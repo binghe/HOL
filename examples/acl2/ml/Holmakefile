@@ -18,7 +18,7 @@ defaxiomsTheory.sig defaxiomsTheory.sml: complex_rationalTheory.uo sexp.uo sexpT
 defaxiomsTheory.ui : .HOLMK/defaxiomsTheory.sig.d
 	echo "Compiling $(@)"
 	@[ -f "$(MOSMLC)" ] || \
-	echo "/opt/hol/sigobj/Overlay" > $(@) && \
+	echo "$(HOLDIR)/sigobj/Overlay" > $(@) && \
 	for i in `cat .HOLMK/defaxiomsTheory.sig.d | cut -f 2 -d':'`; do \
 		echo $$i | cut -f 1 -d'.' >> $(@) ; \
 	done && \
@@ -27,7 +27,7 @@ defaxiomsTheory.ui : .HOLMK/defaxiomsTheory.sig.d
 defaxiomsTheory.uo : .HOLMK/defaxiomsTheory.sml.d
 	echo "Compiling $(@)"
 	@[ -f "$(MOSMLC)" ] || \
-	echo "/opt/hol/sigobj/Overlay" > $(@) && \
+	echo "$(HOLDIR)/sigobj/Overlay" > $(@) && \
 	for i in `cat .HOLMK/defaxiomsTheory.sml.d | cut -f 2 -d':'`; do \
 		(find `pwd` -name $$i 2>/dev/null | grep \. || echo $$i) | cut -f 1 -d'.' >> $(@) ; \
 	done && \
