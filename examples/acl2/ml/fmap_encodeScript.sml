@@ -35,7 +35,7 @@ val _ = new_theory "fmap_encode";
 val PULL_CONV = REPEATC (DEPTH_CONV (RIGHT_IMP_FORALL_CONV ORELSEC AND_IMP_INTRO_CONV));
 val PULL_RULE = CONV_RULE PULL_CONV;
 
-val IND_STEP_TAC = PAT_ASSUM ``!y. P ==> Q`` (MATCH_MP_TAC o PULL_RULE);
+val IND_STEP_TAC = PAT_X_ASSUM ``!y. P ==> Q`` (MATCH_MP_TAC o PULL_RULE);
 
 (*****************************************************************************)
 (* fold for finite maps                                                      *)
@@ -138,7 +138,7 @@ val length_filter_mem = prove(``!l P. (?x. MEM x l /\ ~(P x)) ==> (LENGTH (FILTE
 val L2M_EQ = store_thm("L2M_EQ",
     ``!l1 l2. uniql l1 /\ uniql l2 /\ (set l1 = set l2) ==> (L2M l1 = L2M l2)``,
     REPEAT GEN_TAC THEN completeInduct_on `LENGTH l1 + LENGTH l2` THEN REPEAT STRIP_TAC THEN
-    PAT_ASSUM ``!y. P`` (ASSUME_TAC o CONV_RULE (REPEATC (DEPTH_CONV (RIGHT_IMP_FORALL_CONV ORELSEC AND_IMP_INTRO_CONV)))) THEN
+    PAT_X_ASSUM ``!y. P`` (ASSUME_TAC o CONV_RULE (REPEATC (DEPTH_CONV (RIGHT_IMP_FORALL_CONV ORELSEC AND_IMP_INTRO_CONV)))) THEN
     IMP_RES_TAC seteq_mem THEN FULL_SIMP_TAC std_ss [L2M] THEN
     IMP_RES_TAC l2m_update THEN ONCE_ASM_REWRITE_TAC [] THEN
     ONCE_REWRITE_TAC [update_filter] THEN
@@ -185,7 +185,7 @@ val infdom_lemma = prove(``!a b. ¬(a = b) /\ a IN FDOM x ==> (b IN FDOM x = b I
 val EXISTS_MEM_M2L = store_thm("EXISTS_MEM_M2L",
    ``!x a. (?y. MEM (a,y) (M2L x)) = a IN FDOM x``,
    GEN_TAC THEN completeInduct_on `FCARD x` THEN REPEAT STRIP_TAC THEN
-   PAT_ASSUM ``!y. P`` (ASSUME_TAC o CONV_RULE (REPEATC (DEPTH_CONV (RIGHT_IMP_FORALL_CONV ORELSEC AND_IMP_INTRO_CONV)))) THEN
+   PAT_X_ASSUM ``!y. P`` (ASSUME_TAC o CONV_RULE (REPEATC (DEPTH_CONV (RIGHT_IMP_FORALL_CONV ORELSEC AND_IMP_INTRO_CONV)))) THEN
    FULL_SIMP_TAC std_ss [M2L_def] THEN
    ONCE_REWRITE_TAC [fold_def] THEN REPEAT (CHANGED_TAC (RW_TAC std_ss [MEM, FDOM_FEMPTY, NOT_IN_EMPTY])) THEN
    Cases_on `(a = x')` THEN RW_TAC std_ss [] THEN FULL_SIMP_TAC std_ss [] THEN
@@ -215,7 +215,7 @@ val MEM_M2L = store_thm("MEM_M2L",
     ONCE_REWRITE_TAC [fold_def] THEN RW_TAC std_ss [GSYM M2L_def, MEM, FDOM_FEMPTY, NOT_IN_EMPTY] THEN
     Cases_on `y = x'` THEN RW_TAC std_ss [MEM] THEN1
         METIS_TAC [not_fempty_eq, EXISTS_MEM_M2L, IN_DELETE, FDOM_DOMSUB] THEN
-    PAT_ASSUM ``!y. P`` (ASSUME_TAC o CONV_RULE (REPEATC (DEPTH_CONV (RIGHT_IMP_FORALL_CONV ORELSEC AND_IMP_INTRO_CONV)))) THEN
+    PAT_X_ASSUM ``!y. P`` (ASSUME_TAC o CONV_RULE (REPEATC (DEPTH_CONV (RIGHT_IMP_FORALL_CONV ORELSEC AND_IMP_INTRO_CONV)))) THEN
     FULL_SIMP_TAC std_ss [] THEN
     `FCARD (x \\ x') < FCARD x` by METIS_TAC [fcard_less, not_fempty_eq] THEN
     RW_TAC std_ss [FDOM_DOMSUB, DOMSUB_FAPPLY_NEQ, IN_DELETE]);
@@ -380,14 +380,15 @@ val ALL_DISTINCT_THM = ALL_DISTINCT_FILTER;
 val ALL_DISTINCT_CONS = store_thm("ALL_DISTINCT_CONS",
     ``!l. ALL_DISTINCT (h::l) ==> ALL_DISTINCT l``,
     RW_TAC std_ss [ALL_DISTINCT_THM,FILTER,MEM] THEN
-    PAT_ASSUM ``!y. P`` (MP_TAC o Q.SPEC `x`) THEN RW_TAC std_ss [FILTER_NEQ_NIL] THEN
+    PAT_X_ASSUM ``!y. P`` (MP_TAC o Q.SPEC `x`) THEN
+    RW_TAC std_ss [FILTER_NEQ_NIL] THEN
     FIRST_ASSUM ACCEPT_TAC);
 
 val IN_FILTER_SET = prove(``!x y. FINITE x /\ y IN x ==> (FILTER ($= y) (SET_TO_LIST x) = [y])``,
     GEN_TAC THEN completeInduct_on `CARD x` THEN
     RW_TAC std_ss [SET_TO_LIST_THM, FILTER, FINITE_EMPTY, CHOICE_DEF] THEN
     POP_ASSUM MP_TAC THEN RW_TAC std_ss [CHOICE_NOT_IN_REST, FINITE_REST, MEM_SET_TO_LIST, NOT_IN_EMPTY, RFILTER_EQ_NIL] THEN
-    PAT_ASSUM ``!y. P`` (MATCH_MP_TAC o CONV_RULE (REPEATC (DEPTH_CONV (RIGHT_IMP_FORALL_CONV ORELSEC AND_IMP_INTRO_CONV)))) THEN
+    PAT_X_ASSUM ``!y. P`` (MATCH_MP_TAC o CONV_RULE (REPEATC (DEPTH_CONV (RIGHT_IMP_FORALL_CONV ORELSEC AND_IMP_INTRO_CONV)))) THEN
     Q.EXISTS_TAC `CARD (REST x)` THEN RW_TAC std_ss [FINITE_REST, REST_DEF, CARD_DELETE, CHOICE_DEF, IN_DELETE, GSYM arithmeticTheory.NOT_ZERO_LT_ZERO,CARD_EQ_0]);
 
 val NOT_IN_FILTER_SET = prove(``!x y. FINITE x /\ ~(y IN x) ==> (FILTER ($= y) (SET_TO_LIST x) = [])``,
@@ -433,9 +434,9 @@ val PERM_SORTED_EQ = store_thm(
   DISCH_THEN (REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
   `t1 = t2`
     by (IND_STEP_TAC THEN
-        REPEAT (Q.PAT_ASSUM `SORTED r X` MP_TAC) THEN
+        REPEAT (Q.PAT_X_ASSUM `SORTED r X` MP_TAC) THEN
         ASM_SIMP_TAC (srw_ss() ++ ARITH_ss) [SORTED_EQ] THEN
-        Q.PAT_ASSUM `PERM X Y` MP_TAC THEN
+        Q.PAT_X_ASSUM `PERM X Y` MP_TAC THEN
         ASM_SIMP_TAC (srw_ss()) [PERM_CONS_EQ_APPEND] THEN
         DISCH_THEN (Q.X_CHOOSE_THEN `M` MP_TAC) THEN
         `(M = []) \/ ?h0 t0. M = h0::t0`
@@ -525,8 +526,8 @@ val MAPSET_UNIQ = store_thm("MAPSET_UNIQ",
     Induct THEN REPEAT STRIP_TAC THEN IMP_RES_TAC MAPSET_CONS THEN RES_TAC THEN
     FULL_SIMP_TAC std_ss [uniql_def, MEM, uniql_def, MAPSET_def, MAP, ALL_DISTINCT, MEM_MAP] THEN
     Cases_on `h` THEN RW_TAC std_ss [] THENL [
-       PAT_ASSUM ``!y. P \/ Q`` (MP_TAC o Q.SPEC `(q,y')`),
-       PAT_ASSUM ``!y. P \/ Q`` (MP_TAC o Q.SPEC `(q,y)`),
+       PAT_X_ASSUM ``!y. P \/ Q`` (MP_TAC o Q.SPEC `(q,y')`),
+       PAT_X_ASSUM ``!y. P \/ Q`` (MP_TAC o Q.SPEC `(q,y)`),
        ALL_TAC] THEN
     ASM_REWRITE_TAC [] THEN METIS_TAC []);
 
@@ -560,7 +561,7 @@ val SORTED_LEX = store_thm("SORTED_LEX",
 val filter_first = prove(``!l x y. (FILTER ($= x) (MAP FST l) = [x]) /\ (x = FST y) /\ MEM y l ==> (FILTER ($= x o FST) l = [y])``,
     Induct THEN RW_TAC std_ss [FILTER,MEM,RFILTER_EQ_NIL] THEN
     FULL_SIMP_TAC std_ss [MAP,FILTER,list_11,RFILTER_EQ_NIL, MEM_MAP] THEN
-    FIRST [PAT_ASSUM ``a = b`` MP_TAC, METIS_TAC []] THEN
+    FIRST [PAT_X_ASSUM ``a = b`` MP_TAC, METIS_TAC []] THEN
     RW_TAC std_ss [RFILTER_EQ_NIL, MEM_MAP] THEN METIS_TAC []);
 
 val MAP_FST_DISTINCT_EQ = store_thm("MAP_FST_DISTINCT_EQ",
