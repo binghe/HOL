@@ -120,7 +120,7 @@ fun pTAC tm f (a,g) =
 let	val x = find_terms (can (match_term tm)) g
 	val t = f (hd x)
 in
-	(PAT_ASSUM ``!m:'a.P`` (MP_TAC o SPEC t)) (a,g)
+	(PAT_X_ASSUM ``!m:'a.P`` (MP_TAC o SPEC t)) (a,g)
 end	handle e => NO_TAC (a,g)
 
 
@@ -555,7 +555,7 @@ val EXTEND_EQ = store_thm("EXTEND_EQ",
 	     RW_TAC int_ss [EXTEND_ZERO] THEN INT_CASE_TAC `m` THEN
  	     TRY (Cases_on `c`) THEN
 	     FULL_SIMP_TAC int_ss [])) THEN
-    PAT_ASSUM ``!m:'a.P`` (MP_TAC o Q.SPEC `c - 2 ** SUC n`) THEN
+    PAT_X_ASSUM ``!m:'a.P`` (MP_TAC o Q.SPEC `c - 2 ** SUC n`) THEN
     RW_TAC int_ss [NOT_LESS_EQUAL] THEN
     POP_ASSUM (K ALL_TAC) THEN
     EQ_TAC THEN RW_TAC int_ss [] THENL
@@ -591,7 +591,7 @@ val lem2 = prove(``?m. ~ & (2 ** n) <= b + m * & (2 ** SUC n) /\
 	         INT_MUL_CALCULATE,
                  DECIDE ``0 < a ==> (a < 2 * a) /\ ~(2n * a <= a)``] THEN
           NO_TAC) [`0`,`1`,`~1`]) THEN
-    PAT_ASSUM ``!m:'a. P`` (MP_TAC o Q.SPEC `c - 2 ** SUC n`) THEN
+    PAT_X_ASSUM ``!m:'a. P`` (MP_TAC o Q.SPEC `c - 2 ** SUC n`) THEN
     RW_TAC int_ss [] THEN
     FULL_SIMP_TAC int_ss [] THEN IMP_RES_TAC (GSYM INT_SUB) THENL [
           CF ``m:int`` Q.EXISTS_TAC `m + 1` `m' + 1`,
@@ -800,7 +800,7 @@ val mod_lem = prove(``0 < b ==> ((?m. & (a MOD b) = c + m * & b) =
     	      		(?m. & a = c + m * & b))``,
     completeInduct_on `a` THEN `a < b \/ b <= a` by DECIDE_TAC THEN
     RW_TAC int_ss [MOD_LESS] THEN
-    PAT_ASSUM ``!a:'a.P`` (MP_TAC o Q.SPEC `a - b`) THEN
+    PAT_X_ASSUM ``!a:'a.P`` (MP_TAC o Q.SPEC `a - b`) THEN
     RW_TAC arith_ss [SUB_MOD] THEN
     IMP_RES_TAC (GSYM INT_SUB) THEN EQ_TAC THEN REPEAT STRIP_TAC THENL [
         Q.EXISTS_TAC `m + 1`,Q.EXISTS_TAC `m - 1`] THEN
@@ -956,7 +956,7 @@ val iand_lem1 = prove(``!a x. a < 2 ** x ==> (iand (~ & (2 ** x - a))
         FULL_SIMP_TAC int_ss [int_mod,rwr1,rwr2,INT_SUB_CALCULATE,
 	    INT_ADD_CALCULATE,INT_MUL_CALCULATE] THEN
     Cases_on `a = 0` THEN TRY (POP_ASSUM SUBST_ALL_TAC) THEN
-    PAT_ASSUM ``!m:'a. P`` (MP_TAC o Q.SPEC `a DIV 2`) THEN
+    PAT_X_ASSUM ``!m:'a. P`` (MP_TAC o Q.SPEC `a DIV 2`) THEN
     RW_TAC int_ss [DIV_LT_X] THEN
     FULL_SIMP_TAC int_ss [IAND_ID,INT_MUL_CALCULATE]);
 
@@ -1036,8 +1036,8 @@ val IAND_NEG_TAC =
     TRY (MATCH_MP_TAC (GSYM (ONCE_REWRITE_RULE [IAND_COMM] iand_lem1)) THEN
     	   RW_TAC int_ss [DIV_LT_X]) THEN
     TRY (MATCH_MP_TAC (GSYM iand_lem1) THEN RW_TAC int_ss [DIV_LT_X]) THEN
-    REPEAT (PAT_ASSUM ``a = & (b MOD 2)`` (K ALL_TAC)) THEN
-    PAT_ASSUM ``!m:'a.P`` (K ALL_TAC) THEN
+    REPEAT (PAT_X_ASSUM ``a = & (b MOD 2)`` (K ALL_TAC)) THEN
+    PAT_X_ASSUM ``!m:'a.P`` (K ALL_TAC) THEN
     FULL_SIMP_TAC bool_ss [DECIDE ``(a - 1 + 1 = (if 0 < a then a else 1n))``,
           ZERO_LESS_MULT,ZERO_LT_TWOEXP,DECIDE ``0 < 2n``,
 	  MATCH_MP DIV2_MULT_SUB1 (SPEC_ALL ZERO_LT_TWOEXP),NOT_MOD2] THEN
@@ -1235,8 +1235,8 @@ val sw2i_div_1 = prove(``!a b. ~(b = 0w) /\ ~(b = UINT_MAXw) ==>
     POP_ASSUM IMP_RES_TAC THEN RW_TAC int_ss [int_quot,word_div_def,
     	      word_sdiv_def,word_2comp_def,w2n_n2w,
 	      dimword_def,w2n_lt,plem6,lem7] THEN
-    TRY (PAT_ASSUM ``~(a / b= 0w:'a word)`` MP_TAC) THEN
-    TRY (PAT_ASSUM ``a / b= 0w:'a word`` MP_TAC) THEN
+    TRY (PAT_X_ASSUM ``~(a / b= 0w:'a word)`` MP_TAC) THEN
+    TRY (PAT_X_ASSUM ``a / b= 0w:'a word`` MP_TAC) THEN
     RW_TAC int_ss [word_div_def,word_sdiv_def,word_2comp_def,w2n_n2w,
     	   dimword_def,w2n_lt_full,GSYM w2n_eq_0,lem7,plem6,
 	   DECIDE ``a < b ==> (0n < b - a)``] THEN
@@ -1311,7 +1311,7 @@ val bitwise_lem = prove(``!n x. x < 2 ** n ==>
     	   ONCE_REWRITE_RULE [MULT_COMM] MULT_DIV,ODD_TWOEXP] THEN
     FULL_SIMP_TAC int_ss [BITWISE_ZERO] THEN
     FULL_SIMP_TAC int_ss [GSYM MOD2_ODD_EVEN,NOT_MOD2] THEN
-    PAT_ASSUM ``!m:'a.P`` (MP_TAC o Q.SPEC `x DIV 2`) THEN
+    PAT_X_ASSUM ``!m:'a.P`` (MP_TAC o Q.SPEC `x DIV 2`) THEN
     RW_TAC int_ss [DIV_LT_X,LEFT_ADD_DISTRIB,DIV_MULT_THM2] THEN
     Cases_on `x` THEN FULL_SIMP_TAC int_ss []);
 
