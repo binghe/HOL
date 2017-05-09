@@ -33,6 +33,21 @@ fun frontlast [] = raise Fail "frontlast: failure"
   | frontlast [h] = ([], h)
   | frontlast (h::t) = let val (f,l) = frontlast t in (h::f, l) end;
 
+(* from PolyML's OS.Path module (OS.sml) *)
+local
+    val getOSCall: unit -> int = RunCall.rtsCallFast0 "PolyGetOSType";
+    val getOS: int = getOSCall()
+in
+    val isWindows =
+        case getOS of
+            0 => false (* Posix *)
+        |   1 => true
+        |   _ => raise Fail "Unknown operating system";
+
+    val separator =
+        if isWindows then "\\" else "/"
+end
+
 fun check_dir nm privs candidate = let
   open OS.FileSys
   val p = OS.Path.concat(candidate,nm)
@@ -54,7 +69,7 @@ fun delay limit action = let
   fun loop cnt =
       if cnt >= limit then ()
       else (action cnt;
-            Posix.Process.sleep (Time.fromSeconds 1);
+            OS.Process.sleep (Time.fromSeconds 1);
             loop (cnt + 1))
 in
   loop 0
