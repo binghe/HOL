@@ -33,28 +33,12 @@ fun frontlast [] = raise Fail "frontlast: failure"
   | frontlast [h] = ([], h)
   | frontlast (h::t) = let val (f,l) = frontlast t in (h::f, l) end;
 
-(* from PolyML's OS.Path module (OS.sml) *)
-local
-    val getOSCall: unit -> int = RunCall.rtsCallFast0 "PolyGetOSType";
-    val getOS: int = getOSCall()
-in
-    val isWindows =
-        case getOS of
-            0 => false (* Posix *)
-        |   1 => true
-        |   _ => raise Fail "Unknown operating system";
-
-    val separator =
-        if isWindows then "\\" else "/"
-end
-
 fun check_dir nm privs candidate = let
   open OS.FileSys
   val p = OS.Path.concat(candidate,nm)
 in
   if access(p, privs) then SOME (OS.Path.dir (fullPath p)) else NONE
 end
-val check_poly = check_dir "poly" [OS.FileSys.A_EXEC]
 val check_libpoly = check_dir "libpolymain.a" [OS.FileSys.A_READ]
 fun check_polyc c =
   Option.map (fn p => OS.Path.concat(p,"polyc"))
@@ -144,6 +128,9 @@ in
   else "winNT"
 end
 
+val polyexe = if OS = "winNT" then "poly.exe" else "poly";
+val check_poly = check_dir polyexe [OS.FileSys.A_EXEC]
+
 val polyinstruction =
     "Please write file tools-poly/poly-includes.ML to specify it \
     \properly.\n\
@@ -178,7 +165,7 @@ val (poly,polycopt) =
         | SOME c => let
           in
             case check_poly c of
-              SOME p => (OS.Path.concat(p,"poly"), check_polyc p)
+              SOME p => (OS.Path.concat(p, polyexe), check_polyc p)
             | NONE =>
               die ("\n\nI tried to figure out where your poly executable is\
                    \n\by examining your command-line.\n\
@@ -194,7 +181,7 @@ val (poly,polycopt) =
                      ^poly^
                      "'\nas the location of the poly executable.\n"^
                      polyinstruction)
-      | SOME p => (OS.Path.concat(p, "poly"), check_polyc p)
+      | SOME p => (OS.Path.concat(p, polyexe), check_polyc p)
 
 val polyc =
     case polycopt of
