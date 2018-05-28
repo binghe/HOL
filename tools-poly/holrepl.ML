@@ -1,8 +1,11 @@
+(* -*- Mode: SML; -*- *)
+
 signature HOL_REPL =
 sig
   val sigint_handler : unit -> unit
   val topLevel : (string -> unit) ->
-                 {nameSpace : PolyML.NameSpace.nameSpace,
+                 {isDebug : bool,
+                  nameSpace : PolyML.NameSpace.nameSpace,
                   exitLoop : unit -> bool, startExec : unit -> unit,
                   endExec : unit -> unit, exitOnError : bool,
                   isInteractive : bool} -> unit
@@ -17,7 +20,10 @@ fun printOut s =
 val prompt1 = PolyML.Compiler.prompt1
 val prompt2 = PolyML.Compiler.prompt2
 val timing = PolyML.Compiler.timing
-fun topLevel diag {nameSpace, exitLoop, exitOnError, isInteractive, startExec,
+
+(* Top-level read-eval-print loop.  This is the normal top-level loop and is
+   also used for the debugger. *)
+fun topLevel diag {isDebug, nameSpace, exitLoop, exitOnError, isInteractive, startExec,
                    endExec} =
   let
     (* This is used as the main read-eval-print loop.  It is also invoked
@@ -38,22 +44,22 @@ fun topLevel diag {nameSpace, exitLoop, exitOnError, isInteractive, startExec,
        significant characters are typed. *)
     fun readin cgen () : char option =
       let
-        val () =
-            if isInteractive andalso !lastWasEol (* Start of line *) then
-              if !realDataRead then
-                printOut (!prompt2)
-              else printOut (!prompt1)
-            else ();
+          val () =
+              if isInteractive andalso !lastWasEol (* Start of line *)
+              then if !realDataRead
+              then printOut (if isDebug then "debug " ^ !prompt2 else !prompt2)
+              else printOut (if isDebug then "debug " ^ !prompt1 else !prompt1)
+              else ();
       in
         case cgen() of
-            NONE => (endOfFile := true; NONE)
-         |   SOME #"\n" => ( lastWasEol := true; SOME #"\n" )
-         |   SOME ch =>
-             (
+            NONE       => (  endOfFile := true; NONE )
+        |   SOME #"\n" => ( lastWasEol := true; SOME #"\n" )
+        |   SOME ch    =>
+            (
                lastWasEol := false;
                if ch <> #" " then realDataRead := true else ();
                SOME ch
-             )
+            )
       end; (* readin *)
 
     (* Remove all buffered but unread input. *)
@@ -63,6 +69,7 @@ fun topLevel diag {nameSpace, exitLoop, exitOnError, isInteractive, startExec,
        |   _ => (* No input waiting or we're at EOF. *) ()
 
     val polyCompiler = PolyML.compiler
+
     fun readEvalPrint () : unit =
       let
         (* If we have executed a deeply recursive function the stack
@@ -120,15 +127,15 @@ fun topLevel diag {nameSpace, exitLoop, exitOnError, isInteractive, startExec,
               else ()
         in
           case finalResult of
-              NONE => () (* No exceptions raised. *)
-           |   SOME exn => (* Report exceptions in running code. *)
-               let
+              NONE     => () (* No exceptions raised. *)
+          |   SOME exn => (* Report exceptions in running code. *)
+              let
                  open PolyML PolyML.Exception PolyML.Compiler
                  val exLoc =
                      case exceptionLocation exn of
-                         NONE => []
-                      |   SOME loc => [ContextLocation loc]
-               in
+                         NONE     => []
+                     |   SOME loc => [ContextLocation loc]
+              in
                  PolyML.prettyPrint(TextIO.print, !lineLength)
                    (PrettyBlock(0, false, [],
                                 [
@@ -140,7 +147,7 @@ fun topLevel diag {nameSpace, exitLoop, exitOnError, isInteractive, startExec,
                                   PrettyString "raised"
                    ]));
                  PolyML.Exception.reraise exn
-               end
+              end
         end
       end; (* readEvalPrint *)
 
@@ -152,11 +159,14 @@ fun topLevel diag {nameSpace, exitLoop, exitOnError, isInteractive, startExec,
                (* Allow ^C to terminate the debugger and raise Interrupt in
                   the called program. *)
                if exitOnError then OS.Process.exit OS.Process.failure
+               else if isDebug then (flushInput(); raise Thread.Thread.Interrupt)
                else ()
            |   _ =>
-               if exitOnError then OS.Process.exit OS.Process.failure else ();
-                (* Exit if we've seen end-of-file or we're in the debugger
-                   and we've run "continue". *)
+               if exitOnError
+               then OS.Process.exit OS.Process.failure
+               else ();
+        (* Exit if we've seen end-of-file or we're in the debugger
+           and we've run "continue". *)
         if !endOfFile orelse exitLoop() then ()
         else handledLoop ()
       )

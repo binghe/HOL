@@ -1,3 +1,5 @@
+(* -*- Mode: SML; -*- *)
+
 val _ = use "poly/poly-init2.ML";
 structure BasicIO = SML90;
 exception Interrupt = SML90.Interrupt
@@ -340,6 +342,7 @@ in
                                    exitLoop = fn () => false,
                                    exitOnError = false,
                                    isInteractive = true,
+                                   isDebug = false,
                                    nameSpace = PolyML.globalNameSpace} )
         else
           case exe of
