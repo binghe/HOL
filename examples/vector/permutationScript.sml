@@ -3,8 +3,12 @@ TITLE: Developing the theory of permutation
  It is translated from the corresponding code file of Harrision in Hol-Light.   
 AUTHORS  : (Copyright) Liming Li
              Beijing Engineering Research Center of High Reliable      
-             Embedded System, Capital Normal University, China   
+             Embedded System, Capital Normal University, China
 DATE  : 2011.04.23   
+
+Ported to HOL4 (Kananaskis-12) by Chun Tian (binghe) <ctian@fbk.eu>
+                               Fondazione Bruno Kessler (Italy)
+DATE  : 29/05/2018
 
  ================================================================== *)
 (*
@@ -17,7 +21,10 @@ open arithmeticTheory combinTheory pred_setTheory pairTheory boolTheory
 	 realLib InductiveDefinition;
 
 val _ = new_theory "permutation";
-(* val _ = temp_loose_equality (); *)
+val _ = temp_loose_equality ();
+
+val Know     = Q_TAC KNOW_TAC;			(* from util_prob *)
+val Suff     = Q_TAC SUFF_TAC;			(* from util_prob *)
 
 (* ========================================================================= *)
 (* From fcpTheory                                                            *)
@@ -66,30 +73,30 @@ val HAS_SIZE_IMAGE_INJ = prove(
  *)
 val PERMUTES_DEF = new_infixr_definition
   ("PERMUTES_DEF",
-   `permutes p s = (!x. ~(x IN s) ==> (p(x) = x)) /\ (!y. ?!x. p x = y)`,490);
+   `permutes p s = (!x. ~(x IN s) ==> (p(x) = x)) /\ (!y. ?!x. p x = y)`, 490);
 
 (* ------------------------------------------------------------------------- *)
 (* Inverse function (on whole universe).                                     *)
 (* ------------------------------------------------------------------------- *)
 
 (* TODO: use ``INVERSE f y = LINV f UNIV y``, as suggested by Jeremy Dawson. *)
-val INVERSE_DEF = Define `INVERSE(f) = \y. @x. f x = y`;
+val INVERSE_DEF = Define `INVERSE f = \y. @x. f x = y`;
 
 val SURJECTIVE_INVERSE = store_thm(
-  "SURJECTIVE_INVERSE",
-  `!f. (!y. ?x. f x = y) = !y. f(INVERSE f y) = y`,
+   "SURJECTIVE_INVERSE",
+  `!f. (!y. ?x. f x = y) = !y. f (INVERSE f y) = y`,
   GEN_TAC THEN EQ_TAC THEN REPEAT STRIP_TAC THENL[
 REWRITE_TAC[INVERSE_DEF] THEN 
 CONV_TAC (ONCE_DEPTH_CONV Thm.BETA_CONV) THEN CONV_TAC SELECT_CONV,
 EXISTS_TAC(`INVERSE f y`)] THEN PROVE_TAC[]);
 
 val SURJECTIVE_INVERSE_o = store_thm(
-  " SURJECTIVE_INVERSE_o",
+   "SURJECTIVE_INVERSE_o",
   `!f. (!y. ?x. f x = y) <=> (f o INVERSE f = I)`,
   REWRITE_TAC[FUN_EQ_THM, o_THM, I_THM, SURJECTIVE_INVERSE]);
 
 val INJECTIVE_INVERSE = store_thm(
-  "INJECTIVE_INVERSE",
+   "INJECTIVE_INVERSE",
   `!f. (!x x'. (f x = f x') ==> (x = x')) = (!x. INVERSE f (f x) = x)`,
   GEN_TAC THEN EQ_TAC THENL[
 REPEAT STRIP_TAC THEN
@@ -99,18 +106,18 @@ CONV_TAC SELECT_CONV THEN EXISTS_TAC(`x`) THEN REFL_TAC,
 PROVE_TAC[]]);
 
 val INJECTIVE_INVERSE_o = store_thm(
-  "INJECTIVE_INVERSE_o",
+   "INJECTIVE_INVERSE_o",
   `!f. (!x x'. (f x = f x') ==> (x = x')) = (INVERSE f o f = I)`,
   REWRITE_TAC[FUN_EQ_THM, o_THM, I_THM, INJECTIVE_INVERSE]);
 
 val INVERSE_UNIQUE_o = store_thm(
-  "INVERSE_UNIQUE_o",
+   "INVERSE_UNIQUE_o",
   `!f g. (f o g = I) /\ (g o f = I) ==> (INVERSE f = g)`,
   REWRITE_TAC[FUN_EQ_THM, o_THM, I_THM] THEN
   PROVE_TAC[INJECTIVE_INVERSE, SURJECTIVE_INVERSE]);
 
 val INVERSE_I = store_thm(
-  "INVERSE_I",
+   "INVERSE_I",
   `INVERSE I = I`,
   MATCH_MP_TAC INVERSE_UNIQUE_o THEN REWRITE_TAC[I_o_ID]);
 
@@ -118,33 +125,34 @@ val INVERSE_I = store_thm(
 (* Transpositions.                                                           *)
 (* ------------------------------------------------------------------------- *)
 
-val SWAP_DEF = new_definition("SWAP_DEF",
-  `SWAP(i,j) k = if k = i then j else if k = j then i else k`);
+val SWAP_DEF = new_definition (
+   "SWAP_DEF",
+   `swap (i,j) k = if k = i then j else if k = j then i else k`);
 
 val SWAP_REFL = store_thm(
-  "SWAP_REFL",
-  `!a. SWAP(a,a) = I`,
+   "SWAP_REFL",
+  `!a. swap (a,a) = I`,
   REWRITE_TAC[FUN_EQ_THM, SWAP_DEF, I_THM] THEN PROVE_TAC[]);
 
 val SWAP_SYM = store_thm(
   "SWAP_SYM",
-  `!a b. SWAP(a,b) = SWAP(b,a)`,
+  `!a b. swap(a,b) = swap(b,a)`,
   REWRITE_TAC[FUN_EQ_THM, SWAP_DEF, I_THM] THEN PROVE_TAC[]);
 
 val SWAP_IDEMPOTENT = store_thm(
-  "SWAP_IDEMPOTENT",
-  `!a b. SWAP(a,b) o SWAP(a,b) = I`,
+   "SWAP_IDEMPOTENT",
+  `!a b. swap(a,b) o swap(a,b) = I`,
   REWRITE_TAC[FUN_EQ_THM, SWAP_DEF, o_THM, I_THM] THEN PROVE_TAC[]);
 
 val INVERSE_SWAP = store_thm(
-  "INVERSE_SWAP",
-  `!a b. INVERSE(SWAP(a,b)) = SWAP(a,b)`,
+   "INVERSE_SWAP",
+  `!a b. INVERSE(swap(a,b)) = swap(a,b)`,
 REPEAT GEN_TAC THEN MATCH_MP_TAC INVERSE_UNIQUE_o THEN
   REWRITE_TAC[SWAP_IDEMPOTENT]);
 
 val SWAP_GALOIS = store_thm(
-  "SWAP_GALOIS",
-  `!a b x y. (x = SWAP(a,b) y) = (y = SWAP(a,b) x)`,
+   "SWAP_GALOIS",
+  `!a b x y. (x = swap(a,b) y) = (y = swap(a,b) x)`,
 REWRITE_TAC[SWAP_DEF] THEN PROVE_TAC[]);
 
 (* ------------------------------------------------------------------------- *)
@@ -152,70 +160,70 @@ REWRITE_TAC[SWAP_DEF] THEN PROVE_TAC[]);
 (* ------------------------------------------------------------------------- *)
 
 val PERMUTES_IN_IMAGE = store_thm(
-  "PERMUTES_IN_IMAGE",
+   "PERMUTES_IN_IMAGE",
   `!p s x. p permutes s ==> (p(x) IN s = x IN s)`,
   REWRITE_TAC[PERMUTES_DEF] THEN PROVE_TAC[]);
 
 val PERMUTES_IMAGE = store_thm(
-  "PERMUTES_IMAGE",
+   "PERMUTES_IMAGE",
   `!p s. p permutes s ==> (IMAGE p s = s)`,
 REWRITE_TAC[PERMUTES_DEF, EXTENSION, IN_IMAGE] THEN PROVE_TAC[]);
 
 val PERMUTES_INJECTIVE = store_thm(
-  "PERMUTES_INJECTIVE",
+   "PERMUTES_INJECTIVE",
   `!p s. p permutes s ==> !x y. (p(x) = p(y)) = (x = y)`,
 REWRITE_TAC[PERMUTES_DEF] THEN PROVE_TAC[]);
 
 val PERMUTES_SURJECTIVE = store_thm(
-  "PERMUTES_SURJECTIVE",
+   "PERMUTES_SURJECTIVE",
   `!p s. p permutes s ==> !y. ?x. p(x) = y`,
 REWRITE_TAC[PERMUTES_DEF] THEN PROVE_TAC[]);
 
 val PERMUTES_INVERSES_o = store_thm(
-  "PERMUTES_INVERSES_o",
+   "PERMUTES_INVERSES_o",
   `!p s. p permutes s ==> (p o INVERSE(p) = I) /\ (INVERSE(p) o p = I)`,
   REWRITE_TAC[GSYM INJECTIVE_INVERSE_o, GSYM SURJECTIVE_INVERSE_o] THEN
   REWRITE_TAC[PERMUTES_DEF] THEN PROVE_TAC[]);
 
 val PERMUTES_INVERSES = store_thm(
-  " PERMUTES_INVERSES",
+   "PERMUTES_INVERSES",
   `!p s. p permutes s
          ==> (!x. p(INVERSE p x) = x) /\ (!x. INVERSE p (p x) = x)`,
   REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP PERMUTES_INVERSES_o) THEN
   REWRITE_TAC[FUN_EQ_THM, o_THM, I_THM]);
 
 val PERMUTES_SUBSET = store_thm(
-  "PERMUTES_SUBSET",
+   "PERMUTES_SUBSET",
   `!p s t. p permutes s /\ s SUBSET t ==> p permutes t`,
   REWRITE_TAC[PERMUTES_DEF, SUBSET_DEF] THEN PROVE_TAC[]);
 
 val PERMUTES_EMPTY = store_thm(
-  "PERMUTES_EMPTY",
+   "PERMUTES_EMPTY",
   `!p. p permutes {} = (p = I)`,
   REWRITE_TAC[FUN_EQ_THM, I_THM, PERMUTES_DEF, NOT_IN_EMPTY] THEN PROVE_TAC[]);
 
 val PERMUTES_SING = store_thm(
-  "PERMUTES_SING",
+   "PERMUTES_SING",
   `!p a.  p permutes {a} = (p = I)`,
   REWRITE_TAC[FUN_EQ_THM, I_THM, PERMUTES_DEF, IN_SING] THEN PROVE_TAC[]);
 
 val PERMUTES_UNIV = store_thm(
-  "PERMUTES_UNIV",
+   "PERMUTES_UNIV",
   `!p. p permutes UNIV = !y. ?!x. p x = y`,
   REWRITE_TAC[PERMUTES_DEF, IN_UNIV]);
 
 val PERMUTES_INVERSE_EQ = store_thm(
-  "PERMUTES_INVERSE_EQ",
+   "PERMUTES_INVERSE_EQ",
   `!p. p permutes s ==> !x y. (INVERSE p y = x) = (p x = y)`,
   REWRITE_TAC[PERMUTES_DEF, INVERSE_DEF] THEN METIS_TAC[]);
 
 val PERMUTES_SWAP = store_thm(
-  "PERMUTES_SWAP",
-  `!a b s. a IN s /\ b IN s ==> SWAP(a,b) permutes s`,
+   "PERMUTES_SWAP",
+  `!a b s. a IN s /\ b IN s ==> swap(a,b) permutes s`,
   REWRITE_TAC[PERMUTES_DEF, SWAP_DEF] THEN METIS_TAC[]);
 
 val PERMUTES_SUPERSET = store_thm(
-  "PERMUTES_SUPERSET",
+   "PERMUTES_SUPERSET",
   `!p s t. p permutes s /\ (!x. x IN (s DIFF t) ==> (p(x) = x))
            ==> p permutes t`,
   REWRITE_TAC[PERMUTES_DEF, IN_DIFF] THEN PROVE_TAC[]);
@@ -225,26 +233,25 @@ val PERMUTES_SUPERSET = store_thm(
 (* Group properties.                                                         *)
 (* ------------------------------------------------------------------------- *)
 
-
 val PERMUTES_I = store_thm(
-  "PERMUTES_I",
+   "PERMUTES_I",
   `!s. I permutes s`,
   REWRITE_TAC[PERMUTES_DEF, I_THM] THEN PROVE_TAC[]);
 
 val PERMUTES_COMPOSE = store_thm(
-  "PERMUTES_COMPOSE",
+   "PERMUTES_COMPOSE",
   `!p q s x. p permutes s /\ q permutes s ==> (q o p) permutes s`,
   REWRITE_TAC[PERMUTES_DEF, o_THM] THEN PROVE_TAC[]);
 
 val PERMUTES_INVERSE = store_thm(
-  "PERMUTES_INVERSE",
+   "PERMUTES_INVERSE",
   `!p s. p permutes s ==> INVERSE (p) permutes s`,
   REPEAT STRIP_TAC THEN
  FIRST_ASSUM(MP_TAC o MATCH_MP PERMUTES_INVERSE_EQ) THEN
   POP_ASSUM MP_TAC THEN REWRITE_TAC[PERMUTES_DEF] THEN PROVE_TAC[]);
 
 val PERMUTES_INVERSE_INVERSE = store_thm(
-  "PERMUTES_INVERSE_INVERSE",
+   "PERMUTES_INVERSE_INVERSE",
   `!p s. p permutes s ==> (INVERSE (INVERSE (p)) = p)`,
   REWRITE_TAC [FUN_EQ_THM] THEN
  PROVE_TAC[PERMUTES_INVERSE_EQ, PERMUTES_INVERSE]);
@@ -254,24 +261,24 @@ val PERMUTES_INVERSE_INVERSE = store_thm(
 (* ------------------------------------------------------------------------- *)
 
 val PERMUTES_INSERT_LEMMA = store_thm(
-  "PERMUTES_INSERT_LEMMA",
-  `!p a s. p permutes (a INSERT s) ==> (SWAP(a,p(a)) o p) permutes s`,
+   "PERMUTES_INSERT_LEMMA",
+  `!p a s. p permutes (a INSERT s) ==> (swap(a,p(a)) o p) permutes s`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC PERMUTES_SUPERSET THEN
   EXISTS_TAC `a INSERT s` THEN CONJ_TAC THEN
   METIS_TAC[PERMUTES_SWAP, PERMUTES_IN_IMAGE, IN_INSERT, PERMUTES_COMPOSE, 
 o_THM, SWAP_DEF, IN_DIFF]);
 
 val PERMUTES_INSERT = store_thm(
-  "PERMUTES_INSERT",
+   "PERMUTES_INSERT",
   `{p | p permutes (a INSERT s)} =
-        IMAGE (\(b,p). SWAP(a,b) o p)
+        IMAGE (\(b,p). swap(a,b) o p)
               {(b,p) | b IN a INSERT s /\ p IN {p | p permutes s}}`,
   REWRITE_TAC[EXTENSION, IN_IMAGE] THEN  X_GEN_TAC `p: 'a -> 'a` THEN
   CONV_TAC (DEPTH_CONV SET_SPEC_CONV) THEN
   CONV_TAC(DEPTH_CONV GEN_BETA_CONV) THEN
   SIMP_TAC std_ss[EXISTS_PROD]THEN EQ_TAC THENL
    [DISCH_TAC THEN 
-    MAP_EVERY EXISTS_TAC [`(p: 'a -> 'a) a`, `SWAP(a,p a) o (p: 'a -> 'a)`]  THEN 
+    MAP_EVERY EXISTS_TAC [`(p: 'a -> 'a) a`, `swap(a,p a) o (p: 'a -> 'a)`]  THEN 
     ASM_REWRITE_TAC[SWAP_IDEMPOTENT, o_ASSOC, I_o_ID] THEN
     PROVE_TAC[PERMUTES_IN_IMAGE, IN_INSERT, PERMUTES_INSERT_LEMMA],
     SIMP_TAC std_ss[GSYM LEFT_FORALL_IMP_THM] THEN
@@ -279,39 +286,60 @@ val PERMUTES_INSERT = store_thm(
     STRIP_TAC THEN MATCH_MP_TAC PERMUTES_COMPOSE THEN
     PROVE_TAC[PERMUTES_SUBSET, SUBSET_DEF, IN_INSERT, PERMUTES_SWAP]]);
 
-val HAS_SIZE_PERMUTATIONS = store_thm(
-  "HAS_SIZE_PERMUTATIONS",
-  `!s:'a ->bool n: num. (s HAS_SIZE n) ==> ({p | p permutes s} HAS_SIZE (FACT n))`,
-  SIMP_TAC std_ss[HAS_SIZE_def, GSYM AND_IMP_INTRO, RIGHT_FORALL_IMP_THM] THEN
-  SET_INDUCT_TAC THEN
-  SIMP_TAC std_ss[PERMUTES_EMPTY, CARD_CLAUSES,GSPEC_EQ, FINITE_SING, CARD_SING, FACT] THEN REWRITE_TAC[GSYM HAS_SIZE_def, PERMUTES_INSERT] THEN
-  MATCH_MP_TAC HAS_SIZE_IMAGE_INJ THEN CONJ_TAC THENL
-   [SIMP_TAC std_ss[FORALL_PROD] THEN CONV_TAC (DEPTH_CONV SET_SPEC_CONV) THEN REWRITE_TAC[PAIR_EQ] THEN
-    MAP_EVERY X_GEN_TAC [`b: 'a`, `q: 'a -> 'a`, `c: 'a`, `r: 'a -> 'a`] THEN
-    STRIP_TAC THEN SUBGOAL_THEN `c: 'a = b` SUBST_ALL_TAC THENL
-     [FIRST_X_ASSUM(MP_TAC o C AP_THM `e: 'a`) THEN REWRITE_TAC[o_THM, SWAP_DEF] THEN
-      SUBGOAL_THEN `((q: 'a -> 'a) e = e) /\ ((r: 'a -> 'a) e = e)` (fn th => SIMP_TAC std_ss[th]) THEN
-      PROVE_TAC[PERMUTES_DEF],
-      FIRST_X_ASSUM(MP_TAC o AP_TERM `(\q:'a -> 'a. SWAP(e:'a,b) o q)`) THEN
-      BETA_TAC THEN REWRITE_TAC[SWAP_IDEMPOTENT, o_ASSOC, I_o_ID]],
-   `{(b,p) | b IN e INSERT s /\ p IN {p | p permutes s}} = (e INSERT s) CROSS {p | p permutes s}` by REWRITE_TAC[EXTENSION, CROSS_DEF] THENL[ 
-    CONV_TAC (DEPTH_CONV SET_SPEC_CONV) THEN
-    SIMP_TAC std_ss[FORALL_PROD],
-    ASM_SIMP_TAC std_ss[HAS_SIZE_def, FINITE_INSERT, CARD_CLAUSES, FINITE_CROSS, CARD_CROSS,FACT]]]);
+val HAS_SIZE_PERMUTATIONS = store_thm (
+   "HAS_SIZE_PERMUTATIONS",
+   `!s:'a ->bool n: num. (s HAS_SIZE n) ==> ({p | p permutes s} HAS_SIZE (FACT n))`,
+    SIMP_TAC std_ss [HAS_SIZE_def, GSYM AND_IMP_INTRO, RIGHT_FORALL_IMP_THM]
+ >> SET_INDUCT_TAC (* 2 sub-goals here *)
+ >> SIMP_TAC std_ss [PERMUTES_EMPTY, CARD_CLAUSES, GSPEC_EQ, FINITE_SING, CARD_SING, FACT]
+ >> REWRITE_TAC [GSYM HAS_SIZE_def, PERMUTES_INSERT]
+ >> MATCH_MP_TAC HAS_SIZE_IMAGE_INJ
+ >> CONJ_TAC (* still 2 sub-goals here *)
+ >| [ (* goal 1 (of 2) *)
+      SIMP_TAC std_ss [FORALL_PROD] \\
+      CONV_TAC (DEPTH_CONV SET_SPEC_CONV) \\
+      REWRITE_TAC[PAIR_EQ] \\
+      MAP_EVERY X_GEN_TAC [`b: 'a`, `q: 'a -> 'a`, `c: 'a`, `r: 'a -> 'a`] \\
+      STRIP_TAC \\
+      SUBGOAL_THEN `c: 'a = b` SUBST_ALL_TAC >| (* 2 sub-goals here *)
+      [ (* goal 1.1 (of 2) *)
+        FIRST_X_ASSUM (MP_TAC o C AP_THM `e: 'a`) \\
+        REWRITE_TAC [o_THM, SWAP_DEF] \\
+        SUBGOAL_THEN `((q: 'a -> 'a) e = e) /\ ((r: 'a -> 'a) e = e)`
+		(fn th => SIMP_TAC std_ss[th]) \\
+        PROVE_TAC [PERMUTES_DEF],
+        (* goal 1.2 (of 2) *)
+        FIRST_X_ASSUM (MP_TAC o AP_TERM `(\q:'a -> 'a. swap(e:'a,b) o q)`) \\
+        BETA_TAC \\
+        REWRITE_TAC [SWAP_IDEMPOTENT, o_ASSOC, I_o_ID] ],
+      (* goal 2 (of 2) *)
+      Know `{(b,p) | b IN e INSERT s /\ p IN {p | p permutes s}}
+		= (e INSERT s) CROSS {p | p permutes s}`
+      >- ( REWRITE_TAC [EXTENSION, CROSS_DEF] \\
+           GEN_TAC >> REWRITE_TAC [GSPECIFICATION] >> BETA_TAC \\
+           REWRITE_TAC [PAIR_EQ] >> EQ_TAC >> STRIP_TAC >| (* 2 sub-goals here *)
+           [ (* goal 2.1 (of 2) *)
+             Cases_on `x'` >> FULL_SIMP_TAC std_ss [],
+             (* goal 2.2 (of 2) *)
+             Q.EXISTS_TAC `(FST x, SND x)` >> FULL_SIMP_TAC std_ss [] ] ) \\
+      DISCH_TAC >> ASM_REWRITE_TAC [] \\
+      ASM_SIMP_TAC std_ss [HAS_SIZE_def, FINITE_INSERT, CARD_CLAUSES, FINITE_CROSS,
+			   CARD_CROSS,FACT] ]);
 
-val FINITE_PERMUTATIONS = store_thm(
-  "FINITE_PERMUTATIONS",
+val FINITE_PERMUTATIONS = store_thm (
+   "FINITE_PERMUTATIONS",
   `!s. FINITE s ==> FINITE {p | p permutes s}`,
   METIS_TAC[HAS_SIZE_PERMUTATIONS, HAS_SIZE_def]);
 
-val CARD_PERMUTATIONS = store_thm
-  ("CARD_PERMUTATIONS",
+val CARD_PERMUTATIONS = store_thm (
+   "CARD_PERMUTATIONS",
   `!s. FINITE s ==> (CARD {p | p permutes s} = FACT(CARD s))`,
   METIS_TAC[HAS_SIZE_def ,HAS_SIZE_PERMUTATIONS]);
 
 (* ------------------------------------------------------------------------- *)
-(* Alternative characterizations of finite set.  (Be included in pred_set)      *)
+(* Alternative characterizations of finite set.  (Be included in pred_set)   *)
 (* ------------------------------------------------------------------------- *)
+
 val FINITE_IMAGE_CARD = store_thm
   ("FINITE_IMAGE_CARD",
    `!f s. FINITE s ==> CARD (IMAGE f s) <= CARD s`,
@@ -350,10 +378,12 @@ val SURJECTIVE_IFF_INJECTIVE = prove
 val FORALL_IN_IMAGE = prove
  (`!f s. (!y. y IN IMAGE f s ==> P y) <=> (!x. x IN s ==> P(f x))`,
   REWRITE_TAC[IN_IMAGE] THEN PROVE_TAC[]);
+
 (* ------------------------------------------------------------------------- *)
 (* Alternative characterizations of permutation of finite set.               *)
 (* ------------------------------------------------------------------------- *)
 
+(* TODO: the following 2 theorem need long proof search of METIC_TAC *)
 val PERMUTES_FINITE_INJECTIVE = prove
  (`!s: 'a->bool p.
         FINITE s
@@ -466,8 +496,8 @@ val FINITE_SUPPORT_DELTA = prove
   REWRITE_TAC[SUPPORT_DELTA] THEN REPEAT GEN_TAC THEN
   COND_CASES_TAC THEN SIMP_TAC std_ss[FINITE_RULES, FINITE_SUPPORT]);
 
- (* ------------------------------------------------------------------------- *)
-(* Some characterizations for iterated operations.                            *)
+(* ------------------------------------------------------------------------- *)
+(* Some characterizations for iterated operations.                           *)
 (* ------------------------------------------------------------------------- *)
 
 val ITERATE_SUPPORT = prove
@@ -479,6 +509,8 @@ val ITERATE_EXPAND_CASES = prove
            if FINITE(SUPPORT op f s) then ITERATE op (SUPPORT op f s) f
               else NEUTRAL op`,
   SIMP_TAC std_ss[ITERATE_DEF, SUPPORT_SUPPORT]);
+
+(* stop here -- Chun Tian *)
 
 val ITERATE_CLAUSES_GEN = prove
  (`!op. MONOIDAL op
@@ -1002,7 +1034,7 @@ val SWAP_INDEPENDENT = prove
 val (SWAPSEQ_RULES, SWAPSEQ_INDUCT, SWAPSEQ_CASES) =
        Hol_reln
           `(SWAPSEQ 0 I) /\
-  (!a b p n. SWAPSEQ n p /\ ~(a = b) ==> SWAPSEQ (SUC n) (SWAP(a,b) o p))`;
+  (!a b p n. SWAPSEQ n p /\ ~(a = b) ==> SWAPSEQ (SUC n) (swap(a,b) o p))`;
 
 val PERMUTATION_DEF = Define
  `PERMUTATION p = ?n. SWAPSEQ n p`;
@@ -1049,7 +1081,7 @@ val SWAPSEQ_INVERSE_EXISTS = prove
   REPEAT STRIP_TAC THEN
   MP_TAC(SPECL [`n:num`, `q:'a->'a`, `a:'a`, `b:'a`] SWAPSEQ_ENDSWAP) THEN
   ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
-  EXISTS_TAC `(q:'a->'a) o SWAP(a,b)` THEN
+  EXISTS_TAC `(q:'a->'a) o swap(a,b)` THEN
   ASM_REWRITE_TAC[GSYM o_ASSOC] THEN
   GEN_REWRITE_TAC (BINOP_CONV o LAND_CONV o RAND_CONV) empty_rewrites [o_ASSOC] THEN
   ASM_REWRITE_TAC[SWAP_IDEMPOTENT, I_o_ID]);
@@ -1126,7 +1158,7 @@ val FIXING_SWAPSEQ_DECREASE = prove
     empty_rewrites [EQ_SYM_EQ] THEN ASM_REWRITE_TAC[] THEN
     Q.PAT_ASSUM `$= X Y` MP_TAC THEN
     REWRITE_TAC[GSYM o_ASSOC] THEN
-    ABBREV_TAC `r:'a->'a = SWAP(a:'a,z) o q` THEN
+    ABBREV_TAC `r:'a->'a = swap(a:'a,z) o q` THEN
     ASM_REWRITE_TAC[FUN_EQ_THM, o_THM, SWAP_DEF] THEN PROVE_TAC[],
     SPEC_TAC(`n:num`,`n:num`) THEN INDUCT_TAC THEN
     REWRITE_TAC[SUC_NOT, SUC_SUB1, GSYM o_ASSOC] THEN
@@ -1179,7 +1211,7 @@ val EVENPERM_I = prove
   MATCH_MP_TAC EVENPERM_UNIQUE THEN PROVE_TAC[SWAPSEQ_RULES, EVEN]);
 
 val EVENPERM_SWAP = prove
- (`!a b:'a. EVENPERM (SWAP(a,b)) = (a = b)`,
+ (`!a b:'a. EVENPERM (swap(a,b)) = (a = b)`,
   REPEAT GEN_TAC THEN MATCH_MP_TAC EVENPERM_UNIQUE THEN
   METIS_TAC[SWAPSEQ_SWAP, EVEN, num_CONV ``1:num``]);
 
@@ -1239,7 +1271,7 @@ val PERMUTATION_LEMMA = prove
     ALL_TAC] THEN
   X_GEN_TAC `s:'a->bool` THEN STRIP_TAC THEN X_GEN_TAC `a:'a` THEN
   REWRITE_TAC[IN_INSERT] THEN REPEAT STRIP_TAC THEN
-  SUBGOAL_THEN `PERMUTATION ((SWAP(a,p(a)) o SWAP(a,p(a))) o (p:'a->'a))`
+  SUBGOAL_THEN `PERMUTATION ((swap(a,p(a)) o swap(a,p(a))) o (p:'a->'a))`
   MP_TAC THENL [ALL_TAC, REWRITE_TAC[SWAP_IDEMPOTENT, I_o_ID]] THEN
   REWRITE_TAC[GSYM o_ASSOC] THEN MATCH_MP_TAC PERMUTATION_COMPOSE THEN
   REWRITE_TAC[PERMUTATION_SWAP] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
@@ -1302,14 +1334,14 @@ val PERMUTES_INDUCT = prove
  (`!P s. FINITE s /\
          P I /\
          (!a b:'a p. a IN s /\ b IN s /\ P p /\ PERMUTATION p
-                    ==> P (SWAP(a,b) o p))
+                    ==> P (swap(a,b) o p))
          ==> (!p. p permutes s ==> P p)`,
   ONCE_REWRITE_TAC[TAUT `a /\ b /\ c ==> d <=> b ==> a ==> c ==> d`] THEN
   SIMP_TAC std_ss[RIGHT_FORALL_IMP_THM] THEN GEN_TAC THEN DISCH_TAC THEN
   HO_MATCH_MP_TAC FINITE_INDUCT THEN
   ASM_REWRITE_TAC[PERMUTES_EMPTY, IN_INSERT] THEN REPEAT STRIP_TAC THEN
   ASM_REWRITE_TAC[] THEN
-  SUBGOAL_THEN `p = SWAP(e,p e) o SWAP(e,p e) o (p:'a->'a)` SUBST1_TAC THENL
+  SUBGOAL_THEN `p = swap(e,p e) o swap(e,p e) o (p:'a->'a)` SUBST1_TAC THENL
    [REWRITE_TAC[o_ASSOC, SWAP_IDEMPOTENT, I_o_ID], ALL_TAC] THEN
   Q.PAT_ASSUM `$==> X Y` MP_TAC THEN
   GEN_REWRITE_TAC (LAND_CONV) empty_rewrites [IMP_DISJ_THM] THEN
