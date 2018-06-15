@@ -17,7 +17,7 @@ EXTRA_CLEANS = $(HH2_CMX) $(patsubst %.cmx,%.cmi,$(HH2_CMX)) $(patsubst %.cmx,%.
 
 
 
-all: $(HH2_CMX) hh
+all:
 
 hh: main.ml
 	ocamlopt nums.cmxa str.cmxa unix.cmxa -o $@ -I hh1 $(ALL_CMX) $<

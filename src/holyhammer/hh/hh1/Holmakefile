@@ -6,7 +6,7 @@ EXTRA_CLEANS = $(FILES_CMX) $(patsubst %.cmx,%.cmi,$(FILES_CMX)) $(patsubst %.cm
 
 ifneq($(which ocamlopt),)
 
-all: $(FILES_CMX)
+all:
 
 lib.cmx: lib.ml
 	ocamlopt -c $<
