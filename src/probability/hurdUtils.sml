@@ -1,41 +1,47 @@
 (* ========================================================================= *)
 (* HIGHER-ORDER UTILITY FUNCTIONS                                            *)
 (* Joe Hurd, 10 June 2001                                                    *)
+(* Updated by Chun Tian, 23 August 2018                                      *)
 (* ========================================================================= *)
 
-structure subtypeUseful :> subtypeUseful =
+structure hurdUtils :> hurdUtils =
 struct
 
-open Susp HolKernel Parse Hol_pp boolLib BasicProvers pred_setTheory;
+open Susp HolKernel Parse Hol_pp boolLib metisLib bossLib BasicProvers;
+open pairTheory res_quanTools pred_setTheory; (* for RESQ_STRIP_TAC *)
 
-infixr 0 oo ++ << || THEN THENC ORELSEC THENR ORELSER ## thenf orelsef;
+infixr 0 oo THENR ORELSER ## thenf orelsef;
+
+(* obsoleted:
 infix 1 >> |->;
-
 val op++ = op THEN;
 val op<< = op THENL;
 val op|| = op ORELSE;
+ *)
 
 (* ------------------------------------------------------------------------- *)
 (* Basic ML datatypes/functions.                                             *)
 (* ------------------------------------------------------------------------- *)
 
 type 'a thunk = unit -> 'a;
-(* type (''a, 'b) cache = (''a, 'b) Polyhash.hash_table; *)
-type 'a susp = 'a Susp.susp;
-type ppstream = Portable.ppstream;
-type ('a, 'b) maplet = {redex : 'a, residue : 'b};
-type ('a, 'b) subst = ('a, 'b) Lib.subst;
+type 'a susp = 'a Susp.susp
+type ('a, 'b) maplet = {redex : 'a, residue : 'b}
+type ('a, 'b) subst = ('a, 'b) Lib.subst
 
 (* Error handling *)
 
 exception BUG_EXN of
   {origin_structure : string, origin_function : string, message : string};
 
+val ERR = mk_HOL_ERR "hurdUtils"
+
+(* old definition:
 fun ERR f s = HOL_ERR
-  {origin_structure = "subtypeUseful", origin_function = f, message = s};
+  {origin_structure = "hurdUtils", origin_function = f, message = s};
+ *)
 
 fun BUG f s = BUG_EXN
-  {origin_structure = "subtypeUseful", origin_function = f, message = s};
+  {origin_structure = "hurdUtils", origin_function = f, message = s};
 
 fun BUG_to_string (BUG_EXN {origin_structure, origin_function, message}) =
   ("\nBUG discovered by " ^ origin_structure ^ " at " ^
@@ -168,28 +174,6 @@ end;
 val random_generator = Random.newgen ();
 fun random_integer n = Random.range (0, n) random_generator;
 fun random_real () = Random.random random_generator;
-
-(* Function cacheing *)
-
-(* fun new_cache () : (''a, 'b) cache =
-   Polyhash.mkPolyTable (10000, ERR "cache" "not found"); *)
-
-(* fun cache_lookup c (a, b_thk) =
-  (case Polyhash.peek c a of SOME b => b
-   | NONE =>
-     let
-       val b = b_thk ()
-       val _ = Polyhash.insert c (a, b)
-     in
-       b
-    end); *)
-
-(* fun cachef f =
-  let
-    val c = new_cache ()
-  in
-    fn a => cache_lookup c (a, fn () => f a)
-  end; *)
 
 (* Lazy operations *)
 
@@ -412,59 +396,27 @@ fun tree_partial_trans f_b f_l state (LEAF l) = option_to_list (f_l l state)
 (* Pretty-printing helper-functions.                                     *)
 (* --------------------------------------------------------------------- *)
 
-fun pp_map f pp_a (ppstrm : ppstream) x : unit = pp_a ppstrm (f x);
+fun pp_map f pp_a x = pp_a (f x);
 
-fun pp_string ppstrm =
-  let
-    val {add_string,add_break,begin_block,end_block,add_newline,...}
-      = Portable.with_ppstream ppstrm
+val pp_string = PP.add_string
 
-  in
-    fn s => (begin_block Portable.CONSISTENT 1;
-             add_string s;
-             end_block ())
-  end;
+fun pp_unknown _ = pp_string "_";
 
-fun pp_unknown ppstrm _ = pp_string ppstrm "_";
+fun pp_int i = pp_string (int_to_string i);
 
-fun pp_int ppstrm i = pp_string ppstrm (int_to_string i);
+open PP
+fun pp_pair pp1 pp2 =
+  fn (a, b) => block CONSISTENT 1 [
+                add_string "(", pp1 a, add_string ",",
+                add_break (1, 0), pp2 b, add_string ")"
+              ]
 
-fun pp_pair pp1 pp2 ppstrm =
-  let
-    val {add_string,add_break,begin_block,end_block,add_newline,...}
-      = Portable.with_ppstream ppstrm
-
-  in
-    fn (a, b) => (begin_block Portable.CONSISTENT 1;
-                  add_string "(";
-                  pp1 ppstrm a:unit;
-                  add_string ",";
-                  add_break (1, 0);
-                  pp2 ppstrm b:unit;
-                  add_string ")";
-                  end_block())
-  end;
-
-fun pp_list pp ppstrm =
-  let
-    val {add_string,add_break,begin_block,end_block,add_newline,...}
-      = Portable.with_ppstream ppstrm
-
-    val pp_elt = pp ppstrm
-
-    fun pp_seq [] = ()
-      | pp_seq (h::t) = (add_string ",";
-                         add_break (1, 0);
-                         pp_elt h:unit;
-                         pp_seq t)
-  in
-    fn l => (begin_block Portable.INCONSISTENT 1;
-             add_string "[";
-             (case l of [] => ()
-              | h::t => (pp_elt h; pp_seq t));
-             add_string "]";
-             end_block())
-  end;
+fun pp_list pp =
+    fn l => block INCONSISTENT 1 (
+             add_string "[" ::
+             pr_list pp [add_string ",", add_break(1,0)] l @
+             [add_string "]"]
+           )
 
 (* --------------------------------------------------------------------- *)
 (* Substitution operations.                                              *)
@@ -548,6 +500,8 @@ fun parse_with_goal t (asms, g) =
   in
     Parse.parse_in_context ctxt t
   end;
+
+val PARSE_TAC = fn tac => fn q => W (tac o parse_with_goal q);
 
 (* --------------------------------------------------------------------- *)
 (* Term/type substitutions.                                              *)
@@ -766,13 +720,6 @@ end;
 
 (* Conversionals *)
 
-fun CHANGED_CONV c tm =
-    let
-      val th = QCONV c tm
-    in
-      if rhs (concl th) = tm then raise ERR "CHANGED_CONV" "" else th
-    end;
-
 fun FIRSTC [] tm = raise ERR "FIRSTC" "ran out of convs"
   | FIRSTC (c::cs) tm = (c ORELSEC FIRSTC cs) tm;
 
@@ -973,15 +920,15 @@ fun DISCH_CONJUNCTS [] _ = raise ERR "DISCH_CONJ" "no assumptions!"
   | DISCH_CONJUNCTS (a::al) th = foldl (uncurry DISCH_CONJ) (DISCH a th) al;
 fun DISCH_CONJUNCTS_ALL th = DISCH_CONJUNCTS (hyp th) th;
 fun DISCH_CONJUNCTS_FILTER f th = DISCH_CONJUNCTS (filter f (hyp th)) th;
-fun UNDISCH_CONJ_TAC a = UNDISCH_TAC a ++ CONV_TAC DISCH_CONJ_CONV;
+fun UNDISCH_CONJ_TAC a = UNDISCH_TAC a >> CONV_TAC DISCH_CONJ_CONV;
 val UNDISCH_CONJUNCTS_TAC =
-  POP_ASSUM MP_TAC ++ REPEAT (POP_ASSUM MP_TAC ++ CONV_TAC DISCH_CONJ_CONV);
+  POP_ASSUM MP_TAC >> REPEAT (POP_ASSUM MP_TAC >> CONV_TAC DISCH_CONJ_CONV);
 
 val UNDISCH_CONJ_CONV = REWR_CONV (GSYM AND_IMP_INTRO)
 val UNDISCH_CONJ = CONV_RULE UNDISCH_CONJ_CONV THENR UNDISCH
 val UNDISCH_CONJUNCTS = REPEATR UNDISCH_CONJ THENR UNDISCH
-val DISCH_CONJ_TAC = CONV_TAC UNDISCH_CONJ_CONV ++ DISCH_TAC
-val DISCH_CONJUNCTS_TAC = REPEAT DISCH_CONJ_TAC ++ DISCH_TAC
+val DISCH_CONJ_TAC = CONV_TAC UNDISCH_CONJ_CONV >> DISCH_TAC
+val DISCH_CONJUNCTS_TAC = REPEAT DISCH_CONJ_TAC >> DISCH_TAC
 
 (* --------------------------------------------------------------------- *)
 (* Tacticals.                                                            *)
@@ -1000,48 +947,30 @@ fun ASMLIST_CASES (t1:tactic) _ (g as ([], _)) = t1 g
 fun POP_ASSUM_TAC tac =
   ASMLIST_CASES tac
   (K (UNDISCH_CONJUNCTS_TAC
-      ++ tac
-      ++ TRY (DISCH_THEN (EVERY o map ASSUME_TAC o CONJUNCTS))));
+      >> tac
+      >> TRY (DISCH_THEN (EVERY o map ASSUME_TAC o CONJUNCTS))));
 
 (*---------------------------------------------------------------------------
- * tac1 THEN1 tac2: A tactical like THEN that applies tac2 only to the
- *                  first subgoal of tac1
- *---------------------------------------------------------------------------*)
-
-fun op THEN1 (tac1 : tactic, tac2 : tactic) : tactic =
-  fn g =>
-  let
-    val (gl, jf) = tac1 g
-    val (h_g, t_gl) =
-      case gl of []
-        => raise ERR "THEN1" "goal completely solved by first tactic"
-      | h :: t => (h, t)
-    val (h_gl, h_jf) = tac2 h_g
-    val _ =
-      assert (null h_gl) (ERR "THEN1" "1st subgoal not solved by second tactic")
-  in
-    (t_gl, fn thl => jf (h_jf [] :: thl))
-  end
-  handle HOL_ERR{origin_structure,origin_function,message}
-  => raise ERR "THEN1" (origin_structure^"."^origin_function^": "^message);
-
-val op>> = op THEN1;
-
-(*---------------------------------------------------------------------------
- * REVERSE tac: A tactical that reverses the list of subgoals of tac.
+ * Reverse tac: A tactical that reverses the list of subgoals of tac.
  *              Intended for use with THEN1 to pick the `easy' subgoal, e.g.:
  *              - CONJ_TAC THEN1 SIMP_TAC
  *                  if the first conjunct is easily dispatched
- *              - REVERSE CONJ_TAC THEN1 SIMP_TAC
+ *              - Reverse CONJ_TAC THEN1 SIMP_TAC
  *                  if it is the second conjunct that yields.
+ *
+ * (the old name "REVERSE" has different meaning in rich_listTheory)
  *---------------------------------------------------------------------------*)
 
+val Reverse = Tactical.REVERSE;
+
+(* old definition:
 fun REVERSE tac g
   = let val (gl, jf) = tac g
     in (rev gl, jf o rev)
     end
     handle HOL_ERR{origin_structure,origin_function,message}
-    => raise ERR "REVERSE" (origin_structure^"."^origin_function^": "^message);
+    => raise ERR "Reverse" (origin_structure^"."^origin_function^": "^message);
+ *)
 
 (* --------------------------------------------------------------------- *)
 (* Tactics.                                                              *)
@@ -1049,31 +978,32 @@ fun REVERSE tac g
 
 val TRUTH_TAC = ACCEPT_TAC TRUTH;
 
+val S_TAC = rpt (POP_ASSUM MP_TAC) >> rpt RESQ_STRIP_TAC;
+val Strip = S_TAC;
+
 fun K_TAC _ = ALL_TAC;
 
 val KILL_TAC = POP_ASSUM_LIST K_TAC;
 
-fun CONJUNCTS_TAC g = TRY (CONJ_TAC << [ALL_TAC, CONJUNCTS_TAC]) g;
+fun CONJUNCTS_TAC g = TRY (CONJ_TAC >| [ALL_TAC, CONJUNCTS_TAC]) g;
 
 val FUN_EQ_TAC = CONV_TAC (CHANGED_CONV (ONCE_DEPTH_CONV FUN_EQ_CONV));
 val SET_EQ_TAC = CONV_TAC (CHANGED_CONV (ONCE_DEPTH_CONV SET_EQ_CONV));
-
-fun SUFF_TAC t (al, c)
-  = let val tm = parse_with_goal t (al, c)
-    in ([(al, mk_imp (tm, c)), (al, tm)],
-        fn [th1, th2] => MP th1 th2
-         | _ => raise ERR "SUFF_TAC" "panic")
-    end;
-
-fun KNOW_TAC t = REVERSE (SUFF_TAC t);
 
 local
   val th1 = (prove (``!t. T ==> (F ==> t)``, PROVE_TAC []))
 in
   val CHECK_ASMS_TAC :tactic =
     REPEAT (PAT_ASSUM T K_TAC)
-    ++ REPEAT (PAT_ASSUM F (fn th => MP_TAC th ++ MATCH_MP_TAC th1))
+    >> REPEAT (PAT_ASSUM F (fn th => MP_TAC th >> MATCH_MP_TAC th1))
 end;
+
+val Cond =
+  MATCH_MP_TAC (PROVE [] ``!a b c. a /\ (b ==> c) ==> ((a ==> b) ==> c)``)
+  >> CONJ_TAC;
+
+val Rewr  = DISCH_THEN (REWRITE_TAC o wrap);
+val Rewr' = DISCH_THEN (ONCE_REWRITE_TAC o wrap);
 
 (* --------------------------------------------------------------------- *)
 (* EXACT_MP_TAC : thm -> tactic                                          *)
@@ -1101,8 +1031,10 @@ fun EXACT_MP_TAC mp_th :tactic =
 local
   val th = prove (``!a b. a /\ (a ==> b) ==> a /\ b``, PROVE_TAC [])
 in
-  val STRONG_CONJ_TAC :tactic = MATCH_MP_TAC th ++ CONJ_TAC
+  val STRONG_CONJ_TAC :tactic = MATCH_MP_TAC th >> CONJ_TAC
 end;
+
+val STRONG_DISJ_TAC = CONV_TAC (REWR_CONV (GSYM IMP_DISJ_THM)) >> STRIP_TAC;
 
 (* --------------------------------------------------------------------- *)
 (* FORWARD_TAC : (thm list -> thm list) -> tactic                        *)
@@ -1142,13 +1074,16 @@ fun FORWARD_TAC f (asms, g:term) =
         | _ => raise BUG "FORWARD_TAC" "justification function panic")
   end;
 
+val Know = Q_TAC KNOW_TAC
+val Suff = Q_TAC SUFF_TAC
+val POP_ORW = POP_ASSUM (fn thm => ONCE_REWRITE_TAC [thm]);
+
 (* --------------------------------------------------------------------- *)
 (* A simple-minded CNF conversion.                                       *)
 (* --------------------------------------------------------------------- *)
 
 local
   open simpLib
-  infix ++
 in
   val EXPAND_COND_CONV =
     QCONV (SIMP_CONV (pureSimps.pure_ss ++ boolSimps.COND_elim_ss) [])
@@ -1218,7 +1153,7 @@ val CNF_TAC = CCONTR_TAC THEN FORWARD_TAC (flatten o map CNF_EXPAND);
 
 (* --------------------------------------------------------------------- *)
 (* ASM_MATCH_MP_TAC: adding MP-consequences to the assumption list.      *)
-(* Does less than (EVERY (map ASSUME_TAC ths) ++ RES_TAC).               *)
+(* Does less than (EVERY (map ASSUME_TAC ths) >> RES_TAC).               *)
 (* --------------------------------------------------------------------- *)
 
 local
@@ -1286,5 +1221,18 @@ fun ASM_MATCH_MP_TAC_N depth ths =
 
 val ASM_MATCH_MP_TAC = ASM_MATCH_MP_TAC_N 10;
 
-end; (* probTools *)
+val art = ASM_REWRITE_TAC;
 
+fun SET_TAC L =
+    POP_ASSUM_LIST(K ALL_TAC) THEN REPEAT COND_CASES_TAC THEN
+    REWRITE_TAC (append [EXTENSION, SUBSET_DEF, PSUBSET_DEF, DISJOINT_DEF,
+    SING_DEF] L) THEN
+    SIMP_TAC std_ss [NOT_IN_EMPTY, IN_UNIV, IN_UNION, IN_INTER, IN_DIFF,
+      IN_INSERT, IN_DELETE, IN_REST, IN_BIGINTER, IN_BIGUNION, IN_IMAGE,
+      GSPECIFICATION, IN_DEF, EXISTS_PROD] THEN METIS_TAC [];
+
+fun ASM_SET_TAC L = REPEAT (POP_ASSUM MP_TAC) THEN SET_TAC L;
+
+fun SET_RULE tm = prove(tm,SET_TAC []);
+
+end; (* probTools *)

@@ -1,11 +1,9 @@
-signature subtypeUseful =
+signature hurdUtils =
 sig
 
   (* GENERAL *)
-
   type 'a thunk = unit -> 'a
   type 'a susp = 'a Susp.susp
-  type ppstream = PP.ppstream
   type ('a, 'b) maplet = {redex : 'a, residue : 'b}
   type ('a, 'b) subst = ('a, 'b) Lib.subst
 
@@ -171,15 +169,12 @@ sig
     ('a, 'c) tree -> 'd list
 
   (* Pretty-printing *)
-  val pp_map :
-    ('a -> 'b) -> (ppstream -> 'b -> unit) -> ppstream -> 'a -> unit
-  val pp_string : ppstream -> string -> unit
-  val pp_unknown : ppstream -> 'a -> unit
-  val pp_int : ppstream -> int -> unit
-  val pp_pair :
-    (ppstream -> 'a -> unit) -> (ppstream -> 'b -> unit) ->
-    (ppstream -> 'a * 'b -> unit)
-  val pp_list : (ppstream -> 'a -> unit) -> (ppstream -> 'a list -> unit)
+  val pp_map : ('a -> 'b) -> 'b PP.pprinter -> 'a PP.pprinter
+  val pp_string : string PP.pprinter
+  val pp_unknown : 'a PP.pprinter
+  val pp_int : int PP.pprinter
+  val pp_pair : 'a PP.pprinter -> 'b PP.pprinter -> ('a * 'b) PP.pprinter
+  val pp_list : 'a PP.pprinter -> 'a list PP.pprinter
 
   (* Substitutions *)
   val redex : ('a, 'b) maplet -> 'a
@@ -194,8 +189,7 @@ sig
   val is_renaming_subst : ''b list -> ('a, ''b) subst -> bool
   val invert_renaming_subst : ''b list -> ('a, ''b) subst -> (''b, 'a) subst
 
-  (* HOL *)
-
+  (* HOL Types *)
   type 'a set = 'a HOLset.set
   type hol_type = Type.hol_type
   type term = Term.term
@@ -220,6 +214,7 @@ sig
   (* General *)
   val profile : ('a -> 'b) -> 'a -> 'b
   val parse_with_goal : term frag list -> goal -> term
+  val PARSE_TAC : (term -> tactic) -> term frag list -> tactic
 
   (* Term/type substitutions *)
   val empty_subst : substitution
@@ -248,8 +243,6 @@ sig
   val is_bv : term list -> term -> bool
   val mk_bv : term list -> int -> term
 
-  (* Types *)
-
   (* Terms *)
   val type_vars_in_terms : term list -> hol_type list
   val list_dest_comb : term -> term * term list
@@ -276,7 +269,6 @@ sig
   val PINST : substitution -> thm -> thm
 
   (* Conversions *)
-  val CHANGED_CONV : conv -> conv
   val FIRSTC : conv list -> conv
   val TRYC : conv -> conv
   val REPEATPLUSC : conv -> conv
@@ -339,20 +331,30 @@ sig
   val PURE_CONV_TAC : conv -> tactic
   val ASMLIST_CASES : tactic -> (term -> tactic) -> tactic
   val POP_ASSUM_TAC : tactic -> tactic
-  val THEN1 : tactic * tactic -> tactic
-  val REVERSE : tactic -> tactic
+  val Reverse : tactic -> tactic
   val TRUTH_TAC : tactic
+  val S_TAC : tactic
+  val Strip : tactic
   val K_TAC : 'a -> tactic
   val KILL_TAC : tactic
   val CONJUNCTS_TAC : tactic
   val FUN_EQ_TAC : tactic
   val SET_EQ_TAC : tactic
-  val SUFF_TAC : term frag list -> tactic
-  val KNOW_TAC : term frag list -> tactic
   val CHECK_ASMS_TAC : tactic
   val EXACT_MP_TAC : thm_tactic
   val STRONG_CONJ_TAC : tactic
+  val STRONG_DISJ_TAC : tactic
   val FORWARD_TAC : (thm list -> thm list) -> tactic
+  val Know : term quotation -> tactic
+  val Suff : term quotation -> tactic
+  val POP_ORW : tactic
+  val Cond : tactic
+  val Rewr  : tactic
+  val Rewr' : tactic
+  val art : thm list -> tactic
+  val SET_TAC : thm list -> tactic
+  val ASM_SET_TAC : thm list -> tactic
+  val SET_RULE : term -> thm
 
   (* Simple CNF conversion *)
   val CNF_CONV : conv

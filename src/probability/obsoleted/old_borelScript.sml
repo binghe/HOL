@@ -1,70 +1,33 @@
-(*
-
-app load ["bossLib", "metisLib", "arithmeticTheory", "pred_setTheory", "listTheory",
-          "state_transformerTheory", "formalizeUseful",
-          "combinTheory", "pairTheory", "realTheory", "realLib", "extra_boolTheory", "jrhUtils",
-          "extra_pred_setTheory", "realSimps", "extra_realTheory",
-          "measureTheory", "numTheory", "simpLib",
-          "seqTheory", "subtypeTheory",
-          "transcTheory", "limTheory", "stringTheory", "rich_listTheory", "stringSimps",
-          "listSimps"];
-
-*)
+(* ------------------------------------------------------------------------- *)
+(* The (old) Borel measurable sets defined on reals                          *)
+(* Author: Aaron Coble (2010)                                                *)
+(* Cambridge University                                                      *)
+(* ------------------------------------------------------------------------- *)
 
 open HolKernel Parse boolLib bossLib metisLib arithmeticTheory pred_setTheory
-     listTheory state_transformerTheory formalizeUseful extra_numTheory combinTheory
-     pairTheory realTheory realLib extra_boolTheory jrhUtils
-     extra_pred_setTheory realSimps extra_realTheory measureTheory numTheory
-     simpLib seqTheory subtypeTheory
-     transcTheory limTheory stringTheory rich_listTheory stringSimps listSimps;
+     listTheory combinTheory pairTheory realTheory realLib jrhUtils realSimps
+     simpLib seqTheory real_sigmaTheory transcTheory limTheory numTheory;
 
-open real_sigmaTheory;
+open hurdUtils util_probTheory old_measureTheory;
 
 (* ------------------------------------------------------------------------- *)
-(* Start a new theory called "borel"                                         *)
+(* Start a new theory called "old_borel"                                     *)
 (* ------------------------------------------------------------------------- *)
 
-val _ = new_theory "borel";
+val _ = new_theory "old_borel"; (* moved here from "examples/diningcryptos" *)
 
 (* ------------------------------------------------------------------------- *)
 (* Helpful proof tools                                                       *)
 (* ------------------------------------------------------------------------- *)
 
-val REVERSE = Tactical.REVERSE;
 val lemma = I prove;
 
-val Simplify = RW_TAC arith_ss;
-val Suff = PARSE_TAC SUFF_TAC;
-val Know = PARSE_TAC KNOW_TAC;
-val Rewr = DISCH_THEN (REWRITE_TAC o wrap);
-val Rewr' = DISCH_THEN (ONCE_REWRITE_TAC o wrap);
-val Cond =
-  DISCH_THEN
-  (fn mp_th =>
-   let
-     val cond = fst (dest_imp (concl mp_th))
-   in
-     KNOW_TAC cond >| [ALL_TAC, DISCH_THEN (MP_TAC o MP mp_th)]
-   end);
-
-val POP_ORW = POP_ASSUM (fn thm => ONCE_REWRITE_TAC [thm]);
-
-val safe_list_ss = (simpLib.++ (bool_ss, LIST_ss));
-
-val safe_string_ss = (simpLib.++ (bool_ss, STRING_ss));
-
-val arith_string_ss = (simpLib.++ (arith_ss, STRING_ss));
-
-
-(* ************************************************************************* *)
 (* ************************************************************************* *)
 (* Basic Definitions                                                         *)
 (* ************************************************************************* *)
-(* ************************************************************************* *)
 
 val borel_space_def = Define
-   `borel_space = sigma (UNIV:real->bool) (IMAGE (\a:real. {x:real | x <= a}) (UNIV:real->bool))`;
-
+   `borel_space = sigma univ(:real) (IMAGE (\a:real. {x:real | x <= a}) univ(:real))`;
 
 val borel_measurable_def = Define
    `borel_measurable a = measurable a borel_space`;
@@ -74,10 +37,11 @@ val mono_convergent_def = Define
         (!x m n. m <= n /\ x IN s ==> u m x <= u n x) /\
         (!x. x IN s ==> (\i. u i x) --> f x)`;
 
-(* ************************************************************************* *)
+val indicator_fn_def = Define
+   `indicator_fn s = \x. if x IN s then (1:real) else (0:real)`;
+
 (* ************************************************************************* *)
 (* Proofs                                                                    *)
-(* ************************************************************************* *)
 (* ************************************************************************* *)
 
 val in_borel_measurable = store_thm
@@ -374,7 +338,7 @@ val affine_borel_measurable = store_thm
         by (REPEAT STRIP_TAC >> REAL_ARITH_TAC)
    >> RW_TAC std_ss [borel_measurable_le_iff]
    >> POP_ASSUM (K ALL_TAC)
-   >> REVERSE (Cases_on `b < 0`)
+   >> Reverse (Cases_on `b < 0`)
    >- (`0 < b` by METIS_TAC [REAL_LT_LE, real_lt]
        >> `! x c. (g x * b <= c - a) = (g x <= (c - a) / b)`
         by (REPEAT STRIP_TAC
@@ -426,7 +390,7 @@ val NON_NEG_REAL_RAT_DENSE = store_thm
    >> FULL_SIMP_TAC std_ss [GSYM real_div]
    >> `minimal (\a. y <= & a / & n) = SUC m`
         by (MATCH_MP_TAC (GSYM MINIMAL_SUC_IMP)
-            >> REVERSE CONJ_TAC
+            >> Reverse CONJ_TAC
             >- (RW_TAC real_ss [o_DEF,GSYM real_lt] >> METIS_TAC [REAL_LET_TRANS])
             >> Suff `(\a. y <= & (SUC a) / & n) m` >- RW_TAC std_ss []
             >> Q.UNABBREV_TAC `m`
@@ -651,7 +615,7 @@ val borel_measurable_square = store_thm
    >> Cases_on `a < 0`
    >- (`{x | x IN m_space m /\ f x pow 2 <= a} = {}`
         by (RW_TAC std_ss [Once EXTENSION, NOT_IN_EMPTY, GSPECIFICATION]
-            >> REVERSE (Cases_on `(x IN m_space m)`) >> RW_TAC std_ss []
+            >> Reverse (Cases_on `(x IN m_space m)`) >> RW_TAC std_ss []
             >> RW_TAC std_ss [GSYM real_lt] >> MATCH_MP_TAC REAL_LTE_TRANS >> Q.EXISTS_TAC `0`
             >> RW_TAC std_ss [])
        >> FULL_SIMP_TAC std_ss [measure_space_def, SIGMA_ALGEBRA, subsets_def])
@@ -678,7 +642,7 @@ val borel_measurable_square = store_thm
         by (STRIP_TAC >> RW_TAC bool_ss [Once (GSYM REAL_POW2_ABS)]
             >> ONCE_REWRITE_TAC [GSYM ABS_BOUNDS]
             >> RW_TAC std_ss [GSYM REAL_NOT_LT]
-            >> REVERSE EQ_TAC
+            >> Reverse EQ_TAC
             >- (STRIP_TAC >> MATCH_MP_TAC REAL_POW_LT2 >> RW_TAC real_ss [REAL_LT_IMP_LE])
             >> SPOSE_NOT_THEN STRIP_ASSUME_TAC
             >> POP_ASSUM MP_TAC

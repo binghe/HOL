@@ -21,7 +21,7 @@ open HolKernel Parse boolLib bossLib;
 open listTheory subtypeTools
      res_quanTools res_quanTheory pred_setTheory extra_pred_setTheory
      arithContext ho_proverTools extra_listTheory subtypeTheory
-     listContext arithmeticTheory groupTheory HurdUseful
+     listContext arithmeticTheory groupTheory hurdUtils
      groupContext extra_numTheory gcdTheory dividesTheory
      extra_arithTheory finite_groupTheory finite_groupContext
      abelian_groupTheory num_polyTheory extra_binomialTheory
@@ -29,7 +29,7 @@ open listTheory subtypeTools
      extra_realTheory realTheory realLib
      state_transformerTheory combinTheory;
 
-open util_probTheory probabilityTheory probTheory prob_uniformTheory;
+open util_probTheory old_probabilityTheory probTheory prob_uniformTheory;
 
 (* interactive mode
 quietdec := false;

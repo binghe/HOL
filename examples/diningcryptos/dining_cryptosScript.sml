@@ -2,38 +2,20 @@
 (* Create "leakageTheory" setting up the theory of information leakage       *)
 (* ========================================================================= *)
 
-(* ------------------------------------------------------------------------- *)
-(* Load and open relevant theories                                           *)
-(* (Comment out "load" and "loadPath"s for compilation)                      *)
-(* ------------------------------------------------------------------------- *)
-
-(*app load ["bossLib", "metisLib", "arithmeticTheory", "pred_setTheory",
-          "pred_setLib", "listTheory",
-          "state_transformerTheory", "probabilityTheory", "formalizeUseful",
-          "combinTheory", "pairTheory", "realTheory", "realLib", "extra_boolTheory",
-          "jrhUtils", "extra_pred_setTheory", "realSimps", "extra_realTheory",
-          "measureTheory", "numTheory", "simpLib", "seqTheory", "subtypeTheory",
-          "transcTheory", "limTheory", "stringTheory", "rich_listTheory",
-          "stringSimps", "listSimps", "lebesgueTheory",
-          "informationTheory", "extra_stringTheory", "leakageTheory",
-          "extra_stringLib", "leakageLib", "extra_listTheory"];*)
-
 open HolKernel Parse boolLib bossLib;
 
 open metisLib arithmeticTheory pred_setTheory pred_setLib
-     state_transformerTheory
-     formalizeUseful extra_numTheory combinTheory
-     pairTheory realTheory realLib extra_boolTheory jrhUtils
-     extra_pred_setTheory realSimps extra_realTheory numTheory
-     simpLib seqTheory subtypeTheory
+     state_transformerTheory combinTheory pairTheory realTheory realLib jrhUtils
+     extra_pred_setTheory realSimps numTheory simpLib seqTheory subtypeTheory
      transcTheory limTheory stringTheory stringSimps
-     informationTheory extra_stringTheory leakageTheory
-     extra_stringLib;
+     informationTheory leakageTheory listTheory rich_listTheory listSimps;
 
-open listTheory rich_listTheory listSimps extra_listTheory;
-open real_sigmaTheory;
-open leakageLib;
-open measureTheory lebesgueTheory probabilityTheory;
+open extra_boolTheory extra_numTheory extra_listTheory extra_stringLib
+     extra_stringTheory extra_realTheory;
+
+open real_sigmaTheory leakageLib;
+open hurdUtils util_probTheory old_measureTheory old_lebesgueTheory
+     old_probabilityTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Start a new theory called "information"                                   *)

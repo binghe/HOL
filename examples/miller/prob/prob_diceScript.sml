@@ -11,11 +11,11 @@ open HolKernel Parse boolLib bossLib;
 open arithmeticTheory pred_setTheory listTheory
      state_transformerTheory combinTheory pairTheory
      realTheory realLib extra_boolTheory res_quanTheory
-     HurdUseful extra_numTheory
+     hurdUtils extra_numTheory
      extra_realTheory numTheory simpLib seqTheory;
 
 open sequenceTheory sequenceTools extra_pred_setTheory extra_pred_setTools subtypeTheory;
-open util_probTheory measureTheory probabilityTheory;
+open util_probTheory old_measureTheory old_probabilityTheory;
 open prob_algebraTheory probTheory;
 
 (* interactive mode

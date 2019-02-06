@@ -8,14 +8,14 @@ quietdec := true;
 
 open HolKernel Parse boolLib bossLib arithmeticTheory pred_setTheory
      listTheory state_transformerTheory
-     HurdUseful extra_numTheory combinTheory
+     hurdUtils extra_numTheory combinTheory
      pairTheory realTheory realLib extra_boolTheory
      extra_pred_setTheory sumTheory
      extra_realTheory extra_pred_setTools numTheory
      simpLib seqTheory res_quanTheory;
 
 open sequenceTheory sequenceTools subtypeTheory;
-open util_probTheory measureTheory probabilityTheory;
+open util_probTheory old_measureTheory old_probabilityTheory;
 open prob_algebraTheory probTheory;
 
 (* interactive mode

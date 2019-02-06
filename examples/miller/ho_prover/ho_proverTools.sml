@@ -14,7 +14,7 @@ val () = app load
 val () = show_assums := true;
 *)
 
-open Susp combinTheory HurdUseful skiTools;
+open Susp combinTheory hurdUtils skiTools;
 
 infixr 0 oo ## ++ << || THENC ORELSEC THENR ORELSER -->;
 infix 1 >> |->;
