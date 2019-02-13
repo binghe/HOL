@@ -11,7 +11,7 @@
 (*            Contact:  <m_qasi@ece.concordia.ca>                            *)
 (*                                                                           *)
 (*                                                                           *)
-(* Note: This theory has been ported from hol light                          *)
+(*    Note: This theory is ported from hol-light.                            *)
 (*                                                                           *)
 (*              (c) Copyright, John Harrison 1998-2015                       *)
 (*                (c) Copyright, Valentina Bruno 2010                        *)
@@ -22,10 +22,9 @@ open HolKernel Parse boolLib bossLib numLib unwindLib tautLib Arith prim_recTheo
 combinTheory quotientTheory arithmeticTheory hrealTheory realaxTheory realTheory
 jrhUtils pairTheory boolTheory pred_setTheory optionTheory numTheory
 sumTheory InductiveDefinition ind_typeTheory listTheory mesonLib
-seqTheory limTheory transcTheory realLib topologyTheory;
+seqTheory limTheory transcTheory realLib topologyTheory hurdUtils;
 
-open wellorderTheory cardinalTheory;
-open util_probTheory iterateTheory productTheory;
+open wellorderTheory cardinalTheory iterateTheory productTheory;
 
 val _ = new_theory "real_topology";
 
@@ -33,36 +32,16 @@ val _ = new_theory "real_topology";
 (* MESON, METIS, SET_TAC, SET_RULE, ASSERT_TAC, ASM_ARITH_TAC                *)
 (* ------------------------------------------------------------------------- *)
 
-val Reverse = Tactical.REVERSE;
-fun K_TAC _ = ALL_TAC;
 fun MESON ths tm = prove(tm,MESON_TAC ths);
 fun METIS ths tm = prove(tm,METIS_TAC ths);
 
 val DISC_RW_KILL = DISCH_TAC THEN ONCE_ASM_REWRITE_TAC [] THEN
                    POP_ASSUM K_TAC;
 
-fun SET_TAC L =
-    POP_ASSUM_LIST(K ALL_TAC) THEN REPEAT COND_CASES_TAC THEN
-    REWRITE_TAC (append [EXTENSION, SUBSET_DEF, PSUBSET_DEF, DISJOINT_DEF,
-    SING_DEF] L) THEN
-    SIMP_TAC std_ss [NOT_IN_EMPTY, IN_UNIV, IN_UNION, IN_INTER, IN_DIFF,
-      IN_INSERT, IN_DELETE, IN_REST, IN_BIGINTER, IN_BIGUNION, IN_IMAGE,
-      GSPECIFICATION, IN_DEF, EXISTS_PROD] THEN METIS_TAC [];
-
 fun ASSERT_TAC tm = SUBGOAL_THEN tm STRIP_ASSUME_TAC;
-fun SET_RULE tm = prove(tm,SET_TAC []);
-fun ASM_SET_TAC L = REPEAT (POP_ASSUM MP_TAC) THEN SET_TAC L;
 
 val ASM_ARITH_TAC = REPEAT (POP_ASSUM MP_TAC) THEN ARITH_TAC;
 val ASM_REAL_ARITH_TAC = REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC;
-
-val KILL_TAC = POP_ASSUM_LIST K_TAC;
-val Know = Q_TAC KNOW_TAC;
-val Suff = Q_TAC SUFF_TAC;
-
-fun wrap a = [a];
-val Rewr  = DISCH_THEN (REWRITE_TAC o wrap);
-val Rewr' = DISCH_THEN (ONCE_REWRITE_TAC o wrap);
 
 fun PRINT_TAC s gl =                            (* from cardinalTheory *)
   (print ("** " ^ s ^ "\n"); ALL_TAC gl);

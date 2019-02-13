@@ -1,7 +1,7 @@
 open HolKernel Parse boolLib;
 val _ = new_theory "sequence";
 
-open bossLib arithmeticTheory extra_numTheory combinTheory HurdUseful;
+open bossLib arithmeticTheory extra_numTheory combinTheory hurdUtils;
 
 infixr 0 ++ || ORELSEC;
 infix 1 >>;

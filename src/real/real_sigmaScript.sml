@@ -200,7 +200,7 @@ val REAL_SUM_IMAGE_FINITE_SAME = store_thm
              p IN P /\ (!q. q IN P ==> (f p = f q)) ==> (REAL_SUM_IMAGE f P = (&(CARD P)) * f p)``,
    MP_TAC REAL_SUM_IMAGE_FINITE_SAME_lem >> RW_TAC std_ss []);
 
-val REAL_SUM_IMAGE_FINITE_CONST = store_thm
+val REAL_SUM_IMAGE_FINITE_CONST = store_thm (* from "examples/diningcryptos" *)
   ("REAL_SUM_IMAGE_FINITE_CONST",
    ``!P. FINITE P ==>
         !f x. (!y. f y = x) ==> (REAL_SUM_IMAGE f P = (&(CARD P)) * x)``,
@@ -214,6 +214,29 @@ val REAL_SUM_IMAGE_FINITE_CONST = store_thm
    >> POP_ASSUM (K ALL_TAC)
    >> POP_ASSUM MATCH_MP_TAC
    >> Q.EXISTS_TAC `x'` >> RW_TAC std_ss [IN_INSERT]);
+
+val REAL_SUM_IMAGE_FINITE_CONST2 = store_thm (* from "examples/diningcryptos" *)
+  ("REAL_SUM_IMAGE_FINITE_CONST2",
+   ``!P. FINITE P ==>
+        !f x. (!y. y IN P ==> (f y = x)) ==> (REAL_SUM_IMAGE f P = (&(CARD P)) * x)``,
+   REPEAT STRIP_TAC
+   >> (MP_TAC o Q.SPECL [`P`]) REAL_SUM_IMAGE_FINITE_SAME
+   >> RW_TAC std_ss []
+   >> POP_ASSUM (MP_TAC o (Q.SPECL [`f`]))
+   >> RW_TAC std_ss []
+   >> (MP_TAC o Q.SPECL [`P`]) SET_CASES
+   >> RW_TAC std_ss [] >- RW_TAC real_ss [REAL_SUM_IMAGE_THM, CARD_EMPTY]
+   >> POP_ASSUM (K ALL_TAC)
+   >> POP_ASSUM MATCH_MP_TAC
+   >> Q.EXISTS_TAC `x'` >> RW_TAC std_ss [IN_INSERT]);
+
+val REAL_SUM_IMAGE_FINITE_CONST3 = store_thm
+  ("REAL_SUM_IMAGE_FINITE_CONST3",
+   ``!P. FINITE P ==>
+        !c. (REAL_SUM_IMAGE (\x. c) P = (&(CARD P)) * c)``,
+   REPEAT STRIP_TAC
+   >> (MATCH_MP_TAC o UNDISCH o Q.SPEC `P`) REAL_SUM_IMAGE_FINITE_CONST2
+   >> RW_TAC std_ss []);
 
 val REAL_SUM_IMAGE_IN_IF_lem = prove
   (``!P. FINITE P ==>

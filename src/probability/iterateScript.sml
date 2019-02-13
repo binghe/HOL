@@ -19,10 +19,10 @@ open HolKernel Parse boolLib bossLib numLib unwindLib tautLib Arith
 prim_recTheory combinTheory quotientTheory arithmeticTheory hrealTheory
 realaxTheory realTheory realLib jrhUtils pairTheory seqTheory limTheory
 transcTheory listTheory mesonLib boolTheory pred_setTheory
-util_probTheory optionTheory numTheory sumTheory InductiveDefinition
-ind_typeTheory;
+optionTheory numTheory sumTheory InductiveDefinition ind_typeTheory;
 
 open wellorderTheory cardinalTheory;
+open hurdUtils;
 
 val _ = new_theory "iterate";
 
@@ -30,24 +30,13 @@ val _ = new_theory "iterate";
 (* MESON, METIS, SET_TAC, SET_RULE, ASSERT_TAC, ASM_ARITH_TAC                *)
 (* ------------------------------------------------------------------------- *)
 
-fun K_TAC _ = ALL_TAC;
 fun MESON ths tm = prove(tm,MESON_TAC ths);
 fun METIS ths tm = prove(tm,METIS_TAC ths);
 
 val DISC_RW_KILL = DISCH_TAC THEN ONCE_ASM_REWRITE_TAC [] THEN
                    POP_ASSUM K_TAC;
 
-fun SET_TAC L =
-    POP_ASSUM_LIST(K ALL_TAC) THEN REPEAT COND_CASES_TAC THEN
-    REWRITE_TAC (append [EXTENSION, SUBSET_DEF, PSUBSET_DEF, DISJOINT_DEF,
-    SING_DEF] L) THEN
-    SIMP_TAC std_ss [NOT_IN_EMPTY, IN_UNIV, IN_UNION, IN_INTER, IN_DIFF,
-      IN_INSERT, IN_DELETE, IN_REST, IN_BIGINTER, IN_BIGUNION, IN_IMAGE,
-      GSPECIFICATION, IN_DEF, EXISTS_PROD] THEN METIS_TAC [];
-
 fun ASSERT_TAC tm = SUBGOAL_THEN tm STRIP_ASSUME_TAC;
-fun SET_RULE tm = prove(tm,SET_TAC []);
-fun ASM_SET_TAC L = REPEAT (POP_ASSUM MP_TAC) THEN SET_TAC L;
 
 val ASM_ARITH_TAC = REPEAT (POP_ASSUM MP_TAC) THEN ARITH_TAC;
 val ASM_REAL_ARITH_TAC = REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC;
@@ -62,17 +51,6 @@ val REAL_LT_BETWEEN = store_thm ("REAL_LT_BETWEEN",
   DISCH_TAC THEN EXISTS_TAC ``(a + b) / &2:real`` THEN
   SIMP_TAC arith_ss [REAL_LT_RDIV_EQ, REAL_LT_LDIV_EQ, REAL_ARITH ``0 < 2:real``, REAL_LT] THEN
   POP_ASSUM MP_TAC THEN REAL_ARITH_TAC);
-
-val SIMP_REAL_ARCH = store_thm
-  ("SIMP_REAL_ARCH",
-  ``!x:real. ?n. x <= &n``,
-        REWRITE_TAC [REAL_LE_LT] THEN
-        FULL_SIMP_TAC std_ss [EXISTS_OR_THM] THEN
-        RW_TAC std_ss [] THEN
-        DISJ1_TAC THEN
-        MP_TAC (Q.SPEC `1` REAL_ARCH) THEN
-        REWRITE_TAC [REAL_LT_01, REAL_MUL_RID] THEN
-        RW_TAC std_ss []);
 
 val LOWER_BOUND_FINITE_SET_REAL = store_thm ("LOWER_BOUND_FINITE_SET_REAL",
  ``!f:('a->real) s. FINITE(s) ==> ?a. !x. x IN s ==> a <= f(x)``,
@@ -91,11 +69,6 @@ val UPPER_BOUND_FINITE_SET_REAL = store_thm ("UPPER_BOUND_FINITE_SET_REAL",
   MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN
   REWRITE_TAC[IN_INSERT, NOT_IN_EMPTY] THEN
   METIS_TAC[REAL_LE_TOTAL, REAL_LE_REFL, REAL_LE_TRANS]);
-
-val REAL_WLOG_LT = store_thm ("REAL_WLOG_LT",
- ``(!x. P x x) /\ (!x y. P x y <=> P y x) /\ (!x y. x < y ==> P x y)
-   ==> !x y:real. P x y``,
-  METIS_TAC[REAL_LT_TOTAL]);
 
 (* ------------------------------------------------------------------------- *)
 (* Recursion over finite sets; based on Ching-Tsun's code (archive 713).     *)
