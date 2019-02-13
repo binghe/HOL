@@ -154,9 +154,7 @@ val RN_deriv_def = Define (* or ``dv/dm`` *)
             integrable m f /\ (!x. 0 <= f x) /\
             !s. s IN measurable_sets m ==> (density m f s = v s)`;
 
-val _ = set_fixity "//" (Infixl 680);
-(* val _ = Unicode.unicode_version {u = UTF8.chr 0x2AFD, tmnm = "//"}; *)
-val _ = overload_on ("//", ``RN_deriv``);
+val _ = overload_on ("/", ``RN_deriv``);
 
 (*****************************************************************************)
 
