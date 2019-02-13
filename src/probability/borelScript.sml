@@ -2648,6 +2648,7 @@ val AE_def = new_definition ("AE_def",
 
 val _ = set_fixity "AE" Binder;
 val _ = associate_restriction ("AE", "almost_everywhere");
+val _ = Unicode.unicode_version {u = UTF8.chr 0x00C6, tmnm = "AE"};
 
 val AE_THM = store_thm
   ("AE_THM", ``!m P. (AE x::m. P x) = almost_everywhere m P``,

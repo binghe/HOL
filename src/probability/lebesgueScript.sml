@@ -120,15 +120,16 @@ val _ = Unicode.unicode_version {u = Unicode.UChar.lsl, tmnm = "<<"};
 
 val _ = overload_on ("<<", ``measure_absolutely_continuous``);
 
-(* from HVG's lebesgue_measureScript.sml, with simplifications.
+(* The measure with density (function) f with respect to m,
+   from HVG's lebesgue_measureScript.sml, simplified.
 
-   The set-function `density m f` is a measure on (m_space m, measurable_sets m) [1, p.79]
+   TODO: `density m f` is a measure on (m_space m, measurable_sets m) [1, p.79]
  *)
 val density_def = Define (* or `f * m` *)
-   `density f m = \s. integral m (\x. f x * indicator_fn s x)`;
+   `density m f = \s. integral m (\x. f x * indicator_fn s x)`;
 
 (* `v = density m f` is denoted by `v = f * m`, also see "RN_deriv_def" *)
-val _ = overload_on ("*", ``density``);
+val _ = overload_on ("*", ``\f m. density m f``);
 
 (* Radon-Nikodym derivative, from (old) real_lebesgueScript.sml, simplified.
 
@@ -144,7 +145,7 @@ val _ = overload_on ("*", ``density``);
           (measure_absolutely_continuous v m <=>
            ?f. f IN borel_measurable (m_space m,measurable_sets m) /\
                integrable m f /\ nonneg f /\
-               !s. s IN measurable_sets m ==> (density f m s = v s))``
+               !s. s IN measurable_sets m ==> ((f * m) s = v s))``
 
    Also the uniqueness is asserted by the following theorems:
 
@@ -152,8 +153,8 @@ val _ = overload_on ("*", ``density``);
               f IN borel_measurable (m_space m,measurable_sets m) /\
               f' IN borel_measurable (m_space m,measurable_sets m) /\
               integrable m f /\ integrable m f' /\ nonneg f /\ nonneg f' /\
-              (!s. s IN measurable_sets m ==> (density f m s = density f' m s))
-          ==> AE x :: m. (f x = f' x)``
+              (!s. s IN measurable_sets m ==> ((f * m) s = (f' * m) s))
+          ==> AE x::m. (f x = f' x)``
 
    To be proved in martingaleTheory.
  *)
@@ -161,7 +162,7 @@ val RN_deriv_def = Define (* or `dv / dm` *)
    `RN_deriv v m =
       @f. f IN borel_measurable (m_space m,measurable_sets m) /\
           nonneg f /\ integrable m f /\
-          !s. s IN measurable_sets m ==> (density f m s = v s)`;
+          !s. s IN measurable_sets m ==> ((f * m) s = v s)`;
 
 (* `f = RN_deriv v m` is denoted by `f = v / m`, also see "density_def" *)
 val _ = overload_on ("/", ``RN_deriv``);
