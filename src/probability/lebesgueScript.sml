@@ -77,19 +77,6 @@ val integrable_def = Define
         pos_fn_integral m (fn_plus f) <> PosInf /\
         pos_fn_integral m (fn_minus f) <> PosInf`;
 
-(* from HVG's lebesgue_measureScript.sml, with simplifications *)
-val _ = overload_on ("density", ``\f s x. f x * indicator_fn s x``);
-
-(* To be used by Vitali's convergence theorem [1].
-   It follows the universal formulation due to G. A. Hunt [2, p. 33]. *)
-val uniformly_integrable_def = Define
-   `uniformly_integrable m (f :num -> 'a -> extreal) =
-    !e. 0 < e ==>
-        ?w. nonneg w /\ integrable m w /\
-            sup {r | ?u n. (u = f n) /\
-                           (r = integral m (density (abs o u)
-                                                    {x | w x < (abs o u) x}))} < e`;
-
 val finite_space_integral_def = Define
    `finite_space_integral m f =
         SIGMA (\r. r * measure m (PREIMAGE f {r} INTER m_space m)) (IMAGE f (m_space m))`;
@@ -133,6 +120,16 @@ val _ = Unicode.unicode_version {u = Unicode.UChar.lsl, tmnm = "<<"};
 
 val _ = overload_on ("<<", ``measure_absolutely_continuous``);
 
+(* from HVG's lebesgue_measureScript.sml, with simplifications.
+
+   The set-function `density m f` is a measure on (m_space m, measurable_sets m) [1, p.79]
+ *)
+val density_def = Define (* or `f * m` *)
+   `density f m = \s. integral m (\x. f x * indicator_fn s x)`;
+
+(* `v = density m f` is denoted by `v = f * m`, also see "RN_deriv_def" *)
+val _ = overload_on ("*", ``density``);
+
 (* Radon-Nikodym derivative, from (old) real_lebesgueScript.sml, simplified.
 
    This definition looks more general than "RN_deriv" in Isabelle/HOL which works only on
@@ -147,7 +144,7 @@ val _ = overload_on ("<<", ``measure_absolutely_continuous``);
           (measure_absolutely_continuous v m <=>
            ?f. f IN borel_measurable (m_space m,measurable_sets m) /\
                integrable m f /\ nonneg f /\
-               !s. s IN measurable_sets m ==> (density m f s = v s))``
+               !s. s IN measurable_sets m ==> (density f m s = v s))``
 
    Also the uniqueness is asserted by the following theorems:
 
@@ -155,19 +152,29 @@ val _ = overload_on ("<<", ``measure_absolutely_continuous``);
               f IN borel_measurable (m_space m,measurable_sets m) /\
               f' IN borel_measurable (m_space m,measurable_sets m) /\
               integrable m f /\ integrable m f' /\ nonneg f /\ nonneg f' /\
-              (!s. s IN measurable_sets m ==> (density m f s = density m f' s))
+              (!s. s IN measurable_sets m ==> (density f m s = density f' m s))
           ==> AE x :: m. (f x = f' x)``
 
    To be proved in martingaleTheory.
  *)
-val RN_deriv_def = Define (* or `(v / m)` *)
+val RN_deriv_def = Define (* or `dv / dm` *)
    `RN_deriv v m =
       @f. f IN borel_measurable (m_space m,measurable_sets m) /\
           nonneg f /\ integrable m f /\
-          !s. s IN measurable_sets m ==> (integral m (density f s) = v s)`;
+          !s. s IN measurable_sets m ==> (density f m s = v s)`;
 
-(* this prints ``RN_deriv v m x`` as ``(v / m) x``, denoting "dv(x)/dm(x)" *)
+(* `f = RN_deriv v m` is denoted by `f = v / m`, also see "density_def" *)
 val _ = overload_on ("/", ``RN_deriv``);
+
+(* To be used by Vitali's convergence theorem [1].
+   It follows the universal formulation due to G. A. Hunt [2, p. 33]. *)
+val uniformly_integrable_def = Define
+   `uniformly_integrable m (f :num -> 'a -> extreal) =
+    !e. 0 < e ==>
+        ?w. nonneg w /\ integrable m w /\
+            sup {r | ?u n. (u = f n) /\
+                           (r = ((abs o u) * m) {x | w x < (abs o u) x})} < e`;
+
 
 (*****************************************************************************)
 
@@ -3415,11 +3422,11 @@ val integrable_bounded = store_thm
     RW_TAC std_ss [integrable_def, abs_bounds, GSYM fn_plus_def, GSYM fn_minus_def]
  >- (`!x. x IN m_space m ==> fn_plus g x <= fn_plus f x`
        by (RW_TAC real_ss [fn_plus_def, lt_imp_le, le_refl] \\
-           METIS_TAC [extreal_lt_def,lte_trans]) \\
+           METIS_TAC [extreal_lt_def, lte_trans]) \\
      METIS_TAC [pos_fn_integral_mono_mspace, FN_PLUS_POS, lt_infty, let_trans])
  >> `!x. x IN m_space m ==> fn_minus g x <= fn_plus f x`
         by (RW_TAC real_ss [fn_minus_def, fn_plus_def, lt_imp_le, le_refl] \\
-            METIS_TAC [let_trans,lt_neg,le_neg,neg_neg,neg_0])
+            METIS_TAC [let_trans, lt_neg, le_neg, neg_neg, neg_0])
  >> METIS_TAC [pos_fn_integral_mono_mspace, FN_PLUS_POS, FN_MINUS_POS, lt_infty, let_trans]);
 
 val integrable_fn_plus = store_thm
@@ -3489,16 +3496,16 @@ val integrable_plus_minus = store_thm
   ``!m f. measure_space m ==>
          (integrable m f = f IN measurable (m_space m, measurable_sets m) Borel /\
           integrable m (fn_plus f) /\ integrable m (fn_minus f))``,
-  RW_TAC std_ss [integrable_def,GSYM fn_plus_def,GSYM fn_minus_def]
-  >> `fn_plus (fn_minus f) = fn_minus f` by METIS_TAC [FN_MINUS_POS,FN_PLUS_POS_ID]
-  >> `fn_minus (fn_minus f) = (\x. 0)` by METIS_TAC [FN_MINUS_POS,FN_MINUS_POS_ZERO]
-  >> `fn_plus (fn_plus f) = fn_plus f` by METIS_TAC [FN_PLUS_POS,FN_PLUS_POS_ID]
-  >> `fn_minus (fn_plus f) = (\x. 0)` by METIS_TAC [FN_PLUS_POS,FN_MINUS_POS_ZERO]
-  >> `(\x. fn_minus f x) = fn_minus f` by METIS_TAC []
-  >> `(\x. fn_plus f x) = fn_plus f` by METIS_TAC []
-  >> EQ_TAC
-  >> RW_TAC std_ss [IN_MEASURABLE_BOREL_FN_PLUS, IN_MEASURABLE_BOREL_FN_MINUS,
-                    pos_fn_integral_zero, num_not_infty]);
+    RW_TAC std_ss [integrable_def, GSYM fn_plus_def, GSYM fn_minus_def]
+ >> `fn_plus (fn_minus f) = fn_minus f` by METIS_TAC [FN_MINUS_POS, FN_PLUS_POS_ID]
+ >> `fn_minus (fn_minus f) = (\x. 0)` by METIS_TAC [FN_MINUS_POS, FN_MINUS_POS_ZERO]
+ >> `fn_plus (fn_plus f) = fn_plus f` by METIS_TAC [FN_PLUS_POS, FN_PLUS_POS_ID]
+ >> `fn_minus (fn_plus f) = (\x. 0)` by METIS_TAC [FN_PLUS_POS, FN_MINUS_POS_ZERO]
+ >> `(\x. fn_minus f x) = fn_minus f` by METIS_TAC []
+ >> `(\x. fn_plus f x) = fn_plus f` by METIS_TAC []
+ >> EQ_TAC
+ >> RW_TAC std_ss [IN_MEASURABLE_BOREL_FN_PLUS, IN_MEASURABLE_BOREL_FN_MINUS,
+                   pos_fn_integral_zero, num_not_infty]);
 
 val integrable_add_pos = store_thm
   ("integrable_add_pos",
@@ -3526,8 +3533,8 @@ val integrable_add_lemma = store_thm
   ("integrable_add_lemma",``!m f g. measure_space m /\ integrable m f /\ integrable m g
            ==> (integrable m (\x. fn_plus f x + fn_plus g x) /\
                 integrable m (\x. fn_minus f x + fn_minus g x))``,
-  RW_TAC std_ss []
-  >> METIS_TAC [integrable_add_pos, integrable_plus_minus, FN_PLUS_POS, FN_MINUS_POS]);
+    RW_TAC std_ss []
+ >> METIS_TAC [integrable_add_pos, integrable_plus_minus, FN_PLUS_POS, FN_MINUS_POS]);
 
 (* added `(!x. x IN m_space m ==> f x <> NegInf /\ g x <> NegInf)`, one way to
    make sure that f + g is defined. *)
@@ -3568,30 +3575,31 @@ val integrable_cmul = store_thm
           >> METIS_TAC [measure_space_def,integrable_def])
  >> RW_TAC std_ss [integrable_def, GSYM fn_plus_def, GSYM fn_minus_def]
  >- (Cases_on `0 <= c`
-      >- (`fn_plus (\x. Normal c * f x) = (\x. Normal c * fn_plus f x)`
-           by METIS_TAC [FN_PLUS_CMUL]
-          >> POP_ORW
-          >> FULL_SIMP_TAC std_ss [pos_fn_integral_cmul, integrable_def, FN_PLUS_POS,
-                                   GSYM fn_plus_def]
-          >> METIS_TAC [mul_not_infty])
-      >> `c < 0` by METIS_TAC [real_lt]
-      >>  `fn_plus (\x. Normal c * f x) = (\x. -Normal c * fn_minus f x)`
-            by METIS_TAC [FN_PLUS_CMUL,REAL_LT_IMP_LE]
-      >> POP_ORW
-      >> RW_TAC std_ss [extreal_ainv_def]
-      >> `0 <= -c` by METIS_TAC [REAL_LT_NEG, REAL_NEG_0, REAL_LT_IMP_LE]
-      >> FULL_SIMP_TAC std_ss [pos_fn_integral_cmul, integrable_def, FN_MINUS_POS,
-                               GSYM fn_minus_def]
-      >> METIS_TAC [mul_not_infty])
+     >- (`fn_plus (\x. Normal c * f x) = (\x. Normal c * fn_plus f x)`
+          by METIS_TAC [FN_PLUS_CMUL] \\
+         POP_ORW \\
+         FULL_SIMP_TAC std_ss [pos_fn_integral_cmul, integrable_def, FN_PLUS_POS,
+                               GSYM fn_plus_def] \\
+         METIS_TAC [mul_not_infty]) \\
+    `c < 0` by METIS_TAC [real_lt] \\
+    `fn_plus (\x. Normal c * f x) = (\x. -Normal c * fn_minus f x)`
+            by METIS_TAC [FN_PLUS_CMUL, REAL_LT_IMP_LE] \\
+     POP_ORW \\
+     RW_TAC std_ss [extreal_ainv_def] \\
+    `0 <= -c` by METIS_TAC [REAL_LT_NEG, REAL_NEG_0, REAL_LT_IMP_LE] \\
+     FULL_SIMP_TAC std_ss [pos_fn_integral_cmul, integrable_def, FN_MINUS_POS,
+                           GSYM fn_minus_def] \\
+     METIS_TAC [mul_not_infty])
  >> Cases_on `0 <= c`
- >- (`fn_minus (\x. Normal c * f x) = (\x. Normal c * fn_minus f x)` by METIS_TAC [FN_MINUS_CMUL]
-     >> POP_ORW
-     >> FULL_SIMP_TAC std_ss [pos_fn_integral_cmul, integrable_def, FN_MINUS_POS,
-                              GSYM fn_minus_def]
-     >> METIS_TAC [mul_not_infty])
+ >- (`fn_minus (\x. Normal c * f x) = (\x. Normal c * fn_minus f x)`
+      by METIS_TAC [FN_MINUS_CMUL] \\
+     POP_ORW \\
+     FULL_SIMP_TAC std_ss [pos_fn_integral_cmul, integrable_def, FN_MINUS_POS,
+                           GSYM fn_minus_def] \\
+     METIS_TAC [mul_not_infty])
  >> `c < 0` by METIS_TAC [real_lt]
- >>  `fn_minus (\x. Normal c * f x) = (\x. -Normal c * fn_plus f x)`
-        by METIS_TAC [FN_MINUS_CMUL,REAL_LT_IMP_LE]
+ >> `fn_minus (\x. Normal c * f x) = (\x. -Normal c * fn_plus f x)`
+        by METIS_TAC [FN_MINUS_CMUL, REAL_LT_IMP_LE]
  >> POP_ORW
  >> RW_TAC std_ss [extreal_ainv_def]
  >> `0 <= -c` by METIS_TAC [REAL_LT_IMP_LE, REAL_LE_NEG, REAL_NEG_0]
@@ -3628,7 +3636,7 @@ val integrable_indicator = store_thm
   ``!m s. measure_space m /\ s IN measurable_sets m /\ measure m s < PosInf ==>
           integrable m (indicator_fn s)``,
     RW_TAC std_ss []
- >> `!x. 0 <= indicator_fn s x` by METIS_TAC [indicator_fn_def, le_refl, le_01]
+ >> `!x. 0 <= indicator_fn s x` by PROVE_TAC [INDICATOR_FN_POS]
  >> RW_TAC std_ss [integrable_pos, pos_fn_integral_indicator, lt_infty]
  >> MATCH_MP_TAC IN_MEASURABLE_BOREL_INDICATOR
  >> METIS_TAC [measure_space_def, subsets_def, space_def]);
@@ -3638,7 +3646,8 @@ val integrable_mul_indicator = store_thm
   ("integrable_mul_indicator",
   ``!m s f. measure_space m /\ s IN measurable_sets m /\ measure m s < PosInf /\
             integrable m f ==> integrable m (\x. f x * indicator_fn s x)``,
-    cheat);
+    RW_TAC std_ss [integrable_def]
+ >> cheat);
 
 (* IMPORTANT: all posinf-valued points (which forms a null set) in an integrable
    function can be safely removed without changing its overall integral. *)
