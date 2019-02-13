@@ -123,7 +123,7 @@ val conditional_distribution_def = Define
    `conditional_distribution (p :'a p_space) X Y a b =
       joint_distribution p X Y (a CROSS b) / distribution p Y b`;
 
-(* expection is just (Lebesgue) integral *)
+(* `expectation` is just (Lebesgue) `integral` *)
 val expectation_def = Define
    `expectation = integral`;
 
@@ -131,8 +131,8 @@ val conditional_expectation_def = Define
    `conditional_expectation p X s =
         @f. real_random_variable f p /\
             !g. g IN s ==>
-                (expectation p (\x. f x * indicator_fn g x) =
-                 expectation p (\x. X x * indicator_fn g x))`;
+               (expectation p (\x. f x * indicator_fn g x) =
+                expectation p (\x. X x * indicator_fn g x))`;
 
 val conditional_prob_def = Define
    `conditional_prob p e1 e2 =
@@ -144,14 +144,11 @@ val rv_conditional_expectation_def = Define
 
 (* NOTE: X and Y are forced to have the same types;
          Added `INTER p_space p` after taking the PREIMAGE. *)
-val indep_rv_def = Define
-   `indep_rv (p :'a p_space) (X :'a -> 'b) (Y :'a -> 'b) s t =
+val indep_var_def = Define (* was: indep_rv_def *)
+   `indep_var (p :'a p_space) (X :'a -> 'b) (Y :'a -> 'b) s t =
       !A B. (A IN subsets s) /\ (B IN subsets t) ==>
             indep p ((PREIMAGE X A) INTER p_space p)
                     ((PREIMAGE Y B) INTER p_space p)`;
-
-val _ = overload_on ("indep_var", ``indep_rv``); (* the name used in Isabelle/HOL *)
-val indep_var_def = indep_rv_def;
 
 (* Total independence of a set of random variables.
 

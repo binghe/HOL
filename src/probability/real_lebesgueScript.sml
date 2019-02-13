@@ -36,24 +36,18 @@ val pos_simple_fn_def = Define
         (!i j. i IN s /\ j IN s /\ (~(i=j)) ==> DISJOINT (a i) (a j)) /\
         (BIGUNION (IMAGE a s) = m_space m)`;
 
-
 val pos_simple_fn_integral_def = Define
    `pos_simple_fn_integral m s a x =
         SIGMA (\i. (x i) * ((measure m) (a i))) s`;
 
-
 val psfs_def = Define
    `psfs m f = {(s,a,x) | pos_simple_fn m f s a x}`;
-
 
 val psfis_def = Define
    `psfis m f = IMAGE (\(s,a,x). pos_simple_fn_integral m s a x) (psfs m f)`;
 
-
 val pos_fn_integral_def = Define
-   `pos_fn_integral m f = sup {r:real | ?g. r IN psfis m g /\
-                                             !x. g x <= f x}`;
-
+   `pos_fn_integral m f = sup {r:real | ?g. r IN psfis m g /\ !x. g x <= f x}`;
 
 val nonneg_def = Define
    `nonneg f = !x. 0 <= f x`;
@@ -66,55 +60,44 @@ val pos_part_def = Define
 val neg_part_def = Define
    `neg_part f = (\x. if 0 <= f x then 0 else ~ f x)`;
 
-
 val mono_increasing_def = Define
    `mono_increasing (f:num->real) = !m n. m <= n ==> f m <= f n`;
 
 (* c.f. "pos_fn_integral_def" in (new) lebesgueScript.sml *)
 val nnfis_def = Define
    `nnfis m f = {y | ?u x. mono_convergent u f (m_space m) /\
-                           (!n. x n IN psfis m (u n)) /\
-                           x --> y}`;
-
+                           (!n. x n IN psfis m (u n)) /\ x --> y}`;
 
 val upclose_def = Define
    `upclose f g = (\t. max (f t) (g t))`;
-
 
 val mon_upclose_help_def = Define
    `(mon_upclose_help 0 u m = u m 0) /\
     (mon_upclose_help (SUC n) u m = upclose (u m (SUC n)) (mon_upclose_help n u m))`;
 
-
 val mon_upclose_def = Define
    `mon_upclose u m = mon_upclose_help m u m`;
-
 
 val integrable_def = Define
    `integrable m f = measure_space m /\
                      (?x. x IN nnfis m (pos_part f)) /\
                      (?y. y IN nnfis m (neg_part f))`;
 
-
 val integral_def = Define
-    `integral m f = (@i. i IN nnfis m (pos_part f)) - (@j. j IN nnfis m (neg_part f))`;
-
+   `integral m f = (@i. i IN nnfis m (pos_part f)) - (@j. j IN nnfis m (neg_part f))`;
 
 val finite_space_integral_def = Define
    `finite_space_integral m f =
         SIGMA (\r. r * measure m (PREIMAGE f {r} INTER m_space m)) (IMAGE f (m_space m))`;
-
 
 val countable_space_integral_def = Define
    `countable_space_integral m f =
         let e = enumerate (IMAGE f (m_space m)) in
         suminf ((\r. r * measure m (PREIMAGE f {r} INTER m_space m)) o e)`;
 
-
 val prod_measure_def = Define
    `prod_measure m0 m1 =
         (\a. integral m0 (\s0. (measure m1) (PREIMAGE (\s1. (s0,s1)) a)))`;
-
 
 val prod_measure_space_def = Define
    `prod_measure_space m0 m1 =
@@ -122,7 +105,6 @@ val prod_measure_space_def = Define
          subsets (sigma ((m_space m0) CROSS (m_space m1))
                         (prod_sets (measurable_sets m0) (measurable_sets m1))),
          prod_measure m0 m1)`;
-
 
 val RN_deriv_def = Define
    `RN_deriv m v =

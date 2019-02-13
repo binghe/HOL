@@ -71,6 +71,7 @@ New features:
 
 Bugs fixed:
 -----------
+
 *   `extrealTheory`: the previous definitions of `extreal_add` and
     `extreal_sub` wrongly allow `PosInf + NegInf = PosInf` and
     `PosInf - NegInf = PosInf`. This has been fixed in the new version

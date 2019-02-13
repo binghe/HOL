@@ -62,6 +62,9 @@ val psfis_def = Define
 val pos_fn_integral_def = Define
    `pos_fn_integral m f = sup {r | ?g. r IN psfis m g /\ !x. g x <= f x}`;
 
+val nonneg_def = Define
+   `nonneg (f :'a -> extreal) = !x. 0 <= f x`;
+
 (* the integral of arbitrary function is the integrals of positive parts minus
    negative parts *)
 val integral_def = Define
@@ -73,6 +76,19 @@ val integrable_def = Define
         f IN measurable (m_space m,measurable_sets m) Borel /\
         pos_fn_integral m (fn_plus f) <> PosInf /\
         pos_fn_integral m (fn_minus f) <> PosInf`;
+
+(* from HVG's lebesgue_measureScript.sml, with simplifications *)
+val _ = overload_on ("density", ``\f s x. f x * indicator_fn s x``);
+
+(* To be used by Vitali's convergence theorem [1].
+   It follows the universal formulation due to G. A. Hunt [2, p. 33]. *)
+val uniformly_integrable_def = Define
+   `uniformly_integrable m (f :num -> 'a -> extreal) =
+    !e. 0 < e ==>
+        ?w. nonneg w /\ integrable m w /\
+            sup {r | ?u n. (u = f n) /\
+                           (r = integral m (density (abs o u)
+                                                    {x | w x < (abs o u) x}))} < e`;
 
 val finite_space_integral_def = Define
    `finite_space_integral m f =
@@ -117,17 +133,12 @@ val _ = Unicode.unicode_version {u = Unicode.UChar.lsl, tmnm = "<<"};
 
 val _ = overload_on ("<<", ``measure_absolutely_continuous``);
 
-(* from HVG's lebesgue_measureScript.sml with simplifications.
-
-  `density m f` is a measure of s.
-   needs `integrable f` to make sure the integral is defined, c.f. "integrable_mul_indicator"
- *)
-val _ = overload_on ("density", ``\m f s. integral m (\x. f x * indicator_fn s x)``);
-
-(* from (old) real_lebesgueScript.sml, simplified.
+(* Radon-Nikodym derivative, from (old) real_lebesgueScript.sml, simplified.
 
    This definition looks more general than "RN_deriv" in Isabelle/HOL which works only on
-   positive functions.
+   positive functions. Also, we have swapped the two arguments:
+
+  `RN_deriv v m` (HOL) = `RN_deriv m (m_space m, measurable_sets m, v)` (Isabelle/HOL)
 
    The existence of `RN_deriv v m` is then asserted by Radon-Nikodym theorem:
 
@@ -135,7 +146,7 @@ val _ = overload_on ("density", ``\m f s. integral m (\x. f x * indicator_fn s x
            measure_space (m_space m,measurable_sets m,v) ==>
           (measure_absolutely_continuous v m <=>
            ?f. f IN borel_measurable (m_space m,measurable_sets m) /\
-               integrable m f /\ (!x. 0 <= f x) /\
+               integrable m f /\ nonneg f /\
                !s. s IN measurable_sets m ==> (density m f s = v s))``
 
    Also the uniqueness is asserted by the following theorems:
@@ -143,17 +154,19 @@ val _ = overload_on ("density", ``\m f s. integral m (\x. f x * indicator_fn s x
    ``!m f f'. measure_space m /\ sigma_finite m /\
               f IN borel_measurable (m_space m,measurable_sets m) /\
               f' IN borel_measurable (m_space m,measurable_sets m) /\
-              integrable m f /\ integrable m f' /\
-              (!x. 0 <= f x) /\ (!x. 0 <= f' x) /\
+              integrable m f /\ integrable m f' /\ nonneg f /\ nonneg f' /\
               (!s. s IN measurable_sets m ==> (density m f s = density m f' s))
           ==> AE x :: m. (f x = f' x)``
- *)
-val RN_deriv_def = Define (* or ``dv/dm`` *)
-   `RN_deriv v m =
-        @f. f IN borel_measurable (m_space m,measurable_sets m) /\
-            integrable m f /\ (!x. 0 <= f x) /\
-            !s. s IN measurable_sets m ==> (density m f s = v s)`;
 
+   To be proved in martingaleTheory.
+ *)
+val RN_deriv_def = Define (* or `(v / m)` *)
+   `RN_deriv v m =
+      @f. f IN borel_measurable (m_space m,measurable_sets m) /\
+          nonneg f /\ integrable m f /\
+          !s. s IN measurable_sets m ==> (integral m (density f s) = v s)`;
+
+(* this prints ``RN_deriv v m x`` as ``(v / m) x``, denoting "dv(x)/dm(x)" *)
 val _ = overload_on ("/", ``RN_deriv``);
 
 (*****************************************************************************)
@@ -3612,8 +3625,8 @@ val integrable_sub = store_thm
 (* added `measure m s < PosInf` *)
 val integrable_indicator = store_thm
   ("integrable_indicator",
-  ``!m s. measure_space m /\ s IN measurable_sets m /\ measure m s < PosInf
-      ==> integrable m (indicator_fn s)``,
+  ``!m s. measure_space m /\ s IN measurable_sets m /\ measure m s < PosInf ==>
+          integrable m (indicator_fn s)``,
     RW_TAC std_ss []
  >> `!x. 0 <= indicator_fn s x` by METIS_TAC [indicator_fn_def, le_refl, le_01]
  >> RW_TAC std_ss [integrable_pos, pos_fn_integral_indicator, lt_infty]
@@ -6380,4 +6393,5 @@ val _ = export_theory ();
 (* References:
 
   [1] Schilling, R.L.: Measures, Integrals and Martingales. Cambridge University Press (2005).
+  [2] Hunt, G. A., Martingales et processus de Markov, Paris: Dunod, Monogr. Soc. Math. France t. 1, 1966.
  *)
