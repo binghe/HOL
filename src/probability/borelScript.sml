@@ -2562,9 +2562,9 @@ val IN_MEASURABLE_BOREL_PLUS_MINUS = store_thm
  >- METIS_TAC [le_antisym, extreal_lt_def]);
 
 
-(* ******************************************* *)
-(*  Lebesgue measure space                     *)
-(* ******************************************* *)
+(* ************************************************************** *)
+(*  Constructing Lebesgue measure space by CARATHEODORY_SEMIRING  *)
+(* ************************************************************** *)
 
 val ho_interval_def = Define (* [a, b) *)
    `ho_interval (a,b) = {x | Normal a <= x /\ x < Normal b}`;
@@ -2572,13 +2572,14 @@ val ho_interval_def = Define (* [a, b) *)
 val ho_intervals_def = Define (* [a, b) *)
    `ho_intervals = (univ(:extreal), IMAGE ho_interval univ(:real # real))`;
 
-val lambda0_def = Define
-   `lambda0 (s :extreal set) = sup s - inf s`;
-
-val LAMBDA0 = store_thm
-  ("LAMBDA0",
-  ``!a b. a <= b ==> (lambda0 (ho_interval (a,b)) = Normal b - Normal a)``,
-    cheat);
+local
+  val thm = prove (
+    ``?l. !a b. a <= b ==> (l (ho_interval (a,b)) = Normal b - Normal a)``,
+      cheat); (* use `\s. sup s - inf s` *)
+in
+  val lambda0_def = new_specification (* learnt from "examples/miller" *)
+    ("lambda0_def", ["lambda0"], thm);
+end;
 
 val SEMIRING_HO_INTERVALS = store_thm
   ("SEMIRING_HO_INTERVALS", ``semiring ho_intervals``,
