@@ -103,10 +103,13 @@ val prod_measure_space3_def = Define
                     (prod_sets3 (measurable_sets m0) (measurable_sets m1) (measurable_sets m2))),
      prod_measure3 m0 m1 m2)`;
 
-(* v is absolutely continuous w.r.t. u, denoted by ``v << u`` *)
+(* v is absolutely continuous w.r.t. m, denoted by ``v << m``
+   note: the type of `v` is not a measure space but a measure, the purpose is to simplify
+   the statement of Radon-Nikodym theorem as much as possible.
+ *)
 val measure_absolutely_continuous_def = Define `
-    measure_absolutely_continuous v u =
-      !A. A IN measurable_sets v /\ (measure u A = 0) ==> (measure v A = 0)`;
+    measure_absolutely_continuous v m =
+      !s. s IN measurable_sets m /\ (measure m s = 0) ==> (v s = 0)`;
 
 (* "<<" is already used in "src/n-bit/wordsScript.sml", same priority here *)
 val _ = set_fixity "<<" (Infixl 680);
@@ -114,19 +117,42 @@ val _ = Unicode.unicode_version {u = Unicode.UChar.lsl, tmnm = "<<"};
 
 val _ = overload_on ("<<", ``measure_absolutely_continuous``);
 
-(* from (old) real_lebesgueScript.sml, this definition seems more general than
-   the "RN_deriv" in Isabelle/HOL which involves "density" which works only for
+(* from HVG's lebesgue_measureScript.sml with simplifications.
+
+  `density m f` is a measure of s.
+   needs `integrable f` to make sure the integral is defined, c.f. "integrable_mul_indicator"
+ *)
+val _ = overload_on ("density", ``\m f s. integral m (\x. f x * indicator_fn s x)``);
+
+(* from (old) real_lebesgueScript.sml, simplified.
+
+   This definition looks more general than "RN_deriv" in Isabelle/HOL which works only on
    positive functions.
 
-   added `integrable m f` otherwise integral is undefined (c.f. integrable_mul_indicator)
+   The existence of `RN_deriv m v` is then asserted by Radon-Nikodym theorem:
+
+   ``!m v. measure_space m /\ sigma_finite m /\
+           measure_space (m_space m,measurable_sets m,v) ==>
+          (measure_absolutely_continuous v m <=>
+           ?f. f IN borel_measurable (m_space m,measurable_sets m) /\
+               integrable m f /\ (!x. 0 <= f x) /\
+               !s. s IN measurable_sets m ==> (density m f s = v s))``
+
+   Also the uniqueness is asserted by the following theorems:
+
+   ``!m f f'. measure_space m /\ sigma_finite m /\
+              f IN borel_measurable (m_space m,measurable_sets m) /\
+              f' IN borel_measurable (m_space m,measurable_sets m) /\
+              integrable m f /\ integrable m f' /\
+              (!x. 0 <= f x) /\ (!x. 0 <= f' x) /\
+              (!s. s IN measurable_sets m ==> (density m f s = density m f' s))
+          ==> AE x :: m. (f x = f' x)``
  *)
-val RN_deriv_def = Define
+val RN_deriv_def = Define (* dv/dm *)
    `RN_deriv m v =
-        @f. measure_space m /\ measure_space (m_space m,measurable_sets m,v) /\
-            f IN measurable (m_space m,measurable_sets m) Borel /\
-            integrable m f /\
-            !a. a IN measurable_sets m ==>
-                (integral m (\x. f x * indicator_fn a x) = v a)`;
+        @f. f IN borel_measurable (m_space m,measurable_sets m) /\
+            integrable m f /\ (!x. 0 <= f x) /\
+            !s. s IN measurable_sets m ==> (density m f s = v s)`;
 
 (*****************************************************************************)
 
@@ -4695,9 +4721,12 @@ val finite_space_POW_integral_reduce = store_thm
  >> PROVE_TAC [positive_def]);
 
 (* from (old) real_lebesgueScript.sml, a first result about `RN_deriv`,
-   for the first time, division (/) of extreals is needed.
+   for the first time, division (/) of extreals is used. (Normal 0 / Normal 0 is undefined)
 
    added `measure m (m_space m) < PosInf /\ v (m_space m) < PosInf` into antecedents
+
+   NOTE: `(!x. (measure m {x} = 0) ==> (v {x} = 0))` basically means:
+         `(m_space m,measurable_sets m,v) << m` (measure absolutely continuous)
 
 val finite_POW_RN_deriv_reduce = store_thm
   ("finite_POW_RN_deriv_reduce",
@@ -6308,12 +6337,27 @@ definition density :: "'a measure ==> ('a ==> ennreal) ==> 'a measure" where
 (* `density M f` has the type of `:'a m_space` *)
 val density = new_definition ("density", (* from HVG's lebesgue_measureScript.sml *)
   ``density M f = (m_space M, measurable_sets M,
-      (\A. if A IN measurable_sets M then
+      (\a. if a IN measurable_sets M then
           pos_fn_integral M (\x. max 0 (f x * indicator_fn A x)) else 0))``);
+
+lemma (in finite_measure) Radon_Nikodym_finite_measure:
+  assumes "finite_measure N" and sets_eq[simp]: "sets N = sets M"
+  assumes "absolutely_continuous M N"
+  shows "∃f ∈ borel_measurable M. density M f = N"
+
+lemma (in finite_measure) Radon_Nikodym_finite_measure_infinite:
+  assumes "absolutely_continuous M N" and sets_eq: "sets N = sets M"
+  shows "∃f∈borel_measurable M. density M f = N"
 
 lemma (in sigma_finite_measure) Radon_Nikodym:
   assumes ac: "absolutely_continuous M N" assumes sets_eq: "sets N = sets M"
   shows "?f IN borel_measurable M. density M f = N"
+
+lemma (in sigma_finite_measure) density_unique:
+  assumes f: "f ∈ borel_measurable M"
+  assumes f': "f' ∈ borel_measurable M"
+  assumes density_eq: "density M f = density M f'"
+  shows "AE x in M. f x = f' x"
 
 definition RN_deriv :: "'a measure ==> 'a measure ==> 'a ==> ennreal" where
   "RN_deriv M N =
@@ -6327,14 +6371,6 @@ definition RN_deriv :: "'a measure ==> 'a measure ==> 'a ==> ennreal" where
    (i) measure v A = integral u (\x. f x * indicator_fn A x),
        for some a.e. unique f IN MEASURABLE AA Borel
    (ii) v << u. (measure_absolutely_continuous v u)
-
-(* from (old) real_lebesgueScript.sml *)
-val RN_deriv_def = Define
-   `RN_deriv m v =
-        @f. measure_space m /\ measure_space (m_space m,measurable_sets m,v) /\
-            f IN measurable (m_space m, measurable_sets m) Borel /\
-            (!a. a IN measurable_sets m ==>
-                 (integral m (\x. f x * indicator_fn a x) = v a))`;
 *)
 
 val _ = export_theory ();

@@ -1465,8 +1465,8 @@ val joint_distribution_sum_mul1 = store_thm
 (*  Kolmogorov's 0-1 Law                                                      *)
 (******************************************************************************)
 
-val tail_events_def = Define (* or "remote_events" *)
-   `tail_events (p :'a p_space) (A :num -> 'a events) =
+val remote_events_def = Define (* or "tail_events" *)
+   `remote_events (p :'a p_space) (A :num -> 'a events) =
       BIGINTER (IMAGE (\n. subsets (sigma (p_space p)
                                           (BIGUNION (IMAGE A {m | m > n}))))
                       univ(:num))`;
@@ -1474,8 +1474,8 @@ val tail_events_def = Define (* or "remote_events" *)
 val kolmogorov_0_1_law = store_thm (* [3, p.37-38] *)
   ("kolmogorov_0_1_law",
   ``!(p :'a p_space) (A :num -> 'a events).
-       (!n. sigma_algebra (p_space p, E n)) /\ indep_sets p A UNIV ==>
-        !e. e IN tail_events p A ==> (prob p e = 0) \/ (prob p e = 1)``,
+       prob_space p /\ indep_sets p A UNIV ==>
+       !e. e IN remote_events p A ==> (prob p e = 0) \/ (prob p e = 1)``,
     cheat);
 
 (******************************************************************************)

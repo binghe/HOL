@@ -3643,23 +3643,23 @@ val inf_le' = store_thm
  >> REWRITE_TAC [inf_le]);
 
 val inf_eq = store_thm
-("inf_eq", ``!p x. (inf p = x) =
+  ("inf_eq", ``!p x. (inf p = x) =
                        (!y. p y ==> x <= y) /\
                        (!y. (!z. p z ==> y <= z) ==> y <= x)``,
   METIS_TAC [le_antisym,inf_le,le_inf]);
 
 val inf_const = store_thm
-("inf_const", ``!x. inf (\y. y = x) = x``,
+  ("inf_const", ``!x. inf (\y. y = x) = x``,
    RW_TAC real_ss [inf_eq, le_refl]);
 
 val inf_const_alt = store_thm
-("inf_const_alt", ``!p z. (?x. p x) /\ (!x. p x ==> (x = z)) ==> (inf p = z)``,
+  ("inf_const_alt", ``!p z. (?x. p x) /\ (!x. p x ==> (x = z)) ==> (inf p = z)``,
   RW_TAC std_ss [inf_eq,le_refl]
   >> POP_ASSUM MATCH_MP_TAC
   >> RW_TAC std_ss []);
 
 val inf_const_over_set = store_thm
- ("inf_const_over_set",``!s k. s <> {} ==> (inf (IMAGE (\x. k) s) = k)``,
+  ("inf_const_over_set",``!s k. s <> {} ==> (inf (IMAGE (\x. k) s) = k)``,
   RW_TAC std_ss [inf_eq]
   >- (POP_ASSUM (MP_TAC o ONCE_REWRITE_RULE [GSYM SPECIFICATION])
       >> RW_TAC std_ss [IN_IMAGE] >> RW_TAC std_ss [le_refl])
@@ -3689,7 +3689,7 @@ val inf_suc = store_thm
   >> METIS_TAC []);
 
 val inf_seq = store_thm
- ("inf_seq", ``!f l. mono_decreasing f ==>
+  ("inf_seq", ``!f l. mono_decreasing f ==>
          ((f --> l)  = (inf (IMAGE (\n. Normal (f n)) UNIV) = Normal l))``,
   RW_TAC std_ss []
   >> EQ_TAC
@@ -3747,17 +3747,17 @@ val inf_seq = store_thm
   >> RW_TAC std_ss []);
 
 val inf_lt_infty = store_thm
- ("inf_lt_infty", ``!p. (NegInf < inf p) ==> (!x. p x ==> NegInf < x)``,
+  ("inf_lt_infty", ``!p. (NegInf < inf p) ==> (!x. p x ==> NegInf < x)``,
   METIS_TAC [inf_le_imp,lte_trans]);
 
 val inf_min = store_thm
- ("inf_min", ``!p z. p z /\ (!x. p x ==> z <= x) ==> (inf p = z)``,
+  ("inf_min", ``!p z. p z /\ (!x. p x ==> z <= x) ==> (inf p = z)``,
   RW_TAC std_ss [inf_eq]);
 
-(* new proof *)
 val inf_cminus = store_thm
- ("inf_cminus", ``!f c. Normal c - inf (IMAGE f UNIV) =
+  ("inf_cminus", ``!f c. Normal c - inf (IMAGE f UNIV) =
                         sup (IMAGE (\n. Normal c - f n) UNIV)``,
+ (* new proof *)
   RW_TAC std_ss [sup_eq]
   >- (POP_ASSUM (MP_TAC o ONCE_REWRITE_RULE [GSYM SPECIFICATION])
       >> RW_TAC std_ss [IN_IMAGE,IN_UNIV]
@@ -3835,11 +3835,12 @@ val lt_inf_epsilon = store_thm
 (* ------------------------------------------------------------------------- *)
 
 val ext_suminf_def = Define
-           `ext_suminf f = sup (IMAGE (\n. SIGMA f (count n)) UNIV)`;
+   `ext_suminf f = sup (IMAGE (\n. SIGMA f (count n)) UNIV)`;
 
 val ext_suminf_add = store_thm
-("ext_suminf_add",``!f g. (!n. 0 <= f n /\ 0 <= g n)
-        ==> (ext_suminf (\n. f n + g n) = ext_suminf f + ext_suminf g)``,
+  ("ext_suminf_add",
+  ``!f g. (!n. 0 <= f n /\ 0 <= g n) ==>
+          (ext_suminf (\n. f n + g n) = ext_suminf f + ext_suminf g)``,
   RW_TAC std_ss [ext_suminf_def,sup_eq]
   >- (POP_ASSUM (MP_TAC o ONCE_REWRITE_RULE [GSYM SPECIFICATION])
       >> RW_TAC std_ss [IN_IMAGE,IN_UNIV,SPECIFICATION]
@@ -3917,8 +3918,8 @@ val ext_suminf_add = store_thm
   >> METIS_TAC [le_sub_eq2,add_comm]);
 
 val ext_suminf_cmul = store_thm
- ("ext_suminf_cmul",``!f c. 0 <= c /\ (!n. 0 <= f n)
-              ==> (ext_suminf (\n. c * f n) = c * ext_suminf f)``,
+  ("ext_suminf_cmul",
+  ``!f c. 0 <= c /\ (!n. 0 <= f n) ==> (ext_suminf (\n. c * f n) = c * ext_suminf f)``,
   RW_TAC std_ss [ext_suminf_def]
   >> `c <> NegInf` by METIS_TAC [lt_infty,num_not_infty,lte_trans]
   >> `!n. f n <> NegInf` by METIS_TAC [lt_infty,num_not_infty,lte_trans]
@@ -3976,8 +3977,9 @@ val ext_suminf_cmul = store_thm
   >> METIS_TAC []);
 
 val ext_suminf_cmul_alt = store_thm
- ("ext_suminf_cmul_alt",``!f c. 0 <= c /\ ((!n. f n <> NegInf) \/ (!n. f n <> PosInf))
-       ==> (ext_suminf (\n. (Normal c) * f n) = (Normal c) * ext_suminf f)``,
+  ("ext_suminf_cmul_alt",
+  ``!f c. 0 <= c /\ ((!n. f n <> NegInf) \/ (!n. f n <> PosInf)) ==>
+         (ext_suminf (\n. (Normal c) * f n) = (Normal c) * ext_suminf f)``,
   RW_TAC std_ss [ext_suminf_def]
   >> `!n. SIGMA (\n. Normal c * f n) (count n) = (Normal c) * SIGMA f (count n)`
        by METIS_TAC [EXTREAL_SUM_IMAGE_CMUL,FINITE_COUNT]
@@ -4008,9 +4010,9 @@ val ext_suminf_posinf = store_thm
                          (ONCE_REWRITE_RULE [MONO_NOT_EQ] (Q.SPEC `f` ext_suminf_lt_infty))]);
 
 val ext_suminf_suminf = store_thm
-("ext_suminf_suminf",``!r. (!n. 0 <= r n) /\ (ext_suminf (\n. Normal (r n)) <> PosInf)
-                          ==>  (ext_suminf (\n. Normal (r n)) = Normal (suminf r))``,
-
+  ("ext_suminf_suminf",
+  ``!r. (!n. 0 <= r n) /\ (ext_suminf (\n. Normal (r n)) <> PosInf) ==>
+        (ext_suminf (\n. Normal (r n)) = Normal (suminf r))``,
   RW_TAC std_ss [ext_suminf_def]
   >> `!n. FINITE (count n)` by RW_TAC std_ss [FINITE_COUNT]
   >> RW_TAC std_ss [EXTREAL_SUM_IMAGE_NORMAL]

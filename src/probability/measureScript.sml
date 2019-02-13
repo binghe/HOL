@@ -2378,11 +2378,11 @@ val dynkin_system_def = Define
         f IN (UNIV -> (subsets d)) /\ (!i j. i <> j ==> DISJOINT (f i) (f j))
         ==> BIGUNION (IMAGE f UNIV) IN (subsets d))`;
 
-(* smallest dynkin system generated from a set of sets, similar with sigma_def *)
+(* the smallest dynkin system generated from a set of sets, c. f. "sigma_def" *)
 val dynkin_def = Define
    `dynkin sp sts = (sp, BIGINTER {d | sts SUBSET d /\ dynkin_system (sp, d)})`;
 
-(* sigma-finiteness is a property of measure space *)
+(* `sigma-finite` is a property of measure space but sigma algebra *)
 val sigma_finite_def = Define
    `sigma_finite m =
     ?f :num -> 'a set.
