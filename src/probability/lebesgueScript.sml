@@ -107,8 +107,8 @@ val prod_measure_space3_def = Define
    note: the type of `v` is not a measure space but a measure, the purpose is to simplify
    the statement of Radon-Nikodym theorem as much as possible.
  *)
-val measure_absolutely_continuous_def = Define `
-    measure_absolutely_continuous v m =
+val measure_absolutely_continuous_def = Define
+   `measure_absolutely_continuous v m =
       !s. s IN measurable_sets m /\ (measure m s = 0) ==> (v s = 0)`;
 
 (* "<<" is already used in "src/n-bit/wordsScript.sml", same priority here *)
@@ -129,7 +129,7 @@ val _ = overload_on ("density", ``\m f s. integral m (\x. f x * indicator_fn s x
    This definition looks more general than "RN_deriv" in Isabelle/HOL which works only on
    positive functions.
 
-   The existence of `RN_deriv m v` is then asserted by Radon-Nikodym theorem:
+   The existence of `RN_deriv v m` is then asserted by Radon-Nikodym theorem:
 
    ``!m v. measure_space m /\ sigma_finite m /\
            measure_space (m_space m,measurable_sets m,v) ==>
@@ -148,11 +148,15 @@ val _ = overload_on ("density", ``\m f s. integral m (\x. f x * indicator_fn s x
               (!s. s IN measurable_sets m ==> (density m f s = density m f' s))
           ==> AE x :: m. (f x = f' x)``
  *)
-val RN_deriv_def = Define (* dv/dm *)
-   `RN_deriv m v =
+val RN_deriv_def = Define (* or ``dv/dm`` *)
+   `RN_deriv v m =
         @f. f IN borel_measurable (m_space m,measurable_sets m) /\
             integrable m f /\ (!x. 0 <= f x) /\
             !s. s IN measurable_sets m ==> (density m f s = v s)`;
+
+val _ = set_fixity "//" (Infixl 680);
+(* val _ = Unicode.unicode_version {u = UTF8.chr 0x2AFD, tmnm = "//"}; *)
+val _ = overload_on ("//", ``RN_deriv``);
 
 (*****************************************************************************)
 
@@ -4735,7 +4739,7 @@ val finite_POW_RN_deriv_reduce = store_thm
           measure m (m_space m) < PosInf /\ v (m_space m) < PosInf /\
          (POW (m_space m) = measurable_sets m) /\
          (!x. (measure m {x} = 0) ==> (v {x} = 0)) ==>
-      !x. x IN m_space m /\ measure m {x} <> 0 ==> (RN_deriv m v x = v {x} / measure m {x})``,
+      !x. x IN m_space m /\ measure m {x} <> 0 ==> (RN_deriv v m x = v {x} / measure m {x})``,
  (* proof *)
     RW_TAC std_ss [RN_deriv_def]
  >> Suff `(\f. f x = v {x} / measure m {x})
