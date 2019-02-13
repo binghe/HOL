@@ -2226,7 +2226,8 @@ val EXTREAL_SUM_IMAGE_0 = store_thm
 val EXTREAL_SUM_IMAGE_IN_IF = store_thm
   ("EXTREAL_SUM_IMAGE_IN_IF",
   ``!s. FINITE s ==>
-        !f. ((!x. x IN s ==> f x <> NegInf) \/ !x. x IN s ==> f x <> PosInf) ==>
+        !f. ((!x. x IN s ==> f x <> NegInf) \/
+             (!x. x IN s ==> f x <> PosInf)) ==>
             (EXTREAL_SUM_IMAGE f s = EXTREAL_SUM_IMAGE (\x. if x IN s then f x else 0) s)``,
     Suff `!s. FINITE s ==>
               (\s. !f. ((!x. x IN s ==> f x <> NegInf) \/ (!x. x IN s ==> f x <> PosInf)) ==>
@@ -2234,21 +2235,21 @@ val EXTREAL_SUM_IMAGE_IN_IF = store_thm
  >- RW_TAC std_ss []
  >> MATCH_MP_TAC FINITE_INDUCT
  >> RW_TAC real_ss [EXTREAL_SUM_IMAGE_EMPTY]
- >- ( `!x. (\x. if x IN e INSERT s then f x else 0) x <> NegInf`
-                by RW_TAC std_ss [extreal_not_infty,extreal_of_num_def]
-      >> FULL_SIMP_TAC real_ss [EXTREAL_SUM_IMAGE_PROPERTY]
-      >> `s DELETE e = s` by rw[GSYM DELETE_NON_ELEMENT]
-      >> `EXTREAL_SUM_IMAGE f s = EXTREAL_SUM_IMAGE (\x. if x IN s then f x else 0) s`
-                by METIS_TAC[IN_INSERT]
-      >> WEAKEN_TAC (equal (Term `!x:'a. x IN e INSERT s ==> f x <> NegInf`))
-      >> FULL_SIMP_TAC real_ss [IN_INSERT] )
+ >- (`!x. (\x. if x IN e INSERT s then f x else 0) x <> NegInf`
+         by RW_TAC std_ss [extreal_not_infty,extreal_of_num_def]
+     >> FULL_SIMP_TAC real_ss [EXTREAL_SUM_IMAGE_PROPERTY]
+     >> `s DELETE e = s` by rw[GSYM DELETE_NON_ELEMENT]
+     >> `EXTREAL_SUM_IMAGE f s = EXTREAL_SUM_IMAGE (\x. if x IN s then f x else 0) s`
+         by METIS_TAC [IN_INSERT]
+     >> Q.PAT_X_ASSUM `!x:'a. x IN e INSERT s ==> f x <> NegInf` K_TAC
+     >> FULL_SIMP_TAC real_ss [IN_INSERT])
  >> `!x. (\x. if x IN e INSERT s then f x else 0) x <> PosInf`
                 by RW_TAC std_ss [extreal_not_infty,extreal_of_num_def]
  >> FULL_SIMP_TAC real_ss [EXTREAL_SUM_IMAGE_PROPERTY]
  >> `s DELETE e = s` by rw [GSYM DELETE_NON_ELEMENT]
  >> `EXTREAL_SUM_IMAGE f s = EXTREAL_SUM_IMAGE (\x. if x IN s then f x else 0) s`
                 by METIS_TAC [IN_INSERT]
- >> WEAKEN_TAC (equal (Term `!x:'a. x IN e INSERT s ==> f x <> PosInf`))
+ >> Q.PAT_X_ASSUM `!x:'a. x IN e INSERT s ==> f x <> PosInf` K_TAC
  >> FULL_SIMP_TAC std_ss [IN_INSERT]);
 
 (* more antecedents added *)
@@ -3291,18 +3292,19 @@ val sup_seq = store_thm
    >> RW_TAC std_ss []);
 
 val sup_lt_infty = store_thm
- ("sup_lt_infty", ``!p. (sup p < PosInf) ==> (!x. p x ==> x < PosInf)``,
+  ("sup_lt_infty", ``!p. (sup p < PosInf) ==> (!x. p x ==> x < PosInf)``,
   METIS_TAC [le_sup_imp,let_trans]);
 
 val sup_max = store_thm
- ("sup_max", ``!p z. p z /\ (!x. p x ==> x <= z) ==> (sup p = z)``,
+  ("sup_max", ``!p z. p z /\ (!x. p x ==> x <= z) ==> (sup p = z)``,
   RW_TAC std_ss [sup_eq]);
 
-(* new proof *)
 val sup_add_mono = store_thm
- ("sup_add_mono", ``!f g. (!n. 0 <= f n) /\ (!n. f n <= f (SUC n)) /\
-                          (!n. 0 <= g n) /\ (!n. g n <= g (SUC n)) ==>
-                    (sup (IMAGE (\n. f n + g n) UNIV) = sup (IMAGE f UNIV) + sup (IMAGE g UNIV))``,
+  ("sup_add_mono",
+  ``!f g. (!n. 0 <= f n) /\ (!n. f n <= f (SUC n)) /\
+          (!n. 0 <= g n) /\ (!n. g n <= g (SUC n)) ==>
+          (sup (IMAGE (\n. f n + g n) UNIV) = sup (IMAGE f UNIV) + sup (IMAGE g UNIV))``,
+ (* new proof *)
   RW_TAC std_ss [sup_eq]
   >- (POP_ASSUM (MP_TAC o ONCE_REWRITE_RULE [GSYM SPECIFICATION])
       >> RW_TAC std_ss [IN_IMAGE,IN_UNIV]
@@ -3401,14 +3403,15 @@ val sup_add_mono = store_thm
   >> RW_TAC std_ss [IN_IMAGE,IN_UNIV]
   >> METIS_TAC []);
 
-(* new proof *)
 val sup_sum_mono = store_thm
- ("sup_sum_mono", ``!f s. FINITE s /\ (!i:num. i IN s ==> (!n. 0 <= f i n)) /\
-                                      (!i:num. i IN s ==> (!n. f i n <= f i (SUC n)))
-                   ==>  (sup (IMAGE (\n. SIGMA (\i:num. f i n) s) UNIV) =
-                         SIGMA (\i:num. sup (IMAGE (f i) UNIV)) s)``,
+  ("sup_sum_mono",
+  ``!f s. FINITE s /\ (!i:num. i IN s ==> (!n. 0 <= f i n)) /\
+          (!i:num. i IN s ==> (!n. f i n <= f i (SUC n))) ==>
+          (sup (IMAGE (\n. SIGMA (\i:num. f i n) s) UNIV) =
+           SIGMA (\i:num. sup (IMAGE (f i) UNIV)) s)``,
+ (* new proof *)
   Suff `!s. FINITE s ==> (\s. !f. (!i:num. i IN s ==> (!n. 0 <= f i n)) /\
-                        (!i:num. i IN s ==> (!n. f i n <= f i (SUC n))) ==>
+                         (!i:num. i IN s ==> (!n. f i n <= f i (SUC n))) ==>
                       (sup (IMAGE (\n. SIGMA (\i:num. f i n) s) UNIV) =
                        SIGMA (\i:num. sup (IMAGE (f i) UNIV)) s)) s`
   >- RW_TAC std_ss []
@@ -3444,8 +3447,8 @@ val sup_sum_mono = store_thm
   >> FULL_SIMP_TAC std_ss [IN_INSERT]);
 
 val sup_le_mono = store_thm
- ("sup_le_mono",``!f z. (!n. f n <= f (SUC n)) /\ z < sup (IMAGE f UNIV)
-                    ==> ?n. z <= f n``,
+  ("sup_le_mono",
+  ``!f z. (!n. f n <= f (SUC n)) /\ z < sup (IMAGE f UNIV) ==> ?n. z <= f n``,
   RW_TAC std_ss []
   >> SPOSE_NOT_THEN ASSUME_TAC
   >> FULL_SIMP_TAC std_ss [GSYM extreal_lt_def]
@@ -3454,8 +3457,9 @@ val sup_le_mono = store_thm
   >> METIS_TAC [sup_le,SPECIFICATION,extreal_lt_def]);
 
 val sup_cmul = store_thm
- ("sup_cmul",``!f c. 0 <= c ==> (sup (IMAGE (\n. (Normal c) * f n) UNIV) =
-                                 (Normal c) * sup (IMAGE f UNIV))``,
+  ("sup_cmul",
+  ``!f c. 0 <= c ==> (sup (IMAGE (\n. (Normal c) * f n) UNIV) =
+                      (Normal c) * sup (IMAGE f UNIV))``,
   RW_TAC std_ss []
   >> Cases_on `c = 0` >- RW_TAC real_ss [mul_lzero, GSYM extreal_of_num_def,UNIV_NOT_EMPTY,
                                          sup_const_over_set]
@@ -3534,7 +3538,7 @@ val sup_cmul_pos = store_thm
  >> MATCH_MP_TAC mul_lposinf >> art []);
 
 val sup_lt = store_thm
-("sup_lt",``!P y.  (?x. P x /\ y < x) <=> y < sup P``,
+  ("sup_lt",``!P y.  (?x. P x /\ y < x) <=> y < sup P``,
   RW_TAC std_ss []
   >> EQ_TAC >- METIS_TAC [le_sup_imp,lte_trans]
   >> RW_TAC std_ss []
@@ -3543,8 +3547,9 @@ val sup_lt = store_thm
 
 (* c.f. SUP_EPSILON *)
 val sup_lt_epsilon = store_thm
-("sup_lt_epsilon",``!P e. (0 < e) /\ (?x. P x /\ x <> NegInf) /\ (sup P <> PosInf)
-                        ==> (?x. P x /\ sup P < x + e)``,
+  ("sup_lt_epsilon",
+  ``!P e. (0 < e) /\ (?x. P x /\ x <> NegInf) /\ (sup P <> PosInf) ==>
+          ?x. P x /\ sup P < x + e``,
   RW_TAC std_ss []
   >> Cases_on `e = PosInf`
   >- (Q.EXISTS_TAC `x`
