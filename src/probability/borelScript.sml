@@ -44,12 +44,12 @@ val indicator_fn_not_infty = store_thm (* new *)
  >> Cases_on `x IN s`
  >> ASM_SIMP_TAC std_ss [indicator_fn_def, extreal_of_num_def, extreal_not_infty]);
 
-val INDICATOR_FN_SING = store_thm
-  ("INDICATOR_FN_SING", ``!x y. (x = y) ==> (indicator_fn {x} y = 1)``,
+val INDICATOR_FN_SING_1 = store_thm
+  ("INDICATOR_FN_SING_1", ``!x y. (x = y) ==> (indicator_fn {x} y = 1)``,
     RW_TAC std_ss [indicator_fn_def, IN_SING]);
 
-val INDICATOR_FN_SING_NOT = store_thm
-  ("INDICATOR_FN_SING_NOT", ``!x y. x <> y ==> (indicator_fn {x} y = 0)``,
+val INDICATOR_FN_SING_0 = store_thm
+  ("INDICATOR_FN_SING_0", ``!x y. x <> y ==> (indicator_fn {x} y = 0)``,
     RW_TAC std_ss [indicator_fn_def, IN_SING]);
 
 val INDICATOR_FN_MUL_INTER = store_thm

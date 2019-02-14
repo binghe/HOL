@@ -129,7 +129,8 @@ val _ = overload_on ("<<", ``measure_absolutely_continuous``);
 val density_def = Define (* or `f * m` *)
    `density m f = \s. integral m (\x. f x * indicator_fn s x)`;
 
-(* `v = density m f` is denoted by `v = f * m`, also see "RN_deriv_def" *)
+(* `v = density m f` is denoted by `v = f * m`, also see "RN_deriv_def".
+   (last time the word "density" appears, always use "*" later) *)
 val _ = overload_on ("*", ``\f m. density m f``);
 
 (* Radon-Nikodym derivative, from (old) real_lebesgueScript.sml, simplified.
@@ -3541,8 +3542,8 @@ val integrable_abs = store_thm (* new *)
  >> CONJ_TAC >- (MATCH_MP_TAC integrable_fn_plus >> art [])
  >> MATCH_MP_TAC integrable_fn_minus >> art []);
 
-val integrable_abs_bound_exists = store_thm (* new *)
-  ("integrable_abs_bound_exists",
+(* c.f. [1, p.77, 10.3 (ii) => (iii)] *)
+val integrable_abs_bound_exists = prove (
   ``!m u. measure_space m /\ integrable m (abs o u) ==>
           ?w. integrable m w /\ nonneg w /\ !x. abs (u x) <= w x``,
     rpt STRIP_TAC
@@ -3550,18 +3551,15 @@ val integrable_abs_bound_exists = store_thm (* new *)
  >> RW_TAC std_ss [o_DEF, le_refl]);
 
 (* c.f. [1, p.77, 10.3 (i) => (iv)] *)
-val integrable_bound_exists = store_thm (* new *)
-  ("integrable_bound_exists",
+val integrable_bound_exists = prove (
   ``!m u. measure_space m /\ integrable m u ==>
           ?w. integrable m w /\ nonneg w /\ !x. abs (u x) <= w x``,
     rpt STRIP_TAC
- >> Q.EXISTS_TAC `abs o u` >> art [nonneg_abs]
- >> CONJ_TAC >- (MATCH_MP_TAC integrable_abs >> art [])
- >> RW_TAC std_ss [o_DEF, le_refl]);
+ >> MATCH_MP_TAC integrable_abs_bound_exists >> art []
+ >> MATCH_MP_TAC integrable_abs >> art []);
 
 (* c.f. [1, p.77, 10.3 (iv) => (i)] *)
-val integrable_from_bound_exists = store_thm (* new *)
-  ("integrable_from_bound_exists",
+val integrable_from_bound_exists = prove (
   ``!m u. measure_space m /\ u IN borel_measurable (m_space m,measurable_sets m) /\
           (?w. integrable m w /\ nonneg w /\ !x. abs (u x) <= w x) ==>
           integrable m u``,
@@ -3593,6 +3591,21 @@ val integrable_from_abs = store_thm (* new *)
     RW_TAC std_ss []
  >> MATCH_MP_TAC integrable_from_bound_exists >> art []
  >> MATCH_MP_TAC integrable_abs_bound_exists >> art []);
+
+(* Theorem 10.3 [1, p.77] *)
+val integrable_conditions = store_thm
+  ("integrable_conditions",
+  ``!m f. measure_space m /\ f IN measurable (m_space m, measurable_sets m) Borel ==>
+         (integrable m f = integrable m (fn_plus f) /\ integrable m (fn_minus f)) /\
+         (integrable m f = integrable m (abs o f)) /\
+         (integrable m f = ?w. integrable m w /\ nonneg w /\ !x. abs (f x) <= w x)``,
+    RW_TAC std_ss [] (* 3 subgoals *)
+ >| [ (* goal 1 (of 3) *)
+      PROVE_TAC [integrable_plus_minus],
+      (* goal 2 (of 3) *)
+      PROVE_TAC [integrable_abs, integrable_from_abs],
+      (* goal 3 (of 3) *)
+      PROVE_TAC [integrable_bound_exists, integrable_from_bound_exists] ]);
 
 val integrable_add_lemma = store_thm
   ("integrable_add_lemma",``!m f g. measure_space m /\ integrable m f /\ integrable m g
@@ -4566,8 +4579,8 @@ val finite_space_POW_integral_reduce = store_thm
            >> Reverse (RW_TAC std_ss [mul_rone, mul_rzero])
            >- RW_TAC std_ss [GSYM extreal_of_num_def, mul_lzero]
            >> rename1 `i IN count n`
-           >> Cases_on `c i <> t` >- PROVE_TAC [INDICATOR_FN_SING_NOT, mul_rzero]
-           >> fs [INDICATOR_FN_SING, mul_rone]
+           >> Cases_on `c i <> t` >- PROVE_TAC [INDICATOR_FN_SING_0, mul_rzero]
+           >> fs [INDICATOR_FN_SING_1, mul_rone]
            >> `f t = Normal (x i)` by PROVE_TAC []
            >> `0 <= f t` by PROVE_TAC [extreal_le_eq, extreal_of_num_def]
            >> `f t = 0` by PROVE_TAC [le_antisym, extreal_lt_def]
@@ -4636,8 +4649,8 @@ val finite_space_POW_integral_reduce = store_thm
            >> Reverse (RW_TAC std_ss [mul_rone, mul_rzero])
            >- RW_TAC std_ss [GSYM extreal_of_num_def, mul_lzero]
            >> rename1 `i IN count n`
-           >> Cases_on `c i <> t` >- PROVE_TAC [INDICATOR_FN_SING_NOT, mul_rzero]
-           >> fs [INDICATOR_FN_SING, mul_rone]
+           >> Cases_on `c i <> t` >- PROVE_TAC [INDICATOR_FN_SING_0, mul_rzero]
+           >> fs [INDICATOR_FN_SING_1, mul_rone]
            >> `f t = Normal (x i)` by PROVE_TAC []
            >> `f t <= 0` by PROVE_TAC [extreal_le_eq, extreal_of_num_def]
            >> `f t = 0` by PROVE_TAC [le_antisym]
@@ -4848,7 +4861,7 @@ val finite_POW_RN_deriv_reduce = store_thm
     RW_TAC std_ss [RN_deriv_def]
  >> Suff `(\f. f x = v {x} / measure m {x})
             (@f. f IN borel_measurable (m_space m,measurable_sets m) /\
-                 !a. a IN measurable_sets m /\ integrable m (\x. f x * indicator_fn a x) ==>
+                 !a. a IN measurable_sets m /\ integrable m f ==>
                     (integral m (\x. f x * indicator_fn a x) = v a))`
  >- RW_TAC std_ss []
  >> MATCH_MP_TAC SELECT_ELIM_THM
