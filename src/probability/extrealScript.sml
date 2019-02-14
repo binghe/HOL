@@ -120,6 +120,7 @@ val extreal_ainv_def = Define
    (extreal_ainv PosInf = NegInf) /\
    (extreal_ainv (Normal x) = Normal (- x))`;
 
+(* NOTE: this definition indirectly allows `0 / 0 = 0`, c.f. "zero_div" *)
 val extreal_div_def = Define
    `extreal_div x y = extreal_mul x (extreal_inv y)`;
 
@@ -241,8 +242,8 @@ val entire = store_thm
 (***************)
 
 val extreal_lt_eq = store_thm
-("extreal_lt_eq",``!x y. Normal x < Normal y <=> x < y``,
-  METIS_TAC [extreal_lt_def, extreal_le_def, real_lt]);
+  ("extreal_lt_eq",``!x y. Normal x < Normal y <=> x < y``,
+    METIS_TAC [extreal_lt_def, extreal_le_def, real_lt]);
 
 val extreal_le_eq = store_thm
   ("extreal_le_eq",``!x y. Normal x <= Normal y <=> x <= y``,
@@ -1244,22 +1245,22 @@ val sub_rdistrib = store_thm
 
 (* added antecedent ``y <> 0`` *)
 val extreal_div_eq = store_thm
-("extreal_div_eq",``!x y. y <> 0 ==> (Normal x / Normal y = Normal (x / y))``,
+  ("extreal_div_eq",``!x y. y <> 0 ==> (Normal x / Normal y = Normal (x / y))``,
   rpt Cases
   >> RW_TAC std_ss [extreal_div_def,extreal_inv_def,extreal_mul_def,real_div]);
 
 val inv_one = store_thm
-("inv_one",``inv 1 = 1``,
+  ("inv_one",``inv 1 = 1``,
   RW_TAC std_ss [extreal_inv_def,extreal_of_num_def,REAL_10,REAL_INV1]);
 
 val inv_1over = store_thm
-("inv_1over",``!x. inv x = 1 / x``,
+  ("inv_1over",``!x. inv x = 1 / x``,
   rpt Cases
   >> RW_TAC real_ss [extreal_inv_def,extreal_div_def,extreal_mul_def,
                      extreal_of_num_def,REAL_10,REAL_INV1]);
 
 val div_one = store_thm
-("div_one",``!x. x / 1 = x``,
+  ("div_one",``!x. x / 1 = x``,
    RW_TAC std_ss [extreal_div_def,mul_rone,inv_one]);
 
 val inv_pos = store_thm
@@ -1270,13 +1271,13 @@ val inv_pos = store_thm
   >> FULL_SIMP_TAC real_ss [real_lte]);
 
 val rinv_uniq = store_thm
- ("rinv_uniq",``!x y. (x * y = 1) ==> (y = inv x)``,
+  ("rinv_uniq",``!x y. (x * y = 1) ==> (y = inv x)``,
   rpt Cases
   >> RW_TAC real_ss [extreal_inv_def,extreal_mul_def,
                      extreal_of_num_def,REAL_RINV_UNIQ]);
 
 val linv_uniq = store_thm
- ("linv_uniq",``!x y. (x * y = 1) ==> (x = inv y)``,
+  ("linv_uniq",``!x y. (x * y = 1) ==> (x = inv y)``,
   RW_TAC std_ss [rinv_uniq,mul_comm]);
 
 val le_rdiv = store_thm
@@ -1327,10 +1328,19 @@ val div_add = store_thm
   >> RW_TAC real_ss [extreal_add_def,REAL_RDISTRIB]);
 
 val le_inv = store_thm
- ("le_inv",``!x. 0 <= x ==> 0 <= inv x``,
+  ("le_inv",``!x. 0 <= x ==> 0 <= inv x``,
   Cases
   >> RW_TAC real_ss [extreal_inv_def,extreal_of_num_def,extreal_le_def,
                      le_infty,REAL_LE_INV]);
+
+val div_infty = store_thm (* new *)
+  ("div_infty", ``!x. (x / PosInf = 0) /\ (x / NegInf = 0)``,
+    REWRITE_TAC [extreal_div_def, extreal_inv_def, GSYM extreal_of_num_def, mul_rzero]);
+
+(* NOTE: this result holds even when `x = 0` ?! *)
+val zero_div = store_thm (* new *)
+  ("zero_div", ``!x. 0x / x = 0x``,
+    REWRITE_TAC [extreal_div_def, mul_lzero]);
 
 (***************************)
 (*         x pow n         *)

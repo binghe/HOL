@@ -145,7 +145,8 @@ val _ = overload_on ("*", ``\f m. density m f``);
    ``!m v. measure_space m /\ sigma_finite m /\
            measure_space (m_space m,measurable_sets m,v) ==>
           (measure_absolutely_continuous v m <=>
-           ?f. f IN borel_measurable (m_space m,measurable_sets m) /\ nonneg f /\
+           ?f. f IN borel_measurable (m_space m,measurable_sets m) /\
+               (!x. x IN m_space m ==> 0 <= f x) /\
                !s. s IN measurable_sets m ==> ((f * m) s = v s))``
 
    Also the uniqueness is asserted by the following theorems:
@@ -161,7 +162,8 @@ val _ = overload_on ("*", ``\f m. density m f``);
  *)
 val RN_deriv_def = Define (* or `dv / dm` *)
    `RN_deriv v m =
-      @f. f IN borel_measurable (m_space m,measurable_sets m) /\ nonneg f /\
+      @f. f IN borel_measurable (m_space m,measurable_sets m) /\
+          (!x. x IN m_space m ==> 0 <= f x) /\
           !s. s IN measurable_sets m ==> ((f * m) s = v s)`;
 
 (* `f = RN_deriv v m` is denoted by `f = v / m`, also see "density_def" *)
@@ -4852,17 +4854,18 @@ val finite_space_POW_integral_reduce = store_thm
 val finite_POW_RN_deriv_reduce = store_thm
   ("finite_POW_RN_deriv_reduce",
   ``!m v. measure_space m /\ FINITE (m_space m) /\
+          measure m (m_space m) < PosInf /\
           measure_space (m_space m,measurable_sets m,v) /\
-          measure m (m_space m) < PosInf /\ v (m_space m) < PosInf /\
          (POW (m_space m) = measurable_sets m) /\
          (!x. (measure m {x} = 0) ==> (v {x} = 0)) ==>
       !x. x IN m_space m /\ measure m {x} <> 0 ==> (RN_deriv v m x = v {x} / measure m {x})``,
  (* proof *)
-    RW_TAC std_ss [RN_deriv_def]
+    RW_TAC std_ss [RN_deriv_def, density_def, nonneg_def]
  >> Suff `(\f. f x = v {x} / measure m {x})
             (@f. f IN borel_measurable (m_space m,measurable_sets m) /\
-                 !a. a IN measurable_sets m /\ integrable m f ==>
-                    (integral m (\x. f x * indicator_fn a x) = v a))`
+                 (!x. x IN m_space m ==> 0 <= f x) /\
+                 !s. s IN measurable_sets m ==>
+                    (integral m (\x. f x * indicator_fn s x) = v s))`
  >- RW_TAC std_ss []
  >> MATCH_MP_TAC SELECT_ELIM_THM
  >> RW_TAC std_ss [] (* 2 subgoals *)
@@ -4875,11 +4878,28 @@ val finite_POW_RN_deriv_reduce = store_thm
 			   POW_SIGMA_ALGEBRA]
          >> RW_TAC std_ss [IN_POW, INTER_SUBSET])
      >> RW_TAC std_ss []
+     >- (`{x'} IN measurable_sets m` by PROVE_TAC [IN_POW, IN_SING, SUBSET_DEF] \\
+         Cases_on `measure m {x'} = 0` >- PROVE_TAC [le_refl] \\
+         fs [] \\ (* now: 0 <= v {x'} / measure m {x'} *)
+         Cases_on `(measure m {x'} = NegInf) \/ (measure m {x'} = PosInf)`
+         >- METIS_TAC [div_infty, le_refl] >> fs [] \\
+        `?c. measure m {x'} = Normal c` by PROVE_TAC [extreal_cases] \\
+         Know `0 <= Normal c`
+         >- (POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM) \\
+             PROVE_TAC [measure_space_def, positive_def]) \\
+         DISCH_TAC \\
+        `0 < c` by PROVE_TAC [le_lt, extreal_lt_eq, extreal_of_num_def] \\
+         POP_ASSUM (STRIP_ASSUME_TAC o (MATCH_MP le_rdiv)) \\
+         Q.PAT_X_ASSUM `measure m {x'} = Normal c` (ONCE_REWRITE_TAC o wrap) \\
+         POP_ASSUM (ONCE_REWRITE_TAC o wrap o GSYM) \\
+         REWRITE_TAC [mul_lzero] \\
+         fs [measure_space_def, positive_def, measure_def, measurable_sets_def])
      >> (MP_TAC o Q.ISPECL [`(m :'a m_space)`,
-                            `\x':'a. v {x'} / measure m {x'} * indicator_fn a x'`])
+                            `\x':'a. (if measure m {x'} <> 0 then v {x'} / measure m {x'} else 0) *
+                                     indicator_fn s x'`])
              finite_space_POW_integral_reduce
-     (* I'm not sure if the following is true since `v {x'} / measure m {x'}` is not defined
-        when `measure m {x'} = 0` *)
+     >> BETA_TAC >> art []
+(* TODO *)
      >> Know `(!x. x IN m_space m ==>
                   (\x'. v {x'} / measure m {x'} * indicator_fn a x') x <> NegInf ∧
                   (\x'. v {x'} / measure m {x'} * indicator_fn a x') x <> PosInf)`
@@ -4969,9 +4989,7 @@ val finite_POW_RN_deriv_reduce = store_thm
  >> `0 < measure m {x}`
         by METIS_TAC [measure_space_def, positive_def, REAL_LE_LT]
  >> ASM_SIMP_TAC real_ss [REAL_EQ_RDIV_EQ, indicator_fn_def, IN_SING]);
- *)
 
-(*
 val finite_POW_prod_measure_reduce = store_thm
   ("finite_POW_prod_measure_reduce",
   ``!m0 m1. measure_space m0 /\ measure_space m1 /\
