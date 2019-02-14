@@ -143,8 +143,7 @@ val _ = overload_on ("*", ``\f m. density m f``);
    ``!m v. measure_space m /\ sigma_finite m /\
            measure_space (m_space m,measurable_sets m,v) ==>
           (measure_absolutely_continuous v m <=>
-           ?f. f IN borel_measurable (m_space m,measurable_sets m) /\
-               integrable m f /\ nonneg f /\
+           ?f. f IN borel_measurable (m_space m,measurable_sets m) /\ nonneg f /\
                !s. s IN measurable_sets m ==> ((f * m) s = v s))``
 
    Also the uniqueness is asserted by the following theorems:
@@ -152,7 +151,7 @@ val _ = overload_on ("*", ``\f m. density m f``);
    ``!m f f'. measure_space m /\ sigma_finite m /\
               f IN borel_measurable (m_space m,measurable_sets m) /\
               f' IN borel_measurable (m_space m,measurable_sets m) /\
-              integrable m f /\ integrable m f' /\ nonneg f /\ nonneg f' /\
+              nonneg f /\ nonneg f' /\
               (!s. s IN measurable_sets m ==> ((f * m) s = (f' * m) s))
           ==> AE x::m. (f x = f' x)``
 
@@ -160,8 +159,7 @@ val _ = overload_on ("*", ``\f m. density m f``);
  *)
 val RN_deriv_def = Define (* or `dv / dm` *)
    `RN_deriv v m =
-      @f. f IN borel_measurable (m_space m,measurable_sets m) /\
-          nonneg f /\ integrable m f /\
+      @f. f IN borel_measurable (m_space m,measurable_sets m) /\ nonneg f /\
           !s. s IN measurable_sets m ==> ((f * m) s = v s)`;
 
 (* `f = RN_deriv v m` is denoted by `f = v / m`, also see "density_def" *)
