@@ -27,11 +27,22 @@ val _ = new_theory "borel";
 val indicator_fn_def = Define
    `indicator_fn s = \x. if x IN s then (1 :extreal) else (0 :extreal)`;
 
+val _ = Unicode.unicode_version {u = UTF8.chr 0x1D7D9, tmnm = "indicator_fn"};
+
 val INDICATOR_FN_POS = store_thm
   ("INDICATOR_FN_POS", ``!s x. 0 <= indicator_fn s x``,
     RW_TAC std_ss [indicator_fn_def]
  >- RW_TAC real_ss [extreal_of_num_def, extreal_le_eq]
  >> REWRITE_TAC [le_refl]);
+
+val indicator_fn_not_infty = store_thm (* new *)
+  ("indicator_fn_not_infty",
+  ``!s x. indicator_fn s x <> NegInf /\ indicator_fn s x <> PosInf``,
+    RW_TAC std_ss []
+ >- (MATCH_MP_TAC pos_not_neginf \\
+     REWRITE_TAC [INDICATOR_FN_POS])
+ >> Cases_on `x IN s`
+ >> ASM_SIMP_TAC std_ss [indicator_fn_def, extreal_of_num_def, extreal_not_infty]);
 
 val INDICATOR_FN_SING = store_thm
   ("INDICATOR_FN_SING", ``!x y. (x = y) ==> (indicator_fn {x} y = 1)``,
@@ -192,9 +203,6 @@ val fn_plus_def = Define `
 val fn_minus_def = Define `
     fn_minus (f :'a -> extreal) = (\x. if f x < 0 then ~(f x) else 0)`;
 
-val fn_abs_def = Define `
-    fn_abs (f :'a -> extreal) = (\x. abs (f x))`; (* or: abs o f *)
-
 (* alternative definitions of fn_plus and fn_minus using max/min *)
 val FN_PLUS_ALT = store_thm
   ("FN_PLUS_ALT", ``!f. fn_plus f = (\x. max (f x) 0)``,
@@ -217,8 +225,8 @@ val FN_MINUS_ALT = store_thm
  >- (`f x = 0` by PROVE_TAC [le_antisym] >> fs [neg_0])
  >> fs [neg_0]);
 
-val FN_decomposition = store_thm (* new *)
-  ("FN_decomposition", ``!f x. f x = fn_plus f x - fn_minus f x``,
+val FN_DECOMP = store_thm (* new *)
+  ("FN_DECOMP", ``!f x. f x = fn_plus f x - fn_minus f x``,
     RW_TAC std_ss [fn_plus_def, fn_minus_def]
  >- METIS_TAC [lt_antisym]
  >- REWRITE_TAC [sub_rzero]
@@ -227,15 +235,15 @@ val FN_decomposition = store_thm (* new *)
  >> REWRITE_TAC [sub_rzero]
  >> METIS_TAC [extreal_lt_def, le_antisym]);
 
-val FN_decomposition' = store_thm (* new *)
-  ("FN_decomposition'", ``!f. f = \x. fn_plus f x - fn_minus f x``,
-    METIS_TAC [FN_decomposition]);
+val FN_DECOMP' = store_thm (* new *)
+  ("FN_DECOMP'", ``!f. f = (\x. fn_plus f x - fn_minus f x)``,
+    METIS_TAC [FN_DECOMP]);
 
 (* `fn_plus f x + fn_minus f x` is always defined (same reason as above) *)
 val FN_ABS = store_thm (* new *)
-  ("FN_ABS", ``!f x. fn_abs f x = fn_plus f x + fn_minus f x``,
+  ("FN_ABS", ``!f x. (abs o f) x = fn_plus f x + fn_minus f x``,
  (* proof *)
-    RW_TAC std_ss [fn_abs_def, fn_plus_def, fn_minus_def, add_rzero, add_lzero]
+    RW_TAC std_ss [o_DEF, fn_plus_def, fn_minus_def, add_rzero, add_lzero]
  >> Q.ABBREV_TAC `e = f x` (* 4 subgoals *)
  >| [ (* goal 1 (of 4) *)
       METIS_TAC [lt_antisym],
@@ -256,7 +264,7 @@ val FN_ABS = store_thm (* new *)
       PROVE_TAC [abs_0] ]);
 
 val FN_ABS' = store_thm (* new *)
-  ("FN_ABS'", ``!f. fn_abs f = (\x. fn_plus f x + fn_minus f x)``,
+  ("FN_ABS'", ``!f. (abs o f) = (\x. fn_plus f x + fn_minus f x)``,
     METIS_TAC [FN_ABS]);
 
 val FN_PLUS_POS = store_thm
@@ -479,6 +487,46 @@ val FN_MINUS_ADD_LE = store_thm
  >- (MATCH_MP_TAC EQ_SYM >> MATCH_MP_TAC neg_add >> art []) >> Rewr
  >> `0 < -(f x + g x) <=> f x + g x < 0` by PROVE_TAC [neg_0, lt_neg] >> POP_ORW
  >> REWRITE_TAC []);
+
+val FN_PLUS_LE_ABS = store_thm
+  ("FN_PLUS_LE_ABS", ``!f x. fn_plus f x <= abs (f x)``,
+    rpt GEN_TAC
+ >> REWRITE_TAC [SIMP_RULE std_ss [o_DEF] FN_ABS]
+ >> ACCEPT_TAC
+      (REWRITE_RULE [le_refl, add_rzero, FN_MINUS_POS]
+                    (Q.SPECL [`fn_plus f x`, `fn_plus f x`, `0`, `fn_minus f x`] le_add2)));
+
+val FN_MINUS_LE_ABS = store_thm
+  ("FN_MINUS_LE_ABS", ``!f x. fn_minus f x <= abs (f x)``,
+    rpt GEN_TAC
+ >> REWRITE_TAC [SIMP_RULE std_ss [o_DEF] FN_ABS]
+ >> ACCEPT_TAC
+      (REWRITE_RULE [le_refl, add_lzero, FN_PLUS_POS]
+                    (Q.SPECL [`0`, `fn_plus f x`, `fn_minus f x`, `fn_minus f x`] le_add2)));
+
+(* ******************************************* *)
+(*   Non-negative functions                    *)
+(* ******************************************* *)
+
+val nonneg_def = Define
+   `nonneg (f :'a -> extreal) = !x. 0 <= f x`;
+
+val nonneg_abs = store_thm
+  ("nonneg_abs", ``!f. nonneg (abs o f)``,
+    RW_TAC std_ss [o_DEF, nonneg_def, abs_pos]);
+
+val nonneg_fn_plus = store_thm
+  ("nonneg_fn_plus", ``!f. nonneg f ==> (fn_plus f = f)``,
+    RW_TAC std_ss [nonneg_def, fn_plus_def]
+ >> FUN_EQ_TAC
+ >> RW_TAC std_ss []
+ >> PROVE_TAC [le_lt]);
+
+val nonneg_fn_minus = store_thm
+  ("nonneg_fn_minus", ``!f. nonneg f ==> (fn_minus f = (\x. 0))``,
+    RW_TAC std_ss [nonneg_def, fn_minus_def]
+ >> FUN_EQ_TAC
+ >> RW_TAC std_ss [extreal_lt_def]);
 
 
 (* ******************************************* *)
