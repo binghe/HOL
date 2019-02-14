@@ -189,7 +189,7 @@ val indep_real_vars_def = Define (* new *)
 (* this only works in discrete probability spaces *)
 val uniform_distribution_def = Define
    `uniform_distribution (s :'a algebra) =
-      (\(a :'a set). (&CARD a / &CARD (space s)):extreal)`;
+      (\(a :'a set). (&CARD a / &CARD (space s)) :extreal)`;
 
 (* ------------------------------------------------------------------------- *)
 (* Basic probability theorems, leading to:                                   *)
@@ -1458,6 +1458,7 @@ val joint_distribution_sum_mul1 = store_thm
   >> RW_TAC std_ss [FUN_EQ_THM, REAL_MUL_COMM]);
 *)
 
+
 (******************************************************************************)
 (*  Kolmogorov's 0-1 Law                                                      *)
 (******************************************************************************)
@@ -1470,14 +1471,21 @@ val remote_events_def = Define (* or "tail_events" *)
 
 val kolmogorov_0_1_law = store_thm (* [3, p.37-38] *)
   ("kolmogorov_0_1_law",
-  ``!(p :'a p_space) (A :num -> 'a events).
+  ``!p (A :num -> 'a events).
        prob_space p /\ indep_sets p A UNIV ==>
        !e. e IN remote_events p A ==> (prob p e = 0) \/ (prob p e = 1)``,
     cheat);
 
+
 (******************************************************************************)
 (*  Moments and variance (definitions from [2, p.49])                         *)
 (******************************************************************************)
+
+(* experimental overloads of random variables *)
+val _ = overload_on ("+", ``\(X :'a -> extreal) (Y :'a -> extreal) x. X x + Y x``);
+val _ = overload_on ("-", ``\(X :'a -> extreal) (Y :'a -> extreal) x. X x - Y x``);
+val _ = overload_on ("*", ``\(X :'a -> extreal) (Y :'a -> extreal) x. X x * Y x``);
+val _ = overload_on ("/", ``\(X :'a -> extreal) (Y :'a -> extreal) x. X x / Y x``);
 
 val absolute_moment_def = Define
    `absolute_moment P X r a = expectation P (\x. (abs (X x - a)) pow r)`;
@@ -1498,7 +1506,9 @@ val _ = export_theory ();
 
 (* References:
 
-  [1] Kolmogorov, A.N.: Foundations of the Theory of Probability. Chelsea Publishing Company, New York, N. Y. (1950).
+  [1] Kolmogorov, A.N.: Foundations of the Theory of Probability. Chelsea Publishing Company,
+      New York, N. Y. (1950).
   [2] Chung, K.L.: A Course in Probability Theory, Third Edition. Academic Press (2001).
-  [3] Rosenthal, J.S.: A First Look at Rigorous Probability Theory. World Scientific Publishing Company (2006).
+  [3] Rosenthal, J.S.: A First Look at Rigorous Probability Theory.
+      World Scientific Publishing Company (2006).
  *)
