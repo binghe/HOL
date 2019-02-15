@@ -199,27 +199,28 @@ val uniform_distribution_def = Define
 val POSITIVE_PROB = store_thm
   ("POSITIVE_PROB",
   ``!p. positive p = (prob p {} = 0) /\ !s. s IN events p ==> 0 <= prob p s``,
-   RW_TAC std_ss [positive_def, prob_def, events_def]);
+    RW_TAC std_ss [positive_def, prob_def, events_def]);
 
 val INCREASING_PROB = store_thm
   ("INCREASING_PROB",
-  ``!p. increasing p = !s t. s IN events p /\ t IN events p /\ s SUBSET t
-        ==> prob p s <= prob p t``,
-   RW_TAC std_ss [increasing_def, prob_def, events_def]);
+  ``!p. increasing p = !s t. s IN events p /\ t IN events p /\ s SUBSET t ==>
+        prob p s <= prob p t``,
+    RW_TAC std_ss [increasing_def, prob_def, events_def]);
 
 val ADDITIVE_PROB = store_thm
   ("ADDITIVE_PROB",
   ``!p. additive p =
-        !s t. s IN events p /\ t IN events p /\ DISJOINT s t /\ s UNION t IN events p
-         ==> (prob p (s UNION t) = prob p s + prob p t)``,
-   RW_TAC std_ss [additive_def, prob_def, events_def]);
+         !s t. s IN events p /\ t IN events p /\ DISJOINT s t /\ s UNION t IN events p ==>
+              (prob p (s UNION t) = prob p s + prob p t)``,
+    RW_TAC std_ss [additive_def, prob_def, events_def]);
 
 val COUNTABLY_ADDITIVE_PROB = store_thm
-  ("COUNTABLY_ADDITIVE_PROB", ``!p. countably_additive p =
-       !f. f IN (UNIV -> events p) /\ (!m n. ~(m = n) ==> DISJOINT (f m) (f n)) /\
-           BIGUNION (IMAGE f UNIV) IN events p ==>
-         (prob p (BIGUNION (IMAGE f UNIV)) = suminf (prob p o f))``,
-   RW_TAC std_ss [countably_additive_def, prob_def, events_def]);
+  ("COUNTABLY_ADDITIVE_PROB",
+  ``!p. countably_additive p =
+        !f. f IN (UNIV -> events p) /\ (!m n. ~(m = n) ==> DISJOINT (f m) (f n)) /\
+            BIGUNION (IMAGE f UNIV) IN events p ==>
+           (prob p (BIGUNION (IMAGE f UNIV)) = suminf (prob p o f))``,
+    RW_TAC std_ss [countably_additive_def, prob_def, events_def]);
 
 val PROB_SPACE = store_thm
   ("PROB_SPACE",
@@ -229,38 +230,31 @@ val PROB_SPACE = store_thm
  >> PROVE_TAC []);
 
 val EVENTS_SIGMA_ALGEBRA = store_thm
-  ("EVENTS_SIGMA_ALGEBRA",
-   ``!p. prob_space p ==> sigma_algebra (p_space p, events p)``,
+  ("EVENTS_SIGMA_ALGEBRA", ``!p. prob_space p ==> sigma_algebra (p_space p, events p)``,
    RW_TAC std_ss [PROB_SPACE]);
 
 val EVENTS_ALGEBRA = store_thm
-  ("EVENTS_ALGEBRA",
-   ``!p. prob_space p ==> algebra (p_space p, events p)``,
+  ("EVENTS_ALGEBRA", ``!p. prob_space p ==> algebra (p_space p, events p)``,
    PROVE_TAC [SIGMA_ALGEBRA_ALGEBRA, EVENTS_SIGMA_ALGEBRA]);
 
 val PROB_EMPTY = store_thm
-  ("PROB_EMPTY",
-   ``!p. prob_space p ==> (prob p {} = 0)``,
-   PROVE_TAC [PROB_SPACE, POSITIVE_PROB]);
+  ("PROB_EMPTY", ``!p. prob_space p ==> (prob p {} = 0)``,
+    PROVE_TAC [PROB_SPACE, POSITIVE_PROB]);
 
 val PROB_UNIV = store_thm
-  ("PROB_UNIV",
-   ``!p. prob_space p ==> (prob p (p_space p) = 1)``,
-   RW_TAC std_ss [PROB_SPACE]);
+  ("PROB_UNIV", ``!p. prob_space p ==> (prob p (p_space p) = 1)``,
+    RW_TAC std_ss [PROB_SPACE]);
 
 val PROB_SPACE_POSITIVE = store_thm
-  ("PROB_SPACE_POSITIVE",
-   ``!p. prob_space p ==> positive p``,
-   RW_TAC std_ss [PROB_SPACE]);
+  ("PROB_SPACE_POSITIVE", ``!p. prob_space p ==> positive p``,
+    RW_TAC std_ss [PROB_SPACE]);
 
 val PROB_SPACE_COUNTABLY_ADDITIVE = store_thm
-  ("PROB_SPACE_COUNTABLY_ADDITIVE",
-   ``!p. prob_space p ==> countably_additive p``,
-   RW_TAC std_ss [PROB_SPACE]);
+  ("PROB_SPACE_COUNTABLY_ADDITIVE", ``!p. prob_space p ==> countably_additive p``,
+    RW_TAC std_ss [PROB_SPACE]);
 
 val PROB_SPACE_ADDITIVE = store_thm
-  ("PROB_SPACE_ADDITIVE",
-  ``!p. prob_space p ==> additive p``,
+  ("PROB_SPACE_ADDITIVE", ``!p. prob_space p ==> additive p``,
     rpt STRIP_TAC
  >> MATCH_MP_TAC (REWRITE_RULE [premeasure_def] ALGEBRA_PREMEASURE_ADDITIVE)
  >> IMP_RES_TAC EVENTS_ALGEBRA
@@ -269,21 +263,20 @@ val PROB_SPACE_ADDITIVE = store_thm
 
 val PROB_SPACE_INCREASING = store_thm
   ("PROB_SPACE_INCREASING",
-   ``!p. prob_space p ==> increasing p``,
-   PROVE_TAC [ADDITIVE_INCREASING, EVENTS_ALGEBRA, PROB_SPACE_ADDITIVE,
-              PROB_SPACE_POSITIVE, events_def, p_space_def]);
+  ``!p. prob_space p ==> increasing p``,
+    PROVE_TAC [ADDITIVE_INCREASING, EVENTS_ALGEBRA, PROB_SPACE_ADDITIVE,
+               PROB_SPACE_POSITIVE, events_def, p_space_def]);
 
 val PROB_POSITIVE = store_thm
   ("PROB_POSITIVE",
-   ``!p s. prob_space p /\ s IN events p ==> 0 <= prob p s``,
-   PROVE_TAC [POSITIVE_PROB, PROB_SPACE_POSITIVE]);
+  ``!p s. prob_space p /\ s IN events p ==> 0 <= prob p s``,
+    PROVE_TAC [POSITIVE_PROB, PROB_SPACE_POSITIVE]);
 
 val PROB_INCREASING = store_thm
   ("PROB_INCREASING",
-   ``!p s t.
-       prob_space p /\ s IN events p /\ t IN events p /\ s SUBSET t ==>
-       prob p s <= prob p t``,
-   PROVE_TAC [INCREASING_PROB, PROB_SPACE_INCREASING]);
+  ``!p s t. prob_space p /\ s IN events p /\ t IN events p /\ s SUBSET t ==>
+            prob p s <= prob p t``,
+    PROVE_TAC [INCREASING_PROB, PROB_SPACE_INCREASING]);
 
 val PROB_ADDITIVE = store_thm
   ("PROB_ADDITIVE",
@@ -300,22 +293,20 @@ val PROB_ADDITIVE = store_thm
 
 val PROB_COUNTABLY_ADDITIVE = store_thm
   ("PROB_COUNTABLY_ADDITIVE",
-   ``!p s f.
-       prob_space p /\ f IN (UNIV -> events p) /\
-       (!m n. ~(m = n) ==> DISJOINT (f m) (f n)) /\
-       (s = BIGUNION (IMAGE f UNIV)) ==>
-       (prob p s = suminf (prob p o f))``,
-   RW_TAC std_ss []
-   >> Suff `BIGUNION (IMAGE f UNIV) IN events p`
-   >- PROVE_TAC [COUNTABLY_ADDITIVE_PROB, PROB_SPACE_COUNTABLY_ADDITIVE]
-   >> (MATCH_MP_TAC o REWRITE_RULE [subsets_def, space_def] o
-        Q.SPECL [`(p_space p, events p)`,`f`]) SIGMA_ALGEBRA_ENUM
-   >> PROVE_TAC [EVENTS_SIGMA_ALGEBRA]);
+  ``!p s f. prob_space p /\ f IN (UNIV -> events p) /\
+           (!m n. m <> n ==> DISJOINT (f m) (f n)) /\ (s = BIGUNION (IMAGE f UNIV)) ==>
+           (prob p s = suminf (prob p o f))``,
+    RW_TAC std_ss []
+ >> Suff `BIGUNION (IMAGE f UNIV) IN events p`
+ >- PROVE_TAC [COUNTABLY_ADDITIVE_PROB, PROB_SPACE_COUNTABLY_ADDITIVE]
+ >> (MATCH_MP_TAC o REWRITE_RULE [subsets_def, space_def] o
+     Q.SPECL [`(p_space p, events p)`,`f`]) SIGMA_ALGEBRA_ENUM
+ >> PROVE_TAC [EVENTS_SIGMA_ALGEBRA]);
 
 val PROB_FINITE = store_thm
   ("PROB_FINITE",
   ``!p s. prob_space p /\ s IN events p ==> (prob p s <> NegInf /\ prob p s <> PosInf)``,
-    RW_TAC std_ss [prob_space_def,prob_def,events_def,positive_not_infty,MEASURE_SPACE_POSITIVE]
+    RW_TAC std_ss [prob_space_def, prob_def, events_def, positive_not_infty, MEASURE_SPACE_POSITIVE]
  >> RW_TAC std_ss [GSYM le_infty,GSYM extreal_lt_def]
  >> MATCH_MP_TAC let_trans
  >> Q.EXISTS_TAC `measure p (p_space p)`
@@ -325,263 +316,261 @@ val PROB_FINITE = store_thm
                MEASURE_SPACE_MSPACE_MEASURABLE,p_space_def]);
 
 val PROB_COMPL = store_thm
- ("PROB_COMPL", ``!p s. prob_space p /\ s IN events p
-       ==> (prob p (p_space p DIFF s) = 1 - prob p s)``,
-  METIS_TAC [MEASURE_SPACE_FINITE_DIFF,PROB_FINITE,prob_space_def,events_def,prob_def,p_space_def]);
+  ("PROB_COMPL",
+  ``!p s. prob_space p /\ s IN events p ==> (prob p (p_space p DIFF s) = 1 - prob p s)``,
+    METIS_TAC [MEASURE_SPACE_FINITE_DIFF, PROB_FINITE,
+	       prob_space_def, events_def, prob_def, p_space_def]);
 
 val PROB_INDEP = store_thm
-("PROB_INDEP", ``!p s t u. indep p s t /\ (u = s INTER t)
-       ==> (prob p u = prob p s * prob p t)``,
-  RW_TAC std_ss [indep_def]);
+  ("PROB_INDEP",
+  ``!p s t u. indep p s t /\ (u = s INTER t) ==> (prob p u = prob p s * prob p t)``,
+    RW_TAC std_ss [indep_def]);
 
 val PSPACE = store_thm
-("PSPACE", ``!a b c. p_space (a, b, c) = a``,
-  RW_TAC std_ss [p_space_def, m_space_def]);
+  ("PSPACE", ``!a b c. p_space (a, b, c) = a``,
+    RW_TAC std_ss [p_space_def, m_space_def]);
 
 val EVENTS = store_thm
-("EVENTS", ``!a b c. events (a, b, c) = b``,
-  RW_TAC std_ss [events_def, measurable_sets_def]);
+  ("EVENTS", ``!a b c. events (a, b, c) = b``,
+    RW_TAC std_ss [events_def, measurable_sets_def]);
 
 val PROB = store_thm
-("PROB", ``!a b c. prob (a, b, c) = c``,
-  RW_TAC std_ss [prob_def, measure_def]);
+  ("PROB", ``!a b c. prob (a, b, c) = c``,
+    RW_TAC std_ss [prob_def, measure_def]);
 
 val EVENTS_INTER = store_thm
-("EVENTS_INTER", ``!p s t. prob_space p /\ s IN events p /\ t IN events p
-                    ==> s INTER t IN events p``,
+  ("EVENTS_INTER",
+  ``!p s t. prob_space p /\ s IN events p /\ t IN events p ==> s INTER t IN events p``,
   RW_TAC std_ss []
   >> (MATCH_MP_TAC o REWRITE_RULE [subsets_def, space_def] o
       Q.SPEC `(p_space p, events p)`) ALGEBRA_INTER
   >> PROVE_TAC [PROB_SPACE, SIGMA_ALGEBRA_ALGEBRA]);
 
 val EVENTS_EMPTY = store_thm
-("EVENTS_EMPTY", ``!p. prob_space p ==> {} IN events p``,
+  ("EVENTS_EMPTY", ``!p. prob_space p ==> {} IN events p``,
   RW_TAC std_ss []
   >> (MATCH_MP_TAC o REWRITE_RULE [subsets_def, space_def] o
       Q.SPEC `(p_space p, events p)`) ALGEBRA_EMPTY
   >> PROVE_TAC [SIGMA_ALGEBRA_ALGEBRA, PROB_SPACE]);
 
 val EVENTS_SPACE = store_thm
-("EVENTS_SPACE", ``!p. prob_space p ==> (p_space p) IN events p``,
-  RW_TAC std_ss []
-  >> (MATCH_MP_TAC o REWRITE_RULE [subsets_def, space_def] o
-      Q.SPEC `(p_space p, events p)`) ALGEBRA_SPACE
-  >> PROVE_TAC [SIGMA_ALGEBRA_ALGEBRA, PROB_SPACE]);
+  ("EVENTS_SPACE", ``!p. prob_space p ==> (p_space p) IN events p``,
+    RW_TAC std_ss []
+ >> (MATCH_MP_TAC o REWRITE_RULE [subsets_def, space_def] o
+     Q.SPEC `(p_space p, events p)`) ALGEBRA_SPACE
+ >> PROVE_TAC [SIGMA_ALGEBRA_ALGEBRA, PROB_SPACE]);
 
 val EVENTS_UNION = store_thm
-("EVENTS_UNION", ``!p s t. prob_space p /\ s IN events p /\ t IN events p
-                    ==> s UNION t IN events p``,
-  RW_TAC std_ss []
-  >> (MATCH_MP_TAC o REWRITE_RULE [subsets_def, space_def] o
-      Q.SPEC `(p_space p, events p)`) ALGEBRA_UNION
-  >> PROVE_TAC [PROB_SPACE, SIGMA_ALGEBRA_ALGEBRA]);
+  ("EVENTS_UNION",
+  ``!p s t. prob_space p /\ s IN events p /\ t IN events p ==> s UNION t IN events p``,
+    RW_TAC std_ss []
+ >> (MATCH_MP_TAC o REWRITE_RULE [subsets_def, space_def] o
+     Q.SPEC `(p_space p, events p)`) ALGEBRA_UNION
+ >> PROVE_TAC [PROB_SPACE, SIGMA_ALGEBRA_ALGEBRA]);
 
 val INDEP_EMPTY = store_thm
-("INDEP_EMPTY", ``!p s. prob_space p /\ s IN events p ==> indep p {} s``,
-  RW_TAC std_ss [indep_def, EVENTS_EMPTY, PROB_EMPTY, INTER_EMPTY,mul_lzero]);
+  ("INDEP_EMPTY", ``!p s. prob_space p /\ s IN events p ==> indep p {} s``,
+    RW_TAC std_ss [indep_def, EVENTS_EMPTY, PROB_EMPTY, INTER_EMPTY,mul_lzero]);
 
 val INTER_PSPACE = store_thm
-("INTER_PSPACE", ``!p s. prob_space p /\ s IN events p ==> (p_space p INTER s = s)``,
-  RW_TAC std_ss [PROB_SPACE, SIGMA_ALGEBRA, space_def, subsets_def, subset_class_def, SUBSET_DEF]
-  >> RW_TAC std_ss [Once EXTENSION, IN_INTER]
-  >> PROVE_TAC []);
+  ("INTER_PSPACE", ``!p s. prob_space p /\ s IN events p ==> (p_space p INTER s = s)``,
+    RW_TAC std_ss [PROB_SPACE, SIGMA_ALGEBRA, space_def, subsets_def, subset_class_def,
+		   SUBSET_DEF]
+ >> RW_TAC std_ss [Once EXTENSION, IN_INTER]
+ >> PROVE_TAC []);
 
 val INDEP_SPACE = store_thm
-("INDEP_SPACE", ``!p s. prob_space p /\ s IN events p ==> indep p (p_space p) s``,
-  RW_TAC std_ss [indep_def, EVENTS_SPACE, PROB_UNIV, INTER_PSPACE,mul_lone]);
+  ("INDEP_SPACE", ``!p s. prob_space p /\ s IN events p ==> indep p (p_space p) s``,
+    RW_TAC std_ss [indep_def, EVENTS_SPACE, PROB_UNIV, INTER_PSPACE,mul_lone]);
 
 val EVENTS_DIFF = store_thm
-("EVENTS_DIFF", ``!p s t. prob_space p /\ s IN events p /\ t IN events p
-                    ==> s DIFF t IN events p``,
-  RW_TAC std_ss []
-  >> (MATCH_MP_TAC o REWRITE_RULE [subsets_def, space_def] o
-      Q.SPEC `(p_space p, events p)`) ALGEBRA_DIFF
-  >> PROVE_TAC [PROB_SPACE, SIGMA_ALGEBRA_ALGEBRA]);
+  ("EVENTS_DIFF",
+  ``!p s t. prob_space p /\ s IN events p /\ t IN events p ==> s DIFF t IN events p``,
+    RW_TAC std_ss []
+ >> (MATCH_MP_TAC o REWRITE_RULE [subsets_def, space_def] o
+     Q.SPEC `(p_space p, events p)`) ALGEBRA_DIFF
+ >> PROVE_TAC [PROB_SPACE, SIGMA_ALGEBRA_ALGEBRA]);
 
 val EVENTS_COMPL = store_thm
-("EVENTS_COMPL", ``!p s. prob_space p /\ s IN events p
-                    ==> (p_space p) DIFF s IN events p``,
-  RW_TAC std_ss []
-  >> (MATCH_MP_TAC o REWRITE_RULE [subsets_def, space_def] o
-      Q.SPEC `(p_space p, events p)`) ALGEBRA_COMPL
-  >> PROVE_TAC [PROB_SPACE, SIGMA_ALGEBRA_ALGEBRA]);
+  ("EVENTS_COMPL", ``!p s. prob_space p /\ s IN events p ==> (p_space p) DIFF s IN events p``,
+    RW_TAC std_ss []
+ >> (MATCH_MP_TAC o REWRITE_RULE [subsets_def, space_def] o
+     Q.SPEC `(p_space p, events p)`) ALGEBRA_COMPL
+ >> PROVE_TAC [PROB_SPACE, SIGMA_ALGEBRA_ALGEBRA]);
 
 val EVENTS_COUNTABLE_UNION = store_thm
-("EVENTS_COUNTABLE_UNION", ``!p c. prob_space p /\ c SUBSET events p /\ countable c
-                              ==> BIGUNION c IN events p``,
-  RW_TAC std_ss []
-  >> (MATCH_MP_TAC o REWRITE_RULE [subsets_def, space_def] o
-      Q.SPEC `(p_space p, events p)`) SIGMA_ALGEBRA_COUNTABLE_UNION
-  >> RW_TAC std_ss [EVENTS_SIGMA_ALGEBRA]);
+  ("EVENTS_COUNTABLE_UNION",
+  ``!p c. prob_space p /\ c SUBSET events p /\ countable c ==> BIGUNION c IN events p``,
+    RW_TAC std_ss []
+ >> (MATCH_MP_TAC o REWRITE_RULE [subsets_def, space_def] o
+     Q.SPEC `(p_space p, events p)`) SIGMA_ALGEBRA_COUNTABLE_UNION
+ >> RW_TAC std_ss [EVENTS_SIGMA_ALGEBRA]);
 
 val PROB_ZERO_UNION = store_thm
-("PROB_ZERO_UNION", ``!p s t. prob_space p /\ s IN events p /\ t IN events p /\ (prob p t = 0)
-                       ==> (prob p (s UNION t) = prob p s)``,
-  RW_TAC std_ss []
-  >> Know `t DIFF s IN events p`
-  >- (MATCH_MP_TAC EVENTS_DIFF
-      >> RW_TAC std_ss [])
-  >> STRIP_TAC
-  >> Know `prob p (t DIFF s) = 0`
-  >- (ONCE_REWRITE_TAC [GSYM le_antisym]
-      >> Reverse CONJ_TAC >- PROVE_TAC [PROB_POSITIVE]
-      >> Q.PAT_X_ASSUM `prob p t = 0` (ONCE_REWRITE_TAC o wrap o SYM)
-      >> MATCH_MP_TAC PROB_INCREASING
-      >> RW_TAC std_ss [DIFF_SUBSET])
-  >> STRIP_TAC
-  >> Suff `prob p (s UNION t) = prob p s + prob p (t DIFF s)`
-  >- RW_TAC real_ss [add_rzero]
-  >> MATCH_MP_TAC PROB_ADDITIVE
-  >> RW_TAC std_ss [DISJOINT_DEF, DIFF_DEF, EXTENSION, IN_UNION, IN_DIFF, NOT_IN_EMPTY, IN_INTER]
-  >> PROVE_TAC []);
+  ("PROB_ZERO_UNION",
+  ``!p s t. prob_space p /\ s IN events p /\ t IN events p /\ (prob p t = 0) ==>
+           (prob p (s UNION t) = prob p s)``,
+    RW_TAC std_ss []
+ >> Know `t DIFF s IN events p`
+ >- (MATCH_MP_TAC EVENTS_DIFF >> RW_TAC std_ss [])
+ >> STRIP_TAC
+ >> Know `prob p (t DIFF s) = 0`
+ >- (ONCE_REWRITE_TAC [GSYM le_antisym]
+     >> Reverse CONJ_TAC >- PROVE_TAC [PROB_POSITIVE]
+     >> Q.PAT_X_ASSUM `prob p t = 0` (ONCE_REWRITE_TAC o wrap o SYM)
+     >> MATCH_MP_TAC PROB_INCREASING
+     >> RW_TAC std_ss [DIFF_SUBSET])
+ >> STRIP_TAC
+ >> Suff `prob p (s UNION t) = prob p s + prob p (t DIFF s)`
+ >- RW_TAC real_ss [add_rzero]
+ >> MATCH_MP_TAC PROB_ADDITIVE
+ >> RW_TAC std_ss [DISJOINT_DEF, DIFF_DEF, EXTENSION, IN_UNION, IN_DIFF, NOT_IN_EMPTY, IN_INTER]
+ >> PROVE_TAC []);
 
 val PROB_EQ_COMPL = store_thm
-("PROB_EQ_COMPL", ``!p s t. prob_space p /\ s IN events p /\ t IN events p /\
-                           (prob p (p_space p DIFF s) = prob p (p_space p DIFF t))
-                             ==> (prob p s = prob p t)``,
-  RW_TAC std_ss []
-  >> Know `1 - prob p s = 1 - prob p t`
-  >- (POP_ASSUM MP_TAC
-      >> RW_TAC std_ss [PROB_COMPL])
-  >> `?r1 r2. (prob p t = Normal r1) /\ (prob p s = Normal r2)`
-    by METIS_TAC [extreal_cases,PROB_FINITE]
-  >> FULL_SIMP_TAC std_ss [extreal_of_num_def,extreal_sub_def,extreal_11]
-  >> REAL_ARITH_TAC);
+  ("PROB_EQ_COMPL",
+  ``!p s t. prob_space p /\ s IN events p /\ t IN events p /\
+           (prob p (p_space p DIFF s) = prob p (p_space p DIFF t)) ==> (prob p s = prob p t)``,
+    RW_TAC std_ss []
+ >> Know `1 - prob p s = 1 - prob p t`
+ >- (POP_ASSUM MP_TAC >> RW_TAC std_ss [PROB_COMPL])
+ >> `?r1 r2. (prob p t = Normal r1) /\ (prob p s = Normal r2)`
+     by METIS_TAC [extreal_cases,PROB_FINITE]
+ >> FULL_SIMP_TAC std_ss [extreal_of_num_def,extreal_sub_def,extreal_11]
+ >> REAL_ARITH_TAC);
 
 val PROB_ONE_INTER = store_thm
-("PROB_ONE_INTER", ``!p s t. prob_space p /\ s IN events p /\ t IN events p /\ (prob p t = 1)
-                         ==> (prob p (s INTER t) = prob p s)``,
-  RW_TAC std_ss []
-  >> MATCH_MP_TAC PROB_EQ_COMPL
-  >> RW_TAC std_ss [EVENTS_INTER]
-  >> Know `p_space p DIFF s INTER t = (p_space p DIFF s) UNION (p_space p DIFF t)`
-  >- (RW_TAC std_ss [Once EXTENSION, IN_INTER, IN_UNION, IN_DIFF]
-      >> DECIDE_TAC)
-  >> RW_TAC std_ss [] >> POP_ASSUM (K ALL_TAC)
-  >> MATCH_MP_TAC PROB_ZERO_UNION
-  >> RW_TAC std_ss [PROB_COMPL, EVENTS_COMPL]
-  >> RW_TAC real_ss [extreal_of_num_def,extreal_sub_def]);
+  ("PROB_ONE_INTER",
+  ``!p s t. prob_space p /\ s IN events p /\ t IN events p /\ (prob p t = 1) ==>
+           (prob p (s INTER t) = prob p s)``,
+    RW_TAC std_ss []
+ >> MATCH_MP_TAC PROB_EQ_COMPL
+ >> RW_TAC std_ss [EVENTS_INTER]
+ >> Know `p_space p DIFF s INTER t = (p_space p DIFF s) UNION (p_space p DIFF t)`
+ >- (RW_TAC std_ss [Once EXTENSION, IN_INTER, IN_UNION, IN_DIFF]
+     >> DECIDE_TAC)
+ >> RW_TAC std_ss [] >> POP_ASSUM (K ALL_TAC)
+ >> MATCH_MP_TAC PROB_ZERO_UNION
+ >> RW_TAC std_ss [PROB_COMPL, EVENTS_COMPL]
+ >> RW_TAC real_ss [extreal_of_num_def,extreal_sub_def]);
 
 val EVENTS_COUNTABLE_INTER = store_thm
-("EVENTS_COUNTABLE_INTER",
- ``!p c. prob_space p /\ c SUBSET events p /\ countable c /\ (~(c={}))
-                               ==> BIGINTER c IN events p``,
-  RW_TAC std_ss []
-  >> Know `BIGINTER c = p_space p DIFF (p_space p DIFF (BIGINTER c))`
-  >- (ONCE_REWRITE_TAC [EXTENSION] >> RW_TAC std_ss [IN_DIFF, LEFT_AND_OVER_OR, IN_BIGINTER]
-      >> FULL_SIMP_TAC std_ss [PROB_SPACE, SIGMA_ALGEBRA, subset_class_def,
-                               subsets_def, space_def, SUBSET_DEF]
-      >> EQ_TAC
-      >- (Know `(c = {}) \/ ?x t. (c = x INSERT t) /\ ~(x IN t)` >- PROVE_TAC [SET_CASES]
-          >> RW_TAC std_ss []
-          >> PROVE_TAC [IN_INSERT])
-      >> PROVE_TAC [])
-  >> Rewr'
-  >> MATCH_MP_TAC EVENTS_COMPL
-  >> Know `p_space p DIFF BIGINTER c = BIGUNION (IMAGE (\s. p_space p DIFF s) c)`
-  >- (ONCE_REWRITE_TAC [EXTENSION] >> RW_TAC std_ss [IN_DIFF, IN_BIGUNION, IN_IMAGE, IN_BIGINTER]
-      >> EQ_TAC
-      >- (RW_TAC std_ss [] >> Q.EXISTS_TAC `p_space p DIFF P`
-          >> RW_TAC std_ss [IN_DIFF] >> Q.EXISTS_TAC `P`
-          >> RW_TAC std_ss [])
-      >> RW_TAC std_ss []
-      >- FULL_SIMP_TAC std_ss [IN_DIFF]
-      >> Q.EXISTS_TAC `s'`
-      >> FULL_SIMP_TAC std_ss [IN_DIFF])
-   >> RW_TAC std_ss [] >> POP_ASSUM (K ALL_TAC)
-   >> MATCH_MP_TAC EVENTS_COUNTABLE_UNION
-   >> Q.PAT_X_ASSUM `c SUBSET events p` MP_TAC
-   >> RW_TAC std_ss [image_countable, SUBSET_DEF, IN_IMAGE]
-   >> PROVE_TAC [EVENTS_COMPL]);
+  ("EVENTS_COUNTABLE_INTER",
+  ``!p c. prob_space p /\ c SUBSET events p /\ countable c /\ c <> {} ==>
+          BIGINTER c IN events p``,
+    RW_TAC std_ss []
+ >> Know `BIGINTER c = p_space p DIFF (p_space p DIFF (BIGINTER c))`
+ >- (ONCE_REWRITE_TAC [EXTENSION] >> RW_TAC std_ss [IN_DIFF, LEFT_AND_OVER_OR, IN_BIGINTER]
+     >> FULL_SIMP_TAC std_ss [PROB_SPACE, SIGMA_ALGEBRA, subset_class_def,
+                              subsets_def, space_def, SUBSET_DEF]
+     >> EQ_TAC
+     >- (Know `(c = {}) \/ ?x t. (c = x INSERT t) /\ ~(x IN t)` >- PROVE_TAC [SET_CASES]
+         >> RW_TAC std_ss []
+         >> PROVE_TAC [IN_INSERT])
+     >> PROVE_TAC [])
+ >> Rewr'
+ >> MATCH_MP_TAC EVENTS_COMPL
+ >> Know `p_space p DIFF BIGINTER c = BIGUNION (IMAGE (\s. p_space p DIFF s) c)`
+ >- (ONCE_REWRITE_TAC [EXTENSION] >> RW_TAC std_ss [IN_DIFF, IN_BIGUNION, IN_IMAGE, IN_BIGINTER]
+     >> EQ_TAC
+     >- (RW_TAC std_ss [] >> Q.EXISTS_TAC `p_space p DIFF P`
+         >> RW_TAC std_ss [IN_DIFF] >> Q.EXISTS_TAC `P`
+         >> RW_TAC std_ss [])
+     >> RW_TAC std_ss []
+     >- FULL_SIMP_TAC std_ss [IN_DIFF]
+     >> Q.EXISTS_TAC `s'`
+     >> FULL_SIMP_TAC std_ss [IN_DIFF])
+ >> RW_TAC std_ss [] >> POP_ASSUM (K ALL_TAC)
+ >> MATCH_MP_TAC EVENTS_COUNTABLE_UNION
+ >> Q.PAT_X_ASSUM `c SUBSET events p` MP_TAC
+ >> RW_TAC std_ss [image_countable, SUBSET_DEF, IN_IMAGE]
+ >> PROVE_TAC [EVENTS_COMPL]);
 
 val ABS_PROB = store_thm
-("ABS_PROB", ``!p s. prob_space p /\ s IN events p
-                ==> (abs (prob p s) = prob p s)``,
-  RW_TAC std_ss [extreal_abs_def]
-  >> PROVE_TAC [PROB_POSITIVE,abs_refl]);
+  ("ABS_PROB", ``!p s. prob_space p /\ s IN events p ==> (abs (prob p s) = prob p s)``,
+    RW_TAC std_ss [extreal_abs_def]
+ >> PROVE_TAC [PROB_POSITIVE,abs_refl]);
 
 val PROB_COMPL_LE1 = store_thm
-("PROB_COMPL_LE1", ``!p s r. prob_space p /\ s IN events p
-                      ==> (prob p (p_space p DIFF s) <= r = 1 - r <= prob p s)``,
-  RW_TAC std_ss [PROB_COMPL]
-  >> METIS_TAC [sub_le_switch2,PROB_FINITE,num_not_infty]);
+  ("PROB_COMPL_LE1",
+  ``!p s r. prob_space p /\ s IN events p ==>
+           (prob p (p_space p DIFF s) <= r = 1 - r <= prob p s)``,
+    RW_TAC std_ss [PROB_COMPL]
+ >> METIS_TAC [sub_le_switch2,PROB_FINITE,num_not_infty]);
 
 val PROB_LE_1 = store_thm
-("PROB_LE_1", ``!p s. prob_space p /\ s IN events p ==> prob p s <= 1``,
-  RW_TAC std_ss []
-  >> Suff `0 <= 1 - prob p s` >- METIS_TAC [sub_zero_le,PROB_FINITE]
-  >> RW_TAC std_ss [GSYM PROB_COMPL]
-  >> RW_TAC std_ss [EVENTS_COMPL, PROB_POSITIVE]);
+  ("PROB_LE_1", ``!p s. prob_space p /\ s IN events p ==> prob p s <= 1``,
+    RW_TAC std_ss []
+ >> Suff `0 <= 1 - prob p s` >- METIS_TAC [sub_zero_le,PROB_FINITE]
+ >> RW_TAC std_ss [GSYM PROB_COMPL]
+ >> RW_TAC std_ss [EVENTS_COMPL, PROB_POSITIVE]);
 
 val PROB_EQ_BIGUNION_IMAGE = store_thm
-("PROB_EQ_BIGUNION_IMAGE", ``!p. prob_space p /\ f IN (UNIV -> events p) /\
-                                 g IN (UNIV -> events p) /\
+  ("PROB_EQ_BIGUNION_IMAGE",
+  ``!p. prob_space p /\ f IN (UNIV -> events p) /\ g IN (UNIV -> events p) /\
        (!m n. ~(m = n) ==> DISJOINT (f m) (f n)) /\
        (!m n. ~(m = n) ==> DISJOINT (g m) (g n)) /\
        (!n: num. prob p (f n) = prob p (g n)) ==>
        (prob p (BIGUNION (IMAGE f UNIV)) = prob p (BIGUNION (IMAGE g UNIV)))``,
-   RW_TAC std_ss []
-   >> Know `prob p (BIGUNION (IMAGE f UNIV)) = suminf (prob p o f)`
-   >- PROVE_TAC [PROB_COUNTABLY_ADDITIVE]
-   >> Know `prob p (BIGUNION (IMAGE g UNIV)) = suminf (prob p o g)`
-   >- PROVE_TAC [PROB_COUNTABLY_ADDITIVE]
-   >> METIS_TAC [o_DEF]);
+    RW_TAC std_ss []
+ >> Know `prob p (BIGUNION (IMAGE f UNIV)) = suminf (prob p o f)`
+ >- PROVE_TAC [PROB_COUNTABLY_ADDITIVE]
+ >> Know `prob p (BIGUNION (IMAGE g UNIV)) = suminf (prob p o g)`
+ >- PROVE_TAC [PROB_COUNTABLY_ADDITIVE]
+ >> METIS_TAC [o_DEF]);
 
 val PROB_FINITELY_ADDITIVE = store_thm
   ("PROB_FINITELY_ADDITIVE",
-   ``!p s f n.
-       prob_space p /\ f IN ((count n) -> events p) /\
-       (!a b. a < n /\ b < n /\ ~(a = b) ==> DISJOINT (f a) (f b)) /\
-       (s = BIGUNION (IMAGE f (count n))) ==>
-        (prob p s = SIGMA (prob p o f) (count n))``,
-  RW_TAC std_ss [IN_FUNSET, IN_COUNT]
-  >> Suff `(ext_suminf (prob p o (\m. if m < n then f m else {})) = prob p (BIGUNION (IMAGE f (count n)))) /\
-           (ext_suminf (prob p o (\m. if m < n then f m else {})) = SIGMA (prob p o f) (count n))`
-  >- METIS_TAC []
-  >> Reverse CONJ_TAC
-  >- (Know `SIGMA (prob p o f) (count n) = SIGMA (prob p o (\m. (if m < n then f m else {}))) (count n)`
-      >- ((MATCH_MP_TAC o REWRITE_RULE [FINITE_COUNT] o Q.ISPEC `count n`) EXTREAL_SUM_IMAGE_EQ
-          >> RW_TAC std_ss [IN_COUNT]
-          >> METIS_TAC [PROB_FINITE])
-      >> RW_TAC std_ss []
-      >> MATCH_MP_TAC ext_suminf_sum
-      >> RW_TAC std_ss [PROB_EMPTY,PROB_POSITIVE,le_refl]
-      >> METIS_TAC [NOT_LESS])
-  >> Know `BIGUNION (IMAGE f (count n)) = BIGUNION (IMAGE (\m. (if m < n then f m else {})) UNIV)`
-  >- (RW_TAC std_ss [EXTENSION,IN_BIGUNION_IMAGE, IN_COUNT, IN_UNIV]
-      >> METIS_TAC [NOT_IN_EMPTY])
-  >> Rewr
-  >> MATCH_MP_TAC (GSYM PROB_COUNTABLY_ADDITIVE)
-  >> RW_TAC std_ss [IN_FUNSET, IN_UNIV, DISJOINT_EMPTY]
-  >> METIS_TAC [EVENTS_EMPTY]);
+  ``!p s f n. prob_space p /\ f IN ((count n) -> events p) /\
+             (!a b. a < n /\ b < n /\ ~(a = b) ==> DISJOINT (f a) (f b)) /\
+             (s = BIGUNION (IMAGE f (count n))) ==>
+             (prob p s = SIGMA (prob p o f) (count n))``,
+ (* proof *)
+    RW_TAC std_ss [IN_FUNSET, IN_COUNT]
+ >> Suff `(ext_suminf (prob p o (\m. if m < n then f m else {})) =
+           prob p (BIGUNION (IMAGE f (count n)))) /\
+          (ext_suminf (prob p o (\m. if m < n then f m else {})) = SIGMA (prob p o f) (count n))`
+ >- METIS_TAC []
+ >> Reverse CONJ_TAC
+ >- (Know `SIGMA (prob p o f) (count n) = SIGMA (prob p o (\m. (if m < n then f m else {}))) (count n)`
+     >- ((MATCH_MP_TAC o REWRITE_RULE [FINITE_COUNT] o Q.ISPEC `count n`) EXTREAL_SUM_IMAGE_EQ
+         >> RW_TAC std_ss [IN_COUNT]
+         >> METIS_TAC [PROB_FINITE])
+     >> RW_TAC std_ss []
+     >> MATCH_MP_TAC ext_suminf_sum
+     >> RW_TAC std_ss [PROB_EMPTY,PROB_POSITIVE,le_refl]
+     >> METIS_TAC [NOT_LESS])
+ >> Know `BIGUNION (IMAGE f (count n)) = BIGUNION (IMAGE (\m. (if m < n then f m else {})) UNIV)`
+ >- (RW_TAC std_ss [EXTENSION,IN_BIGUNION_IMAGE, IN_COUNT, IN_UNIV]
+     >> METIS_TAC [NOT_IN_EMPTY])
+ >> Rewr
+ >> MATCH_MP_TAC (GSYM PROB_COUNTABLY_ADDITIVE)
+ >> RW_TAC std_ss [IN_FUNSET, IN_UNIV, DISJOINT_EMPTY]
+ >> METIS_TAC [EVENTS_EMPTY]);
 
 val ABS_1_MINUS_PROB = store_thm
   ("ABS_1_MINUS_PROB",
-  ``!p s.
-      prob_space p /\ s IN events p /\ ~(prob p s = 0) ==>
-      abs (1 - prob p s) < 1``,
-  RW_TAC std_ss []
-  >> Know `0 <= prob p s` >- PROVE_TAC [PROB_POSITIVE]
-  >> Know `prob p s <= 1` >- PROVE_TAC [PROB_LE_1]
-  >> `?r. prob p s = Normal r` by METIS_TAC [PROB_FINITE,extreal_cases]
-  >> FULL_SIMP_TAC std_ss [extreal_of_num_def,extreal_sub_def,extreal_abs_def,
-                           extreal_lt_eq,extreal_le_def,extreal_11]
-  >> RW_TAC std_ss [abs]
-  >> REPEAT (POP_ASSUM MP_TAC)
-  >> REAL_ARITH_TAC);
+ ``!p s. prob_space p /\ s IN events p /\ ~(prob p s = 0) ==> abs (1 - prob p s) < 1``,
+   RW_TAC std_ss []
+ >> Know `0 <= prob p s` >- PROVE_TAC [PROB_POSITIVE]
+ >> Know `prob p s <= 1` >- PROVE_TAC [PROB_LE_1]
+ >> `?r. prob p s = Normal r` by METIS_TAC [PROB_FINITE,extreal_cases]
+ >> FULL_SIMP_TAC std_ss [extreal_of_num_def,extreal_sub_def,extreal_abs_def,
+                          extreal_lt_eq,extreal_le_def,extreal_11]
+ >> RW_TAC std_ss [abs]
+ >> REPEAT (POP_ASSUM MP_TAC)
+ >> REAL_ARITH_TAC);
 
 val PROB_INCREASING_UNION = store_thm
   ("PROB_INCREASING_UNION",
-   ``!p f.
-       prob_space p /\ f IN (UNIV -> events p) /\ (!n. f n SUBSET f (SUC n)) ==>
-       (sup (IMAGE (prob p o f) UNIV) = prob p (BIGUNION (IMAGE f UNIV)))``,
-   RW_TAC std_ss [prob_space_def, events_def, prob_def, MONOTONE_CONVERGENCE]);
+  ``!p f. prob_space p /\ f IN (UNIV -> events p) /\ (!n. f n SUBSET f (SUC n)) ==>
+         (sup (IMAGE (prob p o f) UNIV) = prob p (BIGUNION (IMAGE f UNIV)))``,
+    RW_TAC std_ss [prob_space_def, events_def, prob_def, MONOTONE_CONVERGENCE]);
 
 val PROB_SUBADDITIVE = store_thm
   ("PROB_SUBADDITIVE",
-   ``!p t u.
-       prob_space p /\ t IN events p /\ u IN events p ==>
-       prob p (t UNION u) <= prob p t + prob p u``,
+  ``!p t u. prob_space p /\ t IN events p /\ u IN events p ==>
+            prob p (t UNION u) <= prob p t + prob p u``,
    RW_TAC std_ss []
    >> Know `t UNION u = t UNION (u DIFF t)`
    >- (SET_EQ_TAC
@@ -601,9 +590,8 @@ val PROB_SUBADDITIVE = store_thm
 
 val PROB_COUNTABLY_SUBADDITIVE = store_thm
   ("PROB_COUNTABLY_SUBADDITIVE",
-   ``!p f.
-       prob_space p /\ (IMAGE f UNIV) SUBSET events p ==>
-       prob p (BIGUNION (IMAGE f UNIV)) <= suminf (prob p o f)``,
+  ``!p f. prob_space p /\ (IMAGE f UNIV) SUBSET events p ==>
+          prob p (BIGUNION (IMAGE f UNIV)) <= suminf (prob p o f)``,
   RW_TAC std_ss [SUBSET_DEF, IN_IMAGE, IN_UNIV,ext_suminf_def]
   >> Suff `prob p (BIGUNION (IMAGE f UNIV)) = sup (IMAGE (prob p o (\n. BIGUNION (IMAGE f (count n)))) UNIV)`
   >- (RW_TAC std_ss []
@@ -673,25 +661,23 @@ val PROB_COUNTABLY_ZERO = store_thm
   >> RW_TAC std_ss []);
 
 val INDEP_SYM = store_thm
-  ("INDEP_SYM",
-  ``!p a b. prob_space p /\ indep p a b ==> indep p b a``,
-   RW_TAC std_ss [indep_def]
-   >> PROVE_TAC [mul_comm, INTER_COMM]);
+  ("INDEP_SYM", ``!p a b. prob_space p /\ indep p a b ==> indep p b a``,
+    RW_TAC std_ss [indep_def]
+ >> PROVE_TAC [mul_comm, INTER_COMM]);
 
-val INDEP_REFL = store_thm
+val INDEP_REFL = store_thm (* the simplest "0-1 law" *)
   ("INDEP_REFL",
-   ``!p a.
-       prob_space p /\ a IN events p ==>
-       (indep p a a = (prob p a = 0) \/ (prob p a = 1))``,
-  RW_TAC std_ss [indep_def, INTER_IDEMPOT]
-  >> `?r. prob p a = Normal r` by METIS_TAC [PROB_FINITE,extreal_cases]
-  >> RW_TAC std_ss [extreal_mul_def,extreal_of_num_def,extreal_11]
-  >> METIS_TAC [REAL_MUL_IDEMPOT]);
+  ``!p a. prob_space p /\ a IN events p ==>
+         (indep p a a = (prob p a = 0) \/ (prob p a = 1))``,
+    RW_TAC std_ss [indep_def, INTER_IDEMPOT]
+ >> `?r. prob p a = Normal r` by METIS_TAC [PROB_FINITE, extreal_cases]
+ >> RW_TAC std_ss [extreal_mul_def, extreal_of_num_def, extreal_11]
+ >> METIS_TAC [REAL_MUL_IDEMPOT]);
 
 val PROB_REAL_SUM_IMAGE = store_thm
   ("PROB_REAL_SUM_IMAGE",
-   ``!p s. prob_space p /\ s IN events p /\ (!x. x IN s ==> {x} IN events p) /\ FINITE s ==>
-                (prob p s = SIGMA (\x. prob p {x}) s)``,
+  ``!p s. prob_space p /\ s IN events p /\ (!x. x IN s ==> {x} IN events p) /\ FINITE s ==>
+         (prob p s = SIGMA (\x. prob p {x}) s)``,
   Suff `!s. FINITE s ==>
         (\s. !p. prob_space p /\ s IN events p /\ (!x. x IN s ==> {x} IN events p) ==>
              (prob p s = SIGMA (\x. prob p {x}) s)) s`
@@ -707,7 +693,8 @@ val PROB_REAL_SUM_IMAGE = store_thm
   >> RW_TAC std_ss []
   >> `s IN events p`
       by (`s = (e INSERT s) DIFF {e}`
-             by (RW_TAC std_ss [EXTENSION, IN_INSERT, IN_DIFF, IN_SING] >> METIS_TAC [GSYM DELETE_NON_ELEMENT])
+             by (RW_TAC std_ss [EXTENSION, IN_INSERT, IN_DIFF, IN_SING] \\
+                 METIS_TAC [GSYM DELETE_NON_ELEMENT])
           >> POP_ORW
           >> FULL_SIMP_TAC std_ss [prob_space_def, measure_space_def, sigma_algebra_def, events_def]
           >> METIS_TAC [space_def, subsets_def, ALGEBRA_DIFF])
@@ -718,9 +705,9 @@ val PROB_REAL_SUM_IMAGE = store_thm
 
 val PROB_EQUIPROBABLE_FINITE_UNIONS = store_thm
   ("PROB_EQUIPROBABLE_FINITE_UNIONS",
-   ``!p s. prob_space p /\ s IN events p /\ (!x. x IN s ==> {x} IN events p) /\ FINITE s /\
-           (!x y. x IN s /\ y IN s ==> (prob p {x} = prob p {y})) ==>
-                (prob p s = & (CARD s) * prob p {CHOICE s})``,
+  ``!p s. prob_space p /\ FINITE s /\ s IN events p /\ (!x. x IN s ==> {x} IN events p) /\
+         (!x y. x IN s /\ y IN s ==> (prob p {x} = prob p {y})) ==>
+         (prob p s = & (CARD s) * prob p {CHOICE s})``,
    RW_TAC std_ss []
    >> Cases_on `s = {}`
    >- RW_TAC real_ss [PROB_EMPTY, CARD_EMPTY,mul_lzero]
@@ -735,11 +722,11 @@ val PROB_EQUIPROBABLE_FINITE_UNIONS = store_thm
 
 val PROB_REAL_SUM_IMAGE_FN = store_thm
   ("PROB_REAL_SUM_IMAGE_FN",
-   ``!p f e s. prob_space p /\ e IN events p /\
-               (!x. x IN s ==> e INTER f x IN events p) /\ FINITE s /\
-                (!x y. x IN s /\ y IN s /\ (~(x=y)) ==> DISJOINT (f x) (f y)) /\
-                (BIGUNION (IMAGE f s) INTER p_space p = p_space p) ==>
-                (prob p e = SIGMA (\x. prob p (e INTER f x)) s)``,
+  ``!p f e s. prob_space p /\ e IN events p /\
+             (!x. x IN s ==> e INTER f x IN events p) /\ FINITE s /\
+             (!x y. x IN s /\ y IN s /\ (~(x=y)) ==> DISJOINT (f x) (f y)) /\
+             (BIGUNION (IMAGE f s) INTER p_space p = p_space p) ==>
+             (prob p e = SIGMA (\x. prob p (e INTER f x)) s)``,
    Suff `!(s :'b -> bool). FINITE s ==>
         (\s. !(p :('a -> bool) # (('a -> bool) -> bool) # (('a -> bool) -> extreal))
        (f :'b -> 'a -> bool) (e :'a -> bool). prob_space p /\ e IN events p /\
@@ -873,17 +860,17 @@ val PROB_REAL_SUM_IMAGE_FN = store_thm
    >> METIS_TAC []);
 
 val PROB_REAL_SUM_IMAGE_SPACE = store_thm
-  ("PROB_REAL_SUM_IMAGE_SPACE",``!p. prob_space p /\ (!x. x IN (p_space p) ==> {x} IN events p) /\
-                              FINITE (p_space p) ==>
-                             (SIGMA (\x. prob p {x}) (p_space p) = 1)``,
- RW_TAC std_ss []
+  ("PROB_REAL_SUM_IMAGE_SPACE",
+  ``!p. prob_space p /\ FINITE (p_space p) /\ (!x. x IN p_space p ==> {x} IN events p) ==>
+       (SIGMA (\x. prob p {x}) (p_space p) = 1)``,
+    RW_TAC std_ss []
  >> (MP_TAC o GSYM o Q.SPECL [`p`,`p_space p`]) PROB_REAL_SUM_IMAGE
  >> RW_TAC std_ss [EVENTS_SPACE,PROB_UNIV]);
 
 val PROB_DISCRETE_EVENTS = store_thm
-("PROB_DISCRETE_EVENTS",``!p. prob_space p /\ FINITE (p_space p) /\ (!x. x IN p_space p
-                              ==> {x} IN events p)
-                           ==> (!s. s SUBSET p_space p ==> s IN events p)``,
+  ("PROB_DISCRETE_EVENTS",
+  ``!p. prob_space p /\ FINITE (p_space p) /\ (!x. x IN p_space p ==> {x} IN events p) ==>
+        !s. s SUBSET p_space p ==> s IN events p``,
   RW_TAC std_ss []
   >> `s = BIGUNION ({{x} | x IN s})`
       by (RW_TAC std_ss [EXTENSION,IN_BIGUNION,GSPECIFICATION,IN_SING]
@@ -897,9 +884,9 @@ val PROB_DISCRETE_EVENTS = store_thm
   >> METIS_TAC [EVENTS_COUNTABLE_UNION,finite_countable]);
 
 val PROB_DISCRETE_EVENTS_COUNTABLE = store_thm
-("PROB_DISCRETE_EVENTS_COUNTABLE",``!p. prob_space p /\ countable (p_space p) /\
-                                   (!x. x IN p_space p ==> {x} IN events p) ==>
-                                   (!s. s SUBSET p_space p ==> s IN events p)``,
+  ("PROB_DISCRETE_EVENTS_COUNTABLE",
+  ``!p. prob_space p /\ countable (p_space p) /\ (!x. x IN p_space p ==> {x} IN events p) ==>
+        !s. s SUBSET p_space p ==> s IN events p``,
   RW_TAC std_ss []
   >> `s = BIGUNION ({{x} | x IN s})`
       by (RW_TAC std_ss [EXTENSION,IN_BIGUNION,GSPECIFICATION,IN_SING]
@@ -958,46 +945,47 @@ val marginal_joint_zero3 = store_thm
            prob p (PREIMAGE Z u INTER p_space p)`
            by METIS_TAC [PROB_INCREASING,INTER_SUBSET,IN_POW]
        >> METIS_TAC [PROB_POSITIVE,INTER_SUBSET,IN_POW,REAL_LE_ANTISYM]]);
+ *)
 
 val distribution_prob_space = store_thm
   ("distribution_prob_space",
-   ``!p X s. random_variable X p s ==>
-                prob_space (space s, subsets s, distribution p X)``,
-   RW_TAC std_ss [random_variable_def, distribution_def, prob_space_def, measure_def, PSPACE,
-                  measure_space_def, m_space_def, measurable_sets_def, IN_MEASURABLE,
-                  SPACE, positive_def, PREIMAGE_EMPTY, INTER_EMPTY, PROB_EMPTY,
-                  PROB_POSITIVE, space_def, subsets_def, countably_additive_def]
-   >- (Q.PAT_X_ASSUM `!f.
-            f IN (UNIV -> measurable_sets p) /\
-            (!m n. ~(m = n) ==> DISJOINT (f m) (f n)) /\
+  ``!p X s. random_variable X p s ==>
+            prob_space (space s, subsets s, distribution p X)``,
+    RW_TAC std_ss [random_variable_def, distribution_def, prob_space_def, measure_def, PSPACE,
+                   measure_space_def, m_space_def, measurable_sets_def, IN_MEASURABLE,
+                   SPACE, positive_def, PREIMAGE_EMPTY, INTER_EMPTY, PROB_EMPTY,
+                   PROB_POSITIVE, space_def, subsets_def, countably_additive_def]
+ >- (Q.PAT_X_ASSUM
+       `!f. f IN (UNIV -> measurable_sets p) /\
+            (!m n. m <> n ==> DISJOINT (f m) (f n)) /\
             BIGUNION (IMAGE f UNIV) IN measurable_sets p ==>
             (measure p (BIGUNION (IMAGE f univ(:num))) = suminf (measure p o f))`
-                (MP_TAC o Q.SPEC `(\x. PREIMAGE X x INTER p_space p) o f`)
-       >> RW_TAC std_ss [prob_def, o_DEF, PREIMAGE_BIGUNION, IMAGE_IMAGE]
-       >> `(BIGUNION (IMAGE (\x. PREIMAGE X (f x)) UNIV) INTER p_space p) =
-           (BIGUNION (IMAGE (\x. PREIMAGE X (f x) INTER p_space p) UNIV))`
-        by (RW_TAC std_ss [Once EXTENSION, IN_BIGUNION, IN_INTER, IN_IMAGE, IN_UNIV]
-            >> METIS_TAC [IN_INTER])
-       >> POP_ORW
-       >> POP_ASSUM MATCH_MP_TAC
-       >> FULL_SIMP_TAC std_ss [o_DEF, IN_FUNSET, IN_UNIV, events_def]
-       >> CONJ_TAC
-       >- (REPEAT STRIP_TAC
-            >> Suff `DISJOINT (PREIMAGE X (f m)) (PREIMAGE X (f n))`
-            >- (RW_TAC std_ss [IN_DISJOINT, IN_INTER] >> METIS_TAC [])
-            >> RW_TAC std_ss [PREIMAGE_DISJOINT])
-       >> Suff `BIGUNION (IMAGE (\x. PREIMAGE X (f x) INTER p_space p) UNIV) =
-                PREIMAGE X (BIGUNION (IMAGE f UNIV)) INTER p_space p`
-       >- RW_TAC std_ss []
-       >> RW_TAC std_ss [Once EXTENSION, IN_INTER, IN_BIGUNION, IN_IMAGE, IN_UNIV,
-                         IN_PREIMAGE, IN_BIGUNION]
-       >> METIS_TAC [IN_INTER, IN_PREIMAGE])
-   >> Suff `PREIMAGE X (space s) INTER p_space p = p_space p`
-   >- RW_TAC std_ss [prob_def]
-   >> FULL_SIMP_TAC std_ss [IN_FUNSET, EXTENSION, IN_PREIMAGE, IN_INTER]
-   >> METIS_TAC []);
+       (MP_TAC o Q.SPEC `(\x. PREIMAGE X x INTER p_space p) o f`) \\
+     RW_TAC std_ss [prob_def, o_DEF, PREIMAGE_BIGUNION, IMAGE_IMAGE] \\
+    `(BIGUNION (IMAGE (\x. PREIMAGE X (f x)) UNIV) INTER p_space p) =
+     (BIGUNION (IMAGE (\x. PREIMAGE X (f x) INTER p_space p) UNIV))`
+        by (RW_TAC std_ss [Once EXTENSION, IN_BIGUNION, IN_INTER, IN_IMAGE, IN_UNIV] \\
+            METIS_TAC [IN_INTER]) \\
+     POP_ORW \\
+     POP_ASSUM MATCH_MP_TAC \\
+     FULL_SIMP_TAC std_ss [o_DEF, IN_FUNSET, IN_UNIV, events_def] \\
+     CONJ_TAC
+     >- (rpt STRIP_TAC \\
+         Suff `DISJOINT (PREIMAGE X (f i)) (PREIMAGE X (f j))`
+         >- (RW_TAC std_ss [IN_DISJOINT, IN_INTER] >> METIS_TAC []) \\
+         RW_TAC std_ss [PREIMAGE_DISJOINT]) \\
+     Suff `BIGUNION (IMAGE (\x. PREIMAGE X (f x) INTER p_space p) UNIV) =
+           PREIMAGE X (BIGUNION (IMAGE f UNIV)) INTER p_space p`
+     >- RW_TAC std_ss [] \\
+     RW_TAC std_ss [Once EXTENSION, IN_INTER, IN_BIGUNION, IN_IMAGE, IN_UNIV,
+                    IN_PREIMAGE, IN_BIGUNION] \\
+     METIS_TAC [IN_INTER, IN_PREIMAGE])
+ >> Suff `PREIMAGE X (space s) INTER p_space p = p_space p`
+ >- RW_TAC std_ss [prob_def]
+ >> FULL_SIMP_TAC std_ss [IN_FUNSET, EXTENSION, IN_PREIMAGE, IN_INTER]
+ >> METIS_TAC []);
 
-
+(*
 val uniform_distribution_prob_space = store_thm
   ("uniform_distribution_prob_space",
    ``!X p s. FINITE (p_space p) /\ FINITE (space s) /\ random_variable X p s ==>
@@ -1029,7 +1017,7 @@ val uniform_distribution_prob_space = store_thm
   >> RW_TAC std_ss [GSYM REAL_ADD, REAL_ADD_RDISTRIB]);
 
 val distribution_partition = store_thm
-("distribution_partition",``!p X. prob_space p /\ (!x. x IN p_space p ==> {x} IN events p) /\
+  ("distribution_partition",``!p X. prob_space p /\ (!x. x IN p_space p ==> {x} IN events p) /\
          FINITE (p_space p) /\ random_variable X p Borel ==>
     (SIGMA (\x. distribution p X {x}) (IMAGE X (p_space p)) = 1)``,
   RW_TAC std_ss []
@@ -1049,10 +1037,11 @@ val distribution_partition = store_thm
   >> `(!x. x IN IMAGE X (m_space p) ==> {x} IN POW (IMAGE X (m_space p)))`
       by RW_TAC std_ss [IN_POW, SUBSET_DEF, IN_IMAGE, IN_SING]
   >> METIS_TAC []);
+ *)
 
 val distribution_lebesgue_thm1 = store_thm
   ("distribution_lebesgue_thm1",
-   ``!X p s A. random_variable X p s /\ A IN subsets s ==>
+ ``!X p s A. random_variable X p s /\ A IN subsets s ==>
              (distribution p X A = integral p (indicator_fn (PREIMAGE X A INTER p_space p)))``,
    RW_TAC std_ss [random_variable_def, prob_space_def, distribution_def, events_def,
                   IN_MEASURABLE,p_space_def, prob_def, subsets_def, space_def,
@@ -1060,22 +1049,22 @@ val distribution_lebesgue_thm1 = store_thm
 
 val distribution_lebesgue_thm2 = store_thm
   ("distribution_lebesgue_thm2",
-   ``!X p s A. random_variable X p s /\ A IN subsets s ==>
+  ``!X p s A. random_variable X p s /\ A IN subsets s ==>
              (distribution p X A = integral (space s, subsets s, distribution p X) (indicator_fn A))``,
-   REPEAT STRIP_TAC
-   >> `prob_space (space s,subsets s,distribution p X)`
-        by RW_TAC std_ss [distribution_prob_space]
-   >> Q.PAT_X_ASSUM `random_variable X p s` MP_TAC
-   >> RW_TAC std_ss [random_variable_def, prob_space_def, distribution_def, events_def, IN_MEASURABLE, p_space_def, prob_def,
-                  subsets_def, space_def]
-   >> `measure p (PREIMAGE X A INTER m_space p) =
-       measure (space s,subsets s,(\A. measure p (PREIMAGE X A INTER m_space p))) A`
-        by RW_TAC std_ss [measure_def]
-   >> POP_ORW
-   >> (MP_TAC o Q.SPECL [`(space s,subsets s,(\A. measure p (PREIMAGE X A INTER m_space p)))`,`A`] o INST_TYPE [``:'a``|->``:'b``])
-        integral_indicator
-   >> FULL_SIMP_TAC std_ss [measurable_sets_def, prob_space_def, distribution_def, prob_def, p_space_def]);
-*)
+    rpt STRIP_TAC
+ >> `prob_space (space s,subsets s,distribution p X)`
+     by RW_TAC std_ss [distribution_prob_space]
+ >> Q.PAT_X_ASSUM `random_variable X p s` MP_TAC
+ >> RW_TAC std_ss [random_variable_def, prob_space_def, distribution_def, events_def,
+		   IN_MEASURABLE, p_space_def, prob_def, subsets_def, space_def]
+ >> `measure p (PREIMAGE X A INTER m_space p) =
+     measure (space s,subsets s,(\A. measure p (PREIMAGE X A INTER m_space p))) A`
+     by RW_TAC std_ss [measure_def]
+ >> POP_ORW
+ >> (MP_TAC o Q.SPECL [`(space s,subsets s,\A. measure p (PREIMAGE X A INTER m_space p))`,`A`]
+     o INST_TYPE [``:'a``|->``:'b``]) integral_indicator
+ >> FULL_SIMP_TAC std_ss [measurable_sets_def, prob_space_def, distribution_def,
+			  prob_def, p_space_def]);
 
 (* ************************************************************************* *)
 
@@ -1483,7 +1472,7 @@ val kolmogorov_0_1_law = store_thm (* [3, p.37-38] *)
 
 val _ = type_abbrev ("rv",  ``:'a -> extreal``);
 
-(* experimental overloads of random variables *)
+(* experimental overloads of random variables
 val rv_add_def  = Define `rv_add (X :'a rv) (Y :'a rv) = (\x. X x + Y x)`;
 val rv_add1_def = Define `rv_add1 c (Y :'a rv) = (\x. c + Y x)`;
 val rv_add2_def = Define `rv_add2 (X :'a rv) c = (\x. X x + c)`;
@@ -1530,6 +1519,7 @@ val variance_def = Define
 
 val standard_deviation_def = Define
    `standard_deviation P X = sqrt (variance P X)`;
+*)
 
 val _ = export_theory ();
 

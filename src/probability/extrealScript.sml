@@ -544,36 +544,36 @@ val le_mul_neg = store_thm
   [REAL_LE_NEG, REAL_NEG_0, REAL_NEG_MUL2, REAL_MUL_RZERO, REAL_LE_MUL]);
 
 val mul_le = store_thm
-  ("mul_le",``!x y :extreal. 0 <= x /\ y <= 0 ==> x * y <= 0``,
-  (Cases >> Cases
+  ("mul_le", ``!x y :extreal. 0 <= x /\ y <= 0 ==> x * y <= 0``,
+  Cases >> Cases
   >> RW_TAC std_ss [extreal_le_def, extreal_mul_def, extreal_of_num_def,
-                    REAL_LE_MUL, GSYM real_lt])
+                    REAL_LE_MUL, GSYM real_lt]
   >- METIS_TAC [REAL_LT_LE, real_lt]
   >> `0 <= -r'` by METIS_TAC [REAL_LE_NEG, REAL_NEG_0]
   >> METIS_TAC [REAL_LE_NEG, REAL_NEG_0, REAL_LE_MUL, REAL_MUL_RNEG]);
 
 val lt_mul = store_thm
-  ("lt_mul",``!x y:extreal. 0 < x /\ 0 < y ==> 0 < x * y``,
+  ("lt_mul", ``!x y:extreal. 0 < x /\ 0 < y ==> 0 < x * y``,
   Cases >> Cases
   >> RW_TAC std_ss [extreal_lt_eq, extreal_mul_def, extreal_of_num_def,
                     REAL_LT_MUL, lt_infty]);
 
 val lt_mul_neg = store_thm
-  ("lt_mul_neg",``!x y :extreal. x < 0 /\ y < 0 ==> 0 < x * y``,
+  ("lt_mul_neg", ``!x y :extreal. x < 0 /\ y < 0 ==> 0 < x * y``,
   rpt Cases >> RW_TAC real_ss [extreal_of_num_def, extreal_lt_eq, lt_infty, extreal_mul_def]
   >> METIS_TAC [REAL_LT_LE, real_lt, REAL_LT_NEG, REAL_NEG_0, REAL_NEG_MUL2, REAL_LT_MUL]);
 
 val mul_lt = store_thm
-  ("mul_lt",``!x y:extreal. 0 < x /\ y < 0 ==> x * y < 0``,
-  (Cases >> Cases
-  >> RW_TAC std_ss [extreal_lt_eq, extreal_mul_def, extreal_of_num_def, REAL_LT_MUL, lt_infty])
+  ("mul_lt", ``!x y:extreal. 0 < x /\ y < 0 ==> x * y < 0``,
+  Cases >> Cases
+  >> RW_TAC std_ss [extreal_lt_eq, extreal_mul_def, extreal_of_num_def, REAL_LT_MUL, lt_infty]
   >- METIS_TAC [REAL_LT_LE, real_lt]
   >> `0 < -r'` by METIS_TAC [REAL_LT_NEG, REAL_NEG_0]
   >> METIS_TAC [REAL_MUL_RNEG, REAL_LT_MUL, REAL_LT_NEG, REAL_NEG_0]);
 
 val mul_let = store_thm
-  ("mul_let",``!x y :extreal. 0 <= x /\ y < 0 ==> x * y <= 0``,
- Cases >> Cases
+  ("mul_let", ``!x y :extreal. 0 <= x /\ y < 0 ==> x * y <= 0``,
+  Cases >> Cases
   >> RW_TAC real_ss [extreal_lt_eq, extreal_mul_def, extreal_of_num_def, le_refl, le_infty,
                      lt_infty, extreal_le_def]
   >> METIS_TAC [REAL_LT_NEG, REAL_LT_IMP_LE, REAL_NEG_0, REAL_LE_MUL, REAL_MUL_RNEG, REAL_NEG_NEG,
@@ -581,7 +581,7 @@ val mul_let = store_thm
 
 val mul_lte = store_thm
   ("mul_lte",``!x y :extreal. 0 < x /\ y <= 0 ==> x * y <= 0``,
- Cases >> Cases
+  Cases >> Cases
   >> RW_TAC real_ss [extreal_lt_eq, extreal_mul_def, extreal_of_num_def, le_refl, le_infty,
                      lt_infty, extreal_le_def]
   >> METIS_TAC [REAL_LT_NEG, REAL_LT_IMP_LE, REAL_NEG_0, REAL_LE_MUL, REAL_MUL_RNEG, REAL_NEG_NEG,
@@ -610,21 +610,21 @@ val le_lmul_imp = store_thm
                 extreal_of_num_def,REAL_LE_LMUL]);
 
 val lt_rmul = store_thm
-  ("lt_rmul",``!x y z. 0 < z /\ z <> PosInf ==> (x * z < y * z <=> x < y)``,
+  ("lt_rmul", ``!x y z. 0 < z /\ z <> PosInf ==> (x * z < y * z <=> x < y)``,
   rpt Cases
   >> RW_TAC real_ss [extreal_lt_eq,extreal_mul_def,le_infty,lt_infty,extreal_of_num_def,
                      REAL_LT_REFL,REAL_LT_RMUL]);
 
 val lt_lmul = store_thm
-  ("lt_lmul",``!x y z. 0 < x /\ x <> PosInf ==> (x * y < x * z <=> y < z)``,
+  ("lt_lmul", ``!x y z. 0 < x /\ x <> PosInf ==> (x * y < x * z <=> y < z)``,
   rpt Cases
   >> RW_TAC real_ss [extreal_lt_eq,extreal_mul_def,le_infty,lt_infty,extreal_of_num_def,
                      REAL_LT_REFL,REAL_LT_LMUL]);
 
 val lt_mul2 = store_thm
-  ("lt_mul2",``!x1 x2 y1 y2. 0 <= x1 /\ 0 <= y1 /\
-              x1 <> PosInf /\ y1 <> PosInf /\ x1 < x2 /\ y1 < y2
-              ==> x1 * y1 < x2 * y2``,
+  ("lt_mul2",
+  ``!x1 x2 y1 y2. 0 <= x1 /\ 0 <= y1 /\ x1 <> PosInf /\ y1 <> PosInf /\
+                  x1 < x2 /\ y1 < y2 ==> x1 * y1 < x2 * y2``,
   RW_TAC std_ss []
   >> `0 < x2 /\ 0 < y2` by METIS_TAC [let_trans]
   >> Cases_on `x1` >> Cases_on `y1`
@@ -638,35 +638,33 @@ val abs_0 = store_thm
     METIS_TAC [extreal_abs_def, extreal_of_num_def, extreal_11, ABS_0]);
 
 val abs_pos = store_thm
- ("abs_pos",``!x :extreal. 0 <= abs x``,
+  ("abs_pos", ``!x :extreal. 0 <= abs x``,
   Cases >> RW_TAC std_ss [extreal_abs_def,ABS_POS,extreal_le_def,extreal_of_num_def,le_infty]);
 
 val abs_refl = store_thm
- ("abs_refl",``!x :extreal. (abs x = x) = (0 <= x)``,
+  ("abs_refl", ``!x :extreal. (abs x = x) <=> (0 <= x)``,
   Cases >> RW_TAC std_ss [extreal_abs_def,le_infty,extreal_of_num_def,extreal_le_def,ABS_REFL]);
 
 val abs_bounds = store_thm
-  ("abs_bounds",``!x k :extreal. abs x <= k <=> -k <= x /\ x <= k``,
+  ("abs_bounds", ``!x k :extreal. abs x <= k <=> -k <= x /\ x <= k``,
   Cases >> Cases
   >> RW_TAC std_ss [extreal_abs_def,extreal_le_def,lt_infty,
                     le_infty,extreal_ainv_def,ABS_BOUNDS]);
 
 val abs_bounds_lt = store_thm
-  ("abs_bounds_lt",``!x k :extreal. abs x < k <=> -k < x /\ x < k``,
+  ("abs_bounds_lt", ``!x k :extreal. abs x < k <=> -k < x /\ x < k``,
   Cases >> Cases
   >> RW_TAC std_ss [extreal_abs_def,extreal_lt_eq,
                     lt_infty,le_infty,extreal_ainv_def]
   >> REAL_ARITH_TAC);
 
 val mul_lposinf = store_thm
-  ("mul_lposinf",
- ``!x. 0 < x ==> (PosInf * x = PosInf)``,
+  ("mul_lposinf", ``!x. 0 < x ==> (PosInf * x = PosInf)``,
    Cases >> RW_TAC real_ss [extreal_mul_def, extreal_of_num_def, lt_infty,
                             num_not_infty, extreal_lt_eq]);
 
 val mul_rposinf = store_thm
-  ("mul_rposinf",
- ``!x. 0 < x ==> (x * PosInf = PosInf)``,
+  ("mul_rposinf", ``!x. 0 < x ==> (x * PosInf = PosInf)``,
    Cases >> RW_TAC real_ss [extreal_mul_def, extreal_of_num_def, lt_infty,
                             num_not_infty, extreal_lt_eq]);
 
@@ -677,8 +675,7 @@ val mul_rposinf = store_thm
 
 (* added two antecedents due to new definition of ``extreal_add``, excluded cases are:
    1. x = NegInf /\ y = PosInf
-   2. x = PosInf /\ y = NegInf
- *)
+   2. x = PosInf /\ y = NegInf *)
 val add_comm = store_thm
   ("add_comm", ``!x y. (x <> NegInf /\ y <> NegInf) \/ (x <> PosInf /\ y <> PosInf)
                    ==> (x + y = y + x)``,
@@ -690,8 +687,7 @@ val add_comm_normal = store_thm (* newly added *)
   Strip >> Cases_on `y` >> RW_TAC std_ss [extreal_add_def,REAL_ADD_COMM]);
 
 (* added two antecedents due to new definition of ``extreal_add``, excluded cases are:
-   - all mixes of PosInf and NegInf in x, y and z.
- *)
+   - all mixes of PosInf and NegInf in x, y and z. *)
 val add_assoc = store_thm
   ("add_assoc",``!x y z. (x <> NegInf /\ y <> NegInf /\ z <> NegInf) \/
                          (x <> PosInf /\ y <> PosInf /\ z <> PosInf)
@@ -725,16 +721,16 @@ val add_infty = store_thm
   >> RW_TAC std_ss [extreal_add_def,extreal_not_infty]);
 
 val EXTREAL_EQ_LADD = store_thm
-  ("EXTREAL_EQ_LADD",``!x y z. x <> NegInf /\ x <> PosInf
-           ==> ((x + y = x + z) = (y = z))``,
-  Cases >> Cases >> Cases
-  >> RW_TAC std_ss [extreal_add_def,REAL_EQ_LADD]);
+  ("EXTREAL_EQ_LADD",
+  ``!x y z. x <> NegInf /\ x <> PosInf ==> ((x + y = x + z) <=> (y = z))``,
+    Cases >> Cases >> Cases
+ >> RW_TAC std_ss [extreal_add_def,REAL_EQ_LADD]);
 
 val EXTREAL_EQ_RADD = store_thm
-  ("EXTREAL_EQ_RADD",``!x y z. z <> NegInf /\ z <> PosInf
-           ==> ((x + z = y + z) = (x = y))``,
-  Cases >> Cases >> Cases
-  >> RW_TAC std_ss [extreal_add_def,REAL_EQ_RADD]);
+  ("EXTREAL_EQ_RADD",
+  ``!x y z. z <> NegInf /\ z <> PosInf ==> ((x + z = y + z) <=> (x = y))``,
+    Cases >> Cases >> Cases
+ >> RW_TAC std_ss [extreal_add_def,REAL_EQ_RADD]);
 
 (* |- !x y. x <= 0 /\ y <= 0 ==> x + y <= 0 *)
 val le_add_neg = save_thm
@@ -752,27 +748,26 @@ val lt_add_neg = save_thm
 
 val sub_rzero = store_thm
   ("sub_rzero", ``!x. x - 0 = x``,
-  Cases >> METIS_TAC [extreal_sub_def,extreal_of_num_def,REAL_SUB_RZERO]);
+    Cases >> METIS_TAC [extreal_sub_def, extreal_of_num_def, REAL_SUB_RZERO]);
 
 val sub_lzero = store_thm
   ("sub_lzero", ``!x. 0 - x = -x``,
-  Cases
-  >> METIS_TAC [extreal_ainv_def,extreal_sub_def,
-                extreal_of_num_def,REAL_SUB_LZERO]);
+    Cases
+ >> METIS_TAC [extreal_ainv_def, extreal_sub_def, extreal_of_num_def, REAL_SUB_LZERO]);
 
 val sub_le_imp = store_thm
-  ("sub_le_imp",``!x y z. x <> NegInf /\ x <> PosInf /\ y <= z + x
-                       ==> y - x <= z``,
-   rpt Cases
-   >> RW_TAC std_ss [extreal_le_def,extreal_add_def,extreal_sub_def,
-                     REAL_LE_SUB_RADD]);
+  ("sub_le_imp",
+  ``!x y z. x <> NegInf /\ x <> PosInf /\ y <= z + x ==> y - x <= z``,
+    rpt Cases
+ >> RW_TAC std_ss [extreal_le_def, extreal_add_def, extreal_sub_def,
+                   REAL_LE_SUB_RADD]);
 
 val sub_le_imp2 = store_thm
-  ("sub_le_imp2",``!x y z. y <> NegInf /\ y <> PosInf /\ y <= z + x
-                     ==> y - x <= z``,
-   rpt Cases
-   >> RW_TAC std_ss [extreal_le_def,extreal_add_def,
-                     extreal_sub_def,REAL_LE_SUB_RADD]);
+  ("sub_le_imp2",
+  ``!x y z. y <> NegInf /\ y <> PosInf /\ y <= z + x ==> y - x <= z``,
+    rpt Cases
+ >> RW_TAC std_ss [extreal_le_def, extreal_add_def, extreal_sub_def,
+		   REAL_LE_SUB_RADD]);
 
 val le_sub_imp = store_thm
   ("le_sub_imp",``!x y z. x <> NegInf /\ x <> PosInf /\ y + x <= z ==> y <= z - x``,
@@ -842,74 +837,76 @@ val sub_lt_zero2 = store_thm
 
 (* more antecedents added *)
 val sub_zero_le = store_thm
-  ("sub_zero_le", ``!x y. x <> NegInf /\ x <> PosInf ==> (x <= y = 0 <= y - x)``,
-  rpt Cases
-  >> RW_TAC real_ss [extreal_le_def,extreal_add_def,extreal_sub_def,
-                     lt_infty,extreal_of_num_def,extreal_not_infty,REAL_SUB_LE]);
+  ("sub_zero_le", ``!x y. x <> NegInf /\ x <> PosInf ==> (x <= y <=> 0 <= y - x)``,
+    rpt Cases
+ >> RW_TAC real_ss [extreal_le_def,extreal_add_def,extreal_sub_def,
+                    lt_infty,extreal_of_num_def,extreal_not_infty,REAL_SUB_LE]);
 
 val sub_le_zero = store_thm
-  ("sub_le_zero", ``!x y. y <> NegInf /\ y <> PosInf ==> (x <= y = x - y <= 0)``,
-  rpt Cases
-  >> RW_TAC real_ss [extreal_le_def,extreal_add_def,extreal_sub_def,
-                     lt_infty,extreal_of_num_def,extreal_not_infty,REAL_LE_SUB_RADD]);
+  ("sub_le_zero", ``!x y. y <> NegInf /\ y <> PosInf ==> (x <= y <=> x - y <= 0)``,
+    rpt Cases
+ >> RW_TAC real_ss [extreal_le_def,extreal_add_def,extreal_sub_def,
+                    lt_infty,extreal_of_num_def,extreal_not_infty,REAL_LE_SUB_RADD]);
 
 val le_sub_eq = store_thm
-  ("le_sub_eq",``!x y z. x <> NegInf /\ x <> PosInf  ==>
-       (y <= z - x = y + x <= z)``,
+  ("le_sub_eq",
+  ``!x y z. x <> NegInf /\ x <> PosInf ==> (y <= z - x <=> y + x <= z)``,
    METIS_TAC [le_sub_imp, sub_lt_imp, extreal_lt_def]);
 
 val le_sub_eq2 = store_thm
- ("le_sub_eq2",``!x y z. z <> NegInf /\ z <> PosInf /\ x <> NegInf /\ y <> NegInf ==>
-       (y <= z - x = y + x <= z)``,
+  ("le_sub_eq2",
+  ``!x y z. z <> NegInf /\ z <> PosInf /\ x <> NegInf /\ y <> NegInf ==>
+           (y <= z - x = y + x <= z)``,
   rpt Cases
   >> RW_TAC real_ss [extreal_le_def,extreal_add_def,extreal_sub_def,lt_infty,
                      extreal_of_num_def,extreal_not_infty,REAL_LE_SUB_LADD]);
 
 val sub_le_eq = store_thm
-  ("sub_le_eq",``!x y z. x <> NegInf /\ x <> PosInf
-                   ==> (y - x <= z = y <= z + x)``,
+  ("sub_le_eq",
+  ``!x y z. x <> NegInf /\ x <> PosInf ==> (y - x <= z <=> y <= z + x)``,
   METIS_TAC [sub_le_imp, lt_sub_imp2, extreal_lt_def]);
 
 val sub_le_eq2 = store_thm
- ("sub_le_eq2",``!x y z. y <> NegInf /\ y <> PosInf /\ x <> NegInf /\ z <> NegInf
-                   ==> (y - x <= z = y <= z + x)``,
+  ("sub_le_eq2",
+  ``!x y z. y <> NegInf /\ y <> PosInf /\ x <> NegInf /\ z <> NegInf ==>
+           (y - x <= z <=> y <= z + x)``,
   rpt Cases
   >> RW_TAC real_ss [extreal_le_def,extreal_add_def,extreal_sub_def,lt_infty,
                      extreal_of_num_def,extreal_not_infty,REAL_LE_SUB_RADD]);
 
 val sub_le_switch = store_thm
-  ("sub_le_switch",``!x y z. x <> NegInf /\ x <> PosInf /\ z <> NegInf /\ z <> PosInf
-                           ==> (y - x <= z = y - z <= x)``,
+  ("sub_le_switch",
+  ``!x y z. x <> NegInf /\ x <> PosInf /\ z <> NegInf /\ z <> PosInf ==>
+           (y - x <= z = y - z <= x)``,
   Cases >> Cases >> Cases
   >> RW_TAC std_ss [extreal_sub_def,extreal_le_def,le_infty,lt_infty]
   >> REAL_ARITH_TAC);
 
 val sub_le_switch2 = store_thm
-  ("sub_le_switch2",``!x y z. x <> NegInf /\ x <> PosInf /\ y <> NegInf /\ y <> PosInf
-                            ==> (y - x <= z = y - z <= x)``,
+  ("sub_le_switch2",
+  ``!x y z. x <> NegInf /\ x <> PosInf /\ y <> NegInf /\ y <> PosInf ==>
+           (y - x <= z = y - z <= x)``,
   Cases >> Cases >> Cases
   >> RW_TAC std_ss [extreal_sub_def,extreal_le_def,le_infty,lt_infty]
   >> REAL_ARITH_TAC);
 
 (* more antecedents (x <> NegInf /\ y <> NegInf) added *)
 val lt_sub = store_thm
-  ("lt_sub",``!x y z. x <> NegInf /\ y <> NegInf /\ z <> NegInf /\ z <> PosInf
-                 ==> (y + x < z = y < z - x)``,
- rpt Cases
+  ("lt_sub",
+  ``!x y z. x <> NegInf /\ y <> NegInf /\ z <> NegInf /\ z <> PosInf ==>
+           (y + x < z <=> y < z - x)``,
+    rpt Cases
  >> RW_TAC std_ss [extreal_lt_def,extreal_le_def,extreal_add_def,
                    extreal_sub_def,le_infty]
  >> METIS_TAC [REAL_LE_SUB_RADD]);
 
 val sub_add2 = store_thm
-  ("sub_add2",``!x y. x <> NegInf /\ x <> PosInf
-                  ==> (x + (y - x) = y)``,
-  rpt Cases
-  >> RW_TAC std_ss [extreal_le_def,extreal_add_def,
-                    extreal_sub_def,REAL_SUB_ADD2]);
+  ("sub_add2", ``!x y. x <> NegInf /\ x <> PosInf ==> (x + (y - x) = y)``,
+    rpt Cases
+ >> RW_TAC std_ss [extreal_le_def, extreal_add_def, extreal_sub_def, REAL_SUB_ADD2]);
 
 val add_sub = store_thm
-  ("add_sub",``!x y. y <> NegInf /\ y <> PosInf
-                 ==> (x + y - y = x)``,
+  ("add_sub", ``!x y. y <> NegInf /\ y <> PosInf ==> (x + y - y = x)``,
  rpt Cases
  >> RW_TAC std_ss [extreal_lt_def,extreal_le_def,extreal_add_def,
                    extreal_sub_def,REAL_ADD_SUB_ALT]);

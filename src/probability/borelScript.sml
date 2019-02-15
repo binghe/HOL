@@ -52,15 +52,27 @@ val INDICATOR_FN_SING_0 = store_thm
   ("INDICATOR_FN_SING_0", ``!x y. x <> y ==> (indicator_fn {x} y = 0)``,
     RW_TAC std_ss [indicator_fn_def, IN_SING]);
 
-val INDICATOR_FN_MUL_INTER = store_thm
-  ("INDICATOR_FN_MUL_INTER",
-  ``!A B. (\t. (indicator_fn A t) * (indicator_fn B t)) =
-          (\t. indicator_fn (A INTER B) t)``,
+(* Properties of the indicator function [1, p.13] *)
+val INDICATOR_FN_INTER = store_thm (* new *)
+  ("INDICATOR_FN_INTER",
+  ``!A B. indicator_fn (A INTER B) = (\t. (indicator_fn A t) * (indicator_fn B t))``,
     RW_TAC std_ss [FUN_EQ_THM]
- >> `(indicator_fn (A INTER B) t= (if t IN (A INTER B) then 1 else 0))`
+ >> `indicator_fn (A INTER B) t = if t IN (A INTER B) then 1 else 0`
       by METIS_TAC [indicator_fn_def]
  >> RW_TAC std_ss [indicator_fn_def, mul_lone, IN_INTER, mul_lzero]
- >> FULL_SIMP_TAC real_ss []);
+ >> FULL_SIMP_TAC std_ss []);
+
+val INDICATOR_FN_DIFF = store_thm (* new *)
+  ("INDICATOR_FN_DIFF",
+  ``!A B. indicator_fn (A DIFF B) = (\t. indicator_fn A t - indicator_fn (A INTER B) t)``,
+    RW_TAC std_ss [FUN_EQ_THM]
+ >> `indicator_fn (A DIFF B) t = if t IN (A DIFF B) then 1 else 0`
+      by METIS_TAC [indicator_fn_def]
+ >> fs [indicator_fn_def, IN_DIFF, IN_INTER]
+ >> Cases_on `t IN A` >> Cases_on `t IN B` >> fs [sub_rzero]
+ >> MATCH_MP_TAC EQ_SYM
+ >> MATCH_MP_TAC sub_refl
+ >> PROVE_TAC [extreal_of_num_def, extreal_not_infty]);
 
 val indicator_fn_split = store_thm
   ("indicator_fn_split",
