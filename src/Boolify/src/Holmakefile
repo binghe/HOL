@@ -1,7 +1,3 @@
-ifdef POLY
-HOLHEAP = ../num/termination/numheap
-endif
-
 all: $(DEFAULT_TARGETS) selftest.exe
 .PHONY: all
 
