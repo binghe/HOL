@@ -829,6 +829,65 @@ val GEN_COMPL_INTER = store_thm
     rpt STRIP_TAC
  >> ASM_SET_TAC [])
 
+val COMPL_BIGINTER_IMAGE = store_thm
+  ("COMPL_BIGINTER_IMAGE",
+  ``!f. COMPL (BIGINTER (IMAGE f univ(:num))) = BIGUNION (IMAGE (COMPL o f) univ(:num))``,
+    RW_TAC std_ss [EXTENSION, IN_COMPL, IN_BIGINTER_IMAGE, IN_BIGUNION_IMAGE, IN_UNIV]);
+
+val COMPL_BIGUNION_IMAGE = store_thm
+  ("COMPL_BIGUNION_IMAGE",
+  ``!f. COMPL (BIGUNION (IMAGE f univ(:num))) = BIGINTER (IMAGE (COMPL o f) univ(:num))``,
+    RW_TAC std_ss [EXTENSION, IN_COMPL, IN_BIGINTER_IMAGE, IN_BIGUNION_IMAGE, IN_UNIV]);
+
+val GEN_COMPL_BIGINTER_IMAGE = store_thm
+  ("GEN_COMPL_BIGINTER_IMAGE",
+  ``!sp f. (!n. f n SUBSET sp) ==>
+           (sp DIFF (BIGINTER (IMAGE f univ(:num))) =
+            BIGUNION (IMAGE (\n. sp DIFF (f n)) univ(:num)))``,
+    RW_TAC std_ss [EXTENSION, IN_DIFF, IN_BIGINTER_IMAGE, IN_BIGUNION_IMAGE, IN_UNIV]
+ >> EQ_TAC >> rpt STRIP_TAC >> art []
+ >- (Q.EXISTS_TAC `y` >> art [])
+ >> Q.EXISTS_TAC `n` >> art []);
+
+val GEN_COMPL_BIGUNION_IMAGE = store_thm
+  ("GEN_COMPL_BIGUNION_IMAGE",
+  ``!sp f. (!n. f n SUBSET sp) ==>
+           (sp DIFF (BIGUNION (IMAGE f univ(:num))) =
+            BIGINTER (IMAGE (\n. sp DIFF (f n)) univ(:num)))``,
+    RW_TAC std_ss [EXTENSION, IN_DIFF, IN_BIGINTER_IMAGE, IN_BIGUNION_IMAGE, IN_UNIV]
+ >> EQ_TAC >> rpt STRIP_TAC >> art []
+ >> METIS_TAC []);
+
+val COMPL_BIGINTER = store_thm
+  ("COMPL_BIGINTER",
+  ``!c. COMPL (BIGINTER c) = BIGUNION (IMAGE COMPL c)``,
+    RW_TAC std_ss [EXTENSION, IN_COMPL, IN_BIGINTER, IN_BIGUNION_IMAGE]);
+
+val COMPL_BIGUNION = store_thm
+  ("COMPL_BIGUNION",
+  ``!c. c <> {} ==> (COMPL (BIGUNION c) = BIGINTER (IMAGE COMPL c))``,
+    RW_TAC std_ss [NOT_IN_EMPTY, EXTENSION, IN_COMPL, IN_BIGUNION, IN_BIGINTER_IMAGE]
+ >> EQ_TAC >> rpt STRIP_TAC
+ >> PROVE_TAC []);
+
+val GEN_COMPL_BIGINTER = store_thm
+  ("GEN_COMPL_BIGINTER",
+  ``!sp c. (!x. x IN c ==> x SUBSET sp) ==>
+           (sp DIFF (BIGINTER c) = BIGUNION (IMAGE (\x. sp DIFF x) c))``,
+    RW_TAC std_ss [EXTENSION, IN_DIFF, IN_BIGINTER, IN_BIGUNION_IMAGE]
+ >> EQ_TAC >> rpt STRIP_TAC >> art []
+ >- (Q.EXISTS_TAC `P` >> art [])
+ >> Q.EXISTS_TAC `x'` >> art []);
+
+val GEN_COMPL_BIGUNION = store_thm
+  ("GEN_COMPL_BIGUNION",
+  ``!sp c. c <> {} /\ (!x. x IN c ==> x SUBSET sp) ==>
+           (sp DIFF (BIGUNION c) = BIGINTER (IMAGE (\x. sp DIFF x) c))``,
+    RW_TAC std_ss [EXTENSION, IN_DIFF, IN_BIGINTER, IN_BIGUNION, IN_BIGINTER_IMAGE,
+                   NOT_IN_EMPTY]
+ >> EQ_TAC >> rpt STRIP_TAC >> art []
+ >> METIS_TAC []);
+
 val GEN_COMPL_FINITE_UNION = store_thm
   ("GEN_COMPL_FINITE_UNION",
   ``!sp f n. 0 < n ==> (sp DIFF BIGUNION (IMAGE f (count n)) =
@@ -1474,21 +1533,5 @@ val INCREASING_TO_DISJOINT_SETS' = store_thm
         fs [GSYM LESS_EQ_IFF_LESS_SUC, LESS_OR_EQ] \\
         CCONTR_TAC >> fs [] \\
        `x IN f n` by PROVE_TAC [SUBSET_DEF] ] ]);
-
-
-(* ------------------------------------------------------------------------- *)
-(*  limsup and liminf for events (sets)                                      *)
-(* ------------------------------------------------------------------------- *)
-
-val set_limsup_def = Define
-   `set_limsup (E :num -> 'a set) =
-      BIGINTER (IMAGE (\n. BIGUNION (IMAGE E {m | n <= m})) UNIV)`;
-
-val set_liminf_def = Define
-   `set_liminf (E :num -> 'a set) =
-      BIGUNION (IMAGE (\n. BIGINTER (IMAGE E {m | n <= m})) UNIV)`;
-
-val _ = overload_on ("limsup", ``set_limsup``);
-val _ = overload_on ("liminf", ``set_liminf``);
 
 val _ = export_theory ();
