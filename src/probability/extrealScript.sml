@@ -1242,9 +1242,9 @@ val sub_rdistrib = store_thm
 
 (* added antecedent ``y <> 0`` *)
 val extreal_div_eq = store_thm
-  ("extreal_div_eq",``!x y. y <> 0 ==> (Normal x / Normal y = Normal (x / y))``,
-  rpt Cases
-  >> RW_TAC std_ss [extreal_div_def,extreal_inv_def,extreal_mul_def,real_div]);
+  ("extreal_div_eq", ``!x y. y <> 0 ==> (Normal x / Normal y = Normal (x / y))``,
+    rpt Cases
+ >> RW_TAC std_ss [extreal_div_def, extreal_inv_def, extreal_mul_def, real_div]);
 
 val inv_one = store_thm
   ("inv_one",``inv 1 = 1``,
@@ -1334,7 +1334,7 @@ val div_infty = store_thm (* new *)
   ("div_infty", ``!x. (x / PosInf = 0) /\ (x / NegInf = 0)``,
     REWRITE_TAC [extreal_div_def, extreal_inv_def, GSYM extreal_of_num_def, mul_rzero]);
 
-(* NOTE: this result holds even when `x = 0` ?! *)
+(* NOTE: this result holds even when `x = 0` *)
 val zero_div = store_thm (* new *)
   ("zero_div", ``!x. 0x / x = 0x``,
     REWRITE_TAC [extreal_div_def, mul_lzero]);

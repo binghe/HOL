@@ -947,6 +947,14 @@ val marginal_joint_zero3 = store_thm
        >> METIS_TAC [PROB_POSITIVE,INTER_SUBSET,IN_POW,REAL_LE_ANTISYM]]);
  *)
 
+val distribution_pos = store_thm
+  ("distribution_pos",
+  ``!p X a. prob_space p /\ (events p = POW (p_space p)) ==>
+            0 <= distribution p X a``,
+    RW_TAC std_ss [distribution_def]
+ >> MATCH_MP_TAC PROB_POSITIVE
+ >> RW_TAC std_ss [IN_POW, INTER_SUBSET]);
+
 val distribution_prob_space = store_thm
   ("distribution_prob_space",
   ``!p X s. random_variable X p s ==>
@@ -1256,67 +1264,66 @@ val distribution_x_eq_1_imp_distribution_y_eq_0 = store_thm
  >> MATCH_MP_TAC PROB_EMPTY
  >> FULL_SIMP_TAC std_ss [random_variable_def]);
 
-(*
 val joint_distribution_sym = store_thm
- ("joint_distribution_sym",``!p X Y a b. prob_space p  ==>
-       (joint_distribution p X Y (a CROSS b) = joint_distribution p Y X (b CROSS a))``,
-  RW_TAC std_ss [joint_distribution_def]
-  >> Suff `PREIMAGE (\x. (X x,Y x)) (a CROSS b) INTER p_space p =
-           PREIMAGE (\x. (Y x,X x)) (b CROSS a) INTER p_space p`
-  >- METIS_TAC []
-  >> RW_TAC std_ss [EXTENSION,IN_INTER,IN_PREIMAGE,IN_CROSS]
-  >> METIS_TAC []);
+  ("joint_distribution_sym",
+  ``!p X Y a b. prob_space p ==>
+      (joint_distribution p X Y (a CROSS b) = joint_distribution p Y X (b CROSS a))``,
+    RW_TAC std_ss [joint_distribution_def]
+ >> Suff `PREIMAGE (\x. (X x,Y x)) (a CROSS b) INTER p_space p =
+          PREIMAGE (\x. (Y x,X x)) (b CROSS a) INTER p_space p`
+ >- METIS_TAC []
+ >> RW_TAC std_ss [EXTENSION, IN_INTER, IN_PREIMAGE, IN_CROSS]
+ >> METIS_TAC []);
 
 val joint_distribution_pos = store_thm
- ("joint_distribution_pos",``!p X Y a. prob_space p /\ (events p = POW (p_space p)) ==>
-                             (0 <= joint_distribution p X Y a)``,
-  RW_TAC std_ss [joint_distribution_def]
+  ("joint_distribution_pos",
+  ``!p X Y a. prob_space p /\ (events p = POW (p_space p)) ==>
+              0 <= joint_distribution p X Y a``,
+    RW_TAC std_ss [joint_distribution_def]
   >> MATCH_MP_TAC PROB_POSITIVE
-  >> RW_TAC std_ss [IN_POW,INTER_SUBSET]);
+  >> RW_TAC std_ss [IN_POW, INTER_SUBSET]);
 
 val joint_distribution_le_1 = store_thm
- ("joint_distribution_le_1",``!p X Y a. prob_space p /\ (events p = POW (p_space p)) ==>
-                             (joint_distribution p X Y a <= 1)``,
-  RW_TAC std_ss [joint_distribution_def]
-  >> MATCH_MP_TAC PROB_LE_1
-  >> RW_TAC std_ss [IN_POW,INTER_SUBSET]);
+  ("joint_distribution_le_1",
+  ``!p X Y a. prob_space p /\ (events p = POW (p_space p)) ==>
+             (joint_distribution p X Y a <= 1)``,
+    RW_TAC std_ss [joint_distribution_def]
+ >> MATCH_MP_TAC PROB_LE_1
+ >> RW_TAC std_ss [IN_POW, INTER_SUBSET]);
 
 val joint_distribution_le = store_thm
- ("joint_distribution_le",``!p X Y a b. prob_space p /\ (events p = POW (p_space p)) ==>
-                             (joint_distribution p X Y (a CROSS b) <= distribution p X a)``,
-  RW_TAC std_ss [joint_distribution_def,distribution_def]
-  >> MATCH_MP_TAC PROB_INCREASING
-  >> RW_TAC std_ss [IN_POW,INTER_SUBSET]
-  >> RW_TAC std_ss [SUBSET_DEF,IN_PREIMAGE,IN_CROSS,IN_INTER]);
+  ("joint_distribution_le",
+  ``!p X Y a b. prob_space p /\ (events p = POW (p_space p)) ==>
+                joint_distribution p X Y (a CROSS b) <= distribution p X a``,
+    RW_TAC std_ss [joint_distribution_def,distribution_def]
+ >> MATCH_MP_TAC PROB_INCREASING
+ >> RW_TAC std_ss [IN_POW,INTER_SUBSET]
+ >> RW_TAC std_ss [SUBSET_DEF,IN_PREIMAGE,IN_CROSS,IN_INTER]);
 
 val joint_distribution_le2 = store_thm
- ("joint_distribution_le2",``!p X Y a b. prob_space p /\ (events p = POW (p_space p)) ==>
-                             (joint_distribution p X Y (a CROSS b) <= distribution p Y b)``,
-  RW_TAC std_ss [joint_distribution_def,distribution_def]
-  >> MATCH_MP_TAC PROB_INCREASING
-  >> RW_TAC std_ss [IN_POW,INTER_SUBSET]
-  >> RW_TAC std_ss [SUBSET_DEF,IN_PREIMAGE,IN_CROSS,IN_INTER]);
+  ("joint_distribution_le2",
+  ``!p X Y a b. prob_space p /\ (events p = POW (p_space p)) ==>
+                joint_distribution p X Y (a CROSS b) <= distribution p Y b``,
+    RW_TAC std_ss [joint_distribution_def,distribution_def]
+ >> MATCH_MP_TAC PROB_INCREASING
+ >> RW_TAC std_ss [IN_POW,INTER_SUBSET]
+ >> RW_TAC std_ss [SUBSET_DEF, IN_PREIMAGE, IN_CROSS,IN_INTER]);
 
-
+(*
 val joint_conditional = store_thm
- ("joint_conditional",``!p X Y a b. prob_space p /\ (events p = POW (p_space p)) ==>
-                               (joint_distribution p X Y (a CROSS b) =
-                                conditional_distribution p Y X b a * distribution p X a)``,
-  RW_TAC std_ss [conditional_distribution_def,Once joint_distribution_sym]
-  >> Cases_on `distribution p X a = 0`
-  >- METIS_TAC [REAL_LE_ANTISYM,joint_distribution_pos,joint_distribution_le,
-                joint_distribution_sym,REAL_MUL_RZERO]
-  >> RW_TAC std_ss [REAL_DIV_RMUL]);
+  ("joint_conditional",
+  ``!p X Y a b. prob_space p /\ (events p = POW (p_space p)) ==>
+               (joint_distribution p X Y (a CROSS b) =
+                conditional_distribution p Y X b a * distribution p X a)``,
+    RW_TAC std_ss [conditional_distribution_def,Once joint_distribution_sym]
+ >> Cases_on `distribution p X a = 0`
+ >- METIS_TAC [le_antisym, joint_distribution_pos, joint_distribution_le,
+               joint_distribution_sym, mul_rzero]
 
-val distribution_pos = store_thm
- ("distribution_pos",``!p X a. prob_space p /\ (events p = POW (p_space p)) ==>
-                             (0 <= distribution p X a)``,
-  RW_TAC std_ss [distribution_def]
-  >> MATCH_MP_TAC PROB_POSITIVE
-  >> RW_TAC std_ss [IN_POW,INTER_SUBSET]);
+ >> RW_TAC std_ss [REAL_DIV_RMUL]);
 
 val conditional_distribution_pos = store_thm
- ("conditional_distribution_pos",``!p X Y a b. prob_space p /\ (events p = POW (p_space p)) ==>
+  ("conditional_distribution_pos",``!p X Y a b. prob_space p /\ (events p = POW (p_space p)) ==>
                              (0 <= conditional_distribution p X Y a b)``,
   RW_TAC std_ss [conditional_distribution_def,distribution_pos,joint_distribution_pos,real_div,
                  REAL_LE_MUL,REAL_LE_INV]);
