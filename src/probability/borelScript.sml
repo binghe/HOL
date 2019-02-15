@@ -62,6 +62,16 @@ val INDICATOR_FN_INTER = store_thm (* new *)
  >> RW_TAC std_ss [indicator_fn_def, mul_lone, IN_INTER, mul_lzero]
  >> FULL_SIMP_TAC std_ss []);
 
+val INDICATOR_FN_INTER_MIN = store_thm (* new *)
+  ("INDICATOR_FN_INTER_MIN",
+  ``!A B. indicator_fn (A INTER B) = (\t. min (indicator_fn A t) (indicator_fn B t))``,
+    RW_TAC std_ss [FUN_EQ_THM]
+ >> `indicator_fn (A INTER B) t = if t IN (A INTER B) then 1 else 0`
+      by METIS_TAC [indicator_fn_def]
+ >> fs [indicator_fn_def, IN_INTER]
+ >> Cases_on `t IN A` >> Cases_on `t IN B`
+ >> fs [extreal_of_num_def, extreal_min_def, extreal_le_eq]);
+
 val INDICATOR_FN_DIFF = store_thm (* new *)
   ("INDICATOR_FN_DIFF",
   ``!A B. indicator_fn (A DIFF B) = (\t. indicator_fn A t - indicator_fn (A INTER B) t)``,
@@ -73,6 +83,53 @@ val INDICATOR_FN_DIFF = store_thm (* new *)
  >> MATCH_MP_TAC EQ_SYM
  >> MATCH_MP_TAC sub_refl
  >> PROVE_TAC [extreal_of_num_def, extreal_not_infty]);
+
+val INDICATOR_FN_DIFF_SPACE = store_thm (* new *)
+  ("INDICATOR_FN_DIFF_SPACE",
+  ``!A B sp. A SUBSET sp /\ B SUBSET sp ==>
+            (indicator_fn (A INTER (sp DIFF B)) =
+             (\t. indicator_fn A t - indicator_fn (A INTER B) t))``,
+    RW_TAC std_ss [FUN_EQ_THM]
+ >> `indicator_fn (A DIFF B) t = if t IN (A DIFF B) then 1 else 0`
+      by METIS_TAC [indicator_fn_def]
+ >> fs [indicator_fn_def, IN_DIFF, IN_INTER]
+ >> Cases_on `t IN A` >> Cases_on `t IN B` >> fs [SUBSET_DEF, sub_rzero]
+ >> MATCH_MP_TAC EQ_SYM
+ >> MATCH_MP_TAC sub_refl
+ >> PROVE_TAC [extreal_of_num_def, extreal_not_infty]);
+
+val INDICATOR_FN_UNION_MAX = store_thm (* new *)
+  ("INDICATOR_FN_UNION_MAX",
+  ``!A B. indicator_fn (A UNION B) = (\t. max (indicator_fn A t) (indicator_fn B t))``,
+    RW_TAC std_ss [FUN_EQ_THM]
+ >> `indicator_fn (A UNION B) t = if t IN (A UNION B) then 1 else 0`
+      by METIS_TAC [indicator_fn_def]
+ >> fs [indicator_fn_def, IN_UNION]
+ >> Cases_on `t IN A` >> Cases_on `t IN B`
+ >> fs [extreal_max_def, extreal_le_eq, extreal_of_num_def]);
+
+val INDICATOR_FN_UNION_MIN = store_thm (* new *)
+  ("INDICATOR_FN_UNION_MIN",
+  ``!A B. indicator_fn (A UNION B) = (\t. min (indicator_fn A t + indicator_fn B t) 1)``,
+    RW_TAC std_ss [FUN_EQ_THM]
+ >> `indicator_fn (A UNION B) t = if t IN (A UNION B) then 1 else 0`
+      by METIS_TAC [indicator_fn_def]
+ >> fs [indicator_fn_def, IN_UNION]
+ >> Cases_on `t IN A` >> Cases_on `t IN B`
+ >> fs [extreal_max_def, extreal_add_def, extreal_of_num_def, extreal_min_def, extreal_le_eq]);
+
+val INDICATOR_FN_UNION = store_thm (* new *)
+  ("INDICATOR_FN_UNION",
+  ``!A B. indicator_fn (A UNION B) =
+          (\t. indicator_fn A t + indicator_fn B t - indicator_fn (A INTER B) t)``,
+    RW_TAC std_ss [FUN_EQ_THM]
+ >> `indicator_fn (A INTER B) t = if t IN (A INTER B) then 1 else 0`
+      by METIS_TAC [indicator_fn_def]
+ >> `indicator_fn (A UNION B) t = if t IN (A UNION B) then 1 else 0`
+      by METIS_TAC [indicator_fn_def]
+ >> fs [indicator_fn_def, IN_UNION, IN_INTER]
+ >> Cases_on `t IN A` >> Cases_on `t IN B` >> fs [add_lzero, add_rzero, mul_rzero, sub_rzero]
+ >> fs [extreal_add_def, extreal_sub_def, extreal_of_num_def]);
 
 val indicator_fn_split = store_thm
   ("indicator_fn_split",
