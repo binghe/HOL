@@ -63,8 +63,8 @@ val indep_events_def = Define (* new *)
          (prob p (BIGINTER (IMAGE E N)) = PI (prob p) (IMAGE E N))`;
 
 (* extension of ``indep``: a set of pairwise independent events *)
-val pairwise_indep_events_def = Define (* new *)
-   `pairwise_indep_events p E (J :num set) =
+val pair_indep_events_def = Define (* new *)
+   `pair_indep_events p E (J :num set) =
       !i j. i IN J /\ j IN J /\ i <> j ==>
            (prob p ((E i) INTER (E j)) = prob p (E i) * prob p (E j))`;
 
@@ -76,8 +76,8 @@ val indep_families_def = Define `
 val _ = overload_on ("indep_set", ``indep_families``);
 val indep_set_def = indep_families_def;
 
-val pairwise_indep_sets_def = Define (* new *)
-   `pairwise_indep_sets (p :'a p_space) (A :num -> 'a events) (J :num set) =
+val pair_indep_sets_def = Define (* new *)
+   `pair_indep_sets (p :'a p_space) (A :num -> 'a events) (J :num set) =
       !i j. i IN J /\ j IN J /\ i <> j ==> indep_set p (A i) (A j)`;
 
 (* from Isabelle's IndependentFamily.thy (`Pi` in Isabelle/HOL = `DFUNSET` in HOL4) *)
@@ -119,28 +119,28 @@ val joint_distribution3_def = Define
    `joint_distribution3 (p :'a p_space) X Y Z =
       (\a. prob p (PREIMAGE (\x. (X x,Y x,Z x)) a INTER p_space p))`;
 
-val conditional_distribution_def = Define
-   `conditional_distribution (p :'a p_space) X Y a b =
+val cond_distribution_def = Define
+   `cond_distribution (p :'a p_space) X Y a b =
       joint_distribution p X Y (a CROSS b) / distribution p Y b`;
 
 (* `expectation` is just (Lebesgue) `integral` *)
 val expectation_def = Define
    `expectation = integral`;
 
-val conditional_expectation_def = Define
-   `conditional_expectation p X s =
+val cond_expectation_def = Define
+   `cond_expectation p X s =
         @f. real_random_variable f p /\
             !g. g IN s ==>
                (expectation p (\x. f x * indicator_fn g x) =
                 expectation p (\x. X x * indicator_fn g x))`;
 
-val conditional_prob_def = Define
-   `conditional_prob p e1 e2 =
-    conditional_expectation p (indicator_fn e1) e2`;
+val cond_prob_def = Define
+   `cond_prob p e1 e2 =
+    cond_expectation p (indicator_fn e1) e2`;
 
-val rv_conditional_expectation_def = Define
-   `rv_conditional_expectation (p :'a p_space) s X Y =
-       conditional_expectation p X (IMAGE (\a. (PREIMAGE Y a) INTER p_space p) (subsets s))`;
+val rv_cond_expectation_def = Define
+   `rv_cond_expectation (p :'a p_space) s X Y =
+       cond_expectation p X (IMAGE (\a. (PREIMAGE Y a) INTER p_space p) (subsets s))`;
 
 (* NOTE: X and Y are forced to have the same types;
          Added `INTER p_space p` after taking the PREIMAGE. *)
@@ -170,8 +170,8 @@ val indep_vars_def = Define (* new *)
           indep_events p (\n. (PREIMAGE (X n) (E n)) INTER p_space p) J`;
 
 (* Pairwise independence of a set of random variables *)
-val pairwise_indep_vars_def = Define (* new *)
-   `pairwise_indep_vars p X E (J :num set) =
+val pair_indep_vars_def = Define (* new *)
+   `pair_indep_vars p X E (J :num set) =
       (!n. n IN J ==> random_variable (X n) p (E n)) /\
       !i j. i IN J /\ j IN J /\ i <> j ==> indep_var p (X i) (X j) (E i) (E j)`;
 
@@ -1284,8 +1284,8 @@ val joint_distribution_pos = store_thm
   ``!p X Y a. prob_space p /\ (events p = POW (p_space p)) ==>
               0 <= joint_distribution p X Y a``,
     RW_TAC std_ss [joint_distribution_def]
-  >> MATCH_MP_TAC PROB_POSITIVE
-  >> RW_TAC std_ss [IN_POW, INTER_SUBSET]);
+ >> MATCH_MP_TAC PROB_POSITIVE
+ >> RW_TAC std_ss [IN_POW, INTER_SUBSET]);
 
 val joint_distribution_le_1 = store_thm
   ("joint_distribution_le_1",
@@ -1318,34 +1318,36 @@ val joint_conditional = store_thm
   ("joint_conditional",
   ``!p X Y a b. prob_space p /\ (events p = POW (p_space p)) ==>
                (joint_distribution p X Y (a CROSS b) =
-                conditional_distribution p Y X b a * distribution p X a)``,
-    RW_TAC std_ss [conditional_distribution_def,Once joint_distribution_sym]
+                cond_distribution p Y X b a * distribution p X a)``,
+    RW_TAC std_ss [cond_distribution_def,Once joint_distribution_sym]
  >> Cases_on `distribution p X a = 0`
  >- METIS_TAC [le_antisym, joint_distribution_pos, joint_distribution_le,
                joint_distribution_sym, mul_rzero]
 
  >> RW_TAC std_ss [REAL_DIV_RMUL]);
 
-val conditional_distribution_pos = store_thm
-  ("conditional_distribution_pos",``!p X Y a b. prob_space p /\ (events p = POW (p_space p)) ==>
-                             (0 <= conditional_distribution p X Y a b)``,
-  RW_TAC std_ss [conditional_distribution_def,distribution_pos,joint_distribution_pos,real_div,
-                 REAL_LE_MUL,REAL_LE_INV]);
+val cond_distribution_pos = store_thm
+  ("cond_distribution_pos",
+  ``!p X Y a b. prob_space p /\ (events p = POW (p_space p)) ==>
+                0 <= cond_distribution p X Y a b``,
+    RW_TAC std_ss [cond_distribution_def,distribution_pos,joint_distribution_pos,real_div,
+                   REAL_LE_MUL,REAL_LE_INV]);
 
-val conditional_distribution_le_1 = store_thm
- ("conditional_distribution_le_1",``!p X Y a b. prob_space p /\ (events p = POW (p_space p)) ==>
-                             (conditional_distribution p X Y a b <= 1)``,
-  RW_TAC std_ss [conditional_distribution_def]
+val cond_distribution_le_1 = store_thm
+  ("cond_distribution_le_1",
+  ``!p X Y a b. prob_space p /\ (events p = POW (p_space p)) ==>
+                cond_distribution p X Y a b <= 1``,
+  RW_TAC std_ss [cond_distribution_def]
   >> Cases_on `distribution p Y b = 0`
   >- METIS_TAC [marginal_joint_zero,real_div,REAL_MUL_LZERO,REAL_LE_01]
   >> METIS_TAC [REAL_LE_LDIV_EQ, REAL_MUL_LID, REAL_LT_LE, joint_distribution_le2,
                 distribution_pos]);
 
 val marginal_distribution1 = store_thm
- ("marginal_distribution1",``!p X Y a. prob_space p /\ FINITE (p_space p) /\
-                                       (events p = POW (p_space p))
-    ==> (distribution p X a =
-         SIGMA (\x. joint_distribution p X Y (a CROSS {x})) (IMAGE Y (p_space p)))``,
+  ("marginal_distribution1",
+  ``!p X Y a. prob_space p /\ FINITE (p_space p) /\ (events p = POW (p_space p)) ==>
+             (distribution p X a =
+              SIGMA (\x. joint_distribution p X Y (a CROSS {x})) (IMAGE Y (p_space p)))``,
   RW_TAC std_ss [joint_distribution_def,distribution_def]
   >> `FINITE (IMAGE Y (p_space p))` by METIS_TAC [IMAGE_FINITE]
   >> RW_TAC std_ss [PREIMAGE_def,IN_CROSS,IN_SING]
@@ -1480,8 +1482,8 @@ val _ = overload_on ("limsup", ``set_limsup``);
 val _ = overload_on ("liminf", ``set_liminf``);
 
 (* this lemma implicitly assume `events p = UNIV` *)
-val COMPL_liminf = store_thm
-  ("COMPL_liminf", ``!(E :num -> 'a set). COMPL (liminf E) = limsup (COMPL o E)``,
+val liminf_limsup = store_thm
+  ("liminf_limsup", ``!(E :num -> 'a set). COMPL (liminf E) = limsup (COMPL o E)``,
     RW_TAC std_ss [set_limsup_def, set_liminf_def]
  >> SIMP_TAC std_ss [COMPL_BIGUNION_IMAGE, o_DEF]
  >> Suff `!m. COMPL (BIGINTER {E n | m ≤ n}) = BIGUNION {COMPL (E n) | m ≤ n}` >- Rewr
@@ -1495,8 +1497,8 @@ val COMPL_liminf = store_thm
  >> Q.EXISTS_TAC `E n` >> art []
  >> Q.EXISTS_TAC `n` >> art []);
 
-val GEN_COMPL_liminf = store_thm (* more general form *)
-  ("GEN_COMPL_liminf",
+val liminf_limsup_sp = store_thm (* more general form *)
+  ("liminf_limsup_sp",
   ``!sp E. (!n. E n SUBSET sp) ==> (sp DIFF (liminf E) = limsup (\n. sp DIFF (E n)))``,
     RW_TAC std_ss [set_limsup_def, set_liminf_def]
  >> Q.ABBREV_TAC `f = (λm. BIGINTER {E n | m ≤ n})`
@@ -1521,8 +1523,41 @@ val GEN_COMPL_liminf = store_thm (* more general form *)
  >> Q.EXISTS_TAC `E n` >> art []
  >> Q.EXISTS_TAC `n` >> art []);
 
-val borel_cantelli_lemma1 = store_thm
-  ("borel_cantelli_lemma1",
+val limsup_events = store_thm
+  ("limsup_events",
+  ``!p E. prob_space p /\ (!n. E n IN events p) ==> limsup E IN events p``,
+    cheat);
+
+val liminf_events = store_thm
+  ("liminf_events",
+  ``!p E. prob_space p /\ (!n. E n IN events p) ==> liminf E IN events p``,
+    cheat);
+
+(* A point belongs to `limsup E` if and only if it belongs to infinitely
+   many terms of the sequence E. [2, p.76]
+ *)
+val limsup_thm = store_thm
+  ("limsup_thm", ``!E x. x IN limsup E = ?N. INFINITE N /\ !n. n IN N ==> x IN (E n)``,
+    rpt GEN_TAC >> EQ_TAC
+ >> RW_TAC std_ss [set_limsup_def, IN_BIGINTER_IMAGE, IN_UNIV]
+ >| [ (* goal 1 (of 2) *)
+      Q.ABBREV_TAC `P = \n. x IN (E n)` \\
+     `!n. x IN (E n) = P n` by PROVE_TAC [] >> POP_ORW \\
+      CCONTR_TAC \\
+      cheat,
+      (* goal 2 (of 2) *)
+      SIMP_TAC std_ss [IN_BIGUNION, GSPECIFICATION] \\
+      cheat ]);
+
+(* A point belongs to `liminf E` if and only if it belongs to all terms
+   of the sequence from a certain term on. [2, p.76]
+ *)
+val liminf_thm = store_thm
+  ("liminf_thm", ``!E x. x IN liminf E = ?N. !n. N < n ==> x IN (E n)``,
+    cheat);
+
+val Borel_Cantelli_Lemma1 = store_thm
+  ("Borel_Cantelli_Lemma1",
   ``!p E. prob_space p /\ (!n. E n IN events p) /\
           suminf (prob p o E) < PosInf ==> (prob p (limsup E) = 0)``,
     RW_TAC std_ss []
@@ -1551,6 +1586,24 @@ val borel_cantelli_lemma1 = store_thm
  (* Step 3 *)
  >> cheat);
 
+val Borel_Cantelli_Lemma2 = store_thm
+  ("Borel_Cantelli_Lemma2",
+  ``!p E. prob_space p /\ indep_events p E univ(:num) /\
+         (suminf (prob p o E) = PosInf) ==> (prob p (limsup E) = 1)``,
+    cheat);
+
+val Borel_Cantelli_Lemma2p = store_thm
+  ("Borel_Cantelli_Lemma2p",
+  ``!p E. prob_space p /\ pair_indep_events p E univ(:num) /\
+         (suminf (prob p o E) = PosInf) ==> (prob p (limsup E) = 1)``,
+    cheat);
+
+val PROB_ONE_AE = store_thm
+  ("PROB_ONE_AE",
+  ``!p E. prob_space p /\ E IN events p ==> ((prob p E = 1) <=> AE x::p. x IN E)``,
+    cheat);
+
+
 (******************************************************************************)
 (*  Kolmogorov's 0-1 Law                                                      *)
 (******************************************************************************)
@@ -1561,8 +1614,8 @@ val remote_events_def = Define (* or "tail_events" *)
                                           (BIGUNION (IMAGE A {m | m > n}))))
                       univ(:num))`;
 
-val kolmogorov_0_1_law = store_thm (* [3, p.37-38] *)
-  ("kolmogorov_0_1_law",
+val Kolmogorov_0_1_Law = store_thm (* [3, p.37-38] *)
+  ("Kolmogorov_0_1_Law",
   ``!p (A :num -> 'a events).
        prob_space p /\ indep_sets p A UNIV ==>
        !e. e IN remote_events p A ==> (prob p e = 0) \/ (prob p e = 1)``,
