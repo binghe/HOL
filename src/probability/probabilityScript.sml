@@ -1546,12 +1546,48 @@ val liminf_limsup_sp = store_thm (* more general form *)
 val limsup_events = store_thm
   ("limsup_events",
   ``!p E. prob_space p /\ (!n. E n IN events p) ==> limsup E IN events p``,
-    cheat);
+ (* proof *)
+    RW_TAC std_ss [prob_space_def, measure_space_def, events_def, set_limsup_def]
+ >> IMP_RES_TAC SIGMA_ALGEBRA_FN_BIGINTER
+ >> fs [space_def, subsets_def, IN_FUNSET, IN_UNIV]
+ >> POP_ASSUM MATCH_MP_TAC
+ >> GEN_TAC >> BETA_TAC
+ >> fs [sigma_algebra_def, space_def, subsets_def]
+ >> LAST_X_ASSUM MATCH_MP_TAC
+ >> CONJ_TAC
+ >- (SIMP_TAC std_ss [COUNTABLE_ALT, GSPECIFICATION] \\
+     Q.EXISTS_TAC `E` >> RW_TAC std_ss [] \\
+     Q.EXISTS_TAC `n` >> REWRITE_TAC [])
+ >> RW_TAC std_ss [SUBSET_DEF, GSPECIFICATION]
+ >> ASM_REWRITE_TAC []);
 
 val liminf_events = store_thm
   ("liminf_events",
   ``!p E. prob_space p /\ (!n. E n IN events p) ==> liminf E IN events p``,
-    cheat);
+ (* proof *)
+    RW_TAC std_ss [prob_space_def, measure_space_def, events_def, set_liminf_def]
+ >> STRIP_ASSUME_TAC
+      (REWRITE_RULE [ASSUME ``sigma_algebra (m_space p,measurable_sets p)``, subsets_def]
+                    (Q.SPEC `(m_space p,measurable_sets p)` SIGMA_ALGEBRA_ALT))
+ >> POP_ASSUM MATCH_MP_TAC
+ >> RW_TAC std_ss [IN_FUNSET, IN_UNIV]
+ >> Know `{E n | m ≤ n} <> {}`
+ >- (RW_TAC std_ss [Once EXTENSION, NOT_IN_EMPTY, GSPECIFICATION] \\
+     Q.EXISTS_TAC `SUC m` >> RW_TAC arith_ss [])
+ >> Know `countable {E n | m ≤ n}`
+ >- (SIMP_TAC std_ss [COUNTABLE_ALT, GSPECIFICATION] \\
+     Q.EXISTS_TAC `E` >> RW_TAC std_ss [] \\
+     Q.EXISTS_TAC `n` >> REWRITE_TAC [])
+ >> RW_TAC std_ss [COUNTABLE_ENUM] >> art []
+ >> IMP_RES_TAC SIGMA_ALGEBRA_FN_BIGINTER
+ >> fs [space_def, subsets_def, IN_FUNSET, IN_UNIV]
+ >> POP_ASSUM MATCH_MP_TAC
+ >> Q.PAT_X_ASSUM `{E n | m ≤ n} = IMAGE f univ(:num)` (MP_TAC o (MATCH_MP EQ_SYM))
+ >> RW_TAC std_ss [Once EXTENSION, IN_IMAGE, IN_UNIV, GSPECIFICATION]
+ >> POP_ASSUM (STRIP_ASSUME_TAC o (Q.SPEC `f (x :num)`))
+ >> Know `?x'. f x = f x'` >- (Q.EXISTS_TAC `x` >> REWRITE_TAC [])
+ >> RW_TAC std_ss []
+ >> PROVE_TAC []);
 
 val infinity_often_lemma = Q.prove (
    `!P. ~(?N. INFINITE N /\ !n:num. n IN N ==> P n) <=> ?m. !n. m <= n ==> ~(P n)`,
