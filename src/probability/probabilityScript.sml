@@ -1,4 +1,4 @@
-(* ------------------------------------------------------------------------- *)
+(* --------------------------*- Mode: Lisp; -*------------------------------ *)
 (* Probability Theory                                                        *)
 (* Authors: Tarek Mhamdi, Osman Hasan, Sofiene Tahar                         *)
 (* HVG Group, Concordia University, Montreal                                 *)
@@ -1467,6 +1467,26 @@ val joint_distribution_sum_mul1 = store_thm
 *)
 
 (******************************************************************************)
+(*  Moments and variance (definitions from [2, p.49])                         *)
+(******************************************************************************)
+
+val absolute_moment_def = Define
+   `absolute_moment P X r a = expectation P (\x. (abs (X x − a)) pow r)`;
+
+val moment_def = Define
+   `moment P X r a = expectation P (\x. (X x - a) pow r)`;
+
+val central_moment_def = Define
+   `central_moment P X r = moment P X r (expectation P X)`;
+
+val variance_def = Define
+   `variance P X = central_moment P X 2`;
+
+val standard_deviation_def = Define
+   `standard_deviation P X = sqrt (variance P X)`;
+
+
+(******************************************************************************)
 (*  Almost sure convergence; Borel-Cantelli Lemma [2, p.75]                   *)
 (******************************************************************************)
 
@@ -1533,6 +1553,14 @@ val liminf_events = store_thm
   ``!p E. prob_space p /\ (!n. E n IN events p) ==> liminf E IN events p``,
     cheat);
 
+val infinity_often_lemma = Q.prove (
+   `!P. ~(?N. INFINITE N /\ !n:num. n IN N ==> P n) <=> ?m. !n. m <= n ==> ~(P n)`,
+    cheat);
+
+val infinity_bound_lemma = Q.prove (
+   `!N m. INFINITE N ==> ?n:num. m <= n /\ n IN N`,
+    cheat);
+
 (* A point belongs to `limsup E` if and only if it belongs to infinitely
    many terms of the sequence E. [2, p.76]
  *)
@@ -1544,17 +1572,31 @@ val limsup_thm = store_thm
       Q.ABBREV_TAC `P = \n. x IN (E n)` \\
      `!n. x IN (E n) = P n` by PROVE_TAC [] >> POP_ORW \\
       CCONTR_TAC \\
-      cheat,
+     `?m. !n. m <= n ==> ~(P n)` by PROVE_TAC [infinity_often_lemma] \\
+      Q.UNABBREV_TAC `P` >> FULL_SIMP_TAC bool_ss [] \\
+      Know `x NOTIN BIGUNION {E n | m ≤ n}`
+      >- (SIMP_TAC std_ss [IN_BIGUNION, GSPECIFICATION] \\
+          CCONTR_TAC >> FULL_SIMP_TAC bool_ss [] >> METIS_TAC []) \\
+      DISCH_TAC >> METIS_TAC [],
       (* goal 2 (of 2) *)
       SIMP_TAC std_ss [IN_BIGUNION, GSPECIFICATION] \\
-      cheat ]);
+      IMP_RES_TAC infinity_bound_lemma \\
+      POP_ASSUM (STRIP_ASSUME_TAC o (Q.SPEC `m`)) \\
+      Q.EXISTS_TAC `E n` >> CONJ_TAC >- PROVE_TAC [] \\
+      Q.EXISTS_TAC `n` >> art [] ]);
 
 (* A point belongs to `liminf E` if and only if it belongs to all terms
    of the sequence from a certain term on. [2, p.76]
  *)
 val liminf_thm = store_thm
-  ("liminf_thm", ``!E x. x IN liminf E = ?N. !n. N < n ==> x IN (E n)``,
-    cheat);
+  ("liminf_thm", ``!E x. x IN liminf E = ?m. !n. m <= n ==> x IN (E n)``,
+    rpt GEN_TAC
+ >> ASSUME_TAC
+     (SIMP_RULE std_ss [GSYM liminf_limsup, IN_COMPL, o_DEF]
+                       (Q.SPECL [`COMPL o E`, `x`] limsup_thm))
+ >> `x IN liminf E = ~(?N. INFINITE N /\ !n. n IN N ==> x NOTIN E n)`
+     by PROVE_TAC []
+ >> fs [infinity_often_lemma]);
 
 val Borel_Cantelli_Lemma1 = store_thm
   ("Borel_Cantelli_Lemma1",
@@ -1592,6 +1634,7 @@ val Borel_Cantelli_Lemma2 = store_thm
          (suminf (prob p o E) = PosInf) ==> (prob p (limsup E) = 1)``,
     cheat);
 
+(* The more general version, "variance" is used in this proof *)
 val Borel_Cantelli_Lemma2p = store_thm
   ("Borel_Cantelli_Lemma2p",
   ``!p E. prob_space p /\ pair_indep_events p E univ(:num) /\
@@ -1621,25 +1664,6 @@ val Kolmogorov_0_1_Law = store_thm (* [3, p.37-38] *)
        !e. e IN remote_events p A ==> (prob p e = 0) \/ (prob p e = 1)``,
     cheat);
 
-
-(******************************************************************************)
-(*  Moments and variance (definitions from [2, p.49])                         *)
-(******************************************************************************)
-
-val absolute_moment_def = Define
-   `absolute_moment P X r a = expectation P (\x. (abs (X x − a)) pow r)`;
-
-val moment_def = Define
-   `moment P X r a = expectation P (\x. (X x - a) pow r)`;
-
-val central_moment_def = Define
-   `central_moment P X r = moment P X r (expectation P X)`;
-
-val variance_def = Define
-   `variance P X = central_moment P X 2`;
-
-val standard_deviation_def = Define
-   `standard_deviation P X = sqrt (variance P X)`;
 
 val _ = export_theory ();
 
