@@ -1490,59 +1490,6 @@ val standard_deviation_def = Define
 (*  Almost sure convergence; Borel-Cantelli Lemma [2, p.75]                   *)
 (******************************************************************************)
 
-val set_limsup_def = Define
-   `set_limsup (E :num -> 'a set) =
-      BIGINTER (IMAGE (\m. BIGUNION {E n | m <= n}) UNIV)`;
-
-val set_liminf_def = Define
-   `set_liminf (E :num -> 'a set) =
-      BIGUNION (IMAGE (\m. BIGINTER {E n | m <= n}) UNIV)`;
-
-val _ = overload_on ("limsup", ``set_limsup``);
-val _ = overload_on ("liminf", ``set_liminf``);
-
-(* this lemma implicitly assume `events p = UNIV` *)
-val liminf_limsup = store_thm
-  ("liminf_limsup", ``!(E :num -> 'a set). COMPL (liminf E) = limsup (COMPL o E)``,
-    RW_TAC std_ss [set_limsup_def, set_liminf_def]
- >> SIMP_TAC std_ss [COMPL_BIGUNION_IMAGE, o_DEF]
- >> Suff `!m. COMPL (BIGINTER {E n | m ≤ n}) = BIGUNION {COMPL (E n) | m ≤ n}` >- Rewr
- >> GEN_TAC >> REWRITE_TAC [COMPL_BIGINTER]
- >> Suff `IMAGE COMPL {E n | m ≤ n} = {COMPL (E n) | m ≤ n}` >- Rewr
- >> SIMP_TAC std_ss [IMAGE_DEF, IN_COMPL, Once GSPECIFICATION]
- >> RW_TAC std_ss [Once EXTENSION, GSPECIFICATION, IN_COMPL]
- >> EQ_TAC >> rpt STRIP_TAC
- >- (fs [COMPL_COMPL] >> Q.EXISTS_TAC `n` >> art [])
- >> fs []
- >> Q.EXISTS_TAC `E n` >> art []
- >> Q.EXISTS_TAC `n` >> art []);
-
-val liminf_limsup_sp = store_thm (* more general form *)
-  ("liminf_limsup_sp",
-  ``!sp E. (!n. E n SUBSET sp) ==> (sp DIFF (liminf E) = limsup (\n. sp DIFF (E n)))``,
-    RW_TAC std_ss [set_limsup_def, set_liminf_def]
- >> Q.ABBREV_TAC `f = (λm. BIGINTER {E n | m ≤ n})`
- >> Know `!m. f m SUBSET sp`
- >- (GEN_TAC >> Q.UNABBREV_TAC `f` >> BETA_TAC \\
-     RW_TAC std_ss [SUBSET_DEF, IN_BIGINTER, GSPECIFICATION] \\
-     fs [SUBSET_DEF] >> LAST_X_ASSUM MATCH_MP_TAC \\
-     Q.EXISTS_TAC `SUC m` \\
-     POP_ASSUM (STRIP_ASSUME_TAC o (Q.SPEC `E (SUC m)`)) \\
-     POP_ASSUM MATCH_MP_TAC \\
-     Q.EXISTS_TAC `SUC m` >> RW_TAC arith_ss [])
- >> DISCH_THEN (REWRITE_TAC o wrap o (MATCH_MP GEN_COMPL_BIGUNION_IMAGE))
- >> Suff `!m. sp DIFF f m = BIGUNION {sp DIFF E n | m ≤ n}` >- Rewr
- >> GEN_TAC >> Q.UNABBREV_TAC `f` >> BETA_TAC
- >> Know `!x. x IN {E n | m ≤ n} ==> x SUBSET sp`
- >- (RW_TAC std_ss [GSPECIFICATION] >> art [])
- >> DISCH_THEN (REWRITE_TAC o wrap o (MATCH_MP GEN_COMPL_BIGINTER))
- >> Suff `(IMAGE (\x. sp DIFF x) {E n | m ≤ n}) = {sp DIFF E n | m ≤ n}` >- Rewr
- >> RW_TAC std_ss [Once EXTENSION, IMAGE_DEF, IN_DIFF, GSPECIFICATION]
- >> EQ_TAC >> rpt STRIP_TAC
- >- (Q.EXISTS_TAC `n` >> METIS_TAC [])
- >> Q.EXISTS_TAC `E n` >> art []
- >> Q.EXISTS_TAC `n` >> art []);
-
 val limsup_events = store_thm
   ("limsup_events",
   ``!p E. prob_space p /\ (!n. E n IN events p) ==> limsup E IN events p``,
@@ -1589,17 +1536,18 @@ val liminf_events = store_thm
  >> RW_TAC std_ss []
  >> PROVE_TAC []);
 
+(* TODO *)
 val infinity_often_lemma = Q.prove (
    `!P. ~(?N. INFINITE N /\ !n:num. n IN N ==> P n) <=> ?m. !n. m <= n ==> ~(P n)`,
     cheat);
 
+(* TODO *)
 val infinity_bound_lemma = Q.prove (
    `!N m. INFINITE N ==> ?n:num. m <= n /\ n IN N`,
     cheat);
 
 (* A point belongs to `limsup E` if and only if it belongs to infinitely
-   many terms of the sequence E. [2, p.76]
- *)
+   many terms of the sequence E. [2, p.76] *)
 val limsup_thm = store_thm
   ("limsup_thm", ``!E x. x IN limsup E = ?N. INFINITE N /\ !n. n IN N ==> x IN (E n)``,
     rpt GEN_TAC >> EQ_TAC
@@ -1622,17 +1570,28 @@ val limsup_thm = store_thm
       Q.EXISTS_TAC `n` >> art [] ]);
 
 (* A point belongs to `liminf E` if and only if it belongs to all terms
-   of the sequence from a certain term on. [2, p.76]
- *)
+   of the sequence from a certain term on. [2, p.76] *)
 val liminf_thm = store_thm
   ("liminf_thm", ``!E x. x IN liminf E = ?m. !n. m <= n ==> x IN (E n)``,
     rpt GEN_TAC
  >> ASSUME_TAC
-     (SIMP_RULE std_ss [GSYM liminf_limsup, IN_COMPL, o_DEF]
-                       (Q.SPECL [`COMPL o E`, `x`] limsup_thm))
+      (SIMP_RULE std_ss [GSYM liminf_limsup, IN_COMPL, o_DEF]
+                        (Q.SPECL [`COMPL o E`, `x`] limsup_thm))
  >> `x IN liminf E = ~(?N. INFINITE N /\ !n. n IN N ==> x NOTIN E n)`
      by PROVE_TAC []
  >> fs [infinity_often_lemma]);
+
+val prob_limsup_sup = store_thm
+  ("prob_limsup_sup",
+  ``!p E. prob_space p /\ (!n. E n IN events p) ==>
+         (prob p (limsup E) = sup (IMAGE (\m. prob p (BIGUNION {E n | m <= n})) UNIV))``,
+    cheat);
+
+val prob_liminf_inf = store_thm
+  ("prob_liminf_inf",
+  ``!p E. prob_space p /\ (!n. E n IN events p) ==>
+         (prob p (liminf E) = inf (IMAGE (\m. prob p (BIGUNION {E n | m <= n})) UNIV))``,
+    cheat);
 
 val Borel_Cantelli_Lemma1 = store_thm
   ("Borel_Cantelli_Lemma1",
