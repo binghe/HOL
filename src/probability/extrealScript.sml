@@ -24,26 +24,34 @@ val extreal_of_num_def = Define
    `extreal_of_num n = Normal (&n)`;
 
 val real_def = Define
-   `real x = if ((x = NegInf) \/ (x = PosInf)) then 0:real
-             else (@r. x = Normal r)`;
+   `real x = if (x = NegInf) \/ (x = PosInf) then (0 :real)
+             else @r. x = Normal r`;
 
 val real_normal = store_thm
-  ("real_normal",``!x. real (Normal x) = x``,
-  RW_TAC std_ss [real_def]);
+  ("real_normal", ``!x. real (Normal x) = x``,
+    RW_TAC std_ss [real_def]);
 
 val normal_real = store_thm
-  ("normal_real",``!x. x <> NegInf /\ x <> PosInf ==> (Normal (real x) = x)``,
-  RW_TAC std_ss [real_def]
-  >> SELECT_ELIM_TAC
-  >> RW_TAC std_ss []
-  >> Cases_on `x`
-  >> METIS_TAC []);
+  ("normal_real", ``!x. x <> NegInf /\ x <> PosInf ==> (Normal (real x) = x)``,
+    RW_TAC std_ss [real_def]
+ >> SELECT_ELIM_TAC
+ >> RW_TAC std_ss []
+ >> Cases_on `x`
+ >> METIS_TAC []);
 
 (* ********************************************* *)
 (*     Definitions of Arithmetic Operations      *)
 (* ********************************************* *)
 
-(* new definition of `extreal_add` *)
+(* old definition, which allows `PosInf + NegInf = PosInf`
+val extreal_add_def = Define
+  `(extreal_add (Normal x) (Normal y) = (Normal (x + y))) /\
+   (extreal_add PosInf a = PosInf) /\
+   (extreal_add a PosInf = PosInf) /\
+   (extreal_add NegInf b = NegInf) /\
+   (extreal_add c NegInf = NegInf)`;
+
+   new definition of `extreal_add`: *)
 val extreal_add_def = Define
   `(extreal_add (Normal x) (Normal y) = (Normal (x + y))) /\
    (extreal_add (Normal _) a = a) /\
@@ -51,25 +59,7 @@ val extreal_add_def = Define
    (extreal_add NegInf NegInf = NegInf) /\
    (extreal_add PosInf PosInf = PosInf)`;
 
-(* old definition, which allows ``PosInf + NegInf = PosInf``
-val extreal_add_def = Define
-  `(extreal_add (Normal x) (Normal y) = (Normal (x + y))) /\
-   (extreal_add PosInf a = PosInf) /\
-   (extreal_add a PosInf = PosInf) /\
-   (extreal_add NegInf b = NegInf) /\
-   (extreal_add c NegInf = NegInf)`;
- *)
-
-(* new definition of `extreal_sub` *)
-val extreal_sub_def = Define
-  `(extreal_sub (Normal x) (Normal y) = Normal (x - y)) /\
-   (extreal_sub a (Normal _) = a) /\
-   (extreal_sub (Normal _) NegInf = PosInf) /\
-   (extreal_sub (Normal _) PosInf = NegInf) /\
-   (extreal_sub NegInf PosInf = NegInf) /\
-   (extreal_sub PosInf NegInf = PosInf)`;
-
-(* old definition, which allows ``PosInf - NegInf = PosInf``
+(* old definition, which allows `PosInf - NegInf = PosInf`
 val extreal_sub_def = Define
   `(extreal_sub (Normal x) (Normal y) = Normal (x - y)) /\
    (extreal_sub PosInf a = PosInf) /\
@@ -77,7 +67,15 @@ val extreal_sub_def = Define
    (extreal_sub NegInf NegInf = PosInf) /\
    (extreal_sub NegInf c = NegInf) /\
    (extreal_sub c NegInf = PosInf)`;
- *)
+
+   new definition of `extreal_sub`: *)
+val extreal_sub_def = Define
+  `(extreal_sub (Normal x) (Normal y) = Normal (x - y)) /\
+   (extreal_sub a (Normal _) = a) /\
+   (extreal_sub (Normal _) NegInf = PosInf) /\
+   (extreal_sub (Normal _) PosInf = NegInf) /\
+   (extreal_sub NegInf PosInf = NegInf) /\
+   (extreal_sub PosInf NegInf = PosInf)`;
 
 val extreal_le_def = Define
   `(extreal_le (Normal x) (Normal y) = (x <= y)) /\
@@ -90,10 +88,14 @@ val extreal_lt_def = Define `extreal_lt x y = ~extreal_le y x`;
 
 (* "The rationaly behind our definitions is to understand PosInf (or NegInf) in every
     instance as the limit of some (possibly each time different) sequence, and '0' as
-    a bona fide zero. Then `0 * PosInf (or NegInf) = 0 * lim a_n = lim (0 * a_n) =
-    lim 0 = 0` while expressions of the type `PosInf - PosInf` or `PosInf / PosInf`
+    a bona fide zero. Then
+
+       `0 * PosInf (or NegInf) = 0 * lim a_n = lim (0 * a_n) = lim 0 = 0`
+
+    while expressions of the type `PosInf - PosInf` or `PosInf / PosInf`
     become `lim (a_n - b_n)` or `lim a_n / lim b_n` where two sequences compete and
-    do not lead to unique results." [1, p.58] *)
+    do not lead to unique results." [1, p.58]
+ *)
 val extreal_mul_def = Define
   `(extreal_mul NegInf NegInf = PosInf) /\
    (extreal_mul NegInf PosInf = NegInf) /\
@@ -767,7 +769,7 @@ val sub_le_imp2 = store_thm
   ``!x y z. y <> NegInf /\ y <> PosInf /\ y <= z + x ==> y - x <= z``,
     rpt Cases
  >> RW_TAC std_ss [extreal_le_def, extreal_add_def, extreal_sub_def,
-		   REAL_LE_SUB_RADD]);
+                   REAL_LE_SUB_RADD]);
 
 val le_sub_imp = store_thm
   ("le_sub_imp",``!x y z. x <> NegInf /\ x <> PosInf /\ y + x <= z ==> y <= z - x``,
@@ -1240,95 +1242,93 @@ val sub_rdistrib = store_thm
 (*   Division        *)
 (*********************)
 
-(* added antecedent ``y <> 0`` *)
+(* added antecedent `y <> 0` *)
 val extreal_div_eq = store_thm
   ("extreal_div_eq", ``!x y. y <> 0 ==> (Normal x / Normal y = Normal (x / y))``,
     rpt Cases
  >> RW_TAC std_ss [extreal_div_def, extreal_inv_def, extreal_mul_def, real_div]);
 
 val inv_one = store_thm
-  ("inv_one",``inv 1 = 1``,
-  RW_TAC std_ss [extreal_inv_def,extreal_of_num_def,REAL_10,REAL_INV1]);
+  ("inv_one", ``inv 1 = 1``,
+    RW_TAC std_ss [extreal_inv_def, extreal_of_num_def, REAL_10, REAL_INV1]);
 
 val inv_1over = store_thm
-  ("inv_1over",``!x. inv x = 1 / x``,
-  rpt Cases
-  >> RW_TAC real_ss [extreal_inv_def,extreal_div_def,extreal_mul_def,
-                     extreal_of_num_def,REAL_10,REAL_INV1]);
+  ("inv_1over", ``!x. inv x = 1 / x``,
+    rpt Cases
+ >> RW_TAC real_ss [extreal_inv_def, extreal_div_def, extreal_mul_def,
+                    extreal_of_num_def, REAL_10, REAL_INV1]);
 
 val div_one = store_thm
-  ("div_one",``!x. x / 1 = x``,
-   RW_TAC std_ss [extreal_div_def,mul_rone,inv_one]);
+  ("div_one", ``!x. x / 1 = x``,
+    RW_TAC std_ss [extreal_div_def, mul_rone, inv_one]);
 
 val inv_pos = store_thm
-  ("inv_pos",``!x. 0 < x /\ x <> PosInf ==> (0 < 1 / x)``,
-  Cases
-  >> RW_TAC real_ss [extreal_div_def,extreal_inv_def,extreal_of_num_def,extreal_lt_def,
-                     extreal_mul_def,extreal_le_def,lt_infty,le_infty]
-  >> FULL_SIMP_TAC real_ss [real_lte]);
+  ("inv_pos", ``!x. 0 < x /\ x <> PosInf ==> 0 < 1 / x``,
+    Cases
+ >> RW_TAC real_ss [extreal_div_def, extreal_inv_def, extreal_of_num_def, extreal_lt_def,
+                    extreal_mul_def, extreal_le_def, lt_infty, le_infty]
+ >> FULL_SIMP_TAC real_ss [real_lte]);
 
 val rinv_uniq = store_thm
-  ("rinv_uniq",``!x y. (x * y = 1) ==> (y = inv x)``,
-  rpt Cases
-  >> RW_TAC real_ss [extreal_inv_def,extreal_mul_def,
-                     extreal_of_num_def,REAL_RINV_UNIQ]);
+  ("rinv_uniq", ``!x y. (x * y = 1) ==> (y = inv x)``,
+    rpt Cases
+ >> RW_TAC real_ss [extreal_inv_def, extreal_mul_def, extreal_of_num_def, REAL_RINV_UNIQ]);
 
 val linv_uniq = store_thm
-  ("linv_uniq",``!x y. (x * y = 1) ==> (x = inv y)``,
-  RW_TAC std_ss [rinv_uniq,mul_comm]);
+  ("linv_uniq", ``!x y. (x * y = 1) ==> (x = inv y)``,
+    RW_TAC std_ss [rinv_uniq, mul_comm]);
 
 val le_rdiv = store_thm
-  ("le_rdiv",``!x y z. 0 < x ==> (y * Normal x <= z = y <= z / Normal x)``,
-  STRIP_TAC >> rpt Cases
-  >> RW_TAC std_ss [extreal_mul_def,extreal_div_def,extreal_inv_def,extreal_le_def,
-                    le_infty,extreal_of_num_def,extreal_not_infty,REAL_LT_REFL,REAL_INV_EQ_0,
-                    REAL_INV_POS]
-  >> METIS_TAC [REAL_LE_RDIV_EQ,real_div]);
+  ("le_rdiv", ``!x y z. 0 < x ==> (y * Normal x <= z = y <= z / Normal x)``,
+    STRIP_TAC >> rpt Cases
+ >> RW_TAC std_ss [extreal_mul_def, extreal_div_def, extreal_inv_def, extreal_le_def,
+                   le_infty, extreal_of_num_def, extreal_not_infty, REAL_LT_REFL, REAL_INV_EQ_0,
+                   REAL_INV_POS]
+ >> METIS_TAC [REAL_LE_RDIV_EQ, real_div]);
 
 val le_ldiv = store_thm
   ("le_ldiv",``!x y z. 0 < x ==> (y <= z * Normal x = y / Normal x <= z)``,
-  STRIP_TAC >> rpt Cases
-  >> RW_TAC std_ss [extreal_mul_def,extreal_div_def,extreal_inv_def,extreal_le_def,
-                    le_infty,extreal_of_num_def,extreal_not_infty,REAL_LT_REFL,REAL_INV_EQ_0,
-                    REAL_INV_POS]
-  >> METIS_TAC [REAL_LE_LDIV_EQ,real_div]);
+    STRIP_TAC >> rpt Cases
+ >> RW_TAC std_ss [extreal_mul_def, extreal_div_def, extreal_inv_def, extreal_le_def,
+                   le_infty, extreal_of_num_def, extreal_not_infty, REAL_LT_REFL, REAL_INV_EQ_0,
+                   REAL_INV_POS]
+ >> METIS_TAC [REAL_LE_LDIV_EQ, real_div]);
 
 val lt_rdiv = store_thm
   ("lt_rdiv", ``!x y z. 0 < z ==> (x < y / Normal z <=> x * Normal z < y)``,
-  Cases >> Cases
-  >> RW_TAC std_ss [REAL_INV_EQ_0,REAL_INV_POS,extreal_lt_eq,REAL_LT_RDIV_EQ,GSYM real_div,
-                    REAL_LT_REFL,lt_refl,lt_infty,le_infty,extreal_div_def,extreal_inv_def,
-                    extreal_div_eq,extreal_mul_def]);
+    Cases >> Cases
+ >> RW_TAC std_ss [REAL_INV_EQ_0, REAL_INV_POS, extreal_lt_eq, REAL_LT_RDIV_EQ, GSYM real_div,
+                   REAL_LT_REFL, lt_refl, lt_infty, le_infty, extreal_div_def, extreal_inv_def,
+                   extreal_div_eq, extreal_mul_def]);
 
 val lt_ldiv = store_thm
-  ("lt_ldiv",``!x y z. 0 < z ==> (x / Normal z < y = x < y * Normal z)``,
-  Cases >> Cases
-  >> RW_TAC std_ss [REAL_INV_EQ_0,REAL_INV_POS,extreal_lt_eq,REAL_LT_LDIV_EQ,GSYM real_div,
-                    REAL_LT_REFL,lt_refl,lt_infty,le_infty,extreal_div_def,extreal_inv_def,
-                    extreal_div_eq,extreal_mul_def]);
+  ("lt_ldiv", ``!x y z. 0 < z ==> (x / Normal z < y = x < y * Normal z)``,
+    Cases >> Cases
+ >> RW_TAC std_ss [REAL_INV_EQ_0, REAL_INV_POS, extreal_lt_eq, REAL_LT_LDIV_EQ, GSYM real_div,
+                   REAL_LT_REFL, lt_refl, lt_infty, le_infty, extreal_div_def, extreal_inv_def,
+                   extreal_div_eq, extreal_mul_def]);
 
 val lt_rdiv_neg = store_thm
   ("lt_rdiv_neg", ``!x y z. z < 0 ==> (y / Normal z < x <=> x * Normal z < y)``,
-  (Cases >> Cases >> RW_TAC std_ss []
-  >> RW_TAC std_ss [REAL_INV_POS,REAL_LE_LT,GSYM real_lte,REAL_INV_EQ_0,REAL_INV_POS,
-                    extreal_lt_eq,REAL_LT_RDIV_EQ_NEG,GSYM real_div,REAL_LT_REFL,lt_refl,
-                    lt_infty,le_infty,extreal_div_def,extreal_inv_def,extreal_div_eq,
-                    extreal_mul_def,REAL_LT_REFL])
-  >> METIS_TAC [REAL_LT_REFL,REAL_LT_ANTISYM,real_lte,REAL_LT_IMP_LE,REAL_LT_INV_EQ]);
+    Cases >> Cases >> RW_TAC std_ss []
+ >> RW_TAC std_ss [REAL_INV_POS, REAL_LE_LT, GSYM real_lte, REAL_INV_EQ_0, REAL_INV_POS,
+                   extreal_lt_eq, REAL_LT_RDIV_EQ_NEG, GSYM real_div, REAL_LT_REFL, lt_refl,
+                   lt_infty, le_infty, extreal_div_def, extreal_inv_def, extreal_div_eq,
+                   extreal_mul_def, REAL_LT_REFL]
+ >> METIS_TAC [REAL_LT_REFL, REAL_LT_ANTISYM, real_lte, REAL_LT_IMP_LE, REAL_LT_INV_EQ]);
 
 val div_add = store_thm
-  ("div_add",``!x y z.  x <> NegInf /\ y <> NegInf /\ z <> 0
-                     ==> (x / z + y / z = (x + y) / z)``,
-  rpt Cases
-  >> RW_TAC real_ss [extreal_add_def,extreal_div_def,extreal_mul_def,extreal_inv_def,
-                     extreal_of_num_def]
-  >> RW_TAC real_ss [extreal_add_def,REAL_RDISTRIB]);
+  ("div_add", ``!x y z. x <> NegInf /\ y <> NegInf /\ z <> 0 ==>
+                       (x / z + y / z = (x + y) / z)``,
+    rpt Cases
+ >> RW_TAC real_ss [extreal_add_def, extreal_div_def, extreal_mul_def, extreal_inv_def,
+                    extreal_of_num_def]
+ >> RW_TAC real_ss [extreal_add_def, REAL_RDISTRIB]);
 
 val le_inv = store_thm
-  ("le_inv",``!x. 0 <= x ==> 0 <= inv x``,
-  Cases
-  >> RW_TAC real_ss [extreal_inv_def,extreal_of_num_def,extreal_le_def,
-                     le_infty,REAL_LE_INV]);
+  ("le_inv", ``!x. 0 <= x ==> 0 <= inv x``,
+    Cases >> RW_TAC real_ss [extreal_inv_def, extreal_of_num_def, extreal_le_def,
+                             le_infty, REAL_LE_INV]);
 
 val div_infty = store_thm (* new *)
   ("div_infty", ``!x. (x / PosInf = 0) /\ (x / NegInf = 0)``,
@@ -1521,7 +1521,7 @@ val half_between = store_thm
    ``(0 < 1/2 /\ 1/2 < 1) /\ (0 <= 1/2 /\ 1/2 <= 1)``,
    MATCH_MP_TAC (PROVE [] ``(x ==> y) /\ x ==> x /\ y``)
    >> CONJ_TAC >- PROVE_TAC [lt_imp_le]
-   >> RW_TAC real_ss [extreal_div_def,extreal_inv_def, mul_lone,
+   >> RW_TAC real_ss [extreal_div_def, extreal_inv_def, mul_lone,
                       extreal_lt_def, extreal_le_def, extreal_of_num_def,
                       extreal_not_infty,GSYM real_lt,REAL_INV_1OVER]);
 
@@ -1531,29 +1531,29 @@ val thirds_between = store_thm
      ((0 <= 1/3 /\ 1/3 <= 1) /\ (0 <= 2/3 /\ 2/3 <= 1))``,
    MATCH_MP_TAC (PROVE [] ``(x ==> y) /\ x ==> x /\ y``)
    >> CONJ_TAC >- PROVE_TAC [lt_imp_le]
-   >> RW_TAC real_ss [extreal_div_def,extreal_inv_def, mul_lone,
+   >> RW_TAC real_ss [extreal_div_def, extreal_inv_def, mul_lone,
                       extreal_lt_def, extreal_le_def, extreal_of_num_def,
                       extreal_not_infty,GSYM real_lt,extreal_mul_def,REAL_INV_1OVER]);
 
 val half_cancel = store_thm
   ("half_cancel",``2 * (1 / 2) = 1``,
-   RW_TAC real_ss [extreal_of_num_def,extreal_mul_def,extreal_div_eq,
+   RW_TAC real_ss [extreal_of_num_def, extreal_mul_def, extreal_div_eq,
                    EVAL ``2 <> 0:real``,REAL_MUL_RINV,real_div]);
 
 val third_cancel = store_thm
   ("third_cancel",``3 * (1 / 3) = 1``,
-   RW_TAC real_ss [extreal_of_num_def,extreal_mul_def,extreal_div_eq,
-                   EVAL ``3 <> 0:real``,REAL_MUL_RINV,real_div]);
+    RW_TAC real_ss [extreal_of_num_def, extreal_mul_def, extreal_div_eq,
+                    EVAL ``3 <> 0:real``,REAL_MUL_RINV,real_div]);
 
 val fourth_cancel = store_thm
   ("fourth_cancel",``4 * (1 / 4) = 1``,
-   RW_TAC real_ss [extreal_of_num_def,extreal_mul_def,extreal_div_eq,
-                   EVAL ``4 <> 0:real``,REAL_MUL_RINV,real_div]);
+    RW_TAC real_ss [extreal_of_num_def, extreal_mul_def, extreal_div_eq,
+                    EVAL ``4 <> 0:real``, REAL_MUL_RINV, real_div]);
 
 (* added antecedent ``m <> 0`` *)
 val quotient_normal = store_thm
   ("quotient_normal", ``!n m. m <> 0 ==> (&n / &m = Normal (&n / &m))``,
-  RW_TAC std_ss [extreal_div_eq,extreal_of_num_def,REAL_OF_NUM_EQ]);
+    RW_TAC std_ss [extreal_div_eq, extreal_of_num_def, REAL_OF_NUM_EQ]);
 
 val ext_mono_increasing_def = Define
    `ext_mono_increasing f = (!m n:num. m <= n ==> f m <= f n)`;
@@ -1565,10 +1565,10 @@ val ext_mono_increasing_suc = store_thm
   >> RW_TAC real_ss []
   >> Know `?d. n = m + d` >- PROVE_TAC [LESS_EQ_EXISTS]
   >> RW_TAC std_ss []
-  >> Induct_on `d` >- RW_TAC std_ss [add_rzero,le_refl]
+  >> Induct_on `d` >- RW_TAC std_ss [add_rzero, le_refl]
   >> RW_TAC std_ss []
   >> Q.PAT_X_ASSUM `!n. f n <= f (SUC n)` (MP_TAC o Q.SPEC `m + d`)
-  >> METIS_TAC [le_trans,ADD_CLAUSES,LESS_EQ_ADD]);
+  >> METIS_TAC [le_trans, ADD_CLAUSES, LESS_EQ_ADD]);
 
 val ext_mono_decreasing_def = Define
    `ext_mono_decreasing f = (!m n:num. m <= n ==> f n <= f m)`;
@@ -1589,97 +1589,94 @@ val _ = overload_on ("mono_increasing", Term `ext_mono_increasing`);
 val _ = overload_on ("mono_decreasing", Term `ext_mono_decreasing`);
 
 val EXTREAL_ARCH = store_thm
- ("EXTREAL_ARCH", ``!x. 0 < x ==> !y. y <> PosInf ==> ?n. y < &n * x``,
-  Cases
-  >| [RW_TAC std_ss [lt_infty],
-      RW_TAC std_ss [lt_infty] >> Q.EXISTS_TAC `1` >> RW_TAC std_ss [mul_lone,lt_infty],
+  ("EXTREAL_ARCH", ``!x. 0 < x ==> !y. y <> PosInf ==> ?n. y < &n * x``,
+    Cases
+ >| [ RW_TAC std_ss [lt_infty],
+      RW_TAC std_ss [lt_infty] >> Q.EXISTS_TAC `1` >> RW_TAC std_ss [mul_lone, lt_infty],
       RW_TAC std_ss [lt_infty]
       >> Cases_on `y = NegInf`
-      >- (Q.EXISTS_TAC `1` >> RW_TAC std_ss [mul_lone,lt_infty])
-      >> `?z. y = Normal z` by METIS_TAC [extreal_cases,lt_infty]
-      >> `0 < r` by METIS_TAC [extreal_lt_eq,extreal_of_num_def]
+      >- (Q.EXISTS_TAC `1` >> RW_TAC std_ss [mul_lone, lt_infty])
+      >> `?z. y = Normal z` by METIS_TAC [extreal_cases, lt_infty]
+      >> `0 < r` by METIS_TAC [extreal_lt_eq, extreal_of_num_def]
       >> `?n. z < &n * r` by METIS_TAC [REAL_ARCH]
       >> Q.EXISTS_TAC `n`
-      >> RW_TAC real_ss [extreal_lt_eq,REAL_LE_MUL,extreal_of_num_def,extreal_mul_def]]);
+      >> RW_TAC real_ss [extreal_lt_eq, REAL_LE_MUL, extreal_of_num_def, extreal_mul_def] ]);
 
 val SIMP_EXTREAL_ARCH = store_thm
- ("SIMP_EXTREAL_ARCH",
-  ``!x. x <> PosInf ==> ?n. x <= &n``,
-  Cases
-  >> RW_TAC std_ss [le_infty]
-  >> `?n. r <= &n` by RW_TAC std_ss [SIMP_REAL_ARCH]
-  >> Q.EXISTS_TAC `n`
-  >> RW_TAC real_ss [extreal_of_num_def,extreal_le_def]);
+  ("SIMP_EXTREAL_ARCH", ``!x. x <> PosInf ==> ?n. x <= &n``,
+    Cases
+ >> RW_TAC std_ss [le_infty]
+ >> `?n. r <= &n` by RW_TAC std_ss [SIMP_REAL_ARCH]
+ >> Q.EXISTS_TAC `n`
+ >> RW_TAC real_ss [extreal_of_num_def,extreal_le_def]);
 
 val SIMP_EXTREAL_ARCH_NEG = store_thm
-  ("SIMP_EXTREAL_ARCH_NEG",
-  ``!x. x <> NegInf ==> ?n. - &n <= x``,
-  Cases
-  >> RW_TAC std_ss [le_infty]
-  >> `?n. - &n <= r` by RW_TAC std_ss [SIMP_REAL_ARCH_NEG]
-  >> Q.EXISTS_TAC `n`
-  >> RW_TAC real_ss [extreal_of_num_def, extreal_le_eq, extreal_ainv_def]);
+  ("SIMP_EXTREAL_ARCH_NEG", ``!x. x <> NegInf ==> ?n. - &n <= x``,
+    Cases
+ >> RW_TAC std_ss [le_infty]
+ >> `?n. - &n <= r` by RW_TAC std_ss [SIMP_REAL_ARCH_NEG]
+ >> Q.EXISTS_TAC `n`
+ >> RW_TAC real_ss [extreal_of_num_def, extreal_le_eq, extreal_ainv_def]);
 
 val REAL_ARCH_POW = store_thm
   ("REAL_ARCH_POW", ``!x:real. ?n. x < 2 pow n``,
-  METIS_TAC [POW_2_LT,SIMP_REAL_ARCH,REAL_LET_TRANS]);
+    METIS_TAC [POW_2_LT, SIMP_REAL_ARCH, REAL_LET_TRANS]);
 
 val EXTREAL_ARCH_POW = store_thm
   ("EXTREAL_ARCH_POW", ``!x. x <> PosInf ==> ?n. x < (2 pow n)``,
-  Cases >> RW_TAC std_ss [lt_infty,extreal_lt_eq,REAL_ARCH_POW,
-                          extreal_pow_def,extreal_of_num_def]);
+    Cases >> RW_TAC std_ss [lt_infty, extreal_lt_eq, REAL_ARCH_POW, extreal_pow_def,
+                            extreal_of_num_def]);
 
 val EXTREAL_ARCH_POW_INV = store_thm
   ("EXTREAL_ARCH_POW_INV", ``!e. 0 < e ==> ?n. Normal ((1 / 2) pow n) < e``,
-  Cases >- RW_TAC std_ss [lt_infty]
-  >- METIS_TAC [lt_infty,extreal_not_infty]
-  >> RW_TAC std_ss [extreal_of_num_def,extreal_lt_eq]
-  >>  MP_TAC (Q.SPEC `1 / 2` SEQ_POWER)
-  >> RW_TAC std_ss [abs, REAL_HALF_BETWEEN, REAL_LT_IMP_LE, SEQ]
-  >> POP_ASSUM (MP_TAC o Q.SPEC `r`)
-  >> RW_TAC std_ss [REAL_SUB_RZERO, REAL_POW_LT,
-                    REAL_HALF_BETWEEN,REAL_LT_IMP_LE,GREATER_EQ]
-  >> PROVE_TAC [LESS_EQ_REFL]);
+    Cases >- RW_TAC std_ss [lt_infty]
+ >- METIS_TAC [lt_infty,extreal_not_infty]
+ >> RW_TAC std_ss [extreal_of_num_def,extreal_lt_eq]
+ >> MP_TAC (Q.SPEC `1 / 2` SEQ_POWER)
+ >> RW_TAC std_ss [abs, REAL_HALF_BETWEEN, REAL_LT_IMP_LE, SEQ]
+ >> POP_ASSUM (MP_TAC o Q.SPEC `r`)
+ >> RW_TAC std_ss [REAL_SUB_RZERO, REAL_POW_LT,
+                   REAL_HALF_BETWEEN,REAL_LT_IMP_LE,GREATER_EQ]
+ >> PROVE_TAC [LESS_EQ_REFL]);
 
 val REAL_LE_MUL_EPSILON = store_thm
   ("REAL_LE_MUL_EPSILON",
-   ``!x y:real. (!z. 0 < z /\ z < 1 ==> z * x <= y) ==>
-                x <= y``,
+  ``!x y:real. (!z. 0 < z /\ z < 1 ==> z * x <= y) ==> x <= y``,
     rpt STRIP_TAC
-    >> Cases_on `x = 0`
-    >- (Q.PAT_X_ASSUM `!z. P z` (MP_TAC o Q.SPEC `1/2`)
-        >> RW_TAC real_ss [REAL_HALF_BETWEEN])
-    >> Cases_on `0 < x`
-    >- (MATCH_MP_TAC REAL_LE_EPSILON
-        >> RW_TAC std_ss [GSYM REAL_LE_SUB_RADD]
-        >> Cases_on `e < x`
-        >- (MATCH_MP_TAC REAL_LE_TRANS
-            >> Q.EXISTS_TAC `(1-(e/x))*x`
-            >> CONJ_TAC
-            >- (RW_TAC real_ss [REAL_SUB_RDISTRIB]
-                >> METIS_TAC [REAL_DIV_RMUL, REAL_LE_REFL])
-            >> Q.PAT_X_ASSUM `!z. P z` MATCH_MP_TAC
-            >> RW_TAC real_ss [REAL_LT_SUB_RADD, REAL_LT_ADDR, REAL_LT_DIV, REAL_LT_SUB_LADD,
-                               REAL_LT_1, REAL_LT_IMP_LE])
-        >> FULL_SIMP_TAC std_ss [REAL_NOT_LT]
-        >> MATCH_MP_TAC REAL_LE_TRANS
-        >> Q.EXISTS_TAC `0`
-        >> RW_TAC real_ss [REAL_LE_SUB_RADD]
-        >> MATCH_MP_TAC REAL_LE_TRANS
-        >> Q.EXISTS_TAC `(1/2)*x`
-        >> RW_TAC real_ss [REAL_LE_MUL, REAL_LT_IMP_LE])
-    >> MATCH_MP_TAC REAL_LE_TRANS
-    >> Q.EXISTS_TAC `(1/2)*x`
-    >> RW_TAC real_ss []
-    >> RW_TAC std_ss [Once (GSYM REAL_LE_NEG), GSYM REAL_MUL_RNEG]
-    >> Suff `1/2 * ~x <= 1 * ~x` >- RW_TAC real_ss []
-    >> METIS_TAC [REAL_NEG_GT0, REAL_LT_TOTAL,
-                  REAL_LE_REFL, REAL_HALF_BETWEEN, REAL_LE_RMUL]);
+ >> Cases_on `x = 0`
+ >- (Q.PAT_X_ASSUM `!z. P z` (MP_TAC o Q.SPEC `1/2`)
+     >> RW_TAC real_ss [REAL_HALF_BETWEEN])
+ >> Cases_on `0 < x`
+ >- (MATCH_MP_TAC REAL_LE_EPSILON
+     >> RW_TAC std_ss [GSYM REAL_LE_SUB_RADD]
+     >> Cases_on `e < x`
+     >- (MATCH_MP_TAC REAL_LE_TRANS
+         >> Q.EXISTS_TAC `(1-(e/x))*x`
+         >> CONJ_TAC
+         >- (RW_TAC real_ss [REAL_SUB_RDISTRIB]
+             >> METIS_TAC [REAL_DIV_RMUL, REAL_LE_REFL])
+         >> Q.PAT_X_ASSUM `!z. P z` MATCH_MP_TAC
+         >> RW_TAC real_ss [REAL_LT_SUB_RADD, REAL_LT_ADDR, REAL_LT_DIV, REAL_LT_SUB_LADD,
+                            REAL_LT_1, REAL_LT_IMP_LE])
+     >> FULL_SIMP_TAC std_ss [REAL_NOT_LT]
+     >> MATCH_MP_TAC REAL_LE_TRANS
+     >> Q.EXISTS_TAC `0`
+     >> RW_TAC real_ss [REAL_LE_SUB_RADD]
+     >> MATCH_MP_TAC REAL_LE_TRANS
+     >> Q.EXISTS_TAC `(1/2)*x`
+     >> RW_TAC real_ss [REAL_LE_MUL, REAL_LT_IMP_LE])
+ >> MATCH_MP_TAC REAL_LE_TRANS
+ >> Q.EXISTS_TAC `(1/2)*x`
+ >> RW_TAC real_ss []
+ >> RW_TAC std_ss [Once (GSYM REAL_LE_NEG), GSYM REAL_MUL_RNEG]
+ >> Suff `1/2 * ~x <= 1 * ~x` >- RW_TAC real_ss []
+ >> METIS_TAC [REAL_NEG_GT0, REAL_LT_TOTAL, REAL_LE_REFL, REAL_HALF_BETWEEN, REAL_LE_RMUL]);
 
 val le_epsilon = store_thm
-  ("le_epsilon",``!x y. (!e. 0 < e /\ e <> PosInf ==> x <= y + e) ==> x <= y``,
-  (rpt Cases >> RW_TAC std_ss [le_infty])
-  >| [Q.EXISTS_TAC `1`
+  ("le_epsilon", ``!x y. (!e. 0 < e /\ e <> PosInf ==> x <= y + e) ==> x <= y``,
+    rpt Cases
+ >> RW_TAC std_ss [le_infty]
+ >| [ Q.EXISTS_TAC `1`
       >> RW_TAC std_ss [lt_01, extreal_of_num_def, extreal_not_infty, extreal_add_def],
       Q.EXISTS_TAC `1`
       >> RW_TAC std_ss [lt_01, extreal_of_num_def, extreal_not_infty, extreal_add_def],
@@ -1700,7 +1697,7 @@ val le_epsilon = store_thm
       >> `!e. 0 < e ==>  r <= r' + e`
        by METIS_TAC [extreal_le_def, REAL_LT_IMP_LE, REAL_LE_ADD, extreal_add_def, REAL_LE_ADD]
       >> `!e. 0 < e ==>  r <= r' + e` by METIS_TAC [extreal_le_def]
-      >> METIS_TAC [REAL_LE_EPSILON,extreal_le_def]]);
+      >> METIS_TAC [REAL_LE_EPSILON,extreal_le_def] ]);
 
 val le_mul_epsilon = store_thm
   ("le_mul_epsilon",
@@ -1760,24 +1757,24 @@ local val tactics =
     [ (* goal 1.1 (of 2), x = y, no extreal property used *)
       POP_ASSUM SUBST_ALL_TAC \\ (* all `x` disappeared *)
       Suff `t = s DELETE y` >- SRW_TAC [][] \\
-      `s = y INSERT t` by PROVE_TAC [NOT_IN_EMPTY, CHOICE_INSERT_REST] \\
+     `s = y INSERT t` by PROVE_TAC [NOT_IN_EMPTY, CHOICE_INSERT_REST] \\
       SRW_TAC [][DELETE_INSERT, delete_non_element],
       (* goal 1.2 (of 2), x <> y *)
-      `s = y INSERT t` by PROVE_TAC [NOT_IN_EMPTY, CHOICE_INSERT_REST] \\
-      `x IN t` by PROVE_TAC [IN_INSERT] \\
+     `s = y INSERT t` by PROVE_TAC [NOT_IN_EMPTY, CHOICE_INSERT_REST] \\
+     `x IN t` by PROVE_TAC [IN_INSERT] \\
       Q.ABBREV_TAC `u = t DELETE x` \\
-      `t = x INSERT u` by SRW_TAC [][INSERT_DELETE, Abbr`u`] \\
-      `~(x IN u)` by PROVE_TAC [IN_DELETE] \\
-      `s = x INSERT (y INSERT u)` by SRW_TAC [][INSERT_COMM] \\
+     `t = x INSERT u` by SRW_TAC [][INSERT_DELETE, Abbr`u`] \\
+     `~(x IN u)` by PROVE_TAC [IN_DELETE] \\
+     `s = x INSERT (y INSERT u)` by SRW_TAC [][INSERT_COMM] \\
       POP_ASSUM SUBST_ALL_TAC \\ (* all `s` disappeared *)
       FULL_SIMP_TAC bool_ss [FINITE_INSERT, CARD_INSERT, DELETE_INSERT,IN_INSERT] \\
       (* now we start using properties of extreal *)
-      `f x + b <> limit /\ f y + b <> limit` by METIS_TAC [add_not_infty] \\
+     `f x + b <> limit /\ f y + b <> limit` by METIS_TAC [add_not_infty] \\
       Q.PAT_X_ASSUM `!s' x' b'. (CARD s' < SUC (SUC (CARD u)) /\ FINITE s') /\ X ==> Y`
         (ASSUME_TAC o (Q.SPEC `u`)) \\
       FULL_SIMP_TAC arith_ss [] \\
-      `!z. (z = x) \/ z IN u ==> f z <> limit` by METIS_TAC [] \\
-      `!z. (z = y) \/ z IN u ==> f z <> limit` by METIS_TAC [] \\
+     `!z. (z = x) \/ z IN u ==> f z <> limit` by METIS_TAC [] \\
+     `!z. (z = y) \/ z IN u ==> f z <> limit` by METIS_TAC [] \\
       rpt STRIP_TAC \\
       Q.PAT_ASSUM `!x' b'. FINITE u /\ X ==> Y` (MP_TAC o (Q.SPECL [`x`, `f y + b`])) \\
       Q.PAT_ASSUM `!x' b'. FINITE u /\ X ==> Y` (MP_TAC o (Q.SPECL [`y`, `f x + b`])) \\
@@ -1787,30 +1784,30 @@ local val tactics =
       METIS_TAC [add_assoc, add_comm, add_not_infty] ],
     (* goal 2 (of 2), ~(x IN s) *)
     ASM_SIMP_TAC bool_ss [delete_non_element] \\
-    `x INSERT s = y INSERT t` by PROVE_TAC [NOT_EMPTY_INSERT, CHOICE_INSERT_REST] \\
+   `x INSERT s = y INSERT t` by PROVE_TAC [NOT_EMPTY_INSERT, CHOICE_INSERT_REST] \\
     Cases_on `x = y` >| (* 2 sub-goals here *)
     [ (* goal 2.1 (of 2), no extreal property used *)
       POP_ASSUM SUBST_ALL_TAC \\ (* all `x` disappeared *)
       Suff `t = s` THEN1 SRW_TAC [][] \\
       FULL_SIMP_TAC bool_ss [EXTENSION, IN_INSERT] >> PROVE_TAC [],
       (* goal 2.2 (of 2), ~(x = y) *)
-      `x IN t /\ y IN s` by PROVE_TAC [IN_INSERT] \\
+     `x IN t /\ y IN s` by PROVE_TAC [IN_INSERT] \\
       Q.ABBREV_TAC `u = s DELETE y` \\
-      `~(y IN u)` by PROVE_TAC [IN_DELETE] \\
-      `s = y INSERT u` by SRW_TAC [][INSERT_DELETE, Abbr`u`] \\
+     `~(y IN u)` by PROVE_TAC [IN_DELETE] \\
+     `s = y INSERT u` by SRW_TAC [][INSERT_DELETE, Abbr`u`] \\
       POP_ASSUM SUBST_ALL_TAC \\ (* all `s` disappeared *)
       FULL_SIMP_TAC bool_ss [IN_INSERT, FINITE_INSERT, CARD_INSERT,
                              DELETE_INSERT, delete_non_element] \\
-      `t = x INSERT u` by
-                (FULL_SIMP_TAC bool_ss [EXTENSION, IN_INSERT] THEN PROVE_TAC []) \\
+     `t = x INSERT u` by
+          (FULL_SIMP_TAC bool_ss [EXTENSION, IN_INSERT] THEN PROVE_TAC []) \\
       ASM_REWRITE_TAC [] \\
       (* now we start using properties of extreal *)
-      `f x + b <> limit /\ f y + b <> limit` by METIS_TAC [add_not_infty] \\
+     `f x + b <> limit /\ f y + b <> limit` by METIS_TAC [add_not_infty] \\
       Q.PAT_X_ASSUM `!s x' b'. (CARD s < SUC (CARD u) /\ FINITE s') /\ X ==> Y`
         (ASSUME_TAC o (Q.SPEC `u`)) \\
       FULL_SIMP_TAC arith_ss [] \\
-      `!z. (z = x) \/ z IN u ==> f z <> limit` by METIS_TAC [] \\
-      `!z. (z = y) \/ z IN u ==> f z <> limit` by METIS_TAC [] \\
+     `!z. (z = x) \/ z IN u ==> f z <> limit` by METIS_TAC [] \\
+     `!z. (z = y) \/ z IN u ==> f z <> limit` by METIS_TAC [] \\
       Q.PAT_ASSUM `!x' b'. FINITE u /\ X ==> Y` (MP_TAC o (Q.SPECL [`x`, `f y + b`])) \\
       Q.PAT_ASSUM `!x' b'. FINITE u /\ X ==> Y` (MP_TAC o (Q.SPECL [`y`, `f x + b`])) \\
       Q.PAT_X_ASSUM `!x' b'. FINITE u /\ X ==> Y` K_TAC \\

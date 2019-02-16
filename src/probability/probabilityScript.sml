@@ -1608,7 +1608,7 @@ val PROB_ONE_AE = store_thm
 (*  Kolmogorov's 0-1 Law                                                      *)
 (******************************************************************************)
 
-val remote_events_def = Define (* or "tail_events" *)
+val remote_events_def = Define (* "tail_events" in Isabelle/HOL *)
    `remote_events (p :'a p_space) (A :num -> 'a events) =
       BIGINTER (IMAGE (\n. subsets (sigma (p_space p)
                                           (BIGUNION (IMAGE A {m | m > n}))))
@@ -1626,46 +1626,11 @@ val Kolmogorov_0_1_Law = store_thm (* [3, p.37-38] *)
 (*  Moments and variance (definitions from [2, p.49])                         *)
 (******************************************************************************)
 
-val _ = type_abbrev ("rv",  ``:'a -> extreal``);
-
-(* experimental overloads of random variables
-val rv_add_def  = Define `rv_add (X :'a rv) (Y :'a rv) = (\x. X x + Y x)`;
-val rv_add1_def = Define `rv_add1 c (Y :'a rv) = (\x. c + Y x)`;
-val rv_add2_def = Define `rv_add2 (X :'a rv) c = (\x. X x + c)`;
-val rv_sub_def  = Define `rv_sub (X :'a rv) (Y :'a rv) = (\x. X x - Y x)`;
-val rv_sub1_def = Define `rv_sub1 c (Y :'a rv) = (\x. c - Y x)`;
-val rv_sub2_def = Define `rv_sub2 (X :'a rv) c = (\x. X x - c)`;
-val rv_mul_def  = Define `rv_mul (X :'a rv) (Y :'a rv) = (\x. X x * Y x)`;
-val rv_mul1_def = Define `rv_mul1 c (Y :'a rv) = (\x. c * Y x)`;
-val rv_mul2_def = Define `rv_mul2 (X :'a rv) c = (\x. X x * c)`;
-val rv_div_def  = Define `rv_div (X :'a rv) (Y :'a rv) = (\x. X x / Y x)`;
-val rv_div1_def = Define `rv_div1 c (Y :'a rv) = (\x. c / Y x)`;
-val rv_div2_def = Define `rv_div2 (X :'a rv) c = (\x. X x / c)`;
-val rv_abs_def  = Define `rv_abs (X :'a rv) = (\x. abs (X x))`;
-val rv_sqrt_def = Define `rv_sqrt (X :'a rv) = (\x. sqrt (X x))`;
-val rv_pow_def  = Define `rv_pow (X :'a rv) r = (\x. (X x) pow r)`;
-
-val _ = overload_on ("+",    ``rv_add``);
-val _ = overload_on ("+",    ``rv_add1``);
-val _ = overload_on ("+",    ``rv_add2``);
-val _ = overload_on ("-",    ``rv_sub``);
-val _ = overload_on ("-",    ``rv_sub1``);
-val _ = overload_on ("-",    ``rv_sub2``);
-val _ = overload_on ("*",    ``rv_mul``);
-val _ = overload_on ("*",    ``rv_mul1``);
-val _ = overload_on ("*",    ``rv_mul2``);
-val _ = overload_on ("/",    ``rv_div``);
-val _ = overload_on ("/",    ``rv_div1``);
-val _ = overload_on ("/",    ``rv_div2``);
-val _ = overload_on ("abs",  ``rv_abs``);
-val _ = overload_on ("sqrt", ``rv_sqrt``);
-val _ = overload_on ("pow",  ``rv_pow``);
-
 val absolute_moment_def = Define
-   `absolute_moment P X r a = expectation P (abs (X − a) pow r)`;
+   `absolute_moment P X r a = expectation P (\x. (abs (X x − a)) pow r)`;
 
 val moment_def = Define
-   `moment P X r a = expectation P ((X - a) pow r)`;
+   `moment P X r a = expectation P (\x. (X x - a) pow r)`;
 
 val central_moment_def = Define
    `central_moment P X r = moment P X r (expectation P X)`;
@@ -1675,7 +1640,6 @@ val variance_def = Define
 
 val standard_deviation_def = Define
    `standard_deviation P X = sqrt (variance P X)`;
-*)
 
 val _ = export_theory ();
 
@@ -1686,4 +1650,7 @@ val _ = export_theory ();
   [2] Chung, K.L.: A Course in Probability Theory, Third Edition. Academic Press (2001).
   [3] Rosenthal, J.S.: A First Look at Rigorous Probability Theory.
       World Scientific Publishing Company (2006).
+  [4] Shiryaev, A.N.: Probability-1. Springer-Verlag New York (2016).
+  [5] Shiryaev, A.N.: Probability-2. Springer-Verlag New York (2019).
+  [6] Billingsley, P.: Probability and Measure. Wiley-Interscience (1995).
  *)
