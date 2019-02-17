@@ -31,6 +31,28 @@ val _ = new_theory "measure"; (* Borel sets are moved to "borelTheory" *)
 
 val std_ss' = std_ss ++ boolSimps.ETA_ss;
 val SET_SPEC_TAC = SIMP_TAC (std_ss ++ SET_SPEC_ss);
+val DISC_RW_KILL = DISCH_TAC THEN ONCE_ASM_REWRITE_TAC [] THEN
+                   POP_ASSUM K_TAC;
+(* Some Useful Set Solvers *)
+fun METIS ths tm = prove(tm,METIS_TAC ths);
+
+val IN_REST = store_thm ("IN_REST",
+ ``!x:'a. !s. x IN (REST s) <=> x IN s /\ ~(x = CHOICE s)``,
+  REWRITE_TAC[REST_DEF, IN_DELETE]);
+
+fun SET_TAC L = 
+    POP_ASSUM_LIST(K ALL_TAC) THEN REPEAT COND_CASES_TAC THEN
+    REWRITE_TAC (append [EXTENSION, SUBSET_DEF, PSUBSET_DEF, DISJOINT_DEF,
+    SING_DEF] L) THEN
+    SIMP_TAC std_ss [NOT_IN_EMPTY, IN_UNIV, IN_UNION, IN_INTER, IN_DIFF, 
+      IN_INSERT, IN_DELETE, IN_REST, IN_BIGINTER, IN_BIGUNION, IN_IMAGE, 
+      GSPECIFICATION, IN_DEF, EXISTS_PROD,IN_FUNSET] THEN METIS_TAC [];
+
+fun ASSERT_TAC tm = SUBGOAL_THEN tm STRIP_ASSUME_TAC;
+fun SET_RULE tm = prove(tm,SET_TAC []);
+fun ASM_SET_TAC L = REPEAT (POP_ASSUM MP_TAC) THEN SET_TAC L;
+
+
 
 (* from cardinalTheory *)
 fun PRINT_TAC s gl = (print ("** " ^ s ^ "\n"); ALL_TAC gl);
@@ -329,6 +351,16 @@ val SIGMA_ALGEBRA_ALT_MONO = store_thm
    >- PROVE_TAC []
    >> MATCH_MP_TAC IMAGE_FINITE
    >> RW_TAC std_ss [FINITE_COUNT]);
+
+val SIGMA_ALGEBRA_ALT_EQ = store_thm ("SIGMA_ALGEBRA_ALT_EQ",
+  ``!sp sts. sigma_algebra (sp,sts) = algebra (sp,sts) /\
+     !A. IMAGE A UNIV SUBSET sts ==> BIGUNION {A i | i IN univ(:num)} IN sts``,
+  REPEAT GEN_TAC THEN REWRITE_TAC [SIGMA_ALGEBRA_ALT] THEN EQ_TAC THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC [] THEN X_GEN_TAC ``A:num->'a->bool`` THEN
+  POP_ASSUM (MP_TAC o SPEC ``A:num->'a->bool``) THEN
+  SIMP_TAC std_ss [IMAGE_DEF, subsets_def] THEN REPEAT STRIP_TAC THEN
+  FIRST_ASSUM MATCH_MP_TAC THEN POP_ASSUM MP_TAC THEN EVAL_TAC THEN
+  SRW_TAC[] [IN_UNIV,SUBSET_DEF,IN_FUNSET] THEN METIS_TAC[]);
 
 val SIGMA_ALGEBRA_ALT_DISJOINT = store_thm
   ("SIGMA_ALGEBRA_ALT_DISJOINT",
@@ -3816,6 +3848,7 @@ val ring_def = Define (* c.f. [6] *)
      {} IN (subsets r) /\
      (!s t. s IN (subsets r) /\ t IN (subsets r) ==> s UNION t IN (subsets r)) /\
      (!s t. s IN (subsets r) /\ t IN (subsets r) ==> s DIFF t IN (subsets r))`;
+     
 
 (* the smallest ring generated from a set of sets (usually a semiring) *)
 val smallest_ring_def = Define
@@ -6179,6 +6212,521 @@ val SIGMA_FINITE_ALT2 = store_thm
       FIRST_X_ASSUM MATCH_MP_TAC \\
       REWRITE_TAC [IN_IMAGE, IN_UNIV] \\
       Q.EXISTS_TAC `n` >> REWRITE_TAC [] ]);
+
+(* ------------------------------------------------------------------------- *)
+(* Disjoint Sets                                                             *)
+(* ------------------------------------------------------------------------- *)
+
+val disjoint = new_definition ("disjoint",
+ ``!A. disjoint A = !a b. a IN A /\ b IN A /\ (a <> b) ==> (a INTER b = {})``);
+
+val disjointI = store_thm ("disjointI",
+ ``(!a b . a IN A ==> b IN A ==> (a <> b) ==> (a INTER b = {})) ==> disjoint A``,
+ METIS_TAC [disjoint]);
+
+val disjointD = store_thm ("disjointD",
+ ``disjoint A ==> a IN A ==> b IN A ==> (a <> b) ==> (a INTER b = {})``,
+ METIS_TAC [disjoint]);
+
+val disjoint_empty = store_thm ("disjoint_empty",
+ ``disjoint {}``,
+ SET_TAC [disjoint]);
+
+val disjoint_union = store_thm ("disjoint_union",
+ ``!C B.
+     disjoint C /\ disjoint B /\
+     (BIGUNION C INTER BIGUNION B = {}) ==>
+     disjoint (C UNION B)``,
+ SET_TAC [disjoint]);
+
+val disjoint_sing = store_thm ("disjoint_sing",
+ ``!A. disjoint {A}``,
+  SET_TAC [disjoint]);
+
+(*
+val semiring = new_definition ("semiring",
+ ``semiring sp sts = subset_class sp sts /\ {} IN sts /\
+                (!s t. s IN sts /\ t IN sts ==> s INTER t IN sts) /\
+                (!s t. s IN sts /\ t IN sts ==>
+                 ?c. c SUBSET sts /\ FINITE c /\ disjoint c /\ 
+                     (s DIFF t = BIGUNION c))``);
+*)
+val Int_space_eq1 = store_thm ("Int_space_eq1",
+ ``!sp sts . subset_class sp sts ==> !x. x IN sts ==> (sp INTER x = x)``,
+  REPEAT GEN_TAC THEN SET_TAC [subset_class_def]);
+
+val Int_space_eq2 = store_thm ("Int_space_eq2",
+ ``!sp sts. subset_class sp sts ==> !x. x IN sts ==> (x INTER sp = x)``,
+  REPEAT GEN_TAC THEN SET_TAC [subset_class_def]);
+
+val sets_Collect_conj = store_thm ("sets_Collect_conj",
+ ``!sp sts P Q. semiring (sp, sts) /\
+    {x | x IN sp /\ P x} IN sts /\ {x | x IN sp /\ Q x} IN sts ==>
+    {x | x IN sp /\ P x /\ Q x} IN sts``,
+ REPEAT GEN_TAC THEN SIMP_TAC std_ss [semiring_def] THEN
+ REPEAT STRIP_TAC THEN
+ FIRST_X_ASSUM (K_TAC o SPECL
+  [``{x | x IN sp /\ P x}``,``{x | x IN sp /\ Q x}``]) THEN
+ FIRST_X_ASSUM (MP_TAC o SPECL
+  [``{x | x IN sp /\ P x}``,``{x | x IN sp /\ Q x}``]) THEN
+ ASM_SIMP_TAC std_ss [GSPECIFICATION, INTER_DEF] THEN
+ REWRITE_TAC [SET_RULE ``(A /\ B) /\ A /\ C = A /\ B /\ C``] THEN
+ METIS_TAC[subsets_def]);
+
+(*val ring = new_definition ("ring",
+ ``ring sp sts = semiring sp sts /\ 
+    !a b. a IN sts /\ b IN sts ==> a UNION b IN sts``);
+*)
+val finite_Union = store_thm ("finite_Union",
+ ``!X sp sts. ring (sp, sts) /\ FINITE X ==> X SUBSET sts ==> BIGUNION X IN sts``,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC [ring_def,subsets_def] THEN STRIP_TAC THEN POP_ASSUM MP_TAC THEN
+  SPEC_TAC (``X:('a->bool)->bool``,``X:('a->bool)->bool``) THEN
+  pred_setLib.SET_INDUCT_TAC THENL
+  [FULL_SIMP_TAC std_ss [semiring_def, BIGUNION_EMPTY], ALL_TAC] THEN
+  DISCH_TAC THEN REWRITE_TAC [BIGUNION_INSERT] THEN FIRST_ASSUM MATCH_MP_TAC THEN
+  ASM_SET_TAC []);
+
+val finite_UN = store_thm ("finite_UN",
+ ``!A N sp sts. ring (sp, sts) /\ FINITE N /\ (!i. i IN N ==> A i IN sts) ==>
+   BIGUNION {A i | i IN N} IN sts``,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC [ring_def,subsets_def] THEN STRIP_TAC THEN POP_ASSUM MP_TAC THEN
+  POP_ASSUM MP_TAC THEN SPEC_TAC (``N:'a->bool``,``N:'a->bool``) THEN
+  pred_setLib.SET_INDUCT_TAC THENL
+  [REWRITE_TAC [SET_RULE ``{A i | i IN {}} = {}``, BIGUNION_EMPTY] THEN
+   FULL_SIMP_TAC std_ss [semiring_def], ALL_TAC] THEN
+  DISCH_TAC THEN REWRITE_TAC [IN_INSERT] THEN
+  REWRITE_TAC [SET_RULE ``BIGUNION {A i | (i = e) \/ i IN s} =
+               BIGUNION {A e} UNION BIGUNION {A i | i IN s}``] THEN
+  FIRST_ASSUM MATCH_MP_TAC THEN REWRITE_TAC [BIGUNION_SING] THEN
+  ASM_SET_TAC []);
+
+val Diff = store_thm ("Diff",
+ ``!a b sp sts. ring (sp, sts) /\ a IN sts /\ b IN sts ==> a DIFF b IN sts``,
+  REPEAT GEN_TAC THEN REWRITE_TAC [ring_def,subsets_def, semiring_def] THEN STRIP_TAC THEN
+  POP_ASSUM MP_TAC THEN POP_ASSUM MP_TAC THEN POP_ASSUM MP_TAC THEN
+  FIRST_ASSUM (MP_TAC o SPECL [``a:'a->bool``,``b:'a->bool``]) THEN
+  REPEAT STRIP_TAC THEN FULL_SIMP_TAC std_ss [] THEN
+  UNDISCH_TAC ``c SUBSET sts:('a->bool)->bool`` THEN MATCH_MP_TAC finite_Union THEN
+  EXISTS_TAC ``sp:'a->bool`` THEN FULL_SIMP_TAC std_ss [ring_def,subsets_def, semiring_def]);
+
+val ring_of_setsI = store_thm ("ring_of_setsI",
+ ``!sp sts. sts SUBSET POW sp /\ {} IN sts /\
+    (!a b. a IN sts /\ b IN sts ==> a UNION b IN sts) /\
+    (!a b. a IN sts /\ b IN sts ==> a DIFF b IN sts) ==> ring (sp, sts)``,
+  REWRITE_TAC [ring_def, subsets_def, semiring_def, subset_class_def, POW_DEF] THEN
+  REWRITE_TAC [SET_RULE ``sts SUBSET {s | s SUBSET sp} =
+                !x. x IN sts ==> x SUBSET sp``] THEN
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC std_ss [space_def] THENL
+  [REWRITE_TAC [SET_RULE ``s INTER t = s DIFF (s DIFF t)``] THEN
+   ASM_SET_TAC [], ALL_TAC] THEN
+  REWRITE_TAC [disjoint] THEN EXISTS_TAC ``{(s:'a->bool) DIFF t}`` THEN
+  SIMP_TAC std_ss [BIGUNION_SING, FINITE_SING, IN_SING, SUBSET_DEF] THEN
+  ASM_SET_TAC []);
+
+val ring_of_sets_iff = store_thm ("ring_of_sets_iff",
+ ``!sp sts. ring (sp, sts) = sts SUBSET POW sp /\ {} IN sts /\
+      (!s t. s IN sts /\ t IN sts ==> s UNION t IN sts) /\
+      (!s t. s IN sts /\ t IN sts ==> s DIFF t IN sts)``,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+  [ALL_TAC, METIS_TAC [ring_of_setsI]] THEN
+  REWRITE_TAC [ring_def, subsets_def, space_def, semiring_def, subset_class_def, POW_DEF] THEN
+  REWRITE_TAC [SET_RULE ``sts SUBSET {s | s SUBSET sp} =
+                !x. x IN sts ==> x SUBSET sp``] THEN
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC std_ss [] THEN
+  MATCH_MP_TAC Diff THEN EXISTS_TAC ``sp:'a->bool`` THEN
+  ASM_SIMP_TAC std_ss [ring_def, space_def, subsets_def, semiring_def, subset_class_def]);
+
+val insert_in_sets = store_thm ("insert_in_sets",
+ ``!x A sp sts. ring (sp, sts) /\ {x} IN sts /\ A IN sts ==> x INSERT A IN sts``,
+  REWRITE_TAC [ring_def, subsets_def, space_def] THEN REPEAT STRIP_TAC THEN
+  ONCE_REWRITE_TAC [SET_RULE ``x INSERT A = {x} UNION A``] THEN
+  ASM_SET_TAC []);
+
+val sets_Collect_disj = store_thm ("sets_Collect_disj",
+  ``!sp sts P Q. semiring (sp, sts) /\ {x | x IN sp /\ P x} IN sts /\
+      {x | x IN sp /\ Q x} IN sts ==> {x | x IN sp /\ P x /\ Q x} IN sts``,
+  REPEAT GEN_TAC THEN SIMP_TAC std_ss [ring_def, subsets_def, space_def, semiring_def] THEN
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM (K_TAC o SPECL
+   [``{x | x IN sp /\ P x}``,``{x | x IN sp /\ Q x}``]) THEN
+  FIRST_X_ASSUM (MP_TAC o SPECL
+   [``{x | x IN sp /\ P x}``,``{x | x IN sp /\ Q x}``]) THEN
+  RW_TAC std_ss[] THEN
+  REWRITE_TAC [SET_RULE ``{x | x IN sp /\ P x /\ Q x} =
+                {x | x IN sp /\ P x} INTER {x | x IN sp /\ Q x}``] THEN
+  ASM_SET_TAC []);
+
+val sets_collect_finite_Ex = store_thm ("sets_collect_finite_Ex",
+ ``!sp sts s P. ring (sp, sts) /\ (!i. i IN s ==> {x | x IN sp /\ P i x} IN sts) /\
+      FINITE s ==> {x | x IN sp /\ (?i. i IN s /\ P i x)} IN sts``,
+  REPEAT GEN_TAC THEN SIMP_TAC std_ss [ring_def, subsets_def, space_def] THEN
+  REPEAT STRIP_TAC THEN
+  KNOW_TAC ``{x | x IN sp /\ (?i. i IN s /\ P i x)} =
+              BIGUNION {{x | x IN sp /\ P i x} | i IN s}`` THENL
+  [SIMP_TAC std_ss [EXTENSION, BIGUNION, GSPECIFICATION] THEN
+   GEN_TAC THEN EQ_TAC THENL [ALL_TAC, ASM_SET_TAC []] THEN
+   STRIP_TAC THEN EXISTS_TAC ``{x | x IN sp /\ P i x}`` THEN
+   CONJ_TAC THENL [ALL_TAC, ASM_SET_TAC []] THEN EXISTS_TAC ``i:'b`` THEN
+   ASM_SIMP_TAC std_ss [GSPECIFICATION], ALL_TAC] THEN
+  DISC_RW_KILL THEN
+  KNOW_TAC ``{{x | x IN sp /\ P i x} | i IN s} SUBSET sts`` THENL
+  [SIMP_TAC std_ss [SUBSET_DEF, GSPECIFICATION] THEN GEN_TAC THEN
+   STRIP_TAC THEN ASM_REWRITE_TAC [] THEN FIRST_ASSUM MATCH_MP_TAC THEN
+   ASM_REWRITE_TAC [], MATCH_MP_TAC finite_Union] THEN
+  EXISTS_TAC ``sp:'a->bool`` THEN CONJ_TAC THENL
+  [FULL_SIMP_TAC std_ss [ring_def, space_def, subsets_def], ALL_TAC] THEN
+  ONCE_REWRITE_TAC [METIS [] ``{x | x IN sp /\ P i x} =
+                          (\i. {x | x IN sp /\ P i x}) i``] THEN
+  ONCE_REWRITE_TAC [GSYM IMAGE_DEF] THEN METIS_TAC [IMAGE_FINITE]);
+
+(*val algebra_alt = new_definition ("algebra_alt",
+ ``algebra_alt sp sts = ring sp sts /\ sp IN sts``);*)
+
+val algebra_alt_eq  = store_thm ("algebra_alt_eq",
+ ``!sp sts. algebra (sp, sts) = ring (sp, sts) /\ sp IN sts``,
+ rw[]
+ \\ EQ_TAC
+ >- (rw[]
+    \\ imp_res_tac ALGEBRA_SPACE
+    \\ fs[algebra_def,ring_def,space_def,subsets_def]
+    \\ rw[]
+    \\ FULL_SIMP_TAC std_ss [BIGUNION_SING, subset_class_def]
+    \\ KNOW_TAC ``s SUBSET sp /\ t SUBSET sp ==> 
+            (s DIFF t = sp DIFF ((sp DIFF s) UNION t))``
+    >- (SET_TAC [])
+    \\ FULL_SIMP_TAC std_ss [])
+ \\ metis_tac[RING_SPACE_IMP_ALGEBRA,space_def,subsets_def]);
+
+val compl_sets = store_thm ("compl_sets",
+ ``!sp sts a. algebra (sp,sts) /\ a IN sts ==> sp DIFF a IN sts``,
+  REWRITE_TAC [algebra_alt_eq, ring_def, subsets_def,space_def] THEN
+  REPEAT STRIP_TAC THEN POP_ASSUM MP_TAC THEN POP_ASSUM MP_TAC THEN
+  POP_ASSUM MP_TAC THEN 
+  FIRST_ASSUM (MP_TAC o SPECL [``sp:'a->bool``,``a:'a->bool``]) THEN
+  REPEAT STRIP_TAC THEN FULL_SIMP_TAC std_ss [] THEN
+  UNDISCH_TAC ``c SUBSET (sts:('a->bool)->bool)`` THEN 
+  MATCH_MP_TAC finite_Union THEN
+  EXISTS_TAC ``sp:'a->bool`` THEN FULL_SIMP_TAC std_ss [ring_def, space_def, subsets_def]);
+
+val algebra_iff_Un = store_thm ("algebra_iff_Un",
+ ``!sp sts. algebra (sp,sts) = sts SUBSET POW sp /\ {} IN sts /\
+             (!a. a IN sts ==> sp DIFF a IN sts) /\
+             (!a b. a IN sts /\ b IN sts ==> a UNION b IN sts)``,
+  REPEAT STRIP_TAC THEN REWRITE_TAC [algebra_def, subsets_def, space_def] THEN
+  REWRITE_TAC [subset_class_def, POW_DEF] THEN
+  REWRITE_TAC [SET_RULE ``sts SUBSET {s | s SUBSET sp} =
+                          (!x. x IN sts ==> x SUBSET sp)``]);
+
+val algebra_iff_Int = store_thm ("algebra_if_Int",
+ ``!sp sts. algebra (sp,sts) = sts SUBSET POW sp /\ {} IN sts /\
+             (!a. a IN sts ==> sp DIFF a IN sts) /\
+             (!a b. a IN sts /\  b IN sts ==> a INTER b IN sts)``,
+  REPEAT STRIP_TAC THEN REWRITE_TAC [algebra_def, subsets_def, space_def] THEN
+  REWRITE_TAC [subset_class_def, POW_DEF] THEN
+  REWRITE_TAC [SET_RULE ``sts SUBSET {s | s SUBSET sp} =
+                          (!x. x IN sts ==> x SUBSET sp)``] THEN
+  EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THENL
+  [REPEAT STRIP_TAC THEN KNOW_TAC ``a SUBSET sp /\ b SUBSET sp ==>
+    (a INTER b = sp DIFF ((sp DIFF a) UNION (sp DIFF b)))`` THENL 
+   [SET_TAC [], ALL_TAC]
+   THEN FULL_SIMP_TAC std_ss [], ALL_TAC] THEN
+  REPEAT STRIP_TAC THEN KNOW_TAC ``s SUBSET sp /\ t SUBSET sp ==>
+   (s UNION t = sp DIFF ((sp DIFF s) INTER (sp DIFF t)))`` THENL 
+  [SET_TAC [], ALL_TAC] THEN
+  FULL_SIMP_TAC std_ss []);
+
+val sets_Collect_neg = store_thm ("sets_Collect_neg",
+ ``!sp sts P. algebra (sp,sts) /\ {x | x IN sp /\ P x} IN sts ==>
+             {x | x IN sp /\ ~P x} IN sts``,
+  REPEAT GEN_TAC THEN REWRITE_TAC [algebra_def, space_def, subsets_def] THEN
+  RW_TAC std_ss [subset_class_def] THEN
+  KNOW_TAC ``{x | x IN sp /\ ~P x} = sp DIFF {x | x IN sp /\ P x}`` THENL
+  [ALL_TAC, DISC_RW_KILL THEN FULL_SIMP_TAC std_ss []] THEN SET_TAC []);
+
+val sets_Collect_imp = store_thm ("sets_Collect_imp",
+ ``!sp sts P Q. algebra (sp,sts) /\ {x | x IN sp /\ P x} IN sts ==>
+                 {x | x IN sp /\ Q x} IN sts ==> 
+                 {x | x IN sp /\ (Q x ==> P x)} IN sts``,
+  REPEAT GEN_TAC THEN REWRITE_TAC [algebra_alt_eq, ring_def, space_def, subsets_def] THEN
+  REPEAT STRIP_TAC THEN REWRITE_TAC [IMP_DISJ_THM] THEN
+  REWRITE_TAC [SET_RULE ``{x | x IN sp /\ (~Q x \/ P x)} =
+                          {x | x IN sp /\ ~Q x} UNION {x | x IN sp /\ P x}``] THEN
+  FIRST_ASSUM MATCH_MP_TAC THEN ASM_SIMP_TAC std_ss [] THEN
+  MATCH_MP_TAC sets_Collect_neg THEN
+  FULL_SIMP_TAC std_ss [algebra_alt_eq, ring_def, space_def, subsets_def]);
+
+val sets_Collect_const = store_thm ("sets_Collect_const",
+ ``!sp sts P. algebra (sp,sts) ==> {x | x IN sp /\ P} IN sts``,
+  REWRITE_TAC [algebra_alt_eq] THEN REPEAT STRIP_TAC THEN
+  Cases_on `P` THENL
+  [REWRITE_TAC [SET_RULE ``{x | x IN sp /\ T} = sp``] THEN ASM_REWRITE_TAC [],
+   FULL_SIMP_TAC std_ss [GSPEC_F, ring_def, subsets_def, space_def]]);
+
+val algebra_single_set = store_thm ("algebra_single_set",
+ ``!X S. X SUBSET S ==> algebra (S, {{};X;S DIFF X; S})``,
+  RW_TAC std_ss [algebra_def, subsets_def, space_def, subset_class_def] THEN
+  FULL_SIMP_TAC std_ss [SET_RULE ``x IN {a;b;c;d} =
+        (x = a) \/ (x = b) \/ (x = c) \/ (x = d)``] THEN TRY (ASM_SET_TAC []));
+
+(* ------------------------------------------------------------------------- *)
+(* Retricted Algebras                                                        *)
+(* ------------------------------------------------------------------------- *)
+
+val restricted_algebra = store_thm ("restricted_algebra",
+ ``!sp sts a. algebra (sp,sts) /\ a IN sts ==> 
+              algebra (a,IMAGE (\s. s INTER a) sts)``,
+  REWRITE_TAC [algebra_alt_eq, ring_def, space_def, subsets_def, subset_class_def] THEN 
+  REPEAT STRIP_TAC THEN
+  FULL_SIMP_TAC std_ss [IMAGE_DEF, GSPECIFICATION] THENL
+  [REWRITE_TAC [INTER_SUBSET],
+   EXISTS_TAC ``{}`` THEN ASM_SIMP_TAC std_ss [INTER_EMPTY],
+   EXISTS_TAC ``(s' UNION s'')`` THEN 
+   CONJ_TAC THENL [SET_TAC [], ALL_TAC] THEN
+   FULL_SIMP_TAC std_ss [],
+   EXISTS_TAC ``s' DIFF s''`` THEN CONJ_TAC THENL [SET_TAC [], ALL_TAC] THEN
+   MATCH_MP_TAC Diff THEN EXISTS_TAC ``sp:'a->bool`` THEN
+   FULL_SIMP_TAC std_ss [ring_def, subsets_def, space_def, subset_class_def],
+   EXISTS_TAC ``a:'a->bool`` THEN ASM_SET_TAC []]);
+
+(* ------------------------------------------------------------------------- *)
+(* Binary Unions                                                             *)
+(* ------------------------------------------------------------------------- *)
+
+val binary = new_definition ("binary",
+ ``binary a b = (\x:num. if x = 0 then a else b)``);
+
+val range_binary_eq = store_thm ("range_binary_eq",
+  ``!a b. IMAGE (binary a b) UNIV = {a;b}``,
+  RW_TAC std_ss [IMAGE_DEF, binary] THEN
+  SIMP_TAC std_ss [EXTENSION, GSPECIFICATION, SET_RULE
+   ``x IN {a;b} = (x = a) \/ (x = b)``] THEN
+  GEN_TAC THEN EQ_TAC THEN STRIP_TAC THENL
+  [METIS_TAC [], METIS_TAC [IN_UNIV],
+   EXISTS_TAC ``1:num`` THEN ASM_SIMP_TAC arith_ss [IN_UNIV]]);
+
+val Un_range_binary = store_thm ("Un_range_binary",
+  ``!a b. a UNION b = BIGUNION {binary a b i | i IN UNIV}``,
+  SIMP_TAC arith_ss [GSYM IMAGE_DEF] THEN
+  REWRITE_TAC [METIS [ETA_AX] ``(\i. binary a b i) = binary a b``] THEN
+  SIMP_TAC std_ss [range_binary_eq] THEN SET_TAC []);
+
+val Int_range_binary = store_thm ("Int_range_binary",
+  ``!a b. a INTER b = BIGINTER {binary a b i | i IN UNIV}``,
+  SIMP_TAC arith_ss [GSYM IMAGE_DEF] THEN
+  REWRITE_TAC [METIS [ETA_AX] ``(\i. binary a b i) = binary a b``] THEN
+  SIMP_TAC std_ss [range_binary_eq] THEN SET_TAC []);
+
+val sigma_algebra_iff2 = store_thm ("sigma_algebra_iff2",
+ ``!sp sts. sigma_algebra (sp,sts) = sts SUBSET POW sp /\ {} IN sts /\
+            (!s. s IN sts ==> sp DIFF s IN sts) /\
+            (!A. IMAGE A UNIV SUBSET sts ==>
+                 BIGUNION {(A:num->'a->bool) i | i IN UNIV} IN sts)``,
+  SIMP_TAC std_ss [SIGMA_ALGEBRA_ALT_EQ, algebra_def, space_def, subsets_def] THEN
+  REPEAT GEN_TAC THEN SIMP_TAC std_ss [subset_class_def, POW_DEF] THEN
+  EQ_TAC THENL [ASM_SET_TAC [], ALL_TAC] THEN
+  REPEAT STRIP_TAC THENL [ASM_SET_TAC [], ASM_SET_TAC [], ASM_SET_TAC [],
+   ALL_TAC, ASM_SET_TAC []] THEN
+  SIMP_TAC std_ss [Un_range_binary] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+  SIMP_TAC std_ss [range_binary_eq] THEN ASM_SET_TAC []);
+
+val countable_UN' = store_thm ("countable_UN'",
+ ``!sp sts A X. sigma_algebra (sp,sts) /\ IMAGE A X SUBSET sts /\
+                countable X ==> BIGUNION {A x | x IN X} IN sts``,
+  RW_TAC std_ss [] THEN
+  KNOW_TAC ``(IMAGE (\i. if i IN X then (A:'b->'a->bool) i else {}) UNIV) 
+              SUBSET sts`` THENL
+  [SIMP_TAC std_ss [SUBSET_DEF, IN_IMAGE, IN_UNIV] THEN RW_TAC std_ss [] THEN
+   COND_CASES_TAC THENL [ASM_SET_TAC [], FULL_SIMP_TAC std_ss [sigma_algebra_iff2]],
+   DISCH_TAC] THEN
+  KNOW_TAC ``BIGUNION {(\i. if i IN X then A i else {}) x | x IN UNIV} 
+             IN sts`` THENL
+  [ALL_TAC, DISCH_TAC THEN
+   KNOW_TAC `` 
+    BIGUNION {(\i. if i IN X then (A:'b->'a->bool) i else {}) x | x IN univ(:'b)} =
+    BIGUNION {A x | x IN X}`` THENL [ALL_TAC, METIS_TAC []] THEN
+   SIMP_TAC std_ss [EXTENSION, IN_BIGUNION, GSPECIFICATION] THEN GEN_TAC THEN
+   EQ_TAC THEN REPEAT STRIP_TAC THENL
+   [EXISTS_TAC ``s:'a->bool`` THEN FULL_SIMP_TAC std_ss [] THEN
+    POP_ASSUM K_TAC THEN POP_ASSUM K_TAC THEN POP_ASSUM MP_TAC THEN
+    COND_CASES_TAC THEN ASM_SET_TAC [], ALL_TAC] THEN
+   EXISTS_TAC ``s:'a->bool`` THEN FULL_SIMP_TAC std_ss [IN_UNIV] THEN
+   EXISTS_TAC ``x':'b`` THEN FULL_SIMP_TAC std_ss []] THEN
+  RULE_ASSUM_TAC (SIMP_RULE std_ss [SIGMA_ALGEBRA]) THEN
+  REPEAT (POP_ASSUM MP_TAC) THEN REWRITE_TAC [subsets_def] THEN
+  REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+  ASM_SIMP_TAC std_ss [GSYM IMAGE_DEF] THEN
+  KNOW_TAC ``countable (IMAGE (A:'b->'a->bool) X)`` THENL
+  [rw[image_countable], DISCH_TAC] THEN
+  ONCE_REWRITE_TAC [SET_RULE ``IMAGE (\x. if x IN X then A x else {}) univ(:'b) =
+                    (IMAGE A X) UNION IMAGE (\x. {}) (UNIV DIFF X)``] THEN
+  MATCH_MP_TAC union_countable THEN CONJ_TAC THENL
+  [FULL_SIMP_TAC std_ss [COUNTABLE_ALT] THEN
+   METIS_TAC [], ALL_TAC] THEN
+  SIMP_TAC std_ss [pred_setTheory.COUNTABLE_ALT] THEN Q.EXISTS_TAC `(\n. {}):num->'a->bool` THEN
+  SIMP_TAC std_ss [IN_IMAGE] THEN METIS_TAC []);
+(* ------------------------------------------------------------------------- *)
+(* Initial Sigma Algebra                                                     *)
+(* ------------------------------------------------------------------------- *)
+
+val (sigma_sets_rules, sigma_sets_ind, sigma_sets_cases) = Hol_reln `
+  (sigma_sets sp st {}) /\
+  (!a. st a ==> sigma_sets sp st a) /\
+  (!a. sigma_sets sp st a ==> sigma_sets sp st (sp DIFF a)) /\
+  (!A. (!i. sigma_sets sp st ((A:num->'a->bool) i)) ==>
+             sigma_sets sp st (BIGUNION {A i | i IN UNIV}))`;
+
+val sigma_sets_basic = store_thm ("sigma_sets_basic",
+ ``!sp st a. a IN st ==> a IN sigma_sets sp st``,
+  SIMP_TAC std_ss [SPECIFICATION, sigma_sets_rules]);
+
+val sigma_sets_empty = store_thm ("sigma_sets_empty",
+ ``!sp st. {} IN sigma_sets sp st``,
+  SIMP_TAC std_ss [SPECIFICATION, sigma_sets_rules]);
+
+val sigma_sets_compl = store_thm ("sigma_sets_compl",
+  ``!sp st a. a IN sigma_sets sp st ==> sp DIFF a IN sigma_sets sp st``,
+  SIMP_TAC std_ss [SPECIFICATION, sigma_sets_rules]);
+
+val sigma_sets_union = store_thm ("sigma_sets_union",
+  ``!sp st A. (!i. (A:num->'a->bool) i IN sigma_sets sp st) ==>
+                BIGUNION {A i | i IN UNIV} IN sigma_sets sp st``,
+  SIMP_TAC std_ss [SPECIFICATION, sigma_sets_rules]);
+
+val sigma_sets_subset = store_thm ("sigma_sets_subset",
+  ``!sp sts st. sigma_algebra (sp,sts) /\ st SUBSET sts ==>
+                sigma_sets sp st SUBSET sts``,
+  REPEAT STRIP_TAC THEN SIMP_TAC std_ss [SPECIFICATION, SUBSET_DEF] THEN
+  HO_MATCH_MP_TAC sigma_sets_ind THEN FULL_SIMP_TAC std_ss [SIGMA_ALGEBRA_ALT_EQ,
+    algebra_alt_eq, ring_def, space_def, subsets_def, subset_class_def] THEN
+  REPEAT STRIP_TAC THENL
+  [ASM_SET_TAC [],
+   ASM_SET_TAC [],
+   ONCE_REWRITE_TAC [GSYM SPECIFICATION] THEN MATCH_MP_TAC Diff THEN
+   FULL_SIMP_TAC std_ss [ring_def, subsets_def, space_def, subset_class_def] THEN ASM_SET_TAC [],
+   ONCE_REWRITE_TAC [GSYM SPECIFICATION] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+   REPEAT STRIP_TAC THEN ASM_SET_TAC []]);
+
+val sigma_sets_into_sp = store_thm ("sigma_sets_into_sp",
+ ``!sp st. st SUBSET POW sp ==> !x. x IN sigma_sets sp st ==> x SUBSET sp``,
+  REPEAT GEN_TAC THEN DISCH_TAC THEN SIMP_TAC std_ss [SPECIFICATION] THEN
+  HO_MATCH_MP_TAC sigma_sets_ind THEN FULL_SIMP_TAC std_ss [POW_DEF] THEN
+  REPEAT STRIP_TAC THEN ASM_SET_TAC []);
+
+val sigma_algebra_sigma_sets = store_thm ("sigma_algebra_sigma_sets",
+ ``!sp st. st SUBSET POW sp ==> sigma_algebra (sp, sigma_sets sp st)``,
+  RW_TAC std_ss [sigma_algebra_iff2] THENL
+  [SIMP_TAC std_ss [SUBSET_DEF] THEN
+   SIMP_TAC std_ss [POW_DEF, GSPECIFICATION] THEN
+   METIS_TAC [sigma_sets_into_sp],
+   METIS_TAC [sigma_sets_empty],
+   METIS_TAC [sigma_sets_compl],
+   MATCH_MP_TAC sigma_sets_union THEN ASM_SET_TAC []]);
+
+val sigma_sets_least_sigma_algebra = store_thm ("sigma_sets_least_sigma_algebra",
+ ``!sp A. A SUBSET POW sp ==>
+          (sigma_sets sp A =
+           BIGINTER {B | A SUBSET B /\ sigma_algebra (sp,B)})``,
+  REPEAT STRIP_TAC THEN
+  KNOW_TAC ``!B X. A SUBSET B /\ sigma_algebra (sp,B) /\
+                   X IN sigma_sets sp A ==> X IN B`` THENL
+  [REPEAT STRIP_TAC THEN UNDISCH_TAC ``A SUBSET (B:('a->bool)->bool)`` THEN
+   UNDISCH_TAC ``sigma_algebra (sp, B)`` THEN REWRITE_TAC [AND_IMP_INTRO] THEN
+   DISCH_THEN (MP_TAC o MATCH_MP sigma_sets_subset) THEN ASM_SET_TAC [],
+   DISCH_TAC] THEN
+  KNOW_TAC
+   ``!X. X IN BIGINTER {B | A SUBSET B /\ sigma_algebra (sp,B)} ==>
+         !B. A SUBSET B ==> sigma_algebra (sp,B) ==> X IN B`` THENL
+  [STRIP_TAC THEN ASM_SIMP_TAC std_ss [IN_BIGINTER, GSPECIFICATION],
+   DISCH_TAC] THEN
+  SIMP_TAC std_ss [EXTENSION] THEN GEN_TAC THEN EQ_TAC THENL
+  [DISCH_TAC THEN SIMP_TAC std_ss [IN_BIGINTER, GSPECIFICATION] THEN
+   REPEAT STRIP_TAC THEN FULL_SIMP_TAC std_ss [SUBSET_DEF], ALL_TAC] THEN
+  DISCH_TAC THEN FIRST_X_ASSUM (MP_TAC o SPEC ``x:'a->bool``) THEN
+  ASM_REWRITE_TAC [] THEN DISCH_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+  REPEAT CONJ_TAC THENL
+  [ASM_SIMP_TAC std_ss [SUBSET_DEF, sigma_sets_basic],
+   ASM_SIMP_TAC std_ss [sigma_algebra_sigma_sets],
+   ALL_TAC] THEN
+  FULL_SIMP_TAC std_ss [AND_IMP_INTRO] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+  ASM_SIMP_TAC std_ss [sigma_algebra_sigma_sets] THEN
+  ASM_SIMP_TAC std_ss [SUBSET_DEF, sigma_sets_basic]);
+
+val sigma_sets_top = store_thm ("sigma_sets_top",
+ ``!sp A. sp IN sigma_sets sp A``,
+ METIS_TAC [sigma_sets_compl, sigma_sets_empty, DIFF_EMPTY]);
+
+val sigma_sets_Un = store_thm ("sigma_sets_Un",
+ ``!sp st a b. a IN sigma_sets sp st /\ b IN sigma_sets sp st ==>
+               a UNION b IN sigma_sets sp st``,
+  REPEAT STRIP_TAC THEN REWRITE_TAC [Un_range_binary] THEN
+  MATCH_MP_TAC sigma_sets_union THEN GEN_TAC THEN
+  RW_TAC std_ss [binary]);
+
+val sigma_sets_Inter = store_thm ("sigma_sets_Inter",
+ ``!sp st A. st SUBSET POW sp ==>
+          (!i. (A:num->'a->bool) i IN sigma_sets sp st) ==>
+          BIGINTER {A i | i IN UNIV} IN sigma_sets sp st``,
+  REPEAT STRIP_TAC THEN
+  KNOW_TAC ``(!i:num. A i IN sigma_sets sp st) ==>
+             (!i:num. sp DIFF A i IN sigma_sets sp st)`` THENL
+  [METIS_TAC [sigma_sets_compl], DISCH_TAC] THEN
+  KNOW_TAC ``BIGUNION {sp DIFF A i | (i:num) IN UNIV} IN sigma_sets sp st`` THENL
+  [ONCE_REWRITE_TAC [METIS [] ``sp DIFF A i = (\i. sp DIFF A i) i``] THEN
+   MATCH_MP_TAC sigma_sets_union THEN METIS_TAC [], DISCH_TAC] THEN
+  KNOW_TAC
+   ``sp DIFF BIGUNION {sp DIFF A i | (i:num) IN UNIV} IN sigma_sets sp st`` THENL
+  [MATCH_MP_TAC sigma_sets_compl THEN METIS_TAC [], DISCH_TAC] THEN
+  KNOW_TAC ``sp DIFF BIGUNION {sp DIFF A i | i IN UNIV} =
+             BIGINTER {A i | (i:num) IN UNIV}`` THENL
+  [ALL_TAC, METIS_TAC[]] THEN
+  SIMP_TAC std_ss [EXTENSION] THEN GEN_TAC THEN EQ_TAC THENL
+  [SIMP_TAC std_ss [IN_DIFF, IN_BIGUNION, IN_BIGINTER, GSPECIFICATION] THEN
+   RW_TAC std_ss [] THEN POP_ASSUM K_TAC THEN
+   POP_ASSUM (MP_TAC o SPEC ``sp DIFF (A:num->'a->bool) i``) THEN
+   ASM_SET_TAC [], ALL_TAC] THEN
+  SIMP_TAC std_ss [IN_BIGINTER, IN_DIFF, IN_BIGUNION, GSPECIFICATION] THEN
+  RW_TAC std_ss [IN_UNIV] THENL
+  [FIRST_X_ASSUM (MP_TAC o SPEC ``(A:num->'a->bool) i``) THEN
+   KNOW_TAC ``(?i'. A i = (A:num->'a->bool) i')`` THENL
+   [METIS_TAC [], DISCH_TAC THEN ASM_REWRITE_TAC []] THEN
+   SPEC_TAC (``x``,``x``) THEN REWRITE_TAC [GSYM SUBSET_DEF] THEN
+   UNDISCH_TAC ``st SUBSET POW (sp:'a->bool)`` THEN
+   DISCH_THEN (MP_TAC o MATCH_MP sigma_sets_into_sp) THEN
+   METIS_TAC [], ALL_TAC] THEN
+  ASM_CASES_TAC ``x NOTIN s`` THEN FULL_SIMP_TAC std_ss [] THEN
+  RW_TAC std_ss [EXTENSION] THEN EXISTS_TAC ``x`` THEN
+  ASM_SIMP_TAC std_ss [IN_DIFF] THEN DISJ2_TAC THEN
+  FIRST_X_ASSUM MATCH_MP_TAC THEN METIS_TAC []);
+
+val sigma_sets_INTER = store_thm ("sigma_sets_INTER",
+ ``!sp st A N. st SUBSET POW sp /\  (!i:num. i IN N ==> A i IN sigma_sets sp st) /\
+           (N <> {}) ==> BIGINTER {A i | i IN N} IN sigma_sets sp st``,
+  REPEAT STRIP_TAC THEN
+  KNOW_TAC ``!i:num. (if i IN N then A i else sp) IN sigma_sets sp st`` THENL
+  [GEN_TAC THEN COND_CASES_TAC THEN ASM_SIMP_TAC std_ss [] THEN
+   SIMP_TAC std_ss [sigma_sets_top], DISCH_TAC] THEN
+  KNOW_TAC ``BIGINTER {(if i IN N then (A:num->'a->bool) i else sp) | i IN UNIV} IN
+             sigma_sets sp st`` THENL
+  [ASM_SIMP_TAC std_ss [sigma_sets_Inter], DISCH_TAC] THEN
+  KNOW_TAC ``BIGINTER {(if i IN N then (A:num->'a->bool) i else sp) | i IN UNIV} =
+             BIGINTER {A i | i IN N}`` THENL
+  [ALL_TAC, METIS_TAC []] THEN
+  UNDISCH_TAC ``st SUBSET POW (sp:'a->bool)``  THEN
+  DISCH_THEN (MP_TAC o MATCH_MP sigma_sets_into_sp) THEN DISCH_TAC THEN
+  ASM_SET_TAC []);
+
+val sigma_sets_eq = store_thm ("sigma_sets_eq",
+ ``!sp sts. sigma_algebra (sp,sts) ==>
+            (sigma_sets sp sts = sts)``,
+  REPEAT STRIP_TAC THEN EVAL_TAC THEN CONJ_TAC THENL
+  [MATCH_MP_TAC sigma_sets_subset THEN ASM_SIMP_TAC std_ss [SUBSET_REFL],
+   SIMP_TAC std_ss [SUBSET_DEF, sigma_sets_basic]]);
+
+val sigma_sets_superset_generator = store_thm ("sigma_sets_superset_generator",
+  ``!X A. A SUBSET sigma_sets X A``,
+  SIMP_TAC std_ss [SUBSET_DEF, sigma_sets_basic]);
 
 val _ = export_theory ();
 
