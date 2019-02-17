@@ -1471,7 +1471,7 @@ val joint_distribution_sum_mul1 = store_thm
 (******************************************************************************)
 
 val absolute_moment_def = Define
-   `absolute_moment P X r a = expectation P (\x. (abs (X x − a)) pow r)`;
+   `absolute_moment P X r a = expectation P (\x. (abs (X x - a)) pow r)`;
 
 val moment_def = Define
    `moment P X r a = expectation P (\x. (X x - a) pow r)`;
@@ -1518,10 +1518,10 @@ val liminf_events = store_thm
                     (Q.SPEC `(m_space p,measurable_sets p)` SIGMA_ALGEBRA_ALT))
  >> POP_ASSUM MATCH_MP_TAC
  >> RW_TAC std_ss [IN_FUNSET, IN_UNIV]
- >> Know `{E n | m ≤ n} <> {}`
+ >> Know `{E n | m <= n} <> {}`
  >- (RW_TAC std_ss [Once EXTENSION, NOT_IN_EMPTY, GSPECIFICATION] \\
      Q.EXISTS_TAC `SUC m` >> RW_TAC arith_ss [])
- >> Know `countable {E n | m ≤ n}`
+ >> Know `countable {E n | m <= n}`
  >- (SIMP_TAC std_ss [COUNTABLE_ALT, GSPECIFICATION] \\
      Q.EXISTS_TAC `E` >> RW_TAC std_ss [] \\
      Q.EXISTS_TAC `n` >> REWRITE_TAC [])
@@ -1529,22 +1529,12 @@ val liminf_events = store_thm
  >> IMP_RES_TAC SIGMA_ALGEBRA_FN_BIGINTER
  >> fs [space_def, subsets_def, IN_FUNSET, IN_UNIV]
  >> POP_ASSUM MATCH_MP_TAC
- >> Q.PAT_X_ASSUM `{E n | m ≤ n} = IMAGE f univ(:num)` (MP_TAC o (MATCH_MP EQ_SYM))
+ >> Q.PAT_X_ASSUM `{E n | m <= n} = IMAGE f univ(:num)` (MP_TAC o (MATCH_MP EQ_SYM))
  >> RW_TAC std_ss [Once EXTENSION, IN_IMAGE, IN_UNIV, GSPECIFICATION]
  >> POP_ASSUM (STRIP_ASSUME_TAC o (Q.SPEC `f (x :num)`))
  >> Know `?x'. f x = f x'` >- (Q.EXISTS_TAC `x` >> REWRITE_TAC [])
  >> RW_TAC std_ss []
  >> PROVE_TAC []);
-
-(* TODO *)
-val infinity_often_lemma = Q.prove (
-   `!P. ~(?N. INFINITE N /\ !n:num. n IN N ==> P n) <=> ?m. !n. m <= n ==> ~(P n)`,
-    cheat);
-
-(* TODO *)
-val infinity_bound_lemma = Q.prove (
-   `!N m. INFINITE N ==> ?n:num. m <= n /\ n IN N`,
-    cheat);
 
 (* A point belongs to `limsup E` if and only if it belongs to infinitely
    many terms of the sequence E. [2, p.76] *)
@@ -1558,7 +1548,7 @@ val limsup_thm = store_thm
       CCONTR_TAC \\
      `?m. !n. m <= n ==> ~(P n)` by PROVE_TAC [infinity_often_lemma] \\
       Q.UNABBREV_TAC `P` >> FULL_SIMP_TAC bool_ss [] \\
-      Know `x NOTIN BIGUNION {E n | m ≤ n}`
+      Know `x NOTIN BIGUNION {E n | m <= n}`
       >- (SIMP_TAC std_ss [IN_BIGUNION, GSPECIFICATION] \\
           CCONTR_TAC >> FULL_SIMP_TAC bool_ss [] >> METIS_TAC []) \\
       DISCH_TAC >> METIS_TAC [],

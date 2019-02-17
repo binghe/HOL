@@ -3038,14 +3038,12 @@ val sup_le = store_thm
            >> METIS_TAC [extreal_le_def]]]);
 
 val sup_le' = store_thm
-  ("sup_le'",
-   ``!p x. sup p <= x = (!y. y IN p ==> y <= x)``,
+  ("sup_le'", ``!p x. sup p <= x = (!y. y IN p ==> y <= x)``,
     REWRITE_TAC [IN_APP]
  >> REWRITE_TAC [sup_le]);
 
 val le_sup = store_thm
-  ("le_sup",
-   ``!p x. x <= sup p = !y. (!z. p z ==> z <= y) ==> x <= y``,
+  ("le_sup", ``!p x. x <= sup p = !y. (!z. p z ==> z <= y) ==> x <= y``,
    RW_TAC std_ss [extreal_sup_def,le_infty]
    >- (EQ_TAC >- RW_TAC std_ss [le_infty] >> METIS_TAC [le_infty, le_refl])
    >> FULL_SIMP_TAC std_ss []
@@ -3087,32 +3085,31 @@ val le_sup = store_thm
                    METIS_TAC [extreal_le_def]]]]);
 
 val le_sup' = store_thm
-  ("le_sup'",
-  ``!p x. x <= sup p = !y. (!z. z IN p ==> z <= y) ==> x <= y``,
+  ("le_sup'", ``!p x. x <= sup p = !y. (!z. z IN p ==> z <= y) ==> x <= y``,
     REWRITE_TAC [IN_APP]
  >> REWRITE_TAC [le_sup]);
 
 val sup_eq = store_thm
   ("sup_eq", ``!p x. (sup p = x) =
-                (!y. p y ==> y <= x) /\ !y. (!z. p z ==> z <= y) ==> x <= y``,
+                     (!y. p y ==> y <= x) /\ !y. (!z. p z ==> z <= y) ==> x <= y``,
    METIS_TAC [le_antisym, le_sup, sup_le]);
 
 val sup_eq' = store_thm
-  ("sup_eq'", ``!p x. (sup p = x) =
-                (!y. y IN p ==> y <= x) /\ !y. (!z. z IN p ==> z <= y) ==> x <= y``,
+  ("sup_eq'",
+  ``!p x. (sup p = x) =
+          (!y. y IN p ==> y <= x) /\ !y. (!z. z IN p ==> z <= y) ==> x <= y``,
     REWRITE_TAC [IN_APP]
  >> METIS_TAC [le_antisym, le_sup, sup_le]);
 
 val sup_const = store_thm
-  ("sup_const",
-   ``!x. sup (\y. y = x) = x``,
-   RW_TAC real_ss [sup_eq, le_refl]);
+  ("sup_const", ``!x. sup (\y. y = x) = x``,
+    RW_TAC real_ss [sup_eq, le_refl]);
 
 val sup_const_alt = store_thm
   ("sup_const_alt", ``!p z. (?x. p x) /\ (!x. p x ==> (x = z)) ==> (sup p = z)``,
-  RW_TAC std_ss [sup_eq,le_refl]
-  >> POP_ASSUM MATCH_MP_TAC
-  >> RW_TAC std_ss []);
+    RW_TAC std_ss [sup_eq,le_refl]
+ >> POP_ASSUM MATCH_MP_TAC
+ >> RW_TAC std_ss []);
 
 val sup_const_alt' = store_thm
   ("sup_const_alt'",
@@ -3132,13 +3129,13 @@ val sup_const_over_set = store_thm
   >> METIS_TAC [CHOICE_DEF]);
 
 val sup_const_over_univ = store_thm
-  ("sup_const_over_univ",``!k. sup (IMAGE (\x. k) UNIV) = k``,
+  ("sup_const_over_univ", ``!k. sup (IMAGE (\x. k) UNIV) = k``,
     GEN_TAC >> MATCH_MP_TAC sup_const_over_set
  >> SET_TAC []);
 
 val sup_num = store_thm
   ("sup_num",
-   ``sup (\x. ?n : num. x = & n) = PosInf``,
+  ``sup (\x. ?n : num. x = & n) = PosInf``,
   RW_TAC std_ss [GSYM le_infty,le_sup]
   >> Cases_on `y`
   >| [POP_ASSUM (MP_TAC o Q.SPEC `0`)
@@ -3154,13 +3151,13 @@ val sup_num = store_thm
 
 val sup_le_sup_imp = store_thm
   ("sup_le_sup_imp",
-   ``!p q. (!x. p x ==> ?y. q y /\ x <= y) ==> sup p <= sup q``,
-   RW_TAC std_ss [sup_le] >> METIS_TAC [le_trans, le_sup_imp]);
+  ``!p q. (!x. p x ==> ?y. q y /\ x <= y) ==> sup p <= sup q``,
+    RW_TAC std_ss [sup_le] >> METIS_TAC [le_trans, le_sup_imp]);
 
 val sup_le_sup_imp' = store_thm
   ("sup_le_sup_imp'",
-   ``!p q. (!x. x IN p ==> ?y. y IN q /\ x <= y) ==> sup p <= sup q``,
-   REWRITE_TAC [IN_APP]
+  ``!p q. (!x. x IN p ==> ?y. y IN q /\ x <= y) ==> sup p <= sup q``,
+    REWRITE_TAC [IN_APP]
  >> PROVE_TAC [sup_le_sup_imp]);
 
 val sup_mono = store_thm
@@ -3195,8 +3192,8 @@ val inf_mono_subset = store_thm
 
 val sup_suc = store_thm
   ("sup_suc",
-   ``!f. (!m n. m <= n ==> f m <= f n) ==>
-     (sup (IMAGE (\n. f (SUC n)) UNIV) = sup (IMAGE f UNIV))``,
+  ``!f. (!m n. m <= n ==> f m <= f n) ==>
+        (sup (IMAGE (\n. f (SUC n)) UNIV) = sup (IMAGE f UNIV))``,
    RW_TAC std_ss [sup_eq,sup_le,le_sup]
    >- (POP_ASSUM MATCH_MP_TAC
        >> ONCE_REWRITE_TAC [GSYM SPECIFICATION]

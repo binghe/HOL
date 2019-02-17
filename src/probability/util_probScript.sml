@@ -1592,6 +1592,50 @@ val liminf_limsup_sp = store_thm (* more general form *)
  >> Q.EXISTS_TAC `E n` >> art []
  >> Q.EXISTS_TAC `n` >> art []);
 
+val infinity_often_lemma = store_thm
+  ("infinity_often_lemma",
+  ``!(P :num set). ~(?N. INFINITE N /\ !n. n IN N ==> P n) <=> ?m. !n. m <= n ==> ~(P n)``,
+    GEN_TAC
+ >> `!N. (!n. n IN N ==> P n) = N SUBSET P` by PROVE_TAC [SUBSET_DEF, IN_APP]
+ >> ASM_REWRITE_TAC []
+ >> SIMP_TAC std_ss []
+ >> Reverse EQ_TAC >> rpt STRIP_TAC
+ >| [ (* goal 1 (of 2) *)
+      Cases_on `~(N SUBSET P)` >- art [] >> fs [] \\
+      Suff `FINITE P` >- PROVE_TAC [FINITE_SUBSET] \\
+      Know `P SUBSET {n | ~(m <= n)}`
+      >- (RW_TAC std_ss [SUBSET_DEF, GSPECIFICATION, IN_APP] \\
+          METIS_TAC []) \\
+      DISCH_TAC \\
+      Suff `FINITE {n | ~(m <= n)}` >- PROVE_TAC [FINITE_SUBSET] \\
+      REWRITE_TAC [FINITE_WEAK_ENUMERATE] \\
+      Q.EXISTS_TAC `I` \\
+      Q.EXISTS_TAC `m` \\
+      RW_TAC arith_ss [I_THM, GSPECIFICATION],
+      (* goal 2 (of 2) *)
+      POP_ASSUM (MP_TAC o (Q.SPEC `P`)) \\
+      RW_TAC std_ss [SUBSET_REFL] \\
+      IMP_RES_TAC finite_decomposition_simple \\
+      Q.EXISTS_TAC `SUC (MAX_SET P)` \\
+      Q.X_GEN_TAC `m` >> DISCH_TAC \\
+      CCONTR_TAC >> fs [EXTENSION, IN_IMAGE, IN_COUNT, IN_APP] \\
+     `P <> {}` by METIS_TAC [IN_APP, NOT_IN_EMPTY] \\
+     `!y. y IN P ==> y <= MAX_SET P` by PROVE_TAC [MAX_SET_DEF] \\
+     `m <= MAX_SET P` by PROVE_TAC [IN_APP] \\
+     `MAX_SET P < m` by RW_TAC arith_ss [] \\
+      FULL_SIMP_TAC arith_ss [] ]);
+
+val infinity_bound_lemma = store_thm
+  ("infinity_bound_lemma",
+  ``!(N :num set) m. INFINITE N ==> ?n:num. m <= n /\ n IN N``,
+    rpt GEN_TAC
+ >> Suff `~(?n. m <= n /\ n IN N) ==> FINITE N` >- METIS_TAC []
+ >> RW_TAC std_ss []
+ >> `FINITE (count m)` by PROVE_TAC [FINITE_COUNT]
+ >> Suff `N SUBSET (count m)` >- PROVE_TAC [FINITE_SUBSET]
+ >> RW_TAC std_ss [SUBSET_DEF, IN_COUNT]
+ >> `~(m <= x)` by PROVE_TAC []
+ >> FULL_SIMP_TAC arith_ss []);
 
 val _ = export_theory ();
 
