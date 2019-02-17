@@ -65,6 +65,7 @@ val indep_events_def = Define (* new *)
 (* extension of ``indep``: a set of pairwise independent events *)
 val pair_indep_events_def = Define (* new *)
    `pair_indep_events p E (J :num set) =
+      (!n. n IN J ==> (E n) IN events p) /\
       !i j. i IN J /\ j IN J /\ i <> j ==>
            (prob p ((E i) INTER (E j)) = prob p (E i) * prob p (E j))`;
 
@@ -1490,6 +1491,16 @@ val standard_deviation_def = Define
 (*  Almost sure convergence; Borel-Cantelli Lemma [2, p.75]                   *)
 (******************************************************************************)
 
+val En_not_empty = Q.prove (`!E m:num. {E n | m <= n} <> {}`,
+    RW_TAC std_ss [Once EXTENSION, NOT_IN_EMPTY, GSPECIFICATION]
+ >> Q.EXISTS_TAC `(SUC m)` >> RW_TAC arith_ss []);
+
+val En_countable = Q.prove (`!E m:num. countable {E n | m <= n}`,
+    rpt GEN_TAC
+ >> Suff `{E n | m <= n} = IMAGE E {n | m <= n}`
+ >- PROVE_TAC [COUNTABLE_IMAGE_NUM]
+ >> RW_TAC std_ss [EXTENSION, IN_IMAGE, GSPECIFICATION]);
+
 val limsup_events = store_thm
   ("limsup_events",
   ``!p E. prob_space p /\ (!n. E n IN events p) ==> limsup E IN events p``,
@@ -1500,12 +1511,8 @@ val limsup_events = store_thm
  >> POP_ASSUM MATCH_MP_TAC
  >> GEN_TAC >> BETA_TAC
  >> fs [sigma_algebra_def, space_def, subsets_def]
- >> LAST_X_ASSUM MATCH_MP_TAC
- >> CONJ_TAC
- >- (SIMP_TAC std_ss [COUNTABLE_ALT, GSPECIFICATION] \\
-     Q.EXISTS_TAC `E` >> RW_TAC std_ss [] \\
-     Q.EXISTS_TAC `n` >> REWRITE_TAC [])
- >> RW_TAC std_ss [SUBSET_DEF, GSPECIFICATION]
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> RW_TAC std_ss [En_countable, SUBSET_DEF, GSPECIFICATION]
  >> ASM_REWRITE_TAC []);
 
 val liminf_events = store_thm
@@ -1518,13 +1525,8 @@ val liminf_events = store_thm
                     (Q.SPEC `(m_space p,measurable_sets p)` SIGMA_ALGEBRA_ALT))
  >> POP_ASSUM MATCH_MP_TAC
  >> RW_TAC std_ss [IN_FUNSET, IN_UNIV]
- >> Know `{E n | m <= n} <> {}`
- >- (RW_TAC std_ss [Once EXTENSION, NOT_IN_EMPTY, GSPECIFICATION] \\
-     Q.EXISTS_TAC `SUC m` >> RW_TAC arith_ss [])
- >> Know `countable {E n | m <= n}`
- >- (SIMP_TAC std_ss [COUNTABLE_ALT, GSPECIFICATION] \\
-     Q.EXISTS_TAC `E` >> RW_TAC std_ss [] \\
-     Q.EXISTS_TAC `n` >> REWRITE_TAC [])
+ >> Know `{E n | m <= n} <> {}` >- METIS_TAC [En_not_empty]
+ >> Know `countable {E n | m <= n}` >- METIS_TAC [En_countable]
  >> RW_TAC std_ss [COUNTABLE_ENUM] >> art []
  >> IMP_RES_TAC SIGMA_ALGEBRA_FN_BIGINTER
  >> fs [space_def, subsets_def, IN_FUNSET, IN_UNIV]
@@ -1594,10 +1596,7 @@ val prob_limsup = store_thm
  >- (GEN_TAC \\
      fs [measure_space_def, sigma_algebra_def, space_def, subsets_def] \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
-     CONJ_TAC
-     >- (Suff `{E n | m <= n} = IMAGE E {n | m <= n}` >- PROVE_TAC [COUNTABLE_IMAGE_NUM] \\
-         RW_TAC std_ss [EXTENSION, IN_IMAGE, GSPECIFICATION]) \\
-     RW_TAC std_ss [SUBSET_DEF, GSPECIFICATION] >> art [])
+     RW_TAC std_ss [En_countable, SUBSET_DEF, GSPECIFICATION] >> art [])
  >> RW_TAC std_ss [IN_FUNSET, IN_UNIV] (* 2 subgoals *)
  >| [ (* goal 1 (of 2) *)
       REWRITE_TAC [lt_infty] \\
@@ -1629,12 +1628,8 @@ val prob_liminf = store_thm
  >> MATCH_MP_TAC MONOTONE_CONVERGENCE2
  >> RW_TAC std_ss [IN_FUNSET, IN_UNIV] (* 2 subgoals *)
  >| [ (* goal 1 (of 2) *)
-      Know `{E n | m <= n} <> {}`     (* TODO: move into lemma *)
-      >- (RW_TAC std_ss [Once EXTENSION, NOT_IN_EMPTY, GSPECIFICATION] \\
-          Q.EXISTS_TAC `(SUC m)` >> RW_TAC arith_ss []) \\
-      Know `countable {E n | m <= n}` (* TODO: move into lemma *)
-      >- (Suff `{E n | m <= n} = IMAGE E {n | m <= n}` >- PROVE_TAC [COUNTABLE_IMAGE_NUM] \\
-          RW_TAC std_ss [EXTENSION, IN_IMAGE, GSPECIFICATION]) \\
+      Know `{E n | m <= n} <> {}` >- METIS_TAC [En_not_empty] \\
+      Know `countable {E n | m <= n}` >- METIS_TAC [En_countable] \\
       RW_TAC std_ss [COUNTABLE_ENUM] >> art [] \\
       MATCH_MP_TAC MEASURE_SPACE_BIGINTER >> art [] \\
       Q.PAT_X_ASSUM `{E n | m <= n} = X` (MP_TAC o (MATCH_MP EQ_SYM)) \\
@@ -1653,17 +1648,8 @@ val borel_cantelli_lemma1 = store_thm
           suminf (prob p o E) < PosInf ==> (prob p (limsup E) = 0)``,
     RW_TAC std_ss []
  (* Step 1: convert `{E n | m <= n}` into `IMAGE (f m) univ(:num)` *)
- >> Q.ABBREV_TAC `c = \m. {E n | m <= n}`
- >> Know `!m. c m <> {}`
- >- (Q.UNABBREV_TAC `c` \\
-     RW_TAC std_ss [Once EXTENSION, NOT_IN_EMPTY, GSPECIFICATION] \\
-     Q.EXISTS_TAC `(SUC m)` >> RW_TAC arith_ss [])
- >> Know `!m. countable (c m)`
- >- (GEN_TAC >> Q.UNABBREV_TAC `c` \\
-     SIMP_TAC std_ss [COUNTABLE_ALT, GSPECIFICATION] \\
-     Q.EXISTS_TAC `E` >> RW_TAC std_ss [] \\
-     Q.EXISTS_TAC `n` >> REWRITE_TAC [])
- >> Q.UNABBREV_TAC `c` >> BETA_TAC
+ >> Know `!m. {E n | m <= n} <> {}` >- METIS_TAC [En_not_empty]
+ >> Know `!m. countable {E n | m <= n}` >- METIS_TAC [En_countable]
  >> RW_TAC std_ss [COUNTABLE_ENUM]
  >> fs [SKOLEM_THM]
  (* Step 2 *)
@@ -1675,7 +1661,10 @@ val borel_cantelli_lemma1 = store_thm
      RW_TAC std_ss [SUBSET_DEF, GSPECIFICATION] >> art [])
  >> DISCH_TAC
  (* Step 3 *)
- >> cheat);
+ >> RW_TAC std_ss [prob_limsup]
+ >> (* fs [ext_suminf_def] *)
+
+    cheat);
 
 val borel_cantelli_lemma2 = store_thm
   ("borel_cantelli_lemma2",
@@ -1695,6 +1684,19 @@ val PROB_ONE_AE = store_thm
   ``!p E. prob_space p /\ E IN events p ==> ((prob p E = 1) <=> AE x::p. x IN E)``,
     cheat);
 
+(* [5, Chapter 4.1], slightly more general using pairwise independences *)
+val borel_0_1_law = store_thm 
+  ("borel_0_1_law",
+  ``!p E. prob_space p /\ pair_indep_events p E univ(:num) ==>
+         (prob p (limsup E) = 0) \/ (prob p (limsup E) = 1)``,
+    rpt STRIP_TAC
+ >> Cases_on `suminf (prob p o E) = PosInf`
+ >- (DISJ2_TAC \\
+     MATCH_MP_TAC borel_cantelli_lemma2p >> art [])
+ >> DISJ1_TAC
+ >> MATCH_MP_TAC borel_cantelli_lemma1
+ >> ASM_REWRITE_TAC [GSYM lt_infty]
+ >> fs [pair_indep_events_def]);
 
 (******************************************************************************)
 (*  Kolmogorov's 0-1 Law                                                      *)
@@ -1706,8 +1708,8 @@ val remote_events_def = Define (* "tail_events" in Isabelle/HOL *)
                                           (BIGUNION (IMAGE A {m | m > n}))))
                       univ(:num))`;
 
-val kolmogorov_0_1_Law = store_thm (* [3, p.37-38] *)
-  ("kolmogorov_0_1_Law",
+val kolmogorov_0_1_law = store_thm (* [3, p.37-38] *)
+  ("kolmogorov_0_1_law",
   ``!p (A :num -> 'a events).
        prob_space p /\ indep_sets p A UNIV ==>
        !e. e IN remote_events p A ==> (prob p e = 0) \/ (prob p e = 1)``,
