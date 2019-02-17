@@ -1583,8 +1583,8 @@ val prob_liminf_inf = store_thm
          (prob p (liminf E) = inf (IMAGE (\m. prob p (BIGUNION {E n | m <= n})) UNIV))``,
     cheat);
 
-val Borel_Cantelli_Lemma1 = store_thm
-  ("Borel_Cantelli_Lemma1",
+val borel_cantelli_lemma1 = store_thm
+  ("borel_cantelli_lemma1",
   ``!p E. prob_space p /\ (!n. E n IN events p) /\
           suminf (prob p o E) < PosInf ==> (prob p (limsup E) = 0)``,
     RW_TAC std_ss []
@@ -1613,15 +1613,15 @@ val Borel_Cantelli_Lemma1 = store_thm
  (* Step 3 *)
  >> cheat);
 
-val Borel_Cantelli_Lemma2 = store_thm
-  ("Borel_Cantelli_Lemma2",
+val borel_cantelli_lemma2 = store_thm
+  ("borel_cantelli_lemma2",
   ``!p E. prob_space p /\ indep_events p E univ(:num) /\
          (suminf (prob p o E) = PosInf) ==> (prob p (limsup E) = 1)``,
     cheat);
 
 (* The more general version, "variance" is used in this proof *)
-val Borel_Cantelli_Lemma2p = store_thm
-  ("Borel_Cantelli_Lemma2p",
+val borel_cantelli_lemma2p = store_thm
+  ("borel_cantelli_lemma2p",
   ``!p E. prob_space p /\ pair_indep_events p E univ(:num) /\
          (suminf (prob p o E) = PosInf) ==> (prob p (limsup E) = 1)``,
     cheat);
@@ -1642,8 +1642,8 @@ val remote_events_def = Define (* "tail_events" in Isabelle/HOL *)
                                           (BIGUNION (IMAGE A {m | m > n}))))
                       univ(:num))`;
 
-val Kolmogorov_0_1_Law = store_thm (* [3, p.37-38] *)
-  ("Kolmogorov_0_1_Law",
+val kolmogorov_0_1_Law = store_thm (* [3, p.37-38] *)
+  ("kolmogorov_0_1_Law",
   ``!p (A :num -> 'a events).
        prob_space p /\ indep_sets p A UNIV ==>
        !e. e IN remote_events p A ==> (prob p e = 0) \/ (prob p e = 1)``,

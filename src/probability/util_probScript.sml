@@ -1593,9 +1593,11 @@ val liminf_limsup_sp = store_thm (* more general form *)
  >> Q.EXISTS_TAC `n` >> art []);
 
 (* this lemma is provided by Konrad Slind *)
+val set_ss = arith_ss ++ pred_setLib.PRED_SET_ss;
+
 val lem = Q.prove
   (`!P. ~(?N. INFINITE N /\ !n. N n ==> P n) <=> !N. N SUBSET P ==> FINITE N`,
-  rw_tac (arith_ss ++ pred_setLib.PRED_SET_ss) [EQ_IMP_THM, SUBSET_DEF, IN_DEF]
+  rw_tac set_ss [EQ_IMP_THM, SUBSET_DEF, IN_DEF]
   >- (`FINITE P \/ ?n. P n /\ ~P n` by metis_tac []
        >> imp_res_tac SUBSET_FINITE
        >> full_simp_tac std_ss [SUBSET_DEF, IN_DEF])
