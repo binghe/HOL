@@ -119,28 +119,28 @@ val joint_distribution3_def = Define
    `joint_distribution3 (p :'a p_space) X Y Z =
       (\a. prob p (PREIMAGE (\x. (X x,Y x,Z x)) a INTER p_space p))`;
 
-val cond_distribution_def = Define
-   `cond_distribution (p :'a p_space) X Y a b =
+val conditional_distribution_def = Define
+   `conditional_distribution (p :'a p_space) X Y a b =
       joint_distribution p X Y (a CROSS b) / distribution p Y b`;
 
 (* `expectation` is just (Lebesgue) `integral` *)
 val expectation_def = Define
    `expectation = integral`;
 
-val cond_expectation_def = Define
-   `cond_expectation p X s =
+val conditional_expectation_def = Define
+   `conditional_expectation p X s =
         @f. real_random_variable f p /\
             !g. g IN s ==>
                (expectation p (\x. f x * indicator_fn g x) =
                 expectation p (\x. X x * indicator_fn g x))`;
 
-val cond_prob_def = Define
-   `cond_prob p e1 e2 =
-    cond_expectation p (indicator_fn e1) e2`;
+val conditional_prob_def = Define
+   `conditional_prob p e1 e2 =
+    conditional_expectation p (indicator_fn e1) e2`;
 
-val rv_cond_expectation_def = Define
-   `rv_cond_expectation (p :'a p_space) s X Y =
-       cond_expectation p X (IMAGE (\a. (PREIMAGE Y a) INTER p_space p) (subsets s))`;
+val rv_conditional_expectation_def = Define
+   `rv_conditional_expectation (p :'a p_space) s X Y =
+       conditional_expectation p X (IMAGE (\a. (PREIMAGE Y a) INTER p_space p) (subsets s))`;
 
 (* NOTE: X and Y are forced to have the same types;
          Added `INTER p_space p` after taking the PREIMAGE. *)
@@ -1318,26 +1318,26 @@ val joint_conditional = store_thm
   ("joint_conditional",
   ``!p X Y a b. prob_space p /\ (events p = POW (p_space p)) ==>
                (joint_distribution p X Y (a CROSS b) =
-                cond_distribution p Y X b a * distribution p X a)``,
-    RW_TAC std_ss [cond_distribution_def,Once joint_distribution_sym]
+                conditional_distribution p Y X b a * distribution p X a)``,
+    RW_TAC std_ss [conditional_distribution_def,Once joint_distribution_sym]
  >> Cases_on `distribution p X a = 0`
  >- METIS_TAC [le_antisym, joint_distribution_pos, joint_distribution_le,
                joint_distribution_sym, mul_rzero]
 
  >> RW_TAC std_ss [REAL_DIV_RMUL]);
 
-val cond_distribution_pos = store_thm
-  ("cond_distribution_pos",
+val conditional_distribution_pos = store_thm
+  ("conditional_distribution_pos",
   ``!p X Y a b. prob_space p /\ (events p = POW (p_space p)) ==>
-                0 <= cond_distribution p X Y a b``,
-    RW_TAC std_ss [cond_distribution_def,distribution_pos,joint_distribution_pos,real_div,
+                0 <= conditional_distribution p X Y a b``,
+    RW_TAC std_ss [conditional_distribution_def,distribution_pos,joint_distribution_pos,real_div,
                    REAL_LE_MUL,REAL_LE_INV]);
 
-val cond_distribution_le_1 = store_thm
-  ("cond_distribution_le_1",
+val conditional_distribution_le_1 = store_thm
+  ("conditional_distribution_le_1",
   ``!p X Y a b. prob_space p /\ (events p = POW (p_space p)) ==>
-                cond_distribution p X Y a b <= 1``,
-  RW_TAC std_ss [cond_distribution_def]
+                conditional_distribution p X Y a b <= 1``,
+  RW_TAC std_ss [conditional_distribution_def]
   >> Cases_on `distribution p Y b = 0`
   >- METIS_TAC [marginal_joint_zero,real_div,REAL_MUL_LZERO,REAL_LE_01]
   >> METIS_TAC [REAL_LE_LDIV_EQ, REAL_MUL_LID, REAL_LT_LE, joint_distribution_le2,
@@ -1571,17 +1571,81 @@ val liminf_thm = store_thm
      by PROVE_TAC []
  >> fs [infinity_often_lemma]);
 
-val prob_limsup_sup = store_thm
-  ("prob_limsup_sup",
-  ``!p E. prob_space p /\ (!n. E n IN events p) ==>
-         (prob p (limsup E) = sup (IMAGE (\m. prob p (BIGUNION {E n | m <= n})) UNIV))``,
-    cheat);
+(* NOTE: this lemma cannot be directly promoted to measureTheory, because
+   it used MONOTONE_CONVERGENCE_BIGINTER2, which requires that
+   `measure p (BIGUNION {E n' | n <= n'}) <> PosInf` which doesn't hold in general.
 
-val prob_liminf_inf = store_thm
-  ("prob_liminf_inf",
+   On the other side, Lemma "prob_liminf" can be directly promoted to measureTheory.
+ *)
+val prob_limsup = store_thm
+  ("prob_limsup",
   ``!p E. prob_space p /\ (!n. E n IN events p) ==>
-         (prob p (liminf E) = inf (IMAGE (\m. prob p (BIGUNION {E n | m <= n})) UNIV))``,
-    cheat);
+         (prob p (limsup E) = inf (IMAGE (\m. prob p (BIGUNION {E n | m <= n})) UNIV))``,
+    RW_TAC std_ss [prob_space_def, p_space_def, events_def, prob_def]
+ >> Know `(\m. measure p (BIGUNION {E n | m <= n})) =
+          measure p o (\m. BIGUNION {E n | m <= n})`
+ >- (FUN_EQ_TAC >> RW_TAC std_ss [o_DEF])
+ >> Rewr'
+ >> Suff `inf (IMAGE (measure p o (\m. BIGUNION {E n | m <= n})) UNIV) =
+          measure p (BIGINTER (IMAGE (\m. BIGUNION {E n | m <= n}) UNIV))`
+ >- (Rewr' >> REWRITE_TAC [set_limsup_def])
+ >> MATCH_MP_TAC MONOTONE_CONVERGENCE_BIGINTER2
+ >> Know `!m. BIGUNION {E n | m <= n} IN measurable_sets p`
+ >- (GEN_TAC \\
+     fs [measure_space_def, sigma_algebra_def, space_def, subsets_def] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     CONJ_TAC
+     >- (Suff `{E n | m <= n} = IMAGE E {n | m <= n}` >- PROVE_TAC [COUNTABLE_IMAGE_NUM] \\
+         RW_TAC std_ss [EXTENSION, IN_IMAGE, GSPECIFICATION]) \\
+     RW_TAC std_ss [SUBSET_DEF, GSPECIFICATION] >> art [])
+ >> RW_TAC std_ss [IN_FUNSET, IN_UNIV] (* 2 subgoals *)
+ >| [ (* goal 1 (of 2) *)
+      REWRITE_TAC [lt_infty] \\
+      MATCH_MP_TAC let_trans >> Q.EXISTS_TAC `measure p (m_space p)` \\
+      Reverse CONJ_TAC
+      >- art [extreal_not_infty, extreal_of_num_def, GSYM lt_infty] \\
+      MATCH_MP_TAC INCREASING >> art [] \\
+      CONJ_TAC >- PROVE_TAC [MEASURE_SPACE_INCREASING] \\
+      fs [measure_space_def, sigma_algebra_def, space_def, subsets_def] \\
+      Reverse CONJ_TAC >- PROVE_TAC [ALGEBRA_SPACE, space_def, subsets_def] \\
+      METIS_TAC [algebra_def, subset_class_def, space_def, subsets_def],
+      (* goal 2 (of 2) *)
+      RW_TAC arith_ss [SUBSET_DEF, IN_BIGUNION, GSPECIFICATION] \\
+      Q.EXISTS_TAC `E n'` >> art [] \\
+      Q.EXISTS_TAC `n'` >> RW_TAC arith_ss [] ]);
+
+val prob_liminf = store_thm
+  ("prob_liminf",
+  ``!p E. prob_space p /\ (!n. E n IN events p) ==>
+         (prob p (liminf E) = sup (IMAGE (\m. prob p (BIGINTER {E n | m <= n})) UNIV))``,
+    RW_TAC std_ss [prob_space_def, p_space_def, events_def, prob_def]
+ >> Know `(\m. measure p (BIGINTER {E n | m <= n})) =
+          measure p o (\m. BIGINTER {E n | m <= n})`
+ >- (FUN_EQ_TAC >> RW_TAC std_ss [o_DEF])
+ >> Rewr'
+ >> Suff `sup (IMAGE (measure p o (\m. BIGINTER {E n | m <= n})) UNIV) =
+          measure p (BIGUNION (IMAGE (\m. BIGINTER {E n | m <= n}) UNIV))`
+ >- (Rewr' >> REWRITE_TAC [set_liminf_def])
+ >> MATCH_MP_TAC MONOTONE_CONVERGENCE2
+ >> RW_TAC std_ss [IN_FUNSET, IN_UNIV] (* 2 subgoals *)
+ >| [ (* goal 1 (of 2) *)
+      Know `{E n | m <= n} <> {}`     (* TODO: move into lemma *)
+      >- (RW_TAC std_ss [Once EXTENSION, NOT_IN_EMPTY, GSPECIFICATION] \\
+          Q.EXISTS_TAC `(SUC m)` >> RW_TAC arith_ss []) \\
+      Know `countable {E n | m <= n}` (* TODO: move into lemma *)
+      >- (Suff `{E n | m <= n} = IMAGE E {n | m <= n}` >- PROVE_TAC [COUNTABLE_IMAGE_NUM] \\
+          RW_TAC std_ss [EXTENSION, IN_IMAGE, GSPECIFICATION]) \\
+      RW_TAC std_ss [COUNTABLE_ENUM] >> art [] \\
+      MATCH_MP_TAC MEASURE_SPACE_BIGINTER >> art [] \\
+      Q.PAT_X_ASSUM `{E n | m <= n} = X` (MP_TAC o (MATCH_MP EQ_SYM)) \\
+      RW_TAC std_ss [Once EXTENSION, IN_IMAGE, IN_UNIV, GSPECIFICATION] \\
+      POP_ASSUM (STRIP_ASSUME_TAC o (Q.SPEC `f (n :num)`)) \\
+      Know `?x'. f n = f x'` >- (Q.EXISTS_TAC `n` >> REWRITE_TAC []) \\
+      RW_TAC std_ss [] >> PROVE_TAC [],
+      (* goal 2 (of 2) *)
+      RW_TAC arith_ss [SUBSET_DEF, IN_BIGINTER, GSPECIFICATION] \\
+      FIRST_X_ASSUM MATCH_MP_TAC \\
+      Q.EXISTS_TAC `n'` >> RW_TAC arith_ss [] ]);
 
 val borel_cantelli_lemma1 = store_thm
   ("borel_cantelli_lemma1",

@@ -1141,7 +1141,7 @@ val MEASURE_ADDITIVE = store_thm
 
 (* The following theorems were merged from measure_hvgScript.sml *)
 val MEASURE_SPACE_INCREASING = store_thm
-  ("MEASURE_SPACE_INCREASING",``!m. measure_space m ==> increasing m``,
+  ("MEASURE_SPACE_INCREASING", ``!m. measure_space m ==> increasing m``,
     RW_TAC real_ss []
  >> `additive m` by RW_TAC real_ss [MEASURE_SPACE_ADDITIVE]
  >> FULL_SIMP_TAC real_ss [measure_space_def,sigma_algebra_def,ADDITIVE_INCREASING]);
@@ -1236,6 +1236,7 @@ val MEASURE_SPACE_BIGINTER = store_thm
       (Q.SPEC `(m_space m,measurable_sets m)`)) SIGMA_ALGEBRA_FN_BIGINTER
   >> METIS_TAC [measure_space_def]);
 
+(* use MONOTONE_CONVERGENCE when `f 0 = {}` doesn't hold *)
 val MEASURE_COUNTABLE_INCREASING = store_thm
   ("MEASURE_COUNTABLE_INCREASING",
    ``!m s f.
@@ -1422,10 +1423,11 @@ val MONOTONE_CONVERGENCE = store_thm
     >> METIS_TAC []);
 
 val MONOTONE_CONVERGENCE2 = store_thm
-  ("MONOTONE_CONVERGENCE2", ``!m f. measure_space m /\
-       f IN (UNIV -> measurable_sets m) /\ (!n. f n SUBSET f (SUC n)) ==>
-       (sup (IMAGE (measure m o f) univ(:num)) = measure m (BIGUNION (IMAGE f UNIV)))``,
-  METIS_TAC [MONOTONE_CONVERGENCE]);
+  ("MONOTONE_CONVERGENCE2",
+  ``!m f. measure_space m /\ f IN (UNIV -> measurable_sets m) /\
+         (!n. f n SUBSET f (SUC n)) ==>
+         (sup (IMAGE (measure m o f) univ(:num)) = measure m (BIGUNION (IMAGE f UNIV)))``,
+    METIS_TAC [MONOTONE_CONVERGENCE]);
 
 val MONOTONE_CONVERGENCE_BIGINTER = store_thm
   ("MONOTONE_CONVERGENCE_BIGINTER",
@@ -1487,24 +1489,21 @@ val MONOTONE_CONVERGENCE_BIGINTER = store_thm
 
 val MONOTONE_CONVERGENCE_BIGINTER2 = store_thm
   ("MONOTONE_CONVERGENCE_BIGINTER2",
-   ``!m f.
-       measure_space m /\ f IN (UNIV -> measurable_sets m) /\
-       (!n. measure m (f n) <> PosInf) /\
-       (!n. f (SUC n) SUBSET f n) ==>
-       (inf (IMAGE (measure m o f) univ(:num)) = measure m (BIGINTER (IMAGE f UNIV)))``,
-  METIS_TAC [MONOTONE_CONVERGENCE_BIGINTER]);
+  ``!m f. measure_space m /\ f IN (UNIV -> measurable_sets m) /\
+         (!n. measure m (f n) <> PosInf) /\
+         (!n. f (SUC n) SUBSET f n) ==>
+         (inf (IMAGE (measure m o f) univ(:num)) = measure m (BIGINTER (IMAGE f UNIV)))``,
+    METIS_TAC [MONOTONE_CONVERGENCE_BIGINTER]);
 
 val SIGMA_REDUCE = store_thm
-  ("SIGMA_REDUCE",
-   ``!sp a. (sp, subsets (sigma sp a)) = sigma sp a``,
-   PROVE_TAC [SPACE_SIGMA, SPACE]);
+  ("SIGMA_REDUCE", ``!sp a. (sp, subsets (sigma sp a)) = sigma sp a``,
+    PROVE_TAC [SPACE_SIGMA, SPACE]);
 
 val MEASURABLE_SETS_SUBSET_SPACE = store_thm
   ("MEASURABLE_SETS_SUBSET_SPACE",
-   ``!m s. measure_space m /\ s IN measurable_sets m ==>
-                s SUBSET m_space m``,
-   RW_TAC std_ss [measure_space_def, sigma_algebra_def, algebra_def, subsets_def, space_def,
-                  subset_class_def]);
+  ``!m s. measure_space m /\ s IN measurable_sets m ==> s SUBSET m_space m``,
+    RW_TAC std_ss [measure_space_def, sigma_algebra_def, algebra_def, subsets_def, space_def,
+                   subset_class_def]);
 
 val MEASURABLE_DIFF_PROPERTY = store_thm
   ("MEASURABLE_DIFF_PROPERTY",
