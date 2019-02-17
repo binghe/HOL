@@ -1592,9 +1592,23 @@ val liminf_limsup_sp = store_thm (* more general form *)
  >> Q.EXISTS_TAC `E n` >> art []
  >> Q.EXISTS_TAC `n` >> art []);
 
+(* this lemma is provided by Konrad Slind *)
+val lem = Q.prove
+  (`!P. ~(?N. INFINITE N /\ !n. N n ==> P n) <=> !N. N SUBSET P ==> FINITE N`,
+  rw_tac (arith_ss ++ pred_setLib.PRED_SET_ss) [EQ_IMP_THM, SUBSET_DEF, IN_DEF]
+  >- (`FINITE P \/ ?n. P n /\ ~P n` by metis_tac []
+       >> imp_res_tac SUBSET_FINITE
+       >> full_simp_tac std_ss [SUBSET_DEF, IN_DEF])
+  >- metis_tac[]);
+
+(* TODO: use above lem to simplify this proof with the following hints:
+
+   "From this and the original assumption, you should be able to get that P is finite,
+    so has a maximum element." -- Konrad Slind, Feb 17, 2019.
+ *)
 val infinity_often_lemma = store_thm
   ("infinity_often_lemma",
-  ``!(P :num set). ~(?N. INFINITE N /\ !n. n IN N ==> P n) <=> ?m. !n. m <= n ==> ~(P n)``,
+  ``!P. ~(?N. INFINITE N /\ !n:num. n IN N ==> P n) <=> ?m. !n. m <= n ==> ~(P n)``,
     GEN_TAC
  >> `!N. (!n. n IN N ==> P n) = N SUBSET P` by PROVE_TAC [SUBSET_DEF, IN_APP]
  >> ASM_REWRITE_TAC []
@@ -1625,17 +1639,17 @@ val infinity_often_lemma = store_thm
      `MAX_SET P < m` by RW_TAC arith_ss [] \\
       FULL_SIMP_TAC arith_ss [] ]);
 
+(* this proof is provided by Konrad Slind, slightly shorter than mine. *)
 val infinity_bound_lemma = store_thm
   ("infinity_bound_lemma",
-  ``!(N :num set) m. INFINITE N ==> ?n:num. m <= n /\ n IN N``,
-    rpt GEN_TAC
- >> Suff `~(?n. m <= n /\ n IN N) ==> FINITE N` >- METIS_TAC []
- >> RW_TAC std_ss []
- >> `FINITE (count m)` by PROVE_TAC [FINITE_COUNT]
- >> Suff `N SUBSET (count m)` >- PROVE_TAC [FINITE_SUBSET]
- >> RW_TAC std_ss [SUBSET_DEF, IN_COUNT]
- >> `~(m <= x)` by PROVE_TAC []
- >> FULL_SIMP_TAC arith_ss []);
+  ``!N m. INFINITE N ==> ?n:num. m <= n /\ n IN N``,
+    spose_not_then strip_assume_tac
+ >> `FINITE (count m)` by metis_tac [FINITE_COUNT]
+ >> `N SUBSET (count m)` 
+      by (rw_tac set_ss [SUBSET_DEF]
+           >> `~(m <= x)` by metis_tac []
+           >> decide_tac)
+ >> metis_tac [SUBSET_FINITE]);
 
 val _ = export_theory ();
 
