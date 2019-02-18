@@ -5493,15 +5493,31 @@ val finite_prod_measure_space_POW3 = store_thm
 
    This is mainly to prove the validity of the definition of `ext_liminf`. The value
    of any of the integrals may be infinite. (`!n. integrable m (u n)` is not needed)
+
+   We use the more general statements from [6, p.223] involving both liminf/limsup.
+   Taking `f = \x. 0`, we get the simple version - Theorem 9.11 of [1, p.73].
  *)
-val Fatou_lemma = store_thm (* new *)
-  ("Fatou_lemma",
-  ``!m u. measure_space m /\
+val Fatou_lemma_liminf = store_thm (* new *)
+  ("Fatou_lemma_liminf",
+  ``!m u f. measure_space m /\
          (!n. u n IN borel_measurable (m_space m,measurable_sets m)) /\
-         (!x n. x IN m_space m ==> 0 <= u n x)
+         (!x n. x IN m_space m ==> f x <= u n x) /\
+         integrable m f /\ NegInf < integral m f
        ==>
          (\x. liminf (\n. u n x)) IN borel_measurable (m_space m,measurable_sets m) /\
          (integral m (\x. liminf (\n. u n x)) <= liminf (\n. integral m (u n)))``,
+    cheat);
+
+(* This is also called Reverse Fatou Lemma, c.f. [1, p. 74] (taking `f = \x. 0`) *)
+val Fatou_lemma_limsup = store_thm (* new *)
+  ("Fatou_lemma_limsup",
+  ``!m u f. measure_space m /\
+         (!n. u n IN borel_measurable (m_space m,measurable_sets m)) /\
+         (!x n. x IN m_space m ==> u n x <= f x) /\
+         integrable m f /\ integral m f < PosInf
+       ==>
+         (\x. limsup (\n. u n x)) IN borel_measurable (m_space m,measurable_sets m) /\
+         (limsup (\n. integral m (u n)) <= integral m (\x. limsup (\n. u n x)))``,
     cheat);
 
 (* A generalization of Beppo Levi's theorem 9.6 [1, p.70] (lebesgue_monotone_convergence)
@@ -5531,14 +5547,6 @@ val integrable_monotone_convergence_inf = store_thm (* new *)
         (integral m f = inf (IMAGE (\n. integral m (u n)) UNIV))``,
     cheat);
 
-(* "The only obvious possibility to weaken (11.2) would be to require it to hold
-    only almost everywhere" [1, p.90] *)
-val uniformly_bounded_def = Define
-   `uniformly_bounded m (u :num -> 'a -> extreal) =
-      ?w. w IN measurable (m_space m, measurable_sets m) Borel /\
-          integrable m w /\
-          (!x. x IN m_space m ==> 0 <= w x) /\
-          (AE x::m. x IN m_space m ==> !n. abs (u n x) <= w x)`;
 
 (* Lebesgue's Dominated convergence (Theorem 11.2 [1, p.89])
 
@@ -5546,7 +5554,17 @@ val uniformly_bounded_def = Define
    for the interchange of limits and integrals; the ultimate version for such a result
    with necessary and sufficient conditions will be given in the form of Vitali’s
    convergence theorem 16.6" [1, p.90]
+
+  "The only obvious possibility to weaken (11.2) would be to require it to hold
+   only almost everywhere" [1, p.90]
  *)
+val uniformly_bounded_def = Define
+   `uniformly_bounded m (u :num -> 'a -> extreal) =
+      ?w. w IN measurable (m_space m, measurable_sets m) Borel /\
+          integrable m w /\
+          (!x. x IN m_space m ==> 0 <= w x) /\
+          (AE x::m. !n. abs (u n x) <= w x)`;
+
 val Lebesgue_dominated_convergence = store_thm (* new *)
   ("Lebesgue_dominated_convergence",
   ``!m w f u. measure_space m /\
@@ -5589,4 +5607,5 @@ val _ = export_theory ();
   [3] Wikipedia: https://en.wikipedia.org/wiki/Pierre_Fatou
   [4] Wikipedia: https://en.wikipedia.org/wiki/Beppo_Levi
   [5] Wikipedia: https://en.wikipedia.org/wiki/Giuseppe_Vitali
+  [6] Shiryaev, A.N.: Probability-1. Springer-Verlag New York (2016).
  *)

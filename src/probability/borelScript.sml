@@ -2754,14 +2754,17 @@ val MEASURABLE_SETS_LEBESGUE = store_thm
 
 val _ = overload_on ("lambda", ``measure Lebesgue``);
 
-(* ******************************************* *)
-(*  Almost everywhere (a.e)                    *)
-(* ******************************************* *)
+
+(* ------------------------------------------------------------------------- *)
+(*  Almost everywhere (a.e) - basic binder definitions                       *)
+(* ------------------------------------------------------------------------- *)
 
 val almost_everywhere_def = Define
    `almost_everywhere m P = ?N. null_set m N /\ !x. x IN (m_space m DIFF N) ==> P x`;
 
-(* This binder syntax is learnt from Thomas Tuerk *)
+(* This binder syntax is learnt from Thomas Tuerk. `Lebesgue` is a required
+   household measure space for `AE x. P x` without `::m`, but it's never used.
+ *)
 val AE_def = new_definition ("AE_def",
   ``$AE = \P. almost_everywhere Lebesgue P``);
 
@@ -2784,6 +2787,14 @@ val FORALL_IMP_AE = store_thm
     RW_TAC std_ss [AE_THM, almost_everywhere_def]
  >> Q.EXISTS_TAC `{}`
  >> RW_TAC std_ss [NULL_SET_EMPTY, IN_DIFF, NOT_IN_EMPTY]);
+
+
+(* ------------------------------------------------------------------------- *)
+(*  Fatou's lemma for measures (limsup and liminf) [1, p.74]                 *)
+(* ------------------------------------------------------------------------- *)
+
+(* TODO: migrate all limsup/liminf proofs from probabilityTheory here. *)
+
 
 val _ = export_theory ();
 

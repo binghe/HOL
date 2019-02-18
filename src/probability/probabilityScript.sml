@@ -1686,6 +1686,7 @@ val prob_liminf = store_thm
       FIRST_X_ASSUM MATCH_MP_TAC \\
       Q.EXISTS_TAC `n'` >> RW_TAC arith_ss [] ]);
 
+(* The easy part of Borel-Cantelli Lemma *)
 val Borel_Cantelli_lemma1 = store_thm
   ("Borel_Cantelli_lemma1",
   ``!p E. prob_space p /\ (!n. E n IN events p) /\
@@ -1710,7 +1711,7 @@ val Borel_Cantelli_lemma1 = store_thm
     
     cheat);
 
-(* The basic version of "Borel-Cantelli Lemma (2nd part)".
+(* The hard part of Borel-Cantelli Lemma (full independency)
 
    Although it's an easy corollary of the next "borel_cantelli_lemma2p",
    here we give its original proof, which is based on analysis results
@@ -1722,16 +1723,15 @@ val Borel_Cantelli_lemma2 = store_thm
          (suminf (prob p o E) = PosInf) ==> (prob p (limsup E) = 1)``,
     cheat);
 
-(* The more general version, with a much more complex proof in which basic properties
-   of "variance" is needed.
- *)
+(* The more general version with pairwise independency. Need "variance" in this proof. *)
 val Borel_Cantelli_lemma2p = store_thm
   ("Borel_Cantelli_lemma2p",
   ``!p E. prob_space p /\ pair_indep_events p E univ(:num) /\
          (suminf (prob p o E) = PosInf) ==> (prob p (limsup E) = 1)``,
     cheat);
 
-val Borel_0_1_law = store_thm (* [2, p.82] *)
+(* an easy corollary of Borel-Cantelli lemma, c.f. [2, p.82] *)
+val Borel_0_1_law = store_thm
   ("Borel_0_1_law",
   ``!p E. prob_space p /\ pair_indep_events p E univ(:num) ==>
          (prob p (limsup E) = 0) \/ (prob p (limsup E) = 1)``,
@@ -1750,16 +1750,16 @@ val Borel_0_1_law = store_thm (* [2, p.82] *)
 (******************************************************************************)
 
 val remote_events_def = Define (* "tail_events" in Isabelle/HOL *)
-   `remote_events (p :'a p_space) (A :num -> 'a events) =
+   `remote_events (p :'a p_space) (E :num -> 'a events) =
       BIGINTER (IMAGE (\n. subsets (sigma (p_space p)
-                                          (BIGUNION (IMAGE A {m | m > n}))))
+                                          (BIGUNION (IMAGE E {m | m > n}))))
                       univ(:num))`;
 
 val Kolmogorov_0_1_law = store_thm (* [3, p.37-38] *)
   ("Kolmogorov_0_1_law",
-  ``!p (A :num -> 'a events).
-       prob_space p /\ indep_sets p A UNIV ==>
-       !e. e IN remote_events p A ==> (prob p e = 0) \/ (prob p e = 1)``,
+  ``!p (E :num -> 'a events).
+       prob_space p /\ indep_sets p E UNIV ==>
+       !e. e IN remote_events p E ==> (prob p e = 0) \/ (prob p e = 1)``,
     cheat);
 
 
