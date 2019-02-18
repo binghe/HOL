@@ -728,6 +728,10 @@ val MINIMAL_SUC_IMP = store_thm
 val disjoint_def = Define
    `disjoint A = !a b. a IN A /\ b IN A /\ (a <> b) ==> DISJOINT a b`;
 
+(* ⊢ !A. disjoint A <=> !a b. a IN A /\ b IN A /\ a <> b ==> (a INTER b = {} ) *)
+val disjoint = save_thm
+  ("disjoint", REWRITE_RULE [DISJOINT_DEF] disjoint_def);
+
 val disjointI = store_thm
   ("disjointI",
   ``!A. (!a b . a IN A ==> b IN A ==> (a <> b) ==> DISJOINT a b) ==> disjoint A``,
