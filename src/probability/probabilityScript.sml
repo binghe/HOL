@@ -103,11 +103,11 @@ val possibly_def = Define
 val random_variable_def = Define
    `random_variable X p s = prob_space p /\ X IN measurable (p_space p, events p) s`;
 
-(* is `X x <> NegInf /\ X x <> PosInf` necessary? *)
+(* NOTE: use `real_random_variable` iff `!x. X x <> NegInf /\ X x <> PosInf`,
+   otherwise use `random_variable X p Borel` instead. *)
 val real_random_variable_def = Define
    `real_random_variable X p =
-      prob_space p /\ (!x. x IN p_space p ==> X x <> NegInf /\ X x <> PosInf) /\
-      X IN measurable (p_space p, events p) Borel`;
+         random_variable X p Borel /\ (!x. X x <> NegInf /\ X x <> PosInf)`;
 
 val distribution_def = Define
    `distribution (p :'a p_space) X = (\s. prob p ((PREIMAGE X s) INTER p_space p))`;
@@ -232,11 +232,11 @@ val PROB_SPACE = store_thm
 
 val EVENTS_SIGMA_ALGEBRA = store_thm
   ("EVENTS_SIGMA_ALGEBRA", ``!p. prob_space p ==> sigma_algebra (p_space p, events p)``,
-   RW_TAC std_ss [PROB_SPACE]);
+    RW_TAC std_ss [PROB_SPACE]);
 
 val EVENTS_ALGEBRA = store_thm
   ("EVENTS_ALGEBRA", ``!p. prob_space p ==> algebra (p_space p, events p)``,
-   PROVE_TAC [SIGMA_ALGEBRA_ALGEBRA, EVENTS_SIGMA_ALGEBRA]);
+    PROVE_TAC [SIGMA_ALGEBRA_ALGEBRA, EVENTS_SIGMA_ALGEBRA]);
 
 val PROB_EMPTY = store_thm
   ("PROB_EMPTY", ``!p. prob_space p ==> (prob p {} = 0)``,
@@ -1087,6 +1087,14 @@ val distribution_lebesgue_thm2 = store_thm
 
 (* ************************************************************************* *)
 
+(* |- !X p.
+         real_random_variable X p <=>
+         prob_space p /\ X ∈ borel_measurable (p_space p,events p) /\
+         !x. X x <> NegInf ∧ X x <> PosInf *)
+val real_random_variable = save_thm
+  ("real_random_variable",
+    REWRITE_RULE [random_variable_def] real_random_variable_def);
+
 (* added `integrable p X`, otherwise `expectation p X` is not defined *)
 val finite_expectation1 = store_thm
   ("finite_expectation1",
@@ -1094,19 +1102,18 @@ val finite_expectation1 = store_thm
          (expectation p X =
           SIGMA (\r. r * prob p (PREIMAGE X {r} INTER p_space p)) (IMAGE X (p_space p)))``,
     RW_TAC std_ss [expectation_def, p_space_def, prob_def, prob_space_def,
-                   real_random_variable_def, events_def]
+                   real_random_variable, events_def]
  >> (MATCH_MP_TAC o REWRITE_RULE [finite_space_integral_def]) finite_space_integral_reduce
  >> RW_TAC std_ss [num_lt_infty]);
 
 (* added `integrable p X`, otherwise `expectation p X` is not defined *)
 val finite_expectation2 = store_thm
   ("finite_expectation2",
-  ``!p X. FINITE (IMAGE X (p_space p)) /\ real_random_variable X p /\ 
-          integrable p X ==>
+  ``!p X. FINITE (IMAGE X (p_space p)) /\ real_random_variable X p /\ integrable p X ==>
          (expectation p X =
           SIGMA (\r. r * prob p (PREIMAGE X {r} INTER p_space p)) (IMAGE X (p_space p)))``,
     RW_TAC std_ss [expectation_def, p_space_def, prob_def, prob_space_def,
-                   real_random_variable_def, events_def]
+                   real_random_variable, events_def]
  >> (MATCH_MP_TAC o REWRITE_RULE [finite_space_integral_def]) finite_support_integral_reduce
  >> RW_TAC std_ss [num_lt_infty]);
 
@@ -1472,30 +1479,58 @@ val joint_distribution_sum_mul1 = store_thm
 (******************************************************************************)
 
 val absolute_moment_def = Define
-   `absolute_moment P X r a = expectation P (\x. (abs (X x - a)) pow r)`;
+   `absolute_moment p X a r = expectation p (\x. (abs (X x - a)) pow r)`;
 
 val moment_def = Define
-   `moment P X r a = expectation P (\x. (X x - a) pow r)`;
+   `moment p X a r = expectation p (\x. (X x - a) pow r)`;
+
+val second_moment_def = Define
+   `second_moment p X a = moment p X a 2`;
 
 val central_moment_def = Define
-   `central_moment P X r = moment P X r (expectation P X)`;
+   `central_moment p X r = moment p X (expectation p X) r`;
 
+(* `variance` = central second moment, this is the most used one. *)
 val variance_def = Define
-   `variance P X = central_moment P X 2`;
+   `variance p X = central_moment p X 2`;
 
 val standard_deviation_def = Define
-   `standard_deviation P X = sqrt (variance P X)`;
+   `standard_deviation p X = sqrt (variance p X)`;
 
+(* this lemma was ever confirmed by Prof. Massimo Campanino *)
+val integrable_from_X2 = store_thm
+  ("integrable_from_X2", ``!p X. integrable p (\x. X x * X x) ==> integrable p X``,
+    cheat);
+
+(* the most famous formula about variances in Elementary Probability
+
+  `integrable p X` is not needed as it can be derived from `integrable p (\x. X x * X x)`,
+   which holds trivially in discrete probability spaces.
+ *)
+val variance_eq = store_thm
+  ("variance_eq",
+  ``!p X. integrable p (\x. X x * X x) ==>
+         (variance p X = expectation p (\x. X x * X x) - expectation p X)``,
+    cheat);
 
 (******************************************************************************)
 (*  Almost sure convergence; Borel-Cantelli Lemma [2, p.75]                   *)
 (******************************************************************************)
 
-val En_not_empty = Q.prove (`!E m:num. {E n | m <= n} <> {}`,
+val indicator_fn_real_rv = store_thm
+  ("indicator_fn_real_rv",
+  ``!p s. prob_space p /\ s IN events p ==> real_random_variable (indicator_fn s) p``,
+    RW_TAC std_ss [real_random_variable, indicator_fn_not_infty]
+ >> MATCH_MP_TAC IN_MEASURABLE_BOREL_INDICATOR
+ >> Q.EXISTS_TAC `s`
+ >> RW_TAC std_ss [subsets_def, space_def]
+ >> fs [prob_space_def, measure_space_def, p_space_def, events_def]);
+
+val tail_not_empty = Q.prove (`!E m:num. {E n | m <= n} <> {}`,
     RW_TAC std_ss [Once EXTENSION, NOT_IN_EMPTY, GSPECIFICATION]
  >> Q.EXISTS_TAC `(SUC m)` >> RW_TAC arith_ss []);
 
-val En_countable = Q.prove (`!E m:num. countable {E n | m <= n}`,
+val tail_countable = Q.prove (`!E m:num. countable {E n | m <= n}`,
     rpt GEN_TAC
  >> Suff `{E n | m <= n} = IMAGE E {n | m <= n}`
  >- PROVE_TAC [COUNTABLE_IMAGE_NUM]
@@ -1512,7 +1547,7 @@ val limsup_events = store_thm
  >> GEN_TAC >> BETA_TAC
  >> fs [sigma_algebra_def, space_def, subsets_def]
  >> FIRST_X_ASSUM MATCH_MP_TAC
- >> RW_TAC std_ss [En_countable, SUBSET_DEF, GSPECIFICATION]
+ >> RW_TAC std_ss [tail_countable, SUBSET_DEF, GSPECIFICATION]
  >> ASM_REWRITE_TAC []);
 
 val liminf_events = store_thm
@@ -1525,8 +1560,8 @@ val liminf_events = store_thm
                     (Q.SPEC `(m_space p,measurable_sets p)` SIGMA_ALGEBRA_ALT))
  >> POP_ASSUM MATCH_MP_TAC
  >> RW_TAC std_ss [IN_FUNSET, IN_UNIV]
- >> Know `{E n | m <= n} <> {}` >- METIS_TAC [En_not_empty]
- >> Know `countable {E n | m <= n}` >- METIS_TAC [En_countable]
+ >> Know `{E n | m <= n} <> {}` >- METIS_TAC [tail_not_empty]
+ >> Know `countable {E n | m <= n}` >- METIS_TAC [tail_countable]
  >> RW_TAC std_ss [COUNTABLE_ENUM] >> art []
  >> IMP_RES_TAC SIGMA_ALGEBRA_FN_BIGINTER
  >> fs [space_def, subsets_def, IN_FUNSET, IN_UNIV]
@@ -1596,7 +1631,7 @@ val prob_limsup = store_thm
  >- (GEN_TAC \\
      fs [measure_space_def, sigma_algebra_def, space_def, subsets_def] \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
-     RW_TAC std_ss [En_countable, SUBSET_DEF, GSPECIFICATION] >> art [])
+     RW_TAC std_ss [tail_countable, SUBSET_DEF, GSPECIFICATION] >> art [])
  >> RW_TAC std_ss [IN_FUNSET, IN_UNIV] (* 2 subgoals *)
  >| [ (* goal 1 (of 2) *)
       REWRITE_TAC [lt_infty] \\
@@ -1628,8 +1663,8 @@ val prob_liminf = store_thm
  >> MATCH_MP_TAC MONOTONE_CONVERGENCE2
  >> RW_TAC std_ss [IN_FUNSET, IN_UNIV] (* 2 subgoals *)
  >| [ (* goal 1 (of 2) *)
-      Know `{E n | m <= n} <> {}` >- METIS_TAC [En_not_empty] \\
-      Know `countable {E n | m <= n}` >- METIS_TAC [En_countable] \\
+      Know `{E n | m <= n} <> {}` >- METIS_TAC [tail_not_empty] \\
+      Know `countable {E n | m <= n}` >- METIS_TAC [tail_countable] \\
       RW_TAC std_ss [COUNTABLE_ENUM] >> art [] \\
       MATCH_MP_TAC MEASURE_SPACE_BIGINTER >> art [] \\
       Q.PAT_X_ASSUM `{E n | m <= n} = X` (MP_TAC o (MATCH_MP EQ_SYM)) \\
@@ -1648,8 +1683,8 @@ val borel_cantelli_lemma1 = store_thm
           suminf (prob p o E) < PosInf ==> (prob p (limsup E) = 0)``,
     RW_TAC std_ss []
  (* Step 1: convert `{E n | m <= n}` into `IMAGE (f m) univ(:num)` *)
- >> Know `!m. {E n | m <= n} <> {}` >- METIS_TAC [En_not_empty]
- >> Know `!m. countable {E n | m <= n}` >- METIS_TAC [En_countable]
+ >> Know `!m. {E n | m <= n} <> {}` >- METIS_TAC [tail_not_empty]
+ >> Know `!m. countable {E n | m <= n}` >- METIS_TAC [tail_countable]
  >> RW_TAC std_ss [COUNTABLE_ENUM]
  >> fs [SKOLEM_THM]
  (* Step 2 *)
@@ -1663,29 +1698,31 @@ val borel_cantelli_lemma1 = store_thm
  (* Step 3 *)
  >> RW_TAC std_ss [prob_limsup]
  >> (* fs [ext_suminf_def] *)
-
+    
     cheat);
 
+(* The basic version of "Borel-Cantelli Lemma (2nd part)".
+
+   Although it's an easy corollary of the next "borel_cantelli_lemma2p",
+   here we give its original proof, which is based on analysis results
+   and EXTREAL_PROD_IMAGE (PI) in extrealTheory.
+ *)
 val borel_cantelli_lemma2 = store_thm
   ("borel_cantelli_lemma2",
   ``!p E. prob_space p /\ indep_events p E univ(:num) /\
          (suminf (prob p o E) = PosInf) ==> (prob p (limsup E) = 1)``,
     cheat);
 
-(* The more general version, "variance" is used in this proof *)
+(* The more general version, with a much more complex proof in which basic properties
+   of "variance" is needed.
+ *)
 val borel_cantelli_lemma2p = store_thm
   ("borel_cantelli_lemma2p",
   ``!p E. prob_space p /\ pair_indep_events p E univ(:num) /\
          (suminf (prob p o E) = PosInf) ==> (prob p (limsup E) = 1)``,
     cheat);
 
-val PROB_ONE_AE = store_thm
-  ("PROB_ONE_AE",
-  ``!p E. prob_space p /\ E IN events p ==> ((prob p E = 1) <=> AE x::p. x IN E)``,
-    cheat);
-
-(* [5, Chapter 4.1], slightly more general using pairwise independences *)
-val borel_0_1_law = store_thm 
+val borel_0_1_law = store_thm (* [2, p.82] *)
   ("borel_0_1_law",
   ``!p E. prob_space p /\ pair_indep_events p E univ(:num) ==>
          (prob p (limsup E) = 0) \/ (prob p (limsup E) = 1)``,
@@ -1697,6 +1734,7 @@ val borel_0_1_law = store_thm
  >> MATCH_MP_TAC borel_cantelli_lemma1
  >> ASM_REWRITE_TAC [GSYM lt_infty]
  >> fs [pair_indep_events_def]);
+
 
 (******************************************************************************)
 (*  Kolmogorov's 0-1 Law                                                      *)
@@ -1713,6 +1751,16 @@ val kolmogorov_0_1_law = store_thm (* [3, p.37-38] *)
   ``!p (A :num -> 'a events).
        prob_space p /\ indep_sets p A UNIV ==>
        !e. e IN remote_events p A ==> (prob p e = 0) \/ (prob p e = 1)``,
+    cheat);
+
+
+(******************************************************************************)
+(*  Various modes of convergence [2, Chapter 4]                               *)
+(******************************************************************************)
+
+val PROB_ONE_AE = store_thm
+  ("PROB_ONE_AE",
+  ``!p E. prob_space p /\ E IN events p ==> ((prob p E = 1) <=> AE x::p. x IN E)``,
     cheat);
 
 
