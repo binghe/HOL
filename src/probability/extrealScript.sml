@@ -481,12 +481,12 @@ val le_radd = store_thm
   >> RW_TAC std_ss [extreal_add_def, extreal_le_def, REAL_LE_RADD]);
 
 val le_radd_imp = store_thm
-("le_radd_imp",``!x y z. y <= z ==> y + x <= z + x``,
+  ("le_radd_imp",``!x y z. y <= z ==> y + x <= z + x``,
   rpt Cases
   >> RW_TAC std_ss [extreal_add_def, extreal_le_def, REAL_LE_RADD, le_infty, le_refl]);
 
 val le_ladd_imp = store_thm
-("le_ladd_imp",``!x y z. y <= z ==> x + y <= x + z``,
+  ("le_ladd_imp",``!x y z. y <= z ==> x + y <= x + z``,
   rpt Cases
   >> RW_TAC std_ss [extreal_add_def, extreal_le_def, REAL_LE_LADD, le_infty, le_refl]);
 
@@ -3645,20 +3645,27 @@ val inf_le = store_thm
   >> METIS_TAC [le_neg,neg_neg]);
 
 val inf_le' = store_thm
-  ("inf_le'",
-  ``!p x. (inf p <= x) = (!y. (!z. z IN p ==> y <= z) ==> y <= x)``,
+  ("inf_le'", ``!p x. (extreal_inf p <= x) =
+                        (!y. (!z. z IN p ==> y <= z) ==> y <= x)``,
     REWRITE_TAC [IN_APP]
- >> REWRITE_TAC [inf_le]);
+ >> ACCEPT_TAC inf_le);
 
 val inf_eq = store_thm
-  ("inf_eq", ``!p x. (inf p = x) =
+  ("inf_eq", ``!p x. (extreal_inf p = x) =
                        (!y. p y ==> x <= y) /\
                        (!y. (!z. p z ==> y <= z) ==> y <= x)``,
   METIS_TAC [le_antisym,inf_le,le_inf]);
 
+val inf_eq' = store_thm
+  ("inf_eq'", ``!p x. (extreal_inf p = x) =
+                        (!y. y IN p ==> x <= y) /\
+                        (!y. (!z. z IN p ==> y <= z) ==> y <= x)``,
+    REWRITE_TAC [IN_APP]
+ >> ACCEPT_TAC inf_eq);
+
 val inf_const = store_thm
-  ("inf_const", ``!x. inf (\y. y = x) = x``,
-   RW_TAC real_ss [inf_eq, le_refl]);
+  ("inf_const", ``!x. extreal_inf (\y. y = x) = x``,
+    RW_TAC real_ss [inf_eq, le_refl]);
 
 val inf_const_alt = store_thm
   ("inf_const_alt", ``!p z. (?x. p x) /\ (!x. p x ==> (x = z)) ==> (inf p = z)``,

@@ -3,10 +3,11 @@
 (* Authors: Tarek Mhamdi, Osman Hasan, Sofiene Tahar                         *)
 (* HVG Group, Concordia University, Montreal                                 *)
 (*                                                                           *)
-(* Updated by Chun Tian (2019)                                               *)
+(* Further enriched by Chun Tian (2019)                                      *)
 (* Fondazione Bruno Kessler and University of Trento, Italy                  *)
 (* ------------------------------------------------------------------------- *)
-(* Based on the work of Aaron Coble, Cambridge University                    *)
+(* Based on the work of Joe Hurd [7] (2001) and Aaron Coble [8] (2010)       *)
+(* Cambridge University.                                                     *)
 (* ------------------------------------------------------------------------- *)
 
 open HolKernel Parse boolLib bossLib arithmeticTheory realTheory prim_recTheory
@@ -33,7 +34,7 @@ val _ = new_theory "probability";
     parameter (Chapter IV, 5); and especially the theory of conditional
     probabilities and conditional expectations (Chapter V). ..."
 
-  -- A. N. Kolmogorov, Foundations of the Theory of Probability [1] *)
+  -- A. N. Kolmogorov [1] *)
 
 (* ------------------------------------------------------------------------- *)
 (* Basic probability theory definitions.                                     *)
@@ -1785,4 +1786,6 @@ val _ = export_theory ();
   [4] Shiryaev, A.N.: Probability-1. Springer-Verlag New York (2016).
   [5] Shiryaev, A.N.: Probability-2. Springer-Verlag New York (2019).
   [6] Billingsley, P.: Probability and Measure. Wiley-Interscience (1995).
+  [7] Hurd, J.: Formal verification of probabilistic algorithms. University of Cambridge (2001).
+  [8] Coble, A.R.: Anonymity, information, and machine-assisted proof. University of Cambridge (2010).
  *)

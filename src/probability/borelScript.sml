@@ -3,7 +3,7 @@
 (* Authors: Tarek Mhamdi, Osman Hasan, Sofiene Tahar (2013) [2]              *)
 (* HVG Group, Concordia University, Montreal                                 *)
 (*                                                                           *)
-(* Updated by Chun Tian (2019)                                               *)
+(* Further enriched by Chun Tian (2019)                                      *)
 (* Fondazione Bruno Kessler and University of Trento, Italy                  *)
 (* ------------------------------------------------------------------------- *)
 (* Based on the work of Aaron Coble [3] (2010)                               *)
@@ -767,7 +767,7 @@ val IN_MEASURABLE_BOREL_ALT2 = store_thm
              >> `?r. f x = Normal r` by METIS_TAC [extreal_cases]
              >> FULL_SIMP_TAC std_ss [extreal_lt_eq,extreal_le_def]
              >> METIS_TAC [REAL_LT_IMP_LE,
-			   Q.SPECL [`r`,`c`,`(\n. c + (1 / 2) pow n)`] LE_SEQ_IMP_LE_LIM])
+                           Q.SPECL [`r`,`c`,`(\n. c + (1 / 2) pow n)`] LE_SEQ_IMP_LE_LIM])
      >> `BIGINTER (IMAGE (\n:num. {x | f x < Normal (c + (1 / 2) pow n)} INTER space a) UNIV)
            IN subsets a`
          by (RW_TAC std_ss []
@@ -2683,42 +2683,69 @@ val IN_MEASURABLE_BOREL_PLUS_MINUS = store_thm
 (*  Constructing Lebesgue measure space by CARATHEODORY_SEMIRING  *)
 (* ************************************************************** *)
 
-(* The line-segment from a to b, named after [6, p.389] *)
+(* The line-segment (half open, half closed) from a to b, named after [6, p.389] *)
 val line_segment_def = Define (* (a, b] *)
-   `line_segment (a,b) = {x | Normal a < x /\ x <= Normal b}`;
+   `line_segment a b = {x | Normal a < x /\ x <= Normal b}`;
 
 (* `lambda0` is the "length" of the line-segment from a to b *)
 local
   val thm = prove (
-    ``?l. !a b. a <= b ==> (l (line_segment (a,b)) = Normal b - Normal a)``,
-      Q.EXISTS_TAC `\s. sup s - inf s`
+    ``?l. !a b. a <= b ==> (l (line_segment a b) = Normal b - Normal a)``,
+      Q.EXISTS_TAC `\s. if s = {} then 0 else sup s - inf s`
    >> RW_TAC std_ss []
-   >> Know `sup (line_segment (a,b)) = Normal b`
-   >- (RW_TAC std_ss [line_segment_def, sup_eq] \\
-       cheat)
-   >> cheat);
+   >- (Cases_on `a = b` >- METIS_TAC [sub_refl, extreal_not_infty] \\
+       fs [REAL_LE_LT, line_segment_def] \\
+       Q.PAT_X_ASSUM `P = {}` MP_TAC \\
+       RW_TAC std_ss [Once EXTENSION, GSPECIFICATION, NOT_IN_EMPTY] \\
+       STRIP_ASSUME_TAC (MATCH_MP (Q.SPECL [`a`, `b`] REAL_MEAN)
+                                  (ASSUME ``a < b:real``)) \\
+       METIS_TAC [extreal_lt_eq, lt_imp_le])
+   >> Cases_on `a = b`
+   >- (fs [REAL_LE_LT, line_segment_def] \\
+       Q.PAT_X_ASSUM `P <> {}` MP_TAC \\
+       RW_TAC std_ss [Once EXTENSION, GSPECIFICATION, NOT_IN_EMPTY] \\
+       PROVE_TAC [let_trans, lt_antisym])
+   >> fs [REAL_LE_LT]
+   >> Know `sup (line_segment a b) = Normal b`
+   >- (RW_TAC std_ss [line_segment_def, sup_eq', GSPECIFICATION] \\
+       POP_ASSUM MATCH_MP_TAC >> art [extreal_lt_eq, le_refl])
+   >> Rewr'
+   >> Know `inf (line_segment a b) = Normal a`
+   >- (RW_TAC std_ss [line_segment_def, inf_eq', GSPECIFICATION]
+       >- IMP_RES_TAC lt_imp_le \\
+       MATCH_MP_TAC le_epsilon \\
+       RW_TAC std_ss [] \\
+       Cases_on `Normal a + e <= Normal b`
+       >- (FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
+           ASSUME_TAC (REWRITE_RULE [extreal_not_infty, add_rzero]
+                                    (Q.SPECL [`Normal a`, `0`, `e`] lt_ladd)) >> art []) \\
+       fs [GSYM extreal_lt_def] \\
+       MATCH_MP_TAC le_trans >> Q.EXISTS_TAC `Normal b` \\
+       Reverse CONJ_TAC >- IMP_RES_TAC lt_imp_le \\
+       FIRST_X_ASSUM MATCH_MP_TAC >> art [extreal_lt_eq, le_refl])
+   >> Rewr);
 in
   val lambda0_def = new_specification (* learnt from "examples/miller" *)
     ("lambda0_def", ["lambda0"], thm);
 end;
 
-val line_segments_def = Define (* {(a, b] | a < b} *)
-   `line_segments = (univ(:extreal), {l | ?a b. a <= b /\ (l = line_segment (a,b))})`;
+val Borel_generator_def = Define (* {(a, b] | a < b} *)
+   `Borel_generator = (univ(:extreal), {l | ?a b. a <= b /\ (l = line_segment a b)})`;
 
-val SEMIRING_LINE_SEGMENTS = store_thm
-  ("SEMIRING_LINE_SEGMENTS", ``semiring line_segments``,
+val SEMIRING_BOREL_GENERATOR = store_thm
+  ("SEMIRING_BOREL_GENERATOR", ``semiring Borel_generator``,
     cheat);
 
 (* lambda0 is premeasure, with coutably-additivity coming from COMPACT_IMP_HEINE_BOREL *)
 val PREMEASURE_LAMBDA0 = store_thm
   ("PREMEASURE_LAMBDA0",
-  ``premeasure (space line_segments,subsets line_segments,lambda0)``,
+  ``premeasure (space Borel_generator,subsets Borel_generator,lambda0)``,
     cheat);
 
 (* The sigma algebra generated from half-open intervals is Borel set *)
-val SIGMA_LINE_SEGMENTS_IS_BOREL = store_thm
-  ("SIGMA_LINE_SEGMENTS_IS_BOREL",
-  ``sigma (space line_segments) (subsets line_segments) = Borel``,
+val SIGMA_BOREL_GENERATOR = store_thm
+  ("SIGMA_BOREL_GENERATOR",
+  ``sigma (space Borel_generator) (subsets Borel_generator) = Borel``,
     cheat);
 
 local
