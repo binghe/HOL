@@ -1583,7 +1583,7 @@ val limsup_thm = store_thm
       Q.ABBREV_TAC `P = \n. x IN (E n)` \\
      `!n. x IN (E n) = P n` by PROVE_TAC [] >> POP_ORW \\
       CCONTR_TAC \\
-     `?m. !n. m <= n ==> ~(P n)` by PROVE_TAC [infinity_often_lemma] \\
+     `?m. !n. m <= n ==> ~(P n)` by PROVE_TAC [infinitely_often_lemma] \\
       Q.UNABBREV_TAC `P` >> FULL_SIMP_TAC bool_ss [] \\
       Know `x NOTIN BIGUNION {E n | m <= n}`
       >- (SIMP_TAC std_ss [IN_BIGUNION, GSPECIFICATION] \\
@@ -1606,7 +1606,7 @@ val liminf_thm = store_thm
                         (Q.SPECL [`COMPL o E`, `x`] limsup_thm))
  >> `x IN liminf E = ~(?N. INFINITE N /\ !n. n IN N ==> x NOTIN E n)`
      by PROVE_TAC []
- >> fs [infinity_often_lemma]);
+ >> fs [infinitely_often_lemma]);
 
 (* NOTE: this lemma cannot be directly promoted to measureTheory, because
    it used MONOTONE_CONVERGENCE_BIGINTER2, which requires that

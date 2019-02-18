@@ -1612,8 +1612,8 @@ val lem = Q.prove
    "From this and the original assumption, you should be able to get that P is finite,
     so has a maximum element." -- Konrad Slind, Feb 17, 2019.
  *)
-val infinity_often_lemma = store_thm
-  ("infinity_often_lemma",
+val infinitely_often_lemma = store_thm
+  ("infinitely_often_lemma",
   ``!P. ~(?N. INFINITE N /\ !n:num. n IN N ==> P n) <=> ?m. !n. m <= n ==> ~(P n)``,
     GEN_TAC
  >> `!N. (!n. n IN N ==> P n) = N SUBSET P` by PROVE_TAC [SUBSET_DEF, IN_APP]
