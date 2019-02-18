@@ -1677,8 +1677,8 @@ val prob_liminf = store_thm
       FIRST_X_ASSUM MATCH_MP_TAC \\
       Q.EXISTS_TAC `n'` >> RW_TAC arith_ss [] ]);
 
-val borel_cantelli_lemma1 = store_thm
-  ("borel_cantelli_lemma1",
+val Borel_Cantelli_lemma1 = store_thm
+  ("Borel_Cantelli_lemma1",
   ``!p E. prob_space p /\ (!n. E n IN events p) /\
           suminf (prob p o E) < PosInf ==> (prob p (limsup E) = 0)``,
     RW_TAC std_ss []
@@ -1707,8 +1707,8 @@ val borel_cantelli_lemma1 = store_thm
    here we give its original proof, which is based on analysis results
    and EXTREAL_PROD_IMAGE (PI) in extrealTheory.
  *)
-val borel_cantelli_lemma2 = store_thm
-  ("borel_cantelli_lemma2",
+val Borel_Cantelli_lemma2 = store_thm
+  ("borel_Cantelli_lemma2",
   ``!p E. prob_space p /\ indep_events p E univ(:num) /\
          (suminf (prob p o E) = PosInf) ==> (prob p (limsup E) = 1)``,
     cheat);
@@ -1716,22 +1716,22 @@ val borel_cantelli_lemma2 = store_thm
 (* The more general version, with a much more complex proof in which basic properties
    of "variance" is needed.
  *)
-val borel_cantelli_lemma2p = store_thm
-  ("borel_cantelli_lemma2p",
+val Borel_Cantelli_lemma2p = store_thm
+  ("Borel_Cantelli_lemma2p",
   ``!p E. prob_space p /\ pair_indep_events p E univ(:num) /\
          (suminf (prob p o E) = PosInf) ==> (prob p (limsup E) = 1)``,
     cheat);
 
-val borel_0_1_law = store_thm (* [2, p.82] *)
-  ("borel_0_1_law",
+val Borel_0_1_law = store_thm (* [2, p.82] *)
+  ("Borel_0_1_law",
   ``!p E. prob_space p /\ pair_indep_events p E univ(:num) ==>
          (prob p (limsup E) = 0) \/ (prob p (limsup E) = 1)``,
     rpt STRIP_TAC
  >> Cases_on `suminf (prob p o E) = PosInf`
  >- (DISJ2_TAC \\
-     MATCH_MP_TAC borel_cantelli_lemma2p >> art [])
+     MATCH_MP_TAC Borel_Cantelli_lemma2p >> art [])
  >> DISJ1_TAC
- >> MATCH_MP_TAC borel_cantelli_lemma1
+ >> MATCH_MP_TAC Borel_Cantelli_lemma1
  >> ASM_REWRITE_TAC [GSYM lt_infty]
  >> fs [pair_indep_events_def]);
 
@@ -1746,8 +1746,8 @@ val remote_events_def = Define (* "tail_events" in Isabelle/HOL *)
                                           (BIGUNION (IMAGE A {m | m > n}))))
                       univ(:num))`;
 
-val kolmogorov_0_1_law = store_thm (* [3, p.37-38] *)
-  ("kolmogorov_0_1_law",
+val Kolmogorov_0_1_law = store_thm (* [3, p.37-38] *)
+  ("Kolmogorov_0_1_law",
   ``!p (A :num -> 'a events).
        prob_space p /\ indep_sets p A UNIV ==>
        !e. e IN remote_events p A ==> (prob p e = 0) \/ (prob p e = 1)``,

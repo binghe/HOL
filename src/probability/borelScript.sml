@@ -2735,7 +2735,8 @@ local
       REWRITE_TAC [PROB_ALGEBRA_UNIV]
    *));
 in
-  val Lebesgue_def = new_specification (* learnt from "examples/miller" *)
+  (* named after Henri Lebesgue (1875–1941), a French mathematician [5] *)
+  val Lebesgue_def = new_specification (* method learnt from "examples/miller" *)
     ("Lebesgue_def", ["Lebesgue"], thm);
 end;
 
@@ -2787,4 +2788,5 @@ val _ = export_theory ();
       ACM Trans. Embedded Comput. Syst. 12, 1--23 (2013).
   [3] Coble, A.R.: Anonymity, information, and machine-assisted proof, (2010).
   [4] Hurd, J.: Formal verification of probabilistic algorithms. (2001).
+  [5] Wikipedia: https://en.wikipedia.org/wiki/Henri_Lebesgue
  *)

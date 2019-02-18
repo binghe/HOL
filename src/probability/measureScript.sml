@@ -2381,9 +2381,10 @@ val measure_split = store_thm
    >> FULL_SIMP_TAC std_ss [GSYM DELETE_NON_ELEMENT]);
 
 (* ------------------------------------------------------------------------- *)
-(*  Uniqueness of Measure - Dynkin system                                    *)
+(*  Uniqueness of Measure - Dynkin system [3]                                *)
 (* ------------------------------------------------------------------------- *)
 
+(* named after Eugene B. Dynkin (1924-2014), a Soviet and American mathematician [8] *)
 val dynkin_system_def = Define
    `dynkin_system d =
      subset_class (space d) (subsets d) /\
@@ -6697,4 +6698,5 @@ val _ = export_theory ();
   [5] Chung, K.L.: A Course in Probability Theory, Third Edition. Academic Press (2001).
   [6] Wikipedia: https://en.wikipedia.org/wiki/Ring_of_sets
   [7] Coble, A.R.: Anonymity, information, and machine-assisted proof. University of Cambridge (2010).
+  [8] Wikipedia: https://en.wikipedia.org/wiki/Eugene_Dynkin
  *)

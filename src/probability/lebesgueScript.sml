@@ -169,15 +169,6 @@ val RN_deriv_def = Define (* or `dv / dm` *)
 (* `f = RN_deriv v m` is denoted by `f = v / m`, also see "density_def" *)
 val _ = overload_on ("/", ``RN_deriv``);
 
-(* To be used by Vitali's convergence theorem [1].
-   It follows the universal formulation due to G. A. Hunt [2, p. 33]. *)
-val uniformly_integrable_def = Define
-   `uniformly_integrable m (f :num -> 'a -> extreal) =
-    !e. 0 < e ==>
-        ?w. nonneg w /\ integrable m w /\
-            sup {r | ?u n. (u = f n) /\
-                           (r = ((abs o u) * m) {x | w x < (abs o u) x})} < e`;
-
 
 (*****************************************************************************)
 
@@ -2256,7 +2247,8 @@ val lebesgue_monotone_convergence_lemma = store_thm
         by (RW_TAC std_ss [] >> FUN_EQ_TAC
             >> RW_TAC std_ss []
             >> Cases_on `~(x' IN m_space m)`
-            >- (RW_TAC real_ss [indicator_fn_def,IN_INTER,mul_rone,mul_rzero] >> METIS_TAC [pos_simple_fn_def,EXTREAL_SUM_IMAGE_ZERO])
+            >- (RW_TAC real_ss [indicator_fn_def, IN_INTER, mul_rone, mul_rzero] \\
+                METIS_TAC [pos_simple_fn_def,EXTREAL_SUM_IMAGE_ZERO])
             >> RW_TAC real_ss [indicator_fn_def,IN_INTER,mul_rone,mul_rzero]
             >- FULL_SIMP_TAC real_ss [pos_simple_fn_def,indicator_fn_def]
             >> FULL_SIMP_TAC std_ss [pos_simple_fn_def,EXTREAL_SUM_IMAGE_ZERO])
@@ -2291,7 +2283,9 @@ val lebesgue_monotone_convergence_lemma = store_thm
       >> RW_TAC real_ss []
       >> FULL_SIMP_TAC real_ss [ext_mono_increasing_suc])
   >> `!i. i IN s ==> !n. 0 <= (\i n. Normal (x i) * measure m (a i INTER (b n INTER m_space m))) i n`
-         by (RW_TAC std_ss [] >> METIS_TAC [le_mul,extreal_le_def,extreal_of_num_def,MEASURE_SPACE_POSITIVE,positive_def,MEASURE_SPACE_INTER,pos_simple_fn_def])
+         by (RW_TAC std_ss [] \\
+             METIS_TAC [le_mul, extreal_le_def, extreal_of_num_def, MEASURE_SPACE_POSITIVE,
+                        positive_def, MEASURE_SPACE_INTER, pos_simple_fn_def])
   >> FULL_SIMP_TAC std_ss [sup_sum_mono]
   >> RW_TAC std_ss []
   >> `!i. i IN s ==>
@@ -2369,11 +2363,22 @@ val lebesgue_monotone_convergence_lemma = store_thm
 
 
 (************************************************************)
-(* LEBESGUE MONOTONE CONVERGENCE *)
+(* LEBESGUE MONOTONE CONVERGENCE                            *)
 (************************************************************)
 
+(* NOTE: this is actually Theorem 9.6 (Beppo Levi) [1, p.70] for positive functions,
+         the full version of "Monotone convergence" theroem for arbitrary integrable
+         functions (Theorem 11.1 [1, p.88]) is not proved yet.
+
+   TODO: use `!x i. x IN m_space m ==> 0 <= fi i x` &
+             `!x. x IN m_space ==> 0 <= f x)` &
+             `!x. x IN m_space ==> mono_increasing (\i. fi i x)` instead.
+
+   This theorem is also named after Beppo Levi, an Italian mathematician [4].
+ *)
 val lebesgue_monotone_convergence = store_thm
-  ("lebesgue_monotone_convergence", ``!m f fi. measure_space m /\
+  ("lebesgue_monotone_convergence",
+  ``!m f fi. measure_space m /\
         (!i. fi i IN measurable (m_space m, measurable_sets m) Borel) /\
         (!i x. 0 <= fi i x) /\ (!x. 0 <= f x) /\
         (!x. mono_increasing (\i. fi i x)) /\
@@ -2394,7 +2399,7 @@ val lebesgue_monotone_convergence = store_thm
       >> RW_TAC std_ss [IN_IMAGE,IN_UNIV]
       >> METIS_TAC [])
   >> Q.ABBREV_TAC `r = sup (IMAGE (\i. pos_fn_integral m (fi i)) UNIV)`
-  >> RW_TAC std_ss [pos_fn_integral_def,sup_le]
+  >> RW_TAC std_ss [pos_fn_integral_def, sup_le]
   >> POP_ASSUM (MP_TAC o ONCE_REWRITE_RULE [GSYM SPECIFICATION])
   >> RW_TAC std_ss [GSPECIFICATION]
   >> METIS_TAC [lebesgue_monotone_convergence_lemma, le_antisym]);
@@ -5478,10 +5483,112 @@ val finite_prod_measure_space_POW3 = store_thm
   >> METIS_TAC [PAIR]);
 *)
 
+(* ------------------------------------------------------------------------- *)
+(*  Convergence theorems and their applications [1, Chapter 9 & 11]          *)
+(*  (Author: Chun Tian)                                                      *)
+(* ------------------------------------------------------------------------- *)
+
+(* Another convergence theorem, named after P. Fatou, usually called Fatou's lemma,
+   named after Pierre Fatou (1878-1929), a French mathematician and astronomer [3].
+
+   This is mainly to prove the validity of the definition of `ext_liminf`. The value
+   of any of the integrals may be infinite. (`!n. integrable m (u n)` is not needed)
+ *)
+val Fatou_lemma = store_thm (* new *)
+  ("Fatou_lemma",
+  ``!m u. measure_space m /\
+         (!n. u n IN borel_measurable (m_space m,measurable_sets m)) /\
+         (!x n. x IN m_space m ==> 0 <= u n x)
+       ==>
+         (\x. liminf (\n. u n x)) IN borel_measurable (m_space m,measurable_sets m) /\
+         (integral m (\x. liminf (\n. u n x)) <= liminf (\n. integral m (u n)))``,
+    cheat);
+
+(* A generalization of Beppo Levi's theorem 9.6 [1, p.70] (lebesgue_monotone_convergence)
+   This is Theorem 11.1 (Monotone convergence) [1, p.88].
+ *)
+val integrable_monotone_convergence_sup = store_thm (* new *)
+  ("integrable_monotone_convergence_sup",
+  ``!m f u. measure_space m /\
+        (!n. u n IN measurable (m_space m, measurable_sets m) Borel) /\
+        (!x. x IN m_space m ==> mono_increasing (\n. u n x)) /\
+        (!x. x IN m_space m ==> (sup (IMAGE (\n. u n x) UNIV) = f x)) /\
+        sup (IMAGE (\n. integral m (u n)) UNIV) < PosInf
+      ==>
+        integrable m f /\
+        (integral m f = sup (IMAGE (\n. integral m (u n)) UNIV))``,
+    cheat);
+
+val integrable_monotone_convergence_inf = store_thm (* new *)
+  ("integrable_monotone_convergence_inf",
+  ``!m f u. measure_space m /\
+        (!n. u n IN measurable (m_space m, measurable_sets m) Borel) /\
+        (!x. x IN m_space m ==> mono_decreasing (\n. u n x)) /\
+        (!x. x IN m_space m ==> (inf (IMAGE (\n. u n x) UNIV) = f x)) /\
+        NegInf < inf (IMAGE (\n. integral m (u n)) UNIV)
+      ==>
+        integrable m f /\
+        (integral m f = inf (IMAGE (\n. integral m (u n)) UNIV))``,
+    cheat);
+
+(* "The only obvious possibility to weaken (11.2) would be to require it to hold
+    only almost everywhere" [1, p.90] *)
+val uniformly_bounded_def = Define
+   `uniformly_bounded m (u :num -> 'a -> extreal) =
+      ?w. w IN measurable (m_space m, measurable_sets m) Borel /\
+          integrable m w /\
+          (!x. x IN m_space m ==> 0 <= w x) /\
+          (AE x::m. !n. x IN m_space m ==> abs (u n x) <= w x)`;
+
+(* Lebesgue's Dominated convergence (Theorem 11.2 [1, p.89])
+
+   TODO: define "-->" for extended reals (in extrealTheory) first.
+
+  "Lebesgue’s theorem gives merely sufficient - but easily verifiable - conditions
+   for the interchange of limits and integrals; the ultimate version for such a result
+   with necessary and sufficient conditions will be given in the form of Vitali’s
+   convergence theorem 16.6" [1, p.90]
+ *)
+val Lebesgue_dominated_convergence = store_thm (* new *)
+  ("Lebesgue_dominated_convergence",
+  ``!m w f u. measure_space m /\
+        (!n. u n IN measurable (m_space m, measurable_sets m) Borel) /\
+        (!n. integrable m (u n)) /\ uniformly_bounded m u /\
+        (AE x::m. (\n. real (u n x)) --> real (f x))
+      ==>
+        (\n. real (integral m (\x. abs (u n x - f x)))) --> 0 /\
+        (\n. real (integral m (\x. u n x))) --> real (integral m f)``,
+    cheat);
+
+(* To be used by Vitali's convergence theorem [1].
+  "It follows the universal formulation due to G. A. Hunt [2, p. 33]." [1, p.163] *)
+val uniformly_integrable_def = Define
+   `uniformly_integrable m (f :num -> 'a -> extreal) =
+    !e. 0 < e ==>
+        ?w. nonneg w /\ integrable m w /\
+            sup {r | ?u n. (u = f n) /\
+                           (r = ((abs o u) * m) {x | w x < (abs o u) x})} < e`;
+
+(* Theorem 16.6 (Vitali) [1, p. 165], which generalizes Lebesgue’s dominated convergence
+   theorem 11.2 (Lebesgue_dominated_convergence).
+
+   named after Giuseppe Vitali (1875-1932), an Italian mathematician [5].
+
+val Vitali_uniform_convergence = store_thm (* new *)
+  ("Vitali_uniform_convergence",
+  ``not expressible at this moment``,
+    cheat);
+ *)
+
+
 val _ = export_theory ();
 
 (* References:
 
   [1] Schilling, R.L.: Measures, Integrals and Martingales. Cambridge University Press (2005).
-  [2] Hunt, G. A., Martingales et processus de Markov, Paris: Dunod, Monogr. Soc. Math. France t. 1, 1966.
+  [2] Hunt, G. A., Martingales et processus de Markov, Paris: Dunod, Monogr.
+      Soc. Math. France t. 1, 1966.
+  [3] Wikipedia: https://en.wikipedia.org/wiki/Pierre_Fatou
+  [4] Wikipedia: https://en.wikipedia.org/wiki/Beppo_Levi
+  [5] Wikipedia: https://en.wikipedia.org/wiki/Giuseppe_Vitali
  *)
