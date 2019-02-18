@@ -66,9 +66,19 @@ New features:
 
     These names can also be given attributes in the same way.
 
+*   `Holmakefile`s can now refer to the new variable `DEFAULT_TARGETS` in order to generate a list of the targets in the current directory that Holmake would attempt to build by default.
+    This provides an easier way to adjust makefiles than that suggested in the [release notes for Kananaskis-10](http://hol-theorem-prover.org/kananaskis-10.release.html).
 
 Bugs fixed:
 -----------
+
+*   `extrealTheory`: the previous definitions of `extreal_add` and
+    `extreal_sub` wrongly allow `PosInf + NegInf = PosInf` and
+    `PosInf - NegInf = PosInf`. This has been fixed in the new version
+    with many additional lemmas. (thanks to Concordia HVG and Chun
+    Tian for this work). Now all `EXTREAL_SUM_IAMGE` theorems require
+    that there must be no mixing of `PosInf` and `NegInf` in summing
+    items, as otherwise the summation is not defined.
 
 New theories:
 -------------
@@ -84,8 +94,26 @@ New theories:
     the metric-related results in previous `topologyTheory` should now
     open `metricTheory` instead. (Thanks to Chun Tian for this work.)
 
-*   Holmakefiles can now refer to the new variable `DEFAULT_TARGETS` in order to generate a list of the targets in the current directory that Holmake would attempt to build by default.
-    This provides an easier way to adjust makefiles than that suggested in the [release notes for Kananaskis-10](http://hol-theorem-prover.org/kananaskis-10.release.html).
+*   `measureTheory`, `lebesgueTheory`, `probabilityTheory` (new): the
+    type of measure (and probability) has been changed from `('a set)
+    -> real` to `('a set) -> extreal`, allowing better alignments with
+    modern textbooks. (Thanks to Concordia HVG and Chun Tian for this
+    work). The Carathéodory's extension theorem has been re-proved
+    based on semiring, with additional uniqueness arguments.
+
+    There is a major backwards-incompatibility: old proof scripts
+    using real-valued measure theory and probability theory should now
+    open `old_measureTheory`, `old_borelTheory`, `old_lebesgueTheory`
+	and `old_probabilityTheory` instead.
+
+*   `borelTheory`: the theory of Borel space and Borel-measurable sets
+    is now moved from `measureTheory` into a dedicated new theory
+    with some further extensions and a construction of Lebesgue
+    measure	space based on Caratheodory Extension Theorem (by Chun Tian).
+
+    There is a minor backwards-incompatibility: old proof scripts using
+    the Borel-related results in previous `measureTheory` should now
+    open `borelTheory` instead.
 
 New tools:
 ----------

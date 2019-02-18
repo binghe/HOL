@@ -2,75 +2,29 @@
 (* Create "lebesgueTheory" setting up the theory of Lebesgue Integration     *)
 (* ========================================================================= *)
 
-(* ------------------------------------------------------------------------- *)
-(* Load and open relevant theories                                           *)
-(* (Comment out "load" and "loadPath"s for compilation)                      *)
-(* ------------------------------------------------------------------------- *)
-(*
+open HolKernel Parse boolLib bossLib
 
-app load ["bossLib", "metisLib", "arithmeticTheory", "pred_setTheory", "listTheory",
-          "state_transformerTheory", "formalizeUseful",
-          "combinTheory", "pairTheory", "realTheory", "realLib", "extra_boolTheory", "jrhUtils",
-          "extra_pred_setTheory", "realSimps", "extra_realTheory",
-          "measureTheory", "numTheory", "simpLib",
-          "seqTheory", "subtypeTheory",
-          "transcTheory", "limTheory", "stringTheory", "rich_listTheory", "stringSimps",
-          "listSimps", "borelTheory", "whileTheory"];
+open metisLib arithmeticTheory pred_setTheory listTheory combinTheory
+     pairTheory realTheory realLib jrhUtils realSimps numTheory
+     simpLib seqTheory whileTheory real_sigmaTheory transcTheory limTheory;
 
-*)
-
-open HolKernel Parse boolLib bossLib metisLib arithmeticTheory pred_setTheory
-     listTheory state_transformerTheory formalizeUseful extra_numTheory combinTheory
-     pairTheory realTheory realLib extra_boolTheory jrhUtils
-     extra_pred_setTheory realSimps extra_realTheory measureTheory numTheory
-     simpLib seqTheory subtypeTheory
-     transcTheory limTheory stringTheory rich_listTheory stringSimps listSimps
-     borelTheory whileTheory;
-
-open real_sigmaTheory;
+open hurdUtils util_probTheory real_measureTheory real_borelTheory;
 
 (* ------------------------------------------------------------------------- *)
-(* Start a new theory called "lebesgue"                                   *)
+(* Start a new theory called "lebesgue"                                      *)
 (* ------------------------------------------------------------------------- *)
 
-val _ = new_theory "lebesgue";
+val _ = new_theory "real_lebesgue";
 
 (* ------------------------------------------------------------------------- *)
 (* Helpful proof tools                                                       *)
 (* ------------------------------------------------------------------------- *)
 
-val REVERSE = Tactical.REVERSE;
 val lemma = I prove;
 
-val Simplify = RW_TAC arith_ss;
-val Suff = PARSE_TAC SUFF_TAC;
-val Know = PARSE_TAC KNOW_TAC;
-val Rewr = DISCH_THEN (REWRITE_TAC o wrap);
-val Rewr' = DISCH_THEN (ONCE_REWRITE_TAC o wrap);
-val Cond =
-  DISCH_THEN
-  (fn mp_th =>
-   let
-     val cond = fst (dest_imp (concl mp_th))
-   in
-     KNOW_TAC cond >| [ALL_TAC, DISCH_THEN (MP_TAC o MP mp_th)]
-   end);
-
-val POP_ORW = POP_ASSUM (fn thm => ONCE_REWRITE_TAC [thm]);
-
-val safe_list_ss = bool_ss ++ LIST_ss;
-
-val safe_string_ss = bool_ss ++ STRING_ss;
-
-val arith_string_ss = arith_ss ++ STRING_ss;
-
-
-(* ************************************************************************* *)
 (* ************************************************************************* *)
 (* Basic Definitions                                                         *)
 (* ************************************************************************* *)
-(* ************************************************************************* *)
-
 
 val pos_simple_fn_def = Define
    `pos_simple_fn m f (s:num->bool) a x =
@@ -82,85 +36,68 @@ val pos_simple_fn_def = Define
         (!i j. i IN s /\ j IN s /\ (~(i=j)) ==> DISJOINT (a i) (a j)) /\
         (BIGUNION (IMAGE a s) = m_space m)`;
 
-
 val pos_simple_fn_integral_def = Define
    `pos_simple_fn_integral m s a x =
         SIGMA (\i. (x i) * ((measure m) (a i))) s`;
 
-
 val psfs_def = Define
    `psfs m f = {(s,a,x) | pos_simple_fn m f s a x}`;
-
 
 val psfis_def = Define
    `psfis m f = IMAGE (\(s,a,x). pos_simple_fn_integral m s a x) (psfs m f)`;
 
-
 val pos_fn_integral_def = Define
-   `pos_fn_integral m f = sup {r:real | ?g. r IN psfis m g /\
-                                             !x. g x <= f x}`;
-
+   `pos_fn_integral m f = sup {r:real | ?g. r IN psfis m g /\ !x. g x <= f x}`;
 
 val nonneg_def = Define
-  `nonneg f = !x. 0<= f x`;
+   `nonneg f = !x. 0 <= f x`;
 
-
+(* "fn_plus" in (new) borelScript.sml *)
 val pos_part_def = Define
-  `pos_part f = (\x. if 0 <= f x then f x else 0)`;
+   `pos_part f = (\x. if 0 <= f x then f x else 0)`;
 
-
+(* "fn_minus" in (new) borelScript.sml *)
 val neg_part_def = Define
    `neg_part f = (\x. if 0 <= f x then 0 else ~ f x)`;
-
 
 val mono_increasing_def = Define
    `mono_increasing (f:num->real) = !m n. m <= n ==> f m <= f n`;
 
-
+(* c.f. "pos_fn_integral_def" in (new) lebesgueScript.sml *)
 val nnfis_def = Define
    `nnfis m f = {y | ?u x. mono_convergent u f (m_space m) /\
-                           (!n. x n IN psfis m (u n)) /\
-                           x --> y}`;
-
+                           (!n. x n IN psfis m (u n)) /\ x --> y}`;
 
 val upclose_def = Define
    `upclose f g = (\t. max (f t) (g t))`;
-
 
 val mon_upclose_help_def = Define
    `(mon_upclose_help 0 u m = u m 0) /\
     (mon_upclose_help (SUC n) u m = upclose (u m (SUC n)) (mon_upclose_help n u m))`;
 
-
 val mon_upclose_def = Define
    `mon_upclose u m = mon_upclose_help m u m`;
-
 
 val integrable_def = Define
    `integrable m f = measure_space m /\
                      (?x. x IN nnfis m (pos_part f)) /\
                      (?y. y IN nnfis m (neg_part f))`;
 
-
 val integral_def = Define
-    `integral m f = (@i. i IN nnfis m (pos_part f)) - (@j. j IN nnfis m (neg_part f))`;
-
+   `integral m f = (@i. i IN nnfis m (pos_part f)) - (@j. j IN nnfis m (neg_part f))`;
 
 val finite_space_integral_def = Define
    `finite_space_integral m f =
         SIGMA (\r. r * measure m (PREIMAGE f {r} INTER m_space m)) (IMAGE f (m_space m))`;
-
 
 val countable_space_integral_def = Define
    `countable_space_integral m f =
         let e = enumerate (IMAGE f (m_space m)) in
         suminf ((\r. r * measure m (PREIMAGE f {r} INTER m_space m)) o e)`;
 
-
 val prod_measure_def = Define
    `prod_measure m0 m1 =
         (\a. integral m0 (\s0. (measure m1) (PREIMAGE (\s1. (s0,s1)) a)))`;
-
 
 val prod_measure_space_def = Define
    `prod_measure_space m0 m1 =
@@ -168,7 +105,6 @@ val prod_measure_space_def = Define
          subsets (sigma ((m_space m0) CROSS (m_space m1))
                         (prod_sets (measurable_sets m0) (measurable_sets m1))),
          prod_measure m0 m1)`;
-
 
 val RN_deriv_def = Define
    `RN_deriv m v =
@@ -179,11 +115,8 @@ val RN_deriv_def = Define
 
 
 (* ************************************************************************* *)
-(* ************************************************************************* *)
 (* Proofs                                                                    *)
 (* ************************************************************************* *)
-(* ************************************************************************* *)
-
 
 val indicator_fn_split = store_thm
   ("indicator_fn_split",
@@ -730,14 +663,14 @@ val pos_simple_fn_integral_add = store_thm
    >> RW_TAC std_ss [] >> ASM_SIMP_TAC std_ss []
    >> Q.EXISTS_TAC `k` >> Q.EXISTS_TAC `c` >> Q.EXISTS_TAC `(\i. z i + z' i)`
    >> FULL_SIMP_TAC std_ss [pos_simple_fn_def, pos_simple_fn_integral_def]
-   >> REVERSE CONJ_TAC
+   >> Reverse CONJ_TAC
    >- (RW_TAC std_ss [GSYM REAL_SUM_IMAGE_ADD]
        >> `!i. z i * measure m (c i) + z' i * measure m (c i) =
            (z i + z' i) * measure m (c i)`
         by (STRIP_TAC >> REAL_ARITH_TAC)
        >> RW_TAC std_ss [])
    >> CONJ_TAC >- RW_TAC std_ss [REAL_LE_ADD]
-   >> REVERSE CONJ_TAC
+   >> Reverse CONJ_TAC
    >- RW_TAC std_ss [REAL_LE_ADD]
    >> REPEAT STRIP_TAC
    >> `SIGMA (\i. x i * indicator_fn (a i) x') s =
@@ -1268,7 +1201,7 @@ val real_pos_part_neg_part_pos_times = lemma
   (``!a. 0 <= a ==> (pos_part (\x. a * f x) = (\x. a * pos_part f x)) /\
                     (neg_part (\x. a * f x) = (\x. a * neg_part f x))``,
     RW_TAC std_ss [pos_part_def, neg_part_def, FUN_EQ_THM]
-  >> ( REVERSE (RW_TAC real_ss [REAL_ENTIRE, REAL_NEG_EQ0])
+  >> ( Reverse (RW_TAC real_ss [REAL_ENTIRE, REAL_NEG_EQ0])
     >- METIS_TAC [REAL_LE_MUL]
     >> SPOSE_NOT_THEN STRIP_ASSUME_TAC
     >> `0 < a * f x` by METIS_TAC [REAL_LE_LT, REAL_ENTIRE]
@@ -1362,7 +1295,7 @@ val psfis_borel_measurable = store_thm
 val real_le_mult_sustain = lemma
   (``!r y. (!z. 0 < z /\ z < 1 ==> z * r <= y) ==> r <= y``,
    REPEAT STRIP_TAC
-   >> REVERSE (Cases_on `0<y`)
+   >> Reverse (Cases_on `0<y`)
    >- (`0<(1:real)` by RW_TAC real_ss []
        >> `?z. 0 < z /\ z < 1` by (MATCH_MP_TAC REAL_MEAN >> RW_TAC std_ss [])
        >> `z * r <= y` by RW_TAC std_ss []
@@ -1486,7 +1419,7 @@ val psfis_mono_conv_mono = store_thm
    >> MATCH_MP_TAC SEQ_LE
    >> Q.EXISTS_TAC `(\n. ((\n. z) n) * (\n. SIGMA (\i. x' i * measure m (a i INTER B' n)) s') n)`
    >> Q.EXISTS_TAC `x`
-   >> REVERSE CONJ_TAC
+   >> Reverse CONJ_TAC
    >- (ASM_REWRITE_TAC [GREATER_EQ] >> Q.EXISTS_TAC `0` >> RW_TAC arith_ss [])
    >> MATCH_MP_TAC SEQ_MUL
    >> RW_TAC std_ss [SEQ_CONST]
@@ -2079,7 +2012,7 @@ val borel_measurable_mon_conv_psfis = store_thm
                             >> RW_TAC std_ss [GSYM REAL_ADD_RDISTRIB]
                             >> RW_TAC std_ss [GSYM real_div, REAL_LT_RDIV_EQ]
                             >> Q.UNABBREV_TAC `i` >> RW_TAC real_ss [])
-                >> REVERSE CONJ_TAC >- RW_TAC std_ss []
+                >> Reverse CONJ_TAC >- RW_TAC std_ss []
                 >> Cases_on `f t < &(2*i+1)/(2 * (2 pow n))`
                 >- (RW_TAC std_ss []
                     >> `t IN A (n+1) (2 * i)`
@@ -2141,7 +2074,7 @@ val borel_measurable_mon_conv_psfis = store_thm
                     >> RW_TAC std_ss [GSPECIFICATION]
                     >> Suff `~(t IN A n y)` >- RW_TAC real_ss [indicator_fn_def]
                     >> Q.UNABBREV_TAC `A` >> FULL_SIMP_TAC std_ss [IN_INTER, GSPECIFICATION]
-                    >> REVERSE (Cases_on `& y / 2 pow n <= f t`) >> RW_TAC std_ss []
+                    >> Reverse (Cases_on `& y / 2 pow n <= f t`) >> RW_TAC std_ss []
                     >> FULL_SIMP_TAC std_ss [REAL_NOT_LT]
                     >> MATCH_MP_TAC REAL_LE_TRANS >> Q.EXISTS_TAC `&n`
                     >> FULL_SIMP_TAC std_ss [REAL_LE_LDIV_EQ, REAL_OF_NUM_POW, REAL_MUL, REAL_LE, REAL_LT]
@@ -2528,7 +2461,7 @@ val markov_ineq = store_thm
    >> CONJ_TAC
    >- METIS_TAC [integral_times]
    >> REPEAT STRIP_TAC
-   >> REVERSE (Cases_on `a <= f t`)
+   >> Reverse (Cases_on `a <= f t`)
    >- RW_TAC real_ss [indicator_fn_def, GSPECIFICATION, POW_POS, ABS_POS]
    >> `abs (f t) pow n = abs (f t) pow n * 1` by RW_TAC real_ss []
    >> POP_ORW >> MATCH_MP_TAC REAL_LE_MUL2
@@ -2839,7 +2772,7 @@ val finite_space_POW_integral_reduce = store_thm
                 (\x. if (x = i) /\ 0 <= f (c i) then f(c i) else 0)`
                 by (ONCE_REWRITE_TAC [FUN_EQ_THM] >> POP_ORW
                     >> STRIP_TAC >> SIMP_TAC real_ss [indicator_fn_def, IN_SING]
-                    >> REVERSE (Cases_on `x IN count n`) >- METIS_TAC []
+                    >> Reverse (Cases_on `x IN count n`) >- METIS_TAC []
                     >> ASM_SIMP_TAC std_ss []
                     >> Cases_on `x = i`
                     >> RW_TAC real_ss []
@@ -2876,7 +2809,7 @@ val finite_space_POW_integral_reduce = store_thm
                 (\x. if (x = i) /\ f (c i) <= 0 then ~f(c i) else 0)`
                 by (ONCE_REWRITE_TAC [FUN_EQ_THM] >> POP_ORW
                     >> STRIP_TAC >> SIMP_TAC real_ss [indicator_fn_def, IN_SING]
-                    >> REVERSE (Cases_on `x IN count n`) >- METIS_TAC []
+                    >> Reverse (Cases_on `x IN count n`) >- METIS_TAC []
                     >> ASM_SIMP_TAC std_ss []
                     >> Cases_on `x = i`
                     >> RW_TAC real_ss []
@@ -2971,7 +2904,8 @@ val finite_POW_RN_deriv_reduce = store_thm
        >> SIMP_TAC std_ss []
        >> STRONG_CONJ_TAC
        >- (Q.PAT_X_ASSUM `P = Q` (MP_TAC o GSYM)
-            >> RW_TAC std_ss [borel_measurable_le_iff, IN_POW, SUBSET_DEF, GSPECIFICATION])
+            >> RW_TAC std_ss [borel_measurable_le_iff]
+            >> RW_TAC std_ss [IN_POW, SUBSET_DEF, GSPECIFICATION])
        >> RW_TAC std_ss []
        >> (MP_TAC o Q.ISPECL [`(m :('a -> bool) # (('a -> bool) -> bool) # (('a -> bool) -> real))`,
                               `\x':'a. v {x'} / measure m {x'} * indicator_fn a x'`]) finite_space_POW_integral_reduce
@@ -3404,7 +3338,7 @@ val countable_space_integral_reduce = store_thm
        >> POP_ORW
        >> MATCH_MP_TAC psfis_intro
        >> ASM_SIMP_TAC std_ss [pred_setTheory.FINITE_COUNT]
-       >> REVERSE CONJ_TAC
+       >> Reverse CONJ_TAC
        >- (FULL_SIMP_TAC real_ss [IN_IMAGE, pos_part_def]
                >> METIS_TAC [REAL_LE_REFL])
        >> `(pos_part f) IN borel_measurable (m_space m, measurable_sets m)`
@@ -3493,7 +3427,7 @@ val countable_space_integral_reduce = store_thm
    >> POP_ORW
    >> MATCH_MP_TAC psfis_intro
    >> ASM_SIMP_TAC std_ss [pred_setTheory.FINITE_COUNT]
-   >> REVERSE CONJ_TAC
+   >> Reverse CONJ_TAC
    >- (FULL_SIMP_TAC real_ss [IN_IMAGE, neg_part_def]
        >> METIS_TAC [REAL_LE_REFL, REAL_LE_NEGTOTAL])
    >> `(neg_part f) IN borel_measurable (m_space m, measurable_sets m)`

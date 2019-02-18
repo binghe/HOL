@@ -2100,6 +2100,17 @@ val REAL_ARCH_LEAST = store_thm("REAL_ARCH_LEAST",
     ASM_REWRITE_TAC[] THEN FIRST_ASSUM MATCH_MP_TAC THEN
     FIRST_ASSUM(SUBST1_TAC o SYM) THEN REWRITE_TAC[PRE, LESS_SUC_REFL]]);
 
+val SIMP_REAL_ARCH = store_thm (* from extrealTheory *)
+  ("SIMP_REAL_ARCH",
+  ``!x:real. ?n. x <= &n``,
+        REWRITE_TAC [REAL_LE_LT] THEN
+        FULL_SIMP_TAC std_ss [EXISTS_OR_THM] THEN
+        RW_TAC std_ss [] THEN
+        DISJ1_TAC THEN
+        MP_TAC (Q.SPEC `1` REAL_ARCH) THEN
+        REWRITE_TAC [REAL_LT_01, REAL_MUL_RID] THEN
+        RW_TAC std_ss []);
+
 (*---------------------------------------------------------------------------*)
 (* Now define finite sums; NB: sum(m,n) f = f(m) + f(m+1) + ... + f(m+n-1)   *)
 (*---------------------------------------------------------------------------*)
@@ -2457,6 +2468,14 @@ val REAL_LE_LNEG = store_thm ("REAL_LE_LNEG",
 val REAL_LE_NEG2 = save_thm ("REAL_LE_NEG2", REAL_LE_NEG);
 
 val REAL_NEG_NEG = save_thm ("REAL_NEG_NEG", REAL_NEGNEG);
+
+val SIMP_REAL_ARCH_NEG = store_thm (* from extrealTheory *)
+  ("SIMP_REAL_ARCH_NEG",
+  ``!x:real. ?n. - &n <= x``,
+  RW_TAC std_ss []
+  >> `?n. -x <= &n` by PROVE_TAC [SIMP_REAL_ARCH]
+  >> Q.EXISTS_TAC `n`
+  >> PROVE_TAC [REAL_LE_NEG,REAL_NEG_NEG]);
 
 val REAL_LE_RNEG = store_thm ("REAL_LE_RNEG",
   ``!x y. x <= ~y = x + y <= 0``,
