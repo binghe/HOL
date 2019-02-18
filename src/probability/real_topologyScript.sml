@@ -3222,7 +3222,7 @@ val CLOSED_IN_CLOSED_EQ = store_thm ("CLOSED_IN_CLOSED_EQ",
 (* ------------------------------------------------------------------------- *)
 
 val closed_segment = new_definition ("closed_segment",
- ``closed_segment (l:(real#real)list) =
+  ``closed_segment (l:(real#real)list) =
    {((&1:real) - u) * FST(HD l) + u * SND(HD l) | &0 <= u /\ u <= &1}``);
 
 val open_segment = new_definition ("open_segment",
@@ -3244,8 +3244,8 @@ val OPEN_SEGMENT_ALT = store_thm ("OPEN_SEGMENT_ALT",
         POP_ASSUM (MP_TAC o ONCE_REWRITE_RULE [EQ_SYM_EQ]) THEN DISCH_TAC THEN
         ASM_REWRITE_TAC [] THEN REAL_ARITH_TAC);
 
-val _ = overload_on ("segment",``open_segment``);
-val _ = overload_on ("segment",``closed_segment``);
+val _ = overload_on ("segment", ``open_segment``);
+val _ = overload_on ("segment", ``closed_segment``);
 
 val segment = store_thm ("segment",
  ``(segment[a,b] = {(&1 - u) * a + u * b | &0 <= u /\ u <= &1:real}) /\
@@ -14343,14 +14343,16 @@ val OPEN_UNION_COMPACT_SUBSETS = store_thm ("OPEN_UNION_COMPACT_SUBSETS",
 (* ------------------------------------------------------------------------- *)
 
 val OPEN_interval = new_definition ("OPEN_interval",
-  ``OPEN_interval((a:real),(b:real)) = {x:real | a < x /\ x < b}``);
+  ``OPEN_interval ((a:real),(b:real)) = {x:real | a < x /\ x < b}``);
 
-val CLOSED_interval = new_definition ("CLOSED_interval",
-  ``CLOSED_interval (l:(real#real)list) =
-                      {x:real | FST(HD l) <= x /\ x <= SND(HD l)}``);
+(* TODO: `interval [a;b]` prints better than `interval [(a,b)]` *)
+val CLOSED_interval = new_definition
+  ("CLOSED_interval",
+  ``CLOSED_interval (l :(real # real) list) =
+      {x:real | FST (HD l) <= x /\ x <= SND (HD l)}``);
 
-val _ = overload_on ("interval",``OPEN_interval``);
-val _ = overload_on ("interval",``CLOSED_interval``);
+val _ = overload_on ("interval", ``OPEN_interval``);
+val _ = overload_on ("interval", ``CLOSED_interval``);
 
 val interval = store_thm ("interval",
  ``(interval (a,b) = {x:real | a < x /\ x < b}) /\

@@ -1543,59 +1543,6 @@ val INCREASING_TO_DISJOINT_SETS' = store_thm
 (*  Liminf and limsup [1, p.74] [2, p.76] - the set-theoretic version         *)
 (******************************************************************************)
 
-val set_limsup_def = Define
-   `set_limsup (E :num -> 'a set) =
-      BIGINTER (IMAGE (\m. BIGUNION {E n | m <= n}) UNIV)`;
-
-val set_liminf_def = Define
-   `set_liminf (E :num -> 'a set) =
-      BIGUNION (IMAGE (\m. BIGINTER {E n | m <= n}) UNIV)`;
-
-val _ = overload_on ("limsup", ``set_limsup``);
-val _ = overload_on ("liminf", ``set_liminf``);
-
-(* this lemma implicitly assume `events p = UNIV` *)
-val liminf_limsup = store_thm
-  ("liminf_limsup", ``!(E :num -> 'a set). COMPL (liminf E) = limsup (COMPL o E)``,
-    RW_TAC std_ss [set_limsup_def, set_liminf_def]
- >> SIMP_TAC std_ss [COMPL_BIGUNION_IMAGE, o_DEF]
- >> Suff `!m. COMPL (BIGINTER {E n | m ≤ n}) = BIGUNION {COMPL (E n) | m ≤ n}` >- Rewr
- >> GEN_TAC >> REWRITE_TAC [COMPL_BIGINTER]
- >> Suff `IMAGE COMPL {E n | m ≤ n} = {COMPL (E n) | m ≤ n}` >- Rewr
- >> SIMP_TAC std_ss [IMAGE_DEF, IN_COMPL, Once GSPECIFICATION]
- >> RW_TAC std_ss [Once EXTENSION, GSPECIFICATION, IN_COMPL]
- >> EQ_TAC >> rpt STRIP_TAC
- >- (fs [COMPL_COMPL] >> Q.EXISTS_TAC `n` >> art [])
- >> fs []
- >> Q.EXISTS_TAC `E n` >> art []
- >> Q.EXISTS_TAC `n` >> art []);
-
-val liminf_limsup_sp = store_thm (* more general form *)
-  ("liminf_limsup_sp",
-  ``!sp E. (!n. E n SUBSET sp) ==> (sp DIFF (liminf E) = limsup (\n. sp DIFF (E n)))``,
-    RW_TAC std_ss [set_limsup_def, set_liminf_def]
- >> Q.ABBREV_TAC `f = (λm. BIGINTER {E n | m ≤ n})`
- >> Know `!m. f m SUBSET sp`
- >- (GEN_TAC >> Q.UNABBREV_TAC `f` >> BETA_TAC \\
-     RW_TAC std_ss [SUBSET_DEF, IN_BIGINTER, GSPECIFICATION] \\
-     fs [SUBSET_DEF] >> LAST_X_ASSUM MATCH_MP_TAC \\
-     Q.EXISTS_TAC `SUC m` \\
-     POP_ASSUM (STRIP_ASSUME_TAC o (Q.SPEC `E (SUC m)`)) \\
-     POP_ASSUM MATCH_MP_TAC \\
-     Q.EXISTS_TAC `SUC m` >> RW_TAC arith_ss [])
- >> DISCH_THEN (REWRITE_TAC o wrap o (MATCH_MP GEN_COMPL_BIGUNION_IMAGE))
- >> Suff `!m. sp DIFF f m = BIGUNION {sp DIFF E n | m ≤ n}` >- Rewr
- >> GEN_TAC >> Q.UNABBREV_TAC `f` >> BETA_TAC
- >> Know `!x. x IN {E n | m ≤ n} ==> x SUBSET sp`
- >- (RW_TAC std_ss [GSPECIFICATION] >> art [])
- >> DISCH_THEN (REWRITE_TAC o wrap o (MATCH_MP GEN_COMPL_BIGINTER))
- >> Suff `(IMAGE (\x. sp DIFF x) {E n | m ≤ n}) = {sp DIFF E n | m ≤ n}` >- Rewr
- >> RW_TAC std_ss [Once EXTENSION, IMAGE_DEF, IN_DIFF, GSPECIFICATION]
- >> EQ_TAC >> rpt STRIP_TAC
- >- (Q.EXISTS_TAC `n` >> METIS_TAC [])
- >> Q.EXISTS_TAC `E n` >> art []
- >> Q.EXISTS_TAC `n` >> art []);
-
 (* this lemma is provided by Konrad Slind *)
 val set_ss = arith_ss ++ pred_setLib.PRED_SET_ss;
 

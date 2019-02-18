@@ -2683,35 +2683,42 @@ val IN_MEASURABLE_BOREL_PLUS_MINUS = store_thm
 (*  Constructing Lebesgue measure space by CARATHEODORY_SEMIRING  *)
 (* ************************************************************** *)
 
-val ho_interval_def = Define (* [a, b) *)
-   `ho_interval (a,b) = {x | Normal a <= x /\ x < Normal b}`;
+(* The line-segment from a to b, named after [6, p.389] *)
+val line_segment_def = Define (* (a, b] *)
+   `line_segment (a,b) = {x | Normal a < x /\ x <= Normal b}`;
 
-val ho_intervals_def = Define (* [a, b) *)
-   `ho_intervals = (univ(:extreal), IMAGE ho_interval univ(:real # real))`;
-
+(* `lambda0` is the "length" of the line-segment from a to b *)
 local
   val thm = prove (
-    ``?l. !a b. a <= b ==> (l (ho_interval (a,b)) = Normal b - Normal a)``,
-      cheat); (* use `\s. sup s - inf s` *)
+    ``?l. !a b. a <= b ==> (l (line_segment (a,b)) = Normal b - Normal a)``,
+      Q.EXISTS_TAC `\s. sup s - inf s`
+   >> RW_TAC std_ss []
+   >> Know `sup (line_segment (a,b)) = Normal b`
+   >- (RW_TAC std_ss [line_segment_def, sup_eq] \\
+       cheat)
+   >> cheat);
 in
   val lambda0_def = new_specification (* learnt from "examples/miller" *)
     ("lambda0_def", ["lambda0"], thm);
 end;
 
-val SEMIRING_HO_INTERVALS = store_thm
-  ("SEMIRING_HO_INTERVALS", ``semiring ho_intervals``,
+val line_segments_def = Define (* {(a, b] | a < b} *)
+   `line_segments = (univ(:extreal), {l | ?a b. a <= b /\ (l = line_segment (a,b))})`;
+
+val SEMIRING_LINE_SEGMENTS = store_thm
+  ("SEMIRING_LINE_SEGMENTS", ``semiring line_segments``,
     cheat);
 
 (* lambda0 is premeasure, with coutably-additivity coming from COMPACT_IMP_HEINE_BOREL *)
 val PREMEASURE_LAMBDA0 = store_thm
   ("PREMEASURE_LAMBDA0",
-  ``premeasure (space ho_intervals,subsets ho_intervals,lambda0)``,
+  ``premeasure (space line_segments,subsets line_segments,lambda0)``,
     cheat);
 
 (* The sigma algebra generated from half-open intervals is Borel set *)
-val SIGMA_HO_INTERVALS_IS_BOREL = store_thm
-  ("SIGMA_HO_INTERVALS_IS_BOREL",
-  ``sigma (space ho_intervals) (subsets ho_intervals) = Borel``,
+val SIGMA_LINE_SEGMENTS_IS_BOREL = store_thm
+  ("SIGMA_LINE_SEGMENTS_IS_BOREL",
+  ``sigma (space line_segments) (subsets line_segments) = Borel``,
     cheat);
 
 local
@@ -2793,8 +2800,60 @@ val FORALL_IMP_AE = store_thm
 (*  Fatou's lemma for measures (limsup and liminf) [1, p.74]                 *)
 (* ------------------------------------------------------------------------- *)
 
-(* TODO: migrate all limsup/liminf proofs from probabilityTheory here. *)
+val set_limsup_def = Define
+   `set_limsup (E :num -> 'a set) =
+      BIGINTER (IMAGE (\m. BIGUNION {E n | m <= n}) UNIV)`;
 
+val set_liminf_def = Define
+   `set_liminf (E :num -> 'a set) =
+      BIGUNION (IMAGE (\m. BIGINTER {E n | m <= n}) UNIV)`;
+
+val _ = overload_on ("limsup", ``set_limsup``);
+val _ = overload_on ("liminf", ``set_liminf``);
+
+(* this lemma implicitly assume `events p = UNIV` *)
+val liminf_limsup = store_thm
+  ("liminf_limsup", ``!(E :num -> 'a set). COMPL (liminf E) = limsup (COMPL o E)``,
+    RW_TAC std_ss [set_limsup_def, set_liminf_def]
+ >> SIMP_TAC std_ss [COMPL_BIGUNION_IMAGE, o_DEF]
+ >> Suff `!m. COMPL (BIGINTER {E n | m ≤ n}) = BIGUNION {COMPL (E n) | m ≤ n}` >- Rewr
+ >> GEN_TAC >> REWRITE_TAC [COMPL_BIGINTER]
+ >> Suff `IMAGE COMPL {E n | m ≤ n} = {COMPL (E n) | m ≤ n}` >- Rewr
+ >> SIMP_TAC std_ss [IMAGE_DEF, IN_COMPL, Once GSPECIFICATION]
+ >> RW_TAC std_ss [Once EXTENSION, GSPECIFICATION, IN_COMPL]
+ >> EQ_TAC >> rpt STRIP_TAC
+ >- (fs [COMPL_COMPL] >> Q.EXISTS_TAC `n` >> art [])
+ >> fs []
+ >> Q.EXISTS_TAC `E n` >> art []
+ >> Q.EXISTS_TAC `n` >> art []);
+
+val liminf_limsup_sp = store_thm (* more general form *)
+  ("liminf_limsup_sp",
+  ``!sp E. (!n. E n SUBSET sp) ==> (sp DIFF (liminf E) = limsup (\n. sp DIFF (E n)))``,
+    RW_TAC std_ss [set_limsup_def, set_liminf_def]
+ >> Q.ABBREV_TAC `f = (λm. BIGINTER {E n | m ≤ n})`
+ >> Know `!m. f m SUBSET sp`
+ >- (GEN_TAC >> Q.UNABBREV_TAC `f` >> BETA_TAC \\
+     RW_TAC std_ss [SUBSET_DEF, IN_BIGINTER, GSPECIFICATION] \\
+     fs [SUBSET_DEF] >> LAST_X_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC `SUC m` \\
+     POP_ASSUM (STRIP_ASSUME_TAC o (Q.SPEC `E (SUC m)`)) \\
+     POP_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC `SUC m` >> RW_TAC arith_ss [])
+ >> DISCH_THEN (REWRITE_TAC o wrap o (MATCH_MP GEN_COMPL_BIGUNION_IMAGE))
+ >> Suff `!m. sp DIFF f m = BIGUNION {sp DIFF E n | m ≤ n}` >- Rewr
+ >> GEN_TAC >> Q.UNABBREV_TAC `f` >> BETA_TAC
+ >> Know `!x. x IN {E n | m ≤ n} ==> x SUBSET sp`
+ >- (RW_TAC std_ss [GSPECIFICATION] >> art [])
+ >> DISCH_THEN (REWRITE_TAC o wrap o (MATCH_MP GEN_COMPL_BIGINTER))
+ >> Suff `(IMAGE (\x. sp DIFF x) {E n | m ≤ n}) = {sp DIFF E n | m ≤ n}` >- Rewr
+ >> RW_TAC std_ss [Once EXTENSION, IMAGE_DEF, IN_DIFF, GSPECIFICATION]
+ >> EQ_TAC >> rpt STRIP_TAC
+ >- (Q.EXISTS_TAC `n` >> METIS_TAC [])
+ >> Q.EXISTS_TAC `E n` >> art []
+ >> Q.EXISTS_TAC `n` >> art []);
+
+(* TODO: migrate all limsup/liminf proofs from probabilityTheory here. *)
 
 val _ = export_theory ();
 
@@ -2807,4 +2866,5 @@ val _ = export_theory ();
   [3] Coble, A.R.: Anonymity, information, and machine-assisted proof, (2010).
   [4] Hurd, J.: Formal verification of probabilistic algorithms. (2001).
   [5] Wikipedia: https://en.wikipedia.org/wiki/Henri_Lebesgue
+  [6] Chung, K.L.: A Course in Probability Theory, Third Edition. Academic Press (2001).
  *)

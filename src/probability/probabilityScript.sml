@@ -14,7 +14,7 @@ open HolKernel Parse boolLib bossLib arithmeticTheory realTheory prim_recTheory
      pairTheory combinTheory realLib optionTheory real_sigmaTheory;
 
 open hurdUtils util_probTheory extrealTheory measureTheory borelTheory
-     lebesgueTheory martingaleTheory;
+     lebesgueTheory martingaleTheory real_topologyTheory;
 
 val _ = new_theory "probability";
 
@@ -1524,7 +1524,7 @@ val variance_eq = store_thm
 
 (* some abbreviations from [2] *)
 val _ = overload_on ("r.v.", ``\X p. real_random_variable p X``);
-val _ = overload_on ("d.f.", ``distribution_function``);
+(* val _ = overload_on ("d.f.", ``distribution_function``); *)
 
 val indicator_fn_real_rv = store_thm
   ("indicator_fn_real_rv",
