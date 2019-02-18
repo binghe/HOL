@@ -109,8 +109,13 @@ val real_random_variable_def = Define
    `real_random_variable X p =
          random_variable X p Borel /\ (!x. X x <> NegInf /\ X x <> PosInf)`;
 
+(* A (probability) distribution is a probability measure on `(p_space p, events p)` *)
 val distribution_def = Define
    `distribution (p :'a p_space) X = (\s. prob p ((PREIMAGE X s) INTER p_space p))`;
+
+(* c.f. [2, p.36], [4, p.206], [6, p.256], etc. *)
+val distribution_function_def = Define
+   `distribution_function p X = (\x. prob p ({w | X w <= x} INTER p_space p))`;
 
 val joint_distribution_def = Define
    `joint_distribution (p :'a p_space) X Y =
@@ -1517,9 +1522,13 @@ val variance_eq = store_thm
 (*  Almost sure convergence; Borel-Cantelli Lemma [2, p.75]                   *)
 (******************************************************************************)
 
+(* some abbreviations from [2] *)
+val _ = overload_on ("r.v.", ``\X p. real_random_variable p X``);
+val _ = overload_on ("d.f.", ``distribution_function``);
+
 val indicator_fn_real_rv = store_thm
   ("indicator_fn_real_rv",
-  ``!p s. prob_space p /\ s IN events p ==> real_random_variable (indicator_fn s) p``,
+  ``!p s. prob_space p /\ s IN events p ==> r.v. p (indicator_fn s)``,
     RW_TAC std_ss [real_random_variable, indicator_fn_not_infty]
  >> MATCH_MP_TAC IN_MEASURABLE_BOREL_INDICATOR
  >> Q.EXISTS_TAC `s`
