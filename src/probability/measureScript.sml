@@ -6073,6 +6073,11 @@ val IN_NULL_SET = store_thm
   ("IN_NULL_SET", ``!m s. s IN null_set_of m <=> null_set m s``,
     GEN_TAC >> SIMP_TAC std_ss [null_set_of_def, GSPECIFICATION]);
 
+val NULL_SET_EMPTY = store_thm
+  ("NULL_SET_EMPTY", ``!m. measure_space m ==> null_set m {}``,
+    RW_TAC std_ss [measure_space_def, positive_def, null_set_def]
+ >> PROVE_TAC [sigma_algebra_def, ALGEBRA_EMPTY, space_def, subsets_def]);
+
 (* properties of the set of m-null sets, c.f. [1] (p.29, Problem 4.10) *)
 val NULL_SET_THM = store_thm
   ("NULL_SET_THM",
@@ -6197,17 +6202,25 @@ val SIGMA_FINITE_ALT2 = store_thm
       Q.EXISTS_TAC `n` >> REWRITE_TAC [] ]);
 
 (* ------------------------------------------------------------------------- *)
+(*  Product measures and Fubini's theorem [1, p.120 (Chapter 13)             *)
+(* ------------------------------------------------------------------------- *)
+
+
+
+(* ------------------------------------------------------------------------- *)
 (*  Some further additions by Concordia HVG (M. Qasim & Ahmed Waqar)         *)
 (* ------------------------------------------------------------------------- *)
 
-(*
-val semiring = new_definition ("semiring",
- ``semiring sp sts = subset_class sp sts /\ {} IN sts /\
-                (!s t. s IN sts /\ t IN sts ==> s INTER t IN sts) /\
-                (!s t. s IN sts /\ t IN sts ==>
-                 ?c. c SUBSET sts /\ FINITE c /\ disjoint c /\ 
-                     (s DIFF t = BIGUNION c))``);
-*)
+(* |- semiring (sp,sts) <=>
+     subset_class sp sts /\ {} IN sts /\
+     (!s t. s IN sts /\ t IN sts ==> s INTER t IN sts) /\
+     !s t.
+         s IN sts /\ t IN sts ==>
+         ?c. c SUBSET sts /\ FINITE c /\ disjoint c /\ (s DIFF t = BIGUNION c)
+ *)
+val semiring_alt = save_thm
+  ("semiring_alt",
+    REWRITE_RULE [space_def, subsets_def] (Q.SPEC `(sp,sts)` semiring_def));
 
 val Int_space_eq1 = store_thm ("Int_space_eq1",
  ``!sp sts . subset_class sp sts ==> !x. x IN sts ==> (sp INTER x = x)``,
@@ -6231,10 +6244,36 @@ val sets_Collect_conj = store_thm ("sets_Collect_conj",
  REWRITE_TAC [SET_RULE ``(A /\ B) /\ A /\ C = A /\ B /\ C``] THEN
  METIS_TAC[subsets_def]);
 
-(*val ring = new_definition ("ring",
- ``ring sp sts = semiring sp sts /\ 
-    !a b. a IN sts /\ b IN sts ==> a UNION b IN sts``);
-*)
+(* |- ring (sp,sts) <=>
+     subset_class sp sts /\ {} IN sts /\
+     (!s t. s IN sts /\ t IN sts ==> s UNION t IN sts) /\
+     !s t. s IN sts /\ t IN sts ==> s DIFF t IN sts
+ *)
+val ring_alt = save_thm
+  ("ring_alt",
+    REWRITE_RULE [space_def, subsets_def] (Q.SPEC `(sp,sts)` ring_def));
+
+val ring_and_semiring = store_thm (* by Chun Tian *)
+  ("ring_and_semiring",
+  ``!r. ring r =
+        semiring r /\
+        !s t. s IN (subsets r) /\ t IN (subsets r) ==> s UNION t IN (subsets r)``,
+    GEN_TAC >> EQ_TAC >> RW_TAC std_ss []
+ >- (MATCH_MP_TAC RING_IMP_SEMIRING >> art [])
+ >- (MATCH_MP_TAC RING_UNION >> art [])
+ >> RW_TAC std_ss [ring_def] >> fs [semiring_def]
+ >> Q.PAT_X_ASSUM `!s t. s IN subsets r /\ t IN subsets r ==> ?c. X`
+      (MP_TAC o (Q.SPECL [`s`, `t`]))
+ >> RW_TAC std_ss []
+ >> POP_ORW
+ >> IMP_RES_TAC finite_decomposition_simple
+ >> Cases_on `n = 0`
+ >- (fs [COUNT_ZERO, IMAGE_EMPTY, BIGUNION_EMPTY])
+ >> `0 < n` by RW_TAC arith_ss []
+ >> fs [SUBSET_DEF, IN_IMAGE, IN_COUNT]
+ >> irule DUNION_IMP_FINITE_UNION >> art []
+ >> RW_TAC std_ss []);
+
 val finite_Union = store_thm ("finite_Union",
  ``!X sp sts. ring (sp, sts) /\ FINITE X ==> X SUBSET sts ==> BIGUNION X IN sts``,
   REPEAT GEN_TAC THEN

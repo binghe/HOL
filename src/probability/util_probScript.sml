@@ -797,12 +797,12 @@ val DINTER_IMP_FINITE_INTER = store_thm
                    BIGINTER_INSERT, IMAGE_EMPTY, BIGINTER_EMPTY, INTER_UNIV]
  >> fs [COUNT_SUC]);
 
-(* Dual lemma of above, not used here *)
+(* Dual lemma of above, used in "ring_and_semiring" *)
 val DUNION_IMP_FINITE_UNION = store_thm
   ("DUNION_IMP_FINITE_UNION",
-  ``!sts f. (!s t. s IN sts /\ t IN sts ==> s UNION t IN sts) /\
-            f IN (UNIV -> sts) ==>
-      !n. 0 < n ==> BIGUNION (IMAGE f (count n)) IN sts``,
+  ``!sts f. (!s t. s IN sts /\ t IN sts ==> s UNION t IN sts) ==>
+            !n. 0 < n /\ (!i. i < n ==> f i IN sts) ==>
+                BIGUNION (IMAGE f (count n)) IN sts``,
     rpt GEN_TAC
  >> STRIP_TAC
  >> Induct_on `n`

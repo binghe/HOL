@@ -2778,6 +2778,13 @@ val AE_ALT = store_thm (* [1, p.80] *)
     RW_TAC std_ss [AE_THM, almost_everywhere_def, SUBSET_DEF, GSPECIFICATION, IN_DIFF]
  >> METIS_TAC []);
 
+val FORALL_IMP_AE = store_thm
+  ("FORALL_IMP_AE",
+  ``!m P. measure_space m /\ (!x. x IN m_space m ==> P x) ==> AE x::m. P x``,
+    RW_TAC std_ss [AE_THM, almost_everywhere_def]
+ >> Q.EXISTS_TAC `{}`
+ >> RW_TAC std_ss [NULL_SET_EMPTY, IN_DIFF, NOT_IN_EMPTY]);
+
 val _ = export_theory ();
 
 (* References:

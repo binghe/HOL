@@ -5538,11 +5538,9 @@ val uniformly_bounded_def = Define
       ?w. w IN measurable (m_space m, measurable_sets m) Borel /\
           integrable m w /\
           (!x. x IN m_space m ==> 0 <= w x) /\
-          (AE x::m. !n. x IN m_space m ==> abs (u n x) <= w x)`;
+          (AE x::m. x IN m_space m ==> !n. abs (u n x) <= w x)`;
 
 (* Lebesgue's Dominated convergence (Theorem 11.2 [1, p.89])
-
-   TODO: define "-->" for extended reals (in extrealTheory) first.
 
   "Lebesgue’s theorem gives merely sufficient - but easily verifiable - conditions
    for the interchange of limits and integrals; the ultimate version for such a result
@@ -5557,7 +5555,7 @@ val Lebesgue_dominated_convergence = store_thm (* new *)
         (AE x::m. (\n. real (u n x)) --> real (f x))
       ==>
         (\n. real (integral m (\x. abs (u n x - f x)))) --> 0 /\
-        (\n. real (integral m (\x. u n x))) --> real (integral m f)``,
+        (\n. real (integral m (u n))) --> real (integral m f)``,
     cheat);
 
 (* To be used by Vitali's convergence theorem [1].
