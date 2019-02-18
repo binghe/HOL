@@ -19,9 +19,9 @@ open hurdUtils real_topologyTheory util_probTheory extrealTheory measureTheory;
 
 val _ = new_theory "borel";
 
-(* ******************************************* *)
-(*  Indicator functions                        *)
-(* ******************************************* *)
+(* ------------------------------------------------------------------------- *)
+(*  Indicator functions                                                      *)
+(* ------------------------------------------------------------------------- *)
 
 (* `indicator_fn s` maps x to 0 or 1 when x IN or NOTIN s *)
 val indicator_fn_def = Define
@@ -260,17 +260,15 @@ val indicator_fn_suminf = store_thm
   >> FULL_SIMP_TAC std_ss [FINITE_COUNT,FINITE_DELETE,IN_COUNT,IN_DELETE,indicator_fn_def]);
 
 
-(* ******************************************* *)
-(*  Positive and negative parts of functions   *)
-(* ******************************************* *)
+(* ------------------------------------------------------------------------- *)
+(*  Positive and negative parts of functions                                 *)
+(* ------------------------------------------------------------------------- *)
 
-(* f^+ *)
-val fn_plus_def = Define `
-    fn_plus (f :'a -> extreal) = (\x. if 0 < f x then f x else 0)`;
+val fn_plus_def = Define (* f+ *)
+   `fn_plus (f :'a -> extreal) = (\x. if 0 < f x then f x else 0)`;
 
-(* f^- *)
-val fn_minus_def = Define `
-    fn_minus (f :'a -> extreal) = (\x. if f x < 0 then ~(f x) else 0)`;
+val fn_minus_def = Define (* f- *)
+   `fn_minus (f :'a -> extreal) = (\x. if f x < 0 then ~(f x) else 0)`;
 
 (* alternative definitions of fn_plus and fn_minus using max/min *)
 val FN_PLUS_ALT = store_thm
@@ -2679,13 +2677,20 @@ val IN_MEASURABLE_BOREL_PLUS_MINUS = store_thm
  >- METIS_TAC [le_antisym, extreal_lt_def]);
 
 
-(* ************************************************************** *)
-(*  Constructing Lebesgue measure space by CARATHEODORY_SEMIRING  *)
-(* ************************************************************** *)
+(* ------------------------------------------------------------------------- *)
+(*  Construction of Lebesgue measure space by CARATHEODORY_SEMIRING          *)
+(* ------------------------------------------------------------------------- *)
 
 (* The line-segment (half open, half closed) from a to b, named after [6, p.389] *)
 val line_segment_def = Define (* (a, b] *)
    `line_segment a b = {x | Normal a < x /\ x <= Normal b}`;
+
+(* for {} is in Borel_generator *)
+val line_segment_empty = store_thm
+  ("line_segment_empty", ``!a b. (a = b) ==> (line_segment a b = {})``,
+    RW_TAC std_ss [line_segment_def, Once EXTENSION, GSPECIFICATION, NOT_IN_EMPTY]
+ >> REWRITE_TAC [GSYM extreal_lt_def]
+ >> METIS_TAC [lt_antisym]);
 
 (* `lambda0` is the "length" of the line-segment from a to b *)
 local
@@ -2700,11 +2705,7 @@ local
        STRIP_ASSUME_TAC (MATCH_MP (Q.SPECL [`a`, `b`] REAL_MEAN)
                                   (ASSUME ``a < b:real``)) \\
        METIS_TAC [extreal_lt_eq, lt_imp_le])
-   >> Cases_on `a = b`
-   >- (fs [REAL_LE_LT, line_segment_def] \\
-       Q.PAT_X_ASSUM `P <> {}` MP_TAC \\
-       RW_TAC std_ss [Once EXTENSION, GSPECIFICATION, NOT_IN_EMPTY] \\
-       PROVE_TAC [let_trans, lt_antisym])
+   >> Cases_on `a = b` >- PROVE_TAC [line_segment_empty]
    >> fs [REAL_LE_LT]
    >> Know `sup (line_segment a b) = Normal b`
    >- (RW_TAC std_ss [line_segment_def, sup_eq', GSPECIFICATION] \\
@@ -2725,27 +2726,29 @@ local
        FIRST_X_ASSUM MATCH_MP_TAC >> art [extreal_lt_eq, le_refl])
    >> Rewr);
 in
-  val lambda0_def = new_specification (* learnt from "examples/miller" *)
+  (* |- !a b. a <= b ==> (lambda0 (line_segment a b) = Normal b - Normal a) *)
+  val lambda0_def = new_specification      (* learnt from "examples/miller" *)
     ("lambda0_def", ["lambda0"], thm);
 end;
 
 val Borel_generator_def = Define (* {(a, b] | a < b} *)
    `Borel_generator = (univ(:extreal), {l | ?a b. a <= b /\ (l = line_segment a b)})`;
 
+(* Borel_generator is a semiring *)
 val SEMIRING_BOREL_GENERATOR = store_thm
   ("SEMIRING_BOREL_GENERATOR", ``semiring Borel_generator``,
     cheat);
 
-(* lambda0 is premeasure, with coutably-additivity coming from COMPACT_IMP_HEINE_BOREL *)
-val PREMEASURE_LAMBDA0 = store_thm
-  ("PREMEASURE_LAMBDA0",
-  ``premeasure (space Borel_generator,subsets Borel_generator,lambda0)``,
-    cheat);
-
-(* The sigma algebra generated from half-open intervals is Borel set *)
+(* The smallest sigma algebra generated from line segments is properly the Borel set *)
 val SIGMA_BOREL_GENERATOR = store_thm
   ("SIGMA_BOREL_GENERATOR",
   ``sigma (space Borel_generator) (subsets Borel_generator) = Borel``,
+    cheat);
+
+(* lambda0 is a premeasure, whose countable-additivity comes from COMPACT_IMP_HEINE_BOREL *)
+val PREMEASURE_LAMBDA0 = store_thm
+  ("PREMEASURE_LAMBDA0",
+  ``premeasure (space Borel_generator,subsets Borel_generator,lambda0)``,
     cheat);
 
 local
@@ -2788,6 +2791,10 @@ val MEASURABLE_SETS_LEBESGUE = store_thm
 
 val _ = overload_on ("lambda", ``measure Lebesgue``);
 
+(* from now on, `lambda` is also the "length" of the line-segment from a to b *)
+val lambda = store_thm
+  ("lambda", ``!a b. a <= b ==> (lambda (line_segment a b) = Normal b - Normal a)``,
+    cheat);
 
 (* ------------------------------------------------------------------------- *)
 (*  Almost everywhere (a.e) - basic binder definitions                       *)
@@ -2843,9 +2850,9 @@ val liminf_limsup = store_thm
   ("liminf_limsup", ``!(E :num -> 'a set). COMPL (liminf E) = limsup (COMPL o E)``,
     RW_TAC std_ss [set_limsup_def, set_liminf_def]
  >> SIMP_TAC std_ss [COMPL_BIGUNION_IMAGE, o_DEF]
- >> Suff `!m. COMPL (BIGINTER {E n | m ≤ n}) = BIGUNION {COMPL (E n) | m ≤ n}` >- Rewr
+ >> Suff `!m. COMPL (BIGINTER {E n | m <= n}) = BIGUNION {COMPL (E n) | m <= n}` >- Rewr
  >> GEN_TAC >> REWRITE_TAC [COMPL_BIGINTER]
- >> Suff `IMAGE COMPL {E n | m ≤ n} = {COMPL (E n) | m ≤ n}` >- Rewr
+ >> Suff `IMAGE COMPL {E n | m <= n} = {COMPL (E n) | m <= n}` >- Rewr
  >> SIMP_TAC std_ss [IMAGE_DEF, IN_COMPL, Once GSPECIFICATION]
  >> RW_TAC std_ss [Once EXTENSION, GSPECIFICATION, IN_COMPL]
  >> EQ_TAC >> rpt STRIP_TAC
@@ -2858,7 +2865,7 @@ val liminf_limsup_sp = store_thm (* more general form *)
   ("liminf_limsup_sp",
   ``!sp E. (!n. E n SUBSET sp) ==> (sp DIFF (liminf E) = limsup (\n. sp DIFF (E n)))``,
     RW_TAC std_ss [set_limsup_def, set_liminf_def]
- >> Q.ABBREV_TAC `f = (λm. BIGINTER {E n | m ≤ n})`
+ >> Q.ABBREV_TAC `f = (\m. BIGINTER {E n | m <= n})`
  >> Know `!m. f m SUBSET sp`
  >- (GEN_TAC >> Q.UNABBREV_TAC `f` >> BETA_TAC \\
      RW_TAC std_ss [SUBSET_DEF, IN_BIGINTER, GSPECIFICATION] \\
@@ -2868,12 +2875,12 @@ val liminf_limsup_sp = store_thm (* more general form *)
      POP_ASSUM MATCH_MP_TAC \\
      Q.EXISTS_TAC `SUC m` >> RW_TAC arith_ss [])
  >> DISCH_THEN (REWRITE_TAC o wrap o (MATCH_MP GEN_COMPL_BIGUNION_IMAGE))
- >> Suff `!m. sp DIFF f m = BIGUNION {sp DIFF E n | m ≤ n}` >- Rewr
+ >> Suff `!m. sp DIFF f m = BIGUNION {sp DIFF E n | m <= n}` >- Rewr
  >> GEN_TAC >> Q.UNABBREV_TAC `f` >> BETA_TAC
- >> Know `!x. x IN {E n | m ≤ n} ==> x SUBSET sp`
+ >> Know `!x. x IN {E n | m <= n} ==> x SUBSET sp`
  >- (RW_TAC std_ss [GSPECIFICATION] >> art [])
  >> DISCH_THEN (REWRITE_TAC o wrap o (MATCH_MP GEN_COMPL_BIGINTER))
- >> Suff `(IMAGE (\x. sp DIFF x) {E n | m ≤ n}) = {sp DIFF E n | m ≤ n}` >- Rewr
+ >> Suff `(IMAGE (\x. sp DIFF x) {E n | m <= n}) = {sp DIFF E n | m <= n}` >- Rewr
  >> RW_TAC std_ss [Once EXTENSION, IMAGE_DEF, IN_DIFF, GSPECIFICATION]
  >> EQ_TAC >> rpt STRIP_TAC
  >- (Q.EXISTS_TAC `n` >> METIS_TAC [])
