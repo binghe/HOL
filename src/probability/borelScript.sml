@@ -2830,6 +2830,153 @@ val FORALL_IMP_AE = store_thm
  >> RW_TAC std_ss [NULL_SET_EMPTY, IN_DIFF, NOT_IN_EMPTY]);
 
 
+(* Some Useful Theorems about Almost everywhere*)
+
+
+val AE_I = store_thm ("AE_I",
+  ``!N M P. null_set M N ==> {x | x IN m_space M /\ ~P x} SUBSET N ==>
+            AE x::M. P x``,
+  RW_TAC std_ss [] THEN
+  FULL_SIMP_TAC std_ss [AE_ALT, almost_everywhere_def, null_set_def] THEN
+  FULL_SIMP_TAC std_ss [SUBSET_DEF, GSPECIFICATION] THEN METIS_TAC []);
+
+val AE_iff_null = store_thm ("AE_iff_null",
+  ``!M P. measure_space M /\
+          {x | x IN m_space M /\ ~P x} IN measurable_sets M ==>
+          ((AE x::M. P x) = (null_set M {x | x IN m_space M /\ ~P x}))``,
+  RW_TAC std_ss [AE_ALT, null_set_def, GSPECIFICATION] THEN EQ_TAC THEN
+  RW_TAC std_ss [] THENL [ALL_TAC, METIS_TAC [SUBSET_REFL]] THEN
+  Q_TAC SUFF_TAC `measure M {x | x IN m_space M /\ ~P x} <=
+                  measure M N` THENL
+  [DISCH_TAC THEN ONCE_REWRITE_TAC [GSYM le_antisym] THEN
+   METIS_TAC [measure_space_def, positive_def], ALL_TAC] THEN
+  MATCH_MP_TAC INCREASING THEN METIS_TAC [MEASURE_SPACE_INCREASING]);
+
+val AE_iff_null_sets = store_thm ("AE_iff_null_sets",
+  ``!N M. measure_space M /\ N IN measurable_sets M ==>
+          ((null_set M N) = (AE x::M. {x | ~N x} x))``,
+  REPEAT STRIP_TAC THEN EQ_TAC THEN RW_TAC std_ss [] THEN
+  FULL_SIMP_TAC std_ss [AE_ALT, null_set_def] THENL
+  [FULL_SIMP_TAC std_ss [GSPECIFICATION] THEN rw[EXTENSION] THEN ASM_SET_TAC [], ALL_TAC] THEN
+  fs[EXTENSION] THEN
+  Q_TAC SUFF_TAC `measure M N <= measure M N'` THENL
+  [DISCH_TAC THEN ONCE_REWRITE_TAC [GSYM le_antisym] THEN
+   METIS_TAC [measure_space_def, positive_def], ALL_TAC] THEN
+  MATCH_MP_TAC INCREASING THEN ASM_SIMP_TAC std_ss [MEASURE_SPACE_INCREASING] THEN
+  `N SUBSET m_space M` by METIS_TAC [MEASURABLE_SETS_SUBSET_SPACE] THEN
+  ASM_SET_TAC []);
+
+val AE_not_in = store_thm ("AE_not_in",
+  ``!N M. null_set M N ==> AE x::M. {x | ~N x} x``,
+  rw [AE_ALT, EXTENSION] THEN Q.EXISTS_TAC `N` THEN
+  ASM_SIMP_TAC std_ss [SUBSET_DEF, GSPECIFICATION] THEN rw[IN_DEF]);
+
+val AE_iff_measurable = store_thm ("AE_iff_measurable",
+  ``!N M P. measure_space M /\ N IN measurable_sets M ==>
+           ({x | x IN m_space M /\ ~P x} = N) ==>
+           ((AE x::M. P x) = (measure M N = 0))``,
+  RW_TAC std_ss [AE_ALT, GSPECIFICATION] THEN
+  EQ_TAC THEN RW_TAC std_ss [] THENL
+  [FULL_SIMP_TAC std_ss [null_set_def, GSPECIFICATION] THEN
+   Q_TAC SUFF_TAC `measure M {x | x IN m_space M /\ ~P x} <= measure M N'` THENL
+   [DISCH_TAC THEN ONCE_REWRITE_TAC [GSYM le_antisym] THEN
+    METIS_TAC [measure_space_def, positive_def], ALL_TAC] THEN
+   MATCH_MP_TAC INCREASING THEN ASM_SIMP_TAC std_ss [MEASURE_SPACE_INCREASING],
+   ALL_TAC] THEN
+  FULL_SIMP_TAC std_ss [null_set_def, GSPECIFICATION] THEN
+  METIS_TAC [SUBSET_REFL]);
+
+val AE_impl = store_thm("AE_impl",
+  ``!P M Q. measure_space M ==> ((P ==> (AE x::M. Q x)) ==> (AE x::M.  (\x. P ==> Q x) x))``,
+Cases
+>- (RW_TAC bool_ss[AE_ALT]
+   \\ POP_ASSUM MP_TAC
+   \\ rw[EXTENSION]
+   \\ Q.EXISTS_TAC `N`
+   \\ RW_TAC std_ss[]
+   \\ METIS_TAC[IN_DEF])
+\\ RW_TAC bool_ss[AE_ALT]
+\\ rw[EXTENSION]
+\\ Q.EXISTS_TAC `{}`
+\\ RW_TAC bool_ss[null_set_def,NOT_IN_EMPTY,MEASURE_SPACE_EMPTY_MEASURABLE]
+\\ rw[MEASURE_SPACE_EMPTY_MEASURABLE]
+\\ RW_TAC std_ss[MEASURE_EMPTY]);
+
+val AE_all_countable = store_thm("AE_all_countable",
+  ``!(t:num->num->bool) M (P:num->'a->bool).
+  measure_space M ==>
+  ((!i:num. countable (t i) ==> AE x::M. (\x. P i x) x) =
+   (!i. AE x::M. (\x. P i x) x))``,
+RW_TAC std_ss[]
+\\ EQ_TAC
+>- (RW_TAC (srw_ss())[AE_ALT]
+   \\ FIRST_X_ASSUM(MP_TAC o Q.SPEC `i`)
+   \\ FULL_SIMP_TAC (srw_ss())[COUNTABLE_NUM])
+\\ RW_TAC (srw_ss())[AE_ALT]);
+
+val AE_all_S = store_thm("AE_all_S",
+  ``!M S' P. measure_space M ==>
+  ((!i. (S' i ==> (AE x::M. (λx. P i x) x))) ==>
+  (!(i':num). AE x::M. (λx. (S' (i':num)) ==> (P:num->'a->bool) i' x) x))``,
+ REPEAT GEN_TAC
+ \\ REPEAT DISCH_TAC
+ \\ GEN_TAC
+ \\ `(λx. (S' (i':num)) ⇒ P i' x) x = ((λ(i':num) x. (S' (i':num))  ⇒ P i' x) (i':num)) x` by RW_TAC std_ss[]
+ \\ POP_ORW
+ \\ Q.SPEC_TAC (`i'`, `i`)
+ \\ dep_rewrite.DEP_REWRITE_TAC[GSYM AE_all_countable]
+ \\ RW_TAC std_ss[]
+ \\ POP_ORW
+ \\ RW_TAC std_ss[]
+ \\ metis_tac[AE_impl]);
+
+val AE_mp = store_thm("AE_mp",
+  ``!m P Q. finite_measure m /\
+            measure_space m /\
+	    AE x::m. (\x. P x) x /\
+	    AE x::m. (\x. P x ==> Q x) x ==>
+	     AE x::m. (\x. Q x) x``,
+rw[]
+\\ MP_TAC
+       (Q.ISPECL [`(m :
+        (α -> bool) #
+        ((α -> bool) -> bool) # ((α -> bool) -> extreal_hvg$extreal))`,`(P :α -> bool)`] (REWRITE_RULE [measure_measure_of_ID] AE_E))
+\\ FULL_SIMP_TAC std_ss[measure_measure_of_ID]
+\\ rw[measure_measure_of_ID]
+\\ MP_TAC
+       (Q.ISPECL [`(m :
+        (α -> bool) #
+        ((α -> bool) -> bool) # ((α -> bool) -> extreal_hvg$extreal))`,`\x. (P :α -> bool) x ==> Q x`] AE_E)
+\\ FULL_SIMP_TAC std_ss[]
+\\ rw[]
+\\ irule AE_I
+\\ Q.EXISTS_TAC `N UNION N'`
+\\ rw[]
+>- (MP_TAC (Q.ISPECL[`(m :
+        (α -> bool) #
+        ((α -> bool) -> bool) # ((α -> bool) -> extreal_hvg$extreal))`,`N:'a->bool`,`N':'a->bool`] measure_subadditive)
+   \\ rw[]
+   \\ sg `(measure (measure_of m) N' = measure m N') /\ (measure (measure_of m) N = measure m N)`
+   >- (DEP_REWRITE_TAC [measure_measure_of_ID]
+      \\ rw[])
+   \\ fs[]
+   \\ NTAC 2 (POP_ORW)
+   \\ pop_assum mp_tac
+   \\ once_asm_rewrite_tac[]
+   \\ rw[add_rzero]
+   \\ rw[EXTENSION,null_sets]
+   >- (irule MEASURE_SPACE_UNION
+      \\ rw[])
+   \\ rw[GSYM le_antisym]
+   \\ imp_res_tac MEASURE_SPACE_POSITIVE
+   \\ fs[positive_def]
+   \\ FIRST_X_ASSUM (MATCH_MP_TAC)
+   \\ (irule MEASURE_SPACE_UNION
+      \\ rw[]))
+\\ fs[SUBSET_DEF]
+\\ metis_tac[]);
+
+
 (* ------------------------------------------------------------------------- *)
 (*  Fatou's lemma for measures (limsup and liminf) [1, p.74]                 *)
 (* ------------------------------------------------------------------------- *)
