@@ -2930,6 +2930,7 @@ val AE_all_S = store_thm("AE_all_S",
  \\ RW_TAC std_ss[]
  \\ metis_tac[AE_impl]);
 
+(*
 val AE_mp = store_thm("AE_mp",
   ``!m P Q. finite_measure m /\
             measure_space m /\
@@ -2975,7 +2976,7 @@ rw[]
       \\ rw[]))
 \\ fs[SUBSET_DEF]
 \\ metis_tac[]);
-
+*)
 
 (* ------------------------------------------------------------------------- *)
 (*  Fatou's lemma for measures (limsup and liminf) [1, p.74]                 *)
