@@ -26,8 +26,7 @@ open numTheory numLib unwindLib tautLib Arith prim_recTheory
      sumTheory InductiveDefinition ind_typeTheory listTheory mesonLib
      seqTheory limTheory transcTheory realLib topologyTheory;
 
-open wellorderTheory cardinalTheory hurdUtils util_probTheory;
-open iterateTheory productTheory;
+open wellorderTheory cardinalTheory iterateTheory productTheory hurdUtils;
 
 val _ = new_theory "real_topology";
 val _ = ParseExtras.temp_loose_equality()
@@ -1285,8 +1284,8 @@ val ABS_TRIANGLE_EQ = store_thm ("ABS_TRIANGLE_EQ",
       FULL_SIMP_TAC bool_ss [REAL_ADD_LID],
       (* goal 3 (of 3) *)
       Know `~(0 <= x + y)`
-      >- ( FULL_SIMP_TAC bool_ss [REAL_NOT_LE] \\
-           PROVE_TAC [REAL_LT_ADD2, REAL_ADD_RID] ) \\
+      >- (FULL_SIMP_TAC bool_ss [REAL_NOT_LE] \\
+          PROVE_TAC [REAL_LT_ADD2, REAL_ADD_RID]) \\
       DISCH_TAC >> ASM_SIMP_TAC bool_ss [] \\
       REWRITE_TAC [REAL_NEG_ADD] \\
       PROVE_TAC [REAL_NEG_RMUL, REAL_MUL_SYM] ]);
@@ -5952,7 +5951,34 @@ val LIM_WITHIN_OPEN = store_thm ("LIM_WITHIN_OPEN",
 (* Segment of natural numbers starting at a specific number.                 *)
 (* ------------------------------------------------------------------------- *)
 
-(* "from" is moved to util_probTheory *)
+val from_def = Define
+   `from n = {m:num | n <= m}`;
+
+val FROM_0 = store_thm ("FROM_0",
+  ``from 0 = univ(:num)``,
+    REWRITE_TAC [from_def, ZERO_LESS_EQ, GSPEC_T]);
+
+val IN_FROM = store_thm ("IN_FROM",
+  ``!m n. m IN from n <=> n <= m``,
+    SIMP_TAC std_ss [from_def, GSPECIFICATION]);
+
+val DISJOINT_COUNT_FROM = store_thm
+  ("DISJOINT_COUNT_FROM", ``!n. DISJOINT (count n) (from n)``,
+    RW_TAC arith_ss [from_def, count_def, DISJOINT_DEF, Once EXTENSION, NOT_IN_EMPTY,
+                     GSPECIFICATION, IN_INTER]);
+
+val DISJOINT_FROM_COUNT = store_thm
+  ("DISJOINT_FROM_COUNT", ``!n. DISJOINT (from n) (count n)``,
+    RW_TAC std_ss [Once DISJOINT_SYM, DISJOINT_COUNT_FROM]);
+
+val UNION_COUNT_FROM = store_thm
+  ("UNION_COUNT_FROM", ``!n. (count n) UNION (from n) = UNIV``,
+    RW_TAC arith_ss [from_def, count_def, Once EXTENSION, NOT_IN_EMPTY,
+                     GSPECIFICATION, IN_UNION, IN_UNIV]);
+
+val UNION_FROM_COUNT = store_thm
+  ("UNION_FROM_COUNT", ``!n. (from n) UNION (count n) = UNIV``,
+    RW_TAC std_ss [Once UNION_COMM, UNION_COUNT_FROM]);
 
 val FROM_INTER_NUMSEG_GEN = store_thm ("FROM_INTER_NUMSEG_GEN",
  ``!k m n. (from k) INTER (m..n) = (if m < k then k..n else m..n)``,
