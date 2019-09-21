@@ -19,7 +19,7 @@
 open HolKernel Parse boolLib bossLib numLib unwindLib tautLib Arith prim_recTheory
 combinTheory quotientTheory arithmeticTheory hrealTheory realaxTheory realTheory
 realLib jrhUtils pairTheory seqTheory limTheory transcTheory listTheory mesonLib
-boolTheory topologyTheory pred_setTheory util_probTheory optionTheory numTheory
+boolTheory topologyTheory pred_setTheory optionTheory numTheory
 sumTheory InductiveDefinition ind_typeTheory pred_setLib cardinalTheory;
 
 open hurdUtils iterateTheory productTheory real_topologyTheory derivativeTheory;
