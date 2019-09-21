@@ -1779,7 +1779,7 @@ val REAL_MUL_NZ = store_thm ("REAL_MUL_NZ",
   REPEAT GEN_TAC THEN ONCE_REWRITE_TAC [MONO_NOT_EQ] THEN
   SIMP_TAC real_ss [REAL_ENTIRE]);
 
-val lemma_sum_eq = store_thm ("lemma_sum_eq",
+val lemma_sum_eq = prove (
   ``!n x:real. sum (0, SUC n) (\n. ((\n. inv(&(FACT n)))) n * (x pow n)) =
            sum ((0:num) .. n) (\n. ((\n. inv(&(FACT n)))) n * (x pow n))``,
   GEN_TAC THEN GEN_TAC THEN
@@ -1865,7 +1865,7 @@ val lemma_sum_eq = store_thm ("lemma_sum_eq",
   ASM_SIMP_TAC std_ss [] THEN ONCE_REWRITE_TAC [sum] THEN
   ASM_SIMP_TAC arith_ss [REAL_ADD_COMM]);
 
-val lemma_sums_eq = store_thm ("lemma_sums_eq",
+val lemma_sums_eq = prove (
   ``!l x. (seq$sums (\n. ((\n. inv(&(FACT n)))) n * (x pow n)) l) =
      ((\n. ((\n. inv(&(FACT n)))) n * (x pow n)) sums l) UNIV``,
   RW_TAC std_ss [sums, seqTheory.sums, LIM_SEQUENTIALLY, SEQ, GE] THEN

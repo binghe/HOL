@@ -62,15 +62,15 @@ val INTERIOR_SUBSET_UNION_INTERVALS = store_thm ("INTERIOR_SUBSET_UNION_INTERVAL
     REWRITE_TAC[INTERIOR_CLOSED_INTERVAL] THEN
     REPEAT(POP_ASSUM MP_TAC) THEN SET_TAC[]]);
 
-val lemma1 = store_thm ("lemma1",
- ``(abs(d:real) = e / &2) ==>
-        dist(x + d,y) < e / &2 ==> dist(x,y) < e``,
+val lemma1 = Q.prove (
+   `(abs(d:real) = e / &2) ==>
+        dist(x + d,y) < e / &2 ==> dist(x,y) < e`,
   GEN_REWR_TAC LAND_CONV [EQ_SYM_EQ] THEN DISCH_TAC THEN
   GEN_REWR_TAC (RAND_CONV o RAND_CONV) [GSYM REAL_HALF_DOUBLE] THEN
   ASM_REWRITE_TAC [dist] THEN REAL_ARITH_TAC);
 
-val lemma2 = store_thm ("lemma2",
- ``!x:real. (-x/2) = -(x/2)``,
+val lemma2 = Q.prove (
+   `!x:real. (-x/2) = -(x/2)`,
  GEN_TAC THEN ONCE_REWRITE_TAC [REAL_NEG_MINUS1] THEN
  REWRITE_TAC [real_div, REAL_MUL_ASSOC]);
 
@@ -485,8 +485,8 @@ val EMPTY_DIVISION_OF = store_thm ("EMPTY_DIVISION_OF",
   REWRITE_TAC[division_of, BIGUNION_EMPTY, FINITE_EMPTY, NOT_IN_EMPTY] THEN
   MESON_TAC[]);
 
-val lemma = store_thm ("lemma",
-  ``s SUBSET {{a}} /\ p /\ (BIGUNION s = {a}) <=> (s = {{a}}) /\ p``,
+val lemma = Q.prove (
+   `s SUBSET {{a}} /\ p /\ (BIGUNION s = {a}) <=> (s = {{a}}) /\ p`,
     EQ_TAC THEN STRIP_TAC THEN
     ASM_REWRITE_TAC[SET_RULE ``BIGUNION {a} = a``] THEN
     REPEAT (POP_ASSUM MP_TAC) THEN SET_TAC[]);
@@ -551,10 +551,10 @@ val DIVISION_OF_CONTENT_0 = store_thm ("DIVISION_OF_CONTENT_0",
   REWRITE_TAC[GSYM REAL_LE_ANTISYM, CONTENT_POS_LE] THEN
   METIS_TAC[CONTENT_SUBSET, division_of]);
 
-val lemma = store_thm ("lemma",
-   ``{k1 INTER k2 | k1 IN p1 /\ k2 IN p2 /\ ~(k1 INTER k2 = {})} =
+val lemma = Q.prove (
+   `{k1 INTER k2 | k1 IN p1 /\ k2 IN p2 /\ ~(k1 INTER k2 = {})} =
         {s | s IN IMAGE (\(k1,k2). k1 INTER k2) (p1 CROSS p2) /\
-             ~(s = {})}``,
+             ~(s = {})}`,
     REWRITE_TAC[EXTENSION] THEN
     SIMP_TAC std_ss [IN_IMAGE, GSPECIFICATION, EXISTS_PROD, IN_CROSS] THEN
     MESON_TAC[]);
@@ -1732,14 +1732,15 @@ val TAGGED_DIVISION_UNION = store_thm ("TAGGED_DIVISION_UNION",
   ASM_SIMP_TAC std_ss[INTER_COMM] THEN CONJ_TAC THEN MATCH_MP_TAC SUBSET_INTERIOR THEN
   ASM_MESON_TAC[]);
 
-val lemma1 = store_thm ("lemma1",
-  ``!x' k. (?s. (x',k) IN s /\ ?x. (s = pfn x) /\ x IN iset) <=> (?x. x IN iset /\ (x',k) IN pfn x)``,
-  MESON_TAC[]);
+val lemma1 = Q.prove (
+   `!x' k. (?s. (x',k) IN s /\ ?x. (s = pfn x) /\ x IN iset) <=>
+           (?x. x IN iset /\ (x',k) IN pfn x)`,
+    MESON_TAC []);
 
-val lemma2 = store_thm ("lemma2",
-  ``!s1 t1 s2 t2. s1 SUBSET t1 /\ s2 SUBSET t2 /\ (t1 INTER t2 = {})
-                   ==> (s1 INTER s2 = {})``,
-    SET_TAC[]);
+val lemma2 = Q.prove (
+   `!s1 t1 s2 t2. s1 SUBSET t1 /\ s2 SUBSET t2 /\ (t1 INTER t2 = {})
+                   ==> (s1 INTER s2 = {})`,
+    SET_TAC []);
 
 val TAGGED_DIVISION_BIGUNION = store_thm ("TAGGED_DIVISION_BIGUNION",
  ``!iset pfn. FINITE iset /\
@@ -1987,16 +1988,16 @@ val FINITE_POWERSET = store_thm ("FINITE_POWERSET",
   ``!s. FINITE s ==> FINITE {t | t SUBSET s}``,
   METIS_TAC [FINITE_POW, POW_DEF]);
 
-val lemma1 = store_thm ("lemma1",
- ``!a b:real. ((a + b) / 2 - a) = ((a + b) - (a + a)) / 2``,
+val lemma1 = Q.prove (
+   `!a b:real. ((a + b) / 2 - a) = ((a + b) - (a + a)) / 2`,
   REPEAT GEN_TAC THEN
   KNOW_TAC ``((a + b) / 2 - a) = ((a + b) / 2 - a / 1:real)`` THENL
   [METIS_TAC [REAL_OVER1], ALL_TAC] THEN DISC_RW_KILL THEN
   SIMP_TAC std_ss [REAL_ARITH ``1 <> 0:real /\ 2 <> 0:real``, REAL_SUB_RAT] THEN
   REWRITE_TAC [REAL_MUL_RID] THEN REWRITE_TAC [GSYM REAL_DOUBLE]);
 
-val lemma2 = store_thm ("lemma2",
- ``!a b:real. (b - (a + b) / 2) = ((b + b) - (a + b)) / 2``,
+val lemma2 = Q.prove (
+   `!a b:real. (b - (a + b) / 2) = ((b + b) - (a + b)) / 2`,
   REPEAT GEN_TAC THEN
   KNOW_TAC ``(b - (a + b) / 2) = (b / 1 - (a + b) / 2:real)`` THENL
   [METIS_TAC [REAL_OVER1], ALL_TAC] THEN DISC_RW_KILL THEN
@@ -2145,8 +2146,7 @@ val INTERVAL_BISECTION_STEP = store_thm ("INTERVAL_BISECTION_STEP",
   DISCH_THEN(fn th => X_GEN_TAC ``x:real`` THEN MP_TAC th) THEN
   REAL_ARITH_TAC);
 
-val lemma1 = store_thm ("lemma1",
- ``!n. 2 pow n <> 0:real``,
+val lemma1 = Q.prove (`!n. 2 pow n <> 0:real`,
   GEN_TAC THEN ONCE_REWRITE_TAC [EQ_SYM_EQ] THEN
   MATCH_MP_TAC REAL_LT_IMP_NE THEN MATCH_MP_TAC REAL_LET_TRANS THEN
   EXISTS_TAC ``&n:real`` THEN SIMP_TAC std_ss [REAL_POS, POW_2_LT]);
@@ -2889,13 +2889,13 @@ Proof
  >> (Cases_on `b <= c` >> fs [] >> rfs [])
 QED
 
-val lemma = store_thm ("lemma",
- ``!a b:real c.
-  ((content(interval[a,b] INTER {x | x <= c}) = &0) <=>
-  (interior(interval[a,b] INTER {x | x <= c}) = {})) /\
-  ((content(interval[a,b] INTER {x | x >= c}) = &0) <=>
-  (interior(interval[a,b] INTER {x | x >= c}) = {}))``,
-SIMP_TAC std_ss [INTERVAL_SPLIT, CONTENT_EQ_0_INTERIOR]);
+val lemma = Q.prove (
+   `!a b:real c.
+      ((content(interval[a,b] INTER {x | x <= c}) = &0) <=>
+       (interior(interval[a,b] INTER {x | x <= c}) = {})) /\
+      ((content(interval[a,b] INTER {x | x >= c}) = &0) <=>
+       (interior(interval[a,b] INTER {x | x >= c}) = {}))`,
+    SIMP_TAC std_ss [INTERVAL_SPLIT, CONTENT_EQ_0_INTERIOR]);
 
 val DIVISION_SPLIT_LEFT_RIGHT_INJ = store_thm ("DIVISION_SPLIT_LEFT_RIGHT_INJ",
  ``(!d i k1 k2 k c.
@@ -3014,25 +3014,25 @@ val DIVISION_SPLIT = store_thm ("DIVISION_SPLIT",
   GEN_REWR_TAC I [FUN_EQ_THM] THEN GEN_TAC THEN
   SIMP_TAC std_ss [GSPECIFICATION, PAIR_EQ] THEN MESON_TAC[NOT_IN_EMPTY]]);
 
-val lemma1 = store_thm ("lemma1",
- ``(!x k. (x,k) IN {x,f k | P x k} ==> Q x k) <=>
-   (!x k. P x k ==> Q x (f k))``,
+val lemma1 = Q.prove (
+  `(!x k. (x,k) IN {x,f k | P x k} ==> Q x k) <=>
+   (!x k. P x k ==> Q x (f k))`,
   SIMP_TAC std_ss [GSPECIFICATION, PAIR_EQ, EXISTS_PROD] THEN SET_TAC[]);
 
-val lemma2 = store_thm ("lemma2",
- ``!f:'b->'b s:('a#'b)->bool.
-    FINITE s ==> FINITE {x,f k | (x,k) IN s /\ P x k}``,
+val lemma2 = Q.prove (
+   `!f:'b->'b s:('a#'b)->bool.
+    FINITE s ==> FINITE {x,f k | (x,k) IN s /\ P x k}`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC FINITE_SUBSET THEN
   EXISTS_TAC ``IMAGE (\(x:'a,k:'b). x,(f k:'b)) s`` THEN
   ASM_SIMP_TAC std_ss [IMAGE_FINITE] THEN
   SIMP_TAC std_ss [SUBSET_DEF, FORALL_PROD, lemma1, IN_IMAGE] THEN
   SIMP_TAC std_ss [EXISTS_PROD, PAIR_EQ] THEN MESON_TAC[]);
 
-val lemma3 = store_thm ("lemma3",
- ``!f:real->real g:(real->bool)->(real->bool) p.
+val lemma3 = Q.prove (
+   `!f:real->real g:(real->bool)->(real->bool) p.
   FINITE p
   ==> (sum {x,g k |x,k| (x,k) IN p /\ ~(g k = {})} (\(x,k). content k * f x) =
-      sum (IMAGE (\(x,k). x,g k) p) (\(x,k). content k * f x))``,
+       sum (IMAGE (\(x,k). x,g k) p) (\(x,k). content k * f x))`,
   REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC SUM_SUPERSET THEN
   ASM_SIMP_TAC std_ss [IMAGE_FINITE, lemma2] THEN
   SIMP_TAC std_ss [IMP_CONJ, FORALL_IN_IMAGE] THEN
@@ -3040,9 +3040,9 @@ val lemma3 = store_thm ("lemma3",
   SIMP_TAC std_ss [GSPECIFICATION, PAIR_EQ, REAL_ENTIRE, EXISTS_PROD] THEN
   METIS_TAC[CONTENT_EMPTY]);
 
-val lemma4 = store_thm ("lemma4",
- ``(\(x,l). content (g l) * f x) =
-   (\(x,l). content l * f x) o (\(x,l). x,g l)``,
+val lemma4 = Q.prove (
+  `(\(x,l). content (g l) * f x) =
+   (\(x,l). content l * f x) o (\(x,l). x,g l)`,
   SIMP_TAC std_ss [FUN_EQ_THM, o_THM, FORALL_PROD]);
 
 val HAS_INTEGRAL_SPLIT = store_thm ("HAS_INTEGRAL_SPLIT",
@@ -3303,9 +3303,9 @@ val HAS_INTEGRAL_SEPARATE_SIDES = store_thm ("HAS_INTEGRAL_SEPARATE_SIDES",
   SIMP_TAC std_ss [GSYM INTERVAL_EQ_EMPTY] THEN
   RW_TAC std_ss [REAL_MIN_LE, REAL_LE_MAX] THEN REAL_ARITH_TAC);
 
-val lemma = store_thm ("lemma",
- ``(b - a = c)
-  ==> abs (a:real) < e / &2 ==> abs (b) < e / &2 ==> abs (c) < e``,
+val lemma = Q.prove (
+   `(b - a = c) ==>
+     abs (a:real) < e / &2 ==> abs (b) < e / &2 ==> abs (c) < e`,
   DISCH_THEN(SUBST1_TAC o SYM) THEN REWRITE_TAC[GSYM dist] THEN
   REPEAT STRIP_TAC THEN MATCH_MP_TAC DIST_TRIANGLE_HALF_L THEN
   EXISTS_TAC ``0:real`` THEN
@@ -3826,9 +3826,9 @@ Proof
 *)
 QED
 
-val lemma = store_thm ("lemma",
- ``(\(x,l). f l) = (f o SND)``,
-  SIMP_TAC std_ss [FUN_EQ_THM, o_THM, FORALL_PROD]);
+val lemma = Q.prove (
+   `(\(x,l). f l) = (f o SND)`,
+    SIMP_TAC std_ss [FUN_EQ_THM, o_THM, FORALL_PROD]);
 
 val OPERATIVE_TAGGED_DIVISION = store_thm ("OPERATIVE_TAGGED_DIVISION",
  ``!op d a b f:(real->bool)->'a.
@@ -4003,8 +4003,8 @@ val RSUM_DIFF_BOUND = store_thm ("RSUM_DIFF_BOUND",
     SIMP_TAC std_ss [LAMBDA_PROD, REAL_LE_REFL],
     ASM_SIMP_TAC std_ss [RSUM_BOUND]]);
 
-val lemma = store_thm ("lemma",
-  ``abs(s) <= B ==> ~(abs(s - i) < abs(i) - B:real)``,
+val lemma = Q.prove (
+   `abs(s) <= B ==> ~(abs(s - i) < abs(i) - B:real)`,
   MATCH_MP_TAC (REAL_ARITH ``n1 <= n + n2 ==> n <= B:real ==> ~(n2 < n1 - B)``) THEN
     ONCE_REWRITE_TAC[ABS_SUB] THEN REWRITE_TAC[ABS_TRIANGLE_SUB]);
 
@@ -4272,11 +4272,11 @@ val INTEGRAL_COMPONENT_UBOUND = store_thm ("INTEGRAL_COMPONENT_UBOUND",
 (* Uniform limit of integrable functions is integrable.                      *)
 (* ------------------------------------------------------------------------- *)
 
-val lemma = store_thm ("lemma",
+val lemma = prove (
   ``x:real <= abs(a + b) + c ==> x <= abs(a) + abs(b) + c``,
     MESON_TAC[REAL_ADD_ASSOC, REAL_ADD_SYM, ABS_TRIANGLE, REAL_LE_TRANS, REAL_LE_RADD]);
 
-val lemma12 = store_thm ("lemma12",
+val lemma12 = prove (
  ``(abs(s2 - s1) <= e / &2:real /\
     abs(s1 - i1) < e / &4:real /\ abs(s2 - i2) < e / &4:real
     ==> abs(i1 - i2) < e) /\
@@ -4291,13 +4291,13 @@ val lemma12 = store_thm ("lemma12",
 	  SIMP_TAC std_ss [REAL_LT_RDIV_EQ, REAL_LE_RDIV_EQ,
 	   REAL_ARITH ``0 < 3:real``] THEN REAL_ARITH_TAC]);
 
-val lemma1 = store_thm ("lemma1",
+val lemma1 = prove (
  ``(abs(s2 - s1) <= e / &2:real /\
     abs(s1 - i1) < e / &4:real /\ abs(s2 - i2) < e / &4:real
     ==> abs(i1 - i2) < e)``,
  REWRITE_TAC [lemma12]);
 
-val lemma2 = store_thm ("lemma2",
+val lemma2 = prove (
   ``(abs(sf - sg) <= e / &3:real
     ==> abs(i - s) < e / &3:real ==> abs(sg - i) < e / &3:real ==> abs(sf - s) < e)``,
   REWRITE_TAC [lemma12]);
@@ -4683,7 +4683,7 @@ val NEGLIGIBLE_STANDARD_HYPERPLANE = store_thm ("NEGLIGIBLE_STANDARD_HYPERPLANE"
 (* A technical lemma about "refinement" of division.                         *)
 (* ------------------------------------------------------------------------- *)
 
-val lemma1 = store_thm ("lemma1",
+val lemma1 = prove (
   ``{k | ?x. (x,k) IN p} = IMAGE SND p``,
   SIMP_TAC std_ss [EXTENSION, EXISTS_PROD, IN_IMAGE, GSPECIFICATION] THEN
     METIS_TAC[]);
@@ -4785,7 +4785,7 @@ val TAGGED_DIVISION_FINER = store_thm ("TAGGED_DIVISION_FINER",
 (* Hence the main theorem about negligible sets.                             *)
 (* ------------------------------------------------------------------------- *)
 
-val lemma = store_thm ("lemma",
+val lemma = prove (
    ``!f:'b->real g:'a#'b->real s t.
           FINITE s /\ FINITE t /\
           (!x y. (x,y) IN t ==> &0 <= g(x,y)) /\
@@ -5747,17 +5747,17 @@ val ANTIDERIVATIVE_CONTINUOUS = store_thm ("ANTIDERIVATIVE_CONTINUOUS",
 (* General "twiddling" for interval-to-interval function image.              *)
 (* ------------------------------------------------------------------------- *)
 
-val lemma0 = store_thm ("lemma0",
+val lemma0 = prove (
   ``(!x k. (x,k) IN IMAGE (\(x,k). f x,g k) p ==> P x k) <=>
     (!x k. (x,k) IN p ==> P (f x) (g k))``,
     SIMP_TAC std_ss [IN_IMAGE, EXISTS_PROD, PAIR_EQ] THEN MESON_TAC[]);
 
-val lemma1 = store_thm ("lemma1",
+val lemma1 = prove (
   ``{k | ?x. (x,k) IN p} = IMAGE SND p``,
     SIMP_TAC std_ss [EXTENSION, EXISTS_PROD, IN_IMAGE, GSPECIFICATION] THEN
     MESON_TAC[]);
 
-val lemma2 = store_thm ("lemma2",
+val lemma2 = prove (
   ``(SND o (\(x,k). f x,g k)) = (g o SND)``,
     SIMP_TAC std_ss [FUN_EQ_THM, FORALL_PROD, o_DEF]);
 
@@ -6080,7 +6080,7 @@ val INTEGRAL_REFLECT = store_thm ("INTEGRAL_REFLECT",
 (* point can be in (we sometimes need this for bounding sums).               *)
 (* ------------------------------------------------------------------------- *)
 
-val lemma = store_thm ("lemma",
+val lemma = prove (
   ``!f s. (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y)) /\
            FINITE s /\ CARD(IMAGE f s) <= n
            ==> CARD(s) <= n``,
@@ -6140,7 +6140,7 @@ Proof
  *)
 QED
 
-val lemma = store_thm ("lemma",
+val lemma = prove (
   ``!f s. (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y)) /\
            FINITE s /\ CARD(IMAGE f s) <= n
            ==> CARD(s) <= n``,
@@ -6925,7 +6925,7 @@ Proof
  *)
 QED
 
-val lemma1 = store_thm ("lemma1",
+val lemma1 = prove (
    ``!f:(num->bool)->real n.
           sum {s | s SUBSET ((1:num)..SUC n)} f =
           sum {s | s SUBSET ((1:num)..n)} f +
@@ -6958,7 +6958,7 @@ val lemma1 = store_thm ("lemma1",
             ==> (s = t)``) THEN
       REWRITE_TAC[IN_NUMSEG] THEN ARITH_TAC]);
 
-val lemma2 = store_thm ("lemma2",
+val lemma2 = prove (
    ``!f:real->real m a:real c:real d:real.
           f integrable_on univ(:real) /\ m <= (1:num) /\
           ((a = c) \/ (d = c)) /\
@@ -7138,7 +7138,7 @@ val INTEGRABLE_STRADDLE_INTERVAL = store_thm ("INTEGRABLE_STRADDLE_INTERVAL",
   ASM_SIMP_TAC std_ss [] THEN MATCH_MP_TAC REAL_LE_LMUL_IMP THEN
   METIS_TAC[TAGGED_DIVISION_OF, CONTENT_POS_LE, SUBSET_DEF]);
 
-val lemma = store_thm ("lemma",
+val lemma = prove (
   ``&0:real <= x /\ x <= y ==> abs x <= abs y``,
    REAL_ARITH_TAC);
 
@@ -7607,7 +7607,7 @@ val INTEGRAL_COMBINE_TAGGED_DIVISION_TOPDOWN = store_thm ("INTEGRAL_COMBINE_TAGG
 (* Henstock's lemma.                          7180                           *)
 (* ------------------------------------------------------------------------- *)
 
-val lemma = store_thm ("lemma",
+val lemma = prove (
   ``(!k. &0 < k ==> x <= e + k) ==> x <= e:real``,
    DISCH_THEN(MP_TAC o SPEC ``(x - e) / &2:real``) THEN
    ONCE_REWRITE_TAC [REAL_ADD_SYM] THEN REWRITE_TAC [GSYM REAL_LE_SUB_RADD] THEN
@@ -8031,7 +8031,7 @@ val HENSTOCK_LEMMA = store_thm ("HENSTOCK_LEMMA",
 (* Monotone convergence (bounded interval first).                            *)
 (* ------------------------------------------------------------------------- *)
 
-val lemma = store_thm ("lemma",
+val lemma = prove (
   ``{(x,y) | P x y} = {p | P (FST p) (SND p)}``,
   SIMP_TAC std_ss [EXTENSION, FORALL_PROD, IN_ELIM_PAIR_THM, GSPECIFICATION]);
 
@@ -8841,7 +8841,7 @@ val MONOTONE_CONVERGENCE_DECREASING_AE = store_thm ("MONOTONE_CONVERGENCE_DECREA
 (* More lemmas about existence and bounds between integrals.                 *)
 (* ------------------------------------------------------------------------- *)
 
-val lemma = store_thm ("lemma",
+val lemma = prove (
  ``(!e:real. &0 < e ==> x < y + e) ==> x <= y``,
    DISCH_THEN(MP_TAC o SPEC ``x - y:real``) THEN REAL_ARITH_TAC);
 
@@ -8963,7 +8963,7 @@ val HAS_INTEGRAL_ABS_BOUND_INTEGRAL_COMPONENT = store_thm ("HAS_INTEGRAL_ABS_BOU
   MATCH_MP_TAC INTEGRAL_ABS_BOUND_INTEGRAL_COMPONENT THEN
   ASM_SIMP_TAC std_ss []);
 
-val lemma = store_thm ("lemma",
+val lemma = prove (
    ``!f:real->real g.
           (!a b. f integrable_on interval[a,b]) /\
           (!x. abs(f x) <= (g x)) /\
@@ -9796,7 +9796,7 @@ val SET_VARIATION_SUM_LE = store_thm ("SET_VARIATION_SUM_LE",
             <= sum k (\i. set_variation s (f i)))``,
   REWRITE_TAC [HAS_BOUNDED_SETVARIATION_ON_SUM_AND_SET_VARIATION_SUM_LE]);
 
-val lemma1 = store_thm ("lemma1",
+val lemma1 = prove (
    ``!f:(real->bool)->real B1 B2 a b.
       (!a b. (content(interval[a,b]) = &0) ==> (f(interval[a,b]) = &0)) /\
       (!a b c. f(interval[a,b]) <=
@@ -9872,7 +9872,7 @@ val lemma1 = store_thm ("lemma1",
                              (x IN s ==> ~P x ==> Q x)``] THEN
       SIMP_TAC std_ss [o_THM] THEN ASM_MESON_TAC[EMPTY_AS_INTERVAL, CONTENT_EMPTY]]);
 
-val lemma2 = store_thm ("lemma2",
+val lemma2 = prove (
    ``!f:(real->bool)->real B.
       (!a b. (content(interval[a,b]) = &0) ==> (f(interval[a,b]) = &0)) /\
       (!d. d division_of interval[a,b] ==> sum d f <= B)
@@ -10021,7 +10021,7 @@ val HAS_BOUNDED_SETVARIATION_ON_DIVISION = store_thm ("HAS_BOUNDED_SETVARIATION_
     REPEAT(COND_CASES_TAC THEN
            ASM_SIMP_TAC std_ss [lifted, NOT_NONE_SOME, option_CLAUSES])]);
 
-val lemma0 = store_thm ("lemma0",
+val lemma0 = prove (
    ``!op x y. ((lifted op (SOME x) y = SOME z) <=> ?w. (y = SOME w) /\ (op x w = z))``,
     GEN_TAC THEN GEN_TAC THEN ONCE_REWRITE_TAC [METIS []
      ``((lifted op (SOME x) y = SOME z) <=> ?w. (y = SOME w) /\ (op x w = z)) =
@@ -10030,7 +10030,7 @@ val lemma0 = store_thm ("lemma0",
     SIMP_TAC std_ss [lifted, NOT_NONE_SOME, SOME_11] THEN
     MESON_TAC[]);
 
-val lemma = store_thm ("lemma",
+val lemma = prove (
    ``!P op f s z.
           monoidal op /\ FINITE s /\
           (iterate(lifted op) s (\i. if P i then SOME(f i) else NONE) = SOME z)
@@ -10303,7 +10303,7 @@ val ABSOLUTELY_INTEGRABLE_BOUNDED_SETVARIATION = store_thm ("ABSOLUTELY_INTEGRAB
     MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE THEN
     MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_ABS THEN ASM_SIMP_TAC real_ss []]);
 
-val lemma = store_thm ("lemma",
+val lemma = prove (
  ``!f:'a->real g s e.
         sum s (\x. abs(f x - g x)) < e
         ==> FINITE s
@@ -12185,7 +12185,7 @@ val DOMINATED_CONVERGENCE = store_thm ("DOMINATED_CONVERGENCE",
       DISCH_TAC THEN ASM_REWRITE_TAC [] THEN POP_ASSUM K_TAC THEN
       DISCH_THEN(MATCH_MP_TAC o CONJUNCT1) THEN REWRITE_TAC[LESS_EQ_REFL]]]);
 
-val lemma = store_thm ("lemma",
+val lemma = prove (
    ``!f:num->real->real g h s.
           (!k. f k absolutely_integrable_on s) /\
           h integrable_on s /\
@@ -12394,7 +12394,7 @@ val NEGLIGIBLE_COUNTABLE_BIGUNION = store_thm ("NEGLIGIBLE_COUNTABLE_BIGUNION",
     REWRITE_TAC[SET_RULE ``{c | x | x IN UNIV} = {c}``,
                 BOUNDED_INSERT, BOUNDED_EMPTY]]);
 
-val lemma = store_thm ("lemma",
+val lemma = prove (
    ``!f:real->real s.
           (!x. x IN s ==> &0 <= (f x)) /\ (f has_integral 0) s
           ==> negligible {x | x IN s /\ ~(f x = 0)}``,
@@ -12460,7 +12460,7 @@ val HAS_INTEGRAL_NEGLIGIBLE_EQ = store_thm ("HAS_INTEGRAL_NEGLIGIBLE_EQ",
     SIMP_TAC std_ss [SUBSET_DEF, IN_BIGUNION, EXISTS_IN_GSPEC, IN_NUMSEG] THEN
     SIMP_TAC std_ss [GSPECIFICATION, IN_SING] THEN MESON_TAC[]]);
 
-val lemma = store_thm ("lemma",
+val lemma = prove (
   ``IMAGE f s = BIGUNION {(\x. {f x}) x | x IN s}``,
     SIMP_TAC std_ss [EXTENSION, IN_IMAGE, IN_BIGUNION, IN_SING, GSPECIFICATION] THEN
     MESON_TAC[IN_SING]);
@@ -14182,13 +14182,13 @@ val EQUIINTEGRABLE_ON_NULL = store_thm ("EQUIINTEGRABLE_ON_NULL",
                                            SUM_CONTENT_NULL) th]) THEN
   ASM_SIMP_TAC std_ss [INTEGRAL_NULL, REAL_SUB_REFL, ABS_0]);
 
-val lemma1 = store_thm ("lemma1",
+val lemma1 = prove (
   ``(!x k. (x,k) IN {x,f k | P x k} ==> Q x k) <=>
      (!x k. P x k ==> Q x (f k))``,
     REWRITE_TAC[GSPECIFICATION, PAIR_EQ] THEN
     SET_TAC[]);
 
-val lemma2 = store_thm ("lemma2",
+val lemma2 = prove (
  ``!f:'b->'b s:('a#'b)->bool.
       FINITE s ==> FINITE {x,f k | (x,k) IN s /\ P x k}``,
     REPEAT STRIP_TAC THEN MATCH_MP_TAC FINITE_SUBSET THEN
@@ -14197,7 +14197,7 @@ val lemma2 = store_thm ("lemma2",
     SIMP_TAC std_ss [SUBSET_DEF, FORALL_PROD, lemma1, IN_IMAGE] THEN
     SIMP_TAC std_ss [EXISTS_PROD, PAIR_EQ] THEN METIS_TAC[]);
 
-val lemma3 = store_thm ("lemma3",
+val lemma3 = prove (
  ``!f:real->real g:(real->bool)->(real->bool) p.
      FINITE p
      ==> (sum {x,g k |x,k| (x,k) IN p /\ ~(g k = {})}
@@ -14210,7 +14210,7 @@ val lemma3 = store_thm ("lemma3",
     SIMP_TAC std_ss [GSPECIFICATION, PAIR_EQ, REAL_ENTIRE, EXISTS_PROD] THEN
     METIS_TAC[CONTENT_EMPTY]);
 
-val lemma4 = store_thm ("lemma4",
+val lemma4 = prove (
    ``(\(x,l). content (g l) * f x) =
      (\(x,l). content l * f x) o (\(x,l). x,g l)``,
     SIMP_TAC std_ss [FUN_EQ_THM, o_THM, FORALL_PROD]);
@@ -14925,7 +14925,7 @@ val EQUIINTEGRABLE_UNIFORM_LIMIT = store_thm ("EQUIINTEGRABLE_UNIFORM_LIMIT",
    [``(f:num->real->real) n``, ``p:(real#(real->bool))->bool``]) THEN
   ASM_SIMP_TAC real_ss [dist, REAL_LT_RDIV_EQ] THEN REAL_ARITH_TAC);
 
-val lemma = store_thm ("lemma",
+val lemma = prove (
    ``(!x k. (x,k) IN IMAGE (\(x,k). f x k,g x k) s ==> Q x k) <=>
      (!x k. (x,k) IN s ==> Q (f x k) (g x k))``,
   SIMP_TAC std_ss [IN_IMAGE, PAIR_EQ, EXISTS_PROD] THEN SET_TAC[]);
@@ -15067,7 +15067,7 @@ QED
 (* division, followed by subinterval resictions for equiintegrable family.   *)
 (* ------------------------------------------------------------------------- *)
 
-val lemma0 = store_thm ("lemma0",
+val lemma0 = prove (
    ``!k:real->bool.
           content k / (interval_upperbound k - interval_lowerbound k) =
               if content k = &0 then &0
@@ -15080,7 +15080,7 @@ val lemma0 = store_thm ("lemma0",
     ASM_REWRITE_TAC[content, PRODUCT_EQ_0_NUMSEG] THEN
     ASM_MESON_TAC[REAL_MUL_RINV]);
 
-val lemma1 = store_thm ("lemma1",
+val lemma1 = prove (
    ``!d a b:real s.
           d division_of s /\ s SUBSET interval[a,b] /\
           ((!k. k IN d
@@ -15799,7 +15799,7 @@ Proof
     METIS_TAC []]
 QED
 
-val lemma = store_thm ("lemma",
+val lemma = prove (
    ``(!x k. (x,k) IN IMAGE (\(x,k). f x k,g x k) s ==> Q x k) <=>
      (!x k. (x,k) IN s ==> Q (f x k) (g x k))``,
     SIMP_TAC std_ss [IN_IMAGE, PAIR_EQ, EXISTS_PROD] THEN SET_TAC[]);
@@ -16846,7 +16846,7 @@ val INDEFINITE_INTEGRAL_CONTINUOUS_LEFT = store_thm ("INDEFINITE_INTEGRAL_CONTIN
 (* Second mean value theorem and corollaries.                                *)
 (* ------------------------------------------------------------------------- *)
 
-val lemma1 = store_thm ("lemma1",
+val lemma1 = prove (
    ``!f:real->real s.
       (!x. x IN s ==> &0 <= f x /\ f x <= &1)
       ==> (!n x. x IN s /\ ~(n = 0)
@@ -16891,7 +16891,7 @@ val lemma1 = store_thm ("lemma1",
      ASM_SIMP_TAC std_ss [REAL_POS],
      REWRITE_TAC [GSYM NUM_FLOOR_LET] THEN SIMP_TAC std_ss [REAL_LE_REFL]]);
 
-val lemma2 = store_thm ("lemma2",
+val lemma2 = prove (
    ``!f:real->real g a b.
           f integrable_on interval[a,b] /\
           (!x y. x <= y ==> g(x) <= g(y))
@@ -16950,7 +16950,7 @@ val lemma2 = store_thm ("lemma2",
     X_GEN_TAC ``x:real`` THEN SIMP_TAC std_ss [GSYM REAL_NOT_LE] THEN
     METIS_TAC [REAL_LE_TOTAL, REAL_LT_ANTISYM, REAL_LE_TRANS]);
 
-val lemma3 = store_thm ("lemma3",
+val lemma3 = prove (
    ``!f:real->real g:real->real a b.
           f integrable_on interval[a,b] /\
           (!x y. x <= y ==> g(x) <= g(y))
@@ -16973,7 +16973,7 @@ val lemma3 = store_thm ("lemma3",
     REWRITE_TAC[IN_NUMSEG, REAL_LE_INV_EQ, REAL_POS] THEN STRIP_TAC THEN
     EXISTS_TAC ``&k / &n:real`` THEN SIMP_TAC std_ss []);
 
-val lemma4 = store_thm ("lemma4",
+val lemma4 = prove (
    ``!f:real->real g:real->real a b.
           ~(interval[a,b] = {}) /\
           f integrable_on interval[a,b] /\
@@ -17453,7 +17453,7 @@ val INTEGRABLE_INCREASING_PRODUCT = store_thm ("INTEGRABLE_INCREASING_PRODUCT",
     DISCH_TAC THEN ASM_REWRITE_TAC [] THEN POP_ASSUM K_TAC THEN
     REWRITE_TAC[integrable_on] THEN MESON_TAC[]]);
 
-val lemma = store_thm ("lemma",
+val lemma = prove (
    ``!f:real->real g B.
           f integrable_on univ(:real) /\
           (!x y. x <= y ==> g x <= g y) /\
@@ -19482,7 +19482,7 @@ val HAS_BOUNDED_VECTOR_VARIATION_RIGHT_LIMIT = store_thm ("HAS_BOUNDED_VECTOR_VA
   GEN_REWR_TAC (RATOR_CONV o LAND_CONV) [GSYM ETA_AX] THEN
   ASM_SIMP_TAC std_ss [LIM_SUB]);
 
-val lemma = store_thm ("lemma",
+val lemma = prove (
    ``!f:real->real a b c.
           f has_bounded_variation_on interval[a,b] /\ c IN interval[a,b]
           ==> ((\x. (vector_variation(interval[a,x]) f))
@@ -19790,7 +19790,7 @@ val VECTOR_VARIATION_CONTINUOUS_LEFT = store_thm ("VECTOR_VARIATION_CONTINUOUS_L
     REWRITE_TAC[REAL_ADD_SUB]] THEN
   SIMP_TAC std_ss [NUMSEG_SING, SUM_SING, ETA_AX, REAL_LE_REFL]);
 
-val lemma = store_thm ("lemma",
+val lemma = prove (
    ``!f:real->real a b c.
           f has_bounded_variation_on interval[a,b] /\ c IN interval[a,b]
           ==> ((\x. (vector_variation(interval[a,x]) f))
@@ -20094,7 +20094,7 @@ val VECTOR_VARIATION_CONTINUOUS_RIGHT = store_thm ("VECTOR_VARIATION_CONTINUOUS_
     REWRITE_TAC[REAL_ARITH ``a - (a + b):real = -b``]] THEN
   SIMP_TAC std_ss [NUMSEG_SING, SUM_SING, ETA_AX, REAL_LE_REFL]);
 
-val lemma = store_thm ("lemma",
+val lemma = prove (
     ``!f:real->real a b c.
         c IN interval[a,b]
         ==> (f continuous (at c within interval[a,b]) <=>
