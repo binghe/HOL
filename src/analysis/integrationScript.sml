@@ -1,6 +1,6 @@
 (* ========================================================================= *)
 (*                                                                           *)
-(*         Univariate Henstock-Kurzweil (gauge) Integration Theory           *)
+(*     Henstock-Kurzweil (gauge) Integration Theory - univariate version     *)
 (*                                                                           *)
 (*        (c) Copyright, John Harrison 1998-2008                             *)
 (*        (c) Copyright, Marco Maggesi 2014                                  *)
@@ -19,7 +19,7 @@
 (* ========================================================================= *)
 
 open HolKernel Parse boolLib bossLib numLib unwindLib tautLib Arith prim_recTheory
-combinTheory quotientTheory arithmeticTheory hrealTheory realaxTheory realTheory
+combinTheory quotientTheory arithmeticTheory realaxTheory realTheory
 realLib jrhUtils pairTheory seqTheory limTheory transcTheory listTheory mesonLib
 boolTheory topologyTheory pred_setTheory optionTheory numTheory RealArith
 sumTheory InductiveDefinition ind_typeTheory pred_setLib cardinalTheory;
@@ -214,25 +214,47 @@ val ITERATE_NONZERO_IMAGE_LEMMA = store_thm ("ITERATE_NONZERO_IMAGE_LEMMA",
 (* Bounds on intervals where they exist.                                     *)
 (* ------------------------------------------------------------------------- *)
 
-val interval_upperbound = new_definition ("interval_upperbound",
-  ``(interval_upperbound:(real->bool)->real) s =
-                          sup {a | ?x. x IN s /\ (x = a)}``);
+(* NOTE: HOL Light's original definitions:
 
-val interval_lowerbound = new_definition ("interval_lowerbound",
-  ``(interval_lowerbound:(real->bool)->real) s =
-                           inf {a | ?x. x IN s /\ (x = a)}``);
+   `sup {a | ?x. x IN s /\ (x = a)}` = `sup s`
+   `inf {a | ?x. x IN s /\ (x = a)}` = `inf s`
 
-val INTERVAL_UPPERBOUND = store_thm ("INTERVAL_UPPERBOUND",
- ``!a b:real. a <= b ==> (interval_upperbound(interval[a,b]) = b)``,
-  SIMP_TAC std_ss [interval_upperbound] THEN REPEAT STRIP_TAC THEN
-  MATCH_MP_TAC REAL_SUP_UNIQUE THEN SIMP_TAC std_ss [GSPECIFICATION, IN_INTERVAL] THEN
-  ASM_MESON_TAC[REAL_LE_REFL]);
+   are not specified on {} but `sup {} = inf {}` can be proven due to the
+   definition of `inf` in HOL Light. However in HOL4 this is not derivable.
+   Now we explicitly define that the upper and lower bounds of {} are both 0.
+   This change shouldn't cause anything wrong. -- Chun Tian, Oct 24, 2019.
+ *)
+Definition interval_upperbound :
+    (interval_upperbound:(real->bool)->real) s =
+       if s = {} then 0:real else sup s
+End
 
-val INTERVAL_LOWERBOUND = store_thm ("INTERVAL_LOWERBOUND",
- ``!a b:real. a <= b ==> (interval_lowerbound(interval[a,b]) = a)``,
-  SIMP_TAC std_ss [interval_lowerbound] THEN REPEAT STRIP_TAC THEN
-  MATCH_MP_TAC REAL_INF_UNIQUE THEN SIMP_TAC std_ss [GSPECIFICATION, IN_INTERVAL] THEN
-  ASM_MESON_TAC[REAL_LE_REFL]);
+Definition interval_lowerbound :
+    (interval_lowerbound:(real->bool)->real) s =
+       if s = {} then 0:real else inf s
+End
+
+Theorem INTERVAL_UPPERBOUND :
+    !a b:real. a <= b ==> (interval_upperbound(interval[a,b]) = b)
+Proof
+    RW_TAC std_ss [interval_upperbound]
+ >- (fs [EXTENSION, GSPECIFICATION, IN_INTERVAL] \\
+     METIS_TAC [REAL_LE_REFL])
+ >> MATCH_MP_TAC REAL_SUP_UNIQUE
+ >> SIMP_TAC std_ss [GSPECIFICATION, IN_INTERVAL]
+ >> ASM_MESON_TAC[REAL_LE_REFL]
+QED
+
+Theorem INTERVAL_LOWERBOUND :
+    !a b:real. a <= b ==> (interval_lowerbound(interval[a,b]) = a)
+Proof
+    RW_TAC std_ss [interval_lowerbound]
+ >- (fs [EXTENSION, GSPECIFICATION, IN_INTERVAL] \\
+     METIS_TAC [REAL_LE_REFL])
+ >> MATCH_MP_TAC REAL_INF_UNIQUE
+ >> SIMP_TAC std_ss [GSPECIFICATION, IN_INTERVAL]
+ >> ASM_MESON_TAC [REAL_LE_REFL]
+QED
 
 val INTERVAL_LOWERBOUND_NONEMPTY = store_thm ("INTERVAL_LOWERBOUND_NONEMPTY",
  ``!a b:real. ~(interval[a,b] = {}) ==>
@@ -369,25 +391,21 @@ val CONTENT_LT_NZ = store_thm ("CONTENT_LT_NZ",
  ``!a b. &0 < content(interval[a,b]) <=> ~(content(interval[a,b]) = &0)``,
   REWRITE_TAC[CONTENT_POS_LT_EQ, CONTENT_EQ_0] THEN MESON_TAC[REAL_NOT_LE]);
 
-(* TODO: `interval[a:real,b] <> {}` must be added, otherwise `inf {}`
-   is unspecified. *)
 Theorem INTERVAL_BOUNDS_NULL :
     !a b:real. (content(interval[a,b]) = &0)
         ==> (interval_upperbound(interval[a,b]) =
              interval_lowerbound(interval[a,b]))
 Proof
     rpt GEN_TAC >> ASM_CASES_TAC ``interval[a:real,b] = {}``
- >| [ ASM_REWRITE_TAC [interval_upperbound, interval_lowerbound,
-                       GSYM INTERVAL_EQ_EMPTY, NOT_IN_EMPTY] \\
-(*
-      SIMP_TAC std_ss [sup_alt, inf_alt, NOT_IN_EMPTY, GSPEC_F] THEN DISCH_TAC THEN
-      AP_TERM_TAC THEN ABS_TAC THEN
-      METIS_TAC [REAL_ARITH ``~(x <= x - &1) /\ ~(x + &1 <= x:real)``]
- *)   cheat,
+ >| [ (* goal 1 (of 2) *)
+      RW_TAC std_ss [interval_upperbound, interval_lowerbound,
+                     GSYM INTERVAL_EQ_EMPTY, NOT_IN_EMPTY] \\
+      fs [EXTENSION, GSPECIFICATION, NOT_IN_EMPTY, IN_INTERVAL] \\
+      METIS_TAC [real_lte, REAL_LE_REFL],
       (* goal 2 (of 2) *)
-      RULE_ASSUM_TAC(SIMP_RULE std_ss [GSYM INTERVAL_EQ_EMPTY, REAL_NOT_LT]) THEN
-      ASM_SIMP_TAC std_ss [INTERVAL_UPPERBOUND, INTERVAL_LOWERBOUND] THEN
-      REWRITE_TAC[CONTENT_EQ_0] THEN ASM_REAL_ARITH_TAC ]
+      RULE_ASSUM_TAC (SIMP_RULE std_ss [GSYM INTERVAL_EQ_EMPTY, REAL_NOT_LT]) \\
+      ASM_SIMP_TAC std_ss [INTERVAL_UPPERBOUND, INTERVAL_LOWERBOUND] \\
+      REWRITE_TAC [CONTENT_EQ_0] >> ASM_REAL_ARITH_TAC ]
 QED
 
 val INTERVAL_BOUNDS_EMPTY = store_thm ("INTERVAL_BOUNDS_EMPTY",
