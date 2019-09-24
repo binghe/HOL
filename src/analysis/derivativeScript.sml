@@ -939,63 +939,61 @@ val CONVEX_CBALL = store_thm ("CONVEX_CBALL",
   ASM_SIMP_TAC real_ss [REAL_ARITH
    ``&0 <= u /\ &0 <= v /\ (u + v = &1) ==> (abs(u) + abs(v) = &1:real)``]);
 
-(* TODO *)
 Theorem DIFFERENTIAL_COMPONENT_ZERO_AT_MAXMIN :
     !f:real->real f' x s.
         x IN s /\ open s /\ (f has_derivative f') (at x) /\
         ((!w. w IN s ==> (f w) <= (f x)) \/
-         (!w. w IN s ==> (f x) <= (f w)))
-        ==> !h. (f' h) = &0
+         (!w. w IN s ==> (f x) <= (f w))) ==> !h. (f' h) = &0
 Proof
-    cheat
-(*
     rpt GEN_TAC
  >> DISCH_THEN (REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC)
- >> UNDISCH_TAC ``open s`` >> ONCE_REWRITE_TAC [OPEN_CONTAINS_BALL]
+ >> Q.PAT_ASSUM `open s`
+      (MP_TAC o ONCE_REWRITE_RULE [OPEN_CONTAINS_CBALL])
  >> DISCH_THEN(MP_TAC o Q.SPEC `x:real`) >> art [SUBSET_DEF]
  >> DISCH_THEN(X_CHOOSE_THEN ``e:real`` STRIP_ASSUME_TAC)
- >> FIRST_X_ASSUM DISJ_CASES_TAC THENL
-   [MP_TAC(ISPECL [``f:real->real``, ``f':real->real``,
-                   ``x:real``, ``cball(x:real,e)``, ``e:real``]
-        DIFFERENTIAL_COMPONENT_NEG_AT_MAXIMUM),
-    MP_TAC(ISPECL [``f:real->real``, ``f':real->real``,
-                   ``x:real``, ``cball(x:real,e)``, ``e:real``]
-        DIFFERENTIAL_COMPONENT_POS_AT_MINIMUM)] (* 2 subgoals *)
- >> ((* this THEN is right-associative *)
-  ASM_SIMP_TAC real_ss [HAS_DERIVATIVE_AT_WITHIN, CENTRE_IN_CBALL,
-               CONVEX_CBALL, REAL_LT_IMP_LE, IN_INTER] THEN
-  DISCH_TAC THEN X_GEN_TAC ``h:real`` THEN
-  UNDISCH_TAC ``(f has_derivative f') (at x)`` THEN
-  ONCE_REWRITE_TAC [has_derivative_at] THEN STRIP_TAC THEN
-  (ASM_CASES_TAC ``h:real = 0`` THENL
-    [ASM_MESON_TAC[LINEAR_0], ALL_TAC]) THEN
-  FIRST_X_ASSUM (fn th =>
-    MP_TAC(Q.SPEC `x + e / abs h * h:real` th) THEN
-    MP_TAC(Q.SPEC `x - e / abs h * h:real` th)) THEN
-  SIMP_TAC real_ss [IN_CBALL, dist, REAL_ARITH
-   ``(abs(x:real - (x - e)) = abs e) /\ (abs(x:real - (x + e)) = abs e)``] THEN
-  ONCE_REWRITE_TAC [REAL_ARITH ``x - e / abs h * h - x = -(e / abs h * h):real``] THEN
-  FIRST_ASSUM(fn th => REWRITE_TAC[MATCH_MP LINEAR_NEG th]) THENL
-  [ONCE_REWRITE_TAC [METIS [REAL_LE_NEG] ``-e <= 0 <=> -0 <= --e:real``],
-   ONCE_REWRITE_TAC [METIS [REAL_LE_NEG] ``0 <= -e <=> --e <= -0:real``]] THEN
-  SIMP_TAC std_ss [REAL_NEG_NEG, REAL_NEG_0] THEN
-  Suff `abs (e / abs h * h) <= e`
-  >- (DISCH_TAC \\
-      ASM_CASES_TAC ``0 <= h:real`` \\ (* 2 subgoals, same tactics *)
-      REWRITE_TAC [real_div, REAL_ARITH ``a * b * c = a * (b * c:real)``] \\
-      FULL_SIMP_TAC real_ss [abs, REAL_MUL_LINV, GSYM REAL_NEG_INV,
-                             REAL_ARITH ``-a * b = -(a * b:real)``] \\
-     `0 <= e` by PROVE_TAC [REAL_LT_IMP_LE] >> fs [] \\
-      UNDISCH_TAC ``0 <= e:real`` THEN REAL_ARITH_TAC (* cheat *) ) \\
-  ASM_SIMP_TAC std_ss [] THEN RW_TAC std_ss [] THEN
-  `f' (e / abs h * h) = 0` by METIS_TAC [REAL_LE_ANTISYM] THEN
-  POP_ASSUM MP_TAC THEN ASM_SIMP_TAC std_ss [LINEAR_CMUL] THEN
-  (Q_TAC SUFF_TAC `e / abs h <> 0` THENL
-   [DISCH_TAC,
-    ONCE_REWRITE_TAC [EQ_SYM_EQ] THEN MATCH_MP_TAC REAL_LT_IMP_NE THEN
-    MATCH_MP_TAC REAL_LT_DIV THEN ASM_SIMP_TAC std_ss [GSYM ABS_NZ]]) THEN
-  ASM_SIMP_TAC std_ss [REAL_ENTIRE] )
- *)
+ >> FIRST_X_ASSUM DISJ_CASES_TAC (* 2 subgoals, shared tactics *)
+ >| [ MP_TAC (Q.SPECL [`f`, `f'`, `x`, `cball(x:real,e)`, `e`]
+              DIFFERENTIAL_COMPONENT_NEG_AT_MAXIMUM),
+      MP_TAC (Q.SPECL [`f`, `f'`, `x`, `cball(x:real,e)`, `e`]
+              DIFFERENTIAL_COMPONENT_POS_AT_MINIMUM) ] (* 2 subgoals *)
+ >> ASM_SIMP_TAC real_ss [HAS_DERIVATIVE_AT_WITHIN, CENTRE_IN_CBALL,
+                          CONVEX_CBALL, REAL_LT_IMP_LE, IN_INTER]
+ >> DISCH_TAC THEN X_GEN_TAC ``h:real``
+ >> Q.PAT_X_ASSUM `(f has_derivative f') (at x)`
+      (STRIP_ASSUME_TAC o (ONCE_REWRITE_RULE [has_derivative_at]))
+ >> (Cases_on `h:real = 0` >- ASM_MESON_TAC [LINEAR_0])
+ >> Q.PAT_X_ASSUM `!y. y IN cball (x,e) ==> _`
+      (fn th => MP_TAC (Q.SPEC `x + e / abs h * h:real` th) \\
+                MP_TAC (Q.SPEC `x - e / abs h * h:real` th))
+ >> SIMP_TAC real_ss [IN_CBALL, dist, REAL_ARITH
+     ``(abs(x:real - (x - e)) = abs e) /\ (abs(x:real - (x + e)) = abs e)``,
+       REAL_ARITH ``x - e / abs h * h - x = -(e / abs h * h):real``]
+ >> FIRST_ASSUM (fn th => REWRITE_TAC [MATCH_MP LINEAR_NEG th])
+ >| [ ONCE_REWRITE_TAC [METIS [REAL_LE_NEG] ``-e <= 0 <=> -0 <= --e:real``],
+      ONCE_REWRITE_TAC [METIS [REAL_LE_NEG] ``0 <= -e <=> --e <= -0:real``] ]
+ >> SIMP_TAC std_ss [REAL_NEG_NEG, REAL_NEG_0]
+ (* stage work, right-associative from now on *)
+ >> (Know `abs (e / abs h * h) <= e`
+     >- (Cases_on `0 <= h` (* 2 subgoals, same tactics *)
+         >- (REWRITE_TAC [real_div, REAL_ARITH ``a * b * c = a * (b * c:real)``] \\
+             FULL_SIMP_TAC real_ss [abs, REAL_MUL_LINV, GSYM REAL_NEG_INV,
+                                    REAL_ARITH ``-a * b = -(a * b:real)``] \\
+            `0 <= e` by PROVE_TAC [REAL_LT_IMP_LE] >> rw []) \\
+         REWRITE_TAC [real_div, REAL_ARITH ``a * b * c = a * (b * c:real)``] \\
+         FULL_SIMP_TAC real_ss [abs, REAL_MUL_LINV, GSYM REAL_NEG_INV,
+                                REAL_ARITH ``-a * b = -(a * b:real)``] \\
+         ONCE_REWRITE_TAC [METIS [REAL_LE_NEG] ``0 <= -e <=> --e <= -0:real``] \\
+         SIMP_TAC std_ss [REAL_NEG_NEG, REAL_NEG_0] \\
+        `~(e <= 0)` by PROVE_TAC [real_lte] >> rw []) \\
+     RW_TAC std_ss [] \\
+    `f' (e / abs h * h) = 0` by METIS_TAC [REAL_LE_ANTISYM] \\
+     POP_ASSUM MP_TAC >> ASM_SIMP_TAC std_ss [LINEAR_CMUL] \\
+     ASM_SIMP_TAC std_ss [REAL_ENTIRE] \\
+     Suff `e / abs h <> 0` >- rw [] \\
+     ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+     MATCH_MP_TAC REAL_LT_IMP_NE \\
+     MATCH_MP_TAC REAL_LT_DIV \\
+     ASM_SIMP_TAC std_ss [GSYM ABS_NZ])
 QED
 
 Theorem DIFFERENTIAL_ZERO_MAXMIN :
