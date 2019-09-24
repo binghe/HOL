@@ -1,25 +1,27 @@
 (* ========================================================================= *)
 (*                                                                           *)
-(*                            Integration Theory                             *)
+(*         Univariate Henstock-Kurzweil (gauge) Integration Theory           *)
 (*                                                                           *)
-(*        (c) Copyright,                                                     *)
+(*        (c) Copyright, John Harrison 1998-2008                             *)
+(*        (c) Copyright, Marco Maggesi 2014                                  *)
+(*        (c) Copyright 2015,                                                *)
 (*                       Muhammad Qasim,                                     *)
 (*                       Osman Hasan,                                        *)
 (*                       Hardware Verification Group,                        *)
 (*                       Concordia University                                *)
-(*                                                                           *)
 (*            Contact:  <m_qasi@ece.concordia.ca>                            *)
 (*                                                                           *)
+(*        (c) Copyright 2019, Fondazione Bruno Kessler, Italy                *)
+(*            Contact:  Chun Tian <ctian@fbk.eu>                             *)
 (*                                                                           *)
-(* Note: This theory has been ported from hol light                          *)
-(* Last update: Jan, 2015                                                    *)
+(*    Note: This theory was ported from HOL Light                            *)
 (*                                                                           *)
 (* ========================================================================= *)
 
 open HolKernel Parse boolLib bossLib numLib unwindLib tautLib Arith prim_recTheory
 combinTheory quotientTheory arithmeticTheory hrealTheory realaxTheory realTheory
 realLib jrhUtils pairTheory seqTheory limTheory transcTheory listTheory mesonLib
-boolTheory topologyTheory pred_setTheory optionTheory numTheory
+boolTheory topologyTheory pred_setTheory optionTheory numTheory RealArith
 sumTheory InductiveDefinition ind_typeTheory pred_setLib cardinalTheory;
 
 open hurdUtils iterateTheory productTheory real_topologyTheory derivativeTheory;
@@ -34,12 +36,12 @@ val DISC_RW_KILL = DISCH_TAC THEN ONCE_ASM_REWRITE_TAC [] THEN
 
 fun ASSERT_TAC tm = SUBGOAL_THEN tm STRIP_ASSUME_TAC;
 val ASM_ARITH_TAC = REPEAT (POP_ASSUM MP_TAC) THEN ARITH_TAC;
-val ASM_REAL_ARITH_TAC = REPEAT (POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC;
+val ASM_REAL_ARITH_TAC = REAL_ASM_ARITH_TAC;
 
-(* A minimal hol-light compatibility layer *)
+(* Minimal hol-light compatibility layer *)
 val IMP_CONJ      = CONJ_EQ_IMP;     (* cardinalTheory *)
 val FINITE_SUBSET = SUBSET_FINITE_I; (* pred_setTheory *)
-val LE_0          = ZERO_LESS_EQ;    (* arithmetisTheory *)
+val LE_0          = ZERO_LESS_EQ;    (* arithmeticTheory *)
 
 (* ------------------------------------------------------------------------- *)
 (* Some useful lemmas about intervals.                                       *)
