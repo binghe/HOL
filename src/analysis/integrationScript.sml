@@ -1529,8 +1529,6 @@ Theorem DIVISION_1_SORT :
       ==> ~(t i = t j) /\
      !x y. x IN t i /\ y IN t j ==> x <= y
 Proof
-    cheat
-(*
   REPEAT STRIP_TAC THEN EXISTS_TAC ``CARD(d:(real->bool)->bool)`` THEN
   MP_TAC(ISPEC ``\i j:real->bool. i IN d /\ j IN d /\
    (interval_lowerbound i) <= (interval_lowerbound j)``
@@ -1551,7 +1549,7 @@ Proof
    DISCH_TAC THEN ASM_REWRITE_TAC [] THEN POP_ASSUM K_TAC THEN
    DISCH_THEN(MP_TAC o SPECL
    [``CARD(d:(real->bool)->bool)``, ``d:(real->bool)->bool``]) THEN
-   FIRST_ASSUM(ASSUME_TAC o MATCH_MP DIVISION_OF_FINITE) THEN
+   FIRST_ASSUM(ASSUME_TAC o MATCH_MP DIVISION_OF_FINITE) THEN 
    ASM_REWRITE_TAC[GSYM FINITE_HAS_SIZE] THEN
    DISCH_THEN (X_CHOOSE_TAC ``f:num->real->bool``) THEN
    EXISTS_TAC ``f:num->real->bool`` THEN POP_ASSUM MP_TAC THEN
@@ -1572,7 +1570,7 @@ Proof
     SIMP_TAC std_ss [INTERVAL_LOWERBOUND_NONEMPTY] THEN
     REWRITE_TAC[INTERVAL_NE_EMPTY, IN_INTERVAL] THEN
     MAP_EVERY X_GEN_TAC [``a:real``, ``b:real``] THEN STRIP_TAC THEN
-    MAP_EVERY X_GEN_TAC [``c:real``, ``d:real``] THEN STRIP_TAC THEN
+    MAP_EVERY X_GEN_TAC [``a':real``, ``b':real``] THEN STRIP_TAC THEN
     REPEAT STRIP_TAC THEN
     UNDISCH_TAC ``d division_of s`` THEN DISCH_TAC THEN
     FIRST_X_ASSUM(MP_TAC o REWRITE_RULE [division_of]) THEN
@@ -1580,17 +1578,34 @@ Proof
     DISCH_THEN (CONJUNCTS_THEN2 K_TAC MP_TAC) THEN
     DISCH_THEN (CONJUNCTS_THEN2 MP_TAC K_TAC) THEN
     DISCH_THEN(MP_TAC o SPECL
-     [``interval[a:real,b]``, ``interval[c:real,d]``]) THEN
+     [``interval[a:real,b]``, ``interval[a':real,b']``]) THEN
     (SUBGOAL_THEN
      ``~(interior(interval[a:real,b]) = {}) /\
-       ~(interior(interval[c:real,d]) = {})``
+       ~(interior(interval[a':real,b']) = {})``
      MP_TAC THENL [ASM_MESON_TAC[], ALL_TAC]) THEN
     ASM_REWRITE_TAC [EQ_INTERVAL, GSYM INTERIOR_INTER] THEN
     REWRITE_TAC [INTER_INTERVAL, INTERIOR_INTERVAL, GSYM INTERVAL_EQ_EMPTY] THEN
-    ASM_SIMP_TAC real_ss [min_def, max_def] THEN
-    (POP_ASSUM MP_TAC THEN POP_ASSUM MP_TAC THEN POP_ASSUM MP_TAC THEN
-     POP_ASSUM MP_TAC THEN POP_ASSUM MP_TAC THEN REAL_ARITH_TAC)
- *)
+    ASM_SIMP_TAC real_ss [min_def, max_def] THENL
+   [ (* goal 1 (of 3) *)
+     Cases_on `b <= b'` >> rw [] \\
+     Cases_on `(a = a') /\ (b = b')` >- rw [] \\
+     ONCE_REWRITE_TAC [DISJ_COMM] >> DISJ_TAC \\
+    `b <= a'` by PROVE_TAC [real_lte] \\
+     METIS_TAC [REAL_LE_ANTISYM],
+     (* goal 2 (of 3) *)
+     rw [GSYM real_lte] \\
+     DISJ_TAC >> CCONTR_TAC >> fs [GSYM real_lte],
+     (* goal 3 (of 3) *)
+     rpt STRIP_TAC \\
+     MATCH_MP_TAC REAL_LE_TRANS \\
+     Q.EXISTS_TAC `b` >> art [] \\
+     MATCH_MP_TAC REAL_LE_TRANS \\
+     Q.EXISTS_TAC `a'` >> art [] \\
+     Cases_on `b <= b'` >> Cases_on `a <= a'` >> fs [] (* 4 goals *)
+     >- (FIRST_X_ASSUM MATCH_MP_TAC \\
+         CONJ_TAC >- (DISJ1_TAC >> rw [GSYM real_lte]) \\
+         DISJ_TAC >> CCONTR_TAC >> fs [GSYM real_lte])
+     >> (fs [real_lte] >> PROVE_TAC [REAL_LT_ANTISYM]) ]
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -4536,8 +4551,6 @@ Theorem CONTENT_DOUBLESPLIT :
         &0 < e ==> ?d. &0 < d /\
                 content(interval[a,b] INTER {x | abs(x - c) <= d}) < e
 Proof
-    cheat
-(*
   REPEAT STRIP_TAC THEN
   ASM_CASES_TAC ``content(interval[a:real,b]) = &0`` THENL
    [EXISTS_TAC ``&1:real`` THEN REWRITE_TAC[REAL_LT_01] THEN
@@ -4560,12 +4573,14 @@ Proof
   FIRST_X_ASSUM(ASSUME_TAC o REWRITE_RULE [INTERVAL_NE_EMPTY]) THEN
   ASM_SIMP_TAC std_ss [INTERVAL_LOWERBOUND, INTERVAL_UPPERBOUND, REAL_LT_IMP_LE] THEN
   MATCH_MP_TAC REAL_LET_TRANS THEN EXISTS_TAC ``&2 * d:real`` THEN
-  CONJ_TAC THENL [REWRITE_TAC [min_def, max_def] THEN REAL_ARITH_TAC, ALL_TAC] THEN
-  MATCH_MP_TAC(REAL_ARITH ``&0 < d /\ &3 * d <= x ==> &2 * d < x:real``) THEN
-  ASM_REWRITE_TAC[] THEN
-  FULL_SIMP_TAC std_ss [REAL_EQ_LDIV_EQ, REAL_ARITH ``0 < 3:real``] THEN
-  REAL_ARITH_TAC
- *)
+  Reverse CONJ_TAC
+  >- (MATCH_MP_TAC(REAL_ARITH ``&0 < d /\ &3 * d <= x ==> &2 * d < x:real``) THEN
+      ASM_REWRITE_TAC[] THEN
+      FULL_SIMP_TAC std_ss [REAL_EQ_LDIV_EQ, REAL_ARITH ``0 < 3:real``] THEN
+      REAL_ARITH_TAC) THEN
+  fs [min_def, max_def] THEN
+  Cases_on `a <= c - d` >> Cases_on `b <= c + d` >> fs [] THEN
+  REAL_ASM_ARITH_TAC
 QED
 
 val NEGLIGIBLE_STANDARD_HYPERPLANE = store_thm ("NEGLIGIBLE_STANDARD_HYPERPLANE",
@@ -5981,21 +5996,22 @@ Theorem CONTENT_IMAGE_STRETCH_INTERVAL :
         content(IMAGE (\x. m 1 * x) (interval[a,b]):real->bool) =
         abs(product((1:num)..(1:num)) m) * content(interval[a,b])
 Proof
-    cheat
-(*
-  REPEAT GEN_TAC THEN REWRITE_TAC[content, IMAGE_EQ_EMPTY] THEN
-  COND_CASES_TAC THEN ASM_REWRITE_TAC[REAL_MUL_RZERO] THEN
-  ASM_SIMP_TAC std_ss [SIMP_RULE std_ss [] IMAGE_STRETCH_INTERVAL] THEN
-  RULE_ASSUM_TAC(REWRITE_RULE[INTERVAL_NE_EMPTY]) THEN
-  REWRITE_TAC [min_def, max_def] THEN
-  ASM_SIMP_TAC std_ss [INTERVAL_UPPERBOUND, INTERVAL_LOWERBOUND,
-    REAL_ARITH ``(if a <= b then a else b) <= if a <= b then b else a:real``] THEN
-  ASM_REWRITE_TAC[REAL_ARITH ``(if a <= b then b else a) -
-                              (if a <= b then a else b) = abs(b - a:real)``,
-                  GSYM REAL_SUB_LDISTRIB, ABS_MUL] THEN
-  ASM_SIMP_TAC std_ss [NUMSEG_SING, PRODUCT_SING, FINITE_NUMSEG,
-               REAL_ARITH ``a <= b ==> (abs(b - a) = b - a:real)``]
- *)
+    rpt GEN_TAC >> REWRITE_TAC [content, IMAGE_EQ_EMPTY]
+ >> COND_CASES_TAC >> ASM_REWRITE_TAC [REAL_MUL_RZERO]
+ >> ASM_SIMP_TAC std_ss [SIMP_RULE std_ss [] IMAGE_STRETCH_INTERVAL]
+ >> RULE_ASSUM_TAC (REWRITE_RULE [INTERVAL_NE_EMPTY])
+ >> Know `!x y. min x y <= max x y`
+ >- (RW_TAC std_ss [min_def, max_def] \\
+     MATCH_MP_TAC REAL_LT_IMP_LE >> fs [real_lte])
+ >> DISCH_THEN (ASSUME_TAC o (Q.SPECL [`(m :num->real) 1 * a`,
+                                       `(m :num->real) 1 * b`]))
+ >> ASM_SIMP_TAC std_ss [INTERVAL_UPPERBOUND, INTERVAL_LOWERBOUND]
+ >> Know `!x y. max x y - min x y = abs (y - x)`
+ >- (RW_TAC real_ss [min_def, max_def, abs] >> REAL_ASM_ARITH_TAC)
+ >> Rewr'
+ >> ASM_REWRITE_TAC [GSYM REAL_SUB_LDISTRIB, ABS_MUL]
+ >> ASM_SIMP_TAC std_ss [NUMSEG_SING, PRODUCT_SING, FINITE_NUMSEG,
+                         REAL_ARITH ``a <= b ==> (abs(b - a) = b - a:real)``]
 QED
 
 Theorem HAS_INTEGRAL_STRETCH :
@@ -9464,7 +9480,14 @@ Proof
  >> FIRST_X_ASSUM (MP_TAC o SPECL
    [``{interval[c:real,d]}``, ``interval[c:real,d]``])
  >> ASM_SIMP_TAC std_ss [DIVISION_OF_SELF, SUM_SING, max_def]
- >> cheat
+ >> DISCH_TAC
+ >> Reverse (Cases_on `abs B <= abs (f {})`) >> fs []
+ >- (MATCH_MP_TAC REAL_LE_TRANS \\
+     Q.EXISTS_TAC `B` >> art [ABS_LE])
+ >> MATCH_MP_TAC REAL_LE_TRANS
+ >> Q.EXISTS_TAC `B` >> art []
+ >> MATCH_MP_TAC REAL_LE_TRANS
+ >> Q.EXISTS_TAC `abs B` >> art [ABS_LE]
 QED
 
 val HAS_BOUNDED_SETVARIATION_ON_ABS = store_thm ("HAS_BOUNDED_SETVARIATION_ON_ABS",
@@ -11365,8 +11388,6 @@ Theorem ABSOLUTELY_INTEGRABLE_MAX :
         ==> (\x. (max (f(x)) (g(x))):real)
             absolutely_integrable_on s
 Proof
-    cheat
-(*
   REPEAT GEN_TAC THEN DISCH_TAC THEN
   FIRST_ASSUM(MP_TAC o MATCH_MP ABSOLUTELY_INTEGRABLE_SUB) THEN
   DISCH_THEN(MP_TAC o MATCH_MP ABSOLUTELY_INTEGRABLE_ABS) THEN
@@ -11381,8 +11402,7 @@ Proof
   SIMP_TAC std_ss [max_def] THEN REPEAT STRIP_TAC THEN
   ONCE_REWRITE_TAC [REAL_MUL_SYM] THEN REWRITE_TAC [GSYM real_div] THEN
   SIMP_TAC std_ss [REAL_EQ_LDIV_EQ, REAL_ARITH ``0 < 2:real``] THEN
-  REAL_ARITH_TAC
- *)
+  Cases_on `f x <= g x` >> rw [] >> REAL_ASM_ARITH_TAC
 QED
 
 Theorem ABSOLUTELY_INTEGRABLE_MIN :
@@ -11391,8 +11411,6 @@ Theorem ABSOLUTELY_INTEGRABLE_MIN :
         ==> (\x. (min (f(x)) (g(x))):real)
             absolutely_integrable_on s
 Proof
-    cheat
-(*
   REPEAT GEN_TAC THEN DISCH_TAC THEN
   FIRST_ASSUM(MP_TAC o MATCH_MP ABSOLUTELY_INTEGRABLE_SUB) THEN
   DISCH_THEN(MP_TAC o MATCH_MP ABSOLUTELY_INTEGRABLE_ABS) THEN
@@ -11406,8 +11424,7 @@ Proof
   SIMP_TAC std_ss [min_def] THEN REPEAT STRIP_TAC THEN
   ONCE_REWRITE_TAC [REAL_MUL_SYM] THEN REWRITE_TAC [GSYM real_div] THEN
   SIMP_TAC std_ss [REAL_EQ_LDIV_EQ, REAL_ARITH ``0 < 2:real``] THEN
-  REAL_ARITH_TAC
-*)
+  Cases_on `f x <= g x` >> rw [] >> REAL_ASM_ARITH_TAC
 QED
 
 val ABSOLUTELY_INTEGRABLE_ABS_EQ = store_thm ("ABSOLUTELY_INTEGRABLE_ABS_EQ",
