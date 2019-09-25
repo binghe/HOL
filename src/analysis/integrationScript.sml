@@ -10439,8 +10439,6 @@ Theorem BOUNDED_SETVARIATION_ABSOLUTELY_INTEGRABLE_INTERVAL :
         (\k. integral k f) has_bounded_setvariation_on interval[a,b]
         ==> f absolutely_integrable_on interval[a,b]
 Proof
-    cheat
-(*
   REWRITE_TAC[HAS_BOUNDED_SETVARIATION_ON_INTERVAL] THEN
   REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[absolutely_integrable_on] THEN
   MP_TAC(ISPEC ``IMAGE (\d. sum d (\k. abs(integral k (f:real->real))))
@@ -10515,7 +10513,8 @@ Proof
     MESON_TAC[SET_RULE ``k SUBSET l ==> (i INTER k) SUBSET l``],
     ALL_TAC] THEN
   SUBGOAL_THEN ``p' tagged_division_of interval[a:real,b]`` ASSUME_TAC THENL
-   [REWRITE_TAC[TAGGED_DIVISION_OF] THEN EXPAND_TAC "p'" THEN
+  [ (* goal 1 (of 2) *)
+    REWRITE_TAC[TAGGED_DIVISION_OF] THEN EXPAND_TAC "p'" THEN
     SIMP_TAC std_ss [IN_ELIM_PAIR_THM] THEN
     UNDISCH_TAC ``p tagged_division_of interval [(a,b)]`` THEN DISCH_TAC THEN
     FIRST_ASSUM(MP_TAC o REWRITE_RULE [TAGGED_DIVISION_OF]) THEN
@@ -10653,24 +10652,24 @@ Proof
    ``p' = {x:real,(i INTER l:real->bool) |
             (x,l) IN p /\ i IN d /\ ~(i INTER l = {})}``
   (ASSUME_TAC) THENL
-   [EXPAND_TAC "p'" THEN GEN_REWR_TAC I [EXTENSION] THEN
+  [ EXPAND_TAC "p'" THEN GEN_REWR_TAC I [EXTENSION] THEN
     SIMP_TAC std_ss [FORALL_PROD, IN_ELIM_PAIR_THM] THEN
     SIMP_TAC std_ss [GSPECIFICATION, EXISTS_PROD] THEN
-    MAP_EVERY X_GEN_TAC [``x:real``, ``k:real->bool``] THEN
+    MAP_EVERY X_GEN_TAC [``x:real``, ``k':real->bool``] THEN
     SIMP_TAC std_ss [PAIR_EQ, GSYM CONJ_ASSOC] THEN
     AP_TERM_TAC THEN GEN_REWR_TAC I [FUN_EQ_THM] THEN
-    X_GEN_TAC ``i:real->bool`` THEN SIMP_TAC std_ss [] THEN
+    X_GEN_TAC ``i':real->bool`` THEN SIMP_TAC std_ss [] THEN
     GEN_REWR_TAC (RAND_CONV o ONCE_DEPTH_CONV)
-     [TAUT `A /\ B /\ C /\ D = B /\ C /\ D /\ A`] THEN
+     [TAUT `A /\ B /\ C /\ D <=> B /\ C /\ D /\ A`] THEN
     AP_TERM_TAC THEN GEN_REWR_TAC I [FUN_EQ_THM] THEN
     X_GEN_TAC ``l:real->bool`` THEN SIMP_TAC std_ss [] THEN
-    ASM_CASES_TAC ``k:real->bool = i INTER l`` THEN ASM_SIMP_TAC real_ss [] THEN
+    ASM_CASES_TAC ``k':real->bool = i' INTER l`` THEN ASM_SIMP_TAC real_ss [] THEN
     ASM_SIMP_TAC std_ss [IN_INTER, GSYM MEMBER_NOT_EMPTY] THEN
     EQ_TAC THENL [METIS_TAC[TAGGED_DIVISION_OF], ALL_TAC] THEN
     REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
     DISCH_THEN(X_CHOOSE_THEN ``y:real`` STRIP_ASSUME_TAC) THEN
     ASM_REWRITE_TAC[] THEN
-    FIRST_X_ASSUM(MP_TAC o SPECL [``x:real``, ``i:real->bool``]) THEN
+    FIRST_X_ASSUM(MP_TAC o SPECL [``x:real``, ``i':real->bool``]) THEN
     GEN_REWR_TAC LAND_CONV [MONO_NOT_EQ] THEN
     ASM_REWRITE_TAC[] THEN DISCH_THEN MATCH_MP_TAC THEN
     REWRITE_TAC[GSYM MEMBER_NOT_EMPTY] THEN
@@ -11031,7 +11030,6 @@ Proof
   MATCH_MP_TAC ADDITIVE_CONTENT_DIVISION THEN
   ONCE_REWRITE_TAC[INTER_COMM] THEN MATCH_MP_TAC DIVISION_INTER_1 THEN
   EXISTS_TAC ``interval[a:real,b]`` THEN ASM_REWRITE_TAC[]
-*)
 QED
 
 val BOUNDED_SETVARIATION_ABSOLUTELY_INTEGRABLE = store_thm ("BOUNDED_SETVARIATION_ABSOLUTELY_INTEGRABLE",
@@ -12706,8 +12704,6 @@ Theorem BEPPO_LEVI_INCREASING :
         ==> ?g k. negligible k /\
                   !x. x IN (s DIFF k) ==> ((\k. f k x) --> g x) sequentially
 Proof
-cheat
-(*
   SUBGOAL_THEN
    ``!f:num->real->real s.
         (!k x. x IN s ==> &0 <= (f k x)) /\
@@ -12717,7 +12713,7 @@ cheat
         ==> ?g k. negligible k /\
                   !x. x IN (s DIFF k) ==> ((\k. f k x) --> g x) sequentially``
   ASSUME_TAC THENL
-   [ALL_TAC,
+  [ ALL_TAC,
     REPEAT GEN_TAC THEN STRIP_TAC THEN
     FIRST_X_ASSUM(MP_TAC o ISPECL
      [``\n x:real. f(n:num) x - (f 0 x):real``, ``s:real->bool``]) THEN
@@ -12730,8 +12726,10 @@ cheat
     (f k x - f (0 :num) x) <=
     f (SUC k) x - f (0 :num) x) /\
      (bounded {integral s (\(x :real). f k x - f (0 :num) x) |
-     k IN univ((:num) :num itself)} :bool)`` THEN REPEAT CONJ_TAC THENL
-     [REPEAT STRIP_TAC THEN REWRITE_TAC[REAL_SUB_LE] THEN
+     k IN univ((:num) :num itself)} :bool)`` THEN
+     REPEAT CONJ_TAC THENL (* 5 goals *)
+     [(* goal 1 (of 5) *)
+      REPEAT STRIP_TAC THEN REWRITE_TAC[REAL_SUB_LE] THEN
       MP_TAC(ISPEC
         ``\m n:num. (f m (x:real)) <= (f n x):real``
         TRANSITIVE_STEPWISE_LE) THEN SIMP_TAC real_ss [REAL_LE_REFL] THEN
@@ -12740,10 +12738,13 @@ cheat
         f x' x <= f z x) `` THENL
       [REPEAT GEN_TAC THEN STRIP_TAC THEN METIS_TAC [REAL_LE_TRANS],
        DISCH_TAC THEN ASM_REWRITE_TAC [] THEN POP_ASSUM K_TAC] THEN
-       ASM_MESON_TAC[LE_0],
+      ASM_MESON_TAC[LE_0],
+      (* goal 2 (of 5) *)
       GEN_TAC THEN MATCH_MP_TAC INTEGRABLE_SUB THEN METIS_TAC[ETA_AX],
+      (* goal 3 (of 5) *)
       REPEAT STRIP_TAC THEN
       ASM_SIMP_TAC std_ss [REAL_ARITH ``x - a <= y - a <=> x <= y:real``],
+      (* goal 4 (of 5) *)
       FIRST_X_ASSUM(MP_TAC o REWRITE_RULE [bounded_def]) THEN
       KNOW_TAC ``!k. (\x. (f:num->real->real) k x) integrable_on s`` THENL
       [METIS_TAC [ETA_AX], DISCH_TAC] THEN
@@ -12755,6 +12756,7 @@ cheat
                    X_GEN_TAC ``k:num`` THEN MP_TAC(SPEC ``k:num`` th))) THEN
       REWRITE_TAC [METIS [ETA_AX] ``(\x. f k x) = f k``] THEN
       REAL_ARITH_TAC,
+      (* goal 5 (of 5) *)
       DISCH_TAC THEN ASM_REWRITE_TAC [] THEN POP_ASSUM K_TAC THEN
       KNOW_TAC ``(?(k :real -> bool) (g :real -> real).
         negligible k /\ !(x :real). x IN (s :real -> bool) DIFF k ==>
@@ -12771,14 +12773,13 @@ cheat
       ASM_SIMP_TAC std_ss [] THEN X_GEN_TAC ``x:real`` THEN
       DISCH_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC ``x:real``) THEN
       ASM_SIMP_TAC std_ss [LIM_SEQUENTIALLY, dist] THEN
-      REWRITE_TAC[REAL_ARITH ``a - b - c:real = a - (c + b)``]]] THEN
+      REWRITE_TAC[REAL_ARITH ``a - b - c:real = a - (c + b)``] ] ] THEN
   REPEAT STRIP_TAC THEN
   ABBREV_TAC
    ``g = \i n:num x:real. min (((f:num->real->real) n x) / (&i + &1)) (&1)`` THEN
   SUBGOAL_THEN
    ``!i n. ((g:num->num->real->real) i n) integrable_on s``
   ASSUME_TAC THENL
-
    [REPEAT GEN_TAC THEN EXPAND_TAC "g" THEN
      ONCE_REWRITE_TAC [METIS [] ``(\x. min ((f:num->real->real) n x / (&i + 1)) 1) =
                           (\x. min ((\x. (f n x / (&i + 1))) x) 1)``] THEN
@@ -12792,7 +12793,10 @@ cheat
   ASSUME_TAC THENL
    [REPEAT STRIP_TAC THEN EXPAND_TAC "g" THEN
     KNOW_TAC ``!x y a:real. x <= y ==> min x a <= min y a`` THENL
-    [REWRITE_TAC [min_def] THEN REAL_ARITH_TAC, DISCH_TAC] THEN
+    [RW_TAC real_ss [min_def] THEN 
+     `a < x'` by PROVE_TAC [real_lte] \\
+     `a < y` by PROVE_TAC [REAL_LTE_TRANS] \\
+     PROVE_TAC [REAL_LTE_ANTISYM], DISCH_TAC] THEN
     FIRST_X_ASSUM MATCH_MP_TAC THEN REWRITE_TAC [real_div] THEN
     MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_SIMP_TAC real_ss [REAL_POS, REAL_LE_REFL] THEN
      MATCH_MP_TAC REAL_LE_INV THEN
@@ -12808,12 +12812,14 @@ cheat
      ASM_SIMP_TAC real_ss [] THEN MATCH_MP_TAC REAL_LE_INV THEN
      ASM_SIMP_TAC std_ss [REAL_LE_LT, GSYM REAL_OF_NUM_ADD,
      METIS [REAL_LT, REAL_OF_NUM_ADD, GSYM ADD1, LESS_0]  ``&0 < &n + &1:real``],
-      ALL_TAC] THEN REWRITE_TAC [min_def] THEN REAL_ARITH_TAC,
-    ALL_TAC] THEN
+      ALL_TAC] THEN REWRITE_TAC [min_def] THEN
+      Cases_on `f k x / (&i + 1) <= 1` >> fs [abs],
+     ALL_TAC] THEN
   SUBGOAL_THEN
    ``!i:num x:real. x IN s ==> ?h:real. ((\n. (g i n x):real) --> h) sequentially``
-  MP_TAC THENL
-   [REPEAT STRIP_TAC THEN
+  MP_TAC THENL (* subgoals *)
+  [ (* goal 1 (of 2) *)
+    REPEAT STRIP_TAC THEN
     MP_TAC(ISPECL
      [``\n. (g (i:num) (n:num) (x:real)):real``, ``&1:real``]
      CONVERGENT_BOUNDED_MONOTONE) THEN
@@ -12831,9 +12837,9 @@ cheat
       DISCH_THEN(X_CHOOSE_THEN ``l:real`` (fn th =>
         EXISTS_TAC ``l:real`` THEN MP_TAC th)) THEN
       SIMP_TAC std_ss [LIM_SEQUENTIALLY, dist]],
+    (* goal 2 (of 2) *)
     DISCH_THEN (MP_TAC o SIMP_RULE std_ss [RIGHT_IMP_EXISTS_THM]) THEN
-    SIMP_TAC std_ss [SKOLEM_THM, LEFT_IMP_EXISTS_THM]] THEN
-
+    SIMP_TAC std_ss [SKOLEM_THM, LEFT_IMP_EXISTS_THM] ] THEN
   X_GEN_TAC ``h:num->real->real`` THEN STRIP_TAC THEN
   MP_TAC(GEN ``i:num`` (ISPECL
    [``g(i:num):num->real->real``, ``h(i:num):real->real``,
@@ -12855,12 +12861,15 @@ cheat
       sequentially :bool))`` THENL
    [METIS_TAC [MONO_ALL], POP_ASSUM K_TAC] THEN
   ASM_SIMP_TAC std_ss [] THEN
+  (* stage work *)
   KNOW_TAC ``(!(i :num).
     (bounded
        {integral (s :real -> bool)
           ((g :num -> num -> real -> real) i k) |
         k IN univ((:num) :num itself)} :bool))`` THENL
-   [GEN_TAC THEN REWRITE_TAC[bounded_def] THEN
+  [ (* goal 1 (of 2):
+       !i. bounded {integral s (g i k) | k IN univ(:num)} *)
+    GEN_TAC THEN REWRITE_TAC[bounded_def] THEN
     UNDISCH_TAC ``bounded {integral s (f k) | k IN univ(:num)}`` THEN DISCH_TAC THEN
     FIRST_X_ASSUM(MP_TAC o REWRITE_RULE [bounded_def]) THEN
     DISCH_THEN (X_CHOOSE_TAC ``kk:real``) THEN EXISTS_TAC ``kk:real`` THEN
@@ -12871,7 +12880,9 @@ cheat
     MATCH_MP_TAC(REAL_ARITH
      ``(abs a = a) /\ x <= a ==> x <= a:real``) THEN
     CONJ_TAC THENL
-     [SIMP_TAC std_ss [ABS_ABS],
+    [ (* goal 1.1 (of 2) *)
+      SIMP_TAC std_ss [ABS_ABS],
+      (* goal 1.2 (of 2) *)
       GEN_REWR_TAC RAND_CONV [abs] THEN
       ASM_SIMP_TAC real_ss [INTEGRAL_DROP_POS] THEN
       MATCH_MP_TAC INTEGRAL_ABS_BOUND_INTEGRAL THEN
@@ -12881,20 +12892,32 @@ cheat
                       (((&(i :num)) :real) + (1 :real))) /\
                       ((f :num -> real -> real) (k :num) (x :real) /
                       (((&(i :num)) :real) + (1 :real))) <= f k x`` THENL
-    [CONJ_TAC THENL [REWRITE_TAC [real_div] THEN MATCH_MP_TAC REAL_LE_MUL THEN
-     ASM_SIMP_TAC real_ss [] THEN MATCH_MP_TAC REAL_LE_INV THEN
-     ASM_SIMP_TAC std_ss [REAL_LE_LT, GSYM REAL_OF_NUM_ADD,
-     METIS [REAL_LT, REAL_OF_NUM_ADD, GSYM ADD1, LESS_0]  ``&0 < &n + &1:real``],
-      ALL_TAC] THEN SIMP_TAC real_ss [REAL_LE_LDIV_EQ] THEN
-     GEN_REWR_TAC LAND_CONV [GSYM REAL_MUL_RID] THEN
-     ONCE_REWRITE_TAC [GSYM REAL_SUB_LE] THEN REWRITE_TAC [GSYM REAL_SUB_LDISTRIB] THEN
-     MATCH_MP_TAC REAL_LE_MUL THEN ASM_SIMP_TAC real_ss [] THEN
-     ASM_SIMP_TAC std_ss [REAL_LE_LT, GSYM REAL_OF_NUM_ADD,
-     METIS [REAL_LT, REAL_OF_NUM_ADD, GSYM ADD1, LESS_0]  ``&0 < &n + &1:real``] THEN
-     REWRITE_TAC [REAL_ADD_SUB_ALT, GSYM REAL_LE_LT, REAL_POS], ALL_TAC] THEN
-     REWRITE_TAC [min_def] THEN REAL_ARITH_TAC],
-     DISCH_TAC THEN ASM_REWRITE_TAC [] THEN POP_ASSUM K_TAC THEN
-    SIMP_TAC std_ss [FORALL_AND_THM] THEN STRIP_TAC] THEN
+      [ (* goal 1.2.1 (of 2):
+           0 <= f k x / (&i + 1) /\ f k x / (&i + 1) <= f k x *)
+        CONJ_TAC THENL
+        [ (* goal 1.2.1.1 (of 2) *)
+          REWRITE_TAC [real_div] THEN MATCH_MP_TAC REAL_LE_MUL THEN
+          ASM_SIMP_TAC real_ss [] THEN MATCH_MP_TAC REAL_LE_INV THEN
+          ASM_SIMP_TAC std_ss [REAL_LE_LT, GSYM REAL_OF_NUM_ADD,
+             METIS [REAL_LT, REAL_OF_NUM_ADD, GSYM ADD1, LESS_0]  ``&0 < &n + &1:real``],
+          (* goal 1.2.1.2 (of 2) *)
+          ALL_TAC ] THEN
+        SIMP_TAC real_ss [REAL_LE_LDIV_EQ] THEN
+        GEN_REWR_TAC LAND_CONV [GSYM REAL_MUL_RID] THEN
+        ONCE_REWRITE_TAC [GSYM REAL_SUB_LE] THEN REWRITE_TAC [GSYM REAL_SUB_LDISTRIB] THEN
+        MATCH_MP_TAC REAL_LE_MUL THEN ASM_SIMP_TAC real_ss [] THEN
+        ASM_SIMP_TAC std_ss [REAL_LE_LT, GSYM REAL_OF_NUM_ADD,
+           METIS [REAL_LT, REAL_OF_NUM_ADD, GSYM ADD1, LESS_0]  ``&0 < &n + &1:real``] THEN
+        REWRITE_TAC [REAL_ADD_SUB_ALT, GSYM REAL_LE_LT, REAL_POS],
+        (* goal 1.2.2 (of 2) *)
+        ALL_TAC] THEN
+      RW_TAC std_ss [min_def]
+      >- (NTAC 3 (POP_ASSUM MP_TAC) >> REAL_ARITH_TAC) \\
+      rw [abs] >> NTAC 3 (POP_ASSUM MP_TAC) \\
+      REAL_ARITH_TAC ],
+    (* goal 2 (of 2) *)
+    DISCH_TAC THEN ASM_REWRITE_TAC [] THEN POP_ASSUM K_TAC THEN
+    SIMP_TAC std_ss [FORALL_AND_THM] THEN STRIP_TAC ] THEN
   ABBREV_TAC
    ``Z =
     {x:real | x IN s /\ ~(?l:real. ((\k. f k x) --> l) sequentially)}`` THEN
@@ -12917,7 +12940,8 @@ cheat
   SUBGOAL_THEN
    ``!i x:real. x IN s ==> (h (SUC i) x) <= (h i x):real``
   ASSUME_TAC THENL
-   [MAP_EVERY X_GEN_TAC [``i:num``, ``x:real``] THEN DISCH_TAC THEN
+  [ (* goal 1 (of 2) *)
+    MAP_EVERY X_GEN_TAC [``i:num``, ``x:real``] THEN DISCH_TAC THEN
     MATCH_MP_TAC(ISPEC ``sequentially`` LIM_DROP_LE) THEN
     EXISTS_TAC ``\n. (g:num->num->real->real) (SUC i) n x`` THEN
     EXISTS_TAC ``\n. (g:num->num->real->real) i n x`` THEN
@@ -12925,12 +12949,17 @@ cheat
     MATCH_MP_TAC ALWAYS_EVENTUALLY THEN X_GEN_TAC ``n:num`` THEN
     EXPAND_TAC "g" THEN SIMP_TAC std_ss [] THEN
     KNOW_TAC ``!x y a:real. x <= y ==> min x a <= min y a`` THENL
-    [REWRITE_TAC [min_def] THEN REAL_ARITH_TAC, DISCH_TAC] THEN
+    [ KILL_TAC \\
+      RW_TAC real_ss [min_def] \\
+      `a < x` by PROVE_TAC [real_lte] \\
+      `a < y` by PROVE_TAC [REAL_LTE_TRANS] \\
+      PROVE_TAC [REAL_LTE_ANTISYM], DISCH_TAC] THEN
     FIRST_X_ASSUM MATCH_MP_TAC THEN
     REWRITE_TAC[real_div] THEN MATCH_MP_TAC REAL_LE_LMUL_IMP THEN
     ASM_SIMP_TAC std_ss [] THEN MATCH_MP_TAC REAL_LE_INV2 THEN
     REWRITE_TAC[GSYM REAL_OF_NUM_SUC] THEN SIMP_TAC real_ss [REAL_POS],
-    ASM_SIMP_TAC std_ss []] THEN
+    (* goal 2 (of 2) *)
+    ASM_SIMP_TAC std_ss [] ] THEN
   UNDISCH_TAC ``bounded {integral s (f k) | k IN univ(:num)}`` THEN DISCH_TAC THEN
   FIRST_X_ASSUM(MP_TAC o REWRITE_RULE [BOUNDED_POS]) THEN
   SIMP_TAC std_ss [FORALL_IN_GSPEC, IN_UNIV] THEN
@@ -12938,7 +12967,8 @@ cheat
   SUBGOAL_THEN
    ``!i. abs(integral s ((h:num->real->real) i)) <= B / (&i + &1)``
   ASSUME_TAC THENL
-   [X_GEN_TAC ``i:num`` THEN
+  [ (* goal 1 (of 2) *)
+    X_GEN_TAC ``i:num`` THEN
     MATCH_MP_TAC(ISPEC ``sequentially`` LIM_ABS_UBOUND) THEN
     EXISTS_TAC ``\k. integral s ((g:num->num->real->real) i k)`` THEN
     ASM_REWRITE_TAC[TRIVIAL_LIMIT_SEQUENTIALLY] THEN
@@ -12947,44 +12977,56 @@ cheat
     EXISTS_TAC
      ``(integral s (\x. inv(&i + &1) * (f:num->real->real) n x))`` THEN
     CONJ_TAC THENL
-     [MATCH_MP_TAC INTEGRAL_ABS_BOUND_INTEGRAL THEN ASM_SIMP_TAC std_ss [] THEN
+    [ (* goal 1.1 (of 2) *)
+      MATCH_MP_TAC INTEGRAL_ABS_BOUND_INTEGRAL THEN ASM_SIMP_TAC std_ss [] THEN
       CONJ_TAC THENL [METIS_TAC [INTEGRABLE_CMUL, ETA_AX], ALL_TAC] THEN
       X_GEN_TAC ``x:real`` THEN DISCH_TAC THEN EXPAND_TAC "g" THEN
       KNOW_TAC ``0 <= ((f :num -> real -> real) (n :num) (x :real) /
                       (((&(i :num)) :real) + (1 :real))) /\
                       ((f :num -> real -> real) (n :num) (x :real) /
                       (((&(i :num)) :real) + (1 :real))) <= inv (&i + 1) * f n x`` THENL
-    [CONJ_TAC THENL [REWRITE_TAC [real_div] THEN MATCH_MP_TAC REAL_LE_MUL THEN
-     ASM_SIMP_TAC real_ss [] THEN MATCH_MP_TAC REAL_LE_INV THEN
-     ASM_SIMP_TAC std_ss [REAL_LE_LT, GSYM REAL_OF_NUM_ADD,
-     METIS [REAL_LT, REAL_OF_NUM_ADD, GSYM ADD1, LESS_0] ``&0 < &n + &1:real``],
-      ALL_TAC] THEN SIMP_TAC real_ss [REAL_LE_LDIV_EQ] THEN
-     GEN_REWR_TAC RAND_CONV [REAL_ARITH ``a * b * c = b * (a * c:real)``] THEN
-     GEN_REWR_TAC LAND_CONV [GSYM REAL_MUL_RID] THEN
-     ONCE_REWRITE_TAC [GSYM REAL_SUB_LE] THEN REWRITE_TAC [GSYM REAL_SUB_LDISTRIB] THEN
-     MATCH_MP_TAC REAL_LE_MUL THEN ASM_SIMP_TAC real_ss [] THEN
-     ASM_SIMP_TAC std_ss [REAL_LE_LT, GSYM REAL_OF_NUM_ADD,
-     METIS [REAL_LT, REAL_OF_NUM_ADD, GSYM ADD1, LESS_0] ``&0 < &n + &1:real``] THEN
-     DISJ2_TAC THEN CONV_TAC SYM_CONV THEN REWRITE_TAC [REAL_SUB_0] THEN
-     MATCH_MP_TAC REAL_MUL_LINV THEN SIMP_TAC real_ss [REAL_POS],
-     REWRITE_TAC [min_def] THEN REAL_ARITH_TAC],
-     ONCE_REWRITE_TAC [METIS [] ``(\x. inv (&(i + 1)) * (f:num->real->real) n x) =
+      [ (* goal 1.1.1 (of 2) *)
+        CONJ_TAC THENL
+        [ (* goal 1.1.1.1 (of 2) *)
+          REWRITE_TAC [real_div] THEN MATCH_MP_TAC REAL_LE_MUL THEN
+          ASM_SIMP_TAC real_ss [] THEN MATCH_MP_TAC REAL_LE_INV THEN
+          ASM_SIMP_TAC std_ss [REAL_LE_LT, GSYM REAL_OF_NUM_ADD,
+             METIS [REAL_LT, REAL_OF_NUM_ADD, GSYM ADD1, LESS_0] ``&0 < &n + &1:real``],
+          (* goal 1.1.1.2 (of 2) *)
+          ALL_TAC ] THEN
+        SIMP_TAC real_ss [REAL_LE_LDIV_EQ] THEN
+        GEN_REWR_TAC RAND_CONV [REAL_ARITH ``a * b * c = b * (a * c:real)``] THEN
+        GEN_REWR_TAC LAND_CONV [GSYM REAL_MUL_RID] THEN
+        ONCE_REWRITE_TAC [GSYM REAL_SUB_LE] THEN REWRITE_TAC [GSYM REAL_SUB_LDISTRIB] THEN
+        MATCH_MP_TAC REAL_LE_MUL THEN ASM_SIMP_TAC real_ss [] THEN
+        ASM_SIMP_TAC std_ss [REAL_LE_LT, GSYM REAL_OF_NUM_ADD,
+           METIS [REAL_LT, REAL_OF_NUM_ADD, GSYM ADD1, LESS_0] ``&0 < &n + &1:real``] THEN
+        DISJ2_TAC THEN CONV_TAC SYM_CONV THEN REWRITE_TAC [REAL_SUB_0] THEN
+        MATCH_MP_TAC REAL_MUL_LINV THEN SIMP_TAC real_ss [REAL_POS],
+        (* goal 1.1.2 (of 2) *)
+        RW_TAC real_ss [min_def] THEN
+        NTAC 3 (POP_ASSUM MP_TAC) >> REAL_ARITH_TAC ],
+      (* goal 1.2 (of 2) *)
+      ONCE_REWRITE_TAC [METIS [] ``(\x. inv (&(i + 1)) * (f:num->real->real) n x) =
                              (\x. inv (&(i + 1)) * (\x. f n x) x)``] THEN
-     KNOW_TAC ``(\x. (f:num->real->real) n x) integrable_on s`` THENL
-     [METIS_TAC [ETA_AX], DISCH_TAC] THEN
-     ASM_SIMP_TAC real_ss [INTEGRAL_CMUL] THEN
-     ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
-     SIMP_TAC real_ss [REAL_LE_RDIV_EQ] THEN
-     SIMP_TAC real_ss [REAL_MUL_LINV, GSYM REAL_MUL_ASSOC] THEN
-     MATCH_MP_TAC(REAL_ARITH ``abs x <= a ==> x <= a:real``) THEN
-     METIS_TAC [ETA_AX]], ALL_TAC] THEN
+      KNOW_TAC ``(\x. (f:num->real->real) n x) integrable_on s`` THENL
+      [METIS_TAC [ETA_AX], DISCH_TAC] THEN
+      ASM_SIMP_TAC real_ss [INTEGRAL_CMUL] THEN
+      ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
+      SIMP_TAC real_ss [REAL_LE_RDIV_EQ] THEN
+      SIMP_TAC real_ss [REAL_MUL_LINV, GSYM REAL_MUL_ASSOC] THEN
+      MATCH_MP_TAC(REAL_ARITH ``abs x <= a ==> x <= a:real``) THEN
+      METIS_TAC [ETA_AX] ],
+    (* goal 2 (of 2) *)
+    ALL_TAC ] THEN
   KNOW_TAC ``(!(x :real).
     x IN (s :real -> bool) ==>
     (((\(k :num). (h :num -> real -> real) k x) -->
       if x IN (Z :real -> bool) then (1 :real) else (0 :real))
        sequentially :bool)) /\
    (bounded {integral s (h k) | k | T} :bool)`` THENL
-   [SIMP_TAC std_ss [bounded_def, FORALL_IN_GSPEC] THEN CONJ_TAC THENL
+  [ (* goal 1 (of 2) *)
+    SIMP_TAC std_ss [bounded_def, FORALL_IN_GSPEC] THEN CONJ_TAC THENL
      [ALL_TAC,
       EXISTS_TAC ``B:real`` THEN X_GEN_TAC ``i:num`` THEN
       MATCH_MP_TAC REAL_LE_TRANS THEN
@@ -12995,7 +13037,8 @@ cheat
       ASM_SIMP_TAC std_ss [REAL_LE_MUL, REAL_POS, REAL_LT_IMP_LE]] THEN
     X_GEN_TAC ``x:real`` THEN DISCH_TAC THEN
     ASM_CASES_TAC ``(x:real) IN Z`` THEN ASM_REWRITE_TAC[] THENL
-     [MATCH_MP_TAC LIM_EVENTUALLY THEN
+    [ (* goal 1.1 (of 2) *)
+      MATCH_MP_TAC LIM_EVENTUALLY THEN
       UNDISCH_TAC ``(x:real) IN Z`` THEN EXPAND_TAC "Z" THEN
       SIMP_TAC std_ss [GSPECIFICATION] THEN ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
       MP_TAC(GEN ``B:real`` (ISPECL
@@ -13033,7 +13076,8 @@ cheat
       DISCH_THEN (X_CHOOSE_TAC ``N:num``) THEN EXISTS_TAC ``N:num`` THEN
       X_GEN_TAC ``n:num`` THEN DISCH_TAC THEN
       KNOW_TAC ``!a b. (min a b = b) <=> b <= a:real`` THENL
-      [REWRITE_TAC [min_def] THEN REAL_ARITH_TAC, DISCH_TAC] THEN
+      [ RW_TAC real_ss [min_def] THEN
+        POP_ASSUM MP_TAC >> REAL_ARITH_TAC, DISCH_TAC ] THEN
       FIRST_X_ASSUM (fn th => REWRITE_TAC [th]) THEN
       SIMP_TAC real_ss [REAL_LE_RDIV_EQ, REAL_MUL_LID] THEN
       UNDISCH_TAC ``&i + 1 < abs ((f:num->real->real) N x)`` THEN DISCH_TAC THEN
@@ -13041,6 +13085,7 @@ cheat
       FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REAL_ARITH
        ``a < abs N ==> &0 <= N:real /\ N <= n ==> a <= n:real``)) THEN
       ASM_SIMP_TAC std_ss [],
+      (* goal 1.2 (of 2) *)
       UNDISCH_TAC ``~((x:real) IN Z)`` THEN EXPAND_TAC "Z" THEN
       SIMP_TAC std_ss [GSPECIFICATION] THEN
       ASM_SIMP_TAC std_ss [LEFT_IMP_EXISTS_THM] THEN
@@ -13070,7 +13115,8 @@ cheat
       MATCH_MP_TAC ALWAYS_EVENTUALLY THEN X_GEN_TAC ``n:num`` THEN
       EXPAND_TAC "g" THEN SIMP_TAC std_ss [] THEN
       KNOW_TAC ``!a x:real. &0 <= x /\ x <= a ==> abs(min x (&1)) <= a`` THENL
-      [REWRITE_TAC [min_def] THEN REAL_ARITH_TAC, DISCH_TAC] THEN
+      [ RW_TAC real_ss [min_def] THEN
+        NTAC 3 (POP_ASSUM MP_TAC) >> REAL_ARITH_TAC, DISCH_TAC ] THEN
       FIRST_X_ASSUM MATCH_MP_TAC THEN
       ASM_SIMP_TAC real_ss [REAL_LE_DIV, REAL_LE_ADD, REAL_POS] THEN
       REWRITE_TAC [real_div] THEN MATCH_MP_TAC REAL_LE_MUL2 THEN
@@ -13079,7 +13125,8 @@ cheat
       SIMP_TAC std_ss [REAL_LE_REFL] THEN CONJ_TAC THENL
       [MATCH_MP_TAC REAL_LE_INV THEN SIMP_TAC real_ss [REAL_POS], ALL_TAC] THEN
       MATCH_MP_TAC(REAL_ARITH ``abs x <= a ==> x <= a:real``) THEN
-      ASM_SIMP_TAC real_ss []],
+      ASM_SIMP_TAC real_ss [] ],
+    (* goal 2 (of 2) *)
     DISCH_TAC THEN ASM_REWRITE_TAC [] THEN POP_ASSUM K_TAC THEN
     DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
     MATCH_MP_TAC(MESON[LIM_UNIQUE, TRIVIAL_LIMIT_SEQUENTIALLY]
@@ -13116,8 +13163,7 @@ cheat
         DISCH_THEN SUBST1_TAC THEN
         MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] NEGLIGIBLE_SUBSET) THEN
         SIMP_TAC arith_ss [SUBSET_DEF, GSPECIFICATION] THEN
-        EXPAND_TAC "Z" THEN SIMP_TAC real_ss [GSPECIFICATION]]]]
-*)
+        EXPAND_TAC "Z" THEN SIMP_TAC real_ss [GSPECIFICATION]]] ]
 QED
 
 val BEPPO_LEVI_DECREASING = store_thm ("BEPPO_LEVI_DECREASING",
@@ -15052,8 +15098,6 @@ Theorem EQUIINTEGRABLE_REFLECT :
         fs equiintegrable_on interval[a,b]
         ==> {(\x. f(-x)) | f IN fs} equiintegrable_on interval[-b,-a]
 Proof
-    cheat
-(*
   REPEAT GEN_TAC THEN REWRITE_TAC[equiintegrable_on] THEN
   SIMP_TAC std_ss [RIGHT_FORALL_IMP_THM, IMP_CONJ, FORALL_IN_GSPEC] THEN
   DISCH_TAC THEN DISCH_TAC THEN
@@ -15077,13 +15121,15 @@ Proof
    ``IMAGE (\(x,k). (-x:real,IMAGE (\x. -x) (k:real->bool))) p``) THEN
   KNOW_TAC ``IMAGE (\(x,k). (-x,IMAGE (\x. -x) k)) p tagged_division_of
              interval [(a,b)]`` THENL
-   [UNDISCH_TAC ``p tagged_division_of interval [(-b,-a)]`` THEN DISCH_TAC THEN
+  [ (* goal 1 (of 2) *)
+    UNDISCH_TAC ``p tagged_division_of interval [(-b,-a)]`` THEN DISCH_TAC THEN
     FIRST_X_ASSUM(MP_TAC o REWRITE_RULE [TAGGED_DIVISION_OF]) THEN
     REWRITE_TAC[TAGGED_DIVISION_OF] THEN
     STRIP_TAC THEN ASM_SIMP_TAC std_ss [IMAGE_FINITE] THEN
     SIMP_TAC std_ss [RIGHT_FORALL_IMP_THM, IMP_CONJ, lemma] THEN
-    REPEAT CONJ_TAC THENL
-     [MAP_EVERY X_GEN_TAC [``x:real``, ``k:real->bool``] THEN DISCH_TAC THEN
+    REPEAT CONJ_TAC THENL (* 3 subgoals *)
+    [ (* goal 1.1 (of 3) *)
+      MAP_EVERY X_GEN_TAC [``x:real``, ``k:real->bool``] THEN DISCH_TAC THEN
       ASM_SIMP_TAC std_ss [FUN_IN_IMAGE] THEN CONJ_TAC THENL
        [SIMP_TAC std_ss [SUBSET_DEF, FORALL_IN_IMAGE] THEN
         ONCE_REWRITE_TAC[GSYM IN_INTERVAL_REFLECT] THEN
@@ -15096,6 +15142,7 @@ Proof
          (REPEAT_TCL CHOOSE_THEN SUBST_ALL_TAC)
         THENL [ASM_MESON_TAC[TAGGED_DIVISION_OF], ALL_TAC] THEN
         ASM_MESON_TAC[REAL_NEG_NEG]],
+      (* goal 1.2 (of 3) *)
       MAP_EVERY X_GEN_TAC [``x:real``, ``k:real->bool``] THEN DISCH_TAC THEN
       MAP_EVERY X_GEN_TAC [``y:real``, ``l:real->bool``] THEN DISCH_TAC THEN
       FIRST_X_ASSUM(MP_TAC o SPECL
@@ -15108,6 +15155,7 @@ Proof
        ``(!x. f(f x) = x)
         ==> (s INTER t = {}) ==> (IMAGE f s INTER IMAGE f t = {})``) THEN
       SIMP_TAC std_ss [REAL_NEG_NEG],
+      (* goal 1.3 (of 3) *)
       GEN_REWR_TAC I [EXTENSION] THEN
       ONCE_REWRITE_TAC[GSYM IN_INTERVAL_REFLECT] THEN
       FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN X_GEN_TAC ``y:real`` THEN
@@ -15125,7 +15173,7 @@ Proof
        [SIMP_TAC std_ss [GSYM IMAGE_COMPOSE, o_DEF, REAL_NEG_NEG, IMAGE_ID],
         ALL_TAC] THEN
       X_GEN_TAC ``t:real->bool`` THEN BINOP_TAC THENL
-       [SIMP_TAC std_ss [IN_IMAGE, EXISTS_PROD, PAIR_EQ] THEN
+      [ SIMP_TAC std_ss [IN_IMAGE, EXISTS_PROD, PAIR_EQ] THEN
         SUBGOAL_THEN ``!k:real->bool. IMAGE (\x. -x) (IMAGE (\x. -x) k) = k``
         MP_TAC THENL
          [SIMP_TAC std_ss [GSYM IMAGE_COMPOSE, o_DEF, REAL_NEG_NEG, IMAGE_ID],
@@ -15133,9 +15181,13 @@ Proof
         SIMP_TAC std_ss [IN_IMAGE, EXISTS_PROD] THEN EQ_TAC THENL
         [STRIP_TAC THEN
          ASM_SIMP_TAC std_ss [IMAGE_IMAGE, o_DEF, IMAGE_ID, REAL_NEG_NEG] THEN
-         METIS_TAC [], STRIP_TAC THEN EXISTS_TAC ``x:real`` THEN
+         METIS_TAC [], 
+         DISCH_THEN (X_CHOOSE_TAC ``x:real``) THEN
+         EXISTS_TAC ``x:real`` THEN
          EXISTS_TAC ``IMAGE (\x:real. -x) t`` THEN
-         ASM_SIMP_TAC std_ss [IMAGE_IMAGE, o_DEF, IMAGE_ID, REAL_NEG_NEG]]]],
+         ASM_SIMP_TAC std_ss [IMAGE_IMAGE, o_DEF, IMAGE_ID,
+                              REAL_NEG_NEG] ] ] ],
+    (* goal 2 (of 2) *)
     DISCH_TAC THEN ASM_REWRITE_TAC [] THEN POP_ASSUM K_TAC THEN
     KNOW_TAC ``(d :real -> real -> bool) FINE
       IMAGE (\ ((x :real),(k :real -> bool)). (-x,IMAGE (\ (x :real). -x) k))
@@ -15175,8 +15227,7 @@ Proof
       SUBGOAL_THEN ``(\x. -x):real->real = (\x. -(&1) * x + 0)`` SUBST1_TAC
       THENL [REWRITE_TAC[FUN_EQ_THM] THEN REAL_ARITH_TAC, ALL_TAC] THEN
       SIMP_TAC std_ss [CONTENT_IMAGE_AFFINITY_INTERVAL, ABS_NEG] THEN
-      SIMP_TAC std_ss [POW_1, REAL_MUL_LID, ABS_N]]]
-*)
+      SIMP_TAC std_ss [POW_1, REAL_MUL_LID, ABS_N]] ]
 QED
 
 (* ------------------------------------------------------------------------- *)
