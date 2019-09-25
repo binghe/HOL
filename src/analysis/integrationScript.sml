@@ -17173,8 +17173,6 @@ val lemma4 = prove (
               ?c. c IN interval[a,b] /\
                   (integral (interval[a,b]) (\x. g(x) * f(x)) =
                    integral (interval[c,b]) f)``,
-cheat
-(*
     REPEAT GEN_TAC THEN STRIP_TAC THEN
     SUBGOAL_THEN
      ``?m M. IMAGE (\x. integral (interval[x,b]) (f:real->real))
@@ -17196,7 +17194,8 @@ cheat
                 (\x. sum ((1:num)..n)
                     (\k. if &k / &n <= (g:real->real) x then inv(&n) * f x else 0)))``
     MP_TAC THENL
-     [X_GEN_TAC ``n:num`` THEN ASM_CASES_TAC ``n = 0:num`` THENL
+    [ (* goal 1 (of 2) *)
+      X_GEN_TAC ``n:num`` THEN ASM_CASES_TAC ``n = 0:num`` THENL
        [ASM_SIMP_TAC arith_ss [SUM_CLAUSES_NUMSEG, INTEGRAL_0] THEN
         EXISTS_TAC ``b:real`` THEN ASM_SIMP_TAC std_ss [ENDS_IN_INTERVAL] THEN
         SIMP_TAC std_ss [INTEGRAL_NULL, CONTENT_EQ_0, REAL_LE_REFL],
@@ -17216,14 +17215,16 @@ cheat
          (integral (interval[a,b]) (\x. if y <= (g:real->real) x then f x else 0) =
           integral (interval[d,b]) (f:real->real))``
       MP_TAC THENL
-       [X_GEN_TAC ``y:real`` THEN
+      [ (* goal 1.1 (of 2) *)
+        X_GEN_TAC ``y:real`` THEN
         SUBGOAL_THEN
         ``({x | y <= (g:real->real) x} = {}) \/
           ({x | y <= (g:real->real) x} = univ(:real)) \/
           (?a. {x | y <= (g:real->real) x} = {x | a <= x}) \/
           (?a. {x | y <= (g:real->real) x} = {x | a < x})``
         MP_TAC THENL
-         [MATCH_MP_TAC(TAUT `(~a /\ ~b ==> c \/ d) ==> a \/ b \/ c \/ d`) THEN
+        [ (* goal 1.1.1 (of 2) *)
+          MATCH_MP_TAC(TAUT `(~a /\ ~b ==> c \/ d) ==> a \/ b \/ c \/ d`) THEN
           DISCH_TAC THEN
           MP_TAC(ISPEC ``IMAGE (\x. x) {x | y <= (g:real->real) x}`` INF) THEN
           ASM_SIMP_TAC real_ss [FORALL_IN_IMAGE, GSPECIFICATION, IMAGE_EQ_EMPTY] THEN
@@ -17241,6 +17242,7 @@ cheat
           X_GEN_TAC ``x:real`` THEN
           REWRITE_TAC[GSYM REAL_NOT_LE] THEN
           METIS_TAC[REAL_LE_TOTAL, REAL_LT_ANTISYM, REAL_LE_TRANS],
+          (* goal 1.1.2 (of 2) *)
           SIMP_TAC std_ss [EXTENSION, IN_UNIV, NOT_IN_EMPTY, GSPECIFICATION] THEN
           DISCH_THEN(DISJ_CASES_THEN2 ASSUME_TAC MP_TAC) THENL
            [EXISTS_TAC ``b:real`` THEN ASM_REWRITE_TAC[] THEN
@@ -17253,7 +17255,7 @@ cheat
             ALL_TAC] THEN
           SIMP_TAC std_ss [METIS [OR_EXISTS_THM]
            ``(?(a :real). (!(x :real). (y :real) <= (g :real -> real) x <=> a <= x)) \/
-             (?(a :real). !(x :real). y <= g x <=> a < x) =
+             (?(a :real). !(x :real). y <= g x <=> a < x) <=>
               ?a. ((\a. !x. y <= (g:real->real) x <=> a <= x) a \/
                    (\a. !x. y <= (g:real->real) x <=> a < x) a)``] THEN
           DISCH_THEN(X_CHOOSE_THEN ``d:real`` ASSUME_TAC) THEN
@@ -17291,7 +17293,8 @@ cheat
                       GSPECIFICATION, IN_SING] THEN
           FIRST_X_ASSUM DISJ_CASES_TAC THEN ASM_REWRITE_TAC[] THEN
           UNDISCH_TAC ``~(d < a:real)`` THEN UNDISCH_TAC ``~(b < d:real)`` THEN
-          REAL_ARITH_TAC],
+          REAL_ARITH_TAC ],
+        (* goal 1.2 (of 2) *)
         DISCH_THEN(MP_TAC o GEN ``k:num`` o SPEC ``&k / &n:real``) THEN
         SIMP_TAC std_ss [SKOLEM_THM, FORALL_AND_THM, LEFT_IMP_EXISTS_THM] THEN
         X_GEN_TAC ``d:num->real`` THEN STRIP_TAC THEN
@@ -17304,9 +17307,11 @@ cheat
         MATCH_MP_TAC(REWRITE_RULE[CONVEX_INDEXED]
          (CONJUNCT1(SPEC_ALL CONVEX_INTERVAL))) THEN
         SIMP_TAC real_ss [SUM_CONST_NUMSEG, ADD_SUB, REAL_LE_INV_EQ, REAL_POS] THEN
-        ASM_SIMP_TAC real_ss [REAL_MUL_RINV, REAL_OF_NUM_EQ] THEN ASM_SET_TAC[]],
+        ASM_SIMP_TAC real_ss [REAL_MUL_RINV, REAL_OF_NUM_EQ] THEN ASM_SET_TAC[] ],
+      (* goal 2 (of 2) *)
       SIMP_TAC std_ss [SKOLEM_THM, LEFT_IMP_EXISTS_THM, FORALL_AND_THM] THEN
-      X_GEN_TAC ``c:num->real`` THEN DISCH_THEN(STRIP_ASSUME_TAC o GSYM)] THEN
+      X_GEN_TAC ``c:num->real`` THEN DISCH_THEN(STRIP_ASSUME_TAC o GSYM) ] THEN
+    (* stage work *)
     SUBGOAL_THEN ``compact(interval[a:real,b])`` MP_TAC THENL
      [REWRITE_TAC[COMPACT_INTERVAL], REWRITE_TAC[compact]] THEN
     DISCH_THEN(MP_TAC o SPEC ``c:num->real``) THEN
@@ -17400,9 +17405,7 @@ cheat
       DISCH_THEN(MP_TAC o SPEC ``d:real``) THEN ASM_REWRITE_TAC[] THEN
       REWRITE_TAC[CONTINUOUS_WITHIN_SEQUENTIALLY] THEN
       DISCH_THEN(MP_TAC o SPEC ``(c:num->real) o (s:num->num)``) THEN
-      ASM_REWRITE_TAC[] THEN ASM_SIMP_TAC std_ss [o_DEF]]
-*)
-);
+      ASM_REWRITE_TAC[] THEN ASM_SIMP_TAC std_ss [o_DEF]]);
 
 val SECOND_MEAN_VALUE_THEOREM_FULL = store_thm ("SECOND_MEAN_VALUE_THEOREM_FULL",
  ``!f:real->real g a b.
