@@ -1,6 +1,6 @@
 (* ========================================================================= *)
 (*                                                                           *)
-(*     Henstock-Kurzweil (gauge) Integration Theor (Univariate)              *)
+(*           Henstock-Kurzweil (gauge) Integration  (Univariate)             *)
 (*                                                                           *)
 (*        (c) Copyright, John Harrison 1998-2008                             *)
 (*        (c) Copyright, Marco Maggesi 2014                                  *)
@@ -3625,8 +3625,6 @@ Theorem OPERATIVE_DIVISION :
         monoidal op /\ operative op f /\ d division_of interval[a,b]
     ==> (iterate(op) d f = f(interval[a,b]))
 Proof
-    cheat
-(*
   REPEAT GEN_TAC THEN CONV_TAC(RAND_CONV SYM_CONV) THEN
   completeInduct_on
    `CARD (division_points (interval[a,b]:real->bool) d)` THEN
@@ -3648,7 +3646,8 @@ Proof
   UNDISCH_TAC ``d division_of interval [(a,b)]`` THEN DISCH_TAC THEN
   FIRST_ASSUM(ASSUME_TAC o MATCH_MP DIVISION_OF_FINITE) THEN
   ASM_CASES_TAC ``division_points (interval[a,b]:real->bool) d = {}`` THENL
-  [DISCH_THEN(K ALL_TAC) THEN
+  [(* goal 1 (of 2) *)
+   DISCH_THEN(K ALL_TAC) THEN
    SUBGOAL_THEN
    ``!i. i IN d
      ==> ?u v:real. (i = interval[u,v]) /\
@@ -3776,7 +3775,10 @@ Proof
   ASM_SIMP_TAC std_ss [DIVISION_POINTS_FINITE] THEN
   ASM_SIMP_TAC std_ss [INTERVAL_SPLIT] THEN
   KNOW_TAC ``(max a c = c:real) /\ (min b c = c:real)`` THENL
-  [REWRITE_TAC [min_def, max_def] THEN ASM_REAL_ARITH_TAC, STRIP_TAC] THEN
+  [ CONJ_TAC >- (Suff `a <= c` >- METIS_TAC [REAL_MAX_ALT] \\
+                 MATCH_MP_TAC REAL_LT_IMP_LE >> art []) \\
+    Suff `c <= b` >- METIS_TAC [REAL_MIN_ALT] \\
+    MATCH_MP_TAC REAL_LT_IMP_LE >> art [], STRIP_TAC ] THEN
   ASM_SIMP_TAC std_ss [] THEN POP_ASSUM K_TAC THEN POP_ASSUM K_TAC THEN
   MAP_EVERY ABBREV_TAC
   [``d1:(real->bool)->bool =
@@ -3798,8 +3800,11 @@ Proof
    DISCH_THEN(MP_TAC o SPECL [``a:real``, ``b:real``, ``c:real``]) THEN
    ASM_SIMP_TAC std_ss [INTERVAL_SPLIT] THEN
    KNOW_TAC ``(max a cb = cb:real) /\ (min b cb = cb:real)`` THENL
-  [REWRITE_TAC [min_def, max_def] THEN ASM_REAL_ARITH_TAC, STRIP_TAC] THEN
-  ASM_SIMP_TAC std_ss [],
+   [ CONJ_TAC >- (Suff `a <= cb` >- METIS_TAC [REAL_MAX_ALT] \\
+                  MATCH_MP_TAC REAL_LT_IMP_LE >> art []) \\
+     Suff `cb <= b` >- METIS_TAC [REAL_MIN_ALT] \\
+     MATCH_MP_TAC REAL_LT_IMP_LE >> art [], STRIP_TAC ] THEN
+   ASM_SIMP_TAC std_ss [],
    ALL_TAC] THEN
   MATCH_MP_TAC EQ_TRANS THEN
   EXISTS_TAC
@@ -3858,7 +3863,6 @@ Proof
    SUBGOAL_THEN ``?a b:real. m = interval[a,b]`` STRIP_ASSUME_TAC THENL
    [METIS_TAC[division_of], ALL_TAC] THEN
    ASM_SIMP_TAC std_ss [INTERVAL_SPLIT] THEN MESON_TAC[])
-*)
 QED
 
 val lemma = Q.prove (
@@ -8407,8 +8411,6 @@ Theorem MONOTONE_CONVERGENCE_INCREASING :
         ==> g integrable_on s /\
             ((\k. integral s (f k)) --> integral s g) sequentially
 Proof
-    cheat
-(*
   SUBGOAL_THEN
    ``!f:num->real->real g s.
         (!k x. x IN s ==> &0 <= (f k x)) /\
@@ -8419,7 +8421,7 @@ Proof
         ==> g integrable_on s /\
             ((\k. integral s (f k)) --> integral s g) sequentially``
   ASSUME_TAC THENL
-   [ALL_TAC,
+  [ ALL_TAC,
     REPEAT GEN_TAC THEN STRIP_TAC THEN
     FIRST_X_ASSUM(MP_TAC o ISPECL
      [``\n x:real. f(SUC n) x - f (0:num) x:real``,
@@ -8440,14 +8442,19 @@ Proof
      (bounded
         {integral s (\(x :real). f (SUC k) x - f (0 :num) x) |
          k IN univ((:num) :num itself)} :bool)`` THEN REPEAT CONJ_TAC THENL
-     [REPEAT STRIP_TAC THEN REWRITE_TAC[REAL_SUB_LE] THEN
+     [(* goal 1 (of 6) *)
+      REPEAT STRIP_TAC THEN REWRITE_TAC[REAL_SUB_LE] THEN
       MP_TAC(ISPEC
         ``\m n:num. (f m (x:real)) <= (f n x):real``
         TRANSITIVE_STEPWISE_LE) THEN
-      SIMP_TAC std_ss [REAL_LE_TRANS, REAL_LE_REFL] THEN METIS_TAC[REAL_LE_TRANS, LE_0],
+      SIMP_TAC std_ss [REAL_LE_TRANS, REAL_LE_REFL] THEN
+      METIS_TAC[REAL_LE_TRANS, LE_0],
+      (* goal 2 (of 6) *)
       GEN_TAC THEN MATCH_MP_TAC INTEGRABLE_SUB THEN ASM_SIMP_TAC std_ss [ETA_AX],
+      (* goal 3 (of 6) *)
       REPEAT STRIP_TAC THEN REWRITE_TAC[REAL_SUB_LE] THEN
       ASM_SIMP_TAC std_ss [REAL_ARITH ``x - a <= y - a <=> x <= y:real``],
+      (* goal 4 (of 6) *)
       REPEAT STRIP_TAC THEN
       ONCE_REWRITE_TAC [METIS [] ``!k. (f (SUC k) x - (f:num->real->real) 0 x) =
                                ((\k. f (SUC k) x) k - (\k. f 0 x) k)``] THEN
@@ -8457,6 +8464,7 @@ Proof
           ``(\k. f (k + 1) x) = (\k. (\a. f (a) x) (k + 1:num))``] THEN
       MATCH_MP_TAC(ISPECL[``f:num->real``, ``l:real``, ``1:num``] SEQ_OFFSET) THEN
       ASM_SIMP_TAC std_ss [],
+      (* goal 5 (of 6) *)
       FIRST_X_ASSUM(MP_TAC o REWRITE_RULE [bounded_def]) THEN
       SIMP_TAC std_ss [bounded_def] THEN
       ONCE_REWRITE_TAC [METIS []
@@ -8478,6 +8486,7 @@ Proof
         (fn th => EXISTS_TAC ``(B:real) + abs(integral s (f (0:num):real->real))`` THEN
                    X_GEN_TAC ``k:num`` THEN MP_TAC(SPEC ``SUC k`` th))) THEN
       REAL_ARITH_TAC,
+      (* goal 6 (of 6) *)
       ASM_SIMP_TAC std_ss [] THEN DISCH_TAC THEN POP_ASSUM K_TAC THEN
       ONCE_REWRITE_TAC [METIS []
       ``(\x:real. f (SUC k) x - (f 0 x):real) =
@@ -8504,7 +8513,8 @@ Proof
       REWRITE_TAC[ADD1] THEN
       ONCE_REWRITE_TAC [METIS [] ``(\x. integral s ((f:num->real->real) (x + 1))) =
                                    (\x. (\a. integral s (f (a))) (x + 1))``] THEN
-      SIMP_TAC std_ss [ISPECL[``f:num->real``, ``l:real``, ``1:num``] SEQ_OFFSET_REV]]]
+      SIMP_TAC std_ss [ISPECL[``f:num->real``, ``l:real``, ``1:num``] SEQ_OFFSET_REV]
+      ] ]
   THEN REPEAT GEN_TAC THEN STRIP_TAC THEN
   SUBGOAL_THEN
    ``!x:real k:num. x IN s ==> (f k x) <= (g x):real``
@@ -8514,7 +8524,7 @@ Proof
     EXISTS_TAC ``\k. (f:num->real->real) k x`` THEN
     ASM_SIMP_TAC std_ss [TRIVIAL_LIMIT_SEQUENTIALLY, EVENTUALLY_SEQUENTIALLY] THEN
     EXISTS_TAC ``k:num`` THEN SPEC_TAC(``k:num``,``k:num``) THEN
-    ONCE_REWRITE_TAC [METIS [] ``f k x <= (f:num->real->real) x' x =
+    ONCE_REWRITE_TAC [METIS [] ``f k x <= (f:num->real->real) x' x <=>
                          (\k x'. f k x <= f x' x) k x'``] THEN
     MATCH_MP_TAC TRANSITIVE_STEPWISE_LE THEN
     SIMP_TAC std_ss [REAL_LE_TRANS, REAL_LE_REFL] THEN
@@ -8536,7 +8546,7 @@ Proof
      ASM_SIMP_TAC std_ss [TRIVIAL_LIMIT_SEQUENTIALLY, EVENTUALLY_SEQUENTIALLY] THEN
      EXISTS_TAC ``k:num`` THEN SPEC_TAC(``k:num``,``k:num``) THEN
      ONCE_REWRITE_TAC [METIS []
-     ``(integral s (f k) <= integral s ((f:num->real->real) x)) =
+     ``(integral s (f k) <= integral s ((f:num->real->real) x)) <=>
        (\k x. integral s (f k) <= integral s (f x)) k x``] THEN
      MATCH_MP_TAC TRANSITIVE_STEPWISE_LE THEN
      ASM_SIMP_TAC std_ss [REAL_LE_REFL, REAL_LE_TRANS] THEN CONJ_TAC THENL
@@ -8720,7 +8730,6 @@ Proof
    ``(\x. f (M + N) x) = (f:num->real->real) (M + N)``] THEN
   GEN_TAC THEN COND_CASES_TAC THEN
   ASM_SIMP_TAC std_ss [REAL_LE_REFL]
-*)
 QED
 
 val MONOTONE_CONVERGENCE_DECREASING = store_thm ("MONOTONE_CONVERGENCE_DECREASING",
@@ -9180,8 +9189,6 @@ Theorem HAS_INTEGRAL_LIM_SEQUENTIALLY :
            ((\n:num. (integral (interval[0,&n]) f)) --> l) sequentially
            ==> (f has_integral l) {t | &0 <= t}
 Proof
-    cheat
-(*
   REPEAT STRIP_TAC THEN
   ONCE_REWRITE_TAC[HAS_INTEGRAL_LIM_AT_POSINFINITY] THEN
   MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
@@ -9189,7 +9196,7 @@ Proof
     DISCH_THEN(X_CHOOSE_TAC ``n:num``) THEN
     FIRST_X_ASSUM(MP_TAC o SPEC ``n:num``) THEN
     MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] INTEGRABLE_SUBINTERVAL) THEN
-    REWRITE_TAC[SUBSET_INTERVAL] THEN ASM_REAL_ARITH_TAC,
+    REWRITE_TAC[SUBSET_INTERVAL, REAL_LE_REFL] THEN rw [],
     DISCH_TAC] THEN
   REWRITE_TAC[LIM_AT_POSINFINITY, real_ge] THEN
   X_GEN_TAC ``e:real`` THEN DISCH_TAC THEN
@@ -9258,7 +9265,12 @@ Proof
       ASM_REWRITE_TAC [REAL_POS] THEN REAL_ARITH_TAC],
      DISCH_TAC THEN ASM_SIMP_TAC std_ss [REAL_OF_NUM_LE, NUM_FLOOR_LE2]] THEN
      UNDISCH_TAC ``max (&N) B + 1 <= x:real`` THEN REWRITE_TAC [max_def] THEN
-     REAL_ARITH_TAC, ALL_TAC] THEN
+     Cases_on `&N <= B` >> rw []
+     >- (MATCH_MP_TAC REAL_LE_TRANS >> Q.EXISTS_TAC `B` >> art [] \\
+         POP_ASSUM MP_TAC >> REAL_ARITH_TAC) \\
+     `B < &N` by PROVE_TAC [real_lte] \\
+     MATCH_MP_TAC REAL_LE_TRANS >> Q.EXISTS_TAC `&(N + 1)` >> art [] \\
+     fs [], ALL_TAC] THEN
   MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC
     ``(integral(interval[&n:real,x]) (\x. (e / &2)))`` THEN
   CONJ_TAC THENL
@@ -9312,7 +9324,6 @@ Proof
     MATCH_MP_TAC (REAL_ARITH ``x < &n + 1 ==> x - &n <= 1:real``) THEN
     REWRITE_TAC [GSYM NUM_FLOOR_LET] THEN REWRITE_TAC [GSYM REAL_OF_NUM_LE] THEN
     ASM_SIMP_TAC std_ss [REAL_LE_LT]]
-*)
 QED
 
 (* ------------------------------------------------------------------------- *)
