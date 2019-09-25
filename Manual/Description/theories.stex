@@ -4919,13 +4919,83 @@ See Figure~\ref{fig:bind-defns} for the bind definitions for a number of differe
 \section{Higher Mathematics}
 \label{sec:mathematics}
 
-\subsection{Univariate Differential and Integral Calculus}
-\label{unicalculus}
+\subsection{Univariate differential and integral calculus}
+\label{calculus}
 \index{calculus, the HOL theory of@calculus, the \HOL{} theory of}
 
-The Henstock-Kurzweil or gauge integral.
+An extensive development of (univariate) differential and integral
+calculus, ported from HOL Light, is available in the theory \theoryimp{derivative} and
+\theoryimp{integration}.
 
-The fundamental theorem of calculus.
+\subsubsection{Derivatives}
+
+A quintessentially analytic property is the derivative of a function. One might
+expect to find a higher-order `derivative' function \texttt{deriv}
+$\colon
+(\mathbb{R}\rightarrow\mathbb{R})\rightarrow(\mathbb{R}\rightarrow\mathbb{R})$
+mapping a function $f$ to its derivative $f'$. Actually, no such thing
+is defined in HOL, but rather a ternary operator
+\holtxt{has_derivative} where \holtxt{(f has_derivative f') (at x)}
+means `the function $f$ has a derivative $f'$ at the point $x$', or 
+\holtxt{(f has_derivative f') (at x within s)} means `the function $f$
+has a derivative $f'$ at the point $x$ within the set $s$'.
+Expanding out the definition, we see that
+the definition is much as an analyst might expect:
+
+\begin{hol}
+\begin{alltt}
+>>__ load "derivativeTheory";
+>>__ open derivativeTheory;
+##thm has_derivative_at
+
+##thm has_derivative_within
+\end{alltt}
+\end{hol}
+
+A similar operator is \holtxt{has_vector_derivative}, where
+\holtxt{(f has_vector_derivative f') (at x)} means `the function $f$
+has a derivative with value $f'$ at the point $x$'.
+The usual kinds of combining theorems are proved, for example that the derivative
+of a sum is the sum of the derivatives:
+\begin{hol}
+\begin{alltt}
+##thm HAS_DERIVATIVE_ADD
+\end{alltt}
+\end{hol}
+
+\subsubsection{Integrals}
+
+The version of integral calculus formalized in HOL is a 
+generalized Riemann integral called \emph{Henstock-Kurzweil Integral},
+or \emph{gauge integral}~\cite{Bartle:2001um}. Many functions which
+are not Riemann integrable can be shown to be Henstock-Kurzweil
+integrable. (In particular, a function is Lebesgue integrable if and
+only if the function and its absolute value are Henstock-Kurzweil
+integrable.)
+
+\holtxt{f integrable_on s} means `the function $f$ is integrable on a
+real set $s$'. Similar with \holtxt{f absolutely_integrable_on s}.
+The fundamental theorem of calculus (in the equivalent forms of
+Riemann integral) is stated below:
+\begin{hol}
+\begin{alltt}
+>>__ load "integrationTheory";
+>>__ open integrationTheory;
+##thm FUNDAMENTAL_THEOREM_OF_CALCULUS
+\end{alltt}
+\end{hol}
+
+The above theorem requires that, the function $f$ must be everywhere
+differentiable (i.e. has derivative) in the closed interval
+$[a,b]$. In fact, Henstock-Kurzweil Integral permits a
+countable number of exceptional points. This yields a significant
+improvement, as shown in the following strong version of the
+ fundamental theorem of calculus:
+\begin{hol}
+\begin{alltt}
+##thm FUNDAMENTAL_THEOREM_OF_CALCULUS_STRONG
+\end{alltt}
+\end{hol}
 
 \subsection{Probability Theory}
 \label{prob}
@@ -4949,7 +5019,7 @@ called \emph{measurable sets}, and this is also formalized in the
 \item [probability] Probability theory based on extended reals.
 \end{description}
 
-Below is the old real-based Probability Theory:
+HOL also supports the old real-based Probability Theory:
 
 \begin{description}
 \item [real_measure] Measure theory based on reals.
@@ -4970,9 +5040,6 @@ a positive integer $N$, and returns an integer $n$ in the range $0\le
 n < N$, picked uniformly at random from the available choices. This
 sampling function for the uniform distribution is later used to verify
 the Miller-Rabin primality test.
-
-In the \ml{examples/diningcryptos} directory, done by
-Coble~\cite{coble-thesis}, (TODO) ...
 
 \section{Further Theories}
 Other theories of interest in \HOL{} are listed and briefly described

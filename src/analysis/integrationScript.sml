@@ -1549,7 +1549,7 @@ Proof
    DISCH_TAC THEN ASM_REWRITE_TAC [] THEN POP_ASSUM K_TAC THEN
    DISCH_THEN(MP_TAC o SPECL
    [``CARD(d:(real->bool)->bool)``, ``d:(real->bool)->bool``]) THEN
-   FIRST_ASSUM(ASSUME_TAC o MATCH_MP DIVISION_OF_FINITE) THEN 
+   FIRST_ASSUM(ASSUME_TAC o MATCH_MP DIVISION_OF_FINITE) THEN
    ASM_REWRITE_TAC[GSYM FINITE_HAS_SIZE] THEN
    DISCH_THEN (X_CHOOSE_TAC ``f:num->real->bool``) THEN
    EXISTS_TAC ``f:num->real->bool`` THEN POP_ASSUM MP_TAC THEN
@@ -6181,7 +6181,7 @@ Proof
   `A k < x \/ (A k = x)` by PROVE_TAC [REAL_LE_LT]
   >- (MATCH_MP_TAC REAL_LTE_TRANS >> Q.EXISTS_TAC `x` >> art []) \\
   METIS_TAC []
-QED  
+QED
 
 val lemma = prove (
   ``!f s. (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y)) /\
@@ -6944,10 +6944,10 @@ Proof
       ASM_SIMP_TAC std_ss [max_def, REAL_LE_REFL] THEN
 (* HOL's REAL_ASM_ARITH_TAC failed to solve:
 
-        t ≤ if b ≤ t then t else b
+        t <= if b <= t then t else b
    ------------------------------------
-    0.  a ≤ t
-    1.  a ≤ b
+    0.  a <= t
+    1.  a <= b
     2.  b < t
  *)
      `b <= t` by PROVE_TAC [REAL_LT_IMP_LE] >> fs [REAL_LE_REFL],
@@ -6958,30 +6958,7 @@ Proof
         ==> (x:real = (y + z) + -(&1) * w)``) THEN
       CONJ_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN AP_TERM_TAC THEN
       SIMP_TAC std_ss [CONS_11, PAIR_EQ] THEN TRY CONJ_TAC THEN
-      ASM_SIMP_TAC std_ss [min_def, max_def] THEN (* 3 subgoals *)
-(* HOL's REAL_ASM_ARITH_TAC failed to solve:
-
-        (if b ≤ t then t else b) = t
-   ------------------------------------
-    0.  a ≤ t
-    1.  a ≤ b
-    2.  f integrable_on interval [(a,@f. f = max b t)]
-    3.  b < t
-   
-        (if b ≤ t then b else t) = b
-   ------------------------------------
-    0.  a ≤ t
-    1.  a ≤ b
-    2.  f integrable_on interval [(a,@f. f = max b t)]
-    3.  b < t
-   
-        b = if t ≤ b then t else b
-   ------------------------------------
-    0.  a ≤ t
-    1.  a ≤ b
-    2.  f integrable_on interval [(a,@f. f = max b t)]
-    3.  b < t
- *)   
+      ASM_SIMP_TAC std_ss [min_def, max_def] THEN
       COND_CASES_TAC >> ASM_REAL_ARITH_TAC],
     (* goal 2 (of 2) *)
     MP_TAC(ISPECL
@@ -9162,7 +9139,7 @@ Proof
     SIMP_TAC std_ss [BALL, SUBSET_INTERVAL] THEN STRIP_TAC THEN
     (* stage work *)
     POP_ASSUM MP_TAC \\
-    Know `0 − (abs B + 1) < 0 + (abs B + 1)`
+    Know `0 - (abs B + 1) < 0 + (abs B + 1)`
     >- (rw [] >> Q.PAT_X_ASSUM `0 < abs B + 1` MP_TAC \\
         REAL_ARITH_TAC) >> rw [] \\
     Know `max (&0) (a) = &0:real`
@@ -12793,7 +12770,7 @@ Proof
   ASSUME_TAC THENL
    [REPEAT STRIP_TAC THEN EXPAND_TAC "g" THEN
     KNOW_TAC ``!x y a:real. x <= y ==> min x a <= min y a`` THENL
-    [RW_TAC real_ss [min_def] THEN 
+    [RW_TAC real_ss [min_def] THEN
      `a < x'` by PROVE_TAC [real_lte] \\
      `a < y` by PROVE_TAC [REAL_LTE_TRANS] \\
      PROVE_TAC [REAL_LTE_ANTISYM], DISCH_TAC] THEN
@@ -15181,7 +15158,7 @@ Proof
         SIMP_TAC std_ss [IN_IMAGE, EXISTS_PROD] THEN EQ_TAC THENL
         [STRIP_TAC THEN
          ASM_SIMP_TAC std_ss [IMAGE_IMAGE, o_DEF, IMAGE_ID, REAL_NEG_NEG] THEN
-         METIS_TAC [], 
+         METIS_TAC [],
          DISCH_THEN (X_CHOOSE_TAC ``x:real``) THEN
          EXISTS_TAC ``x:real`` THEN
          EXISTS_TAC ``IMAGE (\x:real. -x) t`` THEN

@@ -666,8 +666,8 @@ val LINEAR_COMPOSE_SUM = store_thm ("LINEAR_COMPOSE_SUM",
          ==> linear(\x. sum s (\a. f a x))``,
   GEN_TAC THEN REWRITE_TAC[GSYM AND_IMP_INTRO] THEN GEN_TAC THEN
   KNOW_TAC
-    “((!a. a IN s ==> linear (f a)) ==> linear (\x. sum s (\a. f a x))) =
-     (\s. (!a. a IN s ==> linear (f a)) ==> linear (\x. sum s (\a. f a x))) s”
+    ``((!a. a IN s ==> linear (f a)) ==> linear (\x. sum s (\a. f a x))) =
+     (\s. (!a. a IN s ==> linear (f a)) ==> linear (\x. sum s (\a. f a x))) s``
   THENL [FULL_SIMP_TAC std_ss [], ALL_TAC] THEN DISC_RW_KILL THEN
   MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN
   SIMP_TAC std_ss [SUM_CLAUSES, LINEAR_ZERO] THEN REPEAT STRIP_TAC THEN
@@ -1662,7 +1662,7 @@ val SPAN_BREAKDOWN = store_thm ("SPAN_BREAKDOWN",
     METIS_TAC [SPAN_ADD],
     REPEAT STRIP_TAC THEN EXISTS_TAC ``c * k:real`` THEN
     ONCE_REWRITE_TAC [
-      REAL_ARITH “(c * x - (c * k) * y = c * (x - k * y:real))”] THEN
+      REAL_ARITH ``(c * x - (c * k) * y = c * (x - k * y:real))``] THEN
     ONCE_REWRITE_TAC [GSYM SPECIFICATION] THEN
     RULE_ASSUM_TAC (ONCE_REWRITE_RULE [GSYM SPECIFICATION]) THEN
     METIS_TAC [SPAN_CLAUSES]]);
@@ -15512,7 +15512,7 @@ Proof
   ASM_SIMP_TAC std_ss [AND_IMP_INTRO, GSPECIFICATION, EXISTS_PROD] THEN
   ONCE_REWRITE_TAC[REAL_ARITH ``(z:real = x + y) <=> (y = z - x)``] THEN
   SIMP_TAC std_ss [UNWIND_THM2] THEN
-  ONCE_REWRITE_TAC [METIS [] 
+  ONCE_REWRITE_TAC [METIS []
    ``!a b s. (!x. a <= x /\ x <= b \/ b <= x /\ x <= a ==> x IN s:real->bool) =
              (!x. (\x. a <= x /\ x <= b \/ b <= x /\ x <= a) x ==> x IN s)``] THEN
   ONCE_REWRITE_TAC [METIS [] ``(y - p_1) = (\x. y - x) (p_1:real)``] THEN
@@ -15523,10 +15523,10 @@ Proof
   POP_ASSUM MP_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
   DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
   DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-  DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN	
+  DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
   SIMP_TAC std_ss [REAL_ARITH
    ``c <= y - x /\ y - x <= d <=> y - d <= x /\ x <= y - c:real``] THEN
-  Know `!a b x. a <= x /\ x <= b \/ b <= x /\ x <= a:real <=> 
+  Know `!a b x. a <= x /\ x <= b \/ b <= x /\ x <= a:real <=>
                 min a b <= x /\ x <= max a b`
   >- (KILL_TAC >> RW_TAC std_ss [max_def, min_def] \\
       REAL_ASM_ARITH_TAC) >> Rewr \\
@@ -17021,8 +17021,8 @@ Proof
      [ALL_TAC,
       MATCH_MP_TAC CARD_MUL2_ABSORB_LE THEN REWRITE_TAC[INFINITE_CARD_LE] THEN
       SIMP_TAC std_ss [CANTOR_THM_UNIV, CARD_LT_IMP_LE, CARD_LE_REFL]] THEN
-    ‘univ(:real) <=_c (univ(:num) *_c {x:real | &0 <= x}) /\
-     univ(:num) *_c {x:real | &0 <= x} <=_c univ(:num) *_c univ(:num -> bool)’
+    `univ(:real) <=_c (univ(:num) *_c {x:real | &0 <= x}) /\
+     univ(:num) *_c {x:real | &0 <= x} <=_c univ(:num) *_c univ(:num -> bool)`
        suffices_by METIS_TAC[CARD_LE_TRANS] THEN
     CONJ_TAC THENL
      [SIMP_TAC std_ss [LE_C, mul_c, EXISTS_PROD, IN_ELIM_PAIR_THM, IN_UNIV] THEN
