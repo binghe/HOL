@@ -4955,7 +4955,7 @@ the definition is much as an analyst might expect:
 A similar operator is \holtxt{has_vector_derivative}, where
 \holtxt{(f has_vector_derivative f') (at x)} means `the function $f$
 has a derivative with value $f'$ at the point $x$'.
-The usual kinds of combining theorems are proved, for example that the derivative
+The usual kinds of combining theorems are proved. For example, the derivative
 of a sum is the sum of the derivatives:
 \begin{hol}
 \begin{alltt}
@@ -4974,9 +4974,9 @@ only if the function and its absolute value are Henstock-Kurzweil
 integrable.)
 
 \holtxt{f integrable_on s} means `the function $f$ is integrable on a
-real set $s$'. Similar with \holtxt{f absolutely_integrable_on s}.
+real set $s$',  similar for \holtxt{f absolutely_integrable_on s}.
 The fundamental theorem of calculus (in the equivalent forms of
-Riemann integral) is stated below:
+Riemann integral) is expressed below:
 \begin{hol}
 \begin{alltt}
 >>__ load "integrationTheory";
