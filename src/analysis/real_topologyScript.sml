@@ -5453,6 +5453,9 @@ val NET_DILEMMA = store_thm ("NET_DILEMMA",
 (* Common nets and the "within" modifier for nets.                           *)
 (* ------------------------------------------------------------------------- *)
 
+val _ = set_fixity "within" (Infix(NONASSOC, 450));
+val _ = set_fixity "in_direction" (Infix(NONASSOC, 450));
+
 val at = new_definition ("at",
   ``at a = mk_net(\x y. &0 < dist(x,a) /\ dist(x,a) <= dist(y,a))``);
 
@@ -5469,12 +5472,10 @@ val sequentially = new_definition ("sequentially",
   ``sequentially = mk_net(\m:num n. m >= n)``);
 
 val within = new_definition ("within",
-  ``within net s = mk_net(\x y. netord net x y /\ x IN s)``);
-val _ = set_fixity "within" (Infix(NONASSOC, 450));
+  ``(net within s) = mk_net(\x y. netord net x y /\ x IN s)``);
 
 val in_direction = new_definition ("in_direction",
-  ``in_direction a v = ((at a) within {b | ?c. &0 <= c /\ (b - a = c * v)})``);
-val _ = set_fixity "in_direction" (Infix(NONASSOC, 450));
+  ``(a in_direction v) = ((at a) within {b | ?c. &0 <= c /\ (b - a = c * v)})``);
 
 (* ------------------------------------------------------------------------- *)
 (* Prove that they are all nets.                                             *)
