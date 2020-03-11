@@ -1943,6 +1943,33 @@ Proof
  >> REWRITE_TAC [REAL_EQ_MUL_LCANCEL]
 QED
 
+Theorem inv_mul :
+    !x y. x <> 0 /\ y <> 0 ==> (inv (x * y) = inv x * inv y)
+Proof
+    rpt STRIP_TAC
+ >> Cases_on `x` >> Cases_on `y`
+ >> FULL_SIMP_TAC real_ss [extreal_mul_def, extreal_inv_def, extreal_not_infty,
+                           extreal_of_num_def, extreal_11]
+ >> TRY (Cases_on `0 < r` >> rw [extreal_inv_def])
+ >> `r * r' <> 0` by METIS_TAC [REAL_ENTIRE]
+ >> ASM_SIMP_TAC std_ss [extreal_inv_eq, extreal_11]
+ >> MATCH_MP_TAC REAL_INV_MUL >> art []
+QED
+
+Theorem abs_div :
+    !x y :extreal. x <> PosInf /\ x <> NegInf /\ y <> 0 ==>
+                  (abs (x / y) = abs x / abs y)
+Proof
+    rpt STRIP_TAC
+ >> Cases_on `x` >> Cases_on `y`
+ >> FULL_SIMP_TAC real_ss [extreal_div_def, extreal_inv_def, extreal_not_infty,
+                           extreal_of_num_def, extreal_11, extreal_abs_def,
+                           extreal_mul_def]
+ >> rename1 `s <> 0`
+ >> `abs s <> 0` by PROVE_TAC [ABS_ZERO]
+ >> ASM_SIMP_TAC real_ss [extreal_div_eq, ABS_MUL, extreal_11, real_div, ABS_INV]
+QED
+
 (***************************)
 (*         x pow n         *)
 (***************************)
@@ -6372,6 +6399,20 @@ Proof
  >> CONJ_TAC >- (MATCH_MP_TAC FINITE_CROSS >> REWRITE_TAC [FINITE_COUNT])
  >> CONJ_TAC >- (MATCH_MP_TAC IMAGE_FINITE >> REWRITE_TAC [FINITE_COUNT])
  >> GEN_TAC >> BETA_TAC >> DISCH_TAC >> art []
+QED
+
+Theorem harmonic_series_pow_2 :
+    ext_suminf (\n. inv (&(SUC n) pow 2)) < PosInf
+Proof
+    Q.ABBREV_TAC `f :num -> real = \n. inv (&(SUC n) pow 2)`
+ >> Suff `(\n. inv (&(SUC n) pow 2)) = Normal o f`
+ >- (Rewr' >> MATCH_MP_TAC summable_ext_suminf \\
+     rw [HARMONIC_SERIES_POW_2, Abbr `f`])
+ >> RW_TAC real_ss [Abbr `f`, o_DEF, FUN_EQ_THM]
+ >> Know `(0 :real) < &(SUC n) pow 2`
+ >- (MATCH_MP_TAC REAL_POW_LT >> RW_TAC real_ss []) >> DISCH_TAC
+ >> `&(SUC n) pow 2 <> (0 :real)` by PROVE_TAC [REAL_LT_IMP_NE]
+ >> ASM_SIMP_TAC real_ss [extreal_of_num_def, extreal_inv_eq, extreal_pow_def]
 QED
 
 (* ------------------------------------------------------------------------- *)
