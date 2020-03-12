@@ -5390,6 +5390,13 @@ Proof
  >> Q.EXISTS_TAC `c` >> RW_TAC std_ss []
 QED
 
+(* Theorem 5.1.2 [2, p.108]: The Strong Law of Large Numbers
+
+   (uncorrelated random sequence with a common bound of variances)
+
+   without loss of generality we may suppose that expectation (X j) = 0 for
+   each j, so that the (X j)'s are orthogonal.
+ *)
 Theorem SLLN_uncorrelated_wlog[local] :
     !p X S M c. prob_space p /\ (!n. real_random_variable (X n) p) /\
        (!i j. i <> j ==> uncorrelated p (X i) (X j)) /\
@@ -5480,13 +5487,6 @@ Proof
  >> fs [FINITE_COUNT, prob_space_def, real_random_variable_def]
 QED
 
-(* Theorem 5.1.2 [2, p.108]: The (simple) Strong Law of Large Numbers
-
-   (uncorrelated random sequence with a common bound of variances)
-
-   without loss of generality we may suppose that expectation (X j) = 0 for
-   each j, so that the (X j)'s are orthogonal.
- *)
 Theorem SLLN_uncorrelated :
     !p X S M. prob_space p /\ (!n. real_random_variable (X n) p) /\
        (!i j. i <> j ==> uncorrelated p (X i) (X j)) /\
@@ -6460,8 +6460,10 @@ val _ = export_theory ();
   [4] Shiryaev, A.N.: Probability-1. Springer-Verlag New York (2016).
   [5] Shiryaev, A.N.: Probability-2. Springer-Verlag New York (2019).
   [6] Billingsley, P.: Probability and Measure (Third Edition). Wiley-Interscience (1995).
-  [7] Hurd, J.: Formal verification of probabilistic algorithms. University of Cambridge (2001).
-  [8] Coble, A.R.: Anonymity, information, and machine-assisted proof. University of Cambridge (2010).
+  [7] Hurd, J.: Formal verification of probabilistic algorithms.
+      University of Cambridge (2003). UCAM-CL-TR-566
+  [8] Coble, A.R.: Anonymity, information, and machine-assisted proof.
+      University of Cambridge (2010). UCAM-CL-TR-785
   [9] Schilling, R.L.: Measures, Integrals and Martingales (Second Edition).
       Cambridge University Press (2017).
   [10] Mhamdi, T., Hasan, O., Tahar, S.: Formalization of Measure Theory and Lebesgue
