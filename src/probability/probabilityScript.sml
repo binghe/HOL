@@ -5775,9 +5775,26 @@ Proof
  >- (MP_TAC (SIMP_RULE std_ss [sub_rzero]
                        (Q.SPECL [`p`, `Z`, `\x. 0`] converge_AE_alt_limsup)) \\
     `real_random_variable (\x. 0) p` by PROVE_TAC [real_random_variable_zero] \\
-     RW_TAC std_ss [])
+     RW_TAC std_ss []) >> DISCH_TAC
  (* preparing for "method of subsequences" *)
- >> 
+ >> Q.ABBREV_TAC `diff = \n k x. abs (S k x - S (&(n ** 2)) x)`
+ >> Q.ABBREV_TAC `D = \n x. sup (IMAGE (\k. diff n k x)
+                                       {k | n ** 2 <= k /\ k < SUC n ** 2})`
+ (* for different x, the maximal k may be different *)
+ >> Know `!n x. ?k. n ** 2 <= k /\ k < SUC n ** 2 /\ D n x = diff n k x`
+ >- (rpt GEN_TAC \\
+     Know `D n x IN (IMAGE (\k. diff n k x) {k | n ** 2 <= k /\ k < SUC n ** 2})`
+     >- (Q.UNABBREV_TAC `D` >> BETA_TAC \\
+         MATCH_MP_TAC finite_sup_member \\
+         reverse CONJ_TAC
+         >- (rw [Once EXTENSION, NOT_IN_EMPTY, IN_IMAGE] \\
+             Q.EXISTS_TAC `n ** 2` >> rw []) \\
+         MATCH_MP_TAC IMAGE_FINITE \\
+         irule SUBSET_FINITE >> Q.EXISTS_TAC `count (SUC n ** 2)` \\
+         rw [FINITE_COUNT, count_def, SUBSET_DEF]) \\
+     rw [IN_IMAGE] >> Q.EXISTS_TAC `k` >> art []) >> DISCH_TAC
+ >> fs [SKOLEM_THM] (* k becomes a function f of n and x *)
+ >>
     cheat
 QED
 

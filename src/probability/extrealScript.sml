@@ -4793,6 +4793,13 @@ val inf_const = store_thm
   ("inf_const", ``!x. extreal_inf (\y. y = x) = x``,
     RW_TAC real_ss [inf_eq, le_refl]);
 
+Theorem inf_sing :
+    !a:extreal. inf {a} = a
+Proof
+    REWRITE_TAC [METIS [EXTENSION, IN_SING, IN_DEF] ``{a} = (\x. x = a)``]
+ >> SIMP_TAC std_ss [inf_const]
+QED
+
 val inf_const_alt = store_thm
   ("inf_const_alt", ``!p z. (?x. p x) /\ (!x. p x ==> (x = z)) ==> (inf p = z)``,
   RW_TAC std_ss [inf_eq,le_refl]
@@ -6538,6 +6545,52 @@ Proof
  >> MATCH_MP_TAC lt_trans >> Q.EXISTS_TAC `0` >> art []
  >> POP_ASSUM (REWRITE_TAC o wrap o
                 (REWRITE_RULE [Once (GSYM lt_neg), neg_0]))
+QED
+
+(* `sup` is the maximal element of any finite non-empty extreal set,
+    see also le_sup_imp'.
+ *)
+Theorem finite_sup_member :
+    !p. FINITE p /\ p <> {} ==> extreal_sup p IN p
+Proof
+    Suff `!p. FINITE p ==> p <> {} ==> extreal_sup p IN p` >- rw []
+ >> HO_MATCH_MP_TAC FINITE_INDUCT
+ >> RW_TAC std_ss []
+ >> Cases_on `p = EMPTY` >- fs [sup_sing]
+ >> Suff `sup (e INSERT p) = max e (sup p)`
+ >- (Rewr' >> rw [extreal_max_def])
+ >> RW_TAC std_ss [sup_eq']
+ >| [ (* goal 1 (of 2) *)
+      fs [IN_INSERT, le_max] \\
+      DISJ2_TAC \\
+      MATCH_MP_TAC le_sup_imp' >> art [],
+      (* goal 2 (of 2) *)
+      POP_ASSUM MATCH_MP_TAC \\
+      fs [IN_INSERT, extreal_max_def] \\
+      Cases_on `e <= sup p` >> fs [] ]
+QED
+
+(* `inf` is the minimal element of any finite non-empty extreal set.
+    see also inf_le_imp'.
+ *)
+Theorem finite_inf_member :
+    !p. FINITE p /\ p <> {} ==> extreal_inf p IN p
+Proof
+    Suff `!p. FINITE p ==> p <> {} ==> extreal_inf p IN p` >- rw []
+ >> HO_MATCH_MP_TAC FINITE_INDUCT
+ >> RW_TAC std_ss []
+ >> Cases_on `p = EMPTY` >- fs [inf_sing]
+ >> Suff `inf (e INSERT p) = min e (inf p)`
+ >- (Rewr' >> rw [extreal_min_def])
+ >> RW_TAC std_ss [inf_eq']
+ >| [ (* goal 1 (of 2) *)
+      fs [IN_INSERT, min_le] \\
+      DISJ2_TAC \\
+      MATCH_MP_TAC inf_le_imp' >> art [],
+      (* goal 2 (of 2) *)
+      POP_ASSUM MATCH_MP_TAC \\
+      fs [IN_INSERT, extreal_min_def] \\
+      Cases_on `e <= inf p` >> fs [] ]
 QED
 
 (* ================================================================= *)
