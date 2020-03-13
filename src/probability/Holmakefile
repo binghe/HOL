@@ -19,7 +19,11 @@ endif
 all: $(TARGETS)
 
 ifeq ($(KERNELID),otknl)
-all: $(patsubst %Script.sml,%.ot.art,$(wildcard *Script.sml))
+
+ARTICLES = $(patsubst %Script.sml,%.ot.art,$(wildcard *Script.sml))
+
+# this takes a lot of time, disabled by default
+# all: $(ARTICLES)
 endif
 
 .PHONY: all
