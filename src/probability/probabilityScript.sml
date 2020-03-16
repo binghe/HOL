@@ -5865,6 +5865,34 @@ Proof
      >- (MATCH_MP_TAC EQ_SYM \\
          MATCH_MP_TAC integral_sum \\
          fs [prob_space_def, p_space_def] \\
+         reverse CONJ_TAC
+         >- (rpt GEN_TAC >> DISCH_TAC \\
+            `?r. diff n i x = Normal r` by METIS_TAC [extreal_cases] \\
+             rw [pow_2, extreal_mul_def]) \\
+         RW_TAC set_ss [Abbr `square`, Abbr `diff`, abs_pow2] \\
+         Know `DISJOINT {k | n ** 2 <= k /\ k < i} (count (n ** 2))`
+         >- (RW_TAC set_ss [DISJOINT_ALT, IN_COUNT] >> rw []) >> DISCH_TAC \\
+         Know `count i = {k | n ** 2 <= k /\ k < i} UNION (count (n ** 2))`
+         >- (RW_TAC set_ss [Once EXTENSION, IN_COUNT] >> rw []) >> Rewr' \\          
+         FULL_SIMP_TAC std_ss [real_random_variable_def] \\
+         Know `!x. SIGMA (\i. X i x) ({k | n ** 2 <= k /\ k < i} UNION (count (n ** 2))) =
+                   SIGMA (\i. X i x) {k | n ** 2 <= k /\ k < i} +
+                   SIGMA (\i. X i x) (count (n ** 2))`
+         >- (GEN_TAC \\
+             irule EXTREAL_SUM_IMAGE_DISJOINT_UNION >> fs [FINITE_COUNT] \\
+             irule SUBSET_FINITE >> Q.EXISTS_TAC `count i` \\
+             rw [FINITE_COUNT, count_def, SUBSET_DEF]) >> Rewr' \\
+         Know `!x. SIGMA (\i. X i x) (count (n ** 2)) <> PosInf`
+         >- (GEN_TAC >> MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_POSINF \\
+             rw [FINITE_COUNT]) >> DISCH_TAC \\
+         Know `!x. SIGMA (\i. X i x) (count (n ** 2)) <> NegInf`
+         >- (GEN_TAC >> MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_NEGINF \\
+             rw [FINITE_COUNT]) >> DISCH_TAC \\
+         Know `!x. SIGMA (\i. X i x) {k | n ** 2 <= k /\ k < i} +
+                   SIGMA (\i. X i x) (count (n ** 2)) -
+                   SIGMA (\i. X i x) (count (n ** 2)) =
+                   SIGMA (\i. X i x) {k | n ** 2 <= k /\ k < i}`
+         >- (GEN_TAC >> MATCH_MP_TAC add_sub >> art []) >> Rewr' \\
          
          cheat) >> BETA_TAC >> Rewr' \\
      
