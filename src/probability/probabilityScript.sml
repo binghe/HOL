@@ -5817,23 +5817,58 @@ Proof
     `real_random_variable (\x. 0) p` by PROVE_TAC [real_random_variable_zero] \\
      RW_TAC std_ss []) >> DISCH_TAC
  (* preparing for "method of subsequences" *)
+ >> Q.ABBREV_TAC `square = \n. {k | n ** 2 <= k /\ k < SUC n ** 2}`
+ >> Know `!n. FINITE (square n)`
+ >- (RW_TAC std_ss [Abbr `square`] \\
+     irule SUBSET_FINITE >> Q.EXISTS_TAC `count (SUC n ** 2)` \\
+     rw [FINITE_COUNT, count_def, SUBSET_DEF]) >> DISCH_TAC
  >> Q.ABBREV_TAC `diff = \n k x. abs (S k x - S (&(n ** 2)) x)`
- >> Q.ABBREV_TAC `D = \n x. sup (IMAGE (\k. diff n k x)
-                                       {k | n ** 2 <= k /\ k < SUC n ** 2})`
+ >> Know `!n k x. diff n k x <> PosInf /\ diff n k x <> NegInf`
+ >- (rpt GEN_TAC >> SIMP_TAC std_ss [Abbr `diff`] \\
+    `?a. S k x = Normal a` by METIS_TAC [extreal_cases] \\
+    `?b. S (n ** 2) x = Normal b` by METIS_TAC [extreal_cases] \\
+     ASM_SIMP_TAC std_ss [extreal_sub_def, extreal_abs_def,
+                          extreal_not_infty]) >> DISCH_TAC
+ >> Q.ABBREV_TAC `D = \n x. sup (IMAGE (\k. diff n k x) (square n))`
  (* NOTE: for different x, the maximal k may be different *)
  >> Know `!n x. ?k. n ** 2 <= k /\ k < SUC n ** 2 /\ D n x = diff n k x`
  >- (rpt GEN_TAC \\
      Know `D n x IN (IMAGE (\k. diff n k x) {k | n ** 2 <= k /\ k < SUC n ** 2})`
-     >- (Q.UNABBREV_TAC `D` >> BETA_TAC \\
+     >- (RW_TAC std_ss [Abbr `D`, Abbr `square`] \\
          MATCH_MP_TAC sup_maximal \\
          reverse CONJ_TAC
          >- (rw [Once EXTENSION, NOT_IN_EMPTY, IN_IMAGE] \\
              Q.EXISTS_TAC `n ** 2` >> rw []) \\
-         MATCH_MP_TAC IMAGE_FINITE \\
-         irule SUBSET_FINITE >> Q.EXISTS_TAC `count (SUC n ** 2)` \\
-         rw [FINITE_COUNT, count_def, SUBSET_DEF]) \\
+         MATCH_MP_TAC IMAGE_FINITE >> fs []) \\
      rw [IN_IMAGE] >> Q.EXISTS_TAC `k` >> art []) >> DISCH_TAC
- >> fs [SKOLEM_THM] (* now k becomes a function f of n and x *)
+ (* now k becomes a function f of n and x, and from now on the original
+    definition of `diff` is not needed. *)
+ >> fs [SKOLEM_THM]
+ (* HARD: now finding the upper bound of E[D(n)^2] *)
+ >> Know `!n. expectation p (\x. D n x pow 2) <=
+              SIGMA (\k. expectation p (\x. diff n k x pow 2)) (square n)`
+ >- (GEN_TAC >> art [expectation_def] \\
+  (* Here we have to prove that
+
+     integral p (\x. (diff n (f n x) x) pow 2) <= 
+       SIGMA (\k. integral p (\x. (diff n k x) pow 2))
+             {k | n ** 2 <= k /\ k < (SUC n) ** 2}
+
+     The tricky part is, we cannot just pick one element from the RHS in SIGMA
+     (which equals LHS) and prove the inequality by showing all other elements
+     are non-negative, because the `k` (= f n x) at LHS is a function of x, i.e.
+     for each point in the integration the corresponding k is jumping. The
+     solution is to put SIGMA inside the integral first (by integral_sum).
+   *)
+     Know `SIGMA (\k. integral p ((\k x. diff n k x pow 2) k)) (square n) =
+           integral p (\x. SIGMA (\k. (\k x. diff n k x pow 2) k x) (square n))`
+     >- (MATCH_MP_TAC EQ_SYM \\
+         MATCH_MP_TAC integral_sum \\
+         fs [prob_space_def, p_space_def] \\
+         
+         cheat) >> BETA_TAC >> Rewr' \\
+     
+     cheat)
  >> 
     cheat
 QED
