@@ -6550,7 +6550,7 @@ QED
 (* `sup` is the maximal element of any finite non-empty extreal set,
     see also le_sup_imp'.
  *)
-Theorem finite_sup_member :
+Theorem sup_maximal :
     !p. FINITE p /\ p <> {} ==> extreal_sup p IN p
 Proof
     Suff `!p. FINITE p ==> p <> {} ==> extreal_sup p IN p` >- rw []
@@ -6573,7 +6573,7 @@ QED
 (* `inf` is the minimal element of any finite non-empty extreal set.
     see also inf_le_imp'.
  *)
-Theorem finite_inf_member :
+Theorem inf_minimal :
     !p. FINITE p /\ p <> {} ==> extreal_inf p IN p
 Proof
     Suff `!p. FINITE p ==> p <> {} ==> extreal_inf p IN p` >- rw []
