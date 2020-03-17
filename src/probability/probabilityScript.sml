@@ -5860,15 +5860,19 @@ Proof
      for each point in the integration the corresponding k is jumping. The
      solution is to put SIGMA inside the integral first (by integral_sum).
    *)
-     Know `SIGMA (\k. integral p ((\k x. diff n k x pow 2) k)) (square n) =
-           integral p (\x. SIGMA (\k. (\k x. diff n k x pow 2) k x) (square n))`
+     Know `!k.       integral p (\x. (diff n k x) pow 2) =
+              pos_fn_integral p (\x. (diff n k x) pow 2)`
+     >- (GEN_TAC >> MATCH_MP_TAC integral_pos_fn \\
+         fs [le_pow2, prob_space_def]) >> Rewr' \\
+     Know `       integral p (\x. (diff n (f n x) x) pow 2) =
+           pos_fn_integral p (\x. (diff n (f n x) x) pow 2)`
+     >- (MATCH_MP_TAC integral_pos_fn >> fs [le_pow2, prob_space_def]) >> Rewr' \\
+     Know `SIGMA (\k. pos_fn_integral p ((\k x. diff n k x pow 2) k)) (square n) =
+           pos_fn_integral p (\x. SIGMA (\k. (\k x. diff n k x pow 2) k x) (square n))`
      >- (MATCH_MP_TAC EQ_SYM \\
-         MATCH_MP_TAC integral_sum \\
-         fs [prob_space_def, p_space_def] \\
-         reverse CONJ_TAC
-         >- (rpt GEN_TAC >> DISCH_TAC \\
-            `?r. diff n i x = Normal r` by METIS_TAC [extreal_cases] \\
-             rw [pow_2, extreal_mul_def]) \\
+         MATCH_MP_TAC pos_fn_integral_sum \\
+         fs [prob_space_def, p_space_def, le_pow2, real_random_variable_def,
+             random_variable_def, events_def] \\
          RW_TAC set_ss [Abbr `square`, Abbr `diff`, abs_pow2] \\
          Know `DISJOINT {k | n ** 2 <= k /\ k < i} (count (n ** 2))`
          >- (RW_TAC set_ss [DISJOINT_ALT, IN_COUNT] >> rw []) >> DISCH_TAC \\
@@ -5893,10 +5897,40 @@ Proof
                    SIGMA (\i. X i x) (count (n ** 2)) =
                    SIGMA (\i. X i x) {k | n ** 2 <= k /\ k < i}`
          >- (GEN_TAC >> MATCH_MP_TAC add_sub >> art []) >> Rewr' \\
-         
-         cheat) >> BETA_TAC >> Rewr' \\
-     
-     cheat)
+         HO_MATCH_MP_TAC IN_MEASURABLE_BOREL_POW \\
+         CONJ_TAC >- fs [measure_space_def] \\
+         reverse CONJ_TAC
+         >- (RW_TAC std_ss [space_def] >| (* 2 subgoals *)
+             [ (* goal 1 (of 2) *)
+               MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_NEGINF \\
+               ASM_SIMP_TAC set_ss [] \\
+               irule SUBSET_FINITE >> Q.EXISTS_TAC `count i` \\
+               rw [FINITE_COUNT, count_def, SUBSET_DEF],
+               (* goal 2 (of 2) *)
+               MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_POSINF \\
+               ASM_SIMP_TAC set_ss [] \\
+               irule SUBSET_FINITE >> Q.EXISTS_TAC `count i` \\
+               rw [FINITE_COUNT, count_def, SUBSET_DEF] ]) \\
+         MATCH_MP_TAC (INST_TYPE [``:'b`` |-> ``:num``] IN_MEASURABLE_BOREL_SUM) \\
+         qexistsl_tac [`X`, `{k | n ** 2 <= k /\ k < i}`] \\
+         fs [space_def, measure_space_def] \\
+         irule SUBSET_FINITE >> Q.EXISTS_TAC `count i` \\
+         rw [FINITE_COUNT, count_def, SUBSET_DEF]) >> BETA_TAC >> Rewr' \\
+     MATCH_MP_TAC pos_fn_integral_mono \\
+     RW_TAC std_ss [le_pow2] \\
+    `DISJOINT {f n x} (square n DELETE (f n x))` by SET_TAC [] \\
+     Know `{f n x} UNION (square n DELETE (f n x)) = square n`
+     >- (Suff `f n x IN (square n)` >- SET_TAC [] \\
+         RW_TAC set_ss [Abbr `square`]) >> DISCH_TAC \\
+     Know `SIGMA (\k. (diff n k x) pow 2) ({f n x} UNION (square n DELETE (f n x))) =
+           SIGMA (\k. (diff n k x) pow 2) {f n x} +
+           SIGMA (\k. (diff n k x) pow 2) (square n DELETE (f n x))`
+     >- (irule EXTREAL_SUM_IMAGE_DISJOINT_UNION >> fs [FINITE_SING] \\
+         DISJ1_TAC >> RW_TAC std_ss [] \\ (* 2 subgoals, same tactics *)
+         (MATCH_MP_TAC pos_not_neginf >> rw [le_pow2])) >> POP_ORW >> Rewr' \\
+     SIMP_TAC std_ss [EXTREAL_SUM_IMAGE_SING] \\
+     MATCH_MP_TAC le_addr_imp \\
+     MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> fs [le_pow2]) >> DISCH_TAC
  >> 
     cheat
 QED
