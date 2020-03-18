@@ -861,6 +861,19 @@ val abs_bounds_lt = store_thm
                     lt_infty,le_infty,extreal_ainv_def]
   >> REAL_ARITH_TAC);
 
+Theorem lt_abs_bounds :
+   !k x :extreal. k < abs x <=> x < -k \/ k < x
+Proof
+    RW_TAC std_ss [extreal_lt_def]
+ >> PROVE_TAC [abs_bounds]
+QED
+
+Theorem le_abs_bounds :
+   !k x :extreal. k <= abs x <=> x <= -k \/ k <= x
+Proof
+   METIS_TAC [extreal_lt_def, abs_bounds_lt]
+QED
+
 val abs_not_infty = store_thm
   ("abs_not_infty", ``!x. x <> PosInf /\ x <> NegInf ==> abs x <> PosInf /\ abs x <> NegInf``,
     GEN_TAC >> STRIP_TAC

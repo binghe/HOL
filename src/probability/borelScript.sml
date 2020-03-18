@@ -2749,7 +2749,7 @@ val IN_MEASURABLE_BOREL_MONO_SUP = store_thm
 
 (* a generalized version of IN_MEASURABLE_BOREL_MAX, cf. sup_maximal *)
 Theorem IN_MEASURABLE_BOREL_MAXIMAL :
-    !N. FINITE N ==>
+    !N. FINITE (N :'b set) ==>
         !g f a. sigma_algebra a /\ (!n. g n IN measurable a Borel) /\
                (!x. f x = sup (IMAGE (\n. g n x) N)) ==> f IN measurable a Borel
 Proof
@@ -2787,7 +2787,7 @@ QED
 
 (* a generalized version of IN_MEASURABLE_BOREL_MIN, cf. inf_minimal *)
 Theorem IN_MEASURABLE_BOREL_MINIMAL :
-    !N. FINITE N ==>
+    !N. FINITE (N :'b set) ==>
         !g f a. sigma_algebra a /\ (!n. g n IN measurable a Borel) /\
                (!x. f x = inf (IMAGE (\n. g n x) N)) ==> f IN measurable a Borel
 Proof

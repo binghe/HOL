@@ -6085,7 +6085,7 @@ Proof
          rw [extreal_of_num_def, extreal_lt_eq]) \\
      NTAC 2 (POP_ASSUM K_TAC) \\
      Q.UNABBREV_TAC `D` >> BETA_TAC \\
-     irule (INST_TYPE [``:'a`` |-> ``:num``] IN_MEASURABLE_BOREL_MAXIMAL) >> art [] \\
+     irule (INST_TYPE [``:'b`` |-> ``:num``] IN_MEASURABLE_BOREL_MAXIMAL) >> art [] \\
      qexistsl_tac [`N (SUC n)`, `d (SUC n)`] \\
      ASM_SIMP_TAC std_ss [] \\
      Q.X_GEN_TAC `k` >> Q.UNABBREV_TAC `d` >> BETA_TAC \\
@@ -6101,10 +6101,41 @@ Proof
  >> Know `(W --> (\x. 0)) (almost_everywhere p)`
  >- (`real_random_variable (\x. 0) p` by METIS_TAC [real_random_variable_zero] \\
      RW_TAC std_ss [converge_AE_alt_limsup, sub_rzero] \\
-     MATCH_MP_TAC Borel_Cantelli_Lemma1 \\
-     RW_TAC std_ss [o_DEF] (* 2 subgoals *)
-     >- (
-         cheat) \\
+     MATCH_MP_TAC Borel_Cantelli_Lemma1 >> BETA_TAC >> art [] \\
+     STRONG_CONJ_TAC
+     >- (GEN_TAC \\
+        `{x | x IN p_space p /\ e < abs (W n x)} =
+         {x | e < abs (W n x)} INTER p_space p` by SET_TAC [] >> POP_ORW \\
+         REWRITE_TAC [lt_abs_bounds] \\
+        `{x | W n x < -e \/ e < W n x} INTER p_space p =
+         ({x | W n x < -e} INTER p_space p) UNION
+         ({x | e < W n x} INTER p_space p)` by SET_TAC [] >> POP_ORW \\
+         MATCH_MP_TAC EVENTS_UNION \\
+         fs [events_def, p_space_def, real_random_variable_def,
+             random_variable_def] \\
+         METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE]) >> DISCH_TAC \\
+     Know `!n. {x | x IN p_space p /\ e <= abs (W n x)} IN events p`
+     >- (GEN_TAC \\
+        `{x | x IN p_space p /\ e <= abs (W n x)} =
+         {x | e <= abs (W n x)} INTER p_space p` by SET_TAC [] >> POP_ORW \\
+         REWRITE_TAC [le_abs_bounds] \\
+        `{x | W n x <= -e \/ e <= W n x} INTER p_space p =
+         ({x | W n x <= -e} INTER p_space p) UNION
+         ({x | e <= W n x} INTER p_space p)` by SET_TAC [] >> POP_ORW \\
+         MATCH_MP_TAC EVENTS_UNION \\
+         fs [events_def, p_space_def, real_random_variable_def,
+             random_variable_def] \\
+         METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE]) >> DISCH_TAC \\
+     SIMP_TAC std_ss [o_DEF] \\
+     MATCH_MP_TAC let_trans \\
+     Q.EXISTS_TAC `suminf (\n. prob p {x | x IN p_space p /\ e <= abs (W n x)})` \\
+     CONJ_TAC >- (MATCH_MP_TAC ext_suminf_mono \\
+                  CONJ_TAC >- METIS_TAC [PROB_POSITIVE] \\
+                  RW_TAC std_ss [] \\
+                  MATCH_MP_TAC PROB_INCREASING >> art [] \\
+                  RW_TAC set_ss [SUBSET_DEF] \\
+                  MATCH_MP_TAC lt_imp_le >> art []) \\
+     (* prob_markov_ineq *)
      cheat)
  >> 
     cheat
