@@ -8,13 +8,13 @@
 (* Based on the work of Joe Hurd [7] and Aaron Coble [8]                     *)
 (* Cambridge University.                                                     *)
 (* ========================================================================= *)
-(* The Law(s) of Large Numbers [WLLN_* and SLLN_*]                           *)
+(* Convergence Concepts and The Laws of Large Numbers                        *)
 (*                                                                           *)
 (* Author: Chun Tian <binghe.lisp@gmail.com> (2020)                          *)
 (* Fondazione Bruno Kessler and University of Trento, Italy                  *)
 (* ========================================================================= *)
 (*                                                                           *)
-(*                 Probability Density Function Theory [11]                  *)
+(*                 Probability Density Function (PDF) [11]                   *)
 (*                                                                           *)
 (*        (c) Copyright 2015,                                                *)
 (*                       Muhammad Qasim,                                     *)
@@ -58,6 +58,7 @@ val set_ss = std_ss ++ PRED_SET_ss;
 val std_ss' = std_ss ++ boolSimps.ETA_ss;
 
 val _ = hide "S";
+val _ = hide "W";
 
 (* ------------------------------------------------------------------------- *)
 (* Basic probability theory definitions.                                     *)
@@ -5816,6 +5817,7 @@ Proof
                        (Q.SPECL [`p`, `Z`, `\x. 0`] converge_AE_alt_limsup)) \\
     `real_random_variable (\x. 0) p` by PROVE_TAC [real_random_variable_zero] \\
      RW_TAC std_ss []) >> DISCH_TAC
+ >> Q.PAT_X_ASSUM `!e. 0 < e /\ e <> PosInf ==> P` K_TAC
  (* preparing for "method of subsequences" *)
  >> Q.ABBREV_TAC `N = \n. {k | n ** 2 <= k /\ k < SUC n ** 2}`
  >> Know `!n m. FINITE {k | n ** 2 <= k /\ k < m}`
@@ -6059,7 +6061,51 @@ Proof
          MATCH_MP_TAC LESS_TRANS >> Q.EXISTS_TAC `n ** 2` >> rw []) >> Rewr' \\
      REWRITE_TAC [CARD_COUNT, ADD1, SUM_SQUARED] >> rw []) >> Rewr'
  >> DISCH_TAC
- (* stage work *)
+ (* stage work, now prove the AE convergence of D(n)/n^2 *)
+ >> Q.ABBREV_TAC `W = (\n x. D (SUC n) x / &(SUC n ** 2))`
+ >> Know `!n. real_random_variable (W n) p`
+ >- (GEN_TAC \\
+     SIMP_TAC std_ss [Abbr `W`, real_random_variable_def,
+                      random_variable_def, p_space_def, events_def] \\
+     reverse CONJ_TAC
+     >- (GEN_TAC >> art [extreal_of_num_def] \\
+        `?r. d (SUC n) (f (SUC n) x) x = Normal r` by METIS_TAC [extreal_cases] \\
+         POP_ORW \\
+         Suff `&(SUC n ** 2) <> (0 :real)`
+         >- METIS_TAC [extreal_div_eq, extreal_not_infty] \\
+         rw []) \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL \\
+     qexistsl_tac [`D (SUC n)`, `inv (&(SUC n ** 2))`] \\
+     fs [prob_space_def, measure_space_def, p_space_def, events_def, space_def] \\
+     reverse CONJ_TAC
+     >- (RW_TAC std_ss [extreal_of_num_def] \\
+        `&(SUC n ** 2) <> (0 :real)` by RW_TAC real_ss [] \\
+         ASM_SIMP_TAC real_ss [GSYM extreal_inv_def] \\
+         MATCH_MP_TAC div_eq_mul_linv \\
+         rw [extreal_of_num_def, extreal_lt_eq]) \\
+     NTAC 2 (POP_ASSUM K_TAC) \\
+     Q.UNABBREV_TAC `D` >> BETA_TAC \\
+     irule (INST_TYPE [``:'a`` |-> ``:num``] IN_MEASURABLE_BOREL_MAXIMAL) >> art [] \\
+     qexistsl_tac [`N (SUC n)`, `d (SUC n)`] \\
+     ASM_SIMP_TAC std_ss [] \\
+     Q.X_GEN_TAC `k` >> Q.UNABBREV_TAC `d` >> BETA_TAC \\
+     POP_ASSUM K_TAC (* clean up *) \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_ABS \\
+     Q.EXISTS_TAC `\x. S k x - S (SUC n ** 2) x` \\
+     CONJ_TAC >- art [] \\
+     reverse CONJ_TAC >- rw [space_def] \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_SUB \\
+     qexistsl_tac [`S k`, `S (SUC n ** 2)`] \\
+     fs [space_def, real_random_variable_def, random_variable_def,
+         p_space_def, events_def]) >> DISCH_TAC
+ >> Know `(W --> (\x. 0)) (almost_everywhere p)`
+ >- (`real_random_variable (\x. 0) p` by METIS_TAC [real_random_variable_zero] \\
+     RW_TAC std_ss [converge_AE_alt_limsup, sub_rzero] \\
+     MATCH_MP_TAC Borel_Cantelli_Lemma1 \\
+     RW_TAC std_ss [o_DEF] (* 2 subgoals *)
+     >- (
+         cheat) \\
+     cheat)
  >> 
     cheat
 QED
