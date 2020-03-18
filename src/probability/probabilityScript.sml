@@ -4,12 +4,15 @@
 (* HVG Group, Concordia University, Montreal                                 *)
 (*                                                                           *)
 (* Further enriched by Chun Tian (2019-2020)                                 *)
-(* Fondazione Bruno Kessler and University of Trento, Italy                  *)
 (* ------------------------------------------------------------------------- *)
 (* Based on the work of Joe Hurd [7] and Aaron Coble [8]                     *)
 (* Cambridge University.                                                     *)
 (* ========================================================================= *)
-(* Updated by Chun Tian (2020) using some materials from:                    *)
+(* The Law(s) of Large Numbers [WLLN_* and SLLN_*]                           *)
+(*                                                                           *)
+(* Author: Chun Tian <binghe.lisp@gmail.com> (2020)                          *)
+(* Fondazione Bruno Kessler and University of Trento, Italy                  *)
+(* ========================================================================= *)
 (*                                                                           *)
 (*                 Probability Density Function Theory [11]                  *)
 (*                                                                           *)
@@ -20,7 +23,6 @@
 (*                       Concordia University                                *)
 (*                                                                           *)
 (*            Contact:  <m_qasi@ece.concordia.ca>                            *)
-(*                                                                           *)
 (* ========================================================================= *)
 
 open HolKernel Parse boolLib bossLib;
@@ -6058,7 +6060,8 @@ Proof
      REWRITE_TAC [CARD_COUNT, ADD1, SUM_SQUARED] >> rw []) >> Rewr'
  >> DISCH_TAC
  (* stage work *)
- >> cheat
+ >> 
+    cheat
 QED
 
 (* ========================================================================= *)
