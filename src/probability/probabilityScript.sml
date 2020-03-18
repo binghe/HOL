@@ -5549,10 +5549,11 @@ Proof
  >> rename1 `!n x. S n x = SIGMA (\i. X i x) (count n)`
  >> rename1 `M <> PosInf`
  (* now the actual proof *)
- >> Know `M <> NegInf`
- >- (MATCH_MP_TAC pos_not_neginf \\
-     MATCH_MP_TAC le_trans >> Q.EXISTS_TAC `variance p (X 0)` >> art [] \\
+ >> Know `0 <= M`
+ >- (MATCH_MP_TAC le_trans >> Q.EXISTS_TAC `variance p (X 0)` \\
      ASM_SIMP_TAC std_ss [variance_pos]) >> DISCH_TAC
+ >> Know `M <> NegInf`
+ >- (MATCH_MP_TAC pos_not_neginf >> art []) >> DISCH_TAC
  (* properties of (S n) *)
  >> Know `!n. variance p (S n) <= &n * M`
  >- (GEN_TAC \\
@@ -5699,7 +5700,7 @@ Proof
  (* applying Borel_Cantelli_Lemma1 *)
  >> Q.ABBREV_TAC `E = \e n. {x | x IN p_space p /\
                                  &(SUC n ** 2) * e < abs (S (SUC n ** 2) x)}`
- >> Know `!e. 0 < e /\ e <> PosInf ==> prob p (limsup (E e)) = 0`
+ >> Know `!e. 0 < e /\ e <> PosInf ==> (prob p (limsup (E e)) = 0)`
  >- (rpt STRIP_TAC \\
      MATCH_MP_TAC Borel_Cantelli_Lemma1 >> art [] \\
      CONJ_TAC >- (GEN_TAC >> Q.UNABBREV_TAC `E` >> BETA_TAC >> art []) \\
@@ -5733,12 +5734,9 @@ Proof
          RW_TAC real_ss [extreal_of_num_def, extreal_lt_eq]) >> DISCH_TAC \\
      Know `suminf (\n. inv (e pow 2) * M * f n) = inv (e pow 2) * M * suminf f`
      >- (MATCH_MP_TAC ext_suminf_cmul \\
-         CONJ_TAC >- (MATCH_MP_TAC le_mul \\
-                      CONJ_TAC >- (MATCH_MP_TAC le_inv \\
-                                   MATCH_MP_TAC pow_pos_lt >> art []) \\
-                      MATCH_MP_TAC le_trans \\
-                      Q.EXISTS_TAC `variance p (X 0)` \\
-                      ASM_SIMP_TAC std_ss [variance_pos]) \\
+         CONJ_TAC >- (MATCH_MP_TAC le_mul >> art [] \\
+                      MATCH_MP_TAC le_inv \\
+                      MATCH_MP_TAC pow_pos_lt >> art []) \\
          RW_TAC std_ss [Abbr `f`] \\
          MATCH_MP_TAC le_inv \\
          MATCH_MP_TAC pow_pos_lt \\
@@ -5851,7 +5849,7 @@ Proof
  >- (GEN_TAC >> art [expectation_def] \\
   (* Here we have to prove that
 
-     integral p (\x. (d n (f n x) x) pow 2) <= 
+     integral p (\x. (d n (f n x) x) pow 2) <=
        SIGMA (\k. integral p (\x. (d n k x) pow 2))
              {k | n ** 2 <= k /\ k < (SUC n) ** 2}
 
@@ -5878,7 +5876,7 @@ Proof
          Know `DISJOINT {k | n ** 2 <= k /\ k < i} (count (n ** 2))`
          >- (RW_TAC set_ss [DISJOINT_ALT, IN_COUNT] >> rw []) >> DISCH_TAC \\
          Know `count i = {k | n ** 2 <= k /\ k < i} UNION (count (n ** 2))`
-         >- (RW_TAC set_ss [Once EXTENSION, IN_COUNT] >> rw []) >> Rewr' \\          
+         >- (RW_TAC set_ss [Once EXTENSION, IN_COUNT] >> rw []) >> Rewr' \\
          Know `!x. SIGMA (\i. X i x) ({k | n ** 2 <= k /\ k < i} UNION (count (n ** 2))) =
                    SIGMA (\i. X i x) {k | n ** 2 <= k /\ k < i} +
                    SIGMA (\i. X i x) (count (n ** 2))`
@@ -6018,13 +6016,49 @@ Proof
          fs [prob_space_def, expectation_def]) >> Rewr' \\
      FULL_SIMP_TAC std_ss [expectation_def] \\
      MATCH_MP_TAC EXTREAL_SUM_IMAGE_ZERO >> art []) >> Rewr'
-(*
- >> Know `SIGMA (\k. expectation p (\x. (d n (SUC n ** 2) x) pow 2)) (N n) =
-          &CARD (N n) * expectation p (\x. (d n (SUC n ** 2) x) pow 2)
-EXTREAL_SUM_IMAGE_FINITE_CONST
- *)
- >> 
-    cheat
+ >> Know `!n. SIGMA (\k. variance p (\x. SIGMA (\i. X i x)
+                                         {j | n ** 2 <= j /\ j < SUC n ** 2})) (N n) =
+              &CARD (N n) * (variance p (\x. SIGMA (\i. X i x)
+                                             {j | n ** 2 <= j /\ j < SUC n ** 2}))`
+ >- (GEN_TAC >> irule EXTREAL_SUM_IMAGE_FINITE_CONST \\
+     ASM_SIMP_TAC std_ss [] \\
+     DISJ1_TAC >> MATCH_MP_TAC pos_not_neginf \\
+     MATCH_MP_TAC variance_pos >> art []) >> Rewr'
+ >> Know `!n. variance p (\x. SIGMA (\i. X i x) {j | n ** 2 <= j /\ j < SUC n ** 2}) =
+                   SIGMA (\i. variance p (X i)) (N n)`
+ >- (RW_TAC std_ss [Abbr `N`] >> MATCH_MP_TAC variance_sum \\
+     rw [uncorrelated_vars_def, real_random_variable_def] \\
+     METIS_TAC [uncorrelated_orthogonal]) >> Rewr'
+ >> DISCH_TAC
+ >> Know `!n. expectation p (\x. (D n x) pow 2) <= &CARD (N n) * SIGMA (\i. M) (N n)`
+ >- (GEN_TAC >> MATCH_MP_TAC le_trans \\
+     Q.EXISTS_TAC `&CARD (N n) * (SIGMA (\i. variance p (X i)) (N n))` >> art [] \\
+     MATCH_MP_TAC le_lmul_imp \\
+     CONJ_TAC >- RW_TAC real_ss [extreal_of_num_def, extreal_le_eq] \\
+     irule EXTREAL_SUM_IMAGE_MONO >> ASM_SIMP_TAC std_ss [] \\
+     DISJ1_TAC >> GEN_TAC >> DISCH_TAC \\
+     MATCH_MP_TAC pos_not_neginf \\
+     MATCH_MP_TAC variance_pos >> art [])
+ >> POP_ASSUM K_TAC
+ >> Know `!n. SIGMA (\i. M) (N n) = &CARD (N n) * M`
+ >- (GEN_TAC >> irule EXTREAL_SUM_IMAGE_FINITE_CONST \\
+     ASM_SIMP_TAC std_ss []) >> Rewr'
+ >> REWRITE_TAC [mul_assoc, GSYM pow_2]
+ >> Know `!n. CARD (N n) = 2 * n + 1`
+ >- (RW_TAC std_ss [Abbr `N`] \\
+     Know `{k | n ** 2 <= k /\ k < SUC n ** 2} = (count (SUC n ** 2)) DIFF (count (n ** 2))`
+     >- (RW_TAC set_ss [Once EXTENSION] >> rw []) >> Rewr' \\
+     Know `CARD (count (SUC n ** 2) DIFF (count (n ** 2))) =
+           CARD (count (SUC n ** 2)) - CARD (count (SUC n ** 2) INTER (count (n ** 2)))`
+     >- (MATCH_MP_TAC CARD_DIFF_EQN >> REWRITE_TAC [FINITE_COUNT]) >> Rewr' \\
+     Know `count (SUC n ** 2) INTER (count (n ** 2)) = count (n ** 2)`
+     >- (RW_TAC set_ss [Once EXTENSION, IN_COUNT] \\
+         EQ_TAC >> RW_TAC arith_ss [] \\
+         MATCH_MP_TAC LESS_TRANS >> Q.EXISTS_TAC `n ** 2` >> rw []) >> Rewr' \\
+     REWRITE_TAC [CARD_COUNT, ADD1, SUM_SQUARED] >> rw []) >> Rewr'
+ >> DISCH_TAC
+ (* stage work *)
+ >> cheat
 QED
 
 (* ========================================================================= *)
