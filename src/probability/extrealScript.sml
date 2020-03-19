@@ -2063,6 +2063,18 @@ val pow_lt2 = store_thm
   >> RW_TAC std_ss [extreal_pow_def,extreal_of_num_def,extreal_le_def,REAL_POW_LT2,
                     lt_infty,le_infty,extreal_not_infty,extreal_lt_eq]);
 
+Theorem pow_le_full :
+    !n x y :extreal. n <> 0 /\ 0 <= x /\ 0 <= y ==>
+                    (x <= y <=> x pow n <= y pow n)
+Proof
+    rpt STRIP_TAC
+ >> EQ_TAC >> DISCH_TAC
+ >- (MATCH_MP_TAC pow_le >> art [])
+ >> SPOSE_NOT_THEN (ASSUME_TAC o (REWRITE_RULE [GSYM extreal_lt_def]))
+ >> `y pow n < x pow n` by PROVE_TAC [pow_lt2]
+ >> METIS_TAC [let_antisym]
+QED
+
 val pow_le_mono = store_thm
   ("pow_le_mono", ``!x n m. 1 <= x /\ n <= m ==> x pow n <= x pow m``,
   Cases

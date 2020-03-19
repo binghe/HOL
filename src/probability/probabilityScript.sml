@@ -2070,7 +2070,11 @@ val finite_second_moments_alt = store_thm
     rpt STRIP_TAC
  >> METIS_TAC [finite_second_moments_eq_finite_variance, lemma]);
 
-Theorem finite_second_moments_alt' =
+(* |- !p X.
+         prob_space p /\ real_random_variable X p ==>
+         (finite_second_moments p X <=> expectation p (\x. (X x) pow 2) < PosInf)
+ *)
+Theorem finite_second_moments_literally =
     REWRITE_RULE [second_moment_def, moment_def, sub_rzero]
                  finite_second_moments_alt;
 
@@ -5515,7 +5519,7 @@ Proof
  >> Know `!i j. i <> j ==> orthogonal p (Y i) (Y j)`
  >- (RW_TAC std_ss [orthogonal_def, Abbr `Y`] \\
      MATCH_MP_TAC uncorrelated_thm >> RW_TAC std_ss []) >> DISCH_TAC
- (* `Z` (Zusammen) is the parial sum of `Y n` *)
+ (* `Z n` is the parial sums of `Y n` *)
  >> Q.ABBREV_TAC `Z = \n x. SIGMA (\i. Y i x) (count n)`
  >> qexistsl_tac [`Y`, `Z`]
  >> RW_TAC std_ss [Abbr `Y`, Abbr `Z`]
@@ -5525,7 +5529,7 @@ Proof
           SIGMA (\i. X i x) (count n) -
           SIGMA (\i. expectation p (X i)) (count n)`
  >- (irule EXTREAL_SUM_IMAGE_SUB >> art [FINITE_COUNT, IN_COUNT] \\
-     DISJ1_TAC (* whatever *) >> fs [real_random_variable_def] \\
+     DISJ1_TAC (* or DISJ2_TAC *) >> fs [real_random_variable_def] \\
      METIS_TAC [expectation_finite]) >> Rewr'
  >> Suff `expectation p (S n) =
           SIGMA (\i. expectation p (X i)) (count n)` >- rw []
@@ -6103,7 +6107,7 @@ Proof
      fs [space_def, real_random_variable_def, random_variable_def,
          p_space_def, events_def]) >> DISCH_TAC
  >> Know `!n. finite_second_moments p (W n)`
- >- (RW_TAC std_ss [finite_second_moments_alt', expectation_def] \\
+ >- (RW_TAC std_ss [finite_second_moments_literally, expectation_def] \\
      Q.UNABBREV_TAC `W` >> BETA_TAC \\
      Know `!x. D (SUC n) x / &(SUC n ** 2) = inv (&(SUC n ** 2)) * D (SUC n) x`
      >- (GEN_TAC \\
@@ -6176,7 +6180,35 @@ Proof
                   MATCH_MP_TAC PROB_INCREASING >> art [] \\
                   RW_TAC set_ss [SUBSET_DEF] \\
                   MATCH_MP_TAC lt_imp_le >> art []) \\
-     (* prob_markov_ineq *)
+     Know `!n x. e <= abs (W n x) <=> e pow 2 <= abs ((\x. (W n x) pow 2) x)`
+     >- (rpt GEN_TAC >> BETA_TAC \\
+        `abs ((W n x) pow 2) = (abs (W n x)) pow 2`
+            by METIS_TAC [abs_refl, le_pow2, abs_pow2] >> POP_ORW \\
+         MATCH_MP_TAC pow_le_full >> rw [abs_pos] \\
+         MATCH_MP_TAC lt_imp_le >> art []) >> DISCH_TAC \\
+     (* applying prob_markov_ineq *)
+    `!n. {x | x IN p_space p /\ e <= abs (W n x)} =
+         {x | e <= abs (W n x)} INTER p_space p` by SET_TAC [] >> POP_ORW \\
+     ASM_REWRITE_TAC [] \\
+     MATCH_MP_TAC let_trans \\
+     Q.EXISTS_TAC `suminf (\n. inv (e pow 2) * expectation p (abs o (\x. (W n x) pow 2)))` \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC ext_suminf_mono \\
+         CONJ_TAC >- (GEN_TAC \\
+                      POP_ASSUM (ONCE_REWRITE_TAC o wrap o GSYM) \\
+                      BETA_TAC >> MATCH_MP_TAC PROB_POSITIVE \\
+                      Suff `{x | e <= abs (W n x)} INTER p_space p =
+                            {x | x IN p_space p /\ e <= abs (W n x)}` >- rw [] \\
+                      SET_TAC []) \\
+         GEN_TAC >> BETA_TAC \\
+         HO_MATCH_MP_TAC prob_markov_ineq >> art [] \\
+         reverse CONJ_TAC >- (MATCH_MP_TAC pow_pos_lt >> art []) \\
+         METIS_TAC [finite_second_moments_eq_integrable_square]) \\
+     NTAC 2 (POP_ASSUM K_TAC) \\
+     SIMP_TAC std_ss [o_DEF] \\
+    `!n x. abs ((W n x) pow 2) = (W n x) pow 2`
+        by METIS_TAC [abs_refl, le_pow2] >> POP_ORW \\
+     
      cheat)
  >> 
     cheat
