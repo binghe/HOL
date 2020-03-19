@@ -2070,6 +2070,10 @@ val finite_second_moments_alt = store_thm
     rpt STRIP_TAC
  >> METIS_TAC [finite_second_moments_eq_finite_variance, lemma]);
 
+Theorem finite_second_moments_alt' =
+    REWRITE_RULE [second_moment_def, moment_def, sub_rzero]
+                 finite_second_moments_alt;
+
 val finite_second_moments_eq_integrable_square = store_thm
   ("finite_second_moments_eq_integrable_square",
   ``!p X. prob_space p /\ real_random_variable X p ==>
@@ -6098,6 +6102,43 @@ Proof
      qexistsl_tac [`S k`, `S (SUC n ** 2)`] \\
      fs [space_def, real_random_variable_def, random_variable_def,
          p_space_def, events_def]) >> DISCH_TAC
+ >> Know `!n. finite_second_moments p (W n)`
+ >- (RW_TAC std_ss [finite_second_moments_alt', expectation_def] \\
+     Q.UNABBREV_TAC `W` >> BETA_TAC \\
+     Know `!x. D (SUC n) x / &(SUC n ** 2) = inv (&(SUC n ** 2)) * D (SUC n) x`
+     >- (GEN_TAC \\
+         MATCH_MP_TAC div_eq_mul_linv >> art [] \\
+         RW_TAC real_ss [extreal_of_num_def, extreal_lt_eq]) >> Rewr' \\
+     Know `       integral p (\x. (inv (&(SUC n ** 2)) * D (SUC n) x) pow 2) =
+           pos_fn_integral p (\x. (inv (&(SUC n ** 2)) * D (SUC n) x) pow 2)`
+     >- (MATCH_MP_TAC integral_pos_fn \\
+         FULL_SIMP_TAC std_ss [le_pow2, prob_space_def]) >> Rewr' \\
+     REWRITE_TAC [pow_mul, extreal_of_num_def] \\
+     Know `(inv (Normal &(SUC n ** 2))) pow 2 = Normal ((inv &(SUC n ** 2)) pow 2)`
+     >- (`&(SUC n ** 2) <> (0 :real)` by RW_TAC real_ss [] \\
+         ASM_SIMP_TAC std_ss [extreal_inv_eq, extreal_pow_def]) >> Rewr' \\
+     Know `pos_fn_integral p
+              (\x. Normal ((inv &(SUC n ** 2)) pow 2) * (\x. (D (SUC n) x) pow 2) x) =
+           Normal ((inv &(SUC n ** 2)) pow 2) * pos_fn_integral p (\x. (D (SUC n) x) pow 2)`
+     >- (MATCH_MP_TAC pos_fn_integral_cmul \\
+         fs [prob_space_def, le_pow2]) >> BETA_TAC >> Rewr' \\
+     Q.ABBREV_TAC `c = Normal ((inv &(SUC n ** 2)) pow 2)` \\
+     MATCH_MP_TAC let_trans \\
+     Q.EXISTS_TAC `c * (&(2 * SUC n + 1) pow 2) * M` \\
+     reverse CONJ_TAC
+     >- (Q.UNABBREV_TAC `c` \\
+        `?r. M = Normal r` by METIS_TAC [extreal_cases] \\
+         ASM_SIMP_TAC std_ss [extreal_pow_def, extreal_of_num_def,
+                              lt_infty, extreal_mul_def]) \\
+     ONCE_REWRITE_TAC [GSYM mul_assoc] \\
+     MATCH_MP_TAC le_lmul_imp \\
+     CONJ_TAC >- (Q.UNABBREV_TAC `c` >> rw [extreal_of_num_def, extreal_le_eq, le_pow2]) \\
+     Suff `pos_fn_integral p (\x. (D (SUC n) x) pow 2) =
+               expectation p (\x. (D (SUC n) x) pow 2)`
+     >- (Rewr' >> art []) \\
+     REWRITE_TAC [expectation_def, Once EQ_SYM_EQ] \\
+     MATCH_MP_TAC integral_pos_fn \\
+     FULL_SIMP_TAC std_ss [prob_space_def, le_pow2]) >> DISCH_TAC
  >> Know `(W --> (\x. 0)) (almost_everywhere p)`
  >- (`real_random_variable (\x. 0) p` by METIS_TAC [real_random_variable_zero] \\
      RW_TAC std_ss [converge_AE_alt_limsup, sub_rzero] \\
