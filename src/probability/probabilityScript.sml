@@ -6136,7 +6136,8 @@ Proof
                               lt_infty, extreal_mul_def]) \\
      ONCE_REWRITE_TAC [GSYM mul_assoc] \\
      MATCH_MP_TAC le_lmul_imp \\
-     CONJ_TAC >- (Q.UNABBREV_TAC `c` >> rw [extreal_of_num_def, extreal_le_eq, le_pow2]) \\
+     CONJ_TAC >- (Q.UNABBREV_TAC `c` \\
+                  rw [extreal_of_num_def, extreal_le_eq, le_pow2]) \\
      Suff `pos_fn_integral p (\x. (D (SUC n) x) pow 2) =
                expectation p (\x. (D (SUC n) x) pow 2)`
      >- (Rewr' >> art []) \\
@@ -6204,12 +6205,163 @@ Proof
          HO_MATCH_MP_TAC prob_markov_ineq >> art [] \\
          reverse CONJ_TAC >- (MATCH_MP_TAC pow_pos_lt >> art []) \\
          METIS_TAC [finite_second_moments_eq_integrable_square]) \\
-     NTAC 2 (POP_ASSUM K_TAC) \\
      SIMP_TAC std_ss [o_DEF] \\
     `!n x. abs ((W n x) pow 2) = (W n x) pow 2`
         by METIS_TAC [abs_refl, le_pow2] >> POP_ORW \\
-     
-     cheat)
+     NTAC 3 (POP_ASSUM K_TAC) \\
+     REWRITE_TAC [expectation_def] \\
+     Know `!n.    integral p (\x. (W n x) pow 2) =
+           pos_fn_integral p (\x. (W n x) pow 2)`
+     >- (GEN_TAC >> MATCH_MP_TAC integral_pos_fn \\
+         fs [prob_space_def, le_pow2]) >> Rewr' \\
+     Q.UNABBREV_TAC `W` >> BETA_TAC \\
+     Know `!n x. D (SUC n) x / &(SUC n ** 2) = inv (&(SUC n ** 2)) * D (SUC n) x`
+     >- (rpt GEN_TAC \\
+         MATCH_MP_TAC div_eq_mul_linv >> art [] \\
+         RW_TAC real_ss [extreal_of_num_def, extreal_lt_eq]) >> Rewr' \\
+     REWRITE_TAC [pow_mul, extreal_of_num_def] \\
+     Know `!n. (inv (Normal &(SUC n ** 2))) pow 2 = Normal ((inv &(SUC n ** 2)) pow 2)`
+     >- (GEN_TAC >> `&(SUC n ** 2) <> (0 :real)` by RW_TAC real_ss [] \\
+         ASM_SIMP_TAC std_ss [extreal_inv_eq, extreal_pow_def]) >> Rewr' \\
+     Know `!n. pos_fn_integral p
+                 (\x. Normal ((inv &(SUC n ** 2)) pow 2) * (\x. (D (SUC n) x) pow 2) x) =
+               Normal ((inv &(SUC n ** 2)) pow 2) *
+                 pos_fn_integral p (\x. (D (SUC n) x) pow 2)`
+     >- (GEN_TAC >> MATCH_MP_TAC pos_fn_integral_cmul \\
+         fs [prob_space_def, le_pow2]) >> BETA_TAC >> Rewr' \\
+     ONCE_REWRITE_TAC [mul_assoc] \\
+     MATCH_MP_TAC let_trans \\
+     Q.EXISTS_TAC `suminf (\n. inv (e pow 2) * Normal ((inv &(SUC n ** 2)) pow 2) *
+                               (&(2 * SUC n + 1)) pow 2 * M)` \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC ext_suminf_mono >> BETA_TAC \\
+         Know `!n. 0 <= inv (e pow 2) * Normal ((inv &(SUC n ** 2)) pow 2)`
+         >- (GEN_TAC >> MATCH_MP_TAC le_mul \\
+             CONJ_TAC >- (MATCH_MP_TAC lt_imp_le \\
+                          MATCH_MP_TAC inv_pos' \\
+                          CONJ_TAC >- (MATCH_MP_TAC pow_pos_lt >> art []) \\
+                         `e <> NegInf` by METIS_TAC [pos_not_neginf, lt_imp_le] \\
+                          METIS_TAC [pow_not_infty]) \\
+             RW_TAC real_ss [extreal_of_num_def, extreal_le_eq, REAL_LE_POW2]) \\
+         DISCH_TAC \\
+         CONJ_TAC >- (GEN_TAC >> MATCH_MP_TAC le_mul >> art [] \\
+                      MATCH_MP_TAC pos_fn_integral_pos \\
+                      fs [prob_space_def, le_pow2]) \\
+         GEN_TAC \\
+         Q.ABBREV_TAC `z = inv (e pow 2) * Normal ((inv &(SUC n ** 2)) pow 2)` \\
+         ONCE_REWRITE_TAC [GSYM mul_assoc] \\
+         MATCH_MP_TAC le_lmul_imp \\
+         Q.UNABBREV_TAC `z` >> CONJ_TAC >- art [] \\
+         Suff `pos_fn_integral p (\x. (D (SUC n) x) pow 2) =
+                   expectation p (\x. (D (SUC n) x) pow 2)` >- (Rewr' >> art []) \\
+         REWRITE_TAC [expectation_def, Once EQ_SYM_EQ] \\
+         MATCH_MP_TAC integral_pos_fn >> fs [prob_space_def, le_pow2]) \\
+  (* now the dirty (ext)real arithmetics *)
+     Know `!n. Normal ((inv &(SUC n ** 2)) pow 2) = inv ((&SUC n) pow 4)`
+     >- (RW_TAC std_ss [extreal_of_num_def] \\
+        `&SUC n <> (0 :real)` by RW_TAC real_ss [] \\
+         ASM_SIMP_TAC std_ss [extreal_inv_eq, extreal_pow_def] \\
+         Know `(&SUC n) pow 4 <> (0 :real)`
+         >- (Suff `(0 :real) < (&SUC n) pow 4` >- rw [] \\
+             MATCH_MP_TAC REAL_POW_LT >> rw []) >> DISCH_TAC \\
+         ASM_SIMP_TAC std_ss [extreal_inv_eq, extreal_11] \\
+        `&(SUC n ** 2) :real = (&SUC n) pow 2` by METIS_TAC [REAL_OF_NUM_POW] >> POP_ORW \\
+         ASM_SIMP_TAC real_ss [POW_INV, REAL_POW_POW]) >> Rewr' \\
+     Q.ABBREV_TAC `z = \n. inv (e pow 2) * inv ((&n) pow 4)` \\
+    `!n. inv (e pow 2) * inv ((&SUC n) pow 4) = z (SUC n)` by METIS_TAC [] >> POP_ORW \\
+     Know `!n. 0 <= z (SUC n)`
+     >- (RW_TAC std_ss [Abbr `z`] \\
+         MATCH_MP_TAC le_mul \\
+         CONJ_TAC >- (MATCH_MP_TAC lt_imp_le >> MATCH_MP_TAC inv_pos' \\
+                      CONJ_TAC >- (MATCH_MP_TAC pow_pos_lt >> art []) \\
+                     `e <> NegInf` by METIS_TAC [pos_not_neginf, lt_imp_le] \\
+                      METIS_TAC [pow_not_infty]) \\
+         MATCH_MP_TAC lt_imp_le >> MATCH_MP_TAC inv_pos' \\
+         CONJ_TAC >- (MATCH_MP_TAC pow_pos_lt \\
+                      rw [extreal_of_num_def, extreal_lt_eq]) \\
+         SIMP_TAC std_ss [extreal_of_num_def, extreal_pow_def, extreal_not_infty]) \\
+     DISCH_TAC \\
+     MATCH_MP_TAC let_trans \\
+     Q.EXISTS_TAC `suminf (\n. z (SUC n) * ((3 * &SUC n) pow 2) * M)` \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC ext_suminf_mono >> BETA_TAC \\
+         CONJ_TAC >- (GEN_TAC >> MATCH_MP_TAC le_mul >> art [] \\
+                      MATCH_MP_TAC le_mul >> art [le_pow2]) \\
+         GEN_TAC \\
+         MATCH_MP_TAC le_rmul_imp >> art [] \\
+         MATCH_MP_TAC le_lmul_imp >> art [] \\
+         MATCH_MP_TAC pow_le \\
+         rw [extreal_of_num_def, extreal_le_eq, extreal_mul_def]) \\
+     POP_ASSUM K_TAC \\
+     Q.UNABBREV_TAC `z` >> BETA_TAC \\
+  (* applying harmonic_series_pow_2 *)
+     Suff `!n. inv (e pow 2) * inv ((&SUC n) pow 4) * (3 * &SUC n) pow 2 * M =
+               inv (e pow 2) * M * 3 pow 2 * (\n. inv ((&SUC n) pow 2)) n`
+     >- (Rewr' \\
+         Know `suminf (\n. inv (e pow 2) * M * 3 pow 2 * (\n. inv ((&SUC n) pow 2)) n) =
+               inv (e pow 2) * M * 3 pow 2 * suminf (\n. inv ((&SUC n) pow 2))`
+         >- (MATCH_MP_TAC ext_suminf_cmul >> BETA_TAC \\
+             CONJ_TAC >- (MATCH_MP_TAC le_mul \\
+                          reverse CONJ_TAC >- (MATCH_MP_TAC pow_pos_le \\
+                                               rw [extreal_of_num_def,  extreal_le_eq]) \\
+                          MATCH_MP_TAC le_mul >> art [] \\
+                          MATCH_MP_TAC lt_imp_le >> MATCH_MP_TAC inv_pos' \\
+                          CONJ_TAC >- (MATCH_MP_TAC pow_pos_lt >> art []) \\
+                         `e <> NegInf` by METIS_TAC [pos_not_neginf, lt_imp_le] \\
+                          METIS_TAC [pow_not_infty]) \\
+             GEN_TAC >> MATCH_MP_TAC lt_imp_le >> MATCH_MP_TAC inv_pos' \\
+             CONJ_TAC >- (MATCH_MP_TAC pow_pos_lt \\
+                          rw [extreal_of_num_def, extreal_lt_eq]) \\
+             METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty]) \\
+         Rewr' \\
+         Know `0 <= suminf (\n. inv ((&SUC n) pow 2))`
+         >- (MATCH_MP_TAC ext_suminf_pos >> RW_TAC std_ss [] \\
+             MATCH_MP_TAC lt_imp_le >> MATCH_MP_TAC inv_pos' \\
+             CONJ_TAC >- (MATCH_MP_TAC pow_pos_lt \\
+                          rw [extreal_of_num_def, extreal_lt_eq]) \\
+             METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty]) \\
+         DISCH_TAC \\
+        `suminf (\n. inv ((&SUC n) pow 2)) <> NegInf` by METIS_TAC [pos_not_neginf] \\
+        `suminf (\n. inv ((&SUC n) pow 2)) <> PosInf`
+            by METIS_TAC [harmonic_series_pow_2, lt_infty] \\
+        `?r. suminf (\n. inv ((&SUC n) pow 2)) = Normal r`
+            by METIS_TAC [extreal_cases] >> POP_ORW \\
+        `?b. M = Normal b` by METIS_TAC [extreal_cases] >> POP_ORW \\
+        `e <> NegInf` by METIS_TAC [pos_not_neginf, lt_imp_le] \\
+        `?a. e = Normal a` by METIS_TAC [extreal_cases] \\
+         ASM_SIMP_TAC std_ss [GSYM lt_infty, extreal_of_num_def, extreal_pow_def] \\
+        `0 < a` by METIS_TAC [extreal_of_num_def, extreal_lt_eq] \\
+        `a pow 2 <> 0` by METIS_TAC [REAL_POW_LT, REAL_LT_IMP_NE] \\
+         ASM_SIMP_TAC std_ss [extreal_inv_eq, extreal_mul_def, extreal_not_infty]) \\
+     GEN_TAC >> BETA_TAC \\
+     REWRITE_TAC [GSYM mul_assoc] \\
+     Suff `inv ((&SUC n) pow 4) * ((3 * &SUC n) pow 2 * M) =
+           M * (3 pow 2 * inv ((&SUC n) pow 2))` >- RW_TAC std_ss [] \\
+     GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) empty_rewrites [mul_comm] \\
+     REWRITE_TAC [mul_assoc] \\
+     Suff `inv ((&SUC n) pow 4) * (3 * &SUC n) pow 2 =
+           3 pow 2 * inv ((&SUC n) pow 2)` >- RW_TAC std_ss [] \\
+     REWRITE_TAC [pow_mul] \\
+     GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites [mul_comm] \\
+     REWRITE_TAC [GSYM mul_assoc] \\
+     Suff `(&SUC n) pow 2 * inv ((&SUC n) pow 4) = inv ((&SUC n) pow 2)` >- rw [] \\
+    `4 = 2 + (2 :num)` by RW_TAC arith_ss [] >> POP_ORW \\
+     REWRITE_TAC [pow_add] \\
+     Know `inv (&SUC n pow 2 * &SUC n pow 2) =
+           inv (&SUC n pow 2) * inv (&SUC n pow 2)`
+     >- (MATCH_MP_TAC inv_mul >> REWRITE_TAC [] \\
+         Suff `0 < (&SUC n) pow 2` >- METIS_TAC [lt_imp_ne] \\
+         MATCH_MP_TAC pow_pos_lt \\
+         RW_TAC real_ss [extreal_of_num_def, extreal_lt_eq]) >> Rewr' \\
+     REWRITE_TAC [mul_assoc] \\
+     Suff `(&SUC n) pow 2 * inv (&SUC n pow 2) = 1`
+     >- (Rewr' >> REWRITE_TAC [mul_lone]) \\
+     ONCE_REWRITE_TAC [mul_comm] \\
+     MATCH_MP_TAC mul_linv_pos \\
+     CONJ_TAC >- (MATCH_MP_TAC pow_pos_lt \\
+                  RW_TAC real_ss [extreal_of_num_def, extreal_lt_eq]) \\
+     REWRITE_TAC [extreal_of_num_def, extreal_pow_def, extreal_not_infty])
+ >> DISCH_TAC
  >> 
     cheat
 QED
