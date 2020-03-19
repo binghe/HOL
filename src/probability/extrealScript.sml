@@ -1374,6 +1374,24 @@ Proof
  >> FULL_SIMP_TAC std_ss [lt_refl]
 QED
 
+Theorem abs_triangle :
+    !x y. x <> PosInf /\ x <> NegInf /\ y <> PosInf /\ y <> NegInf ==>
+          abs(x + y) <= abs(x) + abs(y)
+Proof
+    RW_TAC std_ss []
+ >> Cases_on `x` >> Cases_on `y`
+ >> rw [extreal_abs_def, extreal_add_def, extreal_le_eq, ABS_TRIANGLE]
+QED
+
+Theorem abs_triangle_sub :
+    !x y. x <> PosInf /\ x <> NegInf /\ y <> PosInf /\ y <> NegInf ==>
+          abs(x) <= abs(y) + abs(x - y)
+Proof
+    RW_TAC std_ss []
+ >> Cases_on `x` >> Cases_on `y`
+ >> rw [extreal_abs_def, extreal_add_def, extreal_sub_def, extreal_le_eq, ABS_TRIANGLE_SUB]
+QED
+
 (*********************)
 (*   Multiplication  *)
 (*********************)

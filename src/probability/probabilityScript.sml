@@ -6372,7 +6372,7 @@ Proof
      >- (Q.UNABBREV_TAC `n` \\
          MATCH_MP_TAC LESS_LESS_EQ_TRANS \\
          Q.EXISTS_TAC `1` >> RW_TAC arith_ss [] \\
-        `ROOT 2 1 = 1` by EVAL_TAC \\                   
+        `ROOT 2 1 = 1` by EVAL_TAC \\
          POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM) \\
          irule ROOT_LE_MONO >> RW_TAC arith_ss []) >> DISCH_TAC \\
      MATCH_MP_TAC le_trans \\
@@ -6393,11 +6393,50 @@ Proof
              RW_TAC real_ss [extreal_of_num_def, extreal_lt_eq]) >> Rewr' \\
          SIMP_TAC real_ss [Abbr `n`, extreal_of_num_def, extreal_le_eq] \\
          PROVE_TAC [SIMP_RULE arith_ss [] (Q.SPEC `2` ROOT)]) \\
-     cheat)
+     Know `abs (S (SUC k) x) / &(n ** 2) = inv (&(n ** 2)) * abs (S (SUC k) x)`
+     >- (MATCH_MP_TAC div_eq_mul_linv \\
+         SIMP_TAC real_ss [extreal_of_num_def, extreal_lt_eq] \\
+         ONCE_REWRITE_TAC [CONJ_ASSOC] \\
+         reverse CONJ_TAC >- art [] \\
+         MATCH_MP_TAC abs_not_infty >> art []) >> Rewr' \\
+     Know `(abs (S (n ** 2) x) + D n x) / &(n ** 2) =
+           inv (&(n ** 2)) * (abs (S (n ** 2) x) + D n x)`
+     >- (MATCH_MP_TAC div_eq_mul_linv \\
+         ONCE_REWRITE_TAC [CONJ_ASSOC] \\
+         reverse CONJ_TAC
+         >- (ASM_SIMP_TAC real_ss [extreal_of_num_def, extreal_lt_eq]) \\
+        `?r. S (n ** 2) x = Normal r` by METIS_TAC [extreal_cases] \\
+        `?a. D n x = Normal a` by METIS_TAC [extreal_cases] \\
+         ASM_SIMP_TAC std_ss [extreal_abs_def, extreal_add_def,
+                              extreal_not_infty]) >> Rewr' \\
+     MATCH_MP_TAC le_lmul_imp \\
+     CONJ_TAC >- (MATCH_MP_TAC lt_imp_le >> MATCH_MP_TAC inv_pos' \\
+                  rw [extreal_of_num_def, extreal_lt_eq, extreal_not_infty]) \\
+    `D n x = d n (f n x) x` by PROVE_TAC [] >> POP_ORW \\
+    `d n (f n x) x = abs (S (f n x) x - S (n ** 2) x)` by PROVE_TAC [] >> POP_ORW \\
+     MATCH_MP_TAC le_trans \\
+     Q.EXISTS_TAC `abs (S (n ** 2) x) + abs (S (SUC k) x - S (n ** 2) x)` \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC abs_triangle_sub >> art []) \\
+     Know `abs (S (n ** 2) x) + abs (S (SUC k) x - S (n ** 2) x) <=
+           abs (S (n ** 2) x) + abs (S (f n x) x - S (n ** 2) x) <=>
+           abs (S (SUC k) x - S (n ** 2) x) <= abs (S (f n x) x - S (n ** 2) x)`
+     >- (MATCH_MP_TAC le_ladd \\
+         ONCE_REWRITE_TAC [CONJ_SYM] \\
+         MATCH_MP_TAC abs_not_infty >> art []) >> Rewr' \\
+    `abs (S (SUC k) x - S (n ** 2) x) = d n (SUC k) x` by PROVE_TAC [] >> POP_ORW \\
+    `abs (S (f n x) x - S (n ** 2) x) = d n (f n x) x` by PROVE_TAC [] >> POP_ORW \\
+    `d n (f n x) x = sup (IMAGE (\k. d n k x) (N n))` by METIS_TAC [] >> POP_ORW \\
+     MATCH_MP_TAC le_sup_imp' \\
+     RW_TAC set_ss [Abbr `N`, IN_IMAGE] \\
+     Q.EXISTS_TAC `SUC k` >> art [] \\
+     Q.UNABBREV_TAC `n` \\
+     MATCH_MP_TAC ROOT >> RW_TAC arith_ss []) >> DISCH_TAC
  (* final stage *)
  >> SIMP_TAC std_ss [converge_AE_def, AE_THM, almost_everywhere_def, null_set_def,
                      LIM_SEQUENTIALLY, dist]
- >> cheat
+ >> 
+    cheat
 QED
 
 (* ========================================================================= *)
