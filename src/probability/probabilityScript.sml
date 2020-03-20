@@ -6474,7 +6474,7 @@ Proof
  >> NTAC 3 (Q.PAT_X_ASSUM `x IN m_space p DIFF _`     K_TAC)
  >> Q.PAT_X_ASSUM `M <> PosInf` K_TAC
  >> Q.PAT_X_ASSUM `M <> NegInf` K_TAC
- >> Q.PAT_X_ASSUM `0 <= M`      K_TAC                 
+ >> Q.PAT_X_ASSUM `0 <= M`      K_TAC
  (* clean up Z and W *)
  >> Q.PAT_X_ASSUM `!n. real_random_variable (Z n) p`  K_TAC
  >> Q.PAT_X_ASSUM `!n. real_random_variable (W n) p`  K_TAC
