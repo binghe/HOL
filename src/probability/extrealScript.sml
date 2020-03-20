@@ -828,6 +828,12 @@ Proof
  >> RW_TAC std_ss [extreal_abs_def,le_infty,extreal_of_num_def,extreal_le_def,ABS_REFL]
 QED
 
+Theorem abs_abs[simp]:
+    !x :extreal. abs(abs(x)) = abs(x)
+Proof
+    RW_TAC std_ss [abs_refl, abs_pos]
+QED
+
 Theorem let_total :
     !x y :extreal. x <= y \/ y < x
 Proof
