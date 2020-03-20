@@ -6490,7 +6490,7 @@ Proof
     `&(SUC n ** 2) <> (0: real)` by RW_TAC real_ss [] \\
      ASM_SIMP_TAC real_ss [extreal_of_num_def, extreal_abs_def, real_normal,
                            extreal_div_eq, extreal_lt_eq, ABS_DIV, ABS_N])
- >- DISCH_THEN ((FULL_SIMP_TAC bool_ss) o wrap)
+ >> DISCH_THEN ((FULL_SIMP_TAC bool_ss) o wrap)
  >> Know `!n e. abs (real (D (SUC n) x / &(SUC n ** 2))) < e <=>
                 abs (D (SUC n) x) / &(SUC n ** 2) < Normal e`
  >- (rpt GEN_TAC \\
@@ -6498,7 +6498,7 @@ Proof
     `&(SUC n ** 2) <> (0: real)` by RW_TAC real_ss [] \\
      ASM_SIMP_TAC real_ss [extreal_of_num_def, extreal_abs_def, real_normal,
                            extreal_div_eq, extreal_lt_eq, ABS_DIV, ABS_N])
- >- DISCH_THEN ((FULL_SIMP_TAC bool_ss) o wrap)
+ >> DISCH_THEN ((FULL_SIMP_TAC bool_ss) o wrap)
  (* continue estimating N *)
  >> NTAC 2 (Q.PAT_X_ASSUM `!e. 0 < e ==> P` (MP_TAC o (Q.SPEC `inv 2 * e`)))
  >> Know `0 < inv 2 * e`
@@ -6521,12 +6521,11 @@ Proof
  >> Q.PAT_X_ASSUM `!k x. abs (S (SUC k) x) / &SUC k <= _` K_TAC
  >> Q.ABBREV_TAC `k = ROOT 2 (SUC n)`
  >> Know `0 < k`
- >- (Q.UNABBREV_TAC `k` \\
-     MATCH_MP_TAC LESS_LESS_EQ_TRANS \\
+ >- (Q.UNABBREV_TAC `k` >> MATCH_MP_TAC LESS_LESS_EQ_TRANS \\
      Q.EXISTS_TAC `1` >> RW_TAC arith_ss [] \\
     `ROOT 2 1 = 1` by EVAL_TAC \\
      POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM) \\
-     irule ROOT_LE_MONO >> RW_TAC arith_ss []) >> DISCH_TAC \\
+     irule ROOT_LE_MONO >> RW_TAC arith_ss []) >> DISCH_TAC
  >> Cases_on `k` >- fs [] (* `0 < 0` eliminated *)
  >> rename1 `0 < SUC m`
  >> cheat
