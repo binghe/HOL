@@ -3929,6 +3929,16 @@ val FORALL_IN_BIGUNION = store_thm
   ``!P s. (!x. x IN BIGUNION s ==> P x) <=> !t x. t IN s /\ x IN t ==> P x``,
     REWRITE_TAC [IN_BIGUNION] THEN PROVE_TAC []);
 
+(* from probabilityTheory *)
+Theorem INTER_BIGUNION :
+    (!s t. BIGUNION s INTER t = BIGUNION {x INTER t | x IN s}) /\
+    (!s t. t INTER BIGUNION s = BIGUNION {t INTER x | x IN s})
+Proof
+    ONCE_REWRITE_TAC [EXTENSION]
+ >> SIMP_TAC std_ss [IN_BIGUNION, GSPECIFICATION, IN_INTER]
+ >> MESON_TAC [IN_INTER]
+QED
+
 (* ----------------------------------------------------------------------
     BIGINTER (intersection of a set of sets)
    ---------------------------------------------------------------------- *)

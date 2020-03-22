@@ -393,6 +393,20 @@ val EVENTS_COMPL = store_thm
      Q.SPEC `(p_space p, events p)`) ALGEBRA_COMPL
  >> PROVE_TAC [PROB_SPACE, SIGMA_ALGEBRA_ALGEBRA]);
 
+Theorem EVENTS_BIGUNION :
+    !p f n. prob_space p /\ (f IN ((count n) -> events p)) ==>
+            BIGUNION (IMAGE f (count n)) IN events p
+Proof
+    RW_TAC std_ss [IN_FUNSET, IN_COUNT]
+ >> `BIGUNION (IMAGE f (count n)) = BIGUNION (IMAGE (\m. (if m < n then f m else {})) UNIV)`
+     by (RW_TAC std_ss [EXTENSION,IN_BIGUNION_IMAGE, IN_COUNT, IN_UNIV] >> METIS_TAC [NOT_IN_EMPTY])
+ >> POP_ORW
+ >> (MATCH_MP_TAC o REWRITE_RULE [subsets_def, space_def] o
+        Q.SPECL [`(p_space p, events p)`,`(\m. if m < n then A m else {})`]) SIGMA_ALGEBRA_ENUM
+ >> RW_TAC std_ss [EVENTS_SIGMA_ALGEBRA] >> RW_TAC std_ss [IN_FUNSET, IN_UNIV, DISJOINT_EMPTY]
+ >> METIS_TAC [EVENTS_EMPTY]
+QED
+
 val EVENTS_COUNTABLE_UNION = store_thm
   ("EVENTS_COUNTABLE_UNION",
   ``!p c. prob_space p /\ c SUBSET events p /\ countable c ==> BIGUNION c IN events p``,
@@ -421,6 +435,25 @@ val PROB_ZERO_UNION = store_thm
  >> MATCH_MP_TAC PROB_ADDITIVE
  >> RW_TAC std_ss [DISJOINT_DEF, DIFF_DEF, EXTENSION, IN_UNION, IN_DIFF, NOT_IN_EMPTY, IN_INTER]
  >> PROVE_TAC []);
+
+Theorem PROB_INTER_ZERO :
+    !p A B. prob_space p /\ A IN events p /\ B IN events p /\ (prob p B = 0) ==>
+           (prob p (A INTER B) = 0)
+Proof
+    RW_TAC std_ss []
+ >> `(A INTER B) SUBSET B` by RW_TAC std_ss [INTER_SUBSET]
+ >> `prob p (A INTER B) <= prob p B` by FULL_SIMP_TAC std_ss [PROB_INCREASING, EVENTS_INTER]
+ >> `0 <= prob p (A INTER B)` by FULL_SIMP_TAC std_ss [PROB_POSITIVE, EVENTS_INTER]
+ >> METIS_TAC [le_antisym]
+QED
+
+Theorem PROB_ZERO_INTER :
+    !p A B. prob_space p /\ A IN events p /\ B IN events p /\ (prob p A = 0) ==>
+           (prob p (A INTER B) = 0)
+Proof
+    RW_TAC std_ss [] >> (MP_TAC o Q.SPECL [`p`, `B`, `A`]) PROB_INTER_ZERO
+ >> RW_TAC std_ss [INTER_COMM]
+QED
 
 val PROB_EQ_COMPL = store_thm
   ("PROB_EQ_COMPL",
@@ -6640,39 +6673,6 @@ QED
 (*                      Condition Probability Library                        *)
 (* ========================================================================= *)
 
-Theorem EVENTS_BIGUNION :
-    !p f n. prob_space p /\ (f IN ((count n) -> events p)) ==>
-            BIGUNION (IMAGE f (count n)) IN events p
-Proof
-    RW_TAC std_ss [IN_FUNSET, IN_COUNT]
- >> `BIGUNION (IMAGE f (count n)) = BIGUNION (IMAGE (\m. (if m < n then f m else {})) UNIV)`
-     by (RW_TAC std_ss [EXTENSION,IN_BIGUNION_IMAGE, IN_COUNT, IN_UNIV] >> METIS_TAC [NOT_IN_EMPTY])
- >> POP_ORW
- >> (MATCH_MP_TAC o REWRITE_RULE [subsets_def, space_def] o
-        Q.SPECL [`(p_space p, events p)`,`(\m. if m < n then A m else {})`]) SIGMA_ALGEBRA_ENUM
- >> RW_TAC std_ss [EVENTS_SIGMA_ALGEBRA] >> RW_TAC std_ss [IN_FUNSET, IN_UNIV, DISJOINT_EMPTY]
- >> METIS_TAC [EVENTS_EMPTY]
-QED
-
-Theorem PROB_INTER_ZERO :
-    !p A B. prob_space p /\ A IN events p /\ B IN events p /\ (prob p B = 0) ==>
-           (prob p (A INTER B) = 0)
-Proof
-    RW_TAC std_ss []
- >> `(A INTER B) SUBSET B` by RW_TAC std_ss [INTER_SUBSET]
- >> `prob p (A INTER B) <= prob p B` by FULL_SIMP_TAC std_ss [PROB_INCREASING, EVENTS_INTER]
- >> `0 <= prob p (A INTER B)` by FULL_SIMP_TAC std_ss [PROB_POSITIVE, EVENTS_INTER]
- >> METIS_TAC [le_antisym]
-QED
-
-Theorem PROB_ZERO_INTER :
-    !p A B. prob_space p /\ A IN events p /\ B IN events p /\ (prob p A = 0) ==>
-           (prob p (A INTER B) = 0)
-Proof
-    RW_TAC std_ss [] >> (MP_TAC o Q.SPECL [`p`, `B`, `A`]) PROB_INTER_ZERO
- >> RW_TAC std_ss [INTER_COMM]
-QED
-
 Theorem COND_PROB_ZERO :
     !p A B. prob_space p /\ A IN events p /\ B IN events p /\
            (prob p A = 0) /\ prob p B <> 0 ==> (cond_prob p A B = 0)
@@ -6946,13 +6946,6 @@ Proof
         by (RW_TAC std_ss [EXTENSION, IN_INTER, IN_DIFF, IN_UNION] THEN PROVE_TAC [])
  >> RW_TAC std_ss []
 QED
-
-val INTER_BIGUNION = prove (
-  ``(!s t. BIGUNION s INTER t = BIGUNION {x INTER t | x IN s}) /\
-    (!s t. t INTER BIGUNION s = BIGUNION {t INTER x | x IN s})``,
-    ONCE_REWRITE_TAC [EXTENSION]
- >> SIMP_TAC std_ss [IN_BIGUNION, GSPECIFICATION, IN_INTER]
- >> MESON_TAC [IN_INTER]);
 
 Theorem COND_PROB_FINITE_ADDITIVE :
     !p A B n s. prob_space p /\ B IN events p /\ A IN ((count n) -> events p) /\
