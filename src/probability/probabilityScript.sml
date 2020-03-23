@@ -2355,45 +2355,40 @@ QED
 
   -- A. N. Kolmogorov, "Foundations of the Theory of Probability." [1] *)
 
-(* 1. independence of two events: *)
+(* 1. independence of two events: (DO NOT CHANGE) *)
 val indep_def = Define
    `indep p a b <=> a IN events p /\ b IN events p /\
                    (prob p (a INTER b) = prob p a * prob p b)`;
 
 (* 2. extension of `indep`: a sequence of pairwise independent events *)
-val pairwise_indep_events_def = Define (* new *)
+val pairwise_indep_events_def = Define
    `pairwise_indep_events p E J <=>
-      (!n. n IN J ==> (E n) IN events p) /\
       !i j. i IN J /\ j IN J /\ i <> j ==> indep p (E i) (E j)`;
 
 (* 3. extension of `indep`: a sequence of total independent events *)
 val indep_events_def = Define (* new *)
    `indep_events p E J <=>
-      (!n. n IN J ==> (E n) IN events p) /\
       !N. N SUBSET J /\ N <> {} /\ FINITE N ==>
          (prob p (BIGINTER (IMAGE E N)) = PI (prob p o E) N)`;
 
-(* 4. independence of two sets/collections of events: *)
+(* 4. independence of two sets/collections of events: (DO NOT CHANGE) *)
 val indep_families_def = Define `
     indep_families p q r <=> !s t. s IN q /\ t IN r ==> indep p s t`;
 
 (* 5. extension of `indep_families`: pairwise independent sets/collections of events *)
 val pairwise_indep_sets_def = Define
    `pairwise_indep_sets (p :'a p_space) A J <=>
-      (!n. n IN J ==> (A n) SUBSET events p) /\
       !i j. i IN J /\ j IN J /\ i <> j ==> indep_families p (A i) (A j)`;
 
 (* 6. extension of `indep_families`: total independent sets/collections of events *)
 val indep_sets_def = Define
    `indep_sets (p :'a p_space) A J <=>
-      (!n. n IN J ==> (A n) SUBSET events p) /\
       !N. N SUBSET J /\ N <> {} /\ FINITE N ==>
-          !E. E IN (N --> A) ==> (prob p (BIGINTER (IMAGE E N)) = PI (prob p o E) N)`;
+         !E. E IN (N --> A) ==> (prob p (BIGINTER (IMAGE E N)) = PI (prob p o E) N)`;
 
 (* 7. independence of two r.v.'s, added `INTER p_space p` after taking the PREIMAGE *)
 val indep_rv_def = Define
    `indep_rv (p :'a p_space) X Y s t <=>
-      random_variable X p s /\ random_variable Y p t /\
       !a b. (a IN subsets s) /\ (b IN subsets t) ==>
             indep p ((PREIMAGE X a) INTER p_space p)
                     ((PREIMAGE Y b) INTER p_space p)`;
@@ -2401,22 +2396,18 @@ val indep_rv_def = Define
 (* 8. extension of `indep_rv`: pairwise independent random variables *)
 val pairwise_indep_vars_def = Define
    `pairwise_indep_vars p X A J <=>
-      (!i. i IN J ==> random_variable (X i) p (A i)) /\
       !i j. i IN J /\ j IN J /\ i <> j ==> indep_rv p (X i) (X j) (A i) (A j)`;
 
 (* 9. extension of `indep-rv`: total independent random variables. *)
 val indep_vars_def = Define
    `indep_vars p X A J <=>
-      (!i. i IN J ==> random_variable (X i) p (A i)) /\
       !E. E IN (J --> (subsets o A)) ==>
           indep_events p (\n. (PREIMAGE (X n) (E n)) INTER p_space p) J`;
 
-(* an old definition (of independent functions), not used anywhere.
 val indep_function_def = Define `
     indep_function p =
    {f | indep_families p (IMAGE (PREIMAGE (FST o f)) UNIV)
                          (IMAGE (PREIMAGE (SND o f)) (events p))}`;
- *)
 
 val PROB_INDEP = store_thm
   ("PROB_INDEP",
@@ -2492,9 +2483,10 @@ val INDEP_COMPL2 = store_thm
  >> MATCH_MP_TAC INDEP_SYM >> art []);
 
 (* total ==> pairwise independence (of events) *)
-val total_imp_pairwise_indep_events = store_thm
-  ("total_imp_pairwise_indep_events",
-  ``!p E J. indep_events p E J ==> pairwise_indep_events p E J``,
+Theorem total_imp_pairwise_indep_events :
+    !p E J. (!n. n IN J ==> (E n) IN events p) /\ indep_events p E J ==>
+            pairwise_indep_events p E J
+Proof
     RW_TAC std_ss [indep_events_def, pairwise_indep_events_def, indep_def]
  >> Q.PAT_X_ASSUM `!N. N SUBSET J /\ N <> {} /\ FINITE N ==> X`
       (MP_TAC o (Q.SPEC `{i; j}`))
@@ -2506,12 +2498,14 @@ val total_imp_pairwise_indep_events = store_thm
      METIS_TAC [])
  >> RW_TAC std_ss []
  >> `!i. prob p (E i) = (prob p o E) i` by PROVE_TAC [o_DEF] >> POP_ORW
- >> MATCH_MP_TAC EXTREAL_PROD_IMAGE_PAIR >> art []);
+ >> MATCH_MP_TAC EXTREAL_PROD_IMAGE_PAIR >> art []
+QED
 
 (* total ==> pairwise independence (of sets of events) *)
-val total_imp_pairwise_indep_sets = store_thm
-  ("total_imp_pairwise_indep_sets",
-  ``!p A J. indep_sets p A J ==> pairwise_indep_sets p A J``,
+Theorem total_imp_pairwise_indep_sets :
+    !p A J. (!n. n IN J ==> (A n) SUBSET events p) /\ indep_sets p A J ==>
+            pairwise_indep_sets p A J
+Proof
     RW_TAC std_ss [indep_sets_def, pairwise_indep_sets_def, indep_families_def,
                    indep_def, IN_DFUNSET]
  >- PROVE_TAC [SUBSET_DEF]
@@ -2537,12 +2531,14 @@ val total_imp_pairwise_indep_sets = store_thm
  >> Know `E i = s` >- (Q.UNABBREV_TAC `E` >> RW_TAC std_ss [])
  >> Know `E j = t` >- (Q.UNABBREV_TAC `E` >> RW_TAC std_ss [])
  >> RW_TAC std_ss []
- >> POP_ASSUM MATCH_MP_TAC >> art []);
+ >> POP_ASSUM MATCH_MP_TAC >> art []
+QED
 
 (* total ==> pairwise independence (of random variables) *)
-val total_imp_pairwise_indep_vars = store_thm
-  ("total_imp_pairwise_indep_vars",
-  ``!p X A J. indep_vars p X A J ==> pairwise_indep_vars p X A J``,
+Theorem total_imp_pairwise_indep_vars :
+    !p X A J. (!i. i IN J ==> random_variable (X i) p (A i)) /\ indep_vars p X A J ==>
+              pairwise_indep_vars p X A J
+Proof
     RW_TAC std_ss [indep_vars_def, pairwise_indep_vars_def, indep_rv_def,
                    indep_events_def, random_variable_def]
  >> REWRITE_TAC [indep_def]
@@ -2580,7 +2576,8 @@ val total_imp_pairwise_indep_vars = store_thm
  >- (MATCH_MP_TAC EXTREAL_PROD_IMAGE_PAIR >> art [])
  >> Know `E i = a` >- (Q.UNABBREV_TAC `E` >> RW_TAC std_ss [])
  >> Know `E j = b` >- (Q.UNABBREV_TAC `E` >> RW_TAC std_ss [])
- >> RW_TAC std_ss []);
+ >> RW_TAC std_ss []
+QED
 
 (******************************************************************************)
 (*  Kolmogorov's 0-1 Law (for independent events)                             *)
@@ -2595,12 +2592,13 @@ val SIGMA_SUBSET_EVENTS = store_thm
  >> MATCH_MP_TAC SIGMA_SUBSET_MEASURABLE_SETS >> art []);
 
 (* Lemma 3.5.2 [3, p.37], with simplifications from the Solution Manual of [9]
-   (Problem 5.11) *)
-val INDEP_FAMILIES_SIGMA_lemma = Q.prove (
-   `!p B n J. prob_space p /\ (IMAGE B (n INSERT J)) SUBSET events p /\
+   (Problem 5.11)
+ *)
+Theorem INDEP_FAMILIES_SIGMA_lemma :
+    !p B n J. prob_space p /\ (IMAGE B (n INSERT J)) SUBSET events p /\
               indep_events p B (n INSERT J) /\ n NOTIN J
-          ==> indep_families p {B n} (subsets (sigma (p_space p) (IMAGE B J)))`,
- (* proof *)
+          ==> indep_families p {B n} (subsets (sigma (p_space p) (IMAGE B J)))
+Proof
     RW_TAC std_ss [indep_families_def, IN_SING]
  >> REWRITE_TAC [indep_def]
  >> Know `B n IN events p /\ (IMAGE B J) SUBSET events p`
@@ -2747,7 +2745,8 @@ val INDEP_FAMILIES_SIGMA_lemma = Q.prove (
  >> CONJ_TAC >- (MATCH_MP_TAC finite_countable \\
                  MATCH_MP_TAC IMAGE_FINITE >> art [])
  >> RW_TAC std_ss [Once EXTENSION, IN_IMAGE, NOT_IN_EMPTY]
- >> fs [GSYM MEMBER_NOT_EMPTY] >> Q.EXISTS_TAC `x` >> art []);
+ >> fs [GSYM MEMBER_NOT_EMPTY] >> Q.EXISTS_TAC `x` >> art []
+QED
 
 (* Lemma 3.5.2 [3, p.37], more useful form *)
 val INDEP_FAMILIES_SIGMA_lemma1 = store_thm
@@ -2762,13 +2761,13 @@ val INDEP_FAMILIES_SIGMA_lemma1 = store_thm
  >> Q.EXISTS_TAC `N` >> art []);
 
 (* Corollary 3.5.3 of [3, p.37], Part I *)
-val INDEP_FAMILIES_SIGMA_lemma2 = store_thm
-  ("INDEP_FAMILIES_SIGMA_lemma2",
-  ``!p A M N m S1.
+Theorem INDEP_FAMILIES_SIGMA_lemma2 :
+    !p A M N m S1.
        prob_space p /\ (IMAGE A (M UNION N)) SUBSET events p /\
        indep_events p A (M UNION N) /\ DISJOINT M N /\ m IN M /\ N <> {} /\
        S1 IN (subsets (sigma (p_space p) (IMAGE A M))) ==>
-       indep_events p (\x. if x IN N then A x else S1) (m INSERT N)``,
+       indep_events p (\x. if x IN N then A x else S1) (m INSERT N)
+Proof
     rpt STRIP_TAC
  >> Q.ABBREV_TAC `G = {BIGINTER (IMAGE A J) | J SUBSET N /\ FINITE J /\ J <> {}}`
  >> fs [GSYM MEMBER_NOT_EMPTY]
@@ -2777,74 +2776,64 @@ val INDEP_FAMILIES_SIGMA_lemma2 = store_thm
  >> Know `!a. a IN G ==> indep_events p (B a) (n INSERT M)`
  >- (Q.UNABBREV_TAC `B` >> BETA_TAC \\
      Q.UNABBREV_TAC `G` \\
-     RW_TAC std_ss [GSPECIFICATION, indep_events_def, IN_INSERT] >| (* 3 subgoals *)
-     [ (* goal 1 (of 3) *)
-      `n NOTIN M` by ASM_SET_TAC [DISJOINT_DEF] >> ASM_SIMP_TAC std_ss [] \\
-       MATCH_MP_TAC EVENTS_BIGINTER_FN >> art [] \\
-       CONJ_TAC >- (MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC `IMAGE A N` >> art [] \\
-                    MATCH_MP_TAC IMAGE_SUBSET >> art []) \\
-       CONJ_TAC >- (MATCH_MP_TAC finite_countable >> art []) \\
-       REWRITE_TAC [GSYM MEMBER_NOT_EMPTY] >> Q.EXISTS_TAC `x` >> art [],
-       (* goal 2 (of 3) *)
-       ASM_SIMP_TAC std_ss [] >> PROVE_TAC [SUBSET_DEF, IN_IMAGE],
-       (* goal 3 (of 3) *)
-       Cases_on `n NOTIN N'` (* easy case *)
-       >- (`N' SUBSET M` by PROVE_TAC [SUBSET_INSERT] \\
-           Know `IMAGE (\x. if x IN M then A x else BIGINTER (IMAGE A J)) N' = IMAGE A N'`
-           >- (RW_TAC std_ss [Once EXTENSION, IN_IMAGE] \\
-               EQ_TAC >> rpt STRIP_TAC >| (* 2 subgoals *)
-               [ (* goal 3.1 (of 2) *)
-                `x'' IN M` by PROVE_TAC [SUBSET_DEF] >> fs [] \\
-                 Q.EXISTS_TAC `x''` >> art [],
-                 (* goal 3.2 (of 2) *)
-                `x'' IN M` by PROVE_TAC [SUBSET_DEF] \\
-                 Q.EXISTS_TAC `x''` >> ASM_SIMP_TAC std_ss [] ]) >> Rewr' \\
-           Know `PI (prob p o (\x. if x IN M then A x else BIGINTER (IMAGE A J))) N' =
-                 PI (prob p o A) N'`
-           >- (irule EXTREAL_PROD_IMAGE_EQ >> RW_TAC std_ss [] \\
-               `x' IN M` by PROVE_TAC [SUBSET_DEF]) >> Rewr' \\
-           fs [indep_events_def] >> FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
-           ASM_SET_TAC []) \\
-       fs [] (* hard case: `n IN N'` *) \\
-       Q.ABBREV_TAC `N'' = N' DELETE n` \\
-      `N'' SUBSET M` by ASM_SET_TAC [] \\
-      `N'' DELETE n = N''` by ASM_SET_TAC [] \\
-      `N' = n INSERT N''` by ASM_SET_TAC [] >> POP_ORW \\
-      `n NOTIN N''` by ASM_SET_TAC [] \\
-      `n NOTIN M` by ASM_SET_TAC [DISJOINT_DEF] \\
-       ASM_SIMP_TAC std_ss [IMAGE_INSERT] \\
-       Know `IMAGE (\x. if x IN M then A x else BIGINTER (IMAGE A J)) N'' = IMAGE A N''`
-       >- (RW_TAC std_ss [Once EXTENSION, IN_IMAGE] \\
-           EQ_TAC >> rpt STRIP_TAC >| (* 2 subgoals *)
-           [ (* goal 3.1 (of 2) *)
-            `x'' IN M` by PROVE_TAC [SUBSET_DEF] >> fs [] \\
-             Q.EXISTS_TAC `x''` >> art [],
-             (* goal 3.2 (of 2) *)
-            `x'' IN M` by PROVE_TAC [SUBSET_DEF] \\
-             Q.EXISTS_TAC `x''` >> ASM_SIMP_TAC std_ss [] ]) >> Rewr' \\
-       REWRITE_TAC [BIGINTER_INSERT, GSYM BIGINTER_UNION, GSYM IMAGE_UNION] \\
-      `N'' SUBSET N'` by ASM_SET_TAC [] \\
-      `FINITE N''` by PROVE_TAC [SUBSET_FINITE_I] \\
-       POP_ASSUM ((ASM_SIMP_TAC std_ss) o wrap o (MATCH_MP EXTREAL_PROD_IMAGE_PROPERTY)) \\
-       Know `PI (prob p o (\x. if x IN M then A x else BIGINTER (IMAGE A J))) N'' =
-             PI (prob p o A) N''`
-       >- (irule EXTREAL_PROD_IMAGE_EQ \\
-           RW_TAC std_ss [] >- (`x' IN M` by PROVE_TAC [SUBSET_DEF]) \\
-           PROVE_TAC [SUBSET_FINITE_I]) >> Rewr' \\
-       FULL_SIMP_TAC std_ss [indep_events_def] \\
-       Know `prob p (BIGINTER (IMAGE A (J UNION N''))) = PI (prob p o A) (J UNION N'')`
-       >- (FIRST_X_ASSUM MATCH_MP_TAC >> art [FINITE_UNION] \\
-           CONJ_TAC >- ASM_SET_TAC [] \\
-           CONJ_TAC >- ASM_SET_TAC [] \\
-           PROVE_TAC [SUBSET_FINITE_I]) >> Rewr' \\
-       Know `prob p (BIGINTER (IMAGE A J)) = PI (prob p o A) J`
-       >- (FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
-           CONJ_TAC >- ASM_SET_TAC [] \\
-           METIS_TAC [MEMBER_NOT_EMPTY]) >> Rewr' \\
-       MATCH_MP_TAC EXTREAL_PROD_IMAGE_DISJOINT_UNION >> art [] \\
-       CONJ_TAC >- PROVE_TAC [SUBSET_FINITE_I] \\
-       MATCH_MP_TAC SUBSET_DISJOINT \\
-       qexistsl_tac [`N`, `M`] >> art [DISJOINT_SYM] ])
+     RW_TAC std_ss [GSPECIFICATION, indep_events_def, IN_INSERT] \\
+     Cases_on `n NOTIN N'` (* easy case *)
+     >- (`N' SUBSET M` by PROVE_TAC [SUBSET_INSERT] \\
+         Know `IMAGE (\x. if x IN M then A x else BIGINTER (IMAGE A J)) N' = IMAGE A N'`
+         >- (RW_TAC std_ss [Once EXTENSION, IN_IMAGE] \\
+             EQ_TAC >> rpt STRIP_TAC >| (* 2 subgoals *)
+             [ (* goal 3.1 (of 2) *)
+              `x'' IN M` by PROVE_TAC [SUBSET_DEF] >> fs [] \\
+               Q.EXISTS_TAC `x''` >> art [],
+               (* goal 3.2 (of 2) *)
+              `x'' IN M` by PROVE_TAC [SUBSET_DEF] \\
+               Q.EXISTS_TAC `x''` >> ASM_SIMP_TAC std_ss [] ]) >> Rewr' \\
+         Know `PI (prob p o (\x. if x IN M then A x else BIGINTER (IMAGE A J))) N' =
+               PI (prob p o A) N'`
+         >- (irule EXTREAL_PROD_IMAGE_EQ >> RW_TAC std_ss [] \\
+             `x' IN M` by PROVE_TAC [SUBSET_DEF]) >> Rewr' \\
+         fs [indep_events_def] >> FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
+         ASM_SET_TAC []) \\
+     fs [] (* hard case: `n IN N'` *) \\
+     Q.ABBREV_TAC `N'' = N' DELETE n` \\
+    `N'' SUBSET M` by ASM_SET_TAC [] \\
+    `N'' DELETE n = N''` by ASM_SET_TAC [] \\
+    `N' = n INSERT N''` by ASM_SET_TAC [] >> POP_ORW \\
+    `n NOTIN N''` by ASM_SET_TAC [] \\
+    `n NOTIN M` by ASM_SET_TAC [DISJOINT_DEF] \\
+     ASM_SIMP_TAC std_ss [IMAGE_INSERT] \\
+     Know `IMAGE (\x. if x IN M then A x else BIGINTER (IMAGE A J)) N'' = IMAGE A N''`
+     >- (RW_TAC std_ss [Once EXTENSION, IN_IMAGE] \\
+         EQ_TAC >> rpt STRIP_TAC >| (* 2 subgoals *)
+         [ (* goal 3.1 (of 2) *)
+          `x'' IN M` by PROVE_TAC [SUBSET_DEF] >> fs [] \\
+           Q.EXISTS_TAC `x''` >> art [],
+           (* goal 3.2 (of 2) *)
+          `x'' IN M` by PROVE_TAC [SUBSET_DEF] \\
+           Q.EXISTS_TAC `x''` >> ASM_SIMP_TAC std_ss [] ]) >> Rewr' \\
+     REWRITE_TAC [BIGINTER_INSERT, GSYM BIGINTER_UNION, GSYM IMAGE_UNION] \\
+    `N'' SUBSET N'` by ASM_SET_TAC [] \\
+    `FINITE N''` by PROVE_TAC [SUBSET_FINITE_I] \\
+     POP_ASSUM ((ASM_SIMP_TAC std_ss) o wrap o (MATCH_MP EXTREAL_PROD_IMAGE_PROPERTY)) \\
+     Know `PI (prob p o (\x. if x IN M then A x else BIGINTER (IMAGE A J))) N'' =
+           PI (prob p o A) N''`
+     >- (irule EXTREAL_PROD_IMAGE_EQ \\
+         RW_TAC std_ss [] >- (`x' IN M` by PROVE_TAC [SUBSET_DEF]) \\
+         PROVE_TAC [SUBSET_FINITE_I]) >> Rewr' \\
+     FULL_SIMP_TAC std_ss [indep_events_def] \\
+     Know `prob p (BIGINTER (IMAGE A (J UNION N''))) = PI (prob p o A) (J UNION N'')`
+     >- (FIRST_X_ASSUM MATCH_MP_TAC >> art [FINITE_UNION] \\
+         CONJ_TAC >- ASM_SET_TAC [] \\
+         CONJ_TAC >- ASM_SET_TAC [] \\
+         PROVE_TAC [SUBSET_FINITE_I]) >> Rewr' \\
+     Know `prob p (BIGINTER (IMAGE A J)) = PI (prob p o A) J`
+     >- (FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
+         CONJ_TAC >- ASM_SET_TAC [] \\
+         METIS_TAC [MEMBER_NOT_EMPTY]) >> Rewr' \\
+     MATCH_MP_TAC EXTREAL_PROD_IMAGE_DISJOINT_UNION >> art [] \\
+     CONJ_TAC >- PROVE_TAC [SUBSET_FINITE_I] \\
+     MATCH_MP_TAC SUBSET_DISJOINT \\
+     qexistsl_tac [`N`, `M`] >> art [DISJOINT_SYM])
  >> DISCH_TAC
  >> Know `!s a. a IN G /\ s IN subsets (sigma (p_space p) (IMAGE (B a) M)) ==>
                 indep p (B a n) s`
@@ -2884,72 +2873,66 @@ val INDEP_FAMILIES_SIGMA_lemma2 = store_thm
      EQ_TAC >> rpt STRIP_TAC >> fs [] >- (Q.EXISTS_TAC `x'` >> art []) \\
      Q.EXISTS_TAC `x'` >> ASM_SIMP_TAC std_ss []) >> DISCH_TAC
  >> Q.UNABBREV_TAC `B'` >> BETA_TAC
- >> RW_TAC std_ss [indep_events_def, IN_INSERT] (* 3 subgoals *)
- >| [ (* goal 1 (of 3) *)
-     `m NOTIN N` by ASM_SET_TAC [DISJOINT_DEF] >> ASM_SIMP_TAC std_ss [] \\
-      Suff `subsets (sigma (p_space p) (IMAGE A M)) SUBSET events p` >- METIS_TAC [SUBSET_DEF] \\
-      MATCH_MP_TAC SIGMA_SUBSET_EVENTS >> art [],
-      (* goal 2 (of 3) *)
-      ASM_SIMP_TAC std_ss [] >> METIS_TAC [SUBSET_DEF, IN_IMAGE],
-      (* goal 3 (of 3) *)
-      Cases_on `m NOTIN N'` (* easy case *)
-      >- (`N' SUBSET N` by PROVE_TAC [SUBSET_INSERT] \\
-          Know `IMAGE (\x. if x IN N then A x else S1) N' = IMAGE A N'`
-          >- (RW_TAC std_ss [Once EXTENSION, IN_IMAGE] \\
-              EQ_TAC >> rpt STRIP_TAC >| (* 2 subgoals *)
-              [ (* goal 3.1 (of 2) *)
-               `x' IN N` by PROVE_TAC [SUBSET_DEF] >> fs [] \\
-                Q.EXISTS_TAC `x'` >> art [],
-                (* goal 3.2 (of 2) *)
-               `x' IN N` by PROVE_TAC [SUBSET_DEF] \\
-                Q.EXISTS_TAC `x'` >> ASM_SIMP_TAC std_ss [] ]) >> Rewr' \\
-          Know `PI (prob p o (\x. if x IN N then A x else S1)) N' = PI (prob p o A) N'`
-          >- (irule EXTREAL_PROD_IMAGE_EQ >> RW_TAC std_ss [] \\
-              `x IN N` by PROVE_TAC [SUBSET_DEF]) >> Rewr' \\
-          fs [indep_events_def] >> FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
-          ASM_SET_TAC []) \\
-      fs [] (* hard case: `m IN N'` *) \\
-      Q.ABBREV_TAC `N'' = N' DELETE m` \\
-     `N'' SUBSET N` by ASM_SET_TAC [] \\
-     `N'' DELETE m = N''` by ASM_SET_TAC [] \\
-     `N' = m INSERT N''` by ASM_SET_TAC [] >> POP_ORW \\
-     `m NOTIN N''` by ASM_SET_TAC [] \\
-     `m NOTIN N` by ASM_SET_TAC [DISJOINT_DEF] \\
-      ASM_SIMP_TAC std_ss [IMAGE_INSERT] \\
-      Know `IMAGE (\x. if x IN N then A x else S1) N'' = IMAGE A N''`
-      >- (RW_TAC std_ss [Once EXTENSION, IN_IMAGE] \\
-          EQ_TAC >> rpt STRIP_TAC >| (* 2 subgoals *)
-          [ (* goal 3.1 (of 2) *)
-           `x' IN N` by PROVE_TAC [SUBSET_DEF] >> fs [] \\
-            Q.EXISTS_TAC `x'` >> art [],
-            (* goal 3.2 (of 2) *)
-           `x' IN N` by PROVE_TAC [SUBSET_DEF] \\
-            Q.EXISTS_TAC `x'` >> ASM_SIMP_TAC std_ss [] ]) >> Rewr' \\
-      REWRITE_TAC [BIGINTER_INSERT, GSYM BIGINTER_UNION, GSYM IMAGE_UNION] \\
-     `N'' SUBSET N'` by ASM_SET_TAC [] \\
-     `FINITE N''` by PROVE_TAC [SUBSET_FINITE_I] \\
-      POP_ASSUM ((ASM_SIMP_TAC std_ss) o wrap o (MATCH_MP EXTREAL_PROD_IMAGE_PROPERTY)) \\
-      Know `PI (prob p o (\x. if x IN N then A x else S1)) N'' = PI (prob p o A) N''`
-      >- (irule EXTREAL_PROD_IMAGE_EQ \\
-          RW_TAC std_ss [] >- (`x IN N` by PROVE_TAC [SUBSET_DEF]) \\
-          PROVE_TAC [SUBSET_FINITE_I]) >> Rewr' \\
-      Cases_on `N'' = {}`
-      >- art [IMAGE_EMPTY, BIGINTER_EMPTY, INTER_UNIV, EXTREAL_PROD_IMAGE_EMPTY, mul_rone] \\
-      Know `prob p (S1 INTER BIGINTER (IMAGE A N'')) =
-            prob p S1 * prob p (BIGINTER (IMAGE A N''))`
-      >- (FULL_SIMP_TAC std_ss [indep_def] \\
-         `!a. a IN G ==> a IN events p` by PROVE_TAC [] \\
-         `!a. a IN G ==> (prob p (S1 INTER a) = prob p S1 * prob p a)` by PROVE_TAC [] \\
-          POP_ASSUM MATCH_MP_TAC \\
-          Q.UNABBREV_TAC `G` >> RW_TAC std_ss [GSPECIFICATION] \\
-          Q.EXISTS_TAC `N''` >> art [] \\
-          CONJ_TAC >- PROVE_TAC [SUBSET_FINITE_I] \\
-          fs [GSYM MEMBER_NOT_EMPTY] >> Q.EXISTS_TAC `x'` >> art []) >> Rewr' \\
-      FULL_SIMP_TAC std_ss [indep_events_def] \\
-      Know `prob p (BIGINTER (IMAGE A N'')) = PI (prob p o A) N''`
-      >- (FIRST_X_ASSUM MATCH_MP_TAC >> art [FINITE_UNION] \\
-          CONJ_TAC >- ASM_SET_TAC [] \\
-          PROVE_TAC [SUBSET_FINITE_I]) >> Rewr ]);
+ >> RW_TAC std_ss [indep_events_def, IN_INSERT]
+ >> Cases_on `m NOTIN N'` (* easy case *)
+ >- (`N' SUBSET N` by PROVE_TAC [SUBSET_INSERT] \\
+     Know `IMAGE (\x. if x IN N then A x else S1) N' = IMAGE A N'`
+     >- (RW_TAC std_ss [Once EXTENSION, IN_IMAGE] \\
+         EQ_TAC >> rpt STRIP_TAC >| (* 2 subgoals *)
+         [ (* goal 3.1 (of 2) *)
+          `x' IN N` by PROVE_TAC [SUBSET_DEF] >> fs [] \\
+           Q.EXISTS_TAC `x'` >> art [],
+           (* goal 3.2 (of 2) *)
+          `x' IN N` by PROVE_TAC [SUBSET_DEF] \\
+           Q.EXISTS_TAC `x'` >> ASM_SIMP_TAC std_ss [] ]) >> Rewr' \\
+     Know `PI (prob p o (\x. if x IN N then A x else S1)) N' = PI (prob p o A) N'`
+     >- (irule EXTREAL_PROD_IMAGE_EQ >> RW_TAC std_ss [] \\
+        `x IN N` by PROVE_TAC [SUBSET_DEF]) >> Rewr' \\
+     fs [indep_events_def] >> FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
+     ASM_SET_TAC [])
+ >> fs [] (* hard case: `m IN N'` *)
+ >> Q.ABBREV_TAC `N'' = N' DELETE m`
+ >> `N'' SUBSET N` by ASM_SET_TAC []
+ >> `N'' DELETE m = N''` by ASM_SET_TAC []
+ >> `N' = m INSERT N''` by ASM_SET_TAC [] >> POP_ORW
+ >> `m NOTIN N''` by ASM_SET_TAC []
+ >> `m NOTIN N` by ASM_SET_TAC [DISJOINT_DEF]
+ >> ASM_SIMP_TAC std_ss [IMAGE_INSERT]
+ >> Know `IMAGE (\x. if x IN N then A x else S1) N'' = IMAGE A N''`
+ >- (RW_TAC std_ss [Once EXTENSION, IN_IMAGE] \\
+     EQ_TAC >> rpt STRIP_TAC >| (* 2 subgoals *)
+     [ (* goal 3.1 (of 2) *)
+      `x' IN N` by PROVE_TAC [SUBSET_DEF] >> fs [] \\
+       Q.EXISTS_TAC `x'` >> art [],
+       (* goal 3.2 (of 2) *)
+      `x' IN N` by PROVE_TAC [SUBSET_DEF] \\
+       Q.EXISTS_TAC `x'` >> ASM_SIMP_TAC std_ss [] ]) >> Rewr'
+ >> REWRITE_TAC [BIGINTER_INSERT, GSYM BIGINTER_UNION, GSYM IMAGE_UNION]
+ >> `N'' SUBSET N'` by ASM_SET_TAC []
+ >> `FINITE N''` by PROVE_TAC [SUBSET_FINITE_I]
+ >> POP_ASSUM ((ASM_SIMP_TAC std_ss) o wrap o (MATCH_MP EXTREAL_PROD_IMAGE_PROPERTY))
+ >> Know `PI (prob p o (\x. if x IN N then A x else S1)) N'' = PI (prob p o A) N''`
+ >- (irule EXTREAL_PROD_IMAGE_EQ \\
+     RW_TAC std_ss [] >- (`x IN N` by PROVE_TAC [SUBSET_DEF]) \\
+     PROVE_TAC [SUBSET_FINITE_I]) >> Rewr'
+ >> Cases_on `N'' = {}`
+ >- art [IMAGE_EMPTY, BIGINTER_EMPTY, INTER_UNIV, EXTREAL_PROD_IMAGE_EMPTY, mul_rone]
+ >> Know `prob p (S1 INTER BIGINTER (IMAGE A N'')) =
+          prob p S1 * prob p (BIGINTER (IMAGE A N''))`
+ >- (FULL_SIMP_TAC std_ss [indep_def] \\
+    `!a. a IN G ==> a IN events p` by PROVE_TAC [] \\
+    `!a. a IN G ==> (prob p (S1 INTER a) = prob p S1 * prob p a)` by PROVE_TAC [] \\
+     POP_ASSUM MATCH_MP_TAC \\
+     Q.UNABBREV_TAC `G` >> RW_TAC std_ss [GSPECIFICATION] \\
+     Q.EXISTS_TAC `N''` >> art [] \\
+     CONJ_TAC >- PROVE_TAC [SUBSET_FINITE_I] \\
+     fs [GSYM MEMBER_NOT_EMPTY] >> Q.EXISTS_TAC `x'` >> art []) >> Rewr'
+ >> FULL_SIMP_TAC std_ss [indep_events_def]
+ >> Know `prob p (BIGINTER (IMAGE A N'')) = PI (prob p o A) N''`
+ >- (FIRST_X_ASSUM MATCH_MP_TAC >> art [FINITE_UNION] \\
+     CONJ_TAC >- ASM_SET_TAC [] \\
+     PROVE_TAC [SUBSET_FINITE_I]) >> Rewr
+QED
 
 (* Corollary 3.5.3 of [3, p.37], Part II (futhermore, ...) *)
 val INDEP_FAMILIES_SIGMA = store_thm
@@ -3005,14 +2988,14 @@ val _ = overload_on ("tail_algebra", ``tail_algebra_of_rv``);
   `sigma_functions` (martingaleTheory).
  *)
 Theorem Kolmogorov_0_1_Law :
-    !p E. prob_space p /\ indep_events p E UNIV ==>
+    !p E. prob_space p /\
+          (!n. (E n) IN events p) /\ indep_events p E UNIV ==>
           !e. e IN subsets (tail_algebra p E) ==> (prob p e = 0) \/ (prob p e = 1)
 Proof
     RW_TAC std_ss [tail_algebra_def, subsets_def, IN_BIGINTER_IMAGE, IN_UNIV]
  >> Know `e IN events p`
  >- (fs [indep_events_def] \\
-     Q.PAT_X_ASSUM `!n. e IN subsets P`
-        (STRIP_ASSUME_TAC o (REWRITE_RULE [FROM_0]) o (Q.SPEC `0`)) \\
+     POP_ASSUM (STRIP_ASSUME_TAC o (REWRITE_RULE [FROM_0]) o (Q.SPEC `0`)) \\
      Suff `subsets (sigma (p_space p) (IMAGE E UNIV)) SUBSET events p`
      >- METIS_TAC [SUBSET_DEF] \\
      MATCH_MP_TAC SIGMA_SUBSET_EVENTS >> art [] \\
@@ -3035,15 +3018,7 @@ Proof
      PROVE_TAC [COUNT_NOT_EMPTY]) >> DISCH_TAC
  >> Know `indep_events p (\x. if EVEN x then E (DIV2 x) else e)
                          (1 INSERT {2 * n | T})`
- >- (RW_TAC std_ss [indep_events_def, IN_INSERT, GSPECIFICATION] >| (* 3 subgoals *)
-     [ (* goal 1 (of 3) *)
-      `~EVEN 1` by RW_TAC arith_ss [] >> POP_ASSUM (ASM_SIMP_TAC std_ss o wrap),
-       (* goal 2 (of 3) *)
-       SIMP_TAC arith_ss [EVEN_DOUBLE, DIV2_DOUBLE] \\
-       Q.PAT_X_ASSUM `indep_events p E UNIV`
-          (STRIP_ASSUME_TAC o (REWRITE_RULE [indep_events_def, IN_UNIV])) \\
-       RW_TAC std_ss [SUBSET_DEF, IN_IMAGE, IN_UNIV] >> art [],
-       (* goal 3 (of 3) *)
+ >- (  RW_TAC std_ss [indep_events_def, IN_INSERT, GSPECIFICATION] \\
        Cases_on `1 NOTIN N` (* easier case *)
        >- (`~EVEN 1` by RW_TAC arith_ss [] \\
            `N SUBSET {2 * n | T}` by ASM_SET_TAC [] \\
@@ -3160,7 +3135,7 @@ Proof
              PI (prob p o E) (IMAGE DIV2 N')` >- RW_TAC std_ss [] \\
        irule EXTREAL_PROD_IMAGE_EQ >> RW_TAC std_ss [IN_IMAGE] \\
        Suff `DIV2 x' < n` >- PROVE_TAC [] \\
-       PROVE_TAC [] ]) >> DISCH_TAC
+       PROVE_TAC [] ) >> DISCH_TAC
  (* applying INDEP_FAMILIES_SIGMA_lemma1 *)
  >> Know `!a. a IN subsets
                      (sigma (p_space p)
@@ -3775,10 +3750,10 @@ val expectation_indicator = store_thm
    remainders of `suminf (prob p o E)`, which the latter part is not easy to
    formalize as is.
  *)
-val Borel_Cantelli_Lemma1 = store_thm
-  ("Borel_Cantelli_Lemma1",
-  ``!p E. prob_space p /\ (!n. E n IN events p) /\
-          suminf (prob p o E) < PosInf ==> (prob p (limsup E) = 0)``,
+Theorem Borel_Cantelli_Lemma1 :
+    !p E. prob_space p /\ (!n. E n IN events p) /\
+          suminf (prob p o E) < PosInf ==> (prob p (limsup E) = 0)
+Proof
     RW_TAC std_ss [o_DEF]
  >> Know `limsup E = {x | x IN m_space p /\ (suminf (\n. indicator_fn (E n) x) = PosInf)}`
  >- (MATCH_MP_TAC (((REWRITE_RULE [space_def, subsets_def]) o
@@ -3835,7 +3810,8 @@ val Borel_Cantelli_Lemma1 = store_thm
      MATCH_MP_TAC integral_pos_fn >> RW_TAC std_ss [] \\
      MATCH_MP_TAC ext_suminf_pos >> RW_TAC std_ss [INDICATOR_FN_POS])
  >> DISCH_THEN (fs o wrap)
- >> IMP_RES_TAC integrable_infty_null >> fs [null_set_def]);
+ >> IMP_RES_TAC integrable_infty_null >> fs [null_set_def]
+QED
 
 val finite_second_moments_indicator_fn = store_thm
   ("finite_second_moments_indicator_fn",
@@ -3894,7 +3870,8 @@ QED
 
 (* for indicator_fn r.v.'s, pairwise independence implies additive of variances *)
 Theorem variance_sum_indicator_fn :
-    !p E J. prob_space p /\ pairwise_indep_events p E J /\ FINITE J ==>
+    !p E J. prob_space p /\ (!n. n IN J ==> (E n) IN events p) /\
+            pairwise_indep_events p E J /\ FINITE J ==>
            (variance p (\x. SIGMA (\n. (indicator_fn o E) n x) J) =
             SIGMA (\n. variance p ((indicator_fn o E) n)) J)
 Proof
@@ -3908,11 +3885,11 @@ Proof
 QED
 
 (* The harder part of Borel-Cantelli Lemma (of pairwise independence) *)
-val Borel_Cantelli_Lemma2p = store_thm
-  ("Borel_Cantelli_Lemma2p",
-  ``!p E. prob_space p /\ pairwise_indep_events p E univ(:num) /\
-         (suminf (prob p o E) = PosInf) ==> (prob p (limsup E) = 1)``,
- (* proof *)
+Theorem Borel_Cantelli_Lemma2p :
+    !p E. prob_space p /\ (!n. (E n) IN events p) /\
+          pairwise_indep_events p E univ(:num) /\
+         (suminf (prob p o E) = PosInf) ==> (prob p (limsup E) = 1)
+Proof
     RW_TAC std_ss [pairwise_indep_events_def, IN_UNIV]
  >> Q.ABBREV_TAC `X = indicator_fn o E`
  >> Know `!n. real_random_variable (X n) p`
@@ -4296,32 +4273,37 @@ val Borel_Cantelli_Lemma2p = store_thm
      MATCH_MP_TAC sup_shift >> RW_TAC std_ss []) >> Rewr'
  >> RW_TAC bool_ss [sup_le', IN_IMAGE, IN_UNIV]
  >> POP_ASSUM MATCH_MP_TAC
- >> RW_TAC arith_ss []);
+ >> RW_TAC arith_ss []
+QED
 
 (* The hardest part of Borel-Cantelli Lemma (of full independency)
 
    TODO: prove it directly without using Borel_Cantelli_Lemma2p
  *)
-val Borel_Cantelli_Lemma2 = store_thm
-  ("Borel_Cantelli_Lemma2",
-  ``!p E. prob_space p /\ indep_events p E univ(:num) /\
-         (suminf (prob p o E) = PosInf) ==> (prob p (limsup E) = 1)``,
+Theorem Borel_Cantelli_Lemma2 :
+    !p E. prob_space p /\ (!n. (E n) IN events p) /\
+          indep_events p E univ(:num) /\
+         (suminf (prob p o E) = PosInf) ==> (prob p (limsup E) = 1)
+Proof
     rpt STRIP_TAC
  >> MATCH_MP_TAC Borel_Cantelli_Lemma2p >> art []
- >> MATCH_MP_TAC total_imp_pairwise_indep_events >> art []);
+ >> MATCH_MP_TAC total_imp_pairwise_indep_events >> art []
+QED
 
 (* An easy corollary of Borel-Cantelli Lemma [2, p.82] *)
-val Borel_0_1_Law = store_thm
-  ("Borel_0_1_Law",
-  ``!p E. prob_space p /\ pairwise_indep_events p E univ(:num) ==>
-         (prob p (limsup E) = 0) \/ (prob p (limsup E) = 1)``,
+Theorem Borel_0_1_Law :
+    !p E. prob_space p /\ (!n. (E n) IN events p) /\
+          pairwise_indep_events p E univ(:num) ==>
+         (prob p (limsup E) = 0) \/ (prob p (limsup E) = 1)
+Proof
     rpt STRIP_TAC
  >> Cases_on `suminf (prob p o E) = PosInf`
  >| [ (* goal 1 (of 2) *)
       DISJ2_TAC >> MATCH_MP_TAC Borel_Cantelli_Lemma2p >> art [],
       (* goal 2 (of 2) *)
       DISJ1_TAC >> MATCH_MP_TAC Borel_Cantelli_Lemma1 \\
-      fs [GSYM lt_infty, pairwise_indep_events_def] ]);
+      fs [GSYM lt_infty, pairwise_indep_events_def] ]
+QED
 
 (* ========================================================================= *)
 (*          Convergence Concepts and The Law(s) of Large Numbers             *)
@@ -6609,6 +6591,49 @@ Proof
       >- (MATCH_MP_TAC ROOT_EXP >> RW_TAC arith_ss []) \\
       DISCH_THEN (ONCE_REWRITE_TAC o wrap o SYM) \\
       irule ROOT_LE_MONO >> RW_TAC arith_ss [] ]
+QED
+
+(* ------------------------------------------------------------------------- *)
+(*  The Weak Law of Large Numbers for I.I.D. random sequences                *)
+(* ------------------------------------------------------------------------- *)
+
+(* "The law of large numbers in the general case involves only the first
+    moment (finite expectation), but so far we have operated with the second.
+    In order to drop any assumption on the second moment, we need a new device,
+    that of 'equivalent sequences', due to Khintchine (1894-1959). [2, p.112]
+ *)
+Definition equivalent_def :
+    equivalent p (X :num->'a->extreal) Y =
+      (suminf (\n. prob p {x | x IN p_space p /\ X n x <> Y n x}) < PosInf)
+End
+
+Theorem equivalent_imp_converge_AE :
+    !p X Y Z.
+       equivalent p X Y /\ (!n x. Z n x = SIGMA (\n. X n x - Y n x) (count n)) ==>
+       ?c. (Z --> (\x. c)) (almost_everywhere p)
+Proof
+    cheat
+QED
+
+Theorem equivalent_imp_converge_AE_zero :
+    !p X Y a Z.
+       equivalent p X Y /\ mono_increasing a /\ (sup (IMAGE a UNIV) = PosInf) /\
+       (!n x. Z n x = SIGMA (\n. X n x - Y n x) (count n) / (a n)) ==>
+       (Z --> (\x. 0)) (almost_everywhere p)
+Proof
+    cheat
+QED
+
+(* NOTE: there's no assumptions on the variance, which may go infinite. *)
+Theorem WLLN_IID :
+    !p X S M. prob_space p /\ (!n. real_random_variable (X n) p) /\
+              pairwise_indep_vars p X (\i. Borel) univ(:num) /\
+             (!n. distribution p (X n) = distribution p (X 0)) /\
+             (!n x. S n x = SIGMA (\i. X i x) (count n)) /\
+             (!n. M n = expectation p (S n)) ==>
+       ((\n x. (S (SUC n) x - M (SUC n)) / &SUC n) --> (\x. 0)) (in_probability p)
+Proof
+    cheat
 QED
 
 (* ========================================================================= *)
