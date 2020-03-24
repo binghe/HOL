@@ -351,11 +351,7 @@ val _ = add_rule {fixity = Suffix 2100,
                   pp_elements = [TOK UnicodeChars.sup_4]};
 
 val _ = overload_on (UnicodeChars.sup_4, ``\x :extreal. x pow 4``);
-
-(* TeX notations (not fully working) *)
-val _ = TeX_notation {hol = UnicodeChars.sup_2, TeX = ("\\ensuremath{^2}", 1)};
-val _ = TeX_notation {hol = UnicodeChars.sup_3, TeX = ("\\ensuremath{^3}", 1)};
-val _ = TeX_notation {hol = UnicodeChars.sup_4, TeX = ("\\ensuremath{^4}", 1)};
+val _ = TeX_notation {hol = UnicodeChars.sup_4, TeX = ("\\HOLTokenSupFour{}", 1)};
 
 (* ********************************************* *)
 (*     Properties of Arithmetic Operations       *)

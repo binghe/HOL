@@ -567,6 +567,8 @@ val _ =
               term_name = "realinv"}
 val _ = overload_on("realinv", ``inv``);
 
+val _ = TeX_notation {hol = "realinv", TeX = ("\\HOLTokenInverse{}", 1)};
+
 (*---------------------------------------------------------------------------
        Overload arithmetic operations.
  ---------------------------------------------------------------------------*)
