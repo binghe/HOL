@@ -1,0 +1,29 @@
+EXTRA_CLEANS = heap
+
+THYFILES = $(patsubst %Script.sml,%Theory.uo,$(wildcard *.sml))
+TARGETS = $(patsubst %.sml,%.uo,$(THYFILES))
+
+ifdef POLY
+HOLHEAP = heap
+OBJNAMES = realTheory realLib real_sigmaTheory seqTheory transcTheory \
+	RealArith sortingTheory pred_setLib numpairTheory res_quanTools
+
+OBJS = $(patsubst %,$(dprot $(SIGOBJ)/%.uo),$(OBJNAMES))
+
+all: $(HOLHEAP)
+
+$(HOLHEAP): $(OBJS) $(dprot $(HOLDIR)/bin/hol.state)
+	$(protect $(HOLDIR)/bin/buildheap) -o $@ $(OBJNAMES)
+endif
+
+all: $(TARGETS)
+
+ifeq ($(KERNELID),otknl)
+
+ARTICLES = $(patsubst %Script.sml,%.ot.art,$(wildcard *Script.sml))
+
+# this takes a lot of time, disabled by default
+# all: $(ARTICLES)
+endif
+
+.PHONY: all
