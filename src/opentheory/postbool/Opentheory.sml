@@ -71,7 +71,7 @@ end
 local
   open boolLib BasicProvers metisLib
   fun ins (th,n) = Net.insert (concl th,th) n
-  val imp_def = METIS_PROVE[]``$==> = (\p q. p /\ q = p)``;
+  val imp_def = METIS_PROVE[]``$==> = (\p q. p /\ q <=> p)``;
   val and_def = prove(``$/\ = (\p q. (\f:bool->bool->bool. f p q) = (\f. f T T))``,
     SRW_TAC [][FUN_EQ_THM,EQ_IMP_THM]);
   val exists_def = prove(``$? = (\P. !q. (!x. P x ==> q) ==> q)``,
