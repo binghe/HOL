@@ -5757,7 +5757,8 @@ val tendsto = new_infixr_definition("tendsto",
 
 (* LONG RIGHTWARDS ARROW *)
 val _ = Unicode.unicode_version {u = UTF8.chr 0x27F6, tmnm = "-->"};
-val _ = TeX_notation {hol = "-->", TeX = ("\\HOLTokenLongmap{}", 1)};
+val _ = TeX_notation {hol = UTF8.chr 0x27F6, TeX = ("\\HOLTokenLongmap{}", 1)};
+val _ = TeX_notation {hol = "-->",           TeX = ("\\HOLTokenLongmap{}", 1)};
 
 val lim_def = new_definition ("lim_def",
  ``lim_def net f = @l. (f --> l) net``);

@@ -2042,8 +2042,6 @@ sequences.
 \item [transc] Transcendental functions, e.g., exp, sin,
 cos, ln, root, sqrt, pi, tan, asn, acs, atn.
 \item [real_sigma] Summation of real numbers (the $\Sigma$ operator).
-\item [real_topology] Elementary topology in Euclidean space (ported
-  from HOL Light).
 \end{description}
 \index{real numbers, the HOL theory of@real numbers, the \HOL{} theory of|)}
 
@@ -4904,6 +4902,10 @@ See Figure~\ref{fig:bind-defns} for the bind definitions for a number of differe
 \section{Higher Mathematics}
 \label{sec:mathematics}
 
+\subsection{Elementary topology in one-dimensional Euclidean space ($\mathbb{R}$)}
+
+This is ported from HOL Light.
+
 \subsection{Univariate differential and integral calculus}
 \label{calculus}
 \index{calculus, the HOL theory of@calculus, the \HOL{} theory of}
@@ -4982,6 +4984,30 @@ improvement, as shown in the following strong version of the
 \end{alltt}
 \end{hol}
 
+\subsection{Measure Theory}
+\label{measure}
+\index{measure, the HOL theory of@measure, the \HOL{} theory of}
+
+\begin{hol}
+\begin{alltt}
+>>__ load "measureTheory";
+>>__ open measureTheory;
+##thm CARATHEODORY_SEMIRING
+\end{alltt}
+\end{hol}
+
+\subsection{Lebesgue Intergration Theory}
+\label{lebesgue}
+\index{lebesgue, the HOL theory of@lebesgue, the \HOL{} theory of}
+
+\begin{hol}
+\begin{alltt}
+>>__ load "lebesgueTheory";
+>>__ open lebesgueTheory;
+##thm Radon_Nikodym
+\end{alltt}
+\end{hol}
+
 \subsection{Probability Theory}
 \label{prob}
 \index{probability, the HOL theory of@probability, the \HOL{} theory of}
@@ -5013,6 +5039,21 @@ HOL also supports the old real-based Probability Theory:
 \item [real_lebesgue] The theory of Lebesgue integration based on reals.
 \item [real_probability] Probability theory based on reals.
 \end{description}
+
+\begin{hol}
+\begin{alltt}
+>>__ load "probabilityTheory";
+>>__ open probabilityTheory;
+##thm variance_eq
+##thm prob_markov_ineq
+##thm chebyshev_ineq
+##thm Kolmogorov_0_1_Law
+##thm Borel_Cantelli_Lemma1
+##thm Borel_Cantelli_Lemma2
+##thm WLLN_uncorrelated
+##thm SLLN_uncorrelated
+\end{alltt}
+\end{hol}
 
 In the \ml{examples/miller} directory, done by Hurd~\cite{hurd-thesis},
 first a type of boolean sequences is defined

@@ -150,6 +150,9 @@ val measure_absolutely_continuous_def = Define
 val _ = set_fixity "<<" (Infixl 680);
 val _ = Unicode.unicode_version {u = Unicode.UChar.lsl, tmnm = "<<"};
 
+val _ = TeX_notation {hol = "<<",              TeX = ("\\ensuremath{\\ll}", 1)};
+val _ = TeX_notation {hol = Unicode.UChar.lsl, TeX = ("\\ensuremath{\\ll}", 1)};
+
 val _ = overload_on ("<<", ``measure_absolutely_continuous``);
 
 (* The measure with density (function) f with respect to m, see [1, p.86-87]

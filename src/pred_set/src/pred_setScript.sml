@@ -4433,8 +4433,10 @@ val SUM_IMAGE_DEF = new_definition(
   "SUM_IMAGE_DEF",
   ``SUM_IMAGE f s = ITSET (\e acc. f e + acc) s 0``);
 
-val _ = overload_on ("SIGMA", ``SUM_IMAGE``)
-val _ = Unicode.unicode_version {u = UTF8.chr 0x2211, tmnm = "SIGMA"}
+val _ = overload_on ("SIGMA", ``SUM_IMAGE``);
+val _ = Unicode.unicode_version {u = UTF8.chr 0x2211, tmnm = "SIGMA"};
+val _ = TeX_notation {hol = UTF8.chr 0x2211, TeX = ("\\HOLTokenSum{}", 1)};
+val _ = TeX_notation {hol = "SIGMA",         TeX = ("\\HOLTokenSum{}", 1)};
 
 val SUM_IMAGE_THM = store_thm(
   "SUM_IMAGE_THM",

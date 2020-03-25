@@ -7178,7 +7178,8 @@ val EXTREAL_PROD_IMAGE_DEF = new_definition
 
 val _ = overload_on ("PI", ``EXTREAL_PROD_IMAGE``);
 val _ = Unicode.unicode_version {u = UTF8.chr 0x220F, tmnm = "PI"};
-val _ = TeX_notation {hol = UTF8.chr 0x220F, TeX = ("\\ensuremath{\\prod}", 1)};
+val _ = TeX_notation {hol = UTF8.chr 0x220F, TeX = ("\\HOLTokenPI{}", 1)};
+val _ = TeX_notation {hol = "PI"           , TeX = ("\\HOLTokenPI{}", 1)};
 
 val EXTREAL_PROD_IMAGE_THM = store_thm
   ("EXTREAL_PROD_IMAGE_THM",

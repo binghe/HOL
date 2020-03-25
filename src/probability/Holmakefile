@@ -6,7 +6,8 @@ TARGETS = $(patsubst %.sml,%.uo,$(THYFILES))
 ifdef POLY
 HOLHEAP = heap
 OBJNAMES = realTheory realLib real_sigmaTheory seqTheory transcTheory \
-	RealArith sortingTheory pred_setLib numpairTheory res_quanTools
+	RealArith sortingTheory pred_setLib numpairTheory res_quanTools \
+	logrootTheory
 
 OBJS = $(patsubst %,$(dprot $(SIGOBJ)/%.uo),$(OBJNAMES))
 
