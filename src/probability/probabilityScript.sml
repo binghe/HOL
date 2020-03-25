@@ -6607,7 +6607,7 @@ Definition equivalent_def :
       (suminf (\n. prob p {x | x IN p_space p /\ X n x <> Y n x}) < PosInf)
 End
 
-Theorem equivalent_imp_converge_AE :
+Theorem equivalent_thm1 :
     !p X Y Z.
        equivalent p X Y /\ (!n x. Z n x = SIGMA (\n. X n x - Y n x) (count n)) ==>
        ?c. (Z --> (\x. c)) (almost_everywhere p)
@@ -6615,7 +6615,7 @@ Proof
     cheat
 QED
 
-Theorem equivalent_imp_converge_AE_zero :
+Theorem equivalent_thm2 :
     !p X Y a Z.
        equivalent p X Y /\ mono_increasing a /\ (sup (IMAGE a UNIV) = PosInf) /\
        (!n x. Z n x = SIGMA (\n. X n x - Y n x) (count n) / (a n)) ==>
