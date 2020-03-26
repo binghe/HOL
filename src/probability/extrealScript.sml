@@ -1201,6 +1201,15 @@ Proof
                    REAL_SUB_0]
 QED
 
+Theorem sub_eq_0 :
+    !x y. x <> PosInf /\ x <> NegInf /\ (x = y) ==> (x - y = 0)
+Proof
+    RW_TAC std_ss []
+ >> `?a. x = Normal a` by METIS_TAC [extreal_cases]
+ >> ASM_SIMP_TAC std_ss [extreal_of_num_def, extreal_sub_def,
+                         extreal_11, REAL_SUB_REFL]
+QED
+
 Theorem neg_neg[simp] :
     !x. --x = x
 Proof

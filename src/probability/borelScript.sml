@@ -56,6 +56,9 @@ val indicator_fn_def = Define
 (* MATHEMATICAL DOUBLE-STRUCK DIGIT ONE *)
 val _ = Unicode.unicode_version {u = UTF8.chr 0x1D7D9, tmnm = "indicator_fn"};
 
+val _ = TeX_notation {hol = "indicator_fn",   TeX = ("\\HOLTokenOne{}", 1)};
+val _ = TeX_notation {hol = UTF8.chr 0x1D7D9, TeX = ("\\HOLTokenOne{}", 1)};
+
 val INDICATOR_FN_POS = store_thm
   ("INDICATOR_FN_POS", ``!s x. 0 <= indicator_fn s x``,
     RW_TAC std_ss [indicator_fn_def]
@@ -73,6 +76,18 @@ val INDICATOR_FN_NOT_INFTY = store_thm (* new *)
  >- (MATCH_MP_TAC pos_not_neginf >> REWRITE_TAC [INDICATOR_FN_POS])
  >> Cases_on `x IN s`
  >> ASM_SIMP_TAC std_ss [indicator_fn_def, extreal_of_num_def, extreal_not_infty]);
+
+(* "advanced" lemmas/theorems should have lower-case names *)
+Theorem indicator_fn_normal :
+    !s x. ?r. (indicator_fn s x = Normal r) /\ 0 <= r /\ r <= 1
+Proof
+    rpt STRIP_TAC
+ >> `?r. indicator_fn s x = Normal r`
+       by METIS_TAC [extreal_cases, INDICATOR_FN_NOT_INFTY]
+ >> Q.EXISTS_TAC `r` >> art []
+ >> METIS_TAC [INDICATOR_FN_POS, INDICATOR_FN_LE_1, extreal_le_eq,
+               extreal_of_num_def]
+QED
 
 val INDICATOR_FN_SING_1 = store_thm
   ("INDICATOR_FN_SING_1", ``!x y. (x = y) ==> (indicator_fn {x} y = 1)``,
@@ -5117,9 +5132,6 @@ Definition lebesgue_def :
               {A | !n. (indicator A) integrable_on (line n)},
               (\A. sup {Normal (integral (line n) (indicator A)) | n IN UNIV}))
 End
-
-(* MATHEMATICAL BOLD SCRIPT CAPITAL L, for its special position in AE *)
-val _ = Unicode.unicode_version {u = UTF8.chr 0x1D4DB, tmnm = "lebesgue"};
 
 Theorem space_lebesgue :
     m_space lebesgue = univ(:real)

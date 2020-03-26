@@ -6702,8 +6702,34 @@ Proof
  >- (MATCH_MP_TAC equivalent_lemma >> art [])
  >> STRIP_TAC
  >> Q.EXISTS_TAC `\x. SIGMA (\n. X n x - Y n x) (count (f x)) *
-                      indicator_fn (m_space p DIFF N) x`
+                      indicator_fn (p_space p DIFF N) x`
  >> CONJ_TAC
+ >- (REWRITE_TAC [real_random_variable_def] \\
+     reverse CONJ_TAC
+     >- (GEN_TAC >> BETA_TAC \\
+         reverse (Cases_on `x IN p_space p DIFF N`)
+         >- (ASM_SIMP_TAC std_ss [indicator_fn_def, mul_rzero] \\
+             REWRITE_TAC [extreal_of_num_def, extreal_not_infty]) \\
+         ASM_SIMP_TAC std_ss [indicator_fn_def, mul_rone] \\
+         FULL_SIMP_TAC std_ss [real_random_variable_def] \\
+         CONJ_TAC >| (* 2 subgoals, similar tactics *)
+         [ MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_NEGINF >> art [FINITE_COUNT] \\
+           Q.X_GEN_TAC `n` >> RW_TAC std_ss [] \\
+           METIS_TAC [sub_not_infty],
+           MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_POSINF >> art [FINITE_COUNT] \\
+           Q.X_GEN_TAC `n` >> RW_TAC std_ss [] \\
+           METIS_TAC [sub_not_infty] ]) \\
+     FULL_SIMP_TAC std_ss [prob_space_def, random_variable_def, p_space_def,
+                           events_def, real_random_variable_def] \\
+     (* Here is the missing part in textbook proof, that we need to prove
+
+        (\x. SIGMA (\n. X n x - Y n x) (count (f x)) * indicator_fn s x)
+
+        is Borel-measurable (i.e. a random variable). To remove (f x), we
+        find a way to rewrite `SIGMA` by the subtraction of two `suminf`s,
+        each of which is Borel-measurable, using "ext_suminf_sum".
+      *)
+     cheat)
  >> cheat
 QED
 

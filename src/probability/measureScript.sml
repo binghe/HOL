@@ -4411,8 +4411,9 @@ QED
 val null_set_def = Define
    `null_set m s <=> s IN measurable_sets m /\ (measure m s = 0)`;
 
-(* MATHEMATICAL SCRIPT CAPITAL N *)
+(* MATHEMATICAL SCRIPT CAPITAL N, not very meaningful
 val _ = Unicode.unicode_version {u = UTF8.chr 0x1D4A9, tmnm = "null_set"};
+ *)
 
 (* a measure space m which is not yet complete can be completed *)
 val complete_of_def = Define
