@@ -6831,7 +6831,20 @@ Proof
        >- (MATCH_MP_TAC MEASURE_SPACE_COMPL >> fs [IN_NULL_SET, null_set_def]) \\
        MATCH_MP_TAC IN_MEASURABLE_BOREL_SUB \\
        qexistsl_tac [`X n`, `Y n`] >> ASM_SIMP_TAC std_ss [] ])
- >> cheat
+ >> RW_TAC std_ss [converge_AE_def, AE_THM, GSYM IN_NULL_SET, almost_everywhere_def]
+ >> Q.EXISTS_TAC `N`
+ >> RW_TAC std_ss [LIM_SEQUENTIALLY, dist, indicator_fn_def, mul_rone, GSYM p_space_def]
+ >> Q.EXISTS_TAC `f x`
+ >> RW_TAC std_ss []
+ >> Know `SIGMA (\n. X n x - Y n x) (count n) =
+          SIGMA (\n. X n x - Y n x) ((count n) DIFF (from (f x)))`
+ >- (irule EXTREAL_SUM_IMAGE_ZERO_DIFF \\
+     fs [real_random_variable_def, IN_FROM] \\
+     DISJ2_TAC >> RW_TAC std_ss [sub_not_infty]) >> Rewr'
+ >> Suff `count n DIFF (from (f x)) = count (f x)`
+ >- (Rewr' >> rw [])
+ >> RW_TAC set_ss [Once EXTENSION, IN_FROM, IN_COUNT]
+ >> rw []
 QED
 
 (* Theorem 5.2.1 (2) [2, p.113] *)
@@ -6843,6 +6856,32 @@ Theorem equivalent_thm2 :
                 (!n x. Z n x = SIGMA (\n. X n x - Y n x) (count n) / (a n)) ==>
          (Z --> (\x. 0)) (almost_everywhere p)
 Proof
+    rpt STRIP_TAC
+ >> Know `?N f. N IN null_set p /\
+               !x. x IN p_space p DIFF N ==> !n. f x <= n ==> (X n x - Y n x = 0)`
+ >- (MATCH_MP_TAC equivalent_lemma >> art [])
+ >> STRIP_TAC
+ >> RW_TAC std_ss [converge_AE_def, AE_THM, GSYM IN_NULL_SET, almost_everywhere_def]
+ >> Q.EXISTS_TAC `N`
+ >> RW_TAC std_ss [LIM_SEQUENTIALLY, dist, GSYM p_space_def]
+ (* 1. if (a n) ever reached PosInf, use that n directly *)
+ >> reverse (Cases_on `!n. a n <> PosInf`)
+ >- (FULL_SIMP_TAC std_ss [real_random_variable_def, ext_mono_increasing_def] \\
+     Q.EXISTS_TAC `n` \\
+     Q.X_GEN_TAC `m` >> DISCH_TAC \\
+     Know `a n <= a m` >- (FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+     ASM_REWRITE_TAC [le_infty] >> Rewr' \\
+     Know `SIGMA (\n. X n x - Y n x) (count m) <> PosInf`
+     >- (MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_POSINF >> rw [sub_not_infty]) \\
+     DISCH_TAC \\
+     Know `SIGMA (\n. X n x - Y n x) (count m) <> NegInf`
+     >- (MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_NEGINF >> rw [sub_not_infty]) \\
+     DISCH_TAC \\
+    `?r. SIGMA (\n. X n x - Y n x) (count m) = Normal r`
+         by METIS_TAC [extreal_cases] \\
+     rw [extreal_div_def, real_normal, extreal_of_num_def])
+ (* 2. there's a n such that 0 <= a n, otherwise `sup` cannot be PosInf *)
+ >> 
     cheat
 QED
 
