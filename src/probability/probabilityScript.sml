@@ -6644,10 +6644,9 @@ val equivalent_def = Define
       (suminf (\n. prob p {x | x IN p_space p /\ X n x <> Y n x}) < PosInf)`;
 
 Theorem equivalent_lemma :
-    !p X Y. prob_space p /\
+    !p X Y. prob_space p /\ equivalent p X Y /\
             (!n. real_random_variable (X n) p) /\
-            (!n. real_random_variable (Y n) p) /\
-            equivalent p X Y ==>
+            (!n. real_random_variable (Y n) p) ==>
        ?N f. N IN null_set p /\
              !x. x IN p_space p DIFF N ==> !n. f x <= n ==> (X n x - Y n x = 0)
 Proof
@@ -6689,10 +6688,9 @@ QED
 
 (* Theorem 5.2.1 (1) [2, p.113] *)
 Theorem equivalent_thm1 :
-    !p X Y Z. prob_space p /\
+    !p X Y Z. prob_space p /\ equivalent p X Y /\
               (!n. real_random_variable (X n) p) /\
               (!n. real_random_variable (Y n) p) /\
-              equivalent p X Y /\
               (!n x. Z n x = SIGMA (\n. X n x - Y n x) (count n)) ==>
           ?W. real_random_variable W p /\ (Z --> W) (almost_everywhere p)
 Proof
@@ -6729,16 +6727,118 @@ Proof
         find a way to rewrite `SIGMA` by the subtraction of two `suminf`s,
         each of which is Borel-measurable, using "ext_suminf_sum".
       *)
-     cheat)
+     Know `!x. SIGMA (\n. X n x - Y n x) (count (f x)) *
+                 indicator_fn (m_space p DIFF N) x =
+               SIGMA (\n. indicator_fn (m_space p DIFF N) x *
+                          (\n. X n x - Y n x) n) (count (f x))`
+     >- (GEN_TAC >> MATCH_MP_TAC EQ_SYM \\
+         STRIP_ASSUME_TAC
+           (Q.SPECL [`m_space p DIFF N`, `x`] indicator_fn_normal) >> art [] \\
+         GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) empty_rewrites [mul_comm] \\
+         irule EXTREAL_SUM_IMAGE_CMUL >> art [FINITE_COUNT] \\
+         METIS_TAC [sub_not_infty]) >> BETA_TAC >> Rewr' \\
+     Q.ABBREV_TAC `g = \x n. indicator_fn (m_space p DIFF N) x * (X n x - Y n x)` \\
+     Know `!x n. (\n. indicator_fn (m_space p DIFF N) x * (X n x - Y n x)) n =
+                 fn_plus (g x) n - fn_minus (g x) n`
+     >- (rpt GEN_TAC \\
+        `(\n. indicator_fn (m_space p DIFF N) x * (X n x - Y n x)) = g x`
+             by METIS_TAC [] >> POP_ORW \\
+         REWRITE_TAC [GSYM FN_DECOMP]) >> BETA_TAC >> Rewr' \\
+     Know `!x. SIGMA (\n. fn_plus (g x) n - fn_minus (g x) n) (count (f x)) =
+               SIGMA (fn_plus  (g x)) (count (f x)) -
+               SIGMA (fn_minus (g x)) (count (f x))`
+     >- (GEN_TAC >> irule EXTREAL_SUM_IMAGE_SUB >> art [FINITE_COUNT] \\
+         DISJ2_TAC >> Q.X_GEN_TAC `n` >> DISCH_TAC \\
+         reverse CONJ_TAC
+         >- (MATCH_MP_TAC pos_not_neginf >> REWRITE_TAC [FN_MINUS_POS]) \\
+         MATCH_MP_TAC FN_PLUS_NOT_INFTY \\
+         Q.X_GEN_TAC `i` >> Q.UNABBREV_TAC `g` >> BETA_TAC \\
+         STRIP_ASSUME_TAC
+           (Q.SPECL [`m_space p DIFF N`, `x`] indicator_fn_normal) >> art [] \\
+         Suff `X i x - Y i x <> PosInf` >- METIS_TAC [mul_not_infty] \\
+         METIS_TAC [sub_not_infty]) >> Rewr' \\
+     Know `!x. SIGMA (fn_plus (g x)) (count (f x)) <> NegInf`
+     >- (GEN_TAC \\
+         MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_NEGINF >> art [FINITE_COUNT] \\
+         Q.X_GEN_TAC `n` >> DISCH_TAC \\
+         MATCH_MP_TAC pos_not_neginf >> REWRITE_TAC [FN_PLUS_POS]) >> DISCH_TAC \\
+     Know `!x. SIGMA (fn_plus (g x)) (count (f x)) = suminf (fn_plus (g x))`
+     >- (GEN_TAC >> MATCH_MP_TAC EQ_SYM \\
+         MATCH_MP_TAC ext_suminf_sum \\
+         RW_TAC std_ss [FN_PLUS_POS, Abbr `g`] \\
+         reverse (Cases_on `x IN m_space p DIFF N`)
+         >- (ASM_SIMP_TAC std_ss [indicator_fn_def, mul_lzero, FN_PLUS_ZERO]) \\
+         ASM_SIMP_TAC std_ss [indicator_fn_def, mul_lone, FN_PLUS_ALT, max_refl]) \\
+     DISCH_THEN ((FULL_SIMP_TAC std_ss) o wrap) \\
+     Know `!x. SIGMA (fn_minus (g x)) (count (f x)) <> PosInf`
+     >- (GEN_TAC \\
+         MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_POSINF >> art [FINITE_COUNT] \\
+         Q.X_GEN_TAC `n` >> DISCH_TAC \\
+         MATCH_MP_TAC FN_MINUS_NOT_INFTY \\
+         Q.X_GEN_TAC `i` >> Q.UNABBREV_TAC `g` >> BETA_TAC \\
+         STRIP_ASSUME_TAC
+           (Q.SPECL [`m_space p DIFF N`, `x`] indicator_fn_normal) >> art [] \\
+         Suff `X i x - Y i x <> NegInf` >- METIS_TAC [mul_not_infty] \\
+         METIS_TAC [sub_not_infty]) >> DISCH_TAC \\
+     Know `!x. SIGMA (fn_minus (g x)) (count (f x)) = suminf (fn_minus (g x))`
+     >- (GEN_TAC >> MATCH_MP_TAC EQ_SYM \\
+         MATCH_MP_TAC ext_suminf_sum \\
+         RW_TAC std_ss [FN_MINUS_POS, Abbr `g`] \\
+         reverse (Cases_on `x IN m_space p DIFF N`)
+         >- (ASM_SIMP_TAC std_ss [indicator_fn_def, mul_lzero, FN_MINUS_ZERO]) \\
+         ASM_SIMP_TAC std_ss [indicator_fn_def, mul_lone, FN_MINUS_ALT,
+                              min_refl, neg_0]) \\
+     DISCH_THEN ((FULL_SIMP_TAC std_ss) o wrap) \\
+    `sigma_algebra (m_space p,measurable_sets p)` by METIS_TAC [measure_space_def] \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_SUB \\
+     qexistsl_tac [`\x. suminf (fn_plus (g x))`, `\x. suminf (fn_minus (g x))`] \\
+     ASM_SIMP_TAC std_ss [space_def] \\
+     CONJ_TAC >| (* 2 subgoals, similar tactics *)
+     [ (* goal 1 (of 2) *)
+       MATCH_MP_TAC IN_MEASURABLE_BOREL_SUMINF >> BETA_TAC \\
+       Q.EXISTS_TAC `\n x. fn_plus (g x) n` >> BETA_TAC \\
+      `!x. (\n. (fn_plus (g x)) n) = fn_plus (g x)` by METIS_TAC [] >> POP_ORW \\
+       ASM_SIMP_TAC std_ss [space_def, FN_PLUS_POS] \\
+       Q.PAT_X_ASSUM `!x. suminf (fn_plus  (g x)) <> NegInf` K_TAC \\
+       Q.PAT_X_ASSUM `!x. suminf (fn_minus (g x)) <> PosInf` K_TAC \\
+       RW_TAC std_ss [Abbr `g`, FN_PLUS_ALT] \\
+       HO_MATCH_MP_TAC IN_MEASURABLE_BOREL_MAX >> art [] \\
+       reverse CONJ_TAC
+       >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_CONST' >> art []) \\
+       ONCE_REWRITE_TAC [mul_comm] \\
+       HO_MATCH_MP_TAC IN_MEASURABLE_BOREL_MUL_INDICATOR >> art [subsets_def] \\
+       reverse CONJ_TAC
+       >- (MATCH_MP_TAC MEASURE_SPACE_COMPL >> fs [IN_NULL_SET, null_set_def]) \\
+       MATCH_MP_TAC IN_MEASURABLE_BOREL_SUB \\
+       qexistsl_tac [`X n`, `Y n`] >> ASM_SIMP_TAC std_ss [],
+       (* goal 2 (of 2) *)
+       MATCH_MP_TAC IN_MEASURABLE_BOREL_SUMINF >> BETA_TAC \\
+       Q.EXISTS_TAC `\n x. fn_minus (g x) n` >> BETA_TAC \\
+      `!x. (\n. (fn_minus (g x)) n) = fn_minus (g x)` by METIS_TAC [] >> POP_ORW \\
+       ASM_SIMP_TAC std_ss [space_def, FN_MINUS_POS] \\
+       Q.PAT_X_ASSUM `!x. suminf (fn_plus  (g x)) <> NegInf` K_TAC \\
+       Q.PAT_X_ASSUM `!x. suminf (fn_minus (g x)) <> PosInf` K_TAC \\
+       RW_TAC std_ss [Abbr `g`, FN_MINUS_ALT] \\
+       HO_MATCH_MP_TAC IN_MEASURABLE_BOREL_MINUS \\
+       Q.EXISTS_TAC `\x. min (indicator_fn (m_space p DIFF N) x * (X n x - Y n x)) 0` \\
+       ASM_SIMP_TAC std_ss [] \\
+       HO_MATCH_MP_TAC IN_MEASURABLE_BOREL_MIN >> art [] \\
+       reverse CONJ_TAC
+       >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_CONST' >> art []) \\
+       ONCE_REWRITE_TAC [mul_comm] \\
+       HO_MATCH_MP_TAC IN_MEASURABLE_BOREL_MUL_INDICATOR >> art [subsets_def] \\
+       reverse CONJ_TAC
+       >- (MATCH_MP_TAC MEASURE_SPACE_COMPL >> fs [IN_NULL_SET, null_set_def]) \\
+       MATCH_MP_TAC IN_MEASURABLE_BOREL_SUB \\
+       qexistsl_tac [`X n`, `Y n`] >> ASM_SIMP_TAC std_ss [] ])
  >> cheat
 QED
 
 (* Theorem 5.2.1 (2) [2, p.113] *)
 Theorem equivalent_thm2 :
-    !p X Y a Z. prob_space p /\
+    !p X Y a Z. prob_space p /\ equivalent p X Y /\
                 (!n. real_random_variable (X n) p) /\
                 (!n. real_random_variable (Y n) p) /\
-                equivalent p X Y /\
                 mono_increasing a /\ (sup (IMAGE a UNIV) = PosInf) /\
                 (!n x. Z n x = SIGMA (\n. X n x - Y n x) (count n) / (a n)) ==>
          (Z --> (\x. 0)) (almost_everywhere p)

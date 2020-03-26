@@ -462,6 +462,20 @@ val FN_MINUS_POS_ZERO = store_thm
  >> `0 < g x` by METIS_TAC [lt_le]
  >> METIS_TAC [extreal_lt_def]);
 
+Theorem FN_PLUS_ZERO[simp] :
+    fn_plus (\x. 0) = (\x. 0)
+Proof
+    MATCH_MP_TAC FN_PLUS_NEG_ZERO
+ >> RW_TAC std_ss [le_refl]
+QED
+
+Theorem FN_MINUS_ZERO[simp] :
+    fn_minus (\x. 0) = (\x. 0)
+Proof
+    MATCH_MP_TAC FN_MINUS_POS_ZERO
+ >> RW_TAC std_ss [le_refl]
+QED
+
 val FN_MINUS_TO_PLUS = store_thm
   ("FN_MINUS_TO_PLUS", ``!f. fn_minus (\x. -(f x)) = fn_plus f``,
     RW_TAC std_ss [fn_plus_def, fn_minus_def, neg_neg]
@@ -2396,6 +2410,17 @@ val IN_MEASURABLE_BOREL_CMUL = store_thm
       by (RW_TAC std_ss [EXTENSION, GSPECIFICATION, IN_INTER] \\
           METIS_TAC [lt_rdiv_neg, mul_comm])
  >> METIS_TAC [IN_MEASURABLE_BOREL_ALL, extreal_div_eq, REAL_LT_IMP_NE]);
+
+Theorem IN_MEASURABLE_BOREL_MINUS :
+    !a f g. sigma_algebra a /\ f IN measurable a Borel /\
+           (!x. x IN space a ==> (g x = -f x)) ==> g IN measurable a Borel
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL
+ >> qexistsl_tac [`f`, `-1`]
+ >> RW_TAC std_ss [Once neg_minus1]
+ >> REWRITE_TAC [extreal_of_num_def, extreal_ainv_def]
+QED
 
 val IN_MEASURABLE_BOREL_ABS = store_thm
   ("IN_MEASURABLE_BOREL_ABS",
