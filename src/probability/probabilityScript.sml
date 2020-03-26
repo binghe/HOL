@@ -6597,29 +6597,125 @@ QED
 (*  The Weak Law of Large Numbers for I.I.D. random sequences                *)
 (* ------------------------------------------------------------------------- *)
 
+Theorem PROB_ZERO_AE :
+    !p E. prob_space p /\ E IN events p /\ (prob p E = 0) ==> AE x::p. x NOTIN E
+Proof
+    RW_TAC std_ss [AE_THM, almost_everywhere_def, null_set_def]
+ >> Q.EXISTS_TAC `E`
+ >> fs [prob_space_def, events_def, prob_def]
+QED
+
+Theorem PROB_ONE_AE :
+    !p E. prob_space p /\ E IN events p /\ (prob p E = 1) ==> AE x::p. x IN E
+Proof
+    RW_TAC std_ss [AE_THM, almost_everywhere_def, null_set_def]
+ >> Q.EXISTS_TAC `m_space p DIFF E`
+ >> `E SUBSET p_space p` by PROVE_TAC [PROB_SPACE_SUBSET_PSPACE]
+ >> `p_space p DIFF (p_space p DIFF E) = E` by ASM_SET_TAC []
+ >> Know `prob p (p_space p DIFF E) = 1 - prob p E`
+ >- (MATCH_MP_TAC PROB_COMPL >> art [])
+ >> DISCH_TAC
+ >> FULL_SIMP_TAC std_ss [prob_space_def, events_def, prob_def, p_space_def,
+                          sub_refl, extreal_not_infty, extreal_of_num_def]
+ >> MATCH_MP_TAC MEASURE_SPACE_COMPL >> art []
+QED
+
+(* Actually, whenever you use "fs [SKOLEM_THM]" you can also use
+   "fs [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM]", or this lemma.
+ *)
+Theorem EXT_SKOLEM_THM[local] :
+    !P Q. (!x. x IN P ==> ?y. Q x y) <=> ?f. !x. x IN P ==> Q x (f x)
+Proof
+    rpt STRIP_TAC
+ >> reverse EQ_TAC >> rpt STRIP_TAC
+ >- (Q.EXISTS_TAC `f x` \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> art [])
+ >> fs [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM]
+ >> Q.EXISTS_TAC `f` >> art []
+QED
+
 (* "The law of large numbers in the general case involves only the first
     moment (finite expectation), but so far we have operated with the second.
     In order to drop any assumption on the second moment, we need a new device,
-    that of 'equivalent sequences', due to Khintchine (1894-1959). [2, p.112]
+    that of 'equivalent sequences', due to Khintchine (1894-1959)." [2, p.113]
  *)
-Definition equivalent_def :
-    equivalent p (X :num->'a->extreal) Y =
-      (suminf (\n. prob p {x | x IN p_space p /\ X n x <> Y n x}) < PosInf)
-End
+val equivalent_def = Define
+   `equivalent p (X :num->'a->extreal) Y =
+      (suminf (\n. prob p {x | x IN p_space p /\ X n x <> Y n x}) < PosInf)`;
 
-Theorem equivalent_thm1 :
-    !p X Y Z.
-       equivalent p X Y /\ (!n x. Z n x = SIGMA (\n. X n x - Y n x) (count n)) ==>
-       ?c. (Z --> (\x. c)) (almost_everywhere p)
+Theorem equivalent_lemma :
+    !p X Y. prob_space p /\
+            (!n. real_random_variable (X n) p) /\
+            (!n. real_random_variable (Y n) p) /\
+            equivalent p X Y ==>
+       ?N f. N IN null_set p /\
+             !x. x IN p_space p DIFF N ==> !n. f x <= n ==> (X n x - Y n x = 0)
 Proof
-    cheat
+    RW_TAC std_ss [equivalent_def]
+ >> Q.ABBREV_TAC `E = \n. {x | x IN p_space p /\ X n x <> Y n x}`
+ >> Know `!n. (E n) IN events p`
+ >- (RW_TAC std_ss [Abbr `E`, events_def, p_space_def] \\
+    `{x | x IN m_space p /\ X n x <> Y n x} =
+     {x | X n x <> Y n x} INTER m_space p` by SET_TAC [] >> POP_ORW \\
+     Know `!n x. X n x <> Y n x <=> (\x. X n x - Y n x) x <> 0`
+     >- (RW_TAC std_ss [] \\
+         reverse EQ_TAC >- (DISCH_TAC >> MATCH_MP_TAC sub_0 >> art []) \\
+         fs [real_random_variable_def] \\
+         DISCH_TAC >> MATCH_MP_TAC sub_eq_0 >> art []) >> Rewr' \\
+     Suff `(\x. X n x - Y n x) IN measurable (m_space p,measurable_sets p) Borel`
+     >- (METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE]) \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_SUB \\
+     qexistsl_tac [`X n`, `Y n`] \\
+     fs [prob_space_def, measure_space_def, space_def, real_random_variable_def,
+         random_variable_def, p_space_def, events_def]) >> DISCH_TAC
+ (* applying Borel_Cantelli_Lemma1 *)
+ >> Know `(\n. prob p {x | x IN p_space p /\ X n x <> Y n x}) = prob p o E`
+ >- (RW_TAC std_ss [FUN_EQ_THM, o_DEF, Abbr `E`])
+ >> DISCH_THEN (fs o wrap)
+ >> Know `prob p (limsup E) = 0`
+ >- (MATCH_MP_TAC Borel_Cantelli_Lemma1 >> art []) >> DISCH_TAC
+ >> Know `AE x::p. x NOTIN (limsup E)`
+ >- (MATCH_MP_TAC PROB_ZERO_AE >> art [] \\
+     MATCH_MP_TAC EVENTS_LIMSUP >> art [])
+ >> RW_TAC std_ss [AE_THM, GSYM IN_NULL_SET, almost_everywhere_def,
+                   IN_LIMSUP, infinitely_often_lemma]
+ >> FULL_SIMP_TAC std_ss [EXT_SKOLEM_THM]
+ >> qexistsl_tac [`N`, `f`]
+ >> RW_TAC std_ss []
+ >> Q.UNABBREV_TAC `E`
+ >> fs [real_random_variable_def, p_space_def]
+ >> MATCH_MP_TAC sub_eq_0 >> art []
 QED
 
+(* Theorem 5.2.1 (1) [2, p.113] *)
+Theorem equivalent_thm1 :
+    !p X Y Z. prob_space p /\
+              (!n. real_random_variable (X n) p) /\
+              (!n. real_random_variable (Y n) p) /\
+              equivalent p X Y /\
+              (!n x. Z n x = SIGMA (\n. X n x - Y n x) (count n)) ==>
+          ?W. real_random_variable W p /\ (Z --> W) (almost_everywhere p)
+Proof
+    rpt STRIP_TAC
+ >> Know `?N f. N IN null_set p /\
+               !x. x IN p_space p DIFF N ==> !n. f x <= n ==> (X n x - Y n x = 0)`
+ >- (MATCH_MP_TAC equivalent_lemma >> art [])
+ >> STRIP_TAC
+ >> Q.EXISTS_TAC `\x. SIGMA (\n. X n x - Y n x) (count (f x)) *
+                      indicator_fn (m_space p DIFF N) x`
+ >> CONJ_TAC
+ >> cheat
+QED
+
+(* Theorem 5.2.1 (2) [2, p.113] *)
 Theorem equivalent_thm2 :
-    !p X Y a Z.
-       equivalent p X Y /\ mono_increasing a /\ (sup (IMAGE a UNIV) = PosInf) /\
-       (!n x. Z n x = SIGMA (\n. X n x - Y n x) (count n) / (a n)) ==>
-       (Z --> (\x. 0)) (almost_everywhere p)
+    !p X Y a Z. prob_space p /\
+                (!n. real_random_variable (X n) p) /\
+                (!n. real_random_variable (Y n) p) /\
+                equivalent p X Y /\
+                mono_increasing a /\ (sup (IMAGE a UNIV) = PosInf) /\
+                (!n x. Z n x = SIGMA (\n. X n x - Y n x) (count n) / (a n)) ==>
+         (Z --> (\x. 0)) (almost_everywhere p)
 Proof
     cheat
 QED

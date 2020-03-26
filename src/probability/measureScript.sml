@@ -698,6 +698,25 @@ val MEASURE_SPACE_DIFF = store_thm
    METIS_TAC [measure_space_def,sigma_algebra_def,subsets_def,
               (REWRITE_RULE [subsets_def] (Q.SPEC `(m_space m,measurable_sets m)` ALGEBRA_DIFF))]);
 
+Theorem MEASURE_SPACE_SPACE :
+    !m. measure_space m ==> m_space m IN measurable_sets m
+Proof
+    RW_TAC std_ss [measure_space_def, sigma_algebra_def, subsets_def]
+ >> MATCH_MP_TAC
+      (REWRITE_RULE [space_def, subsets_def]
+                    (Q.SPEC `(m_space m,measurable_sets m)` ALGEBRA_SPACE))
+ >> ASM_REWRITE_TAC []
+QED
+
+Theorem MEASURE_SPACE_COMPL :
+    !m s. measure_space m /\ s IN measurable_sets m ==>
+          (m_space m) DIFF s IN measurable_sets m
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC MEASURE_SPACE_DIFF >> art []
+ >> MATCH_MP_TAC MEASURE_SPACE_SPACE >> art []
+QED
+
 val MEASURE_SPACE_BIGUNION = store_thm
   ("MEASURE_SPACE_BIGUNION",
   ``!m s. measure_space m /\ (!n:num. s n IN measurable_sets m) ==>
