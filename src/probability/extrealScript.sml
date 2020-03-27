@@ -1776,6 +1776,14 @@ Proof
  >> RW_TAC std_ss []
 QED
 
+Theorem le_div : (* cf. REAL_LE_DIV *)
+    !y z. 0 <= y /\ 0 < z ==> 0 <= y / Normal z
+Proof
+    rpt STRIP_TAC
+ >> MP_TAC (GSYM (Q.SPECL [`z`, `0`, `y`] le_rdiv))
+ >> RW_TAC std_ss [mul_lzero]
+QED
+
 val lt_ldiv = store_thm
   ("lt_ldiv", ``!x y z. 0 < z ==> (x / Normal z < y <=> x < y * Normal z)``,
     NTAC 2 Cases
