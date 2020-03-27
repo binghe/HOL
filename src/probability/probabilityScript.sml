@@ -6847,14 +6847,11 @@ Proof
  >> rw []
 QED
 
-(* Theorem 5.2.1 (2) [2, p.113],
-   added `!n. 0 < a n`, because otherwise `Z n = SIGMA / (a n)` is unspecified.
- *)
+(* Theorem 5.2.1 (2) [2, p.113] *)
 Theorem equivalent_thm2 :
     !p X Y a Z. prob_space p /\ equivalent p X Y /\
                 (!n. real_random_variable (X n) p) /\
                 (!n. real_random_variable (Y n) p) /\
-                (!n. 0 < a n) /\
                 mono_increasing a /\ (sup (IMAGE a UNIV) = PosInf) /\
                 (!n x. Z n x = SIGMA (\n. X n x - Y n x) (count n) / (a n)) ==>
          (Z --> (\x. 0)) (almost_everywhere p)
@@ -6901,6 +6898,10 @@ Proof
  >> STRIP_TAC
  >> Q.EXISTS_TAC `MAX k (f x)`
  >> RW_TAC std_ss [MAX_LE]
+ >> Know `0 <= abs (SIGMA (\n. X n x - Y n x) (count (f x))) / Normal e`
+ >- (MATCH_MP_TAC le_div >> art [abs_pos]) >> DISCH_TAC
+ >> `0 < a k` by PROVE_TAC [let_trans]
+ >> `0 < a n` by PROVE_TAC [lte_trans]
  >> Know `SIGMA (\n. X n x - Y n x) (count n) =
           SIGMA (\n. X n x - Y n x) ((count n) DIFF (from (f x)))`
  >- (irule EXTREAL_SUM_IMAGE_ZERO_DIFF >> fs [IN_FROM] \\
@@ -6952,7 +6953,7 @@ Theorem WLLN_IID :
              (!n. distribution p (X n) = distribution p (X 0)) /\
              (!n x. S n x = SIGMA (\i. X i x) (count n)) /\
              (!n. M n = expectation p (S n)) ==>
-       ((\n x. (S (SUC n) x - M (SUC n)) / &SUC n) --> (\x. 0)) (in_probability p)
+       ((\n x. (S n x - M n) / &n) --> (\x. 0)) (in_probability p)
 Proof
     cheat
 QED
