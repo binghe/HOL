@@ -15,7 +15,7 @@ local open Thm Drule in
       (DISCH (concl th1) th2)
 end
 
-val ERR = mk_HOL_ERR "OpenTheory"
+val ERR = mk_HOL_ERR "OpenTheoryReader"
 
 type reader =
 { define_tyop  : {name:thy_tyop, ax:thm, args:hol_type list, rep:thy_const, abs:thy_const} ->

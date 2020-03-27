@@ -61,13 +61,15 @@ hol4-base-unint.art: hol4-base-unint.thy $(ARTS)
 
 base-theorems.art:
 	opentheory info --theorems -o $@ base
+	touch base-theorems.ui base-theorems.uo
 
 hol4-assums.art: hol4-base-unsat.thy hol4-base-unint.art ../opentheory/hol4.int
 	opentheory info --skip-definitions --assumptions -o $@ $<
+	touch hol4-assums.ui hol4-assums.uo
 
 prove_base_assums.art: bossLib.uo prove_base_assums.otd \
 	base-theorems.art hol4-assums.art
 
-all: hol4-base-unint.art base-theorems.art hol4-assums.art
+all: prove_base_assums.art
 
 endif
