@@ -1,6 +1,6 @@
 open HolKernel boolLib bossLib BasicProvers;
 
-open OpenTheory realaxTheory realTheory;
+open OpenTheoryReader realaxTheory realTheory;
 
 val Thy = "prove_real_assums";
 
@@ -49,13 +49,14 @@ fun const_name ([],"=") = {Thy="min",Name="="}
   | const_name (["HOL4","realax"],"real_1") = {Thy=Thy,Name="real_1"}
   | const_name (["HOL4","realax"],"inv") = {Thy=Thy,Name="inv0"}
   | const_name (["HOL4","real"],"/") = {Thy=Thy,Name="real_div"}
-  | const_name (ns,n) = {Thy=Thy,Name=String.concatWith "_"(ns@[n])}
+  | const_name (ns,n) = {Thy=Thy,Name=String.concatWith "_"(ns@[n])};
+
 fun tyop_name ([],"bool") = {Thy="min",Tyop="bool"}
   | tyop_name ([],"->") = {Thy="min",Tyop="fun"}
   | tyop_name ([],"ind") = {Thy="min",Tyop="ind"}
   | tyop_name (["Number","Real"],"real") = {Thy="realax",Tyop="real"}
   | tyop_name (["Number","Natural"],"natural") = {Thy="num",Tyop="num"}
-  | tyop_name (ns,n) = {Thy=Thy,Tyop=String.concatWith "_"(ns@[n])}
+  | tyop_name (ns,n) = {Thy=Thy,Tyop=String.concatWith "_"(ns@[n])};
 
 local
   fun mk_rep_abs {name,ax,args,rep,abs} =
@@ -77,7 +78,7 @@ in
 end
 
 val goalsNet = read_article "hol4-real-assums.art" reader;
-val goals = map concl (Net.listItems goalsNet)
+val goals = map concl (Net.listItems goalsNet);
 
 (*
   Theorems in OpenTheory real-1.61 package

@@ -1,6 +1,6 @@
 open HolKernel boolLib bossLib BasicProvers;
 
-open OpenTheory;
+open OpenTheoryReader;
 
 val Thy = "prove_base_assums";
 

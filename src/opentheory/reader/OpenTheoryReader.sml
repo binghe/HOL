@@ -1,4 +1,4 @@
-structure OpenTheory :> OpenTheory = struct
+structure OpenTheoryReader :> OpenTheoryReader = struct
 
 open boolSyntax HolKernel Parse OpenTheoryMap OpenTheoryCommon
 
