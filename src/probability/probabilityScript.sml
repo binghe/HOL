@@ -6592,6 +6592,78 @@ Proof
       irule ROOT_LE_MONO >> RW_TAC arith_ss [] ]
 QED
 
+Theorem converge_AE_shift :
+    !p X Y. ((\n. X (SUC n)) --> Y) (almost_everywhere p) ==>
+            ((\n. X n)       --> Y) (almost_everywhere p)
+Proof
+    RW_TAC std_ss [converge_AE_def, AE_THM, almost_everywhere_def,
+                   GSYM IN_NULL_SET, LIM_SEQUENTIALLY, dist]
+ >> Q.EXISTS_TAC `N` >> RW_TAC std_ss []
+ >> Q.PAT_X_ASSUM `!x. x IN m_space p DIFF N ==> P` (MP_TAC o (Q.SPEC `x`))
+ >> RW_TAC std_ss []
+ >> rename1 `zero IN null_set p`
+ >> Q.PAT_X_ASSUM `!e. 0 < e ==> P` (MP_TAC o (Q.SPEC `e`))
+ >> RW_TAC std_ss []
+ >> Q.EXISTS_TAC `SUC N`
+ >> RW_TAC std_ss []
+ >> `n <> 0` by RW_TAC arith_ss []
+ >> Cases_on `n` >- fs []
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> rw []
+QED
+
+Theorem converge_PR_shift :
+    !p X Y. ((\n. X (SUC n)) --> Y) (in_probability p) ==>
+            ((\n. X n)       --> Y) (in_probability p)
+Proof
+    RW_TAC std_ss [converge_PR_def, LIM_SEQUENTIALLY, dist]
+ >> rename1 `E <> PosInf`
+ >> Q.PAT_X_ASSUM `!e. 0 < e /\ e <> PosInf ==> P` (MP_TAC o (Q.SPEC `E`))
+ >> RW_TAC std_ss []
+ >> rename1 `0 < e` (* this changes the last matching assumption *)
+ >> Q.PAT_X_ASSUM `!e. 0 < e ==> P` (MP_TAC o (Q.SPEC `e`))
+ >> RW_TAC std_ss []
+ >> Q.EXISTS_TAC `SUC N`
+ >> RW_TAC std_ss []
+ >> `n <> 0` by RW_TAC arith_ss []
+ >> Cases_on `n` >- fs []
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> rw []
+QED
+
+(* more compact statements without SUC but with cautions *)
+Theorem WLLN_uncorrelated' :
+    !p X S. prob_space p /\ (!n. real_random_variable (X n) p) /\
+            (!i j. i <> j ==> uncorrelated p (X i) (X j)) /\
+            (?c. c <> PosInf /\ !n. variance p (X n) <= c) /\
+            (!n x. S n x = SIGMA (\i. X i x) (count n)) ==>
+       ((\n x. (S n x - expectation p (S n)) / &n) --> (\x. 0)) (in_probability p)
+Proof
+    rpt STRIP_TAC
+ >> Q.ABBREV_TAC `M = \n. expectation p (S n)`
+ >> `!n. expectation p (S n) = M n` by METIS_TAC [] >> POP_ORW
+ >> HO_MATCH_MP_TAC converge_PR_shift
+ >> MATCH_MP_TAC WLLN_uncorrelated
+ >> Q.EXISTS_TAC `X` >> art []
+ >> CONJ_TAC >- (Q.EXISTS_TAC `c` >> art [])
+ >> RW_TAC std_ss [Abbr `M`]
+QED
+
+Theorem SLLN_uncorrelated' :
+    !p X S. prob_space p /\ (!n. real_random_variable (X n) p) /\
+            (!i j. i <> j ==> uncorrelated p (X i) (X j)) /\
+            (?c. c <> PosInf /\ !n. variance p (X n) <= c) /\
+            (!n x. S n x = SIGMA (\i. X i x) (count n)) ==>
+       ((\n x. (S n x - expectation p (S n)) / &n) --> (\x. 0)) (almost_everywhere p)
+Proof
+    rpt STRIP_TAC
+ >> Q.ABBREV_TAC `M = \n. expectation p (S n)`
+ >> `!n. expectation p (S n) = M n` by METIS_TAC [] >> POP_ORW
+ >> HO_MATCH_MP_TAC converge_AE_shift
+ >> MATCH_MP_TAC SLLN_uncorrelated
+ >> Q.EXISTS_TAC `X` >> art []
+ >> CONJ_TAC >- (Q.EXISTS_TAC `c` >> art [])
+ >> RW_TAC std_ss [Abbr `M`]
+QED
+
 (* ------------------------------------------------------------------------- *)
 (*  The Weak Law of Large Numbers for I.I.D. random sequences                *)
 (* ------------------------------------------------------------------------- *)
@@ -6619,8 +6691,8 @@ Proof
  >> MATCH_MP_TAC MEASURE_SPACE_COMPL >> art []
 QED
 
-(* Actually, whenever you use "fs [SKOLEM_THM]" you can also use
-   "fs [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM]", or this lemma.
+(* actually, whenever you use "fs [EXT_SKOLEM_THM]" you can also use
+   "fs [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM]".
  *)
 Theorem EXT_SKOLEM_THM[local] :
     !P Q. (!x. x IN P ==> ?y. Q x y) <=> ?f. !x. x IN P ==> Q x (f x)
@@ -6945,78 +7017,7 @@ Proof
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
 QED
 
-Theorem converge_AE_shift :
-    !p X Y. ((\n. X (SUC n)) --> Y) (almost_everywhere p) ==>
-            ((\n. X n)       --> Y) (almost_everywhere p)
-Proof
-    RW_TAC std_ss [converge_AE_def, AE_THM, almost_everywhere_def,
-                   GSYM IN_NULL_SET, LIM_SEQUENTIALLY, dist]
- >> Q.EXISTS_TAC `N` >> RW_TAC std_ss []
- >> Q.PAT_X_ASSUM `!x. x IN m_space p DIFF N ==> P` (MP_TAC o (Q.SPEC `x`))
- >> RW_TAC std_ss []
- >> rename1 `zero IN null_set p`
- >> Q.PAT_X_ASSUM `!e. 0 < e ==> P` (MP_TAC o (Q.SPEC `e`))
- >> RW_TAC std_ss []
- >> Q.EXISTS_TAC `SUC N`
- >> RW_TAC std_ss []
- >> `n <> 0` by RW_TAC arith_ss []
- >> Cases_on `n` >- fs []
- >> FIRST_X_ASSUM MATCH_MP_TAC >> rw []
-QED
-
-Theorem converge_PR_shift :
-    !p X Y. ((\n. X (SUC n)) --> Y) (in_probability p) ==>
-            ((\n. X n)       --> Y) (in_probability p)
-Proof
-    RW_TAC std_ss [converge_PR_def, LIM_SEQUENTIALLY, dist]
- >> rename1 `E <> PosInf`
- >> Q.PAT_X_ASSUM `!e. 0 < e /\ e <> PosInf ==> P` (MP_TAC o (Q.SPEC `E`))
- >> RW_TAC std_ss []
- >> rename1 `0 < e` (* this changes the last matching assumption *)
- >> Q.PAT_X_ASSUM `!e. 0 < e ==> P` (MP_TAC o (Q.SPEC `e`))
- >> RW_TAC std_ss []
- >> Q.EXISTS_TAC `SUC N`
- >> RW_TAC std_ss []
- >> `n <> 0` by RW_TAC arith_ss []
- >> Cases_on `n` >- fs []
- >> FIRST_X_ASSUM MATCH_MP_TAC >> rw []
-QED
-
-Theorem WLLN_uncorrelated' :
-    !p X S. prob_space p /\ (!n. real_random_variable (X n) p) /\
-            (!i j. i <> j ==> uncorrelated p (X i) (X j)) /\
-            (?c. c <> PosInf /\ !n. variance p (X n) <= c) /\
-            (!n x. S n x = SIGMA (\i. X i x) (count n)) ==>
-       ((\n x. (S n x - expectation p (S n)) / &n) --> (\x. 0)) (in_probability p)
-Proof
-    rpt STRIP_TAC
- >> Q.ABBREV_TAC `M = \n. expectation p (S n)`
- >> `!n. expectation p (S n) = M n` by METIS_TAC [] >> POP_ORW
- >> HO_MATCH_MP_TAC converge_PR_shift
- >> MATCH_MP_TAC WLLN_uncorrelated
- >> Q.EXISTS_TAC `X` >> art []
- >> CONJ_TAC >- (Q.EXISTS_TAC `c` >> art [])
- >> RW_TAC std_ss [Abbr `M`]
-QED
-
-Theorem SLLN_uncorrelated' :
-    !p X S. prob_space p /\ (!n. real_random_variable (X n) p) /\
-            (!i j. i <> j ==> uncorrelated p (X i) (X j)) /\
-            (?c. c <> PosInf /\ !n. variance p (X n) <= c) /\
-            (!n x. S n x = SIGMA (\i. X i x) (count n)) ==>
-       ((\n x. (S n x - expectation p (S n)) / &n) --> (\x. 0)) (almost_everywhere p)
-Proof
-    rpt STRIP_TAC
- >> Q.ABBREV_TAC `M = \n. expectation p (S n)`
- >> `!n. expectation p (S n) = M n` by METIS_TAC [] >> POP_ORW
- >> HO_MATCH_MP_TAC converge_AE_shift
- >> MATCH_MP_TAC SLLN_uncorrelated
- >> Q.EXISTS_TAC `X` >> art []
- >> CONJ_TAC >- (Q.EXISTS_TAC `c` >> art [])
- >> RW_TAC std_ss [Abbr `M`]
-QED
-
-(* NOTE: there's no assumptions on the variance, which may go infinite. *)
+(* TODO
 Theorem WLLN_IID :
     !p X S M. prob_space p /\ (!n. real_random_variable (X n) p) /\
               pairwise_indep_vars p X (\i. Borel) univ(:num) /\
@@ -7027,6 +7028,7 @@ Theorem WLLN_IID :
 Proof
     cheat
 QED
+ *)
 
 (* ========================================================================= *)
 (*                 Probability Density Function Theory [11]                  *)
