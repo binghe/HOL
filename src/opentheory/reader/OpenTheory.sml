@@ -1,4 +1,4 @@
-structure Opentheory :> Opentheory = struct
+structure OpenTheory :> OpenTheory = struct
 
 open boolSyntax HolKernel Parse OpenTheoryMap OpenTheoryCommon
 
@@ -15,7 +15,7 @@ local open Thm Drule in
       (DISCH (concl th1) th2)
 end
 
-val ERR = mk_HOL_ERR "Opentheory"
+val ERR = mk_HOL_ERR "OpenTheory"
 
 type reader =
 { define_tyop  : {name:thy_tyop, ax:thm, args:hol_type list, rep:thy_const, abs:thy_const} ->

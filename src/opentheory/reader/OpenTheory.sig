@@ -1,4 +1,4 @@
-signature Opentheory = sig
+signature OpenTheory = sig
 type term = Term.term type hol_type = Type.hol_type type thm = Thm.thm
 type thy_tyop  = OpenTheoryMap.thy_tyop
 type thy_const = OpenTheoryMap.thy_const

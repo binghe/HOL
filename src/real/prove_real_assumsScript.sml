@@ -1,4 +1,6 @@
-open HolKernel boolLib bossLib Opentheory realaxTheory realTheory
+open HolKernel boolLib bossLib BasicProvers;
+
+open OpenTheory realaxTheory realTheory;
 
 val Thy = "prove_real_assums";
 
