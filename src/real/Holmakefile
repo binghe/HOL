@@ -18,6 +18,8 @@ hol4-real-unsat.art: hol4-real-unsat.thy hol4-real-unint.art ../opentheory/hol4.
 
 hol4-real-assums.art: hol4-real-unsat.thy hol4-real-unint.art ../opentheory/hol4.int
 	opentheory info --skip-definitions --assumptions -o $@ $<
+	touch hol4-real-assums.ui
+	touch hol4-real-assums.uo
 
 real.art: real.otd
 

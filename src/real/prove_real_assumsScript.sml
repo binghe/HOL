@@ -8,10 +8,15 @@ val _ = new_theory Thy;
 
 val REAL_0 = new_definition("REAL_0",concl realTheory.REAL_0);
 val REAL_1 = new_definition("REAL_1",concl realTheory.REAL_1);
+
 val _ = new_constant("inv",``:real -> real``);
-val inv0_def = new_definition("inv0_def",``inv0 x = if x = 0 then 0 else inv x``);
+val inv0_def = new_definition
+  ("inv0_def",``inv0 x = if x = 0 then 0 else inv x``);
+
 val _ = new_constant("/",``:real -> real -> real``);
-val real_div_def = new_definition("real_div_def",``real_div x y = if y = 0 then 0 else prove_real_assums$/ x y``);
+
+val real_div_def = new_definition
+  ("real_div_def",``real_div x y = if y = 0 then 0 else prove_real_assums$/ x y``);
 
 val _ = new_constant("hol-real-assums-1.0",alpha);
 
@@ -66,7 +71,7 @@ local
       val P = rator(concl ax)
     in
       {abs_rep = mk_thm([],``(\a. ^abs (^rep a)) = (\a. a)``),
-       rep_abs = mk_thm([],``(\r. ^rep (^abs r) = r) = (\r. P r)``)}
+       rep_abs = mk_thm([],``(\r. ^rep (^abs r) = r) <=> (\r. P r)``)}
     end
 in
   val (reader:reader) = {
