@@ -38,6 +38,8 @@ hol4-probability-unint.art: hol4-probability-unint.thy $(ARTFILES)
 hol4-probability.art: hol4-probability.thy hol4-probability-unint.art ../opentheory/hol4.int
 	opentheory info --article -o $@ $<
 
+real_topology.art: real_topology.otd
+extreal.art: extreal.otd
 probability.art: probability.otd
 
 endif
