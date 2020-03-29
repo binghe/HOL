@@ -21,10 +21,25 @@ all: $(TARGETS)
 
 ifeq ($(KERNELID),otknl)
 
-ARTICLES = $(patsubst %Script.sml,%.ot.art,$(wildcard *Script.sml))
+ARTFILES = $(patsubst %Script.sml,%.ot.art,$(wildcard *Script.sml))
 
 # this takes a lot of time, disabled by default
-# all: $(ARTICLES)
+# all: $(ARTFILES) hol4-analysis-unint.art hol4-probability-unint.art
+
+hol4-analysis-unint.art: hol4-analysis-unint.thy $(ARTFILES)
+	opentheory info --article -o $@ $<
+
+hol4-analysis.art: hol4-analysis.thy hol4-analysis-unint.art ../opentheory/hol4.int
+	opentheory info --article -o $@ $<
+
+hol4-probability-unint.art: hol4-probability-unint.thy $(ARTFILES)
+	opentheory info --article -o $@ $<
+
+hol4-probability.art: hol4-probability.thy hol4-probability-unint.art ../opentheory/hol4.int
+	opentheory info --article -o $@ $<
+
+probability.art: probability.otd
+
 endif
 
 .PHONY: all
