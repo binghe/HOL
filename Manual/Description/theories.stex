@@ -1219,7 +1219,8 @@ The theory \ml{one} is typically used in constructing more elaborate types.
 
 \subsubsection{The itself type}
 \index{itself, the HOL type operator@\holtxt{itself}, the \HOL{} type operator}%
-The unary \holtxt{itself} type operator provides a family of singleton types akin to \holtxt{one}.
+The unary \holtxt{itself} type operator (in \theoryimp{boolTheory})
+provides a family of singleton types akin to \holtxt{one}.
 Thus, for every type $\alpha$, \holtxt{$\alpha$~itself} is a type containing just one value.
 This value's name is \holtxt{the\_value}, but the parser and pretty-printer are set up so that for the type \holtxt{$\alpha$~itself}, \holtxt{the\_value} can be written as \holtxt{(:$\alpha$)} (the syntax includes the parentheses).
 For example, \holtxt{(:num)} is the single value inhabiting the type \holtxt{num~itself}.
@@ -1309,7 +1310,8 @@ value to that constructor's argument, and is unspecified on
 \section{Numbers}
 
 The natural numbers, integers, and real numbers are provided in a
-series of theories. Also available are theories of $n$-bit words
+series of theories. Also available are theories of extended real numbers,
+$n$-bit words
 (numbers modulo $2^n$), floating point and fixed point numbers.
 
 \subsection{Natural numbers}
@@ -1322,7 +1324,7 @@ defined from the Axiom of Infinity, and Peano's axioms are derived. In
 \theoryimp{prim\_rec} the Primitive Recursion theorem is proved. Based
 on that, a large theory treating the standard arithmetic operations is
 developed in \theoryimp{arithmetic}. Lastly, a theory of numerals is
-developed.
+developed in \theoryimp{numeral}.
 
 \subsubsection{The theory \theoryimp{num}}
 
@@ -2023,6 +2025,7 @@ Constant & Overloaded symbol & Strength & Associativity \\ \hline
 {\small\verb+real_mul+} &{\small\verb%*%} & 600 & left \\
 {\small\verb+real_div+} & {\small\verb%/%} & 600 & left \\
 {\small\verb+pow+} & &700 & right \\
+{\small\verb+rpow+} & &700 & right \\
 {\small\verb+real_of_num+} &{\small\verb%&%} & 900 & prefix \\
 {\small\verb+real_neg+} &{\small\verb%~%} & 900 & prefix \\
 \end{tabular}}
@@ -2055,6 +2058,12 @@ The standard arithmetic operations are defined, with the appropriate theorems pr
 \subsection{Extended real numbers}
 \label{extreals}
 \index{extended real numbers, the HOL theory of@extreal numbers, the \HOL{} theory of|(}
+
+The \HOL{} provides an extensive theory of extended real numbers
+(\theoryimp{extreal}), originally developed by T. Mhamdi, O. Hasan, and S. Tahar~\cite{Mhamdi:2011dd}.
+With extended reals, the limit of a
+monotonic sequence is always defined, infinite when the sequence is divergent,
+but still defined and properties can be proven on it.
 
 It is often helpful to use the values $+\infty$ and $-\infty$ in
 calculations. To do this properly, we have to consider the
@@ -2107,7 +2116,43 @@ $/$ & 0 & $\pm b$ & $+\infty$ & $-\infty$ \\ \hline
 \label{tab:extrealAdd}
 \end{table}
 
-\begin{center}
+In \HOL{}, the type of extended real numbers (\emph{extreals} hereafter)
+is constructed by an algebraic datatype \ty{extreal} (see Section~\ref{sec:datatype}):
+\begin{hol}
+\begin{verbatim}
+  Datatype `extreal = NegInf | PosInf | Normal real`
+\end{verbatim}
+\end{hol}
+Thus \holtxt{Normal r} denotes the extreal corresponding
+to the real number \holtxt{r}, while \holtxt{PosInf} and
+\holtxt{NegInf} denote $+\infty$ and $-\infty$, respectively.
+ In order to precisely specify extreals corresponding to natural
+ numbers, the user can use the single character suffix `\ml{x}':
+\begin{session}
+\begin{alltt}
+>>__ load "extrealTheory";
+>>__ open extrealTheory;
+>> type_of ``0x``;
+\end{alltt}
+\end{session}
+The function \holtxt{real} can be used to convert extreals back to the
+corresponding reals ($+\infty$ and $-\infty$ are mapped to \holtxt{0x}).
+%
+A standard collection of arithmetic operators%
+\footnote{Note that, unlike the case of real numbers in \HOL{}, $0 / 0
+  = 0$ (or ``division by zero'' in general) does not hold on
+  extreals. This particular design choice sometimes makes proofs of
+  extreal-related theorems a bit harder (but more aligned with their
+  textbook proofs), as whenever terms like
+  \holtxt{inv x} or \holtxt{1 / x} are involved, \holtxt{x <> 0} must
+  be proved to proceed.}
+and transcendental
+functions (see \theoryimp{transc} for those of reals)
+on the extreals are defined and overloaded on the
+corresponding operators of real numbers, show in Table~\ref{tab:extrealOp}.
+
+\begin{table}[ht]
+\centering
 {\small
 \begin{tabular}{@{}cccc}
 Constant & Overloaded symbol & Strength & Associativity \\ \hline
@@ -2122,13 +2167,73 @@ Constant & Overloaded symbol & Strength & Associativity \\ \hline
 {\small\verb+extreal_inv+} &{\small\verb+inv+} & & prefix \\
 {\small\verb+extreal_abs+} &{\small\verb+abs+} & & prefix \\
 {\small\verb+extreal_pow+} & {\small\verb+pow+} & 700 & right \\
+{\small\verb+extreal_powr+} & {\small\verb+powr+} & 700 & right \\
 {\small\verb+extreal_exp+} &{\small\verb+exp+} & & prefix \\
 {\small\verb+extreal_sqrt+} &{\small\verb%sqrt%} & & prefix \\
 {\small\verb+extreal_logr+} &{\small\verb+logr+} & & prefix \\
 {\small\verb+extreal_lg+} &{\small\verb+lg+} & & prefix \\
 {\small\verb+extreal_ln+} &{\small\verb+ln+} & & prefix \\
 \end{tabular}}
-\end{center}
+\caption{Arithmetic operators and transcendental functions for extreals}
+\label{tab:extrealOp}
+\end{table}
+
+The addition of extreals is not associative and commutative, because
+\holtxt{PosInf + NegInf} (and also \holtxt{NegInf + PosInf}) is not defined (see
+Table~\ref{tab:extrealAdd}). To swap the elements of additions, the
+user must avoid mixing of PosInf and NegInf in
+the involved elements (e.g., let one of the two elements be normal):
+\begin{hol}
+\begin{alltt}
+##thm add_comm
+##thm add_comm_normal 
+##thm add_assoc
+\end{alltt}
+\end{hol}
+On the other hand, the set of extreals is a totally ordered set such that for all
+$a \in \overline{\mathbb{R}}$, $-\infty \leq a \leq +\infty$.
+With this order, $\overline{\mathbb{R}}$ is a complete lattice where every
+subset has a supremum (\holtxt{extreal_sup} or \holtxt{sup}) and an
+infimum (\holtxt{extreal_inf} or \holtxt{inf}). In particular, for
+empty sets (of extreals) we have:
+\begin{hol}
+\begin{alltt}
+##thm sup_empty
+##thm inf_empty
+\end{alltt}
+\end{hol}
+
+\paragraph{Finite and infinite sum of extreals}
+
+The sum of extreals over a finite set
+(\holtxt{EXTREAL_SUM_IMAGE}, overloaded on \holtxt{SIGMA}), $\sum_{i\in s} f(i)$, is defined
+by \holtxt{pred_set.ITSET} (see Section~\ref{sec:theory-of-sets}):
+\begin{hol}
+\begin{alltt}
+##thm EXTREAL_SUM_IMAGE_DEF
+\end{alltt}
+\end{hol}
+To actually work with \holtxt{SIGMA f s},
+beside that $s$ must be a
+finite set, there must be no mixing of
+\holtxt{PosInf} and \holtxt{NegInf} in the values of \holtxt{f},
+i.e.~either all $f(i)$ are not $+\infty$ or they are not $-\infty$ ($i \in s$).
+The following theorem fully captures the properties of
+\holtxt{EXTREAL_SUM_IMAGE}:
+\begin{hol}
+\begin{alltt}
+##thm EXTREAL_SUM_IMAGE_THM
+\end{alltt}
+\end{hol}
+
+The (countably) Infinite sum of extreals (\holtxt{ext_suminf},
+overloaded on \holtxt{suminf}), $\sum_{i\in \mathbb{N}}
+f(i)$, is only defined on non-negative function $f$:
+\begin{hol}
+\begin{alltt}
+##thm ext_suminf_def
+\end{alltt}
+\end{hol}
 
 \subsection{Bit vectors}
 \label{sec:bit-vectors}
