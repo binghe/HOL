@@ -2146,8 +2146,7 @@ A standard collection of arithmetic operators%
   textbook proofs), as whenever terms like
   \holtxt{inv x} or \holtxt{1 / x} are involved, \holtxt{x <> 0} must
   be proved to proceed.}
-and transcendental
-functions (see \theoryimp{transc} for those of reals)
+and elementary functions
 on the extreals are defined and overloaded on the
 corresponding operators of real numbers, show in Table~\ref{tab:extrealOp}.
 
@@ -2178,11 +2177,11 @@ Constant & Overloaded symbol & Strength & Associativity \\ \hline
 \label{tab:extrealOp}
 \end{table}
 
-The addition of extreals is not associative and commutative, because
-\holtxt{PosInf + NegInf} (and also \holtxt{NegInf + PosInf}) is not defined (see
+The addition of extreals is not associative and commutative in general, because
+\holtxt{PosInf + NegInf} and \holtxt{NegInf + PosInf} are not defined (see
 Table~\ref{tab:extrealAdd}). To swap the elements of additions, the
 user must avoid mixing of PosInf and NegInf in
-the involved elements (e.g., let one of the two elements be normal):
+the involved elements (e.g., by letting one of them be normal):
 \begin{hol}
 \begin{alltt}
 ##thm add_comm
@@ -2213,7 +2212,7 @@ by \holtxt{pred_set.ITSET} (see Section~\ref{sec:theory-of-sets}):
 ##thm EXTREAL_SUM_IMAGE_DEF
 \end{alltt}
 \end{hol}
-To actually work with \holtxt{SIGMA f s},
+To actually work with \holtxt{EXTREAL_SUM_IMAGE},
 beside that $s$ must be a
 finite set, there must be no mixing of
 \holtxt{PosInf} and \holtxt{NegInf} in the values of \holtxt{f},
@@ -2226,12 +2225,33 @@ The following theorem fully captures the properties of
 \end{alltt}
 \end{hol}
 
-The (countably) Infinite sum of extreals (\holtxt{ext_suminf},
+The (countably) infinite sum of extreals (\holtxt{ext_suminf},
 overloaded on \holtxt{suminf}), $\sum_{i\in \mathbb{N}}
-f(i)$, is only defined on non-negative function $f$:
+f(i)$, is only defined on non-negative function $f$ as the supremum
+of the $n$th partial sum:
 \begin{hol}
 \begin{alltt}
 ##thm ext_suminf_def
+\end{alltt}
+\end{hol}
+Thus mathematically \holtxt{ext_suminf} represents \emph{positive
+  series}, which always has a unique nonnegative value: \holtxt{PosInf} if the
+positive series is \emph{divergent}, other normal extreals (i.e.~\holtxt{< PosInf}) if the
+positive series is \emph{convergent} (on that normal extreal). A
+fundamental result for positive series says that it converges if and
+only if its $n$th partial sums are bounded:
+\begin{hol}
+\begin{alltt}
+##thm pos_summable
+\end{alltt}
+\end{hol}
+Finally, 2-dimensional (positive) infinite sums
+$\sum_{i,j\in\mathbb{N}} f(i,j)$ can be reduced to iterated sums
+$\sum_{i\in\mathbb{N}} \sum_{j\in\mathbb{N}} f(i,j)$ given an arbitrary bijection between
+$\mathbb{N}$ and $\mathbb{N}\times\mathbb{N}$:
+\begin{hol}
+\begin{alltt}
+##thm ext_suminf_2d_full 
 \end{alltt}
 \end{hol}
 
