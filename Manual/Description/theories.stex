@@ -4609,6 +4609,7 @@ definition hereafter)
 \begin{hol}
 \begin{alltt}
 ##thm BISIM_REL_def
+
 ##thm BISIM_REL_IS_EQUIV_REL
 \end{alltt}
 \end{hol}
@@ -4691,11 +4692,14 @@ below are the definition of weak
 bisimulation (\holtxt{WBISIM}),
 the equivalent definition of weak bisimulation relation
 (\holtxt{WBISIM_REL}) and the theorem saying \holtxt{WBISIM_REL ts
-  tau} is indeed an equivalence relation:
+  tau} is indeed an equivalence relation (in the LTS given by
+\holtxt{ts} and \holtxt{tau}):
 \begin{hol}
 \begin{alltt}
 ##thm WBISIM_def
+
 ##thm WBISIM_REL_def
+
 ##thm WBISIM_REL_IS_EQUIV_REL
 \end{alltt}
 \end{hol}
@@ -5186,11 +5190,13 @@ See Figure~\ref{fig:bind-defns} for the bind definitions for a number of differe
 \label{sec:mathematics}
 
 \subsection{Elementary topology in one-dimensional Euclidean space ($\mathbb{R}$)}
+\label{sec:topology}
+\index{real\_topology, the HOL theory of@real\_topology, the \HOL{} theory of}
 
 This is ported from HOL Light.
 
 \subsection{Univariate differential and integral calculus}
-\label{calculus}
+\label{sec:calculus}
 \index{calculus, the HOL theory of@calculus, the \HOL{} theory of}
 
 An extensive development of (univariate) differential and integral
@@ -5338,7 +5344,7 @@ HOL also supports the old real-based Probability Theory:
 \end{alltt}
 \end{hol}
 
-In the \ml{examples/miller} directory, done by Hurd~\cite{hurd-thesis},
+In \ml{\$(HOLDIR)/examples/miller}, done by Hurd~\cite{hurd-thesis},
 first a type of boolean sequences is defined
 to model an infinite sequence of coin flips. Next a probability
 function is formalized which takes as input a set of boolean
