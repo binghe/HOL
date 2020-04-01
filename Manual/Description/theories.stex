@@ -2221,7 +2221,10 @@ The following theorem fully captures the properties of
 \holtxt{EXTREAL_SUM_IMAGE}:
 \begin{hol}
 \begin{alltt}
+>>__ val oldwidth = !Globals.linewidth;
+     val _ = Globals.linewidth := oldwidth - 10;
 ##thm EXTREAL_SUM_IMAGE_THM
+>>__ val _ = Globals.linewidth := oldwidth;
 \end{alltt}
 \end{hol}
 
@@ -4043,6 +4046,37 @@ is set to \ml{1}.
 \index{traces, controlling HOL feedback@traces, controlling \HOL{} feedback!set comprehensions}
 \index{sets, the HOL theory of@sets, the \HOL{} theory of|)}
 
+\subsubsection{Decision procedure for set-theoretic theorems}
+\index{set theory decision procedure}
+\label{sec:set-decision}
+
+\HOL{} provides some tools (in \texttt{bossLib}) to automate the proof of some routine
+\theoryimp{pred_set} theorems by a reduction to first-order
+logic, ported from HOL Light. They are based on \texttt{metisLib} (see
+Section~\ref{sec:metisLib}). Below are the entry-points: (see
+\REFERENCE{} for more details.)
+\begin{hol}
+\begin{verbatim}
+   SET_TAC     : thm list -> tactic
+   ASM_SET_TAC : thm list -> tactic
+   SET_RULE    : term -> thm
+\end{verbatim}
+\end{hol}
+
+The difference between \ml{SET\_TAC} and \ml{ASM\_SET\_TAC} is that
+the latter one also makes use of assumptions. With them, many simple
+set-theoretic results can be directly proved without finding needed
+lemmas in \theoryimp{pred_setTheory}. For instance, a simple lemma
+from \theoryimp{util_probTheory}:
+\begin{hol}
+\begin{verbatim}
+Theorem DISJOINT_RESTRICT_L :
+  !s t c. DISJOINT s t ==> DISJOINT (s INTER c) (t INTER c)
+Proof SET_TAC []
+QED
+\end{verbatim}
+\end{hol}
+
 \subsection{Multisets (\theoryimp{bag})}\label{multiset}
 
 Multisets, also known as \emph{bags}, are similar to sets, except that
@@ -4546,6 +4580,130 @@ From those, Newman's Lemma is proved.
 ##thm Newmans_lemma
 \end{alltt}
 \end{hol}
+
+\subsection{Bisimulation for labelled transition systems (\theoryimp{bisimulation})}
+\label{bisimulation}
+
+\HOL{} provides a minimal theory (\theoryimp{bisimulation}) for
+generating bisimulation and bisimulation
+relations~\cite{Mil89}
+from any labelled transition relation of the type $\alpha\to\beta\to\alpha\to\konst{bool}$.
+Suppose there is a user-defined labelled transition system (LTS) and
+\holtxt{ts} is the transition relation in it, then \holtxt{ts p l
+  q} denotes a transition from $p$ to $q$ by an action $l$, i.e.~$p \overset{l}{\longrightarrow} q$.
+A binary relation $R$ is called a \emph{bisimulation} if \holtxt{BISIM
+  ts R} holds under the following definition:
+\begin{hol}
+\begin{alltt}
+>>__ load "bisimulationTheory";
+>>__ open bisimulationTheory;
+##thm BISIM_def
+\end{alltt}
+\end{hol}
+Furthermore, the bisimulation relation (or bisimilarity, usually
+denoted by $\sim$),
+\holtxt{BISIM_REL ts}, is the \emph{union} (in the sense of
+\holtxt{RUNION}) of all bisimulations in this LTS, and it can be proven
+to be equivalence relation: (the \emph{original}
+definition hereafter)
+\begin{hol}
+\begin{alltt}
+##thm BISIM_REL_def
+##thm BISIM_REL_IS_EQUIV_REL
+\end{alltt}
+\end{hol}
+
+Bisimulation is a special case of coinduction, by far the most studied
+coinductive concept~\cite{Sangiorgi2012}. In practice it is hard to
+directly work with the above definition of \holtxt{BISIM_REL}. In fact, \holtxt{BISIM_REL}
+is defined by the coinductive relational package (see
+Section~\ref{sec:coinductive}):
+\begin{hol}
+\begin{verbatim}
+CoInductive BISIM_REL :
+    !p q. (!l.
+            (!p'. ts p l p' ==> ?q'. ts q l q' /\ (BISIM_REL ts) p' q') /\
+            (!q'. ts q l q' ==> ?p'. ts p l p' /\ (BISIM_REL ts) p' q'))
+      ==> (BISIM_REL ts) p q
+End
+\end{verbatim}
+\end{hol}
+which automatically generates the following coinduction principle:
+\begin{hol}
+\begin{alltt}
+##thm BISIM_REL_coind
+\end{alltt}
+\end{hol}
+A simple rewrite by \holtxt{BISIM_def} shows that \holtxt{BISIM_REL}
+defined in this way is actually equivalent with the original
+definition (which now becomes a theorem):\footnote{On the other hand, starting from the
+original definition it is not that easy to derive out the coinduction
+principle, which is very useful in practice.}
+\begin{session}
+\begin{alltt}
+>> Q.SPECL [`ts`, `R`]
+           (REWRITE_RULE [GSYM BISIM_def, GSYM RSUBSET] BISIM_REL_coind);
+\end{alltt}
+\end{session}
+
+The bisimulation and bisimulation relation considered so far are
+the \emph{strong} ones, in the sense that all involved transitions are
+\emph{one-step} transitions. To define \emph{weak} bisimulation (and the corresponding
+weak bisimulation relation), beside the transition relation,
+the user must also designate a special unique
+action to be \emph{invisible} (usually denoted by $\tau$).
+An \emph{empty} transition (\holtxt{ETS}) is the
+reflexive-transitive closure (\holtxt{RTC}) of (one-step) invisible transitions:
+\begin{hol}
+\begin{alltt}
+##thm ETS_def
+\end{alltt}
+\end{hol}
+Then a \emph{weak} transition (\holtxt{WTS}) is a one-step transition
+(the action may be invisible) concatenated with two empty transitions:
+\begin{hol}
+\begin{alltt}
+##thm WTS_def
+\end{alltt}
+\end{hol}
+An empty transition \holtxt{ETS ts tau p q} is usually denoted by
+$p\overset{\epsilon}{\Longrightarrow} q$ (assuming \holtxt{ts} and
+\holtxt{tau} is clear from the context), and a weak transition
+\holtxt{WTS ts tau p l q} is denoted by $p\overset{l}{\Longrightarrow}q$.
+Note that a weak transition must have at least one transition (even it
+is $\tau$), while an empty transition may have no actual transition at all.
+To simplify the informal definitions, we denote by
+$p\overset{\hat{a}}{\Longrightarrow}q$ the special notion of weak
+transitions such that, whenever the action $a$ is invisible, it is the
+same as $p\overset{\epsilon}{\Longrightarrow} q$.
+
+A binary relation $R$ is a weak bisimulation if, whenever $p\ R\ q$,
+\begin{itemize}
+\item $p \overset{a}{\longrightarrow} p'$ implies that there is $q'$ such that
+  $q\overset{\hat{a}}{\Longrightarrow} q'$ and $p'\ R\ q'$;
+\item $q \overset{a}{\longrightarrow} q'$ implies that there is $p'$ such that
+  $p\overset{\hat{a}}{\Longrightarrow} p'$ and $p'\ R\ q'$.
+\end{itemize}
+ $p$ and $p$ are \emph{weakly bisimilar}, written as $p \approx q$, if $p\ R\ q$ for some bisimulation $R$.
+
+Following the same manner as the strong case (including the use of \ml{CoInductive} command),
+below are the definition of weak
+bisimulation (\holtxt{WBISIM}),
+the equivalent definition of weak bisimulation relation
+(\holtxt{WBISIM_REL}) and the theorem saying \holtxt{WBISIM_REL ts
+  tau} is indeed an equivalence relation:
+\begin{hol}
+\begin{alltt}
+##thm WBISIM_def
+##thm WBISIM_REL_def
+##thm WBISIM_REL_IS_EQUIV_REL
+\end{alltt}
+\end{hol}
+
+In \ml{\$(HOLDIR)/examples/CCS} there is a comprehensive
+formalization of the Milner's Calculus of Communicating Systems (CCS)~\cite{Mil89},
+where the strong and weak bisimulations are now based on
+\theoryimp{bisimulation} theory.
 
 \subsection{Finite maps (\theoryimp{finite\_map})}
 \label{sec:finite-map}
