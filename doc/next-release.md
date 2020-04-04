@@ -70,20 +70,19 @@ New theories:
     numbers, i.e. the type of measure (probability) is `('a set) -> extreal`.
     The following new (or updated) theories are provided:
 
-    sigma_algebraScript.sml      * Sigma-algebra and other system of sets
-    measureScript.sml            * Measure Theory defined on extended reals
-    real_borelScript.sml         * Borel-measurable sets generated from reals
-    borelScript.sml              * Borel sets and Borel measurable functions
-    lebesgueScript.sml           * Lebesgue integration theory
-    martingaleScript.sml         * Martingales based on σ-finite filtered measure space
-    probabilityScript.sml        * Probability Theory based on extended reals
+        sigma_algebraScript.sml      * Sigma-algebra and other system of sets
+        measureScript.sml            * Measure Theory defined on extended reals
+        real_borelScript.sml         * Borel-measurable sets generated from reals
+        borelScript.sml              * Borel sets (extreal) and Borel measurable functions
+        lebesgueScript.sml           * Lebesgue integration theory
+        martingaleScript.sml         * Martingales based on sigma-finite filtered measure space
+        probabilityScript.sml        * Probability Theory based on extended reals
 
     Notable theorems include: Caratheory's Extension Theorem (for semiring),
     the construction of 1-dimensional Borel and Lebesgue measure spaces,
     Radon-Nikodym theorem, Bayes' Rule (Conditional Probability),
     Kolmogorov 0-1 Law, Borel-Cantelli Lemma, Markov/Chebyshev's inequalities,
     convergence concepts (AE,PR,LP) and the Strong/Weak Law of Large Numbers.
-
 
     There is a major backwards-incompatibility: old proof scripts based on
     real-valued measure and probability theories should now open the following

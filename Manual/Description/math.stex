@@ -1,11 +1,27 @@
 \section{Higher Mathematics}
 \label{sec:mathematics}
 
-\subsection{Elementary topology in one-dimensional Euclidean space)}
+\subsection{Elementary topology of one-dimensional Euclidean space}
 \label{sec:topology}
 \index{real\_topology, the HOL theory of@real\_topology, the \HOL{} theory of}
 
-This is ported from HOL Light.
+The theory \theoryimp{real_topology} provides some deeper analytical
+properties for real numbers and (one-dimensional) real sets (Euclidean space).
+Besides, it provides 
+It was ported from HOL Light by Muhammad Qasim and Osman Hasan.
+
+Heine-Borel theorem
+\begin{hol}
+\begin{alltt}
+>>__ load "real_topologyTheory";
+>>__ open real_topologyTheory;
+##thm COMPACT_EQ_BOUNDED_CLOSED
+
+##thm COMPACT_EQ_HEINE_BOREL
+
+##thm COMPACT_EQ_BOLZANO_WEIERSTRASS
+\end{alltt}
+\end{hol}
 
 \subsection{Univariate differential and integral calculus}
 \label{sec:calculus}
@@ -167,6 +183,10 @@ a positive integer $N$, and returns an integer $n$ in the range $0\le
 n < N$, picked uniformly at random from the available choices. This
 sampling function for the uniform distribution is later used to verify
 the Miller-Rabin primality test.
+
+\section{Further theories on higher mathematics}
+
+In \ml{\$(HOLDIR)/examples/algebra}, ...
 
 \section{Further Theories}
 Other theories of interest in \HOL{} are listed and briefly described
