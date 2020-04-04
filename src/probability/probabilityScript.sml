@@ -2355,51 +2355,86 @@ QED
   -- A. N. Kolmogorov, "Foundations of the Theory of Probability." [1] *)
 
 (* 1. independence of two events: (DO NOT CHANGE) *)
-val indep_def = Define
-   `indep p a b <=> a IN events p /\ b IN events p /\
-                   (prob p (a INTER b) = prob p a * prob p b)`;
+Definition indep_def :
+    indep p a b = (a IN events p /\ b IN events p /\
+                   (prob p (a INTER b) = prob p a * prob p b))
+End
 
-(* 2. extension of `indep`: a sequence of pairwise independent events *)
-val pairwise_indep_events_def = Define
-   `pairwise_indep_events p E J <=>
-      !i j. i IN J /\ j IN J /\ i <> j ==> indep p (E i) (E j)`;
+(* 2. extension of `indep`: a sequence of pairwise independent events
+
+   new definition based on real_topologyTheory.pairwise, users may use
+  `pairwise (indep p) E` if possible (for any two different events in E).
+ *)
+Definition pairwise_indep_events :
+    pairwise_indep_events p E (J :'index set) =
+      pairwise (\i j. indep p (E i) (E j)) J
+End
+
+Theorem pairwise_indep_events_def :
+    !p E (J :'index set).
+       pairwise_indep_events p E J <=>
+       !i j. i IN J /\ j IN J /\ i <> j ==> indep p (E i) (E j)
+Proof
+    RW_TAC std_ss [pairwise_indep_events, pairwise]
+QED
 
 (* 3. extension of `indep`: a sequence of total independent events *)
-val indep_events_def = Define (* new *)
-   `indep_events p E J <=>
+Definition indep_events_def :
+    indep_events p E (J :'index set) =
       !N. N SUBSET J /\ N <> {} /\ FINITE N ==>
-         (prob p (BIGINTER (IMAGE E N)) = PI (prob p o E) N)`;
+         (prob p (BIGINTER (IMAGE E N)) = PI (prob p o E) N)
+End
 
 (* 4. independence of two sets/collections of events: (DO NOT CHANGE) *)
-val indep_families_def = Define `
-    indep_families p q r <=> !s t. s IN q /\ t IN r ==> indep p s t`;
+Definition indep_families_def :
+    indep_families p q r = !s t. s IN q /\ t IN r ==> indep p s t
+End
 
 (* 5. extension of `indep_families`: pairwise independent sets/collections of events *)
-val pairwise_indep_sets_def = Define
-   `pairwise_indep_sets (p :'a p_space) A J <=>
-      !i j. i IN J /\ j IN J /\ i <> j ==> indep_families p (A i) (A j)`;
+Definition pairwise_indep_sets :
+    pairwise_indep_sets p A (J :'index set) =
+      pairwise (\i j. indep_families p (A i) (A j)) J
+End
+
+Theorem pairwise_indep_sets_def :
+    !p A J. pairwise_indep_sets p A J <=>
+            !i j. i IN J /\ j IN J /\ i <> j ==> indep_families p (A i) (A j)
+Proof
+    RW_TAC std_ss [pairwise_indep_sets, pairwise]
+QED
 
 (* 6. extension of `indep_families`: total independent sets/collections of events *)
-val indep_sets_def = Define
-   `indep_sets (p :'a p_space) A J <=>
+Definition indep_sets_def :
+    indep_sets p A (J :'index set) =
       !N. N SUBSET J /\ N <> {} /\ FINITE N ==>
-         !E. E IN (N --> A) ==> (prob p (BIGINTER (IMAGE E N)) = PI (prob p o E) N)`;
+         !E. E IN (N --> A) ==> (prob p (BIGINTER (IMAGE E N)) = PI (prob p o E) N)
+End
 
 (* 7. independence of two r.v.'s, added `INTER p_space p` after taking the PREIMAGE *)
-val indep_rv_def = Define
-   `indep_rv (p :'a p_space) X Y s t <=>
+Definition indep_rv_def :
+    indep_rv (p :'a p_space) (X :'a -> 'b) (Y :'a -> 'b) s t =
       !a b. (a IN subsets s) /\ (b IN subsets t) ==>
             indep p ((PREIMAGE X a) INTER p_space p)
-                    ((PREIMAGE Y b) INTER p_space p)`;
+                    ((PREIMAGE Y b) INTER p_space p)
+End
 
 (* 8. extension of `indep_rv`: pairwise independent random variables *)
-val pairwise_indep_vars_def = Define
-   `pairwise_indep_vars p X A J <=>
-      !i j. i IN J /\ j IN J /\ i <> j ==> indep_rv p (X i) (X j) (A i) (A j)`;
+Definition pairwise_indep_vars :
+    pairwise_indep_vars p X A (J :'index set) =
+      pairwise (\i j. indep_rv p (X i) (X j) (A i) (A j)) J
+End
+
+Theorem pairwise_indep_vars_def :
+    !p X A (J :'index set).
+       pairwise_indep_vars p X A J <=>
+       !i j. i IN J /\ j IN J /\ i <> j ==> indep_rv p (X i) (X j) (A i) (A j)
+Proof
+    RW_TAC std_ss [pairwise_indep_vars, pairwise]
+QED
 
 (* 9. extension of `indep-rv`: total independent random variables. *)
 val indep_vars_def = Define
-   `indep_vars p X A J <=>
+   `indep_vars p X A (J :'index set) <=>
       !E. E IN (J --> (subsets o A)) ==>
           indep_events p (\n. (PREIMAGE (X n) (E n)) INTER p_space p) J`;
 
@@ -2483,7 +2518,8 @@ val INDEP_COMPL2 = store_thm
 
 (* total ==> pairwise independence (of events) *)
 Theorem total_imp_pairwise_indep_events :
-    !p E J. (!n. n IN J ==> (E n) IN events p) /\ indep_events p E J ==>
+    !p E (J :'index set).
+           (!n. n IN J ==> (E n) IN events p) /\ indep_events p E J ==>
             pairwise_indep_events p E J
 Proof
     RW_TAC std_ss [indep_events_def, pairwise_indep_events_def, indep_def]
@@ -2502,8 +2538,9 @@ QED
 
 (* total ==> pairwise independence (of sets of events) *)
 Theorem total_imp_pairwise_indep_sets :
-    !p A J. (!n. n IN J ==> (A n) SUBSET events p) /\ indep_sets p A J ==>
-            pairwise_indep_sets p A J
+    !p A (J :'index set).
+      (!n. n IN J ==> (A n) SUBSET events p) /\ indep_sets p A J ==>
+       pairwise_indep_sets p A J
 Proof
     RW_TAC std_ss [indep_sets_def, pairwise_indep_sets_def, indep_families_def,
                    indep_def, IN_DFUNSET]
@@ -2535,8 +2572,9 @@ QED
 
 (* total ==> pairwise independence (of random variables) *)
 Theorem total_imp_pairwise_indep_vars :
-    !p X A J. (!i. i IN J ==> random_variable (X i) p (A i)) /\ indep_vars p X A J ==>
-              pairwise_indep_vars p X A J
+    !p X A (J :'index set).
+       (!i. i IN J ==> random_variable (X i) p (A i)) /\ indep_vars p X A J ==>
+       pairwise_indep_vars p X A J
 Proof
     RW_TAC std_ss [indep_vars_def, pairwise_indep_vars_def, indep_rv_def,
                    indep_events_def, random_variable_def]
@@ -2594,7 +2632,8 @@ val SIGMA_SUBSET_EVENTS = store_thm
    (Problem 5.11)
  *)
 Theorem INDEP_FAMILIES_SIGMA_lemma :
-    !p B n J. prob_space p /\ (IMAGE B (n INSERT J)) SUBSET events p /\
+    !p B n (J :'index set).
+              prob_space p /\ (IMAGE B (n INSERT J)) SUBSET events p /\
               indep_events p B (n INSERT J) /\ n NOTIN J
           ==> indep_families p {B n} (subsets (sigma (p_space p) (IMAGE B J)))
 Proof
@@ -2750,7 +2789,7 @@ QED
 (* Lemma 3.5.2 [3, p.37], more useful form *)
 val INDEP_FAMILIES_SIGMA_lemma1 = store_thm
   ("INDEP_FAMILIES_SIGMA_lemma1",
-  ``!p A m N S2.
+  ``!p A m (N :'index set) S2.
          prob_space p /\ IMAGE A (m INSERT N) SUBSET events p /\
          indep_events p A (m INSERT N) /\ m NOTIN N /\
          S2 IN subsets (sigma (p_space p) (IMAGE A N)) ==> indep p (A m) S2``,
@@ -2761,7 +2800,7 @@ val INDEP_FAMILIES_SIGMA_lemma1 = store_thm
 
 (* Corollary 3.5.3 of [3, p.37], Part I *)
 Theorem INDEP_FAMILIES_SIGMA_lemma2 :
-    !p A M N m S1.
+    !p A (M :'index set) N m S1.
        prob_space p /\ (IMAGE A (M UNION N)) SUBSET events p /\
        indep_events p A (M UNION N) /\ DISJOINT M N /\ m IN M /\ N <> {} /\
        S1 IN (subsets (sigma (p_space p) (IMAGE A M))) ==>
@@ -2934,12 +2973,13 @@ Proof
 QED
 
 (* Corollary 3.5.3 of [3, p.37], Part II (futhermore, ...) *)
-val INDEP_FAMILIES_SIGMA = store_thm
-  ("INDEP_FAMILIES_SIGMA",
-  ``!p A M N. prob_space p /\ (IMAGE A (M UNION N)) SUBSET events p /\
-              indep_events p A (M UNION N) /\ DISJOINT M N /\ M <> {} /\ N <> {}
-          ==> indep_families p (subsets (sigma (p_space p) (IMAGE A M)))
-                               (subsets (sigma (p_space p) (IMAGE A N)))``,
+Theorem INDEP_FAMILIES_SIGMA :
+    !p A (M :'index set) N.
+       prob_space p /\ (IMAGE A (M UNION N)) SUBSET events p /\
+       indep_events p A (M UNION N) /\ DISJOINT M N /\ M <> {} /\ N <> {} ==>
+       indep_families p (subsets (sigma (p_space p) (IMAGE A M)))
+                        (subsets (sigma (p_space p) (IMAGE A N)))
+Proof
     RW_TAC std_ss [indep_families_def]
  >> rename1 `indep p S1 S2`
  >> FULL_SIMP_TAC std_ss [GSYM MEMBER_NOT_EMPTY]
@@ -2965,7 +3005,8 @@ val INDEP_FAMILIES_SIGMA = store_thm
  >- (Q.UNABBREV_TAC `B'` >> ASM_SIMP_TAC std_ss []) >> Rewr'
  >> FULL_SIMP_TAC std_ss [IMAGE_UNION, UNION_SUBSET]
  >> Suff `subsets (sigma (p_space p) (IMAGE A M)) SUBSET events p` >- METIS_TAC [SUBSET_DEF]
- >> MATCH_MP_TAC SIGMA_SUBSET_EVENTS >> art []);
+ >> MATCH_MP_TAC SIGMA_SUBSET_EVENTS >> art []
+QED
 
 (* c.f. set_limsup_alt, the only difference here is the additional sigma() inside *)
 val tail_algebra_def = Define
