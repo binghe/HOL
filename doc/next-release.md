@@ -80,16 +80,20 @@ New theories:
 
     Notable theorems include: Caratheory's Extension Theorem (for semiring),
     the construction of 1-dimensional Borel and Lebesgue measure spaces,
-    Radon-Nikodym theorem, Kolmogorov Zero-One Law, Borel-Cantelli Lemma,
+    Radon-Nikodym theorem, Bayes' Rule (Conditional Probability),
+    Kolmogorov 0-1 Law, Borel-Cantelli Lemma, Markov/Chebyshev's inequalities,
     convergence concepts (AE,PR,LP) and the Strong/Weak Law of Large Numbers.
 
-    The old measure and probability theories are still available and maintained,
-    to support __examples/miller__ and __examples/diningcryptos__, etc.
 
     There is a major backwards-incompatibility: old proof scripts based on
     real-valued measure and probability theories should now open the following
     legacy theories instead: `sigma_algebraTheory`, `real_measureTheory`,
    `real_borelTheory`, `real_lebesgueTheory` and `real_probabilityTheory`.
+    These legacy theories are stil maintained to support __examples/miller__ and
+    __examples/diningcryptos__, etc.
+
+    Thanks to Muhammad Qasim, Osman Hasan, Liya Liu and Waqar Ahmad et al. for
+    the original work, and Chun Tian for the integration and further extension.
 
 New tools:
 ----------
