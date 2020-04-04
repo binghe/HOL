@@ -24,23 +24,9 @@ fun K_TAC _ = ALL_TAC;
 val DISC_RW_KILL = DISCH_TAC THEN ONCE_ASM_REWRITE_TAC [] THEN
                    POP_ASSUM K_TAC;
 
-fun SET_TAC L =
-    POP_ASSUM_LIST(K ALL_TAC) THEN REPEAT COND_CASES_TAC THEN
-    REWRITE_TAC (append [EXTENSION, SUBSET_DEF, PSUBSET_DEF, DISJOINT_DEF,
-    SING_DEF] L) THEN
-    SIMP_TAC std_ss [NOT_IN_EMPTY, IN_UNIV, IN_UNION, IN_INTER, IN_DIFF,
-      IN_INSERT, IN_DELETE, IN_REST, IN_BIGINTER, IN_BIGUNION, IN_IMAGE,
-      GSPECIFICATION, IN_DEF, EXISTS_PROD] THEN METIS_TAC [];
-
-fun SET_RULE tm = prove(tm,SET_TAC []);
-
 (*---------------------------------------------------------------------------*)
 (* Minimal amount of set notation is convenient                              *)
 (*---------------------------------------------------------------------------*)
-
-val re_intersect = prove (
-   “!P Q. P INTER Q = \x:'a. P x /\ Q x”,
-    PROVE_TAC [INTER_applied, IN_DEF]);
 
 val COMPL_MEM = prove (
   ``!P:'a->bool. !x. P x = ~(COMPL P x)``,
@@ -52,11 +38,12 @@ val COMPL_MEM = prove (
 (*---------------------------------------------------------------------------*)
 
 (* localized notion of open sets (one set being open in another) *)
-val istopology = new_definition("istopology",
-  ``!L. istopology L <=>
-             {} IN L /\
-             (!s t. s IN L /\ t IN L ==> (s INTER t) IN L) /\
-             (!k. k SUBSET L ==> (BIGUNION k) IN L)``);
+Definition istopology :
+    istopology L =
+      ({} IN L /\
+       (!s t. s IN L /\ t IN L ==> (s INTER t) IN L) /\
+       (!k. k SUBSET L ==> (BIGUNION k) IN L))
+End
 
 val EXISTS_istopology = prove (``?t. istopology t``,
     EXISTS_TAC ``univ(:'a set)``
@@ -565,7 +552,7 @@ Definition subtopology :
     subtopology top u = topology {s INTER u | open_in top s}
 End
 
-Theorem ISTOPLOGY_SUBTOPOLOGY :
+Theorem ISTOPOLOGY_SUBTOPOLOGY :
     !top u:'a->bool. istopology {s INTER u | open_in top s}
 Proof
   REWRITE_TAC[istopology, SET_RULE
@@ -587,7 +574,7 @@ Theorem OPEN_IN_SUBTOPOLOGY :
               ?t. open_in top t /\ (s = t INTER u)
 Proof
   REWRITE_TAC[subtopology] THEN
-  SIMP_TAC std_ss [REWRITE_RULE[CONJUNCT2 topology_tybij] ISTOPLOGY_SUBTOPOLOGY] THEN
+  SIMP_TAC std_ss [REWRITE_RULE[CONJUNCT2 topology_tybij] ISTOPOLOGY_SUBTOPOLOGY] THEN
   GEN_REWR_TAC (QUANT_CONV o QUANT_CONV o QUANT_CONV o LAND_CONV) [GSYM SPECIFICATION] THEN
   SIMP_TAC std_ss [EXTENSION, GSPECIFICATION] THEN METIS_TAC []
 QED

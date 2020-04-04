@@ -19,7 +19,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open numTheory numLib unwindLib tautLib Arith prim_recTheory RealArith
-     combinTheory quotientTheory arithmeticTheory realaxTheory realTheory
+     combinTheory quotientTheory arithmeticTheory realTheory
      jrhUtils pairTheory boolTheory pred_setTheory optionTheory
      sumTheory InductiveDefinition ind_typeTheory listTheory mesonLib
      seqTheory limTheory transcTheory realLib topologyTheory metricTheory;
@@ -38,9 +38,6 @@ fun ASSERT_TAC tm = SUBGOAL_THEN tm STRIP_ASSUME_TAC;
 
 val ASM_ARITH_TAC = REPEAT (POP_ASSUM MP_TAC) THEN ARITH_TAC;
 val ASM_REAL_ARITH_TAC = REAL_ASM_ARITH_TAC;
-
-fun PRINT_TAC s gl =                            (* from cardinalTheory *)
-  (print ("** " ^ s ^ "\n"); ALL_TAC gl);
 
 (* Minimal hol-light compatibility layer *)
 val IMP_CONJ      = CONJ_EQ_IMP;     (* cardinalTheory *)
