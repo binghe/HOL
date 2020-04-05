@@ -1,3 +1,5 @@
+%%%% -*- Mode: LaTeX; -*-
+
 \section{Higher Mathematics}
 \label{sec:mathematics}
 
@@ -6,20 +8,47 @@
 \index{real\_topology, the HOL theory of@real\_topology, the \HOL{} theory of}
 
 The theory \theoryimp{real_topology} provides some deeper analytical
-properties for real numbers and (one-dimensional) real sets (Euclidean space).
-Besides, it provides 
-It was ported from HOL Light by Muhammad Qasim and Osman Hasan.
+properties for real numbers and real sets (one-dimensional Euclidean space).
+It was ported from HOL Light by Muhammad Qasim and Osman Hasan et al.
+In particular, \theoryimp{real_topology} contains more general and
+advanced concepts and theorems then those provided by \theoryimp{lim}
+and \theoryimp{seq} (Section~\ref{reals}).
 
-Heine-Borel theorem
+% Below is a list of major features found in \theoryimp{real_topology}:
+% \begin{itemize}
+% \item Metric fucntions (\holtxt{dist}, distance of real numbers), based on \theoryimp{metric};
+% \item Linear (\holtxt{linear}) and bilinear (\holtxt{bilinear}) functions;
+% \item A bit of linear algebra (\holtxt{subspace} and \holtxt{span}) and their closure properties;
+% \item Equality in Cauchy-Schwarz and triangle inequalities;
+% \item Collinearity (\holtxt{collinear});
+% \item Between-ness (\holtxt{between}) and midpoint (\holtxt{midpoint}) between two points;
+% \item Open and closed sets, based on \theoryimp{topology};
+% \item Open and closed balls, based on \theoryimp{metric};
+% \item Open and closed line segments, with open/closed overloading of `(a,b)` and `[a,b]`;
+% \item Connectedness (\holtxt{connected});
+% \item Limit points (\holtxt{limit_point_of});
+% \item Interior of a set (\holtxt{interior});
+% \item Closure of a set (\holtxt{closure});
+% \item Frontier (aka boundary) (\holtxt{frontier});
+% \item ...
+% \end{itemize}
+
+There are more than 60 concepts and 1600 theorems in
+\theoryimp{real_topology}, including properties of continuous
+functions and the completeness of real numbers,
+which is the foundation of other higher mathematics
+theories, such as differential and integral calculus, measure and probability
+theories. For instance, the following version of the \emph{Heine-Borel
+  theorem} (and the fact that a real set is compact iff it is bounded and
+closed) plays an essential role in the construction of
+Borel-measurable spaces in measure theory:
 \begin{hol}
 \begin{alltt}
 >>__ load "real_topologyTheory";
 >>__ open real_topologyTheory;
-##thm COMPACT_EQ_BOUNDED_CLOSED
-
 ##thm COMPACT_EQ_HEINE_BOREL
 
-##thm COMPACT_EQ_BOLZANO_WEIERSTRASS
+##thm COMPACT_EQ_BOUNDED_CLOSED
 \end{alltt}
 \end{hol}
 
@@ -220,8 +249,6 @@ in Figure~\ref{fig:further-hol-theories}.
 \caption{A selection of \HOL{} theories}
 \label{fig:further-hol-theories}
 \end{figure}
-
-
 
 %%% Local Variables:
 %%% mode: latex

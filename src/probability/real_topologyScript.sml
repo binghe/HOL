@@ -316,9 +316,7 @@ val FUN_IN_IMAGE = store_thm ("FUN_IN_IMAGE",
  ``!f s x. x IN s ==> f(x) IN IMAGE f s``,
   SET_TAC[]);
 
-val SUBSET_ANTISYM_EQ = store_thm ("SUBSET_ANTISYM_EQ",
- ``!(s:'a->bool) t. s SUBSET t /\ t SUBSET s <=> (s = t)``,
- SET_TAC[]);
+Theorem SUBSET_ANTISYM_EQ = SUBSET_SUBSET_EQ;
 
 val DIFF_BIGINTER = store_thm ("DIFF_BIGINTER",
  ``!u s. u DIFF BIGINTER s = BIGUNION {u DIFF t | t IN s}``,
@@ -412,10 +410,6 @@ val SUMS_SYM = store_thm ("SUMS_SYM",
 val SUM_ABS_TRIANGLE = store_thm ("SUM_ABS_TRIANGLE",
  ``!s f b. FINITE s /\ sum s (\a. abs(f a)) <= b ==> abs(sum s f) <= b``,
   METIS_TAC[SUM_ABS, REAL_LE_TRANS]);
-
-val IMAGE_SING = store_thm ("IMAGE_SING",
- ``!f a. IMAGE f {a} = {f a}``,
-  SET_TAC []);
 
 val REAL_WLOG_LE = store_thm ("REAL_WLOG_LE",
  ``(!x y:real. P x y <=> P y x) /\ (!x y. x <= y ==> P x y) ==> !x y. P x y``,

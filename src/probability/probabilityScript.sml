@@ -1735,7 +1735,7 @@ val integrable_from_square = store_thm
  >> ASM_SIMP_TAC std_ss [abs_le_square_plus1]
  >> `(\x. (X x) pow 2) IN measurable (m_space p,measurable_sets p) Borel`
       by PROVE_TAC [integrable_def]
- >> fs [real_random_variable_def, random_variable_def, p_space_def, events_def]);
+ >> fs [real_random_variable, p_space_def, events_def]);
 
 (* In general, if X has a finite absolute moment of order k, then it has finite absolute
    moments of orders 1,2,...k-1 as well. [6, p.274] *)
@@ -1755,7 +1755,7 @@ val integrable_absolute_moments = store_thm
  >> BETA_TAC >> DISCH_TAC
  >> MATCH_MP_TAC integrable_bounded
  >> Q.EXISTS_TAC `\x. 1 + (abs (X x)) pow n`
- >> fs [real_random_variable_def, random_variable_def, p_space_def, events_def]
+ >> fs [real_random_variable, p_space_def, events_def]
  >> RW_TAC std_ss []
  >- (`!x. abs (X x) pow m = ((abs o X) x) pow m` by METIS_TAC [o_DEF] >> POP_ORW \\
      MATCH_MP_TAC IN_MEASURABLE_BOREL_POW >> fs [measure_space_def, space_def, o_DEF] \\
@@ -1937,7 +1937,7 @@ val finite_second_moments_all = store_thm (* new *)
  >> reverse EQ_TAC >> rpt STRIP_TAC
  >- (POP_ASSUM (STRIP_ASSUME_TAC o (Q.SPEC `0`)) \\
      Q.EXISTS_TAC `Normal 0` >> art [])
- >> fs [real_random_variable_def, random_variable_def]
+ >> fs [real_random_variable]
  >> Cases_on `(a = PosInf) \/ (a = NegInf)`
  >- (Suff `!x. (X x - a) pow 2 = PosInf`
      >- (DISCH_THEN (fs o wrap) >> METIS_TAC [expectation_posinf, lt_infty]) \\
@@ -1981,7 +1981,7 @@ val finite_second_moments_all = store_thm (* new *)
  >> DISCH_TAC
  >> Know `integrable p (\x. X x - Normal c)`
  >- (MATCH_MP_TAC integrable_from_square \\
-     fs [prob_space_def, real_random_variable_def, random_variable_def,
+     fs [prob_space_def, real_random_variable,
          p_space_def, events_def, prob_space_def, measure_space_def] \\
      reverse CONJ_TAC
      >- (GEN_TAC \\
@@ -3277,7 +3277,7 @@ val uncorrelated_thm = store_thm
  >> Know `integrable p (\x. X x * Y x)`
  >- (MATCH_MP_TAC integrable_bounded \\
      Q.EXISTS_TAC `\x. Normal (1 / 2) * ((X x) pow 2 + (Y x) pow 2)` \\
-     fs [prob_space_def, p_space_def, events_def, real_random_variable_def, random_variable_def] \\
+     fs [prob_space_def, p_space_def, events_def, real_random_variable] \\
      rpt STRIP_TAC >| (* 3 subgoals *)
      [ (* goal 1 (of 3) *)
       `(\x. Normal (1 / 2) * ((X x) pow 2 + (Y x) pow 2)) =
@@ -3546,14 +3546,14 @@ val variance_sum = store_thm
          >- (`!x. X q x - E1 = X q x - (\x. E1) x` by METIS_TAC [] >> POP_ORW \\
              MATCH_MP_TAC IN_MEASURABLE_BOREL_SUB \\
              Q.EXISTS_TAC `X q` >> Q.EXISTS_TAC `\x. E1` \\
-             fs [real_random_variable_def, random_variable_def, space_def, p_space_def, events_def] \\
+             fs [real_random_variable, space_def, p_space_def, events_def] \\
              reverse CONJ_TAC >- (Q.UNABBREV_TAC `E1` >> METIS_TAC []) \\
              MATCH_MP_TAC IN_MEASURABLE_BOREL_CONST >> Q.EXISTS_TAC `E1` >> fs [space_def]) \\
          reverse CONJ_TAC
          >- (`!x. X r x - E2 = X r x - (\x. E2) x` by METIS_TAC [] >> POP_ORW \\
              MATCH_MP_TAC IN_MEASURABLE_BOREL_SUB \\
              Q.EXISTS_TAC `X r` >> Q.EXISTS_TAC `\x. E2` \\
-             fs [real_random_variable_def, random_variable_def, space_def, p_space_def, events_def] \\
+             fs [real_random_variable, space_def, p_space_def, events_def] \\
              reverse CONJ_TAC >- (Q.UNABBREV_TAC `E2` >> METIS_TAC []) \\
              MATCH_MP_TAC IN_MEASURABLE_BOREL_CONST >> Q.EXISTS_TAC `E2` >> fs [space_def]) \\
          GEN_TAC >> DISCH_TAC \\
@@ -3966,7 +3966,7 @@ Proof
  >- (GEN_TAC >> Q.UNABBREV_TAC `S` \\
      MATCH_MP_TAC (INST_TYPE [``:'b`` |-> ``:num``] IN_MEASURABLE_BOREL_SUM) \\
      BETA_TAC >> Q.EXISTS_TAC `X` >> Q.EXISTS_TAC `count n` \\
-     fs [measure_space_def, real_random_variable_def, random_variable_def] \\
+     fs [measure_space_def, real_random_variable] \\
      RW_TAC std_ss [space_def, FINITE_COUNT, IN_COUNT] \\
      fs [prob_space_def, p_space_def, events_def, measure_space_def]) >> DISCH_TAC
  (* M is the mean of S, also always finite *)
@@ -4034,7 +4034,7 @@ Proof
      [ METIS_TAC [lt_infty, finite_second_moments_eq_finite_variance],
        METIS_TAC [finite_second_moments_imp_finite_expectation] ]) >> DISCH_TAC
  >> Know `!n. real_random_variable (S n) p`
- >- (RW_TAC std_ss [real_random_variable_def, random_variable_def]) >> DISCH_TAC
+ >- (RW_TAC std_ss [real_random_variable]) >> DISCH_TAC
  >> Know `!n. finite_second_moments p (S n)`
  >- (RW_TAC std_ss [finite_second_moments_eq_finite_variance] \\
      MATCH_MP_TAC let_trans >> Q.EXISTS_TAC `M n` >> art [GSYM lt_infty]) >> DISCH_TAC
@@ -4058,7 +4058,7 @@ Proof
  (* S' is also Borel-measurable (needed later) *)
  >> Know `S' IN measurable (p_space p,events p) Borel`
  >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_SUMINF >> Q.EXISTS_TAC `X` \\
-     fs [real_random_variable_def, random_variable_def, space_def] \\
+     fs [real_random_variable, space_def] \\
      CONJ_TAC >- fs [prob_space_def, measure_space_def, p_space_def, events_def] \\
      Q.UNABBREV_TAC `X` >> RW_TAC std_ss [o_DEF, INDICATOR_FN_POS]) >> DISCH_TAC
  (* prob p {x | x IN p_space p /\ S' x = PosInf} = 1 *)
@@ -5263,7 +5263,7 @@ Proof
        by METIS_TAC [prob_space_def, measure_space_def]
  >> Know `!n. real_random_variable (Z n) p`
  >- (GEN_TAC >> Q.UNABBREV_TAC `Z` \\
-     SIMP_TAC std_ss [real_random_variable_def, random_variable_def,
+     SIMP_TAC std_ss [real_random_variable,
                       p_space_def, events_def] \\
      reverse CONJ_TAC
      >- (GEN_TAC \\
@@ -5285,7 +5285,7 @@ Proof
      RW_TAC std_ss [FINITE_COUNT, IN_COUNT] \\
      fs [random_variable_def, p_space_def, events_def]) >> DISCH_TAC
  >> Know `!n. real_random_variable (S n) p`
- >- (RW_TAC std_ss [real_random_variable_def, random_variable_def,
+ >- (RW_TAC std_ss [real_random_variable,
                     p_space_def, events_def] \\
     `S n = \x. SIGMA (\i. X i x) (count n)` by METIS_TAC [] >> POP_ORW \\
      MATCH_MP_TAC (INST_TYPE [``:'b`` |-> ``:num``] IN_MEASURABLE_BOREL_SUM) \\
@@ -5467,7 +5467,7 @@ Proof
      Know `inv (&SUC n) = Normal (inv (&SUC n))`
      >- (`(0 :real) <> &SUC n` by RW_TAC real_ss [] \\
          ASM_SIMP_TAC std_ss [extreal_of_num_def, extreal_inv_eq]) >> Rewr' \\
-     SIMP_TAC std_ss [real_random_variable_def, random_variable_def] \\
+     SIMP_TAC std_ss [real_random_variable] \\
      reverse CONJ_TAC
      >- (GEN_TAC \\
         `?a. S (SUC n) x = Normal a` by METIS_TAC [extreal_cases] >> POP_ORW \\
@@ -5549,7 +5549,7 @@ Proof
  >> DISCH_TAC
  >> Know `!n. real_random_variable (Y n) p`
  >- (GEN_TAC >> Q.UNABBREV_TAC `Y` \\
-     fs [real_random_variable_def, random_variable_def, p_space_def, events_def] \\
+     fs [real_random_variable, p_space_def, events_def] \\
      reverse CONJ_TAC
      >- (GEN_TAC \\
         `?a. X n x = Normal a` by METIS_TAC [extreal_cases] \\
@@ -5655,12 +5655,12 @@ Proof
  >- (RW_TAC std_ss [] >> MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_NEGINF \\
      fs [real_random_variable_def, FINITE_COUNT, IN_COUNT]) >> DISCH_TAC
  >> Know `!n. real_random_variable (S n) p`
- >- (RW_TAC std_ss [real_random_variable_def, random_variable_def,
+ >- (RW_TAC std_ss [real_random_variable,
                     p_space_def, events_def] \\
     `S n = \x. SIGMA (\i. X i x) (count n)` by METIS_TAC [] >> POP_ORW \\
      MATCH_MP_TAC (INST_TYPE [``:'b`` |-> ``:num``] IN_MEASURABLE_BOREL_SUM) \\
      qexistsl_tac [`X`, `count n`] \\
-     fs [real_random_variable_def, random_variable_def, p_space_def,
+     fs [real_random_variable, p_space_def,
          events_def, space_def, prob_space_def, measure_space_def]) >> DISCH_TAC
  >> Know `!n. finite_second_moments p (S n)`
  >- (RW_TAC std_ss [finite_second_moments_eq_finite_variance] \\
@@ -5741,7 +5741,7 @@ Proof
      >- (Q.UNABBREV_TAC `f` \\
          MATCH_MP_TAC IN_MEASURABLE_BOREL_ABS \\
          Q.EXISTS_TAC `S n` \\
-         fs [space_def, real_random_variable_def, random_variable_def,
+         fs [space_def, real_random_variable,
              p_space_def, events_def, prob_space_def, measure_space_def]) \\
      DISCH_TAC \\
      ASM_SIMP_TAC std_ss [p_space_def, events_def,
@@ -5755,7 +5755,7 @@ Proof
      >- (Q.UNABBREV_TAC `f` \\
          MATCH_MP_TAC IN_MEASURABLE_BOREL_ABS \\
          Q.EXISTS_TAC `S n` \\
-         fs [space_def, real_random_variable_def, random_variable_def,
+         fs [space_def, real_random_variable,
              p_space_def, events_def, prob_space_def, measure_space_def]) \\
      DISCH_TAC \\
     `{x | x IN p_space p /\ &n * e < f x} =
@@ -5855,7 +5855,7 @@ Proof
  >> DISCH_TAC
  >> Know `!n. real_random_variable (Z n) p`
  >- (GEN_TAC \\
-     SIMP_TAC std_ss [real_random_variable_def, random_variable_def, Abbr `Z`] \\
+     SIMP_TAC std_ss [real_random_variable, Abbr `Z`] \\
     `0 < &(SUC n ** 2)` by RW_TAC real_ss [extreal_of_num_def, extreal_lt_eq] \\
     `&(SUC n ** 2) <> 0` by METIS_TAC [lt_imp_ne] \\
     `&(SUC n ** 2) <> PosInf` by METIS_TAC [num_not_infty] \\
@@ -5873,7 +5873,7 @@ Proof
      ONCE_REWRITE_TAC [mul_comm] \\
      MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL \\
      qexistsl_tac [`S (SUC n ** 2)`, `inv r`] \\
-     fs [real_random_variable_def, random_variable_def, p_space_def, events_def,
+     fs [real_random_variable, p_space_def, events_def,
          prob_space_def, measure_space_def, space_def]) >> DISCH_TAC
  >> Know `(Z --> (\x. 0)) (almost_everywhere p)`
  >- (MP_TAC (SIMP_RULE std_ss [sub_rzero]
@@ -6159,8 +6159,7 @@ Proof
      reverse CONJ_TAC >- rw [space_def] \\
      MATCH_MP_TAC IN_MEASURABLE_BOREL_SUB \\
      qexistsl_tac [`S k`, `S (SUC n ** 2)`] \\
-     fs [space_def, real_random_variable_def, random_variable_def,
-         p_space_def, events_def]) >> DISCH_TAC
+     fs [space_def, real_random_variable, p_space_def, events_def]) >> DISCH_TAC
  >> Know `!n. finite_second_moments p (W n)`
  >- (RW_TAC std_ss [finite_second_moments_literally, expectation_def] \\
      Q.UNABBREV_TAC `W` >> BETA_TAC \\
