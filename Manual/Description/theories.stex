@@ -2056,7 +2056,7 @@ Numerals are supported (with the suffix \holtxt{c} available to force numerals t
 The standard arithmetic operations are defined, with the appropriate theorems proved about them.
 
 \subsection{Extended real numbers}
-\label{extreals}
+\label{sec:extreals}
 \index{extended real numbers, the HOL theory of@extreal numbers, the \HOL{} theory of|(}
 
 The \HOL{} provides an extensive theory of extended real numbers

@@ -60,7 +60,7 @@ An extensive development of (univariate) differential and integral
 calculus, ported from HOL Light, is available in the theory \theoryimp{derivative} and
 \theoryimp{integration}.
 
-\subsubsection{Derivatives}
+\subsubsection{Derivative}
 
 A quintessentially analytic property is the derivative of a function. One might
 expect to find a higher-order `derivative' function \texttt{deriv}
@@ -85,9 +85,8 @@ the definition is much as an analyst might expect:
 \end{alltt}
 \end{hol}
 
-A similar operator is \holtxt{has_vector_derivative}, where
-\holtxt{(f has_vector_derivative f') (at x)} means `the function $f$
-has a derivative with value $f'$ at the point $x$'.
+Similarily, \holtxt{(f has_vector_derivative f') (at x)} means that \emph{the function $f$
+has a derivative with value $f'$ at the point $x$}.
 The usual kinds of combining theorems are proved. For example, the derivative
 of a sum is the sum of the derivatives:
 \begin{hol}
@@ -96,18 +95,24 @@ of a sum is the sum of the derivatives:
 \end{alltt}
 \end{hol}
 
-\subsubsection{Integrals}
+\subsubsection{Integration}
 
 The version of integral calculus formalized in HOL is a 
-generalized Riemann integral called \emph{Henstock-Kurzweil Integral},
+generalized Riemann integration called \emph{Henstock-Kurzweil Integral},
 or \emph{gauge integral}~\cite{Bartle:2001um}. Many functions which
 are not Riemann integrable can be shown to be Henstock-Kurzweil
 integrable. (In particular, a function is Lebesgue integrable if and
 only if the function and its absolute value are Henstock-Kurzweil
 integrable.)
 
-\holtxt{f integrable_on s} means `the function $f$ is integrable on a
-real set $s$',  similar for \holtxt{f absolutely_integrable_on s}.
+\holtxt{f integrable_on s} means that \emph{the function $f$ is integrable on a
+real set $s$}, while \holtxt{f absolutely_integrable_on s} denotes absolute integrability.
+Assuming $f$ is integrable, the usual integration of $f$ on a
+(closed) interval $[a,b]$, i.e.~$\displaystyle\int_a^b f \mathrm{d}x$,
+is expressed as \holtxt{integral (interval [a,b]) f} in HOL. (In
+general, the integration of $f$ on a set $s$ of real numbers is
+\holtxt{integral s f}.)
+
 The fundamental theorem of calculus (in the equivalent forms of
 Riemann integral) is expressed below:
 \begin{hol}
@@ -130,9 +135,29 @@ improvement, as shown in the following strong version of the
 \end{alltt}
 \end{hol}
 
+% \begin{hol}
+% \begin{alltt}
+% ##thm integral
+% \end{alltt}
+% \end{hol}
+
 \subsection{Measure Theory}
 \label{measure}
 \index{measure, the HOL theory of@measure, the \HOL{} theory of}
+
+The theme of measure theory is the problem of how to assign a size, a
+content, a probability, etc.~to certain sets.
+The most common examples of \emph{measure} is the length
+(in one dimension), area (in two dimensions) and
+volume (in three dimensions) in Euclidean spaces.
+In \HOL{}'s \theoryimp{measure}
+theory, a measure is a set function of the type
+$(\alpha \to \konst{bool}) \to \konst{extreal}$.\footnote{The legacy
+  \theoryimp{real_measure} theory, where the type of measure is
+  $(\alpha \to \konst{bool}) \to \konst{real}$, is still available.}
+(See Section~\ref{sec:extreals} for more details of extended real numbers.)
+This allows to express, say, the (positive) infinite measure of the
+set of all real numbers (with a household measure).
 
 \begin{hol}
 \begin{alltt}
