@@ -156,8 +156,8 @@ $(\alpha \to \konst{bool}) \to \konst{extreal}$.\footnote{The legacy
   \theoryimp{real_measure} theory, where the type of measure is
   $(\alpha \to \konst{bool}) \to \konst{real}$, is still available.}
 (See Section~\ref{sec:extreals} for more details of extended real numbers.)
-This allows to express, say, the (positive) infinite measure of the
-set of all real numbers (with a household measure).
+This allows us to express, for example, the ``length'' of the entire
+real line $\mathbb{R}$, which is \holtxt{PosInf}.
 
 \begin{hol}
 \begin{alltt}
