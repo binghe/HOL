@@ -1,0 +1,16 @@
+ifeq ($(KERNELID),otknl)
+
+ARTFILES = $(patsubst %Script.sml,%.ot.art,$(wildcard *Script.sml))
+
+# this takes a lot of time, disabled by default
+# all: $(ARTFILES) hol4-analysis-unint.art
+
+hol4-analysis-unint.art: hol4-analysis-unint.thy $(ARTFILES)
+	opentheory info --article -o $@ $<
+
+hol4-analysis.art: hol4-analysis.thy hol4-analysis-unint.art ../opentheory/hol4.int
+	opentheory info --article -o $@ $<
+
+real_topology.art: real_topology.otd
+
+endif
