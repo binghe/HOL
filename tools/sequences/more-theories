@@ -26,6 +26,7 @@ src/finite_maps
 !examples/ind_def
 !examples/ARM/arm6-verification
 !!examples/ARM/arm6-verification/correctness
+src/algebra
 src/ring/src
 src/integer
 src/topology
