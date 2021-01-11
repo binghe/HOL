@@ -115,6 +115,7 @@ val fullresult as {DB = thy_typebase, get_global_value = theTypeBase,
         uptodate_delta = K true,
         sexps = { dec = fromSEXP, enc = toSEXP },
         globinfo = {apply_to_global = apply_to_global,
+                    thy_finaliser = NONE,
                     initial_value = initial_tydb}
       }
     end
@@ -198,7 +199,14 @@ fun tyi_from_name s =
           case Binarymap.peek(privileged_abbrevs tyg, nm) of
               NONE => raise ERR "tyi_from_name"
                             ("Ty-grammar doesn't know name: "^nm)
-            | SOME thy => tyi_from_kid thy nm
+            | SOME thy =>
+              (case Binarymap.peek(parse_map tyg, {Thy = thy, Name = nm}) of
+                   NONE => raise ERR "tyi_from_name"
+                                 ("Ty-grammar has bad abbrev-map for name: "^nm)
+                 | SOME (TYOP {Thy,Tyop,...}) => tyi_from_kid Thy Tyop
+                 | SOME _ => raise ERR "tyi_from_name"
+                                   "Impossible return from type-grammar \
+                                   \abbreviation information")
         end
       | [thy,nm] => tyi_from_kid thy nm
       | _ => raise ERR "tyi_from_name" ("Malformed tyname: "^s)

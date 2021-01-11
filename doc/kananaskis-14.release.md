@@ -315,6 +315,18 @@ Incompatibilities:
 
     where the appropriate negation operator might be, *e.g.*, `“$real_neg”`.
 
+*   Two theorems about `TAKE` and `DROP` have been added to the stateful simplifier:
+
+           TAKE_LENGTH_ID_rwt2
+           ⊢ ∀l m. TAKE m l = l ⇔ LENGTH l ≤ m
+
+           DROP_EQ_NIL
+           ⊢ ∀l m. DROP m l = [] ⇔ LENGTH l ≤ m
+
+    The former is a new theorem; the latter is an existing theorem that has been promoted to “automatic” status.
+    Use `Excl` or `{temp_,}delsimps` to remove these theorems from the simplifier as necessary.
+
+
 * * * * *
 
 <div class="footer">
