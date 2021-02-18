@@ -3,7 +3,7 @@
 (* Author: Aaron Coble (2010)                                                *)
 (* Cambridge University                                                      *)
 (* ------------------------------------------------------------------------- *)
-(* Updated by Chun Tian (2020) using some materials from:                    *)
+(* Updated by Chun Tian (2020-2021) using some materials from:               *)
 (*                                                                           *)
 (*        Lebesgue Measure Theory (lebesgue_measure_hvgScript.sml)           *)
 (*                                                                           *)
@@ -3152,6 +3152,26 @@ Proof
  >> Suff ‘{J | (?a b c d. J = interval (a,b) CROSS interval (c,d))} =
           {box a b CROSS box c d | T}’ >- Rewr
  >> rw [Once EXTENSION, box_alt]
+QED
+
+Theorem space_borel_2d :
+    space (borel CROSS borel) = UNIV
+Proof
+    REWRITE_TAC [borel_2d_alt_box, SPACE_SIGMA]
+QED
+
+(* Hyperbola area is a open set, used by IN_MEASURABLE_BOREL_2D_MUL *)
+Theorem hyperbola_open_in_mr2 :
+    !a. {(x,y) | a < x * y} IN {s | open_in (mtop mr2) s}
+Proof
+    rw [MTOP_OPEN]
+ >> Cases_on ‘x'’ >> fs []
+ >> Q.PAT_X_ASSUM ‘x = (q,r)’ K_TAC (* cleanup *)
+ >> Cases_on ‘0 <= a’
+ >- (
+     cheat)
+ >> 
+    cheat
 QED
 
 val _ = export_theory ();

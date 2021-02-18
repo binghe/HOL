@@ -1477,27 +1477,41 @@ val mul_assoc = store_thm
                REAL_LT_LMUL_NEG_0_NEG, REAL_LT_RMUL_0, REAL_LT_LMUL_0,
                REAL_LT_RMUL_NEG_0_NEG]);
 
-val mul_infty = store_thm (* new *)
-  ("mul_infty",
-  ``!x. 0 < x ==> (PosInf * x = PosInf) /\ (x * PosInf = PosInf) /\
-                  (NegInf * x = NegInf) /\ (x * NegInf = NegInf)``,
+Theorem mul_infty :
+    !x. 0 < x ==> (PosInf * x = PosInf) /\ (x * PosInf = PosInf) /\
+                  (NegInf * x = NegInf) /\ (x * NegInf = NegInf)
+Proof
     GEN_TAC >> DISCH_TAC
  >> STRONG_CONJ_TAC
- >- (Cases_on `x = PosInf` >- art [extreal_mul_def] \\
-     `x <> NegInf` by PROVE_TAC [lt_imp_le, pos_not_neginf] \\
-     `?r. x = Normal r` by PROVE_TAC [extreal_cases] \\
-     `0 < r` by PROVE_TAC [extreal_of_num_def, extreal_lt_eq] \\
-     `r <> 0` by PROVE_TAC [REAL_LT_IMP_NE] \\
-     ASM_SIMP_TAC std_ss [extreal_mul_def]) >> DISCH_TAC
- >> CONJ_TAC >- ASM_REWRITE_TAC [Once mul_comm]
+ >- (Cases_on ‘x’ >> rw [extreal_mul_def] \\
+     fs [lt_infty, extreal_of_num_def, extreal_lt_eq] \\
+     PROVE_TAC [REAL_LT_ANTISYM])
+ >> DISCH_TAC
+ >> CONJ_TAC >- art [Once mul_comm]
  >> STRONG_CONJ_TAC
- >- (Cases_on `x = PosInf` >- art [extreal_mul_def] \\
-     `x <> NegInf` by PROVE_TAC [lt_imp_le, pos_not_neginf] \\
-     `?r. x = Normal r` by PROVE_TAC [extreal_cases] \\
-     `0 < r` by PROVE_TAC [extreal_of_num_def, extreal_lt_eq] \\
-     `r <> 0` by PROVE_TAC [REAL_LT_IMP_NE] \\
-     ASM_SIMP_TAC std_ss [extreal_mul_def]) >> DISCH_TAC
- >> ASM_REWRITE_TAC [Once mul_comm]);
+ >- (Cases_on ‘x’ >> rw [extreal_mul_def] \\
+     fs [lt_infty, extreal_of_num_def, extreal_lt_eq] \\
+     PROVE_TAC [REAL_LT_ANTISYM])
+ >> REWRITE_TAC [Once mul_comm]
+QED
+
+Theorem mul_infty' :
+    !x. x < 0 ==> (PosInf * x = NegInf) /\ (x * PosInf = NegInf) /\
+                  (NegInf * x = PosInf) /\ (x * NegInf = PosInf)
+Proof
+    GEN_TAC >> DISCH_TAC
+ >> STRONG_CONJ_TAC
+ >- (Cases_on ‘x’ >> rw [extreal_mul_def] \\
+     fs [lt_infty, extreal_of_num_def, extreal_lt_eq] \\
+     PROVE_TAC [REAL_LT_ANTISYM])
+ >> DISCH_TAC
+ >> CONJ_TAC >- art [Once mul_comm]
+ >> STRONG_CONJ_TAC
+ >- (Cases_on ‘x’ >> rw [extreal_mul_def] \\
+     fs [lt_infty, extreal_of_num_def, extreal_lt_eq] \\
+     PROVE_TAC [REAL_LT_ANTISYM])
+ >> REWRITE_TAC [Once mul_comm]
+QED
 
 val mul_not_infty = store_thm
   ("mul_not_infty",
