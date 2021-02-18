@@ -9624,7 +9624,8 @@ Proof
              Q.EXISTS_TAC ‘x'’ >> rw [] \\
              Cases_on ‘x'’ >> fs [Abbr ‘f’, real_normal] ],
            (* goal 2 (of 2) *)
-           Q.EXISTS_TAC ‘s'’ >> rw [] \\
+           rename1 ‘z IN subsets (sigma UNIV {box a b CROSS box c d | T})’ \\
+           Q.EXISTS_TAC ‘z’ >> rw [] \\
            rw [Once EXTENSION] >> EQ_TAC >> rw [] >| (* 3 subgoals *)
            [ (* goal 2.1 (of 3) *)
              Q.EXISTS_TAC ‘f x’ >> art [] \\
