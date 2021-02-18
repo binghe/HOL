@@ -3160,15 +3160,48 @@ Proof
     REWRITE_TAC [borel_2d_alt_box, SPACE_SIGMA]
 QED
 
-(* Hyperbola area is a open set, used by IN_MEASURABLE_BOREL_2D_MUL *)
+(* Hyperbola area is a open set, used by IN_MEASURABLE_BOREL_2D_MUL
+
+  ^ y
+  | .  A
+  |  ____(q,r)
+  |  \ e/|
+  |  .\/ | B
+  |   .\ |    y = a/x = H/x (convex)
+  |     \|
+  |        .  . 
+  +--------------> x
+ *)
 Theorem hyperbola_open_in_mr2 :
     !a. {(x,y) | a < x * y} IN {s | open_in (mtop mr2) s}
 Proof
     rw [MTOP_OPEN]
  >> Cases_on ‘x'’ >> fs []
  >> Q.PAT_X_ASSUM ‘x = (q,r)’ K_TAC (* cleanup *)
+ >> Q.ABBREV_TAC ‘R = abs a’
+ >> Q.ABBREV_TAC ‘X = abs q’
+ >> Q.ABBREV_TAC ‘Y = abs r’
+ >> Q.ABBREV_TAC ‘A = X - R / Y’
+ >> Q.ABBREV_TAC ‘B = Y - R / X’
+ >> Q.ABBREV_TAC ‘C = sqrt (A pow 2 + B pow 2)’
+ >> Q.ABBREV_TAC ‘h = A * B / C’
+ (* part I *)
  >> Cases_on ‘0 <= a’
- >- (
+ >- (Q.EXISTS_TAC ‘h’ \\
+     STRONG_CONJ_TAC (* 0 < h *)
+     >- (Q.UNABBREV_TAC ‘h’ \\
+         MATCH_MP_TAC REAL_LT_DIV \\
+         Suff ‘0 < A /\ 0 < B’
+         >- (STRIP_TAC \\
+             CONJ_TAC >- (MATCH_MP_TAC REAL_LT_MUL >> art []) \\
+             Q.UNABBREV_TAC ‘C’ \\
+             MATCH_MP_TAC SQRT_POS_LT \\
+             MATCH_MP_TAC REAL_LT_ADD \\
+             CONJ_TAC >> MATCH_MP_TAC REAL_POW_LT >> art []) \\         
+         qunabbrevl_tac [‘A’, ‘B’, ‘C’] \\
+         
+         cheat) >> DISCH_TAC \\
+     
      cheat)
  >> 
     cheat
