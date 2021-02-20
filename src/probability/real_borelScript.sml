@@ -3167,7 +3167,7 @@ QED
   |  ____(q,r)
   |  \ e/|
   |  .\/ | B
-  |   .\ |    y = a/x = H/x (convex)
+  |   .\ |    y = a/x (convex)
   |     \|
   |        .  . 
   +--------------> x
@@ -3181,15 +3181,23 @@ Proof
  >> Q.ABBREV_TAC ‘R = abs a’
  >> Q.ABBREV_TAC ‘X = abs q’
  >> Q.ABBREV_TAC ‘Y = abs r’
- >> Q.ABBREV_TAC ‘A = X - R / Y’
- >> Q.ABBREV_TAC ‘B = Y - R / X’
+ >> Q.ABBREV_TAC ‘A = X - R / Y’ (* horizontal distance to the curve *)
+ >> Q.ABBREV_TAC ‘B = Y - R / X’ (*   vertical distance to the curve *)
  >> Q.ABBREV_TAC ‘C = sqrt (A pow 2 + B pow 2)’
- >> Q.ABBREV_TAC ‘h = A * B / C’
- (* part I *)
+ >> Q.ABBREV_TAC ‘e = A * B / C’ (* height of right-angled triangle ABC *)
+ (* start case analysis *)
  >> Cases_on ‘0 <= a’
- >- (Q.EXISTS_TAC ‘h’ \\
-     STRONG_CONJ_TAC (* 0 < h *)
-     >- (Q.UNABBREV_TAC ‘h’ \\
+ >- (Q.EXISTS_TAC ‘e’ \\
+     Know ‘Y <> 0 /\ X <> 0’
+     >- (CONJ_TAC >| (* 2 subgoals *)
+         [ (* goal 1 (of 2) *)
+           CCONTR_TAC >> Q.UNABBREV_TAC ‘Y’ >> fs [ABS_ZERO] \\
+           PROVE_TAC [REAL_LTE_ANTISYM],
+           (* goal 2 (of 2) *)
+           CCONTR_TAC >> Q.UNABBREV_TAC ‘X’ >> fs [ABS_ZERO] \\
+           PROVE_TAC [REAL_LTE_ANTISYM] ]) >> STRIP_TAC \\
+     STRONG_CONJ_TAC (* 0 < e *)
+     >- (Q.UNABBREV_TAC ‘e’ \\
          MATCH_MP_TAC REAL_LT_DIV \\
          Suff ‘0 < A /\ 0 < B’
          >- (STRIP_TAC \\
@@ -3199,10 +3207,38 @@ Proof
              MATCH_MP_TAC REAL_LT_ADD \\
              CONJ_TAC >> MATCH_MP_TAC REAL_POW_LT >> art []) \\         
          qunabbrevl_tac [‘A’, ‘B’, ‘C’] \\
-         
-         cheat) >> DISCH_TAC \\
+         REWRITE_TAC [REAL_SUB_LT] \\
+         CONJ_TAC >| (* 2 subgoals, same ending tactics *)
+         [ (* goal 1 (of 2) *)
+           Know ‘R / Y < X <=> R / Y * Y < X * Y’
+           >- (MATCH_MP_TAC EQ_SYM >> MATCH_MP_TAC REAL_LT_RMUL \\
+               rw [REAL_LT_LE] >> rw [Abbr ‘Y’, ABS_POS]) >> Rewr' \\
+           Know ‘R / Y * Y = R’
+           >- (ONCE_REWRITE_TAC [REAL_MUL_COMM] \\
+               MATCH_MP_TAC REAL_DIV_LMUL >> art []) >> Rewr',
+           (* goal 2 (of 2) *)
+           Know ‘R / X < Y <=> R / X * X < Y * X’
+           >- (MATCH_MP_TAC EQ_SYM >> MATCH_MP_TAC REAL_LT_RMUL \\
+               rw [REAL_LT_LE] >> rw [Abbr ‘X’, ABS_POS]) >> Rewr' \\
+           Know ‘R / X * X = R’
+           >- (ONCE_REWRITE_TAC [REAL_MUL_COMM] \\
+               MATCH_MP_TAC REAL_DIV_LMUL >> art []) >> Rewr' ] \\
+        ((* shared ending tactics *)
+         Know ‘R = a’
+         >- (Q.UNABBREV_TAC ‘R’ >> rw [ABS_REFL]) >> Rewr' \\
+         qunabbrevl_tac [‘R’, ‘X’, ‘Y’] \\
+         REWRITE_TAC [GSYM ABS_MUL] \\
+         Cases_on ‘q * r < 0’
+         >- (‘a < 0’ by PROVE_TAC [REAL_LT_TRANS] \\
+             PROVE_TAC [REAL_LTE_ANTISYM]) \\
+         fs [GSYM real_lte] \\
+         Suff ‘abs (q * r) = q * r’ >- (Rewr' >> art []) \\
+         rw [ABS_REFL])) \\
+     DISCH_TAC \\
+     Q.X_GEN_TAC ‘y’ >> Cases_on ‘y’ >> rw [MR2_DEF] \\
      
      cheat)
+ (* hard part *)
  >> 
     cheat
 QED
