@@ -2,15 +2,15 @@
 
 This directory provides a collection of block ciphers 
 
-  * AES 
-  * IDEA 
-  * MARS 
-  * RC6
+  * AES [1]
+  * IDEA [1]
+  * MARS [1]
+  * RC6 [1]
   * RSA
   * SHA-1
-  * Serpent 
-  * TEA
-  * TWOFISH
+  * Serpent [1]
+  * TEA [1]
+  * TWOFISH [1]
 
 (and their functional correctness proofs), plus some modes 
 of operation (modesScript.sml). Also the hash algorithm SHA-1
@@ -19,8 +19,8 @@ be found in tea.data.encrypt.
 
 ## Publications
 
-- Duan J., Hurd J., Li G., Owens S., Slind K., Zhang J. (2005)
-  Functional Correctness Proofs of Encryption Algorithms.
+1. Duan J., Hurd J., Li G., Owens S., Slind K., Zhang J. (2005)
+  _Functional Correctness Proofs of Encryption Algorithms._
   In: Sutcliffe G., Voronkov A. (eds) Logic for Programming, Artificial Intelligence,
   and Reasoning. LPAR 2005.
   Lecture Notes in Computer Science, vol 3835. Springer, Berlin, Heidelberg.
