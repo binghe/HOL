@@ -4229,6 +4229,32 @@ Proof
      MATCH_MP_TAC REAL_POW_LE_1 \\
      MATCH_MP_TAC REAL_LT_IMP_LE >> art [])
  >> DISCH_TAC
+ >> Know ‘!a (x :real). 1 < a ==> ?n. x < &u a (SUC n)’
+ >- (rpt STRIP_TAC \\
+    ‘1 <= a’ by PROVE_TAC [REAL_LT_IMP_LE] \\
+    ‘0 < a’ by PROVE_TAC [REAL_LT_01, REAL_LT_TRANS] \\
+    ‘0 <= a’ by PROVE_TAC [REAL_LT_IMP_LE] \\
+     Cases_on ‘x < 1’
+     >- (Q.EXISTS_TAC ‘0’ (* any value is fine here *) \\
+         MATCH_MP_TAC REAL_LTE_TRANS \\
+         Q.EXISTS_TAC ‘1’ >> rw [Abbr ‘u’] \\
+         rw [NUM_FLOOR_LE2] (* needs ‘0 <= a’ *)) \\
+     POP_ASSUM (ASSUME_TAC o SIMP_RULE std_ss [real_lt]) \\
+     Suff ‘?n. x < &u a n’
+     >- (STRIP_TAC \\
+         Cases_on ‘n’ >- (fs [Abbr ‘u’] >> PROVE_TAC [REAL_LTE_ANTISYM]) \\
+         rename1 ‘x < &u a (SUC n)’ \\
+         Q.EXISTS_TAC ‘n’ >> art []) \\
+     RW_TAC std_ss [Abbr ‘u’] \\
+     STRIP_ASSUME_TAC
+       (Q.SPEC ‘2 * x’ (MATCH_MP REAL_ARCH_POW (ASSUME “1 < (a :real)”))) \\
+     Q.EXISTS_TAC ‘n’ \\
+     MATCH_MP_TAC REAL_LT_TRANS \\
+     Q.EXISTS_TAC ‘a pow n / 2’ \\
+     CONJ_TAC >- rw [REAL_LT_RDIV_EQ] \\
+     MATCH_MP_TAC NUM_FLOOR_lower_bound \\
+     MATCH_MP_TAC REAL_POW_LE_1 >> art [])
+ >> DISCH_TAC
  (* stage work *)
  >> Q.ABBREV_TAC ‘A = \n x. (Z n x - expectation p (Z n)) / &n’
  >> Q.ABBREV_TAC ‘W = \a n x. A (u a (SUC n)) x’
@@ -4507,27 +4533,10 @@ Proof
   (* prove existence of ‘N’ *)
      Know ‘!(x :real). ?n. x < &u a (SUC n)’
      >- (Q.X_GEN_TAC ‘x’ \\
-         Cases_on ‘x < 1’
-         >- (Q.EXISTS_TAC ‘0’ (* any value is fine here *) \\
-             MATCH_MP_TAC REAL_LTE_TRANS \\
-             Q.EXISTS_TAC ‘1’ >> rw [Abbr ‘u’] \\
-             rw [NUM_FLOOR_LE2]) \\
-         POP_ASSUM (ASSUME_TAC o SIMP_RULE std_ss [real_lt]) \\
-         Suff ‘?n. x < &u a n’
-         >- (STRIP_TAC \\
-             Cases_on ‘n’ >- (fs [Abbr ‘u’] >> PROVE_TAC [REAL_LTE_ANTISYM]) \\
-             rename1 ‘x < &u a (SUC n)’ \\
-             Q.EXISTS_TAC ‘n’ >> art []) \\
-         RW_TAC std_ss [Abbr ‘u’] \\
-         STRIP_ASSUME_TAC
-           (Q.SPEC ‘2 * x’ (MATCH_MP REAL_ARCH_POW (ASSUME “1 < (a :real)”))) \\
-         Q.EXISTS_TAC ‘n’ \\
-         MATCH_MP_TAC REAL_LT_TRANS \\
-         Q.EXISTS_TAC ‘a pow n / 2’ \\
-         reverse CONJ_TAC
-         >- (MATCH_MP_TAC NUM_FLOOR_lower_bound \\
-             MATCH_MP_TAC REAL_POW_LE_1 >> art []) \\
-         rw [REAL_LT_RDIV_EQ]) >> DISCH_TAC \\
+         Q.PAT_X_ASSUM ‘!a x. 1 < a ==> ?n. x < &u a (SUC n)’
+           (fn th => STRIP_ASSUME_TAC
+                       (Q.SPEC ‘x’ (MATCH_MP th (ASSUME “1 < (a :real)”)))) \\
+         Q.EXISTS_TAC ‘n’ >> art []) >> DISCH_TAC \\
   (* eliminate ‘indicator_fn’ *)
      Know ‘pos_fn_integral p
              (\x. X 0 x pow 2 *
@@ -4669,7 +4678,7 @@ Proof
   (* collect all constants so far *)
     ‘!x. X 0 x pow 2 * 2 * inv (Normal a) pow SUC (N (abs (X 0 x))) * c =
                2 * c * X 0 x pow 2 * inv (Normal a) pow SUC (N (abs (X 0 x)))’
-       by METIS_TAC [mul_comm, mul_assoc] >> POP_ORW  \\
+       by METIS_TAC [mul_comm, mul_assoc] >> POP_ORW \\
   (* key property of ‘N’ due to LEAST *)
      Know ‘!x. x <> PosInf /\ x <> NegInf ==> x <= Normal (a pow (SUC (N x)))’
      >- (rw [Abbr ‘N’] \\

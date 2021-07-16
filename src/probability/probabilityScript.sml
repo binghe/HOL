@@ -6443,6 +6443,52 @@ Proof
  >> RW_TAC std_ss []
 QED
 
+Theorem converge_AE_to_limit :
+    !p X M m. prob_space p /\ (!n. real_random_variable (X n) p) /\
+              (M --> m) sequentially /\
+              ((\n x. X n x - Normal (M n)) --> (\x. 0)) (almost_everywhere p) ==>
+              (X --> (\x. Normal m)) (almost_everywhere p)
+Proof
+    rpt STRIP_TAC
+ (* applying converge_PR_cong_full *)
+ >> Know ‘(X --> (\x. Normal m)) (almost_everywhere p) <=>
+          ((\n x. X n x - Normal (M n) + Normal (M n)) --> (\x. 0 + Normal m))
+           (almost_everywhere p)’
+ >- (MATCH_MP_TAC converge_AE_cong_full \\
+     Q.EXISTS_TAC ‘0’ >> rw [sub_add_normal]) >> Rewr'
+ >> HO_MATCH_MP_TAC converge_AE_add
+ >> rw [real_random_variable_zero, real_random_variable_const]
+ >- (HO_MATCH_MP_TAC real_random_variable_sub \\
+     rw [real_random_variable_const] \\
+    ‘(\x. X n x) = X n’ by METIS_TAC [] >> POP_ASSUM (art o wrap))
+ >> Q.PAT_X_ASSUM ‘!n. real_random_variable (X n) p’ K_TAC
+ >> POP_ASSUM K_TAC (* (X n x - M n) --> 0 *)
+ (* stage work, now ‘X n’ disappeared, left only M and m *)
+ >> POP_ASSUM MP_TAC
+ >> rw [converge_AE_def, AE_DEF, null_set_def, LIM_SEQUENTIALLY, dist]
+ >> Q.EXISTS_TAC ‘{}’
+ >> FULL_SIMP_TAC std_ss [prob_space_def]
+ >> ASM_SIMP_TAC std_ss [MEASURE_SPACE_EMPTY_MEASURABLE, MEASURE_EMPTY]
+QED
+
+(* M and m are extreal-valued. This form is used by WLLN_IID directly. *)
+Theorem converge_AE_to_limit' :
+    !p X M m. prob_space p /\ (!n. real_random_variable (X n) p) /\
+              (!n. M n <> PosInf /\ M n <> NegInf) /\ m <> PosInf /\ m <> NegInf /\
+              ((real o M) --> real m) sequentially /\
+              ((\n x. X n x - M n) --> (\x. 0)) (almost_everywhere p) ==>
+              (X --> (\x. m)) (almost_everywhere p)
+Proof
+    rpt STRIP_TAC
+ >> ‘?r. m = Normal r’ by METIS_TAC [extreal_cases] >> fs []
+ >> MATCH_MP_TAC converge_AE_to_limit
+ >> Q.EXISTS_TAC ‘real o M’ >> art []
+ >> Suff ‘((\n x. X n x - Normal ((real o M) n)) --> (\x. 0)) (almost_everywhere p) <=>
+          ((\n x. X n x - M n) --> (\x. 0)) (almost_everywhere p)’ >- rw []
+ >> MATCH_MP_TAC converge_AE_cong
+ >> Q.EXISTS_TAC ‘0’ >> rw [normal_real]
+QED
+
 (* ========================================================================= *)
 (*                  Advanced estimations of expectations                     *)
 (* ========================================================================= *)
