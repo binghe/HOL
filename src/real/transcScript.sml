@@ -665,15 +665,23 @@ val LN_LT_X = store_thm("LN_LT_X",
   REWRITE_TAC[REAL_LT_RADD, REAL_LT_01] THEN
   REWRITE_TAC[REAL_ADD_LID, REAL_LE_REFL]);
 
-val LN_POS = store_thm("LN_POS",
-  Term `!x. &1 <= x ==> &0 <= ln(x)`,
-  GEN_TAC THEN DISCH_TAC THEN SUBGOAL_THEN (Term `&0 < x`) ASSUME_TAC THENL
-   [MATCH_MP_TAC REAL_LTE_TRANS THEN EXISTS_TAC (Term`&1`) THEN
-    ASM_REWRITE_TAC[REAL_LT_01],
-    UNDISCH_TAC (Term`&1 <= x`) THEN SUBST1_TAC(SYM EXP_0) THEN
-    POP_ASSUM(MP_TAC o REWRITE_RULE[GSYM EXP_LN]) THEN
-    DISCH_THEN(fn th => GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [] [SYM th])
-    THEN REWRITE_TAC[EXP_MONO_LE]]);;
+Theorem LN_POS :
+    !(x :real). 1 <= x ==> 0 <= ln x
+Proof
+    RW_TAC std_ss [GSYM LN_1]
+ >> ASSUME_TAC REAL_LT_01
+ >> ‘0 < x’ by PROVE_TAC [REAL_LTE_TRANS]
+ >> RW_TAC std_ss [LN_MONO_LE]
+QED
+
+Theorem LN_POS_LT :
+    !(x :real). 1 < x ==> 0 < ln x
+Proof
+    RW_TAC std_ss [GSYM LN_1]
+ >> ASSUME_TAC REAL_LT_01
+ >> ‘0 < x’ by PROVE_TAC [REAL_LT_TRANS]
+ >> RW_TAC std_ss [LN_MONO_LT]
+QED
 
 Theorem DIFF_LN[difftool]:
    !x. &0 < x ==> (ln diffl (inv x))(x)
@@ -4429,5 +4437,55 @@ Proof
 QED
 
 (* NOTE: Jensen's inequalities are in real_sigmaScript.sml *)
+
+(* ------------------------------------------------------------------------- *)
+(* More variants of the Archimedian property and useful consequences.        *)
+(* ------------------------------------------------------------------------- *)
+
+Theorem REAL_POW_LBOUND :
+    !x n. &0 <= x ==> &1 + &n * x <= (&1 + x) pow n
+Proof
+  GEN_TAC THEN SIMP_TAC arith_ss[RIGHT_FORALL_IMP_THM] THEN
+  DISCH_TAC THEN INDUCT_TAC THEN
+  REWRITE_TAC[pow, REAL_MUL_LZERO, REAL_ADD_RID, REAL_LE_REFL] THEN
+  REWRITE_TAC[GSYM REAL_OF_NUM_SUC] THEN
+  MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC ``(&1 + x) * (&1 + &n * x)`` THEN
+  ASM_SIMP_TAC arith_ss[REAL_LE_MUL, REAL_POS, REAL_ARITH
+   ``&1 + (n + &1) * x <= (&1 + x) * (&1 + n * x) <=> &0 <= n * x * x``] THEN
+  REWRITE_TAC[SUC_ONE_ADD, REAL_POW_ADD, POW_1] THEN
+  ASM_SIMP_TAC arith_ss[REAL_LE_LMUL_IMP, REAL_ARITH ``&0 <= x ==> &0 <= &1 + x``]
+QED
+
+Theorem REAL_ARCH_POW :
+    !x y. &1 < x ==> ?n. y < x pow n
+Proof
+  REPEAT STRIP_TAC THEN
+  MP_TAC(SPEC ``x - &1`` REAL_ARCH) THEN ASM_REWRITE_TAC[REAL_SUB_LT] THEN
+  DISCH_THEN(MP_TAC o SPEC ``y:real``) THEN HO_MATCH_MP_TAC MONO_EXISTS THEN
+  X_GEN_TAC ``n:num`` THEN DISCH_TAC THEN MATCH_MP_TAC REAL_LTE_TRANS THEN
+  EXISTS_TAC ``&1 + &n * (x - &1)`` THEN
+  ASM_SIMP_TAC arith_ss[REAL_ARITH ``x < y ==> x < &1 + y``] THEN
+  ASM_MESON_TAC[REAL_POW_LBOUND, REAL_SUB_ADD2, REAL_ARITH
+    ``&1 < x ==> &0 <= x - &1``]
+QED
+
+Theorem REAL_ARCH_POW_INV :
+    !x:real y. &0 < y /\ x < &1 ==> ?n. x pow n < y
+Proof
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC ``&0 < x:real`` THENL
+   [ALL_TAC, ASM_MESON_TAC[POW_1, REAL_LET_TRANS, REAL_NOT_LT]] THEN
+  SUBGOAL_THEN ``inv(&1) < inv(x:real)`` MP_TAC THENL
+   [ASM_SIMP_TAC std_ss [REAL_LT_INV], REWRITE_TAC[REAL_INV1]] THEN
+  DISCH_THEN(MP_TAC o SPEC ``inv(y:real)`` o MATCH_MP REAL_ARCH_POW) THEN
+  STRIP_TAC THEN EXISTS_TAC ``n:num`` THEN
+  GEN_REWR_TAC BINOP_CONV [GSYM REAL_INV_INV] THEN
+  ASM_SIMP_TAC std_ss [GSYM REAL_POW_INV, REAL_LT_INV_EQ, REAL_LT_INV]
+QED
+
+Theorem REAL_ARCH_POW2 : (* was: REAL_ARCH_POW *)
+    !x. ?n. x < &2 pow n
+Proof
+  SIMP_TAC arith_ss[REAL_ARCH_POW, REAL_LT]
+QED
 
 val _ = export_theory();

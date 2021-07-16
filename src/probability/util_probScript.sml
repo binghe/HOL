@@ -463,6 +463,31 @@ val lg_pow = store_thm
             >> RW_TAC real_ss [LN_POS, LN_MONO_LT])
    >> RW_TAC real_ss [real_div, GSYM REAL_MUL_ASSOC, REAL_MUL_RINV]);
 
+(* cf. LN_MONO_LT *)
+Theorem LOGR_MONO_LT :
+    !x :real y b. 0 < x /\ 0 < y /\ 1 < b ==> (logr b x < logr b y <=> x < y)
+Proof
+    RW_TAC std_ss [logr_def,real_div]
+ >> `0 < ln b` by METIS_TAC [REAL_LT_01, LN_1, REAL_LT_TRANS, LN_MONO_LT]
+ >> METIS_TAC [REAL_LT_INV_EQ, REAL_LT_RMUL, LN_MONO_LT]
+QED
+
+Theorem LOGR_MONO_LE :
+    !x:real y b. 0 < x /\ 0 < y /\ 1 < b ==> (logr b x <= logr b y <=> x <= y)
+Proof
+  RW_TAC std_ss [logr_def,real_div]
+  >> `0 < ln b` by METIS_TAC [REAL_LT_01, LN_1, REAL_LT_TRANS, LN_MONO_LT]
+  >> METIS_TAC [REAL_LT_INV_EQ, REAL_LE_RMUL, LN_MONO_LE]
+QED
+
+Theorem LOGR_MONO_LE_IMP :
+    !x:real y b. 0 < x /\ x <= y /\ 1 <= b ==> (logr b x <= logr b y)
+Proof
+    RW_TAC std_ss [logr_def,real_div]
+ >> `0 <= ln b` by METIS_TAC [REAL_LT_01, LN_1, REAL_LTE_TRANS, LN_MONO_LE]
+ >> METIS_TAC [REAL_LE_INV_EQ, REAL_LE_RMUL_IMP, LN_MONO_LE, REAL_LTE_TRANS]
+QED
+
 (* from extra_realScript.sml of "miller" example *)
 val pos_concave_lg = store_thm
   ("pos_concave_lg",
@@ -966,18 +991,6 @@ val POW_NEG_ODD = store_thm
   >> `x pow n <> 0` by METIS_TAC [POW_NZ, REAL_LT_IMP_NE]
   >> `0 < x pow n` by METIS_TAC [REAL_LT_LE]
   >> METIS_TAC [REAL_NEG_GT0, REAL_MUL_LNEG, REAL_LT_MUL]);
-
-val LOGR_MONO_LE = store_thm
-  ("LOGR_MONO_LE",``!x:real y b. 0 < x /\ 0 < y /\ 1 < b ==> (logr b x <= logr b y <=> x <= y)``,
-  RW_TAC std_ss [logr_def,real_div]
-  >> `0 < ln b` by METIS_TAC [REAL_LT_01, LN_1, REAL_LT_TRANS, LN_MONO_LT]
-  >> METIS_TAC [REAL_LT_INV_EQ, REAL_LE_RMUL, LN_MONO_LE]);
-
-val LOGR_MONO_LE_IMP = store_thm
-  ("LOGR_MONO_LE_IMP",``!x:real y b. 0 < x /\ x <= y /\ 1 <= b ==> (logr b x <= logr b y)``,
-  RW_TAC std_ss [logr_def,real_div]
-  >> `0 <= ln b` by METIS_TAC [REAL_LT_01, LN_1, REAL_LTE_TRANS, LN_MONO_LE]
-  >> METIS_TAC [REAL_LE_INV_EQ, REAL_LE_RMUL_IMP, LN_MONO_LE, REAL_LTE_TRANS]);
 
 Theorem REAL_MAX_REDUCE :
     !x y :real. x <= y \/ x < y ==> (max x y = y) /\ (max y x = y)
@@ -2649,25 +2662,7 @@ Proof
   METIS_TAC [MUL_IN_QSET, real_div]
 QED
 
-Theorem CLG_UBOUND :
-    !x. (0 <= x) ==> &(clg(x)) < (x) + 1
-Proof
-  RW_TAC std_ss [NUM_CEILING_def] THEN LEAST_ELIM_TAC THEN
-  REWRITE_TAC [SIMP_REAL_ARCH] THEN RW_TAC real_ss [] THEN
-  FULL_SIMP_TAC real_ss [GSYM real_lt] THEN
-  PAT_X_ASSUM ``!m. P`` (MP_TAC o Q.SPEC `n-1`) THEN
-  RW_TAC real_ss [] THEN Cases_on `n = 0` THENL
-  [METIS_TAC [REAL_LET_ADD2,REAL_LT_01,REAL_ADD_RID], ALL_TAC] THEN
-  `0 < n` by RW_TAC real_ss [] THEN
-  `&(n - 1) < x:real` by RW_TAC real_ss [] THEN
-  `0 <= n-1` by RW_TAC real_ss [] THEN
-  `0:real <= (&(n-1))` by RW_TAC real_ss [] THEN
-  `0 < x` by METIS_TAC [REAL_LET_TRANS] THEN Cases_on `n = 1` THENL
-  [METIS_TAC [REAL_LE_REFL,REAL_ADD_RID,REAL_LTE_ADD2,REAL_ADD_COMM], ALL_TAC] THEN
-  `0 <> n-1` by RW_TAC real_ss [] THEN
-  `&n - 1 < x` by RW_TAC real_ss [REAL_SUB] THEN
-  FULL_SIMP_TAC real_ss [REAL_LT_SUB_RADD]
-QED
+Theorem CLG_UBOUND = NUM_CEILING_UPPER_BOUND
 
 Theorem Q_DENSE_IN_REAL_LEMMA :
     !x y. (0 <= x) /\ (x < y) ==> ?r. (r IN q_set) /\ (x < r) /\ (r < y)
