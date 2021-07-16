@@ -19,7 +19,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open numTheory numLib unwindLib tautLib Arith prim_recTheory RealArith
-     combinTheory quotientTheory arithmeticTheory realTheory
+     combinTheory quotientTheory arithmeticTheory realTheory real_sigmaTheory
      jrhUtils pairTheory boolTheory pred_setTheory optionTheory
      sumTheory InductiveDefinition ind_typeTheory listTheory mesonLib
      seqTheory limTheory transcTheory realLib topologyTheory metricTheory;
@@ -5294,6 +5294,115 @@ val LIM_SEQUENTIALLY = store_thm ("LIM_SEQUENTIALLY",
           !e. &0 < e ==> ?N. !n. N <= n ==> dist(s(n),l) < e``,
   REWRITE_TAC[tendsto, EVENTUALLY_SEQUENTIALLY] THEN MESON_TAC[]);
 
+(* The limit of the arithmetic means of the first n partial sums is called
+  "Cesaro summation". cf. https://en.wikipedia.org/wiki/Cesaro_summation
+
+   This proof uses iterateTheory (numseg). (Added by Chun Tian for WLLN_IID)
+ *)
+Theorem LIM_SEQUENTIALLY_CESARO :
+    !f l. ((\n. f n) --> l) sequentially ==>
+          ((\n. SIGMA f (count (SUC n)) / &SUC n) --> l) sequentially
+Proof
+    RW_TAC std_ss [LIM_SEQUENTIALLY, dist]
+ >> Q.ABBREV_TAC ‘g = \n. f n - l’
+ >> Know ‘!n. SIGMA f (count (SUC n)) / &SUC n - l =
+              SIGMA g (count (SUC n)) / &SUC n’
+ >- (rw [Abbr ‘g’] \\
+     Know ‘SIGMA (\n. f n - l) (count (SUC n)) =
+           SIGMA f (count (SUC n)) - SIGMA (\x. l) (count (SUC n))’
+     >- (HO_MATCH_MP_TAC REAL_SUM_IMAGE_SUB >> rw []) >> Rewr' \\
+    ‘FINITE (count (SUC n))’ by rw [] \\
+     rw [REAL_SUM_IMAGE_FINITE_CONST3, CARD_COUNT, real_div, REAL_SUB_LDISTRIB])
+ >> Rewr'
+ >> Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ MP_TAC
+ >> ‘!n. f n - l = g n’ by METIS_TAC [] >> POP_ORW
+ >> DISCH_THEN (MP_TAC o (Q.SPEC ‘(1 / 2) * e’))
+ >> ‘0 < 1 / 2 * e’ by rw []
+ >> RW_TAC std_ss []
+ >> Q.PAT_X_ASSUM ‘Abbrev (g = (\n. f n - l))’ K_TAC
+ (* special case: N = 0 *)
+ >> Cases_on ‘N = 0’
+ >- (fs [] >> Q.EXISTS_TAC ‘0’ >> rw [real_div] \\
+    ‘abs (inv (&SUC n) * SIGMA g (count (SUC n))) =
+     abs (inv (&SUC n)) * abs (SIGMA g (count (SUC n)))’
+       by rw [REAL_ABS_MUL] >> POP_ORW \\
+    ‘abs (inv (&SUC n)) = inv (&SUC n) :real’ by rw [] >> POP_ORW \\
+     MATCH_MP_TAC REAL_LET_TRANS \\
+     Q.EXISTS_TAC ‘inv (&SUC n) * SIGMA (abs o g) (count (SUC n))’ \\
+     CONJ_TAC >- (MATCH_MP_TAC REAL_LE_LMUL_IMP >> rw [] \\
+                  MATCH_MP_TAC REAL_SUM_IMAGE_ABS_TRIANGLE >> rw []) \\
+     MATCH_MP_TAC REAL_LET_TRANS \\
+     Q.EXISTS_TAC ‘inv (&SUC n) * SIGMA (\i. 1 / 2 * e) (count (SUC n))’ \\
+     CONJ_TAC >- (MATCH_MP_TAC REAL_LE_LMUL_IMP >> rw [] \\
+                  irule REAL_SUM_IMAGE_MONO >> rw [o_DEF] \\
+                  MATCH_MP_TAC REAL_LT_IMP_LE >> rw []) \\
+     rw [REAL_SUM_IMAGE_FINITE_CONST3])
+ (* stage work, now ‘0 < N’ *)
+ >> ‘0 < N’ by RW_TAC arith_ss []
+ >> Q.ABBREV_TAC ‘M = abs (SIGMA g (count N))’
+ >> Q.EXISTS_TAC ‘MAX N (2 * clg (M * inv e))’
+ >> RW_TAC std_ss [MAX_LE]
+ (* applying LE_NUM_CEILING *)
+ >> ‘M * realinv e <= &clg (M * realinv e)’ by PROVE_TAC [LE_NUM_CEILING]
+ >> Know ‘2 * &clg (M * realinv e) <= (&n :real)’
+ >- (REWRITE_TAC [GSYM REAL_DOUBLE] \\
+    ‘!n. &n + (&n :real) = &(n + n)’ by rw [] >> POP_ORW \\
+     REWRITE_TAC [GSYM TIMES2] >> rw [])
+ >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘2 * clg (M * realinv e) <= n’ K_TAC
+ >> Know ‘2 * (M * realinv e) <= &n’
+ >- (MATCH_MP_TAC REAL_LE_TRANS \\
+     Q.EXISTS_TAC ‘2 * &clg (M * realinv e)’ >> art [] \\
+     MATCH_MP_TAC REAL_LE_LMUL_IMP >> rw [])
+ >> NTAC 2 (POP_ASSUM K_TAC) (* clg is gone *)
+ >> DISCH_TAC
+ >> ‘count (SUC n) = (count N) UNION (N .. n)’
+      by (rw [Once EXTENSION, numseg, IN_COUNT]) >> POP_ORW
+ >> ‘DISJOINT (count N) (N .. n)’
+      by (rw [DISJOINT_ALT, IN_COUNT, IN_NUMSEG])
+ >> Know ‘SIGMA g ((count N) UNION (N .. n)) = SIGMA g (count N) + SIGMA g (N .. n)’
+ >- (MATCH_MP_TAC REAL_SUM_IMAGE_DISJOINT_UNION \\
+     rw [FINITE_COUNT, FINITE_NUMSEG]) >> Rewr'
+ >> REWRITE_TAC [real_div, REAL_ADD_RDISTRIB]
+ (* applying ABS_TRIANGLE *)
+ >> MATCH_MP_TAC REAL_LET_TRANS
+ >> Q.EXISTS_TAC ‘abs (SIGMA g (count N) * inv (&SUC n)) +
+                  abs (SIGMA g (N .. n)  * inv (&SUC n))’
+ >> REWRITE_TAC [ABS_TRIANGLE]
+ >> Suff ‘abs (SIGMA g (count N) * inv (&SUC n)) < 1 / 2 * e /\
+          abs (SIGMA g (N .. n) * inv (&SUC n)) < 1 / 2 * e’
+ >- (DISCH_TAC \\
+     GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) empty_rewrites [GSYM X_HALF_HALF] \\
+     MATCH_MP_TAC REAL_LT_ADD2 >> art [])
+ (* applying REAL_SUM_IMAGE_ABS_TRIANGLE *)
+ >> reverse CONJ_TAC
+ >- (Know ‘abs (SIGMA g (N .. n) * inv (&SUC n)) =
+           abs (SIGMA g (N .. n)) * abs (inv (&SUC n))’
+     >- (rw [REAL_ABS_MUL]) >> Rewr' \\
+    ‘abs (inv (&SUC n)) = inv (&SUC n) :real’ by rw [] >> POP_ORW \\
+     MATCH_MP_TAC REAL_LET_TRANS \\
+     Q.EXISTS_TAC ‘SIGMA (abs o g) (N .. n) * inv (&SUC n)’ \\
+     CONJ_TAC >- (MATCH_MP_TAC REAL_LE_RMUL_IMP >> rw [] \\
+                  MATCH_MP_TAC REAL_SUM_IMAGE_ABS_TRIANGLE \\
+                  REWRITE_TAC [FINITE_NUMSEG]) \\
+     MATCH_MP_TAC REAL_LET_TRANS \\
+     Q.EXISTS_TAC ‘SIGMA (\i. 1 / 2 * e) (N .. n) * inv (&SUC n)’ \\
+     CONJ_TAC >- (MATCH_MP_TAC REAL_LE_RMUL_IMP >> rw [] \\
+                  irule REAL_SUM_IMAGE_MONO >> rw [FINITE_NUMSEG, IN_NUMSEG, o_DEF] \\
+                  MATCH_MP_TAC REAL_LT_IMP_LE >> fs []) \\
+    ‘FINITE (N .. n)’ by PROVE_TAC [FINITE_NUMSEG] \\
+     rw [REAL_SUM_IMAGE_FINITE_CONST3, CARD_NUMSEG, GSYM ADD1])
+ (* final part *)
+ >> Know ‘abs (SIGMA g (count N) * inv (&SUC n)) = M * abs (inv (&SUC n))’
+ >- (rw [Abbr ‘M’, REAL_ABS_MUL]) >> Rewr'
+ >> ‘abs (inv (&SUC n)) = inv (&SUC n) :real’ by rw [] >> POP_ORW
+ >> Q.PAT_X_ASSUM ‘2 * (M * realinv e) <= &n’
+      (MP_TAC o (ONCE_REWRITE_RULE [REAL_MUL_ASSOC]))
+ >> ‘e <> (0 :real)’ by PROVE_TAC [REAL_LT_IMP_NE] >> rw []
+ >> MATCH_MP_TAC REAL_LET_TRANS
+ >> Q.EXISTS_TAC ‘e * &n’ >> rw []
+QED
+
 val LIM_EVENTUALLY = store_thm ("LIM_EVENTUALLY",
  ``!net f l. eventually (\x. f x = l) net ==> (f --> l) net``,
   REWRITE_TAC[eventually, LIM] THEN MESON_TAC[DIST_REFL]);
@@ -7323,6 +7432,28 @@ val LIM_SUBSEQUENCE = store_thm ("LIM_SUBSEQUENCE",
   ==> (s o r --> l) sequentially``,
   SIMP_TAC std_ss [LIM_SEQUENTIALLY, o_THM] THEN
   MESON_TAC[MONOTONE_BIGGER, LESS_EQ_TRANS]);
+
+(* In this "weak" version, r(n) may increase weakly and slowly,
+   but eventually r(n) should go to infinity. (added by Chun Tian for SLLN_IID)
+
+   This lemma is useful when ‘r = \n. flr (a pow n)’, where ‘1 < a’ (but close to 1)
+ *)
+Theorem LIM_SUBSEQUENCE_WEAK :
+    !s r l. (!m n. m <= n ==> r(m) <= r(n)) /\ (!n. ?m. n <= r(m)) /\
+            (s --> l) sequentially ==> (s o r --> l) sequentially
+Proof
+    RW_TAC std_ss [LIM_SEQUENTIALLY, dist, o_THM]
+ >> Q.PAT_X_ASSUM ‘!e. 0 < e ==> P’ (MP_TAC o (Q.SPEC ‘e’))
+ >> RW_TAC std_ss []
+ >> Q.PAT_X_ASSUM ‘!n. ?m. n <= r m’ (MP_TAC o (Q.SPEC ‘N’))
+ >> RW_TAC std_ss []
+ >> Q.EXISTS_TAC ‘MAX N m’
+ >> RW_TAC std_ss [MAX_LE]
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> MATCH_MP_TAC LESS_EQ_TRANS
+ >> Q.EXISTS_TAC ‘r m’ >> art []
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+QED
 
 val MONOTONE_SUBSEQUENCE = store_thm ("MONOTONE_SUBSEQUENCE",
  ``!s:num->real. ?r:num->num.

@@ -230,22 +230,21 @@ Theorem real_random_variable_LLN :
 Proof
     rpt STRIP_TAC
  >> MP_TAC (Q.SPECL [‘p’, ‘X’, ‘Z’, ‘SUC’] real_random_variable_LLN_general)
- >> BETA_TAC
  >> Suff ‘!n. 0 < &SUC n’ >- rw []
  >> rw [extreal_of_num_def, extreal_lt_eq]
 QED
 
-(* a lite version of the previous lemma (needed by SLLN_IID) *)
-Theorem real_random_variable_LLN' :
-    !p X. prob_space p /\
-         (!n. real_random_variable (X n) p) /\
-         (!n. integrable p (X n)) ==>
-         (!n. real_random_variable (\x. SIGMA (\i. X i x) (count (SUC n)) / &SUC n) p)
+Theorem real_random_variable_LLN_general' :
+    !p X b. prob_space p /\
+           (!n. real_random_variable (X n) p) /\ (!n. integrable p (X n)) /\
+           (!n :num. 0 < b n)
+        ==> !n. real_random_variable (\x. SIGMA (\i. X i x) (count (b n)) / &(b n)) p
 Proof
     rpt STRIP_TAC
  (* redefine Z as an abbreviation *)
  >> Q.ABBREV_TAC ‘S = \n x. SIGMA (\i. X i x) (count n)’
  >> simp []
+ (* stage work *)
  >> Q.PAT_X_ASSUM `!n. real_random_variable (X n) p`
       (STRIP_ASSUME_TAC o (CONV_RULE FORALL_AND_CONV) o
        (REWRITE_RULE [real_random_variable_def]))
@@ -258,32 +257,47 @@ Proof
      MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_NEGINF \\
      RW_TAC std_ss [FINITE_COUNT, IN_COUNT]) >> DISCH_TAC
  >> Know ‘!n x. x IN p_space p ==>
-                S (SUC n) x / &SUC n = inv (&SUC n) * S (SUC n) x’
+                S (b n) x / &(b n) = inv (&b n) * S (b n) x’
  >- (rpt STRIP_TAC \\
-     MATCH_MP_TAC div_eq_mul_linv >> rw [extreal_lt_eq, extreal_of_num_def])
+     MATCH_MP_TAC div_eq_mul_linv \\
+    ‘?r. S (b n) x = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+     rw [extreal_sub_def, extreal_lt_eq, extreal_of_num_def])
  >> DISCH_TAC
- >> Know ‘real_random_variable (\x. S (SUC n) x / &SUC n) p <=>
-          real_random_variable (\x. inv (&SUC n) * S (SUC n) x) p’
+ >> Know ‘real_random_variable (\x. S (b n) x / &(b n)) p <=>
+          real_random_variable (\x. inv (&b n) * S (b n) x) p’
  >- (MATCH_MP_TAC real_random_variable_cong \\
      RW_TAC std_ss []) >> Rewr'
- >> Know ‘!n. inv (&SUC n) = Normal (inv (&SUC n))’
- >- (Q.X_GEN_TAC ‘n’ \\
-    ‘(0 :real) <> &SUC n’ by RW_TAC real_ss [] \\
-     ASM_SIMP_TAC std_ss [extreal_of_num_def, extreal_inv_eq])
+ >> Know ‘inv (&b n) = Normal (inv &(b n))’
+ >- (‘(0 :real) < &b n’ by RW_TAC real_ss [] \\
+     ‘&b n <> (0 :real)’ by PROVE_TAC [REAL_LT_IMP_NE] \\
+     rw [extreal_of_num_def, extreal_inv_eq])
  >> Rewr'
  >> ‘sigma_algebra (p_space p,events p)’
        by METIS_TAC [prob_space_def, measure_space_def, p_space_def, events_def]
  >> SIMP_TAC std_ss [real_random_variable]
  >> reverse CONJ_TAC
  >- (Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
-    ‘?r. S (SUC n) x = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+    ‘?r. S (b n) x = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
      rw [extreal_mul_def])
  >> MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL
- >> qexistsl_tac [`S (SUC n)`, `inv (&SUC n)`] >> rw []
+ >> qexistsl_tac [`S (b n)`, `inv &(b n)`] >> rw []
  >> Q.UNABBREV_TAC ‘S’
  >> MATCH_MP_TAC (INST_TYPE [``:'b`` |-> ``:num``] IN_MEASURABLE_BOREL_SUM)
- >> qexistsl_tac [`X`, `count (SUC n)`] >> rw []
+ >> qexistsl_tac [`X`, `count (b n)`] >> rw []
  >> FULL_SIMP_TAC std_ss [random_variable_def]
+QED
+
+(* a lite version of the previous lemma (needed by SLLN_IID) *)
+Theorem real_random_variable_LLN' :
+    !p X. prob_space p /\
+         (!n. real_random_variable (X n) p) /\
+         (!n. integrable p (X n)) ==>
+         (!n. real_random_variable (\x. SIGMA (\i. X i x) (count (SUC n)) / &SUC n) p)
+Proof
+    rpt STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘p’, ‘X’, ‘SUC’] real_random_variable_LLN_general')
+ >> Suff ‘!n. 0 < &SUC n’ >- rw []
+ >> rw [extreal_of_num_def, extreal_lt_eq]
 QED
 
 (* Theorem 5.1.1, Part I [2, p.108]: The Weak Law of Large Numbers
@@ -2652,115 +2666,6 @@ Proof
  >> PROVE_TAC [let_antisym]
 QED
 
-(* The limit of the arithmetic means of the first n partial sums is called
-  "Cesaro summation". cf. https://en.wikipedia.org/wiki/Cesaro_summation
-
-   This proof uses iterateTheory (numseg).
- *)
-Theorem LIM_SEQUENTIALLY_CESARO :
-    !f l. ((\n. f n) --> l) sequentially ==>
-          ((\n. SIGMA f (count (SUC n)) / &SUC n) --> l) sequentially
-Proof
-    RW_TAC std_ss [LIM_SEQUENTIALLY, dist]
- >> Q.ABBREV_TAC ‘g = \n. f n - l’
- >> Know ‘!n. SIGMA f (count (SUC n)) / &SUC n - l =
-              SIGMA g (count (SUC n)) / &SUC n’
- >- (rw [Abbr ‘g’] \\
-     Know ‘SIGMA (\n. f n - l) (count (SUC n)) =
-           SIGMA f (count (SUC n)) - SIGMA (\x. l) (count (SUC n))’
-     >- (HO_MATCH_MP_TAC REAL_SUM_IMAGE_SUB >> rw []) >> Rewr' \\
-    ‘FINITE (count (SUC n))’ by rw [] \\
-     rw [REAL_SUM_IMAGE_FINITE_CONST3, CARD_COUNT, real_div, REAL_SUB_LDISTRIB])
- >> Rewr'
- >> Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ MP_TAC
- >> ‘!n. f n - l = g n’ by METIS_TAC [] >> POP_ORW
- >> DISCH_THEN (MP_TAC o (Q.SPEC ‘(1 / 2) * e’))
- >> ‘0 < 1 / 2 * e’ by rw []
- >> RW_TAC std_ss []
- >> Q.PAT_X_ASSUM ‘Abbrev (g = (\n. f n - l))’ K_TAC
- (* special case: N = 0 *)
- >> Cases_on ‘N = 0’
- >- (fs [] >> Q.EXISTS_TAC ‘0’ >> rw [real_div] \\
-    ‘abs (inv (&SUC n) * SIGMA g (count (SUC n))) =
-     abs (inv (&SUC n)) * abs (SIGMA g (count (SUC n)))’
-       by rw [REAL_ABS_MUL] >> POP_ORW \\
-    ‘abs (inv (&SUC n)) = inv (&SUC n) :real’ by rw [] >> POP_ORW \\
-     MATCH_MP_TAC REAL_LET_TRANS \\
-     Q.EXISTS_TAC ‘inv (&SUC n) * SIGMA (abs o g) (count (SUC n))’ \\
-     CONJ_TAC >- (MATCH_MP_TAC REAL_LE_LMUL_IMP >> rw [] \\
-                  MATCH_MP_TAC REAL_SUM_IMAGE_ABS_TRIANGLE >> rw []) \\
-     MATCH_MP_TAC REAL_LET_TRANS \\
-     Q.EXISTS_TAC ‘inv (&SUC n) * SIGMA (\i. 1 / 2 * e) (count (SUC n))’ \\
-     CONJ_TAC >- (MATCH_MP_TAC REAL_LE_LMUL_IMP >> rw [] \\
-                  irule REAL_SUM_IMAGE_MONO >> rw [o_DEF] \\
-                  MATCH_MP_TAC REAL_LT_IMP_LE >> rw []) \\
-     rw [REAL_SUM_IMAGE_FINITE_CONST3])
- (* stage work, now ‘0 < N’ *)
- >> ‘0 < N’ by RW_TAC arith_ss []
- >> Q.ABBREV_TAC ‘M = abs (SIGMA g (count N))’
- >> Q.EXISTS_TAC ‘MAX N (2 * clg (M * inv e))’
- >> RW_TAC std_ss [MAX_LE]
- (* applying LE_NUM_CEILING *)
- >> ‘M * realinv e <= &clg (M * realinv e)’ by PROVE_TAC [LE_NUM_CEILING]
- >> Know ‘2 * &clg (M * realinv e) <= (&n :real)’
- >- (REWRITE_TAC [GSYM REAL_DOUBLE] \\
-    ‘!n. &n + (&n :real) = &(n + n)’ by rw [] >> POP_ORW \\
-     REWRITE_TAC [GSYM TIMES2] >> rw [])
- >> DISCH_TAC
- >> Q.PAT_X_ASSUM ‘2 * clg (M * realinv e) <= n’ K_TAC
- >> Know ‘2 * (M * realinv e) <= &n’
- >- (MATCH_MP_TAC REAL_LE_TRANS \\
-     Q.EXISTS_TAC ‘2 * &clg (M * realinv e)’ >> art [] \\
-     MATCH_MP_TAC REAL_LE_LMUL_IMP >> rw [])
- >> NTAC 2 (POP_ASSUM K_TAC) (* clg is gone *)
- >> DISCH_TAC
- >> ‘count (SUC n) = (count N) UNION (N .. n)’
-      by (rw [Once EXTENSION, numseg, IN_COUNT]) >> POP_ORW
- >> ‘DISJOINT (count N) (N .. n)’
-      by (rw [DISJOINT_ALT, IN_COUNT, IN_NUMSEG])
- >> Know ‘SIGMA g ((count N) UNION (N .. n)) = SIGMA g (count N) + SIGMA g (N .. n)’
- >- (MATCH_MP_TAC REAL_SUM_IMAGE_DISJOINT_UNION \\
-     rw [FINITE_COUNT, FINITE_NUMSEG]) >> Rewr'
- >> REWRITE_TAC [real_div, REAL_ADD_RDISTRIB]
- (* applying ABS_TRIANGLE *)
- >> MATCH_MP_TAC REAL_LET_TRANS
- >> Q.EXISTS_TAC ‘abs (SIGMA g (count N) * inv (&SUC n)) +
-                  abs (SIGMA g (N .. n)  * inv (&SUC n))’
- >> REWRITE_TAC [ABS_TRIANGLE]
- >> Suff ‘abs (SIGMA g (count N) * inv (&SUC n)) < 1 / 2 * e /\
-          abs (SIGMA g (N .. n) * inv (&SUC n)) < 1 / 2 * e’
- >- (DISCH_TAC \\
-     GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) empty_rewrites [GSYM X_HALF_HALF] \\
-     MATCH_MP_TAC REAL_LT_ADD2 >> art [])
- (* applying REAL_SUM_IMAGE_ABS_TRIANGLE *)
- >> reverse CONJ_TAC
- >- (Know ‘abs (SIGMA g (N .. n) * inv (&SUC n)) =
-           abs (SIGMA g (N .. n)) * abs (inv (&SUC n))’
-     >- (rw [REAL_ABS_MUL]) >> Rewr' \\
-    ‘abs (inv (&SUC n)) = inv (&SUC n) :real’ by rw [] >> POP_ORW \\
-     MATCH_MP_TAC REAL_LET_TRANS \\
-     Q.EXISTS_TAC ‘SIGMA (abs o g) (N .. n) * inv (&SUC n)’ \\
-     CONJ_TAC >- (MATCH_MP_TAC REAL_LE_RMUL_IMP >> rw [] \\
-                  MATCH_MP_TAC REAL_SUM_IMAGE_ABS_TRIANGLE \\
-                  REWRITE_TAC [FINITE_NUMSEG]) \\
-     MATCH_MP_TAC REAL_LET_TRANS \\
-     Q.EXISTS_TAC ‘SIGMA (\i. 1 / 2 * e) (N .. n) * inv (&SUC n)’ \\
-     CONJ_TAC >- (MATCH_MP_TAC REAL_LE_RMUL_IMP >> rw [] \\
-                  irule REAL_SUM_IMAGE_MONO >> rw [FINITE_NUMSEG, IN_NUMSEG, o_DEF] \\
-                  MATCH_MP_TAC REAL_LT_IMP_LE >> fs []) \\
-    ‘FINITE (N .. n)’ by PROVE_TAC [FINITE_NUMSEG] \\
-     rw [REAL_SUM_IMAGE_FINITE_CONST3, CARD_NUMSEG, GSYM ADD1])
- (* final part *)
- >> Know ‘abs (SIGMA g (count N) * inv (&SUC n)) = M * abs (inv (&SUC n))’
- >- (rw [Abbr ‘M’, REAL_ABS_MUL]) >> Rewr'
- >> ‘abs (inv (&SUC n)) = inv (&SUC n) :real’ by rw [] >> POP_ORW
- >> Q.PAT_X_ASSUM ‘2 * (M * realinv e) <= &n’
-      (MP_TAC o (ONCE_REWRITE_RULE [REAL_MUL_ASSOC]))
- >> ‘e <> (0 :real)’ by PROVE_TAC [REAL_LT_IMP_NE] >> rw []
- >> MATCH_MP_TAC REAL_LET_TRANS
- >> Q.EXISTS_TAC ‘e * &n’ >> rw []
-QED
-
 Theorem truncated_vars_expectation' :
     !p X. prob_space p /\ (!n. real_random_variable (X n) p) /\
           identical_distribution p X Borel UNIV /\ integrable p (X 0) ==>
@@ -4771,6 +4676,84 @@ Proof
  >> NTAC 2 (Q.PAT_X_ASSUM ‘!n. variance p (Z n) <= _’ K_TAC)
  >> FULL_SIMP_TAC std_ss [Abbr ‘A’, Abbr ‘W’]
  (* stage work *)
+ >> Know ‘!a. 1 < a ==>
+              ((\n x. (Z (u a (SUC n)) x / &u a (SUC n) -
+                       expectation p (Z (u a (SUC n))) / &u a (SUC n))) -->
+               (\x. 0)) (almost_everywhere p)’
+ >- (rpt STRIP_TAC \\
+     Suff ‘((\n x. (Z (u a (SUC n)) x / &u a (SUC n) -
+                   expectation p (Z (u a (SUC n))) / &u a (SUC n))) -->
+            (\x. 0)) (almost_everywhere p) <=>
+           ((\n x. (Z (u a (SUC n)) x - expectation p (Z (u a (SUC n)))) /
+                   &u a (SUC n)) --> (\x. 0)) (almost_everywhere p)’
+     >- (Rewr' \\
+         FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+     MATCH_MP_TAC converge_AE_cong \\
+     Q.EXISTS_TAC ‘0’ >> RW_TAC arith_ss [] \\
+     MATCH_MP_TAC div_sub \\
+     Know ‘Z (u a (SUC n)) x <> PosInf /\ Z (u a (SUC n)) x <> NegInf’
+     >- (FULL_SIMP_TAC std_ss [real_random_variable]) >> Rewr \\
+     Know ‘expectation p (Z (u a (SUC n))) <> PosInf /\
+           expectation p (Z (u a (SUC n))) <> NegInf’
+     >- (MATCH_MP_TAC expectation_finite >> art []) >> Rewr \\
+     rw [extreal_of_num_def] \\
+     Suff ‘0 < u a (SUC n)’ >- ARITH_TAC \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> art [])
+ >> POP_ASSUM K_TAC >> DISCH_TAC
+ (* applying converge_AE_to_limit' *)
+ >> Know ‘!a. 1 < a ==>
+             ((\n x. Z (u a (SUC n)) x / &u a (SUC n)) --> (\x. m))
+              (almost_everywhere p)’
+ >- (rpt STRIP_TAC \\
+     Know ‘m <> PosInf /\ m <> NegInf’
+     >- (ASM_SIMP_TAC std_ss [expectation_def, Abbr ‘m’] \\
+         MATCH_MP_TAC integrable_finite_integral \\
+         FULL_SIMP_TAC std_ss [prob_space_def]) >> STRIP_TAC \\
+     MATCH_MP_TAC converge_AE_to_limit' \\
+     Q.EXISTS_TAC ‘\n. expectation p (Z (u a (SUC n))) / &u a (SUC n)’ >> simp [] \\
+     CONJ_TAC (* real_random_variable *)
+     >- (rw [Abbr ‘Z’] \\
+         MATCH_MP_TAC real_random_variable_LLN_general' >> rw []) \\
+     CONJ_TAC (* expectation <> PosInf | NegInf *)
+     >- (Q.X_GEN_TAC ‘n’ \\
+         Know ‘expectation p (Z (u a (SUC n))) <> PosInf /\
+               expectation p (Z (u a (SUC n))) <> NegInf’
+         >- (MATCH_MP_TAC expectation_finite >> art []) >> DISCH_TAC \\
+        ‘?r. expectation p (Z (u a (SUC n))) = Normal r’
+           by METIS_TAC [extreal_cases] >> POP_ORW \\
+         Suff ‘&u a (SUC n) <> (0 :real)’ >- rw [extreal_div_eq, extreal_of_num_def] \\
+         rw [extreal_of_num_def] \\
+         Suff ‘0 < u a (SUC n)’ >- ARITH_TAC \\
+         FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+     SIMP_TAC std_ss [o_DEF] \\
+  (* applying LIM_SUBSEQUENCE_WEAK *)
+     Q.ABBREV_TAC ‘s = \n. real (expectation p (Z (SUC n)) / &SUC n)’ \\
+     Q.ABBREV_TAC ‘r = \n. PRE (u a (SUC n))’ \\
+     Know ‘(\n. real (expectation p (Z (u a (SUC n))) / &u a (SUC n))) = s o r’
+     >- (rw [FUN_EQ_THM, Abbr ‘s’, Abbr ‘r’, o_DEF] \\
+         Suff ‘SUC (PRE (u a (SUC n))) = u a (SUC n)’ >- rw [] \\
+         rw [GSYM SUC_PRE]) >> Rewr' \\
+     MATCH_MP_TAC LIM_SUBSEQUENCE_WEAK \\
+     CONJ_TAC (* monotone *)
+     >- (qx_genl_tac [‘N1’, ‘N2’] >> rw [Abbr ‘r’] \\
+        ‘0 < u a (SUC N1)’ by PROVE_TAC [] \\
+         rw [INV_PRE_LESS_EQ, Abbr ‘u’] \\
+         MATCH_MP_TAC NUM_FLOOR_MONO \\
+         Know ‘!n. 0 <= a pow (SUC n)’
+         >- (Q.X_GEN_TAC ‘n’ >> MATCH_MP_TAC POW_POS \\
+             PROVE_TAC [REAL_LT_01, REAL_LT_IMP_LE, REAL_LT_TRANS]) >> Rewr \\
+         MATCH_MP_TAC REAL_POW_MONO >> rw [] \\
+         MATCH_MP_TAC REAL_LT_IMP_LE >> art []) \\
+     CONJ_TAC (* infinity *)
+     >- (Q.X_GEN_TAC ‘N’ >> rw [Abbr ‘r’] \\
+         Q.PAT_X_ASSUM ‘!a x. 1 < a ==> ?n. x < &u a (SUC n)’
+           (fn th => MP_TAC (Q.SPEC ‘&N’ (MATCH_MP th (ASSUME “1 < (a :real)”)))) \\
+         RW_TAC real_ss [] \\
+         Q.EXISTS_TAC ‘n’ \\
+         POP_ASSUM MP_TAC >> ARITH_TAC) \\
+     SIMP_TAC std_ss [Abbr ‘s’, Abbr ‘r’, Abbr ‘Z’, Abbr ‘Y’, Abbr ‘m’] \\
+     MATCH_MP_TAC truncated_vars_expectation' >> art [])
+ >> POP_ASSUM K_TAC >> DISCH_TAC
  >> 
     cheat
 QED
