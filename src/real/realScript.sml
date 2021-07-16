@@ -4547,4 +4547,67 @@ Proof
  >> ASM_REWRITE_TAC []
 QED
 
+(* ------------------------------------------------------------------------- *)
+(* More variants of the Archimedian property and useful consequences.        *)
+(* ------------------------------------------------------------------------- *)
+
+Theorem REAL_POW_LBOUND :
+    !x n. &0 <= x ==> &1 + &n * x <= (&1 + x) pow n
+Proof
+  GEN_TAC THEN SIMP_TAC arith_ss[RIGHT_FORALL_IMP_THM] THEN
+  DISCH_TAC THEN INDUCT_TAC THEN
+  REWRITE_TAC[pow, REAL_MUL_LZERO, REAL_ADD_RID, REAL_LE_REFL] THEN
+  REWRITE_TAC[GSYM REAL_OF_NUM_SUC] THEN
+  MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC ``(&1 + x) * (&1 + &n * x)`` THEN
+  reverse CONJ_TAC
+  >- (MATCH_MP_TAC REAL_LE_LMUL_IMP >> ASM_REWRITE_TAC [] \\
+      MATCH_MP_TAC REAL_LE_TRANS \\
+      Q.EXISTS_TAC ‘1’ >> ASM_REWRITE_TAC [REAL_LE_01, REAL_LE_ADDR]) \\
+  SIMP_TAC arith_ss [REAL_ADD_RDISTRIB, REAL_ADD_LDISTRIB, REAL_ADD_ASSOC,
+		     REAL_MUL_LID, REAL_MUL_RID] \\
+  REWRITE_TAC [GSYM REAL_ADD_ASSOC] \\
+  MATCH_MP_TAC REAL_LE_LADD_IMP \\
+  REWRITE_TAC [REAL_ADD_ASSOC, REAL_LE_ADDR] \\
+  MATCH_MP_TAC REAL_LE_MUL >> ASM_REWRITE_TAC [] \\
+  MATCH_MP_TAC REAL_LE_MUL \\
+  ASM_SIMP_TAC arith_ss [real_of_num, REAL_OF_NUM_LE]
+QED
+
+Theorem REAL_ARCH_POW :
+    !x y. &1 < x ==> ?n. y < x pow n
+Proof
+  REPEAT STRIP_TAC THEN
+  MP_TAC(SPEC ``x - &1`` REAL_ARCH) THEN ASM_REWRITE_TAC[REAL_SUB_LT] THEN
+  DISCH_THEN(MP_TAC o SPEC ``y:real``) THEN HO_MATCH_MP_TAC MONO_EXISTS THEN
+  X_GEN_TAC ``n:num`` THEN DISCH_TAC THEN MATCH_MP_TAC REAL_LTE_TRANS THEN
+  EXISTS_TAC ``&1 + &n * (x - &1)`` THEN
+  CONJ_TAC >- (MATCH_MP_TAC REAL_LT_TRANS \\
+               Q.EXISTS_TAC ‘1 + y’ \\
+               reverse CONJ_TAC >- (ASM_REWRITE_TAC [REAL_LT_LADD]) \\
+               REWRITE_TAC [REAL_LT_ADDL, REAL_LT_01]) \\
+  MATCH_MP_TAC (REWRITE_RULE [REAL_SUB_ADD2]
+			     (Q.SPECL [‘x - 1’, ‘n’] REAL_POW_LBOUND)) \\
+  REWRITE_TAC [REAL_SUB_LE] \\
+  MATCH_MP_TAC REAL_LT_IMP_LE >> ASM_REWRITE_TAC []
+QED
+
+Theorem REAL_ARCH_POW_INV :
+    !x:real y. &0 < y /\ x < &1 ==> ?n. x pow n < y
+Proof
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC ``&0 < x:real`` THENL
+   [ALL_TAC, ASM_MESON_TAC[POW_1, REAL_LET_TRANS, REAL_NOT_LT]] THEN
+  SUBGOAL_THEN ``inv(&1) < inv(x:real)`` MP_TAC THENL
+   [ASM_SIMP_TAC std_ss [REAL_LT_INV], REWRITE_TAC[REAL_INV1]] THEN
+  DISCH_THEN(MP_TAC o SPEC ``inv(y:real)`` o MATCH_MP REAL_ARCH_POW) THEN
+  STRIP_TAC THEN EXISTS_TAC ``n:num`` THEN
+  GEN_REWR_TAC BINOP_CONV [GSYM REAL_INV_INV] THEN
+  ASM_SIMP_TAC std_ss [GSYM REAL_POW_INV, REAL_LT_INV_EQ, REAL_LT_INV]
+QED
+
+Theorem REAL_ARCH_POW2 : (* was: REAL_ARCH_POW *)
+    !x. ?n. x < &2 pow n
+Proof
+  SIMP_TAC arith_ss[REAL_ARCH_POW, REAL_LT]
+QED
+
 val _ = export_theory();
