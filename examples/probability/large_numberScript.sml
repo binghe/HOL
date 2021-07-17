@@ -4323,7 +4323,7 @@ Proof
  >> Know ‘!a (x :real). 1 < a ==> ?n. x < &u a (SUC n)’
  >- (rpt STRIP_TAC \\
     ‘1 <= a’ by PROVE_TAC [REAL_LT_IMP_LE] \\
-    ‘0 < a’ by PROVE_TAC [REAL_LT_01, REAL_LT_TRANS] \\
+    ‘0 <  a’ by PROVE_TAC [REAL_LT_01, REAL_LT_TRANS] \\
     ‘0 <= a’ by PROVE_TAC [REAL_LT_IMP_LE] \\
      Cases_on ‘x < 1’
      >- (Q.EXISTS_TAC ‘0’ (* any value is fine here *) \\
@@ -4351,7 +4351,7 @@ Proof
  >> Know ‘!a. 1 < a ==> (W a --> (\x. 0)) (almost_everywhere p)’
  >- (rpt STRIP_TAC \\
     ‘1 <= a’ by PROVE_TAC [REAL_LT_IMP_LE] \\
-    ‘0 < a’ by PROVE_TAC [REAL_LT_01, REAL_LT_TRANS] \\
+    ‘0 <  a’ by PROVE_TAC [REAL_LT_01, REAL_LT_TRANS] \\
     ‘0 <= a’ by PROVE_TAC [REAL_LT_IMP_LE] \\
     ‘a <> 0’ by PROVE_TAC [REAL_LT_IMP_NE] \\
      Q.PAT_X_ASSUM ‘!a n. 1 < a ==> 0 < u a n’
@@ -4428,26 +4428,23 @@ Proof
      ONCE_REWRITE_TAC [mul_comm] \\
   (* now use the estimates of variance p (Z n) in assumptions *)
      MATCH_MP_TAC let_trans \\
-     Q.EXISTS_TAC ‘suminf (\n. inv (Normal (&u a (SUC n) pow 2)) * inv (e pow 2) *
-                              (\n. &n *
-                                   expectation p
-                                     (\x. X 0 x pow 2 *
-                                          indicator_fn {x | x IN p_space p /\ abs (X 0 x) < &n} x))
-                              (u a (SUC n)))’ >> BETA_TAC \\
+     Q.EXISTS_TAC
+      ‘suminf (\n. inv (Normal (&u a (SUC n) pow 2)) * inv (e pow 2) *
+                   (\n. &n * expectation p
+                               (\x. X 0 x pow 2 *
+                                    indicator_fn {x | x IN p_space p /\ abs (X 0 x) < &n} x))
+                   (u a (SUC n)))’ >> BETA_TAC \\
      CONJ_TAC
      >- (MATCH_MP_TAC ext_suminf_mono >> BETA_TAC \\
          Know ‘!n. 0 <= inv (Normal (&u a (SUC n) pow 2)) * inv (e pow 2)’
          >- (Q.X_GEN_TAC ‘n’ \\
              MATCH_MP_TAC le_mul \\
-             reverse CONJ_TAC >- (MATCH_MP_TAC le_inv \\
-                                  MATCH_MP_TAC pow_pos_lt >> art []) \\
-             MATCH_MP_TAC le_inv \\
-             RW_TAC arith_ss [extreal_of_num_def, extreal_lt_eq, ZERO_LT_POW]) \\
-         DISCH_TAC \\
-         CONJ_TAC >- (Q.X_GEN_TAC ‘n’ \\
-                      MATCH_MP_TAC le_mul >> rw [variance_pos]) \\
-         Q.X_GEN_TAC ‘n’ \\
-         MATCH_MP_TAC le_lmul_imp >> art []) \\
+             CONJ_TAC >> MATCH_MP_TAC le_inv >| (* 2 subgoals *)
+             [ RW_TAC arith_ss [extreal_of_num_def, extreal_lt_eq, ZERO_LT_POW],
+               MATCH_MP_TAC pow_pos_lt >> art [] ]) >> DISCH_TAC \\
+         CONJ_TAC >> Q.X_GEN_TAC ‘n’ >| (* 2 subgoals *)
+         [ MATCH_MP_TAC le_mul >> rw [variance_pos],
+           MATCH_MP_TAC le_lmul_imp >> art [] ]) \\
      NTAC 2 (Q.PAT_X_ASSUM ‘!n. variance p (Z n) <= _’ K_TAC) \\
      Q.PAT_X_ASSUM ‘!n. real_random_variable (Z n) p’  K_TAC \\
      Q.PAT_X_ASSUM ‘!n. integrable p (Z n)’            K_TAC \\
@@ -4463,12 +4460,11 @@ Proof
      >- (rw [extreal_inv_eq, extreal_mul_def, extreal_pow_def]) >> Rewr' \\
   (* stage work *)
     ‘e <> NegInf’ by PROVE_TAC [pos_not_neginf, lt_imp_le] \\
-    ‘?E. e = Normal E /\ 0 < E’
-        by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_lt_eq] \\
-     Q.PAT_X_ASSUM ‘e = Normal E’ (REWRITE_TAC o wrap) \\
-     Q.PAT_X_ASSUM ‘0 < e’       K_TAC \\
-     Q.PAT_X_ASSUM ‘e <> PosInf’ K_TAC \\
-     Q.PAT_X_ASSUM ‘e <> NegInf’ K_TAC \\
+    ‘?E. 0 < E /\ e = Normal E’
+       by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_lt_eq] >> POP_ORW \\
+     Q.PAT_X_ASSUM ‘0 < e’         K_TAC \\
+     Q.PAT_X_ASSUM ‘e <> PosInf’   K_TAC \\
+     Q.PAT_X_ASSUM ‘e <> NegInf’   K_TAC \\
     ‘E pow 2 <> 0’ by METIS_TAC [POW_NZ, REAL_LT_IMP_NE] \\
      ASM_SIMP_TAC real_ss [extreal_pow_def, extreal_inv_def, extreal_mul_def] \\
      Know ‘!n. Normal (inv (&u a (SUC n)) * inv (E pow 2)) *
@@ -5000,7 +4996,7 @@ Proof
        rw [extreal_of_num_def, extreal_lt_eq] \\
        Q.EXISTS_TAC ‘n’ >> rw [] ])
  >> POP_ASSUM K_TAC >> DISCH_TAC
- (* clean up all assumptions of Y, Z and f *)
+ (* clean up all assumptions about Y, Z and f *)
  >> Q.PAT_X_ASSUM ‘!n. real_random_variable (Y n) p’            K_TAC
  >> Q.PAT_X_ASSUM ‘!n x. x IN p_space p ==> P’                  K_TAC
  >> Q.PAT_X_ASSUM ‘pairwise_indep_vars p Y (\n. Borel) UNIV’    K_TAC
@@ -5014,6 +5010,8 @@ Proof
  >> Q.PAT_X_ASSUM ‘!n. f n IN Borel_measurable Borel’           K_TAC
  >> qunabbrevl_tac [‘Y’, ‘Z’, ‘f’]
  >> Q.PAT_X_ASSUM ‘!b n. 1 < b ==> b pow n / 2 <= &u b n’       K_TAC
+ >> Q.PAT_X_ASSUM ‘!n c. _ IN events p’                         K_TAC
+ (* stage work (10 assumptions left) *)
  >> 
     cheat
 QED
