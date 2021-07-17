@@ -2666,6 +2666,7 @@ Proof
  >> PROVE_TAC [let_antisym]
 QED
 
+(* This lemma depends on LIM_SEQUENTIALLY_CESARO (moved to real_topologyTheory) *)
 Theorem truncated_vars_expectation' :
     !p X. prob_space p /\ (!n. real_random_variable (X n) p) /\
           identical_distribution p X Borel UNIV /\ integrable p (X 0) ==>
@@ -4153,8 +4154,7 @@ Proof
      RW_TAC std_ss [Abbr ‘u’] \\
      STRIP_ASSUME_TAC
        (Q.SPEC ‘2 * x’ (MATCH_MP REAL_ARCH_POW (ASSUME “1 < (a :real)”))) \\
-     Q.EXISTS_TAC ‘n’ \\
-     MATCH_MP_TAC REAL_LT_TRANS \\
+     Q.EXISTS_TAC ‘n’ >> MATCH_MP_TAC REAL_LT_TRANS \\
      Q.EXISTS_TAC ‘a pow n / 2’ \\
      CONJ_TAC >- rw [REAL_LT_RDIV_EQ] \\
      MATCH_MP_TAC NUM_FLOOR_lower_bound \\
@@ -4754,6 +4754,12 @@ Proof
      SIMP_TAC std_ss [Abbr ‘s’, Abbr ‘r’, Abbr ‘Z’, Abbr ‘Y’, Abbr ‘m’] \\
      MATCH_MP_TAC truncated_vars_expectation' >> art [])
  >> POP_ASSUM K_TAC >> DISCH_TAC
+ (* stage work, applying equivalent_lemma *)
+ >> Know ‘((\n x. SIGMA (\i. X i x) (count (u a (SUC n))) / &u a (SUC n)) --> (\x. m))
+          (almost_everywhere p)’
+ >- (FULL_SIMP_TAC std_ss [Abbr ‘Z’] \\
+     
+     cheat)
  >> 
     cheat
 QED
