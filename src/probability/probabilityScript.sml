@@ -6502,7 +6502,7 @@ Proof
 QED
 
 Theorem PROB_ZERO_AE_EQ :
-    !p E. prob_space p /\ E IN events p ==> ((prob p E = 0) <=> AE x::p. x NOTIN E)
+    !p E. prob_space p /\ E IN events p ==> (prob p E = 0 <=> AE x::p. x NOTIN E)
 Proof
     rpt STRIP_TAC
  >> EQ_TAC >- (DISCH_TAC >> MATCH_MP_TAC PROB_ZERO_AE >> art [])
@@ -6522,7 +6522,7 @@ Proof
 QED
 
 Theorem PROB_ONE_AE :
-    !p E. prob_space p /\ E IN events p /\ (prob p E = 1 ==> AE x::p. x IN E
+    !p E. prob_space p /\ E IN events p /\ (prob p E = 1) ==> AE x::p. x IN E
 Proof
     RW_TAC std_ss [AE_DEF, null_set_def]
  >> Q.EXISTS_TAC `m_space p DIFF E`
