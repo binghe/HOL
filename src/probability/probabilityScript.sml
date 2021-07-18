@@ -6501,8 +6501,28 @@ Proof
  >> fs [prob_space_def, events_def, prob_def]
 QED
 
+Theorem PROB_ZERO_AE_EQ :
+    !p E. prob_space p /\ E IN events p ==> ((prob p E = 0) <=> AE x::p. x NOTIN E)
+Proof
+    rpt STRIP_TAC
+ >> EQ_TAC >- (DISCH_TAC >> MATCH_MP_TAC PROB_ZERO_AE >> art [])
+ >> RW_TAC std_ss [AE_DEF, null_set_def]
+ >> fs [prob_space_def, events_def, prob_def]
+ >> Know ‘E SUBSET N’
+ >- (rw [SUBSET_DEF] \\
+    ‘x IN m_space p’ by PROVE_TAC [MEASURE_SPACE_IN_MSPACE] \\
+     METIS_TAC [])
+ >> DISCH_TAC
+ >> reverse (rw [GSYM le_antisym])
+ >- (‘positive p’ by PROVE_TAC [MEASURE_SPACE_POSITIVE] \\
+     fs [positive_def])
+ >> Q.PAT_X_ASSUM ‘measure p N = 0’ (ONCE_REWRITE_TAC o wrap o (MATCH_MP EQ_SYM))
+ >> MATCH_MP_TAC INCREASING >> art []
+ >> MATCH_MP_TAC MEASURE_SPACE_INCREASING >> art []
+QED
+
 Theorem PROB_ONE_AE :
-    !p E. prob_space p /\ E IN events p /\ (prob p E = 1) ==> AE x::p. x IN E
+    !p E. prob_space p /\ E IN events p /\ (prob p E = 1 ==> AE x::p. x IN E
 Proof
     RW_TAC std_ss [AE_DEF, null_set_def]
  >> Q.EXISTS_TAC `m_space p DIFF E`
@@ -6514,6 +6534,41 @@ Proof
  >> FULL_SIMP_TAC std_ss [prob_space_def, events_def, prob_def, p_space_def,
                           sub_refl, extreal_not_infty, extreal_of_num_def]
  >> MATCH_MP_TAC MEASURE_SPACE_COMPL >> art []
+QED
+
+Theorem PROB_ONE_AE_EQ :
+    !p E. prob_space p /\ E IN events p ==> (prob p E = 1 <=> AE x::p. x IN E)
+Proof
+    rpt STRIP_TAC
+ >> EQ_TAC >- (DISCH_TAC >> MATCH_MP_TAC PROB_ONE_AE >> art [])
+ >> RW_TAC std_ss [AE_DEF, null_set_def]
+ >> fs [prob_space_def, events_def, prob_def]
+ >> Q.ABBREV_TAC ‘E' = m_space p DIFF E’
+ >> ‘E' IN measurable_sets p’ by METIS_TAC [MEASURE_SPACE_COMPL]
+ >> Know ‘E = m_space p DIFF E'’
+ >- (rw [Once EXTENSION, Abbr ‘E'’] \\
+     EQ_TAC >> rw [] \\
+     PROVE_TAC [MEASURE_SPACE_IN_MSPACE])
+ >> Rewr'
+ >> Know ‘measure p (m_space p DIFF E') = measure p (m_space p) - measure p E'’
+ >- (MATCH_MP_TAC MEASURE_COMPL >> rw [Abbr ‘E'’] \\
+     MATCH_MP_TAC let_trans \\
+     Q.EXISTS_TAC ‘measure p (m_space p)’ \\
+     reverse CONJ_TAC >- rw [lt_infty, extreal_of_num_def] \\
+     MATCH_MP_TAC INCREASING >> rw []
+     >- (MATCH_MP_TAC MEASURE_SPACE_INCREASING >> art []) \\
+     MATCH_MP_TAC MEASURE_SPACE_SPACE >> art [])
+ >> Rewr'
+ >> Suff ‘measure p E' = 0’ >- rw []
+ >> reverse (rw [GSYM le_antisym])
+ >- (‘positive p’ by PROVE_TAC [MEASURE_SPACE_POSITIVE] \\
+     fs [positive_def])
+ >> Q.PAT_X_ASSUM ‘measure p N = 0’ (ONCE_REWRITE_TAC o wrap o (MATCH_MP EQ_SYM))
+ >> Know ‘E' SUBSET N’
+ >- (rw [SUBSET_DEF, Abbr ‘E'’] >> METIS_TAC [])
+ >> DISCH_TAC
+ >> MATCH_MP_TAC INCREASING >> art []
+ >> MATCH_MP_TAC MEASURE_SPACE_INCREASING >> art []
 QED
 
 (* Theorem 3.2.1, Part I [2, p.45] *)
