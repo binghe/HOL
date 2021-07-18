@@ -2361,9 +2361,9 @@ val set_limsup_alt = store_thm
      Q.EXISTS_TAC `x'` >> art [])
  >> Q.EXISTS_TAC `n` >> PROVE_TAC []);
 
-(* this lemma implicitly assume `events p = UNIV` *)
-val liminf_limsup = store_thm
-  ("liminf_limsup", ``!(E :num -> 'a set). COMPL (liminf E) = limsup (COMPL o E)``,
+Theorem LIMSUP_COMPL : (* was: liminf_limsup *)
+    !(E :num -> 'a set). COMPL (liminf E) = limsup (COMPL o E)
+Proof
     RW_TAC std_ss [set_limsup_def, set_liminf_def]
  >> SIMP_TAC std_ss [COMPL_BIGUNION_IMAGE, o_DEF]
  >> Suff `!m. COMPL (BIGINTER {E n | m <= n}) = BIGUNION {COMPL (E n) | m <= n}` >- Rewr
@@ -2375,11 +2375,12 @@ val liminf_limsup = store_thm
  >- (fs [COMPL_COMPL] >> Q.EXISTS_TAC `n` >> art [])
  >> fs []
  >> Q.EXISTS_TAC `E n` >> art []
- >> Q.EXISTS_TAC `n` >> art []);
+ >> Q.EXISTS_TAC `n` >> art []
+QED
 
-val liminf_limsup_sp = store_thm (* more general form *)
-  ("liminf_limsup_sp",
-  ``!sp E. (!n. E n SUBSET sp) ==> (sp DIFF (liminf E) = limsup (\n. sp DIFF (E n)))``,
+Theorem LIMSUP_DIFF : (* was: liminf_limsup_sp *)
+    !sp E. (!n. E n SUBSET sp) ==> (sp DIFF (liminf E) = limsup (\n. sp DIFF (E n)))
+Proof
     RW_TAC std_ss [set_limsup_def, set_liminf_def]
  >> Q.ABBREV_TAC `f = (\m. BIGINTER {E n | m <= n})`
  >> Know `!m. f m SUBSET sp`
@@ -2401,7 +2402,8 @@ val liminf_limsup_sp = store_thm (* more general form *)
  >> EQ_TAC >> rpt STRIP_TAC
  >- (Q.EXISTS_TAC `n` >> METIS_TAC [])
  >> Q.EXISTS_TAC `E n` >> art []
- >> Q.EXISTS_TAC `n` >> art []);
+ >> Q.EXISTS_TAC `n` >> art []
+QED
 
 (* A point belongs to `limsup E` if and only if it belongs to infinitely
    many terms of the sequence E. [2, p.76]
@@ -2436,7 +2438,7 @@ Theorem IN_LIMINF :
     !A x. x IN liminf A <=> ?m. !n. m <= n ==> x IN (A n)
 Proof
     rpt GEN_TAC
- >> ASSUME_TAC (SIMP_RULE std_ss [GSYM liminf_limsup, IN_COMPL, o_DEF]
+ >> ASSUME_TAC (SIMP_RULE std_ss [GSYM LIMSUP_COMPL, IN_COMPL, o_DEF]
                                  (Q.SPECL [`COMPL o A`, `x`] IN_LIMSUP))
  >> `x IN liminf A <=> ~(?N. INFINITE N /\ !n. n IN N ==> x NOTIN A n)` by PROVE_TAC []
  >> fs [infinitely_often_lemma]
