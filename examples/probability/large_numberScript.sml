@@ -4568,8 +4568,7 @@ Proof
            (STRIP_ASSUME_TAC o (CONV_RULE FORALL_AND_CONV) o
             (REWRITE_RULE [real_random_variable, p_space_def, events_def])) \\
          MATCH_MP_TAC IN_MEASURABLE_BOREL_POW >> art []) \\
-     Q.UNABBREV_TAC ‘g’ \\
-     DISCH_THEN (ONCE_REWRITE_TAC o wrap o BETA_RULE) \\
+     Q.UNABBREV_TAC ‘g’ >> BETA_TAC >> Rewr' \\
   (* now let's move out ‘inv (E pow 2)’ *)
      REWRITE_TAC [Once (GSYM extreal_mul_def)] \\
     ‘!n. Normal (inv (&u a (SUC n))) * Normal (inv (E pow 2)) =
@@ -4603,8 +4602,7 @@ Proof
          >- (MATCH_MP_TAC pos_not_neginf \\
              MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
              MATCH_MP_TAC ext_suminf_pos >> art []) >> DISCH_TAC \\
-        ‘?r. pos_fn_integral p (\x. suminf (g x)) = Normal r’
-           by METIS_TAC [extreal_cases] >> POP_ORW  \\
+        ‘?r. pos_fn_integral p (\x. suminf (g x)) = Normal r’ by METIS_TAC [extreal_cases] \\
          rw [extreal_mul_def]) \\
      Q.PAT_X_ASSUM ‘0 < E’            K_TAC \\
      Q.PAT_X_ASSUM ‘E pow 2 <> 0’     K_TAC \\
@@ -5000,7 +4998,7 @@ Proof
  >> qunabbrevl_tac [‘Y’, ‘Z’, ‘f’]
  >> Q.PAT_X_ASSUM ‘!b n. 1 < b ==> b pow n / 2 <= &u b n’       K_TAC
  >> Q.PAT_X_ASSUM ‘!n c. _ IN events p’                         K_TAC
- (* final stage (10 assumptions left) *)
+ (* final stage *)
  >> Q.ABBREV_TAC ‘S = \n x. SIGMA (\i. X i x) (count n)’ >> fs []
  >> Know ‘((\n x. S (SUC n) x / &SUC n) --> (\x. m)) (almost_everywhere p) <=>
           !e. 0 < e /\ e <> PosInf ==>
