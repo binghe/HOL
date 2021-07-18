@@ -1001,7 +1001,8 @@ Proof
          HO_MATCH_MP_TAC IN_MEASURABLE_BOREL_POW \\
          MATCH_MP_TAC IN_MEASURABLE_BOREL_SUB' \\
          qexistsl_tac [‘S i’, ‘S (n ** 2)’] \\
-         FULL_SIMP_TAC std_ss [measure_space_def]) >> BETA_TAC >> Rewr' \\
+         FULL_SIMP_TAC std_ss [measure_space_def]) \\
+     DISCH_THEN (ONCE_REWRITE_TAC o wrap o BETA_RULE) \\
      MATCH_MP_TAC pos_fn_integral_mono \\
      RW_TAC std_ss [le_pow2] \\
     `DISJOINT {f n x} (N n DELETE (f n x))` by SET_TAC [] \\
@@ -1283,7 +1284,8 @@ Proof
               (\x. Normal ((inv &(SUC n ** 2)) pow 2) * (\x. (D (SUC n) x) pow 2) x) =
            Normal ((inv &(SUC n ** 2)) pow 2) * pos_fn_integral p (\x. (D (SUC n) x) pow 2)`
      >- (MATCH_MP_TAC pos_fn_integral_cmul \\
-         fs [prob_space_def, le_pow2]) >> BETA_TAC >> Rewr' \\
+         fs [prob_space_def, le_pow2]) \\
+     DISCH_THEN (ONCE_REWRITE_TAC o wrap o BETA_RULE) \\
      Q.ABBREV_TAC `c = Normal ((inv &(SUC n ** 2)) pow 2)` \\
      MATCH_MP_TAC let_trans \\
      Q.EXISTS_TAC `c * (&(2 * SUC n + 1) pow 2) * M` \\
@@ -1397,7 +1399,8 @@ Proof
                Normal ((inv &(SUC n ** 2)) pow 2) *
                  pos_fn_integral p (\x. (D (SUC n) x) pow 2)`
      >- (GEN_TAC >> MATCH_MP_TAC pos_fn_integral_cmul \\
-         fs [prob_space_def, le_pow2]) >> BETA_TAC >> Rewr' \\
+         fs [prob_space_def, le_pow2]) \\
+     DISCH_THEN (ONCE_REWRITE_TAC o wrap o BETA_RULE) \\
      ONCE_REWRITE_TAC [mul_assoc] \\
      MATCH_MP_TAC let_trans \\
      Q.EXISTS_TAC `suminf (\n. inv (e pow 2) * Normal ((inv &(SUC n ** 2)) pow 2) *
@@ -1905,7 +1908,8 @@ Proof
                  fn_plus (g x) i - fn_minus (g x) i`
      >- (rpt GEN_TAC \\
         `(\i. indicator_fn (m_space p DIFF N) x * (X i x - Y i x)) = g x` by METIS_TAC [] \\
-         POP_ORW >> REWRITE_TAC [GSYM FN_DECOMP]) >> BETA_TAC >> Rewr' \\
+         POP_ORW >> REWRITE_TAC [GSYM FN_DECOMP]) \\
+     DISCH_THEN (ONCE_REWRITE_TAC o wrap o BETA_RULE) \\
      Know `!x. x IN m_space p ==>
                SIGMA (\i. fn_plus (g x) i - fn_minus (g x) i) (count (f x)) =
                SIGMA (fn_plus  (g x)) (count (f x)) -
@@ -4345,7 +4349,15 @@ Proof
      MATCH_MP_TAC NUM_FLOOR_lower_bound \\
      MATCH_MP_TAC REAL_POW_LE_1 >> art [])
  >> DISCH_TAC
- (* stage work *)
+ >> Know ‘!a i j. 1 < a /\ i <= j ==> u a i <= u a j’
+ >- (rw [Abbr ‘u’] \\
+     MATCH_MP_TAC NUM_FLOOR_MONO \\
+    ‘0 <= a’ by PROVE_TAC [REAL_LT_01, REAL_LT_IMP_LE, REAL_LT_TRANS] \\
+    ‘1 <= a’ by PROVE_TAC [REAL_LT_IMP_LE] \\
+     Know ‘!n. 0 <= a pow n’ >- PROVE_TAC [POW_POS] >> Rewr \\
+     MATCH_MP_TAC REAL_POW_MONO >> RW_TAC arith_ss [])
+ >> DISCH_TAC
+(* stage work *)
  >> Q.ABBREV_TAC ‘A = \n x. (Z n x - expectation p (Z n)) / &n’
  >> Q.ABBREV_TAC ‘W = \a n x. A (u a (SUC n)) x’
  >> Know ‘!a. 1 < a ==> (W a --> (\x. 0)) (almost_everywhere p)’
@@ -4510,7 +4522,8 @@ Proof
            MATCH_MP_TAC pow_le >> REWRITE_TAC [abs_pos] \\
            MATCH_MP_TAC lt_imp_le >> art [],
            (* goal 2 (of 2) *)
-           rw [extreal_of_num_def, extreal_le_eq] ]) >> BETA_TAC >> Rewr' \\
+           rw [extreal_of_num_def, extreal_le_eq] ]) \\
+     DISCH_THEN (ONCE_REWRITE_TAC o wrap o BETA_RULE) \\
   (* preparing for swapping ‘suminf’ and ‘expectation’ *)
      FULL_SIMP_TAC std_ss [prob_space_def, p_space_def, events_def] \\
      Know ‘!n. expectation p
@@ -4555,7 +4568,8 @@ Proof
            (STRIP_ASSUME_TAC o (CONV_RULE FORALL_AND_CONV) o
             (REWRITE_RULE [real_random_variable, p_space_def, events_def])) \\
          MATCH_MP_TAC IN_MEASURABLE_BOREL_POW >> art []) \\
-     Q.UNABBREV_TAC ‘g’ >> BETA_TAC >> Rewr' \\
+     Q.UNABBREV_TAC ‘g’ \\
+     DISCH_THEN (ONCE_REWRITE_TAC o wrap o BETA_RULE) \\
   (* now let's move out ‘inv (E pow 2)’ *)
      REWRITE_TAC [Once (GSYM extreal_mul_def)] \\
     ‘!n. Normal (inv (&u a (SUC n))) * Normal (inv (E pow 2)) =
@@ -4676,12 +4690,7 @@ Proof
            numLib.LEAST_ELIM_TAC >> simp [] \\
            Q.X_GEN_TAC ‘i’ >> rw [] \\
            MATCH_MP_TAC REAL_LTE_TRANS \\
-           Q.EXISTS_TAC ‘&u a (SUC i)’ >> art [] \\
-           FULL_SIMP_TAC real_ss [Abbr ‘u’] \\
-           MATCH_MP_TAC NUM_FLOOR_MONO \\
-          ‘0 <= a’ by PROVE_TAC [REAL_LT_01, REAL_LT_IMP_LE, REAL_LT_TRANS] \\
-           Know ‘!n. 0 <= a pow n’ >- PROVE_TAC [POW_POS] >> Rewr \\
-           MATCH_MP_TAC REAL_POW_MONO >> RW_TAC arith_ss [] ]) >> Rewr' \\
+           Q.EXISTS_TAC ‘&u a (SUC i)’ >> rw [] ]) >> Rewr' \\
      Q.PAT_X_ASSUM ‘!n. &u a n pow 2 <> 0’ K_TAC \\
   (* eliminate NUM_FLOOR (flr), left only ‘N’ in the goal *)
      FULL_SIMP_TAC std_ss [Abbr ‘u’] \\
@@ -4915,13 +4924,7 @@ Proof
      CONJ_TAC (* monotone *)
      >- (qx_genl_tac [‘i’, ‘j’] >> rw [Abbr ‘r’] \\
         ‘0 < u a (SUC i)’ by PROVE_TAC [] \\
-         rw [INV_PRE_LESS_EQ, Abbr ‘u’] \\
-         MATCH_MP_TAC NUM_FLOOR_MONO \\
-         Know ‘!n. 0 <= a pow (SUC n)’
-         >- (Q.X_GEN_TAC ‘n’ >> MATCH_MP_TAC POW_POS \\
-             PROVE_TAC [REAL_LT_01, REAL_LT_IMP_LE, REAL_LT_TRANS]) >> Rewr \\
-         MATCH_MP_TAC REAL_POW_MONO >> rw [] \\
-         MATCH_MP_TAC REAL_LT_IMP_LE >> art []) \\
+         rw [INV_PRE_LESS_EQ]) \\
      CONJ_TAC (* infinity *)
      >- (Q.X_GEN_TAC ‘N’ >> rw [Abbr ‘r’] \\
          Q.PAT_X_ASSUM ‘!a x. 1 < a ==> ?n. x < &u a (SUC n)’
@@ -4939,24 +4942,18 @@ Proof
  >- (rpt STRIP_TAC \\
      FULL_SIMP_TAC std_ss [Abbr ‘Z’] \\
      HO_MATCH_MP_TAC equivalent_thm4 \\
-     Q.EXISTS_TAC ‘Y’ >> rw [] >| (* 7 subgoals *)
-     [ (* goal 1 (of 7): equivalent *)
+     Q.EXISTS_TAC ‘Y’ >> rw [] >| (* 6 subgoals *)
+     [ (* goal 1 (of 6): equivalent *)
        ASM_REWRITE_TAC [Once equivalent_comm],
-       (* goal 2 (of 7): real_random_variable *)
+       (* goal 2 (of 6): real_random_variable *)
        MATCH_MP_TAC real_random_variable_const >> art [] \\
        PROVE_TAC [expectation_finite],
-       (* goal 3 (of 7): ‘0 < &u a (SUC n)’ *)
+       (* goal 3 (of 6): ‘0 < &u a (SUC n)’ *)
        rw [extreal_of_num_def, extreal_lt_eq],
-       (* goal 4 (of 7): mono_increasing *)
+       (* goal 4 (of 6): mono_increasing *)
        simp [ext_mono_increasing_def] \\
-       qx_genl_tac [‘i’, ‘j’] >> rw [extreal_of_num_def, extreal_le_eq, Abbr ‘u’] \\
-       MATCH_MP_TAC NUM_FLOOR_MONO \\
-       Know ‘!n. 0 <= a pow (SUC n)’
-       >- (Q.X_GEN_TAC ‘n’ >> MATCH_MP_TAC POW_POS \\
-           PROVE_TAC [REAL_LT_01, REAL_LT_IMP_LE, REAL_LT_TRANS]) >> Rewr \\
-       MATCH_MP_TAC REAL_POW_MONO >> rw [] \\
-       MATCH_MP_TAC REAL_LT_IMP_LE >> art [],
-       (* goal 5 (of 7): sup = PosInf *)
+       qx_genl_tac [‘i’, ‘j’] >> rw [extreal_of_num_def, extreal_le_eq],
+       (* goal 5 (of 6): sup = PosInf *)
        rw [sup_eq', le_infty] \\
        CCONTR_TAC >> FULL_SIMP_TAC std_ss [lt_infty] \\
        Cases_on ‘0 <= y’ >| (* 2 subgoals *)
@@ -4981,15 +4978,7 @@ Proof
          CCONTR_TAC >> FULL_SIMP_TAC std_ss [] \\
          Know ‘&u a 1 < (0 :extreal)’ >- PROVE_TAC [let_trans] \\
          rw [extreal_of_num_def, extreal_lt_eq] ],
-       (* goal 6 (of 7): u is monotone *)
-       rename1 ‘u a (SUC i) <= u a (SUC j)’ >> rw [Abbr ‘u’] \\
-       MATCH_MP_TAC NUM_FLOOR_MONO \\
-       Know ‘!n. 0 <= a pow (SUC n)’
-       >- (Q.X_GEN_TAC ‘n’ >> MATCH_MP_TAC POW_POS \\
-           PROVE_TAC [REAL_LT_01, REAL_LT_IMP_LE, REAL_LT_TRANS]) >> Rewr \\
-       MATCH_MP_TAC REAL_POW_MONO >> rw [] \\
-       MATCH_MP_TAC REAL_LT_IMP_LE >> art [],
-       (* goal 7 (of 7): u is unbounded *)
+       (* goal 6 (of 6): u is unbounded *)
        rename1 ‘?n. N <= u a (SUC n)’ \\
        Q.PAT_X_ASSUM ‘!a x. 1 < a ==> ?n. x < &u a (SUC n)’
          (fn th => MP_TAC (Q.SPEC ‘&N’ (MATCH_MP th (ASSUME “1 < (a :real)”)))) \\
@@ -5011,7 +5000,24 @@ Proof
  >> qunabbrevl_tac [‘Y’, ‘Z’, ‘f’]
  >> Q.PAT_X_ASSUM ‘!b n. 1 < b ==> b pow n / 2 <= &u b n’       K_TAC
  >> Q.PAT_X_ASSUM ‘!n c. _ IN events p’                         K_TAC
- (* stage work (10 assumptions left) *)
+ (* final stage (10 assumptions left) *)
+ >> Q.ABBREV_TAC ‘S = \n x. SIGMA (\i. X i x) (count n)’ >> fs []
+ >> Know ‘((\n x. S (SUC n) x / &SUC n) --> (\x. m)) (almost_everywhere p) <=>
+          !e. 0 < e /\ e <> PosInf ==>
+              prob p (limsup (\n. {x | x IN p_space p /\
+                                       e < abs ((\n x. S (SUC n) x / &SUC n) n x -
+                                                (\x. m) x)})) = 0’
+ >- (MATCH_MP_TAC converge_AE_alt_limsup \\
+    ‘m <> PosInf /\ m <> NegInf’ by METIS_TAC [expectation_finite] \\
+     rw [real_random_variable_const, Abbr ‘S’] \\
+     MATCH_MP_TAC real_random_variable_LLN' >> art [])
+ >> DISCH_THEN (ONCE_REWRITE_TAC o wrap o BETA_RULE)
+ >> rpt STRIP_TAC
+(*
+ >> Suff ‘!a d. 1 < a /\ 1 < d ==> F’
+ >- (
+     cheat)
+ *)
  >> 
     cheat
 QED
@@ -5170,22 +5176,6 @@ Proof
      ‘(\x. -min x 0) = extreal_ainv o (\x. min x 0)’ by rw [o_DEF] >> POP_ORW \\
       MATCH_MP_TAC MEASURABLE_COMP >> Q.EXISTS_TAC ‘Borel’ \\
       REWRITE_TAC [IN_MEASURABLE_BOREL_BOREL_MIN, IN_MEASURABLE_BOREL_BOREL_AINV] ]
-QED
-
-(* The Strong Law of Large Numbers for I.I.D. Random Variables - The Divergence Part
-
-   This is Theorem 5.4.2 (Part 2) of [2, p.133].
- *)
-Theorem SLLN_IID_divergence :
-    !p X. prob_space p /\ (!n. real_random_variable (X n) p) /\
-          pairwise_indep_vars p X (\n. Borel) UNIV /\
-          identical_distribution p X Borel UNIV /\
-          expectation p (abs o X 0) = PosInf
-      ==> let Z n x = SIGMA (\i. X i x) (count n)
-          in AE x::p.
-                limsup (\n. abs (Z (SUC n) x - expectation p (Z (SUC n))) / &SUC n) = PosInf
-Proof
-    cheat
 QED
 
 val _ = export_theory ();
