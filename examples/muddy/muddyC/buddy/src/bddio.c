@@ -1,5 +1,5 @@
 /*========================================================================
-               Copyright (C) 1996-2001 by Jorn Lind-Nielsen
+               Copyright (C) 1996-2002 by Jorn Lind-Nielsen
                             All rights reserved
 
     Permission is hereby granted, without written agreement and without
@@ -28,7 +28,7 @@
 ========================================================================*/
 
 /*************************************************************************
-  $Header$
+  $Header: /cvsroot/buddy/buddy/src/bddio.c,v 1.1.1.1 2004/06/25 13:22:14 haimcohen Exp $
   FILE:  bddio.c
   DESCR: File I/O routines for BDD package
   AUTH:  Jorn Lind
@@ -554,7 +554,7 @@ static int bdd_loaddata(FILE *ifile)
       if (low<0 || high<0 || var<0)
 	 return bdd_error(BDD_FORMAT);
 
-      root = bdd_addref( bdd_ite(bdd_ithvar(var), high, low) );
+      root = bdd_addref( bdd_ite(BDD_ithvar(var), high, low) );
 
       loadhash_add(key, root);
    }

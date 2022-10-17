@@ -1,5 +1,35 @@
 /*========================================================================
-               Copyright (C) 1996-2001 by Jorn Lind-Nielsen
+  Copyright (c) 2022 Randal E. Bryant, Carnegie Mellon University
+  
+  As noted below, this code is a modified version of code authored and
+  copywrited by Jorn Lind-Nielsen.  Permisssion to use the original
+  code is subject to the terms noted below.
+
+  Regarding the modifications, and subject to any constraints on the
+  use of the original code, permission is hereby granted, free of
+  charge, to any person obtaining a copy of this software and
+  associated documentation files (the "Software"), to deal in the
+  Software without restriction, including without limitation the
+  rights to use, copy, modify, merge, publish, distribute, sublicense,
+  and/or sell copies of the Software, and to permit persons to whom
+  the Software is furnished to do so, subject to the following
+  conditions:
+  
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+  
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+========================================================================*/
+
+/*========================================================================
+               Copyright (C) 1996-2002 by Jorn Lind-Nielsen
                             All rights reserved
 
     Permission is hereby granted, without written agreement and without
@@ -28,7 +58,7 @@
 ========================================================================*/
 
 /*************************************************************************
-  $Header$
+  $Header: /cvsroot/buddy/buddy/src/kernel.c,v 1.2 2004/07/13 21:04:36 haimcohen Exp $
   FILE:  kernel.c
   DESCR: implements the bdd kernel functions.
   AUTH:  Jorn Lind
@@ -38,6 +68,7 @@
            as makenode may resize/move the nodetable.
 
 *************************************************************************/
+#include "config.h"
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -47,6 +78,10 @@
 #include "kernel.h"
 #include "cache.h"
 #include "prime.h"
+
+#if ENABLE_TBDD
+#include "prover.h"
+#endif
 
 /*************************************************************************
   Various definitions and global variables
@@ -118,28 +153,67 @@ static bdd2inthandler resize_handler;  /* Node-table-resize handler */
 
    /* Strings for all error mesages */
 static char *errorstrings[BDD_ERRNUM] =
-{ "Out of memory", "Unknown variable", "Value out of range",
-  "Unknown BDD root dereferenced", "bdd_init() called twice",
-  "File operation failed", "Incorrect file format",
-  "Variables not in ascending order", "User called break",
+{ "Out of memory",
+  "Unknown variable",
+  "Value out of range",
+  "Unknown BDD root dereferenced",
+  "bdd_init() called twice",
+  "File operation failed",
+  "Incorrect file format",
+  "Variables not in ascending order",
+  "User called break",
   "Mismatch in size of variable sets",
   "Cannot allocate fewer nodes than already in use",
-  "Unknown operator", "Illegal variable set",
+  "Unknown operator",
+  "Illegal variable set",
   "Bad variable block operation",
-  "Trying to decrease the number of variables",
+  "Invalid change to the number of variables",
   "Trying to replace with variables already in the bdd",
   "Number of nodes reached user defined maximum",
   "Unknown BDD - was not in node table",
   "Bad size argument",
   "Mismatch in bitvector size",
   "Illegal shift-left/right parameter",
-  "Division by zero" };
+  "Division by zero" 
+#if INCLUDE_TBDD
+  ,
+  "Cannot (re)allocate ilist",
+  "Cannot generate proof"
+#endif
+};
 
 
 /*=== OTHER INTERNAL DEFINITIONS =======================================*/
 
 #define NODEHASH(lvl,l,h) (TRIPLE(lvl,l,h) % bddnodesize)
 
+// Debugging macros.  Currently disabled
+
+#define CHECKNODE(n) (n)
+//#define CHECKNODE(n) checknode(n)
+
+static BDD checknode(BDD n) {
+    if (n < 0 || n >= bddnodesize) { 
+	fprintf(ERROUT, "Invalid node %d detected.  Raising error\n", n);
+	bdd_error(BDD_ORDER);
+    }
+    return n;
+}
+
+#define CHECKRANGE(v) (v)
+//#define CHECKRANGE(v) checkrange(v)
+
+static int checkrange(int v) {
+    if (v < 0 || v >= bddnodesize) { 
+	fprintf(ERROUT, "Invalid value %d detected.  Raising error\n", v);
+	bdd_error(BDD_ORDER);
+    }
+    return v;
+}
+
+#if ENABLE_TBDD
+static int bdd_dclause_p(BddNode *n, dclause_t dtype);
+#endif
 
 /*************************************************************************
   BDD misc. user operations
@@ -195,8 +269,13 @@ int bdd_init(int initnodesize, int cs)
    bddnodes[bddnodesize-1].next = 0;
 
    bddnodes[0].refcou = bddnodes[1].refcou = MAXREF;
+   LEVEL(0) = LEVEL(1) = MAXVAR;
    LOW(0) = HIGH(0) = 0;
    LOW(1) = HIGH(1) = 1;
+#if ENABLE_TBDD
+   XVAR(0) = -TAUTOLOGY;
+   XVAR(1) = TAUTOLOGY;
+#endif
    
    if ((err=bdd_operator_init(cs)) < 0)
    {
@@ -205,7 +284,7 @@ int bdd_init(int initnodesize, int cs)
    }
 
    bddfreepos = 2;
-   bddfreenum = bddnodesize-2;
+   bddfreenum = CHECKRANGE(bddnodesize-2);
    bddrunning = 1;
    bddvarnum = 0;
    gbcollectnum = 0;
@@ -254,6 +333,39 @@ void bdd_done(void)
    bdd_reorder_done();
    bdd_pairs_done();
    
+#if ENABLE_TBDD
+   if (proof_type != PROOF_NONE) {
+       int dbuf[4+ILIST_OVHD];
+       ilist dlist;
+       int id;
+       int n;
+
+       print_proof_comment(2, "Delete clauses for all remaining nodes");
+       for (n=bddnodesize-1; n>=2 ; n--)
+	   {
+	       BddNode *node = &bddnodes[n];
+	       if (LEVELp(node) > 0 && LOWp(node) != -1)
+		   {
+		       dlist = ilist_make(dbuf, 4);
+		       /* Delete defining clauses */
+		       if ((id = bdd_dclause_p(node, DEF_HU)) != TAUTOLOGY)
+			   ilist_push(dlist, id);
+		       if ((id = bdd_dclause_p(node, DEF_LU)) != TAUTOLOGY)
+			   ilist_push(dlist, id);
+		       if ((id = bdd_dclause_p(node, DEF_HD)) != TAUTOLOGY)
+			   ilist_push(dlist, id);
+		       if ((id = bdd_dclause_p(node, DEF_LD)) != TAUTOLOGY)
+			   ilist_push(dlist, id);
+
+		       if (ilist_length(dlist) > 0)
+			   print_proof_comment(2, "Delete defining clauses for node N%d.", XVARp(node));
+
+		       delete_clauses(dlist);
+		   }
+	   }
+   }
+#endif
+
    free(bddnodes);
    free(bddrefstack);
    free(bddvarset);
@@ -288,16 +400,34 @@ DESCR   {* This function is used to define the number of variables used in
 	   to increase the number of variables. The argument
 	   {\tt num} is the number of variables to use. *}
 RETURN  {* Zero on succes, otherwise a negative error code. *}
-ALSO    {* bdd\_ithvar, bdd\_varnum, bdd\_extvarnum *}
+ALSO    {* bdd\_setvarnum\_ordered, BDD\_ithvar, bdd\_varnum, bdd\_extvarnum *}
 */
-int bdd_setvarnum(int num)
+int bdd_setvarnum(int num) {
+    return bdd_setvarnum_ordered(num, NULL);
+}
+
+/*
+NAME    {* bdd\_setvarnum\_ordered *}
+SECTION {* kernel *}
+SHORT   {* set the number of used bdd variables and specify the variable ordering *}
+PROTO   {* int bdd_setvarnum(int num, int *varlist) *}
+DESCR   {* This function is used to define the number of variables used in
+           the bdd package and to optionally specify an ordering of the variables.
+	   It can only be called once and before any BDD operations have been performed.
+	   The argument {\tt num} is the number of variables to use.
+	   The argument {\tt varlist} is a permutation over 0 ... num-1
+	   specifying the variable ordering *}
+RETURN  {* Zero on succes, otherwise a negative error code. *}
+ALSO    {* bdd\_setvarnum, bdd\_setvarorder *}
+*/
+int bdd_setvarnum_ordered(int num, int *varlist)
 {
    int bdv;
    int oldbddvarnum = bddvarnum;
 
    bdd_disable_reorder();
       
-   if (num < 1  ||  num > MAXVAR)
+   if (num < 1  ||  num >= MAXVAR)
    {
       bdd_error(BDD_RANGE);
       return bddfalse;
@@ -305,11 +435,14 @@ int bdd_setvarnum(int num)
 
    if (num < bddvarnum)
       return bdd_error(BDD_DECVNUM);
+   if (oldbddvarnum > 0 && varlist != NULL)
+       return bdd_error(BDD_DECVNUM);
    if (num == bddvarnum)
       return 0;
 
    if (bddvarset == NULL)
    {
+      int var, level;
       if ((bddvarset=(BDD*)malloc(sizeof(BDD)*num*2)) == NULL)
 	 return bdd_error(BDD_MEMORY);
       if ((bddlevel2var=(int*)malloc(sizeof(int)*(num+1))) == NULL)
@@ -323,9 +456,34 @@ int bdd_setvarnum(int num)
 	 free(bddlevel2var);
 	 return bdd_error(BDD_MEMORY);
       }
+      for (var = 0; var < num; var++)
+	  bddvar2level[var] = -1;
+      for (level = 0; level < num; level++)
+      {
+	  if (varlist)
+	  {
+	      var = varlist[level];
+	      if (var < 0 || var >= num)
+	      {
+		  fprintf(ERROUT, "Invalid variable %d in initial ordering for level %d\n", var, level);
+		  bdd_error(BDD_DECVNUM);
+		  return bddfalse;
+	      }
+	      if (bddvar2level[var] >= 0)
+	      {
+		  fprintf(ERROUT, "Attempt to assign variable %d to both levels %d and %d in initial ordering\n", var, bddvar2level[var], level);
+		  bdd_error(BDD_DECVNUM);
+		  return bddfalse;
+	      }
+	  } else
+	      var = level;
+	  bddvar2level[var] = level;
+	  bddlevel2var[level] = var;
+      }
    }
    else
    {
+      int level;
       if ((bddvarset=(BDD*)realloc(bddvarset,sizeof(BDD)*num*2)) == NULL)
 	 return bdd_error(BDD_MEMORY);
       if ((bddlevel2var=(int*)realloc(bddlevel2var,sizeof(int)*(num+1))) == NULL)
@@ -339,28 +497,35 @@ int bdd_setvarnum(int num)
 	 free(bddlevel2var);
 	 return bdd_error(BDD_MEMORY);
       }
+      for (level = oldbddvarnum; level < num; level++)
+      {
+	  bddvar2level[level] = level;
+	  bddlevel2var[level] = level;
+      }
+
    }
 
    if (bddrefstack != NULL)
       free(bddrefstack);
    bddrefstack = bddrefstacktop = (int*)malloc(sizeof(int)*(num*2+4));
 
-   for(bdv=bddvarnum ; bddvarnum < num; bddvarnum++)
+   bddvarnum = num;
+
+   for(bdv=oldbddvarnum; bdv < num; bdv++)
    {
-      bddvarset[bddvarnum*2] = PUSHREF( bdd_makenode(bddvarnum, 0, 1) );
-      bddvarset[bddvarnum*2+1] = bdd_makenode(bddvarnum, 1, 0);
+      int level = bddvar2level[bdv];
+      bddvarset[bdv*2] = PUSHREF( bdd_makenode(level, 0, 1) );
+      bddvarset[bdv*2+1] = bdd_makenode(level, 1, 0);
       POPREF(1);
       
       if (bdderrorcond)
       {
-	 bddvarnum = bdv;
+	 bddvarnum = oldbddvarnum;
 	 return -bdderrorcond;
       }
       
-      bddnodes[bddvarset[bddvarnum*2]].refcou = MAXREF;
-      bddnodes[bddvarset[bddvarnum*2+1]].refcou = MAXREF;
-      bddlevel2var[bddvarnum] = bddvarnum;
-      bddvar2level[bddvarnum] = bddvarnum;
+      bddnodes[bddvarset[bdv*2]].refcou = MAXREF;
+      bddnodes[bddvarset[bdv*2+1]].refcou = MAXREF;
    }
 
    LEVEL(0) = num;
@@ -385,7 +550,7 @@ PROTO   {* int bdd_extvarnum(int num) *}
 DESCR   {* Extends the current number of allocated BDD variables with
            {\tt num} extra variables. *}
 RETURN  {* The old number of allocated variables or a negative error code. *}
-ALSO    {* bdd\_setvarnum, bdd\_ithvar, bdd\_nithvar *}
+ALSO    {* bdd\_setvarnum, BDD\_ithvar, BDD\_nithvar *}
 */
 int bdd_extvarnum(int num)
 {
@@ -622,9 +787,8 @@ ALSO    {* bdd\_getallocnum, bdd\_setmaxnodenum *}
 */
 int bdd_getnodenum(void)
 {
-   return bddnodesize - bddfreenum;
+    return bddnodesize - CHECKRANGE(bddfreenum);
 }
-
 
 /*
 NAME    {* bdd\_getallocnum *}
@@ -669,8 +833,7 @@ ALSO    {* bdd\_versionnum *}
 */
 char *bdd_versionstr(void)
 {
-   static char str[100];
-   sprintf(str, "BuDDy -  release %d.%d", VERSION/10, VERSION%10);
+   static char str[] = "BuDDy -  release " PACKAGE_VERSION;
    return str;
 }
 
@@ -686,7 +849,7 @@ ALSO    {* bdd\_versionstr *}
 */
 int bdd_versionnum(void)
 {
-   return VERSION;
+   return MAJOR_VERSION * 10 + MINOR_VERSION;
 }
 
 
@@ -710,6 +873,7 @@ void bdd_stats(bddStat *s)
    s->varnum = bddvarnum;
    s->cachesize = cachesize;
    s->gbcnum = gbcollectnum;
+
 }
 
 
@@ -752,22 +916,22 @@ void bdd_fprintstat(FILE *ofile)
    bddCacheStat s;
    bdd_cachestats(&s);
    
-   fprintf(ofile, "\nCache statistics\n");
-   fprintf(ofile, "----------------\n");
+   fprintf(ofile, "\nc Cache statistics\n");
+   fprintf(ofile, "c ----------------\n");
    
-   fprintf(ofile, "Unique Access:  %ld\n", s.uniqueAccess);
-   fprintf(ofile, "Unique Chain:   %ld\n", s.uniqueChain);
-   fprintf(ofile, "Unique Hit:     %ld\n", s.uniqueHit);
-   fprintf(ofile, "Unique Miss:    %ld\n", s.uniqueMiss);
-   fprintf(ofile, "=> Hit rate =   %.2f\n",
+   fprintf(ofile, "c Unique Access:  %ld\n", s.uniqueAccess);
+   fprintf(ofile, "c Unique Chain:   %ld\n", s.uniqueChain);
+   fprintf(ofile, "c Unique Hit:     %ld\n", s.uniqueHit);
+   fprintf(ofile, "c Unique Miss:    %ld\n", s.uniqueMiss);
+   fprintf(ofile, "c => Hit rate =   %.2f\n",
 	   (s.uniqueHit+s.uniqueMiss > 0) ? 
 	   ((float)s.uniqueHit)/((float)s.uniqueHit+s.uniqueMiss) : 0);
-   fprintf(ofile, "Operator Hits:  %ld\n", s.opHit);
-   fprintf(ofile, "Operator Miss:  %ld\n", s.opMiss);
-   fprintf(ofile, "=> Hit rate =   %.2f\n",
+   fprintf(ofile, "c Operator Hits:  %ld\n", s.opHit);
+   fprintf(ofile, "c Operator Miss:  %ld\n", s.opMiss);
+   fprintf(ofile, "c => Hit rate =   %.2f\n",
 	   (s.opHit+s.opMiss > 0) ? 
 	   ((float)s.opHit)/((float)s.opHit+s.opMiss) : 0);
-   fprintf(ofile, "Swap count =    %ld\n", s.swapCount);
+   fprintf(ofile, "c Swap count =    %ld\n", s.swapCount);
 }
 
 
@@ -802,8 +966,12 @@ const char *bdd_errstring(int e)
 
 void bdd_default_errhandler(int e)
 {
-   fprintf(stderr, "BDD error: %s\n", bdd_errstring(e));
-   exit(1);
+    const char *s = bdd_errstring(e);
+    if (s == NULL)
+	fprintf(ERROUT, "BDD error.  Unknown error code %d\n", e);
+    else
+	fprintf(ERROUT, "BDD error: %s\n", bdd_errstring(e));
+    exit(1);
 }
 
 
@@ -855,49 +1023,49 @@ BDD bdd_false(void)
 
 
 /*
-NAME    {* bdd\_ithvar *}
+NAME    {* BDD\_ithvar *}
 SECTION {* kernel *}
 SHORT   {* returns a bdd representing the I'th variable *}
-PROTO   {* BDD bdd_ithvar(int var) *}
+PROTO   {* BDD BDD_ithvar(int var) *}
 DESCR   {* This function is used to get a bdd representing the I'th
            variable (one node with the childs true and false). The requested
 	   variable must be in the range define by {\tt
 	   bdd\_setvarnum} starting with 0 being the first. For ease
-	   of use then the bdd returned from {\tt bdd\_ithvar} does
+	   of use then the bdd returned from {\tt BDD\_ithvar} does
 	   not have to be referenced counted with a call to {\tt
 	   bdd\_addref}. The initial variable order is defined by the
 	   the index {\tt var} that also defines the position in the
 	   variable order -- variables with lower indecies are before
 	   those with higher indecies. *}
 RETURN  {* The I'th variable on succes, otherwise the constant false bdd *}
-ALSO {* bdd\_setvarnum, bdd\_nithvar, bddtrue, bddfalse *} */
-BDD bdd_ithvar(int var)
+ALSO {* bdd\_setvarnum, BDD\_nithvar, bddtrue, bddfalse *} */
+BDD BDD_ithvar(int var)
 {
    if (var < 0  ||  var >= bddvarnum)
    {
       bdd_error(BDD_VAR);
       return bddfalse;
    }
-   
+
    return bddvarset[var*2];
 }
 
 
 /*
-NAME    {* bdd\_nithvar *}
+NAME    {* BDD\_nithvar *}
 SECTION {* kernel *}
 SHORT   {* returns a bdd representing the negation of the I'th variable *}
-PROTO   {* BDD bdd_nithvar(int var) *}
+PROTO   {* BDD BDD_nithvar(int var) *}
 DESCR   {* This function is used to get a bdd representing the negation of
            the I'th variable (one node with the childs false and true).
 	   The requested variable must be in the range define by
 	   {\tt bdd\_setvarnum} starting with 0 being the first. For ease of
-	   use then the bdd returned from {\tt bdd\_nithvar} does not have
+	   use then the bdd returned from {\tt BDD\_nithvar} does not have
 	   to be referenced counted with a call to {\tt bdd\_addref}. *}
 RETURN  {* The negated I'th variable on succes, otherwise the constant false bdd *}	   
-ALSO    {* bdd\_setvarnum, bdd\_ithvar, bddtrue, bddfalse *}
+ALSO    {* bdd\_setvarnum, BDD\_ithvar, bddtrue, bddfalse *}
 */
-BDD bdd_nithvar(int var)
+BDD BDD_nithvar(int var)
 {
    if (var < 0  ||  var >= bddvarnum)
    {
@@ -917,7 +1085,7 @@ PROTO   {* int bdd_varnum(void) *}
 DESCR   {* This function returns the number of variables defined by
            a call to {\tt bdd\_setvarnum}.*}
 RETURN  {* The number of defined variables *}
-ALSO    {* bdd\_setvarnum, bdd\_ithvar *}
+ALSO    {* bdd\_setvarnum, BDD\_ithvar *}
 */
 int bdd_varnum(void)
 {
@@ -980,6 +1148,87 @@ BDD bdd_high(BDD root)
    return (HIGH(root));
 }
 
+#if ENABLE_TBDD
+/*
+NAME    {* bdd\_xvar *}
+SECTION {* info *}
+SHORT   {* gets the extension variable associated with a bdd node *}
+PROTO   {* BDD bdd_xvar(BDD r) *}
+DESCR   {* Gets the extension variable assoicated with bdd node {\tt r} *}
+RETURN  {* The extension variable *}
+ALSO    {* bdd\_nameid*}
+*/
+BDD bdd_xvar(BDD root)
+{
+   CHECK(root);
+   return (XVAR(root));
+}
+
+/*
+NAME    {* bdd\_dclause *}
+SECTION {* info *}
+SHORT   {* gets the id of specified defining clause of a node *}
+PROTO   {* BDD bdd_dclause(BDD r dclause_t dtype) *}
+DESCR   {* gets id of defining clause {\tt dtype} for node {\tt r} *}
+RETURN  {* The bdd of the true branch *}
+ALSO    {* bdd\_xvar *}
+*/
+int bdd_dclause(BDD root, dclause_t dtype)
+{
+   CHECK(root);
+   if (root < 2)
+       return TAUTOLOGY;
+   int result = DCLAUSE(root) + dtype;
+   switch (dtype) {
+   case DEF_HU:
+       return ISZERO(HIGH(root)) ? TAUTOLOGY : result;
+   case DEF_LU:
+       return ISZERO(LOW(root)) ? TAUTOLOGY : result;
+   case DEF_HD:
+       return ISONE(HIGH(root)) ? TAUTOLOGY : result;
+   case DEF_LD:
+       return ISONE(LOW(root)) ? TAUTOLOGY : result;
+   default: /* Would like to throw exception here */
+       fprintf(ERROUT, "bdd_dclause got type %d\n", dtype);
+       return TAUTOLOGY;
+   }
+}
+
+static int bdd_dclause_p(BddNode *n, dclause_t dtype)
+{
+   int result = DCLAUSEp(n) + dtype;
+   switch (dtype) {
+   case DEF_HU:
+       return ISZERO(HIGHp(n)) ? TAUTOLOGY : result;
+   case DEF_LU:
+       return ISZERO(LOWp(n)) ? TAUTOLOGY : result;
+   case DEF_HD:
+       return ISONE(HIGHp(n)) ? TAUTOLOGY : result;
+   case DEF_LD:
+       return ISONE(LOWp(n)) ? TAUTOLOGY : result;
+   default: /* Would like to throw exception here */
+       return TAUTOLOGY;
+   }
+}
+
+/*
+NAME    {* bdd\_nameid *}
+SECTION {* info *}
+SHORT   {* gets an integer representation of a node for documentation purposes *}
+PROTO   {* BDD bdd_nameid(BDD r) *}
+DESCR   {* gets an integer representation of {\tt r} for documentation purposes *}
+RETURN  {* The integer *}
+ALSO    {* bdd\_xvar *}
+*/
+BDD bdd_nameid(BDD root)
+{
+   CHECK(root);
+   return (NNAME(root));
+}
+
+
+
+#endif
 
 
 /*************************************************************************
@@ -990,8 +1239,8 @@ void bdd_default_gbchandler(int pre, bddGbcStat *s)
 {
    if (!pre)
    {
-      printf("Garbage collection #%d: %d nodes / %d free",
-	     s->num, s->nodes, s->freenodes);
+      printf("c Garbage collection #%d: %d nodes / %d free / %d previously freed ",
+	     s->num, s->nodes, s->freenodes, s->prevfreednodes);
       printf(" / %.1fs / %.1fs total\n",
 	     (float)s->time/(float)(CLOCKS_PER_SEC),
 	     (float)s->sumtime/(float)CLOCKS_PER_SEC);
@@ -1020,9 +1269,9 @@ static void bdd_gbc_rehash(void)
       }
       else
       {
-	 node->next = bddfreepos;
-	 bddfreepos = n;
-	 bddfreenum++;
+	 node->next = CHECKNODE(bddfreepos);
+	 bddfreepos = CHECKNODE(n);
+	 CHECKRANGE(bddfreenum++);
       }
    }
 }
@@ -1033,6 +1282,18 @@ void bdd_gbc(void)
    int *r;
    int n;
    long int c2, c1 = clock();
+   int freed = 0;
+
+#if ENABLE_TBDD
+   int dbuf[4+ILIST_OVHD];
+   ilist dlist;
+   int id;
+
+#if DO_TRACE
+   printf("Starting GC\n");
+#endif   
+#endif
+
 
    if (gbc_handler != NULL)
    {
@@ -1045,18 +1306,24 @@ void bdd_gbc(void)
       gbc_handler(1, &s);
    }
    
-   for (r=bddrefstack ; r<bddrefstacktop ; r++)
-      bdd_mark(*r);
+   for (r=bddrefstack ; r<bddrefstacktop ; r++) {
+       bdd_mark(*r);
+   }
 
    for (n=0 ; n<bddnodesize ; n++)
    {
-      if (bddnodes[n].refcou > 0)
-	 bdd_mark(n);
+       if (bddnodes[n].refcou > 0) {
+	   bdd_mark(n);
+       }
       bddnodes[n].hash = 0;
    }
    
    bddfreepos = 0;
    bddfreenum = 0;
+
+#if ENABLE_TBDD
+   print_proof_comment(2, "Deleting clauses for nodes that have been collected");
+#endif
 
    for (n=bddnodesize-1 ; n>=2 ; n--)
    {
@@ -1073,18 +1340,57 @@ void bdd_gbc(void)
       }
       else
       {
+#if ENABLE_TBDD	  
+	  if (LOWp(node) != -1) {
+	      freed++;
+	      if (proof_type != PROOF_NONE) {
+		  dlist = ilist_make(dbuf, 4);
+		  /* Delete defining clauses */
+		  if ((id = bdd_dclause_p(node, DEF_HU)) != TAUTOLOGY)
+		      ilist_push(dlist, id);
+		  if ((id = bdd_dclause_p(node, DEF_LU)) != TAUTOLOGY)
+		      ilist_push(dlist, id);
+		  if ((id = bdd_dclause_p(node, DEF_HD)) != TAUTOLOGY)
+		      ilist_push(dlist, id);
+		  if ((id = bdd_dclause_p(node, DEF_LD)) != TAUTOLOGY)
+		      ilist_push(dlist, id);
+
+		  if (ilist_length(dlist) > 0) {
+		      print_proof_comment(2, "Delete defining clauses for node N%d", XVARp(node));
+		  }
+		  delete_clauses(dlist);
+	      }
+#if DO_TRACE && ENABLE_TBDD
+	      if (XVARp(node) == TRACE_NNAME)
+		  printf("TRACE: Deleted node N%d from unique table\n", TRACE_NNAME);
+#endif 	 
+
+	  }
+#else
+	 if (LOWp(node) != -1)
+	     freed++;
+#endif
 	 LOWp(node) = -1;
-	 node->next = bddfreepos;
-	 bddfreepos = n;
-	 bddfreenum++;
+	 node->next = CHECKNODE(bddfreepos);
+	 bddfreepos = CHECKNODE(n);
+	 CHECKRANGE(bddfreenum++);
       }
    }
+
+#if DO_TRACE
+   printf("Flushing caches\n");
+#endif   
+
 
    bdd_operator_reset();
 
    c2 = clock();
    gbcclock += c2-c1;
    gbcollectnum++;
+
+#if DO_TRACE
+   printf("Completed GC\n");
+#endif   
 
    if (gbc_handler != NULL)
    {
@@ -1094,6 +1400,7 @@ void bdd_gbc(void)
       s.time = c2-c1;
       s.sumtime = gbcclock;
       s.num = gbcollectnum;
+      s.prevfreednodes = freed;
       gbc_handler(0, &s);
    }
 }
@@ -1119,7 +1426,7 @@ BDD bdd_addref(BDD root)
       return bdd_error(BDD_ILLBDD);
    if (LOW(root) == -1)
       return bdd_error(BDD_ILLBDD);
-      
+
    INCREF(root);
    return root;
 }
@@ -1146,6 +1453,9 @@ BDD bdd_delref(BDD root)
    if (LOW(root) == -1)
       return bdd_error(BDD_ILLBDD);
 
+   /* if the following line is present, fails there much earlier */ 
+   if (!HASREF(root)) bdd_error(BDD_BREAK); /* distinctive */
+   
    DECREF(root);
    return root;
 }
@@ -1262,7 +1572,7 @@ int bdd_makenode(unsigned int level, int low, int high)
    bddcachestats.uniqueAccess++;
 #endif
    
-      /* check whether childs are equal */
+      /* check whether children are equal */
    if (low == high)
       return low;
 
@@ -1278,14 +1588,33 @@ int bdd_makenode(unsigned int level, int low, int high)
 	 bddcachestats.uniqueHit++;
 #endif
 	 return res;
+#if DO_TRACE && ENABLE_TBDD
+	 if (NNAME(res) == TRACE_NNAME)
+	     printf("Found node N%d in unique table\n", TRACE_NNAME);
+#endif 	 
       }
 
-      res = bddnodes[res].next;
+      res = CHECKNODE(bddnodes[res].next);
 #ifdef CACHESTATS
       bddcachestats.uniqueChain++;
 #endif
    }
    
+   /* Error checking */
+   if (level >= LEVEL(low))
+   {
+       fprintf(ERROUT, "Attempt to create invalid BDD node.  New Level = %d.  Low node level = %d\n", level, LEVEL(low));
+       bdd_error(BDD_ILLBDD);
+       return 0;
+   }
+
+   if (level >= LEVEL(high))
+   {
+       fprintf(ERROUT, "Attempt to create invalid BDD node.  New Level = %d.  High node level = %d\n", level, LEVEL(high));
+       bdd_error(BDD_ILLBDD);
+       return 0;
+   }
+
       /* No existing node -> build one */
 #ifdef CACHESTATS
    bddcachestats.uniqueMiss++;
@@ -1300,8 +1629,8 @@ int bdd_makenode(unsigned int level, int low, int high)
          /* Try to allocate more nodes */
       bdd_gbc();
 
-      if ((bddnodesize-bddfreenum) >= usednodes_nextreorder  &&
-	   bdd_reorder_ready())
+      if (CHECKRANGE(bddnodesize-bddfreenum) >= usednodes_nextreorder  &&
+	  bdd_reorder_ready())
       {
 	 longjmp(bddexception,1);
       }
@@ -1322,9 +1651,9 @@ int bdd_makenode(unsigned int level, int low, int high)
    }
 
       /* Build new node */
-   res = bddfreepos;
-   bddfreepos = bddnodes[bddfreepos].next;
-   bddfreenum--;
+   res = CHECKNODE(bddfreepos);
+   bddfreepos = CHECKNODE(bddnodes[bddfreepos].next);
+   CHECKRANGE(bddfreenum--);
    bddproduced++;
    
    node = &bddnodes[res];
@@ -1332,10 +1661,45 @@ int bdd_makenode(unsigned int level, int low, int high)
    LOWp(node) = low;
    HIGHp(node) = high;
    
+   #if ENABLE_TBDD
+   if (level > 0) {
+       if (proof_type == PROOF_NONE) {
+	   XVARp(node) = res;
+	   DCLAUSEp(node) = 0;
+       } else {
+	   int nid = ++(*variable_counter);
+	   int vid = bdd_level2var(level);
+	   int hid = XVAR(high);
+	   int lid = XVAR(low);
+	   int hname = NNAME(high);
+	   int lname = NNAME(low);
+	   int dbuf[3+ILIST_OVHD];
+	   int abuf[2+ILIST_OVHD];
+	   ilist dlist = ilist_make(dbuf, 3);
+	   ilist alist = ilist_make(abuf, 2);
+	   int huid, luid;
+	   XVARp(node) = nid;
+	   DCLAUSEp(node) = *clause_id_counter + 1;
+	   print_proof_comment(2, "Defining clauses for node N%d = ITE(V%d (level=%d), N%d, N%d)", nid, vid, level, hname, lname);
+	   huid = generate_clause(defining_clause(dlist, DEF_HU, nid, vid, hid, lid), alist);
+	   luid = generate_clause(defining_clause(dlist, DEF_LU, nid, vid, hid, lid), alist);
+	   if (huid != TAUTOLOGY)
+	       ilist_push(alist, -huid);
+	   if (luid != TAUTOLOGY)
+	       ilist_push(alist, -luid);
+	   generate_clause(defining_clause(dlist, DEF_HD, nid, vid, hid, lid), alist);              
+	   generate_clause(defining_clause(dlist, DEF_LD, nid, vid, hid, lid), alist);       
+       }
+   }
+   #endif
       /* Insert node */
    node->next = bddnodes[hash].hash;
    bddnodes[hash].hash = res;
 
+#if DO_TRACE && ENABLE_TBDD
+	 if (NNAME(res) == TRACE_NNAME)
+	     printf("TRACE: Added node N%d to unique table\n", TRACE_NNAME);
+#endif 	 
    return res;
 }
 
@@ -1379,15 +1743,14 @@ int bdd_noderesize(int doRehash)
       LOW(n) = -1;
       bddnodes[n].next = n+1;
    }
-   bddnodes[bddnodesize-1].next = bddfreepos;
-   bddfreepos = oldsize;
-   bddfreenum += bddnodesize - oldsize;
+   bddnodes[bddnodesize-1].next = CHECKNODE(bddfreepos);
+   bddfreepos = CHECKNODE(oldsize);
+   bddfreenum += CHECKRANGE(bddnodesize - oldsize);
 
    if (doRehash)
       bdd_gbc_rehash();
 
    bddresized = 1;
-   
    return 0;
 }
 
@@ -1454,10 +1817,10 @@ int bdd_scanset(BDD r, int **varset, int *varnum)
 
 
 /*
-NAME    {* bdd\_makeset *}
+NAME    {* BDD\_makeset *}
 SECTION {* kernel *}
 SHORT   {* builds a BDD variable set from an integer array *}
-PROTO   {* BDD bdd_makeset(int *v, int n) *}
+PROTO   {* BDD BDD_makeset(int *v, int n) *}
 DESCR   {* Reads a set of variable numbers from the integer array {\tt v}
            which must hold exactly {\tt n} integers and then builds a BDD
 	   representing the variable set.
@@ -1469,7 +1832,7 @@ DESCR   {* Reads a set of variable numbers from the integer array {\tt v}
 	   time the set is needed. *}
 ALSO    {* bdd\_scanset *}
 RETURN {* A BDD variable set. *} */
-BDD bdd_makeset(int *varset, int varnum)
+BDD BDD_makeset(int *varset, int varnum)
 {
    int v, res=1;
    
@@ -1477,13 +1840,12 @@ BDD bdd_makeset(int *varset, int varnum)
    {
       BDD tmp;
       bdd_addref(res);
-      tmp = bdd_apply(res, bdd_ithvar(varset[v]), bddop_and);
+      tmp = bdd_apply(res, BDD_ithvar(varset[v]), bddop_and);
       bdd_delref(res);
       res = tmp;
    }
 
    return res;
 }
-
 
 /* EOF */

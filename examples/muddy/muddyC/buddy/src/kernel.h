@@ -1,5 +1,36 @@
 /*========================================================================
-               Copyright (C) 1996-2001 by Jorn Lind-Nielsen
+  Copyright (c) 2022 Randal E. Bryant, Carnegie Mellon University
+  
+  As noted below, this code is a modified version of code authored and
+  copywrited by Jorn Lind-Nielsen.  Permisssion to use the original
+  code is subject to the terms noted below.
+
+  Regarding the modifications, and subject to any constraints on the
+  use of the original code, permission is hereby granted, free of
+  charge, to any person obtaining a copy of this software and
+  associated documentation files (the "Software"), to deal in the
+  Software without restriction, including without limitation the
+  rights to use, copy, modify, merge, publish, distribute, sublicense,
+  and/or sell copies of the Software, and to permit persons to whom
+  the Software is furnished to do so, subject to the following
+  conditions:
+  
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+  
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+========================================================================*/
+
+
+/*========================================================================
+               Copyright (C) 1996-2002 by Jorn Lind-Nielsen
                             All rights reserved
 
     Permission is hereby granted, without written agreement and without
@@ -28,7 +59,7 @@
 ========================================================================*/
 
 /*************************************************************************
-  $Header$
+  $Header: /cvsroot/buddy/buddy/src/kernel.h,v 1.2 2004/07/13 20:51:49 haimcohen Exp $
   FILE:  kernel.h
   DESCR: Kernel specific definitions for BDD package
   AUTH:  Jorn Lind
@@ -38,11 +69,40 @@
 #ifndef _KERNEL_H
 #define _KERNEL_H
 
+/** Enabling proof generation **/
+#ifndef ENABLE_TBDD
+#define ENABLE_TBDD 0
+#endif
+
 /*=== Includes =========================================================*/
 
 #include <limits.h>
 #include <setjmp.h>
+
+#if ENABLE_TBDD
+#include "tbdd.h"
+#include "prover.h"
+#else
 #include "bdd.h"
+#endif
+
+/*=== Error message destination ===*/
+#define ERROUT stdout
+
+#if ENABLE_TBDD
+/*=== ERROR CHECKING =========*/
+
+#ifndef DO_TRACE
+#define DO_TRACE 0
+#endif
+
+#if DO_TRACE
+/* Track activity of specified clause */
+#define TRACE_CLAUSE  17379
+/* Track activity of specified node xvar */
+#define TRACE_NNAME 2881
+#endif /* DO_TRACE */
+#endif /* TBDD */
 
 /*=== SANITY CHECKS ====================================================*/
 
@@ -84,6 +144,10 @@ typedef struct s_BddNode /* Node table entry */
    int high;
    int hash;
    int next;
+#if ENABLE_TBDD
+   int xvar;     /* Associated extension variable */
+   int dclause;  /* Base index of defining clause */
+#endif /* ENABLE_TBDD */
 } BddNode;
 
 
@@ -92,7 +156,7 @@ typedef struct s_BddNode /* Node table entry */
 #ifdef CPLUSPLUS
 extern "C" {
 #endif
-   
+
 extern int       bddrunning;         /* Flag - package initialized */
 extern int       bdderrorcond;       /* Some error condition was met */
 extern int       bddnodesize;        /* Number of allocated nodes */
@@ -108,23 +172,26 @@ extern jmp_buf   bddexception;
 extern int       bddreorderdisabled;
 extern int       bddresized;
 extern bddCacheStat bddcachestats;
-   
+
 #ifdef CPLUSPLUS
 }
 #endif
-   
+
 
 /*=== KERNEL DEFINITIONS ===============================================*/
 
-#define VERSION 20
-
+/* 
+   Note: Although have 22 bits allocated for variable, upper bit
+   required for mark bit used in GC.  That leaves 21 bits available
+   for actual level number
+ */
 #define MAXVAR 0x1FFFFF
 #define MAXREF 0x3FF
 
    /* Reference counting */
-#define DECREF(n) if (bddnodes[n].refcou<MAXREF) bddnodes[n].refcou--
+#define DECREF(n) if (bddnodes[n].refcou!=MAXREF && bddnodes[n].refcou>0) bddnodes[n].refcou--
 #define INCREF(n) if (bddnodes[n].refcou<MAXREF) bddnodes[n].refcou++
-#define DECREFp(n) if (n->refcou<MAXREF) n->refcou--
+#define DECREFp(n) if (n->refcou!=MAXREF && n->refcou>0) n->refcou--
 #define INCREFp(n) if (n->refcou<MAXREF) n->refcou++
 #define HASREF(n) (bddnodes[n].refcou > 0)
 
@@ -144,7 +211,6 @@ extern bddCacheStat bddcachestats;
 #define PAIR(a,b)      ((unsigned int)((((unsigned int)a)+((unsigned int)b))*(((unsigned int)a)+((unsigned int)b)+((unsigned int)1))/((unsigned int)2)+((unsigned int)a)))
 #define TRIPLE(a,b,c)  ((unsigned int)(PAIR((unsigned int)c,PAIR(a,b))))
 
-
    /* Inspection of BDD nodes */
 #define ISCONST(a) ((a) < 2)
 #define ISNONCONST(a) ((a) >= 2)
@@ -157,6 +223,15 @@ extern bddCacheStat bddcachestats;
 #define LOWp(p)     ((p)->low)
 #define HIGHp(p)    ((p)->high)
 
+#if ENABLE_TBDD
+#define XVAR(a)      (bddnodes[a].xvar)
+#define DCLAUSE(a)   (bddnodes[a].dclause)
+#define XVARp(p)     ((p)->xvar)
+#define DCLAUSEp(p)  ((p)->dclause)
+#define NNAME(a) ((a) < 2?(a):XVAR(a))
+#endif /* ENABLE_TBDD */
+
+
    /* Stacking for garbage collector */
 #define INITREF    bddrefstacktop = bddrefstack
 #define PUSHREF(a) *(bddrefstacktop++) = (a)
@@ -167,13 +242,19 @@ extern bddCacheStat bddcachestats;
 #define BDDZERO 0
 
 #ifndef CLOCKS_PER_SEC
-#define CLOCKS_PER_SEC DEFAULT_CLOCK
+  /* Pass `CPPFLAGS=-DDEFAULT_CLOCK=1000' as an argument to ./configure
+     to override this setting.  */
+# ifndef DEFAULT_CLOCK
+#  define DEFAULT_CLOCK 60
+# endif
+# define CLOCKS_PER_SEC DEFAULT_CLOCK
 #endif
 
 #define DEFAULTMAXNODEINC 50000
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
+#define ABS(a) ((a)<0?-(a):(a))
 #define NEW(t,n) ( (t*)malloc(sizeof(t)*(n)) )
 
 
@@ -182,7 +263,7 @@ extern bddCacheStat bddcachestats;
 #ifdef CPLUSPLUS
 extern "C" {
 #endif
-   
+
 extern int    bdd_error(int);
 extern int    bdd_makenode(unsigned int, int, int);
 extern int    bdd_noderesize(int);
@@ -219,6 +300,29 @@ extern void   bdd_cpp_init(void);
 
 #ifdef CPLUSPLUS
 }
+#endif
+
+#if ENABLE_TBDD
+/* Proof generation interface */
+
+/* Data type for proof-generating operations */
+typedef struct {
+    BDD root;
+    int clause_id;
+} pcbdd;
+
+/* In file prover.c */
+/* Complete proof of apply operation */
+/* Absolute of returned value indicates the ID of the justifying proof step */
+/* Value will be < 0 when previous clause ID also used as intermediate step */
+extern int justify_apply(int op, BDD l, BDD r, int splitVar, pcbdd tresl, pcbdd tresh, BDD res);
+
+/* In file bddop.c */
+/* Low-level functions to implement operations on TBDDs */
+pcbdd      bdd_and_justify(BDD, BDD);    
+pcbdd      bdd_imptst_justify(BDD, BDD);    
+pcbdd      bdd_and_imptst_justify(BDD, BDD, BDD);    
+
 #endif
 
 #endif /* _KERNEL_H */

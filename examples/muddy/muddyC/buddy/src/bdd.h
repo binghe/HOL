@@ -1,5 +1,35 @@
 /*========================================================================
-               Copyright (C) 1996-2001 by Jorn Lind-Nielsen
+  Copyright (c) 2022 Randal E. Bryant, Carnegie Mellon University
+  
+  As noted below, this code is a modified version of code authored and
+  copywrited by Jorn Lind-Nielsen.  Permisssion to use the original
+  code is subject to the terms noted below.
+
+  Regarding the modifications, and subject to any constraints on the
+  use of the original code, permission is hereby granted, free of
+  charge, to any person obtaining a copy of this software and
+  associated documentation files (the "Software"), to deal in the
+  Software without restriction, including without limitation the
+  rights to use, copy, modify, merge, publish, distribute, sublicense,
+  and/or sell copies of the Software, and to permit persons to whom
+  the Software is furnished to do so, subject to the following
+  conditions:
+  
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+  
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+========================================================================*/
+
+/*========================================================================
+               Copyright (C) 1996-2002 by Jorn Lind-Nielsen
                             All rights reserved
 
     Permission is hereby granted, without written agreement and without
@@ -28,7 +58,7 @@
 ========================================================================*/
 
 /*************************************************************************
-  $Header$
+  $Header: /cvsroot/buddy/buddy/src/bdd.h,v 1.1.1.1 2004/06/25 13:22:09 haimcohen Exp $
   FILE:  bdd.h
   DESCR: C,C++ User interface for the BDD package
   AUTH:  Jorn Lind
@@ -43,10 +73,16 @@
 #define CPLUSPLUS
 #endif
 
+#ifndef ENABLE_TBDD
+#define ENABLE_TBDD 0
+#endif
+
 #include <stdio.h>
+#include <stdbool.h>
 
-/*=== Defined operators for apply calls ================================*/
+/*=== Defined operators for apply calls, and for op field in cache ====*/
 
+/* Covered by apply operations */
 #define bddop_and       0
 #define bddop_xor       1
 #define bddop_or        2
@@ -58,9 +94,28 @@
 #define bddop_less      8
 #define bddop_invimp    9
 
-   /* Should *not* be used in bdd_apply calls !!! */
-#define bddop_not      10
-#define bddop_simplify 11
+/* Special operations */
+#define bddop_not      11
+#define bddop_simplify 12
+#define bddop_ite        13
+#define bddop_misc       14
+#define bddop_replace    15
+#define bddop_quant      16
+#define bddop_appex      17
+
+
+#if ENABLE_TBDD
+/* Proof generating apply operations */
+#define bddop_andj     18
+#define bddop_imptstj  19
+#define bddop_andimptstj  20
+#endif
+
+/*=== Defining clauses ===================================================*/
+
+#if ENABLE_TBDD
+typedef enum { DEF_HU, DEF_LU, DEF_HD, DEF_LD } dclause_t;
+#endif
 
 
 /*=== User BDD types ===================================================*/
@@ -70,7 +125,6 @@ typedef int BDD;
 #ifndef CPLUSPLUS
 typedef BDD bdd;
 #endif /* CPLUSPLUS */
-
 
 typedef struct s_bddPair
 {
@@ -132,6 +186,7 @@ PROTO   {* typedef struct s_bddGbcStat
 {
    int nodes;
    int freenodes;
+   int prevfreednodes;
    long time;
    long sumtime;
    int num;
@@ -139,6 +194,7 @@ PROTO   {* typedef struct s_bddGbcStat
 DESCR   {* The fields are \\[\baselineskip] \begin{tabular}{ll}
   {\tt nodes}     & Total number of allocated nodes in the nodetable \\
   {\tt freenodes} & Number of free nodes in the nodetable \\
+  {\tt prevfreednodes} & number of bdd nodes that were freed during the preceding garbage collection \\
   {\tt time}      & Time used for garbage collection this time \\
   {\tt sumtime}   & Total time used for garbage collection \\
   {\tt num}       & number of garbage collections done until now
@@ -149,6 +205,7 @@ typedef struct s_bddGbcStat
 {
    int nodes;
    int freenodes;
+   int prevfreednodes;
    long time;
    long sumtime;
    int num;
@@ -173,8 +230,8 @@ DESCR   {* The fields are \\[\baselineskip] \begin{tabular}{ll}
   {\bf Name}         & {\bf Number of } \\
   uniqueAccess & accesses to the unique node table \\
   uniqueChain  & iterations through the cache chains in the unique node table\\
-  uniqueHit    & entries actually found in the unique node table \\
-  uniqueMiss   & entries not found in the unique node table \\
+  uniqueHit    & entries actually found in the the unique node table \\
+  uniqueMiss   & entries not found in the the unique node table \\
   opHit        & entries found in the operator caches \\
   opMiss       & entries not found in the operator caches \\
   swapCount    & number of variable swaps in reordering \\
@@ -219,6 +276,7 @@ typedef void (*bddgbchandler)(int,bddGbcStat*);
 typedef void (*bdd2inthandler)(int,int);
 typedef int  (*bddsizehandler)(void);
 typedef void (*bddfilehandler)(FILE *, int);
+typedef void (*bddallsathandler)(char*, int);
    
 extern bddinthandler  bdd_error_hook(bddinthandler);
 extern bddgbchandler  bdd_gbc_hook(bddgbchandler);
@@ -229,6 +287,7 @@ extern bddfilehandler bdd_file_hook(bddfilehandler);
 extern int      bdd_init(int, int);
 extern void     bdd_done(void);
 extern int      bdd_setvarnum(int);
+extern int      bdd_setvarnum_ordered(int, int*);
 extern int      bdd_extvarnum(int);
 extern int      bdd_isrunning(void);
 extern int      bdd_setmaxnodenum(int);
@@ -251,17 +310,16 @@ extern BDD      bdd_true(void);
 extern BDD      bdd_false(void);
 #endif
 extern int      bdd_varnum(void);
-extern BDD      bdd_ithvar(int);
-extern BDD      bdd_nithvar(int);
+extern BDD      BDD_ithvar(int);
+extern BDD      BDD_nithvar(int);
 extern int      bdd_var(BDD);
 extern BDD      bdd_low(BDD);
 extern BDD      bdd_high(BDD);
-extern int      bdd_varlevel(int);
 extern BDD      bdd_addref(BDD);
 extern BDD      bdd_delref(BDD);
 extern void     bdd_gbc(void);
 extern int      bdd_scanset(BDD, int**, int*);
-extern BDD      bdd_makeset(int *, int);
+extern BDD      BDD_makeset(int *, int);
 extern bddPair* bdd_newpair(void);
 extern int      bdd_setpair(bddPair*, int, int);
 extern int      bdd_setpairs(bddPair*, int*, int*, int);
@@ -270,6 +328,11 @@ extern int      bdd_setbddpairs(bddPair*, int*, BDD*, int);
 extern void     bdd_resetpair(bddPair *);
 extern void     bdd_freepair(bddPair*);
 
+#if ENABLE_TBDD
+extern int      bdd_xvar(BDD);
+extern int      bdd_nameid(BDD);
+extern int      bdd_dclause(BDD, dclause_t);
+#endif     
   /* In bddop.c */
 
 extern int      bdd_setcacheratio(int);
@@ -299,6 +362,7 @@ extern BDD      bdd_support(BDD);
 extern BDD      bdd_satone(BDD);
 extern BDD      bdd_satoneset(BDD, BDD, BDD);
 extern BDD      bdd_fullsatone(BDD);
+extern void     bdd_allsat(BDD r, bddallsathandler handler);
 extern double   bdd_satcount(BDD);
 extern double   bdd_satcountset(BDD, BDD);
 extern double   bdd_satcountln(BDD);
@@ -308,7 +372,6 @@ extern int      bdd_anodecount(BDD *, int);
 extern int*     bdd_varprofile(BDD);
 extern double   bdd_pathcount(BDD);
 
-   
 /* In file "bddio.c" */
 
 extern void     bdd_printall(void);
@@ -349,6 +412,7 @@ extern int      bdd_reorder_verbose(int);
 extern void     bdd_setvarorder(int *);
 extern void     bdd_printorder(void);
 extern void     bdd_fprintorder(FILE *);
+
 
 #ifdef CPLUSPLUS
 }
@@ -407,7 +471,27 @@ extern const BDD bddtrue;
 #define BVEC_SHIFT (-21)   /* Illegal shift-left/right parameter */
 #define BVEC_DIVZERO (-22) /* Division by zero */
 
+#if ENABLE_TBDD
+#define ILIST_ALLOC (-23)  /* Invalid allocation for ilist */
+#define TBDD_PROOF (-24)   /* Couldn't complete proof of justification */
+#define BDD_ERRNUM 26
+#else
 #define BDD_ERRNUM 24
+#endif /* ENABLE_TBDD */
+
+
+
+/*************************************************************************
+ The following hack gives functions the names expected from the C interface 
+ When writing C++, can still access the BDD functions
+*************************************************************************/
+
+#ifndef CPLUSPLUS
+#define bdd_ithvar BDD_ithvar
+#define bdd_nithvar BDD_nithvar
+#define bdd_makeset BDD_makeset
+#endif
+
 
 /*************************************************************************
    If this file is included from a C++ compiler then the following
@@ -450,14 +534,19 @@ class bdd
    int operator==(const bdd &r) const;
    int operator!=(const bdd &r) const;
    
+   // Backdoor to access private value.  Not for general use.
+   inline BDD get_BDD() const { return root; }
+   // Backdoor to create bdd from BDD.  Not for general use.
+   bdd(BDD r) { bdd_addref(root=r); }
+
 private:
    BDD root;
 
-   bdd(BDD r) { bdd_addref(root=r); }
    bdd operator=(BDD r);
 
    friend int      bdd_init(int, int);
    friend int      bdd_setvarnum(int);
+   friend int      bdd_setvarnum(int, int*);
    friend bdd      bdd_true(void);
    friend bdd      bdd_false(void);
    friend bdd      bdd_ithvarpp(int);
@@ -465,6 +554,7 @@ private:
    friend int      bdd_var(const bdd &);
    friend bdd      bdd_low(const bdd &);
    friend bdd      bdd_high(const bdd &);
+   friend int      bdd_nameid(const bdd &);
    friend int      bdd_scanset(const bdd &, int *&, int &);
    friend bdd      bdd_makesetpp(int *, int);
    friend int      bdd_setbddpair(bddPair*, int, const bdd &);
@@ -495,6 +585,7 @@ private:
    friend bdd      bdd_satone(const bdd &);
    friend bdd      bdd_satoneset(const bdd &, const bdd &, const bdd &);
    friend bdd      bdd_fullsatone(const bdd &);
+   friend void     bdd_allsat(const bdd &r, bddallsathandler handler);
    friend double   bdd_satcount(const bdd &);
    friend double   bdd_satcountset(const bdd &, const bdd &);
    friend double   bdd_satcountln(const bdd &);
@@ -503,7 +594,6 @@ private:
    friend int      bdd_anodecountpp(const bdd *, int);
    friend int*     bdd_varprofile(const bdd &);
    friend double   bdd_pathcount(const bdd &);
-   
    friend void   bdd_fprinttable(FILE *, const bdd &);
    friend void   bdd_printtable(const bdd &);
    friend void   bdd_fprintset(FILE *, const bdd &);
@@ -531,6 +621,7 @@ private:
    friend int    bdd_addvarblock(const bdd &, int);
 
    friend class bvec;
+   friend bvec bvec_ite(const bdd& a, const bvec& b, const bvec& c);
    friend bvec bvec_shlfixed(const bvec &e, int pos, const bdd &c);
    friend bvec bvec_shl(const bvec &left, const bvec &right, const bdd &c);
    friend bvec bvec_shrfixed(const bvec &e, int pos, const bdd &c);
@@ -560,10 +651,10 @@ inline void bdd_stats(bddStat& s)
 { bdd_stats(&s); }
 
 inline bdd bdd_ithvarpp(int v)
-{ return bdd_ithvar(v); }
+{ return BDD_ithvar(v); }
 
 inline bdd bdd_nithvarpp(int v)
-{ return bdd_nithvar(v); }
+{ return BDD_nithvar(v); }
 
 inline int bdd_var(const bdd &r)
 { return bdd_var(r.root); }
@@ -574,11 +665,14 @@ inline bdd bdd_low(const bdd &r)
 inline bdd bdd_high(const bdd &r)
 { return bdd_high(r.root); }
 
+inline int bdd_nameid(const bdd &r)
+{ return bdd_nameid(r.root); }
+
 inline int bdd_scanset(const bdd &r, int *&v, int &n)
 { return bdd_scanset(r.root, &v, &n); }
 
 inline bdd bdd_makesetpp(int *v, int n)
-{ return bdd(bdd_makeset(v,n)); }
+{ return bdd(BDD_makeset(v,n)); }
 
 inline int bdd_setbddpair(bddPair *p, int ov, const bdd &nv)
 { return bdd_setbddpair(p,ov,nv.root); }
@@ -660,6 +754,9 @@ inline bdd bdd_satoneset(const bdd &r, const bdd &var, const bdd &pol)
 inline bdd bdd_fullsatone(const bdd &r)
 { return bdd_fullsatone(r.root); }
 
+inline void bdd_allsat(const bdd &r, bddallsathandler handler)
+{ bdd_allsat(r.root, handler); }
+
 inline double bdd_satcount(const bdd &r)
 { return bdd_satcount(r.root); }
 
@@ -680,7 +777,6 @@ inline int* bdd_varprofile(const bdd &r)
 
 inline double bdd_pathcount(const bdd &r)
 { return bdd_pathcount(r.root); }
-
 
    /* I/O extensions */
 

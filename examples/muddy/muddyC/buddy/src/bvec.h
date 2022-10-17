@@ -1,5 +1,5 @@
 /*========================================================================
-               Copyright (C) 1996-2001 by Jorn Lind-Nielsen
+               Copyright (C) 1996-2002 by Jorn Lind-Nielsen
                             All rights reserved
 
     Permission is hereby granted, without written agreement and without
@@ -28,7 +28,7 @@
 ========================================================================*/
 
 /*************************************************************************
-  $Header$
+  $Header: /cvsroot/buddy/buddy/src/bvec.h,v 1.1.1.1 2004/06/25 13:22:34 haimcohen Exp $
   FILE:  bvec.h
   DESCR: Boolean (BDD) vector handling
   AUTH:  Jorn Lind
@@ -96,6 +96,7 @@ extern BVEC bvec_mulfixed(BVEC e, int c);
 extern BVEC bvec_mul(BVEC left, BVEC right);
 extern int  bvec_divfixed(BVEC e, int c, BVEC *res, BVEC *rem);
 extern int  bvec_div(BVEC left, BVEC right, BVEC *res, BVEC *rem);
+extern BVEC bvec_ite(BDD a, BVEC b, BVEC c);
 extern BVEC bvec_shlfixed(BVEC e, int pos, BDD c);
 extern BVEC bvec_shl(BVEC l, BVEC r, BDD c);
 extern BVEC bvec_shrfixed(BVEC e, int pos, BDD c);
@@ -163,6 +164,7 @@ private:
    friend bvec bvec_mul(const bvec &left, const bvec &right);
    friend int  bvec_divfixed(const bvec &e, int c, bvec &res, bvec &rem);
    friend int  bvec_div(const bvec &l, const bvec &r, bvec &res, bvec &rem);
+   friend bvec bvec_ite(const bdd& a, const bvec& b, const bvec& c);
    friend bvec bvec_shlfixed(const bvec &e, int pos, const bdd &c);
    friend bvec bvec_shl(const bvec &left, const bvec &right, const bdd &c);
    friend bvec bvec_shrfixed(const bvec &e, int pos, const bdd &c);
@@ -195,6 +197,7 @@ public:
    bdd operator!=(const bvec &a) const { return bvec_neq(*this, a); }
 };
 
+std::ostream &operator<<(std::ostream &, const bvec &);
 
 inline bvec bvec_truepp(int bitnum)
 { return bvec_true(bitnum); }
@@ -243,6 +246,9 @@ inline int bvec_divfixed(const bvec &e, int c, bvec &res, bvec &rem)
 
 inline int bvec_div(const bvec &l, const bvec &r, bvec &res, bvec &rem)
 { return bvec_div(l.roots, r.roots, &res.roots, &rem.roots); }
+
+inline bvec bvec_ite(const bdd& a, const bvec& b, const bvec& c)
+{ return bvec_ite(a.root, b.roots, c.roots); }
 
 inline bvec bvec_shlfixed(const bvec &e, int pos, const bdd &c)
 { return bvec_shlfixed(e.roots, pos, c.root); }

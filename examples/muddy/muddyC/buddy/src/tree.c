@@ -1,5 +1,5 @@
 /*========================================================================
-               Copyright (C) 1996-2001 by Jorn Lind-Nielsen
+               Copyright (C) 1996-2002 by Jorn Lind-Nielsen
                             All rights reserved
 
     Permission is hereby granted, without written agreement and without
@@ -28,7 +28,7 @@
 ========================================================================*/
 
 /*************************************************************************
-  $Header$
+  $Header: /cvsroot/buddy/buddy/src/tree.c,v 1.1.1.1 2004/06/25 13:23:00 haimcohen Exp $
   FILE:  tree.c
   DESCR: Trees for BDD variables
   AUTH:  Jorn Lind

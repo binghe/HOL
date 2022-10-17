@@ -1,5 +1,36 @@
 /*========================================================================
-               Copyright (C) 1996-2001 by Jorn Lind-Nielsen
+  Copyright (c) 2022 Randal E. Bryant, Carnegie Mellon University
+  
+  As noted below, this code is a modified version of code authored and
+  copywrited by Jorn Lind-Nielsen.  Permisssion to use the original
+  code is subject to the terms noted below.
+
+  Regarding the modifications, and subject to any constraints on the
+  use of the original code, permission is hereby granted, free of
+  charge, to any person obtaining a copy of this software and
+  associated documentation files (the "Software"), to deal in the
+  Software without restriction, including without limitation the
+  rights to use, copy, modify, merge, publish, distribute, sublicense,
+  and/or sell copies of the Software, and to permit persons to whom
+  the Software is furnished to do so, subject to the following
+  conditions:
+  
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+  
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+========================================================================*/
+
+
+/*========================================================================
+               Copyright (C) 1996-2002 by Jorn Lind-Nielsen
                             All rights reserved
 
     Permission is hereby granted, without written agreement and without
@@ -28,7 +59,7 @@
 ========================================================================*/
 
 /*************************************************************************
-  $Header$
+  $Header: /cvsroot/buddy/buddy/src/bddop.c,v 1.1.1.1 2004/06/25 13:22:22 haimcohen Exp $
   FILE:  bddop.c
   DESCR: BDD operators
   AUTH:  Jorn Lind
@@ -40,10 +71,13 @@
 #include <time.h>
 #include <assert.h>
 
+/* Debugging */
+#include <stdio.h>
+
 #include "kernel.h"
 #include "cache.h"
 
-   /* Hash value modifiers to distinguish between entries in misccache */
+   /* Hash value modifiers to distinguish between misc operations */
 #define CACHEID_CONSTRAIN   0x0
 #define CACHEID_RESTRICT    0x1
 #define CACHEID_SATCOU      0x2
@@ -101,17 +135,15 @@ static int supportID;               /* Current ID (true value) for support */
 static int supportMin;              /* Min. used level in support calc. */
 static int supportMax;              /* Max. used level in support calc. */
 static int* supportSet;             /* The found support set */
-static BddCache applycache;         /* Cache for apply results */
-static BddCache itecache;           /* Cache for ITE results */
-static BddCache quantcache;         /* Cache for exist/forall results */
-static BddCache appexcache;         /* Cache for appex/appall results */
-static BddCache replacecache;       /* Cache for replace results */
-static BddCache misccache;          /* Cache for other results */
+static BddCache opcache;            /* Cache for all operations */
 static int cacheratio;
 static BDD satPolarity;
 static int firstReorder;            /* Used instead of local variable in order
 				       to avoid compiler warning about 'first'
 				       being clobbered by setjmp */
+
+static char*            allsatProfile; /* Variable profile for bdd_allsat() */
+static bddallsathandler allsatHandler; /* Callback handler for bdd_allsat() */
 
 extern bddCacheStat bddcachestats;
 
@@ -132,6 +164,7 @@ static void   support_rec(int, int*);
 static BDD    satone_rec(BDD);
 static BDD    satoneset_rec(BDD, BDD);
 static int    fullsatone_rec(int);
+static void   allsat_rec(BDD r);
 static double satcount_rec(int);
 static double satcountln_rec(int);
 static void   varprofile_rec(int);
@@ -139,10 +172,19 @@ static double bdd_pathcount_rec(BDD);
 static int    varset2vartable(BDD);
 static int    varset2svartable(BDD);
 
+#if ENABLE_TBDD
+static pcbdd    pcbdd_null();
+static pcbdd    pcbdd_tautology();
+static pcbdd    bdd_applyj(BDD, BDD, int op);
+static pcbdd    bdd_apply_aij(BDD, BDD, BDD);
+static pcbdd    applyj_rec(BDD, BDD);
+static pcbdd    apply_aij_rec(BDD, BDD, BDD);
+#endif
 
    /* Hashvalues */
 #define NOTHASH(r)           (r)
 #define APPLYHASH(l,r,op)    (TRIPLE(l,r,op))
+#define AIJHASH(l,r,t)    (TRIPLE(l,r,t))
 #define ITEHASH(f,g,h)       (TRIPLE(f,g,h))
 #define RESTRHASH(r,var)     (PAIR(r,var))
 #define CONSTRAINHASH(f,c)   (PAIR(f,c))
@@ -169,22 +211,7 @@ static int    varset2svartable(BDD);
 
 int bdd_operator_init(int cachesize)
 {
-   if (BddCache_init(&applycache,cachesize) < 0)
-      return bdd_error(BDD_MEMORY);
-   
-   if (BddCache_init(&itecache,cachesize) < 0)
-      return bdd_error(BDD_MEMORY);
-   
-   if (BddCache_init(&quantcache,cachesize) < 0)
-      return bdd_error(BDD_MEMORY);
-
-   if (BddCache_init(&appexcache,cachesize) < 0)
-      return bdd_error(BDD_MEMORY);
-
-   if (BddCache_init(&replacecache,cachesize) < 0)
-      return bdd_error(BDD_MEMORY);
-
-   if (BddCache_init(&misccache,cachesize) < 0)
+   if (BddCache_init(&opcache,cachesize) < 0)
       return bdd_error(BDD_MEMORY);
 
    quantvarsetID = 0;
@@ -201,12 +228,11 @@ void bdd_operator_done(void)
    if (quantvarset != NULL)
       free(quantvarset);
    
-   BddCache_done(&applycache);
-   BddCache_done(&itecache);
-   BddCache_done(&quantcache);
-   BddCache_done(&appexcache);
-   BddCache_done(&replacecache);
-   BddCache_done(&misccache);
+#if ENABLE_TBDD
+   BddCache_clear_clauses(&opcache);
+   process_deferred_deletions();
+#endif
+   BddCache_done(&opcache);
 
    if (supportSet != NULL)
      free(supportSet);
@@ -215,12 +241,10 @@ void bdd_operator_done(void)
 
 void bdd_operator_reset(void)
 {
-   BddCache_reset(&applycache);
-   BddCache_reset(&itecache);
-   BddCache_reset(&quantcache);
-   BddCache_reset(&appexcache);
-   BddCache_reset(&replacecache);
-   BddCache_reset(&misccache);
+#if ENABLE_TBDD
+   BddCache_clear_clauses(&opcache);
+#endif
+   BddCache_reset(&opcache);
 }
 
 
@@ -243,12 +267,10 @@ static void bdd_operator_noderesize(void)
    {
       int newcachesize = bddnodesize / cacheratio;
       
-      BddCache_resize(&applycache, newcachesize);
-      BddCache_resize(&itecache, newcachesize);
-      BddCache_resize(&quantcache, newcachesize);
-      BddCache_resize(&appexcache, newcachesize);
-      BddCache_resize(&replacecache, newcachesize);
-      BddCache_resize(&misccache, newcachesize);
+#if ENABLE_TBDD
+      BddCache_clear_clauses(&opcache);
+#endif
+      BddCache_resize(&opcache, newcachesize);
    }
 }
 
@@ -361,9 +383,9 @@ BDD bdd_ibuildcube(int value, int width, int *variables)
       BDD v;
       
       if (value & 0x1)
-	 v = bdd_ithvar(variables[width-z-1]);
+	 v = BDD_ithvar(variables[width-z-1]);
       else
-	 v = bdd_nithvar(variables[width-z-1]);
+	 v = BDD_nithvar(variables[width-z-1]);
 
       bdd_addref(result);
       tmp = bdd_apply(result,v,bddop_and);
@@ -397,7 +419,7 @@ BDD bdd_not(BDD r)
  again:
    if (setjmp(bddexception) == 0)
    {
-      bddrefstacktop = bddrefstack;
+      INITREF;
       
       if (!firstReorder)
 	 bdd_disable_reorder();
@@ -428,9 +450,9 @@ static BDD not_rec(BDD r)
    if (ISONE(r))
       return BDDZERO;
    
-   entry = BddCache_lookup(&applycache, NOTHASH(r));
+   entry = BddCache_lookup(&opcache, NOTHASH(r));
       
-   if (entry->a == r  &&  entry->c == bddop_not)
+   if (entry->a == r  &&  entry->op == bddop_not)
    {
 #ifdef CACHESTATS
       bddcachestats.opHit++;
@@ -446,8 +468,14 @@ static BDD not_rec(BDD r)
    res = bdd_makenode(LEVEL(r), READREF(2), READREF(1));
    POPREF(2);
    
+#if ENABLE_TBDD
+      BddCache_clause_evict(entry);
+#endif      
+
    entry->a = r;
-   entry->c = bddop_not;
+   entry->b = -1;
+   entry->c = -1;
+   entry->op = bddop_not;
    entry->r.res = res;
 
    return res;
@@ -509,7 +537,7 @@ BDD bdd_apply(BDD l, BDD r, int op)
  again:
    if (setjmp(bddexception) == 0)
    {
-      bddrefstacktop = bddrefstack;
+      INITREF;
       applyop = op;
       
       if (!firstReorder)
@@ -589,9 +617,9 @@ static BDD apply_rec(BDD l, BDD r)
       res = oprres[applyop][l<<1 | r];
    else
    {
-      entry = BddCache_lookup(&applycache, APPLYHASH(l,r,applyop));
+      entry = BddCache_lookup(&opcache, APPLYHASH(l,r,applyop));
       
-      if (entry->a == l  &&  entry->b == r  &&  entry->c == applyop)
+      if (entry->a == l  &&  entry->b == r  &&  entry->op == applyop)
       {
 #ifdef CACHESTATS
 	 bddcachestats.opHit++;
@@ -624,9 +652,14 @@ static BDD apply_rec(BDD l, BDD r)
 
       POPREF(2);
 
+#if ENABLE_TBDD
+      BddCache_clause_evict(entry);
+#endif      
+
       entry->a = l;
       entry->b = r;
-      entry->c = applyop;
+      entry->c = -1;
+      entry->op = applyop;
       entry->r.res = res;
    }
 
@@ -709,6 +742,484 @@ BDD bdd_biimp(BDD l, BDD r)
 }
 
 
+/*=== Justifying APPLY ============================================================*/
+#if ENABLE_TBDD
+pcbdd pcbdd_null() {
+    pcbdd p;
+    p.root = BDDZERO;
+    p.clause_id = TAUTOLOGY;
+    return p;
+}
+
+pcbdd pcbdd_tautology() {
+    pcbdd p;
+    p.root = BDDONE;
+    p.clause_id = TAUTOLOGY;
+    return p;
+}
+
+
+/*
+NAME    {* tbdd\_apply *}
+SECTION {* operator *}
+SHORT   {* basic bdd operations, with proof generation  *}
+PROTO   {* pcbdd bdd_applyj(BDD left, BDD right, int opr) *}
+DESCR   {* The {\tt tbdd\_apply} function performs basic
+           proof-generating bdd operations with two operands.
+	   The {\tt left} argument is the left bdd operand and {\tt right}
+	   is the right operand. The {\tt opr} argument is the requested
+	   operation and must be one of the following\\
+	   
+   \begin{tabular}{llllc}
+     {\bf Identifier}    & {\bf Description} & {\bf Proof} & {\bf Truth table}
+        & {\bf C++ opr.} \\
+     {\tt bddop\_andj}    & logical and    ($A \wedge B$)   & $A \wedge B \rightarrow C$      & [0,0,0,1]
+        & \verb%&% \\
+     {\tt bddop\_imptstj}    & implication    ($A \Rightarrow B$) & $\forall X (A \rightarrow B)$    & [1,1,0,1]
+        & \verb%>>% \\
+   \end{tabular}
+   *}
+   RETURN  {* The result of the operation. *}
+   ALSO    {* bdd\_apply *}
+*/
+static pcbdd bdd_applyj(BDD l, BDD r, int op)
+{
+   pcbdd res;
+
+   firstReorder = 1;
+   
+   CHECKa(l, pcbdd_null());
+   CHECKa(r, pcbdd_null());
+
+   if (op<bddop_andj || op>bddop_imptstj)
+   {
+      bdd_error(BDD_OP);
+      res = pcbdd_null();
+      return res;
+   }
+
+ again:
+   if (setjmp(bddexception) == 0)
+   {
+      INITREF;
+      applyop = op;
+      
+      if (!firstReorder)
+	 bdd_disable_reorder();
+      res = applyj_rec(l, r);
+      if (!firstReorder)
+	 bdd_enable_reorder();
+   }
+   else
+   {
+      bdd_checkreorder();
+
+      if (firstReorder-- == 1)
+	 goto again;
+      res = pcbdd_tautology();
+   }
+   
+   checkresize();
+   return res;
+}
+
+/*
+NAME    {* tbdd\_apply\_aij *}
+SECTION {* operator *}
+SHORT   {* basic bdd operations, with proof generation  *}
+PROTO   {* pcbdd bdd_apply_aij(BDD left, BDD right, BDD test) *}
+DESCR   {* The {\tt tbdd\_apply\_aij} function generates a proof
+           that the conjunction of the first two arguments implies
+	   the third without actually performing the conjunction.
+   *}
+   RETURN  {* The result of the operation. *}
+   ALSO    {* bdd\_applyj *}
+*/
+static pcbdd bdd_apply_aij(BDD l, BDD r, BDD t)
+{
+   pcbdd res;
+
+   firstReorder = 1;
+   
+   CHECKa(l, pcbdd_null());
+   CHECKa(r, pcbdd_null());
+   CHECKa(t, pcbdd_null());
+
+ again:
+   if (setjmp(bddexception) == 0)
+   {
+      INITREF;
+      /* Some of the cases degenerate to implication checks */
+      applyop = bddop_imptstj; 
+      
+      if (!firstReorder)
+	 bdd_disable_reorder();
+
+      res = apply_aij_rec(l, r, t);
+
+      if (!firstReorder)
+	 bdd_enable_reorder();
+   }
+   else
+   {
+      bdd_checkreorder();
+
+      if (firstReorder-- == 1)
+	 goto again;
+      res = pcbdd_tautology();
+   }
+   
+   checkresize();
+
+   return res;
+}
+
+
+static pcbdd applyj_rec(BDD l, BDD r)
+{
+   BddCacheData *entry;
+   pcbdd tres;
+   
+   //   printf("applyj_rec called with l=%d (N%d), r=%d (N%d), op = %d\n", (int) l, NNAME(l), (int) r, NNAME(r), applyop);
+
+   tres.root = BDDZERO;
+   tres.clause_id = TAUTOLOGY;
+
+   switch (applyop)
+   {
+    case bddop_andj:
+       if (l == r)
+	   { tres.root = l ; return tres; }
+       if (ISZERO(l)  ||  ISZERO(r))
+	   { tres.root = 0; return tres; }
+       if (ISONE(l))
+	   { tres.root = r; return tres; }
+       if (ISONE(r))
+	   { tres.root = l; return tres; }
+       break;
+   case bddop_imptstj:
+       if (l == r)
+	   { tres.root = BDDONE ; return tres; }
+       if (ISZERO(l))
+	   { tres.root = BDDONE; return tres; }
+       if (ISONE(r))
+	   { tres.root = BDDONE; return tres; }
+       if (ISONE(l))
+	   /* Implication cannot hold for all arguments */
+	   { 
+	       tres.root = BDDZERO;
+	       fprintf(stderr, "Implication failure.  N%d -/-> N%d\n", bdd_nameid(l), bdd_nameid(r));
+	       bdd_error(TBDD_PROOF);
+	       return tres;
+	   }
+       if (ISZERO(r))
+	   /* Implication cannot hold for all arguments */
+	   { 
+	       tres.root = BDDZERO;
+	       fprintf(stderr, "Implication failure.  N%d -/-> N%d\n", bdd_nameid(l), bdd_nameid(r));
+	       bdd_error(TBDD_PROOF);
+	       return tres;
+	   }
+       break;
+   }
+
+
+   {
+      entry = BddCache_lookup(&opcache, APPLYHASH(l,r,applyop));
+      if (entry->a == l  &&  entry->b == r  &&  entry->op == applyop)
+      {
+#ifdef CACHESTATS
+	 bddcachestats.opHit++;
+#endif
+	 tres.root = entry->r.res;
+	 tres.clause_id = entry->r.jclause;
+#if DO_TRACE
+	 if (tres.clause_id == TRACE_CLAUSE) {
+	     printf("TRACE: Retrieving clause #%d from cache in apply_rec.  Operands = N%d, N%d\n", TRACE_CLAUSE, NNAME(l), NNAME(r));
+	 }
+	 if (NNAME(tres.root) == TRACE_NNAME) {
+	     printf("TRACE: Retrieving node N%d from cache in apply_rec.  Operands = N%d, N%d\n", TRACE_NNAME, NNAME(l), NNAME(r));
+	 }
+#endif /* DO_TRACE */
+
+	 return tres;
+      }
+#ifdef CACHESTATS
+      bddcachestats.opMiss++;
+#endif
+      
+      pcbdd tresh;
+      pcbdd tresl;
+      int splitVar;
+      int splitLevel;
+
+      if (LEVEL(l) == LEVEL(r))
+      {
+	  splitLevel = LEVEL(l);
+	  tresl = applyj_rec(LOW(l), LOW(r));
+	  PUSHREF( tresl.root );
+	  tresh = applyj_rec(HIGH(l), HIGH(r));
+	  PUSHREF( tresh.root );
+      }
+      else
+      if (LEVEL(l) < LEVEL(r))
+      {
+	  splitLevel = LEVEL(l);
+	  tresl = applyj_rec(LOW(l), r);
+	  PUSHREF( tresl.root );
+	  tresh = applyj_rec(HIGH(l), r);
+	  PUSHREF( tresh.root );
+      }
+      else
+      {
+	  splitLevel = LEVEL(r);
+	  tresl =  applyj_rec(l, LOW(r));
+	  PUSHREF( tresl.root );
+	  tresh = applyj_rec(l, HIGH(r));
+	  PUSHREF( tresh.root );
+      }
+      splitVar = bdd_level2var(splitLevel);
+      if (applyop == bddop_imptstj)
+	  tres.root = ISONE(tresl.root) && ISONE(tresh.root) ? BDDONE : BDDZERO;
+      else 
+	  tres.root = bdd_makenode(splitLevel, READREF(2), READREF(1));
+      tres.clause_id = justify_apply(applyop, l, r, splitVar, tresl, tresh, tres.root);
+
+#if DO_TRACE
+      if (tresh.clause_id == TRACE_CLAUSE) {
+	  printf("TRACE: Got clause #%d from apply_rec as high result.  Operands = N%d, N%d\n", TRACE_CLAUSE, NNAME(l), NNAME(r));
+      }
+      if (tresl.clause_id == TRACE_CLAUSE) {
+	  printf("TRACE: Got clause #%d from apply_rec as low result.  Operands = N%d, N%d\n", TRACE_CLAUSE, NNAME(l), NNAME(r));
+      }
+#endif /* DO_TRACE */
+
+
+      POPREF(2);
+
+      BddCache_clause_evict(entry);
+      entry->a = l;
+      entry->b = r;
+      entry->c = -1;
+      entry->op = applyop;
+      entry->r.res = tres.root;
+      entry->r.jclause = tres.clause_id;
+#if DO_TRACE
+      if (tres.clause_id == TRACE_CLAUSE) {
+	  printf("TRACE: Adding clause #%d to cache.  Operands = N%d, N%d\n", TRACE_CLAUSE, NNAME(l), NNAME(r));
+      }
+      if (NNAME(tres.root) == TRACE_NNAME) {
+	  printf("TRACE: Adding operation with result node N%d to cache.  Operands = N%d, N%d\n", TRACE_NNAME, NNAME(l), NNAME(r));
+      }
+#endif /* DO_TRACE */
+   }
+
+   return tres;
+}
+
+static pcbdd apply_aij_rec(BDD l, BDD r, BDD t)
+{
+   BddCacheData *entry;
+   pcbdd tres;
+   
+   //   printf("apply_aij_rec called with l=%d (N%d), r=%d (N%d), t = %d (N%d)\n", (int) l, NNAME(l), (int) r, NNAME(r), int(t), NNAME(t));
+
+   tres.root = BDDONE;
+   tres.clause_id = TAUTOLOGY;
+
+   /* Terminal cases */
+   if (ISZERO(l)  ||  ISZERO(r))
+       return tres;
+   if (ISONE(l))
+       /* Implication */
+       return applyj_rec(r, t);
+   if (ISONE(r))
+       /* Implication */
+       return applyj_rec(l, t);
+   if (l == r)
+       /* Implication */
+       return applyj_rec(l, t);
+   if (ISONE(t))
+       return tres;
+   {
+      entry = BddCache_lookup(&opcache, APPLYHASH(l,r,t));
+      if (entry->a == l  &&  entry->b == r  &&  entry->c == t && entry->op == bddop_andimptstj)
+      {
+#ifdef CACHESTATS
+	 bddcachestats.opHit++;
+#endif
+	 tres.root = entry->r.res;
+	 tres.clause_id = entry->r.jclause;
+#if DO_TRACE
+	 if (tres.clause_id == TRACE_CLAUSE) {
+	     printf("TRACE: Retrieving clause #%d from cache in apply_aij_rec.  Operands = N%d, N%d, N%d\n", TRACE_CLAUSE, NNAME(l), NNAME(r), NNAME(t));
+	 }
+	 if (NNAME(tres.root) == TRACE_NNAME) {
+	     printf("TRACE: Retrieving node N%d from cache in apply_aij_rec.  Operands = N%d, N%d\n", N%d, TRACE_NNAME, NNAME(l), NNAME(r), NNAME(t));
+	 }
+#endif /* DO_TRACE */
+
+	 return tres;
+      }
+#ifdef CACHESTATS
+      bddcachestats.opMiss++;
+#endif
+      
+      pcbdd tresh;
+      pcbdd tresl;
+      int splitVar;
+      int splitLevel;
+
+      if (LEVEL(l) == LEVEL(r))
+      {
+	  if (LEVEL(t) < LEVEL(l)) {
+	      splitLevel = LEVEL(t);
+	      tresl = apply_aij_rec(l, r, LOW(t));
+	      PUSHREF( tresl.root );
+	      tresh = apply_aij_rec(l, r, HIGH(t));
+	      PUSHREF( tresh.root );
+	  } else if (LEVEL(t) == LEVEL(l)) {
+	      splitLevel = LEVEL(l);
+	      tresl = apply_aij_rec(LOW(l), LOW(r), LOW(t));
+	      PUSHREF( tresl.root );
+	      tresh = apply_aij_rec(HIGH(l), HIGH(r), HIGH(t));
+	      PUSHREF( tresh.root );
+	  } else {
+	      splitLevel = LEVEL(l);
+	      tresl = apply_aij_rec(LOW(l), LOW(r), t);
+	      PUSHREF( tresl.root );
+	      tresh = apply_aij_rec(HIGH(l), HIGH(r), t);
+	      PUSHREF( tresh.root );
+	  }
+      } else if (LEVEL(l) < LEVEL(r))
+      {
+	  if (LEVEL(t) < LEVEL(l)) {
+	      splitLevel = LEVEL(t);
+	      tresl = apply_aij_rec(l, r, LOW(t));
+	      PUSHREF( tresl.root );
+	      tresh = apply_aij_rec(l, r, HIGH(t));
+	      PUSHREF( tresh.root );
+	  } else if (LEVEL(t) == LEVEL(l)) {
+	      splitLevel = LEVEL(l);
+	      tresl = apply_aij_rec(LOW(l), r, LOW(t));
+	      PUSHREF( tresl.root );
+	      tresh = apply_aij_rec(HIGH(l), r, HIGH(t));
+	      PUSHREF( tresh.root );
+	  } else {
+	      splitLevel = LEVEL(l);
+	      tresl = apply_aij_rec(LOW(l), r, t);
+	      PUSHREF( tresl.root );
+	      tresh = apply_aij_rec(HIGH(l), r, t);
+	      PUSHREF( tresh.root );
+	  }
+      } else
+      {
+	  if (LEVEL(t) < LEVEL(r)) {
+	      splitLevel = LEVEL(t);
+	      tresl = apply_aij_rec(l, r, LOW(t));
+	      PUSHREF( tresl.root );
+	      tresh = apply_aij_rec(l, r, HIGH(t));
+	      PUSHREF( tresh.root );
+	  } else if (LEVEL(t) == LEVEL(r)) {
+	      splitLevel = LEVEL(r);
+	      tresl =  apply_aij_rec(l, LOW(r), LOW(t));
+	      PUSHREF( tresl.root );
+	      tresh = apply_aij_rec(l, HIGH(r), HIGH(t));
+	      PUSHREF( tresh.root );
+	  } else {
+	      splitLevel = LEVEL(r);
+	      tresl =  apply_aij_rec(l, LOW(r), t);
+	      PUSHREF( tresl.root );
+	      tresh = apply_aij_rec(l, HIGH(r), t);
+	      PUSHREF( tresh.root );
+	  }
+      }
+      splitVar = bdd_level2var(splitLevel);
+      tres.root = ISONE(tresl.root) && ISONE(tresh.root) ? BDDONE : BDDZERO;
+      //      printf("Attempting to justify AIJ.  Operands = N%d, N%d, N%d.  Var = %d\n", NNAME(l), NNAME(r), NNAME(t), splitVar);
+      //      printf("   Recursive results give clauses tresl:%d, tresh:%d\n", tresl.clause_id, tresh.clause_id);
+      tres.clause_id = justify_apply(bddop_andj, l, r, splitVar, tresl, tresh, t);
+
+#if DO_TRACE
+      if (tresh.clause_id == TRACE_CLAUSE) {
+	  printf("TRACE: Got clause #%d from apply_aij_rec as high result.  Operands = N%d, N%d, N%d\n", TRACE_CLAUSE, NNAME(l), NNAME(r), NNAME(t));
+      }
+      if (tresl.clause_id == TRACE_CLAUSE) {
+	  printf("TRACE: Got clause #%d from apply_aij_rec as low result.  Operands = N%d, N%d, N%d\n", TRACE_CLAUSE, NNAME(l), NNAME(r), NNAME(t)));
+      }
+#endif /* DO_TRACE */
+
+
+      POPREF(2);
+
+      BddCache_clause_evict(entry);
+      entry->a = l;
+      entry->b = r;
+      entry->c = t;
+      entry->op = bddop_andimptstj;
+      entry->r.res = tres.root;
+      entry->r.jclause = tres.clause_id;
+#if DO_TRACE
+      if (tres.clause_id == TRACE_CLAUSE) {
+	  printf("TRACE: Adding clause #%d to cache.  Operands = N%d, N%d, N%d\n", TRACE_CLAUSE, NNAME(l), NNAME(r), NNAME(t));
+      }
+      if (NNAME(tres.root) == TRACE_NNAME) {
+	  printf("TRACE: Adding operation with result node N%d to cache.  Operands = N%d, N%d, N%d\n", TRACE_NNAME, NNAME(l), NNAME(r), NNAME(t));
+      }
+#endif /* DO_TRACE */
+   }
+
+   return tres;
+}
+
+
+
+/*
+NAME    {* bdd\_and_justify *}
+SECTION {* operator *}
+SHORT   {* The logical 'and' of two BDDs, with proof generation *}
+PROTO   {* pcbdd bdd_and_justify(BDD l, BDD r) *}
+DESCR   {* This a wrapper that calls {\tt bdd\_applyj(l,r,bddop\_andj)}. *}
+RETURN  {* The logical 'and' of {\tt l} and {\tt r} plus a proof. *}
+ALSO    {* tbdd\_and *}
+*/
+pcbdd bdd_and_justify(BDD l, BDD r)
+{
+   pcbdd res= bdd_applyj(l,r,bddop_andj);
+   return res;
+}
+
+/*
+NAME    {* bdd\_imptst_justify *}
+SECTION {* operator *}
+SHORT   {* Confirm the logical 'implication' between two BDDs and generate the proof *}
+PROTO   {* pcbdd bdd_imptstj(BDD l, BDD r) *}
+DESCR   {* This a wrapper that calls {\tt bdd\_applyj(l,r,bddop\_imptstj)}. *}
+RETURN  {* BDD 1 if the implication holds, 0 if it does not, plus a proof. *}
+ALSO    {* tbdd\_validate *}
+*/
+pcbdd bdd_imptst_justify(BDD l, BDD r)
+{
+   return bdd_applyj(l,r,bddop_imptstj);
+}
+
+/*
+NAME    {* bdd\_and\_imptst_justify *}
+SECTION {* operator *}
+SHORT   {* Confirm that the conjunction of two BDDs logical implies the third BDD and generate the proof *}
+PROTO   {* pcbdd bdd_and_imptstj(BDD l, BDD r, BDD t) *}
+DESCR   {* This a wrapper that calls {\tt bdd\_apply\_aij(l,r,t}. *}
+RETURN  {* BDD 1 if the implication holds, 0 if it does not, plus a proof. *}
+ALSO    {* tbdd\_validate\_with\_and *}
+*/
+pcbdd bdd_and_imptst_justify(BDD l, BDD r, BDD t)
+{
+   return bdd_apply_aij(l,r,t);
+}
+#endif /* ENABLE_TBDD */
+
+
+
 /*=== ITE ==============================================================*/
 
 /*
@@ -736,7 +1247,7 @@ BDD bdd_ite(BDD f, BDD g, BDD h)
  again:
    if (setjmp(bddexception) == 0)
    {
-      bddrefstacktop = bddrefstack;
+      INITREF;
       
       if (!firstReorder)
 	 bdd_disable_reorder();
@@ -774,8 +1285,8 @@ static BDD ite_rec(BDD f, BDD g, BDD h)
    if (ISZERO(g) && ISONE(h))
       return not_rec(f);
 
-   entry = BddCache_lookup(&itecache, ITEHASH(f,g,h));
-   if (entry->a == f  &&  entry->b == g  &&  entry->c == h)
+   entry = BddCache_lookup(&opcache, ITEHASH(f,g,h));
+   if (entry->a == f  &&  entry->b == g  &&  entry->c == h && entry->op == bddop_ite)
    {
 #ifdef CACHESTATS
       bddcachestats.opHit++;
@@ -856,9 +1367,14 @@ static BDD ite_rec(BDD f, BDD g, BDD h)
 
    POPREF(2);
 
+#if ENABLE_TBDD
+   BddCache_clause_evict(entry);
+#endif      
+
    entry->a = f;
    entry->b = g;
    entry->c = h;
+   entry->op = bddop_ite;
    entry->r.res = res;
 
    return res;
@@ -884,8 +1400,8 @@ DESCR   {* This function restricts the variables in {\tt r} to constant
 	   restricted to true and variable 3 to false.
 	   \begin{verbatim}
   bdd X = make_user_bdd();
-  bdd R1 = bdd_ithvar(1);
-  bdd R2 = bdd_nithvar(3);
+  bdd R1 = BDD_ithvar(1);
+  bdd R2 = BDD_nithvar(3);
   bdd R = bdd_addref( bdd_apply(R1,R2, bddop_and) );
   bdd RES = bdd_addref( bdd_restrict(X,R) );
 \end{verbatim}
@@ -910,7 +1426,7 @@ BDD bdd_restrict(BDD r, BDD var)
       if (varset2svartable(var) < 0)
 	 return bddfalse;
 
-      bddrefstacktop = bddrefstack;
+      INITREF;
       miscid = (var << 3) | CACHEID_RESTRICT;
       
       if (!firstReorder)
@@ -941,8 +1457,8 @@ static int restrict_rec(int r)
    if (ISCONST(r)  ||  LEVEL(r) > quantlast)
       return r;
 
-   entry = BddCache_lookup(&misccache, RESTRHASH(r,miscid));
-   if (entry->a == r  &&  entry->c == miscid)
+   entry = BddCache_lookup(&opcache, RESTRHASH(r,miscid));
+   if (entry->a == r  &&  entry->c == miscid && entry->op == bddop_misc)
    {
 #ifdef CACHESTATS
       bddcachestats.opHit++;
@@ -968,8 +1484,14 @@ static int restrict_rec(int r)
       POPREF(2);
    }
 
+#if ENABLE_TBDD
+      BddCache_clause_evict(entry);
+#endif      
+
    entry->a = r;
+   entry->b = -1;
    entry->c = miscid;
+   entry->op = bddop_misc;
    entry->r.res = res;
 
    return res;
@@ -999,7 +1521,7 @@ BDD bdd_constrain(BDD f, BDD c)
  again:
    if (setjmp(bddexception) == 0)
    {
-      bddrefstacktop = bddrefstack;
+      INITREF;
       miscid = CACHEID_CONSTRAIN;
       
       if (!firstReorder)
@@ -1036,8 +1558,8 @@ static BDD constrain_rec(BDD f, BDD c)
    if (ISZERO(c))
       return BDDZERO;
 
-   entry = BddCache_lookup(&misccache, CONSTRAINHASH(f,c));
-   if (entry->a == f  &&  entry->b == c  &&  entry->c == miscid)
+   entry = BddCache_lookup(&opcache, CONSTRAINHASH(f,c));
+   if (entry->a == f  &&  entry->b == c  &&  entry->c == miscid && entry->op == bddop_misc)
    {
 #ifdef CACHESTATS
       bddcachestats.opHit++;
@@ -1085,9 +1607,15 @@ static BDD constrain_rec(BDD f, BDD c)
       }
    }
 
+#if ENABLE_TBDD
+      BddCache_clause_evict(entry);
+#endif      
+
+
    entry->a = f;
    entry->b = c;
    entry->c = miscid;
+   entry->op = bddop_misc;
    entry->r.res = res;
 
    return res;
@@ -1119,7 +1647,7 @@ BDD bdd_replace(BDD r, bddPair *pair)
  again:
    if (setjmp(bddexception) == 0)
    {
-      bddrefstacktop = bddrefstack;
+      INITREF;
       replacepair = pair->result;
       replacelast = pair->last;
       replaceid = (pair->id << 2) | CACHEID_REPLACE;
@@ -1152,8 +1680,8 @@ static BDD replace_rec(BDD r)
    if (ISCONST(r)  ||  LEVEL(r) > replacelast)
       return r;
 
-   entry = BddCache_lookup(&replacecache, REPLACEHASH(r));
-   if (entry->a == r  &&  entry->c == replaceid)
+   entry = BddCache_lookup(&opcache, REPLACEHASH(r));
+   if (entry->a == r  &&  entry->c == replaceid && entry->op == bddop_replace)
    {
 #ifdef CACHESTATS
       bddcachestats.opHit++;
@@ -1170,8 +1698,15 @@ static BDD replace_rec(BDD r)
    res = bdd_correctify(LEVEL(replacepair[LEVEL(r)]), READREF(2), READREF(1));
    POPREF(2);
 
+#if ENABLE_TBDD
+      BddCache_clause_evict(entry);
+#endif      
+
+
    entry->a = r;
+   entry->b = -1;
    entry->c = replaceid;
+   entry->op = bddop_replace;
    entry->r.res = res;
 
    return res;
@@ -1244,7 +1779,7 @@ BDD bdd_compose(BDD f, BDD g, int var)
  again:
    if (setjmp(bddexception) == 0)
    {
-      bddrefstacktop = bddrefstack;
+      INITREF;
       composelevel = bddvar2level[var];
       replaceid = (composelevel << 2) | CACHEID_COMPOSE;
       
@@ -1276,8 +1811,8 @@ static BDD compose_rec(BDD f, BDD g)
    if (LEVEL(f) > composelevel)
       return f;
 
-   entry = BddCache_lookup(&replacecache, COMPOSEHASH(f,g));
-   if (entry->a == f  &&  entry->b == g  &&  entry->c == replaceid)
+   entry = BddCache_lookup(&opcache, COMPOSEHASH(f,g));
+   if (entry->a == f  &&  entry->b == g  &&  entry->c == replaceid && entry->op == bddop_replace)
    {
 #ifdef CACHESTATS
       bddcachestats.opHit++;
@@ -1317,9 +1852,15 @@ static BDD compose_rec(BDD f, BDD g)
       res = ite_rec(g, HIGH(f), LOW(f));
    }
 
+#if ENABLE_TBDD
+      BddCache_clause_evict(entry);
+#endif      
+
+
    entry->a = f;
    entry->b = g;
    entry->c = replaceid;
+   entry->op = bddop_replace;
    entry->r.res = res;
 
    return res;
@@ -1356,7 +1897,7 @@ BDD bdd_veccompose(BDD f, bddPair *pair)
  again:
    if (setjmp(bddexception) == 0)
    {
-      bddrefstacktop = bddrefstack;
+      INITREF;
       replacepair = pair->result;
       replaceid = (pair->id << 2) | CACHEID_VECCOMPOSE;
       replacelast = pair->last;
@@ -1389,8 +1930,8 @@ static BDD veccompose_rec(BDD f)
    if (LEVEL(f) > replacelast)
       return f;
    
-   entry = BddCache_lookup(&replacecache, VECCOMPOSEHASH(f));
-   if (entry->a == f  &&  entry->c == replaceid)
+   entry = BddCache_lookup(&opcache, VECCOMPOSEHASH(f));
+   if (entry->a == f  &&  entry->c == replaceid && entry->op == bddop_replace)
    {
 #ifdef CACHESTATS
       bddcachestats.opHit++;
@@ -1406,8 +1947,15 @@ static BDD veccompose_rec(BDD f)
    res = ite_rec(replacepair[LEVEL(f)], READREF(1), READREF(2));
    POPREF(2);
 
+#if ENABLE_TBDD
+      BddCache_clause_evict(entry);
+#endif      
+
+
    entry->a = f;
+   entry->b = -1;
    entry->c = replaceid;
+   entry->op = bddop_replace;
    entry->r.res = res;
 
    return res;
@@ -1439,7 +1987,7 @@ BDD bdd_simplify(BDD f, BDD d)
  again:
    if (setjmp(bddexception) == 0)
    {
-      bddrefstacktop = bddrefstack;
+      INITREF;
       applyop = bddop_or;
       
       if (!firstReorder)
@@ -1474,9 +2022,9 @@ static BDD simplify_rec(BDD f, BDD d)
    if (ISZERO(d))
       return BDDZERO;
 
-   entry = BddCache_lookup(&applycache, APPLYHASH(f,d,bddop_simplify));
+   entry = BddCache_lookup(&opcache, APPLYHASH(f,d,bddop_simplify));
    
-   if (entry->a == f  &&  entry->b == d  &&  entry->c == bddop_simplify)
+   if (entry->a == f  &&  entry->b == d  &&  entry->op == bddop_simplify)
    {
 #ifdef CACHESTATS
       bddcachestats.opHit++;
@@ -1517,9 +2065,14 @@ static BDD simplify_rec(BDD f, BDD d)
       POPREF(1);
    }
 
+#if ENABLE_TBDD
+      BddCache_clause_evict(entry);
+#endif      
+
    entry->a = f;
    entry->b = d;
-   entry->c = bddop_simplify;
+   entry->c = -1;
+   entry->op = bddop_simplify;
    entry->r.res = res;
 
    return res;
@@ -1555,7 +2108,7 @@ BDD bdd_exist(BDD r, BDD var)
       if (varset2vartable(var) < 0)
 	 return bddfalse;
 
-      bddrefstacktop = bddrefstack;
+      INITREF;
       quantid = (var << 3) | CACHEID_EXIST; /* FIXME: range */
       applyop = bddop_or;
 
@@ -1606,7 +2159,7 @@ BDD bdd_forall(BDD r, BDD var)
       if (varset2vartable(var) < 0)
 	 return bddfalse;
 
-      bddrefstacktop = bddrefstack;
+      INITREF;
       quantid = (var << 3) | CACHEID_FORALL;
       applyop = bddop_and;
       
@@ -1660,7 +2213,7 @@ BDD bdd_unique(BDD r, BDD var)
       if (varset2vartable(var) < 0)
 	 return bddfalse;
 
-      bddrefstacktop = bddrefstack;
+      INITREF;
       quantid = (var << 3) | CACHEID_UNIQUE;
       applyop = bddop_xor;
       
@@ -1692,8 +2245,8 @@ static int quant_rec(int r)
    if (r < 2  ||  LEVEL(r) > quantlast)
       return r;
 
-   entry = BddCache_lookup(&quantcache, QUANTHASH(r));
-   if (entry->a == r  &&  entry->c == quantid)
+   entry = BddCache_lookup(&opcache, QUANTHASH(r));
+   if (entry->a == r  &&  entry->c == quantid && entry->op == bddop_quant)
    {
 #ifdef CACHESTATS
       bddcachestats.opHit++;
@@ -1714,8 +2267,14 @@ static int quant_rec(int r)
 
    POPREF(2);
    
+#if ENABLE_TBDD
+      BddCache_clause_evict(entry);
+#endif      
+
    entry->a = r;
+   entry->b = -1;
    entry->c = quantid;
+   entry->op = bddop_quant;
    entry->r.res = res;
 
    return res;
@@ -1766,7 +2325,7 @@ BDD bdd_appex(BDD l, BDD r, int opr, BDD var)
       if (varset2vartable(var) < 0)
 	 return bddfalse;
    
-      bddrefstacktop = bddrefstack;
+      INITREF;
       applyop = bddop_or;
       appexop = opr;
       appexid = (var << 5) | (appexop << 1); /* FIXME: range! */
@@ -1832,7 +2391,7 @@ BDD bdd_appall(BDD l, BDD r, int opr, BDD var)
       if (varset2vartable(var) < 0)
 	 return bddfalse;
 
-      bddrefstacktop = bddrefstack;
+      INITREF;
       applyop = bddop_and;
       appexop = opr;
       appexid = (var << 5) | (appexop << 1) | 1; /* FIXME: range! */
@@ -1898,7 +2457,7 @@ BDD bdd_appuni(BDD l, BDD r, int opr, BDD var)
       if (varset2vartable(var) < 0)
 	 return bddfalse;
 
-      bddrefstacktop = bddrefstack;
+      INITREF;
       applyop = bddop_xor;
       appexop = opr;
       appexid = (var << 5) | (appexop << 1) | 1; /* FIXME: range! */
@@ -1981,8 +2540,8 @@ static int appquant_rec(int l, int r)
    }
    else
    {
-      entry = BddCache_lookup(&appexcache, APPEXHASH(l,r,appexop));
-      if (entry->a == l  &&  entry->b == r  &&  entry->c == appexid)
+      entry = BddCache_lookup(&opcache, APPEXHASH(l,r,appexop));
+      if (entry->a == l  &&  entry->b == r  &&  entry->c == appexid && entry->op == bddop_appex)
       {
 #ifdef CACHESTATS
 	 bddcachestats.opHit++;
@@ -2024,9 +2583,14 @@ static int appquant_rec(int l, int r)
 
       POPREF(2);
       
+#if ENABLE_TBDD
+      BddCache_clause_evict(entry);
+#endif      
+
       entry->a = l;
       entry->b = r;
       entry->c = appexid;
+      entry->op = bddop_appex;
       entry->r.res = res;
    }
 
@@ -2144,7 +2708,7 @@ PROTO   {* BDD bdd_satone(BDD r) *}
 DESCR   {* Finds a BDD with at most one variable at each level. This BDD
            implies {\tt r} and is not false unless {\tt r} is
 	   false. *}
-ALSO    {* bdd\_satoneset, bdd\_fullsatone, bdd\_satcount, bdd\_satcountln *}
+ALSO    {* bdd\_allsat bdd\_satoneset, bdd\_fullsatone, bdd\_satcount, bdd\_satcountln *}
 RETURN  {* The result of the operation. *}
 */
 BDD bdd_satone(BDD r)
@@ -2157,7 +2721,7 @@ BDD bdd_satone(BDD r)
 
    bdd_disable_reorder();
    
-   bddrefstacktop = bddrefstack;
+   INITREF;
    res = satone_rec(r);
 
    bdd_enable_reorder();
@@ -2197,7 +2761,7 @@ DESCR   {* Finds a minterm in {\tt r}. The {\tt var} argument is a
 	   by the {\tt pol} parameter. If {\tt pol} is the false BDD then
 	   the variables will be in negative form, and otherwise they will
 	   be in positive form. *}
-ALSO    {* bdd\_satone, bdd\_fullsatone, bdd\_satcount, bdd\_satcountln *}
+ALSO    {* bdd\_allsat bdd\_satone, bdd\_fullsatone, bdd\_satcount, bdd\_satcountln *}
 RETURN  {* The result of the operation. *}
 */
 BDD bdd_satoneset(BDD r, BDD var, BDD pol)
@@ -2215,7 +2779,7 @@ BDD bdd_satoneset(BDD r, BDD var, BDD pol)
 
    bdd_disable_reorder();
    
-   bddrefstacktop = bddrefstack;
+   INITREF;
    satPolarity = pol;
    res = satoneset_rec(r, var);
 
@@ -2279,7 +2843,7 @@ PROTO   {* BDD bdd_fullsatone(BDD r) *}
 DESCR   {* Finds a BDD with exactly one variable at all levels. This BDD
            implies {\tt r} and is not false unless {\tt r} is
 	   false. *}
-ALSO    {* bdd\_satone, bdd\_satoneset, bdd\_satcount, bdd\_satcountln *}
+ALSO    {* bdd\_allsat bdd\_satone, bdd\_satoneset, bdd\_satcount, bdd\_satcountln *}
 RETURN  {* The result of the operation. *}
 */
 BDD bdd_fullsatone(BDD r)
@@ -2293,7 +2857,7 @@ BDD bdd_fullsatone(BDD r)
 
    bdd_disable_reorder();
    
-   bddrefstacktop = bddrefstack;
+   INITREF;
    res = fullsatone_rec(r);
 
    for (v=LEVEL(r)-1 ; v>=0 ; v--)
@@ -2336,6 +2900,105 @@ static int fullsatone_rec(int r)
       }
 
       return PUSHREF( bdd_makenode(LEVEL(r), 0, res) );
+   }
+}
+
+
+/*=== ALL SATISFYING VARIABLE ASSIGNMENTS ==============================*/
+
+/*
+NAME    {* bdd\_allsat *}
+SECTION {* operator *}
+SHORT   {* finds all satisfying variable assignments *}
+PROTO   {* BDD bdd_satone(BDD r, bddallsathandler handler) *}
+DESCR   {* Iterates through all legal variable assignments (those
+           that make the BDD come true) for the  bdd {\tt r} and
+	   calls the callback handler {\tt handler} for each of them.
+	   The array passed to {\tt handler} contains one entry for
+	   each of the globaly defined variables. Each entry is either
+	   0 if the variable is false, 1 if it is true, and -1 if it
+	   is a don't care.
+
+	   The following is an example of a callback handler that
+	   prints 'X' for don't cares, '0' for zero, and '1' for one:
+	   \begin{verbatim}
+void allsatPrintHandler(char* varset, int size)
+{
+  for (int v=0; v<size ; ++v)
+  {
+    cout << (varset[v] < 0 ? 'X' : (char)('0' + varset[v]));
+  }
+  cout << endl;
+}
+\end{verbatim}
+
+           \noindent
+	   The handler can be used like this:
+	   {\tt bdd\_allsat(r, allsatPrintHandler); } *}
+	   
+ALSO    {* bdd\_satone bdd\_satoneset, bdd\_fullsatone, bdd\_satcount, bdd\_satcountln *}
+*/
+void bdd_allsat(BDD r, bddallsathandler handler)
+{
+   int v;
+  
+   CHECKn(r);
+
+   if ((allsatProfile=(char*)malloc(bddvarnum)) == NULL)
+   {
+      bdd_error(BDD_MEMORY);
+      return;
+   }
+
+   for (v=LEVEL(r)-1 ; v>=0 ; --v)
+     allsatProfile[bddlevel2var[v]] = -1;
+   
+   allsatHandler = handler;
+   INITREF;
+   
+   allsat_rec(r);
+
+   free(allsatProfile);
+}
+
+
+static void allsat_rec(BDD r)
+{
+   if (ISONE(r))
+   {
+      allsatHandler(allsatProfile, bddvarnum);
+      return;
+   }
+  
+   if (ISZERO(r))
+      return;
+   
+   if (!ISZERO(LOW(r)))
+   {
+      int v;
+
+      allsatProfile[bddlevel2var[LEVEL(r)]] = 0;
+	 
+      for (v=LEVEL(LOW(r))-1 ; v>LEVEL(r) ; --v)
+      {
+	 allsatProfile[bddlevel2var[v]] = -1;
+      }
+      
+      allsat_rec(LOW(r));
+   }
+   
+   if (!ISZERO(HIGH(r)))
+   {
+      int v;
+
+      allsatProfile[bddlevel2var[LEVEL(r)]] = 1;
+	 
+      for (v=LEVEL(HIGH(r))-1 ; v>LEVEL(r) ; --v)
+      {
+	 allsatProfile[bddlevel2var[v]] = -1;
+      }
+      
+      allsat_rec(HIGH(r));
    }
 }
 
@@ -2397,8 +3060,8 @@ static double satcount_rec(int root)
    if (root < 2)
       return root;
 
-   entry = BddCache_lookup(&misccache, SATCOUHASH(root));
-   if (entry->a == root  &&  entry->c == miscid)
+   entry = BddCache_lookup(&opcache, SATCOUHASH(root));
+   if (entry->a == root  &&  entry->c == miscid && entry->op == bddop_misc)
       return entry->r.dres;
 
    node = &bddnodes[root];
@@ -2412,8 +3075,14 @@ static double satcount_rec(int root)
    s *= pow(2.0, (float)(LEVEL(HIGHp(node)) - LEVELp(node) - 1));
    size += s * satcount_rec(HIGHp(node));
 
+#if ENABLE_TBDD
+      BddCache_clause_evict(entry);
+#endif      
+
    entry->a = root;
+   entry->b = -1;
    entry->c = miscid;
+   entry->op = bddop_misc;
    entry->r.dres = size;
    
    return size;
@@ -2483,8 +3152,8 @@ static double satcountln_rec(int root)
    if (root == 1)
       return 0.0;
 
-   entry = BddCache_lookup(&misccache, SATCOUHASH(root));
-   if (entry->a == root  &&  entry->c == miscid)
+   entry = BddCache_lookup(&opcache, SATCOUHASH(root));
+   if (entry->a == root  &&  entry->c == miscid && entry->op == bddop_misc)
       return entry->r.dres;
 
    node = &bddnodes[root];
@@ -2506,8 +3175,14 @@ static double satcountln_rec(int root)
    else
       size = s1 + log1p(pow(2.0,s2-s1)) / M_LN2;
    
+#if ENABLE_TBDD
+      BddCache_clause_evict(entry);
+#endif      
+
    entry->a = root;
+   entry->b = -1;
    entry->c = miscid;
+   entry->op = bddop_misc;
    entry->r.dres = size;
    
    return size;
@@ -2649,14 +3324,20 @@ static double bdd_pathcount_rec(BDD r)
    if (ISONE(r))
       return 1.0;
 
-   entry = BddCache_lookup(&misccache, PATHCOUHASH(r));
-   if (entry->a == r  &&  entry->c == miscid)
+   entry = BddCache_lookup(&opcache, PATHCOUHASH(r));
+   if (entry->a == r  &&  entry->c == miscid && entry->op == bddop_misc)
       return entry->r.dres;
 
    size = bdd_pathcount_rec(LOW(r)) + bdd_pathcount_rec(HIGH(r));
 
+#if ENABLE_TBDD
+      BddCache_clause_evict(entry);
+#endif      
+
    entry->a = r;
+   entry->b = -1;
    entry->c = miscid;
+   entry->op = bddop_misc;
    entry->r.dres = size;
    
    return size;

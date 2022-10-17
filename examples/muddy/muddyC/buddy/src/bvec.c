@@ -1,5 +1,5 @@
 /*========================================================================
-               Copyright (C) 1996-2001 by Jorn Lind-Nielsen
+               Copyright (C) 1996-2002 by Jorn Lind-Nielsen
                             All rights reserved
 
     Permission is hereby granted, without written agreement and without
@@ -28,7 +28,7 @@
 ========================================================================*/
 
 /*************************************************************************
-  $Header$
+  $Header: /cvsroot/buddy/buddy/src/bvec.c,v 1.1.1.1 2004/06/25 13:22:34 haimcohen Exp $
   FILE:  bvec.c
   DESCR: Boolean vector arithmetics using BDDs
   AUTH:  Jorn Lind
@@ -179,7 +179,7 @@ SECTION {* bvec *}
 SHORT   {* build a boolean vector with BDD variables *}
 PROTO   {* bvec bvec_var(int bitnum, int offset, int step) *}
 DESCR   {* Builds a boolean vector with the BDD variables $v_1, \ldots,
-           v_n$ as the elements. Each variable will be the variabled
+           v_n$ as the elements. Each variable will be the the variabled
 	   numbered {\tt offset + N*step} where {\tt N} ranges from 0 to
 	   {\tt bitnum}-1.*}
 RETURN  {* The boolean vector (which is already reference counted) *}
@@ -193,7 +193,7 @@ bvec bvec_var(int bitnum, int offset, int step)
    v = bvec_build(bitnum,0);
    
    for (n=0 ; n<bitnum ; n++)
-      v.bitvec[n] = bdd_ithvar(offset+n*step);
+      v.bitvec[n] = BDD_ithvar(offset+n*step);
 
    return v;
 }
@@ -226,7 +226,7 @@ bvec bvec_varfdd(int var)
    v = bvec_build(varbitnum,0);
    
    for (n=0 ; n<v.bitnum ; n++)
-      v.bitvec[n] = bdd_ithvar(bddvar[n]);
+      v.bitvec[n] = BDD_ithvar(bddvar[n]);
 
    return v;
 }
@@ -250,7 +250,7 @@ bvec bvec_varvec(int bitnum, int *var)
    v = bvec_build(bitnum,0);
    
    for (n=0 ; n<bitnum ; n++)
-      v.bitvec[n] = bdd_ithvar(var[n]);
+      v.bitvec[n] = BDD_ithvar(var[n]);
 
    return v;
 }
@@ -902,6 +902,44 @@ int bvec_div(bvec left, bvec right, bvec *result, bvec *remainder)
    
    return 0;
 }
+
+
+/*
+NAME    {* bvec\_ite *}
+SECTION {* bvec *}
+SHORT   {* calculates the if-then-else operator for a boolean vector *}
+PROTO   {* bvec bvec_ite(bdd a, bvec b, bvec c) *}
+DESCR   {* Builds a vector where the bdd {\tt a} has been applied bitwise to
+           {\tt b} and {\tt c} in an if-then-else operation, such that
+	   the result $r$ is:
+	   \[
+	     r_i = ite(a,b_i,c_i);
+	   \] *}
+RETURN  {* The if-then-else result. *}
+ALSO    {* bdd\_ite *}
+*/
+bvec bvec_ite(bdd a, bvec b, bvec c)
+{
+  bvec res;
+  int n;
+
+  DEFAULT(res);
+  if (b.bitnum != c.bitnum)
+  {
+    bdd_error(BVEC_SIZE);
+    return res;
+  }
+
+  res = bvec_build(b.bitnum, 0);
+  
+  for (n=0 ; n<b.bitnum ; ++n)
+  {
+    res.bitvec[n] = bdd_addref( bdd_ite(a, b.bitvec[n], c.bitvec[n]) );
+  }
+
+  return res;
+}
+
 
 
 /*

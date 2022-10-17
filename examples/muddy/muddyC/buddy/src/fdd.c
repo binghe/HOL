@@ -1,5 +1,5 @@
 /*========================================================================
-               Copyright (C) 1996-2001 by Jorn Lind-Nielsen
+               Copyright (C) 1996-2002 by Jorn Lind-Nielsen
                             All rights reserved
 
     Permission is hereby granted, without written agreement and without
@@ -28,7 +28,7 @@
 ========================================================================*/
 
 /*************************************************************************
-  $Header$
+  $Header: /cvsroot/buddy/buddy/src/fdd.c,v 1.1.1.1 2004/06/25 13:22:40 haimcohen Exp $
   FILE:  fdd.c
   DESCR: Finite domain extensions to BDD package
   AUTH:  Jorn Lind
@@ -175,7 +175,7 @@ int fdd_extdomain(int *dom, int num)
 
    for (n=0 ; n<num ; n++)
    {
-      domain[n+fdvarnum].var = bdd_makeset(domain[n+fdvarnum].ivar,
+      domain[n+fdvarnum].var = BDD_makeset(domain[n+fdvarnum].ivar,
 					   domain[n+fdvarnum].binsize);
       bdd_addref(domain[n+fdvarnum].var);
    }
@@ -234,7 +234,7 @@ int fdd_overlapdomain(int v1, int v2)
    for (n=0 ; n<domain[v2].binsize ; n++)
       d->ivar[domain[v1].binsize+n] = domain[v2].ivar[n];
 	 
-   d->var = bdd_makeset(d->ivar, d->binsize);
+   d->var = BDD_makeset(d->ivar, d->binsize);
    bdd_addref(d->var);
    
    return fdvarnum++;
@@ -402,9 +402,9 @@ BDD fdd_ithvar(int var, int val)
       bdd_addref(v);
       
       if (val & 0x1)
-	 tmp = bdd_apply(bdd_ithvar(domain[var].ivar[n]), v, bddop_and);
+	 tmp = bdd_apply(BDD_ithvar(domain[var].ivar[n]), v, bddop_and);
       else
-	 tmp = bdd_apply(bdd_nithvar(domain[var].ivar[n]), v, bddop_and);
+	 tmp = bdd_apply(BDD_nithvar(domain[var].ivar[n]), v, bddop_and);
 
       bdd_delref(v);
       v = tmp;
@@ -577,9 +577,9 @@ BDD fdd_domain(int var)
       BDD tmp;
       
       if (val & 0x1)
-	 tmp = bdd_apply( bdd_nithvar(dom->ivar[n]), d, bddop_or );
+	 tmp = bdd_apply( BDD_nithvar(dom->ivar[n]), d, bddop_or );
       else
-	 tmp = bdd_apply( bdd_nithvar(dom->ivar[n]), d, bddop_and );
+	 tmp = bdd_apply( BDD_nithvar(dom->ivar[n]), d, bddop_and );
 
       val >>= 1;
 
@@ -627,8 +627,8 @@ BDD fdd_equals(int left, int right)
    
    for (n=0 ; n<domain[left].binsize ; n++)
    {
-      tmp1 = bdd_addref( bdd_apply(bdd_ithvar(domain[left].ivar[n]),
-				   bdd_ithvar(domain[right].ivar[n]),
+      tmp1 = bdd_addref( bdd_apply(BDD_ithvar(domain[left].ivar[n]),
+				   BDD_ithvar(domain[right].ivar[n]),
 				   bddop_biimp) );
       
       tmp2 = bdd_addref( bdd_apply(e, tmp1, bddop_and) );

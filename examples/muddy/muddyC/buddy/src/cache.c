@@ -1,5 +1,36 @@
 /*========================================================================
-               Copyright (C) 1996-2001 by Jorn Lind-Nielsen
+  Copyright (c) 2022 Randal E. Bryant, Carnegie Mellon University
+  
+  As noted below, this code is a modified version of code authored and
+  copywrited by Jorn Lind-Nielsen.  Permisssion to use the original
+  code is subject to the terms noted below.
+
+  Regarding the modifications, and subject to any constraints on the
+  use of the original code, permission is hereby granted, free of
+  charge, to any person obtaining a copy of this software and
+  associated documentation files (the "Software"), to deal in the
+  Software without restriction, including without limitation the
+  rights to use, copy, modify, merge, publish, distribute, sublicense,
+  and/or sell copies of the Software, and to permit persons to whom
+  the Software is furnished to do so, subject to the following
+  conditions:
+  
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+  
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+========================================================================*/
+
+
+/*========================================================================
+               Copyright (C) 1996-2002 by Jorn Lind-Nielsen
                             All rights reserved
 
     Permission is hereby granted, without written agreement and without
@@ -28,7 +59,7 @@
 ========================================================================*/
 
 /*************************************************************************
-  $Header$
+  $Header: /cvsroot/buddy/buddy/src/cache.c,v 1.1.1.1 2004/06/25 13:22:34 haimcohen Exp $
   FILE:  cache.c
   DESCR: Cache class for caching apply/exist etc. results in BDD package
   AUTH:  Jorn Lind
@@ -92,6 +123,34 @@ void BddCache_reset(BddCache *cache)
    for (n=0 ; n<cache->tablesize ; n++)
       cache->table[n].a = -1;
 }
+
+#if ENABLE_TBDD
+void BddCache_clause_evict(BddCacheData *entry) {
+    int id;
+    if (entry->a != -1 &&
+	(entry->op == bddop_andimptstj || entry->op == bddop_andj || entry->op == bddop_imptstj)) {
+	id = entry->r.jclause;
+	if (id == TAUTOLOGY)
+	    return;
+#if DO_TRACE
+	if (NNAME(entry->r.res) == TRACE_NNAME) {
+	    printf("TRACE: Evicting node N%d.  Deleting clause %d\n", TRACE_NNAME, entry->r.jclause);
+	}
+#endif	
+	defer_delete_clause(id);
+    }
+}
+
+void BddCache_clear_clauses(BddCache *cache)
+{
+   register int n;
+   print_proof_comment(2, "Deleting justifying clauses for cached operations");
+   for (n=0 ; n<cache->tablesize ; n++) {
+       BddCacheData *entry = &cache->table[n];
+       BddCache_clause_evict(entry);
+   }
+}
+#endif
 
 
 /* EOF */

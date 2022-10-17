@@ -1,5 +1,5 @@
 /*========================================================================
-               Copyright (C) 1996-2001 by Jorn Lind-Nielsen
+               Copyright (C) 1996-2002 by Jorn Lind-Nielsen
                             All rights reserved
 
     Permission is hereby granted, without written agreement and without
@@ -28,7 +28,7 @@
 ========================================================================*/
 
 /*************************************************************************
-  $Header$
+  $Header: /cvsroot/buddy/buddy/src/prime.c,v 1.1.1.1 2004/06/25 13:22:51 haimcohen Exp $
   FILE:  prime.c
   DESCR: Prime number calculations
   AUTH:  Jorn Lind
@@ -224,10 +224,10 @@ static int isPrime(unsigned int src)
 unsigned int bdd_prime_gte(unsigned int src)
 {
   if (isEven(src))
-    --src;
+    ++src;
 
   while (!isPrime(src))
-    src -= 2;
+    src += 2;
 
   return src;
 }

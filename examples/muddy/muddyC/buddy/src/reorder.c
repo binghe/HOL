@@ -1,5 +1,5 @@
 /*========================================================================
-               Copyright (C) 1996-2001 by Jorn Lind-Nielsen
+               Copyright (C) 1996-2002 by Jorn Lind-Nielsen
                             All rights reserved
 
     Permission is hereby granted, without written agreement and without
@@ -28,7 +28,7 @@
 ========================================================================*/
 
 /*************************************************************************
-  $Header$
+  $Header: /cvsroot/buddy/buddy/src/reorder.c,v 1.1.1.1 2004/06/25 13:22:59 haimcohen Exp $
   FILE:  reorder.c
   DESCR: BDD reordering functions
   AUTH:  Jorn Lind
@@ -1626,7 +1626,10 @@ int bdd_reorder_ready(void)
    
 void bdd_reorder_auto(void)
 {
-   if (!bdd_reorder_ready)
+    // Bug Fix REB 2021-11-01
+    // Was:
+    //   if (!bdd_reorder_ready)
+   if (!bdd_reorder_ready())
       return;
    
    if (reorder_handler != NULL)
@@ -1973,8 +1976,10 @@ ALSO    {* bdd\_reorder, bdd\_level2var *}
 */
 int bdd_var2level(int var)
 {
-   if (var < 0  ||  var >= bddvarnum)
-      return bdd_error(BDD_VAR);
+    if (var < 0  ||  var >= bddvarnum) {
+	fprintf(ERROUT, "ERROR.  Attempting to find level of variable %d\n", var);
+	return bdd_error(BDD_VAR);
+    }
 
    return bddvar2level[var];
 }
@@ -1991,9 +1996,10 @@ ALSO    {* bdd\_reorder, bdd\_var2level *}
 */
 int bdd_level2var(int level)
 {
-   if (level < 0  ||  level >= bddvarnum)
-      return bdd_error(BDD_VAR);
-
+    if (level < 0  ||  level >= bddvarnum) {
+	fprintf(ERROUT, "ERROR.  Attempting to find variable at level %d\n", level);
+	return bdd_error(BDD_VAR);
+    }
    return bddlevel2var[level];
 }
 

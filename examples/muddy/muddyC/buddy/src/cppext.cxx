@@ -1,5 +1,5 @@
 /*========================================================================
-               Copyright (C) 1996-2001 by Jorn Lind-Nielsen
+               Copyright (C) 1996-2002 by Jorn Lind-Nielsen
                             All rights reserved
 
     Permission is hereby granted, without written agreement and without
@@ -28,7 +28,7 @@
 ========================================================================*/
 
 /*************************************************************************
-  $Header$
+  $Header: /cvsroot/buddy/buddy/src/cppext.cxx,v 1.1.1.1 2004/06/25 13:22:39 haimcohen Exp $
   FILE:  cppext.cxx
   DESCR: C++ extension of BDD package
   AUTH:  Jorn Lind
@@ -609,5 +609,16 @@ bvec bvec_map3(const bvec &a, const bvec &b, const bvec &c,
    return res;
 }
 
+
+ostream &operator<<(ostream &o, const bvec &v)
+{
+  for (int i=0 ; i<v.bitnum() ; ++i)
+  {
+    o << "B" << i << ":\n"
+      << v[i] << "\n";
+  }
+
+  return o;
+}
 
 /* EOF */

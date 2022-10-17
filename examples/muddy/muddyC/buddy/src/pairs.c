@@ -1,5 +1,5 @@
 /*========================================================================
-               Copyright (C) 1996-2001 by Jorn Lind-Nielsen
+               Copyright (C) 1996-2002 by Jorn Lind-Nielsen
                             All rights reserved
 
     Permission is hereby granted, without written agreement and without
@@ -28,7 +28,7 @@
 ========================================================================*/
 
 /*************************************************************************
-  $Header$
+  $Header: /cvsroot/buddy/buddy/src/pairs.c,v 1.1.1.1 2004/06/25 13:22:50 haimcohen Exp $
   FILE:  pairs.c
   DESCR: Pair management for BDD package.
   AUTH:  Jorn Lind
@@ -124,7 +124,7 @@ int bdd_pairs_resize(int oldsize, int newsize)
 	 return bdd_error(BDD_MEMORY);
 
       for (n=oldsize ; n<newsize ; n++)
-	 p->result[n] = bdd_ithvar(bddlevel2var[n]);
+	 p->result[n] = BDD_ithvar(bddlevel2var[n]);
    }
 
    return 0;
@@ -162,7 +162,8 @@ bddPair *bdd_newpair(void)
    }
 
    for (n=0 ; n<bddvarnum ; n++)
-      p->result[n] = bdd_ithvar(bddlevel2var[n]);
+      p->result[n] = BDD_ithvar(bddlevel2var[n]);
+
    p->id = update_pairsid();
    p->last = -1;
    
@@ -203,7 +204,7 @@ int bdd_setpair(bddPair *pair, int oldvar, int newvar)
       return bdd_error(BDD_VAR);
 
    bdd_delref( pair->result[bddvar2level[oldvar]] );
-   pair->result[bddvar2level[oldvar]] = bdd_ithvar(newvar);
+   pair->result[bddvar2level[oldvar]] = BDD_ithvar(newvar);
    pair->id = update_pairsid();
    
    if (bddvar2level[oldvar] > pair->last)
@@ -325,7 +326,7 @@ void bdd_resetpair(bddPair *p)
    int n;
 
    for (n=0 ; n<bddvarnum ; n++)
-      p->result[n] = bdd_ithvar(n);
+      p->result[n] = BDD_ithvar(n);
    p->last = 0;
 }
 

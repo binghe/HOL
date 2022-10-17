@@ -1,5 +1,36 @@
 /*========================================================================
-               Copyright (C) 1996-2001 by Jorn Lind-Nielsen
+  Copyright (c) 2022 Randal E. Bryant, Carnegie Mellon University
+  
+  As noted below, this code is a modified version of code authored and
+  copywrited by Jorn Lind-Nielsen.  Permisssion to use the original
+  code is subject to the terms noted below.
+
+  Regarding the modifications, and subject to any constraints on the
+  use of the original code, permission is hereby granted, free of
+  charge, to any person obtaining a copy of this software and
+  associated documentation files (the "Software"), to deal in the
+  Software without restriction, including without limitation the
+  rights to use, copy, modify, merge, publish, distribute, sublicense,
+  and/or sell copies of the Software, and to permit persons to whom
+  the Software is furnished to do so, subject to the following
+  conditions:
+  
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+  
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+========================================================================*/
+
+
+/*========================================================================
+               Copyright (C) 1996-2002 by Jorn Lind-Nielsen
                             All rights reserved
 
     Permission is hereby granted, without written agreement and without
@@ -28,24 +59,42 @@
 ========================================================================*/
 
 /*************************************************************************
-  $Header$
+  $Header: /cvsroot/buddy/buddy/src/cache.h,v 1.1.1.1 2004/06/25 13:22:34 haimcohen Exp $
   FILE:  cache.h
   DESCR: Cache class for caching apply/exist etc. results
   AUTH:  Jorn Lind
   DATE:  (C) june 1997
 *************************************************************************/
 
+/*************************************************************************
+  Modified 2022/02/10.  R.E. Bryant
+  Create four cache operands (a, b, c, op) so that single cache would suffice for all operations
+*************************************************************************/
+
 #ifndef _CACHE_H
 #define _CACHE_H
+
+#ifndef ENABLE_TBDD
+#define ENABLE_TBDD 0
+#endif
 
 typedef struct
 {
    union
    {
       double dres;
-      int res;
+#if ENABLE_TBDD
+       // C compiler needs to support anonymous structs
+       struct {
+	   BDD res;
+	   int jclause;
+       };
+#else
+       int res;
+#endif       
    } r;
    int a,b,c;
+   int op;
 } BddCacheData;
 
 
@@ -55,11 +104,15 @@ typedef struct
    int tablesize;
 } BddCache;
 
-
 extern int  BddCache_init(BddCache *, int);
 extern void BddCache_done(BddCache *);
 extern int  BddCache_resize(BddCache *, int);
 extern void BddCache_reset(BddCache *);
+
+#if ENABLE_TBDD
+extern void BddCache_clause_evict(BddCacheData *entry);
+extern void BddCache_clear_clauses(BddCache *);
+#endif
 
 #define BddCache_lookup(cache, hash) (&(cache)->table[hash % (cache)->tablesize])
 
