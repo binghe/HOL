@@ -56,7 +56,7 @@ extern int deleted_clause_count;
 
 /* Prover setup and completion */
 extern int prover_init(FILE *pfile, int *variable_counter, int *clause_counter, ilist *clauses, ilist variable_ordering, proof_type_t ptype, bool binary);
-extern void prover_done();
+extern void prover_done(void);
 
 /* Put literals in clause in canonical order */
 extern ilist clean_clause(ilist clause);
@@ -72,7 +72,7 @@ extern void delete_clauses(ilist clause_ids);
 
 /* Some deletions must be deferred until top-level apply completes */
 extern void defer_delete_clause(int clause_id);
-extern void process_deferred_deletions();
+extern void process_deferred_deletions(void);
 
 
     

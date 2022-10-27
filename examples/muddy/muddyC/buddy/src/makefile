@@ -5,10 +5,15 @@
 
 # --- full object list
 OBJ = bddio.o bddop.o bvec.o cache.o fdd.o imatrix.o kernel.o \
-      pairs.o prime.o reorder.o tree.o
+      pairs.o prime.o reorder.o tree.o \
+      ilist.o prover.o tbdd.o # these 3 files were added by TBDD
+
 CFILES = bddio.c bddop.c bvec.c cache.c fdd.c imatrix.c kernel.c \
-       pairs.c prime.c reorder.c tree.c
-CCFILES = cppext.cxx
+       pairs.c prime.c reorder.c tree.c \
+      ilist.c prover.c tbdd.c # these 3 files were added by TBDD
+
+CCFILES = cppext.cxx \
+	  pseudoboolean.cxx # added by TBDD
 
 include ../config
 
@@ -29,14 +34,13 @@ include ../config
 # The primary targets.
 # --------------------------------------------------------------
 
-libbdd.a:	$(OBJ) ../config
+libbdd.a: $(OBJ) ../config
 	ar r libbdd.a $(OBJ)
 	ranlib libbdd.a
 
 clean:
 	rm -f lib$(TARGET).a
 	rm -f *.o core *~
-#	rm -f libbdd.a
 	rm -f libbdd.a
 	rm -f bddtest
 

@@ -66,14 +66,14 @@ static int empty_clause_id = TAUTOLOGY;
 static bool empty_clause_finalized = false;
 
 
-// Buffer used when generating binary files
+/* Buffer used when generating binary files */
 static unsigned char *dest_buf = NULL;
 static size_t dest_buf_len = 0;
 
-// Parameters
-// Cutoff betweeen large and small allocations (in terms of clauses)
+/* Parameters
+   Cutoff betweeen large and small allocations (in terms of clauses)
 
-// Optionally increase level of garbage collection to stress test code
+   Optionally increase level of garbage collection to stress test code */
 #define STRESS 0
 
 #if STRESS
@@ -85,16 +85,16 @@ static size_t dest_buf_len = 0;
 #define BUDDY_INCREASE_SMALL (100)
 #else
 #define BUDDY_THRESHOLD 1000
-//#define BUDDY_THRESHOLD 10
+/* #define BUDDY_THRESHOLD 10 */
 #define BUDDY_NODES_LARGE (2*1000*1000)
-//#define BUDDY_NODES_LARGE (1000)
+/* #define BUDDY_NODES_LARGE (1000) */
 #define BUDDY_NODES_SMALL (2* 100*1000)
 #define BUDDY_CACHE_RATIO 8
 #define BUDDY_INCREASE_LARGE (4*1000*1000)
 #define BUDDY_INCREASE_SMALL (1* 100*1000)
 #endif
 
-// How many clauses should allocated for clauses
+/* How many clauses should allocated for clauses */
 #define INITIAL_CLAUSE_COUNT 1000
 
 
@@ -197,7 +197,7 @@ void prover_done() {
 	int ebuf[ILIST_OVHD];
 	ilist elist = ilist_make(ebuf, 0);
 	/* Do final garbage collection to delete remaining clauses */
-	//	bdd_gbc();
+	/* bdd_gbc(); */
 	/* Finalize empty clause */
 	if (empty_clause_id != TAUTOLOGY) {
 	    print_proof_comment(2, "Retaining empty clause");
@@ -205,8 +205,10 @@ void prover_done() {
 	}
     }
     
-    //    if (deferred_deletion_list)
-    //	ilist_free(deferred_deletion_list);
+   /*
+    if (deferred_deletion_list)
+    	ilist_free(deferred_deletion_list);
+    */
 }
 
 
@@ -232,7 +234,7 @@ void print_clause(FILE *out, ilist clause) {
 }
 
 /* Helper function for clause cleaning.  Sort literals to put variables in descending order */
-int literal_compare(const void *l1p, const void *l2p) {
+static int literal_compare(const void *l1p, const void *l2p) {
      int bvn = bdd_varnum();
      int l1 = *(int *) l1p;
      int l2 = *(int *) l2p;
@@ -253,8 +255,10 @@ ilist clean_clause(ilist clause) {
     int len = ilist_length(clause);
     if (len == 0)
 	return clause;
-    //    printf("Cleaning clause [");
-    //    ilist_print(clause, stdout, " ");
+
+    /* printf("Cleaning clause ["); */
+    /* ilist_print(clause, stdout, " "); */
+
     /* Sort the literals */
     qsort((void *) clause, ilist_length(clause), sizeof(int), literal_compare);
     int geti = 0;
@@ -284,9 +288,9 @@ ilist clean_clause(ilist clause) {
 	plit = lit;
     }
     clause = ilist_resize(clause, puti);
-    //    printf("] --> [");
-    //    ilist_print(clause, stdout, " ");
-    //    printf("]\n");
+    /* printf("] --> [");
+       ilist_print(clause, stdout, " ");
+       printf("]\n"); */
     return clause;
 }
 
@@ -476,7 +480,7 @@ extern void insert_frat_clause(FILE *pfile, char cmd, int clause_id, ilist liter
     int rval = 0;
     unsigned char *d = dest_buf;
 
-    // Make sure empty clause only finalized once
+    /* Make sure empty clause only finalized once */
     if (cmd == 'f' && empty_clause_id != TAUTOLOGY && ilist_length(literals) == 0) {
 	if (empty_clause_finalized)
 	    return;
@@ -544,7 +548,7 @@ void delete_clauses(ilist clause_ids) {
 		bdd_error(BDD_FILE);
 	}
     } else {
-	// DRAT or FRAT
+      /* DRAT or FRAT */
 	int i;
 	for (i = 0; i < ilist_length(clause_ids); i++) {
 	    int cid = clause_ids[i];
@@ -552,10 +556,10 @@ void delete_clauses(ilist clause_ids) {
 	    if (clause == TAUTOLOGY_CLAUSE)
 		continue;
 	    if (cid == empty_clause_id)
-		// Empty clause should not be deleted
+                /* Empty clause should not be deleted */
 		continue;
 	    if (ilist_length(clause) <= 1 && proof_type == PROOF_DRAT)
-		// Don't delete unit clauses in DRAT
+                /* Don't delete unit clauses in DRAT */
 		continue;
 	    if (do_binary) {
 		check_buffer(ilist_length(clause) + 3);
@@ -707,8 +711,7 @@ static jtype_t hint_h_order[HINT_COUNT/2] =
 static jtype_t hint_l_order[HINT_COUNT/2+1] = 
     { HINT_EXTRA, HINT_RESLU, HINT_ARG1LD, HINT_ARG2LD, HINT_OPL };
 
-
-static char hstring[1024];
+/* static char hstring[1024]; (not used) */
 
 static void initialize_hints() {
     jtype_t hi;
@@ -903,16 +906,16 @@ int justify_apply(int op, BDD l, BDD r, int splitVar, pcbdd tresl, pcbdd tresh, 
 	    hint_id[HINT_ARG2HD] = bdd_dclause(r, DEF_HD);
 	    hint_clause[HINT_ARG2HD] = defining_clause(hint_clause[HINT_ARG2HD], DEF_HD, XVAR(r), splitVar, XVAR(HIGH(r)), XVAR(LOW(r)));
 	}
-	if (LEVEL(res) == splitLevel) { // Test was: tresl.root != tresh.root
+	if (LEVEL(res) == splitLevel) { /* Test was: tresl.root != tresh.root */
 	    hint_id[HINT_RESLU] = bdd_dclause(res, DEF_LU);
 	    hint_clause[HINT_RESLU] = defining_clause(hint_clause[HINT_RESLU], DEF_LU, XVAR(res), splitVar, XVAR(HIGH(res)), XVAR(LOW(res)));
 	    hint_id[HINT_RESHU] = bdd_dclause(res, DEF_HU);
 	    hint_clause[HINT_RESHU] = defining_clause(hint_clause[HINT_RESHU], DEF_HU, XVAR(res), splitVar, XVAR(HIGH(res)), XVAR(LOW(res)));
 	}
 	hint_id[HINT_OPL] = tresl.clause_id;
-	hint_clause[HINT_OPL] = target_and(hint_clause[HINT_OPL], ll, rl, resl); // Was tresl.root
+	hint_clause[HINT_OPL] = target_and(hint_clause[HINT_OPL], ll, rl, resl); /* Was tresl.root */
 	hint_id[HINT_OPH] = tresh.clause_id;
-	hint_clause[HINT_OPH] = target_and(hint_clause[HINT_OPH], lh, rh, resh); // Was tresh.root
+	hint_clause[HINT_OPH] = target_and(hint_clause[HINT_OPH], lh, rh, resh); /* Was tresh.root */
     }
 
     complete_hints();
@@ -994,8 +997,8 @@ int justify_apply(int op, BDD l, BDD r, int splitVar, pcbdd tresl, pcbdd tresh, 
 	    if (hint_used[hi])
 		ilist_push(ant, hint_id[hi]);
 	}
-	// Negate ID to show that two clauses were generated
-	//	jid = -generate_clause(targ, ant);
+	/* Negate ID to show that two clauses were generated */
+        /* jid = -generate_clause(targ, ant); */
 	jid = generate_clause(targ, ant);
 	ilist_fill1(del, iid);
 	delete_clauses(del);

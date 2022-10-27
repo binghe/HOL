@@ -117,7 +117,7 @@ extern int tbdd_init_noproof(int variable_count);
   Deallocate all resources used by TBDD.
   If verbosity >= 1, print summary information
  */
-extern void tbdd_done();
+extern void tbdd_done(void);
 
 /*
   Functions that can be added to provide more data on exit.
@@ -192,8 +192,8 @@ extern bool tbdd_is_false(TBDD tr);
   clause_id should be number between 1 and the number of input clauses
  */
 
-extern TBDD tbdd_from_clause(ilist clause);  // For DRAT
-extern TBDD tbdd_from_clause_id(int id);     // For LRAT
+extern TBDD tbdd_from_clause(ilist clause);  /* For DRAT */
+extern TBDD tbdd_from_clause_id(int id);     /* For LRAT */
 
 /*
   Generate BDD representation of XOR.

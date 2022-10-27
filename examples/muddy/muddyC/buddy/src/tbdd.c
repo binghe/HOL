@@ -39,7 +39,7 @@
 ============================================*/
 
 #define BUFLEN 2048
-// For formatting information
+/* For formatting information */
 static char ibuf[BUFLEN];
 
 #define FUN_MAX 10
@@ -68,7 +68,7 @@ static ilist dead_unit_clauses;
 
 /* Table parameters */
 #define TABLE_INIT_SIZE 1024
-//#define TABLE_INIT_SIZE 1
+/* #define TABLE_INIT_SIZE 1 */
 #define TABLE_SCALE 2
 
 /* Table of references */
