@@ -258,7 +258,7 @@ void ilist_reverse(int *ils) {
 /*
   Sort integers in ascending order
  */
-int int_compare_ilist(const void *i1p, const void *i2p) {
+static int int_compare_ilist(const void *i1p, const void *i2p) {
     int i1 = *(int *) i1p;
     int i2 = *(int *) i2p;
     if (i1 < i2)

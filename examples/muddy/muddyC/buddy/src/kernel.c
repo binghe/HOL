@@ -175,7 +175,7 @@ static char *errorstrings[BDD_ERRNUM] =
   "Mismatch in bitvector size",
   "Illegal shift-left/right parameter",
   "Division by zero" 
-#if INCLUDE_TBDD
+#if ENABLE_TBDD
   ,
   "Cannot (re)allocate ilist",
   "Cannot generate proof"
@@ -187,10 +187,9 @@ static char *errorstrings[BDD_ERRNUM] =
 
 #define NODEHASH(lvl,l,h) (TRIPLE(lvl,l,h) % bddnodesize)
 
-// Debugging macros.  Currently disabled
-
-#define CHECKNODE(n) (n)
-//#define CHECKNODE(n) checknode(n)
+/* Debugging macros.  Currently disabled */
+#if DEBUG
+#define CHECKNODE(n) checknode(n) */
 
 static BDD checknode(BDD n) {
     if (n < 0 || n >= bddnodesize) { 
@@ -200,8 +199,7 @@ static BDD checknode(BDD n) {
     return n;
 }
 
-#define CHECKRANGE(v) (v)
-//#define CHECKRANGE(v) checkrange(v)
+#define CHECKRANGE(v) checkrange(v) */
 
 static int checkrange(int v) {
     if (v < 0 || v >= bddnodesize) { 
@@ -210,6 +208,12 @@ static int checkrange(int v) {
     }
     return v;
 }
+#else /* DEBUG */
+
+#define CHECKNODE(n) (n)
+#define CHECKRANGE(v) (v)
+
+#endif
 
 #if ENABLE_TBDD
 static int bdd_dclause_p(BddNode *n, dclause_t dtype);

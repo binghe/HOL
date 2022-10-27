@@ -32,7 +32,7 @@
 
 /* Turn on TBDD-specific information in files */
 #ifndef ENABLE_TBDD
-#define ENABLE_TBDD 1
+#define ENABLE_TBDD 0
 #endif
 
 /* Allow this headerfile to define C++ constructs if requested */

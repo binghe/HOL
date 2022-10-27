@@ -30,9 +30,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "tbdd.h"
+
+#if ENABLE_TBDD
+
 #include "prover.h"
 #include "kernel.h"
-
 
 /* Global variables exported by prover */
 proof_type_t proof_type = PROOF_FRAT;
@@ -1005,3 +1007,5 @@ int justify_apply(int op, BDD l, BDD r, int splitVar, pcbdd tresl, pcbdd tresh, 
     }
     return jid;
 }
+
+#endif /* ENABLE_TBDD */

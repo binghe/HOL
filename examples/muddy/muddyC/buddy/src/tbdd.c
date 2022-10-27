@@ -31,8 +31,10 @@
 #include <stdio.h>
 #include <string.h>
 #include "tbdd.h"
-#include "kernel.h"
 
+#if ENABLE_TBDD
+
+#include "kernel.h"
 
 /*============================================
   Local data
@@ -879,3 +881,5 @@ ilist BDD_decode_cube(BDD r) {
     return literals;
 
 }
+
+#endif /* ENABLE_TBDD */
