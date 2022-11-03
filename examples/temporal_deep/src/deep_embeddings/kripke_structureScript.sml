@@ -1,136 +1,118 @@
+(* -------------------------------------------------------------------------- *)
+(*   (Fair) Kripke Structures (KS or FKS)                                     *)
+(* -------------------------------------------------------------------------- *)
+
 open HolKernel Parse boolLib bossLib;
 
-(*
-quietdec := true;
-
-val home_dir = (Globals.HOLDIR ^ "/examples/temporal_deep/");
-loadPath := (home_dir ^ "src/deep_embeddings") ::
-            (home_dir ^ "src/tools") :: !loadPath;
-
-map load
- ["xprop_logicTheory", "prop_logicTheory", "infinite_pathTheory", "pred_setTheory", "listTheory", "pairTheory", "set_lemmataTheory",
-   "containerTheory", "prim_recTheory", "tuerk_tacticsLib", "temporal_deep_mixedTheory", "arithmeticTheory"];
-*)
-
-open infinite_pathTheory pred_setTheory listTheory pairTheory xprop_logicTheory containerTheory prop_logicTheory set_lemmataTheory prim_recTheory
+open infinite_pathTheory pred_setTheory listTheory pairTheory xprop_logicTheory
+     containerTheory prop_logicTheory set_lemmataTheory prim_recTheory
      tuerk_tacticsLib temporal_deep_mixedTheory arithmeticTheory;
+
 open Sanity;
 
 val _ = hide "S";
 val _ = hide "I";
 val _ = hide "K";
 
-(*
-show_assums := false;
-show_assums := true;
-show_types := true;
-show_types := false;
-quietdec := false;
-*)
-
-
 val _ = new_theory "kripke_structure";
-val _ = ParseExtras.temp_loose_equality()
 
-
-val kripke_structure_def =
- Hol_datatype
-  `kripke_structure =
+(* NOTE: in “K :('a, 'b) kripke_structure”, 'a = 'label, 'b = 'state. *)
+Datatype : kripke_structure =
     <| S:  'state set;                     (*set of states *)
        S0: 'state set;                     (*initial states*)
        R:  ('state # 'state) set;          (*transition relation*)
        P:  'label set;                     (*set of used labels *)
-       L:  'state -> ('label set)          (*label function*) |>`;
+       L:  'state -> ('label set)          (*label function*) |>
+End
 
-Theorem kripke_structure_REWRITES =
+(* |- (!a0 a1 a2 a3 a4 a0' a1' a2' a3' a4'.
+         kripke_structure a0 a1 a2 a3 a4 = kripke_structure a0' a1' a2' a3' a4' <=>
+         a0 = a0' /\ a1 = a1' /\ a2 = a2' /\ a3 = a3' /\ a4 = a4') /\
+      (!f f0 f1 f2 f3. (kripke_structure f f0 f1 f2 f3).S = f) /\
+      (!f f0 f1 f2 f3. (kripke_structure f f0 f1 f2 f3).S0 = f0) /\
+      (!f f0 f1 f2 f3. (kripke_structure f f0 f1 f2 f3).R = f1) /\
+      (!f f0 f1 f2 f3. (kripke_structure f f0 f1 f2 f3).P = f2) /\
+      !f f0 f1 f2 f3. (kripke_structure f f0 f1 f2 f3).L = f3
+ *)
+Theorem kripke_structure_REWRITES[simp] =
         LIST_CONJ (TypeBase.one_one_of “:(α,β)kripke_structure” ::
                    TypeBase.accessors_of “:(α,β)kripke_structure”)
 
-
-val IS_WELL_FORMED_KRIPKE_STRUCTURE_def =
- Define
-  `IS_WELL_FORMED_KRIPKE_STRUCTURE K =
+val IS_WELL_FORMED_KRIPKE_STRUCTURE_def = Define
+   `IS_WELL_FORMED_KRIPKE_STRUCTURE K =
     (FINITE K.S /\ FINITE K.P /\ K.S0 SUBSET K.S /\
      K.R SUBSET (K.S CROSS K.S) /\
-     (!s. (s IN K.S) ==> (K.L s) SUBSET K.P))`
+     (!s. s IN K.S ==> (K.L s) SUBSET K.P))`;
 
-
+(* not used anywhere
 val simple_kripke_structure_def =
  Define
   `simple_kripke_structure S B R =
    kripke_structure S B R (POW S) (\s. {p | p SUBSET S /\ s IN p})`;
+ *)
 
-
-
+(* not used anywhere (cf. UNIVERSAL_KRIPKE_STRUCTURE_def)
 val universal_kripke_structure_def =
  Define
   `universal_kripke_structure S P L =
    kripke_structure S S (S CROSS S) P L`;
+ *)
 
-
-val IS_PATH_THROUGH_KRIPKE_STRUCTURE_def =
- Define
-  `IS_PATH_THROUGH_KRIPKE_STRUCTURE K p =
+val IS_PATH_THROUGH_KRIPKE_STRUCTURE_def = Define
+   `IS_PATH_THROUGH_KRIPKE_STRUCTURE K p =
      (!n. (p n, p (SUC n)) IN K.R)`;
 
-val IS_FAIR_PATH_THROUGH_KRIPKE_STRUCTURE_def =
- Define
-  `IS_FAIR_PATH_THROUGH_KRIPKE_STRUCTURE K FC p =
+val IS_FAIR_PATH_THROUGH_KRIPKE_STRUCTURE_def = Define
+   `IS_FAIR_PATH_THROUGH_KRIPKE_STRUCTURE K FC p =
      (IS_PATH_THROUGH_KRIPKE_STRUCTURE K p /\
       (!b. MEM b FC ==> (!t0. ?t. t > t0 /\ (P_SEM (K.L (p t)) b))))`;
 
-
-val IS_INITIAL_PATH_THROUGH_KRIPKE_STRUCTURE_def =
- Define
-  `IS_INITIAL_PATH_THROUGH_KRIPKE_STRUCTURE K p =
+val IS_INITIAL_PATH_THROUGH_KRIPKE_STRUCTURE_def = Define
+   `IS_INITIAL_PATH_THROUGH_KRIPKE_STRUCTURE K p =
      (IS_PATH_THROUGH_KRIPKE_STRUCTURE K p /\ p 0 IN K.S0)`;
 
-val IS_FAIR_INITIAL_PATH_THROUGH_KRIPKE_STRUCTURE_def =
- Define
-  `IS_FAIR_INITIAL_PATH_THROUGH_KRIPKE_STRUCTURE K FC p =
+(* NOTE: ‘p’ is a fair initial path of ‘K’ w.r.t. fair components ‘FC’. *)
+val IS_FAIR_INITIAL_PATH_THROUGH_KRIPKE_STRUCTURE_def = Define
+   `IS_FAIR_INITIAL_PATH_THROUGH_KRIPKE_STRUCTURE K FC p =
      (IS_FAIR_PATH_THROUGH_KRIPKE_STRUCTURE K FC p /\
       p 0 IN K.S0)`;
 
-
-val IS_FAIR_PATH_THROUGH_KRIPKE_STRUCTURE___EMPTY_FAIRNESS =
-  store_thm (
-    "IS_FAIR_PATH_THROUGH_KRIPKE_STRUCTURE___EMPTY_FAIRNESS",
-    ``!K p. (IS_FAIR_PATH_THROUGH_KRIPKE_STRUCTURE K [] p =
+(* all paths are fair w.r.t. empty fairness components *)
+Theorem IS_FAIR_PATH_THROUGH_KRIPKE_STRUCTURE___EMPTY_FAIRNESS :
+    !K p. (IS_FAIR_PATH_THROUGH_KRIPKE_STRUCTURE K [] p =
              IS_PATH_THROUGH_KRIPKE_STRUCTURE K p) /\
             (IS_FAIR_INITIAL_PATH_THROUGH_KRIPKE_STRUCTURE K [] p =
-             IS_INITIAL_PATH_THROUGH_KRIPKE_STRUCTURE K p)``,
-
+             IS_INITIAL_PATH_THROUGH_KRIPKE_STRUCTURE K p)
+Proof
       SIMP_TAC list_ss [IS_FAIR_PATH_THROUGH_KRIPKE_STRUCTURE_def,
         IS_FAIR_INITIAL_PATH_THROUGH_KRIPKE_STRUCTURE_def,
-        IS_INITIAL_PATH_THROUGH_KRIPKE_STRUCTURE_def]);
+        IS_INITIAL_PATH_THROUGH_KRIPKE_STRUCTURE_def]
+QED
 
-
-val TRACE_OF_PATH_THROUGH_KRIPKE_STRUCTURE_def =
- Define
-  `TRACE_OF_PATH_THROUGH_KRIPKE_STRUCTURE K p =
+val TRACE_OF_PATH_THROUGH_KRIPKE_STRUCTURE_def = Define
+   `TRACE_OF_PATH_THROUGH_KRIPKE_STRUCTURE K p =
      (\n:num. K.L (p n))`;
 
-val IS_TRACE_OF_PATH_THROUGH_KRIPKE_STRUCTURE_def =
- Define
-  `IS_TRACE_OF_PATH_THROUGH_KRIPKE_STRUCTURE K p =
+val IS_TRACE_OF_PATH_THROUGH_KRIPKE_STRUCTURE_def = Define
+   `IS_TRACE_OF_PATH_THROUGH_KRIPKE_STRUCTURE K p =
     (?p'. IS_PATH_THROUGH_KRIPKE_STRUCTURE K p' /\
           (p = TRACE_OF_PATH_THROUGH_KRIPKE_STRUCTURE K p'))`;
 
 
-val IS_TRACE_OF_INITIAL_PATH_THROUGH_KRIPKE_STRUCTURE_def =
- Define
-  `IS_TRACE_OF_INITIAL_PATH_THROUGH_KRIPKE_STRUCTURE K p =
+val IS_TRACE_OF_INITIAL_PATH_THROUGH_KRIPKE_STRUCTURE_def = Define
+   `IS_TRACE_OF_INITIAL_PATH_THROUGH_KRIPKE_STRUCTURE K p =
     (?p'. IS_INITIAL_PATH_THROUGH_KRIPKE_STRUCTURE K p' /\
           (p = TRACE_OF_PATH_THROUGH_KRIPKE_STRUCTURE K p'))`;
 
 
-val PATH_THROUGH_KRIPKE_STRUCTURE___RESTN =
-  store_thm (
-    "PATH_THROUGH_KRIPKE_STRUCTURE___RESTN",
-    ``!n K FC p. (IS_PATH_THROUGH_KRIPKE_STRUCTURE K p ==> IS_PATH_THROUGH_KRIPKE_STRUCTURE K (PATH_RESTN p n)) /\
-                 (IS_FAIR_PATH_THROUGH_KRIPKE_STRUCTURE K FC p ==> IS_FAIR_PATH_THROUGH_KRIPKE_STRUCTURE K FC (PATH_RESTN p n)) /\
-                 (IS_TRACE_OF_PATH_THROUGH_KRIPKE_STRUCTURE K p ==> IS_TRACE_OF_PATH_THROUGH_KRIPKE_STRUCTURE K (PATH_RESTN p n))``,
-
+Theorem PATH_THROUGH_KRIPKE_STRUCTURE___RESTN :
+    !n K FC p. (IS_PATH_THROUGH_KRIPKE_STRUCTURE K p ==>
+                IS_PATH_THROUGH_KRIPKE_STRUCTURE K (PATH_RESTN p n)) /\
+               (IS_FAIR_PATH_THROUGH_KRIPKE_STRUCTURE K FC p ==>
+                IS_FAIR_PATH_THROUGH_KRIPKE_STRUCTURE K FC (PATH_RESTN p n)) /\
+               (IS_TRACE_OF_PATH_THROUGH_KRIPKE_STRUCTURE K p ==>
+                IS_TRACE_OF_PATH_THROUGH_KRIPKE_STRUCTURE K (PATH_RESTN p n))
+Proof
   SIMP_TAC arith_ss [IS_PATH_THROUGH_KRIPKE_STRUCTURE_def, PATH_RESTN_def,
     IS_FAIR_PATH_THROUGH_KRIPKE_STRUCTURE_def,
     IS_TRACE_OF_PATH_THROUGH_KRIPKE_STRUCTURE_def,
@@ -157,21 +139,19 @@ val PATH_THROUGH_KRIPKE_STRUCTURE___RESTN =
       ONCE_REWRITE_TAC[FUN_EQ_THM] THEN
       ASM_SIMP_TAC std_ss []
     ]
-  ]);
+  ]
+QED
 
-
-val IS_REACHABLE_STATE_OF_KRIPKE_STRUCTURE_def =
- Define
-  `IS_REACHABLE_STATE_OF_KRIPKE_STRUCTURE K s =
+val IS_REACHABLE_STATE_OF_KRIPKE_STRUCTURE_def = Define
+   `IS_REACHABLE_STATE_OF_KRIPKE_STRUCTURE K s =
     (?p n. (p 0 IN K.S0) /\ ((p n) = s) /\
-         (!m. m < n ==> (p m, p (SUC m)) IN K.R))`;
+           (!m. m < n ==> (p m, p (SUC m)) IN K.R))`;
 
-val IS_REACHABLE_STATE_OF_KRIPKE_STRUCTURE___RECURSIVE_DEF =
-  store_thm ("IS_REACHABLE_STATE_OF_KRIPKE_STRUCTURE___RECURSIVE_DEF",
-  ``!K s. IS_REACHABLE_STATE_OF_KRIPKE_STRUCTURE K s =
-    ((s IN K.S0) \/ (?s'. IS_REACHABLE_STATE_OF_KRIPKE_STRUCTURE K s' /\
-                         (s', s) IN K.R))``,
-
+Theorem IS_REACHABLE_STATE_OF_KRIPKE_STRUCTURE___RECURSIVE_DEF :
+    !K s. IS_REACHABLE_STATE_OF_KRIPKE_STRUCTURE K s =
+         ((s IN K.S0) \/ (?s'. IS_REACHABLE_STATE_OF_KRIPKE_STRUCTURE K s' /\
+                               (s', s) IN K.R))
+Proof
     REPEAT STRIP_TAC THEN
     REWRITE_TAC[IS_REACHABLE_STATE_OF_KRIPKE_STRUCTURE_def] THEN
     EQ_TAC THEN REPEAT STRIP_TAC THENL [
@@ -203,11 +183,9 @@ val IS_REACHABLE_STATE_OF_KRIPKE_STRUCTURE___RECURSIVE_DEF =
         ASM_REWRITE_TAC[]
       ],
 
-
       EXISTS_TAC ``\n:num. s:'b`` THEN
       EXISTS_TAC ``0:num`` THEN
       ASM_SIMP_TAC arith_ss [],
-
 
       EXISTS_TAC ``\n':num. if (n' <= n) then (p n') else (s:'b)`` THEN
       EXISTS_TAC ``SUC n`` THEN
@@ -220,9 +198,10 @@ val IS_REACHABLE_STATE_OF_KRIPKE_STRUCTURE___RECURSIVE_DEF =
         `m = n` by DECIDE_TAC THEN
         ASM_SIMP_TAC std_ss []
       ]
-    ]);
+    ]
+QED
 
-
+(* NOTE: "total" = no deadlocks for reachable states (but some states may not be reachable *)
 val IS_TOTAL_KRIPKE_STRUCTURE_def =
  Define
   `IS_TOTAL_KRIPKE_STRUCTURE K =
@@ -300,7 +279,7 @@ val IS_TOTAL_KRIPKE_STRUCTURE___INITIAL_PATH_EXISTS =
     ]
   ]);
 
-
+(* NOTE: "completely total" = all states are reachable and lead to no deadlocks *)
 val IS_TOTAL_COMPLETELY_REACHABLE_KRIPKE_STRUCTURE_def =
  Define
   `IS_TOTAL_COMPLETELY_REACHABLE_KRIPKE_STRUCTURE K =
@@ -356,18 +335,9 @@ val IS_TOTAL_COMPLETELY_REACHABLE_KRIPKE_STRUCTURE___ALTERNATIVE_DEF =
     METIS_TAC[]
   ]);
 
-
-
-
-val IS_WELL_FORMED_KRIPKE_STRUCTURE_def =
- Define
-  `IS_WELL_FORMED_KRIPKE_STRUCTURE K =
-    (FINITE K.S /\ FINITE K.P /\ K.S0 SUBSET K.S /\
-     K.R SUBSET (K.S CROSS K.S) /\
-     (!s. (s IN K.S) ==> (K.L s) SUBSET K.P))`
-
-
-
+(* NOTE: The "language" of K, typed “:(num -> 'a set) set”,
+   is the set of all initial infinite "words" (translated from paths).
+ *)
 val LANGUAGE_OF_KRIPKE_STRUCTURE_def =
  Define
   `LANGUAGE_OF_KRIPKE_STRUCTURE K  =
@@ -435,7 +405,7 @@ REPEAT STRIP_TAC THEN EQ_TAC THEN REPEAT STRIP_TAC THENL [
                         kripke_structure_REWRITES,
                         IN_SING, IMAGE_FINITE, FINITE_COUNT,
                         SUBSET_DEF, IN_IMAGE, IN_COUNT, IN_CROSS,
-    prove(``!P x. x IN (\(x1,x2). P x1 x2) = P (FST x) (SND x)``, Cases_on `x` THEN SIMP_TAC std_ss [IN_DEF])
+    prove(``!P x. x IN (\(x1,x2). P x1 x2) <=> P (FST x) (SND x)``, Cases_on `x` THEN SIMP_TAC std_ss [IN_DEF])
     ] THEN
     `0 < n /\ 0 < (n+n0) /\ n0 < (n+n0) /\ (PRE (n+n0) < (n+n0))` by DECIDE_TAC THEN
     REPEAT STRIP_TAC THENL [
@@ -454,7 +424,7 @@ REPEAT STRIP_TAC THEN EQ_TAC THEN REPEAT STRIP_TAC THENL [
                         IS_PATH_THROUGH_KRIPKE_STRUCTURE_def,
                         kripke_structure_REWRITES,
                         IN_SING,
-    prove(``!P x1 x2. ((x1, x2) IN \(x1,x2). P x1 x2) = P x1 x2``, SIMP_TAC std_ss [IN_DEF])] THEN
+    prove(``!P x1 x2. ((x1, x2) IN \(x1,x2). P x1 x2) <=> P x1 x2``, SIMP_TAC std_ss [IN_DEF])] THEN
 
     Q_TAC EXISTS_TAC `CUT_PATH_PERIODICALLY (\m. el m) n0 n` THEN
     SIMP_TAC arith_ss [CUT_PATH_PERIODICALLY_def] THEN
@@ -530,7 +500,7 @@ REPEAT STRIP_TAC THEN EQ_TAC THEN REPEAT STRIP_TAC THENL [
                         IS_PATH_THROUGH_KRIPKE_STRUCTURE_def,
                         kripke_structure_REWRITES,
                         IN_SING,
-    prove(``!P x1 x2. ((x1, x2) IN \(x1,x2). P x1 x2) = P x1 x2``, SIMP_TAC std_ss [IN_DEF])] THEN
+    prove(``!P x1 x2. ((x1, x2) IN \(x1,x2). P x1 x2) <=> P x1 x2``, SIMP_TAC std_ss [IN_DEF])] THEN
     REPEAT STRIP_TAC THEN
     `p' = p''` suffices_by METIS_TAC[] THEN
     ONCE_REWRITE_TAC[FUN_EQ_THM] THEN
@@ -586,7 +556,7 @@ REPEAT STRIP_TAC THEN EQ_TAC THEN REPEAT STRIP_TAC THENL [
 
         `{p' m | m < (SUC n)} = p' n INSERT {p' m | m < n}` by (
           SIMP_TAC std_ss [EXTENSION, GSPECIFICATION, IN_INSERT] THEN
-          `!m. (m < SUC n) = ((m = n) \/ (m < n))` by DECIDE_TAC THEN
+          `!m. (m < SUC n) <=> ((m = n) \/ (m < n))` by DECIDE_TAC THEN
           METIS_TAC[]
         ) THEN
         `FINITE ({p' m | m < n})` by METIS_TAC[SUBSET_FINITE] THEN
@@ -1139,5 +1109,39 @@ val UNIVERSAL_KRIPKE_STRUCTURE___IS_MOST_GENERAL =
       IN_POW, SUBSET_DEF, EXTENSION, IN_INTER] THEN
     METIS_TAC[FST, SND]);
 
+(* -------------------------------------------------------------------------- *)
+(*  The Theory of Fair States in Fair Kripke Structures (FKS), by Chun Tian   *)
+(* -------------------------------------------------------------------------- *)
+
+Datatype : fair_kripke_structure =
+    <| KS :('label,'state)kripke_structure; FC :'label prop_logic list |>
+End
+
+(* each formula in FC must only use vars in P *)
+val IS_WELL_FORMED_FAIR_KRIPKE_STRUCTURE_def = Define
+   ‘IS_WELL_FORMED_FAIR_KRIPKE_STRUCTURE (K :('label,'state)fair_kripke_structure) =
+   (IS_WELL_FORMED_KRIPKE_STRUCTURE K.KS /\
+    !b. MEM b K.FC ==> P_USED_VARS b SUBSET K.KS.P)’;
+
+(* NOTE: it's not required that a fair state must be a state of initial paths,
+         i.e. a reachable state.
+ *)
+val IS_FAIR_STATE_OF_KRIPKE_STRUCTURE_def = Define
+   ‘IS_FAIR_STATE_OF_KRIPKE_STRUCTURE (K :('label,'state)fair_kripke_structure) s =
+      ?p n. IS_FAIR_PATH_THROUGH_KRIPKE_STRUCTURE K.KS K.FC p /\ p n = s’;
+
+(* This is essentially the same as ‘IS_FAIR_STATE_OF_KRIPKE_STRUCTURE’ *)
+val FAIR_STATES_OF_KRIPKE_STRUCTURE_def = Define
+   ‘FAIR_STATES_OF_KRIPKE_STRUCTURE (K :('label,'state)fair_kripke_structure) =
+      {s | IS_FAIR_STATE_OF_KRIPKE_STRUCTURE K s}’;
+
+(* cf. PRODUCT_KRIPKE_STRUCTURE_def *)
+val PRODUCT_FAIR_KRIPKE_STRUCTURE_def = Define
+   ‘PRODUCT_FAIR_KRIPKE_STRUCTURE K1 K2 =
+      fair_kripke_structure (PRODUCT_KRIPKE_STRUCTURE K1.KS K2.KS)
+                            (K1.FC ++ K2.FC)’;
+
+
 
 val _ = export_theory();
+val _ = html_theory "kripke_structure";

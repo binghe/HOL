@@ -1,9 +1,11 @@
 %%% -*- Mode: LaTeX; -*-
+\chapter{Core Theories---Higher Mathematics}
+\label{ch:math}
 
-\section{Higher Mathematics}
-\label{sec:mathematics}
+% \section{General Topology}
+% \label{sec:generaltop}
 
-\subsection{Elementary topology of one-dimensional Euclidean space}
+\section{Elementary Topology of One-Dimensional Euclidean Space}
 \label{sec:topology}
 \index{real\_topology, the HOL theory of@real\_topology, the \HOL{} theory of}
 
@@ -62,7 +64,7 @@ The concept of open (and closed) sets is fundamental and is needed, for example,
 \end{alltt}
 \end{hol}
 
-\subsection{Univariate differential and integral calculus}
+\section{Univariate Differential and Integral Calculus}
 \label{sec:calculus}
 \index{calculus, the HOL theory of@calculus, the \HOL{} theory of}
 
@@ -70,7 +72,7 @@ An extensive development of (univariate) differential and integral
 calculus, ported from HOL Light, is available in the theory \theoryimp{derivative} and
 \theoryimp{integration}.
 
-\subsubsection{Derivative}
+\subsection{Derivative}
 
 A quintessentially analytic property is the derivative of a function. One might
 expect to find a higher-order `derivative' function \texttt{deriv}
@@ -104,7 +106,7 @@ of a sum is the sum of the derivatives:
 \end{alltt}
 \end{hol}
 
-\subsubsection{Integration}
+\subsection{Integration}
 \label{sec:integration}
 
 The version of integral calculus formalized in HOL is a
@@ -151,7 +153,7 @@ improvement, as shown in the following strong version of the
 % \end{alltt}
 % \end{hol}
 
-\subsection{Measure Theory}
+\section{Measure Theory}
 \label{sec:measure}
 \index{measure, the HOL theory of@measure, the \HOL{} theory of}
 \index{sigma_algebra, the HOL theory of@sigma_algebra, the \HOL{} theory of}
@@ -286,7 +288,7 @@ generators are stable under $\cap$ and $\sigma$-finite:
 \end{alltt}
 \end{hol}
 
-\subsection{Borel Theory}
+\subsection{Borel measurable function and sets}
 \label{sec:borel}
 \index{borel, the HOL theory of@borel, the \HOL{} theory of}
 \index{real_borel, the HOL theory of@real_borel, the \HOL{} theory of}
@@ -403,7 +405,7 @@ so is its extreal-valued version. The converse also holds.
 \end{alltt}
 \end{hol}
 
-\paragraph{Construction of Borel measure space (\holtxt{lborel})}
+\subsection{Construction of Borel measure space (\holtxt{lborel})}
 
 The Borel measure space \holtxt{lborel} (of the type
 $(\konst{real} \to \konst{bool}) \ \#\  ((\konst{real} \to \konst{bool}) \to
@@ -486,7 +488,7 @@ It can be proven that \holtxt{ext_lborel} is indeed a $\sigma$-finite measure sp
 \end{alltt}
 \end{hol}
 
-\paragraph{Construction of Lebesgue measure space (\holtxt{lebesgue})}
+\subsection{Construction of Lebesgue measure space (\holtxt{lebesgue})}
 It is well known that \holtxt{lborel} is not \emph{complete}, in the
 sense that if for
 non-empty set \holtxt{s} we have \holtxt{lambda s = 0}, it's not true
@@ -535,7 +537,7 @@ that \holtxt{lambda} is an abbreviation of \holtxt{measure lborel}):
 \end{alltt}
 \end{hol}
 
-\subsection{Lebesgue Integration Theory}
+\section{Lebesgue Integration Theory}
 \label{sec:lebesgue}
 \index{lebesgue, the HOL theory of@lebesgue, the \HOL{} theory of}
 
@@ -636,7 +638,8 @@ integrations, including the following famous \emph{Markov's inequality}:
 \end{alltt}
 \end{hol}
 
-\paragraph{Null sets and `almost everywhere'}
+\subsection{Null sets and `almost everywhere'}
+
 A measurable set is called \emph{null set} (with respect to its
 measure space) if its measure is zero:
 \begin{hol}
@@ -667,7 +670,7 @@ integration on null sets are very useful (Theorem 11.2 of~\cite[p.~89-90]{Schill
 \end{alltt}
 \end{hol}
 
-\paragraph{Radon-Nikod\'{y}m theorem}
+\subsection{Radon-Nikod\'{y}m theorem}
 
 So far there is no concept ``derivative''
 being discussed. In Lebesgue integration, \emph{Radon-Nikod\'{y}m (RN) Theorem}
@@ -837,7 +840,7 @@ For instance, the following theorem is the general version of \texttt{EXISTENCE_
 \end{alltt}
 \end{hol}
 
-\paragraph{$\mathcal{L}^p$ spaces, semi-norm and important inequalities}
+\subsection{$\mathcal{L}^p$ spaces, semi-norm and important inequalities}
 
 \HOL{} provides a minimal formalization of the function spaces $\mathcal{L}^p$,
 currently in \theoryimp{martingaleTheory}.
@@ -909,7 +912,7 @@ Holder's inequality is useful in Probability Theory, for example, for
 proving that the sum of random variables having finite second moments
 (i.e.~finite variance), has still finite second moments.
 
-\subsection{Probability Theory}
+\section{Probability Theory}
 \label{sec:prob}
 \index{probability, the HOL theory of@probability, the \HOL{} theory of}
 
@@ -924,7 +927,7 @@ In \HOL{}, the \theoryimp{probability} theory depends on
 \theoryimp{pred_set}, \theoryimp{measure}, \theoryimp{borel} and \theoryimp{lebesgue}
 theories, etc.
 
-\paragraph{Probability space}
+\subsection{Probability space}
 
 Probability theory enables us to give a probabilistic-statistical
 description of experiments with a finite or infinite number of
@@ -1012,7 +1015,7 @@ be infinite, is useful in many proofs (when dealing with extreal arithmetics):
 \end{alltt}
 \end{hol}
 
-\paragraph{Conditional probability}
+\subsection{Conditional probability}
 
 \HOL{} provides a formalization of elementary ``conditional
 probability''~\cite[p.~21]{Shiryaev:2016vm}, originally developed by Liya Liu in 2012, in both
@@ -1038,7 +1041,7 @@ versions)~\cite[Chapter V]{Feller:2004vv} are provided:
 \end{alltt}
 \end{hol}
 
-\paragraph{Random variable}
+\subsection{Random variable}
 
 The concept ``random variable'' (r.v.) serves to
 define quantities describing the results of ``measurements'' in random
@@ -1074,7 +1077,7 @@ probability space with its target measurable space:
 \end{alltt}
 \end{hol}
 
-\paragraph{Independence}
+\subsection{Independence}
 
 \begin{quote}\textit{The concept of mutual independence of two or more experiments holds,
 in a certain sense, a central position in the theory of
@@ -1139,7 +1142,7 @@ respectively. Note that total independence always implies pairwise independence:
 \end{alltt}
 \end{hol}
 
-\paragraph{Limit events}
+\subsection{Limit events}
 
 An important concept in set theory is that of the ``$\limsup$'' and
 ``$\liminf$'' of a sequence of sets. These notions can be defined for
@@ -1174,7 +1177,7 @@ in proving other deep results in probability theory:
 \end{alltt}
 \end{hol}
 
-\paragraph{Tail algebra and tail events}
+\subsection{Tail algebra and tail events}
 
 Given a sequence of events $E_1, E_2, \ldots$, we define their
 \emph{tail algebra} (or \emph{tail field}) by
@@ -1201,7 +1204,7 @@ probability of remote events can only be zero or one:
 \end{alltt}
 \end{hol}
 
-\paragraph{Mathematical Expectation}
+\subsection{Mathematical expectation}
 \begin{quote}\textit{
 To achieve reasonable simplicity it is often necessary to describe
 probability distributions rather summarily by a few `typical
@@ -1231,7 +1234,7 @@ denoted by $\mathscr{E}(X)$ in textbooks) exists if and only if the
 random variable as a measurable function is integrable,
 \ie,~\holtxt{integrable p X}.
 
-\paragraph{Second moments and variance}
+\subsection{Second moments and variance}
 
 Let $a$ be extreal, $r$ positive, then $\mathscr{E}(|X - a|^r)$ is
 called the \emph{absolute moment}
@@ -1295,7 +1298,7 @@ Finally, for \emph{uncorrelated} r.v.'s (\ie,~$\mathscr{E}(XY) =
 \end{alltt}
 \end{hol}
 
-\paragraph{Convergence of random sequences}
+\subsection{Convergence of random sequences}
 
 Given a (countable) sequence of finite r.v.'s $X_n$ and another finite
 r.v. $Y$, the following three concepts of convergence (from $X_n$ to $Y$)
@@ -1474,7 +1477,7 @@ is almost-everywhere infinite~\cite[p.133]{Chung:2001}:
 \end{alltt}
 \end{hol}
 
-\subsection{Probability theory (legacy)}
+\section{Probability Theory (legacy)}
 
 The legacy probability theory based on real numbers (and all dependent
 theories) is still available from \theoryimp{real_probability}
@@ -1506,7 +1509,7 @@ n < N$, picked uniformly at random from the available choices. This
 sampling function for the uniform distribution is later used to verify
 the Miller-Rabin primality test.
 
-\subsection{Further theories of higher mathematics}
+\section{Other Theories of Higher Mathematics}
 
 In \ml{\$(HOLDIR)/examples/algebra} there is an abstract algebra
 library for HOL4. The algebraic types
@@ -1522,39 +1525,6 @@ the other \theoryimp{ring} theory in core library),
 \item [linearTheory] for vector spaces, including linear independence, and
 \item [finitefieldTheory] for finite fields, including existence and uniqueness.
 \end{description}
-
-\section{Further Theories}
-Other theories of interest in \HOL{} are listed and briefly described
-in Figure~\ref{fig:further-hol-theories}.
-
-\begin{figure}[hbtp]
-\renewcommand{\arraystretch}{1.5}
-\begin{tabular}{|p{0.2\textwidth}p{0.7\textwidth}|}
-  \hline
-  \theoryimp{poset} & Partial Orders, Knaster-Tarski theorem
-  \\
-  \theoryimp{divides}, \theoryimp{gcd} &
-  Divisibility and the greatest common divisor.
-  \\
-  \theoryimp{poly} &
-  A theory of polynomials over $\mathbb{R}$, providing
-  a collection of operations on polynomials, and theorems about them.
-  \\
-  \theoryimp{Temporal\_Logic},\newline \theoryimp{Omega\_Automata}
-  &
-  Klaus Schneider's development of temporal logic and\newline $\omega$-automata.
-  \\
-  \theoryimp{ctl}, \theoryimp{mu}
-  &
-  Computation Tree Logic and the $\mu$-calculus. See Hasan Amjad's
-  thesis. \\
-  \theoryimp{lbtree} & Possibly infinitely deep (\ie, co-algebraic) binary trees.\\
-  \theoryimp{inftree} & Possibly infinitely branching, algebraic trees\\
-  \hline
-\end{tabular}
-\caption{A selection of \HOL{} theories}
-\label{fig:further-hol-theories}
-\end{figure}
 
 %%% Local Variables:
 %%% mode: latex

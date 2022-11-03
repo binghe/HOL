@@ -4,17 +4,24 @@
 
 open HolKernel Parse boolLib bossLib;
 
-open metisLib arithmeticTheory pred_setTheory
-     listTheory state_transformerTheory combinTheory pairTheory realTheory
-     realLib jrhUtils realSimps numTheory simpLib seqTheory subtypeTheory
-     transcTheory limTheory stringTheory rich_listTheory stringSimps listSimps
-     informationTheory real_sigmaTheory;
+open metisLib arithmeticTheory pred_setTheory listTheory state_transformerTheory
+     combinTheory pairTheory jrhUtils numTheory simpLib subtypeTheory
+     stringTheory rich_listTheory stringSimps listSimps hurdUtils;
+
+open realTheory realLib realSimps transcTheory limTheory seqTheory real_sigmaTheory;
 
 open extra_boolTheory extra_numTheory extra_pred_setTheory extra_realTheory
      extra_listTheory extra_stringTheory extra_stringLib;
 
-open hurdUtils util_probTheory sigma_algebraTheory
-     real_measureTheory real_lebesgueTheory real_probabilityTheory;
+open util_probTheory sigma_algebraTheory real_measureTheory real_lebesgueTheory
+     real_probabilityTheory;
+
+open informationTheory;
+
+(*
+val _ = intLib.deprecate_int();
+val _ = ratLib.deprecate_rat();
+ *)
 
 (* ------------------------------------------------------------------------- *)
 (* Start a new theory called "information"                                   *)
@@ -25,7 +32,6 @@ val _ = temp_set_fixity "CROSS" (Infixl 600)
 val std_ss = std_ss -* ["lift_disj_eq", "lift_imp_disj"];
 val real_ss = real_ss -* ["lift_disj_eq", "lift_imp_disj"];
 val list_ss = list_ss -* ["lift_disj_eq", "lift_imp_disj"];
-
 
 (* ************************************************************************* *)
 (* Basic Definitions                                                         *)

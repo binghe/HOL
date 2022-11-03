@@ -15,6 +15,11 @@
 (* Last update: Jan, 2015                                                    *)
 (*                                                                           *)
 (* ========================================================================= *)
+(* Non-measurable sets                                                       *)
+(*                                                                           *)
+(* Author: Chun Tian (binghe) <binghe.lisp@gmail.com> (2021)                 *)
+(* Fondazione Bruno Kessler and University of Trento, Italy                  *)
+(* ========================================================================= *)
 
 open HolKernel Parse boolLib bossLib;
 
@@ -600,6 +605,162 @@ Proof
  >> `interval (a,b) IN subsets borel`
        by METIS_TAC [borel_measurable_sets, interval]
  >> ASM_SIMP_TAC std_ss [lebesgue_eq_lambda, lambda_open_interval]
+QED
+
+(* ------------------------------------------------------------------------- *)
+(* Non-measurable sets                                                       *)
+(* ------------------------------------------------------------------------- *)
+
+val _ = hide "top" (* defined in posetTheory *)
+
+(* Borel generator (general definition)
+
+   The so-called "Borel" for any topological space is the smallest sigma-algebra
+   generated from all open sets (of that topological space).
+ *)
+Definition Borel_generator_def :
+    Borel_generator top = sigma (topspace top) (open_in top)
+End
+
+(* For example, ‘borel’ is generated from ‘euclidean’ *)
+Theorem borel_alt_generator :
+    borel = Borel_generator euclidean
+Proof
+    rw [borel, Borel_generator_def, TOPSPACE_EUCLIDEAN]
+ >> AP_TERM_TAC
+ >> rw [Once EXTENSION, IN_APP, GSYM OPEN_IN]
+QED
+
+Definition Borel_pointclass_def :
+   (additive_class (top :'a topology) (ord :'b ordinal) =
+           if ord = 0o then {}
+      else if ord = 1o then open_in top
+      else COUNTABLE UNION_OF
+             (BIGUNION (IMAGE (\i. multiplicative_class top i) (preds ord))))
+    /\
+   (multiplicative_class (top :'a topology) (ord :'b ordinal) =
+           if ord = 0o then {}
+      else if ord = 1o then closed_in top
+      else COUNTABLE INTERSECTION_OF
+             (BIGUNION (IMAGE (\i. additive_class top i) (preds ord)))
+           relative_to (topspace top))
+Termination
+ (* val _ = Defn.tgoal (Hol_defn "Borel_pointclass" Borel_pointclass_def);
+    The termination tactics are provided by Michael Norrish:
+  *)
+    WF_REL_TAC ‘inv_image ordlt (\s. case s of INL (x,a) => a | INR (y,a) => a)’
+ >> rw [ordlt_WF]
+End
+
+Theorem additive_class_def :
+    !(top :'a topology).
+       (additive_class top (0o :'b ordinal) = {}) /\
+       (additive_class top (1o :'b ordinal) = open_in top) /\
+       !ord. 1o < (ord :'b ordinal) ==>
+             additive_class top ord =
+             COUNTABLE UNION_OF
+               (BIGUNION (IMAGE (\i. multiplicative_class top i) (preds ord)))
+Proof
+    NTAC 2 (rw [Once Borel_pointclass_def])
+QED
+
+Theorem multiplicative_class_def :
+    !(top :'a topology).
+       (multiplicative_class top (0o :'b ordinal) = {}) /\
+       (multiplicative_class top (1o :'b ordinal) = closed_in top) /\
+       !ord. 1o < (ord :'b ordinal) ==>
+             multiplicative_class top ord =
+             COUNTABLE INTERSECTION_OF
+               (BIGUNION (IMAGE (\i. additive_class top i) (preds ord)))
+             relative_to (topspace top)
+Proof
+    NTAC 2 (rw [Once Borel_pointclass_def])
+QED
+
+Definition ambiguous_class_def :
+    ambiguous_class (top :'a topology) (ord :'b ordinal) =
+      (additive_class top ord) INTER (multiplicative_class top ord)
+End
+
+Theorem preds_2[local] :
+    preds (2o :'b ordinal) = {0o; 1o}
+Proof
+    rw [preds_nat]
+ >> ‘count 2 = {0; 1}’ by rw [Once EXTENSION]
+ >> POP_ORW
+ >> rw [Once EXTENSION]
+ >> EQ_TAC >> rw [] (* 2 subgoals *)
+ >| [ Q.EXISTS_TAC ‘0’ >> rw [],
+      Q.EXISTS_TAC ‘1’ >> rw [] ]
+QED
+
+Theorem additive_class_2 :
+    !(top :'a topology). additive_class top (2o :'b ordinal) = fsigma_in top
+Proof
+    rw [additive_class_def, multiplicative_class_def, fsigma_in, preds_2]
+QED
+
+Theorem multiplicative_class_2 :
+    !(top :'a topology). multiplicative_class top (2o :'b ordinal) = gdelta_in top
+Proof
+    rw [additive_class_def, multiplicative_class_def, gdelta_in, preds_2]
+QED
+
+Overload gdelta_sigma_in =
+  “\top. COUNTABLE UNION_OF (gdelta_in top)”
+Overload fsigma_delta_in =
+  “\top. COUNTABLE INTERSECTION_OF (fsigma_in top) relative_to (topspace top)”
+
+Theorem preds_3[local] :
+    preds (3o :'b ordinal) = {0o; 1o; 2o}
+Proof
+    rw [preds_nat]
+ >> ‘count 3 = {0; 1; 2}’ by rw [Once EXTENSION]
+ >> POP_ORW
+ >> rw [Once EXTENSION]
+ >> EQ_TAC >> rw [] (* 3 subgoals *)
+ >| [ Q.EXISTS_TAC ‘0’ >> rw [],
+      Q.EXISTS_TAC ‘1’ >> rw [],
+      Q.EXISTS_TAC ‘2’ >> rw [] ]
+QED
+
+Theorem additive_class_3 :
+    !(top :'a topology).
+        metrizable_space top ==>
+        additive_class top (3o :'b ordinal) = gdelta_sigma_in top
+Proof
+    rw [additive_class_def, multiplicative_class_def, gdelta_in, preds_2, preds_3]
+ >> AP_TERM_TAC
+ >> rw [GSYM gdelta_in]
+ >> Suff ‘closed_in top SUBSET gdelta_in top’ >- SET_TAC []
+ >> METIS_TAC [SUBSET_DEF, IN_APP, CLOSED_IMP_GDELTA_IN]
+QED
+
+Theorem multiplicative_class_3 :
+    !(top :'a topology).
+        metrizable_space top ==>
+        multiplicative_class top (3o :'b ordinal) = fsigma_delta_in top
+Proof
+    rw [additive_class_def, multiplicative_class_def, fsigma_in, preds_2, preds_3]
+ >> GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) empty_rewrites
+      [COUNTABLE_INTERSECTION_OF_RELATIVE_TO]
+ >> Suff ‘open_in top UNION countable UNION_OF closed_in top =
+          countable UNION_OF closed_in top relative_to topspace top’ >- Rewr
+ >> rw [GSYM fsigma_in, FSIGMA_IN_RELATIVE_TO_TOPSPACE]
+ >> Suff ‘open_in top SUBSET fsigma_in top’ >- SET_TAC []
+ >> METIS_TAC [SUBSET_DEF, IN_APP, OPEN_IMP_FSIGMA_IN]
+QED
+
+Theorem additive_class_mono :
+    !(top :'a topology). metrizable_space top ==>
+        !o1 (o2 :'b ordinal). o1 <= o2 ==>
+            additive_class top o1 SUBSET additive_class top o2
+Proof
+    NTAC 2 STRIP_TAC
+ >> Q.X_GEN_TAC ‘o1’
+ >> HO_MATCH_MP_TAC ord_induction
+ >> rpt STRIP_TAC
+ >> cheat
 QED
 
 val _ = export_theory ();

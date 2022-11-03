@@ -2241,6 +2241,9 @@ Proof
  >> REWRITE_TAC [REAL_EQ_MUL_LCANCEL]
 QED
 
+(* |- !x y z. x <> PosInf /\ x <> NegInf ==> (y * x = z * x <=> x = 0 \/ y = z) *)
+Theorem mul_rcancel = ONCE_REWRITE_RULE [mul_comm] mul_lcancel
+
 Theorem inv_mul :
     !x y. x <> 0 /\ y <> 0 ==> (inv (x * y) = inv x * inv y)
 Proof

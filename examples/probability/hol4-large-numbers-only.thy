@@ -22,7 +22,7 @@ main {
   import: hol-extreal
   import: hol-analysis
   import: hol-probability
-  article: "large_number.ot.art"
+  article: "hol4-large-numbers-unint.art"
   interpretation: "../../src/opentheory/hol4.int"
 }
 base {

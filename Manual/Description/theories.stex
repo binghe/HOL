@@ -1,3 +1,4 @@
+%%% -*- Mode: LaTeX; -*-
 \chapter{Core Theories}\label{HOLtheories}
 
 % LaTeX macros in HOL manuals
@@ -18,7 +19,6 @@
 
 \setcounter{sessioncount}{0}
 
-
 \newcommand{\konst}[1]{\ensuremath{\mbox{\small{\textbf{\sf{#1}}}}}}
 \newcommand{\nil}{\mathbf{[} \;\mathbf{]}}
 \newcommand{\cons}[2]{{#1}\mathbf{:}\mathbf{:}{#2}}
@@ -31,6 +31,8 @@ The sections that follow provide an overview of the contents of each theory.
 For a complete list of all the axioms, definitions and theorems in \HOL, see the online resources distributed with the system.
 In particular, the HTML file \url{help/HOLindex.html} is a good place to start browsing the available theories.
 For a graphical picture of the theory hierarchy, see \url{help/theorygraph/theories.html}.
+
+In addition, core theories of higher mathematics are described in Chapter~\ref{ch:math}.
 
 \section{The Theory {\tt min}}\label{minTheory}
 
@@ -5233,6 +5235,39 @@ See Figure~\ref{fig:bind-defns} for the bind definitions for a number of differe
 \end{figure}
 
 \index{monads|)}
+
+\section{Other Theories}
+Other theories of interest in \HOL{} are listed and briefly described
+in Figure~\ref{fig:further-hol-theories}.
+
+\begin{figure}[hbtp]
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{|p{0.2\textwidth}p{0.7\textwidth}|}
+  \hline
+  \theoryimp{poset} & Partial Orders, Knaster-Tarski theorem
+  \\
+  \theoryimp{divides}, \theoryimp{gcd} &
+  Divisibility and the greatest common divisor.
+  \\
+  \theoryimp{poly} &
+  A theory of polynomials over $\mathbb{R}$, providing
+  a collection of operations on polynomials, and theorems about them.
+  \\
+  \theoryimp{Temporal\_Logic},\newline \theoryimp{Omega\_Automata}
+  &
+  Klaus Schneider's development of temporal logic and\newline $\omega$-automata.
+  \\
+  \theoryimp{ctl}, \theoryimp{mu}
+  &
+  Computation Tree Logic and the $\mu$-calculus. See Hasan Amjad's
+  thesis. \\
+  \theoryimp{lbtree} & Possibly infinitely deep (\ie, co-algebraic) binary trees.\\
+  \theoryimp{inftree} & Possibly infinitely branching, algebraic trees\\
+  \hline
+\end{tabular}
+\caption{A selection of \HOL{} theories}
+\label{fig:further-hol-theories}
+\end{figure}
 
 %%% Local Variables:
 %%% mode: latex

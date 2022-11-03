@@ -1,7 +1,7 @@
 (* ========================================================================= *)
 (* The Laws of Large Numbers (for Uncorrelated and I.I.D. Random Variables)  *)
 (*                                                                           *)
-(* Author: Chun Tian (binghe) <binghe.lisp@gmail.com> (2020 - 2021)          *)
+(* Author: Chun Tian (binghe) <binghe.lisp@gmail.com> (2020 - 2022)          *)
 (* Fondazione Bruno Kessler and University of Trento, Italy                  *)
 (* ========================================================================= *)
 
@@ -15,6 +15,9 @@ open realTheory realLib seqTheory transcTheory real_sigmaTheory iterateTheory
 
 open util_probTheory sigma_algebraTheory extrealTheory measureTheory
      borelTheory lebesgueTheory martingaleTheory probabilityTheory;
+
+(* local theories *)
+open convergenceTheory;
 
 val _ = new_theory "large_number";
 
@@ -3293,35 +3296,24 @@ Proof
                              {x | x IN p_space p /\ a n <= abs (X i x) /\
                                   abs (X i x) < &SUC n} x)) x)’
          >- (REWRITE_TAC [Once EQ_SYM_EQ, expectation_def] \\
-             MATCH_MP_TAC integral_add >> BETA_TAC \\
+             MATCH_MP_TAC integral_add' >> BETA_TAC \\
              FULL_SIMP_TAC std_ss [prob_space_def] \\
-             rpt STRIP_TAC >| (* 3 subgoals *)
-             [ (* goal 1 (of 3) *)
+             rpt STRIP_TAC >| (* 2 subgoals *)
+             [ (* goal 1 (of 2) *)
               ‘?r. a n = Normal r’ by METIS_TAC [extreal_cases] \\
                POP_ASSUM (FULL_SIMP_TAC std_ss o wrap) \\
                HO_MATCH_MP_TAC integrable_cmul >> art [],
-               (* goal 2 (of 3) *)
+               (* goal 2 (of 2) *)
               ‘&n = Normal (&n)’ by rw [extreal_of_num_def] \\
                POP_ASSUM (FULL_SIMP_TAC std_ss o wrap) \\
-               HO_MATCH_MP_TAC integrable_cmul >> art [],
-               (* goal 3 (of 3) *)
-               DISJ1_TAC >> STRIP_TAC >| (* 2 subgoals *)
-               [ (* goal 3.1 (of 2) *)
-                 MATCH_MP_TAC pos_not_neginf \\
-                 MATCH_MP_TAC le_mul >> art [] \\
-                 MATCH_MP_TAC le_mul >> rw [abs_pos, INDICATOR_FN_POS],
-                 (* goal 3.2 (of 2) *)
-                 MATCH_MP_TAC pos_not_neginf \\
-                 MATCH_MP_TAC le_mul \\
-                 CONJ_TAC >- (rw [extreal_of_num_def, extreal_le_eq]) \\
-                 MATCH_MP_TAC le_mul >> rw [abs_pos, INDICATOR_FN_POS] ] ]) >> Rewr' \\
+               HO_MATCH_MP_TAC integrable_cmul >> art [] ]) >> Rewr' \\
          REWRITE_TAC [expectation_def] \\
          MATCH_MP_TAC integral_mono \\
         ‘integrable p (\x. Y i x pow 2)’
            by METIS_TAC [finite_second_moments_eq_integrable_square] \\
          FULL_SIMP_TAC std_ss [prob_space_def] \\
          CONJ_TAC (* integrable *)
-         >- (HO_MATCH_MP_TAC integrable_add >> RW_TAC std_ss [] >| (* 3 subgoals *)
+         >- (HO_MATCH_MP_TAC integrable_add' >> RW_TAC std_ss [] >| (* 2 subgoals *)
              [ (* goal 1 (of 3) *)
               ‘?r. a n = Normal r’ by METIS_TAC [extreal_cases] \\
                POP_ASSUM (FULL_SIMP_TAC std_ss o wrap) \\
@@ -3329,18 +3321,7 @@ Proof
                (* goal 2 (of 3) *)
               ‘&n = Normal (&n)’ by rw [extreal_of_num_def] \\
                POP_ASSUM (FULL_SIMP_TAC std_ss o wrap) \\
-               HO_MATCH_MP_TAC integrable_cmul >> art [],
-               (* goal 3 (of 3) *)
-               DISJ1_TAC >> STRIP_TAC >| (* 2 subgoals *)
-               [ (* goal 3.1 (of 2) *)
-                 MATCH_MP_TAC pos_not_neginf \\
-                 MATCH_MP_TAC le_mul >> art [] \\
-                 MATCH_MP_TAC le_mul >> rw [abs_pos, INDICATOR_FN_POS],
-                 (* goal 3.2 (of 2) *)
-                 MATCH_MP_TAC pos_not_neginf \\
-                 MATCH_MP_TAC le_mul \\
-                 CONJ_TAC >- (rw [extreal_of_num_def, extreal_le_eq]) \\
-                 MATCH_MP_TAC le_mul >> rw [abs_pos, INDICATOR_FN_POS] ] ]) \\
+               HO_MATCH_MP_TAC integrable_cmul >> art [] ]) \\
       (* clean up useless assumptions *)
          Q.PAT_X_ASSUM ‘!i. i < k ==> _’           K_TAC \\
          Q.PAT_X_ASSUM ‘!n. variance p (Z n) <= _’ K_TAC \\

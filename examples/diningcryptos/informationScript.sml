@@ -2,18 +2,24 @@
 (* Create "informationTheory" setting up the theory of information           *)
 (* ========================================================================= *)
 
-open HolKernel Parse boolLib bossLib metisLib arithmeticTheory pred_setTheory
-     listTheory state_transformerTheory combinTheory
-     pairTheory realTheory realLib jrhUtils iterateTheory
-     realSimps numTheory simpLib seqTheory subtypeTheory
-     transcTheory limTheory stringTheory rich_listTheory stringSimps listSimps;
+open HolKernel Parse boolLib bossLib;
+
+open metisLib arithmeticTheory pred_setTheory listTheory state_transformerTheory
+     combinTheory pairTheory jrhUtils numTheory simpLib subtypeTheory
+     stringTheory rich_listTheory stringSimps listSimps hurdUtils;
+
+open realTheory realLib real_sigmaTheory iterateTheory realSimps transcTheory
+     limTheory seqTheory;
 
 open extra_boolTheory extra_numTheory extra_pred_setTheory extra_realTheory;
-open real_sigmaTheory;
 
-open hurdUtils util_probTheory sigma_algebraTheory real_measureTheory
-     real_borelTheory real_lebesgueTheory
-     real_probabilityTheory;
+open util_probTheory sigma_algebraTheory real_measureTheory real_borelTheory
+     real_lebesgueTheory real_probabilityTheory;
+
+(*
+val _ = intLib.deprecate_int();
+val _ = ratLib.deprecate_rat();
+ *)
 
 (* ------------------------------------------------------------------------- *)
 (* Start a new theory called "information"                                   *)
@@ -32,7 +38,8 @@ val _ = temp_set_fixity "CROSS" (Infixl 600)
 
 val KL_divergence_def = Define
    `KL_divergence b s u v =
-        integral (space s, subsets s, u) (\x. logr b ((RN_deriv (space s, subsets s, v) u) x))`;
+      integral (space s, subsets s, u)
+               (\x. logr b ((RN_deriv (space s, subsets s, v) u) x))`;
 
 val mutual_information_def = Define
    `mutual_information b p s1 s2 X Y  =

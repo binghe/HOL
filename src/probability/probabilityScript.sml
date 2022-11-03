@@ -2727,7 +2727,7 @@ Theorem finite_second_moments_sum :
 Proof
     rpt STRIP_TAC
  >> NTAC 3 (POP_ASSUM MP_TAC)
- >> Q.SPEC_TAC (‘J’,‘J’)
+ >> qid_spec_tac ‘J’
  >> Induct_on ‘J’
  >> rw [EXTREAL_SUM_IMAGE_EMPTY]
  >- (IMP_RES_TAC real_random_variable_zero \\
@@ -3100,12 +3100,18 @@ Proof
  >> METIS_TAC [SUBSET_DEF]
 QED
 
-(* 9. extension of `indep-rv`: total independent random variables. *)
-val indep_vars_def = Define
-   `indep_vars p X A (J :'index set) <=>
-      !E. E IN (J --> (subsets o A)) ==>
-          indep_events p (\n. (PREIMAGE (X n) (E n)) INTER p_space p) J`;
+(* 9. extension of `indep-rv`: totally/mutually independent r.v.'s
 
+  cf. indep_vars_alt_generator for a weaker equivalent condition for testing
+      independence.
+ *)
+Definition indep_vars_def :
+    indep_vars p X A (J :'index set) =
+      !E. E IN (J --> (subsets o A)) ==>
+          indep_events p (\n. (PREIMAGE (X n) (E n)) INTER p_space p) J
+End
+
+(* not used *)
 val indep_function_def = Define
    `indep_function p =
    {f | indep_families p (IMAGE (PREIMAGE (FST o f)) UNIV)
@@ -3115,6 +3121,13 @@ val PROB_INDEP = store_thm
   ("PROB_INDEP",
   ``!p s t u. indep p s t /\ (u = s INTER t) ==> (prob p u = prob p s * prob p t)``,
     RW_TAC std_ss [indep_def]);
+
+Theorem INDEP :
+  !p a b. a IN events p /\ b IN events p /\
+          prob p (a INTER b) = prob p a * prob p b ==> indep p a b
+Proof
+  rw [indep_def]
+QED
 
 val INDEP_EMPTY = store_thm
   ("INDEP_EMPTY", ``!p s. prob_space p /\ s IN events p ==> indep p {} s``,
@@ -7691,7 +7704,7 @@ Proof
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
 QED
 
-(* Theorem 3.3.1 [2, p.54], slightly generalized *)
+(* Theorem 3.3.1 [2, p.54], slightly generalized to arbitrary index set *)
 Theorem indep_vars_cong :
     !p X B (J :'index set) f.
          indep_vars p (X :'index -> 'a -> 'b) B (J :'index set) /\
@@ -7731,6 +7744,7 @@ Proof
  >> fs [Abbr ‘E'’, PREIMAGE_def, IN_DFUNSET, IN_MEASURABLE]
 QED
 
+(* A specialized version of previous theorem for only two r.v.'s *)
 Theorem indep_rv_cong :
     !p X Y A B f g. indep_rv p X Y A B /\
                     random_variable X p A /\ random_variable Y p B /\
@@ -7755,6 +7769,7 @@ Proof
  >> Cases_on ‘n = 0’ >> rw []
 QED
 
+(* Another version of "indep_vars_cong" for pairwise independent r.v.'s *)
 Theorem pairwise_indep_vars_cong :
     !p X B (J :'index set) f.
          pairwise_indep_vars p (X :'index -> 'a -> 'b) B (J :'index set) /\
@@ -8060,6 +8075,18 @@ Proof
  >> MATCH_MP_TAC indep_vars_expectation >> art []
  >> CONJ_TAC (* 2 subgoals, same tactics *)
  >> MATCH_MP_TAC finite_second_moments_imp_integrable >> art []
+QED
+
+Theorem pairwise_indep_vars_imp_uncorrelated :
+    !p X A (J :'index set). prob_space p /\
+           (!i. i IN J ==> real_random_variable (X i) p) /\
+           (!i. i IN J ==> finite_second_moments p (X i)) /\
+            pairwise_indep_vars p X (\n. Borel) J ==>
+            uncorrelated_vars p X J
+Proof
+    RW_TAC std_ss [pairwise_indep_vars_def, uncorrelated_vars_def]
+ >> MATCH_MP_TAC indep_vars_imp_uncorrelated
+ >> ASM_SIMP_TAC std_ss []
 QED
 
 (* another version of variance_sum for pairwise independent r.v.'s *)
@@ -8589,6 +8616,199 @@ Proof
  >> `!(x:real) y z w. x * y * (z * w) = x * (y * z) * w`
         by METIS_TAC [REAL_MUL_ASSOC, REAL_MUL_COMM]
  >> RW_TAC std_ss [real_div, REAL_MUL_LINV, REAL_MUL_RID]
+QED
+
+(* ========================================================================= *)
+(*  Additional theorems of conditional probabilities on independent events   *)
+(* ========================================================================= *)
+
+Theorem indep_alt_cond_prob :
+    !p A B. prob_space p /\ A IN events p /\ B IN events p /\ prob p B <> 0 ==>
+           (indep p A B <=> cond_prob p A B = prob p A)
+Proof
+    rw [indep_def]
+ >> rw [COND_PROB_MUL_RULE, Once mul_comm]
+ >> Suff ‘cond_prob p A B * prob p B = prob p A * prob p B <=>
+          prob p B = 0 \/ cond_prob p A B = prob p A’ >- rw []
+ >> MATCH_MP_TAC mul_rcancel >> rw [PROB_FINITE]
+QED
+
+(*
+Theorem indep_rv_alt_generator_lemma[local] :
+    !p X A. prob_space p /\ random_variable X p A /\ sigma_algebra A
+          ==> sigma_algebra
+                (space A,{a | a IN subsets A /\ !E. E IN events p ==>
+                              prob p ((PREIMAGE X a INTER p_space p) INTER E) =
+                              prob p (PREIMAGE X a INTER p_space p) * prob p E})
+Proof
+    cheat
+QED
+ (* applying DYNKIN_LEMMA *)
+    rw [GSYM DYNKIN_LEMMA, dynkin_system_def, IN_FUNSET] (* 5 subgoals *)
+ >| [ (* goal 1 (of 5) *)
+      fs [sigma_algebra_def, algebra_def, subset_class_def],
+      (* goal 2 (of 5) *)
+      Know ‘PREIMAGE X (space A) INTER p_space p = p_space p’
+      >- (Q.PAT_X_ASSUM ‘random_variable X p A’ MP_TAC \\
+          rw [random_variable_def, measurable_def, PREIMAGE_def,
+              IN_FUNSET, SPACE_SIGMA] \\
+          rw [Once EXTENSION] >> EQ_TAC >> rw []) >> Rewr' \\
+      rw [Once INTER_COMM, PROB_UNDER_UNIV, PROB_UNIV],
+      (* goal 3 (of 5) *)
+      REWRITE_TAC [PREIMAGE_DIFF] \\
+     ‘(PREIMAGE X (space A) DIFF PREIMAGE X s) INTER p_space p =
+      (PREIMAGE X (space A) INTER p_space p) DIFF
+      (PREIMAGE X s INTER p_space p)’ by SET_TAC [] >> POP_ORW \\
+      Know ‘PREIMAGE X (space A) INTER p_space p = p_space p’
+      >- (Q.PAT_X_ASSUM ‘random_variable X p A’ MP_TAC \\
+          rw [random_variable_def, measurable_def, PREIMAGE_def,
+              IN_FUNSET, SPACE_SIGMA] \\
+          rw [Once EXTENSION] >> EQ_TAC >> rw []) >> Rewr' \\
+      Q.ABBREV_TAC ‘V = PREIMAGE X s INTER p_space p’ \\
+      Know ‘V IN events p’
+      >- (Q.PAT_X_ASSUM ‘random_variable X p A’ MP_TAC \\
+          rw [random_variable_def, Abbr ‘V’, measurable_def]) >> DISCH_TAC \\
+      ASM_SIMP_TAC std_ss [PROB_COMPL] \\
+      Know ‘(1 - prob p V) * prob p E = 1 * prob p E - prob p V * prob p E’
+      >- (MATCH_MP_TAC sub_rdistrib \\
+          rw [PROB_FINITE]) >> Rewr' \\
+     ‘prob p (V INTER E) = prob p V * prob p E’ by PROVE_TAC [] \\
+      Q.PAT_X_ASSUM ‘prob p (V INTER E) = prob p V * prob p E’
+        (fn th => ONCE_REWRITE_TAC [SYM th, mul_lone]) \\
+      Know ‘(p_space p DIFF V) INTER E = E DIFF (V INTER E)’
+      >- (rw [Once EXTENSION] \\
+          EQ_TAC >> rw [] >> art [] \\
+          irule PROB_SPACE_IN_PSPACE >> art [] \\
+          Q.EXISTS_TAC ‘E’ >> art []) >> Rewr' \\
+      MATCH_MP_TAC PROB_DIFF_SUBSET >> rw [INTER_SUBSET] \\
+      MATCH_MP_TAC EVENTS_INTER >> art [],
+      (* goal 4 (of 5) *)
+      SIMP_TAC std_ss [PREIMAGE_BIGUNION, IMAGE_IMAGE, o_DEF, BIGUNION_OVER_INTER_L] \\
+      Q.ABBREV_TAC ‘g = \x. PREIMAGE X (f x) INTER p_space p’ \\
+      Know ‘!i j. i <> j ==> DISJOINT (g i) (g j)’
+      >- (rw [Abbr ‘g’] \\
+          MATCH_MP_TAC DISJOINT_RESTRICT_L \\
+          MATCH_MP_TAC PREIMAGE_DISJOINT \\
+          FIRST_X_ASSUM MATCH_MP_TAC >> art []) >> DISCH_TAC \\
+      Know ‘!n. g n IN events p’
+      >- (rw [Abbr ‘g’] \\
+          fs [random_variable_def, measurable_def]) >> DISCH_TAC \\
+      Q.ABBREV_TAC ‘h = \x. (g x) INTER E’ \\
+     ‘(\x. PREIMAGE X (f x) INTER p_space p INTER E) = h’ by METIS_TAC [] >> POP_ORW \\
+      Know ‘!i j. i <> j ==> DISJOINT (h i) (h j)’
+      >- (rw [Abbr ‘h’] \\
+          MATCH_MP_TAC DISJOINT_RESTRICT_L \\
+          FIRST_X_ASSUM MATCH_MP_TAC >> art []) >> DISCH_TAC \\
+      Know ‘!n. h n IN events p’
+      >- (rw [Abbr ‘h’] \\
+          MATCH_MP_TAC EVENTS_INTER >> art []) >> DISCH_TAC \\
+      Know ‘prob p (BIGUNION (IMAGE h UNIV)) = suminf (prob p o h)’
+      >- (MATCH_MP_TAC PROB_COUNTABLY_ADDITIVE \\
+          rw [IN_FUNSET]) >> Rewr' \\
+      Know ‘prob p (BIGUNION (IMAGE g UNIV)) = suminf (prob p o g)’
+      >- (MATCH_MP_TAC PROB_COUNTABLY_ADDITIVE \\
+          rw [IN_FUNSET]) >> Rewr' \\
+      rw [o_DEF, Abbr ‘h’] \\
+      ONCE_REWRITE_TAC [mul_comm] \\
+      HO_MATCH_MP_TAC ext_suminf_cmul >> rw [PROB_POSITIVE],
+
+      (* goal 5 (of 5): stable under finite intersection *)
+      REWRITE_TAC [PREIMAGE_INTER] \\
+      Q.ABBREV_TAC ‘E1 = PREIMAGE X s INTER p_space p’ \\
+      Q.ABBREV_TAC ‘E2 = PREIMAGE X t INTER p_space p’ \\
+      Know ‘PREIMAGE X s INTER PREIMAGE X t INTER p_space p = E1 INTER E2’
+      >- (qunabbrevl_tac [‘E1’, ‘E2’] >> SET_TAC []) >> Rewr' \\
+      Know ‘E1 IN events p /\ E2 IN events p’
+      >- (rw [Abbr ‘E1’, Abbr ‘E2’] \\
+          fs [random_variable_def, measurable_def]) >> STRIP_TAC \\
+     ‘E1 INTER E2 IN events p’ by PROVE_TAC [EVENTS_INTER] \\
+      Suff ‘indep p (E1 INTER E2) E’ >- rw [indep_def] \\
+      MATCH_MP_TAC INDEP_INTER >> rw [indep_def] ]
+QED
+ *)
+
+(* A weak condition for testing ‘indep_vars’ on generators
+Theorem indep_rv_alt_generator :
+    !p X sp1 sts1 Y sp2 sts2.
+         prob_space p /\ subset_class sp1 sts1 /\ subset_class sp2 sts2 /\
+         random_variable X p (sigma sp1 sts1) /\
+         random_variable Y p (sigma sp2 sts2) ==>
+        (indep_vars p X Y (sigma sp1 sts1) (sigma sp2 sts2) <=>
+         indep_vars p X Y (sp1,sts1) (sp2,sts2))
+Proof
+    rpt STRIP_TAC
+ >> EQ_TAC
+ >> RW_TAC std_ss [indep_rv_def, subsets_def]
+ >- (FIRST_X_ASSUM MATCH_MP_TAC \\
+     Suff ‘sts1 SUBSET subsets (sigma sp1 sts1) /\
+           sts2 SUBSET subsets (sigma sp2 sts2)’ >- METIS_TAC [SUBSET_DEF] \\
+     REWRITE_TAC [SIGMA_SUBSET_SUBSETS])
+
+
+
+ >> RW_TAC std_ss [indep_def]
+ >- fs [random_variable_def, measurable_def]
+ >- fs [random_variable_def, measurable_def]
+ (* stage work *)
+ >> Q.ABBREV_TAC ‘A = sigma sp1 sts1’
+ >> ‘sigma_algebra A’ by PROVE_TAC [SIGMA_ALGEBRA_SIGMA]
+ >> Q.ABBREV_TAC
+     ‘G = \X E A.
+            (space A, {a | a IN subsets (sigma (space A) A) /\ !E. E IN events p ==>
+                           prob p ((PREIMAGE X a INTER p_space p) INTER E) =
+                           prob p (PREIMAGE X a INTER p_space p) * prob p E})’
+ >> Q.PAT_X_ASSUM ‘a IN subsets A’ MP_TAC
+ >> Suff ‘subsets (sigma (space (G X Y A B)) sts1) SUBSET subsets (G X Y A B)’
+ >- rw [Abbr ‘A’, Abbr ‘B’, Abbr ‘G’, SPACE_SIGMA, SUBSET_DEF, GSPECIFICATION]
+ (* applying SIGMA_SUBSET *)
+ >> MATCH_MP_TAC SIGMA_SUBSET
+ >> CONJ_TAC >- cheat
+ >> Q.PAT_X_ASSUM ‘b IN subsets B’ K_TAC
+ (* this is to prevent ‘B’ from being unabbreviated *)
+ >> Q.PAT_ASSUM ‘Abbrev (G = _)’
+      (fn th => SIMP_TAC std_ss [REWRITE_RULE [markerTheory.Abbrev_def] th])
+ >> rw [SUBSET_DEF]
+ >- (Suff ‘sts1 SUBSET subsets (sigma sp1 sts1)’ >- METIS_TAC [SUBSET_DEF] \\
+     REWRITE_TAC [SIGMA_SUBSET_SUBSETS])
+ >> rename1 ‘x1 IN sts1’
+ (* stage work *)
+ >> REWRITE_TAC [Once INTER_COMM, Once mul_comm]
+ >> Q.PAT_X_ASSUM ‘b IN subsets B’ MP_TAC
+ >> Suff ‘subsets (sigma (space (G Y X (sp2,sts2) (sp1,sts1))) sts2) SUBSET
+          subsets (G Y X (sp2,sts2) (sp1,sts1))’
+ >- (rw [Abbr ‘A’, Abbr ‘B’, Abbr ‘G’, SPACE_SIGMA, SUBSET_DEF, GSPECIFICATION])
+ (* applying SIGMA_SUBSET again *)
+ >> MATCH_MP_TAC SIGMA_SUBSET
+ >> CONJ_TAC (* sigma_algebra (G Y X (sp2,sts2) (sp1,sts1)) *)
+ >- (rw [Abbr ‘G’, GSYM DYNKIN_LEMMA, dynkin_system_def, IN_FUNSET] (* 5 subgoals *)
+     >> cheat
+     )
+ >> rw [Abbr ‘G’, SUBSET_DEF]
+ >> REWRITE_TAC [Once INTER_COMM, Once mul_comm]
+ >> Q.UNABBREV_TAC ‘E’
+ >> Q.PAT_X_ASSUM ‘!a b. a IN sts1 /\ b IN sts2 ==> _’ (MP_TAC o (Q.SPECL [‘b’, ‘x’]))
+ >> rw [indep_def]
+QED
+ *)
+
+Theorem indep_vars_alt_generator :
+    !p X (J :'index set) sp sts.
+         prob_space p /\ (!i. i IN J ==> subset_class (sp i) (sts i)) /\
+        (!i. i IN J ==> random_variable (X i) p (sigma (sp i) (sts i))) ==>
+        (indep_vars p X (\i. sigma (sp i) (sts i)) J <=>
+         indep_vars p X (\i. (sp i,sts i)) J)
+Proof
+    rpt STRIP_TAC
+ >> EQ_TAC
+ >- (RW_TAC std_ss [indep_vars_def, IN_DFUNSET, subsets_def] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+     Suff ‘sts i SUBSET subsets (sigma (sp i) (sts i))’ >- rw [SUBSET_DEF] \\
+     REWRITE_TAC [SIGMA_SUBSET_SUBSETS])
+ (* stage work *)
+ >> RW_TAC std_ss [indep_vars_def, IN_DFUNSET, subsets_def]
+ >> 
+    cheat
 QED
 
 (* ========================================================================= *)
