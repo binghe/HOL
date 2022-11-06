@@ -6,6 +6,7 @@ val _ = new_theory "genericGraph";
 
 Type edge[pp] = “:α # α # 'label”
 
+(* ‘incident e ⊆ grep.nodes’ implies n1,n2 ∈ grep.nodes *)
 Definition incident_def[simp]:
   incident (n1, n2, lab) = {n1;n2}
 End
@@ -92,20 +93,37 @@ Proof
   simp[itself2bool_def, itself2set_def]
 QED
 
-(* generic graphs*)
+Theorem UNIV_UNIT[simp]:
+  UNIV : unit set = {()}
+Proof
+  simp[EXTENSION]
+QED
+
+Theorem itself2bool_unit[simp]:
+  itself2bool (:unit) = T
+Proof
+  simp[itself2bool_def, itself2set_def]
+QED
+
+(* representation type of generic graphs
+
+   NOTE: use ‘:('a,'di,'ec,'el,'nf,'nl,'sl) graphrep’ to reproduce
+         the exact sub-types occurring in the next definition.
+ *)
 Datatype:
-  graphrep = <| nodes : 'a set ;
-                edges : ('a,'el) edge set ;
-                nlab : 'a -> 'nl ;
-                nfincst : 'nf itself ;
-                dircst : 'd itself ;  (* true implies directed graph *)
-                slcst : 'slc itself ; (* true implies self-loops allowed *)
-                edgecst : 'ec  itself
+  graphrep = <| nodes   : 'a set ;
+                edges   : ('a,'el) edge set ; (* 'el is the type of edge labels *)
+                nlab    : 'a -> 'nl ;         (* 'nl is the type of node labels *)
+                nfincst : 'nf itself ; (* FINITE 𝕌(:'nf) implies FINITE nodes *)
+                dircst  : 'di itself ; (* true implies directed graph *)
+                slcst   : 'sl itself ; (* true implies self-loops allowed *)
+                edgecst : 'ec itself   (* CARD 𝕌(:'ec) = 1 (one) or 2 (finite) *)
              |>
 End
 
+(* well-founded graphs *)
 Definition wfgraph_def:
-  wfgraph grep ⇔
+  wfgraph (grep :('a,'di,'ec,'el,'nf,'nl,'sl) graphrep) ⇔
     (∀e. e ∈ grep.edges ⇒ incident e ⊆ grep.nodes) ∧
     finite_cst (itself2set grep.nfincst) grep.nodes ∧
     (¬itself2bool grep.slcst ⇒ ∀e. e ∈ grep.edges ⇒ ¬selfloop e) ∧
@@ -116,12 +134,6 @@ Definition wfgraph_def:
              grep.edges ∧
     (∀n. n ∉ grep.nodes ⇒ grep.nlab n = ARB)
 End
-
-Theorem UNIV_UNIT[simp]:
-  UNIV : unit set = {()}
-Proof
-  simp[EXTENSION]
-QED
 
 Theorem finite_cst_EMPTY[simp]:
   finite_cst (itself2set (:unit)) {} ∧
@@ -143,9 +155,8 @@ Proof
   rw[edge_cst_def]
 QED
 
-
 Theorem graphs_exist[local]:
-  ∃g. wfgraph g
+  ∃g. wfgraph (g :('a,'di,'ec,'el,'nf,'nl,'sl) graphrep) 
 Proof
   Q.REFINE_EXISTS_TAC ‘<| nodes := Ns;
                           edges := {};
@@ -158,12 +169,14 @@ Proof
   qexists ‘{}’ >> simp[]
 QED
 
+(* This defines a new type “:('a, 'di, 'ec, 'el, 'nf, 'nl, 'sl) graph” *)
 val tydefrec = newtypeTools.rich_new_type("graph", graphs_exist)
 
+(* 'nf = unit (finite number of nodes) *)
 Definition emptyG0_def:
-    emptyG0 : ('a,'dir,'ec,'el,unit,'nl,'sl) graphrep =
+    emptyG0 : ('a,'di,'ec,'el,unit,'nl,'sl) graphrep =
      <| nodes := {} ; edges := {}; nlab := K ARB;
-        nfincst := (:unit); dircst := (:'dir); slcst := (:'sl);
+        nfincst := (:unit); dircst := (:'di); slcst := (:'sl);
         edgecst := (:'ec) |>
 End
 
@@ -199,10 +212,12 @@ Proof
   simp[emptyG0_def]
 QED
 
+(* NOTE: n1,n2 belongs to the same edge in G *)
 Definition adjacent_def:
   adjacent G n1 n2 ⇔ ∃l. (n1, n2, l) ∈ (graph_REP G).edges
 End
 
+(* [“:'di” |-> “:num”] (for undirected graphs only) *)
 Theorem adjacent_SYM:
   adjacent (G:('a,num,'ec,'el,'nf,'nl,'sl)graph) m n ⇔ adjacent G n m
 Proof
@@ -220,8 +235,9 @@ Proof
   simp[emptyG0_def]
 QED
 
+(* [“:'di” |-> “:num”] (for undirected graphs only) *)
 Theorem adjacent_irrefl[simp]:
-  adjacent (G:('a,'dir,'ec,'el,'nf,'nl,num)graph) a a = F
+  adjacent (G :('a,'di,'ec,'el,'nf,'nl,num)graph) a a = F
 Proof
   simp[adjacent_def] >>
   ‘wfgraph (graph_REP G)’ by simp[#termP_term_REP tydefrec] >>
@@ -229,19 +245,27 @@ Proof
   rpt strip_tac >> first_x_assum drule >> simp[selfloop_def]
 QED
 
+(* [“:'di” |-> “:num”  (* undirected graphs only *)
+    “:'ec” |-> “:unit” (* only one edge for each pair of nodes *),
+    “:'el” |-> “:unit” (* no edge labels *)
+    “:'nf” |-> “:unit” (* finite number of nodes *),
+    “:'nl” |-> “:unit” (* no node labels *)
+    “:'sl” |-> “:'sl”] (* self-loop is allowed (no requirement) *)
+ *)
 Definition udedges_def:
   udedges (G:('a,num,unit,unit,unit,unit,'sl) graph) =
   {{m;n} | (m,n,()) ∈ (graph_REP G).edges}
 End
 
 Theorem udedges_thm:
-  udedges G = {{m; n} | adjacent G m n}
+  udedges G = {{m;n} | adjacent G m n}
 Proof
   simp[udedges_def, adjacent_def]
 QED
 
+(* :'nf = unit (for finite graphs only) *)
 Theorem FINITE_nodes[simp]:
-  FINITE (nodes (G:('a,'dir,'ec,'el,unit,'nl,'sl)graph))
+  FINITE (nodes (G :('a,'di,'ec,'el,unit,'nl,'sl)graph))
 Proof
   simp[nodes_def] >>
   ‘wfgraph (graph_REP G)’ by simp[#termP_term_REP tydefrec] >>
@@ -261,11 +285,12 @@ Proof
 QED
 
 Definition addNode_def:
-  addNode n l G = graph_ABS $ addNode0 n l $ graph_REP G
+  addNode n l (G :('a,'di,'ec,'el,'nf,'nl,'sl)graph) =
+  graph_ABS $ addNode0 n l $ graph_REP G
 End
 
 Theorem nodes_addNode[simp]:
-  nodes (addNode n l G) = n INSERT nodes G
+  nodes (addNode n l G) = n INSERT nodes (G :('a,'di,'ec,'el,'nf,'nl,'sl)graph)
 Proof
   simp[nodes_def, addNode_def] >>
   ‘wfgraph (graph_REP G)’ by simp[#termP_term_REP tydefrec] >>
@@ -273,7 +298,7 @@ Proof
 QED
 
 Theorem adjacent_addNode[simp]:
-  adjacent (addNode n l G) = adjacent G
+  adjacent (addNode n l G) = adjacent (G :('a,'di,'ec,'el,'nf,'nl,'sl)graph)
 Proof
   simp[adjacent_def, addNode_def, FUN_EQ_THM] >>
   ‘wfgraph (graph_REP G)’ by simp[#termP_term_REP tydefrec] >>
@@ -282,7 +307,7 @@ Proof
 QED
 
 Theorem edges_addNode[simp]:
-  udedges (addNode n l G) = udedges G
+  udedges (addNode n l G) = udedges (G:('a,num,unit,unit,unit,unit,'sl) graph)
 Proof
   simp[udedges_thm]
 QED
@@ -314,14 +339,18 @@ End
 (* any undirected graph *)
 Type udgraph[pp] = “:('a,num,'ec,'el,'nf,'nl,'sl)graph”
 
-(* finite simple graph *)
-Type fsgraph[pp] = “:('a,num,unit,unit,unit,unit,num) graph”
+(* finite simple graph (undirected, self-loop is allowed)
+
+   This is the most common graph-theoretic definition G(V,E) where
+   V is the vertice set (returned by nodes) and E is the edge set
+  (returned by udedges). The only type variable is 'a (node type).
+ *)
+Type fsgraph[pp] = “:('a,num,unit,unit,unit,unit,num)graph”
 
 (* a relation graph; stripped such are in bijection with binary relations.
    (The stripping makes a canonical, minimal choice of node set in the graph.)
  *)
-Type relgraph = “:(α,unit,num,unit,num,unit,unit)graph”
-
+Type relgraph = “:('a,unit,num,unit,num,unit,unit)graph”
 
 Definition addUDEdge_def:
   addUDEdge m n lab G = graph_ABS (addUDEdge0 m n lab (graph_REP G))
@@ -433,7 +462,7 @@ Proof
 QED
 
 Definition connected_def:
-  connected G ⇔
+  connected (G :('a,'di,'ec,'el,'nf,'nl,'sl)graph) ⇔
     ∀n1 n2. n1 ∈ nodes G ∧ n2 ∈ nodes G ∧ n1 ≠ n2 ⇒
             TC (adjacent G) n1 n2
 End
