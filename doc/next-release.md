@@ -62,6 +62,24 @@ New theories:
 New tools:
 ----------
 
+-   The linear decision procedure for the reals (`REAL_ARITH`, `REAL_ARITH_TAC`
+    and `REAL_ASM_ARITH_TAC`) have been updated by porting the latest code from
+    HOL-Light. There are two versions: those in the existing `RealArith` package
+    only support integral-valued coefficients, while those in the new package
+   `RealField` support rational-valued coefficients (this includes division of
+    reals, e.g. `|- x / 2 + x /2 = x` can be proved by `RealField.REAL_ARITH`).
+    Users can explicitly choose between different versions by explicitly opening
+   `RealArith` or `RealField` in their proof scripts. If `realLib` were opened,
+    the maximal backward compatibilities are provided by first trying the old
+    solver (now available as `RealArith.OLD_REAL_ARITH`, etc.) and (if failed)
+    then the new solver. Some existing proofs from HOL-Light can be ported to
+    HOL4 more easily.
+
+-   New decision procedure for the reals ported from HOL-Light: `REAL_FIELD`,
+   `REAL_FIELD_TAC` and `REAL_ASM_FIELD_TAC` (in the package `RealField`). These
+    new tools first try `RealField.REAL_ARITH` and then turn to new solvers
+    based on calculations of Grobner's Basis (from the new package `Grobner`).
+
 -   **Multiplying large numbers more efficiently**:
 
     In `src/real` there is a new library `bitArithLib.sml` which improves the
@@ -101,6 +119,8 @@ number of components.
 
     Some LLN theorems (`WLLN_uncorrelated` and `SLLN_uncorrelated`) previously in `probabilityTheory`
     are now moved to `large_numberTheory` with unified statements.
+
+-   __Vector and Matrix theories__ (in `examples/vector`) translated from HOL-Light's `Multivariate/vectors.ml`.
 
 -   __Relevant Logic__ (in `examples/logic/relevant-logic`): material contributed by James Taylor, mechanising a number of foundational results for propositional relevant logic.
     Three proof systems (two Hilbert, one natural deduction) are shown equivalent, and two model theories (the Routley-Meyer ternary-relation Kripke semantics, and Goldblatt’s “cover” semantics) are shown sound and complete with respect to the proof systems.
