@@ -8,13 +8,11 @@
 open HolKernel Parse boolLib bossLib;
 
 open combinTheory arithmeticTheory pred_setTheory pred_setLib logrootTheory
-     numLib hurdUtils;
+     numLib hurdUtils realTheory realLib seqTheory transcTheory real_sigmaTheory
+     iterateTheory real_topologyTheory;
 
-open realTheory realLib seqTheory transcTheory real_sigmaTheory iterateTheory
-     real_topologyTheory;
-
-open util_probTheory sigma_algebraTheory extrealTheory measureTheory
-     borelTheory lebesgueTheory martingaleTheory probabilityTheory;
+open util_probTheory sigma_algebraTheory extrealTheory measureTheory borelTheory
+     lebesgueTheory martingaleTheory probabilityTheory;
 
 (* local theories *)
 open stochastic_processTheory;
@@ -78,7 +76,7 @@ Proof
     ‘{x | x IN m_space p /\ Normal e < f x} = {x | Normal e < f x} INTER m_space p’
         by SET_TAC [] >> POP_ORW \\
      Suff ‘f IN measurable (m_space p,measurable_sets p) Borel’
-     >- (METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE]) \\
+     >- (METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE, measure_space_def]) \\
      Q.UNABBREV_TAC ‘f’ \\
      MATCH_MP_TAC IN_MEASURABLE_BOREL_MAX_FN_SEQ >> rw [] \\
      MATCH_MP_TAC IN_MEASURABLE_BOREL_ABS' >> rw [])
@@ -155,7 +153,7 @@ Proof
      MATCH_MP_TAC MEASURE_SPACE_INTER >> art [] \\
      Suff ‘f IN measurable (m_space p,measurable_sets p) Borel /\
            g IN measurable (m_space p,measurable_sets p) Borel’
-     >- (METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE]) \\
+     >- (METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE, measure_space_def]) \\
      qunabbrevl_tac [‘f’, ‘g’] \\
      ‘!i. (abs o Z i) IN measurable (m_space p,measurable_sets p) Borel’
         by METIS_TAC [IN_MEASURABLE_BOREL_ABS', measure_space_def] \\
