@@ -68,12 +68,28 @@ The concept of open (and closed) sets is fundamental and is needed, for example,
 \label{sec:calculus}
 \index{calculus, the HOL theory of@calculus, the \HOL{} theory of}
 
-An extensive development of (univariate) differential and integral
-calculus, ported from HOL Light, is available in the theory \theoryimp{derivative} and
-\theoryimp{integration}.
+HOL offers two groups of theories for univariate differential and integral calculus.
+The old group includes \theoryimp{lim} (function limits, differentiation and continuity)
+and \theoryimp{integral} (integration),
+while the new group includes \theoryimp{derivative} and \theoryimp{integration},
+using more fundamental concepts from \theoryimp{real_topology}.
+Both groups of theories were originally developed
+by John Harrison~\footnote{The \theoryimp{derivativeTheory} and
+  \theoryimp{integrationTheory} were originally ported from HOL Light in 2015,
+  by Muhammad Qasim and Osman Hasan. The original HOL Light theories are
+  multivariate.}
+
+These two group of theories are compatible by having some bridging theorems
+showing equivalence between some key concepts.
+The old theories align more tightly to conventional textbooks,
+while the new theories offer some extra functionalities (however, it misses some important
+theorems that can be found from the old theories.) Users can use both of them at the same
+time and freely choose to define new concepts based on either of them.
+
+Some contents below in this section were taken from HOL Light tutorial~\cite{harrison2017hol}.
 
 \subsection{Derivative}
-
+\label{ss:derivative}
 A quintessentially analytic property is the derivative of a function. One might
 expect to find a higher-order `derivative' function \texttt{deriv}
 $\colon
@@ -89,10 +105,21 @@ the definition is much as an analyst might expect:
 
 \begin{hol}
 \begin{alltt}
+>>__ load "limTheory";
+>>__ open limTheory;
+##thm diffl
+\end{alltt}
+\end{hol}
+
+\begin{hol}
+\begin{alltt}
 >>__ load "derivativeTheory";
 >>__ open derivativeTheory;
-##thm has_derivative_at
-##thm has_derivative_within
+##thm HAS_DERIVATIVE_AT
+
+##thm HAS_DERIVATIVE_WITHIN
+
+##thm has_vector_derivative
 \end{alltt}
 \end{hol}
 
@@ -102,12 +129,45 @@ The usual kinds of combining theorems are proved. For example, the derivative
 of a sum is the sum of the derivatives:
 \begin{hol}
 \begin{alltt}
+##thm DIFF_ADD   
+
 ##thm HAS_DERIVATIVE_ADD
+
+##thm DIFF_MUL
+
+##thm HAS_DERIVATIVE_MUL_AT
+
+##thm DIFF_DIV
+\end{alltt}
+\end{hol}
+
+\begin{hol}
+\begin{alltt}
+##thm DIFF_CHAIN
+\end{alltt}
+\end{hol}
+
+\begin{hol}
+\begin{alltt}
+##thm limTheory.IVT
+\end{alltt}
+\end{hol}
+
+\begin{hol}
+\begin{alltt}
+##thm limTheory.MVT
+##thm derivativeTheory.MVT
+\end{alltt}
+\end{hol}
+
+\begin{hol}
+\begin{alltt}
+##thm diffl_has_vector_derivative
 \end{alltt}
 \end{hol}
 
 \subsection{Integration}
-\label{sec:integration}
+\label{ss:integration}
 
 The version of integral calculus formalized in HOL is a
 generalized Riemann integration called \emph{Henstock-Kurzweil Integration},
@@ -118,11 +178,12 @@ only if the function and its absolute value are Henstock-Kurzweil
 integrable.)
 
 \holtxt{f integrable_on s} means that \emph{the function $f$ is integrable on a
-real set $s$}, while \holtxt{f absolutely_integrable_on s} denotes absolute integrability.
-Assuming $f$ is integrable, the usual integration of $f$ on a
-(closed) interval $[a,b]$, \ie,~$\displaystyle\int_a^b f \mathrm{d}x$,
-is expressed as \holtxt{integral (interval [a,b]) f} in HOL. (In
-general, the integration of $f$ on a set $s$ of real numbers is
+  real set $s$} (There is another similar concept called
+\emph{absolute integrability}: \holtxt{f absolutely_integrable_on s}.)
+If $f$ is integrable on a closed interval $[a,b]$,
+then the usual integration of $f$ on $[a,b]$, \ie,~$\displaystyle\int_a^b f \mathrm{d}x$,
+is denoted by \holtxt{integral (interval [a,b]) f} in HOL.
+(In general, the integration of $f$ on a set $s$ of real numbers is
 \holtxt{integral s f}.)
 
 The fundamental theorem of calculus (in the equivalent forms of
@@ -497,7 +558,7 @@ may not be Borel sets at all. The completion of \holtxt{lborel} is called
 \emph{Lebesgue measure space}, denoted by \holtxt{lebesgue}.
 In \theory{extreal} theory (at \ml{\$(HOLDIR)/examples/probability} directory),
 it is defined directly by Henstock-Kurzweil Integration
-(see Section~\ref{sec:integration}):
+(see Section~\ref{ss:integration}):
 \begin{hol}
 \begin{alltt}
 >>__ load "lebesgue_measureTheory";

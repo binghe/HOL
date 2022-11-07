@@ -5,7 +5,11 @@
 \documentclass[12pt,fleqn]{book}
 \usepackage[notindex]{tocbibind}
 
-%\usepackage{amsmath}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+\usepackage{amsmath}
 \usepackage{amssymb}
 %\usepackage{amsbsy}
 \usepackage{amsthm}
@@ -121,8 +125,7 @@
    % references to entire description
    % ---------------------------------------------------------------------
 
-   %\include{references}
-   \bibliographystyle{plain}
+   \bibliographystyle{plainnat}
    \bibliography{description}
 
    % ---------------------------------------------------------------------
