@@ -240,6 +240,35 @@ val linear = new_definition ("linear",
         (!x y. f(x + y) = f(x) + f(y)) /\
         (!c x. f(c * x) = c * f(x))``);
 
+(* Courtesy to Thomas Sewell for providing this proof (first) on Slack *)
+Theorem linear_lemma[local]:
+  (!c x. f(c * x) = c * f(x)) ==> ?l. f = (\x. l * x)
+Proof
+  rw []
+  \\ qexists_tac `f 1`
+  \\ rw [FUN_EQ_THM]
+  \\ metis_tac [linear, REAL_MUL_RID]
+QED
+
+Theorem linear_repr :
+    !f. linear f <=> ?l. f = \x. l * x
+Proof
+    Q.X_GEN_TAC ‘f’
+ >> EQ_TAC
+ >> rw [linear, linear_lemma]
+ >> REAL_ARITH_TAC
+QED
+
+(* In fact, only the part ‘!c x. f(c * x) = c * f(x))’ is primitive *)
+Theorem linear_alt_cmul :
+    !f. linear f <=> !c x. f(c * x) = c * f(x)
+Proof
+    Q.X_GEN_TAC ‘f’
+ >> EQ_TAC >- rw [linear]
+ >> rw [linear_repr]
+ >> MATCH_MP_TAC linear_lemma >> art []
+QED
+
 val LINEAR_SCALING = store_thm ("LINEAR_SCALING",
  ``!c. linear(\x:real. c * x)``,
  SIMP_TAC std_ss [linear] THEN REAL_ARITH_TAC);

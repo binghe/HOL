@@ -168,6 +168,12 @@ Incompatibilities:
     (With the `Definition` syntax, this is done by using the `schematic` attribute.)
     This brings this flavour of definition into line with the others, where the presence of extra free variables on the RHS of a definition’s equation is usually flagged as an error.
 
+*   In `limTheory`, the definition `differentiable` has been renamed to `differentiable_at`,
+    to distinguish from the `derivative$differentiable` which is slightly more general.
+    This brings minor incompatibilities when porting HOL-Light proofs using "Library/analysis.ml",
+    but may eliminate potential confusions when HOL4 users use `limTheory` and `derivativeTheory`
+    together.
+
 * * * * *
 
 <div class="footer">

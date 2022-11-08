@@ -51,7 +51,6 @@ val art = ASM_REWRITE_TAC;
 
 val MVT            = limTheory.MVT;
 val ROLLE          = limTheory.ROLLE;
-val differentiable = limTheory.differentiable;
 val summable       = seqTheory.summable;
 
 (*---------------------------------------------------------------------------*)
@@ -1357,10 +1356,10 @@ val COS_ISZERO = store_thm("COS_ISZERO",
     GEN_REWR_TAC I  [TAUT_CONV “a:bool <=> ~~a”] THEN
     PURE_REWRITE_TAC[NOT_IMP] THEN REWRITE_TAC[] THEN STRIP_TAC THEN
     MP_TAC(SPECL [“x1:real”, “x2:real”] REAL_LT_TOTAL) THEN
-    SUBGOAL_THEN “(!x. cos differentiable x) /\ (!x. cos contl x)”
+    SUBGOAL_THEN “(!x. cos differentiable_at x) /\ (!x. cos contl x)”
     STRIP_ASSUME_TAC THENL
      [CONJ_TAC THEN GEN_TAC THENL
-       [REWRITE_TAC[differentiable], MATCH_MP_TAC DIFF_CONT] THEN
+       [REWRITE_TAC[differentiable_at], MATCH_MP_TAC DIFF_CONT] THEN
       EXISTS_TAC “~(sin x)” THEN REWRITE_TAC[DIFF_COS], ALL_TAC] THEN
     ASM_REWRITE_TAC[] THEN DISCH_THEN DISJ_CASES_TAC THENL
      [MP_TAC(SPECL [“cos”, “x1:real”, “x2:real”] ROLLE),
@@ -1611,7 +1610,7 @@ val COS_TOTAL = store_thm("COS_TOTAL",
   (W(C SUBGOAL_THEN (fn t => REWRITE_TAC[t]) o funpow 2
                     (fst o dest_imp) o snd) THENL
     [CONJ_TAC THEN X_GEN_TAC “x:real” THEN DISCH_THEN(K ALL_TAC) THEN
-     TRY(MATCH_MP_TAC DIFF_CONT) THEN REWRITE_TAC[differentiable] THEN
+     TRY(MATCH_MP_TAC DIFF_CONT) THEN REWRITE_TAC[differentiable_at] THEN
      EXISTS_TAC “~(sin x)” THEN REWRITE_TAC[DIFF_COS], ALL_TAC]) THEN
   DISCH_THEN(X_CHOOSE_THEN “x:real” STRIP_ASSUME_TAC) THEN
   UNDISCH_TAC “(cos diffl &0)(x)” THEN
@@ -1958,7 +1957,7 @@ val TAN_TOTAL = store_thm("TAN_TOTAL",
        EXISTS_TAC “inv(cos(x) pow 2)” THEN MATCH_MP_TAC DIFF_TAN,
        X_GEN_TAC “x:real” THEN
        DISCH_THEN(CONJUNCTS_THEN (ASSUME_TAC o MATCH_MP REAL_LT_IMP_LE)) THEN
-       REWRITE_TAC[differentiable] THEN EXISTS_TAC “inv(cos(x) pow 2)” THEN
+       REWRITE_TAC[differentiable_at] THEN EXISTS_TAC “inv(cos(x) pow 2)” THEN
        MATCH_MP_TAC DIFF_TAN,
        REWRITE_TAC[CONJ_ASSOC] THEN DISCH_THEN(X_CHOOSE_THEN “x:real”
          (CONJUNCTS_THEN2 (CONJUNCTS_THEN (ASSUME_TAC o MATCH_MP
@@ -2467,15 +2466,15 @@ Proof
     FIRST_ASSUM ACCEPT_TAC] THEN
   INDUCT_TAC THENL
    [DISCH_TAC THEN MATCH_MP_TAC ROLLE THEN ASM_REWRITE_TAC[] THEN
-    SUBGOAL_THEN (Term`!t. &0 <= t /\ t <= h ==> g differentiable t`)
+    SUBGOAL_THEN (Term`!t. &0 <= t /\ t <= h ==> g differentiable_at t`)
     MP_TAC THENL
-     [GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[differentiable] THEN
+     [GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[differentiable_at] THEN
       EXISTS_TAC (Term`difg(SUC 0)(t:real):real`) THEN
       SUBST1_TAC(SYM(ASSUME (Term`difg(0:num):real->real = g`))) THEN
       FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[], ALL_TAC] THEN
     DISCH_TAC THEN CONJ_TAC THENL
      [GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC DIFF_CONT THEN
-      REWRITE_TAC[GSYM differentiable] THEN FIRST_ASSUM MATCH_MP_TAC THEN
+      REWRITE_TAC[GSYM differentiable_at] THEN FIRST_ASSUM MATCH_MP_TAC THEN
       ASM_REWRITE_TAC[],
       GEN_TAC THEN DISCH_TAC THEN FIRST_ASSUM MATCH_MP_TAC THEN
       CONJ_TAC THEN MATCH_MP_TAC REAL_LT_IMP_LE THEN ASM_REWRITE_TAC[]],
@@ -2497,8 +2496,8 @@ Proof
             MATCH_MP_TAC REAL_LT_IMP_LE THEN ASM_REWRITE_TAC[],
             MATCH_MP_TAC REAL_LT_IMP_LE THEN ASM_REWRITE_TAC[]]], ALL_TAC] THEN
       SUBGOAL_THEN (Term`!t. &0 <= t /\ t <= t0 ==>
-                       difg(SUC m) differentiable t`) ASSUME_TAC THENL
-       [GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[differentiable] THEN
+                       difg(SUC m) differentiable_at t`) ASSUME_TAC THENL
+       [GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[differentiable_at] THEN
         EXISTS_TAC (Term`difg(SUC(SUC m))(t:real):real`) THEN
         FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN
         MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC (Term`t0:real`) THEN
@@ -2506,7 +2505,7 @@ Proof
         MATCH_MP_TAC REAL_LT_IMP_LE THEN ASM_REWRITE_TAC[], ALL_TAC] THEN
       CONJ_TAC THENL
        [GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC DIFF_CONT THEN
-        REWRITE_TAC[GSYM differentiable] THEN FIRST_ASSUM MATCH_MP_TAC THEN
+        REWRITE_TAC[GSYM differentiable_at] THEN FIRST_ASSUM MATCH_MP_TAC THEN
         ASM_REWRITE_TAC[],
         GEN_TAC THEN DISCH_TAC THEN FIRST_ASSUM MATCH_MP_TAC THEN
         CONJ_TAC THEN MATCH_MP_TAC REAL_LT_IMP_LE THEN ASM_REWRITE_TAC[]],
@@ -3301,7 +3300,7 @@ val exp_convex_lemma5 = prove (
    >> MATCH_MP_TAC REAL_LET_TRANS >> Q.EXISTS_TAC `0 + f i` >> CONJ_TAC >- RW_TAC real_ss []
    >> RW_TAC real_ss [GSYM REAL_LT_SUB_LADD]
    >> `?l z. i < z /\ z < j /\ (f diffl l) z /\ (f j - f i = (j - i) * l)`
-        by (MATCH_MP_TAC MVT >> METIS_TAC [differentiable])
+        by (MATCH_MP_TAC MVT >> METIS_TAC [differentiable_at])
    >> POP_ASSUM (fn thm => ONCE_REWRITE_TAC [thm])
    >> MATCH_MP_TAC REAL_LT_MUL
    >> RW_TAC real_ss [REAL_LT_SUB_LADD]
