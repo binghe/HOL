@@ -341,9 +341,9 @@ Type udgraph[pp] = “:('a,num,'ec,'el,'nf,'nl,'sl)graph”
 
 (* finite simple graph (undirected, self-loop is allowed)
 
-   This is the most common graph-theoretic definition G(V,E) where
-   V is the vertice set (returned by nodes) and E is the edge set
-  (returned by udedges). The only type variable is 'a (node type).
+   This is the most common graph-theoretic definition G = (V,E) where
+   V is the vertice set (accessible by ‘nodes’) and E is the edge set
+  (accessible by ‘udedges’). The only type variable is 'a (vertex type).
  *)
 Type fsgraph[pp] = “:('a,num,unit,unit,unit,unit,num)graph”
 
