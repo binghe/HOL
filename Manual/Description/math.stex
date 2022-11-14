@@ -5,7 +5,7 @@
 % \section{General Topology}
 % \label{sec:generaltop}
 
-\section{Elementary Topology of One-Dimensional Euclidean Space}
+\section{Topology of One-Dimensional Euclidean Space}
 \label{sec:topology}
 \index{real\_topology, the HOL theory of@real\_topology, the \HOL{} theory of}
 
@@ -49,20 +49,21 @@ Borel-measurable spaces in measure theory:
 >>__ val oldwidth = !Globals.linewidth;
      val _ = Globals.linewidth := 70;
 >>__ load "real_topologyTheory";
->>__ open real_topologyTheory;
-##thm COMPACT_EQ_HEINE_BOREL
+##thm real_topologyTheory.COMPACT_EQ_HEINE_BOREL
 
-##thm COMPACT_EQ_BOUNDED_CLOSED
+##thm real_topologyTheory.COMPACT_EQ_BOUNDED_CLOSED
 \end{alltt}
 \end{hol}
 
 The concept of open (and closed) sets is fundamental and is needed, for example, in the definition of Borel sets (see Section~\ref{sec:borel}):
 \begin{hol}
 \begin{alltt}
-##thm open_def
-##thm closed_def
+##thm real_topologyTheory.open_def
+##thm real_topologyTheory.closed_def
 \end{alltt}
 \end{hol}
+
+% TODO: open and closed intervals
 
 \section{Univariate Differential and Integral Calculus}
 \label{sec:calculus}
@@ -74,10 +75,10 @@ and \theoryimp{integral} (integration),
 while the new group includes \theoryimp{derivative} and \theoryimp{integration},
 using more fundamental concepts from \theoryimp{real_topology}.
 Both groups of theories were originally developed
-by John Harrison~\footnote{The \theoryimp{derivativeTheory} and
+by John Harrison\footnote{The \theoryimp{derivativeTheory} and
   \theoryimp{integrationTheory} were originally ported from HOL Light in 2015,
   by Muhammad Qasim and Osman Hasan. The original HOL Light theories are
-  multivariate.}
+  for multivariate calculus.}.
 
 These two group of theories are compatible by having some bridging theorems
 showing equivalence between some key concepts.
@@ -86,83 +87,167 @@ while the new theories offer some extra functionalities (however, it misses some
 theorems that can be found from the old theories.) Users can use both of them at the same
 time and freely choose to define new concepts based on either of them.
 
-Some contents below in this section were taken from HOL Light tutorial~\cite{harrison2017hol}.
+Some contents below are taken from~\cite{harrison2017hol} and~\cite{Harrison:2012ig},
+edited by Chun Tian. Standard textbooks like~\cite{Courant:1989vw} are also consulted.
 
 \subsection{Derivative}
 \label{ss:derivative}
-A quintessentially analytic property is the derivative of a function. One might
-expect to find a higher-order `derivative' function \texttt{deriv}
-$\colon
-(\mathbb{R}\rightarrow\mathbb{R})\rightarrow(\mathbb{R}\rightarrow\mathbb{R})$
+
+A quintessentially analytic property is the derivative of a function.
+The concept of derivative is first suggested by the intuitive notion of
+the \emph{tangent to a smooth curve} $y = f(x)$ at a point $P$ with the coordinates
+$x$ and $y$. See Figure~\ref{fig:diffl} for an illustration of this \emph{differentiation process}.
+Mathematically, one shall generally use either the notation of Lagrange, $y' = f'(x)$,
+to denote the derivative, or, as Leibnitz did, the symbol $dy/dx$ or $df(x)/dx$.
+The notation $f'(x)$ indicates the fact that the
+\emph{derivative is itself a function} of $x$ since a value of $f'(x)$ corresponds to
+each value of $x$ (in the interval considered). The
+definition of the derivative appears in several different forms, one of the following:
+\begin{equation}
+  \label{eq:derivative}
+  f'(x) = \lim_{h\rightarrow 0}\frac{f(x+h) - f(x)}{h}
+\end{equation}
+
+One might expect to find a higher-order `derivative' function \texttt{deriv}
+$\colon (\mathbb{R}\rightarrow\mathbb{R})\rightarrow(\mathbb{R}\rightarrow\mathbb{R})$
 mapping a function $f$ to its derivative $f'$. Actually, no such thing
 is defined in HOL, but rather a ternary operator
-\holtxt{has_derivative} where \holtxt{(f has_derivative f') (at x)}
-means `the function $f$ has a derivative $f'$ at the point $x$', or
-\holtxt{(f has_derivative f') (at x within s)} means `the function $f$
-has a derivative $f'$ at the point $x$ within the set $s$'.
-Expanding out the definition, we see that
-the definition is much as an analyst might expect:
+\holtxt{diffl} (defined in \theoryimp{limTheory}) where \holtxt{(f diffl l) x}
+means `the function $f$ has a derivative with value $l$ at the point $x$'.
+Expanding out the definition, we see that the definition is much as an analyst might expect:
 
 \begin{hol}
 \begin{alltt}
 >>__ load "limTheory";
->>__ open limTheory;
-##thm diffl
+##thm limTheory.diffl
 \end{alltt}
 \end{hol}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics{figs/0.mps}
+  \caption{The differentiation process of \holtxt{diffl}, $f'(x) = \mathrm{tan}\,\alpha$}
+  \label{fig:diffl}
+\end{figure}
+
+
+\holtxt{(f has_derivative f') (at x)}
+means `the function $f$ has a derivative $f'$ at the point $x$', or
+\holtxt{(f has_derivative f') (at x within s)} means `the function $f$
+has a derivative $f'$ at the point $x$ within the set $s$'.
+Expanding out the definition, we see that the definition is much as an analyst might expect:
+(cf.~Figure~\ref{fig:hasDerivative} for an illustration of this differentiation process.)
 
 \begin{hol}
 \begin{alltt}
 >>__ load "derivativeTheory";
->>__ open derivativeTheory;
-##thm HAS_DERIVATIVE_AT
-
-##thm HAS_DERIVATIVE_WITHIN
-
-##thm has_vector_derivative
+##thm derivativeTheory.HAS_DERIVATIVE_AT
 \end{alltt}
 \end{hol}
 
-Similarily, \holtxt{(f has_vector_derivative f') (at x)} means that \emph{the function $f$
+\begin{figure}[ht]
+  \centering
+  \includegraphics{figs/1.mps}
+  \caption{The differentiation process of \holtxt{has_derivative}}
+  \label{fig:hasDerivative}
+\end{figure}
+
+\begin{hol}
+\begin{alltt}
+##thm derivativeTheory.has_vector_derivative
+\end{alltt}
+\end{hol}
+
+Similarly, \holtxt{(f has_vector_derivative f') (at x)} means that \emph{the function $f$
 has a derivative with value $f'$ at the point $x$}.
 The usual kinds of combining theorems are proved. For example, the derivative
 of a sum is the sum of the derivatives:
 \begin{hol}
 \begin{alltt}
-##thm DIFF_ADD   
+##thm limTheory.DIFF_ADD   
 
-##thm HAS_DERIVATIVE_ADD
+##thm derivativeTheory.HAS_DERIVATIVE_ADD
 
-##thm DIFF_MUL
+##thm limTheory.DIFF_MUL
 
-##thm HAS_DERIVATIVE_MUL_AT
+##thm derivativeTheory.HAS_DERIVATIVE_MUL_AT
 
-##thm DIFF_DIV
+##thm limTheory.DIFF_DIV
 \end{alltt}
 \end{hol}
 
 \begin{hol}
 \begin{alltt}
-##thm DIFF_CHAIN
-\end{alltt}
-\end{hol}
-
-\begin{hol}
-\begin{alltt}
-##thm limTheory.IVT
+##thm limTheory.DIFF_CHAIN
 \end{alltt}
 \end{hol}
 
 \begin{hol}
 \begin{alltt}
 ##thm limTheory.MVT
+
 ##thm derivativeTheory.MVT
 \end{alltt}
 \end{hol}
 
 \begin{hol}
 \begin{alltt}
-##thm diffl_has_vector_derivative
+##thm limTheory.diffl_has_vector_derivative
+\end{alltt}
+\end{hol}
+
+A function is \emph{differentiable} at certain point if it has derivative at that point.
+
+The continuity of a function is very close with its differentiability.
+The HOL formalization of ``$f$ is (right-)continuous at the point $x$'' is
+\holtxt{f contl x} with \holtxt{contl} (`locally continuous' from \theoryimp{limTheory}),
+or \holtxt{f continuous (at x)} from \theoryimp{real_topologyTheory},
+both are infix binary operators.
+The two operators are equivalent (when \holtxt{continuous} is used with the \holtxt{at} net)
+by the following bridging theorem:
+\begin{hol}
+\begin{alltt}
+##thm limTheory.contl_eq_continuous_at
+\end{alltt}
+\end{hol}
+However, using \holtxt{continuous} it is also possible to express continuity of
+a function at a point \emph{within} a set of points (usually an interval),
+i.e.~\holtxt{f continuous (at x within s)}.
+
+The global version of \holtxt{continuous} for a set of points (usually an open or closed interval)
+is called \holtxt{continuous_on}.\footnote{There is also another closely related
+  \holtxt{uniformly_continuous_on} which implies \holtxt{continuous_on}. See \theoryimp{UNIFORMLY_CONTINUOUS_IMP_CONTINUOUS},
+\theoryimp{COMPACT_UNIFORMLY_CONTINUOUS}, etc. in \theoryimp{real_topologyTheory}.}
+\begin{hol}
+\begin{alltt}
+##thm real_topologyTheory.continuous_on
+\end{alltt}
+\end{hol}
+
+\begin{hol}
+\begin{alltt}
+##thm real_topologyTheory.CONTINUOUS_ON_EQ_CONTINUOUS_AT
+
+##thm real_topologyTheory.CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN
+\end{alltt}
+\end{hol}
+
+One of the most fundamental facts about continuous functions is the \emph{intermediate
+value property (IVT)}: if a function takes two values then it also somewhere takes any value
+in between. The HOL formulation is that if $f$ is continuous at all points of an interval
+$[a,b]$, and $f(a)\leqslant y\leqslant f(b)$ then there is some point $x$ in the interval where
+$f(x) = y$:
+\begin{hol}
+\begin{alltt}
+##thm limTheory.IVT
+
+##thm real_topologyTheory.CONTINUOUS_ON_IVT
+\end{alltt}
+\end{hol}
+
+\begin{hol}
+\begin{alltt}
+##thm limTheory.IVT2
 \end{alltt}
 \end{hol}
 
@@ -186,13 +271,51 @@ is denoted by \holtxt{integral (interval [a,b]) f} in HOL.
 (In general, the integration of $f$ on a set $s$ of real numbers is
 \holtxt{integral s f}.)
 
-The fundamental theorem of calculus (in the equivalent forms of
-Riemann integral) is expressed below:
+\begin{hol}
+\begin{alltt}
+>>__ load "integralTheory";
+>>__ open integralTheory;
+##thm integralTheory.gauge
+
+##thm integralTheory.fine
+
+##thm integralTheory.tdiv
+
+##thm integralTheory.division
+
+##thm integralTheory.Dint
+
+##thm integralTheory.integral
+\end{alltt}
+\end{hol}
+
 \begin{hol}
 \begin{alltt}
 >>__ load "integrationTheory";
 >>__ open integrationTheory;
-##thm FUNDAMENTAL_THEOREM_OF_CALCULUS
+##thm integrationTheory.gauge_def
+
+##thm integrationTheory.FINE
+
+##thm integrationTheory.tagged_partial_division_of
+
+##thm integrationTheory.tagged_division_of
+
+##thm integrationTheory.has_integral_compact_interval
+
+##thm integrationTheory.has_integral_def
+
+##thm integrationTheory.integral_def
+\end{alltt}
+\end{hol}
+
+The fundamental theorem of calculus (in the equivalent forms of
+Riemann integral) is expressed below:
+\begin{hol}
+\begin{alltt}
+##thm integralTheory.FTC1
+
+##thm integrationTheory.FUNDAMENTAL_THEOREM_OF_CALCULUS
 \end{alltt}
 \end{hol}
 
@@ -204,7 +327,7 @@ improvement, as shown in the following strong version of the
  fundamental theorem of calculus:
 \begin{hol}
 \begin{alltt}
-##thm FUNDAMENTAL_THEOREM_OF_CALCULUS_STRONG
+##thm integrationTheory.FUNDAMENTAL_THEOREM_OF_CALCULUS_STRONG
 \end{alltt}
 \end{hol}
 

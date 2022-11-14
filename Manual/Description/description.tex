@@ -46,9 +46,7 @@
   pdfauthor={The HOL4 contributors},
   pdfsubject={HOL4},
   pdfkeywords={Interactive Theorem Proving; Higher Order Logic},
-  pdfdisplaydoctitle=true,
-  pdfpagelayout=OneColumn,
-  pdfstartview=FitH
+  pdfdisplaydoctitle=true
 }
 
 \usepackage{breakurl} % it depends on hyperref
@@ -109,7 +107,6 @@
    \include{math}                        % math theories
    \include{definitions}
    \include{libraries}
-%   \include{map}
    \include{misc}
 
    % ---------------------------------------------------------------------
@@ -125,19 +122,13 @@
    % references to entire description
    % ---------------------------------------------------------------------
 
+   % The "plainnat" style will show also the DOI and URL, etc.
    \bibliographystyle{plainnat}
    \bibliography{description}
 
    % ---------------------------------------------------------------------
-   % Appendix describing Version 2.0
-   % ---------------------------------------------------------------------
-
-%   \include{version2}
-
-   % ---------------------------------------------------------------------
    % Index
    % ---------------------------------------------------------------------
-
 
 \small
 \emergencystretch=14pt

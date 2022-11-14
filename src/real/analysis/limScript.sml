@@ -267,14 +267,12 @@ Proof
 QED
 
 (* NOTE: renamed from ‘differentiable’ to ‘differentiable_at’, to distinguish
-   with ‘derivative$differentiable’ (slightly more general):
-
-   |- !f net. f differentiable net <=> ?f'. (f has_derivative f') net
+   from ‘derivative$differentiable’.
  *)
 val differentiable_at = new_infixr_definition
   ("differentiable_at", “$differentiable_at f x = ?l. (f diffl l)(x)”, 750);
 
-(* connection between ‘differentiable_at’ and ‘differentiable’ *)
+(* equivalence between ‘differentiable_at’ and ‘derivative$differentiable’ *)
 Theorem differentiable_at_eq_differentiable :
     !f x. f differentiable_at x <=> f differentiable (at x)
 Proof
