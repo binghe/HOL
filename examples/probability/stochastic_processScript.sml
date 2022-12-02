@@ -1024,22 +1024,9 @@ Proof
       RW_TAC fcp_ss [] ]
 QED
 
-(* Problem 2.5.7 of [4, p.217], a simple version of the next indep_vars_cong_general
+(* Problem 2.5.7 of [4, p.217], a simple version of the next "indep_vars_cong_general"
 Theorem indep_vars_cong_disjoint :
     !p X B J s t f g.
-         prob_space p /\ sigma_algebra B /\ FINITE (J :'index set) /\
-         indep_vars p (X :'index -> 'a -> 'b) (\n. B) J /\
-        (!n. n IN J ==> random_variable (X n) p B) /\
-        (J = s UNION t) /\ DISJOINT s t /\ s <> {} /\ t <> {}
-     ==> indep_vars p (f X s) (g X t) B B
-Proof
-    RW_TAC std_ss [indep_vars_def, indep_rv_def, IN_DFUNSET, o_DEF]
-QED
- *)
-
-(*
-Theorem indep_vars_cong_disjoint_sum :
-    !p X B J s t.
          prob_space p /\ sigma_algebra B /\ FINITE (J :'index set) /\
          indep_vars p (X :'index -> 'a -> 'b) (\n. B) J /\
         (!n. n IN J ==> random_variable (X n) p B) /\
