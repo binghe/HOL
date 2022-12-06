@@ -133,23 +133,12 @@ Proof
       POP_ASSUM (ASM_REWRITE_TAC o wrap) ]
 QED
 
-Theorem real_random_variable_SIGMA :
+Theorem real_random_variable_SIGMA[local] :
     !p X. prob_space p /\ (!n. real_random_variable (X n) p) ==>
           !n. real_random_variable (\x. SIGMA (\i. X i x) (count n)) p
 Proof
-    RW_TAC std_ss [real_random_variable]
- >| [ (* goal 1 (of 3) *)
-      MATCH_MP_TAC (INST_TYPE [``:'b`` |-> ``:num``] IN_MEASURABLE_BOREL_SUM) \\
-      qexistsl_tac [`X`, `count n`] \\
-     ‘sigma_algebra (p_space p,events p)’
-        by METIS_TAC [prob_space_def, measure_space_def, p_space_def, events_def] \\
-      rw  [FINITE_COUNT, IN_COUNT],
-      (* goal 2 (of 3) *)
-      MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_NEGINF \\
-      RW_TAC std_ss [FINITE_COUNT, IN_COUNT],
-      (* goal 3 (of 3) *)
-      MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_POSINF \\
-      RW_TAC std_ss [FINITE_COUNT, IN_COUNT] ]
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC real_random_variable_sum >> rw []
 QED
 
 Theorem real_random_variable_LLN_general :
