@@ -1441,6 +1441,19 @@ Proof
  >> MATCH_MP_TAC FN_MINUS_NOT_INFTY >> rw []
 QED
 
+Theorem real_random_variable_mul_indicator :
+    !p E X. prob_space p /\ E IN events p /\ real_random_variable X p ==>
+            real_random_variable (\x. X x * indicator_fn E x) p
+Proof
+    RW_TAC std_ss [real_random_variable]
+ >- (HO_MATCH_MP_TAC IN_MEASURABLE_BOREL_MUL_INDICATOR \\
+     fs [prob_space_def, measure_space_def, p_space_def, events_def])
+ >> ‘?r. 0 <= r /\ r <= 1 /\ indicator_fn E x = Normal r’
+        by METIS_TAC [indicator_fn_normal] >> POP_ORW
+ >> ONCE_REWRITE_TAC [mul_comm]
+ >> METIS_TAC [mul_not_infty]
+QED
+
 (* added `integrable p X`, otherwise `expectation p X` is not defined *)
 val finite_expectation1 = store_thm
   ("finite_expectation1",
@@ -2253,6 +2266,17 @@ Proof
     rpt STRIP_TAC
  >> rw [variance_alt, expectation_const, extreal_sub_def]
  >> rw [extreal_pow_def, expectation_zero]
+QED
+
+Theorem expectation_sum :
+    !p X J.
+        FINITE J /\ prob_space p /\ (!i. i IN J ==> integrable p (X i)) /\
+       (!i. i IN J ==> real_random_variable (X i) p) ==>
+        expectation p (\x. SIGMA (\i. X i x) J) = SIGMA (\i. expectation p (X i)) J
+Proof
+    RW_TAC std_ss [expectation_def, real_random_variable_def, prob_space_def,
+                   p_space_def]
+ >> MATCH_MP_TAC integral_sum >> rw []
 QED
 
 (* |- !p. prob_space p ==> variance p (\x. 0) = 0 *)
