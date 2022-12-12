@@ -4679,6 +4679,34 @@ Proof
  >> rw [o_DEF, Abbr ‘h’, FUN_EQ_THM]
 QED
 
+(* ‘!n. 0 <= f n’ can be weakened but enough for now *)
+Theorem EXTREAL_SUM_IMAGE_OFFSET :
+    !f m n. m <= n /\ (!n. 0 <= f n) ==>
+            SIGMA f (count n) = SIGMA f (count m) + SIGMA (\i. f (i + m)) (count (n - m))
+Proof
+    rpt STRIP_TAC
+ >> Q.ABBREV_TAC ‘h = \(i :num). i + m’
+ >> ‘(\i. f (i + m)) = f o h’ by METIS_TAC [o_DEF] >> POP_ORW
+ (* applying EXTREAL_SUM_IMAGE_IMAGE *)
+ >> Know ‘SIGMA (f o h) (count (n - m)) = SIGMA f (IMAGE h (count (n - m)))’
+ >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+     irule EXTREAL_SUM_IMAGE_IMAGE >> rw []
+     >- (DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> rw [] \\
+         METIS_TAC [pos_not_neginf]) \\
+     rw [INJ_DEF, Abbr ‘h’]) >> Rewr'
+ (* preparing for EXTREAL_SUM_IMAGE_DISJOINT_UNION *)
+ >> Know ‘count n = count m UNION (IMAGE h (count (n - m)))’
+ >- (rw [Once EXTENSION] >> EQ_TAC >> rw [Abbr ‘h’] \\
+    ‘x < m \/ m <= x’ by rw [] >- art [] \\
+     DISJ2_TAC >> Q.EXISTS_TAC ‘x - m’ >> rw [])
+ >> Rewr'
+ (* applying EXTREAL_SUM_IMAGE_DISJOINT_UNION *)
+ >> irule EXTREAL_SUM_IMAGE_DISJOINT_UNION >> simp []
+ >> reverse CONJ_TAC
+ >- (DISJ1_TAC >> rw [] >> METIS_TAC [pos_not_neginf])
+ >> rw [DISJOINT_ALT, Abbr ‘h’]
+QED
+
 val EXTREAL_SUM_IMAGE_POS_MEM_LE = store_thm
   ("EXTREAL_SUM_IMAGE_POS_MEM_LE",
    ``!f s. FINITE s  /\ (!x. x IN s ==> 0 <= f x) ==>
@@ -6461,6 +6489,15 @@ Proof
  >> METIS_TAC [le_sub_eq2, add_comm]
 QED
 
+Theorem ext_suminf_add' :
+    !f g h. (!n. 0 <= f n) /\ (!n. 0 <= g n) /\ (!n. h n = f n + g n) ==>
+            (ext_suminf h = ext_suminf f + ext_suminf g)
+Proof
+    rpt STRIP_TAC
+ >> ‘h = \n. f n + g n’ by METIS_TAC [] >> POP_ORW
+ >> MATCH_MP_TAC ext_suminf_add >> rw []
+QED
+
 Theorem ext_suminf_cmul :
     !f c. 0 <= c /\ (!n. 0 <= f n) ==>
           (ext_suminf (\n. c * f n) = c * ext_suminf f)
@@ -7638,6 +7675,32 @@ Proof
                  PROVE_TAC [half_between])
  >> GEN_TAC
  >> METIS_TAC [half_not_infty, pow_not_infty, lt_infty]
+QED
+
+Theorem ext_suminf_offset :
+    !f m. (!n. 0 <= f n) ==>
+           suminf f = SIGMA f (count m) + suminf (\i. f (i + m))
+Proof
+    rpt STRIP_TAC
+ >> Q.ABBREV_TAC ‘f1 = \n. if n < m then f n else 0’
+ >> Q.ABBREV_TAC ‘f2 = \n. if m <= n then f n else 0’
+ >> Know ‘SIGMA f (count m) = SIGMA f1 (count m)’
+ >- (irule EXTREAL_SUM_IMAGE_EQ >> rw [Abbr ‘f1’] \\
+     DISJ1_TAC >> rw [pos_not_neginf])
+ >> Rewr'
+ (* applying ext_suminf_sum *)
+ >> Know ‘SIGMA f1 (count m) = suminf f1’
+ >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+     MATCH_MP_TAC ext_suminf_sum >> rw [Abbr ‘f1’])
+ >> Rewr'
+ (* applying ext_suminf_eq_shift *)
+ >> Know ‘suminf (\i. f (i + m)) = suminf f2’
+ >- (MATCH_MP_TAC ext_suminf_eq_shift \\
+     Q.EXISTS_TAC ‘m’ >> rw [Abbr ‘f2’])
+ >> Rewr'
+ >> MATCH_MP_TAC ext_suminf_add'
+ >> rw [Abbr ‘f1’, Abbr ‘f2’]
+ >> fs []
 QED
 
 (* ------------------------------------------------------------------------- *)
