@@ -4633,62 +4633,19 @@ val EXTREAL_SUM_IMAGE_EQ = store_thm
                            DISJ_IMP_THM, FORALL_AND_THM]
   >> METIS_TAC []);
 
-(* if the first N items of (g n) are all zero, we can ignore them in SIGMA *)
-Theorem EXTREAL_SUM_IMAGE_EQ_SHIFT :
-    !f g N. (!n. n < N ==> g n = 0) /\ (!n. 0 <= f n /\ f n = g (n + N)) ==>
-            !n. EXTREAL_SUM_IMAGE f (count n) = EXTREAL_SUM_IMAGE g (count (n + N))
-Proof
-    rpt STRIP_TAC
- >> Know ‘!n. 0 <= g n’
- >- (Q.X_GEN_TAC ‘n’ \\
-     Cases_on ‘n < N’ >- rw [] \\
-    ‘n = n - N + N’ by rw [] >> POP_ORW \\
-    ‘g (n - N + N) = f (n - N)’ by rw [] >> POP_ORW >> rw [])
- >> DISCH_TAC
- >> Know ‘count (n + N) = {i | N <= i /\ i < n + N} UNION (count N)’
- >- (rw [Once EXTENSION])
- >> Rewr'
- >> Know ‘DISJOINT {i | N <= i /\ i < n + N} (count N)’
- >- (rw [DISJOINT_ALT])
- >> DISCH_TAC
- >> Know ‘EXTREAL_SUM_IMAGE g ({i | N <= i /\ i < n + N} UNION count N) =
-          EXTREAL_SUM_IMAGE g {i | N <= i /\ i < n + N} + EXTREAL_SUM_IMAGE g (count N)’
- >- (irule EXTREAL_SUM_IMAGE_DISJOINT_UNION >> rw []
-     >- (irule SUBSET_FINITE \\
-         Q.EXISTS_TAC ‘count (N + n)’ >> rw [SUBSET_DEF]) \\
-     DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
-     MATCH_MP_TAC pos_not_neginf >> art [])
- >> Rewr'
- >> Know ‘EXTREAL_SUM_IMAGE g (count N) = 0’
- >- (MATCH_MP_TAC EXTREAL_SUM_IMAGE_0 >> rw [])
- >> Rewr'
- >> REWRITE_TAC [add_rzero]
- >> Q.ABBREV_TAC ‘h = \(i :num). i + N’
- >> Know ‘{i | N <= i /\ i < n + N} = IMAGE h (count n)’
- >- (rw [Once EXTENSION, Abbr ‘h’] \\
-     EQ_TAC >> rw [] \\
-     Q.EXISTS_TAC ‘x - N’ >> rw [])
- >> Rewr'
- >> Know ‘EXTREAL_SUM_IMAGE g (IMAGE h (count n)) = EXTREAL_SUM_IMAGE (g o h) (count n)’
- >- (irule EXTREAL_SUM_IMAGE_IMAGE \\
-     rw [INJ_DEF, Abbr ‘h’] \\
-     DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> STRIP_TAC \\
-     MATCH_MP_TAC pos_not_neginf >> art [])
- >> Rewr'
- >> Suff ‘g o h = f’ >- Rewr
- >> rw [o_DEF, Abbr ‘h’, FUN_EQ_THM]
-QED
-
 (* ‘!n. 0 <= f n’ can be weakened but enough for now *)
 Theorem EXTREAL_SUM_IMAGE_OFFSET :
     !f m n. m <= n /\ (!n. 0 <= f n) ==>
-            SIGMA f (count n) = SIGMA f (count m) + SIGMA (\i. f (i + m)) (count (n - m))
+            EXTREAL_SUM_IMAGE f (count n) =
+            EXTREAL_SUM_IMAGE f (count m) +
+            EXTREAL_SUM_IMAGE (\i. f (i + m)) (count (n - m))
 Proof
     rpt STRIP_TAC
  >> Q.ABBREV_TAC ‘h = \(i :num). i + m’
  >> ‘(\i. f (i + m)) = f o h’ by METIS_TAC [o_DEF] >> POP_ORW
  (* applying EXTREAL_SUM_IMAGE_IMAGE *)
- >> Know ‘SIGMA (f o h) (count (n - m)) = SIGMA f (IMAGE h (count (n - m)))’
+ >> Know ‘EXTREAL_SUM_IMAGE (f o h) (count (n - m)) =
+          EXTREAL_SUM_IMAGE f (IMAGE h (count (n - m)))’
  >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
      irule EXTREAL_SUM_IMAGE_IMAGE >> rw []
      >- (DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> rw [] \\
@@ -4705,6 +4662,30 @@ Proof
  >> reverse CONJ_TAC
  >- (DISJ1_TAC >> rw [] >> METIS_TAC [pos_not_neginf])
  >> rw [DISJOINT_ALT, Abbr ‘h’]
+QED
+
+(* if the first N items of (g n) are all zero, we can ignore them in SIGMA *)
+Theorem EXTREAL_SUM_IMAGE_EQ_SHIFT :
+    !f g N. (!n. n < N ==> g n = 0) /\ (!n. 0 <= f n /\ f n = g (n + N)) ==>
+            !n. EXTREAL_SUM_IMAGE f (count n) = EXTREAL_SUM_IMAGE g (count (n + N))
+Proof
+    rpt STRIP_TAC
+ >> Know ‘EXTREAL_SUM_IMAGE g (count (n + N)) =
+          EXTREAL_SUM_IMAGE g (count N) +
+          EXTREAL_SUM_IMAGE (\i. g (i + N)) (count (n + N - N))’
+ >- (MATCH_MP_TAC EXTREAL_SUM_IMAGE_OFFSET >> rw [] \\
+    ‘n < N \/ N <= n’ by rw [] >- rw [] \\
+    ‘n = n - N + N’ by rw [] >> POP_ORW >> METIS_TAC [])
+ >> Rewr'
+ >> Know ‘EXTREAL_SUM_IMAGE g (count N) = 0’
+ >- (irule EXTREAL_SUM_IMAGE_0 >> rw [])
+ >> Rewr'
+ >> rw []
+ >> irule EXTREAL_SUM_IMAGE_EQ >> rw []
+ >> DISJ1_TAC >> rw []
+ >> MATCH_MP_TAC pos_not_neginf
+ >> Suff ‘g (N + x) = f x’ >- (Rewr' >> rw [])
+ >> METIS_TAC [ADD_SYM]
 QED
 
 val EXTREAL_SUM_IMAGE_POS_MEM_LE = store_thm
