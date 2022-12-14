@@ -1207,17 +1207,11 @@ Proof
     ‘CARD (N n) = CARD (J n)’ by METIS_TAC [] >> POP_ORW \\
      irule EXTREAL_SUM_IMAGE_FINITE_CONST >> simp []) >> Rewr'
  >> REWRITE_TAC [mul_assoc, GSYM pow_2]
+ (* ‘J’ is no more needed *)
  >> Q.PAT_X_ASSUM ‘!n. CARD (J n) = _’ K_TAC
  >> Q.PAT_X_ASSUM ‘!n. FINITE (J n)’   K_TAC
  >> Q.UNABBREV_TAC ‘J’
-
-
-
-
-
-
-
-
+ >> DISCH_TAC
  (* stage work, now prove the AE convergence of D(n)/n^2 *)
  >> Q.ABBREV_TAC ‘W = (\n x. D n x / &SUC (n ** 2))’
  >> Know ‘!n. real_random_variable (W n) p’
@@ -1280,7 +1274,7 @@ Proof
      DISCH_THEN (ONCE_REWRITE_TAC o wrap o BETA_RULE) \\
      Q.ABBREV_TAC ‘c = Normal ((inv &SUC (n ** 2)) pow 2)’ \\
      MATCH_MP_TAC let_trans \\
-     Q.EXISTS_TAC ‘c * &(2 * n + 1) pow 2 * M’ \\
+     Q.EXISTS_TAC ‘c * &CARD (N n) pow 2 * M’ \\
      reverse CONJ_TAC
      >- (Q.UNABBREV_TAC ‘c’ \\
         ‘?r. M = Normal r’ by METIS_TAC [extreal_cases] \\
@@ -1294,6 +1288,7 @@ Proof
      REWRITE_TAC [expectation_def, Once EQ_SYM_EQ] \\
      MATCH_MP_TAC integral_pos_fn \\
      FULL_SIMP_TAC std_ss [prob_space_def, le_pow2]) >> DISCH_TAC
+ (* stage work *)
  >> Know ‘(W --> (\x. 0)) (almost_everywhere p)’
  >- (‘real_random_variable (\x. 0) p’ by METIS_TAC [real_random_variable_zero] \\
      RW_TAC std_ss [converge_AE_alt_limsup, sub_rzero] \\
@@ -1331,27 +1326,27 @@ Proof
                   MATCH_MP_TAC PROB_INCREASING >> art [] \\
                   RW_TAC set_ss [SUBSET_DEF] \\
                   MATCH_MP_TAC lt_imp_le >> art []) \\
+  (* preparing for prob_markov_ineq *)
+    ‘!n. {x | x IN p_space p /\ e <= abs (W n x)} =
+         {x | e <= abs (W n x)} INTER p_space p’ by SET_TAC [] >> POP_ORW \\
      Know ‘!n x. e <= abs (W n x) <=> e pow 2 <= abs ((\x. (W n x) pow 2) x)’
      >- (rpt GEN_TAC >> BETA_TAC \\
         ‘abs ((W n x) pow 2) = (abs (W n x)) pow 2’
             by METIS_TAC [abs_refl, le_pow2, abs_pow2] >> POP_ORW \\
          MATCH_MP_TAC pow_le_full >> rw [abs_pos] \\
          MATCH_MP_TAC lt_imp_le >> art []) >> DISCH_TAC \\
-     (* applying prob_markov_ineq *)
-    ‘!n. {x | x IN p_space p /\ e <= abs (W n x)} =
-         {x | e <= abs (W n x)} INTER p_space p’ by SET_TAC [] >> POP_ORW \\
-     ASM_REWRITE_TAC [] \\
      MATCH_MP_TAC let_trans \\
      Q.EXISTS_TAC ‘suminf (\n. inv (e pow 2) * expectation p (abs o (\x. (W n x) pow 2)))’ \\
      CONJ_TAC
-     >- (MATCH_MP_TAC ext_suminf_mono \\
-         CONJ_TAC >- (Q.X_GEN_TAC ‘n’ \\
+     >- (MATCH_MP_TAC ext_suminf_mono >> art [] \\
+         CONJ_TAC >- (Q.X_GEN_TAC ‘n’ \\                      
                       POP_ASSUM (ONCE_REWRITE_TAC o wrap o GSYM) \\
                       BETA_TAC >> MATCH_MP_TAC PROB_POSITIVE \\
                       Suff ‘{x | e <= abs (W n x)} INTER p_space p =
                             {x | x IN p_space p /\ e <= abs (W n x)}’ >- rw [] \\
                       SET_TAC []) \\
          Q.X_GEN_TAC ‘n’ >> BETA_TAC \\
+      (* applying prob_markov_ineq *)
          HO_MATCH_MP_TAC prob_markov_ineq >> art [] \\
          reverse CONJ_TAC >- (MATCH_MP_TAC pow_pos_lt >> art []) \\
          METIS_TAC [finite_second_moments_eq_integrable_square]) \\
@@ -1388,9 +1383,13 @@ Proof
          fs [prob_space_def, le_pow2]) \\
      DISCH_THEN (ONCE_REWRITE_TAC o wrap o BETA_RULE) \\
      ONCE_REWRITE_TAC [mul_assoc] \\
+
+(* TODO *)
+cheat
+
      MATCH_MP_TAC let_trans \\
      Q.EXISTS_TAC ‘suminf (\n. inv (e pow 2) * Normal ((inv &SUC (n ** 2)) pow 2) *
-                               (&(2 * n + 1)) pow 2 * M)’ \\
+                               &CARD (N n) pow 2 * M)’ \\
      CONJ_TAC
      >- (MATCH_MP_TAC ext_suminf_mono >> BETA_TAC \\
          Know ‘!n. 0 <= inv (e pow 2) * Normal ((inv &SUC (n ** 2)) pow 2)’
@@ -1416,8 +1415,6 @@ Proof
          MATCH_MP_TAC integral_pos_fn >> fs [prob_space_def, le_pow2]) \\
 
 
-(* TODO *)
-cheat
 
   (* Now some dirty (ext)real arithmetics, eliminating ‘Normal’ first *)
      Know ‘!n. Normal ((inv &SUC (n ** 2)) pow 2) = inv ((&n pow 2 + 1)) pow 2’
@@ -1526,11 +1523,12 @@ cheat
      REWRITE_TAC [extreal_of_num_def, extreal_pow_def, extreal_not_infty])
  >> DISCH_TAC
  (* pre-final stage, ‘ROOT 2 n’ is the maximal k such that n^2 < k <= (n+1)^2 *)
- >> Q.ABBREV_TAC ‘g = \n. ROOT 2 (SUC n)’
- >> Know ‘!k x. x IN p_space p ==> abs (S k x) / &SUC k <=
-                                  (abs (S (g k ** 2) x) + abs (D (g k) x)) /
-                                   &SUC (g k ** 2)’
+ >> Q.ABBREV_TAC ‘g = \n. ROOT 2 n’
+ >> Know ‘!k x. x IN p_space p ==>
+                abs (S k x) / &SUC k <=
+                (abs (S (g k ** 2) x) + abs (D (g k) x)) / &SUC (g k ** 2)’
  >- (rpt GEN_TAC >> DISCH_TAC \\
+     Q.UNABBREV_TAC ‘g’ >> BETA_TAC \\
      Q.ABBREV_TAC ‘n = ROOT 2 k’ \\
      MATCH_MP_TAC le_trans \\
      Q.EXISTS_TAC ‘abs (S k x) / &SUC (n ** 2)’ \\
@@ -1588,6 +1586,14 @@ cheat
      Q.UNABBREV_TAC ‘n’ \\
      MATCH_MP_TAC logrootTheory.ROOT (* amazing *) \\
      RW_TAC arith_ss []) >> DISCH_TAC
+
+
+
+
+
+
+
+
  (* final stage *)
  >> Q.PAT_X_ASSUM `(Z --> (\x. 0)) (almost_everywhere p)`
       (MP_TAC o (SIMP_RULE std_ss [converge_AE_def, AE_DEF,
