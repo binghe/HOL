@@ -2159,6 +2159,16 @@ val inv_le_antimono = store_thm
       DISJ1_TAC >> PROVE_TAC [inv_lt_antimono],
       DISJ2_TAC >> PROVE_TAC [inv_inj] ]);
 
+Theorem inv_le_antimono_imp :
+    !x y :extreal. 0 < y /\ y <= x ==> inv x <= inv y
+Proof
+    rpt STRIP_TAC
+ >> Suff ‘inv x <= inv y <=> y <= x’ >- rw []
+ >> MATCH_MP_TAC inv_le_antimono >> art []
+ >> MATCH_MP_TAC lte_trans
+ >> Q.EXISTS_TAC ‘y’ >> art []
+QED
+
 Theorem inv_not_infty :
     !x :extreal. x <> 0 ==> inv x <> PosInf /\ inv x <> NegInf
 Proof
@@ -2558,6 +2568,24 @@ Proof
  >> Suff `inv (y pow n) = (inv y) pow n` >- RW_TAC std_ss []
  >> MATCH_MP_TAC pow_inv
  >> FULL_SIMP_TAC std_ss [lt_le]
+QED
+
+Theorem pow_pow : (* cf. REAL_POW_POW *)
+    !(x :extreal) m n. (x pow m) pow n = x pow (m * n)
+Proof
+    rpt GEN_TAC
+ >> Cases_on ‘x’
+ >| [ (* goal 1 (of 3) *)
+      Cases_on ‘m = 0’ >- rw [extreal_pow_def] \\
+      Cases_on ‘EVEN m’
+      >- (rw [extreal_pow_def] >> fs [EVEN_MULT]) \\
+      rw [extreal_pow_def] >> gs [EVEN_MULT],
+      (* goal 2 (of 3) *)
+      Cases_on ‘m = 0’ >- rw [extreal_pow_def] \\
+      Cases_on ‘EVEN m’ >- rw [extreal_pow_def] \\
+      rw [extreal_pow_def],
+      (* goal 3 (of 3) *)
+      rw [extreal_pow_def, REAL_POW_POW] ]
 QED
 
 val abs_le_square_plus1 = store_thm
