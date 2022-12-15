@@ -1510,17 +1510,35 @@ Proof
          REWRITE_TAC [ADD1] \\
          MATCH_MP_TAC le_addr_imp >> rw []) \\
     ‘!i. &SUC i <> 0’ by rw [extreal_of_num_def] \\
-     rw [pow_inv, pow_pow, pow_mul] \\
-     
-     cheat)
+     rw [GSYM pow_mul] \\
+     Know ‘!i. inv (&SUC i pow 2) * (3 * &SUC i) = inv (&SUC i) * &SUC i * 3 * inv (&SUC i)’
+     >- (rw [pow_2] \\
+        ‘&SUC i <> (0 :extreal)’ by rw [extreal_of_num_def] \\
+         rw [inv_mul] >> METIS_TAC [mul_comm, mul_assoc]) >> Rewr' \\
+     Know ‘!i. inv (&SUC i) * &SUC i = 1’
+     >- (GEN_TAC >> MATCH_MP_TAC mul_linv_pos >> rw [extreal_of_num_def]) >> Rewr' \\
+     rw [pow_mul, GSYM pow_inv] \\
+    ‘(3 :extreal) pow 2 = 9’ by rw [pow_2, extreal_of_num_def, extreal_mul_def] >> POP_ORW \\
+     Know ‘suminf (\i. 9 * inv (&SUC i pow 2)) = 9 * suminf (\i. inv (&SUC i pow 2))’
+     >- (HO_MATCH_MP_TAC ext_suminf_cmul \\
+         CONJ_TAC >- rw [extreal_of_num_def] \\
+         rw [pow_inv, le_pow2]) >> Rewr' \\
+    ‘suminf (\i. realinv (&SUC i pow 2)) <> PosInf’
+       by METIS_TAC [harmonic_series_pow_2, lt_infty] \\
+     Know ‘suminf (\i. realinv (&SUC i pow 2)) <> NegInf’
+     >- (MATCH_MP_TAC pos_not_neginf \\
+         MATCH_MP_TAC ext_suminf_pos >> rw [pow_inv, le_pow2]) >> DISCH_TAC \\
+    ‘?r. suminf (\i. realinv (&SUC i pow 2)) = Normal r’
+       by METIS_TAC [extreal_cases] >> POP_ORW \\
+     rw [GSYM lt_infty, extreal_of_num_def, extreal_mul_def])
  >> DISCH_TAC
  (* pre-final stage, ‘ROOT 2 n’ is the maximal k such that n^2 < k <= (n+1)^2 *)
- >> Q.ABBREV_TAC ‘g = \n. ROOT 2 n’
+ >> Q.ABBREV_TAC ‘g = ROOT 2’
  >> Know ‘!k x. x IN p_space p ==>
                 abs (S k x) / &SUC k <=
                 (abs (S (g k ** 2) x) + abs (D (g k) x)) / &SUC (g k ** 2)’
  >- (rpt GEN_TAC >> DISCH_TAC \\
-     Q.UNABBREV_TAC ‘g’ >> BETA_TAC \\
+     Q.UNABBREV_TAC ‘g’ \\
      Q.ABBREV_TAC ‘n = ROOT 2 k’ \\
      MATCH_MP_TAC le_trans \\
      Q.EXISTS_TAC ‘abs (S k x) / &SUC (n ** 2)’ \\
@@ -1578,123 +1596,105 @@ Proof
      Q.UNABBREV_TAC ‘n’ \\
      MATCH_MP_TAC logrootTheory.ROOT (* amazing *) \\
      RW_TAC arith_ss []) >> DISCH_TAC
-
-
-
-
-
-
-
-
  (* final stage *)
- >> Q.PAT_X_ASSUM `(Z --> (\x. 0)) (almost_everywhere p)`
+ >> Q.PAT_X_ASSUM ‘(Z --> (\x. 0)) (almost_everywhere p)’
       (MP_TAC o (SIMP_RULE std_ss [converge_AE_def, AE_DEF,
                                    GSYM IN_NULL_SET, LIM_SEQUENTIALLY, dist]))
- >> DISCH_THEN (Q.X_CHOOSE_THEN `N1` STRIP_ASSUME_TAC)
- >> Q.PAT_X_ASSUM `(W --> (\x. 0)) (almost_everywhere p)`
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘N1’ STRIP_ASSUME_TAC)
+ >> Q.PAT_X_ASSUM ‘(W --> (\x. 0)) (almost_everywhere p)’
       (MP_TAC o (SIMP_RULE std_ss [converge_AE_def, AE_DEF,
                                    GSYM IN_NULL_SET, LIM_SEQUENTIALLY, dist]))
- >> DISCH_THEN (Q.X_CHOOSE_THEN `N2` STRIP_ASSUME_TAC)
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘N2’ STRIP_ASSUME_TAC)
  >> SIMP_TAC std_ss [converge_AE_def, AE_DEF,
                      GSYM IN_NULL_SET, LIM_SEQUENTIALLY, dist]
- >> Q.EXISTS_TAC `N1 UNION N2`
+ >> Q.EXISTS_TAC ‘N1 UNION N2’
  >> STRONG_CONJ_TAC
  >- (MATCH_MP_TAC NULL_SET_UNION \\
      FULL_SIMP_TAC bool_ss [prob_space_def]) >> DISCH_TAC
  >> rpt STRIP_TAC
- >> `(m_space p DIFF (N1 UNION N2)) SUBSET (m_space p DIFF N1)` by SET_TAC []
- >> `(m_space p DIFF (N1 UNION N2)) SUBSET (m_space p DIFF N2)` by SET_TAC []
+ >> ‘(m_space p DIFF (N1 UNION N2)) SUBSET (m_space p DIFF N1)’ by SET_TAC []
+ >> ‘(m_space p DIFF (N1 UNION N2)) SUBSET (m_space p DIFF N2)’ by SET_TAC []
  (* clean up disturbing assumptions *)
- >> Q.PAT_X_ASSUM `!n x. x IN p_space p ==>
-                         S n x = SIGMA (\i. X i x) (count n)` K_TAC
- >> Q.PAT_X_ASSUM `!n. expectation p (X n) = 0`               K_TAC
- >> Q.PAT_X_ASSUM `!n. real_random_variable (X n) p`          K_TAC
- >> Q.PAT_X_ASSUM `!n. finite_second_moments p (X n)`         K_TAC
- >> Q.PAT_X_ASSUM `!n. variance p (X n) <= M`                 K_TAC
- >> Q.PAT_X_ASSUM `!n. integrable p (X n)`                    K_TAC
- >> Q.PAT_X_ASSUM `!i j. i <> j ==> orthogonal p (X i) (X j)` K_TAC
+ >> Q.PAT_X_ASSUM ‘!n x. x IN p_space p ==>
+                         S n x = SIGMA (\i. X i x) (count1 n)’ K_TAC
+ >> Q.PAT_X_ASSUM ‘!n. expectation p (X n) = 0’                K_TAC
+ >> Q.PAT_X_ASSUM ‘!n. real_random_variable (X n) p’           K_TAC
+ >> Q.PAT_X_ASSUM ‘!n. finite_second_moments p (X n)’          K_TAC
+ >> Q.PAT_X_ASSUM ‘!n. variance p (X n) <= M’                  K_TAC
+ >> Q.PAT_X_ASSUM ‘!n. integrable p (X n)’                     K_TAC
+ >> Q.PAT_X_ASSUM ‘!i j. i <> j ==> orthogonal p (X i) (X j)’  K_TAC
  (* simplify assumptions *)
- >> Q.PAT_X_ASSUM `!x. x IN m_space p DIFF N1 ==> P` (MP_TAC o Q.SPEC `x`)
- >> Know `x IN m_space p DIFF N1` >- ASM_SET_TAC []
+ >> Q.PAT_X_ASSUM ‘!x. x IN m_space p DIFF N1 ==> P’ (MP_TAC o Q.SPEC ‘x’)
+ >> Know ‘x IN m_space p DIFF N1’ >- ASM_SET_TAC []
  >> RW_TAC std_ss []
- >> Q.PAT_X_ASSUM `!x. x IN m_space p DIFF N2 ==> P` (MP_TAC o Q.SPEC `x`)
- >> Know `x IN m_space p DIFF N2` >- ASM_SET_TAC []
+ >> Q.PAT_X_ASSUM ‘!x. x IN m_space p DIFF N2 ==> P’ (MP_TAC o Q.SPEC ‘x’)
+ >> Know ‘x IN m_space p DIFF N2’ >- ASM_SET_TAC []
  >> RW_TAC std_ss []
- >> `real 0 = 0` by METIS_TAC [extreal_of_num_def, real_normal]
+ >> ‘real 0 = 0’ by METIS_TAC [extreal_of_num_def, real_normal]
  >> POP_ASSUM (fn th => FULL_SIMP_TAC bool_ss [REAL_SUB_RZERO, th])
- >> NTAC 3 (Q.PAT_X_ASSUM `_ IN null_set p`           K_TAC)
+ >> NTAC 3 (Q.PAT_X_ASSUM ‘_ IN null_set p’           K_TAC)
  >> ‘m_space p DIFF (N1 UNION N2) SUBSET m_space p’ by SET_TAC []
  >> ‘x IN m_space p’ by METIS_TAC [SUBSET_DEF]
- >> NTAC 2 (Q.PAT_X_ASSUM `_ SUBSET m_space p DIFF _` K_TAC)
- >> NTAC 3 (Q.PAT_X_ASSUM `x IN m_space p DIFF _`     K_TAC)
+ >> NTAC 2 (Q.PAT_X_ASSUM ‘_ SUBSET m_space p DIFF _’ K_TAC)
+ >> NTAC 3 (Q.PAT_X_ASSUM ‘x IN m_space p DIFF _’     K_TAC)
  >> Q.PAT_X_ASSUM ‘m_space p DIFF (N1 UNION N2) SUBSET m_space p’ K_TAC
- >> Q.PAT_X_ASSUM `M <> PosInf` K_TAC
- >> Q.PAT_X_ASSUM `M <> NegInf` K_TAC
- >> Q.PAT_X_ASSUM `0 <= M`      K_TAC
+ >> Q.PAT_X_ASSUM ‘M <> PosInf’ K_TAC
+ >> Q.PAT_X_ASSUM ‘M <> NegInf’ K_TAC
+ >> Q.PAT_X_ASSUM ‘0 <= M’      K_TAC
  (* clean up Z and W *)
- >> Q.PAT_X_ASSUM `!n. real_random_variable (Z n) p`  K_TAC
- >> Q.PAT_X_ASSUM `!n. real_random_variable (W n) p`  K_TAC
- >> Q.PAT_X_ASSUM `!n. finite_second_moments p (W n)` K_TAC
- >> qunabbrevl_tac [`Z`, `W`]
+ >> Q.PAT_X_ASSUM ‘!n. real_random_variable (Z n) p’  K_TAC
+ >> Q.PAT_X_ASSUM ‘!n. real_random_variable (W n) p’  K_TAC
+ >> Q.PAT_X_ASSUM ‘!n. finite_second_moments p (W n)’ K_TAC
+ >> qunabbrevl_tac [‘Z’, ‘W’]
  >> FULL_SIMP_TAC std_ss []
  (* translating real inequalities to extreal ones *)
- >> Know `!n. abs (real (S (SUC n) x / &SUC n)) < e <=>
-              abs (S (SUC n) x) / &SUC n < Normal e`
+ >> Know ‘!n. abs (real (S n x / &SUC n)) < e <=> abs (S n x) / &SUC n < Normal e’
  >- (Q.X_GEN_TAC ‘n’ \\
      FULL_SIMP_TAC std_ss [p_space_def] \\
-    `?r. S (SUC n) x = Normal r` by METIS_TAC [extreal_cases] >> POP_ORW \\
-    `&SUC n <> (0: real)` by RW_TAC real_ss [] \\
+    ‘?r. S n x = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+    ‘&SUC n <> (0: real)’ by RW_TAC real_ss [] \\
      ASM_SIMP_TAC real_ss [extreal_of_num_def, extreal_abs_def, real_normal,
                            extreal_div_eq, extreal_lt_eq, ABS_DIV, ABS_N])
  >> Rewr'
- >> Know `!n e. abs (real (S (SUC n ** 2) x / &(SUC n ** 2))) < e <=>
-                abs (S (SUC n ** 2) x) / &(SUC n ** 2) < Normal e`
+ >> Know ‘!n e. abs (real (S (n ** 2) x / &SUC (n ** 2))) < e <=>
+                abs (S (n ** 2) x) / &SUC (n ** 2) < Normal e’
  >- (rpt GEN_TAC \\
      FULL_SIMP_TAC std_ss [p_space_def] \\
-    `?r. S (SUC n ** 2) x = Normal r` by METIS_TAC [extreal_cases] >> POP_ORW \\
-    `&(SUC n ** 2) <> (0: real)` by RW_TAC real_ss [] \\
+    ‘?r. S (n ** 2) x = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+    ‘&SUC (n ** 2) <> (0: real)’ by RW_TAC real_ss [] \\
      ASM_SIMP_TAC real_ss [extreal_of_num_def, extreal_abs_def, real_normal,
                            extreal_div_eq, extreal_lt_eq, ABS_DIV, ABS_N])
  >> DISCH_THEN ((FULL_SIMP_TAC bool_ss) o wrap)
- >> Know `!n e. abs (real (D (SUC n) x / &(SUC n ** 2))) < e <=>
-                abs (D (SUC n) x) / &(SUC n ** 2) < Normal e`
+ >> Know ‘!n e. abs (real (D n x / &SUC (n ** 2))) < e <=>
+                abs (D n x) / &SUC (n ** 2) < Normal e’
  >- (rpt GEN_TAC \\
-    `?r. D (SUC n) x = Normal r` by METIS_TAC [extreal_cases, p_space_def] >> POP_ORW \\
-    `&(SUC n ** 2) <> (0: real)` by RW_TAC real_ss [] \\
+    ‘?r. D n x = Normal r’ by METIS_TAC [extreal_cases, p_space_def] >> POP_ORW \\
+    ‘&SUC (n ** 2) <> (0: real)’ by RW_TAC real_ss [] \\
      ASM_SIMP_TAC real_ss [extreal_of_num_def, extreal_abs_def, real_normal,
                            extreal_div_eq, extreal_lt_eq, ABS_DIV, ABS_N])
  >> DISCH_THEN ((FULL_SIMP_TAC bool_ss) o wrap)
  (* continue estimating N *)
- >> NTAC 2 (Q.PAT_X_ASSUM `!e. 0 < e ==> P` (MP_TAC o (Q.SPEC `e / 2`)))
- >> Know `0 < e / 2`
+ >> NTAC 2 (Q.PAT_X_ASSUM ‘!e. 0 < e ==> P’ (MP_TAC o (Q.SPEC ‘e / 2’)))
+ >> Know ‘0 < e / 2’
  >- (MATCH_MP_TAC REAL_LT_DIV >> RW_TAC real_ss [])
- >> `!n x. x IN m_space p ==>
-           D n x <> PosInf /\ D n x <> NegInf` by METIS_TAC [p_space_def]
+ >> ‘!n x. x IN m_space p ==>
+           D n x <> PosInf /\ D n x <> NegInf’ by METIS_TAC [p_space_def]
  >> Q.PAT_X_ASSUM (* to prevent `D n x` from being rewritten *)
-      `!n x. n ** 2 <= f n x /\ f n x < SUC n ** 2 /\ D n x = d n (f n x) x` K_TAC
+      ‘!n x. n ** 2 <= f n x /\ f n x < SUC n ** 2 /\ D n x = d n (f n x) x’ K_TAC
  >> RW_TAC std_ss []
- >> rename1 `!n. m1 <= n ==> abs (S (SUC n ** 2) x) / &(SUC n ** 2) < Normal (e / 2)`
- >> rename1 `!n. m2 <= n ==> abs (D (SUC n) x) / &(SUC n ** 2) < Normal (e / 2)`
+ >> rename1 ‘!n. m1 <= n ==> abs (S (n ** 2) x) / &SUC (n ** 2) < Normal (e / 2)’
+ >> rename1 ‘!n. m2 <= n ==> abs (D n x) / &SUC (n ** 2) < Normal (e / 2)’
  (* final-final *)
- >> Q.EXISTS_TAC `(m1 + m2 + 1) ** 2 - 1`
+ >> Q.EXISTS_TAC ‘(m1 + m2) ** 2’
  >> RW_TAC std_ss []
  >> MATCH_MP_TAC let_trans
- >> Q.EXISTS_TAC `(abs (S (ROOT 2 (SUC n) ** 2) x) + abs (D (ROOT 2 (SUC n)) x)) /
-                  &(ROOT 2 (SUC n) ** 2)`
+ >> Q.EXISTS_TAC ‘(abs (S (g n ** 2) x) + abs (D (g n) x)) / &SUC (g n ** 2)’
  >> CONJ_TAC
  >- (FIRST_X_ASSUM MATCH_MP_TAC >> art [p_space_def])
- >> Q.PAT_X_ASSUM `!k x. x IN p_space p ==> abs (S (SUC k) x) / &SUC k <= _` K_TAC
- >> Q.ABBREV_TAC `k = ROOT 2 (SUC n)`
- >> Know `0 < k`
- >- (Q.UNABBREV_TAC `k` >> MATCH_MP_TAC LESS_LESS_EQ_TRANS \\
-     Q.EXISTS_TAC `1` >> RW_TAC arith_ss [] \\
-    `ROOT 2 1 = 1` by EVAL_TAC \\
-     POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM) \\
-     irule ROOT_LE_MONO >> RW_TAC arith_ss []) >> DISCH_TAC
- >> `?m. m = k - 1` by RW_TAC arith_ss []
- >> `k = SUC m` by RW_TAC arith_ss [] >> POP_ORW
- >> Know `(abs (S (SUC m ** 2) x) + abs (D (SUC m) x)) / &(SUC m ** 2) =
-           abs (S (SUC m ** 2) x) / &(SUC m ** 2) + abs (D (SUC m) x) / &(SUC m ** 2)`
+ >> Q.PAT_X_ASSUM ‘!k x. x IN p_space p ==> abs (S k x) / &SUC k <= _’ K_TAC
+ >> Q.ABBREV_TAC ‘k = g n’
+ >> Know ‘(abs (S (k ** 2) x) + abs (D k x)) / &SUC (k ** 2) =
+           abs (S (k ** 2) x) / &SUC (k ** 2) + abs (D k x) / &SUC (k ** 2)’
  >- (MATCH_MP_TAC EQ_SYM \\
      MATCH_MP_TAC div_add \\
      ONCE_REWRITE_TAC [CONJ_ASSOC] \\
@@ -1703,40 +1703,25 @@ Proof
      ONCE_REWRITE_TAC [CONJ_ASSOC] \\
      CONJ_TAC >- (MATCH_MP_TAC abs_not_infty >> rw []) \\
      RW_TAC real_ss [extreal_of_num_def, extreal_11]) >> Rewr'
- >> `Normal e = Normal (e / 2) + Normal (e / 2)`
+ >> ‘Normal e = Normal (e / 2) + Normal (e / 2)’
        by METIS_TAC [extreal_add_def, REAL_HALF_DOUBLE] >> POP_ORW
  >> MATCH_MP_TAC lt_add2
- >> CONJ_TAC (* 2 subgoals, similar tactics *)
+ >> qunabbrevl_tac [‘k’, ‘g’]
+ >> CONJ_TAC >> FIRST_X_ASSUM MATCH_MP_TAC (* 2 subgoals, similar tactics *)
  >| [ (* goal 1 (of 2) *)
-      FIRST_X_ASSUM MATCH_MP_TAC \\
-     `m1 <= m <=> m1 + 1 <= k` by RW_TAC arith_ss [] >> POP_ORW \\
-      NTAC 2 (POP_ASSUM K_TAC) \\
-      Q.UNABBREV_TAC `k` \\
-      Know `(m1 + 1) ** 2 <= SUC n`
-      >- (MATCH_MP_TAC LESS_EQ_TRANS \\
-          Q.EXISTS_TAC `(m1 + m2 + 1) ** 2` \\
-          CONJ_TAC >- RW_TAC arith_ss [] \\
-          PROVE_TAC [ADD_COMM, ADD1]) \\
-      POP_ASSUM K_TAC >> DISCH_TAC \\
-      Know `ROOT 2 ((m1 + 1) ** 2) = m1 + 1`
-      >- (MATCH_MP_TAC ROOT_EXP >> RW_TAC arith_ss []) \\
-      DISCH_THEN (ONCE_REWRITE_TAC o wrap o SYM) \\
-      irule ROOT_LE_MONO >> RW_TAC arith_ss [],
+      Know ‘m1 = ROOT 2 (m1 ** 2)’
+      >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+          MATCH_MP_TAC ROOT_EXP >> RW_TAC arith_ss []) >> Rewr' \\
+      irule ROOT_LE_MONO >> RW_TAC arith_ss [] \\
+      MATCH_MP_TAC LESS_EQ_TRANS \\
+      Q.EXISTS_TAC ‘(m1 + m2) ** 2’ >> rw [],
       (* goal 2 (of 2) *)
-      FIRST_X_ASSUM MATCH_MP_TAC \\
-     `m2 <= m <=> m2 + 1 <= k` by RW_TAC arith_ss [] >> POP_ORW \\
-      NTAC 2 (POP_ASSUM K_TAC) \\
-      Q.UNABBREV_TAC `k` \\
-      Know `(m2 + 1) ** 2 <= SUC n`
-      >- (MATCH_MP_TAC LESS_EQ_TRANS \\
-          Q.EXISTS_TAC `(m1 + m2 + 1) ** 2` \\
-          CONJ_TAC >- RW_TAC arith_ss [] \\
-          PROVE_TAC [ADD_COMM, ADD1]) \\
-      POP_ASSUM K_TAC >> DISCH_TAC \\
-      Know `ROOT 2 ((m2 + 1) ** 2) = m2 + 1`
-      >- (MATCH_MP_TAC ROOT_EXP >> RW_TAC arith_ss []) \\
-      DISCH_THEN (ONCE_REWRITE_TAC o wrap o SYM) \\
-      irule ROOT_LE_MONO >> RW_TAC arith_ss [] ]
+      Know ‘m2 = ROOT 2 (m2 ** 2)’
+      >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+          MATCH_MP_TAC ROOT_EXP >> RW_TAC arith_ss []) >> Rewr' \\
+      irule ROOT_LE_MONO >> RW_TAC arith_ss [] \\
+      MATCH_MP_TAC LESS_EQ_TRANS \\
+      Q.EXISTS_TAC ‘(m1 + m2) ** 2’ >> rw [] ]
 QED
 
 (* ------------------------------------------------------------------------- *)
