@@ -36,6 +36,22 @@ val _ = hide "W";
 
    NOTE: Z(0) = X(0), Z(1) = X(0) + X(1), ...
  *)
+
+Theorem events_max_fn_seq[local] :
+    !p Z. prob_space p /\ (!n. real_random_variable (Z n) p) ==>
+          !e N. {x | x IN p_space p /\ e < max_fn_seq (\i. abs o Z i) N x} IN events p
+Proof
+    rw [prob_space_def, p_space_def, events_def, real_random_variable]
+ >> Q.ABBREV_TAC ‘f = max_fn_seq (\i. abs o Z i) N’
+ >> ‘{x | x IN m_space p /\ e < f x} = {x | e < f x} INTER m_space p’ by SET_TAC []
+ >> POP_ORW
+ >> Suff ‘f IN measurable (m_space p,measurable_sets p) Borel’
+ >- (METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE, measure_space_def])
+ >> Q.UNABBREV_TAC ‘f’
+ >> MATCH_MP_TAC IN_MEASURABLE_BOREL_MAX_FN_SEQ >> rw []
+ >> MATCH_MP_TAC IN_MEASURABLE_BOREL_ABS' >> rw []
+QED
+
 Theorem Kolmogorov_maximal_inequality_1 :
     !p X Z.
        prob_space p /\ (!n. real_random_variable (X n) p) /\
@@ -62,20 +78,8 @@ Proof
      MATCH_MP_TAC real_random_variable_sum >> rw [])
  >> DISCH_TAC
  (* event A and its properties *)
- >> Q.ABBREV_TAC
-     ‘A = {x | x IN p_space p /\ Normal e < max_fn_seq (\i. abs o Z i) N x}’
- >> Know ‘A IN events p’
- >- (FULL_SIMP_TAC std_ss [prob_space_def, p_space_def, events_def,
-                           real_random_variable, Abbr ‘A’] \\
-     Q.ABBREV_TAC ‘f = max_fn_seq (\i. abs o Z i) N’ \\
-    ‘{x | x IN m_space p /\ Normal e < f x} = {x | Normal e < f x} INTER m_space p’
-        by SET_TAC [] >> POP_ORW \\
-     Suff ‘f IN measurable (m_space p,measurable_sets p) Borel’
-     >- (METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE, measure_space_def]) \\
-     Q.UNABBREV_TAC ‘f’ \\
-     MATCH_MP_TAC IN_MEASURABLE_BOREL_MAX_FN_SEQ >> rw [] \\
-     MATCH_MP_TAC IN_MEASURABLE_BOREL_ABS' >> rw [])
- >> DISCH_TAC
+ >> Q.ABBREV_TAC ‘A = {x | x IN p_space p /\ Normal e < max_fn_seq (\i. abs o Z i) N x}’
+ >> ‘A IN events p’ by METIS_TAC [events_max_fn_seq]
  >> Know ‘!x. x IN A ==> ?d. d <= N /\ Normal e < abs (Z d x)’
  >- (rw [Abbr ‘A’, GSPECIFICATION] \\
      fs [lt_max_fn_seq, o_DEF] \\
@@ -584,12 +588,13 @@ QED
   -- Kai Lai Chung, "A Course in Probability Theory." [2, p.149]
  *)
 Theorem Kolmogorov_maximal_inequality_3 :
-    !p X A.
+    !p X A Z.
        prob_space p /\ (!n. real_random_variable (X n) p) /\
        indep_vars p X (\n. Borel) UNIV /\
       (!n. expectation p (X n) = 0) /\ A <> PosInf /\
-      (!n x. x IN p_space p ==> abs (X n x) <= A)
-   ==> !e N. 0 < e /\ e <> PosInf ==>
+      (!n x. x IN p_space p ==> abs (X n x) <= A) /\
+      (!n x. x IN p_space p ==> Z n x = SIGMA (\i. X i x) (count (SUC n)))
+   ==> !e N. 0 < e /\ e <> PosInf /\ 0 < variance p (Z N) ==>
              prob p {x | x IN p_space p /\ max_fn_seq (\i. abs o Z i) N x <= e}
           <= (A + e) pow 2 / variance p (Z N)
 Proof
@@ -601,18 +606,78 @@ QED
    prob p {x | x IN p_space p /\ e < max_fn_seq (\i. abs o Z i) N x}
 
    while Kolmogorov_maximal_inequality_1 provides a upper bound: variance(Z) / e pow 2
+
+   NOTE: when ‘variance p (Z N) = 0’, using only Kolmogorov_maximal_inequality we
+         get ‘prob p E <= 0’ thus ‘= 0’.
  *)
-Theorem Kolmogorov_maximal_inequality_3' :
-    !p X A.
+Theorem Kolmogorov_maximal_inequality :
+    !p X A Z.
        prob_space p /\ (!n. real_random_variable (X n) p) /\
        indep_vars p X (\n. Borel) UNIV /\
-      (!n. expectation p (X n) = 0) /\ A <> PosInf /\
-      (!n x. x IN p_space p ==> abs (X n x) <= Normal A)
-   ==> !e N. 0 < e /\ e <> PosInf ==>
-             1 - (A + e) pow 2 / variance p (Z N) <=
-             prob p {x | x IN p_space p /\ e < max_fn_seq (\i. abs o Z i) N x}
+      (!n. expectation p (X n) = 0) /\ 0 < A /\ A <> PosInf /\
+      (!n x. x IN p_space p ==> abs (X n x) <= A) /\
+      (!n x. x IN p_space p ==> Z n x = SIGMA (\i. X i x) (count (SUC n)))
+   ==> !e N. 0 < e /\ e <> PosInf /\ 0 < variance p (Z N) ==>
+             prob p {x | x IN p_space p /\ e < max_fn_seq (\i. abs o Z i) N x} IN
+             {r | 1 - (A + e) pow 2 / variance p (Z N) <= r /\
+                  r <= variance p (Z N) / e pow 2}
 Proof
-    cheat
+    rpt STRIP_TAC >> simp []
+ >> ‘A <> NegInf’ by METIS_TAC [pos_not_neginf, lt_imp_le]
+ >> Know ‘!n. finite_second_moments p (X n)’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     MATCH_MP_TAC bounded_imp_finite_second_moments \\
+    ‘?r. A = Normal r’ by METIS_TAC [extreal_cases] \\
+     fs [real_random_variable_def] >> Q.EXISTS_TAC ‘r’ >> rw [])
+ >> DISCH_TAC
+ >> reverse CONJ_TAC
+ >- (irule Kolmogorov_maximal_inequality_1 >> art [] \\
+     Q.EXISTS_TAC ‘X’ >> simp [])
+ >> Know ‘!n. real_random_variable (Z n) p’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     Know ‘real_random_variable (Z n) p <=>
+           real_random_variable (\x. SIGMA (\i. X i x) (count (SUC n))) p’
+     >- (MATCH_MP_TAC real_random_variable_cong >> rw []) >> Rewr' \\
+     MATCH_MP_TAC real_random_variable_sum >> rw [])
+ >> DISCH_TAC
+ >> Know ‘!n. finite_second_moments p (Z n)’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     Know ‘finite_second_moments p (Z n) <=>
+           finite_second_moments p (\x. SIGMA (\i. X i x) (count (SUC n)))’
+     >- (MATCH_MP_TAC finite_second_moments_cong >> rw []) >> Rewr' \\
+     MATCH_MP_TAC finite_second_moments_sum >> rw [])
+ >> DISCH_TAC
+ >> Q.ABBREV_TAC ‘E = {x | x IN p_space p /\ e < max_fn_seq (\i. abs o Z i) N x}’
+ >> ‘E IN events p’ by METIS_TAC [events_max_fn_seq]
+ >> ‘variance p (Z N) <> PosInf’
+      by METIS_TAC [finite_second_moments_eq_finite_variance,lt_infty]
+ >> ‘variance p (Z N) <> NegInf’
+      by METIS_TAC [pos_not_neginf, variance_pos]
+ (* applying sub_le_switch2 *)
+ >> Know ‘1 - (A + e) pow 2 / variance p (Z N) <= prob p E <=>
+          1 - prob p E <= (A + e) pow 2 / variance p (Z N)’
+ >- (MATCH_MP_TAC sub_le_switch2 \\
+     rw [extreal_of_num_def, extreal_not_infty]
+     >- (MATCH_MP_TAC pos_not_neginf \\
+        ‘?r. 0 < r /\ variance p (Z N) = Normal r’
+           by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_lt_eq] >> POP_ORW \\
+         MATCH_MP_TAC le_div >> rw [le_pow2]) \\
+    ‘?a. A = Normal a’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+    ‘e <> NegInf’ by METIS_TAC [pos_not_neginf, lt_imp_le] \\
+    ‘?b. e = Normal b’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+     simp [extreal_add_def, extreal_pow_def] \\
+     Suff ‘variance p (Z N) <> 0’ >- METIS_TAC [div_not_infty] \\
+     PROVE_TAC [lt_imp_ne])
+ >> Rewr'
+ >> Know ‘1 - prob p E = prob p (p_space p DIFF E)’
+ >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+     MATCH_MP_TAC PROB_COMPL >> art [])
+ >> Rewr'
+ >> Suff ‘p_space p DIFF E = {x | x IN p_space p /\ max_fn_seq (\i. abs o Z i) N x <= e}’
+ >- (Rewr' >> irule Kolmogorov_maximal_inequality_3 >> art [] \\
+     Q.EXISTS_TAC ‘X’ >> rw [])
+ >> rw [Once EXTENSION, Abbr ‘E’, extreal_lt_def]
+ >> METIS_TAC []
 QED
 
 val _ = export_theory ();
