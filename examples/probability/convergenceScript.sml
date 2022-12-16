@@ -42,11 +42,16 @@ Theorem Kolmogorov_maximal_inequality_1 :
        indep_vars p X (\n. Borel) UNIV /\
       (!n. finite_second_moments p (X n)) /\ (!n. expectation p (X n) = 0) /\
       (!n x. x IN p_space p ==> Z n x = SIGMA (\i. X i x) (count (SUC n)))
-   ==> !e N. 0 < e ==>
-             prob p {x | x IN p_space p /\ Normal e < max_fn_seq (\i. abs o Z i) N x}
-          <= variance p (Z N) / Normal (e pow 2)
+   ==> !e N. 0 < e /\ e <> PosInf ==>
+             prob p {x | x IN p_space p /\ e < max_fn_seq (\i. abs o Z i) N x}
+          <= variance p (Z N) / e pow 2
 Proof
-    rpt STRIP_TAC
+    rpt GEN_TAC >> STRIP_TAC
+ >> qx_genl_tac [‘E’, ‘N’] >> STRIP_TAC
+ >> ‘E <> NegInf’ by PROVE_TAC [pos_not_neginf, lt_imp_le]
+ >> ‘?e. 0 < e /\ E = Normal e’
+       by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_lt_eq] >> POP_ORW
+ >> rw [extreal_pow_def]
  >> ‘measure_space p’ by PROVE_TAC [prob_space_def] (* frequently needed *)
  >> ‘!n. integrable p (X n)’ by PROVE_TAC [finite_second_moments_imp_integrable]
  >> Know ‘!n. real_random_variable (Z n) p’
@@ -553,14 +558,15 @@ Theorem Kolmogorov_maximal_inequality_2 :
     !p X Z A.
        prob_space p /\ (!n. real_random_variable (X n) p) /\
        indep_vars p X (\n. Borel) UNIV /\
-      (!n. integrable p (X n)) /\
-      (!n x. x IN p_space p ==> abs (X n x - expectation p (X n)) <= Normal A) /\
+      (!n. integrable p (X n)) /\ A <> PosInf /\
+      (!n x. x IN p_space p ==> abs (X n x - expectation p (X n)) <= A) /\
       (!n x. x IN p_space p ==> Z n x = SIGMA (\i. X i x) (count (SUC n)))
-   ==> !e N. 0 < e ==>
-             prob p {x | x IN p_space p /\ max_fn_seq (\i. abs o Z i) N x <= Normal e}
-          <= Normal ((2 * A + 4 * e) pow 2) / variance p (Z N)
+   ==> !e N. 0 < e /\ e <> PosInf ==>
+             prob p {x | x IN p_space p /\ max_fn_seq (\i. abs o Z i) N x <= e}
+          <= (2 * A + 4 * e) pow 2 / variance p (Z N)
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> cheat
 QED
 
 (* This is Exercise 5.3 (3) [2, p.128], a companion of Theorem 5.3.2 under the joint
@@ -581,30 +587,30 @@ Theorem Kolmogorov_maximal_inequality_3 :
     !p X A.
        prob_space p /\ (!n. real_random_variable (X n) p) /\
        indep_vars p X (\n. Borel) UNIV /\
-      (!n. expectation p (X n) = 0) /\
-      (!n x. x IN p_space p ==> abs (X n x) <= Normal A)
-   ==> !e N. 0 < e ==>
-             prob p {x | x IN p_space p /\ max_fn_seq (\i. abs o Z i) N x <= Normal e}
-          <= Normal ((A + e) pow 2) / variance p (Z N)
+      (!n. expectation p (X n) = 0) /\ A <> PosInf /\
+      (!n x. x IN p_space p ==> abs (X n x) <= A)
+   ==> !e N. 0 < e /\ e <> PosInf ==>
+             prob p {x | x IN p_space p /\ max_fn_seq (\i. abs o Z i) N x <= e}
+          <= (A + e) pow 2 / variance p (Z N)
 Proof
     cheat
 QED
 
 (* Or, in another equivalent form, the above theorem provides a lower bound for
 
-       ‘prob p {x | x IN p_space p /\ Normal e < ^max_fn_seq’}
+   prob p {x | x IN p_space p /\ e < max_fn_seq (\i. abs o Z i) N x}
 
-   while Kolmogorov_maximal_inequality_1 provides a upper bound: ‘^variance / Normal e pow 2’
+   while Kolmogorov_maximal_inequality_1 provides a upper bound: variance(Z) / e pow 2
  *)
 Theorem Kolmogorov_maximal_inequality_3' :
     !p X A.
        prob_space p /\ (!n. real_random_variable (X n) p) /\
        indep_vars p X (\n. Borel) UNIV /\
-      (!n. expectation p (X n) = 0) /\
+      (!n. expectation p (X n) = 0) /\ A <> PosInf /\
       (!n x. x IN p_space p ==> abs (X n x) <= Normal A)
-   ==> !e N. 0 < e ==>
-             1 - Normal ((A + e) pow 2) / variance p (Z N) <=
-             prob p {x | x IN p_space p /\ Normal e < max_fn_seq (\i. abs o Z i) N x}
+   ==> !e N. 0 < e /\ e <> PosInf ==>
+             1 - (A + e) pow 2 / variance p (Z N) <=
+             prob p {x | x IN p_space p /\ e < max_fn_seq (\i. abs o Z i) N x}
 Proof
     cheat
 QED
