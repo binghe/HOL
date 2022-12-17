@@ -562,10 +562,10 @@ Theorem Kolmogorov_maximal_inequality_2 :
     !p X Z A.
        prob_space p /\ (!n. real_random_variable (X n) p) /\
        indep_vars p X (\n. Borel) UNIV /\
-      (!n. integrable p (X n)) /\ A <> PosInf /\
+      (!n. integrable p (X n)) /\ 0 < A /\ A <> PosInf /\
       (!n x. x IN p_space p ==> abs (X n x - expectation p (X n)) <= A) /\
       (!n x. x IN p_space p ==> Z n x = SIGMA (\i. X i x) (count (SUC n)))
-   ==> !e N. 0 < e /\ e <> PosInf ==>
+   ==> !e N. 0 < e /\ e <> PosInf /\ 0 < variance p (Z N) ==>
              prob p {x | x IN p_space p /\ max_fn_seq (\i. abs o Z i) N x <= e}
           <= (2 * A + 4 * e) pow 2 / variance p (Z N)
 Proof
