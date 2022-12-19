@@ -196,6 +196,12 @@ val PROB_UNIV = store_thm
   ("PROB_UNIV", ``!p. prob_space p ==> (prob p (p_space p) = 1)``,
     RW_TAC std_ss [PROB_SPACE]);
 
+Theorem PROB_SPACE_NOT_EMPTY :
+    !p. prob_space p ==> p_space p <> {}
+Proof
+    METIS_TAC [PROB_EMPTY, PROB_UNIV, ne_01]
+QED
+
 val PROB_SPACE_POSITIVE = store_thm
   ("PROB_SPACE_POSITIVE", ``!p. prob_space p ==> positive p``,
     RW_TAC std_ss [PROB_SPACE]);
