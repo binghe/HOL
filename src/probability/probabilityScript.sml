@@ -49,8 +49,8 @@ val _ = hide "W";
 (* Basic probability theory definitions.                                     *)
 (* ------------------------------------------------------------------------- *)
 
-Type "p_space" = “:'a m_space”
-Type events = “:'a set set”
+Type p_space = “:'a m_space”
+Type events  = “:'a set set”
 
 val p_space_def = Define `p_space = m_space`;
 
