@@ -26,6 +26,8 @@ val set_ss = std_ss ++ PRED_SET_ss;
 val _ = hide "S";
 val _ = hide "W";
 
+Overload count1[local] = “\n. count (SUC n)”
+
 (* ========================================================================= *)
 (* Convergence Concepts                                                      *)
 (* ========================================================================= *)
@@ -1685,11 +1687,26 @@ QED
 
 Theorem events_max_fn_seq[local] :
     !p Z. prob_space p /\ (!n. real_random_variable (Z n) p) ==>
-          !e N. {x | x IN p_space p /\ e < max_fn_seq (\i. abs o Z i) N x} IN events p
+          !e n. {x | x IN p_space p /\ e < max_fn_seq (\i. abs o Z i) n x} IN events p
 Proof
-    rw [prob_space_def, p_space_def, events_def, real_random_variable]
- >> Q.ABBREV_TAC ‘f = max_fn_seq (\i. abs o Z i) N’
+    RW_TAC std_ss [prob_space_def, p_space_def, events_def, real_random_variable]
+ >> Q.ABBREV_TAC ‘f = max_fn_seq (\i. abs o Z i) n’
  >> ‘{x | x IN m_space p /\ e < f x} = {x | e < f x} INTER m_space p’ by SET_TAC []
+ >> POP_ORW
+ >> Suff ‘f IN measurable (m_space p,measurable_sets p) Borel’
+ >- (METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE, measure_space_def])
+ >> Q.UNABBREV_TAC ‘f’
+ >> MATCH_MP_TAC IN_MEASURABLE_BOREL_MAX_FN_SEQ >> rw []
+ >> MATCH_MP_TAC IN_MEASURABLE_BOREL_ABS' >> rw []
+QED
+
+Theorem events_max_fn_seq'[local] :
+    !p Z. prob_space p /\ (!n. real_random_variable (Z n) p) ==>
+          !e n. {x | x IN p_space p /\ max_fn_seq (\i. abs o Z i) n x <= e} IN events p
+Proof
+    RW_TAC std_ss [prob_space_def, p_space_def, events_def, real_random_variable]
+ >> Q.ABBREV_TAC ‘f = max_fn_seq (\i. abs o Z i) n’
+ >> ‘{x | x IN m_space p /\ f x <= e} = {x | f x <= e} INTER m_space p’ by SET_TAC []
  >> POP_ORW
  >> Suff ‘f IN measurable (m_space p,measurable_sets p) Borel’
  >- (METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE, measure_space_def])
@@ -2201,8 +2218,10 @@ QED
    This is Theorem 5.3.2 [2, p.123], see also [5, p.7] (Kolmogorov’s Inequalities (b))
 
    NOTE: ‘abs (X n x - expectation p (X n)) <= A’ implies ‘finite_second_moments p (X n)’,
-         but ‘integrable p (X n)’ must be put first to make sure ‘expectation p (X n)’ is
-         specified and finite (but may not be zero).
+         but ‘integrable p (X n)’ must be put first to make sure ‘expectation p (X n)’
+         exists and is finite.
+
+   TODO: ‘0 < A’ can be derived from PROB_SPACE_NOT_EMPTY
  *)
 Theorem Kolmogorov_maximal_inequality_2 :
     !p X Z A.
@@ -2210,12 +2229,32 @@ Theorem Kolmogorov_maximal_inequality_2 :
        indep_vars p X (\n. Borel) UNIV /\
       (!n. integrable p (X n)) /\ 0 < A /\ A <> PosInf /\
       (!n x. x IN p_space p ==> abs (X n x - expectation p (X n)) <= A) /\
-      (!n x. x IN p_space p ==> Z n x = SIGMA (\i. X i x) (count (SUC n)))
+      (!n x. x IN p_space p ==> Z n x = SIGMA (\i. X i x) (count1 n))
    ==> !e N. 0 < e /\ e <> PosInf /\ 0 < variance p (Z N) ==>
              prob p {x | x IN p_space p /\ max_fn_seq (\i. abs o Z i) N x <= e}
           <= (2 * A + 4 * e) pow 2 / variance p (Z N)
 Proof
     rpt STRIP_TAC
+ >> Q.ABBREV_TAC ‘M = \n. {x | x IN p_space p /\ max_fn_seq (\i. abs o Z i) n x <= e}’
+ >> Q.ABBREV_TAC ‘d = \n. if n = 0 then M 0 else M (n - 1) DIFF M n’
+ >> Q.ABBREV_TAC ‘Y = \n x. X n x - expectation p (X n)’ >> fs []
+ >> Q.ABBREV_TAC ‘W = \n x. SIGMA (\i. Y i x) (count1 n)’
+ >> Know ‘!n. real_random_variable (Z n) p’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     Know ‘real_random_variable (Z n) p <=>
+           real_random_variable (\x. SIGMA (\i. X i x) (count (SUC n))) p’
+     >- (MATCH_MP_TAC real_random_variable_cong >> rw []) >> Rewr' \\
+     MATCH_MP_TAC real_random_variable_sum >> rw [])
+ >> DISCH_TAC
+ >> ‘!n. M n IN events p’ by METIS_TAC [events_max_fn_seq']
+ >> Know ‘!n. finite_second_moments p (X n)’
+ >- (
+     cheat)
+ >> ‘prob p (M N) = 0 \/ 0 < prob p (M N)’
+        by METIS_TAC [PROB_POSITIVE, le_lt]
+ (* Trivial case: prob p (M N) = 0 *)
+ >- (POP_ORW \\
+     cheat)
  >> cheat
 QED
 
