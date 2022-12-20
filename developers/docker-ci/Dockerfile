@@ -13,7 +13,7 @@ ENV LD_LIBRARY_PATH=/usr/local/lib
 ENV PATH=/ML/HOL/bin:$PATH
 
 # copy some visible files to the docker image
-COPY --link * .
+COPY . .
 
 # NOTE: the following commands assume that HOL working directory has been
 #       checked out in the current working directory (whose location is
