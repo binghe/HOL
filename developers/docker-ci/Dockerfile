@@ -18,5 +18,7 @@ COPY * /HOL
 # NOTE: the following commands assume that HOL working directory has been
 #       checked out in the current working directory (whose location is
 #       given by GitHub Actions.
-RUN poly < tools/smart-configure.sml 
-RUN bin/build --expk -j4
+RUN ls -l
+RUN cd /HOL && ls -l
+RUN cd /HOL && poly < tools/smart-configure.sml 
+RUN cd /HOL && bin/build --expk -j4
