@@ -2221,7 +2221,8 @@ QED
          but ‘integrable p (X n)’ must be put first to make sure ‘expectation p (X n)’
          exists and is finite.
 
-   TODO: ‘0 < A’ can be derived from PROB_SPACE_NOT_EMPTY
+   TODO: ‘0 <= A’ can be derived from PROB_SPACE_NOT_EMPTY, and the special case ‘A = 0’
+         is trivial, thus we can ‘0 < A’ at the end.
  *)
 Theorem Kolmogorov_maximal_inequality_2 :
     !p X Z A.
@@ -2235,10 +2236,9 @@ Theorem Kolmogorov_maximal_inequality_2 :
           <= (2 * A + 4 * e) pow 2 / variance p (Z N)
 Proof
     rpt STRIP_TAC
- >> Q.ABBREV_TAC ‘M = \n. {x | x IN p_space p /\ max_fn_seq (\i. abs o Z i) n x <= e}’
- >> Q.ABBREV_TAC ‘d = \n. if n = 0 then M 0 else M (n - 1) DIFF M n’
- >> Q.ABBREV_TAC ‘Y = \n x. X n x - expectation p (X n)’ >> fs []
- >> Q.ABBREV_TAC ‘W = \n x. SIGMA (\i. Y i x) (count1 n)’
+ >> Know ‘!n. finite_second_moments p (X n)’
+ >- (
+     cheat)
  >> Know ‘!n. real_random_variable (Z n) p’
  >- (Q.X_GEN_TAC ‘n’ \\
      Know ‘real_random_variable (Z n) p <=>
@@ -2246,12 +2246,13 @@ Proof
      >- (MATCH_MP_TAC real_random_variable_cong >> rw []) >> Rewr' \\
      MATCH_MP_TAC real_random_variable_sum >> rw [])
  >> DISCH_TAC
+ >> Q.ABBREV_TAC ‘M = \n. {x | x IN p_space p /\ max_fn_seq (\i. abs o Z i) n x <= e}’
  >> ‘!n. M n IN events p’ by METIS_TAC [events_max_fn_seq']
- >> Know ‘!n. finite_second_moments p (X n)’
- >- (
-     cheat)
- >> ‘prob p (M N) = 0 \/ 0 < prob p (M N)’
-        by METIS_TAC [PROB_POSITIVE, le_lt]
+ (* NOTE: ‘D n’ may be empty as ‘M n SUBSET M (SUC n)’ doesn't hold in general *)
+ >> Q.ABBREV_TAC ‘D = \n. if n = 0 then p_space p else M (n - 1) DIFF M n’
+ >> Q.ABBREV_TAC ‘Y = \n x. X n x - expectation p (X n)’ >> fs []
+ >> Q.ABBREV_TAC ‘W = \n x. SIGMA (\i. Y i x) (count1 n)’
+ >> ‘prob p (M N) = 0 \/ 0 < prob p (M N)’ by METIS_TAC [PROB_POSITIVE, le_lt]
  (* Trivial case: prob p (M N) = 0 *)
  >- (POP_ORW \\
      cheat)
