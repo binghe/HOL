@@ -35,4 +35,5 @@ jobs:
           context: .
           file: ./developers/docker-ci/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/hol-dev:latest-ci
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

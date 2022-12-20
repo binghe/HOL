@@ -9,9 +9,11 @@ FROM binghelisp/hol-dev:latest
 ENV LD_LIBRARY_PATH=/usr/local/lib
 ENV PATH=/ML/HOL/bin:$PATH
 
+# copy all visible files to the docker image
+COPY * .
+
 # NOTE: the following commands assume that HOL working directory has been
 #       checked out in the current working directory (whose location is
 #       given by GitHub Actions.
-RUN ls -l
-#RUN poly < tools/smart-configure.sml 
-#RUN bin/build --expk -j4
+RUN poly < tools/smart-configure.sml 
+RUN bin/build --expk -j4
