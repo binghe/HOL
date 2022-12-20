@@ -7,7 +7,7 @@
 FROM binghelisp/hol-dev:latest
 
 # Hardware specification for Windows and Linux virtual machines: 2-core CPU (x86_64)
-ARG BUILD_OPT="--expk -j2"
+ARG BUILD_OPT="--expk -j4"
 
 WORKDIR /ML/HOL
 

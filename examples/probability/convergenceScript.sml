@@ -2222,7 +2222,7 @@ QED
          exists and is finite.
 
    TODO: ‘0 <= A’ can be derived from PROB_SPACE_NOT_EMPTY, and the special case ‘A = 0’
-         is trivial, thus we can ‘0 < A’ at the end.
+         is trivial (violating ‘0 < variance p (Z N)’).
  *)
 Theorem Kolmogorov_maximal_inequality_2 :
     !p X Z A.
