@@ -6,17 +6,14 @@
 # NOTE: this base image is built by "base/Dockerfile"
 FROM binghelisp/hol-dev:latest
 
+WORKDIR /HOL
+VOLUME /HOL
+
 ENV LD_LIBRARY_PATH=/usr/local/lib
 ENV PATH=/ML/HOL/bin:$PATH
 
 # copy some visible files to the docker image
-COPY bin         .
-COPY sigobj      .
-COPY src         .
-COPY std.prelude .
-COPY tools       .
-COPY tools-poly  .
-COPY examples    .
+COPY * /HOL
 
 # NOTE: the following commands assume that HOL working directory has been
 #       checked out in the current working directory (whose location is
