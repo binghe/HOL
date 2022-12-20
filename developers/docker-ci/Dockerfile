@@ -20,5 +20,9 @@ RUN bin/build ${BUILD_OPT}
 
 ENV PATH=/ML/HOL/bin:$PATH
 
+# build some examples
+RUN cd examples/miller && Holmake
+RUN cd examples/probability && Holmake
+
 # default entrypoint
 ENTRYPOINT /ML/HOL/bin/hol
