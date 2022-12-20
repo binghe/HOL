@@ -12,7 +12,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          path: HOL
           fetch-depth: 0
       - name: Docker meta
         id: meta
@@ -29,7 +28,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
-          context: HOL
+          context: .
           file: developers/docker-ci/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
