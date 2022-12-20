@@ -1,16 +1,15 @@
 # syntax=docker/dockerfile:1
 #
-# HOL4 building environment (Docker), CI image
+# HOL4 building environment (Docker), the CI image
 #
 
-# NOTE: this base image is built by "base/Dockerfile"
+# This "base" image is described in "base/Dockerfile"
 FROM binghelisp/hol-dev:latest
 
-ARG BUILD_OPT="--expk -j4"
+# Hardware specification for Windows and Linux virtual machines: 2-core CPU (x86_64)
+ARG BUILD_OPT="--expk -j2"
 
 WORKDIR /ML/HOL
-
-ENV PATH=/ML/HOL/bin:$PATH
 
 # copy all files to the docker image
 COPY --link . .
@@ -19,5 +18,7 @@ COPY --link . .
 RUN poly < tools/smart-configure.sml 
 RUN bin/build ${BUILD_OPT}
 
-# start hol
+ENV PATH=/ML/HOL/bin:$PATH
+
+# default entrypoint
 ENTRYPOINT /ML/HOL/bin/hol
