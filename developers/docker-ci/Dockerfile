@@ -6,18 +6,18 @@
 # NOTE: this base image is built by "base/Dockerfile"
 FROM binghelisp/hol-dev:latest
 
-WORKDIR /HOL
-VOLUME /HOL
+ARG BUILD_OPT="--expk -j4"
 
-ENV LD_LIBRARY_PATH=/usr/local/lib
+WORKDIR /ML/HOL
+
 ENV PATH=/ML/HOL/bin:$PATH
 
-# copy some visible files to the docker image
-COPY . .
+# copy all files to the docker image
+COPY --link . .
 
-# NOTE: the following commands assume that HOL working directory has been
-#       checked out in the current working directory (whose location is
-#       given by GitHub Actions.
-RUN ls -l
+# build HOL
 RUN poly < tools/smart-configure.sml 
-RUN bin/build --expk -j4
+RUN bin/build ${BUILD_OPT}
+
+# start hol
+ENTRYPOINT /ML/HOL/bin/hol
