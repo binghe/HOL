@@ -7,7 +7,7 @@
 FROM binghelisp/hol-dev:latest
 
 # GitHub Actions' hardware specification for Linux virtual machines: 2-core CPU (x86_64)
-ARG BUILDOPTS="--expk -j2"
+ARG BUILDOPTS="--expk -j4"
 ARG SML=poly
 
 WORKDIR /ML/HOL
@@ -18,10 +18,6 @@ COPY --link . .
 # building HOL
 RUN ${SML} < tools/smart-configure.sml 
 RUN bin/build ${BUILDOPTS}
-
-# [optional] building some notable examples
-RUN cd examples/miller && Holmake
-RUN cd examples/probability && Holmake
 
 # default entrypoint
 ENTRYPOINT /ML/HOL/bin/hol
