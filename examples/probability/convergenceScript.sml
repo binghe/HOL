@@ -2228,7 +2228,7 @@ Theorem Kolmogorov_maximal_inequality_2 :
     !p X Z A.
        prob_space p /\ (!n. real_random_variable (X n) p) /\
        indep_vars p X (\n. Borel) UNIV /\
-      (!n. integrable p (X n)) /\ 0 < A /\ A <> PosInf /\
+      (!n. integrable p (X n)) /\ A <> PosInf /\
       (!n x. x IN p_space p ==> abs (X n x - expectation p (X n)) <= A) /\
       (!n x. x IN p_space p ==> Z n x = SIGMA (\i. X i x) (count1 n))
    ==> !e N. 0 < e /\ e <> PosInf /\ 0 < variance p (Z N) ==>
@@ -2239,6 +2239,7 @@ Proof
  >> Know ‘!n. finite_second_moments p (X n)’
  >- (
      cheat)
+ >> DISCH_TAC
  >> Know ‘!n. real_random_variable (Z n) p’
  >- (Q.X_GEN_TAC ‘n’ \\
      Know ‘real_random_variable (Z n) p <=>
@@ -2248,6 +2249,27 @@ Proof
  >> DISCH_TAC
  >> Q.ABBREV_TAC ‘M = \n. {x | x IN p_space p /\ max_fn_seq (\i. abs o Z i) n x <= e}’
  >> ‘!n. M n IN events p’ by METIS_TAC [events_max_fn_seq']
+ >> simp []
+ (* impossible case: A < 0 *)
+ >> ‘A < 0 \/ 0 <= A’ by PROVE_TAC [let_total]
+ >- (‘?x. x IN p_space p’ by METIS_TAC [PROB_SPACE_NOT_EMPTY, MEMBER_NOT_EMPTY] \\
+     ‘abs (X 0 x - expectation p (X 0)) <= A’ by PROVE_TAC [] \\
+     ‘0 <= abs (X 0 x - expectation p (X 0))’ by PROVE_TAC [abs_pos] \\
+     ‘abs (X 0 x - expectation p (X 0)) < 0’ by PROVE_TAC [let_trans] \\
+     METIS_TAC [let_antisym])
+ (* trivial case: A = 0 *)
+ >> ‘A = 0 \/ 0 < A’ by PROVE_TAC [le_lt]
+ >- (POP_ASSUM (fs o wrap) \\
+     Know ‘variance p (Z N) = variance p (\x. SIGMA (\n. X n x) (count1 N))’
+     >- (MATCH_MP_TAC variance_cong >> rw []) >> Rewr' \\
+     Know ‘variance p (\x. SIGMA (\n. X n x) (count1 N)) =
+           SIGMA (\n. variance p (X n)) (count1 N)’
+     >- (MATCH_MP_TAC variance_sum' >> rw [] \\
+         MATCH_MP_TAC total_imp_pairwise_indep_vars >> simp [SIGMA_ALGEBRA_BOREL] \\
+         fs [real_random_variable_def] \\
+         
+         cheat)
+     cheat)
  (* NOTE: ‘D n’ may be empty as ‘M n SUBSET M (SUC n)’ doesn't hold in general *)
  >> Q.ABBREV_TAC ‘D = \n. if n = 0 then p_space p else M (n - 1) DIFF M n’
  >> Q.ABBREV_TAC ‘Y = \n x. X n x - expectation p (X n)’ >> fs []
@@ -2256,7 +2278,8 @@ Proof
  (* Trivial case: prob p (M N) = 0 *)
  >- (POP_ORW \\
      cheat)
- >> cheat
+ >> 
+    cheat
 QED
 
 (* This is Exercise 5.3 (3) [2, p.128], a companion of Theorem 5.3.2 under the joint
