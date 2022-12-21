@@ -1220,7 +1220,6 @@ Proof
  >> Q.PAT_X_ASSUM ‘!a b. a IN sts1 /\ b IN sts2 ==> _’ (MP_TAC o (Q.SPECL [‘b’, ‘x’]))
  >> rw [indep_def]
 QED
- *)
 
 Theorem indep_vars_alt_generator :
     !p X (J :'index set) sp sts.
@@ -1241,6 +1240,7 @@ Proof
  >> 
     cheat
 QED
+ *)
 
 val _ = export_theory ();
 val _ = html_theory "stochastic_process";

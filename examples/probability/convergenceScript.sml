@@ -2236,9 +2236,55 @@ Theorem Kolmogorov_maximal_inequality_2 :
           <= (2 * A + 4 * e) pow 2 / variance p (Z N)
 Proof
     rpt STRIP_TAC
+ (* impossible case: A < 0 *)
+ >> ‘A < 0 \/ 0 <= A’ by PROVE_TAC [let_total]
+ >- (‘?x. x IN p_space p’ by METIS_TAC [PROB_SPACE_NOT_EMPTY, MEMBER_NOT_EMPTY] \\
+     ‘abs (X 0 x - expectation p (X 0)) <= A’ by PROVE_TAC [] \\
+     ‘0 <= abs (X 0 x - expectation p (X 0))’ by PROVE_TAC [abs_pos] \\
+     ‘abs (X 0 x - expectation p (X 0)) < 0’ by PROVE_TAC [let_trans] \\
+     METIS_TAC [let_antisym])
+ >> ‘A <> NegInf’ by PROVE_TAC [pos_not_neginf]
  >> Know ‘!n. finite_second_moments p (X n)’
- >- (
-     cheat)
+ >- (Q.X_GEN_TAC ‘n’ \\
+     MATCH_MP_TAC bounded_imp_finite_second_moments >> art [] \\
+     CONJ_TAC >- FULL_SIMP_TAC std_ss [real_random_variable_def] \\
+     Q.ABBREV_TAC ‘M = expectation p (X n)’ \\
+    ‘M <> PosInf /\ M <> NegInf’ by METIS_TAC [integrable_imp_finite_expectation] \\
+    ‘?a. 0 <= a /\ A = Normal a’
+       by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_le_eq] \\
+    ‘?m. M = Normal m’ by METIS_TAC [extreal_cases] \\
+     Q.EXISTS_TAC ‘max (m + a) (abs (m - a))’ >> RW_TAC std_ss [] \\
+     Q.PAT_X_ASSUM ‘!n. real_random_variable (X n) p’
+       (STRIP_ASSUME_TAC o (CONV_RULE FORALL_AND_CONV) o
+        (REWRITE_RULE [real_random_variable_def])) \\
+     Q.PAT_X_ASSUM ‘!n x. x IN p_space p ==> X n x <> NegInf /\ X n x <> PosInf’
+       (MP_TAC o (Q.SPECL [‘n’, ‘x’])) \\
+     Q.PAT_X_ASSUM ‘!n x. x IN p_space p ==> _ <= Normal a’
+       (MP_TAC o (Q.SPECL [‘n’, ‘x’])) \\
+     RW_TAC std_ss [] \\
+    ‘?y. X n x = Normal y’ by METIS_TAC [extreal_cases] \\
+     gs [extreal_sub_def, extreal_abs_def] \\
+     rw [REAL_LE_MAX] \\
+    ‘0 <= m \/ m <= 0’ by PROVE_TAC [REAL_LE_TOTAL] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       DISJ1_TAC \\
+      ‘abs m + abs (y - m) <= m + a’ by PROVE_TAC [REAL_LE_LADD, ABS_REFL] \\
+       MATCH_MP_TAC REAL_LE_TRANS \\
+       Q.EXISTS_TAC ‘abs m + abs (y - m)’ >> art [] \\
+      ‘abs y = abs (m + (y - m))’ by REAL_ARITH_TAC >> POP_ORW \\
+       REWRITE_TAC [ABS_TRIANGLE],
+       (* goal 2 (of 2) *)
+       DISJ2_TAC \\
+       MATCH_MP_TAC REAL_LE_TRANS \\
+       Q.EXISTS_TAC ‘abs m + abs (y - m)’ >> REWRITE_TAC [ABS_TRIANGLE_SUB] \\
+       Suff ‘abs (m - a) = abs m + a’ >- rw [REAL_LE_LADD] \\
+      ‘abs (m - a) = abs (a - m)’ by REAL_ARITH_TAC >> POP_ORW \\
+       Know ‘abs (a - m) = a - m’
+       >- (rw [ABS_REFL, REAL_SUB_LE] \\
+           MATCH_MP_TAC REAL_LE_TRANS >> Q.EXISTS_TAC ‘0’ >> art []) >> Rewr' \\
+       Know ‘abs (--m) = -m’ >- art [Once ABS_NEG, ABS_REFL, REAL_NEG_GE0] \\
+       REWRITE_TAC [REAL_NEG_NEG] >> Rewr' \\
+       REAL_ARITH_TAC ])
  >> DISCH_TAC
  >> Know ‘!n. real_random_variable (Z n) p’
  >- (Q.X_GEN_TAC ‘n’ \\
@@ -2250,13 +2296,6 @@ Proof
  >> Q.ABBREV_TAC ‘M = \n. {x | x IN p_space p /\ max_fn_seq (\i. abs o Z i) n x <= e}’
  >> ‘!n. M n IN events p’ by METIS_TAC [events_max_fn_seq']
  >> simp []
- (* impossible case: A < 0 *)
- >> ‘A < 0 \/ 0 <= A’ by PROVE_TAC [let_total]
- >- (‘?x. x IN p_space p’ by METIS_TAC [PROB_SPACE_NOT_EMPTY, MEMBER_NOT_EMPTY] \\
-     ‘abs (X 0 x - expectation p (X 0)) <= A’ by PROVE_TAC [] \\
-     ‘0 <= abs (X 0 x - expectation p (X 0))’ by PROVE_TAC [abs_pos] \\
-     ‘abs (X 0 x - expectation p (X 0)) < 0’ by PROVE_TAC [let_trans] \\
-     METIS_TAC [let_antisym])
  (* trivial case: A = 0 *)
  >> ‘A = 0 \/ 0 < A’ by PROVE_TAC [le_lt]
  >- (POP_ASSUM (fs o wrap) \\
@@ -2268,7 +2307,7 @@ Proof
          MATCH_MP_TAC total_imp_pairwise_indep_vars >> simp [SIGMA_ALGEBRA_BOREL] \\
          fs [real_random_variable_def] \\
          
-         cheat)
+         cheat) \\
      cheat)
  (* NOTE: ‘D n’ may be empty as ‘M n SUBSET M (SUC n)’ doesn't hold in general *)
  >> Q.ABBREV_TAC ‘D = \n. if n = 0 then p_space p else M (n - 1) DIFF M n’
