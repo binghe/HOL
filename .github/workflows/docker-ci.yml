@@ -7,7 +7,7 @@ on:
     branches:
       - "master"
       - "develop"
-      - "prob_restart"
+      - "probability_dev"
 
 jobs:
   build:
@@ -40,5 +40,8 @@ jobs:
           context: .
           file: developers/docker-ci/Dockerfile
           push: true
+          build-args: |
+            SML=poly
+            BUILDOPTS="--expk -j2"
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
