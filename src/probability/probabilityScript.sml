@@ -3139,9 +3139,20 @@ QED
 
   old definition:
 
-    indep_vars p X A (J :'index set) =
+Definition old_indep_vars_def :
+    old_indep_vars p X A (J :'index set) =
       !E. E IN (J --> (subsets o A)) ==>
           indep_events p (\n. (PREIMAGE (X n) (E n)) INTER p_space p) J
+End
+
+> REWRITE_RULE [indep_events_def] old_indep_vars_def;
+val it =
+   |- !p X A J.
+        old_indep_vars p X A J <=>
+        !E. E IN J --> subsets o A ==>
+            !N. N SUBSET J /\ N <> {} /\ FINITE N ==>
+                prob p (BIGINTER (IMAGE (\n. PREIMAGE (X n) (E n) INTER p_space p) N)) =
+                PI (prob p o (\n. PREIMAGE (X n) (E n) INTER p_space p)) N:
 
   new definition:
  *)
@@ -3153,8 +3164,47 @@ Definition indep_vars_def :
             PI (prob p o (\n. PREIMAGE (X n) (E n) INTER p_space p)) N
 End
 
-(* NOTE: if a set of r.v.'s is (totally) independent, so is any subset of them.
-   cf. pairwise_indep_vars_subset
+(* NOTE: the old and new definitions are actually equivalent, given ‘A n’ is indeed
+   a sigma-algebra (which can be actually weakened to ‘?x. x IN subsets (A n)’), or
+   ring, semiring, algebra, etc.
+ *)
+Theorem indep_vars_alt_indep_events :
+    !p X A (J :'index set).
+       (!n. n IN J ==> sigma_algebra (A n)) ==>
+       (indep_vars p X A (J :'index set) <=>
+        !E. E IN (J --> (subsets o A)) ==>
+            indep_events p (\n. (PREIMAGE (X n) (E n)) INTER p_space p) J)
+Proof
+    rpt STRIP_TAC
+ >> EQ_TAC
+ >> RW_TAC std_ss [indep_vars_def, indep_events_def]
+ >- (FIRST_X_ASSUM MATCH_MP_TAC >> fs [IN_DFUNSET] \\
+     METIS_TAC [SUBSET_DEF])
+ (* The key is to choose E' such that, for each indexes ‘n NOTIN N’, an arbitrary
+    element ‘E n’ is choosen such that ‘E n IN subsets (A n)’ holds. Here we chose
+   ‘{}’, assuming ‘sigma_algebra (A n)’.
+  *)
+ >> Q.ABBREV_TAC ‘E' = \n. if n IN N then E n else {}’
+ >> Q.PAT_X_ASSUM ‘!E. E IN J --> subsets o A ==> P’ (MP_TAC o (Q.SPEC ‘E'’))
+ >> Know ‘E' IN J --> subsets o A’
+ >- (fs [Abbr ‘E'’, IN_DFUNSET] >> rw [] \\
+     METIS_TAC [SIGMA_ALGEBRA_EMPTY])
+ >> RW_TAC std_ss []
+ >> POP_ASSUM (MP_TAC o (Q.SPEC ‘N’))
+ >> RW_TAC std_ss []
+ >> Suff ‘IMAGE (\n. PREIMAGE (X n) (E  n) INTER p_space p) N =
+          IMAGE (\n. PREIMAGE (X n) (E' n) INTER p_space p) N /\
+          PI (prob p o (\n. PREIMAGE (X n) (E  n) INTER p_space p)) N =
+          PI (prob p o (\n. PREIMAGE (X n) (E' n) INTER p_space p)) N’ >- rw []
+ >> CONJ_TAC
+ >- (rw [Once EXTENSION] >> EQ_TAC >> rw [Abbr ‘E'’] \\
+     Q.EXISTS_TAC ‘n’ >> rw [])
+ >> MATCH_MP_TAC EXTREAL_PROD_IMAGE_EQ
+ >> Q.X_GEN_TAC ‘n’ >> rw [Abbr ‘E'’]
+QED
+
+(* NOTE: If a set of r.v.'s is (totally) independent, so is any subset of them.
+         With the new definition of ‘indep_vars’, this proof is very easy now.
  *)
 Theorem indep_vars_subset :
     !p X A (s :'index set) (t :'index set).
