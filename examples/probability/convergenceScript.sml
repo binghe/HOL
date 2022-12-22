@@ -2246,45 +2246,10 @@ Proof
  >> ‘A <> NegInf’ by PROVE_TAC [pos_not_neginf]
  >> Know ‘!n. finite_second_moments p (X n)’
  >- (Q.X_GEN_TAC ‘n’ \\
-     MATCH_MP_TAC bounded_imp_finite_second_moments >> art [] \\
+     MATCH_MP_TAC bounded_imp_finite_second_moments' >> art [] \\
      CONJ_TAC >- FULL_SIMP_TAC std_ss [real_random_variable_def] \\
-     Q.ABBREV_TAC ‘M = expectation p (X n)’ \\
-    ‘M <> PosInf /\ M <> NegInf’ by METIS_TAC [integrable_imp_finite_expectation] \\
-    ‘?a. 0 <= a /\ A = Normal a’
-       by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_le_eq] \\
-    ‘?m. M = Normal m’ by METIS_TAC [extreal_cases] \\
-     Q.EXISTS_TAC ‘max (m + a) (abs (m - a))’ >> RW_TAC std_ss [] \\
-     Q.PAT_X_ASSUM ‘!n. real_random_variable (X n) p’
-       (STRIP_ASSUME_TAC o (CONV_RULE FORALL_AND_CONV) o
-        (REWRITE_RULE [real_random_variable_def])) \\
-     Q.PAT_X_ASSUM ‘!n x. x IN p_space p ==> X n x <> NegInf /\ X n x <> PosInf’
-       (MP_TAC o (Q.SPECL [‘n’, ‘x’])) \\
-     Q.PAT_X_ASSUM ‘!n x. x IN p_space p ==> _ <= Normal a’
-       (MP_TAC o (Q.SPECL [‘n’, ‘x’])) \\
-     RW_TAC std_ss [] \\
-    ‘?y. X n x = Normal y’ by METIS_TAC [extreal_cases] \\
-     gs [extreal_sub_def, extreal_abs_def] \\
-     rw [REAL_LE_MAX] \\
-    ‘0 <= m \/ m <= 0’ by PROVE_TAC [REAL_LE_TOTAL] >| (* 2 subgoals *)
-     [ (* goal 1 (of 2) *)
-       DISJ1_TAC \\
-      ‘abs m + abs (y - m) <= m + a’ by PROVE_TAC [REAL_LE_LADD, ABS_REFL] \\
-       MATCH_MP_TAC REAL_LE_TRANS \\
-       Q.EXISTS_TAC ‘abs m + abs (y - m)’ >> art [] \\
-      ‘abs y = abs (m + (y - m))’ by REAL_ARITH_TAC >> POP_ORW \\
-       REWRITE_TAC [ABS_TRIANGLE],
-       (* goal 2 (of 2) *)
-       DISJ2_TAC \\
-       MATCH_MP_TAC REAL_LE_TRANS \\
-       Q.EXISTS_TAC ‘abs m + abs (y - m)’ >> REWRITE_TAC [ABS_TRIANGLE_SUB] \\
-       Suff ‘abs (m - a) = abs m + a’ >- rw [REAL_LE_LADD] \\
-      ‘abs (m - a) = abs (a - m)’ by REAL_ARITH_TAC >> POP_ORW \\
-       Know ‘abs (a - m) = a - m’
-       >- (rw [ABS_REFL, REAL_SUB_LE] \\
-           MATCH_MP_TAC REAL_LE_TRANS >> Q.EXISTS_TAC ‘0’ >> art []) >> Rewr' \\
-       Know ‘abs (--m) = -m’ >- art [Once ABS_NEG, ABS_REFL, REAL_NEG_GE0] \\
-       REWRITE_TAC [REAL_NEG_NEG] >> Rewr' \\
-       REAL_ARITH_TAC ])
+    ‘?a. A = Normal a’ by METIS_TAC [extreal_cases] \\
+     Q.EXISTS_TAC ‘a’ >> rw [])
  >> DISCH_TAC
  >> Know ‘!n. real_random_variable (Z n) p’
  >- (Q.X_GEN_TAC ‘n’ \\

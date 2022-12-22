@@ -2637,6 +2637,59 @@ Proof
  >> MATCH_MP_TAC pow_le >> rw [abs_pos]
 QED
 
+(* NOTE: ‘integrable p X’ makes sure that ‘expectation p X’ exists and is finite *)
+Theorem bounded_imp_finite_second_moments' :
+    !p X. prob_space p /\ random_variable X p Borel /\ integrable p X /\
+         (?r. !x. x IN p_space p ==> abs (X x - expectation p X) <= Normal r) ==>
+          finite_second_moments p X
+Proof
+    qx_genl_tac [‘p’, ‘Y’] >> rpt STRIP_TAC
+ >> MATCH_MP_TAC bounded_imp_finite_second_moments >> art []
+ >> Q.ABBREV_TAC ‘M = expectation p Y’
+ >> ‘M <> PosInf /\ M <> NegInf’ by METIS_TAC [integrable_imp_finite_expectation]
+ >> ‘r < 0 \/ 0 <= r’ by PROVE_TAC [REAL_LTE_TOTAL]
+ >- (‘?x. x IN p_space p’ by METIS_TAC [PROB_SPACE_NOT_EMPTY, MEMBER_NOT_EMPTY] \\
+     ‘Normal r < 0’ by METIS_TAC [extreal_of_num_def, extreal_lt_eq] \\
+     ‘abs (Y x - M) < 0’ by METIS_TAC [let_trans] \\
+     METIS_TAC [abs_pos, let_antisym])
+ >> ‘?m. M = Normal m’ by METIS_TAC [extreal_cases] >> fs []
+ >> rename1 ‘0 <= a’
+ >> Know ‘!x. x IN p_space p ==> Y x <> NegInf /\ Y x <> PosInf’
+ >- (NTAC 2 STRIP_TAC \\
+     Q.PAT_X_ASSUM ‘!x. x IN p_space p ==> P’ (MP_TAC o (Q.SPEC ‘x’)) \\
+     RW_TAC std_ss [] >> CCONTR_TAC >> fs [extreal_abs_def, extreal_sub_def])
+ >> DISCH_TAC
+ >> Q.EXISTS_TAC ‘max (m + a) (abs (m - a))’
+ >> RW_TAC std_ss []
+ >> Q.PAT_X_ASSUM ‘!x. x IN p_space p ==> Y x <> NegInf /\ Y x <> PosInf’
+       (MP_TAC o (Q.SPEC ‘x’))
+ >> Q.PAT_X_ASSUM ‘!x. x IN p_space p ==> abs _ <= Normal a’ (MP_TAC o (Q.SPEC ‘x’))
+ >> RW_TAC std_ss []
+ >> ‘?y. Y x = Normal y’ by METIS_TAC [extreal_cases]
+ >> gs [extreal_sub_def, extreal_abs_def]
+ >> rw [REAL_LE_MAX]
+ >> ‘0 <= m \/ m <= 0’ by PROVE_TAC [REAL_LE_TOTAL]
+ >| [ (* goal 1 (of 2) *)
+      DISJ1_TAC \\
+     ‘abs m + abs (y - m) <= m + a’ by PROVE_TAC [REAL_LE_LADD, ABS_REFL] \\
+      MATCH_MP_TAC REAL_LE_TRANS \\
+      Q.EXISTS_TAC ‘abs m + abs (y - m)’ >> art [] \\
+     ‘abs y = abs (m + (y - m))’ by REAL_ARITH_TAC >> POP_ORW \\
+      REWRITE_TAC [ABS_TRIANGLE],
+      (* goal 2 (of 2) *)
+      DISJ2_TAC \\
+      MATCH_MP_TAC REAL_LE_TRANS \\
+      Q.EXISTS_TAC ‘abs m + abs (y - m)’ >> REWRITE_TAC [ABS_TRIANGLE_SUB] \\
+      Suff ‘abs (m - a) = abs m + a’ >- rw [REAL_LE_LADD] \\
+     ‘abs (m - a) = abs (a - m)’ by REAL_ARITH_TAC >> POP_ORW \\
+      Know ‘abs (a - m) = a - m’
+      >- (rw [ABS_REFL, REAL_SUB_LE] \\
+          MATCH_MP_TAC REAL_LE_TRANS >> Q.EXISTS_TAC ‘0’ >> art []) >> Rewr' \\
+      Know ‘abs (--m) = -m’ >- art [Once ABS_NEG, ABS_REFL, REAL_NEG_GE0] \\
+      REWRITE_TAC [REAL_NEG_NEG] >> Rewr' \\
+      REAL_ARITH_TAC ]
+QED
+
 Theorem finite_second_moments_imp_integrable :
     !p X. prob_space p /\ real_random_variable X p /\ finite_second_moments p X ==>
           integrable p X

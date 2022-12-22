@@ -1,9 +1,9 @@
-IMAGE=binghelisp/hol-dev:omega
+IMAGE=binghelisp/hol-dev:polyml-5.4
 
 build:
 	docker build -t $(IMAGE) .
 
-push:
+push: build
 	docker push $(IMAGE)
 
 run:

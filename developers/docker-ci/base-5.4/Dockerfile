@@ -2,7 +2,7 @@
 #
 # HOL4 building environment (Docker), base image for HOL-Omega
 #
-# e.g. docker build --push -t binghelisp/hol-dev:omega .
+# e.g. docker build --push -t binghelisp/hol-dev:polyml-5.4 .
 
 # GitHub Actions recommends Debian-based systems as base images
 FROM ubuntu:16.04
@@ -41,4 +41,4 @@ RUN rm -rf polyml*
 RUN rm -rf mosml*
 
 # for developments using this base image with attached /ML volumes
-ENV PATH=/ML/HOL-Omega/bin:$PATH
+ENV PATH=/ML/HOL-Omega/bin:/ML/HOL/bin:$PATH
