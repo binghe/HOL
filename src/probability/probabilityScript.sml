@@ -3217,6 +3217,18 @@ Definition indep_vars_def :
             PI (prob p o (\n. PREIMAGE (X n) (E n) INTER p_space p)) N
 End
 
+(* NOTE: If a set of r.v.'s is (totally) independent, so is any subset of them.
+         With the new definition of ‘indep_vars’, this proof is very easy now.
+ *)
+Theorem indep_vars_subset :
+    !p X A (s :'index set) (t :'index set).
+       indep_vars p X A t /\ s SUBSET t ==> indep_vars p X A s
+Proof
+    RW_TAC std_ss [indep_vars_def, IN_DFUNSET, indep_events_def]
+ >> FIRST_X_ASSUM irule >> simp []
+ >> PROVE_TAC [SUBSET_TRANS]
+QED
+
 (* NOTE: the old and new definitions are actually equivalent, given ‘A n’ is indeed
    a sigma-algebra (which can be actually weakened to ‘?x. x IN subsets (A n)’), or
    ring, semiring, algebra, etc.
@@ -3233,39 +3245,114 @@ Proof
  >> RW_TAC std_ss [indep_vars_def, indep_events_def]
  >- (FIRST_X_ASSUM MATCH_MP_TAC >> fs [IN_DFUNSET] \\
      METIS_TAC [SUBSET_DEF])
- (* The key is to choose E' such that, for each indexes ‘n NOTIN N’, an arbitrary
+ (* The key is to choose V such that, for each indexes ‘n NOTIN N’, an arbitrary
     element ‘E n’ is choosen such that ‘E n IN subsets (A n)’ holds. Here we chose
    ‘{}’, assuming ‘sigma_algebra (A n)’.
   *)
- >> Q.ABBREV_TAC ‘E' = \n. if n IN N then E n else {}’
- >> Q.PAT_X_ASSUM ‘!E. E IN J --> subsets o A ==> P’ (MP_TAC o (Q.SPEC ‘E'’))
- >> Know ‘E' IN J --> subsets o A’
- >- (fs [Abbr ‘E'’, IN_DFUNSET] >> rw [] \\
+ >> Q.ABBREV_TAC ‘V = \n. if n IN N then E n else {}’
+ >> Q.PAT_X_ASSUM ‘!E. E IN J --> subsets o A ==> P’ (MP_TAC o (Q.SPEC ‘V’))
+ >> Know ‘V IN J --> subsets o A’
+ >- (fs [Abbr ‘V’, IN_DFUNSET] >> rw [] \\
      METIS_TAC [SIGMA_ALGEBRA_EMPTY])
  >> RW_TAC std_ss []
  >> POP_ASSUM (MP_TAC o (Q.SPEC ‘N’))
  >> RW_TAC std_ss []
- >> Suff ‘IMAGE (\n. PREIMAGE (X n) (E  n) INTER p_space p) N =
-          IMAGE (\n. PREIMAGE (X n) (E' n) INTER p_space p) N /\
-          PI (prob p o (\n. PREIMAGE (X n) (E  n) INTER p_space p)) N =
-          PI (prob p o (\n. PREIMAGE (X n) (E' n) INTER p_space p)) N’ >- rw []
+ >> Suff ‘IMAGE (\n. PREIMAGE (X n) (E n) INTER p_space p) N =
+          IMAGE (\n. PREIMAGE (X n) (V n) INTER p_space p) N /\
+          PI (prob p o (\n. PREIMAGE (X n) (E n) INTER p_space p)) N =
+          PI (prob p o (\n. PREIMAGE (X n) (V n) INTER p_space p)) N’ >- rw []
  >> CONJ_TAC
- >- (rw [Once EXTENSION] >> EQ_TAC >> rw [Abbr ‘E'’] \\
+ >- (rw [Once EXTENSION] >> EQ_TAC >> rw [Abbr ‘V’] \\
      Q.EXISTS_TAC ‘n’ >> rw [])
  >> MATCH_MP_TAC EXTREAL_PROD_IMAGE_EQ
- >> Q.X_GEN_TAC ‘n’ >> rw [Abbr ‘E'’]
+ >> Q.X_GEN_TAC ‘n’ >> rw [Abbr ‘V’]
 QED
 
-(* NOTE: If a set of r.v.'s is (totally) independent, so is any subset of them.
-         With the new definition of ‘indep_vars’, this proof is very easy now.
+Overload count1[local] = “\n. count (SUC n)”
+
+(* Alternative definition of independent r.v.'s for univ(:num) index set [9, p.279]
+
+   For Xs to be independent, it's sufficient that the increasing first n r.v.'s are so,
+   no need for arbitrary (non-empty) subset N of univ(:num).
  *)
-Theorem indep_vars_subset :
-    !p X A (s :'index set) (t :'index set).
-       indep_vars p X A t /\ s SUBSET t ==> indep_vars p X A s
+Theorem indep_vars_alt_univ :
+    !p X A. prob_space p /\ (!n. sigma_algebra (A n)) /\
+           (!n. random_variable (X n) p (A n)) ==>
+       (indep_vars p X A univ(:num) <=>
+        !E n. E IN (count1 n --> subsets o A) ==>
+              prob p (BIGINTER (IMAGE (\n. PREIMAGE (X n) (E n) INTER p_space p) (count1 n))) =
+              PI (prob p o (\n. PREIMAGE (X n) (E n) INTER p_space p)) (count1 n))
 Proof
-    RW_TAC std_ss [indep_vars_def, IN_DFUNSET, indep_events_def]
- >> FIRST_X_ASSUM irule >> simp []
- >> PROVE_TAC [SUBSET_TRANS]
+    RW_TAC std_ss [indep_vars_def]
+ >> EQ_TAC >> rw [] (* only one goal remains *)
+ >> Q.ABBREV_TAC ‘V = \n. if n IN N then E n else space (A n)’
+ (* find the maximal element m of N *)
+ >> MP_TAC (FINITE_is_measure_maximal |> Q.GEN ‘m’
+                                      |> INST_TYPE [“:'a” |-> “:num”]
+                                      |> Q.SPECL [‘I’, ‘N’])
+ >> rw [is_measure_maximal_def] >> rename1 ‘m IN N’
+ >> Q.PAT_X_ASSUM ‘!E n. E IN count1 n --> subsets o A ==> P’
+      (MP_TAC o (Q.SPECL [‘V’, ‘m’]))
+ >> Know ‘V IN count1 m --> subsets o A’
+ >- (rw [IN_DFUNSET, Abbr ‘V’] \\
+     Cases_on ‘n IN N’ >- fs [IN_DFUNSET] \\
+     simp [SIGMA_ALGEBRA_SPACE])
+ >> RW_TAC std_ss []
+ >> Suff ‘prob p (BIGINTER (IMAGE (\n. PREIMAGE (X n) (E n) INTER p_space p) N)) =
+          prob p (BIGINTER (IMAGE (\n. PREIMAGE (X n) (V n) INTER p_space p) (count1 m))) /\
+          PI (prob p o (\n. PREIMAGE (X n) (E n) INTER p_space p)) N =
+          PI (prob p o (\n. PREIMAGE (X n) (V n) INTER p_space p)) (count1 m)’ >- rw []
+ >> Q.ABBREV_TAC ‘D = count1 m DIFF N’
+ >> ‘DISJOINT N D’ by rw [DISJOINT_ALT, Abbr ‘D’]
+ >> Know ‘count1 m = N UNION D’
+ >- (rw [Once EXTENSION, Abbr ‘D’] \\
+     EQ_TAC >> rw [] >> rw [LT_SUC_LE]) >> Rewr'
+ >> Know ‘IMAGE (\n. PREIMAGE (X n) (E n) INTER p_space p) N =
+          IMAGE (\n. PREIMAGE (X n) (V n) INTER p_space p) N’
+ >- (rw [Once EXTENSION, IN_IMAGE, Abbr ‘V’] \\
+     EQ_TAC >> rw [] >> Q.EXISTS_TAC ‘n’ >> rw [])
+ >> Rewr'
+ >> Know ‘PI (prob p o (\n. PREIMAGE (X n) (E n) INTER p_space p)) N =
+          PI (prob p o (\n. PREIMAGE (X n) (V n) INTER p_space p)) N’
+ >- (MATCH_MP_TAC EXTREAL_PROD_IMAGE_EQ >> rw [Abbr ‘V’])
+ >> Rewr'
+ >> Cases_on ‘D = {}’ >- rw []
+ >> Know ‘!n. n IN D ==> PREIMAGE (X n) (V n) INTER p_space p = p_space p’
+ >- (rw [Abbr ‘D’, Abbr ‘V’, PREIMAGE_def] \\
+     rw [Once EXTENSION] \\
+     EQ_TAC >> rw [] \\
+     fs [random_variable_def, measurable_def, IN_FUNSET])
+ >> DISCH_TAC
+ >> CONJ_TAC
+ >- (rw [IMAGE_UNION, BIGINTER_UNION] \\
+     Know ‘IMAGE (\n. PREIMAGE (X n) (V n) INTER p_space p) D =
+           IMAGE (\n. p_space p) D’
+     >- (rw [Once EXTENSION] \\
+         EQ_TAC >> rw [] >> Q.EXISTS_TAC ‘n’ >> rw []) >> Rewr' \\
+     Know ‘BIGINTER (IMAGE (\n. p_space p) D) = p_space p’
+     >- (rw [Once EXTENSION, IN_BIGINTER_IMAGE] \\
+         EQ_TAC >> rw [] \\
+         FIRST_X_ASSUM MATCH_MP_TAC \\
+         METIS_TAC [MEMBER_NOT_EMPTY]) >> Rewr' \\
+     ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+     MATCH_MP_TAC PROB_UNDER_UNIV >> art [] \\
+     MATCH_MP_TAC EVENTS_BIGINTER_FN >> art [COUNTABLE_NUM] \\
+     rw [SUBSET_DEF] \\
+     fs [random_variable_def, measurable_def, IN_DFUNSET, Abbr ‘V’])
+ >> Know ‘FINITE D’
+ >- (irule SUBSET_FINITE >> Q.EXISTS_TAC ‘count1 m’ >> rw [Abbr ‘D’])
+ >> DISCH_TAC
+ >> Know ‘PI (prob p o (\n. PREIMAGE (X n) (V n) INTER p_space p)) (N UNION D) =
+          PI (prob p o (\n. PREIMAGE (X n) (V n) INTER p_space p)) N *
+          PI (prob p o (\n. PREIMAGE (X n) (V n) INTER p_space p)) D’
+ >- (MATCH_MP_TAC EXTREAL_PROD_IMAGE_DISJOINT_UNION >> art [])
+ >> Rewr'
+ >> Suff ‘PI (prob p o (\n. PREIMAGE (X n) (V n) INTER p_space p)) D = 1’ >- rw []
+ >> Know ‘PI (prob p o (\n. PREIMAGE (X n) (V n) INTER p_space p)) D =
+          PI (prob p o (\n. p_space p)) D’
+ >- (MATCH_MP_TAC EXTREAL_PROD_IMAGE_EQ >> rw [])
+ >> Rewr'
+ >> simp [o_DEF, PROB_UNIV, EXTREAL_PROD_IMAGE_ONE]
 QED
 
 (* not used *)

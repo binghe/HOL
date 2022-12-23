@@ -2279,7 +2279,7 @@ Proof
  >> Q.ABBREV_TAC ‘Y = \n x. X n x - expectation p (X n)’ >> fs []
  >> Q.ABBREV_TAC ‘W = \n x. SIGMA (\i. Y i x) (count1 n)’
  >> ‘prob p (M N) = 0 \/ 0 < prob p (M N)’ by METIS_TAC [PROB_POSITIVE, le_lt]
- (* Trivial case: prob p (M N) = 0 *)
+ (* trivial case: prob p (M N) = 0 *)
  >- (POP_ORW \\
      cheat)
  >> 
