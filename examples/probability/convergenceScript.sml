@@ -1718,7 +1718,7 @@ Theorem Kolmogorov_maximal_inequality_1 :
        prob_space p /\ (!n. real_random_variable (X n) p) /\
        indep_vars p X (\n. Borel) UNIV /\
       (!n. finite_second_moments p (X n)) /\ (!n. expectation p (X n) = 0) /\
-      (!n x. x IN p_space p ==> Z n x = SIGMA (\i. X i x) (count (SUC n)))
+      (!n x. x IN p_space p ==> Z n x = SIGMA (\i. X i x) (count1 n))
    ==> !e N. 0 < e /\ e <> PosInf ==>
              prob p {x | x IN p_space p /\ e < max_fn_seq (\i. abs o Z i) N x}
           <= variance p (Z N) / e pow 2
@@ -1734,7 +1734,7 @@ Proof
  >> Know ‘!n. real_random_variable (Z n) p’
  >- (Q.X_GEN_TAC ‘n’ \\
      Know ‘real_random_variable (Z n) p <=>
-           real_random_variable (\x. SIGMA (\i. X i x) (count (SUC n))) p’
+           real_random_variable (\x. SIGMA (\i. X i x) (count1 n)) p’
      >- (MATCH_MP_TAC real_random_variable_cong >> rw []) >> Rewr' \\
      MATCH_MP_TAC real_random_variable_sum >> rw [])
  >> DISCH_TAC
@@ -1829,7 +1829,7 @@ Proof
  >> DISCH_TAC
  >> ‘!i j. i <> j ==> DISJOINT (a i) (a j)’
        by (rw [Abbr ‘a’, DISJOINT_ALT])
- (* The range ‘count (SUC n)’ indicates from a(0) to a(N) *)
+ (* The range ‘count1 n’ indicates from a(0) to a(N) *)
  >> Know ‘unint A = BIGUNION (IMAGE a (count (SUC N)))’
  >- (rw [markerTheory.unint_def, Once EXTENSION, IN_BIGUNION_IMAGE] \\
      reverse EQ_TAC (* easy goal first *)
@@ -1958,7 +1958,7 @@ Proof
  >> Know ‘!n. finite_second_moments p (Z n)’
  >- (Q.X_GEN_TAC ‘n’ \\
      Know ‘finite_second_moments p (Z n) <=>
-           finite_second_moments p (\x. SIGMA (\i. X i x) (count (SUC n)))’
+           finite_second_moments p (\x. SIGMA (\i. X i x) (count1 n))’
      >- (MATCH_MP_TAC finite_second_moments_cong >> rw []) >> Rewr' \\
      MATCH_MP_TAC finite_second_moments_sum >> rw [])
  >> DISCH_TAC
@@ -2040,7 +2040,7 @@ Proof
  >> Know ‘!n. n <= N ==> expectation p (D n) = 0’
  >- (Q.X_GEN_TAC ‘n’ \\
      RW_TAC std_ss [Abbr ‘D’] \\
-  (* choose J such that ‘count (SUC N) = J UNION (count (SUC n))’ *)
+  (* choose J such that ‘count (SUC N) = J UNION (count1 n)’ *)
      Q.ABBREV_TAC ‘J = {i | n < i /\ i <= N}’ \\
     ‘J SUBSET count (SUC N)’ by rw [Abbr ‘J’, SUBSET_DEF] \\
     ‘FINITE J’ by PROVE_TAC [SUBSET_FINITE, FINITE_COUNT] \\
@@ -2055,7 +2055,7 @@ Proof
              rw [real_random_variable_def]) >> Rewr' \\
       (* applying EXTREAL_SUM_IMAGE_DISJOINT_UNION *)
          ASM_SIMP_TAC std_ss [] \\
-        ‘count (SUC N) = J UNION (count (SUC n))’ by rw [Abbr ‘J’, Once EXTENSION] \\
+        ‘count (SUC N) = J UNION (count1 n)’ by rw [Abbr ‘J’, Once EXTENSION] \\
          POP_ORW >> irule EXTREAL_SUM_IMAGE_DISJOINT_UNION \\
          Q.PAT_X_ASSUM ‘!n. real_random_variable (X n) p’ MP_TAC \\
          rw [Abbr ‘J’, real_random_variable_def, DISJOINT_ALT]) >> Rewr' \\
@@ -2218,9 +2218,6 @@ QED
    NOTE: ‘abs (X n x - expectation p (X n)) <= A’ implies ‘finite_second_moments p (X n)’,
          but ‘integrable p (X n)’ must be put first to make sure ‘expectation p (X n)’
          exists and is finite.
-
-   TODO: ‘0 <= A’ can be derived from PROB_SPACE_NOT_EMPTY, and the special case ‘A = 0’
-         is trivial (violating ‘0 < variance p (Z N)’).
  *)
 Theorem Kolmogorov_maximal_inequality_2 :
     !p X Z A.
@@ -2252,16 +2249,17 @@ Proof
  >> Know ‘!n. real_random_variable (Z n) p’
  >- (Q.X_GEN_TAC ‘n’ \\
      Know ‘real_random_variable (Z n) p <=>
-           real_random_variable (\x. SIGMA (\i. X i x) (count (SUC n))) p’
+           real_random_variable (\x. SIGMA (\i. X i x) (count1 n)) p’
      >- (MATCH_MP_TAC real_random_variable_cong >> rw []) >> Rewr' \\
      MATCH_MP_TAC real_random_variable_sum >> rw [])
  >> DISCH_TAC
  >> Q.ABBREV_TAC ‘M = \n. {x | x IN p_space p /\ max_fn_seq (\i. abs o Z i) n x <= e}’
  >> ‘!n. M n IN events p’ by METIS_TAC [events_max_fn_seq']
  >> simp []
- (* trivial case: A = 0 *)
+ (* trivial case: A = 0 (conflict with ‘0 < variance p (Z N)’) *)
  >> ‘A = 0 \/ 0 < A’ by PROVE_TAC [le_lt]
  >- (POP_ASSUM (fs o wrap) \\
+     Suff ‘variance p (Z N) = 0’ >- METIS_TAC [lt_le] \\
      Know ‘variance p (Z N) = variance p (\x. SIGMA (\n. X n x) (count1 N))’
      >- (MATCH_MP_TAC variance_cong >> rw []) >> Rewr' \\
      Know ‘variance p (\x. SIGMA (\n. X n x) (count1 N)) =
@@ -2269,17 +2267,34 @@ Proof
      >- (MATCH_MP_TAC variance_sum' >> rw [] \\
          MATCH_MP_TAC total_imp_pairwise_indep_vars >> simp [SIGMA_ALGEBRA_BOREL] \\
          fs [real_random_variable_def] \\
-         
-         cheat) \\
-     cheat)
+         MATCH_MP_TAC indep_vars_subset \\
+         Q.EXISTS_TAC ‘univ(:num)’ >> rw []) >> Rewr' \\
+     REWRITE_TAC [variance_alt] \\
+     Know ‘!n. expectation p (\x. (X n x - expectation p (X n)) pow 2) =
+               expectation p (\x. 0 pow 2)’
+     >- (Q.X_GEN_TAC ‘n’ >> MATCH_MP_TAC expectation_cong >> rw []) >> Rewr' \\
+     rw [zero_pow, expectation_zero, EXTREAL_SUM_IMAGE_ZERO])
+ >> Know ‘!n. finite_second_moments p (Z n)’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     Know ‘finite_second_moments p (Z n) <=>
+           finite_second_moments p (\x. SIGMA (\i. X i x) (count1 n))’
+     >- (MATCH_MP_TAC finite_second_moments_cong >> rw []) >> Rewr' \\
+     MATCH_MP_TAC finite_second_moments_sum >> rw [])
+ >> DISCH_TAC
  (* NOTE: ‘D n’ may be empty as ‘M n SUBSET M (SUC n)’ doesn't hold in general *)
  >> Q.ABBREV_TAC ‘D = \n. if n = 0 then p_space p else M (n - 1) DIFF M n’
  >> Q.ABBREV_TAC ‘Y = \n x. X n x - expectation p (X n)’ >> fs []
  >> Q.ABBREV_TAC ‘W = \n x. SIGMA (\i. Y i x) (count1 n)’
  >> ‘prob p (M N) = 0 \/ 0 < prob p (M N)’ by METIS_TAC [PROB_POSITIVE, le_lt]
- (* trivial case: prob p (M N) = 0 *)
+ (* another trivial case: prob p (M N) = 0 *)
  >- (POP_ORW \\
-     cheat)
+    ‘variance p (Z N) <> PosInf’
+       by METIS_TAC [lt_infty, finite_second_moments_eq_finite_variance] \\
+    ‘variance p (Z N) <> NegInf’ by METIS_TAC [lt_imp_le, pos_not_neginf] \\
+    ‘?r. 0 < r /\ variance p (Z N) = Normal r’
+       by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_lt_eq] >> POP_ORW \\
+     MATCH_MP_TAC le_div >> rw [le_pow2])
+ (* stage work *)
  >> 
     cheat
 QED
@@ -2304,7 +2319,7 @@ Theorem Kolmogorov_maximal_inequality_3 :
        indep_vars p X (\n. Borel) UNIV /\
       (!n. expectation p (X n) = 0) /\ A <> PosInf /\
       (!n x. x IN p_space p ==> abs (X n x) <= A) /\
-      (!n x. x IN p_space p ==> Z n x = SIGMA (\i. X i x) (count (SUC n)))
+      (!n x. x IN p_space p ==> Z n x = SIGMA (\i. X i x) (count1 n))
    ==> !e N. 0 < e /\ e <> PosInf /\ 0 < variance p (Z N) ==>
              prob p {x | x IN p_space p /\ max_fn_seq (\i. abs o Z i) N x <= e}
           <= (A + e) pow 2 / variance p (Z N)
@@ -2327,7 +2342,7 @@ Theorem Kolmogorov_maximal_inequality :
        indep_vars p X (\n. Borel) UNIV /\
       (!n. expectation p (X n) = 0) /\ 0 < A /\ A <> PosInf /\
       (!n x. x IN p_space p ==> abs (X n x) <= A) /\
-      (!n x. x IN p_space p ==> Z n x = SIGMA (\i. X i x) (count (SUC n)))
+      (!n x. x IN p_space p ==> Z n x = SIGMA (\i. X i x) (count1 n))
    ==> !e N. 0 < e /\ e <> PosInf /\ 0 < variance p (Z N) ==>
              prob p {x | x IN p_space p /\ e < max_fn_seq (\i. abs o Z i) N x} IN
              {r | 1 - (A + e) pow 2 / variance p (Z N) <= r /\
@@ -2347,14 +2362,14 @@ Proof
  >> Know ‘!n. real_random_variable (Z n) p’
  >- (Q.X_GEN_TAC ‘n’ \\
      Know ‘real_random_variable (Z n) p <=>
-           real_random_variable (\x. SIGMA (\i. X i x) (count (SUC n))) p’
+           real_random_variable (\x. SIGMA (\i. X i x) (count1 n)) p’
      >- (MATCH_MP_TAC real_random_variable_cong >> rw []) >> Rewr' \\
      MATCH_MP_TAC real_random_variable_sum >> rw [])
  >> DISCH_TAC
  >> Know ‘!n. finite_second_moments p (Z n)’
  >- (Q.X_GEN_TAC ‘n’ \\
      Know ‘finite_second_moments p (Z n) <=>
-           finite_second_moments p (\x. SIGMA (\i. X i x) (count (SUC n)))’
+           finite_second_moments p (\x. SIGMA (\i. X i x) (count1 n))’
      >- (MATCH_MP_TAC finite_second_moments_cong >> rw []) >> Rewr' \\
      MATCH_MP_TAC finite_second_moments_sum >> rw [])
  >> DISCH_TAC
