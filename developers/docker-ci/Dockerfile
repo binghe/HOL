@@ -10,14 +10,18 @@ FROM binghelisp/hol-dev:latest
 ARG BUILDOPTS="--expk -j4"
 ARG SML=poly
 
+# Environment variables get the (overridden) values of (build) arguments
+ENV ENV_SML       $SML
+ENV ENV_BUILDOPTS $BUILDOPTS
+
 WORKDIR /ML/HOL
 
 # fast copy all files to the docker image
 COPY --link . .
 
 # building HOL
-RUN ${SML} < tools/smart-configure.sml 
-RUN bin/build ${BUILDOPTS}
+RUN ${ENV_SML} < tools/smart-configure.sml 
+RUN bin/build ${ENV_BUILDOPTS}
 
 # This can be overrided by "docker run <command>"
 CMD ["/ML/HOL/bin/hol"]
