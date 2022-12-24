@@ -41,8 +41,8 @@ jobs:
           file: developers/docker-ci/Dockerfile
           push: true
           build-args: |
-            SML=poly
+            SML=mosml
             # NOTE: the arg value cannot be quoted here:
-            BUILDOPTS=--expk -j4
+            BUILDOPTS=--expk
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
