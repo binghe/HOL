@@ -3268,8 +3268,6 @@ Proof
  >> Q.X_GEN_TAC ‘n’ >> rw [Abbr ‘V’]
 QED
 
-Overload count1[local] = “\n. count (SUC n)”
-
 (* Alternative definition of independent r.v.'s for univ(:num) index set [9, p.279]
 
    For Xs to be independent, it's sufficient that the increasing first n r.v.'s are so,
