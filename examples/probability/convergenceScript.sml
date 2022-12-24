@@ -2340,7 +2340,7 @@ Theorem Kolmogorov_maximal_inequality :
     !p X A Z.
        prob_space p /\ (!n. real_random_variable (X n) p) /\
        indep_vars p X (\n. Borel) UNIV /\
-      (!n. expectation p (X n) = 0) /\ 0 < A /\ A <> PosInf /\
+      (!n. expectation p (X n) = 0) /\ A <> PosInf /\
       (!n x. x IN p_space p ==> abs (X n x) <= A) /\
       (!n x. x IN p_space p ==> Z n x = SIGMA (\i. X i x) (count1 n))
    ==> !e N. 0 < e /\ e <> PosInf /\ 0 < variance p (Z N) ==>
@@ -2348,14 +2348,22 @@ Theorem Kolmogorov_maximal_inequality :
              {r | 1 - (A + e) pow 2 / variance p (Z N) <= r /\
                   r <= variance p (Z N) / e pow 2}
 Proof
-    rpt STRIP_TAC >> simp []
- >> ‘A <> NegInf’ by METIS_TAC [pos_not_neginf, lt_imp_le]
+    rpt STRIP_TAC
+ (* impossible case: A < 0 *)
+ >> ‘A < 0 \/ 0 <= A’ by PROVE_TAC [let_total]
+ >- (‘?x. x IN p_space p’ by METIS_TAC [PROB_SPACE_NOT_EMPTY, MEMBER_NOT_EMPTY] \\
+     ‘abs (X 0 x) <= A’ by PROVE_TAC [] \\
+     ‘0 <= abs (X 0 x)’ by PROVE_TAC [abs_pos] \\
+     ‘abs (X 0 x) < 0’ by PROVE_TAC [let_trans] \\
+     METIS_TAC [let_antisym])
+ >> ‘A <> NegInf’ by METIS_TAC [pos_not_neginf]
  >> Know ‘!n. finite_second_moments p (X n)’
  >- (Q.X_GEN_TAC ‘n’ \\
      MATCH_MP_TAC bounded_imp_finite_second_moments \\
     ‘?r. A = Normal r’ by METIS_TAC [extreal_cases] \\
      fs [real_random_variable_def] >> Q.EXISTS_TAC ‘r’ >> rw [])
  >> DISCH_TAC
+ >> simp [] (* eliminate {r | ... } *)
  >> reverse CONJ_TAC
  >- (irule Kolmogorov_maximal_inequality_1 >> art [] \\
      Q.EXISTS_TAC ‘X’ >> simp [])
