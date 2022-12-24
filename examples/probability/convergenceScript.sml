@@ -2255,6 +2255,10 @@ Proof
  >> DISCH_TAC
  >> Q.ABBREV_TAC ‘M = \n. {x | x IN p_space p /\ max_fn_seq (\i. abs o Z i) n x <= e}’
  >> ‘!n. M n IN events p’ by METIS_TAC [events_max_fn_seq']
+ >> Know ‘!n. M (SUC n) SUBSET M n’
+ >- (
+  cheat)
+ >> DISCH_TAC
  >> simp []
  (* trivial case: A = 0 (conflict with ‘0 < variance p (Z N)’) *)
  >> ‘A = 0 \/ 0 < A’ by PROVE_TAC [le_lt]
@@ -2281,10 +2285,6 @@ Proof
      >- (MATCH_MP_TAC finite_second_moments_cong >> rw []) >> Rewr' \\
      MATCH_MP_TAC finite_second_moments_sum >> rw [])
  >> DISCH_TAC
- (* NOTE: ‘D n’ may be empty as ‘M n SUBSET M (SUC n)’ doesn't hold in general *)
- >> Q.ABBREV_TAC ‘D = \n. if n = 0 then p_space p else M (n - 1) DIFF M n’
- >> Q.ABBREV_TAC ‘Y = \n x. X n x - expectation p (X n)’ >> fs []
- >> Q.ABBREV_TAC ‘W = \n x. SIGMA (\i. Y i x) (count1 n)’
  >> ‘prob p (M N) = 0 \/ 0 < prob p (M N)’ by METIS_TAC [PROB_POSITIVE, le_lt]
  (* another trivial case: prob p (M N) = 0 *)
  >- (POP_ORW \\
@@ -2295,7 +2295,13 @@ Proof
        by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_lt_eq] >> POP_ORW \\
      MATCH_MP_TAC le_div >> rw [le_pow2])
  (* stage work *)
- >> 
+ >> Q.ABBREV_TAC ‘D = \n. if n = 0 then p_space p else M (n - 1) DIFF M n’
+ >> Q.ABBREV_TAC ‘Y = \n x. X n x - expectation p (X n)’ >> fs []
+ >> Q.ABBREV_TAC ‘W = \n x. SIGMA (\i. Y i x) (count1 n)’
+ >> Q.ABBREV_TAC ‘a = \k. if prob p (M k) = 0 then 0 else
+                          inv (prob p (M k)) *
+                          integral p (\x. W n x * indicator_fn (M k) x)’
+ >>
     cheat
 QED
 
@@ -2333,10 +2339,10 @@ QED
 
    while Kolmogorov_maximal_inequality_1 provides a upper bound: variance(Z) / e pow 2
 
-   NOTE: when ‘variance p (Z N) = 0’, using only Kolmogorov_maximal_inequality we
-         get ‘prob p E <= 0’ thus ‘= 0’.
+   NOTE: when ‘variance p (Z N) = 0’, using only Kolmogorov_maximal_inequality one can
+         get ‘prob p E <= 0’, and thus ‘prob p E = 0’.
  *)
-Theorem Kolmogorov_maximal_inequality :
+Theorem Kolmogorov_maximal_inequality_combined :
     !p X A Z.
        prob_space p /\ (!n. real_random_variable (X n) p) /\
        indep_vars p X (\n. Borel) UNIV /\
