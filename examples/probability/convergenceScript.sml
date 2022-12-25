@@ -2339,11 +2339,62 @@ Proof
     ‘z <> 0’ by PROVE_TAC [REAL_LT_IMP_NE] \\
      rw [extreal_inv_eq, extreal_mul_def, extreal_not_infty])
  >> DISCH_TAC
+ >> Know ‘!n x. x IN p_space p ==> Y n x <> NegInf /\ Y n x <> PosInf’
+ >- (NTAC 3 STRIP_TAC >> simp [Abbr ‘Y’] \\
+     Q.PAT_X_ASSUM ‘!n. real_random_variable (X n) p’
+       (STRIP_ASSUME_TAC o (CONV_RULE FORALL_AND_CONV) o
+        (REWRITE_RULE [real_random_variable_def])) \\
+    ‘?r. X n x = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+    ‘?z. expectation p (X n) = Normal z’
+       by METIS_TAC [extreal_cases, integrable_imp_finite_expectation] \\
+     rw [extreal_sub_def, extreal_not_infty])
+ >> DISCH_TAC
+ >> Know ‘!n x. x IN p_space p ==> S' n x <> NegInf /\ S' n x <> PosInf’
+ >- (NTAC 3 STRIP_TAC >> simp [Abbr ‘S'’] >> CONJ_TAC >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_NEGINF >> rw [],
+       (* goal 2 (of 2) *)
+       MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_POSINF >> rw [] ])
+ >> DISCH_TAC
+ (* key result of ‘a’ *)
  >> Know ‘!k. k <= N ==>
-              integral p (\x. (S' k x - a k) * indicator_fn (M k) x) = 0’
- >- (Q.X_GEN_TAC ‘k’ \\
-     
-     cheat)
+              expectation p (\x. (S' k x - a k) * indicator_fn (M k) x) = 0’
+ >- (Q.X_GEN_TAC ‘k’ >> DISCH_TAC \\
+     Know ‘expectation p (\x. (S' k x - a k) * indicator_fn (M k) x) =
+           expectation p (\x. S' k x * indicator_fn (M k) x -
+                                 a k * indicator_fn (M k) x)’
+     >- (MATCH_MP_TAC expectation_cong >> rw [] \\
+         MATCH_MP_TAC sub_rdistrib \\
+        ‘?r. indicator_fn (M k) x = Normal r’ by METIS_TAC [indicator_fn_normal] \\
+         rw [extreal_not_infty]) >> Rewr' \\
+     Know ‘expectation p (\x. S' k x * indicator_fn (M k) x - a k * indicator_fn (M k) x) =
+           expectation p (\x. S' k x * indicator_fn (M k) x) -
+           expectation p (\x.    a k * indicator_fn (M k) x)’
+     >- (REWRITE_TAC [expectation_def] \\
+         HO_MATCH_MP_TAC integral_sub' >> rw [] \\
+         HO_MATCH_MP_TAC integrable_mul_indicator >> fs [events_def] \\
+        ‘?r. a k = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+         MATCH_MP_TAC integrable_const >> art []) >> Rewr' \\
+     MATCH_MP_TAC sub_eq_0 >> rw [integrable_imp_finite_expectation] \\
+     Know ‘expectation p (\x. a k * indicator_fn (M k) x) =
+           a k * expectation p (\x. indicator_fn (M k) x)’
+     >- (‘?r. a k = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+         HO_MATCH_MP_TAC expectation_cmul >> art [] \\
+        ‘(\x. indicator_fn (M k) x) = indicator_fn (M k)’ by METIS_TAC [] >> POP_ORW \\
+         MATCH_MP_TAC integrable_indicator \\
+         Suff ‘prob p (M k) < PosInf’ >- fs [events_def, prob_def] \\
+        ‘?r. prob p (M k) = Normal r’ by METIS_TAC [prob_normal] \\
+         rw [lt_infty, extreal_not_infty]) >> Rewr' \\
+    ‘(\x. indicator_fn (M k) x) = indicator_fn (M k)’ by METIS_TAC [] >> POP_ORW \\
+     rw [expectation_indicator, expectation_def] \\
+    ‘a k * prob p (M k) = prob p (M k) * a k’ by rw [mul_comm] >> POP_ORW \\
+     simp [Abbr ‘a’, mul_assoc] \\
+     Suff ‘prob p (M k) * inv (prob p (M k)) = 1’ >- rw [] \\
+     ONCE_REWRITE_TAC [mul_comm] \\
+     MATCH_MP_TAC mul_linv_pos >> rw [] \\
+    ‘?r. prob p (M k) = Normal r’ by METIS_TAC [prob_normal] \\
+     rw [extreal_not_infty])
+ >> DISCH_TAC
  >> 
     cheat
 QED
