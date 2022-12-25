@@ -2257,7 +2257,17 @@ Proof
  >> ‘!n. M n IN events p’ by METIS_TAC [events_max_fn_seq']
  >> ‘!n. M (SUC n) SUBSET M n’
        by (rw [Abbr ‘M’, SUBSET_DEF, max_fn_seq_def, max_le])
- 
+ >> Know ‘!m n. m <= n ==> M n SUBSET M m’
+ >- (rpt GEN_TAC \\
+     Induct_on ‘n - m’ >> rw [] (* 2 subgoals *)
+     >- (‘m = n’ by rw [] >> METIS_TAC [SUBSET_REFL]) \\
+    ‘0 < n - m’ by rw [] \\
+    ‘0 < n’ by rw [] \\
+     MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘M (PRE n)’ \\
+     CONJ_TAC >- (‘n = SUC (PRE n)’ by rw [] >> METIS_TAC []) \\
+     FIRST_X_ASSUM irule >> rw [])
+ >> DISCH_TAC
+ (* start working on the goal *)
  >> simp []
  (* trivial case: A = 0 (conflict with ‘0 < variance p (Z N)’) *)
  >> ‘A = 0 \/ 0 < A’ by PROVE_TAC [le_lt]
@@ -2295,8 +2305,10 @@ Proof
      MATCH_MP_TAC le_div >> rw [le_pow2])
  (* stage work *)
  >> Know ‘!n. n <= N ==> 0 < prob p (M n)’
- >- (
-     cheat)
+ >- (rpt STRIP_TAC \\
+     MATCH_MP_TAC lte_trans >> Q.EXISTS_TAC ‘prob p (M N)’ >> art [] \\
+     MATCH_MP_TAC PROB_INCREASING >> art [] \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> art [])
  >> DISCH_TAC
  >> Q.ABBREV_TAC ‘D = \n. if n = 0 then p_space p else M (n - 1) DIFF M n’
  >> Q.ABBREV_TAC ‘Y = \n x. X n x - expectation p (X n)’ >> fs []
