@@ -7,7 +7,6 @@ on:
     branches:
       - "master"
       - "develop"
-      - "probability_dev"
 
 jobs:
   build-stdknl:
