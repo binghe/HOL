@@ -39,7 +39,7 @@ jobs:
           file: developers/docker-ci/Dockerfile
           push: true
           build-args: |
-            SML=polyml
+            SML=poly
             # NOTE: the arg value cannot be quoted here:
             BUILDOPTS=--stdknl -j6
           tags: ${{ steps.meta.outputs.tags }}
@@ -76,7 +76,7 @@ jobs:
           file: developers/docker-ci/Dockerfile
           push: true
           build-args: |
-            SML=polyml
+            SML=poly
             # NOTE: the arg value cannot be quoted here:
             BUILDOPTS=--expk -j6
           tags: ${{ steps.meta.outputs.tags }}
