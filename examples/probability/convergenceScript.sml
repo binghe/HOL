@@ -2312,9 +2312,38 @@ Proof
  >> DISCH_TAC
  >> Q.ABBREV_TAC ‘D = \n. if n = 0 then p_space p else M (n - 1) DIFF M n’
  >> Q.ABBREV_TAC ‘Y = \n x. X n x - expectation p (X n)’ >> fs []
- >> Q.ABBREV_TAC ‘W = \n x. SIGMA (\i. Y i x) (count1 n)’
+ >> Q.ABBREV_TAC ‘S' = \n x. SIGMA (\i. Y i x) (count1 n)’
  >> Q.ABBREV_TAC ‘a = \k. inv (prob p (M k)) *
-                          integral p (\x. W n x * indicator_fn (M k) x)’
+                          integral p (\x. S' k x * indicator_fn (M k) x)’
+ >> ‘measure_space p /\ measure p (m_space p) < PosInf’
+      by (fs [prob_space_def, p_space_def, extreal_of_num_def, lt_infty])
+ >> Know ‘!n. integrable p (Y n)’
+ >- (RW_TAC std_ss [Abbr ‘Y’] \\
+     HO_MATCH_MP_TAC integrable_sub' >> art [] \\
+     CONJ_TAC >- METIS_TAC [] \\
+    ‘?r. expectation p (X n) = Normal r’
+       by METIS_TAC [extreal_cases, integrable_imp_finite_expectation] >> POP_ORW \\
+     METIS_TAC [integrable_const])
+ >> DISCH_TAC
+ >> Know ‘!k. integrable p (\x. S' k x * indicator_fn (M k) x)’
+ >- (Q.X_GEN_TAC ‘k’ \\
+     MATCH_MP_TAC integrable_mul_indicator >> fs [events_def, Abbr ‘S'’] \\
+     MATCH_MP_TAC integrable_sum' >> rw [])
+ >> DISCH_TAC
+ >> Know ‘!k. k <= N ==> a k <> NegInf /\ a k <> PosInf’
+ >- (Q.X_GEN_TAC ‘k’ >> DISCH_TAC >> simp [Abbr ‘a’] \\
+    ‘?r. integral p (\x. S' k x * indicator_fn (M k) x) = Normal r’
+       by METIS_TAC [integrable_normal_integral] >> POP_ORW \\
+    ‘?z. 0 < z /\ prob p (M k) = Normal z’
+       by METIS_TAC [prob_normal, extreal_lt_eq, extreal_of_num_def] >> POP_ORW \\
+    ‘z <> 0’ by PROVE_TAC [REAL_LT_IMP_NE] \\
+     rw [extreal_inv_eq, extreal_mul_def, extreal_not_infty])
+ >> DISCH_TAC
+ >> Know ‘!k. k <= N ==>
+              integral p (\x. (S' k x - a k) * indicator_fn (M k) x) = 0’
+ >- (Q.X_GEN_TAC ‘k’ \\
+     
+     cheat)
  >> 
     cheat
 QED
