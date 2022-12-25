@@ -2255,10 +2255,9 @@ Proof
  >> DISCH_TAC
  >> Q.ABBREV_TAC ‘M = \n. {x | x IN p_space p /\ max_fn_seq (\i. abs o Z i) n x <= e}’
  >> ‘!n. M n IN events p’ by METIS_TAC [events_max_fn_seq']
- >> Know ‘!n. M (SUC n) SUBSET M n’
- >- (
-  cheat)
- >> DISCH_TAC
+ >> ‘!n. M (SUC n) SUBSET M n’
+       by (rw [Abbr ‘M’, SUBSET_DEF, max_fn_seq_def, max_le])
+ 
  >> simp []
  (* trivial case: A = 0 (conflict with ‘0 < variance p (Z N)’) *)
  >> ‘A = 0 \/ 0 < A’ by PROVE_TAC [le_lt]
@@ -2295,13 +2294,16 @@ Proof
        by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_lt_eq] >> POP_ORW \\
      MATCH_MP_TAC le_div >> rw [le_pow2])
  (* stage work *)
+ >> Know ‘!n. n <= N ==> 0 < prob p (M n)’
+ >- (
+     cheat)
+ >> DISCH_TAC
  >> Q.ABBREV_TAC ‘D = \n. if n = 0 then p_space p else M (n - 1) DIFF M n’
  >> Q.ABBREV_TAC ‘Y = \n x. X n x - expectation p (X n)’ >> fs []
  >> Q.ABBREV_TAC ‘W = \n x. SIGMA (\i. Y i x) (count1 n)’
- >> Q.ABBREV_TAC ‘a = \k. if prob p (M k) = 0 then 0 else
-                          inv (prob p (M k)) *
+ >> Q.ABBREV_TAC ‘a = \k. inv (prob p (M k)) *
                           integral p (\x. W n x * indicator_fn (M k) x)’
- >>
+ >> 
     cheat
 QED
 
