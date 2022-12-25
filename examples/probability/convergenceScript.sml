@@ -1,5 +1,5 @@
 (* ------------------------------------------------------------------------- *)
-(*  Convergence Concepts and Kolmogorov's Inequalities                       *)
+(*  Convergence Concepts and Convergence of Series                           *)
 (*                                                                           *)
 (*  Author: Dr. Chun Tian <binghe.lisp@gmail.com> (2022 - 2023)              *)
 (*          Fondazione Bruno Kessler (FBK), Italy                            *)
@@ -17,7 +17,16 @@ open sigma_algebraTheory extrealTheory measureTheory borelTheory
 (* local theories *)
 open stochastic_processTheory;
 
-(* val _ = intLib.deprecate_int(); *)
+(*
+  "Every serious student of probability theory should read:
+
+   A. N. Kolmogoroff, Uber die Summen durch den Zufall bestimmten unabhangiger
+   Grossen, Math. Annalen 99 (1928), 309-319; Bermerkungen, 102 (1929), 484-488. [8]
+
+   This contains Theorems 5.3.1 to 5.3.3 as well as the original version of Theorem 5.2.3."
+
+  -- Kai Lai Chung, "A Course in Probability Theory." [2, p.149]
+ *)
 
 val _ = new_theory "convergence";
 
@@ -30,7 +39,6 @@ val _ = hide "W";
 (* Convergence Concepts                                                      *)
 (* ========================================================================= *)
 
-(* convergence modes *)
 val _ = Datatype `convergence_mode = almost_everywhere   ('a p_space)
                                    | in_probability      ('a p_space)
                                    | in_lebesgue extreal ('a p_space)
@@ -2403,15 +2411,6 @@ QED
    hypotheses in Theorem 5.3.1 and 5.3.2. This is Kolmogorov’s Inequalities (b) of [5, p.7].
 
    A better estimate ‘(A + e) pow 2’ than ‘(2 * A + 4 * e) pow 2’ has been obtained here.
-
-  "Every serious student of probability theory should read:
-
-   A. N. Kolmogoroff, Uber die Summen durch den Zufall bestimmten unabhangiger
-   Grossen, Math. Annalen 99 (1928), 309-319; Bermerkungen, 102 (1929), 484-488. [8]
-
-   This contains Theorems 5.3.1 to 5.3.3 as well as the original version of Theorem 5.2.3."
-
-  -- Kai Lai Chung, "A Course in Probability Theory." [2, p.149]
  *)
 Theorem Kolmogorov_maximal_inequality_3 :
     !p X A Z.
