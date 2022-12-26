@@ -2226,6 +2226,7 @@ Proof
      CONJ_TAC >- (‘n = SUC (PRE n)’ by rw [] >> METIS_TAC []) \\
      FIRST_X_ASSUM irule >> rw [])
  >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘!n. M (SUC n) SUBSET M n’ K_TAC      
  (* start working on the goal *)
  >> simp []
  (* trivial case: A = 0 (conflict with ‘0 < variance p (Z N)’) *)
@@ -2269,8 +2270,10 @@ Proof
      MATCH_MP_TAC PROB_INCREASING >> art [] \\
      FIRST_X_ASSUM MATCH_MP_TAC >> art [])
  >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘0 < prob p (M N)’ K_TAC
  >> Q.ABBREV_TAC ‘D = \n. if n = 0 then p_space p else M (n - 1) DIFF M n’
- >> Q.ABBREV_TAC ‘Y = \n x. X n x - expectation p (X n)’ >> fs []
+ >> Q.ABBREV_TAC ‘Y = \n x. X n x - expectation p (X n)’
+ >> FULL_SIMP_TAC bool_ss []
  >> Q.ABBREV_TAC ‘S' = \n x. SIGMA (\i. Y i x) (count1 n)’
  >> Q.ABBREV_TAC ‘a = \k. inv (prob p (M k)) *
                           integral p (\x. S' k x * indicator_fn (M k) x)’
