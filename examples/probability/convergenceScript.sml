@@ -1025,49 +1025,6 @@ Proof
  >> Q.EXISTS_TAC ‘0’ >> rw []
 QED
 
-Theorem random_variable_cong :
-    !p X Y A. (!x. x IN p_space p ==> X x = Y x) ==>
-              (random_variable X p A <=> random_variable Y p A)
-Proof
-    rw [random_variable_def]
- >> EQ_TAC >> rw []
- >| [ (* goal 1 (of 2) *)
-      fs [p_space_def, events_def, IN_MEASURABLE, IN_FUNSET, PREIMAGE_def] \\
-      CONJ_TAC >- METIS_TAC [] \\
-      rpt STRIP_TAC \\
-      Suff ‘{x | Y x IN s} INTER m_space p =
-            {x | X x IN s} INTER m_space p’ >- METIS_TAC [] \\
-      rw [Once EXTENSION] >> METIS_TAC [],
-      (* goal 2 (of 2) *)
-      fs [p_space_def, events_def, IN_MEASURABLE, IN_FUNSET, PREIMAGE_def] \\
-      rpt STRIP_TAC \\
-      Suff ‘{x | X x IN s} INTER m_space p =
-            {x | Y x IN s} INTER m_space p’ >- METIS_TAC [] \\
-      rw [Once EXTENSION] >> METIS_TAC [] ]
-QED
-
-Theorem real_random_variable_cong :
-    !p X Y. (!x. x IN p_space p ==> X x = Y x) ==>
-            (real_random_variable X p <=> real_random_variable Y p)
-Proof
-    rw [real_random_variable]
- >> EQ_TAC >> rw []
- >| [ (* goal 1 (of 2) *)
-      fs [p_space_def, events_def] \\
-      MATCH_MP_TAC IN_MEASURABLE_BOREL_EQ \\
-      Q.EXISTS_TAC ‘X’ >> rw [],
-      (* goal 2 (of 2) *)
-      fs [p_space_def, events_def] \\
-      MATCH_MP_TAC IN_MEASURABLE_BOREL_EQ \\
-      Q.EXISTS_TAC ‘Y’ >> rw [] ]
-QED
-
-(*
-Theorem WLLN_uncorrelated :
-
-    has been moved to examples/probability/large_numberTheory with improved statements.
- *)
-
 Theorem converge_AE_alt_shift :
     !D p X Y. (X               --> Y) (almost_everywhere p) <=>
               ((\n. X (n + D)) --> Y) (almost_everywhere p)
@@ -1121,12 +1078,6 @@ Proof
       Q.PAT_X_ASSUM ‘!n. N <= n ==> P’ (MP_TAC o (Q.SPEC ‘n - D’)) \\
       RW_TAC arith_ss [] ]
 QED
-
-(*
-Theorem SLLN_uncorrelated :
-
-    has been moved to large_numberTheory with improved statements.
- *)
 
 (* |- !p X Y. ((\n. X (SUC n)) --> Y) (almost_everywhere p) ==>
               (X               --> Y) (almost_everywhere p)

@@ -1460,6 +1460,43 @@ Proof
  >> METIS_TAC [mul_not_infty]
 QED
 
+Theorem random_variable_cong :
+    !p X Y A. (!x. x IN p_space p ==> X x = Y x) ==>
+              (random_variable X p A <=> random_variable Y p A)
+Proof
+    rw [random_variable_def]
+ >> EQ_TAC >> rw []
+ >| [ (* goal 1 (of 2) *)
+      fs [p_space_def, events_def, IN_MEASURABLE, IN_FUNSET, PREIMAGE_def] \\
+      CONJ_TAC >- METIS_TAC [] \\
+      rpt STRIP_TAC \\
+      Suff ‘{x | Y x IN s} INTER m_space p =
+            {x | X x IN s} INTER m_space p’ >- METIS_TAC [] \\
+      rw [Once EXTENSION] >> METIS_TAC [],
+      (* goal 2 (of 2) *)
+      fs [p_space_def, events_def, IN_MEASURABLE, IN_FUNSET, PREIMAGE_def] \\
+      rpt STRIP_TAC \\
+      Suff ‘{x | X x IN s} INTER m_space p =
+            {x | Y x IN s} INTER m_space p’ >- METIS_TAC [] \\
+      rw [Once EXTENSION] >> METIS_TAC [] ]
+QED
+
+Theorem real_random_variable_cong :
+    !p X Y. (!x. x IN p_space p ==> X x = Y x) ==>
+            (real_random_variable X p <=> real_random_variable Y p)
+Proof
+    rw [real_random_variable]
+ >> EQ_TAC >> rw []
+ >| [ (* goal 1 (of 2) *)
+      fs [p_space_def, events_def] \\
+      MATCH_MP_TAC IN_MEASURABLE_BOREL_EQ \\
+      Q.EXISTS_TAC ‘X’ >> rw [],
+      (* goal 2 (of 2) *)
+      fs [p_space_def, events_def] \\
+      MATCH_MP_TAC IN_MEASURABLE_BOREL_EQ \\
+      Q.EXISTS_TAC ‘Y’ >> rw [] ]
+QED
+
 (* added `integrable p X`, otherwise `expectation p X` is not defined *)
 val finite_expectation1 = store_thm
   ("finite_expectation1",
