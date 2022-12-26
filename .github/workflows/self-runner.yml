@@ -1,6 +1,7 @@
 name: self-runner
 
 on:
+  workflow_dispatch:
   pull_request:
     branches:
       - "develop"
