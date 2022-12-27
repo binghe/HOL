@@ -21,10 +21,8 @@ on:
         description: 'More options'
         required: false
         type: string
-
   pull_request:
     branches: [ develop ]
-
   push:
     branches:
       - "master"
@@ -35,14 +33,6 @@ jobs:
   build:
     runs-on: self-hosted
     steps:
-      -
-        name: Set default inputs
-        id: name
-        run: |
-          USER_INPUT=${{ github.event.inputs.kernel }}
-          echo "kernel=${USER_INPUT:-expk}" >> $GITHUB_OUTPUT
-          USER_INPUT=${{ github.event.inputs.concurrency }}
-          echo "concurrency=${USER_INPUT:-2}" >> $GITHUB_OUTPUT
       -
         name: Checkout
         uses: actions/checkout@v3
@@ -77,6 +67,6 @@ jobs:
           build-args: |
             SML=poly
             # NOTE: the arg value cannot be quoted here:
-            BUILDOPTS=--${{ steps.name.outputs.kernel }} -j${{ steps.name.outputs.concurrency }} ${{ github.event.inputs.more-options }}
+            BUILDOPTS=--${{ github.event.inputs.kernel || 'expk' }} -j${{ sgithub.event.inputs.concurrency || '2' }} ${{ github.event.inputs.more-options }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
