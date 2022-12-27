@@ -23,9 +23,6 @@ sig
   val foldl      : ('key * 'a * 'b -> 'b) -> 'b -> ('key,'a) dict -> 'b
   val map        : ('key * 'a -> 'b) -> ('key,'a) dict -> ('key, 'b) dict
   val transform  : ('a -> 'b) -> ('key,'a) dict -> ('key, 'b) dict
-
-  val fromOrderedList    : ('key * 'key -> order) -> ('key * 'a) list ->
-                           ('key, 'a) dict
 end
 
 (*
