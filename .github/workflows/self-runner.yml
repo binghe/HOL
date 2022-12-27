@@ -3,23 +3,10 @@ name: self-runner
 on:
   workflow_dispatch:
     inputs:
-      kernel:
-        description: 'HOL kernel'
+      options:
+        description: 'Build options'
         required: true
-        default: 'expk'
-        type: choice
-        options:
-        - stdknl
-        - expk
-        - otknl
-      concurrency:
-        description: 'Concurrency'
-        required: true
-        default: '4'
-        type: number
-      other-options:
-        description: 'More options'
-        required: false
+        default: '--expk -j6'
         type: string
 
   pull_request:
@@ -70,6 +57,6 @@ jobs:
           build-args: |
             SML=poly
             # NOTE: the arg value cannot be quoted here:
-            BUILDOPTS=--${{ github.event.inputs.kernel }} -j${{ github.event.inputs.concurrency }} ${{ github.event.inputs.more-options }}
+            BUILDOPTS=${{ github.event.inputs.options }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
