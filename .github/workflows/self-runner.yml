@@ -3,23 +3,6 @@ name: self-runner
 on:
   workflow_dispatch:
     inputs:
-      platform:
-        description: 'Building platform'
-        required: true
-        default: 'linux/amd64'
-        type: choice
-        options:
-        - linux/i386
-        - linux/amd64
-        - linux/arm64/v8
-      dockerfile:
-        description: 'Dockerfile'
-        required: true
-        default: 'Dockerfile'
-        type: choice
-        options:
-        - Dockerfile
-        - Dockerfile.arm64
       kernel:
         description: 'HOL kernel'
         required: true
@@ -82,8 +65,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: developers/docker-ci/${{ github.event.inputs.dockerfile }}
-          platforms: ${{ github.event.inputs.platform }}
+          file: developers/docker-ci/Dockerfile
           push: true
           build-args: |
             SML=poly
