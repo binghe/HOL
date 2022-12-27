@@ -3,18 +3,22 @@ name: self-runner
 on:
   workflow_dispatch:
     inputs:
-      HOLkernel:
+      kernel:
         description: 'HOL kernel'
         required: true
-        default: '--stdknl'
+        default: 'expk'
         type: choice
         options:
-        - '--stdknl'
-        - '--expk'
-        - '--otknl'
-
-      options:
-        description: 'More options'
+        - stdknl
+        - expk
+        - otknl
+      concurrency:
+        description: 'Concurrency'
+        required: true
+        default: '2'
+        type: number
+      other-options:
+        description: 'Other options'
         required: false
         type: string
 
@@ -67,6 +71,6 @@ jobs:
           build-args: |
             SML=poly
             # NOTE: the arg value cannot be quoted here:
-            BUILDOPTS=${{ github.event.inputs.HOLkernel }}
+            BUILDOPTS=--${{ github.event.inputs.kernel }} -j${{ github.event.inputs.concurrency }} ${{ github.event.inputs.other-options }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
