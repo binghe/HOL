@@ -3,10 +3,20 @@ name: self-runner
 on:
   workflow_dispatch:
     inputs:
-      options:
-        description: 'Build options'
+      kernel:
+        description: 'HOL kernel'
         required: true
-        default: '--expk -j6'
+        default: 'stdknl'
+        type: choice
+        options:
+        - stdknl
+        - expk
+        - otknl
+
+      options:
+        description: 'More options'
+        required: true
+        default: '-j6'
         type: string
 
   pull_request:
@@ -57,6 +67,6 @@ jobs:
           build-args: |
             SML=poly
             # NOTE: the arg value cannot be quoted here:
-            BUILDOPTS=${{ github.event.inputs.options }}
+            BUILDOPTS='--${{ github.event.inputs.kernel }} ${{ github.event.inputs.options }}'
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
