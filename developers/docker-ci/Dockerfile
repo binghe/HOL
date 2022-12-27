@@ -8,8 +8,8 @@ FROM binghelisp/hol-dev:latest
 
 # By default (on Docker Hub, which cannot take arguments) we use Moscow ML.
 # On GitHub Actions, PolyML (SML=poly) are used by passing these arguments.
-ARG SML=mosml
-ARG BUILDOPTS=--expk
+ARG SML=poly
+ARG BUILDOPTS
 
 WORKDIR /ML/HOL
 
