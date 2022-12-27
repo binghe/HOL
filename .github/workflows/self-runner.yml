@@ -67,6 +67,6 @@ jobs:
           build-args: |
             SML=poly
             # NOTE: the arg value cannot be quoted here:
-            BUILDOPTS=--${{ github.event.inputs.kernel || 'expk' }} -j${{ sgithub.event.inputs.concurrency || '2' }} ${{ github.event.inputs.more-options }}
+            BUILDOPTS=--${{ github.event.inputs.kernel || 'expk' }} -j${{ github.event.inputs.concurrency || '2' }} ${{ github.event.inputs.more-options }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
