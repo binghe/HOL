@@ -3,7 +3,7 @@ name: self-runner
 on:
   workflow_dispatch:
     inputs:
-      kernel:
+      HOLkernel:
         description: 'HOL kernel'
         required: true
         default: '--stdknl'
@@ -67,6 +67,6 @@ jobs:
           build-args: |
             SML=poly
             # NOTE: the arg value cannot be quoted here:
-            BUILDOPTS=${{ github.event.inputs.kernel }}
+            BUILDOPTS=${{ github.event.inputs.HOLkernel }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
