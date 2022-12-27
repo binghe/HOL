@@ -17,8 +17,8 @@ on:
         required: true
         default: '2'
         type: number
-      other-options:
-        description: 'Other options'
+      more-options:
+        description: 'More options'
         required: false
         type: string
 
@@ -71,6 +71,6 @@ jobs:
           build-args: |
             SML=poly
             # NOTE: the arg value cannot be quoted here:
-            BUILDOPTS=--${{ github.event.inputs.kernel }} -j${{ github.event.inputs.concurrency }} ${{ github.event.inputs.other-options }}
+            BUILDOPTS=--${{ inputs.kernel }} -j${{ inputs.concurrency }} ${{ inputs.more-options }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
