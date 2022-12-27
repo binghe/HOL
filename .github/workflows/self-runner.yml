@@ -2,7 +2,7 @@ name: self-runner
 
 env:
   default_kernel: 'expk'
-  default_concurrency: '4'
+  default_concurrency: '6'
   default_dockerfile: 'Dockerfile'
 
 on:
@@ -11,7 +11,7 @@ on:
       kernel:
         description: 'HOL kernel'
         required: true
-        default: ${{ env.default_kernel }}
+        default: 'stdknl'
         type: choice
         options:
         - stdknl
@@ -20,7 +20,7 @@ on:
       concurrency:
         description: 'Concurrency'
         required: true
-        default: ${{ env.default_concurrency }}
+        default: '4'
         type: number
       more-options:
         description: 'More options'
