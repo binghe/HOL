@@ -2,6 +2,50 @@ name: self-runner
 
 on:
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Building environment'
+        required: true
+        default: 'self-hosted'
+        type: choice
+        options:
+        - self-hosted
+        - ubuntu-latest
+      platform:
+        description: 'Building platform'
+        required: true
+        default: 'linux/amd64'
+        type: choice
+        options:
+        - linux/amd64
+        - linux/arm64/v8
+      dockerfile:
+        description: 'Dockerfile'
+        required: true
+        default: 'Dockerfile'
+        type: choice
+        options:
+        - Dockerfile
+        - Dockerfile.arm64
+      kernel:
+        description: 'HOL kernel'
+        required: true
+        default: 'expk'
+        type: choice
+        options:
+        - stdknl
+        - expk
+        - otknl
+      concurrency:
+        description: 'Concurrency'
+        required: true
+        default: '4'
+        type: number
+      other-options:
+        description: 'More options'
+        required: false
+        type: string
+
   pull_request:
     branches:
       - "develop"
@@ -13,8 +57,8 @@ on:
       - "probability_dev"
 
 jobs:
-  build-stdknl:
-    runs-on: self-hosted
+  build:
+    runs-on: ${{ github.event.inputs.environment }}
     steps:
       -
         name: Checkout
@@ -45,11 +89,12 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: developers/docker-ci/Dockerfile
+          file: developers/docker-ci/${{ github.event.inputs.dockerfile }}
+          platforms: ${{ github.event.inputs.platform }}
           push: true
           build-args: |
             SML=poly
             # NOTE: the arg value cannot be quoted here:
-            BUILDOPTS=--stdknl -j6
+            BUILDOPTS=--${{ github.event.inputs.kernel }} -j${{ github.event.inputs.concurrency }} ${{ github.event.inputs.more-options }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
