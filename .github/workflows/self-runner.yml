@@ -1,12 +1,17 @@
 name: self-runner
 
+env:
+  default_kernel: 'expk'
+  default_concurrency: '4'
+  default_dockerfile: 'Dockerfile'
+
 on:
   workflow_dispatch:
     inputs:
       kernel:
         description: 'HOL kernel'
         required: true
-        default: 'expk'
+        default: ${{ env.default_kernel }}
         type: choice
         options:
         - stdknl
@@ -15,14 +20,16 @@ on:
       concurrency:
         description: 'Concurrency'
         required: true
-        default: '4'
+        default: ${{ env.default_concurrency }}
         type: number
       more-options:
         description: 'More options'
         required: false
         type: string
+
   pull_request:
     branches: [ develop ]
+
   push:
     branches:
       - "master"
@@ -62,11 +69,11 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: developers/docker-ci/Dockerfile
+          file: developers/docker-ci/${{ env.default_dockerfile }}
           push: true
           build-args: |
             SML=poly
             # NOTE: the arg value cannot be quoted here:
-            BUILDOPTS=--${{ github.event.inputs.kernel || 'expk' }} -j${{ github.event.inputs.concurrency || '2' }} ${{ github.event.inputs.more-options }}
+            BUILDOPTS=--${{ github.event.inputs.kernel || env.default_kernel }} -j${{ github.event.inputs.concurrency || env.default_concurrency }} ${{ github.event.inputs.more-options }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
