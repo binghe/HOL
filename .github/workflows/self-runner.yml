@@ -6,17 +6,16 @@ on:
       kernel:
         description: 'HOL kernel'
         required: true
-        default: 'stdknl'
+        default: '--stdknl'
         type: choice
         options:
-        - stdknl
-        - expk
-        - otknl
+        - '--stdknl'
+        - '--expk'
+        - '--otknl'
 
       options:
         description: 'More options'
         required: false
-        default: '-j6'
         type: string
 
   pull_request:
@@ -68,6 +67,6 @@ jobs:
           build-args: |
             SML=poly
             # NOTE: the arg value cannot be quoted here:
-            BUILDOPTS=--${{ github.event.inputs.kernel }} -j2
+            BUILDOPTS=${{ github.event.inputs.kernel }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
