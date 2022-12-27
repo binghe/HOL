@@ -1731,7 +1731,7 @@ end
    rationals such as [x |=> a, y |=> b, 1 |=> c].
  *)
 
-(* Solution 1 (Termtab): *)
+(* Solution 1 (Termtab):
 local open Termtab Arbrat in
 type linear_type = rat table;
 
@@ -1774,6 +1774,7 @@ in
     else fold add m2 m1
 end; (* mergeWithoutZero *)
 end; (* local *)
+ *)
 
 (* Solution 2 (Redblackmap):
 local open Redblackmap Arbrat in
@@ -1818,8 +1819,8 @@ end
 end; (* local *)
  *)
 
-(* Solution 3 (Redblackmap2):
-local open Redblackmap2 Arbrat in
+(* Solution 3 (HOLdict aka Redblackmap2) *)
+local open HOLdict Arbrat in
 type linear_type = (term,rat)dict;
 
 val is_undefined :linear_type -> bool = isEmpty;
@@ -1857,7 +1858,6 @@ in
     mergeWith add (m1,m2)
 end
 end; (* local *)
-*)
 
 (* NOTE: this function is only used in verbose mode *)
 fun dom_set (m :linear_type) :term set =
