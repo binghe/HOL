@@ -1846,7 +1846,8 @@ fun choose (m :linear_type) =
 val listItems = listItems;
 val mapWith = transform;
 
-fun mergeWithoutZero f (m1 :linear_type) (m2 :linear_type) :linear_type = let
+fun mergeWithoutZero f (m1 :linear_type) (m2 :linear_type) :linear_type =
+let
     fun add (SOME x, SOME y) = let val z = Arbrat.+ (x,y) in
                                    if z = Arbrat.zero then NONE
                                    else SOME z

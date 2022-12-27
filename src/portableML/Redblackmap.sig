@@ -89,7 +89,4 @@ end
 
    [transform f m] returns a new map whose entries have form (k, f v),
    where (k, v) is an entry in m.
-
-   [fromOrderedList ordr xs] behaves the same as fromList.
-
 *)
