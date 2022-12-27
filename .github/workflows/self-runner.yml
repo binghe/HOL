@@ -15,7 +15,7 @@ on:
 
       options:
         description: 'More options'
-        required: true
+        required: false
         default: '-j6'
         type: string
 
@@ -23,6 +23,7 @@ on:
     branches:
       - "develop"
       - "probability_dev"
+
   push:
     branches:
       - "master"
@@ -67,6 +68,6 @@ jobs:
           build-args: |
             SML=poly
             # NOTE: the arg value cannot be quoted here:
-            BUILDOPTS='--${{ github.event.inputs.kernel }} ${{ github.event.inputs.options }}'
+            BUILDOPTS=--${{ github.event.inputs.kernel }} -j2
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
