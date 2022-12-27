@@ -15,23 +15,12 @@ on:
       concurrency:
         description: 'Concurrency'
         required: true
-        default: '2'
+        default: '4'
         type: number
       more-options:
         description: 'More options'
         required: false
         type: string
-
-  pull_request:
-    branches:
-      - "develop"
-      - "probability_dev"
-
-  push:
-    branches:
-      - "master"
-      - "develop"
-      - "probability_dev"
 
 jobs:
   build:
