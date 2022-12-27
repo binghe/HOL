@@ -3,10 +3,24 @@ name: docker-arm64
 on:
   workflow_dispatch:
     inputs:
-      buildopts:
-        description: 'Build options'
+      kernel:
+        description: 'HOL kernel'
         required: true
-        default: '--expk -j2'
+        default: 'expk'
+        type: choice
+        options:
+        - stdknl
+        - expk
+        - otknl
+      concurrency:
+        description: 'Concurrency'
+        required: true
+        default: '2'
+        type: number
+      other-options:
+        description: 'Other options'
+        required: false
+        type: string
 jobs:
   build-expk:
     runs-on: ubuntu-latest
@@ -46,7 +60,7 @@ jobs:
           build-args: |
             SML=poly
             # NOTE: the arg value cannot be quoted here:
-            BUILDOPTS=${{ github.event.inputs.buildopts }}
+            BUILDOPTS=--${{ github.event.inputs.kernel }} -j${{ github.event.inputs.concurrency }} ${{ github.event.inputs.other-options }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
