@@ -3,20 +3,13 @@ name: self-runner
 on:
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'Building environment'
-        required: true
-        default: 'self-hosted'
-        type: choice
-        options:
-        - self-hosted
-        - ubuntu-latest
       platform:
         description: 'Building platform'
         required: true
         default: 'linux/amd64'
         type: choice
         options:
+        - linux/i386
         - linux/amd64
         - linux/arm64/v8
       dockerfile:
@@ -58,7 +51,7 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ github.event.inputs.environment }}
+    runs-on: self-hosted
     steps:
       -
         name: Checkout
