@@ -22,6 +22,15 @@ on:
         required: false
         type: string
 
+  pull_request:
+    branches: [ develop ]
+
+  push:
+    branches:
+      - "master"
+      - "develop"
+      - "probability_dev"
+
 jobs:
   build:
     runs-on: self-hosted
