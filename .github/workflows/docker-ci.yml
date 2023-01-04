@@ -1,14 +1,12 @@
 name: docker-ci
 
 on:
-  workflow_dispatch:
   pull_request:
     branches: [ develop ]
   push:
     branches:
       - "master"
       - "develop"
-      - "probability_dev"
 
 jobs:
   build-stdknl:
@@ -47,8 +45,6 @@ jobs:
             BUILDOPTS=--stdknl -j2
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
   build-expk:
     runs-on: ubuntu-latest
@@ -86,5 +82,3 @@ jobs:
             BUILDOPTS=--expk -j2
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max

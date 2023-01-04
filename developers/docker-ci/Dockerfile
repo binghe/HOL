@@ -6,10 +6,10 @@
 # This "base" image is described in "base/Dockerfile"
 FROM binghelisp/hol-dev:latest
 
-# By default (on Docker Hub, which cannot take arguments) we use Moscow ML.
-# On GitHub Actions, PolyML (SML=poly) are used by passing these arguments.
+# GitHub Actions' hardware specification for Linux virtual machines: 2-core CPU (x86_64)
+# By default we use 4 cores in other building environments (e.g. Docker Hub autobuilds)
+ARG BUILDOPTS="--expk -j4"
 ARG SML=poly
-ARG BUILDOPTS
 
 WORKDIR /ML/HOL
 
@@ -17,8 +17,8 @@ WORKDIR /ML/HOL
 COPY --link . .
 
 # building HOL
-RUN $SML < tools/smart-configure.sml 
-RUN bin/build $BUILDOPTS
+RUN ${SML} < tools/smart-configure.sml 
+RUN bin/build ${BUILDOPTS}
 
 # This can be overrided by "docker run <command>"
 CMD ["/ML/HOL/bin/hol"]
