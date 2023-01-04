@@ -8,8 +8,8 @@
 open HolKernel Parse boolLib bossLib;
 
 open arithmeticTheory combinTheory pred_setTheory pairTheory boolTheory
-	 PairedLambda pred_setLib fcpTheory fcpLib Q tautLib numLib realTheory
-	 realLib InductiveDefinition;
+         PairedLambda pred_setLib fcpTheory fcpLib Q tautLib numLib realTheory
+         realLib InductiveDefinition;
 
 open hurdUtils permutationTheory iterateTheory vectorTheory matrixTheory;
 
@@ -31,8 +31,8 @@ End
 
 Definition ALG_COMP_DEF :
   (ALG_COMP:real['n]['n]-> num -> num -> real) A i j =
-		DET ((FCP k l. if k = i then (if l = j then &1 else &0) else
-				(if l = j then &0 else A ' k ' l)):real['n]['n])
+                DET ((FCP k l. if k = i then (if l = j then &1 else &0) else
+                                (if l = j then &0 else A ' k ' l)):real['n]['n])
 End
 
 (* ------------------------------------------------------------------------- *)
@@ -107,8 +107,8 @@ val DET_LOWERTRIANGULAR = prove
         ==> (DET(A) = PRODUCT (count (dimindex(:'n))) (\i. A ' i ' i))`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[DET_DEF] THEN MATCH_MP_TAC EQ_TRANS THEN
   EXISTS_TAC `SUM {I}
-     (\p. SIGN p * 
-          PRODUCT (count (dimindex(:'n))) 
+     (\p. SIGN p *
+          PRODUCT (count (dimindex(:'n)))
                 (\i. (A:real['n]['n]) ' i ' (p i)))` THEN
   CONJ_TAC THENL
    [ALL_TAC,
@@ -128,8 +128,8 @@ val DET_UPPERTRIANGULAR = prove
         ==> (DET(A) = PRODUCT (count (dimindex(:'n))) (\i. A ' i ' i))`,
   REPEAT STRIP_TAC THEN REWRITE_TAC[DET_DEF] THEN MATCH_MP_TAC EQ_TRANS THEN
   EXISTS_TAC `SUM {I}
-     (\p. SIGN p * 
-          PRODUCT (count (dimindex(:'n))) 
+     (\p. SIGN p *
+          PRODUCT (count (dimindex(:'n)))
                 (\i. (A:real['n]['n]) ' i ' (p i)))` THEN
   CONJ_TAC THENL
    [ALL_TAC,
@@ -371,7 +371,7 @@ val DET_LINEAR_ROW_VSUM = prove
   SIMP_TAC bool_ss[VSUM_CLAUSES, SUM_CLAUSES, DET_ROW_ADD] THEN
   REPEAT STRIP_TAC THEN MATCH_MP_TAC DET_ZERO_ROW THEN EXISTS_TAC `k:num` THEN
   SRW_TAC[FCP_ss][ROW_DEF, VEC_0_COMPONENT]);
-  
+
 
 val BOUNDED_FUNCTIONS_BIJECTIONS_1 = prove
  (`!p. p IN {(y,g) | y IN s /\
@@ -403,9 +403,9 @@ val BOUNDED_FUNCTIONS_BIJECTIONS_2 = prove
   X_GEN_TAC `h:num->num` THEN REPEAT STRIP_TAC THENL
    [MAP_EVERY EXISTS_TAC[`(h k):num`,`(\i. if i = k then i else h i):num->num`] THEN
     ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THENL
-	  [PROVE_TAC[LT],
-	   BETA_TAC THEN PROVE_TAC[prove(`i < k ==> i< SUC k /\ ~(i = k)`, ARITH_TAC)],
-	   BETA_TAC THEN PROVE_TAC[prove(`i< SUC k /\ ~(i = k) ==> i < k`, ARITH_TAC)]],
+          [PROVE_TAC[LT],
+           BETA_TAC THEN PROVE_TAC[prove(`i < k ==> i< SUC k /\ ~(i = k)`, ARITH_TAC)],
+           BETA_TAC THEN PROVE_TAC[prove(`i< SUC k /\ ~(i = k) ==> i < k`, ARITH_TAC)]],
     REWRITE_TAC[FUN_EQ_THM] THEN BETA_TAC THEN PROVE_TAC[]]);
 
 val FINITE_BOUNDED_FUNCTIONS = prove
@@ -427,7 +427,7 @@ val FINITE_BOUNDED_FUNCTIONS = prove
   X_GEN_TAC `h:num->num` THEN EQ_TAC THENL
    [CONV_TAC (DEPTH_CONV SET_SPEC_CONV) THEN STRIP_TAC THEN
     ASM_SIMP_TAC bool_ss[] THEN PROVE_TAC[LT],
-	ALL_TAC] THEN
+        ALL_TAC] THEN
   CONV_TAC (DEPTH_CONV SET_SPEC_CONV) THEN DISCH_TAC THEN EXISTS_TAC
     `(\h. h(k),(\i. if i = k then i else h(i))) h` THEN
   SIMP_TAC bool_ss[FST, SND] THEN REPEAT STRIP_TAC THEN
@@ -501,8 +501,8 @@ val DET_ROWS_MUL = prove
   X_GEN_TAC `p:num->num` THEN
   CONV_TAC (DEPTH_CONV SET_SPEC_CONV) THEN DISCH_TAC THEN
   MATCH_MP_TAC(prove
-     (`(b:real = c * d) ==> (s * b = c * (s * d))`, 
-	 STRIP_TAC THEN ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC)) THEN
+     (`(b:real = c * d) ==> (s * b = c * (s * d))`,
+         STRIP_TAC THEN ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC)) THEN
   SIMP_TAC bool_ss[GSYM PRODUCT_MUL_COUNT] THEN
   MATCH_MP_TAC PRODUCT_EQ_COUNT THEN
   SRW_TAC[FCP_ss][VECTOR_MUL_COMPONENT, PERMUTES_IN_COUNT]);
@@ -518,7 +518,7 @@ val DET_MUL = prove
    [SIMP_TAC bool_ss[DET_ROWS_MUL] THEN
     MATCH_MP_TAC SUM_SUPERSET THEN
     BETA_TAC THEN REWRITE_TAC[SUBSET_DEF] THEN
-	CONV_TAC (DEPTH_CONV SET_SPEC_CONV) THEN CONJ_TAC THENL
+        CONV_TAC (DEPTH_CONV SET_SPEC_CONV) THEN CONJ_TAC THENL
      [PROVE_TAC[PERMUTES_DEF, IN_COUNT], ALL_TAC] THEN
     X_GEN_TAC `f:num->num` THEN REWRITE_TAC[PERMUTES_DEF, IN_COUNT] THEN
     DISCH_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC) THEN
@@ -651,7 +651,7 @@ val CRAMER_LEMMA_TRANSP = prove
     (x ' k - &1) * ROW k A + (ROW k A + s)``] THEN
   ASM_SIMP_TAC bool_ss[Once DET_ROW_ADD, DET_ROW_MUL] THEN
   MATCH_MP_TAC(prove(`(d:real = d') /\ (e = d') ==> ((c - &1) * d + e = c * d')`,
-					STRIP_TAC THEN ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC)) THEN
+                                        STRIP_TAC THEN ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC)) THEN
   CONJ_TAC THENL
    [AP_TERM_TAC THEN SRW_TAC[FCP_ss][] THEN
     COND_CASES_TAC THEN SRW_TAC[FCP_ss][ROW_DEF],
@@ -673,7 +673,7 @@ val CRAMER_LEMMA = prove
   REWRITE_TAC[DET_TRANSP] THEN DISCH_THEN SUBST1_TAC THEN
   GEN_REWRITE_TAC LAND_CONV empty_rewrites [GSYM DET_TRANSP] THEN AP_TERM_TAC THEN
   SRW_TAC[FCP_ss][TRANSP_DEF, MATRIX_MUL_VSUM, ROW_DEF, COLUMN_DEF,
-				  COND_COMPONENT, VECTOR_MUL_COMPONENT, VSUM_COMPONENT] THEN
+                                  COND_COMPONENT, VECTOR_MUL_COMPONENT, VSUM_COMPONENT] THEN
   COND_CASES_TAC THEN REWRITE_TAC[] THEN MATCH_MP_TAC SUM_EQ_COUNT THEN
   BETA_TAC THEN SRW_TAC[FCP_ss][]);
 
@@ -692,21 +692,21 @@ val CRAMER = prove
     PROVE_TAC[invertible_def, MATRIX_VECTOR_MUL_ASSOC, MATRIX_VECTOR_MUL_LID],
     GEN_TAC THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
     ASM_SIMP_TAC bool_ss[CART_EQ, CRAMER_LEMMA, FCP_BETA, prove(
-		`~(z = &0) ==> ((x = y / z) <=> (x * z = y))`,
-		STRIP_TAC THEN EQ_TAC THEN RW_TAC bool_ss[real_div] THEN
-	RW_TAC bool_ss[GSYM REAL_MUL_ASSOC, REAL_MUL_LINV, REAL_MUL_RINV,REAL_MUL_RID])]]);
+                `~(z = &0) ==> ((x = y / z) <=> (x * z = y))`,
+                STRIP_TAC THEN EQ_TAC THEN RW_TAC bool_ss[real_div] THEN
+        RW_TAC bool_ss[GSYM REAL_MUL_ASSOC, REAL_MUL_LINV, REAL_MUL_RINV,REAL_MUL_RID])]]);
 
 val LAPLACE_ROW = prove
  (`!A:real['n]['n] i.
       i < dimindex (:'n) ==>
-	  (DET(A) = SUM (count(dimindex (:'n))) (\j. (A ' i ' j ) * (ALG_COMP A i j)))`,
+          (DET(A) = SUM (count(dimindex (:'n))) (\j. (A ' i ' j ) * (ALG_COMP A i j)))`,
   REPEAT GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[ALG_COMP_DEF, DET_DEF] THEN
   REWRITE_TAC[GSYM SUM_LMUL] THEN
   ASM_SIMP_TAC bool_ss[FINITE_PERMUTATIONS, FINITE_COUNT, Once SUM_SWAP] THEN
-  MATCH_MP_TAC SUM_EQ THEN CONV_TAC (DEPTH_CONV SET_SPEC_CONV) THEN BETA_TAC THEN 
+  MATCH_MP_TAC SUM_EQ THEN CONV_TAC (DEPTH_CONV SET_SPEC_CONV) THEN BETA_TAC THEN
   ONCE_REWRITE_TAC[REAL_ARITH ``!a b c:real. a * (b * c) = b * (a * c)``] THEN
   SIMP_TAC bool_ss[SUM_LMUL] THEN REWRITE_TAC[SIGN_NZ, REAL_EQ_LMUL] THEN
-  X_GEN_TAC `p :num -> num` THEN DISCH_TAC THEN MATCH_MP_TAC EQ_TRANS THEN  
+  X_GEN_TAC `p :num -> num` THEN DISCH_TAC THEN MATCH_MP_TAC EQ_TRANS THEN
   EXISTS_TAC `SUM (count (dimindex (:'n)))
     (\j. if j = p i then PRODUCT (count (dimindex (:'n))) (\i. A ' i ' (p i)) else &0)` THEN
   CONJ_TAC THENL[
@@ -724,8 +724,8 @@ val LAPLACE_ROW = prove
             &0
           else
             A ' k ' l):real['n]['n]) ' i' ' (p i'))` THEN
-	CONJ_TAC THENL[
-	  SIMP_TAC bool_ss[GSYM PRODUCT_MUL_COUNT] THEN
+        CONJ_TAC THENL[
+          SIMP_TAC bool_ss[GSYM PRODUCT_MUL_COUNT] THEN
       SRW_TAC[FCP_ss][PERMUTES_IN_COUNT] THEN MATCH_MP_TAC PRODUCT_EQ_COUNT THEN
       SRW_TAC[FCP_ss][PERMUTES_IN_COUNT] THEN PROVE_TAC[PERMUTES_INJECTIVE], ALL_TAC] THEN
     REWRITE_TAC[REAL_EQ_RMUL] THEN DISJ2_TAC THEN
@@ -736,7 +736,7 @@ val LAPLACE_ROW = prove
 val LAPLACE_COLUMN = prove
  (`!A:real['n]['n] j.
       j < dimindex (:'n) ==>
-	  (DET(A) = SUM (count(dimindex (:'n))) (\i. (A ' i ' j ) * (ALG_COMP A i j)))`,  
+          (DET(A) = SUM (count(dimindex (:'n))) (\i. (A ' i ' j ) * (ALG_COMP A i j)))`,
   REPEAT STRIP_TAC THEN MATCH_MP_TAC EQ_TRANS THEN
   EXISTS_TAC
     `SUM (count (dimindex (:'n))) (\i. (TRANSP A) ' j ' i * ALG_COMP (TRANSP A) j i)` THEN
@@ -747,35 +747,35 @@ val LAPLACE_COLUMN = prove
 
 val ADJOINT_MATRIX_DEF = Define
  `(ADJOINT_MATRIX:real['n]['n]-> real['n]['n]) A =
-		TRANSP(FCP i j. ALG_COMP A i j)`;
-	
+                TRANSP(FCP i j. ALG_COMP A i j)`;
+
 val LAPLACE_ROW_COROLLARY = prove
  (`!A:real['n]['n].
     !i j. i < dimindex(:'n) /\ j < dimindex(:'n) /\ ~(i = j) ==>
-	(SUM (count (dimindex(:'n))) (\k. A ' i ' k * ALG_COMP A j k) = &0)`,
+        (SUM (count (dimindex(:'n))) (\k. A ' i ' k * ALG_COMP A j k) = &0)`,
 REPEAT STRIP_TAC THEN MATCH_MP_TAC EQ_TRANS THEN
 EXISTS_TAC
- `SUM (count (dimindex(:'n))) 
-	(\k. ((FCP k. if k = j then ROW i A else ROW k A ):real['n]['n])' j ' k *
-		ALG_COMP ((FCP k. if k = j then ROW i A else ROW k A ):real['n]['n]) j k)` THEN
+ `SUM (count (dimindex(:'n)))
+        (\k. ((FCP k. if k = j then ROW i A else ROW k A ):real['n]['n])' j ' k *
+                ALG_COMP ((FCP k. if k = j then ROW i A else ROW k A ):real['n]['n]) j k)` THEN
 CONJ_TAC THENL[
-	MATCH_MP_TAC SUM_EQ THEN SRW_TAC[FCP_ss][ROW_DEF, ALG_COMP_DEF] THEN
-	DISJ2_TAC THEN AP_TERM_TAC THEN SRW_TAC[FCP_ss][], ALL_TAC] THEN
+        MATCH_MP_TAC SUM_EQ THEN SRW_TAC[FCP_ss][ROW_DEF, ALG_COMP_DEF] THEN
+        DISJ2_TAC THEN AP_TERM_TAC THEN SRW_TAC[FCP_ss][], ALL_TAC] THEN
 ASM_SIMP_TAC bool_ss[GSYM LAPLACE_ROW] THEN MATCH_MP_TAC DET_IDENTICAL_ROWS THEN
 MAP_EVERY EXISTS_TAC [`i`, `j`] THEN SRW_TAC[FCP_ss][ROW_DEF]);
 
 val LAPLACE_COLUMN_COROLLARY = prove
  (`!A:real['n]['n].
     !i j. i < dimindex(:'n) /\ j < dimindex(:'n) /\ ~(i = j) ==>
-	(SUM (count (dimindex(:'n))) (\k. A ' k ' i * ALG_COMP A k j) = &0)`,
+        (SUM (count (dimindex(:'n))) (\k. A ' k ' i * ALG_COMP A k j) = &0)`,
 REPEAT STRIP_TAC THEN MATCH_MP_TAC EQ_TRANS THEN
 EXISTS_TAC
- `SUM (count (dimindex(:'n))) 
-	(\k. ((FCP k l. if l = j then A ' k ' i else A ' k ' l ):real['n]['n])' k ' j *
-		ALG_COMP ((FCP k l. if l = j then A ' k ' i else A ' k ' l ):real['n]['n]) k j)` THEN
+ `SUM (count (dimindex(:'n)))
+        (\k. ((FCP k l. if l = j then A ' k ' i else A ' k ' l ):real['n]['n])' k ' j *
+                ALG_COMP ((FCP k l. if l = j then A ' k ' i else A ' k ' l ):real['n]['n]) k j)` THEN
 CONJ_TAC THENL[
-	MATCH_MP_TAC SUM_EQ THEN SRW_TAC[FCP_ss][COLUMN_DEF, ALG_COMP_DEF] THEN
-	DISJ2_TAC THEN AP_TERM_TAC THEN SRW_TAC[FCP_ss][], ALL_TAC] THEN
+        MATCH_MP_TAC SUM_EQ THEN SRW_TAC[FCP_ss][COLUMN_DEF, ALG_COMP_DEF] THEN
+        DISJ2_TAC THEN AP_TERM_TAC THEN SRW_TAC[FCP_ss][], ALL_TAC] THEN
 ASM_SIMP_TAC bool_ss[GSYM LAPLACE_COLUMN] THEN MATCH_MP_TAC DET_IDENTICAL_COLUMNS THEN
 MAP_EVERY EXISTS_TAC [`i`, `j`] THEN SRW_TAC[FCP_ss][COLUMN_DEF]);
 
@@ -790,7 +790,7 @@ val LAPLACE_COROLLARY_LMUL = prove
     SRW_TAC[FCP_ss][TRANSP_DEF] THEN MATCH_MP_TAC SUM_EQ, ALL_TAC] THEN
   SRW_TAC[FCP_ss][] THEN ASM_CASES_TAC `i = i'` THEN
   ASM_SIMP_TAC bool_ss[GSYM LAPLACE_ROW, LAPLACE_ROW_COROLLARY, MATRIX_CMUL_COMPONENT,
-					   MAT_COMPONENT, REAL_MUL_RID, REAL_MUL_RZERO]);
+                                           MAT_COMPONENT, REAL_MUL_RID, REAL_MUL_RZERO]);
 
 val LAPLACE_COROLLARY_RMUL = prove
  (`!A:real['n]['n].
@@ -802,8 +802,8 @@ val LAPLACE_COROLLARY_RMUL = prove
     SRW_TAC[FCP_ss][TRANSP_DEF] THEN MATCH_MP_TAC SUM_EQ, ALL_TAC] THEN
   SRW_TAC[FCP_ss][] THEN ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN ASM_CASES_TAC `i = i'` THEN
   ASM_SIMP_TAC bool_ss[GSYM LAPLACE_COLUMN, LAPLACE_COLUMN_COROLLARY, MATRIX_CMUL_COMPONENT,
-					   MAT_COMPONENT, REAL_MUL_RID, REAL_MUL_RZERO]);
-					   
+                                           MAT_COMPONENT, REAL_MUL_RID, REAL_MUL_RZERO]);
+
 val MATRIX_INV_EXPLICIT = prove
  (`!A:real['n]['n].
     invertible A ==> (MATRIX_INV A = inv(DET A) * ADJOINT_MATRIX A)`,
@@ -812,7 +812,7 @@ val MATRIX_INV_EXPLICIT = prove
   ASM_SIMP_TAC bool_ss[MATRIX_INV, LAPLACE_COROLLARY_LMUL, MATRIX_VECTOR_MUL_ASSOC,
                        MATRIX_MUL_RMUL, MATRIX_CMUL_ASSOC] THEN
   MP_TAC(ISPEC `A:real['n]['n]` INVERTIBLE_DET_NZ) THEN
-  ASM_SIMP_TAC bool_ss[REAL_MUL_LINV, MATRIX_CMUL_LID]);					   
+  ASM_SIMP_TAC bool_ss[REAL_MUL_LINV, MATRIX_CMUL_LID]);
 
 (* ------------------------------------------------------------------------- *)
 (* Orthogonality of a transformation and matrix.                             *)
