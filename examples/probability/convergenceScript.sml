@@ -2278,56 +2278,51 @@ Proof
  >> DISCH_TAC
  >> Q.ABBREV_TAC ‘Y = \n x. X n x - expectation p (X n)’
  >> FULL_SIMP_TAC bool_ss []
- >> ‘measure_space p /\ measure p (m_space p) < PosInf’
-      by (fs [prob_space_def, p_space_def, extreal_of_num_def, lt_infty])
- >> Know ‘!n. integrable p (Y n)’
- >- (RW_TAC std_ss [Abbr ‘Y’] \\
-     HO_MATCH_MP_TAC integrable_sub' >> art [] \\
-     CONJ_TAC >- METIS_TAC [] \\
-    ‘?r. expectation p (X n) = Normal r’
-       by METIS_TAC [extreal_cases, integrable_imp_finite_expectation] >> POP_ORW \\
-     METIS_TAC [integrable_const])
+ >> Know ‘!n. real_random_variable (Y n) p’
+ >- (rw [Abbr ‘Y’] \\
+     HO_MATCH_MP_TAC real_random_variable_sub \\
+    ‘(\x. X n x) = X n’ by METIS_TAC [] >> rw [] \\
+     MATCH_MP_TAC real_random_variable_const >> art [] \\
+     METIS_TAC [integrable_imp_finite_expectation])
  >> DISCH_TAC
- >> Know ‘!n x. x IN p_space p ==> Y n x <> NegInf /\ Y n x <> PosInf’
- >- (NTAC 3 STRIP_TAC >> simp [Abbr ‘Y’] \\
-     Q.PAT_X_ASSUM ‘!n. real_random_variable (X n) p’
-       (STRIP_ASSUME_TAC o (CONV_RULE FORALL_AND_CONV) o
-        (REWRITE_RULE [real_random_variable_def])) \\
-    ‘?r. X n x = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
-    ‘?z. expectation p (X n) = Normal z’
-       by METIS_TAC [extreal_cases, integrable_imp_finite_expectation] \\
-     rw [extreal_sub_def, extreal_not_infty])
+ >> Know ‘!n. finite_second_moments p (Y n)’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     MATCH_MP_TAC bounded_imp_finite_second_moments \\
+     FULL_SIMP_TAC std_ss [real_random_variable_def] \\
+    ‘?r. A = Normal r’ by METIS_TAC [extreal_cases] \\
+     Q.EXISTS_TAC ‘r’ >> rw [])
  >> DISCH_TAC
+ >> ‘!n. integrable p (Y n)’ by PROVE_TAC [finite_second_moments_imp_integrable]
+ >> ‘!n x. x IN p_space p ==> Y n x <> NegInf /\ Y n x <> PosInf’
+       by FULL_SIMP_TAC std_ss [real_random_variable_def]
  >> Q.ABBREV_TAC ‘W = \n x. SIGMA (\i. Y i x) (count1 n)’
- >> Know ‘!n. integrable p (W n)’
- >- (rw [Abbr ‘W’] \\
-     MATCH_MP_TAC integrable_sum' >> rw [])
+ >> Know ‘!n. finite_second_moments p (W n)’
+ >- (rw [Abbr ‘W’] >> MATCH_MP_TAC finite_second_moments_sum >> rw [])
+ >> DISCH_TAC
+ >> Know ‘!n. real_random_variable (W n) p’
+ >- (rw [Abbr ‘W’] >> MATCH_MP_TAC real_random_variable_sum >> rw [])
+ >> DISCH_TAC
+ >> ‘!n. integrable p (W n)’ by PROVE_TAC [finite_second_moments_imp_integrable]
+ >> Know ‘!k. integrable p (\x. W k x * indicator_fn (M k) x)’
+ >- (Q.X_GEN_TAC ‘k’ \\
+     MATCH_MP_TAC integrable_mul_indicator >> fs [events_def, prob_space_def])
  >> DISCH_TAC
  >> Q.ABBREV_TAC ‘a = \k. inv (prob p (M k)) *
                           integral p (\x. W k x * indicator_fn (M k) x)’
-
- >> Know ‘!k. integrable p (\x. W k x * indicator_fn (M k) x)’
- >- (Q.X_GEN_TAC ‘k’ \\
-     MATCH_MP_TAC integrable_mul_indicator >> fs [events_def, Abbr ‘W’] \\
-     MATCH_MP_TAC integrable_sum' >> rw [])
- >> DISCH_TAC
  >> Know ‘!k. k <= N ==> a k <> NegInf /\ a k <> PosInf’
  >- (Q.X_GEN_TAC ‘k’ >> DISCH_TAC >> simp [Abbr ‘a’] \\
     ‘?r. integral p (\x. W k x * indicator_fn (M k) x) = Normal r’
-       by METIS_TAC [integrable_normal_integral] >> POP_ORW \\
+       by METIS_TAC [integrable_normal_integral, prob_space_def] >> POP_ORW \\
     ‘?z. 0 < z /\ prob p (M k) = Normal z’
        by METIS_TAC [prob_normal, extreal_lt_eq, extreal_of_num_def] >> POP_ORW \\
     ‘z <> 0’ by PROVE_TAC [REAL_LT_IMP_NE] \\
      rw [extreal_inv_eq, extreal_mul_def, extreal_not_infty])
  >> DISCH_TAC
- >> Know ‘!n x. x IN p_space p ==> W n x <> NegInf /\ W n x <> PosInf’
- >- (NTAC 3 STRIP_TAC >> simp [Abbr ‘W’] >> CONJ_TAC >| (* 2 subgoals *)
-     [ (* goal 1 (of 2) *)
-       MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_NEGINF >> rw [],
-       (* goal 2 (of 2) *)
-       MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_POSINF >> rw [] ])
- >> DISCH_TAC
- (* key result of ‘a’ *)
+ >> ‘!n x. x IN p_space p ==> W n x <> NegInf /\ W n x <> PosInf’
+       by PROVE_TAC [real_random_variable_def]
+ >> ‘measure_space p /\ measure p (m_space p) < PosInf’
+      by (fs [prob_space_def, p_space_def, extreal_of_num_def, lt_infty])
+ (* A key result of ‘a’ *)
  >> Know ‘!k. k <= N ==>
               expectation p (\x. (W k x - a k) * indicator_fn (M k) x) = 0’
  >- (Q.X_GEN_TAC ‘k’ >> DISCH_TAC \\
