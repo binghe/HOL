@@ -63,7 +63,7 @@ hol4-large-numbers.art: hol4-large-numbers.thy hol4-large-numbers-unint.art \
 	opentheory info --article -o $@ $<
 
 # With the rebuilt OpenTheory/Mlton (-default-type intinf), this step only takes
-# 2 minutes (otherwise 2 hours with OpenTheory/PolyML)
+# 2 minutes (it was 2 hours when using OpenTheory built by PolyML).
 
 # "&> file (aka >& file) is not part of the official POSIX /bin/sh spec, but has
 # been added to many Bourne shells as a convenience extension. (which originally
