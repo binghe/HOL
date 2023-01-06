@@ -1060,7 +1060,7 @@ Proof
     RW_TAC std_ss [indep_vars_def, IN_DFUNSET, o_DEF]
  (* rewrite only the goal *)
  >> RW_TAC std_ss [indep_events_def] (* this asserts N *)
- >> 
+ >>
     cheat
 QED
 *)
@@ -1237,7 +1237,7 @@ Proof
      REWRITE_TAC [SIGMA_SUBSET_SUBSETS])
  (* stage work *)
  >> RW_TAC std_ss [indep_vars_def, IN_DFUNSET, subsets_def]
- >> 
+ >>
     cheat
 QED
  *)

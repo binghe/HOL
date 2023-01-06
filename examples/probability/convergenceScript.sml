@@ -2226,7 +2226,7 @@ Proof
      CONJ_TAC >- (‘n = SUC (PRE n)’ by rw [] >> METIS_TAC []) \\
      FIRST_X_ASSUM irule >> rw [])
  >> DISCH_TAC
- >> Q.PAT_X_ASSUM ‘!n. M (SUC n) SUBSET M n’ K_TAC      
+ >> Q.PAT_X_ASSUM ‘!n. M (SUC n) SUBSET M n’ K_TAC
  (* start working on the goal *)
  >> simp []
  (* trivial case: A = 0 (conflict with ‘0 < variance p (Z N)’) *)
@@ -2363,7 +2363,7 @@ Proof
  >> DISCH_TAC
  (* applying pos_fn_integral_disjoint_sets *)
  >> Q.ABBREV_TAC ‘Q = \n x. (W n x - a n) pow 2’
- >> Know ‘!k. k < N ==> pos_fn_integral p (\x. Q (SUC k) x * indicator_fn (M k) x) = 
+ >> Know ‘!k. k < N ==> pos_fn_integral p (\x. Q (SUC k) x * indicator_fn (M k) x) =
                         pos_fn_integral p (\x. Q (SUC k) x * indicator_fn (M (SUC k)) x) +
                         pos_fn_integral p (\x. Q (SUC k) x * indicator_fn (D (SUC k)) x)’
  >- (rpt STRIP_TAC \\
@@ -2397,7 +2397,7 @@ Proof
     ‘?z5. a (SUC k) = Normal z5’   by METIS_TAC [LESS_EQ, extreal_cases] >> POP_ORW \\
      rw [extreal_add_def, extreal_sub_def] >> REAL_ARITH_TAC)
  >> DISCH_TAC
- >> 
+ >>
     cheat
 QED
 

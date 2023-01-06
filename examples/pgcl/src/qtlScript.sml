@@ -727,7 +727,7 @@ val walk_up_eqn = store_thm
        ++ RW_TAC int_ss [Max_def, npred_nstate, INT_ADD_RID_UNIQ]
        ++ RW_TAC std_ss [sem_max1_0])
 *)
-       
+
 
 
 val _ = export_theory();

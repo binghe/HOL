@@ -288,7 +288,7 @@ Proof
 QED
 
 Theorem graphs_exist[local]:
-  ∃g. wfgraph (g :('a,'di,'ec,'el,'nf,'nl,'sl) graphrep) 
+  ∃g. wfgraph (g :('a,'di,'ec,'el,'nf,'nl,'sl) graphrep)
 Proof
   Q.REFINE_EXISTS_TAC ‘<| nodes := Ns;
                           edges := {};
