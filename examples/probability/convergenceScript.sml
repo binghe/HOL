@@ -2429,7 +2429,7 @@ QED
    NOTE: when ‘variance p (Z N) = 0’, using only Kolmogorov_maximal_inequality one can
          get ‘prob p E <= 0’, and thus ‘prob p E = 0’.
  *)
-Theorem Kolmogorov_maximal_inequality_combined :
+Theorem Kolmogorov_maximal_inequality :
     !p X A Z.
        prob_space p /\ (!n. real_random_variable (X n) p) /\
        indep_vars p X (\n. Borel) UNIV /\
