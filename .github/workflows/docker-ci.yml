@@ -1,15 +1,12 @@
 name: docker-ci
 
 on:
-  pull_request:
-    branches:
-      - "develop"
-      - "probability_dev"
   push:
     branches:
       - "master"
       - "develop"
       - "probability_dev"
+
 env:
   USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
   PASSWORD: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
