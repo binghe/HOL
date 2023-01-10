@@ -2,7 +2,7 @@
 #
 # HOL4 building environment (Docker), base image
 #
-# e.g. docker buildx build --platform linux/amd64,linux/arm64 -t binghelisp/hol-dev .
+# e.g. docker buildx build --platform linux/i386,linux/amd64,linux/arm64 -t binghelisp/hol-dev .
 
 # GitHub Actions recommends Debian-based systems as base images
 FROM --platform=$TARGETPLATFORM debian:stable
