@@ -5,6 +5,7 @@ env:
   default_concurrency: '2'
   default_dockerfile: 'Dockerfile'
   default_platform: 'linux/amd64'
+
 on:
   workflow_dispatch:
     inputs:
@@ -23,7 +24,7 @@ on:
         default: 'linux/amd64'
         type: choice
         options:
-        - linux/i386
+        - linux/386
         - linux/amd64
         - linux/arm64
       concurrency:
@@ -72,8 +73,9 @@ jobs:
           file: developers/docker-ci/${{ env.default_dockerfile }}
           push: true
           build-args: |
-            SML=poly
             TARGETPLATFORM=${{ github.event.inputs.platform || env.default_platform }}
+            # NOTE: mosml is too slow to be chosen here
+            SML=poly
             # NOTE: the arg value cannot be quoted here:
             BUILDOPTS=--${{ github.event.inputs.kernel || env.default_kernel }} -j${{ github.event.inputs.concurrency || env.default_concurrency }} ${{ github.event.inputs.more-options }}
           tags: ${{ steps.meta.outputs.tags }}
