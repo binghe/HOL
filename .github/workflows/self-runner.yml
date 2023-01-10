@@ -38,7 +38,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: [ self-runner, ubuntu-latest ]
     steps:
       -
         name: Checkout
