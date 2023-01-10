@@ -71,9 +71,9 @@ jobs:
           context: .
           file: developers/docker-ci/${{ env.default_dockerfile }}
           push: true
-          platforms: [ ${{ github.event.inputs.platform || env.default_platform }} ]
           build-args: |
             SML=poly
+            TARGETPLATFORM=${{ github.event.inputs.platform || env.default_platform }}
             # NOTE: the arg value cannot be quoted here:
             BUILDOPTS=--${{ github.event.inputs.kernel || env.default_kernel }} -j${{ github.event.inputs.concurrency || env.default_concurrency }} ${{ github.event.inputs.more-options }}
           tags: ${{ steps.meta.outputs.tags }}
