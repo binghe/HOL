@@ -4,7 +4,7 @@ env:
   default_kernel: 'expk'
   default_concurrency: '2'
   default_dockerfile: 'Dockerfile'
-
+  default_platform: 'linux/amd64'
 on:
   workflow_dispatch:
     inputs:
@@ -17,6 +17,15 @@ on:
         - stdknl
         - expk
         - otknl
+      platform:
+        description: 'Platform'
+        required: true
+        default: 'linux/amd64'
+        type: choice
+        options:
+        - linux/i386
+        - linux/amd64
+        - linux/arm64
       concurrency:
         description: 'Concurrency'
         required: true
@@ -62,6 +71,7 @@ jobs:
           context: .
           file: developers/docker-ci/${{ env.default_dockerfile }}
           push: true
+          platforms: [ ${{ github.event.inputs.platform || env.default_platform }} ]
           build-args: |
             SML=poly
             # NOTE: the arg value cannot be quoted here:
