@@ -13,12 +13,9 @@ fun TAC_PROOF(g,t) = Tactical.TAC_PROOF(g,t) handle e => Raise e;
 
 val _ = Rewrite.add_implicit_rewrites pairTheory.pair_rws;
 
-
-
 (* ************************************************************ *)
 (*              Definitions via Hardware-Formulae               *)
 (* ************************************************************ *)
-
 
 val NEXT     = new_definition("NEXT", “NEXT P = \t. P(SUC t):bool”);
 
@@ -26,6 +23,10 @@ val ALWAYS   = new_definition("ALWAYS", “ALWAYS P t0 = !t:num.P(t+t0)”);
 
 val EVENTUAL = new_definition("EVENTUAL", “EVENTUAL P t0 = ?t:num.P(t+t0)”);
 
+(* NOTE: ‘q WATCH b’ (at t0) means that, q is intially false and becomes
+   true "one step" after b is true, and q remains true for the remaining
+   time, no matter what happens to b later.  see also WATCH_REC.
+ *)
 val WATCH = new_infixr_definition("WATCH",
   “$WATCH q b t0 =
           !t. (q t0 = F) /\ (q (SUC (t+t0)) = (q (t+t0) \/ b (t+t0)))”,200);
@@ -34,11 +35,13 @@ val UPTO = new_definition("UPTO",
         “UPTO(t0,t1,a) =
                 !t2.  t0<=t2 /\ t2<t1 ==> a t2”);
 
+(* NOTE: ‘?q. (q WATCH b) t0’ alone always exists, see WATCH_EXISTS. *)
 val WHEN = new_infixr_definition("WHEN",
         “$WHEN a b t0 =
                 ?q. (q WATCH b) t0
                   /\ !t.(q(t+t0) \/ (b(t+t0) ==> a(t+t0)))”,200);
 
+(* NOTE: This is the "weak until" containing the case that b never happens *)
 val UNTIL = new_infixr_definition("UNTIL",
         “$UNTIL a b t0 =
                 ?q. (q WATCH b) t0
@@ -55,6 +58,9 @@ val SWHEN = new_infixr_definition("SWHEN",
                 ?q. (q WATCH b) t0
                   /\ ?t.~q(t+t0) /\ b(t+t0) /\ a(t+t0)”,200);
 
+(* NOTE: Thus is the standard "until" operator which additionally requires
+         that ‘b’ eventually happens.
+ *)
 val SUNTIL = new_infixr_definition("SUNTIL",
         “$SUNTIL a b t0 =
                 ?q. (q WATCH b) t0

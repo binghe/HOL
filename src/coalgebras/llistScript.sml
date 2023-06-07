@@ -778,8 +778,12 @@ val LAPPEND = new_specification
 val _ = export_rewrites ["LAPPEND"]
 val _ = computeLib.add_persistent_funs ["LAPPEND"]
 
+(* NOTE: The last char is Latin Subscript Small Letter L (U+2097) *)
 val _ = set_mapped_fixity{fixity = Infixl 480, term_name = "LAPPEND",
                           tok = "++ₗ"};                               (* UOK *)
+
+val _ = TeX_notation { hol = "LAPPEND",
+                       TeX = ("\\HOLTokenDoublePlusL", 1) };
 
 (* properties of map and append *)
 

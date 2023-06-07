@@ -1,7 +1,7 @@
 (* ========================================================================= *)
-(* The Theory of (General) Stochastic Processes (ongoing)                    *)
+(* The Theory of General Stochastic Processes                                *)
 (*                                                                           *)
-(* Author: Chun Tian (binghe) <binghe.lisp@gmail.com> (2021)                 *)
+(* Author: Chun Tian (binghe) <binghe.lisp@gmail.com> (2021 - 2022)          *)
 (* Fondazione Bruno Kessler and University of Trento, Italy                  *)
 (* ========================================================================= *)
 
@@ -18,6 +18,16 @@ open util_probTheory sigma_algebraTheory extrealTheory real_borelTheory
 
 val _ = new_theory "stochastic_process";
 
+(* "The theory of probability, as a mathematical discipline, can and should
+    be developed from axioms in exactly the same way as Geometry and Algebra.
+    This means that after we have defined the elements to be studied and their
+    basic relations, and have stated the axioms by which these relations are
+    to be governed, all further exposition must be based exclusively on these
+    axioms, independent of the usual concerte meaning of these elements and
+    their relations."
+
+  -- A. N. Kolmogorov, "Foundations of the Theory of Probability" [1]. *)
+
 val set_ss = std_ss ++ PRED_SET_ss;
 val fcp_ss = std_ss ++ FCP_ss ++ PRED_SET_ss;
 
@@ -26,14 +36,33 @@ val fcp_ss = std_ss ++ FCP_ss ++ PRED_SET_ss;
 (*  (moved here from martingaleTheory)                                       *)
 (* ------------------------------------------------------------------------- *)
 
+(* Any non-empty set with (=) is a poset *)
+Theorem poset_trivial :
+    !(s :'a set). s <> {} ==> poset(s,$=)
+Proof
+    RW_TAC std_ss [poset_def]
+ >> rw [REWRITE_RULE [IN_APP] MEMBER_NOT_EMPTY]
+QED
+
+(* Any non-empty set of numbers with (<=) is a poset *)
+Theorem poset_num_sets :
+    !(N :num set). N <> {} ==> poset(N,$<=)
+Proof
+    RW_TAC std_ss [poset_def]
+ >| [ (* goal 1 (of 3) *)
+      rw [REWRITE_RULE [IN_APP] MEMBER_NOT_EMPTY],
+      (* goal 2 (of 3) *)
+      rw [GSYM LESS_EQUAL_ANTISYM],
+      (* goal 3 (of 3) *)
+      MATCH_MP_TAC LESS_EQ_TRANS \\
+      Q.EXISTS_TAC ‘y’ >> art [] ]
+QED
+
 Theorem poset_num[simp] :
     poset (univ(:num),$<=)
 Proof
-    RW_TAC std_ss [poset_def]
- >- (Q.EXISTS_TAC ‘0’ >> REWRITE_TAC [GSYM IN_APP, IN_UNIV])
- >- (MATCH_MP_TAC LESS_EQUAL_ANTISYM >> art [])
- >> MATCH_MP_TAC LESS_EQ_TRANS
- >> Q.EXISTS_TAC ‘y’ >> art []
+    MP_TAC (Q.SPEC ‘univ(:num)’ poset_num_sets)
+ >> RW_TAC std_ss [UNIV_NOT_EMPTY]
 QED
 
 Theorem poset_nnreal[simp] :
@@ -47,7 +76,6 @@ Proof
  >> Q.EXISTS_TAC ‘y’ >> art []
 QED
 
-(* below J is an index set, R is a partial order on J *)
 Definition general_filtration_def :
    general_filtration A a J =
      (poset J /\ (!n. n IN (carrier J) ==> sub_sigma_algebra (a n) A) /\
@@ -130,8 +158,8 @@ Definition fcp_rectangle_def :
     fcp_rectangle (h :num -> 'a set) (:'N) =
       {(v :'a['N]) | !i. i < dimindex(:'N) ==> v ' i IN h i}
 End
+
 Overload rectangle = “fcp_rectangle”
-Theorem rectangle_def[local] = fcp_rectangle_def
 
 Theorem RECTANGLE_UNIV :
     rectangle (\n. univ(:'a)) (:'N) = univ(:'a['N])
@@ -164,13 +192,17 @@ val _ = set_fixity "of_dimension" (Infix(NONASSOC, 470));
 
 (* cf. Theorem 14.17 [9, p.149] for this alternative way of product algebra.
 
+   This is the smallest sigma-algebra on n-dimensional `space B` that makes
+   all N-1 projections simultaneously measurable.
+
+   NOTE: ‘flip $fcp_index = (\n v. v ' n)’
+
    This general definition can be used to convert any (1-dimensional) Borel
    sigma-algebra (e.g. ‘borel’ and ‘Borel’) into n-dimensional Borel spaces.
  *)
 Definition sigma_of_dimension_def :
     sigma_of_dimension (B :'a algebra) (:'N) =
-    sigma_functions (rectangle (\n. space B) (:'N))
-                    (\n. B) (\n v. v ' n)
+    sigma_functions (rectangle (\n. space B) (:'N)) (\n. B) (flip $fcp_index)
                     (count (dimindex(:'N)))
 End
 Overload of_dimension = “sigma_of_dimension”
@@ -210,7 +242,7 @@ Theorem sigma_of_dimension_alt :
       sigma (rectangle (\n. space B) (:'N))
             {rectangle h (:'N) | !i. i < dimindex(:'N) ==> h i IN subsets B}
 Proof
-    rw [sigma_of_dimension_def, sigma_functions_def]
+    rw [sigma_of_dimension_def, C_DEF, sigma_functions_def]
  >> Q.ABBREV_TAC (* this is part of the goal, to be replaced by ‘sts’ *)
    ‘src = BIGUNION
             (IMAGE (\n. IMAGE (\s. PREIMAGE (\ (v :'a['N]). v ' n) s INTER
@@ -380,7 +412,7 @@ Proof
     RW_TAC set_ss []
  >> rename1 ‘!i. i < dimindex (:'N) ==> g i IN subsets B’
  >> Q.EXISTS_TAC ‘\i. (g i) INTER (h i)’
- >> rw [rectangle_def, Once EXTENSION]
+ >> rw [fcp_rectangle_def, Once EXTENSION]
  >> EQ_TAC >> rw []
 QED
 
@@ -404,10 +436,10 @@ Theorem SIGMA_ALGEBRA_BOREL_SPACE =
     REWRITE_RULE [GSYM Borel_space_def]
                  (ISPEC “Borel” sigma_algebra_of_dimension)
 
-(* alternative definition following of_dimension_def *)
+(* alternative definition of ‘borel’ following "of_dimension_def" *)
 Theorem borel_space_alt_sigma_functions :
     borel_space (:'N) =
-    sigma_functions univ(:real['N]) (\n. borel) (\n v. v ' n)
+    sigma_functions univ(:real['N]) (\n. borel) (flip $fcp_index)
                    (count (dimindex(:'N)))
 Proof
     rw [space_borel, borel_space_def, sigma_of_dimension_def, RECTANGLE_UNIV]
@@ -415,13 +447,13 @@ QED
 
 Theorem Borel_space_alt_sigma_functions :
     Borel_space (:'N) =
-    sigma_functions univ(:extreal['N]) (\n. Borel) (\n v. v ' n)
+    sigma_functions univ(:extreal['N]) (\n. Borel) (flip $fcp_index)
                    (count (dimindex(:'N)))
 Proof
     rw [SPACE_BOREL, Borel_space_def, sigma_of_dimension_def, RECTANGLE_UNIV]
 QED
 
-(* alternative definition following of_dimension_alt *)
+(* alternative definition of ‘borel’ following "of_dimension_alt" *)
 Theorem borel_space_alt_sigma :
     borel_space (:'N) =
     sigma univ(:real['N])
@@ -440,23 +472,19 @@ Proof
         sigma_of_dimension_alt_sigma_algebra, RECTANGLE_UNIV]
 QED
 
-Theorem rectangle_in_borel_space :
-    !h. (!i. i < dimindex(:'N) ==> h i IN subsets borel) ==>
-        rectangle h (:'N) IN subsets (borel_space(:'N))
-Proof
-    rpt STRIP_TAC
- >> MP_TAC (ISPECL [“borel”, “h :num -> real set”] rectangle_in_sigma_of_dimension)
- >> rw [sigma_algebra_borel, GSYM borel_space_def]
-QED
+(* |- !h. (!i. i < dimindex (:'N) ==> h i IN subsets borel) ==>
+          rectangle h (:'N) IN subsets (borel_space (:'N))
+ *)
+Theorem rectangle_in_borel_space =
+    REWRITE_RULE [sigma_algebra_borel, GSYM borel_space_def]
+                 (ISPEC “borel” rectangle_in_sigma_of_dimension)
 
-Theorem RECTANGLE_IN_BOREL_SPACE :
-    !h. (!i. i < dimindex(:'N) ==> h i IN subsets Borel) ==>
-        rectangle h (:'N) IN subsets (Borel_space(:'N))
-Proof
-    rpt STRIP_TAC
- >> MP_TAC (ISPECL [“Borel”, “h :num -> extreal set”] rectangle_in_sigma_of_dimension)
- >> rw [SIGMA_ALGEBRA_BOREL, GSYM Borel_space_def]
-QED
+(* |- !h. (!i. i < dimindex (:'N) ==> h i IN subsets Borel) ==>
+          rectangle h (:'N) IN subsets (Borel_space (:'N))
+ *)
+Theorem RECTANGLE_IN_BOREL_SPACE =
+    REWRITE_RULE [SIGMA_ALGEBRA_BOREL, GSYM Borel_space_def]
+                 (ISPEC “Borel” rectangle_in_sigma_of_dimension)
 
 (* (M + N)-dimensional prod space is the product sigma-algebra of M- and N-dimensional
     prod spaces. (The key of this proof is prod_sigma_of_generator.)
@@ -604,6 +632,615 @@ Proof
  >> MATCH_MP_TAC SIGMA_ALGEBRA_SPACE
  >> REWRITE_TAC [SIGMA_ALGEBRA_BOREL]
 QED
+
+(* |- !sp A f J.
+        (!i. i IN J ==> sigma_algebra (A i)) /\
+        (!i. f i IN (sp -> space (A i))) ==>
+        !i. i IN J ==> f i IN measurable (sigma sp A f J) (A i)
+ *)
+val lemma =
+    SIGMA_SIMULTANEOUSLY_MEASURABLE |> INST_TYPE [“:'b” |-> “:'temp”]
+                                    |> INST_TYPE [“:'a” |-> “:'a['N]”]
+                                    |> INST_TYPE [“:'index” |-> “:num”]
+                                    |> INST_TYPE [“:'temp” |-> “:'a”];
+
+Theorem fcp_simultaneously_measurable :
+    !B. sigma_algebra B /\
+       (!i. (\v. v ' i) IN (rectangle (\n. space B) (:'N) -> space B)) ==>
+        !i. i < dimindex(:'N) ==> (\v. v ' i) IN measurable (B of_dimension(:'N)) B
+Proof
+    rw [sigma_of_dimension_def, C_DEF]
+ >> irule (SIMP_RULE std_ss [C_DEF]
+                     (Q.SPECL [‘rectangle (\n. space B) (:'N)’, ‘\n. B’,
+                               ‘flip $fcp_index’] lemma))
+ >> rw []
+QED
+
+(* |- !i. i < dimindex (:'N) ==>
+          (\v. v ' i) IN borel_measurable (borel of_dimension (:'N))
+ *)
+Theorem in_borel_measurable_fcp =
+    SIMP_RULE (srw_ss()) [space_borel, sigma_algebra_borel, IN_FUNSET]
+              (ISPEC “borel” fcp_simultaneously_measurable)
+
+(* |- !i. i < dimindex (:'N) ==>
+          (\v. v ' i) IN Borel_measurable (Borel of_dimension (:'N))
+ *)
+Theorem IN_MEASURABLE_BOREL_FCP =
+    SIMP_RULE (srw_ss()) [SPACE_BOREL, SIGMA_ALGEBRA_BOREL, IN_FUNSET]
+              (ISPEC “Borel” fcp_simultaneously_measurable)
+
+(* ------------------------------------------------------------------------- *)
+(*  General stochastic processes and typical specializations                 *)
+(* ------------------------------------------------------------------------- *)
+
+(* X(x,t) is a stochastic process, where x IN p_space p, t represents "time"
+
+   NOTE: this is the general stochastic process from any probability space to
+   another arbitrary sigma-algebra, not necessarily extreal-valued Borel sets.
+   For example, this definition may support complex-valued stochastic process.
+ *)
+Definition stochastic_process_def :
+    stochastic_process p (X :'index -> 'a -> 'b) (B :'b algebra) (J :'index poset) =
+      (prob_space p /\ poset J /\ sigma_algebra B /\
+       !n. n IN carrier J ==> random_variable (X n) p B)
+End
+
+(* In a more general setting, we have the weaker ‘random_variable (X n) p (b n)’
+   instead of ‘random_variable (X n) p B’.
+ *)
+Definition general_stochastic_process_def :
+    general_stochastic_process (p :'a m_space)
+                               (X :'index -> 'a -> 'b)
+                               (a :'index -> 'b algebra) (A :'b algebra)
+                               (J :'index poset) =
+      (prob_space p /\ general_filtration A a J /\
+       !n. n IN carrier J ==> random_variable (X n) p (a n))
+End
+
+(* For the sake of Kolmogorov's Existence Theorem, we should limit ourselves to
+   real-valued (i.e. extreal-valued but always finite) stochastic processes:
+ *)
+Definition real_stochastic_process_def :
+    real_stochastic_process p (X :'index -> 'a -> extreal) (J :'index poset) =
+      (prob_space p /\ poset J /\
+       !n. n IN carrier J ==> real_random_variable (X n) p)
+End
+
+(* an alternative definition *)
+Theorem real_stochastic_process_alt_general :
+    !(p :'a m_space) (X :'index -> 'a -> extreal) (J :'index poset).
+       real_stochastic_process p X J <=>
+           (stochastic_process p X Borel J /\
+            !n x. n IN carrier J ==> real_random_variable (X n) p)
+Proof
+    rw [stochastic_process_def, real_stochastic_process_def,
+        real_random_variable_def, SIGMA_ALGEBRA_BOREL]
+ >> EQ_TAC >> rw []
+QED
+
+(* not used so far *)
+Definition discrete_process_def :
+    discrete_process p X = real_stochastic_process p X (univ(:num),$<=)
+End
+
+Theorem discrete_process_alt :
+    !p X. discrete_process p X <=>
+          prob_space p /\ (!n. real_random_variable (X n) p)
+Proof
+    rw [discrete_process_def, real_stochastic_process_def]
+QED
+
+(* not used so far *)
+Definition continuous_process_def :
+    continuous_process p X = real_stochastic_process p X ({x | 0r <= x}, real_lte)
+End
+
+(* Finite-Dimensional Distributions [6, p.482 (36.1)]
+
+   This definition is general (like stochastic_process_def), but meaningful only
+   when ‘ALL_DISTINCT (V2L l)’ and H is a Borel set in a sigma-algebra of 'b.
+
+   NOTE: listTheory.ALL_DISTINCT_EL_IMP is the principle theorem for ‘ALL_DISTINCT’,
+         and fcpTheory.EL_V2L asserts ‘EL i (V2L v) = v ' i’.
+ *)
+Definition finite_dimensional_distribution_def :
+           finite_dimensional_distribution (p :'a m_space)
+                                           (X :'index -> 'a -> 'b)
+                                           (l :'index['N])
+                                           (H :'b['N] set) =
+    prob p {x | x IN p_space p /\ (FCP i. X (l ' i) x) IN H}
+End
+
+(* Alternative definition using PREIMAGE, following ‘probability$joint_distribution’ *)
+Theorem finite_dimensional_distribution_alt :
+    !(p :'a m_space) (X :'index -> 'a -> 'b) (l :'index['N]) (H :'b['N] set).
+      finite_dimensional_distribution p X l H =
+        prob p (PREIMAGE (\x. FCP i. X (l ' i) x) H INTER p_space p)
+Proof
+    rw [finite_dimensional_distribution_def, PREIMAGE_def]
+ >> AP_TERM_TAC
+ >> rw [Once EXTENSION, Once CONJ_COMM]
+QED
+
+(* This shows that ‘(\x. FCP i. X (l ' i) x)’ can be seen as a random variable from
+   probability space p to n-dimensional Borel spaces.
+ *)
+Theorem finite_dimensional_distribution_alt_distribution :
+    !(p :'a m_space) (X :'index -> 'a -> 'b) (l :'index['N]).
+      finite_dimensional_distribution p X l = distribution p (\x. FCP i. X (l ' i) x)
+Proof
+    rw [FUN_EQ_THM, distribution_def, finite_dimensional_distribution_alt]
+QED
+
+(* HARD: ‘(\x. FCP i. X (l ' i) x)’ (random element) is indeed a random variable.
+
+   This proof is a generalization of borelTheory.IN_MEASURABLE_BOREL_2D_VECTOR,
+   it seriously depends on PREIMAGE_SIGMA and sigma_of_dimension_alt_sigma_algebra.
+
+   NOTE: this theorem does not use the ordering information from posets.
+     (Use "poset_trival" for satisfying ‘poset J’ in ‘stochastic_process p X B J’)
+ *)
+Theorem random_variable_sigma_of_dimension :
+    !(p :'a m_space) (X :'index -> 'a -> 'b) (B :'b algebra)
+     (J :'index poset) (l :'index['N]).
+        stochastic_process p X B J /\ FCP_EVERY (carrier J) l ==>
+        random_variable (\x. (FCP i. X (l ' i) x) :'b['N]) p (B of_dimension(:'N))
+Proof
+    rw [stochastic_process_def,
+        random_variable_def, prob_space_def, p_space_def, events_def]
+ >> Q.ABBREV_TAC ‘g = \x. (FCP i. X (l ' i) x) :'b['N]’
+ >> simp [IN_MEASURABLE, IN_FUNSET,
+          space_sigma_of_dimension, sigma_algebra_of_dimension]
+ >> CONJ_TAC (* g x IN rectangle *)
+ >- (RW_TAC fcp_ss [IN_RECTANGLE, Abbr ‘g’] \\
+     Q.PAT_X_ASSUM ‘!n. n IN carrier J ==> P’ (MP_TAC o (Q.SPEC ‘(l :'index['N]) ' n’)) \\
+     Know ‘l ' n IN carrier J’
+     >- (FULL_SIMP_TAC fcp_ss [FCP_EVERY_def, GSYM NOT_LESS, IN_APP] \\
+         METIS_TAC []) \\
+     rw [IN_MEASURABLE, IN_FUNSET])
+ >> Suff ‘(IMAGE (\s. PREIMAGE g s INTER m_space p) (subsets (B of_dimension(:'N))))
+            SUBSET measurable_sets p’
+ >- (rw [IN_IMAGE, SUBSET_DEF] \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> Q.EXISTS_TAC ‘s’ >> art [])
+ >> Q.ABBREV_TAC ‘prod = {rectangle h (:'N) | (!i. i < dimindex (:'N) ==> h i IN subsets B)}’
+ >> Know ‘(IMAGE (\s. PREIMAGE g s INTER m_space p) prod) SUBSET measurable_sets p’
+ >- (rw [Abbr ‘g’, Abbr ‘prod’, IN_IMAGE, SUBSET_DEF] \\
+     rw [PREIMAGE_RECTANGLE] (* cannot merge with previous tactics *) \\
+     Q.ABBREV_TAC ‘fcp = \x. (FCP i. X (l ' i) x) :'b['N]’ >> simp [] \\
+     Know ‘IMAGE (\n. PREIMAGE (\x. fcp x ' n) (h n)) (count (dimindex (:'N))) =
+           IMAGE (\n. PREIMAGE (\x. X (l ' n) x) (h n)) (count (dimindex (:'N)))’
+     >- (MATCH_MP_TAC IMAGE_CONG >> RW_TAC fcp_ss [Abbr ‘fcp’]) >> Rewr' \\
+    ‘count (dimindex (:'N)) <> {}’ by PROVE_TAC [COUNT_NOT_EMPTY, DIMINDEX_GT_0] \\
+     rw [BIGINTER_OVER_INTER_L] \\
+     MATCH_MP_TAC (REWRITE_RULE [subsets_def]
+                    (Q.SPEC ‘(m_space p,measurable_sets p)’ SIGMA_ALGEBRA_FINITE_INTER)) \\
+     rw [DIMINDEX_GT_0] \\
+     rename1 ‘n < dimindex(:'N)’ \\
+     Q.PAT_X_ASSUM ‘!n. n IN carrier J ==> P’ (MP_TAC o (Q.SPEC ‘(l :'index['N]) ' n’)) \\
+     Know ‘l ' n IN carrier J’
+     >- (FULL_SIMP_TAC fcp_ss [FCP_EVERY_def, GSYM NOT_LESS, IN_APP] \\
+         METIS_TAC []) \\
+     rw [IN_MEASURABLE, IN_FUNSET] \\
+    ‘(\x. X ((l :'index['N]) ' n) x) = X (l ' n)’ by METIS_TAC [] >> POP_ORW \\
+     POP_ASSUM MATCH_MP_TAC \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> art [])
+ >> DISCH_TAC
+ (* applying SIGMA_SUBSET *)
+ >> Know ‘subsets (sigma (space (m_space p,measurable_sets p))
+                         (IMAGE (\s. PREIMAGE g s INTER m_space p) prod)) SUBSET
+          subsets (m_space p,measurable_sets p)’
+ >- (MATCH_MP_TAC SIGMA_SUBSET >> rw [])
+ >> POP_ASSUM K_TAC
+ >> DISCH_THEN (ASSUME_TAC o SIMP_RULE (srw_ss()) [])
+ (* stage work *)
+ >> Suff ‘IMAGE (\s. PREIMAGE g s INTER m_space p) (subsets (B of_dimension (:'N))) =
+          subsets (sigma (m_space p) (IMAGE (\s. PREIMAGE g s INTER m_space p) prod))’
+ >- (Rewr' >> art [])
+ >> ASM_SIMP_TAC std_ss [sigma_of_dimension_alt_sigma_algebra]
+ (* applying PREIMAGE_SIGMA *)
+ >> MATCH_MP_TAC PREIMAGE_SIGMA
+ >> rw [Abbr ‘prod’, IN_FUNSET, subset_class_def, SUBSET_DEF, IN_RECTANGLE]
+ >| [ (* goal 1 (of 2) *)
+      rename1 ‘y ' n IN space B’ \\
+      FULL_SIMP_TAC std_ss [IN_RECTANGLE] \\
+     ‘subset_class (space B) (subsets B)’ by PROVE_TAC [sigma_algebra_def, algebra_def] \\
+      FULL_SIMP_TAC std_ss [subset_class_def] \\
+      METIS_TAC [SUBSET_DEF],
+      (* goal 2 (of 2) *)
+      RW_TAC fcp_ss [Abbr ‘g’] \\
+      Q.PAT_X_ASSUM ‘!n. n IN carrier J ==> P’ (MP_TAC o (Q.SPEC ‘(l :'index['N]) ' n’)) \\
+      Know ‘l ' n IN carrier J’
+      >- (FULL_SIMP_TAC fcp_ss [FCP_EVERY_def, GSYM NOT_LESS, IN_APP] \\
+          METIS_TAC []) \\
+      rw [IN_MEASURABLE, IN_FUNSET] ]
+QED
+
+(* This HARD result is now a simple corollary of the previous theorem (and
+   distribution_prob_space (or measure_space_distr).)
+ *)
+Theorem finite_dimensional_distribution_prob_space :
+    !(p :'a m_space) (X :'index -> 'a -> 'b) (B :'b algebra)
+     (J :'index poset) (l :'index['N]).
+        stochastic_process p X B J /\ FCP_EVERY (carrier J) l ==>
+        prob_space (space (B of_dimension (:'N)),
+                    subsets (B of_dimension (:'N)),
+                    finite_dimensional_distribution p X l)
+Proof
+    rw [finite_dimensional_distribution_alt_distribution]
+ >> ‘prob_space p’ by PROVE_TAC [stochastic_process_def]
+ >> MATCH_MP_TAC distribution_prob_space >> art [sigma_algebra_of_dimension]
+ >> MATCH_MP_TAC random_variable_sigma_of_dimension
+ >> Q.EXISTS_TAC ‘J’ >> art []
+QED
+
+(* The permutation of finite dimensional vectors *)
+Definition fcp_permutes_def :
+    fcp_permutes (g :num -> num) (v :'a['b]) = (FCP i. v ' (g i)) :'a['b]
+End
+
+(* The first consistency condition [6, p.483 (36.2)], assuming ‘FINITE univ(:'N)’
+
+   ‘{v | !i. i < dimindex(:'N) ==> v ' i IN H i}’ is called a rectangle.
+ *)
+Definition consistency_condition_1_def :
+           consistency_condition_1 (p :'a m_space)
+                                   (X :'index -> 'a -> 'b)
+                                   (B :'b algebra)
+                                   (J :'index poset) (:'N) =
+   !(l :'index['N]) (h :num -> 'b set) (g :num -> num).
+      FCP_EVERY (carrier J) l /\ ALL_DISTINCT (V2L l) /\
+      (!i. i < dimindex(:'N) ==> h i IN subsets B) /\
+      g PERMUTES (count (dimindex(:'N)))
+    ==>
+      finite_dimensional_distribution p X l (rectangle h (:'N)) =
+      finite_dimensional_distribution p X (fcp_permutes g l) (rectangle (h o g) (:'N))
+End
+
+(* The second consistency condition [6, p.483 (36.3)], assuming ‘FINITE univ(:'N)’ *)
+Definition consistency_condition_2_def :
+           consistency_condition_2 (p :'a m_space)
+                                   (X :'index -> 'a -> 'b)
+                                   (B :'b algebra)
+                                   (J :'index poset) (:'N) =
+   !(l :'index[1 + 'N]) h.
+      FCP_EVERY (carrier J) l /\ ALL_DISTINCT (V2L l) /\
+      (!i. i < dimindex(:'N) ==> h i IN subsets B)
+    ==>
+      finite_dimensional_distribution p X ((FCP_SND l) :'index['N]) (rectangle h (:'N)) =
+      finite_dimensional_distribution p X l
+        {(v :'b[1 + 'N]) | !i. i < dimindex(:'N) ==> v ' i IN h i}
+End
+
+(* This is the easy, "uninteresting" part of Kolmogorov's Existence Theorem
+
+   But the proof verifies the correctness of the two ‘consistency_condition’ definitions.
+   Also note that this theorem doesn't need anything from "stochastic_process_def".
+
+   The type ‘:'N’ should be understood as an universal type quantifier ("for all finite list of
+   indexes ..."), which is the only kind of type quentifier supported by HOL.
+ *)
+Theorem consistency_condition_1 :
+    !p (X :'index -> 'a -> 'b) B (J :'index poset).
+        FINITE univ(:'N) ==> consistency_condition_1 p X B J (:'N)
+Proof
+    RW_TAC fcp_ss [consistency_condition_1_def, finite_dimensional_distribution_def,
+                   fcp_rectangle_def, fcp_permutes_def]
+ >> AP_TERM_TAC
+ >> rw [Once EXTENSION]
+ >> EQ_TAC >> rw [] (* 2 subgoals *)
+ >| [ (* goal 1 (of 2) *)
+      FIRST_X_ASSUM MATCH_MP_TAC \\
+      fs [BIJ_DEF, INJ_DEF],
+      (* goal 2 (of 2) *)
+      fs [BIJ_ALT] \\
+      Q.PAT_X_ASSUM ‘!y. y < dimindex(:'N) ==> ?!x. P’ (MP_TAC o (Q.SPEC ‘i’)) \\
+      RW_TAC std_ss [EXISTS_UNIQUE_THM] \\
+      FIRST_X_ASSUM MATCH_MP_TAC >> art [] ]
+QED
+
+Theorem consistency_condition_2 :
+    !p (X :'index -> 'a -> 'b) B (J :'index poset).
+        FINITE univ(:'N) ==> consistency_condition_2 p X B J (:'N)
+Proof
+    RW_TAC fcp_ss [consistency_condition_2_def, finite_dimensional_distribution_def,
+                   fcp_rectangle_def]
+ >> AP_TERM_TAC
+ >> rw [Once EXTENSION]
+ >> EQ_TAC >> rw [] (* 2 subgoals *)
+ >| [ (* goal 1 (of 2) *)
+      Know ‘dimindex(:1 + 'N) = 1 + dimindex(:'N)’
+      >- (rw [index_sum, finite_one, index_one]) >> DISCH_TAC \\
+     ‘i < dimindex(:1 + 'N)’ by rw [] \\
+      RW_TAC fcp_ss [] (* now the goal can be simplified *) \\
+      FULL_SIMP_TAC fcp_ss [FCP_SND_def, index_one],
+      (* goal 2 (of 2) *)
+      RW_TAC fcp_ss [FCP_SND_def] \\
+      Know ‘dimindex(:1 + 'N) = 1 + dimindex(:'N)’
+      >- (rw [index_sum, finite_one, index_one]) >> DISCH_TAC \\
+     ‘i < dimindex(:1 + 'N)’ by rw [] \\
+      Q.PAT_X_ASSUM ‘!i. i < dimindex (:'N) ==> _ ' i IN h i’ (MP_TAC o (Q.SPEC ‘i’)) \\
+      RW_TAC fcp_ss [] ]
+QED
+
+(* The inverse function (or anti-function) of ‘f’ over a domain ‘s’
+
+   NOTE: without ‘x IN s’ (and ‘s’ itself) this definition is hardly useful.
+ *)
+Definition inverse_function_def :
+    inverse_function s (f :'a -> 'b) = \y. @x. x IN s /\ f x = y
+End
+
+Theorem f_o_inverse_function :
+    !(f :'a -> 'b) s t y. SURJ f s t /\ y IN t ==> (f o (inverse_function s f)) y = y
+Proof
+    RW_TAC std_ss [inverse_function_def, SURJ_DEF, o_DEF]
+ >> SELECT_ELIM_TAC >> rw []
+QED
+
+Theorem inverse_function_o_f :
+    !(f :'a -> 'b) s t x. INJ f s t /\ x IN s ==> ((inverse_function s f) o f) x = x
+Proof
+    RW_TAC pure_ss  (* bool_ss or std_ss is too slow here, why? *)
+          [inverse_function_def, INJ_DEF, o_DEF, BETA_THM]
+ >> SELECT_ELIM_TAC >> rw []
+ >> Q.EXISTS_TAC ‘x’ >> rw []
+QED
+
+Theorem inverse_function_domain_range :
+   !(f :'a -> 'b) s t. SURJ f s t ==> (inverse_function s f) IN (t -> s)
+Proof
+    RW_TAC std_ss [inverse_function_def, SURJ_DEF, IN_FUNSET]
+ >> SELECT_ELIM_TAC >> rw []
+QED
+
+(* This is an alternative form of consistency_condition_1 *)
+Theorem finite_dimensional_distribution_permutes :
+    !(p :'a m_space) (X :'index -> 'a -> 'b) (l :'index['N]) (g :num -> num).
+        FINITE univ(:'N) /\ g PERMUTES (count (dimindex(:'N))) ==>
+      ((finite_dimensional_distribution p X (fcp_permutes g l)) o (IMAGE (fcp_permutes g))) =
+       (finite_dimensional_distribution p X l)
+Proof
+    RW_TAC fcp_ss [FUN_EQ_THM, finite_dimensional_distribution_def, fcp_permutes_def]
+ >> AP_TERM_TAC
+ >> rw [Once EXTENSION]
+ >> EQ_TAC >> rw [] >> rename1 ‘y IN p_space p’ (* 2 subgoals *)
+ >| [ (* goal 1 (of 2) *)
+      rename1 ‘!i. i < dimindex(:'N) ==> X (l ' (g i)) y = v ' (g i)’ \\
+      rename1 ‘(FCP i. X (l ' i) y) IN H’ \\
+      Suff ‘(FCP i. X (l ' i) y) = v’ >- rw [] \\
+      Q.PAT_X_ASSUM ‘v IN H’ K_TAC \\
+      RW_TAC fcp_ss [CART_EQ] \\
+      IMP_RES_TAC BIJ_INV >> fs [] (* this asserts g' *) \\
+     ‘i = g (g' i)’ by PROVE_TAC [] >> POP_ORW \\
+     ‘g' i < dimindex(:'N)’ by fs [BIJ_DEF, SURJ_DEF] \\
+     ‘v ' (g (g' i)) = X (l ' i) y’ by METIS_TAC [] >> POP_ORW \\
+      Q.PAT_X_ASSUM ‘!i. i < dimindex (:'N) ==> X (l ' (g i)) y = v ' (g i)’ K_TAC \\
+      simp [],
+      (* goal 2 (of 2) *)
+      Q.ABBREV_TAC ‘v = (FCP i. X (l ' i) y) :'b['N]’ \\
+      Q.EXISTS_TAC ‘v’ >> rw [Abbr ‘v’] \\
+     ‘g i < dimindex(:'N)’ by fs [BIJ_DEF, SURJ_DEF] \\
+      RW_TAC fcp_ss [] ]
+QED
+
+(* Problem 2.5.7 of [4, p.217], a simple version of the next "indep_vars_cong_general"
+Theorem indep_vars_cong_disjoint :
+    !p X B J s t f g.
+         prob_space p /\ sigma_algebra B /\ FINITE (J :'index set) /\
+         indep_vars p (X :'index -> 'a -> 'b) (\n. B) J /\
+        (!n. n IN J ==> random_variable (X n) p B) /\
+        (J = s UNION t) /\ DISJOINT s t /\ s <> {} /\ t <> {}
+     ==> indep_vars p (f X s) (g X t) B B
+Proof
+    RW_TAC std_ss [indep_vars_def, indep_rv_def, IN_DFUNSET, o_DEF]
+QED
+ *)
+
+(* Theorem 3.3.2 [2, p.54] (independence of disjoint compositions of r.v.'s)
+
+   When P partitions J, each ‘f X s’ where ‘s IN P’ represents a r.v. in forms of
+
+     f_1(X_1, X_2, ... X_n1),
+     f_2(X_{n1+1}, X_{n1+2}, ... X_n2),
+     ..
+
+   We show that f_1, f_2, ... (assuming measurable) are still totally independent.
+
+   For instance, if four r.v.'s A,B,C,D are total independent, so are A+B and C+D.
+
+Theorem indep_vars_cong_general :
+    !p X B J f P.
+         prob_space p /\ sigma_algebra B /\ FINITE (J :'index set) /\
+         indep_vars p (X :'index -> 'a -> 'b) (\n. B) J /\
+        (!n. n IN J ==> random_variable (X n) p B) /\ P partitions J /\
+        (!s. s IN P ==> random_variable (f X s) p B)
+     ==> indep_vars p (f X) (\n. B) P
+Proof
+    RW_TAC std_ss [indep_vars_def, IN_DFUNSET, o_DEF]
+ (* rewrite only the goal *)
+ >> RW_TAC std_ss [indep_events_def] (* this asserts N *)
+ >>
+    cheat
+QED
+*)
+
+(*
+Theorem indep_rv_alt_generator_lemma[local] :
+    !p X A. prob_space p /\ random_variable X p A /\ sigma_algebra A
+          ==> sigma_algebra
+                (space A,{a | a IN subsets A /\ !E. E IN events p ==>
+                              prob p ((PREIMAGE X a INTER p_space p) INTER E) =
+                              prob p (PREIMAGE X a INTER p_space p) * prob p E})
+Proof
+    cheat
+QED
+ (* applying DYNKIN_LEMMA *)
+    rw [GSYM DYNKIN_LEMMA, dynkin_system_def, IN_FUNSET] (* 5 subgoals *)
+ >| [ (* goal 1 (of 5) *)
+      fs [sigma_algebra_def, algebra_def, subset_class_def],
+      (* goal 2 (of 5) *)
+      Know ‘PREIMAGE X (space A) INTER p_space p = p_space p’
+      >- (Q.PAT_X_ASSUM ‘random_variable X p A’ MP_TAC \\
+          rw [random_variable_def, measurable_def, PREIMAGE_def,
+              IN_FUNSET, SPACE_SIGMA] \\
+          rw [Once EXTENSION] >> EQ_TAC >> rw []) >> Rewr' \\
+      rw [Once INTER_COMM, PROB_UNDER_UNIV, PROB_UNIV],
+      (* goal 3 (of 5) *)
+      REWRITE_TAC [PREIMAGE_DIFF] \\
+     ‘(PREIMAGE X (space A) DIFF PREIMAGE X s) INTER p_space p =
+      (PREIMAGE X (space A) INTER p_space p) DIFF
+      (PREIMAGE X s INTER p_space p)’ by SET_TAC [] >> POP_ORW \\
+      Know ‘PREIMAGE X (space A) INTER p_space p = p_space p’
+      >- (Q.PAT_X_ASSUM ‘random_variable X p A’ MP_TAC \\
+          rw [random_variable_def, measurable_def, PREIMAGE_def,
+              IN_FUNSET, SPACE_SIGMA] \\
+          rw [Once EXTENSION] >> EQ_TAC >> rw []) >> Rewr' \\
+      Q.ABBREV_TAC ‘V = PREIMAGE X s INTER p_space p’ \\
+      Know ‘V IN events p’
+      >- (Q.PAT_X_ASSUM ‘random_variable X p A’ MP_TAC \\
+          rw [random_variable_def, Abbr ‘V’, measurable_def]) >> DISCH_TAC \\
+      ASM_SIMP_TAC std_ss [PROB_COMPL] \\
+      Know ‘(1 - prob p V) * prob p E = 1 * prob p E - prob p V * prob p E’
+      >- (MATCH_MP_TAC sub_rdistrib \\
+          rw [PROB_FINITE]) >> Rewr' \\
+     ‘prob p (V INTER E) = prob p V * prob p E’ by PROVE_TAC [] \\
+      Q.PAT_X_ASSUM ‘prob p (V INTER E) = prob p V * prob p E’
+        (fn th => ONCE_REWRITE_TAC [SYM th, mul_lone]) \\
+      Know ‘(p_space p DIFF V) INTER E = E DIFF (V INTER E)’
+      >- (rw [Once EXTENSION] \\
+          EQ_TAC >> rw [] >> art [] \\
+          irule PROB_SPACE_IN_PSPACE >> art [] \\
+          Q.EXISTS_TAC ‘E’ >> art []) >> Rewr' \\
+      MATCH_MP_TAC PROB_DIFF_SUBSET >> rw [INTER_SUBSET] \\
+      MATCH_MP_TAC EVENTS_INTER >> art [],
+      (* goal 4 (of 5) *)
+      SIMP_TAC std_ss [PREIMAGE_BIGUNION, IMAGE_IMAGE, o_DEF, BIGUNION_OVER_INTER_L] \\
+      Q.ABBREV_TAC ‘g = \x. PREIMAGE X (f x) INTER p_space p’ \\
+      Know ‘!i j. i <> j ==> DISJOINT (g i) (g j)’
+      >- (rw [Abbr ‘g’] \\
+          MATCH_MP_TAC DISJOINT_RESTRICT_L \\
+          MATCH_MP_TAC PREIMAGE_DISJOINT \\
+          FIRST_X_ASSUM MATCH_MP_TAC >> art []) >> DISCH_TAC \\
+      Know ‘!n. g n IN events p’
+      >- (rw [Abbr ‘g’] \\
+          fs [random_variable_def, measurable_def]) >> DISCH_TAC \\
+      Q.ABBREV_TAC ‘h = \x. (g x) INTER E’ \\
+     ‘(\x. PREIMAGE X (f x) INTER p_space p INTER E) = h’ by METIS_TAC [] >> POP_ORW \\
+      Know ‘!i j. i <> j ==> DISJOINT (h i) (h j)’
+      >- (rw [Abbr ‘h’] \\
+          MATCH_MP_TAC DISJOINT_RESTRICT_L \\
+          FIRST_X_ASSUM MATCH_MP_TAC >> art []) >> DISCH_TAC \\
+      Know ‘!n. h n IN events p’
+      >- (rw [Abbr ‘h’] \\
+          MATCH_MP_TAC EVENTS_INTER >> art []) >> DISCH_TAC \\
+      Know ‘prob p (BIGUNION (IMAGE h UNIV)) = suminf (prob p o h)’
+      >- (MATCH_MP_TAC PROB_COUNTABLY_ADDITIVE \\
+          rw [IN_FUNSET]) >> Rewr' \\
+      Know ‘prob p (BIGUNION (IMAGE g UNIV)) = suminf (prob p o g)’
+      >- (MATCH_MP_TAC PROB_COUNTABLY_ADDITIVE \\
+          rw [IN_FUNSET]) >> Rewr' \\
+      rw [o_DEF, Abbr ‘h’] \\
+      ONCE_REWRITE_TAC [mul_comm] \\
+      HO_MATCH_MP_TAC ext_suminf_cmul >> rw [PROB_POSITIVE],
+      (* goal 5 (of 5): stable under finite intersection *)
+      REWRITE_TAC [PREIMAGE_INTER] \\
+      Q.ABBREV_TAC ‘E1 = PREIMAGE X s INTER p_space p’ \\
+      Q.ABBREV_TAC ‘E2 = PREIMAGE X t INTER p_space p’ \\
+      Know ‘PREIMAGE X s INTER PREIMAGE X t INTER p_space p = E1 INTER E2’
+      >- (qunabbrevl_tac [‘E1’, ‘E2’] >> SET_TAC []) >> Rewr' \\
+      Know ‘E1 IN events p /\ E2 IN events p’
+      >- (rw [Abbr ‘E1’, Abbr ‘E2’] \\
+          fs [random_variable_def, measurable_def]) >> STRIP_TAC \\
+     ‘E1 INTER E2 IN events p’ by PROVE_TAC [EVENTS_INTER] \\
+      Suff ‘indep p (E1 INTER E2) E’ >- rw [indep_def] \\
+      MATCH_MP_TAC INDEP_INTER >> rw [indep_def] ]
+QED
+*)
+
+(* A weak condition for testing ‘indep_vars’ on generators
+Theorem indep_rv_alt_generator :
+    !p X sp1 sts1 Y sp2 sts2.
+         prob_space p /\ subset_class sp1 sts1 /\ subset_class sp2 sts2 /\
+         random_variable X p (sigma sp1 sts1) /\
+         random_variable Y p (sigma sp2 sts2) ==>
+        (indep_vars p X Y (sigma sp1 sts1) (sigma sp2 sts2) <=>
+         indep_vars p X Y (sp1,sts1) (sp2,sts2))
+Proof
+    rpt STRIP_TAC
+ >> EQ_TAC
+ >> RW_TAC std_ss [indep_rv_def, subsets_def]
+ >- (FIRST_X_ASSUM MATCH_MP_TAC \\
+     Suff ‘sts1 SUBSET subsets (sigma sp1 sts1) /\
+           sts2 SUBSET subsets (sigma sp2 sts2)’ >- METIS_TAC [SUBSET_DEF] \\
+     REWRITE_TAC [SIGMA_SUBSET_SUBSETS])
+
+
+
+ >> RW_TAC std_ss [indep_def]
+ >- fs [random_variable_def, measurable_def]
+ >- fs [random_variable_def, measurable_def]
+ (* stage work *)
+ >> Q.ABBREV_TAC ‘A = sigma sp1 sts1’
+ >> ‘sigma_algebra A’ by PROVE_TAC [SIGMA_ALGEBRA_SIGMA]
+ >> Q.ABBREV_TAC
+     ‘G = \X E A.
+            (space A, {a | a IN subsets (sigma (space A) A) /\ !E. E IN events p ==>
+                           prob p ((PREIMAGE X a INTER p_space p) INTER E) =
+                           prob p (PREIMAGE X a INTER p_space p) * prob p E})’
+ >> Q.PAT_X_ASSUM ‘a IN subsets A’ MP_TAC
+ >> Suff ‘subsets (sigma (space (G X Y A B)) sts1) SUBSET subsets (G X Y A B)’
+ >- rw [Abbr ‘A’, Abbr ‘B’, Abbr ‘G’, SPACE_SIGMA, SUBSET_DEF, GSPECIFICATION]
+ (* applying SIGMA_SUBSET *)
+ >> MATCH_MP_TAC SIGMA_SUBSET
+ >> CONJ_TAC >- cheat
+ >> Q.PAT_X_ASSUM ‘b IN subsets B’ K_TAC
+ (* this is to prevent ‘B’ from being unabbreviated *)
+ >> Q.PAT_ASSUM ‘Abbrev (G = _)’
+      (fn th => SIMP_TAC std_ss [REWRITE_RULE [markerTheory.Abbrev_def] th])
+ >> rw [SUBSET_DEF]
+ >- (Suff ‘sts1 SUBSET subsets (sigma sp1 sts1)’ >- METIS_TAC [SUBSET_DEF] \\
+     REWRITE_TAC [SIGMA_SUBSET_SUBSETS])
+ >> rename1 ‘x1 IN sts1’
+ (* stage work *)
+ >> REWRITE_TAC [Once INTER_COMM, Once mul_comm]
+ >> Q.PAT_X_ASSUM ‘b IN subsets B’ MP_TAC
+ >> Suff ‘subsets (sigma (space (G Y X (sp2,sts2) (sp1,sts1))) sts2) SUBSET
+          subsets (G Y X (sp2,sts2) (sp1,sts1))’
+ >- (rw [Abbr ‘A’, Abbr ‘B’, Abbr ‘G’, SPACE_SIGMA, SUBSET_DEF, GSPECIFICATION])
+ (* applying SIGMA_SUBSET again *)
+ >> MATCH_MP_TAC SIGMA_SUBSET
+ >> CONJ_TAC (* sigma_algebra (G Y X (sp2,sts2) (sp1,sts1)) *)
+ >- (rw [Abbr ‘G’, GSYM DYNKIN_LEMMA, dynkin_system_def, IN_FUNSET] (* 5 subgoals *)
+     >> cheat
+     )
+ >> rw [Abbr ‘G’, SUBSET_DEF]
+ >> REWRITE_TAC [Once INTER_COMM, Once mul_comm]
+ >> Q.UNABBREV_TAC ‘E’
+ >> Q.PAT_X_ASSUM ‘!a b. a IN sts1 /\ b IN sts2 ==> _’ (MP_TAC o (Q.SPECL [‘b’, ‘x’]))
+ >> rw [indep_def]
+QED
+
+Theorem indep_vars_alt_generator :
+    !p X (J :'index set) sp sts.
+         prob_space p /\ (!i. i IN J ==> subset_class (sp i) (sts i)) /\
+        (!i. i IN J ==> random_variable (X i) p (sigma (sp i) (sts i))) ==>
+        (indep_vars p X (\i. sigma (sp i) (sts i)) J <=>
+         indep_vars p X (\i. (sp i,sts i)) J)
+Proof
+    rpt STRIP_TAC
+ >> EQ_TAC
+ >- (RW_TAC std_ss [indep_vars_def, IN_DFUNSET, subsets_def] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+     Suff ‘sts i SUBSET subsets (sigma (sp i) (sts i))’ >- rw [SUBSET_DEF] \\
+     REWRITE_TAC [SIGMA_SUBSET_SUBSETS])
+ (* stage work *)
+ >> RW_TAC std_ss [indep_vars_def, IN_DFUNSET, subsets_def]
+ >>
+    cheat
+QED
+ *)
 
 val _ = export_theory ();
 val _ = html_theory "stochastic_process";

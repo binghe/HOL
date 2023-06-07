@@ -10,9 +10,10 @@
 (*                                                                           *)
 (*            Contact:  <m_qasi@ece.concordia.ca>                            *)
 (*                                                                           *)
-(*    Note: This theory was ported from HOL Light                            *)
+(*    Note: This theory was ported from HOL Light's iterate.ml               *)
 (*                                                                           *)
-(*              (c) Copyright, John Harrison and others 1998-2012            *)
+(*              (c) Copyright, John Harrison 1998-2007                       *)
+(*              (c) Copyright, Lars Schewe 2007                              *)
 (* ========================================================================= *)
 
 open HolKernel Parse boolLib bossLib;
@@ -1469,6 +1470,14 @@ QED
 val neutral = new_definition ("neutral",
   ``neutral op = @x. !y. (op x y = y) /\ (op y x = y)``);
 
+(* NOTE: The set of all numbers of the involved type, ‘op’ and ‘neutral op’
+   actually form an Abelian Monoid (also called Commutative Monoid), i.e.
+
+   |- monoidal op <=>
+      AbelianMonoid <| carrier = UNIV, op = op, id = (neutral op) |>
+
+   (see also AbelianMonoid_def in examples/algebra/monoid/monoidScript.sml)
+ *)
 val monoidal = new_definition ("monoidal",
   ``monoidal op <=> (!x y. op x y = op y x) /\
                     (!x y z. op x (op y z) = op (op x y) z) /\

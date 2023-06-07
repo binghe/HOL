@@ -24,6 +24,9 @@ ENV PATH=/ML/HOL/bin:$PATH
 # some necessary Debian packages
 RUN apt-get update -qy
 RUN apt-get install -qy build-essential graphviz git libgmp-dev wget curl procps file
+
+# for Unicode display, learnt from Magnus Myreen
+RUN apt-get install -qy locales-all terminfo man aptitude
 RUN apt-get clean
 
 # 1. install Moscow ML (https://github.com/kfl/mosml.git)
@@ -67,3 +70,7 @@ RUN cd /root && tar xzf opentheory-local.tar.gz && rm opentheory-local.tar.gz
 
 # for HOL Emacs mode (Emacs is not installed by default, however)
 COPY .emacs /root
+
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8

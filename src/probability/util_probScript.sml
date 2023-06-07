@@ -20,6 +20,13 @@ val _ = new_theory "util_prob";
 
 fun METIS ths tm = prove(tm, METIS_TAC ths);
 
+(* This is necessary after opening ratTheory, we don't want any arithmetic term
+   to be explicitly parsed to integer or rational terms. Instead they are either
+   num or real terms (in this theorem). -- Chun Tian
+val _ = ratLib.deprecate_rat();
+val _ = intLib.deprecate_int();
+ *)
+
 (* ------------------------------------------------------------------------- *)
 
 val _ = set_fixity "->" (Infixr 250);

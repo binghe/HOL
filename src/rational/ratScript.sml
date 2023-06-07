@@ -1,6 +1,6 @@
 (***************************************************************************
  *
- *  Theory of rational numbers.
+ *  Theory of rational numbers (:rat).
  *
  *  Jens Brandt, November 2005
  *
@@ -8,22 +8,9 @@
 
 open HolKernel boolLib Parse BasicProvers bossLib;
 
-(* interactive mode
-app load [
-        "integerTheory", "intLib",
-        "intExtensionTheory", "intExtensionLib",
-        "ringLib", "integerRingLib",
-        "fracTheory", "fracLib", "ratUtils", "jbUtils",
-        "quotient", "schneiderUtils"];
-*)
-
-open
-        arithmeticTheory
-        integerTheory intLib
-        intExtensionTheory intExtensionLib
-        ringLib integerRingLib
-        fracTheory fracLib ratUtils jbUtils
-        quotient schneiderUtils;
+open arithmeticTheory integerTheory intLib intExtensionTheory intExtensionLib
+     ringLib integerRingLib fracTheory fracLib ratUtils jbUtils quotient
+     schneiderUtils;
 
 val arith_ss = old_arith_ss
 
@@ -37,24 +24,37 @@ val ERR = mk_HOL_ERR "ratScript"
  *--------------------------------------------------------------------------*)
 
 (* definition of equivalence relation *)
-val rat_equiv_def = Define `rat_equiv f1 f2 = (frac_nmr f1 * frac_dnm f2 = frac_nmr f2 * frac_dnm f1)`;
+Definition rat_equiv_def :
+   rat_equiv f1 f2 = (frac_nmr f1 * frac_dnm f2 = frac_nmr f2 * frac_dnm f1)
+End
 
-(* RAT_EQUIV_REF: |- !a:frac. rat_equiv a a *)
-val RAT_EQUIV_REF = store_thm("RAT_EQUIV_REF", ``!a:frac. rat_equiv a a``,
-       STRIP_TAC THEN
-       REWRITE_TAC[rat_equiv_def] );
+(* |- !a:frac. rat_equiv a a *)
+Theorem RAT_EQUIV_REF :
+    !a:frac. rat_equiv a a
+Proof
+    STRIP_TAC
+ >> REWRITE_TAC [rat_equiv_def]
+QED
 
-(* RAT_EQUIV_SYM: |- !a b. rat_equiv a b = rat_equiv b a *)
-val RAT_EQUIV_SYM = store_thm("RAT_EQUIV_SYM",
-  ``!a b. rat_equiv a b = rat_equiv b a``,
-       REPEAT STRIP_TAC THEN
-       REWRITE_TAC[rat_equiv_def] THEN
-       MATCH_ACCEPT_TAC EQ_SYM_EQ) ;
+(* |- !a b. rat_equiv a b = rat_equiv b a *)
+Theorem RAT_EQUIV_SYM :
+    !a b. rat_equiv a b = rat_equiv b a
+Proof
+    rpt STRIP_TAC
+ >> REWRITE_TAC [rat_equiv_def]
+ >> MATCH_ACCEPT_TAC EQ_SYM_EQ
+QED
 
-val INT_ENTIRE' = CONV_RULE (ONCE_DEPTH_CONV (LHS_CONV SYM_CONV)) INT_ENTIRE ;
-val FRAC_DNMNZ = GSYM (MATCH_MP INT_LT_IMP_NE (SPEC_ALL FRAC_DNMPOS)) ;
+(*  |- !x y. (0 = x * y) <=> (x = 0) \/ (y = 0) *)
+val INT_ENTIRE' = CONV_RULE (ONCE_DEPTH_CONV (LHS_CONV SYM_CONV)) INT_ENTIRE;
+
+(* frac_dnm f <> 0 *)
+val FRAC_DNMNZ = GSYM (MATCH_MP INT_LT_IMP_NE (SPEC_ALL FRAC_DNMPOS));
+
+(* ~(frac_dnm f < 0) *)
 val FRAC_DNMNN = let val th = MATCH_MP INT_LT_IMP_LE (SPEC_ALL FRAC_DNMPOS)
-    in MATCH_MP (snd (EQ_IMP_RULE (SPEC_ALL INT_NOT_LT))) th end ;
+    in MATCH_MP (snd (EQ_IMP_RULE (SPEC_ALL INT_NOT_LT))) th end;
+
 fun ifcan f x = f x handle _ => x ;
 
 val RAT_EQUIV_NMR_Z_IFF = store_thm ("RAT_EQUIV_NMR_Z_IFF",
@@ -166,12 +166,30 @@ val RAT_EQUIV_ALT = store_thm("RAT_EQUIV_ALT",
  * type definition
  *--------------------------------------------------------------------------*)
 
-(* following also stored as rat_QUOTIENT *)
+(* following also stored as rat_QUOTIENT
+   |- QUOTIENT rat_equiv abs_rat rep_rat
+ *)
 val rat_def = save_thm("rat_def",
   define_quotient_type "rat" "abs_rat" "rep_rat" RAT_EQUIV);
 
+(* |- !R abs rep.
+        QUOTIENT R abs rep <=>
+        (!a. abs (rep a) = a) /\ (!a. R (rep a) (rep a)) /\
+        !r s. R r s <=> R r r /\ R s s /\ (abs r = abs s)
+ *)
 val QUOTIENT_def = DB.fetch "quotient" "QUOTIENT_def";
+
+(* |- (!a. abs_rat (rep_rat a) = a) /\
+      (!a. rat_equiv (rep_rat a) (rep_rat a)) /\
+      !r s.
+        rat_equiv r s <=>
+        rat_equiv r r /\ rat_equiv s s /\ (abs_rat r = abs_rat s)
+ *)
 val rat_thm = REWRITE_RULE[QUOTIENT_def] rat_def ; (* was rat_def *)
+
+(* |- (!a. abs_rat (rep_rat a) = a) /\
+      !r s. rat_equiv r s <=> (abs_rat r = abs_rat s)
+ *)
 val rat_type_thm = save_thm ("rat_type_thm",
   REWRITE_RULE[QUOTIENT_def, RAT_EQUIV_REF] rat_def) ;
 
@@ -212,19 +230,31 @@ val rat_gre_def = Define `rat_gre r1 r2 = rat_les r2 r1`;
 val rat_leq_def = Define `rat_leq r1 r2 = rat_les r1 r2 \/ (r1=r2)`;
 val rat_geq_def = Define `rat_geq r1 r2 = rat_leq r2 r1`;
 
-
-
 (* construction of rational numbers, support of numerals *)
-val rat_cons_def = Define `rat_cons (nmr:int) (dnm:int) = abs_rat (abs_frac(SGN nmr * SGN dnm * ABS nmr, ABS dnm))`;
+Definition rat_cons_def :
+   rat_cons (nmr:int) (dnm:int) =
+     abs_rat (abs_frac(SGN nmr * SGN dnm * ABS nmr, ABS dnm))
+End
 
-val rat_of_num_def = Define ` (rat_of_num 0 = rat_0) /\ (rat_of_num (SUC 0) = rat_1) /\ (rat_of_num (SUC (SUC n)) = rat_add (rat_of_num (SUC n)) rat_1)`;
+Definition rat_of_num_def :
+   (rat_of_num 0             = rat_0) /\
+   (rat_of_num (SUC 0)       = rat_1) /\
+   (rat_of_num (SUC (SUC n)) = rat_add (rat_of_num (SUC n)) rat_1)
+End
 val _ = add_numeral_form(#"q", SOME "rat_of_num");
 
-val rat_0 = store_thm("rat_0", ``0q = abs_rat( frac_0 )``,
-        PROVE_TAC[rat_of_num_def, rat_0_def] );
+Theorem rat_0 :
+    0q = abs_rat frac_0
+Proof
+    PROVE_TAC [rat_of_num_def, rat_0_def]
+QED
 
-val rat_1 = store_thm("rat_1", ``1q = abs_rat( frac_1 )``,
-        SUBST_TAC[ARITH_PROVE ``1=SUC 0``] THEN RW_TAC arith_ss [rat_of_num_def, rat_1_def] );
+Theorem rat_1 :
+    1q = abs_rat frac_1
+Proof
+    SUBST_TAC [ARITH_PROVE “1=SUC 0”]
+ >> RW_TAC arith_ss [rat_of_num_def, rat_1_def]
+QED
 
 (*--------------------------------------------------------------------------
  *  parser rules
@@ -255,8 +285,11 @@ val _ = add_user_printer ("rat.decimalfractions",
  *  |- !r. abs_rat ( rep_rat r ) = r
  *--------------------------------------------------------------------------*)
 
-val RAT = store_thm("RAT", ``!r. abs_rat ( rep_rat r ) = r``,
-        ACCEPT_TAC (CONJUNCT1 rat_thm)) ;
+Theorem RAT :
+    !r. abs_rat (rep_rat r) = r
+Proof
+    ACCEPT_TAC (CONJUNCT1 rat_thm)
+QED
 
 (*--------------------------------------------------------------------------
  *  some lemmas
@@ -272,14 +305,21 @@ val REP_ABS_EQUIV = prove(``!a. rat_equiv a (rep_rat (abs_rat a))``,
 val RAT_ABS_EQUIV' = GSYM RAT_ABS_EQUIV ;
 val REP_ABS_EQUIV' = ONCE_REWRITE_RULE [RAT_EQUIV_SYM] REP_ABS_EQUIV ;
 
-val REP_ABS_DFN_EQUIV = prove(``!x. frac_nmr x * frac_dnm (rep_rat(abs_rat x)) = frac_nmr (rep_rat(abs_rat x)) * frac_dnm x``,
-        GEN_TAC THEN
-        REWRITE_TAC[GSYM rat_equiv_def] THEN
-        REWRITE_TAC[REP_ABS_EQUIV] );
+Theorem REP_ABS_DFN_EQUIV[local] :
+    !x. frac_nmr x * frac_dnm (rep_rat(abs_rat x)) =
+        frac_nmr (rep_rat(abs_rat x)) * frac_dnm x
+Proof
+    GEN_TAC
+ >> REWRITE_TAC [GSYM rat_equiv_def]
+ >> REWRITE_TAC[REP_ABS_EQUIV]
+QED
 
-val RAT_IMP_EQUIV = prove(``!r1 r2. (r1 = r2) ==> rat_equiv r1 r2``,
-        REPEAT STRIP_TAC THEN
-        ASM_REWRITE_TAC[RAT_EQUIV_REF]) ;
+Theorem RAT_IMP_EQUIV[local] :
+    !r1 r2. (r1 = r2) ==> rat_equiv r1 r2
+Proof
+    rpt STRIP_TAC
+ >> ASM_REWRITE_TAC [RAT_EQUIV_REF]
+QED
 
 (*==========================================================================
  * equivalence of rational numbers
@@ -291,22 +331,27 @@ val RAT_IMP_EQUIV = prove(``!r1 r2. (r1 = r2) ==> rat_equiv r1 r2``,
  *      = (frac_nmr f1 * frac_dnm f2 = frac_nmr f2 * frac_dnm f1)
  *--------------------------------------------------------------------------*)
 
-val RAT_EQ = store_thm("RAT_EQ",
-``!f1 f2. (abs_rat f1 = abs_rat f2) =
-          (frac_nmr f1 * frac_dnm f2 = frac_nmr f2 * frac_dnm f1)``,
-        REPEAT GEN_TAC THEN
-        REWRITE_TAC [RAT_ABS_EQUIV, rat_equiv_def] );
+Theorem RAT_EQ :
+    !f1 f2. (abs_rat f1 = abs_rat f2) <=>
+            (frac_nmr f1 * frac_dnm f2 = frac_nmr f2 * frac_dnm f1)
+Proof
+    rpt GEN_TAC
+ >> REWRITE_TAC [RAT_ABS_EQUIV, rat_equiv_def]
+QED
 
 (*--------------------------------------------------------------------------
  *  RAT_EQ_ALT: thm
  *  |- ! r1 r2. (r1=r2) = (rat_nmr r1 * rat_dnm r2 = rat_nmr r2 * rat_dnm r1)
  *--------------------------------------------------------------------------*)
 
-val RAT_EQ_ALT = store_thm("RAT_EQ_ALT", ``! r1 r2. (r1=r2) = (rat_nmr r1 * rat_dnm r2 = rat_nmr r2 * rat_dnm r1)``,
-        REPEAT GEN_TAC THEN
-        REWRITE_TAC[rat_nmr_def, rat_dnm_def] THEN
-        REWRITE_TAC[GSYM rat_equiv_def] THEN
-        REWRITE_TAC[rat_type_thm] );
+Theorem RAT_EQ_ALT :
+    !r1 r2. (r1 = r2) <=> (rat_nmr r1 * rat_dnm r2 = rat_nmr r2 * rat_dnm r1)
+Proof
+    rpt GEN_TAC
+ >> REWRITE_TAC [rat_nmr_def, rat_dnm_def]
+ >> REWRITE_TAC [GSYM rat_equiv_def]
+ >> REWRITE_TAC [rat_type_thm]
+QED
 
 (*==========================================================================
  *  congruence theorems
@@ -344,25 +389,31 @@ val RAT_NMRGT0_CONG = store_thm("RAT_NMRGT0_CONG",
  *  |- !f1. frac_sgn (rep_rat (abs_rat f1)) = frac_sgn f1
  *--------------------------------------------------------------------------*)
 
-val RAT_SGN_CONG = store_thm("RAT_SGN_CONG", ``!f1. frac_sgn (rep_rat (abs_rat f1)) = frac_sgn f1``,
-        GEN_TAC THEN
-        REWRITE_TAC[frac_sgn_def, SGN_def] THEN
-        REWRITE_TAC[RAT_NMREQ0_CONG, RAT_NMRLT0_CONG] );
+Theorem RAT_SGN_CONG :
+    !f1. frac_sgn (rep_rat (abs_rat f1)) = frac_sgn f1
+Proof
+    GEN_TAC
+ >> REWRITE_TAC [frac_sgn_def, SGN_def]
+ >> REWRITE_TAC [RAT_NMREQ0_CONG, RAT_NMRLT0_CONG]
+QED
 
 (*--------------------------------------------------------------------------
  *  RAT_AINV_CONG: thm
  *  |- !x. abs_rat (frac_ainv (rep_rat (abs_rat x))) = abs_rat (frac_ainv x)
  *--------------------------------------------------------------------------*)
 
-val RAT_AINV_CONG = store_thm("RAT_AINV_CONG", ``!x. abs_rat (frac_ainv (rep_rat (abs_rat x))) = abs_rat (frac_ainv x)``,
-        REPEAT GEN_TAC THEN
-        REWRITE_TAC[RAT_ABS_EQUIV] THEN
-        REWRITE_TAC[rat_equiv_def,frac_ainv_def] THEN
-        SIMP_TAC bool_ss [NMR, DNM, FRAC_DNMPOS] THEN
-        REWRITE_TAC[INT_MUL_CALCULATE,INT_EQ_NEG] THEN
-        REWRITE_TAC[GSYM rat_equiv_def] THEN
-        ONCE_REWRITE_TAC[RAT_EQUIV_SYM] THEN
-        REWRITE_TAC[REP_ABS_EQUIV] );
+Theorem RAT_AINV_CONG :
+    !x. abs_rat (frac_ainv (rep_rat (abs_rat x))) = abs_rat (frac_ainv x)
+Proof
+    rpt GEN_TAC
+ >> REWRITE_TAC [RAT_ABS_EQUIV]
+ >> REWRITE_TAC [rat_equiv_def, frac_ainv_def]
+ >> SIMP_TAC bool_ss [NMR, DNM, FRAC_DNMPOS]
+ >> REWRITE_TAC [INT_MUL_CALCULATE, INT_EQ_NEG]
+ >> REWRITE_TAC [GSYM rat_equiv_def]
+ >> ONCE_REWRITE_TAC [RAT_EQUIV_SYM]
+ >> REWRITE_TAC [REP_ABS_EQUIV]
+QED
 
 (*--------------------------------------------------------------------------
  *  RAT_MINV_CONG: thm
@@ -370,9 +421,9 @@ val RAT_AINV_CONG = store_thm("RAT_AINV_CONG", ``!x. abs_rat (frac_ainv (rep_rat
  *     (abs_rat (frac_minv (rep_rat (abs_rat x))) = abs_rat (frac_minv x))
  *--------------------------------------------------------------------------*)
 
-val FRAC_MINV_EQUIV = store_thm ("FRAC_MINV_EQUIV",
-  ``~(frac_nmr y=0) ==> rat_equiv x y ==>
-    rat_equiv (frac_minv x) (frac_minv y)``,
+Theorem FRAC_MINV_EQUIV :
+    frac_nmr y <> 0 ==> rat_equiv x y ==> rat_equiv (frac_minv x) (frac_minv y)
+Proof
   DISCH_TAC THEN DISCH_THEN (fn th => MP_TAC th THEN ASSUME_TAC th) THEN
   POP_ASSUM (ASSUME_TAC o MATCH_MP RAT_EQUIV_NMR_Z_IFF) THEN
   REWRITE_TAC[frac_minv_def, rat_equiv_def, frac_sgn_def] THEN
@@ -381,15 +432,19 @@ val FRAC_MINV_EQUIV = store_thm ("FRAC_MINV_EQUIV",
   REWRITE_TAC[SGN_def] THEN REPEAT IF_CASES_TAC THEN
   ASM_SIMP_TAC int_ss [INT_ABS,
     GSYM INT_NEG_MINUS1, GSYM INT_NEG_LMUL, GSYM INT_NEG_RMUL] THEN
-  SIMP_TAC bool_ss [INT_MUL_COMM]) ;
+  SIMP_TAC bool_ss [INT_MUL_COMM]
+QED
 
-val RAT_MINV_CONG = store_thm("RAT_MINV_CONG",
-  ``!x. ~(frac_nmr x=0) ==>
-    (abs_rat (frac_minv (rep_rat (abs_rat x))) = abs_rat (frac_minv x))``,
-  REPEAT STRIP_TAC THEN
-  IMP_RES_TAC FRAC_MINV_EQUIV THEN
-  ASSUME_TAC (Q.SPEC `x` REP_ABS_EQUIV') THEN
-  RES_TAC THEN ASM_SIMP_TAC bool_ss [RAT_ABS_EQUIV]) ;
+Theorem RAT_MINV_CONG :
+    !x. frac_nmr x <> 0 ==>
+        (abs_rat (frac_minv (rep_rat (abs_rat x))) = abs_rat (frac_minv x))
+Proof
+    rpt STRIP_TAC
+ >> IMP_RES_TAC FRAC_MINV_EQUIV
+ >> ASSUME_TAC (Q.SPEC `x` REP_ABS_EQUIV')
+ >> RES_TAC
+ >> ASM_SIMP_TAC bool_ss [RAT_ABS_EQUIV]
+QED
 
 (*--------------------------------------------------------------------------
  *  RAT_ADD_CONG1: thm

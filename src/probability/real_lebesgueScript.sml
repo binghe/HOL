@@ -12,6 +12,11 @@ open realTheory realLib realSimps seqTheory real_sigmaTheory transcTheory
 
 open util_probTheory sigma_algebraTheory real_measureTheory real_borelTheory;
 
+(*
+val _ = ratLib.deprecate_rat();
+val _ = intLib.deprecate_int();
+ *)
+
 (* ------------------------------------------------------------------------- *)
 (* Start a new theory called "lebesgue"                                      *)
 (* ------------------------------------------------------------------------- *)
@@ -3836,5 +3841,705 @@ Proof
           Q.EXISTS_TAC ‘max_fn_seq g n’ >> art [])
  >> METIS_TAC [REAL_LE_ANTISYM]
 QED
+
+(* The following two definitions are not used anywhere:
+val signed_measure_space_def = Define `
+    signed_measure_space m = sigma_algebra (m_space m,measurable_sets m) /\ countably_additive m`;
+
+val negative_set_def = Define `
+    negative_set m A = A IN measurable_sets m /\
+                      (!s. s IN measurable_sets m /\ s SUBSET A ==> measure m s <= 0)`;
+ *)
+
+(*
+Definition RADON_F_def :
+    RADON_F m v =
+      {f | f IN borel_measurable (m_space m,measurable_sets m) /\
+           (!x. 0 <= f x) /\
+           !A. A IN measurable_sets m ==>
+               (pos_fn_integral m (\x. f x * indicator_fn A x) <= (measure v A))}
+End
+
+Definition RADON_F_integrals_def :
+    RADON_F_integrals m v = {r | ?f. (r = pos_fn_integral m f) /\ f IN RADON_F m v}
+End
+
+Definition measure_absolutely_continuous_def :
+    measure_absolutely_continuous m v =
+    !A. A IN measurable_sets m /\ (measure v A = 0) ==> (measure m A = 0)
+End
+
+Theorem lemma_radon_max_in_F :
+    !f g m v. measure_space m /\ measure_space v /\
+             (m_space v = m_space m) /\ (measurable_sets v = measurable_sets m) /\
+              f IN RADON_F m v /\ g IN RADON_F m v
+         ==> (\x. max (f x) (g x)) IN RADON_F m v
+Proof
+    RW_TAC real_ss [RADON_F_def, GSPECIFICATION, REAL_MAX_LE, REAL_LE_MAX]
+ >- FULL_SIMP_TAC std_ss [in_borel_measurable_max, measure_space_def]
+ >> Q.ABBREV_TAC `A1 = {x | x IN A /\ g x < f x}`
+ >> Q.ABBREV_TAC `A2 = {x | x IN A /\ f x <= g x}`
+ >> `DISJOINT A1 A2`
+      by (RW_TAC std_ss [Abbr ‘A1’, Abbr ‘A2’, IN_DISJOINT, GSPECIFICATION] \\
+          METIS_TAC [real_lte])
+ >> `A1 UNION A2 = A`
+      by (rw [Abbr ‘A1’, Abbr ‘A2’, Once EXTENSION] \\
+          METIS_TAC [real_lte])
+ >> `(\x. max (f x) (g x) * indicator_fn A x) =
+     (\x. (\x. max (f x) (g x) * indicator_fn A1 x) x +
+          (\x. max (f x) (g x) * indicator_fn A2 x) x)`
+       by (rw [Abbr ‘A1’, Abbr ‘A2’, indicator_fn_def, FUN_EQ_THM] \\
+           Cases_on `g x < f x` >> rw [] >- METIS_TAC [REAL_LTE_ANTISYM] \\
+           METIS_TAC [real_lte])
+ >> `additive v`
+       by METIS_TAC [measure_space_def,sigma_algebra_def,COUNTABLY_ADDITIVE_ADDITIVE]
+ >> `A SUBSET m_space m` by RW_TAC std_ss [MEASURE_SPACE_SUBSET_MSPACE]
+ >> `A1 = ({x | g x < f x} INTER m_space m) INTER A`
+       by (Q.UNABBREV_TAC `A1` \\
+           RW_TAC std_ss [EXTENSION,IN_INTER,GSPECIFICATION,CONJ_SYM] \\
+           METIS_TAC [SUBSET_DEF])
+ >> `A2 = ({x | f x <= g x} INTER m_space m) INTER A`
+       by (Q.UNABBREV_TAC `A2` \\
+           RW_TAC std_ss [EXTENSION,IN_INTER,GSPECIFICATION,CONJ_SYM] \\
+           METIS_TAC [SUBSET_DEF])
+ >> `A1 IN measurable_sets m`
+       by (ASM_SIMP_TAC std_ss [] \\
+           MATCH_MP_TAC MEASURE_SPACE_INTER \\
+           RW_TAC std_ss [] \\
+          ‘{x | g x < f x} INTER m_space m = {x | x IN m_space m /\ g x < f x}’ by SET_TAC [] \\
+           POP_ORW \\
+           MATCH_MP_TAC (REWRITE_RULE [space_def, subsets_def]
+                                      (Q.SPECL [‘(m_space m,measurable_sets m)’, ‘g’, ‘f’]
+                                               in_borel_measurable_lt2)) >> art [])
+ >> `A2 IN measurable_sets m`
+       by (ASM_SIMP_TAC std_ss [] \\
+           MATCH_MP_TAC MEASURE_SPACE_INTER \\
+           RW_TAC std_ss [] \\
+          ‘{x | f x <= g x} INTER m_space m = {x | x IN m_space m /\ f x <= g x}’ by SET_TAC [] \\
+           POP_ORW \\
+           MATCH_MP_TAC (REWRITE_RULE [space_def, subsets_def]
+                                      (Q.SPECL [‘(m_space m,measurable_sets m)’, ‘f’, ‘g’]
+                                               in_borel_measurable_le2)) >> art [])
+ >> `measure v A = measure v A1 + measure v A2` by METIS_TAC [ADDITIVE]
+ >> Q.PAT_X_ASSUM `A1 = M` (K ALL_TAC)
+ >> Q.PAT_X_ASSUM `A2 = M` (K ALL_TAC)
+ >> `!x. max (f x) (g x) * indicator_fn A1 x = f x * indicator_fn A1 x`
+       by (RW_TAC real_ss [Abbr ‘A1’, max_def, indicator_fn_def, GSPECIFICATION] \\
+           METIS_TAC [real_lte])
+ >> `!x. max (f x) (g x) * indicator_fn A2 x = g x * indicator_fn A2 x`
+       by (RW_TAC real_ss [Abbr ‘A2’, max_def, indicator_fn_def, GSPECIFICATION])
+ >> ASM_SIMP_TAC std_ss []
+
+(* TODO *)
+
+ >> `(\x. f x * indicator_fn A1 x) IN measurable (m_space m, measurable_sets m) borel`
+        by METIS_TAC [in_borel_measurable_mul_indicator, measure_space_def,
+                      measurable_sets_def, subsets_def]
+ >> `(\x. g x * indicator_fn A2 x) IN measurable (m_space m, measurable_sets m) borel`
+        by METIS_TAC [in_borel_measurable_mul_indicator, measure_space_def,
+                       measurable_sets_def, subsets_def]
+ >> `!x. 0 <= (\x. f x * indicator_fn A1 x) x` by RW_TAC real_ss [indicator_fn_def]
+ >> `!x. 0 <= (\x. g x * indicator_fn A2 x) x` by RW_TAC real_ss [indicator_fn_def]
+
+ >> FULL_SIMP_TAC std_ss [le_add2,pos_fn_integral_add, GSYM extreal_add_def]);
+
+val lemma_radon_seq_conv_sup = store_thm
+  ("lemma_radon_seq_conv_sup",``!f m v. (measure_space m /\ measure_space v /\
+                                        (m_space v = m_space m) /\
+                                        (measurable_sets v = measurable_sets m))
+        ==> ?f_n. (!n. f_n n IN RADON_F m v) /\
+                  (!x n. f_n n x <= f_n (SUC n) x) /\
+                  (sup (IMAGE (\n. pos_fn_integral m (f_n n)) UNIV) =
+                            sup (RADON_F_integrals m v))``,
+  RW_TAC std_ss [RADON_F_integrals_def]
+  >> MATCH_MP_TAC REAL_SUP_FUN_SEQ_MONO_IMAGE
+  >> CONJ_TAC
+  >- (Q.EXISTS_TAC `0`
+      >> ONCE_REWRITE_TAC [GSYM SPECIFICATION]
+      >> RW_TAC std_ss [GSPECIFICATION]
+      >> Q.EXISTS_TAC `(\x. 0)`
+      >> RW_TAC real_ss [RADON_F_def,GSPECIFICATION,pos_fn_integral_zero,mul_lzero,REAL_LE_REFL]
+      >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_CONST
+          >> METIS_TAC [space_def,measure_space_def])
+      >> METIS_TAC [measure_space_def, positive_def, extreal_of_num_def, extreal_le_def])
+  >> CONJ_TAC
+  >- (Q.EXISTS_TAC `Normal (measure v (m_space v))`
+      >> RW_TAC std_ss [extreal_not_infty]
+      >> POP_ASSUM (MP_TAC o ONCE_REWRITE_RULE [GSYM SPECIFICATION])
+      >> RW_TAC std_ss [GSPECIFICATION,RADON_F_def]
+      >> POP_ASSUM (MP_TAC o Q.SPEC `m_space m`)
+      >> RW_TAC std_ss [MEASURE_SPACE_MSPACE_MEASURABLE, GSYM pos_fn_integral_mspace])
+  >> CONJ_TAC
+  >- RW_TAC std_ss [EXTENSION,GSPECIFICATION,IN_IMAGE,RADON_F_def]
+  >> CONJ_TAC
+  >- RW_TAC std_ss [RADON_F_def,GSPECIFICATION,pos_fn_integral_mono]
+  >> RW_TAC std_ss [lemma_radon_max_in_F]);
+
+val RN_lemma1 = store_thm
+  ("RN_lemma1",``!m v e. measure_space m /\ measure_space v /\ 0 < e /\
+                       (m_space v = m_space m) /\ (measurable_sets v = measurable_sets m)
+       ==> (?A. A IN measurable_sets m /\
+                measure m (m_space m) - measure v (m_space m) <= measure m A - measure v A /\
+                !B. B IN measurable_sets m /\ B SUBSET A
+                    ==> -e < measure m B - measure v B)``,
+  RW_TAC std_ss []
+  >> Q.ABBREV_TAC `d = (\A. measure m A - measure v A)`
+  >> Q.ABBREV_TAC `h = (\A. if (!B. B IN measurable_sets m /\
+                                    B SUBSET (m_space m DIFF A) ==> -e < d B)
+                            then {} else
+                               @B. B IN measurable_sets m /\ B
+                                   SUBSET (m_space m DIFF A) /\ d B <= -e )`
+  >> `!A. A IN measurable_sets m ==> h A  IN measurable_sets m`
+        by (RW_TAC std_ss []
+            >> METIS_TAC [MEASURE_SPACE_EMPTY_MEASURABLE,real_lt])
+  >> Q.ABBREV_TAC `A = SIMP_REC {} (\a. a UNION h a)`
+  >> `A 0 = {}` by METIS_TAC [SIMP_REC_THM]
+  >> `!n. A (SUC n) = (A n) UNION (h (A n))`
+      by (Q.UNABBREV_TAC `A` >> RW_TAC std_ss [SIMP_REC_THM])
+  >> `!n. A n IN measurable_sets m`
+        by (Induct >- RW_TAC std_ss [MEASURE_SPACE_EMPTY_MEASURABLE]
+            >> RW_TAC std_ss [MEASURE_SPACE_UNION])
+  >> `!n. (?B. B IN measurable_sets m /\ B SUBSET (m_space m DIFF (A n)) /\ d B <= -e) ==>
+               d (A (SUC n)) <= d (A n) - e`
+       by (RW_TAC std_ss []
+           >> `~(!B. B IN measurable_sets m /\ B SUBSET (m_space m DIFF (A n)) ==> -e < d B)`
+                 by METIS_TAC [real_lt]
+           >> `h (A n) = (@B. B IN measurable_sets m /\
+                              B SUBSET m_space m DIFF (A n) /\ d B <= -e)`
+                by (Q.UNABBREV_TAC `h` >> RW_TAC std_ss [])
+           >> POP_ORW
+           >> SELECT_ELIM_TAC
+           >> RW_TAC std_ss []
+           >- METIS_TAC []
+           >> `DISJOINT (A n) x`
+               by (RW_TAC std_ss [DISJOINT_DEF,EXTENSION,IN_INTER,NOT_IN_EMPTY]
+                   >> METIS_TAC [SUBSET_DEF,IN_DIFF])
+           >> `d ((A n) UNION x) = d (A n) + d x`
+                 by (Q.UNABBREV_TAC `d`
+                     >> RW_TAC std_ss []
+                     >> `measure m (A n UNION x) = measure m (A n) + measure m x`
+                           by (MATCH_MP_TAC ADDITIVE
+                               >> FULL_SIMP_TAC std_ss [MEASURE_SPACE_ADDITIVE])
+                     >> `measure v (A n UNION x) = measure v (A n) + measure v x`
+                           by (MATCH_MP_TAC ADDITIVE
+                               >> FULL_SIMP_TAC std_ss [MEASURE_SPACE_ADDITIVE])
+                     >> POP_ORW >> POP_ORW
+                     >> REAL_ARITH_TAC)
+          >> POP_ORW
+          >> METIS_TAC [REAL_LE_LADD,real_sub])
+  >> `!n. d (A (SUC n)) <= d (A n)`
+        by (RW_TAC std_ss []
+            >> Cases_on `(?B. B IN measurable_sets m /\ B SUBSET m_space m DIFF A n /\ d B <= -e)`
+            >- (`d (A n) <= d (A n) + e` by METIS_TAC [REAL_LE_ADDR, REAL_LT_IMP_LE]
+                >> `d (A n) - e <= d (A n)` by METIS_TAC [REAL_LE_SUB_RADD]
+                >> METIS_TAC [REAL_LE_TRANS])
+            >> `!B. B IN measurable_sets m /\ B SUBSET m_space m DIFF A n ==> -e < d B`
+                 by METIS_TAC [real_lt]
+            >> METIS_TAC [UNION_EMPTY,REAL_LE_REFL])
+  >> Cases_on `?n. !B. ((B IN measurable_sets m /\ B SUBSET (m_space m DIFF (A n))) ==> -e < d B)`
+  >- (Q.PAT_X_ASSUM `!n. A (SUC n) = a UNION b` (K ALL_TAC)
+      >> FULL_SIMP_TAC std_ss []
+      >> `!n. m_space m DIFF (A n) IN measurable_sets m`
+          by METIS_TAC [MEASURE_SPACE_DIFF,MEASURE_SPACE_MSPACE_MEASURABLE]
+      >> Suff `!n. d (m_space m) <= d (m_space m DIFF (A n))`
+      >- METIS_TAC []
+      >> Induct
+      >- RW_TAC std_ss [DIFF_EMPTY,REAL_LE_REFL]
+      >> `measure m (m_space m DIFF A (SUC n')) = measure m (m_space m) - measure m (A (SUC n'))`
+           by METIS_TAC [MEASURE_COMPL]
+      >> `measure v (m_space m DIFF A (SUC n')) = measure v (m_space m) - measure v (A (SUC n'))`
+           by METIS_TAC [MEASURE_COMPL]
+      >> `measure m (m_space m DIFF A n') = measure m (m_space m) - measure m (A n')`
+           by METIS_TAC [MEASURE_COMPL]
+      >> `measure v (m_space m DIFF A n') = measure v (m_space m) - measure v (A n')`
+           by METIS_TAC [MEASURE_COMPL]
+      >> `d (m_space m DIFF A n') = d (m_space m) - d (A n')`
+             by (Q.UNABBREV_TAC `d`
+                 >> RW_TAC std_ss []
+                 >> REAL_ARITH_TAC)
+      >> `d (m_space m DIFF A (SUC n')) = d (m_space m) - d (A (SUC n'))`
+             by (Q.UNABBREV_TAC `d`
+                 >> RW_TAC std_ss []
+                 >> REAL_ARITH_TAC)
+      >> FULL_SIMP_TAC std_ss []
+      >> `d (m_space m) - d (A n') <= d (m_space m) - d (A (SUC n'))`
+           by METIS_TAC [real_sub, MEASURE_SPACE_MSPACE_MEASURABLE, REAL_LE_LADD, REAL_LE_NEG]
+      >> METIS_TAC [REAL_LE_TRANS])
+  >> `!n. ?B. B IN measurable_sets m /\ B SUBSET (m_space m DIFF (A n)) /\ d B <= -e`
+        by METIS_TAC [real_lt]
+  >> `!n. d (A n) <= - &n * e`
+       by (Induct
+           >- METIS_TAC [REAL_MUL_LZERO, REAL_NEG_0, REAL_LE_REFL, MEASURE_EMPTY, measure_def,
+                         REAL_SUB_RZERO]
+           >> `d (A (SUC n)) <= d (A n) - e` by METIS_TAC []
+           >> `-&SUC n * e = -&n * e + -e`
+               by (RW_TAC std_ss [ADD1, GSYM add_ints] >> REAL_ARITH_TAC)
+           >> POP_ORW
+           >> Suff `d (A n) - e <= -&n * e + -e` >- METIS_TAC [REAL_LE_TRANS]
+           >> METIS_TAC [REAL_NEG_ADD, REAL_LE_ADD2, real_sub, REAL_LE_REFL])
+  >> `!n. - d (A n) <= - d (A (SUC n))` by METIS_TAC [REAL_LE_NEG]
+  >> `!n. A n SUBSET A (SUC n)` by METIS_TAC [SUBSET_UNION]
+  >> `measure m o A --> measure m (BIGUNION (IMAGE A UNIV))`
+       by METIS_TAC [MONOTONE_CONVERGENCE2, IN_FUNSET, IN_UNIV, measure_def, measurable_sets_def]
+  >> `measure v o A --> measure v (BIGUNION (IMAGE A UNIV))`
+       by METIS_TAC [MONOTONE_CONVERGENCE2, IN_FUNSET, IN_UNIV, measure_def, measurable_sets_def]
+  >> FULL_SIMP_TAC std_ss [o_DEF]
+  >> `BIGUNION (IMAGE A UNIV) IN measurable_sets m`
+      by METIS_TAC [SIGMA_ALGEBRA_ENUM, measure_space_def, subsets_def, measurable_sets_def,
+                    IN_FUNSET, IN_UNIV]
+  >> `(\n. -d (A n)) --> -d (BIGUNION (IMAGE A UNIV))`
+      by (Q.UNABBREV_TAC `d`
+          >> RW_TAC std_ss [SEQ_SUB, REAL_NEG_SUB])
+  >> `?n. - d (BIGUNION (IMAGE A UNIV)) < &n * e` by METIS_TAC [REAL_ARCH]
+  >> `&n * e <= -d (A n)` by METIS_TAC [REAL_LE_NEG, REAL_NEG_NEG, REAL_MUL_LNEG]
+  >> `-d (BIGUNION (IMAGE A univ(:num))) < -d (A n)` by METIS_TAC [REAL_LTE_TRANS]
+  >> `!n. (\n. -d (A n)) n <= (\n. -d (A n)) (n+1)`
+           by METIS_TAC [ADD1]
+  >> Suff `(\n. -d (A n)) n <= -d (BIGUNION (IMAGE A univ(:num)))`
+  >- RW_TAC real_ss [real_lte]
+  >> MATCH_MP_TAC SEQ_MONO_LE
+  >> RW_TAC std_ss []);
+
+val RN_lemma2 = store_thm
+("RN_lemma2",``!m v. measure_space m /\ measure_space v /\
+                     (m_space v = m_space m) /\
+                     (measurable_sets v = measurable_sets m)
+   ==> (?A. A IN measurable_sets m /\
+            measure m (m_space m) - measure v (m_space m) <= measure m A - measure v A /\
+            !B. B IN measurable_sets m /\
+                B SUBSET A ==> 0 <= measure m B - measure v B)``,
+  RW_TAC std_ss []
+  >> Q.ABBREV_TAC `d = (\a. measure m a - measure v a)`
+  >> Q.ABBREV_TAC `p = (\a b n. a IN measurable_sets m /\
+                                a SUBSET b /\
+                                d b <= d a /\
+                                (!c. c IN measurable_sets m /\
+                                     c SUBSET a ==> -((1 / 2) pow n) < d c))`
+  >> Q.ABBREV_TAC `sts = (\s. IMAGE (\A. s INTER A) (measurable_sets m))`
+  >> `!s t. s IN measurable_sets m /\ t IN sts s ==> t IN measurable_sets m`
+        by (RW_TAC std_ss []
+            >> Q.UNABBREV_TAC `sts`
+            >> FULL_SIMP_TAC std_ss [IN_IMAGE,MEASURE_SPACE_INTER])
+  >> `!s t. t IN sts s ==> t SUBSET s`
+        by (RW_TAC std_ss []
+            >> Q.UNABBREV_TAC `sts`
+            >> FULL_SIMP_TAC std_ss [IN_IMAGE,INTER_SUBSET])
+  >> `!s. s IN measurable_sets m ==> measure_space (s, sts s, measure m)`
+      by METIS_TAC [MEASURE_SPACE_RESTRICTED]
+  >> `!s. s IN measurable_sets m ==> measure_space (s, sts s, measure v)`
+      by METIS_TAC [MEASURE_SPACE_RESTRICTED]
+  >> `!n. 0:real <  ((1 / 2) pow n)` by METIS_TAC [POW_HALF_POS]
+  >> `!s n. s IN measurable_sets m ==> ?A. p A s n`
+         by (RW_TAC std_ss []
+             >> `?A. A IN (sts s) /\ measure m s - measure v s <= measure m A - measure v A /\
+                (!B. B IN (sts s) /\ B SUBSET A ==>
+                            -((1 / 2) pow n) < measure m B - measure v B)`
+                 by (RW_TAC std_ss []
+                     >> (MP_TAC o Q.SPECL [`(s,sts s,measure m)`,`(s,sts s,measure v)`,
+                                           `(1 / 2) pow n`]) RN_lemma1
+                     >> RW_TAC std_ss [m_space_def,measure_def,measurable_sets_def])
+             >> Q.EXISTS_TAC `A`
+             >> Q.UNABBREV_TAC `p`
+             >> FULL_SIMP_TAC std_ss []
+             >> RW_TAC std_ss []
+             >| [METIS_TAC [],METIS_TAC [],
+                 `A SUBSET s` by METIS_TAC []
+                 >> Suff `c IN sts s`
+                 >- METIS_TAC []
+                 >> Q.UNABBREV_TAC `sts`
+                 >> FULL_SIMP_TAC std_ss [IN_IMAGE]
+                 >> Q.EXISTS_TAC `c`
+                 >> METIS_TAC [SUBSET_INTER2,SUBSET_TRANS]])
+  >> Q.ABBREV_TAC `A = PRIM_REC (m_space m) (\a n. @b. p b a n)`
+  >> `A 0 = m_space m` by METIS_TAC [PRIM_REC_THM]
+  >> `!n. A (SUC n) = @b. p b (A n) n`
+        by (Q.UNABBREV_TAC `A` >> RW_TAC std_ss [PRIM_REC_THM])
+  >> `!n. A n IN measurable_sets m`
+       by (Induct >- METIS_TAC [MEASURE_SPACE_MSPACE_MEASURABLE]
+           >> RW_TAC std_ss []
+           >> SELECT_ELIM_TAC
+           >> FULL_SIMP_TAC std_ss []
+           >> METIS_TAC [])
+  >> `!n. p (A (SUC n)) (A n) n` by METIS_TAC []
+  >> `!n. A (SUC n) SUBSET (A n)` by METIS_TAC []
+  >> `!n. d (A n) <= d (A (SUC n))` by METIS_TAC []
+  >> `!n c. (c IN measurable_sets m /\ c SUBSET (A (SUC n)) ==> - ((1 / 2) pow n) < d c)`
+       by METIS_TAC []
+  >> Q.EXISTS_TAC `BIGINTER (IMAGE A UNIV)`
+  >> CONJ_TAC
+  >- METIS_TAC [SIGMA_ALGEBRA_FN_BIGINTER, IN_UNIV, IN_FUNSET, subsets_def, measurable_sets_def,
+                measure_space_def]
+  >> reverse CONJ_TAC
+  >- (RW_TAC std_ss []
+      >> SPOSE_NOT_THEN ASSUME_TAC
+      >> FULL_SIMP_TAC std_ss [GSYM real_lt]
+      >> `0 < - (measure m B - measure v B)` by METIS_TAC [REAL_LT_NEG,REAL_NEG_0]
+      >> `?n. measure m B - measure v B < -((1 / 2) pow n)`
+          by METIS_TAC [POW_HALF_SMALL, REAL_LT_NEG, REAL_NEG_NEG]
+      >> `d B < -((1 / 2) pow n)` by METIS_TAC []
+      >> `!n. B SUBSET A n` by METIS_TAC [SUBSET_BIGINTER,IN_IMAGE,IN_UNIV]
+      >> METIS_TAC [REAL_LT_ANTISYM])
+  >> `measure m o A --> measure m (BIGINTER (IMAGE A UNIV))`
+      by METIS_TAC [MONOTONE_CONVERGENCE_BIGINTER2, IN_UNIV, IN_FUNSET]
+  >> `measure v o A --> measure v (BIGINTER (IMAGE A UNIV))`
+      by METIS_TAC [MONOTONE_CONVERGENCE_BIGINTER2, IN_UNIV, IN_FUNSET]
+  >> `BIGINTER (IMAGE A UNIV) IN measurable_sets m` by METIS_TAC [MEASURE_SPACE_BIGINTER]
+  >> FULL_SIMP_TAC std_ss [o_DEF]
+  >> `(\n. -d (A n)) --> -d (BIGINTER (IMAGE A UNIV))`
+      by (Q.UNABBREV_TAC `d`
+          >> RW_TAC std_ss [SEQ_SUB, REAL_NEG_SUB])
+  >> `!n. -d (A (SUC n)) <= -d (A n)` by METIS_TAC [REAL_LE_NEG]
+  >> `!n. (\n. -d (A n)) (n + 1) <= (\n. -d (A n)) n`
+           by METIS_TAC [ADD1]
+  >> `-d (BIGINTER (IMAGE A univ(:num))) <= (\n. -d (A n)) 0`
+       by (MATCH_MP_TAC SEQ_LE_MONO
+           >> RW_TAC std_ss [])
+  >> `d (m_space m) <= d (BIGINTER (IMAGE A UNIV))` by METIS_TAC [REAL_LE_NEG]
+  >> METIS_TAC []);
+
+val Radon_Nikodym = store_thm
+  ("Radon_Nikodym",``!m v. measure_space m /\ measure_space v /\
+                           (m_space v = m_space m) /\
+                           (measurable_sets v = measurable_sets m) /\
+                           measure_absolutely_continuous v m
+            ==> (?f. f IN measurable (m_space m, measurable_sets m) Borel /\ (!x. 0 <= f x) /\
+                (!A. A IN measurable_sets m ==>
+                     (pos_fn_integral m (\x. f x * indicator_fn A x) = Normal (measure v A))))``,
+  RW_TAC std_ss []
+  >> `?f_n. (!n. f_n n IN RADON_F m v) /\ (!x n. f_n n x <= f_n (SUC n) x) /\
+           (sup (IMAGE (\n. pos_fn_integral m (f_n n)) univ(:num)) =
+            sup (RADON_F_integrals m v))`
+       by RW_TAC std_ss [lemma_radon_seq_conv_sup]
+  >> Q.ABBREV_TAC `g = (\x. sup (IMAGE (\n. f_n n x) UNIV))`
+  >> Q.EXISTS_TAC `g`
+  >> `g IN measurable (m_space m,measurable_sets m) Borel`
+      by (MATCH_MP_TAC IN_MEASURABLE_BOREL_MONO_SUP
+          >> Q.EXISTS_TAC `f_n`
+          >> FULL_SIMP_TAC std_ss [RADON_F_def, GSPECIFICATION, measure_space_def, space_def]
+          >> Q.UNABBREV_TAC `g`
+          >> RW_TAC std_ss [])
+  >> `!x. 0 <= g x`
+       by (Q.UNABBREV_TAC `g`
+           >> RW_TAC std_ss [le_sup]
+           >> MATCH_MP_TAC le_trans
+           >> Q.EXISTS_TAC `f_n 0 x`
+           >> RW_TAC std_ss []
+           >- FULL_SIMP_TAC std_ss [RADON_F_def, GSPECIFICATION]
+           >> POP_ASSUM MATCH_MP_TAC
+           >> ONCE_REWRITE_TAC [GSYM SPECIFICATION]
+           >> RW_TAC std_ss [IN_IMAGE, IN_UNIV]
+           >> METIS_TAC [])
+  >> RW_TAC std_ss []
+  >> `!A. A IN measurable_sets m ==>
+          (pos_fn_integral m (\x. g x * indicator_fn A x) =
+           sup (IMAGE (\n. pos_fn_integral m (\x. f_n n x * indicator_fn A x)) UNIV))`
+       by (RW_TAC std_ss []
+           >> MATCH_MP_TAC lebesgue_monotone_convergence_subset
+           >> FULL_SIMP_TAC std_ss [RADON_F_def, GSPECIFICATION, ext_mono_increasing_suc]
+           >> RW_TAC std_ss []
+           >> Q.UNABBREV_TAC `g`
+           >> METIS_TAC [])
+  >> `g IN RADON_F m v`
+      by (FULL_SIMP_TAC std_ss [RADON_F_def, GSPECIFICATION, sup_le]
+          >> RW_TAC std_ss []
+          >> POP_ASSUM (MP_TAC o ONCE_REWRITE_RULE [GSYM SPECIFICATION])
+          >> RW_TAC std_ss [IN_IMAGE,IN_UNIV]
+          >> METIS_TAC [])
+  >> `pos_fn_integral m g = sup (IMAGE (\n:num. pos_fn_integral m (f_n n)) UNIV)`
+       by (MATCH_MP_TAC lebesgue_monotone_convergence
+           >> FULL_SIMP_TAC std_ss [RADON_F_def, GSPECIFICATION, ext_mono_increasing_suc]
+           >> Q.UNABBREV_TAC `g`
+           >> METIS_TAC [])
+  >> `pos_fn_integral m g = sup (RADON_F_integrals m v)` by FULL_SIMP_TAC std_ss []
+  >> `!A. A IN measurable_sets m ==>
+          pos_fn_integral m (\x. g x * indicator_fn A x) <= Normal (measure v A)`
+       by FULL_SIMP_TAC std_ss [RADON_F_def, GSPECIFICATION]
+  >> `!A x. 0 <= (\x. g x * indicator_fn A x) x`
+       by RW_TAC std_ss [indicator_fn_def, mul_rzero, mul_rone, le_01, REAL_LE_REFL]
+  >> `!A. A IN measurable_sets m ==> 0 <= pos_fn_integral m (\x. g x * indicator_fn A x)`
+          by (rpt STRIP_TAC >> MATCH_MP_TAC pos_fn_integral_pos >> METIS_TAC [])
+  >> `!A. A IN measurable_sets m ==> pos_fn_integral m (\x. g x * indicator_fn A x) <> NegInf`
+       by METIS_TAC [lt_infty,extreal_of_num_def,extreal_not_infty,lte_trans]
+  >> `!A. A IN measurable_sets m ==> pos_fn_integral m (\x. g x * indicator_fn A x) <> PosInf`
+       by METIS_TAC [let_trans,lt_infty]
+  >> `?Ig. !A. A IN measurable_sets m ==>
+      (pos_fn_integral m (\x. g x * indicator_fn A x) = Normal (Ig A))`
+      by (Q.EXISTS_TAC `(\A. @Ig. pos_fn_integral m (\x. g x * indicator_fn A x) = Normal (Ig))`
+           >> RW_TAC std_ss []
+           >> METIS_TAC [extreal_cases])
+  >> RW_TAC std_ss []
+  >> Q.ABBREV_TAC `nu = (\A. measure v A - Ig A)`
+  >> `!A. A IN measurable_sets m ==> 0 <= nu A`
+       by (RW_TAC std_ss []
+           >> FULL_SIMP_TAC std_ss [RADON_F_def, GSPECIFICATION]
+           >> METIS_TAC [extreal_le_def, sub_zero_le, extreal_of_num_def, extreal_sub_def])
+  >> `positive (m_space m, measurable_sets m, nu)`
+       by (RW_TAC std_ss [positive_def, measure_def, measurable_sets_def]
+           >> Q.UNABBREV_TAC `nu`
+           >> RW_TAC std_ss [MEASURE_EMPTY]
+           >> Q.PAT_X_ASSUM `!A. A IN measurable_sets m ==> (Q = Normal P)`
+                        (MP_TAC o GSYM o Q.SPEC `{}`)
+           >> RW_TAC std_ss [MEASURE_SPACE_EMPTY_MEASURABLE, indicator_fn_def, NOT_IN_EMPTY,
+                             pos_fn_integral_zero, mul_rzero,mul_rone]
+           >> `IMAGE (\n. 0) univ(:num) = (\y. y = 0)`
+               by RW_TAC std_ss [EXTENSION, IN_IMAGE, IN_UNIV, IN_ABS]
+           >> FULL_SIMP_TAC real_ss [REAL_SUP_CONST, extreal_of_num_def, extreal_11])
+  >> Q.PAT_X_ASSUM `!A. A IN measurable_sets m
+     ==> (pos_fn_integral m (\x. g x * indicator_fn A x) = sup Q)` (K ALL_TAC)
+  >> RW_TAC std_ss []
+  >> `measure_space (m_space m, measurable_sets m, nu)`
+      by (FULL_SIMP_TAC std_ss [measure_space_def, m_space_def, measurable_sets_def,
+                                countably_additive_def,measure_def]
+          >> Q.UNABBREV_TAC `nu`
+          >> RW_TAC std_ss [o_DEF]
+          >> `(\x. measure v (f x)) sums measure v (BIGUNION (IMAGE f univ(:num)))`
+               by METIS_TAC [o_DEF,countably_additive_def]
+          >> Suff `(\x. Ig (f x)) sums Ig (BIGUNION (IMAGE f univ(:num)))`
+          >- METIS_TAC [SER_SUB]
+          >> `measure_space m` by METIS_TAC [measure_space_def, countably_additive_def]
+          >> RW_TAC std_ss [sums]
+          >> Know `mono_increasing (\n. sum (0,n) (\x. Ig (f x)))`
+          >- (RW_TAC std_ss [mono_increasing_def, GSYM extreal_le_def, GSYM REAL_SUM_IMAGE_COUNT]
+              >> RW_TAC std_ss [GSYM EXTREAL_SUM_IMAGE_NORMAL, FINITE_COUNT]
+              >> MATCH_MP_TAC EXTREAL_SUM_IMAGE_MONO_SET
+              >> RW_TAC std_ss [FINITE_COUNT, SUBSET_DEF, IN_COUNT]
+              >- METIS_TAC [LESS_LESS_EQ_TRANS]
+              >> METIS_TAC [IN_UNIV, IN_FUNSET])
+          >> RW_TAC std_ss [sup_seq, GSYM REAL_SUM_IMAGE_COUNT, GSYM EXTREAL_SUM_IMAGE_NORMAL,
+                            FINITE_COUNT]
+          >> RW_TAC std_ss [GSYM ext_suminf_def]
+          >> FULL_SIMP_TAC std_ss [IN_FUNSET, IN_UNIV]
+          >> Q.PAT_X_ASSUM `!A. A IN measurable_sets m ==>
+                   (pos_fn_integral m (\x. g x * indicator_fn A x) = Normal (Ig A))`
+                     (MP_TAC o GSYM)
+          >> RW_TAC std_ss []
+          >> `!i x. 0 <= (\i x. g x * indicator_fn (f i) x) i x`
+              by RW_TAC std_ss [mul_rzero, mul_rone, indicator_fn_def, REAL_LE_REFL]
+          >> `!i. (\i x. g x * indicator_fn (f i) x) i
+                      IN measurable (m_space m,measurable_sets m) Borel`
+               by (RW_TAC std_ss []
+                   >> METIS_TAC [IN_MEASURABLE_BOREL_MUL_INDICATOR, IN_FUNSET, IN_UNIV,
+                                 measurable_sets_def,subsets_def])
+          >> (MP_TAC o Q.SPECL [`m`,`(\i:num. (\x. g x * indicator_fn (f i) x))`] o GSYM)
+                     pos_fn_integral_suminf
+          >> RW_TAC std_ss []
+          >> Suff `(\x. g x * indicator_fn (BIGUNION (IMAGE f univ(:num))) x) =
+                   (\x'. suminf (\x. g x' * indicator_fn (f x) x'))`
+          >- RW_TAC std_ss []
+          >> RW_TAC std_ss [FUN_EQ_THM]
+          >> `suminf (\x. g x' * (\x. indicator_fn (f x) x') x) =
+              g x' * suminf (\x. indicator_fn (f x) x')`
+              by (MATCH_MP_TAC ext_suminf_cmul
+                  >> RW_TAC std_ss [mul_rone, mul_rzero, REAL_LE_REFL, indicator_fn_def, le_01])
+          >> FULL_SIMP_TAC std_ss []
+          >> Suff `suminf (\i. indicator_fn (f i) x') =
+                   indicator_fn (BIGUNION (IMAGE f univ(:num))) x'`
+          >- RW_TAC std_ss []
+          >> FULL_SIMP_TAC std_ss [indicator_fn_suminf])
+  >> `!A. A IN measurable_sets m ==> nu A <= nu (m_space m)`
+      by METIS_TAC [MEASURE_SPACE_INCREASING, INCREASING, MEASURE_SPACE_SUBSET_MSPACE,
+                    measure_def, measurable_sets_def, m_space_def,
+                    MEASURE_SPACE_MSPACE_MEASURABLE]
+
+  >> Cases_on `nu A = 0` >- METIS_TAC [REAL_SUB_0]
+  >> `0 < nu A` by METIS_TAC [REAL_LT_LE, MEASURE_SPACE_POSITIVE, positive_def]
+  >> `0 < nu (m_space m)` by METIS_TAC [REAL_LTE_TRANS]
+  >> `0 <> measure m (m_space m)`
+       by (SPOSE_NOT_THEN ASSUME_TAC
+           >> `measure v (m_space m) = 0`
+               by METIS_TAC [MEASURE_SPACE_MSPACE_MEASURABLE, measure_absolutely_continuous_def]
+           >> `pos_fn_integral m (\x. g x * indicator_fn (m_space m) x) <= 0`
+               by METIS_TAC [MEASURE_SPACE_MSPACE_MEASURABLE, extreal_of_num_def]
+           >> `pos_fn_integral m (\x. g x * indicator_fn (m_space m) x) =  0`
+               by METIS_TAC [le_antisym, MEASURE_SPACE_MSPACE_MEASURABLE]
+           >> `Ig (m_space m) = 0` by METIS_TAC [MEASURE_SPACE_MSPACE_MEASURABLE,
+                                                 extreal_of_num_def, extreal_11]
+           >> `nu (m_space m) = 0` by (Q.UNABBREV_TAC `nu` >> METIS_TAC [REAL_SUB_RZERO])
+           >> METIS_TAC [REAL_LT_IMP_NE])
+  >> `0 < measure m (m_space m)` by METIS_TAC [REAL_LT_LE, MEASURE_SPACE_POSITIVE, positive_def,
+                                               MEASURE_SPACE_MSPACE_MEASURABLE]
+  >> Q.ABBREV_TAC `e = nu (m_space m) / (2 * measure m (m_space m))`
+  >> `0 < e` by METIS_TAC [REAL_LT_DIV, REAL_LT_MUL, EVAL ``0 < 2:real``]
+  >> Q.ABBREV_TAC `snu = (\A. nu A - e * (measure m A))`
+  >> `?A'. A' IN measurable_sets m /\ snu (m_space m) <= snu (A') /\
+       (!B. B IN measurable_sets m /\ B SUBSET A' ==> 0 <= snu (B))`
+        by (Q.UNABBREV_TAC `snu`
+            >> RW_TAC std_ss []
+            >> (MP_TAC o Q.SPECL [`(m_space m, measurable_sets m, nu)`,
+                       `(m_space m, measurable_sets m, (\A. e * measure m A))`]) RN_lemma2
+            >> RW_TAC std_ss [m_space_def,measurable_sets_def,measure_def]
+            >> METIS_TAC [MEASURE_SPACE_CMUL,REAL_LT_IMP_LE])
+  >> Q.ABBREV_TAC `g' = (\x. g x + Normal e * indicator_fn (A') x)`
+  >> `!A. A IN measurable_sets m ==>
+          (pos_fn_integral m (\x. g' x * indicator_fn A x) =
+           pos_fn_integral m (\x. g x * indicator_fn A x) + Normal (e * measure m (A INTER A')))`
+       by (rpt STRIP_TAC
+           >> `Normal (e * measure m (A'' INTER A')) =
+               Normal e * pos_fn_integral m (indicator_fn (A'' INTER A'))`
+                by METIS_TAC [pos_fn_integral_indicator,MEASURE_SPACE_INTER, extreal_mul_def]
+           >> POP_ORW
+           >> `Normal e * pos_fn_integral m (indicator_fn (A'' INTER A')) =
+               pos_fn_integral m (\x. Normal e * indicator_fn (A'' INTER A') x)`
+                by ((MATCH_MP_TAC o GSYM) pos_fn_integral_cmul
+                    >> RW_TAC real_ss [REAL_LT_IMP_LE,indicator_fn_def,le_01,REAL_LE_REFL])
+           >> POP_ORW
+           >> Q.UNABBREV_TAC `g'`
+           >> `(\x. (\x. g x + Normal e * indicator_fn A' x) x * indicator_fn A'' x) =
+               (\x. (\x. g x * indicator_fn A'' x) x +
+                   (\x. Normal e * indicator_fn (A'' INTER A') x) x)`
+                by (RW_TAC std_ss [FUN_EQ_THM,indicator_fn_def,IN_INTER]
+                    >> METIS_TAC [mul_rone,mul_rzero,add_rzero,indicator_fn_def,IN_INTER])
+           >> POP_ORW
+           >> MATCH_MP_TAC pos_fn_integral_add
+           >> FULL_SIMP_TAC std_ss []
+           >> CONJ_TAC
+           >- (RW_TAC std_ss [indicator_fn_def, le_01, REAL_LE_REFL, mul_rone, mul_rzero]
+               >> FULL_SIMP_TAC std_ss [extreal_of_num_def, extreal_le_def, REAL_LT_IMP_LE])
+           >> RW_TAC std_ss []
+           >- METIS_TAC [IN_MEASURABLE_BOREL_MUL_INDICATOR, measure_space_def,
+                         measurable_sets_def, subsets_def]
+           >> MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL
+           >> RW_TAC std_ss []
+           >> Q.EXISTS_TAC `indicator_fn (A'' INTER A')`
+           >> Q.EXISTS_TAC `e`
+           >> RW_TAC std_ss []
+           >- FULL_SIMP_TAC std_ss [measure_space_def]
+           >> MATCH_MP_TAC IN_MEASURABLE_BOREL_INDICATOR
+           >> METIS_TAC [measure_space_def, measurable_sets_def, subsets_def, MEASURE_SPACE_INTER,
+                         space_def])
+  >> `!A. A IN measurable_sets m ==> ((A INTER A') IN measurable_sets m /\
+          (A INTER A') SUBSET A')`
+         by METIS_TAC [INTER_SUBSET, MEASURE_SPACE_INTER]
+  >> `!A. A IN measurable_sets m ==> 0 <= nu (A INTER A') - e * measure m (A INTER A')`
+         by (Q.UNABBREV_TAC `snu` >> METIS_TAC [])
+  >> `!A. A IN measurable_sets m ==> e * measure m (A INTER A') <= nu (A INTER A')`
+         by (RW_TAC std_ss []
+             >> METIS_TAC [REAL_SUB_LE])
+  >> `!A. A IN measurable_sets m ==>
+          pos_fn_integral m (\x. g x * indicator_fn A x) + Normal (e * measure m (A INTER A')) <=
+          pos_fn_integral m (\x. g x * indicator_fn A x) + Normal (nu (A INTER A'))`
+         by METIS_TAC [le_ladd_imp, extreal_le_def]
+  >> `!A. A IN measurable_sets m ==> nu (A INTER A') <= nu A`
+         by (RW_TAC std_ss []
+             >> (MATCH_MP_TAC o REWRITE_RULE [measurable_sets_def, measure_def] o
+                 Q.SPEC `(m_space m,measurable_sets m,nu)`) INCREASING
+             >> METIS_TAC [MEASURE_SPACE_INCREASING, MEASURE_SPACE_INTER, INTER_SUBSET])
+  >> `!A. A IN measurable_sets m ==>
+          pos_fn_integral m (\x. g x * indicator_fn A x) + Normal (e * measure m (A INTER A')) <=
+          pos_fn_integral m (\x. g x * indicator_fn A x) + Normal (nu (A))`
+           by METIS_TAC [le_ladd_imp,le_trans, extreal_le_def]
+  >> `!A. A IN measurable_sets m ==>
+          pos_fn_integral m (\x. g x * indicator_fn A x) + Normal (e * measure m (A INTER A')) <=
+          Normal (measure v A)`
+           by (Q.UNABBREV_TAC `nu`
+               >> FULL_SIMP_TAC std_ss []
+               >> RW_TAC std_ss []
+               >> METIS_TAC [sub_add2, extreal_not_infty, extreal_sub_def])
+  >> `!A. A IN measurable_sets m  ==>
+          pos_fn_integral m (\x. g' x * indicator_fn A x) <= Normal (measure v A)`
+        by METIS_TAC []
+  >> `g' IN RADON_F m v`
+         by (RW_TAC std_ss [RADON_F_def,GSPECIFICATION]
+             >- (Q.UNABBREV_TAC `g'`
+                 >> MATCH_MP_TAC IN_MEASURABLE_BOREL_ADD
+                 >> Q.EXISTS_TAC `g`
+                 >> Q.EXISTS_TAC `(\x. Normal e * indicator_fn A' x)`
+                 >> CONJ_TAC >- FULL_SIMP_TAC std_ss [measure_space_def]
+                 >> FULL_SIMP_TAC std_ss []
+                 >> MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL
+                 >> METIS_TAC [measure_space_def, subsets_def, measurable_sets_def,
+                               IN_MEASURABLE_BOREL_INDICATOR])
+             >> Q.UNABBREV_TAC `g'`
+             >> RW_TAC std_ss [indicator_fn_def, mul_rone, mul_rzero, add_rzero]
+             >> METIS_TAC [le_add2, add_rzero, le_trans, lt_imp_le, extreal_lt_eq,
+                           extreal_of_num_def])
+  >> `pos_fn_integral m g' IN RADON_F_integrals m v`
+       by (FULL_SIMP_TAC std_ss [RADON_F_integrals_def, GSPECIFICATION]
+           >> METIS_TAC [])
+  >> `pos_fn_integral m (\x. g' x * indicator_fn (m_space m) x) =
+      pos_fn_integral m (\x. g x * indicator_fn (m_space m) x) +
+      Normal (e * measure m A')`
+         by METIS_TAC [MEASURE_SPACE_MSPACE_MEASURABLE, MEASURE_SPACE_SUBSET_MSPACE,SUBSET_INTER2]
+  >> `!x. 0 <= g' x`
+      by (Q.UNABBREV_TAC `g'`
+          >> RW_TAC std_ss [indicator_fn_def, mul_rone, mul_rzero, add_rzero]
+          >> METIS_TAC [le_add2,add_rzero, le_trans, lt_imp_le, extreal_lt_eq,extreal_of_num_def])
+  >> `pos_fn_integral m g' = pos_fn_integral m g + Normal (e * measure m A')`
+       by METIS_TAC [pos_fn_integral_mspace]
+  >> `0 < snu (m_space m)`
+       by (Q.UNABBREV_TAC `snu`
+           >> Q.UNABBREV_TAC `e`
+           >> RW_TAC real_ss [real_div,REAL_INV_MUL,REAL_LT_IMP_NE,REAL_MUL_ASSOC]
+           >> `inv 2 * inv (measure m (m_space m)) * measure m (m_space m) = inv 2`
+                by METIS_TAC [REAL_LT_IMP_NE,REAL_MUL_LINV,REAL_MUL_ASSOC,REAL_MUL_RID]
+           >> `nu (m_space m) - nu (m_space m) * inv 2 *
+                                inv (measure m (m_space m)) * measure m (m_space m) =
+               nu (m_space m) / 2`
+                by METIS_TAC [REAL_NEG_HALF,real_div,REAL_MUL_ASSOC]
+           >> FULL_SIMP_TAC real_ss [REAL_LT_DIV])
+  >> `0 < snu A'` by METIS_TAC [REAL_LTE_TRANS]
+  >> `e * measure m A' < nu (A')` by METIS_TAC [REAL_SUB_LT]
+  >> `0 <= e * measure m A'` by METIS_TAC [REAL_LE_MUL, REAL_LT_IMP_LE, MEASURE_SPACE_POSITIVE,positive_def]
+  >> `0 < nu A'` by METIS_TAC [REAL_LET_TRANS]
+  >> `0 <> measure m A'`
+        by (SPOSE_NOT_THEN ASSUME_TAC
+            >> `measure v A' = 0` by METIS_TAC [MEASURE_SPACE_MSPACE_MEASURABLE,
+                                                measure_absolutely_continuous_def]
+            >> `pos_fn_integral m (\x. g x * indicator_fn A' x) <= 0`
+                by METIS_TAC [extreal_of_num_def]
+            >> `pos_fn_integral m (\x. g x * indicator_fn A' x) =  0`
+                by METIS_TAC [REAL_LE_ANTISYM, extreal_of_num_def, extreal_le_def]
+            >>  `Ig A' = 0` by METIS_TAC [extreal_of_num_def, extreal_11]
+            >> `nu A' = 0` by (Q.UNABBREV_TAC `nu` >> RW_TAC real_ss [])
+            >> METIS_TAC [REAL_LT_IMP_NE])
+  >> `0 < measure m A'` by METIS_TAC [REAL_LT_LE, MEASURE_SPACE_POSITIVE, positive_def,
+                                      MEASURE_SPACE_MSPACE_MEASURABLE]
+  >> `0 < e * measure m A'` by METIS_TAC [REAL_LT_MUL]
+  >> `0 < Normal (e * measure m A')` by METIS_TAC [extreal_of_num_def, extreal_lt_eq]
+  >> `pos_fn_integral m g <> NegInf`
+      by METIS_TAC [pos_fn_integral_pos,lt_infty,num_not_infty,lte_trans]
+  >> `pos_fn_integral m g <> PosInf`
+      by METIS_TAC [MEASURE_SPACE_MSPACE_MEASURABLE,pos_fn_integral_mspace]
+  >> `pos_fn_integral m g < pos_fn_integral m g'` by METIS_TAC [let_add2,REAL_LE_REFL,add_rzero]
+  >> `pos_fn_integral m g' <= pos_fn_integral m g` by METIS_TAC [le_sup_imp,SPECIFICATION]
+  >> METIS_TAC [extreal_lt_def]);
+
+val Radon_Nikodym2 = store_thm
+  ("Radon_Nikodym2",``!m v. measure_space m /\ measure_space v /\ (m_space v = m_space m) /\
+         (measurable_sets v = measurable_sets m) /\ measure_absolutely_continuous v m
+            ==> (?f. f IN measurable (m_space m,measurable_sets m) Borel /\
+                (!x. 0 <= f x) /\  (!x. f x <> PosInf) /\
+                (!A. A IN measurable_sets m ==>
+                     (pos_fn_integral m (\x. f x * indicator_fn A x) = Normal (measure v A))))``,
+  RW_TAC std_ss []
+  >> `?g. g IN measurable (m_space m,measurable_sets m) Borel /\
+          (!x. 0 <= g x) /\
+          (!A. A IN measurable_sets m ==>
+               (pos_fn_integral m (\x. g x * indicator_fn A x) = Normal (measure v A)))`
+      by METIS_TAC [Radon_Nikodym]
+  >> Q.EXISTS_TAC `\x. if g x = PosInf then 0 else g x`
+  >> RW_TAC std_ss [REAL_LE_REFL,num_not_infty]
+  >- (`integrable m g` by METIS_TAC [integrable_pos, pos_fn_integral_mspace,
+                                     MEASURE_SPACE_MSPACE_MEASURABLE, extreal_not_infty]
+      >> METIS_TAC [integrable_not_infty_alt2, integrable_def])
+  >> `pos_fn_integral m (\x. g x * indicator_fn A x) = Normal (measure v A)` by METIS_TAC []
+  >> `!x. 0 <= g x * indicator_fn A x` by METIS_TAC [indicator_fn_def,mul_rzero,REAL_LE_REFL,mul_rone]
+  >> `integrable m (\x. g x * indicator_fn A x)`
+      by (MATCH_MP_TAC integrable_bounded
+          >> Q.EXISTS_TAC `g`
+          >> RW_TAC std_ss []
+          >|[METIS_TAC [integrable_pos,pos_fn_integral_mspace,MEASURE_SPACE_MSPACE_MEASURABLE,
+                        extreal_not_infty],
+             METIS_TAC [IN_MEASURABLE_BOREL_MUL_INDICATOR, measurable_sets_def, measure_space_def,
+                        subsets_def],
+             METIS_TAC [abs_refl, mul_rone, mul_rzero, REAL_LE_REFL, indicator_fn_def]])
+  >> (MP_TAC o Q.SPECL [`m`,`(\x. g x * indicator_fn A x)`]) integrable_not_infty_alt2
+  >> Suff `(\x. (if g x = PosInf then 0 else g x) * indicator_fn A x) =
+           (\x. if g x * indicator_fn A x = PosInf then 0 else g x * indicator_fn A x)`
+  >- RW_TAC std_ss []
+  >> RW_TAC std_ss [FUN_EQ_THM]
+  >> METIS_TAC [mul_lzero,mul_rzero,mul_lone,mul_rone,num_not_infty,indicator_fn_def]);
+
+ *)
 
 val _ = export_theory ();

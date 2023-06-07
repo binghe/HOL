@@ -22,7 +22,7 @@ main {
   import: hol-extreal
   import: hol-analysis
   import: hol-probability
-  import: large-number
+  import: large-numbers
 }
 base {
   package: base-1.221
@@ -112,7 +112,7 @@ hol-probability {
   import: hol-words
   package: hol-probability-1.1
 }
-large-number {
+convergence {
   import: base
   import: hol-base
   import: hol-set
@@ -120,6 +120,17 @@ large-number {
   import: hol-extreal
   import: hol-analysis
   import: hol-probability
-  article: "large_number.ot.art"
+  article: "convergence.ot.art"
+  interpretation: "../../src/opentheory/hol4.int"
+}
+large-numbers {
+  import: base
+  import: hol-base
+  import: hol-set
+  import: hol-real
+  import: hol-extreal
+  import: hol-analysis
+  import: hol-probability
+  article: "hol4-large-numbers-unint.art"
   interpretation: "../../src/opentheory/hol4.int"
 }

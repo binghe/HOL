@@ -1,3 +1,4 @@
+%%% -*- Mode: LaTeX; -*-
 \chapter{Core Theories}\label{HOLtheories}
 
 % LaTeX macros in HOL manuals
@@ -18,7 +19,6 @@
 
 \setcounter{sessioncount}{0}
 
-
 \newcommand{\konst}[1]{\ensuremath{\mbox{\small{\textbf{\sf{#1}}}}}}
 \newcommand{\nil}{\mathbf{[} \;\mathbf{]}}
 \newcommand{\cons}[2]{{#1}\mathbf{:}\mathbf{:}{#2}}
@@ -31,6 +31,8 @@ The sections that follow provide an overview of the contents of each theory.
 For a complete list of all the axioms, definitions and theorems in \HOL, see the online resources distributed with the system.
 In particular, the HTML file \url{help/HOLindex.html} is a good place to start browsing the available theories.
 For a graphical picture of the theory hierarchy, see \url{help/theorygraph/theories.html}.
+
+In addition, core theories of higher mathematics are described in Chapter~\ref{ch:math}.
 
 \section{The Theory {\tt min}}\label{minTheory}
 
@@ -1998,6 +2000,9 @@ source files.
 \subsection{Real numbers}\label{reals}
 \index{real numbers, the HOL theory of@real numbers, the \HOL{} theory of|(}
 
+>>__ load "realTheory"; open realTheory
+>>__ load "real_sigmaTheory"; open real_sigmaTheory  
+
 There is an extensive collection of theories that make up the
 development of real numbers and analysis in HOL, due to John Harrison
 \cite{jrh:thesis}. We will only give a sketchy overview of the
@@ -2034,19 +2039,24 @@ Constant & Overloaded symbol & Strength & Associativity \\ \hline
 \end{center}
 
 On the basis of {\small\verb+realTheory+}, the following sequence of
-theories is constructed:
+theories is constructed (for more details of some of these theories, please
+go to corresponding sections):
 
 \begin{description}
-\item [topology] General topology (ported from HOL Light).
+\item [real_sigma] Summation of real numbers (the $\Sigma$ operator, etc.)
+  (Section~\ref{sec:iterateTheory})
+\item [topology] General topology.
 \item [metric] Metric spaces, including metric on the real line.
-\item [nets] Moore-Smith convergence nets, and special cases like
-sequences.
+\item [nets] Moore-Smith convergence nets, and special cases like sequences.
+\item [real_topology] Topology of one-dimensional Euclidean space (Section~\ref{sec:topology}).
 \item [seq] Sequences and series of real numbers.
-\item [lim] Limits, continuity and differentiation.
+\item [derivative] The \emph{new} univariate differential calculus (Section~\ref{sec:calculus}).
+\item [lim] Limits, continuity and the \emph{old} differentiation.
 \item [powser] Power series.
 \item [transc] Transcendental functions, \eg, exp, sin,
-cos, ln, root, sqrt, pi, tan, asn, acs, atn.
-\item [real_sigma] Summation of real numbers (the $\Sigma$ operator).
+  cos, ln, root, sqrt, pi, tan, asn, acs, atn.
+\item [integration] The \emph{new} univariate integral calculus (Section~\ref{sec:calculus}).
+\item [integral] The \emph{old} univariate integral calculus.
 \end{description}
 \index{real numbers, the HOL theory of@real numbers, the \HOL{} theory of|)}
 
@@ -2207,7 +2217,9 @@ empty sets (of extreals) we have:
 \paragraph{Finite and infinite sum of extreals}
 
 The sum of extreals over a finite set
-(\holtxt{EXTREAL_SUM_IMAGE}, overloaded on \holtxt{SIGMA}), $\sum_{i\in s} f(i)$, is defined
+(\holtxt{EXTREAL_SUM_IMAGE}\footnote{For the products of extreals, there is also
+  \holtxt{EXTREAL_SUM_IMAGE} and some related theorems. See Section~\ref{sec:iterateTheory} for a summary
+  of all such iterated operations.}, overloaded on \holtxt{SIGMA}), $\sum_{i\in s} f(i)$, is defined
 by \holtxt{pred_set.ITSET} (see Section~\ref{sec:theory-of-sets}):
 \begin{hol}
 \begin{alltt}
@@ -2696,6 +2708,9 @@ Type &
 \index{bit vectors, the HOL theory of@bit vectors, the \HOL{} theory of|)}
 } % matches bracket at beginning of n-bit section, where some n-bit
   % specific macros are defined
+
+
+
 
 \section{Sequences}
 
@@ -3558,8 +3573,6 @@ Thus:
 \end{alltt}
 \end{session}
 
-
-
 \paragraph {Strings}
 
 The type \holtxt{string} is an alias for the type \holtxt{char list}.
@@ -3613,18 +3626,15 @@ to be doubled.  (See Section~\ref{sec:quotation-antiquotation}.)
 
 As with numerals, string literals can be injected into other types, where it might make sense to have string literals appear to inhabit types in addition to the core system's \holtxt{string} type.
 Such literals can be written with different delimiters to make it clear that such an injection has occurred.
-For more on this facility, see \REFERENCE's description of the \ml{add_strliteral_form} function.
+For more on this facility, see \REFERENCE{}'s description of the \ml{add_strliteral_form} function.
 
-There is also a destructor function {\small\verb+DEST_STRING+} for
-strings which returns an option type.
+There is also a destructor function \holtxt{DEST_STRING} for strings which returns an \holtxt{option} type:
 \begin{hol}
-\begin{verbatim}
-   DEST_STRING
-     |- (DEST_STRING "" = NONE) /\
-        (DEST_STRING (STRING c rst) = SOME(c,rst))
-\end{verbatim}
+\begin{alltt}
+>>__  open stringTheory
+##thm DEST_STRING_def
+\end{alltt}
 \end{hol}
-
 
 \paragraph{Case expressions}
 \index{case expressions!over strings}
@@ -3661,7 +3671,6 @@ of results from \ml{listTheory}:
         (STRCAT (STRING c s1) s2 = STRING c (STRCAT s1 s2))
 \end{verbatim}
 \end{hol}
-
 
 \index{strings, the HOL theory of@strings, the \HOL{} theory of|)}
 
@@ -3837,7 +3846,7 @@ The finite sets have an induction theorem:
 %
 \begin{hol}
 \begin{alltt}
-##thm FINITE_INDUCT
+  ##thm FINITE_INDUCT
 \end{alltt}
 \end{hol}
 %
@@ -3897,7 +3906,10 @@ f\;y\;(f\;x\;z)$, then $f$ can be applied by folding it on the set
 in a tail-recursive fashion.
 \begin{hol}
 \begin{alltt}
+  ##thm ITSET_THM
+
   ##thm ITSET_EMPTY
+
   ##thm COMMUTING_ITSET_INSERT
 \end{alltt}
 \end{hol}
@@ -4899,7 +4911,9 @@ it into a finite map.
 \end{alltt}
 \end{hol}
 
-\section{While Loops}
+\section{Loops and Iterations}
+
+\subsection{While Loops}
 \label{sec:while-loops}
 
 It is a curious fact that higher order logic, although a logic of
@@ -4920,9 +4934,9 @@ x.\;\konst{T}$, the resulting instance of \holtxt{WHILE} would `run
 forever' if executed. Why is such an ``obviously'' partial function
 definable in HOL?
 %
-The answer lies in a subtle definition of \holtxt{WHILE},
+The answer lies in a subtle definition of \holtxt{WHILE}
 \footnote{The original idea is due to J Moore,
-          who suggested it for use in ACL2.}
+          who suggested it for use in ACL2.},
 which uses the expressive power of HOL to surprising effect. Consider
 the following total and non-recursive function:
 %
@@ -5007,6 +5021,71 @@ If one wants a specified result even when the predicate is everywhere false, the
 
 More theorems for reasoning about \holtxt{LEAST}, \holtxt{OLEAST} and \holtxt{WHILE} may be found in theory \theoryimp{while}.
 
+% NOTE: this (sub)section cannot be put into \section{Numbers} because \subsection{Sets}
+% (\section{Collections} ) of is not yet introduced.
+%
+\subsection{Generic Iterated Operations and Special Cases
+  over $\mathbb{N}$ and $\mathbb{R}$}
+\label{sec:iterateTheory}
+
+There is a common need to represent and calculate the summation or production of
+a (finite) sequence of numbers:
+\begin{equation*}
+  \sum_{i=0}^{n-1} a_i = a_0 + a_1 + \cdots + a_{n-1},\qquad
+  \prod_{i=0}^{n-1} a_i = a_0 \times a_1 \times \cdots \times a_{n-1}.
+\end{equation*}
+
+A reasonable formalization of the such \emph{accumulation of values} is to iterate over.
+
+
+
+take the numbers
+from a function, which takes arbitrary type of indexes returning numbers, while the
+``range'' of indexes is given by a set, instead of a ordered list or
+just two endpoints (NOTE: the set of indexes from 0 to $n-1$ can be
+represented by ``\holtxt{pred_set\$count n}'').
+To obtain the final accumulated value, one can use \holtxt{pred_set\$ITSET}
+(see Section~\ref{sec:theory-of-sets})
+to iterate over all set elements, \emph{accumulating} each elements into a base value.
+For natural numbers and their summation, the is the case of \holtxt{SUM_IMAGE}
+defined in \theoryimp{pred\_set} and introduced in Section~\ref{sec:theory-of-sets}. (Note
+that there is no ``\holtxt{PROD_IMAGE}'' provided in \theoryimp{pred\_set} for the
+products of natural numbers.)
+
+For real numbers, HOL's \theoryimp{real_sigma} theory has provided both
+\holtxt{REAL_SUM_IMAGE} (overloaded on \holtxt{SIGMA}) and
+\holtxt{REAL_PROD_IMAGE} (overloaded on \holtxt{PI})\footnote{It is, in general, not
+  recommended for user proofs to directly work with original definitions of
+  iterated operators like \ml{REAL\_SUM\_IMAGE\_DEF}, which is based on
+  \holtxt{ITSET} (because the underlying \holtxt{CHOICE} and \holtxt{RESET} operations
+  of the involved (finite) sets do not fit well with the usual finite induction principles
+  of sets involving \holtxt{INSERT}.)
+  On the other hand, theorems like \ml{REAL\_SUM\_IMAGE\_THM} fully capture
+  the essense of the corresponding iterated operator, and all other related theorems can be
+  just derived from this main theorem without using again the original definitions.}:
+\begin{hol}
+  \begin{alltt}
+>>__ set_grammar_ancestry ["extreal"]
+##thm REAL_SUM_IMAGE_DEF
+##thm REAL_SUM_IMAGE_THM
+
+##thm REAL_PROD_IMAGE_DEF
+##thm REAL_PROD_IMAGE_THM
+\end{alltt}
+\end{hol}
+
+For extended real numbers there are similar devices, namely
+\holtxt{EXTREAL_SUM_IMAGE}  (See Section~\ref{sec:extreal} for more details) and
+\holtxt{EXTREAL_PROD_IMAGE}.
+
+All above mentioned iterated operations have some supporting theorems but the coverage of
+them for different iterated operations varies greatly.
+(So far the most developed ones are \holtxt{REAL_SUM_IMAGE} and \holtxt{EXTREAL_SUM_IMAGE}).
+Since they are all base on \holtxt{ITSET}, and many proofs for different iterated operations are
+indeed quite similar, one may think that a common set of such properties can be proven for
+\holtxt{ITSET} itself, and then is parametrized for different iteration operators (and base values).
+
+%% Its generalization of the \theoryimp{iterate} theory ported from HOL Light.
 
 %\section{Partial orders}
 
@@ -5235,6 +5314,39 @@ See Figure~\ref{fig:bind-defns} for the bind definitions for a number of differe
 \end{figure}
 
 \index{monads|)}
+
+\section{Other Theories}
+Other theories of interest in \HOL{} are listed and briefly described
+in Figure~\ref{fig:further-hol-theories}.
+
+\begin{figure}[hbtp]
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{|p{0.2\textwidth}p{0.7\textwidth}|}
+  \hline
+  \theoryimp{poset} & Partial Orders, Knaster-Tarski theorem
+  \\
+  \theoryimp{divides}, \theoryimp{gcd} &
+  Divisibility and the greatest common divisor.
+  \\
+  \theoryimp{poly} &
+  A theory of polynomials over $\mathbb{R}$, providing
+  a collection of operations on polynomials, and theorems about them.
+  \\
+  \theoryimp{Temporal\_Logic},\newline \theoryimp{Omega\_Automata}
+  &
+  Klaus Schneider's development of temporal logic and\newline $\omega$-automata.
+  \\
+  \theoryimp{ctl}, \theoryimp{mu}
+  &
+  Computation Tree Logic and the $\mu$-calculus. See Hasan Amjad's
+  thesis. \\
+  \theoryimp{lbtree} & Possibly infinitely deep (\ie, co-algebraic) binary trees.\\
+  \theoryimp{inftree} & Possibly infinitely branching, algebraic trees\\
+  \hline
+\end{tabular}
+\caption{A selection of \HOL{} theories}
+\label{fig:further-hol-theories}
+\end{figure}
 
 %%% Local Variables:
 %%% mode: latex

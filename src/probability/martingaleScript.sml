@@ -1,6 +1,6 @@
 (* ------------------------------------------------------------------------- *)
 (* The Theory of Martingales for Sigma-Finite Measure Spaces                 *)
-(* (Lebesgue integration extras, product measure and Fubini-Tonelli theorem) *)
+(* (Lebesgue Integration Extras, Product Measure and Fubini-Tonelli Theorem) *)
 (*                                                                           *)
 (* Author: Chun Tian (binghe) <binghe.lisp@gmail.com> (2019 - 2022)          *)
 (* Fondazione Bruno Kessler and University of Trento, Italy                  *)
@@ -7572,6 +7572,42 @@ Proof
  >> CONJ_TAC (* 2 subgoals, same tactics *)
  >> MATCH_MP_TAC lt_imp_le
  >> MATCH_MP_TAC inv_pos' >> art []
+QED
+
+(* ========================================================================= *)
+(* Independent functions and submartingale [1, p.279-281]                    *)
+(* ========================================================================= *)
+
+Definition indep_functions_def :
+    indep_functions m u A (J :'index set) =
+      !s N. N SUBSET J /\ N <> {} /\ FINITE N /\
+            s IN (N --> subsets o A) ==>
+            measure m (BIGINTER (IMAGE (\n. PREIMAGE (u n) (s n) INTER m_space m) N)) =
+            PI (measure m o (\n. PREIMAGE (u n) (s n) INTER m_space m)) N
+End
+
+(* This is 1st part of Scholium 23.4 (on independent functions) [1, p.280] *)
+Theorem indep_functions_integral_mul_indicator :
+  !m u. measure_space m /\ measure m (m_space m) = 1 /\
+       (!n. integrable m (u n)) /\
+        indep_functions m u (\n. Borel) univ(:num)
+    ==> !n s. s IN subsets (sigma (m_space m) (\n. Borel) u (count1 n)) ==>
+               (integral m (\x. u (SUC n) x * indicator_fn s x) =
+                measure m s * integral m (u (SUC n)))
+Proof
+    cheat
+QED
+
+(* This is Example 23.3(x) of [1, p.279-280] *)
+Theorem indep_functions_sum_sub_martingle :
+  !m X A Z. sigma_finite_filtered_measure_space m A /\ measure m (m_space m) = 1 /\
+           (!n. integrable m (X n)) /\ indep_functions m X A univ(:num) /\
+           (!n x. Z n x = SIGMA (\i. X i x) (count1 n))
+       ==> (sub_martingale m A Z <=> !n. 0 <= integral m (X n))
+Proof
+    rpt STRIP_TAC
+ >> reverse EQ_TAC
+ >> cheat
 QED
 
 (* END *)
