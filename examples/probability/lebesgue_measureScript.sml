@@ -42,7 +42,7 @@ val DISC_RW_KILL = DISCH_TAC >> ONCE_ASM_REWRITE_TAC [] >> POP_ASSUM K_TAC;
 fun METIS ths tm = prove(tm, METIS_TAC ths);
 
 (* ========================================================================= *)
-(* Cantor's Ternary Set, see, e.g. [1, p.4] and [8]                          *)
+(* Cantor's Ternary Set, see, e.g. [1, p.4,59] and [6]                       *)
 (* ========================================================================= *)
 
 (* Recursive construction Cantor Set C(n), a set of reals (C is the generator)
@@ -506,7 +506,7 @@ Proof
  >> ASM_SIMP_TAC std_ss [GSYM sup_seq', REAL_SUM_IMAGE_COUNT]
  >> Know `!n m. sum (0,m) (\x. integral (line n) (indicator ((f:num->real->bool) x))) =
                 integral (line n) (indicator (BIGUNION {f i | i < m}))`
- THENL (* the rest works fine *)
+ THENL (* The rest (original proof) works fine *)
 [GEN_TAC THEN Induct_on `m` THENL
   [REWRITE_TAC [realTheory.sum, LT] THEN
   REWRITE_TAC [SET_RULE ``{f i | i | F} = {}``, BIGUNION_EMPTY] THEN

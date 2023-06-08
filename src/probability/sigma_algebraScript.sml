@@ -3246,6 +3246,23 @@ val sigma_functions_def = Define
 
 val _ = overload_on ("sigma", ``sigma_functions``);
 
+Theorem space_sigma_functions :
+    !sp A f (J :'index set). space (sigma_functions sp A f J) = sp
+Proof
+    rw [sigma_functions_def, SPACE_SIGMA]
+QED
+
+Theorem sigma_algebra_sigma_functions :
+    !sp A f (J :'index set).
+            (!i. f i IN (sp -> space (A i))) ==>
+            sigma_algebra (sigma_functions sp A f J)
+Proof
+    rw [sigma_functions_def, IN_FUNSET]
+ >> MATCH_MP_TAC SIGMA_ALGEBRA_SIGMA
+ >> rw [subset_class_def, IN_BIGUNION_IMAGE]
+ >> rw [PREIMAGE_def]
+QED
+
 (* Lemma 7.5 of [7, p.51] *)
 Theorem SIGMA_SIMULTANEOUSLY_MEASURABLE :
     !sp A f (J :'index set).

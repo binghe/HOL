@@ -8806,6 +8806,7 @@ Proof
  >> MATCH_MP_TAC FN_PLUS_REDUCE
  >> RW_TAC std_ss [o_DEF, abs_pos]
 QED
+Theorem fn_plus_abs = FN_PLUS_ABS_SELF
 
 (* don't put it into simp sets, ‘o’ may be eliminated *)
 Theorem FN_MINUS_ABS_ZERO :
@@ -8815,21 +8816,24 @@ Proof
  >> MATCH_MP_TAC FN_MINUS_REDUCE
  >> RW_TAC std_ss [o_DEF, abs_pos]
 QED
+Theorem fn_minus_abs = FN_MINUS_ABS_ZERO
 
-val FN_PLUS_NEG_ZERO = store_thm
-  ("FN_PLUS_NEG_ZERO",
-  ``!g. (!x. g x <= 0) ==> (fn_plus g = (\x. 0))``,
+Theorem FN_PLUS_NEG_ZERO :
+    !g. (!x. g x <= 0) ==> (fn_plus g = (\x. 0))
+Proof
     RW_TAC real_ss [fn_plus_def, FUN_EQ_THM]
  >> `~(0 < g x)` by PROVE_TAC [extreal_lt_def]
- >> fs []);
+ >> fs []
+QED
 
-val FN_MINUS_POS_ZERO = store_thm
-  ("FN_MINUS_POS_ZERO",
-  ``!g. (!x. 0 <= g x) ==> (fn_minus g = (\x. 0))``,
+Theorem FN_MINUS_POS_ZERO :
+    !g. (!x. 0 <= g x) ==> (fn_minus g = (\x. 0))
+Proof
     RW_TAC real_ss [fn_minus_def, FUN_EQ_THM]
  >> Cases_on `g x = 0` >- METIS_TAC [neg_0]
  >> `0 < g x` by METIS_TAC [lt_le]
- >> METIS_TAC [extreal_lt_def]);
+ >> METIS_TAC [extreal_lt_def]
+QED
 
 Theorem FN_PLUS_ZERO[simp] :
     fn_plus (\x. 0) = (\x. 0)
@@ -8845,17 +8849,21 @@ Proof
  >> RW_TAC std_ss [le_refl]
 QED
 
-val FN_MINUS_TO_PLUS = store_thm
-  ("FN_MINUS_TO_PLUS", ``!f. fn_minus (\x. -(f x)) = fn_plus f``,
+Theorem FN_MINUS_TO_PLUS :
+    !f. fn_minus (\x. -(f x)) = fn_plus f
+Proof
     RW_TAC std_ss [fn_plus_def, fn_minus_def, neg_neg]
  >> `!x. -f x < 0 <=> 0 < f x` by PROVE_TAC [neg_0, lt_neg]
- >> POP_ORW >> REWRITE_TAC []);
+ >> POP_ORW >> REWRITE_TAC []
+QED
 
-val FN_PLUS_TO_MINUS = store_thm
-  ("FN_PLUS_TO_MINUS", ``!f. fn_plus (\x. -(f x)) = fn_minus f``,
+Theorem FN_PLUS_TO_MINUS :
+    !f. fn_plus (\x. -(f x)) = fn_minus f
+Proof
     RW_TAC std_ss [fn_plus_def, fn_minus_def, neg_neg]
  >> `!x. 0 < -f x <=> f x < 0` by PROVE_TAC [neg_0, lt_neg]
- >> POP_ORW >> REWRITE_TAC []);
+ >> POP_ORW >> REWRITE_TAC []
+QED
 
 Theorem FN_PLUS_NOT_INFTY :
     !f x. f x <> PosInf ==> fn_plus f x <> PosInf

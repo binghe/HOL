@@ -6605,6 +6605,25 @@ Proof
  >> METIS_TAC []
 QED
 
+(* special case when ‘p = 1’ *)
+Theorem L1_space_alt_integrable :
+    !m f. measure_space m ==> (f IN L1_space m <=> integrable m f)
+Proof
+    rw [lp_space_alt_finite]
+ >> Know ‘(\x. abs (f x) powr 1) = abs o f’
+ >- (rw [FUN_EQ_THM] \\
+     MATCH_MP_TAC powr_1 >> rw [])
+ >> Rewr'
+ >> EQ_TAC (* easy part first *)
+ >- (rpt STRIP_TAC \\
+     MATCH_MP_TAC integrable_from_abs >> art [] \\
+     PROVE_TAC [integrable_abs_alt])
+ >> DISCH_TAC
+ >> ‘integrable m (abs o f)’ by PROVE_TAC [integrable_abs]
+ >> CONJ_ASM1_TAC >- fs [integrable_def]
+ >> PROVE_TAC [integrable_abs_alt]
+QED
+
 (* special case when ‘p = 2’ *)
 Theorem L2_space_alt_integrable_square :
     !m f. measure_space m ==>
@@ -7598,15 +7617,47 @@ Proof
     cheat
 QED
 
-(* This is Example 23.3(x) of [1, p.279-280] *)
+(* This is Example 23.3(x) of [1, p.279-280]. It's actually about real random variables
+
+   NOTE: ‘!n x. x IN m_space m ==> X n x <> NegInf /\ X n x <> PosInf’ is needed for
+         ‘Z n x’ being specified (cf. probabilityTheory.real_random_variable_def)
+ *)
 Theorem indep_functions_sum_sub_martingle :
-  !m X A Z. sigma_finite_filtered_measure_space m A /\ measure m (m_space m) = 1 /\
-           (!n. integrable m (X n)) /\ indep_functions m X A univ(:num) /\
-           (!n x. Z n x = SIGMA (\i. X i x) (count1 n))
+  !m X A Z. measure_space m /\ measure m (m_space m) = 1 /\
+           (!n. integrable m (X n)) /\
+           (!n x. x IN m_space m ==> X n x <> NegInf /\ X n x <> PosInf) /\
+            indep_functions m X (\n. Borel) univ(:num) /\
+           (!n. A n = sigma (m_space m) (\n. Borel) X (count1 n)) /\
+           (!n x. x IN m_space m ==> Z n x = SIGMA (\i. X i x) (count1 n))
        ==> (sub_martingale m A Z <=> !n. 0 <= integral m (X n))
 Proof
     rpt STRIP_TAC
- >> reverse EQ_TAC
+ >> EQ_TAC (* easier branch first *)
+ >- (RW_TAC std_ss [sub_martingale_def] \\
+     (* redefine Z as an abbreviation *)
+     Q.PAT_X_ASSUM ‘!n s. s IN subsets _ ==> P’ (MP_TAC o (Q.SPECL [‘n’,‘m_space m’])) \\
+     Know ‘m_space m IN subsets (sigma (m_space m) (\n. Borel) X (count1 n))’
+     >- (Q.ABBREV_TAC ‘a = sigma (m_space m) (\n. Borel) X (count1 n)’ \\
+        ‘m_space m = space a’ by PROVE_TAC [space_sigma_functions] >> POP_ORW \\
+         MATCH_MP_TAC SIGMA_ALGEBRA_SPACE \\
+         Q.UNABBREV_TAC ‘a’ \\
+         MATCH_MP_TAC sigma_algebra_sigma_functions \\
+         rw [SPACE_BOREL, IN_FUNSET]) \\
+     RW_TAC std_ss [] >> POP_ASSUM MP_TAC \\
+     Know ‘integral m (\x. Z (SUC n) x * indicator_fn (m_space m) x) =
+           integral m (\x. (X (SUC n) x + Z n x) * indicator_fn (m_space m) x)’
+     >- (MATCH_MP_TAC integral_cong >> rw [] \\
+        ‘count1 (SUC n) = SUC n INSERT (count1 n)’ by rw [COUNT_SUC] >> POP_ORW \\
+         Suff ‘SIGMA (\i. X i x) (SUC n INSERT count1 n) =
+               X (SUC n) x + SIGMA (\i. X i x) (count1 n)’ >- rw [] \\
+         Q.ABBREV_TAC ‘f = \i. X i x’ \\
+        ‘X (SUC n) x = f (SUC n)’ by rw [] >> POP_ORW \\
+        ‘SIGMA f (count1 n) = SIGMA f (count1 n DELETE SUC n)’ by rw [count_def] \\
+         POP_ORW \\
+         irule EXTREAL_SUM_IMAGE_PROPERTY_POS >> rw [Abbr ‘f’]) >> Rewr' \\
+
+     cheat)
+
  >> cheat
 QED
 
