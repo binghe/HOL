@@ -7621,6 +7621,8 @@ QED
 
    NOTE: ‘!n x. x IN m_space m ==> X n x <> NegInf /\ X n x <> PosInf’ is needed for
          ‘Z n x’ being specified (cf. probabilityTheory.real_random_variable_def)
+
+   Also note that ‘sub_martingale m A Z’ does NOT implies ‘0 <= integral m (X 0)’.
  *)
 Theorem indep_functions_sum_sub_martingle :
   !m X A Z. measure_space m /\ measure m (m_space m) = 1 /\
@@ -7629,11 +7631,11 @@ Theorem indep_functions_sum_sub_martingle :
             indep_functions m X (\n. Borel) univ(:num) /\
            (!n. A n = sigma (m_space m) (\n. Borel) X (count1 n)) /\
            (!n x. x IN m_space m ==> Z n x = SIGMA (\i. X i x) (count1 n))
-       ==> (sub_martingale m A Z <=> !n. 0 <= integral m (X n))
+       ==> (sub_martingale m A Z <=> !n. 0 <= integral m (X (SUC n)))
 Proof
     rpt STRIP_TAC
  >> EQ_TAC (* easier branch first *)
- >- (RW_TAC std_ss [sub_martingale_def] \\
+ >- (rw [sub_martingale_def] \\
      (* redefine Z as an abbreviation *)
      Q.PAT_X_ASSUM ‘!n s. s IN subsets _ ==> P’ (MP_TAC o (Q.SPECL [‘n’,‘m_space m’])) \\
      Know ‘m_space m IN subsets (sigma (m_space m) (\n. Borel) X (count1 n))’
@@ -7645,8 +7647,8 @@ Proof
          rw [SPACE_BOREL, IN_FUNSET]) \\
      RW_TAC std_ss [] >> POP_ASSUM MP_TAC \\
      Know ‘integral m (\x. Z (SUC n) x * indicator_fn (m_space m) x) =
-           integral m (\x. (X (SUC n) x + Z n x) * indicator_fn (m_space m) x)’
-     >- (MATCH_MP_TAC integral_cong >> rw [] \\
+           integral m (\x. X (SUC n) x + Z n x)’
+     >- (MATCH_MP_TAC integral_cong >> rw [indicator_fn_def] \\
         ‘count1 (SUC n) = SUC n INSERT (count1 n)’ by rw [COUNT_SUC] >> POP_ORW \\
          Suff ‘SIGMA (\i. X i x) (SUC n INSERT count1 n) =
                X (SUC n) x + SIGMA (\i. X i x) (count1 n)’ >- rw [] \\
@@ -7655,10 +7657,94 @@ Proof
         ‘SIGMA f (count1 n) = SIGMA f (count1 n DELETE SUC n)’ by rw [count_def] \\
          POP_ORW \\
          irule EXTREAL_SUM_IMAGE_PROPERTY_POS >> rw [Abbr ‘f’]) >> Rewr' \\
+     Know ‘integral m (\x. Z n x * indicator_fn (m_space m) x) = integral m (Z n)’
+     >- (MATCH_MP_TAC integral_cong >> rw [indicator_fn_def]) >> Rewr' \\
+     Know ‘integral m (\x. X (SUC n) x + Z n x) = integral m (X (SUC n)) + integral m (Z n)’
+     >- (MATCH_MP_TAC integral_add' >> art []) >> Rewr' \\
+    ‘integral m (Z n) <> PosInf /\ integral m (Z n) <> NegInf’
+      by METIS_TAC [integrable_finite_integral] \\
+    ‘integral m (X (SUC n)) <> PosInf /\ integral m (X (SUC n)) <> NegInf’
+      by METIS_TAC [integrable_finite_integral] \\
+     Q.ABBREV_TAC ‘a = integral m (Z n)’ \\
+     Q.ABBREV_TAC ‘b = integral m (X (SUC n))’ \\
+    ‘b + a = a + b’ by METIS_TAC [add_comm] >> POP_ORW \\
+     Suff ‘a <= a + b <=> 0 <= b’ >- rw [] \\
+     MATCH_MP_TAC le_addr >> art [])
+ >> Know ‘!n. integrable m (Z n)’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     Know ‘integrable m (Z n) <=> integrable m (\x. SIGMA (\i. X i x) (count1 n))’
+     >- (MATCH_MP_TAC integrable_cong >> rw []) >> Rewr' \\
+     MATCH_MP_TAC integrable_sum' >> rw [])
+ >> rw [sub_martingale_def]
+ >| [ (* goal 1 (of 2): sigma_finite_filtered_measure_space m A *)
+      cheat,
+      (* goal 2 (of 2) *)
+      Know ‘integral m (\x. Z (SUC n) x * indicator_fn s x) =
+            integral m (\x. (X (SUC n) x + Z n x) * indicator_fn s x)’
+      >- (MATCH_MP_TAC integral_cong >> rw [] \\
+          Suff ‘SIGMA (\i. X i x) (count1 (SUC n)) =
+                X (SUC n) x + SIGMA (\i. X i x) (count1 n)’ >- rw [] \\
+         ‘count1 (SUC n) = SUC n INSERT (count1 n)’ by rw [COUNT_SUC] >> POP_ORW \\
+          Q.ABBREV_TAC ‘f = \i. X i x’ \\
+         ‘X (SUC n) x = f (SUC n)’ by rw [] >> POP_ORW \\
+         ‘SIGMA f (count1 n) = SIGMA f (count1 n DELETE SUC n)’ by rw [count_def] \\
+          POP_ORW \\
+          irule EXTREAL_SUM_IMAGE_PROPERTY_POS >> rw [Abbr ‘f’]) >> Rewr' \\
+      Know ‘integral m (\x. (X (SUC n) x + Z n x) * indicator_fn s x) =
+            integral m (\x. X (SUC n) x * indicator_fn s x + Z n x * indicator_fn s x)’
+      >- (MATCH_MP_TAC integral_cong >> rw [] \\
+         ‘?r. 0 <= r /\ r <= 1 /\ indicator_fn s x = Normal r’
+            by METIS_TAC [indicator_fn_normal] >> POP_ORW \\
+          MATCH_MP_TAC add_rdistrib_normal >> rw []) >> Rewr' \\
+      Know ‘s IN measurable_sets m’
+      >- (Suff ‘subsets (sigma (m_space m) (\n. Borel) X (count1 n)) SUBSET measurable_sets m’
+          >- rw [SUBSET_DEF] \\
+       (* applying sigma_functions_subset *)
+          MATCH_MP_TAC (REWRITE_RULE [space_def, subsets_def]
+                          (Q.ISPECL [‘measurable_space m’, ‘\n:num. Borel’]
+                                    sigma_functions_subset)) \\
+          rw [MEASURE_SPACE_SIGMA_ALGEBRA, SIGMA_ALGEBRA_BOREL] \\
+          FULL_SIMP_TAC std_ss [integrable_def]) >> DISCH_TAC \\
+      Know ‘integral m (\x. X (SUC n) x * indicator_fn s x + Z n x * indicator_fn s x) =
+            integral m (\x. X (SUC n) x * indicator_fn s x) +
+            integral m (\x. Z n x * indicator_fn s x)’
+      >- (HO_MATCH_MP_TAC integral_add' >> art [] \\
+          CONJ_TAC >- (MATCH_MP_TAC integrable_mul_indicator >> art []) \\
+          MATCH_MP_TAC integrable_mul_indicator >> art []) >> Rewr' \\
+   (* applying indep_functions_integral_mul_indicator! *)
+      Know ‘integral m (\x. X (SUC n) x * indicator_fn s x) =
+            measure m s * integral m (X (SUC n))’
+      >- (irule indep_functions_integral_mul_indicator >> art []) >> Rewr' \\
+     ‘integrable m (\x. Z n x * indicator_fn s x)’
+        by METIS_TAC [integrable_mul_indicator] \\
+     ‘integral m (\x. Z n x * indicator_fn s x) <> PosInf /\
+      integral m (\x. Z n x * indicator_fn s x) <> NegInf’
+        by METIS_TAC [integrable_finite_integral] \\
+      Q.ABBREV_TAC ‘a = integral m (\x. Z n x * indicator_fn s x)’ \\
+     ‘?r. a = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+      ONCE_REWRITE_TAC [GSYM add_comm_normal] \\
+      MATCH_MP_TAC le_addr_imp \\
+      MATCH_MP_TAC le_mul >> art [] \\
+      Know ‘positive m’ >- rw [MEASURE_SPACE_POSITIVE] \\
+      rw [positive_def] ]
+QED
 
-     cheat)
-
- >> cheat
+(* NOTE: The weaker (but more common) ‘!n. 0 <= integral m (X n)’ is used here *)
+Theorem indep_functions_sum_sub_martingle' :
+  !m X A Z. measure_space m /\ measure m (m_space m) = 1 /\
+           (!n. integrable m (X n)) /\
+           (!n x. x IN m_space m ==> X n x <> NegInf /\ X n x <> PosInf) /\
+            indep_functions m X (\n. Borel) univ(:num) /\
+           (!n. A n = sigma (m_space m) (\n. Borel) X (count1 n)) /\
+           (!n x. x IN m_space m ==> Z n x = SIGMA (\i. X i x) (count1 n)) /\
+           (!n. 0 <= integral m (X n))
+       ==> sub_martingale m A Z
+Proof
+    rpt STRIP_TAC
+ >> Know ‘sub_martingale m A Z <=> !n. 0 <= integral m (X (SUC n))’
+ >- (MATCH_MP_TAC indep_functions_sum_sub_martingle >> art [])
+ >> Rewr'
+ >> rw []
 QED
 
 (* END *)

@@ -3263,6 +3263,21 @@ Proof
  >> rw [PREIMAGE_def]
 QED
 
+(* The sigma algebra generated from A/B-measurable functions does not exceed A *)
+Theorem sigma_functions_subset :
+    !A B f (J :'index set). sigma_algebra A /\
+            (!i. i IN J ==> sigma_algebra (B i)) /\
+            (!i. f i IN measurable A (B i)) ==>
+            subsets (sigma (space A) B f J) SUBSET subsets A
+Proof
+    rw [sigma_functions_def]
+ >> MATCH_MP_TAC SIGMA_SUBSET >> art []
+ >> rw [SUBSET_DEF, IN_BIGUNION_IMAGE]
+ >> rename1 ‘t IN subsets (B i)’
+ >> Q.PAT_X_ASSUM ‘!i. f i IN measurable A (B n)’ (MP_TAC o (Q.SPEC ‘i’))
+ >> rw [IN_MEASURABLE]
+QED
+
 (* Lemma 7.5 of [7, p.51] *)
 Theorem SIGMA_SIMULTANEOUSLY_MEASURABLE :
     !sp A f (J :'index set).
