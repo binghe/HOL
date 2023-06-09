@@ -266,19 +266,25 @@ Proof
       RW_TAC real_ss [] ]
 QED
 
-(* NOTE: renamed from ‘differentiable’ to ‘differentiable_at’, to distinguish
-   from ‘derivative$differentiable’.
- *)
-val differentiable_at = new_infixr_definition
-  ("differentiable_at", “$differentiable_at f x = ?l. (f diffl l)(x)”, 750);
+val _ = hide "differentiable";
+
+(* cf. derivativeTheory.differentiable *)
+val differentiable = new_infixr_definition("differentiable",
+  “$differentiable f x = ?l. (f diffl l)(x)”, 750);
+
+Theorem differentiable_has_vector_derivative :
+    !f x. f differentiable x <=> ?l. (f has_vector_derivative l) (at x)
+Proof
+    rw [differentiable, diffl_has_vector_derivative]
+QED
 
 (* Alternative definition of ‘differentiable_at’ showing equivalence between
   ‘lim$differentiable_at’ and ‘derivative$differentiable’
  *)
-Theorem differentiable_at_alt :
-    !f x. f differentiable_at x <=> f differentiable (at x)
+Theorem differentiable_alt :
+    !f x. f differentiable x <=> derivative$differentiable f (at x)
 Proof
-    rw [differentiable_at, diffl_has_derivative, differentiable]
+    rw [differentiable, diffl_has_derivative, derivativeTheory.differentiable]
  >> EQ_TAC
  >- (STRIP_TAC \\
      Q.EXISTS_TAC ‘\x. l * x’ >> rw [])
@@ -307,7 +313,7 @@ Proof
  (* new proof based on derivativeTheory *)
     rw [contl_eq_continuous_at, diffl_has_derivative]
  >> MATCH_MP_TAC DIFFERENTIABLE_IMP_CONTINUOUS_AT
- >> rw [differentiable]
+ >> rw [derivativeTheory.differentiable]
  >> Q.EXISTS_TAC ‘\x. l * x’ >> art []
  (* old proof:
   REPEAT GEN_TAC THEN REWRITE_TAC[diffl, contl] THEN DISCH_TAC THEN
@@ -1235,11 +1241,11 @@ Theorem ROLLE :
    !f a b. a < b /\
            (f(a) = f(b)) /\
            (!x. a <= x /\ x <= b ==> f contl x) /\
-           (!x. a < x /\ x < b ==> f differentiable_at x)
+           (!x. a < x /\ x < b ==> f differentiable x)
         ==> ?z. a < z /\ z < b /\ (f diffl &0)(z)
 Proof
  (* new proof based on derivativeTheory *)
-    rw [differentiable_at, diffl_has_derivative', contl_eq_continuous_at]
+    rw [differentiable, diffl_has_derivative', contl_eq_continuous_at]
  >> fs [GSYM IN_INTERVAL, EXT_SKOLEM_THM]
  >> MP_TAC (Q.SPECL [‘f’, ‘$* o f'’, ‘a’, ‘b’] derivativeTheory.ROLLE)
  >> Know ‘f continuous_on interval [a,b]’
@@ -1266,7 +1272,7 @@ Proof
      “?l. (f diffl l)(x1) /\
           ?d. &0 < d /\ (!y. abs(x1 - y) < d ==> f(y) <= f(x1))” MP_TAC THENL
      [CONV_TAC EXISTS_AND_CONV THEN CONJ_TAC THENL
-       [REWRITE_TAC[GSYM differentiable_at] THEN FIRST_ASSUM MATCH_MP_TAC THEN
+       [REWRITE_TAC[GSYM differentiable] THEN FIRST_ASSUM MATCH_MP_TAC THEN
         ASM_REWRITE_TAC[],
         EXISTS_TAC “d:real” THEN ASM_REWRITE_TAC[] THEN X_GEN_TAC “y:real” THEN
         DISCH_TAC THEN REPEAT(FIRST_ASSUM MATCH_MP_TAC) THEN
@@ -1281,7 +1287,7 @@ Proof
      “?l. (f diffl l)(x2) /\
           ?d. &0 < d /\ (!y. abs(x2 - y) < d ==> f(x2) <= f(y))” MP_TAC THENL
      [CONV_TAC EXISTS_AND_CONV THEN CONJ_TAC THENL
-       [REWRITE_TAC[GSYM differentiable_at] THEN FIRST_ASSUM MATCH_MP_TAC THEN
+       [REWRITE_TAC[GSYM differentiable] THEN FIRST_ASSUM MATCH_MP_TAC THEN
         ASM_REWRITE_TAC[],
         EXISTS_TAC “d:real” THEN ASM_REWRITE_TAC[] THEN X_GEN_TAC “y:real” THEN
         DISCH_TAC THEN REPEAT(FIRST_ASSUM MATCH_MP_TAC) THEN
@@ -1312,7 +1318,7 @@ Proof
     SUBGOAL_THEN “?l. ($diffl f l)(x) /\
         (?d. &0 < d /\ (!y. abs(x - y) < d ==> (f(y) = f(x))))” MP_TAC THENL
      [CONV_TAC(ONCE_DEPTH_CONV EXISTS_AND_CONV) THEN CONJ_TAC THENL
-       [REWRITE_TAC[GSYM differentiable_at] THEN FIRST_ASSUM MATCH_MP_TAC THEN
+       [REWRITE_TAC[GSYM differentiable] THEN FIRST_ASSUM MATCH_MP_TAC THEN
         ASM_REWRITE_TAC[],
         EXISTS_TAC “d:real” THEN ASM_REWRITE_TAC[] THEN GEN_TAC THEN
         DISCH_THEN(fn th => FIRST_ASSUM(MP_TAC o C MATCH_MP th)) THEN
@@ -1358,12 +1364,12 @@ val MVT_LEMMA = store_thm("MVT_LEMMA",
 Theorem MVT :
    !f a b. a < b /\
            (!x. a <= x /\ x <= b ==> f contl x) /\
-           (!x. a < x /\ x < b ==> f differentiable_at x)
+           (!x. a < x /\ x < b ==> f differentiable x)
         ==> ?l z. a < z /\ z < b /\ (f diffl l)(z) /\
             (f(b) - f(a) = (b - a) * l)
 Proof
  (* new proof based on derivativeTheory *)
-    rw [differentiable_at, diffl_has_derivative', contl_eq_continuous_at]
+    rw [differentiable, diffl_has_derivative', contl_eq_continuous_at]
  >> fs [GSYM IN_INTERVAL, EXT_SKOLEM_THM]
  >> MP_TAC (Q.SPECL [‘f’, ‘$* o f'’, ‘a’, ‘b’] derivativeTheory.MVT)
  >> Know ‘f continuous_on interval [a,b]’
@@ -1385,7 +1391,7 @@ Proof
         REWRITE_TAC[CONT_CONST] THEN MATCH_MP_TAC DIFF_CONT THEN
         EXISTS_TAC “&1” THEN MATCH_ACCEPT_TAC DIFF_X],
       DISCH_THEN(fn th => FIRST_ASSUM(MP_TAC o C MATCH_MP th)) THEN
-      REWRITE_TAC[differentiable_at] THEN DISCH_THEN(X_CHOOSE_TAC “l:real”) THEN
+      REWRITE_TAC[differentiable] THEN DISCH_THEN(X_CHOOSE_TAC “l:real”) THEN
       EXISTS_TAC “l - ((f(b) - f(a)) / (b - a))” THEN
       CONV_TAC(ONCE_DEPTH_CONV HABS_CONV) THEN MATCH_MP_TAC DIFF_SUB THEN
       CONJ_TAC THENL
@@ -1434,7 +1440,7 @@ val DIFF_ISCONST_END = store_thm("DIFF_ISCONST_END",
   MP_TAC(SPECL [“f:real->real”, “a:real”, “b:real”] MVT) THEN
   ASM_REWRITE_TAC[] THEN
   W(C SUBGOAL_THEN MP_TAC o funpow 2 (fst o dest_imp) o snd) THENL
-   [GEN_TAC THEN REWRITE_TAC[differentiable_at] THEN
+   [GEN_TAC THEN REWRITE_TAC[differentiable] THEN
     DISCH_THEN(curry op THEN (EXISTS_TAC “&0”) o MP_TAC) THEN
     ASM_REWRITE_TAC[],
     DISCH_THEN(fn th => REWRITE_TAC[th])] THEN
