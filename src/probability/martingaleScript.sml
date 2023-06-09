@@ -6014,17 +6014,6 @@ QED
 (*  Filtration and basic version of martingales (Chapter 23 of [1])          *)
 (* ------------------------------------------------------------------------- *)
 
-(* Another form of measureTheory.MEASURE_SPACE_RESTRICTION *)
-Theorem measure_space_from_sub_sigma_algebra :
-   !m a. measure_space m /\ sub_sigma_algebra a (measurable_space m) ==>
-         measure_space (m_space m,subsets a,measure m)
-Proof
-    rpt STRIP_TAC
- >> MATCH_MP_TAC MEASURE_SPACE_RESTRICTION'
- >> FULL_SIMP_TAC std_ss [sub_sigma_algebra_def, space_def, subsets_def]
- >> METIS_TAC [SPACE]
-QED
-
 (* ‘sub_sigma_algebra’ is a partial-order between sigma-algebra *)
 val SUB_SIGMA_ALGEBRA_REFL = store_thm
   ("SUB_SIGMA_ALGEBRA_REFL",
@@ -6053,6 +6042,7 @@ val SUB_SIGMA_ALGEBRA_ORDER = store_thm
  >- (MATCH_MP_TAC SUB_SIGMA_ALGEBRA_ANTISYM >> art [])
  >> IMP_RES_TAC SUB_SIGMA_ALGEBRA_TRANS);
 
+(* Another form of measureTheory.MEASURE_SPACE_RESTRICTION *)
 val SUB_SIGMA_ALGEBRA_MEASURE_SPACE = store_thm
   ("SUB_SIGMA_ALGEBRA_MEASURE_SPACE",
   ``!m a. measure_space m /\ sub_sigma_algebra a (m_space m,measurable_sets m) ==>
@@ -6160,6 +6150,43 @@ val INFTY_SIGMA_ALGEBRA_MAXIMAL = store_thm
  >- (RW_TAC std_ss [SUBSET_DEF, IN_BIGUNION_IMAGE, IN_UNIV] \\
      Q.EXISTS_TAC `n` >> art [])
  >> REWRITE_TAC [SIGMA_SUBSET_SUBSETS]);
+
+(* A construction of sigma-filteration from only measurable functions *)
+Theorem filtration_from_measurable_functions :
+    !m X A. measure_space m /\
+           (!n. X n IN Borel_measurable (measurable_space m)) /\
+           (!n. A n = sigma (m_space m) (\n. Borel) X (count1 n)) ==>
+            filtration (measurable_space m) A
+Proof
+    rw [filtration_def]
+ >- (rw [sub_sigma_algebra_def, space_sigma_functions]
+     >- (MATCH_MP_TAC sigma_algebra_sigma_functions \\
+         rw [IN_FUNSET, SPACE_BOREL]) \\
+     MATCH_MP_TAC (REWRITE_RULE [space_def, subsets_def]
+                    (Q.ISPECL [‘measurable_space m’, ‘\n:num. Borel’]
+                               sigma_functions_subset)) \\
+     rw [MEASURE_SPACE_SIGMA_ALGEBRA, SIGMA_ALGEBRA_BOREL])
+ (* stage work *)
+ >> REWRITE_TAC [Once sigma_functions_def]
+ >> Q.ABBREV_TAC ‘B = (sigma (m_space m) (\n. Borel) X (count1 j))’
+ >> ‘m_space m = space B’ by METIS_TAC [space_sigma_functions]
+ >> POP_ORW
+ >> MATCH_MP_TAC SIGMA_SUBSET
+ >> CONJ_ASM1_TAC
+ >- (Q.UNABBREV_TAC ‘B’ \\
+     MATCH_MP_TAC sigma_algebra_sigma_functions \\
+     rw [IN_FUNSET, SPACE_BOREL])
+ >> rw [SUBSET_DEF, IN_BIGUNION_IMAGE]
+ >> rename1 ‘k < SUC i’
+ >> rename1 ‘t IN subsets Borel’
+ >> ‘k <= i’ by rw []
+ >> ‘k <= j’ by rw []
+ (* applying SIGMA_SIMULTANEOUSLY_MEASURABLE *)
+ >> Suff ‘X k IN measurable B Borel’ >- rw [IN_MEASURABLE]
+ >> MP_TAC (ISPECL [“m_space m”, “\n:num. Borel”, “X :num->'a->extreal”, “count1 j”]
+                   SIGMA_SIMULTANEOUSLY_MEASURABLE)
+ >> rw [SIGMA_ALGEBRA_BOREL, IN_FUNSET, SPACE_BOREL]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (*  Martingale alternative definitions and properties (Chapter 23 of [1])    *)
@@ -7705,20 +7732,10 @@ Proof
           rw [SPACE, Abbr ‘B’] \\
           MATCH_MP_TAC sigma_algebra_sigma_function \\
           rw [SIGMA_ALGEBRA_BOREL, IN_FUNSET, SPACE_BOREL]) \\
-      rw [filtered_measure_space_def, filtration_def]
-      >- (rw [sub_sigma_algebra_def, space_sigma_functions]
-          >- (MATCH_MP_TAC sigma_algebra_sigma_functions \\
-              rw [IN_FUNSET, SPACE_BOREL]) \\
-          MATCH_MP_TAC (REWRITE_RULE [space_def, subsets_def]
-                         (Q.ISPECL [‘measurable_space m’, ‘\n:num. Borel’]
-                                   sigma_functions_subset)) \\
-          rw [MEASURE_SPACE_SIGMA_ALGEBRA, SIGMA_ALGEBRA_BOREL] \\
-          FULL_SIMP_TAC std_ss [integrable_def]) \\
-   (* The only goal left:
-        subsets (sigma (m_space m) (\n. Borel) X (count1 i)) SUBSET
-        subsets (sigma (m_space m) (\n. Borel) X (count1 j))
-    *)
-      cheat,
+      rw [filtered_measure_space_def] \\
+      MATCH_MP_TAC filtration_from_measurable_functions \\
+      Q.EXISTS_TAC ‘X’ >> rw [] \\
+      FULL_SIMP_TAC std_ss [integrable_def],
       (* goal 2 (of 2) *)
       Know ‘integral m (\x. Z (SUC n) x * indicator_fn s x) =
             integral m (\x. (X (SUC n) x + Z n x) * indicator_fn s x)’
