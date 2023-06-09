@@ -112,17 +112,6 @@ hol-probability {
   import: hol-words
   package: hol-probability-1.1
 }
-convergence {
-  import: base
-  import: hol-base
-  import: hol-set
-  import: hol-real
-  import: hol-extreal
-  import: hol-analysis
-  import: hol-probability
-  article: "convergence.ot.art"
-  interpretation: "../../src/opentheory/hol4.int"
-}
 large-numbers {
   import: base
   import: hol-base

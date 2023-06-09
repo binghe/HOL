@@ -30,8 +30,6 @@ ARTFILES = $(patsubst %Script.sml,%.ot.art,$(wildcard *Script.sml))
 
 all: $(ARTFILES)
 
-convergence.art: convergence.otd
-
 # NOTE: the following targets are not included in "all". OpenTheory binary built
 # by Poly/ML (with Int.maxInt = NONE, i.e., --enable-intinf-as-int) must be used
 # here, since OpenTheory built by the Mlton (otherwise recommended!) will report

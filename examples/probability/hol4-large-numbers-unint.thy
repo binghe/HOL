@@ -5,15 +5,10 @@ author: Chun Tian <binghe.lisp@gmail.com>
 license: MIT
 main {
   import: stochastic-process
-  import: convergence
   import: large-number
 }
 stochastoc-process {
   article: "stochastic_process.ot.art"
-}
-convergence {
-  import: stochastic-process
-  article: "convergence.ot.art"
 }
 large-number {
   import: convergence
