@@ -2,17 +2,15 @@
 (* Properties of real polynomials (not canonically represented).             *)
 (* ========================================================================= *)
 
-open HolKernel Parse boolLib hol88Lib reduceLib pairLib numLib
-     mesonLib tautLib simpLib boolSimps numSimps realSimps
+open HolKernel Parse boolLib hol88Lib;
+
+open reduceLib pairLib numLib mesonLib tautLib simpLib boolSimps numSimps realSimps
      pairTheory numTheory prim_recTheory arithmeticTheory listTheory
      Ho_Rewrite jrhUtils Canon_Port AC realTheory limTheory listTheory
      pred_setTheory realLib;
 
-infix THEN THENL ORELSE ORELSEC ## THENC ORELSE_TCL;
-
 val _ = new_theory "poly";
 val _ = ParseExtras.temp_loose_equality()
-
 
 (* ------------------------------------------------------------------------- *)
 (* Extras needed to port polyTheory to hol98.                                *)
@@ -261,9 +259,9 @@ val POLY_DIFF = store_thm("POLY_DIFF",
 (* ------------------------------------------------------------------------- *)
 
 Theorem POLY_DIFFERENTIABLE :
-    !l x. (\x. poly l x) differentiable_at x
+    !l x. (\x. poly l x) differentiable x
 Proof
-  REPEAT GEN_TAC THEN REWRITE_TAC[differentiable_at] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[differentiable] THEN
   EXISTS_TAC (Term`poly (diff l) x`) THEN
   REWRITE_TAC[POLY_DIFF]
 QED
