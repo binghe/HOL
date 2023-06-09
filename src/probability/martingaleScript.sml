@@ -7787,7 +7787,10 @@ Proof
       rw [positive_def] ]
 QED
 
-(* NOTE: The weaker (but more common) ‘!n. 0 <= integral m (X n)’ is used here *)
+(* NOTE: The weaker (but more common) ‘!n. 0 <= integral m (X n)’ is used here.
+
+   cf. probabilityTheory.indep_vars_sub_martingle for the probability version.
+ *)
 Theorem indep_functions_sub_martingle' :
   !m X A Z. measure_space m /\ measure m (m_space m) = 1 /\
            (!n. integrable m (X n)) /\
