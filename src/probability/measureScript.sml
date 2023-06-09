@@ -2938,10 +2938,10 @@ val OUTER_MEASURE_SPACE_FINITE_SUBADDITIVE = store_thm
  >> ASM_REWRITE_TAC []);
 
 (* cf. MEASURE_SPACE_RESTRICTED *)
-val MEASURE_SPACE_RESTRICTION = store_thm
-  ("MEASURE_SPACE_RESTRICTION",
-  ``!sp sts m sub. measure_space (sp,sts,m) /\ sub SUBSET sts /\ sigma_algebra (sp,sub) ==>
-                   measure_space (sp,sub,m)``,
+Theorem MEASURE_SPACE_RESTRICTION :
+    !sp sts m sub. measure_space (sp,sts,m) /\ sub SUBSET sts /\ sigma_algebra (sp,sub) ==>
+                   measure_space (sp,sub,m)
+Proof
     RW_TAC std_ss [measure_space_def, m_space_def, measurable_sets_def]
  >- (REWRITE_TAC [positive_def, measure_def, measurable_sets_def] \\
      CONJ_TAC >- PROVE_TAC [positive_def, measure_def, measurable_sets_def] \\
@@ -2950,7 +2950,22 @@ val MEASURE_SPACE_RESTRICTION = store_thm
  >> fs [countably_additive_def, IN_FUNSET, IN_UNIV, measurable_sets_def, measure_def]
  >> RW_TAC std_ss []
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
- >> PROVE_TAC [SUBSET_DEF]);
+ >> PROVE_TAC [SUBSET_DEF]
+QED
+
+(* Any sub-sigma-algebra in a measurable space forms a measurable space
+   cf. martingaleTheory.measure_space_from_sub_sigma_algebra
+ *)
+Theorem MEASURE_SPACE_RESTRICTION':
+   !m sts. measure_space m /\ sts SUBSET (measurable_sets m) /\
+           sigma_algebra (m_space m,sts) ==>
+           measure_space (m_space m,sts,measure m)
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC MEASURE_SPACE_RESTRICTION
+ >> Q.EXISTS_TAC ‘measurable_sets m’
+ >> rw [MEASURE_SPACE_REDUCE]
+QED
 
 (* Theorem 18.2 of [1]. Given (sp,sts,m) and u = outer_measure m (countable_covers sts):
 

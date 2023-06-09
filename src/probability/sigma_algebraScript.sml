@@ -3223,10 +3223,36 @@ QED
 (* ------------------------------------------------------------------------- *)
 
 (* The smallest sigma-algebra on `sp` that makes `f` measurable *)
-val sigma_function_def = Define
-   `sigma_function sp A f = (sp,IMAGE (\s. PREIMAGE f s INTER sp) (subsets A))`;
+Definition sigma_function_def :
+    sigma_function sp A f = (sp,IMAGE (\s. PREIMAGE f s INTER sp) (subsets A))
+End
 
-val _ = overload_on ("sigma", ``sigma_function``);
+Overload sigma = “sigma_function”
+
+Theorem space_sigma_function :
+    !sp A f. space (sigma_function sp A f) = sp
+Proof
+    rw [sigma_function_def]
+QED
+
+(* For ‘sigma_function sp A f’ to be a sigma_algebra, A must be sigma_algebra *)
+Theorem sigma_algebra_sigma_function :
+    !sp A f. sigma_algebra A /\ f IN (sp -> space A) ==>
+             sigma_algebra (sigma_function sp A f)
+Proof
+    rw [sigma_function_def]
+ >> MATCH_MP_TAC PREIMAGE_SIGMA_ALGEBRA >> art []
+QED
+
+Theorem sigma_function_subset :
+   !A B f. sigma_algebra A /\ f IN measurable A B ==>
+           subsets (sigma (space A) B f) SUBSET subsets A
+Proof
+    rw [sigma_function_def]
+ >> rw [SUBSET_DEF]
+ >> rename1 ‘t IN subsets B’
+ >> FULL_SIMP_TAC std_ss [IN_MEASURABLE]
+QED
 
 Theorem SIGMA_MEASURABLE :
     !sp A f. sigma_algebra A /\ f IN (sp -> space A) ==>
@@ -3238,13 +3264,15 @@ Proof
 QED
 
 (* Definition 7.5 of [7, p.51], The smallest sigma-algebra on `sp` that makes all `f`
-   simultaneously measurable. *)
-val sigma_functions_def = Define
-   `sigma_functions sp A f (J :'index set) =
+   simultaneously measurable.
+ *)
+Definition sigma_functions_def :
+    sigma_functions sp A f (J :'index set) =
       sigma sp (BIGUNION (IMAGE (\i. IMAGE (\s. PREIMAGE (f i) s INTER sp)
-                                           (subsets (A i))) J))`;
+                                           (subsets (A i))) J))
+End
 
-val _ = overload_on ("sigma", ``sigma_functions``);
+Overload sigma = “sigma_functions”
 
 Theorem space_sigma_functions :
     !sp A f (J :'index set). space (sigma_functions sp A f J) = sp
@@ -3267,15 +3295,49 @@ QED
 Theorem sigma_functions_subset :
     !A B f (J :'index set). sigma_algebra A /\
             (!i. i IN J ==> sigma_algebra (B i)) /\
-            (!i. f i IN measurable A (B i)) ==>
+            (!i. i IN J ==> f i IN measurable A (B i)) ==>
             subsets (sigma (space A) B f J) SUBSET subsets A
 Proof
     rw [sigma_functions_def]
  >> MATCH_MP_TAC SIGMA_SUBSET >> art []
  >> rw [SUBSET_DEF, IN_BIGUNION_IMAGE]
  >> rename1 ‘t IN subsets (B i)’
- >> Q.PAT_X_ASSUM ‘!i. f i IN measurable A (B n)’ (MP_TAC o (Q.SPEC ‘i’))
+ >> Q.PAT_X_ASSUM ‘!i. i IN J ==> f i IN measurable A (B n)’ (MP_TAC o (Q.SPEC ‘i’))
  >> rw [IN_MEASURABLE]
+QED
+
+(* ‘sigma_functions’ reduce to ‘sigma_function’ when there's only one function *)
+Theorem sigma_functions_1 :
+    !sp A f. sigma_algebra A /\ f 0 IN (sp -> space A) ==>
+             sigma sp (\n. A) f (count 1) = sigma sp A (f 0)
+Proof
+    rw [sigma_functions_def]
+ >> Know ‘BIGUNION
+            (IMAGE (\n. IMAGE (\s. PREIMAGE (f n) s INTER sp) (subsets A)) (count 1)) =
+          IMAGE (\s. PREIMAGE (f 0) s INTER sp) (subsets A)’
+ >- rw [Once EXTENSION, IN_BIGUNION_IMAGE]
+ >> Rewr'
+ >> Know ‘IMAGE (\s. PREIMAGE (f 0) s INTER sp) (subsets A) =
+          subsets (sigma sp A (f 0))’
+ >- rw [sigma_function_def]
+ >> Rewr'
+ >> Q.ABBREV_TAC ‘B = sigma sp A (f 0)’
+ >> ‘sp = space B’ by METIS_TAC [space_sigma_function] >> POP_ORW
+ >> MATCH_MP_TAC SIGMA_STABLE
+ >> Q.UNABBREV_TAC ‘B’
+ >> MATCH_MP_TAC sigma_algebra_sigma_function >> art []
+QED
+
+Theorem sigma_function_alt_sigma_functions :
+    !sp A X. sigma_algebra A /\ X IN (sp -> space A) ==>
+             sigma sp A X = sigma sp (\n. A) (\n x. X x) (count 1)
+Proof
+    rpt STRIP_TAC
+ >> ONCE_REWRITE_TAC [EQ_SYM_EQ]
+ >> Q.ABBREV_TAC ‘f = \n:num x. X x’
+ >> ‘X = f 0’ by METIS_TAC [] >> POP_ORW
+ >> MATCH_MP_TAC sigma_functions_1
+ >> rw [Abbr ‘f’, ETA_THM]
 QED
 
 (* Lemma 7.5 of [7, p.51] *)

@@ -6014,6 +6014,17 @@ QED
 (*  Filtration and basic version of martingales (Chapter 23 of [1])          *)
 (* ------------------------------------------------------------------------- *)
 
+(* Another form of measureTheory.MEASURE_SPACE_RESTRICTION *)
+Theorem measure_space_from_sub_sigma_algebra :
+   !m a. measure_space m /\ sub_sigma_algebra a (measurable_space m) ==>
+         measure_space (m_space m,subsets a,measure m)
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC MEASURE_SPACE_RESTRICTION'
+ >> FULL_SIMP_TAC std_ss [sub_sigma_algebra_def, space_def, subsets_def]
+ >> METIS_TAC [SPACE]
+QED
+
 (* ‘sub_sigma_algebra’ is a partial-order between sigma-algebra *)
 val SUB_SIGMA_ALGEBRA_REFL = store_thm
   ("SUB_SIGMA_ALGEBRA_REFL",
@@ -7611,8 +7622,8 @@ Theorem indep_functions_integral_mul_indicator :
        (!n. integrable m (u n)) /\
         indep_functions m u (\n. Borel) univ(:num)
     ==> !n s. s IN subsets (sigma (m_space m) (\n. Borel) u (count1 n)) ==>
-               (integral m (\x. u (SUC n) x * indicator_fn s x) =
-                measure m s * integral m (u (SUC n)))
+             (integral m (\x. u (SUC n) x * indicator_fn s x) =
+              measure m s * integral m (u (SUC n)))
 Proof
     cheat
 QED
@@ -7624,7 +7635,7 @@ QED
 
    Also note that ‘sub_martingale m A Z’ does NOT implies ‘0 <= integral m (X 0)’.
  *)
-Theorem indep_functions_sum_sub_martingle :
+Theorem indep_functions_sub_martingle :
   !m X A Z. measure_space m /\ measure m (m_space m) = 1 /\
            (!n. integrable m (X n)) /\
            (!n x. x IN m_space m ==> X n x <> NegInf /\ X n x <> PosInf) /\
@@ -7677,6 +7688,36 @@ Proof
      MATCH_MP_TAC integrable_sum' >> rw [])
  >> rw [sub_martingale_def]
  >| [ (* goal 1 (of 2): sigma_finite_filtered_measure_space m A *)
+      reverse (rw [sigma_finite_filtered_measure_space_def])
+      >- (MATCH_MP_TAC FINITE_IMP_SIGMA_FINITE >> rw [] \\
+          Know ‘sigma (m_space m) (\n. Borel) X (count 1) = sigma (m_space m) Borel (X 0)’
+          >- (MATCH_MP_TAC sigma_functions_1 \\
+              rw [SIGMA_ALGEBRA_BOREL, IN_FUNSET, SPACE_BOREL]) >> Rewr' \\
+          MATCH_MP_TAC MEASURE_SPACE_RESTRICTION' >> art [] \\
+          CONJ_TAC
+          >- (MATCH_MP_TAC (REWRITE_RULE [space_def, subsets_def]
+                             (Q.ISPECL [‘measurable_space m’, ‘Borel’]
+                                       sigma_function_subset)) \\
+             rw [MEASURE_SPACE_SIGMA_ALGEBRA, SIGMA_ALGEBRA_BOREL] \\
+             FULL_SIMP_TAC std_ss [integrable_def]) \\
+          Q.ABBREV_TAC ‘B = sigma (m_space m) Borel (X 0)’ \\
+         ‘m_space m = space B’ by METIS_TAC [space_sigma_function] >> POP_ORW \\
+          rw [SPACE, Abbr ‘B’] \\
+          MATCH_MP_TAC sigma_algebra_sigma_function \\
+          rw [SIGMA_ALGEBRA_BOREL, IN_FUNSET, SPACE_BOREL]) \\
+      rw [filtered_measure_space_def, filtration_def]
+      >- (rw [sub_sigma_algebra_def, space_sigma_functions]
+          >- (MATCH_MP_TAC sigma_algebra_sigma_functions \\
+              rw [IN_FUNSET, SPACE_BOREL]) \\
+          MATCH_MP_TAC (REWRITE_RULE [space_def, subsets_def]
+                         (Q.ISPECL [‘measurable_space m’, ‘\n:num. Borel’]
+                                   sigma_functions_subset)) \\
+          rw [MEASURE_SPACE_SIGMA_ALGEBRA, SIGMA_ALGEBRA_BOREL] \\
+          FULL_SIMP_TAC std_ss [integrable_def]) \\
+   (* The only goal left:
+        subsets (sigma (m_space m) (\n. Borel) X (count1 i)) SUBSET
+        subsets (sigma (m_space m) (\n. Borel) X (count1 j))
+    *)
       cheat,
       (* goal 2 (of 2) *)
       Know ‘integral m (\x. Z (SUC n) x * indicator_fn s x) =
@@ -7730,7 +7771,7 @@ Proof
 QED
 
 (* NOTE: The weaker (but more common) ‘!n. 0 <= integral m (X n)’ is used here *)
-Theorem indep_functions_sum_sub_martingle' :
+Theorem indep_functions_sub_martingle' :
   !m X A Z. measure_space m /\ measure m (m_space m) = 1 /\
            (!n. integrable m (X n)) /\
            (!n x. x IN m_space m ==> X n x <> NegInf /\ X n x <> PosInf) /\
@@ -7742,7 +7783,7 @@ Theorem indep_functions_sum_sub_martingle' :
 Proof
     rpt STRIP_TAC
  >> Know ‘sub_martingale m A Z <=> !n. 0 <= integral m (X (SUC n))’
- >- (MATCH_MP_TAC indep_functions_sum_sub_martingle >> art [])
+ >- (MATCH_MP_TAC indep_functions_sub_martingle >> art [])
  >> Rewr'
  >> rw []
 QED
