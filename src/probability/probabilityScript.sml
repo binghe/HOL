@@ -7741,7 +7741,7 @@ QED
 
 (* A construction of sub-martingale from real r.v.'s of positive finite expectation *)
 Theorem indep_vars_sub_martingle :
-  !p X A Z. prob_space p /\ 
+  !p X A Z. prob_space p /\
            (!n. real_random_variable (X n) p) /\
            (!n. integrable p (X n)) /\
             indep_vars p X (\n. Borel) univ(:num) /\

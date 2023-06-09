@@ -7674,7 +7674,6 @@ Proof
     rpt STRIP_TAC
  >> EQ_TAC (* easier branch first *)
  >- (rw [sub_martingale_def] \\
-     (* redefine Z as an abbreviation *)
      Q.PAT_X_ASSUM ‘!n s. s IN subsets _ ==> P’ (MP_TAC o (Q.SPECL [‘n’,‘m_space m’])) \\
      Know ‘m_space m IN subsets (sigma (m_space m) (\n. Borel) X (count1 n))’
      >- (Q.ABBREV_TAC ‘a = sigma (m_space m) (\n. Borel) X (count1 n)’ \\

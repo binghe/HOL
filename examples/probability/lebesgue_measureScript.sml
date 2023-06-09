@@ -803,6 +803,20 @@ Proof
  >> ASM_SIMP_TAC std_ss [lebesgue_eq_lambda, lambda_open_interval]
 QED
 
+(* A function is Lebesgue integrable if and only if the function and its absolute
+   value are Henstock–Kurzweil integrable.
+ *)
+Theorem lebesgue_integral_eq_gauge_integral :
+    !f a b.
+       integrable lebesgue (\x. Normal (f x) * indicator_fn (interval[a,b]) x) ==>
+       f integrable_on (interval[a,b]) /\
+      (abs o f) integrable_on (interval[a,b]) /\
+      (integral lebesgue (\x. Normal (f x) * indicator_fn (interval[a,b]) x) =
+       Normal (integral (interval (a,b)) f))
+Proof
+    cheat
+QED
+
 (* ------------------------------------------------------------------------- *)
 (* Non-measurable sets                                                       *)
 (* ------------------------------------------------------------------------- *)
