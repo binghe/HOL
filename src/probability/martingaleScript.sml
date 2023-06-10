@@ -7652,7 +7652,23 @@ Theorem indep_functions_integral_mul_indicator :
              (integral m (\x. u (SUC n) x * indicator_fn s x) =
               measure m s * integral m (u (SUC n)))
 Proof
-    cheat
+    rpt GEN_TAC >> STRIP_TAC
+ >> Q.X_GEN_TAC ‘N’
+ (* define a new generator of ‘sigma (m_space m) (\n. Borel) u (count1 N)’ *)
+ >> Q.ABBREV_TAC ‘sp = m_space m’
+ >> Q.ABBREV_TAC
+     ‘A = {BIGINTER (IMAGE (\i. PREIMAGE (u i) (b i) INTER sp) (count1 N)) | i |
+           !i. i <= N ==> b i IN subsets Borel}’
+ (* prove it's indeed a generator *)
+ >> Know ‘sigma sp (\n. Borel) u (count1 N) = sigma sp A’
+ >- (cheat)
+ >> Rewr'
+ (* prove the goal for sets in the generator *)
+ >> Know ‘!s. s IN A ==> integral m (\x. u (SUC N) x * indicator_fn s x) =
+                         measure m s * integral m (u (SUC N))’
+ >- (rw [Abbr ‘A’, IN_BIGINTER_IMAGE] \\
+     cheat)
+ >> cheat
 QED
 
 (* This is Example 23.3(x) of [1, p.279-280]. It's actually about real random variables
