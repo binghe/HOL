@@ -2575,6 +2575,20 @@ val fn_seq_integral_def = Define
                             f x < (&k + 1) / 2 pow n}) (count (4 ** n)) +
               2 pow n * measure m {x | x IN m_space m /\ 2 pow n <= f x})`;
 
+(* NOTE: Given the following (s,a,x) for a sequence of positive simple function:
+
+   s = `count (4 ** n + 1)`
+   a = `(\k. if k IN count (4 ** n) then
+               {x | x IN m_space m /\ &k / 2 pow n <= f x /\ f x < (&k + 1) / 2 pow n}
+             else
+               {x | x IN m_space m /\ 2 pow n <= f x})`
+   x = `(\k. if k IN count (4 ** n) then &k / 2 pow n else 2 pow n)`
+
+   We have (as part of lemma_fn_seq_in_psfis):
+   |- fn_seq m f = \n t. SIGMA (\i. Normal (x i) * indicator_fn (a i) t) s)
+   |- fn_seq_integral m f n = pos_simple_fn_integral m s a x
+ *)
+
 (******************************************************)
 (****   f_n(x) = &k / 2 pow n in the k^th interval ****)
 (******************************************************)
@@ -2894,7 +2908,8 @@ Proof
   >> `!n.  fn_seq m f n x <= f x` by METIS_TAC [lemma_fn_seq_upper_bounded]
   >> `?r. f x = Normal r` by METIS_TAC [extreal_cases,lt_infty,lte_trans,extreal_of_num_def]
   >> `!n. fn_seq m f n x <> PosInf` by METIS_TAC [lt_infty,let_trans]
-  >> `!n. fn_seq m f n x <> NegInf` by METIS_TAC [lt_infty,lte_trans,lemma_fn_seq_positive,extreal_of_num_def]
+  >> `!n. fn_seq m f n x <> NegInf`
+        by METIS_TAC [lt_infty,lte_trans,lemma_fn_seq_positive,extreal_of_num_def]
   >> `?r. !n. fn_seq m f n x = Normal (r n)`
          by (Q.EXISTS_TAC `\n. @r. fn_seq m f n x = Normal r`
              >> GEN_TAC >> RW_TAC std_ss []
@@ -3187,8 +3202,13 @@ Proof
                     >> Cases_on `i < 4 ** n` >- RW_TAC std_ss []
                     >> RW_TAC std_ss [extreal_of_num_def,extreal_pow_def])
   >> POP_ORW
-  >> (MP_TAC o Q.SPEC `4 ** n` o UNDISCH o Q.SPECL [`(\i. if i < 4 ** n then &i / 2 pow n * measure m {x | x IN m_space m /\ &i / 2 pow n <= f x /\ f x < (&i + 1) / 2 pow n}
-         else 2 pow n * measure m {x | x IN m_space m /\ 2 pow n <= f x})`,`count (4 ** n)`] o INST_TYPE [alpha |-> ``:num``]) EXTREAL_SUM_IMAGE_PROPERTY
+  >> (MP_TAC o Q.SPEC `4 ** n` o UNDISCH o Q.SPECL
+      [`(\i. if i < 4 ** n then
+                &i / 2 pow n *
+                measure m {x | x IN m_space m /\ &i / 2 pow n <= f x /\ f x < (&i + 1) / 2 pow n}
+             else
+                2 pow n * measure m {x | x IN m_space m /\ 2 pow n <= f x})`,`count (4 ** n)`]
+      o INST_TYPE [alpha |-> ``:num``]) EXTREAL_SUM_IMAGE_PROPERTY
   >> `!x. (\i. if i < 4 ** n then &i / 2 pow n * measure m {x | x IN m_space m /\ &i / 2 pow n <= f x /\ f x < (&i + 1) / 2 pow n}
            else 2 pow n * measure m {x | x IN m_space m /\ 2 pow n <= f x}) x <> NegInf`
              by (RW_TAC std_ss []
@@ -5111,10 +5131,10 @@ QED
 (* Properties of integrable functions                                        *)
 (* ------------------------------------------------------------------------- *)
 
-val integrable_eq = store_thm (* new *)
-  ("integrable_eq",
-  ``!m f g. measure_space m /\ integrable m f /\
-            (!x. x IN m_space m ==> (f x = g x)) ==> integrable m g``,
+Theorem integrable_eq :
+    !m f g. measure_space m /\ integrable m f /\
+            (!x. x IN m_space m ==> (f x = g x)) ==> integrable m g
+Proof
     RW_TAC std_ss [integrable_def, IN_MEASURABLE, space_def, subsets_def, IN_FUNSET]
  >| [ (* goal 1 (of 4) *)
       PROVE_TAC [],
@@ -5159,7 +5179,8 @@ val integrable_eq = store_thm (* new *)
       >- (MATCH_MP_TAC EQ_SYM \\
           MATCH_MP_TAC pos_fn_integral_mspace >> art [] \\
           REWRITE_TAC [FN_MINUS_POS]) >> Rewr \\
-      ASM_REWRITE_TAC [] ]);
+      ASM_REWRITE_TAC [] ]
+QED
 
 Theorem integrable_cong :
     !m f g. measure_space m /\ (!x. x IN m_space m ==> (f x = g x)) ==>
@@ -5256,7 +5277,11 @@ Proof
  >> MATCH_MP_TAC pos_fn_integral_cong >> rw []
 QED
 
-(* The need of complete measure space comes from IN_MEASURABLE_BOREL_AE_EQ *)
+(* The need of complete measure space comes from IN_MEASURABLE_BOREL_AE_EQ
+
+   NOTE: In general (unless the measure space is complete), a function g may not
+   be integrable, when it is almost everywhere equal to an integrable function f.
+ *)
 Theorem integrable_eq_AE :
     !m f g. complete_measure_space m /\
             integrable m f /\ (AE x::m. f x = g x) ==> integrable m g
@@ -5516,14 +5541,18 @@ Proof
       MATCH_MP_TAC pos_fn_integral_cong >> rw [] ]
 QED
 
-(* Theorem 10.3 (iii) => (i) [1, p.84] *)
-val integrable_from_abs = store_thm (* new *)
-  ("integrable_from_abs",
-  ``!m u. measure_space m /\ u IN measurable (m_space m,measurable_sets m) Borel /\
-          integrable m (abs o u) ==> integrable m u``,
+(* Theorem 10.3 (iii) => (i) [1, p.84]
+
+   NOTE: (abs o f)-measurability doesn't imply f-measurablity in general.
+ *)
+Theorem integrable_from_abs :
+    !m u. measure_space m /\ u IN measurable (m_space m,measurable_sets m) Borel /\
+          integrable m (abs o u) ==> integrable m u
+Proof
     RW_TAC std_ss []
  >> MATCH_MP_TAC integrable_from_bound_exists >> art []
- >> MATCH_MP_TAC integrable_abs_bound_exists >> art []);
+ >> MATCH_MP_TAC integrable_abs_bound_exists >> art []
+QED
 
 Theorem integral_abs_imp_integrable :
     !m f. measure_space m /\ f IN measurable (m_space m,measurable_sets m) Borel /\

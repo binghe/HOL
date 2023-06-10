@@ -808,9 +808,10 @@ QED
  *)
 Theorem lebesgue_integral_eq_gauge_integral :
     !f a b.
-       integrable lebesgue (\x. Normal (f x) * indicator_fn (interval[a,b]) x) ==>
-       f integrable_on (interval[a,b]) /\
-      (abs o f) integrable_on (interval[a,b]) /\
+       integrable lebesgue (\x. Normal (f x) * indicator_fn (interval[a,b]) x) \/
+       f absolutely_integrable_on (interval[a,b]) ==>
+       integrable lebesgue (\x. Normal (f x) * indicator_fn (interval[a,b]) x) /\
+       f absolutely_integrable_on (interval[a,b]) /\
       (integral lebesgue (\x. Normal (f x) * indicator_fn (interval[a,b]) x) =
        Normal (integral (interval (a,b)) f))
 Proof
