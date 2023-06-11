@@ -7643,7 +7643,18 @@ Definition indep_functions_def :
             PI (measure m o (\n. PREIMAGE (u n) (s n) INTER m_space m)) N
 End
 
-(* This is 1st part of Scholium 23.4 (on independent functions) [1, p.280] *)
+(* This is 1st part of Scholium 23.4 (on independent functions) [1, p.280]
+
+   The prob_space version of this theorem is a generalization of indep_vars_expectation:
+
+   |- !p X Y.
+          prob_space p /\ real_random_variable X p /\
+          real_random_variable Y p /\ indep_vars p X Y Borel Borel /\
+          integrable p X /\ integrable p Y ==>
+          expectation p (\x. X x * Y x) = expectation p X * expectation p Y
+
+   But the present proof doesn't use Fubini's Theorem.
+ *)
 Theorem indep_functions_integral_mul_indicator :
   !m u. measure_space m /\ measure m (m_space m) = 1 /\
        (!n. integrable m (u n)) /\
@@ -7654,8 +7665,8 @@ Theorem indep_functions_integral_mul_indicator :
 Proof
     rpt GEN_TAC >> STRIP_TAC
  >> Q.X_GEN_TAC ‘N’
- (* define a new generator of ‘sigma (m_space m) (\n. Borel) u (count1 N)’ *)
  >> Q.ABBREV_TAC ‘sp = m_space m’
+ (* This is a new generator of ‘sigma (m_space m) (\n. Borel) u (count1 N)’ *)
  >> Q.ABBREV_TAC
      ‘A = {s | ?b. (!i. i <= N ==> b i IN subsets Borel) /\
                    s = BIGINTER (IMAGE (\i. PREIMAGE (u i) (b i) INTER sp) (count1 N))}’
@@ -7669,7 +7680,7 @@ Proof
        Q.ABBREV_TAC ‘B = sigma sp A’ \\
       ‘sp = space B’ by METIS_TAC [SPACE_SIGMA] >> POP_ORW \\
        MATCH_MP_TAC sigma_functions_subset \\
-       rw [SIGMA_ALGEBRA_BOREL, Abbr ‘B’]
+       rw [SIGMA_ALGEBRA_BOREL, Abbr ‘B’, LT_SUC_LE]
        >- (MATCH_MP_TAC SIGMA_ALGEBRA_SIGMA \\
            rw [Abbr ‘A’, subset_class_def, SUBSET_DEF] \\
            POP_ASSUM MP_TAC \\
@@ -7681,10 +7692,34 @@ Proof
        Suff ‘PREIMAGE (u i) s INTER sp IN A’
        >- METIS_TAC [SUBSET_DEF, SIGMA_SUBSET_SUBSETS] \\
        rw [Abbr ‘A’] \\
-    (* correct direction: now construct the needed ‘b’ *)
-       cheat,
+    (* correct direction: now construct ‘b’ *)
+       Q.EXISTS_TAC ‘\j. if j = i then s else UNIV’ \\
+       rw [] >- METIS_TAC [SIGMA_ALGEBRA_SPACE, SIGMA_ALGEBRA_BOREL, SPACE_BOREL] \\
+       rw [Once EXTENSION, IN_BIGINTER_IMAGE, LT_SUC_LE] \\
+       EQ_TAC >> rw [] >| (* 3 subgoals *)
+       [ (* goal 1.1 (of 3) *)
+         rename1 ‘j <= N’ >> Cases_on ‘j = i’ >> rw [],
+         (* goal 1.2 (of 3) *)
+         POP_ASSUM (MP_TAC o Q.SPEC ‘i’) >> rw [],
+         (* goal 1.3 (of 3) *)
+         POP_ASSUM (MP_TAC o Q.SPEC ‘i’) >> rw [] ],
        (* goal 2 (of 2) *)
-       cheat ])
+       Q.ABBREV_TAC ‘B = sigma sp (\n. Borel) u (count1 N)’ \\
+      ‘sp = space B’ by METIS_TAC [space_sigma_functions] >> POP_ORW \\
+       MATCH_MP_TAC SIGMA_SUBSET >> rw [Abbr ‘B’]
+       >- (MATCH_MP_TAC sigma_algebra_sigma_functions >> rw [IN_FUNSET, SPACE_BOREL]) \\
+       rw [SUBSET_DEF, Abbr ‘A’] \\
+       MATCH_MP_TAC SIGMA_ALGEBRA_FINITE_INTER >> rw [LT_SUC_LE]
+       >- (MATCH_MP_TAC sigma_algebra_sigma_functions >> rw [IN_FUNSET, SPACE_BOREL]) \\
+       Q.PAT_X_ASSUM ‘!i. i <= N ==> b i IN subsets Borel’ (MP_TAC o (Q.SPEC ‘i’)) \\
+       rw [sigma_functions_def] \\
+       Suff ‘PREIMAGE (u i) (b i) INTER sp IN
+             (BIGUNION
+               (IMAGE (\n. IMAGE (\s. PREIMAGE (u n) s INTER sp) (subsets Borel)) (count1 N)))’
+       >- METIS_TAC [SUBSET_DEF, SIGMA_SUBSET_SUBSETS] \\
+       rw [IN_BIGUNION_IMAGE, LT_SUC_LE] \\
+       Q.EXISTS_TAC ‘i’ >> art [] \\
+       Q.EXISTS_TAC ‘b i’ >> art [] ])
  >> Rewr'
  (* prove the goal for sets in the generator *)
  >> Know ‘!s. s IN A ==> integral m (\x. u (SUC N) x * indicator_fn s x) =
