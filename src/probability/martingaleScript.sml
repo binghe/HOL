@@ -7657,11 +7657,34 @@ Proof
  (* define a new generator of ‘sigma (m_space m) (\n. Borel) u (count1 N)’ *)
  >> Q.ABBREV_TAC ‘sp = m_space m’
  >> Q.ABBREV_TAC
-     ‘A = {BIGINTER (IMAGE (\i. PREIMAGE (u i) (b i) INTER sp) (count1 N)) | i |
-           !i. i <= N ==> b i IN subsets Borel}’
+     ‘A = {s | ?b. (!i. i <= N ==> b i IN subsets Borel) /\
+                   s = BIGINTER (IMAGE (\i. PREIMAGE (u i) (b i) INTER sp) (count1 N))}’
  (* prove it's indeed a generator *)
  >> Know ‘sigma sp (\n. Borel) u (count1 N) = sigma sp A’
- >- (cheat)
+ >- (Suff ‘subsets (sigma sp (\n. Borel) u (count1 N)) = subsets (sigma sp A)’
+     >- METIS_TAC [SPACE_SIGMA, space_sigma_functions, SPACE] \\
+     MATCH_MP_TAC SUBSET_ANTISYM \\
+     CONJ_TAC >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       Q.ABBREV_TAC ‘B = sigma sp A’ \\
+      ‘sp = space B’ by METIS_TAC [SPACE_SIGMA] >> POP_ORW \\
+       MATCH_MP_TAC sigma_functions_subset \\
+       rw [SIGMA_ALGEBRA_BOREL, Abbr ‘B’]
+       >- (MATCH_MP_TAC SIGMA_ALGEBRA_SIGMA \\
+           rw [Abbr ‘A’, subset_class_def, SUBSET_DEF] \\
+           POP_ASSUM MP_TAC \\
+           Suff ‘BIGINTER (IMAGE (\i. PREIMAGE (u i) (b i) INTER sp) (count1 N))
+                 SUBSET sp’ >- METIS_TAC [SUBSET_DEF] \\
+           rw [SUBSET_DEF, IN_BIGINTER_IMAGE] \\
+           POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> rw []) \\
+       rw [IN_MEASURABLE, IN_FUNSET, SPACE_SIGMA, SPACE_BOREL] \\
+       Suff ‘PREIMAGE (u i) s INTER sp IN A’
+       >- METIS_TAC [SUBSET_DEF, SIGMA_SUBSET_SUBSETS] \\
+       rw [Abbr ‘A’] \\
+    (* correct direction: now construct the needed ‘b’ *)
+       cheat,
+       (* goal 2 (of 2) *)
+       cheat ])
  >> Rewr'
  (* prove the goal for sets in the generator *)
  >> Know ‘!s. s IN A ==> integral m (\x. u (SUC N) x * indicator_fn s x) =
