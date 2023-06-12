@@ -259,7 +259,7 @@ QED
    This proof uses iterateTheory (numseg), added for WLLN_IID and SLLN_IID.
  *)
 Theorem LIM_SEQUENTIALLY_CESARO :
-    !f l. ((\n. f n) --> l) sequentially ==>
+    !(f :num->real) l. ((\n. f n) --> l) sequentially ==>
           ((\n. SIGMA f (count (SUC n)) / &SUC n) --> l) sequentially
 Proof
     RW_TAC std_ss [LIM_SEQUENTIALLY, dist]
