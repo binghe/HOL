@@ -9655,6 +9655,21 @@ Proof
  >> rw [bounded_metric_lt_1]
 QED
 
+(* ------------------------------------------------------------------------- *)
+(* Limits of extreal functions ('a -> extreal)                               *)
+(* ------------------------------------------------------------------------- *)
+
+Definition ext_tendsto_def :
+    ext_tendsto f l net =
+      !e. &0 < e ==> eventually (\x. dist extreal_mr1 (f(x),l) < e) net
+End
+Overload "-->" = “ext_tendsto”
+
+Definition extreal_lim_def :
+    extreal_lim net f = @l. ext_tendsto f l net
+End
+Overload lim = “extreal_lim”
+
 (************************************************************************)
 (*   Miscellaneous Results (generally for use in descendent theories)   *)
 (************************************************************************)
