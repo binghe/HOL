@@ -1500,8 +1500,6 @@ r.v.~$Y$) iff there exists a null set $\mathbf{N}$ such that
 or formally
 \begin{hol}
 \begin{alltt}
->>__ load "convergenceTheory";
->>__ open convergenceTheory;
 ##thm converge_AE_def
 \end{alltt}
 \end{hol}
