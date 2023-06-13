@@ -171,11 +171,6 @@ val REAL_LE_BETWEEN = store_thm ("REAL_LE_BETWEEN",
  ``!a b. a <= b <=> ?x:real. a <= x /\ x <= b``,
   MESON_TAC[REAL_LE_TRANS, REAL_LE_REFL]);
 
-val WLOG_LE = store_thm ("WLOG_LE",
- ``(!m n:num. P m n <=> P n m) /\ (!m n:num. m <= n ==> P m n) ==>
-    !m n:num. P m n``,
-  METIS_TAC[LE_CASES]);
-
 val BIGUNION_GSPEC = store_thm ("BIGUNION_GSPEC",
  ``(!P f. BIGUNION {f x | P x} = {a | ?x. P x /\ a IN (f x)}) /\
    (!P f. BIGUNION {f x y | P x y} = {a | ?x y. P x y /\ a IN (f x y)}) /\

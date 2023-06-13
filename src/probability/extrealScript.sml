@@ -12,10 +12,10 @@ open HolKernel Parse boolLib bossLib;
 open metisLib combinTheory pred_setTheory res_quanTools pairTheory jrhUtils
      prim_recTheory arithmeticTheory tautLib pred_setLib hurdUtils;
 
-open realTheory realLib real_sigmaTheory RealArith seqTheory limTheory
+open realTheory realLib real_sigmaTheory seqTheory limTheory
      transcTheory iterateTheory metricTheory listTheory rich_listTheory;
 
-open util_probTheory cardinalTheory;
+open util_probTheory cardinalTheory real_topologyTheory;
 
 val _ = new_theory "extreal";
 
@@ -9483,6 +9483,23 @@ Definition extreal_lim_def :
     extreal_lim net f = @l. ext_tendsto f l net
 End
 Overload lim = “extreal_lim”
+
+Theorem EXTREAL_LIM :
+   !(f :'a -> extreal) l net.
+      (f --> l) net <=>
+        trivial_limit net \/
+        !e. &0 < e ==> ?y. (?x. netord(net) x y) /\
+                           !x. netord(net) x y ==> dist extreal_mr1(f(x),l) < e
+Proof
+    REWRITE_TAC [ext_tendsto_def, eventually] >> PROVE_TAC []
+QED
+
+Theorem EXTREAL_LIM_SEQUENTIALLY :
+   !(s :num -> extreal) l. (s --> l) sequentially <=>
+          !e. &0 < e ==> ?N. !n. N <= n ==> dist extreal_mr1(s(n),l) < e
+Proof
+    REWRITE_TAC [ext_tendsto_def, EVENTUALLY_SEQUENTIALLY] >> PROVE_TAC []
+QED
 
 (************************************************************************)
 (*   Miscellaneous Results (generally for use in descendent theories)   *)
