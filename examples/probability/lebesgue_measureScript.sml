@@ -152,21 +152,13 @@ QED
 Theorem Cantor_set_decreasing :
     !i j. i <= j ==> Cantor_set j SUBSET Cantor_set i
 Proof
-    rpt STRIP_TAC
- >> Induct_on ‘j - i’
- >- (RW_TAC arith_ss [] >> ‘j = i’ by RW_TAC arith_ss [] >> rw [])
- >> rpt STRIP_TAC
- >> ‘v = PRE j - i’ by RW_TAC arith_ss []
- >> Q.PAT_X_ASSUM ‘!j i. v = j - i ==> P’ (MP_TAC o (Q.SPECL [‘PRE j’, ‘i’]))
- >> ‘i < j /\ i <= PRE j’ by RW_TAC arith_ss []
- >> RW_TAC std_ss []
- >> ‘SUC (PRE j) = j’ by RW_TAC arith_ss []
- >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM)
- >> Q.ABBREV_TAC ‘n = PRE j’
- >> MATCH_MP_TAC SUBSET_TRANS
- >> Q.EXISTS_TAC ‘Cantor_set n’ >> art []
- >> KILL_TAC
- (* BIGUNION (Cantor (SUC n)) SUBSET BIGUNION (Cantor n) *)
+    rpt GEN_TAC
+ >> Suff ‘!i j. i < j ==> Cantor_set j SUBSET Cantor_set i’
+ >- (rpt STRIP_TAC \\
+    ‘i = j \/ i < j’ by rw [] >> rw [SUBSET_REFL])
+ >> HO_MATCH_MP_TAC TRANSITIVE_STEPWISE_LT (* real_topologyTheory *)
+ >> rpt STRIP_TAC >- METIS_TAC [SUBSET_TRANS]
+ >> rename1 ‘Cantor_set (SUC n) SUBSET Cantor_set n’
  >> REWRITE_TAC [Cantor_set_def, Once Cantor_def]
  >> rw [SUBSET_DEF, IN_BIGUNION_IMAGE, IN_BIGUNION] (* 2 subgoals, same initial tactics *)
  >> Q.EXISTS_TAC ‘i’ >> art []

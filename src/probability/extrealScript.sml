@@ -3,8 +3,7 @@
 (* Authors: Tarek Mhamdi, Osman Hasan, Sofiene Tahar (2013, 2015)            *)
 (* HVG Group, Concordia University, Montreal                                 *)
 (* ------------------------------------------------------------------------- *)
-(* Updated and further enriched by Chun Tian (2018 - 2022)                   *)
-(* Fondazione Bruno Kessler and University of Trento, Italy                  *)
+(* Updated and further enriched by Chun Tian (2018 - 2023)                   *)
 (* ------------------------------------------------------------------------- *)
 
 open HolKernel Parse boolLib bossLib;
@@ -9485,8 +9484,8 @@ End
 Overload lim = “extreal_lim”
 
 Theorem EXTREAL_LIM :
-   !(f :'a -> extreal) l net.
-      (f --> l) net <=>
+    !(f :'a -> extreal) l net.
+       (f --> l) net <=>
         trivial_limit net \/
         !e. &0 < e ==> ?y. (?x. netord(net) x y) /\
                            !x. netord(net) x y ==> dist extreal_mr1(f(x),l) < e
@@ -9494,11 +9493,18 @@ Proof
     REWRITE_TAC [ext_tendsto_def, eventually] >> PROVE_TAC []
 QED
 
+(* naming convension: EXTREAL_ + the similar theorem in real_topologyTheory *)
 Theorem EXTREAL_LIM_SEQUENTIALLY :
-   !(s :num -> extreal) l. (s --> l) sequentially <=>
+    !(s :num -> extreal) l. (s --> l) sequentially <=>
           !e. &0 < e ==> ?N. !n. N <= n ==> dist extreal_mr1(s(n),l) < e
 Proof
     REWRITE_TAC [ext_tendsto_def, EVENTUALLY_SEQUENTIALLY] >> PROVE_TAC []
+QED
+
+Theorem EXTREAL_LIM_EVENTUALLY :
+    !net (f :'a -> extreal) l. eventually (\x. f x = l) net ==> (f --> l) net
+Proof
+    REWRITE_TAC[eventually, EXTREAL_LIM] >> PROVE_TAC [METRIC_SAME]
 QED
 
 (************************************************************************)
