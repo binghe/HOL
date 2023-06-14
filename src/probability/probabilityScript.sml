@@ -5444,15 +5444,111 @@ End
 (* "-->" is defined in util_probTheory; *)
 Overload "-->" = “converge”
 
-(* AE x::p. X_n(x) --> Y(x) *)
+(* |- !p X Y.
+        (X --> Y) (almost_everywhere p) <=>
+        AE x::p. ((\n. real (X n x)) --> real (Y x)) sequentially
+ *)
 Theorem converge_AE_def =
    (List.nth (CONJUNCTS converge_def, 0)) |> SPEC_ALL |> (Q.GENL [`p`, `X`, `Y`]);
 
-(* !e. 0 < e ==> Prob {e < |X_n - Y|} --> 0 *)
+(* Equivalent definition of converge_AE using extreal_lim (ext_tendsto) *)
+Theorem converge_AE :
+    !p X Y. (!n. real_random_variable (X n) p) /\ real_random_variable Y p ==>
+       ((X --> Y) (almost_everywhere p) <=>
+        AE x::p. ((\n. X n x) --> (Y x)) sequentially)
+Proof
+    rw [converge_AE_def, real_random_variable_def, p_space_def]
+ >> EQ_TAC >> rw [AE_DEF]
+ >| [ (* goal 1 (of 2) *)
+      Q.EXISTS_TAC ‘N’ >> rw [] \\
+      Q.PAT_X_ASSUM ‘!x. x IN m_space p /\ x NOTIN N ==> P’ (MP_TAC o (Q.SPEC ‘x’)) \\
+      RW_TAC std_ss [] \\
+      Suff ‘(real o (\n. X n x) --> real (Y x)) sequentially <=>
+            ((\n. X n x) --> Y x) sequentially’ >- fs [o_DEF] \\
+      MATCH_MP_TAC extreal_lim_sequentially_eq >> rw [],
+      (* goal 2 (of 2) *)
+      Q.EXISTS_TAC ‘N’ >> rw [] \\
+      Q.PAT_X_ASSUM ‘!x. x IN m_space p /\ x NOTIN N ==> P’ (MP_TAC o (Q.SPEC ‘x’)) \\
+      RW_TAC std_ss [] \\
+      Suff ‘(real o (\n. X n x) --> real (Y x)) sequentially <=>
+            ((\n. X n x) --> Y x) sequentially’ >- rw [o_DEF] \\
+      MATCH_MP_TAC extreal_lim_sequentially_eq >> rw [] ]
+QED
+
+(* |- !p X Y.
+        (X --> Y) (in_probability p) <=>
+        !e. 0 < e /\ e <> PosInf ==>
+            ((\n. real (prob p {x | x IN p_space p /\ e < abs (X n x - Y x)})) --> 0)
+              sequentially
+ *)
 Theorem converge_PR_def =
    (List.nth (CONJUNCTS converge_def, 1)) |> SPEC_ALL |> (Q.GENL [`p`, `X`, `Y`]);
 
-(* X_n IN L^p /\ Y IN L^p /\ E [|X_n - Y|^p] --> 0 *)
+(* Equivalent definition of converge_PR using extreal_lim (ext_tendsto) *)
+Theorem converge_PR :
+    !p X Y. prob_space p /\
+           (!n. real_random_variable (X n) p) /\ real_random_variable Y p ==>
+           ((X --> Y) (in_probability p) <=>
+            !e. 0 < e /\ e <> PosInf ==>
+               ((\n. prob p {x | x IN p_space p /\ e < abs (X n x - Y x)}) --> 0)
+                sequentially)
+Proof
+    rw [converge_PR_def, real_random_variable_def]
+ >> Q.ABBREV_TAC ‘f = \n x. X n x - Y x’
+ >> Know ‘!n. (f n) IN measurable (m_space p,measurable_sets p) Borel’
+ >- (rw [Abbr ‘f’] \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_SUB \\
+     qexistsl_tac [‘X n’, ‘Y’] \\
+     fs [prob_space_def, p_space_def, events_def, space_def,
+         measure_space_def, random_variable_def])
+ >> DISCH_TAC
+ >> Q.ABBREV_TAC ‘A = \e n. {x | x IN p_space p /\ e < abs (f n x)}’
+ >> Know ‘!e n. A e n IN events p’
+ >- (RW_TAC std_ss [Abbr ‘A’] \\
+    ‘{x | x IN p_space p /\ e < abs (f n x)} =
+        p_space p DIFF {x | x IN p_space p /\ abs (f n x) <= e}’
+        by (RW_TAC set_ss [Once EXTENSION, GSYM extreal_lt_def] >> METIS_TAC []) >> POP_ORW \\
+     MATCH_MP_TAC EVENTS_COMPL >> art [] \\
+     REWRITE_TAC [abs_bounds] \\
+    ‘{x | x IN p_space p /\ -e <= f n x /\ f n x <= e} =
+     ({x | -e <= f n x} INTER p_space p) INTER ({x | f n x <= e} INTER p_space p)’
+        by SET_TAC [] >> POP_ORW \\
+     MATCH_MP_TAC EVENTS_INTER >> fs [events_def, p_space_def] \\
+    ‘sigma_algebra (measurable_space p)’ by fs [prob_space_def, measure_space_def] \\
+     METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE])
+ >> DISCH_TAC
+ >> Q.ABBREV_TAC ‘g = \e n. prob p (A e n)’
+ >> Know ‘!e. (\n. prob p {x | x IN p_space p /\ e < abs (X n x - Y x)}) = g e’
+ >- rw [Abbr ‘A’, Abbr ‘g’, FUN_EQ_THM]
+ >> Rewr'
+ >> Know ‘!e. (\n. real (prob p {x | x IN p_space p /\ e < abs (X n x - Y x)})) = real o (g e)’
+ >- rw [Abbr ‘A’, Abbr ‘g’, FUN_EQ_THM]
+ >> Rewr'
+ >> EQ_TAC >> rw []
+ >| [ (* goal 1 (of 2) *)
+      Q.PAT_X_ASSUM ‘!e. 0 < e /\ e <> PosInf ==> P’ (MP_TAC o (Q.SPEC ‘e’)) \\
+      RW_TAC std_ss [] \\
+      Suff ‘(real o g e --> real 0) sequentially <=> (g e --> 0) sequentially’
+      >- fs [real_0] \\
+      MATCH_MP_TAC extreal_lim_sequentially_eq >> rw [] \\
+      Q.EXISTS_TAC ‘0’ >> GEN_TAC >> simp [Abbr ‘g’] \\
+      PROVE_TAC [PROB_FINITE],
+      (* goal 2 (of 2) *)
+      Q.PAT_X_ASSUM ‘!e. 0 < e /\ e <> PosInf ==> P’ (MP_TAC o (Q.SPEC ‘e’)) \\
+      RW_TAC std_ss [] \\
+      Suff ‘(real o g e --> real 0) sequentially <=> (g e --> 0) sequentially’
+      >- rw [real_0] \\
+      MATCH_MP_TAC extreal_lim_sequentially_eq >> rw [] \\
+      Q.EXISTS_TAC ‘0’ >> GEN_TAC >> simp [Abbr ‘g’] \\
+      PROVE_TAC [PROB_FINITE] ]
+QED
+
+(* |- !p X Y r.
+        (X --> Y) (in_lebesgue r p) <=>
+        0 < r /\ r <> PosInf /\ (!n. expectation p (\x. abs (X n x) powr r) <> PosInf) /\
+        expectation p (\x. abs (Y x) powr r) <> PosInf /\
+        ((\n. real (expectation p (\x. abs (X n x - Y x) powr r))) --> 0) sequentially
+ *)
 Theorem converge_LP_def =
    (List.nth (CONJUNCTS converge_def, 2)) |> SPEC_ALL |> (Q.GENL [`p`, `X`, `Y`, `r`]);
 
