@@ -70,24 +70,6 @@ Proof
  >> METIS_TAC []
 QED
 
-Theorem normal_0:
-    Normal 0 = 0
-Proof
-    rw[extreal_of_num_def]
-QED
-
-Theorem normal_1:
-    Normal 1 = 1
-Proof
-    rw[extreal_of_num_def]
-QED
-
-Theorem normal_minus1:
-    Normal (-1) = -1
-Proof
-    rw[extreal_of_num_def, extreal_ainv_def]
-QED
-
 (* ********************************************* *)
 (*     Definitions of Arithmetic Operations      *)
 (* ********************************************* *)
@@ -9546,6 +9528,24 @@ QED
       - Jared Yeager                                                    *)
 
 (*** Basic Theorems ***)
+
+Theorem normal_0:
+    Normal 0 = 0
+Proof
+    rw[extreal_of_num_def]
+QED
+
+Theorem normal_1:
+    Normal 1 = 1
+Proof
+    rw[extreal_of_num_def]
+QED
+
+Theorem normal_minus1:
+    Normal (-1) = -1
+Proof
+    rw[extreal_of_num_def, extreal_ainv_def]
+QED
 
 Theorem extreal_le_simps[simp]:
     (!x y. Normal x <= Normal y <=> x <= y) /\ (!x. NegInf <= x <=> T) /\ (!x. x <= PosInf <=> T) /\
