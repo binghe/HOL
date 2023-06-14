@@ -70,6 +70,24 @@ Proof
  >> METIS_TAC []
 QED
 
+Theorem normal_0:
+    Normal 0 = 0
+Proof
+    rw[extreal_of_num_def]
+QED
+
+Theorem normal_1:
+    Normal 1 = 1
+Proof
+    rw[extreal_of_num_def]
+QED
+
+Theorem normal_minus1:
+    Normal (-1) = -1
+Proof
+    rw[extreal_of_num_def, extreal_ainv_def]
+QED
+
 (* ********************************************* *)
 (*     Definitions of Arithmetic Operations      *)
 (* ********************************************* *)
@@ -9419,7 +9437,7 @@ End
 Theorem extreal_dist_ismet :
     ismet (UNCURRY extreal_dist)
 Proof
-    rw [ismet]
+    RW_TAC std_ss [ismet]
  >- (Cases_on ‘x’ >> Cases_on ‘y’ \\
      rw [extreal_dist_def, bounded_metric_thm, MR1_DEF] \\
      EQ_TAC >> rw [] \\
@@ -9452,10 +9470,19 @@ Definition extreal_mr1_def :
     extreal_mr1 = metric (UNCURRY extreal_dist)
 End
 
+(* Use this theorem to actually calculate the "distance" between two extreals *)
 Theorem extreal_mr1_thm :
     dist extreal_mr1 = UNCURRY extreal_dist
 Proof
     METIS_TAC [extreal_mr1_def, extreal_dist_ismet, metric_tybij]
+QED
+
+(* Use this theorem to calculate the "distance" between two normal extreals *)
+Theorem extreal_dist_normal :
+    !x y. extreal_dist (Normal x) (Normal y) = abs (x - y) / (1 + abs (x - y))
+Proof
+    rw [extreal_dist_def, bounded_metric_thm, MR1_DEF]
+ >> PROVE_TAC [ABS_SUB]
 QED
 
 Theorem extreal_mr1_le_1 :
@@ -9493,7 +9520,10 @@ Proof
     REWRITE_TAC [ext_tendsto_def, eventually] >> PROVE_TAC []
 QED
 
-(* naming convension: EXTREAL_ + the similar theorem in real_topologyTheory *)
+(* Name convention: "EXTREAL_" + (theorem name as in real_topologyTheory)
+
+   e.g. cf. LIM_SEQUENTIALLY for EXTREAL_LIM_SEQUENTIALLY below:
+ *)
 Theorem EXTREAL_LIM_SEQUENTIALLY :
     !(s :num -> extreal) l. (s --> l) sequentially <=>
           !e. &0 < e ==> ?N. !n. N <= n ==> dist extreal_mr1(s(n),l) < e
@@ -9516,24 +9546,6 @@ QED
       - Jared Yeager                                                    *)
 
 (*** Basic Theorems ***)
-
-Theorem normal_0:
-    Normal 0 = 0
-Proof
-    simp[extreal_eq_zero]
-QED
-
-Theorem normal_1:
-    Normal 1 = 1
-Proof
-    simp[extreal_of_num_def]
-QED
-
-Theorem normal_minus1:
-    Normal (-1) = -1
-Proof
-    ‘Normal (-1) = -(Normal 1)’ suffices_by simp[normal_1] >> simp[extreal_ainv_def]
-QED
 
 Theorem extreal_le_simps[simp]:
     (!x y. Normal x <= Normal y <=> x <= y) /\ (!x. NegInf <= x <=> T) /\ (!x. x <= PosInf <=> T) /\
