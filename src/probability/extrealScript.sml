@@ -9459,12 +9459,17 @@ Proof
     METIS_TAC [extreal_mr1_def, extreal_dist_ismet, metric_tybij]
 QED
 
-(* Use this theorem to calculate the "distance" between two normal extreals *)
 Theorem extreal_dist_normal :
     !x y. extreal_dist (Normal x) (Normal y) = abs (x - y) / (1 + abs (x - y))
 Proof
-    rw [extreal_dist_def, bounded_metric_thm, MR1_DEF]
- >> PROVE_TAC [ABS_SUB]
+    rw [extreal_dist_def, bounded_metric_thm, mr1_def]
+QED
+
+(* Use this theorem to calculate the "distance" between two normal extreals *)
+Theorem extreal_mr1_normal :
+    !x y. dist extreal_mr1 (Normal x,Normal y) = abs (x - y) / (1 + abs (x - y))
+Proof
+    rw [extreal_mr1_thm, extreal_dist_normal]
 QED
 
 Theorem extreal_mr1_le_1 :
@@ -9499,7 +9504,7 @@ Theorem EXTREAL_LIM :
         !e. &0 < e ==> ?y. (?x. netord(net) x y) /\
                            !x. netord(net) x y ==> dist extreal_mr1(f(x),l) < e
 Proof
-    REWRITE_TAC [ext_tendsto_def, eventually] >> PROVE_TAC []
+    rw [ext_tendsto_def, eventually] >> PROVE_TAC []
 QED
 
 (* Name convention: "EXTREAL_" + (theorem name as in real_topologyTheory)
@@ -9507,16 +9512,98 @@ QED
    e.g. cf. LIM_SEQUENTIALLY for EXTREAL_LIM_SEQUENTIALLY below:
  *)
 Theorem EXTREAL_LIM_SEQUENTIALLY :
-    !(s :num -> extreal) l. (s --> l) sequentially <=>
-          !e. &0 < e ==> ?N. !n. N <= n ==> dist extreal_mr1(s(n),l) < e
+    !(f :num -> extreal) l. (f --> l) sequentially <=>
+          !e. &0 < e ==> ?N. !n. N <= n ==> dist extreal_mr1 (f n,l) < e
 Proof
-    REWRITE_TAC [ext_tendsto_def, EVENTUALLY_SEQUENTIALLY] >> PROVE_TAC []
+    rw [ext_tendsto_def, EVENTUALLY_SEQUENTIALLY] >> PROVE_TAC []
 QED
 
 Theorem EXTREAL_LIM_EVENTUALLY :
     !net (f :'a -> extreal) l. eventually (\x. f x = l) net ==> (f --> l) net
 Proof
-    REWRITE_TAC[eventually, EXTREAL_LIM] >> PROVE_TAC [METRIC_SAME]
+    rw [eventually, EXTREAL_LIM] >> PROVE_TAC [METRIC_SAME]
+QED
+
+Theorem lim_sequentially_imp_extreal_lim :
+    !f l. (f --> l) sequentially ==> (Normal o f --> Normal l) sequentially
+Proof
+    RW_TAC std_ss [LIM_SEQUENTIALLY, EXTREAL_LIM_SEQUENTIALLY,
+                   extreal_mr1_normal, dist]
+ >> ‘1 <= e \/ e < 1’ by PROVE_TAC [REAL_LET_TOTAL]
+ >- (Q.EXISTS_TAC ‘0’ >> rw [] \\
+     MATCH_MP_TAC REAL_LTE_TRANS >> Q.EXISTS_TAC ‘1’ >> art [] \\
+     MATCH_MP_TAC REAL_LT_1 >> rw [])
+ >> Q.PAT_X_ASSUM ‘!e. 0 < e ==> P’ (MP_TAC o Q.SPEC ‘e / (1 - e)’)
+ >> Know ‘0 < e / (1 - e)’
+ >- (MATCH_MP_TAC REAL_LT_DIV >> rw [REAL_SUB_LT])
+ >> RW_TAC std_ss []
+ >> Q.EXISTS_TAC ‘N’ >> rw []
+ >> Q.PAT_X_ASSUM ‘!n. N <= n ==> P’ (MP_TAC o Q.SPEC ‘n’)
+ >> RW_TAC std_ss []
+ >> Q.ABBREV_TAC ‘x = abs (f n - l)’
+ >> ‘0 <= x’ by METIS_TAC [ABS_POS]
+ >> Know ‘x / (1 + x) < e <=> x < e * (1 + x)’
+ >- (MATCH_MP_TAC REAL_LT_LDIV_EQ \\
+     MATCH_MP_TAC REAL_LTE_TRANS \\
+     Q.EXISTS_TAC ‘1’ >> rw [REAL_LE_ADDR])
+ >> Rewr'
+ >> rw [REAL_ADD_LDISTRIB, GSYM REAL_LT_SUB_RADD]
+ >> ‘x - e * x = 1 * x - e * x’ by rw [] >> POP_ORW
+ >> REWRITE_TAC [GSYM REAL_SUB_RDISTRIB]
+ >> Suff ‘x < e / (1 - e) <=> x * (1 - e) < e’ >- PROVE_TAC [REAL_MUL_COMM]
+ >> MATCH_MP_TAC REAL_LT_RDIV_EQ
+ >> rw [REAL_SUB_LT]
+QED
+
+Theorem lim_sequentially_imp_real_lim :
+    !f l. (?N. !n. N <= n ==> f n <> PosInf /\ f n <> NegInf) /\
+          l <> PosInf /\ l <> NegInf /\ (f --> l) sequentially ==>
+          (real o f --> real l) sequentially
+Proof
+    RW_TAC std_ss [LIM_SEQUENTIALLY, EXTREAL_LIM_SEQUENTIALLY, dist]
+ >> Q.PAT_X_ASSUM ‘!e. 0 < e ==> P’ (MP_TAC o Q.SPEC ‘e / (1 + e)’)
+ >> ‘e <> 0’ by PROVE_TAC [REAL_LT_IMP_NE]
+ >> Know ‘0 < 1 + e’
+ >- (MATCH_MP_TAC REAL_LT_TRANS \\
+     Q.EXISTS_TAC ‘1’ >> rw [])
+ >> DISCH_TAC
+ >> ‘1 + e <> 0’ by PROVE_TAC [REAL_LT_IMP_NE]
+ >> ‘0 < e / (1 + e)’ by PROVE_TAC [REAL_LT_DIV]
+ >> RW_TAC std_ss []
+ >> Q.ABBREV_TAC ‘M = MAX N N'’
+ >> Q.EXISTS_TAC ‘M’
+ >> RW_TAC std_ss []
+ >> Q.PAT_X_ASSUM ‘!n. N' <= n ==> P’ (MP_TAC o Q.SPEC ‘n’)
+ >> Know ‘N' <= n’
+ >- (MATCH_MP_TAC LESS_EQ_TRANS \\
+     Q.EXISTS_TAC ‘M’ >> rw [Abbr ‘M’])
+ >> ‘?r. l = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW
+ >> Q.PAT_X_ASSUM ‘!n. N <= n ==> P’ (MP_TAC o Q.SPEC ‘n’)
+ >> Know ‘N <= n’
+ >- (MATCH_MP_TAC LESS_EQ_TRANS \\
+     Q.EXISTS_TAC ‘M’ >> rw [Abbr ‘M’])
+ >> RW_TAC std_ss []
+ >> ‘?z. f n = Normal z’ by METIS_TAC [extreal_cases]
+ >> POP_ASSUM (fn th => fs [th, extreal_mr1_normal])
+ >> Q.ABBREV_TAC ‘y = e / (1 + e)’
+ >> Know ‘e = y / (1 - y)’
+ >- (rw [Abbr ‘y’] \\
+     Know ‘1 - e / (1 + e) = (1 + e) / (1 + e) - e / (1 + e)’
+     >- (Suff ‘(1 + e) / (1 + e) = 1’ >- rw [] \\
+         MATCH_MP_TAC REAL_DIV_REFL >> art []) >> Rewr' \\
+     rw [REAL_DIV_SUB, REAL_ADD_SUB_ALT, GSYM REAL_INV_1OVER, REAL_INV_INV])
+ >> Rewr'
+ >> Q.ABBREV_TAC ‘a = abs (z - r)’
+ >> Know ‘a < y / (1 - y) <=> a * (1 - y) < y’
+ >- (MATCH_MP_TAC REAL_LT_RDIV_EQ \\
+     rw [REAL_SUB_LT, Abbr ‘y’])
+ >> Rewr'
+ >> rw [REAL_SUB_LDISTRIB, REAL_LT_SUB_RADD]
+ >> ‘y + a * y = (1 + a) * y’ by REAL_ARITH_TAC >> POP_ORW
+ >> Suff ‘a / (1 + a) < y <=> a < y * (1 + a)’ >- PROVE_TAC [REAL_MUL_COMM]
+ >> MATCH_MP_TAC REAL_LT_LDIV_EQ
+ >> MATCH_MP_TAC REAL_LTE_TRANS
+ >> Q.EXISTS_TAC ‘1’ >> rw [Abbr ‘a’]
 QED
 
 (************************************************************************)
