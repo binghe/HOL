@@ -9459,6 +9459,9 @@ Proof
     METIS_TAC [extreal_mr1_def, extreal_dist_ismet, metric_tybij]
 QED
 
+(* |- !x y. dist mr1 (x,y) = abs (x - y) *)
+Theorem mr1_def[local] = ONCE_REWRITE_RULE [ABS_SUB] MR1_DEF
+
 Theorem extreal_dist_normal :
     !x y. extreal_dist (Normal x) (Normal y) = abs (x - y) / (1 + abs (x - y))
 Proof

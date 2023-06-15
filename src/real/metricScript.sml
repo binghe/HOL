@@ -495,9 +495,6 @@ val MR1_DEF = store_thm("MR1_DEF",
   REPEAT GEN_TAC THEN REWRITE_TAC[mr1, REWRITE_RULE[metric_tybij] ISMET_R1]
   THEN CONV_TAC(ONCE_DEPTH_CONV PAIRED_BETA_CONV) THEN REFL_TAC);
 
-(* |- !x y. dist mr1 (x,y) = abs (x - y) *)
-Theorem mr1_def = ONCE_REWRITE_RULE [ABS_SUB] MR1_DEF
-
 val MR1_ADD = store_thm("MR1_ADD",
   “!x d. (dist mr1)(x,x + d) = abs(d)”,
   REPEAT GEN_TAC THEN REWRITE_TAC[MR1_DEF, REAL_ADD_SUB]);
