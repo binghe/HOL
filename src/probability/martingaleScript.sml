@@ -6705,20 +6705,21 @@ Definition seminorm_def :
       (pos_fn_integral m (\x. (abs (f x)) powr p)) powr (inv p)
 End
 
+(* was: 1 <= p *)
 Theorem seminorm_normal :
-    !p m f. 1 <= p /\ p <> PosInf ==>
+    !p m f. 0 < p /\ p <> PosInf ==>
             seminorm p m f = (pos_fn_integral m (\x. (abs (f x)) powr p)) powr (inv p)
 Proof
     rw [seminorm_def]
 QED
 
+(* was: 1 <= p *)
 Theorem seminorm_powr :
-    !p m f. measure_space m /\ 1 <= p /\ p <> PosInf ==>
+    !p m f. measure_space m /\ 0 < p /\ p <> PosInf ==>
            (seminorm p m f) powr p = pos_fn_integral m (\x. (abs (f x)) powr p)
 Proof
     RW_TAC std_ss [seminorm_normal]
  >> Q.ABBREV_TAC ‘a = pos_fn_integral m (\x. abs (f x) powr p)’
- >> ‘0 < p’ by PROVE_TAC [lt_01, lte_trans]
  >> ‘0 < inv p’ by PROVE_TAC [inv_pos']
  >> ‘inv p <> PosInf’ by METIS_TAC [inv_not_infty, lt_imp_ne]
  >> Know ‘0 <= a’
@@ -6729,8 +6730,9 @@ Proof
  >> MATCH_MP_TAC mul_linv_pos >> art []
 QED
 
+(* was: 1 <= p *)
 Theorem seminorm_eq_0 :
-    !p m f. measure_space m /\ 1 <= p /\ p <> PosInf /\
+    !p m f. measure_space m /\ 0 < p /\ p <> PosInf /\
             f IN Borel_measurable (m_space m,measurable_sets m) ==>
            (seminorm p m f = 0 <=> AE x::m. f x = 0)
 Proof
@@ -6738,7 +6740,6 @@ Proof
  >> ‘sigma_algebra (measurable_space m)’
       by PROVE_TAC [MEASURE_SPACE_SIGMA_ALGEBRA]
  >> rw [seminorm_normal]
- >> ‘0 < p’ by PROVE_TAC [lte_trans, lt_01]
  >> ‘0 <= p’ by PROVE_TAC [lt_imp_le]
  >> ‘p <> 0’ by PROVE_TAC [lt_imp_ne]
  >> ‘0 < inv p’ by PROVE_TAC [inv_pos']
@@ -6794,8 +6795,9 @@ Proof
     rw [seminorm_def]
 QED
 
+(* was: 1 <= p *)
 Theorem seminorm_pos :
-    !p m f. 1 <= p ==> 0 <= seminorm p m f
+    !p m f. 0 < p ==> 0 <= seminorm p m f
 Proof
     rpt STRIP_TAC
  >> Cases_on ‘p = PosInf’
@@ -6804,8 +6806,9 @@ Proof
  >> rw [seminorm_normal, powr_pos]
 QED
 
+(* was: 1 <= p *)
 Theorem seminorm_not_infty :
-    !p m f. measure_space m /\ 1 <= p /\ p <> PosInf /\ f IN lp_space p m ==>
+    !p m f. measure_space m /\ 0 < p /\ p <> PosInf /\ f IN lp_space p m ==>
             seminorm p m f <> PosInf /\ seminorm p m f <> NegInf
 Proof
     rpt GEN_TAC >> STRIP_TAC
@@ -6815,7 +6818,6 @@ Proof
      MATCH_MP_TAC seminorm_pos >> art [])
  >> RW_TAC std_ss [seminorm_normal]
  >> rfs [lp_space_def]
- >> ‘0 < p’ by METIS_TAC [lte_trans, lt_01]
  >> ‘0 <= p’ by METIS_TAC [lt_imp_le]
  >> ‘p <> NegInf’ by PROVE_TAC [pos_not_neginf]
  >> Know ‘0 <= pos_fn_integral m (\x. abs (f x) powr p)’
@@ -6842,8 +6844,9 @@ Proof
  >> rw [normal_powr]
 QED
 
+(* was: 1 <= p *)
 Theorem lp_space_alt_seminorm :
-    !p m f. measure_space m /\ 1 <= p /\ p <> PosInf ==>
+    !p m f. measure_space m /\ 0 < p /\ p <> PosInf ==>
            (f IN lp_space p m <=>
             f IN Borel_measurable (m_space m,measurable_sets m) /\
             seminorm p m f < PosInf)
@@ -6856,7 +6859,6 @@ Proof
       (* goao 2 (of 2) *)
       rw [lp_space_alt_finite, seminorm_normal] \\
       CCONTR_TAC \\
-     ‘0 < p’ by PROVE_TAC [lte_trans, lt_01] \\
      ‘0 < inv p’ by PROVE_TAC [inv_pos'] \\
       gs [infty_powr] ]
 QED
@@ -7327,13 +7329,13 @@ Proof
  >> rw [lp_space_alt_finite]
  >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_ADD' (* key result *) \\
      qexistsl_tac [‘u’, ‘v’] >> simp [] \\
-     rfs [lp_space_alt_finite, measure_space_def])
+     gs [lp_space_alt_finite, measure_space_def])
  >> REWRITE_TAC [lt_infty]
  >> MATCH_MP_TAC let_trans
  >> Q.EXISTS_TAC ‘pos_fn_integral m
                    (\x. 2 powr p * (abs (u x) powr p + abs (v x) powr p))’
  >> reverse CONJ_TAC (* easy goal first *)
- >- (rfs [lp_space_alt_finite] \\
+ >- (gs [lp_space_alt_finite] \\
      Know ‘?c. 0 <= c /\ 2 powr p = Normal c’
      >- (‘?r. 0 < r /\ p = Normal r’
             by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_lt_eq] \\
@@ -7376,7 +7378,7 @@ Proof
  >> rw [powr_pos]
  >- (MATCH_MP_TAC le_mul >> art [powr_pos] \\
      MATCH_MP_TAC le_add >> art [powr_pos])
- >> rfs [lp_space_alt_finite]
+ >> gs [lp_space_alt_finite]
  >> Know ‘null_set m {x | x IN m_space m /\ abs (u x) powr p = PosInf} /\
           null_set m {x | x IN m_space m /\ abs (v x) powr p = PosInf}’
  >- (CONJ_TAC (* 2 subgoals, same tactics *) \\
@@ -7478,7 +7480,7 @@ Proof
  >- (POP_ORW \\
      MATCH_MP_TAC pos_fn_integral_mono_AE \\
      rw [le_mul, le_add, abs_pos, powr_pos] \\
-     rfs [lp_space_alt_finite] \\
+     gs [lp_space_alt_finite] \\
      Know ‘null_set m {x | x IN m_space m /\ abs (u x) powr p = PosInf} /\
            null_set m {x | x IN m_space m /\ abs (v x) powr p = PosInf}’
      >- (CONJ_TAC (* 2 subgoals, same tactics *) \\
@@ -7508,7 +7510,7 @@ Proof
           pos_fn_integral m (\x. abs (u x) * abs (u x + v x) powr (p - 1)) +
           pos_fn_integral m (\x. abs (v x) * abs (u x + v x) powr (p - 1))’
  >- (HO_MATCH_MP_TAC pos_fn_integral_add \\
-     rfs [lp_space_alt_finite] \\
+     gs [lp_space_alt_finite] \\
      rw [le_mul, abs_pos, powr_pos] >| (* 2 subgoals *)
      [ (* goal 1 (of 2) *)
        MATCH_MP_TAC IN_MEASURABLE_BOREL_TIMES \\
@@ -7574,7 +7576,7 @@ Proof
  >> ‘!x. abs (f x) = f x’ by rw [abs_refl]
  >> RW_TAC std_ss []
  >> Know ‘f IN lp_space q m’
- >- (rfs [lp_space_alt_finite, Abbr ‘f’] \\
+ >- (gs [lp_space_alt_finite, Abbr ‘f’] \\
      CONJ_TAC
      >- (HO_MATCH_MP_TAC IN_MEASURABLE_BOREL_ABS_POWR >> rw [sub_not_infty]) \\
     ‘!x. abs (abs (u x + v x) powr (p - 1)) = abs (u x + v x) powr (p - 1)’
@@ -7598,7 +7600,7 @@ Proof
  >> DISCH_TAC
  (* applying seminorm_eq_0 *)
  >> Cases_on ‘seminorm q m f = 0’
- >- (rfs [lp_space_alt_finite, seminorm_eq_0] \\
+ >- (gs [lp_space_alt_finite, seminorm_eq_0] \\
      Suff ‘seminorm p m (\x. u x + v x) = 0’
      >- (Rewr' >> MATCH_MP_TAC le_add >> rw [seminorm_pos]) \\
      Know ‘seminorm p m (\x. u x + v x) = 0 <=> AE x::m. u x + v x = 0’

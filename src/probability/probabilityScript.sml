@@ -5566,9 +5566,7 @@ Theorem converge_LP :
 Proof
     rw [converge_LP_def, real_random_variable, expectation_def,
         prob_space_def, p_space_def, events_def]
- >> Know ‘0 < r’
- >- (MATCH_MP_TAC lte_trans >> Q.EXISTS_TAC ‘1’ >> rw [])
- >> DISCH_TAC
+ >> ‘0 < r’ by PROVE_TAC [lte_trans, lt_01]
  >> simp [lp_space_alt_finite']
  >> EQ_TAC >> rw []
  >| [ (* goal 1 (of 2) *)
