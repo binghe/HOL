@@ -5466,7 +5466,7 @@ Proof
  >> METIS_TAC [lt_add2, integrable_pos, lt_infty]
 QED
 
-(* alternative definition of ‘integrable m (abs o f)’ with fn_plus, fn_minus *)
+(* alternative definition of ‘integrable m (abs o f)’ w/o fn_plus, fn_minus *)
 Theorem integrable_abs_alt :
     !m f. measure_space m /\ f IN Borel_measurable (measurable_space m) ==>
          (integrable m (abs o f) <=> pos_fn_integral m (abs o f) <> PosInf)
