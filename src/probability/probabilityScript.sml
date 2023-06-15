@@ -5451,7 +5451,7 @@ Overload "-->" = “converge”
 Theorem converge_AE_def =
    (List.nth (CONJUNCTS converge_def, 0)) |> SPEC_ALL |> (Q.GENL [`p`, `X`, `Y`]);
 
-(* Equivalent definition of converge_AE using extreal_lim (ext_tendsto) *)
+(* An equivalent definition using extreal_lim (ext_tendsto) *)
 Theorem converge_AE :
     !p X Y. (!n. real_random_variable (X n) p) /\ real_random_variable Y p ==>
        ((X --> Y) (almost_everywhere p) <=>
@@ -5484,7 +5484,7 @@ QED
 Theorem converge_PR_def =
    (List.nth (CONJUNCTS converge_def, 1)) |> SPEC_ALL |> (Q.GENL [`p`, `X`, `Y`]);
 
-(* Equivalent definition of converge_PR using extreal_lim (ext_tendsto) *)
+(* An equivalent definition using extreal_lim (ext_tendsto) *)
 Theorem converge_PR :
     !p X Y. prob_space p /\
            (!n. real_random_variable (X n) p) /\ real_random_variable Y p ==>
@@ -5552,6 +5552,31 @@ QED
 Theorem converge_LP_def =
    (List.nth (CONJUNCTS converge_def, 2)) |> SPEC_ALL |> (Q.GENL [`p`, `X`, `Y`, `r`]);
 
+(* An equivalent definition using extreal_lim (ext_tendsto) and lp_space, when r >= 1
+
+   NOTE: This proof needs Minkowski_inequality, which is why r >= 1 must be assumed.
+ *)
+Theorem converge_LP :
+    !p X Y r. prob_space p /\
+             (!n. real_random_variable (X n) p) /\ real_random_variable Y p /\
+              1 <= r /\ r <> PosInf ==>
+       ((X --> Y) (in_lebesgue r p) <=>
+        (!n. X n IN lp_space r p) /\ Y IN lp_space r p /\
+        ((\n. expectation p (\x. abs (X n x - Y x) powr r)) --> 0) sequentially)
+Proof
+    rw [converge_LP_def, real_random_variable, expectation_def,
+        prob_space_def, p_space_def, events_def]
+ >> Know ‘0 < r’
+ >- (MATCH_MP_TAC lte_trans >> Q.EXISTS_TAC ‘1’ >> rw [])
+ >> DISCH_TAC
+ >> simp [lp_space_alt_finite']
+ >> EQ_TAC >> rw []
+ >| [ (* goal 1 (of 2) *)
+      cheat,
+      (* goal 2 (of 2) *)
+      cheat ]
+QED
+
 (* tidy up theory exports, learnt from Magnus Myreen *)
 val _ = List.app Theory.delete_binding
   ["convergence_mode_TY_DEF",
@@ -5591,7 +5616,14 @@ Proof
  >> METIS_TAC [extreal_of_num_def, extreal_lt_eq]
 QED
 
-(* alternative definition of converge_LP using `pow k` explicitly *)
+(* alternative definition of converge_LP using `pow k` explicitly;
+   |- !p X Y k.
+        prob_space p /\ (!n. real_random_variable (X n) p) /\ real_random_variable Y p ==>
+        ((X --> Y) (in_lebesgue (&k) p) <=>
+         0 < k /\ (!n. expectation p (\x. abs (X n x) pow k) <> PosInf) /\
+         expectation p (\x. abs (Y x) pow k) <> PosInf /\
+         ((\n. real (expectation p (\x. abs (X n x - Y x) pow k))) --> 0) sequentially)
+ *)
 Theorem converge_LP_alt_pow =
         SIMP_RULE std_ss [absolute_moment_def, sub_rzero]
                   converge_LP_alt_absolute_moment;

@@ -6603,14 +6603,27 @@ End
 Overload L1_space = “lp_space 1”
 Overload L2_space = “lp_space 2”
 
-(* alternative definition of ‘lp_space’ when p is finite *)
+(* alternative definition of ‘lp_space’ when p is finite (was: 1 <= p) *)
 Theorem lp_space_alt_finite :
-    !p m f. 1 <= p /\ p <> PosInf ==>
+    !p m f. 0 < p /\ p <> PosInf ==>
            (f IN lp_space p m <=>
             f IN measurable (m_space m,measurable_sets m) Borel /\
             pos_fn_integral m (\x. (abs (f x)) powr p) <> PosInf)
 Proof
     rw [lp_space_def]
+QED
+
+Theorem lp_space_alt_finite' :
+    !p m f. measure_space m /\ 0 < p /\ p <> PosInf ==>
+           (f IN lp_space p m <=>
+            f IN measurable (m_space m,measurable_sets m) Borel /\
+            integral m (\x. (abs (f x)) powr p) <> PosInf)
+Proof
+    rpt STRIP_TAC
+ >> Know ‘integral m (\x. abs (f x) powr p) = pos_fn_integral m (\x. abs (f x) powr p)’
+ >- (MATCH_MP_TAC integral_pos_fn >> rw [powr_pos])
+ >> Rewr'
+ >> MATCH_MP_TAC lp_space_alt_finite >> art []
 QED
 
 (* alternative definition of ‘lp_space’ when p is infinite *)
