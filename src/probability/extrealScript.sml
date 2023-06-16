@@ -9558,7 +9558,7 @@ Proof
  >> rw [REAL_SUB_LT]
 QED
 
-Theorem extreal_lim_sequentially_imp_real_lim :
+Theorem extreal_lim_sequentially_imp_real_lim[local] :
     !f l. (?N. !n. N <= n ==> f n <> PosInf /\ f n <> NegInf) /\
           l <> PosInf /\ l <> NegInf /\ (f --> l) sequentially ==>
           (real o f --> real l) sequentially
@@ -9612,10 +9612,10 @@ QED
 Theorem extreal_lim_sequentially_eq :
     !f l. (?N. !n. N <= n ==> f n <> PosInf /\ f n <> NegInf) /\
           l <> PosInf /\ l <> NegInf ==>
-         ((real o f --> real l) sequentially <=> (f --> l) sequentially)
+         ((f --> l) sequentially <=> (real o f --> real l) sequentially)
 Proof
     rpt STRIP_TAC
- >> reverse EQ_TAC >> STRIP_TAC
+ >> EQ_TAC >> STRIP_TAC
  >- (MATCH_MP_TAC extreal_lim_sequentially_imp_real_lim >> rw [] \\
      Q.EXISTS_TAC ‘N’ >> rw [])
  (* applying lim_sequentially_imp_extreal_lim *)
@@ -9642,7 +9642,7 @@ QED
 
 Theorem extreal_lim_sequentially_eq' :
     !f r. (?N. !n. N <= n ==> f n <> PosInf /\ f n <> NegInf) ==>
-         ((real o f --> r) sequentially <=> (f --> Normal r) sequentially)
+         ((f --> Normal r) sequentially <=> (real o f --> r) sequentially)
 Proof
     rpt STRIP_TAC
  >> MP_TAC (Q.SPECL [‘f’, ‘Normal r’] extreal_lim_sequentially_eq)

@@ -5463,15 +5463,15 @@ Proof
       Q.EXISTS_TAC ‘N’ >> rw [] \\
       Q.PAT_X_ASSUM ‘!x. x IN m_space p /\ x NOTIN N ==> P’ (MP_TAC o (Q.SPEC ‘x’)) \\
       RW_TAC std_ss [] \\
-      Suff ‘(real o (\n. X n x) --> real (Y x)) sequentially <=>
-            ((\n. X n x) --> Y x) sequentially’ >- fs [o_DEF] \\
+      Suff ‘((\n. X n x) --> Y x) sequentially <=>
+            (real o (\n. X n x) --> real (Y x)) sequentially’ >- rw [o_DEF] \\
       MATCH_MP_TAC extreal_lim_sequentially_eq >> rw [],
       (* goal 2 (of 2) *)
       Q.EXISTS_TAC ‘N’ >> rw [] \\
       Q.PAT_X_ASSUM ‘!x. x IN m_space p /\ x NOTIN N ==> P’ (MP_TAC o (Q.SPEC ‘x’)) \\
       RW_TAC std_ss [] \\
-      Suff ‘(real o (\n. X n x) --> real (Y x)) sequentially <=>
-            ((\n. X n x) --> Y x) sequentially’ >- rw [o_DEF] \\
+      Suff ‘((\n. X n x) --> Y x) sequentially <=>
+            (real o (\n. X n x) --> real (Y x)) sequentially’ >- fs [o_DEF] \\
       MATCH_MP_TAC extreal_lim_sequentially_eq >> rw [] ]
 QED
 
@@ -5528,16 +5528,16 @@ Proof
  >| [ (* goal 1 (of 2) *)
       Q.PAT_X_ASSUM ‘!e. 0 < e /\ e <> PosInf ==> P’ (MP_TAC o (Q.SPEC ‘e’)) \\
       RW_TAC std_ss [] \\
-      Suff ‘(real o g e --> real 0) sequentially <=> (g e --> 0) sequentially’
-      >- fs [real_0] \\
+      Suff ‘(g e --> 0) sequentially <=> (real o g e --> real 0) sequentially’
+      >- rw [real_0] \\
       MATCH_MP_TAC extreal_lim_sequentially_eq >> rw [] \\
       Q.EXISTS_TAC ‘0’ >> GEN_TAC >> simp [Abbr ‘g’] \\
       PROVE_TAC [PROB_FINITE],
       (* goal 2 (of 2) *)
       Q.PAT_X_ASSUM ‘!e. 0 < e /\ e <> PosInf ==> P’ (MP_TAC o (Q.SPEC ‘e’)) \\
       RW_TAC std_ss [] \\
-      Suff ‘(real o g e --> real 0) sequentially <=> (g e --> 0) sequentially’
-      >- rw [real_0] \\
+      Suff ‘(g e --> 0) sequentially <=> (real o g e --> real 0) sequentially’
+      >- fs [real_0] \\
       MATCH_MP_TAC extreal_lim_sequentially_eq >> rw [] \\
       Q.EXISTS_TAC ‘0’ >> GEN_TAC >> simp [Abbr ‘g’] \\
       PROVE_TAC [PROB_FINITE] ]
