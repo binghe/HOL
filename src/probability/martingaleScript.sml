@@ -6594,7 +6594,7 @@ Definition lp_space_def :
     lp_space p m =
       {f | f IN measurable (m_space m,measurable_sets m) Borel /\
            if p = PosInf then
-             ?c. 0 < c /\ measure m {x | x IN m_space m /\ c <= abs (f x)} = 0
+             ?c. 0 < c /\ measure m {x | x IN m_space m /\ Normal c <= abs (f x)} = 0
            else
              pos_fn_integral m (\x. (abs (f x)) powr p) <> PosInf}
 End
@@ -6631,21 +6631,21 @@ Theorem lp_space_alt_infinite :
     !m f. measure_space m ==>
          (f IN lp_space PosInf m <=>
           f IN measurable (m_space m,measurable_sets m) Borel /\
-          ?c. 0 < c /\ AE x::m. abs (f x) < c)
+          ?c. 0 < c /\ AE x::m. abs (f x) < Normal c)
 Proof
     rpt GEN_TAC >> STRIP_TAC
  >> Know ‘f IN measurable (m_space m,measurable_sets m) Borel ==>
-          !c. {x | x IN m_space m /\ c <= abs (f x)} IN measurable_sets m’
+          !c. {x | x IN m_space m /\ Normal c <= abs (f x)} IN measurable_sets m’
  >- (RW_TAC std_ss [le_abs_bounds] \\
-    ‘{x | x IN m_space m /\ (f x <= -c \/ c <= f x)} =
-       (({x | f x <= -c} INTER m_space m) UNION
-        ({x | c <= f x} INTER m_space m))’ by SET_TAC [] >> POP_ORW \\
+    ‘{x | x IN m_space m /\ (f x <= -Normal c \/ Normal c <= f x)} =
+       (({x | f x <= -Normal c} INTER m_space m) UNION
+        ({x | Normal c <= f x} INTER m_space m))’ by SET_TAC [] >> POP_ORW \\
      MATCH_MP_TAC MEASURE_SPACE_UNION \\
      rw [IN_MEASURABLE_BOREL_ALL_MEASURE])
  >> DISCH_TAC
  >> Know ‘f IN measurable (m_space m,measurable_sets m) Borel ==>
-          !c. (AE x::m. abs (f x) < c) <=>
-               null_set m {x | x IN m_space m /\ ~(abs (f x) < c)}’
+          !c. (AE x::m. abs (f x) < Normal c) <=>
+               null_set m {x | x IN m_space m /\ ~(abs (f x) < Normal c)}’
  >- (DISCH_TAC >> Q.X_GEN_TAC ‘c’ \\
      HO_MATCH_MP_TAC AE_iff_null \\
      rw [extreal_lt_def])
@@ -6700,7 +6700,8 @@ QED
 Definition seminorm_def :
     seminorm p m f =
     if p = PosInf then
-       inf {c | 0 < c /\ measure m {x | x IN m_space m /\ c <= abs (f x)} = 0}
+       inf {Normal c | 0 < c /\
+                       measure m {x | x IN m_space m /\ Normal c <= abs (f x)} = 0}
     else
       (pos_fn_integral m (\x. (abs (f x)) powr p)) powr (inv p)
 End
@@ -6790,7 +6791,7 @@ QED
 
 Theorem seminorm_infty :
     !m f. seminorm PosInf m f =
-          inf {c | 0 < c /\ measure m {x | x IN m_space m /\ c <= abs (f x)} = 0}
+          inf {Normal c | 0 < c /\ measure m {x | x IN m_space m /\ Normal c <= abs (f x)} = 0}
 Proof
     rw [seminorm_def]
 QED
@@ -6801,9 +6802,12 @@ Theorem seminorm_pos :
 Proof
     rpt STRIP_TAC
  >> Cases_on ‘p = PosInf’
- >- (rw [seminorm_infty, le_inf'] \\
-     MATCH_MP_TAC lt_imp_le >> art [])
- >> rw [seminorm_normal, powr_pos]
+ >| [ (* goal 1 (of 2) *)
+      rw [seminorm_infty, le_inf'] \\
+      rw [extreal_of_num_def, extreal_le_eq] \\
+      MATCH_MP_TAC REAL_LT_IMP_LE >> art [],
+      (* goal 2 (of 2) *)
+      rw [seminorm_normal, powr_pos] ]
 QED
 
 (* was: 1 <= p *)
@@ -7318,14 +7322,35 @@ QED
 
 (* This is the first part of Minkowski's inequality *)
 Theorem Minkowski_inequality_lemma[local] :
-    !p m u v. measure_space m /\ 1 <= p /\ p <> PosInf /\
-              u IN lp_space p m /\ v IN lp_space p m
+    !p m u v. measure_space m /\ 1 <= p /\ u IN lp_space p m /\ v IN lp_space p m
           ==> (\x. u x + v x) IN lp_space p m
 Proof
     rpt GEN_TAC >> STRIP_TAC
  >> ‘0 < p’ by PROVE_TAC [lte_trans, lt_01]
  >> ‘0 <= p’ by PROVE_TAC [lt_imp_le]
  >> ‘p <> NegInf’ by PROVE_TAC [pos_not_neginf]
+  (* special case: p = PosInf *)
+ >> Cases_on ‘p = PosInf’
+ >- (Q.PAT_X_ASSUM ‘u IN lp_space p m’ MP_TAC \\
+     Q.PAT_X_ASSUM ‘v IN lp_space p m’ MP_TAC \\
+     rw [lp_space_alt_infinite]
+     >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_ADD' \\
+         qexistsl_tac [‘u’, ‘v’] >> simp []) \\
+     Q.PAT_X_ASSUM ‘AE x::m. abs (v x) < Normal c’ MP_TAC \\
+     rename1 ‘AE x::m. abs (u x) < Normal d’ \\
+     Q.PAT_X_ASSUM ‘AE x::m. abs (u x) < Normal d’ MP_TAC \\
+     rw [AE_DEF] \\
+     Q.EXISTS_TAC ‘d + c’ \\
+     CONJ_TAC >- PROVE_TAC [REAL_LT_ADD] \\
+     Q.EXISTS_TAC ‘N UNION N'’ \\
+     rw [REWRITE_RULE [IN_NULL_SET] NULL_SET_UNION, GSYM extreal_add_def] \\
+     MATCH_MP_TAC let_trans \\
+     Q.EXISTS_TAC ‘abs (u x) + abs (v x)’ \\
+     reverse CONJ_TAC >- (MATCH_MP_TAC lt_add2 >> rw []) \\
+     MATCH_MP_TAC abs_triangle \\
+    ‘abs (u x) < Normal d /\ abs (v x) < Normal c’ by PROVE_TAC [] \\
+     CCONTR_TAC >> fs [] \\ (* 4 subgoals, same tactics *)
+     fs [extreal_abs_def, lt_infty])
  >> rw [lp_space_alt_finite]
  >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_ADD' (* key result *) \\
      qexistsl_tac [‘u’, ‘v’] >> simp [] \\
