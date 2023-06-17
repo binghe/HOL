@@ -688,9 +688,27 @@ val MEASURE_SPACE_INCREASING = store_thm
  >> `additive m` by RW_TAC real_ss [MEASURE_SPACE_ADDITIVE]
  >> FULL_SIMP_TAC real_ss [measure_space_def,sigma_algebra_def,ADDITIVE_INCREASING]);
 
+Theorem MEASURE_INCREASING :
+    !m s t. measure_space m /\ s SUBSET t /\
+            s IN measurable_sets m /\ t IN measurable_sets m ==>
+            measure m s <= measure m t
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC INCREASING >> art []
+ >> MATCH_MP_TAC MEASURE_SPACE_INCREASING >> art []
+QED
+
 val MEASURE_SPACE_POSITIVE = store_thm
   ("MEASURE_SPACE_POSITIVE",``!m. measure_space m ==> positive m``,
    PROVE_TAC [measure_space_def]);
+
+Theorem MEASURE_POSITIVE :
+    !m s. measure_space m /\ s IN measurable_sets m ==> 0 <= measure m s
+Proof
+    rpt STRIP_TAC
+ >> ‘positive m’ by PROVE_TAC [MEASURE_SPACE_POSITIVE]
+ >> fs [positive_def]
+QED
 
 Theorem measure_space_eq :
     !m1 m2. measure_space m1 /\

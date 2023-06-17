@@ -6713,6 +6713,24 @@ Proof
     rw [seminorm_def]
 QED
 
+Theorem seminorm_infty :
+    !m f. seminorm PosInf m f =
+          inf {c | 0 < c /\ measure m {x | x IN m_space m /\ c <= abs (f x)} = 0}
+Proof
+    rw [seminorm_def]
+QED
+
+(* was: 1 <= p *)
+Theorem seminorm_pos :
+    !p m f. 0 < p ==> 0 <= seminorm p m f
+Proof
+    rpt STRIP_TAC
+ >> Cases_on ‘p = PosInf’
+ >- (rw [seminorm_infty, le_inf'] \\
+     MATCH_MP_TAC lt_imp_le >> art [])
+ >> rw [seminorm_normal, powr_pos]
+QED
+
 (* was: 1 <= p *)
 Theorem seminorm_powr :
     !p m f. measure_space m /\ 0 < p /\ p <> PosInf ==>
@@ -6730,15 +6748,67 @@ Proof
  >> MATCH_MP_TAC mul_linv_pos >> art []
 QED
 
-(* was: 1 <= p *)
+(* was: 1 <= p; removed ‘p <> PosInf’ *)
 Theorem seminorm_eq_0 :
-    !p m f. measure_space m /\ 0 < p /\ p <> PosInf /\
+    !p m f. measure_space m /\ 0 < p /\
             f IN Borel_measurable (m_space m,measurable_sets m) ==>
            (seminorm p m f = 0 <=> AE x::m. f x = 0)
 Proof
     rpt STRIP_TAC
  >> ‘sigma_algebra (measurable_space m)’
       by PROVE_TAC [MEASURE_SPACE_SIGMA_ALGEBRA]
+ >> Cases_on ‘p = PosInf’
+ >- (POP_ORW >> rw [seminorm_infty] \\
+     reverse EQ_TAC >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       rw [AE_DEF] \\
+       Know ‘!c. 0 < c ==> measure m {x | x IN m_space m /\ c <= abs (f x)} = 0’
+       >- (rpt STRIP_TAC \\
+           fs [null_set_def] \\
+           Q.ABBREV_TAC ‘s = {x | x IN m_space m /\ c <= abs (f x)}’ \\
+           Know ‘s IN measurable_sets m’
+           >- (rw [Abbr ‘s’, le_abs_bounds] \\
+              ‘{x | x IN m_space m /\ (f x <= -c \/ c <= f x)} =
+                 ({x | f x <= -c} INTER m_space m) UNION
+                 ({x | c <= f x} INTER m_space m)’ by SET_TAC [] >> POP_ORW \\
+               MATCH_MP_TAC MEASURE_SPACE_UNION >> art [] \\
+               METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE]) >> DISCH_TAC \\
+          ‘s = (s DIFF N) UNION (s INTER N)’ by SET_TAC [] >> POP_ORW \\
+          ‘DISJOINT (s DIFF N) (s INTER N)’ by SET_TAC [DISJOINT_ALT] \\
+           Know ‘measure m (s DIFF N UNION s INTER N) =
+                 measure m (s DIFF N) + measure m (s INTER N)’
+           >- (MATCH_MP_TAC MEASURE_ADDITIVE >> rw [] >|
+               [ MATCH_MP_TAC MEASURE_SPACE_DIFF >> art [],
+                 MATCH_MP_TAC MEASURE_SPACE_INTER >> art [] ]) >> Rewr' \\
+           Know ‘measure m (s INTER N) = 0’
+           >- (reverse (rw [GSYM le_antisym])
+               >- (MATCH_MP_TAC MEASURE_POSITIVE >> art [] \\
+                   MATCH_MP_TAC MEASURE_SPACE_INTER >> art []) \\
+               Q.PAT_X_ASSUM ‘measure m N = 0’ (ONCE_REWRITE_TAC o wrap o SYM) \\
+               MATCH_MP_TAC MEASURE_INCREASING >> art [] \\
+               CONJ_TAC >- SET_TAC [] \\
+               MATCH_MP_TAC MEASURE_SPACE_INTER >> art []) \\
+           DISCH_THEN (rw o wrap) \\
+           Suff ‘s DIFF N = {}’ >- (Rewr' >> PROVE_TAC [MEASURE_EMPTY]) \\
+           rw [Abbr ‘s’, Once EXTENSION] \\
+           CCONTR_TAC >> fs [] \\
+          ‘f x = 0’ by PROVE_TAC [] >> fs [abs_0] \\
+           METIS_TAC [let_antisym]) >> DISCH_TAC \\
+       Know ‘{c | 0 < c /\ measure m {x | x IN m_space m /\ c <= abs (f x)} = 0} =
+             {c | 0 < c}’
+       >- (rw [Once EXTENSION] >> EQ_TAC >> rw []) >> Rewr' \\
+       rw [inf_eq'] >- (MATCH_MP_TAC lt_imp_le >> art []) \\
+       CCONTR_TAC >> fs [GSYM extreal_lt_def] \\
+       Cases_on ‘y = PosInf’
+       >- (Q.PAT_X_ASSUM ‘!z. 0 < z ==> y <= z’ (MP_TAC o (Q.SPEC ‘1’)) \\
+           rw [le_infty]) \\
+       Q.PAT_X_ASSUM ‘!z. 0 < z ==> y <= z’ (MP_TAC o (Q.SPEC ‘1 / 2 * y’)) \\
+       Know ‘0 < 1 / 2 * y’
+       >- (MATCH_MP_TAC lt_mul >> rw [half_between]) >> rw [GSYM extreal_lt_def] \\
+       Suff ‘1 / 2 * y < 1 * y’ >- rw [] \\
+       rw [lt_rmul, half_between],
+       (* goal 2 (of 2) *)
+       cheat ])
  >> rw [seminorm_normal]
  >> ‘0 <= p’ by PROVE_TAC [lt_imp_le]
  >> ‘p <> 0’ by PROVE_TAC [lt_imp_ne]
@@ -6786,24 +6856,6 @@ Proof
      MATCH_MP_TAC pos_fn_integral_pos >> rw [powr_pos])
  >> Rewr'
  >> rw [GSYM gen_powr, abs_pow2, le_02]
-QED
-
-Theorem seminorm_infty :
-    !m f. seminorm PosInf m f =
-          inf {c | 0 < c /\ measure m {x | x IN m_space m /\ c <= abs (f x)} = 0}
-Proof
-    rw [seminorm_def]
-QED
-
-(* was: 1 <= p *)
-Theorem seminorm_pos :
-    !p m f. 0 < p ==> 0 <= seminorm p m f
-Proof
-    rpt STRIP_TAC
- >> Cases_on ‘p = PosInf’
- >- (rw [seminorm_infty, le_inf'] \\
-     MATCH_MP_TAC lt_imp_le >> art [])
- >> rw [seminorm_normal, powr_pos]
 QED
 
 (* was: 1 <= p *)
