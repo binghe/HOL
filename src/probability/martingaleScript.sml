@@ -6720,6 +6720,61 @@ Proof
     rw [seminorm_def]
 QED
 
+(* ‘seminorm PosInf m f’ is the AE upper bound of (abs o f) *)
+Theorem seminorm_infty_AE_bounds :
+    !m f. measure_space m /\ f IN Borel_measurable (m_space m,measurable_sets m)
+      ==> (AE x::m. abs (f x) <= seminorm PosInf m f)
+Proof
+ (*
+    rw [AE_DEF, seminorm_infty, le_inf']
+ >> Q.ABBREV_TAC ‘N = \n. {x | x IN m_space m /\ inv (&SUC n) < abs (f x)}’
+ >> Q.EXISTS_TAC ‘BIGUNION (IMAGE N UNIV)’
+ >> ONCE_REWRITE_TAC [CONJ_COMM]
+ >> STRONG_CONJ_TAC
+ >- (rw [IN_BIGUNION_IMAGE, Abbr ‘N’, extreal_not_lt] \\ 
+     Cases_on ‘1 <= y’
+     >- (MATCH_MP_TAC le_trans \\
+         Q.EXISTS_TAC ‘1’ >> art [] \\
+         Q.PAT_X_ASSUM ‘!n. P’ (MP_TAC o (Q.SPEC ‘0’)) \\
+         rw [inv_one]) \\
+     fs [GSYM extreal_lt_def] \\
+    ‘?n. inv (&SUC n) < y’ by METIS_TAC [EXTREAL_ARCH_INV] \\
+     MATCH_MP_TAC le_trans \\
+     Q.EXISTS_TAC ‘inv (&SUC n)’ \\
+     METIS_TAC [lt_imp_le])
+ >> DISCH_TAC
+  *)
+    cheat
+ (*
+    RW_TAC std_ss [GSYM extreal_not_lt]
+ >> ‘sigma_algebra (measurable_space m)’
+      by PROVE_TAC [MEASURE_SPACE_SIGMA_ALGEBRA]
+ >> Know ‘(AE x::m. ~(seminorm PosInf m f < abs (f x))) <=>
+          (AE x::m. x IN m_space m ==> ~(seminorm PosInf m f < abs (f x)))’
+ >- (HO_MATCH_MP_TAC AE_cong >> rw [])
+ >> Rewr'
+ >> ‘!x. (x IN m_space m ==> ~(seminorm PosInf m f < abs (f x))) <=>
+        ~(x IN m_space m /\ seminorm PosInf m f < abs (f x))’ by METIS_TAC []
+ >> POP_ORW
+ >> HO_MATCH_MP_TAC AE_not_in
+ >> ‘(\x. x IN m_space m /\ seminorm PosInf m f < abs (f x)) =
+     {z | z IN m_space m /\ seminorm PosInf m f < abs (f z)}’
+      by rw [Once EXTENSION]
+ >> POP_ORW
+ >> simp [null_set_def]
+ >> CONJ_ASM1_TAC
+ >- (Q.ABBREV_TAC ‘c = seminorm PosInf m f’ \\
+     rw [lt_abs_bounds] \\
+    ‘{z | z IN m_space m /\ (f z < -c \/ c < f z)} =
+     ({z | f z < -c} INTER m_space m) UNION ({z | c < f z} INTER m_space m)’ by SET_TAC [] \\
+     POP_ORW \\
+     MATCH_MP_TAC MEASURE_SPACE_UNION >> art [] \\
+     METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE])
+ >> rw [seminorm_infty, GSYM inf_lt']
+ >> cheat
+ *)
+QED
+
 (* was: 1 <= p *)
 Theorem seminorm_pos :
     !p m f. 0 < p ==> 0 <= seminorm p m f
@@ -6730,7 +6785,6 @@ Proof
      MATCH_MP_TAC lt_imp_le >> art [])
  >> rw [seminorm_normal, powr_pos]
 QED
-
 (* was: 1 <= p *)
 Theorem seminorm_powr :
     !p m f. measure_space m /\ 0 < p /\ p <> PosInf ==>
@@ -6848,18 +6902,7 @@ Proof
                Q.EXISTS_TAC ‘inv (&SUC n)’ >> art [] \\
                MATCH_MP_TAC inv_pos' >> rw [extreal_of_num_def, extreal_lt_eq]) \\
            Q.ABBREV_TAC ‘y = abs (f x)’ \\
-           Cases_on ‘y = PosInf’ >- (Q.EXISTS_TAC ‘0’ >> rw []) \\
-          ‘inv y <> PosInf’ by PROVE_TAC [inv_not_infty, lt_imp_ne] \\
-          ‘?n. inv y <= &n’ by METIS_TAC [SIMP_EXTREAL_ARCH] \\
-          ‘&n <= &(SUC n) :extreal’ by rw [extreal_of_num_def, extreal_le_eq] \\
-          ‘inv y <= &SUC n’ by PROVE_TAC [le_trans] \\
-           Q.EXISTS_TAC ‘n’ \\
-           Know ‘y = inv (inv y)’
-           >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
-               MATCH_MP_TAC inv_inv >> METIS_TAC [lt_imp_le, pos_not_neginf, lt_imp_ne]) \\
-           Rewr' \\
-           MATCH_MP_TAC inv_le_antimono_imp >> art [] \\
-           MATCH_MP_TAC inv_pos' >> art []) \\
+           MATCH_MP_TAC EXTREAL_ARCH_INV' >> art []) \\
        DISCH_THEN (PURE_ONCE_REWRITE_TAC o wrap) \\
     (* applying MONOTONE_CONVERGENCE2 *)
        Q.ABBREV_TAC ‘g = \n. {x | x IN m_space m /\ realinv (&SUC n) <= abs (f x)}’ \\

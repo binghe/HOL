@@ -3646,6 +3646,41 @@ val SIMP_EXTREAL_ARCH_NEG = store_thm
  >> Q.EXISTS_TAC `n`
  >> RW_TAC real_ss [extreal_of_num_def, extreal_le_eq, extreal_ainv_def]);
 
+Theorem EXTREAL_ARCH_INV : 
+    !(x :extreal). 0 < x ==> ?n. inv (&SUC n) < x
+Proof
+    rpt STRIP_TAC
+ >> Cases_on ‘x = PosInf’
+ >- (Q.EXISTS_TAC ‘0’ >> rw [inv_one, lt_infty])
+ >> ‘x <> 0’ by PROVE_TAC [lt_imp_ne]
+ >> Know ‘?n. inv x <= &n’
+ >- (MATCH_MP_TAC SIMP_EXTREAL_ARCH \\
+     METIS_TAC [inv_not_infty])
+ >> STRIP_TAC
+ >> ‘&n < &SUC n’ by rw [extreal_of_num_def]
+ >> ‘inv x < &SUC n’ by PROVE_TAC [let_trans]
+ >> Q.EXISTS_TAC ‘n’
+ >> Know ‘x = inv (inv x)’
+ >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+     MATCH_MP_TAC inv_inv >> art [] \\
+     rw [lt_infty] \\
+     MATCH_MP_TAC lt_trans >> Q.EXISTS_TAC ‘0’ >> rw [])
+ >> Rewr'
+ >> Suff ‘inv (&SUC n) < inv (inv x) <=> inv x < &SUC n’ >- rw []
+ >> MATCH_MP_TAC inv_lt_antimono
+ >> CONJ_TAC >- rw [extreal_of_num_def]
+ >> MATCH_MP_TAC inv_pos' >> rw []
+QED
+
+Theorem EXTREAL_ARCH_INV' : 
+    !(x :extreal). 0 < x ==> ?n. inv (&SUC n) <= x
+Proof
+    rpt STRIP_TAC
+ >> ‘?n. inv (&SUC n) < x’ by METIS_TAC [EXTREAL_ARCH_INV]
+ >> Q.EXISTS_TAC ‘n’
+ >> MATCH_MP_TAC lt_imp_le >> art []
+QED
+
 Theorem EXTREAL_ARCH_POW2 : (* was: EXTREAL_ARCH_POW *)
     !x. x <> PosInf ==> ?n. x < 2 pow n
 Proof
