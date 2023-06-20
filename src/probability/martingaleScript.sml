@@ -6757,9 +6757,10 @@ Proof
     rpt STRIP_TAC
  >> ‘sigma_algebra (measurable_space m)’
       by PROVE_TAC [MEASURE_SPACE_SIGMA_ALGEBRA]
+ (* This special case is very difficult! *)
  >> Cases_on ‘p = PosInf’
  >- (POP_ORW >> rw [seminorm_infty] \\
-     reverse EQ_TAC >| (* 2 subgoals *)
+     reverse EQ_TAC >| (* 2 subgoals, first is easier *)
      [ (* goal 1 (of 2) *)
        rw [AE_DEF] \\
        Know ‘!c. 0 < c ==> measure m {x | x IN m_space m /\ c <= abs (f x)} = 0’
@@ -6808,7 +6809,88 @@ Proof
        Suff ‘1 / 2 * y < 1 * y’ >- rw [] \\
        rw [lt_rmul, half_between],
        (* goal 2 (of 2) *)
-       cheat ])
+       DISCH_TAC \\
+       Know ‘(AE x::m. f x = 0) <=> measure m {x | x IN m_space m /\ f x <> 0} = 0’
+       >- (HO_MATCH_MP_TAC AE_iff_measurable >> art [] \\
+          ‘{x | x IN m_space m /\ f x <> 0} = {x | f x <> 0} INTER m_space m’ by SET_TAC [] \\
+           POP_ORW >> METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE]) >> Rewr' \\
+      ‘!x. f x <> 0 <=> 0 < abs (f x)’ by PROVE_TAC [abs_gt_0] >> POP_ORW \\
+       Know ‘{x | x IN m_space m /\ 0 < abs (f x)} IN measurable_sets m’
+       >- (rw [abs_gt_0] \\
+          ‘{x | x IN m_space m /\ f x <> 0} = {x | f x <> 0} INTER m_space m’ by SET_TAC [] \\
+           POP_ORW >> METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE]) >> DISCH_TAC \\
+       Know ‘!c. {x | x IN m_space m /\ c <= abs (f x)} IN measurable_sets m’
+       >- (rw [le_abs_bounds] \\
+          ‘{x | x IN m_space m /\ (f x <= -c \/ c <= f x)} =
+              ({x | f x <= -c} INTER m_space m) UNION
+              ({x | c <= f x} INTER m_space m)’ by SET_TAC [] >> POP_ORW \\
+           MATCH_MP_TAC MEASURE_SPACE_UNION \\
+           METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE]) >> DISCH_TAC \\
+    (* The measure inside ‘inf {}’ should be monotonic *)
+       Q.ABBREV_TAC ‘H = \c. measure m {x | x IN m_space m /\ c <= abs (f x)}’ \\
+    (* So it's actually decreasing, with smaller c the measure is larger *)
+       Know ‘!a b. a <= b ==> H b <= H a’
+       >- (rw [Abbr ‘H’] \\
+           MATCH_MP_TAC MEASURE_INCREASING >> art [] \\
+           rw [SUBSET_DEF] \\
+           MATCH_MP_TAC le_trans >> Q.EXISTS_TAC ‘b’ >> art []) >> DISCH_TAC \\
+       FULL_SIMP_TAC std_ss [] (* simplify assumptions using ‘H’ *) \\
+       Q.ABBREV_TAC ‘s = {x | x IN m_space m /\ 0 < abs (f x)}’ \\
+    (* NOTE: below we show that, if ‘measure m s < 0’ then ‘inf {} > 0’ *)
+       CCONTR_TAC \\
+      ‘measure m s = 0 \/ 0 < measure m s’ by PROVE_TAC [MEASURE_POSITIVE, le_lt] \\
+       Q.PAT_X_ASSUM ‘measure m s <> 0’ K_TAC \\
+       POP_ASSUM MP_TAC (* 0 < measure m s *) \\
+       Know ‘s = BIGUNION (IMAGE (\n. {x | x IN m_space m /\ (inv &SUC n) <= abs (f x)}) UNIV)’
+       >- (rw [Abbr ‘s’, Once EXTENSION, IN_BIGUNION_IMAGE, Excl "abs_gt_0"] \\
+           reverse EQ_TAC >> RW_TAC std_ss [] >> art []
+           >- (MATCH_MP_TAC lte_trans \\
+               Q.EXISTS_TAC ‘inv (&SUC n)’ >> art [] \\
+               MATCH_MP_TAC inv_pos' >> rw [extreal_of_num_def, extreal_lt_eq]) \\
+           Q.ABBREV_TAC ‘y = abs (f x)’ \\
+           Cases_on ‘y = PosInf’ >- (Q.EXISTS_TAC ‘0’ >> rw []) \\
+          ‘inv y <> PosInf’ by PROVE_TAC [inv_not_infty, lt_imp_ne] \\
+          ‘?n. inv y <= &n’ by METIS_TAC [SIMP_EXTREAL_ARCH] \\
+          ‘&n <= &(SUC n) :extreal’ by rw [extreal_of_num_def, extreal_le_eq] \\
+          ‘inv y <= &SUC n’ by PROVE_TAC [le_trans] \\
+           Q.EXISTS_TAC ‘n’ \\
+           Know ‘y = inv (inv y)’
+           >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+               MATCH_MP_TAC inv_inv >> METIS_TAC [lt_imp_le, pos_not_neginf, lt_imp_ne]) \\
+           Rewr' \\
+           MATCH_MP_TAC inv_le_antimono_imp >> art [] \\
+           MATCH_MP_TAC inv_pos' >> art []) \\
+       DISCH_THEN (PURE_ONCE_REWRITE_TAC o wrap) \\
+    (* applying MONOTONE_CONVERGENCE2 *)
+       Q.ABBREV_TAC ‘g = \n. {x | x IN m_space m /\ realinv (&SUC n) <= abs (f x)}’ \\
+       Know ‘measure m (BIGUNION (IMAGE g univ(:num))) =
+             sup (IMAGE (measure m o g) univ(:num))’
+       >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+           MATCH_MP_TAC MONOTONE_CONVERGENCE2 >> rw [IN_FUNSET, Abbr ‘g’] \\
+           rw [SUBSET_DEF] \\
+           MATCH_MP_TAC le_trans >> Q.EXISTS_TAC ‘inv (&SUC n)’ >> rw [] \\
+           MATCH_MP_TAC inv_le_antimono_imp >> rw [extreal_of_num_def]) \\
+       DISCH_THEN (PURE_ONCE_REWRITE_TAC o wrap) \\
+       Q.UNABBREV_TAC ‘s’ (* useless *) \\
+    (* applying lt_sup *)
+       DISCH_THEN (STRIP_ASSUME_TAC o (SIMP_RULE (srw_ss()) [o_DEF, lt_sup])) \\
+       rename1 ‘x = measure m (g n)’ \\
+       Q.PAT_X_ASSUM ‘x = measure m (g n)’ (FULL_SIMP_TAC std_ss o wrap) \\
+       REV_FULL_SIMP_TAC std_ss [Abbr ‘g’] (* remove ‘g’, using ‘H’ *) \\
+       Q.ABBREV_TAC ‘z = inv (&SUC n)’ (* this is an important constant *) \\
+       Know ‘0 < z’
+       >- (Q.UNABBREV_TAC ‘z’ \\
+           MATCH_MP_TAC inv_pos' >> rw [extreal_of_num_def]) >> DISCH_TAC \\
+    (* now we show ‘inf {H c = 0} = 0’ is impossible since z <= inf {} *)
+       Suff ‘z <= inf {c | 0 < c /\ H c = 0}’
+       >- (DISCH_TAC \\
+          ‘0 < inf {c | 0 < c /\ H c = 0}’ by PROVE_TAC [lte_trans] \\
+           METIS_TAC [lt_le]) \\
+       rw [le_inf'] \\
+       SPOSE_NOT_THEN (ASSUME_TAC o (REWRITE_RULE [GSYM extreal_lt_def])) \\
+      ‘y <= z’ by PROVE_TAC [lt_imp_le] \\
+      ‘H z <= H y’ by PROVE_TAC [] \\
+       METIS_TAC [let_antisym] ])
  >> rw [seminorm_normal]
  >> ‘0 <= p’ by PROVE_TAC [lt_imp_le]
  >> ‘p <> 0’ by PROVE_TAC [lt_imp_ne]
