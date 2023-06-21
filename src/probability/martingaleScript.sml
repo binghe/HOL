@@ -6720,61 +6720,6 @@ Proof
     rw [seminorm_def]
 QED
 
-(* ‘seminorm PosInf m f’ is the AE upper bound of (abs o f) *)
-Theorem seminorm_infty_AE_bounds :
-    !m f. measure_space m /\ f IN Borel_measurable (m_space m,measurable_sets m)
-      ==> (AE x::m. abs (f x) <= seminorm PosInf m f)
-Proof
- (*
-    rw [AE_DEF, seminorm_infty, le_inf']
- >> Q.ABBREV_TAC ‘N = \n. {x | x IN m_space m /\ inv (&SUC n) < abs (f x)}’
- >> Q.EXISTS_TAC ‘BIGUNION (IMAGE N UNIV)’
- >> ONCE_REWRITE_TAC [CONJ_COMM]
- >> STRONG_CONJ_TAC
- >- (rw [IN_BIGUNION_IMAGE, Abbr ‘N’, extreal_not_lt] \\ 
-     Cases_on ‘1 <= y’
-     >- (MATCH_MP_TAC le_trans \\
-         Q.EXISTS_TAC ‘1’ >> art [] \\
-         Q.PAT_X_ASSUM ‘!n. P’ (MP_TAC o (Q.SPEC ‘0’)) \\
-         rw [inv_one]) \\
-     fs [GSYM extreal_lt_def] \\
-    ‘?n. inv (&SUC n) < y’ by METIS_TAC [EXTREAL_ARCH_INV] \\
-     MATCH_MP_TAC le_trans \\
-     Q.EXISTS_TAC ‘inv (&SUC n)’ \\
-     METIS_TAC [lt_imp_le])
- >> DISCH_TAC
-  *)
-    cheat
- (*
-    RW_TAC std_ss [GSYM extreal_not_lt]
- >> ‘sigma_algebra (measurable_space m)’
-      by PROVE_TAC [MEASURE_SPACE_SIGMA_ALGEBRA]
- >> Know ‘(AE x::m. ~(seminorm PosInf m f < abs (f x))) <=>
-          (AE x::m. x IN m_space m ==> ~(seminorm PosInf m f < abs (f x)))’
- >- (HO_MATCH_MP_TAC AE_cong >> rw [])
- >> Rewr'
- >> ‘!x. (x IN m_space m ==> ~(seminorm PosInf m f < abs (f x))) <=>
-        ~(x IN m_space m /\ seminorm PosInf m f < abs (f x))’ by METIS_TAC []
- >> POP_ORW
- >> HO_MATCH_MP_TAC AE_not_in
- >> ‘(\x. x IN m_space m /\ seminorm PosInf m f < abs (f x)) =
-     {z | z IN m_space m /\ seminorm PosInf m f < abs (f z)}’
-      by rw [Once EXTENSION]
- >> POP_ORW
- >> simp [null_set_def]
- >> CONJ_ASM1_TAC
- >- (Q.ABBREV_TAC ‘c = seminorm PosInf m f’ \\
-     rw [lt_abs_bounds] \\
-    ‘{z | z IN m_space m /\ (f z < -c \/ c < f z)} =
-     ({z | f z < -c} INTER m_space m) UNION ({z | c < f z} INTER m_space m)’ by SET_TAC [] \\
-     POP_ORW \\
-     MATCH_MP_TAC MEASURE_SPACE_UNION >> art [] \\
-     METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE])
- >> rw [seminorm_infty, GSYM inf_lt']
- >> cheat
- *)
-QED
-
 (* was: 1 <= p *)
 Theorem seminorm_pos :
     !p m f. 0 < p ==> 0 <= seminorm p m f
@@ -6785,6 +6730,67 @@ Proof
      MATCH_MP_TAC lt_imp_le >> art [])
  >> rw [seminorm_normal, powr_pos]
 QED
+
+(* ‘seminorm PosInf m f’ is the AE upper bound of (abs o f)
+
+   NOTE: The key in this proof is to construct the needed null set satisfying AE
+         of the goal, and to eliminate the ‘inf’ behind ‘seminorm’.
+ *)
+Theorem seminorm_infty_AE_bound :
+    !m f. measure_space m /\ f IN Borel_measurable (m_space m,measurable_sets m)
+      ==> (AE x::m. abs (f x) <= seminorm PosInf m f)
+Proof
+    rpt STRIP_TAC
+ >> Q.ABBREV_TAC ‘c = seminorm PosInf m f’
+ (* This special case must be eliminated first *)
+ >> Cases_on ‘c = PosInf’
+ >- (rw [le_infty] \\
+     MATCH_MP_TAC AE_T >> art [])
+ >> Know ‘c <> NegInf’
+ >- (MATCH_MP_TAC pos_not_neginf \\
+     Q.UNABBREV_TAC ‘c’ \\
+     MATCH_MP_TAC seminorm_pos >> rw [extreal_of_num_def, lt_infty])
+ >> DISCH_TAC
+ (* now start finding the null sets whose BIGUNION is the needed one *)
+ >> Know ‘!n. AE x::m. abs (f x) <= c + inv (&SUC n)’
+ >- (rw [AE_DEF] \\
+     Know ‘0 < inv (&SUC n)’
+     >- (MATCH_MP_TAC inv_pos' >> rw [extreal_of_num_def, extreal_lt_eq]) \\
+     DISCH_TAC \\
+     Know ‘seminorm PosInf m f < c + inv (&SUC n)’
+     >- (simp [] >> MATCH_MP_TAC lt_addr_imp >> art []) \\
+  (* applying inf_lt' *)
+     REWRITE_TAC [seminorm_infty, GSYM inf_lt'] >> rw [] \\
+     Q.EXISTS_TAC ‘{z | z IN m_space m /\ x <= abs (f z)}’ \\
+     reverse CONJ_TAC
+     >- (rw [GSYM extreal_lt_def] \\
+         MATCH_MP_TAC lt_imp_le >> PROVE_TAC [lt_trans]) \\
+     rw [null_set_def, le_abs_bounds] \\
+    ‘{z | z IN m_space m /\ (f z <= -x \/ x <= f z)} =
+       ({z | f z <= -x} INTER m_space m) UNION ({z | x <= f z} INTER m_space m)’
+        by SET_TAC [] >> POP_ORW \\
+     MATCH_MP_TAC MEASURE_SPACE_UNION >> art [] \\
+    ‘sigma_algebra (measurable_space m)’
+       by PROVE_TAC [MEASURE_SPACE_SIGMA_ALGEBRA] \\
+     METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE])
+ (* stage work, ‘seminorm’ is not used below *)
+ >> rw [AE_DEF]
+ >> fs [SKOLEM_THM] (* This asserts function f'(n) of null sets *)
+ >> Q.EXISTS_TAC ‘BIGUNION (IMAGE f' UNIV)’
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC (REWRITE_RULE [IN_NULL_SET] NULL_SET_BIGUNION) >> rw [])
+ >> rw [IN_BIGUNION_IMAGE]
+ >> rename1 ‘!n. x NOTIN (g n)’ (* rename f' with g *)
+ (* applying le_epsilon! *)
+ >> MATCH_MP_TAC le_epsilon >> rw []
+ (* now we need to find n such that ‘inv (&SUCn) <= e’ *)
+ >> ‘?n. inv (&SUC n) <= e’ by METIS_TAC [EXTREAL_ARCH_INV, lt_imp_le]
+ >> MATCH_MP_TAC le_trans
+ >> Q.EXISTS_TAC ‘c + inv (&SUC n)’
+ >> CONJ_TAC >- METIS_TAC []
+ >> MATCH_MP_TAC le_ladd_imp >> art []
+QED
+
 (* was: 1 <= p *)
 Theorem seminorm_powr :
     !p m f. measure_space m /\ 0 < p /\ p <> PosInf ==>
