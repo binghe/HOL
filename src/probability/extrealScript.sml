@@ -3656,7 +3656,7 @@ val SIMP_EXTREAL_ARCH_NEG = store_thm
  >> Q.EXISTS_TAC `n`
  >> RW_TAC real_ss [extreal_of_num_def, extreal_le_eq, extreal_ainv_def]);
 
-Theorem EXTREAL_ARCH_INV : 
+Theorem EXTREAL_ARCH_INV :
     !(x :extreal). 0 < x ==> ?n. inv (&SUC n) < x
 Proof
     rpt STRIP_TAC
@@ -3683,7 +3683,7 @@ Proof
  >> MATCH_MP_TAC inv_pos' >> rw []
 QED
 
-Theorem EXTREAL_ARCH_INV' : 
+Theorem EXTREAL_ARCH_INV' :
     !(x :extreal). 0 < x ==> ?n. inv (&SUC n) <= x
 Proof
     rpt STRIP_TAC
