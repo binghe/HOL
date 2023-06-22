@@ -7105,7 +7105,44 @@ Proof
  >> ‘u IN measurable (m_space m,measurable_sets m) Borel /\
      v IN measurable (m_space m,measurable_sets m) Borel’
        by fs [lp_space_def]
- >> cheat
+ >> ‘seminorm PosInf m u <> PosInf /\ seminorm PosInf m u <> NegInf’
+       by (MATCH_MP_TAC seminorm_not_infty >> rw [])
+ >> ONCE_REWRITE_TAC [CONJ_SYM]
+ >> CONJ_ASM1_TAC
+ >- (Know ‘integral m (\x. abs (u x * v x)) = pos_fn_integral m (\x. abs (u x * v x))’
+     >- (MATCH_MP_TAC integral_pos_fn >> rw [abs_pos]) >> Rewr' \\
+     rw [seminorm_one] \\
+     Know ‘0 <= seminorm PosInf m u’
+     >- (MATCH_MP_TAC seminorm_pos >> rw []) >> DISCH_TAC \\
+     Know ‘seminorm PosInf m u * pos_fn_integral m (abs o v) =
+           pos_fn_integral m (\x. seminorm PosInf m u * (abs o v) x)’
+     >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+        ‘?r. 0 <= r /\ seminorm PosInf m u = Normal r’
+           by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_le_eq] >> POP_ORW \\
+         MATCH_MP_TAC pos_fn_integral_cmul >> rw [o_DEF, abs_pos]) >> Rewr' \\
+     MATCH_MP_TAC pos_fn_integral_mono_AE >> rw [abs_pos]
+     >- (MATCH_MP_TAC le_mul >> rw [abs_pos]) \\
+     Know ‘AE x::m. abs (u x) <= seminorm PosInf m u’
+     >- (MATCH_MP_TAC seminorm_infty_AE_bound >> art []) \\
+     rw [AE_DEF] >> Q.EXISTS_TAC ‘N’ >> rw [abs_mul] \\
+     MATCH_MP_TAC le_rmul_imp >> rw [abs_pos])
+ (* stage work *)
+ >> MATCH_MP_TAC integrable_from_abs >> art []
+ >> CONJ_ASM1_TAC
+ >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_TIMES \\
+     qexistsl_tac [‘u’, ‘v’] >> rw [])
+ >> rw [integrable_abs_alt, lt_infty]
+ >> Know ‘pos_fn_integral m (abs o (\x. u x * v x)) = integral m (\x. abs (u x * v x))’
+ >- (rw [o_DEF, Once EQ_SYM_EQ] \\
+     MATCH_MP_TAC integral_pos_fn >> rw [abs_pos])
+ >> Rewr'
+ >> MATCH_MP_TAC let_trans
+ >> Q.EXISTS_TAC ‘seminorm PosInf m u * seminorm 1 m v’ >> art []
+ >> ‘seminorm 1 m v <> PosInf /\ seminorm 1 m v <> NegInf’
+      by PROVE_TAC [seminorm_not_infty, lt_01]
+ >> ‘?a. seminorm PosInf m u = Normal a’ by METIS_TAC [extreal_cases]
+ >> ‘?b. seminorm 1 m v = Normal b’ by METIS_TAC [extreal_cases]
+ >> rw [GSYM lt_infty, extreal_mul_def, extreal_not_infty]
 QED
 
 Theorem Hoelder_inequality :
