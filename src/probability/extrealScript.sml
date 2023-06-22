@@ -3506,16 +3506,18 @@ QED
 (*         Various         *)
 (***************************)
 
-val half_between = store_thm
-  ("half_between", ``(0 < 1/2 /\ 1/2 < 1) /\ (0 <= 1/2 /\ 1/2 <= 1)``,
+Theorem half_between[simp] :
+    (0 < 1 / 2 /\ 1 / 2 < 1) /\ (0 <= 1 / 2 /\ 1 / 2 <= 1)
+Proof
     MATCH_MP_TAC (PROVE [] ``(x ==> y) /\ x ==> x /\ y``)
  >> CONJ_TAC >- PROVE_TAC [lt_imp_le]
  >> RW_TAC real_ss [extreal_div_def, extreal_inv_def, mul_lone, extreal_lt_def,
                     extreal_le_def, extreal_of_num_def, extreal_not_infty,
-                    GSYM real_lt, REAL_INV_1OVER, extreal_mul_def]);
+                    GSYM real_lt, REAL_INV_1OVER, extreal_mul_def]
+QED
 
-Theorem half_not_infty :
-    1/2 <> PosInf /\ 1/2 <> NegInf
+Theorem half_not_infty[simp] :
+    1 / 2 <> PosInf /\ 1 / 2 <> NegInf
 Proof
     rw [lt_infty]
  >- (MATCH_MP_TAC lt_trans \\
@@ -3526,28 +3528,34 @@ Proof
  >> rw [extreal_of_num_def, lt_infty]
 QED
 
-val thirds_between = store_thm
-  ("thirds_between", ``((0 < 1/3 /\ 1/3 < 1) /\ (0 < 2/3 /\ 2/3 < 1)) /\
-                       ((0 <= 1/3 /\ 1/3 <= 1) /\ (0 <= 2/3 /\ 2/3 <= 1))``,
+Theorem thirds_between[simp] :
+    ((0 < 1 / 3 /\ 1 / 3 < 1) /\ (0 < 2 / 3 /\ 2 / 3 < 1)) /\
+    ((0 <= 1 / 3 /\ 1 / 3 <= 1) /\ (0 <= 2 / 3 /\ 2 / 3 <= 1))
+Proof
     MATCH_MP_TAC (PROVE [] ``(x ==> y) /\ x ==> x /\ y``)
  >> CONJ_TAC >- PROVE_TAC [lt_imp_le]
  >> RW_TAC real_ss [extreal_div_def, extreal_inv_def, mul_lone, extreal_lt_def,
                     extreal_le_def, extreal_of_num_def, extreal_not_infty,
-                    GSYM real_lt, extreal_mul_def, REAL_INV_1OVER]);
+                    GSYM real_lt, extreal_mul_def, REAL_INV_1OVER]
+QED
 
-val fourths_between = store_thm
-  ("fourths_between", ``((0 < 1/4 /\ 1/4 < 1) /\ (0 < 3/4 /\ 3/4 < 1)) /\
-                        ((0 <= 1/4 /\ 1/4 <= 1) /\ (0 <= 3/4 /\ 3/4 <= 1))``,
+Theorem fourths_between[simp] :
+    ((0 < 1 / 4 /\ 1 / 4 < 1) /\ (0 < 3 / 4 /\ 3 / 4 < 1)) /\
+    ((0 <= 1 / 4 /\ 1 / 4 <= 1) /\ (0 <= 3 / 4 /\ 3 / 4 <= 1))
+Proof
     MATCH_MP_TAC (PROVE [] ``(x ==> y) /\ x ==> x /\ y``)
  >> CONJ_TAC >- PROVE_TAC [lt_imp_le]
  >> RW_TAC real_ss [extreal_div_def, extreal_inv_def, mul_lone, extreal_lt_def,
                     extreal_le_def, extreal_of_num_def, extreal_not_infty,
-                    GSYM real_lt, extreal_mul_def, REAL_INV_1OVER]);
+                    GSYM real_lt, extreal_mul_def, REAL_INV_1OVER]
+QED
 
-val half_cancel = store_thm
-  ("half_cancel", ``2 * (1 / 2) = 1``,
+Theorem half_cancel :
+    2 * (1 / 2) = 1
+Proof
     RW_TAC real_ss [extreal_of_num_def, extreal_mul_def, extreal_div_eq,
-                    EVAL ``2 <> 0:real``, REAL_MUL_RINV, real_div]);
+                    EVAL ``2 <> 0:real``, REAL_MUL_RINV, real_div]
+QED
 
 (* cf. realTheory.REAL_HALF_DOUBLE *)
 Theorem half_double :
@@ -3574,15 +3582,19 @@ Proof
  >> MATCH_MP_TAC (GSYM add_rdistrib) >> rw []
 QED
 
-val third_cancel = store_thm
-  ("third_cancel", ``3 * (1 / 3) = 1``,
+Theorem third_cancel :
+    3 * (1 / 3) = 1
+Proof
     RW_TAC real_ss [extreal_of_num_def, extreal_mul_def, extreal_div_eq,
-                    EVAL ``3 <> 0:real``, REAL_MUL_RINV, real_div]);
+                    EVAL ``3 <> 0:real``, REAL_MUL_RINV, real_div]
+QED
 
-val fourth_cancel = store_thm
-  ("fourth_cancel", ``4 * (1 / 4) = 1``,
+Theorem fourth_cancel :
+    4 * (1 / 4) = 1
+Proof
     RW_TAC real_ss [extreal_of_num_def, extreal_mul_def, extreal_div_eq,
-                    EVAL ``4 <> 0:real``, REAL_MUL_RINV, real_div]);
+                    EVAL ``4 <> 0:real``, REAL_MUL_RINV, real_div]
+QED
 
 (* added antecedent ``m <> 0`` *)
 val quotient_normal = store_thm
