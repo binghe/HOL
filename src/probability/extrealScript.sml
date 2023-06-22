@@ -3380,8 +3380,11 @@ Proof
  >> RW_TAC arith_ss []
 QED
 
-(* cf. real_sigmaTheory.YOUNG_INEQUALITY, note that the extreal version supports
+(* cf. transcTheory.YOUNG_INEQUALITY, note that the extreal version supports
       ‘0 <= a /\ 0 <= b’ instead of ‘0 < a /\ 0 < b’ in the real case.
+
+   NOTE: ‘p <> PosInf /\ q <> PosInf’ (thus also ‘0 < p /\ 0 < q’) cannot be
+         removed in general, for there may be ‘PosInf / PosInf’ at RHS.
  *)
 Theorem young_inequality :
     !a b p q. 0 <= a /\ 0 <= b /\ 0 < p /\ 0 < q /\ p <> PosInf /\ q <> PosInf /\
@@ -3437,9 +3440,10 @@ Proof
  >> MATCH_MP_TAC YOUNG_INEQUALITY >> art []
 QED
 
+(* NOTE: improved ‘p = 1 ==> q = PosInf’ to ‘p = 1 <=> q = PosInf’, etc. *)
 Theorem conjugate_properties :
     !p q. 0 < p /\ 0 < q /\ inv(p) + inv(q) = 1 ==>
-          1 <= p /\ 1 <= q /\ (p = 1 ==> q = PosInf) /\ (q = 1 ==> p = PosInf)
+          1 <= p /\ 1 <= q /\ (p = 1 <=> q = PosInf) /\ (q = 1 <=> p = PosInf)
 Proof
     rpt GEN_TAC >> STRIP_TAC
  >> ‘0 <= inv p /\ 0 <= inv q’ by PROVE_TAC [le_inv]
@@ -3477,6 +3481,9 @@ Proof
       DISCH_THEN (fs o wrap) \\
       METIS_TAC [let_antisym],
       (* goal 3 (of 4) *)
+      reverse EQ_TAC >- (DISCH_THEN (fn th => fs [inv_infty, th]) \\
+                         Suff ‘inv p = inv 1’ >- PROVE_TAC [inv_inj, lt_01] \\
+                         rw [inv_one]) \\
       DISCH_THEN (fn th => fs [inv_one, th]) \\
      ‘q <> 0’ by PROVE_TAC [lt_imp_ne] \\
       Cases_on ‘q’ \\
@@ -3484,6 +3491,9 @@ Proof
           extreal_add_def] \\
       METIS_TAC [REAL_ADD_RID_UNIQ, REAL_INV_POS, REAL_LT_IMP_NE],
       (* goal 4 (of 4) *)
+      reverse EQ_TAC >- (DISCH_THEN (fn th => fs [inv_infty, th]) \\
+                         Suff ‘inv q = inv 1’ >- PROVE_TAC [inv_inj, lt_01] \\
+                         rw [inv_one]) \\
       DISCH_THEN (fn th => fs [inv_one, th]) \\
      ‘p <> 0’ by PROVE_TAC [lt_imp_ne] \\
       Cases_on ‘p’ \\

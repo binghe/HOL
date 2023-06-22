@@ -7048,11 +7048,18 @@ QED
 
 (* Theorem 13.2 (Hoelder's inequality) [1, p.117]
 
-   TODO: also prove the case for ‘p = PosInf’ (q = 1) or ‘q = PosInf’ (p = 1)
+   NOTE: ‘p <> PosInf /\ q <> PosInf’ was there but then removed.
  *)
+Theorem Hoelder_inequality_lemma[local] :
+    !m u v. measure_space m /\ u IN lp_space PosInf m /\ v IN L1_space m ==>
+            integrable m (\x. u x * v x) /\
+            integral m (\x. abs (u x * v x)) <= seminorm PosInf m u * seminorm 1 m v
+Proof
+    cheat
+QED
+
 Theorem Hoelder_inequality :
     !m u v p q. measure_space m /\ 0 < p /\ 0 < q /\ inv(p) + inv(q) = 1 /\
-                p <> PosInf /\ q <> PosInf /\
                 u IN lp_space p m /\ v IN lp_space q m
             ==> integrable m (\x. u x * v x) /\
                 integral m (\x. abs (u x * v x)) <= seminorm p m u * seminorm q m v
@@ -7062,12 +7069,21 @@ Proof
  >> ‘1 <= p /\ 1 <= q’ by PROVE_TAC [conjugate_properties]
  >> ‘0 <= p /\ 0 <= q’ by rw [lt_imp_le]
  >> ‘p <> NegInf /\ q <> NegInf’ by PROVE_TAC [pos_not_neginf]
+ >> ‘u IN measurable (m_space m,measurable_sets m) Borel /\
+     v IN measurable (m_space m,measurable_sets m) Borel’
+       by gs [lp_space_def]
+ (* special cases *)
+ >> Cases_on ‘p = PosInf’
+ >- (‘q = 1’ by PROVE_TAC [conjugate_properties] >> fs [] \\
+     MATCH_MP_TAC Hoelder_inequality_lemma >> art [])
+ >> Cases_on ‘q = PosInf’
+ >- (‘p = 1’ by PROVE_TAC [conjugate_properties] >> fs [] \\
+     ONCE_REWRITE_TAC [mul_comm] \\
+     MATCH_MP_TAC Hoelder_inequality_lemma >> art [])
+ (* stage work *)
  >> ‘seminorm p m u <> PosInf /\ seminorm p m u <> NegInf /\
      seminorm q m v <> PosInf /\ seminorm q m v <> NegInf’
        by PROVE_TAC [seminorm_not_infty]
- >> ‘u IN measurable (m_space m,measurable_sets m) Borel /\
-     v IN measurable (m_space m,measurable_sets m) Borel’
-       by gs [lp_space_alt_finite]
  >> Suff ‘integral m (\x. abs (u x * v x)) <= seminorm p m u * seminorm q m v’
  >- (RW_TAC std_ss [] \\
      MATCH_MP_TAC integrable_from_abs >> ASM_SIMP_TAC std_ss [o_DEF] \\
