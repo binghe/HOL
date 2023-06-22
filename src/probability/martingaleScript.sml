@@ -7802,15 +7802,14 @@ Proof
      rw [AE_DEF] \\
      Q.EXISTS_TAC ‘N UNION N'’ \\
      CONJ_TAC >- (MATCH_MP_TAC (REWRITE_RULE [IN_NULL_SET] NULL_SET_UNION) >> art []) \\
-     rw [] \\
-     MATCH_MP_TAC let_trans >> Q.EXISTS_TAC ‘cu + cv’ \\
+     rw [] >> MATCH_MP_TAC let_trans >> Q.EXISTS_TAC ‘cu + cv’ \\
      reverse CONJ_TAC >- (MATCH_MP_TAC lt_addr_imp >> art [] \\
                           METIS_TAC [add_not_infty]) \\
      MATCH_MP_TAC le_trans >> Q.EXISTS_TAC ‘abs (u x) + abs (v x)’ \\
      reverse CONJ_TAC >- (MATCH_MP_TAC le_add2 >> rw []) \\
      MATCH_MP_TAC abs_triangle \\
     ‘abs (u x) <= cu /\ abs (v x) <= cv’ by PROVE_TAC [] \\
-     CCONTR_TAC >> fs [] \\
+     CCONTR_TAC >> FULL_SIMP_TAC bool_ss [] \\
      fs [extreal_abs_def, le_infty])
  (* general case *)
  >> ‘0 < p’ by PROVE_TAC [lt_01, lte_trans]
