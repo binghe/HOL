@@ -5666,7 +5666,7 @@ Proof
      rw [AE_DEF] \\
      Q.EXISTS_TAC ‘{y | y IN Y /\ pos_fn_integral (X,A,u) (\x. (fn_plus f) (x,y)) = PosInf} UNION
                    {y | y IN Y /\ pos_fn_integral (X,A,u) (\x. (fn_minus f) (x,y)) = PosInf}’ \\
-     CONJ_TAC >- (PROVE_TAC [NULL_SET_UNION, GSYM IN_NULL_SET]) \\
+     CONJ_TAC >- PROVE_TAC [NULL_SET_UNION'] \\
      Q.X_GEN_TAC ‘y’ >> rw [] >| (* 3 subgoals *)
      [ (* goal 1 (of 3) *)
       ‘!x. (fn_plus f) (x,y) - (fn_minus f) (x,y) = f (x,y)’
@@ -5696,7 +5696,7 @@ Proof
      rw [AE_DEF] \\
      Q.EXISTS_TAC ‘{x | x IN X /\ pos_fn_integral (Y,B,v) (\y. (fn_plus f) (x,y)) = PosInf} UNION
                    {x | x IN X /\ pos_fn_integral (Y,B,v) (\y. (fn_minus f) (x,y)) = PosInf}’ \\
-     CONJ_TAC >- (PROVE_TAC [NULL_SET_UNION, GSYM IN_NULL_SET]) \\
+     CONJ_TAC >- PROVE_TAC [NULL_SET_UNION'] \\
      Q.X_GEN_TAC ‘x’ >> rw [] >| (* 3 subgoals *)
      [ (* goal 1 (of 3) *)
       ‘!y. (fn_plus f) (x,y) - (fn_minus f) (x,y) = f (x,y)’
@@ -6860,7 +6860,7 @@ Proof
  >> fs [SKOLEM_THM] (* This asserts function f'(n) of null sets *)
  >> Q.EXISTS_TAC ‘BIGUNION (IMAGE f' UNIV)’
  >> CONJ_TAC
- >- (MATCH_MP_TAC (REWRITE_RULE [IN_NULL_SET] NULL_SET_BIGUNION) >> rw [])
+ >- (MATCH_MP_TAC NULL_SET_BIGUNION' >> rw [])
  >> rw [IN_BIGUNION_IMAGE]
  >> rename1 ‘!n. x NOTIN (g n)’ (* rename f' with g *)
  (* applying le_epsilon! *)
@@ -7597,7 +7597,7 @@ Proof
      CONJ_TAC >- PROVE_TAC [lt_add] \\
      CONJ_TAC >- PROVE_TAC [add_not_infty] \\
      Q.EXISTS_TAC ‘N UNION N'’ \\
-     rw [REWRITE_RULE [IN_NULL_SET] NULL_SET_UNION, GSYM extreal_add_def] \\
+     rw [NULL_SET_UNION', GSYM extreal_add_def] \\
      MATCH_MP_TAC let_trans \\
      Q.EXISTS_TAC ‘abs (u x) + abs (v x)’ \\
      reverse CONJ_TAC >- (MATCH_MP_TAC lt_add2 >> rw []) \\
@@ -7787,7 +7787,7 @@ Proof
      Q.PAT_X_ASSUM ‘AE x::m. abs (v x) <= cv’ MP_TAC \\
      rw [AE_DEF] \\
      Q.EXISTS_TAC ‘N UNION N'’ \\
-     CONJ_TAC >- (MATCH_MP_TAC (REWRITE_RULE [IN_NULL_SET] NULL_SET_UNION) >> art []) \\
+     CONJ_TAC >- (MATCH_MP_TAC NULL_SET_UNION' >> art []) \\
      rw [] >> MATCH_MP_TAC let_trans >> Q.EXISTS_TAC ‘cu + cv’ \\
      reverse CONJ_TAC >- (MATCH_MP_TAC lt_addr_imp >> art [] \\
                           METIS_TAC [add_not_infty]) \\
@@ -8004,11 +8004,11 @@ Proof
      rename1 ‘null_set m N0’ \\
      EQ_TAC >> rw [] >| (* 2 subgoals *)
      [ (* goal 1 (of 2) *)
-       Q.EXISTS_TAC ‘N UNION N0’ >> rw [REWRITE_RULE [IN_NULL_SET] NULL_SET_UNION] \\
+       Q.EXISTS_TAC ‘N UNION N0’ >> rw [NULL_SET_UNION'] \\
       ‘v x = u x’ by PROVE_TAC [] >> POP_ORW \\
        FIRST_X_ASSUM MATCH_MP_TAC >> art [],
        (* goal 2 (of 2) *)
-       Q.EXISTS_TAC ‘N UNION N0’ >> rw [REWRITE_RULE [IN_NULL_SET] NULL_SET_UNION] ])
+       Q.EXISTS_TAC ‘N UNION N0’ >> rw [NULL_SET_UNION'] ])
  >> rw [seminorm_normal]
  >> Suff ‘pos_fn_integral m (\x. abs (u x) powr p) =
           pos_fn_integral m (\x. abs (v x) powr p)’ >- rw []
@@ -8028,7 +8028,8 @@ Proof
 QED
 
 Theorem seminorm_cmul :
-    !p m u c. measure_space m /\ 0 < p /\ u IN lp_space p m ==>
+    !p m u c. measure_space m /\ 0 < p /\
+              u IN measurable (m_space m,measurable_sets m) Borel /\
               seminorm p m (\x. Normal c * u x) = Normal c * seminorm p m u
 Proof
     cheat
@@ -8042,9 +8043,8 @@ Proof
 QED
 
 Theorem lp_space_add_cmul :
-    !p m u v a b.
-       measure_space m /\ 0 < p /\ u IN lp_space p m /\ v IN lp_space p m
-   ==> (\x. Normal a * u x + Normal b * v x) IN lp_space p m
+    !p m u v a b. measure_space m /\ 0 < p /\ u IN lp_space p m /\ v IN lp_space p m
+              ==> (\x. Normal a * u x + Normal b * v x) IN lp_space p m
 Proof
     cheat
 QED

@@ -4843,6 +4843,7 @@ Proof
  >> MATCH_MP_TAC SUBADDITIVE >> art []
  >> IMP_RES_TAC MEASURE_SPACE_SUBADDITIVE
 QED
+Theorem NULL_SET_UNION' = REWRITE_RULE [IN_NULL_SET] NULL_SET_UNION
 
 Theorem NULL_SET_INTER :
     !m N1 N2. measure_space m /\ N1 IN null_set m /\ N2 IN null_set m ==>
@@ -4861,6 +4862,7 @@ Proof
  >> reverse CONJ_TAC >- SET_TAC []
  >> IMP_RES_TAC MEASURE_SPACE_INCREASING
 QED
+Theorem NULL_SET_INTER' = REWRITE_RULE [IN_NULL_SET] NULL_SET_INTER
 
 Theorem NULL_SET_BIGUNION :
     !m f. measure_space m /\ (!n. f n IN null_set m) ==>
@@ -4883,6 +4885,7 @@ Proof
  >> MATCH_MP_TAC COUNTABLY_SUBADDITIVE
  >> rw [IN_FUNSET]
 QED
+Theorem NULL_SET_BIGUNION' = REWRITE_RULE [IN_NULL_SET] NULL_SET_BIGUNION
 
 Theorem SIGMA_ALGEBRA_COMPLETION :
     !m. measure_space m ==> sigma_algebra (completion m)
@@ -4988,6 +4991,12 @@ Proof
  >> rw [Once SUBSET_DEF]
  >> MATCH_MP_TAC MEASURE_SPACE_UNION >> art []
  >> FIRST_X_ASSUM irule >> Q.EXISTS_TAC ‘t’ >> art []
+QED
+
+Theorem COMPLETION_STABLE' :
+    !m. complete_measure_space m ==> completion m = measurable_space m
+Proof
+    PROVE_TAC [SPACE, COMPLETION_STABLE]
 QED
 
 (* ------------------------------------------------------------------------- *)
