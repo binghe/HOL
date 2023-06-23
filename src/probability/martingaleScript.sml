@@ -8003,6 +8003,7 @@ Theorem seminorm_cong :
              (!x. x IN m_space m ==> u x = v x) ==> seminorm p m u = seminorm p m v
 Proof
     rpt STRIP_TAC
+ >> cheat
 QED
 
 Theorem seminorm_cmul :
