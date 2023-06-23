@@ -7583,13 +7583,15 @@ Proof
  >> RW_TAC std_ss [sqrt_mul]
 QED
 
-(* This is the first part of Minkowski's inequality *)
-Theorem Minkowski_inequality_lemma[local] :
-    !p m u v. measure_space m /\ 1 <= p /\ u IN lp_space p m /\ v IN lp_space p m
+(* This is the first part of Minkowski's inequality
+
+   NOTE: ‘0 < p’ doesn't hold for Minkowski's inequality but hold for this lemma.
+ *)
+Theorem lp_space_add :
+    !p m u v. measure_space m /\ 0 < p /\ u IN lp_space p m /\ v IN lp_space p m
           ==> (\x. u x + v x) IN lp_space p m
 Proof
     rpt GEN_TAC >> STRIP_TAC
- >> ‘0 < p’ by PROVE_TAC [lte_trans, lt_01]
  >> ‘0 <= p’ by PROVE_TAC [lt_imp_le]
  >> ‘p <> NegInf’ by PROVE_TAC [pos_not_neginf]
   (* special case: p = PosInf *)
@@ -7736,18 +7738,14 @@ Proof
  >> MATCH_MP_TAC REAL_LT_IMP_LE >> art []
 QED
 
-(* not needed so far
-Theorem seminorm_cong_AE :
-    !m u v p. measure_space m /\ u IN lp_space p m /\ v IN lp_space p m /\
-             (AE x::m. u x = v x) ==> seminorm p m u = seminorm p m v
-Proof
-    cheat
-QED
- *)
-
-(* Minkowski's inequality (or triangle inequality of seminorm)
+(* Minkowski's Inequality (or triangle inequality of seminorm)
 
    see, e.g., Corollary 13.4 (Minkowski's inequality) [1, p.118]
+
+   NOTE: This inequality does NOT hold when ‘0 < p < 1’, in which case the inequality
+         became ‘seminorm p m u + seminorm p m v <= seminorm p m (\x. u x + v x)’,
+         namely "Reversed Minkowski's Inequality" (less useful), which can be proven
+         from the present Minkowski_inequality by considering u and (\x. 1 / v x).
  *)
 Theorem Minkowski_inequality :
     !p m u v. measure_space m /\ 1 <= p /\ u IN lp_space p m /\ v IN lp_space p m
@@ -7755,8 +7753,9 @@ Theorem Minkowski_inequality :
               seminorm p m (\x. u x + v x) <= seminorm p m u + seminorm p m v
 Proof
     rpt GEN_TAC >> STRIP_TAC
+ >> ‘0 < p’ by PROVE_TAC [lt_01, lte_trans]
  >> STRONG_CONJ_TAC
- >- (MATCH_MP_TAC Minkowski_inequality_lemma >> art [])
+ >- (MATCH_MP_TAC lp_space_add >> art [])
  >> DISCH_TAC
  (* special case *)
  >> Cases_on ‘p = PosInf’
@@ -7812,7 +7811,6 @@ Proof
      CCONTR_TAC >> FULL_SIMP_TAC bool_ss [] \\
      fs [extreal_abs_def, le_infty])
  (* general case *)
- >> ‘0 < p’ by PROVE_TAC [lt_01, lte_trans]
  >> ‘p <> 0’ by PROVE_TAC [lt_imp_ne]
  >> ‘0 <= p’ by rw [lt_imp_le]
  >> ‘p <> NegInf’ by rw [pos_not_neginf]
@@ -7994,6 +7992,57 @@ Proof
  >> CONJ_TAC (* 2 subgoals, same tactics *)
  >> MATCH_MP_TAC lt_imp_le
  >> MATCH_MP_TAC inv_pos' >> art []
+QED
+
+Theorem Minkowski_inequality' :
+    !p m u v. measure_space m /\ 1 <= p /\ u IN lp_space p m /\ v IN lp_space p m
+          ==> seminorm p m (\x. u x + v x) <= seminorm p m u + seminorm p m v
+Proof
+    rpt STRIP_TAC
+ >> METIS_TAC [Minkowski_inequality]
+QED
+
+Theorem seminorm_cong :
+    !m u v p. measure_space m /\ 0 < p /\ u IN lp_space p m /\ v IN lp_space p m /\
+             (!x. x IN m_space m ==> u x = v x) ==> seminorm p m u = seminorm p m v
+Proof
+    cheat
+QED
+
+Theorem seminorm_cong_AE :
+    !m u v p. measure_space m /\ 0 < p /\ u IN lp_space p m /\ v IN lp_space p m /\
+             (AE x::m. u x = v x) ==> seminorm p m u = seminorm p m v
+Proof
+    cheat
+QED
+
+Theorem seminorm_cmul :
+    !p m u c. measure_space m /\ 0 < p /\ u IN lp_space p m ==>
+              seminorm p m (\x. Normal c * u x) = Normal c * seminorm p m u
+Proof
+    cheat
+QED
+
+Theorem lp_space_cmul :
+    !p m u c. measure_space m /\ 0 < p /\ u IN lp_space p m ==>
+              (\x. Normal c * u x) IN lp_space p m
+Proof
+    cheat
+QED
+
+Theorem lp_space_add_cmul :
+    !p m u v a b.
+       measure_space m /\ 0 < p /\ u IN lp_space p m /\ v IN lp_space p m
+   ==> (\x. Normal a * u x + Normal b * v x) IN lp_space p m
+Proof
+    cheat
+QED
+
+Theorem lp_space_sub :
+    !p m u v. measure_space m /\ 0 < p /\ u IN lp_space p m /\ v IN lp_space p m
+          ==> (\x. u x - v x) IN lp_space p m
+Proof
+    cheat
 QED
 
 (* ========================================================================= *)
