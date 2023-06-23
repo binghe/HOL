@@ -6639,15 +6639,9 @@ Theorem lp_space_alt_infinite :
           ?c. 0 < c /\ c <> PosInf /\ AE x::m. abs (f x) < c)
 Proof
     rpt GEN_TAC >> STRIP_TAC
- >> Know ‘f IN measurable (m_space m,measurable_sets m) Borel ==>
-          !c. {x | x IN m_space m /\ c <= abs (f x)} IN measurable_sets m’
- >- (RW_TAC std_ss [le_abs_bounds] \\
-    ‘{x | x IN m_space m /\ (f x <= -c \/ c <= f x)} =
-       (({x | f x <= -c} INTER m_space m) UNION
-        ({x | c <= f x} INTER m_space m))’ by SET_TAC [] >> POP_ORW \\
-     MATCH_MP_TAC MEASURE_SPACE_UNION \\
-     rw [IN_MEASURABLE_BOREL_ALL_MEASURE])
- >> DISCH_TAC
+ >> ‘f IN measurable (m_space m,measurable_sets m) Borel ==>
+     !c. {x | x IN m_space m /\ c <= abs (f x)} IN measurable_sets m’
+       by rw [IN_MEASURABLE_BOREL_ALL_MEASURE_ABS']
  >> Know ‘f IN measurable (m_space m,measurable_sets m) Borel ==>
           !c. (AE x::m. abs (f x) < c) <=>
                null_set m {x | x IN m_space m /\ ~(abs (f x) < c)}’
@@ -6723,6 +6717,19 @@ Theorem seminorm_infty :
           inf {c | 0 < c /\ measure m {x | x IN m_space m /\ c <= abs (f x)} = 0}
 Proof
     rw [seminorm_def]
+QED
+
+Theorem seminorm_infty_alt :
+    !m f. measure_space m /\ f IN measurable (m_space m,measurable_sets m) Borel ==>
+          seminorm PosInf m f = inf {c | 0 < c /\ AE x::m. abs (f x) < c}
+Proof
+    rw [seminorm_infty]
+ >> Suff ‘!c. (AE x::m. abs (f x) < c) <=>
+              measure m {x | x IN m_space m /\ c <= abs (f x)} = 0’ >- rw []
+ >> Q.X_GEN_TAC ‘c’
+ >> HO_MATCH_MP_TAC AE_iff_measurable
+ >> rw [extreal_lt_def]
+ >> rw [IN_MEASURABLE_BOREL_ALL_MEASURE_ABS']
 QED
 
 (* was: 1 <= p *)
@@ -6889,9 +6896,6 @@ Theorem seminorm_eq_0 :
            (seminorm p m f = 0 <=> AE x::m. f x = 0)
 Proof
     rpt STRIP_TAC
- >> ‘sigma_algebra (measurable_space m)’
-      by PROVE_TAC [MEASURE_SPACE_SIGMA_ALGEBRA]
- (* This special case is very difficult! *)
  >> Cases_on ‘p = PosInf’
  >- (POP_ORW >> rw [seminorm_infty] \\
      reverse EQ_TAC >| (* 2 subgoals, first is easier *)
@@ -6901,13 +6905,7 @@ Proof
        >- (rpt STRIP_TAC \\
            fs [null_set_def] \\
            Q.ABBREV_TAC ‘s = {x | x IN m_space m /\ c <= abs (f x)}’ \\
-           Know ‘s IN measurable_sets m’
-           >- (rw [Abbr ‘s’, le_abs_bounds] \\
-              ‘{x | x IN m_space m /\ (f x <= -c \/ c <= f x)} =
-                 ({x | f x <= -c} INTER m_space m) UNION
-                 ({x | c <= f x} INTER m_space m)’ by SET_TAC [] >> POP_ORW \\
-               MATCH_MP_TAC MEASURE_SPACE_UNION >> art [] \\
-               METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE]) >> DISCH_TAC \\
+          ‘s IN measurable_sets m’ by rw [Abbr ‘s’, IN_MEASURABLE_BOREL_ALL_MEASURE_ABS'] \\
           ‘s = (s DIFF N) UNION (s INTER N)’ by SET_TAC [] >> POP_ORW \\
           ‘DISJOINT (s DIFF N) (s INTER N)’ by SET_TAC [DISJOINT_ALT] \\
            Know ‘measure m (s DIFF N UNION s INTER N) =
@@ -6945,21 +6943,13 @@ Proof
        (* goal 2 (of 2) *)
        DISCH_TAC \\
        Know ‘(AE x::m. f x = 0) <=> measure m {x | x IN m_space m /\ f x <> 0} = 0’
-       >- (HO_MATCH_MP_TAC AE_iff_measurable >> art [] \\
-          ‘{x | x IN m_space m /\ f x <> 0} = {x | f x <> 0} INTER m_space m’ by SET_TAC [] \\
-           POP_ORW >> METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE]) >> Rewr' \\
+       >- (HO_MATCH_MP_TAC AE_iff_measurable \\
+           rw [IN_MEASURABLE_BOREL_ALL_MEASURE_ABS']) >> Rewr' \\
       ‘!x. f x <> 0 <=> 0 < abs (f x)’ by PROVE_TAC [abs_gt_0] >> POP_ORW \\
-       Know ‘{x | x IN m_space m /\ 0 < abs (f x)} IN measurable_sets m’
-       >- (rw [abs_gt_0] \\
-          ‘{x | x IN m_space m /\ f x <> 0} = {x | f x <> 0} INTER m_space m’ by SET_TAC [] \\
-           POP_ORW >> METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE]) >> DISCH_TAC \\
-       Know ‘!c. {x | x IN m_space m /\ c <= abs (f x)} IN measurable_sets m’
-       >- (rw [le_abs_bounds] \\
-          ‘{x | x IN m_space m /\ (f x <= -c \/ c <= f x)} =
-              ({x | f x <= -c} INTER m_space m) UNION
-              ({x | c <= f x} INTER m_space m)’ by SET_TAC [] >> POP_ORW \\
-           MATCH_MP_TAC MEASURE_SPACE_UNION \\
-           METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE]) >> DISCH_TAC \\
+      ‘{x | x IN m_space m /\ 0 < abs (f x)} IN measurable_sets m’
+         by rw [IN_MEASURABLE_BOREL_ALL_MEASURE_ABS'] \\
+      ‘!c. {x | x IN m_space m /\ c <= abs (f x)} IN measurable_sets m’
+         by rw [IN_MEASURABLE_BOREL_ALL_MEASURE_ABS'] \\
     (* The measure inside ‘inf {}’ should be monotonic *)
        Q.ABBREV_TAC ‘H = \c. measure m {x | x IN m_space m /\ c <= abs (f x)}’ \\
     (* So it's actually decreasing, with smaller c the measure is larger *)
@@ -7031,9 +7021,7 @@ Proof
  >> ONCE_REWRITE_TAC [EQ_SYM_EQ]
  >> HO_MATCH_MP_TAC AE_iff_measurable
  >> simp [Abbr ‘g’, powr_eq_0]
- >> ‘{x | x IN m_space m /\ f x <> 0} = {x | f x <> 0} INTER m_space m’ by SET_TAC []
- >> POP_ORW
- >> METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE]
+ >> rw [IN_MEASURABLE_BOREL_ALL_MEASURE_ABS']
 QED
 
 (* was: 1 <= p, removed ‘p <> PosInf’ *)
@@ -7999,21 +7987,22 @@ Theorem Minkowski_inequality' :
           ==> seminorm p m (\x. u x + v x) <= seminorm p m u + seminorm p m v
 Proof
     rpt STRIP_TAC
- >> METIS_TAC [Minkowski_inequality]
-QED
-
-Theorem seminorm_cong :
-    !m u v p. measure_space m /\ 0 < p /\ u IN lp_space p m /\ v IN lp_space p m /\
-             (!x. x IN m_space m ==> u x = v x) ==> seminorm p m u = seminorm p m v
-Proof
-    cheat
+ >> drule Minkowski_inequality >> rw []
 QED
 
 Theorem seminorm_cong_AE :
     !m u v p. measure_space m /\ 0 < p /\ u IN lp_space p m /\ v IN lp_space p m /\
              (AE x::m. u x = v x) ==> seminorm p m u = seminorm p m v
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> cheat
+QED
+
+Theorem seminorm_cong :
+    !m u v p. measure_space m /\ 0 < p /\ u IN lp_space p m /\ v IN lp_space p m /\
+             (!x. x IN m_space m ==> u x = v x) ==> seminorm p m u = seminorm p m v
+Proof
+    rpt STRIP_TAC
 QED
 
 Theorem seminorm_cmul :
