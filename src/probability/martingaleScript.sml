@@ -7749,8 +7749,7 @@ Proof
  >> Cases_on ‘p = PosInf’
  >- (POP_ASSUM (FULL_SIMP_TAC std_ss o wrap) \\
     ‘u IN measurable (m_space m,measurable_sets m) Borel /\
-     v IN measurable (m_space m,measurable_sets m) Borel’
-       by fs [lp_space_def] \\
+     v IN measurable (m_space m,measurable_sets m) Borel’ by fs [lp_space_def] \\
     ‘(AE x::m. abs (u x) <= seminorm PosInf m u) /\
      (AE x::m. abs (v x) <= seminorm PosInf m v)’
        by METIS_TAC [seminorm_infty_AE_bound] \\
@@ -7995,7 +7994,27 @@ Theorem seminorm_cong_AE :
              (AE x::m. u x = v x) ==> seminorm p m u = seminorm p m v
 Proof
     rpt STRIP_TAC
- >> cheat
+ >> ‘u IN measurable (m_space m,measurable_sets m) Borel /\
+     v IN measurable (m_space m,measurable_sets m) Borel’ by fs [lp_space_def]
+ >> Cases_on ‘p = PosInf’
+ >- (rw [seminorm_infty_alt] \\
+     Suff ‘!c. (AE x::m. abs (u x) < c) <=> (AE x::m. abs (v x) < c)’ >- rw [] \\
+     Q.PAT_X_ASSUM ‘AE x::m. u x = v x’ MP_TAC \\
+     rw [AE_DEF] \\
+     rename1 ‘null_set m N0’ \\
+     EQ_TAC >> rw [] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       Q.EXISTS_TAC ‘N UNION N0’ >> rw [REWRITE_RULE [IN_NULL_SET] NULL_SET_UNION] \\
+      ‘v x = u x’ by PROVE_TAC [] >> POP_ORW \\
+       FIRST_X_ASSUM MATCH_MP_TAC >> art [],
+       (* goal 2 (of 2) *)
+       Q.EXISTS_TAC ‘N UNION N0’ >> rw [REWRITE_RULE [IN_NULL_SET] NULL_SET_UNION] ])
+ >> rw [seminorm_normal]
+ >> Suff ‘pos_fn_integral m (\x. abs (u x) powr p) =
+          pos_fn_integral m (\x. abs (v x) powr p)’ >- rw []
+ >> MATCH_MP_TAC pos_fn_integral_cong_AE >> rw [powr_pos]
+ >> HO_MATCH_MP_TAC AE_subset
+ >> Q.EXISTS_TAC ‘\x. u x = v x’ >> rw []
 QED
 
 Theorem seminorm_cong :
@@ -8003,7 +8022,9 @@ Theorem seminorm_cong :
              (!x. x IN m_space m ==> u x = v x) ==> seminorm p m u = seminorm p m v
 Proof
     rpt STRIP_TAC
- >> cheat
+ >> MATCH_MP_TAC seminorm_cong_AE
+ >> rw [AE_DEF]
+ >> Q.EXISTS_TAC ‘{}’ >> rw [NULL_SET_EMPTY]
 QED
 
 Theorem seminorm_cmul :

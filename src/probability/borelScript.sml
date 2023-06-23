@@ -2790,7 +2790,8 @@ Proof
  >> Q.EXISTS_TAC `f` >> RW_TAC std_ss [o_DEF]
 QED
 
-(* Below are a few theorems enhancing the existing IN_MEASURABLE_BOREL_ALL with ‘abs’ *)
+(* A few theorems enhancing the existing IN_MEASURABLE_BOREL_ALL with ‘abs’ *)
+
 Theorem IN_MEASURABLE_BOREL_ALL_ABS :
     !f a. sigma_algebra a /\ f IN measurable a Borel ==>
         (!c. {x | f x < c} INTER space a IN subsets a) /\
@@ -2839,13 +2840,11 @@ Theorem IN_MEASURABLE_BOREL_ALL_MEASURE_ABS :
         (!c. {x | abs (f x) <> c} INTER m_space m IN measurable_sets m)
 Proof
     rpt GEN_TAC >> STRIP_TAC
- >> MP_TAC
-      (REWRITE_RULE [space_def, subsets_def]
-         (Q.SPECL [‘f’, ‘measurable_space m’] IN_MEASURABLE_BOREL_ALL_ABS))
+ >> MP_TAC (REWRITE_RULE [space_def, subsets_def]
+             (Q.SPECL [‘f’, ‘measurable_space m’] IN_MEASURABLE_BOREL_ALL_ABS))
  >> FULL_SIMP_TAC std_ss [measure_space_def]
 QED
 
-(* NOTE: This one is the most useful *)
 Theorem IN_MEASURABLE_BOREL_ALL_MEASURE_ABS' :
    !m f. measure_space m /\ f IN Borel_measurable (measurable_space m) ==>
         (!c. {x | x IN m_space m /\ f x < c} IN measurable_sets m) /\
