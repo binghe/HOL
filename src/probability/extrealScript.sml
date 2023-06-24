@@ -6185,18 +6185,18 @@ Proof
  >> Q.EXISTS_TAC ‘SUC n’ >> rw []
 QED
 
-(* NOTE: This theorem doesn't hold in general, when r = 0 or ‘Normal r’ is PosInf *)
+(* NOTE: This theorem doesn't hold in general, when ‘r = 0’ or ‘Normal r = PosInf’ *)
 Theorem inf_cmul :
     !P r. 0 < r ==> inf {x * Normal r | 0 < x /\ P x} = Normal r * inf {x | 0 < x /\ P x}
 Proof
     rw [inf_eq']
  >| [ (* goal 1 (of 2) *)
      ‘x * Normal r = Normal r * x’ by rw [mul_comm] >> POP_ORW \\
-      MATCH_MP_TAC le_lmul_imp >> rw [REAL_LT_IMP_LE] \\
-      Cases_on ‘x = PosInf’ >- rw [] \\
+      MATCH_MP_TAC le_lmul_imp \\
+      CONJ_TAC >- rw [REAL_LT_IMP_LE, extreal_of_num_def, extreal_le_eq] \\
+      Cases_on ‘x = PosInf’ >- rw [le_infty] \\
       MATCH_MP_TAC le_epsilon >> rpt STRIP_TAC \\
-      MATCH_MP_TAC lt_imp_le \\
-      rw [GSYM inf_lt] \\
+      MATCH_MP_TAC lt_imp_le >> rw [GSYM inf_lt] \\
       Q.EXISTS_TAC ‘x’ >> art [] \\
       MATCH_MP_TAC lt_addr_imp >> art [] \\
       MATCH_MP_TAC pos_not_neginf \\
