@@ -8040,11 +8040,9 @@ Theorem seminorm_zero :
     !p m. measure_space m /\ 0 < p ==> seminorm p m (\x. 0) = 0
 Proof
     rpt STRIP_TAC
- >> ‘sigma_algebra (measurable_space m)’
-      by FULL_SIMP_TAC std_ss [measure_space_def]
  >> Know ‘(\x. 0) IN measurable (measurable_space m) Borel’
  >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_CONST \\
-     Q.EXISTS_TAC ‘0’ >> rw [])
+     Q.EXISTS_TAC ‘0’ >> fs [measure_space_def])
  >> DISCH_TAC
  >> Cases_on ‘p = PosInf’
  >- (rw [seminorm_infty_alt, inf_eq'] >| (* 2 subgoals *)
@@ -8059,16 +8057,14 @@ QED
 
 Theorem seminorm_cmul :
     !p m u r. measure_space m /\ 0 < p /\
-              u IN measurable (m_space m,measurable_sets m) Borel ==>
+              u IN measurable (measurable_space m) Borel ==>
               seminorm p m (\x. Normal r * u x) = Normal (abs r) * seminorm p m u
 Proof
     rpt STRIP_TAC
  >> Cases_on ‘r = 0’ >- rw [seminorm_zero, normal_0]
- >> ‘sigma_algebra (measurable_space m)’
-      by FULL_SIMP_TAC std_ss [measure_space_def]
  >> Know ‘(\x. Normal r * u x) IN measurable (measurable_space m) Borel’
  >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL \\
-     qexistsl_tac [‘u’, ‘r’] >> rw [])
+     qexistsl_tac [‘u’, ‘r’] >> fs [measure_space_def])
  >> DISCH_TAC
  >> Cases_on ‘p = PosInf’
  >- (rw [seminorm_infty_alt, abs_mul, extreal_abs_def] \\
@@ -8091,7 +8087,10 @@ Proof
            Suff ‘d * Normal (abs r) / Normal (abs r) = d’ >- rw [] \\
            ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
            MATCH_MP_TAC mul_div_refl >> rw [] ]) >> Rewr' \\
-     cheat)
+     Suff ‘!P. inf {d * Normal (abs r) | 0 < d /\ P d} =
+               Normal (abs r) * inf {c | 0 < c /\ P c}’ >- rw [] \\
+     MATCH_MP_TAC inf_cmul >> rw [abs_gt_0])
+ (* stage work *)
  >> cheat
 QED
 

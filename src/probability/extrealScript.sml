@@ -6185,6 +6185,35 @@ Proof
  >> Q.EXISTS_TAC ‘SUC n’ >> rw []
 QED
 
+(* NOTE: This theorem doesn't hold in general, when r = 0 or ‘Normal r’ is PosInf *)
+Theorem inf_cmul :
+    !P r. 0 < r ==> inf {x * Normal r | 0 < x /\ P x} = Normal r * inf {x | 0 < x /\ P x}
+Proof
+    rw [inf_eq']
+ >| [ (* goal 1 (of 2) *)
+     ‘x * Normal r = Normal r * x’ by rw [mul_comm] >> POP_ORW \\
+      MATCH_MP_TAC le_lmul_imp >> rw [REAL_LT_IMP_LE] \\
+      Cases_on ‘x = PosInf’ >- rw [] \\
+      MATCH_MP_TAC le_epsilon >> rpt STRIP_TAC \\
+      MATCH_MP_TAC lt_imp_le \\
+      rw [GSYM inf_lt] \\
+      Q.EXISTS_TAC ‘x’ >> art [] \\
+      MATCH_MP_TAC lt_addr_imp >> art [] \\
+      MATCH_MP_TAC pos_not_neginf \\
+      MATCH_MP_TAC lt_imp_le >> art [],
+      (* goal 2 (of 2) *)
+      ONCE_REWRITE_TAC [mul_comm] \\
+      Know ‘y <= inf {x | 0 < x /\ P x} * Normal r <=>
+            y / Normal r <= inf {x | 0 < x /\ P x}’
+      >- (MATCH_MP_TAC le_ldiv >> art []) >> Rewr' \\
+      rw [le_inf] >> rename1 ‘P z’ \\
+      Know ‘y / Normal r <= z <=> y <= z * Normal r’
+      >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+          MATCH_MP_TAC le_ldiv >> art []) >> Rewr' \\
+      FIRST_X_ASSUM MATCH_MP_TAC \\
+      Q.EXISTS_TAC ‘z’ >> art [] ]
+QED
+
 Theorem sup_comm : (* was: SUP_commute *)
     !f. sup {sup {f i j | j IN univ(:num)} | i IN univ(:num)} =
         sup {sup {f i j | i IN univ(:num)} | j IN univ(:num)}
