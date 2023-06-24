@@ -8036,10 +8036,31 @@ Proof
  >> Q.EXISTS_TAC ‘{}’ >> rw [NULL_SET_EMPTY]
 QED
 
+(* NOTE: there's no similar nice properties for ‘seminorm p m (\x. z)’ *)
+Theorem seminorm_zero :
+    !p m. measure_space m /\ 0 < p ==> seminorm p m (\x. 0) = 0
+Proof
+    rpt STRIP_TAC
+ >> ‘sigma_algebra (measurable_space m)’ by FULL_SIMP_TAC std_ss [measure_space_def]
+ >> Know ‘(\x. 0) IN measurable (measurable_space m) Borel’
+ >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_CONST \\
+     Q.EXISTS_TAC ‘0’ >> rw [])
+ >> DISCH_TAC
+ >> Cases_on ‘p = PosInf’
+ >- (rw [seminorm_infty_alt, inf_eq'] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       MATCH_MP_TAC lt_imp_le >> art [],
+       (* goal 2 (of 2) *)
+       MATCH_MP_TAC le_epsilon >> rw [] \\
+       FIRST_X_ASSUM MATCH_MP_TAC >> rw [AE_T] ])
+ >> ‘0 < inv p’ by PROVE_TAC [inv_pos']
+ >> rw [seminorm_normal, zero_rpow, pos_fn_integral_zero]
+QED
+
 Theorem seminorm_cmul :
-    !p m u c. measure_space m /\ 0 < p /\
-              u IN measurable (m_space m,measurable_sets m) Borel /\
-              seminorm p m (\x. Normal c * u x) = Normal c * seminorm p m u
+    !p m u z. measure_space m /\ 0 < p /\
+              u IN measurable (m_space m,measurable_sets m) Borel ==>
+              seminorm p m (\x. z * u x) = abs z * seminorm p m u
 Proof
     cheat
 QED
