@@ -8036,12 +8036,12 @@ Proof
  >> Q.EXISTS_TAC ‘{}’ >> rw [NULL_SET_EMPTY]
 QED
 
-(* NOTE: there's no similar nice properties for ‘seminorm p m (\x. z)’ *)
 Theorem seminorm_zero :
     !p m. measure_space m /\ 0 < p ==> seminorm p m (\x. 0) = 0
 Proof
     rpt STRIP_TAC
- >> ‘sigma_algebra (measurable_space m)’ by FULL_SIMP_TAC std_ss [measure_space_def]
+ >> ‘sigma_algebra (measurable_space m)’
+      by FULL_SIMP_TAC std_ss [measure_space_def]
  >> Know ‘(\x. 0) IN measurable (measurable_space m) Borel’
  >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_CONST \\
      Q.EXISTS_TAC ‘0’ >> rw [])
@@ -8058,16 +8058,46 @@ Proof
 QED
 
 Theorem seminorm_cmul :
-    !p m u z. measure_space m /\ 0 < p /\
+    !p m u r. measure_space m /\ 0 < p /\
               u IN measurable (m_space m,measurable_sets m) Borel ==>
-              seminorm p m (\x. z * u x) = abs z * seminorm p m u
+              seminorm p m (\x. Normal r * u x) = Normal (abs r) * seminorm p m u
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> Cases_on ‘r = 0’ >- rw [seminorm_zero, normal_0]
+ >> ‘sigma_algebra (measurable_space m)’
+      by FULL_SIMP_TAC std_ss [measure_space_def]
+ >> Know ‘(\x. Normal r * u x) IN measurable (measurable_space m) Borel’
+ >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL \\
+     qexistsl_tac [‘u’, ‘r’] >> rw [])
+ >> DISCH_TAC
+ >> Cases_on ‘p = PosInf’
+ >- (rw [seminorm_infty_alt, abs_mul, extreal_abs_def] \\
+    ‘!x c. Normal (abs r) * abs (u x) = abs (u x) * Normal (abs r)’
+        by PROVE_TAC [mul_comm] >> POP_ORW \\
+     Know ‘!x c. abs (u x) * Normal (abs r) < c <=> abs (u x) < c / Normal (abs r)’
+     >- (rpt GEN_TAC \\
+         ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+         MATCH_MP_TAC lt_rdiv >> rw [abs_gt_0]) >> Rewr' \\
+     Know ‘{c | 0 < c /\ AE x::m. abs (u x) < c / Normal (abs r)} =
+           {d * Normal (abs r) | 0 < d /\ AE y::m. abs (u y) < d}’
+     >- (rw [Once EXTENSION] >> EQ_TAC >> rw [] >| (* 3 subgoals *)
+         [ (* goal 1 (of 3) *)
+           Q.EXISTS_TAC ‘x / Normal (abs r)’ >> rw [] >| (* 2 subgoals *)
+           [ MATCH_MP_TAC div_mul_refl >> rw [],
+             MATCH_MP_TAC lt_div >> rw [abs_gt_0] ],
+           (* goal 2 (of 3) *)
+           MATCH_MP_TAC lt_mul >> rw [],
+           (* goal 3 (of 3) *)
+           Suff ‘d * Normal (abs r) / Normal (abs r) = d’ >- rw [] \\
+           ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+           MATCH_MP_TAC mul_div_refl >> rw [] ]) >> Rewr' \\
+     cheat)
+ >> cheat
 QED
 
 Theorem lp_space_cmul :
-    !p m u c. measure_space m /\ 0 < p /\ u IN lp_space p m ==>
-              (\x. Normal c * u x) IN lp_space p m
+    !p m u r. measure_space m /\ 0 < p /\ u IN lp_space p m ==>
+              (\x. Normal r * u x) IN lp_space p m
 Proof
     cheat
 QED

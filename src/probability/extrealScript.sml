@@ -2194,30 +2194,26 @@ Proof
 QED
 
 Theorem div_mul_refl :
-    !(x :extreal) r. r <> 0 ==> x = x / (Normal r) * (Normal r)
+    !(x :extreal) r. r <> 0 ==> x = x / Normal r * Normal r
 Proof
     RW_TAC std_ss [extreal_div_def, extreal_inv_def, GSYM mul_assoc, extreal_mul_def]
  >> RW_TAC real_ss [REAL_MUL_LINV, GSYM extreal_of_num_def, mul_rone]
 QED
 
+(* NOTE: removed ‘x <> PosInf /\ x <> NegInf’; changed ‘0 < r’ to ‘r <> 0’ *)
 Theorem mul_div_refl :
-    !(x :extreal) r. x <> PosInf /\ x <> NegInf /\ 0 < r ==>
-                    (x = x * (Normal r) / (Normal r))
+    !(x :extreal) r. r <> 0 ==> x = x * Normal r / Normal r
 Proof
     rpt STRIP_TAC
- >> Know `x * (Normal r) / (Normal r) = (inv (Normal r)) * (x * (Normal r))`
- >- (MATCH_MP_TAC div_eq_mul_linv \\
-    `?a. x = Normal a` by METIS_TAC [extreal_cases] \\
-     RW_TAC std_ss [extreal_not_infty, extreal_mul_def, extreal_of_num_def,
-                    extreal_lt_eq]) >> Rewr'
- >> ONCE_REWRITE_TAC [mul_comm]
- >> ONCE_REWRITE_TAC [GSYM mul_assoc]
- >> `Normal r * inv (Normal r) = inv (Normal r) * Normal r`
-      by PROVE_TAC [mul_comm] >> POP_ORW
- >> Know `inv (Normal r) * Normal r = 1`
- >- (MATCH_MP_TAC mul_linv_pos \\
-     RW_TAC std_ss [extreal_of_num_def, extreal_lt_eq, extreal_not_infty])
- >> Rewr' >> REWRITE_TAC [mul_rone]
+ >> ‘x * Normal r / Normal r = x * Normal r * inv (Normal r)’
+      by rw [extreal_div_def]
+ >> POP_ORW
+ >> ‘x * Normal r * inv (Normal r) = x * inv (Normal r) * Normal r’
+      by PROVE_TAC [mul_comm, mul_assoc]
+ >> POP_ORW
+ >> ‘x * inv (Normal r) = x / Normal r’ by rw [extreal_div_def]
+ >> POP_ORW
+ >> MATCH_MP_TAC div_mul_refl >> art []
 QED
 
 Theorem ldiv_le_imp :
