@@ -8036,6 +8036,35 @@ Proof
  >> Q.EXISTS_TAC ‘{}’ >> rw [NULL_SET_EMPTY]
 QED
 
+Theorem lp_space_cong :
+    !p m u v. measure_space m /\ 0 < p /\
+             (u IN Borel_measurable (measurable_space m) \/
+              v IN Borel_measurable (measurable_space m)) /\
+             (!x. x IN m_space m ==> u x = v x) ==>
+             (u IN lp_space p m <=> v IN lp_space p m)
+Proof
+    rpt STRIP_TAC
+ >> rw [lp_space_alt_seminorm]
+ >> ‘u IN measurable (m_space m,measurable_sets m) Borel /\
+     v IN measurable (m_space m,measurable_sets m) Borel’
+      by METIS_TAC [IN_MEASURABLE_BOREL_EQ]
+ (* 2 subgoals, same tactics *)
+ >> (Suff ‘seminorm p m u = seminorm p m v’ >- rw [] \\
+     MATCH_MP_TAC seminorm_cong >> art [])
+QED
+
+Theorem lp_space_cong_AE :
+    !p m u v. measure_space m /\ 0 < p /\
+              u IN Borel_measurable (measurable_space m) /\
+              v IN Borel_measurable (measurable_space m) /\
+             (AE x::m. u x = v x) ==> (u IN lp_space p m <=> v IN lp_space p m)
+Proof
+    rpt STRIP_TAC
+ >> rw [lp_space_alt_seminorm]
+ >> Suff ‘seminorm p m u = seminorm p m v’ >- rw []
+ >> MATCH_MP_TAC seminorm_cong_AE >> art []
+QED
+
 Theorem seminorm_zero :
     !p m. measure_space m /\ 0 < p ==> seminorm p m (\x. 0) = 0
 Proof
@@ -8142,21 +8171,74 @@ Theorem lp_space_cmul :
     !p m u r. measure_space m /\ 0 < p /\ u IN lp_space p m ==>
               (\x. Normal r * u x) IN lp_space p m
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> ‘seminorm p m u <> PosInf /\ seminorm p m u <> NegInf’
+       by PROVE_TAC [seminorm_not_infty]
+ >> ‘0 <= seminorm p m u’ by PROVE_TAC [seminorm_pos]
+ >> ‘u IN Borel_measurable (measurable_space m)’ by fs [lp_space_def]
+ >> Q.PAT_X_ASSUM ‘u IN lp_space p m’ MP_TAC
+ >> rw [lp_space_alt_seminorm, seminorm_cmul, GSYM lt_infty]
+ >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL \\
+     qexistsl_tac [‘u’, ‘r’] >> fs [measure_space_def])
+ >> ‘?z. seminorm p m u = Normal z’ by METIS_TAC [extreal_cases]
+ >> rw [extreal_mul_eq]
 QED
 
 Theorem lp_space_add_cmul :
     !p m u v a b. measure_space m /\ 0 < p /\ u IN lp_space p m /\ v IN lp_space p m
               ==> (\x. Normal a * u x + Normal b * v x) IN lp_space p m
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> HO_MATCH_MP_TAC lp_space_add
+ >> rw [lp_space_cmul]
 QED
 
 Theorem lp_space_sub :
     !p m u v. measure_space m /\ 0 < p /\ u IN lp_space p m /\ v IN lp_space p m
           ==> (\x. u x - v x) IN lp_space p m
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> ‘sigma_algebra (measurable_space m)’ by fs [measure_space_def]
+ >> ‘u IN Borel_measurable (measurable_space m) /\
+     v IN Borel_measurable (measurable_space m)’ by fs [lp_space_def]
+ >> MP_TAC (Q.SPECL [‘p’, ‘m’, ‘u’, ‘v’, ‘1’, ‘-1’] lp_space_add_cmul)
+ >> rw [normal_1, normal_minus1]
+ >> Suff ‘(\x. u x - v x) IN lp_space p m <=> (\x. u x + -1 * v x) IN lp_space p m’
+ >- rw []
+ >> MATCH_MP_TAC lp_space_cong_AE >> rw [] (* 3 subgoals *)
+ >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_SUB' \\
+     qexistsl_tac [‘u’, ‘v’] >> rw [])
+ >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_ADD' \\
+     qexistsl_tac [‘u’, ‘\x. -1 * v x’] >> rw [] \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL \\
+     qexistsl_tac [‘v’, ‘-1’] >> rw [normal_minus1])
+ >> Cases_on ‘p = PosInf’
+ >- (POP_ASSUM (fs o wrap) \\
+    ‘0 < PosInf’ by rw [] \\
+    ‘seminorm PosInf m u <> PosInf /\ seminorm PosInf m u <> NegInf’
+       by METIS_TAC [seminorm_not_infty] \\
+    ‘seminorm PosInf m v <> PosInf /\ seminorm PosInf m v <> NegInf’
+       by METIS_TAC [seminorm_not_infty] \\
+     Know ‘(AE x::m. abs (u x) <= seminorm PosInf m u) /\
+           (AE x::m. abs (v x) <= seminorm PosInf m v)’
+     >- METIS_TAC [seminorm_infty_AE_bound] \\
+     Q.ABBREV_TAC ‘cu = seminorm PosInf m u’ \\
+     Q.ABBREV_TAC ‘cv = seminorm PosInf m v’ \\
+    ‘?a. cu = Normal a’ by METIS_TAC [extreal_cases] \\
+    ‘?b. cv = Normal b’ by METIS_TAC [extreal_cases] \\
+     rw [AE_DEF, abs_bounds] \\
+     Q.EXISTS_TAC ‘N UNION N'’ >> rw [NULL_SET_UNION'] \\
+     REWRITE_TAC [GSYM neg_minus1] \\
+     MATCH_MP_TAC extreal_sub_add \\
+     DISJ1_TAC >> rw [lt_infty] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+        MATCH_MP_TAC lte_trans \\
+        Q.EXISTS_TAC ‘-Normal a’ >> rw [extreal_ainv_def],
+        (* goal 2 (of 2) *)
+        MATCH_MP_TAC let_trans \\
+        Q.EXISTS_TAC ‘Normal b’ >> rw [] ])
+ (* stage work *)
+ >> cheat
 QED
 
 (* ========================================================================= *)
