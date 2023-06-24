@@ -8037,19 +8037,17 @@ Proof
 QED
 
 Theorem lp_space_cong :
-    !p m u v. measure_space m /\ 0 < p /\
-             (u IN Borel_measurable (measurable_space m) \/
-              v IN Borel_measurable (measurable_space m)) /\
-             (!x. x IN m_space m ==> u x = v x) ==>
+    !p m u v. measure_space m /\ 0 < p /\ (!x. x IN m_space m ==> u x = v x) ==>
              (u IN lp_space p m <=> v IN lp_space p m)
 Proof
     rpt STRIP_TAC
  >> rw [lp_space_alt_seminorm]
+ >> EQ_TAC >> rpt STRIP_TAC
  >> ‘u IN measurable (m_space m,measurable_sets m) Borel /\
      v IN measurable (m_space m,measurable_sets m) Borel’
       by METIS_TAC [IN_MEASURABLE_BOREL_EQ]
  (* 2 subgoals, same tactics *)
- >> (Suff ‘seminorm p m u = seminorm p m v’ >- rw [] \\
+ >> (Suff ‘seminorm p m u = seminorm p m v’ >- (DISCH_THEN (fs o wrap)) \\
      MATCH_MP_TAC seminorm_cong >> art [])
 QED
 
@@ -8203,9 +8201,13 @@ Proof
      v IN Borel_measurable (measurable_space m)’ by fs [lp_space_def]
  >> MP_TAC (Q.SPECL [‘p’, ‘m’, ‘u’, ‘v’, ‘1’, ‘-1’] lp_space_add_cmul)
  >> rw [normal_1, normal_minus1]
- >> Suff ‘(\x. u x - v x) IN lp_space p m <=> (\x. u x + -1 * v x) IN lp_space p m’
- >- rw []
- >> MATCH_MP_TAC lp_space_cong_AE >> rw [] (* 3 subgoals *)
+ >> Suff ‘(\x. u x - v x) IN lp_space p m <=>
+          (\x. u x + -1 * v x) IN lp_space p m’ >- rw []
+ >> ‘seminorm p m u <> PosInf /\ seminorm p m u <> NegInf’
+      by METIS_TAC [seminorm_not_infty]
+ >> ‘seminorm p m v <> PosInf /\ seminorm p m v <> NegInf’
+      by METIS_TAC [seminorm_not_infty]
+ >> MATCH_MP_TAC lp_space_cong_AE >> rw [] (* 3 subgoals, first 2 are easy *)
  >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_SUB' \\
      qexistsl_tac [‘u’, ‘v’] >> rw [])
  >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_ADD' \\
@@ -8215,10 +8217,6 @@ Proof
  >> Cases_on ‘p = PosInf’
  >- (POP_ASSUM (fs o wrap) \\
     ‘0 < PosInf’ by rw [] \\
-    ‘seminorm PosInf m u <> PosInf /\ seminorm PosInf m u <> NegInf’
-       by METIS_TAC [seminorm_not_infty] \\
-    ‘seminorm PosInf m v <> PosInf /\ seminorm PosInf m v <> NegInf’
-       by METIS_TAC [seminorm_not_infty] \\
      Know ‘(AE x::m. abs (u x) <= seminorm PosInf m u) /\
            (AE x::m. abs (v x) <= seminorm PosInf m v)’
      >- METIS_TAC [seminorm_infty_AE_bound] \\
@@ -8232,11 +8230,11 @@ Proof
      MATCH_MP_TAC extreal_sub_add \\
      DISJ1_TAC >> rw [lt_infty] >| (* 2 subgoals *)
      [ (* goal 1 (of 2) *)
-        MATCH_MP_TAC lte_trans \\
-        Q.EXISTS_TAC ‘-Normal a’ >> rw [extreal_ainv_def],
-        (* goal 2 (of 2) *)
-        MATCH_MP_TAC let_trans \\
-        Q.EXISTS_TAC ‘Normal b’ >> rw [] ])
+       MATCH_MP_TAC lte_trans \\
+       Q.EXISTS_TAC ‘-Normal a’ >> rw [extreal_ainv_def],
+       (* goal 2 (of 2) *)
+       MATCH_MP_TAC let_trans \\
+       Q.EXISTS_TAC ‘Normal b’ >> rw [] ])
  (* stage work *)
  >> cheat
 QED
