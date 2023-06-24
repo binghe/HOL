@@ -7989,13 +7989,17 @@ Proof
  >> drule Minkowski_inequality >> rw []
 QED
 
+(* NOTE: ‘u IN measurable (m_space m,measurable_sets m) Borel’, e.g., and
+  ‘AE x::m. u x = v x’ together do NOT implies ‘v IN measurable ...’ unless
+   the measure space is complete, cf. IN_MEASURABLE_BOREL_AE_EQ.
+ *)
 Theorem seminorm_cong_AE :
-    !m u v p. measure_space m /\ 0 < p /\ u IN lp_space p m /\ v IN lp_space p m /\
+    !m u v p. measure_space m /\ 0 < p /\
+              u IN measurable (m_space m,measurable_sets m) Borel /\
+              v IN measurable (m_space m,measurable_sets m) Borel /\
              (AE x::m. u x = v x) ==> seminorm p m u = seminorm p m v
 Proof
     rpt STRIP_TAC
- >> ‘u IN measurable (m_space m,measurable_sets m) Borel /\
-     v IN measurable (m_space m,measurable_sets m) Borel’ by fs [lp_space_def]
  >> Cases_on ‘p = PosInf’
  >- (rw [seminorm_infty_alt] \\
      Suff ‘!c. (AE x::m. abs (u x) < c) <=> (AE x::m. abs (v x) < c)’ >- rw [] \\
@@ -8018,10 +8022,15 @@ Proof
 QED
 
 Theorem seminorm_cong :
-    !m u v p. measure_space m /\ 0 < p /\ u IN lp_space p m /\ v IN lp_space p m /\
+    !m u v p. measure_space m /\ 0 < p /\
+             (u IN measurable (m_space m,measurable_sets m) Borel \/
+              v IN measurable (m_space m,measurable_sets m) Borel) /\
              (!x. x IN m_space m ==> u x = v x) ==> seminorm p m u = seminorm p m v
 Proof
     rpt STRIP_TAC
+ >> ‘u IN measurable (m_space m,measurable_sets m) Borel /\
+     v IN measurable (m_space m,measurable_sets m) Borel’
+      by METIS_TAC [IN_MEASURABLE_BOREL_EQ]
  >> MATCH_MP_TAC seminorm_cong_AE
  >> rw [AE_DEF]
  >> Q.EXISTS_TAC ‘{}’ >> rw [NULL_SET_EMPTY]
