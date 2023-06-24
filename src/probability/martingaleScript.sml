@@ -8091,7 +8091,51 @@ Proof
                Normal (abs r) * inf {c | 0 < c /\ P c}’ >- rw [] \\
      MATCH_MP_TAC inf_cmul >> rw [abs_gt_0])
  (* stage work *)
- >> cheat
+ >> rw [seminorm_normal, abs_mul, extreal_abs_def]
+ >> Know ‘!x. (Normal (abs r) * abs (u x)) powr p =
+              Normal (abs r) powr p * abs (u x) powr p’
+ >- (Q.X_GEN_TAC ‘x’ >> MATCH_MP_TAC mul_powr >> rw [])
+ >> Rewr'
+ >> ‘p <> NegInf’ by PROVE_TAC [pos_not_neginf, lt_imp_le]
+ >> ‘?z. 0 < z /\ p = Normal z’
+       by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_lt_eq]
+ >> POP_ORW
+ (* applying IN_MEASURABLE_BOREL_ABS_POWR *)
+ >> Know ‘(\x. abs (u x) powr Normal z) IN Borel_measurable (measurable_space m)’
+ >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_ABS_POWR \\
+     rw [REAL_LT_IMP_LE])
+ >> DISCH_TAC
+ >> Know ‘pos_fn_integral m (\x. Normal (abs r) powr Normal z * abs (u x) powr Normal z) =
+          Normal (abs r) powr Normal z * pos_fn_integral m (\x. abs (u x) powr Normal z)’
+ >- (Know ‘Normal (abs r) powr (Normal z) = Normal (abs r powr z)’
+     >- (MATCH_MP_TAC normal_powr >> rw []) >> Rewr' \\
+     HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [powr_pos] \\
+     MATCH_MP_TAC REAL_LT_IMP_LE \\
+     MATCH_MP_TAC RPOW_POS_LT >> rw [])
+ >> Rewr'
+ (* final stage *)
+ >> Q.ABBREV_TAC ‘y = pos_fn_integral m (\x. abs (u x) powr Normal z)’
+ >> Know ‘0 <= y’
+ >- (Q.UNABBREV_TAC ‘y’ \\
+     MATCH_MP_TAC pos_fn_integral_pos >> rw [powr_pos])
+ >> DISCH_TAC
+ >> Know ‘(Normal (abs r) powr (Normal z) * y) powr inv (Normal z) =
+          (Normal (abs r) powr (Normal z)) powr inv (Normal z) * y powr inv (Normal z)’
+ >- (MATCH_MP_TAC mul_powr \\
+    ‘Normal z <> 0’ by rw [REAL_LT_IMP_NE] \\
+     rw [inv_pos', inv_not_infty, powr_pos])
+ >> Rewr'
+ >> Suff ‘(Normal (abs r) powr Normal z) powr inv (Normal z) = Normal (abs r)’ >- rw []
+ >> Know ‘(Normal (abs r) powr Normal z) powr inv (Normal z) =
+           Normal (abs r) powr (Normal z * inv (Normal z))’
+ >- (MATCH_MP_TAC powr_powr \\
+    ‘Normal z <> 0’ by rw [REAL_LT_IMP_NE] \\
+     rw [inv_pos', inv_not_infty, powr_pos])
+ >> Rewr'
+ >> Suff ‘Normal z * inv (Normal z) = 1’
+ >- (Rewr' >> rw [powr_1])
+ >> ONCE_REWRITE_TAC [mul_comm]
+ >> MATCH_MP_TAC mul_linv_pos >> rw []
 QED
 
 Theorem lp_space_cmul :
