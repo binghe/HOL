@@ -8191,6 +8191,44 @@ Proof
  >> rw [lp_space_cmul]
 QED
 
+(* cf. lp_space_alt_finite, lp_space_alt_infinite *)
+Theorem lp_space_AE_normal :
+    !p m f. measure_space m /\ 0 < p /\ f IN lp_space p m ==>
+            AE x::m. f x <> PosInf /\ f x <> NegInf
+Proof
+    rpt STRIP_TAC
+ >> Cases_on ‘p = PosInf’
+ >- (‘?c. 0 < c /\ c <> PosInf /\ AE x::m. abs (f x) < c’
+        by METIS_TAC [lp_space_alt_infinite] \\
+     POP_ASSUM MP_TAC >> rw [AE_DEF, abs_bounds_lt, lt_infty] \\
+     Q.EXISTS_TAC ‘N’ >> rw [] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       MATCH_MP_TAC lt_trans >> Q.EXISTS_TAC ‘c’ >> rw [GSYM lt_infty],
+       (* goal 2 (of 2) *)
+       MATCH_MP_TAC lt_trans >> Q.EXISTS_TAC ‘-c’ >> rw [GSYM lt_infty] \\
+      ‘NegInf = -PosInf’ by rw [extreal_ainv_def] >> POP_ORW \\
+       rw [eq_neg] ])
+ >> ‘f IN Borel_measurable (measurable_space m) /\
+     pos_fn_integral m (\x. abs (f x) powr p) <> PosInf’
+       by METIS_TAC [lp_space_alt_finite]
+ (* applying pos_fn_integral_infty_null *)
+ >> Q.ABBREV_TAC ‘g = \x. abs (f x) powr p’
+ >> Know ‘null_set m {x | x IN m_space m /\ g x = PosInf}’
+ >- (MATCH_MP_TAC pos_fn_integral_infty_null >> art [] \\
+     CONJ_TAC >- rw [Abbr ‘g’, powr_pos] \\
+     Q.UNABBREV_TAC ‘g’ \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_ABS_POWR >> rw [lt_imp_le])
+ >> DISCH_TAC
+ >> rw [AE_DEF]
+ >> Q.EXISTS_TAC ‘{x | x IN m_space m /\ g x = PosInf}’
+ >> rw [Abbr ‘g’] >> CCONTR_TAC (* 2 subgoals, same tactics *)
+ >> gs [extreal_abs_def, infty_powr]
+QED
+
+(* NOTE: the difficulity of this corollary of lp_space_add_cmul is that,
+   to convert ‘1 * u x + -1 * v x’ to ‘u x - v x’, the nullsets such that
+   u x (or v x) = PosInf (or NegInf) must be avoided.
+ *)
 Theorem lp_space_sub :
     !p m u v. measure_space m /\ 0 < p /\ u IN lp_space p m /\ v IN lp_space p m
           ==> (\x. u x - v x) IN lp_space p m
@@ -8235,8 +8273,17 @@ Proof
        (* goal 2 (of 2) *)
        MATCH_MP_TAC let_trans \\
        Q.EXISTS_TAC ‘Normal b’ >> rw [] ])
- (* stage work *)
- >> cheat
+ (* stage work, using lp_space_AE_normal, etc. *)
+ >> Know ‘(AE x::m. u x <> PosInf /\ u x <> NegInf) /\
+          (AE x::m. v x <> PosInf /\ v x <> NegInf)’
+ >- METIS_TAC [lp_space_AE_normal]
+ >> rw [AE_DEF, GSYM neg_minus1]
+ >> Q.EXISTS_TAC ‘N UNION N'’ >> rw [NULL_SET_UNION']
+ >> ‘u x <> PosInf /\ u x <> NegInf /\
+     v x <> PosInf /\ v x <> NegInf’ by PROVE_TAC []
+ >> ‘?a. u x = Normal a’ by METIS_TAC [extreal_cases]
+ >> ‘?b. v x = Normal b’ by METIS_TAC [extreal_cases]
+ >> rw [extreal_add_def, extreal_sub_def, extreal_ainv_def, real_sub]
 QED
 
 (* ========================================================================= *)
