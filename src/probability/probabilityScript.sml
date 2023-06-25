@@ -3,10 +3,10 @@
 (* Authors: Tarek Mhamdi, Osman Hasan, Sofiene Tahar                         *)
 (* HVG Group, Concordia University, Montreal                                 *)
 (*                                                                           *)
-(* Further enriched by Chun Tian <binghe.lisp@gmail.com> (2019 - 2022)       *)
+(* Further enriched by Chun Tian <binghe.lisp@gmail.com> (2019 - 2023)       *)
 (* Fondazione Bruno Kessler and University of Trento, Italy                  *)
 (* ------------------------------------------------------------------------- *)
-(* Based on the work of Joe Hurd [7] and Aaron Coble [8]                     *)
+(* Originally based on the work of Joe Hurd [7] and Aaron Coble [8]          *)
 (* Cambridge University.                                                     *)
 (* ========================================================================= *)
 
@@ -5459,20 +5459,16 @@ Theorem converge_AE :
 Proof
     rw [converge_AE_def, real_random_variable_def, p_space_def]
  >> EQ_TAC >> rw [AE_DEF]
+ >> Q.EXISTS_TAC ‘N’ >> rw []
+ >> Q.PAT_X_ASSUM ‘!x. x IN m_space p /\ x NOTIN N ==> P’ (MP_TAC o (Q.SPEC ‘x’))
+ >> RW_TAC std_ss [] (* 2 subgoals, same ending tactics *)
  >| [ (* goal 1 (of 2) *)
-      Q.EXISTS_TAC ‘N’ >> rw [] \\
-      Q.PAT_X_ASSUM ‘!x. x IN m_space p /\ x NOTIN N ==> P’ (MP_TAC o (Q.SPEC ‘x’)) \\
-      RW_TAC std_ss [] \\
       Suff ‘((\n. X n x) --> Y x) sequentially <=>
-            (real o (\n. X n x) --> real (Y x)) sequentially’ >- rw [o_DEF] \\
-      MATCH_MP_TAC extreal_lim_sequentially_eq >> rw [],
+            (real o (\n. X n x) --> real (Y x)) sequentially’ >- rw [o_DEF],
       (* goal 2 (of 2) *)
-      Q.EXISTS_TAC ‘N’ >> rw [] \\
-      Q.PAT_X_ASSUM ‘!x. x IN m_space p /\ x NOTIN N ==> P’ (MP_TAC o (Q.SPEC ‘x’)) \\
-      RW_TAC std_ss [] \\
       Suff ‘((\n. X n x) --> Y x) sequentially <=>
-            (real o (\n. X n x) --> real (Y x)) sequentially’ >- fs [o_DEF] \\
-      MATCH_MP_TAC extreal_lim_sequentially_eq >> rw [] ]
+            (real o (\n. X n x) --> real (Y x)) sequentially’ >- fs [o_DEF] ]
+ >> MATCH_MP_TAC extreal_lim_sequentially_eq >> rw []
 QED
 
 (* |- !p X Y.
@@ -5525,22 +5521,17 @@ Proof
  >- rw [Abbr ‘A’, Abbr ‘g’, FUN_EQ_THM]
  >> Rewr'
  >> EQ_TAC >> rw []
+ >> Q.PAT_X_ASSUM ‘!e. 0 < e /\ e <> PosInf ==> P’ (MP_TAC o (Q.SPEC ‘e’))
+ >> RW_TAC std_ss [] (* 2 subgoals, same initial & ending tactics *)
  >| [ (* goal 1 (of 2) *)
-      Q.PAT_X_ASSUM ‘!e. 0 < e /\ e <> PosInf ==> P’ (MP_TAC o (Q.SPEC ‘e’)) \\
-      RW_TAC std_ss [] \\
       Suff ‘(g e --> 0) sequentially <=> (real o g e --> real 0) sequentially’
-      >- rw [real_0] \\
-      MATCH_MP_TAC extreal_lim_sequentially_eq >> rw [] \\
-      Q.EXISTS_TAC ‘0’ >> GEN_TAC >> simp [Abbr ‘g’] \\
-      PROVE_TAC [PROB_FINITE],
+      >- rw [real_0],
       (* goal 2 (of 2) *)
-      Q.PAT_X_ASSUM ‘!e. 0 < e /\ e <> PosInf ==> P’ (MP_TAC o (Q.SPEC ‘e’)) \\
-      RW_TAC std_ss [] \\
       Suff ‘(g e --> 0) sequentially <=> (real o g e --> real 0) sequentially’
-      >- fs [real_0] \\
-      MATCH_MP_TAC extreal_lim_sequentially_eq >> rw [] \\
-      Q.EXISTS_TAC ‘0’ >> GEN_TAC >> simp [Abbr ‘g’] \\
-      PROVE_TAC [PROB_FINITE] ]
+      >- fs [real_0] ]
+ >> MATCH_MP_TAC extreal_lim_sequentially_eq >> rw []
+ >> Q.EXISTS_TAC ‘0’ >> GEN_TAC >> simp [Abbr ‘g’]
+ >> PROVE_TAC [PROB_FINITE]
 QED
 
 (* |- !p X Y r.
@@ -5552,27 +5543,36 @@ QED
 Theorem converge_LP_def =
    (List.nth (CONJUNCTS converge_def, 2)) |> SPEC_ALL |> (Q.GENL [`p`, `X`, `Y`, `r`]);
 
-(* An equivalent definition using extreal_lim (ext_tendsto) and lp_space, when r >= 1
-
-   NOTE: This proof needs Minkowski_inequality, which is why r >= 1 must be assumed.
- *)
+(* An equivalent definition using extreal_lim (ext_tendsto) and lp_space *)
 Theorem converge_LP :
     !p X Y r. prob_space p /\
              (!n. real_random_variable (X n) p) /\ real_random_variable Y p /\
-              1 <= r /\ r <> PosInf ==>
+              0 < r /\ r <> PosInf ==>
        ((X --> Y) (in_lebesgue r p) <=>
         (!n. X n IN lp_space r p) /\ Y IN lp_space r p /\
         ((\n. expectation p (\x. abs (X n x - Y x) powr r)) --> 0) sequentially)
 Proof
-    rw [converge_LP_def, real_random_variable, expectation_def,
-        prob_space_def, p_space_def, events_def]
- >> ‘0 < r’ by PROVE_TAC [lte_trans, lt_01]
- >> simp [lp_space_alt_finite']
- >> EQ_TAC >> rw []
- >| [ (* goal 1 (of 2) *)
-      cheat,
-      (* goal 2 (of 2) *)
-      cheat ]
+    rw [converge_LP_def, real_random_variable, expectation_def, prob_space_def,
+        p_space_def, events_def]
+ >> EQ_TAC >> rw [lp_space_alt_finite']
+ (* 2 subgoals, same initial & ending tactics *)
+ >> ‘(!n. X n IN lp_space r p) /\ Y IN lp_space r p’
+      by METIS_TAC [lp_space_alt_finite']
+ >> ‘!n. (\x. X n x - Y x) IN lp_space r p’ by METIS_TAC [lp_space_sub]
+ >> ‘!n. integral p (\x. abs (X n x - Y x) powr r) <> PosInf’
+      by METIS_TAC [lp_space_alt_finite']
+ >> Q.ABBREV_TAC ‘f = (\n. integral p (\x. abs (X n x - Y x) powr r))’
+ >> ‘(\n. real (integral p (\x. abs (X n x - Y x) powr r))) = real o f’
+      by rw [Abbr ‘f’, FUN_EQ_THM] >> fs []
+ >| [ Suff ‘(f --> 0) sequentially <=> (real o f --> real 0) sequentially’
+      >- rw [real_0],
+      Suff ‘(f --> 0) sequentially <=> (real o f --> real 0) sequentially’
+      >- fs [real_0] ]
+ >> MATCH_MP_TAC extreal_lim_sequentially_eq >> rw []
+ >> Q.EXISTS_TAC ‘0’ >> rw []
+ >> MATCH_MP_TAC pos_not_neginf
+ >> simp [Abbr ‘f’]
+ >> MATCH_MP_TAC integral_pos >> rw [powr_pos]
 QED
 
 (* tidy up theory exports, learnt from Magnus Myreen *)
