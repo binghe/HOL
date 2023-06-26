@@ -1853,25 +1853,12 @@ val neg_mul2 = store_thm
     rpt Cases >> RW_TAC real_ss [extreal_mul_def, extreal_ainv_def, REAL_NEG_EQ0]
  >> METIS_TAC [REAL_LT_NEG, REAL_NEG_0, REAL_LT_ANTISYM, real_lt, REAL_LE_ANTISYM]);
 
-(* NOTE: basically all involves values are normal reals *)
+(* NOTE: the number of necessary antecedents are reduced *)
 Theorem add2_sub2 :
-    !a b c d. a <> PosInf /\ b <> PosInf /\ c <> PosInf /\ d <> PosInf /\
-              a <> NegInf /\ b <> NegInf /\ c <> NegInf /\ d <> NegInf
-         ==> a - b + (c - d) = a + c - (b + d)
-Proof
-    rpt Cases
- >> RW_TAC std_ss [extreal_add_def, extreal_sub_def]
- >> REWRITE_TAC [REAL_ADD2_SUB2]
-QED
-
-(* Another version with less constraints (useful in integral_add) *)
-Theorem add2_sub2' :
     !a b c d. a <> NegInf /\ b <> PosInf /\ c <> NegInf /\ d <> PosInf
           ==> a - b + (c - d) = a + c - (b + d)
 Proof
-    rpt Cases
- >> rw [extreal_sub, extreal_add_def, extreal_ainv_def]
- >> REAL_ARITH_TAC
+    rpt Cases >> rw [extreal_sub_def, extreal_add_def, REAL_ADD2_SUB2]
 QED
 
 val sub_ldistrib = store_thm

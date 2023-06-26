@@ -6238,11 +6238,7 @@ Proof
            >- (rw [fn_minus_def] >> METIS_TAC [neg_neg, extreal_ainv_def]) >> STRIP_TAC \\
           ‘fn_plus f x <> NegInf /\ fn_plus g x <> NegInf’
               by PROVE_TAC [FN_PLUS_POS, pos_not_neginf] \\
-           Q.ABBREV_TAC `a = fn_plus f x` \\
-           Q.ABBREV_TAC `b = fn_minus f x` \\
-           Q.ABBREV_TAC `c = fn_plus g x` \\
-           Q.ABBREV_TAC `d = fn_minus g x` \\
-           MATCH_MP_TAC add2_sub2' >> art []) \\
+           MATCH_MP_TAC add2_sub2 >> art []) \\
        Cases_on ‘fn_minus f x = PosInf’
        >- (‘fn_plus f x = 0’ by METIS_TAC [FN_MINUS_INFTY_IMP] >> rw [extreal_ainv_def] \\
            ‘fn_plus g x <> PosInf’ by PROVE_TAC [FN_PLUS_NOT_INFTY] \\
@@ -6264,11 +6260,7 @@ Proof
            rw [extreal_add_def, extreal_sub_def]) \\
       ‘fn_plus f x <> NegInf /\ fn_plus g x <> NegInf’
           by PROVE_TAC [FN_PLUS_POS, pos_not_neginf] \\
-       Q.ABBREV_TAC `a = fn_plus f x` \\
-       Q.ABBREV_TAC `b = fn_minus f x` \\
-       Q.ABBREV_TAC `c = fn_plus g x` \\
-       Q.ABBREV_TAC `d = fn_minus g x` \\
-       MATCH_MP_TAC add2_sub2' >> art [],
+       MATCH_MP_TAC add2_sub2 >> art [],
        (* goal 4 (of 4) *)
        Q.PAT_X_ASSUM ‘!x. x IN m_space m ==> P \/ Q’ (MP_TAC o (Q.SPEC ‘x’)) \\
        RW_TAC std_ss [] >| (* 2 subgoals *)
