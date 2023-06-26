@@ -1352,9 +1352,14 @@ Proof
     NTAC 2 Cases >> RW_TAC std_ss [extreal_ainv_def, REAL_EQ_NEG]
 QED
 
-val neg_minus1 = store_thm
-  ("neg_minus1", ``!x. -x = -1 * x``,
-    Cases >> RW_TAC real_ss [extreal_ainv_def,extreal_of_num_def,extreal_mul_def]);
+(* NOTE: using this theorem directly in any rewriting tactics will cause a self loop,
+         while (GSYM neg_minus1) is more useful in turning ‘-1 * x’ to -x.
+ *)
+Theorem neg_minus1 :
+    !x. -x = -1 * x
+Proof
+    Cases >> RW_TAC real_ss [extreal_ainv_def,extreal_of_num_def,extreal_mul_def]
+QED
 
 (* changed statements (was ``!x y :extreal. x - -y = x + y``) *)
 val sub_rneg = store_thm
