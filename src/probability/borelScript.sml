@@ -2739,6 +2739,14 @@ Proof
  >> REWRITE_TAC [extreal_of_num_def, extreal_ainv_def]
 QED
 
+Theorem IN_MEASURABLE_BOREL_AINV :
+    !a f. sigma_algebra a /\ f IN measurable a Borel ==> (\x. -f x) IN measurable a Borel
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC IN_MEASURABLE_BOREL_MINUS
+ >> Q.EXISTS_TAC ‘f’ >> rw []
+QED
+
 val IN_MEASURABLE_BOREL_ABS = store_thm
   ("IN_MEASURABLE_BOREL_ABS",
   ``!a f g. sigma_algebra a /\ f IN measurable a Borel /\
@@ -6553,8 +6561,10 @@ Proof
        IN_MEASURABLE_BOREL_ADD_tactics_5n ])
 QED
 
-(* NOTE: this new, natural proof is only possible after the new definition of ‘extreal_sub’ *)
-Theorem IN_MEASURABLE_BOREL_SUB' : (* cf. IN_MEASURABLE_BOREL_SUB *)
+(* NOTE: this new, natural proof is only possible after the new definition of
+        ‘extreal_sub’, cf. IN_MEASURABLE_BOREL_SUB
+ *)
+Theorem IN_MEASURABLE_BOREL_SUB' :
     !a f g h. sigma_algebra a /\ f IN measurable a Borel /\ g IN measurable a Borel /\
               (!x. x IN space a ==> (h x = f x - g x)) ==> h IN measurable a Borel
 Proof
@@ -6562,8 +6572,7 @@ Proof
  >> MATCH_MP_TAC IN_MEASURABLE_BOREL_ADD'
  >> qexistsl_tac [‘f’, ‘\x. -g x’]
  >> reverse (rw []) >- rw [extreal_sub]
- >> MATCH_MP_TAC IN_MEASURABLE_BOREL_MINUS
- >> Q.EXISTS_TAC ‘g’ >> rw []
+ >> MATCH_MP_TAC IN_MEASURABLE_BOREL_AINV >> art []
 QED
 
 (* ------------------------------------------------------------------------- *)
