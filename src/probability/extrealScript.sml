@@ -1471,26 +1471,9 @@ val sub_infty = store_thm
     RW_TAC std_ss []
  >> Cases_on `x` >> fs [extreal_sub_def]);
 
-val abs_unbounds = store_thm
-  ("abs_unbounds", ``!x k :extreal. 0 <= k ==> (k <= abs x <=> x <= -k \/ k <= x)``,
-    rpt STRIP_TAC
- >> Cases_on `0 <= x`
- >- (`abs x = x` by PROVE_TAC [abs_refl] >> POP_ORW \\
-     EQ_TAC >> RW_TAC std_ss [] \\
-     `-k <= 0` by METIS_TAC [le_neg, neg_neg, neg_0] \\
-     `x <= 0` by PROVE_TAC [le_trans] \\
-     `x = 0` by PROVE_TAC [le_antisym] >> fs [] \\
-     METIS_TAC [le_neg, neg_neg, neg_0])
- >> fs [GSYM extreal_lt_def]
- >> `abs x = -x` by PROVE_TAC [abs_neg] >> POP_ORW
- >> EQ_TAC >> RW_TAC std_ss [] (* 3 subgoals *)
- >| [ (* goal 1 (of 3) *)
-      `x <= -k` by PROVE_TAC [le_neg, neg_neg] >> DISJ1_TAC >> art [],
-      (* goal 2 (of 3) *)
-      PROVE_TAC [le_neg, neg_neg],
-      (* goal 3 (of 3), the impossible case *)
-      `k < 0` by PROVE_TAC [let_trans] \\
-      PROVE_TAC [let_antisym] ]);
+(* NOTE: removed antecent ‘0 <= k’
+   |- !k x. k <= abs x <=> x <= -k \/ k <= x *)
+Theorem abs_unbounds = le_abs_bounds
 
 Theorem le_abs :
     !x :extreal. x <= abs x /\ -x <= abs x
@@ -1552,13 +1535,58 @@ Proof
  >> rw [extreal_abs_def, extreal_add_def, extreal_le_eq, ABS_TRIANGLE]
 QED
 
+(* NOTE: although is possible that ‘x + y’ may be unspecific, this unspecific
+         value is indeed <= PosInf
+ *)
+Theorem abs_triangle_full :
+    !x y. abs(x + y) <= abs(x) + abs(y)
+Proof
+    rpt GEN_TAC
+ >> Cases_on ‘x <> PosInf /\ x <> NegInf’
+ >- (Cases_on ‘y <> PosInf /\ y <> NegInf’
+     >- (MATCH_MP_TAC abs_triangle >> art []) \\
+    ‘abs y = PosInf’ by fs [extreal_abs_def] >> POP_ORW \\
+     Suff ‘abs x + PosInf = PosInf’ >- rw [le_infty] \\
+     Suff ‘abs x <> NegInf’ >- METIS_TAC [add_infty] \\
+     MATCH_MP_TAC pos_not_neginf >> rw [abs_pos])
+ >> ‘abs x = PosInf’ by fs [extreal_abs_def] >> POP_ORW
+ >> Suff ‘PosInf + abs y = PosInf’ >- rw [le_infty]
+ >> Suff ‘abs y <> NegInf’ >- METIS_TAC [add_infty]
+ >> MATCH_MP_TAC pos_not_neginf >> rw [abs_pos]
+QED
+
 Theorem abs_triangle_sub :
     !x y. x <> PosInf /\ x <> NegInf /\ y <> PosInf /\ y <> NegInf ==>
           abs(x) <= abs(y) + abs(x - y)
 Proof
     RW_TAC std_ss []
  >> Cases_on `x` >> Cases_on `y`
- >> rw [extreal_abs_def, extreal_add_def, extreal_sub_def, extreal_le_eq, ABS_TRIANGLE_SUB]
+ >> rw [extreal_abs_def, extreal_add_def, extreal_sub_def, extreal_le_eq,
+        ABS_TRIANGLE_SUB]
+QED
+
+Theorem abs_triangle_sub_full :
+    !x y. abs(x) <= abs(y) + abs(x - y)
+Proof
+    rpt GEN_TAC
+ >> Cases_on ‘x <> PosInf /\ x <> NegInf’
+ >- (Cases_on ‘y <> PosInf /\ y <> NegInf’
+     >- (MATCH_MP_TAC abs_triangle_sub >> art []) \\
+    ‘abs y = PosInf’ by fs [extreal_abs_def] >> POP_ORW \\
+     Suff ‘PosInf + abs (x - y) = PosInf’ >- rw [le_infty] \\
+     Suff ‘abs (x - y) <> NegInf’ >- METIS_TAC [add_infty] \\
+     MATCH_MP_TAC pos_not_neginf >> rw [abs_pos])
+ >> ‘abs x = PosInf’ by fs [extreal_abs_def] >> POP_ORW
+ >> Cases_on ‘y’
+ >> fs [extreal_abs_def, extreal_sub_def, extreal_add_def] (* 2 subgoals left *)
+ >| [ (* goal 1 (of 2) *)
+      Suff ‘PosInf + abs (NegInf - NegInf) = PosInf’ >- rw [le_infty] \\
+      Suff ‘abs (NegInf - NegInf) <> NegInf’ >- METIS_TAC [add_infty] \\
+      MATCH_MP_TAC pos_not_neginf >> rw [abs_pos],
+      (* goal 2 (of 2) *)
+      Suff ‘PosInf + abs (PosInf - PosInf) = PosInf’ >- rw [le_infty] \\
+      Suff ‘abs (PosInf - PosInf) <> NegInf’ >- METIS_TAC [add_infty] \\
+      MATCH_MP_TAC pos_not_neginf >> rw [abs_pos] ]
 QED
 
 Theorem abs_sub :
@@ -1579,6 +1607,30 @@ Proof
  >- (MATCH_MP_TAC abs_sub >> art [])
  >> Rewr'
  >> MATCH_MP_TAC abs_triangle_sub >> art []
+QED
+
+Theorem abs_triangle_sub_full' :
+    !x y. abs(x) <= abs(y) + abs(y - x)
+Proof
+    rpt GEN_TAC
+ >> Cases_on ‘x <> PosInf /\ x <> NegInf’
+ >- (Cases_on ‘y <> PosInf /\ y <> NegInf’
+     >- (MATCH_MP_TAC abs_triangle_sub' >> art []) \\
+    ‘abs y = PosInf’ by fs [extreal_abs_def] >> POP_ORW \\
+     Suff ‘PosInf + abs (y - x) = PosInf’ >- rw [le_infty] \\
+     Suff ‘abs (y - x) <> NegInf’ >- METIS_TAC [add_infty] \\
+     MATCH_MP_TAC pos_not_neginf >> rw [abs_pos])
+ >> ‘abs x = PosInf’ by fs [extreal_abs_def] >> POP_ORW
+ >> Cases_on ‘y’
+ >> fs [extreal_abs_def, extreal_sub_def, extreal_add_def] (* 2 subgoals left *)
+ >| [ (* goal 1 (of 2) *)
+      Suff ‘PosInf + abs (NegInf - NegInf) = PosInf’ >- rw [le_infty] \\
+      Suff ‘abs (NegInf - NegInf) <> NegInf’ >- METIS_TAC [add_infty] \\
+      MATCH_MP_TAC pos_not_neginf >> rw [abs_pos],
+      (* goal 2 (of 2) *)
+      Suff ‘PosInf + abs (PosInf - PosInf) = PosInf’ >- rw [le_infty] \\
+      Suff ‘abs (PosInf - PosInf) <> NegInf’ >- METIS_TAC [add_infty] \\
+      MATCH_MP_TAC pos_not_neginf >> rw [abs_pos] ]
 QED
 
 Theorem abs_neg_eq[simp] :
@@ -1606,6 +1658,23 @@ Proof
  >> ‘abs y = abs (-y)’ by rw [] >> POP_ORW
  >> MATCH_MP_TAC abs_triangle >> art []
  >> Cases_on ‘y’ >> rw [extreal_ainv_def]
+QED
+
+Theorem abs_triangle_neg_full :
+    !x y. abs(x - y) <= abs(x) + abs(y)
+Proof
+    rpt GEN_TAC
+ >> Cases_on ‘x <> PosInf /\ x <> NegInf’
+ >- (Cases_on ‘y <> PosInf /\ y <> NegInf’
+     >- (MATCH_MP_TAC abs_triangle_neg >> art []) \\
+    ‘abs y = PosInf’ by fs [extreal_abs_def] >> POP_ORW \\
+     Suff ‘abs x + PosInf = PosInf’ >- rw [le_infty] \\
+     Suff ‘abs x <> NegInf’ >- METIS_TAC [add_infty] \\
+     MATCH_MP_TAC pos_not_neginf >> rw [abs_pos])
+ >> ‘abs x = PosInf’ by fs [extreal_abs_def] >> POP_ORW
+ >> Suff ‘PosInf + abs y = PosInf’ >- rw [le_infty]
+ >> Suff ‘abs y <> NegInf’ >- METIS_TAC [add_infty]
+ >> MATCH_MP_TAC pos_not_neginf >> rw [abs_pos]
 QED
 
 (*********************)
