@@ -1487,6 +1487,26 @@ Proof
     rw [le_abs_bounds]
 QED
 
+Theorem le_abs :
+    !x :extreal. x <= abs x /\ -x <= abs x
+Proof
+    GEN_TAC
+ >> `0 <= x \/ x < 0` by PROVE_TAC [let_total]
+ >| [ (* goal 1 (of 2) *)
+      `abs x = x` by PROVE_TAC [GSYM abs_refl] >> POP_ORW \\
+      rw [le_refl] \\
+      MATCH_MP_TAC le_trans >> Q.EXISTS_TAC `0` >> art [] \\
+      POP_ASSUM (REWRITE_TAC o wrap o
+                  (REWRITE_RULE [Once (GSYM le_neg), neg_0])),
+      (* goal 2 (of 2) *)
+      IMP_RES_TAC abs_neg >> POP_ORW \\
+      rw [le_refl] \\
+      MATCH_MP_TAC lt_imp_le \\
+      MATCH_MP_TAC lt_trans >> Q.EXISTS_TAC `0` >> art [] \\
+      POP_ASSUM (REWRITE_TAC o wrap o
+                  (REWRITE_RULE [Once (GSYM lt_neg), neg_0])) ]
+QED
+
 Theorem abs_eq_0[simp] :
     !x. (abs x = 0) <=> (x = 0)
 Proof
