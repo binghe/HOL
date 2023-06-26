@@ -7600,11 +7600,7 @@ Proof
      rw [NULL_SET_UNION', GSYM extreal_add_def] \\
      MATCH_MP_TAC let_trans \\
      Q.EXISTS_TAC ‘abs (u x) + abs (v x)’ \\
-     reverse CONJ_TAC >- (MATCH_MP_TAC lt_add2 >> rw []) \\
-     MATCH_MP_TAC abs_triangle \\
-    ‘abs (u x) < d /\ abs (v x) < c’ by PROVE_TAC [] \\
-     CCONTR_TAC >> fs [] \\ (* 4 subgoals, same tactics *)
-     fs [extreal_abs_def, lt_infty])
+     rw [lt_add2, abs_triangle_full])
  (* general case: p <> PosInf *)
  >> rw [lp_space_alt_finite]
  >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_ADD' (* key result *) \\
@@ -8225,65 +8221,16 @@ Proof
  >> gs [extreal_abs_def, infty_powr]
 QED
 
-(* NOTE: the difficulity of this corollary of lp_space_add_cmul is that,
-   to convert ‘1 * u x + -1 * v x’ to ‘u x - v x’, the nullsets such that
-   u x (or v x) = PosInf (or NegInf) must be avoided.
- *)
 Theorem lp_space_sub :
     !p m u v. measure_space m /\ 0 < p /\ u IN lp_space p m /\ v IN lp_space p m
           ==> (\x. u x - v x) IN lp_space p m
 Proof
-    rpt STRIP_TAC
- >> ‘sigma_algebra (measurable_space m)’ by fs [measure_space_def]
- >> ‘u IN Borel_measurable (measurable_space m) /\
-     v IN Borel_measurable (measurable_space m)’ by fs [lp_space_def]
- >> MP_TAC (Q.SPECL [‘p’, ‘m’, ‘u’, ‘v’, ‘1’, ‘-1’] lp_space_add_cmul)
- >> rw [normal_1, normal_minus1]
- >> Suff ‘(\x. u x - v x) IN lp_space p m <=>
-          (\x. u x + -1 * v x) IN lp_space p m’ >- rw []
- >> ‘seminorm p m u <> PosInf /\ seminorm p m u <> NegInf’
-      by METIS_TAC [seminorm_not_infty]
- >> ‘seminorm p m v <> PosInf /\ seminorm p m v <> NegInf’
-      by METIS_TAC [seminorm_not_infty]
- >> MATCH_MP_TAC lp_space_cong_AE >> rw [] (* 3 subgoals, first 2 are easy *)
- >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_SUB' \\
-     qexistsl_tac [‘u’, ‘v’] >> rw [])
- >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_ADD' \\
-     qexistsl_tac [‘u’, ‘\x. -1 * v x’] >> rw [] \\
-     MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL \\
-     qexistsl_tac [‘v’, ‘-1’] >> rw [normal_minus1])
- >> Cases_on ‘p = PosInf’
- >- (POP_ASSUM (fs o wrap) \\
-    ‘0 < PosInf’ by rw [] \\
-     Know ‘(AE x::m. abs (u x) <= seminorm PosInf m u) /\
-           (AE x::m. abs (v x) <= seminorm PosInf m v)’
-     >- METIS_TAC [seminorm_infty_AE_bound] \\
-     Q.ABBREV_TAC ‘cu = seminorm PosInf m u’ \\
-     Q.ABBREV_TAC ‘cv = seminorm PosInf m v’ \\
-    ‘?a. cu = Normal a’ by METIS_TAC [extreal_cases] \\
-    ‘?b. cv = Normal b’ by METIS_TAC [extreal_cases] \\
-     rw [AE_DEF, abs_bounds] \\
-     Q.EXISTS_TAC ‘N UNION N'’ >> rw [NULL_SET_UNION'] \\
-     REWRITE_TAC [GSYM neg_minus1] \\
-     MATCH_MP_TAC extreal_sub_add \\
-     DISJ1_TAC >> rw [lt_infty] >| (* 2 subgoals *)
-     [ (* goal 1 (of 2) *)
-       MATCH_MP_TAC lte_trans \\
-       Q.EXISTS_TAC ‘-Normal a’ >> rw [extreal_ainv_def],
-       (* goal 2 (of 2) *)
-       MATCH_MP_TAC let_trans \\
-       Q.EXISTS_TAC ‘Normal b’ >> rw [] ])
- (* stage work, using lp_space_AE_normal, etc. *)
- >> Know ‘(AE x::m. u x <> PosInf /\ u x <> NegInf) /\
-          (AE x::m. v x <> PosInf /\ v x <> NegInf)’
- >- METIS_TAC [lp_space_AE_normal]
- >> rw [AE_DEF, GSYM neg_minus1]
- >> Q.EXISTS_TAC ‘N UNION N'’ >> rw [NULL_SET_UNION']
- >> ‘u x <> PosInf /\ u x <> NegInf /\
-     v x <> PosInf /\ v x <> NegInf’ by PROVE_TAC []
- >> ‘?a. u x = Normal a’ by METIS_TAC [extreal_cases]
- >> ‘?b. v x = Normal b’ by METIS_TAC [extreal_cases]
- >> rw [extreal_add_def, extreal_sub_def, extreal_ainv_def, real_sub]
+    rw [extreal_sub]
+ >> HO_MATCH_MP_TAC lp_space_add >> art []
+ >> ‘(\x. -v x) = (\x. Normal (-1) * v x)’
+       by (rw [FUN_EQ_THM, GSYM extreal_ainv_def, GSYM neg_minus1, normal_1])
+ >> POP_ORW
+ >> MATCH_MP_TAC lp_space_cmul >> art []
 QED
 
 (* ========================================================================= *)
