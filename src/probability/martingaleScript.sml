@@ -8000,8 +8000,7 @@ Proof
  >- (rw [seminorm_infty_alt] \\
      Suff ‘!c. (AE x::m. abs (u x) < c) <=> (AE x::m. abs (v x) < c)’ >- rw [] \\
      Q.PAT_X_ASSUM ‘AE x::m. u x = v x’ MP_TAC \\
-     rw [AE_DEF] \\
-     rename1 ‘null_set m N0’ \\
+     rw [AE_DEF] >> rename1 ‘null_set m N0’ \\
      EQ_TAC >> rw [] >| (* 2 subgoals *)
      [ (* goal 1 (of 2) *)
        Q.EXISTS_TAC ‘N UNION N0’ >> rw [NULL_SET_UNION'] \\
@@ -8479,7 +8478,6 @@ Proof
     rpt STRIP_TAC
  >> Know ‘sub_martingale m A Z <=> !n. 0 <= integral m (X (SUC n))’
  >- (MATCH_MP_TAC indep_functions_sub_martingle >> art [])
- >> Rewr'
  >> rw []
 QED
 

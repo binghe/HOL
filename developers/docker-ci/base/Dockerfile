@@ -29,6 +29,9 @@ RUN apt-get install -qy build-essential graphviz git libgmp-dev wget curl procps
 RUN apt-get install -qy locales-all terminfo man aptitude
 RUN apt-get clean
 
+# IDE
+RUN apt-get install -qy emacs-nox
+
 # 1. install Moscow ML (https://github.com/kfl/mosml.git)
 RUN wget -q -O - https://github.com/kfl/mosml/archive/refs/tags/ver-2.10.1.tar.gz | tar xzf -
 RUN make -C mosml-ver-2.10.1/src world install
