@@ -93,6 +93,13 @@ Definition extreal_add_def :
    (extreal_add PosInf PosInf = PosInf)
 End
 
+(* This definition never changed but is moved here to be used by extreal_sub *)
+Definition extreal_ainv_def :
+   (extreal_ainv NegInf = PosInf) /\
+   (extreal_ainv PosInf = NegInf) /\
+   (extreal_ainv (Normal x) = Normal (- x))
+End
+
 (* old definition, which (wrongly) allows `PosInf - PosInf = PosInf` and
    `NegInf - NegInf = PosInf`:
 
@@ -106,16 +113,11 @@ val extreal_sub_def = Define
 
    new definition:
  *)
-Definition extreal_ainv_def :
-   (extreal_ainv NegInf = PosInf) /\
-   (extreal_ainv PosInf = NegInf) /\
-   (extreal_ainv (Normal x) = Normal (- x))
-End
-
 Definition extreal_sub :
     extreal_sub x y = extreal_add x (extreal_ainv y)
 End
 
+(* The previous definition now becomes a theorem *)
 Theorem extreal_sub_def :
    (extreal_sub (Normal x) (Normal y) = Normal (x - y)) /\
    (extreal_sub PosInf (Normal x) = PosInf) /\
