@@ -1612,7 +1612,7 @@ Proof
  >> rw [ABS_SUB, extreal_abs_def, extreal_sub_eq]
 QED
 
-Theorem abs_sub_full :
+Theorem abs_sub' :
     !x y. abs(x - y) = abs(y - x)
 Proof
     rpt GEN_TAC
@@ -1635,7 +1635,7 @@ Theorem abs_triangle_sub_full' :
     !x y. abs(x) <= abs(y) + abs(y - x)
 Proof
     rpt GEN_TAC
- >> ONCE_REWRITE_TAC [abs_sub_full]
+ >> ONCE_REWRITE_TAC [abs_sub']
  >> REWRITE_TAC [abs_triangle_sub_full]
 QED
 

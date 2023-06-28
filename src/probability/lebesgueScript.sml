@@ -5671,29 +5671,27 @@ Proof
  >> METIS_TAC [mul_not_infty, integrable_def]
 QED
 
+Theorem integrable_ainv :
+    !m f. measure_space m /\ integrable m f ==> integrable m (\x. -f x)
+Proof
+    rpt STRIP_TAC
+ >> REWRITE_TAC [Once neg_minus1, extreal_of_num_def, extreal_ainv_def]
+ >> MATCH_MP_TAC integrable_cmul >> art []
+QED
+
 (* NOTE: added `!x. x IN m_space m ==> f x <> NegInf /\ g x <> PosInf`, one way
-   to make sure that `f - g` is defined (i.e. f/g cannot be the same infinites *)
-val integrable_sub = store_thm
-  ("integrable_sub",
-  ``!m f g. measure_space m /\ integrable m f /\ integrable m g /\
+   to make sure that `f - g` is defined (i.e. f/g cannot be the same infinites
+ *)
+Theorem integrable_sub :
+    !m f g. measure_space m /\ integrable m f /\ integrable m g /\
             (!x. x IN m_space m ==> f x <> NegInf /\ g x <> PosInf)
-        ==> integrable m (\x. f x - g x)``,
-    RW_TAC std_ss []
- >> MATCH_MP_TAC integrable_eq
- >> Q.EXISTS_TAC `(\x. f x + (\x. -g x) x)`
- >> CONJ_TAC >- art []
- >> reverse CONJ_TAC
- >- (RW_TAC std_ss [FUN_EQ_THM] \\
-     MATCH_MP_TAC EQ_SYM \\
-     MATCH_MP_TAC extreal_sub_add >> DISJ1_TAC >> METIS_TAC [])
- >> MATCH_MP_TAC integrable_add >> art []
- >> reverse CONJ_TAC
- >- (RW_TAC std_ss [] >> CCONTR_TAC >> fs [] \\
-    `g x = PosInf` by PROVE_TAC [neg_neg, extreal_ainv_def] >> RES_TAC)
- >> `(\x. -g x) = (\x. Normal (-1) * g x)`
-      by METIS_TAC [FUN_EQ_THM, neg_minus1, extreal_of_num_def, extreal_ainv_def]
- >> POP_ORW
- >> METIS_TAC [integrable_cmul]);
+        ==> integrable m (\x. f x - g x)
+Proof
+    rw [extreal_sub]
+ >> ‘integrable m (\x. -g x)’ by METIS_TAC [integrable_ainv]
+ >> HO_MATCH_MP_TAC integrable_add >> rw []
+ >> Cases_on ‘g x’ >> METIS_TAC [extreal_ainv_def, extreal_distinct]
+QED
 
 (* added `measure m s < PosInf` *)
 val integrable_indicator = store_thm
@@ -6371,39 +6369,15 @@ Theorem integral_sub :
                                    (f x <> PosInf /\ g x <> NegInf)) ==>
            (integral m (\x. f x - g x) = integral m f - integral m g)
 Proof
-    rpt STRIP_TAC
- >> MP_TAC (Q.SPECL [‘m’, ‘f’, ‘\x. -g x’] integral_add) >> simp []
- >> Know ‘integrable m (\x. -g x)’
- >- (REWRITE_TAC [Once neg_minus1, extreal_of_num_def, extreal_ainv_def] \\
-     MATCH_MP_TAC integrable_cmul >> art [])
- >> DISCH_TAC
- >> Know ‘!x. x IN m_space m ==> (f x <> NegInf /\ -g x <> NegInf) \/
-                                 (f x <> PosInf /\ -g x <> PosInf)’
- >- (RW_TAC std_ss [] \\
-     Q.PAT_X_ASSUM ‘!x. x IN m_space m ==> P’ (MP_TAC o (Q.SPEC ‘x’)) \\
-     RW_TAC std_ss [] >| (* 2 subgoals *)
-     [ (* goal 1 (of 2) *)
-       DISJ1_TAC >> rw [] \\
-       Cases_on ‘g x’ >> fs [extreal_ainv_def],
-       (* goal 2 (of 2) *)
-       DISJ2_TAC >> rw [] \\
-       Cases_on ‘g x’ >> fs [extreal_ainv_def] ])
- >> DISCH_TAC
- >> Know ‘integral m (\x. f x + -g x) = integral m f + integral m (\x. -g x)’
- >- (HO_MATCH_MP_TAC integral_add >> rw [])
- >> RW_TAC std_ss []
- >> Know ‘integral m (\x. f x - g x) = integral m (\x. f x + -g x)’
- >- (MATCH_MP_TAC integral_cong >> rw [] \\
-     MATCH_MP_TAC extreal_sub_add >> rw [])
- >> Rewr'
- >> Know ‘integral m (\x. -g x) = -integral m g’
- >- (REWRITE_TAC [Once neg_minus1, extreal_of_num_def, extreal_ainv_def] \\
-     REWRITE_TAC [Once neg_minus1, extreal_of_num_def, extreal_ainv_def] \\
+    rw [extreal_sub]
+ >> ‘integrable m (\x. -g x)’ by METIS_TAC [integrable_ainv]
+ >> Know ‘Normal (-1) * integral m g = integral m (\x. Normal (-1) * g x)’
+ >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
      MATCH_MP_TAC integral_cmul >> art [])
- >> DISCH_THEN (FULL_SIMP_TAC std_ss o wrap)
- >> ONCE_REWRITE_TAC [EQ_SYM_EQ]
- >> MATCH_MP_TAC extreal_sub_add
- >> METIS_TAC [integrable_finite_integral]
+ >> rw [GSYM neg_minus1, GSYM extreal_ainv_def, normal_1]
+ >> HO_MATCH_MP_TAC integral_add >> rw []
+ >> CCONTR_TAC
+ >> Cases_on ‘g x’ >> METIS_TAC [extreal_ainv_def, extreal_distinct]
 QED
 
 (* added `measure m s < PosInf` into antecedents, otherwise not true *)
@@ -11274,38 +11248,22 @@ Theorem integral_sub':
     !m f g. measure_space m /\ integrable m f /\ integrable m g ==>
         integral m (λx. f x - g x) = integral m f - integral m g
 Proof
-    rw[] >>
-    map_every (fn th => (qspecl_then [‘m’,‘g’,‘-1’] assume_tac) th)
-        [integral_cmul,integrable_cmul] >>
-    rfs[normal_minus1,GSYM neg_minus1] >>
-    (qspecl_then [‘m’,‘f’,‘λx. -g x’] assume_tac) integral_add' >> rfs[] >>
-    ‘integral m f - integral m g = integral m f + -integral m g /\
-        integral m (λx. f x - g x) = integral m (λx. f x + -g x)’ suffices_by rw[] >>
-    NTAC 3 (pop_assum kall_tac) >> rw[]
-    >- (irule extreal_sub_add >> simp[integrable_finite_integral]) >>
-    irule integral_cong_AE >> simp[] >> imp_res_tac integrable_AE_finite >>
-    qspecl_then [‘m’,‘λx. P x /\ Q x’,‘R’] (resolve_then Any (qspecl_then
-        [‘m’,‘λx. f x - g x = f x + -g x’,‘λx. g x = (Normal o real o g) x’,‘λx. f x = (Normal o real o f) x’] $
-        irule o SIMP_RULE (srw_ss ()) []) AE_INTER o SIMP_RULE (srw_ss ()) []) AE_subset >>
-    fs[] >> rw[] >> NTAC 2 $ pop_assum SUBST1_TAC >>
-    simp[extreal_add_def,extreal_sub_def,extreal_ainv_def,real_sub]
+    rw [extreal_sub]
+ >> ‘integrable m (\x. -g x)’ by METIS_TAC [integrable_ainv]
+ >> Know ‘Normal (-1) * integral m g = integral m (\x. Normal (-1) * g x)’
+ >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+     MATCH_MP_TAC integral_cmul >> art [])
+ >> rw [GSYM neg_minus1, GSYM extreal_ainv_def, normal_1]
+ >> HO_MATCH_MP_TAC integral_add' >> rw []
 QED
 
 Theorem integrable_sub':
     !m f g. measure_space m /\ integrable m f /\ integrable m g ==>
         integrable m (λx. f x - g x)
 Proof
-    rw[] >> qspecl_then [‘m’,‘g’,‘-1’] assume_tac integrable_cmul >>
-    rfs[normal_minus1,GSYM neg_minus1] >>
-    (qspecl_then [‘m’,‘f’,‘λx. -g x’] assume_tac) integrable_add' >> rfs[] >>
-    irule integrable_eq_AE_alt >> simp[PULL_EXISTS] >> qexists_tac ‘λx. f x + -g x’ >> rw[]
-    >- (irule IN_MEASURABLE_BOREL_SUB' >> simp[] >> qexistsl_tac [‘f’,‘g’] >> simp[integrable_measurable]) >>
-    imp_res_tac integrable_AE_finite >>
-    qspecl_then [‘m’,‘λx. P x /\ Q x’,‘R’] (resolve_then Any (qspecl_then
-        [‘m’,‘λx. f x + -g x = f x - g x’,‘λx. g x = (Normal o real o g) x’,‘λx. f x = (Normal o real o f) x’] $
-        irule o SIMP_RULE (srw_ss ()) []) AE_INTER o SIMP_RULE (srw_ss ()) []) AE_subset >>
-    fs[] >> rw[] >> NTAC 2 $ pop_assum SUBST1_TAC >>
-    simp[extreal_add_def,extreal_sub_def,extreal_ainv_def,real_sub]
+    rw [extreal_sub]
+ >> ‘integrable m (\x. -g x)’ by METIS_TAC [integrable_ainv]
+ >> HO_MATCH_MP_TAC integrable_add' >> rw []
 QED
 
 (* An easy corollary of the new integral_add' and integrable_add' *)
