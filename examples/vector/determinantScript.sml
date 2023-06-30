@@ -21,20 +21,33 @@ Overload SIGN[local]     = “permutation$sign”
 Overload SWAP[local]     = “permutation$swap”
 Overload INVERSE[local]  = “permutation$inverse”
 Overload PERMUTES[local] = “permutation$permutes”
+Overload VSUM[local]     = “vector$vsum”
 Overload TRANSP[local]   = “matrix$transp”
 Overload MAT[local]      = “matrix$mat”
 Overload ROW[local]      = “matrix$row”
+Overload ROWS[local]     = “matrix$rows”
 Overload COLUMN[local]   = “matrix$column”
+Overload COLUMNS[local]  = “matrix$columns”
 Overload VECTOR_0[local] = “vector$vec 0”
 
-val SUM_EQ     = iterateTheory.SUM_EQ';
-val SUM_EQ_0   = iterateTheory.SUM_EQ_0';
-val SUM_ADD    = iterateTheory.SUM_ADD';
-val SWAP_DEF   = permutationTheory.swap_def;
-val TRANSP_DEF = matrixTheory.transp_def;
-val MAT_DEF    = matrixTheory.mat_def;
-val ROW_DEF    = matrixTheory.row_def;
-val COLUMN_DEF = matrixTheory.column_def;
+val SUM_EQ      = iterateTheory.SUM_EQ';
+val SUM_EQ_0    = iterateTheory.SUM_EQ_0';
+val SUM_ADD     = iterateTheory.SUM_ADD';
+val SWAP_DEF    = permutationTheory.swap_def;
+val VSUM_DEF    = vectorTheory.vsum_def;
+val TRANSP_DEF  = matrixTheory.transp_def;
+val MAT_DEF     = matrixTheory.mat_def;
+val ROW_DEF     = matrixTheory.row_def;
+val ROWS_DEF    = matrixTheory.rows_def;
+val COLUMN_DEF  = matrixTheory.column_def;
+val COLUMNS_DEF = matrixTheory.columns_def;
+val EQ_IMP      = SPECL [‘a’, ‘b’] boolTheory.EQ_IMPLIES;
+
+Theorem LT_REFL :
+    !n:num. ~(n < n)
+Proof
+    rw []
+QED
 
 (* prioritize_real() *)
 val _ = prefer_real();
@@ -367,9 +380,9 @@ QED
 (* exact duplicates by considering the rows/columns as a set.                *)
 (* ------------------------------------------------------------------------- *)
 
-(*
-val DET_DEPENDENT_ROWS = prove
- (`!A:real['n]['n]. dependent(ROWS A) ==> (DET A = &0)`,
+Theorem DET_DEPENDENT_ROWS :
+   !A:real['n]['n]. dependent(ROWS A) ==> (DET A = &0)
+Proof
   GEN_TAC THEN
   REWRITE_TAC[dependent_def, ROWS_DEF] THEN CONV_TAC (DEPTH_CONV SET_SPEC_CONV) THEN
   SIMP_TAC bool_ss[GSYM LEFT_EXISTS_AND_THM, GSYM LEFT_FORALL_IMP_THM] THEN
@@ -389,56 +402,63 @@ val DET_DEPENDENT_ROWS = prove
     REWRITE_TAC[EXTENSION, IN_DELETE] THEN CONV_TAC (DEPTH_CONV SET_SPEC_CONV) THEN PROVE_TAC[],
     DISCH_THEN(SUBST1_TAC o SYM) THEN MATCH_MP_TAC DET_ZERO_ROW THEN
     EXISTS_TAC `i:num` THEN
-    SRW_TAC[FCP_ss][ROW_DEF, VECTOR_ADD_COMPONENT, VECTOR_NEG_COMPONENT, VEC_0_COMPONENT]]);
+    SRW_TAC[FCP_ss][ROW_DEF, VECTOR_ADD_COMPONENT, VECTOR_NEG_COMPONENT, VEC_0_COMPONENT]]
+QED
 
-val DET_DEPENDENT_COLUMNS = prove
- (`!A:real['n]['n]. dependent(COLUMNS A) ==> (DET A = &0)`,
-  PROVE_TAC[DET_DEPENDENT_ROWS, ROWS_TRANSP, DET_TRANSP]);
+Theorem DET_DEPENDENT_COLUMNS :
+   !A:real['n]['n]. dependent(COLUMNS A) ==> (DET A = &0)
+Proof
+  PROVE_TAC[DET_DEPENDENT_ROWS, ROWS_TRANSP, DET_TRANSP]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Multilinearity and the multiplication formula.                            *)
 (* ------------------------------------------------------------------------- *)
 
-val DET_LINEAR_ROW_VSUM = prove
- (`!a c s k.
+Theorem DET_LINEAR_ROW_VSUM :
+   !a c s k.
          FINITE s /\ k < dimindex(:'n)
          ==> (DET((FCP i. if i = k then VSUM s a else c i):real['n]['n]) =
              SUM s
-               (\j. DET((FCP i. if i = k then a(j) else c i):real['n]['n])))`,
+               (\j. DET((FCP i. if i = k then a(j) else c i):real['n]['n])))
+Proof
   GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[GSYM AND_IMP_INTRO] THEN
   SIMP_TAC bool_ss[RIGHT_FORALL_IMP_THM] THEN
   HO_MATCH_MP_TAC FINITE_INDUCT THEN
   SIMP_TAC bool_ss[VSUM_CLAUSES, SUM_CLAUSES, DET_ROW_ADD] THEN
   REPEAT STRIP_TAC THEN MATCH_MP_TAC DET_ZERO_ROW THEN EXISTS_TAC `k:num` THEN
-  SRW_TAC[FCP_ss][ROW_DEF, VEC_0_COMPONENT]);
+  SRW_TAC[FCP_ss][ROW_DEF, VEC_0_COMPONENT]
+QED
 
-
-val BOUNDED_FUNCTIONS_BIJECTIONS_1 = prove
- (`!p. p IN {(y,g) | y IN s /\
+Theorem BOUNDED_FUNCTIONS_BIJECTIONS_1[local] :
+   !p. p IN {(y,g) | y IN s /\
                      g IN {f | (!i. i < k ==> f i IN s) /\
                                (!i. ~(i < k) ==> (f i = i))}}
        ==> (\(y,g) i. if i = k then y else g(i)) p IN
              {f | (!i. i < SUC k ==> f i IN s) /\
                   (!i. ~(i < SUC k) ==> (f i = i))} /\
            ((\h. h(k),(\i. if i = k then i else h(i)))
-            ((\(y,g) i. if i = k then y else g(i)) p) = p)`,
+            ((\(y,g) i. if i = k then y else g(i)) p) = p)
+Proof
   SIMP_TAC std_ss[FORALL_PROD] THEN CONV_TAC (DEPTH_CONV SET_SPEC_CONV) THEN
   REWRITE_TAC[PAIR_EQ] THEN MAP_EVERY X_GEN_TAC [`y:num`, `h:num->num`] THEN
   REPEAT STRIP_TAC THENL
    [BETA_TAC THEN PROVE_TAC[LT],
     BETA_TAC THEN PROVE_TAC[LT],
     REWRITE_TAC[FUN_EQ_THM] THEN BETA_TAC THEN
-    PROVE_TAC[prove( `~(k:num < k)`, ARITH_TAC)]]);
+    PROVE_TAC[prove( `~(k:num < k)`, ARITH_TAC)]]
+QED
 
-val BOUNDED_FUNCTIONS_BIJECTIONS_2 = prove
- (`!h. h IN {f | (!i. i < SUC k ==> f i IN s) /\
+Theorem BOUNDED_FUNCTIONS_BIJECTIONS_2[local] :
+   !h. h IN {f | (!i. i < SUC k ==> f i IN s) /\
                  (!i. ~(i < SUC k) ==> (f i = i))}
        ==> (\h. h(k),(\i. if i = k then i else h(i))) h IN
            {(y,g) | y IN s /\
                      g IN {f | (!i. i < k ==> f i IN s) /\
                                (!i. ~(i < k) ==> (f i = i))}} /\
            ((\(y,g) i. if i = k then y else g(i))
-              ((\h. h(k),(\i. if i = k then i else h(i))) h) = h)`,
+              ((\h. h(k),(\i. if i = k then i else h(i))) h) = h)
+Proof
   CONV_TAC(REDEPTH_CONV GEN_BETA_CONV) THEN CONV_TAC (DEPTH_CONV SET_SPEC_CONV) THEN
   X_GEN_TAC `h:num->num` THEN REPEAT STRIP_TAC THENL
    [MAP_EVERY EXISTS_TAC[`(h k):num`,`(\i. if i = k then i else h i):num->num`] THEN
@@ -446,12 +466,14 @@ val BOUNDED_FUNCTIONS_BIJECTIONS_2 = prove
           [PROVE_TAC[LT],
            BETA_TAC THEN PROVE_TAC[prove(`i < k ==> i< SUC k /\ ~(i = k)`, ARITH_TAC)],
            BETA_TAC THEN PROVE_TAC[prove(`i< SUC k /\ ~(i = k) ==> i < k`, ARITH_TAC)]],
-    REWRITE_TAC[FUN_EQ_THM] THEN BETA_TAC THEN PROVE_TAC[]]);
+    REWRITE_TAC[FUN_EQ_THM] THEN BETA_TAC THEN PROVE_TAC[]]
+QED
 
-val FINITE_BOUNDED_FUNCTIONS = prove
- (`!s k:num. FINITE s
+Theorem FINITE_BOUNDED_FUNCTIONS :
+   !s k:num. FINITE s
          ==> FINITE {f | (!i. i < k ==> f(i) IN s) /\
-                         (!i. ~(i < k) ==> (f(i) = i))}`,
+                         (!i. ~(i < k) ==> (f(i) = i))}
+Proof
   SIMP_TAC bool_ss[RIGHT_FORALL_IMP_THM] THEN GEN_TAC THEN DISCH_TAC THEN
   INDUCT_TAC THENL
    [REWRITE_TAC[prove(`~(i:num < 0)`, ARITH_TAC)] THEN
@@ -471,23 +493,25 @@ val FINITE_BOUNDED_FUNCTIONS = prove
   CONV_TAC (DEPTH_CONV SET_SPEC_CONV) THEN DISCH_TAC THEN EXISTS_TAC
     `(\h. h(k),(\i. if i = k then i else h(i))) h` THEN
   SIMP_TAC bool_ss[FST, SND] THEN REPEAT STRIP_TAC THEN
-  SIMP_TAC bool_ss[FUN_EQ_THM] THEN PROVE_TAC[prove( `i:num < k ==> ~(i = k)`, ARITH_TAC),LT]);
+  SIMP_TAC bool_ss[FUN_EQ_THM] THEN PROVE_TAC[prove( `i:num < k ==> ~(i = k)`, ARITH_TAC),LT]
+QED
 
-val DET_LINEAR_ROWS_VSUM_LEMMA = prove
- (`!s k a c.
+Theorem DET_LINEAR_ROWS_VSUM_LEMMA :
+   !s k a c.
          FINITE s /\ k <= dimindex(:'n)
          ==> (DET((FCP i. if i < k then VSUM s (a i) else c i):real['n]['n]) =
               SUM {f | (!i. i < k ==> f(i) IN s) /\
                        !i. ~(i < k) ==> (f(i) = i)}
                   (\f. DET((FCP i. if i < k then a i (f i) else c i)
-                          :real['n]['n])))`,
+                          :real['n]['n])))
+Proof
   ONCE_REWRITE_TAC[GSYM AND_IMP_INTRO] THEN
   SIMP_TAC bool_ss[RIGHT_FORALL_IMP_THM] THEN GEN_TAC THEN DISCH_TAC THEN
   INDUCT_TAC THENL
    [REWRITE_TAC[ZERO_LESS_EQ, LT] THEN
     SIMP_TAC bool_ss[GSYM FUN_EQ_THM, GSPEC_EQ] THEN REWRITE_TAC[SUM_SING],
     ALL_TAC] THEN
-  DISCH_TAC THEN PAT_ASSUM `$==> X Y` MP_TAC THEN
+  DISCH_TAC THEN PAT_X_ASSUM `$==> X Y` MP_TAC THEN
   ASM_SIMP_TAC bool_ss[prove(`SUC k <= n ==> k <= n`, ARITH_TAC)] THEN REPEAT STRIP_TAC THEN
   GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) empty_rewrites [LT] THEN
   REWRITE_TAC[prove
@@ -509,32 +533,39 @@ val DET_LINEAR_ROWS_VSUM_LEMMA = prove
   SIMP_TAC bool_ss[FORALL_PROD] THEN
   CONV_TAC(ONCE_DEPTH_CONV GEN_BETA_CONV) THEN
   MAP_EVERY X_GEN_TAC [`y:num`, `g:num->num`] THEN AP_TERM_TAC THEN
-  SRW_TAC[FCP_ss][] THEN REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
-  PROVE_TAC[LT, LT_REFL]);
+  SRW_TAC[FCP_ss][] THEN REPEAT
+  (COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+  PROVE_TAC[LT, LT_REFL]
+QED
 
-val DET_LINEAR_ROWS_VSUM = prove
- (`!s k a.
+Theorem DET_LINEAR_ROWS_VSUM :
+   !s k a.
          FINITE s
          ==> (DET((FCP i. VSUM s (a i)):real['n]['n]) =
               SUM {f | (!i. i < dimindex(:'n) ==> f(i) IN s) /\
                       !i. ~(i < dimindex(:'n)) ==> (f(i) = i)}
-                 (\f. DET((FCP i. a i (f i)):real['n]['n])))`,
+                 (\f. DET((FCP i. a i (f i)):real['n]['n])))
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(SPECL [`s:num->bool`, `dimindex(:'n)`] DET_LINEAR_ROWS_VSUM_LEMMA) THEN
   ASM_SIMP_TAC bool_ss[LT_REFL, GSYM NOT_LESS, prove
    (`(FCP i. if i < dimindex(:'n) then x(i) else y(i)):real['n]['n] =
      (FCP i. x(i))`,
-    SRW_TAC[FCP_ss][])]);
+    SRW_TAC[FCP_ss][])]
+QED
 
-val MATRIX_MUL_VSUM_ALT = prove
- (`!A:real['n]['n] B:real['n]['n]. A ** B =
-                  FCP i. VSUM (count(dimindex(:'n))) (\k. A ' i ' k * B ' k)`,
-  SRW_TAC[FCP_ss][matrix_mul_def, VECTOR_MUL_COMPONENT, VSUM_COMPONENT]);
+Theorem MATRIX_MUL_VSUM_ALT :
+   !A:real['n]['n] B:real['n]['n]. A ** B =
+                  FCP i. VSUM (count(dimindex(:'n))) (\k. A ' i ' k * B ' k)
+Proof
+  SRW_TAC[FCP_ss][matrix_mul_def, VECTOR_MUL_COMPONENT, VSUM_COMPONENT]
+QED
 
-val DET_ROWS_MUL = prove
- (`!a c. DET((FCP i. c i * a i):real['n]['n]) =
+Theorem DET_ROWS_MUL :
+   !a c. DET((FCP i. c i * a i):real['n]['n]) =
          PRODUCT(count(dimindex(:'n))) (\i. c(i)) *
-         DET((FCP i. a(i)):real['n]['n])`,
+         DET((FCP i. a(i)):real['n]['n])
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[DET_DEF] THEN
   SIMP_TAC bool_ss[GSYM SUM_LMUL] THEN
   MATCH_MP_TAC SUM_EQ THEN BETA_TAC THEN
@@ -545,10 +576,13 @@ val DET_ROWS_MUL = prove
          STRIP_TAC THEN ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC)) THEN
   SIMP_TAC bool_ss[GSYM PRODUCT_MUL_COUNT] THEN
   MATCH_MP_TAC PRODUCT_EQ_COUNT THEN
-  SRW_TAC[FCP_ss][VECTOR_MUL_COMPONENT, PERMUTES_IN_COUNT]);
+  SRW_TAC[FCP_ss][VECTOR_MUL_COMPONENT, PERMUTES_IN_COUNT]
+QED
 
-val DET_MUL = prove
- (`!A B:real['n]['n]. DET(A ** B) = DET(A) * DET(B)`,
+(*
+Theorem DET_MUL :
+   !A B:real['n]['n]. DET(A ** B) = DET(A) * DET(B)
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[MATRIX_MUL_VSUM_ALT] THEN
   SIMP_TAC bool_ss[DET_LINEAR_ROWS_VSUM, FINITE_COUNT] THEN
   MATCH_MP_TAC EQ_TRANS THEN
@@ -605,7 +639,8 @@ val DET_MUL = prove
   SRW_TAC[FCP_ss][o_THM] THEN MATCH_MP_TAC EQ_TRANS THEN
   EXISTS_TAC `(A:real['n]['n]) ' i ' (p i) * (B:real['n]['n]) ' (p i) ' (q i)` THEN CONJ_TAC THENL
    [PROVE_TAC[VECTOR_MUL_COMPONENT, PERMUTES_IN_IMAGE, IN_COUNT],
-    PROVE_TAC[PERMUTES_INVERSES]]);
+    PROVE_TAC[PERMUTES_INVERSES]]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Relation to invertibility.                                                *)
