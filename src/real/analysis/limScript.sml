@@ -278,9 +278,7 @@ Proof
     rw [differentiable, diffl_has_vector_derivative]
 QED
 
-(* Alternative definition of ‘differentiable_at’ showing equivalence between
-  ‘lim$differentiable_at’ and ‘derivative$differentiable’
- *)
+(* The equivalence between ‘differentiable’ and ‘derivative$differentiable’ *)
 Theorem differentiable_alt :
     !f x. f differentiable x <=> derivative$differentiable f (at x)
 Proof
