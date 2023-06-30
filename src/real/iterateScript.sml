@@ -4324,6 +4324,14 @@ val PRODUCT_EQ_0 = store_thm ("PRODUCT_EQ_0",
            NOT_IN_EMPTY] THEN
   MESON_TAC[]);
 
+Theorem PRODUCT_EQ_0_COUNT :
+    !f n. product (count n) f = &0 <=> ?i. i < n /\ (f(i) = &0)
+Proof
+    rpt GEN_TAC
+ >> Suff ‘product (count n) f = &0 <=> ?x. x IN count n /\ (f(x) = &0)’ >- rw []
+ >> MATCH_MP_TAC PRODUCT_EQ_0 >> rw []
+QED
+
 val PRODUCT_EQ_0_NUMSEG = store_thm ("PRODUCT_EQ_0_NUMSEG",
  ``!f m n. (product{m..n} f = &0) <=> ?x. m <= x /\ x <= n /\ (f(x) = &0)``,
   SIMP_TAC std_ss [PRODUCT_EQ_0, FINITE_NUMSEG, IN_NUMSEG, GSYM CONJ_ASSOC]);
@@ -4350,6 +4358,15 @@ val PRODUCT_EQ_1 = store_thm ("PRODUCT_EQ_1",
  ``!f s. (!x:'a. x IN s ==> (f(x) = &1)) ==> (product s f = &1)``,
   REWRITE_TAC[product, GSYM NEUTRAL_REAL_MUL] THEN
   SIMP_TAC std_ss [ITERATE_EQ_NEUTRAL, MONOIDAL_REAL_MUL]);
+
+Theorem PRODUCT_EQ_1_COUNT :
+    !f n. (!i. i < n ==> f i = &1) ==> product (count n) f = &1
+Proof
+    rpt GEN_TAC
+ >> Suff ‘(!i. i IN count n ==> f i = &1) ==> product (count n) f = &1’ >- rw []
+ >> DISCH_TAC
+ >> MATCH_MP_TAC PRODUCT_EQ_1 >> art []
+QED
 
 val PRODUCT_EQ_1_NUMSEG = store_thm ("PRODUCT_EQ_1_NUMSEG",
  ``!f m n. (!i. m <= i /\ i <= n ==> (f(i) = &1)) ==> (product{m..n} f = &1)``,

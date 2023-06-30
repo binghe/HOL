@@ -170,6 +170,8 @@ Proof
    SRW_TAC [FCP_ss][vec_def]
 QED
 
+Theorem VEC_0_COMPONENT = Q.SPEC ‘0’ VEC_COMPONENT
+
 Theorem VECTOR_ADD_COMPONENT :
    !x:real['N] y i. i < dimindex (:'N) ==> ((x + y) ' i = (x ' i) + (y ' i))
 Proof
