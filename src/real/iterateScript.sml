@@ -2925,6 +2925,13 @@ Proof
 QED
 val SUM_EQ = SUM_EQ';
 
+Theorem SUM_EQ_COUNT :
+    !f g n. (!i. i < n ==> (f i = g i)) ==> (sum (count n) f = sum (count n) g)
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC SUM_EQ' >> rw []
+QED
+
 (* cf. realTheory.SUM_ABS *)
 Theorem SUM_ABS' : (* was: SUM_ABS *)
    !f s. FINITE(s) ==> abs(sum s f) <= sum s (\x. abs(f x))
