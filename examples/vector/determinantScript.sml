@@ -3,6 +3,8 @@
 (*                                                                           *)
 (*              (c) Copyright, John Harrison 1998-2008                       *)
 (*        (c) Copyright, Liming Li, Yong Guan and Zhiping Shi 2011           *)
+(*                                                                           *)
+(*   Ported to HOL4 by Chun Tian, on (July 1, 2023)                          *)
 (* ========================================================================= *)
 
 open HolKernel Parse boolLib bossLib;
@@ -909,7 +911,8 @@ Proof
    `FCP i j. SUM (count (dimindex (:'N)))(\k. ALG_COMP A k i * A ' k ' j)` THEN
   CONJ_TAC THENL [
     SRW_TAC[FCP_ss][TRANSP_DEF] THEN MATCH_MP_TAC SUM_EQ, ALL_TAC] THEN
-  SRW_TAC[FCP_ss][] THEN ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN ASM_CASES_TAC `i = i'` THEN
+  SRW_TAC[FCP_ss][] THEN
+  ASM_CASES_TAC `i = i'` THEN
   ASM_SIMP_TAC bool_ss[GSYM LAPLACE_COLUMN, LAPLACE_COLUMN_COROLLARY, MATRIX_CMUL_COMPONENT,
                        MAT_COMPONENT, REAL_MUL_RID, REAL_MUL_RZERO]
 QED
