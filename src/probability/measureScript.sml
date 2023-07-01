@@ -1757,7 +1757,7 @@ Theorem has_exhausting_sequence_alt =
 
    The new definition based on ‘exhausting_sequence’ (was in martingaleTheory):
  *)
-Definition sigma_finite :
+Definition sigma_finite[nocompute] :
     sigma_finite m = ?f. exhausting_sequence (m_space m,measurable_sets m) f /\
                          !n. measure m (f n) < PosInf
 End
@@ -5052,12 +5052,12 @@ val SIGMA_FINITE_ALT = store_thm (* was: sigma_finite (HVG) *)
  >> CONJ_TAC >- REWRITE_TAC [FINITE_COUNT]
  >> RW_TAC std_ss [o_DEF, lt_infty]);
 
-val SIGMA_FINITE_ALT2 = store_thm (* was: sigma_finite_measure (HVG) *)
-  ("SIGMA_FINITE_ALT2",
-  ``!m. measure_space m ==>
+Theorem SIGMA_FINITE_ALT2 : (* was: sigma_finite_measure (HVG) *)
+    !m. measure_space m ==>
        (sigma_finite m <=> ?A. countable A /\ A SUBSET measurable_sets m /\
                               (BIGUNION A = m_space m) /\
-                              (!a. a IN A ==> measure m a <> PosInf))``,
+                              (!a. a IN A ==> measure m a <> PosInf))
+Proof
     GEN_TAC >> DISCH_TAC
  >> EQ_TAC >> rpt STRIP_TAC
  >- (fs [sigma_finite_def] \\
@@ -5089,7 +5089,8 @@ val SIGMA_FINITE_ALT2 = store_thm (* was: sigma_finite_measure (HVG) *)
       GEN_TAC >> REWRITE_TAC [GSYM lt_infty] \\
       FIRST_X_ASSUM MATCH_MP_TAC \\
       REWRITE_TAC [IN_IMAGE, IN_UNIV] \\
-      Q.EXISTS_TAC `n` >> REWRITE_TAC [] ]);
+      Q.EXISTS_TAC `n` >> REWRITE_TAC [] ]
+QED
 
 Theorem sigma_finite :
     !m. measure_space m /\ sigma_finite m ==>
