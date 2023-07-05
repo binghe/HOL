@@ -1,6 +1,6 @@
 # Formalization of Block Ciphers and Other Encryption Algorithms
 
-This directory provides a collection of block ciphers 
+This directory provides a collection of block ciphers (and other encryption algorithms)
 
   * AES [1]
   * IDEA [1]
@@ -19,9 +19,4 @@ be found in tea.data.encrypt.
 
 ## Publications
 
-1. Duan J., Hurd J., Li G., Owens S., Slind K., Zhang J. (2005)
-  _Functional Correctness Proofs of Encryption Algorithms._
-  In: Sutcliffe G., Voronkov A. (eds) Logic for Programming, Artificial Intelligence,
-  and Reasoning. LPAR 2005.
-  Lecture Notes in Computer Science, vol 3835. Springer, Berlin, Heidelberg.
-  https://doi.org/10.1007/11591191_36
+- J. Duan, J. Hurd, G. Li, S. Owens, K. Slind, and J. Zhang, “Functional Correctness Proofs of Encryption Algorithms,” in LNAI 3835 - Logic for Programming, Artificial Intelligence, and Reasoning (LPAR 2005), Springer, 2010.
