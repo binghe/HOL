@@ -2417,10 +2417,10 @@ unbounded length.  The operations in \theoryimp{bit} are primarily defined using
 Here \holtxt{BIT b n} states that the $b$-th bit (counted from the least significant bit, starting by 0) of $n$ is 1.
 (In other words, \holtxt{BIT b n} maps the $b$-th bit of $n$ from 0 to \holtxt{false} and 1 to \holtxt{true}.)
 
-On the other hand, \holtxt{SBIT} can be used to construct a number (by \holtxt{SUM}, \eg)
-from each of its bits as \ty{bool}
-(\holtxt{SBIT b n} is a \emph{single} $n$-th bit value given by the Boolean value $b$,
-to be added for building the destination number):
+On the other hand, \holtxt{SBIT} can be used to construct a number by summing up
+values corresponding to each bits.
+\holtxt{SBIT b n} represents the \emph{single} $n$-th bit value indicated by the Boolean value $b$,
+to be accumulated for constructing the destination number:
 \begin{hol}
 \begin{alltt}
 ##thm SBIT_def
