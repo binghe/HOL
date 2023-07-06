@@ -1878,8 +1878,7 @@ numeral \verb+2+ is taken to be an integer.
 %
 \begin{session}
 \begin{alltt}
->> load "integerTheory";
-
+>> load "integerTheory";  
 >> ``2``;
 
 >> type_of it;
@@ -1951,9 +1950,9 @@ session illustrates how overloading and integers literals are treated.
 >> show_numeral_types := true;
 
 >> Term `&1 = &(1n + 0n)`;
+>>_ show_numeral_types := false;
 \end{alltt}
 \end{session}
-
 
 \subsection{Rational numbers}\label{rationals}
 \index{rational numbers, the HOL theory of@rationals, the \HOL{} theory of|(}
@@ -2414,7 +2413,15 @@ unbounded length.  The operations in \theoryimp{bit} are primarily defined using
 ##thm BIT_DEF
 \end{alltt}
 \end{hol}
-Note that \holtxt{BIT b n} states that the $b$-th bit (0-indexed, starting from the least significant bit) of $n$ is one.
+Here \holtxt{BIT b n} states that the $b$-th bit (counted from the least significant bit, starting by 0) of $n$ is 1.
+(In other words, \holtxt{BIT b n} maps the $b$-th bit of $n$ from 0 to \holtxt{false} and 1 to \holtxt{true}.)
+
+On the other hand, \holtxt{SBIT} can be used to construct a number (by sum) from each of its bits as \ty{bool}:
+\begin{hol}
+\begin{alltt}
+##thm SBIT_def
+\end{alltt}
+\end{hol}
 
 This theory is used in the development of the word theory and it also provides
 a mechanism for the efficient evaluation of some word operations via the theory
