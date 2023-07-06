@@ -2365,12 +2365,7 @@ Typically, indices are constrained to be less than the size of
 \ty{'b}.\footnote{Note that FCP indices in HOL Light are ranged from 1
   to \holtxt{dimindex('b)}, while in HOL4 they are ranged from 0 to
   \holtxt{dimindex('b) - 1}, thus is \emph{less} than the size of
-  \ty{'b}.  For this reason, the frequently needed lemma
-  \ml{DIMINDEX_GE_1} (\holtxt{1 <= dimindex('b)}) in many
-  FCP-related proofs in HOL Light, is not very useful in HOL4. When
-  porting these proofs from HOL Light to HOL4, all occurrences of
-  \ml{DIMINDEX_GE_1} should be changed to \ml{DIMINDEX_GT_0}
-  (\holtxt{0 < dimindex('b)}).}\footnote{Also note that the function
+  \ty{'b}. Also note that the function
   \holtxt{fcp_index} in HOL Light is specified for index values:
   \texttt{f ' i = 0} when \holtxt{i = 0} or \holtxt{i > dimindex('b)}. In HOL4, however,
   \texttt{f ' i} is unspecified when \holtxt{i >= dimindex('b)}.}
