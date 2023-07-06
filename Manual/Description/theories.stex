@@ -1878,7 +1878,8 @@ numeral \verb+2+ is taken to be an integer.
 %
 \begin{session}
 \begin{alltt}
->> load "integerTheory";  
+>> load "integerTheory";
+
 >> ``2``;
 
 >> type_of it;
@@ -2416,7 +2417,10 @@ unbounded length.  The operations in \theoryimp{bit} are primarily defined using
 Here \holtxt{BIT b n} states that the $b$-th bit (counted from the least significant bit, starting by 0) of $n$ is 1.
 (In other words, \holtxt{BIT b n} maps the $b$-th bit of $n$ from 0 to \holtxt{false} and 1 to \holtxt{true}.)
 
-On the other hand, \holtxt{SBIT} can be used to construct a number (by sum) from each of its bits as \ty{bool}:
+On the other hand, \holtxt{SBIT} can be used to construct a number (by \holtxt{SUM}, \eg)
+from each of its bits as \ty{bool}
+(\holtxt{SBIT b n} is a \emph{single} $n$-th bit value given by the Boolean value $b$,
+to be added for building the destination number):
 \begin{hol}
 \begin{alltt}
 ##thm SBIT_def
@@ -2449,12 +2453,14 @@ representing an $n$-bit word then its natural number value is:
 \textbf{ else } 0\ .\]
 The length of a word (the number $n$) is given by the function
 \holtxt{word\_len:\worda\rarr\num}.
-The function \holtxt{n2w:\num\rarr\worda} maps from a number to a word and is
+The function \holtxt{n2w:\num\rarr\worda} maps from a number to a word,
+and the function \holtxt{w2n:\worda\rarr\num} maps from a word to a number. They are
 defined in \HOL{} by:
 \begin{hol}
 \begin{alltt}
 >>__ load "wordsTheory"; open wordsTheory;
 ##thm n2w_def
+##thm w2n_def
 \end{alltt}
 \end{hol}
 The suffix \holtxt{w} is used to denote word literals, \eg,
@@ -3651,7 +3657,7 @@ For more on this facility, see \REFERENCE{}'s description of the \ml{add_strlite
 There is also a destructor function \holtxt{DEST_STRING} for strings which returns an \holtxt{option} type:
 \begin{hol}
 \begin{alltt}
->>__  open stringTheory
+>>__ open stringTheory;
 ##thm DEST_STRING_def
 \end{alltt}
 \end{hol}
