@@ -523,8 +523,8 @@ val ZERO_LT_dimword = Q.store_thm("ZERO_LT_dimword[simp]",
   `0 < dimword(:'a)`,
   SRW_TAC [][dimword_def])
 
-val DIMINDEX_GT_0 = save_thm("DIMINDEX_GT_0[simp]",
-  PROVE [DECIDE ``!s. 1 <= s ==> 0 < s``,DIMINDEX_GE_1] ``0 < dimindex(:'a)``)
+(* |- 0 < dimindex (:'a) *)
+Theorem DIMINDEX_GT_0 = fcpTheory.DIMINDEX_GT_0
 
 val dimword_IS_TWICE_INT_MIN = Q.store_thm("dimword_IS_TWICE_INT_MIN",
   `dimword(:'a) = 2 * INT_MIN(:'a)`,
