@@ -4,7 +4,8 @@
 
 open HolKernel Parse boolLib bossLib;
 
-open arithmeticTheory pairTheory fcpTheory fcpLib wordsTheory wordsLib listTheory;
+open arithmeticTheory pairTheory fcpTheory fcpLib wordsTheory wordsLib
+     listTheory sortingTheory pred_setTheory;
 
 val _ = new_theory "des";
 
@@ -31,8 +32,8 @@ Type key[pp] = “:word8 # word8 # word8 # word8 # word8 # word8 # word8 # word8
 Type expansion[pp] = “:word6 # word6 # word6 # word6 #
                        word6 # word6 # word6 # word6”
 
-(* Each S-box returns four bits which, when concatenated together, give a 32-bit
-   intermediate quantity.
+(* Each S-box returns four bits which, when concatenated together, give a
+   32-bit intermediate quantity.
  *)
 Type sbox[pp] = “:word6 -> word4”
 
@@ -44,29 +45,32 @@ Type sbox[pp] = “:word6 -> word4”
 
    The tables should be interpreted (as those for IP and IP^−1) in that the
    first bit of the output of E is taken from the 32nd bit of the input.
-   
+
+   NOTE: these "raw" data assumes the bits are 1-indexed but we use 0-indexing.
  *)
-Definition E_def :
-    E = [32;  1;  2;  3;  4;  5;
-          4;  5;  6;  7;  8;  9;
-          8;  9; 10; 11; 12; 13;
-         12; 13; 14; 15; 16; 17;
-         16; 17; 18; 19; 20; 21;
-         20; 21; 22; 23; 24; 25;
-         24; 25; 26; 27; 28; 29;
-         28; 29; 30; 31; 32;  1]
+Definition E_data_def : (* 48 elements *)
+    E_data = [32;  1;  2;  3;  4;  5;
+               4;  5;  6;  7;  8;  9;
+               8;  9; 10; 11; 12; 13;
+              12; 13; 14; 15; 16; 17;
+              16; 17; 18; 19; 20; 21;
+              20; 21; 22; 23; 24; 25;
+              24; 25; 26; 27; 28; 29;
+              28; 29; 30; 31; 32;  1]
 End
 
 (* The bitwise permutation P (values are directly copied from PDF [1, p.18])
 
    The tables should be interpreted in that the first bit of the output of P
    is taken from the 16th bit of the input.
+
+   NOTE: these "raw" data assumes the bits are 1-indexed but we need 0-indexing.
  *)
-Definition P_def :
-    P = [16;  7; 20; 21; 29; 12; 28; 17;
-          1; 15; 23; 26;  5; 18; 31; 10;
-          2;  8; 24; 14; 32; 27;  3;  9;
-         19; 13; 30;  6; 22; 11;  4; 25]
+Definition P_data_def : (* 32 elements *)
+    P_data = [16;  7; 20; 21; 29; 12; 28; 17;
+               1; 15; 23; 26;  5; 18; 31; 10;
+               2;  8; 24; 14; 32; 27;  3;  9;
+              19; 13; 30;  6; 22; 11;  4; 25]
 End
 
 (* The DES S-boxes given in hexadecimal notation (raw values are directly
@@ -146,14 +150,58 @@ Definition S8_data_def :
 End
 
 (*---------------------------------------------------------------------------*)
-(* Functions                                                                 *)
+(*  DES Round Functions                                                      *)
 (*---------------------------------------------------------------------------*)
 
+(*
+      /                                                          \
+     /                                                            \
+  -- | -----------------------------------------+ k_i             |
+     |       +---+      +---+      +----+       |       +----+    |
+    \|/      |   |      |   |      |    |      \|/      |    |    |
+    (+) <--- | P | <--- | S | <--- | E2 | <--- (+) <--- | E1 | <--+
+     |       |   |      |   |      |    |               |    |    |
+     |       +---+      +---+      +----+               +----+    |
+     \                                                            /
+      \                                                          /
+       +--------------------------+  +--------------------------+
+                                   \/
+                                   /\
+       +--------------------------+  +--------------------------+
+      /                                                          \
+     /                                                            \
+ *)
+
+(* The first part of E seaches the expansion table given by E_data *)
+Definition E1_def :
+    E1 (block :word32) :word48 = FCP i. block ' (EL i E_data - 1)
+End
+
+(* The second part of E split the 48 bits into 8 groups of 6 bits
+
+   NOTE: the lowest 6 bits are to be sent to S1, next 6 to S2, and so on...
+ *)
+Definition E2_def :
+    E2 (block :word48) :expansion =
+     ((5  ><  0) block,
+      (11 ><  6) block,
+      (17 >< 12) block,
+      (23 >< 18) block,
+      (29 >< 24) block,
+      (35 >< 30) block,
+      (41 >< 36) block,
+      (47 >< 42) block)
+End
+
+Definition P_def :
+    P (block :word32) :word32 = FCP i. block ' (EL i P_data - 1)
+End
+
 Definition SBox_def :
-    SBox data :sbox = \w.
-    let row = w2n ((((6 >< 6)w :word1) @@ ((0 >< 0)w :word1)) :word2);
-        col = w2n ((4 >< 1)w :word4)
-    in n2w (EL col (EL row data))
+    SBox data :sbox =
+      (\w. let row = w2n ((((6 >< 6)w :word1) @@ ((0 >< 0)w :word1)) :word2);
+               col = w2n ((4 >< 1)w :word4)
+           in n2w (EL col (EL row data)))
 End
 
 Overload S1 = “SBox S1_data”
@@ -169,9 +217,28 @@ Overload S8 = “SBox S8_data”
 Theorem S5_001101_IS_1101 :
     S5 (n2w 0b001101) = (n2w 0b1101)
 Proof
-    rw [SBox_def, S5_data_def]
- >> EVAL_TAC
+    EVAL_TAC
 QED
+
+(* This gives the same example above *)
+Theorem S5_001101_IS_1101' = EVAL “S5 13w”
+
+(* Basic S-Box criteria (not used so far) *)
+Definition IS_SBOX :
+    IS_SBOX (data :num list list) =
+      (LENGTH data = 4 /\ EVERY (\l. PERM l (GENLIST I 16)) data)
+End
+
+(* A trivial S-Box (not used so far) *)
+Theorem EXISTS_SBOX :
+    ?d. IS_SBOX d
+Proof
+    Q.EXISTS_TAC ‘[GENLIST I 16; GENLIST I 16; GENLIST I 16; GENLIST I 16]’
+ >> rw [IS_SBOX]
+QED
+
+
+
 
 val _ = export_theory();
 val _ = html_theory "des";
