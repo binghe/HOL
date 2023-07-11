@@ -7,8 +7,55 @@ open HolKernel Parse boolLib bossLib;
 open arithmeticTheory pairTheory fcpTheory fcpLib wordsTheory wordsLib
      listTheory sortingTheory pred_setTheory;
 
-val _ = new_theory "des";
+(*  DES with round function components; the bit expansion E, the S-boxes S,
+    and the bit permutation P.
 
+    +-----+                             +-----+
+    | KS  | <--- KEY       MESSAGE ---> | IP  |
+    +--+--+    (56-bit)    (64-bit)     +--+--+
+       |                                   |
+       |   u_0      (32-bit)         +-----+-----+       (32-bit)       v_0
+       |    +------------------------+   split   +-----------------------+
+       |    |                        +-----+-----+                       |
+       +----|------------------------------------------+ k_1             |
+       |   \|/      +---+      +---+      +----+      \|/      +----+    |
+       |   (+) <--- | P | <--- | S | <--- | E2 | <--- (+) <--- | E1 | <--+
+       |    |       +---+   ^  +---+   ^  +----+            ^  +----+    |
+       |     \           (32-bit)   (48-bit)             (48-bit)       /
+       |  v_1 +--------------------------+  +--------------------------+ u_1
+       |                                  \/
+       |                                  /\
+       |  u_1 +--------------------------+  +--------------------------+ v_1
+       |     /                                                          \
+       +----|------------------------------------------+ k_2             |
+       |   \|/      +---+      +---+      +----+      \|/      +----+    |
+       |   (+) <--- | P | <--- | S | <--- | E2 | <--- (+) <--- | E1 | <--+
+       |    |       +---+      +---+      +----+               +----+    |
+       |     \  \-------------------- f(v_1,k_2) --------------------/  /
+       |  v_2 +--------------------------+  +--------------------------+ u_2
+       |                                  \/
+       |                                  /\
+       |      +--------------------------+  +--------------------------+
+       |     /                                                          \
+       |    |       - v_i = u_{i-1} (+) f(v_{i-1}, k_i)                  |
+       |    .       - u_i = v_{i-1}              (i = 1 ... r - 1)       .
+       |    .       - u_r = u_{r-1} (+) f(v_{r-1}, k_r)                  .
+       |    .       - v_r = v_{r-1}                       (r = 16)       .
+       |    |                                                            |
+       +----|------------------------------------------+ k_r             |
+           \|/      +---+      +---+      +----+      \|/      +----+    |
+           (+) <--- | P | <--- | S | <--- | E2 | <--- (+) <--- | E1 | <--+
+            |       +---+      +---+      +----+               +----+    |
+            |                        +-----------+                       |
+            +------------------------+   join    +-----------------------+
+           u_r       (32-bit)        +-----+-----+       (32-bit)       v_r
+                                           |
+                                       +---+---+
+                                       | IP^-1 | ---> CIPHERTEXT
+                                       +-------+       (64-bit)
+ *)
+
+val _ = new_theory "des";
 val _ = hide "S";
 
 (*---------------------------------------------------------------------------*)
@@ -36,6 +83,9 @@ Type expansion[pp] = “:word6 # word6 # word6 # word6 #
    32-bit intermediate quantity.
  *)
 Type sbox[pp] = “:word6 -> word4”
+
+(* DES round function *)
+Type roundop[pp] = “:word32 -> word32”
 
 (*---------------------------------------------------------------------------*)
 (* Tables and S-Boxes                                                        *)
@@ -153,46 +203,32 @@ End
 (*  DES Round Functions                                                      *)
 (*---------------------------------------------------------------------------*)
 
-(*
-      /                                                          \
-     /                                                            \
-  -- | -----------------------------------------+ k_i             |
-     |       +---+      +---+      +----+       |       +----+    |
-    \|/      |   |      |   |      |    |      \|/      |    |    |
-    (+) <--- | P | <--- | S | <--- | E2 | <--- (+) <--- | E1 | <--+
-     |       |   |      |   |      |    |               |    |    |
-     |       +---+      +---+      +----+               +----+    |
-     \                                                            /
-      \                                                          /
-       +--------------------------+  +--------------------------+
-                                   \/
-                                   /\
-       +--------------------------+  +--------------------------+
-      /                                                          \
-     /                                                            \
- *)
+(* The first part of E searches the expansion table given by E_data
 
-(* The first part of E seaches the expansion table given by E_data *)
+   The purpose of ‘-1’ is to convert 1-indexed E values to 0-indexed.
+ *)
 Definition E1_def :
     E1 (block :word32) :word48 = FCP i. block ' (EL i E_data - 1)
 End
 
 (* The second part of E split the 48 bits into 8 groups of 6 bits
 
-   NOTE: the lowest 6 bits are to be sent to S1, next 6 to S2, and so on...
+   NOTE: the lowest 6 bits are sent to S1, the next 6 bits to S2, etc.
  *)
 Definition E2_def :
-    E2 (block :word48) :expansion =
-     ((5  ><  0) block,
-      (11 ><  6) block,
-      (17 >< 12) block,
-      (23 >< 18) block,
-      (29 >< 24) block,
-      (35 >< 30) block,
-      (41 >< 36) block,
-      (47 >< 42) block)
+    E2 (block :word48) :expansion = (
+      (5  ><  0) block, (* for S1 *)
+      (11 ><  6) block, (* for S2 *)
+      (17 >< 12) block, (* for S3 *)
+      (23 >< 18) block, (* for S4 *)
+      (29 >< 24) block, (* for S5 *)
+      (35 >< 30) block, (* for S6 *)
+      (41 >< 36) block, (* for S7 *)
+      (47 >< 42) block  (* for S8 *)
+    )
 End
 
+(* The purpose of ‘-1’ is to convert 1-indexed P values to 0-indexed. *)
 Definition P_def :
     P (block :word32) :word32 = FCP i. block ' (EL i P_data - 1)
 End
