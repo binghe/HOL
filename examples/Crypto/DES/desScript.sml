@@ -5,7 +5,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open arithmeticTheory pairTheory fcpTheory fcpLib wordsTheory wordsLib
-     listTheory sortingTheory pred_setTheory hurdUtils;
+     listTheory listLib sortingTheory pred_setTheory hurdUtils;
 
 (*  DES with round function components; the bit expansion E, the S-boxes S,
     and the bit permutation P [1, p.16]
@@ -333,7 +333,10 @@ Proof
     rw [IIP_data_def, EVERY_DEF]
 QED
 
-Theorem IIP_IP_Inversion :
+(* GENLIST I 64 = [0; 1; 2; 3; ...; 62; 63] *)
+Theorem GENLIST_I_64[local] = EVAL “GENLIST I 64”
+
+Theorem IP_Inversion :
     !w. IIP (IP w) = w
 Proof
     RW_TAC fcp_ss [IIP_def, IP_def]
@@ -347,9 +350,15 @@ Proof
  >> RW_TAC fcp_ss []
  >> Suff ‘EL j IP_data − 1 = i’ >- rw []
  >> fs [Abbr ‘j’, dimindex_64]
- >> Cases_on ‘i = 0’
- >- rw [IIP_data_def, IP_data_def]
- >> cheat
+ >> Q.ABBREV_TAC ‘P = \i. EL (EL i IIP_data − 1) IP_data − 1 = i’
+ >> Q.PAT_X_ASSUM ‘i < 64’ MP_TAC
+ >> Q.PAT_X_ASSUM ‘EL i IIP_data < 65’ K_TAC
+ >> simp []
+ >> Suff ‘EVERY P (GENLIST I 64)’ >- rw [EVERY_EL]
+ >> REWRITE_TAC [GENLIST_I_64]
+ >> Q.UNABBREV_TAC ‘P’
+ (* NOTE: The following step takes about 4 seconds to solve 64 subgoals *)
+ >> RW_TAC list_ss [EVERY_DEF, IP_data_def, IIP_data_def]
 QED
 
 val _ = export_theory();
