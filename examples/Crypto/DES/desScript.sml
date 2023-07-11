@@ -350,13 +350,13 @@ Proof
  >> RW_TAC fcp_ss []
  >> Suff ‘EL j IP_data − 1 = i’ >- rw []
  >> fs [Abbr ‘j’, dimindex_64]
- >> Q.ABBREV_TAC ‘P = \i. EL (EL i IIP_data − 1) IP_data − 1 = i’
+ >> Q.ABBREV_TAC ‘Q = \i. EL (EL i IIP_data − 1) IP_data − 1 = i’
  >> Q.PAT_X_ASSUM ‘i < 64’ MP_TAC
  >> Q.PAT_X_ASSUM ‘EL i IIP_data < 65’ K_TAC
  >> simp []
- >> Suff ‘EVERY P (GENLIST I 64)’ >- rw [EVERY_EL]
+ >> Suff ‘EVERY Q (GENLIST I 64)’ >- rw [EVERY_EL]
  >> REWRITE_TAC [GENLIST_I_64]
- >> Q.UNABBREV_TAC ‘P’
+ >> Q.UNABBREV_TAC ‘Q’
  (* NOTE: The following step takes about 4 seconds to solve 64 subgoals *)
  >> RW_TAC list_ss [EVERY_DEF, IP_data_def, IIP_data_def]
 QED
