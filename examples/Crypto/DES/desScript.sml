@@ -5,7 +5,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open arithmeticTheory pairTheory fcpTheory fcpLib wordsTheory wordsLib
-     listTheory listLib sortingTheory pred_setTheory hurdUtils;
+     listTheory listLib sortingTheory pred_setTheory combinTheory hurdUtils;
 
 (*  DES with round function components; the bit expansion E, the S-boxes S,
     and the bit permutation P [1, p.16]
@@ -13,7 +13,7 @@ open arithmeticTheory pairTheory fcpTheory fcpLib wordsTheory wordsLib
     +-----+                           +-----+
     | KS  | <--- KEY     MESSAGE ---> | IP  |
     +--+--+    (56-bit)  (64-bit)     +--+--+
-       |                                 |
+       |                                \|/
        |   u_0      (32-bit)       +-----+-----+       (32-bit)      v_0
        |    +----------------------+   split   +----------------------+
        |    |                      +-----+-----+                      |
@@ -49,7 +49,7 @@ open arithmeticTheory pairTheory fcpTheory fcpLib wordsTheory wordsLib
             |                      +-----------+                      |
             +--------------------> |   join    | <--------------------+
            u_r       (32-bit)      +-----+-----+      (32-bit)       v_r
-                                         |
+                                        \|/
                                       +--+--+
                                       | IIP | ---> CIPHERTEXT
                                       +-----+       (64-bit)
@@ -125,7 +125,7 @@ End
 
 (* The DES initial permutation IP and its inverse IIP
  *)
-Definition IP_data_def : (* 64 elements *)
+Definition IP_data : (* 64 elements *)
     IP_data = [58; 50; 42; 34; 26; 18; 10; 2;
                60; 52; 44; 36; 28; 20; 12; 4;
                62; 54; 46; 38; 30; 22; 14; 6;
@@ -136,7 +136,7 @@ Definition IP_data_def : (* 64 elements *)
                63; 55; 47; 39; 31; 23; 15; 7]
 End
 
-Definition IIP_data_def : (* 64 elements *)
+Definition IIP_data : (* 64 elements *)
     IIP_data = [40; 8; 48; 16; 56; 24; 64; 32;
                 39; 7; 47; 15; 55; 23; 63; 31;
                 38; 6; 46; 14; 54; 22; 62; 30;
@@ -159,7 +159,7 @@ End
    of the S-box. The entry identified in this way gives the four bits of output
    from the S-box. see also SBox_def.
  *)
-Definition S1_data_def :
+Definition S1_data :
     S1_data =
          [[0xe;0x4;0xd;0x1;0x2;0xf;0xb;0x8;0x3;0xa;0x6;0xc;0x5;0x9;0x0;0x7];
           [0x0;0xf;0x7;0x4;0xe;0x2;0xd;0x1;0xa;0x6;0xc;0xb;0x9;0x5;0x3;0x8];
@@ -167,7 +167,7 @@ Definition S1_data_def :
           [0xf;0xc;0x8;0x2;0x4;0x9;0x1;0x7;0x5;0xb;0x3;0xe;0xa;0x0;0x6;0xd]]
 End
 
-Definition S2_data_def :
+Definition S2_data :
     S2_data =
          [[0xf;0x1;0x8;0xe;0x6;0xb;0x3;0x4;0x9;0x7;0x2;0xd;0xc;0x0;0x5;0xa];
           [0x3;0xd;0x4;0x7;0xf;0x2;0x8;0xe;0xc;0x0;0x1;0xa;0x6;0x9;0xb;0x5];
@@ -175,7 +175,7 @@ Definition S2_data_def :
           [0xd;0x8;0xa;0x1;0x3;0xf;0x4;0x2;0xb;0x6;0x7;0xc;0x0;0x5;0xe;0x9]]
 End
 
-Definition S3_data_def :
+Definition S3_data :
     S3_data =
          [[0xa;0x0;0x9;0xe;0x6;0x3;0xf;0x5;0x1;0xd;0xc;0x7;0xb;0x4;0x2;0x8];
           [0xd;0x7;0x0;0x9;0x3;0x4;0x6;0xa;0x2;0x8;0x5;0xe;0xc;0xb;0xf;0x1];
@@ -183,7 +183,7 @@ Definition S3_data_def :
           [0x1;0xa;0xd;0x0;0x6;0x9;0x8;0x7;0x4;0xf;0xe;0x3;0xb;0x5;0x2;0xc]]
 End
 
-Definition S4_data_def :
+Definition S4_data :
     S4_data =
          [[0x7;0xd;0xe;0x3;0x0;0x6;0x9;0xa;0x1;0x2;0x8;0x5;0xb;0xc;0x4;0xf];
           [0xd;0x8;0xb;0x5;0x6;0xf;0x0;0x3;0x4;0x7;0x2;0xc;0x1;0xa;0xe;0x9];
@@ -191,7 +191,7 @@ Definition S4_data_def :
           [0x3;0xf;0x0;0x6;0xa;0x1;0xd;0x8;0x9;0x4;0x5;0xb;0xc;0x7;0x2;0xe]]
 End
 
-Definition S5_data_def :
+Definition S5_data :
     S5_data =
          [[0x2;0xc;0x4;0x1;0x7;0xa;0xb;0x6;0x8;0x5;0x3;0xf;0xd;0x0;0xe;0x9];
           [0xe;0xb;0x2;0xc;0x4;0x7;0xd;0x1;0x5;0x0;0xf;0xa;0x3;0x9;0x8;0x6];
@@ -199,7 +199,7 @@ Definition S5_data_def :
           [0xb;0x8;0xc;0x7;0x1;0xe;0x2;0xd;0x6;0xf;0x0;0x9;0xa;0x4;0x5;0x3]]
 End
 
-Definition S6_data_def :
+Definition S6_data :
     S6_data =
          [[0xc;0x1;0xa;0xf;0x9;0x2;0x6;0x8;0x0;0xd;0x3;0x4;0xe;0x7;0x5;0xb];
           [0xa;0xf;0x4;0x2;0x7;0xc;0x9;0x5;0x6;0x1;0xd;0xe;0x0;0xb;0x3;0x8];
@@ -207,7 +207,7 @@ Definition S6_data_def :
           [0x4;0x3;0x2;0xc;0x9;0x5;0xf;0xa;0xb;0xe;0x1;0x7;0x6;0x0;0x8;0xd]]
 End
 
-Definition S7_data_def :
+Definition S7_data :
     S7_data =
          [[0x4;0xb;0x2;0xe;0xf;0x0;0x8;0xd;0x3;0xc;0x9;0x7;0x5;0xa;0x6;0x1];
           [0xd;0x0;0xb;0x7;0x4;0x9;0x1;0xa;0xe;0x3;0x5;0xc;0x2;0xf;0x8;0x6];
@@ -215,7 +215,7 @@ Definition S7_data_def :
           [0x6;0xb;0xd;0x8;0x1;0x4;0xa;0x7;0x9;0x5;0x0;0xf;0xe;0x2;0x3;0xc]]
 End
 
-Definition S8_data_def :
+Definition S8_data :
     S8_data =
          [[0xd;0x2;0x8;0x4;0x6;0xf;0xb;0x1;0xa;0x9;0x3;0xe;0x5;0x0;0xc;0x7];
           [0x1;0xf;0xd;0x8;0xa;0x3;0x7;0x4;0xc;0x5;0x6;0xb;0x0;0xe;0x9;0x2];
@@ -249,10 +249,10 @@ Definition IIP_def :
 End
 
 Definition SBox_def :
-    SBox data :sbox =
-      (\w. let row = w2n ((((6 >< 6)w :word1) @@ ((0 >< 0)w :word1)) :word2);
-               col = w2n ((4 >< 1)w :word4)
-           in n2w (EL col (EL row data)))
+    SBox data (w :word6) :word4 =
+      let row = w2n ((((6 >< 6)w :word1) @@ ((0 >< 0)w :word1)) :word2);
+          col = w2n ((4 >< 1)w :word4)
+      in n2w (EL col (EL row data))
 End
 
 Overload S1 = “SBox S1_data”
@@ -311,22 +311,22 @@ Definition RoundOp_def :
    RoundOp (v :word32) (k :word48) = P (S (E v ?? k))
 End
 
-Definition empty_roundkeys_def :
+Definition empty_roundkeys :
    empty_roundkeys :word48 list = [0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w]
 End
 
 (* ‘Round n r (u,v) ks’ returns the (u,v) pair after n rounds, each time one round
    key from the HD of ks (thus is reversely ordered) gets consumed. The size of ks
    must be bigger than n.
-
-   NOTE: we do not consider the case of the last round in which u and v must be
-   swapped (thus the function Round doesn't know the number of maximal round at all.
-   Instead, the caller must do this swap when finally join the two parts before IIP.
  *)
 Definition Round_def :
-   Round 0 (ks :word48 list) ((u,v) :block) = (u,v) /\
-   Round (SUC n) (k::ks) (u,v) =
-     let (u',v') = Round n ks (u,v) in (v', u' ?? RoundOp v' k)
+   Round 0 r (ks :word48 list) (pair :block) = pair /\
+   Round (SUC n) r (k::ks) pair =
+     let (u',v') = Round n r ks pair in
+       if SUC n = r then
+         (u' ?? RoundOp v' k, v')
+       else
+         (v', u' ?? RoundOp v' k)
 End
 
 Definition Split_def :
@@ -335,15 +335,22 @@ End
 
 (* NOTE: This function is given a reversed order of pairs returned by Round. *)
 Definition Join_def :
-   Join ((v,u):block) :word64 = u @@ v
+   Join ((u,v):block) :word64 = u @@ v
 End
+
+Theorem Split_and_Join[simp] :
+    !w. Join (Split w) = w
+Proof
+    rw [Join_def, Split_def]
+ >> WORD_DECIDE_TAC
+QED
 
 (* This is DES, possibly reduced to certain rounds (usually even rounds)
 
    NOTE: It takes about 7 seconds to finish full 16 rounds of computation.
  *)
 Definition DES_def :
-   DES n (ks: word48 list) = IIP o Join o (Round n ks) o Split o IP
+   DES n (ks: word48 list) = IIP o Join o (Round n n ks) o Split o IP
 End
 
 (*---------------------------------------------------------------------------*)
@@ -353,31 +360,31 @@ End
 Theorem LENGTH_IP_data[local] :
     LENGTH IP_data = 64
 Proof
-    rw [IP_data_def, LENGTH]
+    rw [LENGTH, IP_data]
 QED
 
 Theorem LENGTH_IIP_data[local] :
     LENGTH IIP_data = 64
 Proof
-    rw [IIP_data_def, LENGTH]
+    rw [LENGTH, IIP_data]
 QED
 
 Theorem EVERY_IP_data[local] :
     EVERY (\n. n <= 64) IP_data
 Proof
-    rw [IP_data_def, EVERY_DEF]
+    rw [EVERY_DEF, IP_data]
 QED
 
 Theorem EVERY_IIP_data[local] :
     EVERY (\n. n <= 64) IIP_data
 Proof
-    rw [IIP_data_def, EVERY_DEF]
+    rw [EVERY_DEF, IIP_data]
 QED
 
 (* GENLIST I 64 = [0; 1; 2; 3; ...; 62; 63] *)
 Theorem GENLIST_I_64[local] = EVAL “GENLIST I 64”
 
-Theorem IP_Inversion :
+Theorem IP_Inversion[simp] :
     !w. IIP (IP w) = w
 Proof
     RW_TAC fcp_ss [IIP_def, IP_def]
@@ -397,10 +404,37 @@ Proof
  >> simp []
  >> Suff ‘EVERY Q (GENLIST I 64)’ >- rw [EVERY_EL]
  >> REWRITE_TAC [GENLIST_I_64]
- >> Q.UNABBREV_TAC ‘Q’
  (* NOTE: The following step takes about 4 seconds to solve 64 subgoals *)
- >> RW_TAC list_ss [EVERY_DEF, IP_data_def, IIP_data_def]
+ >> RW_TAC list_ss [Abbr ‘Q’, EVERY_DEF, IP_data, IIP_data]
 QED
+
+(* Zero-round DES doesn't change the message at all *)
+Theorem DES_0 :
+    !ks. DES 0 ks w = w
+Proof
+    rw [DES_def, o_DEF, Round_def]
+QED
+
+(*---------------------------------------------------------------------------*)
+(*  Running tests of DES computations [2]                                    *)
+(*---------------------------------------------------------------------------*)
+
+val _ = output_words_as_bin();
+
+(* |- Test_M = 0b100100011010001010110011110001001101010111100110111101111w *)
+Definition Test_M :
+   Test_M :word64 = 0x0123456789ABCDEFw
+End
+
+(* |- IP Test_M_data = 0b1100110000000000110011001111111111110000101010101111000010101010w *)
+Theorem IP_Test_M = EVAL “IP Test_M”
+
+(* |- K_data = 0b1001100110100010101110111100110011011101111001101111111110001w *)
+Definition Test_K :
+   Test_K :word64 = 0x133457799BBCDFF1w
+End
+
+val _ = output_words_as_hex();
 
 val _ = export_theory();
 val _ = html_theory "des";
@@ -409,4 +443,6 @@ val _ = html_theory "des";
 
  [1] Knudsen, L.R., Robshaw, M.J.B.: The Block Cipher Companion. Springer
      Publishing Company, Incorporated, Berlin, Heidelberg (2011).
+ [2] Grabbe, J.O.: The DES Algorithm Illustrated,
+     https://page.math.tu-berlin.de/~kant/teaching/hess/krypto-ws2006/des.htm.
  *)
