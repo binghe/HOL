@@ -56,7 +56,6 @@ open arithmeticTheory pairTheory fcpTheory fcpLib wordsTheory wordsLib
  *)
 val _ = new_theory "des";
 
-val _ = hide "S"; (* “S” is reused as the (overall) S-box function here *)
 val _ = guessing_word_lengths := true;
 val fcp_ss = std_ss ++ fcpLib.FCP_ss;
 
@@ -293,16 +292,58 @@ QED
 
    NOTE: the lowest 6 bits are sent to S1, the next 6 bits to S2, etc.
  *)
+val _ = hide "S";
+
 Definition S_def :
-    S (block :word48) :expansion =
-     ((5  ><  0) block, (* for S1 *)
-      (11 ><  6) block, (* for S2 *)
-      (17 >< 12) block, (* for S3 *)
-      (23 >< 18) block, (* for S4 *)
-      (29 >< 24) block, (* for S5 *)
-      (35 >< 30) block, (* for S6 *)
-      (41 >< 36) block, (* for S7 *)
-      (47 >< 42) block) (* for S8 *)
+    S (block :word48) :word32 =
+      concat_word_list [S1 ((5  ><  0) block);
+                        S2 ((11 ><  6) block);
+                        S3 ((17 >< 12) block);
+                        S4 ((23 >< 18) block);
+                        S5 ((29 >< 24) block);
+                        S6 ((35 >< 30) block);
+                        S7 ((41 >< 36) block);
+                        S8 ((47 >< 42) block)]
+End
+
+(* This is DES Round Operation (Function) combining P, S and E *)
+Definition RoundOp_def :
+   RoundOp (v :word32) (k :word48) = P (S (E v ?? k))
+End
+
+Definition empty_roundkeys_def :
+   empty_roundkeys :word48 list = [0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w]
+End
+
+(* ‘Round n r (u,v) ks’ returns the (u,v) pair after n rounds, each time one round
+   key from the HD of ks (thus is reversely ordered) gets consumed. The size of ks
+   must be bigger than n.
+
+   NOTE: we do not consider the case of the last round in which u and v must be
+   swapped (thus the function Round doesn't know the number of maximal round at all.
+   Instead, the caller must do this swap when finally join the two parts before IIP.
+ *)
+Definition Round_def :
+   Round 0 (ks :word48 list) ((u,v) :block) = (u,v) /\
+   Round (SUC n) (k::ks) (u,v) =
+     let (u',v') = Round n ks (u,v) in (v', u' ?? RoundOp v' k)
+End
+
+Definition Split_def :
+   Split (data :word64) :block = ((63 >< 32)data, (31 >< 0)data)
+End
+
+(* NOTE: This function is given a reversed order of pairs returned by Round. *)
+Definition Join_def :
+   Join ((v,u):block) :word64 = u @@ v
+End
+
+(* This is DES, possibly reduced to certain rounds (usually even rounds)
+
+   NOTE: It takes about 7 seconds to finish full 16 rounds of computation.
+ *)
+Definition DES_def :
+   DES n (ks: word48 list) = IIP o Join o (Round n ks) o Split o IP
 End
 
 (*---------------------------------------------------------------------------*)
