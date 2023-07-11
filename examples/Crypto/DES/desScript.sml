@@ -232,27 +232,27 @@ End
    NOTE: the purpose of ‘-1’ is to convert 1-indexed E values to 0-indexed.
  *)
 Definition E_def :
-    E (block :word32) :word48 = FCP i. block ' (EL i E_data - 1)
+    E (w :word32) :word48 = FCP i. w ' (EL i E_data - 1)
 End
 
 (* The purpose of ‘-1’ is to convert 1-indexed P values to 0-indexed. *)
 Definition P_def :
-    P (block :word32) :word32 = FCP i. block ' (EL i P_data - 1)
+    P (w :word32) :word32 = FCP i. w ' (EL i P_data - 1)
 End
 
 Definition IP_def :
-    IP (block :word64) :word64 = FCP i. block ' (EL i IP_data - 1)
+    IP (w :word64) :word64 = FCP i. w ' (EL i IP_data - 1)
 End
 
 Definition IIP_def :
-    IIP (block :word64) :word64 = FCP i. block ' (EL i IIP_data - 1)
+    IIP (w :word64) :word64 = FCP i. w ' (EL i IIP_data - 1)
 End
 
 Definition SBox_def :
-    SBox data (w :word6) :word4 =
+    SBox box (w :word6) :word4 =
       let row = w2n ((((6 >< 6)w :word1) @@ ((0 >< 0)w :word1)) :word2);
           col = w2n ((4 >< 1)w :word4)
-      in n2w (EL col (EL row data))
+      in n2w (EL col (EL row box))
 End
 
 Overload S1 = “SBox S1_data”
@@ -276,13 +276,13 @@ Theorem S5_001101_IS_1101' = EVAL “S5 13w”
 
 (* Basic S-Box criteria (not used so far) *)
 Definition IS_SBox_def :
-    IS_SBox (data :num list list) =
-      (LENGTH data = 4 /\ EVERY (\l. PERM l (GENLIST I 16)) data)
+    IS_SBox (box :num list list) =
+      (LENGTH box = 4 /\ EVERY (\l. PERM l (GENLIST I 16)) box)
 End
 
 (* A trivial S-Box (not used so far) *)
 Theorem EXISTS_SBox :
-    ?d. IS_SBox d
+    ?box. IS_SBox box
 Proof
     Q.EXISTS_TAC ‘[GENLIST I 16; GENLIST I 16; GENLIST I 16; GENLIST I 16]’
  >> rw [IS_SBox_def]
@@ -295,15 +295,15 @@ QED
 val _ = hide "S";
 
 Definition S_def :
-    S (block :word48) :word32 =
-      concat_word_list [S1 ((5  ><  0) block);
-                        S2 ((11 ><  6) block);
-                        S3 ((17 >< 12) block);
-                        S4 ((23 >< 18) block);
-                        S5 ((29 >< 24) block);
-                        S6 ((35 >< 30) block);
-                        S7 ((41 >< 36) block);
-                        S8 ((47 >< 42) block)]
+    S (w :word48) :word32 =
+      concat_word_list [S1 ((5  ><  0) w);
+                        S2 ((11 ><  6) w);
+                        S3 ((17 >< 12) w);
+                        S4 ((23 >< 18) w);
+                        S5 ((29 >< 24) w);
+                        S6 ((35 >< 30) w);
+                        S7 ((41 >< 36) w);
+                        S8 ((47 >< 42) w)]
 End
 
 (* This is DES Round Operation (Function) combining P, S and E *)
@@ -330,7 +330,7 @@ Definition Round_def :
 End
 
 Definition Split_def :
-   Split (data :word64) :block = ((63 >< 32)data, (31 >< 0)data)
+   Split (w :word64) :block = ((63 >< 32)w, (31 >< 0)w)
 End
 
 (* NOTE: This function is given a reversed order of pairs returned by Round. *)
@@ -345,13 +345,19 @@ Proof
  >> WORD_DECIDE_TAC
 QED
 
-(* This is DES, possibly reduced to certain rounds (usually even rounds)
+(* This is the core of DES (no key scheduling) with parameterized rounds
 
    NOTE: It takes about 7 seconds to finish full 16 rounds of computation.
  *)
-Definition DES_def :
-   DES n (ks: word48 list) = IIP o Join o (Round n n ks) o Split o IP
+Definition desCore_def :
+    desCore n (ks: word48 list) = IIP o Join o (Round n n ks) o Split o IP
 End
+
+(*---------------------------------------------------------------------------*)
+(*  Key Scheduling                                                           *)
+(*---------------------------------------------------------------------------*)
+
+
 
 (*---------------------------------------------------------------------------*)
 (*  Basic Properties of DES Functions                                        *)
@@ -409,10 +415,10 @@ Proof
 QED
 
 (* Zero-round DES doesn't change the message at all *)
-Theorem DES_0 :
-    !ks. DES 0 ks w = w
+Theorem desCore_0 :
+    !ks w. desCore 0 ks w = w
 Proof
-    rw [DES_def, o_DEF, Round_def]
+    rw [desCore_def, o_DEF, Round_def]
 QED
 
 (*---------------------------------------------------------------------------*)
