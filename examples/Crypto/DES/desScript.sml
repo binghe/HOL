@@ -5,58 +5,60 @@
 open HolKernel Parse boolLib bossLib;
 
 open arithmeticTheory pairTheory fcpTheory fcpLib wordsTheory wordsLib
-     listTheory sortingTheory pred_setTheory;
+     listTheory sortingTheory pred_setTheory hurdUtils;
 
 (*  DES with round function components; the bit expansion E, the S-boxes S,
-    and the bit permutation P.
+    and the bit permutation P [1, p.16]
 
-    +-----+                             +-----+
-    | KS  | <--- KEY       MESSAGE ---> | IP  |
-    +--+--+    (56-bit)    (64-bit)     +--+--+
-       |                                   |
-       |   u_0      (32-bit)         +-----+-----+       (32-bit)       v_0
-       |    +------------------------+   split   +-----------------------+
-       |    |                        +-----+-----+                       |
-       +----|------------------------------------------+ k_1             |
-       |   \|/      +---+      +---+      +----+      \|/      +----+    |
-       |   (+) <--- | P | <--- | S | <--- | E2 | <--- (+) <--- | E1 | <--+
-       |    |       +---+   ^  +---+   ^  +----+            ^  +----+    |
-       |     \           (32-bit)   (48-bit)             (48-bit)       /
-       |  v_1 +--------------------------+  +--------------------------+ u_1
+    +-----+                           +-----+
+    | KS  | <--- KEY     MESSAGE ---> | IP  |
+    +--+--+    (56-bit)  (64-bit)     +--+--+
+       |                                 |
+       |   u_0      (32-bit)       +-----+-----+       (32-bit)      v_0
+       |    +----------------------+   split   +----------------------+
+       |    |                      +-----+-----+                      |
+       +----|------------------------------------+ k_1                |
+       |   \|/      +---+          +---+        \|/          +---+    |
+       |   (+) <--- | P | <------- | S | <===== (+) <======= | E | <--+
+       |    |       +---+ (32-bit) +---+            (48-bit) +---+    |
+       |     \                                                       /
+       |  v_1 +-------------------------+  +------------------------+ u_1
+       |                                 \/
+       |                                 /\
+       |  u_1 +-------------------------+  +------------------------+ v_1
+       |     /                                                       \
+       +----|------------------------------------+ k_1                |
+       |   \|/      +---+          +---+        \|/          +---+    |
+       |   (+) <--- | P | <------- | S | <===== (+) <======= | E | <--+
+       |    |       +---+          +---+                     +---+    |
+       |     \                                                       /
+       |  v_2 +--------------------------+  +-----------------------+ u_2
        |                                  \/
        |                                  /\
-       |  u_1 +--------------------------+  +--------------------------+ v_1
-       |     /                                                          \
-       +----|------------------------------------------+ k_2             |
-       |   \|/      +---+      +---+      +----+      \|/      +----+    |
-       |   (+) <--- | P | <--- | S | <--- | E2 | <--- (+) <--- | E1 | <--+
-       |    |       +---+      +---+      +----+               +----+    |
-       |     \  \-------------------- f(v_1,k_2) --------------------/  /
-       |  v_2 +--------------------------+  +--------------------------+ u_2
-       |                                  \/
-       |                                  /\
-       |      +--------------------------+  +--------------------------+
-       |     /                                                          \
-       |    |       - v_i = u_{i-1} (+) f(v_{i-1}, k_i)                  |
-       |    .       - u_i = v_{i-1}              (i = 1 ... r - 1)       .
-       |    .       - u_r = u_{r-1} (+) f(v_{r-1}, k_r)                  .
-       |    .       - v_r = v_{r-1}                       (r = 16)       .
-       |    |                                                            |
-       +----|------------------------------------------+ k_r             |
-           \|/      +---+      +---+      +----+      \|/      +----+    |
-           (+) <--- | P | <--- | S | <--- | E2 | <--- (+) <--- | E1 | <--+
-            |       +---+      +---+      +----+               +----+    |
-            |                        +-----------+                       |
-            +------------------------+   join    +-----------------------+
-           u_r       (32-bit)        +-----+-----+       (32-bit)       v_r
-                                           |
-                                       +---+---+
-                                       | IP^-1 | ---> CIPHERTEXT
-                                       +-------+       (64-bit)
+       |      +--------------------------+  +-----------------------+
+       |     /                                                       \
+       |    |       - v_i = u_{i-1} (+) f(v_{i-1}, k_i)               |
+       .    .       - u_i = v_{i-1}              (i = 1 ... r - 1)    .
+       .    .       - u_r = u_{r-1} (+) f(v_{r-1}, k_r)               .
+       .    .       - v_r = v_{r-1}                       (r = 16)    .
+       |    |                                                         |
+       +----|------------------------------------+ k_r                |
+           \|/      +---+          +---+        \|/          +---+    |
+           (+) <--- | P | <------- | S | <===== (+) <======= | E | <--+
+            |       +---+          +---+                     +---+    |
+            |                      +-----------+                      |
+            +--------------------> |   join    | <--------------------+
+           u_r       (32-bit)      +-----+-----+      (32-bit)       v_r
+                                         |
+                                      +--+--+
+                                      | IIP | ---> CIPHERTEXT
+                                      +-----+       (64-bit)
  *)
-
 val _ = new_theory "des";
-val _ = hide "S";
+
+val _ = hide "S"; (* “S” is reused as the (overall) S-box function here *)
+val _ = guessing_word_lengths := true;
+val fcp_ss = std_ss ++ fcpLib.FCP_ss;
 
 (*---------------------------------------------------------------------------*)
 (* Type abbreviations                                                        *)
@@ -82,21 +84,22 @@ Type expansion[pp] = “:word6 # word6 # word6 # word6 #
 (* Each S-box returns four bits which, when concatenated together, give a
    32-bit intermediate quantity.
  *)
-Type sbox[pp] = “:word6 -> word4”
+Type sbox[pp]   = “:word6 -> word4”
+Type sboxes[pp] = “:word48 -> word32”
 
 (* DES round function *)
 Type roundop[pp] = “:word32 -> word32”
 
 (*---------------------------------------------------------------------------*)
-(* Tables and S-Boxes                                                        *)
+(* Data Tables. All values are directly copied from PDF pages [1]            *)
 (*---------------------------------------------------------------------------*)
 
-(* The bitwise expansion E (values are directly copied from PDF [1, p.18])
+(* The bitwise expansion E
 
    The tables should be interpreted (as those for IP and IP^−1) in that the
    first bit of the output of E is taken from the 32nd bit of the input.
 
-   NOTE: these "raw" data assumes the bits are 1-indexed but we use 0-indexing.
+   NOTE: all "raw" index data assume the bits are 1-indexed.
  *)
 Definition E_data_def : (* 48 elements *)
     E_data = [32;  1;  2;  3;  4;  5;
@@ -109,18 +112,40 @@ Definition E_data_def : (* 48 elements *)
               28; 29; 30; 31; 32;  1]
 End
 
-(* The bitwise permutation P (values are directly copied from PDF [1, p.18])
+(* The bitwise permutation P
 
    The tables should be interpreted in that the first bit of the output of P
    is taken from the 16th bit of the input.
-
-   NOTE: these "raw" data assumes the bits are 1-indexed but we need 0-indexing.
  *)
 Definition P_data_def : (* 32 elements *)
     P_data = [16;  7; 20; 21; 29; 12; 28; 17;
                1; 15; 23; 26;  5; 18; 31; 10;
                2;  8; 24; 14; 32; 27;  3;  9;
               19; 13; 30;  6; 22; 11;  4; 25]
+End
+
+(* The DES initial permutation IP and its inverse IIP
+ *)
+Definition IP_data_def : (* 64 elements *)
+    IP_data = [58; 50; 42; 34; 26; 18; 10; 2;
+               60; 52; 44; 36; 28; 20; 12; 4;
+               62; 54; 46; 38; 30; 22; 14; 6;
+               64; 56; 48; 40; 32; 24; 16; 8;
+               57; 49; 41; 33; 25; 17;  9; 1;
+               59; 51; 43; 35; 27; 19; 11; 3;
+               61; 53; 45; 37; 29; 21; 13; 5;
+               63; 55; 47; 39; 31; 23; 15; 7]
+End
+
+Definition IIP_data_def : (* 64 elements *)
+    IIP_data = [40; 8; 48; 16; 56; 24; 64; 32;
+                39; 7; 47; 15; 55; 23; 63; 31;
+                38; 6; 46; 14; 54; 22; 62; 30;
+                37; 5; 45; 13; 53; 21; 61; 29;
+                36; 4; 44; 12; 52; 20; 60; 28;
+                35; 3; 43; 11; 51; 19; 59; 27;
+                34; 2; 42; 10; 50; 18; 58; 26;
+                33; 1; 41;  9; 49; 17; 57; 25]
 End
 
 (* The DES S-boxes given in hexadecimal notation (raw values are directly
@@ -203,34 +228,25 @@ End
 (*  DES Round Functions                                                      *)
 (*---------------------------------------------------------------------------*)
 
-(* The first part of E searches the expansion table given by E_data
+(* The bitwise expansion function E
 
-   The purpose of ‘-1’ is to convert 1-indexed E values to 0-indexed.
+   NOTE: the purpose of ‘-1’ is to convert 1-indexed E values to 0-indexed.
  *)
-Definition E1_def :
-    E1 (block :word32) :word48 = FCP i. block ' (EL i E_data - 1)
-End
-
-(* The second part of E split the 48 bits into 8 groups of 6 bits
-
-   NOTE: the lowest 6 bits are sent to S1, the next 6 bits to S2, etc.
- *)
-Definition E2_def :
-    E2 (block :word48) :expansion = (
-      (5  ><  0) block, (* for S1 *)
-      (11 ><  6) block, (* for S2 *)
-      (17 >< 12) block, (* for S3 *)
-      (23 >< 18) block, (* for S4 *)
-      (29 >< 24) block, (* for S5 *)
-      (35 >< 30) block, (* for S6 *)
-      (41 >< 36) block, (* for S7 *)
-      (47 >< 42) block  (* for S8 *)
-    )
+Definition E_def :
+    E (block :word32) :word48 = FCP i. block ' (EL i E_data - 1)
 End
 
 (* The purpose of ‘-1’ is to convert 1-indexed P values to 0-indexed. *)
 Definition P_def :
     P (block :word32) :word32 = FCP i. block ' (EL i P_data - 1)
+End
+
+Definition IP_def :
+    IP (block :word64) :word64 = FCP i. block ' (EL i IP_data - 1)
+End
+
+Definition IIP_def :
+    IIP (block :word64) :word64 = FCP i. block ' (EL i IIP_data - 1)
 End
 
 Definition SBox_def :
@@ -260,21 +276,81 @@ QED
 Theorem S5_001101_IS_1101' = EVAL “S5 13w”
 
 (* Basic S-Box criteria (not used so far) *)
-Definition IS_SBOX :
-    IS_SBOX (data :num list list) =
+Definition IS_SBox_def :
+    IS_SBox (data :num list list) =
       (LENGTH data = 4 /\ EVERY (\l. PERM l (GENLIST I 16)) data)
 End
 
 (* A trivial S-Box (not used so far) *)
-Theorem EXISTS_SBOX :
-    ?d. IS_SBOX d
+Theorem EXISTS_SBox :
+    ?d. IS_SBox d
 Proof
     Q.EXISTS_TAC ‘[GENLIST I 16; GENLIST I 16; GENLIST I 16; GENLIST I 16]’
- >> rw [IS_SBOX]
+ >> rw [IS_SBox_def]
 QED
 
+(* The bitsecond part of E split the 48 bits into 8 groups of 6 bits
 
+   NOTE: the lowest 6 bits are sent to S1, the next 6 bits to S2, etc.
+ *)
+Definition S_def :
+    S (block :word48) :expansion =
+     ((5  ><  0) block, (* for S1 *)
+      (11 ><  6) block, (* for S2 *)
+      (17 >< 12) block, (* for S3 *)
+      (23 >< 18) block, (* for S4 *)
+      (29 >< 24) block, (* for S5 *)
+      (35 >< 30) block, (* for S6 *)
+      (41 >< 36) block, (* for S7 *)
+      (47 >< 42) block) (* for S8 *)
+End
 
+(*---------------------------------------------------------------------------*)
+(*  Basic Properties of DES Functions                                        *)
+(*---------------------------------------------------------------------------*)
+
+Theorem LENGTH_IP_data[local] :
+    LENGTH IP_data = 64
+Proof
+    rw [IP_data_def, LENGTH]
+QED
+
+Theorem LENGTH_IIP_data[local] :
+    LENGTH IIP_data = 64
+Proof
+    rw [IIP_data_def, LENGTH]
+QED
+
+Theorem EVERY_IP_data[local] :
+    EVERY (\n. n <= 64) IP_data
+Proof
+    rw [IP_data_def, EVERY_DEF]
+QED
+
+Theorem EVERY_IIP_data[local] :
+    EVERY (\n. n <= 64) IIP_data
+Proof
+    rw [IIP_data_def, EVERY_DEF]
+QED
+
+Theorem IIP_IP_Inversion :
+    !w. IIP (IP w) = w
+Proof
+    RW_TAC fcp_ss [IIP_def, IP_def]
+ >> Q.ABBREV_TAC ‘j = EL i IIP_data − 1’
+ >> Know ‘j < dimindex(:64)’
+ >- (fs [Abbr ‘j’, dimindex_64] \\
+     Suff ‘EL i IIP_data <= 64’ >- rw [] \\
+     MATCH_MP_TAC (SIMP_RULE std_ss [EVERY_IIP_data, LENGTH_IIP_data]
+                     (Q.ISPECL [‘IIP_data’, ‘\n. n <= 64’] EVERY_EL)) >> art [])
+ >> DISCH_TAC
+ >> RW_TAC fcp_ss []
+ >> Suff ‘EL j IP_data − 1 = i’ >- rw []
+ >> fs [Abbr ‘j’, dimindex_64]
+ >> Cases_on ‘i = 0’
+ >- rw [IIP_data_def, IP_data_def]
+ >> cheat
+QED
 
 val _ = export_theory();
 val _ = html_theory "des";
