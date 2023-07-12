@@ -271,9 +271,6 @@ Proof
     EVAL_TAC
 QED
 
-(* This gives the same example above *)
-Theorem S5_001101_IS_1101' = EVAL “S5 13w”
-
 (* Basic S-Box criteria (not used so far) *)
 Definition IS_SBox_def :
     IS_SBox (box :num list list) =
@@ -288,7 +285,8 @@ Proof
  >> rw [IS_SBox_def]
 QED
 
-(* The bitsecond part of E split the 48 bits into 8 groups of 6 bits
+(* The overall S-box function splits the 48 bits into 8 groups of 6 bits, call
+   each S-boxes, and concatenate the results.
 
    NOTE: the lowest 6 bits are sent to S1, the next 6 bits to S2, etc.
  *)
@@ -308,11 +306,11 @@ End
 
 (* This is DES Round Operation (Function) combining P, S and E *)
 Definition RoundOp_def :
-   RoundOp (v :word32) (k :word48) = P (S (E v ?? k))
+    RoundOp (v :word32) (k :word48) = P (S (E v ?? k))
 End
 
 Definition empty_roundkeys :
-   empty_roundkeys :word48 list = [0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w]
+    empty_roundkeys :word48 list = [0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w]
 End
 
 (* ‘Round n r (u,v) ks’ returns the (u,v) pair after n rounds, each time one round
@@ -320,17 +318,17 @@ End
    must be bigger than n.
  *)
 Definition Round_def :
-   Round 0 r (ks :word48 list) (pair :block) = pair /\
-   Round (SUC n) r (k::ks) pair =
-     let (u',v') = Round n r ks pair in
-       if SUC n = r then
-         (u' ?? RoundOp v' k, v')
-       else
-         (v', u' ?? RoundOp v' k)
+    Round 0 r (ks :word48 list) (pair :block) = pair /\
+    Round (SUC n) r (k::ks) pair =
+      let (u',v') = Round n r ks pair in
+        if SUC n = r then
+          (u' ?? RoundOp v' k, v')
+        else
+          (v', u' ?? RoundOp v' k)
 End
 
 Definition Split_def :
-   Split (w :word64) :block = ((63 >< 32)w, (31 >< 0)w)
+    Split (w :word64) :block = ((63 >< 32)w, (31 >< 0)w)
 End
 
 (* NOTE: This function is given a reversed order of pairs returned by Round. *)
@@ -405,9 +403,10 @@ Proof
  >> Suff ‘EL j IP_data − 1 = i’ >- rw []
  >> fs [Abbr ‘j’, dimindex_64]
  >> Q.ABBREV_TAC ‘Q = \i. EL (EL i IIP_data − 1) IP_data − 1 = i’
- >> Q.PAT_X_ASSUM ‘i < 64’ MP_TAC
- >> Q.PAT_X_ASSUM ‘EL i IIP_data < 65’ K_TAC
  >> simp []
+ >> Q.PAT_X_ASSUM ‘EL i IIP_data < 65’ K_TAC
+ >> Q.PAT_X_ASSUM ‘i < 64’ MP_TAC
+ (* NOTE: another way is to use NUMERAL_LESS_THM *)
  >> Suff ‘EVERY Q (GENLIST I 64)’ >- rw [EVERY_EL]
  >> REWRITE_TAC [GENLIST_I_64]
  (* NOTE: The following step takes about 4 seconds to solve 64 subgoals *)
@@ -427,15 +426,18 @@ QED
 
 val _ = output_words_as_bin();
 
-(* |- Test_M = 0b100100011010001010110011110001001101010111100110111101111w *)
+(* A test message (cleartext) *)
 Definition Test_M :
-   Test_M :word64 = 0x0123456789ABCDEFw
+    Test_M :word64 = 0x0123456789ABCDEFw
 End
 
-(* |- IP Test_M_data = 0b1100110000000000110011001111111111110000101010101111000010101010w *)
-Theorem IP_Test_M = EVAL “IP Test_M”
+Theorem IP_Test_M :
+    IP Test_M = 0b1100110000000000110011001111111111110000101010101111000010101010w
+Proof
+    EVAL_TAC
+QED
 
-(* |- K_data = 0b1001100110100010101110111100110011011101111001101111111110001w *)
+(* A test key *)
 Definition Test_K :
    Test_K :word64 = 0x133457799BBCDFF1w
 End
