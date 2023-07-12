@@ -7,7 +7,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open arithmeticTheory numLib pairTheory fcpTheory fcpLib wordsTheory wordsLib
-     listTheory listLib sortingTheory pred_setTheory combinTheory hurdUtils;
+     listTheory listLib combinTheory hurdUtils;
 
 open desTheory;
 
@@ -89,7 +89,7 @@ QED
 
 (* EVAL “KS Test_K” *)
 Theorem Test_K_KS[compute] :
-    KS Test_K =
+    KS Test_K 16 =
       [0b000110110000001011101111111111000111000001110010w; (* K1 *)
        0b011110011010111011011001110110111100100111100101w; (* K2 *)
        0b010101011111110010001010010000101100111110011001w; (* K3 *)
@@ -111,7 +111,7 @@ Proof
 QED
 
 Definition Test_KS :
-    Test_KS = KS Test_K
+    Test_KS = KS Test_K 16
 End
 
 (* A test message (cleartext)
@@ -129,7 +129,7 @@ QED
 
 (* EVAL “Round 0 16 Test_KS (Split (IP Test_M))” *)
 Theorem Test_Round_0[compute] :
-    Round 0 16 Test_KS (Split (IP Test_M)) =
+    Round 0 Test_KS (Split (IP Test_M)) =
       (0b11001100000000001100110011111111w, (* L0 *)
        0b11110000101010101111000010101010w) (* R0 *)
 Proof
@@ -138,11 +138,11 @@ QED
 
 (* These two values are taken from Test_Round_0 *)
 Definition L0_def :
-    L0 = 0b11001100000000001100110011111111w
+    L0 :word32 = 0b11001100000000001100110011111111w
 End
 
 Definition R0_def :
-    R0 = 0b11110000101010101111000010101010w
+    R0 :word32 = 0b11110000101010101111000010101010w
 End
 
 Theorem Test_E_R0 :
@@ -152,7 +152,7 @@ Proof
 QED
 
 Definition K1_def :
-    K1 = 0b000110110000001011101111111111000111000001110010w
+    K1 :word48 = 0b000110110000001011101111111111000111000001110010w
 End
 
 Theorem Test_K1_X_E_R0 :
@@ -177,7 +177,7 @@ QED
 
 (* EVAL “Round 1 16 Test_KS (Split (IP Test_M))” *)
 Theorem Test_Round_1[compute] :
-    Round 1 16 Test_KS (Split (IP Test_M)) =
+    Round 1 Test_KS (Split (IP Test_M)) =
       (0b11110000101010101111000010101010w, (* L1 = R0 *)
        0b11101111010010100110010101000100w) (* R1 *)
 Proof
@@ -185,7 +185,7 @@ Proof
 QED
 
 Definition R1_def :
-    R1 = 0b11101111010010100110010101000100w
+    R1 :word32 = 0b11101111010010100110010101000100w
 End
 
 Theorem Test_R1[compute] :
@@ -196,7 +196,7 @@ QED
 
 (* EVAL “Round 2 16 Test_KS (Split (IP Test_M))” *)
 Theorem Test_Round_2[compute] :
-    Round 2 16 Test_KS (Split (IP Test_M)) =
+    Round 2 Test_KS (Split (IP Test_M)) =
       (0b11101111010010100110010101000100w, (* L2 = R1 *)
        0b11001100000000010111011100001001w) (* R2 *)
 Proof
@@ -209,16 +209,16 @@ QED
    R16 = 0000 1010 0100 1100 1101 1001 1001 0101
  *)
 Theorem Test_Round_16[compute] :
-    Round 16 16 Test_KS (Split (IP Test_M)) =
-      (0b00001010010011001101100110010101w, (* R16 *)
-       0b01000011010000100011001000110100w) (* L16 *)
+    Round 16 Test_KS (Split (IP Test_M)) =
+      (0b01000011010000100011001000110100w, (* L16 *)
+       0b00001010010011001101100110010101w) (* R16 *)
 Proof
     EVAL_TAC
 QED
 
 (* EVAL “FullDESEnc Test_K Test_M”
 
-   IP-1(R16 L16) =
+   FullDESEnc Test_K Test_M = IIP(R16 @@ L16) =
      10000101 11101000 00010011 01010100 00001111 00001010 10110100 00000101
  *)
 Theorem Test_FullDESEnc :

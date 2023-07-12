@@ -39,10 +39,8 @@ open arithmeticTheory numLib pairTheory fcpTheory fcpLib wordsTheory wordsLib
        |                                  /\
        |      +--------------------------+  +-----------------------+
        |     /                                                       \
-       |    |       - v_i = u_{i-1} (+) f(v_{i-1}, k_i)               |
-       .    .       - u_i = v_{i-1}              (i = 1 ... r - 1)    .
-       .    .       - u_r = u_{r-1} (+) f(v_{r-1}, k_r)               .
-       .    .       - v_r = v_{r-1}                       (r = 16)    .
+       .    .                                                         .
+       .    .                                                         .
        |    |                                                         |
        +----|------------------------------------+ k_r                |
            \|/      +---+          +---+        \|/          +---+    |
@@ -162,13 +160,13 @@ End
  *)
 Definition PC1_data : (* 2 * 28 = 56 elements *)
     PC1_data = [57; 49; 41; 33; 25; 17;  9;
-                 1; 58; 50; 42; 34; 26; 18; 
-                10;  2; 59; 51; 43; 35; 27; 
+                 1; 58; 50; 42; 34; 26; 18;
+                10;  2; 59; 51; 43; 35; 27;
                 19; 11;  3; 60; 52; 44; 36; (* above is for C *)
             (* ----------------------------- *)
                 63; 55; 47; 39; 31; 23; 15;
-                 7; 62; 54; 46; 38; 30; 22; 
-                14;  6; 61; 53; 45; 37; 29; 
+                 7; 62; 54; 46; 38; 30; 22;
+                14;  6; 61; 53; 45; 37; 29;
                 21; 13;  5; 28; 20; 12;  4] (* above is for D *)
 End
 
@@ -300,18 +298,6 @@ Definition IIP_def :
     IIP (w :word64) :word64 = bitwise_perm w IIP_data
 End
 
-Theorem LENGTH_IP_data :
-    LENGTH IP_data = 64
-Proof
-    rw [LENGTH, IP_data]
-QED
-
-Theorem LENGTH_IIP_data :
-    LENGTH IIP_data = 64
-Proof
-    rw [LENGTH, IIP_data]
-QED
-
 Theorem IIP_IP_Inversion :
     !w. IIP (IP w) = w
 Proof
@@ -419,12 +405,13 @@ End
 
 Definition PC1_def :
     PC1 (k :word64) :roundkey =
-      let (key :word56) = bitwise_perm k PC1_data
-      in ((55 >< 28) key, (27 >< 0) key)
+      let (k' :word56) = bitwise_perm k PC1_data
+      in ((55 >< 28) k', (27 >< 0) k')
 End
 
 Definition PC2_def :
-    PC2 ((c,d) :roundkey) :word48 = bitwise_perm ((c @@ d) :word56) PC2_data
+    PC2 (w :roundkey) :word48 =
+      bitwise_perm ((FST w @@ SND w) :word56) PC2_data
 End
 
 (* The sum of the rotation amounts for the C and D registers is equal to 28.
@@ -445,43 +432,40 @@ QED
          the base roundkey returned by ‘PC1 key’.
  *)
 Definition RoundKey_def :
-    RoundKey 0 (k :word64) :roundkey list = [PC1 k] /\
+    RoundKey      0  (k :word64) :roundkey list = [PC1 k] /\
     RoundKey (SUC n) (k :word64) =
-      let ks = RoundKey n k; r = EL n R_data; (c,d) = HD ks
+      let ks = RoundKey n k; (c,d) = HD ks;
+          r = EL n R_data
       in (c #<< r, d #<< r)::ks
 End
 
-Theorem LENGTH_RoundKey :
-    !k r. LENGTH (RoundKey r k) = r + 1
+Theorem LENGTH_RoundKey[local] :
+    !k n. LENGTH (RoundKey n k) = n + 1
 Proof
     Q.X_GEN_TAC ‘k’
- >> Induct_on ‘r’
+ >> Induct_on ‘n’
  >- rw [RoundKey_def]
  >> rw [RoundKey_def]
- >> Q.ABBREV_TAC ‘ks = RoundKey r k’
+ >> Q.ABBREV_TAC ‘ks = RoundKey n k’
  >> Cases_on ‘ks’ >- fs []
  >> rw []
  >> Cases_on ‘h’ >> rw []
 QED
 
-(* This is the final 16-elements roundkeys with correct order
-
-   NOTE: This function should always take r = 16 as hard-coded, even for DES
-         with reduced rounds.
- *)
+(* This is the final roundkeys with correct number and order *)
 Definition KS_def :
-    KS key = MAP PC2 (TL (REVERSE (RoundKey 16 key)))
+    KS k n = MAP PC2 (TL (REVERSE (RoundKey n k)))
 End
 
 Theorem LENGTH_KS :
-    !k. LENGTH (KS k) = 16
+    !k n. LENGTH (KS k n) = n
 Proof
     rw [KS_def, RoundKey_def]
- >> Know ‘LENGTH (TL (REVERSE (RoundKey 16 k))) =
-          LENGTH (REVERSE (RoundKey 16 k)) - 1’
+ >> Know ‘LENGTH (TL (REVERSE (RoundKey n k))) =
+          LENGTH (REVERSE (RoundKey n k)) - 1’
  >- (MATCH_MP_TAC LENGTH_TL \\
      rw [LENGTH_REVERSE, LENGTH_RoundKey])
- >> rw [LENGTH_REVERSE, LENGTH_RoundKey] 
+ >> rw [LENGTH_REVERSE, LENGTH_RoundKey]
 QED
 
 (*---------------------------------------------------------------------------*)
@@ -493,49 +477,34 @@ Definition RoundOp_def :
     RoundOp (w :word32) (k :word48) = P (S (E w ?? k))
 End
 
-(* ‘Round n r ks (u,v)’ returns the (u,v) pair after n rounds, each time one round
-   key from the HD of ks (thus is reversely ordered) gets consumed. The size of ks
-   must be bigger than n.
- *)
+(* ‘Round r ks (L,R)’ returns the block after n rounds, no final swapping. *)
 Definition Round_def :
-    Round      0  r ks w = (w :block) /\
-    Round (SUC n) r ks w =
-      let (u,v) = Round n r ks w; k = EL n ks in
-        if SUC n = r then (u ?? RoundOp v k, v)
-        else           (v, u ?? RoundOp v k)
+    Round      0  ks w = (w :block) /\
+    Round (SUC n) ks w =
+      let (L,R) = Round n ks w; k = EL n ks in (R, L ?? RoundOp R k)
 End
 
+(* This is the initial split right after IP *)
 Definition Split_def :
     Split (w :word64) :block = ((63 >< 32)w, (31 >< 0)w)
 End
 
-(* NOTE: This function is given a reversed order of pairs returned by Round. *)
+(* This is the final join after all rounds by Round.
+
+   NOTE: the function is given a reversed order of pairs returned by Round
+ *)
 Definition Join_def :
-   Join ((u,v):block) :word64 = u @@ v
+   Join (w :block) :word64 = SND w @@ FST w
 End
 
-Theorem Join_Split_Inversion :
-    !w. Join (Split w) = w
-Proof
-    rw [Join_def, Split_def]
- >> WORD_DECIDE_TAC
-QED
-
-(* This is the core of DES (no key scheduling) with parameterized rounds
-
-   NOTE: It takes about 7 seconds to finish full 16 rounds of computation.
- *)
+(* This is the core of DES (no key scheduling) possibly reduced to r rounds *)
 Definition DES_def :
-    DES n ks = IIP o Join o (Round n n ks) o Split o IP
+    DES r ks = IIP o Join o (Round r ks) o Split o IP
 End
 
 Definition DESEnc_def :
-    DESEnc n key = DES n (KS key)
+    DESEnc r key = DES r (KS key r)
 End
-
-(* Full DES = DES of full 16 rounds *)
-Overload FullDES    = “DES 16”
-Overload FullDESEnc = “DESEnc 16”
 
 (*---------------------------------------------------------------------------*)
 (*  DES Decryption                                                           *)
@@ -548,27 +517,15 @@ Overload FullDESEnc = “DESEnc 16”
    decryption, with the register rotations being applied in the opposite
    directions (to the right). [1, p. 26]
 
-   NOTE: The equivalence of the above two notes are not obvious, we shall prove
-         the second one by a modified RoundKey function.
-
-   NOTE: This definition may be wrong for r < 16 because there's ‘r + 1’ roundkeys
+   NOTE: The equivalence of the above two notes is not obvious (need a proof).
  *)
 Definition DESDec_def :
-    DESDec n key = DES n (REVERSE (KS key))
+    DESDec r key = DES r (REVERSE (KS key r))
 End
 
+(* Full DES = DES of full 16 rounds *)
+Overload FullDESEnc = “DESEnc 16”
 Overload FullDESDec = “DESDec 16”
-
-(*---------------------------------------------------------------------------*)
-(*  Basic Properties of DES Functions                                        *)
-(*---------------------------------------------------------------------------*)
-
-(* Zero-round DES doesn't change the message at all *)
-Theorem DES_0 :
-    !ks w. DES 0 ks w = w
-Proof
-    rw [DES_def, o_DEF, Round_def, IIP_IP_Inversion, Join_Split_Inversion]
-QED
 
 val _ = export_theory();
 val _ = html_theory "des";
