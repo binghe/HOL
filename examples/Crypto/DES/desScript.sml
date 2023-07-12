@@ -261,7 +261,7 @@ Definition S8_data :
 End
 
 (*---------------------------------------------------------------------------*)
-(*  DES Round Functions                                                      *)
+(*  Expansion and Permutation Functions                                      *)
 (*---------------------------------------------------------------------------*)
 
 (* The bitwise expansion function E
@@ -284,6 +284,57 @@ End
 Definition IIP_def :
     IIP (w :word64) :word64 = FCP i. w ' (EL i IIP_data - 1)
 End
+
+Theorem LENGTH_IP_data :
+    LENGTH IP_data = 64
+Proof
+    rw [LENGTH, IP_data]
+QED
+
+Theorem LENGTH_IIP_data :
+    LENGTH IIP_data = 64
+Proof
+    rw [LENGTH, IIP_data]
+QED
+
+Theorem EVERY_IP_data[local] :
+    EVERY (\n. n <= 64) IP_data
+Proof
+    rw [EVERY_DEF, IP_data]
+QED
+
+Theorem EVERY_IIP_data[local] :
+    EVERY (\n. n <= 64) IIP_data
+Proof
+    rw [EVERY_DEF, IIP_data]
+QED
+
+Theorem IIP_IP_Inversion :
+    !w. IIP (IP w) = w
+Proof
+    RW_TAC fcp_ss [IIP_def, IP_def]
+ >> Q.ABBREV_TAC ‘j = EL i IIP_data − 1’
+ >> Know ‘j < dimindex(:64)’
+ >- (fs [Abbr ‘j’, dimindex_64] \\
+     Suff ‘EL i IIP_data <= 64’ >- rw [] \\
+     MATCH_MP_TAC (SIMP_RULE std_ss [EVERY_IIP_data, LENGTH_IIP_data]
+                     (Q.ISPECL [‘IIP_data’, ‘\n. n <= 64’] EVERY_EL)) >> art [])
+ >> DISCH_TAC
+ >> RW_TAC fcp_ss []
+ >> Suff ‘EL j IP_data − 1 = i’ >- rw []
+ >> fs [Abbr ‘j’, dimindex_64]
+ >> Q.PAT_X_ASSUM ‘EL i IIP_data < 65’ K_TAC
+ >> Q.PAT_X_ASSUM ‘i < 64’ MP_TAC
+ >> Q.SPEC_TAC (‘i’, ‘n’)
+ (* This numLib.BOUNDED_FORALL_CONV was learnt from Konrad Slind *)
+ >> rpt (CONV_TAC (BOUNDED_FORALL_CONV
+                    (SIMP_CONV list_ss [IP_data, IIP_data])))
+ >> REWRITE_TAC [] (* ‘!n. T’ here *)
+QED
+
+(*---------------------------------------------------------------------------*)
+(*  S-Box Functions                                                          *)
+(*---------------------------------------------------------------------------*)
 
 Definition SBox_def :
     SBox box (w :word6) :word4 =
@@ -357,7 +408,23 @@ Definition PC2_def :
       let k = (c @@ d) :word56 in FCP i. k ' (EL i PC2_data - 1)
 End
 
-(* NOTE: RoundKey returns a list of (c,d) pairs, later roundkeys occur first *)
+(* The sum of the rotation amounts for the C and D registers is equal to 28.
+   This is no coincidence and at the end of an encryption the registers C and D
+   are back at their initial state. The registers are ready for the next
+   encryption. [1, p.26]
+ *)
+Theorem SUM_R_data : (* not needed anywhere *)
+    SUM R_data = 28
+Proof
+    EVAL_TAC
+QED
+
+(* RoundKey returns a list of roundkeys as (c,d)-pairs, later keys occur first
+
+   NOTE: there are ‘r + 1’ elements returned by ‘RoundKey r key’. When r = 16,
+         the first and last roundkey are the same (see SUM_R_data), which is
+         the base roundkey returned by ‘PC1 key’.
+ *)
 Definition RoundKey_def :
     RoundKey 0 (key :word64) :roundkey list = [PC1 key] /\
     RoundKey (SUC n) (key :word64) =
@@ -365,12 +432,34 @@ Definition RoundKey_def :
       in (c #<< r, d #<< r)::keys
 End
 
-Definition empty_roundkeys :
-    empty_roundkeys = RoundKey 16 0w
+(* We can use FRONT to drop the last unused roundkey from the list. In this
+   way, the reversed roundkeys result in a correct decryption process for the
+   Feistel network of DES (given by Round_def).
+ *)
+Definition RoundKeys_def :
+    RoundKeys n key = FRONT (RoundKey n key)
 End
 
+Definition empty_roundkeys_def :
+    empty_roundkeys = RoundKeys 16 0w
+End
+
+(* |- empty_roundkeys =
+      [(0b0w,0b0w); (0b0w,0b0w); (0b0w,0b0w); (0b0w,0b0w);
+       (0b0w,0b0w); (0b0w,0b0w); (0b0w,0b0w); (0b0w,0b0w);
+       (0b0w,0b0w); (0b0w,0b0w); (0b0w,0b0w); (0b0w,0b0w);
+       (0b0w,0b0w); (0b0w,0b0w); (0b0w,0b0w); (0b0w,0b0w)]
+ *)
+Theorem empty_roundkeys = EVAL “empty_roundkeys”
+
+Theorem LENGTH_empty_roundkeys :
+    LENGTH empty_roundkeys = 16
+Proof
+    EVAL_TAC
+QED
+
 (*---------------------------------------------------------------------------*)
-(*  Round Function                                                           *)
+(*  Round Function and DES Encryption                                        *)
 (*---------------------------------------------------------------------------*)
 
 (* This is DES Round Operation (Function) combining P, S, E (and PC2) *)
@@ -417,7 +506,7 @@ Definition DES_def :
 End
 
 Definition DESEnc_def :
-    DESEnc n key = DES n (RoundKey n key)
+    DESEnc n key = DES n (RoundKeys n key)
 End
 
 (* Full DES = DES of full 16 rounds *)
@@ -425,55 +514,42 @@ Overload FullDES    = “DES 16”
 Overload FullDESEnc = “DESEnc 16”
 
 (*---------------------------------------------------------------------------*)
-(*  Basic Properties of DES Functions                                        *)
+(*  DES Decryption                                                           *)
 (*---------------------------------------------------------------------------*)
 
-Theorem LENGTH_IP_data[local] :
-    LENGTH IP_data = 64
-Proof
-    rw [LENGTH, IP_data]
-QED
+(* The decryption process is identical to encryption provided the round keys
+   are taken in reverse order. [1, p.16]
 
-Theorem LENGTH_IIP_data[local] :
-    LENGTH IIP_data = 64
-Proof
-    rw [LENGTH, IIP_data]
-QED
+   It is also interesting to note that the key schedule can be reversed for
+   decryption, with the register rotations being applied in the opposite
+   directions (to the right). [1, p. 26]
 
-Theorem EVERY_IP_data[local] :
-    EVERY (\n. n <= 64) IP_data
-Proof
-    rw [EVERY_DEF, IP_data]
-QED
+   NOTE: The equivalence of the above two notes are not obvious, we shall prove
+         the second one by a modified RoundKey function.
 
-Theorem EVERY_IIP_data[local] :
-    EVERY (\n. n <= 64) IIP_data
-Proof
-    rw [EVERY_DEF, IIP_data]
-QED
+   NOTE: This definition may be wrong for r < 16 because there's ‘r + 1’ roundkeys
+ *)
+Definition DESDec_def :
+    DESDec n key = DES n (REVERSE (RoundKeys n key))
+End
 
-Theorem IIP_IP_Inversion :
-    !w. IIP (IP w) = w
-Proof
-    RW_TAC fcp_ss [IIP_def, IP_def]
- >> Q.ABBREV_TAC ‘j = EL i IIP_data − 1’
- >> Know ‘j < dimindex(:64)’
- >- (fs [Abbr ‘j’, dimindex_64] \\
-     Suff ‘EL i IIP_data <= 64’ >- rw [] \\
-     MATCH_MP_TAC (SIMP_RULE std_ss [EVERY_IIP_data, LENGTH_IIP_data]
-                     (Q.ISPECL [‘IIP_data’, ‘\n. n <= 64’] EVERY_EL)) >> art [])
- >> DISCH_TAC
- >> RW_TAC fcp_ss []
- >> Suff ‘EL j IP_data − 1 = i’ >- rw []
- >> fs [Abbr ‘j’, dimindex_64]
- >> Q.PAT_X_ASSUM ‘EL i IIP_data < 65’ K_TAC
- >> Q.PAT_X_ASSUM ‘i < 64’ MP_TAC
- >> Q.SPEC_TAC (‘i’, ‘n’)
- (* This numLib.BOUNDED_FORALL_CONV was learnt from Konrad Slind *)
- >> rpt (CONV_TAC (BOUNDED_FORALL_CONV
-                    (SIMP_CONV list_ss [IP_data, IIP_data])))
- >> REWRITE_TAC [] (* ‘!n. T’ here *)
-QED
+Overload FullDESDec = “DESDec 16”
+
+(* The only difference w.r.t. RoundKey is the uses of "#>>" instead of "#<<" *)
+Definition RoundKeyRev_def :
+    RoundKeyRev 0 (key :word64) :roundkey list = [PC1 key] /\
+    RoundKeyRev (SUC n) (key :word64) =
+      let keys = RoundKeyRev n key; r = EL n R_data; (c,d) = HD keys
+      in (c #>> r, d #>> r)::keys
+End
+
+Definition RoundKeysRev_def :
+   RoundKeysRev n key = FRONT (RoundKeyRev n key)
+End
+
+(*---------------------------------------------------------------------------*)
+(*  Basic Properties of DES Functions                                        *)
+(*---------------------------------------------------------------------------*)
 
 (* Zero-round DES doesn't change the message at all *)
 Theorem DES_0 :
