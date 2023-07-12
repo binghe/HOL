@@ -1,5 +1,7 @@
 (*===========================================================================*)
 (*  The Data Encryption Standard (DES) in HOL                                *)
+(*                                                                           *)
+(*  Author: Chun Tian (binghe) <binghe.lisp@gmail.com> (2023)                *)
 (*===========================================================================*)
 
 open HolKernel Parse boolLib bossLib;
@@ -54,7 +56,7 @@ open arithmeticTheory numLib pairTheory fcpTheory fcpLib wordsTheory wordsLib
                                       | IIP | ---> CIPHERTEXT
                                       +-----+       (64-bit)
  *)
-val _ = new_theory "des";
+val _ = new_theory "des"; (* the lower-case name is following aesTheory *)
 
 val _ = guessing_word_lengths := true;
 val _ = hide "S"; (* reused for S-box *)
@@ -430,18 +432,6 @@ End
 Definition RoundKeys_def :
     RoundKeys n key = MAP PC2 (FRONT (RoundKey n key))
 End
-
-Definition empty_roundkeys_def :
-    empty_roundkeys = RoundKeys 16 0w
-End
-
-Theorem empty_roundkeys = EVAL “empty_roundkeys”
-
-Theorem LENGTH_empty_roundkeys :
-    LENGTH empty_roundkeys = 16
-Proof
-    EVAL_TAC
-QED
 
 (*---------------------------------------------------------------------------*)
 (*  Round Function and DES Encryption                                        *)
