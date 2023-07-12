@@ -717,6 +717,32 @@ Proof
     EVAL_TAC
 QED
 
+(* EVAL “P (S (K1 ?? E R0))” *)
+Triviality Test_P_S_K1_xor_E_R0[compute] :
+    P (S (K1 ?? E R0)) = 0b00100011010010101010100110111011w
+Proof
+    EVAL_TAC
+QED
+
+(* EVAL “Round 1 16 Test_KS (Split (IP Test_M))” *)
+Triviality Test_Round_1[compute] :
+    Round 1 16 Test_KS (Split (IP Test_M)) =
+      (0b11110000101010101111000010101010w, (* L1 = R0 *)
+       0b11101111010010100110010101000100w) (* R1 *)
+Proof
+    EVAL_TAC
+QED
+
+Definition R1_def :
+    R1 = 0b11101111010010100110010101000100w
+End
+
+Triviality Test_R1[compute] :
+    R1 = L0 ?? P (S (K1 ?? E R0))
+Proof
+    EVAL_TAC
+QED
+
 val _ = output_words_as_hex();
 
 val _ = export_theory();
