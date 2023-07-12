@@ -20,21 +20,21 @@ val fcp_ss = std_ss ++ fcpLib.FCP_ss;
 (*---------------------------------------------------------------------------*)
 
 (* This example is from [1, p.23] *)
-Theorem S5_001101_EQ_1101 :
+Theorem S5_001101 :
     S5 (n2w 0b001101) = (n2w 0b1101)
 Proof
     EVAL_TAC
 QED
 
 (* This example is from [2] *)
-Theorem S1_011011_EQ_0101 :
+Theorem S1_011011 :
     S1 (n2w 0b011011) = (n2w 0b0101)
 Proof
     EVAL_TAC
 QED
 
 (* This example is also from [2], ever exposed a bug in SBox_def *)
-Theorem S4_111010_EQ_0010 :
+Theorem S4_111010 :
     S4 (n2w 0b111010) = (n2w 0b0010)
 Proof
     EVAL_TAC
