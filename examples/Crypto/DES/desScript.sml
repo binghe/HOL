@@ -4,7 +4,7 @@
 
 open HolKernel Parse boolLib bossLib;
 
-open arithmeticTheory pairTheory fcpTheory fcpLib wordsTheory wordsLib
+open arithmeticTheory numLib pairTheory fcpTheory fcpLib wordsTheory wordsLib
      listTheory listLib sortingTheory pred_setTheory combinTheory hurdUtils;
 
 (*  DES with round function components; the bit expansion E, the S-boxes S,
@@ -265,7 +265,7 @@ Overload S7 = “SBox S7_data”
 Overload S8 = “SBox S8_data”
 
 (* This example is from [1, p.23] *)
-Theorem S5_001101_IS_1101 :
+Triviality S5_001101_EQ_1101 :
     S5 (n2w 0b001101) = (n2w 0b1101)
 Proof
     EVAL_TAC
@@ -278,7 +278,7 @@ Definition IS_SBox_def :
 End
 
 (* A trivial S-Box (not used so far) *)
-Theorem EXISTS_SBox :
+Theorem EXISTS_SBox[local] :
     ?box. IS_SBox box
 Proof
     Q.EXISTS_TAC ‘[GENLIST I 16; GENLIST I 16; GENLIST I 16; GENLIST I 16]’
@@ -385,9 +385,6 @@ Proof
     rw [EVERY_DEF, IIP_data]
 QED
 
-(* GENLIST I 64 = [0; 1; 2; 3; ...; 62; 63] *)
-Theorem GENLIST_I_64[local] = EVAL “GENLIST I 64”
-
 Theorem IP_Inversion[simp] :
     !w. IIP (IP w) = w
 Proof
@@ -402,15 +399,13 @@ Proof
  >> RW_TAC fcp_ss []
  >> Suff ‘EL j IP_data − 1 = i’ >- rw []
  >> fs [Abbr ‘j’, dimindex_64]
- >> Q.ABBREV_TAC ‘Q = \i. EL (EL i IIP_data − 1) IP_data − 1 = i’
- >> simp []
  >> Q.PAT_X_ASSUM ‘EL i IIP_data < 65’ K_TAC
  >> Q.PAT_X_ASSUM ‘i < 64’ MP_TAC
- (* NOTE: another way is to use NUMERAL_LESS_THM *)
- >> Suff ‘EVERY Q (GENLIST I 64)’ >- rw [EVERY_EL]
- >> REWRITE_TAC [GENLIST_I_64]
- (* NOTE: The following step takes about 4 seconds to solve 64 subgoals *)
- >> RW_TAC list_ss [Abbr ‘Q’, EVERY_DEF, IP_data, IIP_data]
+ >> Q.SPEC_TAC (‘i’, ‘n’)
+ (* This numLib.BOUNDED_FORALL_CONV was learnt from Konrad Slind *)
+ >> rpt (CONV_TAC (BOUNDED_FORALL_CONV
+                    (SIMP_CONV list_ss [IP_data, IIP_data])))
+ >> REWRITE_TAC [] (* ‘!n. T’ here *)
 QED
 
 (* Zero-round DES doesn't change the message at all *)
@@ -431,7 +426,7 @@ Definition Test_M :
     Test_M :word64 = 0x0123456789ABCDEFw
 End
 
-Theorem IP_Test_M :
+Triviality IP_Test_M :
     IP Test_M = 0b1100110000000000110011001111111111110000101010101111000010101010w
 Proof
     EVAL_TAC
