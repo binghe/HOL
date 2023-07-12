@@ -9,7 +9,7 @@ open arithmeticTheory numLib pairTheory fcpTheory fcpLib wordsTheory wordsLib
 
 open desTheory;
 
-val _ = new_theory "desTest";
+val _ = new_theory "des_test";
 
 (*---------------------------------------------------------------------------*)
 (*  S-box Tests                                                              *)
