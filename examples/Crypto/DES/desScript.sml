@@ -89,6 +89,9 @@ Type sboxes[pp] = “:word48 -> word32”
 (* DES round function *)
 Type roundop[pp] = “:word32 -> word32”
 
+(* DES round key *)
+Type roundkey[pp] = “:word28 # word28”
+
 (*---------------------------------------------------------------------------*)
 (* Data Tables. All values are directly copied from PDF pages [1]            *)
 (*---------------------------------------------------------------------------*)
@@ -148,16 +151,20 @@ Definition P_data : (* 32 elements *)
               19; 13; 30;  6; 22; 11;  4; 25]
 End
 
-(* Permuted Choice 1 (PC1), parity bits (e.g. 8) of 64-bit keys do not occur *)
-Definition PC1_data : (* 2 * 28 elements *)
+(* Permuted Choice 1 (PC1), parity bits (e.g. 8) of 64-bit keys do not occur
+
+   NOTE: PC1 is a permutation of all non-parity bit indexes.
+ *)
+Definition PC1_data : (* 2 * 28 = 56 elements *)
     PC1_data = [57; 49; 41; 33; 25; 17;  9;
                  1; 58; 50; 42; 34; 26; 18; 
                 10;  2; 59; 51; 43; 35; 27; 
                 19; 11;  3; 60; 52; 44; 36; (* above is for C *)
+            (* ----------------------------- *)
                 63; 55; 47; 39; 31; 23; 15;
                  7; 62; 54; 46; 38; 30; 22; 
                 14;  6; 61; 53; 45; 37; 29; 
-                21; 13;  5; 28; 20; 12; 4]  (* above is for D *)
+                21; 13;  5; 28; 20; 12;  4] (* above is for D *)
 End
 
 (* Permuted Choice 2 (PC2) *)
@@ -335,21 +342,48 @@ Definition S_def :
                         S8 ((47 >< 42) w)]
 End
 
-(* This is DES Round Operation (Function) combining P, S and E *)
-Definition RoundOp_def :
-    RoundOp (v :word32) (k :word48) = P (S (E v ?? k))
+(*---------------------------------------------------------------------------*)
+(*  Key Scheduling                                                           *)
+(*---------------------------------------------------------------------------*)
+
+Definition PC1_def :
+    PC1 (k :word64) :roundkey =
+      let (key :word56) = FCP i. k ' (EL i PC1_data - 1)
+      in ((55 >< 28) key, (27 >< 0) key)
+End
+
+Definition PC2_def :
+    PC2 ((c,d) :roundkey) :word48 =
+      let k = (c @@ d) :word56 in FCP i. k ' (EL i PC2_data - 1)
+End
+
+(* NOTE: RoundKey returns a list of (c,d) pairs, later roundkeys occur first *)
+Definition RoundKey_def :
+    RoundKey 0 (key :word64) :roundkey list = [PC1 key] /\
+    RoundKey (SUC n) (key :word64) =
+      let keys = RoundKey n key; r = EL n R_data; (c,d) = HD keys
+      in (c #<< r, d #<< r)::keys
 End
 
 Definition empty_roundkeys :
-    empty_roundkeys :word48 list = [0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w;0w]
+    empty_roundkeys = RoundKey 16 0w
 End
 
-(* ‘Round n r (u,v) ks’ returns the (u,v) pair after n rounds, each time one round
+(*---------------------------------------------------------------------------*)
+(*  Round Function                                                           *)
+(*---------------------------------------------------------------------------*)
+
+(* This is DES Round Operation (Function) combining P, S, E (and PC2) *)
+Definition RoundOp_def :
+    RoundOp (v :word32) (k :roundkey) = P (S (E v ?? PC2 k))
+End
+
+(* ‘Round n r ks (u,v)’ returns the (u,v) pair after n rounds, each time one round
    key from the HD of ks (thus is reversely ordered) gets consumed. The size of ks
    must be bigger than n.
  *)
 Definition Round_def :
-    Round 0 r (ks :word48 list) (pair :block) = pair /\
+    Round 0 r (ks :roundkey list) (pair :block) = pair /\
     Round (SUC n) r (k::ks) pair =
       let (u',v') = Round n r ks pair in
         if SUC n = r then
@@ -367,7 +401,7 @@ Definition Join_def :
    Join ((u,v):block) :word64 = u @@ v
 End
 
-Theorem Split_and_Join[simp] :
+Theorem Join_Split_Inversion :
     !w. Join (Split w) = w
 Proof
     rw [Join_def, Split_def]
@@ -378,13 +412,17 @@ QED
 
    NOTE: It takes about 7 seconds to finish full 16 rounds of computation.
  *)
-Definition desCore_def :
-    desCore n (ks: word48 list) = IIP o Join o (Round n n ks) o Split o IP
+Definition DES_def :
+    DES n ks = IIP o Join o (Round n n ks) o Split o IP
 End
 
-(*---------------------------------------------------------------------------*)
-(*  Key Scheduling                                                           *)
-(*---------------------------------------------------------------------------*)
+Definition DESEnc_def :
+    DESEnc n key = DES n (RoundKey n key)
+End
+
+(* Full DES = DES of full 16 rounds *)
+Overload FullDES    = “DES 16”
+Overload FullDESEnc = “DESEnc 16”
 
 (*---------------------------------------------------------------------------*)
 (*  Basic Properties of DES Functions                                        *)
@@ -414,7 +452,7 @@ Proof
     rw [EVERY_DEF, IIP_data]
 QED
 
-Theorem IP_Inversion[simp] :
+Theorem IIP_IP_Inversion :
     !w. IIP (IP w) = w
 Proof
     RW_TAC fcp_ss [IIP_def, IP_def]
@@ -438,10 +476,10 @@ Proof
 QED
 
 (* Zero-round DES doesn't change the message at all *)
-Theorem desCore_0 :
-    !ks w. desCore 0 ks w = w
+Theorem DES_0 :
+    !ks w. DES 0 ks w = w
 Proof
-    rw [desCore_def, o_DEF, Round_def]
+    rw [DES_def, o_DEF, Round_def, IIP_IP_Inversion, Join_Split_Inversion]
 QED
 
 (*---------------------------------------------------------------------------*)
