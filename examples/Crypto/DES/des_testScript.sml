@@ -46,18 +46,6 @@ QED
 
 val _ = output_words_as_padded_bin();
 
-Definition empty_roundkeys_def :
-    empty_roundkeys = RoundKeys 16 0w
-End
-
-Theorem empty_roundkeys = EVAL “empty_roundkeys”
-
-Theorem LENGTH_empty_roundkeys :
-    LENGTH empty_roundkeys = 16
-Proof
-    EVAL_TAC
-QED
-
 (* A test key
    |- Test_K = 0b1001100110100010101110111100110011011101111001101111111110001w
  *)
@@ -99,16 +87,9 @@ Proof
     EVAL_TAC
 QED
 
-Theorem Test_K_RoundKey_Inversion :
-    REVERSE (RoundKey 16 Test_K) = RoundKeyRev 16 16 Test_K
-Proof
-    REWRITE_TAC [Test_K_RoundKey_16]
- >> EVAL_TAC
-QED
-
-(* EVAL “REVERSE (RoundKeys 16 Test_K)” *)
-Theorem Test_K_RoundKeys_16[compute] :
-    REVERSE (RoundKeys 16 Test_K) =
+(* EVAL “KS Test_K” *)
+Theorem Test_K_KS[compute] :
+    KS Test_K =
       [0b000110110000001011101111111111000111000001110010w; (* K1 *)
        0b011110011010111011011001110110111100100111100101w; (* K2 *)
        0b010101011111110010001010010000101100111110011001w; (* K3 *)
@@ -130,7 +111,7 @@ Proof
 QED
 
 Definition Test_KS :
-    Test_KS = REVERSE (RoundKeys 16 Test_K)
+    Test_KS = KS Test_K
 End
 
 (* A test message (cleartext)
@@ -146,9 +127,11 @@ Proof
     EVAL_TAC
 QED
 
+(* EVAL “Round 0 16 Test_KS (Split (IP Test_M))” *)
 Theorem Test_Round_0[compute] :
     Round 0 16 Test_KS (Split (IP Test_M)) =
-      (0b11001100000000001100110011111111w,0b11110000101010101111000010101010w)
+      (0b11001100000000001100110011111111w, (* L0 *)
+       0b11110000101010101111000010101010w) (* R0 *)
 Proof
     EVAL_TAC
 QED
@@ -172,21 +155,21 @@ Definition K1_def :
     K1 = 0b000110110000001011101111111111000111000001110010w
 End
 
-Theorem Test_K1_xor_E_R0 :
+Theorem Test_K1_X_E_R0 :
     K1 ?? E R0 = 0b11000010001011110111010100001100110010100100111w
 Proof
     EVAL_TAC
 QED
 
 (* EVAL “S (K1 ?? E R0)” *)
-Theorem Test_S_K1_xor_E_R0 :
+Theorem Test_S_K1_X_E_R0 :
     S (K1 ?? E R0) = 0b01011100100000101011010110010111w
 Proof
     EVAL_TAC
 QED
 
 (* EVAL “P (S (K1 ?? E R0))” *)
-Theorem Test_P_S_K1_xor_E_R0[compute] :
+Theorem Test_P_S_K1_X_E_R0[compute] :
     P (S (K1 ?? E R0)) = 0b00100011010010101010100110111011w
 Proof
     EVAL_TAC
@@ -211,7 +194,52 @@ Proof
     EVAL_TAC
 QED
 
+(* EVAL “Round 2 16 Test_KS (Split (IP Test_M))” *)
+Theorem Test_Round_2[compute] :
+    Round 2 16 Test_KS (Split (IP Test_M)) =
+      (0b11101111010010100110010101000100w, (* L2 = R1 *)
+       0b11001100000000010111011100001001w) (* R2 *)
+Proof
+    EVAL_TAC
+QED
+
+(* EVAL “Round 16 16 Test_KS (Split (IP Test_M))”
+
+   L16 = 0100 0011 0100 0010 0011 0010 0011 0100
+   R16 = 0000 1010 0100 1100 1101 1001 1001 0101
+ *)
+Theorem Test_Round_16[compute] :
+    Round 16 16 Test_KS (Split (IP Test_M)) =
+      (0b00001010010011001101100110010101w, (* R16 *)
+       0b01000011010000100011001000110100w) (* L16 *)
+Proof
+    EVAL_TAC
+QED
+
+(* EVAL “FullDESEnc Test_K Test_M”
+
+   IP-1(R16 L16) =
+     10000101 11101000 00010011 01010100 00001111 00001010 10110100 00000101
+ *)
+Theorem Test_FullDESEnc :
+    FullDESEnc Test_K Test_M =
+      0b1000010111101000000100110101010000001111000010101011010000000101w
+Proof
+    EVAL_TAC
+QED
+
+(* Go back to HEX (padded) outputs, also for theory exporting purposes *)
+val _ = output_words_as_padded_hex();
+
+(* EVAL “FullDESEnc 0w 0w”, Encrypted text: "8c a6 4d e9 c1 b1 23 a7" [3] *)
+Theorem Test_FullDESEnc_0 :
+    FullDESEnc 0w 0w = 0x8CA64DE9C1B123A7w
+Proof
+    EVAL_TAC
+QED
+
 val _ = export_theory();
+val _ = html_theory "des_test";
 
 (* References:
 
@@ -219,4 +247,6 @@ val _ = export_theory();
      Publishing Company, Incorporated, Berlin, Heidelberg (2011).
  [2] Grabbe, J.O.: The DES Algorithm Illustrated,
      https://page.math.tu-berlin.de/~kant/teaching/hess/krypto-ws2006/des.htm.
+ [3] DES - Symmetric Ciphers Online. http://des.online-domain-tools.com
+
  *)

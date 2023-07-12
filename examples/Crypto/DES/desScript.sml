@@ -445,19 +445,44 @@ QED
          the base roundkey returned by ‘PC1 key’.
  *)
 Definition RoundKey_def :
-    RoundKey 0 (key :word64) :roundkey list = [PC1 key] /\
-    RoundKey (SUC n) (key :word64) =
-      let keys = RoundKey n key; r = EL n R_data; (c,d) = HD keys
-      in (c #<< r, d #<< r)::keys
+    RoundKey 0 (k :word64) :roundkey list = [PC1 k] /\
+    RoundKey (SUC n) (k :word64) =
+      let ks = RoundKey n k; r = EL n R_data; (c,d) = HD ks
+      in (c #<< r, d #<< r)::ks
 End
 
-(* This is the final roundkey as ‘:word48 list’ for DES round functions
+Theorem LENGTH_RoundKey :
+    !k r. LENGTH (RoundKey r k) = r + 1
+Proof
+    Q.X_GEN_TAC ‘k’
+ >> Induct_on ‘r’
+ >- rw [RoundKey_def]
+ >> rw [RoundKey_def]
+ >> Q.ABBREV_TAC ‘ks = RoundKey r k’
+ >> Cases_on ‘ks’ >- fs []
+ >> rw []
+ >> Cases_on ‘h’ >> rw []
+QED
 
-   For r = 16, the shape of returned roundkeys is [K16;K15;K14;...;K1]
+(* This is the final 16-elements roundkeys with correct order
+
+   NOTE: This function should always take r = 16 as hard-coded, even for DES
+         with reduced rounds.
  *)
-Definition RoundKeys_def :
-    RoundKeys r key = MAP PC2 (FRONT (RoundKey r key))
+Definition KS_def :
+    KS key = MAP PC2 (TL (REVERSE (RoundKey 16 key)))
 End
+
+Theorem LENGTH_KS :
+    !k. LENGTH (KS k) = 16
+Proof
+    rw [KS_def, RoundKey_def]
+ >> Know ‘LENGTH (TL (REVERSE (RoundKey 16 k))) =
+          LENGTH (REVERSE (RoundKey 16 k)) - 1’
+ >- (MATCH_MP_TAC LENGTH_TL \\
+     rw [LENGTH_REVERSE, LENGTH_RoundKey])
+ >> rw [LENGTH_REVERSE, LENGTH_RoundKey] 
+QED
 
 (*---------------------------------------------------------------------------*)
 (*  Round Function and DES Encryption                                        *)
@@ -473,9 +498,9 @@ End
    must be bigger than n.
  *)
 Definition Round_def :
-    Round 0 r (ks :word48 list) (w :block) = w /\
-    Round (SUC n) r (k::ks) w =
-      let (u,v) = Round n r ks w in
+    Round      0  r ks w = (w :block) /\
+    Round (SUC n) r ks w =
+      let (u,v) = Round n r ks w; k = EL n ks in
         if SUC n = r then (u ?? RoundOp v k, v)
         else           (v, u ?? RoundOp v k)
 End
@@ -505,7 +530,7 @@ Definition DES_def :
 End
 
 Definition DESEnc_def :
-    DESEnc n key = DES n (RoundKeys n key)
+    DESEnc n key = DES n (KS key)
 End
 
 (* Full DES = DES of full 16 rounds *)
@@ -529,23 +554,10 @@ Overload FullDESEnc = “DESEnc 16”
    NOTE: This definition may be wrong for r < 16 because there's ‘r + 1’ roundkeys
  *)
 Definition DESDec_def :
-    DESDec n key = DES n (REVERSE (RoundKeys n key))
+    DESDec n key = DES n (REVERSE (KS key))
 End
 
 Overload FullDESDec = “DESDec 16”
-
-(* The main difference w.r.t. RoundKey is the uses of "#>>" instead of "#<<"
-
-   The extra parameter ‘r’ is used to get the correct rotation values for
-   DES with reduced rounds.
- *)
-Definition RoundKeyRev_def :
-    RoundKeyRev 0 r (key :word64) :roundkey list = [PC1 key] /\
-    RoundKeyRev (SUC n) r (key :word64) =
-      let keys = RoundKeyRev n r key; (c,d) = HD keys;
-          i = EL (r - 1 - n) R_data;
-      in (c #>> i, d #>> i)::keys
-End
 
 (*---------------------------------------------------------------------------*)
 (*  Basic Properties of DES Functions                                        *)
