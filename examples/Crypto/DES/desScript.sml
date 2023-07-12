@@ -93,14 +93,39 @@ Type roundop[pp] = “:word32 -> word32”
 (* Data Tables. All values are directly copied from PDF pages [1]            *)
 (*---------------------------------------------------------------------------*)
 
+(* The DES initial permutation IP
+
+   NOTE: all "raw" index data below assume 1-indexing bits (the 1st bit is 1).
+ *)
+Definition IP_data : (* 64 elements *)
+    IP_data = [58; 50; 42; 34; 26; 18; 10; 2;
+               60; 52; 44; 36; 28; 20; 12; 4;
+               62; 54; 46; 38; 30; 22; 14; 6;
+               64; 56; 48; 40; 32; 24; 16; 8;
+               57; 49; 41; 33; 25; 17;  9; 1;
+               59; 51; 43; 35; 27; 19; 11; 3;
+               61; 53; 45; 37; 29; 21; 13; 5;
+               63; 55; 47; 39; 31; 23; 15; 7]
+End
+
+(* The final permutation Inverse IP, see IP_Inverse for its relation with IP *)
+Definition IIP_data : (* 64 elements *)
+    IIP_data = [40; 8; 48; 16; 56; 24; 64; 32;
+                39; 7; 47; 15; 55; 23; 63; 31;
+                38; 6; 46; 14; 54; 22; 62; 30;
+                37; 5; 45; 13; 53; 21; 61; 29;
+                36; 4; 44; 12; 52; 20; 60; 28;
+                35; 3; 43; 11; 51; 19; 59; 27;
+                34; 2; 42; 10; 50; 18; 58; 26;
+                33; 1; 41;  9; 49; 17; 57; 25]
+End
+
 (* The bitwise expansion E
 
    The tables should be interpreted (as those for IP and IP^−1) in that the
    first bit of the output of E is taken from the 32nd bit of the input.
-
-   NOTE: all "raw" index data assume the bits are 1-indexed.
  *)
-Definition E_data_def : (* 48 elements *)
+Definition E_data : (* 48 elements *)
     E_data = [32;  1;  2;  3;  4;  5;
                4;  5;  6;  7;  8;  9;
                8;  9; 10; 11; 12; 13;
@@ -116,35 +141,40 @@ End
    The tables should be interpreted in that the first bit of the output of P
    is taken from the 16th bit of the input.
  *)
-Definition P_data_def : (* 32 elements *)
+Definition P_data : (* 32 elements *)
     P_data = [16;  7; 20; 21; 29; 12; 28; 17;
                1; 15; 23; 26;  5; 18; 31; 10;
                2;  8; 24; 14; 32; 27;  3;  9;
               19; 13; 30;  6; 22; 11;  4; 25]
 End
 
-(* The DES initial permutation IP and its inverse IIP
- *)
-Definition IP_data : (* 64 elements *)
-    IP_data = [58; 50; 42; 34; 26; 18; 10; 2;
-               60; 52; 44; 36; 28; 20; 12; 4;
-               62; 54; 46; 38; 30; 22; 14; 6;
-               64; 56; 48; 40; 32; 24; 16; 8;
-               57; 49; 41; 33; 25; 17;  9; 1;
-               59; 51; 43; 35; 27; 19; 11; 3;
-               61; 53; 45; 37; 29; 21; 13; 5;
-               63; 55; 47; 39; 31; 23; 15; 7]
+(* Permuted Choice 1 (PC1), parity bits (e.g. 8) of 64-bit keys do not occur *)
+Definition PC1_data : (* 2 * 28 elements *)
+    PC1_data = [57; 49; 41; 33; 25; 17;  9;
+                 1; 58; 50; 42; 34; 26; 18; 
+                10;  2; 59; 51; 43; 35; 27; 
+                19; 11;  3; 60; 52; 44; 36; (* above is for C *)
+                63; 55; 47; 39; 31; 23; 15;
+                 7; 62; 54; 46; 38; 30; 22; 
+                14;  6; 61; 53; 45; 37; 29; 
+                21; 13;  5; 28; 20; 12; 4]  (* above is for D *)
 End
 
-Definition IIP_data : (* 64 elements *)
-    IIP_data = [40; 8; 48; 16; 56; 24; 64; 32;
-                39; 7; 47; 15; 55; 23; 63; 31;
-                38; 6; 46; 14; 54; 22; 62; 30;
-                37; 5; 45; 13; 53; 21; 61; 29;
-                36; 4; 44; 12; 52; 20; 60; 28;
-                35; 3; 43; 11; 51; 19; 59; 27;
-                34; 2; 42; 10; 50; 18; 58; 26;
-                33; 1; 41;  9; 49; 17; 57; 25]
+(* Permuted Choice 2 (PC2) *)
+Definition PC2_data : (* 48 elements *)
+    PC2_data = [14; 17; 11; 24;  1;  5;
+                 3; 28; 15;  6; 21; 10;
+                23; 19; 12;  4; 26;  8;
+                16;  7; 27; 20; 13;  2;
+                41; 52; 31; 37; 47; 55;
+                30; 40; 51; 45; 33; 48;
+                44; 49; 39; 56; 34; 53;
+                46; 42; 50; 36; 29; 32]
+End
+
+(* The round-dependent rotation values *)
+Definition R_data : (* 16 elements *)
+    R_data = [1; 1; 2; 2; 2; 2; 2; 2; 1; 2; 2; 2; 2; 2; 2; 1]
 End
 
 (* The DES S-boxes given in hexadecimal notation (raw values are directly
@@ -255,6 +285,7 @@ Definition SBox_def :
       in n2w (EL col (EL row box))
 End
 
+(* abbreviations when using "standard" S-boxes *)
 Overload S1 = “SBox S1_data”
 Overload S2 = “SBox S2_data”
 Overload S3 = “SBox S3_data”
@@ -354,8 +385,6 @@ End
 (*---------------------------------------------------------------------------*)
 (*  Key Scheduling                                                           *)
 (*---------------------------------------------------------------------------*)
-
-
 
 (*---------------------------------------------------------------------------*)
 (*  Basic Properties of DES Functions                                        *)
