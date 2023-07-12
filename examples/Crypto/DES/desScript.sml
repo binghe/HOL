@@ -327,8 +327,31 @@ Proof
  >> DISCH_TAC
  >> RW_TAC fcp_ss []
  >> Suff ‘64 - EL (63 - j) IP_data = i’ >- rw []
- >> FULL_SIMP_TAC list_ss [Abbr ‘j’, dimindex_64]
+ >> FULL_SIMP_TAC std_ss [Abbr ‘j’, dimindex_64]
  >> Q.PAT_X_ASSUM ‘0 < EL (63 - i) IIP_data’ K_TAC
+ >> Q.PAT_X_ASSUM ‘i < 64’ MP_TAC
+ >> Q.SPEC_TAC (‘i’, ‘n’)
+ >> rpt (CONV_TAC (BOUNDED_FORALL_CONV
+                    (SIMP_CONV list_ss [IP_data, IIP_data])))
+ >> REWRITE_TAC []
+QED
+
+Theorem IP_IIP_Inversion :
+    !w. IP (IIP w) = w
+Proof
+    RW_TAC fcp_ss [IIP_def, IP_def, bitwise_perm_def, dimindex_64]
+ >> Q.ABBREV_TAC ‘j = 64 - EL (63 - i) IP_data’
+ >> Know ‘j < dimindex(:64)’
+ >- (fs [Abbr ‘j’, dimindex_64] \\
+     POP_ASSUM MP_TAC \\
+     Q.SPEC_TAC (‘i’, ‘n’) \\
+     rpt (CONV_TAC (BOUNDED_FORALL_CONV (SIMP_CONV list_ss [IP_data]))) \\
+     REWRITE_TAC [])
+ >> DISCH_TAC
+ >> RW_TAC fcp_ss []
+ >> Suff ‘64 - EL (63 - j) IIP_data = i’ >- rw []
+ >> FULL_SIMP_TAC std_ss [Abbr ‘j’, dimindex_64]
+ >> Q.PAT_X_ASSUM ‘0 < EL (63 - i) IP_data’ K_TAC
  >> Q.PAT_X_ASSUM ‘i < 64’ MP_TAC
  >> Q.SPEC_TAC (‘i’, ‘n’)
  >> rpt (CONV_TAC (BOUNDED_FORALL_CONV
@@ -428,9 +451,12 @@ Definition RoundKey_def :
       in (c #<< r, d #<< r)::keys
 End
 
-(* This is the final roundkey as ‘:word48 list’ for DES round functions *)
+(* This is the final roundkey as ‘:word48 list’ for DES round functions
+
+   For r = 16, the shape of returned roundkeys is [K16;K15;K14;...;K1]
+ *)
 Definition RoundKeys_def :
-    RoundKeys n key = MAP PC2 (FRONT (RoundKey n key))
+    RoundKeys r key = MAP PC2 (FRONT (RoundKey r key))
 End
 
 (*---------------------------------------------------------------------------*)
@@ -439,7 +465,7 @@ End
 
 (* This is DES Round Operation (Function) combining P, S and E *)
 Definition RoundOp_def :
-    RoundOp (v :word32) (k :word48) = P (S (E v ?? k))
+    RoundOp (w :word32) (k :word48) = P (S (E w ?? k))
 End
 
 (* ‘Round n r ks (u,v)’ returns the (u,v) pair after n rounds, each time one round
@@ -447,13 +473,11 @@ End
    must be bigger than n.
  *)
 Definition Round_def :
-    Round 0 r (ks :word48 list) (pair :block) = pair /\
-    Round (SUC n) r (k::ks) pair =
-      let (u',v') = Round n r ks pair in
-        if SUC n = r then
-          (u' ?? RoundOp v' k, v')
-        else
-          (v', u' ?? RoundOp v' k)
+    Round 0 r (ks :word48 list) (w :block) = w /\
+    Round (SUC n) r (k::ks) w =
+      let (u,v) = Round n r ks w in
+        if SUC n = r then (u ?? RoundOp v k, v)
+        else           (v, u ?? RoundOp v k)
 End
 
 Definition Split_def :
