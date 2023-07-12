@@ -221,9 +221,19 @@ QED
    FullDESEnc Test_K Test_M = IIP(R16 @@ L16) =
      10000101 11101000 00010011 01010100 00001111 00001010 10110100 00000101
  *)
-Theorem Test_FullDESEnc :
-    FullDESEnc Test_K Test_M =
-      0b1000010111101000000100110101010000001111000010101011010000000101w
+Definition Test_C :
+    Test_C = 0b1000010111101000000100110101010000001111000010101011010000000101w
+End
+
+Theorem Test_FullDESEnc_K_M :
+    FullDESEnc Test_K Test_M = Test_C
+Proof
+    EVAL_TAC
+QED
+
+(* EVAL “FullDESDec Test_K Test_C” *)
+Theorem Test_FullDESEnc_K_C :
+    FullDESDec Test_K Test_C = Test_M
 Proof
     EVAL_TAC
 QED
@@ -234,6 +244,12 @@ val _ = output_words_as_padded_hex();
 (* EVAL “FullDESEnc 0w 0w”, Encrypted text: "8c a6 4d e9 c1 b1 23 a7" [3] *)
 Theorem Test_FullDESEnc_0 :
     FullDESEnc 0w 0w = 0x8CA64DE9C1B123A7w
+Proof
+    EVAL_TAC
+QED
+
+Theorem Test_FullDESDec_0 :
+    FullDESDec 0w 0x8CA64DE9C1B123A7w = 0w
 Proof
     EVAL_TAC
 QED
