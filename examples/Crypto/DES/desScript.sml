@@ -57,6 +57,8 @@ open arithmeticTheory numLib pairTheory fcpTheory fcpLib wordsTheory wordsLib
 val _ = new_theory "des";
 
 val _ = guessing_word_lengths := true;
+val _ = hide "S"; (* reused for S-box *)
+
 val fcp_ss = std_ss ++ fcpLib.FCP_ss;
 
 (*---------------------------------------------------------------------------*)
@@ -98,7 +100,8 @@ Type roundkey[pp] = “:word28 # word28”
 
 (* The DES initial permutation IP
 
-   NOTE: all "raw" index data below assume 1-indexing bits (the 1st bit is 1).
+   NOTE: all "raw" index data below assume 1-indexing bits and the first bit is
+         the most significant bit !!!
  *)
 Definition IP_data : (* 64 elements *)
     IP_data = [58; 50; 42; 34; 26; 18; 10; 2;
@@ -264,25 +267,35 @@ End
 (*  Expansion and Permutation Functions                                      *)
 (*---------------------------------------------------------------------------*)
 
+(* This definition is dedicated to DES raw index tables where the "first bit"
+   is considered as the highest (most sigificant) bit with the index "1".
+
+   NOTE: This definition is the only one where ‘FCP i.’ is explicitly used.
+ *)
+Definition bitwise_perm_def :
+    bitwise_perm (w :bool['a]) table :bool['b] =
+       FCP i. w ' (dimindex(:'a) - EL (dimindex(:'b) - 1 - i) table)
+End
+
 (* The bitwise expansion function E
 
    NOTE: the purpose of ‘-1’ is to convert 1-indexed E values to 0-indexed.
  *)
 Definition E_def :
-    E (w :word32) :word48 = FCP i. w ' (EL i E_data - 1)
+    E (w :word32) :word48 = bitwise_perm w E_data
 End
 
 (* The purpose of ‘-1’ is to convert 1-indexed P values to 0-indexed. *)
 Definition P_def :
-    P (w :word32) :word32 = FCP i. w ' (EL i P_data - 1)
+    P (w :word32) :word32 = bitwise_perm w P_data
 End
 
 Definition IP_def :
-    IP (w :word64) :word64 = FCP i. w ' (EL i IP_data - 1)
+    IP (w :word64) :word64 = bitwise_perm w IP_data
 End
 
 Definition IIP_def :
-    IIP (w :word64) :word64 = FCP i. w ' (EL i IIP_data - 1)
+    IIP (w :word64) :word64 = bitwise_perm w IIP_data
 End
 
 Theorem LENGTH_IP_data :
@@ -297,39 +310,28 @@ Proof
     rw [LENGTH, IIP_data]
 QED
 
-Theorem EVERY_IP_data[local] :
-    EVERY (\n. n <= 64) IP_data
-Proof
-    rw [EVERY_DEF, IP_data]
-QED
-
-Theorem EVERY_IIP_data[local] :
-    EVERY (\n. n <= 64) IIP_data
-Proof
-    rw [EVERY_DEF, IIP_data]
-QED
-
 Theorem IIP_IP_Inversion :
     !w. IIP (IP w) = w
 Proof
-    RW_TAC fcp_ss [IIP_def, IP_def]
- >> Q.ABBREV_TAC ‘j = EL i IIP_data − 1’
+    RW_TAC fcp_ss [IIP_def, IP_def, bitwise_perm_def, dimindex_64]
+ >> Q.ABBREV_TAC ‘j = 64 - EL (63 - i) IIP_data’
  >> Know ‘j < dimindex(:64)’
  >- (fs [Abbr ‘j’, dimindex_64] \\
-     Suff ‘EL i IIP_data <= 64’ >- rw [] \\
-     MATCH_MP_TAC (SIMP_RULE std_ss [EVERY_IIP_data, LENGTH_IIP_data]
-                     (Q.ISPECL [‘IIP_data’, ‘\n. n <= 64’] EVERY_EL)) >> art [])
+     POP_ASSUM MP_TAC \\
+     Q.SPEC_TAC (‘i’, ‘n’) \\
+  (* This numLib.BOUNDED_FORALL_CONV was learnt from Konrad Slind *)
+     rpt (CONV_TAC (BOUNDED_FORALL_CONV (SIMP_CONV list_ss [IIP_data]))) \\
+     REWRITE_TAC [])
  >> DISCH_TAC
  >> RW_TAC fcp_ss []
- >> Suff ‘EL j IP_data − 1 = i’ >- rw []
- >> fs [Abbr ‘j’, dimindex_64]
- >> Q.PAT_X_ASSUM ‘EL i IIP_data < 65’ K_TAC
+ >> Suff ‘64 - EL (63 - j) IP_data = i’ >- rw []
+ >> FULL_SIMP_TAC list_ss [Abbr ‘j’, dimindex_64]
+ >> Q.PAT_X_ASSUM ‘0 < EL (63 - i) IIP_data’ K_TAC
  >> Q.PAT_X_ASSUM ‘i < 64’ MP_TAC
  >> Q.SPEC_TAC (‘i’, ‘n’)
- (* This numLib.BOUNDED_FORALL_CONV was learnt from Konrad Slind *)
  >> rpt (CONV_TAC (BOUNDED_FORALL_CONV
                     (SIMP_CONV list_ss [IP_data, IIP_data])))
- >> REWRITE_TAC [] (* ‘!n. T’ here *)
+ >> REWRITE_TAC []
 QED
 
 (*---------------------------------------------------------------------------*)
@@ -338,7 +340,7 @@ QED
 
 Definition SBox_def :
     SBox box (w :word6) :word4 =
-      let row = w2n ((((6 >< 6)w :word1) @@ ((0 >< 0)w :word1)) :word2);
+      let row = w2n ((((5 >< 5)w :word1) @@ ((0 >< 0)w :word1)) :word2);
           col = w2n ((4 >< 1)w :word4)
       in n2w (EL col (EL row box))
 End
@@ -360,6 +362,20 @@ Proof
     EVAL_TAC
 QED
 
+(* This example is from [2] *)
+Triviality S1_011011_EQ_0101 :
+    S1 (n2w 0b011011) = (n2w 0b0101)
+Proof
+    EVAL_TAC
+QED
+
+(* This example is from [2], which exposed a bug in SBox_def *)
+Triviality S4_111010_EQ_0010 :
+    S4 (n2w 0b111010) = (n2w 0b0010)
+Proof
+    EVAL_TAC
+QED
+
 (* Basic S-Box criteria (not used so far) *)
 Definition IS_SBox_def :
     IS_SBox (box :num list list) =
@@ -377,20 +393,20 @@ QED
 (* The overall S-box function splits the 48 bits into 8 groups of 6 bits, call
    each S-boxes, and concatenate the results.
 
-   NOTE: the lowest 6 bits are sent to S1, the next 6 bits to S2, etc.
+   NOTE: The first element of concat_word_list will be at the lowest bits, while
+         the order of bits S1(B1)S2(B2)S3(B3)S4(B4)S5(B5)S6(B6)S7(B7)S8(B8) has
+         the natural bit order (from high to low). Thus S1 takes 47 >< 42, etc.
  *)
-val _ = hide "S";
-
 Definition S_def :
     S (w :word48) :word32 =
-      concat_word_list [S1 ((5  ><  0) w);
-                        S2 ((11 ><  6) w);
-                        S3 ((17 >< 12) w);
-                        S4 ((23 >< 18) w);
-                        S5 ((29 >< 24) w);
-                        S6 ((35 >< 30) w);
-                        S7 ((41 >< 36) w);
-                        S8 ((47 >< 42) w)]
+      concat_word_list [S8 ((5  ><  0) w);
+                        S7 ((11 ><  6) w);
+                        S6 ((17 >< 12) w);
+                        S5 ((23 >< 18) w);
+                        S4 ((29 >< 24) w);
+                        S3 ((35 >< 30) w);
+                        S2 ((41 >< 36) w);
+                        S1 ((47 >< 42) w)]
 End
 
 (*---------------------------------------------------------------------------*)
@@ -399,13 +415,12 @@ End
 
 Definition PC1_def :
     PC1 (k :word64) :roundkey =
-      let (key :word56) = FCP i. k ' (EL i PC1_data - 1)
+      let (key :word56) = bitwise_perm k PC1_data
       in ((55 >< 28) key, (27 >< 0) key)
 End
 
 Definition PC2_def :
-    PC2 ((c,d) :roundkey) :word48 =
-      let k = (c @@ d) :word56 in FCP i. k ' (EL i PC2_data - 1)
+    PC2 ((c,d) :roundkey) :word48 = bitwise_perm ((c @@ d) :word56) PC2_data
 End
 
 (* The sum of the rotation amounts for the C and D registers is equal to 28.
@@ -432,24 +447,15 @@ Definition RoundKey_def :
       in (c #<< r, d #<< r)::keys
 End
 
-(* We can use FRONT to drop the last unused roundkey from the list. In this
-   way, the reversed roundkeys result in a correct decryption process for the
-   Feistel network of DES (given by Round_def).
- *)
+(* This is the final roundkey as ‘:word48 list’ for DES round functions *)
 Definition RoundKeys_def :
-    RoundKeys n key = FRONT (RoundKey n key)
+    RoundKeys n key = MAP PC2 (FRONT (RoundKey n key))
 End
 
 Definition empty_roundkeys_def :
     empty_roundkeys = RoundKeys 16 0w
 End
 
-(* |- empty_roundkeys =
-      [(0b0w,0b0w); (0b0w,0b0w); (0b0w,0b0w); (0b0w,0b0w);
-       (0b0w,0b0w); (0b0w,0b0w); (0b0w,0b0w); (0b0w,0b0w);
-       (0b0w,0b0w); (0b0w,0b0w); (0b0w,0b0w); (0b0w,0b0w);
-       (0b0w,0b0w); (0b0w,0b0w); (0b0w,0b0w); (0b0w,0b0w)]
- *)
 Theorem empty_roundkeys = EVAL “empty_roundkeys”
 
 Theorem LENGTH_empty_roundkeys :
@@ -462,9 +468,9 @@ QED
 (*  Round Function and DES Encryption                                        *)
 (*---------------------------------------------------------------------------*)
 
-(* This is DES Round Operation (Function) combining P, S, E (and PC2) *)
+(* This is DES Round Operation (Function) combining P, S and E *)
 Definition RoundOp_def :
-    RoundOp (v :word32) (k :roundkey) = P (S (E v ?? PC2 k))
+    RoundOp (v :word32) (k :word48) = P (S (E v ?? k))
 End
 
 (* ‘Round n r ks (u,v)’ returns the (u,v) pair after n rounds, each time one round
@@ -472,7 +478,7 @@ End
    must be bigger than n.
  *)
 Definition Round_def :
-    Round 0 r (ks :roundkey list) (pair :block) = pair /\
+    Round 0 r (ks :word48 list) (pair :block) = pair /\
     Round (SUC n) r (k::ks) pair =
       let (u',v') = Round n r ks pair in
         if SUC n = r then
@@ -539,12 +545,8 @@ Overload FullDESDec = “DESDec 16”
 Definition RoundKeyRev_def :
     RoundKeyRev 0 (key :word64) :roundkey list = [PC1 key] /\
     RoundKeyRev (SUC n) (key :word64) =
-      let keys = RoundKeyRev n key; r = EL n R_data; (c,d) = HD keys
+      let keys = RoundKeyRev n key; r = EL (15 - n) R_data; (c,d) = HD keys
       in (c #>> r, d #>> r)::keys
-End
-
-Definition RoundKeysRev_def :
-   RoundKeysRev n key = FRONT (RoundKeyRev n key)
 End
 
 (*---------------------------------------------------------------------------*)
@@ -564,21 +566,156 @@ QED
 
 val _ = output_words_as_bin();
 
-(* A test message (cleartext) *)
+(* A test key
+   |- Test_K = 0b1001100110100010101110111100110011011101111001101111111110001w
+ *)
+Definition Test_K :
+   Test_K :word64 = 0x133457799BBCDFF1w
+End
+
+(* EVAL “PC1 Test_K”
+   1111000 0110011 0010101 0101111 1010101 0110011 0011110 001111
+ *)
+Triviality Test_K_by_PC1:
+    PC1 Test_K = (0b1111000011001100101010101111w,0b101010101100110011110001111w)
+Proof
+    EVAL_TAC
+QED
+
+(* EVAL “REVERSE (RoundKey 16 Test_K)”
+
+   NOTE: All literal values copied as theorem statements are correct w.r.t. [2]
+ *)
+Triviality Test_K_RoundKey_16 :
+    REVERSE (RoundKey 16 Test_K) =
+      [(0b1111000011001100101010101111w,0b0101010101100110011110001111w); (* r0 *)
+       (0b1110000110011001010101011111w,0b1010101011001100111100011110w); (* r1 *)
+       (0b1100001100110010101010111111w,0b0101010110011001111000111101w); (* r2 *)
+       (0b0000110011001010101011111111w,0b0101011001100111100011110101w); (* r3 *)
+       (0b0011001100101010101111111100w,0b0101100110011110001111010101w); (* r4 *)
+       (0b1100110010101010111111110000w,0b0110011001111000111101010101w); (* r5 *)
+       (0b0011001010101011111111000011w,0b1001100111100011110101010101w); (* r6 *)
+       (0b1100101010101111111100001100w,0b0110011110001111010101010110w); (* r7 *)
+       (0b0010101010111111110000110011w,0b1001111000111101010101011001w); (* r8 *)
+       (0b0101010101111111100001100110w,0b0011110001111010101010110011w); (* r9 *)
+       (0b0101010111111110000110011001w,0b1111000111101010101011001100w); (* r10 *)
+       (0b0101011111111000011001100101w,0b1100011110101010101100110011w); (* r11 *)
+       (0b0101111111100001100110010101w,0b0001111010101010110011001111w); (* r12 *)
+       (0b0111111110000110011001010101w,0b0111101010101011001100111100w); (* r13 *)
+       (0b1111111000011001100101010101w,0b1110101010101100110011110001w); (* r14 *)
+       (0b1111100001100110010101010111w,0b1010101010110011001111000111w); (* r15 *)
+       (0b1111000011001100101010101111w,0b0101010101100110011110001111w)] (* r16 *)
+Proof
+    EVAL_TAC
+QED
+
+Triviality Test_K_RoundKeyRev_16 :
+    RoundKeyRev 16 Test_K =
+      [(0b1111000011001100101010101111w,0b0101010101100110011110001111w);
+       (0b1110000110011001010101011111w,0b1010101011001100111100011110w);
+       (0b1100001100110010101010111111w,0b0101010110011001111000111101w);
+       (0b0000110011001010101011111111w,0b0101011001100111100011110101w);
+       (0b0011001100101010101111111100w,0b0101100110011110001111010101w);
+       (0b1100110010101010111111110000w,0b0110011001111000111101010101w);
+       (0b0011001010101011111111000011w,0b1001100111100011110101010101w);
+       (0b1100101010101111111100001100w,0b0110011110001111010101010110w);
+       (0b0010101010111111110000110011w,0b1001111000111101010101011001w);
+       (0b0101010101111111100001100110w,0b0011110001111010101010110011w);
+       (0b0101010111111110000110011001w,0b1111000111101010101011001100w);
+       (0b0101011111111000011001100101w,0b1100011110101010101100110011w);
+       (0b0101111111100001100110010101w,0b0001111010101010110011001111w);
+       (0b0111111110000110011001010101w,0b0111101010101011001100111100w);
+       (0b1111111000011001100101010101w,0b1110101010101100110011110001w);
+       (0b1111100001100110010101010111w,0b1010101010110011001111000111w);
+       (0b1111000011001100101010101111w,0b0101010101100110011110001111w)]
+Proof
+    EVAL_TAC
+QED
+
+Triviality Test_K_RoundKey_Inversion :
+    REVERSE (RoundKey 16 Test_K) = RoundKeyRev 16 Test_K
+Proof
+    REWRITE_TAC [Test_K_RoundKey_16, Test_K_RoundKeyRev_16]
+QED
+
+(* EVAL “REVERSE (RoundKeys 16 Test_K)” *)
+Triviality Test_K_RoundKeys_16[compute] :
+    REVERSE (RoundKeys 16 Test_K) =
+      [0b000110110000001011101111111111000111000001110010w; (* K1 *)
+       0b011110011010111011011001110110111100100111100101w; (* K2 *)
+       0b010101011111110010001010010000101100111110011001w; (* K3 *)
+       0b011100101010110111010110110110110011010100011101w; (* K4 *)
+       0b011111001110110000000111111010110101001110101000w; (* K5 *)
+       0b011000111010010100111110010100000111101100101111w; (* K6 *)
+       0b111011001000010010110111111101100001100010111100w; (* K7 *)
+       0b111101111000101000111010110000010011101111111011w; (* K8 *)
+       0b111000001101101111101011111011011110011110000001w; (* K9 *)
+       0b101100011111001101000111101110100100011001001111w; (* K10 *)
+       0b001000010101111111010011110111101101001110000110w; (* K11 *)
+       0b011101010111000111110101100101000110011111101001w; (* K12 *)
+       0b100101111100010111010001111110101011101001000001w; (* K13 *)
+       0b010111110100001110110111111100101110011100111010w; (* K14 *)
+       0b101111111001000110001101001111010011111100001010w; (* K15 *)
+       0b110010110011110110001011000011100001011111110101w] (* K16 *)
+Proof
+    EVAL_TAC
+QED
+
+Definition Test_KS :
+    Test_KS = REVERSE (RoundKeys 16 Test_K)
+End
+
+(* A test message (cleartext)
+   |- Test_M = 0b100100011010001010110011110001001101010111100110111101111w
+ *)
 Definition Test_M :
     Test_M :word64 = 0x0123456789ABCDEFw
 End
 
-Triviality IP_Test_M :
+Triviality Test_M_by_IP :
     IP Test_M = 0b1100110000000000110011001111111111110000101010101111000010101010w
 Proof
     EVAL_TAC
 QED
 
-(* A test key *)
-Definition Test_K :
-   Test_K :word64 = 0x133457799BBCDFF1w
+Triviality Test_Round_0[compute] :
+    Round 0 16 Test_KS (Split (IP Test_M)) =
+      (0b11001100000000001100110011111111w,0b11110000101010101111000010101010w)
+Proof
+    EVAL_TAC
+QED
+
+(* These two values are taken from Test_Round_0 *)
+Definition L0_def :
+    L0 = 0b11001100000000001100110011111111w
 End
+
+Definition R0_def :
+    R0 = 0b11110000101010101111000010101010w
+End
+
+Triviality Test_E_R0 :
+    E R0 = 0b11110100001010101010101011110100001010101010101w
+Proof
+    EVAL_TAC
+QED
+
+Definition K1_def :
+    K1 = 0b000110110000001011101111111111000111000001110010w
+End
+
+Triviality Test_K1_xor_E_R0 :
+    K1 ?? E R0 = 0b11000010001011110111010100001100110010100100111w
+Proof
+    EVAL_TAC
+QED
+
+(* EVAL “S (K1 ?? E R0)” *)
+Triviality Test_S_K1_xor_E_R0 :
+    S (K1 ?? E R0) = 0b01011100100000101011010110010111w
+Proof
+    EVAL_TAC
+QED
 
 val _ = output_words_as_hex();
 
