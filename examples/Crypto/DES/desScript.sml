@@ -535,50 +535,37 @@ Proof
 QED
 
 (* This is the core of DES (no key scheduling) possibly reduced to r rounds *)
-Definition DES_def :
-    DES r ks = IIP o Join o (RoundSwap r r ks) o Split o IP
+Definition DESCore_def :
+    DESCore r ks = IIP o Join o (RoundSwap r r ks) o Split o IP
 End
 
 (* Zero-round DES doesn't change the message at all *)
-Theorem DES_0 :
-    !ks w. DES 0 ks w = w
+Theorem DESCore_0 :
+    !ks w. DESCore 0 ks w = w
 Proof
-    rw [DES_def, o_DEF, RoundSwap_def, IIP_IP_Inversion, Join_Split_Inversion]
+    rw [o_DEF, DESCore_def, RoundSwap_def, IIP_IP_Inversion,
+        Join_Split_Inversion]
 QED
 
-Theorem DES_alt :
-    !ks r. 0 < r ==> DES r ks = IIP o Join o Swap o (Round r ks) o Split o IP
+Theorem DESCore_alt :
+    !ks r. 0 < r ==>
+           DESCore r ks = IIP o Join o Swap o (Round r ks) o Split o IP
 Proof
-    rw [o_DEF, FUN_EQ_THM, DES_def, RoundSwap_and_Round']
+    rw [o_DEF, FUN_EQ_THM, DESCore_def, RoundSwap_and_Round']
 QED
-
-Definition DESEnc_def :
-    DESEnc r key = DES r (KS key r)
-End
-
-(*---------------------------------------------------------------------------*)
-(*  DES Decryption                                                           *)
-(*---------------------------------------------------------------------------*)
 
 (* The decryption process is identical to encryption provided the round keys
    are taken in reverse order. [1, p.16]
-
-   It is also interesting to note that the key schedule can be reversed for
-   decryption, with the register rotations being applied in the opposite
-   directions (to the right). [1, p. 26]
-
-   NOTE: The equivalence of the above two notes is not obvious (need a proof).
  *)
-Definition DESDec_def :
-    DESDec r key = DES r (REVERSE (KS key r))
+Definition DES_def :
+   DES r key = let keys = KS key r in (DESCore r keys, DESCore r (REVERSE keys))
 End
 
 (* Full DES = DES of full 16 rounds *)
-Overload FullDESEnc = “DESEnc 16”
-Overload FullDESDec = “DESDec 16”
+Overload FullDES = “DES 16”
 
 (*---------------------------------------------------------------------------*)
-(*  Correctness of DES Decryption                                            *)
+(* Basic theorem about encryption/decryption                                 *)
 (*---------------------------------------------------------------------------*)
 
 (* The plaintext message halves and intermediate message halves m0 ~ m16 [3] *)
@@ -617,6 +604,15 @@ Proof
  >> Q.ABBREV_TAC ‘m0 = M (u,v) ks n’
  >> Q.ABBREV_TAC ‘m1 = M (u,v) ks (SUC n)’
  >> simp [message_half, ARITH_PROVE “SUC (SUC n) - 2 = n”]
+QED
+
+Theorem FullDES_CORRECT :
+    !key plaintext.
+       ((encrypt,decrypt) = FullDES key)
+      ==>
+       (decrypt (encrypt plaintext) = plaintext)
+Proof
+    cheat
 QED
 
 val _ = export_theory();

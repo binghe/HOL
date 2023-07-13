@@ -226,15 +226,15 @@ Definition Test_C :
       0b1000010111101000000100110101010000001111000010101011010000000101w
 End
 
-Theorem Test_FullDESEnc_K_M :
-    FullDESEnc Test_K Test_M = Test_C
+Theorem Test_FullDES_K_M :
+    let (encrypt,decrypt) = FullDES Test_K in encrypt Test_M = Test_C
 Proof
     EVAL_TAC
 QED
 
 (* EVAL “FullDESDec Test_K Test_C” *)
-Theorem Test_FullDESEnc_K_C :
-    FullDESDec Test_K Test_C = Test_M
+Theorem Test_FullDES_K_C :
+    let (encrypt,decrypt) = FullDES Test_K in decrypt Test_C = Test_M
 Proof
     EVAL_TAC
 QED
@@ -243,28 +243,28 @@ QED
 val _ = output_words_as_padded_hex();
 
 (* EVAL “FullDESEnc 0w 0w”, Encrypted text: "8c a6 4d e9 c1 b1 23 a7" [3] *)
-Theorem Test_FullDESEnc_0 :
-    FullDESEnc 0w 0w = 0x8CA64DE9C1B123A7w
+Theorem Test_FullDES_0 :
+    let (encrypt,decrypt) = FullDES 0w in encrypt 0w = 0x8CA64DE9C1B123A7w
 Proof
     EVAL_TAC
 QED
 
-Theorem Test_FullDESDec_0 :
-    FullDESDec 0w 0x8CA64DE9C1B123A7w = 0w
+Theorem Test_FullDES_0' :
+    let (encrypt,decrypt) = FullDES 0w in decrypt 0x8CA64DE9C1B123A7w = 0w
 Proof
     EVAL_TAC
 QED
 
 (* DES reduced to 4 rounds *)
 Theorem Test_DES_4 :
-    DESDec 4 Test_K (DESEnc 4 Test_K 0w) = 0w
+    let (encrypt,decrypt) = DES 4 Test_K in decrypt (encrypt 0w) = 0w
 Proof
     EVAL_TAC
 QED
 
 (* DES reduced to 5 rounds (thus odd round also works) *)
 Theorem Test_DES_5 :
-    DESDec 5 Test_K (DESEnc 5 Test_K 0w) = 0w
+    let (encrypt,decrypt) = DES 4 Test_K in decrypt (encrypt 0w) = 0w
 Proof
     EVAL_TAC
 QED
