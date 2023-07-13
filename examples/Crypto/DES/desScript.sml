@@ -65,34 +65,8 @@ val fcp_ss = std_ss ++ fcpLib.FCP_ss;
 (* Type abbreviations                                                        *)
 (*---------------------------------------------------------------------------*)
 
-(* DES is a block cipher that operates on 64-bit blocks. Using two word32, we
-   can easily *split* them into two word32 for round operations.
- *)
 Type block[pp] = “:word32 # word32”
-
-(* It uses a 56-bit key, but this is often embedded within a 64-bit block where
-   one bit in eight is used as a parity bit. Using eight word8, we can easily
-   retrieve 7 bits from each 8-bit group.
- *)
-Type key[pp] = “:word8 # word8 # word8 # word8 # word8 # word8 # word8 # word8”
-
-(* The 32-bit input is expanded to a 48-bit intermediate value, to be split into
-   eight groups of six, and used as inputs to eight different S-boxes
- *)
-Type expansion[pp] = “:word6 # word6 # word6 # word6 #
-                       word6 # word6 # word6 # word6”
-
-(* Each S-box returns four bits which, when concatenated together, give a
-   32-bit intermediate quantity.
- *)
-Type sbox[pp]   = “:word6 -> word4”
-Type sboxes[pp] = “:word48 -> word32”
-
-(* DES round function *)
-Type roundop[pp] = “:word32 -> word32”
-
-(* DES round key *)
-Type roundkey[pp] = “:word28 # word28”
+Type roundkey  = “:word28 # word28”
 
 (*---------------------------------------------------------------------------*)
 (* Data Tables. All values are directly copied from PDF pages [1]            *)
@@ -469,6 +443,46 @@ Proof
 QED
 
 (*---------------------------------------------------------------------------*)
+(*  Split and Join                                                           *)
+(*---------------------------------------------------------------------------*)
+
+(* This is the initial split right after IP. cf. Join_def *)
+Definition Split_def :
+    Split (w :word64) :block = ((63 >< 32)w, (31 >< 0)w)
+End
+
+Definition Join_def :
+   Join ((u,v):block) :word64 = u @@ v
+End
+
+Theorem Join_Split_Inversion :
+    !w. Join (Split w) = w
+Proof
+    rw [Join_def, Split_def]
+ >> WORD_DECIDE_TAC
+QED
+
+Theorem Split_Join_Inversion :
+    !w. Split (Join w) = w
+Proof
+    Cases_on ‘w’
+ >> rw [Join_def, Split_def]
+ >> WORD_DECIDE_TAC
+QED
+
+(* This extra step is needed for DES_alt in which Round (instead of RoundSwap)
+   is used. *)
+Definition Swap_def :
+   Swap ((v,u):block) :block = (u,v)
+End
+
+Theorem Swap_Inversion :
+    !w. Swap (Swap w) = w
+Proof
+    Cases_on ‘w’ >> rw [Swap_def]
+QED
+
+(*---------------------------------------------------------------------------*)
 (*  Round Function and DES Encryption                                        *)
 (*---------------------------------------------------------------------------*)
 
@@ -477,30 +491,67 @@ Definition RoundOp_def :
     RoundOp (w :word32) (k :word48) = P (S (E w ?? k))
 End
 
-(* ‘Round r ks (L,R)’ returns the block after n rounds, no final swapping. *)
+(* ‘RoundSwap n r ks (u,v)’ returns the (u,v) pair after n rounds, each time
+   one round key from the HD of ks (thus is reversely ordered) is consumed.
+   At the last round, the pair is swapped for the final join [1, p.16].
+
+   NOTE: This version is necessary for DES_0 (zero round gives the cleartext).
+ *)
+Definition RoundSwap_def :
+    RoundSwap      0  r ks w = (w :block) /\
+    RoundSwap (SUC n) r ks w =
+      let (u,v) = RoundSwap n r ks w; k = EL n ks in
+        if SUC n = r then (u ?? RoundOp v k, v)
+        else           (v, u ?? RoundOp v k)
+End
+
+(* ‘Round r ks (u,v)’ returns the block after n rounds, no final swapping.
+
+   NOTE: This version is simpler for proving DES properties but requires an
+         extra Swap before Join.
+ *)
 Definition Round_def :
     Round      0  ks w = (w :block) /\
     Round (SUC n) ks w =
-      let (L,R) = Round n ks w; k = EL n ks in (R, L ?? RoundOp R k)
+      let (u,v) = Round n ks w; k = EL n ks in (v, u ?? RoundOp v k)
 End
 
-(* This is the initial split right after IP *)
-Definition Split_def :
-    Split (w :word64) :block = ((63 >< 32)w, (31 >< 0)w)
-End
+Theorem RoundSwap_eq_Round :
+    !ks w r n. n < r ==> RoundSwap n r ks w = Round n ks w
+Proof
+    NTAC 3 GEN_TAC
+ >> Induct_on ‘n’ >> rw [RoundSwap_def, Round_def]
+QED
 
-(* This is the final join after all rounds by Round.
-
-   NOTE: the function is given a reversed order of pairs returned by Round
- *)
-Definition Join_def :
-   Join (w :block) :word64 = SND w @@ FST w
-End
+Theorem RoundSwap_alt_Round :
+    !ks w r. 0 < r ==> RoundSwap r r ks w = Swap (Round r ks w)
+Proof
+    NTAC 2 GEN_TAC
+ >> Cases_on ‘r’ >> rw [RoundSwap_def, Round_def]
+ >> Know ‘RoundSwap n (SUC n) ks w = Round n ks w’
+ >- (MATCH_MP_TAC RoundSwap_eq_Round >> rw [])
+ >> Rewr'
+ >> Q.ABBREV_TAC ‘pair = Round n ks w’
+ >> Cases_on ‘pair’ >> rw [Swap_def]
+QED
 
 (* This is the core of DES (no key scheduling) possibly reduced to r rounds *)
 Definition DES_def :
-    DES r ks = IIP o Join o (Round r ks) o Split o IP
+    DES r ks = IIP o Join o (RoundSwap r r ks) o Split o IP
 End
+
+(* Zero-round DES doesn't change the message at all *)
+Theorem DES_0 :
+    !ks w. DES 0 ks w = w
+Proof
+    rw [DES_def, o_DEF, RoundSwap_def, IIP_IP_Inversion, Join_Split_Inversion]
+QED
+
+Theorem DES_alt :
+    !ks r. 0 < r ==> DES r ks = IIP o Join o Swap o (Round r ks) o Split o IP
+Proof
+    rw [o_DEF, FUN_EQ_THM, DES_def, RoundSwap_alt_Round]
+QED
 
 Definition DESEnc_def :
     DESEnc r key = DES r (KS key r)
