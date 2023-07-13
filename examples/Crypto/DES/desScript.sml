@@ -408,8 +408,7 @@ QED
 Definition RoundKey_def :
     RoundKey      0  (k :word64) :roundkey list = [PC1 k] /\
     RoundKey (SUC n) (k :word64) =
-      let ks = RoundKey n k; (c,d) = HD ks;
-          r = EL n R_data
+      let ks = RoundKey n k; (c,d) = HD ks; r = EL n R_data
       in (c #<< r, d #<< r)::ks
 End
 
@@ -516,20 +515,20 @@ Definition Round_def :
       let (u,v) = Round n ks w; k = EL n ks in (v, u ?? RoundOp v k)
 End
 
-Theorem RoundSwap_eq_Round :
+Theorem RoundSwap_and_Round :
     !ks w r n. n < r ==> RoundSwap n r ks w = Round n ks w
 Proof
     NTAC 3 GEN_TAC
  >> Induct_on ‘n’ >> rw [RoundSwap_def, Round_def]
 QED
 
-Theorem RoundSwap_alt_Round :
+Theorem RoundSwap_and_Round' :
     !ks w r. 0 < r ==> RoundSwap r r ks w = Swap (Round r ks w)
 Proof
     NTAC 2 GEN_TAC
  >> Cases_on ‘r’ >> rw [RoundSwap_def, Round_def]
  >> Know ‘RoundSwap n (SUC n) ks w = Round n ks w’
- >- (MATCH_MP_TAC RoundSwap_eq_Round >> rw [])
+ >- (MATCH_MP_TAC RoundSwap_and_Round >> rw [])
  >> Rewr'
  >> Q.ABBREV_TAC ‘pair = Round n ks w’
  >> Cases_on ‘pair’ >> rw [Swap_def]
@@ -550,7 +549,7 @@ QED
 Theorem DES_alt :
     !ks r. 0 < r ==> DES r ks = IIP o Join o Swap o (Round r ks) o Split o IP
 Proof
-    rw [o_DEF, FUN_EQ_THM, DES_def, RoundSwap_alt_Round]
+    rw [o_DEF, FUN_EQ_THM, DES_def, RoundSwap_and_Round']
 QED
 
 Definition DESEnc_def :
@@ -578,6 +577,48 @@ End
 Overload FullDESEnc = “DESEnc 16”
 Overload FullDESDec = “DESDec 16”
 
+(*---------------------------------------------------------------------------*)
+(*  Correctness of DES Decryption                                            *)
+(*---------------------------------------------------------------------------*)
+
+(* The plaintext message halves and intermediate message halves m0 ~ m16 [3] *)
+Definition message_half_def :
+    message_half f ((u,v) :block) (ks :word48 list) n =
+      if n = 0 then u
+      else if n = 1 then v
+      else (message_half f (u,v) ks (n - 2)) ??
+           (f (message_half f (u,v) ks (n - 1)) (EL (n - 2) ks))
+End
+
+Theorem message_half :
+    !f u v ks. message_half f (u,v) ks 0 = u /\
+               message_half f (u,v) ks 1 = v /\
+              (!n. 2 <= n ==>
+                   message_half f (u,v) ks n =
+                     (message_half f (u,v) ks (n - 2)) ??
+                     (f (message_half f (u,v) ks (n - 1)) (EL (n - 2) ks)))
+Proof
+    rpt STRIP_TAC
+ >- rw [Once message_half_def]
+ >- rw [Once message_half_def]
+ >> ‘n <> 0 /\ n <> 1’ by rw []
+ >> GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites [message_half_def]
+ >> simp []
+QED
+
+Overload M = “message_half RoundOp”
+
+Theorem Round_alt_message_half :
+    !u v ks n. Round n ks (u,v) = (M (u,v) ks n, M (u,v) ks (SUC n))
+Proof
+    NTAC 3 GEN_TAC
+ >> Induct_on ‘n’ >- rw [Round_def, message_half]
+ >> rw [Round_def]
+ >> Q.ABBREV_TAC ‘m0 = M (u,v) ks n’
+ >> Q.ABBREV_TAC ‘m1 = M (u,v) ks (SUC n)’
+ >> simp [message_half, ARITH_PROVE “SUC (SUC n) - 2 = n”]
+QED
+
 val _ = export_theory();
 val _ = html_theory "des";
 
@@ -587,4 +628,6 @@ val _ = html_theory "des";
      Publishing Company, Incorporated, Berlin, Heidelberg (2011).
  [2] Grabbe, J.O.: The DES Algorithm Illustrated,
      https://page.math.tu-berlin.de/~kant/teaching/hess/krypto-ws2006/des.htm.
+ [3] Coopersmith, D.: The Data Encryption Standard (DES) and its strength against
+     attacks. IBM J. 38, 243–250 (1994).
  *)
