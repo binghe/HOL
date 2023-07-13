@@ -255,6 +255,20 @@ Proof
     EVAL_TAC
 QED
 
+(* DES reduced to 4 rounds *)
+Theorem Test_DES_4 :
+    DESDec 4 Test_K (DESEnc 4 Test_K 0w) = 0w
+Proof
+    EVAL_TAC
+QED
+
+(* DES reduced to 5 rounds (thus odd round also works) *)
+Theorem Test_DES_5 :
+    DESDec 5 Test_K (DESEnc 5 Test_K 0w) = 0w
+Proof
+    EVAL_TAC
+QED
+
 val _ = export_theory();
 val _ = html_theory "des_test";
 
