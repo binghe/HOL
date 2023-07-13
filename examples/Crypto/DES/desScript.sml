@@ -272,7 +272,7 @@ Definition IIP_def :
     IIP (w :word64) :word64 = bitwise_perm w IIP_data
 End
 
-Theorem IIP_IP_Inversion :
+Theorem IIP_IP_Inverse :
     !w. IIP (IP w) = w
 Proof
     RW_TAC fcp_ss [IIP_def, IP_def, bitwise_perm_def, dimindex_64]
@@ -296,7 +296,7 @@ Proof
  >> REWRITE_TAC []
 QED
 
-Theorem IP_IIP_Inversion :
+Theorem IP_IIP_Inverse :
     !w. IP (IIP w) = w
 Proof
     RW_TAC fcp_ss [IIP_def, IP_def, bitwise_perm_def, dimindex_64]
@@ -454,14 +454,14 @@ Definition Join_def :
    Join ((u,v):block) :word64 = u @@ v
 End
 
-Theorem Join_Split_Inversion :
+Theorem Join_Split_Inverse :
     !w. Join (Split w) = w
 Proof
     rw [Join_def, Split_def]
  >> WORD_DECIDE_TAC
 QED
 
-Theorem Split_Join_Inversion :
+Theorem Split_Join_Inverse :
     !w. Split (Join w) = w
 Proof
     Cases_on ‘w’
@@ -475,7 +475,7 @@ Definition Swap_def :
    Swap ((v,u):block) :block = (u,v)
 End
 
-Theorem Swap_Inversion :
+Theorem Swap_Inverse :
     !w. Swap (Swap w) = w
 Proof
     Cases_on ‘w’ >> rw [Swap_def]
@@ -543,8 +543,8 @@ End
 Theorem DESCore_0 :
     !ks w. DESCore 0 ks w = w
 Proof
-    rw [o_DEF, DESCore_def, RoundSwap_def, IIP_IP_Inversion,
-        Join_Split_Inversion]
+    rw [o_DEF, DESCore_def, RoundSwap_def, IIP_IP_Inverse,
+        Join_Split_Inverse]
 QED
 
 Theorem DESCore_alt :
@@ -593,6 +593,18 @@ Proof
  >> simp []
 QED
 
+Theorem message_half' :
+    !f uv ks. message_half f uv ks 0 = FST uv /\
+             message_half f uv ks 1 = SND uv /\
+            (!n. 2 <= n ==>
+                 message_half f uv ks n =
+                  (message_half f uv ks (n - 2)) ??
+                  (f (message_half f uv ks (n - 1)) (EL (n - 2) ks)))
+Proof
+    rpt GEN_TAC >> Cases_on ‘uv’ >> REWRITE_TAC [message_half]
+QED
+
+(* This is message_half specialized for DES *)
 Overload M = “message_half RoundOp”
 
 Theorem Round_alt_message_half :
@@ -606,13 +618,60 @@ Proof
  >> simp [message_half, ARITH_PROVE “SUC (SUC n) - 2 = n”]
 QED
 
-Theorem FullDES_CORRECT :
-    !key plaintext.
-       ((encrypt,decrypt) = FullDES key)
-      ==>
-       (decrypt (encrypt plaintext) = plaintext)
+Theorem Round_alt_message_half' :
+    !ks uv n. Round n ks uv = (M uv ks n, M uv ks (SUC n))
 Proof
-    cheat
+    rpt GEN_TAC >> Cases_on ‘uv’
+ >> REWRITE_TAC [Round_alt_message_half]
+QED
+
+(* FullDES can be expressed by just M16 and M17 *)
+Theorem FullDES_alt_message_half :
+    !ks plaintext. DESCore 16 ks plaintext =
+                   let uv = Split (IP plaintext) in
+                     IIP (Join (M uv ks 17, M uv ks 16))
+Proof
+    rw [DESCore_alt, Round_alt_message_half', Swap_def]
+QED
+
+Theorem FullDES_CORRECT :
+    !key plaintext. ((encrypt,decrypt) = FullDES key) ==>
+                    (decrypt (encrypt plaintext) = plaintext)
+Proof
+    rw [DES_def]
+ >> Q.ABBREV_TAC ‘ks = KS key 16’
+ (* applying FullDES_alt_message_half *)
+ >> Know ‘DESCore 16 ks plaintext =
+          let uv = Split (IP plaintext) in
+                     IIP (Join (M uv ks 17, M uv ks 16))’
+ >- REWRITE_TAC [FullDES_alt_message_half]
+ >> Rewr'
+ >> rw [DESCore_def, IP_IIP_Inverse, Split_Join_Inverse,
+        RoundSwap_and_Round']
+ >> Q.ABBREV_TAC ‘uv = Split (IP plaintext)’
+ (* applying Round_def *)
+ >> Suff ‘Round 16 (REVERSE ks) (M uv ks 17,M uv ks 16) = (M uv ks 1,M uv ks 0)’
+ >- (Rewr' \\
+     rw [Abbr ‘uv’, message_half', Swap_def, Join_Split_Inverse, IIP_IP_Inverse])
+ >> Suff ‘!n. n <= 16 ==>
+              Round n (REVERSE ks) (M uv ks 17,M uv ks 16) =
+              (M uv ks (17 - n),M uv ks (16 - n))’
+ >- (DISCH_THEN (MP_TAC o (Q.SPEC ‘16’)) >> rw [])
+ >> Induct_on ‘n’ >- rw [Round_def]
+ >> rw [Round_def, ARITH_PROVE “16 - n = 17 - SUC n”]
+ >> Q.PAT_X_ASSUM ‘n <= 16 ==> _’ K_TAC
+ (* now we have 3 numbers: ‘17 - n’, ‘17 - SUC n’ and ‘17 - SUC (SUC n)’ *)
+ >> Q.ABBREV_TAC ‘i = 17 - n’
+ >> ‘17 - SUC n = i - 1’ by rw [Abbr ‘i’] >> POP_ORW
+ >> ‘17 - SUC (SUC n) = i - 2’ by rw [Abbr ‘i’] >> POP_ORW
+ >> ‘2 <= i’ by rw [Abbr ‘i’]
+ >> Know ‘M uv ks i =
+          M uv ks (i - 2) ?? (RoundOp (M uv ks (i - 1)) (EL (i - 2) ks))’
+ >- METIS_TAC [message_half']
+ >> Rewr'
+ >> Suff ‘EL n (REVERSE ks) = EL (i - 2) ks’ >- rw []
+ >> rw [Abbr ‘ks’, Abbr ‘i’, EL_REVERSE, LENGTH_KS,
+        ARITH_PROVE “PRE (16 - n) = 15 - n”]
 QED
 
 val _ = export_theory();
