@@ -10,3 +10,4 @@ The following is a brief listing of what's available.
                      floating-point arithmetic.
      floatTheory   * Useful properties of floating point numbers.
 
+NOTE: This work has been obsoleted by the work in `src/floating-point`.
