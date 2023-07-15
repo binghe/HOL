@@ -5122,7 +5122,7 @@ val lemma = Q.prove
  *)
 Theorem REAL_LT_INV2 = REAL_LT_INV
 
-(* |- !x. 0 < x ==> 0 < realinv x *)
+(* |- !x. 0 < x ==> 0 < inv x *)
 Theorem REAL_LT_INV' = REAL_INV_POS
 
 Theorem RAT_LEMMA4 :

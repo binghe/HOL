@@ -27,7 +27,7 @@ open arithmeticTheory prim_recTheory optionTheory pairTheory combinTheory
      pred_setTheory pred_setLib numLib res_quanTheory res_quanTools listTheory;
 
 open realTheory realLib seqTheory transcTheory real_sigmaTheory RealArith
-     jrhUtils cardinalTheory;
+     jrhUtils cardinalTheory iterateTheory;
 
 open hurdUtils util_probTheory extrealTheory sigma_algebraTheory measureTheory
      borelTheory real_topologyTheory;

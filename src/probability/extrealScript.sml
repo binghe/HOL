@@ -1,5 +1,6 @@
 (* ------------------------------------------------------------------------- *)
-(* Measure Theory defined on the extended reals and includes Borel spaces    *)
+(* Extended real numberss                                                    *)
+(*                                                                           *)
 (* Authors: Tarek Mhamdi, Osman Hasan, Sofiene Tahar (2013, 2015)            *)
 (* HVG Group, Concordia University, Montreal                                 *)
 (* ------------------------------------------------------------------------- *)

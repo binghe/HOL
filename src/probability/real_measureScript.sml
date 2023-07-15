@@ -9,7 +9,7 @@
 open HolKernel Parse boolLib bossLib arithmeticTheory realTheory
      seqTheory pred_setTheory res_quanTheory res_quanTools listTheory transcTheory
      rich_listTheory pairTheory combinTheory realLib optionTheory
-     real_sigmaTheory;
+     real_sigmaTheory iterateTheory;
 
 open hurdUtils util_probTheory sigma_algebraTheory real_borelTheory;
 

@@ -2116,4 +2116,91 @@ Proof
    >> METIS_TAC []
 QED
 
+Theorem POW_HALF_POS :
+    !n. 0:real < (1/2) pow n
+Proof
+    STRIP_TAC
+ >> Cases_on `n` >- PROVE_TAC [REAL_LT_01, pow]
+ >> PROVE_TAC [HALF_POS, POW_POS_LT]
+QED
+
+Theorem POW_HALF_SMALL :
+    !e:real. 0 < e ==> ?n. (1 / 2) pow n < e
+Proof
+    RW_TAC std_ss []
+ >> MP_TAC (Q.SPEC `1 / 2` SEQ_POWER)
+ >> RW_TAC std_ss [abs, HALF_LT_1, HALF_POS, REAL_LT_IMP_LE, SEQ]
+ >> POP_ASSUM (MP_TAC o Q.SPEC `e`)
+ >> RW_TAC std_ss [REAL_SUB_RZERO, POW_HALF_POS, REAL_LT_IMP_LE,
+                   GREATER_EQ]
+ >> PROVE_TAC [LESS_EQ_REFL]
+QED
+
+Theorem POW_HALF_MONO :
+    !m n. m <= n ==> ((1:real)/2) pow n <= (1/2) pow m
+Proof
+    REPEAT STRIP_TAC
+ >> Induct_on `n`
+ >- (STRIP_TAC \\
+     Know `m:num = 0` >- DECIDE_TAC \\
+     PROVE_TAC [REAL_LE_REFL])
+ >> Cases_on `m = SUC n` >- PROVE_TAC [REAL_LE_REFL]
+ >> ONCE_REWRITE_TAC [pow]
+ >> STRIP_TAC
+ >> Know `m:num <= n` >- DECIDE_TAC
+ >> STRIP_TAC
+ >> Suff `(2:real) * ((1/2) * (1/2) pow n) <= 2 * (1/2) pow m`
+ >- PROVE_TAC [REAL_ARITH ``0:real < 2``, REAL_LE_LMUL]
+ >> Suff `((1:real)/2) pow n <= 2 * (1/2) pow m`
+ >- (KILL_TAC \\
+     PROVE_TAC [GSYM REAL_MUL_ASSOC, HALF_CANCEL, REAL_MUL_LID])
+ >> PROVE_TAC [REAL_ARITH ``!x y. 0:real < x /\ x <= y ==> x <= 2 * y``,
+               POW_HALF_POS]
+QED
+
+Theorem HARMONIC_SERIES_POW_2 : (* was in util_probTheory *)
+    summable (\n. inv (&(SUC n) pow 2))
+Proof
+    MATCH_MP_TAC POS_SUMMABLE
+ >> CONJ_TAC >- rw []
+ >> Q.EXISTS_TAC `2`
+ >> GEN_TAC
+ >> Cases_on `n` >- rw [sum]
+ >> rename1 ‘sum (0,SUC m) (\n. inv (&SUC n pow 2)) <= 2’
+ >> MATCH_MP_TAC REAL_LE_TRANS
+ >> Q.EXISTS_TAC `1 + sum (1,m) (\n. inv (&n) - inv (&SUC n))`
+ >> CONJ_TAC
+ >- (Know `sum (0,SUC m) (\n. inv (&SUC n pow 2)) =
+           sum (0,1) (\n. inv (&SUC n pow 2)) + sum (1,m) (\n. inv (&SUC n pow 2))`
+     >- (MATCH_MP_TAC EQ_SYM \\
+         MP_TAC (Q.SPECL [`\n. inv (&SUC n pow 2)`, `1`, `m`] SUM_TWO) \\
+         RW_TAC arith_ss [ADD1]) >> Rewr' \\
+     Know `sum (0,1) (\n. inv (&SUC n pow 2)) = 1`
+     >- (REWRITE_TAC [sum, ONE] >> rw []) >> Rewr' \\
+     REWRITE_TAC [REAL_LE_LADD] \\
+     MATCH_MP_TAC realTheory.SUM_LE \\
+     RW_TAC real_ss [REAL_INV_1OVER] \\
+    `&r <> 0` by RW_TAC real_ss [] \\
+    `&SUC r <> 0` by RW_TAC real_ss [] \\
+     ASM_SIMP_TAC real_ss [REAL_SUB_RAT] \\
+    `&SUC r - &r = 1` by METIS_TAC [REAL, REAL_ADD_SUB] >> POP_ORW \\
+     ASM_SIMP_TAC std_ss [POW_2, GSYM REAL_INV_1OVER] \\
+    `0 < &SUC r * &SUC r` by rw [] \\
+     Know `0 < &(r * SUC r)`
+     >- (rw [] >> `0 = r * 0` by RW_TAC arith_ss [] >> POP_ORW \\
+         rw [LT_MULT_LCANCEL]) >> DISCH_TAC \\
+     MATCH_MP_TAC REAL_LT_IMP_LE \\
+     ASM_SIMP_TAC real_ss [REAL_INV_LT_ANTIMONO] \\
+    `SUC r ** 2 = SUC r * SUC r` by RW_TAC arith_ss [] >> POP_ORW \\
+     RW_TAC arith_ss [LT_MULT_RCANCEL])
+ >> `2 = 1 + (1 :real)` by RW_TAC real_ss [] >> POP_ORW
+ >> REWRITE_TAC [REAL_LE_LADD]
+ >> Q.ABBREV_TAC `f = \n. -inv (&n)`
+ >> Know `!n. inv (&n) - inv (&SUC n) = f (SUC n) - f n`
+ >- (RW_TAC real_ss [Abbr `f`] \\
+     REAL_ASM_ARITH_TAC) >> Rewr'
+ >> REWRITE_TAC [SUM_CANCEL]
+ >> rw [Abbr `f`, REAL_SUB_NEG2, REAL_LE_SUB_RADD, REAL_LE_ADDR]
+QED
+
 val _ = export_theory();
