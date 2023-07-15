@@ -4722,4 +4722,30 @@ val ITERATE_AND = store_thm ("ITERATE_AND",
   MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN
   ASM_SIMP_TAC std_ss [MONOIDAL_AND, NEUTRAL_AND, ITERATE_CLAUSES] THEN SET_TAC[]);
 
+(* The following "HALF" theorems were moved from seqTheory *)
+Theorem HALF_CANCEL :
+    2 * (1 / 2) = 1:real
+Proof
+    Suff `2 * inv 2 = 1:real` >- PROVE_TAC [REAL_INV_1OVER]
+ >> PROVE_TAC [REAL_MUL_RINV, REAL_ARITH ``~(2:real = 0)``]
+QED
+
+Theorem X_HALF_HALF :
+    !x:real. 1/2 * x + 1/2 * x = x
+Proof
+    STRIP_TAC
+ >> MATCH_MP_TAC (REAL_ARITH ``(2 * (a:real) = 2 * b) ==> (a = b)``)
+ >> RW_TAC std_ss [REAL_ADD_LDISTRIB, REAL_MUL_ASSOC, HALF_CANCEL]
+ >> REAL_ARITH_TAC
+QED
+
+Theorem ONE_MINUS_HALF :
+    (1:real) - 1 / 2 = 1 / 2
+Proof
+    MP_TAC (Q.SPEC `1` X_HALF_HALF)
+ >> RW_TAC real_ss []
+ >> MATCH_MP_TAC (REAL_ARITH ``((x:real) + 1 / 2 = y + 1 / 2) ==> (x = y)``)
+ >> RW_TAC std_ss [REAL_SUB_ADD]
+QED
+
 val _ = export_theory();

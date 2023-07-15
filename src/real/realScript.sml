@@ -5146,4 +5146,19 @@ Proof
   CONJ_TAC THEN MATCH_MP_TAC RAT_LEMMA4 THEN ASM_REWRITE_TAC[]
 QED
 
+(* The following "HALF" theorems were moved from seqTheory *)
+Theorem HALF_POS :
+    0:real < 1/2
+Proof
+    PROVE_TAC [REAL_LT_01, REAL_LT_HALF1]
+QED
+
+Theorem HALF_LT_1 :
+    1 / 2 < 1:real
+Proof
+    ONCE_REWRITE_TAC [GSYM REAL_INV_1OVER, GSYM REAL_INV1]
+ >> MATCH_MP_TAC REAL_LT_INV
+ >> RW_TAC arith_ss [REAL_LT]
+QED
+
 val _ = export_theory();

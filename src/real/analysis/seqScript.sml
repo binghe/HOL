@@ -1729,35 +1729,6 @@ Theorem LT_SUC'[local] = DECIDE “!a b. a < SUC b = a < b \/ (a = b)”
 val K_PARTIAL = store_thm
   ("K_PARTIAL", ``!x. K x = \z. x``, RW_TAC std_ss [K_DEF]);
 
-val HALF_POS = store_thm
-  ("HALF_POS", ``0:real < 1/2``,
-   PROVE_TAC [REAL_ARITH ``0:real < 1``, REAL_LT_HALF1]);
-
-val HALF_LT_1 = store_thm
-  ("HALF_LT_1", ``1 / 2 < 1:real``,
-   ONCE_REWRITE_TAC [GSYM REAL_INV_1OVER, GSYM REAL_INV1]
-   >> MATCH_MP_TAC REAL_LT_INV
-   >> RW_TAC arith_ss [REAL_LT]);
-
-val HALF_CANCEL = store_thm
-  ("HALF_CANCEL", ``2 * (1 / 2) = 1:real``,
-   Suff `2 * inv 2 = 1:real` >- PROVE_TAC [REAL_INV_1OVER]
-   >> PROVE_TAC [REAL_MUL_RINV, REAL_ARITH ``~(2:real = 0)``]);
-
-val X_HALF_HALF = store_thm
-  ("X_HALF_HALF", ``!x:real. 1/2 * x + 1/2 * x = x``,
-   STRIP_TAC
-   >> MATCH_MP_TAC (REAL_ARITH ``(2 * (a:real) = 2 * b) ==> (a = b)``)
-   >> RW_TAC std_ss [REAL_ADD_LDISTRIB, REAL_MUL_ASSOC, HALF_CANCEL]
-   >> REAL_ARITH_TAC);
-
-val ONE_MINUS_HALF = store_thm
-  ("ONE_MINUS_HALF", ``(1:real) - 1 / 2 = 1 / 2``,
-   MP_TAC (Q.SPEC `1` X_HALF_HALF)
-   >> RW_TAC real_ss []
-   >> MATCH_MP_TAC (REAL_ARITH ``((x:real) + 1 / 2 = y + 1 / 2) ==> (x = y)``)
-   >> RW_TAC std_ss [REAL_SUB_ADD]);
-
 (* from util_probTheory, TODO: move to pred_setTheory *)
 val NUM_2D_BIJ_BIG_SQUARE = store_thm
   ("NUM_2D_BIJ_BIG_SQUARE",

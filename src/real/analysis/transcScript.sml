@@ -67,7 +67,11 @@ val cos_ser =
 
 val exp_ser = “\n. inv(&(FACT n))”;
 
-Theorem exp = derivativeTheory.exp
+Theorem exp :
+    !x. exp(x) = suminf (\n. (^exp_ser) n * (x pow n))
+Proof
+    REWRITE_TAC [exp_def, suminf_univ]
+QED
 
 val cos = new_definition("cos",
   “cos(x) = suminf(\n. (^cos_ser) n * (x pow n))”);
@@ -79,41 +83,13 @@ val sin = new_definition("sin",
 (* Show the series for exp converges, using the ratio test                   *)
 (*---------------------------------------------------------------------------*)
 
-(* TODO: use derivativeTheory.EXP_CONVERGES to simply this proof
-   also known as REAL_EXP_CONVERGES *)
-val EXP_CONVERGES = store_thm("EXP_CONVERGES",
-  “!x. (\n. (^exp_ser) n * (x pow n)) sums exp(x)”,
-  let fun fnz tm =
-    (GSYM o MATCH_MP REAL_LT_IMP_NE o
-     REWRITE_RULE[GSYM REAL_LT] o C SPEC FACT_LESS) tm in
-  GEN_TAC THEN REWRITE_TAC[exp] THEN MATCH_MP_TAC SUMMABLE_SUM THEN
-  MATCH_MP_TAC SER_RATIO THEN
-  MP_TAC (SPEC “&1” REAL_DOWN) THEN REWRITE_TAC[REAL_LT_01] THEN
-  DISCH_THEN(X_CHOOSE_THEN “c:real” STRIP_ASSUME_TAC) THEN
-  EXISTS_TAC “c:real” THEN ASM_REWRITE_TAC[] THEN
-  MP_TAC(SPEC “c:real” REAL_ARCH) THEN ASM_REWRITE_TAC[] THEN
-  DISCH_THEN(MP_TAC o SPEC “abs(x)”) THEN
-  DISCH_THEN(X_CHOOSE_TAC “N:num”) THEN EXISTS_TAC “N:num” THEN
-  X_GEN_TAC “n:num” THEN REWRITE_TAC[GREATER_EQ] THEN DISCH_TAC THEN BETA_TAC THEN
-  REWRITE_TAC[ADD1, POW_ADD, ABS_MUL, REAL_MUL_ASSOC, POW_1] THEN
-  GEN_REWR_TAC LAND_CONV  [REAL_MUL_SYM] THEN
-  REWRITE_TAC[REAL_MUL_ASSOC] THEN MATCH_MP_TAC REAL_LE_RMUL_IMP THEN
-  REWRITE_TAC[ABS_POS] THEN REWRITE_TAC[GSYM ADD1, FACT] THEN
-  REWRITE_TAC[GSYM REAL_MUL, MATCH_MP REAL_INV_MUL (CONJ
-   (REWRITE_RULE[GSYM REAL_INJ] (SPEC “n:num” NOT_SUC)) (fnz “n:num”))] THEN
-  REWRITE_TAC[ABS_MUL, REAL_MUL_ASSOC] THEN
-  MATCH_MP_TAC REAL_LE_RMUL_IMP THEN REWRITE_TAC[ABS_POS] THEN
-  MP_TAC(SPEC “n:num” LESS_0) THEN REWRITE_TAC[GSYM REAL_LT] THEN
-  DISCH_THEN(ASSUME_TAC o GSYM o MATCH_MP REAL_LT_IMP_NE) THEN
-  FIRST_ASSUM(fn th => REWRITE_TAC[MATCH_MP ABS_INV th]) THEN
-  REWRITE_TAC[GSYM real_div] THEN MATCH_MP_TAC REAL_LE_LDIV THEN
-  ASM_REWRITE_TAC[GSYM ABS_NZ] THEN ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
-  REWRITE_TAC[REWRITE_RULE[GSYM ABS_REFL, GSYM REAL_LE] ZERO_LESS_EQ] THEN
-  MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC “&N * c” THEN CONJ_TAC THENL
-   [MATCH_MP_TAC REAL_LT_IMP_LE THEN FIRST_ASSUM ACCEPT_TAC,
-    FIRST_ASSUM(fn th => REWRITE_TAC[MATCH_MP REAL_LE_RMUL th]) THEN
-    REWRITE_TAC[REAL_LE] THEN MATCH_MP_TAC LESS_EQ_TRANS THEN
-    EXISTS_TAC “n:num” THEN ASM_REWRITE_TAC[LESS_EQ_SUC_REFL]] end);
+Theorem EXP_CONVERGES :
+    !x. (\n. (^exp_ser) n * (x pow n)) sums exp(x)
+Proof
+    RW_TAC std_ss [Once REAL_MUL_COMM, GSYM real_div]
+ >> REWRITE_TAC [REWRITE_RULE [sums_univ, FROM_0]
+                 derivativeTheory.EXP_CONVERGES]
+QED
 
 (*---------------------------------------------------------------------------*)
 (* Show by the comparison test that sin and cos converge                     *)
