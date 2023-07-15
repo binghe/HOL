@@ -2735,6 +2735,9 @@ Type &
 } % matches bracket at beginning of n-bit section, where some n-bit
   % specific macros are defined
 
+\subsection{IEEE floating numbers}
+\label{sec:floats}
+\index{floating numbers, the HOL theory of@floating numbers, the \HOL{} theory of|(}
 
 
 
