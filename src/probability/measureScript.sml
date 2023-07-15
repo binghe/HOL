@@ -5376,7 +5376,7 @@ val measure_liminf = store_thm
       FIRST_X_ASSUM MATCH_MP_TAC \\
       Q.EXISTS_TAC `n'` >> RW_TAC arith_ss [] ]);
 
-(* An extended version of `limsup_suminf_indicator` with spaces (moved from borelTheory) *)
+(* An extended version of `limsup_suminf_indicator` with spaces *)
 val limsup_suminf_indicator_space = store_thm
   ("limsup_suminf_indicator_space",
   ``!a A. sigma_algebra a /\ (!n. A n IN subsets a) ==>

@@ -1729,47 +1729,6 @@ Theorem LT_SUC'[local] = DECIDE “!a b. a < SUC b = a < b \/ (a = b)”
 val K_PARTIAL = store_thm
   ("K_PARTIAL", ``!x. K x = \z. x``, RW_TAC std_ss [K_DEF]);
 
-(* from util_probTheory, TODO: move to pred_setTheory *)
-val NUM_2D_BIJ_BIG_SQUARE = store_thm
-  ("NUM_2D_BIJ_BIG_SQUARE",
-   ``!(f : num -> num # num) N.
-       BIJ f UNIV (UNIV CROSS UNIV) ==>
-       ?k. IMAGE f (count N) SUBSET count k CROSS count k``,
-   RW_TAC std_ss [IN_CROSS, IN_COUNT, SUBSET_DEF, IN_IMAGE, IN_COUNT]
-   >> Induct_on `N` >- RW_TAC arith_ss []
-   >> Strip
-   >> Cases_on `f N`
-   >> REWRITE_TAC [prim_recTheory.LESS_THM]
-   >> Q.EXISTS_TAC `SUC (MAX k (MAX q r))`
-   >> Know `!a b. a < SUC b = a <= b`
-   >- (KILL_TAC
-       >> DECIDE_TAC)
-   >> RW_TAC std_ss []
-   >> RW_TAC std_ss []
-   >> PROVE_TAC [X_LE_MAX, LESS_EQ_REFL, LESS_IMP_LESS_OR_EQ]);
-
-(* from util_probTheory, TODO: move to pred_setTheory *)
-val NUM_2D_BIJ_SMALL_SQUARE = store_thm
-  ("NUM_2D_BIJ_SMALL_SQUARE",
-   ``!(f : num -> num # num) k.
-       BIJ f UNIV (UNIV CROSS UNIV) ==>
-       ?N. count k CROSS count k SUBSET IMAGE f (count N)``,
-   Strip
-   >> (MP_TAC o
-       Q.SPECL [`f`, `UNIV CROSS UNIV`, `count k CROSS count k`] o
-       INST_TYPE [``:'a`` |-> ``:num # num``]) BIJ_FINITE_SUBSET
-   >> RW_TAC std_ss [CROSS_SUBSET, SUBSET_UNIV, FINITE_CROSS, FINITE_COUNT]
-   >> Q.EXISTS_TAC `N`
-   >> RW_TAC std_ss [SUBSET_DEF, IN_IMAGE, IN_COUNT]
-   >> Q.PAT_X_ASSUM `BIJ a b c` MP_TAC
-   >> RW_TAC std_ss [BIJ_DEF, SURJ_DEF, IN_UNIV, IN_CROSS]
-   >> POP_ASSUM (MP_TAC o Q.SPEC `x`)
-   >> RW_TAC std_ss []
-   >> Q.EXISTS_TAC `y`
-   >> RW_TAC std_ss []
-   >> Suff `~(N <= y)` >- DECIDE_TAC
-   >> PROVE_TAC []);
-
 val SUMINF_ADD = store_thm
   ("SUMINF_ADD",
    ``!f g.
