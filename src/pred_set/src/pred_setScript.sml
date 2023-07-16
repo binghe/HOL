@@ -62,13 +62,15 @@ structure Q = struct
     end
 end
 
-(* from util_prob *)
+(* from hurdUtils *)
 fun K_TAC _ = ALL_TAC;
+val KILL_TAC = POP_ASSUM_LIST K_TAC;
 val Know = Q_TAC KNOW_TAC;
 val Suff = Q_TAC SUFF_TAC;
 val Cond =
     MATCH_MP_TAC (PROVE [] ``!a b c. a /\ (b ==> c) ==> ((a ==> b) ==> c)``) \\
     CONJ_TAC;
+fun wrap a = [a];
 
 (* ---------------------------------------------------------------------*)
 (* Create the new theory.                                               *)
@@ -7151,13 +7153,6 @@ Theorem BIJ_SWAP:
 Proof
     simp[BIJ_IFF_INV] >> Q.EXISTS_TAC ‘SWAP’ >> simp[]
 QED
-
-(* from hurdUtils *)
-val Know = Q_TAC KNOW_TAC;
-val Suff = Q_TAC SUFF_TAC;
-fun K_TAC _ = ALL_TAC;
-val KILL_TAC = POP_ASSUM_LIST K_TAC;
-fun wrap a = [a];
 
 Theorem X_LE_MAX[local] = cj 1 MAX_LE
 Theorem MAX_LE_X[local] = cj 2 MAX_LE
