@@ -13,8 +13,10 @@ open metisLib combinTheory pred_setTheory res_quanTools pairTheory jrhUtils
      prim_recTheory arithmeticTheory tautLib pred_setLib hurdUtils;
 
 open realTheory realLib real_sigmaTheory iterateTheory real_topologyTheory
-     seqTheory limTheory transcTheory  metricTheory listTheory rich_listTheory
+     seqTheory limTheory transcTheory metricTheory listTheory rich_listTheory
      cardinalTheory;
+
+open util_probTheory;
 
 val _ = new_theory "extreal";
 

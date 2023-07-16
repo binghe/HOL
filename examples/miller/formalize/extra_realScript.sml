@@ -6,8 +6,6 @@ open realTheory realLib
      extra_pred_setTheory extra_boolTheory real_sigmaTheory
      sumTheory limTheory listTheory rich_listTheory;
 
-open iterateTheory; (* some real number lemmas are moved there *)
-
 val _ = new_theory "extra_real";
 
 (* ------------------------------------------------------------------------- *)
