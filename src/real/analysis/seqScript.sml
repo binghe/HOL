@@ -1726,9 +1726,6 @@ val SUMS_ZERO = store_thm
 
 Theorem LT_SUC'[local] = DECIDE “!a b. a < SUC b = a < b \/ (a = b)”
 
-val K_PARTIAL = store_thm
-  ("K_PARTIAL", ``!x. K x = \z. x``, RW_TAC std_ss [K_DEF]);
-
 val SUMINF_ADD = store_thm
   ("SUMINF_ADD",
    ``!f g.
@@ -2058,8 +2055,7 @@ val SER_POS_COMPARE = store_thm
 Theorem SEQ_REAL_SUM_IMAGE :
     !s. FINITE s ==>
         !f f'. (!x. x IN s ==> (\n. f n x) --> f' x) ==>
-                (\n. REAL_SUM_IMAGE (f n) s) -->
-                REAL_SUM_IMAGE f' s
+                (\n. REAL_SUM_IMAGE (f n) s) --> REAL_SUM_IMAGE f' s
 Proof
    Suff `!s. FINITE s ==>
                 (\s. !f f'. (!x. x IN s ==> (\n. f n x) --> f' x) ==>
@@ -2073,14 +2069,6 @@ Proof
    >> POP_ORW
    >> MATCH_MP_TAC SEQ_ADD
    >> METIS_TAC []
-QED
-
-Theorem POW_HALF_POS :
-    !n. 0:real < (1/2) pow n
-Proof
-    STRIP_TAC
- >> Cases_on `n` >- PROVE_TAC [REAL_LT_01, pow]
- >> PROVE_TAC [HALF_POS, POW_POS_LT]
 QED
 
 Theorem POW_HALF_SMALL :
