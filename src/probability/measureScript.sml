@@ -5376,12 +5376,11 @@ val measure_liminf = store_thm
       FIRST_X_ASSUM MATCH_MP_TAC \\
       Q.EXISTS_TAC `n'` >> RW_TAC arith_ss [] ]);
 
-(* An extended version of `limsup_suminf_indicator` with spaces *)
-val limsup_suminf_indicator_space = store_thm
-  ("limsup_suminf_indicator_space",
-  ``!a A. sigma_algebra a /\ (!n. A n IN subsets a) ==>
-         (limsup A = {x | x IN space a /\ (suminf (\n. indicator_fn (A n) x) = PosInf)})``,
- (* proof *)
+(* An extended version of `limsup_suminf_indicator` (now removed) with spaces *)
+Theorem limsup_suminf_indicator_space :
+    !a A. sigma_algebra a /\ (!n. A n IN subsets a) ==>
+         (limsup A = {x | x IN space a /\ (suminf (\n. indicator_fn (A n) x) = PosInf)})
+Proof
     RW_TAC std_ss [EXTENSION, IN_LIMSUP, GSPECIFICATION, indicator_fn_def]
  >> `(?N. INFINITE N /\ !n. n IN N ==> x IN A n) = ~(?m. !n. m <= n ==> x NOTIN A n)`
      by METIS_TAC [Q.SPEC `\n. x IN A n` infinitely_often_lemma]
@@ -5452,7 +5451,8 @@ val limsup_suminf_indicator_space = store_thm
           RW_TAC arith_ss [SUBSET_DEF, IN_COUNT, GSPECIFICATION]) \\
       DISCH_THEN (STRIP_ASSUME_TAC o (Q.SPEC `n`)) \\
       Q.EXISTS_TAC `n'` \\
-      MATCH_MP_TAC le_trans >> Q.EXISTS_TAC `&n` >> art [] ]);
+      MATCH_MP_TAC le_trans >> Q.EXISTS_TAC `&n` >> art [] ]
+QED
 
 (***********************)
 (*   Further Results   *)

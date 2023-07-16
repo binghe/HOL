@@ -995,8 +995,7 @@ val jensen_pos_concave_SIGMA = store_thm
    >> FULL_SIMP_TAC std_ss [pos_concave_fn, GSPECIFICATION]);
 
 (* ================================================================= *)
-(*   Rational Numbers as a subset of real numbers                    *)
-(*        (TODO: use rationalTheory instead)                         *)
+(*   The set of rational numbers as a subset of real numbers         *)
 (* ================================================================= *)
 
 Definition real_rat_set_def :
