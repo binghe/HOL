@@ -9011,6 +9011,12 @@ Definition prob_density_function_def :
 End
 Overload pdf[local] = “prob_density_function”
 
+(* cf. examples/dependability/RBD/VDCScript.sml:
+Definition CDF_def :
+    CDF p X (t:real) = distribution p X {y | y <= Normal t}
+End
+ *)
+
 (* local backward compatibility *)
 Theorem pdf_def[local] = prob_density_function_def
 
