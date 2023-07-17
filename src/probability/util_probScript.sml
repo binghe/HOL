@@ -47,12 +47,6 @@ val _ = TeX_notation {hol = UTF8.chr 0x2192, TeX = ("\\HOLTokenMap{}", 1)};
 val _ = TeX_notation {hol = "-->",           TeX = ("\\HOLTokenLongmap{}", 1)};
 val _ = TeX_notation {hol = UTF8.chr 0x27F6, TeX = ("\\HOLTokenLongmap{}", 1)};
 
-Theorem IN_o :
-    !x f s. x IN (s o f) <=> f x IN s
-Proof
-    RW_TAC std_ss [SPECIFICATION, o_THM]
-QED
-
 Definition prod_sets_def :
     prod_sets a b = {s CROSS t | s IN a /\ t IN b}
 End
