@@ -47,7 +47,7 @@ RUN if [ "linux/386" = "$TARGETPLATFORM" ]; then \
     fi
 RUN make -C polyml-master -j4
 RUN make -C polyml-master compiler install
-RUN rm -rf polyml-master
+RUN rm -rf polyml-master polyml-master.zip
 
 # 3. install MLton binary (https://github.com/MLton/mlton.git) for linux/amd64 only
 RUN if [ "linux/amd64" = "$TARGETPLATFORM" ]; then \
