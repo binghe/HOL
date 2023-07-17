@@ -18,13 +18,6 @@ val _ = new_theory "util_prob";
 
 fun METIS ths tm = prove(tm, METIS_TAC ths);
 
-(* This is necessary after opening ratTheory, we don't want any arithmetic term
-   to be explicitly parsed to integer or rational terms. Instead they are either
-   num or real terms (in this theorem). -- Chun Tian
-val _ = ratLib.deprecate_rat();
-val _ = intLib.deprecate_int();
- *)
-
 (* ------------------------------------------------------------------------- *)
 
 val _ = set_fixity "->" (Infixr 250);
@@ -44,12 +37,6 @@ val _ = TeX_notation {hol = "->",            TeX = ("\\HOLTokenMap{}", 1)};
 val _ = TeX_notation {hol = UTF8.chr 0x2192, TeX = ("\\HOLTokenMap{}", 1)};
 val _ = TeX_notation {hol = "-->",           TeX = ("\\HOLTokenLongmap{}", 1)};
 val _ = TeX_notation {hol = UTF8.chr 0x27F6, TeX = ("\\HOLTokenLongmap{}", 1)};
-
-Theorem IN_o :
-    !x f s. x IN (s o f) <=> f x IN s
-Proof
-    RW_TAC std_ss [SPECIFICATION, o_THM]
-QED
 
 Definition prod_sets_def :
     prod_sets a b = {s CROSS t | s IN a /\ t IN b}
