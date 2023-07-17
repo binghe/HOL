@@ -1481,7 +1481,7 @@ QED
 (*---------------------------------------------------------------------------*)
 
 (* |- (!x. x pow 0 = 1) /\ !x n. x pow SUC n = x * x pow n *)
-Theorem pow = real_pow (* original definition is moved to realaxTheory *)
+Theorem pow = real_pow
 
 (* from arithmeticTheory.EXP *)
 val _ = overload_on (UnicodeChars.sup_2, “\x. x pow 2”);
