@@ -16,8 +16,6 @@ open realTheory realLib real_sigmaTheory iterateTheory real_topologyTheory
      seqTheory limTheory transcTheory metricTheory listTheory rich_listTheory
      cardinalTheory;
 
-open util_probTheory;
-
 val _ = new_theory "extreal";
 
 fun METIS ths tm = prove(tm, METIS_TAC ths);
@@ -8057,11 +8055,11 @@ Proof
       Cases_on `e <= inf p` >> fs [] ]
 QED
 
-(* ================================================================= *)
-(*   Rational Numbers as a subset of extended real numbers           *)
-(* ================================================================= *)
+(* ========================================================================= *)
+(*   Rational Numbers as a subset of extended real numbers                   *)
+(* ========================================================================= *)
 
-(* new definition based on util_probTheory.real_rat_set_def *)
+(* new definition based on real_rat_set (q_set), now in real_sigmaTheory *)
 Definition Q_set :
     Q_set = IMAGE Normal q_set
 End
