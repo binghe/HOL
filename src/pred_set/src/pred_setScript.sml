@@ -5286,6 +5286,10 @@ val max_lemma = prove(
     ]
   ])
 
+(* |- !s. FINITE s ==>
+          (s <> {} ==> MAX_SET s IN s /\ !y. y IN s ==> y <= MAX_SET s) /\
+          (s = {} ==> MAX_SET s = 0)
+ *)
 val MAX_SET_DEF = new_specification (
   "MAX_SET_DEF", ["MAX_SET"],
   CONV_RULE (BINDER_CONV RIGHT_IMP_EXISTS_CONV THENC
@@ -5335,6 +5339,7 @@ val MAX_SET_ELIM = store_thm(
           Q (MAX_SET P)``,
   PROVE_TAC [MAX_SET_DEF]);
 
+(* NOTE: “MIN_SET {}” is undefined *)
 val MIN_SET_DEF = new_definition("MIN_SET_DEF", ``MIN_SET = $LEAST``);
 
 val MIN_SET_ELIM = store_thm(
@@ -5375,6 +5380,18 @@ val MIN_SET_THM = store_thm(
                       FORALL_AND_THM] THEN
     REPEAT STRIP_TAC THEN RES_TAC THEN ASM_SIMP_TAC arith_ss [MIN_DEF]
   ]);
+
+(* This version of MIN_SET_THM may be more useful when doing induction on s *)
+Theorem MIN_SET_THM' :
+    (!e. MIN_SET {e} = e) /\
+    (!e s. s <> {} ==> MIN_SET (e INSERT s) = MIN e (MIN_SET s))
+Proof
+    CONJ_TAC >- REWRITE_TAC [MIN_SET_THM]
+ >> rpt GEN_TAC
+ >> DISCH_THEN (fn th =>
+                   ONCE_REWRITE_TAC [SYM (MATCH_MP CHOICE_INSERT_REST th)])
+ >> REWRITE_TAC [MIN_SET_THM]
+QED
 
 val MIN_SET_LEM = Q.store_thm
 ("MIN_SET_LEM",
