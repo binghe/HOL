@@ -14,7 +14,9 @@ open metisLib combinTheory pred_setTheory res_quanTools pairTheory jrhUtils
 
 open realTheory realLib real_sigmaTheory iterateTheory real_topologyTheory
      seqTheory limTheory transcTheory metricTheory listTheory rich_listTheory
-     cardinalTheory extreal_baseTheory;
+     cardinalTheory;
+
+open extreal_arithTheory;
 
 val _ = new_theory "extreal";
 
@@ -79,22 +81,6 @@ Overload ln   = “extreal_ln”
 
 
 
-val mul_not_infty = store_thm
-  ("mul_not_infty",
-  ``(!c y. 0 <= c /\ y <> NegInf ==> Normal (c) * y <> NegInf) /\
-    (!c y. 0 <= c /\ y <> PosInf ==> Normal (c) * y <> PosInf) /\
-    (!c y. c <= 0 /\ y <> NegInf ==> Normal (c) * y <> PosInf) /\
-    (!c y. c <= 0 /\ y <> PosInf ==> Normal (c) * y <> NegInf)``,
-    RW_TAC std_ss [] >> Cases_on `y`
- >> RW_TAC std_ss [extreal_mul_def, extreal_le_def]
- >> METIS_TAC [real_lte, REAL_LE_ANTISYM]);
-
-val mul_not_infty2 = store_thm
-  ("mul_not_infty2",
-  ``!x y. x <> NegInf /\ x <> PosInf /\ y <> NegInf /\ y <> PosInf ==>
-         (x * y <> NegInf) /\ (x * y <> PosInf)``,
-    rpt Cases
- >> RW_TAC std_ss [extreal_mul_def, extreal_not_infty]);
 
 (* two variants of mul_lt and mul_le *)
 val mul_lt2 = store_thm
@@ -6380,6 +6366,46 @@ Proof
       Cases_on `e <= inf p` >> fs [] ]
 QED
 
+(*****************)
+(*    Ceiling    *)
+(*****************)
+
+Definition ceiling_def :
+    ceiling (Normal x) = LEAST (n:num). x <= &n
+End
+
+Theorem CEILING_LBOUND :
+    !x. Normal x <= &(ceiling (Normal x))
+Proof
+    RW_TAC std_ss [ceiling_def]
+ >> LEAST_ELIM_TAC
+ >> REWRITE_TAC [SIMP_REAL_ARCH]
+ >> METIS_TAC [extreal_of_num_def, extreal_le_def]
+QED
+
+Theorem CEILING_UBOUND :
+    !x. (0 <= x) ==> &(ceiling (Normal x)) < (Normal x) + 1
+Proof
+    RW_TAC std_ss [ceiling_def, extreal_of_num_def, extreal_add_def, extreal_lt_eq]
+ >> LEAST_ELIM_TAC
+ >> REWRITE_TAC [SIMP_REAL_ARCH]
+ >> RW_TAC real_ss []
+ >> FULL_SIMP_TAC real_ss [GSYM real_lt]
+ >> PAT_X_ASSUM ``!m. P`` (MP_TAC o Q.SPEC `n-1`)
+ >> RW_TAC real_ss []
+ >> Cases_on `n = 0` >- METIS_TAC [REAL_LET_ADD2, REAL_LT_01, REAL_ADD_RID]
+ >> `0 < n` by RW_TAC real_ss []
+ >> `&(n - 1) < x:real` by RW_TAC real_ss []
+ >> `0 <= n-1` by RW_TAC real_ss []
+ >> `0:real <= (&(n-1))` by RW_TAC real_ss []
+ >> `0 < x` by METIS_TAC [REAL_LET_TRANS]
+ >> Cases_on `n = 1`
+ >- METIS_TAC [REAL_LE_REFL, REAL_ADD_RID, REAL_LTE_ADD2, REAL_ADD_COMM]
+ >> `0 <> n-1` by RW_TAC real_ss []
+ >> `&n - 1 < x` by RW_TAC real_ss [REAL_SUB]
+ >> FULL_SIMP_TAC real_ss [REAL_LT_SUB_RADD]
+QED
+
 (* ========================================================================= *)
 (*   Subsets of extended real numbers                                        *)
 (* ========================================================================= *)
@@ -8333,7 +8359,6 @@ val _ = map (fn name => save_thm (name, DB.fetch "extreal_base" name))
        "add_not_infty",
        "add_rzero",
        "add_sub", "add_sub_normal", "add_sub2",
-       "ceiling_def",
        "entire",
        "eq_add_sub_switch",
        "eq_neg",
@@ -8436,6 +8461,7 @@ val _ = map (fn name => save_thm (name, DB.fetch "extreal_base" name))
        "mul_lone",
        "mul_lposinf",
        "mul_lzero",
+       "mul_not_infty", "mul_not_infty2",
        "mul_rone",
        "mul_rposinf",
        "mul_rzero",
@@ -8473,8 +8499,6 @@ val _ = map (fn name => save_thm (name, DB.fetch "extreal_base" name))
        "sub_zero_le",
        "sub_zero_lt", "sub_zero_lt2",
        "normal_real",
-       "CEILING_LBOUND",
-       "CEILING_UBOUND",
        "EXTREAL_EQ_LADD",
        "EXTREAL_EQ_RADD"];
 
