@@ -8330,10 +8330,10 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
-(* Backwards compatibility: export all theorems moved to extreal_baseTheory  *)
+(* Backwards compatibility: export all theorems moved to extreal_arithTheory  *)
 (* ------------------------------------------------------------------------- *)
 
-val _ = map (fn name => save_thm (name, DB.fetch "extreal_base" name))
+val _ = map (fn name => save_thm (name, DB.fetch "extreal_arith" name))
       ["abs_0",
        "abs_abs",
        "abs_bounds", "abs_bounds_lt",
