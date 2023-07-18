@@ -365,6 +365,551 @@ Proof
     METIS_TAC [extreal_le_def]
 QED
 
+Theorem le_refl[simp] :
+    !x:extreal. x <= x
+Proof
+    Cases >> RW_TAC std_ss [extreal_le_def, REAL_LE_REFL]
+QED
+
+Theorem lt_refl[simp] :
+    !x:extreal. ~(x < x)
+Proof
+    RW_TAC std_ss [extreal_lt_def, le_refl]
+QED
+
+Theorem le_infty :
+   (!x. NegInf <= x /\ x <= PosInf) /\
+   (!x. x <= NegInf <=> (x = NegInf)) /\
+   (!x. PosInf <= x <=> (x = PosInf))
+Proof
+    RW_TAC std_ss []
+ >> Cases_on `x`
+ >> RW_TAC std_ss [extreal_le_def]
+QED
+
+(* NOTE: The statements of this theorem were slightly refined when moving
+         here from extrealTheory. Old statements:
+
+   |- !x y. NegInf < Normal y /\ Normal y < PosInf /\
+            NegInf < PosInf /\ ~(x < NegInf) /\ ~(PosInf < x) /\
+           (x <> PosInf <=> x < PosInf) /\ (x <> NegInf <=> NegInf < x)
+ *)
+Theorem lt_infty :
+    NegInf < PosInf /\
+   (!x. NegInf < Normal x /\ Normal x < PosInf) /\
+   (!x. ~(x < NegInf) /\ ~(PosInf < x)) /\
+   (!x. x <> PosInf <=> x < PosInf) /\
+   (!x. x <> NegInf <=> NegInf < x)
+Proof
+    rpt STRIP_TAC
+ >> RW_TAC std_ss [extreal_lt_def, extreal_le_def, lt_refl]
+ >> Cases_on ‘x’
+ >> fs [extreal_lt_def, extreal_le_def, lt_refl]
+QED
+
+Theorem lt_imp_le :
+    !x y :extreal. x < y ==> x <= y
+Proof
+    NTAC 2 Cases
+ >> RW_TAC std_ss [lt_refl, le_refl, extreal_lt_def, extreal_le_def]
+ >> METIS_TAC [real_lt, REAL_LT_IMP_LE]
+QED
+
+Theorem lt_imp_ne :
+    !x y :extreal. x < y ==> x <> y
+Proof
+    NTAC 2 Cases
+ >> RW_TAC std_ss [lt_refl, le_refl, extreal_lt_def, extreal_le_def]
+ >> METIS_TAC [real_lt, REAL_LT_IMP_NE]
+QED
+
+Theorem le_trans :
+    !x y z :extreal. x <= y /\ y <= z ==> x <= z
+Proof
+    NTAC 3 Cases
+ >> RW_TAC std_ss [extreal_le_def,le_refl]
+ >> METIS_TAC [REAL_LE_TRANS]
+QED
+
+Theorem lt_trans :
+    !x y z :extreal. x < y /\ y < z ==> x < z
+Proof
+    NTAC 3 Cases
+ >> RW_TAC std_ss [extreal_lt_def, lt_refl, extreal_le_def, le_refl, GSYM real_lt]
+ >> METIS_TAC [REAL_LT_TRANS]
+QED
+
+Theorem let_trans :
+    !x y z:extreal. x <= y /\ y < z ==> x < z
+Proof
+    NTAC 3 Cases
+ >> RW_TAC std_ss [lt_refl, le_refl, extreal_lt_def, extreal_le_def]
+ >> METIS_TAC [real_lt,REAL_LET_TRANS]
+QED
+
+Theorem le_antisym :
+    !x y :extreal. (x <= y /\ y <= x) <=> (x = y)
+Proof
+    NTAC 2 Cases
+ >> RW_TAC std_ss [extreal_le_def, le_refl, REAL_LE_ANTISYM]
+QED
+
+Theorem lt_antisym :
+    !x y. ~(x < y /\ y < x)
+Proof
+    NTAC 2 Cases
+ >> RW_TAC std_ss [lt_infty, extreal_lt_eq]
+ >> METIS_TAC [REAL_LT_ANTISYM, DE_MORGAN_THM]
+QED
+
+Theorem lte_trans :
+    !x y z:extreal. x < y /\ y <= z ==> x < z
+Proof
+    NTAC 3 Cases
+ >> RW_TAC std_ss [lt_refl, le_refl, extreal_lt_def, extreal_le_def]
+ >> METIS_TAC [real_lt, REAL_LTE_TRANS]
+QED
+
+Theorem let_antisym :
+    !x y. ~(x < y /\ y <= x)
+Proof
+    rpt GEN_TAC
+ >> CCONTR_TAC >> fs []
+ >> `x < x` by PROVE_TAC [lte_trans]
+ >> PROVE_TAC [lt_refl]
+QED
+
+(* NOTE: The statements of this theorem were slightly refined when moving
+         here from extrealTheory. Old statements:
+
+   |- !x. (0 <= x ==> x <> NegInf) /\ (x <= 0 ==> x <> PosInf)
+*)
+Theorem le_not_infty :
+   (!x. 0 <= x ==> x <> NegInf) /\
+   (!x. x <= 0 ==> x <> PosInf)
+Proof
+    NTAC 3 STRIP_TAC
+ >> ONCE_REWRITE_TAC [lt_infty]
+ >| [ (* goal 1 (of 2) *)
+      MATCH_MP_TAC (Q.SPECL [`NegInf`, `0`, `x`] lte_trans) \\
+      PROVE_TAC [lt_infty, num_not_infty],
+      (* goal 2 (of 2) *)
+      MATCH_MP_TAC (Q.SPECL [`x`, `0`, `PosInf`] let_trans) \\
+      PROVE_TAC [lt_infty, num_not_infty] ]
+QED
+
+(* |- !x. 0 <= x ==> x <> NegInf, very useful in measureTheory *)
+Theorem pos_not_neginf = CONJUNCT1 le_not_infty
+
+(* |- !x. x <= 0 ==> x <> PosInf *)
+Theorem neg_not_posinf = CONJUNCT2 le_not_infty
+
+Theorem le_total :
+    !x y. x <= y \/ y <= x
+Proof
+    NTAC 2 Cases
+ >> RW_TAC std_ss [extreal_le_def, REAL_LE_TOTAL]
+QED
+
+Theorem lt_total :
+    !x y. (x = y) \/ x < y \/ y < x
+Proof
+    NTAC 2 Cases
+ >> RW_TAC std_ss [extreal_le_def, extreal_lt_def, GSYM real_lt, REAL_LT_TOTAL]
+QED
+
+Theorem le_01[simp] : 0 <= 1
+Proof
+    RW_TAC std_ss [extreal_of_num_def, extreal_le_eq, REAL_LE_01]
+QED
+
+Theorem lt_01[simp] : 0 < 1
+Proof
+    RW_TAC std_ss [extreal_of_num_def, extreal_lt_eq, REAL_LT_01]
+QED
+
+Theorem ne_01[simp] : 0 <> 1
+Proof
+    RW_TAC std_ss [extreal_of_num_def, REAL_10]
+QED
+
+Theorem le_02[simp] : 0 <= 2
+Proof
+    RW_TAC real_ss [extreal_of_num_def, extreal_le_eq]
+QED
+
+Theorem lt_02[simp] : 0 < 2
+Proof
+    RW_TAC real_ss [extreal_of_num_def, extreal_lt_eq]
+QED
+
+Theorem lt_10[simp] : -1 < 0
+Proof
+    RW_TAC real_ss [extreal_of_num_def, extreal_lt_eq, extreal_ainv_def]
+QED
+
+Theorem ne_02[simp] : 0 <> 2
+Proof
+    RW_TAC real_ss [extreal_of_num_def]
+QED
+
+(* NOTE: added [simp] when moving here from extrealTheory *)
+Theorem le_num[simp] :
+    !n:num. 0 <= &n
+Proof
+    RW_TAC real_ss [extreal_of_num_def, extreal_le_def]
+QED
+
+Theorem num_lt_infty[simp] :
+    !n:num. &n < PosInf
+Proof
+    RW_TAC std_ss [extreal_of_num_def, lt_infty]
+QED
+
+Theorem lt_le :
+    !x y. x < y <=> (x <= y /\ x <> y)
+Proof
+    NTAC 2 Cases
+ >> RW_TAC std_ss [extreal_lt_eq, extreal_le_def, lt_infty, le_infty, REAL_LT_LE]
+QED
+
+Theorem le_lt :
+    !x y. (x <= y) <=> x < y \/ (x = y)
+Proof
+    NTAC 2 Cases
+ >> RW_TAC std_ss [extreal_lt_eq, extreal_le_def, lt_infty, le_infty, REAL_LE_LT]
+QED
+
+Theorem le_neg :
+    !x y. -x <= -y <=> y <= x
+Proof
+    NTAC 2 Cases
+ >> RW_TAC std_ss [extreal_lt_eq, extreal_le_def, extreal_ainv_def, lt_infty, le_infty,
+                   REAL_LE_NEG]
+QED
+
+Theorem lt_neg :
+    !x y. -x < -y <=> y < x
+Proof
+    NTAC 2 Cases
+ >> RW_TAC std_ss [extreal_lt_eq, extreal_le_def, extreal_ainv_def,  lt_infty,le_infty,
+                   REAL_LT_NEG]
+QED
+
+Theorem le_add :
+    !x y :extreal. 0 <= x /\ 0 <= y ==> 0 <= x + y
+Proof
+    NTAC 2 Cases
+ >> RW_TAC std_ss [extreal_le_def, extreal_add_def, extreal_of_num_def, REAL_LE_ADD]
+QED
+
+Theorem lt_add :
+    !x y :extreal. 0 < x /\ 0 < y ==> 0 < x + y
+Proof
+    NTAC 2 Cases
+ >> RW_TAC std_ss [extreal_lt_def, extreal_le_def, extreal_add_def, extreal_of_num_def]
+ >> METIS_TAC [real_lt, REAL_LT_ADD]
+QED
+
+Theorem let_add :
+    !x y:extreal. 0 <= x /\ 0 < y ==> 0 < x + y
+Proof
+    NTAC 2 Cases
+ >> RW_TAC std_ss [extreal_lt_def, extreal_le_def, extreal_add_def, extreal_of_num_def]
+ >> METIS_TAC [real_lt, REAL_LET_ADD]
+QED
+
+Theorem lte_add :
+    !x y:extreal. 0 < x /\ 0 <= y ==> 0 < x + y
+Proof
+    NTAC 2 Cases
+ >> RW_TAC std_ss [extreal_lt_def, extreal_le_def, extreal_add_def, extreal_of_num_def]
+ >> METIS_TAC [real_lt, REAL_LTE_ADD]
+QED
+
+Theorem le_add2 :
+    !w x y z. w <= x /\ y <= z ==> w + y <= x + z
+Proof
+    NTAC 4 Cases
+ >> RW_TAC std_ss [extreal_le_def, extreal_add_def, le_infty, le_refl]
+ >> METIS_TAC [REAL_LE_ADD2]
+QED
+
+Theorem lt_add2 :
+    !w x y z. w < x /\ y < z ==> w + y < x + z
+Proof
+    rpt Cases
+ >> RW_TAC std_ss [extreal_add_def, extreal_lt_eq, lt_infty, REAL_LT_ADD2]
+QED
+
+Theorem let_add2 :
+    !w x y z. w <> NegInf /\ w <> PosInf /\ w <= x /\ y < z ==> w + y < x + z
+Proof
+    NTAC 4 Cases
+ >> RW_TAC std_ss [extreal_le_def, extreal_lt_def, extreal_add_def, le_infty, le_refl]
+ >> METIS_TAC [real_lt, REAL_LET_ADD2]
+QED
+
+Theorem let_add2_alt :
+    !w x y z. x <> NegInf /\ x <> PosInf /\ w <= x /\ y < z ==> w + y < x + z
+Proof
+    NTAC 4 Cases
+ >> RW_TAC std_ss [extreal_le_def, extreal_lt_def, extreal_add_def, le_infty, le_refl]
+ >> METIS_TAC [real_lt, REAL_LET_ADD2]
+QED
+
+(* This theorem is newly added in extreal_baseTheory *)
+Theorem le_addl :
+    !x y. y <> NegInf /\ y <> PosInf ==> (y <= x + y <=> (0 <= x))
+Proof
+    rpt Cases
+ >> RW_TAC std_ss [extreal_add_def, extreal_le_def, le_infty, extreal_of_num_def,
+                   extreal_not_infty, REAL_LE_ADDL]
+QED
+
+Theorem le_addr :
+    !x y. x <> NegInf /\ x <> PosInf ==> (x <= x + y <=> (0 <= y))
+Proof
+    rpt Cases
+ >> RW_TAC std_ss [extreal_add_def, extreal_le_def, le_infty, extreal_of_num_def,
+                   extreal_not_infty, REAL_LE_ADDR]
+QED
+
+Theorem le_addl_imp :
+    !x y. 0 <= x ==> y <= x + y
+Proof
+    rpt Cases
+ >> RW_TAC std_ss [extreal_add_def, extreal_le_def, le_infty, extreal_of_num_def,
+                   extreal_not_infty, REAL_LE_ADDL]
+QED
+
+Theorem le_addr_imp :
+    !x y. 0 <= y ==> x <= x + y
+Proof
+    rpt Cases
+ >> RW_TAC std_ss [extreal_add_def, extreal_le_def, le_infty, extreal_of_num_def,
+                   extreal_not_infty, REAL_LE_ADDR]
+QED
+
+Theorem le_ladd :
+    !x y z. x <> NegInf /\ x <> PosInf ==> (x + y <= x + z <=> y <= z)
+Proof
+    rpt Cases
+ >> RW_TAC std_ss [extreal_add_def, extreal_le_def, REAL_LE_LADD]
+QED
+
+Theorem le_radd :
+    !x y z. x <> NegInf /\ x <> PosInf ==> (y + x <= z + x <=> y <= z)
+Proof
+    rpt Cases
+ >> RW_TAC std_ss [extreal_add_def, extreal_le_def, REAL_LE_RADD]
+QED
+
+Theorem le_radd_imp :
+    !x y z. y <= z ==> y + x <= z + x
+Proof
+    rpt Cases
+ >> RW_TAC std_ss [extreal_add_def, extreal_le_def, REAL_LE_RADD, le_infty, le_refl]
+QED
+
+Theorem le_ladd_imp :
+    !x y z. y <= z ==> x + y <= x + z
+Proof
+    rpt Cases
+ >> RW_TAC std_ss [extreal_add_def, extreal_le_def, REAL_LE_LADD, le_infty, le_refl]
+QED
+
+Theorem lt_ladd :
+    !x y z. x <> NegInf /\ x <> PosInf ==> (x + y < x + z <=> y < z)
+Proof
+    rpt Cases
+ >> RW_TAC std_ss [extreal_add_def, extreal_le_def, extreal_lt_def, REAL_LE_LADD]
+QED
+
+Theorem lt_radd :
+    !x y z. x <> NegInf /\ x <> PosInf ==> (y + x < z + x <=> y < z)
+Proof
+    rpt Cases
+ >> RW_TAC std_ss [extreal_add_def, extreal_le_def, extreal_lt_def, REAL_LE_RADD]
+QED
+
+Theorem lt_addl :
+    !x y. y <> NegInf /\ y <> PosInf ==> (y < x + y <=> 0 < x)
+Proof
+    rpt Cases
+ >> RW_TAC std_ss [extreal_add_def, extreal_lt_def, extreal_le_def,
+                   le_infty, extreal_of_num_def, extreal_not_infty]
+ >> REAL_ARITH_TAC
+QED
+
+(* This theorem is newly added in extreal_baseTheory *)
+Theorem lt_addr :
+    !x y. x <> NegInf /\ x <> PosInf ==> (x < x + y <=> 0 < y)
+Proof
+    rpt Cases
+ >> RW_TAC std_ss [extreal_add_def, extreal_lt_def, extreal_le_def,
+                   le_infty, extreal_of_num_def, extreal_not_infty]
+ >> REAL_ARITH_TAC
+QED
+
+(* NOTE: two antecedents were added due to new definitions of ‘extreal_add’ *)
+Theorem le_lneg :
+    !x y. ((x <> NegInf /\ y <> NegInf) \/
+           (x <> PosInf /\ y <> PosInf)) ==> (-x <= y <=> 0 <= x + y)
+Proof
+    rpt Cases
+ >> RW_TAC std_ss [extreal_ainv_def, extreal_le_def, extreal_add_def, extreal_sub_def,
+                   le_infty, extreal_of_num_def, extreal_not_infty, REAL_LE_LNEG]
+QED
+
+Theorem le_mul :
+    !x y :extreal. 0 <= x /\ 0 <= y ==> 0 <= x * y
+Proof
+    NTAC 2 Cases
+ >> RW_TAC std_ss [extreal_le_def, extreal_mul_def, extreal_of_num_def,
+                   REAL_LE_MUL, GSYM real_lt]
+ >> METIS_TAC [REAL_LT_LE, real_lte]
+QED
+
+Theorem let_mul :
+    !x y :extreal. 0 <= x /\ 0 < y ==> 0 <= x * y
+Proof
+    rpt Cases
+ >> RW_TAC real_ss [extreal_mul_def, extreal_le_def, extreal_lt_eq, lt_infty,
+                    le_infty, le_refl, extreal_of_num_def]
+ >> METIS_TAC [real_lt, REAL_LT_LE, REAL_LT_IMP_LE, REAL_LE_MUL]
+QED
+
+Theorem lte_mul :
+    !x y :extreal. 0 < x /\ 0 <= y ==> 0 <= x * y
+Proof
+    rpt Cases
+ >> RW_TAC real_ss [extreal_mul_def, extreal_le_def, extreal_lt_eq,
+                    lt_infty, le_infty, le_refl, extreal_of_num_def]
+ >> METIS_TAC [real_lt, REAL_LT_LE, REAL_LT_IMP_LE, REAL_LE_MUL]
+QED
+
+Theorem le_mul_neg :
+    !x y :extreal. x <= 0 /\ y <= 0 ==> 0 <= x * y
+Proof
+    NTAC 2 Cases
+ >> RW_TAC std_ss [extreal_le_def, extreal_mul_def, extreal_of_num_def,
+                   REAL_LE_MUL, GSYM real_lt]
+ >> METIS_TAC [REAL_LE_NEG, REAL_NEG_0, REAL_NEG_MUL2, REAL_MUL_RZERO,
+               REAL_LE_MUL]
+QED
+
+Theorem mul_le :
+    !x y :extreal. 0 <= x /\ y <= 0 ==> x * y <= 0
+Proof
+    NTAC 2 Cases
+ >> RW_TAC std_ss [extreal_le_def, extreal_mul_def, extreal_of_num_def,
+                   REAL_LE_MUL, GSYM real_lt]
+ >- METIS_TAC [REAL_LT_LE, real_lt]
+ >> `0 <= -r'` by METIS_TAC [REAL_LE_NEG, REAL_NEG_0]
+ >> METIS_TAC [REAL_LE_NEG, REAL_NEG_0, REAL_LE_MUL, REAL_MUL_RNEG]
+QED
+
+Theorem lt_mul :
+    !x y:extreal. 0 < x /\ 0 < y ==> 0 < x * y
+Proof
+    NTAC 2 Cases
+ >> RW_TAC std_ss [extreal_lt_eq, extreal_mul_def, extreal_of_num_def,
+                   REAL_LT_MUL, lt_infty]
+QED
+
+Theorem lt_mul_neg :
+    !x y :extreal. x < 0 /\ y < 0 ==> 0 < x * y
+Proof
+    rpt Cases
+ >> RW_TAC real_ss [extreal_of_num_def, extreal_lt_eq, lt_infty, extreal_mul_def]
+ >> METIS_TAC [REAL_LT_LE, real_lt, REAL_LT_NEG, REAL_NEG_0, REAL_NEG_MUL2,
+               REAL_LT_MUL]
+QED
+
+Theorem mul_lt :
+    !x y:extreal. 0 < x /\ y < 0 ==> x * y < 0
+Proof
+    NTAC 2 Cases
+ >> RW_TAC std_ss [extreal_lt_eq, extreal_mul_def, extreal_of_num_def,
+                   REAL_LT_MUL, lt_infty]
+ >- METIS_TAC [REAL_LT_LE, real_lt]
+ >> `0 < -r'` by METIS_TAC [REAL_LT_NEG, REAL_NEG_0]
+ >> METIS_TAC [REAL_MUL_RNEG, REAL_LT_MUL, REAL_LT_NEG, REAL_NEG_0]
+QED
+
+Theorem mul_let :
+    !x y :extreal. 0 <= x /\ y < 0 ==> x * y <= 0
+Proof
+    NTAC 2 Cases
+ >> RW_TAC real_ss [extreal_lt_eq, extreal_mul_def, extreal_of_num_def,
+                    lt_infty, extreal_le_def, le_refl, le_infty]
+ >> METIS_TAC [REAL_LT_NEG, REAL_LT_IMP_LE, REAL_NEG_0, REAL_LE_MUL, real_lt,
+               REAL_MUL_RNEG, REAL_NEG_NEG, REAL_LE_NEG, REAL_LT_LE]
+QED
+
+Theorem mul_lte :
+    !x y :extreal. 0 < x /\ y <= 0 ==> x * y <= 0
+Proof
+    NTAC 2 Cases
+ >> RW_TAC real_ss [extreal_lt_eq, extreal_mul_def, extreal_of_num_def,
+                    lt_infty, extreal_le_def, le_refl, le_infty]
+ >> METIS_TAC [REAL_LT_NEG, REAL_LT_IMP_LE, REAL_NEG_0, REAL_LE_MUL,
+               REAL_MUL_RNEG, REAL_NEG_NEG, REAL_LE_NEG, real_lt, REAL_LT_LE]
+QED
+
+Theorem lt_rmul :
+    !x y z. 0 < z /\ z <> PosInf ==> (x * z < y * z <=> x < y)
+Proof
+    rpt Cases
+ >> RW_TAC real_ss [extreal_lt_eq, extreal_mul_def, le_infty, lt_infty,
+                    REAL_LT_REFL, REAL_LT_RMUL, extreal_of_num_def]
+QED
+
+Theorem lt_rmul_imp :
+    !x y z. x < y /\ 0 < z /\ z <> PosInf ==> x * z < y * z
+Proof
+    METIS_TAC [lt_rmul]
+QED
+
+Theorem le_rmul :
+    !x y z. 0 < z /\ z <> PosInf ==> (x * z <= y * z <=> x <= y)
+Proof
+    rpt Cases
+ >> RW_TAC real_ss [extreal_le_eq, extreal_mul_def, le_infty, extreal_of_num_def,
+                    REAL_LE_REFL, REAL_LE_RMUL, lt_infty, extreal_lt_eq]
+QED
+
+Theorem le_rmul_imp :
+    !x y z :extreal. 0 <= z /\ x <= y ==> x * z <= y * z
+Proof
+    RW_TAC std_ss []
+ >> Cases_on `z = 0` >- RW_TAC std_ss [mul_rzero, le_refl]
+ >> `0 < z` by METIS_TAC [lt_le]
+ >> reverse (Cases_on ‘z = PosInf’) >- METIS_TAC [le_rmul]
+ >> fs [le_infty, lt_infty, extreal_of_num_def]
+ >> Cases_on `x` >> Cases_on `y`
+ >> RW_TAC real_ss [extreal_le_def, extreal_lt_eq, extreal_mul_def,
+                    REAL_LE_REFL, REAL_LT_REFL, GSYM real_lte, GSYM real_lt,
+                    le_infty, lt_infty, extreal_of_num_def, REAL_LT_IMP_LE]
+ >> FULL_SIMP_TAC std_ss [le_infty, extreal_not_infty]
+ >> METIS_TAC [REAL_LT_LE, REAL_LTE_TRANS, extreal_le_eq, REAL_LET_ANTISYM]
+QED
+
+Theorem lt_mul2 :
+    !x1 x2 y1 y2. 0 <= x1 /\ 0 <= y1 /\ x1 <> PosInf /\ y1 <> PosInf /\
+                  x1 < x2 /\ y1 < y2 ==> x1 * y1 < x2 * y2
+Proof
+    RW_TAC std_ss []
+ >> `0 < x2 /\ 0 < y2` by METIS_TAC [let_trans]
+ >> Cases_on `x1` >> Cases_on `y1`
+ >> Cases_on `x2` >> Cases_on `y2`
+ >> FULL_SIMP_TAC real_ss [extreal_lt_eq, extreal_le_def, extreal_mul_def,
+                           le_infty, lt_infty, real_lte, REAL_LT_MUL2,
+                           extreal_of_num_def, extreal_not_infty]
+ >> METIS_TAC [extreal_not_infty,lt_infty]
+QED
+
 (*****************)
 (*    Ceiling    *)
 (*****************)
