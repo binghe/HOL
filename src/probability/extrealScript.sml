@@ -7180,7 +7180,7 @@ val _ = map (fn name => save_thm (name, DB.fetch "extreal_base" name))
        "extreal_not_infty",
        "extreal_not_lt",
        "fourths_between",
-       "fourth_cancal",
+       "fourth_cancel",
        "half_between",
        "half_cancel",
        "half_double",
