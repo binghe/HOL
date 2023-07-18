@@ -10,7 +10,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open metisLib combinTheory pred_setTheory res_quanTools pairTheory jrhUtils
-     prim_recTheory arithmeticTheory tautLib pred_setLib hurdUtils;
+     prim_recTheory arithmeticTheory tautLib pred_setLib hurdUtils numLib;
 
 open realTheory realLib;
 
@@ -42,11 +42,6 @@ val _ = add_numeral_form (#"x", SOME "extreal_of_num");
 Definition real_def :
     real x = if (x = NegInf) \/ (x = PosInf) then (0 :real)
              else @r. x = Normal r
-End
-
-(* convert an extreal set to a real set, used in borelTheory *)
-Definition real_set_def :
-    real_set s = {real x | x <> PosInf /\ x <> NegInf /\ x IN s}
 End
 
 Theorem real_normal[simp] :
@@ -83,6 +78,8 @@ Proof
     RW_TAC std_ss []
 QED
 
+val extreal_distinct = DB.fetch "-" "extreal_distinct";
+
 Theorem extreal_eq_zero[simp] :
     !x. (Normal x = 0) <=> (x = 0)
 Proof
@@ -93,18 +90,6 @@ Theorem num_not_infty[simp] :
     !n. (&n <> NegInf) /\ (&n <> PosInf)
 Proof
     RW_TAC std_ss [extreal_of_num_def]
-QED
-
-Theorem normal_real_set :
-    !(s :extreal set). s INTER (IMAGE Normal UNIV) = IMAGE Normal (real_set s)
-Proof
-    rw [Once EXTENSION, real_set_def]
- >> EQ_TAC >> rw []
- >- (rename1 ‘Normal y IN s’ \\
-     Q.EXISTS_TAC ‘Normal y’ >> rw [real_normal, extreal_not_infty])
- >> rename1 ‘Normal (real y) IN s’
- >> Suff ‘Normal (real y) = y’ >- rw []
- >> MATCH_MP_TAC normal_real >> art []
 QED
 
 Theorem real_0[simp] :
@@ -316,5 +301,108 @@ val _ = add_rule {fixity = Suffix 2100,
 val _ = overload_on (UnicodeChars.sup_4, “\x :extreal. x pow 4”);
 val _ = TeX_notation {hol = UnicodeChars.sup_4,
                       TeX = ("\\HOLTokenSupFour{}", 1)};
+
+(* ********************************************* *)
+(*     Properties of Arithmetic Operations       *)
+(* ********************************************* *)
+
+Theorem mul_rzero[simp] :
+    !x :extreal. x * 0 = 0
+Proof
+    Cases
+ >> RW_TAC real_ss [extreal_mul_def,extreal_of_num_def,REAL_MUL_RZERO]
+QED
+
+Theorem mul_lzero[simp] :
+    !x :extreal. 0 * x = 0
+Proof
+    Cases
+ >> RW_TAC real_ss [extreal_mul_def, extreal_of_num_def, REAL_MUL_LZERO]
+QED
+
+Theorem mul_rone[simp] :
+    !x :extreal. x * 1 = x
+Proof
+    Cases
+ >> RW_TAC real_ss [extreal_mul_def, extreal_of_num_def, REAL_MUL_RID]
+QED
+
+Theorem mul_lone[simp] :
+    !x :extreal. 1 * x = x
+Proof
+    Cases
+ >> RW_TAC real_ss [extreal_mul_def, extreal_of_num_def, REAL_MUL_LID]
+QED
+
+Theorem entire[simp] : (* was: mul2_zero *)
+    !x y :extreal. (x * y = 0) <=> (x = 0) \/ (y = 0)
+Proof
+    rpt Cases
+ >> RW_TAC std_ss [extreal_mul_def, num_not_infty, extreal_of_num_def,
+                   extreal_11, REAL_ENTIRE]
+QED
+
+(***************)
+(*    Order    *)
+(***************)
+
+Theorem extreal_not_lt :
+    !x y:extreal. ~(x < y) <=> y <= x
+Proof
+    REWRITE_TAC [TAUT `(~a <=> b) <=> (a <=> ~b)`] THEN
+    SIMP_TAC std_ss [extreal_lt_def]
+QED
+
+Theorem extreal_lt_eq :
+    !x y. Normal x < Normal y <=> x < y
+Proof
+    METIS_TAC [extreal_lt_def, extreal_le_def, real_lt]
+QED
+
+Theorem extreal_le_eq :
+    !x y. Normal x <= Normal y <=> x <= y
+Proof
+    METIS_TAC [extreal_le_def]
+QED
+
+(*****************)
+(*    Ceiling    *)
+(*****************)
+
+Definition ceiling_def :
+    ceiling (Normal x) = LEAST (n:num). x <= &n
+End
+
+Theorem CEILING_LBOUND :
+    !x. Normal x <= &(ceiling (Normal x))
+Proof
+    RW_TAC std_ss [ceiling_def]
+ >> LEAST_ELIM_TAC
+ >> REWRITE_TAC [SIMP_REAL_ARCH]
+ >> METIS_TAC [extreal_of_num_def, extreal_le_def]
+QED
+
+Theorem CEILING_UBOUND :
+    !x. (0 <= x) ==> &(ceiling (Normal x)) < (Normal x) + 1
+Proof
+    RW_TAC std_ss [ceiling_def, extreal_of_num_def, extreal_add_def, extreal_lt_eq]
+ >> LEAST_ELIM_TAC
+ >> REWRITE_TAC [SIMP_REAL_ARCH]
+ >> RW_TAC real_ss []
+ >> FULL_SIMP_TAC real_ss [GSYM real_lt]
+ >> PAT_X_ASSUM ``!m. P`` (MP_TAC o Q.SPEC `n-1`)
+ >> RW_TAC real_ss []
+ >> Cases_on `n = 0` >- METIS_TAC [REAL_LET_ADD2, REAL_LT_01, REAL_ADD_RID]
+ >> `0 < n` by RW_TAC real_ss []
+ >> `&(n - 1) < x:real` by RW_TAC real_ss []
+ >> `0 <= n-1` by RW_TAC real_ss []
+ >> `0:real <= (&(n-1))` by RW_TAC real_ss []
+ >> `0 < x` by METIS_TAC [REAL_LET_TRANS]
+ >> Cases_on `n = 1`
+ >- METIS_TAC [REAL_LE_REFL, REAL_ADD_RID, REAL_LTE_ADD2, REAL_ADD_COMM]
+ >> `0 <> n-1` by RW_TAC real_ss []
+ >> `&n - 1 < x` by RW_TAC real_ss [REAL_SUB]
+ >> FULL_SIMP_TAC real_ss [REAL_LT_SUB_RADD]
+QED
 
 val _ = export_theory();

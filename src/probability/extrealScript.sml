@@ -21,28 +21,14 @@ val _ = new_theory "extreal";
 fun METIS ths tm = prove(tm, METIS_TAC ths);
 val set_ss = std_ss ++ PRED_SET_ss;
 
-(* ********************************************* *)
-(*   Transcendental Operations                   *)
-(* ********************************************* *)
+(* ------------------------------------------------------------------------- *)
+(*   Transcendental Operations                                               *)
+(* ------------------------------------------------------------------------- *)
 
 Definition extreal_exp_def :
    (extreal_exp (Normal x) = Normal (exp x)) /\
    (extreal_exp PosInf = PosInf) /\
    (extreal_exp NegInf = Normal 0)
-End
-
-Definition extreal_powr_def :
-    extreal_powr x a = extreal_exp (extreal_mul a (extreal_ln x))
-End
-
-(* removed `extreal_logr b NegInf = NegInf` *)
-Definition extreal_logr_def :
-   (extreal_logr b (Normal x) = Normal (logr b x)) /\
-   (extreal_logr b PosInf = PosInf)
-End
-
-Definition extreal_lg_def :
-    extreal_lg x = extreal_logr 2 x
 End
 
 (* old definition: (`ln 0` is not defined)
@@ -71,72 +57,25 @@ in
      ("extreal_ln_def", ["extreal_ln"], thm);
 end;
 
+Definition extreal_powr_def :
+    extreal_powr x a = extreal_exp (extreal_mul a (extreal_ln x))
+End
+
+(* removed `extreal_logr b NegInf = NegInf` *)
+Definition extreal_logr_def :
+   (extreal_logr b (Normal x) = Normal (logr b x)) /\
+   (extreal_logr b PosInf = PosInf)
+End
+
+Definition extreal_lg_def :
+    extreal_lg x = extreal_logr 2 x
+End
+
 Overload exp  = “extreal_exp”
 Overload powr = “extreal_powr”
 Overload logr = “extreal_logr”
 Overload lg   = “extreal_lg”
 Overload ln   = “extreal_ln”
-
-(* ********************************************* *)
-(*     Properties of Arithmetic Operations       *)
-(* ********************************************* *)
-
-Theorem mul_rzero[simp] :
-    !x :extreal. x * 0 = 0
-Proof
-    Cases
- >> RW_TAC real_ss [extreal_mul_def,extreal_of_num_def,REAL_MUL_RZERO]
-QED
-
-Theorem mul_lzero[simp] :
-    !x :extreal. 0 * x = 0
-Proof
-    Cases
- >> RW_TAC real_ss [extreal_mul_def, extreal_of_num_def, REAL_MUL_LZERO]
-QED
-
-Theorem mul_rone[simp] :
-    !x :extreal. x * 1 = x
-Proof
-    Cases
- >> RW_TAC real_ss [extreal_mul_def, extreal_of_num_def, REAL_MUL_RID]
-QED
-
-Theorem mul_lone[simp] :
-    !x :extreal. 1 * x = x
-Proof
-    Cases
- >> RW_TAC real_ss [extreal_mul_def, extreal_of_num_def, REAL_MUL_LID]
-QED
-
-Theorem entire[simp] : (* was: mul2_zero *)
-    !x y :extreal. (x * y = 0) <=> (x = 0) \/ (y = 0)
-Proof
-    rpt Cases
- >> RW_TAC std_ss [extreal_mul_def, num_not_infty, extreal_of_num_def,
-                   extreal_11, REAL_ENTIRE]
-QED
-
-(***************)
-(*    Order    *)
-(***************)
-
-val extreal_not_lt = store_thm ("extreal_not_lt",
-  ``!x y:extreal. ~(x < y) <=> y <= x``,
-  REWRITE_TAC [TAUT `(~a <=> b) <=> (a <=> ~b)`] THEN
-  SIMP_TAC std_ss [extreal_lt_def]);
-
-Theorem extreal_lt_eq :
-    !x y. Normal x < Normal y <=> x < y
-Proof
-    METIS_TAC [extreal_lt_def, extreal_le_def, real_lt]
-QED
-
-Theorem extreal_le_eq :
-    !x y. Normal x <= Normal y <=> x <= y
-Proof
-    METIS_TAC [extreal_le_def]
-QED
 
 Theorem le_refl[simp] :
     !x:extreal. x <= x
@@ -2002,8 +1941,6 @@ Proof
  >> fs [le_infty, extreal_div_eq, infty_div, le_refl, extreal_le_eq]
  >> fs [REAL_LE_LT] >> DISJ1_TAC >> rw [REAL_LT_RDIV]
 QED
-
-val extreal_distinct = DB.fetch "extreal" "extreal_distinct";
 
 (* cf. REAL_EQ_MUL_LCANCEL *)
 Theorem mul_lcancel :
@@ -7752,8 +7689,25 @@ Proof
 QED
 
 (* ========================================================================= *)
-(*   Rational Numbers as a subset of extended real numbers                   *)
+(*   Subsets of extended real numbers                                        *)
 (* ========================================================================= *)
+
+(* convert an extreal set to a real set, used in borelTheory *)
+Definition real_set_def :
+    real_set s = {real x | x <> PosInf /\ x <> NegInf /\ x IN s}
+End
+
+Theorem normal_real_set :
+    !(s :extreal set). s INTER (IMAGE Normal UNIV) = IMAGE Normal (real_set s)
+Proof
+    rw [Once EXTENSION, real_set_def]
+ >> EQ_TAC >> rw []
+ >- (rename1 ‘Normal y IN s’ \\
+     Q.EXISTS_TAC ‘Normal y’ >> rw [real_normal, extreal_not_infty])
+ >> rename1 ‘Normal (real y) IN s’
+ >> Suff ‘Normal (real y) = y’ >- rw []
+ >> MATCH_MP_TAC normal_real >> art []
+QED
 
 (* new definition based on real_rat_set (q_set), now in real_sigmaTheory *)
 Definition Q_set :
@@ -7901,41 +7855,6 @@ Theorem rat_not_infty :
     !r. r IN Q_set ==> r <> NegInf /\ r <> PosInf
 Proof
     rw [Q_set]
-QED
-
-Definition ceiling_def :
-    ceiling (Normal x) = LEAST (n:num). x <= &n
-End
-
-Theorem CEILING_LBOUND :
-    !x. Normal x <= &(ceiling (Normal x))
-Proof
-  RW_TAC std_ss [ceiling_def]
-  >> numLib.LEAST_ELIM_TAC
-  >> REWRITE_TAC [SIMP_REAL_ARCH]
-  >> METIS_TAC [extreal_of_num_def,extreal_le_def]
-QED
-
-Theorem CEILING_UBOUND :
-    !x. (0 <= x) ==> &(ceiling (Normal x)) < (Normal x) + 1
-Proof
-  RW_TAC std_ss [ceiling_def,extreal_of_num_def,extreal_add_def,extreal_lt_eq]
-  >> numLib.LEAST_ELIM_TAC
-  >> REWRITE_TAC [SIMP_REAL_ARCH]
-  >> RW_TAC real_ss []
-  >> FULL_SIMP_TAC real_ss [GSYM real_lt]
-  >> PAT_X_ASSUM ``!m. P`` (MP_TAC o Q.SPEC `n-1`)
-  >> RW_TAC real_ss []
-  >> Cases_on `n = 0` >- METIS_TAC [REAL_LET_ADD2,REAL_LT_01,REAL_ADD_RID]
-  >> `0 < n` by RW_TAC real_ss []
-  >> `&(n - 1) < x:real` by RW_TAC real_ss []
-  >> `0 <= n-1` by RW_TAC real_ss []
-  >> `0:real <= (&(n-1))` by RW_TAC real_ss []
-  >> `0 < x` by METIS_TAC [REAL_LET_TRANS]
-  >> Cases_on `n = 1` >- METIS_TAC [REAL_LE_REFL,REAL_ADD_RID,REAL_LTE_ADD2,REAL_ADD_COMM]
-  >> `0 <> n-1` by RW_TAC real_ss []
-  >> `&n - 1 < x` by RW_TAC real_ss [REAL_SUB]
-  >> FULL_SIMP_TAC real_ss [REAL_LT_SUB_RADD]
 QED
 
 Theorem Q_DENSE_IN_R_LEMMA :
@@ -9691,6 +9610,46 @@ Theorem eqle_trans:
 Proof
     simp[]
 QED
+
+(* ------------------------------------------------------------------------- *)
+(* Backwards compatibility: export all theorems moved to extreal_baseTheory  *)
+(* ------------------------------------------------------------------------- *)
+
+val _ = map (fn name => save_thm (name, DB.fetch "extreal_base" name))
+      ["ceiling_def",
+       "extreal_11",
+       "extreal_abs_def",
+       "extreal_add_def",
+       "extreal_ainv_def",
+       "extreal_cases",
+       "extreal_distinct",
+       "extreal_div_def",
+       "extreal_eq_zero",
+       "extreal_inv_def",
+       "extreal_le_def",
+       "extreal_le_eq",
+       "extreal_lt_def",
+       "extreal_lt_eq",
+       "extreal_mul_def",
+       "extreal_of_num_def",
+       "extreal_pow_def",
+       "extreal_sqrt_def",
+       "extreal_sub",
+       "extreal_sub_def",
+       "extreal_not_infty",
+       "extreal_not_lt",
+       "mul_rzero",
+       "mul_lzero",
+       "mul_rone",
+       "mul_lone",
+       "entire",
+       "num_not_infty",
+       "real_0",
+       "real_def",
+       "real_normal",
+       "normal_real",
+       "CEILING_LBOUND",
+       "CEILING_UBOUND"];
 
 val _ = export_theory();
 
