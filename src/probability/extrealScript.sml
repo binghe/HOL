@@ -1,7 +1,7 @@
 (* ------------------------------------------------------------------------- *)
-(* Extended real numberss                                                    *)
+(* Extended Real Numbers                                                     *)
 (*                                                                           *)
-(* Authors: Tarek Mhamdi, Osman Hasan, Sofiene Tahar (2013, 2015)            *)
+(* Original Authors: Tarek Mhamdi, Osman Hasan, Sofiene Tahar (2013, 2015)   *)
 (* HVG Group, Concordia University, Montreal                                 *)
 (* ------------------------------------------------------------------------- *)
 (* Updated and further enriched by Chun Tian (2018 - 2023)                   *)
@@ -14,7 +14,7 @@ open metisLib combinTheory pred_setTheory res_quanTools pairTheory jrhUtils
 
 open realTheory realLib real_sigmaTheory iterateTheory real_topologyTheory
      seqTheory limTheory transcTheory metricTheory listTheory rich_listTheory
-     cardinalTheory;
+     cardinalTheory extreal_baseTheory;
 
 val _ = new_theory "extreal";
 
@@ -22,282 +22,28 @@ fun METIS ths tm = prove(tm, METIS_TAC ths);
 val set_ss = std_ss ++ PRED_SET_ss;
 
 (* ********************************************* *)
-(*              Type Definiton                   *)
+(*   Transcendental Operations                   *)
 (* ********************************************* *)
 
-Datatype : extreal = NegInf | PosInf | Normal real
+Definition extreal_exp_def :
+   (extreal_exp (Normal x) = Normal (exp x)) /\
+   (extreal_exp PosInf = PosInf) /\
+   (extreal_exp NegInf = Normal 0)
 End
 
-(* INFINITY, the vertical position of UTF8.chr 0x2212 is better than "-" *)
-val _ = Unicode.unicode_version {u = "+" ^ UTF8.chr 0x221E,
-                                 tmnm = "PosInf"};
-val _ = Unicode.unicode_version {u = UTF8.chr 0x2212 ^ UTF8.chr 0x221E,
-                                 tmnm = "NegInf"};
-
-val _ = TeX_notation {hol = "+" ^ UTF8.chr 0x221E,
-                      TeX = ("\\ensuremath{+\\infty}", 1)};
-
-val _ = TeX_notation {hol = "-" ^ UTF8.chr 0x221E,
-                      TeX = ("\\ensuremath{-\\infty}", 1)};
-
-Definition extreal_of_num_def :
-    extreal_of_num n = Normal (&n)
+Definition extreal_powr_def :
+    extreal_powr x a = extreal_exp (extreal_mul a (extreal_ln x))
 End
-
-Definition real_def :
-    real x = if (x = NegInf) \/ (x = PosInf) then (0 :real)
-             else @r. x = Normal r
-End
-
-(* convert an extreal set to a real set, used in borelTheory *)
-Definition real_set_def :
-    real_set s = {real x | x <> PosInf /\ x <> NegInf /\ x IN s}
-End
-
-Theorem real_normal[simp] :
-    !x. real (Normal x) = x
-Proof
-    RW_TAC std_ss [real_def]
-QED
-
-Theorem normal_real :
-    !x. x <> NegInf /\ x <> PosInf ==> (Normal (real x) = x)
-Proof
-    RW_TAC std_ss [real_def]
- >> SELECT_ELIM_TAC
- >> RW_TAC std_ss []
- >> Cases_on `x`
- >> METIS_TAC []
-QED
-
-(* ********************************************* *)
-(*     Definitions of Arithmetic Operations      *)
-(* ********************************************* *)
-
-(* old definition, which (wrongly) allows `PosInf + NegInf = PosInf`:
-
-val extreal_add_def = Define
-  `(extreal_add (Normal x) (Normal y) = Normal (x + y)) /\
-   (extreal_add PosInf a = PosInf) /\
-   (extreal_add a PosInf = PosInf) /\
-   (extreal_add NegInf b = NegInf) /\
-   (extreal_add c NegInf = NegInf)`;
-
-   new definition:
- *)
-Definition extreal_add_def :
-   (extreal_add (Normal x) (Normal y) = Normal (x + y)) /\
-   (extreal_add (Normal _) a = a) /\
-   (extreal_add b (Normal _) = b) /\
-   (extreal_add NegInf NegInf = NegInf) /\
-   (extreal_add PosInf PosInf = PosInf)
-End
-
-(* This definition never changed but is moved here to be used by extreal_sub *)
-Definition extreal_ainv_def :
-   (extreal_ainv NegInf = PosInf) /\
-   (extreal_ainv PosInf = NegInf) /\
-   (extreal_ainv (Normal x) = Normal (- x))
-End
-
-(* old definition, which (wrongly) allows `PosInf - PosInf = PosInf` and
-   `NegInf - NegInf = PosInf`:
-
-val extreal_sub_def = Define
-  `(extreal_sub (Normal x) (Normal y) = Normal (x - y)) /\
-   (extreal_sub PosInf a = PosInf) /\
-   (extreal_sub b PosInf = NegInf) /\
-   (extreal_sub NegInf NegInf = PosInf) /\
-   (extreal_sub NegInf c = NegInf) /\
-   (extreal_sub c NegInf = PosInf)`;
-
-   new definition:
- *)
-Definition extreal_sub :
-    extreal_sub x y = extreal_add x (extreal_ainv y)
-End
-
-(* The previous definition now becomes a theorem *)
-Theorem extreal_sub_def :
-   (extreal_sub (Normal x) (Normal y) = Normal (x - y)) /\
-   (extreal_sub PosInf (Normal x) = PosInf) /\
-   (extreal_sub NegInf (Normal x) = NegInf) /\
-   (extreal_sub (Normal x) NegInf = PosInf) /\
-   (extreal_sub (Normal x) PosInf = NegInf) /\
-   (extreal_sub NegInf PosInf = NegInf) /\
-   (extreal_sub PosInf NegInf = PosInf)
-Proof
-   rw [extreal_sub, extreal_add_def, extreal_ainv_def, real_sub]
-QED
-
-Definition extreal_le_def :
-   (extreal_le (Normal x) (Normal y) = (x <= y)) /\
-   (extreal_le NegInf _ = T) /\
-   (extreal_le _ PosInf = T) /\
-   (extreal_le _ NegInf = F) /\
-   (extreal_le PosInf _ = F)
-End
-
-Definition extreal_lt_def :
-   extreal_lt x y = ~extreal_le y x
-End
-
-(* "The rationaly behind our definitions is to understand PosInf (or
-    NegInf) in every instance as the limit of some (possibly each time
-    different) sequence, and '0' as a bona fide zero. Then
-
-       `0 * PosInf (or NegInf) = 0 * lim a_n = lim (0 * a_n) = lim 0 = 0`
-
-    while expressions of the type `PosInf - PosInf` or `PosInf / PosInf`
-    become `lim (a_n - b_n)` or `lim a_n / lim b_n` where two
-    sequences compete and do not lead to unique results." [1, p.58]
- *)
-Definition extreal_mul_def :
-   (extreal_mul NegInf NegInf = PosInf) /\
-   (extreal_mul NegInf PosInf = NegInf) /\
-   (extreal_mul PosInf NegInf = NegInf) /\
-   (extreal_mul PosInf PosInf = PosInf) /\
-   (extreal_mul (Normal x) NegInf =
-       (if x = 0 then (Normal 0) else (if 0 < x then NegInf else PosInf))) /\
-   (extreal_mul NegInf (Normal y) =
-       (if y = 0 then (Normal 0) else (if 0 < y then NegInf else PosInf))) /\
-   (extreal_mul (Normal x) PosInf =
-       (if x = 0 then (Normal 0) else (if 0 < x then PosInf else NegInf))) /\
-   (extreal_mul PosInf (Normal y) =
-       (if y = 0 then (Normal 0) else (if 0 < y then PosInf else NegInf))) /\
-   (extreal_mul (Normal x) (Normal y) = Normal (x * y))
-End
-
-(* from now on, ``0x`` is intepreted as ``0 :extreal`` *)
-val _ = add_numeral_form (#"x", SOME "extreal_of_num");
-
-val _ = overload_on ("+",    Term `extreal_add`);
-val _ = overload_on ("-",    Term `extreal_sub`);
-val _ = overload_on ("*",    Term `extreal_mul`);
-val _ = overload_on ("<=",   Term `extreal_le`);
-
-(* ********************************************* *)
-(*     Properties of Extended Real Numbers       *)
-(* ********************************************* *)
-
-Theorem extreal_cases :
-    !x. (x = NegInf) \/ (x = PosInf) \/ (?r. x = Normal r)
-Proof
-    Cases >> RW_TAC std_ss []
-QED
-
-Theorem extreal_eq_zero[simp] :
-    !x. (Normal x = 0) <=> (x = 0)
-Proof
-    RW_TAC std_ss [extreal_of_num_def]
-QED
-
-Theorem extreal_not_infty[simp] :
-    !x. (Normal x <> NegInf) /\ (Normal x <> PosInf)
-Proof
-    RW_TAC std_ss []
-QED
-
-Theorem num_not_infty[simp] :
-    !n. (&n <> NegInf) /\ (&n <> PosInf)
-Proof
-    RW_TAC std_ss [extreal_of_num_def]
-QED
-
-Theorem extreal_11[simp] :
-    !a a'. (Normal a = Normal a') <=> (a = a')
-Proof
-    RW_TAC std_ss []
-QED
-
-Theorem normal_real_set :
-    !(s :extreal set). s INTER (IMAGE Normal UNIV) = IMAGE Normal (real_set s)
-Proof
-    rw [Once EXTENSION, real_set_def]
- >> EQ_TAC >> rw []
- >- (rename1 ‘Normal y IN s’ \\
-     Q.EXISTS_TAC ‘Normal y’ >> rw [real_normal, extreal_not_infty])
- >> rename1 ‘Normal (real y) IN s’
- >> Suff ‘Normal (real y) = y’ >- rw []
- >> MATCH_MP_TAC normal_real >> art []
-QED
-
-Theorem real_0[simp] :
-    real 0 = 0
-Proof
-    rw [extreal_of_num_def]
-QED
-
-(* ********************************************* *)
-(*   Mored Definitions of Arithmetic Operations  *)
-(* ********************************************* *)
-
-(* old definition, which allows `extreal_inv (Normal 0) = Normal 0`:
-
-val extreal_inv_def = Define
-  `(extreal_inv NegInf = Normal 0) /\
-   (extreal_inv PosInf = Normal 0) /\
-   (extreal_inv (Normal x) = Normal (inv x)`;
-
-   new definition, where `extreal_inv 0` is *unspecified*:
- *)
-local
-  val thm = Q.prove (
-     `?f. (f NegInf = Normal 0) /\
-          (f PosInf = Normal 0) /\
-          (!r. r <> 0 ==> (f (Normal r) = Normal (inv r)))`,
-   (* proof *)
-      Q.EXISTS_TAC `\x. if (x = PosInf) \/ (x = NegInf) then Normal 0
-                        else if x = Normal 0 then ARB
-                        else Normal (inv (real x))` \\
-      RW_TAC std_ss [extreal_not_infty, real_normal]);
-in
-  (* |- extreal_inv NegInf = Normal 0 /\
-        extreal_inv PosInf = Normal 0 /\
-        !r. r <> 0 ==> extreal_inv (Normal r) = Normal (inv r)
-   *)
-  val extreal_inv_def = new_specification
-    ("extreal_inv_def", ["extreal_inv"], thm);
-end;
-
-(* old definition, which "deliberately" allows `0 / 0 = 0` [3]
-val extreal_div_def = Define
-   `extreal_div x y = extreal_mul x (extreal_inv y)`;
-
-   new definition, where `x / 0`, `PosInf / PosInf` and `NegInf / NegInf`
-   are all *unspecified*:
- *)
-local
-  val thm = Q.prove (
-     `?f. (!r. f (Normal r) PosInf = Normal 0) /\
-          (!r. f (Normal r) NegInf = Normal 0) /\
-          (!x r. r <> 0 ==> (f x (Normal r) = extreal_mul x (extreal_inv (Normal r))))`,
-   (* proof *)
-      Q.EXISTS_TAC `\x y.
-        if ((y = PosInf) \/ (y = NegInf)) /\ (?r. x = Normal r) then Normal 0
-        else if y = Normal 0 then ARB
-        else extreal_mul x (extreal_inv y)` \\
-      RW_TAC std_ss [extreal_not_infty, real_normal]);
-in
-  (* |- (!r. extreal_div (Normal r) PosInf = Normal 0) /\
-        (!r. extreal_div (Normal r) NegInf = Normal 0) /\
-        !x r. r <> 0 ==> extreal_div x (Normal r) = x * extreal_inv (Normal r)
-   *)
-  val extreal_div_def = new_specification
-    ("extreal_div_def", ["extreal_div"], thm);
-end;
-
-val extreal_abs_def = Define
-  `(extreal_abs (Normal x) = Normal (abs x)) /\
-   (extreal_abs _ = PosInf)`;
 
 (* removed `extreal_logr b NegInf = NegInf` *)
-val extreal_logr_def = Define
-  `(extreal_logr b (Normal x) = Normal (logr b x)) /\
-   (extreal_logr b PosInf = PosInf)`;
+Definition extreal_logr_def :
+   (extreal_logr b (Normal x) = Normal (logr b x)) /\
+   (extreal_logr b PosInf = PosInf)
+End
 
-val extreal_lg_def = Define
-   `extreal_lg x = extreal_logr 2 x`;
+Definition extreal_lg_def :
+    extreal_lg x = extreal_logr 2 x
+End
 
 (* old definition: (`ln 0` is not defined)
 val extreal_ln_def = Define
@@ -325,61 +71,11 @@ in
      ("extreal_ln_def", ["extreal_ln"], thm);
 end;
 
-val extreal_exp_def = Define
-  `(extreal_exp (Normal x) = Normal (exp x)) /\
-   (extreal_exp PosInf = PosInf) /\
-   (extreal_exp NegInf = Normal 0)`;
-
-val extreal_pow_def = Define
-  `(extreal_pow (Normal a) n = Normal (a pow n)) /\
-   (extreal_pow PosInf n = (if n = 0 then Normal 1 else PosInf)) /\
-   (extreal_pow NegInf n =
-       (if n = 0 then Normal 1 else (if (EVEN n) then PosInf else NegInf)))`;
-
-val extreal_powr_def = Define
-   `extreal_powr x a = extreal_exp (extreal_mul a (extreal_ln x))`;
-
-val extreal_sqrt_def = Define
-  `(extreal_sqrt (Normal x) = Normal (sqrt x)) /\
-   (extreal_sqrt PosInf = PosInf)`;
-
-val _ = overload_on ("/",    Term `extreal_div`);
-val _ = overload_on ("<",    Term `extreal_lt`);
-val _ = overload_on ("~",    Term `extreal_ainv`);
-val _ = overload_on ("numeric_negate",
-                             Term `extreal_ainv`);
-Overload "~" = “bool$~”
-Overload "¬" = “bool$~” (* UOK *)
-val _ = overload_on ("inv",  Term `extreal_inv`);
-val _ = overload_on ("abs",  Term `extreal_abs`);
-val _ = overload_on ("logr", Term `extreal_logr`);
-val _ = overload_on ("lg",   Term `extreal_lg`);
-val _ = overload_on ("ln",   Term `extreal_ln`);
-val _ = overload_on ("exp",  Term `extreal_exp`);
-val _ = overload_on ("pow",  Term `extreal_pow`);
-val _ = overload_on ("powr", Term `extreal_powr`);
-val _ = overload_on ("sqrt", Term `extreal_sqrt`);
-
-(* to have the Unicode symbol for "inv" *)
-val _ = overload_on ("realinv", ``extreal_inv``);
-
-(* special-case squares and cubes for extreals (c.f. arithmeticTheory) *)
-
-(* pow-2 integrals appear in Variances and many other probability lemmas *)
-val _ = overload_on (UnicodeChars.sup_2, ``\x :extreal. x pow 2``);
-
-(* pow-3 integrals appear in Liapounov's form of the central limit theorem *)
-val _ = overload_on (UnicodeChars.sup_3, ``\x :extreal. x pow 3``);
-
-(* pow-4 integrals appear in Cantelli's Strong Law of Large Numbers *)
-val _ = add_rule {fixity = Suffix 2100,
-                  term_name = UnicodeChars.sup_4,
-                  block_style = (AroundEachPhrase,(PP.CONSISTENT, 0)),
-                  paren_style = OnlyIfNecessary,
-                  pp_elements = [TOK UnicodeChars.sup_4]};
-
-val _ = overload_on (UnicodeChars.sup_4, ``\x :extreal. x pow 4``);
-val _ = TeX_notation {hol = UnicodeChars.sup_4, TeX = ("\\HOLTokenSupFour{}", 1)};
+Overload exp  = “extreal_exp”
+Overload powr = “extreal_powr”
+Overload logr = “extreal_logr”
+Overload lg   = “extreal_lg”
+Overload ln   = “extreal_ln”
 
 (* ********************************************* *)
 (*     Properties of Arithmetic Operations       *)
