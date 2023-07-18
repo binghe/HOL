@@ -97,9 +97,9 @@ Proof
     rw [extreal_of_num_def]
 QED
 
-(* ********************************************* *)
-(*     Definitions of Arithmetic Operations      *)
-(* ********************************************* *)
+(* ------------------------------------------------------------------------- *)
+(*     Definitions of Arithmetic Operations                                  *)
+(* ------------------------------------------------------------------------- *)
 
 (* old definition, which (wrongly) allows `PosInf + NegInf = PosInf`:
 
@@ -301,9 +301,20 @@ val _ = overload_on (UnicodeChars.sup_4, “\x :extreal. x pow 4”);
 val _ = TeX_notation {hol = UnicodeChars.sup_4,
                       TeX = ("\\HOLTokenSupFour{}", 1)};
 
-(***************)
-(*   Addition  *)
-(***************)
+Definition extreal_min_def :
+    extreal_min (x :extreal) y = if x <= y then x else y
+End
+
+Definition extreal_max_def :
+    extreal_max (x :extreal) y = if x <= y then y else x
+End
+
+Overload min = “extreal_min”
+Overload max = “extreal_max”
+
+(* ------------------------------------------------------------------------- *)
+(*   Addition                                                                *)
+(* ------------------------------------------------------------------------- *)
 
 Theorem extreal_add_eq :
     !x y. Normal x + Normal y = Normal (x + y)
@@ -391,9 +402,9 @@ Proof
  >> rw [extreal_of_num_def, extreal_add_def, extreal_mul_def, REAL_DOUBLE]
 QED
 
-(***************)
-(*    Order    *)
-(***************)
+(* ------------------------------------------------------------------------- *)
+(*    Ordering                                                               *)
+(* ------------------------------------------------------------------------- *)
 
 Theorem extreal_not_lt :
     !x y:extreal. ~(x < y) <=> y <= x
@@ -526,35 +537,6 @@ Proof
  >> CCONTR_TAC >> fs []
  >> `x < x` by PROVE_TAC [lte_trans]
  >> PROVE_TAC [lt_refl]
-QED
-
-(* This is proved by REAL_MEAN, SIMP_REAL_ARCH and SIMP_REAL_ARCH_NEG *)
-Theorem extreal_mean :
-    !x y :extreal. x < y ==> ?z. x < z /\ z < y
-Proof
-    rpt STRIP_TAC
- >> Cases_on `y` >- fs [lt_infty]
- >- (Cases_on `x`
-     >- (Q.EXISTS_TAC `Normal 0` >> REWRITE_TAC [lt_infty])
-     >- fs [lt_infty] \\
-     STRIP_ASSUME_TAC (Q.SPEC `r` SIMP_REAL_ARCH) \\
-     Q.EXISTS_TAC `&SUC n` >> REWRITE_TAC [lt_infty, extreal_of_num_def, extreal_lt_eq] \\
-     MATCH_MP_TAC REAL_LET_TRANS \\
-     Q.EXISTS_TAC `&n` >> art [] \\
-     SIMP_TAC real_ss [])
- >> Cases_on `x`
- >- (STRIP_ASSUME_TAC (Q.SPEC `r` SIMP_REAL_ARCH_NEG) \\
-     Q.EXISTS_TAC `-&SUC n` \\
-    `-&SUC n = Normal (-&(SUC n))` by PROVE_TAC [extreal_ainv_def, extreal_of_num_def] \\
-     POP_ORW >> REWRITE_TAC [lt_infty, extreal_lt_eq] \\
-     MATCH_MP_TAC REAL_LTE_TRANS \\
-     Q.EXISTS_TAC `-&n` >> art [] \\
-     SIMP_TAC real_ss [])
- >- fs [lt_infty]
- >> rename1 `Normal a < Normal b`
- >> `a < b` by PROVE_TAC [extreal_lt_eq]
- >> POP_ASSUM (STRIP_ASSUME_TAC o (MATCH_MP REAL_MEAN))
- >> Q.EXISTS_TAC `Normal z` >> art [extreal_lt_eq]
 QED
 
 (* NOTE: The statements of this theorem were slightly refined when moving
@@ -1341,9 +1323,9 @@ Proof
  >> Cases_on `x` >> FULL_SIMP_TAC std_ss [extreal_sub_def]
 QED
 
-(* ********************************************* *)
-(*     Multiplication                            *)
-(* ********************************************* *)
+(* ------------------------------------------------------------------------- *)
+(*     Multiplication                                                        *)
+(* ------------------------------------------------------------------------- *)
 
 Theorem extreal_mul_eq :
     !x y. extreal_mul (Normal x) (Normal y) = Normal (x * y)
@@ -1366,6 +1348,7 @@ Proof
                     REAL_MUL_RZERO, REAL_ENTIRE, REAL_LT_LMUL_0, REAL_POS_NZ,
                     DE_MORGAN_THM]
  >> FULL_SIMP_TAC real_ss [DE_MORGAN_THM, REAL_NOT_LT, REAL_LT_LMUL_0, GSYM REAL_LT_LE]
+ (* some of these theorems are in iterateTheory *)
  >> METIS_TAC [REAL_LT_LMUL_0_NEG, REAL_LT_RMUL_0_NEG, REAL_LT_RMUL_NEG_0,
                REAL_LT_LE, REAL_LT_GT, REAL_ENTIRE, REAL_LT_LMUL_NEG_0,
                REAL_LT_LMUL_NEG_0_NEG, REAL_LT_RMUL_0, REAL_LT_LMUL_0,
@@ -1810,7 +1793,7 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
-(*   abs-related theorems                                                    *)
+(*   Absolute value (abs)                                                    *)
 (* ------------------------------------------------------------------------- *)
 
 Theorem abs_0[simp] :
@@ -2124,6 +2107,13 @@ Theorem extreal_div_eq :
 Proof
     rpt Cases
  >> RW_TAC std_ss [extreal_div_def, extreal_inv_def, extreal_mul_def, real_div]
+QED
+
+(* added antecedent ``m <> 0`` *)
+Theorem quotient_normal :
+    !n m. m <> 0 ==> (&n / &m = Normal (&n / &m))
+Proof
+    RW_TAC std_ss [extreal_div_eq, extreal_of_num_def, REAL_OF_NUM_EQ]
 QED
 
 Theorem extreal_inv_eq :
@@ -2586,9 +2576,9 @@ Proof
  >> ASM_SIMP_TAC std_ss [REAL_INVINV]
 QED
 
-(***************************)
-(*         x pow n         *)
-(***************************)
+(* ------------------------------------------------------------------------- *)
+(*         x pow n                                                           *)
+(* ------------------------------------------------------------------------- *)
 
 Theorem pow_0[simp] :
     !x. x pow 0 = 1
@@ -3004,9 +2994,9 @@ Proof
  >> REWRITE_TAC [GSYM POW_2, ABS_LE_HALF_POW2]
 QED
 
-(***************************)
-(*         SQRT            *)
-(***************************)
+(* ------------------------------------------------------------------------- *)
+(*         SQRT                                                              *)
+(* ------------------------------------------------------------------------- *)
 
 Theorem sqrt_pos_le :
     !x. 0 <= x ==> 0 <= sqrt x
@@ -3126,9 +3116,10 @@ Proof
  >> ‘0 <= X * Y’ by rw [REAL_LE_MUL]
  >> rw [extreal_mul_def, extreal_sqrt_def, SQRT_MUL]
 QED
-(***************************)
-(*         Various         *)
-(***************************)
+
+(* ------------------------------------------------------------------------- *)
+(*    Special values                                                         *)
+(* ------------------------------------------------------------------------- *)
 
 Theorem half_between[simp] :
     (0 < 1 / 2 /\ 1 / 2 < 1) /\ (0 <= 1 / 2 /\ 1 / 2 <= 1)
@@ -3220,103 +3211,9 @@ Proof
                     EVAL ``4 <> 0:real``, REAL_MUL_RINV, real_div]
 QED
 
-(* added antecedent ``m <> 0`` *)
-Theorem quotient_normal :
-    !n m. m <> 0 ==> (&n / &m = Normal (&n / &m))
-Proof
-    RW_TAC std_ss [extreal_div_eq, extreal_of_num_def, REAL_OF_NUM_EQ]
-QED
-
-Theorem EXTREAL_ARCH :
-    !x. 0 < x ==> !y. y <> PosInf ==> ?n. y < &n * x
-Proof
-    Cases
- >| [ (* goal 1 (of 3) *)
-      RW_TAC std_ss [lt_infty],
-      (* goal 2 (of 3) *)
-      RW_TAC std_ss [lt_infty] \\
-      Q.EXISTS_TAC `1` >> RW_TAC std_ss [mul_lone, lt_infty],
-      (* goal 3 (of 3) *)
-      RW_TAC std_ss [lt_infty] \\
-      Cases_on `y = NegInf`
-      >- (Q.EXISTS_TAC `1` >> RW_TAC std_ss [mul_lone, lt_infty]) \\
-     `?z. y = Normal z` by METIS_TAC [extreal_cases, lt_infty] \\
-     `0 < r` by METIS_TAC [extreal_lt_eq, extreal_of_num_def] \\
-     `?n. z < &n * r` by METIS_TAC [REAL_ARCH] \\
-      Q.EXISTS_TAC `n` \\
-      RW_TAC real_ss [extreal_lt_eq, REAL_LE_MUL, extreal_of_num_def, extreal_mul_def] ]
-QED
-
-Theorem SIMP_EXTREAL_ARCH :
-    !x. x <> PosInf ==> ?n. x <= &n
-Proof
-    Cases
- >> RW_TAC std_ss [le_infty]
- >> `?n. r <= &n` by RW_TAC std_ss [SIMP_REAL_ARCH]
- >> Q.EXISTS_TAC `n`
- >> RW_TAC real_ss [extreal_of_num_def,extreal_le_def]
-QED
-
-Theorem SIMP_EXTREAL_ARCH_NEG :
-    !x. x <> NegInf ==> ?n. - &n <= x
-Proof
-    Cases
- >> RW_TAC std_ss [le_infty]
- >> `?n. - &n <= r` by RW_TAC std_ss [SIMP_REAL_ARCH_NEG]
- >> Q.EXISTS_TAC `n`
- >> RW_TAC real_ss [extreal_of_num_def, extreal_le_eq, extreal_ainv_def]
-QED
-
-Theorem EXTREAL_ARCH_INV :
-    !(x :extreal). 0 < x ==> ?n. inv (&SUC n) < x
-Proof
-    rpt STRIP_TAC
- >> Cases_on ‘x = PosInf’
- >- (Q.EXISTS_TAC ‘0’ >> rw [inv_one, lt_infty])
- >> ‘x <> 0’ by PROVE_TAC [lt_imp_ne]
- >> Know ‘?n. inv x <= &n’
- >- (MATCH_MP_TAC SIMP_EXTREAL_ARCH \\
-     METIS_TAC [inv_not_infty])
- >> STRIP_TAC
- >> ‘&n < &SUC n’ by rw [extreal_of_num_def, extreal_lt_eq]
- >> ‘inv x < &SUC n’ by PROVE_TAC [let_trans]
- >> Q.EXISTS_TAC ‘n’
- >> Know ‘x = inv (inv x)’
- >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
-     MATCH_MP_TAC inv_inv >> art [] \\
-     rw [lt_infty] \\
-     MATCH_MP_TAC lt_trans >> Q.EXISTS_TAC ‘0’ >> art [] \\
-     rw [extreal_of_num_def, lt_infty])
- >> Rewr'
- >> Suff ‘inv (&SUC n) < inv (inv x) <=> inv x < &SUC n’ >- rw []
- >> MATCH_MP_TAC inv_lt_antimono
- >> CONJ_TAC >- rw [extreal_of_num_def, extreal_lt_eq]
- >> MATCH_MP_TAC inv_pos' >> rw []
-QED
-
-Theorem EXTREAL_ARCH_INV' :
-    !(x :extreal). 0 < x ==> ?n. inv (&SUC n) <= x
-Proof
-    rpt STRIP_TAC
- >> ‘?n. inv (&SUC n) < x’ by METIS_TAC [EXTREAL_ARCH_INV]
- >> Q.EXISTS_TAC ‘n’
- >> MATCH_MP_TAC lt_imp_le >> art []
-QED
-
 (* ------------------------------------------------------------------------- *)
-(* Minimum and maximum                                                       *)
+(*   Minimum and maximum                                                     *)
 (* ------------------------------------------------------------------------- *)
-
-Definition extreal_min_def :
-    extreal_min (x :extreal) y = if x <= y then x else y
-End
-
-Definition extreal_max_def :
-    extreal_max (x :extreal) y = if x <= y then y else x
-End
-
-Overload min = “extreal_min”
-Overload max = “extreal_max”
 
 Theorem min_le :
     !z x y. min x y <= z <=> x <= z \/ y <= z
@@ -3474,6 +3371,115 @@ Proof
  >> MATCH_MP_TAC lt_trans >> Q.EXISTS_TAC `0` >> art []
  >> POP_ASSUM (REWRITE_TAC o wrap o
                 (REWRITE_RULE [Once (GSYM lt_neg), neg_0]))
+QED
+
+(* ------------------------------------------------------------------------- *)
+(*    Completeness of Extended Real Numbers                                  *)
+(* ------------------------------------------------------------------------- *)
+
+(* This is proved by REAL_MEAN, SIMP_REAL_ARCH and SIMP_REAL_ARCH_NEG *)
+Theorem extreal_mean :
+    !x y :extreal. x < y ==> ?z. x < z /\ z < y
+Proof
+    rpt STRIP_TAC
+ >> Cases_on `y` >- fs [lt_infty]
+ >- (Cases_on `x`
+     >- (Q.EXISTS_TAC `Normal 0` >> REWRITE_TAC [lt_infty])
+     >- fs [lt_infty] \\
+     STRIP_ASSUME_TAC (Q.SPEC `r` SIMP_REAL_ARCH) \\
+     Q.EXISTS_TAC `&SUC n` >> REWRITE_TAC [lt_infty, extreal_of_num_def, extreal_lt_eq] \\
+     MATCH_MP_TAC REAL_LET_TRANS \\
+     Q.EXISTS_TAC `&n` >> art [] \\
+     SIMP_TAC real_ss [])
+ >> Cases_on `x`
+ >- (STRIP_ASSUME_TAC (Q.SPEC `r` SIMP_REAL_ARCH_NEG) \\
+     Q.EXISTS_TAC `-&SUC n` \\
+    `-&SUC n = Normal (-&(SUC n))` by PROVE_TAC [extreal_ainv_def, extreal_of_num_def] \\
+     POP_ORW >> REWRITE_TAC [lt_infty, extreal_lt_eq] \\
+     MATCH_MP_TAC REAL_LTE_TRANS \\
+     Q.EXISTS_TAC `-&n` >> art [] \\
+     SIMP_TAC real_ss [])
+ >- fs [lt_infty]
+ >> rename1 `Normal a < Normal b`
+ >> `a < b` by PROVE_TAC [extreal_lt_eq]
+ >> POP_ASSUM (STRIP_ASSUME_TAC o (MATCH_MP REAL_MEAN))
+ >> Q.EXISTS_TAC `Normal z` >> art [extreal_lt_eq]
+QED
+
+Theorem EXTREAL_ARCH :
+    !x. 0 < x ==> !y. y <> PosInf ==> ?n. y < &n * x
+Proof
+    Cases
+ >| [ (* goal 1 (of 3) *)
+      RW_TAC std_ss [lt_infty],
+      (* goal 2 (of 3) *)
+      RW_TAC std_ss [lt_infty] \\
+      Q.EXISTS_TAC `1` >> RW_TAC std_ss [mul_lone, lt_infty],
+      (* goal 3 (of 3) *)
+      RW_TAC std_ss [lt_infty] \\
+      Cases_on `y = NegInf`
+      >- (Q.EXISTS_TAC `1` >> RW_TAC std_ss [mul_lone, lt_infty]) \\
+     `?z. y = Normal z` by METIS_TAC [extreal_cases, lt_infty] \\
+     `0 < r` by METIS_TAC [extreal_lt_eq, extreal_of_num_def] \\
+     `?n. z < &n * r` by METIS_TAC [REAL_ARCH] \\
+      Q.EXISTS_TAC `n` \\
+      RW_TAC real_ss [extreal_lt_eq, REAL_LE_MUL, extreal_of_num_def, extreal_mul_def] ]
+QED
+
+Theorem SIMP_EXTREAL_ARCH :
+    !x. x <> PosInf ==> ?n. x <= &n
+Proof
+    Cases
+ >> RW_TAC std_ss [le_infty]
+ >> `?n. r <= &n` by RW_TAC std_ss [SIMP_REAL_ARCH]
+ >> Q.EXISTS_TAC `n`
+ >> RW_TAC real_ss [extreal_of_num_def,extreal_le_def]
+QED
+
+Theorem SIMP_EXTREAL_ARCH_NEG :
+    !x. x <> NegInf ==> ?n. - &n <= x
+Proof
+    Cases
+ >> RW_TAC std_ss [le_infty]
+ >> `?n. - &n <= r` by RW_TAC std_ss [SIMP_REAL_ARCH_NEG]
+ >> Q.EXISTS_TAC `n`
+ >> RW_TAC real_ss [extreal_of_num_def, extreal_le_eq, extreal_ainv_def]
+QED
+
+Theorem EXTREAL_ARCH_INV :
+    !(x :extreal). 0 < x ==> ?n. inv (&SUC n) < x
+Proof
+    rpt STRIP_TAC
+ >> Cases_on ‘x = PosInf’
+ >- (Q.EXISTS_TAC ‘0’ >> rw [inv_one, lt_infty])
+ >> ‘x <> 0’ by PROVE_TAC [lt_imp_ne]
+ >> Know ‘?n. inv x <= &n’
+ >- (MATCH_MP_TAC SIMP_EXTREAL_ARCH \\
+     METIS_TAC [inv_not_infty])
+ >> STRIP_TAC
+ >> ‘&n < &SUC n’ by rw [extreal_of_num_def, extreal_lt_eq]
+ >> ‘inv x < &SUC n’ by PROVE_TAC [let_trans]
+ >> Q.EXISTS_TAC ‘n’
+ >> Know ‘x = inv (inv x)’
+ >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+     MATCH_MP_TAC inv_inv >> art [] \\
+     rw [lt_infty] \\
+     MATCH_MP_TAC lt_trans >> Q.EXISTS_TAC ‘0’ >> art [] \\
+     rw [extreal_of_num_def, lt_infty])
+ >> Rewr'
+ >> Suff ‘inv (&SUC n) < inv (inv x) <=> inv x < &SUC n’ >- rw []
+ >> MATCH_MP_TAC inv_lt_antimono
+ >> CONJ_TAC >- rw [extreal_of_num_def, extreal_lt_eq]
+ >> MATCH_MP_TAC inv_pos' >> rw []
+QED
+
+Theorem EXTREAL_ARCH_INV' :
+    !(x :extreal). 0 < x ==> ?n. inv (&SUC n) <= x
+Proof
+    rpt STRIP_TAC
+ >> ‘?n. inv (&SUC n) < x’ by METIS_TAC [EXTREAL_ARCH_INV]
+ >> Q.EXISTS_TAC ‘n’
+ >> MATCH_MP_TAC lt_imp_le >> art []
 QED
 
 val _ = export_theory();
