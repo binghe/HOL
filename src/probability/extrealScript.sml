@@ -6908,6 +6908,7 @@ val _ = map (fn name => save_thm (name, DB.fetch "extreal_base" name))
        "add_sub", "add_sub_normal", "add_sub2",
        "add2_sub2",
        "div_add", "div_add2",
+       "div_eq_mul_linv",
        "div_eq_mul_rinv",
        "div_infty",
        "div_mul_refl",
