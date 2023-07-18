@@ -3227,4 +3227,253 @@ Proof
     RW_TAC std_ss [extreal_div_eq, extreal_of_num_def, REAL_OF_NUM_EQ]
 QED
 
+Theorem EXTREAL_ARCH :
+    !x. 0 < x ==> !y. y <> PosInf ==> ?n. y < &n * x
+Proof
+    Cases
+ >| [ (* goal 1 (of 3) *)
+      RW_TAC std_ss [lt_infty],
+      (* goal 2 (of 3) *)
+      RW_TAC std_ss [lt_infty] \\
+      Q.EXISTS_TAC `1` >> RW_TAC std_ss [mul_lone, lt_infty],
+      (* goal 3 (of 3) *)
+      RW_TAC std_ss [lt_infty] \\
+      Cases_on `y = NegInf`
+      >- (Q.EXISTS_TAC `1` >> RW_TAC std_ss [mul_lone, lt_infty]) \\
+     `?z. y = Normal z` by METIS_TAC [extreal_cases, lt_infty] \\
+     `0 < r` by METIS_TAC [extreal_lt_eq, extreal_of_num_def] \\
+     `?n. z < &n * r` by METIS_TAC [REAL_ARCH] \\
+      Q.EXISTS_TAC `n` \\
+      RW_TAC real_ss [extreal_lt_eq, REAL_LE_MUL, extreal_of_num_def, extreal_mul_def] ]
+QED
+
+Theorem SIMP_EXTREAL_ARCH :
+    !x. x <> PosInf ==> ?n. x <= &n
+Proof
+    Cases
+ >> RW_TAC std_ss [le_infty]
+ >> `?n. r <= &n` by RW_TAC std_ss [SIMP_REAL_ARCH]
+ >> Q.EXISTS_TAC `n`
+ >> RW_TAC real_ss [extreal_of_num_def,extreal_le_def]
+QED
+
+Theorem SIMP_EXTREAL_ARCH_NEG :
+    !x. x <> NegInf ==> ?n. - &n <= x
+Proof
+    Cases
+ >> RW_TAC std_ss [le_infty]
+ >> `?n. - &n <= r` by RW_TAC std_ss [SIMP_REAL_ARCH_NEG]
+ >> Q.EXISTS_TAC `n`
+ >> RW_TAC real_ss [extreal_of_num_def, extreal_le_eq, extreal_ainv_def]
+QED
+
+Theorem EXTREAL_ARCH_INV :
+    !(x :extreal). 0 < x ==> ?n. inv (&SUC n) < x
+Proof
+    rpt STRIP_TAC
+ >> Cases_on ‘x = PosInf’
+ >- (Q.EXISTS_TAC ‘0’ >> rw [inv_one, lt_infty])
+ >> ‘x <> 0’ by PROVE_TAC [lt_imp_ne]
+ >> Know ‘?n. inv x <= &n’
+ >- (MATCH_MP_TAC SIMP_EXTREAL_ARCH \\
+     METIS_TAC [inv_not_infty])
+ >> STRIP_TAC
+ >> ‘&n < &SUC n’ by rw [extreal_of_num_def, extreal_lt_eq]
+ >> ‘inv x < &SUC n’ by PROVE_TAC [let_trans]
+ >> Q.EXISTS_TAC ‘n’
+ >> Know ‘x = inv (inv x)’
+ >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+     MATCH_MP_TAC inv_inv >> art [] \\
+     rw [lt_infty] \\
+     MATCH_MP_TAC lt_trans >> Q.EXISTS_TAC ‘0’ >> art [] \\
+     rw [extreal_of_num_def, lt_infty])
+ >> Rewr'
+ >> Suff ‘inv (&SUC n) < inv (inv x) <=> inv x < &SUC n’ >- rw []
+ >> MATCH_MP_TAC inv_lt_antimono
+ >> CONJ_TAC >- rw [extreal_of_num_def, extreal_lt_eq]
+ >> MATCH_MP_TAC inv_pos' >> rw []
+QED
+
+Theorem EXTREAL_ARCH_INV' :
+    !(x :extreal). 0 < x ==> ?n. inv (&SUC n) <= x
+Proof
+    rpt STRIP_TAC
+ >> ‘?n. inv (&SUC n) < x’ by METIS_TAC [EXTREAL_ARCH_INV]
+ >> Q.EXISTS_TAC ‘n’
+ >> MATCH_MP_TAC lt_imp_le >> art []
+QED
+
+(* ------------------------------------------------------------------------- *)
+(* Minimum and maximum                                                       *)
+(* ------------------------------------------------------------------------- *)
+
+Definition extreal_min_def :
+    extreal_min (x :extreal) y = if x <= y then x else y
+End
+
+Definition extreal_max_def :
+    extreal_max (x :extreal) y = if x <= y then y else x
+End
+
+Overload min = “extreal_min”
+Overload max = “extreal_max”
+
+Theorem min_le :
+    !z x y. min x y <= z <=> x <= z \/ y <= z
+Proof
+    RW_TAC std_ss [extreal_min_def]
+ >> PROVE_TAC [le_total, le_trans]
+QED
+
+Theorem min_le1 :
+    !x y. min x y <= x
+Proof
+    PROVE_TAC [min_le, le_refl]
+QED
+
+Theorem min_le2 :
+    !x y. min x y <= y
+Proof
+    PROVE_TAC [min_le, le_refl]
+QED
+
+Theorem le_min :
+    !z x y. z <= min x y <=> z <= x /\ z <= y
+Proof
+    RW_TAC std_ss [extreal_min_def]
+ >> PROVE_TAC [le_total, le_trans]
+QED
+
+Theorem min_le2_imp :
+    !x1 x2 y1 y2. x1 <= y1 /\ x2 <= y2 ==> min x1 x2 <= min y1 y2
+Proof
+    RW_TAC std_ss [le_min]
+ >> RW_TAC std_ss [min_le]
+QED
+
+Theorem min_refl :
+    !x. min x x = x
+Proof
+    RW_TAC std_ss [extreal_min_def, le_refl]
+QED
+
+Theorem min_comm :
+    !x y. min x y = min y x
+Proof
+    RW_TAC std_ss [extreal_min_def]
+ >> PROVE_TAC [le_antisym, le_total]
+QED
+
+Theorem min_infty :
+    !x. (min x PosInf = x) /\ (min PosInf x = x) /\
+        (min NegInf x = NegInf) /\ (min x NegInf = NegInf)
+Proof
+    RW_TAC std_ss [extreal_min_def, le_infty]
+QED
+
+Theorem le_max :
+    !z x y. z <= max x y <=> z <= x \/ z <= y
+Proof
+    RW_TAC std_ss [extreal_max_def]
+ >> PROVE_TAC [le_total, le_trans]
+QED
+
+Theorem le_max1 :
+    !x y. x <= max x y
+Proof
+    PROVE_TAC [le_max, le_refl]
+QED
+
+Theorem le_max2 :
+    !x y. y <= max x y
+Proof
+    PROVE_TAC [le_max, le_refl]
+QED
+
+Theorem max_le :
+    !z x y. max x y <= z <=> x <= z /\ y <= z
+Proof
+    RW_TAC std_ss [extreal_max_def]
+ >> PROVE_TAC [le_total, le_trans]
+QED
+
+Theorem max_le2_imp :
+    !x1 x2 y1 y2. x1 <= y1 /\ x2 <= y2 ==> max x1 x2 <= max y1 y2
+Proof
+    RW_TAC std_ss [max_le]
+ >> RW_TAC std_ss [le_max]
+QED
+
+(* cf. REAL_LT_MAX *)
+Theorem lt_max :
+    !x y z :extreal. x < max y z <=> x < y \/ x < z
+Proof
+    rw [extreal_lt_def]
+ >> METIS_TAC [max_le]
+QED
+
+Theorem max_refl[simp] :
+    !x. max x x = x
+Proof
+    RW_TAC std_ss [extreal_max_def, le_refl]
+QED
+
+Theorem max_comm :
+    !x y. max x y = max y x
+Proof
+    RW_TAC std_ss [extreal_max_def]
+ >> PROVE_TAC [le_antisym, le_total]
+QED
+
+Theorem max_infty[simp] :
+    !x. (max x PosInf = PosInf) /\ (max PosInf x = PosInf) /\
+        (max NegInf x = x) /\ (max x NegInf = x)
+Proof
+    RW_TAC std_ss [extreal_max_def, le_infty]
+QED
+
+Theorem max_reduce :
+    !x y :extreal. x <= y \/ x < y ==> (max x y = y) /\ (max y x = y)
+Proof
+    PROVE_TAC [lt_imp_le, extreal_max_def, max_comm]
+QED
+
+Theorem min_reduce :
+    !x y :extreal. x <= y \/ x < y ==> (min x y = x) /\ (min y x = x)
+Proof
+    PROVE_TAC [lt_imp_le, extreal_min_def, min_comm]
+QED
+
+Theorem lt_max_between :
+    !x b d. x < max b d /\ b <= x ==> x < d
+Proof
+    RW_TAC std_ss [extreal_max_def]
+ >> fs [GSYM extreal_lt_def]
+ >> PROVE_TAC [let_antisym]
+QED
+
+Theorem min_le_between :
+    !x a c. min a c <= x /\ x < a ==> c <= x
+Proof
+    RW_TAC std_ss [extreal_min_def]
+ >> PROVE_TAC [let_antisym]
+QED
+
+Theorem abs_max :
+    !x :extreal. abs x = max x (-x)
+Proof
+    GEN_TAC >> `0 <= x \/ x < 0` by PROVE_TAC [let_total]
+ >- (`abs x = x` by PROVE_TAC [GSYM abs_refl] >> POP_ORW \\
+     RW_TAC std_ss [GSYM le_antisym, le_max, le_refl, max_le] \\
+     MATCH_MP_TAC le_trans >> Q.EXISTS_TAC `0` >> art [] \\
+     POP_ASSUM (REWRITE_TAC o wrap o
+                (REWRITE_RULE [Once (GSYM le_neg), neg_0])))
+ >> IMP_RES_TAC abs_neg >> POP_ORW
+ >> RW_TAC std_ss [GSYM le_antisym, le_max, le_refl, max_le]
+ >> MATCH_MP_TAC lt_imp_le
+ >> MATCH_MP_TAC lt_trans >> Q.EXISTS_TAC `0` >> art []
+ >> POP_ASSUM (REWRITE_TAC o wrap o
+                (REWRITE_RULE [Once (GSYM lt_neg), neg_0]))
+QED
+
 val _ = export_theory();

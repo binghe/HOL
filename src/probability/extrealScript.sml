@@ -787,76 +787,6 @@ val ext_mono_decreasing_suc = store_thm
 Overload mono_increasing = “ext_mono_increasing”
 Overload mono_decreasing = “ext_mono_decreasing”
 
-val EXTREAL_ARCH = store_thm
-  ("EXTREAL_ARCH", ``!x. 0 < x ==> !y. y <> PosInf ==> ?n. y < &n * x``,
-    Cases
- >| [ (* goal 1 (of 3) *)
-      RW_TAC std_ss [lt_infty],
-      (* goal 2 (of 3) *)
-      RW_TAC std_ss [lt_infty] \\
-      Q.EXISTS_TAC `1` >> RW_TAC std_ss [mul_lone, lt_infty],
-      (* goal 3 (of 3) *)
-      RW_TAC std_ss [lt_infty] \\
-      Cases_on `y = NegInf`
-      >- (Q.EXISTS_TAC `1` >> RW_TAC std_ss [mul_lone, lt_infty]) \\
-     `?z. y = Normal z` by METIS_TAC [extreal_cases, lt_infty] \\
-     `0 < r` by METIS_TAC [extreal_lt_eq, extreal_of_num_def] \\
-     `?n. z < &n * r` by METIS_TAC [REAL_ARCH] \\
-      Q.EXISTS_TAC `n` \\
-      RW_TAC real_ss [extreal_lt_eq, REAL_LE_MUL, extreal_of_num_def, extreal_mul_def] ]);
-
-val SIMP_EXTREAL_ARCH = store_thm
-  ("SIMP_EXTREAL_ARCH", ``!x. x <> PosInf ==> ?n. x <= &n``,
-    Cases
- >> RW_TAC std_ss [le_infty]
- >> `?n. r <= &n` by RW_TAC std_ss [SIMP_REAL_ARCH]
- >> Q.EXISTS_TAC `n`
- >> RW_TAC real_ss [extreal_of_num_def,extreal_le_def]);
-
-val SIMP_EXTREAL_ARCH_NEG = store_thm
-  ("SIMP_EXTREAL_ARCH_NEG", ``!x. x <> NegInf ==> ?n. - &n <= x``,
-    Cases
- >> RW_TAC std_ss [le_infty]
- >> `?n. - &n <= r` by RW_TAC std_ss [SIMP_REAL_ARCH_NEG]
- >> Q.EXISTS_TAC `n`
- >> RW_TAC real_ss [extreal_of_num_def, extreal_le_eq, extreal_ainv_def]);
-
-Theorem EXTREAL_ARCH_INV :
-    !(x :extreal). 0 < x ==> ?n. inv (&SUC n) < x
-Proof
-    rpt STRIP_TAC
- >> Cases_on ‘x = PosInf’
- >- (Q.EXISTS_TAC ‘0’ >> rw [inv_one, lt_infty])
- >> ‘x <> 0’ by PROVE_TAC [lt_imp_ne]
- >> Know ‘?n. inv x <= &n’
- >- (MATCH_MP_TAC SIMP_EXTREAL_ARCH \\
-     METIS_TAC [inv_not_infty])
- >> STRIP_TAC
- >> ‘&n < &SUC n’ by rw [extreal_of_num_def, extreal_lt_eq]
- >> ‘inv x < &SUC n’ by PROVE_TAC [let_trans]
- >> Q.EXISTS_TAC ‘n’
- >> Know ‘x = inv (inv x)’
- >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
-     MATCH_MP_TAC inv_inv >> art [] \\
-     rw [lt_infty] \\
-     MATCH_MP_TAC lt_trans >> Q.EXISTS_TAC ‘0’ >> art [] \\
-     rw [extreal_of_num_def, lt_infty])
- >> Rewr'
- >> Suff ‘inv (&SUC n) < inv (inv x) <=> inv x < &SUC n’ >- rw []
- >> MATCH_MP_TAC inv_lt_antimono
- >> CONJ_TAC >- rw [extreal_of_num_def, extreal_lt_eq]
- >> MATCH_MP_TAC inv_pos' >> rw []
-QED
-
-Theorem EXTREAL_ARCH_INV' :
-    !(x :extreal). 0 < x ==> ?n. inv (&SUC n) <= x
-Proof
-    rpt STRIP_TAC
- >> ‘?n. inv (&SUC n) < x’ by METIS_TAC [EXTREAL_ARCH_INV]
- >> Q.EXISTS_TAC ‘n’
- >> MATCH_MP_TAC lt_imp_le >> art []
-QED
-
 Theorem EXTREAL_ARCH_POW2 : (* was: EXTREAL_ARCH_POW *)
     !x. x <> PosInf ==> ?n. x < 2 pow n
 Proof
@@ -878,39 +808,6 @@ Proof
                    REAL_HALF_BETWEEN,REAL_LT_IMP_LE,GREATER_EQ]
  >> PROVE_TAC [LESS_EQ_REFL]
 QED
-
-val REAL_LE_MUL_EPSILON = store_thm
-  ("REAL_LE_MUL_EPSILON",
-  ``!x y:real. (!z. 0 < z /\ z < 1 ==> z * x <= y) ==> x <= y``,
-    rpt STRIP_TAC
- >> Cases_on `x = 0`
- >- (Q.PAT_X_ASSUM `!z. P z` (MP_TAC o Q.SPEC `1/2`)
-     >> RW_TAC real_ss [REAL_HALF_BETWEEN])
- >> Cases_on `0 < x`
- >- (MATCH_MP_TAC REAL_LE_EPSILON \\
-     RW_TAC std_ss [GSYM REAL_LE_SUB_RADD] \\
-     Cases_on `e < x`
-     >- (MATCH_MP_TAC REAL_LE_TRANS \\
-         Q.EXISTS_TAC `(1 - e/x) * x` \\
-         CONJ_TAC
-         >- (RW_TAC real_ss [REAL_SUB_RDISTRIB] \\
-             METIS_TAC [REAL_DIV_RMUL, REAL_LE_REFL]) \\
-         Q.PAT_X_ASSUM `!z. P z` MATCH_MP_TAC \\
-         RW_TAC real_ss [REAL_LT_SUB_RADD, REAL_LT_ADDR, REAL_LT_DIV, REAL_LT_SUB_LADD,
-                         REAL_LT_1, REAL_LT_IMP_LE]) \\
-     FULL_SIMP_TAC std_ss [REAL_NOT_LT] \\
-     MATCH_MP_TAC REAL_LE_TRANS \\
-     Q.EXISTS_TAC `0` \\
-     RW_TAC real_ss [REAL_LE_SUB_RADD] \\
-     MATCH_MP_TAC REAL_LE_TRANS \\
-     Q.EXISTS_TAC `(1 / 2) * x` \\
-     RW_TAC real_ss [REAL_LE_MUL, REAL_LT_IMP_LE])
- >> MATCH_MP_TAC REAL_LE_TRANS
- >> Q.EXISTS_TAC `(1/2)*x`
- >> RW_TAC real_ss []
- >> RW_TAC std_ss [Once (GSYM REAL_LE_NEG), GSYM REAL_MUL_RNEG]
- >> Suff `1/2 * ~x <= 1 * ~x` >- RW_TAC real_ss []
- >> METIS_TAC [REAL_NEG_GT0, REAL_LT_TOTAL, REAL_LE_REFL, REAL_HALF_BETWEEN, REAL_LE_RMUL]);
 
 val le_epsilon = store_thm
   ("le_epsilon", ``!x y. (!e. 0 < e /\ e <> PosInf ==> x <= y + e) ==> x <= y``,
@@ -4952,142 +4849,6 @@ Proof
  >> fs []
 QED
 
-(* ------------------------------------------------------------------------- *)
-(* Minimum and maximum                                                       *)
-(* ------------------------------------------------------------------------- *)
-
-val extreal_min_def = Define
-   `extreal_min (x :extreal) y = if x <= y then x else y`;
-
-val extreal_max_def = Define
-   `extreal_max (x :extreal) y = if x <= y then y else x`;
-
-val _ = overload_on ("min", Term `extreal_min`);
-val _ = overload_on ("max", Term `extreal_max`);
-
-val min_le = store_thm
-  ("min_le", ``!z x y. min x y <= z <=> x <= z \/ y <= z``,
-    RW_TAC std_ss [extreal_min_def]
- >> PROVE_TAC [le_total, le_trans]);
-
-val min_le1 = store_thm
-  ("min_le1", ``!x y. min x y <= x``,
-    PROVE_TAC [min_le, le_refl]);
-
-val min_le2 = store_thm
-  ("min_le2", ``!x y. min x y <= y``,
-    PROVE_TAC [min_le, le_refl]);
-
-val le_min = store_thm
-  ("le_min", ``!z x y. z <= min x y <=> z <= x /\ z <= y``,
-    RW_TAC std_ss [extreal_min_def]
- >> PROVE_TAC [le_total, le_trans]);
-
-val min_le2_imp = store_thm
-  ("min_le2_imp", ``!x1 x2 y1 y2. x1 <= y1 /\ x2 <= y2 ==> min x1 x2 <= min y1 y2``,
-    RW_TAC std_ss [le_min]
- >> RW_TAC std_ss [min_le]);
-
-val min_refl = store_thm
-  ("min_refl", ``!x. min x x = x``,
-    RW_TAC std_ss [extreal_min_def, le_refl]);
-
-val min_comm = store_thm
-  ("min_comm", ``!x y. min x y = min y x``,
-    RW_TAC std_ss [extreal_min_def]
- >> PROVE_TAC [le_antisym, le_total]);
-
-val min_infty = store_thm
-  ("min_infty",
-  ``!x. (min x PosInf = x) /\ (min PosInf x = x) /\
-        (min NegInf x = NegInf) /\ (min x NegInf = NegInf)``,
-    RW_TAC std_ss [extreal_min_def, le_infty]);
-
-val le_max = store_thm
-  ("le_max", ``!z x y. z <= max x y <=> z <= x \/ z <= y``,
-    RW_TAC std_ss [extreal_max_def]
- >> PROVE_TAC [le_total, le_trans]);
-
-val le_max1 = store_thm
-  ("le_max1", ``!x y. x <= max x y``,
-    PROVE_TAC [le_max, le_refl]);
-
-val le_max2 = store_thm
-  ("le_max2", ``!x y. y <= max x y``,
-    PROVE_TAC [le_max, le_refl]);
-
-val max_le = store_thm
-  ("max_le", ``!z x y. max x y <= z <=> x <= z /\ y <= z``,
-    RW_TAC std_ss [extreal_max_def]
- >> PROVE_TAC [le_total, le_trans]);
-
-val max_le2_imp = store_thm
-  ("max_le2_imp", ``!x1 x2 y1 y2. x1 <= y1 /\ x2 <= y2 ==> max x1 x2 <= max y1 y2``,
-    RW_TAC std_ss [max_le]
- >> RW_TAC std_ss [le_max]);
-
-(* cf. REAL_LT_MAX *)
-Theorem lt_max :
-    !x y z :extreal. x < max y z <=> x < y \/ x < z
-Proof
-    rw [extreal_lt_def]
- >> METIS_TAC [max_le]
-QED
-
-Theorem max_refl[simp] :
-    !x. max x x = x
-Proof
-    RW_TAC std_ss [extreal_max_def, le_refl]
-QED
-
-val max_comm = store_thm
-  ("max_comm", ``!x y. max x y = max y x``,
-    RW_TAC std_ss [extreal_max_def]
- >> PROVE_TAC [le_antisym, le_total]);
-
-Theorem max_infty[simp] :
-    !x. (max x PosInf = PosInf) /\ (max PosInf x = PosInf) /\
-        (max NegInf x = x) /\ (max x NegInf = x)
-Proof
-    RW_TAC std_ss [extreal_max_def, le_infty]
-QED
-
-val max_reduce = store_thm
-  ("max_reduce", ``!x y :extreal. x <= y \/ x < y ==> (max x y = y) /\ (max y x = y)``,
-    PROVE_TAC [lt_imp_le, extreal_max_def, max_comm]);
-
-val min_reduce = store_thm
-  ("min_reduce", ``!x y :extreal. x <= y \/ x < y ==> (min x y = x) /\ (min y x = x)``,
-    PROVE_TAC [lt_imp_le, extreal_min_def, min_comm]);
-
-val lt_max_between = store_thm
-  ("lt_max_between", ``!x b d. x < max b d /\ b <= x ==> x < d``,
-    RW_TAC std_ss [extreal_max_def]
- >> fs [GSYM extreal_lt_def]
- >> PROVE_TAC [let_antisym]);
-
-val min_le_between = store_thm
-  ("min_le_between", ``!x a c. min a c <= x /\ x < a ==> c <= x``,
-    RW_TAC std_ss [extreal_min_def]
- >> PROVE_TAC [let_antisym]);
-
-Theorem abs_max :
-    !x :extreal. abs x = max x (-x)
-Proof
-    GEN_TAC >> `0 <= x \/ x < 0` by PROVE_TAC [let_total]
- >- (`abs x = x` by PROVE_TAC [GSYM abs_refl] >> POP_ORW \\
-     RW_TAC std_ss [GSYM le_antisym, le_max, le_refl, max_le] \\
-     MATCH_MP_TAC le_trans >> Q.EXISTS_TAC `0` >> art [] \\
-     POP_ASSUM (REWRITE_TAC o wrap o
-                (REWRITE_RULE [Once (GSYM le_neg), neg_0])))
- >> IMP_RES_TAC abs_neg >> POP_ORW
- >> RW_TAC std_ss [GSYM le_antisym, le_max, le_refl, max_le]
- >> MATCH_MP_TAC lt_imp_le
- >> MATCH_MP_TAC lt_trans >> Q.EXISTS_TAC `0` >> art []
- >> POP_ASSUM (REWRITE_TAC o wrap o
-                (REWRITE_RULE [Once (GSYM lt_neg), neg_0]))
-QED
-
 (* `sup` is the maximal element of any finite non-empty extreal set,
     see also le_sup_imp'.
  *)
@@ -7102,8 +6863,11 @@ QED
 (* ------------------------------------------------------------------------- *)
 
 val _ = map (fn name => save_thm (name, DB.fetch "extreal_base" name))
-      ["EXTREAL_EQ_LADD",
+      ["EXTREAL_ARCH",
+       "EXTREAL_EQ_LADD",
        "EXTREAL_EQ_RADD",
+       "SIMP_EXTREAL_ARCH", "SIMP_EXTREAL_ARCH_NEG",
+       "EXTREAL_ARCH_INV", "EXTREAL_ARCH_INV'",
        "abs_0",
        "abs_abs",
        "abs_bounds", "abs_bounds_lt",
@@ -7113,6 +6877,7 @@ val _ = map (fn name => save_thm (name, DB.fetch "extreal_base" name))
        "abs_le_0",
        "abs_le_half_pow2",
        "abs_le_square_plus1",
+       "abs_max",
        "abs_mul",
        "abs_neg", "abs_neg'", "abs_neg_eq",
        "abs_not_infty",
@@ -7169,6 +6934,8 @@ val _ = map (fn name => save_thm (name, DB.fetch "extreal_base" name))
        "extreal_le_def", "extreal_le_eq",
        "extreal_lt_def", "extreal_lt_eq",
        "extreal_mean",
+       "extreal_max_def",
+       "extreal_min_def",
        "extreal_mul_def",
        "extreal_mul_eq",
        "extreal_of_num_def",
@@ -7217,6 +6984,8 @@ val _ = map (fn name => save_thm (name, DB.fetch "extreal_base" name))
        "le_ldiv",
        "le_lmul", "le_lmul_imp",
        "le_lneg",
+       "le_max", "le_max1", "le_max2",
+       "le_min",
        "le_mul", "le_mul_neg",
        "le_mul2",
        "le_neg",
@@ -7254,6 +7023,8 @@ val _ = map (fn name => save_thm (name, DB.fetch "extreal_base" name))
        "lt_le",
        "lt_lmul", "lt_lmul_imp",
        "lt_lsub_imp",
+       "lt_max",
+       "lt_max_between",
        "lt_mul", "lt_mul_neg",
        "lt_mul2",
        "lt_neg",
@@ -7270,6 +7041,17 @@ val _ = map (fn name => save_thm (name, DB.fetch "extreal_base" name))
        "lte_mul",
        "lte_total",
        "lte_trans",
+       "max_comm",
+       "max_infty",
+       "max_le", "max_le2_imp",
+       "max_reduce",
+       "max_refl",
+       "min_comm",
+       "min_infty",
+       "min_le", "min_le1", "min_le2", "min_le2_imp",
+       "min_le_between",
+       "min_reduce",
+       "min_refl",
        "mul_assoc",
        "mul_comm",
        "mul_div_refl",
