@@ -9,7 +9,7 @@
 
 open HolKernel Parse boolLib bossLib;
 
-open combinTheory pairTheory tautLib arithmeticTheory hurdUtils numLib;
+open combinTheory tautLib prim_recTheory arithmeticTheory numLib hurdUtils;
 
 open realTheory realLib iterateTheory;
 
@@ -2584,6 +2584,647 @@ Theorem inv_inv :
 Proof
     Cases >> rw [extreal_of_num_def, extreal_inv_eq]
  >> ASM_SIMP_TAC std_ss [REAL_INVINV]
+QED
+
+(***************************)
+(*         x pow n         *)
+(***************************)
+
+Theorem pow_0[simp] :
+    !x. x pow 0 = 1
+Proof
+    Cases >> RW_TAC std_ss [extreal_pow_def, extreal_of_num_def, pow]
+QED
+
+(* an equivalent "recursive" definition like realTheory.pow *)
+Theorem extreal_pow :
+   (!x :extreal. x pow 0 = 1) /\ !(x :extreal) n. x pow SUC n = x * x pow n
+Proof
+    rw [] >> Cases_on ‘x’
+ >> RW_TAC arith_ss [extreal_pow_def, extreal_mul_def, GSYM extreal_of_num_def, pow,
+                     mul_rone, EVEN] >- fs [EVEN]
+ >> PROVE_TAC []
+QED
+
+Theorem zero_pow : (* POW_0 *)
+    !n. 0 < n ==> (extreal_pow 0 n = 0)
+Proof
+    RW_TAC real_ss [extreal_of_num_def, extreal_pow_def, extreal_11]
+ >> Cases_on `n` >- fs [LESS_REFL]
+ >> REWRITE_TAC [POW_0]
+QED
+
+Theorem pow_1[simp] :
+    !x. x pow 1 = x
+Proof
+    Cases >> RW_TAC std_ss [extreal_pow_def, POW_1]
+QED
+
+Theorem one_pow[simp] : (* POW_ONE *)
+    !n. extreal_pow 1 n = 1
+Proof
+    RW_TAC real_ss [extreal_of_num_def, extreal_pow_def, extreal_11, POW_ONE]
+QED
+
+Theorem pow_2 :
+    !x. x pow 2 = x * x
+Proof
+    Cases >> RW_TAC std_ss [extreal_pow_def, extreal_mul_def, POW_2]
+QED
+
+Theorem pow_zero[simp] :
+    !n x :extreal. (x pow (SUC n) = 0) <=> (x = 0)
+Proof
+    STRIP_TAC >> Cases
+ >> RW_TAC std_ss [extreal_pow_def, extreal_of_num_def, POW_ZERO_EQ]
+QED
+
+Theorem pow_zero_imp:
+  !n x. (x pow n = 0) ==> (x = 0)
+Proof
+    STRIP_TAC >> Cases
+ >> RW_TAC std_ss [extreal_pow_def,extreal_of_num_def,REAL_LT_01,REAL_LT_IMP_NE]
+ >> METIS_TAC [POW_ZERO]
+QED
+
+Theorem le_pow2 :
+    !x. 0 <= x pow 2
+Proof
+    Cases
+ >> RW_TAC std_ss [extreal_pow_def, extreal_of_num_def, extreal_le_def, REAL_LE_POW2]
+QED
+
+Theorem abs_pow2[simp] :
+    !x. (abs x) pow 2 = x pow 2
+Proof
+    GEN_TAC
+ >> Cases_on `0 <= x` >- fs [GSYM abs_refl]
+ >> fs [GSYM extreal_lt_def, abs_neg, pow_2, neg_mul2]
+QED
+
+Theorem pow_2_abs :
+    !x. x pow 2 = abs x * abs x
+Proof
+    RW_TAC std_ss [Once (GSYM abs_pow2), pow_2]
+QED
+
+(* NOTE: ‘!n’ is moved to top-level *)
+Theorem pow_pos_le :
+    !n x. 0 <= x ==> 0 <= x pow n
+Proof
+    Q.X_GEN_TAC ‘n’
+ >> Cases
+ >> RW_TAC std_ss [extreal_pow_def, extreal_of_num_def, extreal_le_def, POW_POS]
+ >> METIS_TAC [le_infty, le_01, REAL_LE_01, extreal_of_num_def]
+QED
+
+(* NOTE: ‘!n’ is moved to top-level *)
+Theorem pow_pos_lt :
+    !n x. 0 < x ==> 0 < x pow n
+Proof
+    NTAC 2 Cases
+ >> RW_TAC std_ss [extreal_pow_def, extreal_of_num_def, extreal_le_def, extreal_lt_eq,
+                   POW_POS_LT, REAL_LT_01, lt_infty, extreal_not_infty]
+ >> METIS_TAC [pow, REAL_LT_01]
+QED
+
+Theorem pow_le :
+    !n x y. 0 <= x /\ x <= y ==> x pow n <= y pow n
+Proof
+    STRIP_TAC >> NTAC 2 Cases
+ >> RW_TAC std_ss [extreal_pow_def, extreal_of_num_def, extreal_le_def, POW_LE,
+                   lt_infty, le_infty, extreal_not_infty, REAL_LE_REFL, pow]
+QED
+
+Theorem pow_lt :
+    !n x y. 0 <= x /\ x < y ==> x pow SUC n < y pow SUC n
+Proof
+    STRIP_TAC >> NTAC 2 Cases
+ >> RW_TAC std_ss [extreal_pow_def, extreal_of_num_def, extreal_le_def, REAL_POW_LT2,
+                   lt_infty, le_infty, extreal_not_infty, extreal_lt_eq]
+QED
+
+Theorem pow_lt2 :
+    !n x y. n <> 0 /\ 0 <= x /\ x < y ==> x pow n < y pow n
+Proof
+    STRIP_TAC >> NTAC 2 Cases
+ >> RW_TAC std_ss [extreal_pow_def, extreal_of_num_def, extreal_le_def, REAL_POW_LT2,
+                   lt_infty, le_infty, extreal_not_infty, extreal_lt_eq]
+QED
+
+Theorem pow_le_full :
+    !n x y :extreal. n <> 0 /\ 0 <= x /\ 0 <= y ==>
+                    (x <= y <=> x pow n <= y pow n)
+Proof
+    rpt STRIP_TAC
+ >> EQ_TAC >> DISCH_TAC
+ >- (MATCH_MP_TAC pow_le >> art [])
+ >> SPOSE_NOT_THEN (ASSUME_TAC o (REWRITE_RULE [GSYM extreal_lt_def]))
+ >> `y pow n < x pow n` by PROVE_TAC [pow_lt2]
+ >> METIS_TAC [let_antisym]
+QED
+
+Theorem pow_eq :
+    !n x y. n <> 0 /\ 0 <= x /\ 0 <= y ==> ((x = y) <=> (x pow n = y pow n))
+Proof
+    rpt STRIP_TAC
+ >> EQ_TAC >> rw []
+ >> fs [GSYM le_antisym]
+ >> METIS_TAC [pow_le_full]
+QED
+
+Theorem pow_le_mono :
+    !x n m. 1 <= x /\ n <= m ==> x pow n <= x pow m
+Proof
+    Cases
+ >> RW_TAC std_ss [extreal_pow_def, extreal_of_num_def, extreal_le_def,
+                   lt_infty, le_infty, extreal_not_infty, REAL_LE_REFL]
+ >> Cases_on `n = m` >- RW_TAC std_ss [REAL_LE_REFL]
+ >> `n < m` by METIS_TAC [LESS_OR_EQ]
+ >> `?p. m = p + n` by METIS_TAC [LESS_ADD]
+ >> FULL_SIMP_TAC std_ss []
+ >> NTAC 3 (POP_ASSUM (K ALL_TAC))
+ >> Induct_on `p` >- RW_TAC real_ss [REAL_LE_REFL]
+ >> RW_TAC real_ss [GSYM ADD_SUC,pow]
+ >> `0 <= r` by METIS_TAC [REAL_LE_01,REAL_LE_TRANS]
+ >> `0 <= r pow n` by METIS_TAC [POW_POS]
+ >> ONCE_REWRITE_TAC [ADD_COMM]
+ >> (MP_TAC o Q.SPECL [`1:real`,`r`,`r pow n`,`r pow (p + n)`]) REAL_LE_MUL2
+ >> RW_TAC real_ss []
+QED
+
+Theorem pow_pos_even :
+    !x. x < 0 ==> ((0 < x pow n) <=> (EVEN n))
+Proof
+    Cases
+ >> RW_TAC std_ss [extreal_pow_def, extreal_of_num_def, extreal_not_infty,
+                   le_infty, lt_infty, extreal_lt_eq, REAL_LT_01, POW_POS_EVEN]
+QED
+
+Theorem pow_neg_odd :
+    !x. x < 0 ==> ((x pow n < 0) <=> (ODD n))
+Proof
+    Cases
+ >> RW_TAC std_ss [extreal_pow_def, extreal_of_num_def, extreal_not_infty,
+                   le_infty, lt_infty, extreal_lt_eq, extreal_le_def,
+                   REAL_LT_01, EVEN_ODD, extreal_lt_def, extreal_le_def,
+                   REAL_LE_01, POW_NEG_ODD, GSYM real_lt]
+QED
+
+(* antecedents added due to new definition of `extreal_add` *)
+Theorem add_pow2 :
+    !x y. x <> NegInf /\ x <> PosInf /\ y <> NegInf /\ y <> PosInf ==>
+          ((x + y) pow 2 = x pow 2 + y pow 2 + 2 * x * y)
+Proof
+    NTAC 2 Cases
+ >> RW_TAC real_ss [extreal_pow_def, extreal_mul_def, extreal_add_def,
+                    extreal_of_num_def]
+ >> REWRITE_TAC [ADD_POW_2]
+QED
+
+Theorem REAL_MUL_POS_LT[local] : (* from intergrationTheory *)
+    !x y:real. &0 < x * y <=> &0 < x /\ &0 < y \/ x < &0 /\ y < &0
+Proof
+  REPEAT STRIP_TAC THEN
+  STRIP_ASSUME_TAC(SPEC ``x:real`` REAL_LT_NEGTOTAL) THEN
+  STRIP_ASSUME_TAC(SPEC ``y:real`` REAL_LT_NEGTOTAL) THEN
+  ASM_REWRITE_TAC[REAL_MUL_LZERO, REAL_MUL_RZERO, REAL_LT_REFL] THEN
+  ASSUM_LIST(MP_TAC o MATCH_MP REAL_LT_MUL o end_itlist CONJ) THEN
+  REPEAT(POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC
+QED
+
+Theorem infty_pow2[simp] :
+    (PosInf pow 2 = PosInf) /\ (NegInf pow 2 = PosInf)
+Proof
+    rw [pow_2, extreal_mul_def]
+QED
+
+Theorem add_pow2_pos : (* was: add_pow02 *)
+    !x y. 0 < x /\ x <> PosInf /\ 0 <= y ==>
+         ((x + y) pow 2 = x pow 2 + y pow 2 + 2 * x * y)
+Proof
+    RW_TAC std_ss []
+ >> `x <> NegInf` by METIS_TAC [lt_trans, lt_infty, num_not_infty]
+ >> `y <> NegInf` by METIS_TAC [lte_trans, lt_infty, num_not_infty]
+ >> ASM_CASES_TAC ``y = PosInf`` >| [ALL_TAC, METIS_TAC [add_pow2]]
+ >> ASM_SIMP_TAC std_ss []
+ >> `x = Normal (real x)` by METIS_TAC [normal_real]
+ >> ONCE_ASM_REWRITE_TAC []
+ >> SIMP_TAC std_ss [extreal_add_def, extreal_mul_def, extreal_of_num_def]
+ >> ONCE_REWRITE_TAC [infty_pow2]
+ >> rpt COND_CASES_TAC
+ >> ASM_SIMP_TAC std_ss [extreal_pow_def, extreal_add_def]
+ >> POP_ASSUM MP_TAC
+ >> ONCE_REWRITE_TAC [MONO_NOT_EQ]
+ >> RW_TAC std_ss [real_normal, REAL_MUL_POS_LT]
+ >> DISJ1_TAC
+ >> ASM_SIMP_TAC real_ss [GSYM extreal_lt_eq, normal_real, GSYM extreal_of_num_def]
+QED
+
+Theorem sub_pow2 :
+    !x y. x <> NegInf /\ x <> PosInf /\ y <> NegInf /\ y <> PosInf ==>
+        ((x - y) pow 2 = x pow 2 + y pow 2 - 2 * x * y)
+Proof
+    NTAC 2 Cases
+ >> RW_TAC real_ss [extreal_pow_def, extreal_mul_def, extreal_add_def,
+                    extreal_of_num_def, extreal_ainv_def, extreal_sub_def]
+ >> REWRITE_TAC [SUB_POW_2]
+QED
+
+Theorem pow_add :
+    !x n m. x pow (n + m) = x pow n * x pow m
+Proof
+    Cases
+ >> RW_TAC real_ss [extreal_pow_def, POW_ADD, extreal_of_num_def,
+                    extreal_mul_def, mul_rone, mul_lone]
+ >> METIS_TAC [ADD_CLAUSES, EVEN_ADD]
+QED
+
+Theorem pow_mul :
+    !n x y. (x * y) pow n = x pow n * y pow n
+Proof
+    Cases >- RW_TAC std_ss [pow_0,mul_lone]
+ >> NTAC 2 Cases
+ >> RW_TAC real_ss [extreal_mul_def, extreal_pow_def, pow_zero, POW_ZERO_EQ,
+                    POW_POS_LT, POW_MUL]
+ >> FULL_SIMP_TAC real_ss [GSYM real_lte]
+ >> METIS_TAC [POW_POS_EVEN, POW_NEG_ODD, REAL_LT_LE, POW_POS_LT, real_lt,
+               POW_ZERO_EQ, EVEN_ODD]
+QED
+
+Theorem pow_minus1[simp] :
+    !n. -1 pow (2 * n) = (1 :extreal)
+Proof
+    RW_TAC std_ss [extreal_of_num_def, extreal_ainv_def, extreal_pow_def, POW_MINUS1]
+QED
+
+Theorem pow_not_infty :
+    !n x. x <> NegInf /\ x <> PosInf ==> x pow n <> NegInf /\ x pow n <> PosInf
+Proof
+    Cases
+ >> METIS_TAC [extreal_pow_def, extreal_not_infty, extreal_cases]
+QED
+
+Theorem pow_inv : (* cf. REAL_POW_INV *)
+    !n y. y <> 0 ==> inv (y pow n) = (inv y) pow n
+Proof
+    rpt STRIP_TAC
+ >> Cases_on `n = 0` >- rw [pow_0, inv_one]
+ >> `0 < n` by RW_TAC arith_ss []
+ >> `0 pow n = (0 :real)` by (Cases_on `n` >> rw [POW_0])
+ >> Cases_on `y` >> RW_TAC std_ss [extreal_pow_def, extreal_inv_def]
+ >> `r <> 0` by METIS_TAC [extreal_of_num_def, extreal_11]
+ >> `r pow n <> 0` by PROVE_TAC [POW_NZ]
+ >> ASM_SIMP_TAC std_ss [extreal_inv_eq, extreal_pow_def, extreal_11]
+ >> REWRITE_TAC [REAL_POW_INV]
+QED
+
+Theorem pow_div : (* cf. REAL_POW_DIV *)
+    !n x y. x <> PosInf /\ x <> NegInf /\ 0 < y ==>
+           ((x / y) pow n = x pow n / y pow n)
+Proof
+    rpt STRIP_TAC
+ >> `x pow n <> PosInf /\ x pow n <> NegInf` by METIS_TAC [pow_not_infty]
+ >> `0 < y pow n` by METIS_TAC [pow_pos_lt]
+ >> ASM_SIMP_TAC std_ss [div_eq_mul_linv, pow_mul]
+ >> Suff `inv (y pow n) = (inv y) pow n` >- RW_TAC std_ss []
+ >> MATCH_MP_TAC pow_inv
+ >> FULL_SIMP_TAC std_ss [lt_le]
+QED
+
+Theorem pow_pow : (* cf. REAL_POW_POW *)
+    !(x :extreal) m n. (x pow m) pow n = x pow (m * n)
+Proof
+    rpt GEN_TAC
+ >> Cases_on ‘x’
+ >| [ (* goal 1 (of 3) *)
+      Cases_on ‘m = 0’ >- rw [extreal_pow_def] \\
+      Cases_on ‘EVEN m’
+      >- (rw [extreal_pow_def] >> fs [EVEN_MULT]) \\
+      rw [extreal_pow_def] >> gs [EVEN_MULT],
+      (* goal 2 (of 3) *)
+      Cases_on ‘m = 0’ >- rw [extreal_pow_def] \\
+      Cases_on ‘EVEN m’ >- rw [extreal_pow_def] \\
+      rw [extreal_pow_def],
+      (* goal 3 (of 3) *)
+      rw [extreal_pow_def, REAL_POW_POW] ]
+QED
+
+Theorem abs_le_square_plus1 :
+    !(x :extreal). abs x <= x pow 2 + 1
+Proof
+    GEN_TAC
+ >> Cases_on `0 <= x`
+ >- (fs [GSYM abs_refl] \\
+     Cases_on `1 <= x`
+     >- (MATCH_MP_TAC le_trans >> Q.EXISTS_TAC `x pow 2 + 0` \\
+         reverse CONJ_TAC
+         >- (MATCH_MP_TAC le_add2 >> REWRITE_TAC [le_refl, le_01]) \\
+         REWRITE_TAC [add_rzero, pow_2] \\
+        `x = 1 * x` by PROVE_TAC [mul_lone] \\
+         POP_ASSUM ((GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites) o wrap) \\
+         MATCH_MP_TAC le_rmul_imp >> art [] \\
+         MATCH_MP_TAC le_trans >> Q.EXISTS_TAC `1` >> art [le_01]) \\
+    fs [GSYM extreal_lt_def] \\
+    Know `x <= x pow 2 + 1 <=> x - 1 <= x pow 2`
+    >- (MATCH_MP_TAC EQ_SYM \\
+        MATCH_MP_TAC sub_le_eq >> REWRITE_TAC [extreal_of_num_def, extreal_not_infty]) \\
+    Rewr' \\
+   `x - 1 < 0` by PROVE_TAC [sub_lt_zero] \\
+   `0 <= x pow 2` by PROVE_TAC [le_pow2] \\
+    MATCH_MP_TAC le_trans >> Q.EXISTS_TAC `0` >> art [] \\
+    IMP_RES_TAC lt_imp_le)
+ >> fs [GSYM extreal_lt_def]
+ >> `abs x = -x` by PROVE_TAC [abs_neg] >> POP_ORW
+ >> Cases_on `-1 < x`
+ >- (`-x < 1` by PROVE_TAC [neg_neg, GSYM lt_neg] \\
+     Know `-x <= x pow 2 + 1 <=> -x - 1 <= x pow 2`
+     >- (MATCH_MP_TAC EQ_SYM \\
+         MATCH_MP_TAC sub_le_eq >> REWRITE_TAC [extreal_of_num_def, extreal_not_infty]) \\
+     Rewr' \\
+    `-x - 1 < 0` by PROVE_TAC [sub_lt_zero] \\
+    `0 <= x pow 2` by PROVE_TAC [le_pow2] \\
+     MATCH_MP_TAC le_trans >> Q.EXISTS_TAC `0` >> art [] \\
+     IMP_RES_TAC lt_imp_le)
+ >> fs [extreal_lt_def]
+ >> `1 <= -x` by PROVE_TAC [le_neg, neg_neg]
+ >> MATCH_MP_TAC le_trans
+ >> Q.EXISTS_TAC `x pow 2 + 0`
+ >> reverse CONJ_TAC
+ >- (MATCH_MP_TAC le_add2 >> REWRITE_TAC [le_refl, le_01])
+ >> REWRITE_TAC [add_rzero]
+ >> `x pow 2 = -x * -x` by REWRITE_TAC [pow_2, neg_mul2] >> POP_ORW
+ >> `-x = 1 * -x` by PROVE_TAC [mul_lone]
+ >> POP_ASSUM ((GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites) o wrap)
+ >> MATCH_MP_TAC le_rmul_imp >> art []
+ >> MATCH_MP_TAC le_trans >> Q.EXISTS_TAC `1` >> art [le_01]
+QED
+
+Theorem abs_pow_le_mono :
+    !(x :extreal) n m. n <= m ==> (abs x) pow n <= 1 + (abs x) pow m
+Proof
+    rpt STRIP_TAC
+ >> Cases_on `1 <= x`
+ >- (MATCH_MP_TAC le_trans >> Q.EXISTS_TAC `0 + (abs x) pow m` \\
+     reverse CONJ_TAC
+     >- (MATCH_MP_TAC le_add2 >> REWRITE_TAC [le_01, le_refl]) \\
+     REWRITE_TAC [add_lzero] \\
+     MATCH_MP_TAC pow_le_mono >> art [] \\
+     Suff `abs x = x` >- RW_TAC std_ss [] \\
+     REWRITE_TAC [abs_refl] \\
+     MATCH_MP_TAC le_trans >> Q.EXISTS_TAC `1` >> art [le_01])
+ >> fs [GSYM extreal_lt_def]
+ >> Cases_on `x <= -1`
+ >- (MATCH_MP_TAC le_trans >> Q.EXISTS_TAC `0 + (abs x) pow m` \\
+     reverse CONJ_TAC
+     >- (MATCH_MP_TAC le_add2 >> REWRITE_TAC [le_01, le_refl]) \\
+     REWRITE_TAC [add_lzero] \\
+     MATCH_MP_TAC pow_le_mono >> art [] \\
+     Suff `abs x = -x` >- (Rewr' >> METIS_TAC [le_neg, neg_neg]) \\
+     MATCH_MP_TAC abs_neg \\
+     MATCH_MP_TAC let_trans >> Q.EXISTS_TAC `-1` >> art [lt_10])
+ >> fs [GSYM extreal_lt_def]
+ >> MATCH_MP_TAC le_trans >> Q.EXISTS_TAC `1 + 0`
+ >> reverse CONJ_TAC
+ >- (MATCH_MP_TAC le_add2 >> art [le_refl] \\
+     MATCH_MP_TAC pow_pos_le >> REWRITE_TAC [abs_pos])
+ >> REWRITE_TAC [add_rzero, Once (GSYM (Q.SPEC `n` one_pow))]
+ >> MATCH_MP_TAC pow_le
+ >> REWRITE_TAC [abs_pos, abs_bounds]
+ >> CONJ_TAC >> MATCH_MP_TAC lt_imp_le >> art []
+QED
+
+(* This result is needed for proving Cauchy-Schwarz inequality *)
+Theorem abs_le_half_pow2 :
+    !x y :extreal. abs (x * y) <= Normal (1 / 2) * (x pow 2 + y pow 2)
+Proof
+    NTAC 2 Cases
+ >> ASM_SIMP_TAC real_ss [extreal_abs_def, extreal_mul_def, pow_2, extreal_add_def,
+                          le_refl, le_infty, extreal_le_eq]
+ >> REWRITE_TAC [GSYM POW_2, ABS_LE_HALF_POW2]
+QED
+
+(***************************)
+(*         SQRT            *)
+(***************************)
+
+Theorem sqrt_pos_le :
+    !x. 0 <= x ==> 0 <= sqrt x
+Proof
+    Cases
+ >> RW_TAC std_ss [extreal_sqrt_def, extreal_of_num_def, extreal_le_def, SQRT_POS_LE]
+QED
+
+Theorem sqrt_pos_lt :
+    !x. 0 < x ==> 0 < sqrt x
+Proof
+    Cases
+ >> RW_TAC std_ss [extreal_sqrt_def, extreal_of_num_def, extreal_le_def,
+                   extreal_lt_eq, lt_infty, SQRT_POS_LT]
+QED
+
+Theorem sqrt_pos_ne :
+    !x. 0 < x ==> sqrt x <> 0
+Proof
+    Q.X_GEN_TAC ‘x’
+ >> DISCH_THEN (ASSUME_TAC o (MATCH_MP sqrt_pos_lt))
+ >> ONCE_REWRITE_TAC [EQ_SYM_EQ]
+ >> MATCH_MP_TAC lt_imp_ne >> art []
+QED
+
+Theorem pow2_sqrt :
+    !x. 0 <= x ==> (sqrt (x pow 2) = x)
+Proof
+    Cases
+ >> RW_TAC real_ss [extreal_sqrt_def, extreal_pow_def, POW_2_SQRT, extreal_of_num_def,
+                    extreal_le_def]
+QED
+
+Theorem sqrt_0 :
+    sqrt 0 = 0
+Proof
+    rw [extreal_of_num_def, extreal_sqrt_def, SQRT_0]
+QED
+
+Theorem sqrt_1 :
+    sqrt 1 = 1
+Proof
+    rw [extreal_of_num_def, extreal_sqrt_def, SQRT_1]
+QED
+
+Theorem sqrt_pow2 :
+    !x. ((sqrt x) pow 2 = x) <=> 0 <= x
+Proof
+    Cases
+ >> RW_TAC real_ss [extreal_sqrt_def, extreal_pow_def, SQRT_POW2,
+                    extreal_of_num_def, extreal_le_def]
+ >> METIS_TAC [le_pow2, lt_infty, extreal_of_num_def, extreal_not_infty, lte_trans]
+QED
+
+Theorem sqrt_mono_le :
+    !x y. 0 <= x /\ x <= y ==> sqrt x <= sqrt y
+Proof
+    NTAC 2 Cases
+ >> RW_TAC real_ss [SQRT_MONO_LE, extreal_sqrt_def, extreal_pow_def, POW_2_SQRT,
+                    extreal_of_num_def, extreal_le_def, le_infty, extreal_not_infty]
+QED
+
+Theorem pow2_le_eq :
+    !x y. 0 <= x /\ 0 <= y ==> (x <= y <=> x pow 2 <= y pow 2)
+Proof
+    rpt STRIP_TAC
+ >> EQ_TAC >> DISCH_TAC >- (MATCH_MP_TAC pow_le >> art [])
+ >> `0 <= x pow 2` by PROVE_TAC [le_pow2]
+ >> `sqrt (x pow 2) <= sqrt (y pow 2)` by PROVE_TAC [sqrt_mono_le]
+ >> METIS_TAC [GSYM pow2_sqrt]
+QED
+
+Theorem sqrt_le_x :
+    !(x :extreal). 1 <= x ==> sqrt x <= x
+Proof
+    rpt STRIP_TAC
+ >> ‘0 <= x’ by PROVE_TAC [le_01, le_trans]
+ >> Know ‘sqrt x <= x <=> (sqrt x) pow 2 <= x pow 2’
+ >- (MATCH_MP_TAC pow2_le_eq >> rw [sqrt_pos_le])
+ >> Rewr'
+ >> ‘(sqrt x) pow 2 = x’ by rw [sqrt_pow2]
+ >> POP_ORW
+ >> REWRITE_TAC [pow_2]
+ >> GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites [GSYM mul_rone]
+ >> MATCH_MP_TAC le_lmul_imp >> art []
+QED
+
+(* In sqrt_le_x, if ‘x’ is an integer then ‘1 <= x’ can be dropped. *)
+Theorem sqrt_le_n :
+    !n. sqrt (&n :extreal) <= &n
+Proof
+    Q.X_GEN_TAC ‘n’
+ >> Cases_on ‘n’ >- (rw [extreal_of_num_def, extreal_sqrt_def, SQRT_0])
+ >> MATCH_MP_TAC sqrt_le_x
+ >> rw [extreal_of_num_def, extreal_le_eq]
+QED
+
+Theorem sqrt_mul :
+    !x y. 0 <= x /\ 0 <= y ==> sqrt (x * y) = sqrt x * sqrt y
+Proof
+    rpt STRIP_TAC
+ >> Cases_on ‘x = PosInf’
+ >- (‘y = 0 \/ 0 < y’ by PROVE_TAC [le_lt] \\
+     fs [extreal_sqrt_def, mul_infty, sqrt_0] \\
+     ‘0 < sqrt y’ by PROVE_TAC [sqrt_pos_lt] \\
+     METIS_TAC [mul_infty])
+ >> Cases_on ‘y = PosInf’
+ >- (‘x = 0 \/ 0 < x’ by PROVE_TAC [le_lt] \\
+     fs [extreal_sqrt_def, mul_infty, sqrt_0] \\
+     ‘0 < sqrt x’ by PROVE_TAC [sqrt_pos_lt] \\
+     METIS_TAC [mul_infty])
+ >> ‘x <> NegInf /\ y <> NegInf’ by rw [pos_not_neginf]
+ >> ‘?X. 0 <= X /\ x = Normal X’
+       by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_le_eq] >> POP_ORW
+ >> ‘?Y. 0 <= Y /\ y = Normal Y’
+       by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_le_eq] >> POP_ORW
+ >> ‘0 <= X * Y’ by rw [REAL_LE_MUL]
+ >> rw [extreal_mul_def, extreal_sqrt_def, SQRT_MUL]
+QED
+(***************************)
+(*         Various         *)
+(***************************)
+
+Theorem half_between[simp] :
+    (0 < 1 / 2 /\ 1 / 2 < 1) /\ (0 <= 1 / 2 /\ 1 / 2 <= 1)
+Proof
+    MATCH_MP_TAC (PROVE [] ``(x ==> y) /\ x ==> x /\ y``)
+ >> CONJ_TAC >- PROVE_TAC [lt_imp_le]
+ >> RW_TAC real_ss [extreal_div_def, extreal_inv_def, mul_lone, extreal_lt_def,
+                    extreal_le_def, extreal_of_num_def, extreal_not_infty,
+                    GSYM real_lt, REAL_INV_1OVER, extreal_mul_def]
+QED
+
+Theorem half_not_infty[simp] :
+    1 / 2 <> PosInf /\ 1 / 2 <> NegInf
+Proof
+    rw [lt_infty]
+ >- (MATCH_MP_TAC lt_trans \\
+     Q.EXISTS_TAC `1` >> rw [half_between] \\
+     rw [extreal_of_num_def, lt_infty])
+ >> MATCH_MP_TAC lt_trans
+ >> Q.EXISTS_TAC `0` >> rw [half_between]
+ >> rw [extreal_of_num_def, lt_infty]
+QED
+
+Theorem thirds_between[simp] :
+    ((0 < 1 / 3 /\ 1 / 3 < 1) /\ (0 < 2 / 3 /\ 2 / 3 < 1)) /\
+    ((0 <= 1 / 3 /\ 1 / 3 <= 1) /\ (0 <= 2 / 3 /\ 2 / 3 <= 1))
+Proof
+    MATCH_MP_TAC (PROVE [] ``(x ==> y) /\ x ==> x /\ y``)
+ >> CONJ_TAC >- PROVE_TAC [lt_imp_le]
+ >> RW_TAC real_ss [extreal_div_def, extreal_inv_def, mul_lone, extreal_lt_def,
+                    extreal_le_def, extreal_of_num_def, extreal_not_infty,
+                    GSYM real_lt, extreal_mul_def, REAL_INV_1OVER]
+QED
+
+Theorem fourths_between[simp] :
+    ((0 < 1 / 4 /\ 1 / 4 < 1) /\ (0 < 3 / 4 /\ 3 / 4 < 1)) /\
+    ((0 <= 1 / 4 /\ 1 / 4 <= 1) /\ (0 <= 3 / 4 /\ 3 / 4 <= 1))
+Proof
+    MATCH_MP_TAC (PROVE [] ``(x ==> y) /\ x ==> x /\ y``)
+ >> CONJ_TAC >- PROVE_TAC [lt_imp_le]
+ >> RW_TAC real_ss [extreal_div_def, extreal_inv_def, mul_lone, extreal_lt_def,
+                    extreal_le_def, extreal_of_num_def, extreal_not_infty,
+                    GSYM real_lt, extreal_mul_def, REAL_INV_1OVER]
+QED
+
+Theorem half_cancel :
+    2 * (1 / 2) = 1
+Proof
+    RW_TAC real_ss [extreal_of_num_def, extreal_mul_def, extreal_div_eq,
+                    EVAL ``2 <> 0:real``, REAL_MUL_RINV, real_div]
+QED
+
+(* cf. realTheory.REAL_HALF_DOUBLE *)
+Theorem half_double :
+    !x :extreal. x / 2 + x / 2 = x
+Proof
+   ‘0 < (2 :real)’ by rw []
+ >> Q.X_GEN_TAC ‘x’ >> Cases_on ‘x’
+ >> rw [extreal_of_num_def, extreal_div_eq, extreal_add_def]
+ >- rw [infty_div, extreal_add_def]
+ >- rw [infty_div, extreal_add_def]
+ >> REWRITE_TAC [REAL_HALF_DOUBLE]
+QED
+
+(* cf. seqTheory.X_HALF_HALF *)
+Theorem x_half_half :
+    !x :extreal. 1 / 2 * x + 1 / 2 * x = x
+Proof
+    STRIP_ASSUME_TAC half_between
+ >> Q.X_GEN_TAC ‘x’
+ >> GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) empty_rewrites [GSYM mul_lone]
+ >> Know ‘1 * x = (1 / 2 + 1 / 2) * x’
+ >- (rw [extreal_double, half_cancel])
+ >> Rewr'
+ >> MATCH_MP_TAC (GSYM add_rdistrib) >> rw []
+QED
+
+Theorem third_cancel :
+    3 * (1 / 3) = 1
+Proof
+    RW_TAC real_ss [extreal_of_num_def, extreal_mul_def, extreal_div_eq,
+                    EVAL ``3 <> 0:real``, REAL_MUL_RINV, real_div]
+QED
+
+Theorem fourth_cancel :
+    4 * (1 / 4) = 1
+Proof
+    RW_TAC real_ss [extreal_of_num_def, extreal_mul_def, extreal_div_eq,
+                    EVAL ``4 <> 0:real``, REAL_MUL_RINV, real_div]
+QED
+
+(* added antecedent ``m <> 0`` *)
+Theorem quotient_normal :
+    !n m. m <> 0 ==> (&n / &m = Normal (&n / &m))
+Proof
+    RW_TAC std_ss [extreal_div_eq, extreal_of_num_def, REAL_OF_NUM_EQ]
 QED
 
 val _ = export_theory();

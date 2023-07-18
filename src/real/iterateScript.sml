@@ -5027,4 +5027,36 @@ Proof
  >> ASM_REWRITE_TAC []
 QED
 
+(* moved here from extrealTheory *)
+Theorem ABS_LE_HALF_POW2 :
+  !x y :real. abs (x * y) <= 1/2 * (x pow 2 + y pow 2)
+Proof
+    rpt GEN_TAC
+ >> Cases_on `0 <= x * y`
+ >- (ASM_SIMP_TAC real_ss [abs] \\
+     Know `x * y = (1 / 2) * 2 * x * y`
+     >- (Suff `1 / 2 * 2 = 1r`
+         >- (Rewr' >> REWRITE_TAC [GSYM REAL_MUL_ASSOC, REAL_MUL_LID]) \\
+         MATCH_MP_TAC REAL_DIV_RMUL >> SIMP_TAC real_ss []) >> Rewr' \\
+     REWRITE_TAC [GSYM REAL_MUL_ASSOC] \\
+     MATCH_MP_TAC REAL_LE_MUL2 >> SIMP_TAC real_ss [REAL_LE_REFL] \\
+     CONJ_TAC >- (MATCH_MP_TAC REAL_LT_LE_MUL >> ASM_SIMP_TAC real_ss []) \\
+     ONCE_REWRITE_TAC [GSYM REAL_SUB_LE] \\
+     Suff `x pow 2 + y pow 2 - 2 * (x * y) = (x - y) pow 2`
+     >- (Rewr' >> REWRITE_TAC [REAL_LE_POW2]) \\
+     SIMP_TAC real_ss [REAL_SUB_LDISTRIB, REAL_SUB_RDISTRIB, REAL_ADD_LDISTRIB,
+                       REAL_ADD_RDISTRIB, REAL_ADD_ASSOC, POW_2,
+                       GSYM REAL_DOUBLE] \\
+     REAL_ARITH_TAC)
+ >> ASM_SIMP_TAC real_ss [abs]
+ >> fs [GSYM real_lt]
+ >> REWRITE_TAC [Once (GSYM REAL_SUB_LE), REAL_SUB_RNEG, REAL_MUL_RNEG]
+ >> Suff `x pow 2 + y pow 2 - -2 * (x * y) = (x + y) pow 2`
+ >- (Rewr' >> REWRITE_TAC [REAL_LE_POW2])
+ >> SIMP_TAC real_ss [REAL_SUB_LDISTRIB, REAL_SUB_RDISTRIB, REAL_ADD_LDISTRIB,
+                      REAL_ADD_RDISTRIB, REAL_ADD_ASSOC, POW_2,
+                      GSYM REAL_DOUBLE]
+ >> REAL_ARITH_TAC
+QED
+
 val _ = export_theory();
