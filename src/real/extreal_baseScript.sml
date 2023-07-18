@@ -1,5 +1,5 @@
 (* ------------------------------------------------------------------------- *)
-(* Extended Real Numbers - Basic Arithmetics                                 *)
+(* Extended Real Numbers - Basic Theory                                      *)
 (*                                                                           *)
 (* Original Authors: Tarek Mhamdi, Osman Hasan, Sofiene Tahar (2013, 2015)   *)
 (* HVG Group, Concordia University, Montreal                                 *)
@@ -13,7 +13,7 @@ open combinTheory pairTheory tautLib arithmeticTheory hurdUtils numLib;
 
 open realTheory realLib iterateTheory;
 
-val _ = new_theory "extreal_arith";
+val _ = new_theory "extreal_base";
 
 Datatype : (* extreal_TY_DEF *)
     extreal = NegInf | PosInf | Normal real

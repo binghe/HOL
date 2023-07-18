@@ -1,5 +1,5 @@
 (* ------------------------------------------------------------------------- *)
-(* Extended Real Numbers                                                     *)
+(* Extended Real Numbers - Advanced Theory                                   *)
 (*                                                                           *)
 (* Original Authors: Tarek Mhamdi, Osman Hasan, Sofiene Tahar (2013, 2015)   *)
 (* HVG Group, Concordia University, Montreal                                 *)
@@ -16,7 +16,7 @@ open realTheory realLib real_sigmaTheory iterateTheory real_topologyTheory
      seqTheory limTheory transcTheory metricTheory listTheory rich_listTheory
      cardinalTheory;
 
-open extreal_arithTheory;
+open extreal_baseTheory; (* Base theorems are moved here (to be re-exported) *)
 
 val _ = new_theory "extreal";
 
@@ -8330,10 +8330,10 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
-(* Backwards compatibility: export all theorems moved to extreal_arithTheory  *)
+(* Backwards compatibility: export all theorems moved to extreal_baseTheory  *)
 (* ------------------------------------------------------------------------- *)
 
-val _ = map (fn name => save_thm (name, DB.fetch "extreal_arith" name))
+val _ = map (fn name => save_thm (name, DB.fetch "extreal_base" name))
       ["abs_0",
        "abs_abs",
        "abs_bounds", "abs_bounds_lt",
