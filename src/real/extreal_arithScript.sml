@@ -1,5 +1,5 @@
 (* ------------------------------------------------------------------------- *)
-(* Extended Real Numbers - Base Arithmetics                                  *)
+(* Extended Real Numbers - Basic Arithmetics                                 *)
 (*                                                                           *)
 (* Original Authors: Tarek Mhamdi, Osman Hasan, Sofiene Tahar (2013, 2015)   *)
 (* HVG Group, Concordia University, Montreal                                 *)

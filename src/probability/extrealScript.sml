@@ -10,7 +10,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open metisLib combinTheory pred_setTheory res_quanTools pairTheory jrhUtils
-     prim_recTheory arithmeticTheory tautLib pred_setLib hurdUtils;
+     prim_recTheory arithmeticTheory numLib tautLib pred_setLib hurdUtils;
 
 open realTheory realLib real_sigmaTheory iterateTheory real_topologyTheory
      seqTheory limTheory transcTheory metricTheory listTheory rich_listTheory
