@@ -45,7 +45,7 @@ hol4-real.art: hol4-real.thy hol4-real-unsat.art prove_real_assums.ot.art ../ope
 install: hol4-real.thy hol4-real.art
 	opentheory install --reinstall $<
 
-extreal_arith.art: extreal_arith.otd
+extreal_base.art: extreal_base.otd
 
 all: hol4-real.art
 endif
