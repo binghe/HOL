@@ -1,0 +1,17 @@
+INCLUDES = $(HOLDIR)/src/n-bit $(HOLDIR)/src/real $(HOLDIR)/src/integer \
+	$(HOLDIR)/src/floating-point $(HOLDIR)/src/res_quan/src
+
+ifdef POLY
+HOLHEAP = heap
+OBJS = real/realLib n-bit/fcpLib n-bit/wordsLib integer/intLib res_quan/src/hurdUtils
+FULL_OBJPATHS = $(patsubst %,$(HOLDIR)/src/%.uo,$(OBJS))
+
+all: $(HOLHEAP)
+
+$(HOLHEAP): $(FULL_OBJPATHS) $(HOLDIR)/bin/hol.state
+	$(protect $(HOLDIR)/bin/buildheap) -o $@ $(FULL_OBJPATHS)
+endif
+
+all: $(DEFAULT_TARGETS)
+
+.PHONY: all
