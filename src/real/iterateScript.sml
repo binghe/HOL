@@ -5094,4 +5094,4 @@ Proof
  >> METIS_TAC [REAL_NEG_GT0, REAL_LT_TOTAL, REAL_LE_REFL, REAL_HALF_BETWEEN, REAL_LE_RMUL]
 QED
 
- val _ = export_theory();
+val _ = export_theory();
