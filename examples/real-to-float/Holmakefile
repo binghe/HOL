@@ -3,7 +3,9 @@ INCLUDES = $(HOLDIR)/src/n-bit $(HOLDIR)/src/real $(HOLDIR)/src/integer \
 
 ifdef POLY
 HOLHEAP = heap
-OBJS = real/realLib n-bit/fcpLib n-bit/wordsLib integer/intLib res_quan/src/hurdUtils
+OBJS = real/realLib n-bit/fcpLib n-bit/wordsLib integer/intLib res_quan/src/hurdUtils \
+	real/intrealTheory floating-point/machine_ieeeTheory
+
 FULL_OBJPATHS = $(patsubst %,$(HOLDIR)/src/%.uo,$(OBJS))
 
 all: $(HOLHEAP)
