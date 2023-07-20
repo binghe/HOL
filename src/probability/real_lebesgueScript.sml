@@ -12,11 +12,6 @@ open realTheory realLib realSimps seqTheory real_sigmaTheory transcTheory
 
 open util_probTheory sigma_algebraTheory real_measureTheory real_borelTheory;
 
-(*
-val _ = ratLib.deprecate_rat();
-val _ = intLib.deprecate_int();
- *)
-
 (* ------------------------------------------------------------------------- *)
 (* Start a new theory called "lebesgue"                                      *)
 (* ------------------------------------------------------------------------- *)

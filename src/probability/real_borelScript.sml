@@ -28,11 +28,6 @@ open cardinalTheory real_topologyTheory iterateTheory;
 
 open hurdUtils util_probTheory sigma_algebraTheory;
 
-(*
-val _ = ratLib.deprecate_rat();
-val _ = intLib.deprecate_int();
- *)
-
 (* ------------------------------------------------------------------------- *)
 (* Start a new theory called "borel" (renamed to "real_borel")               *)
 (* ------------------------------------------------------------------------- *)

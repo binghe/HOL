@@ -22,17 +22,6 @@ val _ = prefer_num ();
 
 val _ = new_theory "test";
 
-(* ‘frac x’ to mean x mod 1 or ‘x - flr x’, the fractional part of x [1]
-
-   NOTE: For the negative numbers, here it is defined in the same way as for
-   positive numbers [2] (thus ‘frac 3.6 = 0.6’ but ‘frac ~3.6 = 0.4’.)
-
-   TODO: move this definition and supporting theorems to intrealTheory.
- *)
-Definition frac_def :
-    frac x = x - real_of_int (INT_FLOOR x)
-End
-
 (*---------------------------------------------------------------------------*
  * Write the theory to disk.                                                 *
  *---------------------------------------------------------------------------*)

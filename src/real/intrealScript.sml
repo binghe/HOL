@@ -525,4 +525,25 @@ Proof
   simp[INT_FLOOR_BOUNDS]
 QED
 
+(*---------------------------------------------------------------------------*
+ *  Fractional part                                                          *
+ *---------------------------------------------------------------------------*)
+
+ (* ‘frac x’ to mean x mod 1 or ‘x - flr x’, the fractional part of x [1]
+
+   NOTE: For the negative numbers, here it is defined in the same way as for
+   positive numbers [2] (thus ‘frac 3.6 = 0.6’ but ‘frac ~3.6 = 0.4’.)
+ *)
+Definition frac_def :
+    frac x = x - real_of_int (INT_FLOOR x)
+End
+
 val _ = export_theory ()
+
+(* References:
+
+   [1] Graham, R.L., Knuth, D.E., Patashnik, O.: Concrete Mathematics. 2nd Eds.
+       Addison-Wesley Publishing Company (1994).
+   [2] https://en.wikipedia.org/wiki/Floor_and_ceiling_functions
+   [3] https://en.wikipedia.org/wiki/Fractional_part
+ *)
