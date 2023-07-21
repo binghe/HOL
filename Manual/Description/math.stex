@@ -7,67 +7,30 @@
 
 HOL provides the theory of ordinals and cardinals in
 \theoryimp{wellorderTheory}, \theoryimp{cardinalTheory},
-and \theoryimp{ordinalTheory}, etc.
+and \theoryimp{ordinalTheory}, etc.~\cite{Norrish:2013}.}
 %
-The ordinal numbers are an important foundational type in axiomatic
-set theory.\footnote{The contents in this section is based
-  on~\cite{Norrish:2013}.}  Unfortunately, the typed logic implemented
+Unfortunately, the typed logic implemented
 in the various HOL systems (including Isabelle/HOL) is not strong
 enough to define a type for all possible ordinal values.  It turns
 out, however, that for any fixed $n \in\mathbb{N}$, we can model all
 ordinals of cardinality $\aleph_n$. The user is thus able to choose an
 ordinal domain of sufficient size for their purposes.
 
-The approach here is to model ordinals as quotients of wellorder swith
-respect to wellorder isomorphism. Within HOL, every wellorder has some
-underlying domain (represented as a polymorphic type argument).  The
-resulting ordinals are also parameterised by a type argument,
-indirectly encoding the limit of the type. For example, the type \ty{:num ordinal}
-captures only the countable ordinals.
+\subsection{Ordinals in HOL}
+\label{ss:ordinals}
 
-We define what it is for a relation R to be a wellorder:
+The ordinals are an extension of the natural numbers\footnote{Some contents here
+were taken from~\cite{ACL2approach} (Section~6.3: The Ordinals)}.
+
 \begin{hol}
 \begin{alltt}
 >>__ load "ordinalTheory";
-##thm wellorderTheory.wellorder_def 
+##thm ordinalTheory.ordSUC_def
 \end{alltt}
 \end{hol}
-
-Two wellorders are isomorphic, denoted by \holtxt{orderiso w1 w2}, if
-there is a bijective function between their respective fields that
-preserves the ordering. The definition of the ordering relation on
-wellorders depends on the \holtxt{wobound} function, which truncates a
-wellorder so that it includes only those elements below a particular
-point. With it, the ordering relation for wellorders, \holtxt{orderlt w1 w2}
-can then be defined as
-\begin{hol}
-\begin{alltt}
-##thm wellorderTheory.orderlt_def
-\end{alltt}
-\end{hol}
-The transitivity, well-foundedness and trichotomy are given in the following theorems:
-\begin{hol}
-\begin{alltt}
-##thm wellorderTheory.orderlt_TRANS
-##thm wellorderTheory.orderlt_WF
-##thm wellorderTheory.orderlt_trichotomy
-\end{alltt}
-\end{hol}
-
-\subsection{Constructing the Ordinals}
-
-With \holtxt{orderiso} an equivalence relation, we can quotient all possible wellorders over the type
-\ty{:'a}, giving us a natural type of ordinals over $\alpha$.
-However, if \ty{:'a} is a finite type, then there are
-only finitely many ordinals over this type. Clearly, all the interesting ordinals are those
-over infinite types, and so our approach is to make the new type \ty{:'a ordinal} a quotient
-over the wellorders over the sum type \ty{:'a + num}. Henceforth, this type is abbreviated as
-\ty{:'a inf}.
-
-
 
 \subsection{Cardinals in HOL}
-\label{sec:cardinals}
+\label{ss:cardinals}
 
 In mathematics, a \emph{cardinal number}, or \emph{cardinal} for
 short, is what is commonly called the number of elements of a set. In
@@ -85,6 +48,7 @@ is possible to compare the cardinalities of any two infinite sets.
 Cardinality is defined in terms of bijective functions:
 \begin{hol}
 \begin{alltt}
+>>__ load "cardinalTheory";
 ##thm cardinalTheory.cardleq_def
 \end{alltt}
 \end{hol}
