@@ -25,7 +25,8 @@ hol4-string-unint.art: hol4-string-unint.thy $(ARTFILES)
 hol4-string.art: hol4-string.thy hol4-string-unint.art ../opentheory/hol4.int
 	opentheory info --article -o $@ $<
 
-install: hol4-string.thy hol4-string.art
+OTDIRS = boss sort
+install: hol4-string.thy hol4-string.art $(patsubst %,../%/install,$(OTDIRS))
 	opentheory install --reinstall $<
 
 string.art: string.otd

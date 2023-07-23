@@ -23,7 +23,8 @@ hol4-integer-unint.art: hol4-integer-unint.thy $(ARTFILES)
 hol4-integer.art: hol4-integer.thy hol4-integer-unint.art ../opentheory/hol4.int
 	opentheory info --article -o $@ $<
 
-install: hol4-integer.thy hol4-integer.art
+OTDIRS = boss quotient/src string n-bit ring/src
+install: hol4-integer.thy hol4-integer.art $(patsubst %,../%/install,$(OTDIRS))
 	opentheory install --reinstall $<
 endif
 

@@ -14,7 +14,8 @@ hol4-coalgebras-unint.art: hol4-coalgebras-unint.thy $(patsubst %,%.ot.art,$(BAR
 hol4-coalgebras.art: hol4-coalgebras.thy hol4-coalgebras-unint.art ../opentheory/hol4.int
 	opentheory info --article -o $@ $<
 
-install: hol4-coalgebras.thy hol4-coalgebras.art
+OTDIRS = boss pred_set/src/more_theories finite_maps
+install: hol4-coalgebras.thy hol4-coalgebras.art $(patsubst %,../%/install,$(OTDIRS))
 	opentheory install --reinstall $<
 
 ltree.art: ltree.otd

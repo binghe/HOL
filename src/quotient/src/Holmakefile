@@ -13,7 +13,8 @@ hol4-quotient-unint.art: hol4-quotient-unint.thy $(ARTFILES)
 hol4-quotient.art: hol4-quotient.thy hol4-quotient-unint.art ../../opentheory/hol4.int
 	opentheory info --article -o $@ $<
 
-install: hol4-quotient.thy hol4-quotient.art
+OTDIRS = boss res_quan/src
+install: hol4-quotient.thy hol4-quotient.art $(patsubst %,../../%/install,$(OTDIRS))
 	opentheory install --reinstall $<
 
 endif

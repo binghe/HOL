@@ -33,7 +33,8 @@ hol4-finite-maps-unint.art: hol4-finite-maps-unint.thy $(ARTFILES)
 hol4-finite-maps.art: hol4-finite-maps.thy hol4-finite-maps-unint.art ../opentheory/hol4.int
 	opentheory info --article -o $@ $<
 
-install: hol4-finite-maps.thy hol4-finite-maps.art
+OTDIRS = boss sort n-bit bag
+install: hol4-finite-maps.thy hol4-finite-maps.art $(patsubst %,../%/install,$(OTDIRS))
 	opentheory install --reinstall $<
 
 endif

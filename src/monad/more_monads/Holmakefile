@@ -23,7 +23,8 @@ hol4-monad-unint.art: hol4-monad-unint.thy $(ARTFILES)
 hol4-monad.art: hol4-monad.thy hol4-monad-unint.art ../../opentheory/hol4.int
 	opentheory info --article -o $@ $<
 
-install: hol4-monad.thy hol4-monad.art
+OTDIRS = boss
+install: hol4-monad.thy hol4-monad.art $(patsubst %,../../%/install,$(OTDIRS))
 	opentheory install --reinstall $<
 endif
 

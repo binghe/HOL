@@ -23,6 +23,17 @@ ifdef POLY
 INCLUDES += ../../floating-point/native
 endif
 
+# Install OpenTheory packages
+ifeq ($(KERNELID),otknl)
+
+OTDIRS = boss res_quan/src quotient/src sort string n-bit ring/src integer \
+         pred_set/src/more_theories real real/analysis probability bag \
+         finite_maps coalgebras floating-point monad/more_monads
+
+install: $(patsubst %,../../%/install,$(OTDIRS))
+
+endif # otknl
+
 ifdef HOLSELFTESTLEVEL
 # example directories to build at selftest level 1
 EXDIRS = arm/arm6-verification arm/armv8-memory-model arm/experimental \

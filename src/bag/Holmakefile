@@ -33,7 +33,8 @@ hol4-bag-unint.art: hol4-bag-unint.thy $(ARTFILES)
 hol4-bag.art: hol4-bag.thy hol4-bag-unint.art ../opentheory/hol4.int
 	opentheory info --article -o $@ $<
 
-install: hol4-bag.thy hol4-bag.art
+OTDIRS = boss
+install: hol4-bag.thy hol4-bag.art $(patsubst %,../%/install,$(OTDIRS))
 	opentheory install --reinstall $<
 
 endif

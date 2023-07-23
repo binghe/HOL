@@ -42,7 +42,8 @@ prove_real_assums.art: hol4-real-assums.art base-theorems.art
 hol4-real.art: hol4-real.thy hol4-real-unsat.art prove_real_assums.ot.art ../opentheory/hol4.int
 	opentheory info --article -o $@ $<
 
-install: hol4-real.thy hol4-real.art
+OTDIRS = boss integer pred_set/src/more_theories
+install: hol4-real.thy hol4-real.art $(patsubst %,../%/install,$(OTDIRS))
 	opentheory install --reinstall $<
 
 all: hol4-real.art

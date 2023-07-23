@@ -38,8 +38,8 @@ hol4-analysis-unint.art: hol4-analysis-unint.thy $(ARTFILES)
 hol4-analysis.art: hol4-analysis.thy hol4-analysis-unint.art $(HOLDIR)/src/opentheory/hol4.int
 	opentheory info --article -o $@ $<
 
-
-install: hol4-analysis.thy hol4-analysis.art
+OTDIRS = boss pred_set/src/more_theories real
+install: hol4-analysis.thy hol4-analysis.art $(patsubst %,../../%/install,$(OTDIRS))
 	opentheory install --reinstall $<
 
 real_topology.art: real_topology.otd
