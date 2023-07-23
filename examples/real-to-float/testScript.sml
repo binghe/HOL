@@ -1,26 +1,31 @@
 (*---------------------------------------------------------------------------*
  * testScript.sml:                                                           *
- *                                                                           *
- * A template theory script suitable for Holmake. If you are going to use it *
- * for theory "x", you must change the name of this file to "xScript.sml",   *
- * and the argument to "new_theory" below must be changed to be "x".         *
  *---------------------------------------------------------------------------*)
 
 open HolKernel Parse boolLib bossLib;
 
-open numLib fcpTheory fcpLib wordsLib realLib intLib hurdUtils;
+open intLib realLib fcpLib wordsLib hurdUtils;
 
-open arithmeticTheory realTheory intrealTheory wordsTheory binary_ieeeTheory
-     machine_ieeeTheory;
-
-(* set the default number type to :num *)
-val _ = prefer_num ();
+open whileTheory optionTheory arithmeticTheory realTheory listTheory fcpTheory
+     intrealTheory wordsTheory binary_ieeeTheory machine_ieeeTheory
+     stringTheory;
 
 (*---------------------------------------------------------------------------*
  * Create the theory.                                                        *
  *---------------------------------------------------------------------------*)
 
 val _ = new_theory "test";
+
+val _ = numLib.prefer_num();
+
+val _ = monadsyntax.enable_monadsyntax(); (* enable do/od syntax *)
+val _ = List.app monadsyntax.enable_monad ["list", "option"];
+
+val test_monad = “do
+     list <- some_monad;
+     assert(list <> []);
+     return (HD list + 1)
+od”;
 
 (*---------------------------------------------------------------------------*
  * Write the theory to disk.                                                 *
