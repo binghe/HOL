@@ -3935,7 +3935,7 @@ Proof
  >> `!n. FINITE (g n)`   by PROVE_TAC []
  >> `!n. disjoint (g n)` by PROVE_TAC []
  >> Q.PAT_X_ASSUM `!x. (f x = BIGUNION (g x)) /\ P` K_TAC
- (* applying countable_disjoint_decomposition *)
+ (* applying finite_disjoint_decomposition' *)
  >> Know `!x. ?h n. (!i. i < n ==> h i IN (g x)) /\ (!i. n <= i ==> (h i = {})) /\
                     (g x = IMAGE h (count n)) /\
                     (BIGUNION (g x) = BIGUNION (IMAGE h univ(:num))) /\
@@ -3943,7 +3943,7 @@ Proof
                     (!i j. i < n /\ j < n /\ i <> j ==> DISJOINT (h i) (h j))`
  >- (Q.X_GEN_TAC `n` \\
      Know `FINITE (g n) /\ disjoint (g n)` >- PROVE_TAC [] \\
-     DISCH_THEN (STRIP_ASSUME_TAC o (MATCH_MP countable_disjoint_decomposition)) \\
+     DISCH_THEN (STRIP_ASSUME_TAC o (MATCH_MP finite_disjoint_decomposition')) \\
      Q.EXISTS_TAC `f'` >> Q.EXISTS_TAC `n'` >> art [])
  >> SIMP_TAC std_ss [SKOLEM_THM] >> STRIP_TAC (* skolemization here *)
  >> `!n i. i < f'' n ==> f' n i IN g n` by PROVE_TAC []

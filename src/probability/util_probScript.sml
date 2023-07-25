@@ -54,12 +54,12 @@ QED
 
 (********************************************************************************************)
 
-val finite_enumeration_of_sets_has_max_non_empty = store_thm
-  ("finite_enumeration_of_sets_has_max_non_empty",
-   ``!f s. FINITE s /\ (!x. f x IN s) /\
+Theorem finite_enumeration_of_sets_has_max_non_empty :
+    !f s. FINITE s /\ (!x. f x IN s) /\
             (!m n. ~(m = n) ==> DISJOINT (f m) (f n)) ==>
-            ?N. !n:num. n >= N ==> (f n = {})``,
-        `!s. FINITE s ==>
+            ?N. !n:num. n >= N ==> (f n = {})
+Proof
+   `!s. FINITE s ==>
         (\s. !f. (!x. f x IN {} INSERT s) /\
                  (~({} IN s)) /\
                  (!m n. ~(m = n) ==> DISJOINT (f m) (f n)) ==>
@@ -119,7 +119,8 @@ val finite_enumeration_of_sets_has_max_non_empty = store_thm
    >> Cases_on `{} IN s`
    >- (Q.PAT_X_ASSUM `!s. FINITE s ==> P` (MP_TAC o Q.SPEC `s DELETE {}`)
        >> RW_TAC std_ss [FINITE_DELETE, IN_INSERT, IN_DELETE])
-   >> METIS_TAC [IN_INSERT]);
+   >> METIS_TAC [IN_INSERT]
+QED
 
 val PREIMAGE_REAL_COMPL1 = store_thm
   ("PREIMAGE_REAL_COMPL1", ``!c:real. COMPL {x | c < x} = {x | x <= c}``,
@@ -215,8 +216,13 @@ Proof
     PROVE_TAC [SUBSET_DIFF]
 QED
 
-val disjoint_def = Define
-   `disjoint A = !a b. a IN A /\ b IN A /\ (a <> b) ==> DISJOINT a b`;
+(* ------------------------------------------------------------------------- *)
+(* Disjoint system of sets                                                   *)
+(* ------------------------------------------------------------------------- *)
+
+Definition disjoint_def :
+    disjoint A = !a b. a IN A /\ b IN A /\ (a <> b) ==> DISJOINT a b
+End
 
 (* |- !A. disjoint A <=> !a b. a IN A /\ b IN A /\ a <> b ==> (a INTER b = {} ) *)
 val disjoint = save_thm
@@ -612,11 +618,11 @@ val finite_decomposition_simple = store_thm (* new *)
  >> PROVE_TAC [BIJ_IMAGE]);
 
 (* any finite set can be decomposed into a finite (non-repeated) sequence of sets *)
-val finite_decomposition = store_thm (* new *)
-  ("finite_decomposition",
-  ``!c. FINITE c ==>
+Theorem finite_decomposition :
+    !c. FINITE c ==>
         ?f n. (!x. x < n ==> f x IN c) /\ (c = IMAGE f (count n)) /\
-              (!i j. i < n /\ j < n /\ i <> j ==> f i <> f j)``,
+              (!i j. i < n /\ j < n /\ i <> j ==> f i <> f j)
+Proof
     GEN_TAC
  >> REWRITE_TAC [FINITE_BIJ_COUNT_EQ]
  >> rpt STRIP_TAC
@@ -627,16 +633,17 @@ val finite_decomposition = store_thm (* new *)
  >> CONJ_TAC >- PROVE_TAC [BIJ_IMAGE]
  >> rpt STRIP_TAC
  >> fs [BIJ_ALT, IN_FUNSET, IN_COUNT]
- >> METIS_TAC []);
+ >> METIS_TAC []
+QED
 
 (* any finite disjoint set can be decomposed into a finite pair-wise
    disjoint sequence of sets *)
-val finite_disjoint_decomposition = store_thm (* new *)
-  ("finite_disjoint_decomposition",
-  ``!c. FINITE c /\ disjoint c ==>
+Theorem finite_disjoint_decomposition :
+    !c. FINITE c /\ disjoint c ==>
         ?f n. (!i. i < n ==> f i IN c) /\ (c = IMAGE f (count n)) /\
               (!i j. i < n /\ j < n /\ i <> j ==> f i <> f j) /\
-              (!i j. i < n /\ j < n /\ i <> j ==> DISJOINT (f i) (f j))``,
+              (!i j. i < n /\ j < n /\ i <> j ==> DISJOINT (f i) (f j))
+Proof
     GEN_TAC
  >> REWRITE_TAC [FINITE_BIJ_COUNT_EQ]
  >> rpt STRIP_TAC
@@ -653,16 +660,18 @@ val finite_disjoint_decomposition = store_thm (* new *)
  >> rpt STRIP_TAC
  >> fs [disjoint_def]
  >> FIRST_X_ASSUM MATCH_MP_TAC
- >> METIS_TAC []);
+ >> METIS_TAC []
+QED
 
-val countable_disjoint_decomposition = store_thm (* new *)
-  ("countable_disjoint_decomposition",
-  ``!c. FINITE c /\ disjoint c ==>
+(* cf. cardinalTheory. disjoint_countable_decomposition *)
+Theorem finite_disjoint_decomposition' :
+    !c. FINITE c /\ disjoint c ==>
         ?f n. (!i. i < n ==> f i IN c) /\ (!i. n <= i ==> (f i = {})) /\
               (c = IMAGE f (count n)) /\
               (BIGUNION c = BIGUNION (IMAGE f univ(:num))) /\
               (!i j. i < n /\ j < n /\ i <> j ==> f i <> f j) /\
-              (!i j. i < n /\ j < n /\ i <> j ==> DISJOINT (f i) (f j))``,
+              (!i j. i < n /\ j < n /\ i <> j ==> DISJOINT (f i) (f j))
+Proof
     rpt STRIP_TAC
  >> STRIP_ASSUME_TAC
         (MATCH_MP finite_disjoint_decomposition
@@ -681,7 +690,8 @@ val countable_disjoint_decomposition = store_thm (* new *)
  >> GEN_TAC >> EQ_TAC >> rpt STRIP_TAC
  >| [ Q.EXISTS_TAC `x'` >> METIS_TAC [],
       Cases_on `i < n` >- (Q.EXISTS_TAC `i` >> METIS_TAC []) \\
-      fs [NOT_IN_EMPTY] ]);
+      fs [NOT_IN_EMPTY] ]
+QED
 
 (* any union of two sets can be decomposed into 3 disjoint unions *)
 val UNION_TO_3_DISJOINT_UNIONS = store_thm (* new *)
