@@ -258,13 +258,11 @@ val POLY_DIFF = store_thm("POLY_DIFF",
 (* Trivial consequences.                                                     *)
 (* ------------------------------------------------------------------------- *)
 
-Theorem POLY_DIFFERENTIABLE :
-    !l x. (\x. poly l x) differentiable x
-Proof
+val POLY_DIFFERENTIABLE = store_thm("POLY_DIFFERENTIABLE",
+ (Term`!l x. (\x. poly l x) differentiable x`),
   REPEAT GEN_TAC THEN REWRITE_TAC[differentiable] THEN
   EXISTS_TAC (Term`poly (diff l) x`) THEN
-  REWRITE_TAC[POLY_DIFF]
-QED
+  REWRITE_TAC[POLY_DIFF]);
 
 val POLY_CONT = store_thm("POLY_CONT",
  (Term`!l x. (\x. poly l x) contl x`),
