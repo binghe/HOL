@@ -8,7 +8,7 @@ open intLib realLib fcpLib wordsLib hurdUtils;
 
 open whileTheory optionTheory arithmeticTheory realTheory listTheory fcpTheory
      intrealTheory wordsTheory binary_ieeeTheory machine_ieeeTheory
-     stringTheory;
+     stringTheory ASCIInumbersTheory;
 
 (*---------------------------------------------------------------------------*
  * Create the theory.                                                        *
@@ -23,7 +23,7 @@ val _ = List.app monadsyntax.enable_monad ["list", "option"];
 
 val test_monad = “do
      list <- some_monad;
-     assert(list <> []);
+     assert (list <> []);
      return (HD list + 1)
 od”;
 
