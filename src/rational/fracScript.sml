@@ -8,9 +8,17 @@
 
 open HolKernel boolLib Parse bossLib;
 
-open pairTheory jbUtils schneiderUtils
-     arithmeticTheory integerTheory intLib integerRingLib intSyntax
-     intExtensionTheory intExtensionLib fracUtils;
+(* interactive mode
+app load [
+        "pairTheory", "jbUtils", "schneiderUtils",
+        "arithmeticTheory", "integerTheory", "intLib", "integerRingLib", "intSyntax",
+        "intExtensionTheory", "intExtensionLib", "fracUtils"];
+*)
+
+open
+        pairTheory jbUtils schneiderUtils
+        arithmeticTheory integerTheory intLib integerRingLib intSyntax
+        intExtensionTheory intExtensionLib fracUtils;
 
 val _ = new_theory "frac";
 val _ = ParseExtras.temp_loose_equality()
@@ -53,22 +61,12 @@ val frac_0_def = Define `frac_0 = abs_frac(0i,1i)`;
 val frac_1_def = Define `frac_1 = abs_frac(1i,1i)`;
 
 (* less (absolute value) *)
-Definition les_abs_def :
-   les_abs f1 f2 = frac_nmr f1 * frac_dnm f2 < frac_nmr f2 * frac_dnm f1
-End
+val les_abs_def = Define`les_abs f1 f2 = frac_nmr f1 * frac_dnm f2 < frac_nmr f2 * frac_dnm f1`;
 
 (* basic arithmetics *)
-Definition frac_add_def :
-   frac_add f1 f2 = abs_frac(frac_nmr f1 * frac_dnm f2 + frac_nmr f2 * frac_dnm f1,
-                             frac_dnm f1 * frac_dnm f2)
-End
-
+val frac_add_def = Define `frac_add f1 f2 = abs_frac(frac_nmr f1 * frac_dnm f2 + frac_nmr f2 * frac_dnm f1, frac_dnm f1*frac_dnm f2)`;
 val frac_sub_def = Define `frac_sub f1 f2 = frac_add f1 (frac_ainv f2)`;
-
-Definition frac_mul_def :
-   frac_mul f1 f2 = abs_frac(frac_nmr f1 * frac_nmr f2, frac_dnm f1 * frac_dnm f2)
-End
-
+val frac_mul_def = Define `frac_mul f1 f2 = abs_frac(frac_nmr f1 * frac_nmr f2, frac_dnm f1*frac_dnm f2)`;
 val frac_div_def = Define `frac_div f1 f2 = frac_mul f1 (frac_minv f2)`;
 
 (*  frac_save terms are always defined (encode the definition of a fraction in the syntax) *)
@@ -111,14 +109,16 @@ val FRAC_EQ = store_thm("FRAC_EQ",
  *  |- !f1 f2. (f1=f2) = (frac_nmr f1 = frac_nmr f2) /\ (frac_dnm f1 = frac_dnm f2)
  *--------------------------------------------------------------------------*)
 
-Theorem FRAC_EQ_ALT :
-    !f1 f2. (f1=f2) <=> (frac_nmr f1 = frac_nmr f2) /\ (frac_dnm f1 = frac_dnm f2)
-Proof
-    rpt GEN_TAC
- >> EQ_TAC >> RW_TAC std_ss []
- >> ONCE_REWRITE_TAC [GSYM FRAC]
- >> ASM_REWRITE_TAC []
-QED
+val FRAC_EQ_ALT = store_thm("FRAC_EQ_ALT", ``!f1 f2. (f1=f2) = (frac_nmr f1 = frac_nmr f2) /\ (frac_dnm f1 = frac_dnm f2)``,
+        REPEAT GEN_TAC THEN
+        EQ_TAC THEN
+        STRIP_TAC THENL
+        [
+                ALL_TAC
+        ,
+                ONCE_REWRITE_TAC[GSYM FRAC]
+        ] THEN
+        ASM_REWRITE_TAC[] );
 
 (*--------------------------------------------------------------------------
  *  FRAC_NOT_EQ : thm
@@ -126,14 +126,10 @@ QED
  *      (~(abs_frac(a1,b1) = abs_frac(a2,b2)) = ~(a1=a2) \/ ~(b1=b2))
  *--------------------------------------------------------------------------*)
 
-Theorem FRAC_NOT_EQ :
-    !a1 b1 a2 b2. 0i<b1 ==> 0i<b2 ==>
-                 (~(abs_frac(a1,b1) = abs_frac(a2,b2)) <=> ~(a1=a2) \/ ~(b1=b2))
-Proof
+val FRAC_NOT_EQ = store_thm("FRAC_NOT_EQ", ``!a1 b1 a2 b2. 0i<b1 ==> 0i<b2 ==> (~(abs_frac(a1,b1) = abs_frac(a2,b2)) = ~(a1=a2) \/ ~(b1=b2))``,
         REPEAT STRIP_TAC THEN
         RW_TAC int_ss [] THEN
-        PROVE_TAC[FRAC_EQ]
-QED
+        PROVE_TAC[FRAC_EQ] );
 
 (*--------------------------------------------------------------------------
  *  FRAC_NOT_EQ_IMP : thm
@@ -456,10 +452,7 @@ val FRAC_MULT_CALCULATE = store_thm("FRAC_MULT_CALCULATE", ``!a1 b1 a2 b2. 0<b1 
  *      frac_div (abs_frac(a1,b1)) (abs_frac(a2,b2)) = abs_frac( a1*SGN(a2)*b2 , b1*ABS(a2) )
  *--------------------------------------------------------------------------*)
 
-Theorem FRAC_DIV_CALCULATE :
-     !a1 b1 a2 b2. 0i<b1 ==> 0i<b2 ==> ~(a2=0i) ==>
-       (frac_div (abs_frac(a1,b1)) (abs_frac(a2,b2)) = abs_frac( a1*SGN(a2)*b2 , b1*ABS(a2) ) )
-Proof
+val FRAC_DIV_CALCULATE = store_thm("FRAC_DIV_CALCULATE", ``!a1 b1 a2 b2. 0i<b1 ==> 0i<b2 ==> ~(a2=0i) ==> (frac_div (abs_frac(a1,b1)) (abs_frac(a2,b2)) = abs_frac( a1*SGN(a2)*b2 , b1*ABS(a2) ) )``,
         REPEAT STRIP_TAC THEN
         REWRITE_TAC[frac_div_def,frac_mul_def,frac_minv_def, frac_sgn_def] THEN
         SUBST_TAC[
@@ -467,8 +460,7 @@ Proof
                 FRAC_NMR_CONV ``frac_nmr (abs_frac (a2,b2))``,FRAC_DNM_CONV ``frac_dnm (abs_frac (a2,b2))``] THEN
         ASSUME_TAC (UNDISCH_ALL (SPEC ``a2:int`` INT_ABS_NOT0POS)) THEN
         SUBST_TAC[FRAC_NMR_CONV ``frac_nmr (abs_frac (SGN a2 * b2,ABS a2))``,FRAC_DNM_CONV ``frac_dnm (abs_frac (SGN a2 * b2,ABS a2))``] THEN
-        RW_TAC (int_ss ++ (simpLib.ac_ss [(INT_MUL_ASSOC, INT_MUL_COMM)])) []
-QED
+        RW_TAC (int_ss ++ (simpLib.ac_ss [(INT_MUL_ASSOC, INT_MUL_COMM)])) [] );
 
 (*==========================================================================
  *  basic theorems (associativity, commutativity, identity elements, ...)
