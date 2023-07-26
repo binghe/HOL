@@ -18,13 +18,13 @@
 
 open HolKernel Parse boolLib bossLib;
 
-open numTheory numLib unwindLib tautLib Arith prim_recTheory
-     combinTheory quotientTheory arithmeticTheory realTheory real_sigmaTheory
+open numTheory numLib unwindLib tautLib prim_recTheory
+     combinTheory quotientTheory arithmeticTheory realTheory
      jrhUtils pairTheory boolTheory pred_setTheory optionTheory
-     sumTheory InductiveDefinition ind_typeTheory listTheory mesonLib
+     sumTheory InductiveDefinition listTheory mesonLib
      realLib topologyTheory metricTheory netsTheory;
 
-open wellorderTheory cardinalTheory iterateTheory hurdUtils;
+open wellorderTheory cardinalTheory permutesTheory iterateTheory hurdUtils;
 
 val _ = new_theory "real_topology";
 
@@ -49,27 +49,14 @@ val SUM_ABS_LE         = SUM_ABS_LE';        (* iterateTheory *)
 val SUM_EQ             = SUM_EQ';            (* iterateTheory *)
 val SUM_LE             = SUM_LE';            (* iterateTheory *)
 
+Overload "*_c"[local,inferior] = “pred_set$CROSS”;
+val _ = temp_set_fixity "*_c" (Infixl 600)
+
 (* experimental overloads *)
 Overload uncountable           = “\s. ~countable s”
 Overload UNCOUNTABLE[inferior] = “uncountable”
 
 (* ------------------------------------------------------------------------- *)
-(* Permutes                                                                  *)
-(* ------------------------------------------------------------------------- *)
-
-val _ = set_fixity "permutes" (Infix(NONASSOC, 450));
-
-(* This is different with pred_setTheory.PERMUTES *)
-val permutes = new_definition ("permutes",
- ``p permutes s <=> (!x. ~(x IN s) ==> (p(x) = x)) /\ (!y. ?!x. (p x = y))``);
-
-val PERMUTES_IMAGE = store_thm ("PERMUTES_IMAGE",
- ``!p s. p permutes s ==> (IMAGE p s = s)``,
-  REWRITE_TAC[permutes, EXTENSION, IN_IMAGE] THEN MESON_TAC[]);
-
-val PERMUTES_INJECTIVE = store_thm ("PERMUTES_INJECTIVE",
- ``!p s. p permutes s ==> !x y. (p(x) = p(y)) <=> (x = y)``,
-  REWRITE_TAC[permutes] THEN MESON_TAC[]);
 
 val EXISTS_IN_INSERT = store_thm ("EXISTS_IN_INSERT",
  ``!P a s. (?x. x IN (a INSERT s) /\ P x) <=> P a \/ ?x. x IN s /\ P x``,
@@ -239,6 +226,49 @@ val linear = new_definition ("linear",
   ``linear (f:real->real) <=>
         (!x y. f(x + y) = f(x) + f(y)) /\
         (!c x. f(c * x) = c * f(x))``);
+
+(* Courtesy to Thomas Sewell for providing this proof (first) on Slack
+
+   NOTE: The explicit-form of linear functions (linear_repr and linear_alt) does
+         NOT hold in higher dimensional spaces, e.g. (f:real['M]->real['N]), cf.
+         vec_linear_def in examples/vectorScript.sml (ported from HOL-Light).
+
+         However, the theorem linear_repr is necessary in limTheory to show the
+         equivalence between the old and new definitions of "differentiable":
+
+         |- !f x. f differentiable_at x <=> f differentiable (at x)
+ *)
+Theorem linear_lemma[local]:
+  (!c x. f(c * x) = c * f(x)) ==> ?l. f = (\x. l * x)
+Proof
+  rw []
+  \\ qexists_tac `f 1`
+  \\ rw [FUN_EQ_THM]
+  \\ metis_tac [linear, REAL_MUL_RID]
+QED
+
+Theorem linear_repr :
+    !f. linear f <=> ?l. f = \x. l * x
+Proof
+    Q.X_GEN_TAC ‘f’
+ >> EQ_TAC
+ >> rw [linear, linear_lemma]
+ >> REAL_ARITH_TAC
+QED
+
+(* In fact, only the part ‘!c x. f(c * x) = c * f(x))’ is primitive.
+
+   This theorem may simplify some theorems below, but it only holds for
+   one-dimensional linear functions (I believe). --Chun Tian, 11 nov 2022.
+ *)
+Theorem linear_alt_cmul :
+    !f. linear f <=> !c x. f(c * x) = c * f(x)
+Proof
+    Q.X_GEN_TAC ‘f’
+ >> EQ_TAC >- rw [linear]
+ >> rw [linear_repr]
+ >> MATCH_MP_TAC linear_lemma >> art []
+QED
 
 val LINEAR_SCALING = store_thm ("LINEAR_SCALING",
  ``!c. linear(\x:real. c * x)``,
@@ -1382,7 +1412,7 @@ val EXCHANGE_LEMMA = store_thm ("EXCHANGE_LEMMA",
       FINITE t /\ independent s /\ s SUBSET span t ==>
       ?t'. t' HAS_SIZE CARD t /\ s SUBSET t' /\ t' SUBSET s UNION t /\
         s SUBSET span t') ==>
-    (!t'':real->bool s':real->bool'. (CARD (t'' DIFF s') < CARD (t DIFF s)) ==>
+    (!t'':real->bool s':real->bool. (CARD (t'' DIFF s') < CARD (t DIFF s)) ==>
       FINITE t'' /\ independent s' /\ s' SUBSET span t'' ==>
       ?t'. t' HAS_SIZE CARD t'' /\ s' SUBSET t' /\ t' SUBSET s' UNION t'' /\
         s' SUBSET span t')`` THENL

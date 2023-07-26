@@ -46,6 +46,8 @@ OTDIRS = boss integer pred_set/src/more_theories
 install: hol4-real.thy hol4-real.art $(patsubst %,../%/install,$(OTDIRS))
 	opentheory install --reinstall $<
 
+extreal_base.art: extreal_base.otd
+
 all: hol4-real.art
 endif
 
