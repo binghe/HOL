@@ -1537,7 +1537,7 @@ Proof
   Induct_on ‘FINITE’ >> simp[] >> rw[] >> gvs[CARD1_SING]
 QED
 
-(* cf. permutesTheory.permutes and permutesTheory.permutes_bijns *)
+(* cf. permutesTheory.permutes_alt_bijns *)
 Definition bijns_def:
   bijns A = { f | BIJ f A A /\ !a. a NOTIN A ==> f a = a }
 End
