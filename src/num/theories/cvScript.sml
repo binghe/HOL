@@ -171,6 +171,22 @@ Proof
   simp[c2b_def, cv_if_def0, Num_11, cv_distinct]
 QED
 
+Theorem c2b_thm[simp]:
+  (c2b (Num (SUC n)) = T) /\
+  (c2b (Num 1) = T) /\
+  (c2b (Num 0) = F) /\
+  (c2b (Num (NUMERAL ZERO)) = F) /\
+  (c2b (Pair x y) = F)
+Proof
+  rewrite_tac [c2b_def,Num_11,prim_recTheory.INV_SUC_EQ]
+  \\ rewrite_tac [GSYM boolTheory.EXISTS_REFL,NORM_0]
+  \\ rewrite_tac [SUC_NOT]
+  \\ once_rewrite_tac [EQ_SYM_EQ]
+  \\ rewrite_tac [cv_distinct]
+  \\ EXISTS_TAC “0:num”
+  \\ rewrite_tac [ADD1,ADD_CLAUSES]
+QED
+
 val cv_case_def = Prim_rec.new_recursive_definition {
   name = "cv_case_def",
   rec_axiom = cv_Axiom,
@@ -566,5 +582,10 @@ Theorem exp_to_cv:
 Proof
   rewrite_tac [c2n_def,cv_exp_def]
 QED
+
+val _ = app Parse.permahide [“c2n”,“c2b”,“Num”,“Pair”];
+
+val _ = app delete_const ["P0", "N0", "iscv", "cvrel", "cvrelf",
+                          "cv_ABS", "cv_REP", "cvnum_map2", "cvnumval"];
 
 val _ = export_theory();
