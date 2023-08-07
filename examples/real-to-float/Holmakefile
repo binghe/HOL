@@ -1,6 +1,8 @@
 INCLUDES = $(HOLDIR)/src/n-bit $(HOLDIR)/src/real $(HOLDIR)/src/integer \
 	$(HOLDIR)/src/floating-point $(HOLDIR)/src/res_quan/src
 
+EXTRA_CLEANS = heap
+
 ifdef POLY
 HOLHEAP = heap
 OBJS = real/realLib n-bit/fcpLib n-bit/wordsLib integer/intLib res_quan/src/hurdUtils \

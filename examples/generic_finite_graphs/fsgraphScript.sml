@@ -430,6 +430,7 @@ Definition walk_def:
   walk g vs ⇔ vs ≠ [] ∧ ∀v1 v2. adjacent vs v1 v2 ⇒ adjacent g v1 v2
 End
 
+(* NOTE: A path is a walk without duplicated nodes/vertices. *)
 Definition path_def:
   path g vs ⇔ walk g vs ∧ ALL_DISTINCT vs
 End
@@ -446,6 +447,8 @@ Proof
   recInduct adjpairs_ind >> simp[]
 QED
 
+(* NOTE: A trail may go through some vertices more than once but only traverses
+         each edge of the graph at most once. *)
 Definition trail_def:
   trail g vs ⇔ walk g vs ∧ ALL_DISTINCT (adjpairs vs)
 End
@@ -503,4 +506,64 @@ Proof
   irule adjacent_append2 >> simp[]
 QED
 
+(* ----------------------------------------------------------------------
+    Menger's Theorem [2, p.67], added by Chun Tian
+   ---------------------------------------------------------------------- *)
+
+(* To form an A-B path, the only intersection between A and vs is ‘HD vs’,
+   while the only intersection between B and vs is ‘LAST vs’.
+
+   NOTE: ‘DISJOINT A B’ is not required.
+ *)
+Definition AB_path_def :
+  AB_path g vs A B <=> path g vs /\ A UNION B SUBSET nodes g /\ 
+                       A INTER set vs = {HD vs} /\ B INTER set vs = {LAST vs}
+End
+
+(* NOTE: X separate A,B if each A-B path contains at least one node in X *)
+Definition separation_def :
+  separation g X A B <=> A UNION B SUBSET nodes g /\
+                        !vs. AB_path g vs A B ==> X INTER set vs <> {}
+End
+
+Theorem separation_thm :
+  !g X A B. separation g X A B ==> A INTER B SUBSET X
+Proof
+    rw [separation_def, UNION_SUBSET, AB_path_def]
+ >> Cases_on ‘A INTER B = {}’ >- rw []
+ >> rw [SUBSET_DEF]
+ (* now pick a trivial path containing only ‘x’ *)
+ >> Q.PAT_X_ASSUM ‘!vs. P’ (MP_TAC o Q.SPEC ‘[x]’)
+ >> ‘{x} SUBSET A /\ {x} SUBSET B’ by rw [SUBSET_DEF]
+ >> ‘A INTER {x} = {x} /\ B INTER {x} = {x}’ by PROVE_TAC [INTER_SUBSET_EQN]
+ >> rw [path_def, walk_def]
+ >> POP_ASSUM MP_TAC >> SET_TAC []
+QED
+
+(* NOTE: Two disjoint paths may share nodes but not edges. *)
+Definition disjoint_path_def :
+  disjoint_path vs1 vs2 <=> DISJOINT (set (adjpairs vs1)) (set (adjpairs vs2))
+End
+
+Definition disjoint_paths_def :
+  disjoint_paths vss <=> !vs1 vs2. vs1 IN vss /\ vs2 IN vss /\ vs1 <> vs2 /\
+                                   disjoint_path vs1 vs2
+End
+
+Theorem Menger :
+  !g A B. CARD (BIGINTER {X | separate g X A B}) =
+          CARD (BIGUNION {vss | disjoint_paths vss /\
+                                !vs. vs IN vss ==> AB_path g vs A B})
+Proof
+    cheat
+QED
+
 val _ = export_theory();
+
+(* References:
+
+   [1] Harris, J., Hirst, J.L., Mossinghoff, M.: Combinatorics and Graph Theory.
+       Springer Science & Business Media (2008).
+   [2] Diestel, R.: Graph Theory, 5th Electronic Edition. Springer-Verlag, Berlin (2017).
+   [3] Christoph Dittmann.: Menger's Theorem. https://www.isa-afp.org/entries/Menger.html
+ *)
