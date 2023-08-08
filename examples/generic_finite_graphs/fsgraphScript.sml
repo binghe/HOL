@@ -516,7 +516,7 @@ QED
    NOTE: ‘DISJOINT A B’ is not required.
  *)
 Definition AB_path_def :
-  AB_path g vs A B <=> path g vs /\ A UNION B SUBSET nodes g /\ 
+  AB_path g vs A B <=> path g vs /\ A UNION B SUBSET nodes g /\
                        A INTER set vs = {HD vs} /\ B INTER set vs = {LAST vs}
 End
 
