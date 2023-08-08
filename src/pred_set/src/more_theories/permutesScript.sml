@@ -101,7 +101,7 @@ QED
 
 (* connection to ‘cardinal$bijns’ *)
 Theorem permutes_alt_bijns:
-  f permutes s <=> f IN bijns s
+    !f s. f permutes s <=> f IN bijns s
 Proof
   simp[permutes_alt, bijns_def]
 QED

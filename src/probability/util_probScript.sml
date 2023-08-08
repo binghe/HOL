@@ -10,9 +10,9 @@
 open HolKernel Parse boolLib bossLib;
 
 open metisLib pairTheory combinTheory pred_setTheory pred_setLib jrhUtils
-     arithmeticTheory numLib hurdUtils realTheory realLib iterateTheory;
+     arithmeticTheory numLib hurdUtils topologyTheory;
 
-open topologyTheory;
+open realTheory realLib real_sigmaTheory iterateTheory;
 
 val _ = new_theory "util_prob";
 
