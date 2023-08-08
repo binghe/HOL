@@ -5,7 +5,6 @@ on:
     branches:
       - "master"
       - "develop"
-      - "prob_dev"
 
 env:
   USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
