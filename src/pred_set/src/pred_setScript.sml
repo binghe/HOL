@@ -6255,25 +6255,71 @@ Proof
 QED
 
 (* ----------------------------------------------------------------------
-    Assert a predicate on all pairs of elements in a set.
-    Take the RC of the P argument to consider only pairs of distinct elements.
+    Assert a predicate on all (disjoint) pairs of elements in a set.
    ---------------------------------------------------------------------- *)
 
-val pairwise_def = new_definition(
-  "pairwise_def",
-  ``pairwise P s = !e1 e2. e1 IN s /\ e2 IN s ==> P e1 e2``);
+(* NOTE: The involved pairs are now required to be disjoint: ‘e1 <> e2’ *)
+Definition pairwise_def :
+    pairwise P s = !e1 e2. e1 IN s /\ e2 IN s /\ e1 <> e2 ==> P e1 e2
+End
 
-val pairwise_UNION = Q.store_thm(
-"pairwise_UNION",
-`pairwise R (s1 UNION s2) <=>
- pairwise R s1 /\ pairwise R s2 /\ (!x y. x IN s1 /\ y IN s2 ==> R x y /\ R y x)`,
-SRW_TAC [boolSimps.DNF_ss][pairwise_def] THEN METIS_TAC []);
+(* HOL-Light's equivalent definition (sets.ml) *)
+Theorem pairwise :
+    !r s. pairwise r s <=> !x y. x IN s /\ y IN s /\ ~(x = y) ==> r x y
+Proof
+    rw [pairwise_def]
+QED
 
-val pairwise_SUBSET = Q.store_thm(
-"pairwise_SUBSET",
-`!R s t. pairwise R t /\ s SUBSET t ==> pairwise R s`,
-SRW_TAC [][SUBSET_DEF,pairwise_def]);
+Theorem PAIRWISE_EMPTY :
+    !r. pairwise r {} <=> T
+Proof
+  REWRITE_TAC[pairwise, NOT_IN_EMPTY] THEN MESON_TAC[]
+QED
 
+Theorem PAIRWISE_SING :
+    !r x. pairwise r {x} <=> T
+Proof
+  REWRITE_TAC[pairwise, IN_SING] THEN MESON_TAC[]
+QED
+
+(* NOTE: added ‘x <> y’ to adapt the changed definition of ‘pairwise’ *)
+Theorem pairwise_UNION :
+    !R s1 s2. pairwise R (s1 UNION s2) <=>
+              pairwise R s1 /\ pairwise R s2 /\
+             (!x y. x IN s1 /\ y IN s2 /\ x <> y ==> R x y /\ R y x)
+Proof
+    SRW_TAC [boolSimps.DNF_ss][pairwise_def] THEN METIS_TAC []
+QED
+
+Theorem pairwise_SUBSET :
+    !R s t. pairwise R t /\ s SUBSET t ==> pairwise R s
+Proof
+  SRW_TAC [][SUBSET_DEF, pairwise_def]
+QED
+
+Theorem PAIRWISE_MONO :
+    !r s t. pairwise r s /\ t SUBSET s ==> pairwise r t
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC pairwise_SUBSET
+ >> Q.EXISTS_TAC ‘s’ >> ASM_REWRITE_TAC []
+QED
+
+Theorem PAIRWISE_INSERT :
+    !r x s.
+        pairwise r (x INSERT s) <=>
+        (!y. y IN s /\ ~(y = x) ==> r x y /\ r y x) /\
+        pairwise r s
+Proof
+  REWRITE_TAC[pairwise, IN_INSERT] THEN MESON_TAC[]
+QED
+
+Theorem PAIRWISE_IMAGE :
+    !r f s. pairwise r (IMAGE f s) <=>
+            pairwise (\x y. ~(f x = f y) ==> r (f x) (f y)) s
+Proof
+  REWRITE_TAC[pairwise, IN_IMAGE] THEN MESON_TAC[]
+QED
 
 (* ----------------------------------------------------------------------
     A proof of Koenig's Lemma

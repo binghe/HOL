@@ -1,6 +1,6 @@
 open HolKernel Parse boolLib bossLib;
 
-open pairTheory pred_setTheory sortingTheory genericGraphTheory
+open pairTheory pred_setTheory sortingTheory genericGraphTheory topologyTheory;
 
 val _ = new_theory "fsgraph";
 
@@ -540,19 +540,9 @@ Proof
  >> POP_ASSUM MP_TAC >> SET_TAC []
 QED
 
-(* NOTE: Two disjoint paths may share nodes but not edges. *)
-Definition disjoint_path_def :
-  disjoint_path vs1 vs2 <=> DISJOINT (set (adjpairs vs1)) (set (adjpairs vs2))
-End
-
-Definition disjoint_paths_def :
-  disjoint_paths vss <=> !vs1 vs2. vs1 IN vss /\ vs2 IN vss /\ vs1 <> vs2 /\
-                                   disjoint_path vs1 vs2
-End
-
 Theorem Menger :
-  !g A B. CARD (BIGINTER {X | separate g X A B}) =
-          CARD (BIGUNION {vss | disjoint_paths vss /\
+  !g A B. CARD (BIGINTER {X | separation g X A B}) =
+          CARD (BIGUNION {vss | disjoint (IMAGE set vss) /\
                                 !vs. vs IN vss ==> AB_path g vs A B})
 Proof
     cheat
