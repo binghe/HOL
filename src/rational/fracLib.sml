@@ -3,16 +3,7 @@ struct
 
 open HolKernel boolLib Parse bossLib;
 
-(* interactive mode
-app load ["pairTheory", "pairLib", "integerTheory","intLib","intSyntax",
-        "ringLib", "integerRingTheory","integerRingLib",
-        "intExtensionTheory", "intExtensionLib", "jbUtils",
-        "fracTheory","fracUtils", "fracSyntax"];
-*)
-
-open
-        arithmeticTheory
-        pairTheory pairLib integerTheory intLib intSyntax
+open arithmeticTheory pairTheory pairLib integerTheory intLib intSyntax
         EVAL_ringLib integerRingTheory integerRingLib
         intExtensionTheory intExtensionLib
         jbUtils fracTheory fracUtils fracSyntax;

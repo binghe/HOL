@@ -3,10 +3,6 @@ struct
 
 open HolKernel Parse boolLib;
 
-(* interactive mode
-app load ["ringLib","ratTheory","ratRingTheory","ratLib"]
-*)
-
 open EVAL_ringLib ratTheory ratRingTheory ratSyntax ratLib;
 
 (*--------------------------------------------------------------------------
