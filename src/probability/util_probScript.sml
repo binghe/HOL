@@ -225,8 +225,7 @@ Proof
 QED
 
 (* |- !A. disjoint A <=> !a b. a IN A /\ b IN A /\ a <> b ==> (a INTER b = {} ) *)
-val disjoint = save_thm
-  ("disjoint", REWRITE_RULE [DISJOINT_DEF] disjoint_def);
+Theorem disjoint = REWRITE_RULE [DISJOINT_DEF] disjoint_def
 
 val disjointI = store_thm
   ("disjointI",
@@ -238,9 +237,11 @@ val disjointD = store_thm
   ``!A a b. disjoint A ==> a IN A ==> b IN A ==> (a <> b) ==> DISJOINT a b``,
     METIS_TAC [disjoint_def]);
 
-val disjoint_empty = store_thm
-  ("disjoint_empty", ``disjoint {}``,
-    SET_TAC [disjoint_def]);
+Theorem disjoint_empty :
+    disjoint {}
+Proof
+    rw [PAIRWISE_EMPTY]
+QED
 
 val disjoint_union = store_thm
   ("disjoint_union",
@@ -248,9 +249,11 @@ val disjoint_union = store_thm
           disjoint (A UNION B)``,
     SET_TAC [disjoint_def]);
 
-val disjoint_sing = store_thm
-  ("disjoint_sing", ``!a. disjoint {a}``,
-    SET_TAC [disjoint_def]);
+Theorem disjoint_sing :
+    !a. disjoint {a}
+Proof
+    rw [PAIRWISE_SING]
+QED
 
 val disjoint_same = store_thm
   ("disjoint_same", ``!s t. (s = t) ==> disjoint {s; t}``,
@@ -261,36 +264,31 @@ val disjoint_two = store_thm
     RW_TAC std_ss [IN_INSERT, IN_SING, disjoint_def] >- art []
  >> ASM_REWRITE_TAC [DISJOINT_SYM]);
 
-val disjoint_image = store_thm (* new *)
-  ("disjoint_image",
-  ``!f. (!i j. i <> j ==> DISJOINT (f i) (f j)) ==> disjoint (IMAGE f UNIV)``,
-    rpt STRIP_TAC
- >> MATCH_MP_TAC disjointI
- >> RW_TAC std_ss [IN_IMAGE, IN_UNIV]
- >> METIS_TAC []);
+Theorem disjoint_image :
+    !f. (!i j. i <> j ==> DISJOINT (f i) (f j)) ==> disjoint (IMAGE f UNIV)
+Proof
+    rw [PAIRWISE_IMAGE, pairwise]
+QED
 
-val disjoint_insert_imp = store_thm (* new *)
-  ("disjoint_insert_imp",
-  ``!e c. disjoint (e INSERT c) ==> disjoint c``,
-    RW_TAC std_ss [disjoint_def]
- >> FIRST_ASSUM MATCH_MP_TAC
- >> METIS_TAC [IN_INSERT]);
+Theorem disjoint_insert_imp :
+    !e c. disjoint (e INSERT c) ==> disjoint c
+Proof
+    rw [PAIRWISE_INSERT]
+QED
 
-val disjoint_insert_notin = store_thm (* new *)
-  ("disjoint_insert_notin",
-  ``!e c. disjoint (e INSERT c) /\ e NOTIN c ==> !s. s IN c ==> DISJOINT e s``,
-    RW_TAC std_ss [disjoint_def]
- >> FIRST_ASSUM MATCH_MP_TAC
- >> METIS_TAC [IN_INSERT]);
+Theorem disjoint_insert_notin :
+    !e c. disjoint (e INSERT c) /\ e NOTIN c ==> !s. s IN c ==> DISJOINT e s
+Proof
+    rw [PAIRWISE_INSERT]
+ >> METIS_TAC []
+QED
 
-val disjoint_insert = store_thm (* new *)
-  ("disjoint_insert",
-  ``!e c. disjoint c /\ (!x. x IN c ==> DISJOINT x e) ==> disjoint (e INSERT c)``,
-    rpt STRIP_TAC
- >> Know `e INSERT c = {e} UNION c` >- SET_TAC [] >> Rewr'
- >> MATCH_MP_TAC disjoint_union
- >> art [disjoint_sing, BIGUNION_SING]
- >> ASM_SET_TAC []);
+Theorem disjoint_insert :
+    !e c. disjoint c /\ (!x. x IN c ==> DISJOINT x e) ==> disjoint (e INSERT c)
+Proof
+    rw [PAIRWISE_INSERT]
+ >> rw [Once DISJOINT_SYM]
+QED
 
 val disjoint_restrict = store_thm (* new *)
   ("disjoint_restrict",
