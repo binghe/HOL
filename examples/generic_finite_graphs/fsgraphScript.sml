@@ -520,16 +520,16 @@ Definition AB_path_def :
                        A INTER set vs = {HD vs} /\ B INTER set vs = {LAST vs}
 End
 
-(* NOTE: X separate A,B if each A-B path contains at least one node in X *)
-Definition separation_def :
-  separation g X A B <=> A UNION B SUBSET nodes g /\
+(* NOTE: X separates A,B if each A-B path contains at least one node in X *)
+Definition separates_def :
+  separates g X A B <=> A UNION B SUBSET nodes g /\
                         !vs. AB_path g vs A B ==> X INTER set vs <> {}
 End
 
-Theorem separation_thm :
-  !g X A B. separation g X A B ==> A INTER B SUBSET X
+Theorem separates_thm :
+  !g X A B. separates g X A B ==> A INTER B SUBSET X
 Proof
-    rw [separation_def, UNION_SUBSET, AB_path_def]
+    rw [separates_def, UNION_SUBSET, AB_path_def]
  >> Cases_on ‘A INTER B = {}’ >- rw []
  >> rw [SUBSET_DEF]
  (* now pick a trivial path containing only ‘x’ *)
@@ -541,14 +541,16 @@ Proof
 QED
 
 Theorem Menger :
-  !g A B. CARD (BIGINTER {X | separation g X A B}) =
-          CARD (BIGUNION {vss | disjoint (IMAGE set vss) /\
-                                !vs. vs IN vss ==> AB_path g vs A B})
+  !(g :'a fsgraph) A B.
+      A UNION B SUBSET nodes g ==>
+      CARD (BIGINTER {X | separates g X A B}) =
+      CARD (BIGUNION {vss | disjoint (IMAGE set vss) /\ !vs. vs IN vss ==> AB_path g vs A B})
 Proof
     cheat
 QED
 
 val _ = export_theory();
+val _ = html_theory "fsgraph";
 
 (* References:
 

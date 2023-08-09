@@ -1886,4 +1886,5 @@ Proof
   simp[DELETE_COMM, DIFF_COMM]
 QED
 
-val  _ = export_theory();
+val _ = export_theory();
+val _ = html_theory "genericGraph";
