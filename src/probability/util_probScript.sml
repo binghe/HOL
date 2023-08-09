@@ -148,7 +148,7 @@ val GBIGUNION_IMAGE = store_thm
    RW_TAC std_ss [EXTENSION, GSPECIFICATION, IN_BIGUNION_IMAGE, IN_UNIV]);
 
 (* ------------------------------------------------------------------------- *)
-(*   Disjoint subsets (from HVG's lebesgue_measureTheory)                    *)
+(*  Disjoint system of sets (‘disjoint’, originally from Isabelle/HOL)       *)
 (* ------------------------------------------------------------------------- *)
 
 Theorem DISJOINT_RESTRICT_L :
@@ -216,8 +216,13 @@ Proof
     PROVE_TAC [SUBSET_DIFF]
 QED
 
-val disjoint_def = Define
-   `disjoint A = !a b. a IN A /\ b IN A /\ (a <> b) ==> DISJOINT a b`;
+Overload disjoint = “pairwiseD DISJOINT”
+
+Theorem disjoint_def :
+    !A. disjoint A = !a b. a IN A /\ b IN A /\ (a <> b) ==> DISJOINT a b
+Proof
+    RW_TAC std_ss [pairwise]
+QED
 
 (* |- !A. disjoint A <=> !a b. a IN A /\ b IN A /\ a <> b ==> (a INTER b = {} ) *)
 val disjoint = save_thm

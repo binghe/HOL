@@ -1,6 +1,7 @@
 open HolKernel Parse boolLib bossLib;
 
-open pairTheory pred_setTheory sortingTheory genericGraphTheory topologyTheory;
+open pairTheory pred_setTheory sortingTheory genericGraphTheory
+     util_probTheory hurdUtils;
 
 val _ = new_theory "fsgraph";
 
@@ -544,7 +545,7 @@ Theorem Menger :
   !(g :'a fsgraph) A B.
       A UNION B SUBSET nodes g ==>
       CARD (BIGINTER {X | separates g X A B}) =
-      CARD (BIGUNION {vss | disjoint (IMAGE set vss) /\ !vs. vs IN vss ==> AB_path g vs A B})
+      CARD (BIGUNION {vss | disjointD (IMAGE set vss) /\ !vs. vs IN vss ==> AB_path g vs A B})
 Proof
     cheat
 QED

@@ -953,8 +953,20 @@ QED
 
 val _ = hide "pairwise"; (* pred_setTheory *)
 
+(* NOTE: this definition is HOL-Light compatible, originally from "sets.ml". *)
 val pairwise = new_definition ("pairwise",
   ``pairwise r s <=> !x y. x IN s /\ y IN s /\ ~(x = y) ==> r x y``);
+
+Overload pairwiseD        = “topology$pairwise”
+Overload pairwiseN[local] = “pred_set$pairwise”
+
+(* connection between pairwiseD and pairwiseN, originally by Michael Norrish *)
+Theorem pairwiseD_alt :
+    !R. pairwiseD R = pairwiseN (RC R)
+Proof
+    RW_TAC std_ss [FUN_EQ_THM, pairwise, pairwise_def, RC_DEF]
+ >> METIS_TAC []
+QED
 
 val PAIRWISE_EMPTY = store_thm ("PAIRWISE_EMPTY",
  ``!r. pairwise r {} <=> T``,
@@ -1739,9 +1751,9 @@ QED
 
 Theorem COUNTABLE_DISJOINT_UNION_OF_IDEMPOT :
    !P:('a->bool)->bool.
-        ((COUNTABLE INTER disjoint) UNION_OF
-         (COUNTABLE INTER disjoint) UNION_OF P) =
-        (COUNTABLE INTER disjoint) UNION_OF P
+        ((COUNTABLE INTER pairwise DISJOINT) UNION_OF
+         (COUNTABLE INTER pairwise DISJOINT) UNION_OF P) =
+        (COUNTABLE INTER pairwise DISJOINT) UNION_OF P
 Proof
   GEN_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN Q.X_GEN_TAC `s:'a->bool` THEN
   reverse EQ_TAC
