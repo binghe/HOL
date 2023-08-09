@@ -1,7 +1,6 @@
 open HolKernel Parse boolLib bossLib;
 
-open pairTheory pred_setTheory sortingTheory genericGraphTheory
-     util_probTheory hurdUtils;
+open pairTheory pred_setTheory sortingTheory genericGraphTheory topologyTheory;
 
 val _ = new_theory "fsgraph";
 
@@ -160,10 +159,11 @@ Proof
 QED
 
 Theorem FINITE_sets_have_descending_measure_lists:
-  ∀s. FINITE s ⇒
+  ∀(f :'a -> num) s. FINITE s ⇒
       ∃es. SORTED (inv $<=) (MAP f es) ∧ set es = s ∧
            ALL_DISTINCT es
 Proof
+  qx_gen_tac ‘f’ >>
   Induct_on ‘FINITE’ using FINITE_LEAST_MEASURE_INDUCTION >> qexists ‘f’ >>
   simp[PULL_EXISTS] >> rpt strip_tac >>
   rename [‘¬MEM a es’] >> qexists ‘es ++ [a]’ >>
@@ -172,10 +172,12 @@ Proof
 QED
 
 Theorem descending_measure_lists_unique:
-  ∀es1 es2. SORTED (inv $<=) (MAP f es1) ∧ SORTED (inv $<=) (MAP f es2) ∧
+  ∀(f :'a -> num) es1 es2.
+            SORTED (inv $<=) (MAP f es1) ∧ SORTED (inv $<=) (MAP f es2) ∧
             set es1 = set es2 ∧ ALL_DISTINCT es1 ∧ ALL_DISTINCT es2 ⇒
             MAP f es1 = MAP f es2
 Proof
+  qx_gen_tac ‘f’ >>
   Induct >> simp[SORTED_EQ, listTheory.MEM_MAP, PULL_EXISTS] >>
   rpt strip_tac >> simp[listTheory.MAP_EQ_CONS] >>
   Cases_on ‘es2’ >> gvs[SORTED_EQ, listTheory.MEM_MAP, PULL_EXISTS] >>
@@ -431,10 +433,22 @@ Definition walk_def:
   walk g vs ⇔ vs ≠ [] ∧ ∀v1 v2. adjacent vs v1 v2 ⇒ adjacent g v1 v2
 End
 
+Theorem trivial_walk[simp] :
+    !g v. walk g [v]
+Proof
+    rw [walk_def]
+QED
+
 (* NOTE: A path is a walk without duplicated nodes/vertices. *)
 Definition path_def:
   path g vs ⇔ walk g vs ∧ ALL_DISTINCT vs
 End
+
+Theorem trivial_path[simp] :
+    !g v. path g [v]
+Proof
+    rw [path_def]
+QED
 
 Definition adjpairs_def[simp]:
   adjpairs [] = [] ∧
@@ -473,7 +487,6 @@ Proof
   Induct_on ‘xs’ >> simp[] >> Cases_on ‘xs’ >>
   gs[listTheory.adjacent_iff, listTheory.adjacent_rules]
 QED
-
 
 Theorem walks_contain_paths:
   ∀g vs. walk g vs ⇒
@@ -514,23 +527,32 @@ QED
 (* To form an A-B path, the only intersection between A and vs is ‘HD vs’,
    while the only intersection between B and vs is ‘LAST vs’.
 
-   NOTE: ‘DISJOINT A B’ is not required.
+   NOTE: ‘DISJOINT A B’ is not required. ‘A, B SUBSET nodes g’ is assumed.
  *)
 Definition AB_path_def :
-  AB_path g vs A B <=> path g vs /\ A UNION B SUBSET nodes g /\
-                       A INTER set vs = {HD vs} /\ B INTER set vs = {LAST vs}
+    AB_path g A B vs <=> path g vs /\
+                         A INTER set vs = {HD vs} /\ B INTER set vs = {LAST vs}
 End
+
+(* In the trivial case, there may be no edges in the graph, and any trivial path
+   formed by single shared vertex from both A and B is also an A-B path.
+ *)
+Theorem trivial_AB_path :
+    !g A B v. v IN A /\ v IN B ==> AB_path g A B [v]
+Proof
+    rw [AB_path_def, trivial_path]
+ >> ASM_SET_TAC []
+QED
 
 (* NOTE: X separates A,B if each A-B path contains at least one node in X *)
-Definition separates_def :
-  separates g X A B <=> A UNION B SUBSET nodes g /\
-                        !vs. AB_path g vs A B ==> X INTER set vs <> {}
+Definition separation_def :
+    separation g A B X = !vs. AB_path g A B vs ==> X INTER set vs <> {}
 End
 
-Theorem separates_thm :
-  !g X A B. separates g X A B ==> A INTER B SUBSET X
+Theorem separation_INTER_SUBSET :
+    !g A B X. separation g A B X ==> A INTER B SUBSET X
 Proof
-    rw [separates_def, UNION_SUBSET, AB_path_def]
+    rw [separation_def, UNION_SUBSET, AB_path_def]
  >> Cases_on ‘A INTER B = {}’ >- rw []
  >> rw [SUBSET_DEF]
  (* now pick a trivial path containing only ‘x’ *)
@@ -542,10 +564,10 @@ Proof
 QED
 
 Theorem Menger :
-  !(g :'a fsgraph) A B.
-      A UNION B SUBSET nodes g ==>
-      CARD (BIGINTER {X | separates g X A B}) =
-      CARD (BIGUNION {vss | disjointD (IMAGE set vss) /\ !vs. vs IN vss ==> AB_path g vs A B})
+    !(g :'a fsgraph) A B. A UNION B SUBSET nodes g ==>
+        CARD (BIGINTER {X | separation g A B X}) =
+        CARD (BIGUNION {vss | disjoint (IMAGE set vss) /\
+                              !vs. vs IN vss ==> AB_path g A B vs})
 Proof
     cheat
 QED
