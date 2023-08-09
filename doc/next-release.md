@@ -213,11 +213,6 @@ Incompatibilities:
     This frees up the name `ring` to be used only by the material under `examples/algebra`.
     (In the absence of this change, theories that depended on what was in `src/ring/src` could not be used in a development alongside what is in `examples/algebra`.)
 
-*   In `pred_setTheory`, the definition of `pairwise` has been changed to require
-    pairs of distinct elements as in HOL-Light. The previous HOL-Light compatible
-    version of `pairwise` (in `topologyTheory`) and related theorems are moved to
-   `pred_setTheory`.
-
 * * * * *
 
 <div class="footer">
