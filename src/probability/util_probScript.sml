@@ -148,157 +148,6 @@ val GBIGUNION_IMAGE = store_thm
    RW_TAC std_ss [EXTENSION, GSPECIFICATION, IN_BIGUNION_IMAGE, IN_UNIV]);
 
 (* ------------------------------------------------------------------------- *)
-(*  Disjoint system of sets (‘disjoint’, originally from Isabelle/HOL)       *)
-(* ------------------------------------------------------------------------- *)
-
-Theorem DISJOINT_RESTRICT_L :
-  !s t c. DISJOINT s t ==> DISJOINT (s INTER c) (t INTER c)
-Proof SET_TAC []
-QED
-
-Theorem DISJOINT_RESTRICT_R :
-  !s t c. DISJOINT s t ==> DISJOINT (c INTER s) (c INTER t)
-Proof SET_TAC []
-QED
-
-Theorem DISJOINT_CROSS_L :
-    !s t c. DISJOINT s t ==> DISJOINT (s CROSS c) (t CROSS c)
-Proof
-    RW_TAC std_ss [DISJOINT_ALT, CROSS_DEF, Once EXTENSION, IN_INTER,
-                   NOT_IN_EMPTY, GSPECIFICATION]
-QED
-
-Theorem DISJOINT_CROSS_R :
-    !s t c. DISJOINT s t ==> DISJOINT (c CROSS s) (c CROSS t)
-Proof
-    RW_TAC std_ss [DISJOINT_ALT, CROSS_DEF, Once EXTENSION, IN_INTER,
-                   NOT_IN_EMPTY, GSPECIFICATION]
-QED
-
-Theorem SUBSET_RESTRICT_L :
-  !r s t. s SUBSET t ==> (s INTER r) SUBSET (t INTER r)
-Proof SET_TAC []
-QED
-
-Theorem SUBSET_RESTRICT_R :
-  !r s t. s SUBSET t ==> (r INTER s) SUBSET (r INTER t)
-Proof SET_TAC []
-QED
-
-Theorem SUBSET_RESTRICT_DIFF :
-  !r s t. s SUBSET t ==> (r DIFF t) SUBSET (r DIFF s)
-Proof SET_TAC []
-QED
-
-Theorem SUBSET_INTER_SUBSET_L :
-  !r s t. s SUBSET t ==> (s INTER r) SUBSET t
-Proof SET_TAC []
-QED
-
-Theorem SUBSET_INTER_SUBSET_R :
-  !r s t. s SUBSET t ==> (r INTER s) SUBSET t
-Proof SET_TAC []
-QED
-
-Theorem SUBSET_MONO_DIFF :
-  !r s t. s SUBSET t ==> (s DIFF r) SUBSET (t DIFF r)
-Proof SET_TAC []
-QED
-
-Theorem SUBSET_DIFF_SUBSET :
-  !r s t. s SUBSET t ==> (s DIFF r) SUBSET t
-Proof SET_TAC []
-QED
-
-Theorem SUBSET_DIFF_DISJOINT :
-  !s1 s2 s3. (s1 SUBSET (s2 DIFF s3)) ==> DISJOINT s1 s3
-Proof
-    PROVE_TAC [SUBSET_DIFF]
-QED
-
-Overload disjoint = “pairwiseD DISJOINT”
-
-Theorem disjoint_def :
-    !A. disjoint A = !a b. a IN A /\ b IN A /\ (a <> b) ==> DISJOINT a b
-Proof
-    RW_TAC std_ss [pairwise]
-QED
-
-(* |- !A. disjoint A <=> !a b. a IN A /\ b IN A /\ a <> b ==> (a INTER b = {} ) *)
-Theorem disjoint = REWRITE_RULE [DISJOINT_DEF] disjoint_def
-
-val disjointI = store_thm
-  ("disjointI",
-  ``!A. (!a b . a IN A ==> b IN A ==> (a <> b) ==> DISJOINT a b) ==> disjoint A``,
-    METIS_TAC [disjoint_def]);
-
-val disjointD = store_thm
-  ("disjointD",
-  ``!A a b. disjoint A ==> a IN A ==> b IN A ==> (a <> b) ==> DISJOINT a b``,
-    METIS_TAC [disjoint_def]);
-
-Theorem disjoint_empty :
-    disjoint {}
-Proof
-    rw [PAIRWISE_EMPTY]
-QED
-
-val disjoint_union = store_thm
-  ("disjoint_union",
-  ``!A B. disjoint A /\ disjoint B /\ (BIGUNION A INTER BIGUNION B = {}) ==>
-          disjoint (A UNION B)``,
-    SET_TAC [disjoint_def]);
-
-Theorem disjoint_sing :
-    !a. disjoint {a}
-Proof
-    rw [PAIRWISE_SING]
-QED
-
-val disjoint_same = store_thm
-  ("disjoint_same", ``!s t. (s = t) ==> disjoint {s; t}``,
-    RW_TAC std_ss [IN_INSERT, IN_SING, disjoint_def]);
-
-val disjoint_two = store_thm
-  ("disjoint_two", ``!s t. s <> t /\ DISJOINT s t ==> disjoint {s; t}``,
-    RW_TAC std_ss [IN_INSERT, IN_SING, disjoint_def] >- art []
- >> ASM_REWRITE_TAC [DISJOINT_SYM]);
-
-Theorem disjoint_image :
-    !f. (!i j. i <> j ==> DISJOINT (f i) (f j)) ==> disjoint (IMAGE f UNIV)
-Proof
-    rw [PAIRWISE_IMAGE, pairwise]
-QED
-
-Theorem disjoint_insert_imp :
-    !e c. disjoint (e INSERT c) ==> disjoint c
-Proof
-    rw [PAIRWISE_INSERT]
-QED
-
-Theorem disjoint_insert_notin :
-    !e c. disjoint (e INSERT c) /\ e NOTIN c ==> !s. s IN c ==> DISJOINT e s
-Proof
-    rw [PAIRWISE_INSERT]
- >> METIS_TAC []
-QED
-
-Theorem disjoint_insert :
-    !e c. disjoint c /\ (!x. x IN c ==> DISJOINT x e) ==> disjoint (e INSERT c)
-Proof
-    rw [PAIRWISE_INSERT]
- >> rw [Once DISJOINT_SYM]
-QED
-
-val disjoint_restrict = store_thm (* new *)
-  ("disjoint_restrict",
-  ``!e c. disjoint c ==> disjoint (IMAGE ($INTER e) c)``,
-    RW_TAC std_ss [disjoint_def, IN_IMAGE, o_DEF]
- >> MATCH_MP_TAC DISJOINT_RESTRICT_R
- >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
- >> CCONTR_TAC >> fs []);
-
-(* ------------------------------------------------------------------------- *)
 (* Binary Unions                                                             *)
 (* ------------------------------------------------------------------------- *)
 
@@ -725,7 +574,6 @@ val BIGUNION_IMAGE_UNIV_CROSS_UNIV = store_thm
  >- (Q.PAT_X_ASSUM `!y. ?!x. y = h x` (MP_TAC o (Q.SPEC `x'`)) >> METIS_TAC [])
  >> Q.EXISTS_TAC `h x'` >> art []);
 
-
 (* ------------------------------------------------------------------------- *)
 (*  Three series of lemmas on bigunion-equivalent sequences of sets          *)
 (* ------------------------------------------------------------------------- *)
@@ -1046,9 +894,10 @@ val INCREASING_TO_DISJOINT_SETS' = store_thm
 (* ------------------------------------------------------------------------- *)
 
 (* This is not more general than disjoint_def *)
-val disjoint_family_on = new_definition ("disjoint_family_on",
-  ``disjoint_family_on a s =
-      (!m n. m IN s /\ n IN s /\ (m <> n) ==> (a m INTER a n = {}))``);
+Definition disjoint_family_on :
+    disjoint_family_on a s =
+      (!m n. m IN s /\ n IN s /\ (m <> n) ==> (a m INTER a n = {}))
+End
 
 (* A new, equivalent definition based on DISJOINT *)
 Theorem disjoint_family_on_def :
@@ -1058,30 +907,31 @@ Proof
     rw [DISJOINT_DEF, disjoint_family_on]
 QED
 
-val disjoint_family = new_definition ("disjoint_family",
-  ``disjoint_family A = disjoint_family_on A UNIV``);
+Overload disjoint_family = “\A. disjoint_family_on A UNIV”
 
 (* A new, equivalent definition based on DISJOINT *)
 Theorem disjoint_family_def :
     !A. disjoint_family (A :'index -> 'a set) <=>
         !i j. i <> j ==> DISJOINT (A i) (A j)
 Proof
-    rw [disjoint_family, disjoint_family_on_def]
+    rw [disjoint_family_on_def]
 QED
 
-(* This is the way to convert a family of sets into a disjoint family *)
-(* of sets, cf. SETS_TO_DISJOINT_SETS -- Chun Tian *)
-val disjointed = new_definition ("disjointed",
-  ``!A n. disjointed A n =
-          A n DIFF BIGUNION {A i | i IN {x:num | 0 <= x /\ x < n}}``);
+(* This is the way to convert a family of sets into a disjoint family
+   of sets, cf. SETS_TO_DISJOINT_SETS -- Chun Tian
+ *)
+Definition disjointed :
+    disjointed A n = A n DIFF BIGUNION {A i | i IN {x:num | 0 <= x /\ x < n}}
+End
 
 val disjointed_subset = store_thm ("disjointed_subset",
   ``!A n. disjointed A n SUBSET A n``,
   RW_TAC std_ss [disjointed] THEN ASM_SET_TAC []);
 
-val disjoint_family_disjoint = store_thm ("disjoint_family_disjoint",
-  ``!A. disjoint_family (disjointed A)``,
-  SIMP_TAC std_ss [disjoint_family, disjoint_family_on, IN_UNIV] THEN
+Theorem disjoint_family_disjoint :
+    !A. disjoint_family (disjointed A)
+Proof
+  SIMP_TAC std_ss [disjoint_family_on, IN_UNIV] THEN
   RW_TAC std_ss [disjointed, EXTENSION, GSPECIFICATION, IN_INTER] THEN
   SIMP_TAC std_ss [NOT_IN_EMPTY, IN_DIFF, IN_BIGUNION] THEN
   ASM_CASES_TAC ``(x NOTIN A (m:num) \/ ?s. x IN s /\ s IN {A i | i < m})`` THEN
@@ -1089,7 +939,8 @@ val disjoint_family_disjoint = store_thm ("disjoint_family_disjoint",
   ASM_CASES_TAC ``x NOTIN A (n:num)`` THEN FULL_SIMP_TAC std_ss [] THEN
   FULL_SIMP_TAC std_ss [GSPECIFICATION] THEN
   ASM_CASES_TAC ``m < n:num`` THENL [METIS_TAC [], ALL_TAC] THEN
-  `n < m:num` by ASM_SIMP_TAC arith_ss [] THEN METIS_TAC []);
+  `n < m:num` by ASM_SIMP_TAC arith_ss [] THEN METIS_TAC []
+QED
 
 val finite_UN_disjointed_eq = prove (
   ``!A n. BIGUNION {disjointed A i | i IN {x | 0 <= x /\ x < n}} =

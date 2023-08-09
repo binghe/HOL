@@ -5217,7 +5217,7 @@ val lemma1 = prove (
 
 val lemma2 = prove (
   ``!A. (!m n. m <> n ==> DISJOINT (A m) (A n)) <=> disjoint_family A``,
-  STRIP_TAC THEN SIMP_TAC std_ss [disjoint_family, disjoint_family_on] THEN
+  STRIP_TAC THEN SIMP_TAC std_ss [disjoint_family_on] THEN
   SET_TAC []);
 
 val lemma3 = prove (
