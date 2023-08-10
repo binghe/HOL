@@ -1,7 +1,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open pairTheory pred_setTheory sortingTheory genericGraphTheory topologyTheory
-     listTheory hurdUtils;
+     hurdUtils;
 
 val _ = new_theory "fsgraph";
 
@@ -430,10 +430,11 @@ QED
     Perambulations
    ---------------------------------------------------------------------- *)
 
-(* NOTE: Added ‘!v. v IN nodes g’ to make sure single-vertice talk in the graph.
+(* NOTE: added ‘!v. v IN nodes g’ to make sure vertices of single-vertex
+   walks are indeed vertices in the graph.
 
-   The existing ‘adjacent vs v1 v2 ==> adjacent g v1 v2’ can only guarantee this
-   for walks of two or more vectices.  -- Chun Tian, August 10, 2023.
+   The existing ‘adjacent vs v1 v2 ==> adjacent g v1 v2’ can only guarantee
+   it for walks of two or more vectices.  -- Chun Tian, August 10, 2023.
  *)
 Definition walk_def:
   walk g vs <=> vs <> [] /\ (!v. MEM v vs ==> v IN nodes g) /\
@@ -576,10 +577,10 @@ Proof
     rw [separation_def, AB_path_def, path_def, walk_def]
  >> rw [GSYM DISJOINT_DEF, Once DISJOINT_SYM]
  >> rw [DISJOINT_ALT]
- >> rw [GSYM NOT_NULL_MEM, NULL_EQ]
+ >> rw [GSYM listTheory.NOT_NULL_MEM, listTheory.NULL_EQ]
 QED
 
-(* NOTE: A,B may goes beyond ‘nodes g’ but ‘A INTER B’ must be inside. *)
+(* NOTE: ‘A INTER B SUBSET nodes g’ seems to be the minimal requirement. *)
 Theorem separation_INTER_SUBSET :
     !A B g X. separation g A B X /\ A INTER B SUBSET nodes g ==>
               A INTER B SUBSET X
@@ -596,13 +597,19 @@ Proof
  >> POP_ASSUM MP_TAC >> SET_TAC []
 QED
 
-Theorem separation_SUBSET :
+Theorem separation_SUBSET_IMP :
     !A B g X Y. separation g A B X /\ X SUBSET Y ==> separation g A B Y
 Proof
     rw [separation_def]
  >> Q.PAT_X_ASSUM ‘!vs. P’ (MP_TAC o (Q.SPEC ‘vs’))
  >> simp []
  >> ASM_SET_TAC []
+QED
+
+Theorem separation_UNIV :
+    !g A B. separation g A B UNIV
+Proof
+    cheat
 QED
 
 (* The previous theorem shows that a separation X can be arbitrary enlarged to
