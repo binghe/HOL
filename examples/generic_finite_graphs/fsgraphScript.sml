@@ -538,7 +538,7 @@ End
    formed by single shared vertex from both A and B is also an A-B path.
  *)
 Theorem trivial_AB_path :
-    !g A B v. v IN A /\ v IN B ==> AB_path g A B [v]
+    !A B g v. v IN A /\ v IN B ==> AB_path g A B [v]
 Proof
     rw [AB_path_def, trivial_path]
  >> ASM_SET_TAC []
@@ -549,8 +549,16 @@ Definition separation_def :
     separation g A B X = !vs. AB_path g A B vs ==> X INTER set vs <> {}
 End
 
+(* By definition, ‘separation g A B’ is also the set of all A-B separations. *)
+Theorem separation_alt_GSPEC :
+    !g A B. separation g A B =
+              {X | !vs. AB_path g A B vs ==> X INTER set vs <> {}}
+Proof
+    rw [Once EXTENSION, IN_APP, separation_def]
+QED
+
 Theorem separation_INTER_SUBSET :
-    !g A B X. separation g A B X ==> A INTER B SUBSET X
+    !A B g X. separation g A B X ==> A INTER B SUBSET X
 Proof
     rw [separation_def, UNION_SUBSET, AB_path_def]
  >> Cases_on ‘A INTER B = {}’ >- rw []
@@ -563,11 +571,27 @@ Proof
  >> POP_ASSUM MP_TAC >> SET_TAC []
 QED
 
+Theorem separation_SUBSET :
+    !A B g X Y. separation g A B X /\ X SUBSET Y ==> separation g A B Y
+Proof
+    rw [separation_def]
+ >> Q.PAT_X_ASSUM ‘!vs. P’ (MP_TAC o (Q.SPEC ‘vs’))
+ >> simp []
+ >> ASM_SET_TAC []
+QED
+
+(* The previous theorem shows that a separation X can be arbitrary enlarged to
+   maintain its definition, thus it makes sense to focus on the smallest set of
+   vertices having intersections with all A-B paths.
+ *)
+Definition smallest_separation_def :
+    smallest_separation g A B = BIGINTER (separation g A B)
+End
+
 Theorem Menger :
-    !(g :'a fsgraph) A B. A UNION B SUBSET nodes g ==>
-        CARD (BIGINTER {X | separation g A B X}) =
-        CARD (BIGUNION {vss | disjoint (IMAGE set vss) /\
-                              !vs. vs IN vss ==> AB_path g A B vs})
+    !A B (g :'a fsgraph).
+        ?paths. disjoint (IMAGE set paths) /\ (!p. p IN paths ==> AB_path g A B p) /\
+                CARD paths = CARD (smallest_separation g A B)
 Proof
     cheat
 QED
