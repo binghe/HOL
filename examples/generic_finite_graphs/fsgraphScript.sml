@@ -1,6 +1,7 @@
 open HolKernel Parse boolLib bossLib;
 
-open pairTheory pred_setTheory sortingTheory genericGraphTheory topologyTheory;
+open pairTheory pred_setTheory sortingTheory genericGraphTheory topologyTheory
+     listTheory hurdUtils;
 
 val _ = new_theory "fsgraph";
 
@@ -429,12 +430,18 @@ QED
     Perambulations
    ---------------------------------------------------------------------- *)
 
+(* NOTE: Added ‘!v. v IN nodes g’ to make sure single-vertice talk in the graph.
+
+   The existing ‘adjacent vs v1 v2 ==> adjacent g v1 v2’ can only guarantee this
+   for walks of two or more vectices.  -- Chun Tian, August 10, 2023.
+ *)
 Definition walk_def:
-  walk g vs ⇔ vs ≠ [] ∧ ∀v1 v2. adjacent vs v1 v2 ⇒ adjacent g v1 v2
+  walk g vs <=> vs <> [] /\ (!v. MEM v vs ==> v IN nodes g) /\
+               !v1 v2. adjacent vs v1 v2 ==> adjacent g v1 v2
 End
 
 Theorem trivial_walk[simp] :
-    !g v. walk g [v]
+    !g v. v IN nodes g ==> walk g [v]
 Proof
     rw [walk_def]
 QED
@@ -445,7 +452,7 @@ Definition path_def:
 End
 
 Theorem trivial_path[simp] :
-    !g v. path g [v]
+    !g v. v IN nodes g ==> path g [v]
 Proof
     rw [path_def]
 QED
@@ -498,11 +505,15 @@ Proof
   >- (qexists‘[v1]’ >> simp[]) >>
   gs[listTheory.adjacent_iff, DISJ_IMP_THM, FORALL_AND_THM] >>
   rename [‘LAST _ = LAST (v2::vs)’] >>
-  first_x_assum $ drule_then strip_assume_tac >> rename [‘ALL_DISTINCT vs'’] >>
+ (* stage work *)
+  rpt (first_x_assum $ drule_then strip_assume_tac) >>
+  rename [‘ALL_DISTINCT vs'’] >>
   reverse $ Cases_on ‘MEM v1 vs'’
   >- (qexists ‘v1::vs'’ >> gvs[] >> rpt strip_tac >~
       [‘adjacent (v1::vs') a b’, ‘adjacent g a b’]
-      >- (Cases_on ‘vs'’ >> gvs[listTheory.adjacent_iff]) >>
+      >- (Cases_on ‘vs'’ >> gvs[listTheory.adjacent_iff])
+      >- PROVE_TAC [] (* v IN nodes g *)
+      >- PROVE_TAC [] (* v IN nodes g *) >>
       rename [‘LAST (v1::vs') = LAST (HD vs'::vs)’] >>
       ‘LAST (v1::vs') = LAST vs'’ suffices_by simp[] >>
       qpat_x_assum ‘LAST vs' = LAST (_ :: _)’ kall_tac >>
@@ -515,7 +526,9 @@ Proof
   simp[] >> rpt strip_tac >~
   [‘LAST (HD _ :: _) = LAST (p ++ [v1] ++ s)’,
    ‘LAST (v1 :: s) = LAST (p ++ [v1] ++ s)’]
-  >- (simp[Excl "APPEND_ASSOC", GSYM listTheory.APPEND_ASSOC]) >>
+  >- (simp[Excl "APPEND_ASSOC", GSYM listTheory.APPEND_ASSOC])
+  >- PROVE_TAC [] (* v IN nodes g *)
+  >- PROVE_TAC [] (* v IN nodes g *) >>
   first_x_assum irule >> REWRITE_TAC[GSYM listTheory.APPEND_ASSOC] >>
   irule adjacent_append2 >> simp[]
 QED
@@ -538,7 +551,7 @@ End
    formed by single shared vertex from both A and B is also an A-B path.
  *)
 Theorem trivial_AB_path :
-    !A B g v. v IN A /\ v IN B ==> AB_path g A B [v]
+    !A B g v. v IN nodes g /\ v IN A /\ v IN B ==> AB_path g A B [v]
 Proof
     rw [AB_path_def, trivial_path]
  >> ASM_SET_TAC []
@@ -557,11 +570,23 @@ Proof
     rw [Once EXTENSION, IN_APP, separation_def]
 QED
 
+Theorem separation_all_nodes :
+    !g A B. separation g A B (nodes g)
+Proof
+    rw [separation_def, AB_path_def, path_def, walk_def]
+ >> rw [GSYM DISJOINT_DEF, Once DISJOINT_SYM]
+ >> rw [DISJOINT_ALT]
+ >> rw [GSYM NOT_NULL_MEM, NULL_EQ]
+QED
+
+(* NOTE: A,B may goes beyond ‘nodes g’ but ‘A INTER B’ must be inside. *)
 Theorem separation_INTER_SUBSET :
-    !A B g X. separation g A B X ==> A INTER B SUBSET X
+    !A B g X. separation g A B X /\ A INTER B SUBSET nodes g ==>
+              A INTER B SUBSET X
 Proof
     rw [separation_def, UNION_SUBSET, AB_path_def]
  >> Cases_on ‘A INTER B = {}’ >- rw []
+ >> Q.PAT_X_ASSUM ‘A INTER B SUBSET nodes g’ MP_TAC
  >> rw [SUBSET_DEF]
  (* now pick a trivial path containing only ‘x’ *)
  >> Q.PAT_X_ASSUM ‘!vs. P’ (MP_TAC o Q.SPEC ‘[x]’)
@@ -590,7 +615,8 @@ End
 
 Theorem Menger :
     !A B (g :'a fsgraph).
-        ?paths. disjoint (IMAGE set paths) /\ (!p. p IN paths ==> AB_path g A B p) /\
+        ?paths. disjoint (IMAGE set paths) /\
+               (!p. p IN paths ==> AB_path g A B p) /\
                 CARD paths = CARD (smallest_separation g A B)
 Proof
     cheat
