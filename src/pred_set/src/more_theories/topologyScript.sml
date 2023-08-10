@@ -961,36 +961,56 @@ Overload pairwiseD        = “topology$pairwise”
 Overload pairwiseN[local] = “pred_set$pairwise”
 
 (* connection between pairwiseD and pairwiseN, originally by Michael Norrish *)
-Theorem pairwiseD_alt :
+Theorem pairwiseD_alt_pairwiseN :
     !R. pairwiseD R = pairwiseN (RC R)
 Proof
     RW_TAC std_ss [FUN_EQ_THM, pairwise, pairwise_def, RC_DEF]
  >> METIS_TAC []
 QED
 
-val PAIRWISE_EMPTY = store_thm ("PAIRWISE_EMPTY",
- ``!r. pairwise r {} <=> T``,
-  REWRITE_TAC[pairwise, NOT_IN_EMPTY] THEN MESON_TAC[]);
+Theorem PAIRWISE_EMPTY :
+   !r. pairwise r {} <=> T
+Proof
+   rw [pairwiseD_alt_pairwiseN, pairwise_EMPTY]
+QED
 
-val PAIRWISE_SING = store_thm ("PAIRWISE_SING",
- ``!r x. pairwise r {x} <=> T``,
-  REWRITE_TAC[pairwise, IN_SING] THEN MESON_TAC[]);
+Theorem PAIRWISE_SING :
+   !r x. pairwise r {x} <=> T
+Proof
+  REWRITE_TAC[pairwise, IN_SING] >> MESON_TAC[]
+QED
 
-val PAIRWISE_MONO = store_thm ("PAIRWISE_MONO",
- ``!r s t. pairwise r s /\ t SUBSET s ==> pairwise r t``,
-  REWRITE_TAC[pairwise] THEN SET_TAC[]);
+Theorem PAIRWISE_MONO :
+   !r s t. pairwise r s /\ t SUBSET s ==> pairwise r t
+Proof
+    rw [pairwiseD_alt_pairwiseN]
+ >> MATCH_MP_TAC pairwise_SUBSET
+ >> Q.EXISTS_TAC ‘s’ >> ASM_REWRITE_TAC []
+QED
 
-val PAIRWISE_INSERT = store_thm ("PAIRWISE_INSERT",
- ``!r x s.
+Theorem PAIRWISE_INSERT :
+   !r x s.
         pairwise r (x INSERT s) <=>
         (!y. y IN s /\ ~(y = x) ==> r x y /\ r y x) /\
-        pairwise r s``,
-  REWRITE_TAC[pairwise, IN_INSERT] THEN MESON_TAC[]);
+        pairwise r s
+Proof
+  REWRITE_TAC[pairwise, IN_INSERT] >> MESON_TAC[]
+QED
 
-val PAIRWISE_IMAGE = store_thm ("PAIRWISE_IMAGE",
- ``!r f. pairwise r (IMAGE f s) <=>
-         pairwise (\x y. ~(f x = f y) ==> r (f x) (f y)) s``,
-  REWRITE_TAC[pairwise, IN_IMAGE] THEN MESON_TAC[]);
+Theorem PAIRWISE_IMAGE :
+   !r f. pairwise r (IMAGE f s) <=>
+         pairwise (\x y. ~(f x = f y) ==> r (f x) (f y)) s
+Proof
+  REWRITE_TAC[pairwise, IN_IMAGE] >> MESON_TAC[]
+QED
+
+Theorem PAIRWISE_UNION :
+   !r s1 s2. pairwise r (s1 UNION s2) <=>
+             pairwise r s1 /\ pairwise r s2 /\
+            (!x y. x IN s1 /\ y IN s2 /\ x <> y ==> r x y /\ r y x)
+Proof
+  SRW_TAC [boolSimps.DNF_ss][pairwise] >> METIS_TAC []
+QED
 
 (* ------------------------------------------------------------------------- *)
 (*  Disjoint system of sets (‘disjoint’, originally from Isabelle/HOL)       *)

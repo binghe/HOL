@@ -16,9 +16,8 @@
 open HolKernel Parse boolLib bossLib;
 
 open arithmeticTheory optionTheory pairTheory combinTheory pred_setTheory
-     pred_setLib numLib realLib seqTheory hurdUtils util_probTheory;
-
-open topologyTheory;
+     pred_setLib numLib realLib seqTheory topologyTheory hurdUtils
+     util_probTheory;
 
 val _ = new_theory "sigma_algebra";
 
