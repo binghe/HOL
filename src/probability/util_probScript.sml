@@ -1256,6 +1256,13 @@ Proof
     rw [Once EXTENSION, LT_SUC_LE]
 QED
 
+(* ‘count n’ re-expressed by numseg *)
+Theorem count1_numseg :
+    !n. count1 n = {0..n}
+Proof
+    rw [Once EXTENSION]
+QED
+
 val _ = export_theory ();
 
 (* References:
