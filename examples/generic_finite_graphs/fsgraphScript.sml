@@ -15,6 +15,13 @@ Proof
   metis_tac[adjacent_SYM]
 QED
 
+Overload fsgAddNode = “\n (g :'a fsgraph). addNode n () g”
+Overload fsgAddEdge = “\x y (g :'a fsgraph). addUDEdge x y () g”
+
+Definition fsgAddNodes_def:
+  fsgAddNodes N g = ITSET fsgAddNode N g
+End
+
 Definition fsgAddEdges_def:
   fsgAddEdges (es0: α set set) (g:α fsgraph) =
   let
@@ -34,7 +41,7 @@ Proof
 QED
 
 Theorem fsgedges_addNode[simp]:
-  fsgedges (addNode n u g) = fsgedges g
+  fsgedges (fsgAddNode n g) = fsgedges g
 Proof
   simp[]
 QED
@@ -157,6 +164,19 @@ Theorem fsg_induction:
 Proof
   rpt strip_tac >> Induct_on ‘order g’ >> simp[] >> rpt strip_tac >>
   qspec_then ‘g’ strip_assume_tac fsgraph_decomposition >> gs[]
+QED
+
+Theorem fsg_edge_induction :
+  !N P. P (fsgAddNodes N emptyG) /\
+        (!g0 x y. nodes g0 = N /\
+                  x <> y /\ {x; y} SUBSET (nodes g0) /\ {x; y} NOTIN fsgedges g0 /\
+                  P g0 ==> P (fsgAddEdge x y g0)) ==>
+        !g. nodes g = N ==> P g
+Proof
+    qx_genl_tac [‘N’, ‘Q’]
+ >> STRIP_TAC
+ >> Induct using fsg_induction
+ >> cheat
 QED
 
 Theorem FINITE_sets_have_descending_measure_lists:
@@ -571,6 +591,15 @@ Proof
     rw [Once EXTENSION, IN_APP, separation_def]
 QED
 
+Theorem separation_SUBSET_IMP :
+    !A B g X Y. separation g A B X /\ X SUBSET Y ==> separation g A B Y
+Proof
+    rw [separation_def]
+ >> Q.PAT_X_ASSUM ‘!vs. P’ (MP_TAC o (Q.SPEC ‘vs’))
+ >> simp []
+ >> ASM_SET_TAC []
+QED
+
 Theorem separation_all_nodes :
     !g A B. separation g A B (nodes g)
 Proof
@@ -580,7 +609,18 @@ Proof
  >> rw [GSYM listTheory.NOT_NULL_MEM, listTheory.NULL_EQ]
 QED
 
-(* NOTE: ‘A INTER B SUBSET nodes g’ seems to be the minimal requirement. *)
+Theorem separation_UNIV :
+    !g A B. separation g A B UNIV
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC separation_SUBSET_IMP
+ >> Q.EXISTS_TAC ‘nodes g’
+ >> rw [separation_all_nodes]
+QED
+
+(* NOTE: ‘A INTER B SUBSET nodes g’ seems to be the minimal requirement for the
+          conclusion to hold.
+ *)
 Theorem separation_INTER_SUBSET :
     !A B g X. separation g A B X /\ A INTER B SUBSET nodes g ==>
               A INTER B SUBSET X
@@ -597,19 +637,14 @@ Proof
  >> POP_ASSUM MP_TAC >> SET_TAC []
 QED
 
-Theorem separation_SUBSET_IMP :
-    !A B g X Y. separation g A B X /\ X SUBSET Y ==> separation g A B Y
+(* NOTE: weaker but more common requirements: ‘A,B SUBSET nodes g’ *)
+Theorem separation_INTER_SUBSET' :
+    !A B g X. separation g A B X /\ A SUBSET nodes g /\ B SUBSET nodes g ==>
+              A INTER B SUBSET X
 Proof
-    rw [separation_def]
- >> Q.PAT_X_ASSUM ‘!vs. P’ (MP_TAC o (Q.SPEC ‘vs’))
- >> simp []
- >> ASM_SET_TAC []
-QED
-
-Theorem separation_UNIV :
-    !g A B. separation g A B UNIV
-Proof
-    cheat
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC separation_INTER_SUBSET
+ >> Q.EXISTS_TAC ‘g’ >> fs [SUBSET_DEF]
 QED
 
 (* The previous theorem shows that a separation X can be arbitrary enlarged to
@@ -621,11 +656,18 @@ Definition smallest_separation_def :
 End
 
 Theorem Menger :
-    !A B (g :'a fsgraph).
+    !A B (g :'a fsgraph). A INTER B SUBSET nodes g ==>
         ?paths. disjoint (IMAGE set paths) /\
                (!p. p IN paths ==> AB_path g A B p) /\
                 CARD paths = CARD (smallest_separation g A B)
 Proof
+    qx_genl_tac [‘A’, ‘B’]
+ (* applying fsg_induction *)
+ >> Induct using fsg_induction
+ >- (rw [SUBSET_DEF] \\
+     Q.ABBREV_TAC ‘vs = smallest_separation emptyG A B’ \\
+     cheat)
+ >>
     cheat
 QED
 
