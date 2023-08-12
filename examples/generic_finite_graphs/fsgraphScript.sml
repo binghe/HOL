@@ -15,11 +15,22 @@ Proof
   metis_tac[adjacent_SYM]
 QED
 
-Overload fsgAddNode = “\n (g :'a fsgraph). addNode n () g”
-Overload fsgAddEdge = “\x y (g :'a fsgraph). addUDEdge x y () g”
+Definition fsgAddNode_def :
+  fsgAddNode n (g :'a fsgraph) = addNode n () g
+End
 
-Definition fsgAddNodes_def:
+Theorem nodes_fsgAddNode[simp] :
+    nodes (fsgAddNode n g) = n INSERT nodes g
+Proof
+    rw [fsgAddNode_def]
+QED
+
+Definition fsgAddNodes_def :
   fsgAddNodes N g = ITSET fsgAddNode N g
+End
+
+Definition fsgAddEdge_def :
+  fsgAddEdge x y (g :'a fsgraph) = addUDEdge x y () g
 End
 
 Definition fsgAddEdges_def:
@@ -43,7 +54,17 @@ QED
 Theorem fsgedges_addNode[simp]:
   fsgedges (fsgAddNode n g) = fsgedges g
 Proof
-  simp[]
+  simp[fsgAddNode_def]
+QED
+
+Definition fsg_edgesize_def:
+  fsg_edgesize (g :'a fsgraph) = CARD (fsgedges g)
+End
+
+Theorem fsg_edgesize_empty[simp]:
+  fsg_edgesize emptyG = 0
+Proof
+  simp[fsg_edgesize_def]
 QED
 
 Theorem nodes_fsgAddEdges[simp]:
@@ -166,19 +187,6 @@ Proof
   qspec_then ‘g’ strip_assume_tac fsgraph_decomposition >> gs[]
 QED
 
-Theorem fsg_edge_induction :
-  !N P. P (fsgAddNodes N emptyG) /\
-        (!g0 x y. nodes g0 = N /\
-                  x <> y /\ {x; y} SUBSET (nodes g0) /\ {x; y} NOTIN fsgedges g0 /\
-                  P g0 ==> P (fsgAddEdge x y g0)) ==>
-        !g. nodes g = N ==> P g
-Proof
-    qx_genl_tac [‘N’, ‘Q’]
- >> STRIP_TAC
- >> Induct using fsg_induction
- >> cheat
-QED
-
 Theorem FINITE_sets_have_descending_measure_lists:
   ∀(f :'a -> num) s. FINITE s ⇒
       ∃es. SORTED (inv $<=) (MAP f es) ∧ set es = s ∧
@@ -284,6 +292,39 @@ Proof
   rw[EQ_IMP_THM, PULL_EXISTS, FORALL_AND_THM] >>
   first_x_assum drule >> simp[INSERT2_lemma] >> rw[] >> simp[] >>
   metis_tac[edges_SYM]
+QED
+
+Theorem nodes_fsgAddNodes :
+    !g N. FINITE N ==> nodes (fsgAddNodes N g) = N UNION nodes g
+Proof
+    Q.X_GEN_TAC ‘g’
+ >> simp [fsgAddNodes_def]
+ >> Induct using FINITE_INDUCT >> simp [fsgAddNode_def]
+ >> rpt STRIP_TAC
+ >> Suff ‘ITSET fsgAddNode (e INSERT N) g =
+          fsgAddNode e (ITSET fsgAddNode (N DELETE e) g)’
+ >- (‘N DELETE e = N’ by PROVE_TAC [DELETE_NON_ELEMENT] >> POP_ORW \\
+     rw [] >> SET_TAC [])
+ >> MATCH_MP_TAC COMMUTING_ITSET_RECURSES
+ >> rw [fsgraph_component_equality] >> SET_TAC []
+QED
+
+Theorem fsg_edge_induction :
+  !N P. P (fsgAddNodes N emptyG) /\
+        (!g0 x y. nodes g0 = N /\
+                  x <> y /\ {x; y} SUBSET (nodes g0) /\ {x; y} NOTIN fsgedges g0 /\
+                  P g0 ==> P (fsgAddEdge x y g0)) ==>
+        !g. nodes g = N ==> P g
+Proof
+    rpt STRIP_TAC
+ >> Induct_on ‘fsg_edgesize g’ >> rw []
+ >- (Suff ‘fsgAddNodes (nodes g) emptyG = g’ >- DISCH_THEN (fs o wrap) \\
+     POP_ASSUM MP_TAC >> KILL_TAC \\
+     (* fsg_edgesize g = 0 ==> fsgAddNodes (nodes g) emptyG = g *)
+     rw [fsg_edgesize_def, udul_component_equality] \\
+     cheat)
+ (* stage work *)
+ >> cheat
 QED
 
 Definition fsgsize_def:
