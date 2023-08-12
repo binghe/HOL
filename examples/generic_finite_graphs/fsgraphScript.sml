@@ -52,6 +52,12 @@ Proof
 QED
 
 Theorem fsgedges_addNode[simp]:
+  fsgedges (addNode n u g) = fsgedges g
+Proof
+  simp[]
+QED
+
+Theorem fsgedges_fsgAddNode[simp]:
   fsgedges (fsgAddNode n g) = fsgedges g
 Proof
   simp[fsgAddNode_def]
@@ -188,11 +194,10 @@ Proof
 QED
 
 Theorem FINITE_sets_have_descending_measure_lists:
-  ∀(f :'a -> num) s. FINITE s ⇒
+  ∀s. FINITE s ⇒
       ∃es. SORTED (inv $<=) (MAP f es) ∧ set es = s ∧
            ALL_DISTINCT es
 Proof
-  qx_gen_tac ‘f’ >>
   Induct_on ‘FINITE’ using FINITE_LEAST_MEASURE_INDUCTION >> qexists ‘f’ >>
   simp[PULL_EXISTS] >> rpt strip_tac >>
   rename [‘¬MEM a es’] >> qexists ‘es ++ [a]’ >>
@@ -201,12 +206,10 @@ Proof
 QED
 
 Theorem descending_measure_lists_unique:
-  ∀(f :'a -> num) es1 es2.
-            SORTED (inv $<=) (MAP f es1) ∧ SORTED (inv $<=) (MAP f es2) ∧
+  ∀es1 es2. SORTED (inv $<=) (MAP f es1) ∧ SORTED (inv $<=) (MAP f es2) ∧
             set es1 = set es2 ∧ ALL_DISTINCT es1 ∧ ALL_DISTINCT es2 ⇒
             MAP f es1 = MAP f es2
 Proof
-  qx_gen_tac ‘f’ >>
   Induct >> simp[SORTED_EQ, MEM_MAP, PULL_EXISTS] >>
   rpt strip_tac >> simp[MAP_EQ_CONS] >>
   Cases_on ‘es2’ >> gvs[SORTED_EQ, MEM_MAP, PULL_EXISTS] >>
