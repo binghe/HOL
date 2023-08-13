@@ -1,7 +1,9 @@
 open HolKernel Parse boolLib bossLib;
 
-open pairTheory listTheory pred_setTheory sortingTheory genericGraphTheory
-     topologyTheory hurdUtils;
+open arithmeticTheory pairTheory listTheory pred_setTheory sortingTheory hurdUtils
+     topologyTheory;
+
+open genericGraphTheory;
 
 val _ = new_theory "fsgraph";
 
@@ -325,6 +327,32 @@ Proof
      rw [])
  >> MATCH_MP_TAC COMMUTING_ITSET_RECURSES
  >> rw [fsgraph_component_equality] >> SET_TAC []
+QED
+
+(* FIXME: can this proof be greatly shorten? *)
+Theorem card2_explicit[local] :
+    !e. FINITE e /\ CARD e = 2 ==> ?x y. x <> y /\ e = {x; y}
+Proof
+    rpt STRIP_TAC
+ >> Q.ABBREV_TAC ‘x = CHOICE e’
+ >> Q.EXISTS_TAC ‘x’
+ >> Q.ABBREV_TAC ‘t = REST e’
+ >> ‘e <> {}’ by (CCONTR_TAC >> fs [CARD_EMPTY])
+ >> ‘x IN e’ by METIS_TAC [CHOICE_DEF]
+ >> ‘x NOTIN t’ by ASM_SET_TAC []
+ >> Q.ABBREV_TAC ‘y = CHOICE t’
+ >> ‘FINITE t /\ CARD t = 1’
+      by (‘t = e DELETE x’ by METIS_TAC [REST_DEF] \\
+          rw [CARD_DELETE, FINITE_DELETE])
+ >> ‘SING t’ by PROVE_TAC [SING_IFF_CARD1]
+ >> fs [SING_DEF] >> rename1 ‘t = {z}’
+ >> ‘t <> {}’ by (CCONTR_TAC >> fs [CARD_EMPTY])
+ >> ‘y IN t’ by METIS_TAC [CHOICE_DEF]
+ >> ‘z = y’ by PROVE_TAC [IN_SING]
+ >> ‘x <> y’ by PROVE_TAC []
+ >> Q.EXISTS_TAC ‘y’ >> art []
+ >> ‘e = x INSERT t’ by ASM_SET_TAC [] >> POP_ORW
+ >> rw [Once EXTENSION]
 QED
 
 Theorem fsg_edge_induction :
