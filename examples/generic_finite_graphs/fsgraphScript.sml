@@ -325,8 +325,8 @@ Proof
 QED
 
 Theorem fsgedges_fsgAddEdge[simp] :
-    !a b g. a <> b /\ a IN nodes g /\ b IN nodes g ==>
-            fsgedges (fsgAddEdge a b g) = {a;b} INSERT fsgedges g
+    a <> b /\ a IN nodes g /\ b IN nodes g ==>
+    fsgedges (fsgAddEdge a b g) = {a;b} INSERT fsgedges g
 Proof
     rw [fsgAddEdge_def, udedges_thm]
  >> rw [Once EXTENSION]
@@ -334,9 +334,9 @@ Proof
 QED
 
 Theorem fsgAddEdge_remove_fsedge[simp] :
-    !g x y. {x; y} IN fsgedges g ==> fsgAddEdge x y (remove_fsedge {x;y} g) = g
+    {x; y} IN fsgedges g ==> fsgAddEdge x y (remove_fsedge {x;y} g) = g
 Proof
-    rpt GEN_TAC >> STRIP_TAC
+    STRIP_TAC
  >> ‘x <> y /\ x IN nodes g /\ y IN nodes g’ by PROVE_TAC [fsgedges_members]
  >> rw [fsgraph_component_equality]
 QED
