@@ -68,16 +68,6 @@ Proof
   simp[fsgAddNode_def]
 QED
 
-Definition fsg_edgesize_def:
-  fsg_edgesize (g :'a fsgraph) = CARD (fsgedges g)
-End
-
-Theorem fsg_edgesize_empty[simp]:
-  fsg_edgesize emptyG = 0
-Proof
-  simp[fsg_edgesize_def]
-QED
-
 Theorem nodes_fsgAddEdges[simp]:
   nodes (fsgAddEdges es g) = nodes g
 Proof
@@ -290,12 +280,6 @@ Proof
   drule alledges_valid >> simp[]
 QED
 
-Theorem fsg_edgesize_remove_fsedge[simp] :
-    e IN fsgedges g ==> fsg_edgesize (remove_fsedge e g) = fsg_edgesize g - 1
-Proof
-    rw [fsg_edgesize_def, CARD_DELETE]
-QED
-
 Theorem fsgraph_component_equality:
   (g1 : α fsgraph = g2) ⇔ nodes g1 = nodes g2 ∧ fsgedges g1 = fsgedges g2
 Proof
@@ -306,6 +290,22 @@ Proof
   rw[EQ_IMP_THM, PULL_EXISTS, FORALL_AND_THM] >>
   first_x_assum drule >> simp[INSERT2_lemma] >> rw[] >> simp[] >>
   metis_tac[edges_SYM]
+QED
+
+Definition fsgsize_def:
+  fsgsize (g : α fsgraph) = CARD (fsgedges g)
+End
+
+Theorem fsgsize_empty[simp]:
+  fsgsize emptyG = 0
+Proof
+  simp[fsgsize_def]
+QED
+
+Theorem fsgsize_remove_fsedge[simp] :
+    e IN fsgedges g ==> fsgsize (remove_fsedge e g) = fsgsize g - 1
+Proof
+    rw [fsgsize_def, CARD_DELETE]
 QED
 
 Theorem fsgedges_members :
@@ -376,17 +376,17 @@ Proof
 QED
 
 Theorem fsgraph_edge_decomposition:
-  !g. fsg_edgesize (g :'a fsgraph) = 0 \/
+  !g. fsgsize (g :'a fsgraph) = 0 \/
       ?x y g0.
         x <> y /\ {x; y} SUBSET nodes g0 /\
         {x; y} NOTIN fsgedges g0 /\ g = fsgAddEdge x y g0 /\
-        fsg_edgesize g = fsg_edgesize g0 + 1
+        fsgsize g = fsgsize g0 + 1
 Proof
     rpt STRIP_TAC
- >> Cases_on ‘fsg_edgesize g = 0’ >- rw []
+ >> Cases_on ‘fsgsize g = 0’ >- rw []
  >> DISJ2_TAC
- >> ‘0 < fsg_edgesize g’ by rw []
- >> ‘fsgedges g <> {}’ by fs [CARD_EQ_0, fsg_edgesize_def]
+ >> ‘0 < fsgsize g’ by rw []
+ >> ‘fsgedges g <> {}’ by fs [CARD_EQ_0, fsgsize_def]
  >> ‘?e. e IN fsgedges g’ by METIS_TAC [MEMBER_NOT_EMPTY]
  >> ‘?a b. e = {a; b} /\ a IN nodes g /\ b IN nodes g /\ a <> b’
       by METIS_TAC [alledges_valid]
@@ -400,19 +400,15 @@ Theorem fsg_edge_induction :
                   P g0 ==> P (fsgAddEdge x y g0)) ==> P g
 Proof
     rpt STRIP_TAC
- >> Induct_on ‘fsg_edgesize g’
+ >> Induct_on ‘fsgsize g’
  >- (rw [] \\
      Suff ‘fsgAddNodes (nodes g) emptyG = g’ >- DISCH_THEN (fs o wrap) \\
-     Q.PAT_X_ASSUM ‘fsg_edgesize g = 0’ MP_TAC >> KILL_TAC \\
-     rw [fsg_edgesize_def, udul_component_equality])
+     Q.PAT_X_ASSUM ‘fsgsize g = 0’ MP_TAC >> KILL_TAC \\
+     rw [fsgsize_def, udul_component_equality])
  >> rpt STRIP_TAC
- >> qspec_then ‘g’ strip_assume_tac fsgraph_edge_decomposition (* 2 subgoals *)
+ >> qspec_then ‘g’ strip_assume_tac fsgraph_edge_decomposition
  >> fs []
 QED
-
-Definition fsgsize_def:
-  fsgsize (g : α fsgraph) = CARD (fsgedges g)
-End
 
 (* vertices not even in the graph at all have degree 0 *)
 Definition degree_def:
