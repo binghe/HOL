@@ -375,27 +375,6 @@ Proof
  >> rw [fsgraph_component_equality] >> SET_TAC []
 QED
 
-(* FIXME: can this proof be greatly shorten? *)
-Theorem card2_explicit[local] :
-    !e. FINITE e /\ CARD e = 2 ==> ?x y. x <> y /\ e = {x; y}
-Proof
-    rpt STRIP_TAC
- >> Q.ABBREV_TAC ‘x = CHOICE e’
- >> Q.EXISTS_TAC ‘x’
- >> Q.ABBREV_TAC ‘t = REST e’
- >> ‘e <> {}’ by (CCONTR_TAC >> fs [CARD_EMPTY])
- >> ‘x IN e’ by METIS_TAC [CHOICE_DEF]
- >> ‘FINITE t /\ CARD t = 1’
-      by (‘t = e DELETE x’ by METIS_TAC [REST_DEF] \\
-          rw [CARD_DELETE, FINITE_DELETE])
- >> ‘SING t’ by PROVE_TAC [SING_IFF_CARD1]
- >> ‘x NOTIN t’ by ASM_SET_TAC []
- >> fs [SING_DEF] >> rename1 ‘t = {y}’
- >> ‘e = x INSERT t’ by ASM_SET_TAC [] >> POP_ORW
- >> Q.EXISTS_TAC ‘y’ >> rw [Once EXTENSION]
- >> fs [IN_SING]
-QED
-
 Theorem fsgraph_edge_decomposition:
   !g. fsg_edgesize (g :'a fsgraph) = 0 \/
       ?x y g0.
@@ -415,18 +394,20 @@ Proof
 QED
 
 Theorem fsg_edge_induction :
-  !N P. P (fsgAddNodes N emptyG) /\
-        (!g0 x y. nodes g0 = N /\
-                  x <> y /\ {x; y} SUBSET N /\ {x; y} NOTIN fsgedges g0 /\
-                  P g0 ==> P (fsgAddEdge x y g0)) ==>
-        !g. nodes g = N ==> P g
+  !g P. P (fsgAddNodes (nodes g) emptyG) /\
+        (!g0 x y. nodes g0 = nodes g /\
+                  x <> y /\ {x; y} SUBSET nodes g /\ {x; y} NOTIN fsgedges g0 /\
+                  P g0 ==> P (fsgAddEdge x y g0)) ==> P g
 Proof
     rpt STRIP_TAC
- >> Induct_on ‘fsg_edgesize g’ >> rw []
- >- (Suff ‘fsgAddNodes (nodes g) emptyG = g’ >- DISCH_THEN (fs o wrap) \\
-     POP_ASSUM MP_TAC >> KILL_TAC \\
+ >> Induct_on ‘fsg_edgesize g’
+ >- (rw [] \\
+     Suff ‘fsgAddNodes (nodes g) emptyG = g’ >- DISCH_THEN (fs o wrap) \\
+     Q.PAT_X_ASSUM ‘fsg_edgesize g = 0’ MP_TAC >> KILL_TAC \\
      rw [fsg_edgesize_def, udul_component_equality])
- >> qspec_then ‘g’ strip_assume_tac fsgraph_edge_decomposition >> gs []
+ >> rpt STRIP_TAC
+ >> qspec_then ‘g’ strip_assume_tac fsgraph_edge_decomposition (* 2 subgoals *)
+ >> fs []
 QED
 
 Definition fsgsize_def:
@@ -800,17 +781,23 @@ End
 
 Theorem Menger :
     !A B (g :'a fsgraph). A INTER B SUBSET nodes g ==>
-        ?paths. disjoint (IMAGE set paths) /\
-               (!p. p IN paths ==> AB_path g A B p) /\
-                CARD paths = CARD (smallest_separation g A B)
+        ?pths. disjoint (IMAGE set pths) /\
+              (!p. p IN pths ==> AB_path g A B p) /\
+               CARD pths = CARD (smallest_separation g A B)
 Proof
-    qx_genl_tac [‘A’, ‘B’]
- (* applying fsg_induction *)
- >> Induct using fsg_induction
- >- (rw [SUBSET_DEF] \\
-     Q.ABBREV_TAC ‘vs = smallest_separation emptyG A B’ \\
+    rpt STRIP_TAC
+ (* applying fsg_edge_induction *)
+ >> Q.ABBREV_TAC
+     ‘P = \g :'a fsgraph. ?pths.
+            disjoint (IMAGE set pths) /\ (!p. p IN pths ==> AB_path g A B p) /\
+            CARD pths = CARD (smallest_separation g A B)’
+ >> simp []
+ >> MATCH_MP_TAC (Q.SPEC ‘g’ fsg_edge_induction)
+ >> rw [Abbr ‘P’]
+ >- (Q.EXISTS_TAC ‘{[v] | v IN A /\ v IN B}’ \\
+     
      cheat)
- >>
+ >> 
     cheat
 QED
 
