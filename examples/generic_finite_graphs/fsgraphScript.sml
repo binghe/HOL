@@ -31,6 +31,13 @@ Definition fsgAddEdge_def :
   fsgAddEdge x y (g :'a fsgraph) = addUDEdge x y () g
 End
 
+Theorem nodes_fsgAddEdge[simp] :
+    !x y g. {x; y} SUBSET nodes g ==> nodes (fsgAddEdge x y g) = nodes g
+Proof
+    rw [fsgAddEdge_def]
+ >> ASM_SET_TAC []
+QED
+
 Definition fsgAddEdges_def:
   fsgAddEdges (es0: α set set) (g:α fsgraph) =
   let
@@ -350,6 +357,16 @@ Proof
  >> fs [IN_SING]
 QED
 
+Theorem fsgraph_edge_decomposition:
+  !g. fsg_edgesize (g :'a fsgraph) = 0 \/
+      ?x y g0.
+        x <> y /\ {x;y} SUBSET nodes g0 /\
+        {x;y} NOTIN fsgedges g0 /\ g = fsgAddEdge x y g0 /\
+        fsg_edgesize g = fsg_edgesize g0 + 1
+Proof
+    cheat
+QED
+
 Theorem fsg_edge_induction :
   !N P. P (fsgAddNodes N emptyG) /\
         (!g0 x y. nodes g0 = N /\
@@ -363,8 +380,7 @@ Proof
      POP_ASSUM MP_TAC >> KILL_TAC \\
      rw [fsg_edgesize_def, udul_component_equality])
  (* stage work *)
- >> 
-    cheat
+ >> qspec_then ‘g’ strip_assume_tac fsgraph_edge_decomposition >> gs []
 QED
 
 Definition fsgsize_def:
