@@ -339,20 +339,15 @@ Proof
  >> Q.ABBREV_TAC ‘t = REST e’
  >> ‘e <> {}’ by (CCONTR_TAC >> fs [CARD_EMPTY])
  >> ‘x IN e’ by METIS_TAC [CHOICE_DEF]
- >> ‘x NOTIN t’ by ASM_SET_TAC []
- >> Q.ABBREV_TAC ‘y = CHOICE t’
  >> ‘FINITE t /\ CARD t = 1’
       by (‘t = e DELETE x’ by METIS_TAC [REST_DEF] \\
           rw [CARD_DELETE, FINITE_DELETE])
  >> ‘SING t’ by PROVE_TAC [SING_IFF_CARD1]
- >> fs [SING_DEF] >> rename1 ‘t = {z}’
- >> ‘t <> {}’ by (CCONTR_TAC >> fs [CARD_EMPTY])
- >> ‘y IN t’ by METIS_TAC [CHOICE_DEF]
- >> ‘z = y’ by PROVE_TAC [IN_SING]
- >> ‘x <> y’ by PROVE_TAC []
- >> Q.EXISTS_TAC ‘y’ >> art []
+ >> ‘x NOTIN t’ by ASM_SET_TAC []
+ >> fs [SING_DEF] >> rename1 ‘t = {y}’
  >> ‘e = x INSERT t’ by ASM_SET_TAC [] >> POP_ORW
- >> rw [Once EXTENSION]
+ >> Q.EXISTS_TAC ‘y’ >> rw [Once EXTENSION]
+ >> fs [IN_SING]
 QED
 
 Theorem fsg_edge_induction :
