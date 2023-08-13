@@ -399,8 +399,8 @@ QED
 Theorem fsgraph_edge_decomposition:
   !g. fsg_edgesize (g :'a fsgraph) = 0 \/
       ?x y g0.
-        x <> y /\ {x;y} SUBSET nodes g0 /\
-        {x;y} NOTIN fsgedges g0 /\ g = fsgAddEdge x y g0 /\
+        x <> y /\ {x; y} SUBSET nodes g0 /\
+        {x; y} NOTIN fsgedges g0 /\ g = fsgAddEdge x y g0 /\
         fsg_edgesize g = fsg_edgesize g0 + 1
 Proof
     rpt STRIP_TAC
@@ -417,7 +417,7 @@ QED
 Theorem fsg_edge_induction :
   !N P. P (fsgAddNodes N emptyG) /\
         (!g0 x y. nodes g0 = N /\
-                  x <> y /\ {x; y} SUBSET (nodes g0) /\ {x; y} NOTIN fsgedges g0 /\
+                  x <> y /\ {x; y} SUBSET N /\ {x; y} NOTIN fsgedges g0 /\
                   P g0 ==> P (fsgAddEdge x y g0)) ==>
         !g. nodes g = N ==> P g
 Proof
