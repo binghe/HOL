@@ -28,56 +28,83 @@ open gcdTheory; (* for P_EUCLIDES *)
 
 open pairTheory; (* for FORALL_PROD, PAIR_EQ *)
 
+(* val _ = load "involuteFixTheory"; *)
+open involuteTheory involuteFixTheory;
+
+(* val _ = load "GaussTheory"; *)
+open logrootTheory logPowerTheory; (* for SQRT, SQRT_LE *)
+open GaussTheory; (* for divisors_has_factor *)
+
 
 (* ------------------------------------------------------------------------- *)
 (* Windmills and Involutions Documentation                                   *)
 (* ------------------------------------------------------------------------- *)
-(*
+(* Overloading:
+*)
+(* Definitions and Theorems (# are exported, ! are in compute):
 
    Helper Theorem:
-   triple_parts        |- !t. ?x y z. t = (x,y,z)
+   triple_parts            |- !t. ?x y z. t = (x,y,z)
 
-   Windmill Theory:
-   windmill_def        |- !x y z. windmill x y z = x ** 2 + 4 * y * z
-   windmill_eq_0       |- !x y z. windmill x y z = 0 <=> x = 0 /\ y * z = 0
-   windmill_comm       |- !x y z. windmill x y z = windmill x z y
-   windmill_trivial    |- !k. windmill 1 1 k = 4 * k + 1
-   windmill_by_squares |- !x y. windmill x y y = x ** 2 + (2 * y) ** 2
-   windmill_x_y_y      |- !n x y. n = windmill x y y ==>
+   Windmill:
+   windmill_def            |- !x y z. windmill (x, y, z) = x ** 2 + 4 * y * z
+   windmill_comm           |- !x y z. windmill (x, y, z) = windmill (x, z, y)
+   windmill_flip           |- !x y z. windmill (x, y, z) = windmill (x, z, y)
+   windmill_by_squares     |- !x y. windmill (x, y, y) = x ** 2 + (2 * y) ** 2
+   windmill_eq_0           |- !x y z. windmill (x, y, z) = 0 <=> x = 0 /\ y * z = 0
+   windmill_trivial        |- !k. windmill (1,1,k) = 4 * k + 1
+   windmill_trivial_flip   |- !k. windmill (1,k,1) = 4 * k + 1
+   windmill_trivial_prime  |- !p. p MOD 4 = 1 /\ prime p ==>
+                                  !x z. p = windmill (x, x, z) <=> x = 1 /\ z = p DIV 4
+   windmill_x_y_y          |- !n x y. n = windmill (x, y, y) ==>
                                   n = x ** 2 + (2 * y) ** 2 /\ (ODD n <=> ODD x)
-   windmill_trivial_prime
-                       |- !p. prime p /\ p MOD 4 = 1 ==>
-                          !x z. p = windmill x x z <=> x = 1 /\ z = p DIV 4
+   windmill_yz_product     |- !n x y z. n = windmill (x, y, z) ==> y * z = (n - x ** 2) DIV 4
+   windmill_yz_eq_0        |- !n x y z. n = windmill (x, y, z) ==> ((n - x ** 2) DIV 4 = 0 <=> y = 0 \/ z = 0)
+   windmill_x_upper        |- !n x y z. n = windmill (x,y,z) ==> x <= SQRT n
+   windmill_yz_upper       |- !n x y z. n = windmill (x,y,z) ==> y * z <= n DIV 4
+   windmill_y_upper        |- !n x y z. n = windmill (x,y,z) /\ 0 < z ==> y <= n DIV 4
+   windmill_z_upper        |- !n x y z. n = windmill (x,y,z) /\ 0 < y ==> z <= n DIV 4
+   windmill_nonsquare      |- !n x y z. ~square n /\ n = windmill (x, y, z) ==> y * z <> 0
+   windmill_arm_divisors   |- !n x y z. ~square n /\ n = windmill (x, y, z) ==>
+                                        (let p = (n - x * x) DIV 4 in y IN divisors p /\ z = p DIV y)
+   windmill_with_no_mind   |- !n. n MOD 4 = 0 <=> ?y z. n = windmill (0,y,z)
+   windmill_with_mind      |- !n x y z. n MOD 4 <> 0 /\ n = windmill (x,y,z) ==> 0 < x
+   windmill_with_no_arms   |- !n. square n <=> ?x y. n = windmill (x,y,0) \/ n = windmill (x,0,y)
+   windmill_with_arms      |- !n x y z. ~square n /\ n = windmill (x,y,z) ==> 0 < y /\ 0 < z
+   windmill_mind_and_arms  |- !n x y z. n MOD 4 <> 0 /\ ~square n /\ n = windmill (x,y,z) ==> 0 < x /\ 0 < y /\ 0 < z
 
-   Mills Theory:
-   mills_def               |- !n. mills n = {(x,y,z) | n = windmill x y z}
-   mills_element           |- !n x y z. (x,y,z) IN mills n <=> n = windmill x y z
+   Set of windmills:
+   mills_def               |- !n. mills n = {(x,y,z) | n = windmill (x, y, z)}
+   mills_element           |- !n x y z. (x,y,z) IN mills n <=> n = windmill (x, y, z)
+   mills_element_alt       |- !n t. t IN mills n <=> n = windmill t
+   mills_element_triple    |- !n t. t IN mills n <=> ?x y z. t = (x,y,z) /\ n = windmill (x, y, z)
    mills_element_flip      |- !n x y z. (x,y,z) IN mills n ==> (x,z,y) IN mills n
-   mills_element_triple    |- !n t. t IN mills n <=>
-                                     ?x y z. t = (x,y,z) /\ n = windmill x y z
    mills_element_trivial   |- !n. n MOD 4 = 1 ==> (1,1,n DIV 4) IN mills n
+   mills_element_trivial_flip
+                           |- !n. n MOD 4 = 1 ==> (1,n DIV 4,1) IN mills n
    mills_0                 |- mills 0 = {(0,0,n) | n IN univ(:num)} UNION
                                          {(0,n,0) | n IN univ(:num)}
    mills_0_infinite        |- INFINITE (mills 0)
    mills_1                 |- mills 1 = {1} CROSS ({0} CROSS univ(:num)) UNION
-                                         {1} CROSS (univ(:num) CROSS {0})
+                                        {1} CROSS (univ(:num) CROSS {0})
    mills_1_infinite        |- INFINITE (mills 1)
-   mills_non_square_bound  |- !n x y z. ~square n /\
-                                         (x,y,z) IN mills n ==> x < n /\ y < n /\ z < n
-   mills_non_square_subset |- !n. ~square n ==>
-                                   mills n SUBSET count n CROSS (count n CROSS count n)
+   mills_non_square_bound  |- !n x y z. ~square n /\ (x,y,z) IN mills n ==> x < n /\ y < n /\ z < n
+   mills_non_square_subset |- !n. ~square n ==> mills n SUBSET count n CROSS (count n CROSS count n)
    mills_non_square_card_upper
                            |- !n. ~square n ==> CARD (mills n) < n ** 3
    mills_non_square_finite |- !n. ~square n ==> FINITE (mills n)
    mills_finite_non_square |- !n. FINITE (mills n) <=> ~square n
 
-   mills_with_no_mind      |- !n. (?y z. (0,y,z) IN mills n) <=> n MOD 4 = 0
+   mills_with_no_mind      |- !n. n MOD 4 = 0 <=> ?y z. (0,y,z) IN mills n
    mills_with_all_mind     |- !n. n MOD 4 <> 0 <=> !x y z. (x,y,z) IN mills n ==> x <> 0
-   mills_with_no_arms      |- !n. (?x z. (x,0,z) IN mills n) \/
-                                  (?x y. (x,y,0) IN mills n) <=> square n
+   mills_with_mind         |- !n. n MOD 4 <> 0 <=> !x y z. (x,y,z) IN mills n ==> 0 < x
+   mills_with_no_arms      |- !n. square n <=> ?x y. (x,y,0) IN mills n \/ (x,0,y) IN mills n
    mills_with_all_arms     |- !n. ~square n <=> !x y z. (x,y,z) IN mills n ==> y <> 0 /\ z <> 0
-   mills_quad_suc_non_empty|- !n. n MOD 4 = 1 ==> mills n <> {}
-   mills_triple_nonzero    |- !n. ~square n /\ n MOD 4 <> 0 ==>
+   mills_with_arms         |- !n. ~square n <=> !x y z. (x,y,z) IN mills n ==> 0 < y /\ 0 < z
+   mills_with_mind_and_arms|- !n. n MOD 4 <> 0 /\ ~square n <=>
+                                  !x y z. (x,y,z) IN mills n ==> 0 < x /\ 0 < y /\ 0 < z
+   mills_non_empty         |- !n. n MOD 4 = 1 ==> mills n <> {}
+   mills_triple_nonzero    |- !n. n MOD 4 <> 0 /\ ~square n ==>
                               !x y z. (x,y,z) IN mills n ==> x <> 0 /\ y <> 0 /\ z <> 0
    mills_prime_triple_nonzero
                            |- !p x y z. prime p /\ (x,y,z) IN mills p ==>
@@ -86,52 +113,61 @@ open pairTheory; (* for FORALL_PROD, PAIR_EQ *)
    Flip involution:
    flip_def                |- !x y z. flip (x,y,z) = (x,z,y)
    flip_fix                |- !x y z. flip (x,y,z) = (x,y,z) <=> y = z
-   flip_closure            |- !n x y z. (x,y,z) IN mills n ==> flip (x,y,z) IN mills n
-   flip_closure_alt        |- !n t. t IN mills n ==> flip t IN mills n
-   flip_involute           |- !x y z. flip (flip (x,y,z)) = (x,y,z)
-   flip_involute_alt       |- !t. flip (flip t) = t
+   flip_fixes              |- !n. fixes flip (mills n) = {(x,y,y) | n = windmill (x,y,y)}
+   flip_fixes_element      |- !n x y z. (x,y,z) IN fixes flip (mills n) <=> n = windmill (x,y,z) /\ y = z
+   flip_fixes_alt          |- !s x. x IN fixes flip s <=> x IN s /\ flip x = x
+   flip_windmill           |- !t. windmill t = windmill (flip t)
+   flip_closure            |- !n t. t IN mills n ==> flip t IN mills n
+   flip_closure_iff        |- !n t. t IN mills n <=> flip t IN mills n
+   flip_involute           |- !t. flip (flip t) = t
    flip_involute_mills     |- !n. flip involute (mills n)
 
    Zagier's involution:
-   zagier_def      |- !x y z. zagier (x,y,z) =
-                              if x < y - z then (x + 2 * z,z,y - z - x)
-                              else if x < 2 * y then (2 * y - x,y,x + z - y)
-                              else (x - 2 * y,x + z - y,y)
-   zagier_0_y_z    |- !y z. zagier (0,y,z) =
-                            if z < y then (2 * z,z,y - z)
-                            else if 0 < y then (2 * y,y,z - y)
-                            else (0,z,0)
-   zagier_x_0_z    |- !x z. zagier (x,0,z) = (x,x + z,0)
-   zagier_x_y_0    |- !x y. zagier (x,y,0) =
-                            if x < y then (x,0,y - x)
-                            else if x < 2 * y then (2 * y - x,y,x - y)
-                            else (x - 2 * y,x - y,y)
-   zagier_1_y_1    |- !y. zagier (1,y,1) =
-                            if y = 0 then (1,2,0)
-                            else if y = 1 then (1,1,1)
-                            else if y = 2 then (3,2,0)
-                            else (3,1,y - 2)
-   zagier_1_1_z    |- !z. zagier (1,1,z) = (1,1,z)
-   zagier_x_0_0    |- !x. zagier (x,0,0) = (x,x,0)
-   zagier_0_y_0    |- !y. zagier (0,y,0) = (0,0,y)
-   zagier_0_0_z    |- !z. zagier (0,0,z) = (0,z,0)
-   zagier_0_0_0    |- zagier (0,0,0) = (0,0,0)
-   zagier_x_y_y    |- !x y. zagier (x,y,y) =
-                            if x < 2 * y then (2 * y - x,y,x) else (x - 2 * y,x,y)
-   zagier_fix      |- !x y z. x <> 0 ==> (zagier (x,y,z) = (x,y,z) <=> x = y)
-   zagier_x_x_z    |- !x z. x <> 0 ==> zagier (x,x,z) = (x,x,z)
-   zagier_closure  |- !n x y z. (x,y,z) IN mills n ==> zagier (x,y,z) IN mills n
-   zagier_closure_alt        |- !n t. t IN mills n ==> zagier t IN mills n
-   zagier_involute |- !x y z. x <> 0 /\ z <> 0 ==> zagier (zagier (x,y,z)) = (x,y,z)
-   zagier_involute_alt |- !x y z. x * z <> 0 ==> zagier (zagier (x,y,z)) = (x,y,z)
-   zagier_involute_thm |- !t. FST t <> 0 /\ SND (SND t) <> 0 ==> zagier (zagier t) = t
-   doublet_def         |- !x y z. doublet (x,y,z) = x * z
-   doublet_eq_0        |- !x y z. (doublet (x,y,z) = 0) <=> (x = 0) \/ (z = 0)
-   zagier_involute_alt |- !t. doublet t <> 0 ==> zagier (zagier t) = t
-   zagier_involute_mills
-                       |- !n. ~square n /\ n MOD 4 <> 0 ==> zagier involute (mills n)
+   zagier_def              |- !x y z. zagier (x,y,z) =
+                                      if x < y - z then (x + 2 * z,z,y - z - x)
+                                      else if x < 2 * y then (2 * y - x,y,x + z - y)
+                                      else (x - 2 * y,x + z - y,y)
+   zagier_fix              |- !x y z. x <> 0 ==> (zagier (x,y,z) = (x,y,z) <=> x = y)
+   zagier_fixes            |- !n. n MOD 4 <> 0 ==> fixes zagier (mills n) = {(x,x,z) | n = windmill (x,x,z)}
+   zagier_fixes_element    |- !n x y z. n MOD 4 <> 0 ==>
+                                        ((x,y,z) IN fixes zagier (mills n) <=> n = windmill (x,y,z) /\ x = y)
+   zagier_fixes_alt        |- !s x. x IN fixes zagier s <=> x IN s /\ zagier x = x
+   zagier_windmill         |- !t. windmill t = windmill (zagier t)
+   zagier_closure          |- !n t. t IN mills n ==> zagier t IN mills n
+   zagier_closure_iff      |- !n t. t IN mills n <=> zagier t IN mills n
+   zagier_0_y_z            |- !y z. zagier (0,y,z) =
+                                    if z < y then (2 * z,z,y - z)
+                                    else if 0 < y then (2 * y,y,z - y)
+                                    else (0,z,0)
+   zagier_x_0_z            |- !x z. zagier (x,0,z) = (x,x + z,0)
+   zagier_x_y_0            |- !x y. zagier (x,y,0) =
+                                    if x < y then (x,0,y - x)
+                                    else if x < 2 * y then (2 * y - x,y,x - y)
+                                    else (x - 2 * y,x - y,y)
+   zagier_1_y_1            |- !y. zagier (1,y,1) =
+                                  if y = 0 then (1,2,0)
+                                  else if y = 1 then (1,1,1)
+                                  else if y = 2 then (3,2,0)
+                                  else (3,1,y - 2)
+   zagier_1_1_z            |- !z. zagier (1,1,z) = (1,1,z)
+   zagier_x_0_0            |- !x. zagier (x,0,0) = (x,x,0)
+   zagier_0_y_0            |- !y. zagier (0,y,0) = (0,0,y)
+   zagier_0_0_z            |- !z. zagier (0,0,z) = (0,z,0)
+   zagier_0_1_z            |- !z. zagier (0,1,z) = if z = 0 then (0,0,1) else (2,1,z - 1)
+   zagier_0_0_0            |- zagier (0,0,0) = (0,0,0)
+   zagier_x_y_y            |- !x y. zagier (x,y,y) =
+                                    if x < 2 * y then (2 * y - x,y,x) else (x - 2 * y,x,y)
+   zagier_x_x_z            |- !x z. x <> 0 ==> zagier (x,x,z) = (x,x,z)
+   zagier_involute         |- !x y z. x <> 0 /\ z <> 0 ==> zagier (zagier (x,y,z)) = (x,y,z)
+   zagier_involute_alt     |- !x y z. x * z <> 0 ==> zagier (zagier (x,y,z)) = (x,y,z)
+   zagier_involute_thm     |- !t. FST t <> 0 /\ SND (SND t) <> 0 ==> zagier (zagier t) = t
+
+   doublet_def             |- !x y z. doublet (x,y,z) = x * z
+   doublet_eq_0            |- !x y z. (doublet (x,y,z) = 0) <=> (x = 0) \/ (z = 0)
+   zagier_involute_alt     |- !t. doublet t <> 0 ==> zagier (zagier t) = t
+   zagier_involute_mills   |- !n. n MOD 4 <> 0 /\ ~square n ==> zagier involute (mills n)
    zagier_involute_mills_prime
-                       |- !p. prime p ==> zagier involute (mills p)
+                           |- !p. prime p ==> zagier involute (mills p)
 
    Mind of a windmill:
    mind_def            |- !x y z. mind (x,y,z) =
@@ -155,25 +191,37 @@ open pairTheory; (* for FORALL_PROD, PAIR_EQ *)
    gap_flip_thm        |- !t. gap (flip t) = gap t
 
    Zagier and Flip:
+   zagier_flip_windmill|- !t. windmill t = windmill ((zagier o flip) t)
+   zagier_flip_eqn     |- !x y z. (zagier o flip) (x,y,z) =
+                                  if x < z - y then (x + 2 * y,y,z - y - x)
+                                  else if x < 2 * z then (2 * z - x,z,x + y - z)
+                                  else (x - 2 * z,x + y - z,z)
    zagier_flip_1_1_z   |- !z. (zagier o flip) (1,1,z) =
                               if z = 0 then (1,2,0)
                               else if z = 1 then (1,1,1)
                               else if z = 2 then (3,2,0)
                               else (3,1,z - 2)
+   zagier_flip_0_1_z   |- !z. (zagier o flip) (0,1,z) =
+                              if z = 0 then (0,1,0)
+                              else (2,1,z - 1)
+   zagier_flip_0_y_z   |- !y z. (zagier o flip) (0,y,z) =
+                                if 0 < z - y then (2 * y,y,z - y)
+                                else if 0 < z then (2 * z,z,y - z)
+                                else (0,y,0)
+   zagier_flip_x_0_z   |- !x z. (zagier o flip) (x,0,z) =
+                                if x < z then (x,0,z - x)
+                                else if x < 2 * z then (2 * z - x,z,x - z)
+                                else (x - 2 * z,x - z,z)
+   zagier_flip_x_y_0   |- !x y. (zagier o flip) (x,y,0) = (x,x + y,0)
+   zagier_flip_x_y_x   |- !x y. 0 < x ==> (zagier o flip) (x,y,x) = (x,x,y)
 
-   Computation of (mills n):
-   tuples_helper_def   |- (!k. tuples_helper k 0 = []) /\
-                           !k n. tuples_helper k (SUC n) =
-                                 ZIP (GENLIST (K (SUC n)) k,
-                                      GENLIST SUC k) ++ tuples_helper k n
-   tuples_def          |- !k. tuples k = tuples_helper k k
-   triples_helper_def  |- (!k. triples_helper k 0 = []) /\
-                           !k n. triples_helper k (SUC n) =
-                                 ZIP (GENLIST (K (SUC n)) (k * k),
-                                      tuples k) ++ triples_helper k n
-   triples_def         |- !k. triples k = triples_helper k k
-   mills_of_def        |- !n. mills_of n =
-                              FILTER (\(x,y,z). n = windmill x y z) (triples n)
+   flip_zagier_windmill|- !t. windmill t = windmill ((flip o zagier) t)
+   flip_zagier_eqn     |- !x y z. (flip o zagier) (x,y,z) =
+                                  if x < y - z then (x + 2 * z,y - z - x,z)
+                                  else if x < 2 * y then (2 * y - x,x + z - y,y)
+                                  else (x - 2 * y,y,x + z - y)
+   flip_zagier_x_x_z   |- !x z. 0 < x ==> (flip o zagier) (x,x,z) = (x,z,x)
+
 *)
 
 (* ------------------------------------------------------------------------- *)
@@ -185,12 +233,7 @@ open pairTheory; (* for FORALL_PROD, PAIR_EQ *)
 Theorem triple_parts:
   !(t :num # num # num). ?x y z. t = (x, y, z)
 Proof
-  rpt strip_tac >>
-  qabbrev_tac `x = FST t` >>
-  qabbrev_tac `y = FST (SND t)` >>
-  qabbrev_tac `z = SND (SND t)` >>
-  `t = (x, y, z)` by rw[Abbr`x`, Abbr`y`, Abbr`z`] >>
-  metis_tac[]
+  metis_tac[PAIR]
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -342,97 +385,91 @@ QED
 *)
 
 (* ------------------------------------------------------------------------- *)
-(* Part 1: A windmill                                                        *)
+(* Part 1: Windmill                                                          *)
 (* ------------------------------------------------------------------------- *)
 
-(* Define windmill of three numbers *)
+(* Define windmill of a triple *)
 Definition windmill_def:
-   windmill x y z = x ** 2 + 4 * y * z
+   windmill (x, y, z) = x ** 2 + 4 * y * z
 End
 
-(* Theorem: windmill x y z = 0 <=> x = 0 /\ y * z = 0 *)
+(* Theorem: windmill (x, y, z) = windmill (x, z, y) *)
 (* Proof:
-       windmill x y z = 0
+     windmill (x, y, z)
+   = x ** 2 + 4 * y * z         by windmill_def
+   = x ** 2 + 4 * z * y         by MULT_COMM
+   = windmill (x, z, y)         by windmill_def
+*)
+Theorem windmill_comm:
+  !x y z. windmill (x, y, z) = windmill (x, z, y)
+Proof
+  simp[windmill_def]
+QED
+
+(* Theorem alias *)
+Theorem windmill_flip = windmill_comm;
+(* val windmill_flip = |- !x y z. windmill (x, y, z) = windmill (x, z, y): thm *)
+
+(* Theorem: windmill (x, y, y) = x ** 2 + (2 * y) ** 2 *)
+(* Proof:
+     windmill (x, y, y)
+   = x ** 2 + 4 * y * y           by windmill_def
+   = x ** 2 + (2 * y) * (2 * y)   by arithmetic
+   = x ** 2 + (2 * y) ** 2        by EXP_2
+*)
+Theorem windmill_by_squares:
+  !x y. windmill (x, y, y) = x ** 2 + (2 * y) ** 2
+Proof
+  simp[windmill_def, EXP_BASE_MULT]
+QED
+
+(* Theorem: windmill (x, y, z) = 0 <=> x = 0 /\ y * z = 0 *)
+(* Proof:
+       windmill (x, y, z) = 0
    <=> x ** 2 + 4 * y * z = 0           by windmill_def
    <=> x * x + 4 * y * z = 0            by EXP_2
    <=> (x * x = 0) /\ (4 * y * z = 0)   by ADD_EQ_0
    <=> (x = 0) /\ (y * z = 0)           by MULT_EQ_0
 *)
 Theorem windmill_eq_0:
-  !x y z. windmill x y z = 0 <=> x = 0 /\ y * z = 0
+  !x y z. windmill (x, y, z) = 0 <=> x = 0 /\ y * z = 0
 Proof
   simp[windmill_def]
 QED
 
-(* Theorem: windmill x y z = windmill x z y *)
+(* Theorem: windmill (1, 1, k) = 4 * k + 1 *)
 (* Proof:
-     windmill x y z
-   = x ** 2 + 4 * y * z         by windmill_def
-   = x ** 2 + 4 * z * y         by MULT_COMM
-   = windmill x z y             by windmill_def
-*)
-Theorem windmill_comm:
-  !x y z. windmill x y z = windmill x z y
-Proof
-  simp[windmill_def]
-QED
-
-(* Theorem: windmill 1 1 k = 4 * k + 1 *)
-(* Proof:
-     windmill 1 1 k
+     windmill (1, 1, k)
    = 1 ** 2 + 4 * 1 * k         by windmill_def
    = 1 + 4 * k                  by arithmetic
    = 4 * k + 1                  by arithmetic
 *)
 Theorem windmill_trivial:
-  !k. windmill 1 1 k = 4 * k + 1
+  !k. windmill (1, 1, k) = 4 * k + 1
 Proof
   simp[windmill_def]
 QED
 
-(* Theorem: windmill x y y = x ** 2 + (2 * y) ** 2 *)
+(* Theorem: windmill (1,k,1) = 4 * k + 1 *)
 (* Proof:
-     windmill x y y
-   = x ** 2 + 4 * y * y           by windmill_def
-   = x ** 2 + (2 * y) * (2 * y)   by arithmetic
-   = x ** 2 + (2 * y) ** 2        by EXP_2
+     windmill (1,k,1)
+   = 1 ** 2 + 4 * k * 1            by windmill_def
+   = 4 * k + 1                     by arithmetic
 *)
-Theorem windmill_by_squares:
-  !x y. windmill x y y = x ** 2 + (2 * y) ** 2
+Theorem windmill_trivial_flip:
+  !k. windmill (1,k,1) = 4 * k + 1
 Proof
-  simp[windmill_def, EXP_BASE_MULT]
+  simp[windmill_def]
 QED
 
-(* Theorem: n = windmill x y y ==>
-            n = x ** 2 + (2 * y) ** 2 /\ (ODD n <=> ODD x) *)
-(* Proof:
-   Note n = x ** 2 + (2 * y) ** 2    by windmill_by_squares
-    and EVEN (2 * y)                 by EVEN_DOUBLE
-     so EVEN (2 * y) ** 2            by EVEN_SQ
-        ODD n
-    <=> ODD (x ** 2)                 by ODD_ADD, ODD_EVEN
-    <=> ODD x                        by ODD_SQ
-*)
-Theorem windmill_x_y_y:
-  !n x y. n = windmill x y y ==>
-          n = x ** 2 + (2 * y) ** 2 /\ (ODD n <=> ODD x)
-Proof
-  ntac 4 strip_tac >>
-  `n = x ** 2 + (2 * y) ** 2` by rw[windmill_by_squares] >>
-  `EVEN (2 * y)` by rw[EVEN_DOUBLE] >>
-  `EVEN ((2 * y) ** 2)` by rw[EVEN_SQ] >>
-  `ODD n <=> ODD (x ** 2)` by metis_tac[ODD_ADD, ODD_EVEN] >>
-  simp[ODD_SQ]
-QED
-
-(* Theorem: prime p /\ p MOD 4 = 1 ==>
-            !x z. p = windmill x x z <=> x = 1 /\ z = p DIV 4 *)
+(* Theorem: p MOD 4 = 1 /\ prime p ==>
+            !x z. p = windmill (x, x, z) <=> x = 1 /\ z = p DIV 4 *)
 (* Proof:
    Let k = p DIV 4,
    Then p = 4 * k + 1                by DIVISION
 
-   If part: p = windmill x x z ==> ((x = 1) /\ (z = k))
-      Note p = windmill x x z
+   If part: p = windmill (x, x, z) ==> ((x = 1) /\ (z = k))
+      Note p = windmill (x, x, z)
              = x ** 2 + 4 * x * z    by windmill_def
              = x * (x + 4 * z)       by arithmetic
       Thus x divides p               by divides_def
@@ -445,13 +482,13 @@ QED
          then p + 4 * z = 1          by EQ_MULT_LCANCEL
          but 1 < p                   by ONE_LT_PRIME
         and this is impossible.
-   Only-if part: p = windmill 1 1 k
+   Only-if part: p = windmill (1, 1, k)
       Note p = 4 * k + 1
-             = windmill 1 1 k        by windmill_trivial
+             = windmill (1, 1, k)        by windmill_trivial
 *)
 Theorem windmill_trivial_prime:
-  !p. prime p /\ p MOD 4 = 1 ==>
-      !x z. p = windmill x x z <=> x = 1 /\ z = p DIV 4
+  !p. p MOD 4 = 1 /\ prime p ==>
+      !x z. p = windmill (x, x, z) <=> x = 1 /\ z = p DIV 4
 Proof
   rpt strip_tac >>
   qabbrev_tac `k = p DIV 4` >>
@@ -465,12 +502,230 @@ Proof
     `x divides p` by metis_tac[divides_def] >>
     `(x = 1) \/ (x = p)` by metis_tac[prime_def] >-
     fs[] >>
-    fs[] >>
-    `p + 4 * z = 1` by metis_tac[MULT_RIGHT_1, NOT_PRIME_0, EQ_MULT_LCANCEL] >>
-    `1 < p` by rw[ONE_LT_PRIME] >>
-    decide_tac,
+    fs[],
     rw[windmill_trivial]
   ]
+QED
+
+(* Theorem: n = windmill (x, y, y) ==>
+            n = x ** 2 + (2 * y) ** 2 /\ (ODD n <=> ODD x) *)
+(* Proof:
+   Note n = x ** 2 + (2 * y) ** 2    by windmill_by_squares
+    and EVEN (2 * y)                 by EVEN_DOUBLE
+     so EVEN (2 * y) ** 2            by EVEN_SQ
+        ODD n
+    <=> ODD (x ** 2)                 by ODD_ADD, ODD_EVEN
+    <=> ODD x                        by ODD_SQ
+*)
+Theorem windmill_x_y_y:
+  !n x y. n = windmill (x, y, y) ==>
+          n = x ** 2 + (2 * y) ** 2 /\ (ODD n <=> ODD x)
+Proof
+  ntac 4 strip_tac >>
+  `n = x ** 2 + (2 * y) ** 2` by rw[windmill_by_squares] >>
+  `EVEN (2 * y)` by rw[EVEN_DOUBLE] >>
+  `EVEN ((2 * y) ** 2)` by rw[EVEN_SQ] >>
+  `ODD n <=> ODD (x ** 2)` by metis_tac[ODD_ADD, ODD_EVEN] >>
+  simp[ODD_SQ]
+QED
+
+(* Theorem: n = windmill (x, y, z) ==> y * z = (n - x ** 2) DIV 4 *)
+(* Proof:
+   Note n = x ** 2 + 4 * y * z                 by windmill_def
+     so y * z = (n - x ** 2) DIV 4             by arithmetic
+*)
+Theorem windmill_yz_product:
+  !n x y z. n = windmill (x, y, z) ==> y * z = (n - x ** 2) DIV 4
+Proof
+  rw[windmill_def]
+QED
+
+(* Theorem: n = windmill (x, y, z) ==> ((n - x ** 2) DIV 4 = 0 <=> y = 0 \/ z = 0) *)
+(* Proof:
+   Note n = x ** 2 + 4 * y * z                 by windmill_def
+     so (n - x ** 2) DIV 4 = y * z             by arithmetic
+   Thus     (n - x ** 2) DIV 4 = 0
+         <=> y * z = 0                         by above
+    or   <=> y = 0 \/ z = 0                    by MULT_EQ_0
+*)
+Theorem windmill_yz_eq_0:
+  !n x y z. n = windmill (x, y, z) ==> ((n - x ** 2) DIV 4 = 0 <=> y = 0 \/ z = 0)
+Proof
+  rw[windmill_def]
+QED
+
+(* Theorem: n = windmill (x,y,z) ==> x <= SQRT n *)
+(* Proof:
+   Note n = x ** 2 + 4 * y * z     by windmill_def
+     so x ** 2 <= n                by inequality
+    ==> SQRT (x ** 2) <= SQRT n    by SQRT_LE
+     or             x <= SQRT n    by SQRT_OF_SQ
+*)
+Theorem windmill_x_upper:
+  !n x y z. n = windmill (x,y,z) ==> x <= SQRT n
+Proof
+  rw[windmill_def] >>
+  qabbrev_tac `n = 4 * (y * z) + x ** 2` >>
+  `x ** 2 <= n` by simp[Abbr`n`] >>
+  metis_tac[SQRT_LE, SQRT_OF_SQ]
+QED
+
+(* Theorem: n = windmill (x,y,z) ==> y * z <= n DIV 4 *)
+(* Proof:
+   Note n = x ** 2 + 4 * y * z     by windmill_def
+     so 4 y * z <= n               by inequality
+    ==>   y * z <= n DIV 4         by DIV_LE_MONOTONE
+*)
+Theorem windmill_yz_upper:
+  !n x y z. n = windmill (x,y,z) ==> y * z <= n DIV 4
+Proof
+  simp[windmill_def]
+QED
+
+(* Theorem: n = windmill (x,y,z) /\ 0 < z ==> y <= n DIV 4 *)
+(* Proof:
+   Note y <= y * z             by LE_MULT_CANCEL_LBARE, 0 < z
+    and y * z <= n DIV 4       by windmill_yz_upper
+     so y <= n DIV 4           by LESS_EQ_TRANS
+*)
+Theorem windmill_y_upper:
+  !n x y z. n = windmill (x,y,z) /\ 0 < z ==> y <= n DIV 4
+Proof
+  metis_tac[windmill_yz_upper, LE_MULT_CANCEL_LBARE, LESS_EQ_TRANS]
+QED
+
+(* Theorem: n = windmill (x,y,z) /\ 0 < y ==> z <= n DIV 4 *)
+(* Proof:
+   Note windmill (x,y,z) = windmill (x,z,y)    by windmill_comm
+     so z <= n DIV 4                           by windmill_y_upper
+*)
+Theorem windmill_z_upper:
+  !n x y z. n = windmill (x,y,z) /\ 0 < y ==> z <= n DIV 4
+Proof
+  metis_tac[windmill_y_upper, windmill_comm]
+QED
+
+(* Theorem: ~square n /\ n = windmill (x, y, z) ==> y * z <> 0 *)
+(* Proof:
+   Note n = x ** 2 + 4 * y * z                 by windmill_def
+   By contradiction, assume y * z = 0.
+   Then n = x ** 2, contradicting ~square n    by square_def
+*)
+Theorem windmill_nonsquare:
+  !n x y z. ~square n /\ n = windmill (x, y, z) ==> y * z <> 0
+Proof
+  rw_tac bool_ss[windmill_def] >>
+  spose_not_then strip_assume_tac >>
+  `x ** 2 + 4 * y * z = x * x` by fs[GSYM EXP_2] >>
+  metis_tac[square_def]
+QED
+
+(* Theorem: ~square n /\ n = windmill (x, y, z) ==>
+     let p = (n - x * x) DIV 4 in y IN divisors p /\ z = p DIV y *)
+(* Proof:
+   Note n = x ** 2 + 4 * y * z     by windmill_def
+     so p = y * z                  by p = (n - x * x) DIV 4
+    but 0 < p                      by square_def, ~square n
+     so y IN divisors p            by divisors_has_factor
+   Also 0 < y                      by MULT_EQ_0
+     so z = p DIV y                by DIV_SOLVE_COMM
+*)
+Theorem windmill_arm_divisors:
+  !n x y z. ~square n /\ n = windmill (x, y, z) ==>
+     let p = (n - x * x) DIV 4 in y IN divisors p /\ z = p DIV y
+Proof
+  rpt strip_tac >>
+  qabbrev_tac `foo = (n = windmill (x, y, z))` >>
+  rw_tac bool_ss[] >| [
+    qabbrev_tac `foo = (~square n)` >>
+    fs[windmill_def] >>
+    `y * z = p` by fs[Abbr`p`] >>
+    `0 < p` by metis_tac[MULT_0, ADD, square_def, NOT_ZERO, EXP_2] >>
+    metis_tac[divisors_has_factor],
+    qabbrev_tac `foo = (~square n)` >>
+    fs[windmill_def] >>
+    `y * z = p` by fs[Abbr`p`] >>
+    `p <> 0` by metis_tac[MULT_0, ADD, square_def, EXP_2] >>
+    metis_tac[DIV_SOLVE_COMM, MULT_EQ_0, NOT_ZERO]
+  ]
+QED
+
+(* Theorem: n MOD 4 = 0 <=> ?y z. n = windmill (0,y,z) *)
+(* Proof:
+   If part: n MOD 4 = 0 ==> ?y z. n = windmill (0,y,z)
+      Note n = n DIV 4 * 4 + n MOD 4    by DIVISION
+      Let y = n DIV 4, z = 1.
+      Then n = 0 ** 2 + 4 * n DIV 4     by n MOD 4 = 0
+             = windmill (0,y,z)         by windmill_def
+   Only-if part: ?y z. n = windmill (0,y,z) ==> n MOD 4 = 0
+          n = windmill (0, y, z)
+      ==> n = 0 ** 2 + 4 * y * z        by windmill_def
+      ==> n = 4 * y * z                 by arithmetic
+      ==> n MOD 4 = 0                   by MOD_EQ_0
+*)
+Theorem windmill_with_no_mind:
+  !n. n MOD 4 = 0 <=> ?y z. n = windmill (0,y,z)
+Proof
+  rw[windmill_def, EQ_IMP_THM] >| [
+    `n = n DIV 4 * 4 + n MOD 4` by rw[DIVISION] >>
+    map_every qexists_tac [`n DIV 4`, `1`] >>
+    simp[],
+    simp[]
+  ]
+QED
+
+(* Theorem: n MOD 4 <> 0 /\ n = windmill (x,y,z) ==> 0 < x *)
+(* Proof:
+   Note x <> 0                     by windmill_with_no_mind
+     so 0 < x                      by NOT_ZERO
+*)
+Theorem windmill_with_mind:
+  !n x y z. n MOD 4 <> 0 /\ n = windmill (x,y,z) ==> 0 < x
+Proof
+  metis_tac[windmill_with_no_mind, NOT_ZERO]
+QED
+
+(* Theorem: square n <=> ?x y. n = windmill (x,y,0) \/ n = windmill (x,0,y) *)
+(* Proof:
+   If part: square n ==> ?x y. n = windmill (x,y,0) \/ n = windmill (x,0,y)
+      Note ?k. n = k ** 2          by square_alt
+      Let x = k, any y will do,
+      Then n = x ** 2 + 4 * y * 0  or n = x ** 2 + 4 * 0 * y
+        so n = windmill (x, y, 0)  or n = windmill (x,0,y)
+                                   by windmill_def
+   Only-if part: ?x y. n = windmill (x,y,0) \/ n = windmill (x,0,y) ==> square n
+          n = windmill (x,y,0) or n = windmill (x,0,y)
+      ==> n = x ** 2               by windmill_def
+      ==> square n                 by square_alt
+*)
+Theorem windmill_with_no_arms:
+  !n. square n <=> ?x y. n = windmill (x,y,0) \/ n = windmill (x,0,y)
+Proof
+  rw[windmill_def, EQ_IMP_THM] >-
+  simp[GSYM square_alt] >>
+  simp[square_alt]
+QED
+
+(* Theorem: ~square n /\ n = windmill (x,y,z) ==> 0 < y /\ 0 < z *)
+(* Proof:
+   Note y * z <> 0                 by windmill_nonsquare
+     so 0 < y /\ 0 < z             by MULT_EQ_0
+*)
+Theorem windmill_with_arms:
+  !n x y z. ~square n /\ n = windmill (x,y,z) ==> 0 < y /\ 0 < z
+Proof
+  metis_tac[windmill_nonsquare, MULT_EQ_0, NOT_ZERO]
+QED
+
+(* Theorem: n MOD 4 <> 0 /\ ~square n /\ n = windmill (x,y,z) ==> 0 < x /\ 0 < y /\ 0 < z *)
+(* Proof:
+   Note 0 < x                      by windmill_with_mind
+    and 0 < y /\ 0 < z             by windmill_with_arms, ~square n
+*)
+Theorem windmill_mind_and_arms:
+  !n x y z. n MOD 4 <> 0 /\ ~square n /\ n = windmill (x,y,z) ==> 0 < x /\ 0 < y /\ 0 < z
+Proof
+  metis_tac[windmill_with_mind, windmill_with_arms]
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -480,46 +735,52 @@ QED
 
 (* The set of windmills of a number *)
 Definition mills_def[nocompute]:
-    mills n = {(x,y,z) | n = windmill x y z}
+    mills n = {(x,y,z) | n = windmill (x, y, z)}
 End
 (* use [nocompute] as this is not effective. *)
 
-(* Theorem: (x, y, z) IN mills n <=> n = windmill x y z *)
+(* Theorem: (x, y, z) IN mills n <=> n = windmill (x, y, z) *)
 (* Proof: by mills_def. *)
 Theorem mills_element:
-  !n x y z. (x, y, z) IN mills n <=> n = windmill x y z
+  !n x y z. (x, y, z) IN mills n <=> n = windmill (x, y, z)
 Proof
   simp[mills_def]
 QED
 
+(* Theorem: t IN mills n <=> n = windmill t *)
+(* Proof: by mills_element, triple_parts. *)
+Theorem mills_element_alt:
+  !n t. t IN mills n <=> n = windmill t
+Proof
+  metis_tac[mills_element, triple_parts]
+QED
+
+(* Theorem: t IN mills n <=> ?x y z. (t = (x, y, z)) /\ n = windmill (x, y, z) *)
+(* Proof: by mills_def. *)
+Theorem mills_element_triple:
+  !n t. t IN mills n <=> ?x y z. (t = (x, y, z)) /\ n = windmill (x, y, z)
+Proof
+  simp[mills_def, FORALL_PROD]
+QED
+
 (* Theorem: (x, y, z) IN mills n ==> (x, z, y) IN mills n *)
 (* Proof:
-        (x, y, z) IN mills n
-   <=> n = windmill x y z       by mills_def
-   <=> n = x ** 2 + 4 * y * z   by windmill_def
-   <=> n = x ** 2 + 4 * z * y   by MULT_COMM
-   <=> n = windmill x z y       by windmill_def
-   <=> (x, z, y) IN mills n     by mills_def
+       (x, y, z) IN mills n
+   <=> n = windmill (x, y, z)      by mills_def
+   <=> n = windmill (x, z, y)      by windmill_flip
+   <=> (x, z, y) IN mills n        by mills_def
 *)
 Theorem mills_element_flip:
   !n x y z. (x, y, z) IN mills n ==> (x, z, y) IN mills n
 Proof
-  simp[mills_def, windmill_def]
-QED
-
-(* Theorem: t IN mills n <=> ?x y z. (t = (x, y, z)) /\ n = windmill x y z *)
-(* Proof: by mills_def. *)
-Theorem mills_element_triple:
-  !n t. t IN mills n <=> ?x y z. (t = (x, y, z)) /\ n = windmill x y z
-Proof
-  simp[mills_def, FORALL_PROD]
+  simp[mills_def, windmill_flip]
 QED
 
 (* Theorem: n MOD 4 = 1 ==> (1, 1, n DIV 4) IN mills n *)
 (* Proof:
    Note n = (n DIV 4) * 4 + n MOD 4     by DIVISION
           = 4 * (n DIV 4) + 1           by arithmetic
-          = windmill 1 1 (n DIV 4)      by windmill_trivial
+          = windmill (1, 1, (n DIV 4))  by windmill_trivial
    Thus (1, 1, n DIV 4) IN (mills n)    by mills_element
 *)
 Theorem mills_element_trivial:
@@ -527,15 +788,28 @@ Theorem mills_element_trivial:
 Proof
   rpt strip_tac >>
   `n = (n DIV 4) * 4 + n MOD 4` by rw[DIVISION] >>
-  `_ = windmill 1 1 (n DIV 4)` by rw[windmill_trivial] >>
+  `_ = windmill (1, 1, (n DIV 4))` by rw[windmill_trivial] >>
   fs[mills_element]
+QED
+
+(* Theorem: n MOD 4 = 1 ==> (1,n DIV 4,1) IN mills n *)
+(* Proof:
+   Note (1,1,n DIV 4) IN mills n               by mills_element_trivial
+    ==> n = windmill (1,1,n DIV 4)             by mills_element
+    ==> n = windmill (1,n DIV 4,1)             by windmill_flip
+     so (1,n DIV 4,1) IN mills n               by mills_element
+*)
+Theorem mills_element_trivial_flip:
+  !n. n MOD 4 = 1 ==> (1,n DIV 4,1) IN mills n
+Proof
+  metis_tac[mills_element_trivial, windmill_flip, mills_element]
 QED
 
 (* Theorem: mills 0 = {(0,0,n) | n IN univ(:num)} UNION
                       {(0,n,0) | n IN univ(:num)} *)
 (* Proof:
    Let (x,y,z) IN mills 0
-   Then 0 = windmill x y z              by mills_def
+   Then 0 = windmill (x, y, z)          by mills_def
           = x ** 2 + 4 * y * z          by windmill_def
     ==> x ** 2 = 0 /\ 4 * y * z = 0     by ADD_EQ_0
     ==>  x * x = 0 /\     y * z = 0     by EXP_2
@@ -569,7 +843,7 @@ QED
 (* Proof:
    Let (x,y,z) IN mills 1
    Note 4 * y * z <> 1                  by MULT_EQ_1
-   Then 1 = windmill x y z              by mills_def
+   Then 1 = windmill (x, y, z)          by mills_def
           = x ** 2 + 4 * y * z          by windmill_def
     <=> x ** 2 = 1 /\ 4 * y * z = 0     by ADD_EQ_1
     <=>  x * x = 1 /\     y * z = 0     by EXP_2
@@ -650,12 +924,10 @@ Proof
   ]
 QED
 
-(* Theorem: ~square n ==>
-            mills n SUBSET (count n) CROSS (count n CROSS (count n)) *)
+(* Theorem: ~square n ==> mills n SUBSET (count n) CROSS (count n CROSS (count n)) *)
 (* Proof: by SUBSET_DEF, mills_non_square_bound, IN_COUNT *)
 Theorem mills_non_square_subset:
-  !n. ~square n ==>
-      mills n SUBSET (count n) CROSS (count n CROSS (count n))
+  !n. ~square n ==> mills n SUBSET (count n) CROSS (count n CROSS (count n))
 Proof
   (rw[SUBSET_DEF, FORALL_PROD] >> metis_tac[mills_non_square_bound])
 QED
@@ -670,7 +942,7 @@ QED
     and n <> 1           by square_1, ~square n.
      so 1 < n            by arithmetic
    Thus (1,1,0) IN s     by IN_CROSS, IN_COUNT, 1 < n
-    but windmill 1 1 0
+    but windmill (1, 1, 0)
       = 1 <> n           by windmill_trivial
      so (1,1,0) NOTIN t  by mills_element
     ==> t <> s           by EXTENSION
@@ -696,6 +968,7 @@ Proof
   `CARD s = n ** 3` by rw[CARD_CROSS, Abbr`s`] >>
   metis_tac[CARD_PSUBSET]
 QED
+(* This is a very generous upper bound. *)
 
 (* Theorem: ~square n ==> FINITE (mills n) *)
 (* Proof:
@@ -711,13 +984,15 @@ Proof
   metis_tac[mills_non_square_subset, SUBSET_FINITE, FINITE_CROSS, FINITE_COUNT]
 QED
 
+(* Another proof of the same theorem. *)
+
 (* Theorem: FINITE (mills n) <=> ~square n *)
 (* Proof:
    If part: FINITE (mills n) ==> ~square n
       By contradiction, suppose square n.
       Then ?k. n = k * k = k ** 2       by square_def
-      Then n = k ** 2 + 4 * 0 * t       for any t,
-             = windmill k 0 t           by windmill_def
+      Then n = k ** 2 + 4 * 0 * t       for any t
+             = windmill (k, 0, t)       by windmill_def
         so (k,0,t) IN (mills n)
       Let f = \t:num. (k,0,t).
       Then INJ f univ(:num) (mills n)   by INJ_DEF
@@ -747,29 +1022,16 @@ Proof
   ]
 QED
 
-(* Theorem: (?y z. (0, y, z) IN mills n) <=> n MOD 4 = 0 *)
+(* Theorem: n MOD 4 = 0 <=> ?y z. (0, y, z) IN mills n *)
 (* Proof:
-   If part: (?y z. (0, y, z) IN mills n) ==> n MOD 4 = 0
-          (0, y, z) IN mills n
-      ==> n = windmill 0 y z            by mills_def
-      ==> n = 0 ** 2 + 4 * y * z        by windmill_def
-      ==> n = 4 * y * z                 by arithmetic
-      ==> n MOD 4 = 0                   by MOD_EQ_0
-   Only-if part: n MOD 4 = 0 ==> (?y z. (0, y, z) IN mills n)
-      Note n = n DIV 4 * 4 + n MOD 4    by DIVISION
-      Let y = n DIV 4, z = 1.
-      Then n = 0 ** 2 + 4 * n DIV 4     by n MOD 4 = 0
-       ==> (0, y, z) IN mills n
+       n MOD 4 = 0
+   <=> ?y z. n = windmill (0,y,z)       by windmill_with_no_mind
+   <=> ?y z. (0, y, z) IN mills n       by mills_element
 *)
 Theorem mills_with_no_mind:
-  !n. (?y z. (0, y, z) IN mills n) <=> n MOD 4 = 0
+  !n. n MOD 4 = 0 <=> ?y z. (0, y, z) IN mills n
 Proof
-  rw[mills_def, windmill_def] >>
-  (rw[EQ_IMP_THM] >> simp[]) >>
-  `n = n DIV 4 * 4 + n MOD 4` by rw[DIVISION] >>
-  qexists_tac `n DIV 4` >>
-  qexists_tac `1` >>
-  simp[]
+  simp[windmill_with_no_mind, mills_element]
 QED
 
 (* Theorem: n MOD 4 <> 0 <=> !x y z. (x, y, z) IN mills n ==> x <> 0 *)
@@ -780,31 +1042,26 @@ Proof
   metis_tac[mills_with_no_mind]
 QED
 
-(* Theorem: (?x z. (x, 0, z) IN mills n) \/ (?x y. (x, y, 0) IN mills n)
-            <=> square n *)
+(* Theorem: n MOD 4 <> 0 <=> !x y z. (x,y,z) IN mills n ==> 0 < x *)
+(* Proof: by mills_with_no_mind. *)
+Theorem mills_with_mind:
+  !n. n MOD 4 <> 0 <=> !x y z. (x,y,z) IN mills n ==> 0 < x
+Proof
+  metis_tac[mills_with_no_mind, NOT_ZERO]
+QED
+
+(* Theorem: square n <=> ?x y. (x, y, 0) IN mills n \/ (x, 0, y) IN mills n *)
 (* Proof:
-   If part: (?x z. (x, 0, z) IN mills n) \/ (?x y. (x, y, 0) IN mills n)
-            ==> square n
-          (x, 0, z) IN mills n
-      ==> n = windmill x 0 z        by mills_def
-      ==> n = x ** 2 + 4 * 0 * z    by windmill_def
-      ==> n = x ** 2                by arithmetic
-      ==> square n                  by square_def, EXP_2
-          (x, y, 0) IN mills n
-      ==> n = windmill x y 0        by mills_def
-      ==> n = x ** 2 + 4 * y * 0    by windmill_def
-      ==> n = x ** 2                by arithmetic
-      ==> square n                  by square_def, EXP_2
-   Only-if part: square n ==> (?x z. (x, 0, z) IN mills n) \/ (?x y. (x, y, 0) IN mills n)
-      Note ?k. n = k * k            by square_def
-      Let x = k, any z in first case, any y in second case,
-      then n = x ** 2 + 4 * 0 * z, so (x, 0, z) IN mills n.
-        or n = x ** 2 + 4 * y * 0, so (x, y, 0) IN mills n.
+       square n
+   <=> ?x y. n = windmill (x,y,0) \/ n = windmill (x,0,y)
+                                        by windmill_with_no_arms
+   <=> ?x y. (x,y,0) IN mills n \/ (x,0,y) IN mills n
+                                        by mills_element
 *)
 Theorem mills_with_no_arms:
-  !n. (?x z. (x, 0, z) IN mills n) \/ (?x y. (x, y, 0) IN mills n) <=> square n
+  !n. square n <=> ?x y. (x, y, 0) IN mills n \/ (x, 0, y) IN mills n
 Proof
-  rw[mills_def, windmill_def, square_def]
+  simp[windmill_with_no_arms, mills_element]
 QED
 
 (* Theorem: ~square n <=> !x y z. (x, y, z) IN mills n ==> y <> 0 /\ z <> 0 *)
@@ -815,29 +1072,45 @@ Proof
   metis_tac[mills_with_no_arms]
 QED
 
+(* Theorem: ~square n <=> !x y z. (x,y,z) IN mills n ==> 0 < y /\ 0 < z *)
+(* Proof: by mills_with_no_arms. *)
+Theorem mills_with_arms:
+  !n. ~square n <=> !x y z. (x,y,z) IN mills n ==> 0 < y /\ 0 < z
+Proof
+  metis_tac[mills_with_no_arms, NOT_ZERO]
+QED
+
+(* Theorem: n MOD 4 <> 0 /\ ~square n <=> !x y z. (x,y,z) IN mills n ==> 0 < x /\ 0 < y /\ 0 < z *)
+(* Proof: by mills_with_mind, mills_with_arms. *)
+Theorem mills_with_mind_and_arms:
+  !n. n MOD 4 <> 0 /\ ~square n <=> !x y z. (x,y,z) IN mills n ==> 0 < x /\ 0 < y /\ 0 < z
+Proof
+  metis_tac[mills_with_mind, mills_with_arms]
+QED
+
 (* Theorem: n MOD 4 = 1 ==> mills n <> {} *)
 (* Proof:
-   By contradiction, suppose (mills n = EMPTY).
+   By contradiction, suppose (mills n = {}).
    Now ?k. n = k * 4 + 1              by DIVISION
     so     n = 1 ** 2 + 4 * 1 * k     by arithmetic
-             = windmill 1 1 k         by windmill_def
+             = windmill (1, 1, k)     by windmill_def
    Thus (1, 1, k) IN mills n          by mills_def
-   This contradicts mills n = EMPTY   by MEMBER_NOT_EMPTY
+   This contradicts mills n = {}      by MEMBER_NOT_EMPTY
 *)
-Theorem mills_quad_suc_non_empty:
+Theorem mills_non_empty:
   !n. n MOD 4 = 1 ==> mills n <> {}
 Proof
   rpt strip_tac >>
   `?k. n = k * 4 + 1` by metis_tac[DIVISION, DECIDE``0 < 4``] >>
-  `_ = windmill 1 1 k` by rw[windmill_def] >>
+  `_ = windmill (1, 1, k)` by rw[windmill_def] >>
   `(1, 1, k) IN (mills n)` by metis_tac[mills_element] >>
   metis_tac[MEMBER_NOT_EMPTY]
 QED
 
-(* Theorem: ~square n /\ n MOD 4 <> 0 ==>
+(* Theorem: n MOD 4 <> 0 /\ ~square n ==>
             !x y z. (x,y,z) IN (mills n) ==> x <> 0 /\ y <> 0 /\ z <> 0 *)
 (* Proof:
-   Note n = windmill x y z            by mills_def
+   Note n = windmill (x, y, z)        by mills_def
           = x ** 2 + 4 * y * z        by windmill_def
    By contradiction, suppose x = 0, or y = 0, or z = 0.
    If x = 0, then n MOD 4 = 0         by MOD_EQ_0
@@ -847,7 +1120,7 @@ QED
                                       by square_def, EXP_2
 *)
 Theorem mills_triple_nonzero:
-  !n. ~square n /\ n MOD 4 <> 0 ==>
+  !n. n MOD 4 <> 0 /\ ~square n ==>
       !x y z. (x,y,z) IN (mills n) ==> x <> 0 /\ y <> 0 /\ z <> 0
 Proof
   spose_not_then strip_assume_tac >>
@@ -877,10 +1150,6 @@ QED
 (* Flip involution.                                                          *)
 (* ------------------------------------------------------------------------- *)
 
-(* Use temporary overload, leave proper overload in involute.hol *)
-val _ = temp_overload_on("involute", ``\f s. !x. x IN s ==> f x IN s /\ (f (f x) = x)``);
-val _ = set_fixity "involute" (Infix(NONASSOC, 450)); (* same as relation *)
-
 (* Define the flip function for last two elements of a triple. *)
 Definition flip_def:
    flip (x:num, y:num, z:num) = (x, z, y)
@@ -898,49 +1167,104 @@ Proof
   simp[flip_def]
 QED
 
-(* Theorem: (x,y,z) IN mills n ==> flip (x,y,z) IN mills n *)
-(* Proof: by flip_def, mills_element_flip. *)
-Theorem flip_closure:
-  !n x y z. (x,y,z) IN mills n ==> flip (x,y,z) IN mills n
+(* Theorem: fixes flip (mills n) = {(x,y,y) | n = windmill (x,y,y)} *)
+(* Proof:
+     fixes flip (mills n)
+   = {t | t IN (mills n) /\ flip t = t}        by fixes_def
+   = {(x,y,z) | (x,y,z) IN (mills n) /\ flip (x,y,z) = (x,y,z)}    by triple_parts
+   = {(x,y,z) | (x,y,z) IN (mills n) /\ y = z} by flip_fix
+   = {(x,y,y) | (x,y,y) IN (mills n)}          by simplification
+   = {(x,y,y) | n = windmill (x,y,y)}          by mills_def
+*)
+Theorem flip_fixes:
+  !n. fixes flip (mills n) = {(x,y,y) | n = windmill (x,y,y)}
 Proof
-  rw[flip_def, mills_element_flip]
+  rw[fixes_def, mills_def, EXTENSION] >>
+  metis_tac[flip_fix]
+QED
+
+(* Theorem: (x,y,z) IN fixes flip (mills n) <=> (n = windmill (x,y,z) /\ y = z) *)
+(* Proof: by flip_fixes. *)
+Theorem flip_fixes_element:
+  !n x y z. (x,y,z) IN fixes flip (mills n) <=> (n = windmill (x,y,z) /\ y = z)
+Proof
+  simp[flip_fixes] >>
+  metis_tac[]
+QED
+
+(* Extract Theorem *)
+Theorem flip_fixes_alt = fixes_element |> ISPEC ``flip``;
+(* val flip_fixes_alt = |- !s x. x IN fixes flip s <=> x IN s /\ flip x = x: thm *)
+
+(* Theorem: windmill t = windmill (flip t) *)
+(* Proof:
+   Let (x,y,z) = t             by FORALL_PROD
+     windmill (flip t)
+   = windmill (flip (x,y,z))   by notation
+   = windmill (x,z,y)          by flip_def
+   = x ** 2 + 4 * z * y        by windmill_def
+   = x ** 2 + 4 * y * z        by MULT_COMM
+   = windmill (x,y,z)          by windmill_def
+   = windmill t                by notation
+*)
+Theorem flip_windmill:
+  !t. windmill t = windmill (flip t)
+Proof
+  simp[flip_def, windmill_def, FORALL_PROD]
 QED
 
 (* Theorem: t IN mills n ==> flip t IN mills n *)
-(* Proof: by flip_closure. *)
-Theorem flip_closure_alt:
+(* Proof:
+   Let (x,y,z) = t             by FORALL_PROD
+       t IN mills n
+   <=> (x,y,z) IN mills n      by notation
+   ==> (x,z,y) IN mills n      by mills_element_flip
+   <=> flip (x,y,z) IN mills n by flip_def
+   <=> flip t IN mills n       by notation
+*)
+Theorem flip_closure:
   !n t. t IN mills n ==> flip t IN mills n
 Proof
-  metis_tac[triple_parts, flip_closure]
+  simp[flip_def, mills_element_flip, FORALL_PROD]
 QED
 
-(* Theorem: flip (flip (x,y,z)) = (x,y,z) *)
-(* Proof: by flip_def *)
-Theorem flip_involute:
-  !x y z. flip (flip (x,y,z)) = (x,y,z)
+(* Theorem: t IN mills n <=> flip t IN mills n *)
+(* Proof:
+       t IN mills n
+   <=> n = windmill t              by mills_element_alt
+   <=> n = windmill (flip t)       by flip_windmill
+   <=> flip t IN mills n           by mills_element_alt
+*)
+Theorem flip_closure_iff:
+  !n t. t IN mills n <=> flip t IN mills n
 Proof
-  rw[flip_def]
+  simp[mills_element_alt, GSYM flip_windmill]
 QED
 
 (* Theorem: flip (flip t) = t *)
-(* Proof: by flip_involute. *)
-Theorem flip_involute_alt:
+(* Proof:
+   Let (x,y,z) = t             by FORALL_PROD
+     flip (flip t)
+   = flip (flip (x,y,z))       by notation
+   = flip (x,z,y)              by flip_def
+   = (x,y,z)                   by flip_def
+*)
+Theorem flip_involute:
   !t. flip (flip t) = t
 Proof
-  metis_tac[triple_parts, flip_involute]
+  simp[flip_def, FORALL_PROD]
 QED
 
 (* Theorem: flip involute (mills n) *)
 (* Proof:
-   Let t = (x,y,z).                       by triple_parts
-   Then flip (x,y,z) IN mills n           by flip_closure
-    and flip (flip (x,y,z)) = (x,y,z)     by flip_involute
-     so flip involute (mills n)           by involution
+   Note flip t IN mills n          by flip_closure
+    and flip (flip t) = t          by flip_involute
+     so flip involute (mills n)    by involution
 *)
 Theorem flip_involute_mills:
   !n. flip involute (mills n)
 Proof
-  metis_tac[flip_closure, flip_involute, triple_parts]
+  simp[flip_closure, flip_involute]
 QED
 
 (* flip_involute_mills |> SPEC ``n:num``;
@@ -965,8 +1289,8 @@ Definition zagier_def:
 End
 (*
 At the two boundaries:
-x = y - z, windmill x y z = (y - z) ** 2 + 4 * y * z = (y + z) ** 2, not a windmill.
-x = 2 * y, windmill x y z = (2 * y) ** 2 + 4 * y * z = 4 * y * (y + z), not for a prime.
+x = y - z, windmill (x, y, z) = (y - z) ** 2 + 4 * y * z = (y + z) ** 2, not a windmill.
+x = 2 * y, windmill (x, y, z) = (2 * y) ** 2 + 4 * y * z = 4 * y * (y + z), not for a prime.
 *)
 
 
@@ -986,6 +1310,229 @@ EVAL ``MAP zagier [(5,1,4);(5,4,1);(3,1,8);(5,2,2);(3,2,4);(1,1,10)]``;
 -> [(3,8,1); (3,4,2); (1,10,1); (1,5,2); (1,2,5); (1,1,10)]: thm
 *)
 
+
+(* Theorem: x <> 0 ==> (zagier (x,y,z) = (x,y,z) <=> x = y) *)
+(* Proof:
+   By zagier_def,
+   If x < y - z, then 0 < y by x <> 0.
+          (x + 2 * z,z,y - z - x) = (x, y, z)
+      <=>  x + 2 * z = x, z = y, y - z - x = z
+      <=>  x + 2 * y = x, z = y, 0 - x = y
+      <=>  x + 2 * y = x, z = y, y = 0
+      This contradicts 0 < y.
+   Next, if x < 2 * y,
+          (2 * y - x,y,x + z - y) = (x, y, z)
+      <=>  2 * y - x = x, y = y, x + z - y = z
+      <=>  2 * y - x = x, y = y, x - y = 0
+      <=> x = y
+   Otherwise,
+          (x - 2 * y,x + z - y,y) = (x, y, z)
+      <=> x - 2 * y = x, x + z - y = y, y = z
+      <=> x - 2 * y = x, x = y, y = z
+      <=> x - 2 * x = x, x = y, y = z
+      <=> x = 0, y = 0, z = 0
+      This contradicts x <> 0.
+*)
+Theorem zagier_fix:
+  !x y z. x <> 0 ==> (zagier (x,y,z) = (x,y,z) <=> x = y)
+Proof
+  rw[zagier_def]
+QED
+
+(* Theorem: n MOD 4 <> 0 ==> fixes zagier (mills n) = {(x,x,z) | n = windmill (x,x,z)} *)
+(* Proof:
+   Note !x y z. !x y z. (x,y,z) IN mills n ==> x <> 0
+                                               by mills_with_all_mind
+     fixes zagier (mills n)
+   = {t | t IN (mills n) /\ zagier t = t}      by fixes_def
+   = {(x,y,z) | (x,y,z) IN (mills n) /\ zagier (x,y,z) = (x,y,z)}    by triple_parts
+   = {(x,y,z) | (x,y,z) IN (mills n) /\ x = y} by zagier_fix, x <> 0
+   = {(x,y,y) | (x,y,y) IN (mills n)}          by simplification
+   = {(x,y,y) | n = windmill (x,y,y)}          by mills_def
+*)
+Theorem zagier_fixes:
+  !n. n MOD 4 <> 0 ==> fixes zagier (mills n) = {(x,x,z) | n = windmill (x,x,z)}
+Proof
+  rw[fixes_def, mills_def, EXTENSION, EQ_IMP_THM] >| [
+    rename1 `windmill (x,y,z)` >>
+    `x <> 0` by metis_tac[windmill_with_no_mind] >>
+    fs[zagier_fix, windmill_def],
+    rename1 `windmill (x,x,z)` >>
+    `x <> 0` by metis_tac[windmill_with_no_mind] >>
+    simp[zagier_fix]
+  ]
+QED
+
+(* Theorem: n MOD 4 <> 0 ==> ((x,y,z) IN fixes zagier (mills n) <=> n = windmill (x,y,z) /\ x = y) *)
+(* Proof: by zagier_fixes. *)
+Theorem zagier_fixes_element:
+  !n x y z. n MOD 4 <> 0 ==> ((x,y,z) IN fixes zagier (mills n) <=> n = windmill (x,y,z) /\ x = y)
+Proof
+  rpt strip_tac >>
+  imp_res_tac zagier_fixes >>
+  fs[EXTENSION] >>
+  metis_tac[]
+QED
+
+(* Extract Theorem *)
+Theorem zagier_fixes_alt = fixes_element |> ISPEC ``zagier``;
+(* val zagier_fixes_alt = |- !s x. x IN fixes zagier s <=> x IN s /\ zagier x = x: thm *)
+
+(* Theorem: windmill t = windmill (zagier t) *)
+(* Proof:
+   Let (x,y,z) = t             by FORALL_PROD
+   By windmill_def, zagier_def, this is to show:
+   (1) x < y - z ==>
+       4 * (y * z) + x ** 2 = 4 * (z * (y - (x + z))) + (x + 2 * z) ** 2
+       or windmill (x, y, z) = windmill (x + 2 * z) z (y - (x + z))
+       From      x < y - z
+         so  x + z < y               by LESS_SUB_ADD_LESS, or in detail:
+       Note x < 0 is impossible, so ~(y <= z), or z < y, implies z <= y.
+         so  x + z < y - z + z = y   by SUB_ADD, z <= y
+       Thus  x + z <= y              by x + z < y
+
+         windmill (x + 2 * z, z ,y - (x + z))
+       = (x + 2 * z) ** 2 + 4 * z * (y - (x + z))
+       = x ** 2 + (2 * z) ** 2 + 4 * x * z + 4 * z * (y - (x + z))   by SUM_SQUARED
+       = x ** 2 + 4 * z * z + 4 * z * x + 4 * z (y - (x + z))        by EXP_2
+       = x ** 2 + 4 * z * (x + z) + 4 * z (y - (x + z)) by LEFT_ADD_DISTRIB
+       = x ** 2 + 4 * z * ((x + z) + (y - (x + z)))     by LEFT_ADD_DISTRIB
+       = x ** 2 + 4 * z * ((x + z) + y - (x + z))       by LESS_EQ_ADD_SUB, x + z <= y
+       = x ** 2 + 4 * z * (y + (x + z) - (x + z))
+       = x ** 2 + 4 * z * y                             by ADD_SUB
+       = x ** 2 + 4 * y * z
+       = windmill (x, y, z)
+
+   (2) ~(x < y - z) /\ x < 2 * y ==>
+        4 * (y * z) + x ** 2 = 4 * (y * (x + z - y)) + (2 * y - x) ** 2
+       or windmill (x, y, z) = windmill (2 * y - x) y (x + z - y)
+       Note y - z <= x             by ~(x < y - z)
+         so y <= x + z             by SUB_RIGHT_LESS_EQ
+
+         windmill (2 * y - x, y, x + z - y)
+       = (2 * y - x) ** 2 + 4 * y * (x + z - y)
+       = (2 * y - x) ** 2 + 8 * y * x - 8 * y * x + 4 * y * (x + z - y)  by ADD_SUB
+       = (2 * y - x) ** 2 + 8 * y * x + 4 * y * (x + z - y) - 8 * y * x  by SUB_RIGHT_ADD,
+                        since 8 * y * x <= (2 * y - x) ** 2 + 8 * y * x
+       = (2 * y + x) ** 2 + 4 * y * (x + z - y) - 8 * y * x   by binomial_sub_add, x < 2 * y
+       = (2 * y) ** 2 + x ** 2 + 4 * y * x + 4 * y * (x + z - y) - 8 * y * x
+                                                              by SUM_SQUARED
+       = x ** 2 + 4 * y * y + 4 * y * x + 4 * y * (x + z - y) - 8 * y * x
+                                                              by EXP_2
+       = x ** 2 + 4 * y * (y + x) + 4 * y * (x + z - y) - 8 * y * x
+                                                              by LEFT_ADD_DISTRIB
+       = x ** 2 + 4 * y * (y + x + (x + z - y)) - 8 * y * x   by LEFT_ADD_DISTRIB
+       = x ** 2 + 4 * y * (y + x + x + z - y) - 8 * y * x     by LESS_EQ_ADD_SUB, y <= x + z
+       = x ** 2 + 4 * y * (2 * x + z) - 4 * y * (2 * x)       by arithmetic
+       = x ** 2 + 4 * y * (2 * x + z - 2 * x)                 by LEFT_SUB_DISTRIB
+       = x ** 2 + 4 * y * z                                   by ADD_SUB
+       = windmill (x, y, z)
+
+   (3) ~(x < y - z) /\ ~(x < 2 * y) ==>
+       4 * (y * z) + x ** 2 = 4 * (y * (x + z - y)) + (x - 2 * y) ** 2
+       or windmill (x, y, z) = windmill (x - 2 * y) y (x + z - y)
+       Note y - z <= x             by ~(x < y - z)
+         so y <= x + z             by SUB_RIGHT_LESS_EQ
+       Also 2 * y <= x             by ~(x < 2 * y)
+
+         windmill (x - 2 * y, y, x + z - y)
+       = (x - 2 * y) ** 2 + 4 * y * (x + z - y)
+       = (x - 2 * y) ** 2 + 8 * y * x - 8 * y * x + 4 * y * (x + z - y)  by ADD_SUB
+       = (x - 2 * y) ** 2 + 8 * y * x + 4 * y * (x + z - y) - 8 * y * x  by SUB_RIGHT_ADD,
+                        since 8 * y * x <= (2 * y - x) ** 2 + 8 * y * x
+       = (x + 2 * y) ** 2 + 4 * y * (x + z - y) - 8 * y * x   by binomial_sub_add, 2 * y <= x
+       = x ** 2 + (2 * y) ** 2 + 4 * y * x + 4 * y * (x + z - y) - 8 * y * x
+                                                              by SUM_SQUARED
+       = x ** 2 + 4 * y * y + 4 * y * x + 4 * y * (x + z - y) - 8 * y * x
+                                                              by EXP_2
+       = x ** 2 + 4 * y * (y + x) + 4 * y * (x + z - y) - 8 * y * x
+                                                              by LEFT_ADD_DISTRIB
+       = x ** 2 + 4 * y * (y + x + (x + z - y)) - 8 * y * x   by LEFT_ADD_DISTRIB
+       = x ** 2 + 4 * y * (y + x + x + z - y) - 8 * y * x     by LESS_EQ_ADD_SUB, y <= x + z
+       = x ** 2 + 4 * y * (2 * x + z) - 4 * y * (2 * x)       by arithmetic
+       = x ** 2 + 4 * y * (2 * x + z - 2 * x)                 by LEFT_SUB_DISTRIB
+       = x ** 2 + 4 * y * z                                   by ADD_SUB
+       = windmill (x, y, z)
+*)
+Theorem zagier_windmill:
+  !t. windmill t = windmill (zagier t)
+Proof
+  simp[FORALL_PROD] >>
+  rpt strip_tac >>
+  rename1 `windmill(x,y,z)` >>
+  rw[windmill_def, zagier_def] >| [
+    `x + z < y` by decide_tac >>
+    `(x + 2 * z) ** 2 + 4 * (z * (y - (x + z))) =
+    x ** 2 + (2 * z) ** 2 + 4 * x * z + 4 * z * (y - (x + z))` by simp[SUM_SQUARED] >>
+    `_ = x ** 2 + (2 * z) ** 2 + 4 * z * x + 4 * z * (y - (x + z))` by decide_tac >>
+    `_ = x ** 2 + (2 * z) * (2 * z) + 4 * z * x + 4 * z * (y - (x + z))` by metis_tac[EXP_2] >>
+    `_ = x ** 2 + 4 * z * z + 4 * z * x + 4 * z * (y - (x + z))` by decide_tac >>
+    `_ = x ** 2 + 4 * z * (z + x) + 4 * z * (y - (x + z))` by decide_tac >>
+    `_ = x ** 2 + 4 * z * ((x + z) + (y - (x + z)))` by rw[LEFT_ADD_DISTRIB] >>
+    `_ = x ** 2 + 4 * z * ((x + z) + y - (x + z))` by rw[] >>
+    `_ = x ** 2 + 4 * z * y` by decide_tac >>
+    simp[],
+    `y <= x + z` by decide_tac >>
+    `(2 * y - x) ** 2 + 4 * (y * (x + z - y)) =
+    (2 * y - x) ** 2 + 4 * y * (x + z - y)` by decide_tac >>
+    `_ = (2 * y - x) ** 2 + 8 * y * x - 8 * y * x + 4 * y * (x + z - y)` by decide_tac >>
+    `_ = (2 * y - x) ** 2 + 4 * (2 * y) * x + 4 * y * (x + z - y) - 8 * y * x` by fs[] >>
+    `_ = (2 * y + x) ** 2 + 4 * y * (x + z - y) - 8 * y * x` by simp[binomial_sub_add] >>
+    `_ = (2 * y) ** 2 + x ** 2 + 4 * y * x + 4 * y * (x + z - y) - 8 * y * x` by simp[SUM_SQUARED] >>
+    `_ = (2 * y) * (2 * y) + x ** 2 + 4 * y * x + 4 * y * (x + z - y) - 8 * y * x` by metis_tac[EXP_2] >>
+    `_ = x ** 2 + 4 * y * y + 4 * y * x + 4 * y * (x + z - y) - 8 * y * x` by fs[] >>
+    `_ = x ** 2 + 4 * y * (y + x) + 4 * y * (x + z - y) - 8 * y * x` by rw[LEFT_ADD_DISTRIB] >>
+    `_ = x ** 2 + 4 * y * (y + x + (x + z - y)) - 8 * y * x` by rw[LEFT_ADD_DISTRIB] >>
+    `_ = x ** 2 + 4 * y * (y + x + x + z - y) - 8 * y * x` by rw[LESS_EQ_ADD_SUB] >>
+    `_ = x ** 2 + 4 * y * (x + x + z) - 4 * y * (x + x)` by decide_tac >>
+    `_ = x ** 2 + 4 * y * (x + x + z - (x + x))` by decide_tac >>
+    `_ = x ** 2 + 4 * y * z` by decide_tac >>
+    simp[],
+    `y <= x + z` by decide_tac >>
+    `2 * y <= x` by decide_tac >>
+    `(x - 2 * y) ** 2 + 4 * (y * (x + z - y)) =
+    (x - 2 * y) ** 2 + 4 * y * (x + z - y)` by decide_tac >>
+    `_ = (x - 2 * y) ** 2 + 8 * y * x - 8 * y * x + 4 * y * (x + z - y)` by decide_tac >>
+    `_ = (x - 2 * y) ** 2 + 4 * x * (2 * y) + 4 * y * (x + z - y) - 8 * y * x` by fs[] >>
+    `_ = (x + 2 * y) ** 2 + 4 * y * (x + z - y) - 8 * y * x` by simp[binomial_sub_add] >>
+    `_ = x ** 2 + (2 * y) ** 2 + 4 * y * x + 4 * y * (x + z - y) - 8 * y * x` by simp[SUM_SQUARED] >>
+    `_ = x ** 2 + (2 * y) * (2 * y) + 4 * y * x + 4 * y * (x + z - y) - 8 * y * x` by metis_tac[EXP_2] >>
+    `_ = x ** 2 + 4 * y * y + 4 * y * x + 4 * y * (x + z - y) - 8 * y * x` by fs[] >>
+    `_ = x ** 2 + 4 * y * (y + x) + 4 * y * (x + z - y) - 8 * y * x` by rw[LEFT_ADD_DISTRIB] >>
+    `_ = x ** 2 + 4 * y * (y + x + (x + z - y)) - 8 * y * x` by rw[LEFT_ADD_DISTRIB] >>
+    `_ = x ** 2 + 4 * y * (y + x + x + z - y) - 8 * y * x` by rw[LESS_EQ_ADD_SUB] >>
+    `_ = x ** 2 + 4 * y * (x + x + z) - 4 * y * (x + x)` by decide_tac >>
+    `_ = x ** 2 + 4 * y * (x + x + z - (x + x))` by decide_tac >>
+    `_ = x ** 2 + 4 * y * z` by decide_tac >>
+    simp[]
+  ]
+QED
+
+(* Theorem: t IN mills n ==> zagier t IN mills n *)
+(* Proof:
+       t IN mills n
+   <=> n = windmill t              by mills_element_alt
+   ==> n = windmill (zagier t)     by zagier_windmill
+   <=> zagier t IN mills n         by mills_element_alt
+*)
+Theorem zagier_closure:
+  !n t. t IN mills n ==> zagier t IN mills n
+Proof
+  simp[mills_element_alt, GSYM zagier_windmill]
+QED
+
+(* Theorem: t IN mills n <=> zagier t IN mills n *)
+(* Proof:
+       t IN mills n
+   <=> n = windmill t              by mills_element_alt
+   <=> n = windmill (zagier t)     by zagier_windmill
+   <=> zagier t IN mills n         by mills_element_alt
+*)
+Theorem zagier_closure_iff:
+  !n t. t IN mills n <=> zagier t IN mills n
+Proof
+  simp[mills_element_alt, GSYM zagier_windmill]
+QED
 
 (* Theorem: zagier (0, y, z) =
             if z < y then (2 * z,z,y - z)
@@ -1083,18 +1630,6 @@ Proof
   rw[zagier_def]
 QED
 
-(*
-g `!n x y z. (x, y, z) IN mills n ==> my_zagier (x, y, z) IN mills n`;
-e (rw[mills_def, windmill_def, my_zagier_def]); (* >> 4 *)
-
-g `!n x y z. (x, y, z) IN mills n ==> me_zagier (x, y, z) IN mills n`;
-e (rw[mills_def, windmill_def, me_zagier_def]); (* >> 3 *)
-but me_zagier is wrong!
-
-g `!n x y z. (x, y, z) IN mills n ==> mi_zagier (x, y, z) IN mills n`;
-e (rw[mills_def, windmill_def, mi_zagier_def]); (* >> 4 *)
-*)
-
 (* Theorem: zagier (x,0,0) = (x,x,0) *)
 (* Proof:
    If y = 0 and z = 0, x < y - z becomes x < 0, which is false.
@@ -1133,6 +1668,23 @@ Proof
   simp[zagier_def]
 QED
 
+(*
+> zagier_0_y_z |> SPEC ``1`` |> SIMP_RULE std_ss[DECIDE``n < 1 <=> n = 0``];
+val it = |- !z. zagier (0,1,z) = if z = 0 then (0,0,1) else (2,1,z - 1): thm
+*)
+
+(* Theorem: zagier (0,1,z) = (0,z,0) *)
+(* Proof:
+   If x = 0 and y = 1, x < y - z becomes 0 < 1 - z, true when z = 0, giving (0,0,1).
+   Next x < 2 * y becomes 0 < 2 * 1 = 2, which is true.
+   Thus zagier (0,1,z) = (2 * y - x,y,x + z - y) = (2,1,z - 1).
+*)
+Theorem zagier_0_1_z:
+  !z. zagier (0,1,z) = if z = 0 then (0,0,1) else (2,1,z - 1)
+Proof
+  rw[zagier_def]
+QED
+
 (* Theorem: zagier (0,0,0) = (0,0,0) *)
 (* Proof: by zagier_x_0_0, or zagier_0_0_z or zagier_0_y_0 *)
 Theorem zagier_0_0_0:
@@ -1151,175 +1703,12 @@ Proof
   rw[zagier_def]
 QED
 
-(* Theorem: x <> 0 ==> (zagier (x,y,z) = (x,y,z) <=> x = y) *)
-(* Proof:
-   By zagier_def,
-   If x < y - z, then 0 < y by x <> 0.
-          (x + 2 * z,z,y - z - x) = (x, y, z)
-      <=>  x + 2 * z = x, z = y, y - z - x = z
-      <=>  x + 2 * y = x, z = y, 0 - x = y
-      <=>  x + 2 * y = x, z = y, y = 0
-      This contradicts 0 < y.
-   Next, if x < 2 * y,
-          (2 * y - x,y,x + z - y) = (x, y, z)
-      <=>  2 * y - x = x, y = y, x + z - y = z
-      <=>  2 * y - x = x, y = y, x - y = 0
-      <=> x = y
-   Otherwise,
-          (x - 2 * y,x + z - y,y) = (x, y, z)
-      <=> x - 2 * y = x, x + z - y = y, y = z
-      <=> x - 2 * y = x, x = y, y = z
-      <=> x - 2 * x = x, x = y, y = z
-      <=> x = 0, y = 0, z = 0
-      This contradicts x <> 0.
-*)
-Theorem zagier_fix:
-  !x y z. x <> 0 ==> (zagier (x,y,z) = (x,y,z) <=> x = y)
-Proof
-  rw[zagier_def]
-QED
-
 (* Theorem: x <> 0 ==> zagier (x, x, z) = (x, x, z) *)
 (* Proof: by zagier_fix. *)
 Theorem zagier_x_x_z:
   !x z. x <> 0 ==> zagier (x, x, z) = (x, x, z)
 Proof
   simp[zagier_fix]
-QED
-
-(* Theorem: (x, y, z) IN mills n ==> zagier (x, y, z) IN mills n *)
-(* Proof:
-   By mills_def, windmill_def, zagier_def, this is to show:
-   (1) x < y - z ==>
-       4 * (y * z) + x ** 2 = 4 * (z * (y - (x + z))) + (x + 2 * z) ** 2
-       or windmill x y z = windmill (x + 2 * z) z (y - (x + z))
-       From      x < y - z
-         so  x + z < y               by LESS_SUB_ADD_LESS, or in detail:
-       Note x < 0 is impossible, so ~(y <= z), or z < y, implies z <= y.
-         so  x + z < y - z + z = y   by SUB_ADD, z <= y
-       Thus  x + z <= y              by x + z < y
-
-         windmill (x + 2 * z) z (y - (x + z))
-       = (x + 2 * z) ** 2 + 4 * z * (y - (x + z))
-       = x ** 2 + (2 * z) ** 2 + 4 * x * z + 4 * z * (y - (x + z))   by binomial_add
-       = x ** 2 + 4 * z * z + 4 * z * x + 4 * z (y - (x + z))        by EXP_2
-       = x ** 2 + 4 * z * (x + z) + 4 * z (y - (x + z)) by LEFT_ADD_DISTRIB
-       = x ** 2 + 4 * z * ((x + z) + (y - (x + z)))     by LEFT_ADD_DISTRIB
-       = x ** 2 + 4 * z * ((x + z) + y - (x + z))       by LESS_EQ_ADD_SUB, x + z <= y
-       = x ** 2 + 4 * z * (y + (x + z) - (x + z))
-       = x ** 2 + 4 * z * y                             by ADD_SUB
-       = x ** 2 + 4 * y * z
-       = windmill x y z
-
-   (2) ~(x < y - z) /\ x < 2 * y ==>
-        4 * (y * z) + x ** 2 = 4 * (y * (x + z - y)) + (2 * y - x) ** 2
-       or windmill x y z = windmill (2 * y - x) y (x + z - y)
-       Note y - z <= x             by ~(x < y - z)
-         so y <= x + z             by SUB_RIGHT_LESS_EQ
-
-         windmill (2 * y - x) y (x + z - y)
-       = (2 * y - x) ** 2 + 4 * y * (x + z - y)
-       = (2 * y - x) ** 2 + 8 * y * x - 8 * y * x + 4 * y * (x + z - y)  by ADD_SUB
-       = (2 * y - x) ** 2 + 8 * y * x + 4 * y * (x + z - y) - 8 * y * x  by SUB_RIGHT_ADD,
-                        since 8 * y * x <= (2 * y - x) ** 2 + 8 * y * x
-       = (2 * y + x) ** 2 + 4 * y * (x + z - y) - 8 * y * x   by binomial_sub_add, x < 2 * y
-       = (2 * y) ** 2 + x ** 2 + 4 * y * x + 4 * y * (x + z - y) - 8 * y * x
-                                                              by binomial_add
-       = x ** 2 + 4 * y * y + 4 * y * x + 4 * y * (x + z - y) - 8 * y * x
-                                                              by EXP_2
-       = x ** 2 + 4 * y * (y + x) + 4 * y * (x + z - y) - 8 * y * x
-                                                              by LEFT_ADD_DISTRIB
-       = x ** 2 + 4 * y * (y + x + (x + z - y)) - 8 * y * x   by LEFT_ADD_DISTRIB
-       = x ** 2 + 4 * y * (y + x + x + z - y) - 8 * y * x     by LESS_EQ_ADD_SUB, y <= x + z
-       = x ** 2 + 4 * y * (2 * x + z) - 4 * y * (2 * x)       by arithmetic
-       = x ** 2 + 4 * y * (2 * x + z - 2 * x)                 by LEFT_SUB_DISTRIB
-       = x ** 2 + 4 * y * z                                   by ADD_SUB
-       = windmill x y z
-
-   (3) ~(x < y - z) /\ ~(x < 2 * y) ==>
-       4 * (y * z) + x ** 2 = 4 * (y * (x + z - y)) + (x - 2 * y) ** 2
-       or windmill x y z = windmill (x - 2 * y) y (x + z - y)
-       Note y - z <= x             by ~(x < y - z)
-         so y <= x + z             by SUB_RIGHT_LESS_EQ
-       Also 2 * y <= x             by ~(x < 2 * y)
-
-         windmill (x - 2 * y) y (x + z - y)
-       = (x - 2 * y) ** 2 + 4 * y * (x + z - y)
-       = (x - 2 * y) ** 2 + 8 * y * x - 8 * y * x + 4 * y * (x + z - y)  by ADD_SUB
-       = (x - 2 * y) ** 2 + 8 * y * x + 4 * y * (x + z - y) - 8 * y * x  by SUB_RIGHT_ADD,
-                        since 8 * y * x <= (2 * y - x) ** 2 + 8 * y * x
-       = (x + 2 * y) ** 2 + 4 * y * (x + z - y) - 8 * y * x   by binomial_sub_add, 2 * y <= x
-       = x ** 2 + (2 * y) ** 2 + 4 * y * x + 4 * y * (x + z - y) - 8 * y * x
-                                                              by binomial_add
-       = x ** 2 + 4 * y * y + 4 * y * x + 4 * y * (x + z - y) - 8 * y * x
-                                                              by EXP_2
-       = x ** 2 + 4 * y * (y + x) + 4 * y * (x + z - y) - 8 * y * x
-                                                              by LEFT_ADD_DISTRIB
-       = x ** 2 + 4 * y * (y + x + (x + z - y)) - 8 * y * x   by LEFT_ADD_DISTRIB
-       = x ** 2 + 4 * y * (y + x + x + z - y) - 8 * y * x     by LESS_EQ_ADD_SUB, y <= x + z
-       = x ** 2 + 4 * y * (2 * x + z) - 4 * y * (2 * x)       by arithmetic
-       = x ** 2 + 4 * y * (2 * x + z - 2 * x)                 by LEFT_SUB_DISTRIB
-       = x ** 2 + 4 * y * z                                   by ADD_SUB
-       = windmill x y z
-*)
-Theorem zagier_closure:
-  !n x y z. (x, y, z) IN mills n ==> zagier (x, y, z) IN mills n
-Proof
-  rw[mills_def, windmill_def, zagier_def] >| [
-    `x + z < y` by decide_tac >>
-    `(x + 2 * z) ** 2 + 4 * (z * (y - (x + z))) =
-    x ** 2 + (2 * z) ** 2 + 4 * x * z + 4 * z * (y - (x + z))` by simp[binomial_add] >>
-    `_ = x ** 2 + (2 * z) ** 2 + 4 * z * x + 4 * z * (y - (x + z))` by decide_tac >>
-    `_ = x ** 2 + (2 * z) * (2 * z) + 4 * z * x + 4 * z * (y - (x + z))` by metis_tac[EXP_2] >>
-    `_ = x ** 2 + 4 * z * z + 4 * z * x + 4 * z * (y - (x + z))` by decide_tac >>
-    `_ = x ** 2 + 4 * z * (z + x) + 4 * z * (y - (x + z))` by decide_tac >>
-    `_ = x ** 2 + 4 * z * ((x + z) + (y - (x + z)))` by rw[LEFT_ADD_DISTRIB] >>
-    `_ = x ** 2 + 4 * z * ((x + z) + y - (x + z))` by rw[] >>
-    `_ = x ** 2 + 4 * z * y` by decide_tac >>
-    simp[],
-    `y <= x + z` by decide_tac >>
-    `(2 * y - x) ** 2 + 4 * (y * (x + z - y)) =
-    (2 * y - x) ** 2 + 4 * y * (x + z - y)` by decide_tac >>
-    `_ = (2 * y - x) ** 2 + 8 * y * x - 8 * y * x + 4 * y * (x + z - y)` by decide_tac >>
-    `_ = (2 * y - x) ** 2 + 4 * (2 * y) * x + 4 * y * (x + z - y) - 8 * y * x` by fs[] >>
-    `_ = (2 * y + x) ** 2 + 4 * y * (x + z - y) - 8 * y * x` by simp[binomial_sub_add] >>
-    `_ = (2 * y) ** 2 + x ** 2 + 4 * y * x + 4 * y * (x + z - y) - 8 * y * x` by simp[binomial_add] >>
-    `_ = (2 * y) * (2 * y) + x ** 2 + 4 * y * x + 4 * y * (x + z - y) - 8 * y * x` by metis_tac[EXP_2] >>
-    `_ = x ** 2 + 4 * y * y + 4 * y * x + 4 * y * (x + z - y) - 8 * y * x` by fs[] >>
-    `_ = x ** 2 + 4 * y * (y + x) + 4 * y * (x + z - y) - 8 * y * x` by rw[LEFT_ADD_DISTRIB] >>
-    `_ = x ** 2 + 4 * y * (y + x + (x + z - y)) - 8 * y * x` by rw[LEFT_ADD_DISTRIB] >>
-    `_ = x ** 2 + 4 * y * (y + x + x + z - y) - 8 * y * x` by rw[LESS_EQ_ADD_SUB] >>
-    `_ = x ** 2 + 4 * y * (x + x + z) - 4 * y * (x + x)` by decide_tac >>
-    `_ = x ** 2 + 4 * y * (x + x + z - (x + x))` by decide_tac >>
-    `_ = x ** 2 + 4 * y * z` by decide_tac >>
-    simp[],
-    `y <= x + z` by decide_tac >>
-    `2 * y <= x` by decide_tac >>
-    `(x - 2 * y) ** 2 + 4 * (y * (x + z - y)) =
-    (x - 2 * y) ** 2 + 4 * y * (x + z - y)` by decide_tac >>
-    `_ = (x - 2 * y) ** 2 + 8 * y * x - 8 * y * x + 4 * y * (x + z - y)` by decide_tac >>
-    `_ = (x - 2 * y) ** 2 + 4 * x * (2 * y) + 4 * y * (x + z - y) - 8 * y * x` by fs[] >>
-    `_ = (x + 2 * y) ** 2 + 4 * y * (x + z - y) - 8 * y * x` by simp[binomial_sub_add] >>
-    `_ = x ** 2 + (2 * y) ** 2 + 4 * y * x + 4 * y * (x + z - y) - 8 * y * x` by simp[binomial_add] >>
-    `_ = x ** 2 + (2 * y) * (2 * y) + 4 * y * x + 4 * y * (x + z - y) - 8 * y * x` by metis_tac[EXP_2] >>
-    `_ = x ** 2 + 4 * y * y + 4 * y * x + 4 * y * (x + z - y) - 8 * y * x` by fs[] >>
-    `_ = x ** 2 + 4 * y * (y + x) + 4 * y * (x + z - y) - 8 * y * x` by rw[LEFT_ADD_DISTRIB] >>
-    `_ = x ** 2 + 4 * y * (y + x + (x + z - y)) - 8 * y * x` by rw[LEFT_ADD_DISTRIB] >>
-    `_ = x ** 2 + 4 * y * (y + x + x + z - y) - 8 * y * x` by rw[LESS_EQ_ADD_SUB] >>
-    `_ = x ** 2 + 4 * y * (x + x + z) - 4 * y * (x + x)` by decide_tac >>
-    `_ = x ** 2 + 4 * y * (x + x + z - (x + x))` by decide_tac >>
-    `_ = x ** 2 + 4 * y * z` by decide_tac >>
-    simp[]
-  ]
-QED
-
-
-(* Theorem: t IN mills n ==> zagier t IN mills n *)
-(* Proof: by zagier_closure *)
-Theorem zagier_closure_alt:
-  !n t. t IN mills n ==> zagier t IN mills n
-Proof
-  metis_tac[triple_parts, zagier_closure]
 QED
 
 
@@ -1457,7 +1846,7 @@ Proof
   metis_tac[triple_parts, doublet_eq_0, zagier_involute]
 QED
 
-(* Theorem: ~square n /\ n MOD 4 <> 0 ==> zagier involute (mills n) *)
+(* Theorem: n MOD 4 <> 0 /\ ~square n ==> zagier involute (mills n) *)
 (* Proof:
    Let t = (x,y,z).                           by triple_parts
    Then zagier (x,y,z) IN mills n             by zagier_closure
@@ -1467,7 +1856,7 @@ QED
      so zagier involute (mills n)             by involution
 *)
 Theorem zagier_involute_mills:
-  !n. ~square n /\ n MOD 4 <> 0 ==> zagier involute (mills n)
+  !n. n MOD 4 <> 0 /\ ~square n ==> zagier involute (mills n)
 Proof
   metis_tac[mills_triple_nonzero, zagier_closure, zagier_involute, triple_parts]
 QED
@@ -1727,6 +2116,65 @@ QED
 (* Zagier and Flip.                                                          *)
 (* ------------------------------------------------------------------------- *)
 
+(* Theorem: windmill t = windmill ((zagier o flip) t) *)
+(* Proof:
+     windmill ((zagier o flip) t)
+   = windmill (zagier (flip t))    by o_THM
+   = windmill (flip t)             by zagier_windmill
+   = windmill t                    by flip_windmill
+*)
+Theorem zagier_flip_windmill:
+  !t. windmill t = windmill ((zagier o flip) t)
+Proof
+  simp[GSYM zagier_windmill, GSYM flip_windmill]
+QED
+
+(* Theorem: (zagier o flip) (x, y, z) =
+            if x < z - y then (x + 2 * y, y, z - y - x)
+            else if x < 2 * z then (2 * z - x, z, x + y - z)
+            else (x - 2 * z, x + y - z, z) *)
+(* Proof:
+   Let t = (x,y,z).
+     (zagier o flip) t
+   = zagier (x,z,y)                            by flip_def
+   = if x < z - y then (x + 2 * y, y, z - y - x)
+     else if x < 2 * z then (2 * z - x, z, x + y - z)
+     else (x - 2 * z, x + y - z, z)            by zagier_def
+*)
+Theorem zagier_flip_eqn:
+  !x y z. (zagier o flip) (x, y, z) =
+           if x < z - y then (x + 2 * y, y, z - y - x)
+           else if x < 2 * z then (2 * z - x, z, x + y - z)
+           else (x - 2 * z, x + y - z, z)
+Proof
+  rw[zagier_def, flip_def]
+QED
+
+(*
+zagier_flip_eqn |> SPEC ``x:num`` |> SPEC ``0`` |> SIMP_RULE std_ss [];
+|- !z. zagier (flip (x,0,z)) = if x < z then (x,0,z - x)
+                               else if x < 2 * z then (2 * z - x,z,x - z)
+                               else (x - 2 * z,x - z,z)
+> zagier_flip_eqn |> SPEC ``x:num`` |> SPEC ``y:num`` |> SPEC ``0`` |> SIMP_RULE std_ss [];
+|- zagier (flip (x,y,0)) = (x,x + y,0)
+> zagier_flip_eqn |> SPEC ``x:num`` |> SPEC ``y:num`` |> SPEC ``0`` |> SIMP_RULE std_ss [] |> GEN ``y:num`` |> GEN ``x:num``;
+val it = |- !x y. zagier (flip (x,y,0)) = (x,x + y,0): thm
+> zagier_flip_eqn |> SPEC ``0`` |> SIMP_RULE std_ss [];
+val it = |- !y z.  zagier (flip (0,y,z)) =
+        if 0 < z - y then (2 * y,y,z - y) else if 0 < z then (2 * z,z,y - z)  else (0,y,0): thm
+> zagier_flip_eqn |> SPEC ``0`` |> SPEC ``1`` |> SIMP_RULE std_ss[];
+val it = |- !z. zagier (flip (0,1,z)) =
+          if 0 < z - 1 then (2,1,z - 1)
+          else if 0 < z then (2 * z,z,1 - z)
+          else (0,1,0): thm
+> zagier_def |> ISPEC ``1`` |> ISPEC ``z:num`` |> ISPEC ``1`` |> SIMP_RULE arith_ss [];
+|- zagier (1,z,1) =
+      if 1 < z - 1 then (3,1,z - 2)
+      else if 1 < 2 * z then (2 * z - 1,z,2 - z)
+      else (1 - 2 * z,2 - z,z): thm
+zagier_def |> ISPEC ``x:num`` |> ISPEC ``z:num`` |> ISPEC ``x:num`` |> SIMP_RULE arith_ss [];
+*)
+
 (* Theorem: (zagier o flip) (1,1,z) =
             if z = 0 then (1,2,0)
             else if z = 1 then (1,1,1)
@@ -1740,13 +2188,6 @@ QED
      else if z = 1 then (1,1,1)
      else if z = 2 then (3,2,0)
      else (3,1,z - 2)           by zagier_def
-
-> zagier_def |> ISPEC ``1`` |> ISPEC ``z:num`` |> ISPEC ``1`` |> SIMP_RULE arith_ss [];
-|- zagier (1,z,1) =
-      if 1 < z - 1 then (3,1,z - 2)
-      else if 1 < 2 * z then (2 * z - 1,z,2 - z)
-      else (1 - 2 * z,2 - z,z): thm
-zagier_def |> ISPEC ``x:num`` |> ISPEC ``z:num`` |> ISPEC ``x:num`` |> SIMP_RULE arith_ss [];
 *)
 Theorem zagier_flip_1_1_z:
   !z. (zagier o flip) (1,1,z) =
@@ -1758,83 +2199,115 @@ Proof
   rw[zagier_def, flip_def]
 QED
 
-(* ------------------------------------------------------------------------- *)
-(* Computation of (mills n)                                                  *)
-(* ------------------------------------------------------------------------- *)
-
-(* Generate the tuples *)
-Definition tuples_helper_def:
-   tuples_helper k 0 = [] /\
-   tuples_helper k (SUC n) =
-      ZIP ((GENLIST (K (SUC n)) k), (GENLIST SUC k)) ++ tuples_helper k n
-End
-
-Definition tuples_def:
-   tuples k = tuples_helper k k
-End
-(*
-EVAL ``tuples_helper 3 3``;
-EVAL ``tuples 3``;
-[(3,1); (3,2); (3,3); (2,1); (2,2); (2,3); (1,1); (1,2); (1,3)]
-*)
-
-(* Generate the triples *)
-Definition triples_helper_def:
-    triples_helper k 0 = [] /\
-    triples_helper k (SUC n) =
-       ZIP ((GENLIST (K (SUC n)) (k * k)), tuples k) ++ triples_helper k n
-End
-
-Definition triples_def:
-   triples k = triples_helper k k
-End
-
-(*
-EVAL ``triples_helper 3 3``;
-EVAL ``triples 3``;
-*)
-
-(*
-EVAL ``FILTER (\(x, y, z). 5 = x * x + 4 * y * z) (triples 5)``; -> [(1,1,1)]
-EVAL ``FILTER (\(x, y, z). 13 = x * x + 4 * y * z) (triples 13)``; -> [(3,1,1); (1,3,1); (1,1,3)]
-*)
-
-(* Compute (mills n) *)
-Definition mills_of_def:
-   mills_of n = FILTER (\(x, y, z). n = windmill x y z) (triples n)
-End
-
-(*
-EVAL ``mills_of 5``;               [(1,1,1)]
-EVAL ``MAP zagier (mills_of 5)``;  [(1,1,1)]
-EVAL ``mills_of 13``;              [(3,1,1); (1,3,1); (1,1,3)]
-EVAL ``MAP zagier (mills_of 13)``; [(1,3,1); (3,1,1); (1,1,3)]
-*)
-
-(*
-
-EVAL ``MAP2 (\x y. (x,y)) (GENLIST (K 1) 5) (GENLIST SUC 5)``;
-EVAL ``ZIP ((GENLIST (K 1) 3), (GENLIST SUC 3))``;
-
-EVAL ``(count 13) CROSS (count 13) CROSS (count 13)``;
-EVAL ``13 * 13 * 13``; -> 2197
-
-EVAL ``count 5 CROSS (count 5 CROSS count 5)``;
-EVAL ``ZIP (GENLIST SUC 5, GENLIST SUC 5)``;
-EVAL ``ZIP (GENLIST SUC 5, ZIP (GENLIST SUC 5, GENLIST SUC 5))``;
-
-EVAL ``FILTER (\(x, y, z). 5 = x * x + 4 * y * z) (ZIP (GENLIST SUC 5, ZIP (GENLIST SUC 5, GENLIST SUC 5)))``;
-
-(* Generate the triples *)
-val triples_def = Define`
-    triples n = FILTER (\(x, y, z). n = x * x + 4 * y * z)
-                       (ZIP (GENLIST SUC n, ZIP (GENLIST SUC n, GENLIST SUC n)))
-`;
-
-EVAL ``triples 5``; -> [(1,1,1)]
-EVAL ``triples 13``; the list is wrong!
+(* Theorem: (zagier o flip) (0,1,z) =
+            if z = 0 then (0,1,0)
+            else (2,1,z - 1) *)
+(* Proof:
+     (zagier o flip) (0,1,z)
+   = zagier (flip (0,1,z))      by o_THM
+   = zagier (0,z,1)             by flip_def
+   = if z = 0 then (0,1,0)
+     else if z = 1 then (2,1,0)
+     else (2,1,z - 1)           by zagier_def
+     which also holds for z = 1.
 
 *)
+Theorem zagier_flip_0_1_z:
+  !z. (zagier o flip) (0,1,z) =
+         if z = 0 then (0,1,0)
+         else (2,1,z - 1)
+Proof
+  rw[zagier_def, flip_def]
+QED
+
+(* Theorem: (zagier o flip) (0, y, z) = if 0 < z - y then (2 * y,y,z - y)
+                                        else if 0 < z then (2 * z,z,y - z)
+                                        else (0,y,0) *)
+(* Proof: by zagier_flip_eqn. *)
+Theorem zagier_flip_0_y_z:
+  !y z. (zagier o flip) (0, y, z) =
+         if 0 < z - y then (2 * y, y, z - y)
+         else if 0 < z then (2 * z, z, y - z)
+         else (0,y,0)
+Proof
+  rw[zagier_flip_eqn]
+QED
+
+(* Theorem: (zagier o flip) (x, 0, z) = if x < z then (x, 0, z - x)
+                                        else if x < 2 * z then (2 * z - x, z, x - z)
+                                        else (x - 2 * z, x - z, z) *)
+(* Proof: by zagier_flip_eqn. *)
+Theorem zagier_flip_x_0_z:
+  !x z. (zagier o flip) (x, 0, z) =
+         if x < z then (x, 0, z - x)
+         else if x < 2 * z then (2 * z - x, z, x - z)
+         else (x - 2 * z, x - z, z)
+Proof
+  rw[zagier_flip_eqn]
+QED
+
+(* Theorem: (zagier o flip) (x, y, 0) = (x, x + y, 0) *)
+(* Proof: by zagier_flip_eqn. *)
+Theorem zagier_flip_x_y_0:
+  !x y. (zagier o flip) (x, y, 0) = (x, x + y, 0)
+Proof
+  rw[zagier_flip_eqn]
+QED
+
+(* Theorem: 0 < x ==> (zagier o flip) (x,y,x) = (x,x,y) *)
+(* Proof:
+      (zagier o flip) (x,y,x)
+    = (2 * x - x,x,x + y - x)      by zagier_flip_eqn
+    = (x,x,y)                      by arithmetic
+*)
+Theorem zagier_flip_x_y_x:
+  !x y. 0 < x ==> (zagier o flip) (x,y,x) = (x,x,y)
+Proof
+  simp[zagier_flip_eqn]
+QED
+
+
+(* Theorem: windmill t = windmill ((flip o zagier) t) *)
+(* Proof:
+     windmill ((flip o zagier) t
+   = windmill (flip (zagier t))    by o_THM
+   = windmill (zagier t)           by flip_windmill
+   = windmill t                    by zagier_windmill
+*)
+Theorem flip_zagier_windmill:
+  !t. windmill t = windmill ((flip o zagier) t)
+Proof
+  simp[GSYM flip_windmill, GSYM zagier_windmill]
+QED
+
+(* Theorem: (flip o zagier) (x, y, z) =
+            if x < y - z then (x + 2 * z, y - z - x, z)
+            else if x < 2 * y then (2 * y - x, x + z - y, y)
+            else (x - 2 * y, y, x + z - y) *)
+(* Proof: by flip_def, zagier_def. *)
+Theorem flip_zagier_eqn:
+  !x y z. (flip o zagier) (x, y, z) =
+           if x < y - z then (x + 2 * z, y - z - x, z)
+           else if x < 2 * y then (2 * y - x, x + z - y, y)
+           else (x - 2 * y, y, x + z - y)
+Proof
+  rw[flip_def, zagier_def]
+QED
+
+(* Theorem: 0 < x ==> (flip o zagier) (x,x,z) = (x,z,x) *)
+(* Proof:
+   Note x < x - z is false         by LESS_REFL
+    and x < 2 * x is true          by 0 < x
+      (flip o zagier) (x,x,z)
+    = (2 * x - x,x + z - x,x)      by flip_zagier_eqn
+    = (x,z,x)                      by arithmetic
+*)
+Theorem flip_zagier_x_x_z:
+  !x z. 0 < x ==> (flip o zagier) (x,x,z) = (x,z,x)
+Proof
+  simp[flip_zagier_eqn]
+QED
+
 
 (* ------------------------------------------------------------------------- *)
 
