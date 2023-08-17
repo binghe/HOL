@@ -1,8 +1,7 @@
 (* ========================================================================= *)
 (* The Laws of Large Numbers (for Uncorrelated and I.I.D. Random Variables)  *)
 (*                                                                           *)
-(* Author: Chun Tian (binghe) <binghe.lisp@gmail.com> (2020 - 2022)          *)
-(* Fondazione Bruno Kessler and University of Trento, Italy                  *)
+(* Author: Chun Tian (binghe) <binghe.lisp@gmail.com> (2020 - 2023)          *)
 (* ========================================================================= *)
 
 open HolKernel Parse boolLib bossLib;
@@ -19,7 +18,7 @@ open util_probTheory sigma_algebraTheory extrealTheory measureTheory
 val _ = new_theory "large_number";
 
 (* An unintended overload/abbreviation from pred_setTheory *)
-val _ = hide "equiv_class";
+val _ = temp_clear_overloads_on "equiv_class";
 
 (* "In the formal construction of a course in the theory of probability, limit
     theorems appear as a kind of superstructure over elementary chapters, in
