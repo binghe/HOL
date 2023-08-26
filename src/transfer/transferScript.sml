@@ -316,11 +316,7 @@ QED
     Pairs
    ---------------------------------------------------------------------- *)
 
-Definition PAIR_REL_def:     PAIR_REL AB CD (a,c) (b,d) <=> AB a b /\ CD c d
-End
-val _ =
-    set_mapped_fixity {fixity = Infixr 601, term_name = "PAIR_REL", tok = "###"}
-
+Theorem PAIR_REL_def = pairTheory.PAIR_REL
 Theorem equalityp_PAIR_REL:
   equalityp AB /\ equalityp CD ==> equalityp (AB ### CD)
 Proof
@@ -365,6 +361,12 @@ Proof
   simp[UPAIR_def, pairTheory.FORALL_PROD, FUN_REL_def]
 QED
 
+Theorem pair_CASE_CONG:
+  ((AB ### CD) |==> (AB |==> CD |==> EF) |==> EF) pair_CASE pair_CASE
+Proof
+  simp[FUN_REL_def, pairTheory.FORALL_PROD]
+QED
+
 (* ----------------------------------------------------------------------
     Unit
    ---------------------------------------------------------------------- *)
@@ -373,6 +375,49 @@ Theorem UREL_EQ:
   () = ()
 Proof simp[]
 QED
+
+(* ----------------------------------------------------------------------
+    Options
+   ---------------------------------------------------------------------- *)
+
+Theorem OPTREL_MAP:
+  ((AB |==> CD) |==> OPTREL AB |==> OPTREL CD) OPTION_MAP OPTION_MAP
+Proof
+  simp[FUN_REL_def] >> simp[optionTheory.FORALL_OPTION]
+QED
+
+Theorem OPTREL_total:
+  total AB ==> total (OPTREL AB)
+Proof
+  simp[optionTheory.OPTREL_def, total_def, EXISTS_OR_THM] >> strip_tac >>
+  Cases >> simp[]
+QED
+
+Theorem OPTREL_surj:
+  surj AB ==> surj (OPTREL AB)
+Proof
+  simp[optionTheory.OPTREL_def, surj_def, EXISTS_OR_THM] >> strip_tac >>
+  Cases >> simp[]
+QED
+
+Theorem OPTREL_left_unique:
+  left_unique AB ==> left_unique (OPTREL AB)
+Proof
+  simp[left_unique_def, optionTheory.OPTREL_def, optionTheory.FORALL_OPTION]
+QED
+
+Theorem OPTREL_right_unique:
+  right_unique AB ==> right_unique (OPTREL AB)
+Proof
+  simp[right_unique_def, optionTheory.OPTREL_def, optionTheory.FORALL_OPTION]
+QED
+
+Theorem option_CASE_CONG:
+  (OPTREL AB |==> CD |==> (AB |==> CD) |==> CD) option_CASE option_CASE
+Proof
+  simp[FUN_REL_def, optionTheory.FORALL_OPTION]
+QED
+
 
 (* ----------------------------------------------------------------------
     Lists
@@ -401,6 +446,14 @@ Theorem LIST_REL_total:
   total AB ==> total (LIST_REL AB)
 Proof
   simp[total_def] >> strip_tac >> Induct >> simp[] >> metis_tac[]
+QED
+
+Theorem list_CASE_CONG:
+  (LIST_REL AB |==> CD |==> (AB |==> LIST_REL AB |==> CD) |==> CD)
+    list_CASE
+    list_CASE
+Proof
+  simp[FUN_REL_def, Once listTheory.FORALL_LIST, PULL_EXISTS]
 QED
 
 val _ = export_theory();
