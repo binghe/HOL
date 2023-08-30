@@ -39,7 +39,7 @@ on:
 
 jobs:
   build:
-    runs-on: [self-hosted, linux]
+    runs-on: self-hosted
     steps:
       -
         name: Checkout
