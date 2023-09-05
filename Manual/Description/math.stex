@@ -18,7 +18,31 @@ sufficient size for their purposes.
 \label{ss:ordinals}
 
 The ordinals are an extension of the natural numbers\footnote{Some contents here
-were taken from~\cite{ACL2approach} (Section~6.3: The Ordinals)}.
+  are taken from~\cite{ACL2approach} (Section~6.3: The Ordinals).
+  Courtesy of ACL2 developers.}.
+The idea is to add new ``numbers'' after the naturals. For example, if we add
+$\omega$, we get $0, 1, 2, \ldots, \omega$, where $0 < 1 < 2 < \cdots < \omega$.
+Notice that this new set extends the naturals and is countable.  In addition,
+under this ordering it has a biggest element $\omega$, is linearly ordered,
+and well-founded.  The ordinals are what you get if you keep adding elements.
+The first few ordinals are: $0, 1, \ldots, \omega, \omega + 1, \ldots, \omega\times 2$.
+Notice that (the ordinals less than) $\omega\times 2$ is what you get if you put two
+copies of (the ordinals less than) $\omega$ next to each other,~i.e., $0,1,\ldots,0,1,\ldots$
+(and then rename the elements in the second copy). Continuing to add ``numbers,''
+we get $\omega, \omega\times 2,\omega\times 3,\ldots,\omega^2$.
+Now we have introduced ordinal exponentiation.  Note that $\omega^2$ is what you get
+if you put $\omega$ copies of $\omega$, one after the other (and rename elements).
+We will pick up where we left off, but will now start extending the ordinals at a faster
+rate: $\omega^2, \omega^2+1, \ldots \omega^2+\omega, \omega^2+\omega +1,\ldots
+\omega^2+(\omega\times 2), \omega^2+(\omega\times 2)+1,\ldots,
+\omega^2+(\omega\times 3), \ldots,
+\omega^2+(\omega\times 4), \ldots,
+\omega^2\times 2,\ldots, \omega^2\times 3, \ldots,
+\omega^3, \omega^4, \ldots,
+\omega^\omega, \ldots,
+\omega^{(\omega^\omega)}, \ldots,
+\omega^{(\omega^{(\omega^\omega)})}, \ldots, \epsilon_0$.
+The set of ordinals less than $\epsilon_0$ is countable.
 
 \begin{hol}
 \begin{alltt}

@@ -3892,8 +3892,8 @@ The finite sets have an induction theorem:
 %
 As mentioned, set operations apply to both finite and infinite
 sets. However, some operations, such as cardinality
-(\holtxt{CARD}), are only defined for finite sets. (See Section~\ref{sec:cardinals}
-for the theory of cardinality of infinite sets.)
+(\holtxt{CARD}), are only defined for finite sets. (See Section~\ref{ss:cardinals}
+for the theory of cardinality of possibly infinite sets.)
 \index{cardinality of (finite) sets}
 %
 \begin{hol}
