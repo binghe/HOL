@@ -327,7 +327,7 @@ Definition itree_CASE[nocompute]:
     | Event e => vis e (\a. (itree_abs (\path. itree_rep t (SOME a::path))))
 End
 
-Theorem itree_CASE[compute]:
+Theorem itree_CASE[compute,allow_rebind]:
   itree_CASE (Ret r) ret tau vis = ret r /\
   itree_CASE (Tau t) ret tau vis = tau t /\
   itree_CASE (Vis a g) ret tau vis = vis a g
@@ -416,7 +416,7 @@ Proof
   \\ fs [itree_unfold_path_def] \\ metis_tac []
 QED
 
-Theorem itree_unfold:
+Theorem itree_unfold[allow_rebind]:
   itree_unfold f seed =
     case f seed of
     | Ret' r   => Ret r
@@ -787,7 +787,7 @@ Proof
   metis_tac[strip_tau_rules,itree_wbisim_rules]
 QED
 
-Theorem itree_wbisim_tau:
+Theorem itree_wbisim_tau_eq:
   itree_wbisim (Tau t) t
 Proof
   ‘!t t'. t = Tau t' \/ t = t' ==> itree_wbisim t t'’ suffices_by metis_tac[] \\
@@ -826,6 +826,21 @@ Proof
                 (strip_assume_tac o ONCE_REWRITE_RULE[itree_wbisim_cases]) \\
   gvs[] \\
   metis_tac[itree_wbisim_cases]
+QED
+
+Theorem itree_wbisim_tau_eqn0[local]:
+  !t t'. (?t0. t = Tau t0 /\ itree_wbisim t0 t') ==> itree_wbisim t t'
+Proof
+  ho_match_mp_tac itree_wbisim_strong_coind >> rw[] >>
+  pop_assum (strip_assume_tac o ONCE_REWRITE_RULE [itree_wbisim_cases]) >>
+  gvs[] >> metis_tac[]
+QED
+
+Theorem itree_wbisim_tau_eqn[simp]:
+  (itree_wbisim (Tau t1) t2 <=> itree_wbisim t1 t2) /\
+  (itree_wbisim t1 (Tau t2) <=> itree_wbisim t1 t2)
+Proof
+  metis_tac[itree_wbisim_sym, itree_wbisim_tau_eqn0, itree_wbisim_tau]
 QED
 
 Theorem itree_wbisim_strip_tau:
@@ -889,7 +904,7 @@ Definition spin:
   spin = itree_unfold (K (Tau' ())) ()
 End
 
-Theorem spin:
+Theorem spin[allow_rebind]:
   spin = Tau spin  (* an infinite sequence of silent actions *)
 Proof
   fs [spin] \\ simp [Once itree_unfold]

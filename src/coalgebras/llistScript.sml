@@ -1910,7 +1910,7 @@ val LFLATTEN_SINGLETON = store_thm(
   STRUCT_CASES_TAC (Q.SPEC `ll4` llist_CASES) THEN
   SIMP_TAC (srw_ss()) [LFLATTEN_THM, LHD_THM, LTL_THM]);
 
-Theorem LFINITE_LFLATTEN:
+Theorem LFINITE_LFLATTEN_EQN:
   !lll:'a llist llist.
     every (\ll. LFINITE ll /\ ll <> LNIL) lll ==>
     LFINITE (LFLATTEN lll) = LFINITE lll
@@ -2787,12 +2787,6 @@ val LNTH_LMAP = Q.store_thm(
   Induct >> simp[LNTH] >> rpt gen_tac >>
   Q.SPEC_THEN `l` STRUCT_CASES_TAC llist_CASES >> simp[])
 
-Theorem LNTH_fromList:
-  !n xs. LNTH n (fromList xs) = if n < LENGTH xs then SOME (EL n xs) else NONE
-Proof
-  Induct \\ Cases_on ‘xs’ \\ fs [LNTH]
-QED
-
 val LLENGTH_LGENLIST = Q.store_thm(
   "LLENGTH_LGENLIST[simp,compute]",
   `!f. LLENGTH (LGENLIST f limopt) = limopt`,
@@ -3613,7 +3607,7 @@ Proof
   simp[FUN_EQ_THM]
 QED
 
-Theorem LFLATTEN_fromList:
+Theorem LFLATTEN_fromList_of_NILs:
   EVERY ($= LNIL) l ==> LFLATTEN (fromList l) = LNIL
 Proof
   Induct_on ‘l’ >> simp[]
@@ -3632,7 +3626,7 @@ Proof
       rpt strip_tac >> gs[LFILTER_EQ_NIL, not_compose, iffRL LFLATTEN_EQ_NIL]>>
       drule_then strip_assume_tac LFILTER_EQ_CONS >>
       gvs[LFLATTEN_APPEND_FINITE1, LFINITE_fromList,
-          not_compose, LFLATTEN_fromList] >>
+          not_compose, LFLATTEN_fromList_of_NILs] >>
       drule_at (Pos last) every_LAPPEND2_LFINITE >>
       simp[LFINITE_fromList]) >>
   rpt $ pop_assum mp_tac >> qid_spec_tac ‘ll’ >> Induct_on ‘LFINITE’ >>
@@ -3647,7 +3641,7 @@ Proof
            h:::ll1’] >>
   ‘FILTER ($~ o $= LNIL) l = []’
     by simp[listTheory.FILTER_EQ_NIL, SF ETA_ss] >>
-  gs[LFLATTEN_fromList] >>
+  gs[LFLATTEN_fromList_of_NILs] >>
   Cases_on ‘hl’ >> gvs[] >> rename [‘LFLATTEN _ = LAPPEND t _’] >>
   first_x_assum $ qspec_then ‘t:::ll2’ mp_tac >> simp[LFLATTEN_APPEND] >>
   rw[] >> rw[]
