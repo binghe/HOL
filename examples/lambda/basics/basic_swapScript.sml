@@ -1,6 +1,4 @@
-open HolKernel Parse boolLib bossLib;
-
-open (* BasicProvers *) boolSimps;
+open HolKernel Parse boolLib bossLib BasicProvers boolSimps
 
 local open stringTheory pred_setTheory in end;
 
@@ -13,33 +11,29 @@ fun Store_Thm(s, t, tac) = (store_thm(s,t,tac) before
     swapping over strings
    ---------------------------------------------------------------------- *)
 
-Definition swapstr_def :
-    swapstr x y (s:string) = if x = s then y else if y = s then x else s
-End
+val swapstr_def = Define`
+  swapstr x y (s:string) = if x = s then y else if y = s then x else s
+`;
 
-Theorem swapstr_id[simp] :
-    swapstr x x s = s
-Proof
-  SRW_TAC [][swapstr_def]
-QED
+val swapstr_id = Store_Thm(
+  "swapstr_id",
+  ``swapstr x x s = s``,
+  SRW_TAC [][swapstr_def]);
 
-Theorem swapstr_inverse[simp] :
-    swapstr x y (swapstr x y s) = s
-Proof
-  SRW_TAC [][swapstr_def] THEN METIS_TAC []
-QED
+val swapstr_inverse = Store_Thm(
+  "swapstr_inverse",
+  ``swapstr x y (swapstr x y s) = s``,
+  SRW_TAC [][swapstr_def] THEN METIS_TAC []);
 
-Theorem swapstr_eq_left :
-    (swapstr x y s = t) <=> (s = swapstr x y t)
-Proof
-  SRW_TAC [][swapstr_def] THEN METIS_TAC []
-QED
+val swapstr_eq_left = store_thm(
+  "swapstr_eq_left",
+  ``(swapstr x y s = t) = (s = swapstr x y t)``,
+  SRW_TAC [][swapstr_def] THEN METIS_TAC []);
 
-Theorem swapstr_11[simp] :
-    (swapstr x y s1 = swapstr x y s2) <=> (s1 = s2)
-Proof
-  SRW_TAC [][swapstr_eq_left]
-QED
+val swapstr_11 = Store_Thm(
+  "swapstr_11",
+  ``(swapstr x y s1 = swapstr x y s2) = (s1 = s2)``,
+  SRW_TAC [][swapstr_eq_left]);
 
 fun simp_cond_tac (asl, g) = let
   val eqn = find_term (fn t => is_eq t andalso is_var (lhs t) andalso
@@ -49,25 +43,22 @@ in
   ASM_SIMP_TAC bool_ss []
 end (asl, g)
 
-Theorem swapstr_swapstr[simp] :
-    swapstr (swapstr x y u) (swapstr x y v) (swapstr x y s) =
-    swapstr x y (swapstr u v s)
-Proof
-  REWRITE_TAC [swapstr_def] THEN REPEAT simp_cond_tac
-QED
+val swapstr_swapstr = Store_Thm(
+  "swapstr_swapstr",
+  ``swapstr (swapstr x y u) (swapstr x y v) (swapstr x y s) =
+    swapstr x y (swapstr u v s)``,
+  REWRITE_TAC [swapstr_def] THEN REPEAT simp_cond_tac);
 
-Theorem swapstr_comm[simp] :
-    swapstr y x s = swapstr x y s
-Proof
-  SRW_TAC [][swapstr_def] THEN METIS_TAC []
-QED
+val swapstr_comm = Store_Thm(
+  "swapstr_comm",
+  ``swapstr y x s = swapstr x y s``,
+  SRW_TAC [][swapstr_def] THEN METIS_TAC []);
 
-Theorem swapstr_thm[simp] :
-    (swapstr x y x = y) /\ (swapstr x y y = x) /\
-    (~(x = a) /\ ~(y = a) ==> (swapstr x y a = a))
-Proof
-  SRW_TAC [][swapstr_def]
-QED
+val swapstr_thm = Store_Thm(
+  "swapstr_thm",
+  ``(swapstr x y x = y) /\ (swapstr x y y = x) /\
+    (~(x = a) /\ ~(y = a) ==> (swapstr x y a = a))``,
+  SRW_TAC [][swapstr_def]);
 
 (* ----------------------------------------------------------------------
     swapping lists of pairs over strings (a foldr)
@@ -117,34 +108,30 @@ val raw_lswapstr_sing_to_back = store_thm(
     NEW constant
    ---------------------------------------------------------------------- *)
 
-Theorem INFINITE_STR_UNIV :
-    INFINITE (UNIV : string set)
-Proof
+val INFINITE_STR_UNIV = store_thm(
+  "INFINITE_STR_UNIV",
+  ``INFINITE (UNIV : string set)``,
   SRW_TAC [][pred_setTheory.INFINITE_UNIV] THEN
   Q.EXISTS_TAC `\st. STRING (CHR 0) st` THEN SRW_TAC [][] THEN
-  Q.EXISTS_TAC `""` THEN SRW_TAC [][]
-QED
+  Q.EXISTS_TAC `""` THEN SRW_TAC [][]);
 
-Theorem new_exists :
-    !s : string set. FINITE s ==> ?x. ~(x IN s)
-Proof
+val new_exists = store_thm(
+  "new_exists",
+  ``!s : string set. FINITE s ==> ?x. ~(x IN s)``,
   Q_TAC SUFF_TAC `INFINITE (UNIV : string set)`
         THEN1 METIS_TAC [pred_setTheory.IN_UNIV,
                          pred_setTheory.IN_INFINITE_NOT_FINITE] THEN
-  SRW_TAC [][INFINITE_STR_UNIV]
-QED
+  SRW_TAC [][INFINITE_STR_UNIV]);
 
 val NEW_def =
     new_specification
       ("NEW_def", ["NEW"],
        SIMP_RULE (srw_ss()) [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM] new_exists)
 
-Theorem NEW_ELIM_RULE :
-    !P X. FINITE X /\ (!v:string. ~(v IN X) ==> P v) ==>
-          P (NEW X)
-Proof
-  PROVE_TAC [NEW_def]
-QED
+val NEW_ELIM_RULE = store_thm(
+  "NEW_ELIM_RULE",
+  ``!P X. FINITE X /\ (!v:string. ~(v IN X) ==> P v) ==>
+          P (NEW X)``,
+  PROVE_TAC [NEW_def]);
 
 val _ = export_theory();
-val _ = html_theory "basic_swap";
