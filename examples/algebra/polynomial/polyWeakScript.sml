@@ -571,25 +571,6 @@ val weak_every_mem = store_thm(
   ``!r:'a ring. !p. weak p <=> (!x. MEM x p ==> x IN R)``,
   rw[weak_every_element, EVERY_MEM]);
 
-(* Theorem: weak p /\ p <> |0| ==> last p IN R *)
-(* Proof: by induction on p, with p <> [] by poly_zero.
-   Base: weak [] /\ [] <> [] ==> LAST [] IN R
-      true by contradiction: [] <> [].
-   Step: weak p /\ p <> [] ==> LAST p IN R ==>
-              weak (h::p) /\ h::p <> [] ==> LAST (h::p) IN R
-      weak (h::p) means h IN R and weak p   by weak_cons
-      If p = [], LAST (h::p) = LAST [h] = h IN R  by LAST_CONS
-      If p <> [], induction hypothesis gives LAST p IN R
-      and LAST (h::p) = LAST p IN R         by LAST_CONS.
-*)
-val weak_last_element = store_thm(
-  "weak_last_element",
-  ``!p. weak p /\ p <> |0| ==> LAST p IN R``,
-  rw_tac std_ss[poly_zero] >>
-  Induct_on `p` >-
-  rw_tac std_ss[] >>
-  metis_tac[weak_cons, LAST_CONS, list_CASES]);
-
 (* A better proof without induction. *)
 
 (* Theorem: weak p /\ p <> |0| ==> (LAST p) IN R *)
@@ -598,12 +579,14 @@ val weak_last_element = store_thm(
    Thus ?h t. h IN R /\ weak t /\ (p = h::t)   by weak_cons, list_CASES
     and (LAST p) IN R                          by MEM_LAST, weak_every_mem
 *)
-val weak_last_element = store_thm(
-  "weak_last_element",
-  ``!p. weak p /\ p <> |0| ==> (LAST p) IN R``,
+Theorem weak_last_element:
+  !p. weak p /\ p <> |0| ==> (LAST p) IN R
+Proof
   rpt strip_tac >>
-  `?h t. h IN R /\ weak t /\ (p = h::t)` by metis_tac[list_CASES, weak_cons, poly_zero] >>
-  metis_tac[MEM_LAST, weak_every_mem]);
+  ‘?h t. h IN R /\ weak t /\ (p = h::t)’
+    by metis_tac[list_CASES, weak_cons, poly_zero] >>
+  metis_tac[MEM_LAST, weak_every_mem]
+QED
 
 (* Theorem: weak p /\ p <> |0| ==> weak (FRONT p) /\ weak [LAST p] *)
 (* Proof:
@@ -2419,42 +2402,31 @@ val _ = export_rewrites ["weak_mult_of_rzero"];
 - CONJ (weak_mult_of_lzero |> SPEC_ALL) (weak_mult_of_rzero |> SPEC_ALL) |> GEN_ALL;
 > val it = |- !r q p. ([] o q = []) /\ (p o [] = []) : thm
 *)
-val weak_mult_of_zero = save_thm("weak_mult_of_zero",
-   CONJ (weak_mult_of_rzero |> SPEC_ALL) (weak_mult_of_lzero |> SPEC_ALL) |> GEN_ALL);
-(* > val weak_mult_of_zero = |- !r q p. (p o [] = []) /\ ([] o q = []) : thm *)
-
-(* This is better: no need for q *)
 
 (* Theorem: (p o [] = []) /\ ([] o p = []) *)
 (* Proof: by weak_mult_of_rzero, weak_mult_of_lzero *)
-val weak_mult_of_zero = store_thm(
-  "weak_mult_of_zero",
-  ``!r:'a ring. !p:'a poly. (p o [] = []) /\ ([] o p = [])``,
-  rw_tac std_ss[weak_mult_of_rzero, weak_mult_of_lzero]);
+Theorem weak_mult_of_zero:
+  !r:'a ring. !p:'a poly. (p o [] = []) /\ ([] o p = [])
+Proof
+  rw_tac std_ss[weak_mult_of_rzero, weak_mult_of_lzero]
+QED
 
 (* Theorem: |0| o q = |0|  *)
 (* Proof: by weak_mult_of_lzero and poly_zero. *)
-val weak_mult_lzero = save_thm("weak_mult_lzero", weak_mult_of_lzero |> REWRITE_RULE [GSYM poly_zero]);
+Theorem weak_mult_lzero = weak_mult_of_lzero |> REWRITE_RULE [GSYM poly_zero];
 (* > val weak_mult_lzero = |- !r q. |0| o q = |0| : thm *)
 
 (* Theorem: p o |0| = |0|  *)
 (* Proof: by weak_mult_of_rzero and poly_zero. *)
-val weak_mult_rzero = save_thm("weak_mult_rzero", weak_mult_of_rzero |> REWRITE_RULE [GSYM poly_zero]);
+Theorem weak_mult_rzero = weak_mult_of_rzero |> REWRITE_RULE [GSYM poly_zero];
 (* > val weak_mult_rzero = |- !p. p o |0| = |0| : thm *)
-
-(* Theorem: p o [] = [] /\ [] o q = []  *)
-(* Proof: by weak_mult_of_zero and poly_zero. *)
-val weak_mult_zero = save_thm("weak_mult_zero", weak_mult_of_zero |> REWRITE_RULE [GSYM poly_zero]);
-(* > val weak_mult_zero = |- !r q p. (p o |0| = |0|) /\ ( |0| o q = |0|) : thm *)
-
-(* This is better: no need for q. *)
 
 (* Theorem: (p o |0| = |0|) /\ ( |0| o p = |0|) *)
 (* Proof: by weak_mult_rzero, weak_mult_lzero *)
-val weak_mult_zero = store_thm(
-  "weak_mult_zero",
-  ``!r:'a ring. !p:'a poly. (p o |0| = |0|) /\ ( |0| o p = |0|)``,
-  rw_tac std_ss[weak_mult_rzero, weak_mult_lzero]);
+Theorem weak_mult_zero:
+  !r:'a ring. !p:'a poly. (p o |0| = |0|) /\ ( |0| o p = |0|)
+Proof rw_tac std_ss[weak_mult_rzero, weak_mult_lzero]
+QED
 
 (*
 Why is this true:  weak p <> [], weak q <> [], p o q <> [].
@@ -3317,19 +3289,12 @@ val weak_mult_ladd = store_thm(
 
 val _ = export_rewrites ["weak_mult_radd", "weak_mult_ladd"];
 
-(* Theorem: p o (q || t) = p o q || p o t /\ (p || q) o t = p o t || q o t *)
-(* Proof: by weak_mult_radd and weak_mult_ladd. *)
-val weak_mult_add = save_thm("weak_mult_add",
-    CONJ (weak_mult_radd |> SPEC_ALL |> UNDISCH_ALL)
-         (weak_mult_ladd |> SPEC_ALL |> UNDISCH_ALL) |> DISCH_ALL |> GEN_ALL);
-(* > val weak_mult_add =
-    |- !r. Ring r ==> (!p q t. weak p /\ weak q /\ weak t ==> (p o (q || t) = p o q || p o t) /\
-                       !p q t. weak p /\ weak q /\ weak t ==> ((p || q) o t = p o t || q o t) : thm *)
-val weak_mult_add = save_thm("weak_mult_add",
+Theorem weak_mult_add =
     CONJ (weak_mult_radd |> SPEC_ALL |> UNDISCH_ALL |> SPEC_ALL |> UNDISCH_ALL)
          (weak_mult_ladd |> SPEC_ALL |> UNDISCH_ALL |> SPEC_ALL |> UNDISCH_ALL)
-         |> DISCH ``weak p /\ weak q /\ weak t`` |> GEN ``(t:'a poly)`` |> GEN ``(q:'a poly)`` |> GEN ``(p:'a poly)``
-         |> DISCH_ALL |> GEN_ALL);
+      |> DISCH “weak p /\ weak q /\ weak t” |> GEN “(t:'a poly)”
+      |> GEN “(q:'a poly)” |> GEN “(p:'a poly)”
+      |> DISCH_ALL |> GEN_ALL;
 (* > val weak_mult_add = |- !r. Ring r ==> !p q t. weak p /\ weak q /\ weak t ==>
          (p o (q || t) = p o q || p o t) /\ ((p || q) o t = p o t || q o t) : thm *)
 
@@ -4695,11 +4660,12 @@ val poly_deg_weak_neg = store_thm(
       deg (neg (h::t)) = LENGTH (-t)
       By weak_neg_map and LENGTH_MAP, they are equal.
 *)
-val poly_deg_weak_neg = store_thm(
-  "poly_deg_weak_neg",
-  ``!r:'a ring. Ring r ==> !p. weak p ==> (deg (neg p) = deg p)``,
+Theorem poly_deg_weak_neg[allow_rebind]:
+  !r:'a ring. Ring r ==> !p. weak p ==> (deg (neg p) = deg p)
+Proof
   metis_tac[poly_deg_cons_length, weak_neg_map, LENGTH_MAP,
-    weak_neg_weak, weak_neg_cons, weak_neg_of_zero, list_CASES]);
+            weak_neg_weak, weak_neg_cons, weak_neg_of_zero, list_CASES]
+QED
 
 (* Theorem: deg (c o p) = deg p *)
 (* Proof:

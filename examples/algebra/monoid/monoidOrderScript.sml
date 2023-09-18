@@ -948,26 +948,28 @@ http://www.math.wm.edu/~vinroot/430S13MultFiniteField.pdf
     ==> lcm n m = m                         by EQ_LESS_EQ
      or n divides m                         by divides_iff_lcm_fix
 *)
-val monoid_order_divides_maximal = store_thm(
-  "monoid_order_divides_maximal",
-  ``!g:'a monoid. FiniteAbelianMonoid g ==>
-   !x. x IN G /\ 0 < ord x ==> (ord x) divides (maximal_order g)``,
+Theorem monoid_order_divides_maximal[allow_rebind]:
+  !g:'a monoid.
+    FiniteAbelianMonoid g ==>
+    !x. x IN G /\ 0 < ord x ==> (ord x) divides (maximal_order g)
+Proof
   rw[FiniteAbelianMonoid_def] >>
-  `Monoid g` by metis_tac[AbelianMonoid_def] >>
-  qabbrev_tac `s = IMAGE ord G` >>
-  qabbrev_tac `m = MAX_SET s` >>
-  qabbrev_tac `n = ord x` >>
-  `#e IN G /\ (ord #e = 1)` by rw[] >>
-  `s <> {}` by metis_tac[IN_IMAGE, MEMBER_NOT_EMPTY] >>
-  `FINITE s` by rw[Abbr`s`] >>
-  `m IN s /\ !y. y IN s ==> y <= m` by rw[MAX_SET_DEF, Abbr`m`] >>
-  `?z. z IN G /\ (ord z = m)` by metis_tac[IN_IMAGE] >>
-  `?y. y IN G /\ (ord y = lcm n m)` by metis_tac[abelian_monoid_order_lcm] >>
-  `n IN s /\ ord y IN s` by rw[Abbr`s`, Abbr`n`] >>
-  `n <= m /\ lcm n m <= m` by metis_tac[] >>
-  `0 < m` by decide_tac >>
-  `m <= lcm n m` by rw[LCM_LE] >>
-  rw[divides_iff_lcm_fix]);
+  ‘Monoid g’ by metis_tac[AbelianMonoid_def] >>
+  qabbrev_tac ‘s = IMAGE ord G’ >>
+  qabbrev_tac ‘m = MAX_SET s’ >>
+  qabbrev_tac ‘n = ord x’ >>
+  ‘#e IN G /\ (ord #e = 1)’ by rw[] >>
+  ‘s <> {}’ by metis_tac[IN_IMAGE, MEMBER_NOT_EMPTY] >>
+  ‘FINITE s’ by rw[Abbr‘s’] >>
+  ‘m IN s /\ !y. y IN s ==> y <= m’ by rw[MAX_SET_DEF, Abbr‘m’] >>
+  ‘?z. z IN G /\ (ord z = m)’ by metis_tac[IN_IMAGE] >>
+  ‘?y. y IN G /\ (ord y = lcm n m)’ by metis_tac[abelian_monoid_order_lcm] >>
+  ‘n IN s /\ ord y IN s’ by rw[Abbr‘s’, Abbr‘n’] >>
+  ‘n <= m /\ lcm n m <= m’ by metis_tac[] >>
+  ‘0 < m’ by decide_tac >>
+  ‘m <= lcm n m’ by rw[LCM_LE] >>
+  rw[divides_iff_lcm_fix]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Monoid Invertibles                                                        *)
@@ -1167,17 +1169,16 @@ val monoid_inv_op_invertible = store_thm(
 
 (* Theorem: [Closure for Invertibles] x, y IN G* ==> x * y IN G* *)
 (* Proof: inverse of (x * y) = (inverse of y) * (inverse of x)  *)
-val monoid_inv_op_invertible = store_thm(
-  "monoid_inv_op_invertible",
-  ``!g:'a monoid. Monoid g ==> !x y. x IN G* /\ y IN G* ==> x * y IN G*``,
+Theorem monoid_inv_op_invertible[allow_rebind,simp]:
+  !g:'a monoid. Monoid g ==> !x y. x IN G* /\ y IN G* ==> x * y IN G*
+Proof
   rw[monoid_invertibles_def] >>
   qexists_tac `y'' * y'` >>
   rw_tac std_ss[monoid_op_element] >| [
     `x * y * (y'' * y') = x * ((y * y'') * y')` by rw[monoid_assoc],
     `y'' * y' * (x * y) = y'' * ((y' * x) * y)` by rw[monoid_assoc]
-  ] >> rw_tac std_ss[monoid_lid]);
-
-val _ = export_rewrites ["monoid_inv_op_invertible"];
+  ] >> rw_tac std_ss[monoid_lid]
+QED
 
 (* Theorem: x IN G* ==> |/ x IN G* *)
 (* Proof: by monoid_inv_def. *)
