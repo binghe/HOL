@@ -87,7 +87,7 @@ fun betafy ss =
                     congs = [lameq_app_cong,
                              SPEC_ALL (last (CONJUNCTS lameq_rules)),
                              lameq_sub_cong],
-                    dprocs = [], filter = NONE, name = NONE}
+                    dprocs = [], filter = NONE, name = NONE};
 
 Theorem solvable_xIO :
     solvable (VAR x @@ I @@ Omega)
@@ -102,10 +102,14 @@ Proof
  >> rw [SUB_THM, FV_I, lemma14b]
 QED
 
+val _ = reveal "Y"; (* chap2Theory *)
+
 Theorem solvable_Y :
     solvable Y
 Proof
-    cheat
+    rw [solvable_alt_closed, FV_Y]
+ >> Q.EXISTS_TAC ‘[K @@ I]’ >> simp []
+ >> ASM_SIMP_TAC (betafy (srw_ss())) [YYf, Once YffYf, lameq_K]
 QED
 
 val _ = export_theory ();
