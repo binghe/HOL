@@ -1441,8 +1441,8 @@ val i1_reduce_to_LAMl = prove(
     PROVE_TAC [i_reduce1_under_lam]
   ]);
 
-(* Name conflict with pred_setTheory.SUBSET_DISJOINT *)
-Theorem SUBSET_DISJOINT[local] :
+(* NOTE: renamed due to conflicts with pred_setTheory.SUBSET_DISJOINT *)
+Theorem SUBSET_DISJOINT_L[local] :
     !X Y Z. X SUBSET Y /\ DISJOINT Y Z ==> DISJOINT X Z
 Proof
   SRW_TAC [][SUBSET_DEF, DISJOINT_DEF, EXTENSION] THEN PROVE_TAC []
@@ -1467,7 +1467,7 @@ val i_reduces_to_LAMl = prove(
     SRW_TAC [][] THEN
     `DISJOINT (LIST_TO_SET vs) (FV N1)`
         by (Q_TAC SUFF_TAC `FV N1 SUBSET FV M` THEN1
-                  PROVE_TAC [DISJOINT_SYM, SUBSET_DISJOINT] THEN
+                  PROVE_TAC [DISJOINT_SYM, SUBSET_DISJOINT_L] THEN
             Q_TAC SUFF_TAC
                   `!M N. RTC (i_reduce1) M N ==> FV N SUBSET FV M` THEN1
                   PROVE_TAC [] THEN
@@ -2415,4 +2415,3 @@ val has_bnf_whnf = store_thm(
 
 val _ = export_theory()
 val _ = html_theory "standardisation";
-

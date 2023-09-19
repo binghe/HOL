@@ -18,14 +18,7 @@ open pure_dBTheory;
 
 val _ = new_theory "boehm_tree";
 
-(* FIXME: this is Theorem 8.3.14
-Definition solvable_def :
-    solvable M = has_hnf M
-End
-
-Overload unsolvable = “$~ o solvable” (* this one can be the final version *)
-
-(* Definition 10.1.1 [1, p.215] *)
+(* Definition 10.1.1 [1, p.215]
 Definition labelled_tree_def :
    labelled_tree (symbols :'a set) (nodes :num list set) (phi :num list -> 'a option) =
      ([] IN nodes /\
