@@ -140,20 +140,21 @@ Proof
 QED
 
 Theorem closures_imp_closed :
-    !M M'. M' IN closures M ==> closed M'
+    !M N. N IN closures M ==> closed N
 Proof
     rw [closures_def, closed_def]
  >> simp [FV_LAMl]
 QED
 
-Theorem closures_imp_closed' =
+(* |- !M N. N IN closures M ==> FV N = {} *)
+Theorem FV_closures =
     REWRITE_RULE [closed_def] closures_imp_closed
 
 Theorem FV_closure[simp] :
     !M. FV (closure M) = {}
 Proof
     Q.X_GEN_TAC ‘M’
- >> MATCH_MP_TAC closures_imp_closed'
+ >> MATCH_MP_TAC FV_closures
  >> Q.EXISTS_TAC ‘M’
  >> rw [closure_and_closures]
 QED
