@@ -1,5 +1,5 @@
 (*---------------------------------------------------------------------------*
- * solvableScript.sml: theory of solvable lambda terms                       *
+ * solvableScript.sml (or chap8_3): Theory of Solvable Lambda Terms          *
  *---------------------------------------------------------------------------*)
 
 open HolKernel Parse boolLib bossLib;
@@ -16,14 +16,14 @@ val _ = new_theory "solvable";
 
    closure M = LAMl (SET_TO_LIST (FV M)) M
  *)
-Definition closure_of_def :
-    closure_of M = {LAMl vs M | vs | ALL_DISTINCT vs /\ set vs = FV M}
+Definition closure_def :
+    closure M = {LAMl vs M | vs | ALL_DISTINCT vs /\ set vs = FV M}
 End
 
-Theorem closure_of_closed[simp] :
-    !M. FV M = {} ==> closure_of M = {M}
+Theorem closure_alt_closed[simp] :
+    !M. FV M = {} ==> closure M = {M}
 Proof
-    rw [closure_of_def]
+    rw [closure_def]
  >> rw [Once EXTENSION]
 QED
 
@@ -32,6 +32,7 @@ Theorem LIST_TO_SET_SING :
     !vs x. ALL_DISTINCT vs /\ set vs = {x} <=> vs = [x]
 Proof
     rpt GEN_TAC >> reverse EQ_TAC >- rw []
+ (* necessary case analysis, to use ALL_DISTINCT *)
  >> Cases_on ‘vs’ >> rw []
  >- (fs [Once EXTENSION] >> METIS_TAC [])
  >> Know ‘h = x’
@@ -44,16 +45,16 @@ Proof
  >> METIS_TAC []
 QED
 
-Theorem closure_of_sing :
-    !M v. FV M = {v} ==> closure_of M = {LAM v M}
+Theorem closure_alt_open_sing :
+    !M v. FV M = {v} ==> closure M = {LAM v M}
 Proof
-    rw [closure_of_def, LIST_TO_SET_SING]
+    rw [closure_def, LIST_TO_SET_SING]
  >> rw [Once EXTENSION]
 QED
 
 (* 8.3.1 (ii) [1, p.171] *)
 Definition solvable_def :
-    solvable (M :term) = ?M'. M' IN closure_of M /\ ?Ns. M' @* Ns == I
+    solvable (M :term) = ?M'. M' IN closure M /\ ?Ns. M' @* Ns == I
 End
 
 (* 8.3.1 (i) [1, p.171] *)
@@ -75,7 +76,7 @@ Proof
  >> rw [lameq_K]
 QED
 
-(* copied from chap2Script.sml *)
+(* copied from chap2Script.sml [2] *)
 fun betafy ss =
     simpLib.add_relsimp {refl = GEN_ALL lameq_refl,
                          trans = List.nth(CONJUNCTS lameq_rules, 3),
@@ -94,7 +95,7 @@ Theorem solvable_xIO :
 Proof
     Q.ABBREV_TAC ‘M = VAR x @@ I @@ Omega’
  >> ‘FV M = {x}’ by rw [Abbr ‘M’]
- >> ‘closure_of M = {LAM x M}’ by PROVE_TAC [closure_of_sing]
+ >> ‘closure M = {LAM x M}’ by PROVE_TAC [closure_alt_open_sing]
  >> rw [solvable_def]
  >> Q.EXISTS_TAC ‘[K]’ >> simp []
  >> ASM_SIMP_TAC (betafy (srw_ss())) [Abbr ‘M’, lameq_K]
@@ -102,7 +103,7 @@ Proof
  >> rw [SUB_THM, FV_I, lemma14b]
 QED
 
-val _ = reveal "Y"; (* chap2Theory *)
+val _ = reveal "Y"; (* from chap2Theory *)
 
 Theorem solvable_Y :
     solvable Y
@@ -119,4 +120,6 @@ val _ = html_theory "solvable";
 
    [1] Barendregt, H.P.: The Lambda Calculus, Its Syntax and Semantics.
        College Publications, London (1984).
+   [2] Hankin, C.: Lambda Calculi: A Guide for Computer Scientists.
+       Clarendon Press, Oxford (1994).
  *)
