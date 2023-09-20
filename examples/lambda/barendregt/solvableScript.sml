@@ -10,19 +10,18 @@ open termTheory appFOLDLTheory chap2Theory standardisationTheory;
 
 val _ = new_theory "solvable";
 
-(* NOTE: when proving an open term M is solvable, the choice of ‘vs’ in
-  ‘LAMl vs M’ is important and determines the order of Ns, thus the
-   following definition (closure) doesn't work:
-
- *)
-Definition closure_of_def :
-    closure_of M = {LAMl vs M | vs | ALL_DISTINCT vs /\ set vs = FV M}
+Definition closures_def :
+    closures M = {LAMl vs M | vs | ALL_DISTINCT vs /\ set vs = FV M}
 End
 
-Theorem closure_of_closed[simp] :
-    !M. FV M = {} ==> closure_of M = {M}
+Definition closed_def :
+    closed (M :term) <=> FV M = {}
+End
+
+Theorem closures_of_closed[simp] :
+    !M. closed M ==> closures M = {M}
 Proof
-    rw [closure_of_def]
+    rw [closures_def, closed_def]
  >> rw [Once EXTENSION]
 QED
 
@@ -44,24 +43,27 @@ Proof
  >> METIS_TAC []
 QED
 
-Theorem closure_of_open_sing :
-    !M v. FV M = {v} ==> closure_of M = {LAM v M}
+Theorem closures_of_open_sing :
+    !M v. FV M = {v} ==> closures M = {LAM v M}
 Proof
-    rw [closure_of_def, LIST_TO_SET_SING]
+    rw [closures_def, LIST_TO_SET_SING]
  >> rw [Once EXTENSION]
 QED
 
 (* 8.3.1 (ii) [1, p.171] *)
 Definition solvable_def :
-    solvable (M :term) = ?M'. M' IN closure_of M /\ ?Ns. M' @* Ns == I
+    solvable (M :term) = ?M'. M' IN closures M /\ ?Ns. M' @* Ns == I
 End
 
 (* 8.3.1 (i) [1, p.171] *)
-Theorem solvable_alt_closed :
-    !M. FV M = {} ==> (solvable M <=> ?Ns. M @* Ns == I)
+Theorem solvable_of_closed :
+    !M. closed M ==> (solvable M <=> ?Ns. M @* Ns == I)
 Proof
-    rw [solvable_def]
+    rw [solvable_def, closed_def]
 QED
+
+Theorem solvable_of_closed' =
+    REWRITE_RULE [closed_def] solvable_of_closed
 
 (* 8.3.1 (iii) [1, p.171] *)
 Overload unsolvable = “$~ o solvable”
@@ -70,7 +72,7 @@ Overload unsolvable = “$~ o solvable”
 Theorem solvable_K :
     solvable K
 Proof
-    rw [solvable_alt_closed]
+    rw [solvable_of_closed']
  >> Q.EXISTS_TAC ‘[I; I]’
  >> rw [lameq_K]
 QED
@@ -94,7 +96,7 @@ Theorem solvable_xIO :
 Proof
     Q.ABBREV_TAC ‘M = VAR x @@ I @@ Omega’
  >> ‘FV M = {x}’ by rw [Abbr ‘M’]
- >> ‘closure_of M = {LAM x M}’ by PROVE_TAC [closure_of_open_sing]
+ >> ‘closures M = {LAM x M}’ by PROVE_TAC [closures_of_open_sing]
  >> rw [solvable_def]
  >> Q.EXISTS_TAC ‘[K]’ >> simp []
  >> ASM_SIMP_TAC (betafy (srw_ss())) [Abbr ‘M’, lameq_K]
@@ -107,28 +109,28 @@ val _ = reveal "Y"; (* from chap2Theory *)
 Theorem solvable_Y :
     solvable Y
 Proof
-    rw [solvable_alt_closed, FV_Y]
+    rw [solvable_of_closed', FV_Y]
  >> Q.EXISTS_TAC ‘[K @@ I]’ >> simp []
  >> ASM_SIMP_TAC (betafy (srw_ss())) [YYf, Once YffYf, lameq_K]
 QED
 
-(* ‘closure M’ is one element in ‘closure_of M’, useful when an arbitrary one is needed. *)
+(* ‘closure M’ is one element in ‘closures M’, useful when an arbitrary one is needed. *)
 Definition closure_def :
     closure M = LAMl (SET_TO_LIST (FV M)) M
 End
 
-Theorem closure_of_closure :
-    !M. closure M IN closure_of M
+Theorem closure_and_closures :
+    !M. closure M IN closures M
 Proof
-    rw [closure_def, closure_of_def]
+    rw [closure_def, closures_def]
  >> Q.EXISTS_TAC ‘SET_TO_LIST (FV M)’
  >> rw [SET_TO_LIST_INV]
 QED
 
-Theorem closure_closed[simp] :
-    !M. FV M = {} ==> closure M = M
+Theorem closure_of_closed[simp] :
+    !M. closed M ==> closure M = M
 Proof
-    rw [closure_def]
+    rw [closure_def, closed_def]
 QED
 
 Theorem closure_open_sing :
@@ -137,7 +139,31 @@ Proof
     rw [closure_def]
 QED
 
+Theorem closures_imp_closed :
+    !M M'. M' IN closures M ==> closed M'
+Proof
+    rw [closures_def, closed_def]
+ >> simp [FV_LAMl]
+QED
 
+Theorem closures_imp_closed' =
+    REWRITE_RULE [closed_def] closures_imp_closed
+
+Theorem FV_closure[simp] :
+    !M. FV (closure M) = {}
+Proof
+    Q.X_GEN_TAC ‘M’
+ >> MATCH_MP_TAC closures_imp_closed'
+ >> Q.EXISTS_TAC ‘M’
+ >> rw [closure_and_closures]
+QED
+
+(* alternative definition of solvable terms involving all closed terms *)
+Theorem solvable_alt_closed :
+    !M. closed M ==> (solvable M <=> ?Ns. M @* Ns == I /\ EVERY closed Ns)
+Proof
+    cheat
+QED
 
 val _ = export_theory ();
 val _ = html_theory "solvable";

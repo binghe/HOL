@@ -2,22 +2,28 @@
 #
 # HOL4 building environment (Docker), the CI image
 #
+# NOTE: this docker image is NOT for HOL developers to use interactively.
 
 # This "base" image is described in "base/Dockerfile"
-FROM binghelisp/hol-dev:latest
+FROM --platform=$TARGETPLATFORM binghelisp/hol-dev:latest
 
-RUN apt-get update -qy
+# The following two arguments are supported by "docker buildx" commands
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
 
-# IDE
-RUN apt-get install -qy emacs-nox
-RUN apt-get clean
+# GitHub Actions' hardware specification for Linux virtual machines: 2-core CPU (x86_64)
+# By default we use 4 cores in other building environments (e.g. Docker Hub autobuilds)
+ARG BUILDOPTS="--expk -j4"
+ARG SML=poly
 
-WORKDIR /ML
-VOLUME /ML
+WORKDIR /ML/HOL
 
-# for HOL Emacs mode (Emacs is not installed by default, however)
-COPY .emacs /root
+# fast copy all files to the docker image
+COPY --link . .
 
-ENV LANG en_US.UTF-8
-ENV LANGUAGE en_US:en
-ENV LC_ALL en_US.UTF-8
+# building HOL
+RUN ${SML} < tools/smart-configure.sml 
+RUN bin/build ${BUILDOPTS}
+
+# This can be overrided by "docker run <command>"
+CMD ["/ML/HOL/bin/hol"]
