@@ -4,7 +4,7 @@
 
 open HolKernel Parse boolLib bossLib;
 
-open pred_setTheory hurdUtils;
+open pred_setTheory listTheory hurdUtils;
 
 open termTheory appFOLDLTheory chap2Theory standardisationTheory;
 
@@ -14,16 +14,15 @@ val _ = new_theory "solvable";
   ‘LAMl vs M’ is important and determines the order of Ns, thus the
    following definition (closure) doesn't work:
 
-   closure M = LAMl (SET_TO_LIST (FV M)) M
  *)
-Definition closure_def :
-    closure M = {LAMl vs M | vs | ALL_DISTINCT vs /\ set vs = FV M}
+Definition closure_of_def :
+    closure_of M = {LAMl vs M | vs | ALL_DISTINCT vs /\ set vs = FV M}
 End
 
-Theorem closure_alt_closed[simp] :
-    !M. FV M = {} ==> closure M = {M}
+Theorem closure_of_closed[simp] :
+    !M. FV M = {} ==> closure_of M = {M}
 Proof
-    rw [closure_def]
+    rw [closure_of_def]
  >> rw [Once EXTENSION]
 QED
 
@@ -45,16 +44,16 @@ Proof
  >> METIS_TAC []
 QED
 
-Theorem closure_alt_open_sing :
-    !M v. FV M = {v} ==> closure M = {LAM v M}
+Theorem closure_of_open_sing :
+    !M v. FV M = {v} ==> closure_of M = {LAM v M}
 Proof
-    rw [closure_def, LIST_TO_SET_SING]
+    rw [closure_of_def, LIST_TO_SET_SING]
  >> rw [Once EXTENSION]
 QED
 
 (* 8.3.1 (ii) [1, p.171] *)
 Definition solvable_def :
-    solvable (M :term) = ?M'. M' IN closure M /\ ?Ns. M' @* Ns == I
+    solvable (M :term) = ?M'. M' IN closure_of M /\ ?Ns. M' @* Ns == I
 End
 
 (* 8.3.1 (i) [1, p.171] *)
@@ -95,7 +94,7 @@ Theorem solvable_xIO :
 Proof
     Q.ABBREV_TAC ‘M = VAR x @@ I @@ Omega’
  >> ‘FV M = {x}’ by rw [Abbr ‘M’]
- >> ‘closure M = {LAM x M}’ by PROVE_TAC [closure_alt_open_sing]
+ >> ‘closure_of M = {LAM x M}’ by PROVE_TAC [closure_of_open_sing]
  >> rw [solvable_def]
  >> Q.EXISTS_TAC ‘[K]’ >> simp []
  >> ASM_SIMP_TAC (betafy (srw_ss())) [Abbr ‘M’, lameq_K]
@@ -112,6 +111,33 @@ Proof
  >> Q.EXISTS_TAC ‘[K @@ I]’ >> simp []
  >> ASM_SIMP_TAC (betafy (srw_ss())) [YYf, Once YffYf, lameq_K]
 QED
+
+(* ‘closure M’ is one element in ‘closure_of M’, useful when an arbitrary one is needed. *)
+Definition closure_def :
+    closure M = LAMl (SET_TO_LIST (FV M)) M
+End
+
+Theorem closure_of_closure :
+    !M. closure M IN closure_of M
+Proof
+    rw [closure_def, closure_of_def]
+ >> Q.EXISTS_TAC ‘SET_TO_LIST (FV M)’
+ >> rw [SET_TO_LIST_INV]
+QED
+
+Theorem closure_closed[simp] :
+    !M. FV M = {} ==> closure M = M
+Proof
+    rw [closure_def]
+QED
+
+Theorem closure_open_sing :
+    !M v. FV M = {v} ==> closure M = LAM v M
+Proof
+    rw [closure_def]
+QED
+
+
 
 val _ = export_theory ();
 val _ = html_theory "solvable";
