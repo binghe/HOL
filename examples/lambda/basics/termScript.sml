@@ -495,6 +495,8 @@ Proof
   SRW_TAC [][SUB_THM, SUB_VAR]
 QED
 
+Theorem SUB_STABLE = lemma14b
+
 Theorem lemma14c:
   !t x u. x IN FV u ==> (FV ([t/x]u) = FV t UNION (FV u DELETE x))
 Proof

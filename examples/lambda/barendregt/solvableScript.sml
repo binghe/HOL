@@ -101,7 +101,7 @@ Proof
  >> Q.EXISTS_TAC ‘[K]’ >> simp []
  >> ASM_SIMP_TAC (betafy (srw_ss())) [Abbr ‘M’, lameq_K]
  >> KILL_TAC
- >> rw [SUB_THM, FV_I, lemma14b]
+ >> rw [SUB_THM, FV_I, SUB_STABLE]
 QED
 
 val _ = reveal "Y"; (* from chap2Theory *)
@@ -119,7 +119,7 @@ Definition closure_def :
     closure M = LAMl (SET_TO_LIST (FV M)) M
 End
 
-Theorem closure_and_closures :
+Theorem closure_in_closures :
     !M. closure M IN closures M
 Proof
     rw [closure_def, closures_def]
@@ -156,13 +156,19 @@ Proof
     Q.X_GEN_TAC ‘M’
  >> MATCH_MP_TAC FV_closures
  >> Q.EXISTS_TAC ‘M’
- >> rw [closure_and_closures]
+ >> rw [closure_in_closures]
 QED
 
 (* alternative definition of solvable terms involving all closed terms *)
 Theorem solvable_alt_closed :
     !M. closed M ==> (solvable M <=> ?Ns. M @* Ns == I /\ EVERY closed Ns)
 Proof
+    rw [solvable_of_closed]
+ >> reverse EQ_TAC
+ >- (STRIP_TAC >> Q.EXISTS_TAC ‘Ns’ >> rw [])
+ (* stage work *)
+ >> STRIP_TAC
+ >>
     cheat
 QED
 
