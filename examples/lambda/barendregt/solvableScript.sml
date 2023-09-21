@@ -168,10 +168,9 @@ QED
 Theorem FV_closures = REWRITE_RULE [closed_def] closures_imp_closed
 
 Theorem FV_closure[simp] :
-    !M. FV (closure M) = {}
+    FV (closure M) = {}
 Proof
-    Q.X_GEN_TAC ‘M’
- >> MATCH_MP_TAC FV_closures
+    MATCH_MP_TAC FV_closures
  >> Q.EXISTS_TAC ‘M’
  >> rw [closure_in_closures]
 QED
@@ -181,6 +180,21 @@ Theorem SUB_I[simp] :
 Proof
     rw [SUB_STABLE, FV_I]
 QED
+
+(* TODO: move to finite_mapTheory *)
+Theorem FUN_FMAP_INSERT :
+    !f e s. FINITE s /\ e NOTIN s ==>
+            FUN_FMAP f (e INSERT s) = FUN_FMAP f s |+ (e,f e)
+Proof
+    rw [fmap_EXT]
+ >- rw [FUN_FMAP_DEF]
+ >> ‘x IN e INSERT s’ by ASM_SET_TAC []
+ >> ‘x <> e’ by METIS_TAC []
+ >> rw [FAPPLY_FUPDATE_THM, FUN_FMAP_DEF]
+QED
+
+(* TODO: move to termTheory *)
+Theorem ssub_LAM = List.nth (CONJUNCTS ssub_thm,2)
 
 (* alternative definition of solvable terms involving all closed terms *)
 Theorem solvable_alt_closed :
@@ -207,8 +221,20 @@ Proof
  >- (rw [EVERY_MAP, EVERY_EL, closed_def] \\
      Q.ABBREV_TAC ‘N = EL n Ns’ \\
     ‘MEM N Ns’ by PROVE_TAC [MEM_EL] \\
-     
-     cheat)
+    ‘{} = FV N DIFF vs’ by ASM_SET_TAC [] >> POP_ORW \\
+     Q.UNABBREV_TAC ‘fm’ \\
+     Q.PAT_X_ASSUM ‘FINITE vs’ MP_TAC \\
+     KILL_TAC >> DISCH_TAC \\
+     Q.SPEC_TAC (‘N’, ‘N’) \\
+     HO_MATCH_MP_TAC nc_INDUCTION2 \\
+     Q.EXISTS_TAC ‘vs’ \\
+     rw [SUB_VAR, SUB_THM, ssub_thm] >- rw [FUN_FMAP_DEF] >- SET_TAC [] \\
+     Q.ABBREV_TAC ‘fm = FUN_FMAP (\x. I) vs’ \\
+     Know ‘fm ' (LAM y N) = LAM y (fm ' N)’
+     >- (MATCH_MP_TAC ssub_LAM \\
+         rw [Abbr ‘fm’] \\
+         rw [FUN_FMAP_DEF, FAPPLY_FUPDATE_THM]) >> Rewr' \\
+     simp [] >> SET_TAC [])
  (* stage work *)
  >> cheat
 QED
