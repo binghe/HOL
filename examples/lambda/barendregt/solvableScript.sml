@@ -139,6 +139,24 @@ Proof
     rw [closure_def]
 QED
 
+Theorem closure_of_var[simp] :
+    closure (VAR x) = I
+Proof
+    Know ‘closure (VAR x) = LAM x (VAR x)’
+ >- (MATCH_MP_TAC closure_open_sing >> rw [])
+ >> Rewr'
+ >> REWRITE_TAC [I_def]
+ >> Cases_on ‘x = "x"’ >- rw []
+ >> Q.ABBREV_TAC ‘u :term = VAR x’
+ >> Q.ABBREV_TAC ‘y = "x"’
+ >> ‘y NOTIN FV u’ by rw [Abbr ‘u’]
+ >> Know ‘LAM x u = LAM y ([VAR y/x] u)’
+ >- (MATCH_MP_TAC SIMPLE_ALPHA >> art [])
+ >> Rewr'
+ >> Suff ‘[VAR y/x] u = VAR y’ >- rw []
+ >> rw [Abbr ‘u’]
+QED
+
 Theorem closures_imp_closed :
     !M N. N IN closures M ==> closed N
 Proof
@@ -147,8 +165,7 @@ Proof
 QED
 
 (* |- !M N. N IN closures M ==> FV N = {} *)
-Theorem FV_closures =
-    REWRITE_RULE [closed_def] closures_imp_closed
+Theorem FV_closures = REWRITE_RULE [closed_def] closures_imp_closed
 
 Theorem FV_closure[simp] :
     !M. FV (closure M) = {}
@@ -187,9 +204,10 @@ Proof
  (* stage work *)
  >> Q.EXISTS_TAC ‘MAP (ssub fm) Ns’
  >> reverse CONJ_TAC
- >- (rw [EVERY_MAP, EVERY_EL] \\
+ >- (rw [EVERY_MAP, EVERY_EL, closed_def] \\
      Q.ABBREV_TAC ‘N = EL n Ns’ \\
     ‘MEM N Ns’ by PROVE_TAC [MEM_EL] \\
+     
      cheat)
  (* stage work *)
  >> cheat
