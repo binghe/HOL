@@ -4,7 +4,7 @@
 
 open HolKernel Parse boolLib bossLib;
 
-open pred_setTheory listTheory hurdUtils;
+open pred_setTheory listTheory finite_mapTheory hurdUtils;
 
 open termTheory appFOLDLTheory chap2Theory standardisationTheory;
 
@@ -127,7 +127,7 @@ Proof
  >> rw [SET_TO_LIST_INV]
 QED
 
-Theorem closure_of_closed[simp] :
+Theorem closure_stable[simp] :
     !M. closed M ==> closure M = M
 Proof
     rw [closure_def, closed_def]
@@ -159,6 +159,12 @@ Proof
  >> rw [closure_in_closures]
 QED
 
+Theorem SUB_I[simp] :
+    [N/v] I = I
+Proof
+    rw [SUB_STABLE, FV_I]
+QED
+
 (* alternative definition of solvable terms involving all closed terms *)
 Theorem solvable_alt_closed :
     !M. closed M ==> (solvable M <=> ?Ns. M @* Ns == I /\ EVERY closed Ns)
@@ -168,8 +174,25 @@ Proof
  >- (STRIP_TAC >> Q.EXISTS_TAC ‘Ns’ >> rw [])
  (* stage work *)
  >> STRIP_TAC
- >>
-    cheat
+ (* get all free variables in Ns *)
+ >> Q.ABBREV_TAC ‘vs = BIGUNION (IMAGE FV (set Ns))’
+ >> ‘FINITE vs’
+      by (Q.UNABBREV_TAC ‘vs’ >> MATCH_MP_TAC FINITE_BIGUNION \\
+          rw [IMAGE_FINITE] >> rw [FINITE_FV])
+ >> ‘!N. MEM N Ns ==> FV N SUBSET vs’
+      by (rw [Abbr ‘vs’, SUBSET_DEF, IN_BIGUNION_IMAGE] \\
+          Q.EXISTS_TAC ‘N’ >> art [])
+ (* construct the variable substitution *)
+ >> Q.ABBREV_TAC ‘fm = FUN_FMAP (\x. I) vs’
+ (* stage work *)
+ >> Q.EXISTS_TAC ‘MAP (ssub fm) Ns’
+ >> reverse CONJ_TAC
+ >- (rw [EVERY_MAP, EVERY_EL] \\
+     Q.ABBREV_TAC ‘N = EL n Ns’ \\
+    ‘MEM N Ns’ by PROVE_TAC [MEM_EL] \\
+     cheat)
+ (* stage work *)
+ >> cheat
 QED
 
 val _ = export_theory ();
