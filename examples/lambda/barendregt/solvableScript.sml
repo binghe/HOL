@@ -222,11 +222,47 @@ Proof
  >> SET_TAC []
 QED
 
-(* cf. lameq_sub_cong *)
-Theorem lameq_ssub_cong :
-    M == N ==> fm ' M == fm ' N
+Theorem ssub_LAM = List.nth(CONJUNCTS ssub_thm, 2)
+
+(* TODO: can ‘(!y. y IN FDOM fm ==> FV (fm ' y) = {})’ be removed? *)
+Theorem ssub_update_apply :
+    !fm. s NOTIN FDOM fm /\ (!y. y IN FDOM fm ==> FV (fm ' y) = {}) ==>
+         (fm |+ (s,M)) ' N = [M/s] (fm ' (N :term))
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> Q.ID_SPEC_TAC ‘N’
+ >> HO_MATCH_MP_TAC nc_INDUCTION2
+ >> Q.EXISTS_TAC ‘s INSERT (FDOM fm UNION FV M)’
+ >> rw [SUB_VAR, SUB_THM, ssub_thm, FAPPLY_FUPDATE_THM]
+ >> TRY (METIS_TAC [])
+ >- (MATCH_MP_TAC (GSYM lemma14b) \\
+     METIS_TAC [NOT_IN_EMPTY])
+ >> Suff ‘(fm |+ (s,M)) ' (LAM y N) = LAM y ((fm |+ (s,M)) ' N)’ >- rw []
+ >> MATCH_MP_TAC ssub_LAM >> rw [FAPPLY_FUPDATE_THM]
+QED
+
+(* cf. lameq_sub_cong
+
+   TODO: can ‘(!y. y IN FDOM fm ==> FV (fm ' y) = {})’ be removed?
+ *)
+Theorem lameq_ssub_cong :
+    !fm. (!y. y IN FDOM fm ==> FV (fm ' y) = {}) /\ M == N ==> fm ' M == fm ' N
+Proof
+    HO_MATCH_MP_TAC fmap_INDUCT >> rw [FAPPLY_FUPDATE_THM]
+ >> Know ‘!y. y IN FDOM fm ==> FV (fm ' y) = {}’
+ >- (Q.X_GEN_TAC ‘z’ >> DISCH_TAC \\
+    ‘z <> x’ by PROVE_TAC [] \\
+     Q.PAT_X_ASSUM ‘!y. y = x \/ y IN FDOM fm ==> P’ (MP_TAC o (Q.SPEC ‘z’)) \\
+     RW_TAC std_ss [])
+ >> DISCH_TAC
+ >> ‘fm ' M == fm ' N’ by PROVE_TAC []
+ >> Know ‘(fm |+ (x,y)) ' M = [y/x] (fm ' M)’
+ >- (MATCH_MP_TAC ssub_update_apply >> art [])
+ >> Rewr'
+ >> Know ‘(fm |+ (x,y)) ' N = [y/x] (fm ' N)’
+ >- (MATCH_MP_TAC ssub_update_apply >> art [])
+ >> Rewr'
+ >> ASM_SIMP_TAC (betafy (srw_ss())) []
 QED
 
 Theorem ssub_appstar :
@@ -268,7 +304,10 @@ Proof
  (* stage work *)
  >> MATCH_MP_TAC lameq_trans
  >> Q.EXISTS_TAC ‘fm ' (M @* Ns)’
- >> reverse CONJ_TAC >- PROVE_TAC [lameq_ssub_cong, ssub_I]
+ >> reverse CONJ_TAC
+ >- (ONCE_REWRITE_TAC [SYM ssub_I] \\
+     MATCH_MP_TAC lameq_ssub_cong \\
+     rw [Abbr ‘fm’, FUN_FMAP_DEF, FAPPLY_FUPDATE_THM])
  >> rw [ssub_appstar]
  >> Suff ‘fm ' M = M’ >- rw []
  >> MATCH_MP_TAC ssub_value >> art []
