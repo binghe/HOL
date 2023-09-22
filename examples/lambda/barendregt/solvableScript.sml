@@ -91,6 +91,8 @@ fun betafy ss =
                              lameq_sub_cong],
                     dprocs = [], filter = NONE, name = NONE};
 
+Theorem lameq_trans[local] = List.nth(CONJUNCTS lameq_rules, 3)
+
 Theorem solvable_xIO :
     solvable (VAR x @@ I @@ Omega)
 Proof
@@ -101,7 +103,7 @@ Proof
  >> Q.EXISTS_TAC ‘[K]’ >> simp []
  >> ASM_SIMP_TAC (betafy (srw_ss())) [Abbr ‘M’, lameq_K]
  >> KILL_TAC
- >> rw [SUB_THM, FV_I, SUB_STABLE]
+ >> rw [SUB_THM, lemma14b]
 QED
 
 val _ = reveal "Y"; (* from chap2Theory *)
@@ -109,7 +111,7 @@ val _ = reveal "Y"; (* from chap2Theory *)
 Theorem solvable_Y :
     solvable Y
 Proof
-    rw [solvable_of_closed', FV_Y]
+    rw [solvable_of_closed']
  >> Q.EXISTS_TAC ‘[K @@ I]’ >> simp []
  >> ASM_SIMP_TAC (betafy (srw_ss())) [YYf, Once YffYf, lameq_K]
 QED
@@ -139,13 +141,12 @@ Proof
     rw [closure_def]
 QED
 
-Theorem closure_of_var[simp] :
-    closure (VAR x) = I
+(* TODO: move to chap2Theory *)
+Theorem I_alt :
+    !s. I = LAM s (VAR s)
 Proof
-    Know ‘closure (VAR x) = LAM x (VAR x)’
- >- (MATCH_MP_TAC closure_open_sing >> rw [])
- >> Rewr'
- >> REWRITE_TAC [I_def]
+    Q.X_GEN_TAC ‘x’
+ >> REWRITE_TAC [I_def, Once EQ_SYM_EQ]
  >> Cases_on ‘x = "x"’ >- rw []
  >> Q.ABBREV_TAC ‘u :term = VAR x’
  >> Q.ABBREV_TAC ‘y = "x"’
@@ -155,6 +156,15 @@ Proof
  >> Rewr'
  >> Suff ‘[VAR y/x] u = VAR y’ >- rw []
  >> rw [Abbr ‘u’]
+QED
+
+Theorem closure_of_var[simp] :
+    closure (VAR x) = I
+Proof
+    Know ‘closure (VAR x) = LAM x (VAR x)’
+ >- (MATCH_MP_TAC closure_open_sing >> rw [])
+ >> Rewr'
+ >> REWRITE_TAC [Q.SPEC ‘x’ I_alt]
 QED
 
 Theorem closures_imp_closed :
@@ -178,7 +188,13 @@ QED
 Theorem SUB_I[simp] :
     [N/v] I = I
 Proof
-    rw [SUB_STABLE, FV_I]
+    rw [lemma14b]
+QED
+
+Theorem ssub_I[simp] :
+    ssub fm I = I
+Proof
+    rw [ssub_value]
 QED
 
 (* TODO: move to finite_mapTheory *)
@@ -194,13 +210,38 @@ Proof
 QED
 
 (* TODO: move to termTheory *)
-Theorem ssub_LAM = List.nth (CONJUNCTS ssub_thm,2)
+Theorem FV_ssub :
+    !fm N. (!y. y IN FDOM fm ==> FV (fm ' y) = {}) ==>
+           FV (fm ' N) = FV N DIFF FDOM fm
+Proof
+    rpt STRIP_TAC
+ >> Q.ID_SPEC_TAC ‘N’
+ >> HO_MATCH_MP_TAC nc_INDUCTION2
+ >> Q.EXISTS_TAC ‘FDOM fm’
+ >> rw [SUB_VAR, SUB_THM, ssub_thm]
+ >> SET_TAC []
+QED
+
+(* cf. lameq_sub_cong *)
+Theorem lameq_ssub_cong :
+    M == N ==> fm ' M == fm ' N
+Proof
+    cheat
+QED
+
+Theorem ssub_appstar :
+    fm ' (M @* Ns) = (fm ' M) @* MAP (ssub fm) Ns
+Proof
+    Q.ID_SPEC_TAC ‘Ns’
+ >> HO_MATCH_MP_TAC SNOC_INDUCT
+ >> rw [SNOC_APPEND, SYM appstar_SNOC]
+QED
 
 (* alternative definition of solvable terms involving all closed terms *)
 Theorem solvable_alt_closed :
     !M. closed M ==> (solvable M <=> ?Ns. M @* Ns == I /\ EVERY closed Ns)
 Proof
-    rw [solvable_of_closed]
+    rw [solvable_of_closed, closed_def]
  >> reverse EQ_TAC
  >- (STRIP_TAC >> Q.EXISTS_TAC ‘Ns’ >> rw [])
  (* stage work *)
@@ -215,28 +256,22 @@ Proof
           Q.EXISTS_TAC ‘N’ >> art [])
  (* construct the variable substitution *)
  >> Q.ABBREV_TAC ‘fm = FUN_FMAP (\x. I) vs’
- (* stage work *)
  >> Q.EXISTS_TAC ‘MAP (ssub fm) Ns’
- >> reverse CONJ_TAC
+ >> reverse CONJ_TAC (* EVERY closed (MAP ($' fm) Ns) *)
  >- (rw [EVERY_MAP, EVERY_EL, closed_def] \\
      Q.ABBREV_TAC ‘N = EL n Ns’ \\
     ‘MEM N Ns’ by PROVE_TAC [MEM_EL] \\
     ‘{} = FV N DIFF vs’ by ASM_SET_TAC [] >> POP_ORW \\
-     Q.UNABBREV_TAC ‘fm’ \\
-     Q.PAT_X_ASSUM ‘FINITE vs’ MP_TAC \\
-     KILL_TAC >> DISCH_TAC \\
-     Q.SPEC_TAC (‘N’, ‘N’) \\
-     HO_MATCH_MP_TAC nc_INDUCTION2 \\
-     Q.EXISTS_TAC ‘vs’ \\
-     rw [SUB_VAR, SUB_THM, ssub_thm] >- rw [FUN_FMAP_DEF] >- SET_TAC [] \\
-     Q.ABBREV_TAC ‘fm = FUN_FMAP (\x. I) vs’ \\
-     Know ‘fm ' (LAM y N) = LAM y (fm ' N)’
-     >- (MATCH_MP_TAC ssub_LAM \\
-         rw [Abbr ‘fm’] \\
-         rw [FUN_FMAP_DEF, FAPPLY_FUPDATE_THM]) >> Rewr' \\
-     simp [] >> SET_TAC [])
+    ‘vs = FDOM fm’ by rw [Abbr ‘fm’] >> POP_ORW \\
+     MATCH_MP_TAC FV_ssub \\
+     rw [Abbr ‘fm’, FUN_FMAP_DEF, FAPPLY_FUPDATE_THM])
  (* stage work *)
- >> cheat
+ >> MATCH_MP_TAC lameq_trans
+ >> Q.EXISTS_TAC ‘fm ' (M @* Ns)’
+ >> reverse CONJ_TAC >- PROVE_TAC [lameq_ssub_cong, ssub_I]
+ >> rw [ssub_appstar]
+ >> Suff ‘fm ' M = M’ >- rw []
+ >> MATCH_MP_TAC ssub_value >> art []
 QED
 
 val _ = export_theory ();
