@@ -25,7 +25,7 @@ Proof
  >> rw [Once EXTENSION]
 QED
 
-(* NOTE: ‘ALL_DISTINCT vs’ is required (TODO: optimized this proof) *)
+(* NOTE: ‘ALL_DISTINCT vs’ is required (FIXME: optimized this proof) *)
 Theorem LIST_TO_SET_SING :
     !vs x. ALL_DISTINCT vs /\ set vs = {x} <=> vs = [x]
 Proof
@@ -129,7 +129,7 @@ Proof
  >> rw [SET_TO_LIST_INV]
 QED
 
-Theorem closure_stable[simp] :
+Theorem closure_idem[simp] :
     !M. closed M ==> closure M = M
 Proof
     rw [closure_def, closed_def]
@@ -141,7 +141,7 @@ Proof
     rw [closure_def]
 QED
 
-(* TODO: move to chap2Theory *)
+(* FIXME: move to chap2Theory *)
 Theorem I_alt :
     !s. I = LAM s (VAR s)
 Proof
@@ -185,19 +185,21 @@ Proof
  >> rw [closure_in_closures]
 QED
 
+(* not used
 Theorem SUB_I[simp] :
     [N/v] I = I
 Proof
     rw [lemma14b]
 QED
+ *)
 
-Theorem ssub_I[simp] :
+Theorem ssub_I :
     ssub fm I = I
 Proof
     rw [ssub_value]
 QED
 
-(* TODO: move to finite_mapTheory *)
+(* FIXME: move to finite_mapTheory *)
 Theorem FUN_FMAP_INSERT :
     !f e s. FINITE s /\ e NOTIN s ==>
             FUN_FMAP f (e INSERT s) = FUN_FMAP f s |+ (e,f e)
@@ -209,7 +211,7 @@ Proof
  >> rw [FAPPLY_FUPDATE_THM, FUN_FMAP_DEF]
 QED
 
-(* TODO: move to termTheory *)
+(* FIXME: move to termTheory *)
 Theorem FV_ssub :
     !fm N. (!y. y IN FDOM fm ==> FV (fm ' y) = {}) ==>
            FV (fm ' N) = FV N DIFF FDOM fm
@@ -224,7 +226,7 @@ QED
 
 Theorem ssub_LAM = List.nth(CONJUNCTS ssub_thm, 2)
 
-(* TODO: can ‘(!y. y IN FDOM fm ==> FV (fm ' y) = {})’ be removed? *)
+(* FIXME: can ‘(!y. y IN FDOM fm ==> FV (fm ' y) = {})’ be removed? *)
 Theorem ssub_update_apply :
     !fm. s NOTIN FDOM fm /\ (!y. y IN FDOM fm ==> FV (fm ' y) = {}) ==>
          (fm |+ (s,M)) ' N = [M/s] (fm ' (N :term))
@@ -241,12 +243,10 @@ Proof
  >> MATCH_MP_TAC ssub_LAM >> rw [FAPPLY_FUPDATE_THM]
 QED
 
-(* cf. lameq_sub_cong
-
-   TODO: can ‘(!y. y IN FDOM fm ==> FV (fm ' y) = {})’ be removed?
- *)
+(* FIXME: can ‘(!y. y IN FDOM fm ==> FV (fm ' y) = {})’ be removed? *)
 Theorem lameq_ssub_cong :
-    !fm. (!y. y IN FDOM fm ==> FV (fm ' y) = {}) /\ M == N ==> fm ' M == fm ' N
+    !fm. (!y. y IN FDOM fm ==> FV (fm ' y) = {}) /\
+          M == N ==> fm ' M == fm ' N
 Proof
     HO_MATCH_MP_TAC fmap_INDUCT >> rw [FAPPLY_FUPDATE_THM]
  >> Know ‘!y. y IN FDOM fm ==> FV (fm ' y) = {}’
@@ -265,6 +265,7 @@ Proof
  >> ASM_SIMP_TAC (betafy (srw_ss())) []
 QED
 
+(* FIXME: move to appFOLDLTheory *)
 Theorem ssub_appstar :
     fm ' (M @* Ns) = (fm ' M) @* MAP (ssub fm) Ns
 Proof
@@ -282,7 +283,7 @@ Proof
  >- (STRIP_TAC >> Q.EXISTS_TAC ‘Ns’ >> rw [])
  (* stage work *)
  >> STRIP_TAC
- (* get all free variables in Ns *)
+ (* collect all free variables in Ns into vs *)
  >> Q.ABBREV_TAC ‘vs = BIGUNION (IMAGE FV (set Ns))’
  >> ‘FINITE vs’
       by (Q.UNABBREV_TAC ‘vs’ >> MATCH_MP_TAC FINITE_BIGUNION \\
