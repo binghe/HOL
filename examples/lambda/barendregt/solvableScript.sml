@@ -10,13 +10,35 @@ open termTheory appFOLDLTheory chap2Theory standardisationTheory;
 
 val _ = new_theory "solvable";
 
+(*---------------------------------------------------------------------------*
+ * closed terms and closures of (open or closed) terms
+ *---------------------------------------------------------------------------*)
+
+(* A term is "closed" if it's FV is empty (otherwise the term is open).
+
+   NOTE: the set of all closed terms forms $\Lambda_0$ found in textbooks.
+ *)
+Definition closed_def :
+    closed (M :term) <=> FV M = {}
+End
+
+(* By prefixing a list of abstractions of FVs, any term can be "closed". The
+   set ‘closures M’ represent such closures with different order of FVs.
+ *)
 Definition closures_def :
     closures M = {LAMl vs M | vs | ALL_DISTINCT vs /\ set vs = FV M}
 End
 
-Definition closed_def :
-    closed (M :term) <=> FV M = {}
-End
+Theorem closures_not_empty :
+    !M. closures M <> {}
+Proof
+    Q.X_GEN_TAC ‘M’
+ >> rw [GSYM MEMBER_NOT_EMPTY]
+ >> Q.EXISTS_TAC ‘LAMl (SET_TO_LIST (FV M)) M’
+ >> rw [closures_def]
+ >> Q.EXISTS_TAC ‘SET_TO_LIST (FV M)’
+ >> rw [SET_TO_LIST_INV]
+QED
 
 Theorem closures_of_closed[simp] :
     !M. closed M ==> closures M = {M}
@@ -50,9 +72,36 @@ Proof
  >> rw [Once EXTENSION]
 QED
 
+(* ‘closure M’ is just one arbitrary element in ‘closures M’. *)
+Overload closure = “\M. CHOICE (closures M)”
+
+Theorem closure_in_closures :
+    !M. closure M IN closures M
+Proof
+    rw [CHOICE_DEF, closures_not_empty]
+QED
+
+Theorem closure_idem[simp] :
+    !M. closed M ==> closure M = M
+Proof
+    rw [closures_of_closed]
+QED
+
+Theorem closure_open_sing :
+    !M v. FV M = {v} ==> closure M = LAM v M
+Proof
+    rpt STRIP_TAC
+ >> ‘closures M = {LAM v M}’ by PROVE_TAC [closures_of_open_sing]
+ >> rw []
+QED
+
+(*---------------------------------------------------------------------------*
+ * solvable terms and some equivalent definitions
+ *---------------------------------------------------------------------------*)
+
 (* 8.3.1 (ii) [1, p.171] *)
 Definition solvable_def :
-    solvable (M :term) = ?M'. M' IN closures M /\ ?Ns. M' @* Ns == I
+    solvable (M :term) = ?M' Ns. M' IN closures M /\ M' @* Ns == I
 End
 
 (* 8.3.1 (i) [1, p.171] *)
@@ -114,31 +163,6 @@ Proof
     rw [solvable_of_closed']
  >> Q.EXISTS_TAC ‘[K @@ I]’ >> simp []
  >> ASM_SIMP_TAC (betafy (srw_ss())) [YYf, Once YffYf, lameq_K]
-QED
-
-(* ‘closure M’ is one element in ‘closures M’, useful when an arbitrary one is needed. *)
-Definition closure_def :
-    closure M = LAMl (SET_TO_LIST (FV M)) M
-End
-
-Theorem closure_in_closures :
-    !M. closure M IN closures M
-Proof
-    rw [closure_def, closures_def]
- >> Q.EXISTS_TAC ‘SET_TO_LIST (FV M)’
- >> rw [SET_TO_LIST_INV]
-QED
-
-Theorem closure_idem[simp] :
-    !M. closed M ==> closure M = M
-Proof
-    rw [closure_def, closed_def]
-QED
-
-Theorem closure_open_sing :
-    !M v. FV M = {v} ==> closure M = LAM v M
-Proof
-    rw [closure_def]
 QED
 
 (* FIXME: move to chap2Theory *)
@@ -314,16 +338,14 @@ Proof
  >> MATCH_MP_TAC ssub_value >> art []
 QED
 
-(* cf. solvable_def, with ‘EVERY closed Ns’ added in RHS *)
+(* cf. solvable_def, adding ‘EVERY closed Ns’ in RHS *)
 Theorem solvable_alt :
-    !M. solvable (M :term) <=>
-        ?M'. M' IN closures M /\ ?Ns. M' @* Ns == I /\ EVERY closed Ns
+    !M. solvable M <=> ?M' Ns. M' IN closures M /\ M' @* Ns == I /\ EVERY closed Ns
 Proof
     Q.X_GEN_TAC ‘M’
  >> reverse EQ_TAC
  >- (rw [solvable_def] \\
-     Q.EXISTS_TAC ‘M'’ >> art [] \\
-     Q.EXISTS_TAC ‘Ns’ >> art [])
+     qexistsl_tac [‘M'’, ‘Ns’] >> art [])
  >> rw [solvable_def]
  >> Q.EXISTS_TAC ‘M'’ >> art []
  >> ‘closed M'’ by PROVE_TAC [closures_imp_closed]
@@ -332,7 +354,10 @@ Proof
  >> Q.EXISTS_TAC ‘Ns’ >> art []
 QED
 
-(* cf. solvable_def, with the existential quantifier "upgraded" to universal. *)
+(* cf. solvable_def, with the existential quantifier "upgraded" to universal.
+
+   NOTE: this theorem is not necessary (so far).
+ *)
 Theorem solvable_alt_all_closures :
     !M. solvable M <=> !M'. M' IN closures M ==> ?Ns. M' @* Ns == I /\ EVERY closed Ns
 Proof
@@ -360,10 +385,9 @@ Proof
  (* stage work *)
  >> Q.ABBREV_TAC ‘n = LENGTH vs’
  >> Q.ABBREV_TAC ‘m = LENGTH Ns’
- (* gN is an infinite generator (using I) of Ns *)
- >> Q.ABBREV_TAC ‘gN = \i. if i < m then EL i Ns else I’
+ >> Q.ABBREV_TAC ‘g = \i. if i < m then EL i Ns else I’
  (* permute the first n element of gN (Ns) *)
- >> Q.ABBREV_TAC ‘Ns' = GENLIST (\i. if i < n then gN (f i) else gN i) m’
+ >> Q.ABBREV_TAC ‘Ns' = GENLIST (\i. if i < n then g (f i) else g i) m’
  >> Q.EXISTS_TAC ‘Ns'’
  >> Suff ‘LAMl vs M @* Ns = LAMl vs' M @* Ns'’ >- PROVE_TAC []
  >> Q.PAT_X_ASSUM ‘M' = LAMl vs M’ K_TAC
@@ -372,9 +396,10 @@ Proof
  >> cheat
 QED
 
+(* based on ‘ssub’, allowing ‘FDOM fm’ bigger than ‘FV M’ *)
 Definition closed_substitution_instances_def :
     closed_substitution_instances M =
-       {FUN_FMAP f (FV M) ' M | f | !v. v IN FV M ==> closed (f v)}
+       {fm ' M | fm | FV M SUBSET FDOM fm /\ !v. v IN FDOM fm ==> closed (fm ' v)}
 End
 
 (* Theorem 8.3.3 (i) *)
@@ -383,7 +408,13 @@ Theorem solvable_alt_closed_substitution_instance :
                                EVERY closed Ns /\ M' @* Ns = I
 Proof
     Q.X_GEN_TAC ‘M’
- >> Q.ABBREV_TAC ‘M0 = closure M’
+ >> EQ_TAC
+ >- (rw [solvable_alt, closures_def] \\
+     Q.ABBREV_TAC ‘m = LENGTH Ns’ \\
+     Q.ABBREV_TAC ‘g = \i. if i < m then EL i Ns else I’ \\
+     (* I *)
+     cheat)
+ (* stage work *)
  >> cheat
 QED
 
