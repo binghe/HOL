@@ -314,6 +314,24 @@ Proof
  >> MATCH_MP_TAC ssub_value >> art []
 QED
 
+(* cf. solvable_def, with ‘EVERY closed Ns’ added in RHS *)
+Theorem solvable_alt :
+    !M. solvable (M :term) <=>
+        ?M'. M' IN closures M /\ ?Ns. M' @* Ns == I /\ EVERY closed Ns
+Proof
+    Q.X_GEN_TAC ‘M’
+ >> reverse EQ_TAC
+ >- (rw [solvable_def] \\
+     Q.EXISTS_TAC ‘M'’ >> art [] \\
+     Q.EXISTS_TAC ‘Ns’ >> art [])
+ >> rw [solvable_def]
+ >> Q.EXISTS_TAC ‘M'’ >> art []
+ >> ‘closed M'’ by PROVE_TAC [closures_imp_closed]
+ >> Suff ‘solvable M'’ >- rw [solvable_alt_closed]
+ >> rw [solvable_of_closed]
+ >> Q.EXISTS_TAC ‘Ns’ >> art []
+QED
+
 Definition closed_substitution_instances_def :
     closed_substitution_instances M =
        {FUN_FMAP f (FV M) ' M | f | !v. v IN FV M ==> closed (f v)}
@@ -329,16 +347,18 @@ Proof
      Q.EXISTS_TAC ‘closure M’ >> rw [closure_in_closures])
  (* stage work *)
  >> STRIP_TAC
- >> Q.X_GEN_TAC ‘M0’
- >> rw [closures_def]
- >> fs [solvable_def, closures_def]
+ >> Q.X_GEN_TAC ‘M0’ >> DISCH_TAC
+ >> ‘closed M0’ by PROVE_TAC [closures_imp_closed]
+ >> Suff ‘solvable M0’ >- PROVE_TAC [solvable_of_closed]
+ >> rw [solvable_of_closed]
+ (* applying solvable_alt *)
+ >> fs [solvable_alt, closures_def]
  >> ‘set vs = set vs'’ by PROVE_TAC []
  >> ‘PERM vs  (SET_TO_LIST (set vs)) /\
      PERM vs' (SET_TO_LIST (set vs'))’
       by PROVE_TAC [ALL_DISTINCT_PERM_LIST_TO_SET_TO_LIST]
  >> ‘PERM vs vs'’ by PROVE_TAC [PERM_TRANS, PERM_SYM]
- >> 
-    cheat
+ >> cheat
 QED
 
 (* Theorem 8.3.3 (i) *)
@@ -348,8 +368,7 @@ Theorem solvable_iff_closed_substitution_instance :
 Proof
     Q.X_GEN_TAC ‘M’
  >> Q.ABBREV_TAC ‘M0 = closure M’
- >> 
-    cheat
+ >> cheat
 QED
 
 val _ = export_theory ();
