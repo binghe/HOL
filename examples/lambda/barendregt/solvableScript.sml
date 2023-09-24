@@ -332,13 +332,8 @@ Proof
  >> Q.EXISTS_TAC ‘Ns’ >> art []
 QED
 
-Definition closed_substitution_instances_def :
-    closed_substitution_instances M =
-       {FUN_FMAP f (FV M) ' M | f | !v. v IN FV M ==> closed (f v)}
-End
-
-(* cf. solvable_def, with existential quantifiers "upgraded" to universal. *)
-Theorem solvable_alt_closures :
+(* cf. solvable_def, with the existential quantifier "upgraded" to universal. *)
+Theorem solvable_alt_all_closures :
     !M. solvable M <=> !M'. M' IN closures M ==> ?Ns. M' @* Ns == I /\ EVERY closed Ns
 Proof
     Q.X_GEN_TAC ‘M’
@@ -360,12 +355,30 @@ Proof
       PERM vs' (SET_TO_LIST (set vs'))’
         by PROVE_TAC [ALL_DISTINCT_PERM_LIST_TO_SET_TO_LIST] \\
      PROVE_TAC [PERM_TRANS, PERM_SYM])
- >> DISCH_TAC
+ (* this asserts an bijection ‘f’ mapping vs to vs' *)
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (MATCH_MP PERM_BIJ))
+ (* stage work *)
+ >> Q.ABBREV_TAC ‘n = LENGTH vs’
+ >> Q.ABBREV_TAC ‘m = LENGTH Ns’
+ (* gN is an infinite generator (using I) of Ns *)
+ >> Q.ABBREV_TAC ‘gN = \i. if i < m then EL i Ns else I’
+ (* permute the first n element of gN (Ns) *)
+ >> Q.ABBREV_TAC ‘Ns' = GENLIST (\i. if i < n then gN (f i) else gN i) m’
+ >> Q.EXISTS_TAC ‘Ns'’
+ >> Suff ‘LAMl vs M @* Ns = LAMl vs' M @* Ns'’ >- PROVE_TAC []
+ >> Q.PAT_X_ASSUM ‘M' = LAMl vs M’ K_TAC
+ >> Q.PAT_X_ASSUM ‘M' @* Ns == I’  K_TAC
+ (* stage work *)
  >> cheat
 QED
 
+Definition closed_substitution_instances_def :
+    closed_substitution_instances M =
+       {FUN_FMAP f (FV M) ' M | f | !v. v IN FV M ==> closed (f v)}
+End
+
 (* Theorem 8.3.3 (i) *)
-Theorem solvable_iff_closed_substitution_instance :
+Theorem solvable_alt_closed_substitution_instance :
     !M. solvable M <=> ?M' Ns. M' IN closed_substitution_instances M /\
                                EVERY closed Ns /\ M' @* Ns = I
 Proof
