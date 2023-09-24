@@ -339,25 +339,28 @@ End
 
 (* cf. solvable_def, with existential quantifiers "upgraded" to universal. *)
 Theorem solvable_alt_closures :
-    !M. solvable M <=> !M'. M' IN closures M ==> ?Ns. M' @* Ns == I
+    !M. solvable M <=> !M'. M' IN closures M ==> ?Ns. M' @* Ns == I /\ EVERY closed Ns
 Proof
     Q.X_GEN_TAC ‘M’
  >> reverse EQ_TAC
- >- (rw [solvable_def] \\
-     Q.EXISTS_TAC ‘closure M’ >> rw [closure_in_closures])
+ >- (rw [solvable_def] >> Q.EXISTS_TAC ‘closure M’ \\
+     POP_ASSUM (MP_TAC o (Q.SPEC ‘closure M’)) >> rw [closure_in_closures] \\
+     Q.EXISTS_TAC ‘Ns’ >> art [])
  (* stage work *)
  >> STRIP_TAC
  >> Q.X_GEN_TAC ‘M0’ >> DISCH_TAC
  >> ‘closed M0’ by PROVE_TAC [closures_imp_closed]
- >> Suff ‘solvable M0’ >- PROVE_TAC [solvable_of_closed]
+ >> Suff ‘solvable M0’ >- PROVE_TAC [solvable_alt_closed]
  >> rw [solvable_of_closed]
  (* applying solvable_alt *)
  >> fs [solvable_alt, closures_def]
- >> ‘set vs = set vs'’ by PROVE_TAC []
- >> ‘PERM vs  (SET_TO_LIST (set vs)) /\
-     PERM vs' (SET_TO_LIST (set vs'))’
-      by PROVE_TAC [ALL_DISTINCT_PERM_LIST_TO_SET_TO_LIST]
- >> ‘PERM vs vs'’ by PROVE_TAC [PERM_TRANS, PERM_SYM]
+ >> Know ‘PERM vs vs'’
+ >- (‘set vs = set vs'’ by PROVE_TAC [] \\
+     ‘PERM vs  (SET_TO_LIST (set vs)) /\
+      PERM vs' (SET_TO_LIST (set vs'))’
+        by PROVE_TAC [ALL_DISTINCT_PERM_LIST_TO_SET_TO_LIST] \\
+     PROVE_TAC [PERM_TRANS, PERM_SYM])
+ >> DISCH_TAC
  >> cheat
 QED
 
