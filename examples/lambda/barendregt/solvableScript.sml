@@ -4,7 +4,7 @@
 
 open HolKernel Parse boolLib bossLib;
 
-open pred_setTheory listTheory finite_mapTheory hurdUtils;
+open pred_setTheory listTheory sortingTheory finite_mapTheory hurdUtils;
 
 open termTheory appFOLDLTheory chap2Theory standardisationTheory;
 
@@ -312,6 +312,44 @@ Proof
  >> rw [ssub_appstar]
  >> Suff ‘fm ' M = M’ >- rw []
  >> MATCH_MP_TAC ssub_value >> art []
+QED
+
+Definition closed_substitution_instances_def :
+    closed_substitution_instances M =
+       {FUN_FMAP f (FV M) ' M | f | !v. v IN FV M ==> closed (f v)}
+End
+
+(* cf. solvable_def, with existential quantifiers "upgraded" to universal. *)
+Theorem solvable_alt_closures :
+    !M. solvable M <=> !M'. M' IN closures M ==> ?Ns. M' @* Ns == I
+Proof
+    Q.X_GEN_TAC ‘M’
+ >> reverse EQ_TAC
+ >- (rw [solvable_def] \\
+     Q.EXISTS_TAC ‘closure M’ >> rw [closure_in_closures])
+ (* stage work *)
+ >> STRIP_TAC
+ >> Q.X_GEN_TAC ‘M0’
+ >> rw [closures_def]
+ >> fs [solvable_def, closures_def]
+ >> ‘set vs = set vs'’ by PROVE_TAC []
+ >> ‘PERM vs  (SET_TO_LIST (set vs)) /\
+     PERM vs' (SET_TO_LIST (set vs'))’
+      by PROVE_TAC [ALL_DISTINCT_PERM_LIST_TO_SET_TO_LIST]
+ >> ‘PERM vs vs'’ by PROVE_TAC [PERM_TRANS, PERM_SYM]
+ >> 
+    cheat
+QED
+
+(* Theorem 8.3.3 (i) *)
+Theorem solvable_iff_closed_substitution_instance :
+    !M. solvable M <=> ?M' Ns. M' IN closed_substitution_instances M /\
+                               EVERY closed Ns /\ M' @* Ns = I
+Proof
+    Q.X_GEN_TAC ‘M’
+ >> Q.ABBREV_TAC ‘M0 = closure M’
+ >> 
+    cheat
 QED
 
 val _ = export_theory ();
