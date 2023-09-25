@@ -4,8 +4,10 @@
 
 open HolKernel Parse boolLib bossLib;
 
+(* core theories *)
 open pred_setTheory listTheory sortingTheory finite_mapTheory hurdUtils;
 
+(* lambda theories *)
 open termTheory appFOLDLTheory chap2Theory standardisationTheory;
 
 val _ = new_theory "solvable";
@@ -354,10 +356,7 @@ Proof
  >> Q.EXISTS_TAC ‘Ns’ >> art []
 QED
 
-(* cf. solvable_def, with the existential quantifier "upgraded" to universal.
-
-   NOTE: this theorem is not necessary (so far).
- *)
+(* cf. solvable_def, with the existential quantifier "upgraded" to universal. *)
 Theorem solvable_alt_all_closures :
     !M. solvable M <=> !M'. M' IN closures M ==> ?Ns. M' @* Ns == I /\ EVERY closed Ns
 Proof
@@ -396,24 +395,64 @@ Proof
  >> cheat
 QED
 
+(* cf. lameq_I *)
+Theorem lameq_appstar_cong :
+    !M N Ns. M == N ==> M @* Ns == N @* Ns
+Proof
+    NTAC 2 GEN_TAC
+ >> HO_MATCH_MP_TAC SNOC_INDUCT >> rw []
+ >> ASM_SIMP_TAC (betafy (srw_ss())) [SNOC_APPEND, SYM appstar_SNOC]
+QED
+
 (* based on ‘ssub’, allowing ‘FDOM fm’ bigger than ‘FV M’ *)
 Definition closed_substitution_instances_def :
     closed_substitution_instances M =
        {fm ' M | fm | FV M SUBSET FDOM fm /\ !v. v IN FDOM fm ==> closed (fm ' v)}
 End
 
+Theorem solvable_alt_closed_substitution_instance_lemma[local] :
+    !Ns. LAMl vs M @* Ns == I /\ LENGTH vs <= LENGTH Ns /\ EVERY closed Ns ==>
+         ?M' Ns'. M' IN closed_substitution_instances M /\
+                  M' @* Ns' = I /\ EVERY closed Ns'
+Proof
+    rpt STRIP_TAC
+ >> Q.ABBREV_TAC ‘n = LENGTH vs’
+ >> Q.ABBREV_TAC ‘m = LENGTH Ns’
+ >> cheat
+QED
+
 (* Theorem 8.3.3 (i) *)
 Theorem solvable_alt_closed_substitution_instance :
     !M. solvable M <=> ?M' Ns. M' IN closed_substitution_instances M /\
-                               EVERY closed Ns /\ M' @* Ns = I
+                               M' @* Ns = I /\ EVERY closed Ns
 Proof
     Q.X_GEN_TAC ‘M’
  >> EQ_TAC
  >- (rw [solvable_alt, closures_def] \\
+     Q.ABBREV_TAC ‘n = LENGTH vs’ \\
      Q.ABBREV_TAC ‘m = LENGTH Ns’ \\
-     Q.ABBREV_TAC ‘g = \i. if i < m then EL i Ns else I’ \\
-     (* I *)
-     cheat)
+     Cases_on ‘n <= m’
+     >- (MATCH_MP_TAC solvable_alt_closed_substitution_instance_lemma \\
+         Q.EXISTS_TAC ‘Ns’ >> rw []) \\
+     Q.ABBREV_TAC ‘Is = GENLIST (\i. I) (n - m)’ \\
+    ‘(LAMl vs M @* Ns) @* Is == I @* Is’ by PROVE_TAC [lameq_appstar_cong] \\
+     Know ‘I @* Is == I’
+     >- (Know ‘!e. MEM e Is ==> e = I’
+         >- (rw [Abbr ‘Is’, MEM_GENLIST]) \\
+         Q.ID_SPEC_TAC ‘Is’ \\
+         HO_MATCH_MP_TAC SNOC_INDUCT >> rw [] \\
+         ASM_SIMP_TAC (betafy (srw_ss())) [SNOC_APPEND, SYM appstar_SNOC, lameq_I]) \\
+     DISCH_TAC \\
+     FULL_SIMP_TAC std_ss [GSYM appstar_APPEND] \\
+     Q.ABBREV_TAC ‘Ns' = Ns ++ Is’ \\
+    ‘LENGTH Ns' = n’ by (rw [Abbr ‘Ns'’, Abbr ‘Is’]) \\
+    ‘LAMl vs M @* Ns' == I’ by PROVE_TAC [lameq_trans] \\
+     Know ‘EVERY closed Ns'’
+     >- (rw [EVERY_APPEND, Abbr ‘Ns'’] \\
+         rw [EVERY_MEM, Abbr ‘Is’, closed_def, MEM_GENLIST] \\
+         REWRITE_TAC [FV_I]) >> DISCH_TAC \\
+     MATCH_MP_TAC solvable_alt_closed_substitution_instance_lemma \\
+     Q.EXISTS_TAC ‘Ns'’ >> rw [])
  (* stage work *)
  >> cheat
 QED
