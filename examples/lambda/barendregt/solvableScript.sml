@@ -5,7 +5,8 @@
 open HolKernel Parse boolLib bossLib;
 
 (* core theories *)
-open arithmeticTheory pred_setTheory listTheory sortingTheory finite_mapTheory hurdUtils;
+open arithmeticTheory pred_setTheory listTheory sortingTheory finite_mapTheory
+     hurdUtils;
 
 (* lambda theories *)
 open termTheory appFOLDLTheory chap2Theory standardisationTheory;
@@ -376,49 +377,9 @@ Proof
  >> Q.EXISTS_TAC ‘Ns’ >> art []
 QED
 
-(* cf. solvable_def, with the existential quantifier "upgraded" to universal. *)
-Theorem solvable_alt_all_closures :
-    !M. solvable M <=> !M'. M' IN closures M ==> ?Ns. M' @* Ns == I /\ EVERY closed Ns
-Proof
-    Q.X_GEN_TAC ‘M’
- >> reverse EQ_TAC
- >- (rw [solvable_def] >> Q.EXISTS_TAC ‘closure M’ \\
-     POP_ASSUM (MP_TAC o (Q.SPEC ‘closure M’)) >> rw [closure_in_closures] \\
-     Q.EXISTS_TAC ‘Ns’ >> art [])
- (* stage work *)
- >> STRIP_TAC
- >> Q.X_GEN_TAC ‘M0’ >> DISCH_TAC
- >> ‘closed M0’ by PROVE_TAC [closures_imp_closed]
- >> Suff ‘solvable M0’ >- PROVE_TAC [solvable_alt_closed]
- >> rw [solvable_of_closed]
- (* applying solvable_alt *)
- >> fs [solvable_alt, closures_def]
- >> Know ‘PERM vs vs'’
- >- (‘set vs = set vs'’ by PROVE_TAC [] \\
-     ‘PERM vs  (SET_TO_LIST (set vs)) /\
-      PERM vs' (SET_TO_LIST (set vs'))’
-        by PROVE_TAC [ALL_DISTINCT_PERM_LIST_TO_SET_TO_LIST] \\
-     PROVE_TAC [PERM_TRANS, PERM_SYM])
- (* this asserts an bijection ‘f’ mapping vs to vs' *)
- >> DISCH_THEN (STRIP_ASSUME_TAC o (MATCH_MP PERM_BIJ))
- (* stage work *)
- >> Q.ABBREV_TAC ‘n = LENGTH vs’
- >> Q.ABBREV_TAC ‘m = LENGTH Ns’
- >> Q.ABBREV_TAC ‘g = \i. if i < m then EL i Ns else I’
- (* permute the first n element of gN (Ns) *)
- >> Q.ABBREV_TAC ‘Ns' = GENLIST (\i. if i < n then g (f i) else g i) m’
- >> Q.EXISTS_TAC ‘Ns'’
- >> Suff ‘LAMl vs M @* Ns = LAMl vs' M @* Ns'’ >- PROVE_TAC []
- >> Q.PAT_X_ASSUM ‘M' = LAMl vs M’ K_TAC
- >> Q.PAT_X_ASSUM ‘M' @* Ns == I’  K_TAC
- (* stage work *)
- >> cheat
-QED
-
-(* based on ‘ssub’, allowing ‘FDOM fm’ bigger than ‘FV M’ *)
 Definition closed_substitution_instances_def :
     closed_substitution_instances M =
-       {fm ' M | fm | FV M SUBSET FDOM fm /\ !v. v IN FDOM fm ==> closed (fm ' v)}
+       {fm ' M | fm | FV M = FDOM fm /\ !v. v IN FDOM fm ==> closed (fm ' v)}
 End
 
 (* cf. lameq_I *)
@@ -529,27 +490,20 @@ Proof
  >> ‘fm ' M @* Ns1 == I’ by PROVE_TAC [lameq_trans, lameq_symm]
  >> qexistsl_tac [‘fm ' M’, ‘Ns1’]
  >> rw [closed_substitution_instances_def]
- >> Q.EXISTS_TAC ‘fm’ >> rw [Abbr ‘fm’] (* 2 subgoals *)
- >| [ (* goal 1 (of 2) *)
-      rw [SUBSET_DEF, MEM_MAP, MEM_ZIP, FDOM_FUPDATE_LIST] \\
-      Cases_on ‘INDEX_OF x vs’ >- fs [INDEX_OF_eq_NONE] \\
-      rename1 ‘INDEX_OF x vs = SOME k’ \\
-      fs [INDEX_OF_eq_SOME] \\
-      Q.EXISTS_TAC ‘(x,EL k Ns0)’ >> simp [] \\
-      Q.EXISTS_TAC ‘k’ >> rw [],
-      (* goal 2 (of 2) *)
-      gs [MEM_MAP, MEM_ZIP, FDOM_FUPDATE_LIST] \\
-      Suff ‘(FEMPTY |++ ZIP (vs,Ns0)) ' (EL n vs) = EL n Ns0’
-      >- (Rewr' \\
-          Q.PAT_X_ASSUM ‘EVERY closed Ns0’ MP_TAC \\
-          rw [EVERY_MEM] >> POP_ASSUM MATCH_MP_TAC \\
-          rw [MEM_EL] \\
-          Q.EXISTS_TAC ‘n’ >> rw []) \\
-      MATCH_MP_TAC FUPDATE_LIST_APPLY_MEM \\
-      Q.EXISTS_TAC ‘n’ \\
-      rw [LENGTH_ZIP, EL_MAP, MAP_ZIP, EL_ZIP] \\
-      rename1 ‘j < LENGTH Ns0’ >> ‘j <> n’ by rw [] \\
-      METIS_TAC [EL_ALL_DISTINCT_EL_EQ] ]
+ >> Q.EXISTS_TAC ‘fm’ >> rw [Abbr ‘fm’]
+ >- rw [MEM_MAP, MEM_ZIP, FDOM_FUPDATE_LIST, MAP_ZIP]
+ >> gs [MEM_MAP, MEM_ZIP, FDOM_FUPDATE_LIST]
+ >> Suff ‘(FEMPTY |++ ZIP (vs,Ns0)) ' (EL n vs) = EL n Ns0’
+ >- (Rewr' \\
+     Q.PAT_X_ASSUM ‘EVERY closed Ns0’ MP_TAC >> rw [EVERY_MEM] \\
+     POP_ASSUM MATCH_MP_TAC >> rw [MEM_EL] \\
+     Q.EXISTS_TAC ‘n’ >> rw [])
+ >> MATCH_MP_TAC FUPDATE_LIST_APPLY_MEM
+ >> Q.EXISTS_TAC ‘n’
+ >> rw [LENGTH_ZIP, EL_MAP, MAP_ZIP, EL_ZIP]
+ >> rename1 ‘j < LENGTH Ns0’
+ >> ‘j <> n’ by rw []
+ >> METIS_TAC [EL_ALL_DISTINCT_EL_EQ]
 QED
 
 (* Theorem 8.3.3 (i) *)
@@ -584,6 +538,87 @@ Proof
          REWRITE_TAC [FV_I]) >> DISCH_TAC \\
      MATCH_MP_TAC solvable_alt_closed_substitution_instance_lemma \\
      Q.EXISTS_TAC ‘Ns'’ >> rw [])
+ (* stage work *)
+ >> rw [solvable_def, closed_substitution_instances_def]
+ >> Q.ABBREV_TAC ‘vss = FDOM fm’
+ >> ‘FINITE vss’ by rw [FDOM_FINITE, Abbr ‘vss’]
+ (* preparing for LAMl_appstar *)
+ >> Q.ABBREV_TAC ‘vs = SET_TO_LIST vss’
+ >> ‘ALL_DISTINCT vs’ by PROVE_TAC [Abbr ‘vs’, ALL_DISTINCT_SET_TO_LIST]
+ >> Q.ABBREV_TAC ‘Ps = MAP (\v. fm ' v) vs’
+ >> ‘LENGTH Ps = LENGTH vs’ by rw [Abbr ‘Ps’]
+ (* stage work *)
+ >> Q.PAT_X_ASSUM ‘fm ' M @* Ns == I’ MP_TAC
+ >> Know ‘fm = (FEMPTY |++ ZIP (vs,Ps))’
+ >- (rw [fmap_EXT, FDOM_FUPDATE_LIST, MAP_ZIP]
+     >- rw [Abbr ‘vs’, SET_TO_LIST_INV] \\
+    ‘MEM x vs’ by rw [Abbr ‘vs’] \\
+     Cases_on ‘INDEX_OF x vs’ >- fs [INDEX_OF_eq_NONE] \\
+     rename1 ‘INDEX_OF x vs = SOME n’ \\
+     fs [INDEX_OF_eq_SOME] \\
+     Q.PAT_X_ASSUM ‘EL n vs = x’ (ONCE_REWRITE_TAC o wrap o SYM) \\
+     Q.ABBREV_TAC ‘L = ZIP (vs,Ps)’ \\
+    ‘LENGTH L = LENGTH vs’ by rw [Abbr ‘L’, LENGTH_ZIP] \\
+     Know ‘(FEMPTY |++ L) ' (EL n vs) = EL n Ps’
+     >- (MATCH_MP_TAC FUPDATE_LIST_APPLY_MEM \\
+         Q.EXISTS_TAC ‘n’ >> rw [EL_MAP, Abbr ‘L’, EL_ZIP] \\
+        ‘m <> n’ by rw [] \\
+         METIS_TAC [EL_ALL_DISTINCT_EL_EQ]) >> Rewr' \\
+     rw [Abbr ‘Ps’, EL_MAP])
+ >> Rewr'
+ >> DISCH_TAC
+ >> Know ‘LAMl vs M @* Ps == (FEMPTY |++ ZIP (vs,Ps)) ' M’
+ >- (MATCH_MP_TAC LAMl_appstar >> art [] \\
+     rw [Abbr ‘Ps’, EVERY_MEM, MEM_MAP] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     POP_ASSUM MP_TAC \\
+     rw [Abbr ‘vs’, MEM_SET_TO_LIST])
+ >> DISCH_TAC
+ >> Know ‘LAMl vs M @* Ps @* Ns == (FEMPTY |++ ZIP (vs,Ps)) ' M @* Ns’
+ >- (MATCH_MP_TAC lameq_appstar_cong >> art [])
+ >> DISCH_TAC
+ >> ‘LAMl vs M @* Ps @* Ns == I’ by PROVE_TAC [lameq_trans]
+ >> qexistsl_tac [‘LAMl vs M’, ‘Ps ++ Ns’]
+ >> rw [appstar_APPEND, closures_def]
+ >> Q.EXISTS_TAC ‘vs’ >> art []
+ >> rw [Abbr ‘vs’, SET_TO_LIST_INV]
+QED
+
+(* cf. solvable_def, with the existential quantifier "upgraded" to universal. *)
+Theorem solvable_alt_all_closures :
+    !M. solvable M <=> !M'. M' IN closures M ==> ?Ns. M' @* Ns == I /\ EVERY closed Ns
+Proof
+    Q.X_GEN_TAC ‘M’
+ >> reverse EQ_TAC
+ >- (rw [solvable_def] >> Q.EXISTS_TAC ‘closure M’ \\
+     POP_ASSUM (MP_TAC o (Q.SPEC ‘closure M’)) >> rw [closure_in_closures] \\
+     Q.EXISTS_TAC ‘Ns’ >> art [])
+ (* stage work *)
+ >> STRIP_TAC
+ >> Q.X_GEN_TAC ‘M0’ >> DISCH_TAC
+ >> ‘closed M0’ by PROVE_TAC [closures_imp_closed]
+ >> Suff ‘solvable M0’ >- PROVE_TAC [solvable_alt_closed]
+ >> rw [solvable_of_closed]
+ (* applying solvable_alt *)
+ >> fs [solvable_alt, closures_def]
+ >> Know ‘PERM vs vs'’
+ >- (‘set vs = set vs'’ by PROVE_TAC [] \\
+     ‘PERM vs  (SET_TO_LIST (set vs)) /\
+      PERM vs' (SET_TO_LIST (set vs'))’
+        by PROVE_TAC [ALL_DISTINCT_PERM_LIST_TO_SET_TO_LIST] \\
+     PROVE_TAC [PERM_TRANS, PERM_SYM])
+ (* asserts an bijection ‘f’ mapping vs to vs' *)
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (MATCH_MP PERM_BIJ))
+ >> Q.ABBREV_TAC ‘n = LENGTH vs’
+ >> Q.ABBREV_TAC ‘m = LENGTH Ns’
+ (* stage work *) 
+ >> Q.ABBREV_TAC ‘g = \i. if i < m then EL i Ns else I’
+ (* permute the first n element of gN (Ns) *)
+ >> Q.ABBREV_TAC ‘Ns' = GENLIST (\i. if i < n then g (f i) else g i) m’
+ >> Q.EXISTS_TAC ‘Ns'’
+ >> Suff ‘LAMl vs M @* Ns = LAMl vs' M @* Ns'’ >- PROVE_TAC []
+ >> Q.PAT_X_ASSUM ‘M' = LAMl vs M’ K_TAC
+ >> Q.PAT_X_ASSUM ‘M' @* Ns == I’  K_TAC
  (* stage work *)
  >> cheat
 QED
