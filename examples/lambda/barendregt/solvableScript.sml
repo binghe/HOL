@@ -113,7 +113,8 @@ Proof
     rw [solvable_def, closed_def]
 QED
 
-Theorem solvable_of_closed' =
+(* |- !M. FV M = {} ==> (solvable M <=> ?Ns. M @* Ns == I) *)
+Theorem solvable_of_closed'[local] =
     REWRITE_RULE [closed_def] solvable_of_closed
 
 (* 8.3.1 (iii) [1, p.171] *)
@@ -142,6 +143,7 @@ fun betafy ss =
                              lameq_sub_cong],
                     dprocs = [], filter = NONE, name = NONE};
 
+Theorem lameq_symm[local] = List.nth(CONJUNCTS lameq_rules, 2)
 Theorem lameq_trans[local] = List.nth(CONJUNCTS lameq_rules, 3)
 
 Theorem solvable_xIO :
@@ -395,6 +397,12 @@ Proof
  >> cheat
 QED
 
+(* based on ‘ssub’, allowing ‘FDOM fm’ bigger than ‘FV M’ *)
+Definition closed_substitution_instances_def :
+    closed_substitution_instances M =
+       {fm ' M | fm | FV M SUBSET FDOM fm /\ !v. v IN FDOM fm ==> closed (fm ' v)}
+End
+
 (* cf. lameq_I *)
 Theorem lameq_appstar_cong :
     !M N Ns. M == N ==> M @* Ns == N @* Ns
@@ -404,27 +412,60 @@ Proof
  >> ASM_SIMP_TAC (betafy (srw_ss())) [SNOC_APPEND, SYM appstar_SNOC]
 QED
 
-(* based on ‘ssub’, allowing ‘FDOM fm’ bigger than ‘FV M’ *)
-Definition closed_substitution_instances_def :
-    closed_substitution_instances M =
-       {fm ' M | fm | FV M SUBSET FDOM fm /\ !v. v IN FDOM fm ==> closed (fm ' v)}
-End
-
 Theorem solvable_alt_closed_substitution_instance_lemma[local] :
-    !Ns. LAMl vs M @* Ns == I /\ LENGTH vs <= LENGTH Ns /\ EVERY closed Ns ==>
-         ?M' Ns'. M' IN closed_substitution_instances M /\
-                  M' @* Ns' = I /\ EVERY closed Ns'
+    !Ns. FV M = set vs /\ ALL_DISTINCT vs /\ LAMl vs M @* Ns == I /\
+         LENGTH vs <= LENGTH Ns /\ EVERY closed Ns
+     ==> ?M' Ns'. M' IN closed_substitution_instances M /\
+                  M' @* Ns' == I /\ EVERY closed Ns'
 Proof
     rpt STRIP_TAC
  >> Q.ABBREV_TAC ‘n = LENGTH vs’
  >> Q.ABBREV_TAC ‘m = LENGTH Ns’
+ >> Q.PAT_X_ASSUM ‘LAMl vs M @* Ns == I’ MP_TAC
+ >> Q.ABBREV_TAC ‘Ns0 = TAKE n Ns’
+ >> ‘LENGTH Ns0 = n’ by rw [Abbr ‘Ns0’, LENGTH_TAKE]
+ >> Q.ABBREV_TAC ‘Ns1 = DROP n Ns’
+ >> ‘Ns = Ns0 ++ Ns1’ by rw [Abbr ‘Ns0’, Abbr ‘Ns1’, TAKE_DROP]
+ >> ‘EVERY closed Ns0 /\ EVERY closed Ns1’
+      by FULL_SIMP_TAC std_ss [EVERY_APPEND]
+ >> Q.PAT_X_ASSUM ‘Ns = Ns0 ++ Ns1’ (ONCE_REWRITE_TAC o wrap)
+ >> REWRITE_TAC [appstar_APPEND]
+ >> Q.ABBREV_TAC ‘fm = FEMPTY |++ ZIP (vs,Ns0)’
+ (* stage work *)
+ >> Suff ‘LAMl vs M @* Ns0 == fm ' M’
+ >- (NTAC 2 DISCH_TAC \\
+    ‘LAMl vs M @* Ns0 @* Ns1 == fm ' M @* Ns1’ by PROVE_TAC [lameq_appstar_cong] \\
+    ‘fm ' M @* Ns1 == I’ by PROVE_TAC [lameq_trans, lameq_symm] \\
+     qexistsl_tac [‘fm ' M’, ‘Ns1’] \\
+     rw [closed_substitution_instances_def] \\
+     Q.EXISTS_TAC ‘fm’ >> rw [Abbr ‘fm’] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       rw [SUBSET_DEF, MEM_MAP, MEM_ZIP, FDOM_FUPDATE_LIST] \\
+       Cases_on ‘INDEX_OF x vs’ >- fs [INDEX_OF_eq_NONE] \\
+       rename1 ‘INDEX_OF x vs = SOME k’ \\
+       fs [INDEX_OF_eq_SOME] \\
+       Q.EXISTS_TAC ‘(x,EL k Ns0)’ >> simp [] \\
+       Q.EXISTS_TAC ‘k’ >> simp [],
+       (* goal 2 (of 2) *)
+       gs [MEM_MAP, MEM_ZIP, FDOM_FUPDATE_LIST] \\
+       Suff ‘(FEMPTY |++ ZIP (vs,Ns0)) ' (EL n vs) = EL n Ns0’
+       >- (Rewr' \\
+           Q.PAT_X_ASSUM ‘EVERY closed Ns0’ MP_TAC \\
+           rw [EVERY_MEM] >> POP_ASSUM MATCH_MP_TAC \\
+           rw [MEM_EL] \\
+           Q.EXISTS_TAC ‘n’ >> rw []) \\
+       MATCH_MP_TAC FUPDATE_LIST_APPLY_MEM \\
+       Q.EXISTS_TAC ‘n’ \\
+       rw [LENGTH_ZIP, EL_MAP, MAP_ZIP, EL_ZIP] \\
+       rename1 ‘j < LENGTH Ns0’ >> ‘j <> n’ by rw [] \\
+       METIS_TAC [EL_ALL_DISTINCT_EL_EQ] ])
  >> cheat
 QED
 
 (* Theorem 8.3.3 (i) *)
 Theorem solvable_alt_closed_substitution_instance :
     !M. solvable M <=> ?M' Ns. M' IN closed_substitution_instances M /\
-                               M' @* Ns = I /\ EVERY closed Ns
+                               M' @* Ns == I /\ EVERY closed Ns
 Proof
     Q.X_GEN_TAC ‘M’
  >> EQ_TAC
