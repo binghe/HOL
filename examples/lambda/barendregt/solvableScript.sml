@@ -611,7 +611,7 @@ Proof
  >> DISCH_THEN (STRIP_ASSUME_TAC o (MATCH_MP PERM_BIJ))
  >> Q.ABBREV_TAC ‘n = LENGTH vs’
  >> Q.ABBREV_TAC ‘m = LENGTH Ns’
- (* stage work *) 
+ (* stage work *)
  >> Q.ABBREV_TAC ‘g = \i. if i < m then EL i Ns else I’
  (* permute the first n element of gN (Ns) *)
  >> Q.ABBREV_TAC ‘Ns' = GENLIST (\i. if i < n then g (f i) else g i) m’
