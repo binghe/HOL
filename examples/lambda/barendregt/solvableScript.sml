@@ -487,7 +487,7 @@ Proof
      Q.PAT_X_ASSUM ‘EVERY closed Ns’ MP_TAC \\
      rw [EVERY_MEM, closed_def] \\
      POP_ASSUM MATCH_MP_TAC >> rw [MEM_EL] \\
-    ‘LENGTH L = LENGTH Ns’ by rw [Abbr ‘Ns’, LENGTH_MAP] \\     
+    ‘LENGTH L = LENGTH Ns’ by rw [Abbr ‘Ns’, LENGTH_MAP] \\
      Q.EXISTS_TAC ‘n’ >> rw [])
  >> Rewr'
  (* LHS rewriting *)
