@@ -5,7 +5,7 @@
 open HolKernel Parse boolLib bossLib;
 
 (* core theories *)
-open pred_setTheory listTheory sortingTheory finite_mapTheory hurdUtils;
+open arithmeticTheory pred_setTheory listTheory sortingTheory finite_mapTheory hurdUtils;
 
 (* lambda theories *)
 open termTheory appFOLDLTheory chap2Theory standardisationTheory;
@@ -412,6 +412,41 @@ Proof
  >> ASM_SIMP_TAC (betafy (srw_ss())) [SNOC_APPEND, SYM appstar_SNOC]
 QED
 
+Theorem LAMl_appstar :
+    !vs M Ns. ALL_DISTINCT vs /\
+              LENGTH vs = LENGTH Ns /\ EVERY closed Ns ==>
+              LAMl vs M @* Ns == (FEMPTY |++ ZIP (vs,Ns)) ' M
+Proof
+    rpt STRIP_TAC
+ >> Q.ABBREV_TAC ‘L = ZIP (vs,Ns)’
+ >> ‘Ns = MAP SND L /\ vs = MAP FST L’ by rw [Abbr ‘L’, MAP_ZIP]
+ >> FULL_SIMP_TAC std_ss []
+ >> Q.PAT_X_ASSUM ‘EVERY closed (MAP SND L)’ MP_TAC
+ >> Q.PAT_X_ASSUM ‘ALL_DISTINCT (MAP FST L)’ MP_TAC
+ >> KILL_TAC
+ (* stage work *)
+ >> Induct_on ‘L’
+ >- (rw [] \\
+    ‘FEMPTY |++ [] = FEMPTY :string |-> term’ by rw [FUPDATE_LIST_EQ_FEMPTY] >> rw [])
+ >> rw []
+ >> Q.PAT_X_ASSUM ‘ALL_DISTINCT (MAP FST L) ==> _’ MP_TAC
+ >> RW_TAC std_ss []
+ >> Q.ABBREV_TAC ‘v = FST h’
+ >> Q.ABBREV_TAC ‘vs = MAP FST L’
+ >> Q.ABBREV_TAC ‘N = SND h’
+ >> Q.ABBREV_TAC ‘Ns = MAP SND L’
+ (* LHS rewriting *)
+ (* RHS rewriting *)
+ >> ‘h :: L = [h] ++ L’ by rw [] >> POP_ORW
+ >> rw [FUPDATE_LIST_APPEND]
+ >> Know ‘FEMPTY |++ [h] |++ L = FEMPTY |++ L |++ [h]’
+ >- (MATCH_MP_TAC FUPDATE_LIST_APPEND_COMMUTES \\
+     rw [DISJOINT_ALT])
+ >> Rewr'
+ >> Q.ABBREV_TAC ‘fm = FEMPTY |++ L’
+ >> cheat
+QED
+
 Theorem solvable_alt_closed_substitution_instance_lemma[local] :
     !Ns. FV M = set vs /\ ALL_DISTINCT vs /\ LAMl vs M @* Ns == I /\
          LENGTH vs <= LENGTH Ns /\ EVERY closed Ns
@@ -430,36 +465,37 @@ Proof
       by FULL_SIMP_TAC std_ss [EVERY_APPEND]
  >> Q.PAT_X_ASSUM ‘Ns = Ns0 ++ Ns1’ (ONCE_REWRITE_TAC o wrap)
  >> REWRITE_TAC [appstar_APPEND]
+ >> DISCH_TAC
  >> Q.ABBREV_TAC ‘fm = FEMPTY |++ ZIP (vs,Ns0)’
- (* stage work *)
- >> Suff ‘LAMl vs M @* Ns0 == fm ' M’
- >- (NTAC 2 DISCH_TAC \\
-    ‘LAMl vs M @* Ns0 @* Ns1 == fm ' M @* Ns1’ by PROVE_TAC [lameq_appstar_cong] \\
-    ‘fm ' M @* Ns1 == I’ by PROVE_TAC [lameq_trans, lameq_symm] \\
-     qexistsl_tac [‘fm ' M’, ‘Ns1’] \\
-     rw [closed_substitution_instances_def] \\
-     Q.EXISTS_TAC ‘fm’ >> rw [Abbr ‘fm’] >| (* 2 subgoals *)
-     [ (* goal 1 (of 2) *)
-       rw [SUBSET_DEF, MEM_MAP, MEM_ZIP, FDOM_FUPDATE_LIST] \\
-       Cases_on ‘INDEX_OF x vs’ >- fs [INDEX_OF_eq_NONE] \\
-       rename1 ‘INDEX_OF x vs = SOME k’ \\
-       fs [INDEX_OF_eq_SOME] \\
-       Q.EXISTS_TAC ‘(x,EL k Ns0)’ >> simp [] \\
-       Q.EXISTS_TAC ‘k’ >> simp [],
-       (* goal 2 (of 2) *)
-       gs [MEM_MAP, MEM_ZIP, FDOM_FUPDATE_LIST] \\
-       Suff ‘(FEMPTY |++ ZIP (vs,Ns0)) ' (EL n vs) = EL n Ns0’
-       >- (Rewr' \\
-           Q.PAT_X_ASSUM ‘EVERY closed Ns0’ MP_TAC \\
-           rw [EVERY_MEM] >> POP_ASSUM MATCH_MP_TAC \\
-           rw [MEM_EL] \\
-           Q.EXISTS_TAC ‘n’ >> rw []) \\
-       MATCH_MP_TAC FUPDATE_LIST_APPLY_MEM \\
-       Q.EXISTS_TAC ‘n’ \\
-       rw [LENGTH_ZIP, EL_MAP, MAP_ZIP, EL_ZIP] \\
-       rename1 ‘j < LENGTH Ns0’ >> ‘j <> n’ by rw [] \\
-       METIS_TAC [EL_ALL_DISTINCT_EL_EQ] ])
- >> cheat
+ >> Know ‘LAMl vs M @* Ns0 == fm ' M’
+ >- (Q.UNABBREV_TAC ‘fm’ \\
+     MATCH_MP_TAC LAMl_appstar >> rw [])
+ >> DISCH_TAC
+ >> ‘LAMl vs M @* Ns0 @* Ns1 == fm ' M @* Ns1’ by PROVE_TAC [lameq_appstar_cong]
+ >> ‘fm ' M @* Ns1 == I’ by PROVE_TAC [lameq_trans, lameq_symm]
+ >> qexistsl_tac [‘fm ' M’, ‘Ns1’]
+ >> rw [closed_substitution_instances_def]
+ >> Q.EXISTS_TAC ‘fm’ >> rw [Abbr ‘fm’] (* 2 subgoals *)
+ >| [ (* goal 1 (of 2) *)
+      rw [SUBSET_DEF, MEM_MAP, MEM_ZIP, FDOM_FUPDATE_LIST] \\
+      Cases_on ‘INDEX_OF x vs’ >- fs [INDEX_OF_eq_NONE] \\
+      rename1 ‘INDEX_OF x vs = SOME k’ \\
+      fs [INDEX_OF_eq_SOME] \\
+      Q.EXISTS_TAC ‘(x,EL k Ns0)’ >> simp [] \\
+      Q.EXISTS_TAC ‘k’ >> rw [],
+      (* goal 2 (of 2) *)
+      gs [MEM_MAP, MEM_ZIP, FDOM_FUPDATE_LIST] \\
+      Suff ‘(FEMPTY |++ ZIP (vs,Ns0)) ' (EL n vs) = EL n Ns0’
+      >- (Rewr' \\
+          Q.PAT_X_ASSUM ‘EVERY closed Ns0’ MP_TAC \\
+          rw [EVERY_MEM] >> POP_ASSUM MATCH_MP_TAC \\
+          rw [MEM_EL] \\
+          Q.EXISTS_TAC ‘n’ >> rw []) \\
+      MATCH_MP_TAC FUPDATE_LIST_APPLY_MEM \\
+      Q.EXISTS_TAC ‘n’ \\
+      rw [LENGTH_ZIP, EL_MAP, MAP_ZIP, EL_ZIP] \\
+      rename1 ‘j < LENGTH Ns0’ >> ‘j <> n’ by rw [] \\
+      METIS_TAC [EL_ALL_DISTINCT_EL_EQ] ]
 QED
 
 (* Theorem 8.3.3 (i) *)
