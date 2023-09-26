@@ -271,6 +271,24 @@ Proof
  >> MATCH_MP_TAC ssub_LAM >> rw [FAPPLY_FUPDATE_THM]
 QED
 
+(* NOTE: ‘FV M = {}’ is additionally required *)
+Theorem ssub_update_apply' :
+    !fm. s NOTIN FDOM fm /\ (!y. y IN FDOM fm ==> FV (fm ' y) = {}) /\
+         FV M = {} ==> (fm |+ (s,M)) ' N = fm ' ([M/s] N)
+Proof
+    rpt STRIP_TAC
+ >> Q.ID_SPEC_TAC ‘N’
+ >> HO_MATCH_MP_TAC nc_INDUCTION2
+ >> Q.EXISTS_TAC ‘s INSERT (FDOM fm)’
+ >> rw [SUB_VAR, SUB_THM, ssub_thm, FAPPLY_FUPDATE_THM]
+ >> TRY (METIS_TAC [])
+ >- (MATCH_MP_TAC (GSYM ssub_value) >> art [])
+ >> Know ‘(fm |+ (s,M)) ' (LAM y N) = LAM y ((fm |+ (s,M)) ' N)’
+ >- (MATCH_MP_TAC ssub_LAM >> rw [FAPPLY_FUPDATE_THM])
+ >> Rewr'
+ >> ASM_SIMP_TAC (betafy (srw_ss())) []
+QED
+
 (* FIXME: can ‘(!y. y IN FDOM fm ==> FV (fm ' y) = {})’ be removed? *)
 Theorem lameq_ssub_cong :
     !fm. (!y. y IN FDOM fm ==> FV (fm ' y) = {}) /\
@@ -412,9 +430,17 @@ Proof
  >> ASM_SIMP_TAC (betafy (srw_ss())) [SNOC_APPEND, SYM appstar_SNOC]
 QED
 
+Theorem LAMl_SUB :
+    !M N v vs. ALL_DISTINCT vs /\ ~MEM v vs /\ FV N = {} ==>
+               [N/v] (LAMl vs M) == LAMl vs ([N/v] M)
+Proof
+    rpt STRIP_TAC
+ >> Induct_on ‘vs’ >> rw []
+ >> ASM_SIMP_TAC (betafy (srw_ss())) []
+QED
+
 Theorem LAMl_appstar :
-    !vs M Ns. ALL_DISTINCT vs /\
-              LENGTH vs = LENGTH Ns /\ EVERY closed Ns ==>
+    !vs M Ns. ALL_DISTINCT vs /\ LENGTH vs = LENGTH Ns /\ EVERY closed Ns ==>
               LAMl vs M @* Ns == (FEMPTY |++ ZIP (vs,Ns)) ' M
 Proof
     rpt STRIP_TAC
@@ -424,18 +450,15 @@ Proof
  >> Q.PAT_X_ASSUM ‘EVERY closed (MAP SND L)’ MP_TAC
  >> Q.PAT_X_ASSUM ‘ALL_DISTINCT (MAP FST L)’ MP_TAC
  >> KILL_TAC
+ >> Q.ID_SPEC_TAC ‘M’
  (* stage work *)
- >> Induct_on ‘L’
- >- (rw [] \\
-    ‘FEMPTY |++ [] = FEMPTY :string |-> term’ by rw [FUPDATE_LIST_EQ_FEMPTY] >> rw [])
- >> rw []
- >> Q.PAT_X_ASSUM ‘ALL_DISTINCT (MAP FST L) ==> _’ MP_TAC
- >> RW_TAC std_ss []
+ >> Induct_on ‘L’ >> rw []
+ >- (Suff ‘FEMPTY |++ [] = FEMPTY :string |-> term’ >- rw [] \\
+     rw [FUPDATE_LIST_EQ_FEMPTY])
  >> Q.ABBREV_TAC ‘v = FST h’
  >> Q.ABBREV_TAC ‘vs = MAP FST L’
  >> Q.ABBREV_TAC ‘N = SND h’
  >> Q.ABBREV_TAC ‘Ns = MAP SND L’
- (* LHS rewriting *)
  (* RHS rewriting *)
  >> ‘h :: L = [h] ++ L’ by rw [] >> POP_ORW
  >> rw [FUPDATE_LIST_APPEND]
@@ -443,8 +466,39 @@ Proof
  >- (MATCH_MP_TAC FUPDATE_LIST_APPEND_COMMUTES \\
      rw [DISJOINT_ALT])
  >> Rewr'
+ >> rw [GSYM FUPDATE_EQ_FUPDATE_LIST]
  >> Q.ABBREV_TAC ‘fm = FEMPTY |++ L’
- >> cheat
+ >> FULL_SIMP_TAC std_ss []
+ >> ‘h = (v,N)’ by rw [Abbr ‘v’, Abbr ‘N’] >> POP_ORW
+ >> Know ‘(fm |+ (v,N)) ' M = fm ' ([N/v] M)’
+ >- (MATCH_MP_TAC ssub_update_apply' \\
+     Q.PAT_X_ASSUM ‘closed N’ MP_TAC \\
+     rw [Abbr ‘fm’, FDOM_FUPDATE_LIST, closed_def] \\
+     Cases_on ‘INDEX_OF y vs’ >- fs [INDEX_OF_eq_NONE] \\
+     rename1 ‘INDEX_OF y vs = SOME n’ \\
+     fs [INDEX_OF_eq_SOME] \\
+     Q.PAT_X_ASSUM ‘EL n vs = y’ (ONCE_REWRITE_TAC o wrap o SYM) \\
+    ‘LENGTH L = LENGTH vs’ by rw [Abbr ‘vs’, LENGTH_MAP] \\
+     Know ‘(FEMPTY |++ L) ' (EL n vs) = EL n Ns’
+     >- (MATCH_MP_TAC FUPDATE_LIST_APPLY_MEM \\
+         Q.EXISTS_TAC ‘n’ >> rw [] \\
+        ‘m <> n’ by rw [] \\
+         METIS_TAC [EL_ALL_DISTINCT_EL_EQ]) >> Rewr' \\
+     Q.PAT_X_ASSUM ‘EVERY closed Ns’ MP_TAC \\
+     rw [EVERY_MEM, closed_def] \\
+     POP_ASSUM MATCH_MP_TAC >> rw [MEM_EL] \\
+    ‘LENGTH L = LENGTH Ns’ by rw [Abbr ‘Ns’, LENGTH_MAP] \\     
+     Q.EXISTS_TAC ‘n’ >> rw [])
+ >> Rewr'
+ (* LHS rewriting *)
+ >> Know ‘LAM v (LAMl vs M) @@ N == LAMl vs ([N/v] M)’
+ >- (SIMP_TAC (betafy (srw_ss())) [] \\
+     MATCH_MP_TAC LAMl_SUB \\
+     Q.PAT_X_ASSUM ‘closed N’ MP_TAC >> rw [closed_def])
+ >> DISCH_TAC
+ >> MATCH_MP_TAC lameq_trans
+ >> Q.EXISTS_TAC ‘LAMl vs ([N/v] M) @* Ns’ >> art []
+ >> MATCH_MP_TAC lameq_appstar_cong >> art []
 QED
 
 Theorem solvable_alt_closed_substitution_instance_lemma[local] :
