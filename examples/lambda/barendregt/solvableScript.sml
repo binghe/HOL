@@ -108,15 +108,15 @@ Definition solvable_def :
 End
 
 (* 8.3.1 (i) [1, p.171] *)
-Theorem solvable_of_closed :
+Theorem solvable_alt_closed :
     !M. closed M ==> (solvable M <=> ?Ns. M @* Ns == I)
 Proof
     rw [solvable_def, closed_def]
 QED
 
 (* |- !M. FV M = {} ==> (solvable M <=> ?Ns. M @* Ns == I) *)
-Theorem solvable_of_closed'[local] =
-    REWRITE_RULE [closed_def] solvable_of_closed
+Theorem solvable_alt_closed'[local] =
+    REWRITE_RULE [closed_def] solvable_alt_closed
 
 (* 8.3.1 (iii) [1, p.171] *)
 Overload unsolvable = “$~ o solvable”
@@ -125,7 +125,7 @@ Overload unsolvable = “$~ o solvable”
 Theorem solvable_K :
     solvable K
 Proof
-    rw [solvable_of_closed']
+    rw [solvable_alt_closed']
  >> Q.EXISTS_TAC ‘[I; I]’
  >> rw [lameq_K]
 QED
@@ -165,7 +165,7 @@ val _ = reveal "Y"; (* from chap2Theory *)
 Theorem solvable_Y :
     solvable Y
 Proof
-    rw [solvable_of_closed']
+    rw [solvable_alt_closed']
  >> Q.EXISTS_TAC ‘[K @@ I]’ >> simp []
  >> ASM_SIMP_TAC (betafy (srw_ss())) [YYf, Once YffYf, lameq_K]
 QED
@@ -187,7 +187,7 @@ Proof
  >> rw [Abbr ‘u’]
 QED
 
-Theorem closure_of_var[simp] :
+Theorem closure_VAR[simp] :
     closure (VAR x) = I
 Proof
     Know ‘closure (VAR x) = LAM x (VAR x)’
@@ -253,7 +253,7 @@ Proof
  >> SET_TAC []
 QED
 
-Theorem ssub_LAM = List.nth(CONJUNCTS ssub_thm, 2)
+Theorem ssub_LAM[local] = List.nth(CONJUNCTS ssub_thm, 2)
 
 (* FIXME: can ‘(!y. y IN FDOM fm ==> FV (fm ' y) = {})’ be removed? *)
 Theorem ssub_update_apply :
@@ -322,10 +322,10 @@ Proof
 QED
 
 (* alternative definition of solvable terms involving all closed terms *)
-Theorem solvable_alt_closed :
+Theorem solvable_alt_closed_every :
     !M. closed M ==> (solvable M <=> ?Ns. M @* Ns == I /\ EVERY closed Ns)
 Proof
-    rw [solvable_of_closed, closed_def]
+    rw [solvable_alt_closed, closed_def]
  >> reverse EQ_TAC
  >- (STRIP_TAC >> Q.EXISTS_TAC ‘Ns’ >> rw [])
  (* stage work *)
@@ -372,8 +372,8 @@ Proof
  >> rw [solvable_def]
  >> Q.EXISTS_TAC ‘M'’ >> art []
  >> ‘closed M'’ by PROVE_TAC [closures_imp_closed]
- >> Suff ‘solvable M'’ >- rw [solvable_alt_closed]
- >> rw [solvable_of_closed]
+ >> Suff ‘solvable M'’ >- rw [solvable_alt_closed_every]
+ >> rw [solvable_alt_closed]
  >> Q.EXISTS_TAC ‘Ns’ >> art []
 QED
 
@@ -589,7 +589,7 @@ Proof
  >> rw [Abbr ‘vs’, SET_TO_LIST_INV]
 QED
 
-Theorem solvable_alt_all_closures_lemma[local] :
+Theorem solvable_alt_universal_lemma[local] :
     !Ns. ALL_DISTINCT vs /\ ALL_DISTINCT vs' /\
          set vs = FV M /\ set vs' = FV M /\
          LENGTH vs <= LENGTH Ns /\ EVERY closed Ns /\
@@ -701,7 +701,7 @@ QED
 
    NOTE: this proof needs sortingTheory (PERM)
  *)
-Theorem solvable_alt_all_closures :
+Theorem solvable_alt_universal :
     !M. solvable M <=> !M'. M' IN closures M ==> ?Ns. M' @* Ns == I /\ EVERY closed Ns
 Proof
     Q.X_GEN_TAC ‘M’
@@ -713,14 +713,14 @@ Proof
  >> STRIP_TAC
  >> Q.X_GEN_TAC ‘M0’ >> DISCH_TAC
  >> ‘closed M0’ by PROVE_TAC [closures_imp_closed]
- >> Suff ‘solvable M0’ >- PROVE_TAC [solvable_alt_closed]
- >> rw [solvable_of_closed]
+ >> Suff ‘solvable M0’ >- PROVE_TAC [solvable_alt_closed_every]
+ >> rw [solvable_alt_closed]
  (* applying solvable_alt *)
  >> fs [solvable_alt, closures_def]
  >> Q.ABBREV_TAC ‘n = LENGTH vs’
  >> Q.ABBREV_TAC ‘m = LENGTH Ns’
  >> Cases_on ‘n <= m’
- >- (MATCH_MP_TAC solvable_alt_all_closures_lemma \\
+ >- (MATCH_MP_TAC solvable_alt_universal_lemma \\
      Q.EXISTS_TAC ‘Ns’ >> rw [])
  (* additional steps when ‘m < n’ *)
  >> Q.ABBREV_TAC ‘Is = GENLIST (\i. I) (n - m)’
@@ -735,12 +735,12 @@ Proof
      rw [EVERY_MEM, Abbr ‘Is’, closed_def, MEM_GENLIST] \\
      REWRITE_TAC [FV_I])
  >> DISCH_TAC
- >> MATCH_MP_TAC solvable_alt_all_closures_lemma
+ >> MATCH_MP_TAC solvable_alt_universal_lemma
  >> Q.EXISTS_TAC ‘Ns'’ >> rw []
 QED
 
 (* Theorem 8.3.3 (ii) *)
-Theorem solvable_iff_LAM_solvable :
+Theorem solvable_iff_solvable_LAM :
     !M x. solvable M <=> solvable (LAM x M)
 Proof
     cheat
