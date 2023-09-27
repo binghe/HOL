@@ -532,7 +532,7 @@ Proof
          Q.EXISTS_TAC ‘Ns’ >> rw []) \\
      Q.ABBREV_TAC ‘Is = GENLIST (\i. I) (n - m)’ \\
     ‘(LAMl vs M @* Ns) @* Is == I @* Is’ by PROVE_TAC [lameq_appstar_cong] \\
-    ‘I @* Is == I’ by PROVE_TAC [I_appstar]
+    ‘I @* Is == I’ by PROVE_TAC [I_appstar] \\
      FULL_SIMP_TAC std_ss [GSYM appstar_APPEND] \\
      Q.ABBREV_TAC ‘Ns' = Ns ++ Is’ \\
     ‘LENGTH Ns' = n’ by (rw [Abbr ‘Ns'’, Abbr ‘Is’]) \\
@@ -737,6 +737,13 @@ Proof
  >> DISCH_TAC
  >> MATCH_MP_TAC solvable_alt_all_closures_lemma
  >> Q.EXISTS_TAC ‘Ns'’ >> rw []
+QED
+
+(* Theorem 8.3.3 (ii) *)
+Theorem solvable_iff_LAM_solvable :
+    !M x. solvable M <=> solvable (LAM x M)
+Proof
+    cheat
 QED
 
 val _ = export_theory ();
