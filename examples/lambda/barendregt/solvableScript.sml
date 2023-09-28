@@ -191,7 +191,7 @@ Proof
  >> reverse CONJ_TAC
  >- (ONCE_REWRITE_TAC [SYM ssub_I] \\
      MATCH_MP_TAC lameq_ssub_cong \\
-     rw [Abbr ‘fm’, FUN_FMAP_DEF, FAPPLY_FUPDATE_THM])
+     rw [Abbr ‘fm’, FUN_FMAP_DEF, FAPPLY_FUPDATE_THM, closed_def])
  >> rw [ssub_appstar]
  >> Suff ‘fm ' M = M’ >- rw []
  >> MATCH_MP_TAC ssub_value >> art []
@@ -262,7 +262,7 @@ Proof
  >> METIS_TAC [EL_ALL_DISTINCT_EL_EQ]
 QED
 
-(* Theorem 8.3.3 (i) *)
+(* Lemma 8.3.3 (i) *)
 Theorem solvable_alt_closed_substitution_instance :
     !M. solvable M <=> ?M' Ns. M' IN closed_substitution_instances M /\
                                M' @* Ns == I /\ EVERY closed Ns
@@ -443,7 +443,11 @@ Proof
  >> rw [Abbr ‘Ns0'’, Abbr ‘i’, EL_GENLIST]
 QED
 
-(* cf. solvable_def, with the existential quantifier "upgraded" to universal. *)
+(* cf. solvable_def, with the existential quantifier "upgraded" to universal
+
+   NOTE: This is actually 8.3.5 [1, p.172] showing the definition of solvability of
+         open terms is independent of the order of the variables in its closure.
+ *)
 Theorem solvable_alt_universal :
     !M. solvable M <=> !M'. M' IN closures M ==> ?Ns. M' @* Ns == I /\ EVERY closed Ns
 Proof
@@ -482,11 +486,45 @@ Proof
  >> Q.EXISTS_TAC ‘Ns'’ >> rw []
 QED
 
-(* Theorem 8.3.3 (ii) *)
+(* Lemma 8.3.3 (ii) *)
 Theorem solvable_iff_solvable_LAM :
     !M x. solvable M <=> solvable (LAM x M)
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> EQ_TAC >> rw [solvable_alt_closed_substitution_instance,
+                  closed_substitution_instances_def]
+ >| [ (* goal 1 (of 2) *)
+      Cases_on ‘x IN FV M’ >| (* 2 subgoals *)
+      [ (* goal 1.1 (of 2) *)
+        Q.ABBREV_TAC ‘fm0 = fm \\ x’ \\
+        Q.ABBREV_TAC ‘N = fm ' x’ \\
+        Q.PAT_X_ASSUM ‘fm ' M @* Ns == I’ MP_TAC \\
+        Know ‘fm = fm0 |+ (x,N)’
+        >- (rw [Abbr ‘fm0’, DOMSUB_FUPDATE_THM, FUPDATE_ELIM]) >> Rewr' \\
+        Know ‘(fm0 |+ (x,N)) ' M = fm0 ' ([N/x] M)’
+        >- (MATCH_MP_TAC ssub_update_apply' \\
+            Q.PAT_X_ASSUM ‘!v. v IN FDOM fm ==> closed (fm ' v)’ MP_TAC \\
+            rw [Abbr ‘fm0’, Abbr ‘N’, DOMSUB_FAPPLY_THM, closed_def]) >> Rewr' \\
+        DISCH_TAC \\
+        Know ‘fm0 ' (LAM x M @@ N) @* Ns == I’
+        >- (MATCH_MP_TAC lameq_trans \\
+            Q.EXISTS_TAC ‘fm0 ' ([N/x] M) @* Ns’ \\
+            POP_ASSUM (REWRITE_TAC o wrap) \\
+            MATCH_MP_TAC lameq_appstar_cong \\
+            MATCH_MP_TAC lameq_ssub_cong \\
+            rw [Abbr ‘fm0’, lameq_rules, DOMSUB_FAPPLY_THM]) \\
+        POP_ASSUM K_TAC (* useless now *) \\
+        REWRITE_TAC [ssub_thm, appstar_CONS] \\
+        Know ‘fm0 ' N = N’
+        >- (MATCH_MP_TAC ssub_value >> Q.UNABBREV_TAC ‘N’ \\
+            fs [closed_def]) >> Rewr' \\
+        DISCH_TAC \\
+        qexistsl_tac [‘fm0 ' (LAM x M)’, ‘N::Ns’] >> rw [Abbr ‘N’] \\
+        Q.EXISTS_TAC ‘fm0’ >> rw [Abbr ‘fm0’, DOMSUB_FAPPLY_THM],
+        (* goal 1.2 (of 2) *)
+        cheat ],
+      (* goal 2 (of 2) *)
+      cheat ]
 QED
 
 val _ = export_theory ();
