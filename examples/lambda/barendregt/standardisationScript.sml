@@ -1177,13 +1177,6 @@ val foldl_snoc = prove(
   ``!l f x y. FOLDL f x (APPEND l [y]) = f (FOLDL f x l) y``,
   Induct THEN SRW_TAC [][]);
 
-val size_nonzero = prove(``!t:term. 0 < size t``,
-                         HO_MATCH_MP_TAC simple_induction THEN
-                         SRW_TAC [ARITH_ss][])
-
-val size_nz =
-    REWRITE_RULE [GSYM arithmeticTheory.NOT_ZERO_LT_ZERO] size_nonzero
-
 val combs_not_size_1 = prove(
   ``(size M = 1) ==> ~is_comb M``,
   Q.SPEC_THEN `M` STRUCT_CASES_TAC term_CASES THEN
@@ -1401,6 +1394,12 @@ val strange_cases = prove(
                 ASM_SIMP_TAC (srw_ss()) []
               ]
   ]);
+
+Theorem hnf_decompose :
+    !M : term. hnf M ==> ?vs args y. M = LAMl vs ((VAR y) @* args)
+Proof
+    cheat
+QED
 
 val head_reduction_standard = store_thm(
   "head_reduction_standard",

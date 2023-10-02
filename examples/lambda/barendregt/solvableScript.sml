@@ -9,7 +9,8 @@ open arithmeticTheory pred_setTheory listTheory sortingTheory finite_mapTheory
      hurdUtils;
 
 (* lambda theories *)
-open termTheory appFOLDLTheory chap2Theory standardisationTheory reductionEval;
+open termTheory appFOLDLTheory chap2Theory chap3Theory standardisationTheory
+     reductionEval;
 
 val _ = new_theory "solvable";
 
