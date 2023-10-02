@@ -1395,10 +1395,34 @@ val strange_cases = prove(
               ]
   ]);
 
+Theorem hnf_LAMl[simp] :
+    hnf (LAMl vs M) <=> hnf M
+Proof
+    Induct_on ‘vs’ >> rw []
+QED
+
+Theorem hnf_appstar :
+    hnf (M @* Ns) /\ Ns <> [] ==> hnf M /\ ~is_abs M
+Proof
+    Q.ID_SPEC_TAC ‘Ns’
+ >> HO_MATCH_MP_TAC SNOC_INDUCT
+ >> rw [SNOC_APPEND, SYM appstar_SNOC]
+ >> Cases_on ‘Ns = []’ >> fs []
+QED
+
 Theorem hnf_decompose :
     !M : term. hnf M ==> ?vs args y. M = LAMl vs ((VAR y) @* args)
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> MP_TAC (Q.SPEC ‘M’ strange_cases)
+ >> RW_TAC std_ss []
+ >- (FULL_SIMP_TAC std_ss [size_1] \\
+     qexistsl_tac [‘vs’ , ‘[]’, ‘y’] >> rw [])
+ >> FULL_SIMP_TAC std_ss [hnf_LAMl]
+ >> ‘hnf t /\ ~is_abs t’ by PROVE_TAC [hnf_appstar]
+ >> MP_TAC (Q.SPEC ‘t’ term_CASES)
+ >> STRIP_TAC >> fs []
+ >> qexistsl_tac [‘vs’, ‘args’, ‘s’] >> rw []
 QED
 
 val head_reduction_standard = store_thm(
