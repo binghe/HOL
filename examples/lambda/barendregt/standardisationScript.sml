@@ -2358,6 +2358,7 @@ val hnf_reflected_over_ireduction = store_thm(
   SRW_TAC [][hnf_no_head_redex, i_reduce1_def] THEN
   METIS_TAC [lemma11_4_3ii]);
 
+(* NOTE: this is also Theorem 8.3.11 [1, p. 174] *)
 val corollary11_4_8 = store_thm(
   "corollary11_4_8",
   ``!M. has_hnf M = finite (head_reduction_path M)``,
@@ -2504,22 +2505,22 @@ Proof
 QED
 
 Theorem hnf_appstar :
-    hnf (M @* Ns) /\ Ns <> [] ==> hnf M /\ ~is_abs M
+    !M Ns. hnf (M @* Ns) /\ Ns <> [] ==> hnf M /\ ~is_abs M
 Proof
-    Q.ID_SPEC_TAC ‘Ns’
+    Q.X_GEN_TAC ‘M’
  >> HO_MATCH_MP_TAC SNOC_INDUCT
  >> rw [SNOC_APPEND, SYM appstar_SNOC]
  >> Cases_on ‘Ns = []’ >> fs []
 QED
 
 Theorem hnf_cases :
-    !M : term. hnf M ==> ?vs args y. M = LAMl vs ((VAR y) @* args)
+    !M : term. hnf M ==> ?vs args y. M = LAMl vs (VAR y @* args)
 Proof
     rpt STRIP_TAC
  >> MP_TAC (Q.SPEC ‘M’ strange_cases)
  >> RW_TAC std_ss []
  >- (FULL_SIMP_TAC std_ss [size_1] \\
-     qexistsl_tac [‘vs’ , ‘[]’, ‘y’] >> rw [])
+     qexistsl_tac [‘vs’, ‘[]’, ‘y’] >> rw [])
  >> FULL_SIMP_TAC std_ss [hnf_LAMl]
  >> ‘hnf t /\ ~is_abs t’ by PROVE_TAC [hnf_appstar]
  >> ‘is_var t’ by METIS_TAC [term_cases]
@@ -2527,5 +2528,30 @@ Proof
  >> qexistsl_tac [‘vs’, ‘args’, ‘y’] >> art []
 QED
 
+(* Proposition 8.3.13 (i) *)
+Theorem has_hnf_LAM_lemma :
+    !M x. has_hnf M ==> has_hnf (LAM x M)
+Proof
+    RW_TAC std_ss [has_hnf_def]
+ >> Q.EXISTS_TAC ‘LAM x N’
+ >> CONJ_TAC >- PROVE_TAC [lameq_rules]
+ >> ‘?vs args y. N = LAMl vs (VAR y @* args)’ by METIS_TAC [hnf_cases]
+ >> rw [hnf_cases]
+QED
+
+Theorem has_hnf_LAM :
+    !M x. has_hnf M <=> has_hnf (LAM x M)
+Proof
+    rpt GEN_TAC
+ >> EQ_TAC >- rw [has_hnf_LAM_lemma]
+ >> cheat
+QED
+
 val _ = export_theory()
 val _ = html_theory "standardisation";
+
+(* References:
+
+   [1] Barendregt, H.P.: The Lambda Calculus, Its Syntax and Semantics.
+       College Publications, London (1984).
+ *)

@@ -721,6 +721,7 @@ QED
 val _ = remove_ovl_mapping "Y" {Thy = "chap2", Name = "Y"}
 
 val _ = export_theory()
+val _ = html_theory "chap2";
 
 (* References:
 

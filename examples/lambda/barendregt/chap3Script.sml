@@ -525,7 +525,7 @@ val diamond_property_def = save_thm("diamond_property_def", diamond_def)
 end
 val _ = overload_on("diamond_property", ``relation$diamond``)
 
-(* This is not the same CR as appears in   There
+(* This is not the same CR as appears in relationTheory. There
      CR R = diamond (RTC R)
    Here,
      CR R = diamond (RTC (compat_closure R))
@@ -1474,4 +1474,4 @@ val betastar_eq_cong = store_thm(
   METIS_TAC [bnf_triangle, RTC_CASES_RTC_TWICE]);
 
 val _ = export_theory();
-
+val _ = html_theory "chap3";
