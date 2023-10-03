@@ -1,12 +1,12 @@
-open HolKernel Parse boolLib bossLib metisLib basic_swapTheory
-     relationTheory
+open HolKernel Parse boolLib bossLib;
 
-val _ = new_theory "chap3";
+open metisLib basic_swapTheory relationTheory hurdUtils;
 
 local open pred_setLib in end;
 
-open binderLib BasicProvers
-open nomsetTheory termTheory chap2Theory
+open binderLib BasicProvers nomsetTheory termTheory chap2Theory;
+
+val _ = new_theory "chap3";
 
 fun Store_thm (trip as (n,t,tac)) = store_thm trip before export_rewrites [n]
 
@@ -893,6 +893,10 @@ val lameq_betaconversion = store_thm(
 
 val prop3_18 = save_thm("prop3_18", lameq_betaconversion);
 
+(* |- !M N. M == N ==> ?Z. M -b->* Z /\ N -b->* Z *)
+Theorem lameq_CR = REWRITE_RULE [GSYM lameq_betaconversion, beta_CR]
+                                (Q.SPEC ‘beta’ theorem3_13)
+
 val ccbeta_lameq = store_thm(
   "ccbeta_lameq",
   ``!M N. M -b-> N ==> M == N``,
@@ -907,6 +911,19 @@ val betastar_lameq_bnf = store_thm(
   ``bnf N ==> (M -b->* N <=> M == N)``,
   METIS_TAC [theorem3_13, beta_CR, betastar_lameq, bnf_reduction_to_self,
              lameq_betaconversion]);
+
+(* |- !M N. M =b=> N ==> M -b->* N *)
+Theorem grandbeta_imp_betastar =
+    (REWRITE_RULE [theorem3_17] (Q.ISPEC ‘grandbeta’ TC_SUBSET))
+ |> (Q.SPECL [‘M’, ‘N’]) |> (Q.GENL [‘M’, ‘N’])
+
+Theorem grandbeta_imp_lameq :
+    !M N. M =b=> N ==> M == N
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC betastar_lameq
+ >> MATCH_MP_TAC grandbeta_imp_betastar >> art []
+QED
 
 val lameq_consistent = store_thm(
   "lameq_consistent",

@@ -537,6 +537,15 @@ val is_abs_vsubst_invariant = Store_thm(
   HO_MATCH_MP_TAC nc_INDUCTION2 THEN Q.EXISTS_TAC `{u;v}` THEN
   SRW_TAC [][SUB_THM, SUB_VAR]);
 
+Theorem is_abs_cases :
+    !t. is_abs t <=> ?v t0. t = LAM v t0
+Proof
+    Q.X_GEN_TAC ‘t’
+ >> Q.SPEC_THEN ‘t’ STRUCT_CASES_TAC term_CASES
+ >> SRW_TAC [][]
+ >> qexistsl_tac [‘v’, ‘t0’] >> REWRITE_TAC []
+QED
+
 val (is_comb_thm, _) = define_recursive_term_function
   `(is_comb (VAR s) = F) /\
    (is_comb (t1 @@ t2) = T) /\
@@ -562,9 +571,10 @@ val is_var_vsubst_invariant = Store_thm(
   SRW_TAC [][SUB_THM, SUB_VAR]);
 
 Theorem is_var_cases :
-    is_var t <=> ?y. t = VAR y
+    !t. is_var t <=> ?y. t = VAR y
 Proof
-    Q.SPEC_THEN ‘t’ STRUCT_CASES_TAC term_CASES
+    Q.X_GEN_TAC ‘t’
+ >> Q.SPEC_THEN ‘t’ STRUCT_CASES_TAC term_CASES
  >> SRW_TAC [][]
 QED
 
