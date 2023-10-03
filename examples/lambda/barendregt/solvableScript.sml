@@ -487,8 +487,8 @@ QED
 Theorem ssub_LAM[local] = List.nth(CONJUNCTS ssub_thm, 2)
 
 (* Lemma 8.3.3 (ii) *)
-Theorem solvable_iff_solvable_LAM[simp] :
-    !M x. solvable (LAM x M) <=> solvable M
+Theorem solvable_iff_LAM[simp] :
+    !x M. solvable (LAM x M) <=> solvable M
 Proof
     rpt STRIP_TAC
  >> reverse EQ_TAC

@@ -2524,8 +2524,8 @@ Proof
 QED
 
 (* Proposition 8.3.13 (i) *)
-Theorem has_hnf_LAM[simp] :
-    !M x. has_hnf (LAM x M) <=> has_hnf M
+Theorem has_hnf_iff_LAM[simp] :
+    !x M. has_hnf (LAM x M) <=> has_hnf M
 Proof
     RW_TAC std_ss [has_hnf_def]
  >> reverse EQ_TAC (* easy goal first *)
