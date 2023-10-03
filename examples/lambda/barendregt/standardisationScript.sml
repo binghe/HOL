@@ -2525,10 +2525,11 @@ QED
 
 (* Proposition 8.3.13 (i) *)
 Theorem has_hnf_LAM[simp] :
-    !M x. has_hnf M <=> has_hnf (LAM x M)
+    !M x. has_hnf (LAM x M) <=> has_hnf M
 Proof
     RW_TAC std_ss [has_hnf_def]
- >> EQ_TAC >> rpt STRIP_TAC
+ >> reverse EQ_TAC (* easy goal first *)
+ >> rpt STRIP_TAC
  >- (Q.EXISTS_TAC ‘LAM x N’ \\
      CONJ_TAC >- PROVE_TAC [lameq_rules] \\
     ‘?vs args y. N = LAMl vs (VAR y @* args)’ by METIS_TAC [hnf_cases] \\
