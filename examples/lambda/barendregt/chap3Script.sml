@@ -925,6 +925,26 @@ Proof
  >> MATCH_MP_TAC grandbeta_imp_betastar >> art []
 QED
 
+(* cf. abs_grandbeta, added by Chun Tian *)
+Theorem abs_betastar :
+    !x M Z. LAM x M -b->* Z ==> ?N'. (Z = LAM x N') /\ M == N'
+Proof
+    rpt GEN_TAC
+ >> REWRITE_TAC [SYM theorem3_17]
+ >> Q.ID_SPEC_TAC ‘Z’
+ >> HO_MATCH_MP_TAC (Q.ISPEC ‘grandbeta’ TC_INDUCT_ALT_RIGHT)
+ >> rpt STRIP_TAC
+ >- (FULL_SIMP_TAC std_ss [abs_grandbeta] \\
+     Q.EXISTS_TAC ‘N0’ >> art [] \\
+     MATCH_MP_TAC grandbeta_imp_lameq >> art [])
+ >> Q.PAT_X_ASSUM ‘Z = LAM x N'’ (FULL_SIMP_TAC std_ss o wrap)
+ >> FULL_SIMP_TAC std_ss [abs_grandbeta]
+ >> Q.EXISTS_TAC ‘N0’ >> art []
+ >> MATCH_MP_TAC lameq_TRANS
+ >> Q.EXISTS_TAC ‘N'’ >> art []
+ >> MATCH_MP_TAC grandbeta_imp_lameq >> art []
+QED
+
 val lameq_consistent = store_thm(
   "lameq_consistent",
   ``consistent $==``,

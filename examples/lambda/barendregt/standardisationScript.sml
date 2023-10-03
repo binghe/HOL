@@ -2432,8 +2432,6 @@ Proof
  >> ASM_SIMP_TAC (betafy (srw_ss())) []
 QED
 
-Theorem lameq_trans[local] = List.nth(CONJUNCTS lameq_rules, 3)
-
 Theorem LAMl_appstar :
     !vs M Ns. ALL_DISTINCT vs /\ (LENGTH vs = LENGTH Ns) /\ EVERY closed Ns ==>
               LAMl vs M @* Ns == (FEMPTY |++ ZIP (vs,Ns)) ' M
@@ -2490,7 +2488,7 @@ Proof
      MATCH_MP_TAC LAMl_SUB \\
      Q.PAT_X_ASSUM ‘closed N’ MP_TAC >> rw [closed_def])
  >> DISCH_TAC
- >> MATCH_MP_TAC lameq_trans
+ >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘LAMl vs ([N/v] M) @* Ns’ >> art []
  >> MATCH_MP_TAC lameq_appstar_cong >> art []
 QED
@@ -2525,42 +2523,23 @@ Proof
  >> qexistsl_tac [‘vs’, ‘args’, ‘y’] >> art []
 QED
 
-Theorem has_hnf_LAM_lemma1 :
-    !M x. has_hnf M ==> has_hnf (LAM x M)
-Proof
-    RW_TAC std_ss [has_hnf_def]
- >> Q.EXISTS_TAC ‘LAM x N’
- >> CONJ_TAC >- PROVE_TAC [lameq_rules]
- >> ‘?vs args y. N = LAMl vs (VAR y @* args)’ by METIS_TAC [hnf_cases]
- >> rw [hnf_cases]
-QED
-
-(* cf. hnf_thm *)
-Theorem has_hnf_LAM_lemma2 :
-    !M x. has_hnf (LAM x M) ==> has_hnf M
-Proof
-    RW_TAC std_ss [has_hnf_def]
- >> ‘?Z. LAM x M -b->* Z /\ N -b->* Z’ by METIS_TAC [lameq_CR]
- >> Q.PAT_X_ASSUM ‘LAM x M -b->* Z’
-      (STRIP_ASSUME_TAC o (ONCE_REWRITE_RULE [RTC_CASES1]))
- >- (POP_ASSUM (fs o wrap o SYM) \\
-    ‘hnf (LAM x M)’ by PROVE_TAC [hnf_preserved] \\
-    ‘hnf M’ by PROVE_TAC [hnf_thm] \\
-     Q.EXISTS_TAC ‘M’ >> rw [])
- >> ‘LAM x M =b=> u’ by PROVE_TAC [exercise3_3_1]
- >> POP_ASSUM (STRIP_ASSUME_TAC o (REWRITE_RULE [abs_grandbeta]))
- >> Q.PAT_X_ASSUM ‘u = LAM x N0’ (fs o wrap)
- >> ‘hnf Z’ by PROVE_TAC [hnf_preserved]
- >> cheat
-QED
-
 (* Proposition 8.3.13 (i) *)
-Theorem has_hnf_LAM :
+Theorem has_hnf_LAM[simp] :
     !M x. has_hnf M <=> has_hnf (LAM x M)
 Proof
-    rpt GEN_TAC
- >> EQ_TAC
- >> REWRITE_TAC [has_hnf_LAM_lemma1, has_hnf_LAM_lemma2]
+    RW_TAC std_ss [has_hnf_def]
+ >> EQ_TAC >> rpt STRIP_TAC
+ >- (Q.EXISTS_TAC ‘LAM x N’ \\
+     CONJ_TAC >- PROVE_TAC [lameq_rules] \\
+    ‘?vs args y. N = LAMl vs (VAR y @* args)’ by METIS_TAC [hnf_cases] \\
+     rw [hnf_cases])
+ (* stage work *)
+ >> ‘?Z. LAM x M -b->* Z /\ N -b->* Z’ by METIS_TAC [lameq_CR]
+ >> Suff ‘?N'. (Z = LAM x N') /\ M == N'’
+ >- (STRIP_TAC \\
+    ‘hnf Z’ by PROVE_TAC [hnf_preserved] \\
+     Q.EXISTS_TAC ‘N'’ >> gs [hnf_thm])
+ >> MATCH_MP_TAC abs_betastar >> art []
 QED
 
 val _ = export_theory()

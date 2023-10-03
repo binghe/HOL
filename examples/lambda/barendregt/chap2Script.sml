@@ -106,6 +106,7 @@ val lameq_weaken_cong = store_thm(
   METIS_TAC [lameq_rules]);
 
 Theorem lameq_SYM = List.nth(CONJUNCTS lameq_rules, 2)
+Theorem lameq_TRANS = List.nth(CONJUNCTS lameq_rules, 3)
 
 val fixed_point_thm = store_thm(  (* p. 14 *)
   "fixed_point_thm",
