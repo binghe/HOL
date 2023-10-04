@@ -2355,7 +2355,7 @@ val hnf_reflected_over_ireduction = store_thm(
   SRW_TAC [][hnf_no_head_redex, i_reduce1_def] THEN
   METIS_TAC [lemma11_4_3ii]);
 
-(* NOTE: this is also Theorem 8.3.11 [1, p. 174] *)
+(* NOTE: This is also Theorem 8.3.11 [1, p.174] *)
 val corollary11_4_8 = store_thm(
   "corollary11_4_8",
   ``!M. has_hnf M = finite (head_reduction_path M)``,
