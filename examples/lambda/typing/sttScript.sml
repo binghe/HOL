@@ -383,7 +383,7 @@ Proof
   [‘VAR _ ·· _ = M1 @@ M2’]
   >- (simp[] >> eq_tac >> rpt strip_tac >~
       [‘M1 = LAMl vs1 _’, ‘M1 @@ M2’]
-      >- (‘vs1 = []’ by (Cases_on ‘vs1’ >> gvs[]) >> gvs[appstar_SNOC] >>
+      >- (‘vs1 = []’ by (Cases_on ‘vs1’ >> gvs[]) >> gvs[appstar_SNOC'] >>
           metis_tac[]) >>
       Cases_on ‘Ms’ using rich_listTheory.SNOC_CASES >>
       gvs[rich_listTheory.SNOC_APPEND, appstar_APPEND] >>
