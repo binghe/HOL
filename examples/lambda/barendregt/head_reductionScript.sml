@@ -546,9 +546,20 @@ Proof
 QED
 
 Theorem hnf_cases :
-    !M : term. hnf M ==> ?vs args y. M = LAMl vs (VAR y @* args)
+    !M : term. hnf M <=> ?vs args y. M = LAMl vs (VAR y @* args)
 Proof
-    rpt STRIP_TAC
+    Q.X_GEN_TAC ‘M’
+ >> reverse EQ_TAC >> rpt STRIP_TAC
+ >- (rw [hnf_no_head_redex] \\
+     Q.ID_SPEC_TAC ‘p’ \\
+     Q.SPEC_TAC (‘args’, ‘Ns’) \\
+     HO_MATCH_MP_TAC SNOC_INDUCT >> rw [SNOC_APPEND, SYM appstar_SNOC]
+     >- rw [is_head_redex_thm] \\
+     Q.ABBREV_TAC ‘M = VAR y @* Ns’ \\
+     Know ‘~is_abs M’
+     >- (Q.UNABBREV_TAC ‘M’ >> MATCH_MP_TAC not_is_abs_appstar >> rw []) \\
+     rw [is_head_redex_thm])
+ (* stage work *)
  >> MP_TAC (Q.SPEC ‘M’ strange_cases)
  >> RW_TAC std_ss []
  >- (FULL_SIMP_TAC std_ss [size_1] \\

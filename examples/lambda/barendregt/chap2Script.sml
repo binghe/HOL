@@ -546,6 +546,14 @@ Proof
  >> qexistsl_tac [‘v’, ‘t0’] >> REWRITE_TAC []
 QED
 
+Theorem not_is_abs_appstar :
+    !M Ns. ~is_abs M ==> ~is_abs (M @* Ns)
+Proof
+    NTAC 3 STRIP_TAC
+ >> Q.ID_SPEC_TAC ‘Ns’
+ >> HO_MATCH_MP_TAC SNOC_INDUCT >> rw [SNOC_APPEND, SYM appstar_SNOC]
+QED
+
 val (is_comb_thm, _) = define_recursive_term_function
   `(is_comb (VAR s) = F) /\
    (is_comb (t1 @@ t2) = T) /\
