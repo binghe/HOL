@@ -2171,7 +2171,6 @@ Proof
  >> rpt STRIP_TAC
  >- (Q.EXISTS_TAC ‘LAM x N’ \\
      CONJ_TAC >- PROVE_TAC [lameq_rules] \\
-    ‘?vs args y. N = LAMl vs (VAR y @* args)’ by METIS_TAC [hnf_cases] \\
      rw [hnf_cases])
  (* stage work *)
  >> ‘?Z. LAM x M -b->* Z /\ N -b->* Z’ by METIS_TAC [lameq_CR]
