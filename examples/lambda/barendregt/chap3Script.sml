@@ -4,7 +4,7 @@ open metisLib basic_swapTheory relationTheory hurdUtils;
 
 local open pred_setLib in end;
 
-open binderLib BasicProvers nomsetTheory termTheory chap2Theory;
+open binderLib BasicProvers nomsetTheory termTheory chap2Theory appFOLDLTheory;
 
 val _ = new_theory "chap3";
 
@@ -1512,6 +1512,42 @@ val betastar_eq_cong = store_thm(
   "betastar_eq_cong",
   ``bnf N ==> M -b->* M' ==> (M -b->* N  <=> M' -b->* N)``,
   METIS_TAC [bnf_triangle, RTC_CASES_RTC_TWICE]);
+
+val _ = set_fixity "#" (Infix(NONASSOC, 450))
+Overload "#" = “λv M:term. v ∉ FV M”
+
+Theorem bnf_characterisation:
+  ∀M.
+    bnf M ⇔
+      ∃vs v Ms. ALL_DISTINCT vs ∧ M = LAMl vs (VAR v ·· Ms) ∧
+                (∀M. MEM M Ms ⇒ bnf M)
+Proof
+  ho_match_mp_tac nc_INDUCTION2 >> qexists ‘∅’ >> rw[] >~
+  [‘VAR s = LAMl _ (VAR _ ·· _)’]
+  >- (qexistsl  [‘[]’, ‘s’, ‘[]’] >> simp[]) >~
+  [‘VAR _ ·· _ = M1 @@ M2’]
+  >- (simp[] >> eq_tac >> rpt strip_tac >~
+      [‘M1 = LAMl vs1 _’, ‘M1 @@ M2’]
+      >- (‘vs1 = []’ by (Cases_on ‘vs1’ >> gvs[]) >> gvs[appstar_SNOC'] >>
+          metis_tac[]) >>
+      Cases_on ‘Ms’ using rich_listTheory.SNOC_CASES >>
+      gvs[rich_listTheory.SNOC_APPEND, appstar_APPEND] >>
+      dsimp[appstar_EQ_LAMl] >> irule_at Any EQ_REFL >> simp[]) >>
+  pop_assum SUBST_ALL_TAC >> eq_tac >> rpt strip_tac >> gvs[] >~
+  [‘LAM y (LAMl vs _)’]
+  >- (reverse (Cases_on ‘MEM y vs’)
+      >- (qexists ‘y::vs’ >> simp[]) >>
+      ‘y # LAMl vs (VAR v ·· Ms)’ by simp[FV_LAMl] >>
+      Q_TAC (NEW_TAC "z") ‘y INSERT set vs ∪ FV (VAR v ·· Ms)’ >>
+      ‘z # LAMl vs (VAR v ·· Ms)’ by simp[FV_LAMl] >>
+      dxrule_then (qspec_then ‘y’ mp_tac) tpm_ALPHA >>
+      simp [tpm_fresh, FV_LAMl] >> strip_tac >> qexists ‘z::vs’ >> simp[]) >>
+  rename [‘LAM y M = LAMl vs (VAR v ·· Ms)’] >>
+  Cases_on ‘vs’ >> gvs[] >> gvs[LAM_eq_thm]
+  >- metis_tac[] >>
+  simp[tpm_LAMl, tpm_appstar] >> irule_at Any EQ_REFL >>
+  simp[MEM_listpm] >> rpt strip_tac >> first_assum drule >> simp[]
+QED
 
 val _ = export_theory();
 val _ = html_theory "chap3";

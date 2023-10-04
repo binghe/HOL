@@ -277,5 +277,31 @@ Proof
  >> Induct_on ‘vs’ >> rw []
 QED
 
+(* moved here from sttScript.sml *)
+Theorem APP_EQ_LAMl[simp]:
+  M @@ N = LAMl vs P ⇔ vs = [] ∧ P = M @@ N
+Proof
+  Cases_on ‘vs’ >> simp[] >> metis_tac[]
+QED
+
+(* moved here from sttScript.sml *)
+Theorem appstar_EQ_LAMl:
+  x ·· Ms = LAMl vs M ⇔ vs = [] ∧ M = x ·· Ms ∨ Ms = [] ∧ x = LAMl vs M
+Proof
+  Cases_on ‘vs’ >> simp[] >> Cases_on ‘Ms’ >> simp[] >> metis_tac[]
+QED
+
+Theorem tpm_LAMl:
+  tpm π (LAMl vs M) = LAMl (listpm string_pmact π vs) (tpm π M)
+Proof
+  Induct_on ‘vs’ >> simp[]
+QED
+
+Theorem tpm_appstar:
+  tpm π (M ·· Ms) = tpm π M ·· listpm term_pmact π Ms
+Proof
+  qid_spec_tac ‘M’ >> Induct_on ‘Ms’ >> simp[]
+QED
+
 val _ = export_theory ()
 val _ = html_theory "appFOLDL";
