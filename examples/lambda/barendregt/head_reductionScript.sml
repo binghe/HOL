@@ -484,55 +484,6 @@ Proof
   dsimp[SF CONJ_ss] >> metis_tac[]
 QED
 
-val foldl_snoc = prove(
-  ``!l f x y. FOLDL f x (APPEND l [y]) = f (FOLDL f x l) y``,
-  Induct THEN SRW_TAC [][]);
-
-val combs_not_size_1 = prove(
-  ``(size M = 1) ==> ~is_comb M``,
-  Q.SPEC_THEN `M` STRUCT_CASES_TAC term_CASES THEN
-  SRW_TAC [][size_thm, size_nz]);
-
-Theorem strange_cases :
-    !M : term. (?vs M'. (M = LAMl vs M') /\ (size M' = 1)) \/
-               (?vs args t.
-                         (M = LAMl vs (FOLDL APP t args)) /\
-                         ~(args = []) /\ ~is_comb t)
-Proof
-  HO_MATCH_MP_TAC simple_induction THEN REPEAT CONJ_TAC THENL [
-    (* VAR *) GEN_TAC THEN DISJ1_TAC THEN
-              MAP_EVERY Q.EXISTS_TAC [`[]`, `VAR s`] THEN SRW_TAC [][size_thm],
-    (* app *) MAP_EVERY Q.X_GEN_TAC [`M`,`N`] THEN
-              DISCH_THEN (CONJUNCTS_THEN ASSUME_TAC) THEN
-              DISJ2_TAC THEN Q.EXISTS_TAC `[]` THEN
-              SIMP_TAC (srw_ss()) [] THEN
-              `(?vs M'. (M = LAMl vs M') /\ (size M' = 1)) \/
-               (?vs args t.
-                        (M = LAMl vs (FOLDL APP t args)) /\ ~(args = []) /\
-                        ~is_comb t)` by PROVE_TAC []
-              THENL [
-                MAP_EVERY Q.EXISTS_TAC [`[N]`, `M`] THEN
-                ASM_SIMP_TAC (srw_ss()) [] THEN
-                PROVE_TAC [combs_not_size_1],
-                ASM_SIMP_TAC (srw_ss()) [] THEN
-                Cases_on `vs` THENL [
-                  MAP_EVERY Q.EXISTS_TAC [`APPEND args [N]`, `t`] THEN
-                  ASM_SIMP_TAC (srw_ss()) [foldl_snoc],
-                  MAP_EVERY Q.EXISTS_TAC [`[N]`, `M`] THEN
-                  ASM_SIMP_TAC (srw_ss()) []
-                ]
-              ],
-    (* LAM *) MAP_EVERY Q.X_GEN_TAC [`x`,`M`] THEN STRIP_TAC THENL [
-                DISJ1_TAC THEN
-                MAP_EVERY Q.EXISTS_TAC [`x::vs`, `M'`] THEN
-                ASM_SIMP_TAC (srw_ss()) [],
-                DISJ2_TAC THEN
-                MAP_EVERY Q.EXISTS_TAC [`x::vs`, `args`, `t`] THEN
-                ASM_SIMP_TAC (srw_ss()) []
-              ]
-  ]
-QED
-
 Theorem hnf_cases :
   !M : term. hnf M <=> ?vs args y. M = LAMl vs (VAR y @* args)
 Proof
