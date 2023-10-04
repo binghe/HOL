@@ -557,6 +557,12 @@ Proof
   simp[appstar_SNOC]
 QED
 
+Theorem is_abs_LAMl[simp]:
+  is_abs (LAMl vs M) ⇔ vs ≠ [] ∨ is_abs M
+Proof
+  Cases_on ‘vs’ >> simp[]
+QED
+
 val (is_comb_thm, _) = define_recursive_term_function
   `(is_comb (VAR s) = F) /\
    (is_comb (t1 @@ t2) = T) /\

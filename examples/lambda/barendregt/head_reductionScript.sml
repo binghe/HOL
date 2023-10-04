@@ -484,6 +484,7 @@ Proof
   dsimp[SF CONJ_ss] >> metis_tac[]
 QED
 
+(* FIXME: can we put ‘ALL_DISTINCT vs’ into RHS? cf. bnf_characterisation *)
 Theorem hnf_cases :
   !M : term. hnf M <=> ?vs args y. M = LAMl vs (VAR y @* args)
 Proof

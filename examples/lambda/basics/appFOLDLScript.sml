@@ -12,14 +12,11 @@ val _ = set_fixity "@*" (Infixl 901)
 val _ = Unicode.unicode_version { u = "··", tmnm = "@*"}
 val _ = overload_on ("@*", ``λf (args:term list). FOLDL APP f args``)
 
-val var_eq_appstar = store_thm(
-  "var_eq_appstar",
-  ``(VAR s = f ·· args) ⇔ (args = []) ∧ (f = VAR s)``,
-  Induct_on `args` THEN SRW_TAC [][] THENL [
-    METIS_TAC [],
-    MAP_EVERY Q.ID_SPEC_TAC [`f`,`h`] THEN POP_ASSUM (K ALL_TAC) THEN
-    Induct_on `args` THEN SRW_TAC [][]
-  ]);
+Theorem var_eq_appstar[simp]:
+  VAR s = f ·· args ⇔ args = [] ∧ f = VAR s
+Proof
+  Cases_on `args` using SNOC_CASES >> simp[FOLDL_SNOC] >> metis_tac[]
+QED
 
 val app_eq_appstar = store_thm(
   "app_eq_appstar",
@@ -187,27 +184,46 @@ QED
  *  LAMl (was in standardisationTheory)
  *---------------------------------------------------------------------------*)
 
-Definition LAMl_def :
+Definition LAMl_def:
   LAMl vs (t : term) = FOLDR LAM t vs
 End
 
-Theorem LAMl_thm[simp] :
-    (LAMl [] M = M) /\
-    (LAMl (h::t) M = LAM h (LAMl t M))
-Proof
-  SRW_TAC [][LAMl_def]
+Theorem LAMl_thm[simp]:
+  (LAMl [] M = M) /\
+  (LAMl (h::t) M = LAM h (LAMl t M))
+Proof SRW_TAC [][LAMl_def]
 QED
 
-Theorem LAMl_11[simp] :
-    !vs. (LAMl vs x = LAMl vs y) = (x = y)
+Theorem LAMl_11[simp]:
+  !vs. (LAMl vs x = LAMl vs y) = (x = y)
 Proof
   Induct THEN SRW_TAC [][]
 QED
 
-Theorem size_LAMl[simp] :
-    !vs. size (LAMl vs M) = LENGTH vs + size M
+Theorem size_LAMl[simp]:
+  !vs. size (LAMl vs M) = LENGTH vs + size M
 Proof
   Induct THEN SRW_TAC [numSimps.ARITH_ss][size_thm]
+QED
+
+Theorem LAMl_eq_VAR[simp]:
+  (LAMl vs M = VAR v) ⇔ (vs = []) ∧ (M = VAR v)
+Proof
+  Cases_on ‘vs’ >> simp[]
+QED
+
+Theorem LAMl_eq_APP[simp]:
+  (LAMl vs M = N @@ P) ⇔ (vs = []) ∧ (M = N @@ P)
+Proof
+  Cases_on ‘vs’ >> simp[]
+QED
+
+Theorem LAMl_eq_appstar:
+  (LAMl vs M = N ·· Ns) ⇔
+    (vs = []) ∧ (M = N ·· Ns) ∨ (Ns = []) ∧ (N = LAMl vs M)
+Proof
+  Cases_on ‘vs’ >> simp[] >> Cases_on ‘Ns’ >> simp[] >>
+  metis_tac[]
 QED
 
 val LAMl_vsub = store_thm(

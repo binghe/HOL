@@ -1523,12 +1523,12 @@ Theorem bnf_characterisation:
                 (∀M. MEM M Ms ⇒ bnf M)
 Proof
   ho_match_mp_tac nc_INDUCTION2 >> qexists ‘∅’ >> rw[] >~
-  [‘VAR s = LAMl _ (VAR _ ·· _)’]
-  >- (qexistsl  [‘[]’, ‘s’, ‘[]’] >> simp[]) >~
   [‘VAR _ ·· _ = M1 @@ M2’]
   >- (simp[] >> eq_tac >> rpt strip_tac >~
       [‘M1 = LAMl vs1 _’, ‘M1 @@ M2’]
-      >- (‘vs1 = []’ by (Cases_on ‘vs1’ >> gvs[]) >> gvs[appstar_SNOC'] >>
+      >- (gvs[app_eq_appstar] >>
+          Q.REFINE_EXISTS_TAC ‘SNOC M Mt’ >>
+          simp[DISJ_IMP_THM, rich_listTheory.FRONT_APPEND] >>
           metis_tac[]) >>
       Cases_on ‘Ms’ using rich_listTheory.SNOC_CASES >>
       gvs[rich_listTheory.SNOC_APPEND, appstar_APPEND] >>
@@ -1541,7 +1541,7 @@ Proof
       Q_TAC (NEW_TAC "z") ‘y INSERT set vs ∪ FV (VAR v ·· Ms)’ >>
       ‘z # LAMl vs (VAR v ·· Ms)’ by simp[FV_LAMl] >>
       dxrule_then (qspec_then ‘y’ mp_tac) tpm_ALPHA >>
-      simp [tpm_fresh, FV_LAMl] >> strip_tac >> qexists ‘z::vs’ >> simp[]) >>
+      simp[tpm_fresh, FV_LAMl] >> strip_tac >> qexists ‘z::vs’ >> simp[]) >>
   rename [‘LAM y M = LAMl vs (VAR v ·· Ms)’] >>
   Cases_on ‘vs’ >> gvs[] >> gvs[LAM_eq_thm]
   >- metis_tac[] >>
