@@ -1,6 +1,6 @@
 open HolKernel Parse boolLib bossLib
 
-open pred_setTheory boolSimps listTheory hurdUtils;
+open pred_setTheory boolSimps listTheory finite_mapTheory hurdUtils;
 
 open termTheory appFOLDLTheory chap2Theory chap3Theory nomsetTheory binderLib
      term_posnsTheory;
@@ -128,6 +128,10 @@ val hnf_ccbeta_preserved = store_thm(
     FULL_SIMP_TAC (srw_ss()) [cc_beta_thm] THEN
     SRW_TAC [][] THEN FULL_SIMP_TAC (srw_ss()) []
   ]);
+
+(* ----------------------------------------------------------------------
+    Weak head reductions (weak_head)
+   ---------------------------------------------------------------------- *)
 
 val (weak_head_rules, weak_head_ind, weak_head_cases) = Hol_reln`
   (∀v M N. weak_head (LAM v M @@ N) ([N/v]M)) ∧
@@ -490,6 +494,70 @@ Proof
  >> Q.SPEC_TAC (‘Ns'’, ‘Ns’)
  >> HO_MATCH_MP_TAC SNOC_INDUCT
  >> rw [SNOC_APPEND, SYM appstar_SNOC]
+QED
+
+val foldl_snoc = prove(
+  ``!l f x y. FOLDL f x (APPEND l [y]) = f (FOLDL f x l) y``,
+  Induct THEN SRW_TAC [][]);
+
+val combs_not_size_1 = prove(
+  ``(size M = 1) ==> ~is_comb M``,
+  Q.SPEC_THEN `M` STRUCT_CASES_TAC term_CASES THEN
+  SRW_TAC [][size_thm, size_nz]);
+
+Theorem strange_cases :
+    !M : term. (?vs M'. (M = LAMl vs M') /\ (size M' = 1)) \/
+               (?vs args t.
+                         (M = LAMl vs (FOLDL APP t args)) /\
+                         ~(args = []) /\ ~is_comb t)
+Proof
+  HO_MATCH_MP_TAC simple_induction THEN REPEAT CONJ_TAC THENL [
+    (* VAR *) GEN_TAC THEN DISJ1_TAC THEN
+              MAP_EVERY Q.EXISTS_TAC [`[]`, `VAR s`] THEN SRW_TAC [][size_thm],
+    (* app *) MAP_EVERY Q.X_GEN_TAC [`M`,`N`] THEN
+              DISCH_THEN (CONJUNCTS_THEN ASSUME_TAC) THEN
+              DISJ2_TAC THEN Q.EXISTS_TAC `[]` THEN
+              SIMP_TAC (srw_ss()) [] THEN
+              `(?vs M'. (M = LAMl vs M') /\ (size M' = 1)) \/
+               (?vs args t.
+                        (M = LAMl vs (FOLDL APP t args)) /\ ~(args = []) /\
+                        ~is_comb t)` by PROVE_TAC []
+              THENL [
+                MAP_EVERY Q.EXISTS_TAC [`[N]`, `M`] THEN
+                ASM_SIMP_TAC (srw_ss()) [] THEN
+                PROVE_TAC [combs_not_size_1],
+                ASM_SIMP_TAC (srw_ss()) [] THEN
+                Cases_on `vs` THENL [
+                  MAP_EVERY Q.EXISTS_TAC [`APPEND args [N]`, `t`] THEN
+                  ASM_SIMP_TAC (srw_ss()) [foldl_snoc],
+                  MAP_EVERY Q.EXISTS_TAC [`[N]`, `M`] THEN
+                  ASM_SIMP_TAC (srw_ss()) []
+                ]
+              ],
+    (* LAM *) MAP_EVERY Q.X_GEN_TAC [`x`,`M`] THEN STRIP_TAC THENL [
+                DISJ1_TAC THEN
+                MAP_EVERY Q.EXISTS_TAC [`x::vs`, `M'`] THEN
+                ASM_SIMP_TAC (srw_ss()) [],
+                DISJ2_TAC THEN
+                MAP_EVERY Q.EXISTS_TAC [`x::vs`, `args`, `t`] THEN
+                ASM_SIMP_TAC (srw_ss()) []
+              ]
+  ]
+QED
+
+Theorem hnf_cases :
+    !M : term. hnf M ==> ?vs args y. M = LAMl vs (VAR y @* args)
+Proof
+    rpt STRIP_TAC
+ >> MP_TAC (Q.SPEC ‘M’ strange_cases)
+ >> RW_TAC std_ss []
+ >- (FULL_SIMP_TAC std_ss [size_1] \\
+     qexistsl_tac [‘vs’, ‘[]’, ‘y’] >> rw [])
+ >> FULL_SIMP_TAC std_ss [hnf_LAMl]
+ >> ‘hnf t /\ ~is_abs t’ by PROVE_TAC [hnf_appstar]
+ >> ‘is_var t’ by METIS_TAC [term_cases]
+ >> FULL_SIMP_TAC std_ss [is_var_cases]
+ >> qexistsl_tac [‘vs’, ‘args’, ‘y’] >> art []
 QED
 
 val _ = export_theory()

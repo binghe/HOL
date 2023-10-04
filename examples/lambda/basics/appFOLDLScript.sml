@@ -264,5 +264,13 @@ val LAMl_ALPHA = store_thm(
     SRW_TAC [][LAMl_vsub, SUB_ISUB_SINGLETON, ISUB_APPEND]
   ]);
 
+Theorem LAMl_SUB :
+    !M N v vs. ALL_DISTINCT vs /\ ~MEM v vs /\ (FV N = {}) ==>
+              ([N/v] (LAMl vs M) = LAMl vs ([N/v] M))
+Proof
+    rpt STRIP_TAC
+ >> Induct_on ‘vs’ >> rw []
+QED
+
 val _ = export_theory ()
 val _ = html_theory "appFOLDL";
