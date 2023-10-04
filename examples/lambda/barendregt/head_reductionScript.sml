@@ -462,7 +462,7 @@ val is_head_redex_vsubst_invariant = store_thm(
   SRW_TAC [][is_head_redex_thm, SUB_THM, SUB_VAR]);
 
 (* ----------------------------------------------------------------------
-    HNF and Combinators, etc.
+    More results about head normal forms (hnf)
    ---------------------------------------------------------------------- *)
 
 Theorem hnf_I :
@@ -478,22 +478,10 @@ Proof
 QED
 
 Theorem hnf_appstar :
-    !M Ns. Ns <> [] ==> (hnf (M @* Ns) <=> hnf M /\ ~is_abs M)
+    !M Ns. hnf (M @* Ns) <=> hnf M /\ (is_abs M ⇒ (Ns = []))
 Proof
-    rpt STRIP_TAC
- >> EQ_TAC
- >- (POP_ASSUM MP_TAC \\
-     Q.ID_SPEC_TAC ‘Ns’ >> HO_MATCH_MP_TAC SNOC_INDUCT \\
-     rw [SNOC_APPEND, SYM appstar_SNOC] \\
-     Cases_on ‘Ns = []’ >> fs [])
- >> STRIP_TAC
- >> Q.ID_SPEC_TAC ‘Ns’
- >> HO_MATCH_MP_TAC SNOC_INDUCT
- >> rw [SNOC_APPEND, SYM appstar_SNOC]
- >> Q.PAT_X_ASSUM ‘~is_abs M’ MP_TAC >> KILL_TAC >> DISCH_TAC
- >> Q.SPEC_TAC (‘Ns'’, ‘Ns’)
- >> HO_MATCH_MP_TAC SNOC_INDUCT
- >> rw [SNOC_APPEND, SYM appstar_SNOC]
+  Induct_on ‘Ns’ using SNOC_INDUCT >> simp[appstar_SNOC] >>
+  dsimp[SF CONJ_ss] >> metis_tac[]
 QED
 
 val foldl_snoc = prove(
@@ -546,29 +534,19 @@ Proof
 QED
 
 Theorem hnf_cases :
-    !M : term. hnf M <=> ?vs args y. M = LAMl vs (VAR y @* args)
+  !M : term. hnf M <=> ?vs args y. M = LAMl vs (VAR y @* args)
 Proof
-    Q.X_GEN_TAC ‘M’
- >> reverse EQ_TAC >> rpt STRIP_TAC
- >- (rw [hnf_no_head_redex] \\
-     Q.ID_SPEC_TAC ‘p’ \\
-     Q.SPEC_TAC (‘args’, ‘Ns’) \\
-     HO_MATCH_MP_TAC SNOC_INDUCT >> rw [SNOC_APPEND, SYM appstar_SNOC]
-     >- rw [is_head_redex_thm] \\
-     Q.ABBREV_TAC ‘M = VAR y @* Ns’ \\
-     Know ‘~is_abs M’
-     >- (Q.UNABBREV_TAC ‘M’ >> MATCH_MP_TAC not_is_abs_appstar >> rw []) \\
-     rw [is_head_redex_thm])
- (* stage work *)
- >> MP_TAC (Q.SPEC ‘M’ strange_cases)
- >> RW_TAC std_ss []
- >- (FULL_SIMP_TAC std_ss [size_1] \\
-     qexistsl_tac [‘vs’, ‘[]’, ‘y’] >> rw [])
- >> FULL_SIMP_TAC std_ss [hnf_LAMl]
- >> ‘hnf t /\ ~is_abs t’ by PROVE_TAC [hnf_appstar]
- >> ‘is_var t’ by METIS_TAC [term_cases]
- >> FULL_SIMP_TAC std_ss [is_var_cases]
- >> qexistsl_tac [‘vs’, ‘args’, ‘y’] >> art []
+  simp[FORALL_AND_THM, EQ_IMP_THM] >> conj_tac
+  >- (gen_tac >> MP_TAC (Q.SPEC ‘M’ strange_cases)
+      >> RW_TAC std_ss []
+      >- (FULL_SIMP_TAC std_ss [size_1] \\
+          qexistsl_tac [‘vs’, ‘[]’, ‘y’] >> rw [])
+      >> FULL_SIMP_TAC std_ss [hnf_LAMl]
+      >> ‘hnf t /\ ~is_abs t’ by PROVE_TAC [hnf_appstar]
+      >> ‘is_var t’ by METIS_TAC [term_cases]
+      >> FULL_SIMP_TAC std_ss [is_var_cases]
+      >> qexistsl_tac [‘vs’, ‘args’, ‘y’] >> art []) >>
+  simp[PULL_EXISTS, hnf_appstar]
 QED
 
 val _ = export_theory()

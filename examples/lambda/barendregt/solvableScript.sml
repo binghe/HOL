@@ -637,7 +637,7 @@ Proof
      >- (rw [has_hnf_def] \\
          Q.EXISTS_TAC ‘I’ >> rw [hnf_I]) \\
      Q.ID_SPEC_TAC ‘Ns’ >> KILL_TAC \\
-     HO_MATCH_MP_TAC SNOC_INDUCT >> rw [SNOC_APPEND, SYM appstar_SNOC] \\
+     HO_MATCH_MP_TAC SNOC_INDUCT >> rw [SNOC_APPEND, appstar_SNOC] \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
      FULL_SIMP_TAC std_ss [solvable_iff_APP])
  (* stage work *)

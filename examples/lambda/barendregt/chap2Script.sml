@@ -87,7 +87,9 @@ Inductive lameq :
      (!M N. M == N ==> N == M) /\
 [~TRANS:]
      (!M N L. M == N /\ N == L ==> M == L) /\
+[~APPL:]
      (!M N Z. M == N ==> M @@ Z == N @@ Z) /\
+[~APPR:]
      (!M N Z. M == N ==> Z @@ M == Z @@ N) /\
      (!M N x. M == N ==> LAM x M == LAM x N)
 End
@@ -343,8 +345,8 @@ val lameq_I = store_thm(
 Theorem I_appstar' :
     !Is. (!e. MEM e Is ==> e = I) ==> I @* Is == I
 Proof
-    HO_MATCH_MP_TAC SNOC_INDUCT >> rw []
- >> ASM_SIMP_TAC (betafy (srw_ss())) [SNOC_APPEND, SYM appstar_SNOC, lameq_I]
+  Induct_on ‘Is’ using SNOC_INDUCT >> rw [appstar_SNOC]
+  >> ASM_SIMP_TAC (betafy (srw_ss())) [lameq_I]
 QED
 
 Theorem I_appstar :
@@ -546,12 +548,11 @@ Proof
  >> qexistsl_tac [‘v’, ‘t0’] >> REWRITE_TAC []
 QED
 
-Theorem not_is_abs_appstar :
-    !M Ns. ~is_abs M ==> ~is_abs (M @* Ns)
+Theorem is_abs_appstar[simp]:
+  is_abs (M @* Ns) ⇔ is_abs M ∧ (Ns = [])
 Proof
-    NTAC 3 STRIP_TAC
- >> Q.ID_SPEC_TAC ‘Ns’
- >> HO_MATCH_MP_TAC SNOC_INDUCT >> rw [SNOC_APPEND, SYM appstar_SNOC]
+  Induct_on ‘Ns’ using SNOC_INDUCT >>
+  simp[appstar_SNOC]
 QED
 
 val (is_comb_thm, _) = define_recursive_term_function
@@ -739,7 +740,7 @@ Theorem lameq_appstar_cong :
 Proof
     NTAC 2 GEN_TAC
  >> HO_MATCH_MP_TAC SNOC_INDUCT >> rw []
- >> ASM_SIMP_TAC (betafy (srw_ss())) [SNOC_APPEND, SYM appstar_SNOC]
+ >> ASM_SIMP_TAC (betafy (srw_ss())) [SNOC_APPEND, appstar_SNOC]
 QED
 
 Theorem lameq_LAMl_appstar :
