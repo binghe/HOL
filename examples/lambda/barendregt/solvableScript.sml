@@ -10,7 +10,7 @@ open arithmeticTheory pred_setTheory listTheory sortingTheory finite_mapTheory
 
 (* lambda theories *)
 open termTheory appFOLDLTheory chap2Theory chap3Theory standardisationTheory
-     reductionEval;
+     head_reductionTheory reductionEval;
 
 val _ = new_theory "solvable";
 
@@ -486,7 +486,7 @@ QED
 
 Theorem ssub_LAM[local] = List.nth(CONJUNCTS ssub_thm, 2)
 
-(* Lemma 8.3.3 (ii) *)
+(* Lemma 8.3.3 (ii) [1, p.172] *)
 Theorem solvable_iff_LAM[simp] :
     !x M. solvable (LAM x M) <=> solvable M
 Proof
@@ -604,6 +604,46 @@ Proof
         DISCH_TAC \\
         qexistsl_tac [‘fm ' M’, ‘t’] >> fs [] \\
         Q.EXISTS_TAC ‘fm’ >> simp [] ] ]
+QED
+
+(* Proposition 8.3.13 (iii) [1, p.174] *)
+Theorem solvable_iff_APP :
+    !M N. has_hnf (M @@ N) <=> has_hnf M
+Proof
+    cheat
+QED
+
+(* Theorem 8.3.14 (Wadsworth) [1, p.175] *)
+Theorem solvable_iff_has_hnf :
+    !M. solvable M <=> has_hnf M
+Proof
+    Q.X_GEN_TAC ‘M’
+ >> Q.ABBREV_TAC ‘vs = SET_TO_LIST (FV M)’
+ >> Q.ABBREV_TAC ‘M0 = LAMl vs M’
+ >> ‘closed M0’
+      by (rw [closed_def, Abbr ‘M0’, Abbr ‘vs’, FV_LAMl, SET_TO_LIST_INV])
+ >> Suff ‘solvable M0 <=> has_hnf M0’
+ >- (Q.UNABBREV_TAC ‘M0’ \\
+     KILL_TAC >> Induct_on ‘vs’ >- rw [] \\
+     rw [solvable_iff_LAM, has_hnf_iff_LAM])
+ >> POP_ASSUM MP_TAC
+ >> KILL_TAC
+ >> Q.SPEC_TAC (‘M0’, ‘M’)
+ (* stage work, now M is closed *)
+ >> rpt STRIP_TAC
+ >> EQ_TAC
+ >- (rw [solvable_alt_closed] \\
+     Know ‘has_hnf (M @* Ns)’
+     >- (rw [has_hnf_def] \\
+         Q.EXISTS_TAC ‘I’ >> rw [hnf_I]) \\
+     Q.ID_SPEC_TAC ‘Ns’ >> KILL_TAC \\
+     HO_MATCH_MP_TAC SNOC_INDUCT >> rw [SNOC_APPEND, SYM appstar_SNOC] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     FULL_SIMP_TAC std_ss [solvable_iff_APP])
+ (* stage work *)
+ >> rw [has_hnf_def, solvable_alt_closed]
+ >> ‘?vs y Ns. N = LAMl vs (VAR y @* Ns)’ by METIS_TAC [hnf_cases]
+ >> cheat
 QED
 
 val _ = export_theory ();
