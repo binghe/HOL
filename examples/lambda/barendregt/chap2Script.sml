@@ -235,8 +235,11 @@ val (asmlam_rules, asmlam_ind, asmlam_cases) = Hol_reln`
   (!x M M'. asmlam eqns M M' ==> asmlam eqns (LAM x M) (LAM x M'))
 `;
 
+(* This is also Definition 2.1.32 [1, p.33] *)
 val incompatible_def =
     Define`incompatible x y = ~consistent (asmlam {(x,y)})`
+
+Overload "#" = “incompatible”
 
 val S_def =
     Define`S = LAM "x" (LAM "y" (LAM "z"

@@ -305,6 +305,14 @@ val FV_tpm = Save_thm("FV_tpm",
 val _ = set_mapped_fixity { term_name = "APP", tok = "@@",
                             fixity = Infixl 901}
 
+(* NOTE: The following overload "incompatible" was in sttScript.sml.
+
+   The current "incompatibility" is between a (string) variable and a term.
+   See chap2Theory for the incompatibility bwtween two terms.
+ *)
+val _ = set_fixity "#" (Infix(NONASSOC, 450))
+Overload "#" = “λv M:term. v ∉ FV M”
+
 Theorem FRESH_APP[simp]: v NOTIN FV (M @@ N) <=> v NOTIN FV M /\ v NOTIN FV N
 Proof SRW_TAC [][]
 QED

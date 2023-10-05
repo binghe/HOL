@@ -1513,9 +1513,6 @@ val betastar_eq_cong = store_thm(
   ``bnf N ==> M -b->* M' ==> (M -b->* N  <=> M' -b->* N)``,
   METIS_TAC [bnf_triangle, RTC_CASES_RTC_TWICE]);
 
-val _ = set_fixity "#" (Infix(NONASSOC, 450))
-Overload "#" = “λv M:term. v ∉ FV M”
-
 Theorem bnf_characterisation:
   ∀M.
     bnf M ⇔
