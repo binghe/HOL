@@ -578,7 +578,7 @@ QED
 Theorem size_nz =
     REWRITE_RULE [GSYM arithmeticTheory.NOT_ZERO_LT_ZERO] size_nonzero
 
-Theorem size_1 :
+Theorem size_1_cases :
     (size M = 1) <=> ?y. (M = VAR y)
 Proof
     Q.SPEC_THEN `M` STRUCT_CASES_TAC term_CASES

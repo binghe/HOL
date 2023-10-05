@@ -44,8 +44,6 @@ val _ = temp_add_rule {block_style = (AroundEachPhrase, (PP.INCONSISTENT,2)),
                        term_name = "apply_perm"}
 val _ = temp_overload_on ("apply_perm", ``λp M. tpm [p] M``)
 val _ = temp_overload_on ("apply_perm", ``tpm``)
-val _ = temp_overload_on ("#", ``λv t. v ∉ FV t``)
-val _ = temp_set_fixity "#" (Infix(NONASSOC, 450))
 
 val tpm_hreduce_I = store_thm(
   "tpm_hreduce_I",
@@ -491,7 +489,7 @@ Proof
   simp[FORALL_AND_THM, EQ_IMP_THM] >> conj_tac
   >- (gen_tac >> MP_TAC (Q.SPEC ‘M’ strange_cases)
       >> RW_TAC std_ss []
-      >- (FULL_SIMP_TAC std_ss [size_1] \\
+      >- (FULL_SIMP_TAC std_ss [size_1_cases] \\
           qexistsl_tac [‘vs’, ‘[]’, ‘y’] >> rw [])
       >> FULL_SIMP_TAC std_ss [hnf_LAMl]
       >> ‘hnf t /\ ~is_abs t’ by PROVE_TAC [hnf_appstar]
