@@ -206,6 +206,13 @@ Proof
   Induct THEN SRW_TAC [numSimps.ARITH_ss][size_thm]
 QED
 
+Theorem FV_LAMl :
+    !vs M. FV (LAMl vs M) = FV M DIFF LIST_TO_SET vs
+Proof
+  Induct THEN SRW_TAC [][] THEN
+  SIMP_TAC (srw_ss()) [EXTENSION] THEN PROVE_TAC []
+QED
+
 Theorem LAMl_eq_VAR[simp]:
   (LAMl vs M = VAR v) ⇔ (vs = []) ∧ (M = VAR v)
 Proof
@@ -218,6 +225,13 @@ Proof
   Cases_on ‘vs’ >> simp[]
 QED
 
+(* moved here from sttScript.sml *)
+Theorem APP_EQ_LAMl[simp]:
+  M @@ N = LAMl vs P ⇔ vs = [] ∧ P = M @@ N
+Proof
+  Cases_on ‘vs’ >> simp[] >> metis_tac[]
+QED
+
 Theorem LAMl_eq_appstar:
   (LAMl vs M = N ·· Ns) ⇔
     (vs = []) ∧ (M = N ·· Ns) ∨ (Ns = []) ∧ (N = LAMl vs M)
@@ -226,11 +240,38 @@ Proof
   metis_tac[]
 QED
 
-val LAMl_vsub = store_thm(
-  "LAMl_vsub",
-  ``!vs u v M.
+(* moved here from sttScript.sml *)
+Theorem appstar_EQ_LAMl:
+  x ·· Ms = LAMl vs M ⇔ vs = [] ∧ M = x ·· Ms ∨ Ms = [] ∧ x = LAMl vs M
+Proof
+  Cases_on ‘vs’ >> simp[] >> Cases_on ‘Ms’ >> simp[] >> metis_tac[]
+QED
+
+Theorem LAMl_SUB :
+    !M N v vs. ALL_DISTINCT vs /\ ~MEM v vs /\ (FV N = {}) ==>
+              ([N/v] (LAMl vs M) = LAMl vs ([N/v] M))
+Proof
+    rpt STRIP_TAC
+ >> Induct_on ‘vs’ >> rw []
+QED
+
+Theorem tpm_LAMl:
+  tpm π (LAMl vs M) = LAMl (listpm string_pmact π vs) (tpm π M)
+Proof
+  Induct_on ‘vs’ >> simp[]
+QED
+
+Theorem tpm_appstar:
+  tpm π (M ·· Ms) = tpm π M ·· listpm term_pmact π Ms
+Proof
+  qid_spec_tac ‘M’ >> Induct_on ‘Ms’ >> simp[]
+QED
+
+Theorem LAMl_vsub :
+    !vs u v M.
         ~MEM u vs /\ ~MEM v vs ==>
-        ([VAR v/u] (LAMl vs M) = LAMl vs ([VAR v/u] M))``,
+        ([VAR v/u] (LAMl vs M) = LAMl vs ([VAR v/u] M))
+Proof
   Induct THEN SRW_TAC [][] THEN
   Q_TAC (NEW_TAC "z") `LIST_TO_SET vs UNION {h;v;u} UNION FV (LAMl vs M) UNION
                        FV (LAMl vs ([VAR v/u] M))` THEN
@@ -238,31 +279,27 @@ val LAMl_vsub = store_thm(
      by SRW_TAC [][SIMPLE_ALPHA] THEN
   `LAM h (LAMl vs ([VAR v/u] M)) = LAM z ([VAR z/h] (LAMl vs ([VAR v/u] M)))`
      by SRW_TAC [][SIMPLE_ALPHA] THEN
-  SRW_TAC [][SUB_THM]);
+  SRW_TAC [][SUB_THM]
+QED
 
-val FV_LAMl = store_thm(
-  "FV_LAMl",
-  ``!vs M. FV (LAMl vs M) = FV M DIFF LIST_TO_SET vs``,
-  Induct THEN SRW_TAC [][] THEN
-  SIMP_TAC (srw_ss()) [EXTENSION] THEN PROVE_TAC []);
-
-val LAMl_vsub_disappears = store_thm(
-  "LAMl_vsub_disappears",
- ``!vs u v M. MEM u vs ==> ([VAR v/u] (LAMl vs M) = LAMl vs M)``,
+Theorem LAMl_vsub_disappears :
+   !vs u v M. MEM u vs ==> ([VAR v/u] (LAMl vs M) = LAMl vs M)
+Proof
   Induct THEN SRW_TAC [][] THENL [
     SRW_TAC [][SUB_THM, lemma14b],
     `~(u IN FV (LAMl vs M))` by SRW_TAC [][FV_LAMl] THEN
     `LAM h (LAMl vs M) = LAM u ([VAR u/h] (LAMl vs M))`
        by SRW_TAC [][SIMPLE_ALPHA] THEN
     SRW_TAC [][SUB_THM, lemma14b]
-  ]);
+  ]
+QED
 
-val LAMl_ALPHA = store_thm(
-  "LAMl_ALPHA",
-  ``!vs vs' M.
+Theorem LAMl_ALPHA :
+    !vs vs' M.
        (LENGTH vs = LENGTH vs') /\ ALL_DISTINCT vs' /\
        DISJOINT (LIST_TO_SET vs') (LIST_TO_SET vs UNION FV M) ==>
-       (LAMl vs M = LAMl vs' (M ISUB REVERSE (ZIP(MAP VAR vs', vs))))``,
+       (LAMl vs M = LAMl vs' (M ISUB REVERSE (ZIP(MAP VAR vs', vs))))
+Proof
   Induct THENL [
     SRW_TAC [][] THEN
     FULL_SIMP_TAC (srw_ss()) [ISUB_def],
@@ -283,40 +320,7 @@ val LAMl_ALPHA = store_thm(
     ASM_SIMP_TAC (srw_ss()) [] THEN
     DISCH_THEN (K ALL_TAC) THEN
     SRW_TAC [][LAMl_vsub, SUB_ISUB_SINGLETON, ISUB_APPEND]
-  ]);
-
-Theorem LAMl_SUB :
-    !M N v vs. ALL_DISTINCT vs /\ ~MEM v vs /\ (FV N = {}) ==>
-              ([N/v] (LAMl vs M) = LAMl vs ([N/v] M))
-Proof
-    rpt STRIP_TAC
- >> Induct_on ‘vs’ >> rw []
-QED
-
-(* moved here from sttScript.sml *)
-Theorem APP_EQ_LAMl[simp]:
-  M @@ N = LAMl vs P ⇔ vs = [] ∧ P = M @@ N
-Proof
-  Cases_on ‘vs’ >> simp[] >> metis_tac[]
-QED
-
-(* moved here from sttScript.sml *)
-Theorem appstar_EQ_LAMl:
-  x ·· Ms = LAMl vs M ⇔ vs = [] ∧ M = x ·· Ms ∨ Ms = [] ∧ x = LAMl vs M
-Proof
-  Cases_on ‘vs’ >> simp[] >> Cases_on ‘Ms’ >> simp[] >> metis_tac[]
-QED
-
-Theorem tpm_LAMl:
-  tpm π (LAMl vs M) = LAMl (listpm string_pmact π vs) (tpm π M)
-Proof
-  Induct_on ‘vs’ >> simp[]
-QED
-
-Theorem tpm_appstar:
-  tpm π (M ·· Ms) = tpm π M ·· listpm term_pmact π Ms
-Proof
-  qid_spec_tac ‘M’ >> Induct_on ‘Ms’ >> simp[]
+  ]
 QED
 
 val _ = export_theory ()
