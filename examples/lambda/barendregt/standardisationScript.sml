@@ -2181,6 +2181,15 @@ Proof
  >> MATCH_MP_TAC betastar_lameq >> art []
 QED
 
+(* Proposition 8.3.13 (ii) [2, p.174] *)
+Theorem has_hnf_substitutive :
+    !M. has_hnf ([N/z] M) ==> has_hnf M
+Proof
+    Q.X_GEN_TAC ‘M’
+ >> simp [corollary11_4_8, Once MONO_NOT_EQ]
+ >> cheat
+QED
+
 val _ = export_theory()
 val _ = html_theory "standardisation";
 
