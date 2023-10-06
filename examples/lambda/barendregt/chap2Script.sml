@@ -650,6 +650,39 @@ Proof
   SRW_TAC [][SUB_THM, SUB_VAR]
 QED
 
+Theorem bnf_characterisation:
+  ∀M.
+    bnf M ⇔
+      ∃vs v Ms. ALL_DISTINCT vs ∧ M = LAMl vs (VAR v ·· Ms) ∧
+                (∀M. MEM M Ms ⇒ bnf M)
+Proof
+  ho_match_mp_tac nc_INDUCTION2 >> qexists ‘∅’ >> rw[] >~
+  [‘VAR _ ·· _ = M1 @@ M2’]
+  >- (simp[] >> eq_tac >> rpt strip_tac >~
+      [‘M1 = LAMl vs1 _’, ‘M1 @@ M2’]
+      >- (gvs[app_eq_appstar] >>
+          Q.REFINE_EXISTS_TAC ‘SNOC M Mt’ >>
+          simp[DISJ_IMP_THM, rich_listTheory.FRONT_APPEND] >>
+          metis_tac[]) >>
+      Cases_on ‘Ms’ using rich_listTheory.SNOC_CASES >>
+      gvs[rich_listTheory.SNOC_APPEND, appstar_APPEND] >>
+      dsimp[appstar_EQ_LAMl] >> irule_at Any EQ_REFL >> simp[]) >>
+  pop_assum SUBST_ALL_TAC >> eq_tac >> rpt strip_tac >> gvs[] >~
+  [‘LAM y (LAMl vs _)’]
+  >- (reverse (Cases_on ‘MEM y vs’)
+      >- (qexists ‘y::vs’ >> simp[]) >>
+      ‘y # LAMl vs (VAR v ·· Ms)’ by simp[FV_LAMl] >>
+      Q_TAC (NEW_TAC "z") ‘y INSERT set vs ∪ FV (VAR v ·· Ms)’ >>
+      ‘z # LAMl vs (VAR v ·· Ms)’ by simp[FV_LAMl] >>
+      dxrule_then (qspec_then ‘y’ mp_tac) tpm_ALPHA >>
+      simp[tpm_fresh, FV_LAMl] >> strip_tac >> qexists ‘z::vs’ >> simp[]) >>
+  rename [‘LAM y M = LAMl vs (VAR v ·· Ms)’] >>
+  Cases_on ‘vs’ >> gvs[] >> gvs[LAM_eq_thm]
+  >- metis_tac[] >>
+  simp[tpm_LAMl, tpm_appstar] >> irule_at Any EQ_REFL >>
+  simp[MEM_listpm] >> rpt strip_tac >> first_assum drule >> simp[]
+QED
+
 val _ = augment_srw_ss [rewrites [LAM_eq_thm]]
 val (rand_thm, _) = define_recursive_term_function `rand (t1 @@ t2) = t2`;
 val _ = export_rewrites ["rand_thm"]

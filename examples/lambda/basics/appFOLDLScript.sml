@@ -147,13 +147,6 @@ Proof
   qid_spec_tac ‘x’ >> Induct_on ‘Ms1’ >> simp[]
 QED
 
-(* This is the old version needed by some other theorems! *)
-Theorem appstar_SNOC' :
-  x ·· Ms @@ M = x ·· (Ms ++ [M])
-Proof
-  simp[appstar_APPEND, SNOC_APPEND]
-QED
-
 Theorem appstar_SNOC[simp]:
   x ·· (SNOC M Ms) = (x ·· Ms) @@ M
 Proof
