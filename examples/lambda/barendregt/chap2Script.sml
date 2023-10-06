@@ -666,7 +666,7 @@ Proof
           metis_tac[]) >>
       Cases_on ‘Ms’ using rich_listTheory.SNOC_CASES >>
       gvs[rich_listTheory.SNOC_APPEND, appstar_APPEND] >>
-      dsimp[appstar_EQ_LAMl] >> irule_at Any EQ_REFL >> simp[]) >>
+      dsimp[LAMl_eq_appstar] >> irule_at Any EQ_REFL >> simp[]) >>
   pop_assum SUBST_ALL_TAC >> eq_tac >> rpt strip_tac >> gvs[] >~
   [‘LAM y (LAMl vs _)’]
   >- (reverse (Cases_on ‘MEM y vs’)

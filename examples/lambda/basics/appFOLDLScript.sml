@@ -218,26 +218,12 @@ Proof
   Cases_on ‘vs’ >> simp[]
 QED
 
-(* moved here from sttScript.sml *)
-Theorem APP_EQ_LAMl[simp]:
-  M @@ N = LAMl vs P ⇔ vs = [] ∧ P = M @@ N
-Proof
-  Cases_on ‘vs’ >> simp[] >> metis_tac[]
-QED
-
 Theorem LAMl_eq_appstar:
   (LAMl vs M = N ·· Ns) ⇔
     (vs = []) ∧ (M = N ·· Ns) ∨ (Ns = []) ∧ (N = LAMl vs M)
 Proof
   Cases_on ‘vs’ >> simp[] >> Cases_on ‘Ns’ >> simp[] >>
   metis_tac[]
-QED
-
-(* moved here from sttScript.sml *)
-Theorem appstar_EQ_LAMl:
-  x ·· Ms = LAMl vs M ⇔ vs = [] ∧ M = x ·· Ms ∨ Ms = [] ∧ x = LAMl vs M
-Proof
-  Cases_on ‘vs’ >> simp[] >> Cases_on ‘Ms’ >> simp[] >> metis_tac[]
 QED
 
 Theorem LAMl_SUB :

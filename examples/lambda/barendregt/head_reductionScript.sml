@@ -140,6 +140,7 @@ Theorem hreduce1_bvcX_ind =
                        |> Q.INST [`P'` |-> `P`]
                        |> Q.GEN `X` |> Q.GEN `P`
 
+(* Lemma 8.3.12 [1, p.174] *)
 Theorem hreduce1_substitutive :
     !M N. M -h-> N ==> [P/v] M -h-> [P/v] N
 Proof
@@ -152,6 +153,7 @@ Proof
  >> gs [is_var_cases, hreduce1_rwts]
 QED
 
+(* This form is useful for ‘|- substitutive R ==> ...’ theorems (chap3Theory) *)
 Theorem substitutive_hreduce1 :
     substitutive (-h->)
 Proof
