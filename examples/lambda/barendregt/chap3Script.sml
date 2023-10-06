@@ -4,7 +4,7 @@ open metisLib basic_swapTheory relationTheory hurdUtils;
 
 local open pred_setLib in end;
 
-open binderLib BasicProvers nomsetTheory termTheory chap2Theory appFOLDLTheory;
+open binderLib BasicProvers nomsetTheory termTheory chap2Theory;
 
 val _ = new_theory "chap3";
 
