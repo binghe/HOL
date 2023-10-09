@@ -1,7 +1,7 @@
-open HolKernel Parse boolLib bossLib;
+open HolKernel Parse boolLib bossLib BasicProvers;
 
-open BasicProvers metisLib boolSimps relationTheory pathTheory pred_setTheory
-     listTheory finite_mapTheory hurdUtils;
+open metisLib boolSimps relationTheory listTheory llistTheory pathTheory
+     pred_setTheory finite_mapTheory hurdUtils;
 
 open nomsetTheory binderLib
 open finite_developmentsTheory
@@ -283,7 +283,6 @@ val residuals_different_singletons = store_thm(
     METIS_TAC [lr_beta_preserves_lefter_redexes]
   ]);
 
-val _ = set_trace "Unicode" 1
 val standard_coind = store_thm(
   "standard_coind",
   ``∀Q. (∀x r p. Q (pcons x r p) ⇒
@@ -317,8 +316,8 @@ val standard_coind = store_thm(
      by SRW_TAC [ARITH_ss]
                 [nth_label_drop, ADD1] THEN
   POP_ASSUM SUBST_ALL_TAC THEN
-  NewQ.ABBREV_TAC `pp = drop j p` THEN
-  NewQ.ABBREV_TAC `ii = i - j`  THEN
+  qabbrev_tac `pp = drop j p` THEN
+  qabbrev_tac `ii = i - j`  THEN
   `ii + 1 ∈ PL pp` by SRW_TAC [ARITH_ss][IN_PL_drop, Abbr`ii`, Abbr`pp`] THEN
   `∀n. n + 1 ∈ PL pp ⇒ p' < nth_label n pp`
      by (Q.ISPEC_THEN `pp` FULL_STRUCT_CASES_TAC path_cases THEN
@@ -1912,13 +1911,19 @@ Proof
  >> MATCH_MP_TAC betastar_lameq >> art []
 QED
 
-(* Proposition 8.3.13 (ii) [2, p.174] *)
+(* Proposition 8.3.13 (ii) [1, p.174] *)
 Theorem has_hnf_if_subst :
-    !M. has_hnf ([N/z] M) ==> has_hnf M
+    !M N z. has_hnf ([N/z] M) ==> has_hnf M
 Proof
-    Q.X_GEN_TAC ‘M’
+    rpt STRIP_TAC
  >> simp [corollary11_4_8, Once MONO_NOT_EQ]
- >> cheat
+ >> CCONTR_TAC
+ >> Suff ‘infinite (head_reduction_path ([N/z] M))’
+ >- (DISCH_TAC >> fs [corollary11_4_8])
+ >> Q.PAT_X_ASSUM ‘has_hnf _’ K_TAC
+ >> qabbrev_tac ‘p = head_reduction_path M’
+ >> 
+    cheat
 QED
 
 val _ = export_theory()

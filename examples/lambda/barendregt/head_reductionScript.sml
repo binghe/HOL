@@ -1,7 +1,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open boolSimps relationTheory pred_setTheory listTheory finite_mapTheory
-     arithmeticTheory pathTheory hurdUtils BasicProvers;
+     arithmeticTheory llistTheory pathTheory hurdUtils BasicProvers;
 
 open termTheory appFOLDLTheory chap2Theory chap3Theory nomsetTheory binderLib
      term_posnsTheory finite_developmentsTheory;
@@ -592,11 +592,11 @@ val head_redex_preserved = store_thm(
     PROVE_TAC [is_comb_thm]
   ]);
 
-val is_head_reduction_def = Define`
+Definition is_head_reduction_def :
   is_head_reduction s = okpath (labelled_redn beta) s /\
                         !i. i + 1 IN PL s ==>
                             nth_label i s is_head_redex el i s
-`;
+End
 
 Theorem is_head_reduction_thm[simp] :
     (is_head_reduction (stopped_at x) = T) /\
@@ -614,11 +614,10 @@ Proof
 QED
 
 val _ = add_infix ("head_reduces", 760, NONASSOC)
-val head_reduces_def = Define`
+Definition head_reduces_def :
   M head_reduces N = ?s. finite s /\ (first s = M) /\ (last s = N) /\
                          is_head_reduction s
-`;
-
+End
 
 val head_reduce1_def = store_thm(
   "head_reduce1_def",

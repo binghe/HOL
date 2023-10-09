@@ -2187,6 +2187,18 @@ val LNTH_NONE_MONO = Q.store_thm ("LNTH_NONE_MONO",
   `~(m < z)` by metis_tac[LTAKE_LNTH_EL,optionTheory.NOT_SOME_NONE] >>
   rw[] >> decide_tac);
 
+(* cf. This is just another version of lnth_some_down_closed *)
+Theorem LNTH_IS_SOME_MONO :
+   !m n l.
+     IS_SOME (LNTH n l) /\ m <= n
+   ==>
+     IS_SOME (LNTH m l)
+Proof
+    rw [IS_SOME_EXISTS]
+ >> MATCH_MP_TAC lnth_some_down_closed
+ >> qexistsl_tac [‘x’, ‘n’] >> rw []
+QED
+
 (* ------------------------------------------------------------------------ *)
 (* Turning a stream-like linear order into a lazy list                      *)
 (* ------------------------------------------------------------------------ *)
