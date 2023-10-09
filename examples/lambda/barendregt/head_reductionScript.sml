@@ -717,18 +717,6 @@ val head_reduct_SOME = store_thm(
   METIS_TAC [head_redex_is_redex, IN_term_IN_redex_posns,
              is_redex_occurrence_def]);
 
-val drop_not_stopped = prove(
-  ``!i p. SUC i IN PL p ==> ?v r q. drop i p = pcons v r q``,
-  Induct THEN GEN_TAC THEN
-  Q.SPEC_THEN `p` STRUCT_CASES_TAC path_cases THEN
-  SRW_TAC [][]);
-
-val drop_tail_commute = store_thm(
-  "drop_tail_commute",
-  ``!i p. SUC i IN PL p ==> (drop i (tail p) = tail (drop i p))``,
-  Induct THEN SIMP_TAC (srw_ss()) [Once FORALL_path] THEN
-  SRW_TAC [][]);
-
 val is_head_reduction_coind = store_thm(
   "is_head_reduction_coind",
   ``(!x r q. P (pcons x r q) ==>

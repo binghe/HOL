@@ -756,6 +756,23 @@ val tail_drop = store_thm(
   FULL_SIMP_TAC (srw_ss()) [DECIDE ``SUC x + y = SUC (x + y)``]);
 val _ = export_rewrites ["tail_drop"]
 
+(* from examples/lambda/barengregt/head_reductionScript.sml *)
+Theorem drop_tail_commute :
+    !i p. SUC i IN PL p ==> (drop i (tail p) = tail (drop i p))
+Proof
+  Induct THEN SIMP_TAC (srw_ss()) [Once FORALL_path] THEN
+  SRW_TAC [][]
+QED
+
+(* from examples/lambda/barengregt/head_reductionScript.sml *)
+Theorem drop_not_stopped :
+    !i p. SUC i IN PL p ==> ?v r q. drop i p = pcons v r q
+Proof
+  Induct THEN GEN_TAC THEN
+  Q.SPEC_THEN `p` STRUCT_CASES_TAC path_cases THEN
+  SRW_TAC [][]
+QED
+
 val el_drop = store_thm(
   "el_drop",
   ``!i j p. i + j IN PL p ==> (el i (drop j p) = el (i + j) p)``,
