@@ -1911,9 +1911,25 @@ Proof
  >> MATCH_MP_TAC betastar_lameq >> art []
 QED
 
-(* Proposition 8.3.13 (ii) [1, p.174] *)
+(* NOTE: The (only) needed definitions and theorems:
+   head_reduction_path_def, is_head_reduction_thm, head_reduce1_def
+   is_head_reduction_coind
+   path_cases
+ *)
+Theorem infinite_head_reduction_path_to_llist[local] :
+    !M. infinite (head_reduction_path M) <=>
+        ?l. ~LFINITE l /\ (LNTH 0 l = SOME M) /\
+            !i. THE (LNTH i l) -h-> THE (LNTH (SUC i) l)
+Proof
+    cheat
+QED
+
+(* Proposition 8.3.13 (ii) [1, p.174]
+
+   The key is to use hreduce1_substitutive.
+ *)
 Theorem has_hnf_if_subst :
-    !M N z. has_hnf ([N/z] M) ==> has_hnf M
+    !M P v. has_hnf ([P/v] M) ==> has_hnf M
 Proof
     rpt STRIP_TAC
  >> simp [corollary11_4_8, Once MONO_NOT_EQ]
@@ -1921,9 +1937,21 @@ Proof
  >> Suff ‘infinite (head_reduction_path ([N/z] M))’
  >- (DISCH_TAC >> fs [corollary11_4_8])
  >> Q.PAT_X_ASSUM ‘has_hnf _’ K_TAC
- >> qabbrev_tac ‘p = head_reduction_path M’
- >> 
-    cheat
+ (* stage work *)
+ >> ‘?l. ~LFINITE l /\ (LNTH 0 l = SOME M) /\
+         !i. THE (LNTH i l) -h-> THE (LNTH (SUC i) l)’
+      by METIS_TAC [infinite_head_reduction_path_to_llist]
+ >> qabbrev_tac ‘ll = LMAP [N/z] l’
+ >> rw [infinite_head_reduction_path_to_llist]
+ >> Q.EXISTS_TAC ‘ll’
+ >> rw [Abbr ‘ll’]
+ >> Know ‘!i. THE (OPTION_MAP [N/z] (LNTH i l)) = [N/z] (THE (LNTH i l))’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     Q.PAT_X_ASSUM ‘~LFINITE l’
+       (STRIP_ASSUME_TAC o (Q.SPEC ‘n’) o (REWRITE_RULE [infinite_lnth_some])) \\
+     rw [])
+ >> Rewr
+ >> MATCH_MP_TAC hreduce1_substitutive >> art []
 QED
 
 val _ = export_theory()
