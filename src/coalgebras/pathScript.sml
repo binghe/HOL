@@ -108,6 +108,9 @@ val first_thm = store_thm(
 
 val finite_def =
   Define`finite (sigma : ('a,'b) path) = LFINITE (SND (fromPath sigma))`;
+
+Overload "infinite" = “\p. ~finite p”
+
 val finite_thm = store_thm(
   "finite_thm",
   ``(!x. finite (stopped_at x : ('a,'b) path) = T) /\
