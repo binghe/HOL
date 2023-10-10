@@ -1831,5 +1831,17 @@ SRW_TAC [] [] THENL
      SRW_TAC [] [],
  SRW_TAC [] [Once unfold_def, first_def, path_rep_bijections_thm]]);
 
+Theorem infinite_path_cases :
+    !p. infinite p ==> ?x r q. (p = pcons x r q) /\ infinite q
+Proof
+    rpt STRIP_TAC
+ >> STRIP_ASSUME_TAC (Q.SPEC ‘p’ path_cases)
+ >- (‘length p = NONE’ by PROVE_TAC [length_def] \\
+     ‘length p = SOME 1’ by PROVE_TAC [alt_length_thm] \\
+      fs [])
+ >> qexistsl_tac [‘x’, ‘r’, ‘q’]
+ >> ASM_REWRITE_TAC []
+ >> CCONTR_TAC >> fs []
+QED
 
 val _ = export_theory();

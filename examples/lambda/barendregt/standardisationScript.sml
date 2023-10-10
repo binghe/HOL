@@ -1911,6 +1911,30 @@ Proof
  >> MATCH_MP_TAC betastar_lameq >> art []
 QED
 
+Theorem is_head_reduction_infinite_drop_lemma[local] :
+    !n. infinite p /\ is_head_reduction (drop n p) ==> is_head_reduction (drop (SUC n) p)
+Proof
+    rw [drop_def]
+ >> ‘!i. i IN PL p’ by PROVE_TAC [infinite_PL]
+ >> ASM_SIMP_TAC std_ss [drop_tail_commute]
+ >> qabbrev_tac ‘q = drop n p’
+ >> ‘infinite q’ by PROVE_TAC [finite_drop]
+ >> ‘?x r xs. q = pcons x r xs’ by METIS_TAC [infinite_path_cases]
+ >> POP_ASSUM (fs o wrap)
+QED
+
+Theorem is_head_reduction_infinite_drop[local] :
+    !p. infinite p /\ is_head_reduction p ==> !n. is_head_reduction (drop n p)
+Proof
+    NTAC 2 STRIP_TAC
+ >> Induct_on ‘n’ >> rw []
+ >> ‘!i. i IN PL p’ by PROVE_TAC [infinite_PL]
+ >> rw [drop_tail_commute]
+ >> REWRITE_TAC [GSYM ADD1]
+ >> ‘infinite (drop n p)’ by PROVE_TAC [finite_drop]
+ >> MATCH_MP_TAC is_head_reduction_infinite_drop_lemma >> art []
+QED
+
 (* NOTE: The (only) needed definitions and theorems:
    head_reduction_path_def, is_head_reduction_thm, head_reduce1_def
    is_head_reduction_coind
@@ -1921,15 +1945,32 @@ Theorem infinite_head_reduction_path_to_llist[local] :
         ?l. ~LFINITE l /\ (LNTH 0 l = SOME M) /\
             !i. THE (LNTH i l) -h-> THE (LNTH (SUC i) l)
 Proof
-    cheat
+    Q.X_GEN_TAC ‘M’
+ >> qabbrev_tac ‘p = head_reduction_path M’
+ >> EQ_TAC >> rpt STRIP_TAC
+ >- (Q.EXISTS_TAC ‘LGENLIST (\n. el n p) NONE’ >> rw [LNTH_LGENLIST]
+     >- (rw [Abbr ‘p’, head_reduction_path_def]) \\
+     rw [head_reduce1_def] \\
+    ‘!i. i IN PL p’ by PROVE_TAC [infinite_PL] \\
+     qabbrev_tac ‘q = drop i p’ \\
+    ‘el i p = first q’ by rw [Abbr ‘q’] >> POP_ORW \\
+     Know ‘el i (tail p) = first (tail q)’
+     >- (rw [Abbr ‘q’, REWRITE_RULE [ADD1] el_def]) >> Rewr' \\
+    ‘infinite q’ by PROVE_TAC [finite_drop] \\
+     Know ‘is_head_reduction q’
+     >- (qunabbrev_tac ‘q’ \\
+         MATCH_MP_TAC is_head_reduction_infinite_drop \\
+         rw [Abbr ‘p’, head_reduction_path_def]) >> DISCH_TAC \\
+    ‘?x r xs. q = pcons x r xs’ by METIS_TAC [infinite_path_cases] \\
+     fs [is_head_reduction_thm] \\
+     Q.EXISTS_TAC ‘r’ >> art [])
+ (* stage work *)
+ >> cheat
 QED
 
-(* Proposition 8.3.13 (ii) [1, p.174]
-
-   The key is to use hreduce1_substitutive.
- *)
+(* Proposition 8.3.13 (ii) [1, p.174] *)
 Theorem has_hnf_if_subst :
-    !M P v. has_hnf ([P/v] M) ==> has_hnf M
+    !M N z. has_hnf ([N/z] M) ==> has_hnf M
 Proof
     rpt STRIP_TAC
  >> simp [corollary11_4_8, Once MONO_NOT_EQ]
