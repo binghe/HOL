@@ -828,5 +828,106 @@ val head_reduction_path_unique = store_thm(
               head_reduction_path_uexists THEN
   METIS_TAC [head_reduction_path_def]);
 
+Theorem is_head_reduction_infinite_drop_lemma[local] :
+    !n. infinite p /\ is_head_reduction (drop n p) ==> is_head_reduction (drop (SUC n) p)
+Proof
+    rw [drop_def]
+ >> ‘!i. i IN PL p’ by PROVE_TAC [infinite_PL]
+ >> ASM_SIMP_TAC std_ss [drop_tail_commute]
+ >> qabbrev_tac ‘q = drop n p’
+ >> ‘infinite q’ by PROVE_TAC [finite_drop]
+ >> ‘?x r xs. q = pcons x r xs’ by METIS_TAC [infinite_path_cases]
+ >> POP_ASSUM (fs o wrap)
+QED
+
+Theorem is_head_reduction_infinite_drop[local] :
+    !p. infinite p /\ is_head_reduction p ==> !n. is_head_reduction (drop n p)
+Proof
+    NTAC 2 STRIP_TAC
+ >> Induct_on ‘n’ >> rw []
+ >> ‘!i. i IN PL p’ by PROVE_TAC [infinite_PL]
+ >> rw [drop_tail_commute]
+ >> REWRITE_TAC [GSYM ADD1]
+ >> ‘infinite (drop n p)’ by PROVE_TAC [finite_drop]
+ >> MATCH_MP_TAC is_head_reduction_infinite_drop_lemma >> art []
+QED
+
+Theorem infinite_head_reduction_path_to_llist :
+    !M. infinite (head_reduction_path M) <=>
+        ?l. ~LFINITE l /\ (LNTH 0 l = SOME M) /\
+            !i. THE (LNTH i l) -h-> THE (LNTH (SUC i) l)
+Proof
+    Q.X_GEN_TAC ‘M’
+ >> qabbrev_tac ‘p = head_reduction_path M’
+ >> EQ_TAC >> rpt STRIP_TAC
+ >- (Q.EXISTS_TAC ‘LGENLIST (\n. el n p) NONE’ >> rw [LNTH_LGENLIST]
+     >- (rw [Abbr ‘p’, head_reduction_path_def]) \\
+     rw [head_reduce1_def] \\
+    ‘!i. i IN PL p’ by PROVE_TAC [infinite_PL] \\
+     qabbrev_tac ‘q = drop i p’ \\
+    ‘el i p = first q’ by rw [Abbr ‘q’] >> POP_ORW \\
+     Know ‘el i (tail p) = first (tail q)’
+     >- (rw [Abbr ‘q’, REWRITE_RULE [ADD1] el_def]) >> Rewr' \\
+    ‘infinite q’ by PROVE_TAC [finite_drop] \\
+     Know ‘is_head_reduction q’
+     >- (qunabbrev_tac ‘q’ \\
+         MATCH_MP_TAC is_head_reduction_infinite_drop \\
+         rw [Abbr ‘p’, head_reduction_path_def]) >> DISCH_TAC \\
+    ‘?x r xs. q = pcons x r xs’ by METIS_TAC [infinite_path_cases] \\
+     fs [is_head_reduction_thm] \\
+     Q.EXISTS_TAC ‘r’ >> art [])
+ (* stage work *)
+ >> qabbrev_tac ‘f = \i. THE (LNTH i l)’
+ >> Know ‘!i. ?r. r is_head_redex (f i) /\ labelled_redn beta (f i) r (f (SUC i))’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     Know ‘f n -h-> f (SUC n)’ >- PROVE_TAC [] \\
+     rw [head_reduce1_def] \\
+     Q.EXISTS_TAC ‘r’ >> art [])
+ >> DISCH_THEN ((Q.X_CHOOSE_THEN ‘g’ STRIP_ASSUME_TAC) o (SIMP_RULE std_ss [SKOLEM_THM]))
+ >> qabbrev_tac ‘q = pgenerate f g’
+ >> ‘infinite q’ by PROVE_TAC [pgenerate_infinite]
+ >> Suff ‘head_reduction_path M = q’ >- PROVE_TAC []
+ >> MATCH_MP_TAC head_reduction_path_unique >> simp []
+ >> CONJ_TAC
+ >- ASM_SIMP_TAC std_ss [Abbr ‘q’, GSYM el_def, el_pgenerate, Abbr ‘f’]
+ >> Q.PAT_X_ASSUM ‘finite p’ K_TAC
+ >> qunabbrev_tac ‘p’
+ >> rename1 ‘is_head_reduction p’
+ (* stage work: is_head_reduction p *)
+ >> ‘!i. i IN PL p’ by PROVE_TAC [infinite_PL]
+ >> irule is_head_reduction_coind
+ >> Q.EXISTS_TAC ‘\q. infinite q /\ ?i. q = drop i p’ >> rw [] (* 4 subgoals *)
+ >| [ (* goal 1 (of 4) *)
+      Q.EXISTS_TAC ‘0’ >> rw [],
+      (* goal 2 (of 4) *)
+      Know ‘first (pcons x r q) = first (drop i p)’ >- art [] \\
+      Know ‘first_label (pcons x r q) = first_label (drop i p)’ >- art [] \\
+      rw [] \\
+      Know ‘tail (pcons (el i p) (nth_label i p) q) = tail (drop i p)’ >- art [] \\
+      REWRITE_TAC [tail_def] \\
+      DISCH_THEN (fs o wrap) \\
+      Know ‘nth_label i p = g i’
+      >- (rw [Abbr ‘p’, nth_label_pgenerate]) >> Rewr' \\
+      Know ‘!i. el i p = f i’
+      >- (rw [Abbr ‘p’, el_pgenerate]) >> Rewr' \\
+      ASM_REWRITE_TAC [GSYM ADD1],
+      (* goal 3 (of 4) *)
+      Know ‘first (pcons x r q) = first (drop i p)’ >- art [] \\
+      Know ‘first_label (pcons x r q) = first_label (drop i p)’ >- art [] \\
+      rw [] \\
+      Know ‘tail (pcons (el i p) (nth_label i p) q) = tail (drop i p)’ >- art [] \\
+      REWRITE_TAC [tail_def] \\
+      DISCH_THEN (fs o wrap) \\
+      Know ‘nth_label i p = g i’
+      >- (rw [Abbr ‘p’, nth_label_pgenerate]) >> Rewr' \\
+      Know ‘!i. el i p = f i’
+      >- (rw [Abbr ‘p’, el_pgenerate]) >> Rewr' >> art [],
+      (* goal 4 (of 4) *)
+      Know ‘tail (pcons x r q) = tail (drop i p)’ >- art [] \\
+      REWRITE_TAC [tail_def] \\
+      DISCH_THEN (fs o wrap) \\
+      Q.EXISTS_TAC ‘i + 1’ >> REWRITE_TAC [] ]
+QED
+
 val _ = export_theory()
 val _ = html_theory "head_reduction";
