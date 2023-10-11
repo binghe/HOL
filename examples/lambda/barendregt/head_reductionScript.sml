@@ -1,7 +1,7 @@
-open HolKernel Parse boolLib bossLib;
+open HolKernel Parse boolLib bossLib BasicProvers;
 
 open boolSimps relationTheory pred_setTheory listTheory finite_mapTheory
-     arithmeticTheory llistTheory pathTheory hurdUtils BasicProvers;
+     arithmeticTheory llistTheory pathTheory optionTheory hurdUtils;
 
 open termTheory appFOLDLTheory chap2Theory chap3Theory nomsetTheory binderLib
      term_posnsTheory finite_developmentsTheory;
@@ -828,7 +828,7 @@ val head_reduction_path_unique = store_thm(
               head_reduction_path_uexists THEN
   METIS_TAC [head_reduction_path_def]);
 
-Theorem is_head_reduction_infinite_drop[local] :
+Theorem infinite_is_head_reduction_drop :
     !p. infinite p /\ is_head_reduction p ==> !n. is_head_reduction (drop n p)
 Proof
     NTAC 2 STRIP_TAC
@@ -850,6 +850,20 @@ Proof
  >> POP_ASSUM (fs o wrap)
 QED
 
+Theorem finite_is_head_reduction_drop :
+    !p. finite p /\ is_head_reduction p ==>
+        !n. n < THE (length p) ==> is_head_reduction (drop n p)
+Proof
+    NTAC 2 STRIP_TAC
+ >> ‘?N. length p = SOME (SUC N)’ by METIS_TAC [length_cases]
+ >> fs []
+ >> Q.PAT_X_ASSUM ‘is_head_reduction p’ MP_TAC
+ >> Know ‘PL p = count (SUC N)’
+ >- (rw [PL_def, count_def])
+ >> DISCH_TAC
+ >> simp [is_head_reduction_def]
+QED
+
 Theorem infinite_head_reduction_path_to_llist :
     !M. infinite (head_reduction_path M) <=>
         ?l. ~LFINITE l /\ (LNTH 0 l = SOME M) /\
@@ -869,7 +883,7 @@ Proof
     ‘infinite q’ by PROVE_TAC [finite_drop] \\
      Know ‘is_head_reduction q’
      >- (qunabbrev_tac ‘q’ \\
-         MATCH_MP_TAC is_head_reduction_infinite_drop \\
+         MATCH_MP_TAC infinite_is_head_reduction_drop \\
          rw [Abbr ‘p’, head_reduction_path_def]) >> DISCH_TAC \\
     ‘?x r xs. q = pcons x r xs’ by METIS_TAC [infinite_path_cases] \\
      fs [is_head_reduction_thm] \\
@@ -909,6 +923,52 @@ Proof
  >> ‘!i. el i p = f i’    by (rw [Abbr ‘p’, el_pgenerate])
  >> ASM_REWRITE_TAC [GSYM ADD1]
  >> Q.EXISTS_TAC ‘SUC i’ >> REWRITE_TAC []
+QED
+
+Theorem finite_head_reduction_path_to_list :
+    !M. finite (head_reduction_path M) <=>
+        ?l. (EL 0 l = M) /\ hnf (LAST l) /\
+            !i. SUC i < LENGTH l ==> EL i l -h-> EL (SUC i) l
+Proof
+    Q.X_GEN_TAC ‘M’
+ >> qabbrev_tac ‘p = head_reduction_path M’
+ >> EQ_TAC >> rpt STRIP_TAC
+ >- (‘?n. length p = SOME n’ by METIS_TAC [finite_length] \\
+     Cases_on ‘n’ >- fs [length_never_zero] \\
+     rename1 ‘length p = SOME (SUC n)’ \\
+     Q.EXISTS_TAC ‘GENLIST (\i. el i p) (SUC n)’ >> simp [] \\
+     CONJ_TAC >- rw [Abbr ‘p’, head_reduction_path_def] \\
+     CONJ_TAC
+     >- (qabbrev_tac ‘l = GENLIST (\i. el i p) (SUC n)’ \\
+        ‘l <> []’ by (rw [Abbr ‘l’, LENGTH_GENLIST, NOT_NIL_EQ_LENGTH_NOT_0]) \\
+         rw [Abbr ‘l’, LAST_EL] \\
+         Suff ‘el n p = last p’ >- rw [Abbr ‘p’, head_reduction_path_def] \\
+         rw [finite_last_el]) \\
+     rw [head_reduce1_def] \\
+    ‘i IN PL p /\ i + 1 IN PL p’ by rw [PL_def] \\
+     qabbrev_tac ‘q = drop i p’ \\
+    ‘el i p = first q’ by rw [Abbr ‘q’] >> POP_ORW \\
+     Know ‘el i (tail p) = first (tail q)’
+     >- (rw [Abbr ‘q’, REWRITE_RULE [ADD1] el_def]) >> Rewr' \\
+     Know ‘is_head_reduction q’
+     >- (qunabbrev_tac ‘q’ \\
+         irule finite_is_head_reduction_drop \\
+         rw [Abbr ‘p’, head_reduction_path_def]) >> DISCH_TAC \\
+  (* perform case analysis *)
+    ‘(?x. q = stopped_at x) \/ ?x r xs. q = pcons x r xs’ by METIS_TAC [path_cases]
+     >- (Know ‘PL q = IMAGE (\n. n - i) (PL p)’
+         >- rw [Abbr ‘q’, PL_drop] \\
+        ‘PL p = count (SUC n)’ by rw [PL_def, count_def] >> POP_ORW \\
+         POP_ORW (* q = stopped_at x *) \\
+         simp [PL_stopped_at] \\
+         Suff ‘IMAGE (\n. n - i) (count (SUC n)) <> {0}’ >- METIS_TAC [] \\
+         rw [Once EXTENSION] \\
+         Q.EXISTS_TAC ‘n - i’ >> rw [] \\
+         Q.EXISTS_TAC ‘n’ >> art []) \\
+     fs [is_head_reduction_thm] \\
+     Q.EXISTS_TAC ‘r’ >> art [])
+ (* stage work *)
+ >> cheat
 QED
 
 val _ = export_theory()

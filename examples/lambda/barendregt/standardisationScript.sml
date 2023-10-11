@@ -1893,7 +1893,7 @@ val has_bnf_whnf = store_thm(
   METIS_TAC [has_bnf_hnf, has_hnf_whnf]);
 
 (* Proposition 8.3.13 (i) [1, p.174] *)
-Theorem has_hnf_iff_LAM[simp] :
+Theorem has_hnf_LAM_E[simp] :
     !x M. has_hnf (LAM x M) <=> has_hnf M
 Proof
     RW_TAC std_ss [has_hnf_def]
@@ -1912,7 +1912,7 @@ Proof
 QED
 
 (* Proposition 8.3.13 (ii) [1, p.174] *)
-Theorem has_hnf_if_subst :
+Theorem has_hnf_SUB_E :
     !M N z. has_hnf ([N/z] M) ==> has_hnf M
 Proof
     rpt STRIP_TAC
@@ -1936,6 +1936,23 @@ Proof
      rw [])
  >> Rewr
  >> MATCH_MP_TAC hreduce1_substitutive >> art []
+QED
+
+(* Proposition 8.3.13 (iii) [1, p.174], cf. has_whnf_APP_E
+
+   Uses has_hnf_thm, head_reductions_have_weak_prefixes, hnf_thm
+ *)
+Theorem has_hnf_APP_E :
+    has_hnf (M @@ N) ==> has_hnf M
+Proof
+    rpt STRIP_TAC
+ >> ‘finite (head_reduction_path (M @@ N))’ by rw [GSYM corollary11_4_8]
+ (*
+ >> ‘?N1. M @@ N -h->* N1 /\ hnf N1’ by METIS_TAC [has_hnf_thm]
+ >> MP_TAC (Q.SPECL [‘M @@ N’, ‘N1’] head_reductions_have_weak_prefixes)
+ >> RW_TAC std_ss []
+ *)
+ >> cheat
 QED
 
 val _ = export_theory()

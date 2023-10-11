@@ -606,13 +606,6 @@ Proof
         Q.EXISTS_TAC ‘fm’ >> simp [] ] ]
 QED
 
-(* Proposition 8.3.13 (iii) [1, p.174] *)
-Theorem solvable_iff_APP :
-    !M N. has_hnf (M @@ N) <=> has_hnf M
-Proof
-    cheat
-QED
-
 (* Theorem 8.3.14 (Wadsworth) [1, p.175] *)
 Theorem solvable_iff_has_hnf :
     !M. solvable M <=> has_hnf M
@@ -625,7 +618,7 @@ Proof
  >> Suff ‘solvable M0 <=> has_hnf M0’
  >- (Q.UNABBREV_TAC ‘M0’ \\
      KILL_TAC >> Induct_on ‘vs’ >- rw [] \\
-     rw [solvable_iff_LAM, has_hnf_iff_LAM])
+     rw [solvable_iff_LAM, has_hnf_LAM_E])
  >> POP_ASSUM MP_TAC
  >> KILL_TAC
  >> Q.SPEC_TAC (‘M0’, ‘M’)
@@ -639,7 +632,8 @@ Proof
      Q.ID_SPEC_TAC ‘Ns’ >> KILL_TAC \\
      HO_MATCH_MP_TAC SNOC_INDUCT >> rw [SNOC_APPEND, appstar_SNOC] \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
-     FULL_SIMP_TAC std_ss [solvable_iff_APP])
+     rename1 ‘has_hnf (M @* Ns @@ N)’ \\
+     MATCH_MP_TAC has_hnf_APP_E >> art [])
  (* stage work *)
  >> rw [has_hnf_def, solvable_alt_closed]
  >> ‘?vs y Ns. N = LAMl vs (VAR y @* Ns)’ by METIS_TAC [hnf_cases]
