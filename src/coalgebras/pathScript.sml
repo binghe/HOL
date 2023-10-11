@@ -339,6 +339,17 @@ val finite_length = store_thm(
   PROVE_TAC [finite_length_lemma, optionTheory.option_CASES,
              optionTheory.NOT_NONE_SOME]);
 
+Theorem length_cases :
+    !p. (finite p <=> (?n. length p = SOME (SUC n))) /\
+        (~finite p <=> (length p = NONE))
+Proof
+    rw [finite_length]
+ >> reverse EQ_TAC >> rw []
+ >- (Q.EXISTS_TAC ‘SUC n’ >> rw [])
+ >> Cases_on ‘n’ >- fs [length_never_zero]
+ >> rename1 ‘length p = SOME (SUC n1)’
+ >> Q.EXISTS_TAC ‘n1’ >> rw []
+QED
 
 val length_pmap = store_thm(
   "length_pmap",
@@ -1842,6 +1853,29 @@ Proof
  >> qexistsl_tac [‘x’, ‘r’, ‘q’]
  >> ASM_REWRITE_TAC []
  >> CCONTR_TAC >> fs []
+QED
+
+Theorem finite_take_all :
+    !p. finite p ==> (take (PRE (THE (length p))) p = p)
+Proof
+    HO_MATCH_MP_TAC finite_path_ind
+ >> rw [length_thm]
+ >> POP_ASSUM MP_TAC
+ >> ‘?n. length p = SOME (SUC n)’ by METIS_TAC [length_cases]
+ >> rw [PRE_SUB1, take_def]
+QED
+
+Theorem finite_last_el :
+    !p. finite p ==> (last p = el (PRE (THE (length p))) p)
+Proof
+    rpt STRIP_TAC
+ >> ‘last p = last (take (PRE (THE (length p))) p)’
+      by PROVE_TAC [finite_take_all]
+ >> POP_ASSUM (fn th => ONCE_REWRITE_TAC [th])
+ >> MATCH_MP_TAC last_take
+ >> rw [PL_def]
+ >> ‘?n. length p = SOME (SUC n)’ by METIS_TAC [length_cases]
+ >> rw []
 QED
 
 val _ = export_theory();
