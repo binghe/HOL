@@ -1862,7 +1862,7 @@ Proof
  >> rw [length_thm]
  >> POP_ASSUM MP_TAC
  >> ‘?n. length p = SOME (SUC n)’ by METIS_TAC [length_cases]
- >> rw [PRE_SUB1, take_def]
+ >> rw [arithmeticTheory.PRE_SUB1, take_def]
 QED
 
 Theorem finite_last_el :
