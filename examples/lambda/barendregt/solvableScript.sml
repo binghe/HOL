@@ -639,9 +639,10 @@ Proof
  >> Know ‘FV N = {}’
  >- (fs [closed_def] \\
      Suff ‘FV N SUBSET FV M’ >- ASM_SET_TAC [] \\
-     MP_TAC (Q.GEN ‘v’ (Q.SPECL [‘M’, ‘N’] hstar_FV)) >> rw [SUBSET_DEF])
+     MP_TAC (Q.GEN ‘v’ (Q.SPECL [‘M’, ‘N’] hreduces_FV)) >> rw [SUBSET_DEF])
  >> DISCH_TAC
- >> ‘?vs y Ns. N = LAMl vs (VAR y @* Ns)’ by METIS_TAC [hnf_cases]
+ >> ‘?vs y Ns. ALL_DISTINCT vs /\ N = LAMl vs (VAR y @* Ns)’
+       by METIS_TAC [hnf_cases]
  >> Know ‘MEM y vs’
  >- (CCONTR_TAC \\
      Q.PAT_X_ASSUM ‘FV N = {}’ MP_TAC \\
@@ -656,7 +657,7 @@ Proof
      MATCH_MP_TAC lameq_TRANS \\
      Q.EXISTS_TAC ‘N @* Ms’ >> art [])
  >> Q.PAT_X_ASSUM ‘N = LAMl vs (VAR y @* Ns)’ (ONCE_REWRITE_TAC o wrap)
- (* applying lameq_LAMl_appstar *)
+ (* applying lameq_LAMl_appstar and ssub_appstar *)
  >> cheat
 QED
 
