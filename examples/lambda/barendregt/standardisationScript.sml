@@ -1947,11 +1947,6 @@ Theorem has_hnf_APP_E :
 Proof
     rpt STRIP_TAC
  >> ‘finite (head_reduction_path (M @@ N))’ by rw [GSYM corollary11_4_8]
- (*
- >> ‘?N1. M @@ N -h->* N1 /\ hnf N1’ by METIS_TAC [has_hnf_thm]
- >> MP_TAC (Q.SPECL [‘M @@ N’, ‘N1’] head_reductions_have_weak_prefixes)
- >> RW_TAC std_ss []
- *)
  >> cheat
 QED
 

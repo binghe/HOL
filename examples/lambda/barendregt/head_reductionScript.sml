@@ -976,7 +976,7 @@ Proof
      Q.PAT_X_ASSUM ‘!i. SUC i < len ==> P’ (Q.SPEC_THEN ‘i’ MP_TAC) \\
      rw [head_reduce1_def])
  >> DISCH_TAC
- (* This asserts ‘f’ as the path label generator *)
+ (* this asserts ‘f’ as the path label generator *)
  >> FULL_SIMP_TAC std_ss [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM]
  >> qabbrev_tac ‘nl = GENLIST I (PRE len)’
  >> qabbrev_tac ‘g = \i. pcons (EL i l) (f i)’
@@ -1010,7 +1010,91 @@ Proof
      Induct_on ‘nl’ >- rw [] \\
      rw [Abbr ‘g’])
  >> rename1 ‘is_head_reduction p’
- >> cheat
+ (* applying is_head_reduction_thm *)
+ >> qunabbrev_tac ‘p’
+ >> ‘nl = DROP (PRE len - PRE len) nl’ by rw [] >> POP_ORW
+ >> Suff ‘!n. n < len ==>
+              is_head_reduction (FOLDR g (stopped_at (LAST l)) (DROP (PRE len - n) nl))’
+ >- rw []
+ >> Induct_on ‘n’ >> simp []
+ >- (Know ‘DROP (PRE len) nl = []’
+     >- (MATCH_MP_TAC DROP_LENGTH_TOO_LONG >> rw [Abbr ‘len’, Abbr ‘nl’]) >> Rewr' \\
+     rw [Abbr ‘g’, is_head_reduction_thm])
+ >> STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘n < len ==> P’ MP_TAC
+ >> Know ‘n < len’ >- rw []
+ >> RW_TAC std_ss []
+ >> qabbrev_tac ‘k = PRE len - SUC n’
+ >> Q.PAT_X_ASSUM ‘is_head_reduction _’ MP_TAC
+ >> ‘PRE len - n = SUC k’ by rw [Abbr ‘k’] >> POP_ORW
+ >> ‘(len = 1) \/ 1 < len’ by rw [] >- rw [Abbr ‘nl’]
+ >> ‘0 < PRE len’ by (Cases_on ‘len’ >> rw [])
+ >> ‘nl <> []’ by (rw [Abbr ‘nl’, NOT_NIL_EQ_LENGTH_NOT_0])
+ >> Know ‘HD nl = 0’
+ >- (rw [Abbr ‘nl’] \\
+     Cases_on ‘len’ >> rw [] \\
+     rename1 ‘n < SUC m’ \\
+     Cases_on ‘m’ >> rw [HD_GENLIST])
+ >> DISCH_TAC
+ >> ‘?x xs. nl = x::xs’ by METIS_TAC [list_CASES] >> gs []
+ >> Cases_on ‘k = 0’ >> rw []
+ >- (RW_TAC std_ss [DROP_def ,Abbr ‘g’] \\
+     RW_TAC arith_ss [is_head_reduction_thm] \\
+    ‘SUC 0 < len’ by rw [] \\
+     Suff ‘first (FOLDR (\i. pcons (EL i l) (f i)) (stopped_at (LAST l)) xs) =
+           EL (SUC 0) l’ >- RW_TAC bool_ss [] \\
+     Cases_on ‘xs = []’
+     >- (fs [is_head_reduction_thm, LAST_EL] \\
+         Know ‘LENGTH (GENLIST I (PRE len)) = LENGTH [0]’ >- art [] \\
+         simp []) \\
+    ‘?y ys. xs = y::ys’ by METIS_TAC [list_CASES] >> rw [] \\
+     Know ‘y = EL 1 (GENLIST I (PRE len))’ >- rw [] \\
+     Know ‘LENGTH (GENLIST I (PRE len)) = LENGTH (0::y::ys)’ >- art [] \\
+     simp [])
+ (* stage work *)
+ >> qabbrev_tac ‘ys = DROP k xs’
+ >> Know ‘DROP (k - 1) xs = EL (k - 1) xs::ys’
+ >- (qunabbrev_tac ‘ys’ \\
+     MATCH_MP_TAC LIST_EQ >> rw []
+     >- (rw [SUB_LEFT_SUC] \\
+         Know ‘LENGTH (GENLIST I (PRE len)) = LENGTH (0::xs)’ >- art [] \\
+         simp [Abbr ‘k’]) \\
+     Cases_on ‘x = 0’ >- (rw [HD_DROP]) \\
+    ‘x + k - 1 < LENGTH xs’ by rw [] \\
+     rw [EL_DROP] \\
+     Cases_on ‘x’ >> rw [] \\
+     rename1 ‘SUC m + k - 1 < LENGTH xs’ \\
+    ‘m + k < LENGTH xs’ by rw [] \\
+     rw [EL_DROP] \\
+     Suff ‘k + SUC m - 1 = k + m’ >- Rewr \\
+     numLib.ARITH_TAC)
+ >> Rewr'
+ >> Know ‘EL (k - 1) xs = EL (SUC (k - 1)) (GENLIST I (PRE len))’
+ >- rw []
+ >> ‘SUC (k - 1) = k’ by rw [] >> POP_ORW
+ >> ‘k < PRE len’ by rw [Abbr ‘k’]
+ >> rw [EL_GENLIST]
+ >> Q.PAT_X_ASSUM ‘!i. SUC i < len ==> P’ (MP_TAC o (Q.SPEC ‘k’))
+ >> rw [Abbr ‘g’]
+ >> Suff ‘first (FOLDR (\i. pcons (EL i l) (f i)) (stopped_at (LAST l)) ys) =
+          EL (SUC k) l’ >- RW_TAC bool_ss []
+ >> Cases_on ‘ys = []’
+ >- (fs [is_head_reduction_thm, LAST_EL] \\
+     Suff ‘PRE len = SUC k’ >- rw [] \\
+    ‘LENGTH xs <= k’ by fs [Abbr ‘ys’, DROP_EQ_NIL] \\
+     Know ‘LENGTH (GENLIST I (PRE len)) = LENGTH (0::xs)’ >- art [] \\
+     simp [])
+ >> ‘k < LENGTH xs’ by fs [Abbr ‘ys’, DROP_EQ_NIL]
+ >> ‘?z zs. ys = z::zs’ by METIS_TAC [list_CASES] >> rw []
+ >> ‘z = HD (DROP k xs)’ by rw [] >> POP_ORW
+ >> rw [HD_DROP]
+ (* preparing for EL_GENLIST *)
+ >> Suff ‘EL k xs = I (SUC k)’ >- rw []
+ >> Know ‘EL k xs = EL (SUC k) (GENLIST I (PRE len))’ >- rw []
+ >> Rewr'
+ >> MATCH_MP_TAC EL_GENLIST
+ >> Know ‘LENGTH (GENLIST I (PRE len)) = LENGTH (0::xs)’ >- art []
+ >> simp []
 QED
 
 val _ = export_theory()
