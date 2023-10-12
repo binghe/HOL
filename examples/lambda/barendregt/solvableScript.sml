@@ -635,8 +635,28 @@ Proof
      rename1 ‘has_hnf (M @* Ns @@ N)’ \\
      MATCH_MP_TAC has_hnf_APP_E >> art [])
  (* stage work *)
- >> rw [has_hnf_def, solvable_alt_closed]
+ >> rw [has_hnf_thm, solvable_alt_closed]
+ >> Know ‘FV N = {}’
+ >- (fs [closed_def] \\
+     Suff ‘FV N SUBSET FV M’ >- ASM_SET_TAC [] \\
+     MP_TAC (Q.GEN ‘v’ (Q.SPECL [‘M’, ‘N’] hstar_FV)) >> rw [SUBSET_DEF])
+ >> DISCH_TAC
  >> ‘?vs y Ns. N = LAMl vs (VAR y @* Ns)’ by METIS_TAC [hnf_cases]
+ >> Know ‘MEM y vs’
+ >- (CCONTR_TAC \\
+     Q.PAT_X_ASSUM ‘FV N = {}’ MP_TAC \\
+     rw [Once EXTENSION, FV_LAMl, FV_appstar] \\
+     Q.EXISTS_TAC ‘y’ >> rw [])
+ >> DISCH_TAC
+ >> Suff ‘?Ms. N @* Ms == I’
+ >- (STRIP_TAC \\
+     Q.EXISTS_TAC ‘Ms’ \\
+    ‘M == N’ by PROVE_TAC [hreduces_lameq] \\
+    ‘M @* Ms == N @* Ms’ by PROVE_TAC [lameq_appstar_cong] \\
+     MATCH_MP_TAC lameq_TRANS \\
+     Q.EXISTS_TAC ‘N @* Ms’ >> art [])
+ >> Q.PAT_X_ASSUM ‘N = LAMl vs (VAR y @* Ns)’ (ONCE_REWRITE_TAC o wrap)
+ (* applying lameq_LAMl_appstar *)
  >> cheat
 QED
 

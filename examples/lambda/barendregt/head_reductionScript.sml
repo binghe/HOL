@@ -37,6 +37,12 @@ val hreduce1_FV = store_thm(
   ``∀M N. M -h-> N ⇒ ∀v. v ∈ FV N ⇒ v ∈ FV M``,
   METIS_TAC [SUBSET_DEF, hreduce_ccbeta, cc_beta_FV_SUBSET]);
 
+Theorem hreduces_FV :
+    ∀M N. M -h->* N ⇒ v ∈ FV N ⇒ v ∈ FV M
+Proof
+    HO_MATCH_MP_TAC relationTheory.RTC_INDUCT
+ >> METIS_TAC [relationTheory.RTC_RULES, hreduce1_FV]
+QED
 
 val _ = temp_add_rule {block_style = (AroundEachPhrase, (PP.INCONSISTENT,2)),
                        fixity = Infix(NONASSOC, 950),
@@ -228,21 +234,28 @@ Proof
   dsimp[SF CONJ_ss] >> metis_tac[]
 QED
 
-(* FIXME: can we put ‘ALL_DISTINCT vs’ into RHS? cf. bnf_characterisation *)
+(* NOTE: ‘ALL_DISTINCT vs’ has been added to RHS. *)
 Theorem hnf_cases :
-  !M : term. hnf M <=> ?vs args y. M = LAMl vs (VAR y @* args)
+    !M : term. hnf M <=> ?vs args y. ALL_DISTINCT vs /\ (M = LAMl vs (VAR y @* args))
 Proof
-  simp[FORALL_AND_THM, EQ_IMP_THM] >> conj_tac
-  >- (gen_tac >> MP_TAC (Q.SPEC ‘M’ strange_cases)
-      >> RW_TAC std_ss []
-      >- (FULL_SIMP_TAC std_ss [size_1_cases] \\
-          qexistsl_tac [‘vs’, ‘[]’, ‘y’] >> rw [])
-      >> FULL_SIMP_TAC std_ss [hnf_LAMl]
-      >> ‘hnf t /\ ~is_abs t’ by PROVE_TAC [hnf_appstar]
-      >> ‘is_var t’ by METIS_TAC [term_cases]
-      >> FULL_SIMP_TAC std_ss [is_var_cases]
-      >> qexistsl_tac [‘vs’, ‘args’, ‘y’] >> art []) >>
-  simp[PULL_EXISTS, hnf_appstar]
+    simp [FORALL_AND_THM, EQ_IMP_THM]
+ (* this direction is proved by Michael Norrish *)
+ >> reverse conj_tac
+ >- simp [PULL_EXISTS, hnf_appstar]
+ (* below is learnt from bnf_characterisation *)
+ >> ho_match_mp_tac nc_INDUCTION2
+ >> qexists_tac ‘{}’ >> rw [] >~ [‘VAR _ @* _ = M1 @@ M2’]
+ >- (gs [app_eq_appstar] \\
+     qexists_tac ‘args ++ [M2]’ >> rw [GSYM SNOC_APPEND])
+ >> gs [app_eq_appstar] >~ [‘VAR z @* Ms’]
+ >> reverse (Cases_on ‘MEM y vs’)
+ >- (qexistsl_tac [‘y::vs’, ‘Ms’, ‘z’] >> simp [])
+ >> ‘y # LAMl vs (VAR z @* Ms)’ by simp [FV_LAMl]
+ >> Q_TAC (NEW_TAC "x") ‘y INSERT (set vs) UNION (FV (VAR z @* Ms))’
+ >> ‘x # LAMl vs (VAR z @* Ms)’ by simp [FV_LAMl]
+ >> dxrule_then (qspec_then ‘y’ mp_tac) tpm_ALPHA
+ >> simp [tpm_fresh, FV_LAMl]
+ >> strip_tac >> qexists ‘x::vs’ >> simp []
 QED
 
 (* ----------------------------------------------------------------------
@@ -672,6 +685,14 @@ val head_reduces_reduction_beta = store_thm(
   SIMP_TAC (srw_ss()) [head_reduces_RTC_hreduce1] THEN
   MATCH_MP_TAC relationTheory.RTC_MONOTONE THEN
   METIS_TAC [head_reduce1_def, labelled_redn_cc]);
+
+Theorem hreduces_lameq :
+    M -h->* N ==> M == N
+Proof
+    rw [SYM head_reduces_RTC_hreduce1]
+ >> MATCH_MP_TAC betastar_lameq
+ >> MATCH_MP_TAC head_reduces_reduction_beta >> art []
+QED
 
 val head_reduces_TRANS = store_thm(
   "head_reduces_TRANS",

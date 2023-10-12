@@ -1938,15 +1938,54 @@ Proof
  >> MATCH_MP_TAC hreduce1_substitutive >> art []
 QED
 
-(* Proposition 8.3.13 (iii) [1, p.174], cf. has_whnf_APP_E
-
-   Uses has_hnf_thm, head_reductions_have_weak_prefixes, hnf_thm
- *)
+(* Proposition 8.3.13 (iii) [1, p.174], cf. has_whnf_APP_E *)
 Theorem has_hnf_APP_E :
     has_hnf (M @@ N) ==> has_hnf M
 Proof
     rpt STRIP_TAC
  >> ‘finite (head_reduction_path (M @@ N))’ by rw [GSYM corollary11_4_8]
+ (* this asserts a list ‘l’ *)
+ >> fs [finite_head_reduction_path_to_list]
+ >> ‘0 < LENGTH l’ by rw [GSYM NOT_NIL_EQ_LENGTH_NOT_0]
+ (* case 1 *)
+ >> Cases_on ‘EVERY (\e. is_comb e /\ ~is_abs (rator e)) l’
+ >- (POP_ASSUM MP_TAC >> rw [EVERY_MEM] \\
+     Suff ‘!i. SUC i < LENGTH l ==> rator (EL i l) -h-> rator (EL (SUC i) l)’
+     >- (DISCH_TAC \\
+         rw [corollary11_4_8, finite_head_reduction_path_to_list] \\
+         qabbrev_tac ‘l0 = MAP rator l’ \\
+        ‘(LENGTH l0 = LENGTH l) /\ l0 <> []’ by rw [Abbr ‘l0’] \\
+         Q.EXISTS_TAC ‘l0’ >> RW_TAC std_ss [] >| (* 3 subgoals *)
+         [ (* goal 1 (of 3) *)
+           ASM_SIMP_TAC arith_ss [GSYM EL, EL_MAP, Abbr ‘l0’] >> rw [],
+           (* goal 2 (of 3) *)
+           rw [LAST_MAP, Abbr ‘l0’] \\
+           Know ‘MEM (LAST l) l’
+           >- (rw [LAST_EL, MEM_EL] \\
+               Q.EXISTS_TAC ‘PRE (LENGTH l)’ >> rw []) >> DISCH_TAC \\
+           qabbrev_tac ‘e = LAST l’ \\
+          ‘is_comb e /\ ~is_abs (rator e)’ by PROVE_TAC [] \\
+          ‘?u v. e = u @@ v’ by METIS_TAC [is_comb_APP_EXISTS] \\
+           fs [] (* hnf_thm is used *),
+           (* goal 3 (of 3) *)
+          ‘i < LENGTH l’ by rw [] \\
+           rw [Abbr ‘l0’, EL_MAP] ]) \\
+     (* stage work *)
+     rpt STRIP_TAC \\
+    ‘i < LENGTH l’ by rw [] \\
+     qabbrev_tac ‘a = EL i l’ >> qabbrev_tac ‘b = EL (SUC i) l’ \\
+     Know ‘a -h-> b’ >- PROVE_TAC [] \\
+    ‘MEM a l /\ MEM b l’ by METIS_TAC [MEM_EL] \\
+    ‘is_comb a /\ ~is_abs (rator a) /\
+     is_comb b /\ ~is_abs (rator b)’ by PROVE_TAC [] \\
+    ‘?u v. a = u @@ v’ by METIS_TAC [is_comb_APP_EXISTS] \\
+    ‘?t w. b = t @@ w’ by METIS_TAC [is_comb_APP_EXISTS] \\
+     FULL_SIMP_TAC std_ss [rator_def] \\
+     DISCH_THEN (MP_TAC o (ONCE_REWRITE_RULE [hreduce1_cases])) >> rw [] \\
+     FULL_SIMP_TAC std_ss [is_abs_thm] (* a leftover *))
+ (* case 2 *)
+ >> POP_ASSUM MP_TAC
+ >> simp [NOT_EVERY, EXISTS_MEM] (* TODO: how to find the smallest one? *)
  >> cheat
 QED
 
