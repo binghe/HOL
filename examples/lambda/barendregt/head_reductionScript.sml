@@ -927,7 +927,7 @@ QED
 
 Theorem finite_head_reduction_path_to_list :
     !M. finite (head_reduction_path M) <=>
-        ?l. (EL 0 l = M) /\ hnf (LAST l) /\
+        ?l. l <> [] /\ (HD l = M) /\ hnf (LAST l) /\
             !i. SUC i < LENGTH l ==> EL i l -h-> EL (SUC i) l
 Proof
     Q.X_GEN_TAC ‘M’
@@ -937,10 +937,10 @@ Proof
      Cases_on ‘n’ >- fs [length_never_zero] \\
      rename1 ‘length p = SOME (SUC n)’ \\
      Q.EXISTS_TAC ‘GENLIST (\i. el i p) (SUC n)’ >> simp [] \\
-     CONJ_TAC >- rw [Abbr ‘p’, head_reduction_path_def] \\
-     CONJ_TAC
+     STRONG_CONJ_TAC >- rw [NOT_NIL_EQ_LENGTH_NOT_0] >> DISCH_TAC \\
+     CONJ_TAC >- rw [GSYM EL, Abbr ‘p’, head_reduction_path_def] \\
+     CONJ_TAC (* hnf *)
      >- (qabbrev_tac ‘l = GENLIST (\i. el i p) (SUC n)’ \\
-        ‘l <> []’ by (rw [Abbr ‘l’, LENGTH_GENLIST, NOT_NIL_EQ_LENGTH_NOT_0]) \\
          rw [Abbr ‘l’, LAST_EL] \\
          Suff ‘el n p = last p’ >- rw [Abbr ‘p’, head_reduction_path_def] \\
          rw [finite_last_el]) \\
@@ -968,6 +968,48 @@ Proof
      fs [is_head_reduction_thm] \\
      Q.EXISTS_TAC ‘r’ >> art [])
  (* stage work *)
+ >> qabbrev_tac ‘len = LENGTH l’
+ >> ‘0 < len /\ len <> 0’ by rw [Abbr ‘len’, GSYM NOT_NIL_EQ_LENGTH_NOT_0]
+ >> Know ‘!i. SUC i < len ==>
+              ?r. r is_head_redex (EL i l) /\ labelled_redn beta (EL i l) r (EL (SUC i) l)’
+ >- (rpt STRIP_TAC \\
+     Q.PAT_X_ASSUM ‘!i. SUC i < len ==> P’ (Q.SPEC_THEN ‘i’ MP_TAC) \\
+     rw [head_reduce1_def])
+ >> DISCH_TAC
+ (* This asserts ‘f’ as the path label generator *)
+ >> FULL_SIMP_TAC std_ss [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM]
+ >> qabbrev_tac ‘nl = GENLIST I (PRE len)’
+ >> qabbrev_tac ‘g = \i. pcons (EL i l) (f i)’
+ >> qabbrev_tac ‘q = FOLDR g (stopped_at (LAST l)) nl’
+ >> Know ‘finite q’
+ >- (qunabbrev_tac ‘q’ \\
+     Q.PAT_X_ASSUM ‘Abbrev (nl = _)’ K_TAC \\
+     Induct_on ‘nl’ >- rw [] \\
+     rw [Abbr ‘g’])
+ >> DISCH_TAC
+ (* applying head_reduction_path_unique *)
+ >> Suff ‘head_reduction_path M = q’ >- PROVE_TAC []
+ >> MATCH_MP_TAC head_reduction_path_unique >> simp []
+ (* stage work *)
+ >> CONJ_TAC (* first q = M *)
+ >- (‘(len = 1) \/ 1 < len’ by rw []
+     >- (rw [Abbr ‘nl’, Abbr ‘q’, HD_GENLIST, LAST_EL]) \\
+     Know ‘HD nl = 0’
+     >- (rw [Abbr ‘nl’] \\
+         Cases_on ‘len’ >> rw [] \\
+         Cases_on ‘n’ >> rw [HD_GENLIST]) >> DISCH_TAC \\
+    ‘0 < PRE len’ by (Cases_on ‘len’ >> rw []) \\
+    ‘nl <> []’ by (rw [Abbr ‘nl’, NOT_NIL_EQ_LENGTH_NOT_0]) \\
+     Cases_on ‘nl’ >> fs [EL, Abbr ‘q’, Abbr ‘g’])
+ >> qunabbrev_tac ‘p’
+ >> Q.PAT_X_ASSUM ‘finite q’ K_TAC
+ (* stage work *)
+ >> reverse CONJ_TAC (* hnf (last q) *)
+ >- (qunabbrev_tac ‘q’ \\
+     Q.PAT_X_ASSUM ‘Abbrev (nl = _)’ K_TAC \\
+     Induct_on ‘nl’ >- rw [] \\
+     rw [Abbr ‘g’])
+ >> rename1 ‘is_head_reduction p’
  >> cheat
 QED
 
