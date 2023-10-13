@@ -665,9 +665,30 @@ Proof
  >> CONJ_TAC
  >- (MATCH_MP_TAC lameq_LAMl_appstar >> art [] \\
      CONJ_TAC >- rw [Abbr ‘Ms’] \\
-     rw [EVERY_EL, Abbr ‘Ms’, closed_def] \\
-     cheat)
- >> cheat
+     rw [EVERY_EL, Abbr ‘Ms’, closed_def, FV_funpow])
+ >> REWRITE_TAC [ssub_appstar]
+ >> Q.PAT_X_ASSUM ‘MEM y vs’ ((Q.X_CHOOSE_THEN ‘i’ STRIP_ASSUME_TAC) o
+                              (REWRITE_RULE [MEM_EL]))
+ >> Know ‘(FEMPTY |++ ZIP (vs,Ms)) ' (VAR y) = EL i Ms’
+ >- (cheat)
+ >> Rewr'
+ >> Know ‘EL i Ms = funpow K m I’
+ >- (‘i < n’ by rw [Abbr ‘n’] \\
+     rw [Abbr ‘Ms’, EL_GENLIST])
+ >> Rewr'
+ >> qabbrev_tac ‘Ps = MAP ($' (FEMPTY |++ ZIP (vs,Ms))) Ns’
+ >> Know ‘LENGTH Ps = m’ >- (rw [Abbr ‘m’, Abbr ‘Ps’])
+ >> KILL_TAC
+ (* final stage *)
+ >> Q.ID_SPEC_TAC ‘Ps’
+ >> Induct_on ‘m’
+ >- ASM_SIMP_TAC (betafy(srw_ss())) [LENGTH_NIL, funpow_def]
+ >> rw [funpow_SUC]
+ >> Cases_on ‘Ps’ >> fs []
+ >> MATCH_MP_TAC lameq_TRANS
+ >> Q.EXISTS_TAC ‘funpow K m I @* t’ >> rw []
+ >> MATCH_MP_TAC lameq_appstar_cong
+ >> rw [lameq_K]
 QED
 
 val _ = export_theory ();
