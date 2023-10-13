@@ -1947,6 +1947,18 @@ Proof
   FULL_SIMP_TAC (srw_ss() ++ numSimps.ARITH_ss) []
 QED
 
+Theorem FRONT_TAKE :
+    !l n. 0 < n /\ n <= LENGTH l ==> (FRONT (TAKE n l) = TAKE (n - 1) l)
+Proof
+  Induct THEN SRW_TAC [numSimps.ARITH_ss][TAKE_def, DROP_def] >>
+  `0 < n - 1 /\ n - 1 <= LENGTH l` by numLib.DECIDE_TAC THEN
+  SRW_TAC [][FRONT_DEF] THENL [
+    fs [],
+    `(n - 1) - 1 = n - 2` by numLib.DECIDE_TAC THEN
+    SRW_TAC [][]
+  ]
+QED
+
 val LENGTH_DROP = store_thm(
   "LENGTH_DROP",
   “!n l. LENGTH (DROP n l) = LENGTH l - n”,

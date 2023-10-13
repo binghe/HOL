@@ -45,17 +45,6 @@ val take_lemma = prove(
 
 val _ = augment_srw_ss[rewrites[listTheory.TAKE_def,listTheory.DROP_def]];
 
-val FRONT_TAKE = store_thm(
-  "FRONT_TAKE",
-  ``∀l n. 0 < n ∧ n ≤ LENGTH l ⇒ (FRONT (TAKE n l) = TAKE (n - 1) l)``,
-  Induct THEN SRW_TAC [ARITH_ss][] >>
-  `0 < n - 1 ∧ n - 1 ≤ LENGTH l` by DECIDE_TAC THEN
-  SRW_TAC [][listTheory.FRONT_DEF] THENL [
-    fs [],
-    `(n - 1) - 1 = n - 2` by DECIDE_TAC THEN
-    SRW_TAC [][]
-  ]);
-
 val DROP_PREn_LAST_CONS = store_thm(
   "DROP_PREn_LAST_CONS",
   ``∀t n. 0 < n ∧ n ≤ LENGTH t ⇒
@@ -309,6 +298,22 @@ Proof
     DISCH_THEN (K ALL_TAC) THEN
     SRW_TAC [][LAMl_vsub, SUB_ISUB_SINGLETON, ISUB_APPEND]
   ]
+QED
+
+(*---------------------------------------------------------------------------*
+ *  funpow for lambda terms (cf. arithmeticTheory.FUNPOW)
+ *---------------------------------------------------------------------------*)
+
+Definition funpow :
+    funpow f n (x :term) =
+        if n = 0 then x else funpow f (n - 1) (f @@ x)
+End
+
+Theorem funpow_def :
+    (!f   x. funpow f       0 x = x) /\
+    (!f n x. funpow f (SUC n) x = funpow f n (f @@ x))
+Proof
+    NTAC 2 (rw [Once funpow])
 QED
 
 val _ = export_theory ()
