@@ -316,5 +316,25 @@ Proof
     NTAC 2 (rw [Once funpow])
 QED
 
+Theorem funpow_SUC :
+    !f n x. funpow f (SUC n) x = f @@ (funpow f n x)
+Proof
+    Q.X_GEN_TAC ‘f’
+ >> Induct_on ‘n’ >> rw [funpow_def]
+ >> fs [funpow_def]
+QED
+
+Theorem FV_funpow :
+    !f x n. FV (funpow f n x) = if n = 0 then FV x else FV f UNION FV x
+Proof
+    rpt STRIP_TAC
+ >> Q.SPEC_TAC (‘n’, ‘i’)
+ >> Cases_on ‘i’ >- rw [funpow_def]
+ >> simp []
+ >> Induct_on ‘n’ >- rw [funpow_def]
+ >> fs [funpow_SUC]
+ >> SET_TAC []
+QED
+
 val _ = export_theory ()
 val _ = html_theory "appFOLDL";

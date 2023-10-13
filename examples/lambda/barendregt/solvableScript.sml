@@ -659,21 +659,14 @@ Proof
  >> Q.PAT_X_ASSUM ‘N = LAMl vs (VAR y @* Ns)’ (ONCE_REWRITE_TAC o wrap)
  >> qabbrev_tac ‘Ms = GENLIST (\i. funpow K m I) n’
  >> Q.EXISTS_TAC ‘Ms’
- (* applying lameq_LAMl_appstar_ISUB *)
+ (* applying lameq_LAMl_appstar and ssub_appstar *)
  >> MATCH_MP_TAC lameq_TRANS
- >> Q.EXISTS_TAC ‘(VAR y @* Ns) ISUB (ZIP (Ms,vs))’
- >> CONJ_TAC >- cheat
- >> REWRITE_TAC [ISUB_appstar]
- >> Q.PAT_X_ASSUM ‘MEM y vs’ ((Q.X_CHOOSE_THEN ‘i’ STRIP_ASSUME_TAC) o
-                              (REWRITE_RULE [MEM_EL]))
- >> qabbrev_tac ‘Ns' = MAP (\e. e ISUB ZIP (Ms,vs)) Ns’
- >> Know ‘VAR y ISUB ZIP (Ms,vs) = EL i Ms’
- >- (cheat)
- >> Rewr'
- >> Know ‘EL i Ms = funpow K m I’
- >- (‘i < n’ by rw [Abbr ‘n’] \\
-     rw [Abbr ‘Ms’, EL_GENLIST])
- >> Rewr'
+ >> Q.EXISTS_TAC ‘(FEMPTY |++ ZIP (vs,Ms)) ' (VAR y @* Ns)’
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC lameq_LAMl_appstar >> art [] \\
+     CONJ_TAC >- rw [Abbr ‘Ms’] \\
+     rw [EVERY_EL, Abbr ‘Ms’, closed_def] \\
+     cheat)
  >> cheat
 QED
 
