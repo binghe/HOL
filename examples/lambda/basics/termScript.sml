@@ -706,18 +706,6 @@ Proof
  >> rw [ISUB_def, SUB_VAR]
 QED
 
-Theorem ISUB_VAR :
-    !y i sub. ALL_DISTINCT (MAP SND sub) /\ FVS sub = {} /\ i < LENGTH sub /\
-             (y = EL i (MAP SND sub))
-         ==> (VAR y ISUB sub = EL i (MAP FST sub))
-Proof
-    NTAC 2 GEN_TAC
- >> Induct_on ‘sub’ >> rw []
- >> Cases_on ‘h’ >> fs []
- >> Cases_on ‘i’ >> fs []
- >> cheat
-QED
-
 (* ----------------------------------------------------------------------
     RENAMING: a special iterated substitutions like tpm
    ---------------------------------------------------------------------- *)
