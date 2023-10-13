@@ -614,13 +614,12 @@ Proof
  >> Q.ABBREV_TAC ‘vs = SET_TO_LIST (FV M)’
  >> Q.ABBREV_TAC ‘M0 = LAMl vs M’
  >> ‘closed M0’
-      by (rw [closed_def, Abbr ‘M0’, Abbr ‘vs’, FV_LAMl, SET_TO_LIST_INV])
+       by (rw [closed_def, Abbr ‘M0’, Abbr ‘vs’, FV_LAMl, SET_TO_LIST_INV])
  >> Suff ‘solvable M0 <=> has_hnf M0’
  >- (Q.UNABBREV_TAC ‘M0’ \\
      KILL_TAC >> Induct_on ‘vs’ >- rw [] \\
      rw [solvable_iff_LAM, has_hnf_LAM_E])
- >> POP_ASSUM MP_TAC
- >> KILL_TAC
+ >> POP_ASSUM MP_TAC >> KILL_TAC
  >> Q.SPEC_TAC (‘M0’, ‘M’)
  (* stage work, now M is closed *)
  >> rpt STRIP_TAC >> EQ_TAC
@@ -655,11 +654,12 @@ Proof
     ‘M @* Ms == N @* Ms’ by PROVE_TAC [lameq_appstar_cong] \\
      MATCH_MP_TAC lameq_TRANS \\
      Q.EXISTS_TAC ‘N @* Ms’ >> art [])
- (* applying lameq_LAMl_appstar and ssub_appstar *)
  >> qabbrev_tac ‘n = LENGTH vs’
  >> qabbrev_tac ‘m = LENGTH Ns’
  >> Q.PAT_X_ASSUM ‘N = LAMl vs (VAR y @* Ns)’ (ONCE_REWRITE_TAC o wrap)
- >> Q.EXISTS_TAC ‘GENLIST (\i. funpow K m I) n’
+ >> qabbrev_tac ‘Ms = GENLIST (\i. funpow K m I) n’
+ >> Q.EXISTS_TAC ‘Ms’
+ (* applying lameq_LAMl_appstar_ISUB *)
  >> cheat
 QED
 

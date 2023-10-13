@@ -639,6 +639,107 @@ val ISUB_APPEND = store_thm(
   Induct THEN
   ASM_SIMP_TAC (srw_ss()) [pairTheory.FORALL_PROD, ISUB_def]);
 
+Definition RENAMING_def :
+  (RENAMING []     <=> T) /\
+  (RENAMING (h::t) <=> (?y x:string. (h = (VAR y:term,x))) /\ RENAMING t)
+End
+
+val _ = export_rewrites ["RENAMING_def"]
+
+val RENAMING_APPEND = store_thm(
+  "RENAMING_APPEND",
+  ``!l1 l2. RENAMING (APPEND l1 l2) <=> RENAMING l1 /\ RENAMING l2``,
+  Induct THEN SRW_TAC [][] THEN METIS_TAC []);
+
+(* |- ((RENAMING [] <=> T) /\
+       !h t. RENAMING (h::t) <=> (?y x. h = (VAR y,x)) /\ RENAMING t) /\
+      !l1 l2. RENAMING (l1 ++ l2) <=> RENAMING l1 /\ RENAMING l2
+ *)
+Theorem RENAMING_THM = CONJ RENAMING_def RENAMING_APPEND
+
+val RENAMING_REVERSE = store_thm(
+  "RENAMING_REVERSE",
+  ``!R. RENAMING (REVERSE R) = RENAMING R``,
+  Induct THEN SRW_TAC [][RENAMING_APPEND, RENAMING_THM] THEN METIS_TAC []);
+
+val RENAMING_ZIP = store_thm(
+  "RENAMING_ZIP",
+  ``!l1 l2. (LENGTH l1 = LENGTH l2) ==>
+            (RENAMING (ZIP (l1, l2)) = !e. MEM e l1 ==> ?s. e = VAR s)``,
+  Induct THEN Cases_on `l2` THEN
+  SRW_TAC [][RENAMING_THM] THEN PROVE_TAC []);
+
+val RENAMING_ZIP_MAP_VAR = store_thm(
+  "RENAMING_ZIP_MAP_VAR",
+  ``!l1 l2. (LENGTH l1 = LENGTH l2) ==> RENAMING (ZIP (MAP VAR l1, l2))``,
+  Induct THEN Cases_on `l2` THEN
+  SRW_TAC [][RENAMING_ZIP, listTheory.MEM_MAP] THEN
+  SRW_TAC [][]);
+
+val _ = augment_srw_ss [rewrites [RENAMING_REVERSE, RENAMING_ZIP_MAP_VAR]]
+
+Theorem size_vsubst :
+    !M:term. size ([VAR v/u] M) = size M
+Proof
+  HO_MATCH_MP_TAC nc_INDUCTION2 THEN Q.EXISTS_TAC `{u;v}` THEN
+  SRW_TAC [][SUB_VAR, SUB_THM]
+QED
+
+Theorem size_ISUB :
+    !R N:term. RENAMING R ==> (size (N ISUB R) = size N)
+Proof
+  Induct THEN
+  ASM_SIMP_TAC (srw_ss())[ISUB_def, pairTheory.FORALL_PROD,
+                          RENAMING_THM] THEN
+  SRW_TAC [][] THEN SRW_TAC [][size_vsubst]
+QED
+
+Theorem ISUB_APP :
+    !sub M N. (M @@ N) ISUB sub = (M ISUB sub) @@ (N ISUB sub)
+Proof
+  Induct THEN ASM_SIMP_TAC (srw_ss()) [pairTheory.FORALL_PROD, ISUB_def,
+                                       SUB_THM]
+QED
+
+Theorem FOLDL_APP_ISUB :
+    !args (t:term) sub.
+         FOLDL APP t args ISUB sub =
+         FOLDL APP (t ISUB sub) (MAP (\t. t ISUB sub) args)
+Proof
+  Induct THEN SRW_TAC [][ISUB_APP]
+QED
+
+Theorem size_foldl_app :
+    !args t : term.
+       size (FOLDL APP t args) = FOLDL (\n t. n + size t + 1) (size t) args
+Proof
+  Induct THEN SRW_TAC [][size_thm]
+QED
+
+Theorem size_foldl_app_lt :
+    !(args : term list) x. x <= FOLDL (\n t. n + size t + 1) x args
+Proof
+  Induct THEN SRW_TAC [][] THEN
+  `x + size h + 1 <= FOLDL (\n t. n + size t + 1) (x + size h + 1) args`
+     by METIS_TAC [] THEN
+  DECIDE_TAC
+QED
+
+Theorem size_args_foldl_app :
+    !args n (t : term) x. n < LENGTH args ==>
+                size (EL n args) < x + size (FOLDL APP t args)
+Proof
+  Induct THEN SRW_TAC [][] THEN
+  Cases_on `n` THEN SRW_TAC [][] THENL [
+    SRW_TAC [][size_foldl_app, size_thm] THEN
+    `size t + size h + 1 <=
+       FOLDL (\n t. n + size t + 1) (size t + size h + 1) args`
+       by SRW_TAC [][size_foldl_app_lt] THEN
+    DECIDE_TAC,
+    FULL_SIMP_TAC (srw_ss()) []
+  ]
+QED
+
 (* ----------------------------------------------------------------------
     Simultaneous substitution (using a finite map) - much more interesting
    ---------------------------------------------------------------------- *)
