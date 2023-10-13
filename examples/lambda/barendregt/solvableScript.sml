@@ -623,8 +623,7 @@ Proof
  >> KILL_TAC
  >> Q.SPEC_TAC (‘M0’, ‘M’)
  (* stage work, now M is closed *)
- >> rpt STRIP_TAC
- >> EQ_TAC
+ >> rpt STRIP_TAC >> EQ_TAC
  >- (rw [solvable_alt_closed] \\
      Know ‘has_hnf (M @* Ns)’
      >- (rw [has_hnf_def] \\
@@ -636,17 +635,17 @@ Proof
      MATCH_MP_TAC has_hnf_APP_E >> art [])
  (* stage work *)
  >> rw [has_hnf_thm, solvable_alt_closed]
- >> Know ‘FV N = {}’
+ >> Know ‘closed N’
  >- (fs [closed_def] \\
      Suff ‘FV N SUBSET FV M’ >- ASM_SET_TAC [] \\
      MP_TAC (Q.GEN ‘v’ (Q.SPECL [‘M’, ‘N’] hreduces_FV)) >> rw [SUBSET_DEF])
  >> DISCH_TAC
  >> ‘?vs y Ns. ALL_DISTINCT vs /\ N = LAMl vs (VAR y @* Ns)’
-       by METIS_TAC [hnf_cases]
+       by METIS_TAC [hnf_cases] (* new version with ALL_DISTINCT *)
  >> Know ‘MEM y vs’
  >- (CCONTR_TAC \\
-     Q.PAT_X_ASSUM ‘FV N = {}’ MP_TAC \\
-     rw [Once EXTENSION, FV_LAMl, FV_appstar] \\
+     Q.PAT_X_ASSUM ‘closed N’ MP_TAC \\
+     rw [Once EXTENSION, FV_LAMl, FV_appstar, closed_def] \\
      Q.EXISTS_TAC ‘y’ >> rw [])
  >> DISCH_TAC
  >> Suff ‘?Ms. N @* Ms == I’
@@ -656,8 +655,11 @@ Proof
     ‘M @* Ms == N @* Ms’ by PROVE_TAC [lameq_appstar_cong] \\
      MATCH_MP_TAC lameq_TRANS \\
      Q.EXISTS_TAC ‘N @* Ms’ >> art [])
- >> Q.PAT_X_ASSUM ‘N = LAMl vs (VAR y @* Ns)’ (ONCE_REWRITE_TAC o wrap)
  (* applying lameq_LAMl_appstar and ssub_appstar *)
+ >> qabbrev_tac ‘n = LENGTH vs’
+ >> qabbrev_tac ‘m = LENGTH Ns’
+ >> Q.PAT_X_ASSUM ‘N = LAMl vs (VAR y @* Ns)’ (ONCE_REWRITE_TAC o wrap)
+ >> Q.EXISTS_TAC ‘GENLIST (\i. funpow K m I) n’
  >> cheat
 QED
 
