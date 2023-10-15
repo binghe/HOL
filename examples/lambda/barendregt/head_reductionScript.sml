@@ -605,6 +605,7 @@ val head_redex_preserved = store_thm(
     PROVE_TAC [is_comb_thm]
   ]);
 
+(* moved here from standardisationScript.sml *)
 Definition is_head_reduction_def :
   is_head_reduction s = okpath (labelled_redn beta) s /\
                         !i. i + 1 IN PL s ==>
@@ -699,6 +700,7 @@ val head_reduces_TRANS = store_thm(
   ``!M N P. M head_reduces N /\ N head_reduces P ==> M head_reduces P``,
   METIS_TAC [relationTheory.RTC_RTC, head_reduces_RTC_hreduce1]);
 
+(* moved here from standardisationScript.sml *)
 val has_hnf_def = Define`
   has_hnf M = ?N. M == N /\ hnf N
 `;
@@ -831,6 +833,7 @@ val head_reduction_path_uexists = prove(
     ]
   ]);
 
+(* moved here from standardisationScript.sml *)
 val head_reduction_path_def = new_specification(
   "head_reduction_path_def",
   ["head_reduction_path"],

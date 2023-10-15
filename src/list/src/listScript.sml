@@ -1684,8 +1684,7 @@ Proof
 QED
 
 Theorem NOT_EVERY_EXISTS_FIRST :
-    !P l. ~EVERY (\x. P x) l <=>
-          ?i. i < LENGTH l /\ ~P (EL i l) /\ !j. j < i ==> P (EL j l)
+    !P l. ~EVERY P l <=> ?i. i < LENGTH l /\ ~P (EL i l) /\ !j. j < i ==> P (EL j l)
 Proof
     rpt STRIP_TAC
  >> reverse EQ_TAC
@@ -1703,11 +1702,10 @@ Proof
 QED
 
 Theorem EXISTS_FIRST :
-    !P l. EXISTS P l <=>
-          ?i. i < LENGTH l /\ P (EL i l) /\ !j. j < i ==> ~P (EL j l)
+    !P l. EXISTS P l <=> ?i. i < LENGTH l /\ P (EL i l) /\ !j. j < i ==> ~P (EL j l)
 Proof
     rw [EXISTS_NOT_EVERY]
- >> MP_TAC (Q.SPEC ‘$~ o P’ NOT_EVERY_EXISTS_FIRST) >> rw []
+ >> MP_TAC (Q.SPEC ‘\x. ~P x’ NOT_EVERY_EXISTS_FIRST) >> rw []
 QED
 
 (* --------------------------------------------------------------------- *)
