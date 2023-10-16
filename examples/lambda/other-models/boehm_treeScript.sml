@@ -5,7 +5,7 @@
 open HolKernel boolLib Parse bossLib;
 
 (* core theories *)
-open pred_setTheory listTheory optionTheory;
+open pred_setTheory listTheory llistTheory ltreeTheory optionTheory;
 
 (* theories in ../basics *)
 open binderLib termTheory appFOLDLTheory;
@@ -18,30 +18,18 @@ open pure_dBTheory;
 
 val _ = new_theory "boehm_tree";
 
-(* Definition 10.1.1 [1, p.215]
-Definition labelled_tree_def :
-   labelled_tree (symbols :'a set) (nodes :num list set) (phi :num list -> 'a option) =
-     ([] IN nodes /\
-      (!s t. s IN nodes /\ t <<= s ==> t IN nodes) /\
-      (!s. s IN nodes ==> THE (phi s) IN symbols))
+(* Definition 8.3.20 [1, p.177]
+
+   A term may have several hnf's, e.g. if any of its hnf can still do beta
+   reductions, after such reductions the term is still an hnf by definition.
+   The (unique) terminating term of head reduction path is called "principle"
+   hnf, which is used for defining Boehm trees.
+ *)
+Definition principle_hnf_def :
+    principle_hnf (M :term) = last (head_reduction_path M)
 End
 
-(* Take out vs y and Ms from “LAMl vs ((VAR y) @* Ms)”
-
-val (is_abs_thm, _) = define_recursive_term_function
-  `(is_abs (VAR s) = F) /\
-   (is_abs (t1 @@ t2) = F) /\
-   (is_abs (LAM v t) = T)`;
-
-   TODO: Couldn't prove function with swap over range
-
-   If use ‘is_abs’ instead, how to take out the lambda body?
- *)
-val (hnf_LAMl_thm, _) = define_recursive_term_function
-   ‘(hnf_LAMl ((VAR s) :term) = []) /\
-    (hnf_LAMl (M @@ N) = []) /\
-    (hnf_LAMl (LAM v M) = v::hnf_LAMl M)’;
-
+(*
 Definition BT0_def :
    (BT0 (M :term) ([] :num list) = if unsolvable M then NONE
                                   else ARB) /\
