@@ -41,7 +41,7 @@ val sub_def = Define`
 `;
 val _ = export_rewrites ["sub_def"]
 
-Overload SUB = “sub” (* use the same pprint syntax for SUB *)
+Overload SUB = “sub” (* same syntax as SUB *)
 
 (* a variable-binding lambda-equivalent for dB terms *)
 val dLAM_def = Define`
@@ -406,10 +406,7 @@ val dpm_ALPHA = store_thm(
 val _ = augment_srw_ss [simpLib.name_ss "fromTerm_def" (rewrites [dpm_ALPHA])]
 
 (* now that we know what the free variables of dLAM are, the definition
-   below can go through
-
-   TODO: how to put fromTerm into EVAL (compLib)?
- *)
+   below can go through *)
 val (fromTerm_def,fromTerm_tpm) = binderLib.define_recursive_term_function`
   (fromTerm (VAR s) = dV (s2n s)) /\
   (fromTerm (t @@ u) = dAPP (fromTerm t) (fromTerm u)) /\

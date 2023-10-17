@@ -316,5 +316,13 @@ Proof
  >> SET_TAC []
 QED
 
+(* moved here from churchnumScript.sml *)
+Theorem size_funpow :
+    size (FUNPOW (APP f) n x) = (size f + 1) * n + size x
+Proof
+  Induct_on `n` THEN
+  SRW_TAC [ARITH_ss][FUNPOW_SUC, LEFT_ADD_DISTRIB, MULT_CLAUSES]
+QED
+
 val _ = export_theory ()
 val _ = html_theory "appFOLDL";

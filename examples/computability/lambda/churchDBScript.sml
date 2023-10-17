@@ -1390,3 +1390,4 @@ val bnf_of_cbnf = store_thm(
   ]);
 
 val _ = export_theory()
+val _ = html_theory "churchDB";

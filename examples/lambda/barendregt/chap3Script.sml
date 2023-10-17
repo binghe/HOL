@@ -910,6 +910,13 @@ val betastar_lameq_bnf = store_thm(
   METIS_TAC [theorem3_13, beta_CR, betastar_lameq, bnf_reduction_to_self,
              lameq_betaconversion]);
 
+(* moved here from churchnumScript.sml *)
+Theorem lameq_triangle :
+    M == N ∧ M == P ∧ bnf N ∧ bnf P ⇒ (N = P)
+Proof
+  METIS_TAC [betastar_lameq_bnf, lameq_rules, bnf_reduction_to_self]
+QED
+
 (* |- !M N. M =b=> N ==> M -b->* N *)
 Theorem grandbeta_imp_betastar =
     (REWRITE_RULE [theorem3_17] (Q.ISPEC ‘grandbeta’ TC_SUBSET))
