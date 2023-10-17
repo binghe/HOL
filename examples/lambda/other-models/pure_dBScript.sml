@@ -1,8 +1,8 @@
-open HolKernel boolLib Parse bossLib pred_setTheory termTheory BasicProvers
+open HolKernel boolLib Parse bossLib BasicProvers
 
-open arithmeticTheory boolSimps
+open boolSimps arithmeticTheory pred_setTheory string_numTheory;
 
-local open string_numTheory chap2Theory chap3Theory in end
+open termTheory chap2Theory chap3Theory;
 
 fun Store_thm(trip as (n,t,tac)) = store_thm trip before export_rewrites [n]
 
@@ -14,7 +14,8 @@ val _ = temp_set_fixity "=" (Infix(NONASSOC, 100))
 val _ = Datatype`pdb = dV num | dAPP pdb pdb | dABS pdb`
 
 (* Definitions of lift and substitution from Nipkow's "More Church-Rosser
-   proofs" *)
+   proofs". NOTE: ‘lift s 0’ will forcely lift everything.
+ *)
 val lift_def = Define`
   (lift (dV i) k = if i < k then dV i else dV (i + 1)) /\
   (lift (dAPP s t) k = dAPP (lift s k) (lift t k)) /\
@@ -39,6 +40,8 @@ val sub_def = Define`
   (sub s k (dABS t) = dABS (sub (lift s 0) (k + 1) t))
 `;
 val _ = export_rewrites ["sub_def"]
+
+Overload SUB = “sub” (* use the same pprint syntax for SUB *)
 
 (* a variable-binding lambda-equivalent for dB terms *)
 val dLAM_def = Define`
@@ -297,8 +300,6 @@ val sub_15a = store_thm(
   FIRST_X_ASSUM MATCH_MP_TAC THEN
   FIRST_X_ASSUM (Q.SPEC_THEN `i + 1` MP_TAC) THEN SRW_TAC [ARITH_ss][]);
 
-open chap2Theory
-
 (* from Nipkow *)
 val nipkow_lift_lemma1 = store_thm(
   "nipkow_lift_lemma1",
@@ -405,7 +406,10 @@ val dpm_ALPHA = store_thm(
 val _ = augment_srw_ss [simpLib.name_ss "fromTerm_def" (rewrites [dpm_ALPHA])]
 
 (* now that we know what the free variables of dLAM are, the definition
-   below can go through *)
+   below can go through
+
+   TODO: how to put fromTerm into EVAL (compLib)?
+ *)
 val (fromTerm_def,fromTerm_tpm) = binderLib.define_recursive_term_function`
   (fromTerm (VAR s) = dV (s2n s)) /\
   (fromTerm (t @@ u) = dAPP (fromTerm t) (fromTerm u)) /\
@@ -485,6 +489,12 @@ val fromTerm_eqlam = prove(
     SRW_TAC [][] THEN SRW_TAC [][fromTerm_def]
   ])
 
+(* |- ((fromTerm t = dV j <=> t = VAR (n2s j)) /\
+       (dV j = fromTerm t <=> t = VAR (n2s j)) /\
+       (fromTerm t = dAPP d1 d2 <=>
+        ?t1 t2. t = t1 @@ t2 /\ d1 = fromTerm t1 /\ d2 = fromTerm t2)) /\
+      (fromTerm t = dLAM i d <=> ?t0. t = LAM (n2s i) t0 /\ d = fromTerm t0)
+ *)
 val fromTerm_eqn = save_thm(
   "fromTerm_eqn",
   CONJ fromTerm_eq0 fromTerm_eqlam)
@@ -506,7 +516,6 @@ val (dbeta'_rules, dbeta'_ind, dbeta'_cases) = Hol_reln`
   (!M N i. dbeta' M N ==> dbeta' (dLAM i M) (dLAM i N))
 `;
 
-open chap3Theory
 val dbeta'_ccbeta = store_thm(
   "dbeta'_ccbeta",
   ``!t u. dbeta' t u ==> !M N. (t = fromTerm M) /\ (u = fromTerm N) ==>
@@ -865,7 +874,6 @@ val dbeta_dbeta'_eqn = store_thm(
 
 (* both of the next two proofs begin by rewriting dbeta to dbeta', using
    dbeta_dbeta'_eqn *)
-open chap3Theory
 val ccbeta_dbeta1 = prove(
   ``!M N. compat_closure beta M N ==> dbeta (fromTerm M) (fromTerm N)``,
   REWRITE_TAC [dbeta_dbeta'_eqn] THEN HO_MATCH_MP_TAC compat_closure_ind THEN
