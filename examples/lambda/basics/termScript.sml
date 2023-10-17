@@ -537,6 +537,15 @@ Theorem lemma15b:
 Proof SRW_TAC [][lemma15a]
 QED
 
+Theorem SUB_TWICE_ONE_VAR :
+    !body. [x/v] ([y/v] body) = [[x/v]y / v] body
+Proof
+  HO_MATCH_MP_TAC nc_INDUCTION2 THEN SRW_TAC [][SUB_THM, SUB_VAR] THEN
+  Q.EXISTS_TAC `v INSERT FV x UNION FV y` THEN
+  SRW_TAC [][SUB_THM] THEN
+  Cases_on `v IN FV y` THEN SRW_TAC [][SUB_THM, lemma14c, lemma14b]
+QED
+
 (* ----------------------------------------------------------------------
     alpha-convertibility results
    ---------------------------------------------------------------------- *)

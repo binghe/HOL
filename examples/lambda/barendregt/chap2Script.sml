@@ -118,14 +118,6 @@ val fixed_point_thm = store_thm(  (* p. 14 *)
 
 (* properties of substitution - p19 *)
 
-val SUB_TWICE_ONE_VAR = store_thm(
-  "SUB_TWICE_ONE_VAR",
-  ``!body. [x/v] ([y/v] body) = [[x/v]y / v] body``,
-  HO_MATCH_MP_TAC nc_INDUCTION2 THEN SRW_TAC [][SUB_THM, SUB_VAR] THEN
-  Q.EXISTS_TAC `v INSERT FV x UNION FV y` THEN
-  SRW_TAC [][SUB_THM] THEN
-  Cases_on `v IN FV y` THEN SRW_TAC [][SUB_THM, lemma14c, lemma14b]);
-
 val lemma2_11 = store_thm(
   "lemma2_11",
   ``!t. ~(v = u)  /\ ~(v IN FV M) ==>
@@ -166,6 +158,7 @@ val lemma2_12 = store_thm( (* p. 19 *)
     PROVE_TAC [lameq_rules]
   ]);
 
+(* |- M == M' ==> N == N' ==> [N/x] M == [N'/x] M' *)
 val lameq_sub_cong = save_thm(
   "lameq_sub_cong",
   REWRITE_RULE [GSYM AND_IMP_INTRO] (last (CONJUNCTS lemma2_12)));
