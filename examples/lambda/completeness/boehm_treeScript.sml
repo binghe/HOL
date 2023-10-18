@@ -1,5 +1,5 @@
 (*---------------------------------------------------------------------------*
- * boehmScript.sml: (Effective) Boehm Trees                                  *
+ * boehm_treeScript.sml: (Effective) Boehm Trees (Chapter 10 of [1])         *
  *---------------------------------------------------------------------------*)
 
 open HolKernel boolLib Parse bossLib;
@@ -11,22 +11,26 @@ open pred_setTheory listTheory llistTheory ltreeTheory optionTheory;
 open binderLib termTheory appFOLDLTheory;
 
 (* theories in ../barendregt *)
-open head_reductionTheory standardisationTheory;
+open chap2Theory chap3Theory head_reductionTheory standardisationTheory;
 
-(* local theories *)
+(* theories in ../other-models *)
 open pure_dBTheory;
 
 val _ = new_theory "boehm_tree";
 
-(* Definition 8.3.20 [1, p.177]
+(*---------------------------------------------------------------------------*
+ * Principle Head Normal Forms (phnf)
+ *---------------------------------------------------------------------------*)
+
+ (* Definition 8.3.20 [1, p.177]
 
    A term may have several hnf's, e.g. if any of its hnf can still do beta
    reductions, after such reductions the term is still an hnf by definition.
    The (unique) terminating term of head reduction path is called "principle"
    hnf, which is used for defining Boehm trees.
  *)
-Definition principle_hnf_def :
-    principle_hnf (M :term) = last (head_reduction_path M)
+Definition phnf_def :
+    phnf (M :term) = last (head_reduction_path M)
 End
 
 (*
