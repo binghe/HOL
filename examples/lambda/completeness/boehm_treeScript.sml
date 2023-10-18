@@ -5,13 +5,15 @@
 open HolKernel boolLib Parse bossLib;
 
 (* core theories *)
-open pred_setTheory listTheory llistTheory ltreeTheory optionTheory;
+open optionTheory arithmeticTheory pred_setTheory listTheory llistTheory
+     ltreeTheory pathTheory;
 
 (* theories in ../basics *)
 open binderLib termTheory appFOLDLTheory;
 
 (* theories in ../barendregt *)
-open chap2Theory chap3Theory head_reductionTheory standardisationTheory;
+open chap2Theory chap3Theory head_reductionTheory standardisationTheory
+     solvableTheory;
 
 (* theories in ../other-models *)
 open pure_dBTheory;
@@ -32,6 +34,45 @@ val _ = new_theory "boehm_tree";
 Definition phnf_def :
     phnf (M :term) = last (head_reduction_path M)
 End
+
+(* TODO: move to solvableTheory *)
+Theorem solvable_phnf :
+    !M. solvable M ==> hnf (phnf M)
+Proof
+    rw [solvable_iff_has_hnf, phnf_def, head_reduction_path_def, corollary11_4_8]
+QED
+
+(* TODO: move to pure_DBTheory *)
+Definition dABS_body_def :
+    dABS_body (dABS s) = s
+End
+
+Definition dAPP_rator_def :
+    dAPP_rator (dAPP s t) = s
+End
+
+Definition dAPP_rand_def :
+    dAPP_rand (dAPP s t) = t
+End
+
+Overload "@*" = “\f args. FOLDL dAPP f args”
+
+Definition dB_hnf_def :
+    dB_hnf M = hnf (toTerm M)
+End
+
+Theorem hnf_iff_dB_hnf :
+    !M. hnf M <=> dB_hnf (fromTerm M)
+Proof
+    rw [dB_hnf_def]
+QED
+
+(* dB version of hnf_cases *)
+Theorem dB_hnf_cases :
+    !M. dB_hnf M <=> ?n y Ms. M = FUNPOW dABS n ((dV y) @* Ms)
+Proof
+    cheat
+QED
 
 (*
 Definition BT0_def :
