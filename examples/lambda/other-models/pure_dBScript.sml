@@ -1,8 +1,15 @@
-open HolKernel boolLib Parse bossLib BasicProvers
+(*---------------------------------------------------------------------------*
+   Mechanisation of the type of "pure" de Bruijn terms, following
+   Tobias Nipkow's paper "More Church-Rosser Proofs" [1].  (They are
+   "pure" in contrast with Andy Gordon's de Bruijn terms, which have
+   indices for bound variables and strings for free variables.)
+ *---------------------------------------------------------------------------*)
 
-open boolSimps arithmeticTheory pred_setTheory string_numTheory;
+open HolKernel boolLib Parse bossLib BasicProvers;
 
-open termTheory chap2Theory chap3Theory;
+open boolSimps arithmeticTheory pred_setTheory string_numTheory listTheory;
+
+open termTheory appFOLDLTheory chap2Theory chap3Theory;
 
 fun Store_thm(trip as (n,t,tac)) = store_thm trip before export_rewrites [n]
 
@@ -173,6 +180,7 @@ val _ = export_rewrites ["dpm_thm"]
 
 (* dFVs gives the free indices of a dB term as strings *)
 val dFVs_def = Define`dFVs t = IMAGE n2s (dFV t)`
+
 val IN_dFVs_thm = store_thm(
   "IN_dFVs_thm",
   ``(s IN dFVs (dV i) = (i = s2n s)) /\
@@ -343,13 +351,14 @@ val sub_lemma = store_thm(
 
 (* which allows us to prove that substitution interacts with dLAM in the way
    we'd expect *)
-val sub_dLAM = store_thm(
-  "sub_dLAM",
-  ``~(i IN dFV N) /\ ~(i = j) ==>
-    (sub N j (dLAM i M) = dLAM i (sub N j M))``,
+Theorem sub_dLAM[simp] :
+    ~(i IN dFV N) /\ ~(i = j) ==>
+    (sub N j (dLAM i M) = dLAM i (sub N j M))
+Proof
   SRW_TAC [][dLAM_def] THEN
   SRW_TAC [][Once sub_lemma] THEN
-  SRW_TAC [][lift_sub]);
+  SRW_TAC [][lift_sub]
+QED
 
 val dFVs_lift = store_thm(
   "dFVs_lift",
@@ -1232,4 +1241,77 @@ val eta_eq_lam_eta = store_thm(
   ``eta (fromTerm M) (fromTerm N) = compat_closure eta M N``,
   METIS_TAC [eta_lam_eta, lam_eta_eta]);
 
+(*---------------------------------------------------------------------------*
+ *  Accumulated operators for dB terms (LAMl, appstar, etc.)
+ *---------------------------------------------------------------------------*)
+
+Overload "@*" = “\f args. FOLDL dAPP f args”
+Overload "LAMl" = “\vs t. FOLDR dLAM t vs”
+
+Theorem dappstar_APPEND :
+  (x :pdb) @* (Ms1 ++ Ms2) = (x @* Ms1) @* Ms2
+Proof
+  qid_spec_tac ‘x’ >> Induct_on ‘Ms1’ >> simp[]
+QED
+
+Theorem dappstar_SNOC[simp]:
+  (x :pdb) @* (SNOC M Ms) = dAPP (x @* Ms) M
+Proof
+  simp[dappstar_APPEND, SNOC_APPEND]
+QED
+
+Theorem fromTerm_appstar :
+    !args. fromTerm (f @* args) = fromTerm f @* MAP fromTerm args
+Proof
+    Induct_on ‘args’ using SNOC_INDUCT
+ >> simp [dappstar_SNOC, MAP_SNOC]
+QED
+
+Theorem fromTerm_LAMl :
+    !vs. fromTerm (LAMl vs t) = LAMl (MAP s2n vs) (fromTerm t)
+Proof
+    Induct_on ‘vs’ >> rw []
+QED
+
+(* NOTE: unlike LAMl, there's no need to keep a list of variable names, just the
+         number of nested dABS suffices.
+ *)
+Overload dABSl = “\n t. FUNPOW dABS n t”
+
+Definition isub_def:
+     (isub t [] = (t :pdb))
+  /\ (isub t ((s,x)::rst) = isub ([s/x]t) rst)
+End
+
+Overload ISUB = “isub”
+
+(* NOTE: there's already dFVs_def; The existing DOM_DEF can be reused *)
+Definition DFVS_def :
+   (DFVS [] = {}) /\
+   (DFVS ((t,x)::rst) = dFV t UNION DFVS rst)
+End
+
+Theorem FINITE_DFVS[simp] :
+    !ss. FINITE (DFVS ss)
+Proof
+    Induct >| [ALL_TAC, Cases]
+ >> RW_TAC std_ss [DFVS_def, FINITE_EMPTY, FINITE_UNION, FINITE_dFV]
+QED
+
+Theorem isub_dLAM[simp] :
+    !R x. x NOTIN DOM R /\ x NOTIN DFVS R ==>
+          !t. (dLAM x t) ISUB R = dLAM x (t ISUB R)
+Proof
+    Induct >- rw [isub_def]
+ >> rpt GEN_TAC
+ >> Cases_on ‘h’
+ >> rw [isub_def, pairTheory.FORALL_PROD, DOM_DEF, DFVS_def, sub_def]
+QED
+
 val _ = export_theory();
+val _ = html_theory "pure_dB";
+
+(* References:
+
+   [1] Nipkow, T.: More Church-Rosser Proofs. J. Autom. Reason. (2001).
+ *)

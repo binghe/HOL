@@ -662,8 +662,8 @@ Proof
  >> RW_TAC std_ss [FVS_DEF, FINITE_EMPTY, FINITE_UNION, FINITE_FV]
 QED
 
-Theorem ISUB_LAM :
-    !R x. ~(x IN (DOM R UNION FVS R)) ==>
+Theorem ISUB_LAM[simp] :
+    !R x. x NOTIN DOM R /\ x NOTIN FVS R ==>
           !t. (LAM x t) ISUB R = LAM x (t ISUB R)
 Proof
     Induct

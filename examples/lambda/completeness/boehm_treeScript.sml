@@ -55,34 +55,6 @@ Definition dAPP_rand_def :
     dAPP_rand (dAPP s t) = t
 End
 
-Overload "@*" = “\f args. FOLDL dAPP f args”
-Overload "LAMl" = “\vs t. FOLDR dLAM t vs”
-
-Theorem dappstar_APPEND :
-  (x :pdb) @* (Ms1 ++ Ms2) = (x @* Ms1) @* Ms2
-Proof
-  qid_spec_tac ‘x’ >> Induct_on ‘Ms1’ >> simp[]
-QED
-
-Theorem dappstar_SNOC[simp]:
-  (x :pdb) @* (SNOC M Ms) = dAPP (x @* Ms) M
-Proof
-  simp[dappstar_APPEND, SNOC_APPEND]
-QED
-
-Theorem fromTerm_appstar :
-    !args. fromTerm (f @* args) = fromTerm f @* MAP fromTerm args
-Proof
-    Induct_on ‘args’ using SNOC_INDUCT
- >> simp [dappstar_SNOC, MAP_SNOC]
-QED
-
-Theorem fromTerm_LAMl :
-    !vs. fromTerm (LAMl vs t) = LAMl (MAP s2n vs) (fromTerm t)
-Proof
-    Induct_on ‘vs’ >> rw []
-QED
-
 (* A dB-term M is hnf if its corresponding Lambda term is hnf *)
 Definition dhnf_def :
     dhnf M = hnf (toTerm M)
@@ -93,18 +65,6 @@ Theorem dhnf_fromTerm[simp] :
 Proof
     rw [dhnf_def]
 QED
-
-(* NOTE: unlike LAMl, there's no need to keep a list of variable names, just the
-         number of nested dABS suffices.
- *)
-Overload dABSl = “\n t. FUNPOW dABS n t”
-
-Definition isub_def:
-     (isub t [] = (t :pdb))
-  /\ (isub t ((s,x)::rst) = isub ([s/x]t) rst)
-End
-
-Overload ISUB = “isub”
 
 (* A sample:
 
@@ -121,8 +81,8 @@ Theorem LAMl_to_dABSl :
     !vs. ALL_DISTINCT (vs :num list) ==>
          let n = LENGTH vs;
              body = FOLDL lift t (GENLIST (\x. 0) n);
-             s = ZIP (GENLIST dV n, MAP (\x. x + n) (REVERSE vs))
-         in LAMl vs t = dABSl n (body ISUB s)
+             is = ZIP (GENLIST dV n, MAP (\x. x + n) (REVERSE vs))
+         in LAMl vs t = dABSl n (body ISUB is)
 Proof
     cheat
 QED
