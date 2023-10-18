@@ -849,15 +849,6 @@ Proof
  >> MATCH_MP_TAC lameq_appstar_cong >> art []
 QED
 
-val foldl_snoc = prove(
-  ``!l f x y. FOLDL f x (APPEND l [y]) = f (FOLDL f x l) y``,
-  Induct THEN SRW_TAC [][]);
-
-val combs_not_size_1 = prove(
-  ``(size M = 1) ==> ~is_comb M``,
-  Q.SPEC_THEN `M` STRUCT_CASES_TAC term_CASES THEN
-  SRW_TAC [][size_thm, size_nz]);
-
 Theorem strange_cases :
     !M : term. (?vs M'. (M = LAMl vs M') /\ (size M' = 1)) \/
                (?vs args t.
@@ -878,11 +869,11 @@ Proof
               THENL [
                 MAP_EVERY Q.EXISTS_TAC [`[N]`, `M`] THEN
                 ASM_SIMP_TAC (srw_ss()) [] THEN
-                PROVE_TAC [combs_not_size_1],
+                fs [size_1_cases],
                 ASM_SIMP_TAC (srw_ss()) [] THEN
                 Cases_on `vs` THENL [
-                  MAP_EVERY Q.EXISTS_TAC [`APPEND args [N]`, `t`] THEN
-                  ASM_SIMP_TAC (srw_ss()) [foldl_snoc],
+                  MAP_EVERY Q.EXISTS_TAC [`SNOC N args`, `t`] THEN
+                  ASM_SIMP_TAC (srw_ss()) [FOLDL_SNOC],
                   MAP_EVERY Q.EXISTS_TAC [`[N]`, `M`] THEN
                   ASM_SIMP_TAC (srw_ss()) []
                 ]

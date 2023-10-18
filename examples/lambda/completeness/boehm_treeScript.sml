@@ -6,7 +6,7 @@ open HolKernel boolLib Parse bossLib;
 
 (* core theories *)
 open optionTheory arithmeticTheory pred_setTheory listTheory llistTheory
-     ltreeTheory pathTheory;
+     ltreeTheory pathTheory hurdUtils;
 
 (* theories in ../basics *)
 open binderLib termTheory appFOLDLTheory;
@@ -56,22 +56,90 @@ Definition dAPP_rand_def :
 End
 
 Overload "@*" = “\f args. FOLDL dAPP f args”
+Overload "LAMl" = “\vs t. FOLDR dLAM t vs”
 
-Definition dB_hnf_def :
-    dB_hnf M = hnf (toTerm M)
+Theorem dappstar_APPEND :
+  (x :pdb) @* (Ms1 ++ Ms2) = (x @* Ms1) @* Ms2
+Proof
+  qid_spec_tac ‘x’ >> Induct_on ‘Ms1’ >> simp[]
+QED
+
+Theorem dappstar_SNOC[simp]:
+  (x :pdb) @* (SNOC M Ms) = dAPP (x @* Ms) M
+Proof
+  simp[dappstar_APPEND, SNOC_APPEND]
+QED
+
+Theorem fromTerm_appstar :
+    !args. fromTerm (f @* args) = fromTerm f @* MAP fromTerm args
+Proof
+    Induct_on ‘args’ using SNOC_INDUCT
+ >> simp [dappstar_SNOC, MAP_SNOC]
+QED
+
+Theorem fromTerm_LAMl :
+    !vs. fromTerm (LAMl vs t) = LAMl (MAP s2n vs) (fromTerm t)
+Proof
+    Induct_on ‘vs’ >> rw []
+QED
+
+(* A dB-term M is hnf if its corresponding Lambda term is hnf *)
+Definition dhnf_def :
+    dhnf M = hnf (toTerm M)
 End
 
-Theorem hnf_iff_dB_hnf :
-    !M. hnf M <=> dB_hnf (fromTerm M)
+Theorem dhnf_fromTerm[simp] :
+    !M. dhnf (fromTerm M) <=> hnf M
 Proof
-    rw [dB_hnf_def]
+    rw [dhnf_def]
+QED
+
+(* NOTE: unlike LAMl, there's no need to keep a list of variable names, just the
+         number of nested dABS suffices.
+ *)
+Overload dABSl = “\n t. FUNPOW dABS n t”
+
+Definition isub_def:
+     (isub t [] = (t :pdb))
+  /\ (isub t ((s,x)::rst) = isub ([s/x]t) rst)
+End
+
+Overload ISUB = “isub”
+
+(* A sample:
+
+> SIMP_CONV arith_ss [dLAM_def, lift_def, nipkow_lift_lemma1, sub_def, lift_sub]
+                     “dLAM v2 (dLAM v1 (dLAM v0 t))”;
+# val it =
+   |- dLAM v2 (dLAM v1 (dLAM v0 t)) =
+      dABS
+        (dABS
+           (dABS ([dV 2/v2 + 3] ([dV 1/v1 + 3] ([dV 0/v0 + 3] (lift (lift (lift t 0) 0) 0)))))):
+   thm
+ *)
+Theorem LAMl_to_dABSl :
+    !vs. ALL_DISTINCT (vs :num list) ==>
+         let n = LENGTH vs;
+             body = FOLDL lift t (GENLIST (\x. 0) n);
+             s = ZIP (GENLIST dV n, MAP (\x. x + n) (REVERSE vs))
+         in LAMl vs t = dABSl n (body ISUB s)
+Proof
+    cheat
 QED
 
 (* dB version of hnf_cases *)
-Theorem dB_hnf_cases :
-    !M. dB_hnf M <=> ?n y Ms. M = FUNPOW dABS n ((dV y) @* Ms)
+Theorem dhnf_cases :
+    !M. dhnf M <=> ?n y Ms. M = dABSl n (dV y @* Ms)
 Proof
-    cheat
+    RW_TAC std_ss [dhnf_def, hnf_cases]
+ >> EQ_TAC >> rpt STRIP_TAC
+ >- (qabbrev_tac ‘n = LENGTH vs’ >> Q.EXISTS_TAC ‘n’ \\
+     Know ‘fromTerm (toTerm M) = fromTerm (LAMl vs (VAR y @* args))’
+     >- (art [fromTerm_11]) \\
+     rw [fromTerm_LAMl, fromTerm_appstar] \\
+     cheat)
+ (* stage work *)
+ >> cheat
 QED
 
 (*
