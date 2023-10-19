@@ -1294,7 +1294,7 @@ QED
 (* NOTE: unlike LAMl, there's no need to keep a list of variable names, just the
          number of nested dABS suffices.
  *)
-Overload dABSl = “\n t. FUNPOW dABS n t”
+Overload dABSi = “FUNPOW dABS”
 
 Definition isub_def:
      (isub t [] = (t :pdb))
@@ -1367,8 +1367,8 @@ Proof
  >> rw [lift_appstar, MAP_MAP_o, combinTheory.o_DEF]
 QED
 
-Theorem lift_dABSl :
-    !n k. lift (dABSl n t) k = dABSl n (lift t (k + n))
+Theorem lift_dABSi :
+    !n k. lift (dABSi n t) k = dABSi n (lift t (k + n))
 Proof
     Induct_on ‘n’ >> rw [lift_def, FUNPOW_SUC, ADD1]
 QED
