@@ -28,6 +28,13 @@ Definition lift_def :
 End
 val _ = export_rewrites ["lift_def"]
 
+(* ‘k = 0’ is a common usage of ‘lift’ *)
+Theorem lift_dV_0 :
+    lift (dV i) 0 = dV (i + 1)
+Proof
+    rw [lift_def]
+QED
+
 (* "Nipkow" substitution *)
 Definition nsub_def :
   (nsub s k (dV i) = if k < i then dV (i - 1)
@@ -1317,6 +1324,64 @@ Proof
  >> rpt GEN_TAC
  >> Cases_on ‘h’
  >> rw [isub_def, pairTheory.FORALL_PROD, DOM_DEF, DFVS_def, sub_def]
+QED
+
+Theorem SUB_isub_singleton :
+    !t x u. [t/x]u:pdb = u ISUB [(t,x)]
+Proof
+    SRW_TAC [][isub_def]
+QED
+
+Theorem isub_APPEND :
+    !R1 R2 t:pdb. (t ISUB R1) ISUB R2 = t ISUB (APPEND R1 R2)
+Proof
+    Induct
+ >> ASM_SIMP_TAC (srw_ss()) [pairTheory.FORALL_PROD, isub_def]
+QED
+
+Theorem isub_dAPP :
+    !sub M N. (dAPP M N) ISUB sub = dAPP (M ISUB sub) (N ISUB sub)
+Proof
+    Induct
+ >> ASM_SIMP_TAC (srw_ss()) [pairTheory.FORALL_PROD, isub_def, sub_def]
+QED
+
+Theorem isub_appstar :
+    !args (t:pdb) sub.
+         t @* args ISUB sub = (t ISUB sub) @* MAP (\t. t ISUB sub) args
+Proof
+    Induct >> SRW_TAC [][isub_dAPP]
+QED
+
+Theorem lift_appstar :
+    !Ns. lift (M @* Ns) k = lift M k @* MAP (\e. lift e k) Ns
+Proof
+    Induct_on ‘Ns’ using SNOC_INDUCT
+ >> rw [appstar_SNOC, MAP_SNOC]
+QED
+
+Theorem FOLDL_lift_appstar :
+    !ks M Ns. FOLDL lift (M @* Ns) ks = FOLDL lift M ks @* MAP (\e. FOLDL lift e ks) Ns
+Proof
+    Induct_on ‘ks’
+ >> rw [lift_appstar, MAP_MAP_o, combinTheory.o_DEF]
+QED
+
+Theorem lift_dABSl :
+    !n k. lift (dABSl n t) k = dABSl n (lift t (k + n))
+Proof
+    Induct_on ‘n’ >> rw [lift_def, FUNPOW_SUC, ADD1]
+QED
+
+(* cf. lift_sub *)
+Theorem lift_isub :
+    !N Ms vs n. EVERY (\i. n <= i) vs /\ (LENGTH Ms = LENGTH vs) ==>
+               (lift (N ISUB (ZIP (Ms,vs))) n =
+                (lift N n) ISUB (ZIP (MAP (\e. lift e n) Ns,MAP SUC vs)))
+Proof
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘st = ZIP (Ms,vs)’
+ >> cheat
 QED
 
 val _ = export_theory();

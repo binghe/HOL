@@ -35,14 +35,12 @@ Definition phnf_def :
     phnf (M :term) = last (head_reduction_path M)
 End
 
-(* TODO: move to solvableTheory *)
 Theorem solvable_phnf :
     !M. solvable M ==> hnf (phnf M)
 Proof
     rw [solvable_iff_has_hnf, phnf_def, head_reduction_path_def, corollary11_4_8]
 QED
 
-(* TODO: move to pure_DBTheory *)
 Definition dABS_body_def :
     dABS_body (dABS s) = s
 End
@@ -79,13 +77,28 @@ QED
  *)
 Theorem LAMl_to_dABSl :
     !vs. ALL_DISTINCT (vs :num list) ==>
-         let n = LENGTH vs;
+           let n = LENGTH vs;
              body = FOLDL lift t (GENLIST (\x. 0) n);
-             is = ZIP (GENLIST dV n, MAP (\x. x + n) (REVERSE vs))
-         in LAMl vs t = dABSl n (body ISUB is)
+             is = ZIP (GENLIST dV n, MAP (\i. i + n) (REVERSE vs))
+           in LAMl vs t = dABSl n (body ISUB is)
 Proof
-    cheat
+    Induct_on ‘vs’ >- rw [isub_def]
+ >> rw [isub_def, GSYM SNOC_APPEND, MAP_SNOC,
+        FUNPOW_SUC, GENLIST, FOLDL_SNOC, dLAM_def]
+ >> fs []
+ >> qabbrev_tac ‘n = LENGTH vs’
+ >> rw [lift_dABSl]
+ >> cheat
 QED
+
+(* |- !t vs.
+        ALL_DISTINCT vs ==>
+        LAMl vs t =
+        dABSl (LENGTH vs)
+          (FOLDL lift t (GENLIST (\x. 0) (LENGTH vs)) ISUB
+           ZIP (GENLIST dV (LENGTH vs),MAP (\i. i + LENGTH vs) (REVERSE vs)))
+ *)
+Theorem LAMl_to_dABSl_applied = GEN_ALL (SIMP_RULE std_ss [LET_DEF] LAMl_to_dABSl)
 
 (* dB version of hnf_cases *)
 Theorem dhnf_cases :
@@ -97,6 +110,18 @@ Proof
      Know ‘fromTerm (toTerm M) = fromTerm (LAMl vs (VAR y @* args))’
      >- (art [fromTerm_11]) \\
      rw [fromTerm_LAMl, fromTerm_appstar] \\
+     qabbrev_tac ‘vs' = MAP s2n vs’ \\
+     qabbrev_tac ‘Ms = MAP fromTerm args’ \\
+     qabbrev_tac ‘y' = s2n y’ \\
+     Know ‘LAMl vs' (dV y' @* Ms) =
+           dABSl (LENGTH vs')
+             (FOLDL lift (dV y' @* Ms) (GENLIST (\x. 0) (LENGTH vs')) ISUB
+              ZIP (GENLIST dV (LENGTH vs'),MAP (\i. i + LENGTH vs') (REVERSE vs')))’
+     >- (MATCH_MP_TAC LAMl_to_dABSl_applied \\
+         qunabbrev_tac ‘vs'’ \\
+         MATCH_MP_TAC ALL_DISTINCT_MAP_INJ >> rw []) \\
+    ‘LENGTH vs' = n’ by rw [Abbr ‘vs'’] >> POP_ORW >> Rewr' \\
+     simp [FOLDL_lift_appstar, isub_appstar] \\
      cheat)
  (* stage work *)
  >> cheat
