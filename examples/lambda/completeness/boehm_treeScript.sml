@@ -152,15 +152,56 @@ End
 
 (* 2. The list of terms after appstar (may be empty) *)
 Definition dAPPl_def :
-   (dAPPl (dV n) = []) /\
-   (dAPPl (dABS t) = dAPPl t) /\
+   (dAPPl (dV n)       = []) /\
+   (dAPPl (dABS t)     = dAPPl t) /\
    (dAPPl (dAPP t1 t2) = SNOC t2 (dAPPl t1))
 End
+
+val _ = export_rewrites ["dABSn_def", "dVn_def", "dAPPl_def"];
+
+Theorem dABSn_dABSi[simp] :
+    dABSn (dABSi n t) = n + dABSn t
+Proof
+    Induct_on ‘n’ >> rw [FUNPOW_SUC]
+QED
+
+Theorem dABSn_dV_appstar[simp] :
+    dABSn (dV y @* Ns) = 0
+Proof
+    Induct_on ‘Ns’ using SNOC_INDUCT
+ >> rw [appstar_SNOC]
+QED
+
+Theorem dVn_dABSi[simp] :
+    dVn (dABSi n t) = dVn t
+Proof
+    Induct_on ‘n’ >> rw [FUNPOW_SUC]
+QED
+
+Theorem dVn_appstar[simp] :
+    dVn (M @* Ns) = dVn M
+Proof
+    Induct_on ‘Ns’ using SNOC_INDUCT >> rw []
+QED
+
+Theorem dAPPl_dABSi[simp] :
+    dAPPl (dABSi n t) = dAPPl t
+Proof
+    Induct_on ‘n’ >> rw [FUNPOW_SUC]
+QED
+
+Theorem dAPPl_dV_appstar[simp] :
+    dAPPl (dV y @* Ns) = Ns
+Proof
+    Induct_on ‘Ns’ using SNOC_INDUCT >> rw [dappstar_APPEND]
+QED
 
 Theorem dhnf_thm :
     !M. dhnf M ==> M = dABSi (dABSn M) (dV (dVn M) @* dAPPl M)
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> ‘?n y Ms. M = dABSi n (dV y @* Ms)’ by METIS_TAC [dhnf_cases]
+ >> rw []
 QED
 
 (* Now applying ltree_unfold to build the Boehm Tree *)
