@@ -46,14 +46,12 @@ Definition drand_def :
 End
 
 (* A dB-term M is hnf if its corresponding Lambda term is hnf *)
-Definition dhnf_def :
-    dhnf M = hnf (toTerm M)
-End
+Overload dhnf = “hnf o toTerm”
 
 Theorem dhnf_fromTerm[simp] :
     !M. dhnf (fromTerm M) <=> hnf M
 Proof
-    rw [dhnf_def]
+    rw [o_DEF]
 QED
 
 (* A sample:
@@ -70,9 +68,9 @@ QED
 Theorem LAMl_to_dABSi :
     !vs. ALL_DISTINCT (vs :num list) ==>
            let n = LENGTH vs;
-             body = FOLDL lift t (GENLIST (\x. 0) n);
-             is = ZIP (GENLIST dV n, MAP (\i. i + n) (REVERSE vs))
-           in LAMl vs t = dABSi n (body ISUB is)
+               body = FOLDL lift t (GENLIST (\x. 0) n);
+               st = ZIP (GENLIST dV n, MAP (\i. i + n) (REVERSE vs))
+           in LAMl vs t = dABSi n (body ISUB st)
 Proof
     Induct_on ‘vs’ >- rw [isub_def]
  >> rw [isub_def, GSYM SNOC_APPEND, MAP_SNOC,
@@ -96,7 +94,7 @@ Theorem LAMl_to_dABSi_applied = GEN_ALL (SIMP_RULE std_ss [LET_DEF] LAMl_to_dABS
 Theorem dhnf_cases :
     !M. dhnf M ==> ?n y Ms. M = dABSi n (dV y @* Ms)
 Proof
-    RW_TAC std_ss [dhnf_def, hnf_cases]
+    RW_TAC std_ss [hnf_cases]
  >> qabbrev_tac ‘n = LENGTH vs’
  >> Q.EXISTS_TAC ‘n’
  >> Know ‘fromTerm (toTerm M) = fromTerm (LAMl vs (VAR y @* args))’
@@ -118,13 +116,14 @@ Proof
 QED
 
 (* |- ?f f' f''. !M. dhnf M ==> M = dABS (f M) (dV (f' M) @* f'' M) *)
-val dhnf_cases' = dhnf_cases |> SIMP_RULE std_ss [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM];
+val dhnf_cases' = dhnf_cases
+               |> SIMP_RULE std_ss [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM];
 
 (* |- !M. dhnf M ==> M = dABSi (dABSn' M) (dV (dVn' M) @* dAPPl' M) *)
 val dhnf_decompose =
     new_specification ("dhnf_decompose", ["dABSn'", "dVn'", "dAPPl'"], dhnf_cases');
 
-(* Explicit definitions of hnf components (easier to work with):
+(* Explicit definitions of hnf components (easier to work with) by Michael Norrish:
 
    1. The number of leading dABS (can be zero):
  *)
@@ -148,6 +147,11 @@ Definition dAPPl_def :
    (dAPPl (dAPP t1 t2) = SNOC t2 (dAPPl t1))
 End
 
+(* The "main" part of a hnf *)
+Definition dhnf_main_def :
+    dhnf_main M = dABSi (dABSn M) (dV (dVn M))
+End
+ 
 val _ = export_rewrites ["dABSn_def", "dVn_def", "dAPPl_def"];
 
 Theorem dABSn_dABSi[simp] :
@@ -195,16 +199,17 @@ Proof
  >> rw []
 QED
 
+Overload dsolvable = “solvable o toTerm”
+
 (* The needed unfolding function for ltree_unfold for Boehm Tree *)
 Definition BT_generator_def :
-    BT_generator (M :pdb) = if solvable (toTerm M) then
-                               (SOME (dABSi (dABSn M) (dV (dVn M))),
-                                fromList (dAPPl M))
+    BT_generator (M :pdb) = if dsolvable M then
+                               (SOME (dhnf_main M), fromList (dAPPl M))
                             else
                                (NONE, LNIL)
 End
 
-(* So this is BT(M) *)
+(* So this is BT(M), the Boehm Tree of M, all in dB terms. *)
 Definition BT_def :
     BT (M :pdb) = ltree_unfold BT_generator M
 End
