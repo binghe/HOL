@@ -6,14 +6,14 @@ open HolKernel boolLib Parse bossLib;
 
 (* core theories *)
 open optionTheory arithmeticTheory pred_setTheory listTheory llistTheory
-     ltreeTheory pathTheory hurdUtils;
+     ltreeTheory pathTheory posetTheory hurdUtils;
 
 open binderLib termTheory appFOLDLTheory chap2Theory chap3Theory
      head_reductionTheory standardisationTheory solvableTheory pure_dBTheory;
 
 val _ = new_theory "boehm_tree";
 
-val o_DEF = combinTheory.o_DEF;
+val o_DEF = combinTheory.o_DEF; (* cannot directly open combinTheory *)
 
 (* Definition 8.3.20 [1, p.177]
 
@@ -209,12 +209,33 @@ Definition BT_generator_def :
                                (NONE, LNIL)
 End
 
-(* So this is BT(M), the Boehm Tree of M, all in dB terms. *)
-Definition BT_def :
-    BT (M :pdb) = ltree_unfold BT_generator M
+(* The Boehm tree of M, all in dB terms. *)
+Definition dBT_def :
+    dBT (M :pdb) = ltree_unfold BT_generator M
 End
 
-Type boehm_tree[pp] = “:pdb option ltree”
+(* The Boehm tree of M, translated back to normal Lambda terms *)
+Definition BT_def :
+    BT = ltree_map (OPTION_MAP toTerm) o dBT o fromTerm
+End
+
+Theorem unsolvable_BT :
+    !M. unsolvable M ==> BT M = Branch NONE LNIL
+Proof
+    rw [BT_def, dBT_def, BT_generator_def, ltree_unfold, ltree_map]
+QED
+
+Type boehm_tree[pp] = “:term option ltree”
+
+Overload bot = “Branch NONE (LNIL :term option ltree llist)”
+val _ = Unicode.unicode_version {u = UTF8.chr 0x22A5, tmnm = "bot"};
+
+(* All unsolvable terms have the same Boehm tree. *)
+Theorem unsolvable_BT_EQ :
+    !M N. unsolvable M /\ unsolvable N ==> BT M = BT N
+Proof
+    rw [unsolvable_BT]
+QED
 
 val _ = export_theory ();
 val _ = html_theory "boehm_tree";
