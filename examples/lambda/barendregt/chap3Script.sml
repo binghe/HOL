@@ -1490,3 +1490,11 @@ val betastar_eq_cong = store_thm(
 
 val _ = export_theory();
 val _ = html_theory "chap3";
+
+(* References:
+
+   [1] Barendregt, H.P.: The Lambda Calculus, Its Syntax and Semantics.
+       College Publications, London (1984).
+   [2] Hankin, C.: Lambda Calculi: A Guide for Computer Scientists.
+       Clarendon Press, Oxford (1994).
+ *)
