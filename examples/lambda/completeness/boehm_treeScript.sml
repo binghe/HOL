@@ -15,6 +15,17 @@ val _ = new_theory "boehm_tree";
 
 val o_DEF = combinTheory.o_DEF; (* cannot directly open combinTheory *)
 
+(* A dB-term M is hnf if its corresponding Lambda term is hnf *)
+Overload dhnf = “hnf o toTerm”
+
+Theorem dhnf_fromTerm[simp] :
+    !M. dhnf (fromTerm M) <=> hnf M
+Proof
+    rw [o_DEF]
+QED
+
+Overload dsolvable = “solvable o toTerm”
+
 (* Definition 8.3.20 [1, p.177]
 
    A term may have several hnf's, e.g. if any of its hnf can still do beta
@@ -26,16 +37,13 @@ Definition phnf_def :
     phnf = last o head_reduction_path
 End
 
-Theorem solvable_phnf :
-    !M. solvable M ==> hnf (phnf M)
+Overload dphnf = “fromTerm o phnf o toTerm”
+
+Theorem dsolvable_phnf :
+    !M. dsolvable (M :pdb) ==> dhnf (dphnf M)
 Proof
     rw [o_DEF, solvable_iff_has_hnf, phnf_def, head_reduction_path_def, corollary11_4_8]
 QED
-
-(* NOTE: this function was impossible for “:term” *)
-Definition dbody_def :
-    dbody (dABS s) = s
-End
 
 Definition drator_def :
     drator (dAPP s t) = s
@@ -45,14 +53,10 @@ Definition drand_def :
     drand (dAPP s t) = t
 End
 
-(* A dB-term M is hnf if its corresponding Lambda term is hnf *)
-Overload dhnf = “hnf o toTerm”
-
-Theorem dhnf_fromTerm[simp] :
-    !M. dhnf (fromTerm M) <=> hnf M
-Proof
-    rw [o_DEF]
-QED
+(* NOTE: this function is unsound for “:term” *)
+Definition dbody_def :
+    dbody (dABS s) = s
+End
 
 (* A sample:
 
@@ -151,7 +155,7 @@ End
 Definition dhnf_main_def :
     dhnf_main M = dABSi (dABSn M) (dV (dVn M))
 End
- 
+
 val _ = export_rewrites ["dABSn_def", "dVn_def", "dAPPl_def"];
 
 Theorem dABSn_dABSi[simp] :
@@ -199,12 +203,11 @@ Proof
  >> rw []
 QED
 
-Overload dsolvable = “solvable o toTerm”
-
 (* The needed unfolding function for ltree_unfold for Boehm Tree *)
 Definition BT_generator_def :
     BT_generator (M :pdb) = if dsolvable M then
-                               (SOME (dhnf_main M), fromList (dAPPl M))
+                               let M' = dphnf M in
+                                 (SOME (dhnf_main M'), fromList (dAPPl M'))
                             else
                                (NONE, LNIL)
 End
