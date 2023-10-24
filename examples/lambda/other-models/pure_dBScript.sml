@@ -7,7 +7,8 @@
 
 open HolKernel boolLib Parse bossLib BasicProvers;
 
-open boolSimps arithmeticTheory pred_setTheory string_numTheory listTheory;
+open boolSimps arithmeticTheory pred_setTheory string_numTheory listTheory
+     hurdUtils;
 
 open termTheory appFOLDLTheory chap2Theory chap3Theory;
 
@@ -29,10 +30,16 @@ End
 val _ = export_rewrites ["lift_def"]
 
 (* ‘k = 0’ is a common usage of ‘lift’ *)
-Theorem lift_dV_0 :
+Theorem lift_dV_0[simp] :
     lift (dV i) 0 = dV (i + 1)
 Proof
     rw [lift_def]
+QED
+
+Theorem FUNPOW_lift_dV_0[simp] :
+    FUNPOW (\e. lift e 0) n (dV i) = dV (i + n)
+Proof
+    Induct_on ‘n’ >> rw [FUNPOW_SUC]
 QED
 
 (* "Nipkow" substitution *)
@@ -342,6 +349,12 @@ val IN_dFV_lift = store_thm(
              [EQ_IMP_THM]
   ])
 val _ = export_rewrites ["IN_dFV_lift"]
+
+Theorem dLAM_alt_dpm :
+    !v body. dLAM v body = dABS (dpm [(n2s 0, n2s (v + 1))] (lift body 0))
+Proof
+    RW_TAC arith_ss [dLAM_def, fresh_dpm_sub, IN_dFV_lift]
+QED
 
 (* The substitution lemma, in dB guise *)
 val sub_lemma = store_thm(
@@ -1326,8 +1339,8 @@ Proof
  >> rw [isub_def, pairTheory.FORALL_PROD, DOM_DEF, DFVS_def, sub_def]
 QED
 
-Theorem SUB_isub_singleton :
-    !t x u. [t/x]u:pdb = u ISUB [(t,x)]
+Theorem isub_singleton :
+    !t x u. u ISUB [(t,x)] = [t/x]u:pdb
 Proof
     SRW_TAC [][isub_def]
 QED
@@ -1373,15 +1386,69 @@ Proof
     Induct_on ‘n’ >> rw [lift_def, FUNPOW_SUC, ADD1]
 QED
 
-(* cf. lift_sub *)
+(* cf. sub_def: |- [s/k] (dABS t) = dABS ([lift s 0/k + 1] t) *)
+Theorem sub_dABSi[simp] :
+    !s k. [s/k] (dABSi n t) = dABSi n ([FUNPOW (\e. lift e 0) n s/k + n] t)
+Proof
+    Induct_on ‘n’ >> rw [lift_def]
+ >> rw [FUNPOW_SUC, ADD1]
+ >> KILL_TAC
+ >> Suff ‘FUNPOW (\e. lift e 0) n (lift s 0) =
+          lift (FUNPOW (\e. lift e 0) n s) 0’ >- rw []
+ >> Induct_on ‘n’
+ >- rw [FUNPOW]
+ >> rw [FUNPOW_SUC]
+QED
+
+(* cf. lift_sub:
+
+   |- n <= i ==> lift ([M/i] N) n = [lift M n/i + 1] (lift N n)
+ *)
+Theorem lift_isub_lemma[local] :
+    !l M. EVERY (\i. n <= i) (MAP SND l) ==>
+      (lift (M ISUB l) n =
+       lift M n ISUB ZIP (MAP (\e. lift e n) (MAP FST l),MAP SUC (MAP SND l)))
+Proof
+    Induct_on ‘l’ >- rw [isub_def]
+ >> Q.X_GEN_TAC ‘h’
+ >> Cases_on ‘h’
+ >> rw [isub_def] >> fs []
+ >> rw [lift_sub, ADD1]
+QED
+
 Theorem lift_isub :
-    !N Ms vs n. EVERY (\i. n <= i) vs /\ (LENGTH Ms = LENGTH vs) ==>
-               (lift (N ISUB (ZIP (Ms,vs))) n =
-                (lift N n) ISUB (ZIP (MAP (\e. lift e n) Ns,MAP SUC vs)))
+    !M Ms Ns n. EVERY (\i. n <= i) Ns /\ (LENGTH Ms = LENGTH Ns) ==>
+               (lift (M ISUB (ZIP (Ms,Ns))) n =
+                (lift M n) ISUB (ZIP (MAP (\e. lift e n) Ms,MAP SUC Ns)))
 Proof
     rpt STRIP_TAC
- >> qabbrev_tac ‘st = ZIP (Ms,vs)’
- >> cheat
+ >> qabbrev_tac ‘l = ZIP (Ms,Ns)’
+ >> ‘Ms = MAP FST l’ by rw [Abbr ‘l’, MAP_ZIP]
+ >> ‘Ns = MAP SND l’ by rw [Abbr ‘l’, MAP_ZIP]
+ >> rw []
+ >> MATCH_MP_TAC lift_isub_lemma >> art []
+QED
+
+Theorem isub_SNOC_lemma[local] :
+    !l M. ~MEM k (MAP SND l) ==>
+           (M ISUB ZIP (SNOC s (MAP FST l),SNOC k (MAP SND l)) = [s/k] (M ISUB l))
+Proof
+    Induct_on ‘l’ >- rw [isub_def]
+ >> Q.X_GEN_TAC ‘h’
+ >> Cases_on ‘h’
+ >> rw [isub_def] >> fs []
+QED
+
+Theorem isub_SNOC :
+    !M Ms Ns s k. ~MEM k Ns /\ (LENGTH Ms = LENGTH Ns) ==>
+                 (M ISUB ZIP (SNOC s Ms,SNOC k Ns) = [s/k] (M ISUB ZIP (Ms,Ns)))
+Proof
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘l = ZIP (Ms,Ns)’
+ >> ‘Ms = MAP FST l’ by rw [Abbr ‘l’, MAP_ZIP]
+ >> ‘Ns = MAP SND l’ by rw [Abbr ‘l’, MAP_ZIP]
+ >> rw []
+ >> MATCH_MP_TAC isub_SNOC_lemma >> art []
 QED
 
 val _ = export_theory();
