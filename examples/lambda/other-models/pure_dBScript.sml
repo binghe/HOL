@@ -1280,15 +1280,15 @@ Overload "@*" = “\f args. FOLDL dAPP f args”
 Overload "LAMl" = “\vs t. FOLDR dLAM t vs”
 
 Theorem dappstar_APPEND :
-  (x :pdb) @* (Ms1 ++ Ms2) = (x @* Ms1) @* Ms2
+    (x :pdb) @* (Ms1 ++ Ms2) = (x @* Ms1) @* Ms2
 Proof
-  qid_spec_tac ‘x’ >> Induct_on ‘Ms1’ >> simp[]
+    qid_spec_tac ‘x’ >> Induct_on ‘Ms1’ >> simp[]
 QED
 
 Theorem dappstar_SNOC[simp]:
-  (x :pdb) @* (SNOC M Ms) = dAPP (x @* Ms) M
+    (x :pdb) @* (SNOC M Ms) = dAPP (x @* Ms) M
 Proof
-  simp[dappstar_APPEND, SNOC_APPEND]
+    simp[dappstar_APPEND, SNOC_APPEND]
 QED
 
 Theorem fromTerm_appstar :
@@ -1310,33 +1310,35 @@ QED
 Overload dABSi = “FUNPOW dABS”
 
 Definition isub_def:
-     (isub t [] = (t :pdb))
-  /\ (isub t ((s,x)::rst) = isub ([s/x]t) rst)
+   (isub t [] = (t :pdb)) /\
+   (isub t ((s,x)::rst) = isub ([s/x]t) rst)
 End
 
 Overload ISUB = “isub”
 
 (* NOTE: there's already dFVs_def *)
-Definition DFVS_def :
-   (DFVS [] = {}) /\
-   (DFVS ((t,x)::rst) = dFV t UNION DFVS rst)
+Definition dFVS_def :
+   (dFVS [] = {}) /\
+   (dFVS ((t,x)::rst) = dFV t UNION dFVS rst)
 End
 
-Theorem FINITE_DFVS[simp] :
-    !phi. FINITE (DFVS phi)
+Overload FVS = “dFVS”
+
+Theorem FINITE_dFVS[simp] :
+    !phi. FINITE (dFVS phi)
 Proof
     Induct_on ‘phi’ >| [ALL_TAC, Cases]
- >> RW_TAC std_ss [DFVS_def, FINITE_EMPTY, FINITE_UNION, FINITE_dFV]
+ >> RW_TAC std_ss [dFVS_def, FINITE_EMPTY, FINITE_UNION, FINITE_dFV]
 QED
 
 Theorem isub_dLAM[simp] :
-    !R x. x NOTIN DOM R /\ x NOTIN DFVS R ==>
+    !R x. x NOTIN DOM R /\ x NOTIN dFVS R ==>
           !t. (dLAM x t) ISUB R = dLAM x (t ISUB R)
 Proof
     Induct >- rw [isub_def]
  >> rpt GEN_TAC
  >> Cases_on ‘h’
- >> rw [isub_def, pairTheory.FORALL_PROD, DOM_DEF, DFVS_def, sub_def]
+ >> rw [isub_def, pairTheory.FORALL_PROD, DOM_DEF, dFVS_def, sub_def]
 QED
 
 Theorem isub_singleton :
@@ -1399,14 +1401,14 @@ QED
 
 Theorem isub_dV_once_lemma[local] :
     !l i. ALL_DISTINCT (MAP SND l) /\ i < LENGTH l /\
-         (!j. j < LENGTH l ==> EL j (MAP SND l) NOTIN DFVS l) ==>
+         (!j. j < LENGTH l ==> EL j (MAP SND l) NOTIN dFVS l) ==>
          (dV (EL i (MAP SND l)) ISUB l = EL i (MAP FST l))
 Proof
     Induct_on ‘l’ >- rw [isub_def]
  >> Q.X_GEN_TAC ‘h’
  >> Cases_on ‘h’
  >> Q.X_GEN_TAC ‘i’
- >> Cases_on ‘i’ >> rw [isub_def, DFVS_def]
+ >> Cases_on ‘i’ >> rw [isub_def, dFVS_def]
  >- (MATCH_MP_TAC isub_14b \\
      rw [DOM_ALT_MAP_SND, DISJOINT_ALT, MEM_MAP, MEM_EL] \\
      Q.PAT_X_ASSUM ‘!j. j < SUC (LENGTH l) ==> P’ (MP_TAC o (Q.SPEC ‘SUC n’)) \\
@@ -1424,7 +1426,7 @@ QED
 Theorem isub_dV_once :
     !Ms Ns y i. ALL_DISTINCT Ns /\ (LENGTH Ms = LENGTH Ns) /\
                 i < LENGTH Ns /\ (y = EL i Ns) /\
-              (!j. j < LENGTH Ns ==> EL j Ns NOTIN (DFVS (ZIP (Ms,Ns)))) ==>
+              (!j. j < LENGTH Ns ==> EL j Ns NOTIN (dFVS (ZIP (Ms,Ns)))) ==>
                (dV y ISUB (ZIP (Ms,Ns)) = EL i Ms)
 Proof
     rpt STRIP_TAC

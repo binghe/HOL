@@ -45,18 +45,23 @@ Proof
     rw [o_DEF, solvable_iff_has_hnf, phnf_def, head_reduction_path_def, corollary11_4_8]
 QED
 
+(* not used *)
 Definition drator_def :
     drator (dAPP s t) = s
 End
+Overload rator = “drator”
 
+(* not used *)
 Definition drand_def :
     drand (dAPP s t) = t
 End
+Overload rand = “drand”
 
-(* NOTE: this function is unsound for “:term” *)
+(* NOTE: this "body" bfunction is unsound for “:term” type *)
 Definition dbody_def :
     dbody (dABS s) = s
 End
+Overload body = “dbody”
 
 (* Some samples:
 
