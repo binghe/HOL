@@ -24,48 +24,9 @@ Proof
     rw [o_DEF]
 QED
 
-Overload dsolvable = “solvable o toTerm”
+(* Translations from LAMl to dABSi.
 
-(* Definition 8.3.20 [1, p.177]
-
-   A term may have several hnf's, e.g. if any of its hnf can still do beta
-   reductions, after such reductions the term is still an hnf by definition.
-   The (unique) terminating term of head reduction path is called "principle"
-   hnf, which is used for defining Boehm trees.
- *)
-Definition phnf_def :
-    phnf = last o head_reduction_path
-End
-
-Overload dphnf = “fromTerm o phnf o toTerm”
-
-Theorem dsolvable_phnf :
-    !M. dsolvable (M :pdb) ==> dhnf (dphnf M)
-Proof
-    rw [o_DEF, solvable_iff_has_hnf, phnf_def, head_reduction_path_def, corollary11_4_8]
-QED
-
-(* not used *)
-Definition drator_def :
-    drator (dAPP s t) = s
-End
-Overload rator = “drator”
-
-(* not used *)
-Definition drand_def :
-    drand (dAPP s t) = t
-End
-Overload rand = “drand”
-
-(* NOTE: this "body" bfunction is unsound for “:term” type *)
-Definition dbody_def :
-    dbody (dABS s) = s
-End
-Overload body = “dbody”
-
-(* Translating from LAMl to dABSi.
-
-   Some samples for guessing out the theorem statements:
+   Some samples for guessing out the statements of this theorem:
 
 > SIMP_CONV arith_ss [dLAM_def, lift_def, sub_def, lift_sub]
                      “dLAM v1 (dLAM v0 t)”;
@@ -88,11 +49,12 @@ Theorem LAMl_to_dABSi :
     !vs. ALL_DISTINCT (vs :num list) ==>
          let n = LENGTH vs;
              body = FOLDL lift t (GENLIST I n);
-             st = ZIP (GENLIST dV n, MAP (\i. i + n) (REVERSE vs))
-         in LAMl vs t = dABSi n (body ISUB st)
+             phi = ZIP (GENLIST dV n, MAP (\i. i + n) (REVERSE vs))
+         in LAMl vs t = dABSi n (body ISUB phi)
 Proof
     Induct_on ‘vs’ >- rw [isub_def]
- >> rw [isub_def, GSYM SNOC_APPEND, MAP_SNOC, FUNPOW_SUC, GENLIST, FOLDL_SNOC, dLAM_def]
+ >> rw [isub_def, GSYM SNOC_APPEND, MAP_SNOC, FUNPOW_SUC, GENLIST, FOLDL_SNOC,
+        dLAM_def]
  >> fs []
  >> qabbrev_tac ‘n = LENGTH vs’
  >> rw [lift_dABSi]
@@ -135,7 +97,8 @@ QED
           (FOLDL lift t (GENLIST I (LENGTH vs)) ISUB
            ZIP (GENLIST dV (LENGTH vs),MAP (\i. i + LENGTH vs) (REVERSE vs)))
  *)
-Theorem LAMl_to_dABSi_applied = GEN_ALL (SIMP_RULE std_ss [LET_DEF] LAMl_to_dABSi)
+Theorem LAMl_to_dABSi_applied[local] =
+    GEN_ALL (SIMP_RULE std_ss [LET_DEF] LAMl_to_dABSi)
 
 (* dB version of hnf_cases (only the ==> direction) *)
 Theorem dhnf_cases :
@@ -154,52 +117,63 @@ Proof
  >> Know ‘LAMl vs' (dV y' @* Ms) =
           dABSi (LENGTH vs')
             (FOLDL lift (dV y' @* Ms) (GENLIST I (LENGTH vs')) ISUB
-             ZIP (GENLIST dV (LENGTH vs'),MAP (\i. i + LENGTH vs') (REVERSE vs')))’
+             ZIP (GENLIST dV (LENGTH vs'),
+                  MAP (\i. i + LENGTH vs') (REVERSE vs')))’
  >- (MATCH_MP_TAC LAMl_to_dABSi_applied \\
      qunabbrev_tac ‘vs'’ \\
      MATCH_MP_TAC ALL_DISTINCT_MAP_INJ >> rw [])
  >> ‘LENGTH vs' = n’ by rw [Abbr ‘vs'’] >> POP_ORW
  >> Rewr'
  >> simp [FOLDL_lift_appstar, isub_appstar]
- (* applying nipkow_lift_lemma1 and lift_dV_0 *)
  >> Know ‘FOLDL lift (dV y') (GENLIST I n) = dV (y' + n)’
  >- (KILL_TAC \\
      Induct_on ‘n’ >> rw [GENLIST, FOLDL_SNOC])
  >> Rewr'
  >> qabbrev_tac ‘Ms' = MAP (\e. FOLDL lift e (GENLIST I n)) Ms’
- >> Cases_on ‘MEM y vs’
- >| [ (* goal 1 (of 2) *)
-     ‘MEM y' vs'’ by (rw [Abbr ‘y'’, Abbr ‘vs'’, MEM_MAP]) \\
-     ‘MEM y' (REVERSE vs')’ by PROVE_TAC [MEM_REVERSE] \\
-     ‘?j. j < LENGTH (REVERSE vs') /\ y' = EL j (REVERSE vs')’ by METIS_TAC [MEM_EL] \\
-     ‘LENGTH (REVERSE vs') = n’ by rw [Abbr ‘vs'’, Abbr ‘n’] \\
-      qabbrev_tac ‘Ns = MAP (\i. i + n) (REVERSE vs')’ \\
-     ‘LENGTH Ns = n’ by rw [Abbr ‘Ns’] \\
-      Know ‘ALL_DISTINCT Ns’
-      >- (qunabbrev_tac ‘Ns’ \\
-          MATCH_MP_TAC ALL_DISTINCT_MAP_INJ >> rw [] \\
-          qunabbrev_tac ‘vs'’ \\
-          MATCH_MP_TAC ALL_DISTINCT_MAP_INJ >> rw []) >> DISCH_TAC \\
-      Know ‘dV (y' + n) ISUB ZIP (GENLIST dV n,Ns) = EL j (GENLIST dV n)’
-      >- (MATCH_MP_TAC isub_dV_once >> simp [] \\
-          CONJ_TAC >- (rw [Abbr ‘Ns’, EL_MAP]) \\
-          Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
-         ‘n <= EL i Ns’ by rw [Abbr ‘Ns’, EL_MAP] \\
-          Suff ‘FVS (ZIP (GENLIST dV n,Ns)) = count n’ >- rw [] \\
-          Q.PAT_X_ASSUM ‘LENGTH Ns = n’ MP_TAC \\
-          KILL_TAC >> Q.ID_SPEC_TAC ‘Ns’ \\
-          Induct_on ‘n’ >> rw [dFVS_def] \\
-         ‘Ns <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0] \\
-         ‘LENGTH (FRONT Ns) = n’ by rw [LENGTH_FRONT] \\
-         ‘Ns = SNOC (LAST Ns) (FRONT Ns)’ by rw [APPEND_FRONT_LAST, SNOC_APPEND] \\
-          POP_ORW \\
-          Q.PAT_X_ASSUM ‘!Ns. LENGTH Ns = n ==> P’ (MP_TAC o (Q.SPEC ‘FRONT Ns’)) \\              
-          rw [GENLIST, COUNT_SUC, dFVS_SNOC, ZIP_SNOC, dFV_def] \\
-          SET_TAC []) >> Rewr' \\
-      simp [EL_GENLIST] \\
-      qexistsl_tac [‘j’, ‘MAP (\t. t ISUB ZIP (GENLIST dV n,Ns)) Ms'’] >> rw [],
-      (* goal 2 (of 2) *)
-      cheat ]
+ >> reverse (Cases_on ‘MEM y vs’)
+ >- (‘~MEM y' vs'’ by (rw [Abbr ‘y'’, Abbr ‘vs'’, MEM_MAP]) \\
+     ‘~MEM y' (REVERSE vs')’ by PROVE_TAC [MEM_REVERSE] \\
+     Suff ‘dV (y' + n) ISUB ZIP (GENLIST dV n,MAP (\i. i + n) (REVERSE vs')) =
+           dV (y' + n)’ >- (Rewr' >> METIS_TAC []) \\
+     MATCH_MP_TAC isub_dV_fresh \\
+     qabbrev_tac ‘l1 = GENLIST dV n’ \\
+     qabbrev_tac ‘l2 = MAP (\i. i + n) (REVERSE vs')’ \\
+    ‘LENGTH l1 = n’ by rw [Abbr ‘l1’] \\
+    ‘LENGTH l2 = n’ by rw [Abbr ‘l2’, Abbr ‘n’, Abbr ‘vs'’] \\
+     simp [DOM_ALT_MAP_SND, MAP_ZIP] \\
+     rw [Abbr ‘l2’, MEM_MAP])
+ (* stage work *)
+ >> ‘MEM y' vs'’ by (rw [Abbr ‘y'’, Abbr ‘vs'’, MEM_MAP])
+ >> ‘MEM y' (REVERSE vs')’ by PROVE_TAC [MEM_REVERSE]
+ >> ‘?j. j < LENGTH (REVERSE vs') /\ y' = EL j (REVERSE vs')’
+        by METIS_TAC [MEM_EL]
+ >> ‘LENGTH (REVERSE vs') = n’ by rw [Abbr ‘vs'’, Abbr ‘n’]
+ >> qabbrev_tac ‘Ns = MAP (\i. i + n) (REVERSE vs')’
+ >> ‘LENGTH Ns = n’ by rw [Abbr ‘Ns’]
+ >> Know ‘ALL_DISTINCT Ns’
+ >- (qunabbrev_tac ‘Ns’ \\
+     MATCH_MP_TAC ALL_DISTINCT_MAP_INJ >> rw [] \\
+     qunabbrev_tac ‘vs'’ \\
+     MATCH_MP_TAC ALL_DISTINCT_MAP_INJ >> rw [])
+ >> DISCH_TAC
+ >> Suff ‘dV (y' + n) ISUB ZIP (GENLIST dV n,Ns) = EL j (GENLIST dV n)’
+ >- (Rewr' \\
+     simp [EL_GENLIST] >> METIS_TAC [])
+ >> MATCH_MP_TAC isub_dV_once >> simp []
+ >> CONJ_TAC >- (rw [Abbr ‘Ns’, EL_MAP])
+ >> Q.X_GEN_TAC ‘i’ >> DISCH_TAC
+ >> ‘n <= EL i Ns’ by rw [Abbr ‘Ns’, EL_MAP]
+ >> Suff ‘FVS (ZIP (GENLIST dV n,Ns)) = count n’ >- rw []
+ >> Q.PAT_X_ASSUM ‘LENGTH Ns = n’ MP_TAC
+ >> KILL_TAC >> Q.ID_SPEC_TAC ‘Ns’
+ >> Induct_on ‘n’ >> rw [dFVS_def]
+ >> ‘Ns <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
+ >> ‘LENGTH (FRONT Ns) = n’ by rw [LENGTH_FRONT]
+ >> ‘Ns = SNOC (LAST Ns) (FRONT Ns)’
+      by (rw [APPEND_FRONT_LAST, SNOC_APPEND]) >> POP_ORW
+ >> Q.PAT_X_ASSUM ‘!Ns. LENGTH Ns = n ==> P’ (MP_TAC o (Q.SPEC ‘FRONT Ns’))
+ >> rw [GENLIST, COUNT_SUC, dFVS_SNOC, ZIP_SNOC, dFV_def]
+ >> SET_TAC []
 QED
 
 (* |- ?f f' f''. !M. dhnf M ==> M = dABS (f M) (dV (f' M) @* f'' M) *)
@@ -235,8 +209,8 @@ Definition dAPPl_def :
 End
 
 (* The "main" part of a hnf *)
-Definition dhnf_main_def :
-    dhnf_main M = dABSi (dABSn M) (dV (dVn M))
+Definition dhnf_head_def :
+    dhnf_head M = dABSi (dABSn M) (dV (dVn M))
 End
 
 val _ = export_rewrites ["dABSn_def", "dVn_def", "dAPPl_def"];
@@ -286,11 +260,51 @@ Proof
  >> rw []
 QED
 
+(* Definition 8.3.20 [1, p.177]
+
+   A term may have several hnf's, e.g. if any of its hnf can still do beta
+   reductions, after such reductions the term is still an hnf by definition.
+   The (unique) terminating term of head reduction path is called "principle"
+   hnf, which is used for defining Boehm trees.
+ *)
+Definition phnf_def :
+    phnf = last o head_reduction_path
+End
+
+Overload phnf = “fromTerm o phnf o toTerm”
+
+(* not used *)
+Definition drator_def :
+    drator (dAPP s t) = s
+End
+
+(* not used *)
+Definition drand_def :
+    drand (dAPP s t) = t
+End
+
+(* NOTE: this "body" bfunction is unsound for “:term” type *)
+Definition dbody_def :
+    dbody (dABS s) = s
+End
+
+Overload rator = “drator”
+Overload rand = “drand”
+Overload body = “dbody”
+Overload solvable = “solvable o toTerm”
+
+Theorem solvable_phnf :
+    !M. solvable (M :pdb) ==> dhnf (phnf M)
+Proof
+    rw [o_DEF, solvable_iff_has_hnf, phnf_def, head_reduction_path_def,
+        corollary11_4_8]
+QED
+
 (* The needed unfolding function for ltree_unfold for Boehm Tree *)
 Definition BT_generator_def :
-    BT_generator (M :pdb) = if dsolvable M then
-                               let M' = dphnf M in
-                                 (SOME (dhnf_main M'), fromList (dAPPl M'))
+    BT_generator (M :pdb) = if solvable M then
+                               let M' = phnf M in
+                                 (SOME (dhnf_head M'), fromList (dAPPl M'))
                             else
                                (NONE, LNIL)
 End
