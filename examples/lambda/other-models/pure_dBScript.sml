@@ -1374,6 +1374,7 @@ Proof
  >> Cases_on ‘h’ >> fs [isub_def, DOM_DEF]
 QED
 
+(* cf. lemma14b, ssub_14b, etc. *)
 Theorem isub_14b :
     !t phi. DISJOINT (DOM phi) (dFV t) ==> (isub t phi = t)
 Proof
@@ -1406,17 +1407,15 @@ Proof
  >> Cases_on ‘h’
  >> Q.X_GEN_TAC ‘i’
  >> Cases_on ‘i’ >> rw [isub_def, DFVS_def]
- >| [ (* goal 1 (of 3) *)
-      MATCH_MP_TAC isub_14b \\
-      rw [DOM_ALT_MAP_SND, DISJOINT_ALT, MEM_MAP, MEM_EL] \\
-      Q.PAT_X_ASSUM ‘!j. j < SUC (LENGTH l) ==> P’ (MP_TAC o (Q.SPEC ‘SUC n’)) \\
-      rw [EL_MAP],
-      (* goal 2 (of 3) *)
-      fs [MEM_EL] >> METIS_TAC [],
-      (* goal 3 (of 3) *)
-      FIRST_X_ASSUM MATCH_MP_TAC >> rw [] \\
-      Q.PAT_X_ASSUM ‘!j. j < SUC (LENGTH l) ==> P’ (MP_TAC o (Q.SPEC ‘SUC j’)) \\
-      rw [EL_MAP] ]
+ >- (MATCH_MP_TAC isub_14b \\
+     rw [DOM_ALT_MAP_SND, DISJOINT_ALT, MEM_MAP, MEM_EL] \\
+     Q.PAT_X_ASSUM ‘!j. j < SUC (LENGTH l) ==> P’ (MP_TAC o (Q.SPEC ‘SUC n’)) \\
+     rw [EL_MAP])
+ (* then a contradictory *)
+ >- (fs [MEM_EL] >> METIS_TAC [])
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> rw []
+ >> Q.PAT_X_ASSUM ‘!j. j < SUC (LENGTH l) ==> P’ (MP_TAC o (Q.SPEC ‘SUC j’))
+ >> rw [EL_MAP]
 QED
 
 (* The antecedents of this theorem is dirty, as it basically tries to void
