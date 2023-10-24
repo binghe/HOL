@@ -63,13 +63,15 @@ Definition dbody_def :
 End
 Overload body = “dbody”
 
-(* Some samples:
+(* Translating from LAMl to dABSi.
+
+   Some samples for guessing out the theorem statements:
 
 > SIMP_CONV arith_ss [dLAM_def, lift_def, sub_def, lift_sub]
                      “dLAM v1 (dLAM v0 t)”;
 # val it =
-   |- dLAM v1 (dLAM v0 t) = dABS (dABS ([dV 1/v1 + 2] ([dV 0/v0 + 2] (lift (lift t 0) 1)))):
-   thm
+   |- dLAM v1 (dLAM v0 t) =
+      dABS (dABS ([dV 1/v1 + 2] ([dV 0/v0 + 2] (lift (lift t 0) 1)))): thm
 
 > SIMP_CONV arith_ss [dLAM_def, lift_def, sub_def, lift_sub]
                      “dLAM v2 (dLAM v1 (dLAM v0 t))”;
@@ -77,15 +79,17 @@ Overload body = “dbody”
    |- dLAM v2 (dLAM v1 (dLAM v0 t)) =
       dABS
         (dABS
-           (dABS ([dV 2/v2 + 3] ([dV 1/v1 + 3] ([dV 0/v0 + 3] (lift (lift (lift t 0) 1) 2)))))):
-   thm
+           (dABS ([dV 2/v2 + 3]
+                    ([dV 1/v1 + 3]
+                       ([dV 0/v0 + 3]
+                          (lift (lift (lift t 0) 1) 2)))))): thm
  *)
 Theorem LAMl_to_dABSi :
     !vs. ALL_DISTINCT (vs :num list) ==>
-           let n = LENGTH vs;
-               body = FOLDL lift t (GENLIST I n);
-               st = ZIP (GENLIST dV n, MAP (\i. i + n) (REVERSE vs))
-           in LAMl vs t = dABSi n (body ISUB st)
+         let n = LENGTH vs;
+             body = FOLDL lift t (GENLIST I n);
+             st = ZIP (GENLIST dV n, MAP (\i. i + n) (REVERSE vs))
+         in LAMl vs t = dABSi n (body ISUB st)
 Proof
     Induct_on ‘vs’ >- rw [isub_def]
  >> rw [isub_def, GSYM SNOC_APPEND, MAP_SNOC, FUNPOW_SUC, GENLIST, FOLDL_SNOC, dLAM_def]
@@ -128,7 +132,7 @@ QED
         ALL_DISTINCT vs ==>
         LAMl vs t =
         dABSi (LENGTH vs)
-          (FOLDL lift t (GENLIST (\x. 0) (LENGTH vs)) ISUB
+          (FOLDL lift t (GENLIST I (LENGTH vs)) ISUB
            ZIP (GENLIST dV (LENGTH vs),MAP (\i. i + LENGTH vs) (REVERSE vs)))
  *)
 Theorem LAMl_to_dABSi_applied = GEN_ALL (SIMP_RULE std_ss [LET_DEF] LAMl_to_dABSi)
@@ -168,13 +172,32 @@ Proof
      ‘MEM y' vs'’ by (rw [Abbr ‘y'’, Abbr ‘vs'’, MEM_MAP]) \\
      ‘MEM y' (REVERSE vs')’ by PROVE_TAC [MEM_REVERSE] \\
      ‘?j. j < LENGTH (REVERSE vs') /\ y' = EL j (REVERSE vs')’ by METIS_TAC [MEM_EL] \\
+     ‘LENGTH (REVERSE vs') = n’ by rw [Abbr ‘vs'’, Abbr ‘n’] \\
       qabbrev_tac ‘Ns = MAP (\i. i + n) (REVERSE vs')’ \\
+     ‘LENGTH Ns = n’ by rw [Abbr ‘Ns’] \\
+      Know ‘ALL_DISTINCT Ns’
+      >- (qunabbrev_tac ‘Ns’ \\
+          MATCH_MP_TAC ALL_DISTINCT_MAP_INJ >> rw [] \\
+          qunabbrev_tac ‘vs'’ \\
+          MATCH_MP_TAC ALL_DISTINCT_MAP_INJ >> rw []) >> DISCH_TAC \\
       Know ‘dV (y' + n) ISUB ZIP (GENLIST dV n,Ns) = EL j (GENLIST dV n)’
-      >- (MATCH_MP_TAC isub_dV_once \\
-          rw [Abbr ‘Ns’, Abbr ‘vs'’, LENGTH_REVERSE, LENGTH_MAP] \\
-          cheat) \\
-   (* ALL_DISTINCT_MAP_INJ *)
-      cheat,
+      >- (MATCH_MP_TAC isub_dV_once >> simp [] \\
+          CONJ_TAC >- (rw [Abbr ‘Ns’, EL_MAP]) \\
+          Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+         ‘n <= EL i Ns’ by rw [Abbr ‘Ns’, EL_MAP] \\
+          Suff ‘FVS (ZIP (GENLIST dV n,Ns)) = count n’ >- rw [] \\
+          Q.PAT_X_ASSUM ‘LENGTH Ns = n’ MP_TAC \\
+          KILL_TAC >> Q.ID_SPEC_TAC ‘Ns’ \\
+          Induct_on ‘n’ >> rw [dFVS_def] \\
+         ‘Ns <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0] \\
+         ‘LENGTH (FRONT Ns) = n’ by rw [LENGTH_FRONT] \\
+         ‘Ns = SNOC (LAST Ns) (FRONT Ns)’ by rw [APPEND_FRONT_LAST, SNOC_APPEND] \\
+          POP_ORW \\
+          Q.PAT_X_ASSUM ‘!Ns. LENGTH Ns = n ==> P’ (MP_TAC o (Q.SPEC ‘FRONT Ns’)) \\              
+          rw [GENLIST, COUNT_SUC, dFVS_SNOC, ZIP_SNOC, dFV_def] \\
+          SET_TAC []) >> Rewr' \\
+      simp [EL_GENLIST] \\
+      qexistsl_tac [‘j’, ‘MAP (\t. t ISUB ZIP (GENLIST dV n,Ns)) Ms'’] >> rw [],
       (* goal 2 (of 2) *)
       cheat ]
 QED

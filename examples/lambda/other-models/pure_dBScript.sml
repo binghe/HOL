@@ -1331,6 +1331,15 @@ Proof
  >> RW_TAC std_ss [dFVS_def, FINITE_EMPTY, FINITE_UNION, FINITE_dFV]
 QED
 
+Theorem dFVS_SNOC :
+    !rst. dFVS (SNOC (t,x) rst) = dFV t UNION dFVS rst
+Proof
+    Induct_on ‘rst’ >- rw [dFVS_def]
+ >> Q.X_GEN_TAC ‘h’ >> Cases_on ‘h’
+ >> rw [dFVS_def]
+ >> SET_TAC []
+QED
+
 Theorem isub_dLAM[simp] :
     !R x. x NOTIN DOM R /\ x NOTIN dFVS R ==>
           !t. (dLAM x t) ISUB R = dLAM x (t ISUB R)
