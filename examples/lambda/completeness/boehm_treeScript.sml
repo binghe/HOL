@@ -152,7 +152,26 @@ Proof
  >> ‘LENGTH vs' = n’ by rw [Abbr ‘vs'’] >> POP_ORW
  >> Rewr'
  >> simp [FOLDL_lift_appstar, isub_appstar]
- >> cheat
+ (* applying nipkow_lift_lemma1 and lift_dV_0 *)
+ >> Know ‘FOLDL lift (dV y') (GENLIST I n) = dV (y' + n)’
+ >- (KILL_TAC \\
+     Induct_on ‘n’ >> rw [GENLIST, FOLDL_SNOC])
+ >> Rewr'
+ >> qabbrev_tac ‘Ms' = MAP (\e. FOLDL lift e (GENLIST I n)) Ms’
+ >> Cases_on ‘MEM y vs’
+ >| [ (* goal 1 (of 2) *)
+     ‘MEM y' vs'’ by (rw [Abbr ‘y'’, Abbr ‘vs'’, MEM_MAP]) \\
+     ‘MEM y' (REVERSE vs')’ by PROVE_TAC [MEM_REVERSE] \\
+     ‘?j. j < LENGTH (REVERSE vs') /\ y' = EL j (REVERSE vs')’ by METIS_TAC [MEM_EL] \\
+      qabbrev_tac ‘Ns = MAP (\i. i + n) (REVERSE vs')’ \\
+      Know ‘dV (y' + n) ISUB ZIP (GENLIST dV n,Ns) = EL j (GENLIST dV n)’
+      >- (MATCH_MP_TAC isub_dV_once \\
+          rw [Abbr ‘Ns’, Abbr ‘vs'’, LENGTH_REVERSE, LENGTH_MAP] \\
+          cheat) \\
+   (* ALL_DISTINCT_MAP_INJ *)
+      cheat,
+      (* goal 2 (of 2) *)
+      cheat ]
 QED
 
 (* |- ?f f' f''. !M. dhnf M ==> M = dABS (f M) (dV (f' M) @* f'' M) *)

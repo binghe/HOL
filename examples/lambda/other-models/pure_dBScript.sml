@@ -1329,6 +1329,47 @@ Proof
  >> RW_TAC std_ss [DFVS_def, FINITE_EMPTY, FINITE_UNION, FINITE_dFV]
 QED
 
+Theorem isub_dV_fresh :
+    !y s. ~MEM y (MAP SND s) ==> (dV y ISUB s = dV y)
+Proof
+    Q.X_GEN_TAC ‘x’
+ >> Induct_on ‘s’ >> rw [isub_def]
+ >> Cases_on ‘h’ >> fs [isub_def]
+QED
+
+Theorem isub_dV_once_lemma[local] :
+    !l i. ALL_DISTINCT (MAP SND l) /\ i < LENGTH l /\
+         (!j. j < LENGTH l ==> EL j (MAP SND l) NOTIN DFVS l) ==>
+         (dV (EL i (MAP SND l)) ISUB l = EL i (MAP FST l))
+Proof
+    Induct_on ‘l’ >- rw [isub_def]
+ >> Q.X_GEN_TAC ‘h’
+ >> Cases_on ‘h’
+ >> Q.X_GEN_TAC ‘i’
+ >> Cases_on ‘i’ >> rw [isub_def, DFVS_def]
+ >| [ (* goal 1 (of 3) *)
+      cheat,
+      cheat,
+      cheat ]
+QED
+
+(* The antecedents of this theorem is dirty, as it basically tries to void
+   from more than once substitutions by isub.
+ *)
+Theorem isub_dV_once :
+    !Ms Ns y i. ALL_DISTINCT Ns /\ (LENGTH Ms = LENGTH Ns) /\
+                i < LENGTH Ns /\ (y = EL i Ns) /\
+              (!j. j < LENGTH Ns ==> EL j Ns NOTIN (DFVS (ZIP (Ms,Ns)))) ==>
+               (dV y ISUB (ZIP (Ms,Ns)) = EL i Ms)
+Proof
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘l = ZIP (Ms,Ns)’
+ >> ‘Ms = MAP FST l’ by rw [Abbr ‘l’, MAP_ZIP]
+ >> ‘Ns = MAP SND l’ by rw [Abbr ‘l’, MAP_ZIP]
+ >> rw []
+ >> MATCH_MP_TAC isub_dV_once_lemma >> fs []
+QED
+
 Theorem isub_dLAM[simp] :
     !R x. x NOTIN DOM R /\ x NOTIN DFVS R ==>
           !t. (dLAM x t) ISUB R = dLAM x (t ISUB R)
