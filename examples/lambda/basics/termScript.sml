@@ -643,6 +643,15 @@ Definition DOM_DEF :
    (DOM ((x,y)::rst) = {y} UNION DOM rst)
 End
 
+Theorem DOM_ALT_MAP_SND :
+    !phi. DOM phi = set (MAP SND phi)
+Proof
+    Induct_on ‘phi’ >- rw [DOM_DEF]
+ >> Q.X_GEN_TAC ‘h’
+ >> Cases_on ‘h’
+ >> rw [DOM_DEF] >> SET_TAC []
+QED
+
 Definition FVS_DEF :
    (FVS [] = {}) /\
    (FVS ((t,x)::rst) = FV t UNION FVS rst)

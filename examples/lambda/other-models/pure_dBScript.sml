@@ -1316,58 +1316,17 @@ End
 
 Overload ISUB = “isub”
 
-(* NOTE: there's already dFVs_def; The existing DOM_DEF can be reused *)
+(* NOTE: there's already dFVs_def *)
 Definition DFVS_def :
    (DFVS [] = {}) /\
    (DFVS ((t,x)::rst) = dFV t UNION DFVS rst)
 End
 
 Theorem FINITE_DFVS[simp] :
-    !ss. FINITE (DFVS ss)
+    !phi. FINITE (DFVS phi)
 Proof
-    Induct >| [ALL_TAC, Cases]
+    Induct_on ‘phi’ >| [ALL_TAC, Cases]
  >> RW_TAC std_ss [DFVS_def, FINITE_EMPTY, FINITE_UNION, FINITE_dFV]
-QED
-
-Theorem isub_dV_fresh :
-    !y s. ~MEM y (MAP SND s) ==> (dV y ISUB s = dV y)
-Proof
-    Q.X_GEN_TAC ‘x’
- >> Induct_on ‘s’ >> rw [isub_def]
- >> Cases_on ‘h’ >> fs [isub_def]
-QED
-
-Theorem isub_dV_once_lemma[local] :
-    !l i. ALL_DISTINCT (MAP SND l) /\ i < LENGTH l /\
-         (!j. j < LENGTH l ==> EL j (MAP SND l) NOTIN DFVS l) ==>
-         (dV (EL i (MAP SND l)) ISUB l = EL i (MAP FST l))
-Proof
-    Induct_on ‘l’ >- rw [isub_def]
- >> Q.X_GEN_TAC ‘h’
- >> Cases_on ‘h’
- >> Q.X_GEN_TAC ‘i’
- >> Cases_on ‘i’ >> rw [isub_def, DFVS_def]
- >| [ (* goal 1 (of 3) *)
-      cheat,
-      cheat,
-      cheat ]
-QED
-
-(* The antecedents of this theorem is dirty, as it basically tries to void
-   from more than once substitutions by isub.
- *)
-Theorem isub_dV_once :
-    !Ms Ns y i. ALL_DISTINCT Ns /\ (LENGTH Ms = LENGTH Ns) /\
-                i < LENGTH Ns /\ (y = EL i Ns) /\
-              (!j. j < LENGTH Ns ==> EL j Ns NOTIN (DFVS (ZIP (Ms,Ns)))) ==>
-               (dV y ISUB (ZIP (Ms,Ns)) = EL i Ms)
-Proof
-    rpt STRIP_TAC
- >> qabbrev_tac ‘l = ZIP (Ms,Ns)’
- >> ‘Ms = MAP FST l’ by rw [Abbr ‘l’, MAP_ZIP]
- >> ‘Ns = MAP SND l’ by rw [Abbr ‘l’, MAP_ZIP]
- >> rw []
- >> MATCH_MP_TAC isub_dV_once_lemma >> fs []
 QED
 
 Theorem isub_dLAM[simp] :
@@ -1405,6 +1364,76 @@ Theorem isub_appstar :
          t @* args ISUB sub = (t ISUB sub) @* MAP (\t. t ISUB sub) args
 Proof
     Induct >> SRW_TAC [][isub_dAPP]
+QED
+
+Theorem isub_dV_fresh :
+    !y phi. y NOTIN DOM phi ==> (dV y ISUB phi = dV y)
+Proof
+    Q.X_GEN_TAC ‘x’
+ >> Induct_on ‘phi’ >> rw [isub_def]
+ >> Cases_on ‘h’ >> fs [isub_def, DOM_DEF]
+QED
+
+Theorem isub_14b :
+    !t phi. DISJOINT (DOM phi) (dFV t) ==> (isub t phi = t)
+Proof
+    Induct_on ‘t’
+ >- (rw [DISJOINT_ALT, isub_def] \\
+     MATCH_MP_TAC isub_dV_fresh >> art [])
+ >- (rw [DISJOINT_ALT, isub_dAPP])
+ >> rw [DISJOINT_ALT]
+ >> POP_ASSUM MP_TAC
+ >> Induct_on ‘phi’
+ >- rw [DOM_DEF, isub_def]
+ >> Q.X_GEN_TAC ‘h’
+ >> Cases_on ‘h’
+ >> rw [DOM_DEF, isub_def]
+ >> Know ‘[lift q 0/r + 1] t = t’
+ >- (MATCH_MP_TAC sub_14b \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> rw [])
+ >> Rewr'
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> rw []
+QED
+
+Theorem isub_dV_once_lemma[local] :
+    !l i. ALL_DISTINCT (MAP SND l) /\ i < LENGTH l /\
+         (!j. j < LENGTH l ==> EL j (MAP SND l) NOTIN DFVS l) ==>
+         (dV (EL i (MAP SND l)) ISUB l = EL i (MAP FST l))
+Proof
+    Induct_on ‘l’ >- rw [isub_def]
+ >> Q.X_GEN_TAC ‘h’
+ >> Cases_on ‘h’
+ >> Q.X_GEN_TAC ‘i’
+ >> Cases_on ‘i’ >> rw [isub_def, DFVS_def]
+ >| [ (* goal 1 (of 3) *)
+      MATCH_MP_TAC isub_14b \\
+      rw [DOM_ALT_MAP_SND, DISJOINT_ALT, MEM_MAP, MEM_EL] \\
+      Q.PAT_X_ASSUM ‘!j. j < SUC (LENGTH l) ==> P’ (MP_TAC o (Q.SPEC ‘SUC n’)) \\
+      rw [EL_MAP],
+      (* goal 2 (of 3) *)
+      fs [MEM_EL] >> METIS_TAC [],
+      (* goal 3 (of 3) *)
+      FIRST_X_ASSUM MATCH_MP_TAC >> rw [] \\
+      Q.PAT_X_ASSUM ‘!j. j < SUC (LENGTH l) ==> P’ (MP_TAC o (Q.SPEC ‘SUC j’)) \\
+      rw [EL_MAP] ]
+QED
+
+(* The antecedents of this theorem is dirty, as it basically tries to void
+   from more than once substitutions by isub.
+ *)
+Theorem isub_dV_once :
+    !Ms Ns y i. ALL_DISTINCT Ns /\ (LENGTH Ms = LENGTH Ns) /\
+                i < LENGTH Ns /\ (y = EL i Ns) /\
+              (!j. j < LENGTH Ns ==> EL j Ns NOTIN (DFVS (ZIP (Ms,Ns)))) ==>
+               (dV y ISUB (ZIP (Ms,Ns)) = EL i Ms)
+Proof
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘l = ZIP (Ms,Ns)’
+ >> ‘Ms = MAP FST l’ by rw [Abbr ‘l’, MAP_ZIP]
+ >> ‘Ns = MAP SND l’ by rw [Abbr ‘l’, MAP_ZIP]
+ >> rw []
+ >> MATCH_MP_TAC isub_dV_once_lemma >> fs []
 QED
 
 Theorem lift_appstar :
