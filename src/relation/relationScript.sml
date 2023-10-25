@@ -2350,7 +2350,6 @@ val Newmans_lemma = store_thm(
   `TC R x x0` by PROVE_TAC [EXTEND_RTC_TC] THEN
   PROVE_TAC [RTC_RTC]);
 
-(* moved here from examples/lambda/barendregt/chap3Script.sml *)
 Theorem RUNION_RTC_MONOTONE :
     !R1 x y. RTC R1 x y ==> !R2. RTC (R1 RUNION R2) x y
 Proof
