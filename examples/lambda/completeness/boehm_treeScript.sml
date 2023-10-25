@@ -337,6 +337,58 @@ Proof
     rw [unsolvable_BT]
 QED
 
+(* Definition 10.3.3 (i) *)
+Type transform[pp] = “:(term -> term) list”
+
+(* Definition 10.3.3 (ii) *)
+Definition solving_transform_def :
+    solving_transform (f :term -> term) <=>
+      (?x. f = \p. p @@ VAR x) \/ (?x N. f = [N/x])
+End
+
+(* Definition 10.3.3 (iii)
+
+   NOTE: "Boehm transform is a finite composition of solving transforms
+        (including the identity as a composition of zero transforms).
+
+   Here we just define "Boehm transform" as a list of solving transforms,
+   thus always finite. The "composition" part depends on how this list is used.
+ *)
+Definition Boehm_transform_def :
+    Boehm_transform pi = EVERY solving_transform pi
+End
+
+(* TODO: looking for a better definition as ‘\e f. f e’ looks ugly.
+
+   NOTE: ‘transform pi M’ stands for M^{pi} or pi(M) in textbook.
+ *)
+Definition transform_def :
+    transform pi M = FOLDL (\e f. (f :term -> term) e) M pi
+End
+
+(* Lemma 10.3.4 (i) *)
+Theorem Boehm_transform_ctxt :
+    !pi. Boehm_transform pi ==> ?c. ctxt c /\ !M. transform pi M == c M
+Proof
+    Induct_on ‘pi’ using SNOC_INDUCT
+ >> rw [Boehm_transform_def, transform_def]
+ >- (Q.EXISTS_TAC ‘\x. x’ >> rw [ctxt_rules])
+ >> fs [EVERY_SNOC, FOLDL_SNOC]
+ >> rename1 ‘solving_transform f’
+ >> fs [GSYM Boehm_transform_def, transform_def]
+ >> fs [solving_transform_def]
+ >| [ (* goal 1 (of 2) *)
+      Q.EXISTS_TAC ‘\y. c y @@ (\y. VAR x) y’ >> rw [ctxt_rules] \\
+      MATCH_MP_TAC lameq_APPL >> art [],
+      (* goal 2 (of 2) *)
+      Q.EXISTS_TAC ‘\y. (\z. LAM x (c z)) y @@ (\y. N) y’ \\
+      rw [ctxt_rules, constant_contexts_exist] \\
+      MATCH_MP_TAC lameq_TRANS \\
+      Q.EXISTS_TAC ‘[N/x] (c M)’ \\
+      reverse CONJ_TAC >- rw [lameq_rules] \\
+      irule lameq_sub_cong >> rw [] ]
+QED
+
 val _ = export_theory ();
 val _ = html_theory "boehm_tree";
 
