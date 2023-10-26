@@ -395,6 +395,56 @@ Proof
       irule lameq_sub_cong >> rw [] ]
 QED
 
+(* Lemma 10.4.1 (i) *)
+
+(* Theorem 10.4.2 (i) *)
+Theorem separability_thm :
+    !M N. benf M /\ benf N /\ M <> N ==> !P Q. ?pi. apply pi M == P /\ apply pi N = Q
+Proof
+    cheat
+QED
+
+(* Theorem 10.4.2 (ii) *)
+Theorem separability_thm_closed :
+    !M N. benf M /\ benf N /\ M <> N /\ FV M = {} /\ FV N = {} ==>
+          !P Q. ?L. M @* L == P /\ N @* L == Q
+Proof
+    cheat
+QED
+
+(* Theorem 2.1.36 [1, p.34] or Corollary 15.1.5
+
+   NOTE: This theorem is not necessary if the antecedent of Theorem 2.1.40 is
+   replaced by ‘has_benf M /\ has_benf N’.
+ *)
+Theorem has_benf_iff_has_bnf :
+    !M. has_benf M <=> has_bnf M
+Proof
+    cheat
+QED
+
+(* Theorem 2.1.39 [1, p.35] or Theorem 10.4.3 (i) [1, p.256] *)
+Theorem benf_incompatible :
+    !M N. benf M /\ benf N /\ M <> N ==> incompatible M N
+Proof
+    cheat
+QED
+
+val _ = set_fixity "RINSERT" (Infixr 490)
+
+(* ‘RINSERT’ inserts one more pair into an existing relation *)
+Definition RINSERT :
+    $RINSERT r R = \x y. R x y \/ (x = FST r /\ y = SND r)
+End
+
+(* Theorem 2.1.40 [1, p.35] (Hilbert-Post completeness of beta+eta) *)
+Theorem lameta_completeness :
+    !M N. has_bnf M /\ has_bnf N ==>
+          lameta M N \/ ~consistent (conversion ((M,N) RINSERT (beta RUNION eta)))
+Proof
+    cheat
+QED
+
 val _ = export_theory ();
 val _ = html_theory "boehm_tree";
 
