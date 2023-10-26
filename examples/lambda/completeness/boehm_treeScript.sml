@@ -309,9 +309,9 @@ Definition BT_generator_def :
                                (NONE, LNIL)
 End
 
-(* The Boehm tree of M, all in dB terms. *)
+(* The Boehm tree of M, all in dB terms *)
 Definition dBT_def :
-    dBT (M :pdb) = ltree_unfold BT_generator M
+    dBT = ltree_unfold BT_generator
 End
 
 (* The Boehm tree of M, translated back to normal Lambda terms *)
@@ -358,24 +358,30 @@ Definition Boehm_transform_def :
     Boehm_transform pi = EVERY solving_transform pi
 End
 
-(* TODO: looking for a better definition as ‘\e f. f e’ looks ugly.
+(* ‘apply pi M’ (apply a Boehm transform) denotes "M^{pi}" or "pi(M)".
 
-   NOTE: ‘transform pi M’ stands for M^{pi} or pi(M) in textbook.
+   NOTE: either FOLDL or FOLDR is correct (due to combinTheory.o_ASSOC),
+         but FOLDR seems more natural requiring natural list induction in
+         the next proof(s), while FOLDL would require SNOC_INDUCT.
  *)
-Definition transform_def :
-    transform pi M = FOLDL (\e f. (f :term -> term) e) M pi
+Definition apply_def :
+    apply pi = FOLDR $o I pi
 End
+
+Theorem apply_alt :
+    !pi. apply pi = FOLDL $o I pi
+Proof
+    cheat
+QED
 
 (* Lemma 10.3.4 (i) *)
 Theorem Boehm_transform_ctxt :
-    !pi. Boehm_transform pi ==> ?c. ctxt c /\ !M. transform pi M == c M
+    !pi. Boehm_transform pi ==> ?c. ctxt c /\ !M. apply pi M == c M
 Proof
-    Induct_on ‘pi’ using SNOC_INDUCT
- >> rw [Boehm_transform_def, transform_def]
+    Induct_on ‘pi’
+ >> rw [Boehm_transform_def, apply_def]
  >- (Q.EXISTS_TAC ‘\x. x’ >> rw [ctxt_rules])
- >> fs [EVERY_SNOC, FOLDL_SNOC]
- >> rename1 ‘solving_transform f’
- >> fs [GSYM Boehm_transform_def, transform_def]
+ >> fs [GSYM Boehm_transform_def, apply_def]
  >> fs [solving_transform_def]
  >| [ (* goal 1 (of 2) *)
       Q.EXISTS_TAC ‘\y. c y @@ (\y. VAR x) y’ >> rw [ctxt_rules] \\
