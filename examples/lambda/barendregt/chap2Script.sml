@@ -961,7 +961,7 @@ QED
 Theorem strange_cases :
     !M : term. (?vs M'. (M = LAMl vs M') /\ (size M' = 1) /\ ALL_DISTINCT vs) \/
                (?vs args t.
-                         (M = LAMl vs (FOLDL APP t args)) /\
+                         (M = LAMl vs (t @* args)) /\
                          ~(args = []) /\ ~is_comb t /\ ALL_DISTINCT vs)
 Proof
     rpt STRIP_TAC

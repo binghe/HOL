@@ -94,7 +94,7 @@ Theorem solvable_alt_closed'[local] =
     REWRITE_RULE [closed_def] solvable_alt_closed
 
 (* 8.3.1 (iii) [1, p.171] *)
-Overload unsolvable = “$~ o solvable”
+Overload unsolvable = “\M. ~(solvable M)”
 
 (* 8.3.2 Examples of solvable terms [1, p.171] *)
 Theorem solvable_K :
@@ -126,6 +126,20 @@ Proof
     rw [solvable_alt_closed']
  >> Q.EXISTS_TAC ‘[K @@ I]’ >> simp []
  >> ASM_SIMP_TAC (betafy (srw_ss())) [YYf, Once YffYf, lameq_K]
+QED
+
+(* TODO: how to leverage Omega_starloops *)
+Theorem unsolvable_Omega :
+    unsolvable Omega
+Proof
+   ‘closed Omega’ by rw [closed_def]
+ >> rw [solvable_alt_closed]
+ >> CCONTR_TAC
+ >> ‘?Z. Omega @* Ns -b->* Z /\ I -b->* Z’ by METIS_TAC [lameq_CR]
+ >> fs [bnf_reduction_to_self]
+ >> Q.PAT_X_ASSUM ‘closed Omega’ K_TAC
+ >> POP_ASSUM K_TAC (* Z = I *)
+ >> cheat
 QED
 
 Theorem closure_VAR[simp] :
