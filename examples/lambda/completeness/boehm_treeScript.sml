@@ -16,7 +16,7 @@ val _ = new_theory "boehm_tree";
 val o_DEF = combinTheory.o_DEF; (* cannot directly open combinTheory *)
 
 (* A dB-term M is hnf if its corresponding Lambda term is hnf *)
-Overload dhnf = “hnf o toTerm”
+Overload dhnf = “\M. hnf (toTerm M)”
 
 Theorem dhnf_fromTerm[simp] :
     !M. dhnf (fromTerm M) <=> hnf M
@@ -267,11 +267,11 @@ QED
    The (unique) terminating term of head reduction path is called "principle"
    hnf, which is used for defining Boehm trees.
  *)
-Definition phnf_def :
-    phnf = last o head_reduction_path
+Definition principle_hnf_def :
+    principle_hnf = last o head_reduction_path
 End
 
-Overload phnf = “fromTerm o phnf o toTerm”
+Overload principle_hnf = “\M. fromTerm (principle_hnf (toTerm M))”
 
 (* not used *)
 Definition drator_def :
@@ -283,7 +283,7 @@ Definition drand_def :
     drand (dAPP s t) = t
 End
 
-(* NOTE: this "body" bfunction is unsound for “:term” type *)
+(* NOTE: this "body" bfunction is unsound for :term *)
 Definition dbody_def :
     dbody (dABS s) = s
 End
@@ -291,19 +291,19 @@ End
 Overload rator    = “drator”
 Overload rand     = “drand”
 Overload body     = “dbody”
-Overload solvable = “solvable o toTerm”
+Overload solvable = “\M. (solvable (toTerm M))”
 
-Theorem solvable_phnf :
-    !M. solvable (M :pdb) ==> dhnf (phnf M)
+Theorem solvable_principle_hnf :
+    !M. solvable (M :pdb) ==> dhnf (principle_hnf M)
 Proof
-    rw [o_DEF, solvable_iff_has_hnf, phnf_def, head_reduction_path_def,
+    rw [o_DEF, solvable_iff_has_hnf, principle_hnf_def, head_reduction_path_def,
         corollary11_4_8]
 QED
 
 (* The needed unfolding function for ltree_unfold for Boehm Tree *)
 Definition BT_generator_def :
     BT_generator (M :pdb) = if solvable M then
-                               let M' = phnf M in
+                               let M' = principle_hnf M in
                                  (SOME (dhnf_head M'), fromList (dAPPl M'))
                             else
                                (NONE, LNIL)
@@ -314,28 +314,135 @@ Definition dBT_def :
     dBT = ltree_unfold BT_generator
 End
 
-(* The Boehm tree of M, translated back to normal Lambda terms *)
 Definition BT_def :
     BT = ltree_map (OPTION_MAP toTerm) o dBT o fromTerm
 End
 
+(* The Boehm tree of M, translated back to normal Lambda terms *)
+Type boehm_tree[pp] = “:term option ltree”
+
+(* |- ltree_el (Branch a ts) [] = SOME (a,LLENGTH ts) /\
+      ltree_el (Branch a ts) (n::ns) =
+        case LNTH n ts of NONE => NONE | SOME t => ltree_el t ns
+
+   |- ltree_lookup t [] = SOME t /\
+      ltree_lookup (Branch a ts) (n::ns) =
+        case LNTH n ts of NONE => NONE | SOME t => ltree_lookup t ns
+ *)
+
+(* Remarks 10.1.3 (iii) [1, p.216]: unsolvable terms all have the same Boehm
+   tree (‘bot’).
+ *)
+Overload bot = “Branch NONE (LNIL :boehm_tree llist)”
+val _ = Unicode.unicode_version {u = UTF8.chr 0x22A5, tmnm = "bot"};
+
 Theorem unsolvable_BT :
-    !M. unsolvable M ==> BT M = Branch NONE LNIL
+    !M. unsolvable M ==> BT M = bot
 Proof
     rw [BT_def, dBT_def, BT_generator_def, ltree_unfold, ltree_map]
 QED
 
-Type boehm_tree[pp] = “:term option ltree”
-
-Overload bot = “Branch NONE (LNIL :term option ltree llist)”
-val _ = Unicode.unicode_version {u = UTF8.chr 0x22A5, tmnm = "bot"};
-
-(* All unsolvable terms have the same Boehm tree. *)
 Theorem unsolvable_BT_EQ :
     !M N. unsolvable M /\ unsolvable N ==> BT M = BT N
 Proof
     rw [unsolvable_BT]
 QED
+
+(* Proposition 10.1.6 [1, p.219] *)
+Theorem lameq_cong_BT :
+    !M N. M == N ==> BT M = BT N
+Proof
+    cheat
+QED
+
+(*---------------------------------------------------------------------------*
+ *  Comparing Boehm trees
+ *---------------------------------------------------------------------------*)
+
+(* “ltree_subset A B” <=> A results from B by cutting off some subtrees *)
+Definition ltree_subset_def :
+    ltree_subset A B <=> (subtrees A) SUBSET (subtrees B)
+End
+
+(* “ltree_paths A” has the type “:num list -> bool” (a set of number lists). *)
+Definition ltree_paths_def :
+    ltree_paths A = {path | IS_SOME (ltree_lookup A path)}
+End
+
+Theorem ltree_subset_alt :
+    !A B. ltree_subset A B <=> (ltree_paths A) SUBSET (ltree_paths B)
+Proof
+    cheat
+QED
+
+(*---------------------------------------------------------------------------*
+ *  Equivalent terms
+ *---------------------------------------------------------------------------*)
+
+(* Definition 10.2.19
+
+   M = dABSi (dABSn M) (dV (dVn M) @* dAPPl M)
+   N = dABSi (dABSn N) (dV (dVn N) @* dAPPl N)
+
+   n  = dABSn M, y  = dVn M, m  = LENGTH (dAPPL M)
+   n' = dABSn N, y' = dVn N, m' = LENGTH (dAPPL N)
+
+   y = y'
+   n - m = n' - m' (possibly negative) <=> n + m' = n' + m (all non-negative)
+ *)
+Definition equivalent_def :
+    equivalent (M :pdb) (N :pdb) =
+       if solvable M /\ solvable N then
+          dVn M = dVn N /\
+          dABSn M + LENGTH (dAPPl N) = dABSn N + LENGTH (dAPPl M)
+       else
+          ~solvable M /\ ~solvable N
+End
+
+Theorem equivalent_alt_solvable :
+    !M N. solvable M /\ solvable N ==>
+         (equivalent M (N :pdb) <=>
+          dVn M = dVn N /\
+          dABSn M + LENGTH (dAPPl N) = dABSn N + LENGTH (dAPPl M))
+Proof
+    rw [equivalent_def]
+QED
+
+Theorem unsolvable_imp_equivalent :
+    !M N. ~solvable M /\ ~solvable N ==> equivalent M (N :pdb)
+Proof
+    rw [equivalent_def]
+QED
+
+Theorem equivalent_cases :
+    !M N. equivalent M (N :pdb) <=>
+             solvable M /\ solvable N /\
+             dVn M = dVn N /\
+             dABSn M + LENGTH (dAPPl N) = dABSn N + LENGTH (dAPPl M)
+          \/ ~solvable M /\ ~solvable N
+Proof
+    rw [equivalent_def]
+ >> METIS_TAC []
+QED
+
+Theorem not_equivalent_cases :
+    !M N. ~equivalent M (N :pdb) <=>
+             solvable M /\ ~solvable N
+          \/ ~solvable M /\ solvable N
+          \/ solvable M /\ solvable N /\
+             (dVn M <> dVn N \/
+              dABSn M + LENGTH (dAPPl N) <> dABSn N + LENGTH (dAPPl M))
+Proof
+    rw [equivalent_def]
+ >> METIS_TAC []
+QED
+
+(* use the same name for equivalence of :term *)
+Overload equivalent = “\M N. equivalent (fromTerm M) (fromTerm N)”
+
+(*---------------------------------------------------------------------------*
+ *  Boehm transformations
+ *---------------------------------------------------------------------------*)
 
 (* Definition 10.3.3 (i) *)
 Type transform[pp] = “:(term -> term) list”
@@ -358,20 +465,24 @@ Definition Boehm_transform_def :
     Boehm_transform pi = EVERY solving_transform pi
 End
 
-(* ‘apply pi M’ (apply a Boehm transform) denotes "M^{pi}" or "pi(M)".
-
-   NOTE: either FOLDL or FOLDR is correct (due to combinTheory.o_ASSOC),
-         but FOLDR seems more natural requiring natural list induction in
-         the next proof(s), while FOLDL would require SNOC_INDUCT.
- *)
+(* ‘apply pi M’ (applying a Boehm transformation) means "M^{pi}" or "pi(M)" *)
 Definition apply_def :
     apply pi = FOLDR $o I pi
 End
 
+(* NOTE: either FOLDL or FOLDR is correct (due to combinTheory.o_ASSOC),
+         but FOLDR seems more natural requiring natural list induction in
+         the next proof(s), while FOLDL would require SNOC_INDUCT.
+ *)
 Theorem apply_alt :
     !pi. apply pi = FOLDL $o I pi
 Proof
-    cheat
+    REWRITE_TAC [apply_def]
+ >> Induct_on ‘pi’ >> rw []
+ >> KILL_TAC (* only FOLDL is left *)
+ >> Induct_on ‘pi’ using SNOC_INDUCT
+ >> rw [FOLDL_SNOC]
+ >> POP_ASSUM (rw o wrap o SYM)
 QED
 
 (* Lemma 10.3.4 (i) *)
@@ -395,17 +506,61 @@ Proof
       irule lameq_sub_cong >> rw [] ]
 QED
 
+(* Definition 10.3.5 (ii) *)
+Definition head_original_def :
+    head_original (M :pdb) = EVERY (\N. dVn M NOTIN dFV N) (dAPPl M)
+End
+
+Overload head_original = “\M. head_original (fromTerm M)”
+
+(* Definition 10.3.5 (ii)
+
+   NOTE: ‘head_original M' /\ ~is_dABS M'’ means m := dV n @* Ns (n not free in Ns)
+ *)
+Definition is_ready_def :
+    is_ready (M :pdb) = (~solvable M \/
+                         ~is_dABS (principle_hnf M) /\ head_original (principle_hnf M))
+End
+
+Overload is_ready = “\M. is_ready (fromTerm M)”
+
+(* Lemma 10.3.6 (i) *)
+Theorem lemma10_3_6i :
+    !M. ?pi. is_ready (apply pi M)
+Proof
+    cheat
+QED
+
 (* Lemma 10.4.1 (i) *)
+Theorem separability_lemma1 :
+    !M N. solvable (M :term) /\ solvable N /\ ~equivalent M N ==>
+          !P Q. ?pi. apply pi M == P /\ apply pi N == Q
+Proof
+    cheat
+QED
+
+(* Lemma 10.4.1 (ii)
+
+   NOTE: If M is solvable, then N is either solvable (but not equivalent),
+         or just unsolvable.
+ *)
+Theorem separability_lemma2 :
+    !M N. solvable M /\ ~equivalent M N ==>
+          !P. ?pi. apply pi M == P /\ ~solvable (apply pi N)
+Proof
+    cheat
+QED
 
 (* Theorem 10.4.2 (i) *)
 Theorem separability_thm :
-    !M N. benf M /\ benf N /\ M <> N ==> !P Q. ?pi. apply pi M == P /\ apply pi N = Q
+    !M N. benf M /\ benf N /\ M <> N ==>
+          !P Q. ?pi. apply pi M == P /\ apply pi N = Q
 Proof
     cheat
 QED
 
 (* Theorem 10.4.2 (ii) *)
-Theorem separability_thm_closed :
+Theorem closed_separability_thm :
     !M N. benf M /\ benf N /\ M <> N /\ FV M = {} /\ FV N = {} ==>
           !P Q. ?L. M @* L == P /\ N @* L == Q
 Proof
@@ -415,7 +570,7 @@ QED
 (* Theorem 2.1.36 [1, p.34] or Corollary 15.1.5
 
    NOTE: This theorem is not necessary if the antecedent of Theorem 2.1.40 is
-   replaced by ‘has_benf M /\ has_benf N’.
+         replaced by ‘has_benf M /\ has_benf N’.
  *)
 Theorem has_benf_iff_has_bnf :
     !M. has_benf M <=> has_bnf M
@@ -438,7 +593,7 @@ Definition RINSERT :
 End
 
 (* Theorem 2.1.40 [1, p.35] (Hilbert-Post completeness of beta+eta) *)
-Theorem lameta_completeness :
+Theorem lameta_complete :
     !M N. has_bnf M /\ has_bnf N ==>
           lameta M N \/ ~consistent (conversion ((M,N) RINSERT (beta RUNION eta)))
 Proof
