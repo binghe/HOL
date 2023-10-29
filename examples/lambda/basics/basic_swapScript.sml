@@ -134,4 +134,19 @@ val NEW_ELIM_RULE = store_thm(
           P (NEW X)``,
   PROVE_TAC [NEW_def]);
 
+Theorem FRESH_lists :
+    !n s : string set.
+       FINITE s ==> ?l'. ALL_DISTINCT l' /\ DISJOINT (LIST_TO_SET l') s /\
+                         (LENGTH l' = n)
+Proof
+  Induct THEN SRW_TAC [][] THENL [
+    RES_TAC THEN
+ (* The next two tactics were: Q_TAC (NEW_TAC "z") `LIST_TO_SET l' UNION s` *)
+   ‘FINITE (LIST_TO_SET l' UNION s)’ by rw [] \\
+   ‘?z. z NOTIN LIST_TO_SET l' UNION s’ by METIS_TAC [new_exists] \\
+    Q.EXISTS_TAC `z::l'` THEN
+    FULL_SIMP_TAC (srw_ss()) []
+  ]
+QED
+
 val _ = export_theory();
