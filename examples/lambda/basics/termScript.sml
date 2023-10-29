@@ -315,6 +315,20 @@ Theorem FRESH_LAM[simp]:
   u NOTIN FV (LAM v M) <=> (u <> v ==> u NOTIN FV M)
 Proof SRW_TAC [][] THEN METIS_TAC []
 QED
+
+Theorem FRESH_lists :
+    !n s : string set.
+       FINITE s ==> ?l'. ALL_DISTINCT l' /\ DISJOINT (LIST_TO_SET l') s /\
+                         (LENGTH l' = n)
+Proof
+  Induct THEN SRW_TAC [][] THENL [
+    RES_TAC THEN
+    Q_TAC (NEW_TAC "z") `LIST_TO_SET l' UNION s` THEN
+    Q.EXISTS_TAC `z::l'` THEN
+    FULL_SIMP_TAC (srw_ss()) []
+  ]
+QED
+
 val FV_EMPTY = store_thm(
   "FV_EMPTY",
   ``(FV t = {}) <=> !v. v NOTIN FV t``,

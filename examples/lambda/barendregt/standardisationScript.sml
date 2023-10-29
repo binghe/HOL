@@ -995,18 +995,6 @@ val i_reduce_to_LAM_underneath = prove(
     PROVE_TAC [labelled_redn_rules]
   ]);
 
-val FRESH_lists = store_thm(
-  "FRESH_lists",
-  ``!n s : string set.
-       FINITE s ==> ?l'. ALL_DISTINCT l' /\ DISJOINT (LIST_TO_SET l') s /\
-                         (LENGTH l' = n)``,
-  Induct THEN SRW_TAC [][] THENL [
-    RES_TAC THEN
-    Q_TAC (NEW_TAC "z") `LIST_TO_SET l' UNION s` THEN
-    Q.EXISTS_TAC `z::l'` THEN
-    FULL_SIMP_TAC (srw_ss()) []
-  ]);
-
 val _ = augment_srw_ss [rewrites [RENAMING_REVERSE, RENAMING_ZIP_MAP_VAR]]
 
 val head_reduction_standard = store_thm(
