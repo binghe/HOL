@@ -27,23 +27,22 @@ Definition principle_hnf_def :
     principle_hnf = last o head_reduction_path
 End
 
-val (abs_num_thm, _) = define_recursive_term_function
-   ‘(abs_num ((VAR :string -> term) s) = 0) /\
-    (abs_num (t1 @@ t2) = 0) /\
-    (abs_num (LAM v t) = 1 + abs_num t)’;
+val (LAMl_size_thm, _) = define_recursive_term_function
+   ‘(LAMl_size ((VAR :string -> term) s) = 0) /\
+    (LAMl_size (t1 @@ t2) = 0) /\
+    (LAMl_size (LAM v t) = 1 + LAMl_size t)’;
 
-val _ = export_rewrites ["abs_num_thm"];
+val _ = export_rewrites ["LAMl_size_thm"];
 
-(* deep_rator *)
+(* deep_rator access the head variable term of an abs-free hnf. *)
 local
   val deep_rator_defn =
      ‘deep_rator t = if is_comb t then deep_rator (rator t) else t’;
   (* Defn.tgoal (Hol_defn "deep_rator_def" deep_rator_defn) *)
-  val tactic = WF_REL_TAC ‘measure size’ \\
-               rw [is_comb_APP_EXISTS] >> rw [];
+  val tactic = WF_REL_TAC ‘measure size’ >> rw [is_comb_APP_EXISTS] >> rw [];
 in
   val (deep_rator_def, SOME deep_rator_ind) =
-      TotalDefn.tDefine "deep_rator" deep_rator_defn tactic;
+       TotalDefn.tDefine "deep_rator" deep_rator_defn tactic;
 end;
 
 Theorem deep_rator_appstar :
@@ -58,10 +57,10 @@ Overload hnf_headvar = “\t. THE_VAR (deep_rator t)”
 (* hnf_children retrives the ‘args’ part of an abs-free hnf (VAR y @* args) *)
 local
   val hnf_children_defn =
-     ‘hnf_children t = if is_comb t then SNOC (rand t) (hnf_children (rator t)) else []’;
-  (* Defn.tgoal (Hol_defn "hnf_children_def" hnf_children_defn) *)
-  val tactic = WF_REL_TAC ‘measure size’ \\
-               rw [is_comb_APP_EXISTS] >> rw [];
+     ‘hnf_children t = if is_comb t then SNOC (rand t) (hnf_children (rator t))
+                       else []’;
+  (* Defn.tgoal (Hol_defn "hnf_children_def" hnf_children_defn); *)
+  val tactic = WF_REL_TAC ‘measure size’ >> rw [is_comb_APP_EXISTS] >> rw [];
 in
   val (hnf_children_def, SOME hnf_children_ind) =
       TotalDefn.tDefine "hnf_children" hnf_children_defn tactic;
@@ -85,22 +84,24 @@ Proof
 QED
 
 Theorem absfree_hnf_cases :
-    !M. hnf M /\ ~is_abs M ==> ?y args. M = VAR y @* args
+    !M. hnf M /\ ~is_abs M <=> ?y args. M = VAR y @* args
 Proof
-    rpt STRIP_TAC
- >> ‘?vs args y. ALL_DISTINCT vs /\ M = LAMl vs (VAR y @* args)’ by METIS_TAC [hnf_cases]
- >> reverse (Cases_on ‘vs = []’) >- fs []
- >> qexistsl_tac [‘y’, ‘args’] >> rw []
+    Q.X_GEN_TAC ‘M’
+ >> EQ_TAC
+ >- (STRIP_TAC \\
+    ‘?vs args y. ALL_DISTINCT vs /\ M = LAMl vs (VAR y @* args)’ by METIS_TAC [hnf_cases] \\
+     reverse (Cases_on ‘vs = []’) >- fs [] \\
+     qexistsl_tac [‘y’, ‘args’] >> rw [])
+ >> rpt STRIP_TAC
+ >- rw [hnf_appstar]
+ >> rfs [is_abs_cases]
 QED
 
-Theorem absfree_hnf_deep_rator :
-    !M. hnf M /\ ~is_abs M ==> is_var (deep_rator M)
+Theorem absfree_hnf_thm :
+    !M. hnf M /\ ~is_abs M ==> M = deep_rator M @* hnf_children M
 Proof
-    rpt STRIP_TAC
- >> ‘?y args. M = VAR y @* args’ by METIS_TAC [absfree_hnf_cases]
- >> POP_ORW
- >> Suff ‘deep_rator (VAR y @* args) = VAR y’ >- rw []
- >> MATCH_MP_TAC deep_rator_appstar >> rw []
+    rw [absfree_hnf_cases]
+ >> rw [hnf_children_appstar, deep_rator_appstar]
 QED
 
 (* The needed unfolding function for ltree_unfold for Boehm Tree *)
@@ -108,21 +109,35 @@ Definition BT_generator_def :
     BT_generator (M :term) =
       if solvable M then
          let M0 = principle_hnf M;
-              n = abs_num M0;
+              n = LAMl_size M0;
              vs = FRESH_list n (FV M0);
              M1 = principle_hnf (M0 @* (MAP VAR vs));
+             M2 = LAMl vs (deep_rator M1);
          in
-            (SOME (LAMl vs (deep_rator M1)), fromList (hnf_children M1))
+            (SOME (M2,set vs), fromList (hnf_children M1))
       else
         (NONE, LNIL)
 End
 
+(* NOTE: The type of ‘BT M’ is a :term option ltree (:boehm_tree). In [1], BT(M)
+   denotes a partial function mapping sequence of numbers (path) to ltree nodes,
+   which is ‘ltree_el (BT M)’ (or ‘FST o THE’ of it).
+
+   |- ltree_el (Branch a ts) [] = SOME (a,LLENGTH ts) /\
+      ltree_el (Branch a ts) (n::ns) =
+        case LNTH n ts of NONE => NONE | SOME t => ltree_el t ns
+ *)
 Definition BT_def :
     BT = ltree_unfold BT_generator
 End
 
-(* The Boehm tree of M, translated back to normal Lambda terms *)
-Type boehm_tree[pp] = “:term option ltree”
+(* the type of Boehm tree *)
+Type boehm_tree[pp] = “:(term # string set) option ltree”
+
+(* the trees that are the tree of a term *)
+Definition Boehm_def :
+    Boehm = {BT(M) | T}
+End
 
 (* Remarks 10.1.3 (iii) [1, p.216]: unsolvable terms all have the same Boehm
    tree (‘bot’).
@@ -358,15 +373,6 @@ Definition dBT_def :
     dBT = ltree_unfold dBT_generator
 End
 
-(* |- ltree_el (Branch a ts) [] = SOME (a,LLENGTH ts) /\
-      ltree_el (Branch a ts) (n::ns) =
-        case LNTH n ts of NONE => NONE | SOME t => ltree_el t ns
-
-   |- ltree_lookup t [] = SOME t /\
-      ltree_lookup (Branch a ts) (n::ns) =
-        case LNTH n ts of NONE => NONE | SOME t => ltree_lookup t ns
- *)
-
 (* Proposition 10.1.6 [1, p.219] *)
 Theorem lameq_cong_BT :
     !M N. M == N ==> BT M = BT N
@@ -383,10 +389,21 @@ Definition ltree_subset_def :
     ltree_subset A B <=> (subtrees A) SUBSET (subtrees B)
 End
 
-(* “ltree_paths A” has the type “:num list -> bool” (a set of number lists). *)
+(* “ltree_paths A” has the type “:num list -> bool” (a set of number lists).
+
+   |- ltree_lookup t [] = SOME t /\
+      ltree_lookup (Branch a ts) (n::ns) =
+        case LNTH n ts of NONE => NONE | SOME t => ltree_lookup t ns
+ *)
 Definition ltree_paths_def :
     ltree_paths A = {path | IS_SOME (ltree_lookup A path)}
 End
+
+Theorem ltree_paths_alt :
+    !A. ltree_paths A = {path | IS_SOME (ltree_el A path)}
+Proof
+    cheat
+QED
 
 Theorem ltree_subset_alt :
     !A B. ltree_subset A B <=> (ltree_paths A) SUBSET (ltree_paths B)
@@ -400,11 +417,8 @@ QED
 
 (* Definition 10.2.19
 
-   M = dABSi (dABSn M) (dV (dVn M) @* dAPPl M)
-   N = dABSi (dABSn N) (dV (dVn N) @* dAPPl N)
-
-   n  = dABSn M, y  = dVn M, m  = LENGTH (dAPPL M)
-   n' = dABSn N, y' = dVn N, m' = LENGTH (dAPPL N)
+   M = LAMl v1 (y  @* Ms) @@ (MAP VAR v1) == y  @* Ms' (LENGTH: m)
+   N = LAMl v2 (y' @* Ns) @@ (MAP VAR v2) == y' @* Ns' (LENGTH: m')
 
    y = y'
    n - m = n' - m' (possibly negative) <=> n + m' = n' + m (all non-negative)
@@ -414,21 +428,29 @@ Definition equivalent_def :
         if solvable M /\ solvable N then
            let M0 = principle_hnf M;
                N0 = principle_hnf N;
-               n  = abs_num M0;
-               n' = abs_num N0;
+               n  = LAMl_size M0;
+               n' = LAMl_size N0;
                vs = FRESH_list (MAX n n') (FV M0 UNION FV N0);
-               M1 = principle_hnf (M0 @* (MAP VAR (TAKE n vs)));
-               N1 = principle_hnf (N0 @* (MAP VAR (TAKE n' vs)));
+               v1 = REVERSE (TAKE n  vs);
+               v2 = REVERSE (TAKE n' vs);
+               M1 = principle_hnf (M0 @* (MAP VAR v1));
+               N1 = principle_hnf (N0 @* (MAP VAR v2));
                y  = deep_rator M1;
                y' = deep_rator N1;
                m  = LENGTH (hnf_children M1);
                m' = LENGTH (hnf_children N1);
            in
-               y = y' /\ n - m = n' - m'
+               y = y' /\ n + m' = n' + m
         else
            ~solvable M /\ ~solvable N
 End
 
+(* M = dABSi (dABSn M) (dV (dVn M) @* dAPPl M)
+   N = dABSi (dABSn N) (dV (dVn N) @* dAPPl N)
+
+   n  = dABSn M, y  = dVn M, m  = LENGTH (dAPPL M)
+   n' = dABSn N, y' = dVn N, m' = LENGTH (dAPPL N)
+ *)
 Definition dB_equivalent_def :
     dB_equivalent (M :pdb) (N :pdb) =
        if solvable M /\ solvable N then
