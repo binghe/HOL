@@ -3,7 +3,7 @@ open HolKernel Parse boolLib bossLib BasicProvers;
 open metisLib boolSimps relationTheory listTheory llistTheory pathTheory
      pred_setTheory finite_mapTheory hurdUtils;
 
-open nomsetTheory binderLib
+open basic_swapTheory nomsetTheory binderLib
 open finite_developmentsTheory
 open labelledTermsTheory
 open termTheory chap2Theory chap3Theory appFOLDLTheory

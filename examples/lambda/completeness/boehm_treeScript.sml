@@ -8,12 +8,70 @@ open HolKernel boolLib Parse bossLib;
 open optionTheory arithmeticTheory pred_setTheory listTheory llistTheory
      relationTheory ltreeTheory pathTheory posetTheory hurdUtils;
 
-open binderLib termTheory appFOLDLTheory chap2Theory chap3Theory
+open basic_swapTheory binderLib termTheory appFOLDLTheory chap2Theory chap3Theory
      head_reductionTheory standardisationTheory solvableTheory pure_dBTheory;
 
 val _ = new_theory "boehm_tree";
 
+val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
 val o_DEF = combinTheory.o_DEF; (* cannot directly open combinTheory *)
+
+val (LAM_size_thm, _) = define_recursive_term_function
+   ‘(LAM_size (VAR s) = 0) /\
+    (LAM_size (t1 @@ t2) = 0) /\
+    (LAM_size (LAM v t) = 1 + hnf_prefix_size t)’;
+
+(* appstar_size (((a b) c) d) *)
+val (appstar_size_thm, _) = define_recursive_term_function
+   ‘(appstar_size (VAR s) = 1) /\
+    (appstar_size (t1 @@ t2) = 1 + appstar_size t1) /\
+    (appstar_size (LAM v t) = 1)’;
+
+val _ = export_rewrites ["LAM_size_thm", "appstar_size_thm"];
+
+(* Usage: Defn.tgoal (Hol_defn "deep_rator_def" deep_rator_defn) *)
+val deep_rator_defn = ‘deep_rator t = if is_comb t then deep_rator (rator t) else t’;
+local
+  val tactic = WF_REL_TAC ‘measure size’ \\
+               rw [is_comb_APP_EXISTS] >> rw [];
+in
+  val deep_rator_def =
+      TotalDefn.tDefine "deep_rator_def" deep_rator_defn tactic;
+end;
+
+(* |- !t. deep_rator t = if is_comb t then deep_rator (rator t) else t *)
+Theorem deep_rator_thm = fst deep_rator_def;
+
+(* |- !P. (!t. (is_comb t ==> P (rator t)) ==> P t) ==> !v. P v *)
+Theorem deep_rator_ind = valOf (snd deep_rator_def);
+
+Theorem deep_rator_appstar :
+    !t. ~is_comb t ==> deep_rator (t @* args) = t
+Proof
+    Induct_on ‘args’ using SNOC_INDUCT
+ >> rw [appstar_SNOC, Once deep_rator_thm]
+QED
+
+Theorem absfree_hnf_cases :
+    !M. hnf M /\ ~is_abs M ==> ?y args. M = VAR y @* args
+Proof
+    rpt STRIP_TAC
+ >> ‘?vs args y. ALL_DISTINCT vs /\ M = LAMl vs (VAR y @* args)’ by METIS_TAC [hnf_cases]
+ >> reverse (Cases_on ‘vs = []’) >- fs []
+ >> qexistsl_tac [‘y’, ‘args’] >> rw []
+QED
+
+Theorem absfree_hnf_deep_rator :
+    !M. hnf M /\ ~is_abs M ==> is_var (deep_rator M)
+Proof
+    rpt STRIP_TAC
+ >> ‘?y args. M = VAR y @* args’ by METIS_TAC [absfree_hnf_cases]
+ >> POP_ORW
+ >> Suff ‘deep_rator (VAR y @* args) = VAR y’ >- rw []
+ >> MATCH_MP_TAC deep_rator_appstar >> rw []
+QED
+
+Overload hnf_headvar = “\M. THE_VAR (deep_rator M)”
 
 (* A dB-term M is hnf if its corresponding Lambda term is hnf *)
 Overload dhnf = “\M. hnf (toTerm M)”
@@ -509,7 +567,7 @@ Proof
     cheat
 QED
 
-val _ = set_fixity "RINSERT" (Infixr 490)
+val _ = set_fixity "RINSERT" (Infixr 490);
 
 (* ‘RINSERT’ inserts one more pair into an existing relation *)
 Definition RINSERT :

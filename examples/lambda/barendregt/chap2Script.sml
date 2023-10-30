@@ -643,6 +643,25 @@ Proof
  >> SRW_TAC [][]
 QED
 
+(* accessor for retrieving ‘y’ from ‘VAR y’ *)
+local
+    val th1 = prove (“!t. is_var t ==> ?y. t = VAR y”, rw [is_var_cases]);
+    val th2 = SIMP_RULE std_ss [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM] th1;
+in
+   (* |- !t. is_var t ==> t = VAR (THE_VAR t) *)
+    val THE_VAR_def = new_specification ("THE_VAR_def", ["THE_VAR"], th2);
+end;
+
+Theorem THE_VAR_thm[simp] :
+    !y. THE_VAR (VAR y) = y
+Proof
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘t = (VAR y :term)’ >> simp []
+ >> ‘is_var t’ by rw [Abbr ‘t’]
+ >> Suff ‘VAR (THE_VAR t) = (VAR y :term)’ >- rw []
+ >> ASM_SIMP_TAC std_ss [GSYM THE_VAR_def]
+QED
+
 Theorem term_cases :
     !t. is_var t \/ is_comb t \/ is_abs t
 Proof
