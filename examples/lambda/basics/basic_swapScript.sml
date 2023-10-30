@@ -149,4 +149,11 @@ Proof
   ]
 QED
 
+(* FRESH_list is a function for generating fresh list of new variables *)
+local
+    val th = SIMP_RULE std_ss [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM] FRESH_lists
+in
+    val FRESH_list_def = new_specification ("FRESH_list", ["FRESH_list"], th)
+end
+
 val _ = export_theory();

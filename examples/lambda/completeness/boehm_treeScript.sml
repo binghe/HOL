@@ -16,40 +16,72 @@ val _ = new_theory "boehm_tree";
 val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
 val o_DEF = combinTheory.o_DEF; (* cannot directly open combinTheory *)
 
-val (LAM_size_thm, _) = define_recursive_term_function
-   ‘(LAM_size (VAR s) = 0) /\
-    (LAM_size (t1 @@ t2) = 0) /\
-    (LAM_size (LAM v t) = 1 + hnf_prefix_size t)’;
+(* Definition 8.3.20 [1, p.177]
 
-(* appstar_size (((a b) c) d) *)
-val (appstar_size_thm, _) = define_recursive_term_function
-   ‘(appstar_size (VAR s) = 1) /\
-    (appstar_size (t1 @@ t2) = 1 + appstar_size t1) /\
-    (appstar_size (LAM v t) = 1)’;
+   A term may have several hnf's, e.g. if any of its hnf can still do beta
+   reductions, after such reductions the term is still an hnf by definition.
+   The (unique) terminating term of head reduction path is called "principle"
+   hnf, which is used for defining Boehm trees.
+ *)
+Definition principle_hnf_def :
+    principle_hnf = last o head_reduction_path
+End
 
-val _ = export_rewrites ["LAM_size_thm", "appstar_size_thm"];
+val (abs_num_thm, _) = define_recursive_term_function
+   ‘(abs_num ((VAR :string -> term) s) = 0) /\
+    (abs_num (t1 @@ t2) = 0) /\
+    (abs_num (LAM v t) = 1 + abs_num t)’;
 
-(* Usage: Defn.tgoal (Hol_defn "deep_rator_def" deep_rator_defn) *)
-val deep_rator_defn = ‘deep_rator t = if is_comb t then deep_rator (rator t) else t’;
+val _ = export_rewrites ["abs_num_thm"];
+
+(* deep_rator *)
 local
+  val deep_rator_defn =
+     ‘deep_rator t = if is_comb t then deep_rator (rator t) else t’;
+  (* Defn.tgoal (Hol_defn "deep_rator_def" deep_rator_defn) *)
   val tactic = WF_REL_TAC ‘measure size’ \\
                rw [is_comb_APP_EXISTS] >> rw [];
 in
-  val deep_rator_def =
-      TotalDefn.tDefine "deep_rator_def" deep_rator_defn tactic;
+  val (deep_rator_def, SOME deep_rator_ind) =
+      TotalDefn.tDefine "deep_rator" deep_rator_defn tactic;
 end;
-
-(* |- !t. deep_rator t = if is_comb t then deep_rator (rator t) else t *)
-Theorem deep_rator_thm = fst deep_rator_def;
-
-(* |- !P. (!t. (is_comb t ==> P (rator t)) ==> P t) ==> !v. P v *)
-Theorem deep_rator_ind = valOf (snd deep_rator_def);
 
 Theorem deep_rator_appstar :
     !t. ~is_comb t ==> deep_rator (t @* args) = t
 Proof
     Induct_on ‘args’ using SNOC_INDUCT
- >> rw [appstar_SNOC, Once deep_rator_thm]
+ >> rw [appstar_SNOC, Once deep_rator_def]
+QED
+
+Overload hnf_headvar = “\t. THE_VAR (deep_rator t)”
+
+(* hnf_children retrives the ‘args’ part of an abs-free hnf (VAR y @* args) *)
+local
+  val hnf_children_defn =
+     ‘hnf_children t = if is_comb t then SNOC (rand t) (hnf_children (rator t)) else []’;
+  (* Defn.tgoal (Hol_defn "hnf_children_def" hnf_children_defn) *)
+  val tactic = WF_REL_TAC ‘measure size’ \\
+               rw [is_comb_APP_EXISTS] >> rw [];
+in
+  val (hnf_children_def, SOME hnf_children_ind) =
+      TotalDefn.tDefine "hnf_children" hnf_children_defn tactic;
+end;
+
+Theorem hnf_children_thm :
+   (!y.     hnf_children ((VAR :string -> term) y) = []) /\
+   (!v t.   hnf_children (LAM v t) = []) /\
+   (!t1 t2. hnf_children (t1 @@ t2) = SNOC t2 (hnf_children t1))
+Proof
+   rpt (rw [Once hnf_children_def])
+QED
+
+Theorem hnf_children_appstar :
+    !t. ~is_comb t ==> hnf_children (t @* args) = args
+Proof
+    Induct_on ‘args’ using SNOC_INDUCT
+ >- rw [Once hnf_children_def]
+ >> RW_TAC std_ss [appstar_SNOC]
+ >> rw [Once hnf_children_def]
 QED
 
 Theorem absfree_hnf_cases :
@@ -71,7 +103,48 @@ Proof
  >> MATCH_MP_TAC deep_rator_appstar >> rw []
 QED
 
-Overload hnf_headvar = “\M. THE_VAR (deep_rator M)”
+(* The needed unfolding function for ltree_unfold for Boehm Tree *)
+Definition BT_generator_def :
+    BT_generator (M :term) =
+      if solvable M then
+         let M0 = principle_hnf M;
+              n = abs_num M0;
+             vs = FRESH_list n (FV M0);
+             M1 = principle_hnf (M0 @* (MAP VAR vs));
+         in
+            (SOME (LAMl vs (deep_rator M1)), fromList (hnf_children M1))
+      else
+        (NONE, LNIL)
+End
+
+Definition BT_def :
+    BT = ltree_unfold BT_generator
+End
+
+(* The Boehm tree of M, translated back to normal Lambda terms *)
+Type boehm_tree[pp] = “:term option ltree”
+
+(* Remarks 10.1.3 (iii) [1, p.216]: unsolvable terms all have the same Boehm
+   tree (‘bot’).
+ *)
+Overload bot = “Branch NONE (LNIL :boehm_tree llist)”
+val _ = Unicode.unicode_version {u = UTF8.chr 0x22A5, tmnm = "bot"};
+
+Theorem unsolvable_BT :
+    !M. unsolvable M ==> BT M = bot
+Proof
+    rw [BT_def, BT_generator_def, ltree_unfold, ltree_map]
+QED
+
+Theorem unsolvable_BT_EQ :
+    !M N. unsolvable M /\ unsolvable N ==> BT M = BT N
+Proof
+    rw [unsolvable_BT]
+QED
+
+(*---------------------------------------------------------------------------*
+ * The de Bruijn version of Boehm trees
+ *---------------------------------------------------------------------------*)
 
 (* A dB-term M is hnf if its corresponding Lambda term is hnf *)
 Overload dhnf = “\M. hnf (toTerm M)”
@@ -242,17 +315,6 @@ Proof
  >> rw []
 QED
 
-(* Definition 8.3.20 [1, p.177]
-
-   A term may have several hnf's, e.g. if any of its hnf can still do beta
-   reductions, after such reductions the term is still an hnf by definition.
-   The (unique) terminating term of head reduction path is called "principle"
-   hnf, which is used for defining Boehm trees.
- *)
-Definition principle_hnf_def :
-    principle_hnf = last o head_reduction_path
-End
-
 Overload principle_hnf = “\M. fromTerm (principle_hnf (toTerm M))”
 
 (* not used *)
@@ -283,25 +345,18 @@ Proof
 QED
 
 (* The needed unfolding function for ltree_unfold for Boehm Tree *)
-Definition BT_generator_def :
-    BT_generator (M :pdb) = if solvable M then
+Definition dBT_generator_def :
+    dBT_generator (M :pdb) = if solvable M then
                                let M' = principle_hnf M in
                                  (SOME (dhnf_head M'), fromList (dAPPl M'))
-                            else
+                             else
                                (NONE, LNIL)
 End
 
 (* The Boehm tree of M, all in dB terms *)
 Definition dBT_def :
-    dBT = ltree_unfold BT_generator
+    dBT = ltree_unfold dBT_generator
 End
-
-Definition BT_def :
-    BT = ltree_map (OPTION_MAP toTerm) o dBT o fromTerm
-End
-
-(* The Boehm tree of M, translated back to normal Lambda terms *)
-Type boehm_tree[pp] = “:term option ltree”
 
 (* |- ltree_el (Branch a ts) [] = SOME (a,LLENGTH ts) /\
       ltree_el (Branch a ts) (n::ns) =
@@ -312,24 +367,6 @@ Type boehm_tree[pp] = “:term option ltree”
         case LNTH n ts of NONE => NONE | SOME t => ltree_lookup t ns
  *)
 
-(* Remarks 10.1.3 (iii) [1, p.216]: unsolvable terms all have the same Boehm
-   tree (‘bot’).
- *)
-Overload bot = “Branch NONE (LNIL :boehm_tree llist)”
-val _ = Unicode.unicode_version {u = UTF8.chr 0x22A5, tmnm = "bot"};
-
-Theorem unsolvable_BT :
-    !M. unsolvable M ==> BT M = bot
-Proof
-    rw [BT_def, dBT_def, BT_generator_def, ltree_unfold, ltree_map]
-QED
-
-Theorem unsolvable_BT_EQ :
-    !M N. unsolvable M /\ unsolvable N ==> BT M = BT N
-Proof
-    rw [unsolvable_BT]
-QED
-
 (* Proposition 10.1.6 [1, p.219] *)
 Theorem lameq_cong_BT :
     !M N. M == N ==> BT M = BT N
@@ -338,7 +375,7 @@ Proof
 QED
 
 (*---------------------------------------------------------------------------*
- *  Comparing Boehm trees
+ *  Comparing Boehm trees (can be moved to ltreeTheory)
  *---------------------------------------------------------------------------*)
 
 (* “ltree_subset A B” <=> A results from B by cutting off some subtrees *)
@@ -373,54 +410,61 @@ QED
    n - m = n' - m' (possibly negative) <=> n + m' = n' + m (all non-negative)
  *)
 Definition equivalent_def :
-    equivalent (M :pdb) (N :pdb) =
+    equivalent (M :term) (N :term) =
+        if solvable M /\ solvable N then
+           let M0 = principle_hnf M;
+               N0 = principle_hnf N;
+               n  = abs_num M0;
+               n' = abs_num N0;
+               vs = FRESH_list (MAX n n') (FV M0 UNION FV N0);
+               M1 = principle_hnf (M0 @* (MAP VAR (TAKE n vs)));
+               N1 = principle_hnf (N0 @* (MAP VAR (TAKE n' vs)));
+               y  = deep_rator M1;
+               y' = deep_rator N1;
+               m  = LENGTH (hnf_children M1);
+               m' = LENGTH (hnf_children N1);
+           in
+               y = y' /\ n - m = n' - m'
+        else
+           ~solvable M /\ ~solvable N
+End
+
+Definition dB_equivalent_def :
+    dB_equivalent (M :pdb) (N :pdb) =
        if solvable M /\ solvable N then
-          dVn M = dVn N /\
-          dABSn M + LENGTH (dAPPl N) = dABSn N + LENGTH (dAPPl M)
+          let M0 = principle_hnf M;
+              N0 = principle_hnf N;
+              y  = dVn M0;
+              y' = dVn N0;
+              n  = dABSn M0;
+              n' = dABSn N0;
+              m  = LENGTH (dAPPl M0);
+              m' = LENGTH (dAPPl N0);
+          in
+              y = y' /\ n + m' = n' + m
        else
           ~solvable M /\ ~solvable N
 End
 
+Overload equivalent = “dB_equivalent”
+
 Theorem equivalent_alt_solvable :
     !M N. solvable M /\ solvable N ==>
          (equivalent M (N :pdb) <=>
-          dVn M = dVn N /\
-          dABSn M + LENGTH (dAPPl N) = dABSn N + LENGTH (dAPPl M))
+          let M0 = principle_hnf M;
+              N0 = principle_hnf N
+          in
+              dVn M0 = dVn N0 /\
+              dABSn M0 + LENGTH (dAPPl N0) = dABSn N0 + LENGTH (dAPPl M0))
 Proof
-    rw [equivalent_def]
+    rw [dB_equivalent_def]
 QED
 
 Theorem unsolvable_imp_equivalent :
     !M N. ~solvable M /\ ~solvable N ==> equivalent M (N :pdb)
 Proof
-    rw [equivalent_def]
+    rw [dB_equivalent_def]
 QED
-
-Theorem equivalent_cases :
-    !M N. equivalent M (N :pdb) <=>
-             solvable M /\ solvable N /\
-             dVn M = dVn N /\
-             dABSn M + LENGTH (dAPPl N) = dABSn N + LENGTH (dAPPl M)
-          \/ ~solvable M /\ ~solvable N
-Proof
-    rw [equivalent_def]
- >> METIS_TAC []
-QED
-
-Theorem not_equivalent_cases :
-    !M N. ~equivalent M (N :pdb) <=>
-             solvable M /\ ~solvable N
-          \/ ~solvable M /\ solvable N
-          \/ solvable M /\ solvable N /\
-             (dVn M <> dVn N \/
-              dABSn M + LENGTH (dAPPl N) <> dABSn N + LENGTH (dAPPl M))
-Proof
-    rw [equivalent_def]
- >> METIS_TAC []
-QED
-
-(* use the same name for equivalence of :term *)
-Overload equivalent = “\M N. equivalent (fromTerm M) (fromTerm N)”
 
 (*---------------------------------------------------------------------------*
  *  Boehm transformations
