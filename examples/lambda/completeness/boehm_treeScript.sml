@@ -9,8 +9,7 @@ open optionTheory arithmeticTheory pred_setTheory listTheory llistTheory
      relationTheory ltreeTheory pathTheory posetTheory hurdUtils;
 
 open basic_swapTheory binderLib termTheory appFOLDLTheory chap2Theory
-     chap3Theory head_reductionTheory standardisationTheory solvableTheory
-     pure_dBTheory;
+     chap3Theory head_reductionTheory standardisationTheory solvableTheory;
 
 val _ = new_theory "boehm_tree";
 
@@ -40,6 +39,14 @@ Proof
  >> STRIP_ASSUME_TAC (ISPEC “p :(term, redpos list) path” path_cases)
  >- fs []
  >> gs [is_head_reduction_thm, hnf_no_head_redex]
+QED
+
+(* ‘principle_hnf’ can be used to do final beta-reductions to make a hnf abs-free *)
+Theorem xxx :
+    !M0 n vs M1. hnf M0 /\ n = LAMl_size M0 /\ vs = FRESH_list n (FV M0) /\
+                 M1 = principle_hnf (M0 @* (MAP VAR vs)) ==> ~is_abs M1
+Proof
+    cheat
 QED
 
 (* hnf_head access the head variable term of an abs-free hnf. *)
@@ -165,264 +172,6 @@ Proof
     rw [unsolvable_BT]
 QED
 
-(*---------------------------------------------------------------------------*
- * FV (free variables) and BV (binding variables) of Boehm trees
- *---------------------------------------------------------------------------*)
-
-(* BV of a single term *)
-Definition BV_def :
-    BV (M :term) = if solvable M then
-                      let M0 = principle_hnf M;
-                           n = LAMl_size M0;
-                          vs = FRESH_list n (FV M0)
-                      in
-                          set vs
-                   else EMPTY
-End
-
-Definition BV_of_ltree_node_def :
-    BV_of_ltree_node M p =
-      let node = ltree_el M p in
-          if IS_SOME node then
-             BV (THE (FST (THE node)))
-          else EMPTY
-End
-
-(* BV_of_ltree_path: the set of binding variables up to a path *)
-local
-  (* usage: Defn.tgoal (Hol_defn "BV_of_ltree_path" BV_of_ltree_path_defn); *)
-  val BV_of_ltree_path_defn =
-     ‘BV_of_ltree_path (M :boehm_tree) p =
-         if p = [] then BV_of_ltree_node M p
-         else BV_of_ltree_path M (FRONT p) UNION
-              BV_of_ltree_node M p’;
-  (* for solving the above tgoal *)
-  val tactic = WF_REL_TAC ‘measure (LENGTH o SND)’ \\
-               rw [LENGTH_FRONT] \\
-               fs [NOT_NIL_EQ_LENGTH_NOT_0];
-in
-  val (BV_of_ltree_path_def, SOME BV_of_ltree_path_ind) =
-       TotalDefn.tDefine "BV_of_ltree_path" BV_of_ltree_path_defn tactic;
-end;
-
-Overload BV = “BV_of_ltree_path”
-
-(*---------------------------------------------------------------------------*
- * The de Bruijn version of Boehm trees
- *---------------------------------------------------------------------------*)
-
-(* A dB-term M is hnf if its corresponding Lambda term is hnf *)
-Overload dhnf = “\M. hnf (toTerm M)”
-
-Theorem dhnf_fromTerm[simp] :
-    !M. dhnf (fromTerm M) <=> hnf M
-Proof
-    rw [o_DEF]
-QED
-
-(* dB version of hnf_cases (only the ==> direction) *)
-Theorem dhnf_cases :
-    !M. dhnf M ==> ?n y Ms. M = dABSi n (dV y @* Ms)
-Proof
-    RW_TAC std_ss [hnf_cases]
- >> qabbrev_tac ‘n = LENGTH vs’
- >> Q.EXISTS_TAC ‘n’
- >> Know ‘fromTerm (toTerm M) = fromTerm (LAMl vs (VAR y @* args))’
- >- (art [fromTerm_11])
- >> Q.PAT_X_ASSUM ‘toTerm M = LAMl vs (VAR y @* args)’ K_TAC
- >> rw [fromTerm_LAMl, fromTerm_appstar]
- >> qabbrev_tac ‘vs' = MAP s2n vs’
- >> qabbrev_tac ‘Ms = MAP fromTerm args’
- >> qabbrev_tac ‘y' = s2n y’
- >> Know ‘dLAMl vs' (dV y' @* Ms) =
-          dABSi (LENGTH vs')
-            (FOLDL lift (dV y' @* Ms) (GENLIST I (LENGTH vs')) ISUB
-             ZIP (GENLIST dV (LENGTH vs'),
-                  MAP (\i. i + LENGTH vs') (REVERSE vs')))’
- >- (MATCH_MP_TAC dLAMl_to_dABSi_applied \\
-     qunabbrev_tac ‘vs'’ \\
-     MATCH_MP_TAC ALL_DISTINCT_MAP_INJ >> rw [])
- >> ‘LENGTH vs' = n’ by rw [Abbr ‘vs'’] >> POP_ORW
- >> Rewr'
- >> simp [FOLDL_lift_appstar, isub_appstar]
- >> Know ‘FOLDL lift (dV y') (GENLIST I n) = dV (y' + n)’
- >- (KILL_TAC \\
-     Induct_on ‘n’ >> rw [GENLIST, FOLDL_SNOC])
- >> Rewr'
- >> qabbrev_tac ‘Ms' = MAP (\e. FOLDL lift e (GENLIST I n)) Ms’
- >> reverse (Cases_on ‘MEM y vs’)
- >- (‘~MEM y' vs'’ by (rw [Abbr ‘y'’, Abbr ‘vs'’, MEM_MAP]) \\
-     ‘~MEM y' (REVERSE vs')’ by PROVE_TAC [MEM_REVERSE] \\
-     Suff ‘dV (y' + n) ISUB ZIP (GENLIST dV n,MAP (\i. i + n) (REVERSE vs')) =
-           dV (y' + n)’ >- (Rewr' >> METIS_TAC []) \\
-     MATCH_MP_TAC isub_dV_fresh \\
-     qabbrev_tac ‘l1 = GENLIST dV n’ \\
-     qabbrev_tac ‘l2 = MAP (\i. i + n) (REVERSE vs')’ \\
-    ‘LENGTH l1 = n’ by rw [Abbr ‘l1’] \\
-    ‘LENGTH l2 = n’ by rw [Abbr ‘l2’, Abbr ‘n’, Abbr ‘vs'’] \\
-     simp [DOM_ALT_MAP_SND, MAP_ZIP] \\
-     rw [Abbr ‘l2’, MEM_MAP])
- (* stage work *)
- >> ‘MEM y' vs'’ by (rw [Abbr ‘y'’, Abbr ‘vs'’, MEM_MAP])
- >> ‘MEM y' (REVERSE vs')’ by PROVE_TAC [MEM_REVERSE]
- >> ‘?j. j < LENGTH (REVERSE vs') /\ y' = EL j (REVERSE vs')’
-        by METIS_TAC [MEM_EL]
- >> ‘LENGTH (REVERSE vs') = n’ by rw [Abbr ‘vs'’, Abbr ‘n’]
- >> qabbrev_tac ‘Ns = MAP (\i. i + n) (REVERSE vs')’
- >> ‘LENGTH Ns = n’ by rw [Abbr ‘Ns’]
- >> Know ‘ALL_DISTINCT Ns’
- >- (qunabbrev_tac ‘Ns’ \\
-     MATCH_MP_TAC ALL_DISTINCT_MAP_INJ >> rw [] \\
-     qunabbrev_tac ‘vs'’ \\
-     MATCH_MP_TAC ALL_DISTINCT_MAP_INJ >> rw [])
- >> DISCH_TAC
- >> Suff ‘dV (y' + n) ISUB ZIP (GENLIST dV n,Ns) = EL j (GENLIST dV n)’
- >- (Rewr' \\
-     simp [EL_GENLIST] >> METIS_TAC [])
- >> MATCH_MP_TAC isub_dV_once >> simp []
- >> CONJ_TAC >- (rw [Abbr ‘Ns’, EL_MAP])
- >> Q.X_GEN_TAC ‘i’ >> DISCH_TAC
- >> ‘n <= EL i Ns’ by rw [Abbr ‘Ns’, EL_MAP]
- >> Suff ‘FVS (ZIP (GENLIST dV n,Ns)) = count n’ >- rw []
- >> Q.PAT_X_ASSUM ‘LENGTH Ns = n’ MP_TAC
- >> KILL_TAC >> Q.ID_SPEC_TAC ‘Ns’
- >> Induct_on ‘n’ >> rw [dFVS_def]
- >> ‘Ns <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
- >> ‘LENGTH (FRONT Ns) = n’ by rw [LENGTH_FRONT]
- >> ‘Ns = SNOC (LAST Ns) (FRONT Ns)’
-      by (rw [APPEND_FRONT_LAST, SNOC_APPEND]) >> POP_ORW
- >> Q.PAT_X_ASSUM ‘!Ns. LENGTH Ns = n ==> P’ (MP_TAC o (Q.SPEC ‘FRONT Ns’))
- >> rw [GENLIST, COUNT_SUC, dFVS_SNOC, ZIP_SNOC, dFV_def]
- >> SET_TAC []
-QED
-
-(* |- ?f f' f''. !M. dhnf M ==> M = dABS (f M) (dV (f' M) @* f'' M) *)
-val dhnf_cases' = dhnf_cases
-               |> SIMP_RULE std_ss [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM];
-
-(* |- !M. dhnf M ==> M = dABSi (dABSn' M) (dV (dVn' M) @* dAPPl' M) *)
-val dhnf_decompose =
-    new_specification ("dhnf_decompose", ["dABSn'", "dVn'", "dAPPl'"], dhnf_cases');
-
-(* Explicit definitions of hnf components (easier to work with) by Michael Norrish:
-
-   1. The number of leading dABS (can be zero):
- *)
-Definition dABSn_def :
-   (dABSn (dV n)       = 0) /\
-   (dABSn (dAPP t1 t2) = 0) /\
-   (dABSn (dABS t)     = 1 + dABSn t)
-End
-
-(* 2. The head variable of hnf (always exists) *)
-Definition dVn_def :
-   (dVn (dV n)       = n) /\
-   (dVn (dABS t)     = dVn t) /\
-   (dVn (dAPP t1 t2) = dVn t1)
-End
-
-(* 2. The list of terms after appstar (may be empty) *)
-Definition dAPPl_def :
-   (dAPPl (dV n)       = []) /\
-   (dAPPl (dABS t)     = dAPPl t) /\
-   (dAPPl (dAPP t1 t2) = SNOC t2 (dAPPl t1))
-End
-
-(* The "main" part of a hnf *)
-Definition dhnf_head_def :
-    dhnf_head M = dABSi (dABSn M) (dV (dVn M))
-End
-
-val _ = export_rewrites ["dABSn_def", "dVn_def", "dAPPl_def"];
-
-Theorem dABSn_dABSi[simp] :
-    dABSn (dABSi n t) = n + dABSn t
-Proof
-    Induct_on ‘n’ >> rw [FUNPOW_SUC]
-QED
-
-Theorem dABSn_dV_appstar[simp] :
-    dABSn (dV y @* Ns) = 0
-Proof
-    Induct_on ‘Ns’ using SNOC_INDUCT
- >> rw [appstar_SNOC]
-QED
-
-Theorem dVn_dABSi[simp] :
-    dVn (dABSi n t) = dVn t
-Proof
-    Induct_on ‘n’ >> rw [FUNPOW_SUC]
-QED
-
-Theorem dVn_appstar[simp] :
-    dVn (M @* Ns) = dVn M
-Proof
-    Induct_on ‘Ns’ using SNOC_INDUCT >> rw []
-QED
-
-Theorem dAPPl_dABSi[simp] :
-    dAPPl (dABSi n t) = dAPPl t
-Proof
-    Induct_on ‘n’ >> rw [FUNPOW_SUC]
-QED
-
-Theorem dAPPl_dV_appstar[simp] :
-    dAPPl (dV y @* Ns) = Ns
-Proof
-    Induct_on ‘Ns’ using SNOC_INDUCT >> rw [dappstar_APPEND]
-QED
-
-Theorem dhnf_thm :
-    !M. dhnf M ==> M = dABSi (dABSn M) (dV (dVn M) @* dAPPl M)
-Proof
-    rpt STRIP_TAC
- >> ‘?n y Ms. M = dABSi n (dV y @* Ms)’ by METIS_TAC [dhnf_cases]
- >> rw []
-QED
-
-Overload principle_hnf = “\M. fromTerm (principle_hnf (toTerm M))”
-
-(* not used *)
-Definition drator_def :
-    drator (dAPP s t) = s
-End
-
-(* not used *)
-Definition drand_def :
-    drand (dAPP s t) = t
-End
-
-(* NOTE: this "body" function was unsound for :term *)
-Definition dbody_def :
-    dbody (dABS s) = s
-End
-
-Overload rator    = “drator”
-Overload rand     = “drand”
-Overload body     = “dbody”
-Overload solvable = “\M. (solvable (toTerm M))”
-
-Theorem solvable_principle_hnf :
-    !M. solvable (M :pdb) ==> dhnf (principle_hnf M)
-Proof
-    rw [o_DEF, solvable_iff_has_hnf, principle_hnf_def, head_reduction_path_def,
-        corollary11_4_8]
-QED
-
-(* The needed unfolding function for ltree_unfold for Boehm Tree *)
-Definition dBT_generator_def :
-    dBT_generator (M :pdb) = if solvable M then
-                               let M' = principle_hnf M in
-                                 (SOME (dhnf_head M'), fromList (dAPPl M'))
-                             else
-                               (NONE, LNIL)
-End
-
-(* The Boehm tree of M, all in dB terms *)
-Definition dBT_def :
-    dBT = ltree_unfold dBT_generator
-End
-
 (* Proposition 10.1.6 [1, p.219] *)
 Theorem lameq_cong_BT :
     !M N. M == N ==> BT M = BT N
@@ -462,6 +211,99 @@ Proof
 QED
 
 (*---------------------------------------------------------------------------*
+ * FV (free variables) and BV (binding variables) of Boehm trees
+ *---------------------------------------------------------------------------*)
+
+(* BV of a single term *)
+Definition BV_of_hnf_def :
+    BV_of_hnf (M :term) = let M0 = principle_hnf M;
+                               n = LAMl_size M0;
+                              vs = FRESH_list n (FV M0)
+                          in set vs
+End
+
+Definition BV_of_ltree_node_def :
+    BV_of_ltree_node M p =
+      let node = ltree_el M p in
+          if IS_SOME node then
+             BV_of_hnf (THE (FST (THE node)))
+          else EMPTY
+End
+
+(* BV_of_ltree_path: the set of binding variables up to a path *)
+local
+  (* usage: Defn.tgoal (Hol_defn "BV_of_ltree_path" BV_of_ltree_path_defn); *)
+  val BV_of_ltree_path_defn =
+     ‘BV_of_ltree_path (M :boehm_tree) p =
+         if p = [] then BV_of_ltree_node M p
+         else BV_of_ltree_path M (FRONT p) UNION
+              BV_of_ltree_node M p’;
+  (* for solving the above tgoal *)
+  val tactic = WF_REL_TAC ‘measure (LENGTH o SND)’ \\
+               rw [LENGTH_FRONT] \\
+               fs [NOT_NIL_EQ_LENGTH_NOT_0];
+in
+  val (BV_of_ltree_path_def, SOME BV_of_ltree_path_ind) =
+       TotalDefn.tDefine "BV_of_ltree_path" BV_of_ltree_path_defn tactic;
+end;
+
+Overload BV = “BV_of_ltree_path”
+
+(* BT of a single variable *)
+Overload BT_VAR = “\x. (Branch (SOME (VAR x)) [| |]) :boehm_tree”
+
+val example_10_1_20 =
+   “Branch (SOME (LAMl [x; y] (VAR z))) [| BT_VAR x; BT_VAR y |]”;
+
+Definition FV_of_hnf_head_def :
+    FV_of_hnf_head (M :term) =
+          let M0 = principle_hnf M;
+               n = LAMl_size M0;
+              vs = FRESH_list n (FV M0);
+              M1 = principle_hnf (M0 @* (MAP VAR vs))
+          in
+              FV (hnf_head M1)
+End
+
+Definition FV_of_ltree_node_def :
+    FV_of_ltree_node (M :boehm_tree) p =
+      let node = ltree_el M p in
+          if IS_SOME node then
+             FV_of_hnf_head (THE (FST (THE node)))
+          else EMPTY
+End
+
+Definition FV_of_ltree_path_def :
+    FV_of_ltree_path M p = FV_of_ltree_node M p DIFF BV_of_ltree_path M p
+End
+
+Definition FV_of_ltree_def :
+    FV_of_ltree M = BIGUNION (IMAGE (FV_of_ltree_path M) (ltree_paths M))
+End
+
+Overload FV = “FV_of_ltree”
+
+Theorem FV_of_ltree_empty_imp_closed :
+    !M. FV (BT M) = {} ==> closed M
+Proof
+    rw [FV_of_ltree_def]
+ >- (fs [ltree_paths_def, NOT_IN_EMPTY, Once EXTENSION, NOT_IN_EMPTY] \\
+     POP_ASSUM (MP_TAC o (Q.SPEC ‘[]’)) \\
+     rw [ltree_lookup_def])
+ >> fs [Once EXTENSION]
+ >> POP_ASSUM (MP_TAC o (Q.SPEC ‘{}’))
+ >> rw [ltree_paths_def]
+ >> rename1 ‘FV_of_ltree_path (BT M) p = {}’
+ >> Suff ‘!p. IS_SOME (ltree_lookup (BT M) p) /\
+              FV_of_ltree_path (BT M) p = {} ==> closed M’
+ >- (DISCH_THEN MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘p’ >> art [])
+ >> KILL_TAC
+ (* stage work *)
+ >> cheat
+QED
+
+(*---------------------------------------------------------------------------*
  *  Equivalent terms
  *---------------------------------------------------------------------------*)
 
@@ -495,47 +337,10 @@ Definition equivalent_def :
            ~solvable M /\ ~solvable N
 End
 
-(* M = dABSi (dABSn M) (dV (dVn M) @* dAPPl M)
-   N = dABSi (dABSn N) (dV (dVn N) @* dAPPl N)
-
-   n  = dABSn M, y  = dVn M, m  = LENGTH (dAPPL M)
-   n' = dABSn N, y' = dVn N, m' = LENGTH (dAPPL N)
- *)
-Definition dB_equivalent_def :
-    dB_equivalent (M :pdb) (N :pdb) =
-       if solvable M /\ solvable N then
-          let M0 = principle_hnf M;
-              N0 = principle_hnf N;
-              y  = dVn M0;
-              y' = dVn N0;
-              n  = dABSn M0;
-              n' = dABSn N0;
-              m  = LENGTH (dAPPl M0);
-              m' = LENGTH (dAPPl N0);
-          in
-              y = y' /\ n + m' = n' + m
-       else
-          ~solvable M /\ ~solvable N
-End
-
-Overload equivalent = “dB_equivalent”
-
-Theorem equivalent_alt_solvable :
-    !M N. solvable M /\ solvable N ==>
-         (equivalent M (N :pdb) <=>
-          let M0 = principle_hnf M;
-              N0 = principle_hnf N
-          in
-              dVn M0 = dVn N0 /\
-              dABSn M0 + LENGTH (dAPPl N0) = dABSn N0 + LENGTH (dAPPl M0))
-Proof
-    rw [dB_equivalent_def]
-QED
-
 Theorem unsolvable_imp_equivalent :
-    !M N. ~solvable M /\ ~solvable N ==> equivalent M (N :pdb)
+    !M N. unsolvable M /\ unsolvable N ==> equivalent M N
 Proof
-    rw [dB_equivalent_def]
+    rw [equivalent_def]
 QED
 
 (*---------------------------------------------------------------------------*
@@ -606,20 +411,18 @@ QED
 
 (* Definition 10.3.5 (ii) *)
 Definition head_original_def :
-    head_original (M :pdb) = EVERY (\N. dVn M NOTIN dFV N) (dAPPl M)
+    head_original M0 = let n = LAMl_size M0;
+                          vs = FRESH_list n (FV M0);
+                          M1 = principle_hnf (M0 @* (MAP VAR vs));
+                       in
+                          EVERY (\e. hnf_head M1 # e) (hnf_children M1)
 End
 
-(* Definition 10.3.5 (ii)
-
-   NOTE: ‘head_original M' /\ ~is_dABS M'’ means m := dV n @* Ns (n not free in Ns)
- *)
+(* Definition 10.3.5 (iii) *)
 Definition is_ready_def :
-    is_ready (M :pdb) = (~solvable M \/
-                         ~is_dABS (principle_hnf M) /\ head_original (principle_hnf M))
+    is_ready M <=> unsolvable M \/
+                  ~is_abs (principle_hnf M) /\ head_original (principle_hnf M)
 End
-
-Overload is_ready = “\M. is_ready (fromTerm M)”
-
 (* Lemma 10.3.6 (i) *)
 Theorem lemma10_3_6i :
     !M. ?pi. is_ready (apply pi M)
