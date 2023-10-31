@@ -305,6 +305,13 @@ Proof
   ]
 QED
 
+val (LAMl_size_thm, _) = define_recursive_term_function
+   ‘(LAMl_size ((VAR :string -> term) s) = 0) /\
+    (LAMl_size (t1 @@ t2) = 0) /\
+    (LAMl_size (LAM v t) = 1 + LAMl_size t)’;
+
+val _ = export_rewrites ["LAMl_size_thm"];
+
 (*---------------------------------------------------------------------------*
  *  funpow for lambda terms (using arithmeticTheory.FUNPOW)
  *---------------------------------------------------------------------------*)

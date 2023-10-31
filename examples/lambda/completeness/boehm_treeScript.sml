@@ -8,8 +8,9 @@ open HolKernel boolLib Parse bossLib;
 open optionTheory arithmeticTheory pred_setTheory listTheory llistTheory
      relationTheory ltreeTheory pathTheory posetTheory hurdUtils;
 
-open basic_swapTheory binderLib termTheory appFOLDLTheory chap2Theory chap3Theory
-     head_reductionTheory standardisationTheory solvableTheory pure_dBTheory;
+open basic_swapTheory binderLib termTheory appFOLDLTheory chap2Theory
+     chap3Theory head_reductionTheory standardisationTheory solvableTheory
+     pure_dBTheory;
 
 val _ = new_theory "boehm_tree";
 
@@ -27,32 +28,39 @@ Definition principle_hnf_def :
     principle_hnf = last o head_reduction_path
 End
 
-val (LAMl_size_thm, _) = define_recursive_term_function
-   ‘(LAMl_size ((VAR :string -> term) s) = 0) /\
-    (LAMl_size (t1 @@ t2) = 0) /\
-    (LAMl_size (LAM v t) = 1 + LAMl_size t)’;
-
-val _ = export_rewrites ["LAMl_size_thm"];
-
-(* deep_rator access the head variable term of an abs-free hnf. *)
-local
-  val deep_rator_defn =
-     ‘deep_rator t = if is_comb t then deep_rator (rator t) else t’;
-  (* Defn.tgoal (Hol_defn "deep_rator_def" deep_rator_defn) *)
-  val tactic = WF_REL_TAC ‘measure size’ >> rw [is_comb_APP_EXISTS] >> rw [];
-in
-  val (deep_rator_def, SOME deep_rator_ind) =
-       TotalDefn.tDefine "deep_rator" deep_rator_defn tactic;
-end;
-
-Theorem deep_rator_appstar :
-    !t. ~is_comb t ==> deep_rator (t @* args) = t
+Theorem principle_hnf_stable :
+    !M. hnf M ==> principle_hnf M = M
 Proof
-    Induct_on ‘args’ using SNOC_INDUCT
- >> rw [appstar_SNOC, Once deep_rator_def]
+    rw [principle_hnf_def]
+ >> ‘finite (head_reduction_path M)’ by PROVE_TAC [hnf_has_hnf, corollary11_4_8]
+ >> MP_TAC (Q.SPEC ‘M’ head_reduction_path_def)
+ >> RW_TAC std_ss []
+ (* applying is_head_reduction_thm *)
+ >> qabbrev_tac ‘p = head_reduction_path M’
+ >> STRIP_ASSUME_TAC (ISPEC “p :(term, redpos list) path” path_cases)
+ >- fs []
+ >> gs [is_head_reduction_thm, hnf_no_head_redex]
 QED
 
-Overload hnf_headvar = “\t. THE_VAR (deep_rator t)”
+(* hnf_head access the head variable term of an abs-free hnf. *)
+local
+  val hnf_head_defn =
+     ‘hnf_head t = if is_comb t then hnf_head (rator t) else t’;
+  (* Defn.tgoal (Hol_defn "hnf_head_def" hnf_head_defn) *)
+  val tactic = WF_REL_TAC ‘measure size’ >> rw [is_comb_APP_EXISTS] >> rw [];
+in
+  val (hnf_head_def, SOME hnf_head_ind) =
+       TotalDefn.tDefine "hnf_head" hnf_head_defn tactic;
+end;
+
+Theorem hnf_head_appstar :
+    !t. ~is_comb t ==> hnf_head (t @* args) = t
+Proof
+    Induct_on ‘args’ using SNOC_INDUCT
+ >> rw [appstar_SNOC, Once hnf_head_def]
+QED
+
+Overload hnf_headvar = “\t. THE_VAR (hnf_head t)”
 
 (* hnf_children retrives the ‘args’ part of an abs-free hnf (VAR y @* args) *)
 local
@@ -98,10 +106,10 @@ Proof
 QED
 
 Theorem absfree_hnf_thm :
-    !M. hnf M /\ ~is_abs M ==> M = deep_rator M @* hnf_children M
+    !M. hnf M /\ ~is_abs M ==> M = hnf_head M @* hnf_children M
 Proof
     rw [absfree_hnf_cases]
- >> rw [hnf_children_appstar, deep_rator_appstar]
+ >> rw [hnf_children_appstar, hnf_head_appstar]
 QED
 
 (* The needed unfolding function for ltree_unfold for Boehm Tree *)
@@ -112,7 +120,7 @@ Definition BT_generator_def :
               n = LAMl_size M0;
              vs = FRESH_list n (FV M0);
              M1 = principle_hnf (M0 @* (MAP VAR vs));
-             M2 = LAMl vs (deep_rator M1);
+             M2 = LAMl vs (hnf_head M1);
          in
             (SOME (M2,set vs), fromList (hnf_children M1))
       else
@@ -435,8 +443,8 @@ Definition equivalent_def :
                v2 = REVERSE (TAKE n' vs);
                M1 = principle_hnf (M0 @* (MAP VAR v1));
                N1 = principle_hnf (N0 @* (MAP VAR v2));
-               y  = deep_rator M1;
-               y' = deep_rator N1;
+               y  = hnf_head M1;
+               y' = hnf_head N1;
                m  = LENGTH (hnf_children M1);
                m' = LENGTH (hnf_children N1);
            in
@@ -559,8 +567,6 @@ Definition head_original_def :
     head_original (M :pdb) = EVERY (\N. dVn M NOTIN dFV N) (dAPPl M)
 End
 
-Overload head_original = “\M. head_original (fromTerm M)”
-
 (* Definition 10.3.5 (ii)
 
    NOTE: ‘head_original M' /\ ~is_dABS M'’ means m := dV n @* Ns (n not free in Ns)
@@ -640,7 +646,7 @@ Definition RINSERT :
     $RINSERT r R = \x y. R x y \/ (x = FST r /\ y = SND r)
 End
 
-(* Theorem 2.1.40 [1, p.35] (Hilbert-Post completeness of beta+eta) *)
+(* Theorem 2.1.40 [1, p.35] (Hilbert-Post completeness of lambda(beta)+eta) *)
 Theorem lameta_complete :
     !M N. has_bnf M /\ has_bnf N ==>
           lameta M N \/ ~consistent (conversion ((M,N) RINSERT (beta RUNION eta)))

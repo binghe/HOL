@@ -698,6 +698,13 @@ val has_hnf_def = Define`
   has_hnf M = ?N. M == N /\ hnf N
 `;
 
+Theorem hnf_has_hnf :
+    !M. hnf M ==> has_hnf M
+Proof
+    rw [has_hnf_def]
+ >> Q.EXISTS_TAC ‘M’ >> rw []
+QED
+
 val has_bnf_hnf = store_thm(
   "has_bnf_hnf",
   ``has_bnf M ⇒ has_hnf M``,
