@@ -322,11 +322,11 @@ Definition equivalent_def :
                N0 = principle_hnf N;
                n  = LAMl_size M0;
                n' = LAMl_size N0;
-               vs = FRESH_list (MAX n n') (FV M0 UNION FV N0);
-               v1 = REVERSE (TAKE n  vs);
-               v2 = REVERSE (TAKE n' vs);
-               M1 = principle_hnf (M0 @* (MAP VAR v1));
-               N1 = principle_hnf (N0 @* (MAP VAR v2));
+               vs  = FRESH_list (MAX n n') (FV M0 UNION FV N0);
+               v  = TAKE n  vs;
+               v' = TAKE n' vs';
+               M1 = principle_hnf (M0 @* (MAP VAR v));
+               N1 = principle_hnf (N0 @* (MAP VAR v'));
                y  = hnf_head M1;
                y' = hnf_head N1;
                m  = LENGTH (hnf_children M1);
@@ -336,6 +336,17 @@ Definition equivalent_def :
         else
            ~solvable M /\ ~solvable N
 End
+
+(* From [1, p.238]. This concerte example shows that dB encoding is not easy in
+   defining this "concept": the literal encoding of inner head variables are not
+   the same for equivalent terms.
+ *)
+Theorem equivalent_example :
+    equivalent (LAM x (VAR x @@ M)) (LAMl [y; z] (VAR y @* [M; N]))
+Proof
+    rw [equivalent_def]
+ >> cheat
+QED
 
 Theorem unsolvable_imp_equivalent :
     !M N. unsolvable M /\ unsolvable N ==> equivalent M N
