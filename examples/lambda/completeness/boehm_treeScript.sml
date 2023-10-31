@@ -46,7 +46,7 @@ QED
 local
   val hnf_head_defn =
      ‘hnf_head t = if is_comb t then hnf_head (rator t) else t’;
-  (* Defn.tgoal (Hol_defn "hnf_head_def" hnf_head_defn) *)
+  (* Defn.tgoal (Hol_defn "hnf_head" hnf_head_defn) *)
   val tactic = WF_REL_TAC ‘measure size’ >> rw [is_comb_APP_EXISTS] >> rw [];
 in
   val (hnf_head_def, SOME hnf_head_ind) =
@@ -67,7 +67,7 @@ local
   val hnf_children_defn =
      ‘hnf_children t = if is_comb t then SNOC (rand t) (hnf_children (rator t))
                        else []’;
-  (* Defn.tgoal (Hol_defn "hnf_children_def" hnf_children_defn); *)
+  (* Defn.tgoal (Hol_defn "hnf_children" hnf_children_defn); *)
   val tactic = WF_REL_TAC ‘measure size’ >> rw [is_comb_APP_EXISTS] >> rw [];
 in
   val (hnf_children_def, SOME hnf_children_ind) =
@@ -122,14 +122,14 @@ Definition BT_generator_def :
              M1 = principle_hnf (M0 @* (MAP VAR vs));
              M2 = LAMl vs (hnf_head M1);
          in
-            (SOME (M2,set vs), fromList (hnf_children M1))
+            (SOME M2, fromList (hnf_children M1))
       else
         (NONE, LNIL)
 End
 
 (* NOTE: The type of ‘BT M’ is a :term option ltree (:boehm_tree). In [1], BT(M)
    denotes a partial function mapping sequence of numbers (path) to ltree nodes,
-   which is ‘ltree_el (BT M)’ (or ‘FST o THE’ of it).
+   which is ‘ltree_el (BT M)’:
 
    |- ltree_el (Branch a ts) [] = SOME (a,LLENGTH ts) /\
       ltree_el (Branch a ts) (n::ns) =
@@ -140,7 +140,7 @@ Definition BT_def :
 End
 
 (* the type of Boehm tree *)
-Type boehm_tree[pp] = “:(term # string set) option ltree”
+Type boehm_tree[pp] = “:term option ltree”
 
 (* the trees that are the tree of a term *)
 Definition Boehm_def :
@@ -164,6 +164,48 @@ Theorem unsolvable_BT_EQ :
 Proof
     rw [unsolvable_BT]
 QED
+
+(*---------------------------------------------------------------------------*
+ * FV (free variables) and BV (binding variables) of Boehm trees
+ *---------------------------------------------------------------------------*)
+
+(* BV of a single term *)
+Definition BV_def :
+    BV (M :term) = if solvable M then
+                      let M0 = principle_hnf M;
+                           n = LAMl_size M0;
+                          vs = FRESH_list n (FV M0)
+                      in
+                          set vs
+                   else EMPTY
+End
+
+Definition BV_of_ltree_node_def :
+    BV_of_ltree_node M p =
+      let node = ltree_el M p in
+          if IS_SOME node then
+             BV (THE (FST (THE node)))
+          else EMPTY
+End
+
+(* BV_of_ltree_path: the set of binding variables up to a path *)
+local
+  (* usage: Defn.tgoal (Hol_defn "BV_of_ltree_path" BV_of_ltree_path_defn); *)
+  val BV_of_ltree_path_defn =
+     ‘BV_of_ltree_path (M :boehm_tree) p =
+         if p = [] then BV_of_ltree_node M p
+         else BV_of_ltree_path M (FRONT p) UNION
+              BV_of_ltree_node M p’;
+  (* for solving the above tgoal *)
+  val tactic = WF_REL_TAC ‘measure (LENGTH o SND)’ \\
+               rw [LENGTH_FRONT] \\
+               fs [NOT_NIL_EQ_LENGTH_NOT_0];
+in
+  val (BV_of_ltree_path_def, SOME BV_of_ltree_path_ind) =
+       TotalDefn.tDefine "BV_of_ltree_path" BV_of_ltree_path_defn tactic;
+end;
+
+Overload BV = “BV_of_ltree_path”
 
 (*---------------------------------------------------------------------------*
  * The de Bruijn version of Boehm trees
