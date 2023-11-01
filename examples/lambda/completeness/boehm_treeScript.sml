@@ -27,6 +27,14 @@ Definition principle_hnf_def :
     principle_hnf = last o head_reduction_path
 End
 
+Theorem hnf_principle_hnf :
+    !M. has_hnf M ==> hnf (principle_hnf M)
+Proof
+    rw [corollary11_4_8, principle_hnf_def]
+ >> MP_TAC (Q.SPEC ‘M’ head_reduction_path_def)
+ >> RW_TAC std_ss []
+QED
+
 Theorem principle_hnf_stable :
     !M. hnf M ==> principle_hnf M = M
 Proof
@@ -42,11 +50,27 @@ Proof
 QED
 
 (* ‘principle_hnf’ can be used to do final beta-reductions to make a hnf abs-free *)
-Theorem xxx :
-    !M0 n vs M1. hnf M0 /\ n = LAMl_size M0 /\ vs = FRESH_list n (FV M0) /\
-                 M1 = principle_hnf (M0 @* (MAP VAR vs)) ==> ~is_abs M1
+Theorem principle_hnf_thm :
+    !xs vs t. ALL_DISTINCT xs /\ vs = FRESH_list (LENGTH xs) (FV t) ==>
+              principle_hnf (LAMl xs t @* (MAP VAR vs)) =
+                (FEMPTY |++ ZIP (xs,MAP VAR vs)) ' t
 Proof
-    cheat
+    RW_TAC std_ss []
+ >> qabbrev_tac ‘n = LENGTH xs’
+ >> MP_TAC (Q.SPECL [‘n’, ‘FV (t :term)’] FRESH_list_def)
+ >> rw []
+ >> qabbrev_tac ‘vs = FRESH_list n (FV t)’
+ >> qabbrev_tac ‘ys :term list = MAP VAR vs’
+ >> ‘LENGTH xs = LENGTH ys’ by rw [Abbr ‘n’, Abbr ‘ys’]
+ >> qabbrev_tac ‘l = ZIP (xs,ys)’
+ >> Know ‘ALL_DISTINCT ys’
+ >- (qunabbrev_tac ‘ys’ \\
+     MATCH_MP_TAC ALL_DISTINCT_MAP_INJ >> rw [])
+ >> DISCH_TAC
+ >> Know ‘!y. MEM y ys ==> DISJOINT (FV y) (FV t)’
+ >- (Q.PAT_X_ASSUM ‘DISJOINT (set vs) (FV t)’ rw [Abbr ‘ys’, 
+ >> ‘xs = MAP FST l /\ ys = MAP SND l’ by rw [Abbr ‘l’, Abbr ‘ys’, MAP_ZIP]
+ >> cheat
 QED
 
 (* hnf_head access the head variable term of an abs-free hnf. *)
@@ -322,9 +346,9 @@ Definition equivalent_def :
                N0 = principle_hnf N;
                n  = LAMl_size M0;
                n' = LAMl_size N0;
-               vs  = FRESH_list (MAX n n') (FV M0 UNION FV N0);
+               vs = FRESH_list (MAX n n') (FV M0 UNION FV N0);
                v  = TAKE n  vs;
-               v' = TAKE n' vs';
+               v' = TAKE n' vs;
                M1 = principle_hnf (M0 @* (MAP VAR v));
                N1 = principle_hnf (N0 @* (MAP VAR v'));
                y  = hnf_head M1;

@@ -153,7 +153,8 @@ QED
 local
     val th = SIMP_RULE std_ss [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM] FRESH_lists
 in
-    val FRESH_list_def = new_specification ("FRESH_list", ["FRESH_list"], th)
+    val FRESH_list_def = new_specification ("FRESH_list_def", ["FRESH_list"], th)
 end
 
 val _ = export_theory();
+val _ = html_theory "basic_swap";

@@ -182,20 +182,23 @@ QED
    ---------------------------------------------------------------------- *)
 
 val hnf_def = Define`hnf M = ∀N. ¬(M -h-> N)`;
-val hnf_thm = Store_thm(
-  "hnf_thm",
-  ``(hnf (VAR s) ⇔ T) ∧
+
+Theorem hnf_thm[simp] :
+    (hnf (VAR s) ⇔ T) ∧
     (hnf (M @@ N) ⇔ hnf M ∧ ¬is_abs M) ∧
-    (hnf (LAM v M) ⇔ hnf M)``,
+    (hnf (LAM v M) ⇔ hnf M)
+Proof
   SRW_TAC [][hnf_def, hreduce1_rwts] THEN
   Cases_on `is_abs M` THEN SRW_TAC [][hreduce1_rwts] THEN
   Q.SPEC_THEN `M` FULL_STRUCT_CASES_TAC term_CASES THEN
-  FULL_SIMP_TAC (srw_ss()) [hreduce1_rwts]);
+  FULL_SIMP_TAC (srw_ss()) [hreduce1_rwts]
+QED
 
-val hnf_tpm = Store_thm(
-  "hnf_tpm",
-  ``∀M π. hnf (π·M) = hnf M``,
-  HO_MATCH_MP_TAC simple_induction THEN SRW_TAC [][]);
+Theorem hnf_tpm[simp] :
+    ∀M π. hnf (π·M) = hnf M
+Proof
+  HO_MATCH_MP_TAC simple_induction THEN SRW_TAC [][]
+QED
 
 val strong_cc_ind = IndDefLib.derive_strong_induction (compat_closure_rules,
                                                        compat_closure_ind)
