@@ -762,10 +762,22 @@ Theorem principle_hnf_stable' =
     REWRITE_RULE [GSYM solvable_iff_has_hnf] principle_hnf_stable
 
 (* ‘principle_hnf’ can do one-step beta reduction *)
-Theorem principle_hnf_beta :
-    !v t y. hnf t /\ y # t ==> principle_hnf (LAM v t @@ VAR y) = [VAR y/v]t
+Theorem principle_hnf_eq_beta :
+    !v t y. hnf t /\ y # t ==> principle_hnf (LAM v t @@ VAR y) = [VAR y/v] t
 Proof
-    cheat
+    rw [principle_hnf_def]
+ >> qabbrev_tac ‘M = LAM v t @@ VAR y’
+ >> qabbrev_tac ‘N = [VAR y/v] t’
+ >> ‘hnf N’ by rw [Abbr ‘N’, GSYM fresh_tpm_subst]
+ >> Know ‘M -h-> N’
+ >- (qunabbrevl_tac [‘M’, ‘N’] \\
+     rw [Once hreduce1_cases] \\
+     qexistsl_tac [‘v’, ‘t’] >> rw [])
+ >> rw [head_reduce1_def]
+ >> qabbrev_tac ‘p = pcons M r (stopped_at N)’
+ >> Suff ‘head_reduction_path M = p’ >- rw [Abbr ‘p’]
+ >> MATCH_MP_TAC head_reduction_path_unique
+ >> rw [Abbr ‘p’]
 QED
 
 (* used by principle_hnf_LAMl_appstar *)
