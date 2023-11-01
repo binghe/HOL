@@ -6,7 +6,7 @@ open HolKernel Parse boolLib bossLib;
 
 (* core theories *)
 open arithmeticTheory pred_setTheory listTheory rich_listTheory sortingTheory
-     finite_mapTheory hurdUtils;
+     finite_mapTheory pathTheory hurdUtils;
 
 (* lambda theories *)
 open termTheory appFOLDLTheory chap2Theory chap3Theory standardisationTheory
@@ -731,7 +731,11 @@ Proof
  >> RW_TAC std_ss []
 QED
 
-Theorem principle_hnf_stable :
+(* |- !M. solvable M ==> hnf (principle_hnf M) *)
+Theorem hnf_principle_hnf' =
+   REWRITE_RULE [GSYM solvable_iff_has_hnf] hnf_principle_hnf
+
+Theorem principle_hnf_eq_self :
     !M. hnf M ==> principle_hnf M = M
 Proof
     rw [principle_hnf_def]
@@ -745,6 +749,19 @@ Proof
  >> gs [is_head_reduction_thm, hnf_no_head_redex]
 QED
 
+Theorem principle_hnf_stable :
+    !M. has_hnf M ==> principle_hnf (principle_hnf M) = principle_hnf M
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC principle_hnf_eq_self
+ >> MATCH_MP_TAC hnf_principle_hnf >> art []
+QED
+
+(* |- !M. solvable M ==> principle_hnf (principle_hnf M) = principle_hnf M *)
+Theorem principle_hnf_stable' =
+    REWRITE_RULE [GSYM solvable_iff_has_hnf] principle_hnf_stable
+
+(* ‘principle_hnf’ can do one-step beta reduction *)
 Theorem principle_hnf_beta :
     !v t y. hnf t /\ y # t ==> principle_hnf (LAM v t @@ VAR y) = [VAR y/v]t
 Proof

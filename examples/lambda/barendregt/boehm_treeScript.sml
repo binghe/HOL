@@ -8,8 +8,8 @@ open HolKernel boolLib Parse bossLib;
 open optionTheory arithmeticTheory pred_setTheory listTheory rich_listTheory
      llistTheory relationTheory ltreeTheory pathTheory posetTheory hurdUtils;
 
-open basic_swapTheory binderLib termTheory appFOLDLTheory chap2Theory
-     chap3Theory head_reductionTheory standardisationTheory solvableTheory;
+open binderLib termTheory appFOLDLTheory chap2Theory chap3Theory
+     head_reductionTheory standardisationTheory solvableTheory;
 
 val _ = new_theory "boehm_tree";
 
