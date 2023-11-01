@@ -5,8 +5,8 @@
 open HolKernel Parse boolLib bossLib;
 
 (* core theories *)
-open arithmeticTheory pred_setTheory listTheory sortingTheory finite_mapTheory
-     hurdUtils;
+open arithmeticTheory pred_setTheory listTheory rich_listTheory sortingTheory
+     finite_mapTheory hurdUtils;
 
 (* lambda theories *)
 open termTheory appFOLDLTheory chap2Theory chap3Theory standardisationTheory
@@ -710,6 +710,82 @@ Proof
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘FUNPOW (APP K) m I @* t’ >> rw []
  >> MATCH_MP_TAC lameq_appstar_cong >> rw [lameq_K]
+QED
+
+(* Definition 8.3.20 [1, p.177]
+
+   A term may have several hnf's, e.g. if any of its hnf can still do beta
+   reductions, after such reductions the term is still an hnf by definition.
+   The (unique) terminating term of head reduction path is called "principle"
+   hnf, which is used for defining Boehm trees.
+ *)
+Definition principle_hnf_def :
+    principle_hnf = last o head_reduction_path
+End
+
+Theorem hnf_principle_hnf :
+    !M. has_hnf M ==> hnf (principle_hnf M)
+Proof
+    rw [corollary11_4_8, principle_hnf_def]
+ >> MP_TAC (Q.SPEC ‘M’ head_reduction_path_def)
+ >> RW_TAC std_ss []
+QED
+
+Theorem principle_hnf_stable :
+    !M. hnf M ==> principle_hnf M = M
+Proof
+    rw [principle_hnf_def]
+ >> ‘finite (head_reduction_path M)’ by PROVE_TAC [hnf_has_hnf, corollary11_4_8]
+ >> MP_TAC (Q.SPEC ‘M’ head_reduction_path_def)
+ >> RW_TAC std_ss []
+ (* applying is_head_reduction_thm *)
+ >> qabbrev_tac ‘p = head_reduction_path M’
+ >> STRIP_ASSUME_TAC (ISPEC “p :(term, redpos list) path” path_cases)
+ >- fs []
+ >> gs [is_head_reduction_thm, hnf_no_head_redex]
+QED
+
+Theorem principle_hnf_beta :
+    !v t y. hnf t /\ y # t ==> principle_hnf (LAM v t @@ VAR y) = [VAR y/v]t
+Proof
+    cheat
+QED
+
+(* used by principle_hnf_LAMl_appstar *)
+Theorem lemma2[local] :
+    hnf t /\ (!y. MEM y (MAP SND pi) ==> y # t) ==>
+    principle_hnf (LAMl (MAP FST (REVERSE pi)) t @* MAP (VAR o SND) pi) = tpm pi t
+Proof
+    cheat
+QED
+
+(* ‘principle_hnf’ can be used to do final beta-reductions to make a hnf abs-free *)
+Theorem principle_hnf_LAMl_appstar :
+    !xs t vs pi. hnf t /\ vs = FRESH_list (LENGTH xs) (FV t) /\
+                 pi = ZIP (REVERSE xs,vs) ==>
+                 principle_hnf (LAMl xs t @* (MAP VAR vs)) = tpm pi t
+Proof
+    RW_TAC std_ss []
+ >> qabbrev_tac ‘n = LENGTH xs’
+ >> MP_TAC (Q.SPECL [‘n’, ‘FV (t :term)’] FRESH_list_def) >> rw []
+ >> qabbrev_tac ‘vs = FRESH_list n (FV t)’
+ >> qabbrev_tac ‘pi = ZIP (REVERSE xs,vs)’
+ >> ‘LENGTH (REVERSE xs) = LENGTH vs’ by rw []
+ >> ‘vs = MAP SND pi’ by rw [Abbr ‘pi’, MAP_ZIP]
+ >> POP_ORW
+ >> Know ‘REVERSE (REVERSE xs) = REVERSE (MAP FST pi)’
+ >- rw [Abbr ‘pi’, MAP_ZIP]
+ >> REWRITE_TAC [REVERSE_REVERSE, GSYM MAP_REVERSE]
+ >> Rewr'
+ >> simp [MAP_MAP_o]
+ >> Know ‘!y. MEM y (MAP SND pi) ==> y # t’
+ >- (Q.PAT_X_ASSUM ‘DISJOINT (set vs) (FV t)’ MP_TAC \\
+     rw [DISJOINT_ALT, Abbr ‘pi’, MEM_MAP, MEM_ZIP, MEM_EL] \\
+     simp [] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘n’ >> art [])
+ >> DISCH_TAC
+ >> MATCH_MP_TAC lemma2 >> rw []
 QED
 
 val _ = export_theory ();
