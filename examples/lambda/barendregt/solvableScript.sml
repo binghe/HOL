@@ -761,9 +761,8 @@ QED
 Theorem principle_hnf_stable' =
     REWRITE_RULE [GSYM solvable_iff_has_hnf] principle_hnf_stable
 
-(* ‘principle_hnf’ can do one-step beta reduction *)
-Theorem principle_hnf_eq_beta :
-    !v t y. hnf t /\ y # t ==> principle_hnf (LAM v t @@ VAR y) = [VAR y/v] t
+Theorem principle_hnf_hreduce1 :
+    !v t. hnf t /\ y # t ==> principle_hnf (LAM v t @@ VAR y) = [VAR y/v] t
 Proof
     rw [principle_hnf_def]
  >> qabbrev_tac ‘M = LAM v t @@ VAR y’
@@ -780,33 +779,31 @@ Proof
  >> rw [Abbr ‘p’]
 QED
 
-(* used by principle_hnf_LAMl_appstar *)
-Theorem lemma2[local] :
-    hnf t /\ (!y. MEM y (MAP SND pi) ==> y # t) ==>
-    principle_hnf (LAMl (MAP FST (REVERSE pi)) t @* MAP (VAR o SND) pi) = tpm pi t
+Theorem principle_hnf_LAMl_appstar_lemma[local] :
+    !t. hnf t /\ (!y. MEM y (MAP SND pi) ==> y # t) ==>
+        principle_hnf (LAMl (MAP FST pi) t @* MAP VAR (MAP SND pi)) = tpm pi t
 Proof
-    cheat
+    Induct_on ‘pi’
+ >- rw [principle_hnf_eq_self]
+ >> rw [] >> Cases_on ‘h’ >> fs []
+ >> cheat
 QED
 
 (* ‘principle_hnf’ can be used to do final beta-reductions to make a hnf abs-free *)
 Theorem principle_hnf_LAMl_appstar :
-    !xs t vs pi. hnf t /\ vs = FRESH_list (LENGTH xs) (FV t) /\
-                 pi = ZIP (REVERSE xs,vs) ==>
-                 principle_hnf (LAMl xs t @* (MAP VAR vs)) = tpm pi t
+    !t xs ys pi. hnf t /\ ys = FRESH_list (LENGTH xs) (FV t) /\
+                 pi = ZIP (xs,ys) ==>
+                 principle_hnf (LAMl xs t @* (MAP VAR ys)) = tpm (ZIP (xs,ys)) t
 Proof
     RW_TAC std_ss []
  >> qabbrev_tac ‘n = LENGTH xs’
  >> MP_TAC (Q.SPECL [‘n’, ‘FV (t :term)’] FRESH_list_def) >> rw []
  >> qabbrev_tac ‘vs = FRESH_list n (FV t)’
- >> qabbrev_tac ‘pi = ZIP (REVERSE xs,vs)’
- >> ‘LENGTH (REVERSE xs) = LENGTH vs’ by rw []
+ >> qabbrev_tac ‘pi = ZIP (xs,vs)’
+ >> ‘LENGTH xs = LENGTH vs’ by rw []
+ >> ‘xs = MAP FST pi’ by rw [Abbr ‘pi’, MAP_ZIP]
  >> ‘vs = MAP SND pi’ by rw [Abbr ‘pi’, MAP_ZIP]
- >> POP_ORW
- >> Know ‘REVERSE (REVERSE xs) = REVERSE (MAP FST pi)’
- >- rw [Abbr ‘pi’, MAP_ZIP]
- >> REWRITE_TAC [REVERSE_REVERSE, GSYM MAP_REVERSE]
- >> Rewr'
- >> simp [MAP_MAP_o]
+ >> NTAC 2 POP_ORW
  >> Know ‘!y. MEM y (MAP SND pi) ==> y # t’
  >- (Q.PAT_X_ASSUM ‘DISJOINT (set vs) (FV t)’ MP_TAC \\
      rw [DISJOINT_ALT, Abbr ‘pi’, MEM_MAP, MEM_ZIP, MEM_EL] \\
@@ -814,7 +811,7 @@ Proof
      FIRST_X_ASSUM MATCH_MP_TAC \\
      Q.EXISTS_TAC ‘n’ >> art [])
  >> DISCH_TAC
- >> MATCH_MP_TAC lemma2 >> rw []
+ >> MATCH_MP_TAC principle_hnf_LAMl_appstar_lemma >> rw []
 QED
 
 val _ = export_theory ();
