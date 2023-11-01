@@ -49,9 +49,18 @@ Proof
  >> gs [is_head_reduction_thm, hnf_no_head_redex]
 QED
 
+(* used by principle_hnf_LAMl_appstar *)
+Theorem lemma2[local] :
+    hnf t /\ ALL_DISTINCT (MAP FST l) /\ ALL_DISTINCT (MAP SND l) /\
+   (!y. MEM y (MAP SND l) ==> DISJOINT (FV y) (FV t)) ==>
+    principle_hnf (LAMl (MAP FST l) t @* MAP SND l) = (FEMPTY |++ l) ' t
+Proof
+    cheat
+QED
+
 (* ‘principle_hnf’ can be used to do final beta-reductions to make a hnf abs-free *)
-Theorem principle_hnf_thm :
-    !xs vs t. ALL_DISTINCT xs /\ vs = FRESH_list (LENGTH xs) (FV t) ==>
+Theorem principle_hnf_LAMl_appstar :
+    !xs vs t. hnf t /\ ALL_DISTINCT xs /\ vs = FRESH_list (LENGTH xs) (FV t) ==>
               principle_hnf (LAMl xs t @* (MAP VAR vs)) =
                 (FEMPTY |++ ZIP (xs,MAP VAR vs)) ' t
 Proof
@@ -68,9 +77,13 @@ Proof
      MATCH_MP_TAC ALL_DISTINCT_MAP_INJ >> rw [])
  >> DISCH_TAC
  >> Know ‘!y. MEM y ys ==> DISJOINT (FV y) (FV t)’
- >- (Q.PAT_X_ASSUM ‘DISJOINT (set vs) (FV t)’ rw [Abbr ‘ys’, 
+ >- (Q.PAT_X_ASSUM ‘DISJOINT (set vs) (FV t)’ MP_TAC \\
+     rw [Abbr ‘ys’, MEM_MAP, DISJOINT_ALT, MEM_EL] >> fs [] \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> Q.EXISTS_TAC ‘n’ >> rw [])
+ >> DISCH_TAC
  >> ‘xs = MAP FST l /\ ys = MAP SND l’ by rw [Abbr ‘l’, Abbr ‘ys’, MAP_ZIP]
- >> cheat
+ >> fs []
+ >> MATCH_MP_TAC lemma2 >> art []
 QED
 
 (* hnf_head access the head variable term of an abs-free hnf. *)
