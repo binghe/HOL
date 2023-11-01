@@ -4795,4 +4795,10 @@ Proof
   simp[MAP_MAP_o, FUN_MAP, combinTheory.o_DEF, SF ETA_ss]
 QED
 
+Theorem MAP_REVERSE :
+    !f l. MAP f (REVERSE l) = REVERSE (MAP f l)
+Proof
+    rw [LIST_EQ_REWRITE, EL_REVERSE, EL_MAP]
+QED
+
 val _ = export_theory();
