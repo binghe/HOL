@@ -895,6 +895,7 @@ Proof
  >> MATCH_MP_TAC principle_hnf_LAMl_appstar_lemma >> rw []
 QED
 
+(* Example 8.3.2 [1, p.171] *)
 Theorem unsolvable_Omega :
     unsolvable Omega
 Proof
@@ -905,13 +906,9 @@ Proof
  >> fs [bnf_reduction_to_self]
  >> Q.PAT_X_ASSUM ‘closed Omega’ K_TAC
  >> POP_ASSUM K_TAC (* Z = I *)
- (*
-        F
-   ------------------------------------
-    0.  Omega @* Ns == I
-    1.  Omega @* Ns -b->* I
-  *)
- >> cheat
+ >> ‘?Ms. I = Omega @* Ms’ by METIS_TAC [Omega_appstar_starloops]
+ >> POP_ASSUM MP_TAC
+ >> rw [Omega_def, I_def]
 QED
 
 val _ = export_theory ();

@@ -864,7 +864,7 @@ Proof
     FULL_SIMP_TAC (srw_ss()) [ccbeta_rwt, Omega_def]
 QED
 
-Theorem Omega_starloops[simp]:
+Theorem Omega_starloops[simp] :
     Omega -b->* N <=> N = Omega
 Proof
     Suff ‘!M N. M -b->* N ==> (M = Omega) ==> (N = Omega)’
@@ -873,7 +873,7 @@ Proof
  >> FULL_SIMP_TAC std_ss [Omega_betaloops]
 QED
 
-Theorem Omega_app_betaloops :
+Theorem Omega_app_betaloops[local] :
     Omega @@ A -b-> N ==> ?A'. N = Omega @@ A'
 Proof
     ‘~is_abs Omega’ by rw [Omega_def]
@@ -890,6 +890,32 @@ Proof
  >> HO_MATCH_MP_TAC RTC_INDUCT >> SRW_TAC [][]
  >> ‘?A'. M' = Omega @@ A'’ by METIS_TAC [Omega_app_betaloops]
  >> Q.PAT_X_ASSUM ‘!A. M' = Omega @@ A ==> P’ (MP_TAC o (Q.SPEC ‘A'’))
+ >> RW_TAC std_ss []
+QED
+
+Theorem Omega_appstar_betaloops[local] :
+    !N. Omega @* Ms -b-> N ==> ?Ms'. N = Omega @* Ms'
+Proof
+    Induct_on ‘Ms’ using SNOC_INDUCT
+ >- (rw [] >> Q.EXISTS_TAC ‘[]’ >> rw [])
+ >> rw [appstar_SNOC]
+ >> ‘~is_abs (Omega @* Ms)’ by rw [Omega_def]
+ >> fs [ccbeta_rwt]
+ >- (Q.PAT_X_ASSUM ‘!N. P’ (MP_TAC o (Q.SPEC ‘M'’)) \\
+     RW_TAC std_ss [] \\
+     Q.EXISTS_TAC ‘SNOC x Ms'’ >> rw [])
+ >> Q.EXISTS_TAC ‘SNOC N' Ms’ >> rw []
+QED
+
+Theorem Omega_appstar_starloops :
+    Omega @* Ms -b->* N ==> ?Ms'. N = Omega @* Ms'
+Proof
+    Suff ‘!M N. M -b->* N ==> !Ms. M = Omega @* Ms ==> ?Ms'. N = Omega @* Ms'’
+ >- METIS_TAC [RTC_RULES]
+ >> HO_MATCH_MP_TAC RTC_INDUCT >> SRW_TAC [][]
+ >- (Q.EXISTS_TAC ‘Ms’ >> rw [])
+ >> ‘?Ms'. M' = Omega @* Ms'’ by METIS_TAC [Omega_appstar_betaloops]
+ >> Q.PAT_X_ASSUM ‘!Ms. M' = Omega @* Ms ==> P’ (MP_TAC o (Q.SPEC ‘Ms'’))
  >> RW_TAC std_ss []
 QED
 
