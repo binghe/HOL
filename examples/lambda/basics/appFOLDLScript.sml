@@ -11,6 +11,20 @@ val _ = Unicode.unicode_version { u = "··", tmnm = "@*"}
 
 Overload "@*" = “\f (args:term list). FOLDL APP f args”
 
+Theorem appstar_empty[simp] :
+    M @* [] = M
+Proof
+    rw [FOLDL]
+QED
+
+(* NOTE: no more [simp] for this theorem *)
+Theorem appstar_thm :
+    (M @* [] = M) /\
+    (M @* (h::t) = M @@ h @* t)
+Proof
+    rw [FOLDL]
+QED
+
 Theorem var_eq_appstar[simp]:
   VAR s = f ·· args ⇔ args = [] ∧ f = VAR s
 Proof
@@ -178,16 +192,25 @@ QED
 
 Overload "LAMl" = “\vs (t :term). FOLDR LAM t vs”
 
+(* for compatibility purposes only *)
 Theorem LAMl_def :
   LAMl vs (t : term) = FOLDR LAM t vs
 Proof
     rw []
 QED
 
-Theorem LAMl_thm[simp]:
-  (LAMl [] M = M) /\
-  (LAMl (h::t) M = LAM h (LAMl t M))
-Proof SRW_TAC [][LAMl_def]
+Theorem LAMl_empty[simp] :
+    LAMl [] M = M
+Proof
+    rw [FOLDR]
+QED
+
+(* NOTE: no more [simp] for this theorem *)
+Theorem LAMl_thm :
+   (LAMl [] M = M) /\
+   (LAMl (h::t) M = LAM h (LAMl t M))
+Proof
+    rw [FOLDR]
 QED
 
 Theorem LAMl_11[simp]:

@@ -8,12 +8,16 @@ open HolKernel boolLib Parse bossLib;
 open optionTheory arithmeticTheory pred_setTheory listTheory rich_listTheory
      llistTheory relationTheory ltreeTheory pathTheory posetTheory hurdUtils;
 
-open binderLib termTheory appFOLDLTheory chap2Theory chap3Theory
+open binderLib nomsetTheory termTheory appFOLDLTheory chap2Theory chap3Theory
      head_reductionTheory standardisationTheory solvableTheory;
 
 val _ = new_theory "boehm_tree";
 
-val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
+(* FOLDL destroys appstar with literal lists, while FOLDR destroys LAMl with
+   literal lists in this theory.
+ *)
+val _ = temp_delsimps ["FOLDL", "FOLDR", "lift_disj_eq", "lift_imp_disj"]
+
 val o_DEF = combinTheory.o_DEF; (* cannot directly open combinTheory *)
 
 (* hnf_head access the head variable term of an abs-free hnf. *)
@@ -31,7 +35,7 @@ Theorem hnf_head_appstar :
     !t. ~is_comb t ==> hnf_head (t @* args) = t
 Proof
     Induct_on ‘args’ using SNOC_INDUCT
- >> rw [appstar_SNOC, Once hnf_head_def]
+ >> rw [appstar_SNOC, Once hnf_head_def, FOLDL]
 QED
 
 Overload hnf_headvar = “\t. THE_VAR (hnf_head t)”
@@ -60,7 +64,7 @@ Theorem hnf_children_appstar :
     !t. ~is_comb t ==> hnf_children (t @* args) = args
 Proof
     Induct_on ‘args’ using SNOC_INDUCT
- >- rw [Once hnf_children_def]
+ >- rw [Once hnf_children_def, FOLDL]
  >> RW_TAC std_ss [appstar_SNOC]
  >> rw [Once hnf_children_def]
 QED
@@ -73,7 +77,7 @@ Proof
  >- (STRIP_TAC \\
     ‘?vs args y. ALL_DISTINCT vs /\ M = LAMl vs (VAR y @* args)’ by METIS_TAC [hnf_cases] \\
      reverse (Cases_on ‘vs = []’) >- fs [] \\
-     qexistsl_tac [‘y’, ‘args’] >> rw [])
+     qexistsl_tac [‘y’, ‘args’] >> rw [LAMl_thm])
  >> rpt STRIP_TAC
  >- rw [hnf_appstar]
  >> rfs [is_abs_cases]
@@ -113,10 +117,10 @@ Definition BT_def :
     BT = ltree_unfold BT_generator
 End
 
-(* the type of Boehm tree *)
+(* The type of Boehm tree *)
 Type boehm_tree[pp] = “:term option ltree”
 
-(* the trees that are the tree of a term *)
+(* The set Boehm is the trees that are the tree of a lambda term *)
 Definition Boehm_def :
     Boehm = {BT(M) | T}
 End
@@ -189,6 +193,9 @@ Definition BV_of_hnf_def :
                           in set vs
 End
 
+Theorem BV_of_hnf_applied =
+    SIMP_RULE std_ss [LET_DEF] BV_of_hnf_def
+
 Definition BV_of_ltree_node_def :
     BV_of_ltree_node M p =
       let node = ltree_el M p in
@@ -196,6 +203,9 @@ Definition BV_of_ltree_node_def :
              BV_of_hnf (THE (FST (THE node)))
           else EMPTY
 End
+
+Theorem BV_of_ltree_node_applied =
+    SIMP_RULE std_ss [LET_DEF] BV_of_ltree_node_def
 
 (* BV_of_ltree_path: the set of binding variables up to a path *)
 local
@@ -308,11 +318,65 @@ End
    defining this "concept": the literal encoding of inner head variables are not
    the same for equivalent terms.
  *)
+Theorem not_equivalent_example :
+    !x y. x <> y ==> ~equivalent (LAM x (VAR y @@ M)) (LAM y (VAR y @@ M))
+Proof
+    NTAC 3 STRIP_TAC
+ >> ‘hnf (LAM x (VAR y @@ M)) /\ hnf (LAM y (VAR y @@ M))’ by rw []
+ >> ‘solvable (LAM x (VAR y @@ M)) /\ solvable (LAM y (VAR y @@ M))’
+       by rw [solvable_iff_has_hnf, hnf_has_hnf]
+ >> simp [equivalent_def, principle_hnf_eq_self]
+ >> ‘{y} UNION FV M DELETE y = FV M DELETE y’ by SET_TAC []
+ >> POP_ORW
+ >> ‘{y} UNION FV M DELETE x = (y INSERT FV M) DELETE x’ by SET_TAC []
+ >> POP_ORW
+ >> qabbrev_tac ‘ns = (y INSERT FV M) DELETE x UNION (FV M DELETE y)’
+ >> ‘FINITE ns’ by rw [Abbr ‘ns’]
+ >> drule (Q.SPECL [‘1’, ‘ns’] FRESH_list_def) >> STRIP_TAC
+ >> qabbrev_tac ‘vs = FRESH_list 1 ns’
+ >> qabbrev_tac ‘z = HD vs’
+ >> ‘vs = [z]’ by METIS_TAC [SING_HD]
+ >> simp [appstar_thm]
+ (* applying principle_hnf_beta *)
+ >> qabbrev_tac ‘t = VAR y @@ M’
+ >> ‘hnf t’ by rw [Abbr ‘t’]
+ (*
+ >> Know ‘principle_hnf (LAM x t @@ VAR z) = [VAR z/x] t’
+ >- (MATCH_MP_TAC principle_hnf_beta >> simp [Abbr ‘t’] \\
+     Q.PAT_X_ASSUM ‘DISJOINT (set vs) ns’ MP_TAC \\
+     rw [DISJOINT_ALT, Abbr ‘ns’]
+  >> Know ‘TAKE 1 vs = vs’
+ >- (MATCH_MP_TAC TAKE_LENGTH_ID_rwt >> rw [Abbr ‘vs’])
+ >> Rewr'
+ 
+     METIS_TAC [Q.SPEC_ FRESH_list_def]
+  *)
+ >> cheat
+QED
+
 Theorem equivalent_example :
     equivalent (LAM x (VAR x @@ M)) (LAMl [y; z] (VAR y @* [M; N]))
 Proof
-    rw [equivalent_def]
- >> cheat
+    ‘hnf (LAM x (VAR y @@ M)) /\
+     hnf (LAMl [y; z] (VAR y @* [M; N]))’ by rw [hnf_appstar]
+ >> ‘solvable (LAM x (VAR y @@ M)) /\
+     solvable (LAMl [y; z] (VAR y @* [M; N]))’
+       by rw [solvable_iff_has_hnf, hnf_has_hnf]
+ >> simp [equivalent_def, principle_hnf_eq_self]
+ >> ‘MAX 1 (LAMl_size (LAMl [y; z] (VAR y @* [M; N]))) = 2’
+       by rw [LAMl_thm, appstar_thm]
+ >> POP_ORW
+ >> Know ‘({x} UNION FV M DELETE x UNION FV (LAMl [y; z] (VAR y @* [M; N]))) =
+          (FV M DELETE x) UNION (FV M UNION FV N DELETE y DELETE z)’
+ >- (rw [LAMl_thm, appstar_thm] >> SET_TAC [])
+ >> Rewr'
+ >> qabbrev_tac ‘ns = (FV M DELETE x) UNION (FV M UNION FV N DELETE y DELETE z)’
+ >> qabbrev_tac ‘vs = FRESH_list 2 ns’
+ >> qabbrev_tac ‘vs1 = TAKE 1 vs’
+ >> qabbrev_tac ‘vs2 = TAKE 2 vs’
+ (* applying principle_hnf_LAMl_appstar *)
+ >>
+    cheat
 QED
 
 Theorem unsolvable_imp_equivalent :
@@ -359,10 +423,10 @@ Theorem apply_alt :
     !pi. apply pi = FOLDL $o I pi
 Proof
     REWRITE_TAC [apply_def]
- >> Induct_on ‘pi’ >> rw []
+ >> Induct_on ‘pi’ >> rw [FOLDL, FOLDR]
  >> KILL_TAC (* only FOLDL is left *)
  >> Induct_on ‘pi’ using SNOC_INDUCT
- >> rw [FOLDL_SNOC]
+ >> rw [FOLDL_SNOC, FOLDL]
  >> POP_ASSUM (rw o wrap o SYM)
 QED
 
@@ -372,15 +436,15 @@ Theorem Boehm_transform_ctxt :
 Proof
     Induct_on ‘pi’
  >> rw [Boehm_transform_def, apply_def]
- >- (Q.EXISTS_TAC ‘\x. x’ >> rw [ctxt_rules])
+ >- (Q.EXISTS_TAC ‘\x. x’ >> rw [ctxt_rules, FOLDR])
  >> fs [GSYM Boehm_transform_def, apply_def]
  >> fs [solving_transform_def]
  >| [ (* goal 1 (of 2) *)
-      Q.EXISTS_TAC ‘\y. c y @@ (\y. VAR x) y’ >> rw [ctxt_rules] \\
+      Q.EXISTS_TAC ‘\y. c y @@ (\y. VAR x) y’ >> rw [ctxt_rules, FOLDR] \\
       MATCH_MP_TAC lameq_APPL >> art [],
       (* goal 2 (of 2) *)
       Q.EXISTS_TAC ‘\y. (\z. LAM x (c z)) y @@ (\y. N) y’ \\
-      rw [ctxt_rules, constant_contexts_exist] \\
+      rw [ctxt_rules, constant_contexts_exist, FOLDR] \\
       MATCH_MP_TAC lameq_TRANS \\
       Q.EXISTS_TAC ‘[N/x] (c M)’ \\
       reverse CONJ_TAC >- rw [lameq_rules] \\
