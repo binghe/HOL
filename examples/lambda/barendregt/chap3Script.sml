@@ -1,10 +1,10 @@
 open HolKernel Parse boolLib bossLib;
 
-open boolSimps metisLib basic_swapTheory relationTheory hurdUtils;
+open boolSimps metisLib basic_swapTheory relationTheory listTheory hurdUtils;
 
 local open pred_setLib in end;
 
-open binderLib BasicProvers nomsetTheory termTheory chap2Theory;
+open binderLib BasicProvers nomsetTheory termTheory chap2Theory appFOLDLTheory;
 
 val _ = new_theory "chap3";
 
@@ -858,12 +858,39 @@ val bnf_triangle = store_thm(
   ``M -b->* N /\ M -b->* N' /\ bnf N ==> N' -b->* N``,
   METIS_TAC [betaCR_square, bnf_reduction_to_self]);
 
-Theorem Omega_starloops[simp]: Omega -b->* N <=> N = Omega
+Theorem Omega_betaloops[simp] :
+    Omega -b-> N <=> N = Omega
 Proof
-  Q_TAC SUFF_TAC `!M N. M -b->* N ==> (M = Omega) ==> (N = Omega)`
-     THEN1 METIS_TAC [RTC_RULES] THEN
-  HO_MATCH_MP_TAC RTC_INDUCT THEN SRW_TAC [][] THEN
-  FULL_SIMP_TAC (srw_ss()) [ccbeta_rwt, Omega_def]
+    FULL_SIMP_TAC (srw_ss()) [ccbeta_rwt, Omega_def]
+QED
+
+Theorem Omega_starloops[simp]:
+    Omega -b->* N <=> N = Omega
+Proof
+    Suff ‘!M N. M -b->* N ==> (M = Omega) ==> (N = Omega)’
+ >- METIS_TAC [RTC_RULES]
+ >> HO_MATCH_MP_TAC RTC_INDUCT >> SRW_TAC [][]
+ >> FULL_SIMP_TAC std_ss [Omega_betaloops]
+QED
+
+Theorem Omega_app_betaloops :
+    Omega @@ A -b-> N ==> ?A'. N = Omega @@ A'
+Proof
+    ‘~is_abs Omega’ by rw [Omega_def]
+ >> rw [ccbeta_rwt]
+ >- (Q.EXISTS_TAC ‘A’ >> rw [])
+ >> Q.EXISTS_TAC ‘N'’ >> rw []
+QED
+
+Theorem Omega_app_starloops :
+    Omega @@ A -b->* N ==> ?A'. N = Omega @@ A'
+Proof
+    Suff ‘!M N. M -b->* N ==> !A. M = Omega @@ A ==> ?A'. N = Omega @@ A'’
+ >- METIS_TAC [RTC_RULES]
+ >> HO_MATCH_MP_TAC RTC_INDUCT >> SRW_TAC [][]
+ >> ‘?A'. M' = Omega @@ A'’ by METIS_TAC [Omega_app_betaloops]
+ >> Q.PAT_X_ASSUM ‘!A. M' = Omega @@ A ==> P’ (MP_TAC o (Q.SPEC ‘A'’))
+ >> RW_TAC std_ss []
 QED
 
 val lameq_betaconversion = store_thm(

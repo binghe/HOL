@@ -895,20 +895,24 @@ Proof
  >> MATCH_MP_TAC principle_hnf_LAMl_appstar_lemma >> rw []
 QED
 
-(* FIXME: how to leverage Omega_starloops and prove this theorem?
 Theorem unsolvable_Omega :
     unsolvable Omega
 Proof
    ‘closed Omega’ by rw [closed_def]
  >> rw [solvable_alt_closed]
- >> CCONTR_TAC
+ >> CCONTR_TAC >> fs []
  >> ‘?Z. Omega @* Ns -b->* Z /\ I -b->* Z’ by METIS_TAC [lameq_CR]
  >> fs [bnf_reduction_to_self]
  >> Q.PAT_X_ASSUM ‘closed Omega’ K_TAC
  >> POP_ASSUM K_TAC (* Z = I *)
+ (*
+        F
+   ------------------------------------
+    0.  Omega @* Ns == I
+    1.  Omega @* Ns -b->* I
+  *)
  >> cheat
 QED
- *)
 
 val _ = export_theory ();
 val _ = html_theory "solvable";
