@@ -101,6 +101,14 @@ val hreduce1_unique = store_thm(
   HO_MATCH_MP_TAC hreduce1_ind THEN
   SIMP_TAC (srw_ss() ++ DNF_ss) [hreduce1_rwts]);
 
+Theorem hreduce1_rules_appstar :
+    !Ns. M1 -h-> M2 /\ ~is_abs M1 ==> M1 @* Ns -h-> M2 @* Ns
+Proof
+    Induct_on ‘Ns’ using SNOC_INDUCT
+ >> rw [appstar_SNOC]
+ >> fs [hreduce1_rules]
+QED
+
 Theorem hreduce1_gen_bvc_ind :
   !P f. (!x. FINITE (f x)) /\
         (!v M N x. v NOTIN f x ==> P (LAM v M @@ N) ([N/v] M) x) /\

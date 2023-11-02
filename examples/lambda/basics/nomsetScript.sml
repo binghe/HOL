@@ -2,7 +2,7 @@ open HolKernel Parse boolLib bossLib BasicProvers boolSimps
 
 local open stringTheory in end;
 
-open pred_setTheory
+open pred_setTheory finite_mapTheory;
 
 open basic_swapTheory NEWLib
 
@@ -998,7 +998,6 @@ val notinsupp_fnapp = store_thm(
     v ∉ supp rpm (f x)``,
   prove_tac [supp_fnapp, SUBSET_DEF, IN_UNION]);
 
-open finite_mapTheory
 val raw_fmpm_def = Define`
   raw_fmpm (dpm : 'd pmact) (rpm : 'r pmact) pi fmap =
     pmact rpm pi o_f fmap f_o pmact dpm (REVERSE pi)
