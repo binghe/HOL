@@ -16,7 +16,8 @@ val _ = new_theory "boehm_tree";
 (* FOLDL destroys appstar with literal lists, while FOLDR destroys LAMl with
    literal lists in this theory.
  *)
-val _ = temp_delsimps ["FOLDL", "FOLDR", "lift_disj_eq", "lift_imp_disj"]
+val _ = temp_delsimps ["FOLDL", "FOLDR", "LAMl_thm",
+                       "lift_disj_eq", "lift_imp_disj"];
 
 val o_DEF = combinTheory.o_DEF; (* cannot directly open combinTheory *)
 
@@ -27,8 +28,7 @@ local
   (* Defn.tgoal (Hol_defn "hnf_head" hnf_head_defn) *)
   val tactic = WF_REL_TAC ‘measure size’ >> rw [is_comb_APP_EXISTS] >> rw [];
 in
-  val (hnf_head_def, SOME hnf_head_ind) =
-       TotalDefn.tDefine "hnf_head" hnf_head_defn tactic;
+  val hnf_head_def = tDefine "hnf_head" hnf_head_defn tactic;
 end;
 
 Theorem hnf_head_appstar :
@@ -48,8 +48,7 @@ local
   (* Defn.tgoal (Hol_defn "hnf_children" hnf_children_defn); *)
   val tactic = WF_REL_TAC ‘measure size’ >> rw [is_comb_APP_EXISTS] >> rw [];
 in
-  val (hnf_children_def, SOME hnf_children_ind) =
-      TotalDefn.tDefine "hnf_children" hnf_children_defn tactic;
+  val hnf_children_def = tDefine "hnf_children" hnf_children_defn tactic;
 end;
 
 Theorem hnf_children_thm :
@@ -220,8 +219,8 @@ local
                rw [LENGTH_FRONT] \\
                fs [NOT_NIL_EQ_LENGTH_NOT_0];
 in
-  val (BV_of_ltree_path_def, SOME BV_of_ltree_path_ind) =
-       TotalDefn.tDefine "BV_of_ltree_path" BV_of_ltree_path_defn tactic;
+  val BV_of_ltree_path_def =
+      tDefine "BV_of_ltree_path" BV_of_ltree_path_defn tactic;
 end;
 
 Overload BV = “BV_of_ltree_path”

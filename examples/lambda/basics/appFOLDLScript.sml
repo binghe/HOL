@@ -192,25 +192,16 @@ QED
 
 Overload "LAMl" = “\vs (t :term). FOLDR LAM t vs”
 
-(* for compatibility purposes only *)
 Theorem LAMl_def :
   LAMl vs (t : term) = FOLDR LAM t vs
 Proof
     rw []
 QED
 
-Theorem LAMl_empty[simp] :
-    LAMl [] M = M
-Proof
-    rw [FOLDR]
-QED
-
-(* NOTE: no more [simp] for this theorem *)
-Theorem LAMl_thm :
-   (LAMl [] M = M) /\
-   (LAMl (h::t) M = LAM h (LAMl t M))
-Proof
-    rw [FOLDR]
+Theorem LAMl_thm[simp]:
+  (LAMl [] M = M) /\
+  (LAMl (h::t) M = LAM h (LAMl t M))
+Proof SRW_TAC [][LAMl_def]
 QED
 
 Theorem LAMl_11[simp]:
