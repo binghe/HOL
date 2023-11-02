@@ -340,18 +340,22 @@ Proof
  (* applying principle_hnf_beta *)
  >> qabbrev_tac ‘t = VAR y @@ M’
  >> ‘hnf t’ by rw [Abbr ‘t’]
- (*
  >> Know ‘principle_hnf (LAM x t @@ VAR z) = [VAR z/x] t’
  >- (MATCH_MP_TAC principle_hnf_beta >> simp [Abbr ‘t’] \\
      Q.PAT_X_ASSUM ‘DISJOINT (set vs) ns’ MP_TAC \\
-     rw [DISJOINT_ALT, Abbr ‘ns’]
-  >> Know ‘TAKE 1 vs = vs’
- >- (MATCH_MP_TAC TAKE_LENGTH_ID_rwt >> rw [Abbr ‘vs’])
+     rw [DISJOINT_ALT, Abbr ‘ns’] >> fs [])
  >> Rewr'
- 
-     METIS_TAC [Q.SPEC_ FRESH_list_def]
-  *)
- >> cheat
+ >> Know ‘principle_hnf (LAM y t @@ VAR z) = [VAR z/y] t’
+ >- (MATCH_MP_TAC principle_hnf_beta >> simp [Abbr ‘t’] \\
+     Q.PAT_X_ASSUM ‘DISJOINT (set vs) ns’ MP_TAC \\
+     rw [DISJOINT_ALT, Abbr ‘ns’] >> fs [])
+ >> Rewr'
+ >> DISJ1_TAC
+ >> simp [Abbr ‘t’]
+ >> NTAC 5 (simp [Once hnf_head_def])
+ (* final goal: y <> z *)
+ >> Q.PAT_X_ASSUM ‘DISJOINT (set vs) ns’ MP_TAC
+ >> rw [DISJOINT_ALT, Abbr ‘ns’] >> fs []
 QED
 
 Theorem equivalent_example :
