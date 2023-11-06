@@ -218,6 +218,12 @@ val lemma2_13 = store_thm( (* p.20 *)
   POP_ASSUM MP_TAC THEN Q.ID_SPEC_TAC `c` THEN
   HO_MATCH_MP_TAC ctxt_indn THEN PROVE_TAC [lameq_rules]);
 
+Theorem lameq_LAMl_cong :
+    !vs M N. M == N ==> LAMl vs M == LAMl vs N
+Proof
+    Induct_on ‘vs’ >> rw [lameq_ABS]
+QED
+
 val (lamext_rules, lamext_indn, lamext_cases) = (* p. 21 *)
   Hol_reln`(!x M N. lamext ((LAM x M) @@ N) ([N/x]M)) /\
            (!M. lamext M M) /\

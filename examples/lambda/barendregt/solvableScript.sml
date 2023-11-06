@@ -606,6 +606,12 @@ Proof
         Q.EXISTS_TAC ‘fm’ >> simp [] ] ]
 QED
 
+Theorem solvable_iff_LAMl[simp] :
+    !vs M. solvable (LAMl vs M) <=> solvable M
+Proof
+    Induct_on ‘vs’ >> rw [solvable_iff_LAM]
+QED
+
 (* Theorem 8.3.14 (Wadsworth) [1, p.175] *)
 Theorem solvable_iff_has_hnf :
     !M. solvable M <=> has_hnf M
@@ -616,9 +622,9 @@ Proof
  >> ‘closed M0’
        by (rw [closed_def, Abbr ‘M0’, Abbr ‘vs’, FV_LAMl, SET_TO_LIST_INV])
  >> Suff ‘solvable M0 <=> has_hnf M0’
- >- (Q.UNABBREV_TAC ‘M0’ \\
-     KILL_TAC >> Induct_on ‘vs’ >- rw [] \\
-     rw [solvable_iff_LAM, has_hnf_LAM_E])
+ >- (‘solvable M <=> solvable M0’ by rw [Abbr ‘M0’, solvable_iff_LAMl] \\
+     POP_ORW >> Rewr' \\
+     rw [Abbr ‘M0’, has_hnf_LAMl_E])
  >> POP_ASSUM MP_TAC >> KILL_TAC
  >> Q.SPEC_TAC (‘M0’, ‘M’)
  (* stage work, now M is closed *)
@@ -909,6 +915,38 @@ Proof
  >> ‘?Ms. I = Omega @* Ms’ by METIS_TAC [Omega_appstar_starloops]
  >> POP_ASSUM MP_TAC
  >> rw [Omega_def, I_def]
+QED
+
+Theorem lameq_solvable_cong_lemma[local] :
+    !M N. closed M /\ closed N /\ M == N ==> (solvable M <=> solvable N)
+Proof
+    Suff ‘!M N. closed M /\ closed N /\ M == N /\ solvable M ==> solvable N’
+ >- METIS_TAC [lameq_SYM]
+ >> rw [solvable_alt_closed]
+ >> gs [solvable_alt_closed]
+ >> Q.EXISTS_TAC ‘Ns’
+ >> MATCH_MP_TAC lameq_TRANS
+ >> Q.EXISTS_TAC ‘M @* Ns’ >> art []
+ >> MATCH_MP_TAC lameq_appstar_cong
+ >> rw [lameq_SYM]
+QED
+
+Theorem lameq_solvable_cong :
+    !M N. M == N ==> (solvable M <=> solvable N)
+Proof
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘vs = SET_TO_LIST (FV M UNION FV N)’
+ >> qabbrev_tac ‘M0 = LAMl vs M’
+ >> qabbrev_tac ‘N0 = LAMl vs N’
+ >> Know ‘closed M0 /\ closed N0’
+ >- (rw [closed_def, Abbr ‘M0’, Abbr ‘N0’, Abbr ‘vs’, FV_LAMl] \\
+    ‘FINITE (FV M UNION FV N)’ by rw [] \\
+     simp [SET_TO_LIST_INV] >> SET_TAC [])
+ >> STRIP_TAC
+ >> ‘solvable M <=> solvable M0’ by (rw [Abbr ‘M0’]) >> POP_ORW
+ >> ‘solvable N <=> solvable N0’ by (rw [Abbr ‘N0’]) >> POP_ORW
+ >> ‘M0 == N0’ by (rw [Abbr ‘M0’, Abbr ‘N0’, lameq_LAMl_cong])
+ >> MATCH_MP_TAC lameq_solvable_cong_lemma >> art []
 QED
 
 val _ = export_theory ();

@@ -1817,6 +1817,12 @@ Proof
  >> MATCH_MP_TAC betastar_lameq >> art []
 QED
 
+Theorem has_hnf_LAMl_E[simp] :
+    !vs M. has_hnf (LAMl vs M) <=> has_hnf M
+Proof
+    Induct_on ‘vs’ >> rw []
+QED
+
 (* Proposition 8.3.13 (ii) [1, p.174] *)
 Theorem has_hnf_SUB_E :
     !M N z. has_hnf ([N/z] M) ==> has_hnf M

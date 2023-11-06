@@ -364,7 +364,7 @@ Proof
      hnf (LAMl [y; z] (VAR y @* [M; N]))’ by rw [hnf_appstar]
  >> ‘solvable (LAM x (VAR y @@ M)) /\
      solvable (LAMl [y; z] (VAR y @* [M; N]))’
-       by rw [solvable_iff_has_hnf, hnf_has_hnf]
+       by PROVE_TAC [solvable_iff_has_hnf, hnf_has_hnf]
  >> simp [equivalent_def, principle_hnf_eq_self]
  >> ‘MAX 1 (LAMl_size (LAMl [y; z] (VAR y @* [M; N]))) = 2’
        by rw [LAMl_thm, appstar_thm]
@@ -378,8 +378,7 @@ Proof
  >> qabbrev_tac ‘vs1 = TAKE 1 vs’
  >> qabbrev_tac ‘vs2 = TAKE 2 vs’
  (* applying principle_hnf_LAMl_appstar *)
- >>
-    cheat
+ >> cheat
 QED
 
 Theorem unsolvable_imp_equivalent :
@@ -498,7 +497,7 @@ Proof
          by METIS_TAC [separability_lemma1] \\
      POP_ASSUM (STRIP_ASSUME_TAC o (Q.SPECL [‘P’, ‘Omega’])) \\
      Q.EXISTS_TAC ‘pi’ >> art [] \\
-     cheat)
+     METIS_TAC [lameq_solvable_cong, unsolvable_Omega])
  (* stage work *)
  >> cheat
 QED
