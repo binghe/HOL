@@ -230,15 +230,24 @@ val (lamext_rules, lamext_indn, lamext_cases) = (* p. 21 *)
                     lamext (M @@ VAR x) (N @@ VAR x) ==>
                     lamext M N)`
 
-val (lameta_rules, lameta_ind, lameta_cases) = (* p. 21 *)
-  Hol_reln`(!x M N. lameta ((LAM x M) @@ N) ([N/x]M)) /\
-           (!M. lameta M M) /\
-           (!M N. lameta M N ==> lameta N M) /\
-           (!M N L. lameta M N /\ lameta N L ==> lameta M L) /\
-           (!M N Z. lameta M N ==> lameta (M @@ Z) (N @@ Z)) /\
-           (!M N Z. lameta M N ==> lameta (Z @@ M) (Z @@ N)) /\
-           (!M N x. lameta M N ==> lameta (LAM x M) (LAM x N)) /\
-           (!M x. ~(x IN FV M) ==> lameta (LAM x (M @@ VAR x)) M)`;
+Inductive lameta : (* p. 21 *)
+[~BETA:]
+  !x M N. lameta ((LAM x M) @@ N) ([N/x]M)
+[~REFL:]
+  !M. lameta M M
+[~SYM:]
+  !M N. lameta M N ==> lameta N M
+[~TRANS:]
+  !M N L. lameta M N /\ lameta N L ==> lameta M L
+[~APPL:]
+  !M N Z. lameta M N ==> lameta (M @@ Z) (N @@ Z)
+[~APPR:]
+  !M N Z. lameta M N ==> lameta (Z @@ M) (Z @@ N)
+[~ABS:]
+  !M N x. lameta M N ==> lameta (LAM x M) (LAM x N)
+[~ETA:]
+  !M x. ~(x IN FV M) ==> lameta (LAM x (M @@ VAR x)) M
+End
 
 val lemma2_14 = store_thm(
   "lemma2_14",
@@ -928,8 +937,8 @@ End
 Definition has_bnf_def: has_bnf t = ?t'. t == t' /\ bnf t'
 End
 
-(* wrong? shouldn't this be ==_eta rather than == ? *)
-val has_benf_def = Define`has_benf t = ?t'. t == t' /\ benf t'`;
+Definition has_benf_def: has_benf t = ?t'. lameta t t' /\ benf t'
+End
 
 Theorem fresh_ssub:
   ∀N. y ∉ FV N ∧ (∀k:string. k ∈ FDOM fm ⇒ y # fm ' k) ⇒ y # fm ' N

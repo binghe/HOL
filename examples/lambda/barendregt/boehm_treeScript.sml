@@ -492,7 +492,15 @@ Theorem separability_lemma2 :
     !M N. solvable M /\ ~equivalent M N ==>
           !P. ?pi. apply pi M == P /\ ~solvable (apply pi N)
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> Cases_on ‘solvable N’
+ >- (‘!P Q. ?pi. apply pi M == P /\ apply pi N == Q’
+         by METIS_TAC [separability_lemma1] \\
+     POP_ASSUM (STRIP_ASSUME_TAC o (Q.SPECL [‘P’, ‘Omega’])) \\
+     Q.EXISTS_TAC ‘pi’ >> art [] \\
+     cheat)
+ (* stage work *)
+ >> cheat
 QED
 
 (* Theorem 10.4.2 (i) *)
@@ -541,7 +549,23 @@ Theorem lameta_complete :
     !M N. has_bnf M /\ has_bnf N ==>
           lameta M N \/ ~consistent (conversion ((M,N) RINSERT (beta RUNION eta)))
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> ‘has_benf M /\ has_benf N’ by PROVE_TAC [has_benf_iff_has_bnf]
+ (* NOTE: the definition of ‘has_benf’ may be wrong *)
+ >> ‘?M'. lameta M M' /\ benf M'’ by METIS_TAC [has_benf_def]
+ >> ‘?N'. lameta N N' /\ benf N'’ by METIS_TAC [has_benf_def]
+ >> Cases_on ‘M' = N'’
+ >- (DISJ1_TAC \\
+     MATCH_MP_TAC lameta_TRANS \\
+     Q.EXISTS_TAC ‘N'’ >> rw [lameta_rules])
+ (* applying benf_incompatible *)
+ >> DISJ2_TAC
+ >> Know ‘incompatible M' N'’
+ >- (MATCH_MP_TAC benf_incompatible >> art [])
+ >> rw [incompatible_def, consistent_def]
+ (* applying conversion_rules *)
+ >> qabbrev_tac ‘eqns = {(M',N')}’
+ >> cheat
 QED
 
 val _ = export_theory ();
