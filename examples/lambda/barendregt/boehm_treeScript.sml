@@ -203,6 +203,11 @@ Definition BV_of_ltree_node_def :
           else EMPTY
 End
 
+(* |- !M p.
+        BV_of_ltree_node M p =
+        if IS_SOME (ltree_el M p) then
+           BV_of_hnf (THE (FST (THE (ltree_el M p)))) else {}
+ *)
 Theorem BV_of_ltree_node_applied =
     SIMP_RULE std_ss [LET_DEF] BV_of_ltree_node_def
 
@@ -289,7 +294,7 @@ QED
    N = LAMl v2 (y' @* Ns) @@ (MAP VAR v2) == y' @* Ns' (LENGTH: m')
 
    y = y'
-   n - m = n' - m' (possibly negative) <=> n + m' = n' + m (all non-negative)
+   n - m = n' - m' (possibly negative) <=> n + m' = n' + m (non-negative)
  *)
 Definition equivalent_def :
     equivalent (M :term) (N :term) =
@@ -467,6 +472,7 @@ Definition is_ready_def :
     is_ready M <=> unsolvable M \/
                   ~is_abs (principle_hnf M) /\ head_original (principle_hnf M)
 End
+
 (* Lemma 10.3.6 (i) *)
 Theorem lemma10_3_6i :
     !M. ?pi. is_ready (apply pi M)
