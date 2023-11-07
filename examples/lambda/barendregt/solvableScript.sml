@@ -917,13 +917,6 @@ Proof
  >> rw [Omega_def, I_def]
 QED
 
-(* cf. Omega_starloops *)
-Theorem Omega_hreduce1_loops :
-    Omega -h-> N <=> N = Omega
-Proof
-    rw [hreduce1_rwts, Omega_def]
-QED
-
 (* Another proof based on solvable_iff_has_hnf, told by Michael Norrish *)
 Theorem unsolvable_Omega' :
     unsolvable Omega
@@ -933,21 +926,20 @@ Proof
        by (rw [GSYM head_reduce1_def, Omega_hreduce1_loops])
  >> qabbrev_tac ‘p = pgenerate (\n. Omega) (\n. r)’
  >> ‘infinite p’ by rw [Abbr ‘p’, pgenerate_infinite]
+ >> ‘tail p = p’ by rw [Abbr ‘p’, Once pgenerate_def, tail_def, combinTheory.o_DEF]
  >> Suff ‘head_reduction_path Omega = p’ >- (Rewr' >> art [])
  >> MATCH_MP_TAC head_reduction_path_unique >> simp []
  >> CONJ_TAC >- rw [Abbr ‘p’, Once pgenerate_def]
+ (* is_head_reduction p *)
  >> irule is_head_reduction_coind
  >> Q.EXISTS_TAC ‘\p. first p = Omega /\ first_label p = r /\ tail p = p’
  >> simp []
- >> reverse CONJ_TAC
- >- (RW_TAC std_ss [] >|
-     [ POP_ORW >> simp [first_thm],
-       POP_ORW >> simp [first_thm],
-       POP_ORW >> simp [first_label_def],
-       METIS_TAC [tail_def] ])
- >> CONJ_TAC >- rw [Abbr ‘p’, Once pgenerate_def]
- >> CONJ_TAC >- rw [Abbr ‘p’, Once pgenerate_def]
- >> rw [Abbr ‘p’, Once pgenerate_def, tail_def, combinTheory.o_DEF]
+ >> CONJ_TAC >- (STRIP_TAC >> rw [Abbr ‘p’, Once pgenerate_def])
+ >> RW_TAC std_ss []
+ >| [ POP_ORW >> simp [first_thm],
+      POP_ORW >> simp [first_thm],
+      POP_ORW >> simp [first_label_def],
+      METIS_TAC [tail_def] ]
 QED
 
 Theorem lameq_solvable_cong_lemma[local] :
