@@ -153,7 +153,10 @@ QED
  *  Comparing Boehm trees (can be moved to ltreeTheory)
  *---------------------------------------------------------------------------*)
 
-(* “ltree_subset A B” <=> A results from B by cutting off some subtrees *)
+(* Definition 10.2 [1, p.229]
+
+   ltree_subset A B” <=> A results from B by cutting off some subtrees
+ *)
 Definition ltree_subset_def :
     ltree_subset A B <=> (subtrees A) SUBSET (subtrees B)
 End
@@ -285,13 +288,37 @@ Proof
 QED
 
 (*---------------------------------------------------------------------------*
+ *  Infinite eta reduction for trees
+ *---------------------------------------------------------------------------*)
+
+val _ = set_fixity "extends" (Infixr 490);
+
+(* TODO: Definition 10.2.10 (i) *)
+Definition extends_def :
+    $extends (X :num list set) (A :boehm_tree) = T
+End
+
+(* TODO: Definition 10.2.10 (ii) *)
+Definition eta_expansion_def :
+   eta_expansion (A :boehm_tree) (X :num list set) = A
+End
+
+(* Definition 10.2.10 (iii) *)
+Definition le_eta_def :
+   le_eta (A :boehm_tree) (B :boehm_tree) = ?X. B = eta_expansion A X
+End
+
+(*---------------------------------------------------------------------------*
  *  Equivalent terms
  *---------------------------------------------------------------------------*)
 
 (* Definition 10.2.19
 
-   M = LAMl v1 (y  @* Ms) @@ (MAP VAR v1) == y  @* Ms' (LENGTH: m)
-   N = LAMl v2 (y' @* Ns) @@ (MAP VAR v2) == y' @* Ns' (LENGTH: m')
+   M = LAMl v1 (y  @* Ms) @@ (MAP VAR v1) == y  @* Ms'
+   N = LAMl v2 (y' @* Ns) @@ (MAP VAR v2) == y' @* Ns'
+
+   LENGTH Ms  = n /\ LENGTH Ns  = n'
+   LENGTH Ms' = m /\ LENGTH Ns' = m'
 
    y = y'
    n - m = n' - m' (possibly negative) <=> n + m' = n' + m (non-negative)
@@ -390,6 +417,69 @@ Theorem unsolvable_imp_equivalent :
     !M N. unsolvable M /\ unsolvable N ==> equivalent M N
 Proof
     rw [equivalent_def]
+QED
+
+(* Definition 10.2.21 (i)
+
+   NOTE: ‘A’ and ‘B’ are ltree nodes returned by ‘THE (ltree_el (BT M) p)’
+ *)
+Definition head_equivalent_def :
+    head_equivalent (A :term option # num option) (B :term option # num option) =
+        if IS_SOME (FST A) /\ IS_SOME (FST B) then
+           let M0 = THE (FST A);
+               N0 = THE (FST B);
+               n  = LAMl_size M0;
+               n' = LAMl_size N0;
+               vs = FRESH_list (MAX n n') (FV M0 UNION FV N0);
+               v  = TAKE n  vs;
+               v' = TAKE n' vs;
+               M1 = principle_hnf (M0 @* (MAP VAR v));
+               N1 = principle_hnf (N0 @* (MAP VAR v'));
+               y  = hnf_head M1;
+               y' = hnf_head N1;
+               m  = THE (SND A);
+               m' = THE (SND B)
+            in
+               y = y' /\ n + m' = n' + m
+        else
+            IS_NONE (FST A) /\ IS_NONE (FST B)
+End
+
+(* Definition 10.2.21 (ii) *)
+Definition sub_equivalent_def :
+    sub_equivalent p A B =
+        let A' = ltree_el A p;
+            B' = ltree_el B p
+        in
+            if IS_SOME A' /\ IS_SOME B' then
+               head_equivalent (THE A') (THE B')
+            else
+               IS_NONE A' /\ IS_NONE B'
+End
+
+Overload equivalent = “sub_equivalent”
+
+(* Definition 10.2.23 (i) [1, p.239] *)
+Definition eta_subset_def :
+   eta_subset (A :boehm_tree) (B :boehm_tree) =
+       ?A'. le_eta A A' /\ ltree_subset A' B
+End
+
+(* Definition 10.2.23 (ii) [1, p.239] *)
+Definition eta_subset_eta_def :
+   eta_subset_eta A B = ?A' B'. le_eta A A' /\ le_eta B B' /\ ltree_subset A' B'
+End
+
+(* Definition 10.2.25 [1, p.240] *)
+Definition ltree_eta_def :
+    ltree_eta A B <=> eta_subset_eta A B /\ eta_subset_eta B A
+End
+
+(* Theorem 10.2.31 (i) and (iv) *)
+Theorem ltree_eta_thm :
+    !A B. ltree_eta A B <=> !p. sub_equivalent p A B
+Proof
+    cheat
 QED
 
 (*---------------------------------------------------------------------------*

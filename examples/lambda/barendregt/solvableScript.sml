@@ -928,14 +928,15 @@ Proof
  >> ‘infinite p’ by rw [Abbr ‘p’, pgenerate_infinite]
  >> ‘tail p = p’ by rw [Abbr ‘p’, Once pgenerate_def, tail_def, combinTheory.o_DEF]
  >> Suff ‘head_reduction_path Omega = p’ >- (Rewr' >> art [])
- >> MATCH_MP_TAC head_reduction_path_unique >> simp []
+ >> MATCH_MP_TAC head_reduction_path_unique
+ >> simp []
  >> CONJ_TAC >- rw [Abbr ‘p’, Once pgenerate_def]
  (* is_head_reduction p *)
  >> irule is_head_reduction_coind
  >> Q.EXISTS_TAC ‘\p. first p = Omega /\ first_label p = r /\ tail p = p’
  >> simp []
  >> CONJ_TAC >- (STRIP_TAC >> rw [Abbr ‘p’, Once pgenerate_def])
- >> RW_TAC std_ss []
+ >> RW_TAC std_ss [] (* 4 subgoals *)
  >| [ POP_ORW >> simp [first_thm],
       POP_ORW >> simp [first_thm],
       POP_ORW >> simp [first_label_def],
