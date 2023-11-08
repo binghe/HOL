@@ -291,21 +291,59 @@ QED
  *  Infinite eta reduction for trees
  *---------------------------------------------------------------------------*)
 
-val _ = set_fixity "extends" (Infixr 490);
+(* What makes a ‘:num list set’ a "tree"? The only requirement is that, if
+   there is a path from the root to another node of the tree, all passing nodes
+   must be also in the tree. (Besides, the root ‘[]’ must be in the tree.)
+ *)
+Type tree[pp] = “:num list set”
 
-(* TODO: Definition 10.2.10 (i) *)
-Definition extends_def :
-    $extends (X :num list set) (A :boehm_tree) = T
+Definition is_tree_def :
+    is_tree (ts :tree) <=> [] IN ts /\ !p. p IN ts /\ p <> [] ==> FRONT p IN ts
 End
 
-(* TODO: Definition 10.2.10 (ii) *)
+Theorem ltree_paths_is_tree :
+    !A. is_tree (ltree_paths A)
+Proof
+    cheat
+QED
+
+(* What makes a "tree" finitely branching? For each parent node given by a path
+   p, the set of all direct children is {x | SNOC x p IN ts}, which is finite.
+ *)
+Definition finite_branching_def :
+    finite_branching (ts :tree) = !p. p IN ts ==> FINITE {x | SNOC x p IN ts}
+End
+
+(* or “terminal_nodes” *)
+Definition endpoints_def :
+    endpoints (ts :tree) = {p | !x. SNOC x p NOTIN ts}
+End
+
+Theorem BT_finite_branching :
+    !M. finite_branching (ltree_paths (BT M))
+Proof
+    cheat
+QED
+
+val _ = set_fixity "extends" (Infixr 490);
+
+(* Definition 10.2.10 (i) *)
+Definition extends_def :
+    $extends (X :num list set) (A :boehm_tree) <=>
+       is_tree X /\ ltree_paths A SUBSET X /\ finite_branching X /\
+       !p. p IN ltree_paths A /\ THE (ltree_lookup A p) = bot ==>
+           p IN endpoints X
+End
+
+(* Definition 10.2.10 (ii) *)
 Definition eta_expansion_def :
-   eta_expansion (A :boehm_tree) (X :num list set) = A
+    eta_expansion (A :boehm_tree) (X :num list set) =
+    A
 End
 
 (* Definition 10.2.10 (iii) *)
 Definition le_eta_def :
-   le_eta (A :boehm_tree) (B :boehm_tree) = ?X. B = eta_expansion A X
+    le_eta (A :boehm_tree) (B :boehm_tree) = ?X. B = eta_expansion A X
 End
 
 (*---------------------------------------------------------------------------*
@@ -475,7 +513,7 @@ Definition ltree_eta_def :
     ltree_eta A B <=> eta_subset_eta A B /\ eta_subset_eta B A
 End
 
-(* Theorem 10.2.31 (i) and (iv) *)
+(* Theorem 10.2.31 (i) and (iv) [1, p.244] *)
 Theorem ltree_eta_thm :
     !A B. ltree_eta A B <=> !p. sub_equivalent p A B
 Proof
