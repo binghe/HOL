@@ -125,10 +125,17 @@ Definition Boehm_def :
 End
 
 (* Remarks 10.1.3 (iii) [1, p.216]: unsolvable terms all have the same Boehm
-   tree (‘bot’).
+   tree (‘bot’). The following overloaded ‘bot’ may be returned by
+  ‘THE (ltree_lookup A p)’ when looking up a terminal node of the Boehm tree.
  *)
 Overload bot = “Branch NONE (LNIL :boehm_tree llist)”
+
+(* Another form of ‘bot’, usually returned by “THE (ltree_el A p)”. *)
+Overload bot = “(NONE :term option, SOME 0)”
+
+(* Unicode name: "base" *)
 val _ = Unicode.unicode_version {u = UTF8.chr 0x22A5, tmnm = "bot"};
+val _ = TeX_notation {hol = "bot", TeX = ("\\ensuremath{\\bot}", 1)};
 
 Theorem unsolvable_BT :
     !M. unsolvable M ==> BT M = bot
@@ -291,54 +298,79 @@ QED
  *  Infinite eta reduction for trees
  *---------------------------------------------------------------------------*)
 
-(* What makes a ‘:num list set’ a "tree"? The only requirement is that, if
-   there is a path from the root to another node of the tree, all passing nodes
-   must be also in the tree. (Besides, the root ‘[]’ must be in the tree.)
+(* A (underlying) "naked" tree has only the structure (i.e. valid paths) without
+   any useful information stored in the tree. (The choice of :bool is arbitrary.)
  *)
-Type tree[pp] = “:num list set”
+Type naked_tree[pp] = “:bool ltree”
 
-Definition is_tree_def :
-    is_tree (ts :tree) <=> [] IN ts /\ !p. p IN ts /\ p <> [] ==> FRONT p IN ts
+(* ‘denude (A :'a ltree)’ returns the underlying naked tree of A *)
+Definition denude_def :
+    denude = ltree_map (\e. T)
 End
 
-Theorem ltree_paths_is_tree :
-    !A. is_tree (ltree_paths A)
+(* from a set of ltree paths to a naked ltree.
+
+   NOTE: A typical source of input X is ‘ltree_paths’ of any ltree.
+*)
+Definition fromPaths_def :
+    fromPaths (X :num list set) =
+       gen_ltree (\p. (T,SOME (CARD {x | SNOC x p IN X})))
+End
+
+Theorem ltree_paths_fromPaths :
+    !X. ltree_paths (fromPaths X) = X
 Proof
     cheat
 QED
 
-(* What makes a "tree" finitely branching? For each parent node given by a path
-   p, the set of all direct children is {x | SNOC x p IN ts}, which is finite.
- *)
-Definition finite_branching_def :
-    finite_branching (ts :tree) = !p. p IN ts ==> FINITE {x | SNOC x p IN ts}
-End
-
-(* or “terminal_nodes” *)
-Definition endpoints_def :
-    endpoints (ts :tree) = {p | !x. SNOC x p NOTIN ts}
-End
-
-Theorem BT_finite_branching :
-    !M. finite_branching (ltree_paths (BT M))
+Theorem fromPaths_ltree_paths :
+    !(A :naked_tree). fromPaths (ltree_paths A) = A
 Proof
     cheat
 QED
+
+(* ‘ltree_finite’ means finite branching *)
+Theorem ltree_finite_BT :
+    !M. ltree_finite (BT M)
+Proof
+    cheat
+QED
+
+(* This assumes ‘ltree_finite A’ and ‘p IN ltree_paths A’ for ‘nSucc A p’ *)
+Definition nSucc_def :
+    nSucc A = THE o SND o THE o (ltree_el A)
+End
 
 val _ = set_fixity "extends" (Infixr 490);
 
 (* Definition 10.2.10 (i) *)
 Definition extends_def :
-    $extends (X :num list set) (A :boehm_tree) <=>
-       is_tree X /\ ltree_paths A SUBSET X /\ finite_branching X /\
-       !p. p IN ltree_paths A /\ THE (ltree_lookup A p) = bot ==>
-           p IN endpoints X
+    $extends (X :naked_tree) (A :boehm_tree) <=>
+       ltree_paths A SUBSET (ltree_paths X) /\ ltree_finite X /\
+       !p. p IN ltree_paths A /\ THE (ltree_el A p) = bot ==>
+           SND (THE (ltree_el X p)) = SOME 0
 End
 
-(* Definition 10.2.10 (ii) *)
+(* (TODO) Definition 10.2.10 (ii):
+
+   In the most natural case, ‘eta_expansion_inner A X p = THE (ltree_el A p)’
+ *)
+Definition eta_expansion_inner_def :
+    eta_expansion_inner (A :boehm_tree) (X :naked_tree) (p :num list) =
+    if p IN ltree_paths A then
+       if nSucc A p = nSucc X p then
+          THE (ltree_el A p)
+       else (* nSucc A p < nSucc X p *)
+          THE (ltree_el A p) (* TODO: eta expansion *)
+    else if p IN ltree_paths X then
+       bot (* TODO *)
+    else
+       bot
+End
+
 Definition eta_expansion_def :
-    eta_expansion (A :boehm_tree) (X :num list set) =
-    A
+    eta_expansion (A :boehm_tree) (X :naked_tree) =
+      gen_ltree (eta_expansion_inner A X)
 End
 
 (* Definition 10.2.10 (iii) *)
