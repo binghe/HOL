@@ -21,7 +21,7 @@ val _ = temp_delsimps ["FOLDL", "FOLDR", "LAMl_thm",
 
 val o_DEF = combinTheory.o_DEF; (* cannot directly open combinTheory *)
 
-(* hnf_head access the head variable term of an abs-free hnf. *)
+(* hnf_head access the head variable term of an abs-free hnf.
 local
   val hnf_head_defn =
      ‘hnf_head t = if is_comb t then hnf_head (rator t) else t’;
@@ -30,6 +30,13 @@ local
 in
   val hnf_head_def = tDefine "hnf_head" hnf_head_defn tactic;
 end;
+ *)
+Definition hnf_head_def :
+    hnf_head t = if is_comb t then hnf_head (rator t) else t
+Termination
+    WF_REL_TAC ‘measure size’
+ >> rw [is_comb_APP_EXISTS] >> rw []
+End
 
 Theorem hnf_head_appstar :
     !t. ~is_comb t ==> hnf_head (t @* args) = t
@@ -40,7 +47,7 @@ QED
 
 Overload hnf_headvar = “\t. THE_VAR (hnf_head t)”
 
-(* hnf_children retrives the ‘args’ part of an abs-free hnf (VAR y @* args) *)
+(* hnf_children retrives the ‘args’ part of an abs-free hnf (VAR y @* args)
 local
   val hnf_children_defn =
      ‘hnf_children t = if is_comb t then SNOC (rand t) (hnf_children (rator t))
@@ -50,6 +57,14 @@ local
 in
   val hnf_children_def = tDefine "hnf_children" hnf_children_defn tactic;
 end;
+ *)
+Definition hnf_children_def :
+    hnf_children t = if is_comb t then
+                        SNOC (rand t) (hnf_children (rator t))
+                     else []
+Termination
+    WF_REL_TAC ‘measure size’ >> rw [is_comb_APP_EXISTS] >> rw []
+End
 
 Theorem hnf_children_thm :
    (!y.     hnf_children ((VAR :string -> term) y) = []) /\
@@ -178,6 +193,12 @@ Definition ltree_paths_def :
     ltree_paths A = {path | IS_SOME (ltree_lookup A path)}
 End
 
+Theorem NIL_IN_ltree_paths[simp] :
+    [] IN ltree_paths A
+Proof
+    rw [ltree_paths_def, ltree_lookup_def]
+QED
+
 Theorem ltree_paths_alt :
     !A. ltree_paths A = {path | IS_SOME (ltree_el A path)}
 Proof
@@ -221,9 +242,9 @@ End
 Theorem BV_of_ltree_node_applied =
     SIMP_RULE std_ss [LET_DEF] BV_of_ltree_node_def
 
-(* BV_of_ltree_path: the set of binding variables up to a path *)
+(* BV_of_ltree_path: the set of binding variables up to a path
 local
-  (* usage: Defn.tgoal (Hol_defn "BV_of_ltree_path" BV_of_ltree_path_defn); *)
+  (* Defn.tgoal (Hol_defn "BV_of_ltree_path" BV_of_ltree_path_defn); *)
   val BV_of_ltree_path_defn =
      ‘BV_of_ltree_path (M :boehm_tree) p =
          if p = [] then BV_of_ltree_node M p
@@ -237,6 +258,17 @@ in
   val BV_of_ltree_path_def =
       tDefine "BV_of_ltree_path" BV_of_ltree_path_defn tactic;
 end;
+ *)
+Definition BV_of_ltree_path_def :
+    BV_of_ltree_path (M :boehm_tree) p =
+         if p = [] then BV_of_ltree_node M p
+         else BV_of_ltree_path M (FRONT p) UNION
+              BV_of_ltree_node M p
+Termination
+    WF_REL_TAC ‘measure (LENGTH o SND)’
+ >> rw [LENGTH_FRONT]
+ >> fs [NOT_NIL_EQ_LENGTH_NOT_0]
+End
 
 Overload BV = “BV_of_ltree_path”
 
@@ -303,11 +335,6 @@ QED
  *)
 Type naked_tree[pp] = “:bool ltree”
 
-(* ‘denude (A :'a ltree)’ returns the underlying naked tree of A *)
-Definition denude_def :
-    denude = ltree_map (\e. T)
-End
-
 (* from a set of ltree paths to a naked ltree.
 
    NOTE: A typical source of input X is ‘ltree_paths’ of any ltree.
@@ -325,6 +352,17 @@ QED
 
 Theorem fromPaths_ltree_paths :
     !(A :naked_tree). fromPaths (ltree_paths A) = A
+Proof
+    cheat
+QED
+
+(* ‘denude (A :'a ltree)’ returns the underlying naked tree of A *)
+Definition denude_def :
+    denude = ltree_map (\e. T)
+End
+
+Theorem denude_alt :
+    !A. denude A = fromPaths (ltree_paths A)
 Proof
     cheat
 QED
@@ -356,16 +394,25 @@ End
    In the most natural case, ‘eta_expansion_inner A X p = THE (ltree_el A p)’
  *)
 Definition eta_expansion_inner_def :
-    eta_expansion_inner (A :boehm_tree) (X :naked_tree) (p :num list) =
+  eta_expansion_inner (A :boehm_tree) (X :naked_tree) (p :num list) =
     if p IN ltree_paths A then
        if nSucc A p = nSucc X p then
           THE (ltree_el A p)
        else (* nSucc A p < nSucc X p *)
           THE (ltree_el A p) (* TODO: eta expansion *)
-    else if p IN ltree_paths X then
-       bot (* TODO *)
+    else if p IN ltree_paths X then                (* in this case: p <> [] *)
+       let n = nSucc X (FRONT p);
+           parent = eta_expansion_inner A X (FRONT p)
+       in
+           bot (* TODO *)
     else
        bot
+Termination
+    WF_REL_TAC ‘measure (LENGTH o SND o SND)’
+ >> rpt STRIP_TAC
+ >> Cases_on ‘p = []’ >- fs []
+ >> ‘0 < LENGTH p’ by rw [GSYM NOT_NIL_EQ_LENGTH_NOT_0]
+ >> rw [LENGTH_FRONT]
 End
 
 Definition eta_expansion_def :
@@ -671,7 +718,7 @@ QED
 (* Theorem 10.4.2 (i) *)
 Theorem separability_thm :
     !M N. benf M /\ benf N /\ M <> N ==>
-          !P Q. ?pi. apply pi M == P /\ apply pi N = Q
+          !P Q. ?pi. apply pi M == P /\ apply pi N == Q
 Proof
     cheat
 QED
