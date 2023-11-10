@@ -389,40 +389,34 @@ Definition extends_def :
            SND (THE (ltree_el X p)) = SOME 0
 End
 
-(* (TODO) Definition 10.2.10 (ii):
-
-   In the most natural case, ‘eta_expansion_inner A X p = THE (ltree_el A p)’
- *)
-Definition eta_expansion_inner_def :
-  eta_expansion_inner (A :boehm_tree) (X :naked_tree) (p :num list) =
-    if p IN ltree_paths A then
-       if nSucc A p = nSucc X p then
-          THE (ltree_el A p)
-       else (* nSucc A p < nSucc X p *)
-          THE (ltree_el A p) (* TODO: eta expansion *)
-    else if p IN ltree_paths X then                (* in this case: p <> [] *)
-       let n = nSucc X (FRONT p);
-           parent = eta_expansion_inner A X (FRONT p)
-       in
-           bot (* TODO *)
-    else
-       bot
-Termination
-    WF_REL_TAC ‘measure (LENGTH o SND o SND)’
- >> rpt STRIP_TAC
- >> Cases_on ‘p = []’ >- fs []
- >> ‘0 < LENGTH p’ by rw [GSYM NOT_NIL_EQ_LENGTH_NOT_0]
- >> rw [LENGTH_FRONT]
+Definition ltree_top_def :
+    ltree_top A = case A of Branch a ts => (a,ts)
 End
 
-Definition eta_expansion_def :
-    eta_expansion (A :boehm_tree) (X :naked_tree) =
-      gen_ltree (eta_expansion_inner A X)
+Overload ltree_node     = “\A. FST (ltree_top A)”
+Overload ltree_children = “\A. SND (ltree_top A)”
+
+(* Definition 10.2.10 (ii) *)
+Definition eta_generator_def :
+    eta_generator ((A,X) :boehm_tree # naked_tree) =
+    let  a = ltree_node A;
+        as = ltree_children A;
+        xs = ltree_children X;
+         m = LLENGTH as;
+         n = LLENGTH xs;
+    in
+       if m = n then (a, LZIP (as,xs)) (* case 1 *)
+       else
+         (NONE, LMAP (\e. (bot,e)) xs)
+End
+
+Definition expansion_def :
+    expansion = ltree_unfold eta_generator
 End
 
 (* Definition 10.2.10 (iii) *)
 Definition le_eta_def :
-    le_eta (A :boehm_tree) (B :boehm_tree) = ?X. B = eta_expansion A X
+    le_eta (A :boehm_tree) (B :boehm_tree) = ?X. B = expansion (A,X)
 End
 
 (*---------------------------------------------------------------------------*
@@ -653,16 +647,16 @@ Proof
  >- (Q.EXISTS_TAC ‘\x. x’ >> rw [ctxt_rules, FOLDR])
  >> fs [GSYM Boehm_transform_def, apply_def]
  >> fs [solving_transform_def]
- >| [ (* goal 1 (of 2) *)
-      Q.EXISTS_TAC ‘\y. c y @@ (\y. VAR x) y’ >> rw [ctxt_rules, FOLDR] \\
-      MATCH_MP_TAC lameq_APPL >> art [],
-      (* goal 2 (of 2) *)
-      Q.EXISTS_TAC ‘\y. (\z. LAM x (c z)) y @@ (\y. N) y’ \\
-      rw [ctxt_rules, constant_contexts_exist, FOLDR] \\
-      MATCH_MP_TAC lameq_TRANS \\
-      Q.EXISTS_TAC ‘[N/x] (c M)’ \\
-      reverse CONJ_TAC >- rw [lameq_rules] \\
-      irule lameq_sub_cong >> rw [] ]
+ >- (Q.EXISTS_TAC ‘\y. c y @@ (\y. VAR x) y’ \\
+     rw [ctxt_rules, FOLDR] \\
+     MATCH_MP_TAC lameq_APPL >> art [])
+ (* stage work *)
+ >> Q.EXISTS_TAC ‘\y. (\z. LAM x (c z)) y @@ (\y. N) y’
+ >> rw [ctxt_rules, constant_contexts_exist, FOLDR]
+ >> MATCH_MP_TAC lameq_TRANS
+ >> Q.EXISTS_TAC ‘[N/x] (c M)’
+ >> reverse CONJ_TAC >- rw [lameq_rules]
+ >> irule lameq_sub_cong >> rw []
 QED
 
 (* Definition 10.3.5 (ii) *)
