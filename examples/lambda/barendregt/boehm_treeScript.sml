@@ -150,10 +150,9 @@ QED
    the Boehm tree.
  *)
 Definition BV_of_ltree_node_def :
-    BV_of_ltree_node (M :boehm_tree) p =
-      let node = ltree_el M p in
-          if IS_SOME node then
-             let (vs,t) = THE (FST (THE node)) in set vs
+    BV_of_ltree_node (node :((string list # term) option # num option) option) =
+       if IS_SOME node then
+          let (vs,t) = THE (FST (THE node)) in set vs
           else EMPTY
 End
 
@@ -162,9 +161,9 @@ Theorem BV_of_ltree_node_applied =
 
 Definition BV_of_ltree_path_def :
     BV_of_ltree_path (M :boehm_tree) p =
-         if p = [] then BV_of_ltree_node M p
+         if p = [] then BV_of_ltree_node (ltree_el M p)
          else BV_of_ltree_path M (FRONT p) UNION
-              BV_of_ltree_node M p
+              BV_of_ltree_node (ltree_el M p)
 Termination
     WF_REL_TAC ‘measure (LENGTH o SND)’
  >> rw [LENGTH_FRONT]
@@ -205,18 +204,20 @@ QED
  *  Infinite eta reduction for trees
  *---------------------------------------------------------------------------*)
 
-(* A (underlying) "naked" tree has only the structure (i.e. valid paths) without
-   any useful information stored in the tree. (The choice of :bool is arbitrary.)
+(* A (underlying) "naked" tree has only the structure (i.e. valid paths).
+
+   NOTE: When building an Boehm tree expansion, the naked tree may be used for
+   holding the combined set of binding variables up to the current tree node.
  *)
-Type naked_tree[pp] = “:bool ltree”
+Type naked_tree[pp] = “:string set ltree”
 
 (* from a set of ltree paths to a naked ltree.
 
    NOTE: A typical source of input X is ‘ltree_paths’ of any ltree.
 *)
 Definition fromPaths_def :
-    fromPaths (X :num list set) =
-       gen_ltree (\p. (T,SOME (CARD {x | SNOC x p IN X})))
+    fromPaths (X :num list set) :naked_tree =
+       gen_ltree (\p. ({},SOME (CARD {x | SNOC x p IN X})))
 End
 
 Theorem ltree_paths_fromPaths :
@@ -233,7 +234,7 @@ QED
 
 (* ‘denude (A :'a ltree)’ returns the underlying naked tree of A *)
 Definition denude_def :
-    denude = ltree_map (\e. T)
+    denude = ltree_map (\e. {})
 End
 
 Theorem denude_alt :
@@ -263,16 +264,19 @@ End
 
    NOTE: The generator follows the structure of X (the naked tree) and thus must
          pass the original subtrees as SND of pairs for each generated children.
+
+   NOTE: There's no way to retrieve the FV 
  *)
 Definition eta_generator_def :
     eta_generator ((A,X) :boehm_tree # naked_tree) =
     if IS_SOME (ltree_node A) then
        let (vs,t) = THE (ltree_node A);
+                Z = ltree_node X;           (* initially empty *)
                as = ltree_children A;
                xs = ltree_children X;
                 m = THE (LLENGTH as);            (* never NONE *)
                 n = THE (LLENGTH xs);            (* never NONE *)
-              vs' = FRESH_list (n - m) (set vs); (* maybe  NIL *)
+              vs' = FRESH_list (n - m) (set vs UNION Z);
               as' = fromList (MAP BT_VAR vs')    (* maybe LNIL *)
        in
            (SOME (vs ++ vs',t), LZIP (LAPPEND as as',xs))
