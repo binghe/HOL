@@ -13,7 +13,7 @@ open basic_swapTheory binderLib termTheory appFOLDLTheory chap2Theory
 
 open pure_dBTheory;
 
-val _ = new_theory "unused";
+val _ = new_theory "boehm_tree";
 
 val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
 val o_DEF = combinTheory.o_DEF; (* cannot directly open combinTheory *)
@@ -242,7 +242,7 @@ Proof
 QED
 
 val _ = export_theory ();
-val _ = html_theory "unused";
+val _ = html_theory "boehm_tree";
 
 (* References:
 

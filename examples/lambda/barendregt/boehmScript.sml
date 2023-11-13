@@ -11,7 +11,7 @@ open optionTheory arithmeticTheory pred_setTheory listTheory rich_listTheory
 open binderLib nomsetTheory termTheory appFOLDLTheory chap2Theory chap3Theory
      head_reductionTheory standardisationTheory solvableTheory;
 
-val _ = new_theory "boehm_tree";
+val _ = new_theory "boehm";
 
 (* FOLDL destroys "appstar" with literal lists, while FOLDR destroys LAMl with
    literal lists in this theory.
@@ -642,7 +642,7 @@ Proof
 QED
 
 val _ = export_theory ();
-val _ = html_theory "boehm_tree";
+val _ = html_theory "boehm";
 
 (* References:
 
