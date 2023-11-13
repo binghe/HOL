@@ -76,7 +76,11 @@ Overload ltree_children = “\A. SND (ltree_top A)”
  *)
 Type boehm_tree[pp] = “:(string list # term) option ltree”
 
-(* The needed unfolding function for ltree_unfold for Boehm Tree *)
+(* The needed unfolding function for ltree_unfold for Boehm Tree
+
+   NOTE: the purposes of ‘X’ is to eliminate more names when generating binding
+   variables in the tree.
+ *)
 Definition BT_generator_def :
     BT_generator (X :string set) (M :term) =
       if solvable M then
@@ -84,7 +88,7 @@ Definition BT_generator_def :
               n = LAMl_size M0;
              vs = FRESH_list n (X UNION FV M0);
              M1 = principle_hnf (M0 @* (MAP VAR vs));
-             M2 = (vs,hnf_head M1) (* was: LAMl vs (hnf_head M1) *)
+             M2 = (vs,hnf_head M1)
          in
             (SOME M2,fromList (hnf_children M1))
       else
@@ -92,7 +96,12 @@ Definition BT_generator_def :
 End
 
 Definition BT_def :
-    BT X M = ltree_unfold (BT_generator (X UNION FV M)) M
+    BT X = ltree_unfold (BT_generator X)
+End
+
+(* BT of a single variable *)
+Definition BT_VAR_def :
+    BT_VAR x :boehm_tree = Branch (SOME (NIL,VAR x)) LNIL
 End
 
 (* Remarks 10.1.3 (iii) [1, p.216]: unsolvable terms all have the same Boehm
@@ -163,9 +172,6 @@ Termination
 End
 
 Overload BV = “BV_of_ltree_path”
-
-(* BT of a single variable *)
-Overload BT_VAR = “\x. (Branch (SOME ([],VAR x)) [| |]) :boehm_tree”
 
 (* A concrete Boehm tree *)
 val example_10_1_20 =
@@ -260,26 +266,27 @@ End
  *)
 Definition eta_generator_def :
     eta_generator ((A,X) :boehm_tree # naked_tree) =
-    let  a = ltree_node A;
-        as = ltree_children A;
-        xs = ltree_children X;
-         m = LLENGTH as;
-         n = LLENGTH xs;
-    in
-       if m = n then (a, LZIP (as,xs))
-       else (* m < n
-         let d = n - m;
-             vs = FRESH_lists *)
-         (NONE, LMAP (\e. (bot,e)) xs)
+    if IS_SOME (ltree_node A) then
+       let (vs,t) = THE (ltree_node A);
+               as = ltree_children A;
+               xs = ltree_children X;
+                m = THE (LLENGTH as);            (* never NONE *)
+                n = THE (LLENGTH xs);            (* never NONE *)
+              vs' = FRESH_list (n - m) (set vs); (* maybe  NIL *)
+              as' = fromList (MAP BT_VAR vs')    (* maybe LNIL *)
+       in
+           (SOME (vs ++ vs',t), LZIP (LAPPEND as as',xs))
+    else
+       (NONE, LNIL)
 End
 
 Definition expansion_def :
-    expansion = ltree_unfold eta_generator
+    expansion (A,X) = (ltree_unfold eta_generator) (A,X)
 End
 
 (* Definition 10.2.10 (iii) *)
 Definition le_eta_def :
-    le_eta (A :boehm_tree) (B :boehm_tree) = ?X. B = expansion (A,X)
+    le_eta (A :boehm_tree) (B :boehm_tree) <=> ?X. B = expansion (A,X)
 End
 
 (*---------------------------------------------------------------------------*
