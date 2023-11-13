@@ -1168,6 +1168,74 @@ Proof
     rw [hreduce1_rwts, Omega_def]
 QED
 
+(*---------------------------------------------------------------------------*
+ *  Accessors of hnf components
+ *---------------------------------------------------------------------------*)
+
+Definition hnf_head_def :
+    hnf_head t = if is_comb t then hnf_head (rator t) else t
+Termination
+    WF_REL_TAC ‘measure size’
+ >> rw [is_comb_APP_EXISTS] >> rw []
+End
+
+Theorem hnf_head_appstar :
+    !t. ~is_comb t ==> (hnf_head (t @* args) = t)
+Proof
+    Induct_on ‘args’ using SNOC_INDUCT
+ >> rw [appstar_SNOC, Once hnf_head_def, FOLDL]
+QED
+
+Overload hnf_headvar = “\t. THE_VAR (hnf_head t)”
+
+(* hnf_children retrives the ‘args’ part of an abs-free hnf (VAR y @* args) *)
+Definition hnf_children_def :
+    hnf_children t = if is_comb t then
+                        SNOC (rand t) (hnf_children (rator t))
+                     else []
+Termination
+    WF_REL_TAC ‘measure size’ >> rw [is_comb_APP_EXISTS] >> rw []
+End
+
+Theorem hnf_children_thm :
+   (!y.     hnf_children ((VAR :string -> term) y) = []) /\
+   (!v t.   hnf_children (LAM v t) = []) /\
+   (!t1 t2. hnf_children (t1 @@ t2) = SNOC t2 (hnf_children t1))
+Proof
+   rpt (rw [Once hnf_children_def])
+QED
+
+Theorem hnf_children_appstar :
+    !t. ~is_comb t ==> (hnf_children (t @* args) = args)
+Proof
+    Induct_on ‘args’ using SNOC_INDUCT
+ >- rw [Once hnf_children_def, FOLDL]
+ >> RW_TAC std_ss [appstar_SNOC]
+ >> rw [Once hnf_children_def]
+QED
+
+Theorem absfree_hnf_cases :
+    !M. hnf M /\ ~is_abs M <=> ?y args. M = VAR y @* args
+Proof
+    Q.X_GEN_TAC ‘M’
+ >> EQ_TAC
+ >- (STRIP_TAC \\
+    ‘?vs args y. ALL_DISTINCT vs /\ (M = LAMl vs (VAR y @* args))’
+        by METIS_TAC [hnf_cases] \\
+     reverse (Cases_on ‘vs = []’) >- fs [] \\
+     qexistsl_tac [‘y’, ‘args’] >> rw [LAMl_thm])
+ >> rpt STRIP_TAC
+ >- rw [hnf_appstar]
+ >> rfs [is_abs_cases]
+QED
+
+Theorem absfree_hnf_thm :
+    !M. hnf M /\ ~is_abs M ==> (M = hnf_head M @* hnf_children M)
+Proof
+    rw [absfree_hnf_cases]
+ >> rw [hnf_children_appstar, hnf_head_appstar]
+QED
+
 val _ = export_theory()
 val _ = html_theory "head_reduction";
 

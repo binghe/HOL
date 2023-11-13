@@ -13,7 +13,7 @@ open binderLib nomsetTheory termTheory appFOLDLTheory chap2Theory chap3Theory
 
 val _ = new_theory "boehm_tree";
 
-(* FOLDL destroys appstar with literal lists, while FOLDR destroys LAMl with
+(* FOLDL destroys "appstar" with literal lists, while FOLDR destroys LAMl with
    literal lists in this theory.
  *)
 val _ = temp_delsimps ["FOLDL", "FOLDR", "LAMl_thm",
@@ -21,174 +21,15 @@ val _ = temp_delsimps ["FOLDL", "FOLDR", "LAMl_thm",
 
 val o_DEF = combinTheory.o_DEF; (* cannot directly open combinTheory *)
 
-(* hnf_head access the head variable term of an abs-free hnf.
-local
-  val hnf_head_defn =
-     ‘hnf_head t = if is_comb t then hnf_head (rator t) else t’;
-  (* Defn.tgoal (Hol_defn "hnf_head" hnf_head_defn) *)
-  val tactic = WF_REL_TAC ‘measure size’ >> rw [is_comb_APP_EXISTS] >> rw [];
-in
-  val hnf_head_def = tDefine "hnf_head" hnf_head_defn tactic;
-end;
- *)
-Definition hnf_head_def :
-    hnf_head t = if is_comb t then hnf_head (rator t) else t
-Termination
-    WF_REL_TAC ‘measure size’
- >> rw [is_comb_APP_EXISTS] >> rw []
-End
-
-Theorem hnf_head_appstar :
-    !t. ~is_comb t ==> hnf_head (t @* args) = t
-Proof
-    Induct_on ‘args’ using SNOC_INDUCT
- >> rw [appstar_SNOC, Once hnf_head_def, FOLDL]
-QED
-
-Overload hnf_headvar = “\t. THE_VAR (hnf_head t)”
-
-(* hnf_children retrives the ‘args’ part of an abs-free hnf (VAR y @* args)
-local
-  val hnf_children_defn =
-     ‘hnf_children t = if is_comb t then SNOC (rand t) (hnf_children (rator t))
-                       else []’;
-  (* Defn.tgoal (Hol_defn "hnf_children" hnf_children_defn); *)
-  val tactic = WF_REL_TAC ‘measure size’ >> rw [is_comb_APP_EXISTS] >> rw [];
-in
-  val hnf_children_def = tDefine "hnf_children" hnf_children_defn tactic;
-end;
- *)
-Definition hnf_children_def :
-    hnf_children t = if is_comb t then
-                        SNOC (rand t) (hnf_children (rator t))
-                     else []
-Termination
-    WF_REL_TAC ‘measure size’ >> rw [is_comb_APP_EXISTS] >> rw []
-End
-
-Theorem hnf_children_thm :
-   (!y.     hnf_children ((VAR :string -> term) y) = []) /\
-   (!v t.   hnf_children (LAM v t) = []) /\
-   (!t1 t2. hnf_children (t1 @@ t2) = SNOC t2 (hnf_children t1))
-Proof
-   rpt (rw [Once hnf_children_def])
-QED
-
-Theorem hnf_children_appstar :
-    !t. ~is_comb t ==> hnf_children (t @* args) = args
-Proof
-    Induct_on ‘args’ using SNOC_INDUCT
- >- rw [Once hnf_children_def, FOLDL]
- >> RW_TAC std_ss [appstar_SNOC]
- >> rw [Once hnf_children_def]
-QED
-
-Theorem absfree_hnf_cases :
-    !M. hnf M /\ ~is_abs M <=> ?y args. M = VAR y @* args
-Proof
-    Q.X_GEN_TAC ‘M’
- >> EQ_TAC
- >- (STRIP_TAC \\
-    ‘?vs args y. ALL_DISTINCT vs /\ M = LAMl vs (VAR y @* args)’ by METIS_TAC [hnf_cases] \\
-     reverse (Cases_on ‘vs = []’) >- fs [] \\
-     qexistsl_tac [‘y’, ‘args’] >> rw [LAMl_thm])
- >> rpt STRIP_TAC
- >- rw [hnf_appstar]
- >> rfs [is_abs_cases]
-QED
-
-Theorem absfree_hnf_thm :
-    !M. hnf M /\ ~is_abs M ==> M = hnf_head M @* hnf_children M
-Proof
-    rw [absfree_hnf_cases]
- >> rw [hnf_children_appstar, hnf_head_appstar]
-QED
-
-(* The needed unfolding function for ltree_unfold for Boehm Tree *)
-Definition BT_generator_def :
-    BT_generator (M :term) =
-      if solvable M then
-         let M0 = principle_hnf M;
-              n = LAMl_size M0;
-             vs = FRESH_list n (FV M0);
-             M1 = principle_hnf (M0 @* (MAP VAR vs));
-             M2 = LAMl vs (hnf_head M1);
-         in
-            (SOME M2, fromList (hnf_children M1))
-      else
-        (NONE, LNIL)
-End
-
-(* NOTE: The type of ‘BT M’ is a :term option ltree (:boehm_tree). In [1], BT(M)
-   denotes a partial function mapping sequence of numbers (path) to ltree nodes,
-   which is ‘ltree_el (BT M)’:
-
-   |- ltree_el (Branch a ts) [] = SOME (a,LLENGTH ts) /\
-      ltree_el (Branch a ts) (n::ns) =
-        case LNTH n ts of NONE => NONE | SOME t => ltree_el t ns
- *)
-Definition BT_def :
-    BT = ltree_unfold BT_generator
-End
-
-(* The type of Boehm tree *)
-Type boehm_tree[pp] = “:term option ltree”
-
-(* The set Boehm is the trees that are the tree of a lambda term *)
-Definition Boehm_def :
-    Boehm = {BT(M) | T}
-End
-
-(* Remarks 10.1.3 (iii) [1, p.216]: unsolvable terms all have the same Boehm
-   tree (‘bot’). The following overloaded ‘bot’ may be returned by
-  ‘THE (ltree_lookup A p)’ when looking up a terminal node of the Boehm tree.
- *)
-Overload bot = “Branch NONE (LNIL :boehm_tree llist)”
-
-(* Another form of ‘bot’, usually returned by “THE (ltree_el A p)”. *)
-Overload bot = “(NONE :term option, SOME 0)”
-
-(* Unicode name: "base" *)
-val _ = Unicode.unicode_version {u = UTF8.chr 0x22A5, tmnm = "bot"};
-val _ = TeX_notation {hol = "bot", TeX = ("\\ensuremath{\\bot}", 1)};
-
-Theorem unsolvable_BT :
-    !M. unsolvable M ==> BT M = bot
-Proof
-    rw [BT_def, BT_generator_def, ltree_unfold, ltree_map]
-QED
-
-Theorem unsolvable_BT_EQ :
-    !M N. unsolvable M /\ unsolvable N ==> BT M = BT N
-Proof
-    rw [unsolvable_BT]
-QED
-
-(* Proposition 10.1.6 [1, p.219] *)
-Theorem lameq_cong_BT :
-    !M N. M == N ==> BT M = BT N
-Proof
-    cheat
-QED
-
 (*---------------------------------------------------------------------------*
- *  Comparing Boehm trees (can be moved to ltreeTheory)
+ *  ltreeTheory extras
  *---------------------------------------------------------------------------*)
 
-(* Definition 10.2 [1, p.229]
-
-   ltree_subset A B” <=> A results from B by cutting off some subtrees
- *)
+(* ltree_subset A B <=> A results from B by cutting off some subtrees *)
 Definition ltree_subset_def :
     ltree_subset A B <=> (subtrees A) SUBSET (subtrees B)
 End
 
-(* “ltree_paths A” has the type “:num list -> bool” (a set of number lists).
-
-   |- ltree_lookup t [] = SOME t /\
-      ltree_lookup (Branch a ts) (n::ns) =
-        case LNTH n ts of NONE => NONE | SOME t => ltree_lookup t ns
- *)
 Definition ltree_paths_def :
     ltree_paths A = {path | IS_SOME (ltree_lookup A path)}
 End
@@ -211,54 +52,105 @@ Proof
     cheat
 QED
 
+Definition ltree_top_def :
+    ltree_top A = case A of Branch a ts => (a,ts)
+End
+
+Overload ltree_node     = “\A. FST (ltree_top A)”
+Overload ltree_children = “\A. SND (ltree_top A)”
+
+(*---------------------------------------------------------------------------*
+ *  Boehm tree
+ *---------------------------------------------------------------------------*)
+
+(* The type of Boehm tree:
+
+   For each ltree node, ‘NONE’ represents {\bot} (for unsolvable terms), while
+  ‘SOME (vs,t)’ represents ‘LAMl vs t’ (|- ?y. t = VAR y). The separation of vs
+   and t has two purposes:
+
+   1. ‘set vs’ is the set of binding variables (BV) at that ltree node.
+   2. ‘LAMl vs t’ can be easily "expanded" (w.r.t. eta reduction) into terms
+      such as ‘LAMl (vs ++ [z0;z1]) t’ (with two extra children ‘z0’ and ‘z1’)
+      without changing ‘t’ (dB encoding requires extra lifts of ‘t’).
+ *)
+Type boehm_tree[pp] = “:(string list # term) option ltree”
+
+(* The needed unfolding function for ltree_unfold for Boehm Tree *)
+Definition BT_generator_def :
+    BT_generator (X :string set) (M :term) =
+      if solvable M then
+         let M0 = principle_hnf M;
+              n = LAMl_size M0;
+             vs = FRESH_list n (X UNION FV M0);
+             M1 = principle_hnf (M0 @* (MAP VAR vs));
+             M2 = (vs,hnf_head M1) (* was: LAMl vs (hnf_head M1) *)
+         in
+            (SOME M2,fromList (hnf_children M1))
+      else
+        (NONE, LNIL)
+End
+
+Definition BT_def :
+    BT X M = ltree_unfold (BT_generator (X UNION FV M)) M
+End
+
+(* Remarks 10.1.3 (iii) [1, p.216]: unsolvable terms all have the same Boehm
+   tree (‘bot’). The following overloaded ‘bot’ may be returned by
+  ‘THE (ltree_lookup A p)’ when looking up a terminal node of the Boehm tree.
+ *)
+Overload bot = “Branch NONE (LNIL :boehm_tree llist)”
+
+(* Another form of ‘bot’, usually returned by “THE (ltree_el A p)”. *)
+Overload bot = “(NONE :(string list # term) option, SOME 0)”
+
+(* Unicode name: "base" *)
+val _ = Unicode.unicode_version {u = UTF8.chr 0x22A5, tmnm = "bot"};
+val _ = TeX_notation {hol = "bot", TeX = ("\\ensuremath{\\bot}", 1)};
+
+(* some easy theorems about Boehm trees of unsolvable terms *)
+Theorem unsolvable_BT :
+    !X M. unsolvable M ==> BT X M = bot
+Proof
+    rw [BT_def, BT_generator_def, ltree_unfold, ltree_map]
+QED
+
+Theorem unsolvable_BT_EQ :
+    !X M N. unsolvable M /\ unsolvable N ==> BT X M = BT X N
+Proof
+    rw [unsolvable_BT]
+QED
+
+(* ‘Boehm’ is the set of trees that are the tree of a lambda term *)
+Definition Boehm_def :
+    Boehm X = {BT X M | T}
+End
+
+(* Proposition 10.1.6 [1, p.219] *)
+Theorem lameq_cong_BT :
+    !X M N. M == N ==> BT X M = BT X N
+Proof
+    cheat
+QED
+
 (*---------------------------------------------------------------------------*
  * FV (free variables) and BV (binding variables) of Boehm trees
  *---------------------------------------------------------------------------*)
 
-(* BV of a single term *)
-Definition BV_of_hnf_def :
-    BV_of_hnf (M :term) = let M0 = principle_hnf M;
-                               n = LAMl_size M0;
-                              vs = FRESH_list n (FV M0)
-                          in set vs
-End
-
-Theorem BV_of_hnf_applied =
-    SIMP_RULE std_ss [LET_DEF] BV_of_hnf_def
-
+(* ‘BV_of_ltree_node’ directly takes out the binding variable list stored in
+   the Boehm tree.
+ *)
 Definition BV_of_ltree_node_def :
-    BV_of_ltree_node M p =
+    BV_of_ltree_node (M :boehm_tree) p =
       let node = ltree_el M p in
           if IS_SOME node then
-             BV_of_hnf (THE (FST (THE node)))
+             let (vs,t) = THE (FST (THE node)) in set vs
           else EMPTY
 End
 
-(* |- !M p.
-        BV_of_ltree_node M p =
-        if IS_SOME (ltree_el M p) then
-           BV_of_hnf (THE (FST (THE (ltree_el M p)))) else {}
- *)
 Theorem BV_of_ltree_node_applied =
     SIMP_RULE std_ss [LET_DEF] BV_of_ltree_node_def
 
-(* BV_of_ltree_path: the set of binding variables up to a path
-local
-  (* Defn.tgoal (Hol_defn "BV_of_ltree_path" BV_of_ltree_path_defn); *)
-  val BV_of_ltree_path_defn =
-     ‘BV_of_ltree_path (M :boehm_tree) p =
-         if p = [] then BV_of_ltree_node M p
-         else BV_of_ltree_path M (FRONT p) UNION
-              BV_of_ltree_node M p’;
-  (* for solving the above tgoal *)
-  val tactic = WF_REL_TAC ‘measure (LENGTH o SND)’ \\
-               rw [LENGTH_FRONT] \\
-               fs [NOT_NIL_EQ_LENGTH_NOT_0];
-in
-  val BV_of_ltree_path_def =
-      tDefine "BV_of_ltree_path" BV_of_ltree_path_defn tactic;
-end;
- *)
 Definition BV_of_ltree_path_def :
     BV_of_ltree_path (M :boehm_tree) p =
          if p = [] then BV_of_ltree_node M p
@@ -273,26 +165,17 @@ End
 Overload BV = “BV_of_ltree_path”
 
 (* BT of a single variable *)
-Overload BT_VAR = “\x. (Branch (SOME (VAR x)) [| |]) :boehm_tree”
+Overload BT_VAR = “\x. (Branch (SOME ([],VAR x)) [| |]) :boehm_tree”
 
+(* A concrete Boehm tree *)
 val example_10_1_20 =
-   “Branch (SOME (LAMl [x; y] (VAR z))) [| BT_VAR x; BT_VAR y |]”;
-
-Definition FV_of_hnf_head_def :
-    FV_of_hnf_head (M :term) =
-          let M0 = principle_hnf M;
-               n = LAMl_size M0;
-              vs = FRESH_list n (FV M0);
-              M1 = principle_hnf (M0 @* (MAP VAR vs))
-          in
-              FV (hnf_head M1)
-End
+   “Branch (SOME ([x; y],VAR z)) [| BT_VAR x; BT_VAR y |]”;
 
 Definition FV_of_ltree_node_def :
     FV_of_ltree_node (M :boehm_tree) p =
       let node = ltree_el M p in
           if IS_SOME node then
-             FV_of_hnf_head (THE (FST (THE node)))
+             let (vs,t) = THE (FST (THE node)) in FV t DIFF set vs
           else EMPTY
 End
 
@@ -307,23 +190,9 @@ End
 Overload FV = “FV_of_ltree”
 
 Theorem FV_of_ltree_empty_imp_closed :
-    !M. FV (BT M) = {} ==> closed M
+    !X M. FV (BT X M) = {} ==> closed M
 Proof
-    rw [FV_of_ltree_def]
- >- (fs [ltree_paths_def, NOT_IN_EMPTY, Once EXTENSION, NOT_IN_EMPTY] \\
-     POP_ASSUM (MP_TAC o (Q.SPEC ‘[]’)) \\
-     rw [ltree_lookup_def])
- >> fs [Once EXTENSION]
- >> POP_ASSUM (MP_TAC o (Q.SPEC ‘{}’))
- >> rw [ltree_paths_def]
- >> rename1 ‘FV_of_ltree_path (BT M) p = {}’
- >> Suff ‘!p. IS_SOME (ltree_lookup (BT M) p) /\
-              FV_of_ltree_path (BT M) p = {} ==> closed M’
- >- (DISCH_THEN MATCH_MP_TAC \\
-     Q.EXISTS_TAC ‘p’ >> art [])
- >> KILL_TAC
- (* stage work *)
- >> cheat
+    cheat
 QED
 
 (*---------------------------------------------------------------------------*
@@ -369,15 +238,10 @@ QED
 
 (* ‘ltree_finite’ means finite branching *)
 Theorem ltree_finite_BT :
-    !M. ltree_finite (BT M)
+    !X M. ltree_finite (BT X M)
 Proof
     cheat
 QED
-
-(* This assumes ‘ltree_finite A’ and ‘p IN ltree_paths A’ for ‘nSucc A p’ *)
-Definition nSucc_def :
-    nSucc A = THE o SND o THE o (ltree_el A)
-End
 
 val _ = set_fixity "extends" (Infixr 490);
 
@@ -389,14 +253,11 @@ Definition extends_def :
            SND (THE (ltree_el X p)) = SOME 0
 End
 
-Definition ltree_top_def :
-    ltree_top A = case A of Branch a ts => (a,ts)
-End
+(* Definition 10.2.10 (ii)
 
-Overload ltree_node     = “\A. FST (ltree_top A)”
-Overload ltree_children = “\A. SND (ltree_top A)”
-
-(* Definition 10.2.10 (ii) *)
+   NOTE: The generator follows the structure of X (the naked tree) and thus must
+         pass the original subtrees as SND of pairs for each generated children.
+ *)
 Definition eta_generator_def :
     eta_generator ((A,X) :boehm_tree # naked_tree) =
     let  a = ltree_node A;
@@ -405,8 +266,10 @@ Definition eta_generator_def :
          m = LLENGTH as;
          n = LLENGTH xs;
     in
-       if m = n then (a, LZIP (as,xs)) (* case 1 *)
-       else
+       if m = n then (a, LZIP (as,xs))
+       else (* m < n
+         let d = n - m;
+             vs = FRESH_lists *)
          (NONE, LMAP (\e. (bot,e)) xs)
 End
 
@@ -535,19 +398,12 @@ QED
    NOTE: ‘A’ and ‘B’ are ltree nodes returned by ‘THE (ltree_el (BT M) p)’
  *)
 Definition head_equivalent_def :
-    head_equivalent (A :term option # num option) (B :term option # num option) =
+    head_equivalent (A :(string list # term) option # num option) B =
         if IS_SOME (FST A) /\ IS_SOME (FST B) then
-           let M0 = THE (FST A);
-               N0 = THE (FST B);
-               n  = LAMl_size M0;
-               n' = LAMl_size N0;
-               vs = FRESH_list (MAX n n') (FV M0 UNION FV N0);
-               v  = TAKE n  vs;
-               v' = TAKE n' vs;
-               M1 = principle_hnf (M0 @* (MAP VAR v));
-               N1 = principle_hnf (N0 @* (MAP VAR v'));
-               y  = hnf_head M1;
-               y' = hnf_head N1;
+           let (vs1,y ) = THE (FST A);
+               (vs2,y') = THE (FST B);
+               n  = LENGTH vs1;
+               n' = LENGTH vs2;
                m  = THE (SND A);
                m' = THE (SND B)
             in
@@ -558,7 +414,7 @@ End
 
 (* Definition 10.2.21 (ii) *)
 Definition sub_equivalent_def :
-    sub_equivalent p A B =
+    sub_equivalent p (A :boehm_tree) (B :boehm_tree) =
         let A' = ltree_el A p;
             B' = ltree_el B p
         in
@@ -572,13 +428,13 @@ Overload equivalent = “sub_equivalent”
 
 (* Definition 10.2.23 (i) [1, p.239] *)
 Definition eta_subset_def :
-   eta_subset (A :boehm_tree) (B :boehm_tree) =
+    eta_subset (A :boehm_tree) (B :boehm_tree) =
        ?A'. le_eta A A' /\ ltree_subset A' B
 End
 
 (* Definition 10.2.23 (ii) [1, p.239] *)
 Definition eta_subset_eta_def :
-   eta_subset_eta A B = ?A' B'. le_eta A A' /\ le_eta B B' /\ ltree_subset A' B'
+    eta_subset_eta A B = ?A' B'. le_eta A A' /\ le_eta B B' /\ ltree_subset A' B'
 End
 
 (* Definition 10.2.25 [1, p.240] *)
