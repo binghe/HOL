@@ -25,6 +25,14 @@ val o_DEF = combinTheory.o_DEF; (* cannot directly open combinTheory *)
  *  ltreeTheory extras
  *---------------------------------------------------------------------------*)
 
+Definition ltree_head_def :
+    ltree_head (Branch a ts) = a
+End
+
+Definition ltree_children_def :
+    ltree_children (Branch a ts) = ts
+End
+
 (* ltree_subset A B <=> A results from B by cutting off some subtrees *)
 Definition ltree_subset_def :
     ltree_subset A B <=> (subtrees A) SUBSET (subtrees B)
@@ -52,12 +60,6 @@ Proof
     cheat
 QED
 
-Definition ltree_top_def :
-    ltree_top A = case A of Branch a ts => (a,ts)
-End
-
-Overload ltree_node     = “\A. FST (ltree_top A)”
-Overload ltree_children = “\A. SND (ltree_top A)”
 
 (*---------------------------------------------------------------------------*
  *  Boehm tree
@@ -150,7 +152,8 @@ QED
    the Boehm tree.
  *)
 Definition BV_of_ltree_node_def :
-    BV_of_ltree_node (node :((string list # term) option # num option) option) =
+    BV_of_ltree_node (M :boehm_tree) p =
+       let node = ltree_el M p in
        if IS_SOME node then
           let (vs,t) = THE (FST (THE node)) in set vs
           else EMPTY
@@ -161,9 +164,9 @@ Theorem BV_of_ltree_node_applied =
 
 Definition BV_of_ltree_path_def :
     BV_of_ltree_path (M :boehm_tree) p =
-         if p = [] then BV_of_ltree_node (ltree_el M p)
+         if p = [] then BV_of_ltree_node M p
          else BV_of_ltree_path M (FRONT p) UNION
-              BV_of_ltree_node (ltree_el M p)
+              BV_of_ltree_node M p
 Termination
     WF_REL_TAC ‘measure (LENGTH o SND)’
  >> rw [LENGTH_FRONT]
@@ -265,13 +268,13 @@ End
    NOTE: The generator follows the structure of X (the naked tree) and thus must
          pass the original subtrees as SND of pairs for each generated children.
 
-   NOTE: There's no way to retrieve the FV 
+   NOTE: There's no way to retrieve the FV
  *)
 Definition eta_generator_def :
     eta_generator ((A,X) :boehm_tree # naked_tree) =
-    if IS_SOME (ltree_node A) then
-       let (vs,t) = THE (ltree_node A);
-                Z = ltree_node X;           (* initially empty *)
+    if IS_SOME (ltree_head A) then
+       let (vs,t) = THE (ltree_head A);
+                Z = ltree_head X;           (* initially empty *)
                as = ltree_children A;
                xs = ltree_children X;
                 m = THE (LLENGTH as);            (* never NONE *)
@@ -285,13 +288,46 @@ Definition eta_generator_def :
 End
 
 Definition expansion_def :
-    expansion (A,X) = (ltree_unfold eta_generator) (A,X)
+    expansion A X = (ltree_unfold eta_generator) (A,X)
 End
 
-(* Definition 10.2.10 (iii) *)
-Definition le_eta_def :
-    le_eta (A :boehm_tree) (B :boehm_tree) <=> ?X. B = expansion (A,X)
+(* Definition 10.2.21 (i)
+
+   NOTE: ‘A’ and ‘B’ are ltree nodes returned by ‘THE (ltree_el (BT M) p)’
+ *)
+Definition head_equivalent_def :
+    head_equivalent (A :(string list # term) option # num option) B =
+        if IS_SOME (FST A) /\ IS_SOME (FST B) then
+           let (vs1,y ) = THE (FST A);
+               (vs2,y') = THE (FST B);
+               n  = LENGTH vs1;
+               n' = LENGTH vs2;
+               m  = THE (SND A);
+               m' = THE (SND B)
+            in
+               y = y' /\ n + m' = n' + m
+        else
+            IS_NONE (FST A) /\ IS_NONE (FST B)
 End
+
+(* Definition 10.2.10 (iii) (FIXME)
+
+   |- le_eta A B <=> ?X. X extends A /\ B = expansion A X
+ *)
+Definition le_eta_def :
+    le_eta (A :boehm_tree) (B :boehm_tree) <=>
+     (!p. p IN ltree_paths A ==>
+          p IN ltree_paths B /\
+          head_equivalent (THE (ltree_el A p))
+                          (THE (ltree_el B p)))
+End
+
+(* This theorem connects ‘le_eta’ and ‘expansion’ (‘eta_generator’) *)
+Theorem le_eta_expansion :
+    !A B X. X extends A ==> le_eta A (expansion A X)
+Proof
+    cheat
+QED
 
 (*---------------------------------------------------------------------------*
  *  Equivalent terms
@@ -403,25 +439,6 @@ Theorem unsolvable_imp_equivalent :
 Proof
     rw [equivalent_def]
 QED
-
-(* Definition 10.2.21 (i)
-
-   NOTE: ‘A’ and ‘B’ are ltree nodes returned by ‘THE (ltree_el (BT M) p)’
- *)
-Definition head_equivalent_def :
-    head_equivalent (A :(string list # term) option # num option) B =
-        if IS_SOME (FST A) /\ IS_SOME (FST B) then
-           let (vs1,y ) = THE (FST A);
-               (vs2,y') = THE (FST B);
-               n  = LENGTH vs1;
-               n' = LENGTH vs2;
-               m  = THE (SND A);
-               m' = THE (SND B)
-            in
-               y = y' /\ n + m' = n' + m
-        else
-            IS_NONE (FST A) /\ IS_NONE (FST B)
-End
 
 (* Definition 10.2.21 (ii) *)
 Definition sub_equivalent_def :
@@ -592,7 +609,7 @@ Proof
     cheat
 QED
 
-(* Theorem 2.1.36 [1, p.34] or Corollary 15.1.5
+(* Theorem 2.1.36 [1, p.34] aka Corollary 15.1.5 [1, p.386]
 
    NOTE: This theorem is not necessary if the antecedent of Theorem 2.1.40 is
          replaced by ‘has_benf M /\ has_benf N’.
@@ -603,7 +620,7 @@ Proof
     cheat
 QED
 
-(* Theorem 2.1.39 [1, p.35] or Theorem 10.4.3 (i) [1, p.256] *)
+(* Theorem 2.1.39 [1, p.35] aka Corollary 10.4.3 (i) [1, p.256] *)
 Theorem benf_incompatible :
     !M N. benf M /\ benf N /\ M <> N ==> incompatible M N
 Proof
@@ -617,7 +634,10 @@ Definition RINSERT :
     $RINSERT r R = \x y. R x y \/ (x = FST r /\ y = SND r)
 End
 
-(* Theorem 2.1.40 [1, p.35] (Hilbert-Post completeness of lambda(beta)+eta) *)
+(* Theorem 2.1.40 [1, p.35] aka Corollary 10.4.3 (ii) [1, p.256]
+
+   Also know as "Hilbert-Post completeness of lambda(beta)+eta".
+ *)
 Theorem lameta_complete :
     !M N. has_bnf M /\ has_bnf N ==>
           lameta M N \/ ~consistent (conversion ((M,N) RINSERT (beta RUNION eta)))
