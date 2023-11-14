@@ -32,11 +32,6 @@ End
 Overload ltree_head     = “\A. FST (ltree_node A)”
 Overload ltree_children = “\A. SND (ltree_node A)”
 
-(* ltree_subset A B <=> A results from B by cutting off some subtrees *)
-Definition ltree_subset_def :
-    ltree_subset A B <=> (subtrees A) SUBSET (subtrees B)
-End
-
 Definition ltree_paths_def :
     ltree_paths A = {p | IS_SOME (ltree_lookup A p)}
 End
@@ -66,6 +61,25 @@ Proof
       POP_ASSUM (MP_TAC o REWRITE_RULE [GSYM SUBSET_ANTISYM_EQ]) \\
       rw [SUBSET_DEF] )
 QED
+
+(* ltree_subset A B <=> A results from B by "cutting off" some subtrees. Thus,
+
+   1) The paths of A is a subset of paths of B
+   2) The node contents for all paths of A is identical to those of B, but the number
+      of successors at those nodes of B may be different (B may have more successors)
+
+   NOTE: Simply defining ‘ltree_subset A B <=> subtrees A SUBSET subtrees B’ is wrong,
+         as A may appear as a non-root subtree of B, i.e. ‘A IN subtrees B’ but there's
+         no way to "cut off" B to get A, the resulting subtree in B always have some
+         more path prefixes.
+ *)
+Definition ltree_subset_def :
+    ltree_subset A B <=>
+       (ltree_paths A) SUBSET (ltree_paths B) /\
+       !p. p IN ltree_paths A ==>
+           ltree_head (THE (ltree_lookup A p)) =
+           ltree_head (THE (ltree_lookup B p))
+End
 
 (*---------------------------------------------------------------------------*
  *  Boehm tree
@@ -330,7 +344,7 @@ End
 Definition tree_le_eta_def :
     tree_le_eta (A :boehm_tree) (B :boehm_tree) <=>
    (!p. p IN ltree_paths A ==>
-        p IN ltree_paths B /\ T) /\ 
+        p IN ltree_paths B /\ T) /\
    (!p. p IN ltree_paths B /\ p NOTIN ltree_paths A ==>
         T)
 End
@@ -628,6 +642,10 @@ Proof
     cheat
 QED
 
+(*---------------------------------------------------------------------------*
+ *  Separability of terms
+ *---------------------------------------------------------------------------*)
+
 (* Lemma 10.4.1 (i) *)
 Theorem separability_lemma1 :
     !M N. solvable (M :term) /\ solvable N /\ ~equivalent M N ==>
@@ -672,7 +690,7 @@ Theorem separability_thm :
           !P Q. ?pi. apply pi M == P /\ apply pi N == Q
 Proof
     rpt STRIP_TAC
- >> 
+ >>
     cheat
 QED
 
@@ -697,7 +715,7 @@ QED
 
 (* Corollary 10.4.3 (i) [1, p.256] *)
 Theorem distinct_benf_imp_inconsistent :
-    !M N. benf M /\ benf N /\ M <> N ==> ~consistent (asmlam {(M,N)})
+    !M N. benf M /\ benf N /\ M <> N ==> inconsistent (asmlam {(M,N)})
 Proof
     cheat
 QED

@@ -284,6 +284,8 @@ Definition consistent_def :
     consistent (thy:term -> term -> bool) = ?M N. ~thy M N
 End
 
+Overload inconsistent = “\thy. ~consistent thy”
+
 (* This is lambda theories (only having beta equivalence, no eta equivalence)
    extended with extra equations as formulas.
 

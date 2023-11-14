@@ -94,7 +94,7 @@ Theorem solvable_alt_closed'[local] =
     REWRITE_RULE [closed_def] solvable_alt_closed
 
 (* 8.3.1 (iii) [1, p.171] *)
-Overload unsolvable = “\M. ~(solvable M)”
+Overload unsolvable = “\M. ~solvable M”
 
 (* 8.3.2 Examples of solvable terms [1, p.171] *)
 Theorem solvable_K :
