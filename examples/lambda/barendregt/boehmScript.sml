@@ -280,8 +280,7 @@ QED
    tree branch.
  *)
 Definition eta_expansion1_def :
-    eta_expansion1 (A :boehm_tree) (A' :boehm_tree) =
-    ?p. p IN ltree_paths A /\ ltree_paths A' /\
+    eta_expansion1 (A :boehm_tree) (A' :boehm_tree) p =
     case (THE (ltree_lookup A p)) of
     Branch a ts =>
       case a of
