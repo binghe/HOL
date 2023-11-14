@@ -25,13 +25,12 @@ val o_DEF = combinTheory.o_DEF; (* cannot directly open combinTheory *)
  *  ltreeTheory extras
  *---------------------------------------------------------------------------*)
 
-Definition ltree_head_def :
-    ltree_head (Branch a ts) = a
+Definition ltree_node_def :
+    ltree_node (Branch a ts) = (a,ts)
 End
 
-Definition ltree_children_def :
-    ltree_children (Branch a ts) = ts
-End
+Overload ltree_head     = “\A. FST (ltree_node A)”
+Overload ltree_children = “\A. SND (ltree_node A)”
 
 (* ltree_subset A B <=> A results from B by cutting off some subtrees *)
 Definition ltree_subset_def :
@@ -66,12 +65,6 @@ Proof
       RW_TAC std_ss [] \\
       POP_ASSUM (MP_TAC o REWRITE_RULE [GSYM SUBSET_ANTISYM_EQ]) \\
       rw [SUBSET_DEF] )
-QED
-
-Theorem ltree_subset_alt :
-    !A B. ltree_subset A B <=> (ltree_paths A) SUBSET (ltree_paths B)
-Proof
-    cheat
 QED
 
 (*---------------------------------------------------------------------------*
@@ -114,7 +107,7 @@ Definition BT_def :
     BT X = ltree_unfold (BT_generator X)
 End
 
-(* BT of a single variable *)
+(* Boehm tree of a single free variable *)
 Definition BT_VAR_def :
     BT_VAR x :boehm_tree = Branch (SOME (NIL,VAR x)) LNIL
 End
@@ -248,7 +241,7 @@ Proof
     cheat
 QED
 
-(* ‘denude (A :'a ltree)’ returns the underlying naked tree of A *)
+(* ‘denude (A :'a ltree)’ (or |A| in textbook) is the underlying naked tree of A *)
 Definition denude_def :
     denude = ltree_map (\e. {})
 End
@@ -266,14 +259,31 @@ Proof
     cheat
 QED
 
-val _ = set_fixity "extends" (Infixr 490);
+(* Definition 10.2.8 (i) [1, p.232]:
+
+   An one-step eta-expansion of A at path p is the result A' of replacing in A the
+   subtree ‘ltree_lookup A p’ by another subtree with modified tree node and one more
+   tree branch.
+ *)
+Definition eta_expansion1_def :
+    eta_expansion1 (A :boehm_tree) (A' :boehm_tree) =
+    ?p. p IN ltree_paths A /\ ltree_paths A' /\
+    case (THE (ltree_lookup A p)) of
+    Branch a ts =>
+      case a of
+        SOME (vs,t) => {A' | ?z. ~MEM z vs /\ z NOTIN FV A /\
+                             A' = Branch (SOME (SNOC z vs,t)) (LAPPEND ts [| BT_VAR z |])}
+      | NONE => {}
+End
 
 (* Definition 10.2.10 (i) *)
+val _ = set_fixity "extends" (Infixr 490);
+
 Definition extends_def :
-    $extends (X :naked_tree) (A :boehm_tree) <=>
-       ltree_paths A SUBSET (ltree_paths X) /\ ltree_finite X /\
-       !p. p IN ltree_paths A /\ THE (ltree_el A p) = bot ==>
-           SND (THE (ltree_el X p)) = SOME 0
+    $extends (ts :naked_tree) (A :boehm_tree) <=>
+       ltree_paths A SUBSET (ltree_paths ts) /\ ltree_finite ts /\
+       !p. p IN (ltree_paths A) /\ THE (ltree_el A p) = bot ==>
+           SND (THE (ltree_el ts p)) = SOME 0
 End
 
 (* Definition 10.2.10 (ii)
@@ -301,27 +311,9 @@ Definition eta_generator_def :
        (NONE, LNIL)
 End
 
-Definition expansion_def :
-    expansion A X = (ltree_unfold eta_generator) (A,X)
-End
-
-(* Definition 10.2.21 (i)
-
-   NOTE: ‘A’ and ‘B’ are ltree nodes returned by ‘THE (ltree_el (BT M) p)’
- *)
-Definition head_equivalent_def :
-    head_equivalent (A :(string list # term) option # num option) B =
-        if IS_SOME (FST A) /\ IS_SOME (FST B) then
-           let (vs1,y ) = THE (FST A);
-               (vs2,y') = THE (FST B);
-               n  = LENGTH vs1;
-               n' = LENGTH vs2;
-               m  = THE (SND A);
-               m' = THE (SND B)
-            in
-               y = y' /\ n + m' = n' + m
-        else
-            IS_NONE (FST A) /\ IS_NONE (FST B)
+(* generating eta expansions following a underlying naked tree *)
+Definition eta_generate_def :
+    eta_generate A ts = (ltree_unfold eta_generator) (A,ts)
 End
 
 (* Definition 10.2.10 (iii)
@@ -335,27 +327,25 @@ End
    NOTE: The 1st branch ‘!p. p IN ltree_paths A ==> ...’ also includes the case
          when ‘ltree_el A p = THE bot’ so is ‘ltree_el B p’.
  *)
-Definition le_eta_def :
-    le_eta (A :boehm_tree) (B :boehm_tree) <=>
+Definition tree_le_eta_def :
+    tree_le_eta (A :boehm_tree) (B :boehm_tree) <=>
    (!p. p IN ltree_paths A ==>
-        p IN ltree_paths B /\
-        head_equivalent (THE (ltree_el A p))
-                        (THE (ltree_el B p))) /\
+        p IN ltree_paths B /\ T) /\ 
    (!p. p IN ltree_paths B /\ p NOTIN ltree_paths A ==>
         T)
 End
 
-Overload "<=" = “le_eta”
+Overload "le_eta" = “tree_le_eta”
 
 Theorem le_eta_imp_ltree_paths_subset :
     !A B. le_eta A B ==> ltree_paths A SUBSET ltree_paths B
 Proof
-    rw [le_eta_def, SUBSET_DEF]
+    rw [tree_le_eta_def, SUBSET_DEF]
 QED
 
 (* This theorem connects ‘le_eta’ and ‘expansion’ (‘eta_generator’) *)
 Theorem le_eta_expansion :
-    !A B X. X extends A ==> le_eta A (expansion A X)
+    !A B ts. ts extends A ==> le_eta A (eta_generate A ts)
 Proof
     cheat
 QED
@@ -471,9 +461,28 @@ Proof
     rw [equivalent_def]
 QED
 
+(* Definition 10.2.21 (i)
+
+   NOTE: ‘A’ and ‘B’ are ltree nodes returned by ‘THE (ltree_el (BT M) p)’
+ *)
+Definition head_equivalent_def :
+    head_equivalent (A :(string list # term) option # num option) B =
+        if IS_SOME (FST A) /\ IS_SOME (FST B) then
+           let (vs1,y ) = THE (FST A);
+               (vs2,y') = THE (FST B);
+               n  = LENGTH vs1;
+               n' = LENGTH vs2;
+               m  = THE (SND A);
+               m' = THE (SND B)
+            in
+               y = y' /\ n + m' = n' + m
+        else
+            IS_NONE (FST A) /\ IS_NONE (FST B)
+End
+
 (* Definition 10.2.21 (ii) *)
-Definition sub_equivalent_def :
-    sub_equivalent p (A :boehm_tree) (B :boehm_tree) =
+Definition subtree_eta_equiv_def :
+    subtree_eta_equiv p (A :boehm_tree) (B :boehm_tree) =
         let A' = ltree_el A p;
             B' = ltree_el B p
         in
@@ -482,8 +491,6 @@ Definition sub_equivalent_def :
             else
                IS_NONE A' /\ IS_NONE B'
 End
-
-Overload equivalent = “sub_equivalent”
 
 (* Definition 10.2.23 (i) [1, p.239] *)
 Definition eta_subset_def :
@@ -497,19 +504,41 @@ Definition eta_subset_eta_def :
 End
 
 (* Definition 10.2.25 [1, p.240] *)
-Definition eta_equiv_def :
-    eta_equiv A B <=> eta_subset_eta A B /\ eta_subset_eta B A
+Definition tree_eta_equiv_def :
+    tree_eta_equiv A B <=> eta_subset_eta A B /\ eta_subset_eta B A
 End
 
 (* ‘eta_equiv’ is an equivalence relation over Boehm trees *)
-Overload "==" = “eta_equiv”
+val _ = set_fixity "=e=" (Infixr 490);
+Overload "=e=" = “tree_eta_equiv”
 
 (* Theorem 10.2.31, (i) <=> (iv) [1, p.244] *)
-Theorem eta_equiv_thm :
-    !A B. eta_equiv A B <=> !p. sub_equivalent p A B
+Theorem tree_eta_equiv_thm :
+    !A B. tree_eta_equiv A B <=> !p. subtree_eta_equiv p A B
 Proof
     cheat
 QED
+
+(* Definition 10.2.32 (iii) [1, p.245] *)
+Definition term_le_eta_def :
+    term_le_eta M N = let X = FV M UNION FV N in
+                          tree_le_eta (BT X M) (BT X N)
+End
+Overload "le_eta" = “term_le_eta”
+
+(* Definition 10.2.32 (iv) [1, p.245] *)
+Definition term_eta_equiv_def :
+    term_eta_equiv M N = let X = FV M UNION FV N in
+                           tree_eta_equiv (BT X M) (BT X N)
+End
+Overload eta_equiv = “term_eta_equiv”
+
+(* Definition 10.2.32 (v) [1, p.245] *)
+Definition subterm_equiv_def :
+    subterm_eta_equiv p M N =
+        let X = FV M UNION FV N in
+            subtree_eta_equiv p (BT X M) (BT X N)
+End
 
 (*---------------------------------------------------------------------------*
  *  Boehm transformations
@@ -593,8 +622,8 @@ Definition is_ready_def :
 End
 
 (* Lemma 10.3.6 (i) *)
-Theorem lemma10_3_6i :
-    !M. ?pi. is_ready (apply pi M)
+Theorem Boehm_transform_is_ready_exists :
+    !M. ?pi. Boehm_transform pi /\ is_ready (apply pi M)
 Proof
     cheat
 QED
@@ -627,11 +656,23 @@ Proof
  >> cheat
 QED
 
+(* Exercise 10.6.9 [1, p.272]:
+
+   NOTE: the actual statements have ‘has_benf M /\ has_benf N’
+ *)
+Theorem distinct_benf_no_subterm_equiv :
+    !M N. benf M /\ benf N /\ M <> N ==> ?p. ~subterm_equiv p M N
+Proof
+    cheat
+QED
+
 (* Theorem 10.4.2 (i) *)
 Theorem separability_thm :
     !M N. benf M /\ benf N /\ M <> N ==>
           !P Q. ?pi. apply pi M == P /\ apply pi N == Q
 Proof
+    rpt STRIP_TAC
+ >> 
     cheat
 QED
 
@@ -655,18 +696,15 @@ Proof
 QED
 
 (* Corollary 10.4.3 (i) [1, p.256] *)
-Theorem distinct_benf_eq_inconsistent_asmlam :
+Theorem distinct_benf_imp_inconsistent :
     !M N. benf M /\ benf N /\ M <> N ==> ~consistent (asmlam {(M,N)})
 Proof
     cheat
 QED
 
 (* Theorem 2.1.39 [1, p.35] *)
-Theorem distinct_benf_eq_incompatible :
-    !M N. benf M /\ benf N /\ M <> N ==> incompatible M N
-Proof
-    rw [incompatible_def, distinct_benf_eq_inconsistent_asmlam]
-QED
+Theorem distinct_benf_imp_incompatible =
+        REWRITE_RULE [GSYM incompatible_def] distinct_benf_imp_inconsistent
 
 val _ = set_fixity "RINSERT" (Infixr 490);
 
@@ -695,10 +733,10 @@ Proof
  (* applying benf_incompatible *)
  >> DISJ2_TAC
  >> Know ‘incompatible M' N'’
- >- (MATCH_MP_TAC distinct_benf_eq_incompatible >> art [])
- >> rw [incompatible_def, consistent_def]
- (* applying conversion_rules *)
+ >- (MATCH_MP_TAC distinct_benf_imp_incompatible >> art [])
+ >> rw [incompatible_def]
  >> qabbrev_tac ‘eqns = {(M',N')}’
+ (* stage work *)
  >> cheat
 QED
 
