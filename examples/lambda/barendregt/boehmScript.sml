@@ -39,7 +39,7 @@ Definition ltree_subset_def :
 End
 
 Definition ltree_paths_def :
-    ltree_paths A = {path | IS_SOME (ltree_lookup A path)}
+    ltree_paths A = {p | IS_SOME (ltree_lookup A p)}
 End
 
 Theorem NIL_IN_ltree_paths[simp] :
@@ -48,10 +48,24 @@ Proof
     rw [ltree_paths_def, ltree_lookup_def]
 QED
 
+(* TODO: can ‘ltree_finite A’ be removed? *)
 Theorem ltree_paths_alt :
-    !A. ltree_paths A = {path | IS_SOME (ltree_el A path)}
+    !A. ltree_finite A ==> ltree_paths A = {p | IS_SOME (ltree_el A p)}
 Proof
-    cheat
+    HO_MATCH_MP_TAC ltree_finite_ind
+ >> rw [ltree_paths_def]
+ >> rw [GSYM SUBSET_ANTISYM_EQ, SUBSET_DEF] (* 2 subgoals, same tactics *)
+ >> ( POP_ASSUM MP_TAC \\
+      Q.SPEC_TAC (‘x’, ‘p’) \\
+      Induct_on ‘p’ >- rw [ltree_lookup_def, ltree_el_def] \\
+      rw [ltree_lookup_def, ltree_el_def] \\
+      Cases_on ‘LNTH h (fromList ts)’ >> fs [] \\
+      Cases_on ‘h < LENGTH ts’ >> fs [LNTH_fromList] \\
+      Q.PAT_X_ASSUM ‘EVERY P ts’ (MP_TAC o REWRITE_RULE [EVERY_EL]) \\
+      DISCH_THEN (MP_TAC o (Q.SPEC ‘h’)) \\
+      RW_TAC std_ss [] \\
+      POP_ASSUM (MP_TAC o REWRITE_RULE [GSYM SUBSET_ANTISYM_EQ]) \\
+      rw [SUBSET_DEF] )
 QED
 
 Theorem ltree_subset_alt :
@@ -59,7 +73,6 @@ Theorem ltree_subset_alt :
 Proof
     cheat
 QED
-
 
 (*---------------------------------------------------------------------------*
  *  Boehm tree
@@ -265,10 +278,11 @@ End
 
 (* Definition 10.2.10 (ii)
 
-   NOTE: The generator follows the structure of X (the naked tree) and thus must
+   NOTE: 1) The generator follows the structure of X (the naked tree) and thus must
          pass the original subtrees as SND of pairs for each generated children.
 
-   NOTE: There's no way to retrieve the FV
+         2) The relatively simple definition should be able to cover all four cases
+         mentioned in the textbook.
  *)
 Definition eta_generator_def :
     eta_generator ((A,X) :boehm_tree # naked_tree) =
@@ -310,17 +324,34 @@ Definition head_equivalent_def :
             IS_NONE (FST A) /\ IS_NONE (FST B)
 End
 
-(* Definition 10.2.10 (iii) (FIXME)
+(* Definition 10.2.10 (iii)
+
+   NOTE: instead of following the textbook definition based on ‘expansion’:
 
    |- le_eta A B <=> ?X. X extends A /\ B = expansion A X
+
+   We try to directly describe the relationship between A and B when ‘A <= B’
+
+   NOTE: The 1st branch ‘!p. p IN ltree_paths A ==> ...’ also includes the case
+         when ‘ltree_el A p = THE bot’ so is ‘ltree_el B p’.
  *)
 Definition le_eta_def :
     le_eta (A :boehm_tree) (B :boehm_tree) <=>
-     (!p. p IN ltree_paths A ==>
-          p IN ltree_paths B /\
-          head_equivalent (THE (ltree_el A p))
-                          (THE (ltree_el B p)))
+   (!p. p IN ltree_paths A ==>
+        p IN ltree_paths B /\
+        head_equivalent (THE (ltree_el A p))
+                        (THE (ltree_el B p))) /\
+   (!p. p IN ltree_paths B /\ p NOTIN ltree_paths A ==>
+        T)
 End
+
+Overload "<=" = “le_eta”
+
+Theorem le_eta_imp_ltree_paths_subset :
+    !A B. le_eta A B ==> ltree_paths A SUBSET ltree_paths B
+Proof
+    rw [le_eta_def, SUBSET_DEF]
+QED
 
 (* This theorem connects ‘le_eta’ and ‘expansion’ (‘eta_generator’) *)
 Theorem le_eta_expansion :
@@ -466,13 +497,16 @@ Definition eta_subset_eta_def :
 End
 
 (* Definition 10.2.25 [1, p.240] *)
-Definition ltree_eta_def :
-    ltree_eta A B <=> eta_subset_eta A B /\ eta_subset_eta B A
+Definition eta_equiv_def :
+    eta_equiv A B <=> eta_subset_eta A B /\ eta_subset_eta B A
 End
 
-(* Theorem 10.2.31 (i) and (iv) [1, p.244] *)
-Theorem ltree_eta_thm :
-    !A B. ltree_eta A B <=> !p. sub_equivalent p A B
+(* ‘eta_equiv’ is an equivalence relation over Boehm trees *)
+Overload "==" = “eta_equiv”
+
+(* Theorem 10.2.31, (i) <=> (iv) [1, p.244] *)
+Theorem eta_equiv_thm :
+    !A B. eta_equiv A B <=> !p. sub_equivalent p A B
 Proof
     cheat
 QED
@@ -620,11 +654,18 @@ Proof
     cheat
 QED
 
-(* Theorem 2.1.39 [1, p.35] aka Corollary 10.4.3 (i) [1, p.256] *)
-Theorem benf_incompatible :
-    !M N. benf M /\ benf N /\ M <> N ==> incompatible M N
+(* Corollary 10.4.3 (i) [1, p.256] *)
+Theorem distinct_benf_eq_inconsistent_asmlam :
+    !M N. benf M /\ benf N /\ M <> N ==> ~consistent (asmlam {(M,N)})
 Proof
     cheat
+QED
+
+(* Theorem 2.1.39 [1, p.35] *)
+Theorem distinct_benf_eq_incompatible :
+    !M N. benf M /\ benf N /\ M <> N ==> incompatible M N
+Proof
+    rw [incompatible_def, distinct_benf_eq_inconsistent_asmlam]
 QED
 
 val _ = set_fixity "RINSERT" (Infixr 490);
@@ -638,7 +679,7 @@ End
 
    Also know as "Hilbert-Post completeness of lambda(beta)+eta".
  *)
-Theorem lameta_complete :
+Theorem has_bnf_imp_lameta_complete :
     !M N. has_bnf M /\ has_bnf N ==>
           lameta M N \/ ~consistent (conversion ((M,N) RINSERT (beta RUNION eta)))
 Proof
@@ -654,7 +695,7 @@ Proof
  (* applying benf_incompatible *)
  >> DISJ2_TAC
  >> Know ‘incompatible M' N'’
- >- (MATCH_MP_TAC benf_incompatible >> art [])
+ >- (MATCH_MP_TAC distinct_benf_eq_incompatible >> art [])
  >> rw [incompatible_def, consistent_def]
  (* applying conversion_rules *)
  >> qabbrev_tac ‘eqns = {(M',N')}’
