@@ -13,11 +13,7 @@ open binderLib nomsetTheory termTheory appFOLDLTheory chap2Theory chap3Theory
 
 val _ = new_theory "boehm";
 
-(* FOLDL destroys "appstar" with literal lists, while FOLDR destroys LAMl with
-   literal lists in this theory.
- *)
-val _ = temp_delsimps ["FOLDL", "FOLDR", "LAMl_thm",
-                       "lift_disj_eq", "lift_imp_disj"];
+val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
 
 val o_DEF = combinTheory.o_DEF; (* cannot directly open combinTheory *)
 
@@ -474,7 +470,7 @@ Proof
     rw [equivalent_def]
 QED
 
-(* Definition 10.2.21 (i)
+(* Definition 10.2.21 (i) [1, p.238]
 
    NOTE: ‘A’ and ‘B’ are ltree nodes returned by ‘THE (ltree_el (BT M) p)’
  *)
@@ -493,7 +489,7 @@ Definition head_equivalent_def :
             IS_NONE (FST A) /\ IS_NONE (FST B)
 End
 
-(* Definition 10.2.21 (ii) *)
+(* Definition 10.2.21 (ii) [1, p.238] *)
 Definition subtree_eta_equiv_def :
     subtree_eta_equiv p (A :boehm_tree) (B :boehm_tree) =
         let A' = ltree_el A p;
@@ -504,6 +500,7 @@ Definition subtree_eta_equiv_def :
             else
                IS_NONE A' /\ IS_NONE B'
 End
+Overload eta_sub_equiv = “subtree_eta_equiv”
 
 (* Definition 10.2.23 (i) [1, p.239] *)
 Definition eta_subset_def :
@@ -547,11 +544,12 @@ End
 Overload eta_equiv = “term_eta_equiv”
 
 (* Definition 10.2.32 (v) [1, p.245] *)
-Definition subterm_equiv_def :
+Definition subterm_eta_equiv_def :
     subterm_eta_equiv p M N =
         let X = FV M UNION FV N in
             subtree_eta_equiv p (BT X M) (BT X N)
 End
+Overload eta_sub_equiv = “subterm_eta_equiv”
 
 (*---------------------------------------------------------------------------*
  *  Boehm transformations
@@ -677,8 +675,8 @@ QED
 
    NOTE: the actual statements have ‘has_benf M /\ has_benf N’
  *)
-Theorem distinct_benf_no_subterm_equiv :
-    !M N. benf M /\ benf N /\ M <> N ==> ?p. ~subterm_equiv p M N
+Theorem distinct_benf_no_subterm_eta_equiv :
+    !M N. benf M /\ benf N /\ M <> N ==> ?p. ~subterm_eta_equiv p M N
 Proof
     cheat
 QED
