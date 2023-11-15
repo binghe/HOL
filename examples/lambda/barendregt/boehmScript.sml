@@ -756,23 +756,31 @@ Proof
  >> Know ‘incompatible M' N'’
  >- (MATCH_MP_TAC distinct_benf_imp_incompatible >> art [])
  >> rw [incompatible_def]
- >> Suff ‘inconsistent (conversion ((M',N') RINSERT beta RUNION eta))’
- >- cheat
  >> MATCH_MP_TAC inconsistent_mono
  >> Q.EXISTS_TAC ‘asmlam {(M',N')}’ >> art []
- >> KILL_TAC
- >> qabbrev_tac ‘r = (M',N') RINSERT beta RUNION eta’
+ >> qabbrev_tac ‘R = (M,N) RINSERT beta RUNION eta’
  >> simp [RSUBSET]
- >> HO_MATCH_MP_TAC asmlam_ind >> rw [] (* 7 subgoals *)
- >| [ (* goal 1 (of 7) *)
-      Suff ‘r M' N'’ >- rw [conversion_rules] \\
-      rw [Abbr ‘r’, RINSERT],
-      (* goal 2 (of 7) *)
-      Suff ‘r (LAM x M @@ N) ([N/x] M)’ >- rw [conversion_rules] \\
-      rw [Abbr ‘r’] \\
-      MATCH_MP_TAC RINSERT_MONO \\
+ >> HO_MATCH_MP_TAC asmlam_ind >> rw [] (* 7 subgoals, only the first is hard *)
+ (* goal 1 (of 7 *)
+ >- (MATCH_MP_TAC conversion_trans >> Q.EXISTS_TAC ‘M’ \\
+     CONJ_TAC
+     >- (irule (REWRITE_RULE [RSUBSET] conversion_monotone) \\
+         Q.EXISTS_TAC ‘beta RUNION eta’ \\
+         CONJ_TAC >- rw [Abbr ‘R’, RINSERT] \\
+         rw [beta_eta_lameta, Once lameta_SYM]) \\
+     MATCH_MP_TAC conversion_trans >> Q.EXISTS_TAC ‘N’ \\
+     reverse CONJ_TAC
+     >- (irule (REWRITE_RULE [RSUBSET] conversion_monotone) \\
+         Q.EXISTS_TAC ‘beta RUNION eta’ \\
+         CONJ_TAC >- rw [Abbr ‘R’, RINSERT] \\
+         rw [beta_eta_lameta]) \\
+     Suff ‘R M N’ >- rw [conversion_rules] \\
+     rw [Abbr ‘R’, RINSERT])
+ >| [ (* goal 2 (of 7) *)
+      Suff ‘R (LAM x M'' @@ N'') ([N''/x] M'')’ >- rw [conversion_rules] \\
+      rw [Abbr ‘R’] >> MATCH_MP_TAC RINSERT_MONO \\
       rw [RUNION] >> DISJ1_TAC \\
-      rw [beta_def] >> qexistsl_tac [‘x’, ‘M’] >> rw [],
+      rw [beta_def] >> qexistsl_tac [‘x’, ‘M''’] >> rw [],
       (* goal 3 (of 7) *)
       rw [conversion_rules],
       (* goal 4 (of 7) *)
