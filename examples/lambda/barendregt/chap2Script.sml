@@ -286,6 +286,18 @@ End
 
 Overload inconsistent = “\thy. ~consistent thy”
 
+Theorem inconsistent_def :
+    !thy. inconsistent thy <=> !M N. thy M N
+Proof
+    rw [consistent_def]
+QED
+
+Theorem inconsistent_mono :
+    !t1 t2. t1 RSUBSET t2 /\ inconsistent t1 ==> inconsistent t2
+Proof
+    cheat
+QED
+
 (* This is lambda theories (only having beta equivalence, no eta equivalence)
    extended with extra equations as formulas.
 

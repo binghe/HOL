@@ -728,6 +728,12 @@ Definition RINSERT :
     $RINSERT r R = \x y. R x y \/ (x = FST r /\ y = SND r)
 End
 
+Theorem RINSERT_MONO :
+    !r R x y. R x y ==> (r RINSERT R) x y
+Proof
+    rw [RINSERT]
+QED
+
 (* Theorem 2.1.40 [1, p.35] aka Corollary 10.4.3 (ii) [1, p.256]
 
    Also know as "Hilbert-Post completeness of lambda(beta)+eta".
@@ -750,9 +756,33 @@ Proof
  >> Know ‘incompatible M' N'’
  >- (MATCH_MP_TAC distinct_benf_imp_incompatible >> art [])
  >> rw [incompatible_def]
- >> qabbrev_tac ‘eqns = {(M',N')}’
- (* stage work *)
- >> cheat
+ >> Suff ‘inconsistent (conversion ((M',N') RINSERT beta RUNION eta))’
+ >- cheat
+ >> MATCH_MP_TAC inconsistent_mono
+ >> Q.EXISTS_TAC ‘asmlam {(M',N')}’ >> art []
+ >> KILL_TAC
+ >> qabbrev_tac ‘r = (M',N') RINSERT beta RUNION eta’
+ >> simp [RSUBSET]
+ >> HO_MATCH_MP_TAC asmlam_ind >> rw [] (* 7 subgoals *)
+ >| [ (* goal 1 (of 7) *)
+      Suff ‘r M' N'’ >- rw [conversion_rules] \\
+      rw [Abbr ‘r’, RINSERT],
+      (* goal 2 (of 7) *)
+      Suff ‘r (LAM x M @@ N) ([N/x] M)’ >- rw [conversion_rules] \\
+      rw [Abbr ‘r’] \\
+      MATCH_MP_TAC RINSERT_MONO \\
+      rw [RUNION] >> DISJ1_TAC \\
+      rw [beta_def] >> qexistsl_tac [‘x’, ‘M’] >> rw [],
+      (* goal 3 (of 7) *)
+      rw [conversion_rules],
+      (* goal 4 (of 7) *)
+      METIS_TAC [conversion_rules],
+      (* goal 5 (of 7) *)
+      PROVE_TAC [conversion_compatible, compatible_def, rightctxt, rightctxt_thm],
+      (* goal 6 (of 7) *)
+      PROVE_TAC [conversion_compatible, compatible_def, leftctxt],
+      (* goal 7 (of 7) *)
+      PROVE_TAC [conversion_compatible, compatible_def, absctxt] ]
 QED
 
 val _ = export_theory ();
