@@ -684,7 +684,7 @@ QED
 (* Theorem 10.4.2 (i) *)
 Theorem separability_thm :
     !M N. benf M /\ benf N /\ M <> N ==>
-          !P Q. ?pi. apply pi M == P /\ apply pi N == Q
+          !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q
 Proof
     rpt STRIP_TAC
  >>
@@ -710,11 +710,30 @@ Proof
     cheat
 QED
 
+Theorem asmlam_Boehm_transform_cong :
+    !M N pi. asmlam eqns M N /\ Boehm_transform pi ==>
+             asmlam eqns (apply pi M) (apply pi N)
+Proof
+    cheat
+QED
+
 (* Corollary 10.4.3 (i) [1, p.256] *)
 Theorem distinct_benf_imp_inconsistent :
     !M N. benf M /\ benf N /\ M <> N ==> inconsistent (asmlam {(M,N)})
 Proof
-    cheat
+    rw [inconsistent_def] >> rename1 ‘asmlam {(M,N)} P Q’
+ >> ‘?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q’
+       by METIS_TAC [separability_thm]
+ >> qabbrev_tac ‘eqns = {(M,N)}’
+ >> MATCH_MP_TAC asmlam_trans
+ >> Q.EXISTS_TAC ‘apply pi M’
+ >> CONJ_TAC >- (MATCH_MP_TAC lameq_asmlam >> rw [lameq_SYM])
+ >> MATCH_MP_TAC asmlam_trans
+ >> Q.EXISTS_TAC ‘apply pi N’
+ >> reverse CONJ_TAC >- (MATCH_MP_TAC lameq_asmlam >> art [])
+ >> MATCH_MP_TAC asmlam_Boehm_transform_cong >> art []
+ >> Suff ‘(M,N) IN eqns’ >- rw [asmlam_rules]
+ >> rw [Abbr ‘eqns’]
 QED
 
 (* Theorem 2.1.39 [1, p.35] *)
