@@ -295,7 +295,7 @@ QED
 Theorem inconsistent_mono :
     !t1 t2. t1 RSUBSET t2 /\ inconsistent t1 ==> inconsistent t2
 Proof
-    cheat
+    rw [relationTheory.RSUBSET, inconsistent_def]
 QED
 
 (* This is lambda theories (only having beta equivalence, no eta equivalence)
