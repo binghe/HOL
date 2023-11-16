@@ -11,7 +11,7 @@ open optionTheory arithmeticTheory pred_setTheory listTheory rich_listTheory
 open binderLib nomsetTheory termTheory appFOLDLTheory chap2Theory chap3Theory
      head_reductionTheory standardisationTheory solvableTheory reductionEval;
 
-val _ = new_theory "boehm";
+val _ = new_theory "chap10";
 
 val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
 
@@ -1064,7 +1064,7 @@ Proof
 QED
 
 val _ = export_theory ();
-val _ = html_theory "boehm";
+val _ = html_theory "chap10";
 
 (* References:
 
