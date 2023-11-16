@@ -1007,6 +1007,9 @@ Proof
   Induct_on ‘Ns’ using SNOC_INDUCT >> rw [appstar_SNOC, lameq_APPL]
 QED
 
+(* NOTE: The antecedents ‘EVERY closed Ns’ is just one way to make sure that
+   the order of ‘vs’ makes no difference in the substitution results.
+ *)
 Theorem lameq_LAMl_appstar :
     !vs M Ns. ALL_DISTINCT vs /\ (LENGTH vs = LENGTH Ns) /\ EVERY closed Ns ==>
               LAMl vs M @* Ns == (FEMPTY |++ ZIP (vs,Ns)) ' M

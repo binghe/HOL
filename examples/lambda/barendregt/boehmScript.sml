@@ -587,6 +587,18 @@ Definition Boehm_transform_def :
     Boehm_transform pi = EVERY solving_transform pi
 End
 
+Theorem Boehm_transform_CONS[simp] :
+    Boehm_transform (h::pi) <=> solving_transform h /\ Boehm_transform pi
+Proof
+    rw [Boehm_transform_def]
+QED
+
+Theorem Boehm_transform_SNOC[simp] :
+    Boehm_transform (SNOC h pi) <=> solving_transform h /\ Boehm_transform pi
+Proof
+    rw [Boehm_transform_def, EVERY_SNOC, Once CONJ_SYM]
+QED
+
 (* ‘apply pi M’ (applying a Boehm transformation) means "M^{pi}" or "pi(M)"
 
    NOTE: ‘apply [f1;f2;f3] M’ should be equivalent to ‘f3 (f2 (f1 M))’, thus
@@ -596,7 +608,7 @@ Definition apply_def :
     apply pi = FOLDR $o I (REVERSE pi)
 End
 
-Theorem FOLDL_FOLDR_o_I :
+Theorem FOLDL_FOLDR_o_I[local] :
     FOLDL $o I = FOLDR $o I 
 Proof
     simp [Once EQ_SYM_EQ, Once FUN_EQ_THM]
@@ -637,7 +649,6 @@ Proof
     Induct_on ‘pi’ using SNOC_INDUCT
  >> rw [Boehm_transform_def, apply_def]
  >- (Q.EXISTS_TAC ‘\x. x’ >> rw [ctxt_rules])
- >> fs [EVERY_SNOC]
  >> fs [GSYM Boehm_transform_def, apply_def]
  >> fs [solving_transform_def]
  >- (rename1 ‘x = \p. p @@ VAR y’ \\
@@ -709,6 +720,26 @@ Proof
     Q.X_GEN_TAC ‘p1’
  >> Induct_on ‘p2’
  >> rw [APPEND_SNOC]
+QED
+
+Theorem apply_MAP_rightctxt_eq_appstar :
+    !Ns t. apply (MAP rightctxt Ns) t = t @* Ns
+Proof
+    Induct_on ‘Ns’ >> rw [rightctxt_thm]
+QED
+
+Theorem unsolvable_apply :
+    !pi M. Boehm_transform pi /\ unsolvable M ==> unsolvable (apply pi M)
+Proof
+    Induct_on ‘pi’ >> rw []
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+ >> fs [solving_transform_def, solvable_iff_has_hnf] (* 2 subgaols *)
+ >| [ (* goal 1 (of 2) *)
+      CCONTR_TAC >> fs [] \\
+      METIS_TAC [has_hnf_APP_E],
+      (* goal 2 (of 2) *)
+      CCONTR_TAC >> fs [] \\
+      METIS_TAC [has_hnf_SUB_E] ]
 QED
 
 (* Definition 10.3.5 (ii) *)
@@ -783,12 +814,6 @@ Proof
     cheat
 QED
 
-Theorem unsolvable_apply_stable :
-    !pi. Boehm_transform pi /\ unsolvable N ==> unsolvable (apply pi N)
-Proof
-    cheat
-QED
-
 (* Lemma 10.4.1 (ii)
 
    NOTE: If M is solvable, then N is either solvable (but not equivalent),
@@ -812,28 +837,33 @@ Proof
  >> qabbrev_tac ‘X = set vs UNION FV (VAR y @* args)’
  >> qabbrev_tac ‘n = LENGTH vs’
  >> qabbrev_tac ‘as = FRESH_list n X’
- >> qabbrev_tac ‘pi = SNOC [LAMl as P/y] (MAP (\e p. p @@ VAR e) vs)’
+ >> qabbrev_tac ‘pi = SNOC [LAMl as P/y] (MAP rightctxt (MAP VAR vs))’
  >> Q.EXISTS_TAC ‘pi’
  >> STRONG_CONJ_TAC
  >- (rw [Abbr ‘pi’, Boehm_transform_def, EVERY_SNOC, EVERY_MAP]
-     >- (rw [EVERY_MEM, solving_transform_def] \\
-         DISJ1_TAC >> Q.EXISTS_TAC ‘e’ >> rw []) \\
+     >- (rw [EVERY_MEM, solving_transform_def, FUN_EQ_THM, rightctxt_thm]) \\
      rw [solving_transform_def] \\
      DISJ2_TAC >> qexistsl_tac [‘y’, ‘LAMl as P’] >> rw [])
  >> DISCH_TAC
  (* stage work *)
  >> reverse CONJ_TAC
- >- (MATCH_MP_TAC unsolvable_apply_stable >> art [])
+ >- (MATCH_MP_TAC unsolvable_apply >> art [])
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘apply pi M0’
  >> CONJ_TAC >- (MATCH_MP_TAC Boehm_transform_lameq_apply_cong >> art [])
  >> POP_ASSUM K_TAC (* ‘Boehm_transform pi’ is not needed here *)
  >> rw [Abbr ‘pi’]
- >> qabbrev_tac ‘pi :transform = MAP (\e p. p @@ VAR e) vs’
+ >> qabbrev_tac ‘pi :transform = MAP rightctxt (MAP VAR vs)’
+ >> qabbrev_tac ‘t = VAR y @* args’
+ (* applying apply_MAP_rightctxt_eq_appstar *)
+ >> Know ‘apply pi (LAMl vs t) = LAMl vs t @* MAP VAR vs’
+ >- rw [Abbr ‘pi’, apply_MAP_rightctxt_eq_appstar]
+ >> Rewr'
+ (* applying lameq_LAMl_appstar *)
  >> cheat
 QED
 
-(* Exercise 10.6.9 [1, p.272]. It avoids using Theorem 10.2.31.
+(* Exercise 10.6.9 [1, p.272]. It may avoid using Theorem 10.2.31.
 
    NOTE: the actual statements have ‘has_benf M /\ has_benf N’
  *)
