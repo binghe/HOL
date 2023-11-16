@@ -9,13 +9,24 @@ open optionTheory arithmeticTheory pred_setTheory listTheory rich_listTheory
      llistTheory relationTheory ltreeTheory pathTheory posetTheory hurdUtils;
 
 open binderLib nomsetTheory termTheory appFOLDLTheory chap2Theory chap3Theory
-     head_reductionTheory standardisationTheory solvableTheory;
+     head_reductionTheory standardisationTheory solvableTheory reductionEval;
 
 val _ = new_theory "boehm";
 
 val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
 
 val o_DEF = combinTheory.o_DEF; (* cannot directly open combinTheory *)
+
+(* Theorem 2.1.36 [1, p.34] aka Corollary 15.1.5 [1, p.386]
+
+   NOTE: This theorem is not necessary if the antecedent of Theorem 2.1.40 is
+         replaced by ‘has_benf M /\ has_benf N’.
+ *)
+Theorem has_benf_iff_has_bnf :
+    !M. has_benf M <=> has_bnf M
+Proof
+    cheat
+QED
 
 (*---------------------------------------------------------------------------*
  *  ltreeTheory extras
@@ -596,8 +607,17 @@ Proof
  >> POP_ASSUM (rw o wrap o SYM)
 QED
 
-(* Lemma 10.3.4 (i) *)
-Theorem Boehm_transform_ctxt :
+Theorem apply_rwts[simp] :
+    (apply [] = I) /\
+    (!f pi M. apply (f::pi) M = f (apply pi M)) /\
+    (!f pi M. apply (SNOC f pi) M = apply pi (f M))
+Proof
+    NTAC 2 (CONJ_TAC >- rw [apply_def, o_DEF])
+ >> rw [apply_alt, o_DEF, FOLDL_SNOC]
+QED
+
+(* Lemma 10.3.4 (i) [1, p.246] *)
+Theorem Boehm_transform_lameq_ctxt :
     !pi. Boehm_transform pi ==> ?c. ctxt c /\ !M. apply pi M == c M
 Proof
     Induct_on ‘pi’
@@ -615,6 +635,51 @@ Proof
  >> Q.EXISTS_TAC ‘[N/x] (c M)’
  >> reverse CONJ_TAC >- rw [lameq_rules]
  >> irule lameq_sub_cong >> rw []
+QED
+
+(* Lemma 10.3.4 (ii) [1, p.246] *)
+Theorem Boehm_transform_lameq_LAMl_appstar :
+    !pi. Boehm_transform pi ==>
+         ?c. ctxt c /\ (!M. apply pi M == c M) /\
+             !xs. FINITE xs ==>
+                  ?Ns. !M. FV M SUBSET xs ==> c M == (LAMl (SET_TO_LIST xs) M) @* Ns
+Proof
+    cheat
+QED
+
+Theorem Boehm_transform_eq_appstar :
+    !pi. Boehm_transform pi ==>
+         ?Ns. !M. closed M ==> apply pi M == M @* Ns
+Proof
+    cheat
+QED
+
+Theorem Boehm_transform_ctxt_closed :
+Theorem Boehm_transform_asmlam :
+    !pi M N. Boehm_transform pi /\ asmlam eqns M N ==>
+             asmlam eqns (apply pi M) (apply pi N)
+Proof
+    Induct_on ‘pi’ using SNOC_INDUCT >> rw []
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> Q.PAT_X_ASSUM ‘Boehm_transform (SNOC x pi)’ MP_TAC
+ >> rw [Boehm_transform_def, EVERY_SNOC]
+ >> fs [solving_transform_def]
+ >- rw [asmlam_rules]
+ >> MATCH_MP_TAC asmlam_subst >> art []
+QED
+
+Theorem Boehm_transform_APPEND :
+    !pi pi2. Boehm_transform p1 /\ Boehm_transform p2 ==> Boehm_transform (p1 ++ p2)
+Proof
+    rw [Boehm_transform_def]
+QED
+
+Theorem apply_APPEND :
+    !p1 p2. apply (p1 ++ p2) = (apply p1) o (apply p2)
+Proof
+    Q.X_GEN_TAC ‘p1’
+ >> Induct_on ‘p2’ using SNOC_INDUCT
+ >> rw [FUN_EQ_THM, o_DEF, APPEND_SNOC]
 QED
 
 (* Definition 10.3.5 (ii) *)
@@ -639,6 +704,44 @@ Proof
     cheat
 QED
 
+(* Definition 10.3.10 (ii) *)
+Definition is_faithful_def :
+    is_faithful p Fs pi =
+       !M N. M IN Fs /\ N IN Fs ==>
+            (subterm_eta_equiv p M N <=> equivalent (apply pi M) (apply pi N)) /\
+            (!X. IS_SOME (ltree_lookup (BT X M) p) <=>
+                 solvable (apply pi M))
+End
+
+Definition term_agrees_upto_def :
+    term_agrees_upto M N p <=>
+      !q. q <<= p ==> !X. ltree_el (BT X M) q = ltree_el (BT X N) q
+End
+
+(* Definition 10.3.10 (iv) *)
+val _ = set_fixity "agrees_upto" (Infixr 490);
+Definition agrees_upto_def :
+    $agrees_upto Fs p = !M N. M IN Fs /\ N IN Fs ==> term_agrees_upto M N p
+End
+
+(* Lemma 10.3.11 (3) [1. p.251] *)
+Theorem agrees_upto_lemma :
+    !Fs p. Fs agrees_upto p ==>
+           ?pi. Boehm_transform pi /\
+                !M N. M IN Fs /\ N IN Fs ==>
+                     (subterm_eta_equiv p M N <=>
+                      subterm_eta_equiv p (apply pi M) (apply pi N))
+Proof
+    cheat
+QED
+
+(* Proposition 10.3.13 [1, p.253] *)
+Theorem agrees_upto_thm :
+    !Fs p. Fs agrees_upto p ==> ?pi. Boehm_transform pi /\ is_faithful p Fs pi
+Proof
+    cheat
+QED
+
 (*---------------------------------------------------------------------------*
  *  Separability of terms
  *---------------------------------------------------------------------------*)
@@ -646,7 +749,7 @@ QED
 (* Lemma 10.4.1 (i) *)
 Theorem separability_lemma1 :
     !M N. solvable (M :term) /\ solvable N /\ ~equivalent M N ==>
-          !P Q. ?pi. apply pi M == P /\ apply pi N == Q
+          !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q
 Proof
     cheat
 QED
@@ -658,11 +761,11 @@ QED
  *)
 Theorem separability_lemma2 :
     !M N. solvable M /\ ~equivalent M N ==>
-          !P. ?pi. apply pi M == P /\ ~solvable (apply pi N)
+          !P. ?pi. Boehm_transform pi /\ apply pi M == P /\ ~solvable (apply pi N)
 Proof
     rpt STRIP_TAC
  >> Cases_on ‘solvable N’
- >- (‘!P Q. ?pi. apply pi M == P /\ apply pi N == Q’
+ >- (‘!P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q’
          by METIS_TAC [separability_lemma1] \\
      POP_ASSUM (STRIP_ASSUME_TAC o (Q.SPECL [‘P’, ‘Omega’])) \\
      Q.EXISTS_TAC ‘pi’ >> art [] \\
@@ -671,7 +774,7 @@ Proof
  >> cheat
 QED
 
-(* Exercise 10.6.9 [1, p.272]:
+(* Exercise 10.6.9 [1, p.272]. It avoids using Theorem 10.2.31.
 
    NOTE: the actual statements have ‘has_benf M /\ has_benf N’
  *)
@@ -687,34 +790,46 @@ Theorem separability_thm :
           !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q
 Proof
     rpt STRIP_TAC
- >>
-    cheat
+ (* TODO: find p with minimal length for ‘agrees_upto {M;N} p’ to hold *)
+ >> ‘?p. ~subterm_eta_equiv p M N’
+       by METIS_TAC [distinct_benf_no_subterm_eta_equiv]
+ >> Know ‘{M;N} agrees_upto p’
+ >- (cheat)
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (MATCH_MP agrees_upto_thm))
+ >> Know ‘~equivalent (apply pi M) (apply pi N)’
+ >- (POP_ASSUM (MP_TAC o (Q.SPECL [‘M’, ‘N’]) o (REWRITE_RULE [is_faithful_def])) \\
+     simp [])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘M0 = apply pi M’
+ >> qabbrev_tac ‘N0 = apply pi N’
+ (* solvable mostly because M and N are bnf *)
+ >> Know ‘solvable M0 /\ solvable N0’
+ >- (rw [solvable_iff_has_hnf, Abbr ‘M0’, Abbr ‘N0’] (* 2 subgoals, same tactics *)
+     cheat)
+ >> ‘?pi. Boehm_transform pi /\ apply pi M0 == P /\ apply pi N0 == Q’
+       by PROVE_TAC [separability_lemma1] (* this asserts pi' *)
+ >> Q.EXISTS_TAC ‘pi' ++ pi’
+ >> rw [Boehm_transform_APPEND, apply_APPEND, o_DEF, Abbr ‘M0’, Abbr ‘N0’]
 QED
 
 (* Theorem 10.4.2 (ii) *)
 Theorem closed_separability_thm :
-    !M N. benf M /\ benf N /\ M <> N /\ FV M = {} /\ FV N = {} ==>
+    !M N. benf M /\ benf N /\ M <> N /\ closed M /\ closed N ==>
           !P Q. ?L. M @* L == P /\ N @* L == Q
 Proof
-    cheat
-QED
-
-(* Theorem 2.1.36 [1, p.34] aka Corollary 15.1.5 [1, p.386]
-
-   NOTE: This theorem is not necessary if the antecedent of Theorem 2.1.40 is
-         replaced by ‘has_benf M /\ has_benf N’.
- *)
-Theorem has_benf_iff_has_bnf :
-    !M. has_benf M <=> has_bnf M
-Proof
-    cheat
-QED
-
-Theorem asmlam_Boehm_transform_cong :
-    !M N pi. asmlam eqns M N /\ Boehm_transform pi ==>
-             asmlam eqns (apply pi M) (apply pi N)
-Proof
-    cheat
+    rpt STRIP_TAC
+ >> ‘?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q’
+       by METIS_TAC [separability_thm]
+ >> ‘?Ns. !M. closed M ==> apply pi M == M @* Ns’
+       by METIS_TAC [Boehm_transform_eq_appstar]
+ >> Q.EXISTS_TAC ‘Ns’
+ >> CONJ_TAC
+ >| [ (* goal 1 (of 2) *)
+      MATCH_MP_TAC lameq_TRANS >> Q.EXISTS_TAC ‘apply pi M’ >> art [] \\
+      rw [lameq_SYM],
+      (* goal 2 (of 2) *)
+      MATCH_MP_TAC lameq_TRANS >> Q.EXISTS_TAC ‘apply pi N’ >> art [] \\
+      rw [lameq_SYM] ]
 QED
 
 (* Corollary 10.4.3 (i) [1, p.256] *)
@@ -731,7 +846,7 @@ Proof
  >> MATCH_MP_TAC asmlam_trans
  >> Q.EXISTS_TAC ‘apply pi N’
  >> reverse CONJ_TAC >- (MATCH_MP_TAC lameq_asmlam >> art [])
- >> MATCH_MP_TAC asmlam_Boehm_transform_cong >> art []
+ >> MATCH_MP_TAC Boehm_transform_asmlam >> art []
  >> Suff ‘(M,N) IN eqns’ >- rw [asmlam_rules]
  >> rw [Abbr ‘eqns’]
 QED

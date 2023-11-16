@@ -324,6 +324,18 @@ Inductive asmlam :
   !x M M'. asmlam eqns M M' ==> asmlam eqns (LAM x M) (LAM x M')
 End
 
+Theorem asmlam_subst :
+    !M N P x. asmlam eqns M N ==> asmlam eqns ([P/x] M) ([P/x] N)
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC asmlam_trans
+ >> Q.EXISTS_TAC ‘LAM x N @@ P’
+ >> simp [asmlam_rules]
+ >> MATCH_MP_TAC asmlam_trans
+ >> Q.EXISTS_TAC ‘LAM x M @@ P’
+ >> simp [asmlam_rules]
+QED
+
 (* Definition 2.1.32 [1, p.33]
 
    cf. also Definition 2.1.30 (iii): If t is a set of equations, then lambda + t
