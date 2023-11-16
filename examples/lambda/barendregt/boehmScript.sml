@@ -21,6 +21,8 @@ val o_DEF = combinTheory.o_DEF; (* cannot directly open combinTheory *)
 
    NOTE: This theorem is not necessary if the antecedent of Theorem 2.1.40 is
          replaced by ‘has_benf M /\ has_benf N’.
+
+   Used by: has_bnf_imp_lameta_complete
  *)
 Theorem has_benf_iff_has_bnf :
     !M. has_benf M <=> has_bnf M
@@ -475,7 +477,7 @@ Proof
  >> cheat
 QED
 
-Theorem unsolvable_imp_equivalent :
+Theorem equivalent_unsolvables :
     !M N. unsolvable M /\ unsolvable N ==> equivalent M N
 Proof
     rw [equivalent_def]
@@ -594,9 +596,9 @@ Proof
 QED
 
 Theorem Boehm_transform_SNOC[simp] :
-    Boehm_transform (SNOC h pi) <=> solving_transform h /\ Boehm_transform pi
+    Boehm_transform (SNOC h pi) <=> Boehm_transform pi /\ solving_transform h
 Proof
-    rw [Boehm_transform_def, EVERY_SNOC, Once CONJ_SYM]
+    rw [Boehm_transform_def, EVERY_SNOC]
 QED
 
 (* ‘apply pi M’ (applying a Boehm transformation) means "M^{pi}" or "pi(M)"
@@ -608,6 +610,7 @@ Definition apply_def :
     apply pi = FOLDR $o I (REVERSE pi)
 End
 
+(* Used by apply_alt *)
 Theorem FOLDL_FOLDR_o_I[local] :
     FOLDL $o I = FOLDR $o I 
 Proof
@@ -620,7 +623,10 @@ Proof
  >> POP_ASSUM (rw o wrap o SYM)
 QED
 
-(* |- !pi. apply pi = FOLDL $o I (REVERSE pi) *)
+(* |- !pi. apply pi = FOLDL $o I (REVERSE pi)
+
+   Used by: apply_CONS
+ *)
 Theorem apply_alt = REWRITE_RULE [SYM FOLDL_FOLDR_o_I] apply_def
 
 Theorem apply_empty[simp] :
@@ -664,7 +670,10 @@ Proof
  >> irule lameq_sub_cong >> rw []
 QED
 
-(* Lemma 10.3.4 (ii) [1, p.246] *)
+(* Lemma 10.3.4 (ii) [1, p.246]
+
+   Used by: Boehm_transform_lameq_appstar
+ *)
 Theorem Boehm_transform_lameq_LAMl_appstar :
     !pi. Boehm_transform pi ==>
          ?c. ctxt c /\ (!M. apply pi M == c M) /\
@@ -674,7 +683,10 @@ Proof
     cheat
 QED
 
-(* An corollary of the above lemma with ‘xs = {}’ *)
+(* An corollary of the above lemma with ‘xs = {}’
+
+   Used by: closed_separability_thm
+ *)
 Theorem Boehm_transform_lameq_appstar :
     !pi. Boehm_transform pi ==>
          ?Ns. !M. closed M ==> apply pi M == M @* Ns
@@ -687,6 +699,7 @@ Proof
  >> RW_TAC (betafy (srw_ss())) []
 QED
 
+(* Used by: distinct_benf_imp_inconsistent *)
 Theorem Boehm_transform_asmlam_apply_cong :
     !pi M N. Boehm_transform pi /\ asmlam eqns M N ==>
              asmlam eqns (apply pi M) (apply pi N)
@@ -698,6 +711,7 @@ Proof
  >> MATCH_MP_TAC asmlam_subst >> art []
 QED
 
+(* Used by: separability_lemma2 *)
 Theorem Boehm_transform_lameq_apply_cong :
     !pi M N. Boehm_transform pi /\ M == N ==> apply pi M == apply pi N
 Proof
@@ -708,12 +722,14 @@ Proof
  >> rw [lameq_sub_cong]
 QED
 
+(* Used by separability_thm *)
 Theorem Boehm_transform_APPEND :
     !pi pi2. Boehm_transform p1 /\ Boehm_transform p2 ==> Boehm_transform (p1 ++ p2)
 Proof
     rw [Boehm_transform_def]
 QED
 
+(* Used by separability_thm *)
 Theorem Boehm_transform_apply_apply :
     !p1 p2 M. apply p1 (apply p2 M) = apply (p2 ++ p1) M
 Proof
@@ -722,12 +738,14 @@ Proof
  >> rw [APPEND_SNOC]
 QED
 
+(* Used by separability_lemma2 *)
 Theorem apply_MAP_rightctxt_eq_appstar :
     !Ns t. apply (MAP rightctxt Ns) t = t @* Ns
 Proof
     Induct_on ‘Ns’ >> rw [rightctxt_thm]
 QED
 
+(* Used by separability_lemma2 *)
 Theorem unsolvable_apply :
     !pi M. Boehm_transform pi /\ unsolvable M ==> unsolvable (apply pi M)
 Proof
@@ -795,7 +813,10 @@ Proof
     cheat
 QED
 
-(* Proposition 10.3.13 [1, p.253] *)
+(* Proposition 10.3.13 [1, p.253]
+
+   Used by separability_thm
+ *)
 Theorem agrees_upto_thm :
     !Fs p. Fs agrees_upto p ==> ?pi. Boehm_transform pi /\ is_faithful p Fs pi
 Proof
@@ -806,7 +827,10 @@ QED
  *  Separability of terms
  *---------------------------------------------------------------------------*)
 
-(* Lemma 10.4.1 (i) *)
+(* Lemma 10.4.1 (i)
+
+   Used by separability_thm, separability_lemma2
+ *)
 Theorem separability_lemma1 :
     !M N. solvable (M :term) /\ solvable N /\ ~equivalent M N ==>
           !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q
@@ -814,16 +838,13 @@ Proof
     cheat
 QED
 
-(* Lemma 10.4.1 (ii)
-
-   NOTE: If M is solvable, then N is either solvable (but not equivalent),
-         or just unsolvable.
- *)
+(* Lemma 10.4.1 (ii) *)
 Theorem separability_lemma2 :
     !M N. solvable M /\ ~equivalent M N ==>
           !P. ?pi. Boehm_transform pi /\ apply pi M == P /\ ~solvable (apply pi N)
 Proof
     rpt STRIP_TAC
+ (* applying separability_lemma1, ‘~equivalent M N’ is only used here *)
  >> Cases_on ‘solvable N’
  >- (‘!P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q’
          by METIS_TAC [separability_lemma1] \\
@@ -845,9 +866,10 @@ Proof
      rw [solving_transform_def] \\
      DISJ2_TAC >> qexistsl_tac [‘y’, ‘LAMl as P’] >> rw [])
  >> DISCH_TAC
- (* stage work *)
+ (* applying unsolvable_apply *)
  >> reverse CONJ_TAC
  >- (MATCH_MP_TAC unsolvable_apply >> art [])
+ (* stage work *) 
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘apply pi M0’
  >> CONJ_TAC >- (MATCH_MP_TAC Boehm_transform_lameq_apply_cong >> art [])
@@ -866,6 +888,8 @@ QED
 (* Exercise 10.6.9 [1, p.272]. It may avoid using Theorem 10.2.31.
 
    NOTE: the actual statements have ‘has_benf M /\ has_benf N’
+
+   Used by: separability_thm
  *)
 Theorem distinct_benf_no_subterm_eta_equiv :
     !M N. benf M /\ benf N /\ M <> N ==> ?p. ~subterm_eta_equiv p M N
@@ -873,7 +897,10 @@ Proof
     cheat
 QED
 
-(* Theorem 10.4.2 (i) [1, p.256] *)
+(* Theorem 10.4.2 (i) [1, p.256]
+
+   Used by: distinct_benf_imp_inconsistent
+ *)
 Theorem separability_thm :
     !M N. benf M /\ benf N /\ M <> N ==>
           !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q
@@ -923,7 +950,10 @@ Proof
       rw [lameq_SYM] ]
 QED
 
-(* Corollary 10.4.3 (i) [1, p.256] *)
+(* Corollary 10.4.3 (i) [1, p.256]
+
+   Used by: distinct_benf_imp_incompatible
+ *)
 Theorem distinct_benf_imp_inconsistent :
     !M N. benf M /\ benf N /\ M <> N ==> inconsistent (asmlam {(M,N)})
 Proof
@@ -942,13 +972,20 @@ Proof
  >> rw [Abbr ‘eqns’]
 QED
 
-(* Theorem 2.1.39 [1, p.35] *)
+(* Theorem 2.1.39 [1, p.35]
+
+   Used by: has_bnf_imp_lameta_complete
+ *)
 Theorem distinct_benf_imp_incompatible =
         REWRITE_RULE [GSYM incompatible_def] distinct_benf_imp_inconsistent
 
 val _ = set_fixity "RINSERT" (Infixr 490);
 
-(* ‘RINSERT’ inserts one more pair into an existing relation *)
+(* ‘RINSERT’ inserts one more pair into an existing relation
+
+   NOTE: this definition cannot be moved into relationTheory as pairTheory is
+         not yet defined when building relationTheory.
+ *)
 Definition RINSERT :
     $RINSERT r R = \x y. R x y \/ (x = FST r /\ y = SND r)
 End
