@@ -1236,6 +1236,51 @@ Proof
  >> rw [hnf_children_appstar, hnf_head_appstar]
 QED
 
+(*---------------------------------------------------------------------------*
+ *  LAMl_size (of hnf)
+ *---------------------------------------------------------------------------*)
+
+val (LAMl_size_thm, _) = define_recursive_term_function
+   ‘(LAMl_size ((VAR :string -> term) s) = 0) /\
+    (LAMl_size (t1 @@ t2) = 0) /\
+    (LAMl_size (LAM v t) = 1 + LAMl_size t)’;
+
+val _ = export_rewrites ["LAMl_size_thm"];
+
+Theorem LAMl_size_0_cases :
+    !t. is_var t \/ is_comb t ==> (LAMl_size t = 0)
+Proof
+    rw [is_var_cases, is_comb_APP_EXISTS]
+ >> rw []
+QED
+
+Theorem LAMl_size_0_cases' :
+    !t. ~is_abs t ==> (LAMl_size t = 0)
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC LAMl_size_0_cases
+ >> METIS_TAC [term_cases]
+QED
+
+Theorem LAMl_size_LAMl :
+    !vs t. ~is_abs t ==> (LAMl_size (LAMl vs t) = LENGTH vs)
+Proof
+    rpt STRIP_TAC
+ >> Induct_on ‘vs’
+ >- rw [LAMl_size_0_cases']
+ >> rw []
+QED
+
+Theorem LAMl_size_hnf_cases :
+    !vs y args. LAMl_size (LAMl vs (VAR y @* args)) = LENGTH vs
+Proof
+    rpt GEN_TAC
+ >> MATCH_MP_TAC LAMl_size_LAMl
+ >> Cases_on ‘args = []’ >- rw []
+ >> ‘?x l. args = SNOC x l’ by METIS_TAC [SNOC_CASES]
+ >> rw [appstar_SNOC]
+QED
+
 val _ = export_theory()
 val _ = html_theory "head_reduction";
 

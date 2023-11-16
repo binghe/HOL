@@ -835,7 +835,15 @@ Theorem separability_lemma1 :
     !M N. solvable (M :term) /\ solvable N /\ ~equivalent M N ==>
           !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘M0 = principle_hnf M’
+ >> qabbrev_tac ‘N0 = principle_hnf N’
+ >> ‘hnf M0 /\ hnf N0’ by METIS_TAC [hnf_principle_hnf']
+ >> ‘?vs1 args1 y1. ALL_DISTINCT vs1 /\ M0 = LAMl vs1 (VAR y1 @* args1)’
+       by METIS_TAC [hnf_cases]
+ >> ‘?vs2 args2 y2. ALL_DISTINCT vs2 /\ N0 = LAMl vs2 (VAR y2 @* args2)’
+       by METIS_TAC [hnf_cases]
+ >> cheat
 QED
 
 (* Lemma 10.4.1 (ii) *)
