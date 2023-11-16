@@ -647,14 +647,19 @@ Proof
     cheat
 QED
 
-Theorem Boehm_transform_eq_appstar :
+(* An corollary of the above lemma with ‘xs = {}’ *)
+Theorem Boehm_transform_lameq_appstar :
     !pi. Boehm_transform pi ==>
          ?Ns. !M. closed M ==> apply pi M == M @* Ns
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> POP_ASSUM (STRIP_ASSUME_TAC o (MATCH_MP Boehm_transform_lameq_LAMl_appstar))
+ >> POP_ASSUM (MP_TAC o (Q.SPEC ‘{}’))
+ >> rw [closed_def]
+ >> Q.EXISTS_TAC ‘Ns’
+ >> RW_TAC (betafy (srw_ss())) []
 QED
 
-Theorem Boehm_transform_ctxt_closed :
 Theorem Boehm_transform_asmlam :
     !pi M N. Boehm_transform pi /\ asmlam eqns M N ==>
              asmlam eqns (apply pi M) (apply pi N)
@@ -674,12 +679,12 @@ Proof
     rw [Boehm_transform_def]
 QED
 
-Theorem apply_APPEND :
-    !p1 p2. apply (p1 ++ p2) = (apply p1) o (apply p2)
+Theorem Boehm_apply_apply :
+    !p1 p2 M. apply p1 (apply p2 M) = apply (p1 ++ p2) M
 Proof
     Q.X_GEN_TAC ‘p1’
  >> Induct_on ‘p2’ using SNOC_INDUCT
- >> rw [FUN_EQ_THM, o_DEF, APPEND_SNOC]
+ >> rw [APPEND_SNOC]
 QED
 
 (* Definition 10.3.5 (ii) *)
@@ -784,7 +789,7 @@ Proof
     cheat
 QED
 
-(* Theorem 10.4.2 (i) *)
+(* Theorem 10.4.2 (i) [1, p.256] *)
 Theorem separability_thm :
     !M N. benf M /\ benf N /\ M <> N ==>
           !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q
@@ -793,7 +798,7 @@ Proof
  (* TODO: find p with minimal length for ‘agrees_upto {M;N} p’ to hold *)
  >> ‘?p. ~subterm_eta_equiv p M N’
        by METIS_TAC [distinct_benf_no_subterm_eta_equiv]
- >> Know ‘{M;N} agrees_upto p’
+ >> Know ‘{M; N} agrees_upto p’
  >- (cheat)
  >> DISCH_THEN (STRIP_ASSUME_TAC o (MATCH_MP agrees_upto_thm))
  >> Know ‘~equivalent (apply pi M) (apply pi N)’
@@ -804,15 +809,17 @@ Proof
  >> qabbrev_tac ‘N0 = apply pi N’
  (* solvable mostly because M and N are bnf *)
  >> Know ‘solvable M0 /\ solvable N0’
- >- (rw [solvable_iff_has_hnf, Abbr ‘M0’, Abbr ‘N0’] (* 2 subgoals, same tactics *)
+ >- (rw [solvable_iff_has_hnf,
+         Abbr ‘M0’, Abbr ‘N0’] (* 2 subgoals, same tactics *) \\
      cheat)
+ >> STRIP_TAC
  >> ‘?pi. Boehm_transform pi /\ apply pi M0 == P /\ apply pi N0 == Q’
        by PROVE_TAC [separability_lemma1] (* this asserts pi' *)
  >> Q.EXISTS_TAC ‘pi' ++ pi’
- >> rw [Boehm_transform_APPEND, apply_APPEND, o_DEF, Abbr ‘M0’, Abbr ‘N0’]
+ >> fs [Boehm_transform_APPEND, Boehm_apply_apply, Abbr ‘M0’, Abbr ‘N0’]
 QED
 
-(* Theorem 10.4.2 (ii) *)
+(* Theorem 10.4.2 (ii) [1, p.256] *)
 Theorem closed_separability_thm :
     !M N. benf M /\ benf N /\ M <> N /\ closed M /\ closed N ==>
           !P Q. ?L. M @* L == P /\ N @* L == Q
@@ -821,7 +828,7 @@ Proof
  >> ‘?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q’
        by METIS_TAC [separability_thm]
  >> ‘?Ns. !M. closed M ==> apply pi M == M @* Ns’
-       by METIS_TAC [Boehm_transform_eq_appstar]
+       by METIS_TAC [Boehm_transform_lameq_appstar]
  >> Q.EXISTS_TAC ‘Ns’
  >> CONJ_TAC
  >| [ (* goal 1 (of 2) *)
