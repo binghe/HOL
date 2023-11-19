@@ -3050,9 +3050,13 @@ Theorem EVERY_REPLICATE[simp]:
 Proof Induct_on `n` >> rw [] >> metis_tac []
 QED
 
-val ALL_DISTINCT_DROP = Q.store_thm("ALL_DISTINCT_DROP",
-   `!ls n. ALL_DISTINCT ls ==> ALL_DISTINCT (DROP n ls)`,
-   Induct >> simp[DROP_def] >> rw[])
+(* ALL_DISTINCT_DROP is already in listTheory *)
+Theorem ALL_DISTINCT_TAKE :
+    !ls n. ALL_DISTINCT ls ==> ALL_DISTINCT (TAKE n ls)
+Proof
+    Induct >> simp[TAKE_def] >> rw[]
+ >> METIS_TAC [MEM_TAKE]
+QED
 
 val MAP_SND_FILTER_NEQ = Q.store_thm("MAP_SND_FILTER_NEQ",
    `MAP SND (FILTER (\(x,y). y <> z) ls) = FILTER ($<> z) (MAP SND ls)`,
