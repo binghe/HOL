@@ -409,6 +409,28 @@ Definition equivalent_def :
            ~solvable M /\ ~solvable N
 End
 
+Theorem solvables_equivalent_def :
+    !M N. solvable M /\ solvable N ==>
+         (equivalent M N <=>
+          let M0 = principle_hnf M;
+               N0 = principle_hnf N;
+               n  = LAMl_size M0;
+               n' = LAMl_size N0;
+               vs = FRESH_list (MAX n n') (FV M0 UNION FV N0);
+               v  = TAKE n  vs;
+               v' = TAKE n' vs;
+               M1 = principle_hnf (M0 @* (MAP VAR v));
+               N1 = principle_hnf (N0 @* (MAP VAR v'));
+               y  = hnf_head M1;
+               y' = hnf_head N1;
+               m  = LENGTH (hnf_children M1);
+               m' = LENGTH (hnf_children N1);
+           in
+               y = y' /\ n + m' = n' + m)
+Proof
+    rw [equivalent_def]
+QED
+
 (* From [1, p.238]. This concerte example shows that dB encoding is not easy in
    defining this "concept": the literal encoding of inner head variables are not
    the same for equivalent terms.
@@ -838,11 +860,37 @@ Proof
     rpt STRIP_TAC
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> qabbrev_tac ‘N0 = principle_hnf N’
+ (* applying equivalent_def *)
+ >> qabbrev_tac ‘n = LAMl_size M0’
+ >> qabbrev_tac ‘n' = LAMl_size N0’
+ >> qabbrev_tac ‘vs = FRESH_list (MAX n n') (FV M0 UNION FV N0)’
+ >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M0 UNION FV N0) /\
+     LENGTH vs = MAX n n'’ by rw [Abbr ‘vs’, FRESH_list_def]
+ >> qabbrev_tac ‘v = TAKE n vs’
+ >> qabbrev_tac ‘v' = TAKE n' vs’
+ >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR v)’
+ >> qabbrev_tac ‘N1 = principle_hnf (N0 @* MAP VAR v')’
+ >> qabbrev_tac ‘y = hnf_head M1’
+ >> qabbrev_tac ‘y' = hnf_head N1’
+ >> qabbrev_tac ‘m = LENGTH (hnf_children M1)’
+ >> qabbrev_tac ‘m' = LENGTH (hnf_children N1)’
+ >> ‘~(y = y' /\ n + m' = n' + m)’ by METIS_TAC [equivalent_def]
+ (* applying hnf_cases_genX *)
  >> ‘hnf M0 /\ hnf N0’ by METIS_TAC [hnf_principle_hnf']
- >> ‘?vs1 args1 y1. ALL_DISTINCT vs1 /\ M0 = LAMl vs1 (VAR y1 @* args1)’
-       by METIS_TAC [hnf_cases]
- >> ‘?vs2 args2 y2. ALL_DISTINCT vs2 /\ N0 = LAMl vs2 (VAR y2 @* args2)’
-       by METIS_TAC [hnf_cases]
+ >> ‘?vs1 args1 y1. ALL_DISTINCT vs1 /\ M0 = LAMl vs1 (VAR y1 @* args1) /\
+                    DISJOINT (set vs1) (set vs)’
+       by METIS_TAC [hnf_cases_genX, FINITE_LIST_TO_SET]
+ >> ‘?vs2 args2 y2. ALL_DISTINCT vs2 /\ N0 = LAMl vs2 (VAR y2 @* args2) /\
+                    DISJOINT (set vs2) (set vs)’
+       by METIS_TAC [hnf_cases_genX, FINITE_LIST_TO_SET]
+ >> ‘LENGTH vs1 = n /\ LENGTH vs2 = n'’ by METIS_TAC [LAMl_size_hnf_cases]
+ (* applying principle_hnf_LAMl_appstar *)
+ >> Know ‘M1 = tpm (ZIP (vs1,v)) (VAR y1 @* args1)’
+ >- (qunabbrev_tac ‘M1’ \\
+     Q.PAT_X_ASSUM ‘M0 = _’ (ONCE_REWRITE_TAC o wrap) \\
+     MATCH_MP_TAC principle_hnf_LAMl_appstar >> simp [Abbr ‘v’, hnf_appstar] \\
+     cheat)
+ (* stage work *)
  >> cheat
 QED
 
@@ -987,30 +1035,13 @@ QED
 Theorem distinct_benf_imp_incompatible =
         REWRITE_RULE [GSYM incompatible_def] distinct_benf_imp_inconsistent
 
-val _ = set_fixity "RINSERT" (Infixr 490);
-
-(* ‘RINSERT’ inserts one more pair into an existing relation
-
-   NOTE: this definition cannot be moved into relationTheory as pairTheory is
-         not yet defined when building relationTheory.
- *)
-Definition RINSERT :
-    $RINSERT r R = \x y. R x y \/ (x = FST r /\ y = SND r)
-End
-
-Theorem RINSERT_MONO :
-    !r R x y. R x y ==> (r RINSERT R) x y
-Proof
-    rw [RINSERT]
-QED
-
 (* Theorem 2.1.40 [1, p.35] aka Corollary 10.4.3 (ii) [1, p.256]
 
    Also know as "Hilbert-Post completeness of lambda(beta)+eta".
  *)
 Theorem has_bnf_imp_lameta_complete :
     !M N. has_bnf M /\ has_bnf N ==>
-          lameta M N \/ ~consistent (conversion ((M,N) RINSERT (beta RUNION eta)))
+          lameta M N \/ ~consistent (conversion (RINSERT (beta RUNION eta) M N))
 Proof
     rpt STRIP_TAC
  >> ‘has_benf M /\ has_benf N’ by PROVE_TAC [has_benf_iff_has_bnf]
@@ -1028,7 +1059,7 @@ Proof
  >> rw [incompatible_def]
  >> MATCH_MP_TAC inconsistent_mono
  >> Q.EXISTS_TAC ‘asmlam {(M',N')}’ >> art []
- >> qabbrev_tac ‘R = (M,N) RINSERT beta RUNION eta’
+ >> qabbrev_tac ‘R = RINSERT (beta RUNION eta) M N’
  >> simp [RSUBSET]
  >> HO_MATCH_MP_TAC asmlam_ind >> rw [] (* 7 subgoals, only the first is hard *)
  (* goal 1 (of 7 *)
@@ -1048,7 +1079,7 @@ Proof
      rw [Abbr ‘R’, RINSERT])
  >| [ (* goal 2 (of 7) *)
       Suff ‘R (LAM x M'' @@ N'') ([N''/x] M'')’ >- rw [conversion_rules] \\
-      rw [Abbr ‘R’] >> MATCH_MP_TAC RINSERT_MONO \\
+      rw [Abbr ‘R’] >> MATCH_MP_TAC (REWRITE_RULE [RSUBSET] RSUBSET_RINSERT) \\
       rw [RUNION] >> DISJ1_TAC \\
       rw [beta_def] >> qexistsl_tac [‘x’, ‘M''’] >> rw [],
       (* goal 3 (of 7) *)

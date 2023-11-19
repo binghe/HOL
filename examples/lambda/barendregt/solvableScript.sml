@@ -874,8 +874,8 @@ QED
 
    NOTE: to satisfy ‘DISJOINT (set xs) (set ys)’, one first get ‘LENGTH xs’
          without knowing ‘xs’ (e.g. by ‘LAMl_size’), then generate ‘ys’ by
-        ‘FRESH_list’, and then call ‘hnf_cases’ (more general version) using ‘ys’
-         as the excluded list.
+        ‘FRESH_list’, and then call ‘hnf_cases_genX’ using ‘ys’ as the excluded
+         list.
  *)
 Theorem principle_hnf_LAMl_appstar :
     !t xs ys. hnf t /\
