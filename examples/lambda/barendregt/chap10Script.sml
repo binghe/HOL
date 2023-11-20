@@ -611,6 +611,18 @@ Definition Boehm_transform_def :
     Boehm_transform pi = EVERY solving_transform pi
 End
 
+Theorem Boehm_transform_CONS[simp] :
+    Boehm_transform (h::pi) <=> solving_transform h /\ Boehm_transform pi
+Proof
+    rw [Boehm_transform_def]
+QED
+
+Theorem Boehm_transform_SNOC[simp] :
+    Boehm_transform (SNOC h pi) <=> Boehm_transform pi /\ solving_transform h
+Proof
+    rw [Boehm_transform_def, EVERY_SNOC]
+QED
+
 (* ‘apply pi M’ (applying a Boehm transformation) means "M^{pi}" or "pi(M)"
 
    NOTE: ‘apply [f3;f2;f1] M = (f3 o f2 o f1) M = f3 (f2 (f1 M))’ *)
