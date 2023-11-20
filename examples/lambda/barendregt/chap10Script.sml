@@ -611,33 +611,21 @@ Definition Boehm_transform_def :
     Boehm_transform pi = EVERY solving_transform pi
 End
 
-Theorem Boehm_transform_CONS[simp] :
-    Boehm_transform (h::pi) <=> solving_transform h /\ Boehm_transform pi
-Proof
-    rw [Boehm_transform_def]
-QED
-
-Theorem Boehm_transform_SNOC[simp] :
-    Boehm_transform (SNOC h pi) <=> Boehm_transform pi /\ solving_transform h
-Proof
-    rw [Boehm_transform_def, EVERY_SNOC]
-QED
-
 (* ‘apply pi M’ (applying a Boehm transformation) means "M^{pi}" or "pi(M)"
 
-   NOTE: ‘apply [f1;f2;f3] M’ should be equivalent to ‘f3 (f2 (f1 M))’, thus
-         this is naturally a FOLDR with REVERSE.
- *)
+   NOTE: ‘apply [f3;f2;f1] M = (f3 o f2 o f1) M = f3 (f2 (f1 M))’ *)
 Definition apply_def :
-    apply pi = FOLDR $o I (REVERSE pi)
+    apply pi = FOLDR $o I pi
 End
 
-(* Used by apply_alt *)
-Theorem FOLDL_FOLDR_o_I[local] :
-    FOLDL $o I = FOLDR $o I
+(* NOTE: either FOLDL or FOLDR is correct (due to combinTheory.o_ASSOC),
+         but FOLDR seems more natural requiring natural list induction in
+         the next proof(s), while FOLDL would require SNOC_INDUCT.
+ *)
+Theorem apply_alt :
+    !pi. apply pi = FOLDL $o I pi
 Proof
-    simp [Once EQ_SYM_EQ, Once FUN_EQ_THM]
- >> Q.X_GEN_TAC ‘pi’
+    REWRITE_TAC [apply_def]
  >> Induct_on ‘pi’ >> rw [FOLDL, FOLDR]
  >> KILL_TAC (* only FOLDL is left *)
  >> Induct_on ‘pi’ using SNOC_INDUCT
@@ -645,49 +633,32 @@ Proof
  >> POP_ASSUM (rw o wrap o SYM)
 QED
 
-(* |- !pi. apply pi = FOLDL $o I (REVERSE pi)
-
-   Used by: apply_CONS
- *)
-Theorem apply_alt = REWRITE_RULE [SYM FOLDL_FOLDR_o_I] apply_def
-
-Theorem apply_empty[simp] :
-    apply [] = I
+Theorem apply_rwts[simp] :
+    (apply [] = I) /\
+    (!f pi M. apply (f::pi) M = f (apply pi M)) /\
+    (!f pi M. apply (SNOC f pi) M = apply pi (f M))
 Proof
-    rw [apply_def]
-QED
-
-Theorem apply_CONS[simp] :
-    !f pi M. apply (f::pi) M = apply pi (f M)
-Proof
-    rw [apply_alt, o_DEF, GSYM SNOC_APPEND]
- >> rw [FOLDL_SNOC]
-QED
-
-Theorem apply_SNOC[simp] :
-    !f pi M. apply (SNOC f pi) M = f (apply pi M)
-Proof
-    rw [apply_def, o_DEF, GSYM SNOC_APPEND, REVERSE_SNOC]
+    NTAC 2 (CONJ_TAC >- rw [apply_def, o_DEF])
+ >> rw [apply_alt, o_DEF, FOLDL_SNOC]
 QED
 
 (* Lemma 10.3.4 (i) [1, p.246] *)
 Theorem Boehm_transform_lameq_ctxt :
     !pi. Boehm_transform pi ==> ?c. ctxt c /\ !M. apply pi M == c M
 Proof
-    Induct_on ‘pi’ using SNOC_INDUCT
+    Induct_on ‘pi’
  >> rw [Boehm_transform_def, apply_def]
- >- (Q.EXISTS_TAC ‘\x. x’ >> rw [ctxt_rules])
+ >- (Q.EXISTS_TAC ‘\x. x’ >> rw [ctxt_rules, FOLDR])
  >> fs [GSYM Boehm_transform_def, apply_def]
  >> fs [solving_transform_def]
- >- (rename1 ‘x = \p. p @@ VAR y’ \\
-     Q.EXISTS_TAC ‘\z. c z @@ (\z. VAR y) z’ >> rw [ctxt_rules] \\
+ >- (Q.EXISTS_TAC ‘\y. c y @@ (\y. VAR x) y’ \\
+     rw [ctxt_rules, FOLDR] \\
      MATCH_MP_TAC lameq_APPL >> art [])
  (* stage work *)
- >> rename1 ‘x = [N/y]’
- >> Q.EXISTS_TAC ‘\z. (\z. LAM y (c z)) z @@ (\z. N) z’
+ >> Q.EXISTS_TAC ‘\y. (\z. LAM x (c z)) y @@ (\y. N) y’
  >> rw [ctxt_rules, constant_contexts_exist, FOLDR]
  >> MATCH_MP_TAC lameq_TRANS
- >> Q.EXISTS_TAC ‘[N/y] (c M)’
+ >> Q.EXISTS_TAC ‘[N/x] (c M)’
  >> reverse CONJ_TAC >- rw [lameq_rules]
  >> irule lameq_sub_cong >> rw []
 QED
@@ -722,13 +693,13 @@ Proof
 QED
 
 (* Used by: distinct_benf_imp_inconsistent *)
-Theorem Boehm_transform_asmlam_apply_cong :
+Theorem Boehm_transform_asmlam :
     !pi M N. Boehm_transform pi /\ asmlam eqns M N ==>
              asmlam eqns (apply pi M) (apply pi N)
 Proof
-    Induct_on ‘pi’ >> rw []
- >> FIRST_X_ASSUM MATCH_MP_TAC
- >> fs [Boehm_transform_def, solving_transform_def]
+    Induct_on ‘pi’ using SNOC_INDUCT >> rw []
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+ >> fs [solving_transform_def]
  >- rw [asmlam_rules]
  >> MATCH_MP_TAC asmlam_subst >> art []
 QED
@@ -737,9 +708,9 @@ QED
 Theorem Boehm_transform_lameq_apply_cong :
     !pi M N. Boehm_transform pi /\ M == N ==> apply pi M == apply pi N
 Proof
-    Induct_on ‘pi’ >> rw []
- >> FIRST_X_ASSUM MATCH_MP_TAC
- >> fs [Boehm_transform_def, solving_transform_def]
+    Induct_on ‘pi’ using SNOC_INDUCT >> rw []
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+ >> fs [solving_transform_def]
  >- rw [lameq_rules]
  >> rw [lameq_sub_cong]
 QED
@@ -753,25 +724,26 @@ QED
 
 (* Used by separability_thm *)
 Theorem Boehm_transform_apply_apply :
-    !p1 p2 M. apply p1 (apply p2 M) = apply (p2 ++ p1) M
+    !p1 p2 M. apply p1 (apply p2 M) = apply (p1 ++ p2) M
 Proof
     Q.X_GEN_TAC ‘p1’
- >> Induct_on ‘p2’
+ >> Induct_on ‘p2’ using SNOC_INDUCT
  >> rw [APPEND_SNOC]
 QED
 
 (* Used by separability_lemma2 *)
 Theorem apply_MAP_rightctxt_eq_appstar :
-    !Ns t. apply (MAP rightctxt Ns) t = t @* Ns
+    !Ns t. apply (MAP rightctxt Ns) t = t @* (REVERSE Ns)
 Proof
     Induct_on ‘Ns’ >> rw [rightctxt_thm]
+ >> rw [GSYM SNOC_APPEND]
 QED
 
 (* Used by separability_lemma2 *)
 Theorem unsolvable_apply :
     !pi M. Boehm_transform pi /\ unsolvable M ==> unsolvable (apply pi M)
 Proof
-    Induct_on ‘pi’ >> rw []
+    Induct_on ‘pi’ using SNOC_INDUCT >> rw []
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
  >> fs [solving_transform_def, solvable_iff_has_hnf] (* 2 subgaols *)
  >| [ (* goal 1 (of 2) *)
@@ -966,10 +938,10 @@ Proof
  >> qabbrev_tac ‘X = set vs UNION FV (VAR y @* args)’
  >> qabbrev_tac ‘n = LENGTH vs’
  >> qabbrev_tac ‘as = FRESH_list n X’
- >> qabbrev_tac ‘pi = SNOC [LAMl as P/y] (MAP rightctxt (MAP VAR vs))’
+ >> qabbrev_tac ‘pi = [LAMl as P/y]::MAP rightctxt (MAP VAR (REVERSE vs))’
  >> Q.EXISTS_TAC ‘pi’
  >> STRONG_CONJ_TAC
- >- (rw [Abbr ‘pi’, Boehm_transform_def, EVERY_SNOC, EVERY_MAP]
+ >- (reverse (rw [Abbr ‘pi’, Boehm_transform_def, EVERY_SNOC, EVERY_MAP])
      >- (rw [EVERY_MEM, solving_transform_def, FUN_EQ_THM, rightctxt_thm]) \\
      rw [solving_transform_def] \\
      DISJ2_TAC >> qexistsl_tac [‘y’, ‘LAMl as P’] >> rw [])
@@ -983,13 +955,14 @@ Proof
  >> CONJ_TAC >- (MATCH_MP_TAC Boehm_transform_lameq_apply_cong >> art [])
  >> POP_ASSUM K_TAC (* ‘Boehm_transform pi’ is not needed here *)
  >> rw [Abbr ‘pi’]
- >> qabbrev_tac ‘pi :transform = MAP rightctxt (MAP VAR vs)’
+ >> qabbrev_tac ‘pi :transform = MAP rightctxt (MAP VAR (REVERSE (vs)))’
  >> qabbrev_tac ‘t = VAR y @* args’
  (* applying apply_MAP_rightctxt_eq_appstar *)
  >> Know ‘apply pi (LAMl vs t) = LAMl vs t @* MAP VAR vs’
- >- rw [Abbr ‘pi’, apply_MAP_rightctxt_eq_appstar]
+ >- (rw [Abbr ‘pi’, apply_MAP_rightctxt_eq_appstar] \\
+     rw [MAP_REVERSE, REVERSE_REVERSE])
  >> Rewr'
- (* applying lameq_LAMl_appstar *)
+ (* applying lameq_LAMl_appstar (generalized version) *)
  >> cheat
 QED
 
@@ -1034,8 +1007,8 @@ Proof
  >> STRIP_TAC
  >> ‘?pi. Boehm_transform pi /\ apply pi M0 == P /\ apply pi N0 == Q’
        by PROVE_TAC [separability_lemma1] (* this asserts pi' *)
- >> Q.EXISTS_TAC ‘pi ++ pi'’
- >> fs [Abbr ‘M0’, Abbr ‘N0’, Boehm_transform_APPEND, Boehm_transform_apply_apply]
+ >> Q.EXISTS_TAC ‘pi' ++ pi’
+ >> fs [Boehm_transform_APPEND, Boehm_transform_apply_apply, Abbr ‘M0’, Abbr ‘N0’]
 QED
 
 (* Theorem 10.4.2 (ii) [1, p.256] *)
@@ -1075,7 +1048,7 @@ Proof
  >> MATCH_MP_TAC asmlam_trans
  >> Q.EXISTS_TAC ‘apply pi N’
  >> reverse CONJ_TAC >- (MATCH_MP_TAC lameq_asmlam >> art [])
- >> MATCH_MP_TAC Boehm_transform_asmlam_apply_cong >> art []
+ >> MATCH_MP_TAC Boehm_transform_asmlam >> art []
  >> Suff ‘(M,N) IN eqns’ >- rw [asmlam_rules]
  >> rw [Abbr ‘eqns’]
 QED
