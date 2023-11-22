@@ -886,7 +886,7 @@ Proof
           Suff ‘DISJOINT (set vs1) (set vs)’ >- rw [DISJOINT_ALT] \\
           MATCH_MP_TAC DISJOINT_SUBSET \\
           Q.EXISTS_TAC ‘set vs UNION FV M0’ >> simp [SUBSET_UNION] ])
- >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [tpm_appstar, tpm_thm]))
+ >> DISCH_TAC
  >> Know ‘N1 = tpm (ZIP (vs2,vsn')) (VAR y2 @* args2)’
  >- (qunabbrev_tac ‘N1’ \\
      Q.PAT_ASSUM ‘N0 = _’ (ONCE_REWRITE_TAC o wrap) \\
@@ -914,14 +914,22 @@ Proof
           Suff ‘DISJOINT (set vs2) (set vs)’ >- rw [DISJOINT_ALT] \\
           MATCH_MP_TAC DISJOINT_SUBSET \\
           Q.EXISTS_TAC ‘set vs UNION FV N0’ >> simp [SUBSET_UNION] ])
- >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [tpm_appstar, tpm_thm]))
+ >> DISCH_TAC
  (* stage work *)
  >> qabbrev_tac ‘p1 = ZIP (vs1,vsn)’
  >> qabbrev_tac ‘p2 = ZIP (vs2,vsn')’
+ >> REV_FULL_SIMP_TAC bool_ss [tpm_appstar, tpm_thm]
  >> ‘y = VAR (lswapstr p1 y1) /\ y' = VAR (lswapstr p2 y2)’
       by rw [Abbr ‘y’, Abbr ‘y'’, hnf_head_absfree]
- >> 
-    cheat
+ (* Case 1 *)
+ >> Cases_on ‘y <> y'’
+ >- (Know ‘y1 <> y2’
+     >- (SPOSE_NOT_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [])) \\
+
+         cheat) \\
+     cheat)
+ (* Case 2 *)
+ >> cheat
 QED
 
 (* Lemma 10.4.1 (ii) *)
