@@ -857,7 +857,7 @@ Proof
  >> ‘?vs2 args2 y2. ALL_DISTINCT vs2 /\ N0 = LAMl vs2 (VAR y2 @* args2) /\
                     DISJOINT (set vs2) (set vs UNION FV N0)’
        by METIS_TAC [hnf_cases_genX, FINITE_LIST_TO_SET, FINITE_UNION, FINITE_FV]
- >> ‘LENGTH vs1 = n /\ LENGTH vs2 = n'’ by METIS_TAC [LAMl_size_hnf_cases]
+ >> ‘LENGTH vs1 = n /\ LENGTH vs2 = n'’ by METIS_TAC [LAMl_size_hnf]
  (* applying principle_hnf_LAMl_appstar *)
  >> Know ‘M1 = tpm (ZIP (vs1,vsn)) (VAR y1 @* args1)’
  >- (qunabbrev_tac ‘M1’ \\
@@ -886,7 +886,7 @@ Proof
           Suff ‘DISJOINT (set vs1) (set vs)’ >- rw [DISJOINT_ALT] \\
           MATCH_MP_TAC DISJOINT_SUBSET \\
           Q.EXISTS_TAC ‘set vs UNION FV M0’ >> simp [SUBSET_UNION] ])
- >> DISCH_TAC
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [tpm_appstar, tpm_thm]))
  >> Know ‘N1 = tpm (ZIP (vs2,vsn')) (VAR y2 @* args2)’
  >- (qunabbrev_tac ‘N1’ \\
      Q.PAT_ASSUM ‘N0 = _’ (ONCE_REWRITE_TAC o wrap) \\
@@ -914,9 +914,14 @@ Proof
           Suff ‘DISJOINT (set vs2) (set vs)’ >- rw [DISJOINT_ALT] \\
           MATCH_MP_TAC DISJOINT_SUBSET \\
           Q.EXISTS_TAC ‘set vs UNION FV N0’ >> simp [SUBSET_UNION] ])
- >> DISCH_TAC
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [tpm_appstar, tpm_thm]))
  (* stage work *)
- >> cheat
+ >> qabbrev_tac ‘p1 = ZIP (vs1,vsn)’
+ >> qabbrev_tac ‘p2 = ZIP (vs2,vsn')’
+ >> ‘y = VAR (lswapstr p1 y1) /\ y' = VAR (lswapstr p2 y2)’
+      by rw [Abbr ‘y’, Abbr ‘y'’, hnf_head_absfree]
+ >> 
+    cheat
 QED
 
 (* Lemma 10.4.1 (ii) *)

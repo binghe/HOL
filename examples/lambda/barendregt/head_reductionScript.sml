@@ -1236,6 +1236,13 @@ Proof
  >> rw [hnf_children_appstar, hnf_head_appstar]
 QED
 
+Theorem hnf_head_absfree :
+    !y args. hnf_head (VAR y @* args) = VAR y
+Proof
+    rpt GEN_TAC
+ >> MATCH_MP_TAC hnf_head_appstar >> rw []
+QED
+
 (*---------------------------------------------------------------------------*
  *  LAMl_size (of hnf)
  *---------------------------------------------------------------------------*)
@@ -1271,7 +1278,7 @@ Proof
  >> rw []
 QED
 
-Theorem LAMl_size_hnf_cases :
+Theorem LAMl_size_hnf :
     !vs y args. LAMl_size (LAMl vs (VAR y @* args)) = LENGTH vs
 Proof
     rpt GEN_TAC

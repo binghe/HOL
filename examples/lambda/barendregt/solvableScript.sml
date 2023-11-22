@@ -975,6 +975,24 @@ Proof
  >> MATCH_MP_TAC lameq_solvable_cong_lemma >> art []
 QED
 
+Theorem lameq_principle_hnf :
+    !M. has_hnf M ==> principle_hnf M == M
+Proof
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘N = principle_hnf M’
+ >> Know ‘M head_reduces N’
+ >- (rw [head_reduces_def] \\
+     Q.EXISTS_TAC ‘head_reduction_path M’ \\
+     fs [corollary11_4_8, head_reduction_path_def] \\
+     rw [Abbr ‘N’, principle_hnf_def])
+ >> rw [head_reduces_RTC_hreduce1]
+ >> MATCH_MP_TAC lameq_SYM
+ >> MATCH_MP_TAC hreduces_lameq >> art []
+QED
+
+Theorem lameq_principle_hnf' =
+        REWRITE_RULE [GSYM solvable_iff_has_hnf] lameq_principle_hnf
+
 val _ = export_theory ();
 val _ = html_theory "solvable";
 
