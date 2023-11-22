@@ -1288,6 +1288,34 @@ Proof
  >> rw [appstar_SNOC]
 QED
 
+(* Another variant of ‘hnf_cases’ with a given (shared) list of fresh variables *)
+Theorem hnf_cases_shared :
+    !vs M. hnf M /\ ALL_DISTINCT vs /\ LAMl_size M <= LENGTH vs /\
+           DISJOINT (set vs) (FV M) ==>
+           ?args y. (M = LAMl (TAKE (LAMl_size M) vs) (VAR y @* args))
+Proof
+    Induct_on ‘vs’
+ >- (rw [] \\
+    ‘?vs args y. M = LAMl vs (VAR y @* args)’ by METIS_TAC [hnf_cases] \\
+     fs [LAMl_size_hnf])
+ (* stage work *)
+ >> rw [LIST_TO_SET_SNOC, ALL_DISTINCT_SNOC]
+ >> fs []
+ >> Cases_on ‘LAMl_size M = 0’
+ >- (fs [] \\
+     Q.PAT_X_ASSUM ‘!M. P’ (MP_TAC o (Q.SPEC ‘M’)) >> rw [])
+ >> ‘is_abs M’ by METIS_TAC [LAMl_size_0_cases']
+ (* applying is_abs_cases_genX *)
+ >> ‘?t0. M = LAM h t0’ by METIS_TAC [is_abs_cases_genX]
+ >> FIRST_X_ASSUM (MP_TAC o (Q.SPEC ‘t0’))
+ >> ‘hnf t0’ by METIS_TAC [hnf_thm]
+ >> fs [LAMl_size_hnf]
+ >> Suff ‘DISJOINT (set vs) (FV t0)’ >- rw []
+ >> Q.PAT_X_ASSUM ‘DISJOINT _ _’ MP_TAC
+ >> rw [DISJOINT_ALT]
+ >> METIS_TAC []
+QED
+
 val _ = export_theory()
 val _ = html_theory "head_reduction";
 

@@ -662,6 +662,19 @@ Proof
  >> qexistsl_tac [‘v’, ‘t0’] >> REWRITE_TAC []
 QED
 
+Theorem is_abs_cases_genX :
+    !v t. is_abs t /\ v # t <=> ?t0. t = LAM v t0
+Proof
+    rpt GEN_TAC
+ >> reverse EQ_TAC >- (STRIP_TAC >> rw [is_abs_thm])
+ >> rw [is_abs_cases]
+ >> fs [FV_thm]
+ >> Cases_on ‘v = v'’
+ >- (Q.EXISTS_TAC ‘t0’ >> rw [])
+ >> Q.EXISTS_TAC ‘[VAR v/v'] t0’
+ >> MATCH_MP_TAC SIMPLE_ALPHA >> rw []
+QED
+
 Theorem is_abs_appstar[simp]:
   is_abs (M @* Ns) ⇔ is_abs M ∧ (Ns = [])
 Proof
