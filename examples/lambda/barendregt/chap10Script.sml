@@ -852,11 +852,11 @@ Proof
  (* applying hnf_cases_genX *)
  >> ‘hnf M0 /\ hnf N0’ by METIS_TAC [hnf_principle_hnf']
  >> ‘?vs1 args1 y1. ALL_DISTINCT vs1 /\ M0 = LAMl vs1 (VAR y1 @* args1) /\
-                    DISJOINT (set vs1) (set vs UNION FV M0)’
-       by METIS_TAC [hnf_cases_genX, FINITE_LIST_TO_SET, FINITE_UNION, FINITE_FV]
+                    DISJOINT (set vs1) (set vs)’
+       by METIS_TAC [hnf_cases_genX, FINITE_LIST_TO_SET]
  >> ‘?vs2 args2 y2. ALL_DISTINCT vs2 /\ N0 = LAMl vs2 (VAR y2 @* args2) /\
-                    DISJOINT (set vs2) (set vs UNION FV N0)’
-       by METIS_TAC [hnf_cases_genX, FINITE_LIST_TO_SET, FINITE_UNION, FINITE_FV]
+                    DISJOINT (set vs2) (set vs)’
+       by METIS_TAC [hnf_cases_genX, FINITE_LIST_TO_SET]
  >> ‘LENGTH vs1 = n /\ LENGTH vs2 = n'’ by METIS_TAC [LAMl_size_hnf]
  (* applying principle_hnf_LAMl_appstar *)
  >> Know ‘M1 = tpm (ZIP (vs1,vsn)) (VAR y1 @* args1)’
@@ -865,8 +865,8 @@ Proof
      MATCH_MP_TAC principle_hnf_LAMl_appstar \\
      simp [Abbr ‘vsn’, hnf_appstar, ALL_DISTINCT_TAKE] \\
      CONJ_TAC >- (MATCH_MP_TAC DISJOINT_SUBSET \\
-                  Q.EXISTS_TAC ‘set vs UNION FV M0’ >> art [] \\
-                  rw [SUBSET_DEF] >> DISJ1_TAC >> METIS_TAC [MEM_TAKE]) \\
+                  Q.EXISTS_TAC ‘set vs’ >> art [] \\
+                  simp [SUBSET_DEF] >> REWRITE_TAC [MEM_TAKE]) \\
      ONCE_REWRITE_TAC [DISJOINT_SYM] \\
      MATCH_MP_TAC DISJOINT_SUBSET \\
      Q.EXISTS_TAC ‘set vs’ \\
@@ -883,9 +883,8 @@ Proof
           MATCH_MP_TAC DISJOINT_SUBSET \\
           Q.EXISTS_TAC ‘FV M0 UNION FV N0’ >> simp [SUBSET_UNION],
           (* goal 2 (of 2) *)
-          Suff ‘DISJOINT (set vs1) (set vs)’ >- rw [DISJOINT_ALT] \\
-          MATCH_MP_TAC DISJOINT_SUBSET \\
-          Q.EXISTS_TAC ‘set vs UNION FV M0’ >> simp [SUBSET_UNION] ])
+          Q.PAT_X_ASSUM ‘DISJOINT (set vs1) (set vs)’ MP_TAC \\
+          rw [DISJOINT_ALT] ])
  >> DISCH_TAC
  >> Know ‘N1 = tpm (ZIP (vs2,vsn')) (VAR y2 @* args2)’
  >- (qunabbrev_tac ‘N1’ \\
@@ -893,8 +892,8 @@ Proof
      MATCH_MP_TAC principle_hnf_LAMl_appstar \\
      simp [Abbr ‘vsn'’, hnf_appstar, ALL_DISTINCT_TAKE] \\
      CONJ_TAC >- (MATCH_MP_TAC DISJOINT_SUBSET \\
-                  Q.EXISTS_TAC ‘set vs UNION FV N0’ >> art [] \\
-                  rw [SUBSET_DEF] >> DISJ1_TAC >> METIS_TAC [MEM_TAKE]) \\
+                  Q.EXISTS_TAC ‘set vs’ >> art [] \\
+                  simp [SUBSET_DEF] >> REWRITE_TAC [MEM_TAKE]) \\
      ONCE_REWRITE_TAC [DISJOINT_SYM] \\
      MATCH_MP_TAC DISJOINT_SUBSET \\
      Q.EXISTS_TAC ‘set vs’ \\
@@ -911,9 +910,8 @@ Proof
           MATCH_MP_TAC DISJOINT_SUBSET \\
           Q.EXISTS_TAC ‘FV M0 UNION FV N0’ >> simp [SUBSET_UNION],
           (* goal 2 (of 2) *)
-          Suff ‘DISJOINT (set vs2) (set vs)’ >- rw [DISJOINT_ALT] \\
-          MATCH_MP_TAC DISJOINT_SUBSET \\
-          Q.EXISTS_TAC ‘set vs UNION FV N0’ >> simp [SUBSET_UNION] ])
+          Q.PAT_X_ASSUM ‘DISJOINT (set vs2) (set vs)’ MP_TAC \\
+          rw [DISJOINT_ALT] ])
  >> DISCH_TAC
  (* stage work *)
  >> qabbrev_tac ‘p1 = ZIP (vs1,vsn)’
