@@ -1033,11 +1033,24 @@ Proof
  >> DISJ1_TAC >> qexistsl_tac [‘h’, ‘M’] >> rw []
 QED
 
-Theorem lameq_LAMl_appstar_elim :
+Theorem lameq_LAMl_appstar_14b :
     !xs t args. DISJOINT (set xs) (FV t) /\ LENGTH xs = LENGTH args ==>
                 LAMl xs t @* args == t
 Proof
-    cheat
+    Induct_on ‘xs’ >> rw []
+ >> Cases_on ‘args’ >- fs []
+ >> rw [GSYM appstar_CONS]
+ >> qabbrev_tac ‘M = LAMl xs t’
+ >> MATCH_MP_TAC lameq_TRANS
+ >> Q.EXISTS_TAC ‘M @* t'’
+ >> reverse CONJ_TAC
+ >- (qunabbrev_tac ‘M’ \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> fs [])
+ >> MATCH_MP_TAC lameq_appstar_cong
+ >> rw [Once lameq_cases] >> DISJ1_TAC
+ >> qexistsl_tac [‘h’, ‘M’] >> art []
+ >> MATCH_MP_TAC (GSYM lemma14b)
+ >> rw [Abbr ‘M’, FV_LAMl]
 QED
 
 (* NOTE: The antecedents ‘EVERY closed Ns’ is just one way to make sure that

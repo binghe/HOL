@@ -2629,6 +2629,10 @@ val SNOC_APPEND = store_thm("SNOC_APPEND",
    “!x (l:('a) list). SNOC x l = APPEND l [x]”,
    GEN_TAC THEN LIST_INDUCT_TAC THEN ASM_REWRITE_TAC [SNOC, APPEND]);
 
+(* |- !l. l <> [] ==> SNOC (LAST l) (FRONT l) = l *)
+Theorem SNOC_LAST_FRONT =
+     REWRITE_RULE [GSYM SNOC_APPEND] APPEND_FRONT_LAST
+
 val LIST_TO_SET_SNOC = Q.store_thm("LIST_TO_SET_SNOC",
     ‘set (SNOC x ls) = x INSERT set ls’,
     Induct_on ‘ls’ THEN SRW_TAC [] [INSERT_COMM]);

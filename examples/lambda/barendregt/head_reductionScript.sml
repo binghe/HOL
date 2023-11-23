@@ -1250,6 +1250,30 @@ Proof
  >> MATCH_MP_TAC hnf_head_appstar >> rw []
 QED
 
+Theorem lameq_absfree_hnf_fresh_subst :
+    !as args P. LENGTH args = LENGTH as /\ DISJOINT (set as) (FV P) ==>
+                [LAMl as P/y] (VAR y @* args) == P
+Proof
+    Induct_on ‘as’ using SNOC_INDUCT >> rw []
+ >> Cases_on ‘args = []’ >- fs []
+ >> ‘args = SNOC (LAST args) (FRONT args)’ by PROVE_TAC [SNOC_LAST_FRONT]
+ >> POP_ORW
+ >> REWRITE_TAC [appstar_SNOC, SUB_THM]
+ >> MATCH_MP_TAC lameq_TRANS
+ >> qabbrev_tac ‘M = [LAMl as (LAM x P)/y] (LAST args)’
+ >> Q.EXISTS_TAC ‘LAM x P @@ M’
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC lameq_APPL \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> rw [FV_thm, LENGTH_FRONT] \\
+     Q.PAT_X_ASSUM ‘DISJOINT _ _’ MP_TAC \\
+     rw [DISJOINT_ALT])
+ >> rw [Once lameq_cases] >> DISJ1_TAC
+ >> qexistsl_tac [‘x’, ‘P’] >> art []
+ >> MATCH_MP_TAC (GSYM lemma14b)
+ >> Q.PAT_X_ASSUM ‘DISJOINT _ _’ MP_TAC
+ >> rw [DISJOINT_ALT]
+QED
+
 (*---------------------------------------------------------------------------*
  *  LAMl_size (of hnf)
  *---------------------------------------------------------------------------*)

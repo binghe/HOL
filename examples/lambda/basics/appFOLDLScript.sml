@@ -1,6 +1,6 @@
 open HolKernel Parse boolLib bossLib;
 
-open arithmeticTheory listTheory pred_setTheory hurdUtils;
+open arithmeticTheory listTheory rich_listTheory pred_setTheory hurdUtils;
 
 open termTheory binderLib;
 
@@ -324,6 +324,12 @@ Proof
     DISCH_THEN (K ALL_TAC) THEN
     SRW_TAC [][LAMl_vsub, SUB_ISUB_SINGLETON, ISUB_APPEND]
   ]
+QED
+
+Theorem LAMl_SNOC[simp] :
+    LAMl (SNOC v vs) t = LAMl vs (LAM v t)
+Proof
+    rw [FOLDR_SNOC]
 QED
 
 (*---------------------------------------------------------------------------*

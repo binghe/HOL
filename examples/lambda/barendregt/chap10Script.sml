@@ -853,13 +853,6 @@ Proof
     cheat
 QED
 
-Theorem absfree_hnf_fresh_subst :
-    !as P y args. LENGTH as = LENGTH args /\ DISJOINT (set as) (FV P) ==>
-                  [LAMl as P/y] (VAR y @* args) == P
-Proof
-    cheat
-QED
-
 (*---------------------------------------------------------------------------*
  *  Separability of terms
  *---------------------------------------------------------------------------*)
@@ -949,14 +942,14 @@ Proof
   (* stage work *)
      Know ‘[LAMl as' Q/y2] N1 == Q’
      >- (Q.PAT_ASSUM ‘N1 = VAR y2 @* args2’ (REWRITE_TAC o wrap) \\
-         MATCH_MP_TAC absfree_hnf_fresh_subst >> art [] \\
+         MATCH_MP_TAC lameq_absfree_hnf_fresh_subst >> art [] \\
          Suff ‘hnf_children N1 = args2’ >- rw [Abbr ‘m'’] \\
          Q.PAT_ASSUM ‘N1 = VAR y2 @* args2’ (REWRITE_TAC o wrap) \\
          REWRITE_TAC [hnf_children_hnf]) >> DISCH_TAC \\
      Know ‘[LAMl as P/y1] (M1 @* DROP n (MAP VAR vs)) == P’
      >- (Q.PAT_ASSUM ‘M1 = VAR y1 @* args1’ (REWRITE_TAC o wrap) \\
          REWRITE_TAC [GSYM appstar_APPEND] \\
-         MATCH_MP_TAC absfree_hnf_fresh_subst >> art [] \\
+         MATCH_MP_TAC lameq_absfree_hnf_fresh_subst >> art [] \\
          ASM_SIMP_TAC list_ss [] \\
          Suff ‘hnf_children M1 = args1’ >- rw [Abbr ‘m’] \\
          Q.PAT_ASSUM ‘M1 = VAR y1 @* args1’ (REWRITE_TAC o wrap) \\
@@ -1036,7 +1029,7 @@ Proof
  >> rw [Abbr ‘t’, appstar_SUB]
  >> ‘DISJOINT (set as) (FV P) /\ LENGTH as = LENGTH args’
        by rw [FRESH_list_def, Abbr ‘as’]
- >> MATCH_MP_TAC lameq_LAMl_appstar_elim >> rw []
+ >> MATCH_MP_TAC lameq_LAMl_appstar_14b >> rw []
 QED
 
 (* Exercise 10.6.9 [1, p.272]. It may avoid using Theorem 10.2.31.
