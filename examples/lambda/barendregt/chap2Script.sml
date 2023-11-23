@@ -1020,7 +1020,7 @@ Proof
   Induct_on ‘Ns’ using SNOC_INDUCT >> rw [appstar_SNOC, lameq_APPL]
 QED
 
-Theorem lameq_LAMl_appstar_reduce[simp] :
+Theorem lameq_LAMl_appstar_VAR[simp] :
     !xs. LAMl xs t @* (MAP VAR xs) == t
 Proof
     Induct_on ‘xs’ >> rw []
@@ -1031,6 +1031,13 @@ Proof
  >> MATCH_MP_TAC lameq_appstar_cong
  >> rw [Once lameq_cases]
  >> DISJ1_TAC >> qexistsl_tac [‘h’, ‘M’] >> rw []
+QED
+
+Theorem lameq_LAMl_appstar_elim :
+    !xs t args. DISJOINT (set xs) (FV t) /\ LENGTH xs = LENGTH args ==>
+                LAMl xs t @* args == t
+Proof
+    cheat
 QED
 
 (* NOTE: The antecedents ‘EVERY closed Ns’ is just one way to make sure that

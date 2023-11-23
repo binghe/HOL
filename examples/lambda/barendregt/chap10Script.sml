@@ -1006,16 +1006,11 @@ Proof
  >> ‘?M0. M == M0 /\ hnf M0’ by METIS_TAC [has_hnf_def, solvable_iff_has_hnf]
  >> ‘?vs args y. ALL_DISTINCT vs /\ M0 = LAMl vs (VAR y @* args)’
        by METIS_TAC [hnf_cases]
- >> qabbrev_tac ‘X = set vs UNION FV (VAR y @* args)’
- >> qabbrev_tac ‘n = LENGTH vs’
- >> qabbrev_tac ‘as = FRESH_list n X’
+ >> qabbrev_tac ‘as = FRESH_list (LENGTH args) (FV P)’
  >> qabbrev_tac ‘pi = [LAMl as P/y]::MAP rightctxt (MAP VAR (REVERSE vs))’
  >> Q.EXISTS_TAC ‘pi’
  >> STRONG_CONJ_TAC
- >- (reverse (rw [Abbr ‘pi’, Boehm_transform_def, EVERY_SNOC, EVERY_MAP])
-     >- (rw [EVERY_MEM, solving_transform_def, FUN_EQ_THM, rightctxt_thm]) \\
-     rw [solving_transform_def] \\
-     DISJ2_TAC >> qexistsl_tac [‘y’, ‘LAMl as P’] >> rw [])
+ >- rw [Abbr ‘pi’, Boehm_transform_def, EVERY_SNOC, EVERY_MAP]
  >> DISCH_TAC
  (* applying unsolvable_apply *)
  >> reverse CONJ_TAC
@@ -1033,8 +1028,15 @@ Proof
  >- (rw [Abbr ‘pi’, apply_MAP_rightctxt_eq_appstar] \\
      rw [MAP_REVERSE, REVERSE_REVERSE])
  >> Rewr'
- (* applying lameq_LAMl_appstar (generalized version) *)
- >> cheat
+ (* applying lameq_LAMl_appstar_VAR *)
+ >> MATCH_MP_TAC lameq_TRANS
+ >> Q.EXISTS_TAC ‘[LAMl as P/y] t’
+ >> CONJ_TAC
+ >- (irule lameq_sub_cong >> rw [lameq_LAMl_appstar_VAR])
+ >> rw [Abbr ‘t’, appstar_SUB]
+ >> ‘DISJOINT (set as) (FV P) /\ LENGTH as = LENGTH args’
+       by rw [FRESH_list_def, Abbr ‘as’]
+ >> MATCH_MP_TAC lameq_LAMl_appstar_elim >> rw []
 QED
 
 (* Exercise 10.6.9 [1, p.272]. It may avoid using Theorem 10.2.31.

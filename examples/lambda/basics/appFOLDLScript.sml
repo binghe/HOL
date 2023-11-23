@@ -177,6 +177,13 @@ Proof
     Induct_on ‘Ns’ using SNOC_INDUCT >> simp[appstar_SNOC, MAP_SNOC]
 QED
 
+Theorem appstar_SUB :
+    !args. [N/v] (t @* args) = [N/v] t @* MAP [N/v] args
+Proof
+    Induct_on ‘args’ using SNOC_INDUCT
+ >> rw [appstar_SNOC, MAP_SNOC]
+QED
+
 Theorem FV_appstar :
     !M Ns. FV (M @* Ns) = FV M UNION (BIGUNION (IMAGE FV (set Ns)))
 Proof
