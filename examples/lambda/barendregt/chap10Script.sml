@@ -383,7 +383,7 @@ Definition equivalent_def :
                N0 = principle_hnf N;
                n  = LAMl_size M0;
                n' = LAMl_size N0;
-               vs = FRESH_list (n + n') (FV M0 UNION FV N0);
+               vs = FRESH_list (MAX n n') (FV M0 UNION FV N0);
                vM = TAKE n  vs;
                vN = TAKE n' vs;
                M1 = principle_hnf (M0 @* (MAP VAR vM));
@@ -398,6 +398,16 @@ Definition equivalent_def :
            ~solvable M /\ ~solvable N
 End
 
+Theorem equivalent_comm :
+    !M N. equivalent M N <=> equivalent N M
+Proof
+    RW_TAC std_ss [equivalent_def, Once MAX_COMM, Once UNION_COMM]
+ >- (rename1 ‘y2 = y3 /\ n1 + m3 = n3 + m2 <=> y = y1 /\ n + m1 = n1 + m’ \\
+    ‘n3 = n’ by rw [Abbr ‘n3’, Abbr ‘n’] >> gs [] \\
+     EQ_TAC >> rw [])
+ >>  METIS_TAC []
+QED
+
 Theorem solvables_equivalent_def :
     !M N. solvable M /\ solvable N ==>
          (equivalent M N <=>
@@ -405,7 +415,7 @@ Theorem solvables_equivalent_def :
                N0 = principle_hnf N;
                n  = LAMl_size M0;
                n' = LAMl_size N0;
-               vs = FRESH_list (n + n') (FV M0 UNION FV N0);
+               vs = FRESH_list (MAX n n') (FV M0 UNION FV N0);
                vM = TAKE n  vs;
                vN = TAKE n' vs;
                M1 = principle_hnf (M0 @* (MAP VAR vM));
@@ -417,7 +427,7 @@ Theorem solvables_equivalent_def :
            in
                y = y' /\ n + m' = n' + m)
 Proof
-    rw [equivalent_def]
+    RW_TAC std_ss [equivalent_def]
 QED
 
 (* From [1, p.238]. This concerte example shows that dB encoding is not easy in
@@ -438,14 +448,10 @@ Proof
  >> POP_ORW
  >> qabbrev_tac ‘ns = (y INSERT FV M) DELETE x UNION (FV M DELETE y)’
  >> ‘FINITE ns’ by rw [Abbr ‘ns’]
- >> drule (Q.SPECL [‘2’, ‘ns’] FRESH_list_def) >> STRIP_TAC
- >> qabbrev_tac ‘vs = FRESH_list 2 ns’
- >> qabbrev_tac ‘z = HD (TAKE 1 vs)’
- >> Know ‘MEM z vs’
- >- (rw [Abbr ‘z’, MEM_EL] \\
-     Q.EXISTS_TAC ‘0’ >> rw [HD_TAKE])
- >> DISCH_TAC
- >> ‘TAKE 1 vs = [z]’ by rw [Abbr ‘z’, SING_HD] >> POP_ORW
+ >> drule (Q.SPECL [‘1’, ‘ns’] FRESH_list_def) >> STRIP_TAC
+ >> qabbrev_tac ‘vs = FRESH_list 1 ns’
+ >> qabbrev_tac ‘z = HD vs’
+ >> ‘vs = [z]’ by METIS_TAC [SING_HD]
  >> simp [appstar_thm]
  (* applying principle_hnf_beta *)
  >> qabbrev_tac ‘t = VAR y @@ M’
@@ -453,20 +459,19 @@ Proof
  >> Know ‘principle_hnf (LAM x t @@ VAR z) = [VAR z/x] t’
  >- (MATCH_MP_TAC principle_hnf_beta >> simp [Abbr ‘t’] \\
      Q.PAT_X_ASSUM ‘DISJOINT (set vs) ns’ MP_TAC \\
-     rw [DISJOINT_ALT, Abbr ‘ns’] >> METIS_TAC [])
+     rw [DISJOINT_ALT, Abbr ‘ns’] >> fs [])
  >> Rewr'
  >> Know ‘principle_hnf (LAM y t @@ VAR z) = [VAR z/y] t’
  >- (MATCH_MP_TAC principle_hnf_beta >> simp [Abbr ‘t’] \\
      Q.PAT_X_ASSUM ‘DISJOINT (set vs) ns’ MP_TAC \\
-     rw [DISJOINT_ALT, Abbr ‘ns’] >> METIS_TAC [])
+     rw [DISJOINT_ALT, Abbr ‘ns’] >> fs [])
  >> Rewr'
  >> DISJ1_TAC
  >> simp [Abbr ‘t’]
  >> NTAC 5 (simp [Once hnf_head_def])
  (* final goal: y <> z *)
  >> Q.PAT_X_ASSUM ‘DISJOINT (set vs) ns’ MP_TAC
- >> rw [DISJOINT_ALT, Abbr ‘ns’]
- >> METIS_TAC []
+ >> rw [DISJOINT_ALT, Abbr ‘ns’] >> fs []
 QED
 
 Theorem equivalent_example :
@@ -699,7 +704,7 @@ Proof
 QED
 
 (* Used by: distinct_benf_imp_inconsistent *)
-Theorem Boehm_transform_asmlam :
+Theorem asmlam_apply_cong :
     !pi M N. Boehm_transform pi /\ asmlam eqns M N ==>
              asmlam eqns (apply pi M) (apply pi N)
 Proof
@@ -711,7 +716,7 @@ Proof
 QED
 
 (* Used by: separability_lemma2 *)
-Theorem Boehm_transform_lameq_apply_cong :
+Theorem lameq_apply_cong :
     !pi M N. Boehm_transform pi /\ M == N ==> apply pi M == apply pi N
 Proof
     Induct_on ‘pi’ using SNOC_INDUCT >> rw []
@@ -729,7 +734,7 @@ Proof
 QED
 
 (* Used by separability_thm *)
-Theorem Boehm_transform_apply_apply :
+Theorem apply_apply_APPEND :
     !p1 p2 M. apply p1 (apply p2 M) = apply (p1 ++ p2) M
 Proof
     Q.X_GEN_TAC ‘p1’
@@ -827,12 +832,9 @@ QED
  *  Separability of terms
  *---------------------------------------------------------------------------*)
 
-(* Lemma 10.4.1 (i)
-
-   Used by separability_thm, separability_lemma2
- *)
-Theorem separability_lemma1 :
-    !M N. solvable (M :term) /\ solvable N /\ ~equivalent M N ==>
+Theorem separability_lemma0[local] :
+    !M N. solvable (M :term) /\ solvable N /\ ~equivalent M N /\
+          LAMl_size (principle_hnf M) <= LAMl_size (principle_hnf N) ==>
           !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q
 Proof
     rpt STRIP_TAC
@@ -841,9 +843,11 @@ Proof
  >> qabbrev_tac ‘N0 = principle_hnf N’
  >> qabbrev_tac ‘n = LAMl_size M0’
  >> qabbrev_tac ‘n' = LAMl_size N0’
- >> qabbrev_tac ‘vs = FRESH_list (n + n') (FV M0 UNION FV N0)’
+ >> qabbrev_tac ‘k = n' - n’
+ >> ‘n + k = n'’ by rw [Abbr ‘k’]
+ >> qabbrev_tac ‘vs = FRESH_list (MAX n n') (FV M0 UNION FV N0)’
  >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M0 UNION FV N0) /\
-     LENGTH vs = n + n'’ by rw [Abbr ‘vs’, FRESH_list_def]
+     LENGTH vs = MAX n n'’ by rw [Abbr ‘vs’, FRESH_list_def]
  >> qabbrev_tac ‘vsM = TAKE n vs’
  >> qabbrev_tac ‘vsN = TAKE n' vs’
  >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vsM)’
@@ -882,10 +886,32 @@ Proof
  >> NTAC 2 (POP_ASSUM (REV_FULL_SIMP_TAC std_ss o wrap))
  (* Case 1 *)
  >> Cases_on ‘y <> y'’
- >- (
-     cheat)
+ >- (cheat)
  (* Case 2 *)
  >> cheat
+QED
+
+(* Lemma 10.4.1 (i)
+
+   Used by separability_thm, separability_lemma2
+ *)
+Theorem separability_lemma1 :
+    !M N. solvable (M :term) /\ solvable N /\ ~equivalent M N ==>
+          !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q
+Proof     
+    rpt STRIP_TAC
+ (* preparing for equivalent_def *)
+ >> qabbrev_tac ‘M0 = principle_hnf M’
+ >> qabbrev_tac ‘N0 = principle_hnf N’
+ >> qabbrev_tac ‘n = LAMl_size M0’
+ >> qabbrev_tac ‘n' = LAMl_size N0’
+ >> ‘n <= n' \/ n' <= n’ by rw []
+ >- (MATCH_MP_TAC separability_lemma0 >> rw [])
+ >> MP_TAC (Q.SPECL [‘N’, ‘M’] separability_lemma0)
+ >> RW_TAC std_ss [Once equivalent_comm]
+ >> POP_ASSUM (MP_TAC o Q.SPECL [‘Q’, ‘P’])
+ >> RW_TAC std_ss []
+ >> Q.EXISTS_TAC ‘pi’ >> art []
 QED
 
 (* Lemma 10.4.1 (ii) *)
@@ -922,7 +948,7 @@ Proof
  (* stage work *)
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘apply pi M0’
- >> CONJ_TAC >- (MATCH_MP_TAC Boehm_transform_lameq_apply_cong >> art [])
+ >> CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> art [])
  >> POP_ASSUM K_TAC (* ‘Boehm_transform pi’ is not needed here *)
  >> rw [Abbr ‘pi’]
  >> qabbrev_tac ‘pi :transform = MAP rightctxt (MAP VAR (REVERSE (vs)))’
@@ -978,7 +1004,7 @@ Proof
  >> ‘?pi. Boehm_transform pi /\ apply pi M0 == P /\ apply pi N0 == Q’
        by PROVE_TAC [separability_lemma1] (* this asserts pi' *)
  >> Q.EXISTS_TAC ‘pi' ++ pi’
- >> fs [Boehm_transform_APPEND, Boehm_transform_apply_apply, Abbr ‘M0’, Abbr ‘N0’]
+ >> fs [Boehm_transform_APPEND, apply_apply_APPEND, Abbr ‘M0’, Abbr ‘N0’]
 QED
 
 (* Theorem 10.4.2 (ii) [1, p.256] *)
@@ -1018,7 +1044,7 @@ Proof
  >> MATCH_MP_TAC asmlam_trans
  >> Q.EXISTS_TAC ‘apply pi N’
  >> reverse CONJ_TAC >- (MATCH_MP_TAC lameq_asmlam >> art [])
- >> MATCH_MP_TAC Boehm_transform_asmlam >> art []
+ >> MATCH_MP_TAC asmlam_apply_cong >> art []
  >> Suff ‘(M,N) IN eqns’ >- rw [asmlam_rules]
  >> rw [Abbr ‘eqns’]
 QED
