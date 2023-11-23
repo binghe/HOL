@@ -1,7 +1,8 @@
 open HolKernel Parse boolLib bossLib BasicProvers;
 
 open boolSimps relationTheory pred_setTheory listTheory finite_mapTheory
-     arithmeticTheory llistTheory pathTheory optionTheory hurdUtils;
+     arithmeticTheory llistTheory pathTheory optionTheory rich_listTheory
+     hurdUtils;
 
 open termTheory appFOLDLTheory chap2Theory chap3Theory nomsetTheory binderLib
      term_posnsTheory finite_developmentsTheory;
@@ -1250,9 +1251,9 @@ Proof
  >> MATCH_MP_TAC hnf_head_appstar >> rw []
 QED
 
-Theorem lameq_absfree_hnf_fresh_subst :
-    !as args P. LENGTH args = LENGTH as /\ DISJOINT (set as) (FV P) ==>
-                [LAMl as P/y] (VAR y @* args) == P
+Theorem lameq_hnf_fresh_subst :
+    !as args P. (LENGTH args = LENGTH as) /\ DISJOINT (set as) (FV P) ==>
+                ([LAMl as P/y] (VAR y @* args) == P)
 Proof
     Induct_on ‘as’ using SNOC_INDUCT >> rw []
  >> Cases_on ‘args = []’ >- fs []

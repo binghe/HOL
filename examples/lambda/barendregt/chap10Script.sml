@@ -942,14 +942,14 @@ Proof
   (* stage work *)
      Know ‘[LAMl as' Q/y2] N1 == Q’
      >- (Q.PAT_ASSUM ‘N1 = VAR y2 @* args2’ (REWRITE_TAC o wrap) \\
-         MATCH_MP_TAC lameq_absfree_hnf_fresh_subst >> art [] \\
+         MATCH_MP_TAC lameq_hnf_fresh_subst >> art [] \\
          Suff ‘hnf_children N1 = args2’ >- rw [Abbr ‘m'’] \\
          Q.PAT_ASSUM ‘N1 = VAR y2 @* args2’ (REWRITE_TAC o wrap) \\
          REWRITE_TAC [hnf_children_hnf]) >> DISCH_TAC \\
      Know ‘[LAMl as P/y1] (M1 @* DROP n (MAP VAR vs)) == P’
      >- (Q.PAT_ASSUM ‘M1 = VAR y1 @* args1’ (REWRITE_TAC o wrap) \\
          REWRITE_TAC [GSYM appstar_APPEND] \\
-         MATCH_MP_TAC lameq_absfree_hnf_fresh_subst >> art [] \\
+         MATCH_MP_TAC lameq_hnf_fresh_subst >> art [] \\
          ASM_SIMP_TAC list_ss [] \\
          Suff ‘hnf_children M1 = args1’ >- rw [Abbr ‘m’] \\
          Q.PAT_ASSUM ‘M1 = VAR y1 @* args1’ (REWRITE_TAC o wrap) \\
