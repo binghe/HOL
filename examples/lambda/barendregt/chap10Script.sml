@@ -918,6 +918,7 @@ Proof
      qabbrev_tac ‘k = n' - n’ \\
     ‘n + k = n'’ by rw [Abbr ‘k’] \\
      qabbrev_tac ‘p0 = MAP rightctxt (REVERSE (MAP VAR vs))’ \\
+    ‘Boehm_transform p0’ by rw [Boehm_transform_def, Abbr ‘p0’, EVERY_MAP] \\
      Know ‘apply p0 N0 == N1’
      >- (rw [Abbr ‘p0’, apply_MAP_rightctxt_eq_appstar']) >> DISCH_TAC \\
      Know ‘apply p0 M0 == M1 @* DROP n (MAP VAR vs)’
@@ -937,9 +938,15 @@ Proof
      qabbrev_tac ‘s1 = [LAMl as P/y1]’ \\
      qabbrev_tac ‘s2 = [LAMl as' Q/y2]’ \\
      qabbrev_tac ‘p1 = [s2; s1]’ \\
-    ‘Boehm_transform p1’
-       by (rw [Boehm_transform_def, Abbr ‘p1’, Abbr ‘s1’, Abbr ‘s2’]) \\
+    ‘Boehm_transform p1’ by rw [Boehm_transform_def, Abbr ‘p1’, Abbr ‘s1’, Abbr ‘s2’] \\
   (* stage work *)
+     Q.EXISTS_TAC ‘p1 ++ p0’ \\
+     CONJ_TAC >- rw [Boehm_transform_APPEND] \\
+     rw [GSYM apply_apply_APPEND] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       cheat,
+       (* goal 2 (of 2) *)
+       cheat ] (*
      Know ‘[LAMl as' Q/y2] N1 == Q’
      >- (Q.PAT_ASSUM ‘N1 = VAR y2 @* args2’ (REWRITE_TAC o wrap) \\
          MATCH_MP_TAC lameq_hnf_fresh_subst >> art [] \\
@@ -954,7 +961,7 @@ Proof
          Suff ‘hnf_children M1 = args1’ >- rw [Abbr ‘m’] \\
          Q.PAT_ASSUM ‘M1 = VAR y1 @* args1’ (REWRITE_TAC o wrap) \\
          REWRITE_TAC [hnf_children_hnf]) >> DISCH_TAC \\
-     cheat)
+       *))
  (* Case 2 *)
  >> cheat
 QED
