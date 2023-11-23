@@ -1020,15 +1020,15 @@ Proof
   Induct_on ‘Ns’ using SNOC_INDUCT >> rw [appstar_SNOC, lameq_APPL]
 QED
 
-Theorem lameq_LAMl_appstar_reduce :
-    !xs t. LAMl xs t @* (MAP VAR xs) == t
+Theorem lameq_LAMl_appstar_reduce[simp] :
+    !xs. LAMl xs t @* (MAP VAR xs) == t
 Proof
     Induct_on ‘xs’ >> rw []
+ >> qabbrev_tac ‘M = LAMl xs t’
  >> qabbrev_tac ‘args :term list = MAP VAR xs’
  >> MATCH_MP_TAC lameq_TRANS
- >> Q.EXISTS_TAC ‘LAMl xs t @* args’ >> art []
+ >> Q.EXISTS_TAC ‘M @* args’ >> art []
  >> MATCH_MP_TAC lameq_appstar_cong
- >> qabbrev_tac ‘M = LAMl xs t’
  >> rw [Once lameq_cases]
  >> DISJ1_TAC >> qexistsl_tac [‘h’, ‘M’] >> rw []
 QED

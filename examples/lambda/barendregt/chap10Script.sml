@@ -598,6 +598,21 @@ Definition solving_transform_def :
       (?x. f = \p. p @@ VAR x) \/ (?x N. f = [N/x])
 End
 
+Theorem solving_transform_subst[simp] :
+    solving_transform [N/x]
+Proof
+    rw [solving_transform_def]
+ >> DISJ2_TAC >> qexistsl_tac [‘x’, ‘N’] >> rw []
+QED
+
+Theorem solving_transform_rightctxt[simp] :
+    solving_transform (rightctxt (VAR x))
+Proof
+    rw [solving_transform_def, FUN_EQ_THM]
+ >> DISJ1_TAC
+ >> Q.EXISTS_TAC ‘x’ >> rw [rightctxt_thm]
+QED
+
 (* Definition 10.3.3 (iii)
 
    NOTE: "Boehm transform is a finite composition of solving transforms
@@ -838,6 +853,13 @@ Proof
     cheat
 QED
 
+Theorem absfree_hnf_fresh_subst :
+    !as P y args. LENGTH as = LENGTH args /\ DISJOINT (set as) (FV P) ==>
+                  [LAMl as P/y] (VAR y @* args) == P
+Proof
+    cheat
+QED
+
 (*---------------------------------------------------------------------------*
  *  Separability of terms
  *---------------------------------------------------------------------------*)
@@ -904,8 +926,7 @@ Proof
     ‘n + k = n'’ by rw [Abbr ‘k’] \\
      qabbrev_tac ‘p0 = MAP rightctxt (REVERSE (MAP VAR vs))’ \\
      Know ‘apply p0 N0 == N1’
-     >- (rw [Abbr ‘p0’, apply_MAP_rightctxt_eq_appstar'] \\
-         rw [lameq_LAMl_appstar_reduce]) >> DISCH_TAC \\
+     >- (rw [Abbr ‘p0’, apply_MAP_rightctxt_eq_appstar']) >> DISCH_TAC \\
      Know ‘apply p0 M0 == M1 @* DROP n (MAP VAR vs)’
      >- (qabbrev_tac ‘l :term list = MAP VAR vs’ \\
          qunabbrev_tac ‘p0’ \\
@@ -914,8 +935,32 @@ Proof
          REWRITE_TAC [REVERSE_APPEND, MAP_APPEND, GSYM apply_apply_APPEND] \\
          REWRITE_TAC [apply_MAP_rightctxt_eq_appstar'] \\
          MATCH_MP_TAC lameq_appstar_cong \\
-         rw [Abbr ‘l’, Abbr ‘vsM’, GSYM MAP_TAKE, lameq_LAMl_appstar_reduce]) \\
-     DISCH_TAC \\
+         rw [Abbr ‘l’, Abbr ‘vsM’, GSYM MAP_TAKE]) >> DISCH_TAC \\
+  (* now use P and Q *)
+     qabbrev_tac ‘as = FRESH_list (m + k) (FV P)’ \\
+    ‘LENGTH as = m + k /\ DISJOINT (set as) (FV P)’ by rw [Abbr ‘as’, FRESH_list_def] \\
+     qabbrev_tac ‘as' = FRESH_list m' (FV Q)’ \\
+    ‘LENGTH as' = m' /\ DISJOINT (set as') (FV Q)’ by rw [Abbr ‘as'’, FRESH_list_def] \\
+     qabbrev_tac ‘s1 = [LAMl as P/y1]’ \\
+     qabbrev_tac ‘s2 = [LAMl as' Q/y2]’ \\
+     qabbrev_tac ‘p1 = [s2; s1]’ \\
+    ‘Boehm_transform p1’
+       by (rw [Boehm_transform_def, Abbr ‘p1’, Abbr ‘s1’, Abbr ‘s2’]) \\
+  (* stage work *)
+     Know ‘[LAMl as' Q/y2] N1 == Q’
+     >- (Q.PAT_ASSUM ‘N1 = VAR y2 @* args2’ (REWRITE_TAC o wrap) \\
+         MATCH_MP_TAC absfree_hnf_fresh_subst >> art [] \\
+         Suff ‘hnf_children N1 = args2’ >- rw [Abbr ‘m'’] \\
+         Q.PAT_ASSUM ‘N1 = VAR y2 @* args2’ (REWRITE_TAC o wrap) \\
+         REWRITE_TAC [hnf_children_hnf]) >> DISCH_TAC \\
+     Know ‘[LAMl as P/y1] (M1 @* DROP n (MAP VAR vs)) == P’
+     >- (Q.PAT_ASSUM ‘M1 = VAR y1 @* args1’ (REWRITE_TAC o wrap) \\
+         REWRITE_TAC [GSYM appstar_APPEND] \\
+         MATCH_MP_TAC absfree_hnf_fresh_subst >> art [] \\
+         ASM_SIMP_TAC list_ss [] \\
+         Suff ‘hnf_children M1 = args1’ >- rw [Abbr ‘m’] \\
+         Q.PAT_ASSUM ‘M1 = VAR y1 @* args1’ (REWRITE_TAC o wrap) \\
+         REWRITE_TAC [hnf_children_hnf]) >> DISCH_TAC \\
      cheat)
  (* Case 2 *)
  >> cheat

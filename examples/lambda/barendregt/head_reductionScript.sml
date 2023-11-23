@@ -1214,6 +1214,13 @@ Proof
  >> rw [Once hnf_children_def]
 QED
 
+Theorem hnf_children_hnf :
+    !y args. hnf_children (VAR y @* args) = args
+Proof
+    rpt GEN_TAC
+ >> MATCH_MP_TAC hnf_children_appstar >> rw []
+QED
+
 Theorem absfree_hnf_cases :
     !M. hnf M /\ ~is_abs M <=> ?y args. M = VAR y @* args
 Proof
