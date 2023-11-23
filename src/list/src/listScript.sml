@@ -1918,6 +1918,9 @@ Proof
   ASM_SIMP_TAC (srw_ss()) [TAKE_def]
 QED
 
+(* |- !n l. 0 < n ==> HD (TAKE n l) = HD l *)
+Theorem HD_TAKE = GEN_ALL (REWRITE_RULE [EL] (Q.SPECL [‘n’, ‘0’] EL_TAKE))
+
 val MAP_TAKE = store_thm(
   "MAP_TAKE",
   “!f n l. MAP f (TAKE n l) = TAKE n (MAP f l)”,

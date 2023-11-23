@@ -383,11 +383,11 @@ Definition equivalent_def :
                N0 = principle_hnf N;
                n  = LAMl_size M0;
                n' = LAMl_size N0;
-               vs = FRESH_list (MAX n n') (FV M0 UNION FV N0);
-               v  = TAKE n  vs;
-               v' = TAKE n' vs;
-               M1 = principle_hnf (M0 @* (MAP VAR v));
-               N1 = principle_hnf (N0 @* (MAP VAR v'));
+               vs = FRESH_list (n + n') (FV M0 UNION FV N0);
+               vM = TAKE n  vs;
+               vN = TAKE n' vs;
+               M1 = principle_hnf (M0 @* (MAP VAR vM));
+               N1 = principle_hnf (N0 @* (MAP VAR vN));
                y  = hnf_head M1;
                y' = hnf_head N1;
                m  = LENGTH (hnf_children M1);
@@ -405,11 +405,11 @@ Theorem solvables_equivalent_def :
                N0 = principle_hnf N;
                n  = LAMl_size M0;
                n' = LAMl_size N0;
-               vs = FRESH_list (MAX n n') (FV M0 UNION FV N0);
-               v  = TAKE n  vs;
-               v' = TAKE n' vs;
-               M1 = principle_hnf (M0 @* (MAP VAR v));
-               N1 = principle_hnf (N0 @* (MAP VAR v'));
+               vs = FRESH_list (n + n') (FV M0 UNION FV N0);
+               vM = TAKE n  vs;
+               vN = TAKE n' vs;
+               M1 = principle_hnf (M0 @* (MAP VAR vM));
+               N1 = principle_hnf (N0 @* (MAP VAR vN));
                y  = hnf_head M1;
                y' = hnf_head N1;
                m  = LENGTH (hnf_children M1);
@@ -438,10 +438,14 @@ Proof
  >> POP_ORW
  >> qabbrev_tac ‘ns = (y INSERT FV M) DELETE x UNION (FV M DELETE y)’
  >> ‘FINITE ns’ by rw [Abbr ‘ns’]
- >> drule (Q.SPECL [‘1’, ‘ns’] FRESH_list_def) >> STRIP_TAC
- >> qabbrev_tac ‘vs = FRESH_list 1 ns’
- >> qabbrev_tac ‘z = HD vs’
- >> ‘vs = [z]’ by METIS_TAC [SING_HD]
+ >> drule (Q.SPECL [‘2’, ‘ns’] FRESH_list_def) >> STRIP_TAC
+ >> qabbrev_tac ‘vs = FRESH_list 2 ns’
+ >> qabbrev_tac ‘z = HD (TAKE 1 vs)’
+ >> Know ‘MEM z vs’
+ >- (rw [Abbr ‘z’, MEM_EL] \\
+     Q.EXISTS_TAC ‘0’ >> rw [HD_TAKE])
+ >> DISCH_TAC
+ >> ‘TAKE 1 vs = [z]’ by rw [Abbr ‘z’, SING_HD] >> POP_ORW
  >> simp [appstar_thm]
  (* applying principle_hnf_beta *)
  >> qabbrev_tac ‘t = VAR y @@ M’
@@ -449,19 +453,20 @@ Proof
  >> Know ‘principle_hnf (LAM x t @@ VAR z) = [VAR z/x] t’
  >- (MATCH_MP_TAC principle_hnf_beta >> simp [Abbr ‘t’] \\
      Q.PAT_X_ASSUM ‘DISJOINT (set vs) ns’ MP_TAC \\
-     rw [DISJOINT_ALT, Abbr ‘ns’] >> fs [])
+     rw [DISJOINT_ALT, Abbr ‘ns’] >> METIS_TAC [])
  >> Rewr'
  >> Know ‘principle_hnf (LAM y t @@ VAR z) = [VAR z/y] t’
  >- (MATCH_MP_TAC principle_hnf_beta >> simp [Abbr ‘t’] \\
      Q.PAT_X_ASSUM ‘DISJOINT (set vs) ns’ MP_TAC \\
-     rw [DISJOINT_ALT, Abbr ‘ns’] >> fs [])
+     rw [DISJOINT_ALT, Abbr ‘ns’] >> METIS_TAC [])
  >> Rewr'
  >> DISJ1_TAC
  >> simp [Abbr ‘t’]
  >> NTAC 5 (simp [Once hnf_head_def])
  (* final goal: y <> z *)
  >> Q.PAT_X_ASSUM ‘DISJOINT (set vs) ns’ MP_TAC
- >> rw [DISJOINT_ALT, Abbr ‘ns’] >> fs []
+ >> rw [DISJOINT_ALT, Abbr ‘ns’]
+ >> METIS_TAC []
 QED
 
 Theorem equivalent_example :
@@ -836,13 +841,13 @@ Proof
  >> qabbrev_tac ‘N0 = principle_hnf N’
  >> qabbrev_tac ‘n = LAMl_size M0’
  >> qabbrev_tac ‘n' = LAMl_size N0’
- >> qabbrev_tac ‘vs = FRESH_list (MAX n n') (FV M0 UNION FV N0)’
+ >> qabbrev_tac ‘vs = FRESH_list (n + n') (FV M0 UNION FV N0)’
  >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M0 UNION FV N0) /\
-     LENGTH vs = MAX n n'’ by rw [Abbr ‘vs’, FRESH_list_def]
- >> qabbrev_tac ‘vsn = TAKE n vs’
- >> qabbrev_tac ‘vsn' = TAKE n' vs’
- >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vsn)’
- >> qabbrev_tac ‘N1 = principle_hnf (N0 @* MAP VAR vsn')’
+     LENGTH vs = n + n'’ by rw [Abbr ‘vs’, FRESH_list_def]
+ >> qabbrev_tac ‘vsM = TAKE n vs’
+ >> qabbrev_tac ‘vsN = TAKE n' vs’
+ >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vsM)’
+ >> qabbrev_tac ‘N1 = principle_hnf (N0 @* MAP VAR vsN)’
  >> qabbrev_tac ‘y = hnf_head M1’
  >> qabbrev_tac ‘y' = hnf_head N1’
  >> qabbrev_tac ‘m = LENGTH (hnf_children M1)’
@@ -859,11 +864,11 @@ Proof
        by METIS_TAC [hnf_cases_genX, FINITE_LIST_TO_SET]
  >> ‘LENGTH vs1 = n /\ LENGTH vs2 = n'’ by METIS_TAC [LAMl_size_hnf]
  (* applying principle_hnf_LAMl_appstar *)
- >> Know ‘M1 = tpm (ZIP (vs1,vsn)) (VAR y1 @* args1)’
+ >> Know ‘M1 = tpm (ZIP (vs1,vsM)) (VAR y1 @* args1)’
  >- (qunabbrev_tac ‘M1’ \\
      Q.PAT_ASSUM ‘M0 = _’ (ONCE_REWRITE_TAC o wrap) \\
      MATCH_MP_TAC principle_hnf_LAMl_appstar \\
-     simp [Abbr ‘vsn’, hnf_appstar, ALL_DISTINCT_TAKE] \\
+     simp [Abbr ‘vsM’, hnf_appstar, ALL_DISTINCT_TAKE] \\
      CONJ_TAC >- (MATCH_MP_TAC DISJOINT_SUBSET \\
                   Q.EXISTS_TAC ‘set vs’ >> art [] \\
                   simp [SUBSET_DEF] >> REWRITE_TAC [MEM_TAKE]) \\
@@ -886,11 +891,11 @@ Proof
           Q.PAT_X_ASSUM ‘DISJOINT (set vs1) (set vs)’ MP_TAC \\
           rw [DISJOINT_ALT] ])
  >> DISCH_TAC
- >> Know ‘N1 = tpm (ZIP (vs2,vsn')) (VAR y2 @* args2)’
+ >> Know ‘N1 = tpm (ZIP (vs2,vsN)) (VAR y2 @* args2)’
  >- (qunabbrev_tac ‘N1’ \\
      Q.PAT_ASSUM ‘N0 = _’ (ONCE_REWRITE_TAC o wrap) \\
      MATCH_MP_TAC principle_hnf_LAMl_appstar \\
-     simp [Abbr ‘vsn'’, hnf_appstar, ALL_DISTINCT_TAKE] \\
+     simp [Abbr ‘vsN’, hnf_appstar, ALL_DISTINCT_TAKE] \\
      CONJ_TAC >- (MATCH_MP_TAC DISJOINT_SUBSET \\
                   Q.EXISTS_TAC ‘set vs’ >> art [] \\
                   simp [SUBSET_DEF] >> REWRITE_TAC [MEM_TAKE]) \\
@@ -914,8 +919,8 @@ Proof
           rw [DISJOINT_ALT] ])
  >> DISCH_TAC
  (* stage work *)
- >> qabbrev_tac ‘p1 = ZIP (vs1,vsn)’
- >> qabbrev_tac ‘p2 = ZIP (vs2,vsn')’
+ >> qabbrev_tac ‘p1 = ZIP (vs1,vsM)’
+ >> qabbrev_tac ‘p2 = ZIP (vs2,vsN)’
  >> REV_FULL_SIMP_TAC bool_ss [tpm_appstar, tpm_thm]
  >> ‘y = VAR (lswapstr p1 y1) /\ y' = VAR (lswapstr p2 y2)’
       by rw [Abbr ‘y’, Abbr ‘y'’, hnf_head_absfree]
