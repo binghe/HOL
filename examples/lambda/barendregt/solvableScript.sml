@@ -901,6 +901,24 @@ Proof
  >> MATCH_MP_TAC principle_hnf_LAMl_appstar_lemma >> rw []
 QED
 
+Theorem principle_hnf_reduce :
+    !xs t. hnf t ==> principle_hnf (LAMl xs t @* (MAP VAR xs)) = t
+Proof
+    Induct_on ‘xs’
+ >- rw [principle_hnf_eq_self]
+ >> rw []
+ >> qabbrev_tac ‘M = LAMl xs t’
+ >> qabbrev_tac ‘args :term list = MAP VAR xs’
+ >> Know ‘principle_hnf (LAM h M @@ VAR h @* args) =
+          principle_hnf ([VAR h/h] M @* args)’
+ >- (MATCH_MP_TAC principle_hnf_hreduce1 \\
+     MATCH_MP_TAC hreduce1_rules_appstar >> simp [] \\
+     rw [Once hreduce1_cases] \\
+     qexistsl_tac [‘h’, ‘M’] >> rw [])
+ >> Rewr'
+ >> simp [Abbr ‘M’]
+QED
+
 (* Example 8.3.2 [1, p.171] *)
 Theorem unsolvable_Omega :
     unsolvable Omega

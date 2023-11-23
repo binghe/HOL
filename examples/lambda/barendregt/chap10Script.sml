@@ -854,82 +854,35 @@ Proof
  >> qabbrev_tac ‘m' = LENGTH (hnf_children N1)’
  (* applying equivalent_def *)
  >> ‘~(y = y' /\ n + m' = n' + m)’ by METIS_TAC [equivalent_def]
- (* applying hnf_cases_genX *)
+ (* applying hnf_cases_shared *)
  >> ‘hnf M0 /\ hnf N0’ by METIS_TAC [hnf_principle_hnf']
- >> ‘?vs1 args1 y1. ALL_DISTINCT vs1 /\ M0 = LAMl vs1 (VAR y1 @* args1) /\
-                    DISJOINT (set vs1) (set vs)’
-       by METIS_TAC [hnf_cases_genX, FINITE_LIST_TO_SET]
- >> ‘?vs2 args2 y2. ALL_DISTINCT vs2 /\ N0 = LAMl vs2 (VAR y2 @* args2) /\
-                    DISJOINT (set vs2) (set vs)’
-       by METIS_TAC [hnf_cases_genX, FINITE_LIST_TO_SET]
- >> ‘LENGTH vs1 = n /\ LENGTH vs2 = n'’ by METIS_TAC [LAMl_size_hnf]
- (* applying principle_hnf_LAMl_appstar *)
- >> Know ‘M1 = tpm (ZIP (vs1,vsM)) (VAR y1 @* args1)’
+ >> Know ‘?y2 args2. N0 = LAMl vsN (VAR y2 @* args2)’
+ >- (qunabbrevl_tac [‘vsN’, ‘n'’] \\
+     MATCH_MP_TAC hnf_cases_shared >> rw [] \\
+     MATCH_MP_TAC DISJOINT_SUBSET \\
+     Q.EXISTS_TAC ‘FV M0 UNION FV N0’ >> rw [SUBSET_UNION])
+ >> Know ‘?y1 args1. M0 = LAMl vsM (VAR y1 @* args1)’
+ >- (qunabbrevl_tac [‘vsM’, ‘n’] \\
+     MATCH_MP_TAC hnf_cases_shared >> rw [] \\
+     MATCH_MP_TAC DISJOINT_SUBSET \\
+     Q.EXISTS_TAC ‘FV M0 UNION FV N0’ >> rw [SUBSET_UNION])
+ >> NTAC 2 STRIP_TAC
+ (* applying principle_hnf_reduce *)
+ >> Know ‘M1 = VAR y1 @* args1’
  >- (qunabbrev_tac ‘M1’ \\
      Q.PAT_ASSUM ‘M0 = _’ (ONCE_REWRITE_TAC o wrap) \\
-     MATCH_MP_TAC principle_hnf_LAMl_appstar \\
-     simp [Abbr ‘vsM’, hnf_appstar, ALL_DISTINCT_TAKE] \\
-     CONJ_TAC >- (MATCH_MP_TAC DISJOINT_SUBSET \\
-                  Q.EXISTS_TAC ‘set vs’ >> art [] \\
-                  simp [SUBSET_DEF] >> REWRITE_TAC [MEM_TAKE]) \\
-     ONCE_REWRITE_TAC [DISJOINT_SYM] \\
-     MATCH_MP_TAC DISJOINT_SUBSET \\
-     Q.EXISTS_TAC ‘set vs’ \\
-     reverse CONJ_TAC >- (simp [SUBSET_DEF] >> REWRITE_TAC [MEM_TAKE]) \\
-     qabbrev_tac ‘P = VAR y1 @* args1’ \\
-     Know ‘FV P = FV M0 UNION (FV P INTER set vs1)’
-     >- (Q.PAT_X_ASSUM ‘M0 = LAMl vs1 P’ (ONCE_REWRITE_TAC o wrap) \\
-         simp [FV_LAMl] >> SET_TAC []) >> Rewr' \\
-     REWRITE_TAC [DISJOINT_ALT, IN_UNION, IN_INTER] \\
-     NTAC 2 STRIP_TAC (* 2 subgoals *)
-     >| [ (* goal 1 (of 2) *)
-          Suff ‘DISJOINT (FV M0) (set vs)’ >- rw [DISJOINT_ALT] \\
-          ONCE_REWRITE_TAC [DISJOINT_SYM] \\
-          MATCH_MP_TAC DISJOINT_SUBSET \\
-          Q.EXISTS_TAC ‘FV M0 UNION FV N0’ >> simp [SUBSET_UNION],
-          (* goal 2 (of 2) *)
-          Q.PAT_X_ASSUM ‘DISJOINT (set vs1) (set vs)’ MP_TAC \\
-          rw [DISJOINT_ALT] ])
+     MATCH_MP_TAC principle_hnf_reduce >> rw [hnf_appstar])
  >> DISCH_TAC
- >> Know ‘N1 = tpm (ZIP (vs2,vsN)) (VAR y2 @* args2)’
+ >> Know ‘N1 = VAR y2 @* args2’
  >- (qunabbrev_tac ‘N1’ \\
      Q.PAT_ASSUM ‘N0 = _’ (ONCE_REWRITE_TAC o wrap) \\
-     MATCH_MP_TAC principle_hnf_LAMl_appstar \\
-     simp [Abbr ‘vsN’, hnf_appstar, ALL_DISTINCT_TAKE] \\
-     CONJ_TAC >- (MATCH_MP_TAC DISJOINT_SUBSET \\
-                  Q.EXISTS_TAC ‘set vs’ >> art [] \\
-                  simp [SUBSET_DEF] >> REWRITE_TAC [MEM_TAKE]) \\
-     ONCE_REWRITE_TAC [DISJOINT_SYM] \\
-     MATCH_MP_TAC DISJOINT_SUBSET \\
-     Q.EXISTS_TAC ‘set vs’ \\
-     reverse CONJ_TAC >- (simp [SUBSET_DEF] >> REWRITE_TAC [MEM_TAKE]) \\
-     qabbrev_tac ‘P = VAR y2 @* args2’ \\
-     Know ‘FV P = FV N0 UNION (FV P INTER set vs2)’
-     >- (Q.PAT_X_ASSUM ‘N0 = LAMl vs2 P’ (ONCE_REWRITE_TAC o wrap) \\
-         simp [FV_LAMl] >> SET_TAC []) >> Rewr' \\
-     REWRITE_TAC [DISJOINT_ALT, IN_UNION, IN_INTER] \\
-     NTAC 2 STRIP_TAC (* 2 subgoals *)
-     >| [ (* goal 1 (of 2) *)
-          Suff ‘DISJOINT (FV N0) (set vs)’ >- rw [DISJOINT_ALT] \\
-          ONCE_REWRITE_TAC [DISJOINT_SYM] \\
-          MATCH_MP_TAC DISJOINT_SUBSET \\
-          Q.EXISTS_TAC ‘FV M0 UNION FV N0’ >> simp [SUBSET_UNION],
-          (* goal 2 (of 2) *)
-          Q.PAT_X_ASSUM ‘DISJOINT (set vs2) (set vs)’ MP_TAC \\
-          rw [DISJOINT_ALT] ])
+     MATCH_MP_TAC principle_hnf_reduce >> rw [hnf_appstar])
  >> DISCH_TAC
- (* stage work *)
- >> qabbrev_tac ‘p1 = ZIP (vs1,vsM)’
- >> qabbrev_tac ‘p2 = ZIP (vs2,vsN)’
- >> REV_FULL_SIMP_TAC bool_ss [tpm_appstar, tpm_thm]
- >> ‘y = VAR (lswapstr p1 y1) /\ y' = VAR (lswapstr p2 y2)’
-      by rw [Abbr ‘y’, Abbr ‘y'’, hnf_head_absfree]
+ >> ‘VAR y1 = y /\ VAR y2 = y'’ by rw [Abbr ‘y’, Abbr ‘y'’, hnf_head_absfree]
+ >> NTAC 2 (POP_ASSUM (REV_FULL_SIMP_TAC std_ss o wrap))
  (* Case 1 *)
  >> Cases_on ‘y <> y'’
- >- (Know ‘y1 <> y2’
-     >- (SPOSE_NOT_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [])) \\
-
-         cheat) \\
+ >- (
      cheat)
  (* Case 2 *)
  >> cheat

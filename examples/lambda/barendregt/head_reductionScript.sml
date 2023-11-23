@@ -1292,7 +1292,7 @@ QED
 Theorem hnf_cases_shared :
     !vs M. hnf M /\ ALL_DISTINCT vs /\ LAMl_size M <= LENGTH vs /\
            DISJOINT (set vs) (FV M) ==>
-           ?args y. (M = LAMl (TAKE (LAMl_size M) vs) (VAR y @* args))
+           ?y args. (M = LAMl (TAKE (LAMl_size M) vs) (VAR y @* args))
 Proof
     Induct_on ‘vs’
  >- (rw [] \\
