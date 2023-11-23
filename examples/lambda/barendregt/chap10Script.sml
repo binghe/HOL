@@ -750,6 +750,16 @@ Proof
  >> rw [GSYM SNOC_APPEND]
 QED
 
+(* Used by separability_lemma0 *)
+Theorem apply_MAP_rightctxt_eq_appstar' :
+    !Ns t. apply (MAP rightctxt (REVERSE Ns)) t = t @* Ns
+Proof
+    rpt GEN_TAC
+ >> qabbrev_tac ‘Ns' = REVERSE Ns’
+ >> ‘Ns = REVERSE Ns'’ by rw [Abbr ‘Ns'’, REVERSE_REVERSE]
+ >> rw [apply_MAP_rightctxt_eq_appstar]
+QED
+
 (* Used by separability_lemma2 *)
 Theorem unsolvable_apply :
     !pi M. Boehm_transform pi /\ unsolvable M ==> unsolvable (apply pi M)
@@ -843,8 +853,6 @@ Proof
  >> qabbrev_tac ‘N0 = principle_hnf N’
  >> qabbrev_tac ‘n = LAMl_size M0’
  >> qabbrev_tac ‘n' = LAMl_size N0’
- >> qabbrev_tac ‘k = n' - n’
- >> ‘n + k = n'’ by rw [Abbr ‘k’]
  >> qabbrev_tac ‘vs = FRESH_list (MAX n n') (FV M0 UNION FV N0)’
  >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M0 UNION FV N0) /\
      LENGTH vs = MAX n n'’ by rw [Abbr ‘vs’, FRESH_list_def]
@@ -883,10 +891,32 @@ Proof
      MATCH_MP_TAC principle_hnf_reduce >> rw [hnf_appstar])
  >> DISCH_TAC
  >> ‘VAR y1 = y /\ VAR y2 = y'’ by rw [Abbr ‘y’, Abbr ‘y'’, hnf_head_absfree]
- >> NTAC 2 (POP_ASSUM (REV_FULL_SIMP_TAC std_ss o wrap))
+ (* cleanup MAX and vsN *)
+ >> ‘MAX n n' = n'’ by rw [MAX_DEF]
+ >> POP_ASSUM (REV_FULL_SIMP_TAC std_ss o wrap)
+ >> ‘vsN = vs’ by rw [Abbr ‘vsN’, TAKE_LENGTH_ID_rwt]
+ >> qunabbrev_tac ‘vsN’
+ >> POP_ASSUM (REV_FULL_SIMP_TAC std_ss o wrap)
  (* Case 1 *)
  >> Cases_on ‘y <> y'’
- >- (cheat)
+ >- (‘y1 <> y2’ by (CCONTR_TAC >> fs []) \\
+     qabbrev_tac ‘k = n' - n’ \\
+    ‘n + k = n'’ by rw [Abbr ‘k’] \\
+     qabbrev_tac ‘p0 = MAP rightctxt (REVERSE (MAP VAR vs))’ \\
+     Know ‘apply p0 N0 == N1’
+     >- (rw [Abbr ‘p0’, apply_MAP_rightctxt_eq_appstar'] \\
+         rw [lameq_LAMl_appstar_reduce]) >> DISCH_TAC \\
+     Know ‘apply p0 M0 == M1 @* DROP n (MAP VAR vs)’
+     >- (qabbrev_tac ‘l :term list = MAP VAR vs’ \\
+         qunabbrev_tac ‘p0’ \\
+         Know ‘REVERSE l = REVERSE (TAKE n l ++ DROP n l)’
+         >- REWRITE_TAC [TAKE_DROP] >> Rewr' \\
+         REWRITE_TAC [REVERSE_APPEND, MAP_APPEND, GSYM apply_apply_APPEND] \\
+         REWRITE_TAC [apply_MAP_rightctxt_eq_appstar'] \\
+         MATCH_MP_TAC lameq_appstar_cong \\
+         rw [Abbr ‘l’, Abbr ‘vsM’, GSYM MAP_TAKE, lameq_LAMl_appstar_reduce]) \\
+     DISCH_TAC \\
+     cheat)
  (* Case 2 *)
  >> cheat
 QED
@@ -898,13 +928,13 @@ QED
 Theorem separability_lemma1 :
     !M N. solvable (M :term) /\ solvable N /\ ~equivalent M N ==>
           !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q
-Proof     
+Proof
     rpt STRIP_TAC
- (* preparing for equivalent_def *)
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> qabbrev_tac ‘N0 = principle_hnf N’
  >> qabbrev_tac ‘n = LAMl_size M0’
  >> qabbrev_tac ‘n' = LAMl_size N0’
+ (* applying separability_lemma0 *)
  >> ‘n <= n' \/ n' <= n’ by rw []
  >- (MATCH_MP_TAC separability_lemma0 >> rw [])
  >> MP_TAC (Q.SPECL [‘N’, ‘M’] separability_lemma0)
