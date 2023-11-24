@@ -864,8 +864,8 @@ Theorem separability_lemma0[local] :
 Proof
     rpt STRIP_TAC
  >> Q.PAT_X_ASSUM ‘~equivalent M N’ MP_TAC
+ (* NOTE: this will create all abbreviations automatically *)
  >> REWRITE_TAC [DECIDE “~P ==> Q <=> P \/ Q”]
- (* this will create all abbreviations automatically *)
  >> RW_TAC std_ss [equivalent_def]
  >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M0 UNION FV N0) /\
      LENGTH vs = MAX n n'’ by rw [Abbr ‘vs’, FRESH_list_def]
@@ -873,12 +873,12 @@ Proof
  >> ‘hnf M0 /\ hnf N0’ by METIS_TAC [hnf_principle_hnf']
  >> Know ‘?y2 args2. N0 = LAMl vsN (VAR y2 @* args2)’
  >- (qunabbrevl_tac [‘vsN’, ‘n'’] \\
-     MATCH_MP_TAC hnf_cases_shared >> rw [] \\
+     irule (iffLR hnf_cases_shared) >> rw [] \\
      MATCH_MP_TAC DISJOINT_SUBSET \\
      Q.EXISTS_TAC ‘FV M0 UNION FV N0’ >> rw [SUBSET_UNION])
  >> Know ‘?y1 args1. M0 = LAMl vsM (VAR y1 @* args1)’
  >- (qunabbrevl_tac [‘vsM’, ‘n’] \\
-     MATCH_MP_TAC hnf_cases_shared >> rw [] \\
+     irule (iffLR hnf_cases_shared) >> rw [] \\
      MATCH_MP_TAC DISJOINT_SUBSET \\
      Q.EXISTS_TAC ‘FV M0 UNION FV N0’ >> rw [SUBSET_UNION])
  >> NTAC 2 STRIP_TAC
@@ -902,7 +902,8 @@ Proof
  >> POP_ASSUM (REV_FULL_SIMP_TAC std_ss o wrap)
  (* Case 1 *)
  >> Cases_on ‘y <> y'’
- >- (‘y1 <> y2’ by (CCONTR_TAC >> fs []) \\
+ >- (simp [] (* cleanup the goal *) \\
+    ‘y1 <> y2’ by (CCONTR_TAC >> fs []) \\
      qabbrev_tac ‘k = n' - n’ \\
     ‘n + k = n'’ by rw [Abbr ‘k’] \\
      qabbrev_tac ‘p0 = MAP rightctxt (REVERSE (MAP VAR vs))’ \\
@@ -928,7 +929,6 @@ Proof
      qabbrev_tac ‘p1 = [s2; s1]’ \\
     ‘Boehm_transform p1’ by rw [Boehm_transform_def, Abbr ‘p1’, Abbr ‘s1’, Abbr ‘s2’] \\
   (* stage work *)
-     simp [] \\
      Q.EXISTS_TAC ‘p1 ++ p0’ \\
      CONJ_TAC >- rw [Boehm_transform_APPEND] \\
      rw [GSYM apply_apply_APPEND] >| (* 2 subgoals *)
@@ -952,6 +952,8 @@ Proof
          REWRITE_TAC [hnf_children_hnf]) >> DISCH_TAC \\
        *))
  (* Case 2 *)
+ >> REWRITE_TAC [DECIDE “P \/ Q <=> ~P ==> Q”]
+ >> rfs [] >> DISCH_TAC (* m' + n <> m + n' *)
  >> cheat
 QED
 

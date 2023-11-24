@@ -1320,13 +1320,22 @@ Proof
  >> rw [appstar_SNOC]
 QED
 
-(* Another variant of ‘hnf_cases’ with a given (shared) list of fresh variables *)
+(* Another variant of ‘hnf_cases’ with a given (shared) list of fresh variables
+
+   NOTE: "irule (iffLR hnf_cases_shared)" is a useful tactic for this theorem.
+ *)
 Theorem hnf_cases_shared :
-    !vs M. hnf M /\ ALL_DISTINCT vs /\ LAMl_size M <= LENGTH vs /\
+    !vs M. ALL_DISTINCT vs /\ LAMl_size M <= LENGTH vs /\
            DISJOINT (set vs) (FV M) ==>
-           ?y args. (M = LAMl (TAKE (LAMl_size M) vs) (VAR y @* args))
+          (hnf M <=> ?y args. (M = LAMl (TAKE (LAMl_size M) vs) (VAR y @* args)))
 Proof
-    Induct_on ‘vs’
+    rpt STRIP_TAC
+ >> reverse EQ_TAC
+ >- (STRIP_TAC >> POP_ORW \\
+     rw [hnf_appstar, hnf_LAMl])
+ >> rpt (POP_ASSUM MP_TAC)
+ >> Q.ID_SPEC_TAC ‘M’
+ >> Induct_on ‘vs’
  >- (rw [] \\
     ‘?vs args y. M = LAMl vs (VAR y @* args)’ by METIS_TAC [hnf_cases] \\
      fs [LAMl_size_hnf])
