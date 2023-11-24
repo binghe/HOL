@@ -613,6 +613,14 @@ Proof
  >> Q.EXISTS_TAC ‘x’ >> rw [rightctxt_thm]
 QED
 
+Theorem solving_transform_lameq :
+    !f M N. solving_transform f /\ M == N ==> f M == f N
+Proof
+    rw [solving_transform_def, FUN_EQ_THM]
+ >- rw [lameq_rules]
+ >> rw [lameq_sub_cong]
+QED
+
 (* Definition 10.3.3 (iii)
 
    NOTE: "Boehm transform is a finite composition of solving transforms
@@ -736,9 +744,7 @@ Theorem lameq_apply_cong :
 Proof
     Induct_on ‘pi’ using SNOC_INDUCT >> rw []
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
- >> fs [solving_transform_def]
- >- rw [lameq_rules]
- >> rw [lameq_sub_cong]
+ >> MATCH_MP_TAC solving_transform_lameq >> art []
 QED
 
 (* Used by separability_thm *)
@@ -907,6 +913,7 @@ Proof
      qabbrev_tac ‘k = n' - n’ \\
     ‘n + k = n'’ by rw [Abbr ‘k’] \\
      qabbrev_tac ‘p0 = MAP rightctxt (REVERSE (MAP VAR vs))’ \\
+  (* properties of p0 *)
     ‘Boehm_transform p0’ by rw [Boehm_transform_def, Abbr ‘p0’, EVERY_MAP] \\
      Know ‘apply p0 N0 == N1’
      >- (rw [Abbr ‘p0’, apply_MAP_rightctxt_eq_appstar']) >> DISCH_TAC \\
@@ -919,38 +926,83 @@ Proof
          REWRITE_TAC [apply_MAP_rightctxt_eq_appstar'] \\
          MATCH_MP_TAC lameq_appstar_cong \\
          rw [Abbr ‘l’, Abbr ‘vsM’, GSYM MAP_TAKE]) >> DISCH_TAC \\
-  (* now use P and Q *)
-     qabbrev_tac ‘as = FRESH_list (m + k) (FV P)’ \\
-    ‘LENGTH as = m + k /\ DISJOINT (set as) (FV P)’ by rw [Abbr ‘as’, FRESH_list_def] \\
-     qabbrev_tac ‘as' = FRESH_list m' (FV Q)’ \\
-    ‘LENGTH as' = m' /\ DISJOINT (set as') (FV Q)’ by rw [Abbr ‘as'’, FRESH_list_def] \\
-     qabbrev_tac ‘s1 = [LAMl as P/y1]’ \\
-     qabbrev_tac ‘s2 = [LAMl as' Q/y2]’ \\
-     qabbrev_tac ‘p1 = [s2; s1]’ \\
-    ‘Boehm_transform p1’ by rw [Boehm_transform_def, Abbr ‘p1’, Abbr ‘s1’, Abbr ‘s2’] \\
+  (* now use P and Q
+
+     NOTE: This Z = [z1;z2] contains two fresh variables fixing the textbook proof,
+           where [1, p.254] the iterated substition "[LAMl as P/y1] [LAMl as' Q/y2]"
+           must be fixed to act as a simultaneous substitition:
+
+       [LAMl as [VAR z2/y2]P/y1] [LAMl as' [VAR z1/y1]Q/y2] [VAR y1/z1] [VAR y2/z2]
+   *)
+     qabbrev_tac ‘Z = FRESH_list 2 (FV P UNION FV Q)’ \\
+     qabbrev_tac ‘z1 = EL 0 Z’ \\
+     qabbrev_tac ‘z2 = EL 1 Z’ \\
+     qabbrev_tac ‘as = FRESH_list (m + k) (FV P UNION set Z)’ \\
+    ‘LENGTH as = m + k /\ DISJOINT (set as) (FV P UNION set Z)’
+       by rw [Abbr ‘as’, FRESH_list_def] \\
+     qabbrev_tac ‘as' = FRESH_list m' (FV Q UNION set Z)’ \\
+    ‘LENGTH as' = m' /\ DISJOINT (set as') (FV Q UNION set Z)’
+       by rw [Abbr ‘as'’, FRESH_list_def] \\
+     qabbrev_tac ‘f1 = [LAMl as  ([VAR z2/y2] P)/y1]’ \\
+     qabbrev_tac ‘f2 = [LAMl as' ([VAR z1/y1] Q)/y2]’ \\
+     qabbrev_tac ‘f3 :term -> term = [VAR y1/z1]’ \\
+     qabbrev_tac ‘f4 :term -> term = [VAR y2/z2]’ \\
+     qabbrev_tac ‘p1 = [f4; f3; f2; f1]’ \\
+  (* properties of p1 *)
+    ‘Boehm_transform p1’ by rw [Boehm_transform_def, Abbr ‘p1’,
+                                Abbr ‘f1’, Abbr ‘f2’, Abbr ‘f3’, Abbr ‘f4’] \\
   (* stage work *)
      Q.EXISTS_TAC ‘p1 ++ p0’ \\
-     CONJ_TAC >- rw [Boehm_transform_APPEND] \\
-     rw [GSYM apply_apply_APPEND] >| (* 2 subgoals *)
+     CONJ_ASM1_TAC >- rw [Boehm_transform_APPEND] \\
+     reverse CONJ_TAC >| (* 2 subgoals *)
      [ (* goal 1 (of 2) *)
-       cheat,
+       MATCH_MP_TAC lameq_TRANS \\
+       Q.EXISTS_TAC ‘apply (p1 ++ p0) N0’ \\
+       CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
+                    qunabbrev_tac ‘N0’ >> MATCH_MP_TAC lameq_SYM \\
+                    MATCH_MP_TAC lameq_principle_hnf >> art [GSYM solvable_iff_has_hnf]) \\
+       REWRITE_TAC [GSYM apply_apply_APPEND] \\
+       MATCH_MP_TAC lameq_TRANS \\
+       Q.EXISTS_TAC ‘apply p1 N1’ \\
+       CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> art []) \\
+       SIMP_TAC (srw_ss()) [Abbr ‘p1’] (* f4 (f3 (f2 (f1 N1))) == Q *) \\
+       cheat (*
+       qabbrev_tac ‘args2a = MAP s1 args2’ \\
+      ‘s1 N1 = VAR y2 @* args2a’
+          by (rw [appstar_SUB, Abbr ‘s1’, Abbr ‘args2a’]) >> POP_ORW \\
+       qunabbrev_tac ‘s2’ \\
+       MATCH_MP_TAC lameq_hnf_fresh_subst >> art [] \\
+       SIMP_TAC list_ss [Abbr ‘args2a’] \\
+       Suff ‘hnf_children N1 = args2’ >- rw [Abbr ‘m'’] \\
+       Q.PAT_ASSUM ‘N1 = VAR y2 @* args2’ (REWRITE_TAC o wrap) \\
+       REWRITE_TAC [hnf_children_hnf] *),
        (* goal 2 (of 2) *)
-       cheat ] (*
-     Know ‘[LAMl as' Q/y2] N1 == Q’
-     >- (Q.PAT_ASSUM ‘N1 = VAR y2 @* args2’ (REWRITE_TAC o wrap) \\
-         MATCH_MP_TAC lameq_hnf_fresh_subst >> art [] \\
-         Suff ‘hnf_children N1 = args2’ >- rw [Abbr ‘m'’] \\
-         Q.PAT_ASSUM ‘N1 = VAR y2 @* args2’ (REWRITE_TAC o wrap) \\
-         REWRITE_TAC [hnf_children_hnf]) >> DISCH_TAC \\
-     Know ‘[LAMl as P/y1] (M1 @* DROP n (MAP VAR vs)) == P’
-     >- (Q.PAT_ASSUM ‘M1 = VAR y1 @* args1’ (REWRITE_TAC o wrap) \\
-         REWRITE_TAC [GSYM appstar_APPEND] \\
-         MATCH_MP_TAC lameq_hnf_fresh_subst >> art [] \\
-         ASM_SIMP_TAC list_ss [] \\
-         Suff ‘hnf_children M1 = args1’ >- rw [Abbr ‘m’] \\
-         Q.PAT_ASSUM ‘M1 = VAR y1 @* args1’ (REWRITE_TAC o wrap) \\
-         REWRITE_TAC [hnf_children_hnf]) >> DISCH_TAC \\
-       *))
+       MATCH_MP_TAC lameq_TRANS \\
+       Q.EXISTS_TAC ‘apply (p1 ++ p0) M0’ \\
+       CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
+                    qunabbrev_tac ‘M0’ \\
+                    MATCH_MP_TAC lameq_SYM \\
+                    MATCH_MP_TAC lameq_principle_hnf >> art [GSYM solvable_iff_has_hnf]) \\
+       REWRITE_TAC [GSYM apply_apply_APPEND] \\
+       MATCH_MP_TAC lameq_TRANS \\
+       Q.EXISTS_TAC ‘apply p1 (M1 @* DROP n (MAP VAR vs))’ \\
+       CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> art []) \\
+       SIMP_TAC (srw_ss()) [Abbr ‘p1’] (* f4 (f3 (f2 (f1 M1))) == P *) \\
+       cheat (*
+       MATCH_MP_TAC lameq_TRANS \\
+       Q.EXISTS_TAC ‘s2 P’ \\
+       CONJ_TAC >- (MATCH_MP_TAC solving_transform_lameq \\
+                    CONJ_TAC >- REV_FULL_SIMP_TAC list_ss [Boehm_transform_def] \\
+                    qunabbrev_tac ‘s1’ \\
+                    Q.PAT_ASSUM ‘M1 = VAR y1 @* args1’ (REWRITE_TAC o wrap) \\
+                    REWRITE_TAC [GSYM appstar_APPEND] \\
+                    MATCH_MP_TAC lameq_hnf_fresh_subst >> art [] \\
+                    ASM_SIMP_TAC list_ss [] \\
+                    Suff ‘hnf_children M1 = args1’ >- rw [Abbr ‘m’] \\
+                    Q.PAT_ASSUM ‘M1 = VAR y1 @* args1’ (REWRITE_TAC o wrap) \\
+                    REWRITE_TAC [hnf_children_hnf]) \\
+       qunabbrev_tac ‘s2’ \\
+       lameq_hnf_subst *) ])
  (* Case 2 *)
  >> REWRITE_TAC [DECIDE “P \/ Q <=> ~P ==> Q”]
  >> rfs [] >> DISCH_TAC (* m' + n <> m + n' *)
