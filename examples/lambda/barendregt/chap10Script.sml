@@ -384,10 +384,10 @@ Definition equivalent_def :
                n  = LAMl_size M0;
                n' = LAMl_size N0;
                vs = FRESH_list (MAX n n') (FV M0 UNION FV N0);
-               vM = TAKE n  vs;
-               vN = TAKE n' vs;
-               M1 = principle_hnf (M0 @* (MAP VAR vM));
-               N1 = principle_hnf (N0 @* (MAP VAR vN));
+              vsM = TAKE n  vs;
+              vsN = TAKE n' vs;
+               M1 = principle_hnf (M0 @* (MAP VAR vsM));
+               N1 = principle_hnf (N0 @* (MAP VAR vsN));
                y  = hnf_head M1;
                y' = hnf_head N1;
                m  = LENGTH (hnf_children M1);
@@ -416,10 +416,10 @@ Theorem solvables_equivalent_def :
                n  = LAMl_size M0;
                n' = LAMl_size N0;
                vs = FRESH_list (MAX n n') (FV M0 UNION FV N0);
-               vM = TAKE n  vs;
-               vN = TAKE n' vs;
-               M1 = principle_hnf (M0 @* (MAP VAR vM));
-               N1 = principle_hnf (N0 @* (MAP VAR vN));
+              vsM = TAKE n  vs;
+              vsN = TAKE n' vs;
+               M1 = principle_hnf (M0 @* (MAP VAR vsM));
+               N1 = principle_hnf (N0 @* (MAP VAR vsN));
                y  = hnf_head M1;
                y' = hnf_head N1;
                m  = LENGTH (hnf_children M1);
@@ -863,24 +863,12 @@ Theorem separability_lemma0[local] :
           !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q
 Proof
     rpt STRIP_TAC
- (* preparing for equivalent_def *)
- >> qabbrev_tac ‘M0 = principle_hnf M’
- >> qabbrev_tac ‘N0 = principle_hnf N’
- >> qabbrev_tac ‘n = LAMl_size M0’
- >> qabbrev_tac ‘n' = LAMl_size N0’
- >> qabbrev_tac ‘vs = FRESH_list (MAX n n') (FV M0 UNION FV N0)’
+ >> Q.PAT_X_ASSUM ‘~equivalent M N’ MP_TAC
+ >> REWRITE_TAC [DECIDE “~P ==> Q <=> P \/ Q”]
+ (* this will create all abbreviations automatically *)
+ >> RW_TAC std_ss [equivalent_def]
  >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M0 UNION FV N0) /\
      LENGTH vs = MAX n n'’ by rw [Abbr ‘vs’, FRESH_list_def]
- >> qabbrev_tac ‘vsM = TAKE n vs’
- >> qabbrev_tac ‘vsN = TAKE n' vs’
- >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vsM)’
- >> qabbrev_tac ‘N1 = principle_hnf (N0 @* MAP VAR vsN)’
- >> qabbrev_tac ‘y = hnf_head M1’
- >> qabbrev_tac ‘y' = hnf_head N1’
- >> qabbrev_tac ‘m = LENGTH (hnf_children M1)’
- >> qabbrev_tac ‘m' = LENGTH (hnf_children N1)’
- (* applying equivalent_def *)
- >> ‘~(y = y' /\ n + m' = n' + m)’ by METIS_TAC [equivalent_def]
  (* applying hnf_cases_shared *)
  >> ‘hnf M0 /\ hnf N0’ by METIS_TAC [hnf_principle_hnf']
  >> Know ‘?y2 args2. N0 = LAMl vsN (VAR y2 @* args2)’
@@ -940,6 +928,7 @@ Proof
      qabbrev_tac ‘p1 = [s2; s1]’ \\
     ‘Boehm_transform p1’ by rw [Boehm_transform_def, Abbr ‘p1’, Abbr ‘s1’, Abbr ‘s2’] \\
   (* stage work *)
+     simp [] \\
      Q.EXISTS_TAC ‘p1 ++ p0’ \\
      CONJ_TAC >- rw [Boehm_transform_APPEND] \\
      rw [GSYM apply_apply_APPEND] >| (* 2 subgoals *)
