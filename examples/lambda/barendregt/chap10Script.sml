@@ -864,15 +864,12 @@ QED
  *---------------------------------------------------------------------------*)
 
 Theorem separability_lemma0[local] :
-    !M N. solvable (M :term) /\ solvable N /\ ~equivalent M N /\
+    !M N. solvable (M :term) /\ solvable N /\
           LAMl_size (principle_hnf M) <= LAMl_size (principle_hnf N) ==>
+          equivalent M N \/
           !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q
 Proof
-    rpt STRIP_TAC
- >> Q.PAT_X_ASSUM ‘~equivalent M N’ MP_TAC
- (* NOTE: this will create all abbreviations automatically *)
- >> REWRITE_TAC [DECIDE “~P ==> Q <=> P \/ Q”]
- >> RW_TAC std_ss [equivalent_def]
+    RW_TAC std_ss [equivalent_def]
  >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M0 UNION FV N0) /\
      LENGTH vs = MAX n n'’ by rw [Abbr ‘vs’, FRESH_list_def]
  (* applying hnf_cases_shared *)
@@ -908,7 +905,7 @@ Proof
  >> POP_ASSUM (REV_FULL_SIMP_TAC std_ss o wrap)
  (* Case 1 *)
  >> Cases_on ‘y <> y'’
- >- (simp [] (* cleanup the goal *) \\
+ >- (simp [] >> rpt GEN_TAC \\
     ‘y1 <> y2’ by (CCONTR_TAC >> fs []) \\
      qabbrev_tac ‘k = n' - n’ \\
     ‘n + k = n'’ by rw [Abbr ‘k’] \\
@@ -935,8 +932,15 @@ Proof
        [LAMl as [VAR z2/y2]P/y1] [LAMl as' [VAR z1/y1]Q/y2] [VAR y1/z1] [VAR y2/z2]
    *)
      qabbrev_tac ‘Z = FRESH_list 2 (FV P UNION FV Q)’ \\
+    ‘LENGTH Z = 2 /\ DISJOINT (set Z) (FV P UNION FV Q)’
+       by rw [FRESH_list_def, Abbr ‘Z’] \\
      qabbrev_tac ‘z1 = EL 0 Z’ \\
      qabbrev_tac ‘z2 = EL 1 Z’ \\
+    ‘MEM z1 Z /\ MEM z2 Z’
+       by (rw [MEM_EL, Abbr ‘z1’, Abbr ‘z2’] >| (* 2 subgoals *)
+           [ Q.EXISTS_TAC ‘0’ >> rw [],
+             Q.EXISTS_TAC ‘1’ >> rw [] ]) \\
+    ‘LENGTH Z = 2’ by rw [Abbr ‘Z’, FRESH_list_def] \\
      qabbrev_tac ‘as = FRESH_list (m + k) (FV P UNION set Z)’ \\
     ‘LENGTH as = m + k /\ DISJOINT (set as) (FV P UNION set Z)’
        by rw [Abbr ‘as’, FRESH_list_def] \\
@@ -951,31 +955,59 @@ Proof
   (* properties of p1 *)
     ‘Boehm_transform p1’ by rw [Boehm_transform_def, Abbr ‘p1’,
                                 Abbr ‘f1’, Abbr ‘f2’, Abbr ‘f3’, Abbr ‘f4’] \\
+     Know ‘DISJOINT (set as) (FV ([VAR z2/y2] P))’
+     >- (MATCH_MP_TAC DISJOINT_SUBSET \\
+         Q.EXISTS_TAC ‘FV P UNION set Z’ >> art [] \\
+         simp [FV_SUB] \\
+         Cases_on ‘y2 IN FV P’ >> rw [SUBSET_DEF, Abbr ‘z2’] >> art []) \\
+     DISCH_TAC \\
+     Know ‘DISJOINT (set as') (FV ([VAR z1/y1] Q))’
+     >- (MATCH_MP_TAC DISJOINT_SUBSET \\
+         Q.EXISTS_TAC ‘FV Q UNION set Z’ >> art [] \\
+         simp [FV_SUB] \\
+         Cases_on ‘y1 IN FV Q’ >> rw [SUBSET_DEF, Abbr ‘z2’] >> art []) \\
+     DISCH_TAC \\
   (* stage work *)
      Q.EXISTS_TAC ‘p1 ++ p0’ \\
      CONJ_ASM1_TAC >- rw [Boehm_transform_APPEND] \\
-     reverse CONJ_TAC >| (* 2 subgoals *)
+     reverse CONJ_TAC >| (* 2 subgoals, Q part seems easier *)
      [ (* goal 1 (of 2) *)
        MATCH_MP_TAC lameq_TRANS \\
        Q.EXISTS_TAC ‘apply (p1 ++ p0) N0’ \\
        CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
                     qunabbrev_tac ‘N0’ >> MATCH_MP_TAC lameq_SYM \\
                     MATCH_MP_TAC lameq_principle_hnf >> art [GSYM solvable_iff_has_hnf]) \\
+    (* eliminating p0 *)
        REWRITE_TAC [GSYM apply_apply_APPEND] \\
        MATCH_MP_TAC lameq_TRANS \\
        Q.EXISTS_TAC ‘apply p1 N1’ \\
        CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> art []) \\
        SIMP_TAC (srw_ss()) [Abbr ‘p1’] (* f4 (f3 (f2 (f1 N1))) == Q *) \\
-       cheat (*
-       qabbrev_tac ‘args2a = MAP s1 args2’ \\
-      ‘s1 N1 = VAR y2 @* args2a’
-          by (rw [appstar_SUB, Abbr ‘s1’, Abbr ‘args2a’]) >> POP_ORW \\
-       qunabbrev_tac ‘s2’ \\
-       MATCH_MP_TAC lameq_hnf_fresh_subst >> art [] \\
-       SIMP_TAC list_ss [Abbr ‘args2a’] \\
-       Suff ‘hnf_children N1 = args2’ >- rw [Abbr ‘m'’] \\
-       Q.PAT_ASSUM ‘N1 = VAR y2 @* args2’ (REWRITE_TAC o wrap) \\
-       REWRITE_TAC [hnf_children_hnf] *),
+    (* eliminating f1 *)
+      ‘f1 N1 = VAR y2 @* (MAP f1 args2)’
+          by (rw [appstar_SUB, Abbr ‘f1’]) >> POP_ORW \\
+    (* eliminating f2 *)
+       qunabbrev_tac ‘f2’ \\
+       MATCH_MP_TAC lameq_TRANS \\
+       Q.EXISTS_TAC ‘f4 (f3 ([VAR z1/y1] Q))’ \\
+       CONJ_TAC >- (MATCH_MP_TAC solving_transform_lameq \\
+                    CONJ_TAC >- rw [Abbr ‘f4’] \\
+                    MATCH_MP_TAC solving_transform_lameq \\
+                    CONJ_TAC >- rw [Abbr ‘f3’] \\
+                    MATCH_MP_TAC lameq_hnf_fresh_subst >> art [] \\
+                    rw [Abbr ‘m'’, hnf_children_hnf]) \\
+    (* eliminating f3 *)
+       qunabbrev_tac ‘f3’ \\
+       Know ‘[VAR y1/z1] ([VAR z1/y1] Q) = Q’
+       >- (MATCH_MP_TAC lemma15b \\
+           Q.PAT_X_ASSUM ‘DISJOINT (set Z) (FV P UNION FV Q)’ MP_TAC \\
+           rw [DISJOINT_ALT] >> METIS_TAC []) >> Rewr' \\
+    (* eliminating f4 *)
+       qunabbrev_tac ‘f4’ \\
+       Suff ‘[VAR y2/z2] Q = Q’ >- rw [] \\
+       MATCH_MP_TAC lemma14b \\
+       Q.PAT_X_ASSUM ‘DISJOINT (set Z) (FV P UNION FV Q)’ MP_TAC \\
+       rw [DISJOINT_ALT] >> METIS_TAC [],
        (* goal 2 (of 2) *)
        MATCH_MP_TAC lameq_TRANS \\
        Q.EXISTS_TAC ‘apply (p1 ++ p0) M0’ \\
@@ -983,11 +1015,16 @@ Proof
                     qunabbrev_tac ‘M0’ \\
                     MATCH_MP_TAC lameq_SYM \\
                     MATCH_MP_TAC lameq_principle_hnf >> art [GSYM solvable_iff_has_hnf]) \\
+    (* eliminating p0 *)
        REWRITE_TAC [GSYM apply_apply_APPEND] \\
        MATCH_MP_TAC lameq_TRANS \\
        Q.EXISTS_TAC ‘apply p1 (M1 @* DROP n (MAP VAR vs))’ \\
        CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> art []) \\
        SIMP_TAC (srw_ss()) [Abbr ‘p1’] (* f4 (f3 (f2 (f1 M1))) == P *) \\
+    (* eliminating f1 *)
+    (* eliminating f2 *)
+    (* eliminating f3 *)
+    (* eliminating f4 *)
        cheat (*
        MATCH_MP_TAC lameq_TRANS \\
        Q.EXISTS_TAC ‘s2 P’ \\
@@ -1023,8 +1060,7 @@ Proof
  >> qabbrev_tac ‘n = LAMl_size M0’
  >> qabbrev_tac ‘n' = LAMl_size N0’
  (* applying separability_lemma0 *)
- >> ‘n <= n' \/ n' <= n’ by rw []
- >- (MATCH_MP_TAC separability_lemma0 >> rw [])
+ >> ‘n <= n' \/ n' <= n’ by rw [] >- METIS_TAC [separability_lemma0]
  >> MP_TAC (Q.SPECL [‘N’, ‘M’] separability_lemma0)
  >> RW_TAC std_ss [Once equivalent_comm]
  >> POP_ASSUM (MP_TAC o Q.SPECL [‘Q’, ‘P’])
