@@ -246,14 +246,14 @@ Proof
  >> reverse (rw [conversion_rules])
  >- (MATCH_MP_TAC EQC_TRANS \\
      rename1 ‘conversion r2 z y’ \\
-     Q.EXISTS_TAC ‘z’ >> art [])
+     Q.EXISTS_TAC ‘z’ >> ASM_REWRITE_TAC [])
  >> POP_ASSUM MP_TAC
  >> Q.ID_SPEC_TAC ‘y’
  >> Q.ID_SPEC_TAC ‘x’
  >> HO_MATCH_MP_TAC compat_closure_ind
  >> RW_TAC std_ss []
  >| [ (* goal 1 (of 4) *)
-      Suff ‘r2 x y’ >- rw [conversion_rules] \\
+      Q_TAC SUFF_TAC ‘r2 x y’ >- rw [conversion_rules] \\
       Q.PAT_X_ASSUM ‘r1 RSUBSET r2’ MP_TAC \\
       rw [relationTheory.RSUBSET],
       (* goal 2 (of 4) *)
