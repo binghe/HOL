@@ -1388,13 +1388,13 @@ Proof
  >> simp [RSUBSET]
  >> HO_MATCH_MP_TAC asmlam_ind >> rw [] (* 7 subgoals, only the first is hard *)
  (* goal 1 (of 7 *)
- >- (MATCH_MP_TAC conversion_trans >> Q.EXISTS_TAC ‘M’ \\
+ >- (MATCH_MP_TAC conversion_TRANS >> Q.EXISTS_TAC ‘M’ \\
      CONJ_TAC
      >- (irule (REWRITE_RULE [RSUBSET] conversion_monotone) \\
          Q.EXISTS_TAC ‘beta RUNION eta’ \\
          CONJ_TAC >- rw [Abbr ‘R’, RINSERT] \\
          rw [beta_eta_lameta, Once lameta_SYM]) \\
-     MATCH_MP_TAC conversion_trans >> Q.EXISTS_TAC ‘N’ \\
+     MATCH_MP_TAC conversion_TRANS >> Q.EXISTS_TAC ‘N’ \\
      reverse CONJ_TAC
      >- (irule (REWRITE_RULE [RSUBSET] conversion_monotone) \\
          Q.EXISTS_TAC ‘beta RUNION eta’ \\
