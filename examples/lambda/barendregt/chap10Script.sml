@@ -932,7 +932,7 @@ Proof
        [LAMl as [VAR z2/y2]P/y1] [LAMl as' [VAR z1/y1]Q/y2] [VAR y1/z1] [VAR y2/z2]
    *)
      qabbrev_tac ‘Z = FRESH_list 2 (FV P UNION FV Q)’ \\
-    ‘LENGTH Z = 2 /\ DISJOINT (set Z) (FV P UNION FV Q)’
+    ‘ALL_DISTINCT Z /\ DISJOINT (set Z) (FV P UNION FV Q) /\ LENGTH Z = 2’
        by rw [FRESH_list_def, Abbr ‘Z’] \\
      qabbrev_tac ‘z1 = EL 0 Z’ \\
      qabbrev_tac ‘z2 = EL 1 Z’ \\
@@ -940,7 +940,7 @@ Proof
        by (rw [MEM_EL, Abbr ‘z1’, Abbr ‘z2’] >| (* 2 subgoals *)
            [ Q.EXISTS_TAC ‘0’ >> rw [],
              Q.EXISTS_TAC ‘1’ >> rw [] ]) \\
-    ‘LENGTH Z = 2’ by rw [Abbr ‘Z’, FRESH_list_def] \\
+    ‘z1 <> z2’ by (rw [Abbr ‘z1’, Abbr ‘z2’, ALL_DISTINCT_EL_IMP]) \\
      qabbrev_tac ‘as = FRESH_list (m + k) (FV P UNION set Z)’ \\
     ‘LENGTH as = m + k /\ DISJOINT (set as) (FV P UNION set Z)’
        by rw [Abbr ‘as’, FRESH_list_def] \\
@@ -1022,24 +1022,38 @@ Proof
        CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> art []) \\
        SIMP_TAC (srw_ss()) [Abbr ‘p1’] (* f4 (f3 (f2 (f1 M1))) == P *) \\
     (* eliminating f1 *)
-    (* eliminating f2 *)
-    (* eliminating f3 *)
-    (* eliminating f4 *)
-       cheat (*
        MATCH_MP_TAC lameq_TRANS \\
-       Q.EXISTS_TAC ‘s2 P’ \\
+       Q.EXISTS_TAC ‘f4 (f3 (f2 ([VAR z2/y2] P)))’ \\
        CONJ_TAC >- (MATCH_MP_TAC solving_transform_lameq \\
-                    CONJ_TAC >- REV_FULL_SIMP_TAC list_ss [Boehm_transform_def] \\
-                    qunabbrev_tac ‘s1’ \\
-                    Q.PAT_ASSUM ‘M1 = VAR y1 @* args1’ (REWRITE_TAC o wrap) \\
-                    REWRITE_TAC [GSYM appstar_APPEND] \\
-                    MATCH_MP_TAC lameq_hnf_fresh_subst >> art [] \\
-                    ASM_SIMP_TAC list_ss [] \\
-                    Suff ‘hnf_children M1 = args1’ >- rw [Abbr ‘m’] \\
-                    Q.PAT_ASSUM ‘M1 = VAR y1 @* args1’ (REWRITE_TAC o wrap) \\
-                    REWRITE_TAC [hnf_children_hnf]) \\
-       qunabbrev_tac ‘s2’ \\
-       lameq_hnf_subst *) ])
+                    CONJ_TAC >- rw [Abbr ‘f4’] \\
+                    MATCH_MP_TAC solving_transform_lameq \\
+                    CONJ_TAC >- rw [Abbr ‘f3’] \\
+                    MATCH_MP_TAC solving_transform_lameq \\
+                    CONJ_TAC >- rw [Abbr ‘f2’] \\
+                    rw [appstar_SUB, GSYM appstar_APPEND, Abbr ‘f1’] \\
+                    MATCH_MP_TAC lameq_LAMl_appstar_reduce >> art [] \\
+                    rw [Abbr ‘m’, hnf_children_hnf]) \\
+    (* eliminating f2 *)
+       Know ‘f2 ([VAR z2/y2] P) = [VAR z2/y2] P’
+       >- (qunabbrev_tac ‘f2’ \\
+           MATCH_MP_TAC lemma14b >> rw [FV_SUB] \\
+           CCONTR_TAC >> ‘MEM y2 Z’ by METIS_TAC [] \\
+           Q.PAT_X_ASSUM ‘DISJOINT (set Z) (FV P UNION FV Q)’
+               (MP_TAC o ONCE_REWRITE_RULE [DISJOINT_SYM]) \\
+           rw [DISJOINT_ALT] >> METIS_TAC []) >> Rewr' \\
+    (* eliminating f3 *)
+       Know ‘f3 ([VAR z2/y2] P) = [VAR z2/y2] P’
+       >- (qunabbrev_tac ‘f3’ \\
+           MATCH_MP_TAC lemma14b \\
+           Suff ‘z1 # P’ >- rw [FV_SUB] \\
+           Q.PAT_X_ASSUM ‘DISJOINT (set Z) (FV P UNION FV Q)’ MP_TAC \\
+           rw [DISJOINT_ALT] >> METIS_TAC []) >> Rewr' \\
+    (* eliminating f4 *)
+       qunabbrev_tac ‘f4’ \\
+       Suff ‘[VAR y2/z2] ([VAR z2/y2] P) = P’ >- rw [] \\
+       MATCH_MP_TAC lemma15b \\
+       Q.PAT_X_ASSUM ‘DISJOINT (set Z) (FV P UNION FV Q)’ MP_TAC \\
+       rw [DISJOINT_ALT] >> METIS_TAC [] ])
  (* Case 2 *)
  >> REWRITE_TAC [DECIDE “P \/ Q <=> ~P ==> Q”]
  >> rfs [] >> DISCH_TAC (* m' + n <> m + n' *)
@@ -1115,7 +1129,7 @@ Proof
  >> rw [Abbr ‘t’, appstar_SUB]
  >> ‘DISJOINT (set as) (FV P) /\ LENGTH as = LENGTH args’
        by rw [FRESH_list_def, Abbr ‘as’]
- >> MATCH_MP_TAC lameq_LAMl_appstar_14b >> rw []
+ >> MATCH_MP_TAC lameq_LAMl_appstar_reduce >> rw []
 QED
 
 (* Exercise 10.6.9 [1, p.272]. It may avoid using Theorem 10.2.31.

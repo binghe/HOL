@@ -1033,7 +1033,7 @@ Proof
  >> DISJ1_TAC >> qexistsl_tac [‘h’, ‘M’] >> rw []
 QED
 
-Theorem lameq_LAMl_appstar_14b :
+Theorem lameq_LAMl_appstar_reduce :
     !xs t args. DISJOINT (set xs) (FV t) /\ LENGTH xs = LENGTH args ==>
                 LAMl xs t @* args == t
 Proof
