@@ -764,7 +764,7 @@ Proof
 QED
 
 (* Used by separability_lemma2 *)
-Theorem apply_MAP_rightctxt_eq_appstar :
+Theorem Boehm_apply_MAP_rightctxt :
     !Ns t. apply (MAP rightctxt Ns) t = t @* (REVERSE Ns)
 Proof
     Induct_on ‘Ns’ >> rw [rightctxt_thm]
@@ -772,13 +772,13 @@ Proof
 QED
 
 (* Used by separability_lemma0 *)
-Theorem apply_MAP_rightctxt_eq_appstar' :
+Theorem Boehm_apply_MAP_rightctxt' :
     !Ns t. apply (MAP rightctxt (REVERSE Ns)) t = t @* Ns
 Proof
     rpt GEN_TAC
  >> qabbrev_tac ‘Ns' = REVERSE Ns’
  >> ‘Ns = REVERSE Ns'’ by rw [Abbr ‘Ns'’, REVERSE_REVERSE]
- >> rw [apply_MAP_rightctxt_eq_appstar]
+ >> rw [Boehm_apply_MAP_rightctxt]
 QED
 
 (* Used by separability_lemma2 *)
@@ -870,14 +870,62 @@ Theorem separability_lemma0_case2[local] :
                   apply pi (VAR y @* args2) == Q
 Proof
     rpt STRIP_TAC
+ >> qabbrev_tac ‘M1 = VAR y @* args1’
+ >> qabbrev_tac ‘N1 = VAR y @* args2’
  >> qabbrev_tac ‘p  = LENGTH args1’
  >> qabbrev_tac ‘p' = LENGTH args2’
  >> qabbrev_tac ‘vs = FRESH_list (k + 1) (y INSERT FV P UNION FV Q)’
- >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (y INSERT FV P UNION FV Q) /\
-     LENGTH vs = k + 1’ by rw [Abbr ‘vs’, FRESH_list_def]
+ >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (y INSERT FV P UNION FV Q)’
+      by rw [Abbr ‘vs’, FRESH_list_def]
  >> qabbrev_tac ‘a = HD vs’
  >> qabbrev_tac ‘bs = DROP 1 vs’
- >> ‘LENGTH bs = k’ by rw [Abbr ‘bs’]
+ >> Know ‘LENGTH bs + 1 = LENGTH vs’
+ >- (‘LENGTH vs = k + 1’ by rw [Abbr ‘vs’, FRESH_list_def] \\
+     rw [Abbr ‘bs’])
+ >> DISCH_TAC
+ (* p1 = ()a b_1 b_2 ... b_k *)
+ >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE (MAP VAR vs))’
+ >> ‘Boehm_transform p1’ by rw [Boehm_transform_def, Abbr ‘p1’, EVERY_MAP]
+ >> ‘apply p1 M1 = VAR y @* (args1 ++ MAP VAR vs)’
+      by (rw [Abbr ‘M1’, Abbr ‘p1’, Boehm_apply_MAP_rightctxt', appstar_APPEND])
+ >> ‘apply p1 N1 = VAR y @* (args2 ++ MAP VAR vs)’
+      by (rw [Abbr ‘N1’, Abbr ‘p1’, Boehm_apply_MAP_rightctxt', appstar_APPEND])
+ (* p2 *)
+ >> qabbrev_tac ‘Z = FRESH_list (p + 1) {}’
+ >> ‘ALL_DISTINCT Z /\ LENGTH Z = p + 1’ by rw [Abbr ‘Z’, FRESH_list_def]
+ >> ‘Z <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
+ >> qabbrev_tac ‘z = LAST Z’
+ >> qabbrev_tac ‘p2 = [[LAMl Z (VAR z)/y]]’
+ >> ‘Boehm_transform p2’ by rw [Boehm_transform_def, Abbr ‘p2’]
+ >> Know ‘apply p2 (VAR y @* (args1 ++ MAP VAR vs)) == VAR a @* MAP VAR bs’
+ >- (simp [Abbr ‘p2’, appstar_SUB] \\
+     Know ‘MAP [LAMl Z (VAR z)/y] (MAP VAR vs) = MAP VAR vs’
+     >- (rw [LIST_EQ_REWRITE, EL_MAP] \\
+         MATCH_MP_TAC lemma14b \\
+         Q.PAT_X_ASSUM ‘DISJOINT (set vs) _’ (MP_TAC o (ONCE_REWRITE_RULE [DISJOINT_SYM])) \\
+         rw [DISJOINT_ALT, MEM_EL] >> METIS_TAC []) >> Rewr' \\
+     qabbrev_tac ‘args1' = MAP [LAMl Z (VAR z)/y] args1’ \\
+     Know ‘LAMl Z (VAR z) = LAMl (FRONT Z) (LAM z (VAR z))’
+     >- (REWRITE_TAC [GSYM LAMl_SNOC] \\
+         Suff ‘SNOC z (FRONT Z) = Z’ >- Rewr \\
+         qunabbrev_tac ‘z’ >> MATCH_MP_TAC SNOC_LAST_FRONT >> art []) >> Rewr' \\
+     REWRITE_TAC [appstar_APPEND] \\
+     qabbrev_tac ‘t :term = LAM z (VAR z)’ \\
+     MATCH_MP_TAC lameq_TRANS >> Q.EXISTS_TAC ‘t @* MAP VAR vs’ \\
+     CONJ_TAC >- (MATCH_MP_TAC lameq_appstar_cong \\
+                  MATCH_MP_TAC lameq_LAMl_appstar_reduce \\
+                  rw [Abbr ‘t’, Abbr ‘args1'’, LENGTH_FRONT]) \\
+     qunabbrev_tac ‘t’ \\
+     Know ‘MAP VAR vs = (VAR a::MAP VAR bs) :term list’
+     >- (rw [Abbr ‘a’, Abbr ‘bs’, LIST_EQ_REWRITE, MAP_DROP] \\
+         Cases_on ‘x’ >- rw [EL_MAP] \\
+         rw [EL_MAP, EL_DROP, ADD1]) >> Rewr' \\
+     rw [GSYM I_alt] \\
+     MATCH_MP_TAC lameq_appstar_cong >> rw [lameq_I])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘b0 = LAST bs’
+ >> Know ‘apply p2 (VAR y @* (args2 ++ MAP VAR vs)) == VAR b0’
+ >- cheat
  >> cheat
 QED
 
@@ -931,14 +979,14 @@ Proof
   (* properties of p0 *)
     ‘Boehm_transform p0’ by rw [Boehm_transform_def, Abbr ‘p0’, EVERY_MAP] \\
      Know ‘apply p0 N0 == N1’
-     >- (rw [Abbr ‘p0’, apply_MAP_rightctxt_eq_appstar']) >> DISCH_TAC \\
+     >- (rw [Abbr ‘p0’, Boehm_apply_MAP_rightctxt']) >> DISCH_TAC \\
      Know ‘apply p0 M0 == M1 @* DROP n (MAP VAR vs)’
      >- (qabbrev_tac ‘l :term list = MAP VAR vs’ \\
          qunabbrev_tac ‘p0’ \\
          Know ‘REVERSE l = REVERSE (TAKE n l ++ DROP n l)’
          >- REWRITE_TAC [TAKE_DROP] >> Rewr' \\
          REWRITE_TAC [REVERSE_APPEND, MAP_APPEND, Boehm_apply_APPEND] \\
-         REWRITE_TAC [apply_MAP_rightctxt_eq_appstar'] \\
+         REWRITE_TAC [Boehm_apply_MAP_rightctxt'] \\
          MATCH_MP_TAC lameq_appstar_cong \\
          rw [Abbr ‘l’, Abbr ‘vsM’, GSYM MAP_TAKE]) >> DISCH_TAC \\
   (* now use P and Q
@@ -1081,7 +1129,7 @@ Proof
  (* properties of p0 *)
  >> ‘Boehm_transform p0’ by rw [Boehm_transform_def, Abbr ‘p0’, EVERY_MAP]
  >> Know ‘apply p0 N0 == N1’
- >- rw [Abbr ‘p0’, apply_MAP_rightctxt_eq_appstar']
+ >- rw [Abbr ‘p0’, Boehm_apply_MAP_rightctxt']
  >> ‘LENGTH args2 = m'’ by rw [Abbr ‘m'’, hnf_children_hnf]
  >> Q.PAT_X_ASSUM ‘N1 = _’ (ONCE_REWRITE_TAC o wrap)
  >> DISCH_TAC
@@ -1091,7 +1139,7 @@ Proof
      Know ‘REVERSE l = REVERSE (TAKE n l ++ DROP n l)’
      >- REWRITE_TAC [TAKE_DROP] >> Rewr' \\
      REWRITE_TAC [REVERSE_APPEND, MAP_APPEND, Boehm_apply_APPEND] \\
-     REWRITE_TAC [apply_MAP_rightctxt_eq_appstar'] \\
+     REWRITE_TAC [Boehm_apply_MAP_rightctxt'] \\
      MATCH_MP_TAC lameq_appstar_cong \\
      rw [Abbr ‘l’, Abbr ‘vsM’, GSYM MAP_TAKE])
  >> ‘LENGTH args1 = m’ by rw [Abbr ‘m’, hnf_children_hnf]
@@ -1202,9 +1250,9 @@ Proof
  >> rw [Abbr ‘pi’]
  >> qabbrev_tac ‘pi :transform = MAP rightctxt (MAP VAR (REVERSE (vs)))’
  >> qabbrev_tac ‘t = VAR y @* args’
- (* applying apply_MAP_rightctxt_eq_appstar *)
+ (* applying Boehm_apply_MAP_rightctxt *)
  >> Know ‘apply pi (LAMl vs t) = LAMl vs t @* MAP VAR vs’
- >- (rw [Abbr ‘pi’, apply_MAP_rightctxt_eq_appstar] \\
+ >- (rw [Abbr ‘pi’, Boehm_apply_MAP_rightctxt] \\
      rw [MAP_REVERSE, REVERSE_REVERSE])
  >> Rewr'
  (* applying lameq_LAMl_appstar_VAR *)
