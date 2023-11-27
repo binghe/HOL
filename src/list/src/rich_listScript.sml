@@ -2959,6 +2959,22 @@ val FRONT_APPEND = Q.store_thm ("FRONT_APPEND",
    `!l1 l2 e. FRONT (l1 ++ e::l2) = l1 ++ FRONT (e::l2)`,
    Induct_on `l1` THEN ASM_SIMP_TAC list_ss [FRONT_DEF])
 
+Theorem FRONT_APPEND_NOT_NIL :
+    !l1 l2. l2 <> [] ==> FRONT (l1 ++ l2) = l1 ++ FRONT l2
+Proof
+    rpt STRIP_TAC
+ >> Cases_on ‘l2’
+ >> FULL_SIMP_TAC std_ss [FRONT_APPEND]
+QED
+
+Theorem LAST_APPEND_NOT_NIL :
+    !l1 l2. l2 <> [] ==> LAST (l1 ++ l2) = LAST l2
+Proof
+    rpt STRIP_TAC
+ >> Cases_on ‘l2’
+ >> FULL_SIMP_TAC std_ss [LAST_APPEND_CONS]
+QED
+
 val EL_FRONT = Q.store_thm ("EL_FRONT",
    `!l n. n < LENGTH (FRONT l) /\ ~NULL l ==> (EL n (FRONT l) = EL n l)`,
    Induct_on `l`
