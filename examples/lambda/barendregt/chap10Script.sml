@@ -755,8 +755,8 @@ Proof
 QED
 
 (* Used by separability_thm *)
-Theorem apply_apply_APPEND :
-    !p1 p2 M. apply p1 (apply p2 M) = apply (p1 ++ p2) M
+Theorem Boehm_apply_APPEND :
+    !p1 p2 M. apply (p1 ++ p2) M = apply p1 (apply p2 M)
 Proof
     Q.X_GEN_TAC ‘p1’
  >> Induct_on ‘p2’ using SNOC_INDUCT
@@ -863,6 +863,14 @@ QED
  *  Separability of terms
  *---------------------------------------------------------------------------*)
 
+Theorem separability_lemma0_case2[local] :
+    !y args1 args2 k. 0 < k /\ LENGTH args1 = LENGTH args2 + k ==>
+       !P Q. ?pi. Boehm_transform pi /\
+                  apply pi (y @* args1) == P /\ apply pi (y @* args2) == Q
+Proof
+    cheat
+QED
+
 Theorem separability_lemma0[local] :
     !M N. solvable (M :term) /\ solvable N /\
           LAMl_size (principle_hnf M) <= LAMl_size (principle_hnf N) ==>
@@ -919,7 +927,7 @@ Proof
          qunabbrev_tac ‘p0’ \\
          Know ‘REVERSE l = REVERSE (TAKE n l ++ DROP n l)’
          >- REWRITE_TAC [TAKE_DROP] >> Rewr' \\
-         REWRITE_TAC [REVERSE_APPEND, MAP_APPEND, GSYM apply_apply_APPEND] \\
+         REWRITE_TAC [REVERSE_APPEND, MAP_APPEND, Boehm_apply_APPEND] \\
          REWRITE_TAC [apply_MAP_rightctxt_eq_appstar'] \\
          MATCH_MP_TAC lameq_appstar_cong \\
          rw [Abbr ‘l’, Abbr ‘vsM’, GSYM MAP_TAKE]) >> DISCH_TAC \\
@@ -978,7 +986,7 @@ Proof
                     qunabbrev_tac ‘N0’ >> MATCH_MP_TAC lameq_SYM \\
                     MATCH_MP_TAC lameq_principle_hnf >> art [GSYM solvable_iff_has_hnf]) \\
     (* eliminating p0 *)
-       REWRITE_TAC [GSYM apply_apply_APPEND] \\
+       REWRITE_TAC [Boehm_apply_APPEND] \\
        MATCH_MP_TAC lameq_TRANS \\
        Q.EXISTS_TAC ‘apply p1 N1’ \\
        CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> art []) \\
@@ -1016,7 +1024,7 @@ Proof
                     MATCH_MP_TAC lameq_SYM \\
                     MATCH_MP_TAC lameq_principle_hnf >> art [GSYM solvable_iff_has_hnf]) \\
     (* eliminating p0 *)
-       REWRITE_TAC [GSYM apply_apply_APPEND] \\
+       REWRITE_TAC [Boehm_apply_APPEND] \\
        MATCH_MP_TAC lameq_TRANS \\
        Q.EXISTS_TAC ‘apply p1 (M1 @* DROP n (MAP VAR vs))’ \\
        CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> art []) \\
@@ -1057,7 +1065,73 @@ Proof
  (* Case 2 *)
  >> REWRITE_TAC [DECIDE “P \/ Q <=> ~P ==> Q”]
  >> rfs [] >> DISCH_TAC (* m' + n <> m + n' *)
- >> cheat
+ >> rpt GEN_TAC
+ (* p0 is the same as in case 1 *)
+ >> qabbrev_tac ‘p0 = MAP rightctxt (REVERSE (MAP VAR vs))’
+ (* properties of p0 *)
+ >> ‘Boehm_transform p0’ by rw [Boehm_transform_def, Abbr ‘p0’, EVERY_MAP]
+ >> Know ‘apply p0 N0 == N1’
+ >- rw [Abbr ‘p0’, apply_MAP_rightctxt_eq_appstar']
+ >> ‘LENGTH args2 = m'’ by rw [Abbr ‘m'’, hnf_children_hnf]
+ >> Q.PAT_X_ASSUM ‘N1 = _’ (ONCE_REWRITE_TAC o wrap)
+ >> Q.PAT_X_ASSUM ‘VAR y2 = y'’ (ONCE_REWRITE_TAC o wrap)
+ >> Q.PAT_X_ASSUM ‘y = y'’ (ONCE_REWRITE_TAC o wrap o SYM)
+ >> DISCH_TAC
+ >> Know ‘apply p0 M0 == M1 @* DROP n (MAP VAR vs)’
+ >- (qabbrev_tac ‘l :term list = MAP VAR vs’ \\
+     qunabbrev_tac ‘p0’ \\
+     Know ‘REVERSE l = REVERSE (TAKE n l ++ DROP n l)’
+     >- REWRITE_TAC [TAKE_DROP] >> Rewr' \\
+     REWRITE_TAC [REVERSE_APPEND, MAP_APPEND, Boehm_apply_APPEND] \\
+     REWRITE_TAC [apply_MAP_rightctxt_eq_appstar'] \\
+     MATCH_MP_TAC lameq_appstar_cong \\
+     rw [Abbr ‘l’, Abbr ‘vsM’, GSYM MAP_TAKE])
+ >> ‘LENGTH args1 = m’ by rw [Abbr ‘m’, hnf_children_hnf]
+ >> Q.PAT_X_ASSUM ‘M1 = _’ (ONCE_REWRITE_TAC o wrap)
+ >> Q.PAT_X_ASSUM ‘VAR y1 = y’ (ONCE_REWRITE_TAC o wrap)
+ >> REWRITE_TAC [GSYM appstar_APPEND]
+ >> qabbrev_tac ‘args1' = args1 ++ DROP n (MAP VAR vs)’
+ >> DISCH_TAC
+ >> qabbrev_tac ‘l = LENGTH args1'’
+ >> ‘l <> m'’ by rw [Abbr ‘l’, Abbr ‘args1'’]
+ (* stage work *)
+ >> ‘m' < l \/ l < m'’ by rw [] (* 2 subgoals sharing the same ending tactics *)
+ >| [ (* goal 1 (of 2) *)
+      MP_TAC (Q.SPECL [‘y’, ‘args1'’, ‘args2’, ‘l - m'’] separability_lemma0_case2) \\
+      simp [] \\
+      DISCH_THEN (STRIP_ASSUME_TAC o (Q.SPECL [‘P’, ‘Q’])),
+      (* goal 2 (of 2) *)
+      MP_TAC (Q.SPECL [‘y’, ‘args2’, ‘args1'’, ‘m' - l’] separability_lemma0_case2) \\
+      simp [] \\
+      DISCH_THEN (STRIP_ASSUME_TAC o (Q.SPECL [‘Q’, ‘P’])) ]
+ (* shared tactics *)
+ >> (Q.EXISTS_TAC ‘pi ++ p0’ \\
+     CONJ_ASM1_TAC >- rw [Boehm_transform_APPEND] \\
+     CONJ_TAC >| (* 2 subgoals *)
+     [ (* goal 1.1 (of 2) *)
+       MATCH_MP_TAC lameq_TRANS \\
+       Q.EXISTS_TAC ‘apply (pi ++ p0) M0’ \\
+       CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
+                    qunabbrev_tac ‘M0’ >> MATCH_MP_TAC lameq_SYM \\
+                    MATCH_MP_TAC lameq_principle_hnf \\
+                    ASM_REWRITE_TAC [GSYM solvable_iff_has_hnf]) \\
+       REWRITE_TAC [Boehm_apply_APPEND] \\
+       MATCH_MP_TAC lameq_TRANS \\
+       Q.EXISTS_TAC ‘apply pi (y @* args1')’ \\
+       reverse CONJ_TAC >- art [] \\
+       MATCH_MP_TAC lameq_apply_cong >> art [],
+       (* goal 1.2 (of 2) *)
+       MATCH_MP_TAC lameq_TRANS \\
+       Q.EXISTS_TAC ‘apply (pi ++ p0) N0’ \\
+       CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
+                    qunabbrev_tac ‘N0’ >> MATCH_MP_TAC lameq_SYM \\
+                    MATCH_MP_TAC lameq_principle_hnf \\
+                    ASM_REWRITE_TAC [GSYM solvable_iff_has_hnf]) \\
+       REWRITE_TAC [Boehm_apply_APPEND] \\
+       MATCH_MP_TAC lameq_TRANS \\
+       Q.EXISTS_TAC ‘apply pi (y @* args2)’ \\
+       reverse CONJ_TAC >- art [] \\
+       MATCH_MP_TAC lameq_apply_cong >> art [] ])
 QED
 
 (* Lemma 10.4.1 (i)
@@ -1074,7 +1148,8 @@ Proof
  >> qabbrev_tac ‘n = LAMl_size M0’
  >> qabbrev_tac ‘n' = LAMl_size N0’
  (* applying separability_lemma0 *)
- >> ‘n <= n' \/ n' <= n’ by rw [] >- METIS_TAC [separability_lemma0]
+ >> ‘n <= n' \/ n' <= n’ by rw []
+ >- METIS_TAC [separability_lemma0]
  >> MP_TAC (Q.SPECL [‘N’, ‘M’] separability_lemma0)
  >> RW_TAC std_ss [Once equivalent_comm]
  >> POP_ASSUM (MP_TAC o Q.SPECL [‘Q’, ‘P’])
@@ -1174,7 +1249,7 @@ Proof
  >> ‘?pi. Boehm_transform pi /\ apply pi M0 == P /\ apply pi N0 == Q’
        by PROVE_TAC [separability_lemma1] (* this asserts pi' *)
  >> Q.EXISTS_TAC ‘pi' ++ pi’
- >> fs [Boehm_transform_APPEND, apply_apply_APPEND, Abbr ‘M0’, Abbr ‘N0’]
+ >> fs [Abbr ‘M0’, Abbr ‘N0’, Boehm_transform_APPEND, GSYM Boehm_apply_APPEND]
 QED
 
 (* Theorem 10.4.2 (ii) [1, p.256] *)
