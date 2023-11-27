@@ -1,5 +1,5 @@
 (*---------------------------------------------------------------------------*
- * chap10Script.sml: (Effective) Boehm Trees (Chapter 10 of [1])             *
+ * boehmScript.sml: (Effective) Boehm Trees (Chapter 10 of [1])              *
  *---------------------------------------------------------------------------*)
 
 open HolKernel boolLib Parse bossLib;
@@ -11,9 +11,9 @@ open optionTheory arithmeticTheory pred_setTheory listTheory rich_listTheory
 open binderLib nomsetTheory termTheory appFOLDLTheory chap2Theory chap3Theory
      head_reductionTheory standardisationTheory solvableTheory reductionEval;
 
-open chap15_1Theory;
+open horeductionTheory takahashiTheory;
 
-val _ = new_theory "chap10";
+val _ = new_theory "boehm";
 
 val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
 
@@ -1420,7 +1420,7 @@ Proof
 QED
 
 val _ = export_theory ();
-val _ = html_theory "chap10";
+val _ = html_theory "boehm";
 
 (* References:
 
