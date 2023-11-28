@@ -1187,6 +1187,16 @@ Proof
  >> rw [appstar_SNOC, Once hnf_head_def, FOLDL]
 QED
 
+Theorem hnf_head_hnf[simp] :
+    (hnf_head (VAR y @@ t) = VAR y) /\
+    (hnf_head (VAR y @* args) = VAR y)
+Proof
+    CONJ_TAC
+ >- NTAC 2 (rw [Once hnf_head_def])
+ >> MATCH_MP_TAC hnf_head_appstar
+ >> rw []
+QED
+
 Overload hnf_headvar = “\t. THE_VAR (hnf_head t)”
 
 (* hnf_children retrives the ‘args’ part of an abs-free hnf (VAR y @* args) *)

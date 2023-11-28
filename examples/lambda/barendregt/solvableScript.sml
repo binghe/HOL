@@ -727,7 +727,7 @@ QED
 Theorem hnf_principle_hnf' =
    REWRITE_RULE [GSYM solvable_iff_has_hnf] hnf_principle_hnf
 
-Theorem principle_hnf_eq_self :
+Theorem principle_hnf_eq_self[simp] :
     !M. hnf M ==> principle_hnf M = M
 Proof
     rw [principle_hnf_def]

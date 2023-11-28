@@ -17,7 +17,7 @@ val _ = new_theory "boehm";
 
 val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
 
-val o_DEF = combinTheory.o_DEF; (* cannot directly open combinTheory *)
+val o_DEF = combinTheory.o_DEF;
 
 (*---------------------------------------------------------------------------*
  *  ltreeTheory extras
@@ -408,27 +408,59 @@ Proof
  >>  METIS_TAC []
 QED
 
-Theorem solvables_equivalent_def :
+Theorem equivalent_of_solvables :
     !M N. solvable M /\ solvable N ==>
          (equivalent M N <=>
           let M0 = principle_hnf M;
-               N0 = principle_hnf N;
-               n  = LAMl_size M0;
-               n' = LAMl_size N0;
-               vs = FRESH_list (MAX n n') (FV M0 UNION FV N0);
-              vsM = TAKE n  vs;
-              vsN = TAKE n' vs;
-               M1 = principle_hnf (M0 @* (MAP VAR vsM));
-               N1 = principle_hnf (N0 @* (MAP VAR vsN));
-               y  = hnf_head M1;
-               y' = hnf_head N1;
-               m  = LENGTH (hnf_children M1);
-               m' = LENGTH (hnf_children N1);
+              N0 = principle_hnf N;
+              n  = LAMl_size M0;
+              n' = LAMl_size N0;
+              vs = FRESH_list (MAX n n') (FV M0 UNION FV N0);
+             vsM = TAKE n  vs;
+             vsN = TAKE n' vs;
+              M1 = principle_hnf (M0 @* (MAP VAR vsM));
+              N1 = principle_hnf (N0 @* (MAP VAR vsN));
+              y  = hnf_head M1;
+              y' = hnf_head N1;
+              m  = LENGTH (hnf_children M1);
+              m' = LENGTH (hnf_children N1);
            in
-               y = y' /\ n + m' = n' + m)
+              y = y' /\ n + m' = n' + m)
 Proof
     RW_TAC std_ss [equivalent_def]
 QED
+
+(* NOTE: this combined tactic is useful after:
+
+   RW_TAC std_ss [equivalent_def]
+ *)
+val equivalent_tac =
+   ‘hnf M0 /\ hnf N0’ by PROVE_TAC [hnf_principle_hnf, solvable_iff_has_hnf] \\
+   ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M0 UNION FV N0) /\
+    LENGTH vs = MAX n n'’ by rw [Abbr ‘vs’, FRESH_list_def] \\
+    Know ‘?y2 args2. N0 = LAMl vsN (VAR y2 @* args2)’
+    >- (qunabbrevl_tac [‘vsN’, ‘n'’] \\
+        irule (iffLR hnf_cases_shared) >> rw [] \\
+        MATCH_MP_TAC DISJOINT_SUBSET \\
+        Q.EXISTS_TAC ‘FV M0 UNION FV N0’ >> rw [SUBSET_UNION]) \\
+    Know ‘?y1 args1. M0 = LAMl vsM (VAR y1 @* args1)’
+    >- (qunabbrevl_tac [‘vsM’, ‘n’] \\
+        irule (iffLR hnf_cases_shared) >> rw [] \\
+        MATCH_MP_TAC DISJOINT_SUBSET \\
+        Q.EXISTS_TAC ‘FV M0 UNION FV N0’ >> rw [SUBSET_UNION]) \\
+    NTAC 2 STRIP_TAC \\
+    Know ‘M1 = VAR y1 @* args1’
+    >- (qunabbrev_tac ‘M1’ \\
+        Q.PAT_ASSUM ‘M0 = _’ (ONCE_REWRITE_TAC o wrap) \\
+        MATCH_MP_TAC principle_hnf_reduce >> rw [hnf_appstar]) \\
+    DISCH_TAC \\
+    Know ‘N1 = VAR y2 @* args2’
+    >- (qunabbrev_tac ‘N1’ \\
+        Q.PAT_ASSUM ‘N0 = _’ (ONCE_REWRITE_TAC o wrap) \\
+        MATCH_MP_TAC principle_hnf_reduce >> rw [hnf_appstar]) \\
+    DISCH_TAC \\
+   ‘VAR y1 = y’ by rw [Abbr ‘y’, hnf_head_absfree] \\
+   ‘VAR y2 = y'’ by rw [Abbr ‘y'’, hnf_head_absfree];
 
 (* From [1, p.238]. This concerte example shows that dB encoding is not easy in
    defining this "concept": the literal encoding of inner head variables are not
@@ -437,64 +469,63 @@ QED
 Theorem not_equivalent_example :
     !x y. x <> y ==> ~equivalent (LAM x (VAR y @@ M)) (LAM y (VAR y @@ M))
 Proof
-    NTAC 3 STRIP_TAC
- >> ‘hnf (LAM x (VAR y @@ M)) /\ hnf (LAM y (VAR y @@ M))’ by rw []
- >> ‘solvable (LAM x (VAR y @@ M)) /\ solvable (LAM y (VAR y @@ M))’
+ (* NOTE: ‘y’ must avoid here for the shared equivalent_tac *)
+    qx_genl_tac [‘x’, ‘v’] >> DISCH_TAC
+ >> ‘hnf (LAM x (VAR v @@ M)) /\ hnf (LAM v (VAR v @@ M))’ by rw []
+ >> ‘solvable (LAM x (VAR v @@ M)) /\ solvable (LAM v (VAR v @@ M))’
        by rw [solvable_iff_has_hnf, hnf_has_hnf]
- >> simp [equivalent_def, principle_hnf_eq_self]
- >> ‘{y} UNION FV M DELETE y = FV M DELETE y’ by SET_TAC []
- >> POP_ORW
- >> ‘{y} UNION FV M DELETE x = (y INSERT FV M) DELETE x’ by SET_TAC []
- >> POP_ORW
- >> qabbrev_tac ‘ns = (y INSERT FV M) DELETE x UNION (FV M DELETE y)’
- >> ‘FINITE ns’ by rw [Abbr ‘ns’]
- >> drule (Q.SPECL [‘1’, ‘ns’] FRESH_list_def) >> STRIP_TAC
- >> qabbrev_tac ‘vs = FRESH_list 1 ns’
+ >> RW_TAC std_ss [equivalent_of_solvables, principle_hnf_eq_self]
+ (* applying shared tactics *)
+ >> equivalent_tac
+ >> qunabbrevl_tac [‘n’, ‘n'’]
+ >> Know ‘LAMl_size M0 = 1 /\ LAMl_size N0 = 1’
+ >- (rw [Abbr ‘M0’, Abbr ‘N0’, LAMl_size_def])
+ >> DISCH_THEN (rfs o wrap)
  >> qabbrev_tac ‘z = HD vs’
  >> ‘vs = [z]’ by METIS_TAC [SING_HD]
- >> simp [appstar_thm]
- (* applying principle_hnf_beta *)
- >> qabbrev_tac ‘t = VAR y @@ M’
- >> ‘hnf t’ by rw [Abbr ‘t’]
- >> Know ‘principle_hnf (LAM x t @@ VAR z) = [VAR z/x] t’
- >- (MATCH_MP_TAC principle_hnf_beta >> simp [Abbr ‘t’] \\
-     Q.PAT_X_ASSUM ‘DISJOINT (set vs) ns’ MP_TAC \\
-     rw [DISJOINT_ALT, Abbr ‘ns’] >> fs [])
- >> Rewr'
- >> Know ‘principle_hnf (LAM y t @@ VAR z) = [VAR z/y] t’
- >- (MATCH_MP_TAC principle_hnf_beta >> simp [Abbr ‘t’] \\
-     Q.PAT_X_ASSUM ‘DISJOINT (set vs) ns’ MP_TAC \\
-     rw [DISJOINT_ALT, Abbr ‘ns’] >> fs [])
- >> Rewr'
+ >> Q.PAT_X_ASSUM ‘vsN = vsM’ (rfs o wrap o SYM)
+ >> rfs [Abbr ‘vsN’]
+ >> POP_ASSUM (rfs o wrap)
+ >> qunabbrevl_tac [‘M0’, ‘N0’]
  >> DISJ1_TAC
+ >> qunabbrevl_tac [‘y’, ‘y'’]
+ (* applying principle_hnf_beta *)
+ >> qabbrev_tac ‘t = VAR v @@ M’
+ >> ‘hnf t’ by rw [Abbr ‘t’]
+ >> Know ‘M1 = [VAR z/x] t’
+ >- (qunabbrev_tac ‘M1’ \\
+     Cases_on ‘z = x’ >- POP_ASSUM (rfs o wrap) \\
+     MATCH_MP_TAC principle_hnf_beta >> simp [Abbr ‘t’] \\
+     rfs [FV_thm])
+ >> Rewr'
+ >> Know ‘N1 = [VAR z/v] t’
+ >- (qunabbrev_tac ‘N1’ \\
+     Cases_on ‘z = v’ >- POP_ASSUM (rfs o wrap) \\
+     MATCH_MP_TAC principle_hnf_beta >> simp [Abbr ‘t’] \\
+     rfs [FV_thm])
+ >> Rewr'
  >> simp [Abbr ‘t’]
- >> NTAC 5 (simp [Once hnf_head_def])
  (* final goal: y <> z *)
- >> Q.PAT_X_ASSUM ‘DISJOINT (set vs) ns’ MP_TAC
- >> rw [DISJOINT_ALT, Abbr ‘ns’] >> fs []
+ >> Q.PAT_X_ASSUM ‘z # LAM x (VAR v @@ M)’ MP_TAC
+ >> rw [FV_thm]
+ >> METIS_TAC []
 QED
 
 Theorem equivalent_example :
-    equivalent (LAM x (VAR x @@ M)) (LAMl [y; z] (VAR y @* [M; N]))
+    !x y z. y <> z ==> equivalent (LAM x (VAR x @@ M)) (LAMl [y; z] (VAR y @* [M; N]))
 Proof
-    ‘hnf (LAM x (VAR y @@ M)) /\
-     hnf (LAMl [y; z] (VAR y @* [M; N]))’ by rw [hnf_appstar]
- >> ‘solvable (LAM x (VAR y @@ M)) /\
-     solvable (LAMl [y; z] (VAR y @* [M; N]))’
+    qx_genl_tac [‘x’, ‘v’, ‘z’]
+ >> ‘hnf (LAM x (VAR x @@ M)) /\
+     hnf (LAMl [v; z] (VAR v @* [M; N]))’ by rw [hnf_appstar]
+ >> ‘solvable (LAM x (VAR x @@ M)) /\
+     solvable (LAMl [v; z] (VAR v @* [M; N]))’
        by PROVE_TAC [solvable_iff_has_hnf, hnf_has_hnf]
- >> simp [equivalent_def, principle_hnf_eq_self]
- >> ‘MAX 1 (LAMl_size (LAMl [y; z] (VAR y @* [M; N]))) = 2’
-       by rw [LAMl_thm, appstar_thm]
- >> POP_ORW
- >> Know ‘({x} UNION FV M DELETE x UNION FV (LAMl [y; z] (VAR y @* [M; N]))) =
-          (FV M DELETE x) UNION (FV M UNION FV N DELETE y DELETE z)’
- >- (rw [LAMl_thm, appstar_thm] >> SET_TAC [])
- >> Rewr'
- >> qabbrev_tac ‘ns = (FV M DELETE x) UNION (FV M UNION FV N DELETE y DELETE z)’
- >> qabbrev_tac ‘vs = FRESH_list 2 ns’
- >> qabbrev_tac ‘vs1 = TAKE 1 vs’
- >> qabbrev_tac ‘vs2 = TAKE 2 vs’
- (* applying principle_hnf_LAMl_appstar *)
+ >> RW_TAC std_ss [equivalent_of_solvables, principle_hnf_eq_self]
+ (* applying shared tactics *)
+ >> equivalent_tac
+ >- (
+     cheat)
+ (* stage work *)
  >> cheat
 QED
 
@@ -782,7 +813,7 @@ Proof
 QED
 
 (* Used by separability_lemma2 *)
-Theorem unsolvable_apply :
+Theorem Boehm_apply_unsolvable :
     !pi M. Boehm_transform pi /\ unsolvable M ==> unsolvable (apply pi M)
 Proof
     Induct_on ‘pi’ using SNOC_INDUCT >> rw []
@@ -1029,33 +1060,8 @@ Theorem separability_lemma0[local] :
           !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q
 Proof
     RW_TAC std_ss [equivalent_def]
- >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M0 UNION FV N0) /\
-     LENGTH vs = MAX n n'’ by rw [Abbr ‘vs’, FRESH_list_def]
- (* applying hnf_cases_shared *)
- >> ‘hnf M0 /\ hnf N0’ by METIS_TAC [hnf_principle_hnf']
- >> Know ‘?y2 args2. N0 = LAMl vsN (VAR y2 @* args2)’
- >- (qunabbrevl_tac [‘vsN’, ‘n'’] \\
-     irule (iffLR hnf_cases_shared) >> rw [] \\
-     MATCH_MP_TAC DISJOINT_SUBSET \\
-     Q.EXISTS_TAC ‘FV M0 UNION FV N0’ >> rw [SUBSET_UNION])
- >> Know ‘?y1 args1. M0 = LAMl vsM (VAR y1 @* args1)’
- >- (qunabbrevl_tac [‘vsM’, ‘n’] \\
-     irule (iffLR hnf_cases_shared) >> rw [] \\
-     MATCH_MP_TAC DISJOINT_SUBSET \\
-     Q.EXISTS_TAC ‘FV M0 UNION FV N0’ >> rw [SUBSET_UNION])
- >> NTAC 2 STRIP_TAC
- (* applying principle_hnf_reduce *)
- >> Know ‘M1 = VAR y1 @* args1’
- >- (qunabbrev_tac ‘M1’ \\
-     Q.PAT_ASSUM ‘M0 = _’ (ONCE_REWRITE_TAC o wrap) \\
-     MATCH_MP_TAC principle_hnf_reduce >> rw [hnf_appstar])
- >> DISCH_TAC
- >> Know ‘N1 = VAR y2 @* args2’
- >- (qunabbrev_tac ‘N1’ \\
-     Q.PAT_ASSUM ‘N0 = _’ (ONCE_REWRITE_TAC o wrap) \\
-     MATCH_MP_TAC principle_hnf_reduce >> rw [hnf_appstar])
- >> DISCH_TAC
- >> ‘VAR y1 = y /\ VAR y2 = y'’ by rw [Abbr ‘y’, Abbr ‘y'’, hnf_head_absfree]
+ (* applying the shared equivalent_tac *)
+ >> equivalent_tac
  (* cleanup MAX and vsN *)
  >> ‘MAX n n' = n'’ by rw [MAX_DEF]
  >> POP_ASSUM (REV_FULL_SIMP_TAC std_ss o wrap)
@@ -1329,9 +1335,9 @@ Proof
  >> STRONG_CONJ_TAC
  >- rw [Abbr ‘pi’, Boehm_transform_def, EVERY_SNOC, EVERY_MAP]
  >> DISCH_TAC
- (* applying unsolvable_apply *)
+ (* applying Boehm_apply_unsolvable *)
  >> reverse CONJ_TAC
- >- (MATCH_MP_TAC unsolvable_apply >> art [])
+ >- (MATCH_MP_TAC Boehm_apply_unsolvable >> art [])
  (* stage work *)
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘apply pi M0’
