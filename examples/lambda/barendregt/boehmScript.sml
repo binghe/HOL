@@ -511,6 +511,7 @@ Proof
  >> METIS_TAC []
 QED
 
+(*
 Theorem equivalent_example :
     !x y z. y <> z ==> equivalent (LAM x (VAR x @@ M)) (LAMl [y; z] (VAR y @* [M; N]))
 Proof
@@ -523,11 +524,39 @@ Proof
  >> RW_TAC std_ss [equivalent_of_solvables, principle_hnf_eq_self]
  (* applying shared tactics *)
  >> equivalent_tac
- >- (
+ (* shared tactics for both subgoals *) 
+ >> (Q.PAT_X_ASSUM ‘M0 = _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘N0 = _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘M1 = _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘N1 = _’ K_TAC \\
+     NTAC 2 (POP_ASSUM K_TAC) \\
+  (* eliminate n and n' *)
+     qunabbrevl_tac [‘n’, ‘n'’] \\
+     Know ‘LAMl_size M0 = 1 /\ LAMl_size N0 = 2’
+     >- (rw [Abbr ‘M0’, Abbr ‘N0’, LAMl_size_def, LAMl_size_LAMl]) \\
+     DISCH_THEN (rfs o wrap) \\
+  (* eliminate vs, vsM, vsN *)
+     Know ‘?v0 v1. vs = [v0; v1]’
+     >- (qexistsl_tac [‘EL 0 vs’, ‘EL 1 vs’] \\
+         rw [Once LIST_EQ_REWRITE] \\
+         rename1 ‘i < 2’ \\
+        ‘i = 0 \/ i = 1’ by rw [] >> rw []) >> STRIP_TAC \\
+     POP_ASSUM (fn th => rfs [th, Abbr ‘vsN’, Abbr ‘vsM’]) \\
+     qunabbrevl_tac [‘y’, ‘y'’] \\
+  (* stage work *)
+     Know ‘M1 = [VAR v0/x] (VAR x @@ M)’
+     >- (qunabbrevl_tac [‘M0’, ‘M1’] \\
+         Cases_on ‘v0 = x’
+         >- (rw [lemma14a] \\
+             MATCH_MP_TAC principle_hnf_reduce1 >> rw []) \\
+         MATCH_MP_TAC principle_hnf_beta >> rw [FV_thm] \\
+         rfs [FV_thm]) \\
+      simp [SUB_THM] >> DISCH_TAC \\
+     Know ‘N1 = LAM v (LAM z (VAR v @@ M @@ N)) @@ VAR v0 @@ VAR v1’
+     >- cheat \\
      cheat)
- (* stage work *)
- >> cheat
 QED
+ *)
 
 Theorem equivalent_unsolvables :
     !M N. unsolvable M /\ unsolvable N ==> equivalent M N

@@ -901,6 +901,19 @@ Proof
  >> MATCH_MP_TAC principle_hnf_LAMl_appstar_lemma >> rw []
 QED
 
+Theorem principle_hnf_reduce1 :
+    !v t. hnf t ==> principle_hnf (LAM v t @@ VAR v) = t
+Proof
+    rpt STRIP_TAC
+ >> Know ‘principle_hnf (LAM v t @@ VAR v) =
+          principle_hnf ([VAR v/v] t)’
+ >- (MATCH_MP_TAC principle_hnf_hreduce1 \\
+     rw [Once hreduce1_cases] \\
+     qexistsl_tac [‘v’, ‘t’] >> rw [])
+ >> Rewr'
+ >> rw [principle_hnf_eq_self]
+QED
+
 Theorem principle_hnf_reduce :
     !xs t. hnf t ==> principle_hnf (LAMl xs t @* (MAP VAR xs)) = t
 Proof
