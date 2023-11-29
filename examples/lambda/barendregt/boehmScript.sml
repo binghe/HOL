@@ -453,6 +453,29 @@ Proof
  >> METIS_TAC []
 QED
 
+(* Given a hnf ‘M0’ and a shared binding variable list ‘vs’
+
+   hnf_tac adds the following abbreviation and new assumptions:
+
+   Abbrev (M1 = principle_hnf (M0 @* MAP VAR (TAKE (LAMl_size M0) vs)))
+   M0 = LAMl (TAKE (LAMl_size M0) vs) (VAR y @* args)
+   M1 = VAR y @* args
+
+   where the names "M1", "y" and "args" can be chosen from inputs.
+ *)
+fun hnf_tac (M0,vs,M1,y,args) = let val n = “LAMl_size ^M0” in
+    qabbrev_tac ‘^M1 = principle_hnf (^M0 @* MAP VAR (TAKE ^n ^vs))’
+ >> Know ‘?^y ^args. ^M0 = LAMl (TAKE ^n ^vs) (VAR ^y @* ^args)’
+ >- (irule (iffLR hnf_cases_shared) >> rw [])
+ >> STRIP_TAC
+ >> Know ‘^M1 = VAR ^y @* ^args’
+ >- (qunabbrev_tac ‘^M1’ \\
+     Q.PAT_ASSUM ‘^M0 = LAMl (TAKE ^n ^vs) (VAR ^y @* ^args)’
+        (fn th => REWRITE_TAC [Once th]) \\
+     MATCH_MP_TAC principle_hnf_reduce >> rw [hnf_appstar])
+ >> DISCH_TAC
+end;
+
 (* The following combined tactic is useful after:
 
    RW_TAC std_ss [equivalent_of_solvables, principle_hnf_eq_self]
@@ -460,32 +483,30 @@ QED
    NOTE: it doesn't work with equivalent_of_hnf
  *)
 val equivalent_tac =
-   ‘hnf M0 /\ hnf N0’ by PROVE_TAC [hnf_principle_hnf, solvable_iff_has_hnf] \\
-   ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M0 UNION FV N0) /\
-    LENGTH vs = MAX n n'’ by rw [Abbr ‘vs’, FRESH_list_def] \\
-    Know ‘?y2 args2. N0 = LAMl vsN (VAR y2 @* args2)’
-    >- (qunabbrevl_tac [‘vsN’, ‘n'’] \\
-        irule (iffLR hnf_cases_shared) >> rw [] \\
-        MATCH_MP_TAC DISJOINT_SUBSET \\
-        Q.EXISTS_TAC ‘FV M0 UNION FV N0’ >> rw [SUBSET_UNION]) \\
-    Know ‘?y1 args1. M0 = LAMl vsM (VAR y1 @* args1)’
-    >- (qunabbrevl_tac [‘vsM’, ‘n’] \\
-        irule (iffLR hnf_cases_shared) >> rw [] \\
-        MATCH_MP_TAC DISJOINT_SUBSET \\
-        Q.EXISTS_TAC ‘FV M0 UNION FV N0’ >> rw [SUBSET_UNION]) \\
-    NTAC 2 STRIP_TAC \\
-    Know ‘M1 = VAR y1 @* args1’
-    >- (qunabbrev_tac ‘M1’ \\
-        Q.PAT_ASSUM ‘M0 = _’ (ONCE_REWRITE_TAC o wrap) \\
-        MATCH_MP_TAC principle_hnf_reduce >> rw [hnf_appstar]) \\
-    DISCH_TAC \\
-    Know ‘N1 = VAR y2 @* args2’
-    >- (qunabbrev_tac ‘N1’ \\
-        Q.PAT_ASSUM ‘N0 = _’ (ONCE_REWRITE_TAC o wrap) \\
-        MATCH_MP_TAC principle_hnf_reduce >> rw [hnf_appstar]) \\
-    DISCH_TAC \\
-   ‘VAR y1 = y’ by rw [Abbr ‘y’, hnf_head_absfree] \\
-   ‘VAR y2 = y'’ by rw [Abbr ‘y'’, hnf_head_absfree];
+    ‘hnf M0 /\ hnf N0’ by PROVE_TAC [hnf_principle_hnf, solvable_iff_has_hnf]
+ >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M0 UNION FV N0) /\
+     LENGTH vs = MAX n n'’ by rw [Abbr ‘vs’, FRESH_list_def]
+ >> ‘DISJOINT (set vs) (FV M0) /\ DISJOINT (set vs) (FV N0)’
+      by METIS_TAC [DISJOINT_SYM, DISJOINT_UNION]
+ >> qunabbrevl_tac [‘M1’, ‘N1’]
+ >> hnf_tac (“M0 :term”, “vs :string list”,
+             “M1 :term”, “y1 :string”, “args1 :term list”)
+ >> hnf_tac (“N0 :term”, “vs :string list”,
+             “N1 :term”, “y2 :string”, “args2 :term list”)
+ >> ‘TAKE (LAMl_size M0) vs = vsM’ by rw [Abbr ‘vsM’, Abbr ‘n’]
+ >> ‘TAKE (LAMl_size N0) vs = vsN’ by rw [Abbr ‘vsN’, Abbr ‘n'’]
+ >> NTAC 2 (POP_ASSUM (rfs o wrap))
+ (* reshaping and reordering assumptions *)
+ >> qunabbrev_tac ‘M1’
+ >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vsM)’
+ >> qunabbrev_tac ‘N1’
+ >> qabbrev_tac ‘N1 = principle_hnf (N0 @* MAP VAR vsN)’
+ >> Q.PAT_X_ASSUM ‘M0 = _’ ASSUME_TAC
+ >> Q.PAT_X_ASSUM ‘N0 = _’ ASSUME_TAC
+ >> Q.PAT_X_ASSUM ‘M1 = _’ ASSUME_TAC
+ >> Q.PAT_X_ASSUM ‘N1 = _’ ASSUME_TAC
+ >> ‘VAR y1 = y’  by rw [Abbr ‘y’ , hnf_head_absfree]
+ >> ‘VAR y2 = y'’ by rw [Abbr ‘y'’, hnf_head_absfree];
 
 (* From [1, p.238]. This concerte example shows that dB encoding is not easy in
    defining this "concept": the literal encoding of inner head variables are not
@@ -502,15 +523,18 @@ Proof
  >> RW_TAC std_ss [equivalent_of_solvables, principle_hnf_eq_self]
  (* applying shared tactics *)
  >> equivalent_tac
+ (* eliminating n and n' *)
  >> qunabbrevl_tac [‘n’, ‘n'’]
  >> Know ‘LAMl_size M0 = 1 /\ LAMl_size N0 = 1’
  >- (rw [Abbr ‘M0’, Abbr ‘N0’, LAMl_size_def])
  >> DISCH_THEN (rfs o wrap)
+ (* eliminating vsM and vsN *)
  >> qabbrev_tac ‘z = HD vs’
  >> ‘vs = [z]’ by METIS_TAC [SING_HD]
  >> Q.PAT_X_ASSUM ‘vsN = vsM’ (rfs o wrap o SYM)
  >> rfs [Abbr ‘vsN’]
  >> POP_ASSUM (rfs o wrap)
+ (* stage work *)
  >> qunabbrevl_tac [‘M0’, ‘N0’]
  >> DISJ1_TAC
  >> qunabbrevl_tac [‘y’, ‘y'’]
@@ -532,8 +556,7 @@ Proof
  >> simp [Abbr ‘t’]
  (* final goal: y <> z *)
  >> Q.PAT_X_ASSUM ‘z # LAM x (VAR v @@ M)’ MP_TAC
- >> rw [FV_thm]
- >> METIS_TAC []
+ >> simp [FV_thm] >> PROVE_TAC []
 QED
 
 (* NOTE: not easy, plus useless...
@@ -940,7 +963,7 @@ QED
 Definition head_original_def :
     head_original M0 = let n = LAMl_size M0;
                           vs = FRESH_list n (FV M0);
-                          M1 = principle_hnf (M0 @* (MAP VAR vs));
+                          M1 = principle_hnf (M0 @* MAP VAR vs);
                        in
                           EVERY (\e. hnf_head M1 # e) (hnf_children M1)
 End
@@ -948,14 +971,29 @@ End
 (* Definition 10.3.5 (iii) *)
 Definition is_ready_def :
     is_ready M <=> unsolvable M \/
-                  ~is_abs (principle_hnf M) /\ head_original (principle_hnf M)
+                   ?N. M == N /\ hnf N /\ ~is_abs N /\ head_original N
 End
 
 (* Lemma 10.3.6 (i) *)
 Theorem Boehm_transform_is_ready_exists :
     !M. ?pi. Boehm_transform pi /\ is_ready (apply pi M)
 Proof
-    cheat
+    Q.X_GEN_TAC ‘M’
+ >> reverse (Cases_on ‘solvable M’)
+ >- (Q.EXISTS_TAC ‘[]’ >> rw [is_ready_def])
+ (* now M is solvable *)
+ >> qabbrev_tac ‘M0 = principle_hnf M’
+ >> ‘hnf M0’ by PROVE_TAC [hnf_principle_hnf, solvable_iff_has_hnf]
+ >> qabbrev_tac ‘n = LAMl_size M0’
+ >> qabbrev_tac ‘vs = FRESH_list n (FV M0)’
+ >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M0) /\ LENGTH vs = n’
+       by (rw [Abbr ‘vs’, FRESH_list_def])
+ (* applying the shared hnf_tac *)
+ >> hnf_tac (“M0 :term”, “vs :string list”,
+             “M1 :term”, “y :string”, “args :term list”)
+ >> ‘TAKE (LAMl_size M0) vs = vs’ by rw []
+ >> POP_ASSUM (REV_FULL_SIMP_TAC std_ss o wrap)
+ >> cheat
 QED
 
 (* Definition 10.3.10 (ii) *)
