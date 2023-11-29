@@ -984,7 +984,7 @@ fun FRESH_list_tac (vs,n,X) =
     STRIP_TAC;
 
 (* Lemma 10.3.6 (i) *)
-Theorem Boehm_transform_is_ready_exists :
+Theorem EXISTS_Boehm_transform_is_ready :
     !M. ?pi. Boehm_transform pi /\ is_ready (apply pi M)
 Proof
     Q.X_GEN_TAC ‘M’
@@ -1007,19 +1007,37 @@ Proof
  >> ‘apply p1 M0 == M1’
        by (rw [Abbr ‘p1’, Boehm_apply_MAP_rightctxt', Abbr ‘xs’])
  >> qabbrev_tac ‘m = LENGTH args’
- >> qabbrev_tac ‘Z = FRESH_list (m + 1) {}’
- >> FRESH_list_tac (“Z :string list”, “(m + 1) :num”, “{} :string set”)
- >> qabbrev_tac ‘P = LAMl Z (VAR (LAST Z) @* MAP VAR (FRONT Z))’
- >> qabbrev_tac ‘p2 = [[P/y]]’
- >> ‘apply p2 M1 = P @* MAP [P/y] args’ by (rw [Abbr ‘p2’, appstar_SUB])
- >> qabbrev_tac ‘args' = MAP [P/y] args’
- >> qabbrev_tac ‘X = BIGUNION (IMAGE FV (set args'))’
+ (* X collects all free variables in ‘args’ *)
+ >> qabbrev_tac ‘X = BIGUNION (IMAGE FV (set args))’
  >> Know ‘FINITE X’
  >- (qunabbrev_tac ‘X’ \\
      MATCH_MP_TAC FINITE_BIGUNION >> rw [] >> rw [])
  >> DISCH_TAC
+ (* Z needs to avoid any free variables in args' *)
+ >> qabbrev_tac ‘Z = FRESH_list (m + 1) X’
+ >> FRESH_list_tac (“Z :string list”, “(m + 1) :num”, “X :string set”)
+ >> ‘Z <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
+ >> qabbrev_tac ‘A = LAST Z’
+ >> qabbrev_tac ‘P = LAMl Z (VAR A @* MAP VAR (FRONT Z))’
+ >> qabbrev_tac ‘p2 = [[P/y]]’
+ >> ‘apply p2 M1 = P @* MAP [P/y] args’ by (rw [Abbr ‘p2’, appstar_SUB])
+ >> qabbrev_tac ‘args' = MAP [P/y] args’
+ (* a needs to avoid any free variables in args' *)
  >> NEW_TAC "a" “X :string set”
  >> qabbrev_tac ‘p3 = [rightctxt (VAR a)]’
+ >> Know ‘apply p3 (P @* args') == VAR a @* args'’
+ >- (rw [Abbr ‘p3’, Abbr ‘P’, rightctxt_thm] \\
+    ‘!t. LAMl Z t = LAMl (SNOC A (FRONT Z)) t’
+         by (ASM_SIMP_TAC std_ss [Abbr ‘A’, SNOC_LAST_FRONT]) >> POP_ORW \\
+     REWRITE_TAC [LAMl_SNOC] \\
+     qabbrev_tac ‘t = LAM A (VAR A @* MAP VAR (FRONT Z))’ \\
+     MATCH_MP_TAC lameq_TRANS \\
+     Q.EXISTS_TAC ‘LAM A (VAR A @* args') @@ VAR a’ \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC lameq_APPL \\
+         cheat (* applying lameq_LAMl_appstar *)) \\
+     cheat)
+ (* final stage *)
  >> cheat
 QED
 

@@ -238,7 +238,7 @@ Proof
  >> Q.ABBREV_TAC ‘fm = FEMPTY |++ ZIP (vs,Ns0)’
  >> Know ‘LAMl vs M @* Ns0 == fm ' M’
  >- (Q.UNABBREV_TAC ‘fm’ \\
-     MATCH_MP_TAC lameq_LAMl_appstar >> rw [])
+     MATCH_MP_TAC lameq_LAMl_appstar_closed >> rw [])
  >> DISCH_TAC
  >> ‘LAMl vs M @* Ns0 @* Ns1 == fm ' M @* Ns1’ by PROVE_TAC [lameq_appstar_cong]
  >> ‘fm ' M @* Ns1 == I’ by PROVE_TAC [lameq_TRANS, lameq_SYM]
@@ -290,7 +290,7 @@ Proof
  >> rw [solvable_def, closed_substitution_instances_def]
  >> Q.ABBREV_TAC ‘vss = FDOM fm’
  >> ‘FINITE vss’ by rw [FDOM_FINITE, Abbr ‘vss’]
- (* preparing for lameq_LAMl_appstar *)
+ (* preparing for lameq_LAMl_appstar_closed *)
  >> Q.ABBREV_TAC ‘vs = SET_TO_LIST vss’
  >> ‘ALL_DISTINCT vs’ by PROVE_TAC [Abbr ‘vs’, ALL_DISTINCT_SET_TO_LIST]
  >> Q.ABBREV_TAC ‘Ps = MAP (\v. fm ' v) vs’
@@ -316,7 +316,7 @@ Proof
  >> Rewr'
  >> DISCH_TAC
  >> Know ‘LAMl vs M @* Ps == (FEMPTY |++ ZIP (vs,Ps)) ' M’
- >- (MATCH_MP_TAC lameq_LAMl_appstar >> art [] \\
+ >- (MATCH_MP_TAC lameq_LAMl_appstar_closed >> art [] \\
      rw [Abbr ‘Ps’, EVERY_MEM, MEM_MAP] \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
      POP_ASSUM MP_TAC \\
@@ -364,7 +364,7 @@ Proof
  >> Q.ABBREV_TAC ‘fm = FEMPTY |++ ZIP (vs,Ns0)’
  >> Know ‘LAMl vs M @* Ns0 == fm ' M’
  >- (Q.UNABBREV_TAC ‘fm’ \\
-     MATCH_MP_TAC lameq_LAMl_appstar >> rw [])
+     MATCH_MP_TAC lameq_LAMl_appstar_closed >> rw [])
  >> DISCH_TAC
  >> ‘LAMl vs M @* Ns0 @* Ns1 == fm ' M @* Ns1’ by PROVE_TAC [lameq_appstar_cong]
  >> ‘fm ' M @* Ns1 == I’ by PROVE_TAC [lameq_TRANS, lameq_SYM]
@@ -387,7 +387,7 @@ Proof
  >> Q.ABBREV_TAC ‘fm' = FEMPTY |++ ZIP (vs',Ns0')’
  >> Know ‘LAMl vs' M @* Ns0' == fm' ' M’
  >- (Q.UNABBREV_TAC ‘fm'’ \\
-     MATCH_MP_TAC lameq_LAMl_appstar >> rw [])
+     MATCH_MP_TAC lameq_LAMl_appstar_closed >> rw [])
  >> DISCH_TAC
  >> ‘LAMl vs' M @* Ns0' @* Ns1 == fm' ' M @* Ns1’ by PROVE_TAC [lameq_appstar_cong]
  >> MATCH_MP_TAC lameq_TRANS
@@ -666,11 +666,11 @@ Proof
  (* now we use arithmeticTheory.FUNPOW instead of locally defined one *)
  >> qabbrev_tac ‘Ms = GENLIST (\i. FUNPOW (APP K) m I) n’
  >> Q.EXISTS_TAC ‘Ms’
- (* applying lameq_LAMl_appstar and ssub_appstar *)
+ (* applying lameq_LAMl_appstar_closed and ssub_appstar *)
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘(FEMPTY |++ ZIP (vs,Ms)) ' (VAR y @* Ns)’
  >> CONJ_TAC
- >- (MATCH_MP_TAC lameq_LAMl_appstar >> art [] \\
+ >- (MATCH_MP_TAC lameq_LAMl_appstar_closed >> art [] \\
      CONJ_TAC >- rw [Abbr ‘Ms’] \\
      rw [EVERY_EL, Abbr ‘Ms’, closed_def, FV_FUNPOW])
  >> REWRITE_TAC [ssub_appstar]
