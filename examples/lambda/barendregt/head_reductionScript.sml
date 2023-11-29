@@ -14,6 +14,7 @@ val _ = ParseExtras.temp_loose_equality()
 fun Store_thm(trip as (n,t,tac)) = store_thm trip before export_rewrites [n]
 
 Inductive hreduce1 :
+[~BETA:]
   (∀v M N. hreduce1 (LAM v M @@ N) ([N/v]M))
 [~LAM:]
   (∀v M1 M2. hreduce1 M1 M2 ⇒ hreduce1 (LAM v M1) (LAM v M2))

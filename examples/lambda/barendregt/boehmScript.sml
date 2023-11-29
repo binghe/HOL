@@ -430,9 +430,34 @@ Proof
     RW_TAC std_ss [equivalent_def]
 QED
 
-(* NOTE: this combined tactic is useful after:
+Theorem equivalent_of_hnf :
+    !M N. hnf M /\ hnf N ==>
+         (equivalent M N <=>
+          let n  = LAMl_size M;
+              n' = LAMl_size N;
+              vs = FRESH_list (MAX n n') (FV M UNION FV N);
+             vsM = TAKE n  vs;
+             vsN = TAKE n' vs;
+              M1 = principle_hnf (M @* (MAP VAR vsM));
+              N1 = principle_hnf (N @* (MAP VAR vsN));
+              y  = hnf_head M1;
+              y' = hnf_head N1;
+              m  = LENGTH (hnf_children M1);
+              m' = LENGTH (hnf_children N1);
+           in
+              y = y' /\ n + m' = n' + m)
+Proof
+    rpt STRIP_TAC
+ >> ‘solvable M /\ solvable N’ by PROVE_TAC [hnf_has_hnf, solvable_iff_has_hnf]
+ >> RW_TAC std_ss [equivalent_def, principle_hnf_eq_self]
+ >> METIS_TAC []
+QED
 
-   RW_TAC std_ss [equivalent_def]
+(* The following combined tactic is useful after:
+
+   RW_TAC std_ss [equivalent_of_solvables, principle_hnf_eq_self]
+
+   NOTE: it doesn't work with equivalent_of_hnf
  *)
 val equivalent_tac =
    ‘hnf M0 /\ hnf N0’ by PROVE_TAC [hnf_principle_hnf, solvable_iff_has_hnf] \\
@@ -511,9 +536,10 @@ Proof
  >> METIS_TAC []
 QED
 
-(*
+(* NOTE: not easy, plus useless...
 Theorem equivalent_example :
-    !x y z. y <> z ==> equivalent (LAM x (VAR x @@ M)) (LAMl [y; z] (VAR y @* [M; N]))
+    !x y z. y <> z ==>
+            equivalent (LAM x (VAR x @@ M)) (LAMl [y; z] (VAR y @* [M; N]))
 Proof
     qx_genl_tac [‘x’, ‘v’, ‘z’]
  >> ‘hnf (LAM x (VAR x @@ M)) /\
@@ -524,8 +550,8 @@ Proof
  >> RW_TAC std_ss [equivalent_of_solvables, principle_hnf_eq_self]
  (* applying shared tactics *)
  >> equivalent_tac
- (* shared tactics for both subgoals *) 
- >> (Q.PAT_X_ASSUM ‘M0 = _’ K_TAC \\
+ (* Let's try only the first subgoal *)
+ >- (Q.PAT_X_ASSUM ‘M0 = _’ K_TAC \\
      Q.PAT_X_ASSUM ‘N0 = _’ K_TAC \\
      Q.PAT_X_ASSUM ‘M1 = _’ K_TAC \\
      Q.PAT_X_ASSUM ‘N1 = _’ K_TAC \\
@@ -551,14 +577,20 @@ Proof
              MATCH_MP_TAC principle_hnf_reduce1 >> rw []) \\
          MATCH_MP_TAC principle_hnf_beta >> rw [FV_thm] \\
          rfs [FV_thm]) \\
-      simp [SUB_THM] >> DISCH_TAC \\
+     simp [SUB_THM] >> DISCH_TAC \\
+  (* stage work
+
+     N1 = principle_hnf (N0 @@ VAR v0 @@ VAR v1)
+        = principle_hnf (LAM v (LAM z (VAR v @@ M @@ N)) @@ VAR v0 @@ VAR v1)
+        = principle_hnf (
+   *)
      Know ‘N1 = LAM v (LAM z (VAR v @@ M @@ N)) @@ VAR v0 @@ VAR v1’
      >- cheat \\
      cheat)
 QED
  *)
 
-Theorem equivalent_unsolvables :
+Theorem equivalent_of_unsolvables :
     !M N. unsolvable M /\ unsolvable N ==> equivalent M N
 Proof
     rw [equivalent_def]
@@ -693,6 +725,12 @@ Definition Boehm_transform_def :
     Boehm_transform pi = EVERY solving_transform pi
 End
 
+Theorem Boehm_transform_empty[simp] :
+    Boehm_transform []
+Proof
+    rw [Boehm_transform_def]
+QED
+
 Theorem Boehm_transform_CONS[simp] :
     Boehm_transform (h::pi) <=> solving_transform h /\ Boehm_transform pi
 Proof
@@ -707,7 +745,10 @@ QED
 
 (* ‘apply pi M’ (applying a Boehm transformation) means "M^{pi}" or "pi(M)"
 
-   NOTE: ‘apply [f3;f2;f1] M = (f3 o f2 o f1) M = f3 (f2 (f1 M))’ *)
+   NOTE: ‘apply [f3;f2;f1] M = (f3 o f2 o f1) M = f3 (f2 (f1 M))’
+
+   NOTE2: The type of ‘apply’ is “:('a -> 'a) list -> 'a -> 'a”
+ *)
 Definition apply_def :
     apply pi = FOLDR $o I pi
 End
@@ -764,10 +805,49 @@ QED
 Theorem Boehm_transform_lameq_LAMl_appstar :
     !pi. Boehm_transform pi ==>
          ?c. ctxt c /\ (!M. apply pi M == c M) /\
-             !xs. FINITE xs ==>
-                  ?Ns. !M. FV M SUBSET xs ==> c M == (LAMl (SET_TO_LIST xs) M) @* Ns
+             !vs. ALL_DISTINCT vs ==>
+                  ?Ns. !M. FV M SUBSET (set vs) ==> c M == LAMl vs M @* Ns
 Proof
-    cheat
+    Induct_on ‘pi’
+ >- (rw [] \\
+     Q.EXISTS_TAC ‘\x. x’ >> rw [ctxt_rules] \\
+     Q.EXISTS_TAC ‘MAP VAR vs’ >> rpt STRIP_TAC \\
+     rw [Once lameq_SYM, lameq_LAMl_appstar_VAR])
+ >> rw []
+ >> Q.PAT_X_ASSUM ‘Boehm_transform pi ==> P’ MP_TAC
+ >> RW_TAC std_ss []
+ >> FULL_SIMP_TAC std_ss [solving_transform_def] (* 2 subgoals *)
+ (* goal 1 (of 2) *)
+ >- (Q.EXISTS_TAC ‘\z. c z @@ (\z. VAR x) z’ \\
+     rw [ctxt_rules, lameq_rules] \\
+     Q.PAT_X_ASSUM ‘!vs. ALL_DISTINCT vs ==> P’ (drule_then STRIP_ASSUME_TAC) \\
+     Q.EXISTS_TAC ‘SNOC (VAR x) Ns’ \\
+     rw [appstar_SNOC, lameq_rules])
+ (* goal 2 (of 2) *)
+ >> rename1 ‘h = [P/y]’
+ >> qabbrev_tac ‘c1 = \z. LAM y (c z)’
+ >> ‘ctxt c1’ by rw [ctxt_rules, Abbr ‘c1’]
+ >> Q.EXISTS_TAC ‘\z. c1 z @@ (\z. P) z’
+ >> CONJ_TAC >- rw [ctxt_rules, constant_contexts_exist]
+ >> CONJ_TAC
+ >- (rw [Abbr ‘c1’] \\
+     MATCH_MP_TAC lameq_TRANS >> Q.EXISTS_TAC ‘[P/y] (c M)’ \\
+     rw [lameq_sub_cong, Once lameq_SYM, lameq_BETA])
+ >> rpt STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘!vs. ALL_DISTINCT vs ==> _’ (drule_then STRIP_ASSUME_TAC)
+ >> Q.EXISTS_TAC ‘MAP [P/y] Ns’
+ >> rw [Abbr ‘c1’]
+ >> Q.PAT_X_ASSUM ‘!M. FV M SUBSET set vs ==> _’ (drule_then STRIP_ASSUME_TAC)
+ >> MATCH_MP_TAC lameq_TRANS
+ >> Q.EXISTS_TAC ‘[P/y] (c M)’ >> rw [lameq_BETA]
+ >> MATCH_MP_TAC lameq_TRANS
+ >> Q.EXISTS_TAC ‘[P/y] (LAMl vs M @* Ns)’ >> rw [lameq_sub_cong]
+ >> rw [appstar_SUB]
+ >> Suff ‘[P/y] (LAMl vs M) = LAMl vs M’ >- rw []
+ >> MATCH_MP_TAC lemma14b
+ >> Suff ‘FV (LAMl vs M) = {}’ >- rw []
+ >> rw [FV_LAMl]
+ >> Q.PAT_X_ASSUM ‘FV M SUBSET (set vs)’ MP_TAC >> SET_TAC []
 QED
 
 (* An corollary of the above lemma with ‘xs = {}’
@@ -1088,7 +1168,7 @@ Theorem separability_lemma0[local] :
           equivalent M N \/
           !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q
 Proof
-    RW_TAC std_ss [equivalent_def]
+    RW_TAC std_ss [equivalent_of_solvables]
  (* applying the shared equivalent_tac *)
  >> equivalent_tac
  (* cleanup MAX and vsN *)

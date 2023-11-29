@@ -761,9 +761,7 @@ Proof
  >> qabbrev_tac ‘N = [VAR y/v] t’
  >> ‘hnf N’ by rw [Abbr ‘N’, GSYM fresh_tpm_subst]
  >> Know ‘M -h-> N’
- >- (qunabbrevl_tac [‘M’, ‘N’] \\
-     rw [Once hreduce1_cases] \\
-     qexistsl_tac [‘v’, ‘t’] >> rw [])
+ >- rw [Abbr ‘M’, Abbr ‘N’, hreduce1_BETA]
  >> rw [head_reduce1_def]
  >> qabbrev_tac ‘p = pcons M r (stopped_at N)’
  >> Suff ‘head_reduction_path M = p’ >- rw [Abbr ‘p’]
@@ -804,9 +802,7 @@ Proof
  >> Know ‘principle_hnf (LAM q M @@ VAR r @* args) =
           principle_hnf ([VAR r/q] M @* args)’
  >- (MATCH_MP_TAC principle_hnf_hreduce1 \\
-     MATCH_MP_TAC hreduce1_rules_appstar >> simp [] \\
-     rw [Once hreduce1_cases] \\
-     qexistsl_tac [‘q’, ‘M’] >> rw [])
+     MATCH_MP_TAC hreduce1_rules_appstar >> rw [hreduce1_BETA])
  >> Rewr'
  >> Know ‘[VAR r/q] M = LAMl (MAP FST pi) ([VAR r/q] t)’
  >- (qunabbrev_tac ‘M’ \\
@@ -908,8 +904,7 @@ Proof
  >> Know ‘principle_hnf (LAM v t @@ VAR v) =
           principle_hnf ([VAR v/v] t)’
  >- (MATCH_MP_TAC principle_hnf_hreduce1 \\
-     rw [Once hreduce1_cases] \\
-     qexistsl_tac [‘v’, ‘t’] >> rw [])
+     rw [hreduce1_BETA])
  >> Rewr'
  >> rw [principle_hnf_eq_self]
 QED
@@ -918,16 +913,13 @@ Theorem principle_hnf_reduce :
     !xs t. hnf t ==> principle_hnf (LAMl xs t @* (MAP VAR xs)) = t
 Proof
     Induct_on ‘xs’
- >- rw [principle_hnf_eq_self]
- >> rw []
+ >> rw [principle_hnf_eq_self]
  >> qabbrev_tac ‘M = LAMl xs t’
  >> qabbrev_tac ‘args :term list = MAP VAR xs’
  >> Know ‘principle_hnf (LAM h M @@ VAR h @* args) =
           principle_hnf ([VAR h/h] M @* args)’
  >- (MATCH_MP_TAC principle_hnf_hreduce1 \\
-     MATCH_MP_TAC hreduce1_rules_appstar >> simp [] \\
-     rw [Once hreduce1_cases] \\
-     qexistsl_tac [‘h’, ‘M’] >> rw [])
+     MATCH_MP_TAC hreduce1_rules_appstar >> rw [hreduce1_BETA])
  >> Rewr'
  >> simp [Abbr ‘M’]
 QED
@@ -1021,6 +1013,7 @@ Proof
  >> MATCH_MP_TAC hreduces_lameq >> art []
 QED
 
+(* |- !M. solvable M ==> principle_hnf M == M *)
 Theorem lameq_principle_hnf' =
         REWRITE_RULE [GSYM solvable_iff_has_hnf] lameq_principle_hnf
 
