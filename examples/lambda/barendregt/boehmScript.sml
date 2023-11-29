@@ -770,7 +770,7 @@ QED
 
    NOTE: ‘apply [f3;f2;f1] M = (f3 o f2 o f1) M = f3 (f2 (f1 M))’
 
-   NOTE2: The type of ‘apply’ is “:('a -> 'a) list -> 'a -> 'a”
+   NOTE2: This function seems general: “:('a -> 'a) list -> 'a -> 'a”.
  *)
 Definition apply_def :
     apply pi = FOLDR $o I pi
@@ -974,6 +974,15 @@ Definition is_ready_def :
                    ?N. M == N /\ hnf N /\ ~is_abs N /\ head_original N
 End
 
+(* cf. NEW_TAC
+
+   NOTE: “FINITE X” must be present in the assumptions or provable by rw [].
+ *)
+fun FRESH_list_tac (vs,n,X) =
+    KNOW_TAC “ALL_DISTINCT ^vs /\ DISJOINT (set ^vs) ^X /\ LENGTH ^vs = ^n”
+    >- rw [FRESH_list_def, Abbr ‘^vs’] \\
+    STRIP_TAC;
+
 (* Lemma 10.3.6 (i) *)
 Theorem Boehm_transform_is_ready_exists :
     !M. ?pi. Boehm_transform pi /\ is_ready (apply pi M)
@@ -993,6 +1002,24 @@ Proof
              “M1 :term”, “y :string”, “args :term list”)
  >> ‘TAKE (LAMl_size M0) vs = vs’ by rw []
  >> POP_ASSUM (REV_FULL_SIMP_TAC std_ss o wrap)
+ >> qabbrev_tac ‘xs :term list = MAP VAR vs’
+ >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE xs)’
+ >> ‘apply p1 M0 == M1’
+       by (rw [Abbr ‘p1’, Boehm_apply_MAP_rightctxt', Abbr ‘xs’])
+ >> qabbrev_tac ‘m = LENGTH args’
+ >> qabbrev_tac ‘Z = FRESH_list (m + 1) {}’
+ >> FRESH_list_tac (“Z :string list”, “(m + 1) :num”, “{} :string set”)
+ >> qabbrev_tac ‘P = LAMl Z (VAR (LAST Z) @* MAP VAR (FRONT Z))’
+ >> qabbrev_tac ‘p2 = [[P/y]]’
+ >> ‘apply p2 M1 = P @* MAP [P/y] args’ by (rw [Abbr ‘p2’, appstar_SUB])
+ >> qabbrev_tac ‘args' = MAP [P/y] args’
+ >> qabbrev_tac ‘X = BIGUNION (IMAGE FV (set args'))’
+ >> Know ‘FINITE X’
+ >- (qunabbrev_tac ‘X’ \\
+     MATCH_MP_TAC FINITE_BIGUNION >> rw [] >> rw [])
+ >> DISCH_TAC
+ >> NEW_TAC "a" “X :string set”
+ >> qabbrev_tac ‘p3 = [rightctxt (VAR a)]’
  >> cheat
 QED
 
