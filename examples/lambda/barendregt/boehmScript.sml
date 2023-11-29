@@ -860,7 +860,7 @@ Theorem Boehm_transform_lameq_appstar :
 Proof
     rpt STRIP_TAC
  >> POP_ASSUM (STRIP_ASSUME_TAC o (MATCH_MP Boehm_transform_lameq_LAMl_appstar))
- >> POP_ASSUM (MP_TAC o (Q.SPEC ‘{}’))
+ >> POP_ASSUM (MP_TAC o (Q.SPEC ‘[]’))
  >> rw [closed_def]
  >> Q.EXISTS_TAC ‘Ns’
  >> RW_TAC (betafy (srw_ss())) []
