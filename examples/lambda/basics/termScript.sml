@@ -951,6 +951,27 @@ Proof
  >> SET_TAC []
 QED
 
+Theorem fresh_ssub:
+  ∀N. y ∉ FV N ∧ (∀k:string. k ∈ FDOM fm ⇒ y # fm ' k) ⇒ y # fm ' N
+Proof
+  ho_match_mp_tac nc_INDUCTION2 >>
+  qexists ‘fmFV fm’ >>
+  rw[] >> metis_tac[]
+QED
+
+Theorem ssub_SUBST:
+  ∀M.
+    (∀k. k ∈ FDOM fm ⇒ v # fm ' k) ∧ v ∉ FDOM fm ⇒
+    fm ' ([N/v]M) = [fm ' N / v] (fm ' M)
+Proof
+  ho_match_mp_tac nc_INDUCTION2 >>
+  qexists ‘fmFV fm ∪ {v} ∪ FV N’ >>
+  rw[] >> rw[lemma14b, SUB_VAR] >>
+  gvs[DECIDE “~p ∨ q ⇔ p ⇒ q”, PULL_FORALL] >>
+  ‘y # fm ' N’ suffices_by simp[SUB_THM] >>
+  irule fresh_ssub >> simp[]
+QED
+
 Theorem ssub_LAM[local] = List.nth(CONJUNCTS ssub_thm, 2)
 
 (* FIXME: can ‘(!y. y IN FDOM fm ==> closed (fm ' y))’ be removed? *)
@@ -982,9 +1003,9 @@ Proof
  >> rw [SUB_VAR, SUB_THM, ssub_thm, FAPPLY_FUPDATE_THM]
  >> TRY (METIS_TAC [])
  >- (MATCH_MP_TAC (GSYM ssub_value) >> art [])
- >> Know ‘(fm |+ (s,M)) ' (LAM y N) = LAM y ((fm |+ (s,M)) ' N)’
- >- (MATCH_MP_TAC ssub_LAM >> rw [FAPPLY_FUPDATE_THM])
- >> rw []
+ >> Suff ‘(fm |+ (s,M)) ' (LAM y N) = LAM y ((fm |+ (s,M)) ' N)’ >- rw []
+ >> MATCH_MP_TAC ssub_LAM
+ >> rw [FAPPLY_FUPDATE_THM]
 QED
 
 (* ----------------------------------------------------------------------
