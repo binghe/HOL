@@ -6,7 +6,8 @@ open HolKernel boolLib Parse bossLib;
 
 (* core theories *)
 open optionTheory arithmeticTheory pred_setTheory listTheory rich_listTheory
-     llistTheory relationTheory ltreeTheory pathTheory posetTheory hurdUtils;
+     llistTheory relationTheory ltreeTheory pathTheory posetTheory hurdUtils
+     finite_mapTheory;
 
 open binderLib nomsetTheory termTheory appFOLDLTheory chap2Theory chap3Theory
      head_reductionTheory standardisationTheory solvableTheory reductionEval;
@@ -968,10 +969,21 @@ Definition head_original_def :
                           EVERY (\e. hnf_head M1 # e) (hnf_children M1)
 End
 
-(* Definition 10.3.5 (iii) *)
+(* Definition 10.3.5 (iii)
+
+   old definition (NOTE: |- has_hnf M <=> ?N. M == N /\ hnf N):
 Definition is_ready_def :
     is_ready M <=> unsolvable M \/
                    ?N. M == N /\ hnf N /\ ~is_abs N /\ head_original N
+End
+
+   new definition with ‘head_original’ embedded
+
+   TODO: prove the new definition as an equivalent theorem.
+ *)
+Definition is_ready_def :
+    is_ready M <=> unsolvable M \/
+                   ?y Ns. M == VAR y @* Ns /\ EVERY (\e. y # e) Ns
 End
 
 (* cf. NEW_TAC
@@ -1018,13 +1030,31 @@ Proof
  >> FRESH_list_tac (“Z :string list”, “(m + 1) :num”, “X :string set”)
  >> ‘Z <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
  >> qabbrev_tac ‘z = LAST Z’
+ (* P is a permutator *)
  >> qabbrev_tac ‘P = LAMl Z (VAR z @* MAP VAR (FRONT Z))’
+ >> Know ‘FV P = {}’
+ >- (rw [Abbr ‘P’, FV_LAMl] \\
+     Suff ‘FV (VAR z @* MAP VAR (FRONT Z)) SUBSET set Z’ >- SET_TAC [] \\
+     rw [FV_appstar, SUBSET_DEF, Abbr ‘z’, MEM_MAP]
+     >- rw [MEM_LAST_NOT_NIL] \\
+     rfs [MEM_FRONT_NOT_NIL])
+ >> DISCH_TAC
  >> qabbrev_tac ‘p2 = [[P/y]]’
  >> ‘apply p2 M1 = P @* MAP [P/y] args’ by (rw [Abbr ‘p2’, appstar_SUB])
  >> qabbrev_tac ‘args' = MAP [P/y] args’
- (* TODO: FV args vs. FV args'
-
-  *)
+ >> ‘!i. i < m ==> FV (EL i args') SUBSET FV (EL i args)’
+         by rw [Abbr ‘args'’, EL_MAP, FV_SUB]
+ >> ‘LENGTH args' = m’ by rw [Abbr ‘args'’, Abbr ‘m’]
+  (* Key: “args'” has less free variables than “args” *)
+ >> Know ‘BIGUNION (IMAGE FV (set args')) SUBSET
+          BIGUNION (IMAGE FV (set args))’
+ >- (rw [SUBSET_DEF, IN_BIGUNION_IMAGE, MEM_EL] \\
+     Q.EXISTS_TAC ‘EL n args’ \\
+     CONJ_TAC >- (Q.EXISTS_TAC ‘n’ >> art []) \\
+     POP_ASSUM MP_TAC \\
+     Suff ‘FV (EL n args') SUBSET FV (EL n args)’ >- METIS_TAC [SUBSET_DEF] \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> art [])
+ >> DISCH_TAC
  (* a needs to avoid any free variables in args' *)
  >> NEW_TAC "a" “X :string set”
  >> qabbrev_tac ‘p3 = [rightctxt (VAR a)]’
@@ -1043,12 +1073,25 @@ Proof
          >- (Rewr' \\
              MATCH_MP_TAC lameq_LAMl_appstar_ssub \\
              CONJ_TAC >- rw [ALL_DISTINCT_FRONT] \\
-             CONJ_TAC >- rw [LENGTH_FRONT, Abbr ‘args'’] \\
+             CONJ_TAC >- rw [LENGTH_FRONT] \\
              ONCE_REWRITE_TAC [DISJOINT_SYM] \\
              MATCH_MP_TAC DISJOINT_SUBSET >> Q.EXISTS_TAC ‘set Z’ \\
              reverse CONJ_TAC >- rw [SUBSET_DEF, MEM_FRONT_NOT_NIL] \\
              ASM_SIMP_TAC std_ss [Once DISJOINT_SYM, Abbr ‘X’] \\
-             cheat) \\
+             MATCH_MP_TAC DISJOINT_SUBSET \\
+             Q.EXISTS_TAC ‘BIGUNION (IMAGE FV (set args))’ >> art []) \\
+         qunabbrev_tac ‘t’ \\
+         qabbrev_tac ‘fm = FEMPTY |++ ZIP (FRONT Z,args')’ \\
+         qabbrev_tac ‘t = VAR z @* MAP VAR (FRONT Z)’ \\
+         Know ‘fm ' (LAM z t) = LAM z (fm ' t)’
+         >- (MATCH_MP_TAC ssub_LAM \\
+            ‘LENGTH (FRONT Z) = LENGTH args'’ by rw [LENGTH_FRONT] \\
+             CONJ_TAC >- (rw [Abbr ‘z’, Abbr ‘fm’, FDOM_FUPDATE_LIST, MAP_ZIP] \\
+                          Know ‘ALL_DISTINCT (SNOC (LAST Z) (FRONT Z))’
+                          >- rw [SNOC_LAST_FRONT] \\
+                          rw [ALL_DISTINCT_SNOC]) \\
+             (* here *)
+             cheat) >> Rewr' \\
          cheat) \\
      cheat)
  (* final stage *)

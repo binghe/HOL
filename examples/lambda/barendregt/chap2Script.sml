@@ -1041,6 +1041,7 @@ Theorem lameq_LAMl_appstar_ssub :
               LAMl vs M @* Ns == (FEMPTY |++ ZIP (vs,Ns)) ' M
 Proof
     cheat
+QED
 (*
     rpt STRIP_TAC
  >> qabbrev_tac ‘L = ZIP (vs,Ns)’
@@ -1068,7 +1069,7 @@ Proof
  >> qabbrev_tac ‘fm = FEMPTY |++ L’
  >> FULL_SIMP_TAC std_ss []
  >> ‘h = (v,N)’ by rw [Abbr ‘v’, Abbr ‘N’] >> POP_ORW
- (* RHS rewriting *)
+ (* RHS rewriting, try ssub_update_apply_subst_general *)
  >> Know ‘(fm |+ (v,N)) ' M = fm ' ([N/v] M)’
  >- (MATCH_MP_TAC ssub_update_apply' \\
      Q.PAT_X_ASSUM ‘closed N’ MP_TAC \\
@@ -1099,8 +1100,8 @@ Proof
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘LAMl vs ([N/v] M) @* Ns’ >> art []
  >> MATCH_MP_TAC lameq_appstar_cong >> art []
- *)
 QED
+ *)
 
 (* NOTE: The antecedents ‘EVERY closed Ns’ is just one way to make sure that
    the order of ‘vs’ makes no difference in the substitution results.

@@ -976,7 +976,7 @@ QED
         v NOTIN FDOM fm /\ (!y. y IN FDOM fm ==> v # fm ' y) ==>
         fm ' (LAM v t) = LAM v (fm ' t)
  *)
-Theorem ssub_LAM[local] = List.nth(CONJUNCTS ssub_thm, 2)
+Theorem ssub_LAM = List.nth(CONJUNCTS ssub_thm, 2)
 
 Theorem ssub_update_apply :
     !fm. s NOTIN FDOM fm /\ (!y. y IN FDOM fm ==> closed (fm ' y)) ==>
