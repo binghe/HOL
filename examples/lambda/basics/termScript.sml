@@ -992,7 +992,7 @@ Proof
 QED
 
 (* NOTE: ‘closed M’ is additionally required *)
-Theorem ssub_update_apply' :
+Theorem ssub_update_apply_subst :
     !fm. s NOTIN FDOM fm /\ (!y. y IN FDOM fm ==> closed (fm ' y)) /\ closed M ==>
          (fm |+ (s,M)) ' N = fm ' ([M/s] N)
 Proof

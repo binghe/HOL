@@ -502,7 +502,7 @@ Proof
         Know ‘fm = fm0 |+ (x,N)’
         >- (rw [Abbr ‘fm0’, DOMSUB_FUPDATE_THM, FUPDATE_ELIM]) >> Rewr' \\
         Know ‘(fm0 |+ (x,N)) ' M = fm0 ' ([N/x] M)’
-        >- (MATCH_MP_TAC ssub_update_apply' \\
+        >- (MATCH_MP_TAC ssub_update_apply_subst \\
             Q.PAT_X_ASSUM ‘!v. v IN FDOM fm ==> closed (fm ' v)’ MP_TAC \\
             rw [Abbr ‘fm0’, Abbr ‘N’, DOMSUB_FAPPLY_THM, closed_def]) >> Rewr' \\
         DISCH_TAC \\
