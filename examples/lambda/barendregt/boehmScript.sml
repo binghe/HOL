@@ -979,9 +979,10 @@ End
    NOTE: “FINITE X” must be present in the assumptions or provable by rw [].
  *)
 fun FRESH_list_tac (vs,n,X) =
-    KNOW_TAC “ALL_DISTINCT ^vs /\ DISJOINT (set ^vs) ^X /\ LENGTH ^vs = ^n”
-    >- rw [FRESH_list_def, Abbr ‘^vs’] \\
-    STRIP_TAC;
+    qabbrev_tac ‘^vs = FRESH_list ^n X’
+ >> KNOW_TAC “ALL_DISTINCT ^vs /\ DISJOINT (set ^vs) ^X /\ LENGTH ^vs = ^n”
+ >- rw [FRESH_list_def, Abbr ‘^vs’]
+ >> STRIP_TAC;
 
 (* Lemma 10.3.6 (i) *)
 Theorem EXISTS_Boehm_transform_is_ready :
@@ -1014,28 +1015,41 @@ Proof
      MATCH_MP_TAC FINITE_BIGUNION >> rw [] >> rw [])
  >> DISCH_TAC
  (* Z needs to avoid any free variables in args' *)
- >> qabbrev_tac ‘Z = FRESH_list (m + 1) X’
  >> FRESH_list_tac (“Z :string list”, “(m + 1) :num”, “X :string set”)
  >> ‘Z <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
- >> qabbrev_tac ‘A = LAST Z’
- >> qabbrev_tac ‘P = LAMl Z (VAR A @* MAP VAR (FRONT Z))’
+ >> qabbrev_tac ‘z = LAST Z’
+ >> qabbrev_tac ‘P = LAMl Z (VAR z @* MAP VAR (FRONT Z))’
  >> qabbrev_tac ‘p2 = [[P/y]]’
  >> ‘apply p2 M1 = P @* MAP [P/y] args’ by (rw [Abbr ‘p2’, appstar_SUB])
  >> qabbrev_tac ‘args' = MAP [P/y] args’
+ (* TODO: FV args vs. FV args'
+
+  *)
  (* a needs to avoid any free variables in args' *)
  >> NEW_TAC "a" “X :string set”
  >> qabbrev_tac ‘p3 = [rightctxt (VAR a)]’
  >> Know ‘apply p3 (P @* args') == VAR a @* args'’
  >- (rw [Abbr ‘p3’, Abbr ‘P’, rightctxt_thm] \\
-    ‘!t. LAMl Z t = LAMl (SNOC A (FRONT Z)) t’
-         by (ASM_SIMP_TAC std_ss [Abbr ‘A’, SNOC_LAST_FRONT]) >> POP_ORW \\
+    ‘!t. LAMl Z t = LAMl (SNOC z (FRONT Z)) t’
+         by (ASM_SIMP_TAC std_ss [Abbr ‘z’, SNOC_LAST_FRONT]) >> POP_ORW \\
      REWRITE_TAC [LAMl_SNOC] \\
-     qabbrev_tac ‘t = LAM A (VAR A @* MAP VAR (FRONT Z))’ \\
+     qabbrev_tac ‘t = LAM z (VAR z @* MAP VAR (FRONT Z))’ \\
      MATCH_MP_TAC lameq_TRANS \\
-     Q.EXISTS_TAC ‘LAM A (VAR A @* args') @@ VAR a’ \\
+     Q.EXISTS_TAC ‘LAM z (VAR z @* args') @@ VAR a’ \\
+  (* applying lameq_LAMl_appstar_ssub *)
      CONJ_TAC
      >- (MATCH_MP_TAC lameq_APPL \\
-         cheat (* applying lameq_LAMl_appstar *)) \\
+         Suff ‘LAM z (VAR z @* args') = (FEMPTY |++ ZIP (FRONT Z,args')) ' t’
+         >- (Rewr' \\
+             MATCH_MP_TAC lameq_LAMl_appstar_ssub \\
+             CONJ_TAC >- rw [ALL_DISTINCT_FRONT] \\
+             CONJ_TAC >- rw [LENGTH_FRONT, Abbr ‘args'’] \\
+             ONCE_REWRITE_TAC [DISJOINT_SYM] \\
+             MATCH_MP_TAC DISJOINT_SUBSET >> Q.EXISTS_TAC ‘set Z’ \\
+             reverse CONJ_TAC >- rw [SUBSET_DEF, MEM_FRONT_NOT_NIL] \\
+             ASM_SIMP_TAC std_ss [Once DISJOINT_SYM, Abbr ‘X’] \\
+             cheat) \\
+         cheat) \\
      cheat)
  (* final stage *)
  >> cheat

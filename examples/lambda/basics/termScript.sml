@@ -972,9 +972,12 @@ Proof
   irule fresh_ssub >> simp[]
 QED
 
+(* |- !v fm t.
+        v NOTIN FDOM fm /\ (!y. y IN FDOM fm ==> v # fm ' y) ==>
+        fm ' (LAM v t) = LAM v (fm ' t)
+ *)
 Theorem ssub_LAM[local] = List.nth(CONJUNCTS ssub_thm, 2)
 
-(* FIXME: can ‘(!y. y IN FDOM fm ==> closed (fm ' y))’ be removed? *)
 Theorem ssub_update_apply :
     !fm. s NOTIN FDOM fm /\ (!y. y IN FDOM fm ==> closed (fm ' y)) ==>
          (fm |+ (s,M)) ' N = [M/s] (fm ' (N :term))
@@ -991,21 +994,33 @@ Proof
  >> MATCH_MP_TAC ssub_LAM >> rw [FAPPLY_FUPDATE_THM]
 QED
 
-(* NOTE: ‘closed M’ is additionally required *)
+(* slightly weaker antecedents than ssub_update_apply_subst (closed M) *)
+Theorem ssub_update_apply_subst' :
+    !fm. s NOTIN FDOM fm /\ (!y. y IN FDOM fm ==> closed (fm ' y)) /\
+         DISJOINT (FV M) (FDOM fm) ==>
+         (fm |+ (s,M)) ' N = fm ' ([M/s] N)
+Proof
+    rw [closed_def]
+ (* applying ssub_update_apply *)
+ >> Know ‘(fm |+ (s,M)) ' N = [M/s] (fm ' (N :term))’
+ >- (MATCH_MP_TAC ssub_update_apply >> rw [closed_def])
+ >> Rewr'
+ (* applying ssub_SUBST *)
+ >> Know ‘fm ' ([M/s] N) = [fm ' M / s] (fm ' N)’
+ >- (MATCH_MP_TAC ssub_SUBST >> rw [])
+ >> Rewr'
+ >> Suff ‘fm ' M = M’ >- rw []
+ >> MATCH_MP_TAC ssub_14b
+ >> rw [GSYM DISJOINT_DEF]
+QED
+
 Theorem ssub_update_apply_subst :
     !fm. s NOTIN FDOM fm /\ (!y. y IN FDOM fm ==> closed (fm ' y)) /\ closed M ==>
          (fm |+ (s,M)) ' N = fm ' ([M/s] N)
 Proof
-    rw [closed_def]
- >> Q.ID_SPEC_TAC ‘N’
- >> HO_MATCH_MP_TAC nc_INDUCTION2
- >> Q.EXISTS_TAC ‘s INSERT (FDOM fm)’
- >> rw [SUB_VAR, SUB_THM, ssub_thm, FAPPLY_FUPDATE_THM]
- >> TRY (METIS_TAC [])
- >- (MATCH_MP_TAC (GSYM ssub_value) >> art [])
- >> Suff ‘(fm |+ (s,M)) ' (LAM y N) = LAM y ((fm |+ (s,M)) ' N)’ >- rw []
- >> MATCH_MP_TAC ssub_LAM
- >> rw [FAPPLY_FUPDATE_THM]
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC ssub_update_apply_subst' >> art []
+ >> fs [closed_def, DISJOINT_DEF]
 QED
 
 (* ----------------------------------------------------------------------
