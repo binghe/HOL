@@ -997,7 +997,7 @@ fun FRESH_list_tac (vs,n,X) =
  >> STRIP_TAC;
 
 (* Lemma 10.3.6 (i) *)
-Theorem EXISTS_Boehm_transform_is_ready :
+Theorem Boehm_transform_is_ready :
     !M. ?pi. Boehm_transform pi /\ is_ready (apply pi M)
 Proof
     Q.X_GEN_TAC ‘M’
@@ -1090,8 +1090,25 @@ Proof
                           Know ‘ALL_DISTINCT (SNOC (LAST Z) (FRONT Z))’
                           >- rw [SNOC_LAST_FRONT] \\
                           rw [ALL_DISTINCT_SNOC]) \\
-             (* here *)
-             cheat) >> Rewr' \\
+             rw [Abbr ‘fm’, FDOM_FUPDATE_LIST, MAP_ZIP, MEM_EL] \\
+             qabbrev_tac ‘L = ZIP (FRONT Z,args')’ \\
+             Know ‘(FEMPTY |++ L) ' (EL n (FRONT Z)) = EL n args'’
+             >- (MATCH_MP_TAC FUPDATE_LIST_APPLY_MEM \\
+                 Q.EXISTS_TAC ‘n’ >> rw [Abbr ‘L’, MAP_ZIP] \\
+                ‘m <> n’ by rw [] \\
+                ‘ALL_DISTINCT (FRONT Z)’ by METIS_TAC [ALL_DISTINCT_FRONT] \\
+                 METIS_TAC [EL_ALL_DISTINCT_EL_EQ]) >> Rewr' \\
+             Suff ‘z # EL n args’
+             >- (DISCH_TAC \\
+                 CCONTR_TAC >> fs [] >> METIS_TAC [SUBSET_DEF]) \\
+             CCONTR_TAC >> fs [] \\
+             Q.PAT_X_ASSUM ‘DISJOINT (set Z) X’ MP_TAC \\
+             rw [DISJOINT_ALT, Abbr ‘X’] \\
+             Q.EXISTS_TAC ‘FV (EL n args)’ \\
+             CONJ_TAC >- (Q.EXISTS_TAC ‘EL n args’ >> rw [MEM_EL] \\
+                          Q.EXISTS_TAC ‘n’ >> rw []) \\
+             Q.EXISTS_TAC ‘z’ >> rw [MEM_LAST_NOT_NIL, Abbr ‘z’]) >> Rewr' \\
+         simp [] (* VAR z @* args' = fm ' t *) \\
          cheat) \\
      cheat)
  (* final stage *)
