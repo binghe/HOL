@@ -366,7 +366,7 @@ QED
  *  Equivalent terms
  *---------------------------------------------------------------------------*)
 
-(* Definition 10.2.19
+(* Definition 10.2.19 [1, p. 238]
 
    M = LAMl v1 (y  @* Ms) @@ (MAP VAR v1) == y  @* Ms'
    N = LAMl v2 (y' @* Ns) @@ (MAP VAR v2) == y' @* Ns'
@@ -527,18 +527,15 @@ Proof
  >> RW_TAC std_ss [equivalent_of_solvables, principle_hnf_reduce]
  (* applying shared tactics *)
  >> equivalent_tac
- (* eliminating n and n' *)
  >> qunabbrevl_tac [‘n’, ‘n'’]
  >> Know ‘LAMl_size M0 = 1 /\ LAMl_size N0 = 1’
  >- (rw [Abbr ‘M0’, Abbr ‘N0’, LAMl_size_def])
  >> DISCH_THEN (rfs o wrap)
- (* eliminating vsM and vsN *)
  >> qabbrev_tac ‘z = HD vs’
  >> ‘vs = [z]’ by METIS_TAC [SING_HD]
  >> Q.PAT_X_ASSUM ‘vsN = vsM’ (rfs o wrap o SYM)
  >> rfs [Abbr ‘vsN’]
  >> POP_ASSUM (rfs o wrap)
- (* stage work *)
  >> qunabbrevl_tac [‘M0’, ‘N0’]
  >> DISJ1_TAC
  >> qunabbrevl_tac [‘y’, ‘y'’]
@@ -560,7 +557,8 @@ Proof
  >> simp [Abbr ‘t’]
  (* final goal: y <> z *)
  >> Q.PAT_X_ASSUM ‘z # LAM x (VAR v @@ M)’ MP_TAC
- >> simp [FV_thm] >> PROVE_TAC []
+ >> rw [FV_thm]
+ >> METIS_TAC []
 QED
 
 (* NOTE: not easy, plus useless...
@@ -981,7 +979,7 @@ Definition is_ready_def :
                    ?N. M == N /\ hnf N /\ ~is_abs N /\ head_original N
 End
 
-(* cf. NEW_TAC
+(* cf. NEW_TAC (This is the multivariate version)
 
    NOTE: “FINITE X” must be present in the assumptions or provable by rw [].
  *)
@@ -1000,7 +998,7 @@ Theorem is_ready_alt :
 Proof
     Q.X_GEN_TAC ‘M’
  >> reverse EQ_TAC
- >- (rw [is_ready_def] >- (DISJ1_TAC >> art []) \\
+ >- (rw [is_ready_def] >- art [] \\
      DISJ2_TAC >> Q.EXISTS_TAC ‘VAR y @* Ns’ >> art [] \\
      CONJ_ASM1_TAC >- (rw [hnf_appstar]) >> simp [] \\
      RW_TAC std_ss [head_original_def, LAMl_size_hnf_absfree] \\
@@ -1011,8 +1009,7 @@ Proof
      POP_ORW >> qunabbrev_tac ‘M1’ \\
      simp [hnf_head_hnf, hnf_children_hnf])
  (* stage work *)
- >> rw [is_ready_def]
- >- (DISJ1_TAC >> art [])
+ >> rw [is_ready_def] >- art []
  >> DISJ2_TAC
  >> qabbrev_tac ‘n = LAMl_size N’
  >> FRESH_list_tac (“vs :string list”, “n :num”, “FV (N :term)”)

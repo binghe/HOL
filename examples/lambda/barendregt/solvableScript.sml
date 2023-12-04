@@ -666,7 +666,7 @@ Proof
  (* now we use arithmeticTheory.FUNPOW instead of locally defined one *)
  >> qabbrev_tac ‘Ms = GENLIST (\i. FUNPOW (APP K) m I) n’
  >> Q.EXISTS_TAC ‘Ms’
- (* applying lameq_LAMl_appstar_ssub_closed and ssub_appstar *)
+ (* applying ssub_appstar *)
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘(FEMPTY |++ ZIP (vs,Ms)) ' (VAR y @* Ns)’
  >> CONJ_TAC
