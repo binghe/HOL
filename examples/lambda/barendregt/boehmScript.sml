@@ -1070,8 +1070,7 @@ Proof
      CONJ_TAC
      >- (MATCH_MP_TAC lameq_APPL \\
          Suff ‘LAM z (VAR z @* args') = (FEMPTY |++ ZIP (FRONT Z,args')) ' t’
-         >- (Rewr' \\
-             MATCH_MP_TAC lameq_LAMl_appstar_ssub \\
+         >- (Rewr' >> MATCH_MP_TAC lameq_LAMl_appstar_ssub \\
              CONJ_TAC >- rw [ALL_DISTINCT_FRONT] \\
              CONJ_TAC >- rw [LENGTH_FRONT] \\
              ONCE_REWRITE_TAC [DISJOINT_SYM] \\
@@ -1082,14 +1081,16 @@ Proof
              Q.EXISTS_TAC ‘BIGUNION (IMAGE FV (set args))’ >> art []) \\
          qunabbrev_tac ‘t’ \\
          qabbrev_tac ‘fm = FEMPTY |++ ZIP (FRONT Z,args')’ \\
+        ‘LENGTH (FRONT Z) = LENGTH args'’ by rw [LENGTH_FRONT] \\
+        ‘FDOM fm = set (FRONT Z)’ by rw [Abbr ‘fm’, FDOM_FUPDATE_LIST, MAP_ZIP] \\
+         Know ‘z NOTIN FDOM fm’
+         >- (rw [Abbr ‘z’] \\
+             Know ‘ALL_DISTINCT (SNOC (LAST Z) (FRONT Z))’
+             >- rw [SNOC_LAST_FRONT] \\
+             rw [ALL_DISTINCT_SNOC]) >> DISCH_TAC \\
          qabbrev_tac ‘t = VAR z @* MAP VAR (FRONT Z)’ \\
          Know ‘fm ' (LAM z t) = LAM z (fm ' t)’
-         >- (MATCH_MP_TAC ssub_LAM \\
-            ‘LENGTH (FRONT Z) = LENGTH args'’ by rw [LENGTH_FRONT] \\
-             CONJ_TAC >- (rw [Abbr ‘z’, Abbr ‘fm’, FDOM_FUPDATE_LIST, MAP_ZIP] \\
-                          Know ‘ALL_DISTINCT (SNOC (LAST Z) (FRONT Z))’
-                          >- rw [SNOC_LAST_FRONT] \\
-                          rw [ALL_DISTINCT_SNOC]) \\
+         >- (MATCH_MP_TAC ssub_LAM >> art [] \\
              rw [Abbr ‘fm’, FDOM_FUPDATE_LIST, MAP_ZIP, MEM_EL] \\
              qabbrev_tac ‘L = ZIP (FRONT Z,args')’ \\
              Know ‘(FEMPTY |++ L) ' (EL n (FRONT Z)) = EL n args'’
@@ -1108,7 +1109,7 @@ Proof
              CONJ_TAC >- (Q.EXISTS_TAC ‘EL n args’ >> rw [MEM_EL] \\
                           Q.EXISTS_TAC ‘n’ >> rw []) \\
              Q.EXISTS_TAC ‘z’ >> rw [MEM_LAST_NOT_NIL, Abbr ‘z’]) >> Rewr' \\
-         simp [] (* VAR z @* args' = fm ' t *) \\
+         simp [Abbr ‘t’, ssub_appstar] \\
          cheat) \\
      cheat)
  (* final stage *)
