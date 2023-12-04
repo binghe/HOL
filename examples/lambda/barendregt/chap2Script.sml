@@ -1033,16 +1033,14 @@ Proof
 QED
 
 (* NOTE: The antecedent ‘DISJOINT (set vs) (BIGUION (IMAGE FV (set Ns)))’ is to
-   guarantee that the set of free variables in all Ns won't be any of ‘vs’.
+   guarantee that the iterate substitution at LHS is equivalent to the
+   simultaneous substitution at RHS.
  *)
 Theorem lameq_LAMl_appstar_ssub :
     !vs M Ns. ALL_DISTINCT vs /\ (LENGTH vs = LENGTH Ns) /\
               DISJOINT (set vs) (BIGUNION (IMAGE FV (set Ns))) ==>
               LAMl vs M @* Ns == (FEMPTY |++ ZIP (vs,Ns)) ' M
 Proof
-    cheat
-QED
-(*
     rpt STRIP_TAC
  >> qabbrev_tac ‘L = ZIP (vs,Ns)’
  >> ‘(Ns = MAP SND L) /\ (vs = MAP FST L)’ by rw [Abbr ‘L’, MAP_ZIP]
@@ -1068,40 +1066,42 @@ QED
  >> rw [GSYM FUPDATE_EQ_FUPDATE_LIST]
  >> qabbrev_tac ‘fm = FEMPTY |++ L’
  >> FULL_SIMP_TAC std_ss []
+ >> ‘FDOM fm = set vs’ by rw [Abbr ‘fm’, FDOM_FUPDATE_LIST]
  >> ‘h = (v,N)’ by rw [Abbr ‘v’, Abbr ‘N’] >> POP_ORW
- (* RHS rewriting, try ssub_update_apply_subst_general *)
- >> Know ‘(fm |+ (v,N)) ' M = fm ' ([N/v] M)’
- >- (MATCH_MP_TAC ssub_update_apply' \\
-     Q.PAT_X_ASSUM ‘closed N’ MP_TAC \\
-     rw [Abbr ‘fm’, FDOM_FUPDATE_LIST, closed_def] \\
-     Cases_on ‘INDEX_OF y vs’ >- fs [INDEX_OF_eq_NONE] \\
-     rename1 ‘INDEX_OF y vs = SOME n’ \\
-     fs [INDEX_OF_eq_SOME] \\
-     Q.PAT_X_ASSUM ‘EL n vs = y’ (ONCE_REWRITE_TAC o wrap o SYM) \\
+ (* LHS rewriting *)
+ >> Know ‘LAM v (LAMl vs M) @@ N == LAMl vs ([N/v] M)’
+ >- (SIMP_TAC (betafy (srw_ss())) [] \\
+     Suff ‘[N/v] (LAMl vs M) = LAMl vs ([N/v] M)’ >- rw [lameq_rules] \\
+     MATCH_MP_TAC LAMl_SUB \\
+     METIS_TAC [])
+ >> DISCH_TAC
+ >> MATCH_MP_TAC lameq_TRANS
+ >> Q.EXISTS_TAC ‘LAMl vs ([N/v] M) @* Ns’
+ >> CONJ_TAC >- (MATCH_MP_TAC lameq_appstar_cong >> art [])
+ >> MATCH_MP_TAC lameq_TRANS
+ >> Q.EXISTS_TAC ‘fm ' ([N/v] M)’
+ >> CONJ_TAC >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [DISJOINT_ALT])
+ (* applying ssub_SUBST *)
+ >> Know ‘fm ' ([N/v] M) = [fm ' N/v] (fm ' M)’
+ >- (MATCH_MP_TAC ssub_SUBST >> rw [MEM_EL] \\
+     qunabbrev_tac ‘fm’ \\
     ‘LENGTH L = LENGTH vs’ by rw [Abbr ‘vs’, LENGTH_MAP] \\
      Know ‘(FEMPTY |++ L) ' (EL n vs) = EL n Ns’
      >- (MATCH_MP_TAC FUPDATE_LIST_APPLY_MEM \\
          Q.EXISTS_TAC ‘n’ >> rw [] \\
         ‘m <> n’ by rw [] \\
          METIS_TAC [EL_ALL_DISTINCT_EL_EQ]) >> Rewr' \\
-     Q.PAT_X_ASSUM ‘EVERY closed Ns’ MP_TAC \\
-     rw [EVERY_MEM, closed_def] \\
-     POP_ASSUM MATCH_MP_TAC >> rw [MEM_EL] \\
-    ‘LENGTH L = LENGTH Ns’ by rw [Abbr ‘Ns’, LENGTH_MAP] \\
-     Q.EXISTS_TAC ‘n’ >> rw [])
+     Q.PAT_X_ASSUM ‘!s. _ ==> DISJOINT (set vs) s /\ v NOTIN s’
+        (MP_TAC o (Q.SPEC ‘FV (EL n Ns)’)) \\
+     Know ‘?x. FV (EL n Ns) = FV x /\ (x = N \/ MEM x Ns)’
+     >- (Q.EXISTS_TAC ‘EL n Ns’ >> rw [MEM_EL] \\
+         DISJ2_TAC >> Q.EXISTS_TAC ‘n’ >> rw [] \\
+         rw [Abbr ‘Ns’, LENGTH_MAP]) \\
+     RW_TAC std_ss [])
  >> Rewr'
- (* LHS rewriting *)
- >> Know ‘LAM v (LAMl vs M) @@ N == LAMl vs ([N/v] M)’
- >- (SIMP_TAC (betafy (srw_ss())) [] \\
-     Suff ‘[N/v] (LAMl vs M) = LAMl vs ([N/v] M)’ >- rw [lameq_rules] \\
-     MATCH_MP_TAC LAMl_SUB \\
-     Q.PAT_X_ASSUM ‘closed N’ MP_TAC >> rw [closed_def])
- >> DISCH_TAC
- >> MATCH_MP_TAC lameq_TRANS
- >> Q.EXISTS_TAC ‘LAMl vs ([N/v] M) @* Ns’ >> art []
- >> MATCH_MP_TAC lameq_appstar_cong >> art []
+ (* final goal: [fm ' N/v] (fm ' M) == (fm |+ (v,N)) ' M *)
+ >> cheat
 QED
- *)
 
 (* NOTE: The antecedents ‘EVERY closed Ns’ is just one way to make sure that
    the order of ‘vs’ makes no difference in the substitution results.
