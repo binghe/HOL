@@ -431,6 +431,9 @@ Proof
     RW_TAC std_ss [equivalent_def]
 QED
 
+(* NOTE: the initial calls of ‘principle_hnf’ get eliminated if the involved
+         terms are already in head normal forms.
+ *)
 Theorem equivalent_of_hnf :
     !M N. hnf M /\ hnf N ==>
          (equivalent M N <=>
