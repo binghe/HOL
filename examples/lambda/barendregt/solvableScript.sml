@@ -727,7 +727,7 @@ QED
 Theorem hnf_principle_hnf' =
    REWRITE_RULE [GSYM solvable_iff_has_hnf] hnf_principle_hnf
 
-Theorem principle_hnf_eq_self[simp] :
+Theorem principle_hnf_reduce[simp] :
     !M. hnf M ==> principle_hnf M = M
 Proof
     rw [principle_hnf_def]
@@ -745,7 +745,7 @@ Theorem principle_hnf_stable :
     !M. has_hnf M ==> principle_hnf (principle_hnf M) = principle_hnf M
 Proof
     rpt STRIP_TAC
- >> MATCH_MP_TAC principle_hnf_eq_self
+ >> MATCH_MP_TAC principle_hnf_reduce
  >> MATCH_MP_TAC hnf_principle_hnf >> art []
 QED
 
@@ -793,7 +793,7 @@ Theorem principle_hnf_LAMl_appstar_lemma[local] :
         principle_hnf (LAMl (MAP FST pi) t @* MAP VAR (MAP SND pi)) = tpm pi t
 Proof
     Induct_on ‘pi’ (* using SNOC_INDUCT *)
- >- rw [principle_hnf_eq_self]
+ >- rw [principle_hnf_reduce]
  >> rw [] (* rw [FOLDR_SNOC, MAP_SNOC] *)
  >> Cases_on ‘h’ (* ‘x’ *) >> fs []
  >> qabbrev_tac ‘M = LAMl (MAP FST pi) t’
@@ -897,7 +897,7 @@ Proof
  >> MATCH_MP_TAC principle_hnf_LAMl_appstar_lemma >> rw []
 QED
 
-Theorem principle_hnf_reduce1 :
+Theorem principle_hnf_beta_reduce1 :
     !v t. hnf t ==> principle_hnf (LAM v t @@ VAR v) = t
 Proof
     rpt STRIP_TAC
@@ -906,14 +906,14 @@ Proof
  >- (MATCH_MP_TAC principle_hnf_hreduce1 \\
      rw [hreduce1_BETA])
  >> Rewr'
- >> rw [principle_hnf_eq_self]
+ >> rw [principle_hnf_reduce]
 QED
 
-Theorem principle_hnf_reduce :
+Theorem principle_hnf_beta_reduce :
     !xs t. hnf t ==> principle_hnf (LAMl xs t @* (MAP VAR xs)) = t
 Proof
     Induct_on ‘xs’
- >> rw [principle_hnf_eq_self]
+ >> rw [principle_hnf_reduce]
  >> qabbrev_tac ‘M = LAMl xs t’
  >> qabbrev_tac ‘args :term list = MAP VAR xs’
  >> Know ‘principle_hnf (LAM h M @@ VAR h @* args) =

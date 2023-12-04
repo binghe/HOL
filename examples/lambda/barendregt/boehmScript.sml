@@ -453,7 +453,7 @@ Theorem equivalent_of_hnf :
 Proof
     rpt STRIP_TAC
  >> ‘solvable M /\ solvable N’ by PROVE_TAC [hnf_has_hnf, solvable_iff_has_hnf]
- >> RW_TAC std_ss [equivalent_def, principle_hnf_eq_self]
+ >> RW_TAC std_ss [equivalent_def, principle_hnf_reduce]
  >> METIS_TAC []
 QED
 
@@ -476,13 +476,13 @@ fun hnf_tac (M0,vs,M1,y,args) = let val n = “LAMl_size ^M0” in
  >- (qunabbrev_tac ‘^M1’ \\
      Q.PAT_ASSUM ‘^M0 = LAMl (TAKE ^n ^vs) (VAR ^y @* ^args)’
         (fn th => REWRITE_TAC [Once th]) \\
-     MATCH_MP_TAC principle_hnf_reduce >> rw [hnf_appstar])
+     MATCH_MP_TAC principle_hnf_beta_reduce >> rw [hnf_appstar])
  >> DISCH_TAC
 end;
 
 (* The following combined tactic is useful after:
 
-   RW_TAC std_ss [equivalent_of_solvables, principle_hnf_eq_self]
+   RW_TAC std_ss [equivalent_of_solvables, principle_hnf_reduce]
 
    NOTE: it doesn't work with equivalent_of_hnf
  *)
@@ -524,7 +524,7 @@ Proof
  >> ‘hnf (LAM x (VAR v @@ M)) /\ hnf (LAM v (VAR v @@ M))’ by rw []
  >> ‘solvable (LAM x (VAR v @@ M)) /\ solvable (LAM v (VAR v @@ M))’
        by rw [solvable_iff_has_hnf, hnf_has_hnf]
- >> RW_TAC std_ss [equivalent_of_solvables, principle_hnf_eq_self]
+ >> RW_TAC std_ss [equivalent_of_solvables, principle_hnf_reduce]
  (* applying shared tactics *)
  >> equivalent_tac
  (* eliminating n and n' *)
@@ -574,7 +574,7 @@ Proof
  >> ‘solvable (LAM x (VAR x @@ M)) /\
      solvable (LAMl [v; z] (VAR v @* [M; N]))’
        by PROVE_TAC [solvable_iff_has_hnf, hnf_has_hnf]
- >> RW_TAC std_ss [equivalent_of_solvables, principle_hnf_eq_self]
+ >> RW_TAC std_ss [equivalent_of_solvables, principle_hnf_reduce]
  (* applying shared tactics *)
  >> equivalent_tac
  (* Let's try only the first subgoal *)
@@ -601,7 +601,7 @@ Proof
      >- (qunabbrevl_tac [‘M0’, ‘M1’] \\
          Cases_on ‘v0 = x’
          >- (rw [lemma14a] \\
-             MATCH_MP_TAC principle_hnf_reduce1 >> rw []) \\
+             MATCH_MP_TAC principle_hnf_beta_reduce1 >> rw []) \\
          MATCH_MP_TAC principle_hnf_beta >> rw [FV_thm] \\
          rfs [FV_thm]) \\
      simp [SUB_THM] >> DISCH_TAC \\
@@ -974,20 +974,35 @@ End
 
 (* Definition 10.3.5 (iii)
 
-   old definition (NOTE: |- has_hnf M <=> ?N. M == N /\ hnf N):
+   NOTE: |- has_hnf M <=> ?N. M == N /\ hnf N
+ *)
 Definition is_ready_def :
     is_ready M <=> unsolvable M \/
                    ?N. M == N /\ hnf N /\ ~is_abs N /\ head_original N
 End
 
-   new definition with ‘head_original’ embedded
-
-   TODO: prove the new definition as an equivalent theorem.
+(*
+Theorem is_ready_and_head_original_def :
+    !M. is_ready M /\ head_original M <=>
+        unsolvable M \/ ?y Ns. M == VAR y @* Ns /\ EVERY (\e. y # e) Ns
+Proof
+    Q.X_GEN_TAC ‘M’
+ >> reverse EQ_TAC
+ >- (rw [is_ready_def] >- (DISJ1_TAC >> art []) \\
+     DISJ2_TAC \\
+     Q.EXISTS_TAC ‘VAR y @* Ns’ >> art [] \\
+     CONJ_ASM1_TAC >- rw [hnf_appstar] \\
+     simp [] \\
+     RW_TAC std_ss [head_original_def, LAMl_size_hnf_absfree] \\
+     qunabbrev_tac ‘n’ \\
+    ‘vs = []’ by METIS_TAC [LENGTH_NIL, FRESH_list_def, FINITE_FV] \\
+     POP_ASSUM (fs o wrap) \\
+     cheat)
+ (* stage work *)
+ >>
+    cheat
+QED
  *)
-Definition is_ready_def :
-    is_ready M <=> unsolvable M \/
-                   ?y Ns. M == VAR y @* Ns /\ EVERY (\e. y # e) Ns
-End
 
 (* cf. NEW_TAC
 

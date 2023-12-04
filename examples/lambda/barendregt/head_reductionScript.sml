@@ -1321,12 +1321,19 @@ Proof
  >> rw []
 QED
 
-Theorem LAMl_size_hnf :
-    !vs y args. LAMl_size (LAMl vs (VAR y @* args)) = LENGTH vs
+Theorem LAMl_size_hnf[simp] :
+    LAMl_size (LAMl vs (VAR y @* args)) = LENGTH vs
 Proof
-    rpt GEN_TAC
- >> MATCH_MP_TAC LAMl_size_LAMl
+    MATCH_MP_TAC LAMl_size_LAMl
  >> Cases_on ‘args = []’ >- rw []
+ >> ‘?x l. args = SNOC x l’ by METIS_TAC [SNOC_CASES]
+ >> rw [appstar_SNOC]
+QED
+
+Theorem LAMl_size_hnf_absfree[simp] :
+    LAMl_size (VAR y @* args) = 0
+Proof
+    Cases_on ‘args = []’ >- rw []
  >> ‘?x l. args = SNOC x l’ by METIS_TAC [SNOC_CASES]
  >> rw [appstar_SNOC]
 QED
