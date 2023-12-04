@@ -969,7 +969,7 @@ Definition head_original_def :
                           vs = FRESH_list n (FV M0);
                           M1 = principle_hnf (M0 @* MAP VAR vs);
                        in
-                          EVERY (\e. hnf_head M1 # e) (hnf_children M1)
+                          EVERY (\e. hnf_headvar M1 # e) (hnf_children M1)
 End
 
 (* Definition 10.3.5 (iii)
@@ -981,38 +981,57 @@ Definition is_ready_def :
                    ?N. M == N /\ hnf N /\ ~is_abs N /\ head_original N
 End
 
-(*
-Theorem is_ready_and_head_original_def :
-    !M. is_ready M /\ head_original M <=>
-        unsolvable M \/ ?y Ns. M == VAR y @* Ns /\ EVERY (\e. y # e) Ns
-Proof
-    Q.X_GEN_TAC ‘M’
- >> reverse EQ_TAC
- >- (rw [is_ready_def] >- (DISJ1_TAC >> art []) \\
-     DISJ2_TAC \\
-     Q.EXISTS_TAC ‘VAR y @* Ns’ >> art [] \\
-     CONJ_ASM1_TAC >- rw [hnf_appstar] \\
-     simp [] \\
-     RW_TAC std_ss [head_original_def, LAMl_size_hnf_absfree] \\
-     qunabbrev_tac ‘n’ \\
-    ‘vs = []’ by METIS_TAC [LENGTH_NIL, FRESH_list_def, FINITE_FV] \\
-     POP_ASSUM (fs o wrap) \\
-     cheat)
- (* stage work *)
- >>
-    cheat
-QED
- *)
-
 (* cf. NEW_TAC
 
    NOTE: “FINITE X” must be present in the assumptions or provable by rw [].
  *)
 fun FRESH_list_tac (vs,n,X) =
-    qabbrev_tac ‘^vs = FRESH_list ^n X’
+    qabbrev_tac ‘^vs = FRESH_list ^n ^X’
  >> KNOW_TAC “ALL_DISTINCT ^vs /\ DISJOINT (set ^vs) ^X /\ LENGTH ^vs = ^n”
  >- rw [FRESH_list_def, Abbr ‘^vs’]
  >> STRIP_TAC;
+
+(* NOTE: This alternative definition of ‘is_ready’ consumes ‘head_original’
+         and eliminated the ‘principle_hnf’ inside it.
+ *)
+Theorem is_ready_alt :
+    !M. is_ready M <=>
+        unsolvable M \/ ?y Ns. M == VAR y @* Ns /\ EVERY (\e. y # e) Ns
+Proof
+    Q.X_GEN_TAC ‘M’
+ >> reverse EQ_TAC
+ >- (rw [is_ready_def] >- (DISJ1_TAC >> art []) \\
+     DISJ2_TAC >> Q.EXISTS_TAC ‘VAR y @* Ns’ >> art [] \\
+     CONJ_ASM1_TAC >- (rw [hnf_appstar]) >> simp [] \\
+     RW_TAC std_ss [head_original_def, LAMl_size_hnf_absfree] \\
+     qunabbrev_tac ‘n’ \\
+    ‘vs = []’ by METIS_TAC [LENGTH_NIL, FRESH_list_def, FINITE_FV] \\
+     POP_ASSUM (fs o wrap) >> qunabbrev_tac ‘vs’ \\
+    ‘M1 = VAR y @* Ns’ by rw [principle_hnf_reduce, Abbr ‘M1’] \\
+     POP_ORW >> qunabbrev_tac ‘M1’ \\
+     simp [hnf_head_hnf, hnf_children_hnf])
+ (* stage work *)
+ >> rw [is_ready_def]
+ >- (DISJ1_TAC >> art [])
+ >> DISJ2_TAC
+ >> qabbrev_tac ‘n = LAMl_size N’
+ >> FRESH_list_tac (“vs :string list”, “n :num”, “FV (N :term)”)
+ >> qabbrev_tac ‘M1 = principle_hnf (N @* MAP VAR vs)’
+ >> ‘EVERY (\e. hnf_headvar M1 # e) (hnf_children M1)’
+       by METIS_TAC [head_original_def]
+ >> Know ‘?y args. N = LAMl (TAKE (LAMl_size N) vs) (VAR y @* args)’
+ >- (Suff ‘ALL_DISTINCT vs /\ LAMl_size N <= LENGTH vs /\ DISJOINT (set vs) (FV N)’
+     >- METIS_TAC [hnf_cases_shared] \\
+     rw [Abbr ‘n’])
+ >> ‘TAKE (LAMl_size N) vs = vs’ by rw [] >> POP_ORW
+ >> STRIP_TAC
+ >> Know ‘M1 = VAR y @* args’
+ >- (rw [Abbr ‘M1’] \\
+     MATCH_MP_TAC principle_hnf_beta_reduce >> rw [hnf_appstar])
+ >> DISCH_THEN (fn th => fs [th, hnf_head_hnf, hnf_children_hnf])
+ (* stage work *)
+ >> qexistsl_tac [‘y’, ‘args’] >> art []
+QED
 
 (* Lemma 10.3.6 (i) *)
 Theorem Boehm_transform_is_ready :
