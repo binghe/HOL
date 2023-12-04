@@ -979,47 +979,51 @@ QED
 Theorem ssub_LAM = List.nth(CONJUNCTS ssub_thm, 2)
 
 Theorem ssub_update_apply :
-    !fm. s NOTIN FDOM fm /\ (!y. y IN FDOM fm ==> closed (fm ' y)) ==>
-         (fm |+ (s,M)) ' N = [M/s] (fm ' (N :term))
+    !fm v N M. v NOTIN FDOM fm /\ (!k. k IN FDOM fm ==> closed (fm ' k)) ==>
+              (fm |+ (v,N)) ' M = [N/v] (fm ' (M :term))
 Proof
-    rw [closed_def]
- >> Q.ID_SPEC_TAC ‘N’
+    RW_TAC std_ss [closed_def]
+ >> Q.ID_SPEC_TAC ‘M’
  >> HO_MATCH_MP_TAC nc_INDUCTION2
- >> Q.EXISTS_TAC ‘s INSERT (FDOM fm UNION FV M)’
+ >> Q.EXISTS_TAC ‘v INSERT (FDOM fm UNION FV N)’
  >> rw [SUB_VAR, SUB_THM, ssub_thm, FAPPLY_FUPDATE_THM]
  >> TRY (METIS_TAC [])
  >- (MATCH_MP_TAC (GSYM lemma14b) \\
      METIS_TAC [NOT_IN_EMPTY])
- >> Suff ‘(fm |+ (s,M)) ' (LAM y N) = LAM y ((fm |+ (s,M)) ' N)’ >- rw []
- >> MATCH_MP_TAC ssub_LAM >> rw [FAPPLY_FUPDATE_THM]
+ >> Suff ‘(fm |+ (v,N)) ' (LAM y M) = LAM y ((fm |+ (v,N)) ' M)’ >- rw []
+ >> MATCH_MP_TAC ssub_LAM
+ >> rw [FAPPLY_FUPDATE_THM]
 QED
 
-(* slightly weaker antecedents than ssub_update_apply_subst (closed M) *)
-Theorem ssub_update_apply_subst' :
-    !fm. s NOTIN FDOM fm /\ (!y. y IN FDOM fm ==> closed (fm ' y)) /\
-         DISJOINT (FV M) (FDOM fm) ==>
-         (fm |+ (s,M)) ' N = fm ' ([M/s] N)
+(* NOTE: This theorem has the same antecedents as ssub_SUBST, plus:
+
+   ‘DISJOINT (FV N) (FDOM fm)’, which seems necessary.
+ *)
+Theorem ssub_update_apply_SUBST :
+    !M. (!k. k IN FDOM fm ==> v # fm ' k) /\ v NOTIN FDOM fm /\
+        DISJOINT (FDOM fm) (FV N) ==>
+        (fm |+ (v,N)) ' M = fm ' ([N/v] M)
 Proof
-    rw [closed_def]
- (* applying ssub_update_apply *)
- >> Know ‘(fm |+ (s,M)) ' N = [M/s] (fm ' (N :term))’
- >- (MATCH_MP_TAC ssub_update_apply >> rw [closed_def])
+    HO_MATCH_MP_TAC nc_INDUCTION2
+ >> Q.EXISTS_TAC ‘v INSERT fmFV fm UNION FV M UNION FV N’
+ >> rw [SUB_VAR, SUB_THM, ssub_thm, FAPPLY_FUPDATE_THM]
+ >> TRY (METIS_TAC [])
+ >- (MATCH_MP_TAC (GSYM ssub_14b) \\
+     rw [GSYM DISJOINT_DEF, Once DISJOINT_SYM])
+ >> Know ‘(fm |+ (v,N)) ' (LAM y M') = LAM y ((fm |+ (v,N)) ' M')’
+ >- (MATCH_MP_TAC ssub_LAM >> rw [FAPPLY_FUPDATE_THM])
  >> Rewr'
- (* applying ssub_SUBST *)
- >> Know ‘fm ' ([M/s] N) = [fm ' M / s] (fm ' N)’
- >- (MATCH_MP_TAC ssub_SUBST >> rw [])
- >> Rewr'
- >> Suff ‘fm ' M = M’ >- rw []
- >> MATCH_MP_TAC ssub_14b
- >> rw [GSYM DISJOINT_DEF]
+ (* finally, applying IH *)
+ >> rw []
 QED
 
 Theorem ssub_update_apply_subst :
-    !fm. s NOTIN FDOM fm /\ (!y. y IN FDOM fm ==> closed (fm ' y)) /\ closed M ==>
-         (fm |+ (s,M)) ' N = fm ' ([M/s] N)
+    !fm v N M. v NOTIN FDOM fm /\
+              (!k. k IN FDOM fm ==> closed (fm ' k)) /\ closed N ==>
+              (fm |+ (v,N)) ' M = fm ' ([N/v] M)
 Proof
     rpt STRIP_TAC
- >> MATCH_MP_TAC ssub_update_apply_subst' >> art []
+ >> MATCH_MP_TAC ssub_update_apply_SUBST >> art []
  >> fs [closed_def, DISJOINT_DEF]
 QED
 
