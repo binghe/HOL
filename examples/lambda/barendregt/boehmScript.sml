@@ -1036,7 +1036,7 @@ Proof
  >> qexistsl_tac [‘y’, ‘args’] >> art []
 QED
 
-(* Lemma 10.3.6 (i) *)
+(* Lemma 10.3.6 (i) [1, p.247] *)
 Theorem Boehm_transform_is_ready_exists :
     !M. ?pi. Boehm_transform pi /\ is_ready (apply pi M)
 Proof
