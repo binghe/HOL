@@ -1182,6 +1182,7 @@ Proof
      reverse CONJ_TAC
      >- (rw [Abbr ‘p1’, Abbr ‘xs’, MAP_MAP_o, GSYM MAP_REVERSE]) \\
      MATCH_MP_TAC Boehm_transform_APPEND >> rw [Abbr ‘p2’, Abbr ‘p3’])
+ (* applying is_ready_alt *)
  >> simp [is_ready_alt]
  >> DISJ2_TAC
  >> qexistsl_tac [‘a’, ‘args'’]
@@ -1783,13 +1784,12 @@ Proof
  >> ‘?Ns. !M. closed M ==> apply pi M == M @* Ns’
        by METIS_TAC [Boehm_transform_lameq_appstar]
  >> Q.EXISTS_TAC ‘Ns’
- >> CONJ_TAC
+ >> CONJ_TAC (* 2 subgoals, same ending tactics *)
  >| [ (* goal 1 (of 2) *)
-      MATCH_MP_TAC lameq_TRANS >> Q.EXISTS_TAC ‘apply pi M’ >> art [] \\
-      rw [lameq_SYM],
+      MATCH_MP_TAC lameq_TRANS >> Q.EXISTS_TAC ‘apply pi M’ >> art [],
       (* goal 2 (of 2) *)
-      MATCH_MP_TAC lameq_TRANS >> Q.EXISTS_TAC ‘apply pi N’ >> art [] \\
-      rw [lameq_SYM] ]
+      MATCH_MP_TAC lameq_TRANS >> Q.EXISTS_TAC ‘apply pi N’ >> art [] ]
+ >> rw [lameq_SYM]
 QED
 
 (* Corollary 10.4.3 (i) [1, p.256]
