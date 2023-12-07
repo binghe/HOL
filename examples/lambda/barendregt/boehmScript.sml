@@ -24,12 +24,17 @@ val o_DEF = combinTheory.o_DEF;
  *  ltreeTheory extras
  *---------------------------------------------------------------------------*)
 
+(* ltree_node can be used to access ltree nodes without children information *)
 Definition ltree_node_def :
-    ltree_node (Branch a ts) = (a,ts)
+    ltree_node A p = OPTION_MAP FST (ltree_el A p)
 End
 
-Overload ltree_head     = “\A. FST (ltree_node A)”
-Overload ltree_children = “\A. SND (ltree_node A)”
+Definition ltree_decomp_def :
+    ltree_decomp (Branch a ts) = (a,ts)
+End
+
+Overload ltree_head     = “\A. FST (ltree_decomp A)”
+Overload ltree_children = “\A. SND (ltree_decomp A)”
 
 Definition ltree_paths_def :
     ltree_paths A = {p | IS_SOME (ltree_lookup A p)}
@@ -87,15 +92,15 @@ End
 (* The type of Boehm tree:
 
    For each ltree node, ‘NONE’ represents {\bot} (for unsolvable terms), while
-  ‘SOME (vs,t)’ represents ‘LAMl vs t’ (|- ?y. t = VAR y). The separation of vs
-   and t has two purposes:
+  ‘SOME (vs,y)’ represents ‘LAMl vs (VAR y)’. This separation of vs and y has
+   at least two advantages:
 
    1. ‘set vs’ is the set of binding variables (BV) at that ltree node.
-   2. ‘LAMl vs t’ can be easily "expanded" (w.r.t. eta reduction) into terms
+   2. ‘LAMl vs (VAR y)’ can be easily "expanded" (w.r.t. eta reduction) into terms
       such as ‘LAMl (vs ++ [z0;z1]) t’ (with two extra children ‘z0’ and ‘z1’)
-      without changing ‘t’ (dB encoding requires extra lifts of ‘t’).
+      without changing the head variable (VAR y).
  *)
-Type boehm_tree[pp] = “:(string list # term) option ltree”
+Type boehm_tree[pp] = “:(string list # string) option ltree”
 
 (* Definition 10.1.9 [1, p.221] (Effective Boehm tree) *)
 Definition BT_generator_def :
@@ -106,20 +111,24 @@ Definition BT_generator_def :
              vs = FRESH_list n (X UNION FV M0);
              M1 = principle_hnf (M0 @* (MAP VAR vs));
              Ms = hnf_children M1;
-              N = (vs,hnf_head M1)
+              y = hnf_headvar M1;
+              N = (vs,y) (* represents ‘LAMl vs (VAR y)’ *)
          in
             (SOME N, fromList Ms)
       else
             (NONE  , LNIL)
 End
 
+Definition fromNode_def :
+    fromNode = OPTION_MAP (\(vs,y). LAMl vs (VAR y))
+End
+
 Definition BTe_def :
     BTe X M = ltree_unfold (BT_generator X) M
 End
 
-val BT_def = BTe_def;
-
 Overload BT = “BTe {}”
+val BT_def = BTe_def;
 
 (* Definition 10.1.13 (iii)
 
@@ -140,9 +149,17 @@ Definition subterm_def :
         NONE
 End
 
+(* connection between ‘subterm’ and ‘BT’ *)
+Theorem subterm_thm :
+    !M p. p IN ltree_paths (BT M) ==>
+          subterm M p = fromNode (THE (ltree_node (BT M) p))
+Proof
+    cheat
+QED
+
 (* Boehm tree of a single free variable *)
 Definition BT_VAR_def :
-    BT_VAR x :boehm_tree = Branch (SOME (NIL,VAR x)) LNIL
+    BT_VAR x :boehm_tree = Branch (SOME (NIL,x)) LNIL
 End
 
 (* Remarks 10.1.3 (iii) [1, p.216]: unsolvable terms all have the same Boehm
@@ -152,7 +169,7 @@ End
 Overload bot = “Branch NONE (LNIL :boehm_tree llist)”
 
 (* Another form of ‘bot’, usually returned by “THE (ltree_el A p)”. *)
-Overload bot = “(NONE :(string list # term) option, SOME 0)”
+Overload bot = “(NONE :(string list # string) option, SOME 0)”
 
 (* Unicode name: "base" *)
 val _ = Unicode.unicode_version {u = UTF8.chr 0x22A5, tmnm = "bot"};
@@ -214,18 +231,18 @@ Overload BV = “BV_of_ltree_path”
 
 (* A concrete Boehm tree *)
 val example_10_1_20 =
-   “Branch (SOME ([x; y],VAR z)) [| BT_VAR x; BT_VAR y |]”;
+   “Branch (SOME ([x; y],z)) [| BT_VAR x; BT_VAR y |]”;
 
-Definition FV_of_ltree_node_def :
-    FV_of_ltree_node (M :boehm_tree) p =
+Definition FV_of_ltree_decomp_def :
+    FV_of_ltree_decomp (M :boehm_tree) p =
       let node = ltree_el M p in
           if IS_SOME node then
-             let (vs,t) = THE (FST (THE node)) in FV t DIFF set vs
+             let (vs,t) = THE (FST (THE node)) in {t} DIFF set vs
           else EMPTY
 End
 
 Definition FV_of_ltree_path_def :
-    FV_of_ltree_path M p = FV_of_ltree_node M p DIFF BV_of_ltree_path M p
+    FV_of_ltree_path M p = FV_of_ltree_decomp M p DIFF BV_of_ltree_path M p
 End
 
 Definition FV_of_ltree_def :
@@ -644,7 +661,7 @@ QED
    NOTE: ‘A’ and ‘B’ are ltree nodes returned by ‘THE (ltree_el (BT M) p)’
  *)
 Definition head_equivalent_def :
-    head_equivalent (A :(string list # term) option # num option) B =
+    head_equivalent (A :(string list # string) option # num option) B =
         if IS_SOME (FST A) /\ IS_SOME (FST B) then
            let (vs1,y ) = THE (FST A);
                (vs2,y') = THE (FST B);
@@ -669,6 +686,7 @@ Definition subtree_eta_equiv_def :
             else
                IS_NONE A' /\ IS_NONE B'
 End
+
 Overload eta_sub_equiv = “subtree_eta_equiv”
 
 (* Definition 10.2.23 (i) [1, p.239] *)
@@ -689,6 +707,7 @@ End
 
 (* ‘eta_equiv’ is an equivalence relation over Boehm trees *)
 val _ = set_fixity "=e=" (Infixr 490);
+
 Overload "=e=" = “tree_eta_equiv”
 
 (* Theorem 10.2.31, (i) <=> (iv) [1, p.244] *)
@@ -703,6 +722,7 @@ Definition term_le_eta_def :
     term_le_eta M N = let X = FV M UNION FV N in
                           tree_le_eta (BTe X M) (BTe X N)
 End
+
 Overload "le_eta" = “term_le_eta”
 
 (* Definition 10.2.32 (iv) [1, p.245] *)
@@ -710,6 +730,7 @@ Definition term_eta_equiv_def :
     term_eta_equiv M N = let X = FV M UNION FV N in
                            tree_eta_equiv (BTe X M) (BTe X N)
 End
+
 Overload eta_equiv = “term_eta_equiv”
 
 (* Definition 10.2.32 (v) [1, p.245] *)
@@ -718,6 +739,7 @@ Definition subterm_eta_equiv_def :
         let X = FV M UNION FV N in
             subtree_eta_equiv p (BTe X M) (BTe X N)
 End
+
 Overload eta_sub_equiv = “subterm_eta_equiv”
 
 (*---------------------------------------------------------------------------*
