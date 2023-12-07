@@ -12,7 +12,7 @@ open optionTheory arithmeticTheory pred_setTheory listTheory rich_listTheory
 open binderLib nomsetTheory termTheory appFOLDLTheory chap2Theory chap3Theory
      head_reductionTheory standardisationTheory solvableTheory reductionEval;
 
-open horeductionTheory takahashiTheory;
+open horeductionTheory takahashiS3Theory;
 
 val _ = new_theory "boehm";
 
@@ -1830,7 +1830,7 @@ Theorem has_bnf_imp_lameta_complete :
           lameta M N \/ ~consistent (conversion (RINSERT (beta RUNION eta) M N))
 Proof
     rpt STRIP_TAC
- >> ‘has_benf M /\ has_benf N’ by PROVE_TAC [has_benf_iff_has_bnf]
+ >> ‘has_benf M /\ has_benf N’ by PROVE_TAC [has_benf_has_bnf]
  (* NOTE: the definition of ‘has_benf’ may be wrong *)
  >> ‘?M'. lameta M M' /\ benf M'’ by METIS_TAC [has_benf_def]
  >> ‘?N'. lameta N N' /\ benf N'’ by METIS_TAC [has_benf_def]

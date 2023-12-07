@@ -121,11 +121,4 @@ val grandbeta_diamond = store_thm(
   ``diamond_property $=b=>``,
   metis_tac [takahashi_5, diamond_property_def]);
 
-(* Theorem 2.1.36 [1, p.34] or Corollary 15.1.5 [1, p.386] *)
-Theorem has_benf_iff_has_bnf :
-    !M. has_benf M <=> has_bnf M
-Proof
-    cheat
-QED
-
 val _ = export_theory()
