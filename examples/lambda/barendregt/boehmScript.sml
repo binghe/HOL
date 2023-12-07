@@ -97,27 +97,47 @@ End
  *)
 Type boehm_tree[pp] = “:(string list # term) option ltree”
 
-(* The needed unfolding function for ltree_unfold for Boehm Tree
-
-   NOTE: the purposes of ‘X’ is to eliminate more names when generating binding
-   variables in the tree.
- *)
+(* Definition 10.1.9 [1, p.221] (Effective Boehm tree) *)
 Definition BT_generator_def :
-    BT_generator (X :string set) (M :term) =
+    BT_generator X (M :term) =
       if solvable M then
          let M0 = principle_hnf M;
               n = LAMl_size M0;
              vs = FRESH_list n (X UNION FV M0);
              M1 = principle_hnf (M0 @* (MAP VAR vs));
-             M2 = (vs,hnf_head M1)
+             Ms = hnf_children M1;
+              N = (vs,hnf_head M1)
          in
-            (SOME M2,fromList (hnf_children M1))
+            (SOME N, fromList Ms)
       else
-        (NONE, LNIL)
+            (NONE  , LNIL)
 End
 
-Definition BT_def :
-    BT X = ltree_unfold (BT_generator X)
+Definition BTe_def :
+    BTe X M = ltree_unfold (BT_generator X) M
+End
+
+val BT_def = BTe_def;
+
+Overload BT = “BTe {}”
+
+(* Definition 10.1.13 (iii)
+
+   NOTE: ‘subterm’ is the main device connecting Boehm trees to Boehm transformations.
+ *)
+Definition subterm_def :
+    subterm M [] = SOME (M :term) /\
+    subterm M (x::xs) = if solvable M then
+        let M0 = principle_hnf M;
+             n = LAMl_size M0;
+            vs = FRESH_list n (FV M0);
+            M1 = principle_hnf (M0 @* (MAP VAR vs));
+            Ms = hnf_children M1;
+             m = LENGTH Ms
+        in
+            if x < m then subterm (EL x Ms) xs else NONE
+    else
+        NONE
 End
 
 (* Boehm tree of a single free variable *)
@@ -140,25 +160,21 @@ val _ = TeX_notation {hol = "bot", TeX = ("\\ensuremath{\\bot}", 1)};
 
 (* some easy theorems about Boehm trees of unsolvable terms *)
 Theorem unsolvable_BT :
-    !X M. unsolvable M ==> BT X M = bot
+    !M. unsolvable M ==> BT M = bot
 Proof
     rw [BT_def, BT_generator_def, ltree_unfold, ltree_map]
 QED
 
 Theorem unsolvable_BT_EQ :
-    !X M N. unsolvable M /\ unsolvable N ==> BT X M = BT X N
+    !M N. unsolvable M /\ unsolvable N ==> BT M = BT N
 Proof
     rw [unsolvable_BT]
 QED
 
-(* ‘Boehm’ is the set of trees that are the tree of a lambda term *)
-Definition Boehm_def :
-    Boehm X = {BT X M | T}
-End
 
 (* Proposition 10.1.6 [1, p.219] *)
 Theorem lameq_cong_BT :
-    !X M N. M == N ==> BT X M = BT X N
+    !M N. M == N ==> BT M = BT N
 Proof
     cheat
 QED
@@ -167,7 +183,9 @@ QED
  * FV (free variables) and BV (binding variables) of Boehm trees
  *---------------------------------------------------------------------------*)
 
-(* ‘BV_of_ltree_node’ directly takes out the binding variable list stored in
+(* Definition 10.1.20 [1, p.224]
+
+  ‘BV_of_ltree_node’ directly takes out the binding variable list stored in
    the Boehm tree.
  *)
 Definition BV_of_ltree_node_def :
@@ -217,7 +235,7 @@ End
 Overload FV = “FV_of_ltree”
 
 Theorem FV_of_ltree_empty_imp_closed :
-    !X M. FV (BT X M) = {} ==> closed M
+    !M. FV (BT M) = {} ==> closed M
 Proof
     cheat
 QED
@@ -267,7 +285,7 @@ QED
 
 (* ‘ltree_finite’ means finite branching *)
 Theorem ltree_finite_BT :
-    !X M. ltree_finite (BT X M)
+    !M. ltree_finite (BT M)
 Proof
     cheat
 QED
@@ -683,14 +701,14 @@ QED
 (* Definition 10.2.32 (iii) [1, p.245] *)
 Definition term_le_eta_def :
     term_le_eta M N = let X = FV M UNION FV N in
-                          tree_le_eta (BT X M) (BT X N)
+                          tree_le_eta (BTe X M) (BTe X N)
 End
 Overload "le_eta" = “term_le_eta”
 
 (* Definition 10.2.32 (iv) [1, p.245] *)
 Definition term_eta_equiv_def :
     term_eta_equiv M N = let X = FV M UNION FV N in
-                           tree_eta_equiv (BT X M) (BT X N)
+                           tree_eta_equiv (BTe X M) (BTe X N)
 End
 Overload eta_equiv = “term_eta_equiv”
 
@@ -698,7 +716,7 @@ Overload eta_equiv = “term_eta_equiv”
 Definition subterm_eta_equiv_def :
     subterm_eta_equiv p M N =
         let X = FV M UNION FV N in
-            subtree_eta_equiv p (BT X M) (BT X N)
+            subtree_eta_equiv p (BTe X M) (BTe X N)
 End
 Overload eta_sub_equiv = “subterm_eta_equiv”
 
@@ -706,7 +724,15 @@ Overload eta_sub_equiv = “subterm_eta_equiv”
  *  Boehm transformations
  *---------------------------------------------------------------------------*)
 
-(* Definition 10.3.3 (i) *)
+(* Definition 10.3.2 [1, p.246]
+
+   cf. solvableTheory.closed_substitution_instances_def
+ *)
+Definition substitution_instances_def :
+    substitution_instances M = {M ISUB phi | phi | DOM phi SUBSET FV M}
+End
+
+(* Definition 10.3.3 (i) [1, p.246] *)
 Type transform[pp] = “:(term -> term) list”
 
 (* Definition 10.3.3 (ii) *)
@@ -1215,18 +1241,28 @@ Proof
  >> rw [Abbr ‘p3’]
 QED
 
+(* Lemma 10.3.7 (i) [1, p.247] *)
+Theorem Boehm_transform_subterm_exists :
+    !M p. p IN ltree_paths (BT M) ==>
+            ?pi. Boehm_transform pi /\ is_ready (apply pi M) /\
+                 THE (subterm (apply pi M) p)
+                 IN substitution_instances (THE (subterm M p))
+Proof
+    cheat
+QED
+
 (* Definition 10.3.10 (ii) *)
 Definition is_faithful_def :
     is_faithful p Fs pi =
        !M N. M IN Fs /\ N IN Fs ==>
             (subterm_eta_equiv p M N <=> equivalent (apply pi M) (apply pi N)) /\
-            (!X. IS_SOME (ltree_lookup (BT X M) p) <=>
+            (!X. IS_SOME (ltree_lookup (BTe X M) p) <=>
                  solvable (apply pi M))
 End
 
 Definition term_agrees_upto_def :
     term_agrees_upto M N p <=>
-      !q. q <<= p ==> !X. ltree_el (BT X M) q = ltree_el (BT X N) q
+      !q. q <<= p ==> !X. ltree_el (BTe X M) q = ltree_el (BTe X N) q
 End
 
 (* Definition 10.3.10 (iv) *)
