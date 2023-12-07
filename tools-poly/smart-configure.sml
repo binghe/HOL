@@ -212,7 +212,7 @@ val dynlib_available = false;
 
 print "\n";
 
-val DOT_PATH = "/usr/bin/dot"
+val DOT_PATH = "/opt/local/bin/dot"
 
 fun verdict (prompt, value) =
     if value = "" then
