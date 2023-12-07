@@ -119,16 +119,17 @@ Definition BT_generator_def :
             (NONE  , LNIL)
 End
 
-Definition fromNode_def :
-    fromNode = OPTION_MAP (\(vs,y). LAMl vs (VAR y))
-End
-
 Definition BTe_def :
     BTe X M = ltree_unfold (BT_generator X) M
 End
 
 Overload BT = “BTe {}”
-val BT_def = BTe_def;
+val BT_def = BTe_def; (* for backward compatibility *)
+
+(* from BT tree node data to terms in form of ‘SOME (LAMl vs (VAR y))’ or NONE *)
+Definition fromNode_def :
+    fromNode = OPTION_MAP (\(vs,y). LAMl vs (VAR y))
+End
 
 (* Definition 10.1.13 (iii)
 
@@ -149,10 +150,16 @@ Definition subterm_def :
         NONE
 End
 
-(* connection between ‘subterm’ and ‘BT’ *)
+Theorem subterm_exists :
+    !M p. p IN ltree_paths (BT M) ==> subterm M p <> NONE
+Proof
+    cheat
+QED
+
+(* Lemma 10.1.15 [1, p.222] *)
 Theorem subterm_thm :
     !M p. p IN ltree_paths (BT M) ==>
-          subterm M p = fromNode (THE (ltree_node (BT M) p))
+          BT (THE (subterm M p)) = THE (ltree_lookup (BT M) p)
 Proof
     cheat
 QED
