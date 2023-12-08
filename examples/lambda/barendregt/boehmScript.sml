@@ -136,7 +136,7 @@ End
    NOTE: ‘subterm’ is the main device connecting Boehm trees to Boehm transformations.
  *)
 Definition subterm_def :
-    subterm M [] = SOME (M :term) /\
+    subterm M []      = SOME (M :term) /\
     subterm M (x::xs) = if solvable M then
         let M0 = principle_hnf M;
              n = LAMl_size M0;
@@ -151,14 +151,16 @@ Definition subterm_def :
 End
 
 Theorem subterm_exists :
-    !M p. p IN ltree_paths (BT M) ==> subterm M p <> NONE
+    !p M. p IN ltree_paths (BT M) ==> subterm M p <> NONE
 Proof
-    cheat
+    Induct_on ‘p’
+ >- rw [subterm_def]
+ >> cheat
 QED
 
 (* Lemma 10.1.15 [1, p.222] *)
 Theorem subterm_thm :
-    !M p. p IN ltree_paths (BT M) ==>
+    !p M. p IN ltree_paths (BT M) /\
           BT (THE (subterm M p)) = THE (ltree_lookup (BT M) p)
 Proof
     cheat
