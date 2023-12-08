@@ -196,7 +196,8 @@ val _ = TeX_notation {hol = "bot", TeX = ("\\ensuremath{\\bot}", 1)};
 Theorem unsolvable_BT :
     !M. unsolvable M ==> BT M = bot
 Proof
-    rw [BT_def, BT_generator_def, ltree_unfold, ltree_map]
+    rw [BT_def, BT_generator_def, BT_generator0_def,
+        ltree_unfold, ltree_map]
 QED
 
 Theorem unsolvable_BT_EQ :
