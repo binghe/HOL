@@ -102,9 +102,12 @@ End
  *)
 Type boehm_tree[pp] = “:(string list # string) option ltree”
 
-(* Definition 10.1.9 [1, p.221] (Effective Boehm tree) *)
-Definition BT_generator_def :
-    BT_generator X (M :term) =
+(* Definition 10.1.9 [1, p.221] (Effective Boehm tree)
+
+   NOTE: ‘BT_generator0’ is intended to be used for generating a rose tree.
+ *)
+Definition BT_generator0_def :
+    BT_generator0 X (M :term) =
       if solvable M then
          let M0 = principle_hnf M;
               n = LAMl_size M0;
@@ -114,9 +117,14 @@ Definition BT_generator_def :
               y = hnf_headvar M1;
               N = (vs,y) (* represents ‘LAMl vs (VAR y)’ *)
          in
-            (SOME N, fromList Ms)
+            (SOME N, Ms)
       else
-            (NONE  , LNIL)
+            (NONE  , [])
+End
+
+Definition BT_generator_def :
+    BT_generator X (M :term) =
+       let (t,ts) = BT_generator0 X M in (t, fromList ts)
 End
 
 Definition BTe_def :
@@ -313,7 +321,9 @@ QED
 Theorem ltree_finite_BT :
     !M. ltree_finite (BT M)
 Proof
-    cheat
+    rw [ltree_finite_from_rose]
+ (* applying from_rose_def? *)
+ >> cheat
 QED
 
 (* Definition 10.2.8 (i) [1, p.232]:
