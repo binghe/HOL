@@ -122,10 +122,31 @@ Definition BT_generator0_def :
             (NONE  , [])
 End
 
-Definition BT_generator_def :
+Definition BT_generator :
     BT_generator X (M :term) =
        let (t,ts) = BT_generator0 X M in (t, fromList ts)
 End
+
+Theorem BT_generator_def :
+  !X M.
+    BT_generator X M =
+      if solvable M then
+         let M0 = principle_hnf M;
+              n = LAMl_size M0;
+             vs = FRESH_list n (X UNION FV M0);
+             M1 = principle_hnf (M0 @* (MAP VAR vs));
+             Ms = hnf_children M1;
+              y = hnf_headvar M1;
+              N = (vs,y)
+         in
+            (SOME N, fromList Ms)
+      else
+            (NONE  , LNIL)
+Proof
+    RW_TAC std_ss [BT_generator, BT_generator0_def, fromList_def, fromList_11]
+ >> ‘n' = n’ by rw [Abbr ‘n’, Abbr ‘n'’]
+ >> POP_ASSUM (rfs o wrap)
+QED
 
 Definition BTe_def :
     BTe X M = ltree_unfold (BT_generator X) M
@@ -196,8 +217,7 @@ val _ = TeX_notation {hol = "bot", TeX = ("\\ensuremath{\\bot}", 1)};
 Theorem unsolvable_BT :
     !M. unsolvable M ==> BT M = bot
 Proof
-    rw [BT_def, BT_generator_def, BT_generator0_def,
-        ltree_unfold, ltree_map]
+    rw [BT_def, BT_generator_def, ltree_unfold, ltree_map]
 QED
 
 Theorem unsolvable_BT_EQ :
