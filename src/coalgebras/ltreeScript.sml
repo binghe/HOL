@@ -689,6 +689,48 @@ Proof
   \\ fs [LSET_def,IN_DEF,LNTH_fromList,PULL_EXISTS,LFINITE_fromList,EVERY_EL]
 QED
 
+CoInductive ltree_every :
+    P a ts /\ every (ltree_every P) ts ==> (ltree_every P (Branch a ts))
+End
+
+Definition ltree_finite_branching_def :
+    ltree_finite_branching t = ltree_every (\a ts. LFINITE ts) t
+End
+
+(* cf. ltree_cases *)
+Theorem ltree_finite_branching_cases :
+    !t. ltree_finite_branching t <=>
+        ?a ts. t = Branch a (fromList ts) /\ EVERY ltree_finite_branching ts
+Proof
+    Q.X_GEN_TAC ‘t’
+ >> reverse EQ_TAC
+ >- (rw [ltree_finite_branching_def, EVERY_MEM] \\
+     qabbrev_tac ‘P = \(a :'a) (ts :'a ltree llist). LFINITE ts’ \\
+     rw [Once ltree_every_cases]
+     >- rw [Abbr ‘P’, LFINITE_fromList] \\
+     rw [every_fromList_EVERY, EVERY_MEM])
+ >> rw [ltree_finite_branching_def, EVERY_MEM]
+ >> POP_ASSUM (MP_TAC o (ONCE_REWRITE_RULE [ltree_every_cases]))
+ >> rw []
+ >> ‘?l. ts = fromList l’ by METIS_TAC [LFINITE_IMP_fromList]
+ >> fs [every_fromList_EVERY, EVERY_MEM]
+QED
+
+Theorem ltree_finite_imp_finite_branching :
+    !t. ltree_finite t ==> ltree_finite_branching t
+Proof
+    HO_MATCH_MP_TAC ltree_finite_ind
+ >> rw [EVERY_MEM, ltree_finite_branching_def]
+ >> qabbrev_tac ‘P = \(a :'a) (ts :'a ltree llist). LFINITE ts’
+ >> rw [Once ltree_every_cases]
+ >- rw [Abbr ‘P’, LFINITE_fromList]
+ >> rw [every_fromList_EVERY, EVERY_MEM]
+QED
+
+(*---------------------------------------------------------------------------*
+ *  Rose tree is a finite variant of ltree, defined inductively.
+ *---------------------------------------------------------------------------*)
+
 Datatype:
   rose_tree = Rose 'a (rose_tree list)
 End
@@ -727,6 +769,6 @@ val _ = List.app Theory.delete_binding
   ["Branch_rep_def", "dest_Branch_rep_def", "make_ltree_rep_def",
    "path_ok_def", "ltree_absrep", "ltree_absrep",
    "gen_ltree_def", "ltree_rep_ok_def", "Branch",
-   "from_rose_def_primitive", "ltree_finite_def"];
+   "from_rose_def_primitive"];
 
 val _ = export_theory();
