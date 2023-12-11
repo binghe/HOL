@@ -226,6 +226,32 @@ Proof
     rw [BT_of_unsolvables]
 QED
 
+Theorem ltree_finite_branching_BT :
+    !M. ltree_finite_branching (BT M)
+Proof
+ (* applying ltree_finite_branching_coind *)
+    Q.X_GEN_TAC ‘M’
+ >> irule ltree_finite_branching_coind
+ >> Q.EXISTS_TAC ‘\b. ?M. b = BT M’
+ >> rw [] >- (Q.EXISTS_TAC ‘M’ >> rw [])
+ >> qabbrev_tac ‘a = ltree_head (BT M)’
+ >> qabbrev_tac ‘ts = THE (toList (ltree_children (BT M)))’
+ >> qexistsl_tac [‘a’, ‘ts’]
+ >> CONJ_TAC
+ >- (reverse (RW_TAC std_ss [BT_def, BT_generator_def, Once ltree_unfold])
+     >- simp [BT_of_unsolvables, Abbr ‘a’, Abbr ‘ts’, toList] \\
+     CONJ_TAC
+     >- (RW_TAC std_ss [Abbr ‘a’, BT_def, BT_generator_def, Once ltree_unfold] \\
+         rw [] >> ‘n' = n’ by rw [Abbr ‘n’, Abbr ‘n'’] >> gs []) \\
+     RW_TAC std_ss [Abbr ‘ts’, BT_def, BT_generator_def, Once ltree_unfold] \\
+    ‘n' = n’ by rw [Abbr ‘n’, Abbr ‘n'’] >> gs [] \\
+     qabbrev_tac ‘ll = LMAP (ltree_unfold (BT_generator {})) (fromList Ms)’ \\
+     MATCH_MP_TAC (GSYM to_fromList) \\
+     rw [Abbr ‘ll’, LFINITE_fromList])
+ (* stage work *)
+ >> cheat
+QED
+
 (* Proposition 10.1.6 [1, p.219] *)
 Theorem lameq_cong_BT :
     !M N. M == N ==> BT M = BT N
@@ -335,33 +361,6 @@ Theorem denude_alt :
     !A. denude A = fromPaths (ltree_paths A)
 Proof
     cheat
-QED
-
-Theorem ltree_finite_branching_BT :
-    !M. ltree_finite_branching (BT M)
-Proof
- (* How to apply ltree_finite_branching_coind? *)
-    Q.X_GEN_TAC ‘M’
- >> irule ltree_finite_branching_coind
- >> Q.EXISTS_TAC ‘\b. ?M. b = BT M’
- >> rw []
- >- (Q.EXISTS_TAC ‘M’ >> rw [])
- >> qabbrev_tac ‘a = ltree_head (BT M)’
- >> qabbrev_tac ‘ts = THE (toList (ltree_children (BT M)))’
- >> qexistsl_tac [‘a’, ‘ts’]
- >> CONJ_TAC
- >- (reverse (RW_TAC std_ss [BT_def, BT_generator_def, Once ltree_unfold])
-     >- simp [BT_of_unsolvables, Abbr ‘a’, Abbr ‘ts’, toList] \\
-     CONJ_TAC
-     >- (RW_TAC std_ss [Abbr ‘a’, BT_def, BT_generator_def, Once ltree_unfold] \\
-         rw [] >> ‘n' = n’ by rw [Abbr ‘n’, Abbr ‘n'’] >> gs []) \\
-     RW_TAC std_ss [Abbr ‘ts’, BT_def, BT_generator_def, Once ltree_unfold] \\
-    ‘n' = n’ by rw [Abbr ‘n’, Abbr ‘n'’] >> gs [] \\
-     qabbrev_tac ‘ll = LMAP (ltree_unfold (BT_generator {})) (fromList Ms)’ \\
-     MATCH_MP_TAC (GSYM to_fromList) \\
-     rw [Abbr ‘ll’, LFINITE_fromList])
- (* stage work *)
- >> cheat
 QED
 
 (* Definition 10.2.8 (i) [1, p.232]:
