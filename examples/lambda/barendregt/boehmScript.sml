@@ -29,7 +29,7 @@ Definition ltree_node_def :
     ltree_node A p = OPTION_MAP FST (ltree_el A p)
 End
 
-Definition ltree_decomp_def :
+Definition ltree_decomp_def[simp] :
     ltree_decomp (Branch a ts) = (a,ts)
 End
 
@@ -214,18 +214,17 @@ val _ = Unicode.unicode_version {u = UTF8.chr 0x22A5, tmnm = "bot"};
 val _ = TeX_notation {hol = "bot", TeX = ("\\ensuremath{\\bot}", 1)};
 
 (* some easy theorems about Boehm trees of unsolvable terms *)
-Theorem unsolvable_BT :
+Theorem BT_of_unsolvables :
     !M. unsolvable M ==> BT M = bot
 Proof
     rw [BT_def, BT_generator_def, ltree_unfold, ltree_map]
 QED
 
-Theorem unsolvable_BT_EQ :
+Theorem BT_of_unsolvables_EQ :
     !M N. unsolvable M /\ unsolvable N ==> BT M = BT N
 Proof
-    rw [unsolvable_BT]
+    rw [BT_of_unsolvables]
 QED
-
 
 (* Proposition 10.1.6 [1, p.219] *)
 Theorem lameq_cong_BT :
@@ -338,12 +337,30 @@ Proof
     cheat
 QED
 
-(* ‘ltree_finite’ means finite branching *)
-Theorem ltree_finite_BT :
-    !M. ltree_finite (BT M)
+Theorem ltree_finite_branching_BT :
+    !M. ltree_finite_branching (BT M)
 Proof
-    rw [ltree_finite_from_rose]
- (* applying from_rose_def? *)
+ (* How to apply ltree_finite_branching_coind? *)
+    Q.X_GEN_TAC ‘M’
+ >> irule ltree_finite_branching_coind
+ >> Q.EXISTS_TAC ‘\b. ?M. b = BT M’
+ >> rw []
+ >- (Q.EXISTS_TAC ‘M’ >> rw [])
+ >> qabbrev_tac ‘a = ltree_head (BT M)’
+ >> qabbrev_tac ‘ts = THE (toList (ltree_children (BT M)))’
+ >> qexistsl_tac [‘a’, ‘ts’]
+ >> CONJ_TAC
+ >- (reverse (RW_TAC std_ss [BT_def, BT_generator_def, Once ltree_unfold])
+     >- simp [BT_of_unsolvables, Abbr ‘a’, Abbr ‘ts’, toList] \\
+     CONJ_TAC
+     >- (RW_TAC std_ss [Abbr ‘a’, BT_def, BT_generator_def, Once ltree_unfold] \\
+         rw [] >> ‘n' = n’ by rw [Abbr ‘n’, Abbr ‘n'’] >> gs []) \\
+     RW_TAC std_ss [Abbr ‘ts’, BT_def, BT_generator_def, Once ltree_unfold] \\
+    ‘n' = n’ by rw [Abbr ‘n’, Abbr ‘n'’] >> gs [] \\
+     qabbrev_tac ‘ll = LMAP (ltree_unfold (BT_generator {})) (fromList Ms)’ \\
+     MATCH_MP_TAC (GSYM to_fromList) \\
+     rw [Abbr ‘ll’, LFINITE_fromList])
+ (* stage work *)
  >> cheat
 QED
 
