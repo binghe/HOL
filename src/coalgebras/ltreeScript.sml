@@ -694,37 +694,36 @@ CoInductive ltree_every :
 End
 
 Definition ltree_finite_branching_def :
-    ltree_finite_branching t = ltree_every (\a ts. LFINITE ts) t
+    ltree_finite_branching = ltree_every (\a ts. LFINITE ts)
 End
 
-(* cf. ltree_cases *)
-Theorem ltree_finite_branching_cases :
-    !t. ltree_finite_branching t <=>
-        ?a ts. t = Branch a (fromList ts) /\ EVERY ltree_finite_branching ts
+Theorem ltree_finite_branching_rules :
+    !a ts. EVERY ltree_finite_branching ts ==>
+           ltree_finite_branching (Branch a (fromList ts))
 Proof
-    Q.X_GEN_TAC ‘t’
- >> reverse EQ_TAC
- >- (rw [ltree_finite_branching_def, EVERY_MEM] \\
-     qabbrev_tac ‘P = \(a :'a) (ts :'a ltree llist). LFINITE ts’ \\
-     rw [Once ltree_every_cases]
-     >- rw [Abbr ‘P’, LFINITE_fromList] \\
-     rw [every_fromList_EVERY, EVERY_MEM])
- >> rw [ltree_finite_branching_def, EVERY_MEM]
- >> POP_ASSUM (MP_TAC o (ONCE_REWRITE_RULE [ltree_every_cases]))
- >> rw []
- >> ‘?l. ts = fromList l’ by METIS_TAC [LFINITE_IMP_fromList]
- >> fs [every_fromList_EVERY, EVERY_MEM]
+    rw [ltree_finite_branching_def, EVERY_MEM]
+ >> qabbrev_tac ‘P = \(a :'a) (ts :'a ltree llist). LFINITE ts’
+ >> rw [Once ltree_every_cases]
+ >- rw [Abbr ‘P’, LFINITE_fromList]
+ >> rw [every_fromList_EVERY, EVERY_MEM]
 QED
 
 Theorem ltree_finite_imp_finite_branching :
     !t. ltree_finite t ==> ltree_finite_branching t
 Proof
     HO_MATCH_MP_TAC ltree_finite_ind
- >> rw [EVERY_MEM, ltree_finite_branching_def]
- >> qabbrev_tac ‘P = \(a :'a) (ts :'a ltree llist). LFINITE ts’
- >> rw [Once ltree_every_cases]
- >- rw [Abbr ‘P’, LFINITE_fromList]
- >> rw [every_fromList_EVERY, EVERY_MEM]
+ >> rw [ltree_finite_branching_rules]
+QED
+
+(* cf. ltree_cases *)
+Theorem ltree_finite_branching_cases :
+    !t. ltree_finite_branching t <=>
+        ?a ts. t = Branch a (fromList ts) /\ EVERY ltree_finite_branching ts
+Proof
+    rw [ltree_finite_branching_def, Once ltree_every_cases]
+ >> EQ_TAC >> rw [LFINITE_fromList, every_fromList_EVERY]
+ >> ‘?l. ts = fromList l’ by METIS_TAC [LFINITE_IMP_fromList]
+ >> fs [every_fromList_EVERY]
 QED
 
 (*---------------------------------------------------------------------------*
