@@ -786,12 +786,12 @@ Overload eta_sub_equiv = “subterm_eta_equiv”
  *  Boehm transformations
  *---------------------------------------------------------------------------*)
 
-(* Definition 10.3.2 [1, p.246]
+(* Definition 10.3.2 [1, p.246] *)
+val _ = set_fixity "is_substitution_instance_of" (Infixr 490);
 
-   cf. solvableTheory.closed_substitution_instances_def
- *)
-Definition substitution_instances_def :
-    substitution_instances M = {M ISUB phi | phi | DOM phi SUBSET FV M}
+(* NOTE: ‘(DOM phi) SUBSET (FV M)’ is not necessary *)
+Definition is_substitution_instance_of :
+    N is_substitution_instance_of M <=> ?phi. N = M ISUB phi
 End
 
 (* Definition 10.3.3 (i) [1, p.246] *)
@@ -1125,7 +1125,7 @@ Proof
 QED
 
 (* Lemma 10.3.6 (i) [1, p.247] *)
-Theorem Boehm_transform_is_ready_exists :
+Theorem Boehm_transform_exists_lemma1 :
     !M. ?pi. Boehm_transform pi /\ is_ready (apply pi M)
 Proof
     Q.X_GEN_TAC ‘M’
@@ -1231,8 +1231,7 @@ Proof
              Know ‘(FEMPTY |++ L) ' (EL n (FRONT Z)) = EL n args'’
              >- (FIRST_X_ASSUM MATCH_MP_TAC >> art []) >> Rewr' \\
              Suff ‘z # EL n args’
-             >- (DISCH_TAC \\
-                 CCONTR_TAC >> fs [] >> METIS_TAC [SUBSET_DEF]) \\
+             >- (DISCH_TAC >> CCONTR_TAC >> fs [] >> METIS_TAC [SUBSET_DEF]) \\
              CCONTR_TAC >> fs [] \\
              Q.PAT_X_ASSUM ‘DISJOINT (set Z) X’ MP_TAC \\
              rw [DISJOINT_ALT, Abbr ‘X’] \\
@@ -1258,8 +1257,7 @@ Proof
      Know ‘DISJOINT (set Z) (BIGUNION (IMAGE FV (set args')))’
      >- (MATCH_MP_TAC DISJOINT_SUBSET \\
          Q.EXISTS_TAC ‘X’ >> rw [Abbr ‘X’]) \\
-     rw [DISJOINT_ALT] \\
-     FIRST_X_ASSUM irule >> art [] \\
+     rw [DISJOINT_ALT] >> FIRST_X_ASSUM irule >> art [] \\
      Q.EXISTS_TAC ‘EL n args'’ >> rw [MEM_EL] \\
      Q.EXISTS_TAC ‘n’ >> art [])
  >> DISCH_TAC
@@ -1304,11 +1302,11 @@ Proof
 QED
 
 (* Lemma 10.3.7 (i) [1, p.247] *)
-Theorem Boehm_transform_subterm_exists :
+Theorem Boehm_transform_exists_lemma2 :
     !M p. p IN ltree_paths (BT M) ==>
             ?pi. Boehm_transform pi /\ is_ready (apply pi M) /\
                  THE (subterm (apply pi M) p)
-                 IN substitution_instances (THE (subterm M p))
+                 is_substitution_instance_of (THE (subterm M p))
 Proof
     cheat
 QED
@@ -1504,8 +1502,7 @@ Proof
       Q.EXISTS_TAC ‘apply p3 (VAR a @* MAP VAR bs)’ \\
       CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> art []) \\
       rw [Abbr ‘p3’] \\
-      MATCH_MP_TAC lameq_TRANS \\
-      Q.EXISTS_TAC ‘f2 P’ \\
+      MATCH_MP_TAC lameq_TRANS >> Q.EXISTS_TAC ‘f2 P’ \\
       reverse CONJ_TAC >- rw [] \\
       MATCH_MP_TAC solving_transform_lameq >> rw [Abbr ‘f2’],
       (* goal 2 (of 2) *)
