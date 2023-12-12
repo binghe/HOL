@@ -209,6 +209,7 @@ Definition subterm_def :
         NONE
 End
 
+(* What if M is unsolvable? *)
 Theorem subterm_exists :
     !p M. p IN ltree_paths (BT M) ==> subterm M p <> NONE
 Proof
@@ -219,7 +220,7 @@ QED
 
 (* Lemma 10.1.15 [1, p.222] *)
 Theorem subterm_thm :
-    !p M. p IN ltree_paths (BT M) /\
+    !p M. p IN ltree_paths (BT M) ==>
           BT (THE (subterm M p)) = THE (ltree_lookup (BT M) p)
 Proof
     cheat
@@ -420,7 +421,7 @@ val _ = set_fixity "extends" (Infixr 490);
 
 Definition extends_def :
     $extends (ts :naked_tree) (A :boehm_tree) <=>
-       ltree_paths A SUBSET (ltree_paths ts) /\ ltree_finite ts /\
+       ltree_paths A SUBSET (ltree_paths ts) /\ finite_branching ts /\
        !p. p IN (ltree_paths A) /\ THE (ltree_el A p) = bot ==>
            SND (THE (ltree_el ts p)) = SOME 0
 End
@@ -435,9 +436,9 @@ End
  *)
 Definition eta_generator_def :
     eta_generator ((A,X) :boehm_tree # naked_tree) =
-    if IS_SOME (ltree_head A) then
-       let (vs,t) = THE (ltree_head A);
-                Z = ltree_head X;           (* initially empty *)
+    if IS_SOME (ltree_node A) then
+       let (vs,t) = THE (ltree_node A);
+                Z = ltree_node X;           (* initially empty *)
                as = ltree_children A;
                xs = ltree_children X;
                 m = THE (LLENGTH as);            (* never NONE *)
