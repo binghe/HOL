@@ -24,46 +24,76 @@ val o_DEF = combinTheory.o_DEF;
  *  ltreeTheory extras
  *---------------------------------------------------------------------------*)
 
-(* ltree_node can be used to access ltree nodes without children information *)
-Definition ltree_node_def :
-    ltree_node A p = OPTION_MAP FST (ltree_el A p)
+(* ltree_element is an variant of ‘ltree_el’ without number of children *)
+Definition ltree_element_def :
+    ltree_element t p = OPTION_MAP FST (ltree_el t p)
 End
 
-Definition ltree_decomp_def[simp] :
-    ltree_decomp (Branch a ts) = (a,ts)
+Definition ltree_node_def[simp] :
+    ltree_node (Branch a ts) = a
 End
 
-Overload ltree_head     = “\A. FST (ltree_decomp A)”
-Overload ltree_children = “\A. SND (ltree_decomp A)”
+Definition ltree_children_def[simp] :
+    ltree_children (Branch a ts) = ts
+End
 
 Definition ltree_paths_def :
-    ltree_paths A = {p | IS_SOME (ltree_lookup A p)}
+    ltree_paths t = {p | ltree_lookup t p <> NONE}
 End
 
+Theorem ltree_lookup_valid :
+    !p t. p IN ltree_paths t ==> ltree_lookup t p <> NONE
+Proof
+    rw [ltree_paths_def]
+QED
+
 Theorem NIL_IN_ltree_paths[simp] :
-    [] IN ltree_paths A
+    [] IN ltree_paths t
 Proof
     rw [ltree_paths_def, ltree_lookup_def]
 QED
 
-(* TODO: can ‘ltree_finite A’ be removed? *)
-Theorem ltree_paths_alt :
-    !A. ltree_finite A ==> ltree_paths A = {p | IS_SOME (ltree_el A p)}
+Theorem ltree_el :
+    ltree_el t [] = SOME (ltree_node t,LLENGTH (ltree_children t)) /\
+    ltree_el t (n::ns) =
+      case LNTH n (ltree_children t) of
+        NONE => NONE
+      | SOME a => ltree_el a ns
 Proof
-    HO_MATCH_MP_TAC ltree_finite_ind
- >> rw [ltree_paths_def]
- >> rw [GSYM SUBSET_ANTISYM_EQ, SUBSET_DEF] (* 2 subgoals, same tactics *)
- >> ( POP_ASSUM MP_TAC \\
-      Q.SPEC_TAC (‘x’, ‘p’) \\
-      Induct_on ‘p’ >- rw [ltree_lookup_def, ltree_el_def] \\
-      rw [ltree_lookup_def, ltree_el_def] \\
-      Cases_on ‘LNTH h (fromList ts)’ >> fs [] \\
-      Cases_on ‘h < LENGTH ts’ >> fs [LNTH_fromList] \\
-      Q.PAT_X_ASSUM ‘EVERY P ts’ (MP_TAC o REWRITE_RULE [EVERY_EL]) \\
-      DISCH_THEN (MP_TAC o (Q.SPEC ‘h’)) \\
-      RW_TAC std_ss [] \\
-      POP_ASSUM (MP_TAC o REWRITE_RULE [GSYM SUBSET_ANTISYM_EQ]) \\
-      rw [SUBSET_DEF] )
+   ‘?a ts. t = Branch a ts’ by METIS_TAC [ltree_cases]
+ >> simp [ltree_el_def]
+QED
+
+Theorem ltree_lookup :
+    ltree_lookup t [] = SOME t /\
+    ltree_lookup t (n::ns) =
+      case LNTH n (ltree_children t) of
+        NONE => NONE
+      | SOME a => ltree_lookup a ns
+Proof
+   ‘?a ts. t = Branch a ts’ by METIS_TAC [ltree_cases]
+ >> simp [ltree_lookup_def]
+QED
+
+Theorem ltree_lookup_and_ltree_el[local] :
+    !p t. ltree_lookup t p <> NONE <=> ltree_el t p <> NONE
+Proof
+    Induct_on ‘p’
+ >- rw [ltree_lookup, ltree_el]
+ >> rw [Once ltree_lookup, Once ltree_el]
+ >> Cases_on ‘LNTH h (ltree_children t)’ >> fs []
+QED
+
+Theorem ltree_paths_alt :
+    !t. ltree_paths A = {p | ltree_el A p <> NONE}
+Proof
+    rw [ltree_paths_def, Once EXTENSION, ltree_lookup_and_ltree_el]
+QED
+
+Theorem ltree_el_valid :
+    !p t. p IN ltree_paths t ==> ltree_el t p <> NONE
+Proof
+    rw [ltree_paths_alt]
 QED
 
 (* ltree_subset A B <=> A results from B by "cutting off" some subtrees. Thus,
@@ -81,8 +111,8 @@ Definition ltree_subset_def :
     ltree_subset A B <=>
        (ltree_paths A) SUBSET (ltree_paths B) /\
        !p. p IN ltree_paths A ==>
-           ltree_head (THE (ltree_lookup A p)) =
-           ltree_head (THE (ltree_lookup B p))
+           ltree_node (THE (ltree_lookup A p)) =
+           ltree_node (THE (ltree_lookup B p))
 End
 
 (*---------------------------------------------------------------------------*
