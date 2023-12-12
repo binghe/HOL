@@ -789,6 +789,84 @@ Proof
 QED
 
 (*---------------------------------------------------------------------------*
+ *  More ltree operators
+ *---------------------------------------------------------------------------*)
+
+Definition ltree_node_def[simp] :
+    ltree_node (Branch a ts) = a
+End
+
+Definition ltree_children_def[simp] :
+    ltree_children (Branch a ts) = ts
+End
+
+Theorem ltree_node_children_reduce[simp] :
+    Branch (ltree_node t) (ltree_children t) = t
+Proof
+   ‘?a ts. t = Branch a ts’ by METIS_TAC [ltree_cases]
+ >> rw []
+QED
+
+Definition ltree_paths_def :
+    ltree_paths t = {p | ltree_lookup t p <> NONE}
+End
+
+Theorem ltree_lookup_valid :
+    !p t. p IN ltree_paths t ==> ltree_lookup t p <> NONE
+Proof
+    rw [ltree_paths_def]
+QED
+
+Theorem NIL_IN_ltree_paths[simp] :
+    [] IN ltree_paths t
+Proof
+    rw [ltree_paths_def, ltree_lookup_def]
+QED
+
+Theorem ltree_el :
+    ltree_el t [] = SOME (ltree_node t,LLENGTH (ltree_children t)) /\
+    ltree_el t (n::ns) =
+      case LNTH n (ltree_children t) of
+        NONE => NONE
+      | SOME a => ltree_el a ns
+Proof
+   ‘?a ts. t = Branch a ts’ by METIS_TAC [ltree_cases]
+ >> simp [ltree_el_def]
+QED
+
+Theorem ltree_lookup :
+    ltree_lookup t [] = SOME t /\
+    ltree_lookup t (n::ns) =
+      case LNTH n (ltree_children t) of
+        NONE => NONE
+      | SOME a => ltree_lookup a ns
+Proof
+   ‘?a ts. t = Branch a ts’ by METIS_TAC [ltree_cases]
+ >> simp [ltree_lookup_def]
+QED
+
+Theorem ltree_lookup_iff_ltree_el[local] :
+    !p t. ltree_lookup t p <> NONE <=> ltree_el t p <> NONE
+Proof
+    Induct_on ‘p’
+ >- rw [ltree_lookup, ltree_el]
+ >> rw [Once ltree_lookup, Once ltree_el]
+ >> Cases_on ‘LNTH h (ltree_children t)’ >> fs []
+QED
+
+Theorem ltree_paths_alt :
+    !t. ltree_paths A = {p | ltree_el A p <> NONE}
+Proof
+    rw [ltree_paths_def, Once EXTENSION, ltree_lookup_iff_ltree_el]
+QED
+
+Theorem ltree_el_valid :
+    !p t. p IN ltree_paths t ==> ltree_el t p <> NONE
+Proof
+    rw [ltree_paths_alt]
+QED
+
+(*---------------------------------------------------------------------------*
  *  Rose tree is a finite variant of ltree, defined inductively.
  *---------------------------------------------------------------------------*)
 
