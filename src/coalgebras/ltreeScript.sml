@@ -778,8 +778,7 @@ Proof
 QED
 
 Theorem finite_branching_rewrite[simp] :
-    finite_branching (Branch a ts) <=>
-    LFINITE ts /\ every finite_branching ts
+    finite_branching (Branch a ts) <=> LFINITE ts /\ every finite_branching ts
 Proof
     SIMP_TAC std_ss [finite_branching_cases]
  >> EQ_TAC >> rw []

@@ -8,7 +8,6 @@ open Lib boolLib Globals Parse Term Type Thm Drule Conv Feedback FileSys
 open dimacsTools satTools SatSolvers satCommonTools minisatParse satConfig
      dpll def_cnf
 
-
 in
 
 exception SAT_cex of thm
@@ -159,5 +158,5 @@ fun ZSAT_PROVE tm = GEN_SAT (set_term tm zchaff_config)
 fun ZSAT_ORACLE tm =
     GEN_SAT ((set_term tm o set_flag_is_proved false) zchaff_config)
 
-end
-end
+end (* local *)
+end (* struct *)
