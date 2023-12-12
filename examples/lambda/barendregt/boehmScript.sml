@@ -145,9 +145,9 @@ Definition BT_generator0_def :
              M1 = principle_hnf (M0 @* (MAP VAR vs));
              Ms = hnf_children M1;
               y = hnf_headvar M1;
-              N = (vs,y) (* represents ‘LAMl vs (VAR y)’ *)
+              h = (vs,y) (* = ‘LAMl vs (VAR y)’ *)
          in
-            (SOME N, Ms)
+            (SOME h, Ms)
       else
             (NONE  , [])
 End
@@ -167,9 +167,9 @@ Theorem BT_generator_def :
              M1 = principle_hnf (M0 @* (MAP VAR vs));
              Ms = hnf_children M1;
               y = hnf_headvar M1;
-              N = (vs,y)
+              h = (vs,y)
          in
-            (SOME N, fromList Ms)
+            (SOME h, fromList Ms)
       else
             (NONE  , LNIL)
 Proof
@@ -256,30 +256,36 @@ Proof
     rw [BT_of_unsolvables]
 QED
 
-Theorem ltree_finite_branching_BT :
-    !M. ltree_finite_branching (BT M)
+Theorem finite_branching_BT :
+    !M. finite_branching (BT M)
 Proof
- (* applying ltree_finite_branching_coind *)
     Q.X_GEN_TAC ‘M’
- >> irule ltree_finite_branching_coind
+ >> irule finite_branching_coind'
  >> Q.EXISTS_TAC ‘\b. ?M. b = BT M’
  >> rw [] >- (Q.EXISTS_TAC ‘M’ >> rw [])
- >> qabbrev_tac ‘a = ltree_head (BT M)’
- >> qabbrev_tac ‘ts = THE (toList (ltree_children (BT M)))’
+ >> qabbrev_tac ‘a = ltree_node (BT M)’
+ >> qabbrev_tac ‘ts = ltree_children (BT M)’
  >> qexistsl_tac [‘a’, ‘ts’]
  >> CONJ_TAC
  >- (reverse (RW_TAC std_ss [BT_def, BT_generator_def, Once ltree_unfold])
-     >- simp [BT_of_unsolvables, Abbr ‘a’, Abbr ‘ts’, toList] \\
+     >- simp [BT_of_unsolvables, Abbr ‘a’, Abbr ‘ts’] \\
      CONJ_TAC
      >- (RW_TAC std_ss [Abbr ‘a’, BT_def, BT_generator_def, Once ltree_unfold] \\
          rw [] >> ‘n' = n’ by rw [Abbr ‘n’, Abbr ‘n'’] >> gs []) \\
      RW_TAC std_ss [Abbr ‘ts’, BT_def, BT_generator_def, Once ltree_unfold] \\
-    ‘n' = n’ by rw [Abbr ‘n’, Abbr ‘n'’] >> gs [] \\
-     qabbrev_tac ‘ll = LMAP (ltree_unfold (BT_generator {})) (fromList Ms)’ \\
-     MATCH_MP_TAC (GSYM to_fromList) \\
-     rw [Abbr ‘ll’, LFINITE_fromList])
+    ‘n' = n’ by rw [Abbr ‘n’, Abbr ‘n'’] >> gs [])
  (* stage work *)
- >> cheat
+ >> CONJ_TAC
+ >- (reverse (RW_TAC std_ss [Abbr ‘ts’, BT_def, BT_generator_def, Once ltree_unfold])
+     >- rw [] \\
+     rw [LFINITE_fromList])
+ >> qabbrev_tac ‘P = \b. ?M. b = BT M’
+ >> reverse (RW_TAC std_ss [Abbr ‘ts’, BT_def, BT_generator_def, Once ltree_unfold])
+ >- rw []
+ >> rw [every_fromList_EVERY, LMAP_fromList]
+ >> rw [EVERY_MAP, Abbr ‘P’, EVERY_MEM]
+ >> rename1 ‘MEM N Ms’
+ >> Q.EXISTS_TAC ‘N’ >> rw [BT_def]
 QED
 
 (* Proposition 10.1.6 [1, p.219] *)
