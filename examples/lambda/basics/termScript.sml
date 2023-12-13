@@ -147,7 +147,6 @@ end
 val LIST_REL_CONS1 = listTheory.LIST_REL_CONS1
 val LIST_REL_NIL = listTheory.LIST_REL_NIL
 
-(* NOTE: term_ind is the most general induction principle for :term *)
 val term_ind =
     bvc_genind
         |> INST_TYPE [alpha |-> ``:unit+unit``, beta |-> ``:unit``]

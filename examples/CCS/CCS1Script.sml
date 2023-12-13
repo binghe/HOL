@@ -322,10 +322,12 @@ val tyname = "CCS";
 (* ‘GVAR s vv’ corresponds to ‘var 'a’ *)
 val vp = “(\n u:unit. n = 0)”;                                  (* 0. var *)
 
+val lp_t = “:unit + 'a Action + unit + unit + 'a Label set + 'a Relabeling + unit”;
+val d = mk_var("d", lp_t);
+
 (* ‘GLAM v bv ts us’ corresponds to everything else. *)
 val lp =
-  “(\n (d :unit + 'a Action + unit + unit + 'a Label set + 'a Relabeling + unit)
-       tns uns.
+  “(\n ^d tns uns.
      n = 0 /\ ISL d /\ tns = [] ∧ uns = []  \/                  (* 1. nil *)
      n = 0 /\ ISR d /\ ISL (OUTR d) /\ tns = [] /\ uns = [0] \/ (* 2. prefix *)
      n = 0 /\ ISR d /\ ISR (OUTR d) /\ ISL (OUTR (OUTR d)) /\
@@ -366,15 +368,12 @@ val var_t = defined_const var_def;
 (* nil *)
 val nil_t = mk_var("nil", “:^newty”);
 val nil_def = new_definition(
-   "nil_def",
-  “^nil_t = ^term_ABS_t (GLAM ARB (INL ()) [] [])”);
-val nil_termP = prove(
-  “^termP (GLAM x (INL ()) [] [])”,
-  match_mp_tac glam >> srw_tac [][genind_term_REP]);
+   "nil_def", “^nil_t = ^term_ABS_t (GLAM ARB (INL ()) [] [])”);
+val nil_termP = prove(“^termP (GLAM x (INL ()) [] [])”,
+    match_mp_tac glam >> srw_tac [][genind_term_REP]);
 val nil_t = defined_const nil_def;
-val nil_def' = prove(
-  “^term_ABS_t (GLAM v (INL ()) [] []) = ^nil_t”,
-  srw_tac [][nil_def, GLAM_NIL_EQ, term_ABS_pseudo11, nil_termP]);
+val nil_def' = prove(“^term_ABS_t (GLAM v (INL ()) [] []) = ^nil_t”,
+    srw_tac [][nil_def, GLAM_NIL_EQ, term_ABS_pseudo11, nil_termP]);
 
 (* prefix *)
 val prefix_t = mk_var("prefix", “:'a Action -> ^newty -> ^newty”);
@@ -383,11 +382,11 @@ val prefix_def = new_definition(
   “^prefix_t u E = ^term_ABS_t (GLAM ARB (INR (INL u)) [] [^term_REP_t E])”);
 val prefix_termP = prove(
   “^termP (GLAM x (INR (INL u)) [] [^term_REP_t E])”,
-  match_mp_tac glam >> srw_tac [][genind_term_REP]);
+    match_mp_tac glam >> srw_tac [][genind_term_REP]);
 val prefix_t = defined_const prefix_def;
 val prefix_def' = prove(
   “^term_ABS_t (GLAM v (INR (INL u)) [] [^term_REP_t E]) = ^prefix_t u E”,
-  srw_tac [][prefix_def, GLAM_NIL_EQ, term_ABS_pseudo11, prefix_termP]);
+    srw_tac [][prefix_def, GLAM_NIL_EQ, term_ABS_pseudo11, prefix_termP]);
 
 (* sum *)
 val sum_t = mk_var("sum", “:^newty -> ^newty -> ^newty”);
@@ -397,12 +396,12 @@ val sum_def = new_definition(
                                         [^term_REP_t E1; ^term_REP_t E2])”);
 val sum_termP = prove(
   “^termP (GLAM x (INR (INR (INL ()))) [] [^term_REP_t E1; ^term_REP_t E2])”,
-  match_mp_tac glam >> srw_tac [][genind_term_REP]);
+    match_mp_tac glam >> srw_tac [][genind_term_REP]);
 val sum_t = defined_const sum_def;
 val sum_def' = prove(
   “^term_ABS_t (GLAM v (INR (INR (INL ()))) []
                        [^term_REP_t E1; ^term_REP_t E2]) = ^sum_t E1 E2”,
-  srw_tac [][sum_def, GLAM_NIL_EQ, term_ABS_pseudo11, sum_termP]);
+    srw_tac [][sum_def, GLAM_NIL_EQ, term_ABS_pseudo11, sum_termP]);
 
 (* par *)
 val par_t = mk_var("par", “:^newty -> ^newty -> ^newty”);
@@ -413,12 +412,12 @@ val par_def = new_definition(
 val par_termP = prove(
   “^termP (GLAM x (INR (INR (INR (INL ())))) []
                   [^term_REP_t E1; ^term_REP_t E2])”,
-  match_mp_tac glam >> srw_tac [][genind_term_REP]);
+    match_mp_tac glam >> srw_tac [][genind_term_REP]);
 val par_t = defined_const par_def;
 val par_def' = prove(
   “^term_ABS_t (GLAM v (INR (INR (INR (INL ())))) []
                        [^term_REP_t E1; ^term_REP_t E2]) = ^par_t E1 E2”,
-  srw_tac [][par_def, GLAM_NIL_EQ, term_ABS_pseudo11, par_termP]);
+    srw_tac [][par_def, GLAM_NIL_EQ, term_ABS_pseudo11, par_termP]);
 
 (* restr *)
 val restr_t = mk_var("restr", “:'a Label set -> ^newty -> ^newty”);
@@ -428,12 +427,12 @@ val restr_def = new_definition(
                                         [^term_REP_t E])”);
 val restr_termP = prove(
   “^termP (GLAM x (INR (INR (INR (INR (INL L))))) [] [^term_REP_t E])”,
-  match_mp_tac glam >> srw_tac [][genind_term_REP]);
+    match_mp_tac glam >> srw_tac [][genind_term_REP]);
 val restr_t = defined_const restr_def;
 val restr_def' = prove(
   “^term_ABS_t (GLAM v (INR (INR (INR (INR (INL L))))) [] [^term_REP_t E]) =
    ^restr_t L E”,
-  srw_tac [][restr_def, GLAM_NIL_EQ, term_ABS_pseudo11, restr_termP]);
+    srw_tac [][restr_def, GLAM_NIL_EQ, term_ABS_pseudo11, restr_termP]);
 
 (* relab *)
 val relab_t = mk_var("relab", “:^newty -> 'a Relabeling -> ^newty”);
@@ -444,13 +443,25 @@ val relab_def = new_definition(
                          [^term_REP_t E])”);
 val relab_termP = prove(
   “^termP (GLAM x (INR (INR (INR (INR (INR (INL rf)))))) [] [^term_REP_t E])”,
-  match_mp_tac glam >> srw_tac [][genind_term_REP]);
+    match_mp_tac glam >> srw_tac [][genind_term_REP]);
 val relab_t = defined_const relab_def;
 val relab_def' = prove(
   “^term_ABS_t (GLAM v (INR (INR (INR (INR (INR (INL rf)))))) []
                        [^term_REP_t E]) =
    ^relab_t E rf”,
-  srw_tac [][relab_def, GLAM_NIL_EQ, term_ABS_pseudo11, relab_termP]);
+    srw_tac [][relab_def, GLAM_NIL_EQ, term_ABS_pseudo11, relab_termP]);
+
+(* rec *)
+val rec_t = mk_var("rec", “:string -> ^newty -> ^newty”);
+val rec_def = new_definition(
+   "rec_def",
+  “^rec_t X E =
+   ^term_ABS_t (GLAM X (INR (INR (INR (INR (INR (INR ()))))))
+                       [^term_REP_t E] [])”);
+val rec_termP = prove(
+  “^termP (GLAM X (INR (INR (INR (INR (INR (INR ())))))) [^term_REP_t E] [])”,
+    match_mp_tac glam >> srw_tac [][genind_term_REP]);
+val rec_t = defined_const rec_def;
 
 (* rpm (recursion permutation) *)
 val cons_info =
@@ -460,9 +471,10 @@ val cons_info =
      {con_termP = sum_termP,    con_def = SYM sum_def'},
      {con_termP = par_termP,    con_def = SYM par_def'},
      {con_termP = restr_termP,  con_def = SYM restr_def'},
-     {con_termP = relab_termP,  con_def = SYM relab_def'}];
+     {con_termP = relab_termP,  con_def = SYM relab_def'},
+     {con_termP = rec_termP,    con_def = rec_def}];
 
-val tpm_name_pfx = "r";
+val tpm_name_pfx = "t";
 val {tpm_thm, term_REP_tpm, t_pmact_t, tpm_t} =
     define_permutation {name_pfx = tpm_name_pfx, name = tyname,
                         term_REP_t = term_REP_t,
@@ -471,6 +483,105 @@ val {tpm_thm, term_REP_tpm, t_pmact_t, tpm_t} =
                         repabs_pseudo_id = repabs_pseudo_id,
                         cons_info = cons_info, newty = newty,
                         genind_term_REP = genind_term_REP};
+
+(* support *)
+Theorem term_REP_eqv[local] :
+    support (fn_pmact ^t_pmact_t gt_pmact) ^term_REP_t {}
+Proof
+    srw_tac [][support_def, fnpm_def, FUN_EQ_THM, term_REP_tpm, pmact_sing_inv]
+QED
+
+Theorem supp_term_REP[local] :
+    supp (fn_pmact ^t_pmact_t gt_pmact) ^term_REP_t = {}
+Proof
+    REWRITE_TAC [GSYM SUBSET_EMPTY]
+ >> MATCH_MP_TAC (GEN_ALL supp_smallest)
+ >> srw_tac [][term_REP_eqv]
+QED
+
+Theorem tpm_def'[local] =
+    term_REP_tpm |> AP_TERM term_ABS_t |> PURE_REWRITE_RULE [absrep_id]
+
+val t = mk_var("t", newty);
+Theorem supptpm_support[local] :
+    support ^t_pmact_t ^t (supp gt_pmact (^term_REP_t ^t))
+Proof
+    srw_tac [][support_def, tpm_def', supp_fresh, absrep_id]
+QED
+
+Theorem supptpm_apart[local] :
+    x IN supp gt_pmact (^term_REP_t ^t) /\ y NOTIN supp gt_pmact (^term_REP_t ^t)
+    ==> ^tpm_t [(x,y)] ^t <> ^t
+Proof
+    srw_tac [][tpm_def']
+ >> DISCH_THEN (MP_TAC o AP_TERM term_REP_t)
+ >> srw_tac [][repabs_pseudo_id, genind_gtpm_eqn, genind_term_REP, supp_apart]
+QED
+
+Theorem supp_tpm[local] :
+    supp ^t_pmact_t ^t = supp gt_pmact (^term_REP_t ^t)
+Proof
+    match_mp_tac (GEN_ALL supp_unique_apart)
+ >> srw_tac [][supptpm_support, supptpm_apart, FINITE_GFV]
+QED
+
+Overload FV = “supp ^t_pmact_t”
+
+Theorem FINITE_FV[simp]:
+    FINITE (FV t)
+Proof
+    srw_tac [][supp_tpm, FINITE_GFV]
+QED
+
+fun supp_clause {con_termP, con_def} = let
+  val t = mk_comb(“supp ^t_pmact_t”, lhand (concl (SPEC_ALL con_def)))
+in
+  t |> REWRITE_CONV [supp_tpm, con_def, MATCH_MP repabs_pseudo_id con_termP,
+                     GFV_thm]
+    |> REWRITE_RULE [supp_listpm, EMPTY_DELETE, UNION_EMPTY]
+    |> REWRITE_RULE [GSYM supp_tpm]
+    |> GEN_ALL
+end
+
+Theorem FV_thm[simp] = LIST_CONJ (map supp_clause cons_info)
+
+(* term induction *)
+fun genit th = let
+  val (_, args) = strip_comb (concl th)
+  val (tm, x) = case args of [x,y] => (x,y) | _ => raise Fail "Bind"
+  val ty = type_of tm
+  val t = mk_var("t", ty)
+in
+  th |> INST [tm |-> t] |> GEN x |> GEN t
+end
+
+val term_ind =
+    bvc_genind
+        |> INST_TYPE [alpha |-> lp_t, beta |-> “:unit”]
+        |> Q.INST [‘vp’ |-> ‘^vp’, ‘lp’ |-> ‘^lp’]
+        |> SIMP_RULE std_ss [LIST_REL_CONS1, RIGHT_AND_OVER_OR,
+                             LEFT_AND_OVER_OR, DISJ_IMP_THM, LIST_REL_NIL]
+        |> Q.SPECL [‘\n t0 x. Q t0 x’, ‘fv’]
+        |> UNDISCH |> Q.SPEC ‘0’ |> DISCH_ALL
+        |> SIMP_RULE (std_ss ++ DNF_ss)
+                     [sumTheory.FORALL_SUM, supp_listpm,
+                      IN_UNION, NOT_IN_EMPTY, oneTheory.FORALL_ONE,
+                      genind_exists, LIST_REL_CONS1, LIST_REL_NIL]
+        |> Q.INST [‘Q’ |-> ‘\t. P (^term_ABS_t t)’]
+        |> SIMP_RULE std_ss [GSYM var_def, GSYM nil_def, nil_def', prefix_def',
+                             sum_def', par_def', restr_def', relab_def',
+                             GSYM rec_def, absrep_id]
+        |> SIMP_RULE (srw_ss()) [GSYM supp_tpm]
+        |> elim_unnecessary_atoms {finite_fv = FINITE_FV}
+                                  [ASSUME “!x:'c. FINITE (fv x:string set)”]
+        |> SPEC_ALL |> UNDISCH
+        |> genit |> DISCH_ALL |> Q.GENL [‘P’, ‘fv’];
+
+fun mkX_ind th = th |> Q.SPECL [‘\t x. Q t’, ‘\x. X’]
+                    |> SIMP_RULE std_ss [] |> Q.GEN ‘X’
+                    |> Q.INST [‘Q’ |-> ‘P’] |> Q.GEN ‘P’;
+
+Theorem CCS_induction = mkX_ind term_ind
 
 (* end of the new way *)
 
