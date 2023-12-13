@@ -12,7 +12,7 @@ open pred_setTheory pred_setLib relationTheory optionTheory listTheory CCSLib
 
 local open termTheory; in end; (* for SUB's syntax only *)
 
-val _ = new_theory "CCS";
+val _ = new_theory "CCSNew";
 
 val set_ss = std_ss ++ PRED_SET_ss;
 
@@ -1247,4 +1247,4 @@ val FN_UNIV2 = store_thm ("FN_UNIV2",
     PROVE_TAC [EQ_UNIV, IN_UNION]);
 
 val _ = export_theory ();
-val _ = html_theory "CCS";
+val _ = html_theory "CCSNew";
