@@ -10,7 +10,7 @@ open HolKernel Parse boolLib bossLib;
 open pred_setTheory pred_setLib relationTheory optionTheory listTheory CCSLib
      rich_listTheory;
 
-local open termTheory; in end; (* for SUB's syntax only *)
+open generic_termsTheory binderLib nomsetTheory nomdatatype;
 
 val _ = new_theory "CCS";
 
@@ -341,14 +341,14 @@ val _ = TeX_notation { hol = "mu", TeX = ("\\ensuremath{\\mu}", 1) };
 val _ = overload_on ("+", ``sum``); (* priority: 500 *)
 val _ = TeX_notation { hol = "+", TeX = ("\\ensuremath{+}", 1) };
 
-val _ = set_mapped_fixity { fixity = Infix(LEFT, 600),
+val _ = set_mapped_fixity { fixity = Infixl 600,
                             tok = "||", term_name = "par" };
 
 (* val _ = Unicode.unicode_version {u = UTF8.chr 0x007C, tmnm = "par"}; *)
 val _ = TeX_notation { hol = "||", TeX = ("\\ensuremath{\\mid}", 1) };
 
 val _ =
-    add_rule { term_name = "prefix", fixity = Infix(RIGHT, 700),
+    add_rule { term_name = "prefix", fixity = Infixr 700,
         pp_elements = [ BreakSpace(0,0), TOK "..", BreakSpace(0,0) ],
         paren_style = OnlyIfNecessary,
         block_style = (AroundSamePrec, (PP.CONSISTENT, 0)) };
@@ -1179,7 +1179,7 @@ QED
 (*                Free and bound names (sorts) ('b)                   *)
 (**********************************************************************)
 
-(* Learnt from Robert Beers (not used so far) *)
+(* Learnt from Robert Beers (not used so far)
 Definition ALL_IDENTICAL :
     ALL_IDENTICAL t = ?x. !y. MEM y t ==> (y = x)
 End
@@ -1245,6 +1245,7 @@ val FN_UNIV2 = store_thm ("FN_UNIV2",
   ``!p q. free_names p UNION free_names q <> (UNIV :'b Label set) ==>
           ?a. a NOTIN free_names p /\ a NOTIN free_names q``,
     PROVE_TAC [EQ_UNIV, IN_UNION]);
+ *)
 
 val _ = export_theory ();
 val _ = html_theory "CCS";
