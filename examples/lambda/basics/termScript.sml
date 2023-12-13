@@ -10,21 +10,21 @@ val _ = set_fixity "=" (Infix(NONASSOC, 450))
 
 val tyname = "term"
 
-(* The vp polymorphic variable is used to add extra data to the ‘GVAR’, and
+(* The vp polymorphic variable is used to add extra data to ‘GVAR s vv’, and
    there's no extra data here (n = 0).
  *)
 val vp = “(λn u:unit. n = 0)”;
 
-(* The lp polymorphic variable is used to add extra data to the ‘GLAM’. There's
-   no extra data here (n = 0), but ‘GLAM’ corresponds to both ‘APP’ and ‘LAM’.
-   The type ‘:unit + unit’ of is for this purpose (otherwise it could be :bool).
+(* The lp polymorphic variable is used to add extra data to ‘GLAM v bv ts us’.
+   There's no extra data here (n = 0), but ‘GLAM’ corresponds to both ‘APP’ and
+  ‘LAM’. The type ‘:unit + unit’ of is for this purpose.
 
    In the APP case, given by ‘(n = 0) ∧ ISL d ∧ (tns = []) ∧ (uns = [0;0])’, tns
    must be empty (no binding variables), and there must be two values in the uns
    list, as APP does indeed require two unbounded term (0) arguments.
 
    In the LAM case, given by ‘(n = 0) ∧ ISR d ∧ (tns = [0]) ∧ (uns = [])’, the one
-   element of tns corresponds to the one term argument of LAM (the ‘t’ of ‘LAM v t’)
+   element of tns corresponds to the one term argument of LAM (‘t’ in ‘LAM v t’).
  *)
 val lp = “(λn (d:unit + unit) tns uns.
                (n = 0) ∧ ISL d ∧ (tns = []) ∧ (uns = [0;0]) ∨
@@ -32,7 +32,8 @@ val lp = “(λn (d:unit + unit) tns uns.
 
 val {term_ABS_pseudo11, term_REP_11, genind_term_REP, genind_exists,
      termP, absrep_id, repabs_pseudo_id, term_REP_t, term_ABS_t, newty, ...} =
-    new_type_step1 tyname 0 {vp=vp, lp = lp}
+    new_type_step1 tyname 0 {vp = vp, lp = lp};
+
 val [gvar,glam] = genind_rules |> SPEC_ALL |> CONJUNCTS
 
 val LAM_t = mk_var("LAM", ``:string -> ^newty -> ^newty``)
@@ -44,7 +45,6 @@ val LAM_termP = prove(
   mk_comb(termP, LAM_def |> SPEC_ALL |> concl |> rhs |> rand),
   match_mp_tac glam >> srw_tac [][genind_term_REP]);
 val LAM_t = defined_const LAM_def
-
 
 val APP_t = mk_var("APP", ``:^newty -> ^newty -> ^newty``)
 val APP_def = new_definition(
@@ -74,6 +74,7 @@ val cons_info =
      {con_termP = APP_termP, con_def = SYM APP_def'},
      {con_termP = LAM_termP, con_def = LAM_def}]
 
+(* tpm *)
 val tpm_name_pfx = "t"
 val {tpm_thm, term_REP_tpm, t_pmact_t, tpm_t} =
     define_permutation {name_pfx = "t", name = tyname,
@@ -81,7 +82,7 @@ val {tpm_thm, term_REP_tpm, t_pmact_t, tpm_t} =
                         term_ABS_t = term_ABS_t, absrep_id = absrep_id,
                         repabs_pseudo_id = repabs_pseudo_id,
                         cons_info = cons_info, newty = newty,
-                        genind_term_REP = genind_term_REP}
+                        genind_term_REP = genind_term_REP};
 
 (* support *)
 val term_REP_eqv = prove(
