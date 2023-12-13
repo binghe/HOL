@@ -8,7 +8,9 @@ val _ = new_theory "cterm";
 
 val tyname = "cterm"
 
-val vp = ``(λn u:unit. n = 0)``
+val vp = “(λn u:unit. n = 0)”;
+
+(* GLAM corresponds to APP, LAM and CONST *)
 val lp = “(λn (d:unit + unit + 'a) tns uns.
              n = 0 ∧ ISL d ∧ tns = [] ∧ uns = [0;0] ∨
              n = 0 ∧ ISR d ∧ ISL (OUTR d) ∧ tns = [0] ∧ uns = [] ∨
@@ -27,7 +29,6 @@ val LAM_termP = prove(
   mk_comb(termP, LAM_def |> SPEC_ALL |> concl |> rhs |> rand),
   match_mp_tac glam >> srw_tac [][genind_term_REP]);
 val LAM_t = defined_const LAM_def
-
 
 val APP_t = mk_var("APP", ``:^newty -> ^newty -> ^newty``)
 val APP_def = new_definition(

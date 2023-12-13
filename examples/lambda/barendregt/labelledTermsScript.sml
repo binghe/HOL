@@ -6,17 +6,18 @@ open basic_swapTheory nomsetTheory generic_termsTheory
 open nomdatatype
 open boolSimps
 
-
 val _ = new_theory "labelledTerms"
 
 val tyname = "lterm"
 
-val vp = “(λn u: unit. n = 0)”
+(* GVAR corresponds to VAR *)
+val vp = “(λn u: unit. n = 0)”;
 
+(* GLAM corresponds to APP, LAM and LAMi *)
 val lp = “(λn (d:unit + unit + num) tns uns.
                (n = 0) ∧ ISL d ∧ (tns = []) ∧ (uns = [0;0]) ∨
                (n = 0) ∧ ISR d ∧ ISL (OUTR d) ∧ (tns = [0]) ∧ (uns = []) ∨
-               (n = 0) ∧ ISR d ∧ ISR (OUTR d) ∧ (tns = [0]) ∧ (uns = [0]))”
+               (n = 0) ∧ ISR d ∧ ISR (OUTR d) ∧ (tns = [0]) ∧ (uns = [0]))”;
 
 val {term_ABS_pseudo11, term_REP_11, genind_term_REP, genind_exists,
      termP, absrep_id, repabs_pseudo_id, newty, term_REP_t, term_ABS_t,...} =
@@ -38,6 +39,7 @@ val LAM_termP = prove(
   match_mp_tac glam >> srw_tac [][genind_term_REP])
 val LAM_t = defined_const LAM_def
 
+(* NOTE: in ‘(LAMi n v t1) t2’, only t1 is bounded (by v), t2 is not. *)
 val LAMi_t = mk_var("LAMi", “:num -> string -> ^newty -> ^newty -> ^newty”)
 val LAMi_def = new_definition(
   "LAMi_def",

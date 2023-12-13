@@ -10,10 +10,25 @@ val _ = set_fixity "=" (Infix(NONASSOC, 450))
 
 val tyname = "term"
 
-val vp = ``(λn u:unit. n = 0)``
-val lp = ``(λn (d:unit + unit) tns uns.
+(* The vp polymorphic variable is used to add extra data to the ‘GVAR’, and
+   there's no extra data here (n = 0).
+ *)
+val vp = “(λn u:unit. n = 0)”;
+
+(* The lp polymorphic variable is used to add extra data to the ‘GLAM’. There's
+   no extra data here (n = 0), but ‘GLAM’ corresponds to both ‘APP’ and ‘LAM’.
+   The type ‘:unit + unit’ of is for this purpose (otherwise it could be :bool).
+
+   In the APP case, given by ‘(n = 0) ∧ ISL d ∧ (tns = []) ∧ (uns = [0;0])’, tns
+   must be empty (no binding variables), and there must be two values in the uns
+   list, as APP does indeed require two unbounded term (0) arguments.
+
+   In the LAM case, given by ‘(n = 0) ∧ ISR d ∧ (tns = [0]) ∧ (uns = [])’, the one
+   element of tns corresponds to the one term argument of LAM (the ‘t’ of ‘LAM v t’)
+ *)
+val lp = “(λn (d:unit + unit) tns uns.
                (n = 0) ∧ ISL d ∧ (tns = []) ∧ (uns = [0;0]) ∨
-               (n = 0) ∧ ISR d ∧ (tns = [0]) ∧ (uns = []))``
+               (n = 0) ∧ ISR d ∧ (tns = [0]) ∧ (uns = []))”;
 
 val {term_ABS_pseudo11, term_REP_11, genind_term_REP, genind_exists,
      termP, absrep_id, repabs_pseudo_id, term_REP_t, term_ABS_t, newty, ...} =
@@ -23,7 +38,8 @@ val [gvar,glam] = genind_rules |> SPEC_ALL |> CONJUNCTS
 val LAM_t = mk_var("LAM", ``:string -> ^newty -> ^newty``)
 val LAM_def = new_definition(
   "LAM_def",
-  ``^LAM_t v t = ^term_ABS_t (GLAM v (INR ()) [^term_REP_t t] [])``)
+  ``^LAM_t v t = ^term_ABS_t (GLAM v (INR ()) [^term_REP_t t] [])``);
+
 val LAM_termP = prove(
   mk_comb(termP, LAM_def |> SPEC_ALL |> concl |> rhs |> rand),
   match_mp_tac glam >> srw_tac [][genind_term_REP]);
