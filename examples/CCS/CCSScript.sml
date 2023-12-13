@@ -313,31 +313,6 @@ Datatype: CCS = nil
               | rec 'a CCS
 End
 
-(* NEW way based on "examples/lambda/basics/generic_termsTheory *)
-val tyname = "ccs";
-
-(* ‘GVAR s vv’ corresponds to ‘var 'a’ *)
-val vp = “(\n u:unit. n = 0)”;
-
-(* ‘GLAM v bv ts us’ corresponds to everything else. *)
-val lp = “(\n (d :num # 'a Action # 'a Label set # 'a Relabeling) tns uns.
-             n = 0 /\ FST d = 0 /\ tns = [] ∧ uns = []  \/ (* nil *)
-             n = 0 /\ FST d = 1 /\ tns = [] ∧ uns = [0] \/ (* prefix *)
-             n = 0 /\ FST d = 2 /\ tns = [] ∧ uns = [0] \/ (* sum *)
-             n = 0 /\ FST d = 3 /\ tns = [] ∧ uns = [0] \/ (* par *)
-             n = 0 /\ FST d = 4 /\ tns = [] ∧ uns = [0] \/ (* restr *)
-             n = 0 /\ FST d = 5 /\ tns = [] ∧ uns = [0] \/ (* relab *)
-             n = 0 /\ FST d = 6 /\ tns = [0] ∧ uns = [])”; (* rec *)
-
-val {term_ABS_pseudo11, term_REP_11, genind_term_REP, genind_exists,
-     termP, absrep_id, repabs_pseudo_id, term_REP_t, term_ABS_t, newty, ...} =
-    new_type_step1 tyname 0 {vp = vp, lp = lp};
-
-val [gvar,glam] = genind_rules |> SPEC_ALL |> CONJUNCTS;
-
-
-(* End of new way *)
-
 val _ = TeX_notation { hol = "nil", TeX = ("\\ensuremath{\\mathbf{0}}", 1) };
 
 (* compact representation for single-action restriction *)
