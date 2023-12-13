@@ -2,6 +2,7 @@
  * Copyright 1991-1995  University of Cambridge (Author: Monica Nesi)
  * Copyright 2016-2017  University of Bologna, Italy (Author: Chun Tian)
  * Copyright 2018-2019  Fondazione Bruno Kessler, Italy (Author: Chun Tian)
+ * Copyright 2023-2024  The Australian National University (Author: Chun Tian)
  *)
 
 open HolKernel Parse boolLib bossLib;
@@ -12,7 +13,7 @@ local open termTheory; in end; (* for SUB's syntax only *)
 
 val _ = new_theory "CCS";
 
-val lset_ss = std_ss ++ PRED_SET_ss;
+val set_ss = std_ss ++ PRED_SET_ss;
 
 (******************************************************************************)
 (*                                                                            *)
@@ -387,7 +388,8 @@ val CCS_11 = TypeBase.one_one_of ``:('a, 'b) CCS``;
 (* Given any agent expression, define the substitution of an agent expression
    E' for an agent variable X.
 
-   This works under the hypothesis that the Barendregt convention holds. *)
+   This works under the hypothesis that the Barendregt convention holds.
+ *)
 Definition CCS_Subst_def :
    (CCS_Subst nil          E' X = nil) /\
    (CCS_Subst (prefix u E) E' X = prefix u (CCS_Subst E E' X)) /\
@@ -932,7 +934,7 @@ Theorem FV_SUBSET :
     !X E E'. FV (CCS_Subst E E' X) SUBSET (FV E) UNION (FV E')
 Proof
     GEN_TAC >> Induct_on `E`
- >> RW_TAC lset_ss [FV_def, CCS_Subst_def]
+ >> RW_TAC set_ss [FV_def, CCS_Subst_def]
  >> ASM_SET_TAC []
 QED
 
@@ -942,7 +944,7 @@ Theorem FV_SUBSET_PRO :
     !X E E'. FV (CCS_Subst E E' X) SUBSET ((FV E) DELETE X) UNION (FV E')
 Proof
     GEN_TAC >> Induct_on `E`
- >> RW_TAC lset_ss [FV_def, CCS_Subst_def]
+ >> RW_TAC set_ss [FV_def, CCS_Subst_def]
  >> ASM_SET_TAC []
 QED
 
@@ -958,7 +960,7 @@ Theorem NOTIN_FV_lemma :
     !X E E'. X NOTIN FV (CCS_Subst E (rec X E') X)
 Proof
     GEN_TAC >> Induct_on `E`
- >> RW_TAC lset_ss [CCS_Subst_def, FV_def]
+ >> RW_TAC set_ss [CCS_Subst_def, FV_def]
 QED
 
 Theorem FV_SUBSET_REC_PRO :
@@ -974,7 +976,7 @@ Theorem TRANS_FV :
     !E u E'. TRANS E u E' ==> FV E' SUBSET (FV E)
 Proof
     HO_MATCH_MP_TAC TRANS_IND (* strongind is useless *)
- >> RW_TAC lset_ss [FV_def] (* 7 subgoals *)
+ >> RW_TAC set_ss [FV_def] (* 7 subgoals *)
  >> TRY (ASM_SET_TAC []) (* 1 - 6 *)
  >> MATCH_MP_TAC SUBSET_TRANS
  >> Q.EXISTS_TAC `FV (CCS_Subst E (rec X E) X)`
@@ -986,7 +988,7 @@ Theorem CCS_Subst_elim :
     !X E. X NOTIN (FV E) ==> !E'. (CCS_Subst E E' X = E)
 Proof
     GEN_TAC >> Induct_on `E` (* 8 subgoals *)
- >> RW_TAC lset_ss [CCS_Subst_def, FV_def] (* one left *)
+ >> RW_TAC set_ss [CCS_Subst_def, FV_def] (* one left *)
  >> Cases_on `a = X` >- fs []
  >> RES_TAC >> ASM_SIMP_TAC std_ss []
 QED
@@ -995,7 +997,7 @@ Theorem CCS_Subst_elim_IMP_NOTIN :
     !X E. (!E'. CCS_Subst E E' X = E) ==> X NOTIN (FV E)
 Proof
     GEN_TAC >> Induct_on `E` (* 8 subgoals *)
- >> RW_TAC lset_ss [CCS_Subst_def, FV_def] (* 2 goals left *)
+ >> RW_TAC set_ss [CCS_Subst_def, FV_def] (* 2 goals left *)
  >- (CCONTR_TAC >> fs [] \\
      PROVE_TAC [Q.SPEC `var a` CCS_distinct_exists])
  >> Cases_on `X = a` >- fs []
@@ -1009,7 +1011,7 @@ Proof
     Suff `!X E. X IN (FV E) ==> ?E1 E2. CCS_Subst E E1 X <> CCS_Subst E E2 X`
  >- METIS_TAC []
  >> GEN_TAC >> Induct_on `E` (* 8 subgoals *)
- >> RW_TAC lset_ss [CCS_Subst_def, FV_def] (* 5 subgoals left *)
+ >> RW_TAC set_ss [CCS_Subst_def, FV_def] (* 5 subgoals left *)
  >- (Q.EXISTS_TAC `nil` >> METIS_TAC [CCS_distinct_exists]) >>
  RES_TAC >> take [`E1`, `E2`] >> art []
 QED
@@ -1019,7 +1021,7 @@ Theorem FV_REC_PREF :
                FV (CCS_Subst E (rec X E') X)
 Proof
     GEN_TAC >> Induct_on `E`
- >> RW_TAC lset_ss [CCS_Subst_def, FV_def]
+ >> RW_TAC set_ss [CCS_Subst_def, FV_def]
 QED
 
 Theorem FV_REC_SUM :
@@ -1027,7 +1029,7 @@ Theorem FV_REC_SUM :
                (FV (CCS_Subst E (rec X E1) X)) UNION (FV (CCS_Subst E (rec X E2) X))
 Proof
     GEN_TAC >> Induct_on `E`
- >> RW_TAC lset_ss [CCS_Subst_def, FV_def] (* 4 subgoals *)
+ >> RW_TAC set_ss [CCS_Subst_def, FV_def] (* 4 subgoals *)
  >> SET_TAC []
 QED
 
@@ -1036,7 +1038,7 @@ Theorem FV_REC_PAR :
                (FV (CCS_Subst E (rec X E1) X)) UNION (FV (CCS_Subst E (rec X E2) X))
 Proof
     GEN_TAC >> Induct_on `E`
- >> RW_TAC lset_ss [CCS_Subst_def, FV_def] (* 4 subgoals *)
+ >> RW_TAC set_ss [CCS_Subst_def, FV_def] (* 4 subgoals *)
  >> SET_TAC []
 QED
 
@@ -1044,7 +1046,7 @@ Theorem FINITE_FV :
     !E. FINITE (FV E)
 Proof
     Induct_on `E`
- >> RW_TAC lset_ss [CCS_Subst_def, FV_def]
+ >> RW_TAC set_ss [CCS_Subst_def, FV_def]
 QED
 
 (* ('a, 'b) CCS -> 'a set (set of bound variables) *)
@@ -1072,7 +1074,7 @@ Theorem BV_SUBSET :
     !X E E'. BV (CCS_Subst E E' X) SUBSET (BV E) UNION (BV E')
 Proof
     GEN_TAC >> Induct_on `E`
- >> RW_TAC lset_ss [BV_def, CCS_Subst_def]
+ >> RW_TAC set_ss [BV_def, CCS_Subst_def]
  >> ASM_SET_TAC []
 QED
 
@@ -1088,7 +1090,7 @@ Theorem TRANS_BV :
     !E u E'. TRANS E u E' ==> BV E' SUBSET BV E
 Proof
     HO_MATCH_MP_TAC TRANS_ind
- >> RW_TAC lset_ss [BV_def] (* 7 subgoals *)
+ >> RW_TAC set_ss [BV_def] (* 7 subgoals *)
  >> TRY (ASM_SET_TAC []) (* 1 - 6 *)
  >> MATCH_MP_TAC SUBSET_TRANS
  >> Q.EXISTS_TAC `BV (CCS_Subst E (rec X E) X)` >> art []
@@ -1115,7 +1117,7 @@ Theorem FINITE_BV :
     !E. FINITE (BV E)
 Proof
     Induct_on `E`
- >> RW_TAC lset_ss [CCS_Subst_def, BV_def]
+ >> RW_TAC set_ss [CCS_Subst_def, BV_def]
 QED
 
 Definition IS_PROC_def :
@@ -1143,25 +1145,25 @@ QED
 Theorem IS_PROC_sum :
     !P Q. IS_PROC (sum P Q) <=> IS_PROC P /\ IS_PROC Q
 Proof
-    RW_TAC lset_ss [IS_PROC_def, FV_def]
+    RW_TAC set_ss [IS_PROC_def, FV_def]
 QED
 
 Theorem IS_PROC_par :
     !P Q. IS_PROC (par P Q) <=> IS_PROC P /\ IS_PROC Q
 Proof
-    RW_TAC lset_ss [IS_PROC_def, FV_def]
+    RW_TAC set_ss [IS_PROC_def, FV_def]
 QED
 
 Theorem IS_PROC_restr :
     !P L. IS_PROC (restr L P) <=> IS_PROC P
 Proof
-    RW_TAC lset_ss [IS_PROC_def, FV_def]
+    RW_TAC set_ss [IS_PROC_def, FV_def]
 QED
 
 Theorem IS_PROC_relab :
     !P rf. IS_PROC (relab P rf) <=> IS_PROC P
 Proof
-    RW_TAC lset_ss [IS_PROC_def, FV_def]
+    RW_TAC set_ss [IS_PROC_def, FV_def]
 QED
 
 Theorem TRANS_PROC :
@@ -1175,68 +1177,6 @@ QED
 (**********************************************************************)
 (*                Free and bound names (sorts) ('b)                   *)
 (**********************************************************************)
-
-(* To be moved to rich_listTheory *)
-Definition DELETE_ELEMENT :
-    (DELETE_ELEMENT e [] = []) /\
-    (DELETE_ELEMENT e (x :: l) = if (e = x) then DELETE_ELEMENT e l
-                                 else x :: DELETE_ELEMENT e l)
-End
-
-Theorem NOT_IN_DELETE_ELEMENT :
-    !e L. ~MEM e (DELETE_ELEMENT e L)
-Proof
-    GEN_TAC >> Induct_on `L`
- >- REWRITE_TAC [DELETE_ELEMENT, MEM]
- >> GEN_TAC >> REWRITE_TAC [DELETE_ELEMENT]
- >> Cases_on `e = h` >> fs []
-QED
-
-Theorem DELETE_ELEMENT_FILTER :
-    !e L. DELETE_ELEMENT e L = FILTER ((<>) e) L
-Proof
-    GEN_TAC >> Induct_on `L`
- >- REWRITE_TAC [DELETE_ELEMENT, FILTER]
- >> GEN_TAC >> REWRITE_TAC [DELETE_ELEMENT, FILTER]
- >> Cases_on `e = h` >> fs []
-QED
-
-Theorem LENGTH_DELETE_ELEMENT_LEQ :
-    !e L. LENGTH (DELETE_ELEMENT e L) <= LENGTH L
-Proof
-    rpt GEN_TAC
- >> REWRITE_TAC [DELETE_ELEMENT_FILTER]
- >> MP_TAC (Q.SPECL [`\y. e <> y`, `\y. T`] LENGTH_FILTER_LEQ_MONO)
- >> BETA_TAC >> simp []
-QED
-
-Theorem LENGTH_DELETE_ELEMENT_LE :
-    !e L. MEM e L ==> LENGTH (DELETE_ELEMENT e L) < LENGTH L
-Proof
-    rpt GEN_TAC >> Induct_on `L`
- >- REWRITE_TAC [MEM]
- >> GEN_TAC >> REWRITE_TAC [MEM, DELETE_ELEMENT]
- >> Cases_on `e = h` >> fs []
- >> MP_TAC (Q.SPECL [`h`, `L`] LENGTH_DELETE_ELEMENT_LEQ)
- >> KILL_TAC >> RW_TAC arith_ss []
-QED
-
-Theorem EVERY_DELETE_ELEMENT :
-    !e L P. P e /\ EVERY P (DELETE_ELEMENT e L) ==> EVERY P L
-Proof
-    GEN_TAC >> Induct_on `L`
- >- RW_TAC std_ss [DELETE_ELEMENT]
- >> rpt GEN_TAC >> REWRITE_TAC [DELETE_ELEMENT]
- >> Cases_on `e = h` >> fs []
-QED
-
-Theorem DELETE_ELEMENT_APPEND :
-    !a L L'. DELETE_ELEMENT a (L ++ L') =
-             DELETE_ELEMENT a L ++ DELETE_ELEMENT a L'
-Proof
-    REWRITE_TAC [DELETE_ELEMENT_FILTER]
- >> REWRITE_TAC [GSYM FILTER_APPEND_DISTRIB]
-QED
 
 (* Learnt from Robert Beers (not used so far) *)
 Definition ALL_IDENTICAL :
