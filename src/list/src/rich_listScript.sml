@@ -3567,6 +3567,9 @@ Proof
  >> BETA_TAC >> simp []
 QED
 
+fun K_TAC _ = ALL_TAC;
+val KILL_TAC = POP_ASSUM_LIST K_TAC;
+
 Theorem LENGTH_DELETE_ELEMENT_LE :
     !e L. MEM e L ==> LENGTH (DELETE_ELEMENT e L) < LENGTH L
 Proof
