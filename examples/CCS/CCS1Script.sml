@@ -463,7 +463,7 @@ val rec_termP = prove(
     match_mp_tac glam >> srw_tac [][genind_term_REP]);
 val rec_t = defined_const rec_def;
 
-(* rpm (recursion permutation) *)
+(* tpm (CCS recursion variable permutation) *)
 val cons_info =
     [{con_termP = var_termP,    con_def = var_def},
      {con_termP = nil_termP,    con_def = SYM nil_def'},
@@ -484,7 +484,7 @@ val {tpm_thm, term_REP_tpm, t_pmact_t, tpm_t} =
                         cons_info = cons_info, newty = newty,
                         genind_term_REP = genind_term_REP};
 
-(* support *)
+(* support and FV *)
 Theorem term_REP_eqv[local] :
     support (fn_pmact ^t_pmact_t gt_pmact) ^term_REP_t {}
 Proof
