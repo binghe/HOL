@@ -275,24 +275,9 @@ val parameter_tm_recursion = save_thm(
                  `dpm` |-> `apm`]
       |> CONV_RULE (REDEPTH_CONV sort_uvars))
 
-val FORALL_ONE = prove(
-  ``(!u:one. P u) = P ()``,
-  SRW_TAC [][EQ_IMP_THM, oneTheory.one_induction]);
-val FORALL_ONE_FN = prove(
-  ``(!uf : one -> 'a. P uf) = !a. P (\u. a)``,
-  SRW_TAC [][EQ_IMP_THM] THEN
-  POP_ASSUM (Q.SPEC_THEN `uf ()` MP_TAC) THEN
-  Q_TAC SUFF_TAC `(\y. uf()) = uf` THEN1 SRW_TAC [][] THEN
-  SRW_TAC [][FUN_EQ_THM, oneTheory.one]);
-
-val EXISTS_ONE_FN = prove(
-  ``(?f : 'a -> one -> 'b. P f) = (?f : 'a -> 'b. P (\x u. f x))``,
-  SRW_TAC [][EQ_IMP_THM] THENL [
-    Q.EXISTS_TAC `\a. f a ()` THEN SRW_TAC [][] THEN
-    Q_TAC SUFF_TAC `(\x u. f x ()) = f` THEN1 SRW_TAC [][] THEN
-    SRW_TAC [][FUN_EQ_THM, oneTheory.one],
-    Q.EXISTS_TAC `\a u. f a` THEN SRW_TAC [][]
-  ]);
+val FORALL_ONE = oneTheory.FORALL_ONE;
+val FORALL_ONE_FN = oneTheory.FORALL_ONE_FN;
+val EXISTS_ONE_FN = oneTheory.EXISTS_ONE_FN;
 
 val tm_recursion = save_thm(
   "tm_recursion",
