@@ -176,7 +176,6 @@ val restr_def' = prove(
 (* compact representation for single-action restriction *)
 val _ = overload_on("nu", “λ(n :'a) P. restr {name n} P”);
 
-val _ = overload_on ("nu", “restr”);
 val _ = add_rule {term_name = "nu", fixity = Closefix,
                   pp_elements = [TOK ("(" ^ UnicodeChars.nu), TM, TOK ")"],
                   paren_style = OnlyIfNecessary,
@@ -304,6 +303,12 @@ Theorem FINITE_FV[simp] :
     FINITE (FV t)
 Proof
     srw_tac [][supp_tpm, FINITE_GFV]
+QED
+
+Theorem FV_EMPTY :
+    FV t = {} <=> !v. v NOTIN FV t
+Proof
+    SIMP_TAC (srw_ss()) [EXTENSION]
 QED
 
 fun supp_clause {con_termP, con_def} = let
@@ -539,16 +544,87 @@ Theorem tm_recursion =
     cases theorem
    ---------------------------------------------------------------------- *)
 
-(* aka CCS_cases *)
-Theorem CCS_nchotomy :
+Theorem CCS_cases :
     !t. t = nil \/ (?a. t = var a) \/ (?u E. t = prefix u E) \/
         (?E1 E2. t = sum E1 E2) \/ (?E1 E2. t = par E1 E2) \/
-        (?L E. t = (restr L) E) \/ (?E rf. t = relab E rf) \/
+        (?L E. t = restr L E) \/ (?E rf. t = relab E rf) \/
          ?X E. t = rec X E
 Proof
     HO_MATCH_MP_TAC simple_induction
  >> SRW_TAC [][] (* 161 subgoals here *)
  >> METIS_TAC []
+QED
+
+Theorem CCS_distinct[simp] :
+    (!X.     nil <> var X :'a CCS) /\
+    (!u E.   nil <> prefix u E :'a CCS) /\
+    (!E1 E2. nil <> E1 + E2 :'a CCS) /\
+    (!E1 E2. nil <> E1 || E2 :'a CCS) /\
+    (!L E.   nil <> restr L E :'a CCS) /\
+    (!E rf.  nil <> relab E rf :'a CCS) /\
+    (!X E.   nil <> rec X E :'a CCS) /\
+    (!X u E.   var X <> prefix u E :'a CCS) /\
+    (!X E1 E2. var X <> E1 + E2 :'a CCS) /\
+    (!X E1 E2. var X <> E1 || E2 :'a CCS) /\
+    (!X L E.   var X <> restr L E :'a CCS) /\
+    (!X E rf.  var X <> relab E rf :'a CCS) /\
+    (!X Y E.   var X <> rec Y E :'a CCS) /\
+    (!u E E1 E2. prefix u E <> E1 + E2 :'a CCS) /\
+    (!u E E1 E2. prefix u E <> E1 || E2 :'a CCS) /\
+    (!u E L E'.  prefix u E <> restr L E' :'a CCS) /\
+    (!u E E' rf. prefix u E <> relab E' rf :'a CCS) /\
+    (!u E X E'.  prefix u E <> rec X E' :'a CCS) /\
+    (!E1 E2 E3 E4. E1 + E2 <> E3 || E4 :'a CCS) /\
+    (!E1 E2 L E.   E1 + E2 <> restr L E :'a CCS) /\
+    (!E1 E2 E rf.  E1 + E2 <> relab E rf :'a CCS) /\
+    (!E1 E2 X E.   E1 + E2 <> rec X E :'a CCS) /\
+    (!E1 E2 L E.   E1 || E2 <> (restr L) E :'a CCS) /\
+    (!E1 E2 E rf.  E1 || E2 <> relab E rf :'a CCS) /\
+    (!E1 E2 X E.   E1 || E2 <> rec X E :'a CCS) /\
+    (!L E E' rf. restr L E <> relab E' rf :'a CCS) /\
+    (!L E X E'.  restr L E <> rec X E' :'a CCS) /\
+     !E rf X E'. relab E rf <> rec X E' :'a CCS
+Proof
+    srw_tac [] [nil_def, nil_termP, var_def, var_termP,
+                prefix_def, prefix_termP, sum_def, sum_termP,
+                par_def, par_termP, restr_def, restr_termP,
+                relab_def, relab_termP, rec_def, rec_termP,
+                term_ABS_pseudo11, gterm_distinct, GLAM_eq_thm]
+QED
+
+local
+    val thm = CONJUNCTS CCS_distinct;
+    val CCS_distinct_LIST = thm @ (map GSYM thm);
+in
+    val CCS_distinct' = save_thm
+      ("CCS_distinct'", LIST_CONJ CCS_distinct_LIST);
+end
+
+Theorem CCS_distinct_exists :
+    !p :'a CCS. ?q. q <> p
+Proof
+    Q.X_GEN_TAC ‘p’
+ >> MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw []
+ >- (Q.EXISTS_TAC ‘prefix a nil’ >> rw [CCS_distinct'])
+ >> Q.EXISTS_TAC ‘nil’
+ >> rw [CCS_distinct]
+QED
+
+(* cf. rec_eq_thm for “rec X E = rec X' E'” *)
+Theorem CCS_11[simp] :
+    (!X X'. var X = var X' :'a CCS <=> X = X') /\
+    (!u E u' E' :'a CCS. prefix u E = prefix u' E' <=> u = u' /\ E = E') /\
+    (!E1 E2 E1' E2' :'a CCS. E1 + E2 = E1' + E2' <=> E1 = E1' /\ E2 = E2') /\
+    (!E1 E2 E1' E2' :'a CCS. E1 || E2 = E1' || E2' <=> E1 = E1' /\ E2 = E2') /\
+    (!L E L' E' :'a CCS. restr L E = restr L' E' <=> L = L' /\ E = E') /\
+    (!(E :'a CCS) rf E' rf'. relab E rf = relab E' rf' <=> E = E' /\ rf = rf')
+Proof
+    srw_tac [] [nil_def, nil_termP, var_def, var_termP,
+                prefix_def, prefix_termP, sum_def, sum_termP,
+                par_def, par_termP, restr_def, restr_termP,
+                relab_def, relab_termP,
+                term_ABS_pseudo11, gterm_11, term_REP_11]
+ >> rw [Once CONJ_COMM]
 QED
 
 val _ = export_theory ();
