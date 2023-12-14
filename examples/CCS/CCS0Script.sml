@@ -1,13 +1,12 @@
-(******************************************************************************
- *
- *   Milner's Calculus of Concurrent System (CCS) in HOL4
- *
- * Copyright 1991-1995  University of Cambridge (Author: Monica Nesi)
- * Copyright 2016-2017  University of Bologna, Italy (Author: Chun Tian)
- * Copyright 2018-2019  Fondazione Bruno Kessler, Italy (Author: Chun Tian)
- * Copyright 2023-2024  The Australian National University (Author: Chun Tian)
- *
- ******************************************************************************)
+(* ========================================================================== *)
+(* FILE          : CCSScript.sml                                              *)
+(* DESCRIPTION   : A formalization of the process algebra CCS in HOL          *)
+(*                                                                            *)
+(* COPYRIGHTS    : 1991-1995 University of Cambridge (Monica Nesi)            *)
+(*                 2016-2017 University of Bologna, Italy (Chun Tian)         *)
+(*                 2018-2019 Fondazione Bruno Kessler, Italy (Chun Tian)      *)
+(*                 2023-2024 The Australian National University (Chun Tian)   *)
+(******************************************************************************)
 
 open HolKernel Parse boolLib bossLib;
 
@@ -20,11 +19,9 @@ val _ = new_theory "CCS0";
 
 val set_ss = std_ss ++ PRED_SET_ss;
 
-(******************************************************************************)
-(*                                                                            *)
-(*                           Labels and Actions                               *)
-(*                                                                            *)
-(******************************************************************************)
+(* ----------------------------------------------------------------------
+    Labels and Actions
+   ---------------------------------------------------------------------- *)
 
 (* Define the set of labels as the union of names (`in`) (strings) and
    co-names (`out`) (complement of names) *)
@@ -457,7 +454,7 @@ val restr_def' = prove(
     srw_tac [][restr_def, GLAM_NIL_EQ, term_ABS_pseudo11, restr_termP]);
 
 (* compact representation for single-action restriction *)
-Overload restr1 = “λ(n :'a) P. restr {name n} P”
+val _ = overload_on("restr1", “λ(n :'a) P. restr {name n} P”);
 
 (* relab *)
 val relab_t = mk_var("relab", “:^newty -> 'a Relabeling -> ^newty”);
@@ -524,50 +521,40 @@ val {tpm_thm, term_REP_tpm, t_pmact_t, tpm_t} =
     support and FV
    ---------------------------------------------------------------------- *)
 
-Theorem term_REP_eqv[local] :
-    support (fn_pmact ^t_pmact_t gt_pmact) ^term_REP_t {}
-Proof
-    srw_tac [][support_def, fnpm_def, FUN_EQ_THM, term_REP_tpm, pmact_sing_inv]
-QED
+val term_REP_eqv = prove(
+   “support (fn_pmact ^t_pmact_t gt_pmact) ^term_REP_t {}”,
+    srw_tac [][support_def, fnpm_def, FUN_EQ_THM, term_REP_tpm, pmact_sing_inv]);
 
-Theorem supp_term_REP[local] :
-    supp (fn_pmact ^t_pmact_t gt_pmact) ^term_REP_t = {}
-Proof
+val supp_term_REP = prove(
+   “supp (fn_pmact ^t_pmact_t gt_pmact) ^term_REP_t = {}”,
     REWRITE_TAC [GSYM SUBSET_EMPTY]
  >> MATCH_MP_TAC (GEN_ALL supp_smallest)
- >> srw_tac [][term_REP_eqv]
-QED
+ >> srw_tac [][term_REP_eqv]);
 
-Theorem tpm_def'[local] =
-    term_REP_tpm |> AP_TERM term_ABS_t |> PURE_REWRITE_RULE [absrep_id]
+val tpm_def' =
+    term_REP_tpm |> AP_TERM term_ABS_t |> PURE_REWRITE_RULE [absrep_id];
 
 val t = mk_var("t", newty);
-Theorem supptpm_support[local] :
-    support ^t_pmact_t ^t (supp gt_pmact (^term_REP_t ^t))
-Proof
-    srw_tac [][support_def, tpm_def', supp_fresh, absrep_id]
-QED
+val supptpm_support = prove(
+   “support ^t_pmact_t ^t (supp gt_pmact (^term_REP_t ^t))”,
+    srw_tac [][support_def, tpm_def', supp_fresh, absrep_id]);
 
-Theorem supptpm_apart[local] :
-    x IN supp gt_pmact (^term_REP_t ^t) /\ y NOTIN supp gt_pmact (^term_REP_t ^t)
-    ==> ^tpm_t [(x,y)] ^t <> ^t
-Proof
+val supptpm_apart = prove(
+   “x IN supp gt_pmact (^term_REP_t ^t) /\ y NOTIN supp gt_pmact (^term_REP_t ^t)
+    ==> ^tpm_t [(x,y)] ^t <> ^t”,
     srw_tac [][tpm_def']
  >> DISCH_THEN (MP_TAC o AP_TERM term_REP_t)
- >> srw_tac [][repabs_pseudo_id, genind_gtpm_eqn, genind_term_REP, supp_apart]
-QED
+ >> srw_tac [][repabs_pseudo_id, genind_gtpm_eqn, genind_term_REP, supp_apart]);
 
-Theorem supp_tpm[local] :
-    supp ^t_pmact_t ^t = supp gt_pmact (^term_REP_t ^t)
-Proof
+val supp_tpm = prove(
+   “supp ^t_pmact_t ^t = supp gt_pmact (^term_REP_t ^t)”,
     match_mp_tac (GEN_ALL supp_unique_apart)
- >> srw_tac [][supptpm_support, supptpm_apart, FINITE_GFV]
-QED
+ >> srw_tac [][supptpm_support, supptpm_apart, FINITE_GFV]);
 
-Overload FV = “supp ^t_pmact_t”
+val _ = overload_on ("FV", “supp ^t_pmact_t”);
 
 val _ = set_fixity "#" (Infix(NONASSOC, 450));
-Overload "#" = “\X (E :'a CCS). X NOTIN FV E”
+val _ = overload_on ("#", “\X (E :'a CCS). X NOTIN FV E”);
 
 Theorem FINITE_FV[simp] :
     FINITE (FV t)
@@ -586,6 +573,12 @@ in
 end
 
 Theorem FV_thm[simp] = LIST_CONJ (map supp_clause cons_info)
+
+val [FV_var, FV_nil, FV_prefix, FV_sum, FV_par,
+     FV_restr, FV_relab, FV_rec] =
+    map save_thm
+        (combine (["FV_var", "FV_nil", "FV_prefix", "FV_sum", "FV_par",
+                   "FV_restr", "FV_relab", "FV_rec"], CONJUNCTS FV_thm));
 
 (* |- !x t p. x IN FV (tpm p t) <=> lswapstr (REVERSE p) x IN FV t *)
 Theorem FV_tpm[simp] = “x IN FV (tpm p t)”
@@ -608,7 +601,7 @@ end
 val LIST_REL_CONS1 = listTheory.LIST_REL_CONS1;
 val LIST_REL_NIL = listTheory.LIST_REL_NIL;
 
-Theorem term_ind[local] =
+val term_ind =
     bvc_genind
         |> INST_TYPE [alpha |-> rep_t, beta |-> “:unit”]
         |> Q.INST [‘vp’ |-> ‘^vp’, ‘lp’ |-> ‘^lp’]
@@ -628,7 +621,7 @@ Theorem term_ind[local] =
         |> elim_unnecessary_atoms {finite_fv = FINITE_FV}
                                   [ASSUME “!x:'c. FINITE (fv x:string set)”]
         |> SPEC_ALL |> UNDISCH
-        |> genit |> DISCH_ALL |> Q.GENL [‘P’, ‘fv’]
+        |> genit |> DISCH_ALL |> Q.GENL [‘P’, ‘fv’];
 
 fun mkX_ind th = th |> Q.SPECL [‘\t x. Q t’, ‘\x. X’]
                     |> SIMP_RULE std_ss [] |> Q.GEN ‘X’
@@ -649,37 +642,29 @@ Theorem rec_eq_thm =
      |> Q.GENL [‘u’, ‘v’, ‘t1’, ‘t2’]
 
 (* ----------------------------------------------------------------------
-    tm recursion (recursion functions defined on CCS terms)
+    term recursion
    ---------------------------------------------------------------------- *)
 
 val (_, repty) = dom_rng (type_of term_REP_t);
 val repty' = ty_antiq repty;
 
-val u_tm = mk_var("u", rep_t);
-
-Theorem LENGTH_NIL'[local] =
+val LENGTH_NIL' =
     CONV_RULE (BINDER_CONV (LAND_CONV (REWR_CONV EQ_SYM_EQ)))
-              listTheory.LENGTH_NIL
+              listTheory.LENGTH_NIL;
 
-Theorem LENGTH1[local] :
-    (1 = LENGTH l) <=> ?e. l = [e]
-Proof
-    Cases_on ‘l’ >> srw_tac [][listTheory.LENGTH_NIL]
-QED
+val LENGTH1 = prove(
+   “(1 = LENGTH l) <=> ?e. l = [e]”,
+    Cases_on ‘l’ >> srw_tac [][listTheory.LENGTH_NIL]);
 
-Theorem LENGTH2[local] :
-    (2 = LENGTH l) <=> ?a b. l = [a;b]
-Proof
-    Cases_on ‘l’ >> srw_tac [][LENGTH1]
-QED
+val LENGTH2 = prove(
+   “(2 = LENGTH l) <=> ?a b. l = [a;b]”,
+    Cases_on ‘l’ >> srw_tac [][LENGTH1]);
 
-Theorem termP_elim[local] :
-    (!g. ^termP g ==> P g) <=> (!t. P (^term_REP_t t))
-Proof
+val termP_elim = prove(
+   “(!g. ^termP g ==> P g) <=> (!t. P (^term_REP_t t))”,
     srw_tac [][EQ_IMP_THM] >- srw_tac [][genind_term_REP]
  >> first_x_assum (qspec_then ‘^term_ABS_t g’ mp_tac)
- >> srw_tac [][repabs_pseudo_id]
-QED
+ >> srw_tac [][repabs_pseudo_id]);
 
 val termP_removal =
     nomdatatype.termP_removal {
@@ -687,32 +672,52 @@ val termP_removal =
       tpm_def = AP_TERM term_ABS_t term_REP_tpm |> REWRITE_RULE [absrep_id],
       termP = termP, repty = repty};
 
-Theorem termP0[local] :
-    genind ^vp ^lp n t <=> ^termP t ∧ (n = 0)
-Proof
+val termP0 = prove(
+   “genind ^vp ^lp n t <=> ^termP t ∧ (n = 0)”,
     EQ_TAC >> simp_tac (srw_ss()) [] >> strip_tac
  >> qsuff_tac ‘n = 0’ >- (strip_tac >> srw_tac [][])
  >> pop_assum mp_tac
  >> Q.ISPEC_THEN ‘t’ STRUCT_CASES_TAC gterm_cases
- >> srw_tac [][genind_GVAR, genind_GLAM_eqn]
-QED
+ >> srw_tac [][genind_GVAR, genind_GLAM_eqn]);
 
-(*
+val u_tm = mk_var("u", rep_t);
+
+(* “tvf :string -> 'q -> 'r” *)
+val tvf = “λ(s:string) (u:unit) (p:ρ). tvf s p : 'r”; (* var *)
+
+(* nil:    “tnf :'r”
+   prefix: “tff :('q -> 'r) -> 'a Action -> 'a CCS -> 'q -> 'r”
+   sum:    “tsf :('q -> 'r) -> ('q -> 'r) -> 'a CCS -> 'a CCS -> 'q -> 'r”
+   par:    “tpf :('q -> 'r) -> ('q -> 'r) -> 'a CCS -> 'a CCS -> 'q -> 'r”
+   restr:  “trf :('q -> 'r) -> ('a Label -> bool) -> 'a CCS -> 'q -> 'r”
+   relab:  “tlf :('q -> 'r) -> 'a CCS -> 'a Relabeling -> 'q -> 'r”
+   rec:    “tcf :('q -> 'r) -> string -> 'a CCS -> 'q -> 'r”  
+ *)
 val tlf =
-   “λ(v:string) ^u_tm (ds1:(ρ -> α) list) (ds2:(ρ -> α) list)
-                      (ts1:^repty' list) (ts2:^repty' list) (p:ρ).
-       if ISR u then
-          tlf (HD ds1) v (term_ABS (HD ts1)) p : α
+   “λ(v:string) ^u_tm (ds1:('q -> 'r) list) (ds2:('q -> 'r) list)
+                      (ts1:^repty' list) (ts2:^repty' list) (p :'q).
+       if ISL u then
+         tnf :'r
+       else if ISL (OUTR u) then
+         tff (HD ds2) (OUTL (OUTR u)) (^term_ABS_t (HD ts2)) p :'r
+       else if ISL (OUTR (OUTR u)) then
+         tsf (HD ds2) (HD (TL ds2))
+             (^term_ABS_t (HD ts2)) (^term_ABS_t (HD (TL ts2))) p :'r
+       else if ISL (OUTR (OUTR (OUTR u))) then
+         tpf (HD ds2) (HD (TL ds2))
+             (^term_ABS_t (HD ts2)) (^term_ABS_t (HD (TL ts2))) p :'r
+       else if ISL (OUTR (OUTR (OUTR (OUTR u)))) then
+         trf (HD ds2) (OUTL (OUTR (OUTR (OUTR (OUTR u)))))
+             (^term_ABS_t (HD ts2)) p :'r
+       else if ISL (OUTR (OUTR (OUTR (OUTR (OUTR u))))) then
+         tlf (HD ds2) (^term_ABS_t (HD ts2))
+             (OUTL (OUTR (OUTR (OUTR (OUTR (OUTR u)))))) p :'r
        else
-          taf (HD ds2) (HD (TL ds2))
-              (term_ABS (HD ts2))
-              (term_ABS (HD (TL ts2))) p: α”;
-
-val tvf = “λ(s:string) (u:unit) (p:ρ). tvf s p : α”;
+         tcf (HD ds1) v (^term_ABS_t (HD ts1)) p :'r”;
 
 Theorem parameter_tm_recursion =
   parameter_gtm_recursion
-      |> INST_TYPE [alpha |-> rep_t, beta |-> “:unit”, gamma |-> alpha]
+      |> INST_TYPE [alpha |-> rep_t, beta |-> “:unit”, gamma |-> “:'r”]
       |> Q.INST [‘lf’ |-> ‘^tlf’, ‘vf’ |-> ‘^tvf’, ‘vp’ |-> ‘^vp’,
                  ‘lp’ |-> ‘^lp’, ‘n’ |-> ‘0’]
       |> SIMP_RULE (srw_ss()) [sumTheory.FORALL_SUM, FORALL_AND_THM,
@@ -736,15 +741,63 @@ Theorem parameter_tm_recursion =
                           cons_info = cons_info}
       |> DISCH_ALL
       |> elim_unnecessary_atoms {finite_fv = FINITE_FV}
-                                [ASSUME “FINITE (A:string set)”,
-                                 ASSUME “!p:ρ. FINITE (supp ppm p)”]
+                                [ASSUME ``FINITE (A:string set)``,
+                                 ASSUME ``!p:ρ. FINITE (supp ppm p)``]
       |> UNDISCH_ALL |> DISCH_ALL
       |> REWRITE_RULE [AND_IMP_INTRO]
       |> CONV_RULE (LAND_CONV (REWRITE_CONV [GSYM CONJ_ASSOC]))
-      |> Q.INST [`tvf` |-> `vr`, `tlf` |-> `lm`, `taf` |-> `ap`,
-                 `dpm` |-> `apm`]
-      |> CONV_RULE (REDEPTH_CONV sort_uvars))
- *)
+      |> Q.INST [‘tvf’ |-> ‘vr’, (* var *)
+                 ‘tnf’ |-> ‘nl’, (* nil *)
+                 ‘tff’ |-> ‘pf’, (* prefix *)
+                 ‘tsf’ |-> ‘sm’, (* sum *)
+                 ‘tpf’ |-> ‘pr’, (* par *)
+                 ‘trf’ |-> ‘rs’, (* restr *)
+                 ‘tlf’ |-> ‘rl’, (* relab *)
+                 ‘tcf’ |-> ‘re’, (* rec *)
+                 ‘dpm’ |-> ‘apm’]
+      |> CONV_RULE (REDEPTH_CONV sort_uvars)
+
+val FORALL_ONE = prove(
+  ``(!u:one. P u) = P ()``,
+  SRW_TAC [][EQ_IMP_THM, oneTheory.one_induction]);
+
+val FORALL_ONE_FN = prove(
+  ``(!uf : one -> 'a. P uf) = !a. P (\u. a)``,
+  SRW_TAC [][EQ_IMP_THM] THEN
+  POP_ASSUM (Q.SPEC_THEN `uf ()` MP_TAC) THEN
+  Q_TAC SUFF_TAC `(\y. uf()) = uf` THEN1 SRW_TAC [][] THEN
+  SRW_TAC [][FUN_EQ_THM, oneTheory.one]);
+
+val EXISTS_ONE_FN = prove(
+  ``(?f : 'a -> one -> 'b. P f) = (?f : 'a -> 'b. P (\x u. f x))``,
+  SRW_TAC [][EQ_IMP_THM] THENL [
+    Q.EXISTS_TAC `\a. f a ()` THEN SRW_TAC [][] THEN
+    Q_TAC SUFF_TAC `(\x u. f x ()) = f` THEN1 SRW_TAC [][] THEN
+    SRW_TAC [][FUN_EQ_THM, oneTheory.one],
+    Q.EXISTS_TAC `\a u. f a` THEN SRW_TAC [][]
+  ]);
+
+Theorem tm_recursion = 
+  parameter_tm_recursion
+      |> Q.INST_TYPE [‘:'q’ |-> ‘:unit’]
+      |> Q.INST [‘ppm’ |-> ‘discrete_pmact’,
+                  ‘vr’ |-> ‘\s u. vru s’,
+                  ‘pf’ |-> ‘\r a t u. pfu (r()) a t’,
+                  ‘sm’ |-> ‘\r1 r2 t1 t2 u. smu (r1()) (r2()) t1 t2’,
+                  ‘pr’ |-> ‘\r1 r2 t1 t2 u. pru (r1()) (r2()) t1 t2’,
+                  ‘rs’ |-> ‘\r L t u. rsu (r()) L t’,
+                  ‘rl’ |-> ‘\r t rf u. rlu (r()) t rf’,
+                  ‘re’ |-> ‘\r v t u. reu (r()) v t’]
+      |> SIMP_RULE (srw_ss()) [FORALL_ONE, FORALL_ONE_FN, EXISTS_ONE_FN,
+                               fnpm_def]
+      |> SIMP_RULE (srw_ss() ++ CONJ_ss) [supp_unitfn]
+      |> Q.INST [‘vru’ |-> ‘vr’,
+                 ‘pfu’ |-> ‘pf’,
+                 ‘smu’ |-> ‘sm’,
+                 ‘pru’ |-> ‘pr’,
+                 ‘rsu’ |-> ‘rs’,
+                 ‘rlu’ |-> ‘rl’,
+                 ‘reu’ |-> ‘re’]
 
 val _ = export_theory ();
 val _ = html_theory "CCS0";
