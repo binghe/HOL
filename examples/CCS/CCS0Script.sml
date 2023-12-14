@@ -16,7 +16,7 @@ open pred_setTheory pred_setLib relationTheory optionTheory listTheory CCSLib
 
 open generic_termsTheory binderLib nomsetTheory nomdatatype;
 
-val _ = new_theory "CCS1";
+val _ = new_theory "CCS0";
 
 val set_ss = std_ss ++ PRED_SET_ss;
 
@@ -636,16 +636,11 @@ fun mkX_ind th = th |> Q.SPECL [‘\t x. Q t’, ‘\x. X’]
 
 Theorem CCS_induction = mkX_ind term_ind
 
-(* cf. simple_induction in termTheory *)
-Theorem CCS_induct =
+Theorem simple_induction =
     CCS_induction |> Q.SPECL [‘P’, ‘{}’]
                   |> REWRITE_RULE [FINITE_EMPTY, NOT_IN_EMPTY]
                   |> Q.GEN ‘P’
 
-(* |- !u v t1 t2.
-        rec u t1 = rec v t2 <=>
-        u = v /\ t1 = t2 \/ u <> v /\ u NOTIN FV t2 /\ t1 = tpm [(u,v)] t2
- *)
 Theorem rec_eq_thm =
   “(rec u t1 = rec v t2)”
      |> SIMP_CONV (srw_ss()) [rec_def, rec_termP, term_ABS_pseudo11,
@@ -752,4 +747,4 @@ Theorem parameter_tm_recursion =
  *)
 
 val _ = export_theory ();
-val _ = html_theory "CCS1";
+val _ = html_theory "CCS0";
