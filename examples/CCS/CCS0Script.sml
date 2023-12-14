@@ -454,7 +454,13 @@ val restr_def' = prove(
     srw_tac [][restr_def, GLAM_NIL_EQ, term_ABS_pseudo11, restr_termP]);
 
 (* compact representation for single-action restriction *)
-val _ = overload_on("restr1", “λ(n :'a) P. restr {name n} P”);
+val _ = overload_on("nu", “λ(n :'a) P. restr {name n} P”);
+
+val _ = overload_on ("nu", “restr”);
+val _ = add_rule {term_name = "nu", fixity = Closefix,
+                  pp_elements = [TOK ("(" ^ UnicodeChars.nu), TM, TOK ")"],
+                  paren_style = OnlyIfNecessary,
+                  block_style = (AroundEachPhrase, (PP.INCONSISTENT, 2))};
 
 (* relab *)
 val relab_t = mk_var("relab", “:^newty -> 'a Relabeling -> ^newty”);
@@ -516,6 +522,24 @@ val {tpm_thm, term_REP_tpm, t_pmact_t, tpm_t} =
                         repabs_pseudo_id = repabs_pseudo_id,
                         cons_info = cons_info, newty = newty,
                         genind_term_REP = genind_term_REP};
+
+Theorem tpm_eqr:
+    t = tpm pi u <=> tpm (REVERSE pi) t = u
+Proof
+    METIS_TAC [pmact_inverse]
+QED
+
+Theorem tpm_eql:
+    tpm pi t = u <=> t = tpm (REVERSE pi) u
+Proof
+    simp[tpm_eqr]
+QED
+
+Theorem tpm_CONS :
+    tpm ((x,y)::pi) t = tpm [(x,y)] (tpm pi t)
+Proof
+  SRW_TAC [][GSYM pmact_decompose]
+QED
 
 (* ----------------------------------------------------------------------
     support and FV
@@ -640,6 +664,12 @@ Theorem rec_eq_thm =
                               GLAM_eq_thm, term_REP_11, GSYM term_REP_tpm,
                               GSYM supp_tpm]
      |> Q.GENL [‘u’, ‘v’, ‘t1’, ‘t2’]
+
+Theorem tpm_ALPHA :
+    v # u ==> (rec x u = rec v (tpm [(v,x)] u))
+Proof
+    SRW_TAC [boolSimps.CONJ_ss][rec_eq_thm, pmact_flip_args]
+QED
 
 (* ----------------------------------------------------------------------
     term recursion
@@ -798,6 +828,22 @@ Theorem tm_recursion =
                  ‘rsu’ |-> ‘rs’,
                  ‘rlu’ |-> ‘rl’,
                  ‘reu’ |-> ‘re’]
+
+(* ----------------------------------------------------------------------
+    cases theorem
+   ---------------------------------------------------------------------- *)
+
+(* aka CCS_cases *)
+Theorem CCS_nchotomy :
+    !t. t = nil \/ (?a. t = var a) \/ (?u E. t = prefix u E) \/
+        (?E1 E2. t = sum E1 E2) \/ (?E1 E2. t = par E1 E2) \/
+        (?L E. t = (restr L) E) \/ (?E rf. t = relab E rf) \/
+         ?X E. t = rec X E
+Proof
+    HO_MATCH_MP_TAC simple_induction
+ >> SRW_TAC [][] (* 161 subgoals here *)
+ >> METIS_TAC []
+QED
 
 val _ = export_theory ();
 val _ = html_theory "CCS0";
