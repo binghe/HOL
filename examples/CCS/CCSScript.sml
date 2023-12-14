@@ -356,7 +356,7 @@ val _ =
 val _ = TeX_notation { hol = "..", TeX = ("\\ensuremath{\\ldotp}", 1) };
 
 (* Define structural induction on CCS agent expressions. *)
-val CCS_induct = TypeBase.induction_of ``:('a, 'b) CCS``;
+val CCS_induction = TypeBase.induction_of ``:('a, 'b) CCS``;
 
 (* The structural cases theorem for the type CCS. *)
 val CCS_cases = TypeBase.nchotomy_of ``:('a, 'b) CCS``;

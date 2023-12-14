@@ -1042,3 +1042,4 @@ val _ = adjoin_after_completion (fn _ => PP.add_string term_info_string)
 
 
 val _ = export_theory()
+val _ = html_theory "cterm";

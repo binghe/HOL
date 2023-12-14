@@ -301,10 +301,14 @@ val APPLY_RELAB_THM = save_thm (
                   (Q.SPEC `labl` IS_RELABELING))));
 
 (******************************************************************************)
-(*  Type (and term) of CCS agents                                             *)
+(*  The Type “:'a CCS”                                                        *)
 (******************************************************************************)
 
-(* Define the type of (pure) CCS agent expressions. (old way)
+(* The old way (no alpha conversion)
+
+   NOTE: it defined “:('a, 'b) CCS” where 'a is the set of recursion variables,
+         and 'b is the type of label/actions.
+
 Datatype: CCS = nil
               | var 'a
               | prefix ('b Action) CCS
@@ -316,18 +320,21 @@ Datatype: CCS = nil
 End
  *)
 
-(* new way based on "examples/lambda/basics/generic_termsTheory *)
+(* The new way based on "examples/lambda/basics/generic_termsTheory
+
+   NOTE: it defines “:'a CCS” where 'a is 'b of the old “:('a,'b) CCS”.
+ *)
 val tyname = "CCS";
 
 (* ‘GVAR s vv’ corresponds to ‘var 'a’ *)
 val vp = “(\n u:unit. n = 0)”;                                  (* 0. var *)
 
-val lp_t = “:unit + 'a Action + unit + unit + 'a Label set + 'a Relabeling + unit”;
-val d = mk_var("d", lp_t);
+val rep_t = “:unit + 'a Action + unit + unit + 'a Label set + 'a Relabeling + unit”;
+val d_tm = mk_var("d", rep_t);
 
 (* ‘GLAM v bv ts us’ corresponds to everything else. *)
 val lp =
-  “(\n ^d tns uns.
+  “(\n ^d_tm tns uns.
      n = 0 /\ ISL d /\ tns = [] ∧ uns = []  \/                  (* 1. nil *)
      n = 0 /\ ISR d /\ ISL (OUTR d) /\ tns = [] /\ uns = [0] \/ (* 2. prefix *)
      n = 0 /\ ISR d /\ ISR (OUTR d) /\ ISL (OUTR (OUTR d)) /\
@@ -354,6 +361,10 @@ val {term_ABS_pseudo11, term_REP_11, genind_term_REP, genind_exists,
      termP, absrep_id, repabs_pseudo_id, term_REP_t, term_ABS_t, newty, ...} =
     new_type_step1 tyname 0 {vp = vp, lp = lp};
 
+(* ----------------------------------------------------------------------
+    CCS operators
+   ---------------------------------------------------------------------- *)
+
 val [gvar,glam] = genind_rules |> SPEC_ALL |> CONJUNCTS;
 
 (* var *)
@@ -374,6 +385,8 @@ val nil_termP = prove(“^termP (GLAM x (INL ()) [] [])”,
 val nil_t = defined_const nil_def;
 val nil_def' = prove(“^term_ABS_t (GLAM v (INL ()) [] []) = ^nil_t”,
     srw_tac [][nil_def, GLAM_NIL_EQ, term_ABS_pseudo11, nil_termP]);
+
+val _ = TeX_notation { hol = "nil", TeX = ("\\ensuremath{\\mathbf{0}}", 1) };
 
 (* prefix *)
 val prefix_t = mk_var("prefix", “:'a Action -> ^newty -> ^newty”);
@@ -403,6 +416,9 @@ val sum_def' = prove(
                        [^term_REP_t E1; ^term_REP_t E2]) = ^sum_t E1 E2”,
     srw_tac [][sum_def, GLAM_NIL_EQ, term_ABS_pseudo11, sum_termP]);
 
+val _ = overload_on ("+", ``sum``); (* priority: 500 *)
+val _ = TeX_notation { hol = "+", TeX = ("\\ensuremath{+}", 1) };
+
 (* par *)
 val par_t = mk_var("par", “:^newty -> ^newty -> ^newty”);
 val par_def = new_definition(
@@ -419,6 +435,12 @@ val par_def' = prove(
                        [^term_REP_t E1; ^term_REP_t E2]) = ^par_t E1 E2”,
     srw_tac [][par_def, GLAM_NIL_EQ, term_ABS_pseudo11, par_termP]);
 
+val _ = set_mapped_fixity {fixity = Infixl 600,
+                           tok = "||", term_name = "par"};
+
+(* val _ = Unicode.unicode_version {u = UTF8.chr 0x007C, tmnm = "par"}; *)
+val _ = TeX_notation { hol = "||", TeX = ("\\ensuremath{\\mid}", 1) };
+
 (* restr *)
 val restr_t = mk_var("restr", “:'a Label set -> ^newty -> ^newty”);
 val restr_def = new_definition(
@@ -433,6 +455,9 @@ val restr_def' = prove(
   “^term_ABS_t (GLAM v (INR (INR (INR (INR (INL L))))) [] [^term_REP_t E]) =
    ^restr_t L E”,
     srw_tac [][restr_def, GLAM_NIL_EQ, term_ABS_pseudo11, restr_termP]);
+
+(* compact representation for single-action restriction *)
+Overload restr1 = “λ(n :'a) P. restr {name n} P”
 
 (* relab *)
 val relab_t = mk_var("relab", “:^newty -> 'a Relabeling -> ^newty”);
@@ -463,7 +488,18 @@ val rec_termP = prove(
     match_mp_tac glam >> srw_tac [][genind_term_REP]);
 val rec_t = defined_const rec_def;
 
-(* tpm (CCS recursion variable permutation) *)
+val _ =
+    add_rule { term_name = "prefix", fixity = Infixr 700,
+        pp_elements = [ BreakSpace(0,0), TOK "..", BreakSpace(0,0) ],
+        paren_style = OnlyIfNecessary,
+        block_style = (AroundSamePrec, (PP.CONSISTENT, 0)) };
+
+val _ = TeX_notation { hol = "..", TeX = ("\\ensuremath{\\ldotp}", 1) };
+
+(* ----------------------------------------------------------------------
+    tpm (permutation of CCS recursion variables)
+   ---------------------------------------------------------------------- *)
+
 val cons_info =
     [{con_termP = var_termP,    con_def = var_def},
      {con_termP = nil_termP,    con_def = SYM nil_def'},
@@ -484,7 +520,10 @@ val {tpm_thm, term_REP_tpm, t_pmact_t, tpm_t} =
                         cons_info = cons_info, newty = newty,
                         genind_term_REP = genind_term_REP};
 
-(* support and FV *)
+(* ----------------------------------------------------------------------
+    support and FV
+   ---------------------------------------------------------------------- *)
+
 Theorem term_REP_eqv[local] :
     support (fn_pmact ^t_pmact_t gt_pmact) ^term_REP_t {}
 Proof
@@ -527,7 +566,10 @@ QED
 
 Overload FV = “supp ^t_pmact_t”
 
-Theorem FINITE_FV[simp]:
+val _ = set_fixity "#" (Infix(NONASSOC, 450));
+Overload "#" = “\X (E :'a CCS). X NOTIN FV E”
+
+Theorem FINITE_FV[simp] :
     FINITE (FV t)
 Proof
     srw_tac [][supp_tpm, FINITE_GFV]
@@ -545,7 +587,15 @@ end
 
 Theorem FV_thm[simp] = LIST_CONJ (map supp_clause cons_info)
 
-(* term induction *)
+(* |- !x t p. x IN FV (tpm p t) <=> lswapstr (REVERSE p) x IN FV t *)
+Theorem FV_tpm[simp] = “x IN FV (tpm p t)”
+                       |> REWRITE_CONV [perm_supp, pmact_IN]
+                       |> GEN_ALL
+
+(* ----------------------------------------------------------------------
+    term induction
+   ---------------------------------------------------------------------- *)
+
 fun genit th = let
   val (_, args) = strip_comb (concl th)
   val (tm, x) = case args of [x,y] => (x,y) | _ => raise Fail "Bind"
@@ -555,9 +605,12 @@ in
   th |> INST [tm |-> t] |> GEN x |> GEN t
 end
 
-val term_ind =
+val LIST_REL_CONS1 = listTheory.LIST_REL_CONS1;
+val LIST_REL_NIL = listTheory.LIST_REL_NIL;
+
+Theorem term_ind[local] =
     bvc_genind
-        |> INST_TYPE [alpha |-> lp_t, beta |-> “:unit”]
+        |> INST_TYPE [alpha |-> rep_t, beta |-> “:unit”]
         |> Q.INST [‘vp’ |-> ‘^vp’, ‘lp’ |-> ‘^lp’]
         |> SIMP_RULE std_ss [LIST_REL_CONS1, RIGHT_AND_OVER_OR,
                              LEFT_AND_OVER_OR, DISJ_IMP_THM, LIST_REL_NIL]
@@ -575,7 +628,7 @@ val term_ind =
         |> elim_unnecessary_atoms {finite_fv = FINITE_FV}
                                   [ASSUME “!x:'c. FINITE (fv x:string set)”]
         |> SPEC_ALL |> UNDISCH
-        |> genit |> DISCH_ALL |> Q.GENL [‘P’, ‘fv’];
+        |> genit |> DISCH_ALL |> Q.GENL [‘P’, ‘fv’]
 
 fun mkX_ind th = th |> Q.SPECL [‘\t x. Q t’, ‘\x. X’]
                     |> SIMP_RULE std_ss [] |> Q.GEN ‘X’
@@ -583,7 +636,120 @@ fun mkX_ind th = th |> Q.SPECL [‘\t x. Q t’, ‘\x. X’]
 
 Theorem CCS_induction = mkX_ind term_ind
 
-(* end of the new way *)
+(* cf. simple_induction in termTheory *)
+Theorem CCS_induct =
+    CCS_induction |> Q.SPECL [‘P’, ‘{}’]
+                  |> REWRITE_RULE [FINITE_EMPTY, NOT_IN_EMPTY]
+                  |> Q.GEN ‘P’
+
+(* |- !u v t1 t2.
+        rec u t1 = rec v t2 <=>
+        u = v /\ t1 = t2 \/ u <> v /\ u NOTIN FV t2 /\ t1 = tpm [(u,v)] t2
+ *)
+Theorem rec_eq_thm =
+  “(rec u t1 = rec v t2)”
+     |> SIMP_CONV (srw_ss()) [rec_def, rec_termP, term_ABS_pseudo11,
+                              GLAM_eq_thm, term_REP_11, GSYM term_REP_tpm,
+                              GSYM supp_tpm]
+     |> Q.GENL [‘u’, ‘v’, ‘t1’, ‘t2’]
+
+(* ----------------------------------------------------------------------
+    tm recursion (recursion functions defined on CCS terms)
+   ---------------------------------------------------------------------- *)
+
+val (_, repty) = dom_rng (type_of term_REP_t);
+val repty' = ty_antiq repty;
+
+val u_tm = mk_var("u", rep_t);
+
+Theorem LENGTH_NIL'[local] =
+    CONV_RULE (BINDER_CONV (LAND_CONV (REWR_CONV EQ_SYM_EQ)))
+              listTheory.LENGTH_NIL
+
+Theorem LENGTH1[local] :
+    (1 = LENGTH l) <=> ?e. l = [e]
+Proof
+    Cases_on ‘l’ >> srw_tac [][listTheory.LENGTH_NIL]
+QED
+
+Theorem LENGTH2[local] :
+    (2 = LENGTH l) <=> ?a b. l = [a;b]
+Proof
+    Cases_on ‘l’ >> srw_tac [][LENGTH1]
+QED
+
+Theorem termP_elim[local] :
+    (!g. ^termP g ==> P g) <=> (!t. P (^term_REP_t t))
+Proof
+    srw_tac [][EQ_IMP_THM] >- srw_tac [][genind_term_REP]
+ >> first_x_assum (qspec_then ‘^term_ABS_t g’ mp_tac)
+ >> srw_tac [][repabs_pseudo_id]
+QED
+
+val termP_removal =
+    nomdatatype.termP_removal {
+      elimth = termP_elim, absrep_id = absrep_id,
+      tpm_def = AP_TERM term_ABS_t term_REP_tpm |> REWRITE_RULE [absrep_id],
+      termP = termP, repty = repty};
+
+Theorem termP0[local] :
+    genind ^vp ^lp n t <=> ^termP t ∧ (n = 0)
+Proof
+    EQ_TAC >> simp_tac (srw_ss()) [] >> strip_tac
+ >> qsuff_tac ‘n = 0’ >- (strip_tac >> srw_tac [][])
+ >> pop_assum mp_tac
+ >> Q.ISPEC_THEN ‘t’ STRUCT_CASES_TAC gterm_cases
+ >> srw_tac [][genind_GVAR, genind_GLAM_eqn]
+QED
+
+(*
+val tlf =
+   “λ(v:string) ^u_tm (ds1:(ρ -> α) list) (ds2:(ρ -> α) list)
+                      (ts1:^repty' list) (ts2:^repty' list) (p:ρ).
+       if ISR u then
+          tlf (HD ds1) v (term_ABS (HD ts1)) p : α
+       else
+          taf (HD ds2) (HD (TL ds2))
+              (term_ABS (HD ts2))
+              (term_ABS (HD (TL ts2))) p: α”;
+
+val tvf = “λ(s:string) (u:unit) (p:ρ). tvf s p : α”;
+
+Theorem parameter_tm_recursion =
+  parameter_gtm_recursion
+      |> INST_TYPE [alpha |-> rep_t, beta |-> “:unit”, gamma |-> alpha]
+      |> Q.INST [‘lf’ |-> ‘^tlf’, ‘vf’ |-> ‘^tvf’, ‘vp’ |-> ‘^vp’,
+                 ‘lp’ |-> ‘^lp’, ‘n’ |-> ‘0’]
+      |> SIMP_RULE (srw_ss()) [sumTheory.FORALL_SUM, FORALL_AND_THM,
+                               GSYM RIGHT_FORALL_IMP_THM, IMP_CONJ_THM,
+                               GSYM RIGHT_EXISTS_AND_THM,
+                               GSYM LEFT_EXISTS_AND_THM,
+                               GSYM LEFT_FORALL_IMP_THM,
+                               LIST_REL_CONS1, genind_GVAR,
+                               genind_GLAM_eqn, sidecond_def,
+                               NEWFCB_def, relsupp_def,
+                               LENGTH_NIL', LENGTH1, LENGTH2]
+      |> ONCE_REWRITE_RULE [termP0]
+      |> SIMP_RULE (srw_ss() ++ DNF_ss) [LENGTH1, LENGTH2,
+                                         listTheory.LENGTH_NIL]
+      |> CONV_RULE (DEPTH_CONV termP_removal)
+      |> SIMP_RULE (srw_ss()) [GSYM supp_tpm, SYM term_REP_tpm]
+      |> UNDISCH
+      |> rpt_hyp_dest_conj
+      |> lift_exfunction {repabs_pseudo_id = repabs_pseudo_id,
+                          term_REP_t = term_REP_t,
+                          cons_info = cons_info}
+      |> DISCH_ALL
+      |> elim_unnecessary_atoms {finite_fv = FINITE_FV}
+                                [ASSUME “FINITE (A:string set)”,
+                                 ASSUME “!p:ρ. FINITE (supp ppm p)”]
+      |> UNDISCH_ALL |> DISCH_ALL
+      |> REWRITE_RULE [AND_IMP_INTRO]
+      |> CONV_RULE (LAND_CONV (REWRITE_CONV [GSYM CONJ_ASSOC]))
+      |> Q.INST [`tvf` |-> `vr`, `tlf` |-> `lm`, `taf` |-> `ap`,
+                 `dpm` |-> `apm`]
+      |> CONV_RULE (REDEPTH_CONV sort_uvars))
+ *)
 
 val _ = export_theory ();
 val _ = html_theory "CCS1";
