@@ -21,10 +21,6 @@ val _ = new_theory "CCS1";
 
 val set_ss = std_ss ++ PRED_SET_ss;
 
-(******************************************************************************)
-(*  The Type “:'a CCS”                                                        *)
-(******************************************************************************)
-
 (* The old way (no alpha conversion)
 
    NOTE: it defined “:('a, 'b) CCS” where 'a is the set of recursion variables,
@@ -439,7 +435,7 @@ val u_tm = mk_var("u", rep_t);
 (* “tvf :string -> 'q -> 'r” *)
 val tvf = “λ(s:string) (u:unit) (p:ρ). tvf s p : 'r”; (* var *)
 
-(* nil:    “tnf :'r”
+(* nil:    “tnf :'q -> 'r”
    prefix: “tff :('q -> 'r) -> 'a Action -> 'a CCS -> 'q -> 'r”
    sum:    “tsf :('q -> 'r) -> ('q -> 'r) -> 'a CCS -> 'a CCS -> 'q -> 'r”
    par:    “tpf :('q -> 'r) -> ('q -> 'r) -> 'a CCS -> 'a CCS -> 'q -> 'r”
@@ -451,7 +447,7 @@ val tlf =
    “λ(v:string) ^u_tm (ds1:('q -> 'r) list) (ds2:('q -> 'r) list)
                       (ts1:^repty' list) (ts2:^repty' list) (p :'q).
        if ISL u then
-         tnf :'r
+         tnf p :'r
        else if ISL (OUTR u) then
          tff (HD ds2) (OUTL (OUTR u)) (^term_ABS_t (HD ts2)) p :'r
        else if ISL (OUTR (OUTR u)) then
@@ -520,6 +516,7 @@ Theorem tm_recursion =
       |> Q.INST_TYPE [‘:'q’ |-> ‘:unit’]
       |> Q.INST [‘ppm’ |-> ‘discrete_pmact’,
                   ‘vr’ |-> ‘\s u. vru s’,
+                  ‘nl’ |-> ‘\u. nlu’,
                   ‘pf’ |-> ‘\r a t u. pfu (r()) a t’,
                   ‘sm’ |-> ‘\r1 r2 t1 t2 u. smu (r1()) (r2()) t1 t2’,
                   ‘pr’ |-> ‘\r1 r2 t1 t2 u. pru (r1()) (r2()) t1 t2’,
@@ -530,6 +527,7 @@ Theorem tm_recursion =
                                fnpm_def]
       |> SIMP_RULE (srw_ss() ++ CONJ_ss) [supp_unitfn]
       |> Q.INST [‘vru’ |-> ‘vr’,
+                 ‘nlu’ |-> ‘nl’,
                  ‘pfu’ |-> ‘pf’,
                  ‘smu’ |-> ‘sm’,
                  ‘pru’ |-> ‘pr’,

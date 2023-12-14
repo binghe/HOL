@@ -1,11 +1,9 @@
 (* ========================================================================== *)
-(* FILE          : CCSScript.sml                                              *)
+(* FILE          : LabelScript.sml (was part of CCSScript.sml)                *)
 (* DESCRIPTION   : A formalization of the process algebra CCS in HOL          *)
 (*                                                                            *)
 (* COPYRIGHTS    : 1991-1995 University of Cambridge (Monica Nesi)            *)
 (*                 2016-2017 University of Bologna, Italy (Chun Tian)         *)
-(*                 2018-2019 Fondazione Bruno Kessler, Italy (Chun Tian)      *)
-(*                 2023-2024 The Australian National University (Chun Tian)   *)
 (******************************************************************************)
 
 open HolKernel Parse boolLib bossLib;
