@@ -446,7 +446,7 @@ val tvf = “λ(s:string) (u:unit) (p:ρ). tvf s p : 'r”; (* var *)
    par:    “tpf :('q -> 'r) -> ('q -> 'r) -> 'a CCS -> 'a CCS -> 'q -> 'r”
    restr:  “trf :('q -> 'r) -> ('a Label -> bool) -> 'a CCS -> 'q -> 'r”
    relab:  “tlf :('q -> 'r) -> 'a CCS -> 'a Relabeling -> 'q -> 'r”
-   rec:    “tcf :('q -> 'r) -> string -> 'a CCS -> 'q -> 'r”  
+   rec:    “tcf :('q -> 'r) -> string -> 'a CCS -> 'q -> 'r”
  *)
 val tlf =
    “λ(v:string) ^u_tm (ds1:('q -> 'r) list) (ds2:('q -> 'r) list)
@@ -516,7 +516,7 @@ val FORALL_ONE = oneTheory.FORALL_ONE;
 val FORALL_ONE_FN = oneTheory.FORALL_ONE_FN;
 val EXISTS_ONE_FN = oneTheory.EXISTS_ONE_FN;
 
-Theorem tm_recursion = 
+Theorem tm_recursion =
   parameter_tm_recursion
       |> Q.INST_TYPE [‘:'q’ |-> ‘:unit’]
       |> Q.INST [‘ppm’ |-> ‘discrete_pmact’,
@@ -541,7 +541,7 @@ Theorem tm_recursion =
                  ‘reu’ |-> ‘re’]
 
 (* ----------------------------------------------------------------------
-    cases theorem
+    cases, distinct and one-one theorems
    ---------------------------------------------------------------------- *)
 
 Theorem CCS_cases :
@@ -611,7 +611,7 @@ Proof
 QED
 
 (* cf. rec_eq_thm for “rec X E = rec X' E'” *)
-Theorem CCS_11[simp] :
+Theorem CCS_one_one[simp] :
     (!X X'. var X = var X' :'a CCS <=> X = X') /\
     (!u E u' E' :'a CCS. prefix u E = prefix u' E' <=> u = u' /\ E = E') /\
     (!E1 E2 E1' E2' :'a CCS. E1 + E2 = E1' + E2' <=> E1 = E1' /\ E2 = E2') /\
@@ -626,6 +626,33 @@ Proof
                 term_ABS_pseudo11, gterm_11, term_REP_11]
  >> rw [Once CONJ_COMM]
 QED
+
+Theorem sum_acyclic :
+    !t1 t2 :'a CCS. t1 <> t1 + t2 /\ t1 <> t2 + t1
+Proof
+    HO_MATCH_MP_TAC simple_induction >> SRW_TAC [][]
+QED
+
+Theorem par_acyclic :
+    !t1 t2 :'a CCS. t1 <> t1 || t2 /\ t1 <> t2 || t1
+Proof
+    HO_MATCH_MP_TAC simple_induction >> SRW_TAC [][]
+QED
+
+Theorem FORALL_TERM :
+    (!t. P t) <=>
+    P nil /\ (!s. P (var s)) /\ (!u t. P (prefix u t)) /\
+    (!t1 t2. P (t1 + t2)) /\ (!t1 t2. P (t1 || t2)) /\
+    (!L t. P (restr L t)) /\ (!t rf. P (relab t rf)) /\
+    (!v t. P (rec v t))
+Proof
+    EQ_TAC >> SRW_TAC [][]
+ >> Q.SPEC_THEN ‘t’ STRUCT_CASES_TAC CCS_cases >> SRW_TAC [][]
+QED
+
+(* ----------------------------------------------------------------------
+    Establish substitution function
+   ---------------------------------------------------------------------- *)
 
 val _ = export_theory ();
 val _ = html_theory "CCS1";
