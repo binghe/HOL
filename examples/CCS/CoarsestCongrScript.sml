@@ -8,11 +8,9 @@ open HolKernel Parse boolLib bossLib;
 open pred_setTheory relationTheory pairTheory sumTheory listTheory;
 open prim_recTheory arithmeticTheory combinTheory;
 
-open CCSLib LabelTheory CCSTheory;
-open StrongEQTheory StrongEQLib StrongLawsTheory;
-open WeakEQTheory WeakEQLib WeakLawsTheory;
-open ObsCongrTheory ObsCongrLib ObsCongrLawsTheory ObsCongrConv;
-open TraceTheory CongruenceTheory;
+open CCSLib LabelTheory CCSTheory TransTheory StrongEQTheory StrongEQLib
+     StrongLawsTheory WeakEQTheory WeakEQLib WeakLawsTheory ObsCongrTheory
+     ObsCongrLib ObsCongrLawsTheory ObsCongrConv TraceTheory CongruenceTheory;
 
 val _ = new_theory "CoarsestCongr";
 val _ = temp_loose_equality ();

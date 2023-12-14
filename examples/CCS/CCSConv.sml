@@ -7,7 +7,7 @@ structure CCSConv :> CCSConv =
 struct
 
 open HolKernel Parse boolLib bossLib;
-open CCSLib LabelTheory CCSTheory CCSSyntax stringTheory;
+open CCSLib LabelTheory CCSTheory TransTheory CCSSyntax stringTheory;
 
 structure Parse = struct
   open Parse

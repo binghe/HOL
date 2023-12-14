@@ -9,7 +9,7 @@ open HolKernel Parse boolLib bossLib;
 open pred_setTheory relationTheory pairTheory sumTheory listTheory;
 open prim_recTheory arithmeticTheory combinTheory stringTheory;
 
-open CCSLib CCSTheory CCSSyntax CCSConv;
+open CCSLib CCSTheory TransTheory CCSSyntax CCSConv;
 open StrongEQTheory StrongEQLib StrongLawsTheory;
 open WeakEQTheory WeakEQLib WeakLawsTheory;
 open ObsCongrTheory ObsCongrLib ObsCongrLawsTheory;
@@ -26,106 +26,6 @@ val _ = temp_loose_equality ();
 val _ = disable_tyabbrev_printing "transition";
 val _ = disable_tyabbrev_printing "context";
 val _ = disable_tyabbrev_printing "simulation";
-
-(******************************************************************************)
-(*                                                                            *)
-(*          The proof of PROPERTY_STAR (old way as in Milner's book)          *)
-(*                                                                            *)
-(******************************************************************************)
-
-(*
- In StrongEQScript.ml, currently we define STRONG_EQUIV (strong bisimilarity) by
- HOL's co-inductive package (Hol_coreln):
-
-val (STRONG_EQUIV_rules, STRONG_EQUIV_coind, STRONG_EQUIV_cases) = Hol_coreln `
-    (!(E :('a, 'b) CCS) (E' :('a, 'b) CCS).
-       (!u.
-         (!E1. TRANS E u E1 ==>
-               (?E2. TRANS E' u E2 /\ STRONG_EQUIV E1 E2)) /\
-         (!E2. TRANS E' u E2 ==>
-               (?E1. TRANS E u E1 /\ STRONG_EQUIV E1 E2))) ==> STRONG_EQUIV E E')`;
-
-  then the 3rd returned value (STRONG_EQUIV_cases) is just the PROPERTY_STAR:
-
-(* Prop. 4, page 91: strong equivalence satisfies property [*] *)
-val PROPERTY_STAR = save_thm ((* NEW *)
-   "PROPERTY_STAR", STRONG_EQUIV_cases);
-
- However, if we started with the original definition of STRONG_EQUIV, which now
- becomes a theorem:
-
-val STRONG_EQUIV = new_definition (
-   "STRONG_EQUIV",
-  ``STRONG_EQUIV E E' = ?Bsm. Bsm E E' /\ STRONG_BISIM Bsm``);
-
- It's not easy to prove PROPERTY_STAR, below is the proof of Robin Milner through
- a temporarily definition STRONG_EQUIV', originally formalized by Monica Nesi.
-
- *)
-
-(* Definition 3, page 91 in Milner's book. *)
-val STRONG_EQUIV' = new_definition (
-   "STRONG_EQUIV'",
-  ``STRONG_EQUIV' E E' =
-        (!u.
-         (!E1. TRANS E u E1 ==>
-               (?E2. TRANS E' u E2 /\ STRONG_EQUIV E1 E2)) /\
-         (!E2. TRANS E' u E2 ==>
-               (?E1. TRANS E u E1 /\ STRONG_EQUIV E1 E2)))``);
-
-(* Strong equivalence implies the new relation. *)
-val STRONG_EQUIV_IMP_STRONG_EQUIV' = store_thm (
-   "STRONG_EQUIV_IMP_STRONG_EQUIV'",
-      ``!E E'. STRONG_EQUIV E E' ==> STRONG_EQUIV' E E'``,
-    rpt GEN_TAC
- >> REWRITE_TAC [STRONG_EQUIV', STRONG_EQUIV]
- >> rpt STRIP_TAC (* 2 sub-goals *)
- >> IMP_RES_TAC
-      (MATCH_MP (EQ_MP STRONG_BISIM (ASSUME ``STRONG_BISIM Bsm``))
-                (ASSUME ``(Bsm: ('a, 'b) simulation) E E'``))
- >| [ Q.EXISTS_TAC `E2`,
-      Q.EXISTS_TAC `E1` ]
- >> ASM_REWRITE_TAC []
- >> Q.EXISTS_TAC `Bsm`
- >> ASM_REWRITE_TAC [] );
-
-val STRONG_EQUIV'_IS_STRONG_BISIM = store_thm (
-   "STRONG_EQUIV'_IS_STRONG_BISIM",
-  ``STRONG_BISIM STRONG_EQUIV'``,
-    PURE_ONCE_REWRITE_TAC [STRONG_BISIM]
- >> rpt STRIP_TAC (* 2 sub-goals here *)
- >> IMP_RES_TAC
-       (EQ_MP (Q.SPECL [`E`, `E'`] STRONG_EQUIV')
-              (ASSUME ``STRONG_EQUIV' E E'``))
- >| [ Q.EXISTS_TAC `E2`,
-      Q.EXISTS_TAC `E1` ]
- >> IMP_RES_TAC STRONG_EQUIV_IMP_STRONG_EQUIV'
- >> ASM_REWRITE_TAC []);
-
-(* The new relation implies strong equivalence. *)
-val STRONG_EQUIV'_IMP_STRONG_EQUIV = store_thm (
-   "STRONG_EQUIV'_IMP_STRONG_EQUIV",
-      ``!E E'. STRONG_EQUIV' E E' ==> STRONG_EQUIV E E'``,
-    rpt STRIP_TAC
- >> PURE_ONCE_REWRITE_TAC [STRONG_EQUIV]
- >> EXISTS_TAC ``STRONG_EQUIV'``
- >> ASM_REWRITE_TAC [STRONG_EQUIV'_IS_STRONG_BISIM]);
-
-(* Prop. 4, page 91: strong equivalence satisfies property [*] *)
-val PROPERTY_STAR' = store_thm (
-   "PROPERTY_STAR'",
-      ``!E E'. STRONG_EQUIV E E' =
-         (!u.
-           (!E1. TRANS E u E1 ==>
-                 (?E2. TRANS E' u E2 /\ STRONG_EQUIV E1 E2)) /\
-           (!E2. TRANS E' u E2 ==>
-                 (?E1. TRANS E u E1 /\ STRONG_EQUIV E1 E2)))``,
-    rpt GEN_TAC
- >> EQ_TAC (* 2 sub-goals here *)
- >| [ PURE_ONCE_REWRITE_TAC
-        [ONCE_REWRITE_RULE [STRONG_EQUIV'] STRONG_EQUIV_IMP_STRONG_EQUIV'],
-      PURE_ONCE_REWRITE_TAC
-        [ONCE_REWRITE_RULE [STRONG_EQUIV'] STRONG_EQUIV'_IMP_STRONG_EQUIV] ]);
 
 (******************************************************************************)
 (*                                                                            *)

@@ -12,12 +12,11 @@
 open HolKernel Parse boolLib bossLib;
 
 open relationTheory combinTheory listTheory;
-open CCSLib LabelTheory CCSTheory;
-open StrongEQTheory StrongLawsTheory;
-open WeakEQTheory WeakEQLib WeakLawsTheory;
-open ObsCongrTheory ObsCongrLib ObsCongrLawsTheory ObsCongrConv;
-open TraceTheory CongruenceTheory CoarsestCongrTheory;
-open ExpansionTheory;
+
+open CCSLib LabelTheory CCSTheory TransTheory StrongEQTheory StrongLawsTheory
+     WeakEQTheory WeakEQLib WeakLawsTheory ObsCongrTheory ObsCongrLib
+     ObsCongrLawsTheory ObsCongrConv TraceTheory CongruenceTheory
+     CoarsestCongrTheory ExpansionTheory;
 
 val _ = new_theory "Contraction";
 val _ = temp_loose_equality ();

@@ -6,9 +6,9 @@
 open HolKernel Parse boolLib bossLib;
 
 open pred_setTheory relationTheory;
-open CCSLib LabelTheory CCSTheory;
-open StrongEQTheory StrongLawsTheory;
-open WeakEQTheory WeakEQLib WeakLawsTheory;
+
+open CCSLib LabelTheory CCSTheory TransTheory StrongEQTheory StrongLawsTheory
+     WeakEQTheory WeakEQLib WeakLawsTheory;
 
 val _ = new_theory "ObsCongr";
 val _ = temp_loose_equality ();
