@@ -12,7 +12,8 @@
 open HolKernel Parse boolLib bossLib;
 
 open pred_setTheory relationTheory combinTheory arithmeticTheory;
-open CCSLib CCSTheory;
+
+open CCSLib LabelTheory CCSTheory;
 open StrongEQTheory StrongLawsTheory WeakEQTheory WeakLawsTheory;
 open ObsCongrTheory ObsCongrLib ObsCongrLawsTheory ObsCongrConv;
 open BisimulationUptoTheory;

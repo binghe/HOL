@@ -7,7 +7,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open pred_setTheory relationTheory bisimulationTheory listTheory IndDefRules;
-open CCSLib CCSTheory StrongEQTheory;
+open CCSLib LabelTheory CCSTheory StrongEQTheory;
 
 val _ = new_theory "WeakEQ";
 val _ = temp_loose_equality ();

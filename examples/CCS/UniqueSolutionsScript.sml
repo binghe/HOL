@@ -14,7 +14,8 @@ open HolKernel Parse boolLib bossLib;
 open pred_setTheory relationTheory pairTheory sumTheory listTheory;
 open prim_recTheory arithmeticTheory combinTheory;
 
-open CCSLib CCSTheory TraceTheory StrongEQTheory WeakEQTheory ObsCongrTheory
+open CCSLib LabelTheory CCSTheory TraceTheory StrongEQTheory WeakEQTheory
+     ObsCongrTheory
      BisimulationUptoTheory CongruenceTheory ExpansionTheory ContractionTheory;
 
 val _ = new_theory "UniqueSolutions";

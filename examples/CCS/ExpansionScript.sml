@@ -11,7 +11,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open relationTheory listTheory;
-open CCSLib CCSTheory;
+open CCSLib LabelTheory CCSTheory;
 open StrongEQTheory StrongLawsTheory;
 open WeakEQTheory WeakLawsTheory;
 open CongruenceTheory TraceTheory;

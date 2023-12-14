@@ -12,7 +12,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open relationTheory combinTheory listTheory;
-open CCSLib CCSTheory;
+open CCSLib LabelTheory CCSTheory;
 open StrongEQTheory StrongLawsTheory;
 open WeakEQTheory WeakEQLib WeakLawsTheory;
 open ObsCongrTheory ObsCongrLib ObsCongrLawsTheory ObsCongrConv;

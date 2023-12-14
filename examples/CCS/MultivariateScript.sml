@@ -10,7 +10,8 @@ open HolKernel Parse boolLib bossLib;
 open relationTheory pred_setTheory pred_setLib listTheory finite_mapTheory;
 open combinTheory arithmeticTheory; (* for o_DEF and FUNPOW *)
 
-open CCSLib CCSTheory StrongEQTheory StrongLawsTheory WeakEQTheory TraceTheory
+open CCSLib LabelTheory CCSTheory StrongEQTheory StrongLawsTheory WeakEQTheory
+     TraceTheory
      ObsCongrTheory ContractionTheory CongruenceTheory BisimulationUptoTheory
      UniqueSolutionsTheory;
 
