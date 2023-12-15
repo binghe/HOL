@@ -654,5 +654,84 @@ QED
     Establish substitution function
    ---------------------------------------------------------------------- *)
 
+val tpm_COND = prove(
+  ``tpm pi (if P then x else y) = if P then tpm pi x else tpm pi y``,
+  SRW_TAC [][]);
+
+Theorem tpm_apart :
+    !t. x NOTIN FV t /\ y IN FV t ==> tpm [(x,y)] t <> t
+Proof
+    metis_tac[supp_apart, pmact_flip_args]
+QED
+
+Theorem tpm_fresh :
+    !t x y. x NOTIN FV t /\ y NOTIN FV t ==> tpm [(x,y)] t = t
+Proof
+    srw_tac [][supp_fresh]
+QED
+
+val rewrite_pairing = prove(
+   “(?f: 'a CCS -> (string # 'a CCS) -> 'a CCS. P f) <=>
+    (?f: 'a CCS -> string -> 'a CCS -> 'a CCS. P (\M (x,N). f N x M))”,
+  EQ_TAC >> strip_tac >| [
+    qexists_tac ‘\N x M. f M (x,N)’ >> srw_tac [][] \\
+    CONV_TAC (DEPTH_CONV pairLib.PAIRED_ETA_CONV) \\
+    srw_tac [ETA_ss][],
+    qexists_tac ‘\M (x,N). f N x M’ >> srw_tac [][]
+  ]);
+
+val subst_exists =
+    parameter_tm_recursion
+        |> INST_TYPE [“:'r” |-> “:'a CCS”,
+                      “:'q” |-> “:string # 'a CCS”]
+        |> SPEC_ALL
+        |> Q.INST [‘A’ |-> ‘{}’, ‘apm’ |-> ‘^t_pmact_t’,
+                   ‘ppm’ |-> ‘pair_pmact string_pmact ^t_pmact_t’,
+                   ‘vr’ |-> ‘\s (x,N). if s = x then N else var s’,
+                   ‘nl’ |-> ‘\r. nil’,
+                   ‘pf’ |-> ‘\r x t p. prefix x (r p)’,
+                   ‘sm’ |-> ‘\r1 r2 t1 t2 p. r1 p + r2 p’,
+                   ‘pr’ |-> ‘\r1 r2 t1 t2 p. r1 p || r2 p’,
+                   ‘rs’ |-> ‘\r L t p. restr L (r p)’,
+                   ‘rl’ |-> ‘\r t rf p. relab (r p) rf’,
+                   ‘re’ |-> ‘\r s t p. rec s (r p)’]
+        |> CONV_RULE (LAND_CONV (SIMP_CONV (srw_ss()) [pairTheory.FORALL_PROD]))
+        |> SIMP_RULE (srw_ss()) [support_def, FUN_EQ_THM, fnpm_def,
+                                 tpm_COND, tpm_fresh, pmact_sing_inv,
+                                 basic_swapTheory.swapstr_eq_left]
+        |> SIMP_RULE (srw_ss()) [rewrite_pairing, pairTheory.FORALL_PROD]
+        |> CONV_RULE (DEPTH_CONV (rename_vars [("p_1", "u"), ("p_2", "E")]))
+        |> prove_alpha_fcbhyp {ppm = ``pair_pmact string_pmact ^t_pmact_t``,
+                               rwts = [],
+                               alphas = [tpm_ALPHA]};
+
+val SUB_DEF = new_specification("SUB_DEF", ["SUB"], subst_exists);
+
+val _ = add_rule {term_name = "SUB", fixity = Closefix,
+                  pp_elements = [TOK "[", TM, TOK "/", TM, TOK "]"],
+                  paren_style = OnlyIfNecessary,
+                  block_style = (AroundEachPhrase, (PP.INCONSISTENT, 2))};
+
+val SUB_THMv = prove(
+  “([N/x](var x) = N :'a CCS) /\ (x <> y ==> [N/y](var x) = var x)”,
+  SRW_TAC [][SUB_DEF]);
+
+val SUB_COMM = prove(
+   “!N x x' y t.
+        x' <> x /\ x' # N ∧ y <> x /\ y # N ==>
+        (tpm [(x',y)] ([N/x] t) = [N/x] (tpm [(x',y)] t))”,
+  srw_tac [][SUB_DEF, supp_fresh]);
+
+val SUB_THM = save_thm("SUB_THM",
+  let val (eqns,_) = CONJ_PAIR SUB_DEF
+  in
+    CONJ (REWRITE_RULE [GSYM CONJ_ASSOC]
+                       (LIST_CONJ (SUB_THMv :: tl (CONJUNCTS eqns))))
+         SUB_COMM
+  end);
+val _ = export_rewrites ["SUB_THM"];
+
+val SUB_VAR = save_thm("SUB_VAR", hd (CONJUNCTS SUB_DEF));
+
 val _ = export_theory ();
 val _ = html_theory "CCS1";
