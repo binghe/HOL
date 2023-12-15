@@ -243,19 +243,19 @@ val {tpm_thm, term_REP_tpm, t_pmact_t, tpm_t} =
                         genind_term_REP = genind_term_REP};
 
 Theorem tpm_eqr:
-    t = tpm pi u <=> tpm (REVERSE pi) t = u
+    t = tpm pi u <=> tpm (REVERSE pi) t = (u :'a CCS)
 Proof
     METIS_TAC [pmact_inverse]
 QED
 
 Theorem tpm_eql:
-    tpm pi t = u <=> t = tpm (REVERSE pi) u
+    tpm pi t = u <=> t = tpm (REVERSE pi) (u :'a CCS)
 Proof
     simp[tpm_eqr]
 QED
 
 Theorem tpm_CONS :
-    tpm ((x,y)::pi) t = tpm [(x,y)] (tpm pi t)
+    tpm ((x,y)::pi) (t :'a CCS) = tpm [(x,y)] (tpm pi t)
 Proof
   SRW_TAC [][GSYM pmact_decompose]
 QED
@@ -278,6 +278,7 @@ val tpm_def' =
     term_REP_tpm |> AP_TERM term_ABS_t |> PURE_REWRITE_RULE [absrep_id];
 
 val t = mk_var("t", newty);
+
 val supptpm_support = prove(
    “support ^t_pmact_t ^t (supp gt_pmact (^term_REP_t ^t))”,
     srw_tac [][support_def, tpm_def', supp_fresh, absrep_id]);
@@ -300,13 +301,13 @@ val _ = set_fixity "#" (Infix(NONASSOC, 450));
 val _ = overload_on ("#", “\X (E :'a CCS). X NOTIN FV E”);
 
 Theorem FINITE_FV[simp] :
-    FINITE (FV t)
+    FINITE (FV (t :'a CCS))
 Proof
     srw_tac [][supp_tpm, FINITE_GFV]
 QED
 
 Theorem FV_EMPTY :
-    FV t = {} <=> !v. v NOTIN FV t
+    FV t = {} <=> !v. v NOTIN FV (t :'a CCS)
 Proof
     SIMP_TAC (srw_ss()) [EXTENSION]
 QED
@@ -330,7 +331,7 @@ val [FV_var, FV_nil, FV_prefix, FV_sum, FV_par,
                    "FV_restr", "FV_relab", "FV_rec"], CONJUNCTS FV_thm));
 
 (* |- !x t p. x IN FV (tpm p t) <=> lswapstr (REVERSE p) x IN FV t *)
-Theorem FV_tpm[simp] = “x IN FV (tpm p t)”
+Theorem FV_tpm[simp] = “x IN FV (tpm p (t :'a CCS))”
                        |> REWRITE_CONV [perm_supp, pmact_IN]
                        |> GEN_ALL
 
@@ -384,14 +385,14 @@ Theorem simple_induction =
                   |> Q.GEN ‘P’
 
 Theorem rec_eq_thm =
-  “(rec u t1 = rec v t2)”
+  “(rec u t1 = rec v t2 :'a CCS)”
      |> SIMP_CONV (srw_ss()) [rec_def, rec_termP, term_ABS_pseudo11,
                               GLAM_eq_thm, term_REP_11, GSYM term_REP_tpm,
                               GSYM supp_tpm]
      |> Q.GENL [‘u’, ‘v’, ‘t1’, ‘t2’]
 
 Theorem tpm_ALPHA :
-    v # u ==> (rec x u = rec v (tpm [(v,x)] u))
+    v # (u :'a CCS) ==> rec x u = rec v (tpm [(v,x)] u)
 Proof
     SRW_TAC [boolSimps.CONJ_ss][rec_eq_thm, pmact_flip_args]
 QED
@@ -408,11 +409,11 @@ val LENGTH_NIL' =
               listTheory.LENGTH_NIL;
 
 val LENGTH1 = prove(
-   “(1 = LENGTH l) <=> ?e. l = [e]”,
+   “(1 = LENGTH (l :'a list)) <=> ?e. l = [e]”,
     Cases_on ‘l’ >> srw_tac [][listTheory.LENGTH_NIL]);
 
 val LENGTH2 = prove(
-   “(2 = LENGTH l) <=> ?a b. l = [a;b]”,
+   “(2 = LENGTH (l :'a list)) <=> ?a b. l = [a;b]”,
     Cases_on ‘l’ >> srw_tac [][LENGTH1]);
 
 val termP_elim = prove(
@@ -545,7 +546,7 @@ Theorem tm_recursion =
    ---------------------------------------------------------------------- *)
 
 Theorem CCS_cases :
-    !t. t = nil \/ (?a. t = var a) \/ (?u E. t = prefix u E) \/
+    !t. (t :'a CCS) = nil \/ (?a. t = var a) \/ (?u E. t = prefix u E) \/
         (?E1 E2. t = sum E1 E2) \/ (?E1 E2. t = par E1 E2) \/
         (?L E. t = restr L E) \/ (?E rf. t = relab E rf) \/
          ?X E. t = rec X E
@@ -601,7 +602,7 @@ in
 end
 
 Theorem CCS_distinct_exists :
-    !p :'a CCS. ?q. q <> p
+    !(p :'a CCS). ?q. q <> p
 Proof
     Q.X_GEN_TAC ‘p’
  >> MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw []
@@ -640,7 +641,7 @@ Proof
 QED
 
 Theorem FORALL_TERM :
-    (!t. P t) <=>
+    (!(t :'a CCS). P t) <=>
     P nil /\ (!s. P (var s)) /\ (!u t. P (prefix u t)) /\
     (!t1 t2. P (t1 + t2)) /\ (!t1 t2. P (t1 || t2)) /\
     (!L t. P (restr L t)) /\ (!t rf. P (relab t rf)) /\
@@ -659,13 +660,13 @@ val tpm_COND = prove(
   SRW_TAC [][]);
 
 Theorem tpm_apart :
-    !t. x NOTIN FV t /\ y IN FV t ==> tpm [(x,y)] t <> t
+    !(t :'a CCS). x NOTIN FV t /\ y IN FV t ==> tpm [(x,y)] t <> t
 Proof
     metis_tac[supp_apart, pmact_flip_args]
 QED
 
 Theorem tpm_fresh :
-    !t x y. x NOTIN FV t /\ y NOTIN FV t ==> tpm [(x,y)] t = t
+    !(t :'a CCS) x y. x NOTIN FV t /\ y NOTIN FV t ==> tpm [(x,y)] t = t
 Proof
     srw_tac [][supp_fresh]
 QED
@@ -713,11 +714,11 @@ val _ = add_rule {term_name = "SUB", fixity = Closefix,
                   block_style = (AroundEachPhrase, (PP.INCONSISTENT, 2))};
 
 val SUB_THMv = prove(
-  “([N/x](var x) = N :'a CCS) /\ (x <> y ==> [N/y](var x) = var x)”,
+  “([N/x](var x) = (N :'a CCS)) /\ (x <> y ==> [N/y](var x) = var x)”,
   SRW_TAC [][SUB_DEF]);
 
 val SUB_COMM = prove(
-   “!N x x' y t.
+   “!N x x' y (t :'a CCS).
         x' <> x /\ x' # N ∧ y <> x /\ y # N ==>
         (tpm [(x',y)] ([N/x] t) = [N/x] (tpm [(x',y)] t))”,
   srw_tac [][SUB_DEF, supp_fresh]);
@@ -837,6 +838,84 @@ Proof
     SRW_TAC [][GSYM fresh_tpm_subst]
  >> SRW_TAC [boolSimps.CONJ_ss][rec_eq_thm, pmact_flip_args]
 QED
+
+(* ----------------------------------------------------------------------
+    size function
+   ---------------------------------------------------------------------- *)
+
+val size_exists =
+    tm_recursion
+        |> INST_TYPE [“:'r” |-> “:num”]
+        |> SPEC_ALL
+        |> Q.INST [‘A’ |-> ‘{}’, ‘apm’ |-> ‘discrete_pmact’,
+                   ‘vr’ |-> ‘\s. 1’,
+                   ‘nl’ |-> ‘1’,
+                   ‘pf’ |-> ‘\m u E. m + 1’,
+                   ‘sm’ |-> ‘\m n t1 t2. m + n + 1’,
+                   ‘pr’ |-> ‘\m n t1 t2. m + n + 1’,
+                   ‘rs’ |-> ‘\m L t. m + 1’,
+                   ‘rl’ |-> ‘\m t rf. m + 1’,
+                   ‘re’ |-> ‘\m v t. m + 1’]
+        |> SIMP_RULE (srw_ss()) []
+
+val size_def = new_specification("CCS_size_def", ["CCS_size"], size_exists);
+
+Theorem size_thm[simp] = CONJUNCT1 size_def
+
+Theorem size_tpm[simp] = GSYM (CONJUNCT2 size_def)
+
+Theorem size_nonzero :
+    !t :'a CCS. 0 < CCS_size t
+Proof
+    HO_MATCH_MP_TAC simple_induction
+ >> SRW_TAC [ARITH_ss][]
+QED
+
+(* |- !t. CCS_size t <> 0 *)
+Theorem size_nz =
+    REWRITE_RULE [GSYM arithmeticTheory.NOT_ZERO_LT_ZERO] size_nonzero
+
+Theorem size_vsubst[simp]:
+    !M :'a CCS. CCS_size ([var v/u] M) = CCS_size M
+Proof
+    HO_MATCH_MP_TAC nc_INDUCTION2 >> Q.EXISTS_TAC ‘{u;v}’
+ >> SRW_TAC [][SUB_VAR, SUB_THM]
+QED
+
+(* ----------------------------------------------------------------------
+    Set up the recursion functionality in binderLib
+   ---------------------------------------------------------------------- *)
+
+val lemma = prove(
+   “(!x y t. pmact apm [(x,y)] (h t) = h (tpm [(x,y)] t)) <=>
+     !pi t. pmact apm pi (h t) = h (tpm pi t)”,
+    simp_tac (srw_ss()) [EQ_IMP_THM]
+ >> ONCE_REWRITE_TAC [EQ_SYM_EQ]
+ >> strip_tac >> Induct_on ‘pi’
+ >> asm_simp_tac (srw_ss()) [pmact_nil, pairTheory.FORALL_PROD]
+ >> srw_tac [][Once tpm_CONS] >> srw_tac [][GSYM pmact_decompose]);
+
+Theorem tm_recursion_nosideset =
+  tm_recursion |> Q.INST [‘A’ |-> ‘{}’] |> SIMP_RULE (srw_ss()) [lemma]
+
+val term_info_string =
+    "local\n\
+    \fun k |-> v = {redex = k, residue = v}\n\
+    \open binderLib\n\
+    \val term_info = \n\
+    \   {nullfv = “rec \"\" (var \"\") :'a CCS”,\n\
+    \    pm_rewrites = [],\n\
+    \    pm_constant = “(nomset$mk_pmact CCS1$raw_tpm) :'a CCS pmact”,\n\
+    \    fv_rewrites = [],\n\
+    \    recursion_thm = SOME tm_recursion_nosideset,\n\
+    \    binders = [(“CCS1$rec :string -> 'a CCS -> 'a CCS”, 0, tpm_ALPHA)]}\n\
+    \val _ = binderLib.type_db :=\n\
+    \          Binarymap.insert(!binderLib.type_db,\n\
+    \                           {Thy=\"CCS1\", Name = \"CCS\"},\n\
+    \                           binderLib.NTI term_info)\n\
+    \in end;\n";
+
+val _ = adjoin_after_completion (fn _ => PP.add_string term_info_string);
 
 val _ = export_theory ();
 val _ = html_theory "CCS1";
