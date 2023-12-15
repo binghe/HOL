@@ -376,10 +376,10 @@ fun mkX_ind th = th |> Q.SPECL [‘\t x. Q t’, ‘\x. X’]
                     |> SIMP_RULE std_ss [] |> Q.GEN ‘X’
                     |> Q.INST [‘Q’ |-> ‘P’] |> Q.GEN ‘P’;
 
-Theorem CCS_induction = mkX_ind term_ind
+Theorem nc_INDUCTION2 = mkX_ind term_ind
 
 Theorem simple_induction =
-    CCS_induction |> Q.SPECL [‘P’, ‘{}’]
+    nc_INDUCTION2 |> Q.SPECL [‘P’, ‘{}’]
                   |> REWRITE_RULE [FINITE_EMPTY, NOT_IN_EMPTY]
                   |> Q.GEN ‘P’
 
@@ -732,6 +732,111 @@ val SUB_THM = save_thm("SUB_THM",
 val _ = export_rewrites ["SUB_THM"];
 
 val SUB_VAR = save_thm("SUB_VAR", hd (CONJUNCTS SUB_DEF));
+
+(* ----------------------------------------------------------------------
+    Results about substitution
+   ---------------------------------------------------------------------- *)
+
+Theorem fresh_tpm_subst :
+    !t. u # (t :'a CCS) ==> (tpm [(u,v)] t = [var u/v] t)
+Proof
+    HO_MATCH_MP_TAC nc_INDUCTION2 >> Q.EXISTS_TAC ‘{u;v}’
+ >> SRW_TAC [][SUB_THM, SUB_VAR]
+QED
+
+Theorem tpm_subst :
+    !N :'a CCS. tpm pi ([M/v] N) = [tpm pi M/lswapstr pi v] (tpm pi N)
+Proof
+    HO_MATCH_MP_TAC nc_INDUCTION2
+ >> Q.EXISTS_TAC ‘v INSERT FV M’
+ >> SRW_TAC [][SUB_THM, SUB_VAR]
+QED
+
+Theorem tpm_subst_out :
+    [M/v] (tpm pi (N :'a CCS)) =
+    tpm pi ([tpm (REVERSE pi) M/lswapstr (REVERSE pi) v] N)
+Proof
+    SRW_TAC [][tpm_subst]
+QED
+
+Theorem lemma14a[simp] :
+    !t. [var v/v] t = (t :'a CCS)
+Proof
+    HO_MATCH_MP_TAC nc_INDUCTION2 >> Q.EXISTS_TAC ‘{v}’
+ >> SRW_TAC [][SUB_THM, SUB_VAR]
+QED
+
+Theorem lemma14b :
+    !M. v # M ==> [N/v] M = (M :'a CCS)
+Proof
+    HO_MATCH_MP_TAC nc_INDUCTION2 >> Q.EXISTS_TAC ‘v INSERT FV N’
+ >> SRW_TAC [][SUB_THM, SUB_VAR]
+QED
+
+Theorem lemma14c :
+    !t x u :'a CCS. x IN FV u ==> (FV ([t/x]u) = FV t UNION (FV u DELETE x))
+Proof
+    NTAC 2 GEN_TAC
+ >> HO_MATCH_MP_TAC nc_INDUCTION2
+ >> Q.EXISTS_TAC ‘x INSERT FV t’
+ >> SRW_TAC [][SUB_THM, SUB_VAR, EXTENSION]
+ >> METIS_TAC [lemma14b]
+QED
+
+Theorem FV_SUB :
+    !(t :'a CCS) u v. FV ([t/v] u) =
+                      if v IN FV u then FV t UNION (FV u DELETE v) else FV u
+Proof
+    PROVE_TAC [lemma14b, lemma14c]
+QED
+
+Theorem lemma15a :
+    !M :'a CCS. v # M ==> [N/v] ([var v/x] M) = [N/x] M
+Proof
+    HO_MATCH_MP_TAC nc_INDUCTION2 >> Q.EXISTS_TAC ‘{x;v} UNION FV N’
+ >> SRW_TAC [][SUB_THM, SUB_VAR]
+QED
+
+Theorem lemma15b :
+    v # (M :'a CCS) ==> [var u/v] ([var v/u] M) = M
+Proof
+    SRW_TAC [][lemma15a]
+QED
+
+Theorem SUB_TWICE_ONE_VAR :
+    !M :'a CCS. [x/v] ([y/v] M) = [[x/v] y/v] M
+Proof
+    HO_MATCH_MP_TAC nc_INDUCTION2
+ >> SRW_TAC [][SUB_THM, SUB_VAR]
+ >> Q.EXISTS_TAC ‘v INSERT FV x UNION FV y’
+ >> SRW_TAC [][SUB_THM]
+ >> Cases_on ‘v IN FV y’
+ >> SRW_TAC [][SUB_THM, lemma14c, lemma14b]
+QED
+
+Theorem swap_eq_3substs :
+    z # (M :'a CCS) /\ x <> z /\ y <> z ==>
+    tpm [(x,y)] M = [var y/z] ([var x/y] ([var z/x] M))
+Proof
+    SRW_TAC [][GSYM fresh_tpm_subst]
+ >> ‘tpm [(x,y)] (tpm [(z,x)] M) =
+     tpm [(swapstr x y z, swapstr x y x)] (tpm [(x,y)] M)’
+     by (SRW_TAC [][Once (GSYM pmact_sing_to_back), SimpLHS] \\
+         SRW_TAC [][])
+ >> POP_ASSUM SUBST_ALL_TAC
+ >> SRW_TAC [][pmact_flip_args]
+QED
+
+(* ----------------------------------------------------------------------
+    alpha-convertibility results
+   ---------------------------------------------------------------------- *)
+
+Theorem SIMPLE_ALPHA :
+    y # (u :'a CCS) ==> !x. rec x u = rec y ([var y/x] u)
+Proof
+    SRW_TAC [][GSYM fresh_tpm_subst]
+ >> SRW_TAC [boolSimps.CONJ_ss][rec_eq_thm, pmact_flip_args]
+QED
 
 val _ = export_theory ();
 val _ = html_theory "CCS1";

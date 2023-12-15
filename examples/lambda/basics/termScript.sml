@@ -514,9 +514,11 @@ Theorem tpm_subst:
 Proof
   HO_MATCH_MP_TAC nc_INDUCTION2 THEN
   Q.EXISTS_TAC `v INSERT FV M` THEN
-  SRW_TAC [][SUB_THM, SUB_VAR] THEN
+  SRW_TAC [][SUB_THM, SUB_VAR]
+(* NOTE: the following steps are no more needed
   MATCH_MP_TAC (SUB_THM |> CONJUNCTS |> C (curry List.nth) 3 |> GSYM) THEN
   SRW_TAC [][stringpm_raw]
+ *)
 QED
 
 Theorem tpm_subst_out:
