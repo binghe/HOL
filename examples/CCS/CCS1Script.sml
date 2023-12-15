@@ -377,10 +377,10 @@ fun mkX_ind th = th |> Q.SPECL [‘\t x. Q t’, ‘\x. X’]
                     |> SIMP_RULE std_ss [] |> Q.GEN ‘X’
                     |> Q.INST [‘Q’ |-> ‘P’] |> Q.GEN ‘P’;
 
-Theorem nc_INDUCTION2 = mkX_ind term_ind
+Theorem CCS_induction = mkX_ind term_ind
 
 Theorem simple_induction =
-    nc_INDUCTION2 |> Q.SPECL [‘P’, ‘{}’]
+    CCS_induction |> Q.SPECL [‘P’, ‘{}’]
                   |> REWRITE_RULE [FINITE_EMPTY, NOT_IN_EMPTY]
                   |> Q.GEN ‘P’
 
@@ -732,7 +732,12 @@ val SUB_THM = save_thm("SUB_THM",
   end);
 val _ = export_rewrites ["SUB_THM"];
 
-val SUB_VAR = save_thm("SUB_VAR", hd (CONJUNCTS SUB_DEF));
+(* |- !Y X E. [E/X] (var Y) = if Y = X then E else var Y *)
+Theorem SUB_VAR = hd (CONJUNCTS SUB_DEF) |> Q.SPECL [‘Y’, ‘X’] |> GEN_ALL
+
+(* |- !Y X E' E. Y <> X /\ Y # E' ==> [E'/X] (rec Y E) = rec Y ([E'/X] E) *)
+Theorem SUB_REC =
+    List.nth (CONJUNCTS SUB_DEF, 7) |> Q.SPECL [‘Y’, ‘X’, ‘E'’, ‘E’] |> GEN_ALL    
 
 (* ----------------------------------------------------------------------
     Results about substitution
@@ -741,14 +746,14 @@ val SUB_VAR = save_thm("SUB_VAR", hd (CONJUNCTS SUB_DEF));
 Theorem fresh_tpm_subst :
     !t. u # (t :'a CCS) ==> (tpm [(u,v)] t = [var u/v] t)
 Proof
-    HO_MATCH_MP_TAC nc_INDUCTION2 >> Q.EXISTS_TAC ‘{u;v}’
+    HO_MATCH_MP_TAC CCS_induction >> Q.EXISTS_TAC ‘{u;v}’
  >> SRW_TAC [][SUB_THM, SUB_VAR]
 QED
 
 Theorem tpm_subst :
     !N :'a CCS. tpm pi ([M/v] N) = [tpm pi M/lswapstr pi v] (tpm pi N)
 Proof
-    HO_MATCH_MP_TAC nc_INDUCTION2
+    HO_MATCH_MP_TAC CCS_induction
  >> Q.EXISTS_TAC ‘v INSERT FV M’
  >> SRW_TAC [][SUB_THM, SUB_VAR]
 QED
@@ -763,14 +768,14 @@ QED
 Theorem lemma14a[simp] :
     !t. [var v/v] t = (t :'a CCS)
 Proof
-    HO_MATCH_MP_TAC nc_INDUCTION2 >> Q.EXISTS_TAC ‘{v}’
+    HO_MATCH_MP_TAC CCS_induction >> Q.EXISTS_TAC ‘{v}’
  >> SRW_TAC [][SUB_THM, SUB_VAR]
 QED
 
 Theorem lemma14b :
     !M. v # M ==> [N/v] M = (M :'a CCS)
 Proof
-    HO_MATCH_MP_TAC nc_INDUCTION2 >> Q.EXISTS_TAC ‘v INSERT FV N’
+    HO_MATCH_MP_TAC CCS_induction >> Q.EXISTS_TAC ‘v INSERT FV N’
  >> SRW_TAC [][SUB_THM, SUB_VAR]
 QED
 
@@ -778,7 +783,7 @@ Theorem lemma14c :
     !t x u :'a CCS. x IN FV u ==> (FV ([t/x]u) = FV t UNION (FV u DELETE x))
 Proof
     NTAC 2 GEN_TAC
- >> HO_MATCH_MP_TAC nc_INDUCTION2
+ >> HO_MATCH_MP_TAC CCS_induction
  >> Q.EXISTS_TAC ‘x INSERT FV t’
  >> SRW_TAC [][SUB_THM, SUB_VAR, EXTENSION]
  >> METIS_TAC [lemma14b]
@@ -794,7 +799,7 @@ QED
 Theorem lemma15a :
     !M :'a CCS. v # M ==> [N/v] ([var v/x] M) = [N/x] M
 Proof
-    HO_MATCH_MP_TAC nc_INDUCTION2 >> Q.EXISTS_TAC ‘{x;v} UNION FV N’
+    HO_MATCH_MP_TAC CCS_induction >> Q.EXISTS_TAC ‘{x;v} UNION FV N’
  >> SRW_TAC [][SUB_THM, SUB_VAR]
 QED
 
@@ -807,7 +812,7 @@ QED
 Theorem SUB_TWICE_ONE_VAR :
     !M :'a CCS. [x/v] ([y/v] M) = [[x/v] y/v] M
 Proof
-    HO_MATCH_MP_TAC nc_INDUCTION2
+    HO_MATCH_MP_TAC CCS_induction
  >> SRW_TAC [][SUB_THM, SUB_VAR]
  >> Q.EXISTS_TAC ‘v INSERT FV x UNION FV y’
  >> SRW_TAC [][SUB_THM]
@@ -878,10 +883,68 @@ Theorem size_nz =
 Theorem size_vsubst[simp]:
     !M :'a CCS. CCS_size ([var v/u] M) = CCS_size M
 Proof
-    HO_MATCH_MP_TAC nc_INDUCTION2 >> Q.EXISTS_TAC ‘{u;v}’
+    HO_MATCH_MP_TAC CCS_induction >> Q.EXISTS_TAC ‘{u;v}’
  >> SRW_TAC [][SUB_VAR, SUB_THM]
 QED
 
+(* ----------------------------------------------------------------------
+    CCS_Subst (obsoleted)
+   ---------------------------------------------------------------------- *)
+
+Definition CCS_Subst :
+    CCS_Subst E E' X = [E'/X] (E :'a CCS)
+End
+
+(* NOTE: “Y # E'” is additionally required in case of ‘rec’ *)
+Theorem CCS_Subst_def :
+   (CCS_Subst nil          E' X = nil) /\
+   (CCS_Subst (prefix u E) E' X = prefix u (CCS_Subst E E' X)) /\
+   (CCS_Subst (sum E1 E2)  E' X = sum (CCS_Subst E1 E' X)
+                                      (CCS_Subst E2 E' X)) /\
+   (CCS_Subst (par E1 E2)  E' X = par (CCS_Subst E1 E' X)
+                                      (CCS_Subst E2 E' X)) /\
+   (CCS_Subst (restr L E)  E' X = restr L (CCS_Subst E E' X)) /\
+   (CCS_Subst (relab E rf) E' X = relab   (CCS_Subst E E' X) rf) /\
+   (CCS_Subst (var Y)      E' X = if (Y = X) then E' else (var Y)) /\
+   (Y <> X /\ Y # E' ==>
+    CCS_Subst (rec Y E)    E' X = rec Y (CCS_Subst E E' X))
+Proof
+    rw [CCS_Subst]
+QED
+
+val [CCS_Subst_nil,   CCS_Subst_prefix, CCS_Subst_sum, CCS_Subst_par,
+     CCS_Subst_restr, CCS_Subst_relab,  CCS_Subst_var, CCS_Subst_rec] =
+    map save_thm
+        (combine (["CCS_Subst_nil",   "CCS_Subst_prefix",
+                   "CCS_Subst_sum",   "CCS_Subst_par",
+                   "CCS_Subst_restr", "CCS_Subst_relab",
+                   "CCS_Subst_var",   "CCS_Subst_rec"],
+                  CONJUNCTS CCS_Subst_def));
+
+(* 1st fixed point of CCS_Subst *)
+Theorem CCS_Subst_rec_fix[simp] :
+    !X E E'. CCS_Subst (rec X E) E' X = rec X E 
+Proof
+    rw [CCS_Subst] >> MATCH_MP_TAC lemma14b >> rw []
+QED
+
+(* 2nd fixed point of CCS_Subst *)
+Theorem CCS_Subst_var_fix[simp] :
+    !X E. CCS_Subst (var X) E X = E
+Proof
+    rw [CCS_Subst_var]
+QED
+
+(* 3rd fixed point of CCS_Subst *)
+Theorem CCS_Subst_self[simp] :
+    !X E. CCS_Subst E (var X) X = E
+Proof
+    rw [CCS_Subst]
+QED
+
+(* !t1 t2. (if T then t1 else t2) = t1) /\ (if F then t1 else t2) = t2) *)
+Theorem CCS_COND_CLAUSES = INST_TYPE [“:'a” |-> “:'a CCS”] COND_CLAUSES
+   
 (* ----------------------------------------------------------------------
     Set up the recursion functionality in binderLib
    ---------------------------------------------------------------------- *)
