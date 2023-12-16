@@ -271,7 +271,7 @@ val TRANS_PAR_P_NIL = store_thm ("TRANS_PAR_P_NIL",
       IMP_RES_TAC NIL_NO_TRANS ]);
 
 val TRANS_PAR_NO_SYNCR = store_thm ("TRANS_PAR_NO_SYNCR",
-  ``!(l :'b Label) l'. l <> COMPL l' ==>
+  ``!(l :'a Label) l'. l <> COMPL l' ==>
         !E E' E''. ~(TRANS (par (prefix (label l) E) (prefix (label l') E')) tau E'')``,
     rpt STRIP_TAC
  >> IMP_RES_TAC TRANS_PAR (* 3 sub-goals here *)
@@ -279,9 +279,9 @@ val TRANS_PAR_NO_SYNCR = store_thm ("TRANS_PAR_NO_SYNCR",
       IMP_RES_TAC TRANS_PREFIX >> IMP_RES_TAC Action_distinct,
       IMP_RES_TAC TRANS_PREFIX >> IMP_RES_TAC Action_11 \\
       CHECK_ASSUME_TAC
-        (REWRITE_RULE [SYM (ASSUME ``(l'' :'b Label) = l``),
-                       SYM (ASSUME ``COMPL (l'' :'b Label) = l'``), COMPL_COMPL_LAB]
-                      (ASSUME ``~(l = COMPL (l' :'b Label))``)) \\
+        (REWRITE_RULE [SYM (ASSUME ``(l'' :'a Label) = l``),
+                       SYM (ASSUME ``COMPL (l'' :'a Label) = l'``), COMPL_COMPL_LAB]
+                      (ASSUME ``~(l = COMPL (l' :'a Label))``)) \\
       RW_TAC bool_ss [] ]);
 
 val RESTR_cases_EQ = save_thm (
@@ -344,7 +344,7 @@ val TRANS_P_RESTR = store_thm (
   end);
 
 val RESTR_NIL_NO_TRANS = store_thm ("RESTR_NIL_NO_TRANS",
-  ``!(L :'b Label set) u E. ~(TRANS (restr L nil) u E)``,
+  ``!(L :'a Label set) u E. ~(TRANS (restr L nil) u E)``,
     rpt STRIP_TAC
  >> IMP_RES_TAC TRANS_RESTR (* two sub-goals here, but same proofs *)
  >> IMP_RES_TAC NIL_NO_TRANS);
@@ -365,7 +365,7 @@ val TRANS_RESTR_NO_NIL = store_thm ("TRANS_RESTR_NO_NIL",
  >> IMP_RES_TAC NIL_NO_TRANS);
 
 val RESTR_LABEL_NO_TRANS = store_thm ("RESTR_LABEL_NO_TRANS",
-  ``!(l :'b Label) L. (l IN L) \/ ((COMPL l) IN L) ==>
+  ``!(l :'a Label) L. (l IN L) \/ ((COMPL l) IN L) ==>
                       (!E u E'. ~(TRANS (restr L (prefix (label l) E)) u E'))``,
     rpt STRIP_TAC (* 2 goals here *)
  >| [ (* goal 1 *)
@@ -438,7 +438,7 @@ val TRANS_RELAB_labl = save_thm ("TRANS_RELAB_labl",
     Q.GENL [`E`, `labl`] (Q.SPECL [`E`, `RELAB labl`] TRANS_RELAB));
 
 val RELAB_NIL_NO_TRANS = store_thm ("RELAB_NIL_NO_TRANS",
-  ``!(rf :'b Relabeling) u E. ~(TRANS (relab nil rf) u E)``,
+  ``!(rf :'a Relabeling) u E. ~(TRANS (relab nil rf) u E)``,
     rpt STRIP_TAC
  >> IMP_RES_TAC TRANS_RELAB
  >> IMP_RES_TAC NIL_NO_TRANS);
