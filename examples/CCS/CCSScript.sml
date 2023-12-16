@@ -958,6 +958,52 @@ QED
 (* !t1 t2. (if T then t1 else t2) = t1) /\ (if F then t1 else t2) = t2) *)
 Theorem CCS_COND_CLAUSES = INST_TYPE [“:'a” |-> “:'a CCS”] COND_CLAUSES
 
+Theorem FV_SUBSET :
+    !X E E'. FV (CCS_Subst E E' X) SUBSET (FV E) UNION (FV E')
+Proof
+    rw [CCS_Subst, FV_SUB]
+ >> MATCH_MP_TAC SUBSET_TRANS
+ >> Q.EXISTS_TAC ‘FV E’
+ >> SET_TAC []
+QED
+
+Theorem FV_SUBSET_PRO :
+    !X E E'. FV (CCS_Subst E E' X) SUBSET ((FV E) DELETE X) UNION (FV E')
+Proof
+    rw [CCS_Subst, FV_SUB]
+ >> ASM_SET_TAC []
+QED
+
+Theorem FV_SUBSET_REC :
+    !X E. FV (CCS_Subst E (rec X E) X) SUBSET (FV E)
+Proof
+    rpt GEN_TAC
+ >> ASSUME_TAC (Q.SPECL [`X`, `E`, `rec X E`] FV_SUBSET)
+ >> ASM_SET_TAC [FV_thm]
+QED
+
+Theorem NOTIN_FV_lemma :
+    !X E E'. X NOTIN FV (CCS_Subst E (rec X E') X)
+Proof
+    rw [CCS_Subst, FV_SUB]
+QED
+
+Theorem FV_SUBSET_REC_PRO :
+    !X E. FV (CCS_Subst E (rec X E) X) SUBSET (FV E) DELETE X
+Proof
+    rpt GEN_TAC
+ >> ASSUME_TAC (Q.SPECL [`X`, `E`] FV_SUBSET_REC)
+ >> ASSUME_TAC (Q.SPECL [`X`, `E`, `E`] NOTIN_FV_lemma)
+ >> ASM_SET_TAC []
+QED
+
+Theorem CCS_Subst_elim :
+    !X E. X NOTIN (FV E) ==> !E'. (CCS_Subst E E' X = E)
+Proof
+    rw [CCS_Subst]
+ >> MATCH_MP_TAC lemma14b >> art []
+QED
+
 (* ----------------------------------------------------------------------
     Set up the recursion functionality in binderLib
    ---------------------------------------------------------------------- *)
