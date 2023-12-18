@@ -172,17 +172,19 @@ fun mkX_ind th = th |> Q.SPEC `λt x. Q t` |> Q.SPEC `λx. X`
                     |> SIMP_RULE std_ss [] |> Q.GEN `X`
                     |> Q.INST [`Q` |-> `P`] |> Q.GEN `P`
 
+val nc_INDUCTION = mkX_ind term_ind
+
 (* exactly mimic historical bound variable names etc for backwards
    compatibility *)
-val nc_INDUCTION2 = store_thm(
-  "nc_INDUCTION2",
-  ``∀P X.
+Theorem nc_INDUCTION2 :
+    ∀P X.
       (∀s. P (VAR s)) ∧
       (∀t u. P t ∧ P u ==> P (APP t u)) ∧
       (∀y u. y ∉ X ∧ P u ==> P (LAM y u)) ∧ FINITE X ==>
-      ∀u. P u``,
-  metis_tac [mkX_ind term_ind]);
-
+      ∀u. P u
+Proof
+  metis_tac [nc_INDUCTION]
+QED
 
 val LAM_eq_thm = save_thm(
   "LAM_eq_thm",
@@ -192,29 +194,16 @@ val LAM_eq_thm = save_thm(
                               GSYM supp_tpm]
      |> GENL [``u:string``, ``v:string``, ``t1:term``, ``t2:term``]);
 
-
-
-
 val (_, repty) = dom_rng (type_of term_REP_t)
 val repty' = ty_antiq repty
 
 val tlf =
-  ``λ(v:string) (u:unit + unit) (ds1:(ρ -> α) list) (ds2:(ρ -> α)  list)
-                                (ts1:^repty' list) (ts2:^repty' list) (p:ρ).
-       if ISR u then tlf (HD ds1) v (term_ABS (HD ts1)) p: α
-       else taf (HD ds2) (HD (TL ds2)) (term_ABS (HD ts2))
-                (term_ABS (HD (TL ts2))) p: α``
-val tvf = ``λ(s:string) (u:unit) (p:ρ). tvf s p : α``
-
-val LENGTH_NIL' =
-    CONV_RULE (BINDER_CONV (LAND_CONV (REWR_CONV EQ_SYM_EQ)))
-              listTheory.LENGTH_NIL
-val LENGTH1 = prove(
-  ``(1 = LENGTH l) ⇔ ∃e. l = [e]``,
-  Cases_on `l` >> srw_tac [][listTheory.LENGTH_NIL]);
-val LENGTH2 = prove(
-  ``(2 = LENGTH l) ⇔ ∃a b. l = [a;b]``,
-  Cases_on `l` >> srw_tac [][LENGTH1]);
+   “λ(v:string) (u:unit + unit) (ds1:(ρ -> α) list) (ds2:(ρ -> α) list)
+                                (ts1:^repty' list) (ts2:^repty' list) (p :ρ).
+       if ISR u then tlf (HD ds1) v (^term_ABS_t (HD ts1)) p :α
+       else taf (HD ds2) (HD (TL ds2)) (^term_ABS_t (HD ts2))
+                (^term_ABS_t (HD (TL ts2))) p :α”
+val tvf = “λ(s:string) (u:unit) (p:ρ). tvf s p :α”;
 
 val termP_elim = prove(
   ``(∀g. ^termP g ⇒ P g) ⇔ (∀t. P (^term_REP_t t))``,
@@ -235,8 +224,6 @@ val termP0 = prove(
   pop_assum mp_tac >>
   Q.ISPEC_THEN `t` STRUCT_CASES_TAC gterm_cases >>
   srw_tac [][genind_GVAR, genind_GLAM_eqn]);
-
-
 
 val parameter_tm_recursion = save_thm(
   "parameter_tm_recursion",
@@ -274,10 +261,6 @@ val parameter_tm_recursion = save_thm(
       |> Q.INST [`tvf` |-> `vr`, `tlf` |-> `lm`, `taf` |-> `ap`,
                  `dpm` |-> `apm`]
       |> CONV_RULE (REDEPTH_CONV sort_uvars))
-
-val FORALL_ONE = oneTheory.FORALL_ONE;
-val FORALL_ONE_FN = oneTheory.FORALL_ONE_FN;
-val EXISTS_ONE_FN = oneTheory.EXISTS_ONE_FN;
 
 val tm_recursion = save_thm(
   "tm_recursion",

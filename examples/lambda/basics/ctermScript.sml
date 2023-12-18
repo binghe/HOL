@@ -192,16 +192,6 @@ val tlf =
                 (cterm_ABS (HD (TL ts2))) p: 'r``
 val tvf = ``λ(s:string) (u:unit) (p:ρ). tvf s p : 'r``
 
-val LENGTH_NIL' =
-    CONV_RULE (BINDER_CONV (LAND_CONV (REWR_CONV EQ_SYM_EQ)))
-              listTheory.LENGTH_NIL
-val LENGTH1 = prove(
-  ``(1 = LENGTH l) ⇔ ∃e. l = [e]``,
-  Cases_on `l` >> srw_tac [][listTheory.LENGTH_NIL]);
-val LENGTH2 = prove(
-  ``(2 = LENGTH l) ⇔ ∃a b. l = [a;b]``,
-  Cases_on `l` >> srw_tac [][LENGTH1]);
-
 val termP_elim = prove(
   ``(∀g. ^termP g ⇒ P g) ⇔ (∀t. P (^term_REP_t t))``,
   srw_tac [][EQ_IMP_THM] >- srw_tac [][genind_term_REP] >>
@@ -258,10 +248,6 @@ val parameter_tm_recursion = save_thm(
       |> Q.INST [`tvf` |-> `vr`, `tlf` |-> `lm`, `taf` |-> `ap`,
                  `dpm` |-> `apm`, ‘tcf’ |-> ‘cn’]
       |> CONV_RULE (REDEPTH_CONV sort_uvars))
-
-val FORALL_ONE = oneTheory.FORALL_ONE;
-val FORALL_ONE_FN = oneTheory.FORALL_ONE_FN;
-val EXISTS_ONE_FN = oneTheory.EXISTS_ONE_FN;
 
 val ctm_recursion = save_thm(
   "ctm_recursion",
