@@ -526,17 +526,16 @@ val STRONG_EQUIV_SUBST_RELAB = store_thm (
           take [`E1'`, `E''''`, `rf'`] \\
           ASM_REWRITE_TAC [] ] ] ]);
 
-(* Proposition 4.12 of [1], the univariate version (unconfirmed):
+(* Proposition 4.12 of [1, p.99], the univariate version
 
    Let P and Q contain (free, recursion) variable X at most.
    Let A = P{A/X} (or `rec X P`), B = Q{B/X} (or `rec X Q`) and E ~ F.
    Then A ~ B.
  *)
 Theorem STRONG_EQUIV_PRESD_BY_REC :
-    !X P Q. (FV P) SUBSET {X} /\ (FV Q) SUBSET {X} /\
-            STRONG_EQUIV P Q ==> STRONG_EQUIV (rec X P) (rec X Q)
+    !X P Q. STRONG_EQUIV P Q ==> STRONG_EQUIV (rec X P) (rec X Q)
 Proof
-     cheat
+    cheat
 QED
 
 (******************************************************************************)
@@ -641,3 +640,20 @@ val PROPERTY_STAR' = store_thm (
 
 val _ = export_theory ();
 val _ = html_theory "StrongEQ";
+
+(* Bibliography:
+
+ [1] Milner, Robin. Communication and concurrency. Prentice hall, 1989.
+
+ [2] Sangiorgi, Davide. "Equations, contractions, and unique
+     solutions." ACM Transactions on Computational Logic (TOCL) 18.1
+     (2017): 4. (DOI: 10.1145/2971339)
+
+ [3] Tian, Chun, and Davide Sangiorgi. "Unique Solutions of
+     Contractions, CCS, and their HOL Formalisation." Combined 25th
+     International Workshop on Expressiveness in Concurrency and 15th
+     Workshop on Structural Operational Semantics (EXPRESS/SOS
+     2018). Vol. 276. No. 4. 2018. (DOI: 10.4204/EPTCS.276.10)
+
+ [4] Gorrieri, R., Versari, C.: Introduction to Concurrency Theory. Springer, Cham (2015).
+ *)

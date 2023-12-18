@@ -1338,25 +1338,4 @@ assume_tac (eqv_I |> Q.GEN `t`
 asm_simp_tac (srw_ss()) [pmact_sing_inv] >>
 metis_tac [genind_GLAM_subterm]);
 
-(* Below are helper theorems needed for all users of generic_termsTheory *)
-Theorem LENGTH_NIL' =
-    CONV_RULE (BINDER_CONV (LAND_CONV (REWR_CONV EQ_SYM_EQ)))
-              LENGTH_NIL
-
-Theorem LENGTH1 :
-    (1 = LENGTH l) ⇔ ∃e. l = [e]
-Proof
-    Cases_on `l` >> srw_tac [][LENGTH_NIL]
-QED
-
-Theorem LENGTH2 :
-    (2 = LENGTH l) ⇔ ∃a b. l = [a;b]
-Proof
-    Cases_on `l` >> srw_tac [][LENGTH1]
-QED
-
-Theorem FORALL_ONE = oneTheory.FORALL_ONE
-Theorem FORALL_ONE_FN = oneTheory.FORALL_ONE_FN
-Theorem EXISTS_ONE_FN = oneTheory.EXISTS_ONE_FN
-
 val _ = export_theory()
