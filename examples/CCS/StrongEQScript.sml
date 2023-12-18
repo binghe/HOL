@@ -526,6 +526,19 @@ val STRONG_EQUIV_SUBST_RELAB = store_thm (
           take [`E1'`, `E''''`, `rf'`] \\
           ASM_REWRITE_TAC [] ] ] ]);
 
+(* Proposition 4.12 of [1], the univariate version (unconfirmed):
+
+   Let P and Q contain (free, recursion) variable X at most.
+   Let A = P{A/X} (or `rec X P`), B = Q{B/X} (or `rec X Q`) and E ~ F.
+   Then A ~ B.
+ *)
+Theorem STRONG_EQUIV_PRESD_BY_REC :
+    !X P Q. (FV P) SUBSET {X} /\ (FV Q) SUBSET {X} /\
+            STRONG_EQUIV P Q ==> STRONG_EQUIV (rec X P) (rec X Q)
+Proof
+     cheat
+QED
+
 (******************************************************************************)
 (*                                                                            *)
 (*          The proof of PROPERTY_STAR (old way as in Milner's book)          *)

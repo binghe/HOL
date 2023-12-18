@@ -3461,21 +3461,8 @@ Proof
 QED
  *)
 
-(* Proposition 4.12 of [1], the univariate version (unconfirmed):
-
-   Let P and Q contain (free, recursion) variable X at most.
-   Let A = P{A/X} (or `rec X P`), B = Q{B/X} (or `rec X Q`) and E ~ F.
-   Then A ~ B.
-
-Theorem STRONG_EQUIV_PRESD_BY_REC :
-    !X P Q. (FV P) SUBSET {X} /\ (FV Q) SUBSET {X} /\
-            STRONG_EQUIV P Q ==> STRONG_EQUIV (rec X P) (rec X Q)
-Proof
-   ...
-QED
-
 (* the name "observationally_guarded" is from [4, p.104]
-   TODO: instead of changing SEQ to GSEQ, we should change SG to OG *)
+   TODO: instead of changing SEQ to GSEQ, we should change SG to OG
 Definition observationally_guarded_def :
     observationally_guarded Xs =
        \E. DISJOINT (BV E) (set Xs) /\
