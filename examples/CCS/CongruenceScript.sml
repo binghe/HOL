@@ -505,7 +505,7 @@ val CC_precongruence = store_thm (
       `CONTEXT (c o ctx)` by PROVE_TAC [CONTEXT_combin] \\
       RES_TAC >> FULL_SIMP_TAC std_ss [o_THM] ]);
 
-(* The built relation is indeed congruence *)
+(* The relation built by CC is indeed a congruence *)
 val CC_congruence = store_thm (
    "CC_congruence", ``!R. equivalence R ==> congruence (CC R)``,
     REWRITE_TAC [congruence, CC_def]

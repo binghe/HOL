@@ -373,8 +373,6 @@ Proof
   simp[tpm_eqr]
 QED
 
-
-
 val tpm_CONS = store_thm(
   "tpm_CONS",
   ``tpm ((x,y)::pi) t = tpm [(x,y)] (tpm pi t)``,
@@ -515,10 +513,6 @@ Proof
   HO_MATCH_MP_TAC nc_INDUCTION2 THEN
   Q.EXISTS_TAC `v INSERT FV M` THEN
   SRW_TAC [][SUB_THM, SUB_VAR]
-(* NOTE: the following steps are no more needed
-  MATCH_MP_TAC (SUB_THM |> CONJUNCTS |> C (curry List.nth) 3 |> GSYM) THEN
-  SRW_TAC [][stringpm_raw]
- *)
 QED
 
 Theorem tpm_subst_out:
