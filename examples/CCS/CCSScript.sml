@@ -792,6 +792,61 @@ Proof
  >> SRW_TAC [][SUB_THM, SUB_VAR]
 QED
 
+(* Note: this is the opposite direction of lemma14b *)
+Theorem SUB_FIX_IMP_NOTIN_FV :
+    !x t. (!u. [u/x] t = t) ==> x NOTIN FV t
+Proof
+    rpt GEN_TAC
+ >> Suff ‘(?u. u # t /\ [var u/x] t = t) ==> x # t’
+ >- (rw [] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q_TAC (NEW_TAC "z") ‘FV t’ \\
+     Q.EXISTS_TAC ‘z’ >> rw [])
+ >> simp [PULL_EXISTS]
+ >> Q.X_GEN_TAC ‘u’
+ >> Q.ID_SPEC_TAC ‘t’
+ >> HO_MATCH_MP_TAC CCS_induction
+ >> Q.EXISTS_TAC ‘{x;u}’ >> rw [rec_eq_thm]
+ >> CCONTR_TAC >> fs []
+QED
+
+Theorem lemma14b_ext1 :
+    !v M. v # M <=> !N. ([N/v] M = M)
+Proof
+    rpt GEN_TAC
+ >> EQ_TAC >- rw [lemma14b]
+ >> DISCH_TAC
+ >> rw [SUB_FIX_IMP_NOTIN_FV]
+QED
+
+Theorem SUB_EQ_IMP_NOTIN_FV :
+    !x t. (!t1 t2. [t1/x] t = [t2/x] t) ==> x NOTIN FV t
+Proof
+    rpt GEN_TAC
+ >> Suff ‘(?u u'. u <> u' /\ u # t /\ u' # t /\
+                  [var u/x] t = [var u'/x] t) ==> x # t’
+ >- (rw [] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q_TAC (NEW_TAC "z") ‘FV t’ \\
+     Q.EXISTS_TAC ‘z’ >> rw [] \\
+     Q_TAC (NEW_TAC "z'") ‘{z} UNION FV t’ \\
+     Q.EXISTS_TAC ‘z'’ >> rw [])
+ >> simp [PULL_EXISTS]
+ >> rpt GEN_TAC
+ >> Q.ID_SPEC_TAC ‘t’
+ >> HO_MATCH_MP_TAC CCS_induction
+ >> Q.EXISTS_TAC ‘{x;u;u'}’ >> rw [rec_eq_thm]
+ >> CCONTR_TAC >> fs []
+QED
+
+Theorem lemma14b_ext2 :
+    !v M. v # M <=> !N1 N2. [N1/v] M = [N2/v] M
+Proof
+    rpt GEN_TAC
+ >> EQ_TAC >- rw [lemma14b]
+ >> rw [SUB_EQ_IMP_NOTIN_FV]
+QED
+
 Theorem lemma14c :
     !t x u :'a CCS. x IN FV u ==> (FV ([t/x]u) = FV t UNION (FV u DELETE x))
 Proof
@@ -1008,14 +1063,16 @@ QED
 Theorem CCS_Subst_FIX_IMP_NOTIN_FV :
     !X E. (!E'. CCS_Subst E E' X = E) ==> X NOTIN (FV E)
 Proof
-    cheat
+    rw [CCS_Subst]
+ >> MATCH_MP_TAC SUB_FIX_IMP_NOTIN_FV >> rw []
 QED
 
-(* if E[t/X] = E[t'/X] for all t t', X must not be free in E *)
+(* If E[t/X] = E[t'/X] for all t t', X must not be free in E *)
 Theorem CCS_Subst_EQ_IMP_NOTIN_FV :
     !X E. (!E1 E2. CCS_Subst E E1 X = CCS_Subst E E2 X) ==> X NOTIN (FV E)
 Proof
-    cheat
+    rw [CCS_Subst]
+ >> MATCH_MP_TAC SUB_EQ_IMP_NOTIN_FV >> rw []
 QED
 
 Theorem FV_REC_PREF :
