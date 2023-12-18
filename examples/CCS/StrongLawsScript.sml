@@ -1107,6 +1107,8 @@ val STRONG_RELAB_PREFIX = store_thm (
 Theorem STRONG_UNFOLDING :
     !X E. STRONG_EQUIV (rec X E) (CCS_Subst E (rec X E) X)
 Proof
+    cheat
+ (*
     rpt GEN_TAC
  >> PURE_ONCE_REWRITE_TAC [STRONG_EQUIV]
  >> EXISTS_TAC
@@ -1136,6 +1138,7 @@ Proof
         art
          [REWRITE_RULE [ASSUME ``E' = CCS_Subst E'' (rec Y E'') Y``]
                        (ASSUME ``TRANS E' u E2``), TRANS_REC_EQ] ] ]
+ *)
 QED
 
 (* Prove the theorem STRONG_PREF_REC_EQUIV:
@@ -1220,12 +1223,12 @@ val STRONG_PREF_REC_EQUIV = store_thm (
 (* Prove the theorem STRONG_REC_ACT2:
    |- ∀s u. rec s (u..u..var s) ~ rec s (u..var s)
  *)
-val STRONG_REC_ACT2 = store_thm (
-   "STRONG_REC_ACT2",
-      ``!s u.
-         STRONG_EQUIV
-         (rec s (prefix u (prefix u (var s))))
-         (rec s (prefix u (var s)))``,
+Theorem STRONG_REC_ACT2 :
+    !s u. STRONG_EQUIV (rec s (prefix u (prefix u (var s))))
+                       (rec s (prefix u (var s)))
+Proof
+    cheat
+ (*
     rpt GEN_TAC
  >> PURE_ONCE_REWRITE_TAC [STRONG_EQUIV]
  >> EXISTS_TAC
@@ -1294,7 +1297,9 @@ val STRONG_REC_ACT2 = store_thm (
           art [PREFIX],
           (* goal 2.4.2 (of 2) *)
           EXISTS_TAC ``s' :'a`` \\
-          EXISTS_TAC ``u' :'a Action`` >> art [] ] ] ]);
+          EXISTS_TAC ``u' :'a Action`` >> art [] ] ] ]
+ *)
+QED
 
 (******************************************************************************)
 (*                                                                            *)
@@ -1302,14 +1307,20 @@ val STRONG_REC_ACT2 = store_thm (
 (*                                                                            *)
 (******************************************************************************)
 
-val PREF_ACT_def = Define `
-    PREF_ACT (prefix (u :'a Action) E) = u `;
-
-val PREF_PROC_def = Define `
-    PREF_PROC (prefix (u :'a Action) E) = E `;
-
 val Is_Prefix_def = Define `
     Is_Prefix E = (?(u :'a Action) E'. (E = prefix u E')) `;
+
+Theorem PREF_ACT_def :
+    PREF_ACT (prefix (u :'a Action) E) = u
+Proof
+    REWRITE_TAC [PREF_ACT_DEF]
+QED
+
+Theorem PREF_PROC_def :
+    PREF_PROC (prefix (u :'a Action) E) = E
+Proof
+    REWRITE_TAC [PREF_PROC_DEF]
+QED
 
 val PREF_IS_PREFIX = store_thm (
    "PREF_IS_PREFIX", ``!(u :'a Action) E. Is_Prefix (prefix u E)``,
@@ -1562,7 +1573,7 @@ val SYNC_TRANS_THM_EQ = store_thm (
           (* goal 2.1.2 (of 2) *)
           STRIP_TAC \\
           DISJ_CASES_TAC (ASSUME ``((u :'a Action) = tau) \/
-                                   (PREF_ACT ((f :num -> ('a,'b) CCS) (SUC m)) = tau)``)
+                                   (PREF_ACT ((f :num -> 'a CCS) (SUC m)) = tau)``)
           >| (* 2 sub-goals here *)
           [ (* goal 2.1.2.1 (of 2) *)
             CHECK_ASSUME_TAC (REWRITE_RULE [ASSUME ``(u :'a Action) = tau``, Action_distinct]

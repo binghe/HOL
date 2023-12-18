@@ -909,7 +909,8 @@ Proof
  >> DISCH_TAC
  >> IMP_RES_TAC CONTEXT8_IMP_CONST
  >> Q.UNABBREV_TAC `e` >> fs [IS_CONST_def]
- >> POP_ASSUM (STRIP_ASSUME_TAC o (MATCH_MP CCS_Subst_IMP_NOTIN_FV))
+ >> POP_ASSUM (STRIP_ASSUME_TAC o
+               (MATCH_MP CCS_Subst_EQ_IMP_NOTIN_FV))
 QED
 
 (* a collection of all (forward) rules of `context` *)

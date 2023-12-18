@@ -1004,6 +1004,126 @@ Proof
  >> MATCH_MP_TAC lemma14b >> art []
 QED
 
+(* cf. termTheory.SUB_FIX_IMP_NOTIN_FV *)
+Theorem CCS_Subst_FIX_IMP_NOTIN_FV :
+    !X E. (!E'. CCS_Subst E E' X = E) ==> X NOTIN (FV E)
+Proof
+    cheat
+QED
+
+(* if E[t/X] = E[t'/X] for all t t', X must not be free in E *)
+Theorem CCS_Subst_EQ_IMP_NOTIN_FV :
+    !X E. (!E1 E2. CCS_Subst E E1 X = CCS_Subst E E2 X) ==> X NOTIN (FV E)
+Proof
+    cheat
+QED
+
+Theorem FV_REC_PREF :
+    !X E u E'. FV (CCS_Subst E (rec X (prefix u E')) X) =
+               FV (CCS_Subst E (rec X E') X)
+Proof
+    cheat
+QED
+
+Theorem FV_REC_SUM :
+    !X E E1 E2. FV (CCS_Subst E (rec X (E1 + E2)) X) =
+               (FV (CCS_Subst E (rec X E1) X)) UNION (FV (CCS_Subst E (rec X E2) X))
+Proof
+    cheat
+QED
+
+Theorem FV_REC_PAR :
+    !X E E1 E2. FV (CCS_Subst E (rec X (par E1 E2)) X) =
+               (FV (CCS_Subst E (rec X E1) X)) UNION (FV (CCS_Subst E (rec X E2) X))
+Proof
+    cheat
+QED
+
+(* i.e. closed term *)
+Definition IS_PROC_def :
+    IS_PROC E <=> (FV E = EMPTY)
+End
+
+Definition ALL_PROC_def :
+    ALL_PROC Es <=> EVERY IS_PROC Es
+End
+
+Theorem IS_PROC_EL :
+    !Es n. ALL_PROC Es /\ n < LENGTH Es ==> IS_PROC (EL n Es)
+Proof
+    RW_TAC list_ss [ALL_PROC_def, EVERY_MEM, MEM_EL]
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC `n` >> art []
+QED
+
+Theorem IS_PROC_prefix :
+    !P u. IS_PROC (prefix u P) <=> IS_PROC P
+Proof
+    RW_TAC std_ss [IS_PROC_def, FV_thm]
+QED
+
+Theorem IS_PROC_sum :
+    !P Q. IS_PROC (sum P Q) <=> IS_PROC P /\ IS_PROC Q
+Proof
+    RW_TAC set_ss [IS_PROC_def, FV_thm]
+QED
+
+Theorem IS_PROC_par :
+    !P Q. IS_PROC (par P Q) <=> IS_PROC P /\ IS_PROC Q
+Proof
+    RW_TAC set_ss [IS_PROC_def, FV_thm]
+QED
+
+Theorem IS_PROC_restr :
+    !P L. IS_PROC (restr L P) <=> IS_PROC P
+Proof
+    RW_TAC set_ss [IS_PROC_def, FV_thm]
+QED
+
+Theorem IS_PROC_relab :
+    !P rf. IS_PROC (relab P rf) <=> IS_PROC P
+Proof
+    RW_TAC set_ss [IS_PROC_def, FV_thm]
+QED
+
+val PREF_ACT_exists =
+    tm_recursion
+        |> INST_TYPE [“:'r” |-> “:'a Action”]
+        |> SPEC_ALL
+        |> Q.INST [‘A’ |-> ‘{}’, ‘apm’ |-> ‘discrete_pmact’,
+                   ‘vr’ |-> ‘\s. tau’,
+                   ‘nl’ |-> ‘tau’,
+                   ‘pf’ |-> ‘\m u E. u’, (* here *)
+                   ‘sm’ |-> ‘\m n t1 t2. tau’,
+                   ‘pr’ |-> ‘\m n t1 t2. tau’,
+                   ‘rs’ |-> ‘\m L t. tau’,
+                   ‘rl’ |-> ‘\m t rf. tau’,
+                   ‘re’ |-> ‘\m v t. tau’]
+        |> SIMP_RULE (srw_ss()) [];
+
+val PREF_ACT_DEF = new_specification
+  ("PREF_ACT_DEF", ["PREF_ACT"], PREF_ACT_exists);
+
+val PREF_PROC_exists =
+    tm_recursion
+        |> INST_TYPE [“:'r” |-> “:'a CCS”]
+        |> SPEC_ALL
+        |> Q.INST [‘A’ |-> ‘{}’,
+                   ‘apm’ |-> ‘^t_pmact_t’,
+                   ‘ppm’ |-> ‘pair_pmact string_pmact ^t_pmact_t’,
+                   ‘vr’ |-> ‘\s. nil’,
+                   ‘nl’ |-> ‘nil’,
+                   ‘pf’ |-> ‘\m u E. E’, (* here *)
+                   ‘sm’ |-> ‘\m n t1 t2. nil’,
+                   ‘pr’ |-> ‘\m n t1 t2. nil’,
+                   ‘rs’ |-> ‘\m L t. nil’,
+                   ‘rl’ |-> ‘\m t rf. nil’,
+                   ‘re’ |-> ‘\m v t. nil’]
+        |> SIMP_RULE (srw_ss()) [];
+
+val PREF_PROC_DEF = new_specification
+  ("PREF_PROC_DEF", ["PREF_PROC"], PREF_PROC_exists);
+
 (* ----------------------------------------------------------------------
     Set up the recursion functionality in binderLib
    ---------------------------------------------------------------------- *)
