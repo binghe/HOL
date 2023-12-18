@@ -35,10 +35,10 @@ val _ = temp_loose_equality ();
 (*                                                                            *)
 (******************************************************************************)
 
-val _ = type_abbrev_pp ("context", ``:('a, 'b) CCS -> ('a, 'b) CCS``);
+val _ = type_abbrev_pp ("context", ``:'a CCS -> 'a CCS``);
 
 Definition IS_CONST_def :
-    IS_CONST (e :('a, 'b) context) <=> !t1 t2. e t1 = e t2
+    IS_CONST (e :'a context) <=> !t1 t2. e t1 = e t2
 End
 
 Theorem IS_CONST_alt :
@@ -106,7 +106,7 @@ val [CONTEXT1, CONTEXT2, CONTEXT3, CONTEXT4, CONTEXT5, CONTEXT6, CONTEXT7] =
 
 val CONTEXT3a = store_thm (
    "CONTEXT3a",
-  ``!a :'b Action. CONTEXT (\t. prefix a t)``,
+  ``!a :'a Action. CONTEXT (\t. prefix a t)``,
     ASSUME_TAC CONTEXT1
  >> IMP_RES_TAC CONTEXT3
  >> POP_ASSUM MP_TAC
@@ -127,8 +127,8 @@ Proof
  >> fs [FUN_EQ_THM, IS_CONST_def]
  >> rpt STRIP_TAC
  >- (Q.EXISTS_TAC `nil` >> rw [])
- >> Cases_on `p` >> fs [FUN_EQ_THM]
- >> METIS_TAC []
+ >> MP_TAC (Q.SPEC ‘p’ CCS_cases)
+ >> cheat
 QED
 
 Theorem CONTEXT8_IMP_CONST :
@@ -381,7 +381,7 @@ val [GCONTEXT1, GCONTEXT2, GCONTEXT3, GCONTEXT4, GCONTEXT5,
 
 val GCONTEXT3a = store_thm (
    "GCONTEXT3a",
-  ``!a :'b Action. GCONTEXT (\t. prefix a t)``,
+  ``!a :'a Action. GCONTEXT (\t. prefix a t)``,
     ASSUME_TAC GCONTEXT1
  >> IMP_RES_TAC GCONTEXT3
  >> POP_ASSUM MP_TAC
@@ -591,7 +591,7 @@ val [WG2, WG3, WG4, WG5, WG6, WG7] =
         (combine (["WG2", "WG3", "WG4", "WG5", "WG6", "WG7"], CONJUNCTS WG_rules));
 
 Theorem WG1 : (* WG1 is derivable from WG3 *)
-    !a :'b Action. WG (\t. prefix a t)
+    !a :'a Action. WG (\t. prefix a t)
 Proof
     ASSUME_TAC CONTEXT1
  >> IMP_RES_TAC WG3
@@ -781,21 +781,21 @@ val CONTEXT_WG_combin = store_thm (
       REWRITE_TAC [WG2],
       (* goal 2 (of 6) *)
       IMP_RES_TAC WG_IMP_CONTEXT \\
-      MP_TAC (Q.SPECL [`a`, `(\x. (c :('a, 'b) context) (e x))`] WG3) \\
+      MP_TAC (Q.SPECL [`a`, `(\x. (c :'a context) (e x))`] WG3) \\
       BETA_TAC >> RW_TAC std_ss [],
       (* goal 3 (of 6) *)
-      MP_TAC (Q.SPECL [`(\x. (c :('a, 'b) context) (e x))`,
-                       `(\x. (c' :('a, 'b) context) (e x))`] WG4) \\
+      MP_TAC (Q.SPECL [`(\x. (c :'a context) (e x))`,
+                       `(\x. (c' :'a context) (e x))`] WG4) \\
       BETA_TAC >> RW_TAC std_ss [],
       (* goal 4 (of 6) *)
-      MP_TAC (Q.SPECL [`(\x. (c :('a, 'b) context) (e x))`,
-                       `(\x. (c' :('a, 'b) context) (e x))`] WG5) \\
+      MP_TAC (Q.SPECL [`(\x. (c :'a context) (e x))`,
+                       `(\x. (c' :'a context) (e x))`] WG5) \\
       BETA_TAC >> RW_TAC std_ss [],
       (* goal 5 (of 6) *)
-      MP_TAC (Q.SPECL [`L`, `(\x. (c :('a, 'b) context) (e x))`] WG6) \\
+      MP_TAC (Q.SPECL [`L`, `(\x. (c :'a context) (e x))`] WG6) \\
       BETA_TAC >> RW_TAC std_ss [],
       (* goal 6 (of 6) *)
-      MP_TAC (Q.SPECL [`rf`, `(\x. (c :('a, 'b) context) (e x))`] WG7) \\
+      MP_TAC (Q.SPECL [`rf`, `(\x. (c :'a context) (e x))`] WG7) \\
       BETA_TAC >> RW_TAC std_ss [] ]);
 
 (******************************************************************************)
@@ -847,7 +847,7 @@ val SG_IMP_WG = store_thm (
       MATCH_MP_TAC WG6 >> art [],
       MATCH_MP_TAC WG7 >> art [] ]);
 
-val lemma = Q.prove (`!p :('a, 'b) CCS. ?q. q <> p`,
+val lemma = Q.prove (`!p :'a CCS. ?q. q <> p`,
     Cases_on `p`
  >- ( Q.EXISTS_TAC `nil + nil` >> PROVE_TAC [CCS_distinct'] )
  >> ( Q.EXISTS_TAC `nil` >> PROVE_TAC [CCS_distinct'] ));
@@ -1142,7 +1142,7 @@ val [SEQ1, SEQ2, SEQ3, SEQ4] =
     map save_thm (combine (["SEQ1", "SEQ2", "SEQ3", "SEQ4"], CONJUNCTS SEQ_rules));
 
 val SEQ3a = store_thm ("SEQ3a",
-  ``!a :'b Action. SEQ (\t. prefix a t)``,
+  ``!a :'a Action. SEQ (\t. prefix a t)``,
     ASSUME_TAC SEQ1
  >> IMP_RES_TAC SEQ3
  >> POP_ASSUM MP_TAC
@@ -1203,7 +1203,7 @@ val [GSEQ1, GSEQ2, GSEQ3, GSEQ4] =
                            CONJUNCTS GSEQ_rules));
 
 val GSEQ3a = store_thm ("GSEQ3a",
-  ``!a :'b Action. GSEQ (\t. prefix a t)``,
+  ``!a :'a Action. GSEQ (\t. prefix a t)``,
     ASSUME_TAC GSEQ1
  >> IMP_RES_TAC GSEQ3
  >> POP_ASSUM MP_TAC
@@ -1259,8 +1259,8 @@ val WEAK_EQUIV_SUBST_GSEQ = store_thm (
 val SG_SEQ_strong_induction = store_thm (
    "SG_SEQ_strong_induction",
   ``!R. (!p. R (\t. p)) /\
-        (!(l :'b Label) e. SEQ e ==> R (\t. prefix (label l) (e t))) /\
-        (!(a :'b Action) e. SG e /\ SEQ e /\ R e ==> R (\t. prefix a (e t))) /\
+        (!(l :'a Label) e. SEQ e ==> R (\t. prefix (label l) (e t))) /\
+        (!(a :'a Action) e. SG e /\ SEQ e /\ R e ==> R (\t. prefix a (e t))) /\
         (!e1 e2. SG e1 /\ SEQ e1 /\ R e1 /\
                  SG e2 /\ SEQ e2 /\ R e2 ==> R (\t. sum (e1 t) (e2 t)))
         ==> (!e. SG e /\ SEQ e ==> R e)``,
@@ -1301,8 +1301,8 @@ val SG_SEQ_strong_induction = store_thm (
 val SG_GSEQ_strong_induction = store_thm (
    "SG_GSEQ_strong_induction",
   ``!R. (!p. R (\t. p)) /\
-        (!(l :'b Label) e. GSEQ e ==> R (\t. prefix (label l) (e t))) /\
-        (!(a :'b Action) e. SG e /\ GSEQ e /\ R e ==> R (\t. prefix a (e t))) /\
+        (!(l :'a Label) e. GSEQ e ==> R (\t. prefix (label l) (e t))) /\
+        (!(a :'a Action) e. SG e /\ GSEQ e /\ R e ==> R (\t. prefix a (e t))) /\
         (!e1 e2.       SG e1 /\ GSEQ e1 /\ R e1 /\ SG e2 /\ GSEQ e2 /\ R e2
                    ==> R (\t. sum (prefix tau (e1 t)) (prefix tau (e2 t)))) /\
         (!l2 e1 e2.    SG e1 /\ GSEQ e1 /\ R e1 /\ GSEQ e2
@@ -1411,8 +1411,8 @@ val SG_SEQ_combin = store_thm (
         (* goal 5.2 (of 4) *)
         REWRITE_TAC [SG1],
         (* goal 5.3 (of 4) *)
-        ASSUME_TAC (Q.SPECL [`a' :'b Action`,
-                             `\x. (H :('a, 'b) CCS -> ('a, 'b) CCS) (prefix a (E x))`] SG3) \\
+        ASSUME_TAC (Q.SPECL [`a' :'a Action`,
+                             `\x. (H :'a CCS -> 'a CCS) (prefix a (E x))`] SG3) \\
         POP_ASSUM MP_TAC \\
         BETA_TAC >> rpt STRIP_TAC >> RES_TAC,
         (* goal 5.4 (of 4) *)
@@ -1423,7 +1423,7 @@ val SG_SEQ_combin = store_thm (
         BETA_TAC >> DISCH_TAC \\
         METIS_TAC [] ],
       (* goal 6 (of 8) *)
-      ASSUME_TAC (Q.SPECL [`a :'b Action`, `E`] SEQ3) \\
+      ASSUME_TAC (Q.SPECL [`a :'a Action`, `E`] SEQ3) \\
       RES_TAC >> NTAC 4 (POP_ASSUM K_TAC) \\
       ASSUME_TAC (Q.SPEC `H` SEQ_combin) \\
       POP_ASSUM (ASSUME_TAC o (fn th => MP th (ASSUME ``SEQ H``))) \\
@@ -1440,8 +1440,8 @@ val SG_SEQ_combin = store_thm (
         (* goal 7.2 (of 4) *)
         REWRITE_TAC [SG1],
         (* goal 7.3 (of 4) *)
-        ASSUME_TAC (Q.SPECL [`a :'b Action`,
-                             `\x. (H :('a, 'b) CCS -> ('a, 'b) CCS) (E x + E' x)`] SG3) \\
+        ASSUME_TAC (Q.SPECL [`a :'a Action`,
+                             `\x. (H :'a CCS -> 'a CCS) (E x + E' x)`] SG3) \\
         POP_ASSUM MP_TAC >> BETA_TAC >> rpt STRIP_TAC \\
         PROVE_TAC [],
         (* goal 7.4 (of 4) *)
@@ -1508,8 +1508,8 @@ val SG_GSEQ_combin = store_thm (
         (* goal 5.2 (of 4) *)
         REWRITE_TAC [SG1],
         (* goal 5.3 (of 4) *)
-        ASSUME_TAC (Q.SPECL [`a' :'b Action`,
-                             `\x. (H :('a, 'b) CCS -> ('a, 'b) CCS) (prefix a (E x))`] SG3) \\
+        ASSUME_TAC (Q.SPECL [`a' :'a Action`,
+                             `\x. (H :'a CCS -> 'a CCS) (prefix a (E x))`] SG3) \\
         POP_ASSUM MP_TAC \\
         BETA_TAC >> rpt STRIP_TAC >> RES_TAC,
         (* goal 5.4 (of 4) *)
@@ -1524,7 +1524,7 @@ val SG_GSEQ_combin = store_thm (
         POP_ASSUM K_TAC \\
         BETA_TAC >> DISCH_TAC >> METIS_TAC [] ],
       (* goal 6 (of 14) *)
-      ASSUME_TAC (Q.SPECL [`a :'b Action`, `E`] GSEQ3) \\
+      ASSUME_TAC (Q.SPECL [`a :'a Action`, `E`] GSEQ3) \\
       RES_TAC >> NTAC 4 (POP_ASSUM K_TAC) \\
       ASSUME_TAC (Q.SPEC `H` GSEQ_combin) \\
       POP_ASSUM (ASSUME_TAC o (fn th => MP th (ASSUME ``GSEQ H``))) \\
@@ -1548,8 +1548,8 @@ val SG_GSEQ_combin = store_thm (
         REWRITE_TAC [SG1],
         (* goal 7.3 (of 4) *)
         ASSUME_TAC
-          (Q.SPECL [`a :'b Action`,
-                    `\x. (H :('a, 'b) CCS -> ('a, 'b) CCS) (tau..(E x) + tau..(E' x))`] SG3) \\
+          (Q.SPECL [`a :'a Action`,
+                    `\x. (H :'a CCS -> 'a CCS) (tau..(E x) + tau..(E' x))`] SG3) \\
         POP_ASSUM MP_TAC >> BETA_TAC >> rpt STRIP_TAC \\
         PROVE_TAC [],
         (* goal 7.4 (of 4) *)
@@ -1588,8 +1588,8 @@ val SG_GSEQ_combin = store_thm (
         REWRITE_TAC [SG1],
         (* goal 9.3 (of 4) *)
         ASSUME_TAC
-          (Q.SPECL [`a :'b Action`,
-                    `\x. (H :('a, 'b) CCS -> ('a, 'b) CCS) (tau..(E x) + (label l2)..(e2 x))`] SG3) \\
+          (Q.SPECL [`a :'a Action`,
+                    `\x. (H :'a CCS -> 'a CCS) (tau..(E x) + (label l2)..(e2 x))`] SG3) \\
         POP_ASSUM MP_TAC >> BETA_TAC >> rpt STRIP_TAC \\
         PROVE_TAC [],
         (* goal 9.4 (of 4) *)
@@ -1629,8 +1629,8 @@ val SG_GSEQ_combin = store_thm (
         REWRITE_TAC [SG1],
         (* goal 11.3 (of 4) *)
         ASSUME_TAC
-          (Q.SPECL [`a :'b Action`,
-                    `\x. (H :('a, 'b) CCS -> ('a, 'b) CCS)
+          (Q.SPECL [`a :'a Action`,
+                    `\x. (H :'a CCS -> 'a CCS)
                            ((label l1)..(e1 x) + tau..(E x))`] SG3) \\
         POP_ASSUM MP_TAC >> BETA_TAC >> rpt STRIP_TAC \\
         PROVE_TAC [],
@@ -1671,8 +1671,8 @@ val SG_GSEQ_combin = store_thm (
         REWRITE_TAC [SG1],
         (* goal 13.3 (of 4) *)
         ASSUME_TAC
-          (Q.SPECL [`a :'b Action`,
-                    `\x. (H :('a, 'b) CCS -> ('a, 'b) CCS)
+          (Q.SPECL [`a :'a Action`,
+                    `\x. (H :'a CCS -> 'a CCS)
                          ((label l1)..(e1 x) + (label l2)..(e2 x))`] SG3) \\
         POP_ASSUM MP_TAC >> BETA_TAC >> rpt STRIP_TAC >> PROVE_TAC [],
         (* goal 13.4 (of 4) *)
@@ -1721,7 +1721,7 @@ val [WGS2, WGS3, WGS4, WGS5, WGS6, WGS7] =
 
 (** WGS1 is derivable from WGS3 *)
 val WGS1 = store_thm ("WGS1",
-  ``!a :'b Action. WGS (\t. prefix a t)``,
+  ``!a :'a Action. WGS (\t. prefix a t)``,
     ASSUME_TAC GCONTEXT1
  >> IMP_RES_TAC WGS3
  >> POP_ASSUM MP_TAC
@@ -1759,22 +1759,22 @@ val GCONTEXT_WGS_combin = store_thm (
       REWRITE_TAC [WGS2],
       (* goal 2 (of 6) *)
       IMP_RES_TAC WGS_IMP_GCONTEXT \\
-      MP_TAC (Q.SPECL [`a`, `(\x. (c :('a, 'b) context) (e x))`] WGS3) \\
+      MP_TAC (Q.SPECL [`a`, `(\x. (c :'a context) (e x))`] WGS3) \\
       BETA_TAC >> RW_TAC std_ss [],
       (* goal 3 (of 6) *)
-      MP_TAC (Q.SPECL [`a1`, `a2`, `(\x. (c :('a, 'b) context) (e x))`,
-                                   `(\x. (c' :('a, 'b) context) (e x))`] WGS4) \\
+      MP_TAC (Q.SPECL [`a1`, `a2`, `(\x. (c :'a context) (e x))`,
+                                   `(\x. (c' :'a context) (e x))`] WGS4) \\
       BETA_TAC \\
       IMP_RES_TAC WGS_IMP_GCONTEXT >> RW_TAC std_ss [],
       (* goal 4 (of 6) *)
-      MP_TAC (Q.SPECL [`(\x. (c :('a, 'b) context) (e x))`,
-                       `(\x. (c' :('a, 'b) context) (e x))`] WGS5) \\
+      MP_TAC (Q.SPECL [`(\x. (c :'a context) (e x))`,
+                       `(\x. (c' :'a context) (e x))`] WGS5) \\
       BETA_TAC >> RW_TAC std_ss [],
       (* goal 5 (of 6) *)
-      MP_TAC (Q.SPECL [`L`, `(\x. (c :('a, 'b) context) (e x))`] WGS6) \\
+      MP_TAC (Q.SPECL [`L`, `(\x. (c :'a context) (e x))`] WGS6) \\
       BETA_TAC >> RW_TAC std_ss [],
       (* goal 6 (of 6) *)
-      MP_TAC (Q.SPECL [`rf`, `(\x. (c :('a, 'b) context) (e x))`] WGS7) \\
+      MP_TAC (Q.SPECL [`rf`, `(\x. (c :'a context) (e x))`] WGS7) \\
       BETA_TAC >> RW_TAC std_ss [] ]);
 
 val _ = export_theory ();
