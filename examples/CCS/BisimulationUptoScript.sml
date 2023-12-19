@@ -1195,16 +1195,16 @@ val OBS_CONGR_BY_BISIM_UPTO = store_thm (
  >> irule (REWRITE_RULE [RSUBSET] OBS_BISIM_UPTO_THM)
  >> Q.EXISTS_TAC `Obsm` >> art []);
 
+val _ = export_theory ();
+val _ = html_theory "BisimulationUpto";
+
 (* Bibliography:
  *
  * [1] Milner, R.: Communication and concurrency. (1989).
-.* [2] Gorrieri, R., Versari, C.: Introduction to Concurrency Theory. Springer, Cham (2015).
- * [3] Sangiorgi, D.: Introduction to Bisimulation and Coinduction. Cambridge University Press (2011).
+ * [2] Gorrieri, R., Versari, C.: Introduction to Concurrency Theory. Springer, Cham (2015).
+ * [3] Sangiorgi, D.: Introduction to Bisimulation and Coinduction.
+                      Cambridge University Press (2011).
  * [4] Sangiorgi, D., Rutten, J.: Advanced Topics in Bisimulation and Coinduction.
                                   Cambridge University Press (2011).
  *)
 
-val _ = export_theory ();
-val _ = html_theory "BisimulationUpto";
-
-(* last updated: Aug 5, 2017 *)

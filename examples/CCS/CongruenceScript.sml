@@ -13,7 +13,7 @@ open HolKernel Parse boolLib bossLib;
 
 open pred_setTheory relationTheory combinTheory arithmeticTheory;
 
-open CCSLib LabelTheory CCSTheory;
+open CCSLib LabelTheory CCSTheory TransTheory;
 open StrongEQTheory StrongLawsTheory WeakEQTheory WeakLawsTheory;
 open ObsCongrTheory ObsCongrLib ObsCongrLawsTheory ObsCongrConv;
 open BisimulationUptoTheory;
@@ -219,19 +219,6 @@ Proof
       METIS_TAC [] ]
 QED
 
-Theorem CONTEXT8_backward :
-    !e X. CONTEXT (\t. rec X (e t)) ==> CONTEXT e
-Proof
-    rpt STRIP_TAC
- >> POP_ASSUM (STRIP_ASSUME_TAC o (ONCE_REWRITE_RULE [CONTEXT_cases]))
- >> fs [FUN_EQ_THM] (* 2 subgoals left *)
- >| [ (* goal 1 (of 2) *)
-      POP_ASSUM (MP_TAC o (Q.SPEC `nil`)) \\
-      SIMP_TAC std_ss [CCS_distinct],
-      (* goal 2 (of 3) *)
-      cheat ]
-QED
-
 Theorem CONTEXT_combin :
     !c1 c2. CONTEXT c1 /\ CONTEXT c2 ==> CONTEXT (c1 o c2)
 Proof
@@ -291,6 +278,32 @@ Proof
       MATCH_MP_TAC CONTEXT8 >> art [] ]
 QED
 
+(* This is Proposition 4.12 of [1, p.99] or Theorem 4.2 of [2, p.182]
+
+   Let P and Q contain (free, recursion) variable X at most.
+   Let A = P{A/X} (or `rec X P`), B = Q{B/X} (or `rec X Q`) and E ~ F.
+   Then A ~ B.
+ *)
+Theorem STRONG_EQUIV_PRESD_BY_REC :
+    !X P Q. STRONG_EQUIV P Q ==> STRONG_EQUIV (rec X P) (rec X Q)
+Proof
+    rpt STRIP_TAC
+ (* applying STRONG_EQUIV_BY_BISIM_UPTO *)
+ >> MATCH_MP_TAC STRONG_EQUIV_BY_BISIM_UPTO
+ >> Q.EXISTS_TAC ‘\x y. ?E. CONTEXT E /\ (x = E (rec X P)) /\ (y = E (rec X Q))’
+ >> BETA_TAC
+ >> reverse CONJ_TAC
+ >- (Q.EXISTS_TAC ‘\t. t’ >> rw [CONTEXT1])
+ (* stage work *)
+ >> rw [STRONG_BISIM_UPTO]
+ (* two subgoals *)
+ >> NTAC 2 (POP_ASSUM MP_TAC)
+ >> Q.ID_SPEC_TAC ‘E’
+ >> HO_MATCH_MP_TAC CONTEXT_ind >> BETA_TAC
+ >> rw [] (* 9 subgoals *)
+ >> cheat
+QED
+
 Theorem STRONG_EQUIV_SUBST_CONTEXT :
     !P Q. STRONG_EQUIV P Q ==> !E. CONTEXT E ==> STRONG_EQUIV (E P) (E Q)
 Proof
@@ -311,7 +324,7 @@ Proof
       (* goal 5 (of 6) *)
       MATCH_MP_TAC STRONG_EQUIV_SUBST_RELAB >> art [],
       (* goal 6 (of 6) *)
-      cheat (* MATCH_MP_TAC STRONG_EQUIV_SUBST_REC >> art [] *) ]
+      MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_REC >> art [] ]
 QED
 
 Theorem OBS_CONGR_SUBST_CONTEXT :

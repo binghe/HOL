@@ -2,6 +2,7 @@
  * Copyright 1991-1995  University of Cambridge (Author: Monica Nesi)
  * Copyright 2016-2017  University of Bologna, Italy (Author: Chun Tian)
  * Copyright 2018-2019  Fondazione Bruno Kessler, Italy (Author: Chun Tian)
+ * Copyright 2023-2024  Australian National University (Author: Chun Tian)
  *)
 
 open HolKernel Parse boolLib bossLib;
@@ -528,18 +529,6 @@ val STRONG_EQUIV_SUBST_RELAB = store_thm (
           (* goal 2.2.2 (of 2) *)
           take [`E1'`, `E''''`, `rf'`] \\
           ASM_REWRITE_TAC [] ] ] ]);
-
-(* Proposition 4.12 of [1, p.99], the univariate version
-
-   Let P and Q contain (free, recursion) variable X at most.
-   Let A = P{A/X} (or `rec X P`), B = Q{B/X} (or `rec X Q`) and E ~ F.
-   Then A ~ B.
- *)
-Theorem STRONG_EQUIV_PRESD_BY_REC :
-    !X P Q. STRONG_EQUIV P Q ==> STRONG_EQUIV (rec X P) (rec X Q)
-Proof
-    cheat
-QED
 
 (******************************************************************************)
 (*                                                                            *)
