@@ -1021,8 +1021,8 @@ Proof
  >> SET_TAC []
 QED
 
-Theorem FV_SUBSET_PRO :
-    !X E E'. FV (CCS_Subst E E' X) SUBSET ((FV E) DELETE X) UNION (FV E')
+Theorem FV_SUBSET' :
+    !X E E'. FV (CCS_Subst E E' X) SUBSET (FV E DELETE X) UNION (FV E')
 Proof
     rw [CCS_Subst, FV_SUB]
  >> ASM_SET_TAC []
@@ -1036,19 +1036,13 @@ Proof
  >> ASM_SET_TAC [FV_thm]
 QED
 
-Theorem NOTIN_FV_lemma :
-    !X E E'. X NOTIN FV (CCS_Subst E (rec X E') X)
-Proof
-    rw [CCS_Subst, FV_SUB]
-QED
-
-Theorem FV_SUBSET_REC_PRO :
-    !X E. FV (CCS_Subst E (rec X E) X) SUBSET (FV E) DELETE X
+(* NOTE: this theorem is key to prove TRANS_FV *)
+Theorem FV_SUBSET_REC' :
+    !X E. FV (CCS_Subst E (rec X E) X) SUBSET (FV E DELETE X)
 Proof
     rpt GEN_TAC
- >> ASSUME_TAC (Q.SPECL [`X`, `E`] FV_SUBSET_REC)
- >> ASSUME_TAC (Q.SPECL [`X`, `E`, `E`] NOTIN_FV_lemma)
- >> ASM_SET_TAC []
+ >> ASSUME_TAC (Q.SPECL [`X`, `E`, `rec X E`] FV_SUBSET')
+ >> ASM_SET_TAC [FV_thm]
 QED
 
 Theorem CCS_Subst_elim :
@@ -1058,7 +1052,6 @@ Proof
  >> MATCH_MP_TAC lemma14b >> art []
 QED
 
-(* cf. termTheory.SUB_FIX_IMP_NOTIN_FV *)
 Theorem CCS_Subst_FIX_IMP_NOTIN_FV :
     !X E. (!E'. CCS_Subst E E' X = E) ==> X NOTIN (FV E)
 Proof
@@ -1078,21 +1071,21 @@ Theorem FV_REC_PREF :
     !X E u E'. FV (CCS_Subst E (rec X (prefix u E')) X) =
                FV (CCS_Subst E (rec X E') X)
 Proof
-    cheat
+    rw [CCS_Subst, FV_SUB]
 QED
 
 Theorem FV_REC_SUM :
     !X E E1 E2. FV (CCS_Subst E (rec X (E1 + E2)) X) =
                (FV (CCS_Subst E (rec X E1) X)) UNION (FV (CCS_Subst E (rec X E2) X))
 Proof
-    cheat
+    rw [CCS_Subst, FV_SUB] >> SET_TAC []
 QED
 
 Theorem FV_REC_PAR :
     !X E E1 E2. FV (CCS_Subst E (rec X (par E1 E2)) X) =
                (FV (CCS_Subst E (rec X E1) X)) UNION (FV (CCS_Subst E (rec X E2) X))
 Proof
-    cheat
+    rw [CCS_Subst, FV_SUB] >> SET_TAC []
 QED
 
 (* i.e. closed term *)
