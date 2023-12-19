@@ -507,3 +507,9 @@ QED
 
 val _ = export_theory ();
 val _ = html_theory "Trans";
+
+(* Bibliography:
+
+ [1] Milner, Robin. Communication and concurrency. Prentice hall, 1989.
+
+ *)

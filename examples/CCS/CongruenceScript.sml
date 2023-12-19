@@ -1777,4 +1777,8 @@ val GCONTEXT_WGS_combin = store_thm (
 val _ = export_theory ();
 val _ = html_theory "Congruence";
 
-(* last updated: Oct 12, 2017 *)
+(* Bibliography:
+
+ [1] Milner, Robin. Communication and concurrency. Prentice hall, 1989.
+
+ *)

@@ -1210,3 +1210,10 @@ val _ = adjoin_after_completion (fn _ => PP.add_string term_info_string);
 
 val _ = export_theory ();
 val _ = html_theory "CCS";
+
+(* Bibliography:
+
+ [1] Milner, Robin. Communication and concurrency. Prentice hall, 1989.
+ [2] Gorrieri, R., Versari, C.: Introduction to Concurrency Theory. Springer (2015).
+
+ *)

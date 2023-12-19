@@ -1084,8 +1084,7 @@ val STRONG_RELAB_PREFIX = store_thm (
         ASSUME_TAC (REWRITE_RULE [ASSUME ``E = relab (prefix u' E'') (RELAB labl)``]
                                  (ASSUME ``TRANS E u E1``)) \\
         IMP_RES_TAC TRANS_RELAB \\
-        IMP_RES_TAC TRANS_PREFIX \\
-        art [PREFIX],
+        IMP_RES_TAC TRANS_PREFIX >> art [PREFIX],
         (* goal 2.4 (of 4) *)
         Q.EXISTS_TAC `E2` >> REWRITE_TAC [] \\
         ASSUME_TAC (REWRITE_RULE
@@ -1101,14 +1100,15 @@ val STRONG_RELAB_PREFIX = store_thm (
 (*                                                                            *)
 (******************************************************************************)
 
-(* The unfolding law R1 for strong equivalence: (Proposition 4.11 of [Mil89])
-   |- ∀X E. rec X E ~ CCS_Subst E (rec X E) X:
+(* The unfolding law R1 for strong equivalence: (Proposition 4.11 of [1, p.99])
+
+   If A := P, then STRONG_EQUIV A P
+
+   where A is ‘rec X E’, P is ‘CCS_Subst E (rec X E) X’ (instead of just E)
  *)
 Theorem STRONG_UNFOLDING :
     !X E. STRONG_EQUIV (rec X E) (CCS_Subst E (rec X E) X)
 Proof
-    cheat
- (*
     rpt GEN_TAC
  >> PURE_ONCE_REWRITE_TAC [STRONG_EQUIV]
  >> EXISTS_TAC
@@ -1117,8 +1117,7 @@ Proof
  >> CONJ_TAC (* 2 sub-goals here *)
  >| [ (* goal 1 (of 2) *)
       BETA_TAC >> DISJ2_TAC \\
-      EXISTS_TAC ``X :'a`` \\
-      EXISTS_TAC ``E :'a CCS`` >> REWRITE_TAC [],
+      qexistsl_tac [‘X’, ‘E’] >> rw [],
       (* goal 2 (of 2) *)
       PURE_ONCE_REWRITE_TAC [STRONG_BISIM] >> BETA_TAC \\
       rpt STRIP_TAC >| (* 4 sub-goals here *)
@@ -1138,7 +1137,6 @@ Proof
         art
          [REWRITE_RULE [ASSUME ``E' = CCS_Subst E'' (rec Y E'') Y``]
                        (ASSUME ``TRANS E' u E2``), TRANS_REC_EQ] ] ]
- *)
 QED
 
 (* Prove the theorem STRONG_PREF_REC_EQUIV:
@@ -1227,8 +1225,6 @@ Theorem STRONG_REC_ACT2 :
     !s u. STRONG_EQUIV (rec s (prefix u (prefix u (var s))))
                        (rec s (prefix u (var s)))
 Proof
-    cheat
- (*
     rpt GEN_TAC
  >> PURE_ONCE_REWRITE_TAC [STRONG_EQUIV]
  >> EXISTS_TAC
@@ -1241,12 +1237,10 @@ Proof
  >> CONJ_TAC (* 2 sub-goals here *)
  >| [ (* goal 1 (of 2) *)
       BETA_TAC \\
-      EXISTS_TAC ``s :'a`` \\
-      EXISTS_TAC ``u :'a Action`` >> REWRITE_TAC [],
+      qexistsl_tac [‘s’, ‘u’] >> rw [],
       (* goal 2 (of 2) *)
       PURE_ONCE_REWRITE_TAC [STRONG_BISIM] \\
-      BETA_TAC \\
-      rpt STRIP_TAC >| (* 4 sub-goals *)
+      BETA_TAC >> rpt STRIP_TAC >| (* 4 sub-goals *)
       [ (* goal 2.1 (of 4) *)
         ASSUME_TAC
           (REWRITE_RULE [ASSUME ``E = rec s' (prefix u' (prefix u' (var s')))``,
@@ -1255,10 +1249,10 @@ Proof
         IMP_RES_TAC TRANS_PREFIX >> EXISTS_TAC ``E' :'a CCS`` \\
         CONJ_TAC >| (* 2 sub-goals here *)
         [ (* goal 2.1.1 (of 2) *)
-          art [] \\
+          ASM_REWRITE_TAC [] \\
           MATCH_MP_TAC REC >> REWRITE_TAC [CCS_Subst_def, PREFIX],
           (* goal 2.1.2 (of 2) *)
-          EXISTS_TAC ``s' :'a`` >> EXISTS_TAC ``u' :'a Action`` >> art [] ],
+          qexistsl_tac [‘s'’, ‘u'’] >> art [] ],
         (* goal 2.2 (of 4) *)
         ASSUME_TAC (REWRITE_RULE [ASSUME ``E' = rec s'(prefix u'(var s'))``,
                                   TRANS_REC_EQ, CCS_Subst_def]
@@ -1267,11 +1261,10 @@ Proof
         EXISTS_TAC ``prefix (u' :'a Action) E`` \\
         CONJ_TAC >| (* 2 sub-goals here *)
         [ (* goal 2.2.1 (of 2) *)
-          art [] \\
+          ASM_REWRITE_TAC [] \\
           MATCH_MP_TAC REC >> REWRITE_TAC [CCS_Subst_def, PREFIX],
           (* goal 2.2.2 (of 2) *)
-          EXISTS_TAC ``s' :'a`` \\
-          EXISTS_TAC ``u' :'a Action`` >> art [] ],
+          qexistsl_tac [‘s'’, ‘u'’] >> art [] ],
         (* goal 2.3 (of 4) *)
         ASSUME_TAC
           (REWRITE_RULE
@@ -1280,12 +1273,11 @@ Proof
         IMP_RES_TAC TRANS_PREFIX >> EXISTS_TAC ``E' :'a CCS`` \\
         CONJ_TAC >| (* 2 sub-goals here *)
         [ (* goal 2.3.1 (of 2) *)
-          art [] \\
+          ASM_REWRITE_TAC [] \\
           MATCH_MP_TAC REC \\
           REWRITE_TAC [CCS_Subst_def, PREFIX],
           (* goal 2.3.2 (of 2) *)
-          EXISTS_TAC ``s' :'a`` \\
-          EXISTS_TAC ``u' :'a Action`` >> art [] ],
+          qexistsl_tac [‘s'’, ‘u'’] >> art [] ],
         (* goal 2.4 (of 4) *)
         ASSUME_TAC (REWRITE_RULE [ASSUME ``E' = rec s' (prefix u' (var s'))``,
                                   TRANS_REC_EQ, CCS_Subst_def]
@@ -1294,11 +1286,9 @@ Proof
         EXISTS_TAC ``rec s' (prefix u' (prefix u' (var s')))`` \\
         CONJ_TAC >| (* 2 sub-goals here, first one is easy *)
         [ (* goal 2.4.1 (of 2) *)
-          art [PREFIX],
+          ASM_REWRITE_TAC [PREFIX],
           (* goal 2.4.2 (of 2) *)
-          EXISTS_TAC ``s' :'a`` \\
-          EXISTS_TAC ``u' :'a Action`` >> art [] ] ] ]
- *)
+          qexistsl_tac [‘s'’, ‘u'’] >> art [] ] ] ]
 QED
 
 (******************************************************************************)
@@ -1899,7 +1889,7 @@ val STRONG_EXPANSION_LAW = store_thm (
             MATCH_MP_TAC PAR1 \\
             REWRITE_TAC [SIGMA_TRANS_THM_EQ] \\
             EXISTS_TAC ``k: num`` \\
-            art [PREF_ACT_def, PREF_PROC_def, PREFIX],
+            ASM_REWRITE_TAC [PREF_ACT_def, PREF_PROC_def, PREFIX],
             (* goal 4.1.2 (of 2) *)
             IMP_RES_TAC SIGMA_TRANS_THM \\
             ASSUME_TAC
@@ -1915,7 +1905,7 @@ val STRONG_EXPANSION_LAW = store_thm (
             MATCH_MP_TAC PAR2 \\
             REWRITE_TAC [SIGMA_TRANS_THM_EQ] \\
             EXISTS_TAC ``k: num`` \\
-            art [PREF_ACT_def, PREF_PROC_def, PREFIX] ],
+            ASM_REWRITE_TAC [PREF_ACT_def, PREF_PROC_def, PREFIX] ],
           (* goal 4.2 (of 2) *)
           IMP_RES_TAC ALL_SYNC_TRANS_THM >> art [] \\
           MATCH_MP_TAC PAR3 \\
@@ -1932,7 +1922,7 @@ val STRONG_EXPANSION_LAW = store_thm (
              (REWRITE_RULE [ASSUME ``(f1: num -> 'a CCS) k = prefix u' E''``,
                             PREF_ACT_def]
                 (ASSUME ``PREF_ACT ((f1: num -> 'a CCS) k) = label l``)) \\
-            art [PREF_PROC_def, PREFIX],
+            ASM_REWRITE_TAC [PREF_PROC_def, PREFIX],
             (* goal 4.2.2 (of 2) *)
             EXISTS_TAC ``k': num`` \\
             STRIP_ASSUME_TAC
@@ -1943,7 +1933,14 @@ val STRONG_EXPANSION_LAW = store_thm (
              (REWRITE_RULE [ASSUME ``(f2: num -> 'a CCS) k' = prefix u' E''``,
                             PREF_ACT_def]
                 (ASSUME ``PREF_ACT ((f2: num -> 'a CCS) k') = label (COMPL l)``)) \\
-            art [PREF_PROC_def, PREFIX] ] ] ] ]);
+            ASM_REWRITE_TAC [PREF_PROC_def, PREFIX] ] ] ] ]);
 
 val _ = export_theory ();
 val _ = html_theory "StrongLaws";
+
+(* Bibliography:
+
+ [1] Milner, Robin. Communication and concurrency. Prentice hall, 1989.
+ [2] Gorrieri, R., Versari, C.: Introduction to Concurrency Theory. Springer (2015).
+
+ *)
