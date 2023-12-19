@@ -23,8 +23,9 @@ val _ = temp_loose_equality ();
 Type simulation = “:'a CCS -> 'a CCS -> bool”
 
 (* new definition based on relationTheory.BISIM *)
-val STRONG_BISIM_def = Define
-   `STRONG_BISIM (R :'a simulation) = BISIM TRANS R`;
+Definition STRONG_BISIM_def :
+    STRONG_BISIM = BISIM TRANS
+End
 
 (* original definition of STRONG_BISIM, now becomes a theorem *)
 Theorem STRONG_BISIM :
@@ -70,8 +71,10 @@ Proof
     REWRITE_TAC [STRONG_BISIM_def, BISIM_RUNION]
 QED
 
-(* The (strong) bisimilarity, now based on BISIM_REL *)
-val STRONG_EQUIV_def = Define `STRONG_EQUIV = BISIM_REL TRANS`;
+(* The strong bisimilarity is now based on bisimulationTheory.BISIM_REL *)
+Definition STRONG_EQUIV_def :
+    STRONG_EQUIV = BISIM_REL TRANS
+End
 
 val _ = add_rule { block_style = (AroundEachPhrase, (PP.CONSISTENT, 0)),
                    fixity = Infix (NONASSOC, 450),
@@ -540,21 +543,21 @@ QED
 
 (******************************************************************************)
 (*                                                                            *)
-(*          The proof of PROPERTY_STAR (old way as in Milner's book)          *)
+(*          The clasic proof of PROPERTY_STAR (in [1])                        *)
 (*                                                                            *)
 (******************************************************************************)
 
-(*
- In StrongEQScript.ml, currently we define STRONG_EQUIV (strong bisimilarity) by
- HOL's co-inductive package (Hol_coreln):
+(* Currently we define STRONG_EQUIV (strong bisimilarity) by HOL's co-inductive
+   relation package (Hol_coreln):
 
-val (STRONG_EQUIV_rules, STRONG_EQUIV_coind, STRONG_EQUIV_cases) = Hol_coreln `
-    (!(E :'a CCS) (E' :'a CCS).
+CoInductive STRONG_EQUIV :
+    !(E :'a CCS) (E' :'a CCS).
        (!u.
          (!E1. TRANS E u E1 ==>
                (?E2. TRANS E' u E2 /\ STRONG_EQUIV E1 E2)) /\
          (!E2. TRANS E' u E2 ==>
-               (?E1. TRANS E u E1 /\ STRONG_EQUIV E1 E2))) ==> STRONG_EQUIV E E')`;
+               (?E1. TRANS E u E1 /\ STRONG_EQUIV E1 E2))) ==> STRONG_EQUIV E E'
+End
 
   then the 3rd returned value (STRONG_EQUIV_cases) is just the PROPERTY_STAR:
 
@@ -562,16 +565,14 @@ val (STRONG_EQUIV_rules, STRONG_EQUIV_coind, STRONG_EQUIV_cases) = Hol_coreln `
 val PROPERTY_STAR = save_thm ((* NEW *)
    "PROPERTY_STAR", STRONG_EQUIV_cases);
 
- However, if we started with the original definition of STRONG_EQUIV, which now
- becomes a theorem:
+ However, if we started with the original definition of STRONG_EQUIV:
 
-val STRONG_EQUIV = new_definition (
-   "STRONG_EQUIV",
-  ``STRONG_EQUIV E E' = ?Bsm. Bsm E E' /\ STRONG_BISIM Bsm``);
+Definition STRONG_EQUIV :
+    STRONG_EQUIV E E' = ?Bsm. Bsm E E' /\ STRONG_BISIM Bsm
+End
 
- It's not easy to prove PROPERTY_STAR, below is the proof of Robin Milner through
+ It's not easy to prove PROPERTY_STAR. Below is the proof of Robin Milner through
  a temporarily definition STRONG_EQUIV', originally formalized by Monica Nesi.
-
  *)
 
 (* Definition 3, page 91 in Milner's book. *)
