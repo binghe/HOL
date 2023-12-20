@@ -137,21 +137,33 @@ Definition subterm_def :
         NONE
 End
 
-(* What if M is unsolvable? *)
-Theorem subterm_exists :
-    !p M. p IN ltree_paths (BT M) ==> subterm M p <> NONE
-Proof
-    Induct_on ‘p’
- >- rw [subterm_def]
- >> cheat
-QED
+(* Lemma 10.1.15 [1, p.222]
 
-(* Lemma 10.1.15 [1, p.222] *)
+   NOTE: when ‘p IN ltree_paths (BT M) /\ subterm M p = NONE’, 
+        ‘subterm M (FRONT p)’ must be an unsolvable term.
+ *)
 Theorem subterm_thm :
-    !p M. p IN ltree_paths (BT M) ==>
+    !p M. p IN ltree_paths (BT M) /\ subterm M p <> NONE ==>
           BT (THE (subterm M p)) = THE (ltree_lookup (BT M) p)
 Proof
-    cheat
+    Induct_on ‘p’
+ >- rw [subterm_def, ltree_lookup_def]
+ (* stage work *)
+ >> rw [subterm_def, ltree_lookup]
+ >> qabbrev_tac ‘M0 = principle_hnf M’
+ >> qabbrev_tac ‘n = LAMl_size M0’
+ >> qabbrev_tac ‘vs = FRESH_list n (FV M0)’
+ >> qabbrev_tac ‘M1 = principle_hnf (M0 @* (MAP VAR vs))’
+ >> qabbrev_tac ‘Ms = hnf_children M1’
+ >> Know ‘BT M = ltree_unfold (BT_generator {}) M’ >- rw [BT_def]
+ >> simp [Once ltree_unfold]
+ >> simp [BT_generator_def]
+ >> DISCH_TAC
+ >> simp [LNTH_fromList]
+ >> rw [GSYM BT_def]
+ >> Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BT M)’ MP_TAC
+ >> POP_ORW
+ >> simp [ltree_paths_def, ltree_lookup_def, LNTH_fromList, GSYM BT_def]
 QED
 
 (* Boehm tree of a single free variable *)
