@@ -2585,6 +2585,12 @@ val isPREFIX_CONSR = Q.store_thm(
   ‘x <<= y::ys <=> (x = []) \/ ?xs. (x = y::xs) /\ xs <<= ys’,
   Cases_on ‘x’ >> simp[]);
 
+Theorem isPREFIX_SNOC[simp] :
+    l <<= SNOC x l
+Proof
+    Induct_on ‘l’ >> rw [SNOC, isPREFIX]
+QED
+
 (* ----------------------------------------------------------------------
     SNOC
    ---------------------------------------------------------------------- *)
