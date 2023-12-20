@@ -60,33 +60,8 @@ End
  *)
 Type boehm_tree[pp] = “:(string list # string) option ltree”
 
-(* Definition 10.1.9 [1, p.221] (Effective Boehm tree)
-
-   NOTE: ‘BT_generator0’ is intended to be used for generating a rose tree.
- *)
-Definition BT_generator0_def :
-    BT_generator0 X (M :term) =
-      if solvable M then
-         let M0 = principle_hnf M;
-              n = LAMl_size M0;
-             vs = FRESH_list n (X UNION FV M0);
-             M1 = principle_hnf (M0 @* (MAP VAR vs));
-             Ms = hnf_children M1;
-              y = hnf_headvar M1;
-              h = (vs,y) (* = ‘LAMl vs (VAR y)’ *)
-         in
-            (SOME h, Ms)
-      else
-            (NONE  , [])
-End
-
-Definition BT_generator :
-    BT_generator X (M :term) =
-       let (t,ts) = BT_generator0 X M in (t, fromList ts)
-End
-
-Theorem BT_generator_def :
-  !X M.
+(* Definition 10.1.9 [1, p.221] (Effective Boehm tree) *)
+Definition BT_generator_def :
     BT_generator X M =
       if solvable M then
          let M0 = principle_hnf M;
@@ -100,11 +75,7 @@ Theorem BT_generator_def :
             (SOME h, fromList Ms)
       else
             (NONE  , LNIL)
-Proof
-    RW_TAC std_ss [BT_generator, BT_generator0_def, fromList_def, fromList_11]
- >> ‘n' = n’ by rw [Abbr ‘n’, Abbr ‘n'’]
- >> POP_ASSUM (rfs o wrap)
-QED
+End
 
 Definition BTe_def :
     BTe X M = ltree_unfold (BT_generator X) M
@@ -137,18 +108,27 @@ Definition subterm_def :
         NONE
 End
 
+Theorem subterm_NONE_iff_unsolvable :
+    !p M. p IN ltree_paths (BT M) ==>
+         (subterm M p = NONE <=> p <> [] /\ unsolvable (THE (subterm M (FRONT p))))
+Proof
+    Induct_on ‘p’ using SNOC_INDUCT
+ >- rw [subterm_def]
+ >> rw [FRONT_SNOC]
+ >> cheat
+QED
+
 (* Lemma 10.1.15 [1, p.222]
 
    NOTE: when ‘p IN ltree_paths (BT M) /\ subterm M p = NONE’, 
         ‘subterm M (FRONT p)’ must be an unsolvable term.
  *)
-Theorem subterm_thm :
+Theorem BT_subterm_thm :
     !p M. p IN ltree_paths (BT M) /\ subterm M p <> NONE ==>
           BT (THE (subterm M p)) = THE (ltree_lookup (BT M) p)
 Proof
     Induct_on ‘p’
  >- rw [subterm_def, ltree_lookup_def]
- (* stage work *)
  >> rw [subterm_def, ltree_lookup]
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> qabbrev_tac ‘n = LAMl_size M0’
