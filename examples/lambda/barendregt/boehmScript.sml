@@ -89,63 +89,6 @@ Definition fromNode_def :
     fromNode = OPTION_MAP (\(vs,y). LAMl vs (VAR y))
 End
 
-(* Definition 10.1.13 (iii)
-
-   NOTE: ‘subterm’ is the main device connecting Boehm trees to Boehm transformations.
- *)
-Definition subterm_def :
-    subterm M []      = SOME (M :term) /\
-    subterm M (x::xs) = if solvable M then
-        let M0 = principle_hnf M;
-             n = LAMl_size M0;
-            vs = FRESH_list n (FV M0);
-            M1 = principle_hnf (M0 @* (MAP VAR vs));
-            Ms = hnf_children M1;
-             m = LENGTH Ms
-        in
-            if x < m then subterm (EL x Ms) xs else NONE
-    else
-        NONE
-End
-
-Theorem subterm_NONE_iff_unsolvable :
-    !p M. p IN ltree_paths (BT M) ==>
-         (subterm M p = NONE <=> p <> [] /\ unsolvable (THE (subterm M (FRONT p))))
-Proof
-    Induct_on ‘p’ using SNOC_INDUCT
- >- rw [subterm_def]
- >> rw [FRONT_SNOC]
- >> cheat
-QED
-
-(* Lemma 10.1.15 [1, p.222]
-
-   NOTE: when ‘p IN ltree_paths (BT M) /\ subterm M p = NONE’, 
-        ‘subterm M (FRONT p)’ must be an unsolvable term.
- *)
-Theorem BT_subterm_thm :
-    !p M. p IN ltree_paths (BT M) /\ subterm M p <> NONE ==>
-          BT (THE (subterm M p)) = THE (ltree_lookup (BT M) p)
-Proof
-    Induct_on ‘p’
- >- rw [subterm_def, ltree_lookup_def]
- >> rw [subterm_def, ltree_lookup]
- >> qabbrev_tac ‘M0 = principle_hnf M’
- >> qabbrev_tac ‘n = LAMl_size M0’
- >> qabbrev_tac ‘vs = FRESH_list n (FV M0)’
- >> qabbrev_tac ‘M1 = principle_hnf (M0 @* (MAP VAR vs))’
- >> qabbrev_tac ‘Ms = hnf_children M1’
- >> Know ‘BT M = ltree_unfold (BT_generator {}) M’ >- rw [BT_def]
- >> simp [Once ltree_unfold]
- >> simp [BT_generator_def]
- >> DISCH_TAC
- >> simp [LNTH_fromList]
- >> rw [GSYM BT_def]
- >> Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BT M)’ MP_TAC
- >> POP_ORW
- >> simp [ltree_paths_def, ltree_lookup_def, LNTH_fromList, GSYM BT_def]
-QED
-
 (* Boehm tree of a single free variable *)
 Definition BT_VAR_def :
     BT_VAR x :boehm_tree = Branch (SOME (NIL,x)) LNIL
@@ -214,6 +157,105 @@ Theorem lameq_cong_BT :
     !M N. M == N ==> BT M = BT N
 Proof
     cheat
+QED
+
+(*---------------------------------------------------------------------------*
+ *  subterm
+ *---------------------------------------------------------------------------*)
+
+(* Definition 10.1.13 (iii)
+
+   NOTE: ‘subterm’ is the main device connecting Boehm trees to Boehm transformations.
+ *)
+Definition subterm_def :
+    subterm M []      = SOME (M :term) /\
+    subterm M (x::xs) = if solvable M then
+        let M0 = principle_hnf M;
+             n = LAMl_size M0;
+            vs = FRESH_list n (FV M0);
+            M1 = principle_hnf (M0 @* (MAP VAR vs));
+            Ms = hnf_children M1;
+             m = LENGTH Ms
+        in
+            if x < m then subterm (EL x Ms) xs else NONE
+    else
+        NONE
+End
+
+(* |- !M. subterm M [] = SOME M *)
+Theorem subterm_NIL[simp] = cj 1 subterm_def
+    
+(* Lemma 10.1.15 [1, p.222]
+
+   NOTE: when ‘p IN ltree_paths (BT M) /\ subterm M p = NONE’, 
+        ‘subterm M (FRONT p)’ must be an unsolvable term.
+ *)
+Theorem BT_subterm_thm :
+    !p M. p IN ltree_paths (BT M) /\ subterm M p <> NONE ==>
+          BT (THE (subterm M p)) = THE (ltree_lookup (BT M) p)
+Proof
+    Induct_on ‘p’
+ >- rw [subterm_def, ltree_lookup_def]
+ >> rw [subterm_def, ltree_lookup]
+ >> qabbrev_tac ‘M0 = principle_hnf M’
+ >> qabbrev_tac ‘n = LAMl_size M0’
+ >> qabbrev_tac ‘vs = FRESH_list n (FV M0)’
+ >> qabbrev_tac ‘M1 = principle_hnf (M0 @* (MAP VAR vs))’
+ >> qabbrev_tac ‘Ms = hnf_children M1’
+ >> Know ‘BT M = ltree_unfold (BT_generator {}) M’ >- rw [BT_def]
+ >> simp [Once ltree_unfold]
+ >> simp [BT_generator_def]
+ >> DISCH_TAC
+ >> simp [LNTH_fromList]
+ >> rw [GSYM BT_def]
+ >> Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BT M)’ MP_TAC
+ >> POP_ORW
+ >> simp [ltree_paths_def, ltree_lookup_def, LNTH_fromList, GSYM BT_def]
+QED
+
+Theorem subterm_NONE_iff_unsolvable :
+    !p M. p IN ltree_paths (BT M) ==>
+         (subterm M p = NONE <=> p <> [] /\ unsolvable (THE (subterm M (FRONT p))))
+Proof
+    Induct_on ‘p’
+ >- rw [subterm_def]
+ >> rw [subterm_def]
+ >> qabbrev_tac ‘M0 = principle_hnf M’
+ >> qabbrev_tac ‘n = LAMl_size M0’
+ >> qabbrev_tac ‘vs = FRESH_list n (FV M0)’
+ >> qabbrev_tac ‘M1 = principle_hnf (M0 @* (MAP VAR vs))’
+ >> qabbrev_tac ‘Ms = hnf_children M1’
+ >> reverse (Cases_on ‘solvable M’)
+ >- (rw [] \\
+     Suff ‘p = []’ >- rw [subterm_NIL] \\
+     Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BT M)’ MP_TAC \\
+     simp [BT_of_unsolvables, ltree_paths_def, ltree_lookup_def])
+ >> simp []
+ (* now: solvable M *)
+ >> Cases_on ‘p = []’
+ >- (rw [subterm_NIL] \\
+     Q.PAT_X_ASSUM ‘[h] IN ltree_paths (BT M)’ MP_TAC \\
+     simp [BTe_def, Once ltree_unfold, BT_generator_def, ltree_paths_def,
+           ltree_lookup_def, LNTH_fromList] \\
+     Cases_on ‘h < LENGTH Ms’ >> simp [])
+ (* now: p <> [] *)
+ >> Know ‘h < LENGTH Ms’
+ >- (Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BT M)’ MP_TAC \\
+     simp [BTe_def, Once ltree_unfold, BT_generator_def, ltree_paths_def,
+           ltree_lookup_def, LNTH_fromList] \\
+     Cases_on ‘h < LENGTH Ms’ >> simp [])
+ >> RW_TAC std_ss [FRONT_DEF]
+ (* stage work *)
+ >> qabbrev_tac ‘N = EL h Ms’
+ >> Know ‘subterm M (h::FRONT p) = subterm N (FRONT p)’
+ >- rw [subterm_def]
+ >> Rewr'
+ >> FULL_SIMP_TAC std_ss []
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ (* p IN ltree_paths (BT N) *)
+ >> Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BT M)’ MP_TAC
+ >> simp [BTe_def, Once ltree_unfold, BT_generator_def, ltree_paths_def,
+          ltree_lookup_def, LNTH_fromList]
 QED
 
 (*---------------------------------------------------------------------------*
