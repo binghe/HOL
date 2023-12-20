@@ -2585,12 +2585,6 @@ val isPREFIX_CONSR = Q.store_thm(
   ‘x <<= y::ys <=> (x = []) \/ ?xs. (x = y::xs) /\ xs <<= ys’,
   Cases_on ‘x’ >> simp[]);
 
-Theorem isPREFIX_SNOC[simp] :
-    l <<= SNOC x l
-Proof
-    Induct_on ‘l’ >> rw [SNOC, isPREFIX]
-QED
-
 (* ----------------------------------------------------------------------
     SNOC
    ---------------------------------------------------------------------- *)
@@ -2725,7 +2719,6 @@ val f_REVERSE_lemma = TAC_PROOF (([],
       (GEN (“x:('a)list”) (BETA_RULE (AP_THM x (“REVERSE (x:('a)list)”))))))),
       ASM_REWRITE_TAC[]]);
 
-
 val SNOC_Axiom_old = prove(
   “!(e:'b) (f:'b -> ('a -> (('a)list -> 'b))).
         ?! fn1.
@@ -2771,6 +2764,12 @@ val SNOC_Axiom = store_thm(
 
 val SNOC_INDUCT = save_thm("SNOC_INDUCT", prove_induction_thm SNOC_Axiom_old);
 val SNOC_CASES =  save_thm("SNOC_CASES", hd (prove_cases_thm SNOC_INDUCT));
+
+Theorem isPREFIX_SNOC[simp] :
+    l <<= SNOC x l
+Proof
+    Induct_on ‘l’ >> rw [SNOC, isPREFIX]
+QED
 
 (*--------------------------------------------------------------*)
 (* List generator                                               *)

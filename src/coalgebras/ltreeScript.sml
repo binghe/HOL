@@ -8,9 +8,10 @@
   Note that this tree data structure allows for both infinite depth
   and infinite breadth.
 *)
-open HolKernel Parse boolLib bossLib term_tactic;
+open HolKernel Parse boolLib bossLib;
+
 open arithmeticTheory listTheory llistTheory alistTheory optionTheory;
-open mp_then pred_setTheory relationTheory pairTheory combinTheory;
+open pred_setTheory relationTheory pairTheory combinTheory hurdUtils;
 
 val _ = new_theory "ltree";
 
@@ -811,8 +812,8 @@ Definition ltree_paths_def :
     ltree_paths t = {p | ltree_lookup t p <> NONE}
 End
 
-Theorem ltree_lookup_valid :
-    !p t. p IN ltree_paths t ==> ltree_lookup t p <> NONE
+Theorem IN_ltree_lookup :
+    !p t. p IN ltree_paths t <=> ltree_lookup t p <> NONE
 Proof
     rw [ltree_paths_def]
 QED
@@ -821,6 +822,25 @@ Theorem NIL_IN_ltree_paths[simp] :
     [] IN ltree_paths t
 Proof
     rw [ltree_paths_def, ltree_lookup_def]
+QED
+
+Theorem ltree_paths_inclusive :
+    !l1 l2 t. l1 <<= l2 /\ l2 IN ltree_paths t ==> l1 IN ltree_paths t
+Proof
+    Induct_on ‘l1’
+ >> rw [] (* only one goal left *)
+ >> Cases_on ‘l2’ >> fs []
+ >> rename1 ‘l1 <<= l2’
+ >> Q.PAT_X_ASSUM ‘h = h'’ K_TAC
+ >> rename1 ‘h::l1 IN ltree_paths t’
+ >> POP_ASSUM MP_TAC
+ >> ‘?a ts. t = Branch a ts’ by METIS_TAC [ltree_cases]
+ >> POP_ORW
+ >> simp [ltree_paths_def, ltree_lookup_def]
+ >> Cases_on ‘LNTH h ts’ >> rw []
+ >> fs [GSYM IN_ltree_lookup]
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘l2’ >> rw []
 QED
 
 Theorem ltree_el :

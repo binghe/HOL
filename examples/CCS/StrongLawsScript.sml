@@ -1514,8 +1514,7 @@ val SYNC_TRANS_THM_EQ = store_thm (
          (REWRITE_RULE [DE_MORGAN_THM]
                        (ASSUME ``~(((u :'a Action) = tau) \/
                                  (PREF_ACT ((f: num -> 'a CCS) 0) = tau))``)) \\
-        IMP_RES_TAC Action_no_tau_is_Label \\
-        art [LABEL_def] \\
+        IMP_RES_TAC Action_no_tau_is_Label >> art [LABEL_def] \\
         COND_CASES_TAC >| (* 2 sub-goals here *)
         [ (* goal 1.2.1 (of 2) *)
           EQ_TAC >| (* 2 sub-goals here *)
@@ -1523,11 +1522,9 @@ val SYNC_TRANS_THM_EQ = store_thm (
             DISCH_TAC \\
             IMP_RES_TAC TRANS_PREFIX \\
             EXISTS_TAC ``0: num`` \\
-            EXISTS_TAC ``x' :'a Label`` \\
-            art [COMPL_COMPL_LAB],
+            EXISTS_TAC ``x' :'a Label`` >> art [COMPL_COMPL_LAB],
             (* goal 1.2.1.2 (of 2) *)
-            STRIP_TAC \\
-            art [PREFIX] ],
+            STRIP_TAC >> art [PREFIX] ],
           (* goal 1.2.2 (of 2) *)
           REWRITE_TAC [NIL_NO_TRANS] \\
           STRIP_TAC \\
