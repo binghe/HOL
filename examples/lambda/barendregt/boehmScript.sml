@@ -66,7 +66,7 @@ Definition BT_generator_def :
       if solvable M then
          let M0 = principle_hnf M;
               n = LAMl_size M0;
-             vs = FRESH_list n (X UNION FV M0);
+             vs = FRESH_list n X;
              M1 = principle_hnf (M0 @* (MAP VAR vs));
              Ms = hnf_children M1;
               y = hnf_headvar M1;
@@ -81,7 +81,7 @@ Definition BTe_def :
     BTe X = ltree_unfold (BT_generator X)
 End
 
-Overload BT = “BTe {}”
+Overload BT = “\M. BTe (FV M) M”
 val BT_def = BTe_def; (* for backward compatibility *)
 
 (* from BT tree node data to terms in form of ‘SOME (LAMl vs (VAR y))’ or NONE *)
@@ -91,7 +91,7 @@ End
 
 (* Boehm tree of a single free variable *)
 Definition BT_VAR_def :
-    BT_VAR x :boehm_tree = Branch (SOME (NIL,x)) LNIL
+    BT_VAR s :boehm_tree = Branch (SOME (NIL,s)) LNIL
 End
 
 (* Remarks 10.1.3 (iii) [1, p.216]: unsolvable terms all have the same Boehm
@@ -109,26 +109,26 @@ val _ = TeX_notation {hol = "bot", TeX = ("\\ensuremath{\\bot}", 1)};
 
 (* some easy theorems about Boehm trees of unsolvable terms *)
 Theorem BT_of_unsolvables :
-    !M. unsolvable M ==> BT M = bot
+    !X M. unsolvable M ==> BTe X M = bot
 Proof
     rw [BT_def, BT_generator_def, ltree_unfold, ltree_map]
 QED
 
 Theorem BT_of_unsolvables_EQ :
-    !M N. unsolvable M /\ unsolvable N ==> BT M = BT N
+    !X M N. unsolvable M /\ unsolvable N ==> BTe X M = BTe X N
 Proof
     rw [BT_of_unsolvables]
 QED
 
 Theorem finite_branching_BT :
-    !M. finite_branching (BT M)
+    !X M. finite_branching (BTe X M)
 Proof
-    Q.X_GEN_TAC ‘M’
+    rpt GEN_TAC
  >> irule finite_branching_coind'
- >> Q.EXISTS_TAC ‘\b. ?M. b = BT M’
+ >> Q.EXISTS_TAC ‘\b. ?M. b = BTe X M’
  >> rw [] >- (Q.EXISTS_TAC ‘M’ >> rw [])
- >> qabbrev_tac ‘a = ltree_node (BT M)’
- >> qabbrev_tac ‘ts = ltree_children (BT M)’
+ >> qabbrev_tac ‘a = ltree_node (BTe X M)’
+ >> qabbrev_tac ‘ts = ltree_children (BTe X M)’
  >> qexistsl_tac [‘a’, ‘ts’]
  >> CONJ_TAC
  >- (reverse (RW_TAC std_ss [BT_def, BT_generator_def, Once ltree_unfold])
@@ -143,7 +143,7 @@ Proof
  >- (reverse (RW_TAC std_ss [Abbr ‘ts’, BT_def, BT_generator_def, Once ltree_unfold])
      >- rw [] \\
      rw [LFINITE_fromList])
- >> qabbrev_tac ‘P = \b. ?M. b = BT M’
+ >> qabbrev_tac ‘P = \b. ?M. b = BTe X M’
  >> reverse (RW_TAC std_ss [Abbr ‘ts’, BT_def, BT_generator_def, Once ltree_unfold])
  >- rw []
  >> rw [every_fromList_EVERY, LMAP_fromList]
@@ -154,9 +154,10 @@ QED
 
 (* Proposition 10.1.6 [1, p.219] *)
 Theorem lameq_cong_BT :
-    !M N. M == N ==> BT M = BT N
+    !X M N. X = FV M UNION FV N /\ M == N ==> BTe X M = BTe X N
 Proof
-    rpt STRIP_TAC
+    RW_TAC std_ss []
+ >> qabbrev_tac ‘X = FV M UNION FV N’
  >> reverse (Cases_on ‘solvable M’)
  >- (‘unsolvable N’ by METIS_TAC [lameq_solvable_cong] \\
      rw [BT_of_unsolvables])
@@ -164,12 +165,36 @@ Proof
  >> ‘solvable N’ by METIS_TAC [lameq_solvable_cong]
  (* applying ltree_bisimulation *)
  >> rw [ltree_bisimulation]
- >> Q.EXISTS_TAC ‘\x y. ?P Q. P == Q /\ x = BT P /\ y = BT Q’
+ >> Q.EXISTS_TAC ‘\x y. ?P Q Y. P == Q /\ solvable P /\ solvable Q /\
+                                Y = FV P UNION FV Q /\
+                                x = BTe Y P /\ y = BTe Y Q’
  >> BETA_TAC
- >> CONJ_TAC
- >- (qexistsl_tac [‘M’, ‘N’] >> rw [])
+ >> CONJ_TAC >- (qexistsl_tac [‘M’, ‘N’, ‘X’] >> rw [])
+ (* stage work *)
  >> qx_genl_tac [‘a1’, ‘ts1’, ‘a2’, ‘ts2’]
  >> STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘Y = FV P UNION FV Q’ (fs o wrap)
+ >> qabbrev_tac ‘Y = FV P UNION FV Q’
+ >> qabbrev_tac ‘P0 = principle_hnf P’
+ >> qabbrev_tac ‘n = LAMl_size P0’
+ >> qabbrev_tac ‘vs = FRESH_list n Y’
+ >> qabbrev_tac ‘P1 = principle_hnf (P0 @* MAP VAR vs)’
+ >> qabbrev_tac ‘Ps = hnf_children P1’
+ >> qabbrev_tac ‘y = hnf_headvar P1’
+ (* applying ltree_unfold *)
+ >> Q.PAT_X_ASSUM ‘_ = BTe Y P’ MP_TAC
+ >> simp [BT_def, Once ltree_unfold, BT_generator_def]
+ >> qabbrev_tac ‘Q0 = principle_hnf Q’
+ >> qabbrev_tac ‘n' = LAMl_size Q0’
+ >> qabbrev_tac ‘vs' = FRESH_list n' Y’
+ >> qabbrev_tac ‘Q1 = principle_hnf (Q0 @* MAP VAR vs')’
+ >> qabbrev_tac ‘Qs = hnf_children Q1’
+ >> qabbrev_tac ‘y' = hnf_headvar Q1’
+ (* applying ltree_unfold, again *)
+ >> Q.PAT_X_ASSUM ‘_ = BTe Y Q’ MP_TAC
+ >> simp [BT_def, Once ltree_unfold, BT_generator_def]
+ >> NTAC 2 STRIP_TAC
+ (* applying hnf_cases_shared *)
  >> cheat
 QED
 
@@ -182,92 +207,101 @@ QED
    NOTE: ‘subterm’ is the main device connecting Boehm trees to Boehm transformations.
  *)
 Definition subterm_def :
-    subterm M []      = SOME (M :term) /\
-    subterm M (x::xs) = if solvable M then
+    subterm X M []      = SOME (M :term) /\
+    subterm X M (x::xs) = if solvable M then
         let M0 = principle_hnf M;
              n = LAMl_size M0;
-            vs = FRESH_list n (FV M0);
+            vs = FRESH_list n X;
             M1 = principle_hnf (M0 @* (MAP VAR vs));
             Ms = hnf_children M1;
              m = LENGTH Ms
         in
-            if x < m then subterm (EL x Ms) xs else NONE
+            if x < m then subterm X (EL x Ms) xs else NONE
     else
         NONE
 End
 
-(* |- !M. subterm M [] = SOME M *)
+(* |- !X M. subterm X M [] = SOME M *)
 Theorem subterm_NIL[simp] = cj 1 subterm_def
-    
+
 (* Lemma 10.1.15 [1, p.222]
 
-   NOTE: when ‘p IN ltree_paths (BT M) /\ subterm M p = NONE’, 
+   NOTE: when ‘p IN ltree_paths (BT M) /\ subterm M p = NONE’,
         ‘subterm M (FRONT p)’ must be an unsolvable term.
  *)
 Theorem BT_subterm_thm :
-    !p M. p IN ltree_paths (BT M) /\ subterm M p <> NONE ==>
-          BT (THE (subterm M p)) = THE (ltree_lookup (BT M) p)
+    !X p M. p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
+            BTe X (THE (subterm X M p)) = THE (ltree_lookup (BTe X M) p)
 Proof
-    Induct_on ‘p’
+    Q.X_GEN_TAC ‘X’
+ >> Induct_on ‘p’
  >- rw [subterm_def, ltree_lookup_def]
  >> rw [subterm_def, ltree_lookup]
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> qabbrev_tac ‘n = LAMl_size M0’
- >> qabbrev_tac ‘vs = FRESH_list n (FV M0)’
+ >> qabbrev_tac ‘vs = FRESH_list n X’
  >> qabbrev_tac ‘M1 = principle_hnf (M0 @* (MAP VAR vs))’
  >> qabbrev_tac ‘Ms = hnf_children M1’
- >> Know ‘BT M = ltree_unfold (BT_generator {}) M’ >- rw [BT_def]
+ >> Know ‘BTe X M = ltree_unfold (BT_generator X) M’ >- rw [BT_def]
  >> simp [Once ltree_unfold]
  >> simp [BT_generator_def]
  >> DISCH_TAC
  >> simp [LNTH_fromList]
  >> rw [GSYM BT_def]
- >> Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BT M)’ MP_TAC
+ >> Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BTe X M)’ MP_TAC
  >> POP_ORW
  >> simp [ltree_paths_def, ltree_lookup_def, LNTH_fromList, GSYM BT_def]
 QED
 
+(* |- !p M.
+        p IN ltree_paths (BT M) /\ subterm (FV M) M p <> NONE ==>
+        BTe (FV M) (THE (subterm (FV M) M p)) = THE (ltree_lookup (BT M) p)
+ *)
+Theorem BT_subterm_thm' =
+        BT_subterm_thm |> Q.SPECL [‘FV (M :term)’, ‘p’, ‘M’] |> GEN_ALL
+
 Theorem subterm_NONE_iff_unsolvable :
-    !p M. p IN ltree_paths (BT M) ==>
-         (subterm M p = NONE <=> p <> [] /\ unsolvable (THE (subterm M (FRONT p))))
+    !X p M. p IN ltree_paths (BTe X M) ==>
+           (subterm X M p = NONE <=> p <> [] /\ unsolvable (THE (subterm X M (FRONT p))))
 Proof
-    Induct_on ‘p’
+    Q.X_GEN_TAC ‘X’
+ >> Induct_on ‘p’
  >- rw [subterm_def]
  >> rw [subterm_def]
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> qabbrev_tac ‘n = LAMl_size M0’
- >> qabbrev_tac ‘vs = FRESH_list n (FV M0)’
+ >> qabbrev_tac ‘vs = FRESH_list n X’
  >> qabbrev_tac ‘M1 = principle_hnf (M0 @* (MAP VAR vs))’
  >> qabbrev_tac ‘Ms = hnf_children M1’
  >> reverse (Cases_on ‘solvable M’)
  >- (rw [] \\
      Suff ‘p = []’ >- rw [subterm_NIL] \\
-     Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BT M)’ MP_TAC \\
+     Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BTe X M)’ MP_TAC \\
      simp [BT_of_unsolvables, ltree_paths_def, ltree_lookup_def])
  >> simp []
  (* now: solvable M *)
  >> Cases_on ‘p = []’
  >- (rw [subterm_NIL] \\
-     Q.PAT_X_ASSUM ‘[h] IN ltree_paths (BT M)’ MP_TAC \\
+     Q.PAT_X_ASSUM ‘[h] IN ltree_paths (BTe X M)’ MP_TAC \\
      simp [BTe_def, Once ltree_unfold, BT_generator_def, ltree_paths_def,
            ltree_lookup_def, LNTH_fromList] \\
      Cases_on ‘h < LENGTH Ms’ >> simp [])
  (* now: p <> [] *)
  >> Know ‘h < LENGTH Ms’
- >- (Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BT M)’ MP_TAC \\
+ >- (Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BTe X M)’ MP_TAC \\
      simp [BTe_def, Once ltree_unfold, BT_generator_def, ltree_paths_def,
            ltree_lookup_def, LNTH_fromList] \\
      Cases_on ‘h < LENGTH Ms’ >> simp [])
  >> RW_TAC std_ss [FRONT_DEF]
  (* stage work *)
  >> qabbrev_tac ‘N = EL h Ms’
- >> Know ‘subterm M (h::FRONT p) = subterm N (FRONT p)’
+ >> Know ‘subterm X M (h::FRONT p) = subterm X N (FRONT p)’
  >- rw [subterm_def]
  >> Rewr'
  >> FULL_SIMP_TAC std_ss []
  >> FIRST_X_ASSUM MATCH_MP_TAC
- (* p IN ltree_paths (BT N) *)
- >> Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BT M)’ MP_TAC
+ (* p IN ltree_paths (BTe X N) *)
+ >> Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BTe X M)’ MP_TAC
  >> simp [BTe_def, Once ltree_unfold, BT_generator_def, ltree_paths_def,
           ltree_lookup_def, LNTH_fromList]
 QED
@@ -1332,10 +1366,10 @@ QED
 
 (* Lemma 10.3.7 (i) [1, p.247] *)
 Theorem Boehm_transform_exists_lemma2 :
-    !M p. p IN ltree_paths (BT M) ==>
+    !X M p. p IN ltree_paths (BTe X M) ==>
             ?pi. Boehm_transform pi /\ is_ready (apply pi M) /\
-                 THE (subterm (apply pi M) p)
-                 is_substitution_instance_of (THE (subterm M p))
+                 THE (subterm X (apply pi M) p)
+                 is_substitution_instance_of (THE (subterm X M p))
 Proof
     cheat
 QED
