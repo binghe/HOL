@@ -1102,7 +1102,7 @@ val STRONG_RELAB_PREFIX = store_thm (
 
 (* The unfolding law R1 for strong equivalence: (Proposition 4.11 of [1, p.99])
 
-   If A := P, then STRONG_EQUIV A P
+   If A := P, then A ~ P
 
    where A is ‘rec X E’, P is ‘CCS_Subst E (rec X E) X’ (instead of just E)
  *)
@@ -1134,7 +1134,7 @@ Proof
         IMP_RES_TAC TRANS_REC >> art [],
         (* goal 2.4 (of 4) *)
         Q.EXISTS_TAC `E2` \\
-        art
+        ASM_REWRITE_TAC
          [REWRITE_RULE [ASSUME ``E' = CCS_Subst E'' (rec Y E'') Y``]
                        (ASSUME ``TRANS E' u E2``), TRANS_REC_EQ] ] ]
 QED

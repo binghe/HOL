@@ -137,7 +137,7 @@ Proof
     REWRITE_TAC [STRONG_EQUIV_def, BISIM_REL_IS_EQUIV_REL]
 QED
 
-Theorem STRONG_EQUIV_REFL :
+Theorem STRONG_EQUIV_REFL[simp] :
     !E. STRONG_EQUIV E E
 Proof
     PROVE_TAC [REWRITE_RULE [equivalence_def, reflexive_def]
@@ -149,6 +149,12 @@ Theorem STRONG_EQUIV_SYM :
 Proof
     PROVE_TAC [REWRITE_RULE [equivalence_def, symmetric_def]
                             STRONG_EQUIV_equivalence]
+QED
+
+Theorem STRONG_EQUIV_SYM_EQ :
+    !E E'. STRONG_EQUIV E E' <=> STRONG_EQUIV E' E
+Proof
+    rpt GEN_TAC >> EQ_TAC >> rw [STRONG_EQUIV_SYM]
 QED
 
 Theorem STRONG_EQUIV_TRANS :

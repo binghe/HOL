@@ -11,23 +11,16 @@
 
 open HolKernel Parse boolLib bossLib;
 
-open pred_setTheory relationTheory combinTheory arithmeticTheory;
+open pred_setTheory pred_setLib relationTheory combinTheory arithmeticTheory;
 
-open CCSLib LabelTheory CCSTheory TransTheory;
+open CCSLib LabelTheory CCSTheory TransTheory binderLib;
 open StrongEQTheory StrongLawsTheory WeakEQTheory WeakLawsTheory;
 open ObsCongrTheory ObsCongrLib ObsCongrLawsTheory ObsCongrConv;
 open BisimulationUptoTheory;
 
 val _ = new_theory "Congruence";
-val _ = temp_loose_equality ();
 
-(******************************************************************************)
-(*                                                                            *)
-(*                STRONG_EQ is preserved by recursive definition              *)
-(*                                                                            *)
-(******************************************************************************)
-
-(* moved to MultivariateScript.sml *)
+val set_ss = std_ss ++ PRED_SET_ss;
 
 (******************************************************************************)
 (*                                                                            *)
@@ -165,6 +158,15 @@ Proof
       METIS_TAC [] ]
 QED
 
+Theorem CONTEXT3_full :
+    !e u. CONTEXT (\t. prefix u (e t)) <=> CONTEXT e
+Proof
+    rpt GEN_TAC
+ >> EQ_TAC
+ >- REWRITE_TAC [CONTEXT3_backward]
+ >> REWRITE_TAC [CONTEXT3]
+QED
+
 Theorem CONTEXT4_backward :
     !e e'. CONTEXT (\t. sum (e t) (e' t)) ==> CONTEXT e /\ CONTEXT e'
 Proof
@@ -177,6 +179,15 @@ Proof
       SIMP_TAC std_ss [CCS_distinct],
       (* goal 2 (of 2) *)
       METIS_TAC [] ] )
+QED
+
+Theorem CONTEXT4_full :
+    !e e'. CONTEXT (\t. sum (e t) (e' t)) <=> CONTEXT e /\ CONTEXT e'
+Proof
+    rpt GEN_TAC
+ >> EQ_TAC
+ >- REWRITE_TAC [CONTEXT4_backward]
+ >> REWRITE_TAC [CONTEXT4]
 QED
 
 Theorem CONTEXT5_backward :
@@ -193,6 +204,15 @@ Proof
       METIS_TAC [] ] )
 QED
 
+Theorem CONTEXT5_full :
+    !e e'. CONTEXT (\t. par (e t) (e' t)) <=> CONTEXT e /\ CONTEXT e'
+Proof
+    rpt GEN_TAC
+ >> EQ_TAC
+ >- REWRITE_TAC [CONTEXT5_backward]
+ >> REWRITE_TAC [CONTEXT5]
+QED
+
 Theorem CONTEXT6_backward :
     !e L. CONTEXT (\t. restr L (e t)) ==> CONTEXT e
 Proof
@@ -206,6 +226,15 @@ Proof
       METIS_TAC [] ]
 QED
 
+Theorem CONTEXT6_full :
+    !e L. CONTEXT (\t. restr L (e t)) <=> CONTEXT e
+Proof
+    rpt GEN_TAC
+ >> EQ_TAC
+ >- REWRITE_TAC [CONTEXT6_backward]
+ >> REWRITE_TAC [CONTEXT6]
+QED
+
 Theorem CONTEXT7_backward :
     !e rf. CONTEXT (\t. relab (e t) rf) ==> CONTEXT e
 Proof
@@ -217,6 +246,15 @@ Proof
       SIMP_TAC std_ss [CCS_distinct],
       (* goal 2 (of 3) *)
       METIS_TAC [] ]
+QED
+
+Theorem CONTEXT7_full :
+    !e rf. CONTEXT (\t. relab (e t) rf) <=> CONTEXT e
+Proof
+    rpt GEN_TAC
+ >> EQ_TAC
+ >- REWRITE_TAC [CONTEXT7_backward]
+ >> REWRITE_TAC [CONTEXT7]
 QED
 
 Theorem CONTEXT_combin :
@@ -278,31 +316,123 @@ Proof
       MATCH_MP_TAC CONTEXT8 >> art [] ]
 QED
 
-(* This is Proposition 4.12 of [1, p.99] or Theorem 4.2 of [2, p.182]
+(******************************************************************************)
+(*                                                                            *)
+(*                STRONG_EQ is preserved by recursive definition              *)
+(*                                                                            *)
+(******************************************************************************)
+(*
+Theorem STRONG_EQUIV_PRESD_BY_REC_lemma :
+    FV P SUBSET {X} /\ FV Q SUBSET {X} /\ STRONG_EQUIV P Q /\
+    CONTEXT E /\ E P --u-> E1 ==>
+    ?E2. E Q --u-> E2 /\
+        (STRONG_EQUIV O (\x y. ?E. CONTEXT E /\ x = E P /\ y = E Q) O
+         STRONG_EQUIV) E1 E2
+Proof
+    rpt STRIP_TAC
+ >> NTAC 2 (POP_ASSUM MP_TAC)
+ >> Q.ID_SPEC_TAC ‘E’
+ >> HO_MATCH_MP_TAC CONTEXT_strongind_X
+ >> Q.EXISTS_TAC ‘{X}’
+ >> rw [] (* 9 subgoals *)
+ >| [ (* goal 1 (of 9) *)
+     ‘?E2. Q --u-> E2 /\ STRONG_EQUIV E1 E2’ by METIS_TAC [PROPERTY_STAR_LEFT] \\
+      Q.EXISTS_TAC ‘E2’ >> rw [O_DEF] \\
+      Q.EXISTS_TAC ‘E1’ >> art [] \\
+     ‘FV E1 SUBSET FV P’ by PROVE_TAC [TRANS_FV] \\
+     ‘FV E1 SUBSET {X}’ by PROVE_TAC [SUBSET_TRANS] \\
+      Q.EXISTS_TAC ‘E1’ >> rw [STRONG_EQUIV_REFL] \\
+      Q.EXISTS_TAC ‘\t. E1’ >> rw [CONTEXT2],
+      (* goal 2 (of 9) *)
+      PROVE_TAC [NIL_NO_TRANS],
+      (* goal 3 (of 9) *)
+      PROVE_TAC [VAR_NO_TRANS],
+      (* goal 4 (of 9) *)
+      FULL_SIMP_TAC std_ss [TRANS_PREFIX_EQ] \\
+      rw [O_DEF] \\
+      Q.EXISTS_TAC ‘E Q’ >> rw [STRONG_EQUIV_REFL] \\
+      Q.EXISTS_TAC ‘E P’ >> rw [STRONG_EQUIV_REFL] \\
+      Q.EXISTS_TAC ‘E’ >> rw [],
+      (* goal 5 (of 9) *)
+      FULL_SIMP_TAC std_ss [TRANS_SUM_EQ] >| (* 2 subgoals *)
+      [ (* goal 5.1 (of 2) *)
+        FULL_SIMP_TAC std_ss [] \\
+        Q.EXISTS_TAC ‘E2’ >> rw [],
+        (* goal 5.2 (of 2) *)
+        FULL_SIMP_TAC std_ss [] \\
+        Q.EXISTS_TAC ‘E2’ >> rw [] ],
+      (* goal 6 (of 9) *)
+      cheat, (* FULL_SIMP_TAC std_ss [TRANS_PAR_EQ] *)
+      (* goal 7 (of 9) *)
+      cheat, (* FULL_SIMP_TAC std_ss [TRANS_RESTR_EQ] *)
+      (* goal 8 (of 9) *)
+      cheat, (* FULL_SIMP_TAC std_ss [TRANS_RELAB_EQ] *)
+      (* goal 9 (of 9) *)
+      FULL_SIMP_TAC std_ss [TRANS_REC_EQ] \\
+      cheat ]
+QED
 
-   Let P and Q contain (free, recursion) variable X at most.
-   Let A = P{A/X} (or `rec X P`), B = Q{B/X} (or `rec X Q`) and E ~ F.
-   Then A ~ B.
+(* Proposition 4.12 of [1, p.99] or Theorem 4.2 of [2, p.182]
+
+   NOTE: The textbook requirement ‘FV P SUBSET {X} /\ FV Q SUBSET {X}’ is
+   necessary, because: if P and Q contains unbounded ‘var s’ subterms other
+   than ‘var X’, then these ‘var s’, together with ‘var X’ should all have
+   no contributions in making transitions (see VAR_NO_TRANS), but further
+   wrapping both P and Q with ‘rec X’ may additionally cause more transitions
+   on the side with ‘var X’. In another words, let
+
+   P = a..var X and Q = a..var Y
+
+   clearly P ~ Q since they both have just one transitions (--a->). But then
+
+   rec X P := rec X (a..var X)   and
+   rec X Q := rec X (a..var Y)   (X <> Y)
+
+   behave differently in bisimilarity tests: ‘rec X P’ has infinite many a-
+   transitions, while ‘rec X Q’ still has just one a-transition, thus no more
+   bisimilar.
+
+   To prevent this issue, we must at least require that subterms like ‘var Y’
+   do not occur, i.e.
+
+      "P contains free variables at most X"  or  FV P SUBSET {X}.
+
+   Note that it doesn't forbid bounded variables, e.g. rec Z (var Z + var X)
  *)
 Theorem STRONG_EQUIV_PRESD_BY_REC :
-    !X P Q. STRONG_EQUIV P Q ==> STRONG_EQUIV (rec X P) (rec X Q)
+    !X P Q. FV P SUBSET {X} /\ FV Q SUBSET {X} /\ STRONG_EQUIV P Q ==>
+            STRONG_EQUIV (rec X P) (rec X Q)
 Proof
     rpt STRIP_TAC
  (* applying STRONG_EQUIV_BY_BISIM_UPTO *)
  >> MATCH_MP_TAC STRONG_EQUIV_BY_BISIM_UPTO
- >> Q.EXISTS_TAC ‘\x y. ?E. CONTEXT E /\ (x = E (rec X P)) /\ (y = E (rec X Q))’
+ >> Q.EXISTS_TAC ‘\x y. ?E. CONTEXT E /\ x = E P /\ y = E Q /\
+                            (!t. FV t SUBSET FV (E t))’
  >> BETA_TAC
  >> reverse CONJ_TAC
- >- (Q.EXISTS_TAC ‘\t. t’ >> rw [CONTEXT1])
+ >- (Q.EXISTS_TAC ‘\t. rec X ((\t. t) t)’ >> rw [CONTEXT1, CONTEXT8])
  (* stage work *)
  >> rw [STRONG_BISIM_UPTO]
- (* two subgoals *)
- >> NTAC 2 (POP_ASSUM MP_TAC)
- >> Q.ID_SPEC_TAC ‘E’
- >> HO_MATCH_MP_TAC CONTEXT_ind >> BETA_TAC
- >> rw [] (* 9 subgoals *)
- >> cheat
+ >- (MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_REC_lemma >> art [])
+ >> Know ‘!E1. (STRONG_EQUIV O (\x y. ?E. CONTEXT E /\ (x = E P) /\ (y = E Q))
+                O STRONG_EQUIV) E1 E2 <=>
+               (STRONG_EQUIV O (\x y. ?E. CONTEXT E /\ (x = E Q) /\ (y = E P))
+                O STRONG_EQUIV) E2 E1’
+ >- (rw [O_DEF] \\
+     EQ_TAC >> rw [] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       Q.EXISTS_TAC ‘E' P’ >> rw [STRONG_EQUIV_SYM] \\
+       Q.EXISTS_TAC ‘E' Q’ >> rw [STRONG_EQUIV_SYM] \\
+       Q.EXISTS_TAC ‘E'’ >> art [],
+       (* goal 2 (of 2) *)
+       Q.EXISTS_TAC ‘E' Q’ >> rw [STRONG_EQUIV_SYM] \\
+       Q.EXISTS_TAC ‘E' P’ >> rw [STRONG_EQUIV_SYM] \\
+       Q.EXISTS_TAC ‘E'’ >> art [] ])
+ >> Rewr'
+ >> MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_REC_lemma
+ >> rw [STRONG_EQUIV_SYM]
 QED
+*)
 
 Theorem STRONG_EQUIV_SUBST_CONTEXT :
     !P Q. STRONG_EQUIV P Q ==> !E. CONTEXT E ==> STRONG_EQUIV (E P) (E Q)
@@ -324,7 +454,7 @@ Proof
       (* goal 5 (of 6) *)
       MATCH_MP_TAC STRONG_EQUIV_SUBST_RELAB >> art [],
       (* goal 6 (of 6) *)
-      MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_REC >> art [] ]
+      cheat ]
 QED
 
 Theorem OBS_CONGR_SUBST_CONTEXT :
