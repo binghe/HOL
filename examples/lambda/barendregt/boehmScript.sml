@@ -78,7 +78,7 @@ Definition BT_generator_def :
 End
 
 Definition BTe_def :
-    BTe X M = ltree_unfold (BT_generator X) M
+    BTe X = ltree_unfold (BT_generator X)
 End
 
 Overload BT = “BTe {}”
@@ -156,7 +156,21 @@ QED
 Theorem lameq_cong_BT :
     !M N. M == N ==> BT M = BT N
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> reverse (Cases_on ‘solvable M’)
+ >- (‘unsolvable N’ by METIS_TAC [lameq_solvable_cong] \\
+     rw [BT_of_unsolvables])
+ (* stage work *)
+ >> ‘solvable N’ by METIS_TAC [lameq_solvable_cong]
+ (* applying ltree_bisimulation *)
+ >> rw [ltree_bisimulation]
+ >> Q.EXISTS_TAC ‘\x y. ?P Q. P == Q /\ x = BT P /\ y = BT Q’
+ >> BETA_TAC
+ >> CONJ_TAC
+ >- (qexistsl_tac [‘M’, ‘N’] >> rw [])
+ >> qx_genl_tac [‘a1’, ‘ts1’, ‘a2’, ‘ts2’]
+ >> STRIP_TAC
+ >> cheat
 QED
 
 (*---------------------------------------------------------------------------*
