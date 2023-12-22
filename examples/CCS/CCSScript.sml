@@ -11,7 +11,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open pred_setTheory pred_setLib relationTheory optionTheory listTheory CCSLib
-     rich_listTheory;
+     rich_listTheory finite_mapTheory;
 
 open generic_termsTheory binderLib nomsetTheory nomdatatype;
 
@@ -238,13 +238,13 @@ val {tpm_thm, term_REP_tpm, t_pmact_t, tpm_t} =
                         cons_info = cons_info, newty = newty,
                         genind_term_REP = genind_term_REP};
 
-Theorem tpm_eqr:
+Theorem tpm_eqr :
     t = tpm pi u <=> tpm (REVERSE pi) t = (u :'a CCS)
 Proof
     METIS_TAC [pmact_inverse]
 QED
 
-Theorem tpm_eql:
+Theorem tpm_eql :
     tpm pi t = u <=> t = tpm (REVERSE pi) (u :'a CCS)
 Proof
     simp[tpm_eqr]
@@ -374,6 +374,21 @@ fun mkX_ind th = th |> Q.SPECL [‘\t x. Q t’, ‘\x. X’]
                     |> Q.INST [‘Q’ |-> ‘P’] |> Q.GEN ‘P’;
 
 Theorem CCS_induction = mkX_ind term_ind
+
+Theorem nc_INDUCTION2 :
+    !P X.
+        (!s. P (var s)) /\ P nil /\ (!u E. P E ==> P (u..E)) /\
+        (!E1 E2. P E1 /\ P E2 ==> P (E1 + E2)) /\
+        (!E1 E2. P E1 /\ P E2 ==> P (E1 || E2)) /\
+        (!L E. P E ==> P (restr L E)) /\
+        (!E rf. P E ==> P (relab E rf)) /\
+        (!y E. P E /\ y NOTIN X ==> P (rec y E)) /\ FINITE X ==>
+        !t. P t
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC CCS_induction
+ >> Q.EXISTS_TAC ‘X’ >> rw []
+QED
 
 Theorem simple_induction =
     CCS_induction |> Q.SPECL [‘P’, ‘{}’]
@@ -1150,8 +1165,13 @@ val PREF_ACT_exists =
                    ‘re’ |-> ‘\m v t. tau’]
         |> SIMP_RULE (srw_ss()) [];
 
-val PREF_ACT_DEF = new_specification
-  ("PREF_ACT_DEF", ["PREF_ACT"], PREF_ACT_exists);
+local val lemma = Q.prove (‘?f. !u E. f (u..E) = u’,
+                           METIS_TAC [PREF_ACT_exists]);
+in
+(* !u E. PREF_ACT (u..E) = u *)
+val PREF_ACT_def = new_specification
+  ("PREF_ACT_def", ["PREF_ACT"], lemma);
+end
 
 val PREF_PROC_exists =
     tm_recursion
@@ -1170,8 +1190,213 @@ val PREF_PROC_exists =
                    ‘re’ |-> ‘\m v t. nil’]
         |> SIMP_RULE (srw_ss()) [];
 
-val PREF_PROC_DEF = new_specification
-  ("PREF_PROC_DEF", ["PREF_PROC"], PREF_PROC_exists);
+local val lemma = Q.prove (‘?f. !u E. f (u..E) = E’,
+                           METIS_TAC [PREF_PROC_exists]);
+in
+(* |- !u E. PREF_PROC (u..E) = E *)
+val PREF_PROC_def = new_specification
+  ("PREF_PROC_def", ["PREF_PROC"], lemma);
+end
+
+(* ----------------------------------------------------------------------
+    Simultaneous substitution (using a finite map) - much more interesting
+   ---------------------------------------------------------------------- *)
+
+Overload fmFV = “supp (fm_pmact string_pmact ^t_pmact_t)”
+Overload tmsFV = “supp (set_pmact ^t_pmact_t)”
+Overload fmtpm = “fmpm string_pmact term_pmact”
+
+Theorem strterm_fmap_supp:
+    fmFV fmap = FDOM fmap ∪ tmsFV (FRANGE fmap)
+Proof
+    SRW_TAC [][fmap_supp]
+QED
+
+Theorem FINITE_strterm_fmap_supp[simp]:
+    FINITE (fmFV fmap)
+Proof
+    SRW_TAC [][strterm_fmap_supp, supp_setpm] >> SRW_TAC [][]
+QED
+
+val lem1 = prove(
+  ``∃a. ~(a ∈ supp (fm_pmact string_pmact ^t_pmact_t) fm)``,
+  Q_TAC (NEW_TAC "z") `supp (fm_pmact string_pmact ^t_pmact_t) fm` THEN
+  METIS_TAC []);
+
+val supp_FRANGE = prove(
+  ``~(x ∈ supp (set_pmact ^t_pmact_t) (FRANGE fm)) =
+   ∀y. y ∈ FDOM fm ==> ~(x ∈ FV (fm ' y))``,
+  SRW_TAC [][supp_setpm, finite_mapTheory.FRANGE_DEF] >> METIS_TAC []);
+
+fun ex_conj1 thm = let
+  val (v,c) = dest_exists (concl thm)
+  val c1 = CONJUNCT1 (ASSUME c)
+  val fm = mk_exists(v,concl c1)
+in
+  CHOOSE (v, thm) (EXISTS(fm,v) c1)
+end
+
+val supp_EMPTY = prove(
+  ``(supp (set_pmact apm) {} = {})``,
+  srw_tac [][EXTENSION] >> match_mp_tac notinsupp_I >>
+  qexists_tac `{}` >> srw_tac [][support_def]);
+
+Theorem lem2[local] :
+    ∀fm. FINITE (tmsFV (FRANGE fm))
+Proof
+    srw_tac [][supp_setpm] >> srw_tac [][]
+QED
+
+val ordering = prove(
+  ``(∃f. P f) <=> (∃f. P (combin$C f))``,
+  srw_tac [][EQ_IMP_THM] >-
+    (qexists_tac `λx y. f y x` >> srw_tac [ETA_ss][combinTheory.C_DEF]) >>
+  metis_tac [])
+
+Theorem notin_frange:
+    v ∉ tmsFV (FRANGE p) <=> ∀y. y ∈ FDOM p ==> v ∉ FV (p ' y)
+Proof
+    srw_tac [][supp_setpm, EQ_IMP_THM, finite_mapTheory.FRANGE_DEF]
+ >> metis_tac []
+QED
+
+val ssub_exists =
+    parameter_tm_recursion
+        |> INST_TYPE [“:'r” |-> “:'a CCS”, “:'q” |-> “:string |-> 'a CCS”]
+        |> Q.INST [‘A’ |-> ‘{}’, ‘apm’ |-> ‘^t_pmact_t’,
+                   ‘ppm’ |-> ‘fm_pmact string_pmact ^t_pmact_t’,
+                   ‘vr’ |-> ‘\s fm. if s IN FDOM fm then fm ' s else var s’,
+                   ‘re’ |-> ‘\r v t fm. rec v (r fm)’,
+                   ‘nl’ |-> ‘\r. nil’,
+                   ‘pf’ |-> ‘\r u t fm. prefix u (r fm)’,
+                   ‘sm’ |-> ‘\r1 r2 t1 t2 fm. r1 fm + r2 fm’,
+                   ‘pr’ |-> ‘\r1 r2 t1 t2 fm. r1 fm || r2 fm’,
+                   ‘rs’ |-> ‘\r L t fm. restr L (r fm)’,
+                   ‘rl’ |-> ‘\r t rf fm. relab (r fm) rf’]
+        |> SIMP_RULE (srw_ss()) [tpm_COND, strterm_fmap_supp, lem2,
+                                 FAPPLY_eqv_lswapstr, supp_fresh,
+                                 pmact_sing_inv, fnpm_def,
+                                 fmpm_FDOM, notin_frange]
+        |> SIMP_RULE (srw_ss()) [Once ordering]
+        |> CONV_RULE (DEPTH_CONV (rename_vars [("p", "fm")]))
+        |> prove_alpha_fcbhyp {ppm = “fm_pmact string_pmact ^t_pmact_t”,
+                               rwts = [notin_frange, strterm_fmap_supp],
+                               alphas = [tpm_ALPHA]};
+
+val ssub_def = new_specification ("ssub_def", ["ssub"], ssub_exists)
+
+(* |- (!s fm. ssub fm (var s) = if s IN FDOM fm then fm ' s else var s) /\
+      (!fm. ssub fm nil = nil) /\ (!x fm t. ssub fm (x..t) = x..ssub fm t) /\
+      (!fm t t'. ssub fm (t' + t) = ssub fm t' + ssub fm t) /\
+      (!fm t t'. ssub fm (t' || t) = ssub fm t' || ssub fm t) /\
+      (!x fm t. ssub fm (restr x t) = restr x (ssub fm t)) /\
+      (!x fm t. ssub fm (relab t x) = relab (ssub fm t) x) /\
+      !v fm t.
+        v NOTIN FDOM fm /\ (!y. y IN FDOM fm ==> v # fm ' y) ==>
+        ssub fm (rec v t) = rec v (ssub fm t)
+ *)
+Theorem ssub_thm[simp] = CONJUNCT1 ssub_def
+
+val _ = overload_on ("'", “ssub”);
+
+val tpm_ssub = save_thm("tpm_ssub", CONJUNCT2 ssub_def);
+
+Theorem single_ssub :
+    !N. (FEMPTY |+ (s,M)) ' N = [M/s] N
+Proof
+    HO_MATCH_MP_TAC CCS_induction >> Q.EXISTS_TAC `s INSERT FV M`
+ >> SRW_TAC [][SUB_VAR, SUB_THM]
+QED
+
+Theorem in_fmap_supp:
+    x IN fmFV fm <=> x IN FDOM fm \/ ?y. y IN FDOM fm /\ x IN FV (fm ' y)
+Proof
+    SRW_TAC [][strterm_fmap_supp, nomsetTheory.supp_setpm]
+ >> SRW_TAC [boolSimps.DNF_ss][finite_mapTheory.FRANGE_DEF]
+ >> METIS_TAC []
+QED
+
+Theorem not_in_fmap_supp[simp]:
+    x NOTIN fmFV fm <=> x NOTIN FDOM fm /\ !y. y IN FDOM fm ==> x NOTIN FV (fm ' y)
+Proof
+    METIS_TAC [in_fmap_supp]
+QED
+
+Theorem ssub_14b:
+    !t. DISJOINT (FV t) (FDOM phi) ==> (phi : string |-> 'a CCS) ' t = t
+Proof
+    HO_MATCH_MP_TAC CCS_induction
+ >> Q.EXISTS_TAC ‘fmFV phi’
+ >> SRW_TAC [][DISJOINT_DEF, SUB_THM, SUB_VAR, pred_setTheory.EXTENSION]
+ >> METIS_TAC []
+QED
+
+Theorem ssub_value :
+    FV t = EMPTY ==> (phi : string |-> 'a CCS) ' t = t
+Proof
+    SRW_TAC [][ssub_14b]
+QED
+
+Theorem ssub_FEMPTY[simp]:
+    !t. (FEMPTY :string |-> 'a CCS) ' t = t
+Proof
+    HO_MATCH_MP_TAC simple_induction >> SRW_TAC [][]
+QED
+
+Theorem FV_ssub :
+    !fm N. (!y. y IN FDOM fm ==> FV (fm ' y) = {}) ==>
+           FV (fm ' N) = FV N DIFF FDOM fm
+Proof
+    rpt STRIP_TAC
+ >> Q.ID_SPEC_TAC ‘N’
+ >> HO_MATCH_MP_TAC CCS_induction
+ >> Q.EXISTS_TAC ‘FDOM fm’
+ >> rw [SUB_VAR, SUB_THM, ssub_thm]
+ >> SET_TAC []
+QED
+
+Theorem fresh_ssub:
+    !N. y NOTIN FV N /\ (!k :string. k IN FDOM fm ==> y # fm ' k) ==> y # fm ' N
+Proof
+    ho_match_mp_tac CCS_induction
+ >> qexists ‘fmFV fm’ >> rw [] >> metis_tac[]
+QED
+
+(* cf. termTheory.ssub_SUBST *)
+Theorem ssub_subst :
+    !M. (!k. k IN FDOM fm ==> v # fm ' k) /\ v NOTIN FDOM fm ==>
+        fm ' ([N/v] M) = [fm ' N/v] (fm ' M)
+Proof
+    ho_match_mp_tac nc_INDUCTION2
+ >> qexists ‘fmFV fm UNION {v} UNION FV N’
+ >> rw [] >> rw [lemma14b, SUB_VAR]
+ >> gvs [DECIDE “~p \/ q <=> p ==> q”, PULL_FORALL]
+ >> ‘y # fm ' N’ suffices_by simp[SUB_THM]
+ >> irule fresh_ssub >> simp []
+QED
+
+(* |- !v fm t.
+        v NOTIN FDOM fm /\ (!y. y IN FDOM fm ==> v # fm ' y) ==>
+        fm ' (rec v t) = rec v (fm ' t)
+ *)
+Theorem ssub_rec = List.nth(CONJUNCTS ssub_thm, 7)
+
+(* cf. termTheory.ssub_update_apply_SUBST *)
+Theorem ssub_update_apply_subst :
+    !M. (!k. k IN FDOM fm ==> v # fm ' k) /\ v NOTIN FDOM fm /\
+        DISJOINT (FDOM fm) (FV N) ==>
+        (fm |+ (v,N)) ' M = fm ' ([N/v] M)
+Proof
+    HO_MATCH_MP_TAC nc_INDUCTION2
+ >> Q.EXISTS_TAC ‘v INSERT fmFV fm UNION FV M UNION FV N’
+ >> rw [SUB_VAR, SUB_THM, ssub_thm, FAPPLY_FUPDATE_THM]
+ >> TRY (METIS_TAC [])
+ >- (MATCH_MP_TAC (GSYM ssub_14b) \\
+     rw [GSYM DISJOINT_DEF, Once DISJOINT_SYM])
+ >> Suff ‘(fm |+ (v,N)) ' (rec y M') = rec y ((fm |+ (v,N)) ' M')’ >- rw []
+ >> MATCH_MP_TAC ssub_rec
+ >> rw [FAPPLY_FUPDATE_THM]
+QED
 
 (* ----------------------------------------------------------------------
     Set up the recursion functionality in binderLib

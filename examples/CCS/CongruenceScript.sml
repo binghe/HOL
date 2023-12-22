@@ -95,7 +95,7 @@ Proof
       FULL_SIMP_TAC std_ss [OH_CONTEXT9] ]
 QED
 
-(* Multi-hole (or non-hole) contexts (Univariate CCS equations)
+(* Multi-hole (or non-hole) contexts
 
    NEW: added [CONTEXT8] for (\t. rec v (e t)), while CONTEXT2 is replaced by
         CONTEXT2a and CONTEXT2b.                    -- Chun Tian, 18 dec 2023
@@ -121,13 +121,14 @@ val [CONTEXT1, CONTEXT2a, CONTEXT2b, CONTEXT3, CONTEXT4, CONTEXT5, CONTEXT6,
                    "CONTEXT5", "CONTEXT6", "CONTEXT7", "CONTEXT8"],
                   CONJUNCTS CONTEXT_rules));
 
-val CONTEXT3a = store_thm (
-   "CONTEXT3a",
-  ``!a :'a Action. CONTEXT (\t. prefix a t)``,
+Theorem CONTEXT3a :
+    !a. CONTEXT (\t. prefix a t)
+Proof
     ASSUME_TAC CONTEXT1
  >> IMP_RES_TAC CONTEXT3
  >> POP_ASSUM MP_TAC
- >> BETA_TAC >> REWRITE_TAC []);
+ >> BETA_TAC >> REWRITE_TAC []
+QED
 
 (* cf. chap2Theory.constant_contexts_exist *)
 Theorem CONTEXT2 :
@@ -244,7 +245,7 @@ Proof
  >| [ (* goal 1 (of 2) *)
       POP_ASSUM (MP_TAC o (Q.SPEC `nil`)) \\
       SIMP_TAC std_ss [CCS_distinct],
-      (* goal 2 (of 3) *)
+      (* goal 2 (of 2) *)
       METIS_TAC [] ]
 QED
 
@@ -256,6 +257,35 @@ Proof
  >- REWRITE_TAC [CONTEXT7_backward]
  >> REWRITE_TAC [CONTEXT7]
 QED
+
+(*
+Theorem CONTEXT8_backward :
+    !v e. CONTEXT (\t. rec v (e t)) ==> CONTEXT e
+Proof
+    rpt STRIP_TAC
+ >> POP_ASSUM (STRIP_ASSUME_TAC o (ONCE_REWRITE_RULE [CONTEXT_cases]))
+ >> fs [FUN_EQ_THM] (* 2 subgoals left *)
+ >- (POP_ASSUM (MP_TAC o (Q.SPEC ‘nil’)) \\
+     SIMP_TAC std_ss [CCS_distinct])
+ (* key assumption: !t. rec v (e t) = rec v' (e' t) *)
+ >> FULL_SIMP_TAC std_ss [rec_eq_thm]
+ >> Cases_on ‘v = v'’
+ >> fs [FORALL_AND_THM] >- METIS_TAC []
+ >> qabbrev_tac ‘pi = [(v,v')]’
+ >> ‘e = \t. tpm pi (e' t)’ by METIS_TAC []
+ >> POP_ORW
+ >> MATCH_MP_TAC CONTEXT_tpm >> art []
+QED
+
+Theorem CONTEXT8_full :
+    !v e. CONTEXT (\t. rec v (e t)) <=> CONTEXT e
+Proof
+    rpt GEN_TAC
+ >> EQ_TAC
+ >- REWRITE_TAC [CONTEXT8_backward]
+ >> REWRITE_TAC [CONTEXT8]
+QED
+ *)
 
 Theorem CONTEXT_combin :
     !c1 c2. CONTEXT c1 /\ CONTEXT c2 ==> CONTEXT (c1 o c2)

@@ -1300,18 +1300,6 @@ QED
 val Is_Prefix_def = Define `
     Is_Prefix E = (?(u :'a Action) E'. (E = prefix u E')) `;
 
-Theorem PREF_ACT_def :
-    PREF_ACT (prefix (u :'a Action) E) = u
-Proof
-    REWRITE_TAC [PREF_ACT_DEF]
-QED
-
-Theorem PREF_PROC_def :
-    PREF_PROC (prefix (u :'a Action) E) = E
-Proof
-    REWRITE_TAC [PREF_PROC_DEF]
-QED
-
 val PREF_IS_PREFIX = store_thm (
    "PREF_IS_PREFIX", ``!(u :'a Action) E. Is_Prefix (prefix u E)``,
     rpt GEN_TAC
