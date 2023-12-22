@@ -640,16 +640,5 @@ val _ = html_theory "StrongEQ";
 (* Bibliography:
 
  [1] Milner, Robin. Communication and concurrency. Prentice hall, 1989.
-
- [2] Sangiorgi, Davide. "Equations, contractions, and unique
-     solutions." ACM Transactions on Computational Logic (TOCL) 18.1
-     (2017): 4. (DOI: 10.1145/2971339)
-
- [3] Tian, Chun, and Davide Sangiorgi. "Unique Solutions of
-     Contractions, CCS, and their HOL Formalisation." Combined 25th
-     International Workshop on Expressiveness in Concurrency and 15th
-     Workshop on Structural Operational Semantics (EXPRESS/SOS
-     2018). Vol. 276. No. 4. 2018. (DOI: 10.4204/EPTCS.276.10)
-
- [4] Gorrieri, R., Versari, C.: Introduction to Concurrency Theory. Springer, Cham (2015).
+ [2] Gorrieri, R., Versari, C.: Introduction to Concurrency Theory. Springer (2015).
  *)
