@@ -970,7 +970,7 @@ Proof
 QED
 
 (* ----------------------------------------------------------------------
-    CCS_Subst (obsoleted)
+    CCS_Subst
    ---------------------------------------------------------------------- *)
 
 Definition CCS_Subst :
@@ -1107,6 +1107,7 @@ QED
 Definition IS_PROC_def :
     IS_PROC E <=> (FV E = EMPTY)
 End
+Overload closed = “IS_PROC”
 
 Definition ALL_PROC_def :
     ALL_PROC Es <=> EVERY IS_PROC Es

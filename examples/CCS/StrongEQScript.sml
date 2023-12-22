@@ -7,12 +7,12 @@
 
 open HolKernel Parse boolLib bossLib;
 
-open pred_setTheory pairTheory relationTheory bisimulationTheory listTheory;
+open pred_setTheory pairTheory relationTheory bisimulationTheory listTheory
+     finite_mapTheory;
 
 open CCSLib CCSTheory TransTheory;
 
 val _ = new_theory "StrongEQ";
-val _ = temp_loose_equality ();
 
 (******************************************************************************)
 (*                                                                            *)
@@ -72,7 +72,12 @@ Proof
     REWRITE_TAC [STRONG_BISIM_def, BISIM_RUNION]
 QED
 
-(* The strong bisimilarity is now based on bisimulationTheory.BISIM_REL *)
+(* The strong bisimilarity is now based on bisimulationTheory.BISIM_REL
+
+   NOTE: this definition only works for closed CCS terms (IS_PROC), or
+   arbitrary CCS terms in which open ‘var s’ has the same transition
+   behavior with ‘nil’ (cf. NIL_NO_TRANS and VAR_NO_TRANS.)
+ *)
 Definition STRONG_EQUIV_def :
     STRONG_EQUIV = BISIM_REL TRANS
 End
@@ -85,6 +90,26 @@ val _ = add_rule { block_style = (AroundEachPhrase, (PP.CONSISTENT, 0)),
 
 val _ = TeX_notation { hol = UTF8.chr 0x223C,
                        TeX = ("\\HOLTokenStrongEQ", 1) };
+
+(* Definition 5 of [1, p.98] (see also [2, p.181])
+
+   If any of P and Q is not closed, but all their closed simultaneous
+   substitutions are strong bisimular, then so is P and Q.
+ *)
+Definition StrongEQ_def :
+    StrongEQ P Q = if closed P /\ closed Q then
+                      STRONG_EQUIV P Q
+                   else
+                      !fm. FDOM fm = FV P UNION FV Q /\
+                          (!x. x IN FDOM fm ==> closed (fm ' x)) ==>
+                          STRONG_EQUIV (fm ' P) (fm ' Q)
+End
+
+Theorem StrongEQ_of_closed :
+    !P Q. closed P /\ closed Q ==> (StrongEQ P Q <=> STRONG_EQUIV P Q)
+Proof
+    rw [StrongEQ_def]
+QED
 
 (* |- !p q.
          (!l.
