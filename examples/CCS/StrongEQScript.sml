@@ -105,10 +105,70 @@ Definition StrongEQ_def :
                           STRONG_EQUIV (fm ' P) (fm ' Q)
 End
 
-Theorem StrongEQ_of_closed :
+Theorem StrongEQ_alt_closed :
     !P Q. closed P /\ closed Q ==> (StrongEQ P Q <=> STRONG_EQUIV P Q)
 Proof
     rw [StrongEQ_def]
+QED
+
+Theorem SUBSET_SING_CASES[local] :
+    !X x. X SUBSET {x} <=> X = {} \/ X = {x}
+Proof
+    SET_TAC []
+QED
+
+Theorem StrongEQ_alt_SUB :
+    !X P Q. FV P SUBSET {X} /\ FV Q SUBSET {X} ==>
+           (StrongEQ P Q <=> !E. closed E ==> STRONG_EQUIV ([E/X] P) ([E/X] Q))
+Proof
+    rpt STRIP_TAC
+ >> Cases_on ‘closed P /\ closed Q’
+ >- (rw [StrongEQ_def] \\
+     Suff ‘!E. closed E ==> [E/X] P = P /\ [E/X] Q = Q’ >- METIS_TAC [] \\
+     rpt STRIP_TAC \\
+     MATCH_MP_TAC lemma14b >> fs [closed_def])
+ >> rw [StrongEQ_def]
+ >> ‘FV P UNION FV Q SUBSET {X}’ by ASM_SET_TAC []
+ >> Know ‘FV P UNION FV Q = {X}’
+ >- (Suff ‘FV P UNION FV Q <> {}’ >- METIS_TAC [SUBSET_SING_CASES] \\
+     CCONTR_TAC >> fs [closed_def])
+ >> Rewr'
+ >> EQ_TAC
+ >- (rpt STRIP_TAC \\
+     Q.PAT_X_ASSUM ‘!fm. _ ==> STRONG_EQUIV (fm ' P) (fm ' Q)’
+       (MP_TAC o (Q.SPEC ‘FEMPTY |+ (X,E)’)) \\
+     simp [FDOM_FUPDATE] \\
+     rw [FEMPTY_update_apply])
+ (* stage work *)
+ >> rpt STRIP_TAC
+ >> qabbrev_tac ‘E = fm ' X’
+ >> qabbrev_tac ‘fm' = FEMPTY |+ (X,E)’
+ >> Know ‘fm = fm'’
+ >- (rw [Abbr ‘fm'’, GSYM fmap_EQ_THM])
+ >> Rewr'
+ >> Know ‘fm' ' P = [E/X] P /\ fm' ' Q = [E/X] Q’
+ >- (rw [Abbr ‘fm'’, FEMPTY_update_apply])
+ >> Rewr'
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> rw [Abbr ‘E’]
+QED
+
+Theorem StrongEQ_alt_SUB' :
+    !X P Q. FV P SUBSET {X} /\ FV Q SUBSET {X} ==>
+           (StrongEQ P Q <=> !E. closed E ==> StrongEQ ([E/X] P) ([E/X] Q))
+Proof
+    rpt STRIP_TAC
+ >> Know ‘StrongEQ P Q <=> !E. closed E ==> STRONG_EQUIV ([E/X] P) ([E/X] Q)’
+ >- (MATCH_MP_TAC StrongEQ_alt_SUB >> art [])
+ >> Rewr'
+ >> Suff ‘!E. closed E ==>
+             (STRONG_EQUIV ([E/X] P) ([E/X] Q) <=> StrongEQ ([E/X] P) ([E/X] Q))’
+ >- METIS_TAC []
+ >> rw [closed_def]
+ >> Suff ‘closed ([E/X] P) /\ closed ([E/X] Q)’
+ >- rw [StrongEQ_alt_closed]
+ >> rw [closed_def, FV_SUB]
+ >> ASM_SET_TAC []
 QED
 
 (* |- !p q.

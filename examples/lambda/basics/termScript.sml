@@ -1061,6 +1061,16 @@ Proof
  >> rw []
 QED
 
+Theorem FEMPTY_update_apply :
+    !M. (FEMPTY |+ (v,N)) ' M = [N/v] M
+Proof
+    Q.X_GEN_TAC ‘M’
+ >> ‘[N/v] M = FEMPTY ' ([N/v] M)’ by rw []
+ >> POP_ORW
+ >> MATCH_MP_TAC ssub_update_apply_SUBST
+ >> rw []
+QED
+
 Theorem ssub_update_apply_subst :
     !fm v N M. v NOTIN FDOM fm /\
               (!k. k IN FDOM fm ==> closed (fm ' k)) /\ closed N ==>

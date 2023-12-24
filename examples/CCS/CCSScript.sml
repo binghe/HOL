@@ -1107,7 +1107,9 @@ QED
 Definition IS_PROC_def :
     IS_PROC E <=> (FV E = EMPTY)
 End
+
 Overload closed = “IS_PROC”
+Theorem closed_def = IS_PROC_def
 
 Definition ALL_PROC_def :
     ALL_PROC Es <=> EVERY IS_PROC Es
@@ -1397,6 +1399,16 @@ Proof
  >> Suff ‘(fm |+ (v,N)) ' (rec y M') = rec y ((fm |+ (v,N)) ' M')’ >- rw []
  >> MATCH_MP_TAC ssub_rec
  >> rw [FAPPLY_FUPDATE_THM]
+QED
+
+Theorem FEMPTY_update_apply :
+    !M. (FEMPTY |+ (v,N)) ' M = [N/v] M
+Proof
+    Q.X_GEN_TAC ‘M’
+ >> ‘[N/v] M = FEMPTY ' ([N/v] M)’ by rw []
+ >> POP_ORW
+ >> MATCH_MP_TAC ssub_update_apply_subst
+ >> rw []
 QED
 
 (* ----------------------------------------------------------------------
