@@ -117,7 +117,7 @@ Proof
     SET_TAC []
 QED
 
-Theorem StrongEQ_alt_SUB :
+Theorem StrongEQ_alt_subst :
     !X P Q. FV P SUBSET {X} /\ FV Q SUBSET {X} ==>
            (StrongEQ P Q <=> !E. closed E ==> STRONG_EQUIV ([E/X] P) ([E/X] Q))
 Proof
@@ -153,13 +153,13 @@ Proof
  >> rw [Abbr ‘E’]
 QED
 
-Theorem StrongEQ_alt_SUB' :
+Theorem StrongEQ_alt_subst' :
     !X P Q. FV P SUBSET {X} /\ FV Q SUBSET {X} ==>
            (StrongEQ P Q <=> !E. closed E ==> StrongEQ ([E/X] P) ([E/X] Q))
 Proof
     rpt STRIP_TAC
  >> Know ‘StrongEQ P Q <=> !E. closed E ==> STRONG_EQUIV ([E/X] P) ([E/X] Q)’
- >- (MATCH_MP_TAC StrongEQ_alt_SUB >> art [])
+ >- (MATCH_MP_TAC StrongEQ_alt_subst >> art [])
  >> Rewr'
  >> Suff ‘!E. closed E ==>
              (STRONG_EQUIV ([E/X] P) ([E/X] Q) <=> StrongEQ ([E/X] P) ([E/X] Q))’
@@ -235,6 +235,25 @@ Proof
     PROVE_TAC [REWRITE_RULE [equivalence_def, symmetric_def]
                             STRONG_EQUIV_equivalence]
 QED
+
+Theorem StrongEQ_symmetric :
+    symmetric StrongEQ
+Proof
+    rw [symmetric_def, StrongEQ_def]
+ >> Cases_on ‘closed x /\ closed y’
+ >- (fs [] >> PROVE_TAC [STRONG_EQUIV_SYM])
+ >> ‘~(closed y /\ closed x)’ by PROVE_TAC []
+ >> simp []
+ >> EQ_TAC
+ >> rpt STRIP_TAC (* 2 subgoals, same tactics *)
+ >> MATCH_MP_TAC STRONG_EQUIV_SYM
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+ >> SET_TAC []
+QED
+
+(* |- !x y. StrongEQ x y ==> StrongEQ y x *)
+Theorem StrongEQ_SYM =
+    StrongEQ_symmetric |> REWRITE_RULE [symmetric_def] |> iffLR
 
 Theorem STRONG_EQUIV_SYM_EQ :
     !E E'. STRONG_EQUIV E E' <=> STRONG_EQUIV E' E
