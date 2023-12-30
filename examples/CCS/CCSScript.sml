@@ -1061,7 +1061,7 @@ Proof
 QED
 
 Theorem CCS_Subst_elim :
-    !X E. X NOTIN (FV E) ==> !E'. (CCS_Subst E E' X = E)
+    !X E. X # E ==> !E'. (CCS_Subst E E' X = E)
 Proof
     rw [CCS_Subst]
  >> MATCH_MP_TAC lemma14b >> art []

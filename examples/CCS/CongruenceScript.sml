@@ -28,65 +28,66 @@ val set_ss = std_ss ++ PRED_SET_ss;
 (*                                                                            *)
 (******************************************************************************)
 
-Theorem STRONG_EQUIV_PRESD_BY_REC_lemma :
-    FV P SUBSET {X} /\
-    FV Q SUBSET {X} /\
-    StrongEQ P Q /\
-    FV G SUBSET {X} /\
-    CCS_Subst G (rec X P) X --u-> E1
-  ==>
-    ?E2. CCS_Subst G (rec X Q) X --u-> E2 /\
-         (STRONG_EQUIV O
-          (\x y. ?G. FV G SUBSET {X} /\ x = CCS_Subst G (rec X P) X /\
-                     y = CCS_Subst G (rec X Q) X) O
-          STRONG_EQUIV) E1 E2
+Theorem FV_SUBSET_lemma[local] :
+    !P X. FV P SUBSET {X} /\ Y <> X ==> Y # P
 Proof
-    cheat
-QED
-(*
     rpt STRIP_TAC
- >> NTAC 2 (POP_ASSUM MP_TAC)
- >> Q.ID_SPEC_TAC ‘E’
- >> HO_MATCH_MP_TAC CONTEXT_strongind_X
- >> Q.EXISTS_TAC ‘{X}’
- >> rw [] (* 9 subgoals *)
- >| [ (* goal 1 (of 9) *)
-     ‘?E2. Q --u-> E2 /\ STRONG_EQUIV E1 E2’ by METIS_TAC [PROPERTY_STAR_LEFT] \\
-      Q.EXISTS_TAC ‘E2’ >> rw [O_DEF] \\
-      Q.EXISTS_TAC ‘E1’ >> art [] \\
-     ‘FV E1 SUBSET FV P’ by PROVE_TAC [TRANS_FV] \\
-     ‘FV E1 SUBSET {X}’ by PROVE_TAC [SUBSET_TRANS] \\
-      Q.EXISTS_TAC ‘E1’ >> rw [STRONG_EQUIV_REFL] \\
-      Q.EXISTS_TAC ‘\t. E1’ >> rw [CONTEXT2],
-      (* goal 2 (of 9) *)
-      PROVE_TAC [NIL_NO_TRANS],
-      (* goal 3 (of 9) *)
-      PROVE_TAC [VAR_NO_TRANS],
-      (* goal 4 (of 9) *)
-      FULL_SIMP_TAC std_ss [TRANS_PREFIX_EQ] \\
+ >> ‘Y IN {X}’ by METIS_TAC [SUBSET_DEF]
+ >> fs []
+QED
+
+Theorem STRONG_EQUIV_PRESD_BY_REC_lemma :
+    !G P Q X. FV P SUBSET {X} /\ FV Q SUBSET {X} /\ StrongEQ P Q /\
+              FV G SUBSET {X} /\ CCS_Subst G (rec X P) X --u-> E1 ==>
+         ?E2. CCS_Subst G (rec X Q) X --u-> E2 /\
+              (STRONG_EQUIV O
+               (\x y. ?G. FV G SUBSET {X} /\
+                          x = CCS_Subst G (rec X P) X /\
+                          y = CCS_Subst G (rec X Q) X) O STRONG_EQUIV) E1 E2
+Proof
+    HO_MATCH_MP_TAC simple_induction
+ >> rw [] (* 8 subgoals *)
+ >| [ (* goal 1 (of 8) *)
+      fs [TRANS_REC_EQ] (* hard but possible *)\\
+      cheat,
+      (* goal 2 (of 8) *)
+      FULL_SIMP_TAC std_ss [CCS_Subst_nil, NIL_NO_TRANS],
+      (* goal 3 (of 8) *)
+      FULL_SIMP_TAC std_ss [CCS_Subst_def, TRANS_PREFIX_EQ] \\
       rw [O_DEF] \\
-      Q.EXISTS_TAC ‘E Q’ >> rw [STRONG_EQUIV_REFL] \\
-      Q.EXISTS_TAC ‘E P’ >> rw [STRONG_EQUIV_REFL] \\
-      Q.EXISTS_TAC ‘E’ >> rw [],
-      (* goal 5 (of 9) *)
-      FULL_SIMP_TAC std_ss [TRANS_SUM_EQ] >| (* 2 subgoals *)
-      [ (* goal 5.1 (of 2) *)
-        FULL_SIMP_TAC std_ss [] \\
-        Q.EXISTS_TAC ‘E2’ >> rw [],
-        (* goal 5.2 (of 2) *)
-        FULL_SIMP_TAC std_ss [] \\
-        Q.EXISTS_TAC ‘E2’ >> rw [] ],
-      (* goal 6 (of 9) *)
+      Q.EXISTS_TAC ‘CCS_Subst G (rec X Q) X’ >> rw [STRONG_EQUIV_REFL] \\
+      Q.EXISTS_TAC ‘CCS_Subst G (rec X P) X’ >> rw [STRONG_EQUIV_REFL] \\
+      Q.EXISTS_TAC ‘G’ >> art [],
+      (* goal 4 (of 8): SUM *)
+      cheat,
+      (* goal 5 (of 8): PAR *)
       cheat, (* FULL_SIMP_TAC std_ss [TRANS_PAR_EQ] *)
-      (* goal 7 (of 9) *)
+      (* goal 6 (of 8):  *)
       cheat, (* FULL_SIMP_TAC std_ss [TRANS_RESTR_EQ] *)
-      (* goal 8 (of 9) *)
+      (* goal 7 (of 8) *)
       cheat, (* FULL_SIMP_TAC std_ss [TRANS_RELAB_EQ] *)
-      (* goal 9 (of 9) *)
-      FULL_SIMP_TAC std_ss [TRANS_REC_EQ] \\
+      (* goal 8 (of 8) *)
+      rename1 ‘FV G DELETE Y SUBSET {X}’ \\
+      Cases_on ‘Y = X’ (* trivial case *)
+      >- (‘X # rec Y G’ by rw [FV_thm] \\
+          gs [CCS_Subst_elim] \\
+          Q.EXISTS_TAC ‘E1’ >> rw [O_DEF] \\
+          Q.EXISTS_TAC ‘E1’ >> rw [STRONG_EQUIV_REFL] \\
+          Q.EXISTS_TAC ‘E1’ >> rw [STRONG_EQUIV_REFL] \\
+          Know ‘X # E1’
+          >- (CCONTR_TAC >> fs [] \\
+             ‘X IN FV (rec X G)’ by METIS_TAC [SUBSET_DEF, TRANS_FV] \\
+              fs [FV_thm]) >> DISCH_TAC \\
+          Q.EXISTS_TAC ‘E1’ >> ASM_SIMP_TAC std_ss [CCS_Subst_elim] \\
+          MATCH_MP_TAC SUBSET_TRANS \\
+          Q.EXISTS_TAC ‘FV (rec X G)’ \\
+          CONJ_TAC >- (MATCH_MP_TAC TRANS_FV >> Q.EXISTS_TAC ‘u’ >> art []) \\
+          rw [FV_thm]) \\
+      Know ‘Y # rec X P /\ Y # rec X Q’
+      >- (rw [FV_thm] >> PROVE_TAC [FV_SUBSET_lemma]) >> STRIP_TAC \\
+      gs [CCS_Subst_rec] \\
       cheat ]
 QED
-*)
 
 (* Proposition 4.12 of [1, p.99] or Theorem 4.2 of [2, p.182]
 

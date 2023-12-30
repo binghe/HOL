@@ -640,6 +640,30 @@ val STRONG_EQUIV_SUBST_RELAB = store_thm (
           take [`E1'`, `E''''`, `rf'`] \\
           ASM_REWRITE_TAC [] ] ] ]);
 
+Theorem STRONG_EQUIV_subst_lemma :
+    !E. FV E SUBSET {X} /\ closed P /\ closed Q /\ STRONG_EQUIV P Q ==>
+        STRONG_EQUIV ([P/X] E) ([Q/X] E)
+Proof
+    HO_MATCH_MP_TAC CCS_induction
+ >> Q.EXISTS_TAC ‘{X}’
+ >> rw [] (* 6 subgoals *)
+ >| [ (* goal 1 (of 6) *)
+      MATCH_MP_TAC STRONG_EQUIV_SUBST_PREFIX >> rw [],
+      (* goal 2 (of 6) *)
+      MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_SUM >> rw [],
+      (* goal 3 (of 6) *)
+      MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_PAR >> rw [],
+      (* goal 4 (of 6) *)
+      MATCH_MP_TAC STRONG_EQUIV_SUBST_RESTR >> rw [],
+      (* goal 5 (of 6) *)
+      MATCH_MP_TAC STRONG_EQUIV_SUBST_RELAB >> rw [] ]
+ (* goal 6 (of 6) *)
+ >> rename1 ‘Y <> X’
+ >> 
+    cheat
+QED
+
+
 (******************************************************************************)
 (*                                                                            *)
 (*          The clasic proof of PROPERTY_STAR (in [1])                        *)
