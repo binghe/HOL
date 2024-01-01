@@ -152,12 +152,15 @@ Proof
  >> Q.EXISTS_TAC ‘N’ >> rw [BT_def]
 QED
 
-(* Proposition 10.1.6 [1, p.219] *)
+(* Proposition 10.1.6 [1, p.219]
+
+   NOTE: X is an sufficiently large finite set of names covering all FVs of
+         M and N. The Boehm trees of M and N are generated with help of this set.
+ *)
 Theorem lameq_cong_BT :
-    !X M N. X = FV M UNION FV N /\ M == N ==> BTe X M = BTe X N
+    !X M N. FV M UNION FV N SUBSET X /\ M == N ==> BTe X M = BTe X N
 Proof
     RW_TAC std_ss []
- >> qabbrev_tac ‘X = FV M UNION FV N’
  >> reverse (Cases_on ‘solvable M’)
  >- (‘unsolvable N’ by METIS_TAC [lameq_solvable_cong] \\
      rw [BT_of_unsolvables])
@@ -166,15 +169,13 @@ Proof
  (* applying ltree_bisimulation *)
  >> rw [ltree_bisimulation]
  >> Q.EXISTS_TAC ‘\x y. ?P Q Y. P == Q /\ solvable P /\ solvable Q /\
-                                Y = FV P UNION FV Q /\
+                                FV P UNION FV Q SUBSET Y /\
                                 x = BTe Y P /\ y = BTe Y Q’
  >> BETA_TAC
  >> CONJ_TAC >- (qexistsl_tac [‘M’, ‘N’, ‘X’] >> rw [])
  (* stage work *)
  >> qx_genl_tac [‘a1’, ‘ts1’, ‘a2’, ‘ts2’]
  >> STRIP_TAC
- >> Q.PAT_X_ASSUM ‘Y = FV P UNION FV Q’ (fs o wrap)
- >> qabbrev_tac ‘Y = FV P UNION FV Q’
  >> qabbrev_tac ‘P0 = principle_hnf P’
  >> qabbrev_tac ‘n = LAMl_size P0’
  >> qabbrev_tac ‘vs = FRESH_list n Y’
@@ -194,8 +195,20 @@ Proof
  >> Q.PAT_X_ASSUM ‘_ = BTe Y Q’ MP_TAC
  >> simp [BT_def, Once ltree_unfold, BT_generator_def]
  >> NTAC 2 STRIP_TAC
+ (* NOTE: Here the existing list of names vs and vs' cannot be used as the shared
+          binding list for both P0 and Q0. Thus we have to call FRESH_list again.
+          But once we have proved that ‘LAMl_size P0 = LAMl_size Q0’, i.e. n = n',
+          then it will be clear that vs = vs', a shared binding list.
+  *)
+ >> Know ‘n = n' /\ vs = vs'’
+ >- (reverse CONJ_ASM1_TAC >- rw [Abbr ‘vs’, Abbr ‘vs'’] \\
+     qunabbrevl_tac [‘n’, ‘n'’, ‘P0’, ‘Q0’] \\
+     MATCH_MP_TAC lameq_imp_principle_hnf_size_eq >> art [])
+ >> qunabbrevl_tac [‘n'’, ‘vs'’]
+ >> DISCH_THEN (rfs o wrap o GSYM)
  (* applying hnf_cases_shared *)
- >> cheat
+ >> 
+    cheat
 QED
 
 (*---------------------------------------------------------------------------*
@@ -1350,7 +1363,7 @@ Proof
      CONJ_TAC >- art [] \\
      qunabbrev_tac ‘M0’ \\
      MATCH_MP_TAC lameq_SYM \\
-     MATCH_MP_TAC lameq_principle_hnf' >> art [])
+     MATCH_MP_TAC lameq_principle_hnf_idem' >> art [])
  >> ONCE_REWRITE_TAC [Boehm_apply_APPEND]
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘apply (p3 ++ p2) M1’
@@ -1665,7 +1678,7 @@ Proof
        Q.EXISTS_TAC ‘apply (p1 ++ p0) N0’ \\
        CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
                     qunabbrev_tac ‘N0’ >> MATCH_MP_TAC lameq_SYM \\
-                    MATCH_MP_TAC lameq_principle_hnf >> art [GSYM solvable_iff_has_hnf]) \\
+                    MATCH_MP_TAC lameq_principle_hnf_idem >> art [GSYM solvable_iff_has_hnf]) \\
     (* eliminating p0 *)
        REWRITE_TAC [Boehm_apply_APPEND] \\
        MATCH_MP_TAC lameq_TRANS \\
@@ -1703,7 +1716,7 @@ Proof
        CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
                     qunabbrev_tac ‘M0’ \\
                     MATCH_MP_TAC lameq_SYM \\
-                    MATCH_MP_TAC lameq_principle_hnf >> art [GSYM solvable_iff_has_hnf]) \\
+                    MATCH_MP_TAC lameq_principle_hnf_idem >> art [GSYM solvable_iff_has_hnf]) \\
     (* eliminating p0 *)
        REWRITE_TAC [Boehm_apply_APPEND] \\
        MATCH_MP_TAC lameq_TRANS \\
@@ -1792,7 +1805,7 @@ Proof
        Q.EXISTS_TAC ‘apply (pi ++ p0) M0’ \\
        CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
                     qunabbrev_tac ‘M0’ >> MATCH_MP_TAC lameq_SYM \\
-                    MATCH_MP_TAC lameq_principle_hnf \\
+                    MATCH_MP_TAC lameq_principle_hnf_idem \\
                     ASM_REWRITE_TAC [GSYM solvable_iff_has_hnf]) \\
        REWRITE_TAC [Boehm_apply_APPEND] \\
        MATCH_MP_TAC lameq_TRANS \\
@@ -1805,7 +1818,7 @@ Proof
        Q.EXISTS_TAC ‘apply (pi ++ p0) N0’ \\
        CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
                     qunabbrev_tac ‘N0’ >> MATCH_MP_TAC lameq_SYM \\
-                    MATCH_MP_TAC lameq_principle_hnf \\
+                    MATCH_MP_TAC lameq_principle_hnf_idem \\
                     ASM_REWRITE_TAC [GSYM solvable_iff_has_hnf]) \\
        REWRITE_TAC [Boehm_apply_APPEND] \\
        MATCH_MP_TAC lameq_TRANS \\

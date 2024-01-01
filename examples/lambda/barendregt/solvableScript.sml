@@ -920,7 +920,7 @@ Proof
  >> MATCH_MP_TAC lameq_solvable_cong_lemma >> art []
 QED
 
-Theorem lameq_principle_hnf :
+Theorem lameq_principle_hnf_idem :
     !M. has_hnf M ==> principle_hnf M == M
 Proof
     rpt STRIP_TAC
@@ -936,8 +936,15 @@ Proof
 QED
 
 (* |- !M. solvable M ==> principle_hnf M == M *)
-Theorem lameq_principle_hnf' =
-        REWRITE_RULE [GSYM solvable_iff_has_hnf] lameq_principle_hnf
+Theorem lameq_principle_hnf_idem' =
+        REWRITE_RULE [GSYM solvable_iff_has_hnf] lameq_principle_hnf_idem
+
+Theorem lameq_imp_principle_hnf_size_eq :
+    !P Q. solvable P /\ solvable Q /\ P == Q ==>
+          LAMl_size (principle_hnf P) = LAMl_size (principle_hnf Q)
+Proof
+    cheat
+QED
 
 val _ = export_theory ();
 val _ = html_theory "solvable";
