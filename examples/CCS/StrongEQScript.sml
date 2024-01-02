@@ -656,13 +656,14 @@ Proof
       (* goal 4 (of 6) *)
       MATCH_MP_TAC STRONG_EQUIV_SUBST_RESTR >> rw [],
       (* goal 5 (of 6) *)
-      MATCH_MP_TAC STRONG_EQUIV_SUBST_RELAB >> rw [] ]
- (* goal 6 (of 6) *)
+      MATCH_MP_TAC STRONG_EQUIV_SUBST_RELAB >> rw [],
+      (* goal 6 (of 6) *)
+      ALL_TAC ]
+ (* stage work *)
  >> rename1 ‘Y <> X’
  >> 
     cheat
 QED
-
 
 (******************************************************************************)
 (*                                                                            *)
