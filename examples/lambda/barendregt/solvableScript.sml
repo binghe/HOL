@@ -939,7 +939,8 @@ QED
 Theorem lameq_principle_hnf_idem' =
         REWRITE_RULE [GSYM solvable_iff_has_hnf] lameq_principle_hnf_idem
 
-Theorem lameq_imp_principle_hnf_size_eq :
+(* This is the most important property of principle hnfs *)
+Theorem principle_hnf_thm :
     !P Q. solvable P /\ solvable Q /\ P == Q ==>
           LAMl_size (principle_hnf P) = LAMl_size (principle_hnf Q)
 Proof
