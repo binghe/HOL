@@ -944,44 +944,45 @@ QED
 Theorem lameq_principle_hnf_reduce' =
         lameq_principle_hnf_reduce |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
 
-Theorem hnf_ccbeta_cases :
-    !M N. M -b-> N ==>
-         !Ms vs y. M = LAMl vs (VAR y @* Ms) ==>
-                   ?Ns. N = LAMl vs (VAR y @* Ns) /\
-                        LENGTH Ns = LENGTH Ms /\
-                        !i. i < LENGTH Ms ==> EL i Ms -b->* EL i Ns
+Theorem hnf_ccbeta_appstar_rwt[local] :
+    !y Ms N. VAR y @* Ms -b-> N /\ Ms <> [] ==>
+             ?Ns. N = VAR y @* Ns /\ LENGTH Ns = LENGTH Ms /\
+                  !i. i < LENGTH Ms ==> EL i Ms -b->* EL i Ns
 Proof
-cheat
-(*
-    HO_MATCH_MP_TAC ccbeta_ind
- >> Q.EXISTS_TAC ‘{}’ >> rw [] (* 4 subgoals *)
- >> FULL_SIMP_TAC std_ss [Once EQ_SYM_EQ]
- >| [ (* goal 1 (of 4) *)
-      fs [app_eq_appstar],
-      (* goal 2 (of 4) *)
-      fs [app_eq_appstar] \\
-      Q.PAT_X_ASSUM ‘!Ms vs y. P’ (MP_TAC o (Q.SPECL [‘FRONT Ms’, ‘[]’, ‘y’])) \\
-      rw [] \\
-      Q.EXISTS_TAC ‘SNOC (LAST Ms) Ns’ \\
-      REWRITE_TAC [FRONT_SNOC, LAST_SNOC] >> rw [],
-      (* goal 3 (of 4) *)
-      fs [app_eq_appstar] \\
-      Q.EXISTS_TAC ‘SNOC N (FRONT Ms)’ \\
-      REWRITE_TAC [FRONT_SNOC, LAST_SNOC] >> rw [],
-      (* goal 4 (of 4) *)
-      Cases_on ‘vs’ >> fs [] \\
-      fs [LAM_eq_thm]
-      >- (Q.PAT_X_ASSUM ‘!Ms vs y. P’ (MP_TAC o (Q.SPECL [‘Ms’, ‘t’, ‘y’])) \\
-          rw [] >> Q.EXISTS_TAC ‘Ns’ >> rw []) \\
-      fs [tpm_eqr, tpm_LAMl, tpm_appstar] \\
-      qabbrev_tac ‘vs' = listpm string_pmact [(h,v)] t’ \\
-      qabbrev_tac ‘y'  = swapstr h v y’ \\
-      qabbrev_tac ‘Ms' = listpm term_pmact [(h,v)] Ms’ \\
-      Q.PAT_X_ASSUM ‘!Ms vs y. P’ (MP_TAC o (Q.SPECL [‘Ms'’, ‘vs'’, ‘y'’])) \\
-      rw [] (* this asserts the needed Ns from IH *) \\
-      Q.EXISTS_TAC ‘listpm term_pmact [(v,h)] Ns’ >> simp [] \\
-      cheat ]
-*)
+    Q.X_GEN_TAC ‘y’
+ >> Induct_on ‘Ms’ using SNOC_INDUCT >> rw []
+ >> fs [ccbeta_rwt] (* 2 subgoals *)
+ >- (Cases_on ‘Ms = []’ >> fs [ccbeta_rwt] \\
+     Q.PAT_X_ASSUM ‘!N. P’ (MP_TAC o (Q.SPEC ‘M'’)) \\
+     RW_TAC std_ss [] \\
+     Q.EXISTS_TAC ‘SNOC x Ns’ >> rw [] \\
+    ‘i = LENGTH Ms \/ i < LENGTH Ms’ by rw []
+     >- (rw [EL_LENGTH_SNOC] \\
+         Q.PAT_X_ASSUM ‘LENGTH Ns = LENGTH Ms’ (REWRITE_TAC o wrap o SYM) \\
+         rw [EL_LENGTH_SNOC]) \\
+     rw [EL_SNOC])
+ (* stage work *)
+ >> Cases_on ‘Ms = []’ >> fs []
+ >- (Q.EXISTS_TAC ‘[N']’ >> rw [])
+ >> Q.EXISTS_TAC ‘SNOC N' Ms’
+ >> rw [appstar_SNOC]
+ >> ‘i = LENGTH Ms \/ i < LENGTH Ms’ by rw []
+ >- (rw [EL_LENGTH_SNOC])
+ >> rw [EL_SNOC]
+QED
+
+Theorem hnf_ccbeta_cases[local] :
+    !Ms. LAMl vs (VAR y @* Ms) -b-> N ==>
+         ?Ns. N = LAMl vs (VAR y @* Ns) /\
+              LENGTH Ns = LENGTH Ms /\
+              !i. i < LENGTH Ms ==> EL i Ms -b->* EL i Ns
+Proof
+    rw [ccbeta_LAMl_rwt]
+ >> Suff ‘?Ns. M' = VAR y @* Ns /\ LENGTH Ns = LENGTH Ms /\
+              !i. i < LENGTH Ms ==> EL i Ms -b->* EL i Ns’
+ >- (STRIP_TAC >> Q.EXISTS_TAC ‘Ns’ >> rw [])
+ >> MATCH_MP_TAC hnf_ccbeta_appstar_rwt
+ >> Cases_on ‘Ms = []’ >> fs [ccbeta_rwt]
 QED
 
 (* Lemma 8.3.16 [1, p.176] *)
@@ -1002,8 +1003,7 @@ Proof
  >> Know ‘?Ns. M' = LAMl vs (VAR y @* Ns) /\
                LENGTH Ns = LENGTH Ms /\
                !i. i < LENGTH Ms ==> EL i Ms -b->* EL i Ns’
- >- (irule hnf_ccbeta_cases \\
-     Q.EXISTS_TAC ‘LAMl vs (VAR y @* Ms)’ >> art [])
+ >- (irule hnf_ccbeta_cases >> art [])
  >> STRIP_TAC
  >> Q.PAT_X_ASSUM ‘!Ms. M' = LAMl vs (VAR y @* Ms) ==> P’
       (MP_TAC o (Q.SPEC ‘Ns’))
@@ -1036,13 +1036,14 @@ Proof
      MATCH_MP_TAC DISJOINT_SUBSET \\
      Q.EXISTS_TAC ‘X’ >> rw [Abbr ‘X’])
  >> STRIP_TAC
- (* applying lameq_CR *)
- >> ‘?Z. N -b->* Z /\ N' -b->* Z’ by METIS_TAC [lameq_CR]
  >> qabbrev_tac ‘vs1 = TAKE n vs’
  >> qabbrev_tac ‘vs2 = TAKE n' vs’
+ >> ‘n = LENGTH vs1 /\ n' = LENGTH vs2’ by rw [Abbr ‘n’, Abbr ‘n'’]
+ (* applying lameq_CR *)
+ >> ‘?Z. N -b->* Z /\ N' -b->* Z’ by METIS_TAC [lameq_CR]
  >> ‘?Ns. Z = LAMl vs1 (VAR y @* Ns)’ by METIS_TAC [hnf_betastar_cases]
  >> ‘?Ns'. Z = LAMl vs2 (VAR y' @* Ns')’ by METIS_TAC [hnf_betastar_cases]
- >> cheat
+ >> METIS_TAC [LAMl_size_hnf]
 QED
 
 Theorem lameq_principle_hnf_properties :

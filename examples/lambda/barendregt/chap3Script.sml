@@ -186,6 +186,17 @@ val ccbeta_rwt = store_thm(
     FULL_SIMP_TAC (srw_ss()) []
   ]);
 
+Theorem ccbeta_LAMl_rwt :
+    !vs M N. LAMl vs M -b-> N <=> ?M'. N = LAMl vs M' /\ M -b-> M'
+Proof
+    Induct_on ‘vs’
+ >- rw []
+ >> rw [ccbeta_rwt]
+ >> EQ_TAC >> rw []
+ >- (Q.EXISTS_TAC ‘M'’ >> art [])
+ >> Q.EXISTS_TAC ‘LAMl vs M'’ >> rw []
+QED
+
 val beta_normal_form_bnf = store_thm(
   "beta_normal_form_bnf",
   ``normal_form beta = bnf``,
