@@ -1578,6 +1578,11 @@ val betastar_eq_cong = store_thm(
   ``bnf N ==> M -b->* M' ==> (M -b->* N  <=> M' -b->* N)``,
   METIS_TAC [bnf_triangle, RTC_CASES_RTC_TWICE]);
 
+(* |- !x y z. x -b->* y /\ y -b->* z ==> x -b->* z *)
+Theorem betastar_TRANS =
+        RTC_TRANSITIVE |> Q.ISPEC ‘compat_closure beta’
+                       |> REWRITE_RULE [transitive_def]
+
 val _ = export_theory();
 val _ = html_theory "chap3";
 

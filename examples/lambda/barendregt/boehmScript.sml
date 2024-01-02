@@ -220,12 +220,12 @@ Proof
  >> Know ‘n = n' /\ vs = vs'’
  >- (reverse CONJ_ASM1_TAC >- rw [Abbr ‘vs’, Abbr ‘vs'’] \\
      qunabbrevl_tac [‘n’, ‘n'’, ‘P0’, ‘Q0’] \\
-     METIS_TAC [principle_hnf_thm])
+     METIS_TAC [lameq_principle_hnf_properties'])
+ (* clean up now duplicated abbreviations: n' and vs' *)
  >> qunabbrevl_tac [‘n'’, ‘vs'’]
  >> DISCH_THEN (rfs o wrap o GSYM)
  (* applying hnf_cases_shared *)
- >> 
-    cheat
+ >> cheat
 QED
 
 (*---------------------------------------------------------------------------*
@@ -561,16 +561,19 @@ Definition equivalent_def :
            ~solvable M /\ ~solvable N
 End
 
-Theorem equivalent_comm :
-    !M N. equivalent M N <=> equivalent N M
+Theorem equivalent_symmetric :
+    symmetric equivalent
 Proof
-    RW_TAC std_ss [equivalent_def, Once MAX_COMM, Once UNION_COMM]
- >- (rename1 ‘y2 = y3 /\ n1 + m3 = n3 + m2 <=> y = y1 /\ n + m1 = n1 + m’ \\
-    ‘n3 = n’ by rw [Abbr ‘n3’, Abbr ‘n’] >> gs [] \\
-     EQ_TAC >> rw [])
- (* 3 subgoals, same tactics *)
- >> METIS_TAC []
+    RW_TAC std_ss [symmetric_def, equivalent_def, Once MAX_COMM, Once UNION_COMM]
+ >> reverse (Cases_on ‘solvable x /\ solvable y’) >- fs []
+ >> simp []
+ >> rename1 ‘y1 = y2 /\ m1 + n = m + n1 <=> y3 = y4 /\ m3 + n1 = m2 + n3’
+ >> ‘n3 = n’ by rw [Abbr ‘n3’, Abbr ‘n’] >> gs []
+ >> EQ_TAC >> rw []
 QED
+
+(* |- !x y. equivalent x y <=> equivalent y x *)
+Theorem equivalent_comm = REWRITE_RULE [symmetric_def] equivalent_symmetric
 
 Theorem equivalent_of_solvables :
     !M N. solvable M /\ solvable N ==>
@@ -1375,7 +1378,7 @@ Proof
      CONJ_TAC >- art [] \\
      qunabbrev_tac ‘M0’ \\
      MATCH_MP_TAC lameq_SYM \\
-     MATCH_MP_TAC lameq_principle_hnf_idem' >> art [])
+     MATCH_MP_TAC lameq_principle_hnf_reduce' >> art [])
  >> ONCE_REWRITE_TAC [Boehm_apply_APPEND]
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘apply (p3 ++ p2) M1’
@@ -1690,7 +1693,7 @@ Proof
        Q.EXISTS_TAC ‘apply (p1 ++ p0) N0’ \\
        CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
                     qunabbrev_tac ‘N0’ >> MATCH_MP_TAC lameq_SYM \\
-                    MATCH_MP_TAC lameq_principle_hnf_idem >> art [GSYM solvable_iff_has_hnf]) \\
+                    MATCH_MP_TAC lameq_principle_hnf_reduce >> art [GSYM solvable_iff_has_hnf]) \\
     (* eliminating p0 *)
        REWRITE_TAC [Boehm_apply_APPEND] \\
        MATCH_MP_TAC lameq_TRANS \\
@@ -1728,7 +1731,7 @@ Proof
        CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
                     qunabbrev_tac ‘M0’ \\
                     MATCH_MP_TAC lameq_SYM \\
-                    MATCH_MP_TAC lameq_principle_hnf_idem >> art [GSYM solvable_iff_has_hnf]) \\
+                    MATCH_MP_TAC lameq_principle_hnf_reduce >> art [GSYM solvable_iff_has_hnf]) \\
     (* eliminating p0 *)
        REWRITE_TAC [Boehm_apply_APPEND] \\
        MATCH_MP_TAC lameq_TRANS \\
@@ -1817,7 +1820,7 @@ Proof
        Q.EXISTS_TAC ‘apply (pi ++ p0) M0’ \\
        CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
                     qunabbrev_tac ‘M0’ >> MATCH_MP_TAC lameq_SYM \\
-                    MATCH_MP_TAC lameq_principle_hnf_idem \\
+                    MATCH_MP_TAC lameq_principle_hnf_reduce \\
                     ASM_REWRITE_TAC [GSYM solvable_iff_has_hnf]) \\
        REWRITE_TAC [Boehm_apply_APPEND] \\
        MATCH_MP_TAC lameq_TRANS \\
@@ -1830,7 +1833,7 @@ Proof
        Q.EXISTS_TAC ‘apply (pi ++ p0) N0’ \\
        CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
                     qunabbrev_tac ‘N0’ >> MATCH_MP_TAC lameq_SYM \\
-                    MATCH_MP_TAC lameq_principle_hnf_idem \\
+                    MATCH_MP_TAC lameq_principle_hnf_reduce \\
                     ASM_REWRITE_TAC [GSYM solvable_iff_has_hnf]) \\
        REWRITE_TAC [Boehm_apply_APPEND] \\
        MATCH_MP_TAC lameq_TRANS \\
