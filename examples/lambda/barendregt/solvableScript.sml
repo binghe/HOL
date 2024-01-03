@@ -1052,7 +1052,7 @@ Proof
  >> Q.EXISTS_TAC ‘EL i Ns’ >> rw []
 QED
 
-(* Corollary 8.3.17 (ii) [1, p.176] *)
+(* Corollary 8.3.17 (ii) [1, p.176] (inner part) *)
 Theorem lameq_principle_hnf_lemma :
     !X M N. FINITE X /\ FV M SUBSET X /\ FV N SUBSET X /\
             hnf M /\ hnf N /\ M == N
@@ -1195,9 +1195,7 @@ QED
 Theorem lameq_principle_hnf_headvar_eq' =
         lameq_principle_hnf_headvar_eq |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
 
-(* This is also Corollary 8.3.17 (ii) [1, p.176], the most important
-   property of principle hnfs, thus earned the theorem name.
- *)
+(* Corollary 8.3.17 (ii) [1, p.176] (outer part) *)
 Theorem lameq_principle_hnf_thm :
     !X M N M0 N0 n vs M1 N1.
          FINITE X /\ FV M UNION FV N SUBSET X /\
@@ -1236,6 +1234,9 @@ Proof
  (* applying principle_hnf_FV_SUBSET *)
  >> METIS_TAC [principle_hnf_FV_SUBSET, SUBSET_TRANS, UNION_SUBSET]
 QED
+
+Theorem lameq_principle_hnf_thm' =
+        lameq_principle_hnf_thm |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
 
 val _ = export_theory ();
 val _ = html_theory "solvable";

@@ -171,13 +171,10 @@ QED
    NOTE: X is an sufficiently large finite set of names covering all FVs of
          M and N. The Boehm trees of M and N are generated with help of this set.
 
-   NOTE2: This theorem can be improved to an iff (M == N <=> BTe X M = BTe X N),
-          but this requires constructing lambda terms from a Boehm tree:
-
-          M == fromBT (BTe X M) = fromBT (BTe X N) == N   or  M == N
+   TODO: this theorem can be improved to an iff: M == N <=> BTe X M = BTe X N
  *)
-Theorem lameq_imp_same_BT :
-    !X M N. FINITE X /\ FV M UNION FV N SUBSET X /\
+Theorem lameq_BT_cong :
+    !X M N. FINITE X /\ FV M UNION FV N SUBSET X ==>
             M == N ==> BTe X M = BTe X N
 Proof
     RW_TAC std_ss []
@@ -187,42 +184,42 @@ Proof
  >> ‘solvable N’ by METIS_TAC [lameq_solvable_cong]
  (* applying ltree_bisimulation *)
  >> rw [ltree_bisimulation]
- >> Q.EXISTS_TAC ‘\x y. ?P Q Y. P == Q /\ solvable P /\ solvable Q /\
-                                FINITE Y /\ FV P UNION FV Q SUBSET Y /\
-                                x = BTe Y P /\ y = BTe Y Q’
+ (* NOTE: ‘solvable P /\ solvable Q’ cannot be added into the next relation *)
+ >> Q.EXISTS_TAC ‘\x y. ?P Q Y. FINITE Y /\ FV P UNION FV Q SUBSET Y /\
+                                P == Q /\ x = BTe Y P /\ y = BTe Y Q’
  >> BETA_TAC
  >> CONJ_TAC >- (qexistsl_tac [‘M’, ‘N’, ‘X’] >> rw [])
  (* stage work *)
- >> qx_genl_tac [‘a1’, ‘ts1’, ‘a2’, ‘ts2’]
- >> STRIP_TAC
+ >> qx_genl_tac [‘a1’, ‘ts1’, ‘a2’, ‘ts2’] >> STRIP_TAC
+ >> qabbrev_tac ‘P0 = principle_hnf P’
  >> qabbrev_tac ‘Q0 = principle_hnf Q’
+ >> qabbrev_tac ‘n  = LAMl_size P0’
  >> qabbrev_tac ‘n' = LAMl_size Q0’
+ >> qabbrev_tac ‘vs = FRESH_list n (Y UNION FV P)’
  >> qabbrev_tac ‘vs' = FRESH_list n' (Y UNION FV Q)’
+ >> qabbrev_tac ‘P1 = principle_hnf (P0 @* MAP VAR vs)’
  >> qabbrev_tac ‘Q1 = principle_hnf (Q0 @* MAP VAR vs')’
+ >> qabbrev_tac ‘Ps = hnf_children P1’
  >> qabbrev_tac ‘Qs = hnf_children Q1’
+ >> qabbrev_tac ‘y  = hnf_headvar P1’
  >> qabbrev_tac ‘y' = hnf_headvar Q1’
  (* applying ltree_unfold *)
  >> Q.PAT_X_ASSUM ‘_ = BTe Y Q’ MP_TAC
  >> simp [BT_def, Once ltree_unfold, BT_generator_def]
- >> qabbrev_tac ‘P0 = principle_hnf P’
- >> qabbrev_tac ‘n = LAMl_size P0’
- >> qabbrev_tac ‘vs = FRESH_list n (Y UNION FV P)’
- >> qabbrev_tac ‘P1 = principle_hnf (P0 @* MAP VAR vs)’
- >> qabbrev_tac ‘Ps = hnf_children P1’
- >> qabbrev_tac ‘y = hnf_headvar P1’
  (* applying ltree_unfold *)
  >> Q.PAT_X_ASSUM ‘_ = BTe Y P’ MP_TAC
  >> simp [BT_def, Once ltree_unfold, BT_generator_def]
  >> NTAC 2 STRIP_TAC
+ (* easy case: unsolvable P (and Q) *)
+ >> reverse (Cases_on ‘solvable P’)
+ >- (‘unsolvable Q’ by PROVE_TAC [lameq_solvable_cong] >> fs [] \\
+     rw [llist_rel_def, LLENGTH_MAP])
+ (* now both P and Q are solvable *)
+ >> ‘solvable Q’ by PROVE_TAC [lameq_solvable_cong]
  (* clean up definitions of vs and vs' by using ‘FV M UNION FV N SUBSET X’ *)
  >> Know ‘Y UNION FV P = Y /\ Y UNION FV Q = Y’
  >- (Q.PAT_X_ASSUM ‘FV P UNION FV Q SUBSET Y’ MP_TAC >> SET_TAC [])
  >> DISCH_THEN (fs o wrap)
- (* NOTE: Here the existing list of names vs and vs' cannot be used as the shared
-          binding list for both P0 and Q0. Thus we have to call FRESH_list again.
-          But once we have proved that ‘LAMl_size P0 = LAMl_size Q0’, i.e. n = n',
-          then it will be clear that vs = vs', a shared binding list.
-  *)
  >> Know ‘n = n' /\ vs = vs'’
  >- (reverse CONJ_ASM1_TAC >- rw [Abbr ‘vs’, Abbr ‘vs'’] \\
      qunabbrevl_tac [‘n’, ‘n'’, ‘P0’, ‘Q0’] \\
@@ -235,10 +232,69 @@ Proof
  >- (MP_TAC (Q.SPECL [‘Y’, ‘P’, ‘Q’, ‘P0’, ‘Q0’, ‘n’, ‘vs’, ‘P1’, ‘Q1’]
                      lameq_principle_hnf_headvar_eq') >> simp [])
  >> DISCH_THEN (rfs o wrap o GSYM)
- >> NTAC 4 (POP_ASSUM K_TAC)
- (* stage work *)
+ >> qunabbrevl_tac [‘y’, ‘y'’]
+ (* applying lameq_principle_hnf_thm' *)
+ >> MP_TAC (Q.SPECL [‘Y’, ‘P’, ‘Q’, ‘P0’, ‘Q0’, ‘n’, ‘vs’, ‘P1’, ‘Q1’]
+                     lameq_principle_hnf_thm') >> simp []
  >> rw [llist_rel_def, LLENGTH_MAP]
- >> cheat
+ >> Cases_on ‘i < LENGTH Ps’ >> fs [LNTH_fromList]
+ >> qexistsl_tac [‘z’, ‘z'’, ‘Y’] >> simp []
+ >> reverse CONJ_TAC >- PROVE_TAC [] (* z == z' *)
+ (* preparing for hnf_children_FV_SUBSET
+
+    Here, once again, we need to get suitable explicit forms of P0 and Q0,
+    to show that, P1 and Q1 are absfree hnf.
+  *)
+ >> ‘hnf P0 /\ hnf Q0’ by PROVE_TAC [hnf_principle_hnf, solvable_iff_has_hnf]
+ >> qabbrev_tac ‘n = LAMl_size Q0’
+ >> ‘ALL_DISTINCT vs /\ LENGTH vs = n /\ DISJOINT (set vs) Y’
+      by rw [Abbr ‘vs’, FRESH_list_def]
+ >> Know ‘DISJOINT (set vs) (FV P0)’
+ >- (MATCH_MP_TAC DISJOINT_SUBSET \\
+     Q.EXISTS_TAC ‘Y’ >> art [] \\
+     MATCH_MP_TAC SUBSET_TRANS \\
+     Q.EXISTS_TAC ‘FV P’ >> art [] \\
+     qunabbrev_tac ‘P0’ \\
+     MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
+ >> DISCH_TAC
+ >> Know ‘DISJOINT (set vs) (FV Q0)’
+ >- (MATCH_MP_TAC DISJOINT_SUBSET \\
+     Q.EXISTS_TAC ‘Y’ >> art [] \\
+     MATCH_MP_TAC SUBSET_TRANS \\
+     Q.EXISTS_TAC ‘FV Q’ >> art [] \\
+     qunabbrev_tac ‘Q0’ \\
+     MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
+ >> DISCH_TAC
+ (* NOTE: the next two hnf_tac will refine P1 and Q1 *)
+ >> qunabbrevl_tac [‘P1’, ‘Q1’]
+ >> hnf_tac (“P0 :term”, “vs :string list”,
+             “P1 :term”, “y  :string”, “args :term list”)
+ >> hnf_tac (“Q0 :term”, “vs :string list”,
+             “Q1 :term”, “y' :string”, “args' :term list”)
+ >> ‘TAKE n vs = vs’ by rw [TAKE_LENGTH_ID_rwt]
+ >> POP_ASSUM (rfs o wrap)
+ (* refine P1 and Q1 again for clear assumptions using them *)
+ >> qunabbrevl_tac [‘P1’, ‘Q1’]
+ >> qabbrev_tac ‘P1 = principle_hnf (P0 @* MAP VAR vs)’
+ >> qabbrev_tac ‘Q1 = principle_hnf (Q0 @* MAP VAR vs)’
+ (* applying hnf_children_FV_SUBSET *)
+ >> CONJ_TAC
+ >| [ (* goal 1 (of 2) *)
+      Know ‘!i. i < LENGTH Ps ==> FV (EL i Ps) SUBSET FV P1’
+      >- (MATCH_MP_TAC hnf_children_FV_SUBSET >> rw [Abbr ‘Ps’, hnf_appstar]) \\
+      DISCH_TAC \\
+      Q.PAT_X_ASSUM ‘EL i Ps = z’ (ONCE_REWRITE_TAC o wrap o SYM) \\
+      MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘FV P1’ \\
+      CONJ_TAC >- (FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+      MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘FV P0’ \\
+      reverse CONJ_TAC
+      >- (MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘FV P’ \\
+          reverse CONJ_TAC >- art [] \\
+          qunabbrev_tac ‘P0’ >> MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art []) \\
+      simp [FV_LAMl] \\
+      cheat,
+      (* goal 2 (of 2) *)
+      cheat ]
 QED
 
 (*---------------------------------------------------------------------------*
@@ -646,7 +702,8 @@ QED
 
    where the names "M1", "y" and "args" can be chosen from inputs.
  *)
-fun hnf_tac (M0,vs,M1,y,args) = let val n = “LAMl_size ^M0” in
+fun hnf_tac (M0, vs, M1, y, args) =
+  let val n = “LAMl_size ^M0” in
     qabbrev_tac ‘^M1 = principle_hnf (^M0 @* MAP VAR (TAKE ^n ^vs))’
  >> Know ‘?^y ^args. ^M0 = LAMl (TAKE ^n ^vs) (VAR ^y @* ^args)’
  >- (irule (iffLR hnf_cases_shared) >> rw [])
@@ -657,7 +714,7 @@ fun hnf_tac (M0,vs,M1,y,args) = let val n = “LAMl_size ^M0” in
         (fn th => REWRITE_TAC [Once th]) \\
      MATCH_MP_TAC principle_hnf_beta_reduce >> rw [hnf_appstar])
  >> DISCH_TAC
-end;
+  end;
 
 (* The following combined tactic is useful after:
 
@@ -688,8 +745,8 @@ val equivalent_tac =
  >> Q.PAT_X_ASSUM ‘N0 = _’ ASSUME_TAC
  >> Q.PAT_X_ASSUM ‘M1 = _’ ASSUME_TAC
  >> Q.PAT_X_ASSUM ‘N1 = _’ ASSUME_TAC
- >> ‘VAR y1 = y’  by rw [Abbr ‘y’ , hnf_head_absfree]
- >> ‘VAR y2 = y'’ by rw [Abbr ‘y'’, hnf_head_absfree];
+ >> ‘VAR y1 = y’  by rw [Abbr ‘y’ , absfree_hnf_head]
+ >> ‘VAR y2 = y'’ by rw [Abbr ‘y'’, absfree_hnf_head];
 
 (* From [1, p.238]. This concerte example shows that dB encoding is not easy in
    defining this "concept": the literal encoding of inner head variables are not

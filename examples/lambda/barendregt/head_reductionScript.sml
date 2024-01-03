@@ -1219,7 +1219,7 @@ QED
 
 Overload hnf_headvar = “\t. THE_VAR (hnf_head t)”
 
-(* hnf_children retrives the ‘args’ part of an abs-free hnf (VAR y @* args) *)
+(* hnf_children retrives the ‘args’ part of absfree hnf *)
 Definition hnf_children_def :
     hnf_children t = if is_comb t then
                         SNOC (rand t) (hnf_children (rator t))
@@ -1274,7 +1274,25 @@ Proof
  >> rw [hnf_children_appstar, hnf_head_appstar]
 QED
 
-Theorem hnf_head_absfree :
+Theorem hnf_children_FV_SUBSET :
+    !M Ms. hnf M /\ ~is_abs M /\ Ms = hnf_children M ==>
+           !i. i < LENGTH Ms ==> FV (EL i Ms) SUBSET FV M
+Proof
+    rpt STRIP_TAC
+ >> ‘M = hnf_head M @* hnf_children M’ by PROVE_TAC [absfree_hnf_thm]
+ >> POP_ORW
+ >> Q.PAT_X_ASSUM ‘Ms = hnf_children M’ (fs o wrap)
+ >> qabbrev_tac ‘Ms = hnf_children M’
+ >> simp [FV_appstar]
+ >> MATCH_MP_TAC SUBSET_TRANS
+ >> Q.EXISTS_TAC ‘BIGUNION (IMAGE FV (set Ms))’
+ >> simp []
+ >> rw [SUBSET_DEF, IN_BIGUNION_IMAGE]
+ >> Q.EXISTS_TAC ‘EL i Ms’ >> rw [MEM_EL]
+ >> Q.EXISTS_TAC ‘i’ >> rw []
+QED
+
+Theorem absfree_hnf_head :
     !y args. hnf_head (VAR y @* args) = VAR y
 Proof
     rpt GEN_TAC
