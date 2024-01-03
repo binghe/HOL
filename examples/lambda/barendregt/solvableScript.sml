@@ -647,13 +647,13 @@ End
    NOTE: this theorem depends on finite_head_reduction_path_to_list_11 and
          hreduce1_FV.
  *)
-Theorem principle_hnf_FV :
+Theorem principle_hnf_FV_SUBSET :
     !M. has_hnf M ==> FV (principle_hnf M) SUBSET FV M
 Proof
     rw [corollary11_4_8]
  >> qabbrev_tac ‘p = head_reduction_path M’
  >> MP_TAC (Q.SPECL [‘M’, ‘p’] finite_head_reduction_path_to_list_11)
- >> rw [principle_hnf_def, o_DEF]
+ >> rw [principle_hnf_def, combinTheory.o_DEF]
  >> simp [finite_last_el]
  >> Q.PAT_X_ASSUM ‘LENGTH l = _’ (ONCE_REWRITE_TAC o wrap o SYM)
  >> qabbrev_tac ‘n = PRE (LENGTH l)’
@@ -673,13 +673,13 @@ Proof
  >> Q.EXISTS_TAC ‘FV (EL j l)’
  >> reverse CONJ_TAC
  >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [])
- >> MATCH_MP_TAC hreduce1_FV'
+ >> MATCH_MP_TAC hreduce1_FV_SUBSET
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
 QED
 
 (* |- !M. solvable M ==> FV (principle_hnf M) SUBSET FV M *)
-Theorem principle_hnf_FV' =
-        principle_hnf_FV |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
+Theorem principle_hnf_FV_SUBSET' =
+        principle_hnf_FV_SUBSET |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
 
 Theorem hnf_principle_hnf :
     !M. has_hnf M ==> hnf (principle_hnf M)

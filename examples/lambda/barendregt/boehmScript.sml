@@ -170,9 +170,15 @@ QED
 
    NOTE: X is an sufficiently large finite set of names covering all FVs of
          M and N. The Boehm trees of M and N are generated with help of this set.
+
+   NOTE2: This theorem can be improved to an iff (M == N <=> BTe X M = BTe X N),
+          but this requires constructing lambda terms from a Boehm tree:
+
+          M == fromBT (BTe X M) = fromBT (BTe X N) == N   or  M == N
  *)
-Theorem BT_lameq_congruence :
-    !X M N. FV M UNION FV N SUBSET X /\ M == N ==> BTe X M = BTe X N
+Theorem lameq_imp_same_BT :
+    !X M N. FINITE X /\ FV M UNION FV N SUBSET X /\
+            M == N ==> BTe X M = BTe X N
 Proof
     RW_TAC std_ss []
  >> reverse (Cases_on ‘solvable M’)
@@ -182,7 +188,7 @@ Proof
  (* applying ltree_bisimulation *)
  >> rw [ltree_bisimulation]
  >> Q.EXISTS_TAC ‘\x y. ?P Q Y. P == Q /\ solvable P /\ solvable Q /\
-                                FV P UNION FV Q SUBSET Y /\
+                                FINITE Y /\ FV P UNION FV Q SUBSET Y /\
                                 x = BTe Y P /\ y = BTe Y Q’
  >> BETA_TAC
  >> CONJ_TAC >- (qexistsl_tac [‘M’, ‘N’, ‘X’] >> rw [])
@@ -232,7 +238,7 @@ Proof
  >> NTAC 4 (POP_ASSUM K_TAC)
  (* stage work *)
  >> rw [llist_rel_def, LLENGTH_MAP]
- cheat
+ >> cheat
 QED
 
 (*---------------------------------------------------------------------------*

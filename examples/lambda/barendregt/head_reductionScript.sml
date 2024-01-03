@@ -40,7 +40,7 @@ val hreduce1_FV = store_thm(
   METIS_TAC [SUBSET_DEF, hreduce_ccbeta, cc_beta_FV_SUBSET]);
 
 (* |- !M N. M -h-> N ==> FV N SUBSET FV M *)
-Theorem hreduce1_FV = REWRITE_RULE [GSYM SUBSET_DEF] hreduce1_FV
+Theorem hreduce1_FV_SUBSET = hreduce1_FV |> REWRITE_RULE [GSYM SUBSET_DEF]
 
 Theorem hreduces_FV :
     ∀M N. M -h->* N ⇒ v ∈ FV N ⇒ v ∈ FV M
@@ -996,10 +996,10 @@ QED
 
 (* This theorem guarentees the one-one mapping between the list and the path *)
 Theorem finite_head_reduction_path_to_list_11 :
-    !M p. p = head_reduction_path M /\ finite p ==>
+    !M p. (p = head_reduction_path M) /\ finite p ==>
           ?l. l <> [] /\ (HD l = M) /\ hnf (LAST l) /\
              (LENGTH l = THE (length p)) /\
-             (!i. i < LENGTH l ==> EL i l = el i (head_reduction_path M)) /\
+             (!i. i < LENGTH l ==> (EL i l = el i (head_reduction_path M))) /\
               !i. SUC i < LENGTH l ==> EL i l -h-> EL (SUC i) l
 Proof
     RW_TAC std_ss []
