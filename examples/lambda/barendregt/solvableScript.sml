@@ -642,6 +642,45 @@ Definition principle_hnf_def :
     principle_hnf = last o head_reduction_path
 End
 
+(* principle hnf has less (or equal) free variables
+
+   NOTE: this theorem depends on finite_head_reduction_path_to_list_11 and
+         hreduce1_FV.
+ *)
+Theorem principle_hnf_FV :
+    !M. has_hnf M ==> FV (principle_hnf M) SUBSET FV M
+Proof
+    rw [corollary11_4_8]
+ >> qabbrev_tac ‘p = head_reduction_path M’
+ >> MP_TAC (Q.SPECL [‘M’, ‘p’] finite_head_reduction_path_to_list_11)
+ >> rw [principle_hnf_def, o_DEF]
+ >> simp [finite_last_el]
+ >> Q.PAT_X_ASSUM ‘LENGTH l = _’ (ONCE_REWRITE_TAC o wrap o SYM)
+ >> qabbrev_tac ‘n = PRE (LENGTH l)’
+ >> ‘LENGTH l <> 0’ by rw [GSYM NOT_NIL_EQ_LENGTH_NOT_0]
+ >> Know ‘el n p = EL n l’
+ >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> rw [Abbr ‘n’])
+ >> Rewr'
+ >> REWRITE_TAC [GSYM EL]
+ (* preparing for induction *)
+ >> Suff ‘!j. j < LENGTH l ==> FV (EL j l) SUBSET FV (EL 0 l)’
+ >- (DISCH_THEN MATCH_MP_TAC >> rw [Abbr ‘n’])
+ >> Q.PAT_X_ASSUM ‘!i. i < LENGTH l ==> EL i l = el i p’ K_TAC
+ >> Induct_on ‘j’
+ >> RW_TAC std_ss [SUBSET_REFL] (* only one goal is left *)
+ >> MATCH_MP_TAC SUBSET_TRANS
+ >> Q.EXISTS_TAC ‘FV (EL j l)’
+ >> reverse CONJ_TAC
+ >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [])
+ >> MATCH_MP_TAC hreduce1_FV'
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+QED
+
+(* |- !M. solvable M ==> FV (principle_hnf M) SUBSET FV M *)
+Theorem principle_hnf_FV' =
+        principle_hnf_FV |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
+
 Theorem hnf_principle_hnf :
     !M. has_hnf M ==> hnf (principle_hnf M)
 Proof
