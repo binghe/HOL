@@ -189,6 +189,15 @@ Proof
  (* stage work *)
  >> qx_genl_tac [‘a1’, ‘ts1’, ‘a2’, ‘ts2’]
  >> STRIP_TAC
+ >> qabbrev_tac ‘Q0 = principle_hnf Q’
+ >> qabbrev_tac ‘n' = LAMl_size Q0’
+ >> qabbrev_tac ‘vs' = FRESH_list n' (Y UNION FV Q)’
+ >> qabbrev_tac ‘Q1 = principle_hnf (Q0 @* MAP VAR vs')’
+ >> qabbrev_tac ‘Qs = hnf_children Q1’
+ >> qabbrev_tac ‘y' = hnf_headvar Q1’
+ (* applying ltree_unfold *)
+ >> Q.PAT_X_ASSUM ‘_ = BTe Y Q’ MP_TAC
+ >> simp [BT_def, Once ltree_unfold, BT_generator_def]
  >> qabbrev_tac ‘P0 = principle_hnf P’
  >> qabbrev_tac ‘n = LAMl_size P0’
  >> qabbrev_tac ‘vs = FRESH_list n (Y UNION FV P)’
@@ -198,17 +207,8 @@ Proof
  (* applying ltree_unfold *)
  >> Q.PAT_X_ASSUM ‘_ = BTe Y P’ MP_TAC
  >> simp [BT_def, Once ltree_unfold, BT_generator_def]
- >> qabbrev_tac ‘Q0 = principle_hnf Q’
- >> qabbrev_tac ‘n' = LAMl_size Q0’
- >> qabbrev_tac ‘vs' = FRESH_list n' (Y UNION FV Q)’
- >> qabbrev_tac ‘Q1 = principle_hnf (Q0 @* MAP VAR vs')’
- >> qabbrev_tac ‘Qs = hnf_children Q1’
- >> qabbrev_tac ‘y' = hnf_headvar Q1’
- (* applying ltree_unfold, again *)
- >> Q.PAT_X_ASSUM ‘_ = BTe Y Q’ MP_TAC
- >> simp [BT_def, Once ltree_unfold, BT_generator_def]
  >> NTAC 2 STRIP_TAC
- (* clean up definitions of vs and vs' *)
+ (* clean up definitions of vs and vs' by using ‘FV M UNION FV N SUBSET X’ *)
  >> Know ‘Y UNION FV P = Y /\ Y UNION FV Q = Y’
  >- (Q.PAT_X_ASSUM ‘FV P UNION FV Q SUBSET Y’ MP_TAC >> SET_TAC [])
  >> DISCH_THEN (fs o wrap)
@@ -220,12 +220,19 @@ Proof
  >> Know ‘n = n' /\ vs = vs'’
  >- (reverse CONJ_ASM1_TAC >- rw [Abbr ‘vs’, Abbr ‘vs'’] \\
      qunabbrevl_tac [‘n’, ‘n'’, ‘P0’, ‘Q0’] \\
-     METIS_TAC [lameq_principle_hnf_properties'])
+     MATCH_MP_TAC lameq_principle_hnf_size_eq' >> art [])
  (* clean up now duplicated abbreviations: n' and vs' *)
  >> qunabbrevl_tac [‘n'’, ‘vs'’]
  >> DISCH_THEN (rfs o wrap o GSYM)
- (* applying hnf_cases_shared *)
- >> cheat
+ (* proving y = y' *)
+ >> STRONG_CONJ_TAC
+ >- (MP_TAC (Q.SPECL [‘Y’, ‘P’, ‘Q’, ‘P0’, ‘Q0’, ‘n’, ‘vs’, ‘P1’, ‘Q1’]
+                     lameq_principle_hnf_headvar_eq') >> simp [])
+ >> DISCH_THEN (rfs o wrap o GSYM)
+ >> NTAC 4 (POP_ASSUM K_TAC)
+ (* stage work *)
+ >> rw [llist_rel_def, LLENGTH_MAP]
+ cheat
 QED
 
 (*---------------------------------------------------------------------------*

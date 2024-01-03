@@ -1013,40 +1013,65 @@ Proof
  >> Q.EXISTS_TAC ‘EL i Ns’ >> rw []
 QED
 
-(* This is part of Corollary 8.3.17 (ii) [1, p.176] *)
+(* Corollary 8.3.17 (ii) [1, p.176] *)
 Theorem lameq_principle_hnf_lemma :
-    !N N'. hnf N /\ hnf N' /\ N == N' ==> LAMl_size N = LAMl_size N'
+    !X M N. FINITE X /\ FV M SUBSET X /\ FV N SUBSET X /\
+            hnf M /\ hnf N /\ M == N
+        ==> LAMl_size M = LAMl_size N /\
+            let n = LAMl_size M;
+                vs = FRESH_list n X;
+                M1 = principle_hnf (M @* MAP VAR vs);
+                N1 = principle_hnf (N @* MAP VAR vs)
+            in
+                hnf_headvar M1 = hnf_headvar N1
 Proof
-    rpt STRIP_TAC
+    rpt GEN_TAC >> STRIP_TAC
  (* at the beginning, we don't know if n = n' *)
- >> qabbrev_tac ‘n  = LAMl_size N’
- >> qabbrev_tac ‘n' = LAMl_size N'’
- (* applying (iffLR hnf_cases_shared) *)
- >> qabbrev_tac ‘X = FV N UNION FV N'’
+ >> qabbrev_tac ‘n  = LAMl_size M’
+ >> qabbrev_tac ‘n' = LAMl_size N’
+ (* applying hnf_cases_shared *)
  >> qabbrev_tac ‘vs = FRESH_list (MAX n n') X’
  >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) X /\ LENGTH vs = MAX n n'’
-      by rw [FRESH_list_def, Abbr ‘vs’, Abbr ‘X’]
- >> Know ‘?y args. N = LAMl (TAKE n vs) (VAR y @* args)’
+      by rw [FRESH_list_def, Abbr ‘vs’]
+ >> Know ‘?y args. M = LAMl (TAKE n vs) (VAR y @* args)’
  >- (qunabbrev_tac ‘n’ >> irule (iffLR hnf_cases_shared) >> rw [] \\
      MATCH_MP_TAC DISJOINT_SUBSET \\
-     Q.EXISTS_TAC ‘X’ >> rw [Abbr ‘X’])
+     Q.EXISTS_TAC ‘X’ >> fs [])
  >> STRIP_TAC
- >> Know ‘?y' args'. N' = LAMl (TAKE n' vs) (VAR y' @* args')’
+ >> Know ‘?y' args'. N = LAMl (TAKE n' vs) (VAR y' @* args')’
  >- (qunabbrev_tac ‘n'’ >> irule (iffLR hnf_cases_shared) >> rw [] \\
      MATCH_MP_TAC DISJOINT_SUBSET \\
-     Q.EXISTS_TAC ‘X’ >> rw [Abbr ‘X’])
+     Q.EXISTS_TAC ‘X’ >> fs [])
  >> STRIP_TAC
  >> qabbrev_tac ‘vs1 = TAKE n vs’
  >> qabbrev_tac ‘vs2 = TAKE n' vs’
  >> ‘n = LENGTH vs1 /\ n' = LENGTH vs2’ by rw [Abbr ‘n’, Abbr ‘n'’]
  (* applying lameq_CR *)
- >> ‘?Z. N -b->* Z /\ N' -b->* Z’ by METIS_TAC [lameq_CR]
+ >> ‘?Z. M -b->* Z /\ N -b->* Z’ by METIS_TAC [lameq_CR]
  >> ‘?Ns. Z = LAMl vs1 (VAR y @* Ns)’ by METIS_TAC [hnf_betastar_cases]
  >> ‘?Ns'. Z = LAMl vs2 (VAR y' @* Ns')’ by METIS_TAC [hnf_betastar_cases]
- >> METIS_TAC [LAMl_size_hnf]
+ (* now n = n' *)
+ >> STRONG_CONJ_TAC
+ >- METIS_TAC [LAMl_size_hnf]
+ >> DISCH_THEN (REV_FULL_SIMP_TAC std_ss o wrap o SYM)
+ (* eliminiate let in the goal *)
+ >> simp []
+ >> qunabbrevl_tac [‘vs1’, ‘vs2’]
+ >> ‘TAKE n vs = vs’ by METIS_TAC [TAKE_LENGTH_ID] 
+ >> POP_ASSUM (REV_FULL_SIMP_TAC std_ss o wrap)
+ >> rpt (Q.PAT_X_ASSUM ‘T’ K_TAC)
+ (* applying principle_hnf_beta_reduce *)
+ >> Know ‘principle_hnf (LAMl vs (VAR y @* args) @* MAP VAR vs) = VAR y @* args’
+ >- (MATCH_MP_TAC principle_hnf_beta_reduce >> rw [hnf_appstar])
+ >> Rewr'
+ >> Know ‘principle_hnf (LAMl vs (VAR y' @* args') @* MAP VAR vs) = VAR y' @* args'’
+ >- (MATCH_MP_TAC principle_hnf_beta_reduce >> rw [hnf_appstar])
+ >> Rewr'
+ >> simp [hnf_head_hnf]
+ >> fs [LAMl_eq_rewrite]
 QED
 
-Theorem lameq_principle_hnf_properties :
+Theorem lameq_principle_hnf_size_eq :
     !M N. has_hnf M /\ has_hnf N /\ M == N ==>
           LAMl_size (principle_hnf M) = LAMl_size (principle_hnf N)
 Proof
@@ -1063,15 +1088,53 @@ Proof
      MATCH_MP_TAC lameq_principle_hnf_reduce >> art [])
  >> DISCH_TAC
  >> ‘hnf M0 /\ hnf N0’ by METIS_TAC [hnf_principle_hnf]
- >> MATCH_MP_TAC lameq_principle_hnf_lemma >> art []
+ >> qabbrev_tac ‘X = FV M0 UNION FV N0’
+ >> MP_TAC (Q.SPECL [‘X’, ‘M0’, ‘N0’] lameq_principle_hnf_lemma)
+ >> rw [Abbr ‘X’]
 QED
 
 (* |- !M N.
         solvable M /\ solvable N /\ M == N ==>
         LAMl_size (principle_hnf M) = LAMl_size (principle_hnf N)
  *)
-Theorem lameq_principle_hnf_properties' =
-        lameq_principle_hnf_properties |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
+Theorem lameq_principle_hnf_size_eq' =
+        lameq_principle_hnf_size_eq |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
+
+Theorem lameq_principle_hnf_headvar_eq :
+    !X M N M0 N0 n vs M1 N1.
+         FINITE X /\ FV M UNION FV N SUBSET X /\
+         has_hnf M /\ has_hnf N /\ M == N /\
+         M0 = principle_hnf M /\ N0 = principle_hnf N /\
+         n = LAMl_size M0 /\ vs = FRESH_list n X /\
+         M1 = principle_hnf (M0 @* MAP VAR vs) /\
+         N1 = principle_hnf (N0 @* MAP VAR vs)
+     ==> hnf_headvar M1 = hnf_headvar N1
+Proof
+    RW_TAC std_ss []
+ >> qabbrev_tac ‘M0 = principle_hnf M’
+ >> qabbrev_tac ‘N0 = principle_hnf N’
+ >> qabbrev_tac ‘n = LAMl_size M0’
+ >> qabbrev_tac ‘vs = FRESH_list n X’
+ >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
+ >> qabbrev_tac ‘N1 = principle_hnf (N0 @* MAP VAR vs)’
+ >> Know ‘M0 == N0’
+ >- (MATCH_MP_TAC lameq_TRANS >> Q.EXISTS_TAC ‘M’ \\
+     CONJ_TAC >- (qunabbrev_tac ‘M0’ \\
+                  MATCH_MP_TAC lameq_principle_hnf_reduce >> art []) \\
+     MATCH_MP_TAC lameq_TRANS >> Q.EXISTS_TAC ‘N’ >> art [] \\
+     MATCH_MP_TAC lameq_SYM \\
+     qunabbrev_tac ‘N0’ \\
+     MATCH_MP_TAC lameq_principle_hnf_reduce >> art [])
+ >> DISCH_TAC
+ >> ‘hnf M0 /\ hnf N0’ by METIS_TAC [hnf_principle_hnf]
+ (* applying lameq_principle_hnf_lemma *)
+ >> MP_TAC (Q.SPECL [‘X’, ‘M0’, ‘N0’] lameq_principle_hnf_lemma)
+ >> rw []
+ >> cheat
+QED
+
+Theorem lameq_principle_hnf_headvar_eq' =
+        lameq_principle_hnf_headvar_eq |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
 
 val _ = export_theory ();
 val _ = html_theory "solvable";
