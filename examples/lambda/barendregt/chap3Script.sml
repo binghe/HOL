@@ -700,6 +700,7 @@ val ccbeta_lameq = store_thm(
   "ccbeta_lameq",
   ``!M N. M -b-> N ==> M == N``,
   SRW_TAC [][lameq_betaconversion, EQC_R]);
+
 val betastar_lameq = store_thm(
   "betastar_lameq",
   ``!M N. M -b->* N ==> M == N``,
