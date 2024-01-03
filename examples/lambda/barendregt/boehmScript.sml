@@ -69,25 +69,33 @@ Type boehm_tree[pp] = “:(string list # string) option ltree”
    Boehm tree do not capture free variables in the children nodes. Thus, if we
    further translate each node from ‘string list # string’ to ‘num # num’ w.r.t.
    de Bruijn encodings, the resulting Boehm tree should be unique for all X.
+
+   2024 UPDATE: Now BT_generator takes (X,M) where X is the initial X. Then,
+   for each generating children, the created fresh binding list ‘vs’ at current
+   level must be added into X for the next level. This is because the children
+   terms may contain free variables in ‘vs’, which was bound (thus not included
+   in FV M). When choosing binding variables for the next level, ‘vs’ must be
+   avoided too, for a "correct" generation.            -- Chun Tian, 4 gen 2024
  *)
 Definition BT_generator_def :
-    BT_generator X M =
+    BT_generator (X,M) =
       if solvable M then
          let M0 = principle_hnf M;
               n = LAMl_size M0;
              vs = FRESH_list n (X UNION FV M);
              M1 = principle_hnf (M0 @* (MAP VAR vs));
              Ms = hnf_children M1;
+              l = MAP ($, (X UNION set vs)) Ms;
               y = hnf_headvar M1;
               h = (vs,y)
          in
-            (SOME h, fromList Ms)
+            (SOME h, fromList l)
       else
             (NONE  , LNIL)
 End
 
 Definition BTe_def :
-    BTe X = ltree_unfold (BT_generator X)
+    BTe X M = ltree_unfold BT_generator (X,M)
 End
 
 (* The "default" Boehm tree, BT M, is abbreviated by setting X = {} *)
@@ -139,29 +147,54 @@ Theorem BT_finite_branching :
 Proof
     rpt GEN_TAC
  >> irule finite_branching_coind'
- >> Q.EXISTS_TAC ‘\b. ?M. b = BTe X M’
- >> rw [] >- (Q.EXISTS_TAC ‘M’ >> rw [])
- >> qabbrev_tac ‘a = ltree_node (BTe X M)’
- >> qabbrev_tac ‘ts = ltree_children (BTe X M)’
- >> qexistsl_tac [‘a’, ‘ts’]
- >> CONJ_TAC
- >- (reverse (RW_TAC std_ss [BT_def, BT_generator_def, Once ltree_unfold])
-     >- simp [BT_of_unsolvables, Abbr ‘a’, Abbr ‘ts’] \\
-     CONJ_TAC
-     >- (RW_TAC std_ss [Abbr ‘a’, BT_def, BT_generator_def, Once ltree_unfold] \\
-         rw [] >> ‘n' = n’ by rw [Abbr ‘n’, Abbr ‘n'’] >> gs []) \\
-     RW_TAC std_ss [Abbr ‘ts’, BT_def, BT_generator_def, Once ltree_unfold] \\
-    ‘n' = n’ by rw [Abbr ‘n’, Abbr ‘n'’] >> gs [])
+ >> Q.EXISTS_TAC ‘\b. ?X M. b = BTe X M’
+ >> rw [] >- (qexistsl_tac [‘X’, ‘M’] >> rw [])
  (* stage work *)
+ >> qabbrev_tac ‘A = BTe X M’
+ >> qabbrev_tac ‘a = ltree_node A’
+ >> qabbrev_tac ‘ts = ltree_children A’
+ >> qexistsl_tac [‘a’, ‘ts’]
+ (* A = Branch a ts *)
+ >> CONJ_TAC >- rw [Abbr ‘a’, Abbr ‘ts’]
+ (* LFINITE ts *)
  >> CONJ_TAC
- >- (RW_TAC std_ss [Abbr ‘ts’, BT_def, BT_generator_def, Once ltree_unfold] \\
-     rw [LFINITE_fromList])
- >> qabbrev_tac ‘P = \b. ?M. b = BTe X M’
- >> RW_TAC std_ss [Abbr ‘ts’, BT_def, BT_generator_def, Once ltree_unfold]
+ >- rw [Abbr ‘A’, Abbr ‘ts’, BT_def, BT_generator_def, Once ltree_unfold,
+        LFINITE_fromList]
+ >> qabbrev_tac ‘P = \b. ?X M. b = BTe X M’
+ >> rw [Abbr ‘A’, Abbr ‘ts’, BT_def, BT_generator_def, Once ltree_unfold]
  >> rw [every_fromList_EVERY, LMAP_fromList, EVERY_MAP, Abbr ‘P’, EVERY_MEM]
- >> rename1 ‘MEM N Ms’
- >> Q.EXISTS_TAC ‘N’ >> rw [BT_def]
+ >> qabbrev_tac ‘M0 = principle_hnf M’
+ >> qabbrev_tac ‘n = LAMl_size M0’
+ >> qabbrev_tac ‘vs = FRESH_list n (X UNION FV M)’
+ >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
+ >> rename1 ‘MEM N (hnf_children M1)’
+ >> qexistsl_tac [‘X UNION set vs’, ‘N’] >> rw [BT_def]
 QED
+
+
+(* Given a hnf ‘M0’ and a shared binding variable list ‘vs’
+
+   hnf_tac adds the following abbreviation and new assumptions:
+
+   Abbrev (M1 = principle_hnf (M0 @* MAP VAR (TAKE (LAMl_size M0) vs)))
+   M0 = LAMl (TAKE (LAMl_size M0) vs) (VAR y @* args)
+   M1 = VAR y @* args
+
+   where the names "M1", "y" and "args" can be chosen from inputs.
+ *)
+fun hnf_tac (M0, vs, M1, y, args) =
+  let val n = “LAMl_size ^M0” in
+    qabbrev_tac ‘^M1 = principle_hnf (^M0 @* MAP VAR (TAKE ^n ^vs))’
+ >> Know ‘?^y ^args. ^M0 = LAMl (TAKE ^n ^vs) (VAR ^y @* ^args)’
+ >- (irule (iffLR hnf_cases_shared) >> rw [])
+ >> STRIP_TAC
+ >> Know ‘^M1 = VAR ^y @* ^args’
+ >- (qunabbrev_tac ‘^M1’ \\
+     Q.PAT_ASSUM ‘^M0 = LAMl (TAKE ^n ^vs) (VAR ^y @* ^args)’
+        (fn th => REWRITE_TAC [Once th]) \\
+     MATCH_MP_TAC principle_hnf_beta_reduce >> rw [hnf_appstar])
+ >> DISCH_TAC
+  end;
 
 (* Proposition 10.1.6 [1, p.219] (beta-equivalent terms have the same Boehm tree)
 
@@ -233,10 +266,11 @@ Proof
  (* applying lameq_principle_hnf_thm' *)
  >> MP_TAC (Q.SPECL [‘Y’, ‘P’, ‘Q’, ‘P0’, ‘Q0’, ‘n’, ‘vs’, ‘P1’, ‘Q1’]
                      lameq_principle_hnf_thm') >> simp []
- >> rw [llist_rel_def, LLENGTH_MAP]
- >> Cases_on ‘i < LENGTH Ps’ >> fs [LNTH_fromList]
- >> qexistsl_tac [‘z’, ‘z'’, ‘Y’] >> simp []
- >> reverse CONJ_TAC >- PROVE_TAC [] (* z == z' *)
+ >> rw [llist_rel_def, LLENGTH_MAP, EL_MAP]
+ >> Cases_on ‘i < LENGTH Ps’ >> fs [LNTH_fromList, EL_MAP]
+ >> Q.PAT_X_ASSUM ‘(Y UNION set vs,EL i Ps) = z’  (ONCE_REWRITE_TAC o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘(Y UNION set vs,EL i Qs) = z'’ (ONCE_REWRITE_TAC o wrap o SYM)
+ >> qexistsl_tac [‘EL i Ps’, ‘EL i Qs’, ‘Y UNION set vs’] >> simp []
  (* preparing for hnf_children_FV_SUBSET
 
     Here, once again, we need to get suitable explicit forms of P0 and Q0,
@@ -276,6 +310,8 @@ Proof
  >> qabbrev_tac ‘Q1 = principle_hnf (Q0 @* MAP VAR vs)’
  (* applying hnf_children_FV_SUBSET *)
  >> CONJ_TAC
+ >> cheat
+ (*
  >| [ (* goal 1 (of 2) *)
       Know ‘!i. i < LENGTH Ps ==> FV (EL i Ps) SUBSET FV P1’
       >- (MATCH_MP_TAC hnf_children_FV_SUBSET >> rw [Abbr ‘Ps’, hnf_appstar]) \\
@@ -292,6 +328,7 @@ Proof
       cheat,
       (* goal 2 (of 2) *)
       cheat ]
+ *)
 QED
 
 (*---------------------------------------------------------------------------*
@@ -688,30 +725,6 @@ Proof
  >> RW_TAC std_ss [equivalent_def, principle_hnf_reduce]
  >> METIS_TAC []
 QED
-
-(* Given a hnf ‘M0’ and a shared binding variable list ‘vs’
-
-   hnf_tac adds the following abbreviation and new assumptions:
-
-   Abbrev (M1 = principle_hnf (M0 @* MAP VAR (TAKE (LAMl_size M0) vs)))
-   M0 = LAMl (TAKE (LAMl_size M0) vs) (VAR y @* args)
-   M1 = VAR y @* args
-
-   where the names "M1", "y" and "args" can be chosen from inputs.
- *)
-fun hnf_tac (M0, vs, M1, y, args) =
-  let val n = “LAMl_size ^M0” in
-    qabbrev_tac ‘^M1 = principle_hnf (^M0 @* MAP VAR (TAKE ^n ^vs))’
- >> Know ‘?^y ^args. ^M0 = LAMl (TAKE ^n ^vs) (VAR ^y @* ^args)’
- >- (irule (iffLR hnf_cases_shared) >> rw [])
- >> STRIP_TAC
- >> Know ‘^M1 = VAR ^y @* ^args’
- >- (qunabbrev_tac ‘^M1’ \\
-     Q.PAT_ASSUM ‘^M0 = LAMl (TAKE ^n ^vs) (VAR ^y @* ^args)’
-        (fn th => REWRITE_TAC [Once th]) \\
-     MATCH_MP_TAC principle_hnf_beta_reduce >> rw [hnf_appstar])
- >> DISCH_TAC
-  end;
 
 (* The following combined tactic is useful after:
 

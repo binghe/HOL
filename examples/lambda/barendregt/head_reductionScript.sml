@@ -1275,7 +1275,7 @@ Proof
 QED
 
 Theorem hnf_children_FV_SUBSET :
-    !M Ms. hnf M /\ ~is_abs M /\ Ms = hnf_children M ==>
+    !M Ms. hnf M /\ ~is_abs M /\ (Ms = hnf_children M) ==>
            !i. i < LENGTH Ms ==> FV (EL i Ms) SUBSET FV M
 Proof
     rpt STRIP_TAC
