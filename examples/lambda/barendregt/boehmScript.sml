@@ -154,14 +154,11 @@ Proof
     ‘n' = n’ by rw [Abbr ‘n’, Abbr ‘n'’] >> gs [])
  (* stage work *)
  >> CONJ_TAC
- >- (reverse (RW_TAC std_ss [Abbr ‘ts’, BT_def, BT_generator_def, Once ltree_unfold])
-     >- rw [] \\
+ >- (RW_TAC std_ss [Abbr ‘ts’, BT_def, BT_generator_def, Once ltree_unfold] \\
      rw [LFINITE_fromList])
  >> qabbrev_tac ‘P = \b. ?M. b = BTe X M’
- >> reverse (RW_TAC std_ss [Abbr ‘ts’, BT_def, BT_generator_def, Once ltree_unfold])
- >- rw []
- >> rw [every_fromList_EVERY, LMAP_fromList]
- >> rw [EVERY_MAP, Abbr ‘P’, EVERY_MEM]
+ >> RW_TAC std_ss [Abbr ‘ts’, BT_def, BT_generator_def, Once ltree_unfold]
+ >> rw [every_fromList_EVERY, LMAP_fromList, EVERY_MAP, Abbr ‘P’, EVERY_MEM]
  >> rename1 ‘MEM N Ms’
  >> Q.EXISTS_TAC ‘N’ >> rw [BT_def]
 QED
