@@ -310,25 +310,30 @@ Proof
  >> qabbrev_tac ‘Q1 = principle_hnf (Q0 @* MAP VAR vs)’
  (* applying hnf_children_FV_SUBSET *)
  >> CONJ_TAC
- >> cheat
- (*
  >| [ (* goal 1 (of 2) *)
       Know ‘!i. i < LENGTH Ps ==> FV (EL i Ps) SUBSET FV P1’
       >- (MATCH_MP_TAC hnf_children_FV_SUBSET >> rw [Abbr ‘Ps’, hnf_appstar]) \\
       DISCH_TAC \\
-      Q.PAT_X_ASSUM ‘EL i Ps = z’ (ONCE_REWRITE_TAC o wrap o SYM) \\
       MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘FV P1’ \\
       CONJ_TAC >- (FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
-      MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘FV P0’ \\
-      reverse CONJ_TAC
-      >- (MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘FV P’ \\
-          reverse CONJ_TAC >- art [] \\
-          qunabbrev_tac ‘P0’ >> MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art []) \\
-      simp [FV_LAMl] \\
-      cheat,
+      MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘FV P0 UNION set vs’ \\  
+      CONJ_TAC >- simp [FV_LAMl] \\
+      Suff ‘FV P0 SUBSET Y’ >- SET_TAC [] \\
+      MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘FV P’ \\
+      reverse CONJ_TAC >- art [] (* FV P SUBSET Y *) \\
+      qunabbrev_tac ‘P0’ >> MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [],
       (* goal 2 (of 2) *)
-      cheat ]
- *)
+      Know ‘!i. i < LENGTH Qs ==> FV (EL i Qs) SUBSET FV Q1’
+      >- (MATCH_MP_TAC hnf_children_FV_SUBSET >> rw [Abbr ‘Qs’, hnf_appstar]) \\
+      DISCH_TAC \\
+      MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘FV Q1’ \\
+      CONJ_TAC >- (FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+      MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘FV Q0 UNION set vs’ \\  
+      CONJ_TAC >- simp [FV_LAMl] \\
+      Suff ‘FV Q0 SUBSET Y’ >- SET_TAC [] \\
+      MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘FV Q’ \\
+      reverse CONJ_TAC >- art [] (* FV Q SUBSET Y *) \\
+      qunabbrev_tac ‘Q0’ >> MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [] ]
 QED
 
 (*---------------------------------------------------------------------------*
