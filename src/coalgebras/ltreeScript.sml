@@ -361,17 +361,17 @@ Definition make_unfold_def:
        make_unfold f (THE (LNTH n seeds)) path
 End
 
-Definition ltree_unfold_def:
+Definition ltree_unfold:
   ltree_unfold f seed =
     gen_ltree (make_unfold f seed)
 End
 
-Theorem ltree_unfold :
+Theorem ltree_unfold[allow_rebind]:
   ltree_unfold f seed =
     let (a,seeds) = f seed in
       Branch a (LMAP (ltree_unfold f) seeds)
 Proof
-  fs [ltree_unfold_def]
+  fs [ltree_unfold]
   \\ once_rewrite_tac [gen_ltree]
   \\ simp [Once make_unfold_def]
   \\ Cases_on `f seed`
@@ -379,12 +379,12 @@ Proof
   \\ reverse (qspec_then `r` strip_assume_tac fromList_fromSeq)
   \\ fs [LGENLIST_EQ_fromSeq]
   THEN1
-   (fs [FUN_EQ_THM,ltree_unfold_def] \\ rw []
+   (fs [FUN_EQ_THM,ltree_unfold] \\ rw []
     \\ AP_TERM_TAC \\ fs [FUN_EQ_THM] \\ rw []
     \\ fs [make_unfold_def])
   \\ fs [LGENLIST_EQ_fromList,LMAP_fromList]
   \\ fs [LIST_EQ_REWRITE,EL_MAP] \\ rw []
-  \\ rw [ltree_unfold_def] \\ rw []
+  \\ rw [ltree_unfold] \\ rw []
   \\ AP_TERM_TAC \\ fs [FUN_EQ_THM] \\ rw []
   \\ fs [make_unfold_def,LNTH_fromList]
 QED
@@ -926,8 +926,8 @@ QED
 
 val _ = List.app Theory.delete_binding
   ["Branch_rep_def", "dest_Branch_rep_def", "make_ltree_rep_def",
-   "path_ok_def", "ltree_absrep", "ltree_absrep",
+   "make_unfold_def", "path_ok_def", "ltree_absrep", "ltree_absrep",
    "gen_ltree_def", "ltree_rep_ok_def", "Branch",
-   "from_rose_def_primitive"];
+   "from_rose_def_primitive", "ltree_finite_def"];
 
 val _ = export_theory();
