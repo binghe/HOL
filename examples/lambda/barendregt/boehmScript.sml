@@ -98,8 +98,14 @@ Definition BT_def :
     BT = ltree_unfold BT_generator
 End
 
-(* The "default" Boehm tree, BT M, is abbreviated by setting X = {} *)
 Overload BTe = “\X M. BT (X,M)”
+
+(* BTe is actually the Curry-ized version of BT *)
+Theorem BTe_def :
+    !X M. BTe X M = CURRY BT X M
+Proof
+    rw [pairTheory.CURRY_DEF]
+QED
 
 (* This is the meaning of Boehm tree nodes, ‘fromNote’ translated from BT nodes
    to lambda terms in form of ‘SOME (LAMl vs (VAR y))’ or ‘NONE’.
