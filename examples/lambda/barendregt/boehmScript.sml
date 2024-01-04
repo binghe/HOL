@@ -60,7 +60,7 @@ End
  *)
 Type boehm_tree[pp] = “:(string list # string) option ltree”
 
-(* Definition 10.1.9 [1, p.221] (Effective Boehm tree)
+(* Definition 10.1.9 [1, p.221] (Effective Boehm Tree)
 
    NOTE: The setup of ‘X UNION FV M’ when calling ‘FRESH_list’ guarentees that
    the generated Boehm tree is "correct" no matter what X is supplied.
@@ -233,8 +233,8 @@ Proof
  >> qabbrev_tac ‘Q1 = principle_hnf (Q0 @* MAP VAR vs')’
  >> qabbrev_tac ‘Ps = hnf_children P1’
  >> qabbrev_tac ‘Qs = hnf_children Q1’
- >> qabbrev_tac ‘y  = hnf_headvar P1’
- >> qabbrev_tac ‘y' = hnf_headvar Q1’
+ >> qabbrev_tac ‘y  = hnf_head P1’
+ >> qabbrev_tac ‘y' = hnf_head Q1’
  (* applying ltree_unfold *)
  >> Q.PAT_X_ASSUM ‘_ = BTe Y Q’ MP_TAC
  >> simp [BT_def, Once ltree_unfold, BT_generator_def]
@@ -371,8 +371,14 @@ End
 (* This assumes ‘subterm X M p <> NONE’ *)
 Overload subterm' = “\X M p. SND (THE (subterm X M p))”
 
-(* |- !X M. subterm X M [] = SOME M *)
+(* |- !X M. subterm X M [] = SOME (X,M) *)
 Theorem subterm_NIL[simp] = cj 1 subterm_def
+
+Theorem subterm_NIL'[simp] :
+    subterm' X M [] = M
+Proof
+    rw [subterm_NIL]
+QED
 
 (* Lemma 10.1.15 [1, p.222] *)
 Theorem BT_subterm_thm :
@@ -670,7 +676,7 @@ Definition equivalent_def :
                N0 = principle_hnf N;
                n  = LAMl_size M0;
                n' = LAMl_size N0;
-               vs = FRESH_list (MAX n n') (FV M0 UNION FV N0);
+               vs = FRESH_list (MAX n n') (FV M UNION FV N);
               vsM = TAKE n  vs;
               vsN = TAKE n' vs;
                M1 = principle_hnf (M0 @* (MAP VAR vsM));
@@ -706,7 +712,7 @@ Theorem equivalent_of_solvables :
               N0 = principle_hnf N;
               n  = LAMl_size M0;
               n' = LAMl_size N0;
-              vs = FRESH_list (MAX n n') (FV M0 UNION FV N0);
+              vs = FRESH_list (MAX n n') (FV M UNION FV N);
              vsM = TAKE n  vs;
              vsN = TAKE n' vs;
               M1 = principle_hnf (M0 @* (MAP VAR vsM));
@@ -719,6 +725,31 @@ Theorem equivalent_of_solvables :
               y = y' /\ n + m' = n' + m)
 Proof
     RW_TAC std_ss [equivalent_def]
+QED
+
+(* beta-equivalent terms are also equivalent here *)
+Theorem lameq_imp_equivalent :
+    !M N. M == N ==> equivalent M N
+Proof
+    rpt STRIP_TAC
+ >> reverse (Cases_on ‘solvable M’)
+ >- (‘unsolvable N’ by METIS_TAC [lameq_solvable_cong] \\
+     rw [equivalent_def])
+ >> ‘solvable N’ by METIS_TAC [lameq_solvable_cong]
+ >> qabbrev_tac ‘X = FV M UNION FV N’
+ >> ‘FINITE X’ by rw [Abbr ‘X’]
+ >> ‘LAMl_size (principle_hnf M) = LAMl_size (principle_hnf N)’
+       by METIS_TAC [lameq_principle_hnf_size_eq']
+ (* stage work *)
+ >> RW_TAC std_ss [equivalent_of_solvables] (* 2 subgoals, same tactics *)
+ >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) X /\ LENGTH vs = n’
+       by rw [Abbr ‘vs’, FRESH_list_def]
+ >> ‘vsM = vs’ by rw [Abbr ‘vsM’, TAKE_LENGTH_ID_rwt]
+ >> POP_ASSUM (fs o wrap)
+ >> Q.PAT_X_ASSUM ‘vs = vsN’ (fs o wrap o SYM)
+ >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘N’, ‘M0’, ‘N0’, ‘n’, ‘vs’, ‘M1’, ‘N1’]
+                    lameq_principle_hnf_thm')
+ >> simp [Abbr ‘X’]
 QED
 
 (* NOTE: the initial calls of ‘principle_hnf’ get eliminated if the involved

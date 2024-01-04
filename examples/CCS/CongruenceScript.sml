@@ -2,11 +2,9 @@
 (* FILE          : CongruenceScript.sml                                       *)
 (* DESCRIPTION   : The theory of congruence and guarded contexts              *)
 (*                                                                            *)
-(* THESIS        : A Formalization of Unique Solutions of Equations in        *)
-(*                 Process Algebra                                            *)
 (* AUTHOR        : (c) 2017 Chun Tian, University of Bologna, Italy           *)
 (*                 (c) 2018 Chun Tian, Fondazione Bruno Kessler (FBK)         *)
-(* DATE          : 2017-2018                                                  *)
+(*                 (c) 2024 Chun Tian, Australian National University         *)
 (* ========================================================================== *)
 
 open HolKernel Parse boolLib bossLib;
