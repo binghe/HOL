@@ -1314,7 +1314,7 @@ qx_gen_tac `u` >> strip_tac >>
  LIST_REL (relsupp A dpm ppm) us (MAP (tmrec A ppm vf lf) us)` by (
   assume_tac fresh_I >>
   fsrw_tac [DNF_ss][MEM_EL] >>
-  srw_tac [][LIST_REL_EL_EQN,EL_MAP, relsupp_def] >>
+  srw_tac [][LIST_REL_EL_EQN, EL_MAP, relsupp_def] >>
   fsrw_tac [][AND_IMP_INTRO] >>
   first_x_assum match_mp_tac >>
   fsrw_tac [][] >>

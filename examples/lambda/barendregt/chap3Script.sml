@@ -190,8 +190,7 @@ Theorem ccbeta_LAMl_rwt :
     !vs M N. LAMl vs M -b-> N <=> ?M'. N = LAMl vs M' /\ M -b-> M'
 Proof
     Induct_on ‘vs’
- >- rw []
- >> rw [ccbeta_rwt]
+ >> rw [ccbeta_rwt] (* only one goal left *)
  >> EQ_TAC >> rw []
  >- (Q.EXISTS_TAC ‘M'’ >> art [])
  >> Q.EXISTS_TAC ‘LAMl vs M'’ >> rw []

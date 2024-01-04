@@ -872,7 +872,7 @@ val pm_cpmpm_cancel = prove(
   POP_ASSUM (fn th => CONV_TAC (LAND_CONV (ONCE_REWRITE_CONV [th]))) THEN
   ONCE_REWRITE_TAC [GSYM pmact_sing_to_back] THEN
   fsrw_tac [][GSYM pmact_decompose] >>
-  metis_tac [pmact_decompose,APPEND]);
+  metis_tac [pmact_decompose, APPEND]);
 
 val pmact_supp_empty = store_thm(
   "pmact_supp_empty",
@@ -957,8 +957,7 @@ val supp_perm_of = store_thm(
        by (POP_ASSUM (ASSUME_TAC o SIMP_RULE (srw_ss()) [fnpm_def]) THEN
            SRW_TAC [][permeq_thm, pmact_decompose, GSYM swapstr_eq_left]) THEN
     `(x,y) :: p == (lswapstr p x, lswapstr p y) :: p`
-       by METIS_TAC [permeq_swap_ends, permeq_trans, permeq_sym,
-                     APPEND] THEN
+       by METIS_TAC [permeq_swap_ends, permeq_trans, permeq_sym, APPEND] THEN
     `(x,y) :: (p ++ p⁻¹) == (lswapstr p x, lswapstr p y) :: (p ++ p⁻¹)`
        by METIS_TAC [app_permeq_monotone, APPEND, permeq_refl] THEN
     `!h. [h] == h :: (p ++ p⁻¹)`
