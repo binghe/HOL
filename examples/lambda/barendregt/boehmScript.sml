@@ -406,7 +406,8 @@ QED
 Theorem subterm_is_none_iff_parent_unsolvable :
     !p X M. p IN ltree_paths (BTe X M) ==>
            (subterm X M p = NONE <=>
-            p <> [] /\ unsolvable (subterm' X M (FRONT p)))
+            p <> [] /\ subterm X M (FRONT p) <> NONE /\
+            unsolvable (subterm' X M (FRONT p)))
 Proof
     Induct_on ‘p’ >> rw [subterm_def] (* 2 subgoals, only one left *)
  >> qabbrev_tac ‘M0 = principle_hnf M’
@@ -444,6 +445,13 @@ Proof
  >> Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BTe X M)’ MP_TAC
  >> rw [BT_def, Once ltree_unfold, BT_generator_def, ltree_paths_def,
         ltree_lookup_def, LNTH_fromList, EL_MAP]
+QED
+
+Theorem subterm_is_none_imp_parent_some :
+    !p X M. p IN ltree_paths (BTe X M) /\
+            subterm X M p = NONE ==> subterm X M (FRONT p) <> NONE
+Proof
+    METIS_TAC [subterm_is_none_iff_parent_unsolvable]
 QED
 
 (*---------------------------------------------------------------------------*
