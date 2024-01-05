@@ -9,4 +9,4 @@ push: build
 	docker push $(IMAGE)
 
 run:
-	docker run --rm -ti $(IMAGE)
+	docker run -ti -v ML --rm $(DOCKER_IMAGE)
