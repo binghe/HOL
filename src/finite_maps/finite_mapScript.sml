@@ -1490,6 +1490,14 @@ Proof
  >> rw [FAPPLY_FUPDATE_THM, FUN_FMAP_DEF]
 QED
 
+Theorem FUN_FMAP_DISJOINT_UNION :
+    !f s t. FINITE (s UNION t) /\ DISJOINT s t ==>
+            FUN_FMAP f (s UNION t) = FUNION (FUN_FMAP f s) (FUN_FMAP f t)
+Proof
+    rw [fmap_EXT]
+ >> rw [FUNION_DEF, FUN_FMAP_DEF]
+QED
+
 (*---------------------------------------------------------------------------
          Composition of finite map and function
  ---------------------------------------------------------------------------*)
