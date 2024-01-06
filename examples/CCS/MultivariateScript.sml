@@ -10,8 +10,8 @@ open HolKernel Parse boolLib bossLib;
 open combinTheory relationTheory pred_setTheory pred_setLib finite_mapTheory
      arithmeticTheory listTheory;
 
-open CCSLib LabelTheory CCSTheory TransTheory StrongEQTheory StrongLawsTheory
-     WeakEQTheory TraceTheory ObsCongrTheory ContractionTheory CongruenceTheory
+open CCSLib CCSTheory StrongEQTheory StrongLawsTheory;
+open WeakEQTheory TraceTheory ObsCongrTheory ContractionTheory CongruenceTheory
      BisimulationUptoTheory UniqueSolutionsTheory;
 
 val _ = new_theory "Multivariate";

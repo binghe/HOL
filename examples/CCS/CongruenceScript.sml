@@ -11,7 +11,9 @@ open HolKernel Parse boolLib bossLib;
 
 open pred_setTheory pred_setLib relationTheory combinTheory arithmeticTheory;
 
-open CCSLib LabelTheory CCSTheory TransTheory binderLib;
+open binderLib;
+
+open CCSLib CCSTheory;
 open StrongEQTheory StrongLawsTheory WeakEQTheory WeakLawsTheory;
 open ObsCongrTheory ObsCongrLib ObsCongrLawsTheory ObsCongrConv;
 open BisimulationUptoTheory;
@@ -821,21 +823,21 @@ Proof
  >> POP_ASSUM (STRIP_ASSUME_TAC o (ONCE_REWRITE_RULE [SG_cases])) (* 7 sub-goals here *)
  >| [ (* goal 1 (of 7) *)
       POP_ASSUM (ASSUME_TAC o BETA_RULE o (ONCE_REWRITE_RULE [FUN_EQ_THM])) \\
-      Cases_on `p` (* 8 or 9 sub-goals here *)
+      MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw [] (* 8 subgoals *)
       >- PROVE_TAC [CCS_distinct']
       >- PROVE_TAC [CCS_distinct']
-      >- ( FULL_SIMP_TAC std_ss [CCS_11] \\
-           `(e = \t. C') \/ (e = \t. C)` by PROVE_TAC [] \\ (* 2 sub-goals *)
-           ASM_REWRITE_TAC [] >> REWRITE_TAC [SG1] )
+      >- (fs [CCS_one_one, FUN_EQ_THM] \\
+         ‘e = \t. E’ by PROVE_TAC [] >> POP_ORW \\
+          rw [SG1])
       >> PROVE_TAC [CCS_distinct'],
       (* goal 2 (of 7) *)
       qpat_x_assum `(\t. prefix tau (e t)) = X`
         (ASSUME_TAC o BETA_RULE o (REWRITE_RULE [FUN_EQ_THM])) \\
-      PROVE_TAC [CCS_11, Action_distinct],
+      PROVE_TAC [CCS_one_one, Action_distinct],
       (* goal 3 (of 7) *)
       qpat_x_assum `(\t. prefix tau (e t)) = X`
         (ASSUME_TAC o BETA_RULE o (REWRITE_RULE [FUN_EQ_THM])) \\
-      FULL_SIMP_TAC std_ss [CCS_11] \\
+      FULL_SIMP_TAC std_ss [CCS_one_one] \\
       METIS_TAC [],
       (* goal 4 (of 7) *)
       qpat_x_assum `(\t. prefix tau (e t)) = X`
@@ -863,13 +865,13 @@ Proof
   ( POP_ASSUM (STRIP_ASSUME_TAC o (ONCE_REWRITE_RULE [SG_cases])) (* 7 sub-goals here *)
  >| [ (* goal 1 (of 7) *)
       POP_ASSUM (ASSUME_TAC o BETA_RULE o (ONCE_REWRITE_RULE [FUN_EQ_THM])) \\
-      Cases_on `p` (* 8 or 9 sub-goals here *)
+      MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw [] (* 8 subgoals *)
       >- PROVE_TAC [CCS_distinct]
       >- PROVE_TAC [CCS_distinct]
       >- PROVE_TAC [CCS_distinct]
-      >- ( FULL_SIMP_TAC std_ss [CCS_11] \\
-           `((e = \t. C) \/ (e = \t. C')) /\ (e' = \t. C0)` by PROVE_TAC [] \\
-           ASM_REWRITE_TAC [] >> REWRITE_TAC [SG1] )
+      >- (fs [FUN_EQ_THM, CCS_one_one] \\
+         ‘(e = \t. E1) /\ (e' = \t. E2)’ by PROVE_TAC [] >> art [] \\
+          rw [SG1])
       >> PROVE_TAC [CCS_distinct],
       (* goal 2 (of 7) *)
       qpat_x_assum `(\t. sum (e t) (e' t)) = X`
@@ -882,7 +884,7 @@ Proof
       (* goal 4 (of 7) *)
       qpat_x_assum `(\t. sum (e t) (e' t)) = X`
         (ASSUME_TAC o BETA_RULE o (REWRITE_RULE [FUN_EQ_THM])) \\
-      FULL_SIMP_TAC std_ss [CCS_11] \\
+      FULL_SIMP_TAC std_ss [CCS_one_one] \\
       METIS_TAC [],
       (* goal 5 (of 7) *)
       qpat_x_assum `(\t. sum (e t) (e' t)) = X`
@@ -898,8 +900,10 @@ Proof
       PROVE_TAC [CCS_distinct'] ] )
 QED
 
-val SG10 = store_thm ("SG10",
-  ``!e e'. SG (\t. sum (prefix tau (e t)) (prefix tau (e' t))) ==> SG e /\ SG e'``,
+(* TODO *)
+Theorem SG10 :
+    !e e'. SG (\t. sum (prefix tau (e t)) (prefix tau (e' t))) ==> SG e /\ SG e'
+Proof
     rpt STRIP_TAC
  >| [ (* goal 1 (of 2) *)
       POP_ASSUM (STRIP_ASSUME_TAC o (ONCE_REWRITE_RULE [SG_cases])) >| (* 7 sub-goals here *)
@@ -909,11 +913,11 @@ val SG10 = store_thm ("SG10",
         >- PROVE_TAC [CCS_distinct]
         >- PROVE_TAC [CCS_distinct]
         >- PROVE_TAC [CCS_distinct]
-        >- ( FULL_SIMP_TAC std_ss [CCS_11] \\
+        >- ( FULL_SIMP_TAC std_ss [CCS_one_one] \\
              (TRY (Cases_on `C'`) >> TRY (Cases_on `C`)) (* 8 or 9 sub-goals here *)
           >- PROVE_TAC [CCS_distinct]
           >- PROVE_TAC [CCS_distinct]
-          >- ( FULL_SIMP_TAC std_ss [CCS_11] \\
+          >- ( FULL_SIMP_TAC std_ss [CCS_one_one] \\
                `(e = \t. C'') \/ (e = \t. C')` by PROVE_TAC [] \\
                ASM_REWRITE_TAC [] >> REWRITE_TAC [SG1] )
           >> PROVE_TAC [CCS_distinct] )
@@ -929,7 +933,7 @@ val SG10 = store_thm ("SG10",
         (* goal 1.4 (of 7) *)
         qpat_x_assum `(\t. sum (prefix tau (e t)) (prefix tau (e' t))) = X`
           (ASSUME_TAC o BETA_RULE o (REWRITE_RULE [FUN_EQ_THM])) \\
-        FULL_SIMP_TAC std_ss [CCS_11] \\
+        FULL_SIMP_TAC std_ss [CCS_one_one] \\
         `e1 = \t. prefix tau (e t)` by PROVE_TAC [] \\
         FULL_SIMP_TAC std_ss [] \\
         IMP_RES_TAC SG3_backward,
@@ -953,11 +957,11 @@ val SG10 = store_thm ("SG10",
         >- PROVE_TAC [CCS_distinct]
         >- PROVE_TAC [CCS_distinct]
         >- PROVE_TAC [CCS_distinct]
-        >- ( FULL_SIMP_TAC std_ss [CCS_11] \\
+        >- ( FULL_SIMP_TAC std_ss [CCS_one_one] \\
              Cases_on `C0` (* 8 or 9 sub-goals here *)
           >- PROVE_TAC [CCS_distinct]
           >- PROVE_TAC [CCS_distinct]
-          >- ( FULL_SIMP_TAC std_ss [CCS_11] \\
+          >- ( FULL_SIMP_TAC std_ss [CCS_one_one] \\
                `(e' = \t. C'') \/ (e' = \t. C')` by PROVE_TAC [] \\
                ASM_REWRITE_TAC [] >> REWRITE_TAC [SG1] )
           >> PROVE_TAC [CCS_distinct] )
@@ -973,7 +977,7 @@ val SG10 = store_thm ("SG10",
         (* goal 1.4 (of 7) *)
         qpat_x_assum `(\t. sum (prefix tau (e t)) (prefix tau (e' t))) = X`
           (ASSUME_TAC o BETA_RULE o (REWRITE_RULE [FUN_EQ_THM])) \\
-        FULL_SIMP_TAC std_ss [CCS_11] \\
+        FULL_SIMP_TAC std_ss [CCS_one_one] \\
         `e2 = \t. prefix tau (e' t)` by PROVE_TAC [] \\
         FULL_SIMP_TAC std_ss [] \\
         IMP_RES_TAC SG3_backward,
@@ -988,7 +992,8 @@ val SG10 = store_thm ("SG10",
         (* goal 1.7 (of 7) *)
         qpat_x_assum `(\t. sum (prefix tau (e t)) (prefix tau (e' t))) = X`
           (ASSUME_TAC o BETA_RULE o (REWRITE_RULE [FUN_EQ_THM])) \\
-        PROVE_TAC [CCS_distinct'] ]]);
+        PROVE_TAC [CCS_distinct'] ]]
+QED
 
 val SG11 = store_thm ("SG11",
   ``!e e' L. SG (\t. sum (prefix tau (e t)) (prefix (label L) (e' t))) ==> SG e``,
@@ -1000,11 +1005,11 @@ val SG11 = store_thm ("SG11",
       >- PROVE_TAC [CCS_distinct]
       >- PROVE_TAC [CCS_distinct]
       >- PROVE_TAC [CCS_distinct]
-      >- ( FULL_SIMP_TAC std_ss [CCS_11] \\
+      >- ( FULL_SIMP_TAC std_ss [CCS_one_one] \\
            (TRY (Cases_on `C'`) >> TRY (Cases_on `C`)) (* 8 or 9 sub-goals here *)
         >- PROVE_TAC [CCS_distinct]
         >- PROVE_TAC [CCS_distinct]
-        >- ( FULL_SIMP_TAC std_ss [CCS_11] \\
+        >- ( FULL_SIMP_TAC std_ss [CCS_one_one] \\
              `(e = \t. C'') \/ (e = \t. C')` by PROVE_TAC [] \\
              ASM_REWRITE_TAC [] >> REWRITE_TAC [SG1] )
         >> PROVE_TAC [CCS_distinct] )
@@ -1020,7 +1025,7 @@ val SG11 = store_thm ("SG11",
       (* goal 4 (of 7) *)
       qpat_x_assum `(\t. sum (prefix tau (e t)) (prefix (label L) (e' t))) = X`
           (ASSUME_TAC o BETA_RULE o (REWRITE_RULE [FUN_EQ_THM])) \\
-      FULL_SIMP_TAC std_ss [CCS_11] \\
+      FULL_SIMP_TAC std_ss [CCS_one_one] \\
       `e1 = \t. prefix tau (e t)` by PROVE_TAC [] \\
       FULL_SIMP_TAC std_ss [] \\
       IMP_RES_TAC SG3_backward,
@@ -1047,11 +1052,11 @@ val SG11' = store_thm ("SG11'",
       >- PROVE_TAC [CCS_distinct]
       >- PROVE_TAC [CCS_distinct]
       >- PROVE_TAC [CCS_distinct]
-      >- ( FULL_SIMP_TAC std_ss [CCS_11] \\
+      >- ( FULL_SIMP_TAC std_ss [CCS_one_one] \\
            Cases_on `C0` (* 8 or 9 sub-goals here *)
         >- PROVE_TAC [CCS_distinct]
         >- PROVE_TAC [CCS_distinct]
-        >- ( FULL_SIMP_TAC std_ss [CCS_11] \\
+        >- ( FULL_SIMP_TAC std_ss [CCS_one_one] \\
              `(e' = \t. C'') \/ (e' = \t. C')` by PROVE_TAC [] \\
              ASM_REWRITE_TAC [] >> REWRITE_TAC [SG1] )
         >> PROVE_TAC [CCS_distinct] )
@@ -1067,7 +1072,7 @@ val SG11' = store_thm ("SG11'",
       (* goal 4 (of 7) *)
       qpat_x_assum `(\t. sum (prefix (label L) (e t)) (prefix tau (e' t))) = X`
           (ASSUME_TAC o BETA_RULE o (REWRITE_RULE [FUN_EQ_THM])) \\
-      FULL_SIMP_TAC std_ss [CCS_11] \\
+      FULL_SIMP_TAC std_ss [CCS_one_one] \\
       `e2 = \t. prefix tau (e' t)` by PROVE_TAC [] \\
       FULL_SIMP_TAC std_ss [] \\
       IMP_RES_TAC SG3_backward,

@@ -7,7 +7,7 @@ open HolKernel Parse boolLib bossLib;
 
 open pred_setTheory prim_recTheory arithmeticTheory relationTheory;
 
-open CCSLib LabelTheory CCSTheory TransTheory StrongEQTheory StrongLawsTheory
+open CCSLib CCSTheory StrongEQTheory StrongLawsTheory
      WeakEQTheory WeakEQLib;
 
 val _ = new_theory "WeakLaws";

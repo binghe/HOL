@@ -11,7 +11,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open pred_setTheory relationTheory arithmeticTheory listTheory;
-open CCSLib LabelTheory CCSTheory StrongEQTheory WeakEQTheory;
+open CCSLib CCSTheory StrongEQTheory WeakEQTheory;
 
 val _ = new_theory "Trace";
 val _ = temp_loose_equality ();

@@ -8,7 +8,7 @@ open HolKernel Parse boolLib bossLib;
 
 open pred_setTheory prim_recTheory arithmeticTheory relationTheory;
 
-open CCSLib LabelTheory CCSTheory TransTheory StrongEQTheory StrongEQLib;
+open CCSLib CCSTheory StrongEQTheory StrongEQLib;
 
 val _ = new_theory "StrongLaws";
 val _ = temp_loose_equality ();

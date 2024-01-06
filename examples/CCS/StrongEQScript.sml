@@ -10,7 +10,7 @@ open HolKernel Parse boolLib bossLib;
 open pred_setTheory pairTheory relationTheory bisimulationTheory listTheory
      finite_mapTheory;
 
-open CCSLib CCSTheory TransTheory;
+open CCSLib CCSTheory;
 
 val _ = new_theory "StrongEQ";
 

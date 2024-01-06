@@ -12,8 +12,8 @@ open HolKernel Parse boolLib bossLib;
 
 open relationTheory listTheory;
 
-open CCSLib LabelTheory CCSTheory TransTheory StrongEQTheory StrongLawsTheory
-     WeakEQTheory WeakLawsTheory CongruenceTheory TraceTheory;
+open CCSLib CCSTheory StrongEQTheory StrongLawsTheory;
+open WeakEQTheory WeakLawsTheory CongruenceTheory TraceTheory;
 
 val _ = new_theory "Expansion";
 val _ = temp_loose_equality ();

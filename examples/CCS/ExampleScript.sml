@@ -9,7 +9,7 @@ open HolKernel Parse boolLib bossLib;
 open pred_setTheory relationTheory pairTheory sumTheory listTheory;
 open prim_recTheory arithmeticTheory combinTheory stringTheory;
 
-open CCSLib CCSTheory TransTheory CCSSyntax CCSConv;
+open CCSLib CCSTheory CCSSyntax CCSConv;
 open StrongEQTheory StrongEQLib StrongLawsTheory;
 open WeakEQTheory WeakEQLib WeakLawsTheory;
 open ObsCongrTheory ObsCongrLib ObsCongrLawsTheory;

@@ -1,20 +1,20 @@
 (* ========================================================================== *)
-(* FILE          : OpenCCSScript.sml                                          *)
-(* DESCRIPTION   : The theory of "open" CCS terms                             *)
+(* FILE          : ExtendedScript.sml                                         *)
+(* DESCRIPTION   : Extended Theory of CCS w.r.t. "open" terms                 *)
 (*                                                                            *)
 (* COPYRIGHTS    : 2023-2024 Australian National University (Chun Tian)       *)
 (******************************************************************************)
-
+x
 open HolKernel Parse boolLib bossLib;
 
 open pred_setTheory pairTheory relationTheory bisimulationTheory listTheory
      finite_mapTheory;
 
-open CCSLib CCSTheory TransTheory StrongEQTheory;
+open CCSLib CCSTheory StrongEQTheory;
 
 val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
 
-val _ = new_theory "OpenCCS";
+val _ = new_theory "Extended";
 
 (*
 
@@ -411,7 +411,7 @@ Proof
 QED
 
 val _ = export_theory ();
-val _ = html_theory "OpenCCS";
+val _ = html_theory "Extended";
 
 (* Bibliography:
 

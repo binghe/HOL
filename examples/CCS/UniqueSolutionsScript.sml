@@ -14,9 +14,8 @@ open HolKernel Parse boolLib bossLib;
 open combinTheory pred_setTheory relationTheory pairTheory sumTheory listTheory
      prim_recTheory arithmeticTheory;
 
-open CCSLib LabelTheory CCSTheory TransTheory TraceTheory StrongEQTheory
-     WeakEQTheory ObsCongrTheory BisimulationUptoTheory CongruenceTheory
-     ExpansionTheory ContractionTheory;
+open CCSLib CCSTheory TraceTheory StrongEQTheory WeakEQTheory ObsCongrTheory
+     BisimulationUptoTheory CongruenceTheory ExpansionTheory ContractionTheory;
 
 val _ = new_theory "UniqueSolutions";
 val _ = temp_loose_equality ();

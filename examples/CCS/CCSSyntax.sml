@@ -8,7 +8,7 @@ struct
 
 open HolKernel Parse boolLib bossLib;
 open PFset_conv computeLib;
-open CCSLib LabelTheory CCSTheory;
+open CCSLib CCSTheory;
 
 structure Parse = struct
   open Parse
@@ -22,8 +22,8 @@ open Parse
 (*                                                                            *)
 (******************************************************************************)
 
-val name   = prim_mk_const {Name="name",   Thy="Label"};
-val coname = prim_mk_const {Name="coname", Thy="Label"};
+val name   = prim_mk_const {Name="name",   Thy="CCS"};
+val coname = prim_mk_const {Name="coname", Thy="CCS"};
 val tau    = prim_mk_const {Name="NONE",   Thy="option"};
 val NIL    = prim_mk_const {Name="nil",    Thy="CCS"};
 val restr  = prim_mk_const {Name="restr",  Thy="CCS"};
@@ -38,11 +38,11 @@ in
     else failwith "term not a CCS label"
 end;
 
-val (_, _, arg_name, _)         = HolKernel.syntax_fns1 "Label" "name";
-val (_, _, arg_coname, _)       = HolKernel.syntax_fns1 "Label" "coname";
+val (_, _, arg_name, _)         = HolKernel.syntax_fns1 "CCS" "name";
+val (_, _, arg_coname, _)       = HolKernel.syntax_fns1 "CCS" "coname";
 val (_, _, arg_action, _)       = HolKernel.syntax_fns1 "option" "SOME";
-val (_, _, arg_compl, _)        = HolKernel.syntax_fns1 "Label" "COMPL_ACT";
-val (_, _, arg_relabelling, _)  = HolKernel.syntax_fns1 "Label" "RELAB";
+val (_, _, arg_compl, _)        = HolKernel.syntax_fns1 "CCS" "COMPL_ACT";
+val (_, _, arg_relabelling, _)  = HolKernel.syntax_fns1 "CCS" "RELAB";
 val (_, _, arg_ccs_var, _)      = HolKernel.syntax_fns1 "CCS" "var";
 val (_, _, args_prefix, _)      = HolKernel.syntax_fns2 "CCS" "prefix";
 val (_, _, args_sum, _)         = HolKernel.syntax_fns2 "CCS" "sum";
