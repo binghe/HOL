@@ -617,7 +617,7 @@ Theorem CCS_distinct_exists :
 Proof
     Q.X_GEN_TAC ‘p’
  >> MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw []
- >- (Q.EXISTS_TAC ‘prefix a nil’ >> rw [CCS_distinct'])
+ >- (Q.EXISTS_TAC ‘nil + nil’ >> rw [CCS_distinct'])
  >> Q.EXISTS_TAC ‘nil’
  >> rw [CCS_distinct]
 QED

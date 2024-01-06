@@ -749,7 +749,7 @@ val SG_IMP_CONTEXT = store_thm (
    "SG_IMP_CONTEXT", ``!e. SG e ==> CONTEXT e``,
     Induct_on `SG`
  >> rpt STRIP_TAC (* 7 sub-goals here *)
- >| [ REWRITE_TAC [CONTEXT2],
+ >| [ rw [CONTEXT2],
       MATCH_MP_TAC CONTEXT3 >> art [],
       MATCH_MP_TAC CONTEXT3 >> art [],
       MATCH_MP_TAC CONTEXT4 >> art [],
@@ -762,18 +762,13 @@ val SG_IMP_WG = store_thm (
    "SG_IMP_WG", ``!e. SG e ==> WG e``,
     Induct_on `SG`
  >> rpt STRIP_TAC (* 7 sub-goals here *)
- >| [ REWRITE_TAC [WG2],
+ >| [ rw [WG2],
       MATCH_MP_TAC WG3 >> art [],
       MATCH_MP_TAC WG3 >> IMP_RES_TAC SG_IMP_CONTEXT,
       MATCH_MP_TAC WG4 >> art [],
       MATCH_MP_TAC WG5 >> art [],
       MATCH_MP_TAC WG6 >> art [],
       MATCH_MP_TAC WG7 >> art [] ]);
-
-val lemma = Q.prove (`!p :'a CCS. ?q. q <> p`,
-    Cases_on `p`
- >- ( Q.EXISTS_TAC `nil + nil` >> PROVE_TAC [CCS_distinct'] )
- >> ( Q.EXISTS_TAC `nil` >> PROVE_TAC [CCS_distinct'] ));
 
 (* an important backward property of SG *)
 Theorem SG3_backward :
@@ -1199,7 +1194,7 @@ val SG_SEQ_strong_induction = store_thm (
       CCONTR_TAC >> FULL_SIMP_TAC std_ss [] \\
       POP_ASSUM (STRIP_ASSUME_TAC o (ONCE_REWRITE_RULE [SG_cases])) (* 7 sub-goals here *)
       >- ( POP_ASSUM (MP_TAC o BETA_RULE o (ONCE_REWRITE_RULE [FUN_EQ_THM])) \\
-           STRIP_ASSUME_TAC (Q.SPEC `p` lemma) >> PROVE_TAC [] ) \\
+           STRIP_ASSUME_TAC (Q.SPEC `p` CCS_distinct_exists) >> PROVE_TAC [] ) \\
       qpat_x_assum `(\t. t) = X`
         (ASSUME_TAC o BETA_RULE o (Q.SPEC `nil`) o (REWRITE_RULE [FUN_EQ_THM])) \\
       PROVE_TAC [CCS_distinct'],
@@ -1247,7 +1242,7 @@ val SG_GSEQ_strong_induction = store_thm (
       CCONTR_TAC >> FULL_SIMP_TAC std_ss [] \\
       POP_ASSUM (STRIP_ASSUME_TAC o (ONCE_REWRITE_RULE [SG_cases])) (* 7 sub-goals here *)
       >- ( POP_ASSUM (MP_TAC o BETA_RULE o (ONCE_REWRITE_RULE [FUN_EQ_THM])) \\
-           STRIP_ASSUME_TAC (Q.SPEC `p` lemma) >> PROVE_TAC [] ) \\
+           STRIP_ASSUME_TAC (Q.SPEC `p` CCS_distinct_exists) >> PROVE_TAC [] ) \\
       qpat_x_assum `(\t. t) = X`
         (ASSUME_TAC o BETA_RULE o (Q.SPEC `nil`) o (REWRITE_RULE [FUN_EQ_THM])) \\
       PROVE_TAC [CCS_distinct'],
