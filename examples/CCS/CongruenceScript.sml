@@ -90,7 +90,7 @@ val [CONTEXT1, CONTEXT2, CONTEXT3, CONTEXT4, CONTEXT5, CONTEXT6, CONTEXT7] =
                   CONJUNCTS CONTEXT_rules));
 
 Theorem CONTEXT3a :
-    !a. CONTEXT (\t. prefix a t)
+    !a :'a Action. CONTEXT (\t. prefix a t)
 Proof
     ASSUME_TAC CONTEXT1
  >> IMP_RES_TAC CONTEXT3
@@ -900,7 +900,6 @@ Proof
       PROVE_TAC [CCS_distinct'] ] )
 QED
 
-(* TODO *)
 Theorem SG10 :
     !e e'. SG (\t. sum (prefix tau (e t)) (prefix tau (e' t))) ==> SG e /\ SG e'
 Proof
@@ -909,18 +908,18 @@ Proof
       POP_ASSUM (STRIP_ASSUME_TAC o (ONCE_REWRITE_RULE [SG_cases])) >| (* 7 sub-goals here *)
       [ (* goal 1.1 (of 7) *)
         POP_ASSUM (ASSUME_TAC o BETA_RULE o (ONCE_REWRITE_RULE [FUN_EQ_THM])) \\
-        Cases_on `p` (* 8 or 9 sub-goals here *)
+        MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw [] (* 8 subgoals *)
         >- PROVE_TAC [CCS_distinct]
         >- PROVE_TAC [CCS_distinct]
         >- PROVE_TAC [CCS_distinct]
-        >- ( FULL_SIMP_TAC std_ss [CCS_one_one] \\
-             (TRY (Cases_on `C'`) >> TRY (Cases_on `C`)) (* 8 or 9 sub-goals here *)
-          >- PROVE_TAC [CCS_distinct]
-          >- PROVE_TAC [CCS_distinct]
-          >- ( FULL_SIMP_TAC std_ss [CCS_one_one] \\
-               `(e = \t. C'') \/ (e = \t. C')` by PROVE_TAC [] \\
-               ASM_REWRITE_TAC [] >> REWRITE_TAC [SG1] )
-          >> PROVE_TAC [CCS_distinct] )
+        >- (fs [CCS_one_one, FUN_EQ_THM] \\
+            MP_TAC (Q.SPEC ‘E1’ CCS_cases) >> rw [] (* 8 subgoals *)
+            >- PROVE_TAC [CCS_distinct]
+            >- PROVE_TAC [CCS_distinct]
+            >- (fs [CCS_one_one, FUN_EQ_THM] \\
+               ‘e = \t. E’ by PROVE_TAC [] >> POP_ORW \\
+                rw [SG1])
+            >> PROVE_TAC [CCS_distinct])
         >> PROVE_TAC [CCS_distinct],
         (* goal 1.2 (of 7) *)
         qpat_x_assum `(\t. sum (prefix tau (e t)) (prefix tau (e' t))) = X`
@@ -951,68 +950,69 @@ Proof
         PROVE_TAC [CCS_distinct'] ],
       (* goal 2 (of 2) *)
       POP_ASSUM (STRIP_ASSUME_TAC o (ONCE_REWRITE_RULE [SG_cases])) >| (* 7 sub-goals here *)
-      [ (* goal 1.1 (of 7) *)
+      [ (* goal 2.1 (of 7) *)
         POP_ASSUM (ASSUME_TAC o BETA_RULE o (ONCE_REWRITE_RULE [FUN_EQ_THM])) \\
-        Cases_on `p` (* 8 or 9 sub-goals here *)
+        MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw [] (* 8 subgoals *)
         >- PROVE_TAC [CCS_distinct]
         >- PROVE_TAC [CCS_distinct]
         >- PROVE_TAC [CCS_distinct]
-        >- ( FULL_SIMP_TAC std_ss [CCS_one_one] \\
-             Cases_on `C0` (* 8 or 9 sub-goals here *)
-          >- PROVE_TAC [CCS_distinct]
-          >- PROVE_TAC [CCS_distinct]
-          >- ( FULL_SIMP_TAC std_ss [CCS_one_one] \\
-               `(e' = \t. C'') \/ (e' = \t. C')` by PROVE_TAC [] \\
-               ASM_REWRITE_TAC [] >> REWRITE_TAC [SG1] )
-          >> PROVE_TAC [CCS_distinct] )
+        >- (fs [CCS_one_one, FUN_EQ_THM] \\
+            MP_TAC (Q.SPEC ‘E2’ CCS_cases) >> rw [] (* 8 subgoals *)
+            >- PROVE_TAC [CCS_distinct]
+            >- PROVE_TAC [CCS_distinct]
+            >- (fs [CCS_one_one, FUN_EQ_THM] \\
+               ‘e' = \t. E’ by PROVE_TAC [] >> POP_ORW \\
+                rw [SG1])
+            >> PROVE_TAC [CCS_distinct])
         >> PROVE_TAC [CCS_distinct],
-        (* goal 1.2 (of 7) *)
+        (* goal 2.2 (of 7) *)
         qpat_x_assum `(\t. sum (prefix tau (e t)) (prefix tau (e' t))) = X`
           (ASSUME_TAC o BETA_RULE o (REWRITE_RULE [FUN_EQ_THM])) \\
         PROVE_TAC [CCS_distinct'],
-        (* goal 1.3 (of 7) *)
+        (* goal 2.3 (of 7) *)
         qpat_x_assum `(\t. sum (prefix tau (e t)) (prefix tau (e' t))) = X`
           (ASSUME_TAC o BETA_RULE o (REWRITE_RULE [FUN_EQ_THM])) \\
         PROVE_TAC [CCS_distinct'],
-        (* goal 1.4 (of 7) *)
+        (* goal 2.4 (of 7) *)
         qpat_x_assum `(\t. sum (prefix tau (e t)) (prefix tau (e' t))) = X`
           (ASSUME_TAC o BETA_RULE o (REWRITE_RULE [FUN_EQ_THM])) \\
         FULL_SIMP_TAC std_ss [CCS_one_one] \\
         `e2 = \t. prefix tau (e' t)` by PROVE_TAC [] \\
         FULL_SIMP_TAC std_ss [] \\
         IMP_RES_TAC SG3_backward,
-        (* goal 1.5 (of 7) *)
+        (* goal 2.5 (of 7) *)
         qpat_x_assum `(\t. sum (prefix tau (e t)) (prefix tau (e' t))) = X`
           (ASSUME_TAC o BETA_RULE o (REWRITE_RULE [FUN_EQ_THM])) \\
         PROVE_TAC [CCS_distinct'],
-        (* goal 1.6 (of 7) *)
+        (* goal 2.6 (of 7) *)
         qpat_x_assum `(\t. sum (prefix tau (e t)) (prefix tau (e' t))) = X`
           (ASSUME_TAC o BETA_RULE o (REWRITE_RULE [FUN_EQ_THM])) \\
         PROVE_TAC [CCS_distinct'],
         (* goal 1.7 (of 7) *)
         qpat_x_assum `(\t. sum (prefix tau (e t)) (prefix tau (e' t))) = X`
           (ASSUME_TAC o BETA_RULE o (REWRITE_RULE [FUN_EQ_THM])) \\
-        PROVE_TAC [CCS_distinct'] ]]
+        PROVE_TAC [CCS_distinct'] ] ]
 QED
 
-val SG11 = store_thm ("SG11",
-  ``!e e' L. SG (\t. sum (prefix tau (e t)) (prefix (label L) (e' t))) ==> SG e``,
+Theorem SG11 :
+    !e e' L. SG (\t. sum (prefix tau (e t)) (prefix (label L) (e' t))) ==> SG e
+Proof
     rpt STRIP_TAC
  >> POP_ASSUM (STRIP_ASSUME_TAC o (ONCE_REWRITE_RULE [SG_cases])) (* 7 sub-goals here *)
  >| [ (* goal 1 (of 7) *)
       POP_ASSUM (ASSUME_TAC o BETA_RULE o (ONCE_REWRITE_RULE [FUN_EQ_THM])) \\
-      Cases_on `p` (* 8 or 9 sub-goals here *)
+      MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw [] (* 8 subgoals *)
       >- PROVE_TAC [CCS_distinct]
       >- PROVE_TAC [CCS_distinct]
       >- PROVE_TAC [CCS_distinct]
-      >- ( FULL_SIMP_TAC std_ss [CCS_one_one] \\
-           (TRY (Cases_on `C'`) >> TRY (Cases_on `C`)) (* 8 or 9 sub-goals here *)
-        >- PROVE_TAC [CCS_distinct]
-        >- PROVE_TAC [CCS_distinct]
-        >- ( FULL_SIMP_TAC std_ss [CCS_one_one] \\
-             `(e = \t. C'') \/ (e = \t. C')` by PROVE_TAC [] \\
-             ASM_REWRITE_TAC [] >> REWRITE_TAC [SG1] )
-        >> PROVE_TAC [CCS_distinct] )
+      >- (fs [CCS_one_one, FUN_EQ_THM] \\
+          MP_TAC (Q.SPEC ‘E1’ CCS_cases) >> rw [] (* 8 subgoals *)
+          >- PROVE_TAC [CCS_distinct]
+          >- PROVE_TAC [CCS_distinct]
+          >- (fs [CCS_one_one, FUN_EQ_THM] \\
+             ‘e = \t. E’ by PROVE_TAC [] >> POP_ORW \\
+              rw [SG1])
+          >> PROVE_TAC [CCS_distinct])
       >> PROVE_TAC [CCS_distinct],
       (* goal 2 (of 7) *)
       qpat_x_assum `(\t. sum (prefix tau (e t)) (prefix (label L) (e' t))) = X`
@@ -1040,26 +1040,28 @@ val SG11 = store_thm ("SG11",
       (* goal 7 (of 7) *)
       qpat_x_assum `(\t. sum (prefix tau (e t)) (prefix (label L) (e' t))) = X`
           (ASSUME_TAC o BETA_RULE o (REWRITE_RULE [FUN_EQ_THM])) \\
-      PROVE_TAC [CCS_distinct'] ]);
+      PROVE_TAC [CCS_distinct'] ]
+QED
 
-val SG11' = store_thm ("SG11'",
-  ``!e e' L. SG (\t. sum (prefix (label L) (e t)) (prefix tau (e' t))) ==> SG e'``,
+Theorem SG11' :
+    !e e' L. SG (\t. sum (prefix (label L) (e t)) (prefix tau (e' t))) ==> SG e'
+Proof
     rpt STRIP_TAC
  >> POP_ASSUM (STRIP_ASSUME_TAC o (ONCE_REWRITE_RULE [SG_cases])) (* 7 sub-goals here *)
  >| [ (* goal 1 (of 7) *)
       POP_ASSUM (ASSUME_TAC o BETA_RULE o (ONCE_REWRITE_RULE [FUN_EQ_THM])) \\
-      Cases_on `p` (* 8 or 9 sub-goals here *)
+      MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw [] (* 8 subgoals *)
       >- PROVE_TAC [CCS_distinct]
       >- PROVE_TAC [CCS_distinct]
       >- PROVE_TAC [CCS_distinct]
-      >- ( FULL_SIMP_TAC std_ss [CCS_one_one] \\
-           Cases_on `C0` (* 8 or 9 sub-goals here *)
-        >- PROVE_TAC [CCS_distinct]
-        >- PROVE_TAC [CCS_distinct]
-        >- ( FULL_SIMP_TAC std_ss [CCS_one_one] \\
-             `(e' = \t. C'') \/ (e' = \t. C')` by PROVE_TAC [] \\
-             ASM_REWRITE_TAC [] >> REWRITE_TAC [SG1] )
-        >> PROVE_TAC [CCS_distinct] )
+      >- (fs [CCS_one_one, FUN_EQ_THM] \\
+          MP_TAC (Q.SPEC ‘E2’ CCS_cases) >> rw [] (* 8 subgoals *)
+          >- PROVE_TAC [CCS_distinct]
+          >- PROVE_TAC [CCS_distinct]
+          >- (fs [CCS_one_one, FUN_EQ_THM] \\
+             ‘e' = \t. E’ by PROVE_TAC [] >> POP_ORW \\
+              rw [SG1])
+          >> PROVE_TAC [CCS_distinct])
       >> PROVE_TAC [CCS_distinct],
       (* goal 2 (of 7) *)
       qpat_x_assum `(\t. sum (prefix (label L) (e t)) (prefix tau (e' t))) = X`
@@ -1087,7 +1089,8 @@ val SG11' = store_thm ("SG11'",
       (* goal 7 (of 7) *)
       qpat_x_assum `(\t. sum (prefix (label L) (e t)) (prefix tau (e' t))) = X`
           (ASSUME_TAC o BETA_RULE o (REWRITE_RULE [FUN_EQ_THM])) \\
-      PROVE_TAC [CCS_distinct'] ]);
+      PROVE_TAC [CCS_distinct'] ]
+QED
 
 (******************************************************************************)
 (*                                                                            *)
@@ -1099,7 +1102,7 @@ val SG11' = store_thm ("SG11'",
    X itself, is of the form a.F or Sigma F_i *)
 Inductive SEQ :
     (                             SEQ (\t. t)) /\              (* SEQ1 *)
-    (!p.                          SEQ (\t. p)) /\              (* SEQ2 *)
+    (!p.     closed p         ==> SEQ (\t. p)) /\              (* SEQ2 *)
     (!a e.   SEQ e            ==> SEQ (\t. prefix a (e t))) /\ (* SEQ3 *)
     (!e1 e2. SEQ e1 /\ SEQ e2 ==> SEQ (\t. sum (e1 t) (e2 t))) (* SEQ4 *)
 End
@@ -1114,14 +1117,16 @@ val SEQ3a = store_thm ("SEQ3a",
  >> POP_ASSUM MP_TAC
  >> BETA_TAC >> REWRITE_TAC []);
 
-val SEQ_IMP_CONTEXT = store_thm (
-   "SEQ_IMP_CONTEXT", ``!e. SEQ e ==> CONTEXT e``,
-    Induct_on `SEQ`
+Theorem SEQ_IMP_CONTEXT :
+    !e. SEQ e ==> CONTEXT e
+Proof
+    HO_MATCH_MP_TAC SEQ_ind
  >> rpt STRIP_TAC (* 4 sub-goals here *)
  >| [ REWRITE_TAC [CONTEXT1],
-      REWRITE_TAC [CONTEXT2],
-      MATCH_MP_TAC CONTEXT3 >> ASM_REWRITE_TAC [],
-      MATCH_MP_TAC CONTEXT4 >> ASM_REWRITE_TAC [] ]);
+      rw [CONTEXT2],
+      MATCH_MP_TAC CONTEXT3 >> art [],
+      MATCH_MP_TAC CONTEXT4 >> art [] ]
+QED
 
 val SEQ_combin = store_thm (
    "SEQ_combin", ``!E. SEQ E ==> !E'. SEQ E' ==> SEQ (E o E')``,
@@ -1130,7 +1135,7 @@ val SEQ_combin = store_thm (
  >> REWRITE_TAC [ETA_THM]
  >> rpt STRIP_TAC (* 3 sub-goals here *)
  >| [ (* goal 1 (of 3) *)
-      REWRITE_TAC [SEQ2],
+      rw [SEQ2],
       (* goal 2 (of 3) *)
       RES_TAC >> IMP_RES_TAC SEQ3 \\
       NTAC 2 (POP_ASSUM K_TAC) \\
@@ -1157,7 +1162,7 @@ val OBS_CONGR_SUBST_SEQ = store_thm (
 (* Sequential expression with guarded sums *)
 Inductive GSEQ :
     (                         GSEQ (\t. t)) /\                 (* GSEQ1 *)
-    (!p.                      GSEQ (\t. p)) /\                 (* GSEQ2 *)
+    (!p.         closed p ==> GSEQ (\t. p)) /\                 (* GSEQ2 *)
     (!a e.        GSEQ e  ==> GSEQ (\t. prefix a (e t))) /\    (* GSEQ3 *)
     (!a1 a2 e1 e2.
        GSEQ e1 /\ GSEQ e2 ==> GSEQ (\t. sum (prefix a1 (e1 t)) (* GSEQ4 *)
@@ -1175,17 +1180,19 @@ val GSEQ3a = store_thm ("GSEQ3a",
  >> POP_ASSUM MP_TAC
  >> BETA_TAC >> REWRITE_TAC []);
 
-val GSEQ_IMP_CONTEXT = store_thm (
-   "GSEQ_IMP_CONTEXT", ``!e. GSEQ e ==> CONTEXT e``,
-    Induct_on `GSEQ`
+Theorem GSEQ_IMP_CONTEXT :
+    !e. GSEQ e ==> CONTEXT e
+Proof
+    HO_MATCH_MP_TAC GSEQ_ind
  >> rpt STRIP_TAC (* 4 sub-goals here *)
  >| [ REWRITE_TAC [CONTEXT1],
-      REWRITE_TAC [CONTEXT2],
-      MATCH_MP_TAC CONTEXT3 >> ASM_REWRITE_TAC [],
+      rw [CONTEXT2],
+      MATCH_MP_TAC CONTEXT3 >> art [],
       qpat_x_assum `CONTEXT e1` (ASSUME_TAC o (Q.SPEC `a1`) o (MATCH_MP CONTEXT3)) \\
       qpat_x_assum `CONTEXT e2` (ASSUME_TAC o (Q.SPEC `a2`) o (MATCH_MP CONTEXT3)) \\
       MP_TAC (Q.SPECL [`\t. (prefix a1 (e1 t))`, `\t. (prefix a2 (e2 t))`] CONTEXT4) \\
-      BETA_TAC >> RW_TAC std_ss [] ]);
+      BETA_TAC >> RW_TAC std_ss [] ]
+QED
 
 val GSEQ_combin = store_thm (
    "GSEQ_combin", ``!E. GSEQ E ==> !E'. GSEQ E' ==> GSEQ (E o E')``,
@@ -1194,7 +1201,7 @@ val GSEQ_combin = store_thm (
  >> REWRITE_TAC [ETA_THM]
  >> rpt STRIP_TAC (* 3 sub-goals here *)
  >| [ (* goal 1 (of 3) *)
-      REWRITE_TAC [GSEQ2],
+      rw [GSEQ2],
       (* goal 2 (of 3) *)
       RES_TAC >> IMP_RES_TAC GSEQ3 \\
       NTAC 2 (POP_ASSUM K_TAC) \\
@@ -1222,27 +1229,27 @@ val WEAK_EQUIV_SUBST_GSEQ = store_thm (
    this induction theorem than defining another combined inductive relation SG_SEQ and
    prove SG /\ SEQ = SQ_SEQ, which is a combinatorial explosion of cases.
  *)
-val SG_SEQ_strong_induction = store_thm (
-   "SG_SEQ_strong_induction",
-  ``!R. (!p. R (\t. p)) /\
+Theorem SG_SEQ_strong_induction :
+    !R. (!p. closed p ==> R (\t. p)) /\
         (!(l :'a Label) e. SEQ e ==> R (\t. prefix (label l) (e t))) /\
         (!(a :'a Action) e. SG e /\ SEQ e /\ R e ==> R (\t. prefix a (e t))) /\
         (!e1 e2. SG e1 /\ SEQ e1 /\ R e1 /\
                  SG e2 /\ SEQ e2 /\ R e2 ==> R (\t. sum (e1 t) (e2 t)))
-        ==> (!e. SG e /\ SEQ e ==> R e)``,
+        ==> (!e. SG e /\ SEQ e ==> R e)
+Proof
     rpt STRIP_TAC
- >> qpat_x_assum `SG e` MP_TAC
+ >> qpat_x_assum ‘SG e’ MP_TAC
  >> POP_ASSUM MP_TAC
- >> Q.SPEC_TAC (`e`, `e`)
- >> Induct_on `SEQ`
- >> rpt STRIP_TAC >> FULL_SIMP_TAC std_ss []  (* 3 sub-goals here *)
+ >> Q.ID_SPEC_TAC ‘e’
+ >> HO_MATCH_MP_TAC SEQ_strongind
+ >> rpt STRIP_TAC >> fs [] (* 3 sub-goals here *)
  >| [ (* goal 1 (of 3) *)
       Suff `~SG (\t. t)` >- PROVE_TAC [] \\
       KILL_TAC \\
       CCONTR_TAC >> FULL_SIMP_TAC std_ss [] \\
       POP_ASSUM (STRIP_ASSUME_TAC o (ONCE_REWRITE_RULE [SG_cases])) (* 7 sub-goals here *)
-      >- ( POP_ASSUM (MP_TAC o BETA_RULE o (ONCE_REWRITE_RULE [FUN_EQ_THM])) \\
-           STRIP_ASSUME_TAC (Q.SPEC `p` CCS_distinct_exists) >> PROVE_TAC [] ) \\
+      >- (POP_ASSUM (MP_TAC o BETA_RULE o (ONCE_REWRITE_RULE [FUN_EQ_THM])) \\
+          STRIP_ASSUME_TAC (Q.SPEC `p` CCS_distinct_exists) >> PROVE_TAC []) \\
       qpat_x_assum `(\t. t) = X`
         (ASSUME_TAC o BETA_RULE o (Q.SPEC `nil`) o (REWRITE_RULE [FUN_EQ_THM])) \\
       PROVE_TAC [CCS_distinct'],
@@ -1252,21 +1259,21 @@ val SG_SEQ_strong_induction = store_thm (
         qpat_x_assum `!l e. SEQ e ==> P` MATCH_MP_TAC \\
         ASM_REWRITE_TAC [],
         (* goal 2.2 (of 2) *)
-        Suff `SG e` >- ( DISCH_TAC \\
-                         qpat_x_assum `!a e. SG e /\ SEQ e /\ R e ==> P` MATCH_MP_TAC \\
-                         ASM_REWRITE_TAC [] >> METIS_TAC [] ) \\
+        Suff `SG e` >- (DISCH_TAC \\
+                        qpat_x_assum `!a e. SG e /\ SEQ e /\ R e ==> P` MATCH_MP_TAC \\
+                        ASM_REWRITE_TAC [] >> METIS_TAC []) \\
         POP_ASSUM MP_TAC >> KILL_TAC >> DISCH_TAC \\
-        MATCH_MP_TAC SG3_backward >> ASM_REWRITE_TAC [] ],
+        MATCH_MP_TAC SG3_backward >> art [] ],
       (* goal 3 (of 3) *)
       qpat_x_assum `!e1 e2. X` MATCH_MP_TAC \\
       ASM_REWRITE_TAC [] \\
-      Suff `SG e /\ SG e'` >- ( STRIP_TAC >> ASM_REWRITE_TAC [] >> METIS_TAC [] ) \\
+      Suff `SG e /\ SG e'` >- (STRIP_TAC >> art [] >> METIS_TAC []) \\
       POP_ASSUM MP_TAC >> KILL_TAC >> DISCH_TAC \\
-      MATCH_MP_TAC SG4_backward >> ASM_REWRITE_TAC [] ]);
+      MATCH_MP_TAC SG4_backward >> art [] ]
+QED
 
-val SG_GSEQ_strong_induction = store_thm (
-   "SG_GSEQ_strong_induction",
-  ``!R. (!p. R (\t. p)) /\
+Theorem SG_GSEQ_strong_induction :
+    !R. (!p. closed p ==> R (\t. p)) /\
         (!(l :'a Label) e. GSEQ e ==> R (\t. prefix (label l) (e t))) /\
         (!(a :'a Action) e. SG e /\ GSEQ e /\ R e ==> R (\t. prefix a (e t))) /\
         (!e1 e2.       SG e1 /\ GSEQ e1 /\ R e1 /\ SG e2 /\ GSEQ e2 /\ R e2
@@ -1277,20 +1284,21 @@ val SG_GSEQ_strong_induction = store_thm (
                    ==> R (\t. sum (prefix (label l1) (e1 t)) (prefix tau (e2 t)))) /\
         (!l1 l2 e1 e2. GSEQ e1 /\ GSEQ e2
                    ==> R (\t. sum (prefix (label l1) (e1 t)) (prefix (label l2) (e2 t))))
-        ==> (!e. SG e /\ GSEQ e ==> R e)``,
+        ==> (!e. SG e /\ GSEQ e ==> R e)
+Proof
     rpt STRIP_TAC
- >> qpat_x_assum `SG e` MP_TAC
+ >> qpat_x_assum ‘SG e’ MP_TAC
  >> POP_ASSUM MP_TAC
- >> Q.SPEC_TAC (`e`, `e`)
- >> Induct_on `GSEQ`
- >> rpt STRIP_TAC >> FULL_SIMP_TAC std_ss [] (* 3 sub-goals here *)
+ >> Q.ID_SPEC_TAC ‘e’
+ >> HO_MATCH_MP_TAC GSEQ_strongind
+ >> rpt STRIP_TAC >> fs [] (* 3 sub-goals here *)
  >| [ (* goal 1 (of 3) *)
       Suff `~SG (\t. t)` >- PROVE_TAC [] \\
       KILL_TAC \\
       CCONTR_TAC >> FULL_SIMP_TAC std_ss [] \\
       POP_ASSUM (STRIP_ASSUME_TAC o (ONCE_REWRITE_RULE [SG_cases])) (* 7 sub-goals here *)
-      >- ( POP_ASSUM (MP_TAC o BETA_RULE o (ONCE_REWRITE_RULE [FUN_EQ_THM])) \\
-           STRIP_ASSUME_TAC (Q.SPEC `p` CCS_distinct_exists) >> PROVE_TAC [] ) \\
+      >- (POP_ASSUM (MP_TAC o BETA_RULE o (ONCE_REWRITE_RULE [FUN_EQ_THM])) \\
+          STRIP_ASSUME_TAC (Q.SPEC `p` CCS_distinct_exists) >> PROVE_TAC []) \\
       qpat_x_assum `(\t. t) = X`
         (ASSUME_TAC o BETA_RULE o (Q.SPEC `nil`) o (REWRITE_RULE [FUN_EQ_THM])) \\
       PROVE_TAC [CCS_distinct'],
@@ -1300,55 +1308,67 @@ val SG_GSEQ_strong_induction = store_thm (
         qpat_x_assum `!l e. GSEQ e ==> P` MATCH_MP_TAC \\
         ASM_REWRITE_TAC [],
         (* goal 2.2 (of 2) *)
-        Suff `SG e` >- ( DISCH_TAC \\
-                         qpat_x_assum `!a e. SG e /\ GSEQ e /\ R e ==> P` MATCH_MP_TAC \\
-                         ASM_REWRITE_TAC [] >> METIS_TAC [] ) \\
+        Suff `SG e` >- (DISCH_TAC \\
+                        qpat_x_assum `!a e. SG e /\ GSEQ e /\ R e ==> P` MATCH_MP_TAC \\
+                        ASM_REWRITE_TAC [] >> METIS_TAC []) \\
         POP_ASSUM MP_TAC >> KILL_TAC >> DISCH_TAC \\
-        MATCH_MP_TAC SG3_backward >> ASM_REWRITE_TAC [] ],
+        MATCH_MP_TAC SG3_backward >> art [] ],
       (* goal 3 (of 3) *)
       Cases_on `a1` >> Cases_on `a2` >| (* 4 sub-goals here *)
       [ (* goal 3.1 (of 4) *)
         qpat_x_assum `!e1 e2. X ==> R (\t. prefix tau (e1 t) + prefix tau (e2 t))` MATCH_MP_TAC \\
         ASM_REWRITE_TAC [] \\
-        Suff `SG e /\ SG e'` >- ( STRIP_TAC >> ASM_REWRITE_TAC [] >> METIS_TAC [] ) \\
+        Suff `SG e /\ SG e'` >- (STRIP_TAC >> art [] >> METIS_TAC []) \\
         POP_ASSUM MP_TAC >> KILL_TAC >> DISCH_TAC \\
-        MATCH_MP_TAC SG10 >> ASM_REWRITE_TAC [],
+        MATCH_MP_TAC SG10 >> art [],
         (* goal 3.2 (of 4) *)
         qpat_x_assum `!l2 e1 e2. X ==> R (\t. prefix tau (e1 t) + prefix (label l2) (e2 t))`
           MATCH_MP_TAC \\
         ASM_REWRITE_TAC [] \\
-        Suff `SG e` >- ( STRIP_TAC >> ASM_REWRITE_TAC [] >> METIS_TAC [] ) \\
+        Suff `SG e` >- (STRIP_TAC >> art [] >> METIS_TAC []) \\
         POP_ASSUM MP_TAC >> KILL_TAC >> DISCH_TAC \\
-        MATCH_MP_TAC SG11 >> take [`e'`, `x`] >> ASM_REWRITE_TAC [],
+        MATCH_MP_TAC SG11 >> take [`e'`, `x`] >> art [],
         (* goal 3.2 (of 4) *)
         qpat_x_assum `!l1 e1 e2. X ==> R (\t. prefix (label l1) (e1 t) + prefix tau (e2 t))`
-          MATCH_MP_TAC \\
-        ASM_REWRITE_TAC [] \\
-        Suff `SG e'` >- ( STRIP_TAC >> ASM_REWRITE_TAC [] >> METIS_TAC [] ) \\
+          MATCH_MP_TAC >> art [] \\
+        Suff `SG e'` >- (STRIP_TAC >> art [] >> METIS_TAC []) \\
         POP_ASSUM MP_TAC >> KILL_TAC >> DISCH_TAC \\
-        MATCH_MP_TAC SG11' >> take [`e`, `x`] >> ASM_REWRITE_TAC [],
+        MATCH_MP_TAC SG11' >> take [`e`, `x`] >> art [],
         (* goal 3.4 (of 4) *)
         qpat_x_assum `!l1 l2 e1 e2. X ==> R (\t. prefix (label l1) (e1 t) + prefix (label l2) (e2 t))`
           MATCH_MP_TAC \\
-        ASM_REWRITE_TAC [] ] ]);
+        ASM_REWRITE_TAC [] ] ]
+QED
 
-val SG_SEQ_combin = store_thm (
-   "SG_SEQ_combin", ``!E. SG E /\ SEQ E ==> !H. SEQ H ==> (SG (H o E) /\ SEQ (H o E))``,
+Theorem SEQ_closed :
+    !p H. closed p /\ SEQ H ==> closed (H p)
+Proof
+    rpt STRIP_TAC
+ >> POP_ASSUM MP_TAC
+ >> Q.ID_SPEC_TAC ‘H’
+ >> HO_MATCH_MP_TAC SEQ_ind >> rw []
+QED
+
+Theorem SG_SEQ_combin :
+    !E. SG E /\ SEQ E ==> !H. SEQ H ==> (SG (H o E) /\ SEQ (H o E))
+Proof
     HO_MATCH_MP_TAC SG_SEQ_strong_induction
  >> REWRITE_TAC [o_DEF]
  >> BETA_TAC >> rpt STRIP_TAC (* 8 sub-goals here *)
  >| [ (* goal 1 (of 8) *)
-      REWRITE_TAC [SG1],
+      MATCH_MP_TAC SG1 \\
+      MATCH_MP_TAC SEQ_closed >> art [],
       (* goal 2 (of 8) *)
-      REWRITE_TAC [SEQ2],
+      MATCH_MP_TAC SEQ2 \\
+      MATCH_MP_TAC SEQ_closed >> art [],
       (* goal 3 (of 8) *)
-      POP_ASSUM MP_TAC >> Q.SPEC_TAC (`H`, `H`) \\
+      POP_ASSUM MP_TAC >> Q.ID_SPEC_TAC ‘H’ \\
       Induct_on `SEQ` >> BETA_TAC >> rpt STRIP_TAC >| (* 4 sub-goals here *)
       [ (* goal 3.1 (of 4) *)
         IMP_RES_TAC SEQ_IMP_CONTEXT \\
-        MATCH_MP_TAC SG2 >> ASM_REWRITE_TAC [],
+        MATCH_MP_TAC SG2 >> art [],
         (* goal 3.2 (of 4) *)
-        REWRITE_TAC [SG1],
+        rw [SG1],
         (* goal 3.3 (of 4) *)
         IMP_RES_TAC SG3 \\
         POP_ASSUM MP_TAC >> BETA_TAC \\
@@ -1370,12 +1390,12 @@ val SG_SEQ_combin = store_thm (
       REWRITE_TAC [],
       (* goal 5 (of 8) *)
       POP_ASSUM MP_TAC \\
-      Q.SPEC_TAC (`H`, `H`) \\
+      Q.ID_SPEC_TAC ‘H’ \\
       Induct_on `SEQ` >> BETA_TAC >> rpt STRIP_TAC >| (* 4 sub-goals here *)
       [ (* goal 5.1 (of 4) *)
-        MATCH_MP_TAC SG3 >> ASM_REWRITE_TAC [],
+        MATCH_MP_TAC SG3 >> art [],
         (* goal 5.2 (of 4) *)
-        REWRITE_TAC [SG1],
+        rw [SG1],
         (* goal 5.3 (of 4) *)
         ASSUME_TAC (Q.SPECL [`a' :'a Action`,
                              `\x. (H :'a CCS -> 'a CCS) (prefix a (E x))`] SG3) \\
@@ -1399,12 +1419,12 @@ val SG_SEQ_combin = store_thm (
       PROVE_TAC [],
       (* goal 7 (of 8) *)
       POP_ASSUM MP_TAC \\
-      Q.SPEC_TAC (`H`, `H`) \\
+      Q.ID_SPEC_TAC ‘H’ \\
       Induct_on `SEQ` >> BETA_TAC >> rpt STRIP_TAC >| (* 4 sub-goals here *)
       [ (* goal 7.1 (of 4) *)
-        MATCH_MP_TAC SG4 >> ASM_REWRITE_TAC [],
+        MATCH_MP_TAC SG4 >> art [],
         (* goal 7.2 (of 4) *)
-        REWRITE_TAC [SG1],
+        rw [SG1],
         (* goal 7.3 (of 4) *)
         ASSUME_TAC (Q.SPECL [`a :'a Action`,
                              `\x. (H :'a CCS -> 'a CCS) (E x + E' x)`] SG3) \\
@@ -1423,25 +1443,39 @@ val SG_SEQ_combin = store_thm (
       NTAC 2 (qpat_x_assum `!H. X` K_TAC) >> RES_TAC \\
       ASSUME_TAC (Q.SPEC `H` SEQ_combin) \\
       RES_TAC >> NTAC 3 (POP_ASSUM K_TAC) \\
-      POP_ASSUM MP_TAC >> REWRITE_TAC [o_DEF] >> BETA_TAC >> REWRITE_TAC [] ]);
+      POP_ASSUM MP_TAC >> REWRITE_TAC [o_DEF] \\
+      BETA_TAC >> REWRITE_TAC [] ]
+QED
 
-val SG_GSEQ_combin = store_thm (
-   "SG_GSEQ_combin", ``!E. SG E /\ GSEQ E ==> !H. GSEQ H ==> (SG (H o E) /\ GSEQ (H o E))``,
+Theorem GSEQ_closed :
+    !p H. closed p /\ GSEQ H ==> closed (H p)
+Proof
+    rpt STRIP_TAC
+ >> POP_ASSUM MP_TAC
+ >> Q.ID_SPEC_TAC ‘H’
+ >> HO_MATCH_MP_TAC GSEQ_ind >> rw []
+QED
+
+Theorem SG_GSEQ_combin :
+    !E. SG E /\ GSEQ E ==> !H. GSEQ H ==> (SG (H o E) /\ GSEQ (H o E))
+Proof
     HO_MATCH_MP_TAC SG_GSEQ_strong_induction
  >> REWRITE_TAC [o_DEF]
  >> BETA_TAC >> rpt STRIP_TAC (* 14 sub-goals here *)
  >| [ (* goal 1 (of 14) *)
-      REWRITE_TAC [SG1],
+      MATCH_MP_TAC SG1 \\
+      MATCH_MP_TAC GSEQ_closed >> art [],
       (* goal 2 (of 14) *)
-      REWRITE_TAC [GSEQ2],
+      MATCH_MP_TAC GSEQ2 \\
+      MATCH_MP_TAC GSEQ_closed >> art [],
       (* goal 3 (of 14) *)
-      POP_ASSUM MP_TAC >> Q.SPEC_TAC (`H`, `H`) \\
+      POP_ASSUM MP_TAC >> Q.ID_SPEC_TAC ‘H’ \\
       Induct_on `GSEQ` >> BETA_TAC >> rpt STRIP_TAC >| (* 4 sub-goals here *)
       [ (* goal 3.1 (of 4) *)
         IMP_RES_TAC GSEQ_IMP_CONTEXT \\
-        MATCH_MP_TAC SG2 >> ASM_REWRITE_TAC [],
+        MATCH_MP_TAC SG2 >> art [],
         (* goal 3.2 (of 4) *)
-        REWRITE_TAC [SG1],
+        rw [SG1],
         (* goal 3.3 (of 4) *)
         IMP_RES_TAC SG3 \\
         POP_ASSUM MP_TAC >> BETA_TAC \\
@@ -1467,12 +1501,12 @@ val SG_GSEQ_combin = store_thm (
       REWRITE_TAC [],
       (* goal 5 (of 14) *)
       POP_ASSUM MP_TAC \\
-      Q.SPEC_TAC (`H`, `H`) \\
+      Q.ID_SPEC_TAC ‘H’ \\
       Induct_on `GSEQ` >> BETA_TAC >> rpt STRIP_TAC >| (* 4 sub-goals here *)
       [ (* goal 5.1 (of 4) *)
-        MATCH_MP_TAC SG3 >> ASM_REWRITE_TAC [],
+        MATCH_MP_TAC SG3 >> art [],
         (* goal 5.2 (of 4) *)
-        REWRITE_TAC [SG1],
+        rw [SG1],
         (* goal 5.3 (of 4) *)
         ASSUME_TAC (Q.SPECL [`a' :'a Action`,
                              `\x. (H :'a CCS -> 'a CCS) (prefix a (E x))`] SG3) \\
@@ -1500,7 +1534,7 @@ val SG_GSEQ_combin = store_thm (
       PROVE_TAC [],
       (* goal 7 (of 14) *)
       POP_ASSUM MP_TAC \\
-      Q.SPEC_TAC (`H`, `H`) \\
+      Q.ID_SPEC_TAC ‘H’ \\
       Induct_on `GSEQ` >> BETA_TAC >> rpt STRIP_TAC >| (* 4 sub-goals here *)
       [ (* goal 7.1 (of 4) *)
         IMP_RES_TAC SG3 \\
@@ -1511,7 +1545,7 @@ val SG_GSEQ_combin = store_thm (
         POP_ASSUM K_TAC \\
         BETA_TAC >> DISCH_TAC >> METIS_TAC [],
         (* goal 7.2 (of 4) *)
-        REWRITE_TAC [SG1],
+        rw [SG1],
         (* goal 7.3 (of 4) *)
         ASSUME_TAC
           (Q.SPECL [`a :'a Action`,
@@ -1538,7 +1572,7 @@ val SG_GSEQ_combin = store_thm (
       POP_ASSUM MP_TAC >> REWRITE_TAC [o_DEF] >> BETA_TAC >> REWRITE_TAC [],
       (* goal 9 (of 14) *)
       POP_ASSUM MP_TAC \\
-      Q.SPEC_TAC (`H`, `H`) \\
+      Q.ID_SPEC_TAC ‘H’ \\
       Induct_on `GSEQ` >> BETA_TAC >> rpt STRIP_TAC >| (* 4 sub-goals here *)
       [ (* goal 9.1 (of 4) *)
         IMP_RES_TAC SG3 \\
@@ -1551,7 +1585,7 @@ val SG_GSEQ_combin = store_thm (
         POP_ASSUM MP_TAC \\
         BETA_TAC >> DISCH_TAC >> METIS_TAC [],
         (* goal 9.2 (of 4) *)
-        REWRITE_TAC [SG1],
+        rw [SG1],
         (* goal 9.3 (of 4) *)
         ASSUME_TAC
           (Q.SPECL [`a :'a Action`,
@@ -1578,7 +1612,7 @@ val SG_GSEQ_combin = store_thm (
       POP_ASSUM MP_TAC >> REWRITE_TAC [o_DEF] >> BETA_TAC >> REWRITE_TAC [],
       (* goal 11 (of 14) *)
       POP_ASSUM MP_TAC \\
-      Q.SPEC_TAC (`H`, `H`) \\
+      Q.ID_SPEC_TAC ‘H’ \\
       Induct_on `GSEQ` >> BETA_TAC >> rpt STRIP_TAC >| (* 4 sub-goals here *)
       [ (* goal 11.1 (of 4) *)
         IMP_RES_TAC SG3 \\
@@ -1592,7 +1626,7 @@ val SG_GSEQ_combin = store_thm (
         POP_ASSUM MP_TAC \\
         BETA_TAC >> DISCH_TAC >> METIS_TAC [],
         (* goal 11.2 (of 4) *)
-        REWRITE_TAC [SG1],
+        rw [SG1],
         (* goal 11.3 (of 4) *)
         ASSUME_TAC
           (Q.SPECL [`a :'a Action`,
@@ -1620,7 +1654,7 @@ val SG_GSEQ_combin = store_thm (
       POP_ASSUM MP_TAC >> REWRITE_TAC [o_DEF] >> BETA_TAC >> REWRITE_TAC [],
       (* goal 13 (of 14) *)
       POP_ASSUM MP_TAC \\
-      Q.SPEC_TAC (`H`, `H`) \\
+      Q.ID_SPEC_TAC ‘H’ \\
       Induct_on `GSEQ` >> BETA_TAC >> rpt STRIP_TAC >| (* 4 sub-goals here *)
       [ (* goal 13.1 (of 4) *)
         IMP_RES_TAC GSEQ_IMP_CONTEXT \\
@@ -1634,7 +1668,7 @@ val SG_GSEQ_combin = store_thm (
         POP_ASSUM MP_TAC >> KILL_TAC \\
         BETA_TAC >> DISCH_TAC >> METIS_TAC [],
         (* goal 13.2 (of 4) *)
-        REWRITE_TAC [SG1],
+        rw [SG1],
         (* goal 13.3 (of 4) *)
         ASSUME_TAC
           (Q.SPECL [`a :'a Action`,
@@ -1657,7 +1691,8 @@ val SG_GSEQ_combin = store_thm (
       RW_TAC std_ss [] \\
       qpat_x_assum `!E'. GSEQ E' ==> X`
         (MP_TAC o (Q.SPEC `\t. (label l1)..(e1 t) + (label l2)..(e2 t)`)) \\
-      REWRITE_TAC [o_DEF] >> BETA_TAC >> METIS_TAC [] ]);
+      REWRITE_TAC [o_DEF] >> BETA_TAC >> METIS_TAC [] ]
+QED
 
 (******************************************************************************)
 (*                                                                            *)
@@ -1668,7 +1703,7 @@ val SG_GSEQ_combin = store_thm (
 (* The only difference from WG is at WGS4, in which the sum has prefixed args,
    and the underlying e1 & e2 can be simply GCONTEXT. *)
 val (WGS_rules, WGS_ind, WGS_cases) = Hol_reln `
-    (!p.                          WGS (\t. p)) /\                   (* WGS2 *)
+    (!p.       closed p       ==> WGS (\t. p)) /\                   (* WGS2 *)
     (!a e.   GCONTEXT e       ==> WGS (\t. prefix a (e t))) /\      (* WGS3 *)
     (!a1 a2 e1 e2.
              GCONTEXT e1 /\ GCONTEXT e2
@@ -1698,7 +1733,7 @@ val WGS_IMP_GCONTEXT = store_thm (
    "WGS_IMP_GCONTEXT", ``!e. WGS e ==> GCONTEXT e``,
     Induct_on `WGS`
  >> rpt STRIP_TAC (* 6 sub-goals here *)
- >| [ REWRITE_TAC [GCONTEXT2],
+ >| [ rw [GCONTEXT2],
       MATCH_MP_TAC GCONTEXT3 >> ASM_REWRITE_TAC [],
       MATCH_MP_TAC GCONTEXT4 >> ASM_REWRITE_TAC [],
       MATCH_MP_TAC GCONTEXT5 >> ASM_REWRITE_TAC [],
@@ -1711,18 +1746,19 @@ val WGS_IMP_CONTEXT = store_thm (
  >> MATCH_MP_TAC GCONTEXT_IMP_CONTEXT
  >> IMP_RES_TAC WGS_IMP_GCONTEXT);
 
-val GCONTEXT_WGS_combin = store_thm (
-   "GCONTEXT_WGS_combin", ``!c e. GCONTEXT c /\ WGS e ==> WGS (c o e)``,
+Theorem GCONTEXT_WGS_combin :
+    !c e. GCONTEXT c /\ WGS e ==> WGS (c o e)
+Proof
     rpt STRIP_TAC
  >> NTAC 2 (POP_ASSUM MP_TAC)
- >> Q.SPEC_TAC (`c`, `c`)
+ >> Q.ID_SPEC_TAC ‘c’
  >> HO_MATCH_MP_TAC GCONTEXT_ind
  >> REWRITE_TAC [o_DEF]
  >> BETA_TAC
  >> REWRITE_TAC [ETA_AX]
  >> rpt STRIP_TAC >> RES_TAC (* 6 sub-goals here *)
  >| [ (* goal 1 (of 6) *)
-      REWRITE_TAC [WGS2],
+      rw [WGS2],
       (* goal 2 (of 6) *)
       IMP_RES_TAC WGS_IMP_GCONTEXT \\
       MP_TAC (Q.SPECL [`a`, `(\x. (c :'a context) (e x))`] WGS3) \\
@@ -1741,7 +1777,8 @@ val GCONTEXT_WGS_combin = store_thm (
       BETA_TAC >> RW_TAC std_ss [],
       (* goal 6 (of 6) *)
       MP_TAC (Q.SPECL [`rf`, `(\x. (c :'a context) (e x))`] WGS7) \\
-      BETA_TAC >> RW_TAC std_ss [] ]);
+      BETA_TAC >> RW_TAC std_ss [] ]
+QED
 
 val _ = export_theory ();
 val _ = html_theory "Congruence";
