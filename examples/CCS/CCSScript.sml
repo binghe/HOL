@@ -1103,6 +1103,14 @@ Proof
     rw [CCS_Subst, FV_SUB] >> SET_TAC []
 QED
 
+Theorem FV_SUBSET_lemma :
+    !P X Y. FV P SUBSET {X} /\ Y <> X ==> Y # P
+Proof
+    rpt STRIP_TAC
+ >> ‘Y IN {X}’ by METIS_TAC [SUBSET_DEF]
+ >> fs []
+QED
+
 (* i.e. closed term *)
 Definition IS_PROC_def :
     IS_PROC E <=> (FV E = EMPTY)
@@ -1123,31 +1131,31 @@ Proof
  >> Q.EXISTS_TAC `n` >> art []
 QED
 
-Theorem IS_PROC_prefix :
+Theorem IS_PROC_prefix[simp] :
     !P u. IS_PROC (prefix u P) <=> IS_PROC P
 Proof
     RW_TAC std_ss [IS_PROC_def, FV_thm]
 QED
 
-Theorem IS_PROC_sum :
+Theorem IS_PROC_sum[simp] :
     !P Q. IS_PROC (sum P Q) <=> IS_PROC P /\ IS_PROC Q
 Proof
     RW_TAC set_ss [IS_PROC_def, FV_thm]
 QED
 
-Theorem IS_PROC_par :
+Theorem IS_PROC_par[simp] :
     !P Q. IS_PROC (par P Q) <=> IS_PROC P /\ IS_PROC Q
 Proof
     RW_TAC set_ss [IS_PROC_def, FV_thm]
 QED
 
-Theorem IS_PROC_restr :
+Theorem IS_PROC_restr[simp] :
     !P L. IS_PROC (restr L P) <=> IS_PROC P
 Proof
     RW_TAC set_ss [IS_PROC_def, FV_thm]
 QED
 
-Theorem IS_PROC_relab :
+Theorem IS_PROC_relab[simp] :
     !P rf. IS_PROC (relab P rf) <=> IS_PROC P
 Proof
     RW_TAC set_ss [IS_PROC_def, FV_thm]
@@ -1339,6 +1347,10 @@ Theorem ssub_value :
 Proof
     SRW_TAC [][ssub_14b]
 QED
+
+(* |- !t phi. closed t ==> phi ' t = t *)
+Theorem ssub_value' =
+        ssub_value |> REWRITE_RULE [GSYM closed_def] |> GEN_ALL
 
 Theorem ssub_FEMPTY[simp]:
     !t. (FEMPTY :string |-> 'a CCS) ' t = t

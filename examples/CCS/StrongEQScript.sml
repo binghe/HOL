@@ -14,6 +14,8 @@ open CCSLib CCSTheory TransTheory;
 
 val _ = new_theory "StrongEQ";
 
+val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
+
 (******************************************************************************)
 (*                                                                            *)
 (*    Operational definition of strong equivalence for CCS (strong_sem.ml)    *)
@@ -91,86 +93,6 @@ val _ = add_rule { block_style = (AroundEachPhrase, (PP.CONSISTENT, 0)),
 val _ = TeX_notation { hol = UTF8.chr 0x223C,
                        TeX = ("\\HOLTokenStrongEQ", 1) };
 
-(* Definition 5 of [1, p.98] (see also [2, p.181])
-
-   If any of P and Q is not closed, but all their closed simultaneous
-   substitutions are strong bisimular, then so is P and Q.
- *)
-Definition StrongEQ_def :
-    StrongEQ P Q = if closed P /\ closed Q then
-                      STRONG_EQUIV P Q
-                   else
-                      !fm. FDOM fm = FV P UNION FV Q /\
-                          (!x. x IN FDOM fm ==> closed (fm ' x)) ==>
-                          STRONG_EQUIV (fm ' P) (fm ' Q)
-End
-
-Theorem StrongEQ_alt_closed :
-    !P Q. closed P /\ closed Q ==> (StrongEQ P Q <=> STRONG_EQUIV P Q)
-Proof
-    rw [StrongEQ_def]
-QED
-
-Theorem SUBSET_SING_CASES[local] :
-    !X x. X SUBSET {x} <=> X = {} \/ X = {x}
-Proof
-    SET_TAC []
-QED
-
-Theorem StrongEQ_alt_subst :
-    !X P Q. FV P SUBSET {X} /\ FV Q SUBSET {X} ==>
-           (StrongEQ P Q <=> !E. closed E ==> STRONG_EQUIV ([E/X] P) ([E/X] Q))
-Proof
-    rpt STRIP_TAC
- >> Cases_on ‘closed P /\ closed Q’
- >- (rw [StrongEQ_def] \\
-     Suff ‘!E. closed E ==> [E/X] P = P /\ [E/X] Q = Q’ >- METIS_TAC [] \\
-     rpt STRIP_TAC \\
-     MATCH_MP_TAC lemma14b >> fs [closed_def])
- >> rw [StrongEQ_def]
- >> ‘FV P UNION FV Q SUBSET {X}’ by ASM_SET_TAC []
- >> Know ‘FV P UNION FV Q = {X}’
- >- (Suff ‘FV P UNION FV Q <> {}’ >- METIS_TAC [SUBSET_SING_CASES] \\
-     CCONTR_TAC >> fs [closed_def])
- >> Rewr'
- >> EQ_TAC
- >- (rpt STRIP_TAC \\
-     Q.PAT_X_ASSUM ‘!fm. _ ==> STRONG_EQUIV (fm ' P) (fm ' Q)’
-       (MP_TAC o (Q.SPEC ‘FEMPTY |+ (X,E)’)) \\
-     simp [FDOM_FUPDATE] \\
-     rw [FEMPTY_update_apply])
- (* stage work *)
- >> rpt STRIP_TAC
- >> qabbrev_tac ‘E = fm ' X’
- >> qabbrev_tac ‘fm' = FEMPTY |+ (X,E)’
- >> Know ‘fm = fm'’
- >- (rw [Abbr ‘fm'’, GSYM fmap_EQ_THM])
- >> Rewr'
- >> Know ‘fm' ' P = [E/X] P /\ fm' ' Q = [E/X] Q’
- >- (rw [Abbr ‘fm'’, FEMPTY_update_apply])
- >> Rewr'
- >> FIRST_X_ASSUM MATCH_MP_TAC
- >> rw [Abbr ‘E’]
-QED
-
-Theorem StrongEQ_alt_subst' :
-    !X P Q. FV P SUBSET {X} /\ FV Q SUBSET {X} ==>
-           (StrongEQ P Q <=> !E. closed E ==> StrongEQ ([E/X] P) ([E/X] Q))
-Proof
-    rpt STRIP_TAC
- >> Know ‘StrongEQ P Q <=> !E. closed E ==> STRONG_EQUIV ([E/X] P) ([E/X] Q)’
- >- (MATCH_MP_TAC StrongEQ_alt_subst >> art [])
- >> Rewr'
- >> Suff ‘!E. closed E ==>
-             (STRONG_EQUIV ([E/X] P) ([E/X] Q) <=> StrongEQ ([E/X] P) ([E/X] Q))’
- >- METIS_TAC []
- >> rw [closed_def]
- >> Suff ‘closed ([E/X] P) /\ closed ([E/X] Q)’
- >- rw [StrongEQ_alt_closed]
- >> rw [closed_def, FV_SUB]
- >> ASM_SET_TAC []
-QED
-
 (* |- !p q.
          (!l.
               (!p'. p --l-> p' ==> ?q'. q --l-> q' /\ STRONG_EQUIV p' q') /\
@@ -235,25 +157,6 @@ Proof
     PROVE_TAC [REWRITE_RULE [equivalence_def, symmetric_def]
                             STRONG_EQUIV_equivalence]
 QED
-
-Theorem StrongEQ_symmetric :
-    symmetric StrongEQ
-Proof
-    rw [symmetric_def, StrongEQ_def]
- >> Cases_on ‘closed x /\ closed y’
- >- (fs [] >> PROVE_TAC [STRONG_EQUIV_SYM])
- >> ‘~(closed y /\ closed x)’ by PROVE_TAC []
- >> simp []
- >> EQ_TAC
- >> rpt STRIP_TAC (* 2 subgoals, same tactics *)
- >> MATCH_MP_TAC STRONG_EQUIV_SYM
- >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
- >> SET_TAC []
-QED
-
-(* |- !x y. StrongEQ x y ==> StrongEQ y x *)
-Theorem StrongEQ_SYM =
-    StrongEQ_symmetric |> REWRITE_RULE [symmetric_def] |> iffLR
 
 Theorem STRONG_EQUIV_SYM_EQ :
     !E E'. STRONG_EQUIV E E' <=> STRONG_EQUIV E' E
@@ -639,31 +542,6 @@ val STRONG_EQUIV_SUBST_RELAB = store_thm (
           (* goal 2.2.2 (of 2) *)
           take [`E1'`, `E''''`, `rf'`] \\
           ASM_REWRITE_TAC [] ] ] ]);
-
-Theorem STRONG_EQUIV_subst_lemma :
-    !E. FV E SUBSET {X} /\ closed P /\ closed Q /\ STRONG_EQUIV P Q ==>
-        STRONG_EQUIV ([P/X] E) ([Q/X] E)
-Proof
-    HO_MATCH_MP_TAC CCS_induction
- >> Q.EXISTS_TAC ‘{X}’
- >> rw [] (* 6 subgoals *)
- >| [ (* goal 1 (of 6) *)
-      MATCH_MP_TAC STRONG_EQUIV_SUBST_PREFIX >> rw [],
-      (* goal 2 (of 6) *)
-      MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_SUM >> rw [],
-      (* goal 3 (of 6) *)
-      MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_PAR >> rw [],
-      (* goal 4 (of 6) *)
-      MATCH_MP_TAC STRONG_EQUIV_SUBST_RESTR >> rw [],
-      (* goal 5 (of 6) *)
-      MATCH_MP_TAC STRONG_EQUIV_SUBST_RELAB >> rw [],
-      (* goal 6 (of 6) *)
-      ALL_TAC ]
- (* stage work *)
- >> rename1 ‘Y <> X’
- >> 
-    cheat
-QED
 
 (******************************************************************************)
 (*                                                                            *)

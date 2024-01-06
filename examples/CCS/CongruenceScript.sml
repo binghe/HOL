@@ -22,154 +22,7 @@ val set_ss = std_ss ++ PRED_SET_ss;
 
 (******************************************************************************)
 (*                                                                            *)
-(*                StrongEQ is preserved by recursive definition               *)
-(*                                                                            *)
-(******************************************************************************)
-
-Theorem FV_SUBSET_lemma[local] :
-    !P X. FV P SUBSET {X} /\ Y <> X ==> Y # P
-Proof
-    rpt STRIP_TAC
- >> ‘Y IN {X}’ by METIS_TAC [SUBSET_DEF]
- >> fs []
-QED
-
-Theorem STRONG_EQUIV_PRESD_BY_REC_lemma :
-    !G P Q X. FV P SUBSET {X} /\ FV Q SUBSET {X} /\ StrongEQ P Q /\
-              FV G SUBSET {X} /\ CCS_Subst G (rec X P) X --u-> E1 ==>
-         ?E2. CCS_Subst G (rec X Q) X --u-> E2 /\
-              (STRONG_EQUIV O
-               (\x y. ?G. FV G SUBSET {X} /\
-                          x = CCS_Subst G (rec X P) X /\
-                          y = CCS_Subst G (rec X Q) X) O STRONG_EQUIV) E1 E2
-Proof
-    HO_MATCH_MP_TAC simple_induction
- >> rw [] (* 8 subgoals *)
- >| [ (* goal 1 (of 8) *)
-      fs [TRANS_REC_EQ] (* hard but possible *)\\
-      cheat,
-      (* goal 2 (of 8) *)
-      FULL_SIMP_TAC std_ss [CCS_Subst_nil, NIL_NO_TRANS],
-      (* goal 3 (of 8) *)
-      FULL_SIMP_TAC std_ss [CCS_Subst_def, TRANS_PREFIX_EQ] \\
-      rw [O_DEF] \\
-      Q.EXISTS_TAC ‘CCS_Subst G (rec X Q) X’ >> rw [STRONG_EQUIV_REFL] \\
-      Q.EXISTS_TAC ‘CCS_Subst G (rec X P) X’ >> rw [STRONG_EQUIV_REFL] \\
-      Q.EXISTS_TAC ‘G’ >> art [],
-      (* goal 4 (of 8): SUM *)
-      cheat,
-      (* goal 5 (of 8): PAR *)
-      cheat, (* FULL_SIMP_TAC std_ss [TRANS_PAR_EQ] *)
-      (* goal 6 (of 8):  *)
-      cheat, (* FULL_SIMP_TAC std_ss [TRANS_RESTR_EQ] *)
-      (* goal 7 (of 8) *)
-      cheat, (* FULL_SIMP_TAC std_ss [TRANS_RELAB_EQ] *)
-      (* goal 8 (of 8) *)
-      rename1 ‘FV G DELETE Y SUBSET {X}’ \\
-      Cases_on ‘Y = X’ (* trivial case *)
-      >- (‘X # rec Y G’ by rw [FV_thm] \\
-          gs [CCS_Subst_elim] \\
-          Q.EXISTS_TAC ‘E1’ >> rw [O_DEF] \\
-          Q.EXISTS_TAC ‘E1’ >> rw [STRONG_EQUIV_REFL] \\
-          Q.EXISTS_TAC ‘E1’ >> rw [STRONG_EQUIV_REFL] \\
-          Know ‘X # E1’
-          >- (CCONTR_TAC >> fs [] \\
-             ‘X IN FV (rec X G)’ by METIS_TAC [SUBSET_DEF, TRANS_FV] \\
-              fs [FV_thm]) >> DISCH_TAC \\
-          Q.EXISTS_TAC ‘E1’ >> ASM_SIMP_TAC std_ss [CCS_Subst_elim] \\
-          MATCH_MP_TAC SUBSET_TRANS \\
-          Q.EXISTS_TAC ‘FV (rec X G)’ \\
-          CONJ_TAC >- (MATCH_MP_TAC TRANS_FV >> Q.EXISTS_TAC ‘u’ >> art []) \\
-          rw [FV_thm]) \\
-      Know ‘Y # rec X P /\ Y # rec X Q’
-      >- (rw [FV_thm] >> PROVE_TAC [FV_SUBSET_lemma]) >> STRIP_TAC \\
-      gs [CCS_Subst_rec] \\
-      cheat ]
-QED
-
-(* Proposition 4.12 of [1, p.99] or Theorem 4.2 of [2, p.182]
-
-   NOTE: The textbook requirement ‘FV P SUBSET {X} /\ FV Q SUBSET {X}’ is
-   necessary, because: if P and Q contains unbounded ‘var s’ subterms other
-   than ‘var X’, then these ‘var s’, together with ‘var X’ should all have
-   no contributions in making transitions (see VAR_NO_TRANS), but further
-   wrapping both P and Q with ‘rec X’ may additionally cause more transitions
-   on the side with ‘var X’. In another words, let
-
-   P = a..var X and Q = a..var Y
-
-   clearly P ~ Q since they both have just one transitions (--a->). But then
-
-   rec X P := rec X (a..var X)   and
-   rec X Q := rec X (a..var Y)   (X <> Y)
-
-   behave differently in bisimilarity tests: ‘rec X P’ has infinite many a-
-   transitions, while ‘rec X Q’ still has just one a-transition, thus no more
-   bisimilar.
-
-   To prevent this issue, we must at least require that subterms like ‘var Y’
-   do not occur, i.e.
-
-      "P contains free variables at most X"  or  FV P SUBSET {X}.
-
-   Note that it doesn't forbid bounded variables, e.g. rec Z (var Z + var X)
- *)
-Theorem STRONG_EQUIV_PRESD_BY_REC :
-    !X P Q. FV P SUBSET {X} /\ FV Q SUBSET {X} /\ StrongEQ P Q ==>
-            STRONG_EQUIV (rec X P) (rec X Q)
-Proof
-    rpt STRIP_TAC
- (* applying STRONG_EQUIV_BY_BISIM_UPTO *)
- >> MATCH_MP_TAC STRONG_EQUIV_BY_BISIM_UPTO
- >> Q.EXISTS_TAC ‘\x y. ?G. FV G SUBSET {X} /\
-                            x = CCS_Subst G (rec X P) X /\
-                            y = CCS_Subst G (rec X Q) X’
- >> BETA_TAC
- >> reverse CONJ_TAC
- >- (Q.EXISTS_TAC ‘var X’ >> rw [FV_thm, CCS_Subst_var_fix])
- (* stage work *)
- >> rw [STRONG_BISIM_UPTO]
- (* applying STRONG_EQUIV_PRESD_BY_REC_lemma *)
- >- (MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_REC_lemma >> art [])
- >> Know ‘!E1. (STRONG_EQUIV O (\x y. ?G. FV G SUBSET {X} /\
-                                      x = CCS_Subst G (rec X P) X /\
-                                      y = CCS_Subst G (rec X Q) X) O
-                STRONG_EQUIV) E1 E2 <=>
-               (STRONG_EQUIV O (\x y. ?G. FV G SUBSET {X} /\
-                                      x = CCS_Subst G (rec X Q) X /\
-                                      y = CCS_Subst G (rec X P) X) O
-                STRONG_EQUIV) E2 E1’
- >- (rw [O_DEF] \\
-     EQ_TAC >> rw [] >| (* 2 subgoals *)
-     [ (* goal 1 (of 2) *)
-       Q.EXISTS_TAC ‘CCS_Subst G' (rec X P) X’ >> rw [STRONG_EQUIV_SYM] \\
-       Q.EXISTS_TAC ‘CCS_Subst G' (rec X Q) X’ >> rw [STRONG_EQUIV_SYM] \\
-       Q.EXISTS_TAC ‘G'’ >> art [],
-       (* goal 2 (of 2) *)
-       Q.EXISTS_TAC ‘CCS_Subst G' (rec X Q) X’ >> rw [STRONG_EQUIV_SYM] \\
-       Q.EXISTS_TAC ‘CCS_Subst G' (rec X P) X’ >> rw [STRONG_EQUIV_SYM] \\
-       Q.EXISTS_TAC ‘G'’ >> art [] ])
- >> Rewr'
- (* applying STRONG_EQUIV_PRESD_BY_REC_lemma again *)
- >> MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_REC_lemma
- >> rw [StrongEQ_SYM]
-QED
-
-Theorem StrongEQ_preserved_by_rec :
-    !X P Q. FV P SUBSET {X} /\ FV Q SUBSET {X} /\ StrongEQ P Q ==>
-            StrongEQ (rec X P) (rec X Q)
-Proof
-    rpt STRIP_TAC
- >> Know ‘StrongEQ (rec X P) (rec X Q) <=> STRONG_EQUIV (rec X P) (rec X Q)’
- >- (MATCH_MP_TAC StrongEQ_alt_closed \\
-     rw [closed_def, FV_thm] >> ASM_SET_TAC [])
- >> Rewr'
- >> MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_REC >> art []
-QED
-
-(******************************************************************************)
-(*                                                                            *)
-(*                one-hole contexts and multi-hole contexts                   *)
+(*             Multi-hole (or no-hole) contexts (CONTEXT)                     *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -180,7 +33,7 @@ Definition IS_CONST_def :
 End
 
 Theorem IS_CONST_alt :
-    !e. IS_CONST e <=> ?p. !t. (e t = p)
+    !e. IS_CONST e <=> ?p. !t. e t = p
 Proof
     RW_TAC std_ss [IS_CONST_def]
  >> METIS_TAC []
@@ -192,78 +45,27 @@ Proof
     rw [IS_CONST_alt, FUN_EQ_THM]
 QED
 
-(* ONE HOLE CONTEXT (unused)
-
-   NEW: added OH_CONTEXT9 (\t. rec v (c t)) -- Chun Tian, 18 dec 2023
- *)
-Inductive OH_CONTEXT :
-    (                        OH_CONTEXT (\t. t)) /\              (* OH_CONTEXT1 *)
-    (!a c.  OH_CONTEXT c ==> OH_CONTEXT (\t. prefix a (c t))) /\ (* OH_CONTEXT2 *)
-    (!x c.  OH_CONTEXT c ==> OH_CONTEXT (\t. sum (c t) x)) /\    (* OH_CONTEXT3 *)
-    (!x c.  OH_CONTEXT c ==> OH_CONTEXT (\t. sum x (c t))) /\    (* OH_CONTEXT4 *)
-    (!x c.  OH_CONTEXT c ==> OH_CONTEXT (\t. par (c t) x)) /\    (* OH_CONTEXT5 *)
-    (!x c.  OH_CONTEXT c ==> OH_CONTEXT (\t. par x (c t))) /\    (* OH_CONTEXT6 *)
-    (!L c.  OH_CONTEXT c ==> OH_CONTEXT (\t. restr L (c t))) /\  (* OH_CONTEXT7 *)
-    (!rf c. OH_CONTEXT c ==> OH_CONTEXT (\t. relab (c t) rf)) /\ (* OH_CONTEXT8 *)
-    (!v c.  OH_CONTEXT c ==> OH_CONTEXT (\t. rec v (c t)))       (* OH_CONTEXT9 *)
-End
-
-(* renamed following chap2Theory of the lambda example *)
-Overload one_hole_context = “OH_CONTEXT”
-
-val [OH_CONTEXT1, OH_CONTEXT2, OH_CONTEXT3, OH_CONTEXT4, OH_CONTEXT5, OH_CONTEXT6,
-     OH_CONTEXT7, OH_CONTEXT8, OH_CONTEXT9] =
-    map save_thm
-        (combine (["OH_CONTEXT1", "OH_CONTEXT2", "OH_CONTEXT3", "OH_CONTEXT4",
-                   "OH_CONTEXT5", "OH_CONTEXT6", "OH_CONTEXT7", "OH_CONTEXT8",
-                   "OH_CONTEXT9"],
-                  CONJUNCTS OH_CONTEXT_rules));
-
-Theorem OH_CONTEXT_combin :
-    !c1 c2. OH_CONTEXT c1 /\ OH_CONTEXT c2 ==> OH_CONTEXT (c1 o c2)
-Proof
-    rpt STRIP_TAC
- >> NTAC 2 (POP_ASSUM MP_TAC)
- >> Q.SPEC_TAC (`c1`, `c`)
- >> HO_MATCH_MP_TAC OH_CONTEXT_ind
- >> REWRITE_TAC [o_DEF]
- >> BETA_TAC
- >> REWRITE_TAC [ETA_AX]
- >> REPEAT STRIP_TAC (* 8 sub-goals here *)
- >| [ FULL_SIMP_TAC std_ss [OH_CONTEXT2],
-      FULL_SIMP_TAC std_ss [OH_CONTEXT3],
-      FULL_SIMP_TAC std_ss [OH_CONTEXT4],
-      FULL_SIMP_TAC std_ss [OH_CONTEXT5],
-      FULL_SIMP_TAC std_ss [OH_CONTEXT6],
-      FULL_SIMP_TAC std_ss [OH_CONTEXT7],
-      FULL_SIMP_TAC std_ss [OH_CONTEXT8],
-      FULL_SIMP_TAC std_ss [OH_CONTEXT9] ]
-QED
-
-(* Multi-hole (or non-hole) contexts
-
-   NEW: added [CONTEXT8] for (\t. rec v (e t)), while CONTEXT2 is replaced by
-        CONTEXT2a and CONTEXT2b.                    -- Chun Tian, 18 dec 2023
- *)
+(* NOTE: now for [CONTEXT2] we require that p must be a closed term, and thus
+   (\t. t + rec v (prefix nil (var v))) context but (\t. t + var v) is not.
+   And since [CONTEXT8] doesn't exist (i.e. (\t. rec v (e t)) is not context),
+   we have prevented the hole to occur inside ‘rec’.  --Chun Tian, 6 gen 2024
+  *)
 Inductive CONTEXT :
     (        CONTEXT (\t. t)) /\                               (* CONTEXT1 *)
-    (        CONTEXT (\t. nil)) /\                             (* CONTEXT2a *)
-    (!s.     CONTEXT (\t. var s)) /\                           (* CONTEXT2b *)
+    (!p.     closed p  ==> CONTEXT (\t. p)) /\                 (* CONTEXT2 *)
     (!a e.   CONTEXT e ==> CONTEXT (\t. prefix a (e t))) /\    (* CONTEXT3 *)
     (!e1 e2. CONTEXT e1 /\ CONTEXT e2
                        ==> CONTEXT (\t. sum (e1 t) (e2 t))) /\ (* CONTEXT4 *)
     (!e1 e2. CONTEXT e1 /\ CONTEXT e2
                        ==> CONTEXT (\t. par (e1 t) (e2 t))) /\ (* CONTEXT5 *)
     (!L e.   CONTEXT e ==> CONTEXT (\t. restr L (e t))) /\     (* CONTEXT6 *)
-    (!rf e.  CONTEXT e ==> CONTEXT (\t. relab (e t) rf)) /\    (* CONTEXT7 *)
-    (!v e.   CONTEXT e ==> CONTEXT (\t. rec v (e t)))          (* CONTEXT8 *)
+    (!rf e.  CONTEXT e ==> CONTEXT (\t. relab (e t) rf))       (* CONTEXT7 *)
 End
 
-val [CONTEXT1, CONTEXT2a, CONTEXT2b, CONTEXT3, CONTEXT4, CONTEXT5, CONTEXT6,
-     CONTEXT7, CONTEXT8] =
+val [CONTEXT1, CONTEXT2, CONTEXT3, CONTEXT4, CONTEXT5, CONTEXT6, CONTEXT7] =
     map save_thm
-        (combine (["CONTEXT1", "CONTEXT2a", "CONTEXT2b", "CONTEXT3", "CONTEXT4",
-                   "CONTEXT5", "CONTEXT6", "CONTEXT7", "CONTEXT8"],
+        (combine (["CONTEXT1", "CONTEXT2", "CONTEXT3", "CONTEXT4", "CONTEXT5",
+                   "CONTEXT6", "CONTEXT7"],
                   CONJUNCTS CONTEXT_rules));
 
 Theorem CONTEXT3a :
@@ -275,32 +77,20 @@ Proof
  >> BETA_TAC >> REWRITE_TAC []
 QED
 
-(* cf. chap2Theory.constant_contexts_exist *)
-Theorem CONTEXT2 :
-    !t. CONTEXT (\x. t)
-Proof
-    HO_MATCH_MP_TAC simple_induction
- >> rpt STRIP_TAC
- >> SRW_TAC [][CONTEXT_rules]
-QED
-
-Theorem CONTEXT_CONST :
-    !e. IS_CONST e ==> CONTEXT e
-Proof
-    rw [IS_CONST_thm]
- >> rw [CONTEXT2]
-QED
-
 Theorem CONTEXT3_backward :
     !e u. CONTEXT (\t. prefix u (e t)) ==> CONTEXT e
 Proof
     rpt STRIP_TAC
  >> POP_ASSUM (STRIP_ASSUME_TAC o
                (ONCE_REWRITE_RULE [CONTEXT_cases]))
- >> fs [FUN_EQ_THM] (* 2 subgoals left *)
- >| [ (* goal 1 (of 2) *)
-      POP_ASSUM (MP_TAC o (Q.SPEC `nil`)) >> rw [],
-      (* goal 2 (of 2) *)
+ >> fs [FUN_EQ_THM] (* 3 subgoals left *)
+ >| [ (* goal 1 (of 3) *)
+      POP_ASSUM (MP_TAC o (Q.SPEC ‘nil’)) >> rw [],
+      (* goal 2 (of 3) *)
+      MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw [] >> fs [] \\
+     ‘e = \t. E’ by PROVE_TAC [] >> POP_ORW \\
+      MATCH_MP_TAC CONTEXT2 >> art [],
+      (* goal 3 (of 3) *)
       METIS_TAC [] ]
 QED
 
@@ -316,15 +106,31 @@ QED
 Theorem CONTEXT4_backward :
     !e e'. CONTEXT (\t. sum (e t) (e' t)) ==> CONTEXT e /\ CONTEXT e'
 Proof
-    rpt STRIP_TAC \\ (* 2 sub-goals here, same tacticals *)
-  ( POP_ASSUM (STRIP_ASSUME_TAC o
-               (ONCE_REWRITE_RULE [CONTEXT_cases])) (* 7 sub-goals here *)
- >> fs [FUN_EQ_THM] (* 2 subgoals left *)
+    rpt STRIP_TAC
  >| [ (* goal 1 (of 2) *)
-      POP_ASSUM (MP_TAC o (Q.SPEC `nil`)) \\
-      SIMP_TAC std_ss [CCS_distinct],
+      POP_ASSUM (STRIP_ASSUME_TAC o
+                 (ONCE_REWRITE_RULE [CONTEXT_cases])) \\ (* 7 sub-goals here *)
+      fs [FUN_EQ_THM] >| (* 2 subgoals left *)
+      [ (* goal 1.1 (of 3) *)
+        POP_ASSUM (MP_TAC o (Q.SPEC ‘nil’)) >> fs [],
+        (* goal 1.2 (of 3) *)
+        MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw [] >> fs [] \\
+       ‘e = \t. E1’ by PROVE_TAC [] >> POP_ORW \\
+        MATCH_MP_TAC CONTEXT2 >> art [],
+        (* goal 1.3 (of 3) *)
+        METIS_TAC [] ],
       (* goal 2 (of 2) *)
-      METIS_TAC [] ] )
+      POP_ASSUM (STRIP_ASSUME_TAC o
+                 (ONCE_REWRITE_RULE [CONTEXT_cases])) \\ (* 7 sub-goals here *)
+      fs [FUN_EQ_THM] >| (* 2 subgoals left *)
+      [ (* goal 2.1 (of 3) *)
+        POP_ASSUM (MP_TAC o (Q.SPEC ‘nil’)) >> fs [],
+        (* goal 2.2 (of 3) *)
+        MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw [] >> fs [] \\
+       ‘e' = \t. E2’ by PROVE_TAC [] >> POP_ORW \\
+        MATCH_MP_TAC CONTEXT2 >> art [],
+        (* goal 2.3 (of 3) *)
+        METIS_TAC [] ] ]
 QED
 
 Theorem CONTEXT4_full :
@@ -336,18 +142,35 @@ Proof
  >> REWRITE_TAC [CONTEXT4]
 QED
 
+(* NOTE: This proof is identical with CONTEXT4_backward *)
 Theorem CONTEXT5_backward :
     !e e'. CONTEXT (\t. par (e t) (e' t)) ==> CONTEXT e /\ CONTEXT e'
 Proof
-    rpt STRIP_TAC \\ (* 2 sub-goals here, same tacticals *)
-  ( POP_ASSUM (STRIP_ASSUME_TAC o
-               (ONCE_REWRITE_RULE [CONTEXT_cases])) (* 7 sub-goals here *)
- >> fs [FUN_EQ_THM] (* 2 subgoals left *)
+    rpt STRIP_TAC
  >| [ (* goal 1 (of 2) *)
-      POP_ASSUM (MP_TAC o (Q.SPEC `nil`)) \\
-      SIMP_TAC std_ss [CCS_distinct],
-      (* goal 2 (of 3) *)
-      METIS_TAC [] ] )
+      POP_ASSUM (STRIP_ASSUME_TAC o
+                 (ONCE_REWRITE_RULE [CONTEXT_cases])) \\ (* 7 sub-goals here *)
+      fs [FUN_EQ_THM] >| (* 2 subgoals left *)
+      [ (* goal 1.1 (of 3) *)
+        POP_ASSUM (MP_TAC o (Q.SPEC ‘nil’)) >> fs [],
+        (* goal 1.2 (of 3) *)
+        MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw [] >> fs [] \\
+       ‘e = \t. E1’ by PROVE_TAC [] >> POP_ORW \\
+        MATCH_MP_TAC CONTEXT2 >> art [],
+        (* goal 1.3 (of 3) *)
+        METIS_TAC [] ],
+      (* goal 2 (of 2) *)
+      POP_ASSUM (STRIP_ASSUME_TAC o
+                 (ONCE_REWRITE_RULE [CONTEXT_cases])) \\ (* 7 sub-goals here *)
+      fs [FUN_EQ_THM] >| (* 2 subgoals left *)
+      [ (* goal 2.1 (of 3) *)
+        POP_ASSUM (MP_TAC o (Q.SPEC ‘nil’)) >> fs [],
+        (* goal 2.2 (of 3) *)
+        MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw [] >> fs [] \\
+       ‘e' = \t. E2’ by PROVE_TAC [] >> POP_ORW \\
+        MATCH_MP_TAC CONTEXT2 >> art [],
+        (* goal 2.3 (of 3) *)
+        METIS_TAC [] ] ]
 QED
 
 Theorem CONTEXT5_full :
@@ -364,11 +187,14 @@ Theorem CONTEXT6_backward :
 Proof
     rpt STRIP_TAC
  >> POP_ASSUM (STRIP_ASSUME_TAC o (ONCE_REWRITE_RULE [CONTEXT_cases]))
- >> fs [FUN_EQ_THM] (* 2 subgoals left *)
- >| [ (* goal 1 (of 2) *)
-      POP_ASSUM (MP_TAC o (Q.SPEC `nil`)) \\
-      SIMP_TAC std_ss [CCS_distinct],
-      (* goal 2 (of 2) *)
+ >> fs [FUN_EQ_THM] (* 3 subgoals left *)
+ >| [ (* goal 1 (of 3) *)
+      POP_ASSUM (MP_TAC o (Q.SPEC ‘nil’)) >> fs [],
+      (* goal 2 (of 3) *)
+      MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw [] >> fs [] \\
+     ‘e = \t. E’ by PROVE_TAC [] >> POP_ORW \\
+      MATCH_MP_TAC CONTEXT2 >> art [],
+      (* goal 3 (of 3) *)
       METIS_TAC [] ]
 QED
 
@@ -386,11 +212,15 @@ Theorem CONTEXT7_backward :
 Proof
     rpt STRIP_TAC
  >> POP_ASSUM (STRIP_ASSUME_TAC o (ONCE_REWRITE_RULE [CONTEXT_cases]))
- >> fs [FUN_EQ_THM] (* 2 subgoals left *)
- >| [ (* goal 1 (of 2) *)
+ >> fs [FUN_EQ_THM] (* 3 subgoals left *)
+ >| [ (* goal 1 (of 3) *)
       POP_ASSUM (MP_TAC o (Q.SPEC `nil`)) \\
       SIMP_TAC std_ss [CCS_distinct],
-      (* goal 2 (of 2) *)
+      (* goal 2 (of 3) *)
+      MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw [] >> fs [] \\
+     ‘e = \t. E’ by PROVE_TAC [] >> POP_ORW \\
+      MATCH_MP_TAC CONTEXT2 >> art [],
+      (* goal 3 (of 3) *)
       METIS_TAC [] ]
 QED
 
@@ -403,137 +233,79 @@ Proof
  >> REWRITE_TAC [CONTEXT7]
 QED
 
-(*
-Theorem CONTEXT8_backward :
-    !v e. CONTEXT (\t. rec v (e t)) ==> CONTEXT e
-Proof
-    rpt STRIP_TAC
- >> POP_ASSUM (STRIP_ASSUME_TAC o (ONCE_REWRITE_RULE [CONTEXT_cases]))
- >> fs [FUN_EQ_THM] (* 2 subgoals left *)
- >- (POP_ASSUM (MP_TAC o (Q.SPEC ‘nil’)) \\
-     SIMP_TAC std_ss [CCS_distinct])
- (* key assumption: !t. rec v (e t) = rec v' (e' t) *)
- >> FULL_SIMP_TAC std_ss [rec_eq_thm]
- >> Cases_on ‘v = v'’
- >> fs [FORALL_AND_THM] >- METIS_TAC []
- >> qabbrev_tac ‘pi = [(v,v')]’
- >> ‘e = \t. tpm pi (e' t)’ by METIS_TAC []
- >> POP_ORW
- >> MATCH_MP_TAC CONTEXT_tpm >> art []
-QED
-
-Theorem CONTEXT8_full :
-    !v e. CONTEXT (\t. rec v (e t)) <=> CONTEXT e
+Theorem NO_CONTEXT8 :
+    !e X. ~IS_CONST e ==> ~CONTEXT (\t. rec X (e t))
 Proof
     rpt GEN_TAC
- >> EQ_TAC
- >- REWRITE_TAC [CONTEXT8_backward]
- >> REWRITE_TAC [CONTEXT8]
+ >> ONCE_REWRITE_TAC [CONTEXT_cases]
+ >> fs [FUN_EQ_THM, IS_CONST_def]
+ >> rpt STRIP_TAC
+ >- (Q.EXISTS_TAC ‘nil’ >> rw [])
+ >> MP_TAC (Q.SPEC ‘p’ CCS_cases)
+ >> rw [] >> CCONTR_TAC >> fs []
+ >> rename1 ‘p = rec Y E’
+ >> Cases_on ‘X = Y’ >> fs [rec_eq_thm]
 QED
- *)
+
+Theorem CONTEXT8_IMP_CONST :
+    !e X. CONTEXT (\t. rec X (e t)) ==> IS_CONST e
+Proof
+    METIS_TAC [NO_CONTEXT8]
+QED
 
 Theorem CONTEXT_combin :
     !c1 c2. CONTEXT c1 /\ CONTEXT c2 ==> CONTEXT (c1 o c2)
 Proof
     REPEAT STRIP_TAC
  >> NTAC 2 (POP_ASSUM MP_TAC)
- >> Q.SPEC_TAC (`c1`, `c`)
+ >> Q.SPEC_TAC (‘c1’, ‘c’)
  >> HO_MATCH_MP_TAC CONTEXT_ind
  >> REWRITE_TAC [o_DEF]
  >> BETA_TAC
  >> REWRITE_TAC [ETA_AX]
- >> REPEAT STRIP_TAC (* 8 sub-goals here *)
- >| [ REWRITE_TAC [CONTEXT2a],
-      REWRITE_TAC [CONTEXT2b],
+ >> rpt STRIP_TAC (* 6 sub-goals here *)
+ >| [ MATCH_MP_TAC CONTEXT2 >> art [],
       FULL_SIMP_TAC std_ss [CONTEXT3],
       FULL_SIMP_TAC std_ss [CONTEXT4],
       FULL_SIMP_TAC std_ss [CONTEXT5],
       FULL_SIMP_TAC std_ss [CONTEXT6],
-      FULL_SIMP_TAC std_ss [CONTEXT7],
-      FULL_SIMP_TAC std_ss [CONTEXT8] ]
-QED
-
-(* One-hole contexts are also multi-hole contexts *)
-Theorem OH_CONTEXT_IMP_CONTEXT :
-    !c. OH_CONTEXT c ==> CONTEXT c
-Proof
-    Induct_on `OH_CONTEXT`
- >> rpt STRIP_TAC (* 9 sub-goals here *)
- >| [ (* goal 1 (of 9) *)
-      REWRITE_TAC [CONTEXT1],
-      (* goal 2 (of 9) *)
-      MATCH_MP_TAC CONTEXT3 >> art [],
-      (* goal 3 (of 9) *)
-     `CONTEXT (\y. x)` by REWRITE_TAC [CONTEXT2] \\
-      Know `CONTEXT (\t. c t + (\y. x) t)`
-      >- (MATCH_MP_TAC CONTEXT4 >> art []) \\
-      BETA_TAC >> REWRITE_TAC [],
-      (* goal 4 (of 9) *)
-     `CONTEXT (\y. x)` by REWRITE_TAC [CONTEXT2] \\
-      Know `CONTEXT (\t. (\y. x) t + c t)`
-      >- (MATCH_MP_TAC CONTEXT4 >> art []) \\
-      BETA_TAC >> REWRITE_TAC [],
-      (* goal 5 (of 9) *)
-     `CONTEXT (\y. x)` by REWRITE_TAC [CONTEXT2] \\
-      Know `CONTEXT (\t. par (c t) ((\y. x) t))`
-      >- (MATCH_MP_TAC CONTEXT5 >> art []) \\
-      BETA_TAC >> REWRITE_TAC [],
-      (* goal 6 (of 9) *)
-     `CONTEXT (\y. x)` by REWRITE_TAC [CONTEXT2] \\
-      Know `CONTEXT (\t. par ((\y. x) t) (c t))`
-      >- (MATCH_MP_TAC CONTEXT5 >> art []) \\
-      BETA_TAC >> REWRITE_TAC [],
-      (* goal 7 (of 9) *)
-      MATCH_MP_TAC CONTEXT6 >> art [],
-      (* goal 8 (of 9) *)
-      MATCH_MP_TAC CONTEXT7 >> art [],
-      (* goal 9 (of 9) *)
-      MATCH_MP_TAC CONTEXT8 >> art [] ]
+      FULL_SIMP_TAC std_ss [CONTEXT7] ]
 QED
 
 Theorem STRONG_EQUIV_SUBST_CONTEXT :
     !P Q. STRONG_EQUIV P Q ==> !E. CONTEXT E ==> STRONG_EQUIV (E P) (E Q)
 Proof
     rpt GEN_TAC >> DISCH_TAC
- >> Induct_on `CONTEXT`
- >> BETA_TAC >> rpt STRIP_TAC (* 9 sub-goals here *)
- >- ASM_REWRITE_TAC []
- >- REWRITE_TAC [STRONG_EQUIV_REFL]
- >- REWRITE_TAC [STRONG_EQUIV_REFL]
- >| [ (* goal 1 (of 6) *)
+ >> HO_MATCH_MP_TAC CONTEXT_strongind
+ >> rw [STRONG_EQUIV_REFL] (* 5 subgoals left *)
+ >| [ (* goal 1 (of 5) *)
       MATCH_MP_TAC STRONG_EQUIV_SUBST_PREFIX >> art [],
-      (* goal 2 (of 6) *)
-      IMP_RES_TAC STRONG_EQUIV_PRESD_BY_SUM,
-      (* goal 3 (of 6) *)
-      IMP_RES_TAC STRONG_EQUIV_PRESD_BY_PAR,
-      (* goal 4 (of 6) *)
+      (* goal 2 (of 5) *)
+      MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_SUM >> art [],
+      (* goal 3 (of 5) *)
+      MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_PAR >> art [],
+      (* goal 4 (of 5) *)
       MATCH_MP_TAC STRONG_EQUIV_SUBST_RESTR >> art [],
-      (* goal 5 (of 6) *)
-      MATCH_MP_TAC STRONG_EQUIV_SUBST_RELAB >> art [],
-      (* goal 6 (of 6) *)
-      cheat ]
+      (* goal 5 (of 5) *)
+      MATCH_MP_TAC STRONG_EQUIV_SUBST_RELAB >> art [] ]
 QED
 
 Theorem OBS_CONGR_SUBST_CONTEXT :
     !P Q. OBS_CONGR P Q ==> !E. CONTEXT E ==> OBS_CONGR (E P) (E Q)
 Proof
     rpt GEN_TAC >> DISCH_TAC
- >> Induct_on `CONTEXT` >> BETA_TAC >> rpt STRIP_TAC (* 7 sub-goals here *)
- >- ASM_REWRITE_TAC []
- >- REWRITE_TAC [OBS_CONGR_REFL]
- >- REWRITE_TAC [OBS_CONGR_REFL]
- >| [ (* goal 1 (of 6) *)
+ >> HO_MATCH_MP_TAC CONTEXT_strongind
+ >> rw [OBS_CONGR_REFL] (* 5 subgoals left *)
+ >| [ (* goal 1 (of 5) *)
       MATCH_MP_TAC OBS_CONGR_SUBST_PREFIX >> art [],
-      (* goal 2 (of 6) *)
-      IMP_RES_TAC OBS_CONGR_PRESD_BY_SUM,
-      (* goal 3 (of 6) *)
-      IMP_RES_TAC OBS_CONGR_PRESD_BY_PAR,
-      (* goal 4 (of 6) *)
+      (* goal 2 (of 5) *)
+      MATCH_MP_TAC OBS_CONGR_PRESD_BY_SUM >> art [],
+      (* goal 3 (of 5) *)
+      MATCH_MP_TAC OBS_CONGR_PRESD_BY_PAR >> art [],
+      (* goal 4 (of 5) *)
       MATCH_MP_TAC OBS_CONGR_SUBST_RESTR >> art [],
       (* goal 5 (of 6) *)
-      MATCH_MP_TAC OBS_CONGR_SUBST_RELAB >> art [],
-      (* goal 5 (of 6) *)
-      cheat ]
+      MATCH_MP_TAC OBS_CONGR_SUBST_RELAB >> art [] ]
 QED
 
 (******************************************************************************)
@@ -544,7 +316,7 @@ QED
 
 Inductive GCONTEXT :
     (        GCONTEXT (\t. t)) /\                                (* GCONTEXT1 *)
-    (!p.     GCONTEXT (\t. p)) /\                                (* GCONTEXT2 *)
+    (!p.     closed p   ==> GCONTEXT (\t. p)) /\                 (* GCONTEXT2 *)
     (!a e.   GCONTEXT e ==> GCONTEXT (\t. prefix a (e t))) /\    (* GCONTEXT3 *)
     (!a1 a2 e1 e2.
              GCONTEXT e1 /\ GCONTEXT e2
@@ -581,39 +353,40 @@ val GCONTEXT_combin = store_thm (
  >> BETA_TAC
  >> REWRITE_TAC [ETA_AX]
  >> rpt STRIP_TAC (* 6 sub-goals here *)
- >| [ REWRITE_TAC [GCONTEXT2],
+ >| [ rw [GCONTEXT2],
       FULL_SIMP_TAC std_ss [GCONTEXT3],
       FULL_SIMP_TAC std_ss [GCONTEXT4],
       FULL_SIMP_TAC std_ss [GCONTEXT5],
       FULL_SIMP_TAC std_ss [GCONTEXT6],
       FULL_SIMP_TAC std_ss [GCONTEXT7] ]);
 
-val GCONTEXT_IMP_CONTEXT = store_thm (
-   "GCONTEXT_IMP_CONTEXT", ``!c. GCONTEXT c ==> CONTEXT c``,
-    Induct_on `GCONTEXT`
+Theorem GCONTEXT_IMP_CONTEXT :
+    !c. GCONTEXT c ==> CONTEXT c
+Proof
+    HO_MATCH_MP_TAC GCONTEXT_strongind
  >> rpt STRIP_TAC (* 7 sub-goals here *)
  >| [ (* goal 1 (of 7) *)
       REWRITE_TAC [CONTEXT1],
       (* goal 2 (of 7) *)
-      REWRITE_TAC [CONTEXT2],
+      rw [CONTEXT2],
       (* goal 3 (of 7) *)
-      MATCH_MP_TAC CONTEXT3 >> ASM_REWRITE_TAC [],
+      MATCH_MP_TAC CONTEXT3 >> art [],
       (* goal 4 (of 7) *)
-      Know `CONTEXT (\t. (prefix a1 (e1 t)))`
-      >- ( MATCH_MP_TAC CONTEXT3 >> ASM_REWRITE_TAC [] ) \\
-      Know `CONTEXT (\t. (prefix a2 (e2 t)))`
-      >- ( MATCH_MP_TAC CONTEXT3 >> ASM_REWRITE_TAC [] ) \\
-      KILL_TAC \\
-      NTAC 2 DISCH_TAC \\
-      Know `CONTEXT (\t. (\t. (prefix a1 (e1 t))) t + (\t. (prefix a2 (e2 t))) t)`
-      >- ( MATCH_MP_TAC CONTEXT4 >> ASM_REWRITE_TAC [] ) \\
+      Know `CONTEXT (\t. prefix a1 (e1 t))`
+      >- (MATCH_MP_TAC CONTEXT3 >> art []) \\
+      Know `CONTEXT (\t. prefix a2 (e2 t))`
+      >- (MATCH_MP_TAC CONTEXT3 >> art []) \\
+      KILL_TAC >> NTAC 2 DISCH_TAC \\
+      Know `CONTEXT (\t. (\t. prefix a1 (e1 t)) t + (\t. prefix a2 (e2 t)) t)`
+      >- (MATCH_MP_TAC CONTEXT4 >> art []) \\
       BETA_TAC >> REWRITE_TAC [],
       (* goal 5 (of 7) *)
-      MATCH_MP_TAC CONTEXT5 >> ASM_REWRITE_TAC [],
+      MATCH_MP_TAC CONTEXT5 >> art [],
       (* goal 6 (of 7) *)
-      MATCH_MP_TAC CONTEXT6 >> ASM_REWRITE_TAC [],
+      MATCH_MP_TAC CONTEXT6 >> art [],
       (* goal 7 (of 7) *)
-      MATCH_MP_TAC CONTEXT7 >> ASM_REWRITE_TAC [] ]);
+      MATCH_MP_TAC CONTEXT7 >> art [] ]
+QED
 
 val WEAK_EQUIV_SUBST_GCONTEXT = store_thm (
    "WEAK_EQUIV_SUBST_GCONTEXT",
@@ -624,16 +397,15 @@ val WEAK_EQUIV_SUBST_GCONTEXT = store_thm (
  >- ASM_REWRITE_TAC []
  >- REWRITE_TAC [WEAK_EQUIV_REFL]
  >| [ (* goal 1 (of 5) *)
-      MATCH_MP_TAC WEAK_EQUIV_SUBST_PREFIX >> ASM_REWRITE_TAC [],
+      MATCH_MP_TAC WEAK_EQUIV_SUBST_PREFIX >> art [],
       (* goal 2 (of 5) *)
-      MATCH_MP_TAC WEAK_EQUIV_PRESD_BY_GUARDED_SUM \\
-      ASM_REWRITE_TAC [],
+      MATCH_MP_TAC WEAK_EQUIV_PRESD_BY_GUARDED_SUM >> art [],
       (* goal 3 (of 5) *)
-      IMP_RES_TAC WEAK_EQUIV_PRESD_BY_PAR,
+      MATCH_MP_TAC WEAK_EQUIV_PRESD_BY_PAR >> art [],
       (* goal 4 (of 5) *)
-      MATCH_MP_TAC WEAK_EQUIV_SUBST_RESTR >> ASM_REWRITE_TAC [],
+      MATCH_MP_TAC WEAK_EQUIV_SUBST_RESTR >> art [],
       (* goal 5 (of 5) *)
-      MATCH_MP_TAC WEAK_EQUIV_SUBST_RELAB >> ASM_REWRITE_TAC [] ]);
+      MATCH_MP_TAC WEAK_EQUIV_SUBST_RELAB >> art [] ]);
 
 (******************************************************************************)
 (*                                                                            *)
@@ -642,25 +414,25 @@ val WEAK_EQUIV_SUBST_GCONTEXT = store_thm (
 (******************************************************************************)
 
 Definition precongruence :
-    precongruence R = PreOrder R /\
+    precongruence R <=> PreOrder R /\
         !x y ctx. CONTEXT ctx ==> R x y ==> R (ctx x) (ctx y)
 End
 
 (* a special version of precongruence with only guarded sums *)
 Definition precongruence' :
-    precongruence' R = PreOrder R /\
+    precongruence' R <=> PreOrder R /\
         !x y ctx. GCONTEXT ctx ==> R x y ==> R (ctx x) (ctx y)
 End
 
 (* The definition of congruence for CCS, TODO: use precongruence *)
 Definition congruence :
-    congruence R = equivalence R /\
+    congruence R <=> equivalence R /\
         !x y ctx. CONTEXT ctx ==> R x y ==> R (ctx x) (ctx y)
 End
 
 (* a special version of congruence with only guarded sums *)
 Definition congruence' :
-    congruence' R = equivalence R /\
+    congruence' R <=> equivalence R /\
         !x y ctx. GCONTEXT ctx ==> R x y ==> R (ctx x) (ctx y)
 End
 
@@ -762,7 +534,7 @@ QED
 (******************************************************************************)
 
 Inductive WG :
-    (!p.                        WG (\t. p)) /\                 (* WG2 *)
+    (!p.     closed p       ==> WG (\t. p)) /\                 (* WG2 *)
     (!a e.   CONTEXT e      ==> WG (\t. prefix a (e t))) /\    (* WG3 *)
     (!e1 e2. WG e1 /\ WG e2 ==> WG (\t. sum (e1 t) (e2 t))) /\ (* WG4 *)
     (!e1 e2. WG e1 /\ WG e2 ==> WG (\t. par (e1 t) (e2 t))) /\ (* WG5 *)
@@ -774,8 +546,8 @@ val [WG2, WG3, WG4, WG5, WG6, WG7] =
     map save_thm
         (combine (["WG2", "WG3", "WG4", "WG5", "WG6", "WG7"], CONJUNCTS WG_rules));
 
-Theorem WG1 : (* WG1 is derivable from WG3 *)
-    !a :'a Action. WG (\t. prefix a t)
+Theorem WG1 :
+    !a. WG (\t. prefix a t)
 Proof
     ASSUME_TAC CONTEXT1
  >> IMP_RES_TAC WG3
@@ -794,22 +566,16 @@ Proof
  >> fs [CCS_distinct]
 QED
 
-Theorem WG_CONST :
-    !e. IS_CONST e ==> WG e
-Proof
-    RW_TAC std_ss [IS_CONST_def]
- >> Know `e = (\t. e nil)` >- fs [FUN_EQ_THM]
- >> Rewr' >> REWRITE_TAC [WG2]
-QED
-
 Theorem NO_WG8 :
     !e X. ~IS_CONST e ==> ~WG (\t. rec X (e t))
 Proof
     rpt GEN_TAC >> ONCE_REWRITE_TAC [WG_cases]
  >> fs [FUN_EQ_THM, IS_CONST_def]
  >> rpt STRIP_TAC
- >> Cases_on `p` >> fs [FUN_EQ_THM]
- >> METIS_TAC []
+ >> MP_TAC (Q.SPEC ‘p’ CCS_cases)
+ >> rw [] >> CCONTR_TAC >> fs []
+ >> rename1 ‘p = rec Y E’
+ >> Cases_on ‘X = Y’ >> fs [rec_eq_thm]
 QED
 
 Theorem WG8_IMP_CONST :
@@ -823,15 +589,11 @@ Theorem WG3_backward :
 Proof
     rpt GEN_TAC
  >> ONCE_REWRITE_TAC [WG_cases]
- >> RW_TAC std_ss [FUN_EQ_THM] (* 2 subgoals left *)
+ >> rw [FUN_EQ_THM] (* 2 subgoals left *)
  >| [ (* goal 1 (of 2) *)
-      Cases_on `p` (* 8 sub-goals here *)
-      >- PROVE_TAC [CCS_distinct]
-      >- PROVE_TAC [CCS_distinct]
-      >- (FULL_SIMP_TAC std_ss [CCS_11] \\
-          rename1 `!t. (u = o') /\ (e t = C')` \\
-         `(e = \t. C')` by PROVE_TAC [] >> art [CONTEXT2])
-      >> PROVE_TAC [CCS_distinct],
+      MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw [] >> fs [] \\
+     ‘e = \t. E’ by PROVE_TAC [] >> POP_ORW \\
+      MATCH_MP_TAC CONTEXT2 >> art [],
       (* goal 2 (of 2) *)
       METIS_TAC [] ]
 QED
@@ -839,52 +601,53 @@ QED
 Theorem WG4_backward :
     !e e'. WG (\t. sum (e t) (e' t)) ==> WG e /\ WG e'
 Proof
-    rpt STRIP_TAC \\ (* 2 sub-goals here, same tacticals *)
-  ( POP_ASSUM (STRIP_ASSUME_TAC o
-               (ONCE_REWRITE_RULE [WG_cases])) (* 6 sub-goals here *)
- >| [ (* goal 1 (of 6) *)
-      fs [FUN_EQ_THM] \\
-      Cases_on `p` (* 8 sub-goals here *)
-      >- PROVE_TAC [CCS_distinct]
-      >- PROVE_TAC [CCS_distinct]
-      >- PROVE_TAC [CCS_distinct]
-      >- (FULL_SIMP_TAC std_ss [CCS_11] \\
-          rename1 `!t. (e t = C') /\ (e' t = C0)` \\
-         `(e = \t. C') /\ (e' = \t. C0)` by PROVE_TAC [] \\
-          ASM_REWRITE_TAC [WG2])
-      >> PROVE_TAC [CCS_distinct],
-      (* goal 2 (of 6) *)
-      fs [FUN_EQ_THM],
-      (* goal 3 (of 6) *)
-      fs [FUN_EQ_THM] >> METIS_TAC [],
-      (* goal 4 (of 6) *)
-      fs [FUN_EQ_THM],
-      (* goal 5 (of 6) *)
-      fs [FUN_EQ_THM],
-      (* goal 6 (of 6) *)
-      fs [FUN_EQ_THM] ] )
+    rpt STRIP_TAC
+ >| [ (* goal 1 (of 2) *)
+      POP_ASSUM (STRIP_ASSUME_TAC o
+                 (ONCE_REWRITE_RULE [WG_cases])) \\ (* 6 subgoals here *)
+      fs [FUN_EQ_THM] >| (* 2 subgoals left *)
+      [ (* goal 1.1 (of 2) *)
+        MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw [] >> fs [] \\
+       ‘e = \t. E1’ by PROVE_TAC [] >> POP_ORW \\
+        MATCH_MP_TAC WG2 >> art [],
+        (* goal 1.2 (of 2) *)
+        METIS_TAC [] ],
+      (* goal 2 (of 2) *)
+      POP_ASSUM (STRIP_ASSUME_TAC o
+                 (ONCE_REWRITE_RULE [WG_cases])) \\ (* 6 subgoals here *)
+      fs [FUN_EQ_THM] >| (* 2 subgoals left *)
+      [ (* goal 2.1 (of 2) *)
+        MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw [] >> fs [] \\
+       ‘e' = \t. E2’ by PROVE_TAC [] >> POP_ORW \\
+        MATCH_MP_TAC WG2 >> art [],
+        (* goal 2.2 (of 2) *)
+        METIS_TAC [] ] ]
 QED
 
 Theorem WG5_backward :
     !e e'. WG (\t. par (e t) (e' t)) ==> WG e /\ WG e'
 Proof
-    rpt STRIP_TAC \\ (* 2 subgoals here, same tacticals *)
-  ( POP_ASSUM (STRIP_ASSUME_TAC o
-               (ONCE_REWRITE_RULE [WG_cases])) \\ (* 6 subgoals here *)
-    fs [FUN_EQ_THM] (* 2 subgoals left *)
+    rpt STRIP_TAC
  >| [ (* goal 1 (of 2) *)
-      Cases_on `p` (* 8 sub-goals here *)
-      >- PROVE_TAC [CCS_distinct]
-      >- PROVE_TAC [CCS_distinct]
-      >- PROVE_TAC [CCS_distinct]
-      >- PROVE_TAC [CCS_distinct]
-      >- (FULL_SIMP_TAC std_ss [CCS_11] \\
-          rename1 `!t. (e t = C') /\ (e' t = C0)` \\
-         `(e = \t. C') /\ (e' = \t. C0)` by PROVE_TAC [] \\
-          ASM_REWRITE_TAC [WG2])
-      >> PROVE_TAC [CCS_distinct],
+      POP_ASSUM (STRIP_ASSUME_TAC o
+                 (ONCE_REWRITE_RULE [WG_cases])) \\ (* 6 subgoals here *)
+      fs [FUN_EQ_THM] >| (* 2 subgoals left *)
+      [ (* goal 1.1 (of 2) *)
+        MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw [] >> fs [] \\
+       ‘e = \t. E1’ by PROVE_TAC [] >> POP_ORW \\
+        MATCH_MP_TAC WG2 >> art [],
+        (* goal 1.2 (of 2) *)
+        METIS_TAC [] ],
       (* goal 2 (of 2) *)
-      METIS_TAC [] ] )
+      POP_ASSUM (STRIP_ASSUME_TAC o
+                 (ONCE_REWRITE_RULE [WG_cases])) \\ (* 6 subgoals here *)
+      fs [FUN_EQ_THM] >| (* 2 subgoals left *)
+      [ (* goal 2.1 (of 2) *)
+        MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw [] >> fs [] \\
+       ‘e' = \t. E2’ by PROVE_TAC [] >> POP_ORW \\
+        MATCH_MP_TAC WG2 >> art [],
+        (* goal 2.2 (of 2) *)
+        METIS_TAC [] ] ]
 QED
 
 Theorem WG6_backward :
@@ -894,16 +657,9 @@ Proof
  >> POP_ASSUM (STRIP_ASSUME_TAC o (ONCE_REWRITE_RULE [WG_cases]))
  >> fs [FUN_EQ_THM] (* 2 subgoals left *)
  >| [ (* goal 1 (of 2) *)
-      Cases_on `p` (* 8 sub-goals here *)
-      >- PROVE_TAC [CCS_distinct]
-      >- PROVE_TAC [CCS_distinct]
-      >- PROVE_TAC [CCS_distinct]
-      >- PROVE_TAC [CCS_distinct]
-      >- PROVE_TAC [CCS_distinct]
-      >- (FULL_SIMP_TAC std_ss [CCS_11] \\
-          rename1 `!t. (L = f) /\ (e t = C')` \\
-         `(e = \t. C')` by PROVE_TAC [] >> art [WG2])
-      >> PROVE_TAC [CCS_distinct],
+      MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw [] >> fs [] \\
+     ‘e = \t. E’ by PROVE_TAC [] >> POP_ORW \\
+      MATCH_MP_TAC WG2 >> art [],
       (* goal 2 (of 2) *)
       METIS_TAC [] ]
 QED
@@ -913,30 +669,13 @@ Theorem WG7_backward :
 Proof
     rpt STRIP_TAC
  >> POP_ASSUM (STRIP_ASSUME_TAC o (ONCE_REWRITE_RULE [WG_cases]))
- >> fs [FUN_EQ_THM]
+ >> fs [FUN_EQ_THM] (* 2 subgoals left *)
  >| [ (* goal 1 (of 2) *)
-      Cases_on `p` (* 8 sub-goals here *)
-      >- PROVE_TAC [CCS_distinct]
-      >- PROVE_TAC [CCS_distinct]
-      >- PROVE_TAC [CCS_distinct]
-      >- PROVE_TAC [CCS_distinct]
-      >- PROVE_TAC [CCS_distinct]
-      >- PROVE_TAC [CCS_distinct]
-      >- (FULL_SIMP_TAC std_ss [CCS_11] \\
-          rename1 `!t. (e t = C') /\ (rf = R)` \\
-         `(e = \t. C')` by PROVE_TAC [] >> art [WG2])
-      >> PROVE_TAC [CCS_distinct],
+      MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw [] >> fs [] \\
+     ‘e = \t. E’ by PROVE_TAC [] >> POP_ORW \\
+      MATCH_MP_TAC WG2 >> art [],
       (* goal 2 (of 2) *)
       METIS_TAC [] ]
-QED
-
-Theorem WG8_backward :
-    !e X. WG (\t. rec X (e t)) ==> WG e
-Proof
-    rpt STRIP_TAC
- >> MATCH_MP_TAC WG_CONST
- >> MATCH_MP_TAC WG8_IMP_CONST
- >> Q.EXISTS_TAC `X` >> art []
 QED
 
 (* Weakly guarded expressions are also expressions *)
@@ -944,7 +683,7 @@ val WG_IMP_CONTEXT = store_thm (
    "WG_IMP_CONTEXT", ``!e. WG e ==> CONTEXT e``,
     Induct_on `WG`
  >> rpt STRIP_TAC (* 6 sub-goals here *)
- >| [ REWRITE_TAC [CONTEXT2],
+ >| [ rw [CONTEXT2],
       MATCH_MP_TAC CONTEXT3 >> art [],
       MATCH_MP_TAC CONTEXT4 >> art [],
       MATCH_MP_TAC CONTEXT5 >> art [],
@@ -962,7 +701,7 @@ val CONTEXT_WG_combin = store_thm (
  >> REWRITE_TAC [ETA_AX]
  >> rpt STRIP_TAC >> RES_TAC (* 6 sub-goals here *)
  >| [ (* goal 1 (of 6) *)
-      REWRITE_TAC [WG2],
+      rw [WG2],
       (* goal 2 (of 6) *)
       IMP_RES_TAC WG_IMP_CONTEXT \\
       MP_TAC (Q.SPECL [`a`, `(\x. (c :'a context) (e x))`] WG3) \\
@@ -991,7 +730,7 @@ val CONTEXT_WG_combin = store_thm (
 (* X is guarded in E if each occurrence of X is within some subexpression of E of
    the form l.F *)
 Inductive SG :
-    (!p.                        SG (\t. p)) /\                      (* SG1 *)
+    (!p.     closed p       ==> SG (\t. p)) /\                      (* SG1 *)
     (!l e.   CONTEXT e      ==> SG (\t. prefix (label l) (e t))) /\ (* SG2 *)
     (!a e.   SG e           ==> SG (\t. prefix a (e t))) /\         (* SG3 *)
     (!e1 e2. SG e1 /\ SG e2 ==> SG (\t. sum (e1 t) (e2 t))) /\      (* SG4 *)
