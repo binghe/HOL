@@ -45,6 +45,25 @@ Proof
     rw [IS_CONST_alt, FUN_EQ_THM]
 QED
 
+Definition closed_const :
+    closed_const (e :'a context) <=> IS_CONST e /\ !t. closed (e t)
+End
+
+Theorem closed_const_def = closed_const |> REWRITE_RULE [IS_CONST_def]
+
+Theorem closed_const_alt :
+    !e. closed_const e <=> ?p. closed p /\ !t. e t = p
+Proof
+    rw [closed_const_def, IS_CONST_alt]
+ >> METIS_TAC []
+QED
+
+Theorem closed_const_thm :
+    !e. closed_const e <=> ?p. closed p /\ e = \t. p
+Proof
+    rw [closed_const_alt, FUN_EQ_THM]
+QED
+
 (* NOTE: now for [CONTEXT2] we require that p must be a closed term, and thus
    (\t. t + rec v (prefix nil (var v))) context but (\t. t + var v) is not.
    And since [CONTEXT8] doesn't exist (i.e. (\t. rec v (e t)) is not context),
@@ -75,6 +94,34 @@ Proof
  >> IMP_RES_TAC CONTEXT3
  >> POP_ASSUM MP_TAC
  >> BETA_TAC >> REWRITE_TAC []
+QED
+
+Theorem CONTEXT_CONST :
+    !e. closed_const e ==> CONTEXT e
+Proof
+    rw [closed_const_def]
+ >> ‘e = (\t. e nil)’ by fs [FUN_EQ_THM]
+ >> POP_ORW >> rw [CONTEXT2]
+QED
+
+Theorem NO_CONTEXT8 :
+    !e X. ~IS_CONST e ==> ~CONTEXT (\t. rec X (e t))
+Proof
+    rpt GEN_TAC
+ >> ONCE_REWRITE_TAC [CONTEXT_cases]
+ >> fs [FUN_EQ_THM, IS_CONST_def]
+ >> rpt STRIP_TAC
+ >- (Q.EXISTS_TAC ‘nil’ >> rw [])
+ >> MP_TAC (Q.SPEC ‘p’ CCS_cases)
+ >> rw [] >> CCONTR_TAC >> fs []
+ >> rename1 ‘p = rec Y E’
+ >> Cases_on ‘X = Y’ >> fs [rec_eq_thm]
+QED
+
+Theorem CONTEXT8_IMP_CONST :
+    !e X. CONTEXT (\t. rec X (e t)) ==> IS_CONST e
+Proof
+    METIS_TAC [NO_CONTEXT8]
 QED
 
 Theorem CONTEXT3_backward :
@@ -231,26 +278,6 @@ Proof
  >> EQ_TAC
  >- REWRITE_TAC [CONTEXT7_backward]
  >> REWRITE_TAC [CONTEXT7]
-QED
-
-Theorem NO_CONTEXT8 :
-    !e X. ~IS_CONST e ==> ~CONTEXT (\t. rec X (e t))
-Proof
-    rpt GEN_TAC
- >> ONCE_REWRITE_TAC [CONTEXT_cases]
- >> fs [FUN_EQ_THM, IS_CONST_def]
- >> rpt STRIP_TAC
- >- (Q.EXISTS_TAC ‘nil’ >> rw [])
- >> MP_TAC (Q.SPEC ‘p’ CCS_cases)
- >> rw [] >> CCONTR_TAC >> fs []
- >> rename1 ‘p = rec Y E’
- >> Cases_on ‘X = Y’ >> fs [rec_eq_thm]
-QED
-
-Theorem CONTEXT8_IMP_CONST :
-    !e X. CONTEXT (\t. rec X (e t)) ==> IS_CONST e
-Proof
-    METIS_TAC [NO_CONTEXT8]
 QED
 
 Theorem CONTEXT_combin :
@@ -566,6 +593,14 @@ Proof
  >> fs [CCS_distinct]
 QED
 
+Theorem WG_CONST :
+    !e. closed_const e ==> WG e
+Proof
+    rw [closed_const_def]
+ >> ‘e = (\t. e nil)’ by fs [FUN_EQ_THM]
+ >> POP_ORW >> rw [WG2]
+QED
+
 Theorem NO_WG8 :
     !e X. ~IS_CONST e ==> ~WG (\t. rec X (e t))
 Proof
@@ -743,6 +778,14 @@ val [SG1, SG2, SG3, SG4, SG5, SG6, SG7] =
     map save_thm
         (combine (["SG1", "SG2", "SG3", "SG4", "SG5", "SG6", "SG7"],
                   CONJUNCTS SG_rules));
+
+Theorem SG_CONST :
+    !e. closed_const e ==> SG e
+Proof
+    rw [closed_const_def]
+ >> ‘e = (\t. e nil)’ by fs [FUN_EQ_THM]
+ >> POP_ORW >> rw [SG1]
+QED
 
 (* Strongly guarded expressions are expressions *)
 val SG_IMP_CONTEXT = store_thm (
