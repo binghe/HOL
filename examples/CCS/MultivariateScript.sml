@@ -1076,55 +1076,52 @@ Proof
                       EVERY (context Xs) Es /\ (LENGTH Es = LENGTH Xs) ==>
                       context Xs (CCS_SUBST (fromList Xs Es) C)` >- METIS_TAC []
  >> NTAC 3 STRIP_TAC
- >> Induct_on `C` >> RW_TAC std_ss [CCS_SUBST_def] (* 8 subgoals *)
- (* goal 1 (of 8): not easy *)
- >- (Know `FDOM (fromList Xs Es) = set Xs`
-     >- (MATCH_MP_TAC FDOM_fromList >> art []) >> DISCH_THEN (fs o wrap) \\
-     fs [EVERY_MEM, MEM_EL] \\
-     Know `(fromList Xs Es) ' (EL n Xs) = EL n Es`
-     >- (MATCH_MP_TAC fromList_FAPPLY_EL >> art []) >> Rewr' \\
+ >> HO_MATCH_MP_TAC CCS_induction
+ >> Q.EXISTS_TAC ‘set Xs UNION (BIGUNION (IMAGE FV (set Es)))’
+ >> rw [ssub_thm] (* 8 subgoals *)
+ >- rw [FINITE_FV]
+ (* 7 subgoals left *)
+ >- (fs [FDOM_fromList, EVERY_MEM, MEM_EL] \\
+     fs [fromList_FAPPLY_EL] \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
      Q.EXISTS_TAC `n` >> art [])
- (* goal 2 (of 8): easy *)
+ (* 6 subgoals left *)
  >- (Q.PAT_X_ASSUM `context Xs C' ==> _` MP_TAC >> RW_TAC std_ss [] \\
      IMP_RES_TAC context_prefix >> RES_TAC \\
      MATCH_MP_TAC context_prefix_rule >> art [])
- (* goal 3 (of 8): easy *)
+ (* 5 subgoals *)
  >- (IMP_RES_TAC context_sum \\
      Q.PAT_X_ASSUM `context Xs C'' ==> _` MP_TAC \\
      Q.PAT_X_ASSUM `context Xs C' ==> _` MP_TAC >> RW_TAC std_ss [] \\
      MATCH_MP_TAC context_sum_rule >> art [])
- (* goal 4 (of 8): easy *)
+ (* 4 subgoals *)
  >- (IMP_RES_TAC context_par \\
      Q.PAT_X_ASSUM `context Xs C'' ==> _` MP_TAC \\
      Q.PAT_X_ASSUM `context Xs C' ==> _` MP_TAC >> RW_TAC std_ss [] \\
      MATCH_MP_TAC context_par_rule >> art [])
- (* goal 5 (of 8): easy *)
+ (* 3 subgoals *)
  >- (IMP_RES_TAC context_restr \\
      Q.PAT_X_ASSUM `context Xs C' ==> _` MP_TAC >> RW_TAC std_ss [] \\
      MATCH_MP_TAC context_restr_rule >> art [])
- (* goal 6 (of 8): easy *)
+ (* 2 subgoals *)
  >- (IMP_RES_TAC context_relab \\
      Q.PAT_X_ASSUM `context Xs C' ==> _` MP_TAC >> RW_TAC std_ss [] \\
      MATCH_MP_TAC context_relab_rule >> art [])
- (* goal 7 (of 8): hard *)
- >- (Know `FDOM (fromList Xs Es) = set Xs`
-     >- (MATCH_MP_TAC FDOM_fromList >> art []) >> DISCH_THEN (fs o wrap) \\
-     IMP_RES_TAC context_rec \\
-     rename1 `MEM X Xs` \\
-     Suff `CCS_SUBST ((fromList Xs Es) \\ X) C' = C'` >- fs [] \\
-     MATCH_MP_TAC CCS_SUBST_elim' \\
-     ASM_SIMP_TAC std_ss [FDOM_DOMSUB, FDOM_fromList] \\
-     ASM_SET_TAC [])
- (* goal 8 (of 8): not hard *)
- >> Know `FDOM (fromList Xs Es) = set Xs`
- >- (MATCH_MP_TAC FDOM_fromList >> art []) >> DISCH_THEN (fs o wrap)
- >> rename1 `~MEM Y Xs`
+ (* 1 subgoal *)
+ >> rename1 ‘context Xs (rec Y E)’
  >> IMP_RES_TAC context_rec
- >> Suff `CCS_SUBST (fromList Xs Es) C' = C'` >- fs []
+ (* applying ssub_rec *)
+ >> qabbrev_tac ‘fm = fromList Xs Es’
+ >> Know ‘CCS_SUBST fm (rec Y E) = rec Y (CCS_SUBST fm E)’
+ >- (MATCH_MP_TAC ssub_rec \\
+     rw [Abbr ‘fm’, FDOM_fromList] \\
+     fs [MEM_EL, fromList_FAPPLY_EL] >> METIS_TAC [])
+ >> Rewr'
+ >> gs []
+ >> qunabbrev_tac ‘fm’
+ >> Suff `CCS_SUBST (fromList Xs Es) E = E` >- rw []
  >> MATCH_MP_TAC CCS_SUBST_elim'
- >> ASM_SIMP_TAC std_ss [FDOM_DOMSUB, FDOM_fromList]
- >> ASM_SET_TAC []
+ >> fs [FDOM_fromList] >> ASM_SET_TAC []
 QED
 
 Theorem LIST_REL_equivalence : (* unused *)
@@ -1200,25 +1197,19 @@ Proof
  >> MATCH_MP_TAC WG3 >> art []
 QED
 
-local
-  val t1 =
-      MATCH_MP_TAC SUBSET_DISJOINT \\
-      take [`BV (E1 + E2)`, `set Xs`] >> art [BV_SUBSET_rules, SUBSET_REFL];
-  val t2 =
-      RES_TAC >> fs [CCS_Subst_def] \\
+Theorem weakly_guarded_sum :
+    !Xs E1 E2. weakly_guarded Xs (sum E1 E2) ==>
+               weakly_guarded Xs E1 /\ weakly_guarded Xs E2
+Proof
+    RW_TAC std_ss [weakly_guarded_def, EVERY_MEM]
+ >> ( RES_TAC >> fs [CCS_Subst_def] \\
       Q.ABBREV_TAC `e1 = \t. CCS_Subst E1 t X` \\
       Q.ABBREV_TAC `e2 = \t. CCS_Subst E2 t X` \\
       Know `WG (\t. e1 t + e2 t)`
       >- (Q.UNABBREV_TAC `e1` >> Q.UNABBREV_TAC `e2` \\
           ASM_SIMP_TAC bool_ss []) \\
-      DISCH_TAC >> IMP_RES_TAC WG4_backward;
-in
-  val weakly_guarded_sum = store_thm
-    ("weakly_guarded_sum",
-    ``!Xs E1 E2. weakly_guarded Xs (sum E1 E2) ==>
-                 weakly_guarded Xs E1 /\ weakly_guarded Xs E2``,
-      RW_TAC std_ss [weakly_guarded_def, EVERY_MEM] >> t2);
-end;
+      DISCH_TAC >> IMP_RES_TAC WG4_backward )
+QED
 
 Theorem weakly_guarded_sum_rule :
     !Xs E1 E2. weakly_guarded Xs E1 /\ weakly_guarded Xs E2 ==>
@@ -1248,25 +1239,19 @@ Proof
  >> MATCH_MP_TAC weakly_guarded_sum_rule >> art []
 QED
 
-local
-  val t1 =
-     (MATCH_MP_TAC SUBSET_DISJOINT \\
-      take [`BV (E1 || E2)`, `set Xs`] >> art [BV_SUBSET_rules, SUBSET_REFL]);
-  val t2 =
-     (RES_TAC >> fs [CCS_Subst_def] \\
+Theorem weakly_guarded_par :
+    !Xs E1 E2. weakly_guarded Xs (par E1 E2) ==>
+               weakly_guarded Xs E1 /\ weakly_guarded Xs E2
+Proof
+    RW_TAC std_ss [weakly_guarded_def, EVERY_MEM]
+ >> ( RES_TAC >> fs [CCS_Subst_def] \\
       Q.ABBREV_TAC `e1 = \t. CCS_Subst E1 t X` \\
       Q.ABBREV_TAC `e2 = \t. CCS_Subst E2 t X` \\
       Know `WG (\t. e1 t || e2 t)`
       >- (Q.UNABBREV_TAC `e1` >> Q.UNABBREV_TAC `e2` \\
           ASM_SIMP_TAC bool_ss []) \\
-      DISCH_TAC >> IMP_RES_TAC WG5_backward);
-in
-  val weakly_guarded_par = store_thm
-    ("weakly_guarded_par",
-    ``!Xs E1 E2. weakly_guarded Xs (par E1 E2) ==>
-                 weakly_guarded Xs E1 /\ weakly_guarded Xs E2``,
-      RW_TAC std_ss [weakly_guarded_def, EVERY_MEM] >> t2);
-end;
+      DISCH_TAC >> IMP_RES_TAC WG5_backward )
+QED
 
 Theorem weakly_guarded_par_rule :
     !Xs E1 E2. weakly_guarded Xs E1 /\ weakly_guarded Xs E2 ==>
@@ -1441,66 +1426,60 @@ Proof
                       weakly_guarded Xs (CCS_SUBST (fromList Xs Es) C)`
  >- METIS_TAC []
  >> NTAC 3 STRIP_TAC (* up to `!C.` *)
- >> Induct_on `C` >> RW_TAC std_ss [CCS_SUBST_def] (* 10 subgoals *)
- (* goal 1 (of 10): easy *)
- >- REWRITE_TAC [weakly_guarded_nil]
- (* goal 2 (of 10): not easy *)
- >- (Know `FDOM (fromList Xs Es) = set Xs`
-     >- (MATCH_MP_TAC FDOM_fromList >> art []) >> DISCH_THEN (fs o wrap) \\
-     fs [EVERY_MEM, MEM_EL] \\
-     Know `(fromList Xs Es) ' (EL n Xs) = EL n Es`
-     >- (MATCH_MP_TAC fromList_FAPPLY_EL >> art []) >> Rewr' \\
-     FIRST_X_ASSUM MATCH_MP_TAC \\
-     Q.EXISTS_TAC `n` >> art [])
- (* goal 3 (of 10): not hard *)
- >- (Know `FDOM (fromList Xs Es) = set Xs`
-     >- (MATCH_MP_TAC FDOM_fromList >> art []) >> DISCH_THEN (fs o wrap) \\
+ >> HO_MATCH_MP_TAC CCS_induction
+ >> Q.EXISTS_TAC ‘set Xs UNION (BIGUNION (IMAGE FV (set Es)))’
+ >> rw [ssub_thm] (* 10 subgoals *)
+ >- rw [FINITE_FV]
+ (* 9 subgoals *)
+ >- (fs [FDOM_fromList, MEM_EL, LIST_REL_EL_EQN] \\
+     rw [fromList_FAPPLY_EL] \\
+     fs [EVERY_EL])
+ (* 8 subgoals *)
+ >- (fs [FDOM_fromList] \\
      MATCH_MP_TAC weakly_guarded_var_rule >> art [])
- (* goal 4 (of 10): not hard *)
+ (* 7 subgoals *)
+ >- (rw [weakly_guarded_nil])
+ (* 6 subgoals *)
  >- (IMP_RES_TAC context_prefix \\
      Q.PAT_X_ASSUM `context Xs C' ==> _` MP_TAC >> RW_TAC std_ss [] \\
      MATCH_MP_TAC weakly_guarded_prefix_rule \\
      MATCH_MP_TAC weakly_guarded_imp_context >> art [])
- (* goal 5 (of 10): easy *)
+ (* 5 subgoals *)
  >- (IMP_RES_TAC context_sum \\
      Q.PAT_X_ASSUM `context Xs C'' ==> _` MP_TAC \\
      Q.PAT_X_ASSUM `context Xs C' ==> _` MP_TAC >> RW_TAC std_ss [] \\
      MATCH_MP_TAC weakly_guarded_sum_rule >> art [])
- (* goal 6 (of 10): easy *)
+ (* 4 subgoals *)
  >- (IMP_RES_TAC context_par \\
      Q.PAT_X_ASSUM `context Xs C'' ==> _` MP_TAC \\
      Q.PAT_X_ASSUM `context Xs C' ==> _` MP_TAC >> RW_TAC std_ss [] \\
      MATCH_MP_TAC weakly_guarded_par_rule >> art [])
- (* goal 7 (of 10): easy *)
+ (* 3 subgoals *)
  >- (IMP_RES_TAC context_restr \\
      Q.PAT_X_ASSUM `context Xs C' ==> _` MP_TAC >> RW_TAC std_ss [] \\
      MATCH_MP_TAC weakly_guarded_restr_rule >> art [])
- (* goal 8 (of 10): easy *)
+ (* 2 subgoals *)
  >- (IMP_RES_TAC context_relab \\
      Q.PAT_X_ASSUM `context Xs C' ==> _` MP_TAC >> RW_TAC std_ss [] \\
      MATCH_MP_TAC weakly_guarded_relab_rule >> art [])
- (* goal 9 (of 10): hard, impossible case *)
- >- (Know `FDOM (fromList Xs Es) = set Xs`
-     >- (MATCH_MP_TAC FDOM_fromList >> art []) >> DISCH_THEN (fs o wrap) \\
-     IMP_RES_TAC context_rec \\
-     rename1 `MEM X Xs` \\
-     Know `CCS_SUBST ((fromList Xs Es) \\ X) C' = C'`
-     >- (MATCH_MP_TAC CCS_SUBST_elim' \\
-         ASM_SIMP_TAC std_ss [FDOM_DOMSUB, FDOM_fromList] \\
-         ASM_SET_TAC [context_def]) >> Rewr' \\
-     MATCH_MP_TAC disjoint_imp_weakly_guarded \\
-     fs [FV_def, context_def])
- (* goal 10 (of 10): not easy *)
- >> Know `FDOM (fromList Xs Es) = set Xs`
- >- (MATCH_MP_TAC FDOM_fromList >> art []) >> DISCH_THEN (fs o wrap)
+ (* 1 subgoal *)
+ >> rename1 ‘context Xs (rec Y E)’
  >> IMP_RES_TAC context_rec
- >> Know `CCS_SUBST (fromList Xs Es) C' = C'`
+ (* applying ssub_rec *)
+ >> qabbrev_tac ‘fm = fromList Xs Es’
+ >> Know ‘CCS_SUBST fm (rec Y E) = rec Y (CCS_SUBST fm E)’
+ >- (MATCH_MP_TAC ssub_rec \\
+     rw [Abbr ‘fm’, FDOM_fromList] \\
+     fs [MEM_EL, fromList_FAPPLY_EL] >> METIS_TAC [])
+ >> Rewr'
+ >> gs []
+ >> qunabbrev_tac ‘fm’
+ >> Know `CCS_SUBST (fromList Xs Es) E = E`
  >- (MATCH_MP_TAC CCS_SUBST_elim' \\
-    fs [FDOM_fromList] >> ASM_SET_TAC [])
+     fs [FDOM_fromList] >> ASM_SET_TAC [])
  >> DISCH_THEN (fs o wrap)
- >> rename1 `~MEM Y Xs`
  >> MATCH_MP_TAC disjoint_imp_weakly_guarded
- >> fs [context_def, FV_def]
+ >> rw [FV_thm]
 QED
 
 (* ========================================================================== *)
@@ -1509,22 +1488,17 @@ QED
 
 (* NOTE: each E in Es MUST contain free variables up to Xs *)
 Definition CCS_equation_def :
-    CCS_equation (Xs :'a list) (Es :'a CCS list) <=>
-        ALL_DISTINCT Xs /\ (LENGTH Es = LENGTH Xs) /\
-        EVERY (\e. (FV e) SUBSET (set Xs)) Es /\
-        EVERY (\e. DISJOINT (BV e) (set Xs)) Es
+    CCS_equation (Xs :string list) (Es :'a CCS list) <=>
+        ALL_DISTINCT Xs /\ LENGTH Es = LENGTH Xs /\
+        EVERY (\e. (FV e) SUBSET (set Xs)) Es
 End
 
 (* A solution Ps of the CCS equation (group) Es[Xs] up to R,
   `ALL_PROC Ps` is required in (all) unique-solution proofs.
-
-  `EVERY (\e. DISJOINT (BV e) (set Xs)) Ps` is not necessary but makes proofs
-   (much) easier.
  *)
 Definition CCS_solution_def :
     CCS_solution R Xs Es Ps <=>
         ALL_PROC Ps /\
-        EVERY (\e. DISJOINT (BV e) (set Xs)) Ps /\
         LIST_REL R Ps (MAP (CCS_SUBST (fromList Xs Ps)) Es)
 End
 
@@ -1550,17 +1524,13 @@ QED
 
    NOTE1: `ALL_PROC Ps` is not required here.
    NOTE2: `FV E SUBSET (set Xs)` and `FV E' SUBSET (set Xs)` were added
-   NOTE3: `DISJOINT (BV E) (set Xs)` and `DISJOINT (BV E') (set Xs)` were
-          moved from weakly_guarded_def and context_def.
  *)
 Theorem strong_unique_solution_lemma :
-    !Xs E. weakly_guarded Xs E /\
-           FV E SUBSET (set Xs) /\ DISJOINT (BV E) (set Xs) ==>
+    !Xs E. weakly_guarded Xs E /\ FV E SUBSET (set Xs) ==>
            !Ps. (LENGTH Ps = LENGTH Xs) ==>
                 !u P'. TRANS (CCS_SUBST (fromList Xs Ps) E) u P' ==>
                        ?E'. context Xs E' /\
                             FV E' SUBSET (set Xs) /\
-                            DISJOINT (BV E') (set Xs) /\
                            (P' = CCS_SUBST (fromList Xs Ps) E') /\
                             !Qs. (LENGTH Qs = LENGTH Xs) ==>
                                  TRANS (CCS_SUBST (fromList Xs Qs) E) u
