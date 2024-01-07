@@ -1413,6 +1413,12 @@ Proof
  >> Q.EXISTS_TAC `n` >> art []
 QED
 
+Theorem closed_nil[simp] :
+    closed nil
+Proof
+    rw [closed_def]
+QED
+
 Theorem IS_PROC_prefix[simp] :
     !P u. IS_PROC (prefix u P) <=> IS_PROC P
 Proof
