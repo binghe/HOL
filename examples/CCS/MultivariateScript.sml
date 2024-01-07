@@ -2,7 +2,8 @@
 (* FILE          : MultivariateScript.sml                                     *)
 (* DESCRIPTION   : Unique Solution of CCS Equations (Multivariate Version)    *)
 (*                                                                            *)
-(* COPYRIGHT     : (c) 2019 Chun Tian, Fondazione Bruno Kessler, Italy        *)
+(* COPYRIGHT     : 2019-2020 Fondazione Bruno Kessler, Italy (Chun Tian)      *)
+(*                 2023-2024 Australian National University (Chun Tian)       *)
 (* ========================================================================== *)
 
 open HolKernel Parse boolLib bossLib;
@@ -657,24 +658,17 @@ Proof
  >> MATCH_MP_TAC context_prefix_rule >> art []
 QED
 
-(*
-  val t1 =
-     (MATCH_MP_TAC SUBSET_DISJOINT \\
-      take [`BV (E1 + E2)`, `set Xs`] >> art [BV_SUBSET_rules, SUBSET_REFL]);
-  val t2 =
-     (RES_TAC >> fs [CCS_Subst_def] \\
+Theorem context_sum :
+    !Xs E1 E2. context Xs (sum E1 E2) ==> context Xs E1 /\ context Xs E2
+Proof
+    RW_TAC std_ss [context_def, EVERY_MEM] (* 2 subgoals, same tactics *)
+ >> ( RES_TAC >> fs [CCS_Subst_def] \\
       Q.ABBREV_TAC `e1 = \t. CCS_Subst E1 t X` \\
       Q.ABBREV_TAC `e2 = \t. CCS_Subst E2 t X` \\
       Know `CONTEXT (\t. e1 t + e2 t)`
       >- (Q.UNABBREV_TAC `e1` >> Q.UNABBREV_TAC `e2` \\
           ASM_SIMP_TAC bool_ss []) \\
-      DISCH_TAC >> IMP_RES_TAC CONTEXT4_backward);
- *)
-Theorem context_sum :
-    !Xs E1 E2. context Xs (sum E1 E2) ==> context Xs E1 /\ context Xs E2
-Proof
-    RW_TAC std_ss [context_def, EVERY_MEM]
- >> cheat
+      DISCH_TAC >> IMP_RES_TAC CONTEXT4_backward )
 QED
 
 Theorem context_sum_rule :
@@ -704,24 +698,18 @@ Proof
  >> MATCH_MP_TAC context_sum_rule >> art []
 QED
 
-local
-  val t1 =
-     (MATCH_MP_TAC SUBSET_DISJOINT \\
-      take [`BV (E1 || E2)`, `set Xs`] >> art [BV_SUBSET_rules, SUBSET_REFL]);
-  val t2 =
-     (RES_TAC >> fs [CCS_Subst_def] \\
+Theorem context_par :
+    !Xs E1 E2. context Xs (par E1 E2) ==> context Xs E1 /\ context Xs E2
+Proof
+    RW_TAC std_ss [context_def, EVERY_MEM]
+ >> ( RES_TAC >> fs [CCS_Subst_def] \\
       Q.ABBREV_TAC `e1 = \t. CCS_Subst E1 t X` \\
       Q.ABBREV_TAC `e2 = \t. CCS_Subst E2 t X` \\
       Know `CONTEXT (\t. e1 t || e2 t)`
       >- (Q.UNABBREV_TAC `e1` >> Q.UNABBREV_TAC `e2` \\
           ASM_SIMP_TAC bool_ss []) \\
-      DISCH_TAC >> IMP_RES_TAC CONTEXT5_backward);
-in
-  val context_par = store_thm
-    ("context_par",
-    ``!Xs E1 E2. context Xs (par E1 E2) ==> context Xs E1 /\ context Xs E2``,
-      RW_TAC std_ss [context_def, EVERY_MEM] >> t2);
-end;
+      DISCH_TAC >> IMP_RES_TAC CONTEXT5_backward )
+QED
 
 Theorem context_par_rule :
     !Xs E1 E2. context Xs E1 /\ context Xs E2 ==> context Xs (par E1 E2)
@@ -831,17 +819,18 @@ Proof
     rpt GEN_TAC >> DISCH_TAC
  >> fs [context_def, EVERY_MEM]
  >> CCONTR_TAC >> fs [IN_DISJOINT]
- >> RES_TAC
- >> `Y <> x` by PROVE_TAC []
- >> fs [CCS_Subst_def]
- >> Q.ABBREV_TAC `e = \t. CCS_Subst E t x`
- >> Know `CONTEXT (\t. rec Y (e t))` >- (Q.UNABBREV_TAC `e` >> fs [])
- >> Q.PAT_X_ASSUM `CONTEXT (\t. P)` K_TAC (* cleanup *)
- >> DISCH_TAC
- >> IMP_RES_TAC CONTEXT8_IMP_CONST
- >> Q.UNABBREV_TAC `e` >> fs [IS_CONST_def]
- >> POP_ASSUM (STRIP_ASSUME_TAC o
-               (MATCH_MP CCS_Subst_EQ_IMP_NOTIN_FV))
+ >> rename1 ‘X <> Y’
+ >> `Y <> X` by PROVE_TAC []
+ >> Q.PAT_X_ASSUM ‘!X. MEM X Xs ==> P’ (MP_TAC o (Q.SPEC ‘X’))
+ >> RW_TAC std_ss []
+ >> rw [Once CONTEXT_cases, FUN_EQ_THM]
+ (* 7 subgoals *)
+ >- (Q.EXISTS_TAC ‘var X’ >> rw [])
+ >- (CCONTR_TAC >> fs [] \\
+     Know ‘X # rec Y E’
+     >- (MATCH_MP_TAC CCS_Subst_EQ_IMP_NOTIN_FV >> rw []) \\
+     rw [FV_thm])
+ >> DISJ1_TAC >> Q.EXISTS_TAC ‘var X’ >> rw []
 QED
 
 (* a collection of all (forward) rules of `context` *)
@@ -866,66 +855,68 @@ Theorem STRONG_EQUIV_subst_context :
                          (CCS_SUBST (fromList Xs Qs) E)
 Proof
     rpt GEN_TAC >> STRIP_TAC
- >> Induct_on `E` >> RW_TAC lset_ss [CCS_SUBST_def] (* 14 subgoals *)
- >- REWRITE_TAC [STRONG_EQUIV_REFL]
+ >> HO_MATCH_MP_TAC CCS_induction
+ >> Q.EXISTS_TAC ‘set Xs UNION (BIGUNION (IMAGE FV (set Ps)))
+                         UNION (BIGUNION (IMAGE FV (set Qs)))’
+ >> rw [ssub_thm, STRONG_EQUIV_REFL] (* 11 subgoals *)
+ >- rw [FINITE_FV]
+ >- rw [FINITE_FV]
+ (* 9 subgoals left *)
  >- (`LENGTH Qs = LENGTH Xs` by METIS_TAC [LIST_REL_LENGTH] \\
      fs [FDOM_fromList, MEM_EL, LIST_REL_EL_EQN] \\
      rw [fromList_FAPPLY_EL])
- (* impossible case *)
+ (* 8 subgoals left *)
  >- (`LENGTH Qs = LENGTH Xs` by METIS_TAC [LIST_REL_LENGTH] \\
      METIS_TAC [FDOM_fromList])
- (* impossible case *)
+ (* 7 subgoals left *)
  >- (`LENGTH Qs = LENGTH Xs` by METIS_TAC [LIST_REL_LENGTH] \\
      METIS_TAC [FDOM_fromList])
- (* 10 cases left *)
- >- REWRITE_TAC [STRONG_EQUIV_REFL]
- (* 9 cases left *)
+ (* 6 subgoals left *)
  >- (MATCH_MP_TAC STRONG_EQUIV_SUBST_PREFIX \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
      IMP_RES_TAC context_prefix)
- (* 8 cases left *)
+ (* 5 subgoals left *)
  >- (MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_SUM \\
      IMP_RES_TAC context_sum \\
      RES_TAC >> art [])
- (* 7 cases left *)
+ (* 4 subgoals left *)
  >- (MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_PAR \\
      IMP_RES_TAC context_par \\
      RES_TAC >> art [])
- (* 6 cases left *)
+ (* 3 subgoals left *)
  >- (MATCH_MP_TAC STRONG_EQUIV_SUBST_RESTR \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
      IMP_RES_TAC context_restr)
- (* 5 cases left *)
+ (* 2 subgoals left *)
  >- (MATCH_MP_TAC STRONG_EQUIV_SUBST_RELAB \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
      IMP_RES_TAC context_relab)
- (* 4 cases left *)
- >- (IMP_RES_TAC context_rec \\
-    `LENGTH Qs = LENGTH Xs` by METIS_TAC [LIST_REL_LENGTH] \\
-     Know `CCS_SUBST ((fromList Xs Ps) \\ a) E = E`
-     >- (MATCH_MP_TAC CCS_SUBST_elim' \\
-         ASM_SIMP_TAC std_ss [FDOM_DOMSUB, FDOM_fromList] \\
-         ASM_SET_TAC []) >> Rewr' \\
-     Know `CCS_SUBST ((fromList Xs Qs) \\ a) E = E`
-     >- (MATCH_MP_TAC CCS_SUBST_elim' \\
-         ASM_SIMP_TAC std_ss [FDOM_DOMSUB, FDOM_fromList] \\
-         ASM_SET_TAC []) >> Rewr' \\
-     REWRITE_TAC [STRONG_EQUIV_REFL])
- (* 3 cases left *)
- >- (`LENGTH Qs = LENGTH Xs` by METIS_TAC [LIST_REL_LENGTH] \\
-     METIS_TAC [FDOM_fromList])
- (* 2 cases left *)
- >- (`LENGTH Qs = LENGTH Xs` by METIS_TAC [LIST_REL_LENGTH] \\
-     METIS_TAC [FDOM_fromList])
- >> (IMP_RES_TAC context_rec \\
-    `LENGTH Qs = LENGTH Xs` by METIS_TAC [LIST_REL_LENGTH] \\
-     Know `CCS_SUBST (fromList Xs Ps) E = E`
-     >- (MATCH_MP_TAC CCS_SUBST_elim' \\
-         fs [FDOM_fromList] >> ASM_SET_TAC []) >> Rewr' \\
-     Know `CCS_SUBST (fromList Xs Qs) E = E`
-     >- (MATCH_MP_TAC CCS_SUBST_elim' \\
-         fs [FDOM_fromList] >> ASM_SET_TAC []) >> Rewr' \\
-     REWRITE_TAC [STRONG_EQUIV_REFL])
+ (* 1 subgoal left *)
+ >> IMP_RES_TAC context_rec
+ >> `LENGTH Qs = LENGTH Xs` by METIS_TAC [LIST_REL_LENGTH]
+  (* applying ssub_rec *)
+ >> qabbrev_tac ‘fm = fromList Xs Ps’
+ >> Know ‘CCS_SUBST fm (rec v E) = rec v (CCS_SUBST fm E)’
+ >- (MATCH_MP_TAC ssub_rec \\
+     rw [Abbr ‘fm’, FDOM_fromList] \\
+     fs [MEM_EL, fromList_FAPPLY_EL] >> METIS_TAC [])
+ >> Rewr'
+ >> qabbrev_tac ‘fm' = fromList Xs Qs’
+ >> Know ‘CCS_SUBST fm' (rec v E) = rec v (CCS_SUBST fm' E)’
+ >- (MATCH_MP_TAC ssub_rec \\
+     rw [Abbr ‘fm'’, FDOM_fromList] \\
+     fs [MEM_EL, fromList_FAPPLY_EL] >> METIS_TAC [])
+ >> Rewr'
+ >> qunabbrevl_tac [‘fm’, ‘fm'’]
+ >> Know `CCS_SUBST (fromList Xs Ps) E = E`
+ >- (MATCH_MP_TAC CCS_SUBST_elim' \\
+     fs [FDOM_fromList] >> ASM_SET_TAC [])
+ >> Rewr'
+ >> Know `CCS_SUBST (fromList Xs Qs) E = E`
+ >- (MATCH_MP_TAC CCS_SUBST_elim' \\
+     fs [FDOM_fromList] >> ASM_SET_TAC [])
+ >> Rewr'
+ >> REWRITE_TAC [STRONG_EQUIV_REFL]
 QED
 
 (* c.f. OBS_CONGR_SUBST_CONTEXT *)
