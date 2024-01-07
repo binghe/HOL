@@ -188,7 +188,7 @@ val OBS_CONGR_IMP_WEAK_CONGR = store_thm ((* NEW *)
 
 (* NOTE: added ‘closed r’ *)
 Definition SUM_EQUIV :
-    SUM_EQUIV = (\p q. !r. closed r ==> WEAK_EQUIV (sum p r) (sum q r))
+    SUM_EQUIV = (\p q. !r. WEAK_EQUIV (sum p r) (sum q r))
 End
 
 Theorem WEAK_CONGR_IMP_SUM_EQUIV :
@@ -211,7 +211,7 @@ QED
 (******************************************************************************)
 
 Theorem COARSEST_CONGR_LR :
-    !p q. OBS_CONGR p q ==> !r. closed r ==> WEAK_EQUIV (sum p r) (sum q r)
+    !p q. OBS_CONGR p q ==> !r. WEAK_EQUIV (sum p r) (sum q r)
 Proof
     rpt STRIP_TAC
  >> MATCH_MP_TAC OBS_CONGR_IMP_WEAK_EQUIV
@@ -225,13 +225,13 @@ End
 
 Theorem COARSEST_CONGR_RL :
     !p q. free_action p /\ free_action q ==>
-          (!r. closed r ==> WEAK_EQUIV (sum p r) (sum q r)) ==> OBS_CONGR p q
+          (!r. WEAK_EQUIV (sum p r) (sum q r)) ==> OBS_CONGR p q
 Proof
     rw [free_action_def, OBS_CONGR]
  >> rpt STRIP_TAC (* 2 sub-goals here *)
  >| [ (* goal 1 (of 2) *)
       ASSUME_TAC (Q.SPEC `prefix (label a) nil`
-                         (ASSUME ``!r. closed r ==> WEAK_EQUIV (sum p r) (sum q r)``)) \\
+                         (ASSUME ``!r. WEAK_EQUIV (sum p r) (sum q r)``)) \\
       fs [] >> IMP_RES_TAC SUM1 \\
       POP_ASSUM (ASSUME_TAC o (Q.SPEC `prefix (label a) nil`)) \\
       Cases_on `u` >| (* 2 sub-goals here *)
@@ -291,7 +291,7 @@ Proof
             RES_TAC ] ] ],                      (* initial assumption of `p` is used here *)
       (* goal 2, completely symmetric with goal 1 *)
       ASSUME_TAC (Q.SPEC `prefix (label a') nil`
-                         (ASSUME ``!r. closed r ==> WEAK_EQUIV (sum p r) (sum q r)``)) \\
+                         (ASSUME ``!r. WEAK_EQUIV (sum p r) (sum q r)``)) \\
       fs [] >> IMP_RES_TAC SUM1 \\
       POP_ASSUM (ASSUME_TAC o (Q.SPEC `prefix (label a') nil`)) \\
       Cases_on `u` >| (* 2 sub-goals here *)
@@ -356,7 +356,7 @@ QED
 val COARSEST_CONGR_THM = store_thm ((* NEW *)
    "COARSEST_CONGR_THM",
   ``!p q. free_action p /\ free_action q ==>
-          (OBS_CONGR p q = !r. closed r ==> WEAK_EQUIV (sum p r) (sum q r))``,
+          (OBS_CONGR p q = !r. WEAK_EQUIV (sum p r) (sum q r))``,
     rpt STRIP_TAC
  >> EQ_TAC >- REWRITE_TAC [COARSEST_CONGR_LR]
  >> MATCH_MP_TAC COARSEST_CONGR_RL
@@ -373,10 +373,10 @@ Theorem PROP3_COMMON :
     !p q. (?k. STABLE k /\ closed k /\
                (!p' u. WEAK_TRANS p u p' ==> ~(WEAK_EQUIV p' k)) /\
                (!q' u. WEAK_TRANS q u q' ==> ~(WEAK_EQUIV q' k))) ==>
-          (!r. closed r ==> WEAK_EQUIV (sum p r) (sum q r)) ==> OBS_CONGR p q
+          (!r. WEAK_EQUIV (sum p r) (sum q r)) ==> OBS_CONGR p q
 Proof
     rpt STRIP_TAC
- >> Q.PAT_X_ASSUM ‘!r. closed r ==> WEAK_EQUIV (sum p r) (sum q r)’
+ >> Q.PAT_X_ASSUM ‘!r. WEAK_EQUIV (sum p r) (sum q r)’
                   (ASSUME_TAC o (Q.SPEC ‘prefix (label a) k’))
  >> REWRITE_TAC [OBS_CONGR]
  >> rpt STRIP_TAC (* 2 sub-goals here *)
@@ -857,7 +857,7 @@ QED
 val COARSEST_CONGR_FINITE = store_thm ((* NEW *)
    "COARSEST_CONGR_FINITE",
   ``!p q. finite_state p /\ finite_state q ==>
-          (OBS_CONGR p q <=> !r. closed r ==> WEAK_EQUIV (sum p r) (sum q r))``,
+          (OBS_CONGR p q <=> !r. WEAK_EQUIV (sum p r) (sum q r))``,
     rpt STRIP_TAC
  >> EQ_TAC >- REWRITE_TAC [COARSEST_CONGR_LR]
  >> MP_TAC (Q.SPECL [`p`, `q`] KLOP_LEMMA_FINITE)

@@ -2197,6 +2197,8 @@ Proof
  >> rfs []
 QED
 
+Theorem TRANS_closed = TRANS_PROC
+
 (* ----------------------------------------------------------------------
     Set up the recursion functionality in binderLib
    ---------------------------------------------------------------------- *)

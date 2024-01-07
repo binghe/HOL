@@ -43,7 +43,7 @@ val _ = hide "fromList";
 1. What's a multivariate CCS equation?
 
    - Xs: A list of equation variables: [X1; X2; ...; Xn] :'a list
-   - Es: A list of arbitrary CCS terms: [E1; E2; ...; En] :('a,'b) CCS list
+   - Es: A list of arbitrary CCS terms: [E1; E2; ...; En] :'a CCS list
 
    ``ALL_DISTINCT Xs /\ (LENGTH Xs = LENGTH Es)`` must hold.
 
@@ -68,7 +68,7 @@ val _ = hide "fromList";
 
 2. What's a solution of (above) multiviriate CCS equation (group)?
 
-   - Ps: A list of arbitrary CCS terms: [P1; P2; ...; Pn] :('a,'b) CCS list
+   - Ps: A list of arbitrary CCS terms: [P1; P2; ...; Pn] :'a CCS list
 
    `Ps` is a solution of (above) multivariate CCS equation (group) iff:
 
@@ -82,7 +82,7 @@ val _ = hide "fromList";
 
     Ps = MAP (SUBST (ZIP Xs Ps)) Es
 
-   (where ``ZIP Xs Ps`` is an alist of type ``:('a # ('a,'b) CCS) list``)
+   (where ``ZIP Xs Ps`` is an alist of type ``:('a # 'a CCS) list``)
 
    or (abbrev.)
 
@@ -160,8 +160,7 @@ val _ = hide "fromList";
 (*  Section I: Multivariate Variable Substitution                             *)
 (* ========================================================================== *)
 
-(* The use of alistTheory/finite_mapTheory to get rid of substitution
-   orders was suggested by Konrad Slind: (HOL-info, Oct 23, 2017):
+(* This is now ‘ssub’ defined in CCSTheory. Original notes by Konrad Slind:
 
   "There are all kinds of issues with substitutions and applying them
    to term-like structures. I would probably start by choosing finite
@@ -174,52 +173,16 @@ val _ = hide "fromList";
    Also see <holdir>/examples/unification/triangular/first-order
    for a unification case study."
  *)
-Definition CCS_SUBST_def :
-   (CCS_SUBST (fm :('a |-> ('a, 'b) CCS)) nil = nil) /\
-   (CCS_SUBST fm (prefix u E) = prefix u (CCS_SUBST fm E)) /\
-   (CCS_SUBST fm (sum E1 E2)  = sum (CCS_SUBST fm E1)
-                                    (CCS_SUBST fm E2)) /\
-   (CCS_SUBST fm (par E1 E2)  = par (CCS_SUBST fm E1)
-                                    (CCS_SUBST fm E2)) /\
-   (CCS_SUBST fm (restr L E)  = restr L (CCS_SUBST fm E)) /\
-   (CCS_SUBST fm (relab E rf) = relab (CCS_SUBST fm E) rf) /\
-   (CCS_SUBST fm (var X)      = if X IN FDOM fm then fm ' X else (var X)) /\
-   (CCS_SUBST fm (rec X E)    = if X IN FDOM fm
-                                then (rec X (CCS_SUBST (fm \\ X) E))
-                                else (rec X (CCS_SUBST fm E)))
-End
+val _ = TeX_notation {hol = "\\\\", TeX = ("\\ensuremath{\\setminus}", 1)};
 
-(* TODO: move to relationTheory *)
-val _ = TeX_notation {hol = "\\\\", TeX = ("\\ensuremath{\\setminus}", 1)}
+Overload CCS_SUBST[local] = “ssub”
 
-(* broken into separate "axioms" *)
-val [CCS_SUBST_nil,   CCS_SUBST_prefix, CCS_SUBST_sum, CCS_SUBST_par,
-     CCS_SUBST_restr, CCS_SUBST_relab,  CCS_SUBST_var, CCS_SUBST_rec] =
-    map save_thm
-        (combine (["CCS_SUBST_nil",   "CCS_SUBST_prefix",
-                   "CCS_SUBST_sum",   "CCS_SUBST_par",
-                   "CCS_SUBST_restr", "CCS_SUBST_relab",
-                   "CCS_SUBST_var",   "CCS_SUBST_rec"],
-                  CONJUNCTS CCS_SUBST_def));
-
-Theorem CCS_SUBST_FEMPTY :
-    !E. CCS_SUBST FEMPTY E = E
-Proof
-    Induct_on `E` >> SRW_TAC [] [CCS_SUBST_def]
-QED
-
-(* CCS_Subst can be expressed in CCS_SUBST *)
-Theorem CCS_SUBST_SING :
-    !X E E'. CCS_SUBST (FEMPTY |+ (X,E')) E = CCS_Subst E E' X
-Proof
-    GEN_TAC >> Induct_on `E`
- >> SRW_TAC [] [CCS_SUBST_def, CCS_Subst_def]
- >> REWRITE_TAC [CCS_SUBST_FEMPTY]
-QED
+Theorem CCS_SUBST_FEMPTY[local] = ssub_FEMPTY
+Theorem CCS_SUBST_SING[local] = FEMPTY_update_apply
 
 (* from a key list and a value list (of same length) to an alist *)
 Definition fromList_def :
-    fromList (Xs :'a list) (Ps :('a, 'b) CCS list) = FEMPTY |++ ZIP (Xs,Ps)
+    fromList (Xs :string list) (Ps :'a CCS list) = FEMPTY |++ ZIP (Xs,Ps)
 End
 
 (* new pretty print format: ``[Ps/Xs] E`` (from termTheory) *)
@@ -229,7 +192,7 @@ Theorem CCS_SUBST_sing :
     !X E E'. CCS_SUBST (fromList [X] [E']) E = CCS_Subst E E' X
 Proof
     RW_TAC list_ss [fromList_def, ZIP, FUPDATE_LIST_THM]
- >> rw [CCS_SUBST_SING]
+ >> rw [CCS_SUBST_SING, CCS_Subst]
 QED
 
 Theorem fromList_EMPTY :
@@ -304,16 +267,7 @@ Proof
 QED
 
 (* slightly more general then CCS_SUBST_elim *)
-Theorem CCS_SUBST_elim' :
-    !E fm. DISJOINT (FV E) (FDOM fm) ==> (CCS_SUBST fm E = E)
-Proof
-    Induct_on `E` (* 8 subgoals *)
- >> reverse (RW_TAC lset_ss [Once CCS_SUBST_def, BV_def, FV_def])
- >- (`DISJOINT (FV E) (FDOM fm)` by ASM_SET_TAC [] \\
-     METIS_TAC [])
- >> FIRST_X_ASSUM MATCH_MP_TAC >> fs []
- >> ASM_SET_TAC []
-QED
+Theorem CCS_SUBST_elim'[local] = GEN_ALL ssub_14b
 
 (* KEY result: if Xs is disjoint with free variables of E, then E{? / Xs} = E *)
 Theorem CCS_SUBST_elim :
@@ -324,41 +278,38 @@ Proof
  >> MATCH_MP_TAC CCS_SUBST_elim' >> fs [FDOM_fromList]
 QED
 
-val lemma0 = Q.prove (
-   `!X P E fm. X NOTIN (FDOM fm) /\
+Theorem lemma0[local] :
+    !X P E fm. X NOTIN (FDOM fm) /\ DISJOINT (FDOM fm) (FV P) /\
                FEVERY (\(k,v). X NOTIN (FV v)) fm ==>
-              (CCS_SUBST (fm |+ (X,P)) E = CCS_Subst (CCS_SUBST fm E) P X)`,
- (* proof *)
-    NTAC 2 GEN_TAC
- >> Induct_on `E` >> SRW_TAC [] []
- >> fs [CCS_Subst_def, CCS_SUBST_def, EVERY_MEM] (* 2 subgoals left *)
- >- (Cases_on `a = X` >> fs [] \\
-     Cases_on `a NOTIN FDOM fm` >> fs []
-     >- (MATCH_MP_TAC EQ_SYM \\
-         MATCH_MP_TAC CCS_Subst_elim >> rw [FV_def]) \\
-     fs [FAPPLY_FUPDATE_THM] \\
-     MATCH_MP_TAC EQ_SYM \\
-     MATCH_MP_TAC CCS_Subst_elim \\
-     fs [FEVERY_DEF])
- >> Cases_on `a = X` >> fs [DOMSUB_NOT_IN_DOM]
- >> Cases_on `a NOTIN FDOM fm` >> fs [CCS_Subst_rec]
- >> Know `fm |+ (X,P) \\ a = fm \\ a |+ (X,P)`
- >- (MATCH_MP_TAC DOMSUB_FUPDATE_NEQ >> METIS_TAC []) >> Rewr'
- >> FIRST_X_ASSUM MATCH_MP_TAC
- >> fs [FDOM_DOMSUB, FEVERY_DEF]
- >> RW_TAC std_ss []
- >> fs [DOMSUB_FAPPLY_NEQ]);
+              (CCS_SUBST (fm |+ (X,P)) E = CCS_Subst (CCS_SUBST fm E) P X)
+Proof
+    rw [CCS_Subst]
+ (* applying ssub_update_apply_subst *)
+ >> Know ‘CCS_SUBST (fm |+ (X,P)) E = CCS_SUBST fm ([P/X] E)’
+ >- (MATCH_MP_TAC ssub_update_apply_subst >> fs [FEVERY_DEF])
+ >> Rewr'
+ >> Know ‘CCS_SUBST fm ([P/X] E) = [CCS_SUBST fm P/X] (CCS_SUBST fm E)’
+ >- (MATCH_MP_TAC ssub_subst >> fs [FEVERY_DEF])
+ >> Rewr'
+ >> Suff ‘CCS_SUBST fm P = P’ >- rw []
+ >> MATCH_MP_TAC ssub_14b >> rw [DISJOINT_SYM]
+QED
 
-(* CCS_SUBST_reduce leads to CCS_SUBST_FOLDR *)
+(* CCS_SUBST_reduce leads to CCS_SUBST_FOLDR
+
+   NOTE: added ‘DISJOINT (set Xs) (FV P)’ when switching to ‘ssub’
+ *)
 Theorem CCS_SUBST_reduce :
-    !X Xs P Ps. ~MEM X Xs /\ ALL_DISTINCT Xs /\ (LENGTH Ps = LENGTH Xs) /\
-                EVERY (\e. X NOTIN (FV e)) Ps ==>
-         !E. (CCS_SUBST (fromList (X::Xs) (P::Ps)) E =
-              CCS_Subst (CCS_SUBST (fromList Xs Ps) E) P X)
+    !X Xs P (Ps :'a CCS list). ~MEM X Xs /\ ALL_DISTINCT Xs /\ (LENGTH Ps = LENGTH Xs) /\
+                EVERY (\e. X NOTIN (FV e)) Ps /\
+                DISJOINT (set Xs) (FV P) ==>
+         !E. CCS_SUBST (fromList (X::Xs) (P::Ps)) E =
+             CCS_Subst (CCS_SUBST (fromList Xs Ps) E) P X
 Proof
     rpt STRIP_TAC
  >> Know `fromList (X::Xs) (P::Ps) = (fromList Xs Ps) |+ (X,P)`
- >- (MATCH_MP_TAC fromList_HD >> art []) >> Rewr'
+ >- (MATCH_MP_TAC fromList_HD >> art [])
+ >> Rewr'
  >> MATCH_MP_TAC lemma0
  >> fs [FDOM_fromList, FEVERY_DEF]
  >> RW_TAC std_ss []
@@ -370,11 +321,12 @@ Proof
 QED
 
 (* CCS_SUBST_reduce in another form *)
-Theorem lemma1[local]:
+Theorem lemma1[local] :
    !E E' map.
       map <> [] /\
       ~MEM (FST (HD map)) (MAP FST (TL map)) /\
       ALL_DISTINCT (MAP FST (TL map)) /\
+      DISJOINT (set (MAP FST (TL map))) (FV (SND (HD map))) /\
       EVERY (\e. (FST (HD map)) NOTIN (FV e)) (MAP SND (TL map)) /\
       CCS_SUBST (FEMPTY |++ (TL map)) E = E'
    ==>
@@ -393,21 +345,20 @@ Proof
  >> DISCH_THEN (fs o wrap)
  >> Know `(MAP SND (ZIP (Xs,Ps))) = Ps` >- PROVE_TAC [MAP_ZIP]
  >> DISCH_THEN (fs o wrap)
- >> MP_TAC (REWRITE_RULE [fromList_def] (Q.SPECL [`q`,`Xs`,`r`,`Ps`] CCS_SUBST_reduce))
- >> RW_TAC std_ss []
- >> first_x_assum (qspec_then ‘E’ (MP_TAC o REWRITE_RULE [ZIP, LIST_TO_SET]))
- >> rw []
+ >> rename1 ‘~MEM X Xs’
+ >> MP_TAC (REWRITE_RULE [fromList_def] (Q.SPECL [`X`,`Xs`,`r`,`Ps`] CCS_SUBST_reduce))
+ >> simp []
 QED
 
 (* Let map = ZIP(Xs,Ps), to convert CCS_SUBST to a folding of CCS_Subst, each P
    of Ps must contains free variables up to the corresponding X of Xs.
  *)
-val lemma2 = Q.prove (
-   `!E map. ALL_DISTINCT (MAP FST map) /\
+Theorem lemma2[local] :
+    !E map. ALL_DISTINCT (MAP FST map) /\
             EVERY (\(x,p). FV p SUBSET {x}) map ==>
            (CCS_SUBST (FEMPTY |++ map) E =
-            FOLDR (\l e. CCS_Subst e (SND l) (FST l)) E map)`,
- (* proof *)
+            FOLDR (\l e. CCS_Subst e (SND l) (FST l)) E map)
+Proof
     GEN_TAC >> Induct_on `map`
  >- SRW_TAC [] [FUPDATE_LIST_THM, CCS_SUBST_FEMPTY]
  >> rpt STRIP_TAC >> fs [MAP]
@@ -421,7 +372,8 @@ val lemma2 = Q.prove (
     `X <> FST y` by METIS_TAC [] \\
      CCONTR_TAC >> fs [] >> RES_TAC \\
      Cases_on `y` >> fs [] >> ASM_SET_TAC [])
- >> RW_TAC std_ss []);
+ >> RW_TAC std_ss []
+QED
 
 (* lemma2 in another form; this is less general than CCS_SUBST_reduce *)
 Theorem CCS_SUBST_FOLDR :
@@ -1583,7 +1535,7 @@ QED
 
 (* NOTE: each E in Es MUST contain free variables up to Xs *)
 Definition CCS_equation_def :
-    CCS_equation (Xs :'a list) (Es :('a, 'b) CCS list) <=>
+    CCS_equation (Xs :'a list) (Es :'a CCS list) <=>
         ALL_DISTINCT Xs /\ (LENGTH Es = LENGTH Xs) /\
         EVERY (\e. (FV e) SUBSET (set Xs)) Es /\
         EVERY (\e. DISJOINT (BV e) (set Xs)) Es
@@ -2704,7 +2656,7 @@ QED
    thus this lemma doesn't derive from LIST_REL_equivalence.
  *)
 Theorem OBS_contracts_transitive :
-    !(Ps :('a, 'b) CCS list) Qs Rs.
+    !(Ps :'a CCS list) Qs Rs.
           LIST_REL OBS_contracts Ps Qs /\ LIST_REL OBS_contracts Qs Rs
       ==> LIST_REL OBS_contracts Ps Rs
 Proof
@@ -2716,7 +2668,7 @@ Proof
 QED
 
 Theorem OBS_contracts_reflexive :
-    !(Ps :('a, 'b) CCS list). LIST_REL OBS_contracts Ps Ps
+    !(Ps :'a CCS list). LIST_REL OBS_contracts Ps Ps
 Proof
     RW_TAC list_ss [LIST_REL_EL_EQN, OBS_contracts_REFL]
 QED
@@ -3061,14 +3013,14 @@ Proof
  >> IMP_RES_TAC TRACE_cases2
  >> Cases_on `xs`
  >- (FULL_SIMP_TAC bool_ss [NULL] \\
-    `LENGTH (epsilon :'b Action list) <= n` by FULL_SIMP_TAC arith_ss [LENGTH] \\
+    `LENGTH (epsilon :'a Action list) <= n` by FULL_SIMP_TAC arith_ss [LENGTH] \\
      Know `!Ys. (LENGTH Ys = LENGTH Xs) ==> (LENGTH (E Ys) = LENGTH Xs)`
      >- (rpt STRIP_TAC \\
          Q.UNABBREV_TAC `E` >> ASM_SIMP_TAC list_ss [LENGTH_MAP]) \\
      DISCH_TAC \\
      Q.PAT_X_ASSUM `!xs Ps P'. _ ==> _`
-        (MP_TAC o (Q.SPECL [`[] :'b Action list`,
-                            `(E :('a, 'b) CCS list -> ('a, 'b) CCS list) Ps`, `P'`])) \\
+        (MP_TAC o (Q.SPECL [`[] :'a Action list`,
+                            `(E :'a CCS list -> 'a CCS list) Ps`, `P'`])) \\
      Q.PAT_ASSUM `_ = P'` (ONCE_REWRITE_TAC o wrap) \\
      RW_TAC bool_ss [] \\
      Q.EXISTS_TAC `CCS_SUBST (fromList Xs Es) C''`  \\
@@ -3091,7 +3043,7 @@ Proof
          fs [context_def]) \\
      rpt STRIP_TAC \\
      Q.PAT_X_ASSUM `!Qs. (LENGTH Qs = LENGTH Xs) ==> _`
-        (MP_TAC o (Q.SPEC `(E :('a, 'b) CCS list -> ('a, 'b) CCS list) Qs`)) \\
+        (MP_TAC o (Q.SPEC `(E :'a CCS list -> 'a CCS list) Qs`)) \\
      RW_TAC bool_ss [] \\
      Suff `CCS_SUBST (fromList Xs Qs) (CCS_SUBST (fromList Xs Es) C'') =
            CCS_SUBST (fromList Xs (E Qs)) C''` >- (Rewr' >> art []) \\
@@ -3106,7 +3058,7 @@ Proof
  >> Q.ABBREV_TAC `u = LAST (h::t)`
  >> Q.PAT_X_ASSUM `!xs Ps' P''. _ ==> ?C''. _`
       (MP_TAC o
-       (Q.SPECL [`us`, `(E :('a, 'b) CCS list -> ('a, 'b) CCS list) Ps`, `P`]))
+       (Q.SPECL [`us`, `(E :'a CCS list -> 'a CCS list) Ps`, `P`]))
  >> RW_TAC std_ss []
  >> MP_TAC (Q.SPECL [`Xs`, `Es`, `C''`, `E`] USC_unfolding_lemma3)
  >> FULL_SIMP_TAC bool_ss [CCS_equation_def]
