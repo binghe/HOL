@@ -601,6 +601,7 @@ in
 end
 
 Theorem FV_thm[simp] = LIST_CONJ (map supp_clause cons_info)
+Theorem FV_def = FV_thm
 
 val [FV_var, FV_nil, FV_prefix, FV_sum, FV_par,
      FV_restr, FV_relab, FV_rec] =
@@ -1415,6 +1416,12 @@ QED
 
 Theorem closed_nil[simp] :
     closed nil
+Proof
+    rw [closed_def]
+QED
+
+Theorem not_closed_var[simp] :
+    ~closed (var X)
 Proof
     rw [closed_def]
 QED
