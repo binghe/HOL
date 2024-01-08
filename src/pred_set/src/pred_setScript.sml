@@ -870,21 +870,32 @@ Theorem DISJOINT_UNION_BOTH:
 Proof PROVE_TAC [DISJOINT_UNION, DISJOINT_SYM]
 QED
 
-val DISJOINT_SUBSET = Q.store_thm
-("DISJOINT_SUBSET",
-  `!s t u. DISJOINT s t /\ u SUBSET t ==> DISJOINT s u`,
+Theorem DISJOINT_SUBSET :
+   !s t u. DISJOINT s t /\ u SUBSET t ==> DISJOINT s u
+Proof
   REWRITE_TAC [DISJOINT_DEF, SUBSET_DEF, IN_INTER, NOT_IN_EMPTY,
                EXTENSION] THEN
-  PROVE_TAC []);
+  PROVE_TAC []
+QED
 
-val SUBSET_DISJOINT = store_thm
-  ("SUBSET_DISJOINT",
-  ``!s t u v. DISJOINT s t /\ u SUBSET s /\ v SUBSET t ==> DISJOINT u v``,
+Theorem SUBSET_DISJOINT :
+    !s t u v. DISJOINT s t /\ u SUBSET s /\ v SUBSET t ==> DISJOINT u v
+Proof
     RW_TAC std_ss [DISJOINT_ALT]
  >> `x IN s` by PROVE_TAC [SUBSET_DEF]
  >> CCONTR_TAC >> fs []
  >> `x IN t` by PROVE_TAC [SUBSET_DEF]
- >> RES_TAC);
+ >> RES_TAC
+QED
+
+Theorem DISJOINT_SUBSET' :
+    !s t u. DISJOINT s t /\ u SUBSET s ==> DISJOINT u t
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC SUBSET_DISJOINT
+ >> qexistsl_tac [‘s’, ‘t’]
+ >> ASM_REWRITE_TAC [SUBSET_REFL]
+QED
 
 (* ===================================================================== *)
 (* Set difference                                                        *)
