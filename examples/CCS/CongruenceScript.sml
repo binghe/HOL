@@ -1,6 +1,6 @@
 (* ========================================================================== *)
 (* FILE          : CongruenceScript.sml                                       *)
-(* DESCRIPTION   : The theory of congruence and guarded contexts              *)
+(* DESCRIPTION   : The theory of congruence and (guarded) contexts            *)
 (*                                                                            *)
 (* COPYRIGHTS    : 1991-1995 University of Cambridge (Monica Nesi)            *)
 (*                 2016-2017 University of Bologna, Italy (Chun Tian)         *)

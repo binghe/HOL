@@ -2,8 +2,8 @@
 (* FILE          : MultivariateScript.sml                                     *)
 (* DESCRIPTION   : Unique Solution of CCS Equations (Multivariate Version)    *)
 (*                                                                            *)
-(* COPYRIGHT     : 2019-2020 Fondazione Bruno Kessler, Italy (Chun Tian)      *)
-(*                 2023-2024 Australian National University (Chun Tian)       *)
+(* COPYRIGHTS    : 2019-2020 Fondazione Bruno Kessler, Italy (Chun Tian)      *)
+(*                 2023-2024 The Australian National University (Chun Tian)   *)
 (* ========================================================================== *)
 
 open HolKernel Parse boolLib bossLib;

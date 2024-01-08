@@ -1,10 +1,9 @@
 (* ========================================================================== *)
 (* FILE          : CoarsestCongrScript.sml                                    *)
-(* DESCRIPTION   : A formalization of the process algebra CCS in HOL          *)
+(* DESCRIPTION   : The coarsest congruence contained in weal bisimilarity     *)
 (*                                                                            *)
 (* COPYRIGHTS    : 1991-1995 University of Cambridge (Monica Nesi)            *)
 (*                 2016-2017 University of Bologna, Italy (Chun Tian)         *)
-(*                 2023-2024 Australian National University (Chun Tian)       *)
 (******************************************************************************)
 
 open HolKernel Parse boolLib bossLib;
