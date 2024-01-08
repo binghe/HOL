@@ -23,7 +23,7 @@ Theorem STRONG_EQUIV_ssub_lemma :
     !fm E. (!y. y IN FDOM fm ==> fm ' y = nil) ==> STRONG_EQUIV E (fm ' E)
 Proof
     Q.X_GEN_TAC ‘fm’
- >> HO_MATCH_MP_TAC CCS_induction
+ >> HO_MATCH_MP_TAC nc_INDUCTION2
  >> Q.EXISTS_TAC ‘FDOM fm’
  >> rw [] (* 7 subgoals *)
  >| [ (* goal 1 (of 7) *)
@@ -199,7 +199,7 @@ Theorem StrongEQ_subst_lemma :
     !E. FV E SUBSET {X} /\ closed P /\ closed Q /\ StrongEQ P Q ==>
         StrongEQ ([P/X] E) ([Q/X] E)
 Proof
-    HO_MATCH_MP_TAC CCS_induction
+    HO_MATCH_MP_TAC nc_INDUCTION2
  >> Q.EXISTS_TAC ‘{X}’
  >> rw [] (* 6 subgoals *)
  >| [ (* goal 1 (of 6) *)

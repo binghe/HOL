@@ -1,7 +1,11 @@
-(*
- * Copyright 1991-1995  University of Cambridge (Author: Monica Nesi)
- * Copyright 2017       University of Bologna   (Author: Chun Tian)
- *)
+(* ========================================================================== *)
+(* FILE          : CoarsestCongrScript.sml                                    *)
+(* DESCRIPTION   : A formalization of the process algebra CCS in HOL          *)
+(*                                                                            *)
+(* COPYRIGHTS    : 1991-1995 University of Cambridge (Monica Nesi)            *)
+(*                 2016-2017 University of Bologna, Italy (Chun Tian)         *)
+(*                 2023-2024 Australian National University (Chun Tian)       *)
+(******************************************************************************)
 
 open HolKernel Parse boolLib bossLib;
 
@@ -186,7 +190,6 @@ val OBS_CONGR_IMP_WEAK_CONGR = store_thm ((* NEW *)
  >> IMP_RES_TAC CC_is_coarsest
  >> ASM_REWRITE_TAC []);
 
-(* NOTE: added ‘closed r’ *)
 Definition SUM_EQUIV :
     SUM_EQUIV = (\p q. !r. WEAK_EQUIV (sum p r) (sum q r))
 End

@@ -2,10 +2,10 @@
 (* FILE          : CCSScript.sml                                              *)
 (* DESCRIPTION   : A formalization of the process algebra CCS in HOL          *)
 (*                                                                            *)
-(* COPYRIGHTS    : 1991-1995 University of Cambridge (Monica Nesi)            *)
+(* COPYRIGHTS    : 1991-1995 University of Cambridge, UK (Monica Nesi)        *)
 (*                 2016-2017 University of Bologna, Italy (Chun Tian)         *)
 (*                 2018-2019 Fondazione Bruno Kessler, Italy (Chun Tian)      *)
-(*                 2023-2024 Australian National University (Chun Tian)       *)
+(*                 2023-2024 The Australian National University (Chun Tian)   *)
 (******************************************************************************)
 
 open HolKernel Parse boolLib bossLib;
@@ -46,14 +46,18 @@ val Label_cases = TypeBase.nchotomy_of ``:'a Label``;
 val Label_distinct = TypeBase.distinct_of ``:'a Label``;
 val Label_distinct' = save_thm ("Label_distinct'", GSYM Label_distinct);
 
+(* |- !a' a. name a = coname a' <=> F *)
 val Label_not_eq = save_thm (
    "Label_not_eq", STRIP_FORALL_RULE EQF_INTRO Label_distinct);
 
+(* |- !a' a. coname a' = name a <=> F *)
 val Label_not_eq' = save_thm (
    "Label_not_eq'", STRIP_FORALL_RULE
                         (PURE_REWRITE_RULE [SYM_CONV ``name s = coname s'``])
                         Label_not_eq);
 
+(* |- (!a a'. name a = name a' <=> a = a') /\
+       !a a'. coname a = coname a' <=> a = a' *)
 val Label_11 = TypeBase.one_one_of ``:'a Label``;
 
 (* NEW: define the set of actions as the OPTION of Label *)
@@ -656,8 +660,12 @@ fun mkX_ind th = th |> Q.SPECL [‘\t x. Q t’, ‘\x. X’]
                     |> SIMP_RULE std_ss [] |> Q.GEN ‘X’
                     |> Q.INST [‘Q’ |-> ‘P’] |> Q.GEN ‘P’;
 
-Theorem CCS_induction = mkX_ind term_ind
+(* NOTE: not recommended unless in generated theorems *)
+Theorem nc_INDUCTION = mkX_ind term_ind
 
+(* The recommended induction theorem containing correctly named
+   binding variables (L, rf, y, etc.)
+ *)
 Theorem nc_INDUCTION2 :
     !P X.
         (!s. P (var s)) /\ P nil /\ (!u E. P E ==> P (u..E)) /\
@@ -669,12 +677,12 @@ Theorem nc_INDUCTION2 :
         !t. P t
 Proof
     rpt STRIP_TAC
- >> MATCH_MP_TAC CCS_induction
+ >> MATCH_MP_TAC nc_INDUCTION
  >> Q.EXISTS_TAC ‘X’ >> rw []
 QED
 
 Theorem simple_induction =
-    CCS_induction |> Q.SPECL [‘P’, ‘{}’]
+    nc_INDUCTION2 |> Q.SPECL [‘P’, ‘{}’]
                   |> REWRITE_RULE [FINITE_EMPTY, NOT_IN_EMPTY]
                   |> Q.GEN ‘P’
 
@@ -1056,14 +1064,14 @@ Theorem SUB_REC = List.nth (CONJUNCTS SUB_DEF, 7)
 Theorem fresh_tpm_subst :
     !t. u # (t :'a CCS) ==> (tpm [(u,v)] t = [var u/v] t)
 Proof
-    HO_MATCH_MP_TAC CCS_induction >> Q.EXISTS_TAC ‘{u;v}’
+    HO_MATCH_MP_TAC nc_INDUCTION >> Q.EXISTS_TAC ‘{u;v}’
  >> SRW_TAC [][SUB_THM, SUB_VAR]
 QED
 
 Theorem tpm_subst :
     !N :'a CCS. tpm pi ([M/v] N) = [tpm pi M/lswapstr pi v] (tpm pi N)
 Proof
-    HO_MATCH_MP_TAC CCS_induction
+    HO_MATCH_MP_TAC nc_INDUCTION
  >> Q.EXISTS_TAC ‘v INSERT FV M’
  >> SRW_TAC [][SUB_THM, SUB_VAR]
 QED
@@ -1078,14 +1086,14 @@ QED
 Theorem lemma14a[simp] :
     !t. [var v/v] t = (t :'a CCS)
 Proof
-    HO_MATCH_MP_TAC CCS_induction >> Q.EXISTS_TAC ‘{v}’
+    HO_MATCH_MP_TAC nc_INDUCTION >> Q.EXISTS_TAC ‘{v}’
  >> SRW_TAC [][SUB_THM, SUB_VAR]
 QED
 
 Theorem lemma14b :
     !M. v # M ==> [N/v] M = (M :'a CCS)
 Proof
-    HO_MATCH_MP_TAC CCS_induction >> Q.EXISTS_TAC ‘v INSERT FV N’
+    HO_MATCH_MP_TAC nc_INDUCTION >> Q.EXISTS_TAC ‘v INSERT FV N’
  >> SRW_TAC [][SUB_THM, SUB_VAR]
 QED
 
@@ -1102,7 +1110,7 @@ Proof
  >> simp [PULL_EXISTS]
  >> Q.X_GEN_TAC ‘u’
  >> Q.ID_SPEC_TAC ‘t’
- >> HO_MATCH_MP_TAC CCS_induction
+ >> HO_MATCH_MP_TAC nc_INDUCTION
  >> Q.EXISTS_TAC ‘{x;u}’ >> rw [rec_eq_thm]
  >> CCONTR_TAC >> fs []
 QED
@@ -1131,7 +1139,7 @@ Proof
  >> simp [PULL_EXISTS]
  >> rpt GEN_TAC
  >> Q.ID_SPEC_TAC ‘t’
- >> HO_MATCH_MP_TAC CCS_induction
+ >> HO_MATCH_MP_TAC nc_INDUCTION
  >> Q.EXISTS_TAC ‘{x;u;u'}’ >> rw [rec_eq_thm]
  >> CCONTR_TAC >> fs []
 QED
@@ -1148,7 +1156,7 @@ Theorem lemma14c :
     !t x u :'a CCS. x IN FV u ==> (FV ([t/x]u) = FV t UNION (FV u DELETE x))
 Proof
     NTAC 2 GEN_TAC
- >> HO_MATCH_MP_TAC CCS_induction
+ >> HO_MATCH_MP_TAC nc_INDUCTION
  >> Q.EXISTS_TAC ‘x INSERT FV t’
  >> SRW_TAC [][SUB_THM, SUB_VAR, EXTENSION]
  >> METIS_TAC [lemma14b]
@@ -1164,7 +1172,7 @@ QED
 Theorem lemma15a :
     !M :'a CCS. v # M ==> [N/v] ([var v/x] M) = [N/x] M
 Proof
-    HO_MATCH_MP_TAC CCS_induction >> Q.EXISTS_TAC ‘{x;v} UNION FV N’
+    HO_MATCH_MP_TAC nc_INDUCTION >> Q.EXISTS_TAC ‘{x;v} UNION FV N’
  >> SRW_TAC [][SUB_THM, SUB_VAR]
 QED
 
@@ -1177,7 +1185,7 @@ QED
 Theorem SUB_TWICE_ONE_VAR :
     !M :'a CCS. [x/v] ([y/v] M) = [[x/v] y/v] M
 Proof
-    HO_MATCH_MP_TAC CCS_induction
+    HO_MATCH_MP_TAC nc_INDUCTION
  >> SRW_TAC [][SUB_THM, SUB_VAR]
  >> Q.EXISTS_TAC ‘v INSERT FV x UNION FV y’
  >> SRW_TAC [][SUB_THM]
@@ -1248,7 +1256,7 @@ Theorem size_nz =
 Theorem size_vsubst[simp]:
     !M :'a CCS. CCS_size ([var v/u] M) = CCS_size M
 Proof
-    HO_MATCH_MP_TAC CCS_induction >> Q.EXISTS_TAC ‘{u;v}’
+    HO_MATCH_MP_TAC nc_INDUCTION >> Q.EXISTS_TAC ‘{u;v}’
  >> SRW_TAC [][SUB_VAR, SUB_THM]
 QED
 
@@ -1610,7 +1618,7 @@ val tpm_ssub = save_thm("tpm_ssub", CONJUNCT2 ssub_def);
 Theorem single_ssub :
     !N. (FEMPTY |+ (s,M)) ' N = [M/s] N
 Proof
-    HO_MATCH_MP_TAC CCS_induction >> Q.EXISTS_TAC `s INSERT FV M`
+    HO_MATCH_MP_TAC nc_INDUCTION >> Q.EXISTS_TAC `s INSERT FV M`
  >> SRW_TAC [][SUB_VAR, SUB_THM]
 QED
 
@@ -1631,7 +1639,7 @@ QED
 Theorem ssub_14b:
     !t. DISJOINT (FV t) (FDOM phi) ==> (phi : string |-> 'a CCS) ' t = t
 Proof
-    HO_MATCH_MP_TAC CCS_induction
+    HO_MATCH_MP_TAC nc_INDUCTION
  >> Q.EXISTS_TAC ‘fmFV phi’
  >> SRW_TAC [][DISJOINT_DEF, SUB_THM, SUB_VAR, pred_setTheory.EXTENSION]
  >> METIS_TAC []
@@ -1659,7 +1667,7 @@ Theorem FV_ssub :
 Proof
     rpt STRIP_TAC
  >> Q.ID_SPEC_TAC ‘N’
- >> HO_MATCH_MP_TAC CCS_induction
+ >> HO_MATCH_MP_TAC nc_INDUCTION
  >> Q.EXISTS_TAC ‘FDOM fm’
  >> rw [SUB_VAR, SUB_THM, ssub_thm]
  >> SET_TAC []
@@ -1668,19 +1676,19 @@ QED
 Theorem fresh_ssub:
     !N. y NOTIN FV N /\ (!k :string. k IN FDOM fm ==> y # fm ' k) ==> y # fm ' N
 Proof
-    ho_match_mp_tac CCS_induction
+    ho_match_mp_tac nc_INDUCTION
  >> qexists ‘fmFV fm’ >> rw [] >> metis_tac[]
 QED
 
-(* cf. termTheory.ssub_SUBST *)
-Theorem ssub_subst :
+Theorem ssub_SUBST :
     !M. (!k. k IN FDOM fm ==> v # fm ' k) /\ v NOTIN FDOM fm ==>
         fm ' ([N/v] M) = [fm ' N/v] (fm ' M)
 Proof
-    ho_match_mp_tac nc_INDUCTION2
+    ho_match_mp_tac nc_INDUCTION
  >> qexists ‘fmFV fm UNION {v} UNION FV N’
  >> rw [] >> rw [lemma14b, SUB_VAR]
  >> gvs [DECIDE “~p \/ q <=> p ==> q”, PULL_FORALL]
+ >> rename1 ‘y # N’
  >> ‘y # fm ' N’ suffices_by simp[SUB_THM]
  >> irule fresh_ssub >> simp []
 QED
@@ -1691,21 +1699,35 @@ QED
  *)
 Theorem ssub_rec = List.nth(CONJUNCTS ssub_thm, 7)
 
-(* cf. termTheory.ssub_update_apply_SUBST *)
-Theorem ssub_update_apply_subst :
+Theorem ssub_update_apply_SUBST :
     !M. (!k. k IN FDOM fm ==> v # fm ' k) /\ v NOTIN FDOM fm /\
         DISJOINT (FDOM fm) (FV N) ==>
         (fm |+ (v,N)) ' M = fm ' ([N/v] M)
 Proof
-    HO_MATCH_MP_TAC nc_INDUCTION2
+    HO_MATCH_MP_TAC nc_INDUCTION
  >> Q.EXISTS_TAC ‘v INSERT fmFV fm UNION FV M UNION FV N’
  >> rw [SUB_VAR, SUB_THM, ssub_thm, FAPPLY_FUPDATE_THM]
  >> TRY (METIS_TAC [])
  >- (MATCH_MP_TAC (GSYM ssub_14b) \\
      rw [GSYM DISJOINT_DEF, Once DISJOINT_SYM])
+ >> rename1 ‘y # N’
  >> Suff ‘(fm |+ (v,N)) ' (rec y M') = rec y ((fm |+ (v,N)) ' M')’ >- rw []
  >> MATCH_MP_TAC ssub_rec
  >> rw [FAPPLY_FUPDATE_THM]
+QED
+
+(* A combined version of ssub_update_apply_SUBST and ssub_SUBST *)
+Theorem ssub_update_apply_SUBST' :
+    !M. (!k. k IN FDOM fm ==> v # fm ' k) /\ v NOTIN FDOM fm /\
+        DISJOINT (FDOM fm) (FV N) ==>
+        (fm |+ (v,N)) ' M = [fm ' N/v] (fm ' M)
+Proof
+    rpt STRIP_TAC
+ >> Know ‘[fm ' N/v] (fm ' M) = fm ' ([N/v] M)’
+ >- (ONCE_REWRITE_TAC [EQ_SYM_EQ]  \\
+     MATCH_MP_TAC ssub_SUBST >> art [])
+ >> Rewr'
+ >> MATCH_MP_TAC ssub_update_apply_SUBST >> art []
 QED
 
 Theorem FEMPTY_update_apply :
@@ -1714,7 +1736,7 @@ Proof
     Q.X_GEN_TAC ‘M’
  >> ‘[N/v] M = FEMPTY ' ([N/v] M)’ by rw []
  >> POP_ORW
- >> MATCH_MP_TAC ssub_update_apply_subst
+ >> MATCH_MP_TAC ssub_update_apply_SUBST
  >> rw []
 QED
 

@@ -2,10 +2,11 @@
 (* FILE          : CongruenceScript.sml                                       *)
 (* DESCRIPTION   : The theory of congruence and guarded contexts              *)
 (*                                                                            *)
-(* AUTHOR        : (c) 2017 Chun Tian, University of Bologna, Italy           *)
-(*                 (c) 2018 Chun Tian, Fondazione Bruno Kessler (FBK)         *)
-(*                 (c) 2024 Chun Tian, Australian National University         *)
-(* ========================================================================== *)
+(* COPYRIGHTS    : 1991-1995 University of Cambridge (Monica Nesi)            *)
+(*                 2016-2017 University of Bologna, Italy (Chun Tian)         *)
+(*                 2018-2019 Fondazione Bruno Kessler, Italy (Chun Tian)      *)
+(*                 2023-2024 Australian National University (Chun Tian)       *)
+(******************************************************************************)
 
 open HolKernel Parse boolLib bossLib;
 
@@ -47,6 +48,7 @@ Proof
     rw [IS_CONST_alt, FUN_EQ_THM]
 QED
 
+(* not used *)
 Definition closed_const :
     closed_const (e :'a context) <=> IS_CONST e /\ !t. closed (e t)
 End
@@ -66,7 +68,7 @@ Proof
     rw [closed_const_alt, FUN_EQ_THM]
 QED
 
-(* ONE HOLE CONTEXT (unused) *)
+(* ONE HOLE CONTEXT (not used) *)
 Inductive OH_CONTEXT :
     (                        OH_CONTEXT (\t. t)) /\              (* OH_CONTEXT1 *)
     (!a c.  OH_CONTEXT c ==> OH_CONTEXT (\t. prefix a (c t))) /\ (* OH_CONTEXT2 *)

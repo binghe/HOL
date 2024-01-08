@@ -893,7 +893,8 @@ Theorem DISJOINT_SUBSET' :
 Proof
     rpt STRIP_TAC
  >> MATCH_MP_TAC SUBSET_DISJOINT
- >> qexistsl_tac [‘s’, ‘t’]
+ >> Q.EXISTS_TAC ‘s’
+ >> Q.EXISTS_TAC ‘t’
  >> ASM_REWRITE_TAC [SUBSET_REFL]
 QED
 

@@ -2,10 +2,9 @@
 (* FILE          : UniqueSolutionsScript.sml                                  *)
 (* DESCRIPTION   : Milner and Sangiorgi's "Unique Solutions of Equations"     *)
 (*                                                                            *)
-(* THESIS        : A Formalization of Unique Solutions of Equations in        *)
-(*                 Process Algebra                                            *)
-(* AUTHOR        : (c) 2017 Chun Tian, University of Bologna, Italy           *)
-(*                 (c) 2018 Chun Tian, Fondazione Bruno Kessler (FBK)         *)
+(* AUTHOR        : 2017      University of Bologna, Italy (Chun Tian)         *)
+(*                 2018      Fondazione Bruno Kessler, Italy (Chun Tian)      *)
+(*                 2023-2024 Australian National University (Chun Tian)       *)
 (* ========================================================================== *)
 
 open HolKernel Parse boolLib bossLib;

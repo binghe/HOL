@@ -29,12 +29,13 @@ val _ = disable_tyabbrev_printing "simulation";
 
 (******************************************************************************)
 (*                                                                            *)
-(*                     The coffee machine model                               *)
+(*                     The coffee machine model [2]                           *)
 (*                                                                            *)
 (******************************************************************************)
 
-val VM = ``rec "VM" (In "coin"..(In "ask-esp"..rec "VM1" (Out "esp-coffee"..var "VM") +
-                                 In "ask-am"..rec "VM2" (Out "am-coffee"..var "VM")))``;
+val VM = “rec "VM" (In "coin"..
+                      (In "ask-esp"..rec "VM1" (Out "esp-coffee"..var "VM") +
+                       In "ask-am"..rec "VM2" (Out "am-coffee"..var "VM")))”;
 
 (* ex1 =
 |- label (name "a")..label (name "b")..nil +
@@ -96,7 +97,8 @@ val List_eq_coList = store_thm (
 (******************************************************************************)
 
 local
-    val (temp_A, trans) = CCS_TRANS ``label (name "a")..nil || label (coname "a")..nil``;
+    val (temp_A, trans) =
+        CCS_TRANS “label (name "a")..nil || label (coname "a")..nil”;
     val nodes = map (fn (l, s) => CCS_TRANS s) trans;
 in
   val ex_A = save_thm ("ex_A", temp_A);
@@ -169,4 +171,9 @@ val _ =
  else
     {};
 
-(* last updated: Oct 15, 2017 *)
+(* Bibliography:
+
+ [1] Milner, Robin. Communication and concurrency. Prentice hall, 1989.
+ [2] Gorrieri, R., Versari, C.: Introduction to Concurrency Theory. Springer (2015).
+
+ *)

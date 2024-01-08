@@ -1,9 +1,12 @@
-(*
- * Copyright 1991-1995  University of Cambridge (Author: Monica Nesi)
- * Copyright 2016-2017  University of Bologna, Italy (Author: Chun Tian)
- * Copyright 2018-2019  Fondazione Bruno Kessler, Italy (Author: Chun Tian)
- * Copyright 2023-2024  Australian National University (Author: Chun Tian)
- *)
+(* ========================================================================== *)
+(* FILE          : StrongEQScript.sml                                         *)
+(* DESCRIPTION   : Strong bisimulation and strong bisimularity (STRONG_EQUIV) *)
+(*                                                                            *)
+(* COPYRIGHTS    : 1991-1995 University of Cambridge, UK (Monica Nesi)        *)
+(*                 2016-2017 University of Bologna, Italy (Chun Tian)         *)
+(*                 2018-2019 Fondazione Bruno Kessler, Italy (Chun Tian)      *)
+(*                 2023-2024 The Australian National University (Chun Tian)   *)
+(******************************************************************************)
 
 open HolKernel Parse boolLib bossLib;
 
@@ -545,7 +548,7 @@ val STRONG_EQUIV_SUBST_RELAB = store_thm (
 
 (******************************************************************************)
 (*                                                                            *)
-(*          The clasic proof of PROPERTY_STAR (in [1])                        *)
+(*          The clasic proof of PROPERTY_STAR [1, p.91]                       *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -648,4 +651,5 @@ val _ = html_theory "StrongEQ";
 
  [1] Milner, Robin. Communication and concurrency. Prentice hall, 1989.
  [2] Gorrieri, R., Versari, C.: Introduction to Concurrency Theory. Springer (2015).
+
  *)
