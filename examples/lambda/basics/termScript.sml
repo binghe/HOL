@@ -172,7 +172,7 @@ fun mkX_ind th = th |> Q.SPEC `λt x. Q t` |> Q.SPEC `λx. X`
                     |> SIMP_RULE std_ss [] |> Q.GEN `X`
                     |> Q.INST [`Q` |-> `P`] |> Q.GEN `P`
 
-val nc_INDUCTION = mkX_ind term_ind
+Theorem nc_INDUCTION[local] = mkX_ind term_ind
 
 (* exactly mimic historical bound variable names etc for backwards
    compatibility *)
@@ -269,8 +269,8 @@ val tm_recursion = save_thm(
       |> Q.INST [`ppm` |-> `discrete_pmact`, `vr` |-> `λs u. vru s`,
                  `ap` |-> `λr1 r2 t1 t2 u. apu (r1()) (r2()) t1 t2`,
                  `lm` |-> `λr v t u. lmu (r()) v t`]
-      |> SIMP_RULE (srw_ss()) [FORALL_ONE, FORALL_ONE_FN, EXISTS_ONE_FN,
-                               fnpm_def]
+      |> SIMP_RULE (srw_ss()) [oneTheory.FORALL_ONE, oneTheory.FORALL_ONE_FN,
+                               oneTheory.EXISTS_ONE_FN, fnpm_def]
       |> SIMP_RULE (srw_ss() ++ CONJ_ss) [supp_unitfn]
       |> Q.INST [`apu` |-> `ap`, `lmu` |-> `lm`, `vru` |-> `vr`])
 
@@ -486,14 +486,14 @@ val SUB_VAR = save_thm("SUB_VAR", hd (CONJUNCTS SUB_DEF))
 Theorem fresh_tpm_subst:
   !t. ~(u IN FV t) ==> (tpm [(u,v)] t = [VAR u/v] t)
 Proof
-  HO_MATCH_MP_TAC nc_INDUCTION2 THEN Q.EXISTS_TAC `{u;v}` THEN
+  HO_MATCH_MP_TAC nc_INDUCTION THEN Q.EXISTS_TAC `{u;v}` THEN
   SRW_TAC [][SUB_THM, SUB_VAR]
 QED
 
 Theorem tpm_subst:
   !N. tpm pi ([M/v] N) = [tpm pi M/lswapstr pi v] (tpm pi N)
 Proof
-  HO_MATCH_MP_TAC nc_INDUCTION2 THEN
+  HO_MATCH_MP_TAC nc_INDUCTION THEN
   Q.EXISTS_TAC `v INSERT FV M` THEN
   SRW_TAC [][SUB_THM, SUB_VAR]
 QED
@@ -506,14 +506,14 @@ QED
 Theorem lemma14a[simp]:
   !t. [VAR v/v] t = t
 Proof
-  HO_MATCH_MP_TAC nc_INDUCTION2 THEN Q.EXISTS_TAC `{v}` THEN
+  HO_MATCH_MP_TAC nc_INDUCTION THEN Q.EXISTS_TAC `{v}` THEN
   SRW_TAC [][SUB_THM, SUB_VAR]
 QED
 
 Theorem lemma14b:
   !M. ~(v IN FV M) ==> ([N/v] M = M)
 Proof
-  HO_MATCH_MP_TAC nc_INDUCTION2 THEN Q.EXISTS_TAC `v INSERT FV N` THEN
+  HO_MATCH_MP_TAC nc_INDUCTION THEN Q.EXISTS_TAC `v INSERT FV N` THEN
   SRW_TAC [][SUB_THM, SUB_VAR]
 QED
 
@@ -530,7 +530,7 @@ Proof
  >> simp [PULL_EXISTS]
  >> Q.X_GEN_TAC ‘u’
  >> Q.ID_SPEC_TAC ‘t’
- >> HO_MATCH_MP_TAC nc_INDUCTION2
+ >> HO_MATCH_MP_TAC nc_INDUCTION
  >> Q.EXISTS_TAC ‘{x;u}’ >> rw []
  >> CCONTR_TAC >> fs []
 QED
@@ -559,7 +559,7 @@ Proof
  >> simp [PULL_EXISTS]
  >> rpt GEN_TAC
  >> Q.ID_SPEC_TAC ‘t’
- >> HO_MATCH_MP_TAC nc_INDUCTION2
+ >> HO_MATCH_MP_TAC nc_INDUCTION
  >> Q.EXISTS_TAC ‘{x;u;u'}’ >> rw []
  >> CCONTR_TAC >> fs []
 QED
@@ -575,7 +575,7 @@ QED
 Theorem lemma14c:
   !t x u. x IN FV u ==> (FV ([t/x]u) = FV t UNION (FV u DELETE x))
 Proof
-  NTAC 2 GEN_TAC THEN HO_MATCH_MP_TAC nc_INDUCTION2 THEN
+  NTAC 2 GEN_TAC THEN HO_MATCH_MP_TAC nc_INDUCTION THEN
   Q.EXISTS_TAC `x INSERT FV t` THEN
   SRW_TAC [][SUB_THM, SUB_VAR, EXTENSION] THEN
   METIS_TAC [lemma14b]
@@ -589,7 +589,7 @@ QED
 Theorem lemma15a:
   !M. v ∉ FV M ==> [N/v]([VAR v/x]M) = [N/x]M
 Proof
-  HO_MATCH_MP_TAC nc_INDUCTION2 THEN Q.EXISTS_TAC `{x;v} UNION FV N` THEN
+  HO_MATCH_MP_TAC nc_INDUCTION THEN Q.EXISTS_TAC `{x;v} UNION FV N` THEN
   SRW_TAC [][SUB_THM, SUB_VAR]
 QED
 
@@ -601,7 +601,7 @@ QED
 Theorem SUB_TWICE_ONE_VAR :
     !body. [x/v] ([y/v] body) = [[x/v]y / v] body
 Proof
-  HO_MATCH_MP_TAC nc_INDUCTION2 THEN SRW_TAC [][SUB_THM, SUB_VAR] THEN
+  HO_MATCH_MP_TAC nc_INDUCTION THEN SRW_TAC [][SUB_THM, SUB_VAR] THEN
   Q.EXISTS_TAC `v INSERT FV x UNION FV y` THEN
   SRW_TAC [][SUB_THM] THEN
   Cases_on `v IN FV y` THEN SRW_TAC [][SUB_THM, lemma14c, lemma14b]
@@ -671,7 +671,7 @@ QED
 Theorem size_vsubst[simp]:
     !M:term. size ([VAR v/u] M) = size M
 Proof
-  HO_MATCH_MP_TAC nc_INDUCTION2 THEN Q.EXISTS_TAC `{u;v}` THEN
+  HO_MATCH_MP_TAC nc_INDUCTION THEN Q.EXISTS_TAC `{u;v}` THEN
   SRW_TAC [][SUB_VAR, SUB_THM]
 QED
 
@@ -948,7 +948,7 @@ val tpm_ssub = save_thm("tpm_ssub", CONJUNCT2 ssub_def)
 val single_ssub = store_thm(
   "single_ssub",
   ``∀N. (FEMPTY |+ (s,M)) ' N = [M/s]N``,
-  HO_MATCH_MP_TAC nc_INDUCTION2 THEN Q.EXISTS_TAC `s INSERT FV M` THEN
+  HO_MATCH_MP_TAC nc_INDUCTION THEN Q.EXISTS_TAC `s INSERT FV M` THEN
   SRW_TAC [][SUB_VAR, SUB_THM]);
 
 Theorem in_fmap_supp:
@@ -967,7 +967,7 @@ QED
 Theorem ssub_14b:
   ∀t. (FV t ∩ FDOM phi = EMPTY) ==> ((phi : string |-> term) ' t = t)
 Proof
-  HO_MATCH_MP_TAC nc_INDUCTION2 THEN
+  HO_MATCH_MP_TAC nc_INDUCTION THEN
   Q.EXISTS_TAC `fmFV phi` THEN
   SRW_TAC [][SUB_THM, SUB_VAR, pred_setTheory.EXTENSION] THEN METIS_TAC []
 QED
@@ -989,7 +989,7 @@ Theorem FV_ssub :
 Proof
     rpt STRIP_TAC
  >> Q.ID_SPEC_TAC ‘N’
- >> HO_MATCH_MP_TAC nc_INDUCTION2
+ >> HO_MATCH_MP_TAC nc_INDUCTION
  >> Q.EXISTS_TAC ‘FDOM fm’
  >> rw [SUB_VAR, SUB_THM, ssub_thm]
  >> SET_TAC []
@@ -998,7 +998,7 @@ QED
 Theorem fresh_ssub:
   ∀N. y ∉ FV N ∧ (∀k:string. k ∈ FDOM fm ⇒ y # fm ' k) ⇒ y # fm ' N
 Proof
-  ho_match_mp_tac nc_INDUCTION2 >>
+  ho_match_mp_tac nc_INDUCTION >>
   qexists ‘fmFV fm’ >>
   rw[] >> metis_tac[]
 QED
@@ -1008,10 +1008,11 @@ Theorem ssub_SUBST:
     (∀k. k ∈ FDOM fm ⇒ v # fm ' k) ∧ v ∉ FDOM fm ⇒
     fm ' ([N/v]M) = [fm ' N / v] (fm ' M)
 Proof
-  ho_match_mp_tac nc_INDUCTION2 >>
+  ho_match_mp_tac nc_INDUCTION >>
   qexists ‘fmFV fm ∪ {v} ∪ FV N’ >>
   rw[] >> rw[lemma14b, SUB_VAR] >>
   gvs[DECIDE “~p ∨ q ⇔ p ⇒ q”, PULL_FORALL] >>
+  rename1 ‘y # N’ >>
   ‘y # fm ' N’ suffices_by simp[SUB_THM] >>
   irule fresh_ssub >> simp[]
 QED
@@ -1028,12 +1029,13 @@ Theorem ssub_update_apply :
 Proof
     RW_TAC std_ss [closed_def]
  >> Q.ID_SPEC_TAC ‘M’
- >> HO_MATCH_MP_TAC nc_INDUCTION2
+ >> HO_MATCH_MP_TAC nc_INDUCTION
  >> Q.EXISTS_TAC ‘v INSERT (FDOM fm UNION FV N)’
  >> rw [SUB_VAR, SUB_THM, ssub_thm, FAPPLY_FUPDATE_THM]
  >> TRY (METIS_TAC [])
  >- (MATCH_MP_TAC (GSYM lemma14b) \\
      METIS_TAC [NOT_IN_EMPTY])
+ >> rename1 ‘y # N’
  >> Suff ‘(fm |+ (v,N)) ' (LAM y M) = LAM y ((fm |+ (v,N)) ' M)’ >- rw []
  >> MATCH_MP_TAC ssub_LAM
  >> rw [FAPPLY_FUPDATE_THM]
@@ -1048,12 +1050,13 @@ Theorem ssub_update_apply_SUBST :
         DISJOINT (FDOM fm) (FV N) ==>
         (fm |+ (v,N)) ' M = fm ' ([N/v] M)
 Proof
-    HO_MATCH_MP_TAC nc_INDUCTION2
+    HO_MATCH_MP_TAC nc_INDUCTION
  >> Q.EXISTS_TAC ‘v INSERT fmFV fm UNION FV M UNION FV N’
  >> rw [SUB_VAR, SUB_THM, ssub_thm, FAPPLY_FUPDATE_THM]
  >> TRY (METIS_TAC [])
  >- (MATCH_MP_TAC (GSYM ssub_14b) \\
      rw [GSYM DISJOINT_DEF, Once DISJOINT_SYM])
+ >> rename1 ‘y # N’
  >> Know ‘(fm |+ (v,N)) ' (LAM y M') = LAM y ((fm |+ (v,N)) ' M')’
  >- (MATCH_MP_TAC ssub_LAM >> rw [FAPPLY_FUPDATE_THM])
  >> Rewr'

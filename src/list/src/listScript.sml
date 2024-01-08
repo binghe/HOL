@@ -742,6 +742,23 @@ val LENGTH_NIL = store_thm("LENGTH_NIL[simp]",
       LIST_INDUCT_TAC THEN
       REWRITE_TAC [LENGTH, NOT_SUC, NOT_CONS_NIL]);
 
+(* NOTE: the following 3theorems are helper functions for nomsetTheory *)
+Theorem LENGTH_NIL' =
+    CONV_RULE (BINDER_CONV (LAND_CONV (REWR_CONV EQ_SYM_EQ)))
+              LENGTH_NIL
+
+Theorem LENGTH1 :
+    (1 = LENGTH l) ⇔ ∃e. l = [e]
+Proof
+    Cases_on `l` >> srw_tac [][LENGTH_NIL]
+QED
+
+Theorem LENGTH2 :
+    (2 = LENGTH l) ⇔ ∃a b. l = [a;b]
+Proof
+    Cases_on `l` >> srw_tac [][LENGTH1]
+QED
+
 val LENGTH_NIL_SYM = store_thm (
    "LENGTH_NIL_SYM[simp]",
    “(0 = LENGTH l) = (l = [])”,

@@ -661,7 +661,7 @@ fun mkX_ind th = th |> Q.SPECL [‘\t x. Q t’, ‘\x. X’]
                     |> Q.INST [‘Q’ |-> ‘P’] |> Q.GEN ‘P’;
 
 (* NOTE: not recommended unless in generated theorems *)
-Theorem nc_INDUCTION = mkX_ind term_ind
+Theorem nc_INDUCTION[local] = mkX_ind term_ind
 
 (* The recommended induction theorem containing correctly named
    binding variables (L, rf, y, etc.)

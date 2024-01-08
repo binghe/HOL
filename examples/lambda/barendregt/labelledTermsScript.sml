@@ -279,8 +279,8 @@ val tm_recursion = save_thm(
                  ‘ap’ |-> ‘λr1 r2 t1 t2 u. apu (r1()) (r2()) t1 t2’,
                  ‘lm’ |-> ‘λr v t u. lmu (r()) v t’,
                  ‘li’ |-> ‘λr1 r2 n v t1 t2 u. liu (r1()) (r2()) n v t1 t2’]
-      |> SIMP_RULE (srw_ss()) [FORALL_ONE, FORALL_ONE_FN, EXISTS_ONE_FN,
-                               fnpm_def]
+      |> SIMP_RULE (srw_ss()) [oneTheory.FORALL_ONE, oneTheory.FORALL_ONE_FN,
+                               oneTheory.EXISTS_ONE_FN, fnpm_def]
       |> SIMP_RULE (srw_ss() ++ CONJ_ss) [supp_unitfn]
       |> Q.INST [‘apu’ |-> ‘ap’, ‘lmu’ |-> ‘lm’, ‘vru’ |-> ‘vr’,
                  ‘liu’ |-> ‘li’])
