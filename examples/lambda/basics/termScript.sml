@@ -225,10 +225,9 @@ val parameter_tm_recursion = save_thm(
                                LIST_REL_CONS1, genind_GVAR,
                                genind_GLAM_eqn, sidecond_def,
                                NEWFCB_def, relsupp_def,
-                               LENGTH_NIL', LENGTH1, LENGTH2]
+                               LENGTH_NIL_SYM, LENGTH1, LENGTH2]
       |> ONCE_REWRITE_RULE [termP0]
-      |> SIMP_RULE (srw_ss() ++ DNF_ss) [LENGTH1, LENGTH2,
-                                         listTheory.LENGTH_NIL]
+      |> SIMP_RULE (srw_ss() ++ DNF_ss) [LENGTH1, LENGTH2, LENGTH_NIL]
       |> CONV_RULE (DEPTH_CONV termP_removal)
       |> SIMP_RULE (srw_ss()) [GSYM supp_tpm, SYM term_REP_tpm]
       |> UNDISCH

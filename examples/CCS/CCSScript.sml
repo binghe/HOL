@@ -706,18 +706,6 @@ QED
 val (_, repty) = dom_rng (type_of term_REP_t);
 val repty' = ty_antiq repty;
 
-val LENGTH_NIL' =
-    CONV_RULE (BINDER_CONV (LAND_CONV (REWR_CONV EQ_SYM_EQ)))
-              listTheory.LENGTH_NIL;
-
-val LENGTH1 = prove(
-   “(1 = LENGTH (l :'a list)) <=> ?e. l = [e]”,
-    Cases_on ‘l’ >> srw_tac [][listTheory.LENGTH_NIL]);
-
-val LENGTH2 = prove(
-   “(2 = LENGTH (l :'a list)) <=> ?a b. l = [a;b]”,
-    Cases_on ‘l’ >> srw_tac [][LENGTH1]);
-
 val termP_elim = prove(
    “(!g. ^termP g ==> P g) <=> (!t. P (^term_REP_t t))”,
     srw_tac [][EQ_IMP_THM] >- srw_tac [][genind_term_REP]
@@ -787,10 +775,9 @@ Theorem parameter_tm_recursion =
                                LIST_REL_CONS1, genind_GVAR,
                                genind_GLAM_eqn, sidecond_def,
                                NEWFCB_def, relsupp_def,
-                               LENGTH_NIL', LENGTH1, LENGTH2]
+                               LENGTH_NIL_SYM, LENGTH1, LENGTH2]
       |> ONCE_REWRITE_RULE [termP0]
-      |> SIMP_RULE (srw_ss() ++ DNF_ss) [LENGTH1, LENGTH2,
-                                         listTheory.LENGTH_NIL]
+      |> SIMP_RULE (srw_ss() ++ DNF_ss) [LENGTH1, LENGTH2, LENGTH_NIL]
       |> CONV_RULE (DEPTH_CONV termP_removal)
       |> SIMP_RULE (srw_ss()) [GSYM supp_tpm, SYM term_REP_tpm]
       |> UNDISCH
