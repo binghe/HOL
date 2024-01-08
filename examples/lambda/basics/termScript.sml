@@ -21,7 +21,7 @@ val vp = “(λn u:unit. n = 0)”;
 
    In the APP case, given by ‘(n = 0) ∧ ISL d ∧ (tns = []) ∧ (uns = [0;0])’, tns
    must be empty (no binding variables), and there must be two values in the uns
-   list, as APP does indeed require two unbounded term (0) arguments.
+   list, as APP does indeed require two unbounded term arguments.
 
    In the LAM case, given by ‘(n = 0) ∧ ISR d ∧ (tns = [0]) ∧ (uns = [])’, the one
    element of tns corresponds to the one term argument of LAM (‘t’ in ‘LAM v t’).
@@ -1059,6 +1059,20 @@ Proof
  >> Rewr'
  (* finally, applying IH *)
  >> rw []
+QED
+
+(* A combined version of ssub_update_apply_SUBST and ssub_SUBST *)
+Theorem ssub_update_apply_SUBST' :
+    !M. (!k. k IN FDOM fm ==> v # fm ' k) /\ v NOTIN FDOM fm /\
+        DISJOINT (FDOM fm) (FV N) ==>
+        (fm |+ (v,N)) ' M = [fm ' N/v] (fm ' M)
+Proof
+    rpt STRIP_TAC
+ >> Know ‘[fm ' N/v] (fm ' M) = fm ' ([N/v] M)’
+ >- (ONCE_REWRITE_TAC [EQ_SYM_EQ]  \\
+     MATCH_MP_TAC ssub_SUBST >> art [])
+ >> Rewr'
+ >> MATCH_MP_TAC ssub_update_apply_SUBST >> art []
 QED
 
 Theorem FEMPTY_update_apply :
