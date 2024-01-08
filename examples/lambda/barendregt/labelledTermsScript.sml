@@ -1,10 +1,8 @@
-open HolKernel boolLib Parse bossLib BasicProvers
-open pred_setTheory
+open HolKernel boolLib Parse bossLib;
 
-open binderLib
-open basic_swapTheory nomsetTheory generic_termsTheory
-open nomdatatype
-open boolSimps
+open BasicProvers boolSimps pred_setTheory listTheory;
+
+open binderLib basic_swapTheory nomsetTheory generic_termsTheory nomdatatype;
 
 val _ = new_theory "labelledTerms"
 

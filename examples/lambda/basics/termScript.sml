@@ -1,6 +1,6 @@
 open HolKernel Parse boolLib bossLib;
 
-open boolSimps arithmeticTheory pred_setTheory finite_mapTheory hurdUtils;
+open boolSimps arithmeticTheory pred_setTheory listTheory finite_mapTheory hurdUtils;
 
 open generic_termsTheory binderLib nomsetTheory nomdatatype;
 
@@ -10,25 +10,10 @@ val _ = set_fixity "=" (Infix(NONASSOC, 450))
 
 val tyname = "term"
 
-(* The vp polymorphic variable is used to add extra data to ‘GVAR s vv’, and
-   there's no extra data here (n = 0).
- *)
-val vp = “(λn u:unit. n = 0)”;
-
-(* The lp polymorphic variable is used to add extra data to ‘GLAM v bv ts us’.
-   There's no extra data here (n = 0), but ‘GLAM’ corresponds to both ‘APP’ and
-  ‘LAM’. The type ‘:unit + unit’ of is for this purpose.
-
-   In the APP case, given by ‘(n = 0) ∧ ISL d ∧ (tns = []) ∧ (uns = [0;0])’, tns
-   must be empty (no binding variables), and there must be two values in the uns
-   list, as APP does indeed require two unbounded term arguments.
-
-   In the LAM case, given by ‘(n = 0) ∧ ISR d ∧ (tns = [0]) ∧ (uns = [])’, the one
-   element of tns corresponds to the one term argument of LAM (‘t’ in ‘LAM v t’).
- *)
+val vp = “(λn u:unit. n = 0)”
 val lp = “(λn (d:unit + unit) tns uns.
                (n = 0) ∧ ISL d ∧ (tns = []) ∧ (uns = [0;0]) ∨
-               (n = 0) ∧ ISR d ∧ (tns = [0]) ∧ (uns = []))”;
+               (n = 0) ∧ ISR d ∧ (tns = [0]) ∧ (uns = []))”
 
 val {term_ABS_pseudo11, term_REP_11, genind_term_REP, genind_exists,
      termP, absrep_id, repabs_pseudo_id, term_REP_t, term_ABS_t, newty, ...} =
