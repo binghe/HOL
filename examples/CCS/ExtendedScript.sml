@@ -4,7 +4,7 @@
 (*                                                                            *)
 (* COPYRIGHTS    : 2023-2024 Australian National University (Chun Tian)       *)
 (******************************************************************************)
-x
+
 open HolKernel Parse boolLib bossLib;
 
 open pred_setTheory pairTheory relationTheory bisimulationTheory listTheory
@@ -396,7 +396,7 @@ Proof
  >> NTAC 2 (POP_ASSUM MP_TAC)
  >> Q.SPEC_TAC (`c1`, `c`)
  >> HO_MATCH_MP_TAC OH_CONTEXT_ind
- >> REWRITE_TAC [o_DEF]
+ >> REWRITE_TAC [combinTheory.o_DEF]
  >> BETA_TAC
  >> REWRITE_TAC [ETA_AX]
  >> REPEAT STRIP_TAC (* 8 sub-goals here *)
