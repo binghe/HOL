@@ -192,7 +192,7 @@ Proof
      ‘fm ' E1 = E1 /\ fm ' E3 = E3’ by PROVE_TAC [ssub_value] >> fs [] \\
       MATCH_MP_TAC STRONG_EQUIV_TRANS >> Q.EXISTS_TAC ‘fm ' E2’ >> art [],
       (* goal 5 (of 12) *)
-      cheat 
+      cheat
 QED
 
 Theorem StrongEQ_subst_lemma :
@@ -216,7 +216,7 @@ Proof
       ALL_TAC ]
  (* stage work *)
  >> rename1 ‘Y <> X’
- >> 
+ >>
     cheat
 QED
 
