@@ -535,7 +535,8 @@ fun CCS_TRANS_CONV tm =
           val thmS = SIMP_CONV (srw_ss ()) [CCS_Subst_def] ``CCS_Subst ^P ^tm ^X``;
           val thm = CCS_TRANS_CONV (rconcl thmS)
       in
-          GEN_ALL (REWRITE_CONV [TRANS_REC_EQ, thmS, thm] ``TRANS ^tm u E``)
+          GEN_ALL (REWRITE_CONV [TRANS_REC_EQ, CCS_distinct',
+                                 thmS, thm] ``TRANS ^tm u E``)
       end (* val (X, P) *)
   else (* no need to distinguish on (rconcl thm) *)
       failwith "CCS_TRANS_CONV";
