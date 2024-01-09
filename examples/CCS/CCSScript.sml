@@ -1854,6 +1854,7 @@ Proof
  >> Cases_on ‘X = Y’ >> fs [rec_eq_thm]
 QED
 
+(* NOTE: This proof is only possible under the modified [REC] *)
 Theorem REC_VAR_NO_TRANS :
     !X u E. ~TRANS (rec X (var X)) u E
 Proof
@@ -1869,7 +1870,7 @@ Theorem I_NO_TRANS = REWRITE_RULE [GSYM I_alt] REC_VAR_NO_TRANS
 (*                                                                            *)
 (*                The transitions of prefixed term                            *)
 (*                                                                            *)
-(******************************************************************************)                         
+(******************************************************************************)
 
 (* !u E u' E'. TRANS (prefix u E) u' E' <=> (u' = u) /\ (E' = E) *)
 Theorem TRANS_PREFIX_EQ =

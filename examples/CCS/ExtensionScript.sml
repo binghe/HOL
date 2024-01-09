@@ -14,7 +14,7 @@ open CCSLib CCSTheory StrongEQTheory BisimulationUptoTheory;
 
 val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
 
-val _ = new_theory "Extended";
+val _ = new_theory "Extension";
 
 (******************************************************************************)
 (*                                                                            *)
@@ -77,7 +77,7 @@ Proof
  >> Q.ID_SPEC_TAC ‘P’
  >> HO_MATCH_MP_TAC nc_INDUCTION2
  >> Q.EXISTS_TAC ‘FDOM fm1’ >> rw [] (* 9 subgoals *)
- >> cheat  
+ >> cheat
 QED
 
 Theorem StrongEQ_REFL[simp] :
@@ -482,7 +482,7 @@ QED
  *)
 
 val _ = export_theory ();
-val _ = html_theory "Extended";
+val _ = html_theory "Extension";
 
 (* Bibliography:
 
