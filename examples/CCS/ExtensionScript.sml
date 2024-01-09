@@ -78,6 +78,23 @@ Proof
     rpt GEN_TAC >> EQ_TAC >> rw [StrongEQ_SYM]
 QED
 
+Theorem StrongEQ_TRANS :
+    !E1 E2 E3. StrongEQ E1 E2 /\ StrongEQ E2 E3 ==> StrongEQ E1 E3
+Proof
+    rw [StrongEQ_def]
+ >> MATCH_MP_TAC STRONG_EQUIV_TRANS
+ >> Q.EXISTS_TAC ‘fm ' E2’ >> rw []
+QED
+
+Theorem StrongEQ_equivalence :
+    equivalence StrongEQ
+Proof
+    rw [equivalence_def, reflexive_def, StrongEQ_symmetric, StrongEQ_REFL,
+        transitive_def]
+ >> MATCH_MP_TAC StrongEQ_TRANS
+ >> Q.EXISTS_TAC ‘y’ >> art []
+QED
+
 (* NOTE: the opposite direction doesn't hold *)
 Theorem StrongEQ_IMP_SUBST :
     !X P Q. StrongEQ P Q ==> !E. STRONG_EQUIV ([E/X] P) ([E/X] Q)
@@ -85,17 +102,6 @@ Proof
     rw [StrongEQ_def]
  >> POP_ASSUM (MP_TAC o (Q.SPEC ‘FEMPTY |+ (X,E)’))
  >> rw [single_ssub]
-QED
-
-Theorem StrongEQ_var_cases :
-    !X E. StrongEQ (var X) E <=> E = var X
-Proof
-    rpt GEN_TAC
- >> reverse EQ_TAC >- rw []
- >> Q.ID_SPEC_TAC ‘E’
- >> HO_MATCH_MP_TAC nc_INDUCTION2
- >> Q.EXISTS_TAC ‘{X} UNION FV E’ >> rw [] (* 8 subgoals *)
- >> cheat
 QED
 
 (* Key result: if the same free variables in P and Q were substituted with non-identical
@@ -119,7 +125,85 @@ Proof
  >> Q.ID_SPEC_TAC ‘Q’
  >> Q.ID_SPEC_TAC ‘P’
  >> HO_MATCH_MP_TAC nc_INDUCTION2
- >> Q.EXISTS_TAC ‘FDOM fm1’ >> rw [] (* 9 subgoals *)
+ >> Q.EXISTS_TAC ‘FDOM fm1
+                  UNION (BIGUNION (IMAGE (\s. FV (fm1 ' s)) (FDOM fm1)))
+                  UNION (BIGUNION (IMAGE (\s. FV (fm2 ' s)) (FDOM fm1)))’
+ >> rw [] >> rw [FINITE_FV] (* 9 subgoals *)
+ (* goal 1 (of 9) *)
+ >- (MATCH_MP_TAC STRONG_EQUIV_TRANS \\
+     Q.EXISTS_TAC ‘fm2 ' s’ >> rw [] \\
+     FULL_SIMP_TAC std_ss [StrongEQ_def] \\
+     POP_ASSUM (MP_TAC o (Q.SPEC ‘fm2’)) >> rw [])
+ (* goal 2 (of 9) *)
+ >- (FULL_SIMP_TAC std_ss [StrongEQ_def] \\
+     POP_ASSUM (MP_TAC o (Q.SPEC ‘fm2’)) >> rw [])
+ (* goal 3 (of 9) *)
+ >- (FULL_SIMP_TAC std_ss [StrongEQ_def, ssub_thm])
+ (* goal 4 (of 9) *)
+ >- (FULL_SIMP_TAC std_ss [StrongEQ_def, ssub_thm] \\
+     POP_ASSUM (MP_TAC o (Q.SPEC ‘fm2’)) >> rw [] \\
+     MATCH_MP_TAC STRONG_EQUIV_TRANS \\
+     Q.EXISTS_TAC ‘u..fm2 ' E’ >> art [] \\
+     MATCH_MP_TAC STRONG_EQUIV_SUBST_PREFIX \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> rw [])
+ (* goal 5 (of 9) *)
+ >- (MATCH_MP_TAC STRONG_EQUIV_TRANS \\
+     Q.EXISTS_TAC ‘fm2 ' E1 + fm2 ' E2’ \\
+     CONJ_TAC >- (MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_SUM >> rw []) \\
+     FULL_SIMP_TAC std_ss [StrongEQ_def, ssub_thm])
+ (* goal 6 (of 9) *)
+ >- (MATCH_MP_TAC STRONG_EQUIV_TRANS \\
+     Q.EXISTS_TAC ‘fm2 ' E1 || fm2 ' E2’ \\
+     CONJ_TAC >- (MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_PAR >> rw []) \\
+     FULL_SIMP_TAC std_ss [StrongEQ_def, ssub_thm])
+ (* goal 7 (of 9) *)
+ >- (Q.PAT_X_ASSUM ‘!Q. StrongEQ E Q ==> P’ (MP_TAC o (Q.SPEC ‘E’)) >> rw [] \\
+     MATCH_MP_TAC STRONG_EQUIV_TRANS \\
+     Q.EXISTS_TAC ‘restr L (fm2 ' E)’ \\
+     CONJ_TAC >- (MATCH_MP_TAC STRONG_EQUIV_SUBST_RESTR >> art []) \\
+     FULL_SIMP_TAC std_ss [StrongEQ_def, ssub_thm])
+ (* goal 8 (of 9) *)
+ >- (Q.PAT_X_ASSUM ‘!Q. StrongEQ E Q ==> P’ (MP_TAC o (Q.SPEC ‘E’)) >> rw [] \\
+     MATCH_MP_TAC STRONG_EQUIV_TRANS \\
+     Q.EXISTS_TAC ‘relab (fm2 ' E) rf’ \\
+     CONJ_TAC >- (MATCH_MP_TAC STRONG_EQUIV_SUBST_RELAB >> art []) \\
+     FULL_SIMP_TAC std_ss [StrongEQ_def, ssub_thm])
+ (* goal 9 (of 9) *)
+ >> Q.PAT_X_ASSUM ‘!Q. StrongEQ E Q ==> P’ (MP_TAC o (Q.SPEC ‘E’)) >> rw []
+ >> FULL_SIMP_TAC std_ss [StrongEQ_def, ssub_thm]
+ >> MATCH_MP_TAC STRONG_EQUIV_TRANS
+ >> Q.EXISTS_TAC ‘fm2 ' (rec y E)’ >> art []
+ >> Know ‘fm1 ' (rec y E) = rec y (fm1 ' E)’
+ >- (MATCH_MP_TAC ssub_rec >> rw [] >> METIS_TAC [])
+ >> Rewr'
+ >> Know ‘fm2 ' (rec y E) = rec y (fm2 ' E)’
+ >- (MATCH_MP_TAC ssub_rec >> rw [] >> METIS_TAC [])
+ >> Rewr'
+ >> cheat
+QED
+
+Theorem STRONG_EQUIV_ssub_cong :
+    !fm1 fm2. FDOM fm1 = FDOM fm2 /\
+             (!s. s IN FDOM fm1 ==> STRONG_EQUIV (fm1 ' s) (fm2 ' s)) ==>
+              !Q. STRONG_EQUIV (fm1 ' Q) (fm2 ' Q)
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> HO_MATCH_MP_TAC nc_INDUCTION2
+ >> Q.EXISTS_TAC ‘FDOM fm1
+                  UNION (BIGUNION (IMAGE (\s. FV (fm1 ' s)) (FDOM fm1)))
+                  UNION (BIGUNION (IMAGE (\s. FV (fm2 ' s)) (FDOM fm1)))’
+ >> rw [] >> rw [FINITE_FV] (* 6 subgoals *)
+ >- (MATCH_MP_TAC STRONG_EQUIV_SUBST_PREFIX >> art [])
+ >- (MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_SUM >> art [])
+ >- (MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_PAR >> art [])
+ >- (MATCH_MP_TAC STRONG_EQUIV_SUBST_RESTR >> art [])
+ >- (MATCH_MP_TAC STRONG_EQUIV_SUBST_RELAB >> art [])
+ >> Know ‘fm1 ' (rec y Q) = rec y (fm1 ' Q)’
+ >- (MATCH_MP_TAC ssub_rec >> rw [] >> METIS_TAC [])
+ >> Rewr'
+ >> Know ‘fm2 ' (rec y Q) = rec y (fm2 ' Q)’
+ >- (MATCH_MP_TAC ssub_rec >> rw [] >> METIS_TAC [])
+ >> Rewr'
  >> cheat
 QED
 
@@ -397,38 +481,6 @@ Proof
  >- rw [StrongEQ_alt_closed]
  >> rw [closed_def, FV_SUB]
  >> ASM_SET_TAC []
-QED
-
-
-Theorem StrongEQ_TRANS :
-    !E1 E2 E3. StrongEQ E1 E2 /\ StrongEQ E2 E3 ==> StrongEQ E1 E3
-Proof
-    rw [StrongEQ_def] (* 8 subgoals *)
- >> TRY (PROVE_TAC []) (* 5 goals left *)
- >> fs [closed_def]
- >| [ (* goal 1 (of 12) *)
-      MATCH_MP_TAC STRONG_EQUIV_TRANS >> Q.EXISTS_TAC ‘E2’ >> art [],
-      (* goal 2 (of 12) *)
-      Q.PAT_X_ASSUM ‘!fm :string |-> 'a CCS. P’
-        (MP_TAC o (Q.SPEC ‘fm’)) >> rw [] \\
-     ‘fm ' E1 = E1 /\ fm ' E2 = E2’ by PROVE_TAC [ssub_value] >> fs [] \\
-      MATCH_MP_TAC STRONG_EQUIV_TRANS >> Q.EXISTS_TAC ‘E2’ >> art [],
-      (* goal 3 (of 12) *)
-      Q.PAT_X_ASSUM ‘!fm :string |-> 'a CCS. P’
-        (MP_TAC o (Q.SPEC ‘fm’)) >> rw [] \\
-     ‘fm ' E2 = E2 /\ fm ' E3 = E3’ by PROVE_TAC [ssub_value] >> fs [] \\
-      MATCH_MP_TAC STRONG_EQUIV_TRANS >> Q.EXISTS_TAC ‘E2’ >> art [],
-      (* goal 4 (of 12) *)
-      qabbrev_tac ‘fm :string |-> 'a CCS = FUN_FMAP (\e. nil) (FV E2)’ \\
-     ‘FDOM fm = FV E2’ by rw [FDOM_FMAP, Abbr ‘fm’] \\
-     ‘!x. x IN FV E2 ==> FV (fm ' x) = {}’ by rw [Abbr ‘fm’, FUN_FMAP_DEF] \\
-      NTAC 2 (Q.PAT_X_ASSUM ‘!fm. FDOM fm = FV E2 /\ _ ==> _’
-                (MP_TAC o (Q.SPEC ‘fm’))) \\
-      RW_TAC std_ss [] \\
-     ‘fm ' E1 = E1 /\ fm ' E3 = E3’ by PROVE_TAC [ssub_value] >> fs [] \\
-      MATCH_MP_TAC STRONG_EQUIV_TRANS >> Q.EXISTS_TAC ‘fm ' E2’ >> art [],
-      (* goal 5 (of 12) *)
-      cheat
 QED
 
 Theorem StrongEQ_subst_lemma :

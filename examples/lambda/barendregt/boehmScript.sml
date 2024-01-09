@@ -1630,7 +1630,7 @@ Proof
      >- (rw [Abbr ‘a’, Abbr ‘bs’, LIST_EQ_REWRITE, MAP_DROP] \\
          Cases_on ‘x’ >- rw [EL_MAP] \\
          rw [EL_MAP, EL_DROP, ADD1]) >> Rewr' \\
-     rw [GSYM I_alt] \\
+     rw [GSYM I_thm] \\
      MATCH_MP_TAC lameq_appstar_cong >> rw [lameq_I])
  >> DISCH_TAC
  >> qabbrev_tac ‘b0 = LAST bs’
@@ -1665,7 +1665,7 @@ Proof
                   MATCH_MP_TAC lameq_LAMl_appstar_reduce \\
                   rw [Abbr ‘t’, Abbr ‘args2'’, LENGTH_FRONT] \\
                  ‘LENGTH vs = k + 1’ by rw [Abbr ‘vs’, FRESH_list_def] >> rw []) \\
-     rw [Abbr ‘t’, GSYM I_alt, lameq_I])
+     rw [Abbr ‘t’, GSYM I_thm, lameq_I])
  >> DISCH_TAC
  (* p3 *)
  >> qabbrev_tac ‘f1 = [LAMl bs P/a]’

@@ -1809,7 +1809,7 @@ Proof
     SRW_TAC [][I_def]
 QED
 
-Theorem I_alt :
+Theorem I_thm :
     !X. I = rec X (var X)
 Proof
     Q.X_GEN_TAC ‘x’
@@ -1851,11 +1851,11 @@ Theorem REC_VAR_NO_TRANS :
 Proof
     rw [Once TRANS_cases, CCS_Subst]
  >> DISJ2_TAC
- >> fs [GSYM I_alt, I_cases]
+ >> fs [GSYM I_thm, I_cases]
 QED
 
 (* |- !u E. ~(I --u-> E) *)
-Theorem I_NO_TRANS = REWRITE_RULE [GSYM I_alt] REC_VAR_NO_TRANS
+Theorem I_NO_TRANS = REWRITE_RULE [GSYM I_thm] REC_VAR_NO_TRANS
 
 (******************************************************************************)
 (*                                                                            *)

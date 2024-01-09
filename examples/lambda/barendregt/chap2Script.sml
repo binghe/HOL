@@ -375,7 +375,7 @@ Theorem FV_I[simp]: FV I = {}
 Proof SRW_TAC [][I_def]
 QED
 
-Theorem I_alt :
+Theorem I_thm :
     !s. I = LAM s (VAR s)
 Proof
     Q.X_GEN_TAC ‘x’

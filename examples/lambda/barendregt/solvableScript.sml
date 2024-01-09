@@ -56,7 +56,7 @@ Proof
     Know ‘closure (VAR x) = LAM x (VAR x)’
  >- (MATCH_MP_TAC closure_open_sing >> rw [])
  >> Rewr'
- >> REWRITE_TAC [Q.SPEC ‘x’ I_alt]
+ >> REWRITE_TAC [Q.SPEC ‘x’ I_thm]
 QED
 
 Theorem closures_imp_closed :
