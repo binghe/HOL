@@ -60,7 +60,7 @@ Theorem StrongEQ_IMP_STRONG_EQUIV =
          which is not substituted, will be treated as nil (i.e. no transitions).
          Furthermore, if ‘FDOM fm’ is larger than ‘FV P UNION FV Q’, the extra
          keys won't cause any trouble.
-         
+
    |- !P Q. StrongEQ P Q <=> !fm. STRONG_EQUIV (fm ' P) (fm ' Q)
  *)
 Theorem StrongEQ_def =
