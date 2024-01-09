@@ -55,6 +55,49 @@ Theorem StrongEQ_IMP_STRONG_EQUIV =
 Theorem StrongEQ_def =
     SIMP_RULE std_ss [FUN_EQ_THM] (Q.SPEC ‘STRONG_EQUIV’ extension_def)
 
+Theorem StrongEQ_REFL[simp] :
+    !E. StrongEQ E E
+Proof
+    rw [StrongEQ_def]
+QED
+
+Theorem StrongEQ_symmetric :
+    symmetric StrongEQ
+Proof
+    rw [symmetric_def, StrongEQ_def]
+ >> rw [Once STRONG_EQUIV_SYM_EQ]
+QED
+
+(* |- !x y. StrongEQ x y ==> StrongEQ y x *)
+Theorem StrongEQ_SYM =
+    StrongEQ_symmetric |> REWRITE_RULE [symmetric_def] |> iffLR
+
+Theorem StrongEQ_SYM_EQ :
+    !P Q. StrongEQ P Q <=> StrongEQ Q P
+Proof
+    rpt GEN_TAC >> EQ_TAC >> rw [StrongEQ_SYM]
+QED
+
+(* NOTE: the opposite direction doesn't hold *)
+Theorem StrongEQ_IMP_SUBST :
+    !X P Q. StrongEQ P Q ==> !E. STRONG_EQUIV ([E/X] P) ([E/X] Q)
+Proof
+    rw [StrongEQ_def]
+ >> POP_ASSUM (MP_TAC o (Q.SPEC ‘FEMPTY |+ (X,E)’))
+ >> rw [single_ssub]
+QED
+
+Theorem StrongEQ_var_cases :
+    !X E. StrongEQ (var X) E <=> E = var X
+Proof
+    rpt GEN_TAC
+ >> reverse EQ_TAC >- rw []
+ >> Q.ID_SPEC_TAC ‘E’
+ >> HO_MATCH_MP_TAC nc_INDUCTION2
+ >> Q.EXISTS_TAC ‘{X} UNION FV E’ >> rw [] (* 8 subgoals *)
+ >> cheat
+QED
+
 (* Key result: if the same free variables in P and Q were substituted with non-identical
    but strong equivalent terms, the resulting substituted two terms are still equivalent.
 
@@ -78,29 +121,6 @@ Proof
  >> HO_MATCH_MP_TAC nc_INDUCTION2
  >> Q.EXISTS_TAC ‘FDOM fm1’ >> rw [] (* 9 subgoals *)
  >> cheat
-QED
-
-Theorem StrongEQ_REFL[simp] :
-    !E. StrongEQ E E
-Proof
-    rw [StrongEQ_def]
-QED
-
-Theorem StrongEQ_symmetric :
-    symmetric StrongEQ
-Proof
-    rw [symmetric_def, StrongEQ_def]
- >> rw [Once STRONG_EQUIV_SYM_EQ]
-QED
-
-(* |- !x y. StrongEQ x y ==> StrongEQ y x *)
-Theorem StrongEQ_SYM =
-    StrongEQ_symmetric |> REWRITE_RULE [symmetric_def] |> iffLR
-
-Theorem StrongEQ_SYM_EQ :
-    !P Q. StrongEQ P Q <=> StrongEQ Q P
-Proof
-    rpt GEN_TAC >> EQ_TAC >> rw [StrongEQ_SYM]
 QED
 
 (******************************************************************************)

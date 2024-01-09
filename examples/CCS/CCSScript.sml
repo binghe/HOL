@@ -15,6 +15,8 @@ open pred_setTheory pred_setLib relationTheory optionTheory listTheory CCSLib
 
 open generic_termsTheory binderLib nomsetTheory nomdatatype;
 
+local open termTheory; in end; (* for SUB's syntax only *)
+
 val _ = new_theory "CCS";
 
 val set_ss = std_ss ++ PRED_SET_ss;
@@ -803,10 +805,6 @@ Theorem parameter_tm_recursion =
                  ‘dpm’ |-> ‘apm’]
       |> CONV_RULE (REDEPTH_CONV sort_uvars)
 
-val FORALL_ONE = oneTheory.FORALL_ONE;
-val FORALL_ONE_FN = oneTheory.FORALL_ONE_FN;
-val EXISTS_ONE_FN = oneTheory.EXISTS_ONE_FN;
-
 Theorem tm_recursion =
   parameter_tm_recursion
       |> Q.INST_TYPE [‘:'q’ |-> ‘:unit’]
@@ -819,8 +817,8 @@ Theorem tm_recursion =
                   ‘rs’ |-> ‘\r L t u. rsu (r()) L t’,
                   ‘rl’ |-> ‘\r t rf u. rlu (r()) t rf’,
                   ‘re’ |-> ‘\r v t u. reu (r()) v t’]
-      |> SIMP_RULE (srw_ss()) [FORALL_ONE, FORALL_ONE_FN, EXISTS_ONE_FN,
-                               fnpm_def]
+      |> SIMP_RULE (srw_ss()) [oneTheory.FORALL_ONE, oneTheory.FORALL_ONE_FN,
+                               oneTheory.EXISTS_ONE_FN, fnpm_def]
       |> SIMP_RULE (srw_ss() ++ CONJ_ss) [supp_unitfn]
       |> Q.INST [‘vru’ |-> ‘vr’,
                  ‘nlu’ |-> ‘nl’,
@@ -1009,14 +1007,7 @@ val subst_exists =
 
 val SUB_DEF = new_specification("SUB_DEF", ["SUB"], subst_exists);
 
-val _ = add_rule {term_name = "SUB", fixity = Closefix,
-                  pp_elements = [TOK "[", TM, TOK "/", TM, TOK "]"],
-                  paren_style = OnlyIfNecessary,
-                  block_style = (AroundEachPhrase, (PP.INCONSISTENT, 2))};
-
-val _ = TeX_notation { hol = "[", TeX = ("\\ensuremath{[}", 1) };
-val _ = TeX_notation { hol = "/", TeX = ("\\ensuremath{/}", 1) };
-val _ = TeX_notation { hol = "]", TeX = ("\\ensuremath{]}", 1) };
+Overload SUB = “SUB”; (* use the syntax already defined in termTheory *)
 
 val SUB_THMv = prove(
   “([N/x](var x) = (N :'a CCS)) /\ (x <> y ==> [N/y](var x) = var x)”,
