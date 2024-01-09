@@ -1,6 +1,6 @@
 (* ========================================================================== *)
-(* FILE          : ExtensionScript.sml                                        *)
-(* DESCRIPTION   : Extension of the theory of CCS to possibly "open" terms    *)
+(* FILE          : ExtendedScript.sml                                         *)
+(* DESCRIPTION   : Extended CCS Theory for Possibly "Open" Terms              *)
 (*                                                                            *)
 (* COPYRIGHTS    : 2023-2024 Australian National University (Chun Tian)       *)
 (******************************************************************************)
@@ -14,7 +14,7 @@ open CCSLib CCSTheory StrongEQTheory BisimulationUptoTheory;
 
 val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
 
-val _ = new_theory "Extension";
+val _ = new_theory "Extended";
 
 (******************************************************************************)
 (*                                                                            *)
@@ -51,7 +51,18 @@ Overload StrongEQ = “extension STRONG_EQUIV”
 Theorem StrongEQ_IMP_STRONG_EQUIV =
     REWRITE_RULE [RSUBSET] (Q.SPEC ‘STRONG_EQUIV’ extension_RSUBSET)
 
-(* |- !P Q. StrongEQ P Q <=> !fm. STRONG_EQUIV (fm ' P) (fm ' Q) *)
+(* Definition 5 of [1, p.98] (see also [2, p.181])
+
+   If any of P and Q is not closed, but all their closed simultaneous
+   substitutions are strong bisimular, then so is P and Q.
+
+   NOTE: ‘fm’ is not required to cover all FVs of P and Q, those free vars
+         which is not substituted, will be treated as nil (i.e. no transitions).
+         Furthermore, if ‘FDOM fm’ is larger than ‘FV P UNION FV Q’, the extra
+         keys won't cause any trouble.
+         
+   |- !P Q. StrongEQ P Q <=> !fm. STRONG_EQUIV (fm ' P) (fm ' Q)
+ *)
 Theorem StrongEQ_def =
     SIMP_RULE std_ss [FUN_EQ_THM] (Q.SPEC ‘STRONG_EQUIV’ extension_def)
 
@@ -365,9 +376,6 @@ Proof
       Know ‘STRONG_EQUIV ([rec v P/v] P) ([rec v Q/v] Q)’
 QED
 
-
-(*
-
 (* Substitution of free variables to ‘nil’ preserves strong bisimilarity. *)
 Theorem STRONG_EQUIV_ssub_lemma :
     !fm E. (!y. y IN FDOM fm ==> fm ' y = nil) ==> STRONG_EQUIV E (fm ' E)
@@ -392,18 +400,6 @@ Proof
       cheat ]
 QED
 
-(* Definition 5 of [1, p.98] (see also [2, p.181])
-
-   If any of P and Q is not closed, but all their closed simultaneous
-   substitutions are strong bisimular, then so is P and Q.
-
-   NOTE: ‘fm’ is not required to cover all FVs of P and Q, those free vars
-         which is not substituted, will be treated as nil (i.e. no transitions).
-         Furthermore, if ‘FDOM fm’ is larger than ‘FV P UNION FV Q’, the extra
-         keys won't cause any trouble.
-
-   TODO: do we really need to say ‘fm’ is closed substitution?
- *)
 Definition StrongEQ_def :
     StrongEQ P Q = !fm. (!y. y IN FDOM fm ==> closed (fm ' y)) ==>
                         STRONG_EQUIV (fm ' P) (fm ' Q)
@@ -508,10 +504,8 @@ Proof
     cheat
 QED
 
-l
 Theorem StrongEQ_preserved_by_rec :
-    !X P Q. FV P SUBSET {X} /\ FV Q SUBSET {X} /\ StrongEQ P Q ==>
-            StrongEQ (rec X P) (rec X Q)
+    !X P Q. StrongEQ P Q ==> StrongEQ (rec X P) (rec X Q)
 Proof
     rpt STRIP_TAC
  >> Know ‘StrongEQ (rec X P) (rec X Q) <=> STRONG_EQUIV (rec X P) (rec X Q)’
@@ -520,8 +514,6 @@ Proof
  >> Rewr'
  >> MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_REC >> art []
 QED
-
-*)
 
 (* ONE HOLE CONTEXT (unused)
 
@@ -573,7 +565,7 @@ QED
  *)
 
 val _ = export_theory ();
-val _ = html_theory "Extension";
+val _ = html_theory "Extended";
 
 (* Bibliography:
 
