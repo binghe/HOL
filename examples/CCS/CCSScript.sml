@@ -1805,38 +1805,65 @@ Theorem VAR_NO_TRANS =
            (REWRITE_RULE [CCS_distinct', CCS_one_one]
                          (Q.SPECL [`var X`, `u`, `E`] TRANS_cases))
 
-Theorem VAR_lemma[local] :
-    X # P ==> var X = [var X/Y] P ==> X <> Y ==> P = var Y
+val _ = hide "I";
+
+(* cf. chap2Theory (examples/lambda/barendregt) *)
+Definition I_def :
+    I = rec "x" (var "x")
+End
+
+Theorem FV_I[simp] :
+    FV I = {}
 Proof
-    MP_TAC (Q.SPEC ‘P’ CCS_cases) >> rw []
- >> fs [] (* 3 subgoals left *)
- >| [ (* goal 1 (of 3) *)
-      rename1 ‘Z = Y’ >> CCONTR_TAC >> fs [SUB_THM],
-      (* goal 2 (of 3) *)
-      rename1 ‘var X = [var X/Y] (rec Z E)’ \\
-      Q_TAC (NEW_TAC "Z'") ‘{X;Y;Z} UNION FV E’ \\
-      Know ‘rec Z E = rec Z' ([var Z'/Z] E)’
-      >- (MATCH_MP_TAC SIMPLE_ALPHA >> art []) \\
-      DISCH_THEN (fs o wrap),
-      (* goal 3 (of 3) *)
-      Q.PAT_X_ASSUM ‘X = X'’ (fs o wrap o SYM) \\
-      Q_TAC (NEW_TAC "Z") ‘{X;Y} UNION FV E’ \\
-      Know ‘rec X E = rec Z ([var Z/X] E)’
-      >- (MATCH_MP_TAC SIMPLE_ALPHA >> art []) \\
-      DISCH_THEN (fs o wrap) ]
+    SRW_TAC [][I_def]
+QED
+
+Theorem I_alt :
+    !X. I = rec X (var X)
+Proof
+    Q.X_GEN_TAC ‘x’
+ >> REWRITE_TAC [I_def, Once EQ_SYM_EQ]
+ >> Cases_on ‘x = "x"’ >- rw []
+ >> qabbrev_tac ‘u = var x’
+ >> qabbrev_tac ‘y = "x"’
+ >> ‘y NOTIN FV u’ by rw [Abbr ‘u’]
+ >> Know ‘rec x u = rec y ([var y/x] u)’
+ >- (MATCH_MP_TAC SIMPLE_ALPHA >> art [])
+ >> Rewr'
+ >> Suff ‘[var y/x] u = var y’ >- rw []
+ >> rw [Abbr ‘u’]
+QED
+
+Theorem SUB_I[simp] :
+    [N/v] I = I
+Proof
+    rw [lemma14b]
+QED
+
+Theorem ssub_I :
+    ssub fm I = I
+Proof
+    rw [ssub_value]
+QED
+
+Theorem I_cases :
+    I = rec Y P ==> P = var Y
+Proof
+    rw [I_def]
+ >> qabbrev_tac ‘X = "x"’
+ >> Cases_on ‘X = Y’ >> fs [rec_eq_thm]
 QED
 
 Theorem REC_VAR_NO_TRANS :
     !X u E. ~TRANS (rec X (var X)) u E
 Proof
     rw [Once TRANS_cases, CCS_Subst]
- >> rename1 ‘rec X (var X) = rec Y P’
  >> DISJ2_TAC
- >> Cases_on ‘X = Y’ >> fs [rec_eq_thm]
- >> rfs [fresh_tpm_subst]
- >> NTAC 3 (POP_ASSUM MP_TAC)
- >> REWRITE_TAC [VAR_lemma]
+ >> fs [GSYM I_alt, I_cases]
 QED
+
+(* |- !u E. ~(I --u-> E) *)
+Theorem I_NO_TRANS = REWRITE_RULE [GSYM I_alt] REC_VAR_NO_TRANS
 
 (******************************************************************************)
 (*                                                                            *)
@@ -2204,6 +2231,27 @@ val REC_cases_EQ = save_thm
                 |> (Q.GENL [`X`, `E`, `u`, `E'`]));
 
 val REC_cases = save_thm ("REC_cases", EQ_IMP_LR REC_cases_EQ);
+
+Theorem VAR_lemma[local] :
+    X # P ==> var X = [var X/Y] P ==> X <> Y ==> P = var Y
+Proof
+    MP_TAC (Q.SPEC ‘P’ CCS_cases) >> rw []
+ >> fs [] (* 3 subgoals left *)
+ >| [ (* goal 1 (of 3) *)
+      rename1 ‘Z = Y’ >> CCONTR_TAC >> fs [SUB_THM],
+      (* goal 2 (of 3) *)
+      rename1 ‘var X = [var X/Y] (rec Z E)’ \\
+      Q_TAC (NEW_TAC "Z'") ‘{X;Y;Z} UNION FV E’ \\
+      Know ‘rec Z E = rec Z' ([var Z'/Z] E)’
+      >- (MATCH_MP_TAC SIMPLE_ALPHA >> art []) \\
+      DISCH_THEN (fs o wrap),
+      (* goal 3 (of 3) *)
+      Q.PAT_X_ASSUM ‘X = X'’ (fs o wrap o SYM) \\
+      Q_TAC (NEW_TAC "Z") ‘{X;Y} UNION FV E’ \\
+      Know ‘rec X E = rec Z ([var Z/X] E)’
+      >- (MATCH_MP_TAC SIMPLE_ALPHA >> art []) \\
+      DISCH_THEN (fs o wrap) ]
+QED
 
 Theorem TRANS_REC_EQ :
     !X E u E'. TRANS (rec X E) u E' <=> TRANS (CCS_Subst E (rec X E) X) u E' /\ E <> var X
