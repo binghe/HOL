@@ -1765,6 +1765,8 @@ val [PREFIX, SUM1, SUM2, PAR1, PAR2, PAR3, RESTR, RELABELING, REC] =
                    "RELABELING", "REC"],
                   CONJUNCTS TRANS_rules));
 
+Theorem REC' = REWRITE_RULE [CCS_Subst] REC
+
 val TRANS_IND = save_thm ("TRANS_IND",
     TRANS_ind |> (Q.SPEC `P`) |> GEN_ALL);
 
@@ -2245,6 +2247,7 @@ Proof
       DISCH_THEN (fs o wrap) ]
 QED
 
+(* NOTE: ‘E <> var X’ is added at RHS after changed [REC] to allow |- ~(I --u-> E) *)
 Theorem TRANS_REC_EQ :
     !X E u E'. TRANS (rec X E) u E' <=> TRANS (CCS_Subst E (rec X E) X) u E' /\ E <> var X
 Proof
@@ -2272,7 +2275,13 @@ Proof
  >> METIS_TAC [VAR_lemma]
 QED
 
-val TRANS_REC = save_thm ("TRANS_REC", EQ_IMP_LR TRANS_REC_EQ);
+(* |- !X E u E'. rec X E --u-> E' <=> [rec X E/X] E --u-> E' /\ E <> var X *)
+Theorem TRANS_REC_EQ' = REWRITE_RULE [CCS_Subst] TRANS_REC_EQ
+
+Theorem TRANS_REC = EQ_IMP_LR TRANS_REC_EQ
+
+(* |- !X E u E'. rec X E --u-> E' ==> [rec X E/X] E --u-> E' /\ E <> var X *)
+Theorem TRANS_REC' = EQ_IMP_LR TRANS_REC_EQ'
 
 Theorem TRANS_FV :
     !E u E'. TRANS E u E' ==> FV E' SUBSET (FV E)
