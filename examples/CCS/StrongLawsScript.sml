@@ -11,7 +11,6 @@ open pred_setTheory prim_recTheory arithmeticTheory relationTheory;
 open CCSLib CCSTheory StrongEQTheory StrongEQLib;
 
 val _ = new_theory "StrongLaws";
-val _ = temp_loose_equality ();
 
 (******************************************************************************)
 (*                                                                            *)
@@ -1105,20 +1104,24 @@ val STRONG_RELAB_PREFIX = store_thm (
    If A := P, then A ~ P
 
    where A is ‘rec X E’, P is ‘CCS_Subst E (rec X E) X’ (instead of just E)
+
+   NOTE: this proof has been fixed due to changed [REC]. --binghe, 9 gen 2024
  *)
 Theorem STRONG_UNFOLDING :
     !X E. STRONG_EQUIV (rec X E) (CCS_Subst E (rec X E) X)
 Proof
     rpt GEN_TAC
+ >> Cases_on ‘E = var X’ >- rw []
  >> PURE_ONCE_REWRITE_TAC [STRONG_EQUIV]
- >> EXISTS_TAC
-       ``\x y. (x = y) \/
-              (?Y E'. (x = rec Y E') /\ (y = CCS_Subst E' (rec Y E') Y))``
+ >> Q.EXISTS_TAC
+      ‘\x y. x = y \/
+            ?Y E'. x = rec Y E' /\ y = CCS_Subst E' (rec Y E') Y /\ E' <> var Y’
  >> CONJ_TAC (* 2 sub-goals here *)
  >| [ (* goal 1 (of 2) *)
       BETA_TAC >> DISJ2_TAC \\
       qexistsl_tac [‘X’, ‘E’] >> rw [],
       (* goal 2 (of 2) *)
+      POP_ASSUM K_TAC \\
       PURE_ONCE_REWRITE_TAC [STRONG_BISIM] >> BETA_TAC \\
       rpt STRIP_TAC >| (* 4 sub-goals here *)
       [ (* goal 2.1 (of 4) *)
@@ -1142,11 +1145,11 @@ QED
 (* Prove the theorem STRONG_PREF_REC_EQUIV:
    |- ∀u s v. u..rec s (v..u..var s) ~ rec s (u..v..var s):
  *)
-val STRONG_PREF_REC_EQUIV = store_thm (
-   "STRONG_PREF_REC_EQUIV",
-  ``!(u :'a Action) s v.
+Theorem STRONG_PREF_REC_EQUIV :
+    !(u :'a Action) s v.
         STRONG_EQUIV (prefix u (rec s (prefix v (prefix u (var s)))))
-                     (rec s (prefix u (prefix v (var s))))``,
+                     (rec s (prefix u (prefix v (var s))))
+Proof
     rpt GEN_TAC
  >> PURE_ONCE_REWRITE_TAC [STRONG_EQUIV]
  >> EXISTS_TAC
@@ -1216,7 +1219,8 @@ val STRONG_PREF_REC_EQUIV = store_thm (
           art [] \\
           MATCH_MP_TAC REC >> REWRITE_TAC [CCS_Subst_def, PREFIX],
           (* goal 2.4.2 (of 2) *)
-          take [`u'`, `v'`, `s'`] >> art [] ] ] ]);
+          take [`u'`, `v'`, `s'`] >> art [] ] ] ]
+QED
 
 (* Prove the theorem STRONG_REC_ACT2:
    |- ∀s u. rec s (u..u..var s) ~ rec s (u..var s)
