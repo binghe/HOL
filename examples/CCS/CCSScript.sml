@@ -1737,6 +1737,8 @@ Type transition[pp] = “:'a CCS -> 'a Action -> 'a CCS -> bool”
 
 (* Inductive definition of the transition relation TRANS for CCS.
    TRANS: CCS -> Action -> CCS -> bool
+
+   NOTE: added ‘E <> var X’ into [REC] to prove I_NO_TRANS (see below).
  *)
 Inductive TRANS :
     (!E u.                           TRANS (prefix u E) u E) /\         (* PREFIX *)
@@ -1751,7 +1753,7 @@ Inductive TRANS :
                 ==> TRANS (restr L E) u (restr L E')) /\                (* RESTR *)
     (!E u E' rf.    TRANS E u E'
                 ==> TRANS (relab E rf) (relabel rf u) (relab E' rf)) /\ (* RELABELING *)
-    (!E u X E1.     TRANS (CCS_Subst E (rec X E) X) u E1
+    (!E u X E1.     TRANS (CCS_Subst E (rec X E) X) u E1 /\ E <> var X
                 ==> TRANS (rec X E) u E1)                               (* REC *)
 End
 
@@ -1798,10 +1800,49 @@ QED
 (* An recursion variable has no transition.
    !X u E. ~TRANS (var X) u E
  *)
-val VAR_NO_TRANS = save_thm ("VAR_NO_TRANS",
+Theorem VAR_NO_TRANS =
     Q.GENL [`X`, `u`, `E`]
            (REWRITE_RULE [CCS_distinct', CCS_one_one]
-                         (Q.SPECL [`var X`, `u`, `E`] TRANS_cases)));
+                         (Q.SPECL [`var X`, `u`, `E`] TRANS_cases))
+
+Theorem VAR_lemma[local] :
+    X # P ==> var X = [var X/Y] P ==> X <> Y ==> P = var Y
+Proof
+    MP_TAC (Q.SPEC ‘P’ CCS_cases) >> rw []
+ >> fs [] (* 3 subgoals left *)
+ >| [ (* goal 1 (of 3) *)
+      rename1 ‘Z = Y’ >> CCONTR_TAC >> fs [SUB_THM],
+      (* goal 2 (of 3) *)
+      rename1 ‘var X = [var X/Y] (rec Z E)’ \\
+      Q_TAC (NEW_TAC "Z'") ‘{X;Y;Z} UNION FV E’ \\
+      Know ‘rec Z E = rec Z' ([var Z'/Z] E)’
+      >- (MATCH_MP_TAC SIMPLE_ALPHA >> art []) \\
+      DISCH_THEN (fs o wrap),
+      (* goal 3 (of 3) *)
+      Q.PAT_X_ASSUM ‘X = X'’ (fs o wrap o SYM) \\
+      Q_TAC (NEW_TAC "Z") ‘{X;Y} UNION FV E’ \\
+      Know ‘rec X E = rec Z ([var Z/X] E)’
+      >- (MATCH_MP_TAC SIMPLE_ALPHA >> art []) \\
+      DISCH_THEN (fs o wrap) ]
+QED
+
+Theorem REC_VAR_NO_TRANS :
+    !X u E. ~TRANS (rec X (var X)) u E
+Proof
+    rw [Once TRANS_cases, CCS_Subst]
+ >> rename1 ‘rec X (var X) = rec Y P’
+ >> DISJ2_TAC
+ >> Cases_on ‘X = Y’ >> fs [rec_eq_thm]
+ >> rfs [fresh_tpm_subst]
+ >> NTAC 3 (POP_ASSUM MP_TAC)
+ >> REWRITE_TAC [VAR_lemma]
+QED
+
+(******************************************************************************)
+(*                                                                            *)
+(*                The transitions of prefixed term                            *)
+(*                                                                            *)
+(******************************************************************************)                         
 
 (* !u E u' E'. TRANS (prefix u E) u' E' <=> (u' = u) /\ (E' = E) *)
 Theorem TRANS_PREFIX_EQ =
@@ -2165,30 +2206,30 @@ val REC_cases_EQ = save_thm
 val REC_cases = save_thm ("REC_cases", EQ_IMP_LR REC_cases_EQ);
 
 Theorem TRANS_REC_EQ :
-    !X E u E'. TRANS (rec X E) u E' <=> TRANS (CCS_Subst E (rec X E) X) u E'
+    !X E u E'. TRANS (rec X E) u E' <=> TRANS (CCS_Subst E (rec X E) X) u E' /\ E <> var X
 Proof
     rpt GEN_TAC
  >> reverse EQ_TAC
  >- PURE_ONCE_REWRITE_TAC [REC]
  >> PURE_ONCE_REWRITE_TAC [REC_cases_EQ]
- >> rpt STRIP_TAC
+ >> STRIP_TAC
+ >> rename1 ‘rec X E = rec Y P’
  >> fs [rec_eq_thm, CCS_Subst]
- >> rename1 ‘X <> Y’
- >> rename1 ‘X # P’
- (* stage work *)
- >> rw [fresh_tpm_subst]
+ >> Q.PAT_X_ASSUM ‘E = _’ K_TAC
+ >> simp [fresh_tpm_subst]
  >> Q.ABBREV_TAC ‘E = [var X/Y] P’
  >> Know ‘rec X E = rec Y ([var Y/X] E)’
  >- (MATCH_MP_TAC SIMPLE_ALPHA \\
      rw [Abbr ‘E’, FV_SUB])
  >> Rewr'
- >> rw [Abbr ‘E’]
+ >> simp [Abbr ‘E’]
  >> Know ‘[var Y/X] ([var X/Y] P) = P’
  >- (MATCH_MP_TAC lemma15b >> art [])
  >> Rewr'
- >> Suff ‘[rec Y P/X] ([var X/Y] P) = [rec Y P/Y] P’
- >- rw []
- >> MATCH_MP_TAC lemma15a >> art []
+ >> Know ‘[rec Y P/X] ([var X/Y] P) = [rec Y P/Y] P’
+ >- (MATCH_MP_TAC lemma15a >> art [])
+ >> Rewr' >> art []
+ >> METIS_TAC [VAR_lemma]
 QED
 
 val TRANS_REC = save_thm ("TRANS_REC", EQ_IMP_LR TRANS_REC_EQ);
@@ -2201,8 +2242,7 @@ Proof
  >> TRY (ASM_SET_TAC []) (* 1 - 6 *)
  >> MATCH_MP_TAC SUBSET_TRANS
  >> Q.EXISTS_TAC `FV (CCS_Subst E (rec X E) X)`
- >> POP_ASSUM (REWRITE_TAC o wrap)
- >> REWRITE_TAC [FV_SUBSET_REC']
+ >> ASM_REWRITE_TAC [FV_SUBSET_REC']
 QED
 
 Theorem TRANS_PROC :
