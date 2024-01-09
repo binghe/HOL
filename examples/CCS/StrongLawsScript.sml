@@ -1291,6 +1291,37 @@ QED
 
 (******************************************************************************)
 (*                                                                            *)
+(*       The strong laws for the redundant recursion operators                *)
+(*                                                                            *)
+(******************************************************************************)
+
+Theorem STRONG_EQUIV_REC_ELIM :
+    !X E. X # E ==> STRONG_EQUIV (rec X E) E
+Proof
+    rw [Once PROPERTY_STAR]
+ >| [ (* goal 1 (of 2) *)
+      fs [TRANS_REC_EQ, CCS_Subst] \\
+      Know ‘[rec X E/X] E = E’
+      >- (MATCH_MP_TAC lemma14b >> art []) \\
+      DISCH_THEN (fs o wrap) \\
+      Q.EXISTS_TAC ‘E1’ >> rw [],
+      (* goal 2 (of 2) *)
+      Q.EXISTS_TAC ‘E2’ >> reverse (rw [TRANS_REC_EQ, CCS_Subst])
+      >- (CCONTR_TAC >> fs [VAR_NO_TRANS]) \\
+      Know ‘[rec X E/X] E = E’
+      >- (MATCH_MP_TAC lemma14b >> art []) >> rw [] ]
+QED
+
+Theorem STRONG_EQUIV_REC_REC_ELIM :
+    !X E. STRONG_EQUIV (rec X (rec X E)) (rec X E)
+Proof
+    rpt GEN_TAC
+ >> MATCH_MP_TAC STRONG_EQUIV_REC_ELIM
+ >> rw []
+QED
+
+(******************************************************************************)
+(*                                                                            *)
 (*       The strong laws for the parallel operator in the general form        *)
 (*                                                                            *)
 (******************************************************************************)
