@@ -57,18 +57,7 @@ val take_lemma = prove(
   ``∀l n. 0 < n ∧ n ≤ LENGTH l ⇒ TAKE n l ≠ []``,
   Induct THEN SRW_TAC [ARITH_ss][]);
 
-val _ = augment_srw_ss[rewrites[listTheory.TAKE_def,listTheory.DROP_def]];
-
-val DROP_PREn_LAST_CONS = store_thm(
-  "DROP_PREn_LAST_CONS",
-  ``∀t n. 0 < n ∧ n ≤ LENGTH t ⇒
-          (DROP (n - 1) t = LAST (TAKE n t) :: DROP n t)``,
-  Induct THEN SRW_TAC [ARITH_ss][] THENL [
-    `n = 1` by DECIDE_TAC THEN SRW_TAC [][],
-    `n = 1` by DECIDE_TAC THEN SRW_TAC [][],
-    `(t = []) ∨ ∃h t0. t = h :: t0` by METIS_TAC [listTheory.list_CASES] THEN
-    FULL_SIMP_TAC (srw_ss() ++ ARITH_ss) []
-  ]);
+val _ = augment_srw_ss[rewrites[TAKE_def, DROP_def]];
 
 val appstar_eq_appstar = store_thm(
   "appstar_eq_appstar",
