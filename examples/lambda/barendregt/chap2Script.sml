@@ -378,17 +378,8 @@ QED
 Theorem I_thm :
     !s. I = LAM s (VAR s)
 Proof
-    Q.X_GEN_TAC ‘x’
- >> REWRITE_TAC [I_def, Once EQ_SYM_EQ]
- >> Cases_on ‘x = "x"’ >- rw []
- >> qabbrev_tac ‘u :term = VAR x’
- >> qabbrev_tac ‘y = "x"’
- >> ‘y NOTIN FV u’ by rw [Abbr ‘u’]
- >> Know ‘LAM x u = LAM y ([VAR y/x] u)’
- >- (MATCH_MP_TAC SIMPLE_ALPHA >> art [])
- >> Rewr'
- >> Suff ‘[VAR y/x] u = VAR y’ >- rw []
- >> rw [Abbr ‘u’]
+    rw [I_def, Once EQ_SYM_EQ]
+ >> Cases_on ‘s = "x"’ >> rw [LAM_eq_thm]
 QED
 
 Theorem SUB_I[simp] :
@@ -401,6 +392,14 @@ Theorem ssub_I :
     ssub fm I = I
 Proof
     rw [ssub_value]
+QED
+
+Theorem I_cases :
+    !Y t. I = LAM Y t ==> t = VAR Y
+Proof
+    rw [I_def]
+ >> qabbrev_tac ‘X = "x"’
+ >> Cases_on ‘X = Y’ >> fs [LAM_eq_thm]
 QED
 
 val Omega_def =

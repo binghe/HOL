@@ -1765,6 +1765,7 @@ val [PREFIX, SUM1, SUM2, PAR1, PAR2, PAR3, RESTR, RELABELING, REC] =
                    "RELABELING", "REC"],
                   CONJUNCTS TRANS_rules));
 
+(* Use SUB instead of CCS_Subst *)
 Theorem REC' = REWRITE_RULE [CCS_Subst] REC
 
 val TRANS_IND = save_thm ("TRANS_IND",
@@ -1798,11 +1799,15 @@ Theorem VAR_NO_TRANS =
            (REWRITE_RULE [CCS_distinct', CCS_one_one]
                          (Q.SPECL [`var X`, `u`, `E`] TRANS_cases))
 
+(*---------------------------------------------------------------------------*
+ *  The "I combinator" of CCS
+ *---------------------------------------------------------------------------*)
+
 val _ = hide "I";
 
 (* cf. chap2Theory (examples/lambda/barendregt) *)
 Definition I_def :
-    I = rec "x" (var "x")
+    I = rec "s" (var "s")
 End
 
 Theorem FV_I[simp] :
@@ -1814,17 +1819,8 @@ QED
 Theorem I_thm :
     !X. I = rec X (var X)
 Proof
-    Q.X_GEN_TAC ‘x’
- >> REWRITE_TAC [I_def, Once EQ_SYM_EQ]
- >> Cases_on ‘x = "x"’ >- rw []
- >> qabbrev_tac ‘u = var x’
- >> qabbrev_tac ‘y = "x"’
- >> ‘y NOTIN FV u’ by rw [Abbr ‘u’]
- >> Know ‘rec x u = rec y ([var y/x] u)’
- >- (MATCH_MP_TAC SIMPLE_ALPHA >> art [])
- >> Rewr'
- >> Suff ‘[var y/x] u = var y’ >- rw []
- >> rw [Abbr ‘u’]
+    rw [I_def, Once EQ_SYM_EQ]
+ >> Cases_on ‘X = "s"’ >> rw [rec_eq_thm]
 QED
 
 Theorem SUB_I[simp] :
@@ -1840,7 +1836,7 @@ Proof
 QED
 
 Theorem I_cases :
-    I = rec Y P ==> P = var Y
+    !Y P. I = rec Y P ==> P = var Y
 Proof
     rw [I_def]
  >> qabbrev_tac ‘X = "x"’

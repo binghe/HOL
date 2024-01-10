@@ -1,14 +1,18 @@
-(*
- * Copyright 1991-1995  University of Cambridge (Author: Monica Nesi)
- * Copyright 2016-2017  University of Bologna, Italy (Author: Chun Tian)
- * Copyright 2018-2019  Fondazione Bruno Kessler, Italy (Author: Chun Tian)
- *)
+(* ========================================================================== *)
+(* FILE          : ExampleScript.sml                                          *)
+(* DESCRIPTION   : Examples of concrete CCS processes; Some experiments       *)
+(*                                                                            *)
+(* COPYRIGHTS    : 1991-1995 University of Cambridge, UK (Monica Nesi)        *)
+(*                 2016-2017 University of Bologna, Italy (Chun Tian)         *)
+(*                 2018-2019 Fondazione Bruno Kessler, Italy (Chun Tian)      *)
+(******************************************************************************)
 
 open HolKernel Parse boolLib bossLib;
 
-open pred_setTheory relationTheory pairTheory sumTheory listTheory;
-open prim_recTheory arithmeticTheory combinTheory stringTheory;
+open combinTheory pred_setTheory relationTheory pairTheory sumTheory listTheory
+     arithmeticTheory stringTheory EmitTeX;
 
+(* local theories *)
 open CCSLib CCSTheory CCSSyntax CCSConv;
 open StrongEQTheory StrongEQLib StrongLawsTheory;
 open WeakEQTheory WeakEQLib WeakLawsTheory;
@@ -16,11 +20,9 @@ open ObsCongrTheory ObsCongrLib ObsCongrLawsTheory;
 open CongruenceTheory CoarsestCongrTheory;
 open TraceTheory ExpansionTheory ContractionTheory;
 open BisimulationUptoTheory UniqueSolutionsTheory;
-
 open MultivariateTheory;
 
 val _ = new_theory "Example";
-val _ = temp_loose_equality ();
 
 (* For paper generating purposes, some type abbreviations are disabled *)
 val _ = disable_tyabbrev_printing "transition";
@@ -124,10 +126,70 @@ Proof
  >> REWRITE_TAC [WG2]
 QED
 
+(******************************************************************************)
+(*                                                                            *)
+(*            What if the transition relation is coinductive?                 *)
+(*                                                                            *)
+(******************************************************************************)
+
+(* oTRANS is the original inductive definition of TRANS with changes in [REC] *)
+Inductive oTRANS :
+    (!E u.                            oTRANS (prefix u E) u E) /\         (* PREFIX *)
+    (!E u E1 E'.    oTRANS E u E1 ==> oTRANS (sum E E') u E1) /\          (* SUM1 *)
+    (!E u E1 E'.    oTRANS E u E1 ==> oTRANS (sum E' E) u E1) /\          (* SUM2 *)
+    (!E u E1 E'.    oTRANS E u E1 ==> oTRANS (par E E') u (par E1 E')) /\ (* PAR1 *)
+    (!E u E1 E'.    oTRANS E u E1 ==> oTRANS (par E' E) u (par E' E1)) /\ (* PAR2 *)
+    (!E l E1 E' E2. oTRANS E (label l) E1 /\ oTRANS E' (label (COMPL l)) E2
+                ==> oTRANS (par E E') tau (par E1 E2)) /\                 (* PAR3 *)
+    (!E u E' l L.   oTRANS E u E' /\ ((u = tau) \/
+                                     ((u = label l) /\ l NOTIN L /\ (COMPL l) NOTIN L))
+                ==> oTRANS (restr L E) u (restr L E')) /\                 (* RESTR *)
+    (!E u E' rf.    oTRANS E u E'
+                ==> oTRANS (relab E rf) (relabel rf u) (relab E' rf)) /\  (* RELABELING *)
+    (!E u X E1.     oTRANS (CCS_Subst E (rec X E) X) u E1
+                ==> oTRANS (rec X E) u E1)                                (* REC *)
+End
+
+(* The rules for the transition relation TRANS as individual theorems. *)
+val [oPREFIX, oSUM1, oSUM2, oPAR1, oPAR2, oPAR3, oRESTR, oRELABELING, oREC] =
+    map save_thm
+        (combine (["oPREFIX", "oSUM1", "oSUM2", "oPAR1", "oPAR2", "oPAR3", "oRESTR",
+                   "oRELABELING", "oREC"],
+                  CONJUNCTS oTRANS_rules));
+
+(* Use SUB instead of CCS_Subst *)
+Theorem oREC' = REWRITE_RULE [CCS_Subst] oREC
+
+(* coTRANS is the coinductive version of oTRANS with identical input rules *)
+CoInductive coTRANS :
+    (!E u.                             coTRANS (prefix u E) u E) /\         (* PREFIX *)
+    (!E u E1 E'.    coTRANS E u E1 ==> coTRANS (sum E E') u E1) /\          (* SUM1 *)
+    (!E u E1 E'.    coTRANS E u E1 ==> coTRANS (sum E' E) u E1) /\          (* SUM2 *)
+    (!E u E1 E'.    coTRANS E u E1 ==> coTRANS (par E E') u (par E1 E')) /\ (* PAR1 *)
+    (!E u E1 E'.    coTRANS E u E1 ==> coTRANS (par E' E) u (par E' E1)) /\ (* PAR2 *)
+    (!E l E1 E' E2. coTRANS E (label l) E1 /\ coTRANS E' (label (COMPL l)) E2
+                ==> coTRANS (par E E') tau (par E1 E2)) /\                  (* PAR3 *)
+    (!E u E' l L.   coTRANS E u E' /\ ((u = tau) \/
+                                     ((u = label l) /\ l NOTIN L /\ (COMPL l) NOTIN L))
+                ==> coTRANS (restr L E) u (restr L E')) /\                  (* RESTR *)
+    (!E u E' rf.    coTRANS E u E'
+                ==> coTRANS (relab E rf) (relabel rf u) (relab E' rf)) /\   (* RELABELING *)
+    (!E u X E1.     coTRANS (CCS_Subst E (rec X E) X) u E1
+                ==> coTRANS (rec X E) u E1)                                 (* REC *)
+End
+
+(* The rules for the transition relation TRANS as individual theorems. *)
+val [coPREFIX, coSUM1, coSUM2, coPAR1, coPAR2, coPAR3, coRESTR, coRELABELING, coREC] =
+    map save_thm
+        (combine (["coPREFIX", "coSUM1", "coSUM2", "coPAR1", "coPAR2", "coPAR3",
+                   "coRESTR", "coRELABELING", "coREC"],
+                  CONJUNCTS coTRANS_rules));
+
+(* Use SUB instead of CCS_Subst *)
+Theorem coREC' = REWRITE_RULE [CCS_Subst] coREC
+
 val _ = export_theory ();
 val _ = html_theory "Example";
-
-open EmitTeX;
 
 (* Emit theory books in TeX *)
 val _ =
