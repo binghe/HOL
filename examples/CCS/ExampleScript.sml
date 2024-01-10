@@ -157,6 +157,54 @@ val [oPREFIX, oSUM1, oSUM2, oPAR1, oPAR2, oPAR3, oRESTR, oRELABELING, oREC] =
                    "oRELABELING", "oREC"],
                   CONJUNCTS oTRANS_rules));
 
+Theorem oREC_cases_EQ = 
+    oTRANS_cases |> (Q.SPEC `rec X E`)
+                 |> (REWRITE_RULE [CCS_distinct', CCS_one_one])
+                 |> (Q.SPECL [`u`, `E'`])
+                 |> (Q.GENL [`X`, `E`, `u`, `E'`])
+
+Theorem oREC_cases = EQ_IMP_LR oREC_cases_EQ
+
+Theorem oTRANS_REC_EQ :
+    !X E u E'. oTRANS (rec X E) u E' <=> oTRANS (CCS_Subst E (rec X E) X) u E'
+Proof
+    rpt GEN_TAC
+ >> reverse EQ_TAC
+ >- PURE_ONCE_REWRITE_TAC [oREC]
+ >> PURE_ONCE_REWRITE_TAC [oREC_cases_EQ]
+ >> rpt STRIP_TAC
+ >> fs [rec_eq_thm, CCS_Subst]
+ >> rename1 ‘X <> Y’
+ >> rename1 ‘X # P’
+ (* stage work *)
+ >> rw [fresh_tpm_subst]
+ >> Q.ABBREV_TAC ‘E = [var X/Y] P’
+ >> Know ‘rec X E = rec Y ([var Y/X] E)’
+ >- (MATCH_MP_TAC SIMPLE_ALPHA \\
+     rw [Abbr ‘E’, FV_SUB])
+ >> Rewr'
+ >> rw [Abbr ‘E’]
+ >> Know ‘[var Y/X] ([var X/Y] P) = P’
+ >- (MATCH_MP_TAC lemma15b >> art [])
+ >> Rewr'
+ >> Suff ‘[rec Y P/X] ([var X/Y] P) = [rec Y P/Y] P’
+ >- rw []
+ >> MATCH_MP_TAC lemma15a >> art []
+QED
+
+Theorem oTRANS_REC_EQ' = REWRITE_RULE [CCS_Subst] oTRANS_REC_EQ
+
+Theorem oVAR_NO_TRANS =
+    Q.GENL [`X`, `u`, `E`]
+           (REWRITE_RULE [CCS_distinct', CCS_one_one]
+                         (Q.SPECL [`var X`, `u`, `E`] oTRANS_cases))
+
+Theorem oREC_VAR_NO_TRANS :
+    !X Y u E. X <> Y ==> ~oTRANS (rec X (var Y)) u E
+Proof
+    rw [oTRANS_REC_EQ', oVAR_NO_TRANS]
+QED
+
 (* Use SUB instead of CCS_Subst *)
 Theorem oREC' = REWRITE_RULE [CCS_Subst] oREC
 

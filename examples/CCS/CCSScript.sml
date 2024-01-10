@@ -1843,8 +1843,11 @@ Proof
  >> Cases_on ‘X = Y’ >> fs [rec_eq_thm]
 QED
 
-(* NOTE: This proof is only possible under the modified [REC] *)
-Theorem REC_VAR_NO_TRANS :
+(* NOTE: This proof is only possible under the modified [REC]
+
+   cf. REC_VAR_NO_TRANS for a more general version of this theorem.
+ *)
+Theorem lemma[local] :
     !X u E. ~TRANS (rec X (var X)) u E
 Proof
     rw [Once TRANS_cases, CCS_Subst]
@@ -1853,7 +1856,7 @@ Proof
 QED
 
 (* |- !u E. ~(I --u-> E) *)
-Theorem I_NO_TRANS = REWRITE_RULE [GSYM I_thm] REC_VAR_NO_TRANS
+Theorem I_NO_TRANS = REWRITE_RULE [GSYM I_thm] lemma
 
 (******************************************************************************)
 (*                                                                            *)
@@ -2278,6 +2281,20 @@ Theorem TRANS_REC = EQ_IMP_LR TRANS_REC_EQ
 
 (* |- !X E u E'. rec X E --u-> E' ==> [rec X E/X] E --u-> E' /\ E <> var X *)
 Theorem TRANS_REC' = EQ_IMP_LR TRANS_REC_EQ'
+
+(* NOTE: another proof is to use StrongLawsTheory.STRONG_EQUIV_REC_ELIM, as
+  ‘STRONG_EQUIV (rec X (var Y)) (var Y)’ holds when ‘X <> Y’, and because
+  ‘var Y’ has no trans, thus also ‘rec X (var Y)’.
+
+  cf. ExampleTheory.oREC_VAR_NO_TRANS for a proof of this theorem (X <> Y)
+      under the original [REC].
+ *)
+Theorem REC_VAR_NO_TRANS :
+    !X Y u E. ~TRANS (rec X (var Y)) u E
+Proof
+    rw [TRANS_REC_EQ']
+ >> Cases_on ‘X = Y’ >> rw [VAR_NO_TRANS]
+QED
 
 Theorem TRANS_FV :
     !E u E'. TRANS E u E' ==> FV E' SUBSET (FV E)
