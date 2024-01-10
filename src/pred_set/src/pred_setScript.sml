@@ -829,6 +829,14 @@ val DISJOINT_ALT = store_thm (* from util_prob *)
    RW_TAC std_ss [IN_DISJOINT]
    >> PROVE_TAC []);
 
+Theorem DISJOINT_ALT' :
+    !s t. DISJOINT s t <=> !x. x IN t ==> x NOTIN s
+Proof
+    ONCE_REWRITE_TAC [DISJOINT_SYM]
+ >> RW_TAC std_ss [IN_DISJOINT]
+ >> PROVE_TAC []
+QED
+
 (* --------------------------------------------------------------------- *)
 (* A theorem from homeier@org.aero.uniblab (Peter Homeier)               *)
 (* --------------------------------------------------------------------- *)

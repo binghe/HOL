@@ -1418,10 +1418,9 @@ Proof
          >- (Rewr' >> MATCH_MP_TAC lameq_LAMl_appstar_ssub \\
              CONJ_TAC >- rw [ALL_DISTINCT_FRONT] \\
              CONJ_TAC >- rw [LENGTH_FRONT] \\
-             ONCE_REWRITE_TAC [DISJOINT_SYM] \\
-             MATCH_MP_TAC DISJOINT_SUBSET >> Q.EXISTS_TAC ‘set Z’ \\
+             MATCH_MP_TAC DISJOINT_SUBSET' >> Q.EXISTS_TAC ‘set Z’ \\
              reverse CONJ_TAC >- rw [SUBSET_DEF, MEM_FRONT_NOT_NIL] \\
-             ASM_SIMP_TAC std_ss [Once DISJOINT_SYM, Abbr ‘X’] \\
+             ASM_SIMP_TAC std_ss [Abbr ‘X’] \\
              MATCH_MP_TAC DISJOINT_SUBSET \\
              Q.EXISTS_TAC ‘BIGUNION (IMAGE FV (set args))’ >> art []) \\
          qunabbrev_tac ‘t’ \\
@@ -1612,8 +1611,8 @@ Proof
      Know ‘MAP [LAMl Z (VAR z)/y] (MAP VAR vs) = MAP VAR vs’
      >- (rw [LIST_EQ_REWRITE, EL_MAP] \\
          MATCH_MP_TAC lemma14b \\
-         Q.PAT_X_ASSUM ‘DISJOINT (set vs) _’ (MP_TAC o (ONCE_REWRITE_RULE [DISJOINT_SYM])) \\
-         rw [DISJOINT_ALT, MEM_EL] >> METIS_TAC []) >> Rewr' \\
+         Q.PAT_X_ASSUM ‘DISJOINT (set vs) _’ MP_TAC \\
+         rw [DISJOINT_ALT', MEM_EL] >> METIS_TAC []) >> Rewr' \\
      qabbrev_tac ‘args1' = MAP [LAMl Z (VAR z)/y] args1’ \\
      Know ‘LAMl Z (VAR z) = LAMl (FRONT Z) (LAM z (VAR z))’
      >- (REWRITE_TAC [GSYM LAMl_SNOC] \\
@@ -1639,8 +1638,8 @@ Proof
      Know ‘MAP [LAMl Z (VAR z)/y] (MAP VAR vs) = MAP VAR vs’
      >- (rw [LIST_EQ_REWRITE, EL_MAP] \\
          MATCH_MP_TAC lemma14b \\
-         Q.PAT_X_ASSUM ‘DISJOINT (set vs) _’ (MP_TAC o (ONCE_REWRITE_RULE [DISJOINT_SYM])) \\
-         rw [DISJOINT_ALT, MEM_EL] >> METIS_TAC []) >> Rewr' \\
+         Q.PAT_X_ASSUM ‘DISJOINT (set vs) _’ MP_TAC \\
+         rw [DISJOINT_ALT', MEM_EL] >> METIS_TAC []) >> Rewr' \\
      qabbrev_tac ‘args2' = MAP [LAMl Z (VAR z)/y] args2’ \\
      Know ‘LAMl Z (VAR z) = LAMl (FRONT Z) (LAM z (VAR z))’
      >- (REWRITE_TAC [GSYM LAMl_SNOC] \\
@@ -1911,9 +1910,8 @@ Proof
        >- (qunabbrev_tac ‘f2’ \\
            MATCH_MP_TAC lemma14b >> rw [FV_SUB] \\
            CCONTR_TAC >> ‘MEM y2 Z’ by METIS_TAC [] \\
-           Q.PAT_X_ASSUM ‘DISJOINT (set Z) (FV P UNION FV Q)’
-               (MP_TAC o ONCE_REWRITE_RULE [DISJOINT_SYM]) \\
-           rw [DISJOINT_ALT] >> METIS_TAC []) >> Rewr' \\
+           Q.PAT_X_ASSUM ‘DISJOINT (set Z) (FV P UNION FV Q)’ MP_TAC \\
+           rw [DISJOINT_ALT'] >> METIS_TAC []) >> Rewr' \\
     (* eliminating f3 *)
        Know ‘f3 ([VAR z2/y2] P) = [VAR z2/y2] P’
        >- (qunabbrev_tac ‘f3’ \\
