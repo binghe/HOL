@@ -1220,6 +1220,8 @@ Proof
         take [`u'`, `v'`, `s'`] >> art [] ] ]
 QED
 
+Theorem STRONG_UNFOLDING' = REWRITE_RULE [CCS_Subst] STRONG_UNFOLDING
+
 (* Prove the theorem STRONG_REC_ACT2:
    |- ∀s u. rec s (u..u..var s) ~ rec s (u..var s)
  *)

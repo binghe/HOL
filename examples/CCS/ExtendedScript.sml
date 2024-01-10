@@ -1,20 +1,199 @@
 (* ========================================================================== *)
 (* FILE          : ExtendedScript.sml                                         *)
-(* DESCRIPTION   : Extended CCS Theory for Possibly "Open" Terms              *)
+(* DESCRIPTION   : Extended Theory for "Open" CCS Terms                       *)
 (*                                                                            *)
 (* COPYRIGHTS    : 2023-2024 Australian National University (Chun Tian)       *)
 (******************************************************************************)
 
 open HolKernel Parse boolLib bossLib;
 
-open pred_setTheory pairTheory relationTheory bisimulationTheory listTheory
-     finite_mapTheory;
+open pred_setTheory relationTheory bisimulationTheory listTheory finite_mapTheory;
 
-open binderLib CCSLib CCSTheory StrongEQTheory BisimulationUptoTheory;
+open binderLib;
+
+open CCSLib CCSTheory StrongEQTheory StrongLawsTheory BisimulationUptoTheory;
 
 val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
 
 val _ = new_theory "Extended";
+
+Theorem TRANS_tpm :
+    !pi E u E'. TRANS E u E' ==> TRANS (tpm pi E) u (tpm pi E')
+Proof
+    Q.X_GEN_TAC ‘pi’
+ >> HO_MATCH_MP_TAC TRANS_IND >> rw [tpm_thm, CCS_Subst]
+ (* 10 subgoals *)
+ >- (rw [PREFIX])
+ >- (MATCH_MP_TAC SUM1 >> art [])
+ >- (MATCH_MP_TAC SUM2 >> art [])
+ >- (MATCH_MP_TAC PAR1 >> art [])
+ >- (MATCH_MP_TAC PAR2 >> art [])
+ >- (MATCH_MP_TAC PAR3 >> Q.EXISTS_TAC ‘l’ >> art [])
+ >- (MATCH_MP_TAC RESTR >> rw [])
+ >- (MATCH_MP_TAC RESTR >> Q.EXISTS_TAC ‘l’ >> art [])
+ >- (MATCH_MP_TAC RELABELING >> art [])
+ (* stage work *)
+ >> fs [tpm_subst]
+ >> MATCH_MP_TAC REC' >> rw []
+ >> Q.PAT_X_ASSUM ‘TRANS _ u (tpm pi E')’ K_TAC
+ >> ‘var (lswapstr pi X) = tpm pi (var X)’ by rw [tpm_thm] >> POP_ORW
+ >> CCONTR_TAC
+ >> fs [tpm_eqr]
+QED
+
+Theorem TRANS_tpm_eq :
+    !pi E u E'. TRANS E u E' <=> TRANS (tpm pi E) u (tpm pi E')
+Proof
+    rpt GEN_TAC
+ >> EQ_TAC >- rw [TRANS_tpm]
+ >> DISCH_TAC
+ >> ‘E = tpm (REVERSE pi) (tpm pi E)’ by rw [] >> POP_ORW
+ >> ‘E' = tpm (REVERSE pi) (tpm pi E')’ by rw [] >> POP_ORW
+ >> MATCH_MP_TAC TRANS_tpm >> art []
+QED
+
+Theorem STRONG_EQUIV_tpm1_cong :
+    !u v P Q. STRONG_EQUIV P Q ==> STRONG_EQUIV (tpm [(u,v)] P) (tpm [(u,v)] Q)
+Proof
+    qx_genl_tac [‘u’, ‘v’]
+ >> HO_MATCH_MP_TAC nc_INDUCTION2
+ >> Q.EXISTS_TAC ‘{u;v}’ >> rw [] (* 8 subgoals *)
+ >> cheat
+(*
+    rpt STRIP_TAC
+ >> rw [Once PROPERTY_STAR]
+ >| [ (* goal 1 (of 2) *)
+      Know ‘tpm (REVERSE pi) (tpm pi P) --u-> tpm (REVERSE pi) E1’
+      >- (art [GSYM TRANS_tpm_eq]) >> rw [] \\
+      IMP_RES_TAC PROPERTY_STAR_LEFT \\
+      Q.EXISTS_TAC ‘tpm pi E2’ >> rw [GSYM TRANS_tpm_eq] \\
+      cheat,
+      (* goal 2 (of 2) *)
+      cheat ]
+ *)
+QED
+
+(* If the possibly free variable X of E were substituted by two equivalent terms,
+   the resulting two terms must be also equivalent.
+
+   NOTE: The similar statement |- STRONG_EQUIV P Q ==> STRONG_EQUIV ([E/X] P) ([E/X] Q)
+         does NOT hold. The antecedent ‘STRONG_EQUIV P Q’ must be ‘StrongEQ P Q’.
+
+   This theorem uses the new ‘SUB’ instead of the old ‘CCS_Subst’, and the theorem
+   STRONG_UNFOLDING' is needed in handling the (only) non-trivial recursion case.
+ *)
+Theorem STRONG_EQUIV_SUB_cong :
+    !E P Q X. STRONG_EQUIV P Q ==> STRONG_EQUIV ([P/X] E) ([Q/X] E)
+Proof
+    HO_MATCH_MP_TAC simple_induction >> rw [] (* 7 subgoals *)
+ >- (Cases_on ‘s = X’ >> rw [SUB_THM])
+ >- (MATCH_MP_TAC STRONG_EQUIV_SUBST_PREFIX >> rw [])
+ >- (MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_SUM >> rw [])
+ >- (MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_PAR >> rw [])
+ >- (MATCH_MP_TAC STRONG_EQUIV_SUBST_RESTR  >> rw [])
+ >- (MATCH_MP_TAC STRONG_EQUIV_SUBST_RELAB  >> rw [])
+ (* applying NEW_TAC *)
+ >> Q.ABBREV_TAC ‘Z = FV P UNION FV Q UNION FV E UNION {X;y}’
+ >> ‘FINITE Z’ by rw [Abbr ‘Z’]
+ >> NEW_TAC "z" “Z :string set”
+ >> Q.PAT_X_ASSUM ‘FINITE Z’ K_TAC
+ >> fs [Abbr ‘Z’]
+ >> rename1 ‘Z <> Y’
+ (* applying SIMPLE_ALPHA *)
+ >> Know ‘rec Y E = rec Z ([var Z/Y] E)’
+ >- (MATCH_MP_TAC SIMPLE_ALPHA >> art [])
+ >> Rewr'
+ (* applying fresh_tpm_subst *)
+ >> Know ‘[var Z/Y] E = tpm [(Z,Y)] E’
+ >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+     MATCH_MP_TAC fresh_tpm_subst >> art [])
+ >> Rewr'
+ >> Q.ABBREV_TAC ‘E' = tpm [(Z,Y)] E’ (* [var Z/Y] E’ *)
+ (* applying SUB_REC *)
+ >> Know ‘[P/X] (rec Z E') = rec Z ([P/X] E')’
+ >- (MATCH_MP_TAC SUB_REC >> rw [])
+ >> Rewr'
+ >> Know ‘[Q/X] (rec Z E') = rec Z ([Q/X] E')’
+ >- (MATCH_MP_TAC SUB_REC >> rw [])
+ >> Rewr'
+ (* applying STRONG_UNFOLDING' *)
+ >> Q.ABBREV_TAC ‘E1 = [P/X] E'’
+ >> Q.ABBREV_TAC ‘E2 = [Q/X] E'’
+ >> MATCH_MP_TAC STRONG_EQUIV_TRANS
+ >> Q.EXISTS_TAC ‘[rec Z E1/Z] E1’
+ >> CONJ_TAC >- rw [STRONG_UNFOLDING']
+ >> MATCH_MP_TAC STRONG_EQUIV_TRANS
+ >> Q.EXISTS_TAC ‘[rec Z E2/Z] E2’
+ >> reverse CONJ_TAC >- rw [Once STRONG_EQUIV_SYM_EQ, STRONG_UNFOLDING']
+ (* special case: Y = X *)
+ >> Cases_on ‘Y = X’
+ >- (POP_ASSUM (fs o wrap) \\
+     Know ‘E1 = E' /\ E2 = E'’
+     >- (rw [Abbr ‘E1’, Abbr ‘E2’] \\ (* 2 subgoals, same tactics *)
+         MATCH_MP_TAC lemma14b >> rw [Abbr ‘E'’, FV_tpm]) \\
+     DISCH_THEN (fs o wrap))
+ >> Know ‘!P Q X. STRONG_EQUIV P Q ==> STRONG_EQUIV ([P/X] E') ([Q/X] E')’
+ >> cheat
+QED
+
+(* fmap_rel_ind *)
+Theorem STRONG_EQUIV_ssub_cong :
+    !E fm1 fm2. fmap_rel STRONG_EQUIV fm1 fm2 ==> STRONG_EQUIV (fm1 ' E) (fm2 ' E)
+Proof
+    HO_MATCH_MP_TAC simple_induction >> rw [FINITE_FV]
+ (* 9 subgoals *)
+ >- fs [fmap_rel_def]
+ (* 8 subgoals left *)
+ >- fs [fmap_rel_def]
+ (* 7 subgoals left *)
+ >- fs [fmap_rel_def]
+ (* 6 subgoals left *)
+ >- (Q.PAT_X_ASSUM ‘!fm1 fm2. P’ (MP_TAC o (Q.SPECL [‘fm1’, ‘fm2’])) >> rw [] \\
+     MATCH_MP_TAC STRONG_EQUIV_SUBST_PREFIX >> rw [])
+ (* 5 subgoals left *)
+ >- (Q.PAT_X_ASSUM ‘!fm1 fm2. P’ (MP_TAC o (Q.SPECL [‘fm1’, ‘fm2’])) >> rw [] \\
+     Q.PAT_X_ASSUM ‘!fm1 fm2. P’ (MP_TAC o (Q.SPECL [‘fm1’, ‘fm2’])) >> rw [] \\
+     MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_SUM >> rw [])
+ (* 4 subgoals left *)
+ >- (Q.PAT_X_ASSUM ‘!fm1 fm2. P’ (MP_TAC o (Q.SPECL [‘fm1’, ‘fm2’])) >> rw [] \\
+     Q.PAT_X_ASSUM ‘!fm1 fm2. P’ (MP_TAC o (Q.SPECL [‘fm1’, ‘fm2’])) >> rw [] \\
+     MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_PAR >> rw [])
+ (* 3 subgoals left *)
+ >- (Q.PAT_X_ASSUM ‘!fm1 fm2. P’ (MP_TAC o (Q.SPECL [‘fm1’, ‘fm2’])) >> rw [] \\
+     MATCH_MP_TAC STRONG_EQUIV_SUBST_RESTR >> rw [])
+ (* 2 subgoals left *)
+ >- (Q.PAT_X_ASSUM ‘!fm1 fm2. P’ (MP_TAC o (Q.SPECL [‘fm1’, ‘fm2’])) >> rw [] \\
+     MATCH_MP_TAC STRONG_EQUIV_SUBST_RELAB >> rw [])
+ >> qabbrev_tac ‘X = {y} UNION FV E UNION FDOM fm1 UNION FDOM fm2
+                     UNION (BIGUNION (IMAGE (\s. FV (fm1 ' s)) (FDOM fm1)))
+                     UNION (BIGUNION (IMAGE (\s. FV (fm2 ' s)) (FDOM fm2)))’
+ >> ‘FINITE X’ by (rw [Abbr ‘X’] >> rw [FINITE_FV])
+ >> NEW_TAC "z" “X :string set”
+ >> Q.PAT_X_ASSUM ‘FINITE X’ K_TAC
+ >> fs [Abbr ‘X’]
+ (* stage work *)
+ >> Know ‘rec y E = rec z ([var z/y] E)’
+ >- (MATCH_MP_TAC SIMPLE_ALPHA >> art [])
+ >> Rewr'
+ >> qabbrev_tac ‘P = [var z/y] E’
+ >> Know ‘fm1 ' (rec z P) = rec z (fm1 ' P)’
+ >- (MATCH_MP_TAC ssub_rec >> rw [] >> METIS_TAC [])
+ >> Rewr'
+ >> Know ‘fm2 ' (rec z P) = rec z (fm2 ' P)’
+ >- (MATCH_MP_TAC ssub_rec >> rw [] >> METIS_TAC [])
+ >> Rewr'
+ (* applying STRONG_UNFOLDING' *)
+ >> Q.ABBREV_TAC ‘E1 = fm1 ' P’
+ >> Q.ABBREV_TAC ‘E2 = fm2 ' P’
+ >> MATCH_MP_TAC STRONG_EQUIV_TRANS
+ >> Q.EXISTS_TAC ‘[rec z E1/z] E1’
+ >> CONJ_TAC >- rw [STRONG_UNFOLDING']
+ >> MATCH_MP_TAC STRONG_EQUIV_TRANS
+ >> Q.EXISTS_TAC ‘[rec z E2/z] E2’
+ >> reverse CONJ_TAC >- rw [Once STRONG_EQUIV_SYM_EQ, STRONG_UNFOLDING']
+ (* stage work *)
+ >> cheat
+QED
 
 (******************************************************************************)
 (*                                                                            *)
@@ -188,54 +367,6 @@ Proof
  >- (MATCH_MP_TAC ssub_rec >> rw [] >> METIS_TAC [])
  >> Rewr'
  >> Know ‘fm2 ' (rec y E) = rec y (fm2 ' E)’
- >- (MATCH_MP_TAC ssub_rec >> rw [] >> METIS_TAC [])
- >> Rewr'
- >> cheat
-QED
-
-(* NOTE: If the free variables of E were substituted by two equivalent terms,
-   the resulting two terms must be also equivalent.
-
-   This theorem can be moved to StrongEQTheory.
- *)
-Theorem STRONG_EQUIV_ssub_cong :
-    !E fm1 fm2. FDOM fm1 = FDOM fm2 /\
-               (!s. s IN FDOM fm1 ==> STRONG_EQUIV (fm1 ' s) (fm2 ' s)) ==>
-                STRONG_EQUIV (fm1 ' E) (fm2 ' E)
-Proof
-    HO_MATCH_MP_TAC nc_INDUCTION2
- >> Q.EXISTS_TAC ‘{}’
- >> rw [] >> rw [FINITE_FV] (* 6 subgoals *)
- >- (Q.PAT_X_ASSUM ‘!fm1 fm2. P’ (MP_TAC o (Q.SPECL [‘fm1’, ‘fm2’])) >> rw [] \\
-     MATCH_MP_TAC STRONG_EQUIV_SUBST_PREFIX >> art [])
- >- (Q.PAT_X_ASSUM ‘!fm1 fm2. P’ (MP_TAC o (Q.SPECL [‘fm1’, ‘fm2’])) >> rw [] \\
-     Q.PAT_X_ASSUM ‘!fm1 fm2. P’ (MP_TAC o (Q.SPECL [‘fm1’, ‘fm2’])) >> rw [] \\
-     MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_SUM >> art [])
- >- (Q.PAT_X_ASSUM ‘!fm1 fm2. P’ (MP_TAC o (Q.SPECL [‘fm1’, ‘fm2’])) >> rw [] \\
-     Q.PAT_X_ASSUM ‘!fm1 fm2. P’ (MP_TAC o (Q.SPECL [‘fm1’, ‘fm2’])) >> rw [] \\
-     MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_PAR >> art [])
- >- (Q.PAT_X_ASSUM ‘!fm1 fm2. P’ (MP_TAC o (Q.SPECL [‘fm1’, ‘fm2’])) >> rw [] \\
-     MATCH_MP_TAC STRONG_EQUIV_SUBST_RESTR >> art [])
- >- (Q.PAT_X_ASSUM ‘!fm1 fm2. P’ (MP_TAC o (Q.SPECL [‘fm1’, ‘fm2’])) >> rw [] \\
-     MATCH_MP_TAC STRONG_EQUIV_SUBST_RELAB >> art [])
- (* stage work *)
- >> qabbrev_tac ‘X = FV E UNION FDOM fm1
-                     UNION (BIGUNION (IMAGE (\s. FV (fm1 ' s)) (FDOM fm1)))
-                     UNION (BIGUNION (IMAGE (\s. FV (fm2 ' s)) (FDOM fm1)))’
- >> Know ‘FINITE X’
- >- (rw [Abbr ‘X’] >> rw [FINITE_FV])
- >> DISCH_TAC
- >> NEW_TAC "z" “X :string set”
- >> Q.PAT_X_ASSUM ‘FINITE X’ K_TAC
- >> fs [Abbr ‘X’]
- >> Know ‘rec y E = rec z ([var z/y] E)’
- >- (MATCH_MP_TAC SIMPLE_ALPHA >> art [])
- >> Rewr'
- >> qabbrev_tac ‘P = [var z/y] E’
- >> Know ‘fm1 ' (rec z P) = rec z (fm1 ' P)’
- >- (MATCH_MP_TAC ssub_rec >> rw [] >> METIS_TAC [])
- >> Rewr'
- >> Know ‘fm2 ' (rec z P) = rec z (fm2 ' P)’
  >- (MATCH_MP_TAC ssub_rec >> rw [] >> METIS_TAC [])
  >> Rewr'
  >> cheat

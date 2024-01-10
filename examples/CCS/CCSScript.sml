@@ -1013,7 +1013,7 @@ val SUB_THMv = prove(
   “([N/x](var x) = (N :'a CCS)) /\ (x <> y ==> [N/y](var x) = var x)”,
   SRW_TAC [][SUB_DEF]);
 
-val SUB_COMM = prove(
+Theorem SUB_COMM = prove(
    “!N x x' y (t :'a CCS).
         x' <> x /\ x' # N ∧ y <> x /\ y # N ==>
         (tpm [(x',y)] ([N/x] t) = [N/x] (tpm [(x',y)] t))”,
