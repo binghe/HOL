@@ -874,8 +874,20 @@ Proof
         term_ABS_pseudo11, gterm_distinct, GLAM_eq_thm]
 QED
 
+(* NOTE: ‘var X <> rec Y E’ does't hold in general. *)
+Theorem CCS_distinct_nil[simp] :
+    (nil <> var X :'a CCS) /\
+    (nil <> prefix u E :'a CCS) /\
+    (nil <> E1 + E2 :'a CCS) /\
+    (nil <> E1 || E2 :'a CCS) /\
+    (nil <> restr L E :'a CCS) /\
+    (nil <> relab E rf :'a CCS)
+Proof
+    rw [nil_def]
+QED
+
 local
-    val thm = CONJUNCTS CCS_distinct;
+    val thm = append (CONJUNCTS CCS_distinct) (CONJUNCTS CCS_distinct_nil);
     val CCS_distinct_LIST = thm @ (map GSYM thm);
 in
     val CCS_distinct' = save_thm
@@ -887,7 +899,8 @@ Theorem CCS_distinct_exists :
 Proof
     Q.X_GEN_TAC ‘p’
  >> MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw []
- >- (Q.EXISTS_TAC ‘rec a (var a)’ >> rw [CCS_distinct'])
+ >- (Q_TAC (NEW_TAC "b") ‘{a}’ \\
+     Q.EXISTS_TAC ‘var b’ >> rw [CCS_distinct'])
  >> Q.EXISTS_TAC ‘var a’
  >> rw [CCS_distinct]
 QED
@@ -898,7 +911,8 @@ Proof
     rpt STRIP_TAC
  >> Q_TAC (NEW_TAC "z") ‘X’
  >> MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw []
- >- (Q.EXISTS_TAC ‘rec a (var a)’ >> rw [CCS_distinct'])
+ >- (Q_TAC (NEW_TAC "b") ‘{a} UNION X’ \\
+     Q.EXISTS_TAC ‘var b’ >> rw [CCS_distinct'])
  >> Q.EXISTS_TAC ‘var z’
  >> rw [CCS_distinct]
 QED

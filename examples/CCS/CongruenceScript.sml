@@ -153,7 +153,7 @@ Proof
  >> ONCE_REWRITE_TAC [CONTEXT_cases]
  >> fs [FUN_EQ_THM, IS_CONST_def]
  >> rpt STRIP_TAC
- >- (Q.EXISTS_TAC ‘nil’ >> rw [])
+ >- (Q.EXISTS_TAC ‘var X’ >> rw [])
  >> MP_TAC (Q.SPEC ‘p’ CCS_cases)
  >> rw [] >> CCONTR_TAC >> fs []
  >> rename1 ‘!t. rec X (e t) = rec Y E’
