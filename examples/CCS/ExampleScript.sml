@@ -157,7 +157,7 @@ val [oPREFIX, oSUM1, oSUM2, oPAR1, oPAR2, oPAR3, oRESTR, oRELABELING, oREC] =
                    "oRELABELING", "oREC"],
                   CONJUNCTS oTRANS_rules));
 
-Theorem oREC_cases_EQ = 
+Theorem oREC_cases_EQ =
     oTRANS_cases |> (Q.SPEC `rec X E`)
                  |> (REWRITE_RULE [CCS_distinct', CCS_one_one])
                  |> (Q.SPECL [`u`, `E'`])
