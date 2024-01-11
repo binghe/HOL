@@ -1,6 +1,6 @@
 (* ========================================================================== *)
-(* FILE          : ExtendedScript.sml                                         *)
-(* DESCRIPTION   : Extended Theory for "Open" CCS Terms                       *)
+(* FILE          : FutureScript.sml                                           *)
+(* DESCRIPTION   : "Future" theory of CCS (for potentially open terms)        *)
 (*                                                                            *)
 (* COPYRIGHTS    : 2023-2024 Australian National University (Chun Tian)       *)
 (******************************************************************************)
@@ -9,13 +9,22 @@ open HolKernel Parse boolLib bossLib;
 
 open pred_setTheory relationTheory bisimulationTheory listTheory finite_mapTheory;
 
+(* lambda theories *)
 open binderLib;
 
-open CCSLib CCSTheory StrongEQTheory StrongLawsTheory BisimulationUptoTheory;
+(* local theories *)
+open CCSLib CCSTheory CCSSyntax CCSConv;
+open StrongEQTheory StrongEQLib StrongLawsTheory;
+open WeakEQTheory WeakEQLib WeakLawsTheory;
+open ObsCongrTheory ObsCongrLib ObsCongrLawsTheory;
+open CongruenceTheory CoarsestCongrTheory;
+open TraceTheory ExpansionTheory ContractionTheory;
+open BisimulationUptoTheory UniqueSolutionsTheory;
+(* open MultivariateTheory; *)
 
 val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
 
-val _ = new_theory "Extended";
+val _ = new_theory "Future";
 
 Theorem TRANS_tpm :
     !pi E u E'. TRANS E u E' ==> TRANS (tpm pi E) u (tpm pi E')
@@ -719,7 +728,7 @@ QED
  *)
 
 val _ = export_theory ();
-val _ = html_theory "Extended";
+val _ = html_theory "Future";
 
 (* Bibliography:
 
