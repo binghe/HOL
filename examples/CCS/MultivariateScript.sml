@@ -1107,17 +1107,6 @@ Proof
  >> fs [FDOM_fromList] >> ASM_SET_TAC []
 QED
 
-Theorem LIST_REL_equivalence : (* unused *)
-    !R. equivalence R ==> equivalence (LIST_REL R)
-Proof
-    RW_TAC list_ss [equivalence_def, reflexive_def, symmetric_def,
-                    transitive_def, LIST_REL_EL_EQN]
- >- (EQ_TAC >> RW_TAC std_ss [])
- >> Q.PAT_X_ASSUM `!x y z. R x y /\ R y z ==> R x z` MATCH_MP_TAC
- >> Q.EXISTS_TAC `EL n y`
- >> CONJ_TAC >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
-QED
-
 (* ========================================================================== *)
 (*  Section III: Weakly guarded equations                                     *)
 (* ========================================================================== *)
