@@ -1520,12 +1520,11 @@ Theorem Boehm_transform_exists_lemma2 :
             ?pi. Boehm_transform pi /\ is_ready (apply pi M) /\
                  ?fm. subterm' X (apply pi M) p = fm ' (subterm' X M p)
 Proof
-    rpt GEN_TAC >> rpt STRIP_TAC
- >> cheat
- (* below is the proof of Boehm_transform_exists_lemma1 for reference:
-    Q.X_GEN_TAC ‘M’
+    qx_genl_tac [‘Y’, ‘M’, ‘p’] (* X --> Y *)
+ >> DISCH_TAC
  >> reverse (Cases_on ‘solvable M’)
- >- (Q.EXISTS_TAC ‘[]’ >> rw [is_ready_def])
+ >- (Q.EXISTS_TAC ‘[]’ >> rw [is_ready_def] \\
+     Q.EXISTS_TAC ‘FEMPTY’ >> rw [])
  (* now M is solvable *)
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> ‘hnf M0’ by PROVE_TAC [hnf_principle_hnf, solvable_iff_has_hnf]
@@ -1549,6 +1548,11 @@ Proof
  >- (qunabbrev_tac ‘X’ \\
      MATCH_MP_TAC FINITE_BIGUNION >> rw [] >> rw [])
  >> DISCH_TAC
+
+
+(*
+
+ 
  (* Z needs to avoid any free variables in args' *)
  >> FRESH_list_tac (“Z :string list”, “(m + 1) :num”, “X :string set”)
  >> ‘Z <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
@@ -1693,7 +1697,7 @@ Proof
  >> Q.EXISTS_TAC ‘apply p3 (P @* args')’ >> art []
  >> MATCH_MP_TAC lameq_apply_cong
  >> rw [Abbr ‘p3’]
- *)
+*)
 QED
 
 (* Definition 10.3.10 (ii) *)
