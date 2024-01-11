@@ -52,7 +52,7 @@ Proof
  >> MATCH_MP_TAC TRANS_tpm >> art []
 QED
 
-Theorem STRONG_EQUIV_tpm1_cong :
+Theorem STRONG_EQUIV_tpm_cong_lemma[local] :
     !u v P Q. STRONG_EQUIV P Q ==> STRONG_EQUIV (tpm [(u,v)] P) (tpm [(u,v)] Q)
 Proof
     qx_genl_tac [‘u’, ‘v’]
