@@ -2277,6 +2277,7 @@ QED
 (* |- !X E u E'. rec X E --u-> E' <=> [rec X E/X] E --u-> E' /\ E <> var X *)
 Theorem TRANS_REC_EQ' = REWRITE_RULE [CCS_Subst] TRANS_REC_EQ
 
+(* |- !X E u E'. rec X E --u-> E' ==> CCS_Subst E (rec X E) X --u-> E' /\ E <> var X *)
 Theorem TRANS_REC = EQ_IMP_LR TRANS_REC_EQ
 
 (* |- !X E u E'. rec X E --u-> E' ==> [rec X E/X] E --u-> E' /\ E <> var X *)
@@ -2296,6 +2297,12 @@ Proof
  >> Cases_on ‘X = Y’ >> rw [VAR_NO_TRANS]
 QED
 
+(* NOTE: This is the *ONLY* theorem for which the induction principle of
+  ‘TRANS’ is needed. And this theorem (and the next TRANS_PROC) is only needed
+   in MultivariateScript.sml (so even the univariate "Unique solution" theorems
+   do not need this theorem). Thus, if ‘TRANS’ were defined by CoInductive,
+  "almost all" CCS theorems in this work, still hold.  -- Chun Tian, 11 gen 2024
+ *)
 Theorem TRANS_FV :
     !E u E'. TRANS E u E' ==> FV E' SUBSET (FV E)
 Proof
@@ -2315,6 +2322,7 @@ Proof
  >> rfs []
 QED
 
+(* A modern name after ‘IS_PROC’ has been overloaded on ‘closed’. *)
 Theorem TRANS_closed = TRANS_PROC
 
 (* ----------------------------------------------------------------------
