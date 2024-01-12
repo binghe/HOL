@@ -1548,11 +1548,8 @@ Proof
  >- (qunabbrev_tac ‘X’ \\
      MATCH_MP_TAC FINITE_BIGUNION >> rw [] >> rw [])
  >> DISCH_TAC
-
-
+ >> cheat
 (*
-
- 
  (* Z needs to avoid any free variables in args' *)
  >> FRESH_list_tac (“Z :string list”, “(m + 1) :num”, “X :string set”)
  >> ‘Z <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
