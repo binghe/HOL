@@ -327,41 +327,39 @@ Proof
  >> Q.EXISTS_TAC ‘FDOM fm1
                   UNION (BIGUNION (IMAGE (\s. FV (fm1 ' s)) (FDOM fm1)))
                   UNION (BIGUNION (IMAGE (\s. FV (fm2 ' s)) (FDOM fm1)))’
- >> rw [] >> rw [FINITE_FV] (* 9 subgoals *)
- (* goal 1 (of 9) *)
+ >> rw [] >> rw [FINITE_FV] (* 8 subgoals *)
+ (* goal 1 (of 8) *)
  >- (MATCH_MP_TAC STRONG_EQUIV_TRANS \\
      Q.EXISTS_TAC ‘fm2 ' s’ >> rw [] \\
      FULL_SIMP_TAC std_ss [StrongEQ_def] \\
      POP_ASSUM (MP_TAC o (Q.SPEC ‘fm2’)) >> rw [])
- (* goal 2 (of 9) *)
+ (* goal 2 (of 8) *)
  >- (FULL_SIMP_TAC std_ss [StrongEQ_def] \\
      POP_ASSUM (MP_TAC o (Q.SPEC ‘fm2’)) >> rw [])
- (* goal 3 (of 9) *)
- >- (FULL_SIMP_TAC std_ss [StrongEQ_def, ssub_thm])
- (* goal 4 (of 9) *)
+ (* goal 4 (of 8) *)
  >- (FULL_SIMP_TAC std_ss [StrongEQ_def, ssub_thm] \\
      POP_ASSUM (MP_TAC o (Q.SPEC ‘fm2’)) >> rw [] \\
      MATCH_MP_TAC STRONG_EQUIV_TRANS \\
      Q.EXISTS_TAC ‘u..fm2 ' E’ >> art [] \\
      MATCH_MP_TAC STRONG_EQUIV_SUBST_PREFIX \\
      FIRST_X_ASSUM MATCH_MP_TAC >> rw [])
- (* goal 5 (of 9) *)
+ (* goal 5 (of 8) *)
  >- (MATCH_MP_TAC STRONG_EQUIV_TRANS \\
      Q.EXISTS_TAC ‘fm2 ' E1 + fm2 ' E2’ \\
      CONJ_TAC >- (MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_SUM >> rw []) \\
      FULL_SIMP_TAC std_ss [StrongEQ_def, ssub_thm])
- (* goal 6 (of 9) *)
+ (* goal 6 (of 8) *)
  >- (MATCH_MP_TAC STRONG_EQUIV_TRANS \\
      Q.EXISTS_TAC ‘fm2 ' E1 || fm2 ' E2’ \\
      CONJ_TAC >- (MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_PAR >> rw []) \\
      FULL_SIMP_TAC std_ss [StrongEQ_def, ssub_thm])
- (* goal 7 (of 9) *)
+ (* goal 7 (of 8) *)
  >- (Q.PAT_X_ASSUM ‘!Q. StrongEQ E Q ==> P’ (MP_TAC o (Q.SPEC ‘E’)) >> rw [] \\
      MATCH_MP_TAC STRONG_EQUIV_TRANS \\
      Q.EXISTS_TAC ‘restr L (fm2 ' E)’ \\
      CONJ_TAC >- (MATCH_MP_TAC STRONG_EQUIV_SUBST_RESTR >> art []) \\
      FULL_SIMP_TAC std_ss [StrongEQ_def, ssub_thm])
- (* goal 8 (of 9) *)
+ (* goal 8 (of 8) *)
  >- (Q.PAT_X_ASSUM ‘!Q. StrongEQ E Q ==> P’ (MP_TAC o (Q.SPEC ‘E’)) >> rw [] \\
      MATCH_MP_TAC STRONG_EQUIV_TRANS \\
      Q.EXISTS_TAC ‘relab (fm2 ' E) rf’ \\
@@ -424,20 +422,18 @@ Theorem STRONG_EQUIV_PRESD_BY_REC_lemma :
                           y = CCS_Subst G (rec X Q) X) O STRONG_EQUIV) E1 E2
 Proof
     HO_MATCH_MP_TAC simple_induction
- >> rw [CCS_Subst] (* 8 subgoals *)
- >| [ (* goal 1 (of 8) *)
+ >> rw [CCS_Subst] (* 7 subgoals *)
+ >| [ (* goal 1 (of 7) *)
       fs [TRANS_REC_EQ, CCS_Subst] (* this adds ‘P <> var X’, very useful *) \\
       cheat,
-      (* goal 2 (of 8) *)
-      FULL_SIMP_TAC bool_ss [NIL_NO_TRANS],
-      (* goal 3 (of 8) *)
+      (* goal 2 (of 7) *)
       fs [TRANS_PREFIX_EQ, O_DEF] \\
       Q.EXISTS_TAC ‘[rec X Q/X] G’ >> rw [] \\
       Q.EXISTS_TAC ‘[rec X P/X] G’ >> rw [] \\
       Q.EXISTS_TAC ‘G’ >> art [],
-      (* goal 4 (of 8): SUM *)
+      (* goal 3 (of 7): SUM *)
       fs [TRANS_SUM_EQ] >| (* 2 subgoals *)
-      [ (* goal 4.1 (of 2) *)
+      [ (* goal 3.1 (of 2) *)
         Q.PAT_X_ASSUM ‘!P Q X. FV P SUBSET {X} /\ FV Q SUBSET {X} /\ StrongEQ P Q /\
                                FV G SUBSET {X} /\
                                [rec X P/X] G --u-> E1 ==> _’
@@ -447,7 +443,7 @@ Proof
         Q.EXISTS_TAC ‘[rec X Q/X] G2’ >> rw [] \\
         Q.EXISTS_TAC ‘[rec X P/X] G2’ >> rw [] \\
         Q.EXISTS_TAC ‘G2’ >> art [],
-        (* goal 4.2 (of 2) *)
+        (* goal 3.2 (of 2) *)
         Q.PAT_X_ASSUM ‘!P Q X. FV P SUBSET {X} /\ FV Q SUBSET {X} /\ StrongEQ P Q /\
                                FV G' SUBSET {X} /\
                                [rec X P/X] G' --u-> E1 ==> _’
@@ -457,13 +453,13 @@ Proof
         Q.EXISTS_TAC ‘[rec X Q/X] G2’ >> rw [] \\
         Q.EXISTS_TAC ‘[rec X P/X] G2’ >> rw [] \\
         Q.EXISTS_TAC ‘G2’ >> art [] ],
-      (* goal 5 (of 8): PAR *)
+      (* goal 4 (of 8): PAR *)
       cheat, (* FULL_SIMP_TAC std_ss [TRANS_PAR_EQ] *)
-      (* goal 6 (of 8):  *)
+      (* goal 5 (of 8):  *)
       cheat, (* FULL_SIMP_TAC std_ss [TRANS_RESTR_EQ] *)
-      (* goal 7 (of 8) *)
+      (* goal 6 (of 8) *)
       cheat, (* FULL_SIMP_TAC std_ss [TRANS_RELAB_EQ] *)
-      (* goal 8 (of 8) *)
+      (* goal 7 (of 8) *)
       rename1 ‘FV G DELETE Y SUBSET {X}’ \\
       Cases_on ‘Y = X’ (* trivial case *)
       >- (‘X # rec Y G’ by rw [FV_thm] \\

@@ -887,35 +887,12 @@ Proof
 QED
 
 local
-    val thm = append (CONJUNCTS CCS_distinct) (CONJUNCTS CCS_distinct_nil);
+    val thm = (CONJUNCTS CCS_distinct) @ (CONJUNCTS CCS_distinct_nil);
     val CCS_distinct_LIST = thm @ (map GSYM thm);
 in
     val CCS_distinct' = save_thm
       ("CCS_distinct'", LIST_CONJ CCS_distinct_LIST);
 end
-
-Theorem CCS_distinct_exists :
-    !(p :'a CCS). ?q. q <> p
-Proof
-    Q.X_GEN_TAC ‘p’
- >> MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw []
- >- (Q_TAC (NEW_TAC "b") ‘{a}’ \\
-     Q.EXISTS_TAC ‘var b’ >> rw [CCS_distinct'])
- >> Q.EXISTS_TAC ‘var a’
- >> rw [CCS_distinct]
-QED
-
-Theorem CCS_distinct_exists_FV :
-    !X (p :'a CCS). FINITE X ==> ?q. q <> p /\ DISJOINT (FV q) X
-Proof
-    rpt STRIP_TAC
- >> Q_TAC (NEW_TAC "z") ‘X’
- >> MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw []
- >- (Q_TAC (NEW_TAC "b") ‘{a} UNION X’ \\
-     Q.EXISTS_TAC ‘var b’ >> rw [CCS_distinct'])
- >> Q.EXISTS_TAC ‘var z’
- >> rw [CCS_distinct]
-QED
 
 (* cf. rec_eq_thm for “rec X E = rec X' E'” *)
 Theorem CCS_one_one[simp] :
@@ -930,6 +907,27 @@ Proof
                 par_def, par_termP, restr_def, restr_termP, relab_def, relab_termP,
                 term_ABS_pseudo11, gterm_11, term_REP_11]
  >> rw [Once CONJ_COMM]
+QED
+
+Theorem CCS_distinct_exists :
+    !(p :'a CCS). ?q. q <> p
+Proof
+    Q.X_GEN_TAC ‘p’
+ >> MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw []
+ >- (Q.EXISTS_TAC ‘nil’ >> rw [])
+ >> Q.EXISTS_TAC ‘var a’
+ >> rw [CCS_distinct]
+QED
+
+Theorem CCS_distinct_exists_FV :
+    !X (p :'a CCS). FINITE X ==> ?q. q <> p /\ DISJOINT (FV q) X
+Proof
+    rpt STRIP_TAC
+ >> Q_TAC (NEW_TAC "z") ‘X’
+ >> MP_TAC (Q.SPEC ‘p’ CCS_cases) >> rw []
+ >- (Q.EXISTS_TAC ‘nil’ >> rw [])
+ >> Q.EXISTS_TAC ‘var z’
+ >> rw [CCS_distinct]
 QED
 
 Theorem sum_acyclic :
@@ -1048,7 +1046,7 @@ val _ = export_rewrites ["SUB_THM"];
 Theorem SUB_VAR = hd (CONJUNCTS SUB_DEF) |> Q.SPECL [‘Y’, ‘X’] |> GEN_ALL
 
 (* |- !Y X E' E. Y <> X /\ Y # E' ==> [E'/X] (rec Y E) = rec Y ([E'/X] E) *)
-Theorem SUB_REC = List.nth (CONJUNCTS SUB_DEF, 7)
+Theorem SUB_REC = List.nth (CONJUNCTS SUB_DEF, 6)
                |> Q.SPECL [‘Y’, ‘X’, ‘E'’, ‘E’] |> GEN_ALL
 
 (* ----------------------------------------------------------------------
