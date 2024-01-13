@@ -77,10 +77,22 @@ Theorem StrongEQ_IMP_STRONG_EQUIV =
 Theorem StrongEQ_def =
     SIMP_RULE std_ss [FUN_EQ_THM] (Q.SPEC ‘STRONG_EQUIV’ extension_def)
 
+Theorem StrongEQ_alt_closed :
+    !P Q. closed P /\ closed Q ==> (StrongEQ P Q <=> STRONG_EQUIV P Q)
+Proof
+    rw [StrongEQ_def, ssub_value']
+QED
+
 Theorem StrongEQ_REFL[simp] :
     !E. StrongEQ E E
 Proof
     rw [StrongEQ_def]
+QED
+
+Theorem StrongEQ_reflexive :
+    reflexive StrongEQ
+Proof
+    rw [reflexive_def]
 QED
 
 Theorem StrongEQ_symmetric :
@@ -108,17 +120,23 @@ Proof
  >> Q.EXISTS_TAC ‘fm ' E2’ >> rw []
 QED
 
-Theorem StrongEQ_equivalence :
-    equivalence StrongEQ
+Theorem StrongEQ_transitive :
+    transitive StrongEQ
 Proof
-    rw [equivalence_def, reflexive_def, StrongEQ_symmetric, StrongEQ_REFL,
-        transitive_def]
+    rw [transitive_def]
  >> MATCH_MP_TAC StrongEQ_TRANS
  >> Q.EXISTS_TAC ‘y’ >> art []
 QED
 
-(* NOTE: the opposite direction doesn't hold *)
-Theorem StrongEQ_imp_subst :
+Theorem StrongEQ_equivalence :
+    equivalence StrongEQ
+Proof
+    rw [equivalence_def,
+        StrongEQ_reflexive, StrongEQ_symmetric, StrongEQ_transitive]
+QED
+
+(* NOTE: the opposite direction doesn't hold, unless X is the only FV *)
+Theorem StrongEQ_IMP_SUBST :
     !X P Q. StrongEQ P Q ==> !E. STRONG_EQUIV ([E/X] P) ([E/X] Q)
 Proof
     rw [StrongEQ_def]
@@ -126,14 +144,51 @@ Proof
  >> rw [single_ssub]
 QED
 
-(* An easy corollary of STRONG_UNIQUE_SOLUTION_EXTENDED *)
-Theorem StrongEQ_presd_by_rec_weakly_guarded :
-    !P Q X. weakly_guarded [X] P /\ weakly_guarded [X] Q /\
+Theorem SUBSET_SING[local] :
+    !X Y. Y SUBSET {X} <=> Y = {} \/ Y = {X}
+Proof
+    SET_TAC []
+QED
+
+Theorem StrongEQ_EQ_SUBST_lemma :
+    !P X E fm. FV P SUBSET {X} /\ E = fm ' (var X) ==> fm ' P = [E/X] P
+Proof
+    RW_TAC std_ss []
+ >> FULL_SIMP_TAC std_ss [SUBSET_SING] >- rw [ssub_value, lemma14b]
+ >> Q.ID_SPEC_TAC ‘fm’
+ >> HO_MATCH_MP_TAC fmap_INDUCT >> rw []
+ >- (rename1 ‘Y NOTIN FDOM fm’ \\
+    ‘Y <> X’ by PROVE_TAC [] \\
+     cheat)
+ >> cheat
+QED
+
+Theorem StrongEQ_EQ_SUBST :
+    !X P Q. FV P SUBSET {X} /\ FV Q SUBSET {X} ==>
+           (StrongEQ P Q <=> !E. STRONG_EQUIV ([E/X] P) ([E/X] Q))
+Proof
+    rpt STRIP_TAC
+ >> EQ_TAC >- rw [StrongEQ_IMP_SUBST]
+ >> rw [StrongEQ_def]
+ >> qabbrev_tac ‘E = fm ' (var X)’
+ >> Know ‘fm ' P = [E/X] P’
+ >- (MATCH_MP_TAC StrongEQ_EQ_SUBST_lemma >> rw [Abbr ‘E’])
+ >> Know ‘fm ' Q = [E/X] Q’
+ >- (MATCH_MP_TAC StrongEQ_EQ_SUBST_lemma >> rw [Abbr ‘E’])
+ >> rw []
+QED
+
+(* An easy corollary of STRONG_UNIQUE_SOLUTION_EXTENDED
+
+   cf. Proposition 4.12 of [1, p.99] or Theorem 4.2 of [2, p.182]
+ *)
+Theorem STRONG_EQUIV_PRESD_BY_REC :
+    !P Q X. weakly_guarded [X] [P; Q] ==>
             StrongEQ P Q ==> STRONG_EQUIV (rec X P) (rec X Q)
 Proof
     rw [weakly_guarded_def, CCS_Subst]
  >> ‘!E. STRONG_EQUIV ([E/X] P) ([E/X] Q)’
-       by PROVE_TAC [StrongEQ_imp_subst]
+       by PROVE_TAC [StrongEQ_IMP_SUBST]
  >> MATCH_MP_TAC STRONG_UNIQUE_SOLUTION_EXTENDED
  >> qexistsl_tac [‘\t. [t/X] P’, ‘\t. [t/X] Q’] >> simp []
  >> rw [STRONG_UNFOLDING']
@@ -172,6 +227,63 @@ Proof
  >> ‘E  = tpm (REVERSE pi) (tpm pi E )’ by rw [] >> POP_ORW
  >> ‘E' = tpm (REVERSE pi) (tpm pi E')’ by rw [] >> POP_ORW
  >> MATCH_MP_TAC TRANS_tpm >> art []
+QED
+
+(* Substitution of free variables to ‘nil’ preserves strong bisimilarity. *)
+Theorem STRONG_EQUIV_ssub_lemma :
+    !fm E. (!y. y IN FDOM fm ==> fm ' y = nil) ==> STRONG_EQUIV E (fm ' E)
+Proof
+    Q.X_GEN_TAC ‘fm’
+ >> HO_MATCH_MP_TAC nc_INDUCTION2
+ >> Q.EXISTS_TAC ‘FDOM fm’ >> rw [] (* 7 subgoals *)
+ >- (rw [FUN_FMAP_DEF, PROPERTY_STAR, NIL_NO_TRANS, VAR_NO_TRANS])
+ >- (MATCH_MP_TAC STRONG_EQUIV_SUBST_PREFIX >> rw [])
+ >- (MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_SUM >> rw [])
+ >- (MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_PAR >> rw [])
+ >- (MATCH_MP_TAC STRONG_EQUIV_SUBST_RESTR  >> rw [])
+ >- (MATCH_MP_TAC STRONG_EQUIV_SUBST_RELAB  >> rw [])
+ (* stage work *)
+ >> cheat (* FAIL *)
+QED
+
+Theorem STRONG_EQUIV_PRESD_BY_REC_FULL :
+    !X P Q. StrongEQ P Q ==> STRONG_EQUIV (rec X P) (rec X Q)
+Proof
+    rpt STRIP_TAC
+ (* applying STRONG_EQUIV_BY_BISIM_UPTO *)
+ >> MATCH_MP_TAC STRONG_EQUIV_BY_BISIM_UPTO
+ >> qabbrev_tac ‘R = \x y. x = y \/
+                          ?E. CONTEXT E /\ x = E (rec X P) /\ y = E (rec X Q)’
+ >> Q.EXISTS_TAC ‘R’
+ >> reverse CONJ_TAC
+ >- (rw [Abbr ‘R’] \\
+     DISJ2_TAC >> qexistsl_tac [‘\t. t’] >> rw [CONTEXT1])
+ (* stage work *)
+ >> rw [STRONG_BISIM_UPTO]
+ (* applying STRONG_EQUIV_PRESD_BY_REC_lemma *)
+ >- (MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_REC_lemma >> art [])
+ >> Know ‘!E1. (STRONG_EQUIV O (\x y. ?G. FV G SUBSET {X} /\
+                                      x = CCS_Subst G (rec X P) X /\
+                                      y = CCS_Subst G (rec X Q) X) O
+                STRONG_EQUIV) E1 E2 <=>
+               (STRONG_EQUIV O (\x y. ?G. FV G SUBSET {X} /\
+                                      x = CCS_Subst G (rec X Q) X /\
+                                      y = CCS_Subst G (rec X P) X) O
+                STRONG_EQUIV) E2 E1’
+ >- (rw [O_DEF] \\
+     EQ_TAC >> rw [] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       Q.EXISTS_TAC ‘CCS_Subst G' (rec X P) X’ >> rw [STRONG_EQUIV_SYM] \\
+       Q.EXISTS_TAC ‘CCS_Subst G' (rec X Q) X’ >> rw [STRONG_EQUIV_SYM] \\
+       Q.EXISTS_TAC ‘G'’ >> art [],
+       (* goal 2 (of 2) *)
+       Q.EXISTS_TAC ‘CCS_Subst G' (rec X Q) X’ >> rw [STRONG_EQUIV_SYM] \\
+       Q.EXISTS_TAC ‘CCS_Subst G' (rec X P) X’ >> rw [STRONG_EQUIV_SYM] \\
+       Q.EXISTS_TAC ‘G'’ >> art [] ])
+ >> Rewr'
+ (* applying STRONG_EQUIV_PRESD_BY_REC_lemma again *)
+ >> MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_REC_lemma
+ >> rw [StrongEQ_SYM]
 QED
 
 val _ = export_theory ();
