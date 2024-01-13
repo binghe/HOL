@@ -106,12 +106,13 @@ Proof
       GEN_TAC >> MATCH_MP_TAC RELABELING >> art [] ]
 QED
 
+(* NOTE: This is a generalization of STRONG_UNIQUE_SOLUTION with the same proof. *)
 Theorem STRONG_UNIQUE_SOLUTION_EXT :
-    !W1 W2 P Q. WG W1 /\ WG W2 /\ (!t. STRONG_EQUIV (W1 t) (W2 t)) /\
-                STRONG_EQUIV P (W1 P) /\ STRONG_EQUIV Q (W2 Q) ==> STRONG_EQUIV P Q
+    !C1 C2 P Q. WG C1 /\ WG C2 /\ (!t. STRONG_EQUIV (C1 t) (C2 t)) /\
+                STRONG_EQUIV P (C1 P) /\ STRONG_EQUIV Q (C2 Q) ==> STRONG_EQUIV P Q
 Proof
     rpt STRIP_TAC
- >> irule (REWRITE_RULE [RSUBSET] STRONG_BISIM_UPTO_THM)
+ >> MATCH_MP_TAC STRONG_EQUIV_BY_BISIM_UPTO
  >> qabbrev_tac ‘R = \x y. x = y \/ ?E. CONTEXT E /\ x = E P /\ y = E Q’
  >> Q.EXISTS_TAC ‘R’
  >> reverse CONJ_TAC
@@ -136,14 +137,16 @@ Proof
  >> Q.ID_SPEC_TAC ‘E’
  >> Induct_on `CONTEXT` >> rw []
  (* 14 subgoals left *)
- >- ((* proof idea:
-        P  ~ W1[P] ~ W2[P]  :  W2[Q] ~  Q
-        |    |        |          |      |
-        E1 ~ E2   ~  G[P]   :  G[Q]  ~  E3
+ >- ((*
+        P  ~  C1[P] ~ C2[P]  : C2[Q] ~  Q
+        |     |        |          |     |
+        u     u        u          u     u
+        |     |        |          |     |
+        E1 ~ ?E2   ~  ?G[P]  :  G[Q] ~ ?E3
       *)
-    ‘?E2. W1 P --u-> E2 /\ STRONG_EQUIV E1 E2’ by METIS_TAC [PROPERTY_STAR_LEFT] \\
-    ‘?E3. W2 P --u-> E3 /\ STRONG_EQUIV E2 E3’ by METIS_TAC [PROPERTY_STAR_LEFT] \\
-     MP_TAC (Q.SPEC ‘W2’ STRONG_UNIQUE_SOLUTION_LEMMA) >> simp [] \\
+    ‘?E2. C1 P --u-> E2 /\ STRONG_EQUIV E1 E2’ by METIS_TAC [PROPERTY_STAR_LEFT] \\
+    ‘?E3. C2 P --u-> E3 /\ STRONG_EQUIV E2 E3’ by METIS_TAC [PROPERTY_STAR_LEFT] \\
+     MP_TAC (Q.SPEC ‘C2’ STRONG_UNIQUE_SOLUTION_LEMMA) >> simp [] \\
      DISCH_THEN (MP_TAC o (Q.SPECL [‘P’, ‘u’, ‘E3’])) >> simp [] \\
      DISCH_THEN (Q.X_CHOOSE_THEN ‘G’ STRIP_ASSUME_TAC) \\
      Q.PAT_X_ASSUM ‘E3 = G P’ (rfs o wrap) \\
@@ -154,14 +157,14 @@ Proof
      CONJ_TAC >- (MATCH_MP_TAC STRONG_EQUIV_TRANS >> Q.EXISTS_TAC ‘E2’ >> art []) \\
      DISJ2_TAC >> Q.EXISTS_TAC ‘G’ >> art [])
  (* 13 subgoals left *)
- >- ((* proof idea:
-        Q  ~ W2[Q] ~ W1[Q]  :  W1[P] ~  P
+ >- ((*
+        Q  ~ C2[Q] ~ C1[Q]  :  C1[P] ~  P
         |    |        |          |      |
         E2 ~ E1   ~  G[Q]   :  G[P]  ~  E3
       *)
-    ‘?E1. W2 Q --u-> E1 /\ STRONG_EQUIV E2 E1’ by METIS_TAC [PROPERTY_STAR_LEFT] \\
-    ‘?E3. W1 Q --u-> E3 /\ STRONG_EQUIV E3 E1’ by METIS_TAC [PROPERTY_STAR_RIGHT] \\
-     MP_TAC (Q.SPEC ‘W1’ STRONG_UNIQUE_SOLUTION_LEMMA) >> simp [] \\
+    ‘?E1. C2 Q --u-> E1 /\ STRONG_EQUIV E2 E1’ by METIS_TAC [PROPERTY_STAR_LEFT] \\
+    ‘?E3. C1 Q --u-> E3 /\ STRONG_EQUIV E3 E1’ by METIS_TAC [PROPERTY_STAR_RIGHT] \\
+     MP_TAC (Q.SPEC ‘C1’ STRONG_UNIQUE_SOLUTION_LEMMA) >> simp [] \\
      DISCH_THEN (MP_TAC o (Q.SPECL [‘Q’, ‘u’, ‘E3’])) >> simp [] \\
      DISCH_THEN (Q.X_CHOOSE_THEN ‘G’ STRIP_ASSUME_TAC) \\
      Q.PAT_X_ASSUM ‘E3 = G Q’ (rfs o wrap) \\
