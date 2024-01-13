@@ -178,20 +178,35 @@ Proof
  >> rw []
 QED
 
-(* An easy corollary of STRONG_UNIQUE_SOLUTION_EXTENDED
+(* An easy corollary of STRONG_UNIQUE_SOLUTION_EXT
 
    cf. Proposition 4.12 of [1, p.99] or Theorem 4.2 of [2, p.182]
  *)
 Theorem STRONG_EQUIV_PRESD_BY_REC :
-    !P Q X. weakly_guarded [X] [P; Q] ==>
-            StrongEQ P Q ==> STRONG_EQUIV (rec X P) (rec X Q)
+    !P Q X. weakly_guarded [X] [P; Q] /\ StrongEQ P Q ==>
+            STRONG_EQUIV (rec X P) (rec X Q)
 Proof
     rw [weakly_guarded_def, CCS_Subst]
  >> ‘!E. STRONG_EQUIV ([E/X] P) ([E/X] Q)’
        by PROVE_TAC [StrongEQ_IMP_SUBST]
- >> MATCH_MP_TAC STRONG_UNIQUE_SOLUTION_EXTENDED
+ >> MATCH_MP_TAC STRONG_UNIQUE_SOLUTION_EXT
  >> qexistsl_tac [‘\t. [t/X] P’, ‘\t. [t/X] Q’] >> simp []
  >> rw [STRONG_UNFOLDING']
+QED
+
+Theorem STRONG_EQUIV_PRESD_BY_REC_FULL :
+    !P Q X. StrongEQ P Q ==> STRONG_EQUIV (rec X P) (rec X Q)
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC STRONG_EQUIV_BY_BISIM_UPTO
+ >> Q.ABBREV_TAC ‘R = \x y. ?E. CONTEXT E /\ x = E (rec X P) /\ y = E (rec X Q)’
+ >> Q.EXISTS_TAC ‘R’
+ >> reverse CONJ_TAC
+ >- (rw [Abbr ‘R’] \\
+     Q.EXISTS_TAC ‘\t. t’ >> rw [CONTEXT1])
+ (* stage work *)
+ >> rw [STRONG_BISIM_UPTO, Abbr ‘R’]
+ >> cheat
 QED
 
 Theorem TRANS_tpm :
