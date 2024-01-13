@@ -229,63 +229,6 @@ Proof
  >> MATCH_MP_TAC TRANS_tpm >> art []
 QED
 
-(* Substitution of free variables to ‘nil’ preserves strong bisimilarity. *)
-Theorem STRONG_EQUIV_ssub_lemma :
-    !fm E. (!y. y IN FDOM fm ==> fm ' y = nil) ==> STRONG_EQUIV E (fm ' E)
-Proof
-    Q.X_GEN_TAC ‘fm’
- >> HO_MATCH_MP_TAC nc_INDUCTION2
- >> Q.EXISTS_TAC ‘FDOM fm’ >> rw [] (* 7 subgoals *)
- >- (rw [FUN_FMAP_DEF, PROPERTY_STAR, NIL_NO_TRANS, VAR_NO_TRANS])
- >- (MATCH_MP_TAC STRONG_EQUIV_SUBST_PREFIX >> rw [])
- >- (MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_SUM >> rw [])
- >- (MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_PAR >> rw [])
- >- (MATCH_MP_TAC STRONG_EQUIV_SUBST_RESTR  >> rw [])
- >- (MATCH_MP_TAC STRONG_EQUIV_SUBST_RELAB  >> rw [])
- (* stage work *)
- >> cheat (* FAIL *)
-QED
-
-Theorem STRONG_EQUIV_PRESD_BY_REC_FULL :
-    !X P Q. StrongEQ P Q ==> STRONG_EQUIV (rec X P) (rec X Q)
-Proof
-    rpt STRIP_TAC
- (* applying STRONG_EQUIV_BY_BISIM_UPTO *)
- >> MATCH_MP_TAC STRONG_EQUIV_BY_BISIM_UPTO
- >> qabbrev_tac ‘R = \x y. x = y \/
-                          ?E. CONTEXT E /\ x = E (rec X P) /\ y = E (rec X Q)’
- >> Q.EXISTS_TAC ‘R’
- >> reverse CONJ_TAC
- >- (rw [Abbr ‘R’] \\
-     DISJ2_TAC >> qexistsl_tac [‘\t. t’] >> rw [CONTEXT1])
- (* stage work *)
- >> rw [STRONG_BISIM_UPTO]
- (* applying STRONG_EQUIV_PRESD_BY_REC_lemma *)
- >- (MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_REC_lemma >> art [])
- >> Know ‘!E1. (STRONG_EQUIV O (\x y. ?G. FV G SUBSET {X} /\
-                                      x = CCS_Subst G (rec X P) X /\
-                                      y = CCS_Subst G (rec X Q) X) O
-                STRONG_EQUIV) E1 E2 <=>
-               (STRONG_EQUIV O (\x y. ?G. FV G SUBSET {X} /\
-                                      x = CCS_Subst G (rec X Q) X /\
-                                      y = CCS_Subst G (rec X P) X) O
-                STRONG_EQUIV) E2 E1’
- >- (rw [O_DEF] \\
-     EQ_TAC >> rw [] >| (* 2 subgoals *)
-     [ (* goal 1 (of 2) *)
-       Q.EXISTS_TAC ‘CCS_Subst G' (rec X P) X’ >> rw [STRONG_EQUIV_SYM] \\
-       Q.EXISTS_TAC ‘CCS_Subst G' (rec X Q) X’ >> rw [STRONG_EQUIV_SYM] \\
-       Q.EXISTS_TAC ‘G'’ >> art [],
-       (* goal 2 (of 2) *)
-       Q.EXISTS_TAC ‘CCS_Subst G' (rec X Q) X’ >> rw [STRONG_EQUIV_SYM] \\
-       Q.EXISTS_TAC ‘CCS_Subst G' (rec X P) X’ >> rw [STRONG_EQUIV_SYM] \\
-       Q.EXISTS_TAC ‘G'’ >> art [] ])
- >> Rewr'
- (* applying STRONG_EQUIV_PRESD_BY_REC_lemma again *)
- >> MATCH_MP_TAC STRONG_EQUIV_PRESD_BY_REC_lemma
- >> rw [StrongEQ_SYM]
-QED
-
 val _ = export_theory ();
 val _ = html_theory "Future";
 
