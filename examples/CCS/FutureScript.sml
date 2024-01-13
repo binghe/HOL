@@ -7,7 +7,8 @@
 
 open HolKernel Parse boolLib bossLib;
 
-open pred_setTheory relationTheory bisimulationTheory listTheory finite_mapTheory;
+open pred_setTheory relationTheory bisimulationTheory listTheory rich_listTheory
+     finite_mapTheory;
 
 (* lambda theories *)
 open binderLib;

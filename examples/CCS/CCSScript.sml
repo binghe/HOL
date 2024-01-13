@@ -1965,6 +1965,64 @@ Proof
     PROVE_TAC [NIL_NO_TRANS]
 QED
 
+(* |- !X E u E'.
+         rec X E --u-> E' <=>
+         ?E'' X'. ((X = X') /\ (E = E'')) /\ [rec X' E''/X'] E'' --u-> E'
+ *)
+val REC_cases_EQ = save_thm
+  ("REC_cases_EQ",
+    TRANS_cases |> (Q.SPEC `rec X E`)
+                |> (REWRITE_RULE [CCS_distinct', CCS_one_one])
+                |> (Q.SPECL [`u`, `E'`])
+                |> (Q.GENL [`X`, `E`, `u`, `E'`]));
+
+val REC_cases = save_thm ("REC_cases", EQ_IMP_LR REC_cases_EQ);
+
+Theorem TRANS_REC_EQ :
+    !X E u E'. TRANS (rec X E) u E' <=> TRANS (CCS_Subst E (rec X E) X) u E'
+Proof
+    rpt GEN_TAC
+ >> reverse EQ_TAC
+ >- PURE_ONCE_REWRITE_TAC [REC]
+ >> PURE_ONCE_REWRITE_TAC [REC_cases_EQ]
+ >> rpt STRIP_TAC
+ >> fs [rec_eq_thm, CCS_Subst]
+ >> rename1 ‘X <> Y’
+ >> rename1 ‘X # P’
+ (* stage work *)
+ >> rw [fresh_tpm_subst]
+ >> Q.ABBREV_TAC ‘E = [var X/Y] P’
+ >> Know ‘rec X E = rec Y ([var Y/X] E)’
+ >- (MATCH_MP_TAC SIMPLE_ALPHA \\
+     rw [Abbr ‘E’, FV_SUB])
+ >> Rewr'
+ >> rw [Abbr ‘E’]
+ >> Know ‘[var Y/X] ([var X/Y] P) = P’
+ >- (MATCH_MP_TAC lemma15b >> art [])
+ >> Rewr'
+ >> Suff ‘[rec Y P/X] ([var X/Y] P) = [rec Y P/Y] P’
+ >- rw []
+ >> MATCH_MP_TAC lemma15a >> art []
+QED
+
+(* |- !X E u E'. rec X E --u-> E' <=> [rec X E/X] E --u-> E' *)
+Theorem TRANS_REC_EQ' = REWRITE_RULE [CCS_Subst] TRANS_REC_EQ
+
+(* |- !X E u E'. rec X E --u-> E' ==> CCS_Subst E (rec X E) X --u-> E' *)
+Theorem TRANS_REC = EQ_IMP_LR TRANS_REC_EQ
+
+(* |- !X E u E'. rec X E --u-> E' ==> [rec X E/X] E --u-> E' *)
+Theorem TRANS_REC' = EQ_IMP_LR TRANS_REC_EQ'
+
+Theorem REC_VAR_NO_TRANS :
+    !X Y u E. ~TRANS (rec X (var Y)) u E
+Proof
+    rpt GEN_TAC
+ >> Cases_on ‘X = Y’
+ >- rw [GSYM nil_thm, NIL_NO_TRANS]
+ >> rw [TRANS_REC_EQ', VAR_NO_TRANS]
+QED
+
 (******************************************************************************)
 (*                                                                            *)
 (*                The transitions of prefixed term                            *)
@@ -2318,64 +2376,6 @@ val RELAB_NIL_NO_TRANS = store_thm ("RELAB_NIL_NO_TRANS",
     rpt STRIP_TAC
  >> IMP_RES_TAC TRANS_RELAB
  >> IMP_RES_TAC NIL_NO_TRANS);
-
-(* |- !X E u E'.
-         rec X E --u-> E' <=>
-         ?E'' X'. ((X = X') /\ (E = E'')) /\ [rec X' E''/X'] E'' --u-> E'
- *)
-val REC_cases_EQ = save_thm
-  ("REC_cases_EQ",
-    TRANS_cases |> (Q.SPEC `rec X E`)
-                |> (REWRITE_RULE [CCS_distinct', CCS_one_one])
-                |> (Q.SPECL [`u`, `E'`])
-                |> (Q.GENL [`X`, `E`, `u`, `E'`]));
-
-val REC_cases = save_thm ("REC_cases", EQ_IMP_LR REC_cases_EQ);
-
-Theorem TRANS_REC_EQ :
-    !X E u E'. TRANS (rec X E) u E' <=> TRANS (CCS_Subst E (rec X E) X) u E'
-Proof
-    rpt GEN_TAC
- >> reverse EQ_TAC
- >- PURE_ONCE_REWRITE_TAC [REC]
- >> PURE_ONCE_REWRITE_TAC [REC_cases_EQ]
- >> rpt STRIP_TAC
- >> fs [rec_eq_thm, CCS_Subst]
- >> rename1 ‘X <> Y’
- >> rename1 ‘X # P’
- (* stage work *)
- >> rw [fresh_tpm_subst]
- >> Q.ABBREV_TAC ‘E = [var X/Y] P’
- >> Know ‘rec X E = rec Y ([var Y/X] E)’
- >- (MATCH_MP_TAC SIMPLE_ALPHA \\
-     rw [Abbr ‘E’, FV_SUB])
- >> Rewr'
- >> rw [Abbr ‘E’]
- >> Know ‘[var Y/X] ([var X/Y] P) = P’
- >- (MATCH_MP_TAC lemma15b >> art [])
- >> Rewr'
- >> Suff ‘[rec Y P/X] ([var X/Y] P) = [rec Y P/Y] P’
- >- rw []
- >> MATCH_MP_TAC lemma15a >> art []
-QED
-
-(* |- !X E u E'. rec X E --u-> E' <=> [rec X E/X] E --u-> E' *)
-Theorem TRANS_REC_EQ' = REWRITE_RULE [CCS_Subst] TRANS_REC_EQ
-
-(* |- !X E u E'. rec X E --u-> E' ==> CCS_Subst E (rec X E) X --u-> E' *)
-Theorem TRANS_REC = EQ_IMP_LR TRANS_REC_EQ
-
-(* |- !X E u E'. rec X E --u-> E' ==> [rec X E/X] E --u-> E' *)
-Theorem TRANS_REC' = EQ_IMP_LR TRANS_REC_EQ'
-
-Theorem REC_VAR_NO_TRANS :
-    !X Y u E. ~TRANS (rec X (var Y)) u E
-Proof
-    rpt GEN_TAC
- >> Cases_on ‘X = Y’
- >- rw [GSYM nil_thm, NIL_NO_TRANS]
- >> rw [TRANS_REC_EQ', VAR_NO_TRANS]
-QED
 
 (* NOTE: This is the *ONLY* theorem for which the induction principle of
   ‘TRANS’ is needed. And this theorem (and the next TRANS_PROC) is only needed
