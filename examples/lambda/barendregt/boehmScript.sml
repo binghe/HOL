@@ -1520,8 +1520,9 @@ Theorem Boehm_transform_exists_lemma2 :
             ?pi. Boehm_transform pi /\ is_ready (apply pi M) /\
                  ?fm. subterm' X (apply pi M) p = fm ' (subterm' X M p)
 Proof
-    qx_genl_tac [‘Y’, ‘M’, ‘p’] (* X --> Y *)
+    qx_genl_tac [‘Y’, ‘M’, ‘p’]
  >> DISCH_TAC
+ (* trivial case: unsolvable M *)
  >> reverse (Cases_on ‘solvable M’)
  >- (Q.EXISTS_TAC ‘[]’ >> rw [is_ready_def] \\
      Q.EXISTS_TAC ‘FEMPTY’ >> rw [])
@@ -1532,15 +1533,23 @@ Proof
  >> qabbrev_tac ‘vs = FRESH_list n (FV M0)’
  >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M0) /\ LENGTH vs = n’
        by (rw [Abbr ‘vs’, FRESH_list_def])
- (* applying the shared hnf_tac *)
+ (* applying the shared hnf_tac to decompose M0 *)
  >> hnf_tac (“M0 :term”, “vs :string list”,
              “M1 :term”, “y :string”, “args :term list”)
  >> ‘TAKE (LAMl_size M0) vs = vs’ by rw []
  >> POP_ASSUM (REV_FULL_SIMP_TAC std_ss o wrap)
+ (* ‘xs’ is the list of binding variables of M0 in lambda terms *)
  >> qabbrev_tac ‘xs :term list = MAP VAR vs’
+ (* ‘p1’ is the first part of the transformations for removing abstractions of M0 *)
  >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE xs)’
  >> ‘apply p1 M0 == M1’
        by (rw [Abbr ‘p1’, Boehm_apply_MAP_rightctxt', Abbr ‘xs’])
+  (* NOTE: ‘m’ is the length of M0/M1's hnf children list. In the proof of
+     Boehm_transform_exists_lemma1, this number plays an important role for the
+     construction of the rest part of Boehm transformations, but here we need to
+     know the potentially bigger number, which is the maximal length of all hnf
+     children along the ltree path ‘p’. -- Chun Tian, 12 gen 2024
+   *)
  >> qabbrev_tac ‘m = LENGTH args’
  (* X collects all free variables in ‘args’ *)
  >> qabbrev_tac ‘X = BIGUNION (IMAGE FV (set args))’

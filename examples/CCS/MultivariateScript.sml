@@ -188,7 +188,7 @@ Definition fromList_def :
 End
 
 (* new pretty print format: ``[Ps/Xs] E`` (from termTheory) *)
-val _ = overload_on ("SUB", ``\Ps Xs. CCS_SUBST (fromList Xs Ps)``);
+Overload SUB[inferior] = “\Ps Xs. CCS_SUBST (fromList Xs Ps)”
 
 Theorem CCS_SUBST_sing :
     !X E E'. CCS_SUBST (fromList [X] [E']) E = CCS_Subst E E' X
