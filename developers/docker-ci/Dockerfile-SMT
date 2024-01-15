@@ -22,10 +22,8 @@ WORKDIR /ML/HOL
 COPY --link . .
 
 # set up extra environment variables
-RUN if [ "linux/amd64" = "$TARGETPLATFORM" ]; then \
-       export HOL4_Z3_EXECUTABLE=/ML/z3-2.19/bin/z3; \
-       export HOL4_CVC_EXECUTABLE=/ML/cvc5-Linux; \
-    fi
+ENV HOL4_Z3_EXECUTABLE=/ML/z3-2.19/bin/z3
+ENV HOL4_CVC_EXECUTABLE=/ML/cvc5-Linux
 
 # remove poly-includes.ML for docker builds
 RUN rm -f tools-poly/poly-includes.ML

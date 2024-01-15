@@ -9,7 +9,7 @@ open optionTheory arithmeticTheory pred_setTheory listTheory rich_listTheory
      llistTheory relationTheory ltreeTheory pathTheory posetTheory hurdUtils
      finite_mapTheory;
 
-open binderLib nomsetTheory termTheory appFOLDLTheory chap2Theory chap3Theory
+open binderLib termTheory appFOLDLTheory chap2Theory chap3Theory
      head_reductionTheory standardisationTheory solvableTheory reductionEval;
 
 open horeductionTheory takahashiS3Theory;
@@ -1557,6 +1557,9 @@ Proof
  >- (qunabbrev_tac ‘X’ \\
      MATCH_MP_TAC FINITE_BIGUNION >> rw [] >> rw [])
  >> DISCH_TAC
+ (* Define ‘q’ as the maximal number of children up to p. By definition
+    it must be bigger (or equal) than the current ‘m’.
+  *)
  >> cheat
 (*
  (* Z needs to avoid any free variables in args' *)
