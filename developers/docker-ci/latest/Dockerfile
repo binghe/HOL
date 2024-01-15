@@ -5,7 +5,7 @@
 # e.g. docker buildx build --platform linux/386,linux/amd64,linux/arm64 .
 
 # GitHub Actions recommends Debian-based systems as base images
-FROM --platform=$TARGETPLATFORM binghelisp/hol-dev
+FROM --platform=$TARGETPLATFORM binghelisp/hol-dev:base
 
 # The following two arguments are supported by "docker buildx"
 ARG TARGETPLATFORM

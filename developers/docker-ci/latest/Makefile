@@ -1,4 +1,4 @@
-DOCKER_IMAGE=binghelisp/hol-dev:more-solvers
+DOCKER_IMAGE=binghelisp/hol-dev:latest
 
 build:
 	docker buildx build --platform linux/amd64 -t $(DOCKER_IMAGE) .
