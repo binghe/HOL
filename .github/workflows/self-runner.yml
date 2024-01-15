@@ -12,7 +12,7 @@ on:
       kernel:
         description: 'HOL kernel'
         required: true
-        default: 'stdknl'
+        default: 'expk'
         type: choice
         options:
         - stdknl
