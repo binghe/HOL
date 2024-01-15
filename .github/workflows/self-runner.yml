@@ -36,7 +36,14 @@ on:
         description: 'More options'
         required: false
         type: string
-
+      template:
+        description: 'Docker template'
+        required: true
+        default: 'Dockerfile'
+        type: choice
+        options:
+        - Dockerfile
+        - Dockerfile-SMT
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -70,7 +77,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: developers/docker-ci/${{ env.default_dockerfile }}
+          file: developers/docker-ci/${{ github.event.inputs.template || env.default_dockerfile }}
           push: true
           build-args: |
             TARGETPLATFORM=${{ github.event.inputs.platform || env.default_platform }}
