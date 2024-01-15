@@ -35,6 +35,7 @@ on:
       more-options:
         description: 'More options'
         required: false
+        default: '-t'
         type: string
       Z3:
         description: 'Z3 version'
@@ -52,10 +53,10 @@ on:
         type: choice
         options:
         - 5
-      YICES:
+      Yices:
         description: 'Yices verison'
         required: false
-        default: '1.0.40'
+        default: ''
         type: choice
         options:
         - 1.0.40
@@ -100,7 +101,7 @@ jobs:
             SML=poly
             Z3_VERSION=${{ github.event.inputs.Z3 }}
             CVC_VERSION=${{ github.event.inputs.CVC }}
-            YICES_VERSION=${{ github.event.inputs.YICES }}
+            YICES_VERSION=${{ github.event.inputs.Yices }}
             # NOTE: the arg value cannot be quoted here:
             BUILDOPTS=--${{ github.event.inputs.kernel || env.default_kernel }} -j${{ github.event.inputs.concurrency || env.default_concurrency }} ${{ github.event.inputs.more-options }}
           tags: ${{ steps.meta.outputs.tags }}
