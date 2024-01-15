@@ -36,14 +36,29 @@ on:
         description: 'More options'
         required: false
         type: string
-      template:
-        description: 'Docker template'
-        required: true
-        default: 'Dockerfile'
+      Z3:
+        description: 'Z3 version'
+        required: false
+        default: '4.12.4'
         type: choice
         options:
-        - Dockerfile
-        - Dockerfile-SMT
+        - 2.19
+        - 2.19.1
+        - 4.12.4
+      CVC:
+        description: 'CVC version'
+        required: false
+        default: '5'
+        type: choice
+        options:
+        - 5
+      YICES:
+        description: 'Yices verison'
+        required: false
+        default: '1.0.40'
+        type: choice
+        options:
+        - 1.0.40
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -77,12 +92,15 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: developers/docker-ci/${{ github.event.inputs.template || env.default_dockerfile }}
+          file: developers/docker-ci/${{ env.default_dockerfile }}
           push: true
           build-args: |
             TARGETPLATFORM=${{ github.event.inputs.platform || env.default_platform }}
             # NOTE: mosml is too slow to be chosen here
             SML=poly
+            Z3_VERSION=${{ github.event.inputs.Z3 }}
+            CVC_VERSION=${{ github.event.inputs.CVC }}
+            YICES_VERSION=${{ github.event.inputs.YICES }}
             # NOTE: the arg value cannot be quoted here:
             BUILDOPTS=--${{ github.event.inputs.kernel || env.default_kernel }} -j${{ github.event.inputs.concurrency || env.default_concurrency }} ${{ github.event.inputs.more-options }}
           tags: ${{ steps.meta.outputs.tags }}
