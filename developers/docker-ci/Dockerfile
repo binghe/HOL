@@ -5,7 +5,7 @@
 # NOTE: this docker image is NOT for HOL developers to use interactively.
 
 # This "base" image is described in "base/Dockerfile"
-FROM --platform=$TARGETPLATFORM binghelisp/hol-dev:latest
+FROM --platform=$TARGETPLATFORM binghelisp/hol-dev:more-solvers
 
 # The following two arguments are supported by "docker buildx" commands
 ARG TARGETPLATFORM
@@ -20,6 +20,12 @@ WORKDIR /ML/HOL
 
 # fast copy all files to the docker image
 COPY --link . .
+
+# set up extra environment variables
+RUN if [ "linux/amd64" = "$TARGETPLATFORM" ]; then \
+       export HOL4_Z3_EXECUTABLE=/ML/z3-2.19/bin/z3; \
+       export HOL4_CVC_EXECUTABLE=/ML/cvc5-Linux; \
+    fi
 
 # building HOL
 RUN ${SML} < tools/smart-configure.sml 
