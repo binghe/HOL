@@ -195,6 +195,43 @@ Proof
  >> MATCH_MP_TAC TRANS_tpm >> art []
 QED
 
+(******************************************************************************)
+(*                                                                            *)
+(*         Multi-hole (or no-hole) contexts with recursion support            *)
+(*                                                                            *)
+(******************************************************************************)
+
+Inductive ctxt :
+    (                   ctxt (\t. t)) /\                 (* ctxt1 *)
+    (!s.                ctxt (\t. var s)) /\             (* ctxt2 *)
+    (!a e.   ctxt e ==> ctxt (\t. prefix a (e t))) /\    (* ctxt3 *)
+    (!e1 e2. ctxt e1 /\ ctxt e2
+                    ==> ctxt (\t. sum (e1 t) (e2 t))) /\ (* ctxt4 *)
+    (!e1 e2. ctxt e1 /\ ctxt e2
+                    ==> ctxt (\t. par (e1 t) (e2 t))) /\ (* ctxt5 *)
+    (!L e.   ctxt e ==> ctxt (\t. restr L (e t))) /\     (* ctxt6 *)
+    (!e rf.  ctxt e ==> ctxt (\t. relab (e t) rf)) /\    (* ctxt7 *)
+    (!v e.   ctxt e ==> ctxt (\t. rec v (e t)))          (* ctxt8 *)
+End
+
+val [ctxt1, ctxt2, ctxt3, ctxt4, ctxt5, ctxt6, ctxt7, ctxt8] =
+    map save_thm
+        (combine (["ctxt1", "ctxt2", "ctxt3", "ctxt4", "ctxt5",
+                   "ctxt6", "ctxt7", "ctxt8"],
+                  CONJUNCTS ctxt_rules));
+
+(* |- !a. ctxt (\t. a..t) *)
+Theorem ctxt3a =
+        ctxt3 |> Q.SPECL [‘a’, ‘\t. t’]
+              |> REWRITE_RULE [ctxt1] |> BETA_RULE |> GEN_ALL
+
+Theorem constant_contexts_exist :
+    !(t :'a CCS). ctxt (\x. t)
+Proof
+    HO_MATCH_MP_TAC simple_induction
+ >> SRW_TAC [][ctxt_rules]
+QED
+
 val _ = export_theory ();
 val _ = html_theory "Future";
 
