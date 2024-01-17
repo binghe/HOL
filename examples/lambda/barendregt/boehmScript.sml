@@ -1530,21 +1530,30 @@ QED
    NOTE: The construction of ‘pi’ needs to fix the ltree path ‘p’, to collect the
    maximum number of children in all nodes along ‘p’. In other words, there isn't
    a universal ‘pi’ for which the conclusion holds for arbitrary ‘p’.
+
+   NOTE: Now added ‘subterm X M p <> NONE’ into antecedents so that ‘subterm' X M p’
+   is specified. But ‘subterm X (apply pi M) p <> NONE’ needs a proof.
  *)
 Theorem Boehm_transform_exists_lemma2 :
-    !X M p. p IN ltree_paths (BTe X M) ==>
+    !X M p. p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
             ?pi. Boehm_transform pi /\ is_ready (apply pi M) /\
                  ?fm. subterm' X (apply pi M) p = fm ' (subterm' X M p)
 Proof
-    qx_genl_tac [‘Y’, ‘M’, ‘p’]
+    qx_genl_tac [‘Y’, ‘M’, ‘p’] >> STRIP_TAC
+ (* applying subterm_is_none_iff_children *)
+ >> Know ‘!p'. p' <<= p ==> subterm Y M p' <> NONE’
+ >- (Q.X_GEN_TAC ‘q’ >> STRIP_TAC \\
+     CCONTR_TAC \\
+     POP_ASSUM (MP_TAC o (REWRITE_RULE [Once subterm_is_none_iff_children])) \\
+     DISCH_THEN (MP_TAC o (Q.SPEC ‘p’)) >> rw [])
  >> DISCH_TAC
+ (* applying subterm_is_none_iff_parent_unsolvable *)
+ >> cheat
+ (*
  (* trivial case: unsolvable M *)
  >> reverse (Cases_on ‘solvable M’)
  >- (Q.EXISTS_TAC ‘[]’ >> rw [is_ready_def] \\
      Q.EXISTS_TAC ‘FEMPTY’ >> rw [])
- (* new we need to find a way to retrieve hnf of ‘subterm X M p’ for any p *)
- >> cheat
- (*
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> ‘hnf M0’ by PROVE_TAC [hnf_principle_hnf, solvable_iff_has_hnf]
  >> qabbrev_tac ‘n = LAMl_size M0’
