@@ -453,11 +453,28 @@ Proof
         ltree_lookup_def, LNTH_fromList, EL_MAP]
 QED
 
-Theorem subterm_is_none_imp_parent_some :
+Theorem subterm_is_none_imp_parent_not :
     !p X M. p IN ltree_paths (BTe X M) /\
             subterm X M p = NONE ==> subterm X M (FRONT p) <> NONE
 Proof
     METIS_TAC [subterm_is_none_iff_parent_unsolvable]
+QED
+
+(* NOTE: for whatever reasons such that ‘subterm X M p = NONE’, even when
+        ‘p NOTIN ltree_paths (BTe X M)’, the conclusion (rhs) always holds.
+ *)
+Theorem subterm_is_none_iff_children :
+    !X M p. subterm X M p = NONE <=> !p'. p <<= p' ==> subterm X M p' = NONE
+Proof
+    rpt GEN_TAC
+ >> reverse EQ_TAC
+ >- (DISCH_THEN (MP_TAC o (Q.SPEC ‘p’)) >> rw [])
+ >> Q.ID_SPEC_TAC ‘M’
+ >> Q.ID_SPEC_TAC ‘X’
+ >> Q.ID_SPEC_TAC ‘p’
+ >> Induct_on ‘p’ >- rw [subterm_NIL]
+ >> rw [subterm_def]
+ >> Cases_on ‘p'’ >> fs [subterm_def]
 QED
 
 (*---------------------------------------------------------------------------*
@@ -1505,8 +1522,7 @@ Proof
  >> REWRITE_TAC [Boehm_apply_APPEND]
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘apply p3 (P @* args')’ >> art []
- >> MATCH_MP_TAC lameq_apply_cong
- >> rw [Abbr ‘p3’]
+ >> MATCH_MP_TAC lameq_apply_cong >> rw [Abbr ‘p3’]
 QED
 
 (* Lemma 10.3.7 (ii) [1, p.247]:
@@ -1526,7 +1542,9 @@ Proof
  >> reverse (Cases_on ‘solvable M’)
  >- (Q.EXISTS_TAC ‘[]’ >> rw [is_ready_def] \\
      Q.EXISTS_TAC ‘FEMPTY’ >> rw [])
- (* now M is solvable *)
+ (* new we need to find a way to retrieve hnf of ‘subterm X M p’ for any p *)
+ >> cheat
+ (*
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> ‘hnf M0’ by PROVE_TAC [hnf_principle_hnf, solvable_iff_has_hnf]
  >> qabbrev_tac ‘n = LAMl_size M0’
@@ -1557,11 +1575,7 @@ Proof
  >- (qunabbrev_tac ‘X’ \\
      MATCH_MP_TAC FINITE_BIGUNION >> rw [] >> rw [])
  >> DISCH_TAC
- (* Define ‘q’ as the maximal number of children up to p. By definition
-    it must be bigger (or equal) than the current ‘m’.
-  *)
  >> cheat
-(*
  (* Z needs to avoid any free variables in args' *)
  >> FRESH_list_tac (“Z :string list”, “(m + 1) :num”, “X :string set”)
  >> ‘Z <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
