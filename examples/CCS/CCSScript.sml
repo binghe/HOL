@@ -2061,16 +2061,15 @@ QED
 
 Theorem fromPairs_nested :
     !Xs Ps Es E.
-        ALL_DISTINCT Xs /\ (LENGTH Ps = LENGTH Xs) /\ (LENGTH Es = LENGTH Xs) ==>
+        ALL_DISTINCT Xs /\ LENGTH Ps = LENGTH Xs /\ LENGTH Es = LENGTH Xs ==>
         fromPairs Xs Ps ' (fromPairs Xs Es ' E) =
         fromPairs Xs (MAP ($' (fromPairs Xs Ps)) Es) ' E
 Proof
     Suff (* rewriting for induction *)
    `!Xs Ps Es. ALL_DISTINCT Xs /\
               (LENGTH Ps = LENGTH Xs) /\ (LENGTH Es = LENGTH Xs) ==>
-        !E. ssub (fromPairs Xs Ps)
-                      (ssub (fromPairs Xs Es) E) =
-            ssub (fromPairs Xs (MAP (ssub (fromPairs Xs Ps)) Es)) E`
+        !E. fromPairs Xs Ps ' (fromPairs Xs Es ' E) =
+            fromPairs Xs (MAP ($' (fromPairs Xs Ps)) Es) ' E`
  >- METIS_TAC []
  >> rpt GEN_TAC >> STRIP_TAC
  >> HO_MATCH_MP_TAC nc_INDUCTION2
@@ -2118,8 +2117,8 @@ QED
 
 (* A (non-trivial) generalization of FV_SUBSET *)
 Theorem FV_SUBSET_BIGUNION :
-    !Xs Ps E. ALL_DISTINCT Xs /\ (LENGTH Ps = LENGTH Xs) ==>
-              FV (ssub (fromPairs Xs Ps) E) SUBSET
+    !Xs Ps E. ALL_DISTINCT Xs /\ LENGTH Ps = LENGTH Xs ==>
+              FV (fromPairs Xs Ps ' E) SUBSET
                  (FV E) UNION BIGUNION (IMAGE FV (set Ps))
 Proof
     NTAC 2 GEN_TAC
@@ -2145,7 +2144,7 @@ QED
 
 (* A more precise estimation with `set Xs` *)
 Theorem FV_SUBSET_BIGUNION' :
-    !Xs Ps E. ALL_DISTINCT Xs /\ (LENGTH Ps = LENGTH Xs) ==>
+    !Xs Ps E. ALL_DISTINCT Xs /\ LENGTH Ps = LENGTH Xs ==>
               FV (fromPairs Xs Ps ' E) SUBSET
                  ((FV E) DIFF (set Xs)) UNION BIGUNION (IMAGE FV (set Ps))
 Proof
@@ -2189,8 +2188,7 @@ Proof
 QED
 
 Theorem fromPairs_elim_closed :
-    !Xs Ps P. LENGTH Ps = LENGTH Xs /\ closed P ==>
-              fromPairs Xs Ps ' P = P
+    !Xs Ps P. LENGTH Ps = LENGTH Xs /\ closed P ==> fromPairs Xs Ps ' P = P
 Proof
     RW_TAC std_ss [IS_PROC_def]
  >> MATCH_MP_TAC fromPairs_elim >> art [DISJOINT_EMPTY]
