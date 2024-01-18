@@ -1543,15 +1543,22 @@ QED
 
 (* Lemma 10.3.7 (ii) [1, p.247]:
 
-   NOTE: The construction of ‘pi’ needs to fix the ltree path ‘p’, to collect the
-   maximum number of children in all nodes along ‘p’. In other words, there isn't
-   a universal ‘pi’ for which the conclusion holds for arbitrary ‘p’.
+   NOTE: The construction of ‘pi’ needs a fixed ltree path ‘p’, so that we can
+   collect the maximum number of children in all nodes along ‘p’. In other words,
+   there exists no universal ‘pi’ for which the conclusion holds for arbitrary ‘p’.
 
-   NOTE: Now added ‘subterm X M p <> NONE’ into antecedents so that ‘subterm' X M p’
-   is specified. But ‘subterm X (apply pi M) p <> NONE’ needs a proof.
+   NOTE2: Added ‘subterm X M p <> NONE’ to antecedents so that ‘subterm' X M p’ is
+   specified. ‘subterm X (apply pi M) p <> NONE’ can be proved.
+
+   NOTE3: ‘p <> []’ must be added into antecedents. Otherwise the statement became:
+
+   [...] |- !X M. ?pi. Boehm_transform pi /\ is_ready (apply pi M) /\
+                       ?fm. apply pi M = fm ' M
+
+   which is impossible if M is not already "ready".
  *)
 Theorem Boehm_transform_exists_lemma2 :
-    !X M p. p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
+    !X M p. p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
             ?pi. Boehm_transform pi /\ is_ready (apply pi M) /\
                  ?fm. subterm' X (apply pi M) p = fm ' (subterm' X M p)
 Proof
@@ -1573,20 +1580,11 @@ Proof
          MATCH_MP_TAC IS_PREFIX_TRANS >> Q.EXISTS_TAC ‘q’ >> rw [] \\
          MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []) >> rw [])
  >> DISCH_TAC
- (* trivial case: unsolvable M *)
+ (* trivial case: unsolvable M (optional)
  >> reverse (Cases_on ‘solvable M’)
  >- (Q.EXISTS_TAC ‘[]’ >> rw [is_ready_def] \\
      Q.EXISTS_TAC ‘FEMPTY’ >> rw [])
- (* special case: p = [] *)
- >> Cases_on ‘p = []’
- >- (gs [] (* only ‘solvable M’ is left *) \\
-     qabbrev_tac ‘M0 = principle_hnf M’ \\
-    ‘hnf M0’ by PROVE_TAC [hnf_principle_hnf, solvable_iff_has_hnf] \\
-     qabbrev_tac ‘n = LAMl_size M0’ \\
-     qabbrev_tac ‘vs = FRESH_list n (FV M0)’ \\
-    ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M0) /\ LENGTH vs = n’
-       by (rw [Abbr ‘vs’, FRESH_list_def]) \\
-     cheat)
+  *)
  >> Know ‘!q. q <> [] /\ q <<= p ==> solvable (subterm' X M q)’
  >- (rpt STRIP_TAC \\
      cheat)
