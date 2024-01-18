@@ -368,11 +368,27 @@ Definition subterm_def :
         NONE
 End
 
-(* This assumes ‘subterm X M p <> NONE’ *)
+Theorem subterm_of_solvables :
+    !X M x xs. solvable M ==>
+               subterm X M (x::xs) =
+        let M0 = principle_hnf M;
+             n = LAMl_size M0;
+            vs = FRESH_list n (X UNION FV M);
+            M1 = principle_hnf (M0 @* (MAP VAR vs));
+            Ms = hnf_children M1;
+             m = LENGTH Ms
+        in
+            if x < m then subterm (X UNION set vs) (EL x Ms) xs else NONE
+Proof
+    RW_TAC std_ss []
+ >> rw [subterm_def]
+QED
+
+(* NOTE: The uses of ‘subterm' X M p’ assumes ‘subterm X M p <> NONE’ *)
 Overload subterm' = “\X M p. SND (THE (subterm X M p))”
 
 (* |- !X M. subterm X M [] = SOME (X,M) *)
-Theorem subterm_NIL[simp] = cj 1 subterm_def
+Theorem subterm_NIL[simp] = SPEC_ALL (cj 1 subterm_def)
 
 Theorem subterm_NIL'[simp] :
     subterm' X M [] = M
@@ -1213,7 +1229,7 @@ Proof
 QED
 
 (* Used by: distinct_benf_imp_inconsistent *)
-Theorem asmlam_apply_cong :
+Theorem Boehm_apply_asmlam_cong :
     !pi M N. Boehm_transform pi /\ asmlam eqns M N ==>
              asmlam eqns (apply pi M) (apply pi N)
 Proof
@@ -1225,7 +1241,7 @@ Proof
 QED
 
 (* Used by: separability_lemma2 *)
-Theorem lameq_apply_cong :
+Theorem Boehm_apply_lameq_cong :
     !pi M N. Boehm_transform pi /\ M == N ==> apply pi M == apply pi N
 Proof
     Induct_on ‘pi’ using SNOC_INDUCT >> rw []
@@ -1508,7 +1524,7 @@ Proof
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘apply (p3 ++ p2 ++ p1) M0’
  >> CONJ_TAC
- >- (MATCH_MP_TAC lameq_apply_cong \\
+ >- (MATCH_MP_TAC Boehm_apply_lameq_cong \\
      CONJ_TAC >- art [] \\
      qunabbrev_tac ‘M0’ \\
      MATCH_MP_TAC lameq_SYM \\
@@ -1517,12 +1533,12 @@ Proof
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘apply (p3 ++ p2) M1’
  >> CONJ_TAC
- >- (MATCH_MP_TAC lameq_apply_cong >> art [] \\
+ >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> art [] \\
      MATCH_MP_TAC Boehm_transform_APPEND >> rw [Abbr ‘p2’, Abbr ‘p3’])
  >> REWRITE_TAC [Boehm_apply_APPEND]
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘apply p3 (P @* args')’ >> art []
- >> MATCH_MP_TAC lameq_apply_cong >> rw [Abbr ‘p3’]
+ >> MATCH_MP_TAC Boehm_apply_lameq_cong >> rw [Abbr ‘p3’]
 QED
 
 (* Lemma 10.3.7 (ii) [1, p.247]:
@@ -1557,12 +1573,25 @@ Proof
          MATCH_MP_TAC IS_PREFIX_TRANS >> Q.EXISTS_TAC ‘q’ >> rw [] \\
          MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []) >> rw [])
  >> DISCH_TAC
- >> cheat
- (*
  (* trivial case: unsolvable M *)
  >> reverse (Cases_on ‘solvable M’)
  >- (Q.EXISTS_TAC ‘[]’ >> rw [is_ready_def] \\
      Q.EXISTS_TAC ‘FEMPTY’ >> rw [])
+ (* special case: p = [] *)
+ >> Cases_on ‘p = []’
+ >- (gs [] (* only ‘solvable M’ is left *) \\
+     qabbrev_tac ‘M0 = principle_hnf M’ \\
+    ‘hnf M0’ by PROVE_TAC [hnf_principle_hnf, solvable_iff_has_hnf] \\
+     qabbrev_tac ‘n = LAMl_size M0’ \\
+     qabbrev_tac ‘vs = FRESH_list n (FV M0)’ \\
+    ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M0) /\ LENGTH vs = n’
+       by (rw [Abbr ‘vs’, FRESH_list_def]) \\
+     cheat)
+ >> Know ‘!q. q <> [] /\ q <<= p ==> solvable (subterm' X M q)’
+ >- (rpt STRIP_TAC \\
+     cheat)
+ >> cheat
+ (*
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> ‘hnf M0’ by PROVE_TAC [hnf_principle_hnf, solvable_iff_has_hnf]
  >> qabbrev_tac ‘n = LAMl_size M0’
@@ -1722,7 +1751,7 @@ Proof
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘apply (p3 ++ p2 ++ p1) M0’
  >> CONJ_TAC
- >- (MATCH_MP_TAC lameq_apply_cong \\
+ >- (MATCH_MP_TAC Boehm_apply_lameq_cong \\
      CONJ_TAC >- art [] \\
      qunabbrev_tac ‘M0’ \\
      MATCH_MP_TAC lameq_SYM \\
@@ -1731,12 +1760,12 @@ Proof
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘apply (p3 ++ p2) M1’
  >> CONJ_TAC
- >- (MATCH_MP_TAC lameq_apply_cong >> art [] \\
+ >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> art [] \\
      MATCH_MP_TAC Boehm_transform_APPEND >> rw [Abbr ‘p2’, Abbr ‘p3’])
  >> REWRITE_TAC [Boehm_apply_APPEND]
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘apply p3 (P @* args')’ >> art []
- >> MATCH_MP_TAC lameq_apply_cong
+ >> MATCH_MP_TAC Boehm_apply_lameq_cong
  >> rw [Abbr ‘p3’]
 *)
 QED
@@ -1930,7 +1959,7 @@ Proof
       rw [Boehm_apply_APPEND] \\
       MATCH_MP_TAC lameq_TRANS \\
       Q.EXISTS_TAC ‘apply p3 (VAR a @* MAP VAR bs)’ \\
-      CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> art []) \\
+      CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> art []) \\
       rw [Abbr ‘p3’] \\
       MATCH_MP_TAC lameq_TRANS >> Q.EXISTS_TAC ‘f2 P’ \\
       reverse CONJ_TAC >- rw [] \\
@@ -1941,7 +1970,7 @@ Proof
       MATCH_MP_TAC lameq_TRANS \\
       Q.EXISTS_TAC ‘apply p3 (VAR b0)’ \\
       reverse CONJ_TAC >- rw [Abbr ‘p3’] \\
-      MATCH_MP_TAC lameq_apply_cong >> art [] ]
+      MATCH_MP_TAC Boehm_apply_lameq_cong >> art [] ]
 QED
 
 Theorem separability_lemma0[local] :
@@ -2061,14 +2090,14 @@ Proof
      [ (* goal 1 (of 2) *)
        MATCH_MP_TAC lameq_TRANS \\
        Q.EXISTS_TAC ‘apply (p1 ++ p0) N0’ \\
-       CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
+       CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
                     qunabbrev_tac ‘N0’ >> MATCH_MP_TAC lameq_SYM \\
                     MATCH_MP_TAC lameq_principle_hnf_reduce >> art [GSYM solvable_iff_has_hnf]) \\
     (* eliminating p0 *)
        REWRITE_TAC [Boehm_apply_APPEND] \\
        MATCH_MP_TAC lameq_TRANS \\
        Q.EXISTS_TAC ‘apply p1 N1’ \\
-       CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> art []) \\
+       CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> art []) \\
        SIMP_TAC (srw_ss()) [Abbr ‘p1’] (* f4 (f3 (f2 (f1 N1))) == Q *) \\
     (* eliminating f1 *)
       ‘f1 N1 = VAR y2 @* (MAP f1 args2)’
@@ -2098,7 +2127,7 @@ Proof
        (* goal 2 (of 2) *)
        MATCH_MP_TAC lameq_TRANS \\
        Q.EXISTS_TAC ‘apply (p1 ++ p0) M0’ \\
-       CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
+       CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
                     qunabbrev_tac ‘M0’ \\
                     MATCH_MP_TAC lameq_SYM \\
                     MATCH_MP_TAC lameq_principle_hnf_reduce >> art [GSYM solvable_iff_has_hnf]) \\
@@ -2106,7 +2135,7 @@ Proof
        REWRITE_TAC [Boehm_apply_APPEND] \\
        MATCH_MP_TAC lameq_TRANS \\
        Q.EXISTS_TAC ‘apply p1 (M1 @* DROP n (MAP VAR vs))’ \\
-       CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> art []) \\
+       CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> art []) \\
        SIMP_TAC (srw_ss()) [Abbr ‘p1’] (* f4 (f3 (f2 (f1 M1))) == P *) \\
     (* eliminating f1 *)
        MATCH_MP_TAC lameq_TRANS \\
@@ -2187,7 +2216,7 @@ Proof
      [ (* goal 1.1 (of 2) *)
        MATCH_MP_TAC lameq_TRANS \\
        Q.EXISTS_TAC ‘apply (pi ++ p0) M0’ \\
-       CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
+       CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
                     qunabbrev_tac ‘M0’ >> MATCH_MP_TAC lameq_SYM \\
                     MATCH_MP_TAC lameq_principle_hnf_reduce \\
                     ASM_REWRITE_TAC [GSYM solvable_iff_has_hnf]) \\
@@ -2195,12 +2224,12 @@ Proof
        MATCH_MP_TAC lameq_TRANS \\
        Q.EXISTS_TAC ‘apply pi (y' @* args1')’ \\
        reverse CONJ_TAC >- art [] \\
-       MATCH_MP_TAC lameq_apply_cong \\
+       MATCH_MP_TAC Boehm_apply_lameq_cong \\
        Q.PAT_X_ASSUM ‘VAR y2 = y'’ (ONCE_REWRITE_TAC o wrap o SYM) >> art [],
        (* goal 1.2 (of 2) *)
        MATCH_MP_TAC lameq_TRANS \\
        Q.EXISTS_TAC ‘apply (pi ++ p0) N0’ \\
-       CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
+       CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
                     qunabbrev_tac ‘N0’ >> MATCH_MP_TAC lameq_SYM \\
                     MATCH_MP_TAC lameq_principle_hnf_reduce \\
                     ASM_REWRITE_TAC [GSYM solvable_iff_has_hnf]) \\
@@ -2208,7 +2237,7 @@ Proof
        MATCH_MP_TAC lameq_TRANS \\
        Q.EXISTS_TAC ‘apply pi (y @* args2)’ \\
        reverse CONJ_TAC >- art [] \\
-       MATCH_MP_TAC lameq_apply_cong \\
+       MATCH_MP_TAC Boehm_apply_lameq_cong \\
        Q.PAT_X_ASSUM ‘y = y'’ (ONCE_REWRITE_TAC o wrap) \\
        Q.PAT_X_ASSUM ‘VAR y2 = y'’ (ONCE_REWRITE_TAC o wrap o SYM) >> art [] ])
 QED
@@ -2262,7 +2291,7 @@ Proof
  (* stage work *)
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘apply pi M0’
- >> CONJ_TAC >- (MATCH_MP_TAC lameq_apply_cong >> art [])
+ >> CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> art [])
  >> POP_ASSUM K_TAC (* ‘Boehm_transform pi’ is not needed here *)
  >> rw [Abbr ‘pi’]
  >> qabbrev_tac ‘pi :transform = MAP rightctxt (MAP VAR (REVERSE (vs)))’
@@ -2364,7 +2393,7 @@ Proof
  >> MATCH_MP_TAC asmlam_trans
  >> Q.EXISTS_TAC ‘apply pi N’
  >> reverse CONJ_TAC >- (MATCH_MP_TAC lameq_asmlam >> art [])
- >> MATCH_MP_TAC asmlam_apply_cong >> art []
+ >> MATCH_MP_TAC Boehm_apply_asmlam_cong >> art []
  >> Suff ‘(M,N) IN eqns’ >- rw [asmlam_rules]
  >> rw [Abbr ‘eqns’]
 QED

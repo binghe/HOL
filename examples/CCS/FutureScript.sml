@@ -83,6 +83,59 @@ Proof
     rw [StrongEQ_def, ssub_value']
 QED
 
+(* special case when P, Q contains free variables up to X, a classic condition *)
+Theorem StrongEQ_alt_single :
+    !P Q X. FV P SUBSET {X} /\ FV Q SUBSET {X} ==>
+           (StrongEQ P Q <=> !E. STRONG_EQUIV ([E/X] P) ([E/X] Q))
+Proof
+    rw [StrongEQ_def]
+ >> EQ_TAC
+ >- (rpt STRIP_TAC \\
+     POP_ASSUM (MP_TAC o (Q.SPEC ‘FEMPTY |+ (X,E)’)) \\
+     rw [single_ssub])
+ >> STRIP_TAC
+ (* preparing for ssub_reduce_thm *)
+ >> ‘FV P = {} \/ FV P = {X}’ by ASM_SET_TAC []
+ >- (fs [ssub_value, lemma14b] \\
+    ‘FV Q = {} \/ FV Q = {X}’ by ASM_SET_TAC []
+     >- (fs [ssub_value, lemma14b]) \\
+     Q.X_GEN_TAC ‘fm’ \\
+     Cases_on ‘DISJOINT (FV Q) (FDOM fm)’
+     >- (rw [ssub_14b] \\
+         Q.PAT_X_ASSUM ‘!E. _’ (MP_TAC o (Q.SPEC ‘var X’)) \\
+         rw [lemma14a]) \\
+     gs [DISJOINT_ALT] \\
+     Know ‘fm ' Q = [fm ' X/X] Q’
+     >- (MATCH_MP_TAC ssub_reduce_thm >> ASM_SET_TAC []) >> Rewr' \\
+     qabbrev_tac ‘E = fm ' X’ >> rw [])
+ >> ‘FV Q = {} \/ FV Q = {X}’ by ASM_SET_TAC []
+ >- (fs [ssub_value, lemma14b] \\
+     Q.X_GEN_TAC ‘fm’ \\
+     Cases_on ‘DISJOINT (FV P) (FDOM fm)’
+     >- (rw [ssub_14b] \\
+         Q.PAT_X_ASSUM ‘!E. _’ (MP_TAC o (Q.SPEC ‘var X’)) \\
+         rw [lemma14a]) \\
+     gs [DISJOINT_ALT] \\
+     Know ‘fm ' P = [fm ' X/X] P’
+     >- (MATCH_MP_TAC ssub_reduce_thm >> ASM_SET_TAC []) >> Rewr' \\
+     qabbrev_tac ‘E = fm ' X’ >> rw [])
+ (* stage work *)
+ >> Q.X_GEN_TAC ‘fm’
+ >> Cases_on ‘DISJOINT (FV P) (FDOM fm)’
+ >- (rw [ssub_14b] \\
+     Cases_on ‘DISJOINT (FV Q) (FDOM fm)’
+     >- (rw [ssub_14b] \\
+         Q.PAT_X_ASSUM ‘!E. _’ (MP_TAC o (Q.SPEC ‘var X’)) \\
+         rw [lemma14a]) \\
+     gs [DISJOINT_ALT])
+ >> gs [DISJOINT_ALT]
+ >> Know ‘fm ' P = [fm ' X/X] P’
+ >- (MATCH_MP_TAC ssub_reduce_thm >> ASM_SET_TAC []) >> Rewr'
+ >> Know ‘fm ' Q = [fm ' X/X] Q’
+ >- (MATCH_MP_TAC ssub_reduce_thm >> ASM_SET_TAC []) >> Rewr'
+ >> rw []
+QED
+
 Theorem StrongEQ_REFL[simp] :
     !E. StrongEQ E E
 Proof
