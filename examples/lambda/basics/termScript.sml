@@ -1086,7 +1086,7 @@ Proof
 QED
 
 Theorem ssub_reduce_thm :
-    !t. FV t INTER (FDOM fm) = {s} ==> fm ' t = [fm ' s/s] t
+    !t. FV t INTER FDOM fm = {s} ==> fm ' t = [fm ' s/s] t
 Proof
     HO_MATCH_MP_TAC nc_INDUCTION2
  >> Q.EXISTS_TAC ‘fmFV fm UNION {s}’
@@ -1109,8 +1109,8 @@ Proof
  >- (MATCH_MP_TAC SUB_LAM >> rw [])
  >> Rewr'
  >> rw []
- >> ‘FV t INTER FDOM fm = {s}’ by ASM_SET_TAC []
- >> rw []
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> ASM_SET_TAC []
 QED
 
 Theorem ssub_reduce :

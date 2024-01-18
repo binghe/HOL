@@ -1757,6 +1757,52 @@ Proof
  >> MATCH_MP_TAC ssub_update_apply_SUBST >> rw []
 QED
 
+Theorem ssub_reduce_thm :
+    !t. FV t INTER FDOM fm = {s} ==> fm ' t = [fm ' s/s] t
+Proof
+    HO_MATCH_MP_TAC nc_INDUCTION2
+ >> Q.EXISTS_TAC ‘fmFV fm UNION {s}’
+ >> rw [SUB_THM, ssub_thm] (* 7 subgoals *)
+ >- (‘s' = s’ by ASM_SET_TAC [] >> fs [])
+ >- (‘s' = s’ by ASM_SET_TAC [] >> fs [ssub_thm] \\
+     ‘s IN FDOM fm’ by ASM_SET_TAC [])
+ >- (‘FV t INTER FDOM fm = {s} \/ FV t INTER FDOM fm = {}’ by ASM_SET_TAC []
+     >- rw [] \\
+     rw [REWRITE_RULE [DISJOINT_DEF] ssub_14b] \\
+     MATCH_MP_TAC (GSYM lemma14b) \\
+     ASM_SET_TAC [])
+ >- (‘FV t' INTER FDOM fm = {s} \/ FV t' INTER FDOM fm = {}’ by ASM_SET_TAC []
+     >- rw [] \\
+     rw [REWRITE_RULE [DISJOINT_DEF] ssub_14b] \\
+     MATCH_MP_TAC (GSYM lemma14b) \\
+     ASM_SET_TAC [])
+ >- (‘FV t INTER FDOM fm = {s} \/ FV t INTER FDOM fm = {}’ by ASM_SET_TAC []
+     >- rw [] \\
+     rw [REWRITE_RULE [DISJOINT_DEF] ssub_14b] \\
+     MATCH_MP_TAC (GSYM lemma14b) \\
+     ASM_SET_TAC [])
+ >- (‘FV t' INTER FDOM fm = {s} \/ FV t' INTER FDOM fm = {}’ by ASM_SET_TAC []
+     >- rw [] \\
+     rw [REWRITE_RULE [DISJOINT_DEF] ssub_14b] \\
+     MATCH_MP_TAC (GSYM lemma14b) \\
+     ASM_SET_TAC [])
+ >> ‘s IN FDOM fm’ by ASM_SET_TAC []
+ >> Know ‘[fm ' s/s] (rec y t) = rec y ([fm ' s/s] t)’
+ >- (MATCH_MP_TAC SUB_REC >> rw [])
+ >> Rewr'
+ >> rw [rec_eq_thm]
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> ASM_SET_TAC []
+QED
+
+Theorem ssub_reduce :
+    !t. FV t = {s} /\ s IN FDOM fm ==> fm ' t = [fm ' s/s] t
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC ssub_reduce_thm
+ >> ASM_SET_TAC []
+QED
+
 (******************************************************************************)
 (*                                                                            *)
 (*            Definition of the transition relation for pure CCS              *)
