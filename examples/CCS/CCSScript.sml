@@ -1803,6 +1803,399 @@ Proof
  >> ASM_SET_TAC []
 QED
 
+(* ----------------------------------------------------------------------
+    Simultaneous substitution given by a pair of key list and value list
+   ---------------------------------------------------------------------- *)
+
+(* from a key list and a value list (of same length) to an alist *)
+Definition fromPairs_def :
+    fromPairs (Xs :string list) (Ps :'a CCS list) = FEMPTY |++ ZIP (Xs,Ps)
+End
+
+Theorem fromPairs_sing :
+    !X E E'. ssub (fromPairs [X] [E']) E = CCS_Subst E E' X
+Proof
+    RW_TAC list_ss [fromPairs_def, ZIP, FUPDATE_LIST_THM]
+ >> rw [FEMPTY_update_apply, CCS_Subst]
+QED
+
+Theorem fromPairs_EMPTY :
+    fromPairs [] [] = FEMPTY
+Proof
+    SRW_TAC [] [fromPairs_def, FUPDATE_LIST_THM]
+QED
+
+Theorem fromPairs_HD :
+    !X Xs P Ps. ~MEM X Xs /\ LENGTH Ps = LENGTH Xs ==>
+                fromPairs (X::Xs) (P::Ps) = fromPairs Xs Ps |+ (X,P)
+Proof
+    SRW_TAC [] [fromPairs_def, FUPDATE_LIST_THM]
+ >> MATCH_MP_TAC FUPDATE_FUPDATE_LIST_COMMUTES
+ >> METIS_TAC [MAP_ZIP]
+QED
+
+Theorem FDOM_fromPairs :
+    !Xs Ps. LENGTH Ps = LENGTH Xs ==> FDOM (fromPairs Xs Ps) = set Xs
+Proof
+    SRW_TAC [] [fromPairs_def, FDOM_FUPDATE_LIST, MAP_ZIP]
+QED
+
+Theorem fromPairs_DOMSUB_NOT_IN_DOM :
+    !X Xs Ps. ~MEM X Xs /\ (LENGTH Ps = LENGTH Xs) ==>
+              (fromPairs Xs Ps) \\ X = fromPairs Xs Ps
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC DOMSUB_NOT_IN_DOM
+ >> fs [FDOM_fromPairs]
+QED
+
+Theorem fromPairs_FAPPLY_HD :
+    !X Xs P Ps n. ~MEM X Xs /\ ALL_DISTINCT Xs /\ (LENGTH Ps = LENGTH Xs) ==>
+                  ((fromPairs (X::Xs) (P::Ps)) ' X = P)
+Proof
+    RW_TAC std_ss [fromPairs_HD, FAPPLY_FUPDATE]
+QED
+
+Theorem fromPairs_FAPPLY_EL :
+    !Xs Ps n. ALL_DISTINCT Xs /\ LENGTH Ps = LENGTH Xs /\ n < LENGTH Xs ==>
+              (fromPairs Xs Ps) ' (EL n Xs) = EL n Ps
+Proof
+    RW_TAC std_ss [fromPairs_def]
+ >> MATCH_MP_TAC FUPDATE_LIST_APPLY_MEM
+ >> Q.EXISTS_TAC `n`
+ >> fs [LENGTH_ZIP, MAP_ZIP]
+ >> RW_TAC list_ss []
+ >> CCONTR_TAC >> fs []
+ >> `n < LENGTH Xs /\ m <> n` by RW_TAC arith_ss []
+ >> METIS_TAC [ALL_DISTINCT_EL_IMP]
+QED
+
+Theorem fromPairs_FAPPLY_EL' :
+    !X P Xs Ps n. ~MEM X Xs /\ ALL_DISTINCT Xs /\ LENGTH Ps = LENGTH Xs /\
+                  n < LENGTH Xs ==> fromPairs (X::Xs) (P::Ps) ' (EL n Xs) = EL n Ps
+Proof
+    RW_TAC std_ss [fromPairs_HD, fromPairs_def]
+ >> Know `((FEMPTY |++ ZIP (Xs,Ps)) |+ (X,P)) = ((FEMPTY |+ (X,P)) |++ ZIP (Xs,Ps))`
+ >- (MATCH_MP_TAC EQ_SYM \\
+     MATCH_MP_TAC FUPDATE_FUPDATE_LIST_COMMUTES \\
+     fs [MAP_ZIP])
+ >> Rewr'
+ >> MATCH_MP_TAC FUPDATE_LIST_APPLY_MEM
+ >> Q.EXISTS_TAC `n`
+ >> fs [LENGTH_ZIP, MAP_ZIP]
+ >> RW_TAC list_ss []
+ >> CCONTR_TAC >> fs []
+ >> `n < LENGTH Xs /\ m <> n` by RW_TAC arith_ss []
+ >> METIS_TAC [ALL_DISTINCT_EL_IMP]
+QED
+
+Theorem fromPairs_elim :
+    !Xs Ps E. DISJOINT (FV E) (set Xs) /\ LENGTH Ps = LENGTH Xs ==>
+              (fromPairs Xs Ps) ' E = E
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC ssub_14b >> fs [FDOM_fromPairs]
+QED
+
+Theorem lemma0[local] :
+    !X P E fm. X NOTIN FDOM fm /\ DISJOINT (FDOM fm) (FV P) /\
+               FEVERY (\(k,v). X NOTIN (FV v)) fm ==>
+              (fm |+ (X,P)) ' E = CCS_Subst (ssub fm E) P X
+Proof
+    rw [CCS_Subst]
+ (* applying ssub_update_apply_subst *)
+ >> Know ‘ssub (fm |+ (X,P)) E = [ssub fm P/X] (ssub fm E)’
+ >- (MATCH_MP_TAC ssub_update_apply_SUBST' >> fs [FEVERY_DEF])
+ >> Rewr'
+ >> Suff ‘ssub fm P = P’ >- rw []
+ >> MATCH_MP_TAC ssub_14b >> rw [DISJOINT_SYM]
+QED
+
+(* fromPairs_reduce leads to fromPairs_FOLDR
+
+   NOTE: added ‘DISJOINT (set Xs) (FV P)’ when switching to ‘ssub’
+ *)
+Theorem fromPairs_reduce :
+    !X Xs P Ps. ~MEM X Xs /\ ALL_DISTINCT Xs /\ (LENGTH Ps = LENGTH Xs) /\
+                EVERY (\e. X NOTIN (FV e)) Ps /\
+                DISJOINT (set Xs) (FV P) ==>
+         !E. fromPairs (X::Xs) (P::Ps) ' E = CCS_Subst (fromPairs Xs Ps ' E) P X
+Proof
+    rpt STRIP_TAC
+ >> Know `fromPairs (X::Xs) (P::Ps) = (fromPairs Xs Ps) |+ (X,P)`
+ >- (MATCH_MP_TAC fromPairs_HD >> art [])
+ >> Rewr'
+ >> MATCH_MP_TAC lemma0
+ >> fs [FDOM_fromPairs, FEVERY_DEF]
+ >> RW_TAC std_ss []
+ >> rename1 `MEM Y Xs`
+ >> `?n. n < LENGTH Xs /\ (Y = EL n Xs)` by PROVE_TAC [MEM_EL]
+ >> fs [fromPairs_FAPPLY_EL, EVERY_MEM]
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> rw [MEM_EL]
+ >> Q.EXISTS_TAC `n` >> art []
+QED
+
+(* fromPairs_reduce in another form *)
+Theorem lemma1[local] :
+   !E E' map.
+      map <> [] /\
+      ~MEM (FST (HD map)) (MAP FST (TL map)) /\
+      ALL_DISTINCT (MAP FST (TL map)) /\
+      DISJOINT (set (MAP FST (TL map))) (FV (SND (HD map))) /\
+      EVERY (\e. (FST (HD map)) NOTIN (FV e)) (MAP SND (TL map)) /\
+      ssub (FEMPTY |++ (TL map)) E = E'
+   ==>
+      ssub (FEMPTY |++ map) E = CCS_Subst E' (SND (HD map)) (FST (HD map))
+Proof
+    rpt GEN_TAC
+ >> Cases_on `map` >- SRW_TAC [] []
+ >> RW_TAC std_ss [HD, TL]
+ >> Cases_on `h` >> fs []
+ >> Q.ABBREV_TAC `Xs = FST (UNZIP t)`
+ >> Q.ABBREV_TAC `Ps = SND (UNZIP t)`
+ >> Know `t = ZIP (Xs,Ps)` >- (unset [`Xs`, `Ps`] >> fs [])
+ >> Know `LENGTH Ps = LENGTH Xs` >- (unset [`Xs`, `Ps`] >> fs [])
+ >> RW_TAC std_ss []
+ >> Know `(MAP FST (ZIP (Xs,Ps))) = Xs` >- PROVE_TAC [MAP_ZIP]
+ >> DISCH_THEN (fs o wrap)
+ >> Know `(MAP SND (ZIP (Xs,Ps))) = Ps` >- PROVE_TAC [MAP_ZIP]
+ >> DISCH_THEN (fs o wrap)
+ >> rename1 ‘~MEM X Xs’
+ >> MP_TAC (REWRITE_RULE [fromPairs_def] (Q.SPECL [`X`,`Xs`,`r`,`Ps`] fromPairs_reduce))
+ >> simp []
+QED
+
+(* Let map = ZIP(Xs,Ps), to convert ssub to a folding of CCS_Subst, each P
+   of Ps must contains free variables up to the corresponding X of Xs.
+ *)
+Theorem lemma2[local] :
+    !E map. ALL_DISTINCT (MAP FST map) /\
+            EVERY (\(x,p). DISJOINT (set (MAP FST map)) (FV p)) map ==>
+           (ssub (FEMPTY |++ map) E =
+            FOLDR (\l e. CCS_Subst e (SND l) (FST l)) E map)
+Proof
+    GEN_TAC >> Induct_on `map`
+ >- SRW_TAC [] [FUPDATE_LIST_THM, ssub_FEMPTY]
+ >> rpt STRIP_TAC >> fs [MAP]
+ >> MP_TAC (Q.SPECL [`E`, `ssub (FEMPTY |++ map) E`,
+                     `h::map`] lemma1) >> fs []
+ >> Know ‘DISJOINT (set (MAP FST map)) (FV (SND h)) /\
+          EVERY (\e. FST h # e) (MAP SND map)’
+ >- (Cases_on ‘h’ >> fs [] \\
+     Q.PAT_X_ASSUM ‘EVERY (\(x,p). DISJOINT (set (MAP FST map)) (FV p) /\ q # p) map’
+       MP_TAC >> rw [EVERY_MEM, MEM_MAP] \\
+     Q.PAT_X_ASSUM ‘!e. MEM e map ==> _’ (MP_TAC o (Q.SPEC ‘y’)) \\
+     Cases_on ‘y’ >> rw [])
+ >> rw []
+ >> Cases_on `h` >> fs []
+ >> rename1 `X # P`
+ >> Suff ‘ssub (FEMPTY |++ map) E =
+          FOLDR (\l e. CCS_Subst e (SND l) (FST l)) E map’ >- rw []
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> Q.PAT_X_ASSUM
+     ‘EVERY (\(x,p). DISJOINT (set (MAP FST map)) (FV p) /\ X # p) map’ MP_TAC
+ >> rw [EVERY_MEM]
+ >> Q.PAT_X_ASSUM ‘!e. MEM e map ==> _’ (MP_TAC o (Q.SPEC ‘e’))
+ >> Cases_on ‘e’ >> rw []
+QED
+
+(* lemma2 in another form; this is less general than fromPairs_reduce *)
+Theorem fromPairs_FOLDR :
+    !Xs Ps E. ALL_DISTINCT Xs /\ LENGTH Ps = LENGTH Xs /\
+              EVERY (\p. DISJOINT (set Xs) (FV p)) Ps ==>
+              (fromPairs Xs Ps) ' E =
+              FOLDR (\(x,y) e. CCS_Subst e y x) E (ZIP (Xs,Ps))
+Proof
+    RW_TAC std_ss []
+ >> MP_TAC (Q.SPECL [`E`, `ZIP (Xs,Ps)`] lemma2)
+ >> RW_TAC std_ss [MAP_ZIP, fromPairs_def]
+ >> Know `(\l e. CCS_Subst e (SND l) (FST l)) = (\(x,y) e. CCS_Subst e y x)`
+ >- (rw [FUN_EQ_THM] >> Cases_on `l` >> rw [])
+ >> DISCH_THEN (fs o wrap)
+ >> POP_ASSUM MATCH_MP_TAC
+ >> POP_ASSUM MP_TAC >> rw [EVERY_MEM, MEM_ZIP]
+ >> simp []
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> rw [MEM_EL]
+ >> Q.EXISTS_TAC ‘n’ >> art []
+QED
+
+Theorem fromPairs_FOLDR' :
+    !Xs Ps E. ALL_DISTINCT Xs /\ LENGTH Ps = LENGTH Xs /\
+              EVERY (\p. DISJOINT (set Xs) (FV p)) Ps ==>
+              (fromPairs Xs Ps) ' E =
+              FOLDR (\(x,y) e. CCS_Subst e y x) E (ZIP (Xs,Ps))
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC fromPairs_FOLDR >> art []
+ >> fs [FEVERY_DEF, EVERY_MEM]
+ >> RW_TAC std_ss [MEM_ZIP]
+QED
+
+(* A FOLDL-like version of fromPairs_reduce (unfinished, unused)
+Theorem fromPairs_reduce' :
+    !E X P Xs Ps. ~MEM X Xs /\ ALL_DISTINCT Xs /\ LENGTH Ps = LENGTH Xs /\
+                  EVERY (\(x,p). FV p SUBSET {x}) (ZIP (Xs,Ps))
+              ==> (fromPairs (X::Xs) (P::Ps)) ' E =
+                  (fromPairs Xs Ps) ' (CCS_Subst E P X)
+Proof
+    NTAC 3 GEN_TAC
+ >> Induct_on `Xs` >> SRW_TAC [][]
+QED
+ *)
+
+Theorem fromPairs_self :
+    !E Xs. ALL_DISTINCT Xs ==> fromPairs Xs (MAP var Xs) ' E = E
+Proof
+    GEN_TAC >> Induct_on `Xs`
+ >> SRW_TAC [] [ssub_FEMPTY, fromPairs_EMPTY]
+ >> Q.PAT_X_ASSUM `ALL_DISTINCT Xs ==> _` MP_TAC
+ >> RW_TAC std_ss []
+ >> MP_TAC (Q.SPECL [`h`, `Xs`, `var h`, `MAP var Xs`] fromPairs_reduce)
+ >> `LENGTH (MAP var Xs) = LENGTH Xs` by PROVE_TAC [LENGTH_MAP]
+ >> simp []
+ >> Suff ‘EVERY (\e. h # e) (MAP var Xs)’
+ >- RW_TAC std_ss [EVERY_MEM, MEM_MAP]
+ >> rw [EVERY_MAP, EVERY_MEM, FV_thm]
+QED
+
+Theorem fromPairs_nested :
+    !Xs Ps Es E.
+        ALL_DISTINCT Xs /\ (LENGTH Ps = LENGTH Xs) /\ (LENGTH Es = LENGTH Xs) ==>
+        fromPairs Xs Ps ' (fromPairs Xs Es ' E) =
+        fromPairs Xs (MAP ($' (fromPairs Xs Ps)) Es) ' E
+Proof
+    Suff (* rewriting for induction *)
+   `!Xs Ps Es. ALL_DISTINCT Xs /\
+              (LENGTH Ps = LENGTH Xs) /\ (LENGTH Es = LENGTH Xs) ==>
+        !E. ssub (fromPairs Xs Ps)
+                      (ssub (fromPairs Xs Es) E) =
+            ssub (fromPairs Xs (MAP (ssub (fromPairs Xs Ps)) Es)) E`
+ >- METIS_TAC []
+ >> rpt GEN_TAC >> STRIP_TAC
+ >> HO_MATCH_MP_TAC nc_INDUCTION2
+ >> qabbrev_tac ‘fm2 = fromPairs Xs Ps’
+ >> Q.EXISTS_TAC ‘set Xs UNION BIGUNION (IMAGE FV (set Es))
+                         UNION BIGUNION (IMAGE FV (set Ps))
+                         UNION BIGUNION (IMAGE (\e. FV (ssub fm2 e)) (set Es))’
+ >> rw [Abbr ‘fm2’, FDOM_fromPairs] (* 5 subgoals *)
+ >> TRY (rw [FINITE_FV]) (* 2 subgoals left *)
+ >- (fs [MEM_EL] >> rename1 `X = EL n Xs` \\
+    `LENGTH (MAP (ssub (fromPairs Xs Ps)) Es) = LENGTH Xs`
+       by PROVE_TAC [LENGTH_MAP] \\
+     ASM_SIMP_TAC std_ss [fromPairs_FAPPLY_EL, EL_MAP])
+ >> `LENGTH (MAP (ssub (fromPairs Xs Ps)) Es) = LENGTH Xs`
+       by PROVE_TAC [LENGTH_MAP]
+ (* stage work *)
+ >> qabbrev_tac ‘fm1 = fromPairs Xs Es’
+ >> qabbrev_tac ‘fm2 = fromPairs Xs Ps’
+ (* applying ssub_rec *)
+ >> Know ‘ssub fm1 (rec y E) = rec y (ssub fm1 E)’
+ >- (MATCH_MP_TAC ssub_rec >> rw [Abbr ‘fm1’, FDOM_fromPairs] \\
+     fs [MEM_EL] >> rename1 `X = EL n Xs` \\
+     ASM_SIMP_TAC std_ss [fromPairs_FAPPLY_EL, EL_MAP] \\
+     METIS_TAC [])
+ >> Rewr'
+ >> Know ‘ssub fm2 (rec y (ssub fm1 E)) =
+          rec y (ssub fm2 (ssub fm1 E))’
+ >- (MATCH_MP_TAC ssub_rec >> rw [Abbr ‘fm2’, FDOM_fromPairs] \\
+     fs [MEM_EL] >> rename1 `X = EL n Xs` \\
+     ASM_SIMP_TAC std_ss [fromPairs_FAPPLY_EL, EL_MAP] \\
+     METIS_TAC [])
+ >> Rewr'
+ >> qabbrev_tac ‘fm3 = fromPairs Xs (MAP (ssub fm2) Es)’
+ >> Know ‘ssub fm3 (rec y E) = rec y (ssub fm3 E)’
+ >- (MATCH_MP_TAC ssub_rec >> rw [Abbr ‘fm3’, FDOM_fromPairs] \\
+     FULL_SIMP_TAC std_ss [MEM_EL] >> rename1 `X = EL n Xs` \\
+     ASM_SIMP_TAC std_ss [fromPairs_FAPPLY_EL, EL_MAP] \\
+     (* NOTE: this is why we put
+          ‘BIGUNION (IMAGE (\e. FV (ssub fm2 e)) (set Es))’
+        into the exclusive set required by nc_INDUCTION2. *)
+     METIS_TAC [])
+ >> Rewr'
+ >> rw [rec_eq_thm]
+QED
+
+(* A (non-trivial) generalization of FV_SUBSET *)
+Theorem FV_SUBSET_BIGUNION :
+    !Xs Ps E. ALL_DISTINCT Xs /\ (LENGTH Ps = LENGTH Xs) ==>
+              FV (ssub (fromPairs Xs Ps) E) SUBSET
+                 (FV E) UNION BIGUNION (IMAGE FV (set Ps))
+Proof
+    NTAC 2 GEN_TAC
+ >> HO_MATCH_MP_TAC nc_INDUCTION2
+ >> Q.EXISTS_TAC ‘set Xs UNION BIGUNION (IMAGE FV (set Ps))’
+ >> rw [FDOM_fromPairs, ssub_thm] (* 7 subgoals *)
+ >- (fs [MEM_EL, fromPairs_FAPPLY_EL] \\
+    `MEM (EL n Ps) Ps` by PROVE_TAC [MEM_EL] >> ASM_SET_TAC [])
+ >> TRY (rw [FINITE_FV] >> ASM_SET_TAC [])
+ >> qabbrev_tac ‘fm = fromPairs Xs Ps’
+ >> Know ‘ssub fm (rec y E) = rec y (ssub fm E)’
+ >- (MATCH_MP_TAC ssub_rec \\
+     rw [Abbr ‘fm’, FDOM_fromPairs] \\
+     fs [MEM_EL, fromPairs_FAPPLY_EL] \\
+     METIS_TAC [])
+ >> Rewr'
+ >> fs [FV_rec]
+ >> qabbrev_tac ‘A = ssub fm E’
+ >> qabbrev_tac ‘B = BIGUNION (IMAGE FV (set Ps))’
+ >> Q.PAT_X_ASSUM ‘FV A SUBSET FV E UNION B’ MP_TAC
+ >> SET_TAC []
+QED
+
+(* A more precise estimation with `set Xs` *)
+Theorem FV_SUBSET_BIGUNION' :
+    !Xs Ps E. ALL_DISTINCT Xs /\ (LENGTH Ps = LENGTH Xs) ==>
+              FV (fromPairs Xs Ps ' E) SUBSET
+                 ((FV E) DIFF (set Xs)) UNION BIGUNION (IMAGE FV (set Ps))
+Proof
+    NTAC 2 GEN_TAC
+ >> HO_MATCH_MP_TAC nc_INDUCTION2
+ >> Q.EXISTS_TAC ‘set Xs UNION BIGUNION (IMAGE FV (set Ps))’
+ >> rw [FDOM_fromPairs, ssub_thm] (* 7 subgoals *)
+ >- (fs [MEM_EL, fromPairs_FAPPLY_EL] \\
+    `MEM (EL n Ps) Ps` by PROVE_TAC [MEM_EL] >> ASM_SET_TAC [])
+ >> TRY (rw [FINITE_FV] >> ASM_SET_TAC [])
+ >> qabbrev_tac ‘fm = fromPairs Xs Ps’
+ >> Know ‘ssub fm (rec y E) = rec y (ssub fm E)’
+ >- (MATCH_MP_TAC ssub_rec \\
+     rw [Abbr ‘fm’, FDOM_fromPairs] \\
+     fs [MEM_EL, fromPairs_FAPPLY_EL] \\
+     METIS_TAC []) >> Rewr'
+ >> fs [FV_rec]
+ >> qabbrev_tac ‘A = fm ' E’
+ >> qabbrev_tac ‘B = BIGUNION (IMAGE FV (set Ps))’
+ >> Q.PAT_X_ASSUM ‘FV A SUBSET FV E DIFF set Xs UNION B’ MP_TAC
+ >> SET_TAC []
+QED
+
+(* KEY result *)
+val lset_ss = list_ss ++ PRED_SET_ss; (* list + pred_set *)
+
+Theorem fromPairs_closed :
+    !Xs Ps E. ALL_DISTINCT Xs /\ LENGTH Ps = LENGTH Xs /\
+              ALL_PROC Ps /\ FV E SUBSET (set Xs) ==>
+              closed (fromPairs Xs Ps ' E)
+Proof
+    RW_TAC lset_ss [IS_PROC_def, ALL_PROC_def, EVERY_MEM]
+ >> Suff `FV (ssub (fromPairs Xs Ps) E) SUBSET {}` >- SET_TAC []
+ >> Know `FV (ssub (fromPairs Xs Ps) E) SUBSET
+           ((FV E) DIFF (set Xs)) UNION BIGUNION (IMAGE FV (set Ps))`
+ >- PROVE_TAC [FV_SUBSET_BIGUNION']
+ >> Know `FV E DIFF (set Xs) = {}` >- ASM_SET_TAC [] >> Rewr'
+ >> Know `BIGUNION (IMAGE FV (set Ps)) = {}`
+ >- rw [NOT_IN_EMPTY, IN_BIGUNION_IMAGE, IMAGE_EQ_SING] >> Rewr'
+ >> REWRITE_TAC [UNION_EMPTY]
+QED
+
+Theorem fromPairs_elim_closed :
+    !Xs Ps P. LENGTH Ps = LENGTH Xs /\ closed P ==>
+              fromPairs Xs Ps ' P = P
+Proof
+    RW_TAC std_ss [IS_PROC_def]
+ >> MATCH_MP_TAC fromPairs_elim >> art [DISJOINT_EMPTY]
+QED
+
 (******************************************************************************)
 (*                                                                            *)
 (*            Definition of the transition relation for pure CCS              *)
