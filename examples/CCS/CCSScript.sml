@@ -2116,7 +2116,7 @@ Proof
 QED
 
 (* A (non-trivial) generalization of FV_SUBSET *)
-Theorem FV_SUBSET_BIGUNION :
+Theorem FV_fromPairs :
     !Xs Ps E. ALL_DISTINCT Xs /\ LENGTH Ps = LENGTH Xs ==>
               FV (fromPairs Xs Ps ' E) SUBSET
                  (FV E) UNION BIGUNION (IMAGE FV (set Ps))
@@ -2143,7 +2143,7 @@ Proof
 QED
 
 (* A more precise estimation with `set Xs` *)
-Theorem FV_SUBSET_BIGUNION' :
+Theorem FV_fromPairs' :
     !Xs Ps E. ALL_DISTINCT Xs /\ LENGTH Ps = LENGTH Xs ==>
               FV (fromPairs Xs Ps ' E) SUBSET
                  ((FV E) DIFF (set Xs)) UNION BIGUNION (IMAGE FV (set Ps))
@@ -2180,7 +2180,7 @@ Proof
  >> Suff `FV (ssub (fromPairs Xs Ps) E) SUBSET {}` >- SET_TAC []
  >> Know `FV (ssub (fromPairs Xs Ps) E) SUBSET
            ((FV E) DIFF (set Xs)) UNION BIGUNION (IMAGE FV (set Ps))`
- >- PROVE_TAC [FV_SUBSET_BIGUNION']
+ >- PROVE_TAC [FV_fromPairs']
  >> Know `FV E DIFF (set Xs) = {}` >- ASM_SET_TAC [] >> Rewr'
  >> Know `BIGUNION (IMAGE FV (set Ps)) = {}`
  >- rw [NOT_IN_EMPTY, IN_BIGUNION_IMAGE, IMAGE_EQ_SING] >> Rewr'

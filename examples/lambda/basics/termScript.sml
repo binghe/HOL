@@ -1430,7 +1430,7 @@ Proof
 QED
 
 (* A (non-trivial) generalization of FV_SUBSET *)
-Theorem FV_SUBSET_BIGUNION :
+Theorem FV_fromPairs :
     !Xs Ps E. ALL_DISTINCT Xs /\ LENGTH Ps = LENGTH Xs ==>
               FV (fromPairs Xs Ps ' E) SUBSET
                  (FV E) UNION BIGUNION (IMAGE FV (set Ps))
@@ -1457,7 +1457,7 @@ Proof
 QED
 
 (* A more precise estimation with `set Xs` *)
-Theorem FV_SUBSET_BIGUNION' :
+Theorem FV_fromPairs' :
     !Xs Ps E. ALL_DISTINCT Xs /\ LENGTH Ps = LENGTH Xs ==>
               FV (fromPairs Xs Ps ' E) SUBSET
                  ((FV E) DIFF (set Xs)) UNION BIGUNION (IMAGE FV (set Ps))

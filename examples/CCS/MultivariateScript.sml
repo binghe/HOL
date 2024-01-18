@@ -2191,7 +2191,7 @@ Proof
  >> IMP_RES_TAC TRANS_FV
  >> Know `FV P SUBSET (FV (rec y E)) UNION (BIGUNION (IMAGE FV (set Ps)))`
  >- (Q.UNABBREV_TAC `P` \\
-     MATCH_MP_TAC FV_SUBSET_BIGUNION >> art []) >> DISCH_TAC
+     MATCH_MP_TAC FV_fromPairs >> art []) >> DISCH_TAC
  >> FULL_SIMP_TAC bool_ss [ALL_PROC_def, EVERY_MEM, IS_PROC_def]
  >> Know `BIGUNION (IMAGE FV (set Ps)) = EMPTY`
  >- rw [NOT_IN_EMPTY, IN_BIGUNION_IMAGE, IMAGE_EQ_SING]
