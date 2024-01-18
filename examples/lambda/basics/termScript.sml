@@ -463,6 +463,9 @@ val SUB_THM = save_thm(
 val _ = export_rewrites ["SUB_THM"]
 val SUB_VAR = save_thm("SUB_VAR", hd (CONJUNCTS SUB_DEF))
 
+(* |- !v u N t. v <> u /\ v # N ==> [N/u] (LAM v t) = LAM v ([N/u] t) *)
+Theorem SUB_LAM = List.nth (CONJUNCTS SUB_DEF, 2)
+
 (* ----------------------------------------------------------------------
     Results about substitution
    ---------------------------------------------------------------------- *)
@@ -1080,6 +1083,42 @@ Proof
     rpt STRIP_TAC
  >> MATCH_MP_TAC ssub_update_apply_SUBST >> art []
  >> fs [closed_def, DISJOINT_DEF]
+QED
+
+Theorem ssub_reduce_thm :
+    !t. FV t INTER (FDOM fm) = {s} ==> fm ' t = [fm ' s/s] t
+Proof
+    HO_MATCH_MP_TAC nc_INDUCTION2
+ >> Q.EXISTS_TAC ‘fmFV fm UNION {s}’
+ >> rw [SUB_THM, ssub_thm]
+ >- (‘s' = s’ by ASM_SET_TAC [] >> fs [])
+ >- (‘s' = s’ by ASM_SET_TAC [] >> fs [ssub_thm] \\
+     ‘s IN FDOM fm’ by ASM_SET_TAC [])
+ >- (‘FV t INTER FDOM fm = {s} \/ FV t INTER FDOM fm = {}’ by ASM_SET_TAC []
+     >- rw [] \\
+     rw [ssub_14b] \\
+     MATCH_MP_TAC (GSYM lemma14b) \\
+     ASM_SET_TAC [])
+ >- (‘FV t' INTER FDOM fm = {s} \/ FV t' INTER FDOM fm = {}’ by ASM_SET_TAC []
+     >- rw [] \\
+     rw [ssub_14b] \\
+     MATCH_MP_TAC (GSYM lemma14b) \\
+     ASM_SET_TAC [])
+ >> ‘s IN FDOM fm’ by ASM_SET_TAC []
+ >> Know ‘[fm ' s/s] (LAM y t) = LAM y ([fm ' s/s] t)’
+ >- (MATCH_MP_TAC SUB_LAM >> rw [])
+ >> Rewr'
+ >> rw []
+ >> ‘FV t INTER FDOM fm = {s}’ by ASM_SET_TAC []
+ >> rw []
+QED
+
+Theorem ssub_reduce :
+    !t. FV t = {s} /\ s IN FDOM fm ==> fm ' t = [fm ' s/s] t
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC ssub_reduce_thm
+ >> ASM_SET_TAC []
 QED
 
 (* ----------------------------------------------------------------------

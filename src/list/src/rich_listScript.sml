@@ -2579,6 +2579,14 @@ val IS_PREFIX_BUTLAST = Q.store_thm ("IS_PREFIX_BUTLAST",
    THEN INDUCT_THEN list_INDUCT ASSUME_TAC
    THEN ASM_SIMP_TAC boolSimps.bool_ss [FRONT_CONS, IS_PREFIX]);
 
+Theorem IS_PREFIX_BUTLAST' :
+    !l. l <> [] ==> IS_PREFIX l (FRONT l)
+Proof
+    Q.X_GEN_TAC ‘l’
+ >> Cases_on ‘l’ >- SRW_TAC[][]
+ >> SRW_TAC[][IS_PREFIX_BUTLAST]
+QED
+
 val IS_PREFIX_LENGTH = Q.store_thm ("IS_PREFIX_LENGTH",
    `!x y. IS_PREFIX y x ==> LENGTH x <= LENGTH y`,
    INDUCT_THEN list_INDUCT ASSUME_TAC

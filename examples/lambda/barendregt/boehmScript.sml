@@ -1539,15 +1539,24 @@ Theorem Boehm_transform_exists_lemma2 :
             ?pi. Boehm_transform pi /\ is_ready (apply pi M) /\
                  ?fm. subterm' X (apply pi M) p = fm ' (subterm' X M p)
 Proof
-    qx_genl_tac [‘Y’, ‘M’, ‘p’] >> STRIP_TAC
+    qx_genl_tac [‘X’, ‘M’, ‘p’] >> STRIP_TAC
  (* applying subterm_is_none_iff_children *)
- >> Know ‘!p'. p' <<= p ==> subterm Y M p' <> NONE’
+ >> Know ‘!q. q <<= p ==> subterm X M q <> NONE’
  >- (Q.X_GEN_TAC ‘q’ >> STRIP_TAC \\
      CCONTR_TAC \\
      POP_ASSUM (MP_TAC o (REWRITE_RULE [Once subterm_is_none_iff_children])) \\
      DISCH_THEN (MP_TAC o (Q.SPEC ‘p’)) >> rw [])
  >> DISCH_TAC
  (* applying subterm_is_none_iff_parent_unsolvable *)
+ >> Know ‘!q. q <> [] /\ q <<= p ==> solvable (subterm' X M (FRONT q))’
+ >- (rpt STRIP_TAC \\
+     MP_TAC (Q.SPECL [‘q’, ‘X’, ‘M’] subterm_is_none_iff_parent_unsolvable) \\
+    ‘q IN ltree_paths (BTe X M)’ by PROVE_TAC [ltree_paths_inclusive] \\
+     Know ‘subterm X M (FRONT q) <> NONE’
+     >- (FIRST_X_ASSUM MATCH_MP_TAC \\
+         MATCH_MP_TAC IS_PREFIX_TRANS >> Q.EXISTS_TAC ‘q’ >> rw [] \\
+         MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []) >> rw [])
+ >> DISCH_TAC
  >> cheat
  (*
  (* trivial case: unsolvable M *)
