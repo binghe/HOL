@@ -1916,7 +1916,7 @@ QED
    NOTE: added ‘DISJOINT (set Xs) (FV P)’ when switching to ‘ssub’
  *)
 Theorem fromPairs_reduce :
-    !X Xs P Ps. ~MEM X Xs /\ ALL_DISTINCT Xs /\ (LENGTH Ps = LENGTH Xs) /\
+    !X Xs P Ps. ~MEM X Xs /\ ALL_DISTINCT Xs /\ LENGTH Ps = LENGTH Xs /\
                 EVERY (\e. X NOTIN (FV e)) Ps /\
                 DISJOINT (set Xs) (FV P) ==>
          !E. fromPairs (X::Xs) (P::Ps) ' E = CCS_Subst (fromPairs Xs Ps ' E) P X
