@@ -1160,10 +1160,7 @@ Proof
  >> irule lameq_sub_cong >> rw []
 QED
 
-(* Lemma 10.3.4 (ii) [1, p.246]
-
-   Used by: Boehm_transform_lameq_appstar
- *)
+(* Lemma 10.3.4 (ii) [1, p.246] *)
 Theorem Boehm_transform_lameq_LAMl_appstar :
     !pi. Boehm_transform pi ==>
          ?c. ctxt c /\ (!M. apply pi M == c M) /\
@@ -1212,10 +1209,7 @@ Proof
  >> Q.PAT_X_ASSUM ‘FV M SUBSET (set vs)’ MP_TAC >> SET_TAC []
 QED
 
-(* An corollary of the above lemma with ‘xs = {}’
-
-   Used by: closed_separability_thm
- *)
+(* An corollary of the above lemma with ‘xs = {}’ *)
 Theorem Boehm_transform_lameq_appstar :
     !pi. Boehm_transform pi ==>
          ?Ns. !M. closed M ==> apply pi M == M @* Ns
@@ -1228,7 +1222,6 @@ Proof
  >> RW_TAC (betafy (srw_ss())) []
 QED
 
-(* Used by: distinct_benf_imp_inconsistent *)
 Theorem Boehm_apply_asmlam_cong :
     !pi M N. Boehm_transform pi /\ asmlam eqns M N ==>
              asmlam eqns (apply pi M) (apply pi N)
@@ -1240,7 +1233,6 @@ Proof
  >> MATCH_MP_TAC asmlam_subst >> art []
 QED
 
-(* Used by: separability_lemma2 *)
 Theorem Boehm_apply_lameq_cong :
     !pi M N. Boehm_transform pi /\ M == N ==> apply pi M == apply pi N
 Proof
@@ -1249,14 +1241,12 @@ Proof
  >> MATCH_MP_TAC solving_transform_lameq >> art []
 QED
 
-(* Used by separability_thm *)
 Theorem Boehm_transform_APPEND :
     !p1 p2. Boehm_transform p1 /\ Boehm_transform p2 ==> Boehm_transform (p1 ++ p2)
 Proof
     rw [Boehm_transform_def]
 QED
 
-(* Used by separability_thm *)
 Theorem Boehm_apply_APPEND :
     !p1 p2 M. apply (p1 ++ p2) M = apply p1 (apply p2 M)
 Proof
@@ -1265,7 +1255,6 @@ Proof
  >> rw [APPEND_SNOC]
 QED
 
-(* Used by separability_lemma2 *)
 Theorem Boehm_apply_MAP_rightctxt :
     !Ns t. apply (MAP rightctxt Ns) t = t @* (REVERSE Ns)
 Proof
@@ -1282,7 +1271,6 @@ Proof
  >> rw [Boehm_apply_MAP_rightctxt]
 QED
 
-(* Used by separability_lemma2 *)
 Theorem Boehm_apply_unsolvable :
     !pi M. Boehm_transform pi /\ unsolvable M ==> unsolvable (apply pi M)
 Proof
@@ -1555,7 +1543,7 @@ QED
    [...] |- !X M. ?pi. Boehm_transform pi /\ is_ready (apply pi M) /\
                        ?fm. apply pi M = fm ' M
 
-   which is impossible if M is not already "ready".
+          which is impossible if M is not already "is_ready".
  *)
 Theorem Boehm_transform_exists_lemma2 :
     !X M p. p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
@@ -1580,14 +1568,11 @@ Proof
          MATCH_MP_TAC IS_PREFIX_TRANS >> Q.EXISTS_TAC ‘q’ >> rw [] \\
          MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []) >> rw [])
  >> DISCH_TAC
- (* trivial case: unsolvable M (optional)
+ (* trivial case: unsolvable M (useless)
  >> reverse (Cases_on ‘solvable M’)
  >- (Q.EXISTS_TAC ‘[]’ >> rw [is_ready_def] \\
      Q.EXISTS_TAC ‘FEMPTY’ >> rw [])
   *)
- >> Know ‘!q. q <> [] /\ q <<= p ==> solvable (subterm' X M q)’
- >- (rpt STRIP_TAC \\
-     cheat)
  >> cheat
  (*
  >> qabbrev_tac ‘M0 = principle_hnf M’
@@ -1799,10 +1784,7 @@ Proof
     cheat
 QED
 
-(* Proposition 10.3.13 [1, p.253]
-
-   Used by separability_thm
- *)
+(* Proposition 10.3.13 [1, p.253] *)
 Theorem agrees_upto_thm :
     !Fs p. Fs agrees_upto p ==> ?pi. Boehm_transform pi /\ is_faithful p Fs pi
 Proof
@@ -2313,8 +2295,6 @@ QED
 (* Exercise 10.6.9 [1, p.272]. It may avoid using Theorem 10.2.31.
 
    NOTE: the actual statements have ‘has_benf M /\ has_benf N’
-
-   Used by: separability_thm
  *)
 Theorem distinct_benf_no_subterm_eta_equiv :
     !M N. benf M /\ benf N /\ M <> N ==> ?p. ~subterm_eta_equiv p M N
@@ -2322,10 +2302,7 @@ Proof
     cheat
 QED
 
-(* Theorem 10.4.2 (i) [1, p.256]
-
-   Used by: distinct_benf_imp_inconsistent
- *)
+(* Theorem 10.4.2 (i) [1, p.256] *)
 Theorem separability_thm :
     !M N. benf M /\ benf N /\ M <> N ==>
           !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q

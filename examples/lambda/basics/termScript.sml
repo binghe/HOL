@@ -1130,7 +1130,7 @@ Definition fromPairs_def :
     fromPairs (Xs :string list) (Ps :term list) = FEMPTY |++ ZIP (Xs,Ps)
 End
 
-Theorem fromPairs_sing :
+Theorem fromPairs_single :
     !X E E'. ssub (fromPairs [X] [E']) E = [E'/X] E
 Proof
     RW_TAC list_ss [fromPairs_def, ZIP, FUPDATE_LIST_THM]
@@ -1288,7 +1288,6 @@ Proof
                          (Q.SPECL [`X`,`Xs`,`r`,`Ps`] fromPairs_reduce))
  >> simp []
 QED
-
 
 (* Let map = ZIP(Xs,Ps), to convert ssub to a folding of CCS_Subst, each P
    of Ps must contains free variables up to the corresponding X of Xs.

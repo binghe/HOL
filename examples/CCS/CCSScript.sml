@@ -1812,7 +1812,7 @@ Definition fromPairs_def :
     fromPairs (Xs :string list) (Ps :'a CCS list) = FEMPTY |++ ZIP (Xs,Ps)
 End
 
-Theorem fromPairs_sing :
+Theorem fromPairs_single :
     !X E E'. ssub (fromPairs [X] [E']) E = CCS_Subst E E' X
 Proof
     RW_TAC list_ss [fromPairs_def, ZIP, FUPDATE_LIST_THM]
