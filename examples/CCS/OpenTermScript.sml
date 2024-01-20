@@ -1,6 +1,6 @@
 (* ========================================================================== *)
-(* FILE          : FutureScript.sml                                           *)
-(* DESCRIPTION   : "Future" theory of CCS (for potentially open terms)        *)
+(* FILE          : OpenTermScript.sml                                         *)
+(* DESCRIPTION   : The theory of CCS for possibly open terms                  *)
 (*                                                                            *)
 (* COPYRIGHTS    : 2023-2024 Australian National University (Chun Tian)       *)
 (******************************************************************************)
@@ -14,18 +14,15 @@ open pred_setTheory relationTheory bisimulationTheory listTheory rich_listTheory
 open binderLib;
 
 (* local theories *)
-open CCSLib CCSTheory CCSSyntax CCSConv;
-open StrongEQTheory StrongEQLib StrongLawsTheory;
-open WeakEQTheory WeakEQLib WeakLawsTheory;
-open ObsCongrTheory ObsCongrLib ObsCongrLawsTheory;
-open CongruenceTheory CoarsestCongrTheory;
-open TraceTheory ExpansionTheory ContractionTheory;
-open BisimulationUptoTheory UniqueSolutionsTheory;
-open MultivariateTheory;
+open CCSLib CCSTheory CCSSyntax CCSConv StrongEQTheory StrongEQLib
+     StrongLawsTheory WeakEQTheory WeakEQLib WeakLawsTheory ObsCongrTheory
+     ObsCongrLib ObsCongrLawsTheory CongruenceTheory CoarsestCongrTheory
+     TraceTheory ExpansionTheory ContractionTheory BisimulationUptoTheory
+     UniqueSolutionsTheory MultivariateTheory;
 
 val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
 
-val _ = new_theory "Future";
+val _ = new_theory "OpenTerm";
 
 (******************************************************************************)
 (*                                                                            *)
@@ -58,24 +55,24 @@ QED
 
 Overload StrongEQ = “extension STRONG_EQUIV”
 
-(* |- !x y. StrongEQ x y ==> STRONG_EQUIV x y *)
-Theorem StrongEQ_IMP_STRONG_EQUIV =
-    REWRITE_RULE [RSUBSET] (Q.SPEC ‘STRONG_EQUIV’ extension_RSUBSET)
-
 (* Definition 5 of [1, p.98] (see also [2, p.181])
 
    If any of P and Q is not closed, but all their closed simultaneous
    substitutions are strong bisimular, then so is P and Q.
 
-   NOTE: ‘fm’ is not required to cover all FVs of P and Q, those free vars
-         which is not substituted, will be treated as nil (i.e. no transitions).
+   NOTE: ‘fm’ is not required to cover all FVs of P and Q. The free vars who
+         is not substituted, will be treated as nil having no transitions.
          Furthermore, if ‘FDOM fm’ is larger than ‘FV P UNION FV Q’, the extra
-         keys won't cause any trouble.
+         keys won't cause any further changes to P and Q.
 
    |- !P Q. StrongEQ P Q <=> !fm. STRONG_EQUIV (fm ' P) (fm ' Q)
  *)
 Theorem StrongEQ_def =
     SIMP_RULE std_ss [FUN_EQ_THM] (Q.SPEC ‘STRONG_EQUIV’ extension_def)
+
+(* |- !x y. StrongEQ x y ==> STRONG_EQUIV x y *)
+Theorem StrongEQ_imp_STRONG_EQUIV =
+    REWRITE_RULE [RSUBSET] (Q.SPEC ‘STRONG_EQUIV’ extension_RSUBSET)
 
 Theorem StrongEQ_alt_closed :
     !P Q. closed P /\ closed Q ==> (StrongEQ P Q <=> STRONG_EQUIV P Q)
@@ -83,23 +80,28 @@ Proof
     rw [StrongEQ_def, ssub_value']
 QED
 
+(* NOTE: the opposite direction doesn't hold, unless X is the only FV *)
+Theorem StrongEQ_imp_SUB :
+    !X P Q. StrongEQ P Q ==> !E. STRONG_EQUIV ([E/X] P) ([E/X] Q)
+Proof
+    rw [StrongEQ_def]
+ >> POP_ASSUM (MP_TAC o (Q.SPEC ‘FEMPTY |+ (X,E)’))
+ >> rw [single_ssub]
+QED
+
 (* special case when P, Q contains free variables up to X, a classic condition *)
-Theorem StrongEQ_alt_single :
+Theorem StrongEQ_alt_SUB :
     !P Q X. FV P SUBSET {X} /\ FV Q SUBSET {X} ==>
            (StrongEQ P Q <=> !E. STRONG_EQUIV ([E/X] P) ([E/X] Q))
 Proof
-    rw [StrongEQ_def]
- >> EQ_TAC
- >- (rpt STRIP_TAC \\
-     POP_ASSUM (MP_TAC o (Q.SPEC ‘FEMPTY |+ (X,E)’)) \\
-     rw [single_ssub])
- >> STRIP_TAC
+    rpt STRIP_TAC
+ >> EQ_TAC >- REWRITE_TAC [StrongEQ_imp_SUB]
+ >> rw [StrongEQ_def]
  (* preparing for ssub_reduce_thm *)
  >> ‘FV P = {} \/ FV P = {X}’ by ASM_SET_TAC []
  >- (fs [ssub_value, lemma14b] \\
     ‘FV Q = {} \/ FV Q = {X}’ by ASM_SET_TAC []
      >- (fs [ssub_value, lemma14b]) \\
-     Q.X_GEN_TAC ‘fm’ \\
      Cases_on ‘DISJOINT (FV Q) (FDOM fm)’
      >- (rw [ssub_14b] \\
          Q.PAT_X_ASSUM ‘!E. _’ (MP_TAC o (Q.SPEC ‘var X’)) \\
@@ -110,7 +112,6 @@ Proof
      qabbrev_tac ‘E = fm ' X’ >> rw [])
  >> ‘FV Q = {} \/ FV Q = {X}’ by ASM_SET_TAC []
  >- (fs [ssub_value, lemma14b] \\
-     Q.X_GEN_TAC ‘fm’ \\
      Cases_on ‘DISJOINT (FV P) (FDOM fm)’
      >- (rw [ssub_14b] \\
          Q.PAT_X_ASSUM ‘!E. _’ (MP_TAC o (Q.SPEC ‘var X’)) \\
@@ -120,7 +121,6 @@ Proof
      >- (MATCH_MP_TAC ssub_reduce_thm >> ASM_SET_TAC []) >> Rewr' \\
      qabbrev_tac ‘E = fm ' X’ >> rw [])
  (* stage work *)
- >> Q.X_GEN_TAC ‘fm’
  >> Cases_on ‘DISJOINT (FV P) (FDOM fm)’
  >- (rw [ssub_14b] \\
      Cases_on ‘DISJOINT (FV Q) (FDOM fm)’
@@ -188,15 +188,6 @@ Proof
         StrongEQ_reflexive, StrongEQ_symmetric, StrongEQ_transitive]
 QED
 
-(* NOTE: the opposite direction doesn't hold, unless X is the only FV *)
-Theorem StrongEQ_IMP_SUBST :
-    !X P Q. StrongEQ P Q ==> !E. STRONG_EQUIV ([E/X] P) ([E/X] Q)
-Proof
-    rw [StrongEQ_def]
- >> POP_ASSUM (MP_TAC o (Q.SPEC ‘FEMPTY |+ (X,E)’))
- >> rw [single_ssub]
-QED
-
 (* An easy corollary of STRONG_UNIQUE_SOLUTION_EXT
 
    cf. Proposition 4.12 of [1, p.99] or Theorem 4.2 of [2, p.182]
@@ -206,8 +197,7 @@ Theorem STRONG_EQUIV_PRESD_BY_REC :
             STRONG_EQUIV (rec X P) (rec X Q)
 Proof
     rw [weakly_guarded_def, CCS_Subst]
- >> ‘!E. STRONG_EQUIV ([E/X] P) ([E/X] Q)’
-       by PROVE_TAC [StrongEQ_IMP_SUBST]
+ >> ‘!E. STRONG_EQUIV ([E/X] P) ([E/X] Q)’ by PROVE_TAC [StrongEQ_imp_SUB]
  >> MATCH_MP_TAC STRONG_UNIQUE_SOLUTION_EXT
  >> qexistsl_tac [‘\t. [t/X] P’, ‘\t. [t/X] Q’] >> simp []
  >> rw [STRONG_UNFOLDING']
@@ -286,10 +276,14 @@ Proof
 QED
 
 val _ = export_theory ();
-val _ = html_theory "Future";
+val _ = html_theory "OpenTerm";
 
 (* Bibliography:
 
  [1] Milner, Robin. Communication and concurrency. Prentice hall, 1989.
  [2] Gorrieri, R., Versari, C.: Introduction to Concurrency Theory. Springer (2015).
+ [3] S. Schafer and G. Smolka, “Tower Induction and Up-to Techniques for CCS with
+     Fixed Points,” in LNCS 10226 - Relational and Algebraic Methods in Computer
+     Science (RAMiCS 2017), P. Höfner, D. Pous, and G. Struth, Eds. Cham: Springer
+     International Publishing, 2017.
  *)
