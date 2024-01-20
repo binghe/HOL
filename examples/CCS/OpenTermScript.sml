@@ -45,12 +45,26 @@ End
 
 Overload TC = “extension” (* ^+ *)
 
+(* ‘extension R’ is contained in the original relation *)
 Theorem extension_RSUBSET :
     !R. (extension R) RSUBSET R
 Proof
     rw [RSUBSET, extension_def]
  >> POP_ASSUM (MP_TAC o (Q.SPEC ‘FEMPTY’))
  >> rw [ssub_FEMPTY]
+QED
+
+Theorem extension_equivalence :
+    !R. equivalence R ==> equivalence (extension R)
+Proof
+    rw [equivalence_def, extension_def]
+ >- (fs [reflexive_def])
+ >- (fs [symmetric_def])
+ >> fs [transitive_def]
+ >> rw []
+ >> rename1 ‘!fm. R (fm ' P) (fm ' P1)’
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘fm ' P1’ >> art []
 QED
 
 Overload StrongEQ = “extension STRONG_EQUIV”
@@ -72,7 +86,7 @@ Theorem StrongEQ_def =
 
 (* |- !x y. StrongEQ x y ==> STRONG_EQUIV x y *)
 Theorem StrongEQ_imp_STRONG_EQUIV =
-    REWRITE_RULE [RSUBSET] (Q.SPEC ‘STRONG_EQUIV’ extension_RSUBSET)
+    extension_RSUBSET |> Q.SPEC ‘STRONG_EQUIV’ |> REWRITE_RULE [RSUBSET]
 
 Theorem StrongEQ_alt_closed :
     !P Q. closed P /\ closed Q ==> (StrongEQ P Q <=> STRONG_EQUIV P Q)
@@ -81,12 +95,28 @@ Proof
 QED
 
 (* NOTE: the opposite direction doesn't hold, unless X is the only FV *)
-Theorem StrongEQ_imp_SUB :
+Theorem StrongEQ_imp_STRONG_EQUIV_SUB :
     !X P Q. StrongEQ P Q ==> !E. STRONG_EQUIV ([E/X] P) ([E/X] Q)
 Proof
     rw [StrongEQ_def]
  >> POP_ASSUM (MP_TAC o (Q.SPEC ‘FEMPTY |+ (X,E)’))
  >> rw [single_ssub]
+QED
+
+(* An easy corollary of STRONG_UNIQUE_SOLUTION_EXT
+
+   cf. Proposition 4.12 of [1, p.99] or Theorem 4.2 of [2, p.182]
+ *)
+Theorem STRONG_EQUIV_PRESD_BY_REC :
+    !P Q X. weakly_guarded {X} [P; Q] /\ StrongEQ P Q ==>
+            STRONG_EQUIV (rec X P) (rec X Q)
+Proof
+    rw [weakly_guarded_def, CCS_Subst]
+ >> ‘!E. STRONG_EQUIV ([E/X] P) ([E/X] Q)’
+       by PROVE_TAC [StrongEQ_imp_STRONG_EQUIV_SUB]
+ >> MATCH_MP_TAC STRONG_UNIQUE_SOLUTION_EXT
+ >> qexistsl_tac [‘\t. [t/X] P’, ‘\t. [t/X] Q’] >> simp []
+ >> rw [STRONG_UNFOLDING']
 QED
 
 (* special case when P, Q contains free variables up to X, a classic condition *)
@@ -95,7 +125,7 @@ Theorem StrongEQ_alt_SUB :
            (StrongEQ P Q <=> !E. STRONG_EQUIV ([E/X] P) ([E/X] Q))
 Proof
     rpt STRIP_TAC
- >> EQ_TAC >- REWRITE_TAC [StrongEQ_imp_SUB]
+ >> EQ_TAC >- REWRITE_TAC [StrongEQ_imp_STRONG_EQUIV_SUB]
  >> rw [StrongEQ_def]
  (* preparing for ssub_reduce_thm *)
  >> ‘FV P = {} \/ FV P = {X}’ by ASM_SET_TAC []
@@ -136,107 +166,22 @@ Proof
  >> rw []
 QED
 
-Theorem StrongEQ_REFL[simp] :
-    !E. StrongEQ E E
-Proof
-    rw [StrongEQ_def]
-QED
-
-Theorem StrongEQ_reflexive :
-    reflexive StrongEQ
-Proof
-    rw [reflexive_def]
-QED
-
-Theorem StrongEQ_symmetric :
-    symmetric StrongEQ
-Proof
-    rw [symmetric_def, StrongEQ_def]
- >> rw [Once STRONG_EQUIV_SYM_EQ]
-QED
-
-(* |- !x y. StrongEQ x y ==> StrongEQ y x *)
-Theorem StrongEQ_SYM =
-    StrongEQ_symmetric |> REWRITE_RULE [symmetric_def] |> iffLR
-
-Theorem StrongEQ_SYM_EQ :
-    !P Q. StrongEQ P Q <=> StrongEQ Q P
-Proof
-    rpt GEN_TAC >> EQ_TAC >> rw [StrongEQ_SYM]
-QED
-
-Theorem StrongEQ_TRANS :
-    !E1 E2 E3. StrongEQ E1 E2 /\ StrongEQ E2 E3 ==> StrongEQ E1 E3
-Proof
-    rw [StrongEQ_def]
- >> MATCH_MP_TAC STRONG_EQUIV_TRANS
- >> Q.EXISTS_TAC ‘fm ' E2’ >> rw []
-QED
-
-Theorem StrongEQ_transitive :
-    transitive StrongEQ
-Proof
-    rw [transitive_def]
- >> MATCH_MP_TAC StrongEQ_TRANS
- >> Q.EXISTS_TAC ‘y’ >> art []
-QED
-
 Theorem StrongEQ_equivalence :
     equivalence StrongEQ
 Proof
-    rw [equivalence_def,
-        StrongEQ_reflexive, StrongEQ_symmetric, StrongEQ_transitive]
+    MATCH_MP_TAC extension_equivalence
+ >> REWRITE_TAC [STRONG_EQUIV_equivalence]
 QED
 
-(* An easy corollary of STRONG_UNIQUE_SOLUTION_EXT
+(* To actually use [StrongEQ_equivalence]: *)
+val theorems =
+    REWRITE_RULE [equivalence_def, reflexive_def, symmetric_def, transitive_def]
+                 StrongEQ_equivalence;
 
-   cf. Proposition 4.12 of [1, p.99] or Theorem 4.2 of [2, p.182]
- *)
-Theorem STRONG_EQUIV_PRESD_BY_REC :
-    !P Q X. weakly_guarded {X} [P; Q] /\ StrongEQ P Q ==>
-            STRONG_EQUIV (rec X P) (rec X Q)
-Proof
-    rw [weakly_guarded_def, CCS_Subst]
- >> ‘!E. STRONG_EQUIV ([E/X] P) ([E/X] Q)’ by PROVE_TAC [StrongEQ_imp_SUB]
- >> MATCH_MP_TAC STRONG_UNIQUE_SOLUTION_EXT
- >> qexistsl_tac [‘\t. [t/X] P’, ‘\t. [t/X] Q’] >> simp []
- >> rw [STRONG_UNFOLDING']
-QED
-
-Theorem TRANS_tpm :
-    !pi E u E'. TRANS E u E' ==> TRANS (tpm pi E) u (tpm pi E')
-Proof
-    Q.X_GEN_TAC ‘pi’
- >> HO_MATCH_MP_TAC TRANS_IND >> rw [tpm_thm, CCS_Subst] (* 10 subgoals *)
- >- (rw [PREFIX])
- >- (MATCH_MP_TAC SUM1 >> art [])
- >- (MATCH_MP_TAC SUM2 >> art [])
- >- (MATCH_MP_TAC PAR1 >> art [])
- >- (MATCH_MP_TAC PAR2 >> art [])
- >- (MATCH_MP_TAC PAR3 >> Q.EXISTS_TAC ‘l’ >> art [])
- >- (MATCH_MP_TAC RESTR >> rw [])
- >- (MATCH_MP_TAC RESTR >> Q.EXISTS_TAC ‘l’ >> art [])
- >- (MATCH_MP_TAC RELABELING >> art [])
- (* stage work *)
- >> fs [tpm_subst]
- >> MATCH_MP_TAC REC' >> rw []
- >> Q.PAT_X_ASSUM ‘TRANS _ u (tpm pi E')’ K_TAC
- >> ‘var (lswapstr pi X) = tpm pi (var X)’ by rw [tpm_thm]
- >> POP_ORW
- >> CCONTR_TAC
- >> fs [tpm_eqr]
-QED
-
-Theorem TRANS_tpm_eq :
-    !pi E u E'. TRANS E u E' <=> TRANS (tpm pi E) u (tpm pi E')
-Proof
-    rpt GEN_TAC
- >> EQ_TAC >- rw [TRANS_tpm]
- >> DISCH_TAC
- >> ‘E  = tpm (REVERSE pi) (tpm pi E )’ by rw [] >> POP_ORW
- >> ‘E' = tpm (REVERSE pi) (tpm pi E')’ by rw [] >> POP_ORW
- >> MATCH_MP_TAC TRANS_tpm >> art []
-QED
+Theorem StrongEQ_REFL   = cj 1 theorems
+Theorem StrongEQ_SYM_EQ = cj 2 theorems
+Theorem StrongEQ_TRANS  = cj 3 theorems
+Theorem StrongEQ_SYM    = iffLR StrongEQ_SYM_EQ
 
 (******************************************************************************)
 (*                                                                            *)
@@ -244,6 +189,13 @@ QED
 (*                                                                            *)
 (******************************************************************************)
 
+(* NOTE: Unlike in the case of lambda calculus, one-hole contexts are not that
+         useful, because the treatments of the two holes for ‘sum’ and ‘par’ are
+         completely symmetry (in lambda calculus, on the other hand, the type of
+        ‘t1’ and ‘t2’ in ‘APP t1 t2’ are different, leading to sometimes very
+         different proofs.)  Thus, I think there's no proof cases in which only
+         one-hole contexts can do the job.   -- Chun Tian, 20 gen 2024
+ *)
 Inductive ctxt :
     (                   ctxt (\t. t)) /\                 (* ctxt1 *)
     (!s.                ctxt (\t. var s)) /\             (* ctxt2 *)

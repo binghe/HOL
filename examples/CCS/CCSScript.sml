@@ -2245,6 +2245,41 @@ Theorem REC' = REWRITE_RULE [CCS_Subst] REC
 val TRANS_IND = save_thm ("TRANS_IND",
     TRANS_ind |> (Q.SPEC `P`) |> GEN_ALL);
 
+Theorem TRANS_tpm :
+    !pi E u E'. TRANS E u E' ==> TRANS (tpm pi E) u (tpm pi E')
+Proof
+    Q.X_GEN_TAC ‘pi’
+ >> HO_MATCH_MP_TAC TRANS_IND >> rw [tpm_thm, CCS_Subst] (* 10 subgoals *)
+ >- (rw [PREFIX])
+ >- (MATCH_MP_TAC SUM1 >> art [])
+ >- (MATCH_MP_TAC SUM2 >> art [])
+ >- (MATCH_MP_TAC PAR1 >> art [])
+ >- (MATCH_MP_TAC PAR2 >> art [])
+ >- (MATCH_MP_TAC PAR3 >> Q.EXISTS_TAC ‘l’ >> art [])
+ >- (MATCH_MP_TAC RESTR >> rw [])
+ >- (MATCH_MP_TAC RESTR >> Q.EXISTS_TAC ‘l’ >> art [])
+ >- (MATCH_MP_TAC RELABELING >> art [])
+ (* stage work *)
+ >> fs [tpm_subst]
+ >> MATCH_MP_TAC REC' >> rw []
+ >> Q.PAT_X_ASSUM ‘TRANS _ u (tpm pi E')’ K_TAC
+ >> ‘var (lswapstr pi X) = tpm pi (var X)’ by rw [tpm_thm]
+ >> POP_ORW
+ >> CCONTR_TAC
+ >> fs [tpm_eqr]
+QED
+
+Theorem TRANS_tpm_eq :
+    !pi E u E'. TRANS E u E' <=> TRANS (tpm pi E) u (tpm pi E')
+Proof
+    rpt GEN_TAC
+ >> EQ_TAC >- rw [TRANS_tpm]
+ >> DISCH_TAC
+ >> ‘E  = tpm (REVERSE pi) (tpm pi E )’ by rw [] >> POP_ORW
+ >> ‘E' = tpm (REVERSE pi) (tpm pi E')’ by rw [] >> POP_ORW
+ >> MATCH_MP_TAC TRANS_tpm >> art []
+QED
+
 (* An recursion variable has no transition.
    !X u E. ~TRANS (var X) u E
  *)
