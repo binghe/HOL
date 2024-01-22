@@ -1573,6 +1573,9 @@ Proof
  >- (Q.EXISTS_TAC ‘[]’ >> rw [is_ready_def] \\
      Q.EXISTS_TAC ‘FEMPTY’ >> rw [])
   *)
+ >> qabbrev_tac ‘s = {q | q <> [] /\ q <<= p}’
+ >> qabbrev_tac ‘J = IMAGE (\e. hnf_children_size (principle_hnf (subterm' X M (FRONT e)))) s’
+ (* applying IMAGE_FINITE *)
  >> cheat
  (*
  >> qabbrev_tac ‘M0 = principle_hnf M’

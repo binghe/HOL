@@ -1396,8 +1396,7 @@ Theorem hnf_children_size_hnf[simp] :
     hnf_children_size (LAMl vs (VAR y @* Ms)) = LENGTH Ms
 Proof
     rw []
- >> Induct_on ‘Ms’ using SNOC_INDUCT
- >- rw []
+ >> Induct_on ‘Ms’ using SNOC_INDUCT >- rw []
  >> rw [appstar_SNOC]
 QED
 
