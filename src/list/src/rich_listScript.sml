@@ -3456,6 +3456,145 @@ Proof
 QED
 
 (*---------------------------------------------------------------------------*)
+(*   More properties of IS_PREFIX                                            *)
+(*---------------------------------------------------------------------------*)
+
+val Know = Q_TAC KNOW_TAC;
+val Suff = Q_TAC SUFF_TAC;
+
+Theorem IS_PREFIX_EQ_TAKE :
+    !l l1. l1 <<= l <=> ?n. n <= LENGTH l /\ l1 = TAKE n l
+Proof
+    rpt GEN_TAC
+ >> reverse EQ_TAC
+ >- (STRIP_TAC \\
+     GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) empty_rewrites
+                     [SYM (Q.SPECL [‘n’, ‘l’] TAKE_DROP)] \\
+     POP_ASSUM (fn th => ONCE_REWRITE_TAC [th]) \\
+     PROVE_TAC [IS_PREFIX_APPEND])
+ (* stage work *)
+ >> Induct_on ‘l1’ using SNOC_INDUCT
+ >- (rw [] >> Q.EXISTS_TAC ‘0’ >> rw [])
+ >> rw [SNOC_APPEND]
+ >> Q.PAT_X_ASSUM ‘l1 <<= l ==> P’ MP_TAC
+ >> ‘l1 <<= l’ by PROVE_TAC [IS_PREFIX_APPEND1]
+ >> RW_TAC std_ss []
+ >> Q.PAT_X_ASSUM ‘TAKE n l ++ [x] <<= l’ MP_TAC
+ >> rw [IS_PREFIX_APPEND]
+ >> Q.EXISTS_TAC ‘SUC n’
+ >> CONJ_ASM1_TAC
+ >- (POP_ASSUM (fn th => ONCE_REWRITE_TAC [th]) >> rw [])
+ (* applying SNOC_EL_TAKE *)
+ >> Know ‘TAKE (SUC n) l = SNOC (EL n l) (TAKE n l)’
+ >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+     MATCH_MP_TAC SNOC_EL_TAKE >> rw [])
+ >> DISCH_THEN (fn th => ONCE_REWRITE_TAC [th])
+ >> Suff ‘EL n l = x’ >- rw [SNOC_APPEND]
+ >> Q.PAT_X_ASSUM ‘l = _’ (fn th => ONCE_REWRITE_TAC [th])
+ (* applying el_append3, fortunately *)
+ >> Q.ABBREV_TAC ‘l1 = TAKE n l’
+ >> ‘n = LENGTH l1’ by rw [Abbr ‘l1’, LENGTH_TAKE]
+ >> POP_ASSUM (fn th => ONCE_REWRITE_TAC [th])
+ >> rw [el_append3]
+QED
+
+(* ‘n <= LENGTH l’ can be removed from RHS *)
+Theorem IS_PREFIX_EQ_TAKE' :
+    !l l1. l1 <<= l <=> ?n. l1 = TAKE n l
+Proof
+    rpt GEN_TAC
+ >> EQ_TAC
+ >- (rw [IS_PREFIX_EQ_TAKE] \\
+     Q.EXISTS_TAC ‘n’ >> REWRITE_TAC [])
+ >> STRIP_TAC
+ >> Cases_on ‘n <= LENGTH l’
+ >- (rw [IS_PREFIX_EQ_TAKE] \\
+     Q.EXISTS_TAC ‘n’ >> ASM_REWRITE_TAC [])
+ >> ‘LENGTH l <= n’ by rw []
+ >> rw [TAKE_LENGTH_TOO_LONG]
+QED
+
+Theorem IS_PREFIX_FINITE :
+    !l. FINITE {l1 | l1 <<= l}
+Proof
+    rw [IS_PREFIX_EQ_TAKE]
+ >> Know ‘{l1 | (?n. n <= LENGTH l /\ l1 = TAKE n l)} =
+          IMAGE (\n. TAKE n l) (count (SUC (LENGTH l)))’
+ >- (rw [Once EXTENSION, LT_SUC_LE] >> METIS_TAC [])
+ >> DISCH_THEN (fn th => ONCE_REWRITE_TAC [th])
+ >> MATCH_MP_TAC IMAGE_FINITE
+ >> rw []
+QED
+
+(*---------------------------------------------------------------------------*)
+(*   Delete one (or more) element from list (from examples/CCS)              *)
+(*---------------------------------------------------------------------------*)
+
+Definition DELETE_ELEMENT :
+    (DELETE_ELEMENT e [] = []) /\
+    (DELETE_ELEMENT e (x :: l) = if (e = x) then DELETE_ELEMENT e l
+                                 else x :: DELETE_ELEMENT e l)
+End
+
+Theorem NOT_IN_DELETE_ELEMENT :
+    !e L. ~MEM e (DELETE_ELEMENT e L)
+Proof
+    GEN_TAC >> Induct_on `L`
+ >- REWRITE_TAC [DELETE_ELEMENT, MEM]
+ >> GEN_TAC >> REWRITE_TAC [DELETE_ELEMENT]
+ >> Cases_on `e = h` >> fs []
+QED
+
+Theorem DELETE_ELEMENT_FILTER :
+    !e L. DELETE_ELEMENT e L = FILTER ((<>) e) L
+Proof
+    GEN_TAC >> Induct_on `L`
+ >- REWRITE_TAC [DELETE_ELEMENT, FILTER]
+ >> GEN_TAC >> REWRITE_TAC [DELETE_ELEMENT, FILTER]
+ >> Cases_on `e = h` >> fs []
+QED
+
+Theorem LENGTH_DELETE_ELEMENT_LEQ :
+    !e L. LENGTH (DELETE_ELEMENT e L) <= LENGTH L
+Proof
+    rpt GEN_TAC
+ >> REWRITE_TAC [DELETE_ELEMENT_FILTER]
+ >> MP_TAC (Q.SPECL [`\y. e <> y`, `\y. T`] LENGTH_FILTER_LEQ_MONO)
+ >> BETA_TAC >> simp []
+QED
+
+fun K_TAC _ = ALL_TAC;
+val KILL_TAC = POP_ASSUM_LIST K_TAC;
+
+Theorem LENGTH_DELETE_ELEMENT_LE :
+    !e L. MEM e L ==> LENGTH (DELETE_ELEMENT e L) < LENGTH L
+Proof
+    rpt GEN_TAC >> Induct_on `L`
+ >- REWRITE_TAC [MEM]
+ >> GEN_TAC >> REWRITE_TAC [MEM, DELETE_ELEMENT]
+ >> Cases_on `e = h` >> fs []
+ >> MP_TAC (Q.SPECL [`h`, `L`] LENGTH_DELETE_ELEMENT_LEQ)
+ >> KILL_TAC >> RW_TAC arith_ss []
+QED
+
+Theorem EVERY_DELETE_ELEMENT :
+    !e L P. P e /\ EVERY P (DELETE_ELEMENT e L) ==> EVERY P L
+Proof
+    GEN_TAC >> Induct_on `L`
+ >- RW_TAC std_ss [DELETE_ELEMENT]
+ >> rpt GEN_TAC >> REWRITE_TAC [DELETE_ELEMENT]
+ >> Cases_on `e = h` >> fs []
+QED
+
+Theorem DELETE_ELEMENT_APPEND :
+    !a L L'. DELETE_ELEMENT a (L ++ L') =
+             DELETE_ELEMENT a L ++ DELETE_ELEMENT a L'
+Proof
+    REWRITE_TAC [DELETE_ELEMENT_FILTER]
+ >> REWRITE_TAC [GSYM FILTER_APPEND_DISTRIB]
+QED
+
+(*---------------------------------------------------------------------------*)
 (* Add evaluation theorems to computeLib.the_compset                         *)
 (*---------------------------------------------------------------------------*)
 
@@ -3527,73 +3666,6 @@ in
    val _ = overload_on("IS_EL", mem_t)
    val _ = overload_on("MEM", mem_t)
 end
-
-(* moved here from examples/CCS/CCSScript.sml, originally by Chun Tian *)
-Definition DELETE_ELEMENT :
-    (DELETE_ELEMENT e [] = []) /\
-    (DELETE_ELEMENT e (x :: l) = if (e = x) then DELETE_ELEMENT e l
-                                 else x :: DELETE_ELEMENT e l)
-End
-
-Theorem NOT_IN_DELETE_ELEMENT :
-    !e L. ~MEM e (DELETE_ELEMENT e L)
-Proof
-    GEN_TAC >> Induct_on `L`
- >- REWRITE_TAC [DELETE_ELEMENT, MEM]
- >> GEN_TAC >> REWRITE_TAC [DELETE_ELEMENT]
- >> Cases_on `e = h` >> fs []
-QED
-
-Theorem DELETE_ELEMENT_FILTER :
-    !e L. DELETE_ELEMENT e L = FILTER ((<>) e) L
-Proof
-    GEN_TAC >> Induct_on `L`
- >- REWRITE_TAC [DELETE_ELEMENT, FILTER]
- >> GEN_TAC >> REWRITE_TAC [DELETE_ELEMENT, FILTER]
- >> Cases_on `e = h` >> fs []
-QED
-
-Theorem LENGTH_DELETE_ELEMENT_LEQ :
-    !e L. LENGTH (DELETE_ELEMENT e L) <= LENGTH L
-Proof
-    rpt GEN_TAC
- >> REWRITE_TAC [DELETE_ELEMENT_FILTER]
- >> MP_TAC (Q.SPECL [`\y. e <> y`, `\y. T`] LENGTH_FILTER_LEQ_MONO)
- >> BETA_TAC >> simp []
-QED
-
-fun K_TAC _ = ALL_TAC;
-val KILL_TAC = POP_ASSUM_LIST K_TAC;
-
-Theorem LENGTH_DELETE_ELEMENT_LE :
-    !e L. MEM e L ==> LENGTH (DELETE_ELEMENT e L) < LENGTH L
-Proof
-    rpt GEN_TAC >> Induct_on `L`
- >- REWRITE_TAC [MEM]
- >> GEN_TAC >> REWRITE_TAC [MEM, DELETE_ELEMENT]
- >> Cases_on `e = h` >> fs []
- >> MP_TAC (Q.SPECL [`h`, `L`] LENGTH_DELETE_ELEMENT_LEQ)
- >> KILL_TAC >> RW_TAC arith_ss []
-QED
-
-Theorem EVERY_DELETE_ELEMENT :
-    !e L P. P e /\ EVERY P (DELETE_ELEMENT e L) ==> EVERY P L
-Proof
-    GEN_TAC >> Induct_on `L`
- >- RW_TAC std_ss [DELETE_ELEMENT]
- >> rpt GEN_TAC >> REWRITE_TAC [DELETE_ELEMENT]
- >> Cases_on `e = h` >> fs []
-QED
-
-Theorem DELETE_ELEMENT_APPEND :
-    !a L L'. DELETE_ELEMENT a (L ++ L') =
-             DELETE_ELEMENT a L ++ DELETE_ELEMENT a L'
-Proof
-    REWRITE_TAC [DELETE_ELEMENT_FILTER]
- >> REWRITE_TAC [GSYM FILTER_APPEND_DISTRIB]
-QED
-
-(* ------------------------------------------------------------------------ *)
 
 local
    val alias =
