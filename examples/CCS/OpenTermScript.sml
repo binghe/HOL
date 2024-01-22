@@ -58,13 +58,12 @@ Theorem extension_equivalence :
     !R. equivalence R ==> equivalence (extension R)
 Proof
     rw [equivalence_def, extension_def]
- >- (fs [reflexive_def])
- >- (fs [symmetric_def])
+ >- fs [reflexive_def]
+ >- fs [symmetric_def]
  >> fs [transitive_def]
  >> rw []
- >> rename1 ‘!fm. R (fm ' P) (fm ' P1)’
  >> FIRST_X_ASSUM MATCH_MP_TAC
- >> Q.EXISTS_TAC ‘fm ' P1’ >> art []
+ >> Q.EXISTS_TAC ‘fm ' P'’ >> art []
 QED
 
 Overload StrongEQ = “extension STRONG_EQUIV”
@@ -183,18 +182,32 @@ Theorem StrongEQ_SYM_EQ = cj 2 theorems
 Theorem StrongEQ_TRANS  = cj 3 theorems
 Theorem StrongEQ_SYM    = iffLR StrongEQ_SYM_EQ
 
+(* cf. "Open Bisimilarity" [3, p.281] *)
+Theorem StrongEQ_alt_closed_substitutions :
+    !P Q. StrongEQ P Q <=>
+          !fm. FDOM fm = FV P UNION FV Q /\
+               (!s. s IN FDOM fm ==> closed (fm ' s))
+           ==> STRONG_EQUIV (fm ' P) (fm ' Q)
+Proof
+    rpt GEN_TAC
+ >> EQ_TAC >- rw [StrongEQ_def]
+ (* stage work *)
+ >> rpt STRIP_TAC
+ >> cheat
+QED
+
 (******************************************************************************)
 (*                                                                            *)
 (*         Multi-hole (or no-hole) contexts with recursion support            *)
 (*                                                                            *)
 (******************************************************************************)
 
-(* NOTE: Unlike in the case of lambda calculus, one-hole contexts are not that
+(* NOTE: Unlike in the case of lambda calculus, one-hole contexts are not very
          useful, because the treatments of the two holes for ‘sum’ and ‘par’ are
          completely symmetry (in lambda calculus, on the other hand, the type of
         ‘t1’ and ‘t2’ in ‘APP t1 t2’ are different, leading to sometimes very
-         different proofs.)  Thus, I think there's no proof cases in which only
-         one-hole contexts can do the job.   -- Chun Tian, 20 gen 2024
+         different proofs.)  There's no proof cases in which one-hole contexts
+         must be used to finish the proof.             -- Chun Tian, 20 gen 2024
  *)
 Inductive ctxt :
     (                   ctxt (\t. t)) /\                 (* ctxt1 *)
