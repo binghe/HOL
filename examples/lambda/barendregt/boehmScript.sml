@@ -1543,7 +1543,7 @@ QED
    [...] |- !X M. ?pi. Boehm_transform pi /\ is_ready (apply pi M) /\
                        ?fm. apply pi M = fm ' M
 
-          which is impossible if M is not already "is_ready".
+   which is impossible if M is not already "is_ready".
  *)
 Theorem Boehm_transform_exists_lemma2 :
     !X M p. p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
@@ -1552,32 +1552,48 @@ Theorem Boehm_transform_exists_lemma2 :
 Proof
     qx_genl_tac [‘X’, ‘M’, ‘p’] >> STRIP_TAC
  (* applying subterm_is_none_iff_children *)
- >> Know ‘!q. q <<= p ==> subterm X M q <> NONE’
- >- (Q.X_GEN_TAC ‘q’ >> STRIP_TAC \\
+ >> Know ‘!p1. p1 <<= p ==> subterm X M p1 <> NONE’
+ >- (Q.X_GEN_TAC ‘p1’ >> STRIP_TAC \\
      CCONTR_TAC \\
      POP_ASSUM (MP_TAC o (REWRITE_RULE [Once subterm_is_none_iff_children])) \\
      DISCH_THEN (MP_TAC o (Q.SPEC ‘p’)) >> rw [])
  >> DISCH_TAC
  (* applying subterm_is_none_iff_parent_unsolvable *)
- >> Know ‘!q. q <> [] /\ q <<= p ==> solvable (subterm' X M (FRONT q))’
+ >> Know ‘!p1. p1 <> [] /\ p1 <<= p ==> solvable (subterm' X M (FRONT p1))’
  >- (rpt STRIP_TAC \\
-     MP_TAC (Q.SPECL [‘q’, ‘X’, ‘M’] subterm_is_none_iff_parent_unsolvable) \\
-    ‘q IN ltree_paths (BTe X M)’ by PROVE_TAC [ltree_paths_inclusive] \\
-     Know ‘subterm X M (FRONT q) <> NONE’
+     MP_TAC (Q.SPECL [‘p1’, ‘X’, ‘M’] subterm_is_none_iff_parent_unsolvable) \\
+    ‘p1 IN ltree_paths (BTe X M)’ by PROVE_TAC [ltree_paths_inclusive] \\
+     Know ‘subterm X M (FRONT p1) <> NONE’
      >- (FIRST_X_ASSUM MATCH_MP_TAC \\
-         MATCH_MP_TAC IS_PREFIX_TRANS >> Q.EXISTS_TAC ‘q’ >> rw [] \\
+         MATCH_MP_TAC IS_PREFIX_TRANS >> Q.EXISTS_TAC ‘p1’ >> rw [] \\
          MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []) >> rw [])
  >> DISCH_TAC
- (* trivial case: unsolvable M (useless)
+ >> qabbrev_tac ‘s = {p1 | p1 <> [] /\ p1 <<= p}’
+ >> Know ‘FINITE s’
+ >- (irule SUBSET_FINITE >> Q.EXISTS_TAC ‘{p1 | p1 <<= p}’ \\
+     reverse CONJ_TAC >- rw [Abbr ‘s’, SUBSET_DEF] \\
+     REWRITE_TAC [IS_PREFIX_FINITE])
+ >> DISCH_TAC
+ >> Know ‘s <> {}’
+ >- (rw [GSYM MEMBER_NOT_EMPTY, Abbr ‘s’] \\
+     Q.EXISTS_TAC ‘p’ >> rw [])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘J = IMAGE (\e. hnf_children_size (principle_hnf (subterm' X M (FRONT e)))) s’
+ >> Know ‘FINITE J’
+ >- (qunabbrev_tac ‘J’ >> MATCH_MP_TAC IMAGE_FINITE >> art [])
+ >> DISCH_TAC
+ >> Know ‘J <> {}’
+ >- (rw [GSYM MEMBER_NOT_EMPTY, Abbr ‘J’] \\
+     rw [MEMBER_NOT_EMPTY])
+ >> DISCH_TAC
+ (* now define q as the maximal element of J *)
+ >> qabbrev_tac ‘q = MAX_SET J’
+ >> ‘q IN J /\ !j. j IN J ==> j <= q’ by (rw [Abbr ‘q’, MAX_SET_DEF])
+ (* trivial case: unsolvable M (useless) *)
  >> reverse (Cases_on ‘solvable M’)
  >- (Q.EXISTS_TAC ‘[]’ >> rw [is_ready_def] \\
      Q.EXISTS_TAC ‘FEMPTY’ >> rw [])
-  *)
- >> qabbrev_tac ‘s = {q | q <> [] /\ q <<= p}’
- >> qabbrev_tac ‘J = IMAGE (\e. hnf_children_size (principle_hnf (subterm' X M (FRONT e)))) s’
- (* applying IMAGE_FINITE *)
- >> cheat
- (*
+ (* stage work *)
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> ‘hnf M0’ by PROVE_TAC [hnf_principle_hnf, solvable_iff_has_hnf]
  >> qabbrev_tac ‘n = LAMl_size M0’
@@ -1595,12 +1611,13 @@ Proof
  >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE xs)’
  >> ‘apply p1 M0 == M1’
        by (rw [Abbr ‘p1’, Boehm_apply_MAP_rightctxt', Abbr ‘xs’])
+ >> cheat
   (* NOTE: ‘m’ is the length of M0/M1's hnf children list. In the proof of
      Boehm_transform_exists_lemma1, this number plays an important role for the
      construction of the rest part of Boehm transformations, but here we need to
      know the potentially bigger number, which is the maximal length of all hnf
      children along the ltree path ‘p’. -- Chun Tian, 12 gen 2024
-   *)
+
  >> qabbrev_tac ‘m = LENGTH args’
  (* X collects all free variables in ‘args’ *)
  >> qabbrev_tac ‘X = BIGUNION (IMAGE FV (set args))’
