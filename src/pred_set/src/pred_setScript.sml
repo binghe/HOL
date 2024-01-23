@@ -871,6 +871,13 @@ Proof
      ASM_REWRITE_TAC []
 QED
 
+Theorem DISJOINT_UNION' :
+    !s t u. DISJOINT u (s UNION t) <=> DISJOINT u s /\ DISJOINT u t
+Proof
+    ONCE_REWRITE_TAC [DISJOINT_SYM]
+ >> REWRITE_TAC [DISJOINT_UNION]
+QED
+
 Theorem DISJOINT_UNION_BOTH:
   !s t u:'a set.
         (DISJOINT (s UNION t) u <=> DISJOINT s u /\ DISJOINT t u) /\
