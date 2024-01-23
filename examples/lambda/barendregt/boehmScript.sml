@@ -1546,7 +1546,8 @@ QED
    which is impossible if M is not already "is_ready".
  *)
 Theorem Boehm_transform_exists_lemma2 :
-    !X M p. p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
+    !X M p. FINITE X /\
+            p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
             ?pi. Boehm_transform pi /\ is_ready (apply pi M) /\
                  ?fm. subterm' X (apply pi M) p = fm ' (subterm' X M p)
 Proof
@@ -1569,22 +1570,18 @@ Proof
          MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []) >> rw [])
  >> DISCH_TAC
  >> qabbrev_tac ‘s = {p1 | p1 <> [] /\ p1 <<= p}’
- >> Know ‘FINITE s’
- >- (irule SUBSET_FINITE >> Q.EXISTS_TAC ‘{p1 | p1 <<= p}’ \\
+ (* J collects all hnf_children_size(s) along the fixed path p *)
+ >> qabbrev_tac ‘J = IMAGE (\e. hnf_children_size (principle_hnf (subterm' X M (FRONT e)))) s’
+ >> Know ‘FINITE J’
+ >- (qunabbrev_tac ‘J’ >> MATCH_MP_TAC IMAGE_FINITE \\
+  (* below is the proof of ‘FINITE s’ *)
+     irule SUBSET_FINITE >> Q.EXISTS_TAC ‘{p1 | p1 <<= p}’ \\
      reverse CONJ_TAC >- rw [Abbr ‘s’, SUBSET_DEF] \\
      REWRITE_TAC [IS_PREFIX_FINITE])
  >> DISCH_TAC
- >> Know ‘s <> {}’
- >- (rw [GSYM MEMBER_NOT_EMPTY, Abbr ‘s’] \\
-     Q.EXISTS_TAC ‘p’ >> rw [])
- >> DISCH_TAC
- >> qabbrev_tac ‘J = IMAGE (\e. hnf_children_size (principle_hnf (subterm' X M (FRONT e)))) s’
- >> Know ‘FINITE J’
- >- (qunabbrev_tac ‘J’ >> MATCH_MP_TAC IMAGE_FINITE >> art [])
- >> DISCH_TAC
  >> Know ‘J <> {}’
  >- (rw [GSYM MEMBER_NOT_EMPTY, Abbr ‘J’] \\
-     rw [MEMBER_NOT_EMPTY])
+     Q.EXISTS_TAC ‘p’ >> rw [Abbr ‘s’])
  >> DISCH_TAC
  (* now define q as the maximal element of J *)
  >> qabbrev_tac ‘q = MAX_SET J’
@@ -1607,27 +1604,28 @@ Proof
  >> POP_ASSUM (REV_FULL_SIMP_TAC std_ss o wrap)
  (* ‘xs’ is the list of binding variables of M0 in lambda terms *)
  >> qabbrev_tac ‘xs :term list = MAP VAR vs’
- (* ‘p1’ is the first part of the transformations for removing abstractions of M0 *)
+ (* ‘p1’ is the first part of the transformations for removing abstractions of M0
+
+    NOTE: ‘REVERSE xs’ is required by Boehm_apply_MAP_rightctxt'
+  *)
  >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE xs)’
  >> ‘apply p1 M0 == M1’
        by (rw [Abbr ‘p1’, Boehm_apply_MAP_rightctxt', Abbr ‘xs’])
- >> cheat
-  (* NOTE: ‘m’ is the length of M0/M1's hnf children list. In the proof of
-     Boehm_transform_exists_lemma1, this number plays an important role for the
-     construction of the rest part of Boehm transformations, but here we need to
-     know the potentially bigger number, which is the maximal length of all hnf
-     children along the ltree path ‘p’. -- Chun Tian, 12 gen 2024
-
+ (* Y collects all free variables in ‘args’ *)
+ >> qabbrev_tac ‘Y = X UNION BIGUNION (IMAGE FV (set args))’
+ >> ‘FINITE Y’ by (rw [Abbr ‘Y’] >> simp [])
  >> qabbrev_tac ‘m = LENGTH args’
- (* X collects all free variables in ‘args’ *)
- >> qabbrev_tac ‘X = BIGUNION (IMAGE FV (set args))’
- >> Know ‘FINITE X’
- >- (qunabbrev_tac ‘X’ \\
-     MATCH_MP_TAC FINITE_BIGUNION >> rw [] >> rw [])
+ >> Know ‘m <= q’
+ >- (FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.PAT_X_ASSUM ‘q IN J’ K_TAC \\
+     Q.PAT_X_ASSUM ‘FINITE J’ K_TAC \\
+     rw [Abbr ‘J’] \\
+     Q.EXISTS_TAC ‘[HD p]’ \\
+     reverse CONJ_TAC >- (rw [Abbr ‘s’] >> Cases_on ‘p’ >> rw []) \\
+     simp [FRONT_DEF])
  >> DISCH_TAC
- >> cheat
  (* Z needs to avoid any free variables in args' *)
- >> FRESH_list_tac (“Z :string list”, “(m + 1) :num”, “X :string set”)
+ >> FRESH_list_tac (“Z :string list”, “(q + 1) :num”, “Y :string set”)
  >> ‘Z <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
  >> qabbrev_tac ‘z = LAST Z’
  >> ‘MEM z Z’ by rw [Abbr ‘z’, MEM_LAST_NOT_NIL]
@@ -1655,9 +1653,20 @@ Proof
      Suff ‘FV (EL n args') SUBSET FV (EL n args)’ >- METIS_TAC [SUBSET_DEF] \\
      FIRST_X_ASSUM MATCH_MP_TAC >> art [])
  >> DISCH_TAC
- (* a needs to avoid any free variables in args' *)
- >> NEW_TAC "a" “X :string set”
- >> qabbrev_tac ‘p3 = [rightctxt (VAR a)]’
+ (* NOTE: Here is how lemma2 diverses with lemma1. Instead of a single fresh
+    variable a, now we need a list of fresh variables as of length ‘q - m’, plus
+    another single fresh variable b. Together with ‘args'’ (length: m), their
+    total length is ‘m + (q - m) + 1 = q + 1’, same as ‘LENGTH Z’.
+  *)
+ >> qabbrev_tac ‘as = FRESH_list (q - m) Y’
+ >> ‘ALL_DISTINCT as /\ DISJOINT (set as) Y /\ LENGTH as = q - m’
+       by (rw [Abbr ‘as’, FRESH_list_def])
+ >> Q_TAC (NEW_TAC "b") ‘Y UNION set as’
+ >> qabbrev_tac ‘l = as ++ [b]’ (* or ‘SNOC b as’ *)
+ >> qabbrev_tac ‘p3 = MAP rightctxt (REVERSE (MAP VAR l))’
+ (* stage work *)
+ >> cheat
+ (*
  >> Know ‘apply p3 (P @* args') == VAR a @* args'’
  >- (rw [Abbr ‘p3’, Abbr ‘P’, rightctxt_thm] \\
     ‘!t. LAMl Z t = LAMl (SNOC z (FRONT Z)) t’
