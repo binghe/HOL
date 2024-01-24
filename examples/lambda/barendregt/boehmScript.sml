@@ -1677,7 +1677,7 @@ Proof
   (* below is the proof of ‘FINITE s’ *)
      irule SUBSET_FINITE >> Q.EXISTS_TAC ‘{p1 | p1 <<= p}’ \\
      reverse CONJ_TAC >- rw [Abbr ‘s’, SUBSET_DEF] \\
-     REWRITE_TAC [IS_PREFIX_FINITE])
+     REWRITE_TAC [FINITE_prefix])
  >> DISCH_TAC
  >> Know ‘J <> {}’
  >- (rw [GSYM MEMBER_NOT_EMPTY, Abbr ‘J’] \\
