@@ -277,7 +277,7 @@ Proof
     Here, once again, we need to get suitable explicit forms of P0 and Q0,
     to show that, P1 and Q1 are absfree hnf.
   *)
- >> ‘hnf P0 /\ hnf Q0’ by PROVE_TAC [hnf_principle_hnf, solvable_iff_has_hnf]
+ >> ‘hnf P0 /\ hnf Q0’ by PROVE_TAC [hnf_principle_hnf']
  >> qabbrev_tac ‘n = LAMl_size Q0’
  >> ‘ALL_DISTINCT vs /\ LENGTH vs = n /\ DISJOINT (set vs) Y’
       by rw [Abbr ‘vs’, FRESH_list_def]
@@ -491,6 +491,106 @@ Proof
  >> Induct_on ‘p’ >- rw [subterm_NIL]
  >> rw [subterm_def]
  >> Cases_on ‘p'’ >> fs [subterm_def]
+QED
+
+(* subterm X M p <> NONE ==> subterm' X M p == subterm' X N p) *)
+Theorem lameq_subterm_cong_none :
+    !p X M N. FINITE X /\ FV M UNION FV N SUBSET X /\ M == N ==>
+             (subterm X M p = NONE <=> subterm X N p = NONE)
+Proof
+    Q.X_GEN_TAC ‘p’
+ >> Cases_on ‘p = []’ >- rw []
+ >> POP_ASSUM MP_TAC
+ >> Q.ID_SPEC_TAC ‘p’
+ >> Induct_on ‘p’ >- rw []
+ >> RW_TAC std_ss []
+ >> reverse (Cases_on ‘solvable M’)
+ >- (‘unsolvable N’ by METIS_TAC [lameq_solvable_cong] \\
+     Cases_on ‘p’ >> fs [subterm_def])
+ >> ‘solvable N’ by METIS_TAC [lameq_solvable_cong]
+ >> RW_TAC std_ss [subterm_of_solvables]
+ >> Know ‘X UNION FV M = X /\ X UNION FV N = X’
+ >- (Q.PAT_X_ASSUM ‘FV M UNION FV N SUBSET X’ MP_TAC >> SET_TAC [])
+ >> DISCH_THEN (fs o wrap)
+ >> Know ‘n = n' /\ vs = vs'’
+ >- (reverse CONJ_ASM1_TAC >- rw [Abbr ‘vs’, Abbr ‘vs'’] \\
+     qunabbrevl_tac [‘n’, ‘n'’, ‘M0’, ‘M0'’] \\
+     MATCH_MP_TAC lameq_principle_hnf_size_eq' >> art [])
+ (* clean up now duplicated abbreviations: n' and vs' *)
+ >> qunabbrevl_tac [‘n'’, ‘vs'’]
+ >> DISCH_THEN (rfs o wrap o GSYM)
+ (* applying lameq_principle_hnf_thm' *)
+ >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘N’, ‘M0’, ‘M0'’, ‘n’, ‘vs’, ‘M1’, ‘M1'’]
+                     lameq_principle_hnf_thm') >> simp []
+ >> RW_TAC std_ss [Abbr ‘m’, Abbr ‘m'’]
+ >> qabbrev_tac ‘m = LENGTH Ms'’
+ >> Cases_on ‘h < m’ >> simp []
+ >> Cases_on ‘p = []’ >> fs []
+ (* preparing for hnf_children_FV_SUBSET
+
+    Here, once again, we need to get suitable explicit forms of P0 and Q0,
+    to show that, P1 and Q1 are absfree hnf.
+  *)
+ >> ‘hnf M0 /\ hnf M0'’ by PROVE_TAC [hnf_principle_hnf']
+ >> qabbrev_tac ‘n = LAMl_size M0’
+ >> ‘ALL_DISTINCT vs /\ LENGTH vs = n /\ DISJOINT (set vs) X’
+      by rw [Abbr ‘vs’, FRESH_list_def]
+ >> Know ‘DISJOINT (set vs) (FV M0)’
+ >- (MATCH_MP_TAC DISJOINT_SUBSET \\
+     Q.EXISTS_TAC ‘X’ >> art [] \\
+     MATCH_MP_TAC SUBSET_TRANS \\
+     Q.EXISTS_TAC ‘FV M’ >> art [] \\
+     qunabbrev_tac ‘M0’ \\
+     MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
+ >> DISCH_TAC
+ >> Know ‘DISJOINT (set vs) (FV M0')’
+ >- (MATCH_MP_TAC DISJOINT_SUBSET \\
+     Q.EXISTS_TAC ‘X’ >> art [] \\
+     MATCH_MP_TAC SUBSET_TRANS \\
+     Q.EXISTS_TAC ‘FV N’ >> art [] \\
+     qunabbrev_tac ‘M0'’ \\
+     MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
+ >> DISCH_TAC
+ (* NOTE: the next two hnf_tac will refine M1 and M1' *)
+ >> qunabbrevl_tac [‘M1’, ‘M1'’]
+ >> hnf_tac (“M0 :term”, “vs :string list”,
+             “M1 :term”, “y  :string”, “args :term list”)
+ >> hnf_tac (“M0':term”, “vs :string list”,
+             “M1':term”, “y' :string”, “args':term list”)
+ >> Q.PAT_X_ASSUM ‘n = LAMl_size M0'’ (rfs o wrap o SYM)
+ >> ‘TAKE n vs = vs’ by rw [TAKE_LENGTH_ID_rwt]
+ >> POP_ASSUM (rfs o wrap)
+ (* refine P1 and Q1 again for clear assumptions using them *)
+ >> qunabbrevl_tac [‘M1’, ‘M1'’]
+ >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
+ >> qabbrev_tac ‘M1' = principle_hnf (M0' @* MAP VAR vs)’
+ (* final stage *)
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> simp []
+ >> CONJ_TAC (* 2 subgoals *)
+ >| [ (* goal 1 (of 2) *)
+      Know ‘!i. i < LENGTH Ms ==> FV (EL i Ms) SUBSET FV M1’
+      >- (MATCH_MP_TAC hnf_children_FV_SUBSET \\
+          rw [Abbr ‘Ms’, hnf_appstar]) >> DISCH_TAC \\
+      MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘FV M1’ \\
+      CONJ_TAC >- (FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+      MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘FV M0 UNION set vs’ \\
+      CONJ_TAC >- simp [FV_LAMl] \\
+      Suff ‘FV M0 SUBSET X’ >- SET_TAC [] \\
+      MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘FV M’ \\
+      reverse CONJ_TAC >- art [] (* FV M SUBSET X *) \\
+      qunabbrev_tac ‘M0’ >> MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [],
+      (* goal 2 (of 2) *)
+      Know ‘!i. i < LENGTH Ms' ==> FV (EL i Ms') SUBSET FV M1'’
+      >- (MATCH_MP_TAC hnf_children_FV_SUBSET \\
+          rw [Abbr ‘Ms'’, hnf_appstar]) >> DISCH_TAC \\
+      MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘FV M1'’ \\
+      CONJ_TAC >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [Abbr ‘m’]) \\
+      MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘FV M0' UNION set vs’ \\
+      CONJ_TAC >- simp [FV_LAMl] \\
+      Suff ‘FV M0' SUBSET X’ >- SET_TAC [] \\
+      MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘FV N’ \\
+      reverse CONJ_TAC >- art [] (* FV N SUBSET X *) \\
+      qunabbrev_tac ‘M0'’ >> MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [] ]
 QED
 
 (*---------------------------------------------------------------------------*
