@@ -1643,6 +1643,7 @@ Proof
      rfs [MEM_FRONT_NOT_NIL])
  >> DISCH_TAC
  >> qabbrev_tac ‘p2 = [[P/y]]’
+ >> ‘Boehm_transform p2’ by rw [Abbr ‘p2’]
  >> ‘apply p2 M1 = P @* MAP [P/y] args’ by rw [Abbr ‘p2’, appstar_SUB]
  >> qabbrev_tac ‘args' = MAP [P/y] args’
  >> ‘!i. i < m ==> FV (EL i args') SUBSET FV (EL i args)’
@@ -1773,43 +1774,41 @@ Proof
  >> Q.EXISTS_TAC ‘p3 ++ p2 ++ p1’
  >> CONJ_ASM1_TAC
  >- (MATCH_MP_TAC Boehm_transform_APPEND >> art [] \\
-     MATCH_MP_TAC Boehm_transform_APPEND >> art [] \\
-     rw [Abbr ‘p2’])
+     MATCH_MP_TAC Boehm_transform_APPEND >> art [])
+ >> Know ‘apply (p3 ++ p2 ++ p1) M == VAR b @* args' @* MAP VAR as’
+ >- (MATCH_MP_TAC lameq_TRANS \\
+     Q.EXISTS_TAC ‘apply (p3 ++ p2 ++ p1) M0’ \\
+     CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong \\
+                  CONJ_TAC >- art [] \\
+                  qunabbrev_tac ‘M0’ \\
+                  MATCH_MP_TAC lameq_SYM \\
+                  MATCH_MP_TAC lameq_principle_hnf_reduce' >> art []) \\
+     ONCE_REWRITE_TAC [Boehm_apply_APPEND] \\
+     MATCH_MP_TAC lameq_TRANS \\
+     Q.EXISTS_TAC ‘apply (p3 ++ p2) M1’ \\
+     CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> art [] \\
+                  MATCH_MP_TAC Boehm_transform_APPEND >> art []) \\
+     ONCE_REWRITE_TAC [Boehm_apply_APPEND] \\
+     MATCH_MP_TAC lameq_TRANS \\
+     Q.EXISTS_TAC ‘apply p3 (P @* args')’ >> art [] \\
+     MATCH_MP_TAC Boehm_apply_lameq_cong >> rw [])
+ >> DISCH_TAC
  (* applying is_ready_alt *)
  >> CONJ_TAC
  >- (simp [is_ready_alt] >> DISJ2_TAC \\
      qexistsl_tac [‘b’, ‘args' ++ MAP VAR as’] \\
-     reverse CONJ_TAC
-     >- (rw [EVERY_MEM] >| (* 2 subgoals *)
-         [ (* goal 1 (of 2) *)
-           Suff ‘FV e SUBSET Y’ >- METIS_TAC [SUBSET_DEF] \\
-           MATCH_MP_TAC SUBSET_TRANS \\
-           Q.EXISTS_TAC ‘BIGUNION (IMAGE FV (set args'))’ \\
-           CONJ_TAC >- (rw [SUBSET_DEF, IN_BIGUNION_IMAGE] \\
-                        Q.EXISTS_TAC ‘e’ >> art []) \\
-           MATCH_MP_TAC SUBSET_TRANS \\
-           Q.EXISTS_TAC ‘BIGUNION (IMAGE FV (set args))’ >> art [] \\
-           rw [Abbr ‘Y’],
-           (* goal 2 (of 2) *)
-           CCONTR_TAC >> gs [MEM_MAP] ]) \\
-     MATCH_MP_TAC lameq_TRANS \\
-     Q.EXISTS_TAC ‘apply (p3 ++ p2 ++ p1) M0’ \\
-     CONJ_TAC
-     >- (MATCH_MP_TAC Boehm_apply_lameq_cong \\
-         CONJ_TAC >- art [] (* this prevent M0 from being rewritten *) \\
-         qunabbrev_tac ‘M0’ \\
-         MATCH_MP_TAC lameq_SYM \\
-         MATCH_MP_TAC lameq_principle_hnf_reduce' >> art []) \\
-     ONCE_REWRITE_TAC [Boehm_apply_APPEND] \\
-     MATCH_MP_TAC lameq_TRANS \\
-     Q.EXISTS_TAC ‘apply (p3 ++ p2) M1’ \\
-     CONJ_TAC
-     >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> art [] \\
-         MATCH_MP_TAC Boehm_transform_APPEND >> rw [Abbr ‘p2’]) \\
-     REWRITE_TAC [Boehm_apply_APPEND] \\
-     MATCH_MP_TAC lameq_TRANS \\
-     Q.EXISTS_TAC ‘apply p3 (P @* args')’ >> art [appstar_APPEND] \\
-     MATCH_MP_TAC Boehm_apply_lameq_cong >> rw [])
+     rw [appstar_APPEND, EVERY_MEM] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       Suff ‘FV e SUBSET Y’ >- METIS_TAC [SUBSET_DEF] \\
+       MATCH_MP_TAC SUBSET_TRANS \\
+       Q.EXISTS_TAC ‘BIGUNION (IMAGE FV (set args'))’ \\
+       CONJ_TAC >- (rw [SUBSET_DEF, IN_BIGUNION_IMAGE] \\
+                    Q.EXISTS_TAC ‘e’ >> art []) \\
+       MATCH_MP_TAC SUBSET_TRANS \\
+       Q.EXISTS_TAC ‘BIGUNION (IMAGE FV (set args))’ >> art [] \\
+       rw [Abbr ‘Y’],
+       (* goal 2 (of 2) *)
+       CCONTR_TAC >> gs [MEM_MAP] ])
  (* stage work *)
  >> cheat
 QED
