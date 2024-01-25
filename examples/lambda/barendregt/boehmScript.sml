@@ -1725,7 +1725,7 @@ Proof
  >> MATCH_MP_TAC Boehm_apply_lameq_cong >> rw [Abbr ‘p3’]
 QED
 
-(* Lemma 10.3.7 (ii) [1, p.247]:
+(* Lemma 10.3.6 (ii) [1, p.247]:
 
    NOTE: The construction of ‘pi’ needs a fixed ltree path ‘p’, so that we can
    collect the maximum number of children in all nodes along ‘p’. In other words,
@@ -1745,7 +1745,7 @@ Theorem Boehm_transform_exists_lemma2 :
     !X M p. FINITE X /\
             p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
             ?pi. Boehm_transform pi /\ is_ready (apply pi M) /\
-                 ?fm. subterm' X (apply pi M) p = fm ' (subterm' X M p)
+                 ?fm. subterm' X (apply pi M) p == fm ' (subterm' X M p)
 Proof
     qx_genl_tac [‘X’, ‘M’, ‘p’] >> STRIP_TAC
  (* applying subterm_is_none_iff_children *)
@@ -2006,10 +2006,37 @@ Proof
        (* goal 2 (of 2) *)
        CCONTR_TAC >> gs [MEM_MAP] ])
  (* stage work *)
+ >> Q.EXISTS_TAC ‘FEMPTY |+ (y,P)’
+ >> MATCH_MP_TAC lameq_TRANS
+ >> Q.EXISTS_TAC ‘subterm' X (VAR b @* args' @* MAP VAR as) p’
+ (* applying lameq_subterm_cong *)
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC lameq_subterm_cong >> simp [] \\
+     cheat)
+ (* stage work *)
  >> cheat
 QED
 
-(* Definition 10.3.10 (ii) *)
+(* Proposition 10.3.7 (i) [1, p.248] (Boehm out lemma)
+
+   NOTE: this time the case ‘p = []’ is included, but it's a trvial case.
+ *)
+Theorem Boehm_out_lemma :
+    !p X M. FINITE X /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
+            ?pi fm. apply pi M == fm ' (subterm' X M p)
+Proof
+    Induct_on ‘p’
+ >- (rw [] \\
+     qexistsl_tac [‘[]’, ‘FEMPTY’] >> rw [])
+ (* stage work *)
+ >> rpt STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::p’] Boehm_transform_exists_lemma2)
+ >> rw [] (* this asserts ‘pi’ (to be renamed to ‘p0’) and ‘fm’ *)
+ >> rename1 ‘Boehm_transform p0’
+ >> cheat
+QED
+
+(* Definition 10.3.10 (ii) [1, p.251] *)
 Definition is_faithful_def :
     is_faithful p Fs pi =
        !M N. M IN Fs /\ N IN Fs ==>
