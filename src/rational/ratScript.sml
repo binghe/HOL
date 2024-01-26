@@ -8,8 +8,7 @@
 
 open HolKernel boolLib Parse BasicProvers bossLib;
 
-open
-        arithmeticTheory
+open arithmeticTheory pred_setTheory
         integerTheory intLib
         intExtensionTheory intExtensionLib
         EVAL_ringLib integerRingLib

@@ -14,25 +14,16 @@
 (*                                                                          *)
 (*==========================================================================*)
 
+open HolKernel Parse boolLib bossLib;
 
-open HolKernel Parse boolLib
-
-val _ = new_theory "integer";
-
-val _ = set_grammar_ancestry ["arithmetic", "pred_set"]
-
-(* interactive mode
-  app load ["jrhUtils", "quotient", "liteLib", "QLib",
-            "BasicProvers", "boolSimps", "pairSimps",
-            "numSimps", "numLib", "metisLib"];
-*)
-open jrhUtils quotient liteLib
+open jrhUtils quotient liteLib pred_setTheory
      arithmeticTheory prim_recTheory numTheory
      simpLib numLib boolTheory liteLib metisLib BasicProvers;
 
-open bossLib
+val _ = new_theory "integer";
 
-val _ = temp_delsimps ["NORMEQ_CONV"]
+val _ = temp_delsimps ["NORMEQ_CONV"];
+val _ = set_grammar_ancestry ["arithmetic", "pred_set"];
 
 val int_ss = boolSimps.bool_ss ++ numSimps.old_ARITH_ss ++ pairSimps.PAIR_ss;
 
@@ -3121,7 +3112,6 @@ val INT_LE_MONO = store_thm(
   ASM_SIMP_TAC bool_ss [INT_LE_LT, INT_MUL_SIGN_CASES, INT_LT_GT] THEN
   PROVE_TAC [INT_ENTIRE, INT_LT_REFL]);
 
-open pred_setTheory
 val INFINITE_INT_UNIV = store_thm(
   "INFINITE_INT_UNIV",
   ``INFINITE univ(:int)``,
