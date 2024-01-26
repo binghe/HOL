@@ -105,10 +105,24 @@ local
     ("quant-intro",     one_prem "quant-intro"),
     ("rewrite",         zero_prems "rewrite"),
     ("symm",            one_prem "symm"),
-    ("th-lemma-arith",  list_prems "th-lemma-arith"),
-    ("th-lemma-array",  list_prems "th-lemma-array"),
-    ("th-lemma-basic",  list_prems "th-lemma-basic"),
-    ("th-lemma-bv",     list_prems "th-lemma-bv"),
+    ("th-lemma",        SmtLib_Theories.list_list (fn token => fn indices =>
+      fn prems =>
+        let
+          (* Parsing this rule: (_ |th-lemma| arith farkas -1 -1 1)
+             The vertical bars have already been eliminated in the tokenizer, so
+             we're already matching "th-lemma".
+
+             The indices will be passed as ["arith", "farkas", "-1", "-1", "1"]
+             but currently we only care about the first one (the theory name), so
+             we'll discard the rest.
+
+             We'll change the name of the rule to "th-lemma-<theory>" which will
+             later hook into the theory-specific rule processing. *)
+          val theory = List.hd indices
+          val name = "th-lemma-" ^ theory
+        in
+          list_prems name token [] prems
+        end)),
     ("trans",           two_prems "trans"),
     ("true-axiom",      zero_prems "true-axiom"),
     ("unit-resolution", list_prems "unit-resolution"),
@@ -159,13 +173,13 @@ local
       else
         raise ERR "<z3_builtin_dict._>" "not extract[m:n]")),
     (* (_ extractm n) t *)
-    ("_", SmtLib_Theories.one_one (fn token => fn n =>
+    ("_", SmtLib_Theories.one_one (fn token => fn n_str =>
       if String.isPrefix "extract" token then
         let
-          val m = Library.parse_arbnum (String.extract (token, 7, NONE))
+          val m_str = String.extract (token, 7, NONE)
+          val (m, n) = Lib.pair_map Library.parse_arbnum (m_str, n_str)
           val index_type = fcpLib.index_type (Arbnum.plus1 (Arbnum.- (m, n)))
-          val m = numSyntax.mk_numeral m
-          val n = numSyntax.mk_numeral n
+          val (m, n) = Lib.pair_map numSyntax.mk_numeral (m, n)
         in
           fn t => wordsSyntax.mk_word_extract (m, n, t, index_type)
         end

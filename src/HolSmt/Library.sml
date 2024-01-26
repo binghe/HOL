@@ -133,10 +133,17 @@ struct
   end
 
   fun parse_arbnum (s : string) =
-    Arbnum.fromString s
-      handle Option.Option =>
+    let
+      fun handle_err () =
         raise Feedback.mk_HOL_ERR "Library" "parse_arbnum"
           ("numeral expected, but '" ^ s ^ "' found")
+    in
+      Arbnum.fromString s
+        (* Moscow ML's Arbnum implementation throws Option.Option on error,
+           while Poly/ML's throws the Fail exception *)
+        handle Option.Option => handle_err ()
+             | Fail _ => handle_err ()
+    end
 
   fun expect_token (expected : string) (actual : string) : unit =
     if expected = actual then
@@ -165,7 +172,7 @@ struct
 
   (* creates a dictionary that maps strings to lists of parsing functions *)
   fun dict_from_list xs
-      : (string, (string -> Arbnum.num list -> 'a list -> 'a) list)
+      : (string, (string -> string list -> 'a list -> 'a) list)
         Redblackmap.dict =
     List.foldl extend_dict (Redblackmap.mkDict String.compare) xs
 
