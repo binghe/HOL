@@ -7,6 +7,8 @@
 # GitHub Actions recommends Debian-based systems as base images
 FROM --platform=$TARGETPLATFORM debian:stable
 
+MAINTAINER Chun Tian <binghe.lisp@gmail.com>
+
 # The following two arguments are supported by "docker buildx"
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM

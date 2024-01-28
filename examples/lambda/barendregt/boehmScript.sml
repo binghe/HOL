@@ -1737,7 +1737,7 @@ QED
    NOTE3: ‘p <> []’ must be added into antecedents. Otherwise the statement became:
 
    [...] |- !X M. ?pi. Boehm_transform pi /\ is_ready (apply pi M) /\
-                       ?fm. apply pi M = fm ' M
+                       ?fm. apply pi M == fm ' M
 
    which is impossible if M is not already "is_ready".
  *)
@@ -1745,7 +1745,7 @@ Theorem Boehm_transform_exists_lemma2 :
     !X M p. FINITE X /\
             p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
             ?pi. Boehm_transform pi /\ is_ready (apply pi M) /\
-                 ?fm. subterm' X (apply pi M) p == fm ' (subterm' X M p)
+                 ?fm. !Y. subterm' Y (apply pi M) p == fm ' (subterm' Y M p)
 Proof
     qx_genl_tac [‘X’, ‘M’, ‘p’] >> STRIP_TAC
  (* applying subterm_is_none_iff_children *)
@@ -2007,6 +2007,7 @@ Proof
        CCONTR_TAC >> gs [MEM_MAP] ])
  (* stage work *)
  >> Q.EXISTS_TAC ‘FEMPTY |+ (y,P)’
+ (* stage work *) 
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘subterm' X (VAR b @* args' @* MAP VAR as) p’
  (* applying lameq_subterm_cong *)
@@ -2036,7 +2037,11 @@ Proof
  >> cheat
 QED
 
-(* Definition 10.3.10 (ii) [1, p.251] *)
+(*---------------------------------------------------------------------------*
+ *  Faithfulness and agreements of terms
+ *---------------------------------------------------------------------------*)
+
+ (* Definition 10.3.10 (ii) [1, p.251] *)
 Definition is_faithful_def :
     is_faithful p Fs pi =
        !M N. M IN Fs /\ N IN Fs ==>
