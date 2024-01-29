@@ -1747,7 +1747,7 @@ Theorem Boehm_transform_exists_lemma2 :
             ?pi. Boehm_transform pi /\ is_ready (apply pi M) /\
                  ?fm. !Y. subterm' Y (apply pi M) p == fm ' (subterm' Y M p)
 Proof
-    qx_genl_tac [‘X’, ‘M’, ‘p’] >> STRIP_TAC
+    rpt STRIP_TAC
  (* applying subterm_is_none_iff_children *)
  >> Know ‘!p1. p1 <<= p ==> subterm X M p1 <> NONE’
  >- (Q.X_GEN_TAC ‘p1’ >> STRIP_TAC \\
@@ -1765,19 +1765,21 @@ Proof
          MATCH_MP_TAC IS_PREFIX_TRANS >> Q.EXISTS_TAC ‘p1’ >> rw [] \\
          MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []) >> rw [])
  >> DISCH_TAC
+ (* s is the set of all non-empty prefix of p *)
  >> qabbrev_tac ‘s = {p1 | p1 <> [] /\ p1 <<= p}’
  (* J collects all hnf_children_size(s) along the fixed path p *)
- >> qabbrev_tac ‘J = IMAGE (\e. hnf_children_size (principle_hnf (subterm' X M (FRONT e)))) s’
+ >> qabbrev_tac ‘J = IMAGE (\e. hnf_children_size
+                                  (principle_hnf (subterm' X M (FRONT e)))) s’
+ >> Know ‘J <> {}’
+ >- (rw [GSYM MEMBER_NOT_EMPTY, Abbr ‘J’] \\
+     Q.EXISTS_TAC ‘p’ >> rw [Abbr ‘s’])
+ >> DISCH_TAC
  >> Know ‘FINITE J’
  >- (qunabbrev_tac ‘J’ >> MATCH_MP_TAC IMAGE_FINITE \\
   (* below is the proof of ‘FINITE s’ *)
      irule SUBSET_FINITE >> Q.EXISTS_TAC ‘{p1 | p1 <<= p}’ \\
      reverse CONJ_TAC >- rw [Abbr ‘s’, SUBSET_DEF] \\
      REWRITE_TAC [FINITE_prefix])
- >> DISCH_TAC
- >> Know ‘J <> {}’
- >- (rw [GSYM MEMBER_NOT_EMPTY, Abbr ‘J’] \\
-     Q.EXISTS_TAC ‘p’ >> rw [Abbr ‘s’])
  >> DISCH_TAC
  (* now define q as the maximal element of J *)
  >> qabbrev_tac ‘q = MAX_SET J’
@@ -1786,7 +1788,7 @@ Proof
  >> reverse (Cases_on ‘solvable M’)
  >- (Q.EXISTS_TAC ‘[]’ >> rw [is_ready_def] \\
      Q.EXISTS_TAC ‘FEMPTY’ >> rw [])
- (* stage work *)
+ (* stage workm, M0 is meaningful given M is solvable *)
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> ‘hnf M0’ by PROVE_TAC [hnf_principle_hnf, solvable_iff_has_hnf]
  >> qabbrev_tac ‘n = LAMl_size M0’
@@ -1798,17 +1800,12 @@ Proof
              “M1 :term”, “y :string”, “args :term list”)
  >> ‘TAKE (LAMl_size M0) vs = vs’ by rw []
  >> POP_ASSUM (REV_FULL_SIMP_TAC std_ss o wrap)
- (* ‘xs’ is the list of binding variables of M0 in lambda terms *)
- >> qabbrev_tac ‘xs :term list = MAP VAR vs’
- (* ‘p1’ is the first part of the transformations for removing abstractions of M0
-
-    NOTE: ‘REVERSE xs’ is required by Boehm_apply_MAP_rightctxt'
+ (* p1 is the first part of the transformations for removing abstractions of M0
+    NOTE: ‘REVERSE’ is required by Boehm_apply_MAP_rightctxt'
   *)
- >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE xs)’
- >> ‘Boehm_transform p1’
-       by (rw [Abbr ‘p1’, Abbr ‘xs’, MAP_MAP_o, GSYM MAP_REVERSE])
- >> ‘apply p1 M0 == M1’
-       by (rw [Abbr ‘p1’, Boehm_apply_MAP_rightctxt', Abbr ‘xs’])
+ >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE (MAP VAR vs))’
+ >> ‘Boehm_transform p1’ by rw [Abbr ‘p1’, MAP_MAP_o, GSYM MAP_REVERSE]
+ >> ‘apply p1 M0 == M1’  by rw [Abbr ‘p1’, Boehm_apply_MAP_rightctxt']
  (* Y collects all free variables in ‘args’ *)
  >> qabbrev_tac ‘Y = X UNION BIGUNION (IMAGE FV (set args))’
  >> ‘FINITE Y’ by (rw [Abbr ‘Y’] >> simp [])
@@ -2005,9 +2002,14 @@ Proof
        rw [Abbr ‘Y’],
        (* goal 2 (of 2) *)
        CCONTR_TAC >> gs [MEM_MAP] ])
- (* stage work *)
+ (* stage work, there seems no other choice on the finite map: *)
  >> Q.EXISTS_TAC ‘FEMPTY |+ (y,P)’
- (* stage work *) 
+ (* NOTE: here, whatever Y it is, the first step is to establish
+
+    subterm' Y (apply (p3 ++ p2 ++ p1) M) p ==
+    subterm' Y (VAR b @* args' @* MAP VAR as) p
+
+   *)
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘subterm' X (VAR b @* args' @* MAP VAR as) p’
  (* applying lameq_subterm_cong *)
