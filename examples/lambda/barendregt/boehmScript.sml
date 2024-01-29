@@ -1788,27 +1788,32 @@ Proof
  >> reverse (Cases_on ‘solvable M’)
  >- (Q.EXISTS_TAC ‘[]’ >> rw [is_ready_def] \\
      Q.EXISTS_TAC ‘FEMPTY’ >> rw [])
- (* stage workm, M0 is meaningful given M is solvable *)
+ (* stage work (all correct until here)
+
+    M0 is meaningful given M is now solvable:
+  *)
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> ‘hnf M0’ by PROVE_TAC [hnf_principle_hnf, solvable_iff_has_hnf]
  >> qabbrev_tac ‘n = LAMl_size M0’
- >> qabbrev_tac ‘vs = FRESH_list n (FV M0)’
- >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M0) /\ LENGTH vs = n’
+ (* NOTE: the following excluded set can be ‘X UNION FV M’ *)
+ >> qabbrev_tac ‘vs = FRESH_list n (FV M)’
+ >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\ LENGTH vs = n’
        by (rw [Abbr ‘vs’, FRESH_list_def])
  (* applying the shared hnf_tac to decompose M0 *)
- >> hnf_tac (“M0 :term”, “vs :string list”,
-             “M1 :term”, “y :string”, “args :term list”)
- >> ‘TAKE (LAMl_size M0) vs = vs’ by rw []
+ >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR (TAKE n vs))’
+ >> Know ‘?y args. M0 = LAMl (TAKE n vs) (VAR y @* args)’
+ >- (qunabbrev_tac ‘n’ >> irule (iffLR hnf_cases_shared) >> rw [] \\
+     MATCH_MP_TAC DISJOINT_SUBSET \\
+     Q.EXISTS_TAC ‘FV M’ >> art [] \\
+     qunabbrev_tac ‘M0’ >> MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
+ >> STRIP_TAC
+ (* eliminate ‘TAKE n vs’ *)
+ >> ‘TAKE n vs = vs’ by rw []
  >> POP_ASSUM (REV_FULL_SIMP_TAC std_ss o wrap)
- (* p1 is the first part of the transformations for removing abstractions of M0
-    NOTE: ‘REVERSE’ is required by Boehm_apply_MAP_rightctxt'
-  *)
- >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE (MAP VAR vs))’
- >> ‘Boehm_transform p1’ by rw [Abbr ‘p1’, MAP_MAP_o, GSYM MAP_REVERSE]
- >> ‘apply p1 M0 == M1’  by rw [Abbr ‘p1’, Boehm_apply_MAP_rightctxt']
- (* Y collects all free variables in ‘args’ *)
- >> qabbrev_tac ‘Y = X UNION BIGUNION (IMAGE FV (set args))’
- >> ‘FINITE Y’ by (rw [Abbr ‘Y’] >> simp [])
+ >> Know ‘M1 = VAR y @* args’
+ >- (qunabbrev_tac ‘M1’ >> POP_ORW \\
+     MATCH_MP_TAC principle_hnf_beta_reduce >> rw [hnf_appstar])
+ >> DISCH_TAC
  >> qabbrev_tac ‘m = LENGTH args’
  >> Know ‘m <= q’
  >- (FIRST_X_ASSUM MATCH_MP_TAC \\
@@ -1819,6 +1824,20 @@ Proof
      reverse CONJ_TAC >- (rw [Abbr ‘s’] >> Cases_on ‘p’ >> rw []) \\
      simp [FRONT_DEF])
  >> DISCH_TAC
+ (* p1 is the first Boehm transformation for removing abstractions of M0 *)
+ >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE (MAP VAR vs))’
+ >> ‘Boehm_transform p1’ by rw [Abbr ‘p1’, MAP_MAP_o, GSYM MAP_REVERSE]
+ >> ‘apply p1 M0 == M1’  by rw [Abbr ‘p1’, Boehm_apply_MAP_rightctxt']
+ (* stage work (all correct until here)
+
+    Now we define the permutator P (and then p2). This requires q + 1 fresh
+    variables. The excluded list is at least X and FV M, and then ‘vs’.
+    But since P is a closed term, these fresh variables seem irrelevant...
+
+    For now, Y collects all free variables in ‘args’:
+  *)
+ >> qabbrev_tac ‘Y = X UNION BIGUNION (IMAGE FV (set args))’
+ >> ‘FINITE Y’ by (rw [Abbr ‘Y’] >> simp [])
  (* Z needs to avoid any free variables in args' *)
  >> FRESH_list_tac (“Z :string list”, “(q + 1) :num”, “Y :string set”)
  >> ‘Z <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
@@ -2010,8 +2029,9 @@ Proof
     subterm' Y (VAR b @* args' @* MAP VAR as) p
 
    *)
+ >> Q.X_GEN_TAC ‘X0’
  >> MATCH_MP_TAC lameq_TRANS
- >> Q.EXISTS_TAC ‘subterm' X (VAR b @* args' @* MAP VAR as) p’
+ >> Q.EXISTS_TAC ‘subterm' X0 (VAR b @* args' @* MAP VAR as) p’
  (* applying lameq_subterm_cong *)
  >> CONJ_TAC
  >- (MATCH_MP_TAC lameq_subterm_cong >> simp [] \\
