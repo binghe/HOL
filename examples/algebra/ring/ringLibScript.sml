@@ -1,14 +1,15 @@
 (* ========================================================================= *)
-(*  HOL-Light's ringtheory.ml (partial)                                      *)
+(*  HOL-Light's ringtheory.ml (partial, for ringLib.RING_RULE)               *)
 (*                                                                           *)
 (*       John Harrison, University of Cambridge Computer Laboratory          *)
 (*            (c) Copyright, University of Cambridge 1998                    *)
 (*                                                                           *)
+(*  Ported to HOL4 by Chun Tian                                              *)
 (* ========================================================================= *)
 
 open HolKernel boolLib bossLib Parse;
 
-open pred_setTheory cardinalTheory hurdUtils;
+open pred_setTheory cardinalTheory arithmeticTheory integerTheory hurdUtils;
 
 open ringTheory ringMapTheory groupMapTheory monoidMapTheory;
 
@@ -24,6 +25,8 @@ Overload ring_1[local]            = “\r. r.prod.id”
 Overload ring_neg[local]          = “\r x. r.sum.inv x”
 Overload ring_add[local]          = “\r x y. r.sum.op x y”
 Overload ring_mul[local]          = “\r x y. r.prod.op x y”
+Overload ring_pow[local]          = “\r x n. r.prod.exp x n”
+
 Overload ring_homomorphism[local] = “\(r,s) (f :'a -> 'b). RingHomo f r s”
 
 (* NOTE: This theorem is a definition in HOL-Light (ringtheory.ml, L4708) *)
@@ -64,4 +67,32 @@ Definition ring_monomorphism :
         !x y. x IN ring_carrier r /\ y IN ring_carrier r /\ f x = f y ==> x = y
 End
 
+(* ------------------------------------------------------------------------- *)
+(* Mapping natural numbers and integers into a ring in the obvious way.      *)
+(* ------------------------------------------------------------------------- *)
+
+Overload ring_of_num[local] = “\r n. r.sum.exp (ring_1 r) n” (* ##n *)
+
+Theorem ring_of_num :
+   !r. Ring r ==> ring_of_num r (0 :num) = ring_0 r /\
+                  !n. ring_of_num r (SUC n) =
+                      ring_add r (ring_of_num r n) (ring_1 r)
+Proof
+    RW_TAC std_ss [ring_num_0]
+ >> Know ‘ring_add r (ring_of_num r n) (ring_1 r) =
+          ring_add r (ring_1 r) (ring_of_num r n)’
+ >- (irule ring_add_comm >> rw [])
+ >> Rewr'
+ >> MATCH_MP_TAC ring_num_SUC >> art []
+QED
+
+Overload num_of_int[local] = “integer$Num”
+
+Definition ring_of_int :
+    ring_of_int (r :'a ring) (n :int) =
+        if &0 <= n then ring_of_num r (num_of_int n)
+        else ring_neg r (ring_of_num r (num_of_int (-n)))
+End
+
 val _ = export_theory();
+val _ = html_theory "ringLib";
