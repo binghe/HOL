@@ -1,6 +1,7 @@
 open HolKernel Parse boolLib bossLib;
 
-open arithmeticTheory listTheory rich_listTheory pred_setTheory hurdUtils;
+open arithmeticTheory listTheory rich_listTheory pred_setTheory finite_mapTheory
+     hurdUtils;
 
 open termTheory binderLib;
 

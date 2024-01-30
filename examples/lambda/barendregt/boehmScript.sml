@@ -1748,7 +1748,7 @@ Proof
 QED
 
 (* |- !n. FV (permutator n) = {} *)
-Theorem FV_permutator[simp] = REWRITE_RULE [closed_def] closed_permutator    
+Theorem FV_permutator[simp] = REWRITE_RULE [closed_def] closed_permutator
 
 Theorem permutator_thm :
     !n N Ns. LENGTH Ns = n ==> permutator n @* SNOC N Ns == N @* Ns
@@ -1756,14 +1756,15 @@ Proof
     RW_TAC std_ss [permutator_def]
  >> qabbrev_tac ‘n = LENGTH Ns’
  >> ‘ALL_DISTINCT Z /\ LENGTH Z = n + 1’ by rw [FRESH_list_def, Abbr ‘Z’]
- >>
-    cheat
+ >> ‘Z <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
+ >> ‘!t. LAMl Z t = LAMl (SNOC z (FRONT Z)) t’
+         by (ASM_SIMP_TAC std_ss [Abbr ‘z’, SNOC_LAST_FRONT]) >> POP_ORW
+ >> REWRITE_TAC [LAMl_SNOC, appstar_SNOC]
+ >> cheat
 QED
 
 (*
-    ‘!t. LAMl Z t = LAMl (SNOC z (FRONT Z)) t’
-         by (ASM_SIMP_TAC std_ss [Abbr ‘z’, SNOC_LAST_FRONT]) >> POP_ORW \\
-     REWRITE_TAC [LAMl_SNOC] \\
+      \\
      qabbrev_tac ‘t = LAM z (VAR z @* MAP VAR (FRONT Z))’ \\
      simp [GSYM appstar_APPEND] \\
      qabbrev_tac ‘Ns = args' ++ MAP VAR as’ \\
