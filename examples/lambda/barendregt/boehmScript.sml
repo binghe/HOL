@@ -1750,6 +1750,9 @@ QED
 (* |- !n. FV (permutator n) = {} *)
 Theorem FV_permutator[simp] = REWRITE_RULE [closed_def] closed_permutator
 
+(* NOTE: This proof is rather long but the idea is relatively clear and easy
+   because I wanted to use ssub instead of ISUB. -- Chun Tian, 30 gen 2024
+ *)
 Theorem permutator_thm :
     !n N Ns. LENGTH Ns = n ==> permutator n @* SNOC N Ns == N @* Ns
 Proof
@@ -1869,8 +1872,41 @@ Proof
      Q.EXISTS_TAC ‘n’ >> rw [])
  >> Rewr'
  >> Q.PAT_X_ASSUM ‘FDOM fm = set (FRONT Y)’ K_TAC
- >> simp [Abbr ‘fm’, ssub_appstar]
- >> cheat
+ >> simp [Abbr ‘fm’]
+ >> ‘FDOM (fromPairs (FRONT Y) Ns) = set (FRONT Y)’
+       by rw [FDOM_fromPairs, LENGTH_FRONT]
+ >> Know ‘~MEM y (FRONT Y)’
+ >- (rw [Abbr ‘y’, MEM_EL, LAST_EL, LENGTH_FRONT, GSYM ADD1] \\
+     STRONG_DISJ_TAC >> rename1 ‘i < n’ \\
+     Know ‘EL i (FRONT Y) = EL i Y’
+     >- (MATCH_MP_TAC EL_FRONT >> rw [LENGTH_FRONT, NULL_EQ]) >> Rewr' \\
+     rw [ALL_DISTINCT_EL_IMP])
+ >> DISCH_TAC
+ >> simp [Abbr ‘t’, ssub_appstar]
+ >> Know ‘MAP ($' (fromPairs (FRONT Y) Ns)) (MAP VAR (FRONT Y)) = Ns’
+ >- (rw [LIST_EQ_REWRITE, LENGTH_FRONT] \\
+     rw [MAP_MAP_o, LENGTH_FRONT, EL_MAP]
+     >- (MATCH_MP_TAC fromPairs_FAPPLY_EL \\
+         rw [LENGTH_FRONT, ALL_DISTINCT_FRONT]) \\
+     NTAC 2 (POP_ASSUM MP_TAC) \\
+     simp [GSYM ADD1, MEM_EL, LENGTH_FRONT] \\
+     METIS_TAC [])
+ >> Rewr'
+ >> Suff ‘N @* Ns = [N/y] (VAR y @* Ns)’
+ >- (Rewr' >> rw [lameq_BETA])
+ >> simp [appstar_SUB]
+ >> Suff ‘MAP [N/y] Ns = Ns’ >- rw []
+ >> rw [LIST_EQ_REWRITE, EL_MAP]
+ >> rename1 ‘i < n’
+ >> MATCH_MP_TAC lemma14b
+ >> Know ‘DISJOINT (FV (EL i Ns)) (set Y)’
+ >- (FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘EL i Ns’ >> rw [MEM_EL] \\
+     Q.EXISTS_TAC ‘i’ >> art [])
+ >> ONCE_REWRITE_TAC [DISJOINT_SYM]
+ >> rw [DISJOINT_ALT]
+ >> POP_ASSUM MATCH_MP_TAC
+ >> rw [Abbr ‘y’, MEM_LAST_NOT_NIL]
 QED
 
 (* Lemma 10.3.6 (ii) [1, p.247]:
