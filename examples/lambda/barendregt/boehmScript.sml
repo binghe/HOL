@@ -1725,6 +1725,136 @@ Proof
  >> MATCH_MP_TAC Boehm_apply_lameq_cong >> rw [Abbr ‘p3’]
 QED
 
+(* [1, p.247] *)
+Definition permutator_def :
+    permutator n = let Z = FRESH_list (n + 1) {};
+                       z = LAST Z;
+                   in
+                       LAMl Z (VAR z @* MAP VAR (FRONT Z))
+End
+
+Theorem closed_permutator :
+    !n. closed (permutator n)
+Proof
+    rw [closed_def, permutator_def, FV_LAMl]
+ >> qabbrev_tac ‘Z = FRESH_list (n + 1) {}’
+ >> ‘ALL_DISTINCT Z /\ LENGTH Z = n + 1’ by rw [FRESH_list_def, Abbr ‘Z’]
+ >> ‘Z <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
+ >> qabbrev_tac ‘z = LAST Z’
+ >> ‘MEM z Z’ by rw [Abbr ‘z’, MEM_LAST_NOT_NIL]
+ >> Suff ‘FV (VAR z @* MAP VAR (FRONT Z)) SUBSET set Z’ >- SET_TAC []
+ >> rw [FV_appstar, SUBSET_DEF, MEM_MAP] >- art []
+ >> rfs [MEM_FRONT_NOT_NIL]
+QED
+
+(* |- !n. FV (permutator n) = {} *)
+Theorem FV_permutator[simp] = REWRITE_RULE [closed_def] closed_permutator    
+
+Theorem permutator_thm :
+    !n N Ns. LENGTH Ns = n ==> permutator n @* SNOC N Ns == N @* Ns
+Proof
+    RW_TAC std_ss [permutator_def]
+ >> qabbrev_tac ‘n = LENGTH Ns’
+ >> ‘ALL_DISTINCT Z /\ LENGTH Z = n + 1’ by rw [FRESH_list_def, Abbr ‘Z’]
+ >>
+    cheat
+QED
+
+(*
+    ‘!t. LAMl Z t = LAMl (SNOC z (FRONT Z)) t’
+         by (ASM_SIMP_TAC std_ss [Abbr ‘z’, SNOC_LAST_FRONT]) >> POP_ORW \\
+     REWRITE_TAC [LAMl_SNOC] \\
+     qabbrev_tac ‘t = LAM z (VAR z @* MAP VAR (FRONT Z))’ \\
+     simp [GSYM appstar_APPEND] \\
+     qabbrev_tac ‘Ns = args' ++ MAP VAR as’ \\
+    ‘LENGTH Ns = q’ by (rw [Abbr ‘Ns’]) \\
+  (* NOTE: This is a common subgoal to be used later, twice *)
+     Know ‘!n. n < LENGTH Ns ==> z # EL n Ns’
+     >- (Q.X_GEN_TAC ‘i’ >> POP_ORW >> STRIP_TAC \\
+        ‘(m <= i /\ i < q) \/ i < m’ by rw []
+         >- (simp [Abbr ‘Ns’, EL_APPEND2, EL_MAP] \\
+             Q.PAT_X_ASSUM ‘DISJOINT (set as) (set Z)’
+               (MP_TAC o (ONCE_REWRITE_RULE [DISJOINT_SYM])) >> rw [DISJOINT_ALT] \\
+             POP_ASSUM (MP_TAC o (Q.SPEC ‘z’)) >> simp [] \\
+             rw [MEM_EL] \\
+             POP_ASSUM (MP_TAC o (Q.SPEC ‘i - LENGTH (args' :term list)’)) \\
+             simp []) \\
+         simp [Abbr ‘Ns’, EL_APPEND1] \\
+         Suff ‘z # EL i args’
+         >- (REWRITE_TAC [GSYM MONO_NOT_EQ] \\
+             Q.PAT_X_ASSUM ‘!i. i < m ==> FV (EL i args') SUBSET FV (EL i args)’
+               (MP_TAC o Q.SPEC ‘i’) \\
+             simp [SUBSET_DEF]) \\
+         Q.PAT_X_ASSUM ‘DISJOINT (set Z) (BIGUNION (IMAGE FV (set args)))’ MP_TAC \\
+         rw [DISJOINT_ALT] \\
+         POP_ASSUM irule >> art [] \\
+         Q.EXISTS_TAC ‘EL i args’ >> rw [MEM_EL] \\
+         Q.EXISTS_TAC ‘i’ >> rw []) >> DISCH_TAC \\
+  (* Now eliminating ‘LAMl (FRONT Z) t’ *)
+     simp [appstar_APPEND] \\
+     MATCH_MP_TAC lameq_TRANS \\
+     Q.EXISTS_TAC ‘LAM z (VAR z @* Ns) @@ VAR b’ \\
+  (* applying lameq_LAMl_appstar_ssub *)
+     CONJ_TAC
+     >- (MATCH_MP_TAC lameq_APPL \\
+         Suff ‘LAM z (VAR z @* Ns) = (FEMPTY |++ ZIP (FRONT Z,Ns)) ' t’
+         >- (Rewr' >> MATCH_MP_TAC lameq_LAMl_appstar_ssub \\
+             CONJ_TAC >- rw [ALL_DISTINCT_FRONT] \\
+             CONJ_TAC >- rw [LENGTH_FRONT] \\
+             MATCH_MP_TAC DISJOINT_SUBSET' >> Q.EXISTS_TAC ‘set Z’ \\
+             reverse CONJ_TAC >- rw [SUBSET_DEF, MEM_FRONT_NOT_NIL] \\
+             ASM_SIMP_TAC list_ss [Abbr ‘Ns’] \\
+             MATCH_MP_TAC DISJOINT_SUBSET \\
+             Q.EXISTS_TAC ‘BIGUNION (IMAGE FV (set args UNION set (MAP VAR as)))’ \\
+             REWRITE_TAC [BIGUNION_UNION, IMAGE_UNION, DISJOINT_UNION'] \\
+             Know ‘BIGUNION (IMAGE (FV :term -> string set) (set (MAP VAR as))) = set as’
+             >- (rw [Once EXTENSION] \\
+                 EQ_TAC >> rw [MEM_MAP] >> fs [] \\
+                 Q.EXISTS_TAC ‘FV (VAR x)’ >> simp [] \\
+                 Q.EXISTS_TAC ‘VAR x’ >> simp []) >> Rewr' \\
+             CONJ_TAC >- (rw [Once DISJOINT_SYM]) \\
+             ASM_SET_TAC []) \\
+         qunabbrev_tac ‘t’ \\
+         qabbrev_tac ‘fm = FEMPTY |++ ZIP (FRONT Z,Ns)’ \\
+        ‘LENGTH (FRONT Z) = LENGTH Ns’ by rw [LENGTH_FRONT] \\
+        ‘FDOM fm = set (FRONT Z)’ by rw [Abbr ‘fm’, FDOM_FUPDATE_LIST, MAP_ZIP] \\
+         Know ‘z NOTIN FDOM fm’
+         >- (rw [Abbr ‘z’] \\
+             Know ‘ALL_DISTINCT (SNOC (LAST Z) (FRONT Z))’
+             >- rw [SNOC_LAST_FRONT] \\
+             rw [ALL_DISTINCT_SNOC]) >> DISCH_TAC \\
+         qabbrev_tac ‘t = VAR z @* MAP VAR (FRONT Z)’ \\
+         qabbrev_tac ‘L = ZIP (FRONT Z,Ns)’ \\
+         Know ‘!n. n < LENGTH Ns ==> (FEMPTY |++ L) ' (EL n (FRONT Z)) = EL n Ns’
+         >- (Q.X_GEN_TAC ‘i’ >> STRIP_TAC \\
+             MATCH_MP_TAC FUPDATE_LIST_APPLY_MEM \\
+             Q.EXISTS_TAC ‘i’ >> rw [Abbr ‘L’, MAP_ZIP] \\
+             rename1 ‘i < m’ >> ‘m <> i’ by rw [] \\
+            ‘ALL_DISTINCT (FRONT Z)’ by METIS_TAC [ALL_DISTINCT_FRONT] \\
+             METIS_TAC [EL_ALL_DISTINCT_EL_EQ]) >> DISCH_TAC \\
+         Know ‘fm ' (LAM z t) = LAM z (fm ' t)’
+         >- (MATCH_MP_TAC ssub_LAM >> art [] \\
+             rw [Abbr ‘fm’, FDOM_FUPDATE_LIST, MAP_ZIP, MEM_EL] \\
+             Know ‘(FEMPTY |++ L) ' (EL n (FRONT Z)) = EL n Ns’
+             >- (FIRST_X_ASSUM MATCH_MP_TAC >> art []) >> Rewr' \\
+             FIRST_X_ASSUM MATCH_MP_TAC >> art []) >> Rewr' \\
+         simp [Abbr ‘t’, ssub_appstar] \\
+         simp [Once LIST_EQ_REWRITE] \\
+         Q.X_GEN_TAC ‘i’ \\
+         REWRITE_TAC [MAP_MAP_o] \\
+         DISCH_TAC >> ‘i < LENGTH (FRONT Z)’ by rw [] \\
+         ASM_SIMP_TAC std_ss [EL_MAP] \\
+        ‘MEM (EL i (FRONT Z)) (FRONT Z)’ by METIS_TAC [MEM_EL] \\
+         rw [Abbr ‘fm’, ssub_thm]) \\
+     Suff ‘VAR b @* Ns = [VAR b/z](VAR z @* Ns)’
+     >- (Rewr' >> rw [lameq_BETA]) \\
+     rw [appstar_SUB] \\
+     rw [Once LIST_EQ_REWRITE] >> rename1 ‘n < LENGTH Ns’ \\
+     rw [EL_MAP] \\
+     MATCH_MP_TAC (GSYM lemma14b) \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> art [])
+*)
+
 (* Lemma 10.3.6 (ii) [1, p.247]:
 
    NOTE: The construction of ‘pi’ needs a fixed ltree path ‘p’, so that we can
@@ -1833,27 +1963,9 @@ Proof
     Now we define the permutator P (and then p2). This requires q + 1 fresh
     variables. The excluded list is at least X and FV M, and then ‘vs’.
     But since P is a closed term, these fresh variables seem irrelevant...
-
-    For now, Y collects all free variables in ‘args’:
   *)
- >> qabbrev_tac ‘Y = X UNION BIGUNION (IMAGE FV (set args))’
- >> ‘FINITE Y’ by (rw [Abbr ‘Y’] >> simp [])
- (* Z needs to avoid any free variables in args' *)
- >> FRESH_list_tac (“Z :string list”, “(q + 1) :num”, “Y :string set”)
- >> ‘Z <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
- >> Q.PAT_X_ASSUM ‘DISJOINT (set Z) Y’ MP_TAC
- >> ‘Y = X UNION BIGUNION (IMAGE FV (set args))’ by rw [Abbr ‘Y’] >> POP_ORW
- >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
- >> qabbrev_tac ‘z = LAST Z’
- >> ‘MEM z Z’ by rw [Abbr ‘z’, MEM_LAST_NOT_NIL]
- (* P is a permutator *)
- >> qabbrev_tac ‘P = LAMl Z (VAR z @* MAP VAR (FRONT Z))’
- >> Know ‘FV P = {}’
- >- (rw [Abbr ‘P’, FV_LAMl] \\
-     Suff ‘FV (VAR z @* MAP VAR (FRONT Z)) SUBSET set Z’ >- SET_TAC [] \\
-     rw [FV_appstar, SUBSET_DEF, MEM_MAP] >- art [] \\
-     rfs [MEM_FRONT_NOT_NIL])
- >> DISCH_TAC
+ >> qabbrev_tac ‘P = permutator q’
+ >> ‘FV P = {}’ by rw [Abbr ‘P’, closed_permutator, GSYM closed_def]
  >> qabbrev_tac ‘p2 = [[P/y]]’
  >> ‘Boehm_transform p2’ by rw [Abbr ‘p2’]
  >> ‘apply p2 M1 = P @* MAP [P/y] args’ by rw [Abbr ‘p2’, appstar_SUB]
@@ -1871,116 +1983,27 @@ Proof
      Suff ‘FV (EL n args') SUBSET FV (EL n args)’ >- METIS_TAC [SUBSET_DEF] \\
      FIRST_X_ASSUM MATCH_MP_TAC >> art [])
  >> DISCH_TAC
- (* NOTE: Here is how lemma2 diverses with lemma1. Instead of a single fresh
+ (* NOTE: Here is how lemma2 diverses from lemma1. Instead of a single fresh
     variable a, now we need a list of fresh variables as of length ‘q - m’, plus
     another single fresh variable b. Together with ‘args'’ (length: m), their
     total length is ‘m + (q - m) + 1 = q + 1’, same as ‘LENGTH Z’.
   *)
- >> qabbrev_tac ‘as = FRESH_list (q - m) (Y UNION set Z)’
- >> Know ‘ALL_DISTINCT as /\ DISJOINT (set as) (Y UNION set Z) /\ LENGTH as = q - m’
+ >> qabbrev_tac ‘as = FRESH_list (q - m) X’
+ >> Know ‘ALL_DISTINCT as /\ DISJOINT (set as) X /\ LENGTH as = q - m’
  >- (rw [Abbr ‘as’, FRESH_list_def])
- >> REWRITE_TAC [DISJOINT_UNION']
  >> STRIP_TAC
- >> Q_TAC (NEW_TAC "b") ‘Y UNION set Z UNION set as’
+ >> Q_TAC (NEW_TAC "b") ‘X UNION set as’
  >> qabbrev_tac ‘l = as ++ [b]’ (* or ‘SNOC b as’ *)
  >> qabbrev_tac ‘p3 = MAP rightctxt (REVERSE (MAP VAR l))’
  >> ‘Boehm_transform p3’
        by (rw [Abbr ‘p3’, MAP_MAP_o, GSYM MAP_REVERSE])
- (* stage work *)
+ (* applying permutator_thm *)
  >> Know ‘apply p3 (P @* args') == VAR b @* args' @* MAP VAR as’
  >- (simp [Abbr ‘p3’, Abbr ‘P’, Abbr ‘l’, rightctxt_thm, Boehm_apply_MAP_rightctxt'] \\
-    ‘!t. LAMl Z t = LAMl (SNOC z (FRONT Z)) t’
-         by (ASM_SIMP_TAC std_ss [Abbr ‘z’, SNOC_LAST_FRONT]) >> POP_ORW \\
-     REWRITE_TAC [LAMl_SNOC] \\
-     qabbrev_tac ‘t = LAM z (VAR z @* MAP VAR (FRONT Z))’ \\
-     simp [GSYM appstar_APPEND] \\
-     qabbrev_tac ‘Ns = args' ++ MAP VAR as’ \\
-    ‘LENGTH Ns = q’ by (rw [Abbr ‘Ns’]) \\
-  (* NOTE: This is a common subgoal to be used later, twice *)
-     Know ‘!n. n < LENGTH Ns ==> z # EL n Ns’
-     >- (Q.X_GEN_TAC ‘i’ >> POP_ORW >> STRIP_TAC \\
-        ‘(m <= i /\ i < q) \/ i < m’ by rw []
-         >- (simp [Abbr ‘Ns’, EL_APPEND2, EL_MAP] \\
-             Q.PAT_X_ASSUM ‘DISJOINT (set as) (set Z)’
-               (MP_TAC o (ONCE_REWRITE_RULE [DISJOINT_SYM])) >> rw [DISJOINT_ALT] \\
-             POP_ASSUM (MP_TAC o (Q.SPEC ‘z’)) >> simp [] \\
-             rw [MEM_EL] \\
-             POP_ASSUM (MP_TAC o (Q.SPEC ‘i - LENGTH (args' :term list)’)) \\
-             simp []) \\
-         simp [Abbr ‘Ns’, EL_APPEND1] \\
-         Suff ‘z # EL i args’
-         >- (REWRITE_TAC [GSYM MONO_NOT_EQ] \\
-             Q.PAT_X_ASSUM ‘!i. i < m ==> FV (EL i args') SUBSET FV (EL i args)’
-               (MP_TAC o Q.SPEC ‘i’) \\
-             simp [SUBSET_DEF]) \\
-         Q.PAT_X_ASSUM ‘DISJOINT (set Z) (BIGUNION (IMAGE FV (set args)))’ MP_TAC \\
-         rw [DISJOINT_ALT] \\
-         POP_ASSUM irule >> art [] \\
-         Q.EXISTS_TAC ‘EL i args’ >> rw [MEM_EL] \\
-         Q.EXISTS_TAC ‘i’ >> rw []) >> DISCH_TAC \\
-  (* Now eliminating ‘LAMl (FRONT Z) t’ *)
-     simp [appstar_APPEND] \\
-     MATCH_MP_TAC lameq_TRANS \\
-     Q.EXISTS_TAC ‘LAM z (VAR z @* Ns) @@ VAR b’ \\
-  (* applying lameq_LAMl_appstar_ssub *)
-     CONJ_TAC
-     >- (MATCH_MP_TAC lameq_APPL \\
-         Suff ‘LAM z (VAR z @* Ns) = (FEMPTY |++ ZIP (FRONT Z,Ns)) ' t’
-         >- (Rewr' >> MATCH_MP_TAC lameq_LAMl_appstar_ssub \\
-             CONJ_TAC >- rw [ALL_DISTINCT_FRONT] \\
-             CONJ_TAC >- rw [LENGTH_FRONT] \\
-             MATCH_MP_TAC DISJOINT_SUBSET' >> Q.EXISTS_TAC ‘set Z’ \\
-             reverse CONJ_TAC >- rw [SUBSET_DEF, MEM_FRONT_NOT_NIL] \\
-             ASM_SIMP_TAC list_ss [Abbr ‘Ns’] \\
-             MATCH_MP_TAC DISJOINT_SUBSET \\
-             Q.EXISTS_TAC ‘BIGUNION (IMAGE FV (set args UNION set (MAP VAR as)))’ \\
-             REWRITE_TAC [BIGUNION_UNION, IMAGE_UNION, DISJOINT_UNION'] \\
-             Know ‘BIGUNION (IMAGE (FV :term -> string set) (set (MAP VAR as))) = set as’
-             >- (rw [Once EXTENSION] \\
-                 EQ_TAC >> rw [MEM_MAP] >> fs [] \\
-                 Q.EXISTS_TAC ‘FV (VAR x)’ >> simp [] \\
-                 Q.EXISTS_TAC ‘VAR x’ >> simp []) >> Rewr' \\
-             CONJ_TAC >- (rw [Once DISJOINT_SYM]) \\
-             ASM_SET_TAC []) \\
-         qunabbrev_tac ‘t’ \\
-         qabbrev_tac ‘fm = FEMPTY |++ ZIP (FRONT Z,Ns)’ \\
-        ‘LENGTH (FRONT Z) = LENGTH Ns’ by rw [LENGTH_FRONT] \\
-        ‘FDOM fm = set (FRONT Z)’ by rw [Abbr ‘fm’, FDOM_FUPDATE_LIST, MAP_ZIP] \\
-         Know ‘z NOTIN FDOM fm’
-         >- (rw [Abbr ‘z’] \\
-             Know ‘ALL_DISTINCT (SNOC (LAST Z) (FRONT Z))’
-             >- rw [SNOC_LAST_FRONT] \\
-             rw [ALL_DISTINCT_SNOC]) >> DISCH_TAC \\
-         qabbrev_tac ‘t = VAR z @* MAP VAR (FRONT Z)’ \\
-         qabbrev_tac ‘L = ZIP (FRONT Z,Ns)’ \\
-         Know ‘!n. n < LENGTH Ns ==> (FEMPTY |++ L) ' (EL n (FRONT Z)) = EL n Ns’
-         >- (Q.X_GEN_TAC ‘i’ >> STRIP_TAC \\
-             MATCH_MP_TAC FUPDATE_LIST_APPLY_MEM \\
-             Q.EXISTS_TAC ‘i’ >> rw [Abbr ‘L’, MAP_ZIP] \\
-             rename1 ‘i < m’ >> ‘m <> i’ by rw [] \\
-            ‘ALL_DISTINCT (FRONT Z)’ by METIS_TAC [ALL_DISTINCT_FRONT] \\
-             METIS_TAC [EL_ALL_DISTINCT_EL_EQ]) >> DISCH_TAC \\
-         Know ‘fm ' (LAM z t) = LAM z (fm ' t)’
-         >- (MATCH_MP_TAC ssub_LAM >> art [] \\
-             rw [Abbr ‘fm’, FDOM_FUPDATE_LIST, MAP_ZIP, MEM_EL] \\
-             Know ‘(FEMPTY |++ L) ' (EL n (FRONT Z)) = EL n Ns’
-             >- (FIRST_X_ASSUM MATCH_MP_TAC >> art []) >> Rewr' \\
-             FIRST_X_ASSUM MATCH_MP_TAC >> art []) >> Rewr' \\
-         simp [Abbr ‘t’, ssub_appstar] \\
-         simp [Once LIST_EQ_REWRITE] \\
-         Q.X_GEN_TAC ‘i’ \\
-         REWRITE_TAC [MAP_MAP_o] \\
-         DISCH_TAC >> ‘i < LENGTH (FRONT Z)’ by rw [] \\
-         ASM_SIMP_TAC std_ss [EL_MAP] \\
-        ‘MEM (EL i (FRONT Z)) (FRONT Z)’ by METIS_TAC [MEM_EL] \\
-         rw [Abbr ‘fm’, ssub_thm]) \\
-     Suff ‘VAR b @* Ns = [VAR b/z](VAR z @* Ns)’
-     >- (Rewr' >> rw [lameq_BETA]) \\
-     rw [appstar_SUB] \\
-     rw [Once LIST_EQ_REWRITE] >> rename1 ‘n < LENGTH Ns’ \\
-     rw [EL_MAP] \\
-     MATCH_MP_TAC (GSYM lemma14b) \\
-     FIRST_X_ASSUM MATCH_MP_TAC >> art [])
+     REWRITE_TAC [GSYM appstar_APPEND, APPEND_ASSOC] \\
+     REWRITE_TAC [GSYM SNOC_APPEND] \\
+     qabbrev_tac ‘l = args' ++ MAP VAR as’ \\
+     MATCH_MP_TAC permutator_thm >> rw [Abbr ‘l’])
  >> DISCH_TAC
  (* pre-final stage *)
  >> Q.EXISTS_TAC ‘p3 ++ p2 ++ p1’
@@ -2005,13 +2028,13 @@ Proof
      Q.EXISTS_TAC ‘apply p3 (P @* args')’ >> art [] \\
      MATCH_MP_TAC Boehm_apply_lameq_cong >> rw [])
  >> DISCH_TAC
- (* applying is_ready_alt *)
+ (* applying is_ready_alt
  >> CONJ_TAC
  >- (simp [is_ready_alt] >> DISJ2_TAC \\
      qexistsl_tac [‘b’, ‘args' ++ MAP VAR as’] \\
      rw [appstar_APPEND, EVERY_MEM] >| (* 2 subgoals *)
      [ (* goal 1 (of 2) *)
-       Suff ‘FV e SUBSET Y’ >- METIS_TAC [SUBSET_DEF] \\
+       Suff ‘FV e SUBSET X’ >- METIS_TAC [SUBSET_DEF] \\
        MATCH_MP_TAC SUBSET_TRANS \\
        Q.EXISTS_TAC ‘BIGUNION (IMAGE FV (set args'))’ \\
        CONJ_TAC >- (rw [SUBSET_DEF, IN_BIGUNION_IMAGE] \\
@@ -2037,6 +2060,7 @@ Proof
  >- (MATCH_MP_TAC lameq_subterm_cong >> simp [] \\
      cheat)
  (* stage work *)
+  *)
  >> cheat
 QED
 
