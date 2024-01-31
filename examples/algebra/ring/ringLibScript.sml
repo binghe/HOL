@@ -67,6 +67,35 @@ Definition ring_monomorphism :
         !x y. x IN ring_carrier r /\ y IN ring_carrier r /\ f x = f y ==> x = y
 End
 
+(* TODO list
+              RING_HOMOMORPHISM_0; RING_HOMOMORPHISM_1;
+              RING_HOMOMORPHISM_RING_OF_NUM; RING_HOMOMORPHISM_RING_OF_INT;
+              RING_HOMOMORPHISM_NEG; RING_HOMOMORPHISM_POW;
+              RING_HOMOMORPHISM_ADD; RING_HOMOMORPHISM_SUB;
+              RING_HOMOMORPHISM_MUL
+ *)
+
+(* |- !r. Ring r ==> #0 IN R *)
+Theorem RING_0 = ring_zero_element
+
+(* |- !r. Ring r ==> #1 IN R *)
+Theorem RING_1 = ring_one_element
+
+(* |- !r. Ring r ==> !x. x IN R ==> ring_neg r x IN R *)
+Theorem RING_NEG = ring_neg_element
+
+(* |- !r. Ring r ==> !x. x IN R ==> !n. ring_pow r x n IN R *)
+Theorem RING_POW = ring_exp_element
+
+(* |- !r. Ring r ==> !x y. x IN R /\ y IN R ==> ring_add r x y IN R *)
+Theorem RING_ADD = ring_add_element
+
+(* |- !r. Ring r ==> !x y. x IN R /\ y IN R ==> x - y IN R *)
+Theorem RING_SUB = ring_sub_element
+
+(* |- !r. Ring r ==> !x y. x IN R /\ y IN R ==> ring_mul r x y IN R *)
+Theorem RING_MUL = ring_mult_element
+
 (* ------------------------------------------------------------------------- *)
 (* Mapping natural numbers and integers into a ring in the obvious way.      *)
 (* ------------------------------------------------------------------------- *)
@@ -74,9 +103,9 @@ End
 Overload ring_of_num[local] = “\r n. r.sum.exp (ring_1 r) n” (* ##n *)
 
 Theorem ring_of_num :
-   !r. Ring r ==> ring_of_num r (0 :num) = ring_0 r /\
-                  !n. ring_of_num r (SUC n) =
-                      ring_add r (ring_of_num r n) (ring_1 r)
+    !r. Ring r ==> ring_of_num r (0 :num) = ring_0 r /\
+                   !n. ring_of_num r (SUC n) =
+                       ring_add r (ring_of_num r n) (ring_1 r)
 Proof
     RW_TAC std_ss [ring_num_0]
  >> Know ‘ring_add r (ring_of_num r n) (ring_1 r) =
@@ -93,6 +122,16 @@ Definition ring_of_int :
         if &0 <= n then ring_of_num r (num_of_int n)
         else ring_neg r (ring_of_num r (num_of_int (-n)))
 End
+
+(* |- !r. Ring r ==> !n. ring_of_num r n IN R *)
+Theorem RING_OF_NUM = ring_num_element
+
+Theorem RING_OF_INT :
+     !(r:'a ring) n. Ring r ==> ring_of_int r n IN ring_carrier r
+Proof
+  REPEAT GEN_TAC THEN REWRITE_TAC[ring_of_int] THEN COND_CASES_TAC THEN
+  ASM_SIMP_TAC std_ss [RING_NEG, RING_OF_NUM]
+QED
 
 val _ = export_theory();
 val _ = html_theory "ringLib";
