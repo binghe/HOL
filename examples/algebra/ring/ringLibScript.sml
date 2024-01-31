@@ -77,12 +77,6 @@ Definition ring_monomorphism :
         !x y. x IN ring_carrier r /\ y IN ring_carrier r /\ f x = f y ==> x = y
 End
 
-(* TODO list
-              RING_HOMOMORPHISM_NEG; RING_HOMOMORPHISM_POW;
-              RING_HOMOMORPHISM_ADD; RING_HOMOMORPHISM_SUB;
-              RING_HOMOMORPHISM_MUL
- *)
-
 (* |- !r. Ring r ==> ring_0 r IN ring_carrier r *)
 Theorem RING_0 = ring_zero_element
 
@@ -133,6 +127,42 @@ Theorem RING_HOMOMORPHISM_NEG :
                 ==> f(ring_neg r x) = ring_neg r' (f x)
 Proof
     rw [ring_homo_neg]
+QED
+
+Theorem RING_HOMOMORPHISM_ADD :
+    !r r' (f :'a -> 'b).
+        Ring r /\ Ring r' /\ ring_homomorphism(r,r') f
+        ==> !x y. x IN ring_carrier r /\ y IN ring_carrier r
+                  ==> f(ring_add r x y) = ring_add r' (f x) (f y)
+Proof
+    rw [ring_homo_add]
+QED
+
+Theorem RING_HOMOMORPHISM_MUL :
+    !r r' (f :'a -> 'b).
+        Ring r /\ Ring r' /\ ring_homomorphism(r,r') f
+        ==> !x y. x IN ring_carrier r /\ y IN ring_carrier r
+                  ==> f(ring_mul r x y) = ring_mul r' (f x) (f y)
+Proof
+    rw [ring_homo_mult]
+QED
+
+Theorem RING_HOMOMORPHISM_SUB :
+    !r r' (f :'a -> 'b).
+        Ring r /\ Ring r' /\ ring_homomorphism(r,r') f
+        ==> !x y. x IN ring_carrier r /\ y IN ring_carrier r
+                  ==> f(ring_sub r x y) = ring_sub r' (f x) (f y)
+Proof
+    rw [ring_homo_sub]
+QED
+
+Theorem RING_HOMOMORPHISM_POW :
+    !r r' (f :'a -> 'b).
+        Ring r /\ Ring r' /\ ring_homomorphism(r,r') f
+        ==> !x n. x IN ring_carrier r
+                  ==> f(ring_pow r x n) = ring_pow r' (f x) n
+Proof
+    rw [ring_homo_exp]
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -199,10 +229,11 @@ Theorem RING_OF_INT_CASES :
    (!(r :'a ring) n. ring_of_int r (&n) = ring_of_num r n) /\
    (!(r :'a ring) n. Ring r ==> ring_of_int r (-&n) = ring_neg r (ring_of_num r n))
 Proof
-  REPEAT STRIP_TAC >- REWRITE_TAC[RING_OF_INT_OF_NUM] THEN
-  REWRITE_TAC[ring_of_int, INT_ARITH ``&0:int <= - &n <=> &n:int = &0``] THEN
-  SIMP_TAC std_ss [INT_NEG_NEG, INT_OF_NUM_EQ, INT_NEG_0, NUM_OF_INT_OF_NUM] THEN
-  COND_CASES_TAC THEN ASM_SIMP_TAC std_ss [ring_of_num, RING_NEG_0]
+    rpt STRIP_TAC
+ >- REWRITE_TAC[RING_OF_INT_OF_NUM]
+ >> REWRITE_TAC[ring_of_int, INT_ARITH ``&0:int <= - &n <=> &n:int = &0``]
+ >> SIMP_TAC std_ss [INT_NEG_NEG, INT_OF_NUM_EQ, INT_NEG_0, NUM_OF_INT_OF_NUM]
+ >> COND_CASES_TAC THEN ASM_SIMP_TAC std_ss [ring_of_num, RING_NEG_0]
 QED
 
 Theorem RING_HOMOMORPHISM_RING_OF_INT :
@@ -210,7 +241,7 @@ Theorem RING_HOMOMORPHISM_RING_OF_INT :
         Ring r /\ Ring r' /\ ring_homomorphism(r,r') f
         ==> !n. f(ring_of_int r n) = ring_of_int r' n
 Proof
-    REPEAT GEN_TAC >> STRIP_TAC
+    rpt GEN_TAC >> STRIP_TAC
  >> ASM_SIMP_TAC std_ss [FORALL_INT_CASES, RING_OF_INT_CASES]
  >> Know ‘Ring r /\ Ring r' /\ ring_homomorphism (r,r') f’ >- art []
  >> DISCH_THEN (ASSUME_TAC o (MATCH_MP RING_HOMOMORPHISM_NEG))
