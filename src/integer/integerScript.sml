@@ -3493,6 +3493,19 @@ val LEAST_INT_DEF = new_definition ("LEAST_INT_DEF",
 val _ = set_fixity "LEAST_INT" Binder
 
 (*---------------------------------------------------------------------------*)
+(* Compatibility layer for HOL-Light's integer.ml                            *)
+(*---------------------------------------------------------------------------*)
+
+Theorem FORALL_INT_CASES :
+    !(P :int -> bool). (!x. P x) <=> (!n. P (&n)) /\ (!n. P (-&n))
+Proof
+    rpt STRIP_TAC
+ >> EQ_TAC >> rw []
+ >> MP_TAC (Q.SPEC ‘x’ INT_NUM_CASES) >> rw [] (* 3 subgoals *)
+ >> rw []
+QED
+
+(*---------------------------------------------------------------------------*)
 
 val _ = BasicProvers.export_rewrites
         ["INT_ADD_LID_UNIQ",
