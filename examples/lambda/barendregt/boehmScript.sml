@@ -1550,190 +1550,6 @@ Proof
  >> qexistsl_tac [‘y’, ‘args’] >> art []
 QED
 
-(* [1, p.247] *)
-Definition permutator_def :
-    permutator n = let Z = FRESH_list (n + 1) {};
-                       z = LAST Z;
-                   in
-                       LAMl Z (VAR z @* MAP VAR (FRONT Z))
-End
-
-Theorem closed_permutator :
-    !n. closed (permutator n)
-Proof
-    rw [closed_def, permutator_def, FV_LAMl]
- >> qabbrev_tac ‘Z = FRESH_list (n + 1) {}’
- >> ‘ALL_DISTINCT Z /\ LENGTH Z = n + 1’ by rw [FRESH_list_def, Abbr ‘Z’]
- >> ‘Z <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
- >> qabbrev_tac ‘z = LAST Z’
- >> ‘MEM z Z’ by rw [Abbr ‘z’, MEM_LAST_NOT_NIL]
- >> Suff ‘FV (VAR z @* MAP VAR (FRONT Z)) SUBSET set Z’ >- SET_TAC []
- >> rw [FV_appstar, SUBSET_DEF, MEM_MAP] >- art []
- >> rfs [MEM_FRONT_NOT_NIL]
-QED
-
-(* |- !n. FV (permutator n) = {} *)
-Theorem FV_permutator[simp] = REWRITE_RULE [closed_def] closed_permutator
-
-(* NOTE: This proof is rather long but the idea is relatively clear and easy
-   because I wanted to use ssub instead of ISUB. -- Chun Tian, 30 gen 2024
- *)
-Theorem permutator_thm :
-    !n N Ns. LENGTH Ns = n ==> permutator n @* SNOC N Ns == N @* Ns
-Proof
-    RW_TAC std_ss [permutator_def]
- >> qabbrev_tac ‘n = LENGTH Ns’
- >> ‘ALL_DISTINCT Z /\ LENGTH Z = n + 1’ by rw [FRESH_list_def, Abbr ‘Z’]
- >> ‘Z <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
- >> ‘MEM z Z’ by rw [Abbr ‘z’, MEM_LAST_NOT_NIL]
- >> qabbrev_tac ‘M = VAR z @* MAP VAR (FRONT Z)’
- (* preparing for LAMl_ALPHA_ssub *)
- >> qabbrev_tac
-     ‘Y = FRESH_list (n + 1) (set Z UNION (BIGUNION (IMAGE FV (set Ns))))’
- >> Know ‘FINITE (set Z UNION (BIGUNION (IMAGE FV (set Ns))))’
- >- (rw [] >> rw [FINITE_FV])
- >> DISCH_TAC
- >> Know ‘ALL_DISTINCT Y /\
-          DISJOINT (set Y) (set Z UNION (BIGUNION (IMAGE FV (set Ns)))) /\
-          LENGTH Y = n + 1’
- >- (ASM_SIMP_TAC std_ss [FRESH_list_def, Abbr ‘Y’])
- >> rw []
- (* applying LAMl_ALPHA_ssub *)
- >> Know ‘LAMl Z M = LAMl Y ((FEMPTY |++ ZIP (Z,MAP VAR Y)) ' M)’
- >- (MATCH_MP_TAC LAMl_ALPHA_ssub >> rw [DISJOINT_SYM] \\
-     Suff ‘FV M = set Z’ >- METIS_TAC [DISJOINT_SYM] \\
-     rw [Abbr ‘M’, FV_appstar] \\
-    ‘Z = SNOC (LAST Z) (FRONT Z)’ by PROVE_TAC [SNOC_LAST_FRONT] \\
-     POP_ORW \\
-     simp [LIST_TO_SET_SNOC] \\
-     rw [Once EXTENSION, MEM_MAP] \\
-     EQ_TAC >> rw [] >> fs [] \\
-     DISJ2_TAC \\
-     Q.EXISTS_TAC ‘FV (VAR x)’ >> rw [] \\
-     Q.EXISTS_TAC ‘VAR x’ >> rw [])
- >> Rewr'
- >> ‘Y <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
- >> REWRITE_TAC [GSYM fromPairs_def]
- >> qabbrev_tac ‘fm = fromPairs Z (MAP VAR Y)’
- >> ‘FDOM fm = set Z’ by rw [FDOM_fromPairs, Abbr ‘fm’]
- >> qabbrev_tac ‘y = LAST Y’
- (* postfix for LAMl_ALPHA_ssub *)
- >> ‘!t. LAMl Y t = LAMl (SNOC y (FRONT Y)) t’
-       by (ASM_SIMP_TAC std_ss [Abbr ‘y’, SNOC_LAST_FRONT]) >> POP_ORW
- >> REWRITE_TAC [LAMl_SNOC, appstar_SNOC]
- >> Know ‘fm ' M = VAR y @* MAP VAR (FRONT Y)’
- >- (simp [Abbr ‘M’, ssub_appstar] \\
-     Know ‘fm ' z = VAR y’
-     >- (rw [Abbr ‘fm’, Abbr ‘z’, LAST_EL] \\
-         Know ‘fromPairs Z (MAP VAR Y) ' (EL (PRE (n + 1)) Z) =
-               EL (PRE (n + 1)) (MAP VAR Y)’
-         >- (MATCH_MP_TAC fromPairs_FAPPLY_EL >> rw []) >> Rewr' \\
-         rw [EL_MAP, Abbr ‘y’, LAST_EL]) >> Rewr' \\
-     Suff ‘MAP ($' fm) (MAP VAR (FRONT Z)) = MAP VAR (FRONT Y)’ >- rw [] \\
-     rw [LIST_EQ_REWRITE, LENGTH_FRONT] \\
-    ‘PRE (n + 1) = n’ by rw [] >> POP_ASSUM (fs o wrap) \\
-     rename1 ‘i < n’ \\
-     simp [EL_MAP, LENGTH_FRONT] \\
-     Know ‘MEM (EL i (FRONT Z)) Z’
-     >- (rw [MEM_EL] \\
-         Q.EXISTS_TAC ‘i’ >> rw [] \\
-         MATCH_MP_TAC EL_FRONT >> rw [LENGTH_FRONT, NULL_EQ]) \\
-     rw [Abbr ‘fm’] \\
-     Know ‘EL i (FRONT Z) = EL i Z’
-     >- (MATCH_MP_TAC EL_FRONT >> rw [LENGTH_FRONT, NULL_EQ]) >> Rewr' \\
-     Know ‘EL i (FRONT Y) = EL i Y’
-     >- (MATCH_MP_TAC EL_FRONT >> rw [LENGTH_FRONT, NULL_EQ]) >> Rewr' \\
-     Know ‘fromPairs Z (MAP VAR Y) ' (EL i Z) = EL i (MAP VAR Y)’
-     >- (MATCH_MP_TAC fromPairs_FAPPLY_EL >> rw []) >> Rewr' \\
-     rw [EL_MAP])
- >> Rewr'
- (* stage work *)
- >> qabbrev_tac ‘t = LAM y (VAR y @* MAP VAR (FRONT Y))’
- >> MATCH_MP_TAC lameq_TRANS
- >> Q.EXISTS_TAC ‘((FEMPTY |++ ZIP (FRONT Y,Ns)) ' t) @@ N’
- >> CONJ_TAC
- >- (MATCH_MP_TAC lameq_APPL \\
-     MATCH_MP_TAC lameq_LAMl_appstar_ssub \\
-     rw [ALL_DISTINCT_FRONT, LENGTH_FRONT] \\
-     MATCH_MP_TAC DISJOINT_SUBSET' \\
-     Q.EXISTS_TAC ‘set Y’ \\
-     reverse CONJ_TAC >- rw [SUBSET_DEF, MEM_FRONT_NOT_NIL] \\
-     ONCE_REWRITE_TAC [DISJOINT_SYM] \\
-     FIRST_X_ASSUM MATCH_MP_TAC \\
-     Q.EXISTS_TAC ‘x’ >> art [])
- (* cleanup ‘fm’ *)
- >> Q.PAT_X_ASSUM ‘FDOM fm = set Z’ K_TAC
- >> qunabbrev_tac ‘fm’
- (* stage work *)
- >> REWRITE_TAC [GSYM fromPairs_def]
- >> qabbrev_tac ‘fm = fromPairs (FRONT Y) Ns’
- >> ‘FDOM fm = set (FRONT Y)’ by rw [Abbr ‘fm’, FDOM_fromPairs, LENGTH_FRONT]
- >> qunabbrev_tac ‘t’
- >> qabbrev_tac ‘t = VAR y @* MAP VAR (FRONT Y)’
- >> Know ‘fm ' (LAM y t) = LAM y (fm ' t)’
- >- (MATCH_MP_TAC ssub_LAM \\
-     simp [Abbr ‘y’, LAST_EL] \\
-     CONJ_TAC
-     >- (rw [MEM_EL, LENGTH_FRONT] \\
-        ‘PRE (n + 1) = n’ by rw [] >> POP_ORW \\
-         STRONG_DISJ_TAC >> rename1 ‘i < n’ \\
-         Know ‘EL i (FRONT Y) = EL i Y’
-         >- (MATCH_MP_TAC EL_FRONT >> rw [LENGTH_FRONT, NULL_EQ]) >> Rewr' \\
-         rw [ALL_DISTINCT_EL_IMP]) \\
-     Q.X_GEN_TAC ‘y’ \\
-     rw [MEM_EL] >> rename1 ‘i < LENGTH (FRONT Y)’ \\
-    ‘PRE (n + 1) = n’ by rw [] >> POP_ORW \\
-     qunabbrev_tac ‘fm’ \\
-     Know ‘fromPairs (FRONT Y) Ns ' (EL i (FRONT Y)) = EL i Ns’
-     >- (MATCH_MP_TAC fromPairs_FAPPLY_EL \\
-         rw [ALL_DISTINCT_FRONT, LENGTH_FRONT]) >> Rewr' \\
-     Know ‘DISJOINT (FV (EL i Ns)) (set Y)’
-     >- (FIRST_X_ASSUM MATCH_MP_TAC \\
-         Q.EXISTS_TAC ‘EL i Ns’ >> rw [MEM_EL] \\
-         Q.EXISTS_TAC ‘i’ >> rfs [LENGTH_FRONT]) \\
-     ONCE_REWRITE_TAC [DISJOINT_SYM] \\
-     rw [DISJOINT_ALT] \\
-     POP_ASSUM MATCH_MP_TAC >> rw [MEM_EL] \\
-     Q.EXISTS_TAC ‘n’ >> rw [])
- >> Rewr'
- >> Q.PAT_X_ASSUM ‘FDOM fm = set (FRONT Y)’ K_TAC
- >> simp [Abbr ‘fm’]
- >> ‘FDOM (fromPairs (FRONT Y) Ns) = set (FRONT Y)’
-       by rw [FDOM_fromPairs, LENGTH_FRONT]
- >> Know ‘~MEM y (FRONT Y)’
- >- (rw [Abbr ‘y’, MEM_EL, LAST_EL, LENGTH_FRONT, GSYM ADD1] \\
-     STRONG_DISJ_TAC >> rename1 ‘i < n’ \\
-     Know ‘EL i (FRONT Y) = EL i Y’
-     >- (MATCH_MP_TAC EL_FRONT >> rw [LENGTH_FRONT, NULL_EQ]) >> Rewr' \\
-     rw [ALL_DISTINCT_EL_IMP])
- >> DISCH_TAC
- >> simp [Abbr ‘t’, ssub_appstar]
- >> Know ‘MAP ($' (fromPairs (FRONT Y) Ns)) (MAP VAR (FRONT Y)) = Ns’
- >- (rw [LIST_EQ_REWRITE, LENGTH_FRONT] \\
-     rw [MAP_MAP_o, LENGTH_FRONT, EL_MAP]
-     >- (MATCH_MP_TAC fromPairs_FAPPLY_EL \\
-         rw [LENGTH_FRONT, ALL_DISTINCT_FRONT]) \\
-     NTAC 2 (POP_ASSUM MP_TAC) \\
-     simp [GSYM ADD1, MEM_EL, LENGTH_FRONT] \\
-     METIS_TAC [])
- >> Rewr'
- >> Suff ‘N @* Ns = [N/y] (VAR y @* Ns)’
- >- (Rewr' >> rw [lameq_BETA])
- >> simp [appstar_SUB]
- >> Suff ‘MAP [N/y] Ns = Ns’ >- rw []
- >> rw [LIST_EQ_REWRITE, EL_MAP]
- >> rename1 ‘i < n’
- >> MATCH_MP_TAC lemma14b
- >> Know ‘DISJOINT (FV (EL i Ns)) (set Y)’
- >- (FIRST_X_ASSUM MATCH_MP_TAC \\
-     Q.EXISTS_TAC ‘EL i Ns’ >> rw [MEM_EL] \\
-     Q.EXISTS_TAC ‘i’ >> art [])
- >> ONCE_REWRITE_TAC [DISJOINT_SYM]
- >> rw [DISJOINT_ALT]
- >> POP_ASSUM MATCH_MP_TAC
- >> rw [Abbr ‘y’, MEM_LAST_NOT_NIL]
-QED
-
 (* Lemma 10.3.6 (i) [1, p.247] *)
 Theorem Boehm_transform_exists_lemma1 :
     !M. ?pi. Boehm_transform pi /\ is_ready (apply pi M)
@@ -1786,8 +1602,7 @@ Proof
  >> ‘Boehm_transform p3’ by rw [Abbr ‘p3’, MAP_MAP_o, GSYM MAP_REVERSE]
  >> Know ‘apply p3 (P @* args') == VAR a @* args'’
  >- (rw [Abbr ‘p3’, Abbr ‘P’, rightctxt_thm, Boehm_apply_MAP_rightctxt'] \\
-     REWRITE_TAC [GSYM appstar_SNOC] \\
-     MATCH_MP_TAC permutator_thm >> rw [])
+     MATCH_MP_TAC permutator_thm >> art [])
  >> DISCH_TAC
  (* final stage *)
  >> Q.EXISTS_TAC ‘p3 ++ p2 ++ p1’
@@ -1963,15 +1778,13 @@ Proof
  >> Q_TAC (NEW_TAC "b") ‘X UNION set as’
  >> qabbrev_tac ‘l = as ++ [b]’ (* or ‘SNOC b as’ *)
  >> qabbrev_tac ‘p3 = MAP rightctxt (REVERSE (MAP VAR l))’
- >> ‘Boehm_transform p3’
-       by (rw [Abbr ‘p3’, MAP_MAP_o, GSYM MAP_REVERSE])
+ >> ‘Boehm_transform p3’ by rw [Abbr ‘p3’, MAP_MAP_o, GSYM MAP_REVERSE]
  (* applying permutator_thm *)
  >> Know ‘apply p3 (P @* args') == VAR b @* args' @* MAP VAR as’
  >- (simp [Abbr ‘p3’, Abbr ‘P’, Abbr ‘l’, rightctxt_thm, Boehm_apply_MAP_rightctxt'] \\
      REWRITE_TAC [GSYM appstar_APPEND, APPEND_ASSOC] \\
-     REWRITE_TAC [GSYM SNOC_APPEND] \\
-     qabbrev_tac ‘l = args' ++ MAP VAR as’ \\
-     MATCH_MP_TAC permutator_thm >> rw [Abbr ‘l’])
+     REWRITE_TAC [GSYM SNOC_APPEND, appstar_SNOC] \\
+     MATCH_MP_TAC permutator_thm >> rw [])
  >> DISCH_TAC
  (* pre-final stage *)
  >> Q.EXISTS_TAC ‘p3 ++ p2 ++ p1’
