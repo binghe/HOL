@@ -135,4 +135,3 @@ val NEW_ELIM_RULE = store_thm(
   PROVE_TAC [NEW_def]);
 
 val _ = export_theory();
-val _ = html_theory "basic_swap";
