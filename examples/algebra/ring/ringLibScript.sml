@@ -355,20 +355,15 @@ End
 
 (* ------------------------------------------------------------------------- *)
 
-(* 1. ring_carrier
-   2. ring_0
-   3. ring_1
-   4. ring_neg
-   5. ring_add
-   6. ring_mul
-
+(* The negation operation (\x. RESTRICTION k (\i. ring_neg (r i) (x i))) needs
+   a proof.
+ *)
 Definition product_ring :
     product_ring k (r :'k -> 'a ring) =
         let c = cartesian_product k (\i. ring_carrier(r i));
             g = <| carrier := c;
                    op := (\x y. RESTRICTION k (\i. ring_add (r i) (x i) (y i)));
-                   id := RESTRICTION k (\i. ring_0 (r i));
-                   inv := (\x. RESTRICTION k (\i. ring_neg (r i) (x i))) |>;
+                   id := RESTRICTION k (\i. ring_0 (r i)) |>;
             m = <| carrier := c;
                    op := (\x y. RESTRICTION k (\i. ring_mul (r i) (x i) (y i)));
                    id := RESTRICTION k (\i. ring_1 (r i)) |>
@@ -376,6 +371,7 @@ Definition product_ring :
           <| carrier := c; sum := g; prod := m |>
 End
 
+(*
 Theorem RING_TOTALIZATION_lemma :
     !r :'a ring.
             ~(trivial_ring r) /\ INFINITE univ(:'b) /\ univ(:'a) <=_c univ(:'b)
