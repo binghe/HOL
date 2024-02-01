@@ -33,53 +33,7 @@ open Parse;
 
 (*
 let RING_MONOMORPHIC_IMAGE_RULE =
-  let pth = prove
-   (`!r r' (f:A->B).
-          ring_monomorphism(r,r') f
-          ==> (!x x' y y'.
-                  (x IN ring_carrier r /\ f x = x') /\
-                  (y IN ring_carrier r /\ f y = y')
-                  ==> (x = y <=> x' = y')) /\
-              (!x. x IN ring_carrier r
-                   ==> x IN ring_carrier r /\ f x = f x) /\
-              (ring_0 r IN ring_carrier r /\ f(ring_0 r) = ring_0 r') /\
-              (ring_1 r IN ring_carrier r /\ f(ring_1 r) = ring_1 r') /\
-              (!n. ring_of_num r n IN ring_carrier r /\
-                   f(ring_of_num r n) = ring_of_num r' n) /\
-              (!n. ring_of_int r n IN ring_carrier r /\
-                   f(ring_of_int r n) = ring_of_int r' n) /\
-              (!x x'. x IN ring_carrier r /\ f x = x'
-                      ==> ring_neg r x IN ring_carrier r /\
-                          f(ring_neg r x) = ring_neg r' x') /\
-              (!n x x'.
-                  x IN ring_carrier r /\ f x = x'
-                  ==> ring_pow r x n IN ring_carrier r /\
-                      f(ring_pow r x n) = ring_pow r' x' n) /\
-              (!x x' y y'.
-                  (x IN ring_carrier r /\ f x = x') /\
-                  (y IN ring_carrier r /\ f y = y')
-                  ==> ring_add r x y IN ring_carrier r /\
-                      f(ring_add r x y) = ring_add r' x' y') /\
-              (!x x' y y'.
-                  (x IN ring_carrier r /\ f x = x') /\
-                  (y IN ring_carrier r /\ f y = y')
-                  ==> ring_sub r x y IN ring_carrier r /\
-                      f(ring_sub r x y) = ring_sub r' x' y') /\
-              (!x x' y y'.
-                  (x IN ring_carrier r /\ f x = x') /\
-                  (y IN ring_carrier r /\ f y = y')
-                  ==> ring_mul r x y IN ring_carrier r /\
-                      f(ring_mul r x y) = ring_mul r' x' y')`,
-    REPEAT GEN_TAC THEN REWRITE_TAC[ring_monomorphism] THEN
-    GEN_REWRITE_TAC LAND_CONV [CONJ_SYM] THEN MATCH_MP_TAC MONO_AND THEN
-    CONJ_TAC THENL [MESON_TAC[]; ALL_TAC] THEN
-    MESON_TAC[RING_0; RING_1; RING_OF_NUM; RING_OF_INT; RING_NEG;
-              RING_POW; RING_ADD; RING_SUB; RING_MUL;
-              RING_HOMOMORPHISM_0; RING_HOMOMORPHISM_1;
-              RING_HOMOMORPHISM_RING_OF_NUM; RING_HOMOMORPHISM_RING_OF_INT;
-              RING_HOMOMORPHISM_NEG; RING_HOMOMORPHISM_POW;
-              RING_HOMOMORPHISM_ADD; RING_HOMOMORPHISM_SUB;
-              RING_HOMOMORPHISM_MUL]) in
+  val pth = RING_MONOMORPHIC_IMAGE_THM
   fun hth ->
     let [pth_eq; pth_asm;
          pth_0; pth_1; pth_num; pth_int;

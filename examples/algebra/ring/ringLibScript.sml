@@ -10,7 +10,7 @@
 open HolKernel boolLib bossLib Parse;
 
 open pred_setTheory cardinalTheory arithmeticTheory integerTheory intLib
-     hurdUtils;
+     hurdUtils mesonLib;
 
 open ringTheory ringMapTheory groupMapTheory monoidMapTheory;
 
@@ -248,6 +248,58 @@ Proof
  >> Know ‘Ring r /\ Ring r' /\ ring_homomorphism (r,r') f’ >- art []
  >> DISCH_THEN (ASSUME_TAC o (MATCH_MP RING_HOMOMORPHISM_RING_OF_NUM))
  >> ASM_SIMP_TAC std_ss [RING_NEG, RING_OF_NUM]
+QED
+
+Theorem RING_MONOMORPHIC_IMAGE_THM :
+    !r r' (f :'a -> 'b).
+          Ring r /\ Ring r' /\ ring_monomorphism(r,r') f
+          ==> (!x x' y y'.
+                  (x IN ring_carrier r /\ f x = x') /\
+                  (y IN ring_carrier r /\ f y = y')
+                  ==> (x = y <=> x' = y')) /\
+              (!x. x IN ring_carrier r
+                   ==> x IN ring_carrier r /\ f x = f x) /\
+              (ring_0 r IN ring_carrier r /\ f(ring_0 r) = ring_0 r') /\
+              (ring_1 r IN ring_carrier r /\ f(ring_1 r) = ring_1 r') /\
+              (!n. ring_of_num r n IN ring_carrier r /\
+                   f(ring_of_num r n) = ring_of_num r' n) /\
+              (!n. ring_of_int r n IN ring_carrier r /\
+                   f(ring_of_int r n) = ring_of_int r' n) /\
+              (!x x'. x IN ring_carrier r /\ f x = x'
+                      ==> ring_neg r x IN ring_carrier r /\
+                          f(ring_neg r x) = ring_neg r' x') /\
+              (!n x x'.
+                  x IN ring_carrier r /\ f x = x'
+                  ==> ring_pow r x n IN ring_carrier r /\
+                      f(ring_pow r x n) = ring_pow r' x' n) /\
+              (!x x' y y'.
+                  (x IN ring_carrier r /\ f x = x') /\
+                  (y IN ring_carrier r /\ f y = y')
+                  ==> ring_add r x y IN ring_carrier r /\
+                      f(ring_add r x y) = ring_add r' x' y') /\
+              (!x x' y y'.
+                  (x IN ring_carrier r /\ f x = x') /\
+                  (y IN ring_carrier r /\ f y = y')
+                  ==> ring_sub r x y IN ring_carrier r /\
+                      f(ring_sub r x y) = ring_sub r' x' y') /\
+              (!x x' y y'.
+                  (x IN ring_carrier r /\ f x = x') /\
+                  (y IN ring_carrier r /\ f y = y')
+                  ==> ring_mul r x y IN ring_carrier r /\
+                      f(ring_mul r x y) = ring_mul r' x' y')
+Proof
+    rpt GEN_TAC >> REWRITE_TAC[ring_monomorphism]
+ >> ONCE_REWRITE_TAC [DECIDE “(a /\ b /\ c /\ d ==> e) <=>
+                              (d /\ a /\ b /\ c ==> e)”]
+ >> MATCH_MP_TAC MONO_AND
+ >> CONJ_TAC >- MESON_TAC[]
+ >> METIS_TAC[RING_0, RING_1, RING_OF_NUM, RING_OF_INT, RING_NEG,
+              RING_POW, RING_ADD, RING_SUB, RING_MUL,
+              RING_HOMOMORPHISM_0, RING_HOMOMORPHISM_1,
+              RING_HOMOMORPHISM_RING_OF_NUM, RING_HOMOMORPHISM_RING_OF_INT,
+              RING_HOMOMORPHISM_NEG, RING_HOMOMORPHISM_POW,
+              RING_HOMOMORPHISM_ADD, RING_HOMOMORPHISM_SUB,
+              RING_HOMOMORPHISM_MUL]
 QED
 
 val _ = export_theory();
