@@ -1785,7 +1785,7 @@ Proof
  >> ‘Boehm_transform p3’ by rw [Abbr ‘p3’, MAP_MAP_o, GSYM MAP_REVERSE]
  (* applying permutator_thm *)
  >> Know ‘apply p3 (P @* args') == VAR b @* args' @* MAP VAR as’
- >- (simp [Abbr ‘p3’, Abbr ‘P’, rightctxt_thm, MAP_SNOC, Boehm_apply_MAP_rightctxt'] \\ 
+ >- (simp [Abbr ‘p3’, Abbr ‘P’, rightctxt_thm, MAP_SNOC, Boehm_apply_MAP_rightctxt'] \\
      REWRITE_TAC [GSYM appstar_APPEND, APPEND_ASSOC] \\
      MATCH_MP_TAC permutator_thm >> rw [])
  >> DISCH_TAC
