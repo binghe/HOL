@@ -1658,7 +1658,7 @@ Theorem Boehm_transform_exists_lemma2 :
     !X M p. FINITE X /\
             p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
             ?pi. Boehm_transform pi /\ is_ready (apply pi M) /\
-                 ?fm. !Y. subterm' Y (apply pi M) p == fm ' (subterm' Y M p)
+                 ?fm Z. subterm' Z (apply pi M) p == fm ' (subterm' Z M p)
 Proof
     rpt STRIP_TAC
  (* applying subterm_is_none_iff_children *)
@@ -1766,24 +1766,27 @@ Proof
      Suff ‘FV (EL n args') SUBSET FV (EL n args)’ >- METIS_TAC [SUBSET_DEF] \\
      FIRST_X_ASSUM MATCH_MP_TAC >> art [])
  >> DISCH_TAC
- (* NOTE: Here is how lemma2 diverses from lemma1. Instead of a single fresh
-    variable a, now we need a list of fresh variables as of length ‘q - m’, plus
-    another single fresh variable b. Together with ‘args'’ (length: m), their
-    total length is ‘m + (q - m) + 1 = q + 1’, same as ‘LENGTH Z’.
-  *)
- >> qabbrev_tac ‘as = FRESH_list (q - m) X’
- >> Know ‘ALL_DISTINCT as /\ DISJOINT (set as) X /\ LENGTH as = q - m’
- >- (rw [Abbr ‘as’, FRESH_list_def])
+ >> qabbrev_tac ‘Y = BIGUNION (IMAGE FV (set args))’
+ >> qabbrev_tac ‘l = FRESH_list (q - m + 1) Y’
+ >> Know ‘FINITE Y’
+ >- (rw [Abbr ‘Y’] >> rw [])
+ >> DISCH_TAC
+ >> Know ‘ALL_DISTINCT l /\ DISJOINT (set l) Y /\ LENGTH l = q - m + 1’
+ >- (rw [Abbr ‘l’, FRESH_list_def])
  >> STRIP_TAC
- >> Q_TAC (NEW_TAC "b") ‘X UNION set as’
- >> qabbrev_tac ‘l = as ++ [b]’ (* or ‘SNOC b as’ *)
+ >> ‘l <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
+ >> qabbrev_tac ‘as = FRONT l’
+ >> ‘LENGTH as = q - m’ by rw [Abbr ‘as’, LENGTH_FRONT]
+ >> qabbrev_tac ‘b = LAST l’
+ >> Know ‘l = SNOC b as’
+ >- (ASM_SIMP_TAC std_ss [Abbr ‘as’, Abbr ‘b’, SNOC_LAST_FRONT])
+ >> DISCH_TAC
  >> qabbrev_tac ‘p3 = MAP rightctxt (REVERSE (MAP VAR l))’
  >> ‘Boehm_transform p3’ by rw [Abbr ‘p3’, MAP_MAP_o, GSYM MAP_REVERSE]
  (* applying permutator_thm *)
  >> Know ‘apply p3 (P @* args') == VAR b @* args' @* MAP VAR as’
- >- (simp [Abbr ‘p3’, Abbr ‘P’, Abbr ‘l’, rightctxt_thm, Boehm_apply_MAP_rightctxt'] \\
+ >- (simp [Abbr ‘p3’, Abbr ‘P’, rightctxt_thm, MAP_SNOC, Boehm_apply_MAP_rightctxt'] \\ 
      REWRITE_TAC [GSYM appstar_APPEND, APPEND_ASSOC] \\
-     REWRITE_TAC [GSYM SNOC_APPEND, appstar_SNOC] \\
      MATCH_MP_TAC permutator_thm >> rw [])
  >> DISCH_TAC
  (* pre-final stage *)
@@ -1809,39 +1812,32 @@ Proof
      Q.EXISTS_TAC ‘apply p3 (P @* args')’ >> art [] \\
      MATCH_MP_TAC Boehm_apply_lameq_cong >> rw [])
  >> DISCH_TAC
- (* applying is_ready_alt
+ (* applying is_ready_alt *)
  >> CONJ_TAC
  >- (simp [is_ready_alt] >> DISJ2_TAC \\
      qexistsl_tac [‘b’, ‘args' ++ MAP VAR as’] \\
-     rw [appstar_APPEND, EVERY_MEM] >| (* 2 subgoals *)
-     [ (* goal 1 (of 2) *)
-       Suff ‘FV e SUBSET X’ >- METIS_TAC [SUBSET_DEF] \\
-       MATCH_MP_TAC SUBSET_TRANS \\
-       Q.EXISTS_TAC ‘BIGUNION (IMAGE FV (set args'))’ \\
-       CONJ_TAC >- (rw [SUBSET_DEF, IN_BIGUNION_IMAGE] \\
-                    Q.EXISTS_TAC ‘e’ >> art []) \\
-       MATCH_MP_TAC SUBSET_TRANS \\
-       Q.EXISTS_TAC ‘BIGUNION (IMAGE FV (set args))’ >> art [] \\
-       rw [Abbr ‘Y’],
-       (* goal 2 (of 2) *)
-       CCONTR_TAC >> gs [MEM_MAP] ])
- (* stage work, there seems no other choice on the finite map: *)
+     simp [appstar_APPEND] \\
+     reverse CONJ_TAC
+     >- (rw [EVERY_MEM, Abbr ‘b’, Abbr ‘as’, MEM_MAP] >> rw [FV_thm] \\
+         Q.PAT_X_ASSUM ‘ALL_DISTINCT l’ MP_TAC \\
+         Q.PAT_X_ASSUM ‘l = SNOC (LAST l) (FRONT l)’ (ONCE_REWRITE_TAC o wrap) \\
+         rw [ALL_DISTINCT_SNOC] >> PROVE_TAC []) \\
+     rw [EVERY_MEM] \\
+     fs [LIST_TO_SET_SNOC] \\
+     Suff ‘FV e SUBSET Y’ >- METIS_TAC [SUBSET_DEF] \\
+     qunabbrev_tac ‘Y’ \\
+     MATCH_MP_TAC SUBSET_TRANS \\
+     Q.EXISTS_TAC ‘BIGUNION (IMAGE FV (set args'))’ >> art [] \\
+     rw [SUBSET_DEF, IN_BIGUNION_IMAGE] \\
+     Q.EXISTS_TAC ‘e’ >> art [])
+ (* stage work *)
  >> Q.EXISTS_TAC ‘FEMPTY |+ (y,P)’
- (* NOTE: here, whatever Y it is, the first step is to establish
+ (* NOTE: here, whatever Z it is, the first step is to establish
 
-    subterm' Y (apply (p3 ++ p2 ++ p1) M) p ==
-    subterm' Y (VAR b @* args' @* MAP VAR as) p
+    subterm' Z (apply (p3 ++ p2 ++ p1) M) p ==
+    subterm' Z (VAR b @* args' @* MAP VAR as) p
 
    *)
- >> Q.X_GEN_TAC ‘X0’
- >> MATCH_MP_TAC lameq_TRANS
- >> Q.EXISTS_TAC ‘subterm' X0 (VAR b @* args' @* MAP VAR as) p’
- (* applying lameq_subterm_cong *)
- >> CONJ_TAC
- >- (MATCH_MP_TAC lameq_subterm_cong >> simp [] \\
-     cheat)
- (* stage work *)
-  *)
  >> cheat
 QED
 
