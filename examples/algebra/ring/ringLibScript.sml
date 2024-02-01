@@ -12,7 +12,8 @@ open HolKernel boolLib bossLib Parse;
 open pred_setTheory cardinalTheory arithmeticTheory integerTheory intLib
      hurdUtils mesonLib;
 
-open ringTheory ringMapTheory groupMapTheory monoidMapTheory;
+open ringTheory ringMapTheory groupMapTheory monoidTheory monoidMapTheory
+     monoidOrderTheory;
 
 val _ = new_theory "ringLib";
 
@@ -20,7 +21,7 @@ val _ = deprecate_int ();
 val INT_ARITH = intLib.ARITH_PROVE;
 
 (* ------------------------------------------------------------------------- *)
-(*   Translations from HOL4's ringTheory to HOL-Light's ringtheory.ml        *)
+(* The ring operations, primitive plus subtraction as a derived operation.   *)
 (* ------------------------------------------------------------------------- *)
 
 Overload ring_carrier[local]      = “\r. r.carrier”
@@ -30,6 +31,43 @@ Overload ring_neg[local]          = “\r x. r.sum.inv x”
 Overload ring_add[local]          = “\r x y. r.sum.op x y”
 Overload ring_mul[local]          = “\r x y. r.prod.op x y”
 Overload ring_pow[local]          = “\r x n. r.prod.exp x n”
+
+(* |- !r. Ring r ==> ring_0 r IN ring_carrier r *)
+Theorem RING_0 = ring_zero_element
+
+(* |- !r. Ring r ==> ring_1 r IN ring_carrier r *)
+Theorem RING_1 = ring_one_element
+
+(* |- !r. Ring r ==> !x. x IN R ==> ring_neg r x IN ring_carrier r *)
+Theorem RING_NEG = ring_neg_element
+
+(* |- !r. Ring r ==> ring_neg r (ring_0 r) = ring_0 r *)
+Theorem RING_NEG_0 = ring_neg_zero
+
+(* |- !r. Ring r ==> !x. x IN R ==> !n. ring_pow r x n IN R *)
+Theorem RING_POW = ring_exp_element
+
+(* |- !r. Ring r ==> !x y. x IN R /\ y IN R ==> ring_add r x y IN R *)
+Theorem RING_ADD = ring_add_element
+
+(* |- !r. Ring r ==> !x y. x IN R /\ y IN R ==> x - y IN R *)
+Theorem RING_SUB = ring_sub_element
+
+(* |- !r. Ring r ==> !x y. x IN R /\ y IN R ==> ring_mul r x y IN R *)
+Theorem RING_MUL = ring_mult_element
+
+(* |- !r. Ring r ==> !x. x IN R ==> ring_add r #0 x = x *)
+Theorem RING_ADD_LZERO = ring_add_lzero
+
+(* |- !r. Ring r ==> !x. x IN R ==> ring_mul r #1 x = x *)
+Theorem RING_MUL_LID = ring_mult_lone
+
+(* |- !r. Ring r ==> !x. x IN R ==> ring_mul r #0 x = #0 *)
+Theorem RING_MUL_LZERO = ring_mult_lzero
+
+(* ------------------------------------------------------------------------- *)
+(* Homomorphisms etc.                                                        *)
+(* ------------------------------------------------------------------------- *)
 
 Overload ring_homomorphism[local] = “\(r,s) (f :'a -> 'b). RingHomo f r s”
 
@@ -76,35 +114,6 @@ Definition ring_monomorphism :
         ring_homomorphism (r,r') f /\
         !x y. x IN ring_carrier r /\ y IN ring_carrier r /\ f x = f y ==> x = y
 End
-
-(* |- !r. Ring r ==> ring_0 r IN ring_carrier r *)
-Theorem RING_0 = ring_zero_element
-
-(* |- !r. Ring r ==> ring_1 r IN ring_carrier r *)
-Theorem RING_1 = ring_one_element
-
-(* |- !r. Ring r ==> !x. x IN R ==> ring_neg r x IN ring_carrier r *)
-Theorem RING_NEG = ring_neg_element
-
-(* |- !r. Ring r ==> ring_neg r (ring_0 r) = ring_0 r *)
-Theorem RING_NEG_0 = ring_neg_zero
-
-(* |- !r. Ring r ==>
-          !x. x IN ring_carrier r ==> !n. ring_pow r x n IN ring_carrier r
- *)
-Theorem RING_POW = ring_exp_element
-
-(* |- !r. Ring r ==>
-          !x y. x IN ring_carrier r /\ y IN ring_carrier r ==>
-                ring_add r x y IN ring_carrier r
- *)
-Theorem RING_ADD = ring_add_element
-
-(* |- !r. Ring r ==> !x y. x IN R /\ y IN R ==> x - y IN R *)
-Theorem RING_SUB = ring_sub_element
-
-(* |- !r. Ring r ==> !x y. x IN R /\ y IN R ==> ring_mul r x y IN R *)
-Theorem RING_MUL = ring_mult_element
 
 Theorem RING_HOMOMORPHISM_0 :
     !r r' (f :'a -> 'b). Ring r /\ Ring r' /\ ring_homomorphism(r,r') f ==>
@@ -301,6 +310,131 @@ Proof
               RING_HOMOMORPHISM_ADD, RING_HOMOMORPHISM_SUB,
               RING_HOMOMORPHISM_MUL]
 QED
+
+(* ------------------------------------------------------------------------- *)
+(* Charaterizing trivial (zero) rings.                                       *)
+(* ------------------------------------------------------------------------- *)
+
+Definition trivial_ring :
+    trivial_ring r <=> Ring r /\ ring_carrier r = {ring_0 r}
+End
+
+Theorem TRIVIAL_RING_10 :
+    !r :'a ring. trivial_ring r <=> Ring r /\ ring_1 r = ring_0 r
+Proof
+  REWRITE_TAC[trivial_ring, EXTENSION, IN_SING] THEN
+  MESON_TAC[RING_1, RING_0, RING_MUL_LID, RING_MUL_LZERO]
+QED
+
+(* ------------------------------------------------------------------------- *)
+(* "Extensional" functions, mapping to a fixed value ARB outside the domain. *)
+(* Even though these are still total, they're a conveniently better model    *)
+(* of the partial function space (e.g. the space has the right cardinality). *)
+(* ------------------------------------------------------------------------- *)
+
+Definition EXTENSIONAL :
+    EXTENSIONAL s = {f :'a -> 'b | !x. ~(x IN s) ==> f x = ARB}
+End
+
+(* ------------------------------------------------------------------------- *)
+(* Restriction of a function to an EXTENSIONAL one on a subset.              *)
+(* ------------------------------------------------------------------------- *)
+
+Definition RESTRICTION :
+    RESTRICTION s (f :'a -> 'b) x = if x IN s then f x else ARB
+End
+
+(* ------------------------------------------------------------------------- *)
+(* General Cartesian product / dependent function space.                     *)
+(* ------------------------------------------------------------------------- *)
+
+Definition cartesian_product :
+    cartesian_product k s =
+        {f :'k -> 'a | EXTENSIONAL k f /\ !i. i IN k ==> f i IN s i}
+End
+
+(* ------------------------------------------------------------------------- *)
+
+(* 1. ring_carrier
+   2. ring_0
+   3. ring_1
+   4. ring_neg
+   5. ring_add
+   6. ring_mul
+
+Definition product_ring :
+    product_ring k (r :'k -> 'a ring) =
+        let c = cartesian_product k (\i. ring_carrier(r i));
+            g = <| carrier := c;
+                   op := (\x y. RESTRICTION k (\i. ring_add (r i) (x i) (y i)));
+                   id := RESTRICTION k (\i. ring_0 (r i));
+                   inv := (\x. RESTRICTION k (\i. ring_neg (r i) (x i))) |>;
+            m = <| carrier := c;
+                   op := (\x y. RESTRICTION k (\i. ring_mul (r i) (x i) (y i)));
+                   id := RESTRICTION k (\i. ring_1 (r i)) |>
+        in
+          <| carrier := c; sum := g; prod := m |>
+End
+
+Theorem RING_TOTALIZATION_lemma :
+    !r :'a ring.
+            ~(trivial_ring r) /\ INFINITE univ(:'b) /\ univ(:'a) <=_c univ(:'b)
+            ==> ring_carrier(product_ring (:'b) (\i. r)) =_c univ(:'b -> bool)
+Proof
+      REPEAT STRIP_TAC THEN REWRITE_TAC[PRODUCT_RING] THEN
+      REWRITE_TAC[CARTESIAN_PRODUCT_CONST; GSYM CARD_EXP_UNIV] THEN
+      MATCH_MP_TAC CARD_EXP_ABSORB THEN ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
+       [TRANS_TAC CARD_LE_TRANS `{ring_0 r:A,ring_1 r:A}` THEN
+        CONJ_TAC THENL
+         [SIMP_TAC[CARD_LE_CARD; FINITE_INSERT; FINITE_EMPTY; FINITE_BOOL;
+                   CARD_BOOL; CARD_CLAUSES] THEN
+          RULE_ASSUM_TAC(REWRITE_RULE[TRIVIAL_RING_10]) THEN
+          ASM_REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN
+          CONV_TAC NUM_REDUCE_CONV;
+          MATCH_MP_TAC CARD_LE_SUBSET THEN
+          REWRITE_TAC[INSERT_SUBSET; EMPTY_SUBSET; RING_0; RING_1]];
+        TRANS_TAC CARD_LE_TRANS `(:A)` THEN
+        ASM_SIMP_TAC[CARD_LE_SUBSET; SUBSET_UNIV] THEN
+        TRANS_TAC CARD_LE_TRANS `(:B)` THEN ASM_REWRITE_TAC[] THEN
+        SIMP_TAC[CARD_EXP_CANTOR; CARD_LT_IMP_LE]])
+QED
+
+Theorem RING_TOTALIZATION :
+    !r :'a ring.
+          (?r' f. ring_carrier r' = (:1) /\
+                  ring_monomorphism(r,r') f) \/
+          (?r' f. ring_carrier r' = (:num#A->bool) /\
+                  ring_monomorphism(r,r') f)
+Proof
+    GEN_TAC THEN ASM_CASES_TAC `trivial_ring(r:A ring)` THENL
+     [DISJ1_TAC THEN EXISTS_TAC `singleton_ring one` THEN
+      EXISTS_TAC `(\x. one):A->1` THEN
+      ASM_SIMP_TAC[RING_MONOMORPHISM_FROM_TRIVIAL_RING;
+                   RING_HOMOMORPHISM_FROM_TRIVIAL_RING] THEN
+      ASM_SIMP_TAC[TRIVIAL_RING_SINGLETON_RING; SINGLETON_RING] THEN
+      REWRITE_TAC[IMAGE_CONST; RING_CARRIER_NONEMPTY] THEN
+      REWRITE_TAC[EXTENSION; IN_UNIV; IN_SING; FORALL_ONE_THM];
+      DISJ2_TAC] THEN
+    MP_TAC(snd(EQ_IMP_RULE(ISPECL
+     [`product_ring (:num#A) (\i. (r:A ring))`; `(:num#A->bool)`]
+     ISOMORPHIC_COPY_OF_RING))) THEN
+    ANTS_TAC THENL
+     [MATCH_MP_TAC lemma THEN
+      ASM_REWRITE_TAC[GSYM MUL_C_UNIV; INFINITE; CARD_MUL_FINITE_EQ] THEN
+      REWRITE_TAC[UNIV_NOT_EMPTY; DE_MORGAN_THM; GSYM INFINITE] THEN
+      REWRITE_TAC[num_INFINITE; MUL_C_UNIV] THEN
+      REWRITE_TAC[le_c] THEN EXISTS_TAC `\x:A. 0,x` THEN
+      REWRITE_TAC[IN_UNIV; PAIR_EQ];
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `r':(num#A->bool)ring` THEN
+      STRIP_TAC THEN ASM_REWRITE_TAC[]] THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [isomorphic_ring]) THEN
+    DISCH_THEN(X_CHOOSE_TAC `f:(num#A->A)->num#A->bool`) THEN
+    EXISTS_TAC `(f:(num#A->A)->num#A->bool) o (\x i. x)` THEN
+    MATCH_MP_TAC RING_MONOMORPHISM_COMPOSE THEN
+    EXISTS_TAC `product_ring (:num#A) (\i. (r:A ring))` THEN
+    REWRITE_TAC[RING_MONOMORPHISM_DIAGONAL_UNIV] THEN
+    ASM_SIMP_TAC[RING_ISOMORPHISM_IMP_MONOMORPHISM]) in
+*)
 
 val _ = export_theory();
 val _ = html_theory "ringLib";

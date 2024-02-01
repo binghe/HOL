@@ -205,7 +205,12 @@ val _ = Hol_datatype`
 *)
 val _ = type_abbrev ("group", Type `:'a monoid`);
 
-(* Define Group by Monoid *)
+(* Define Group by Monoid
+
+   NOTE:
+val _ = overload_on ("G", ``g.carrier``);
+val _ = overload_on ("G*", ``monoid_invertibles g``);
+ *)
 val Group_def = Define`
   Group (g:'a group) <=>
     Monoid g /\ (G* = G)
