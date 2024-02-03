@@ -358,10 +358,10 @@ Definition subterm_def :
     subterm X M (x::xs) = if solvable M then
         let M0 = principle_hnf M;
              n = LAMl_size M0;
+             m = hnf_children_size M0;
             vs = FRESH_list n (X UNION FV M);
             M1 = principle_hnf (M0 @* (MAP VAR vs));
-            Ms = hnf_children M1;
-             m = LENGTH Ms
+            Ms = hnf_children M1
         in
             if x < m then subterm (X UNION set vs) (EL x Ms) xs else NONE
     else
@@ -373,10 +373,10 @@ Theorem subterm_of_solvables :
                subterm X M (x::xs) =
         let M0 = principle_hnf M;
              n = LAMl_size M0;
+             m = hnf_children_size M0;
             vs = FRESH_list n (X UNION FV M);
             M1 = principle_hnf (M0 @* (MAP VAR vs));
-            Ms = hnf_children M1;
-             m = LENGTH Ms
+            Ms = hnf_children M1
         in
             if x < m then subterm (X UNION set vs) (EL x Ms) xs else NONE
 Proof
@@ -426,14 +426,16 @@ QED
    even improved to an iff, as the present theorem shows.
  *)
 Theorem subterm_is_none_iff_parent_unsolvable :
-    !p X M. p IN ltree_paths (BTe X M) ==>
+    !p X M. FINITE X /\ p IN ltree_paths (BTe X M) ==>
            (subterm X M p = NONE <=>
             p <> [] /\ subterm X M (FRONT p) <> NONE /\
             unsolvable (subterm' X M (FRONT p)))
 Proof
-    Induct_on ‘p’ >> rw [subterm_def] (* 2 subgoals, only one left *)
+    Induct_on ‘p’
+ >> rw [subterm_def] (* 2 subgoals, only one left *)
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> qabbrev_tac ‘n = LAMl_size M0’
+ >> qabbrev_tac ‘m = hnf_children_size M0’
  >> qabbrev_tac ‘vs = FRESH_list n (X UNION FV M)’
  >> qabbrev_tac ‘M1 = principle_hnf (M0 @* (MAP VAR vs))’
  >> qabbrev_tac ‘Ms = hnf_children M1’
@@ -442,6 +444,28 @@ Proof
      Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BTe X M)’ MP_TAC \\
      simp [BT_of_unsolvables, ltree_paths_def, ltree_lookup_def])
  >> simp []
+ >> Know ‘m = LENGTH Ms’
+ >- (qunabbrev_tac ‘M1’ \\
+    ‘ALL_DISTINCT vs /\ LENGTH vs = n /\ DISJOINT (set vs) (X UNION FV M)’
+        by (rw [Abbr ‘vs’, FRESH_list_def]) \\
+    ‘hnf M0’ by rw [hnf_principle_hnf', Abbr ‘M0’] \\
+     Know ‘?y args. M0 = LAMl (TAKE n vs) (VAR y @* args)’
+     >- (qunabbrev_tac ‘n’ >> irule (iffLR hnf_cases_shared) >> rw [] \\
+         MATCH_MP_TAC DISJOINT_SUBSET \\
+         Q.EXISTS_TAC ‘X UNION FV M’ >> art [] \\
+         Suff ‘FV M0 SUBSET FV M’ >- SET_TAC [] \\
+         qunabbrev_tac ‘M0’ >> MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art []) \\
+     STRIP_TAC \\
+    ‘TAKE n vs = vs’ by rw [] \\
+     POP_ASSUM (REV_FULL_SIMP_TAC std_ss o wrap) \\
+     qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’ \\
+     Know ‘M1 = VAR y @* args’
+     >- (qunabbrev_tac ‘M1’ >> POP_ORW \\
+         MATCH_MP_TAC principle_hnf_beta_reduce >> rw [hnf_appstar]) \\
+     qunabbrev_tac ‘Ms’ \\
+     Rewr' >> simp [hnf_children_hnf] \\
+     qunabbrev_tac ‘m’ >> simp [hnf_children_size_hnf])
+ >> DISCH_TAC
  (* stage work, now M is solvable *)
  >> Cases_on ‘p = []’
  >- (rw [subterm_NIL] \\
@@ -470,7 +494,7 @@ Proof
 QED
 
 Theorem subterm_is_none_imp_parent_not :
-    !p X M. p IN ltree_paths (BTe X M) /\
+    !p X M. FINITE X /\ p IN ltree_paths (BTe X M) /\
             subterm X M p = NONE ==> subterm X M (FRONT p) <> NONE
 Proof
     METIS_TAC [subterm_is_none_iff_parent_unsolvable]
@@ -522,9 +546,6 @@ Proof
  >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘N’, ‘M0’, ‘M0'’, ‘n’, ‘vs’, ‘M1’, ‘M1'’]
                      lameq_principle_hnf_thm') >> simp []
  >> RW_TAC std_ss [Abbr ‘m’, Abbr ‘m'’]
- >> qabbrev_tac ‘m = LENGTH Ms'’
- >> Cases_on ‘h < m’ >> simp []
- >> Cases_on ‘p = []’ >> fs []
  (* preparing for hnf_children_FV_SUBSET
 
     Here, once again, we need to get suitable explicit forms of P0 and Q0,
@@ -533,7 +554,7 @@ Proof
  >> ‘hnf M0 /\ hnf M0'’ by PROVE_TAC [hnf_principle_hnf']
  >> qabbrev_tac ‘n = LAMl_size M0’
  >> ‘ALL_DISTINCT vs /\ LENGTH vs = n /\ DISJOINT (set vs) X’
-      by rw [Abbr ‘vs’, FRESH_list_def]
+       by rw [Abbr ‘vs’, FRESH_list_def]
  >> Know ‘DISJOINT (set vs) (FV M0)’
  >- (MATCH_MP_TAC DISJOINT_SUBSET \\
      Q.EXISTS_TAC ‘X’ >> art [] \\
@@ -563,7 +584,20 @@ Proof
  >> qunabbrevl_tac [‘M1’, ‘M1'’]
  >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
  >> qabbrev_tac ‘M1' = principle_hnf (M0' @* MAP VAR vs)’
- (* final stage *)
+ >> Know ‘LENGTH args = LENGTH Ms’
+ >- (qunabbrev_tac ‘Ms’ \\
+     Q.PAT_X_ASSUM ‘M1 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap) \\
+     simp [hnf_children_hnf])
+ >> Rewr'
+ >> Know ‘LENGTH args' = LENGTH Ms'’
+ >- (qunabbrev_tac ‘Ms'’ \\
+     Q.PAT_X_ASSUM ‘M1' = VAR y' @* args'’ (ONCE_REWRITE_TAC o wrap) \\
+     simp [hnf_children_hnf])
+ >> Rewr'
+ >> qabbrev_tac ‘m = LENGTH Ms'’
+ >> Cases_on ‘h < m’ >> simp []
+ >> Cases_on ‘p = []’ >> fs []
+  (* final stage *)
  >> FIRST_X_ASSUM MATCH_MP_TAC >> simp []
  >> CONJ_TAC (* 2 subgoals *)
  >| [ (* goal 1 (of 2) *)
@@ -624,8 +658,6 @@ Proof
  >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘N’, ‘M0’, ‘M0'’, ‘n’, ‘vs’, ‘M1’, ‘M1'’]
                      lameq_principle_hnf_thm') >> simp []
  >> RW_TAC std_ss [Abbr ‘m’, Abbr ‘m'’]
- >> qabbrev_tac ‘m = LENGTH Ms'’
- >> Cases_on ‘p = []’ >> fs []
  (* preparing for hnf_children_FV_SUBSET *)
  >> ‘hnf M0 /\ hnf M0'’ by PROVE_TAC [hnf_principle_hnf']
  >> qabbrev_tac ‘n = LAMl_size M0’
@@ -656,10 +688,22 @@ Proof
  >> Q.PAT_X_ASSUM ‘n = LAMl_size M0'’ (rfs o wrap o SYM)
  >> ‘TAKE n vs = vs’ by rw [TAKE_LENGTH_ID_rwt]
  >> POP_ASSUM (rfs o wrap)
- (* refine P1 and Q1 again for clear assumptions using them *)
+  (* refine P1 and Q1 again for clear assumptions using them *)
  >> qunabbrevl_tac [‘M1’, ‘M1'’]
  >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
  >> qabbrev_tac ‘M1' = principle_hnf (M0' @* MAP VAR vs)’
+ >> Know ‘LENGTH args = LENGTH Ms’
+ >- (qunabbrev_tac ‘Ms’ \\
+     Q.PAT_X_ASSUM ‘M1 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap) \\
+     simp [hnf_children_hnf])
+ >> DISCH_TAC
+ >> Know ‘LENGTH args' = LENGTH Ms'’
+ >- (qunabbrev_tac ‘Ms'’ \\
+     Q.PAT_X_ASSUM ‘M1' = VAR y' @* args'’ (ONCE_REWRITE_TAC o wrap) \\
+     simp [hnf_children_hnf])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘m = LENGTH Ms'’
+ >> Cases_on ‘p = []’ >> fs []
  (* final stage *)
  >> FIRST_X_ASSUM MATCH_MP_TAC >> simp []
  >> CONJ_TAC (* 2 subgoals *)
@@ -1836,8 +1880,20 @@ Proof
 
     subterm' Z (apply (p3 ++ p2 ++ p1) M) p ==
     subterm' Z (VAR b @* args' @* MAP VAR as) p
-
    *)
+ >> Q.EXISTS_TAC ‘FV M UNION set vs’
+ >> MATCH_MP_TAC lameq_TRANS
+ >> Q.EXISTS_TAC ‘(FEMPTY |+ (y,P)) ' (subterm' (FV M UNION set vs) M0 p)’
+ >> reverse CONJ_TAC
+ >- (MATCH_MP_TAC lameq_ssub_cong \\
+     MATCH_MP_TAC lameq_subterm_cong \\
+     CONJ_TAC >- simp [] (* FINITE *) \\
+     CONJ_TAC >- (Suff ‘FV M0 SUBSET FV M’ >- SET_TAC [] \\
+                  qunabbrev_tac ‘M0’ \\
+                  MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art []) \\
+     CONJ_TAC >- (qunabbrev_tac ‘M0’ \\
+                  MATCH_MP_TAC lameq_principle_hnf_reduce' >> art []) \\
+     cheat)
  >> cheat
 QED
 
