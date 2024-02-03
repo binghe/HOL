@@ -371,7 +371,43 @@ Definition product_ring :
           <| carrier := c; sum := g; prod := m |>
 End
 
-(*
+Theorem PRODUCT_RING :
+   (!k (r :'k -> 'a ring).
+        ring_carrier(product_ring k r) =
+          cartesian_product k (\i. ring_carrier(r i))) /\
+   (!k (r :'k -> 'a ring).
+        ring_0 (product_ring k r) =
+          RESTRICTION k (\i. ring_0 (r i))) /\
+   (!k (r :'k -> 'a ring).
+        ring_1 (product_ring k r) =
+          RESTRICTION k (\i. ring_1 (r i))) /\
+   (!k (r :'k -> 'a ring).
+        ring_neg (product_ring k r) =
+          \x. RESTRICTION k (\i. ring_neg (r i) (x i))) /\
+   (!k (r :'k -> 'a ring).
+        ring_add (product_ring k r) =
+          (\x y. RESTRICTION k (\i. ring_add (r i) (x i) (y i)))) /\
+   (!k (r :'k -> 'a ring).
+        ring_mul (product_ring k r) =
+          (\x y. RESTRICTION k (\i. ring_mul (r i) (x i) (y i))))
+Proof
+  REWRITE_TAC[AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
+  MP_TAC(fst(EQ_IMP_RULE
+   (ISPEC(rand(rand(snd(strip_forall(concl product_ring)))))
+   (CONJUNCT2 ring_tybij)))) THEN
+  REWRITE_TAC[GSYM product_ring] THEN ANTS_TAC THENL
+   [REWRITE_TAC[cartesian_product; RESTRICTION; EXTENSIONAL; IN_ELIM_THM] THEN
+    REWRITE_TAC[FUN_EQ_THM; RESTRICTION] THEN
+    REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+    REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
+    ASM_SIMP_TAC[RING_ADD_LDISTRIB; RING_ADD_LZERO; RING_ADD_LNEG;
+      RING_MUL_LID; RING_0; RING_1; RING_NEG; RING_ADD; RING_MUL] THEN
+    ASM_SIMP_TAC[RING_MUL_AC; RING_ADD_AC; RING_ADD; RING_MUL];
+    DISCH_TAC THEN
+    ASM_REWRITE_TAC[ring_carrier, ring_0, ring_1,
+                    ring_neg, ring_add, ring_mul]]
+QED
+
 Theorem RING_TOTALIZATION_lemma :
     !r :'a ring.
             ~(trivial_ring r) /\ INFINITE univ(:'b) /\ univ(:'a) <=_c univ(:'b)
