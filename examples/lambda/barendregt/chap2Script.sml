@@ -5,7 +5,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open pred_setTheory pred_setLib listTheory rich_listTheory finite_mapTheory
-     arithmeticTheory hurdUtils;
+     arithmeticTheory string_numTheory hurdUtils;
 
 open termTheory BasicProvers nomsetTheory binderLib appFOLDLTheory;
 
@@ -1155,7 +1155,7 @@ val _ = remove_ovl_mapping "Y" {Thy = "chap2", Name = "Y"}
 
 (* permutator [1, p.247] *)
 Definition permutator_def :
-    permutator n = let Z = FRESH_list (n + 1) {};
+    permutator n = let Z = GENLIST n2s (n + 1);
                        z = LAST Z;
                    in
                        LAMl Z (VAR z @* MAP VAR (FRONT Z))
@@ -1165,8 +1165,9 @@ Theorem closed_permutator :
     !n. closed (permutator n)
 Proof
     rw [closed_def, permutator_def, FV_LAMl]
- >> qabbrev_tac ‘Z = FRESH_list (n + 1) {}’
- >> ‘ALL_DISTINCT Z /\ LENGTH Z = n + 1’ by rw [FRESH_list_def, Abbr ‘Z’]
+ >> qabbrev_tac ‘Z = GENLIST n2s (n + 1)’
+ >> ‘ALL_DISTINCT Z /\ LENGTH Z = n + 1’
+       by (rw [Abbr ‘Z’, ALL_DISTINCT_GENLIST])
  >> ‘Z <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
  >> qabbrev_tac ‘z = LAST Z’
  >> ‘MEM z Z’ by rw [Abbr ‘z’, MEM_LAST_NOT_NIL]
@@ -1183,8 +1184,9 @@ Theorem permutator_thm :
 Proof
     RW_TAC std_ss [permutator_def]
  >> qabbrev_tac ‘n = LENGTH Ns’
- >> qabbrev_tac ‘Z = FRESH_list (n + 1) {}’
- >> ‘ALL_DISTINCT Z /\ LENGTH Z = n + 1’ by rw [FRESH_list_def, Abbr ‘Z’]
+ >> qabbrev_tac ‘Z = GENLIST n2s (n + 1)’
+ >> ‘ALL_DISTINCT Z /\ LENGTH Z = n + 1’
+       by (rw [Abbr ‘Z’, ALL_DISTINCT_GENLIST])
  >> ‘Z <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
  >> qabbrev_tac ‘z = LAST Z’
  >> ‘MEM z Z’ by rw [Abbr ‘z’, MEM_LAST_NOT_NIL]
