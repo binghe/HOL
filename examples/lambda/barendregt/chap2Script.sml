@@ -1340,6 +1340,91 @@ Proof
  >> rw [Abbr ‘y’, MEM_LAST_NOT_NIL]
 QED
 
+Definition selector_def :
+    selector i n = LAMl (GENLIST n2s n) (VAR (n2s i))
+End
+
+Theorem closed_selector :
+    !i n. i < n ==> closed (selector i n)
+Proof
+    rw [closed_def, selector_def, FV_LAMl]
+ >> POP_ASSUM MP_TAC >> rw [MEM_GENLIST]
+QED
+
+(* |- !i n. i < n ==> FV (selector i n) = {} *)
+Theorem FV_selector[simp] = REWRITE_RULE [closed_def] closed_selector
+
+Theorem selector_thm :
+    !i n Ns. i < n /\ LENGTH Ns = n ==> selector i n @* Ns == EL i Ns
+Proof
+    RW_TAC std_ss [selector_def]
+ >> qabbrev_tac ‘n = LENGTH Ns’
+ >> qabbrev_tac ‘Z = GENLIST n2s n’
+ >> ‘ALL_DISTINCT Z /\ LENGTH Z = n’ by rw [Abbr ‘Z’, ALL_DISTINCT_GENLIST]
+ >> ‘Z <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
+ >> qabbrev_tac ‘z = n2s i’
+ >> Know ‘MEM z Z’
+ >- (rw [Abbr ‘Z’, Abbr ‘z’, MEM_GENLIST] \\
+     Q.EXISTS_TAC ‘i’ >> art [])
+ >> DISCH_TAC
+ (* preparing for LAMl_ALPHA_ssub *)
+ >> qabbrev_tac
+     ‘Y = FRESH_list n (set Z UNION (BIGUNION (IMAGE FV (set Ns))))’
+ >> Know ‘FINITE (set Z UNION (BIGUNION (IMAGE FV (set Ns))))’
+ >- (rw [] >> rw [FINITE_FV])
+ >> DISCH_TAC
+ >> Know ‘ALL_DISTINCT Y /\
+          DISJOINT (set Y) (set Z UNION (BIGUNION (IMAGE FV (set Ns)))) /\
+          LENGTH Y = n’
+ >- (ASM_SIMP_TAC std_ss [FRESH_list_def, Abbr ‘Y’])
+ >> rw []
+ (* applying LAMl_ALPHA_ssub *)
+ >> Know ‘LAMl Z (VAR z) = LAMl Y ((FEMPTY |++ ZIP (Z,MAP VAR Y)) ' (VAR z))’
+ >- (MATCH_MP_TAC LAMl_ALPHA_ssub >> rw [] \\
+     Q.PAT_X_ASSUM ‘DISJOINT (set Z) (set Y)’ MP_TAC \\
+     rw [DISJOINT_ALT])
+ >> Rewr'
+ >> ‘Y <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
+ >> REWRITE_TAC [GSYM fromPairs_def]
+ >> qabbrev_tac ‘fm = fromPairs Z (MAP VAR Y)’
+ >> ‘FDOM fm = set Z’ by rw [FDOM_fromPairs, Abbr ‘fm’]
+ >> Know ‘fm ' (VAR z) = EL i (MAP VAR Y)’
+ >- (rw [ssub_thm] \\
+     Know ‘z = EL i Z’
+     >- (simp [Abbr ‘Z’, Abbr ‘z’] \\
+         fs [LENGTH_GENLIST, EL_GENLIST]) >> Rewr' \\
+     qunabbrev_tac ‘fm’ \\
+     MATCH_MP_TAC fromPairs_FAPPLY_EL >> rw [])
+ >> Rewr'
+ (* stage work *)
+ >> qabbrev_tac ‘t = EL i (MAP VAR Y)’
+ >> MATCH_MP_TAC lameq_TRANS
+ >> Q.EXISTS_TAC ‘(FEMPTY |++ ZIP (Y,Ns)) ' t’
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC lameq_LAMl_appstar_ssub >> rw [] \\
+     ONCE_REWRITE_TAC [DISJOINT_SYM] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘x’ >> art [])
+ (* cleanup ‘fm’ *)
+ >> Q.PAT_X_ASSUM ‘FDOM fm = set Z’ K_TAC
+ >> qunabbrev_tac ‘fm’
+ (* stage work *)
+ >> REWRITE_TAC [GSYM fromPairs_def]
+ >> qabbrev_tac ‘fm = fromPairs Y Ns’
+ >> ‘FDOM fm = set Y’ by rw [Abbr ‘fm’, FDOM_fromPairs]
+ >> qunabbrev_tac ‘t’
+ >> simp [EL_MAP]
+ >> Know ‘MEM (EL i Y) Y’
+ >- (rw [MEM_EL] \\
+     Q.EXISTS_TAC ‘i’ >> rw [])
+ >> Rewr
+ >> Q.PAT_X_ASSUM ‘FDOM fm = set Y’ K_TAC
+ >> simp [Abbr ‘fm’]
+ >> Suff ‘fromPairs Y Ns ' (EL i Y) = EL i Ns’ >- rw []
+ >> MATCH_MP_TAC fromPairs_FAPPLY_EL
+ >> rw []
+QED
+
 (* ----------------------------------------------------------------------
     closed terms and closures of (open or closed) terms, leading into
     B's Chapter 2's section “Solvable and unsolvable terms” p41.
