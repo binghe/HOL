@@ -1398,10 +1398,9 @@ Proof
  >> Rewr'
  (* stage work *)
  >> qabbrev_tac ‘t = EL i (MAP VAR Y)’
- >> MATCH_MP_TAC lameq_TRANS
- >> Q.EXISTS_TAC ‘(FEMPTY |++ ZIP (Y,Ns)) ' t’
- >> CONJ_TAC
- >- (MATCH_MP_TAC lameq_LAMl_appstar_ssub >> rw [] \\
+ >> Suff ‘EL i Ns = (FEMPTY |++ ZIP (Y,Ns)) ' t’
+ >- (Rewr' \\
+     MATCH_MP_TAC lameq_LAMl_appstar_ssub >> rw [] \\
      ONCE_REWRITE_TAC [DISJOINT_SYM] \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
      Q.EXISTS_TAC ‘x’ >> art [])
@@ -1409,20 +1408,17 @@ Proof
  >> Q.PAT_X_ASSUM ‘FDOM fm = set Z’ K_TAC
  >> qunabbrev_tac ‘fm’
  (* stage work *)
- >> REWRITE_TAC [GSYM fromPairs_def]
+ >> REWRITE_TAC [Once EQ_SYM_EQ, GSYM fromPairs_def]
  >> qabbrev_tac ‘fm = fromPairs Y Ns’
  >> ‘FDOM fm = set Y’ by rw [Abbr ‘fm’, FDOM_fromPairs]
- >> qunabbrev_tac ‘t’
- >> simp [EL_MAP]
+ >> simp [Abbr ‘t’, EL_MAP]
  >> Know ‘MEM (EL i Y) Y’
  >- (rw [MEM_EL] \\
      Q.EXISTS_TAC ‘i’ >> rw [])
  >> Rewr
  >> Q.PAT_X_ASSUM ‘FDOM fm = set Y’ K_TAC
  >> simp [Abbr ‘fm’]
- >> Suff ‘fromPairs Y Ns ' (EL i Y) = EL i Ns’ >- rw []
- >> MATCH_MP_TAC fromPairs_FAPPLY_EL
- >> rw []
+ >> MATCH_MP_TAC fromPairs_FAPPLY_EL >> rw []
 QED
 
 (* ----------------------------------------------------------------------
