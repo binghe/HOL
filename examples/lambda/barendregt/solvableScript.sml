@@ -832,12 +832,12 @@ Proof
  >> FIRST_X_ASSUM MATCH_MP_TAC >> rw []
 QED
 
-(* ‘principle_hnf’ can be used to do final beta-reductions to make a hnf abs-free
+(* ‘principle_hnf’ can be used to do final beta-reductions for an abs-free hnf
 
    NOTE: to satisfy ‘DISJOINT (set xs) (set ys)’, one first get ‘LENGTH xs’
          without knowing ‘xs’ (e.g. by ‘LAMl_size’), then generate ‘ys’ by
-        ‘FRESH_list’, and then call ‘hnf_cases_genX’ using ‘ys’ as the excluded
-         list.
+        ‘FRESH_list’, and then call [hnf_cases_genX] using ‘ys’ as the new
+         excluded list.
  *)
 Theorem principle_hnf_LAMl_appstar :
     !t xs ys. hnf t /\
@@ -845,7 +845,7 @@ Theorem principle_hnf_LAMl_appstar :
               LENGTH xs = LENGTH ys /\
               DISJOINT (set xs) (set ys) /\
               DISJOINT (set ys) (FV t)
-          ==> principle_hnf (LAMl xs t @* (MAP VAR ys)) = tpm (ZIP (xs,ys)) t
+          ==> principle_hnf (LAMl xs t @* MAP VAR ys) = tpm (ZIP (xs,ys)) t
 Proof
     RW_TAC std_ss []
  >> qabbrev_tac ‘n = LENGTH xs’

@@ -733,6 +733,89 @@ Proof
       qunabbrev_tac ‘M0'’ >> MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [] ]
 QED
 
+(* NOTE: since ‘subterm X M p’ is correct for whatever X supplied, changing ‘X’ to
+   something else shouldn't change the properties of ‘subterm X M p’, as long as
+   these properties are not directly related to specific choices of ‘vs’.
+ *)
+Theorem subterm_not_none_imp_forall :
+    !p M. (?X. FINITE X /\ subterm X M p <> NONE) ==>
+           !X. FINITE X ==> subterm X M p <> NONE
+Proof
+    Induct_on ‘p’ >- rw []
+ >> rpt GEN_TAC
+ >> simp [subterm_def]
+ >> Cases_on ‘solvable M’ >> simp []
+ >> qabbrev_tac ‘M0 = principle_hnf M’
+ >> qabbrev_tac ‘m = hnf_children_size M0’
+ >> Cases_on ‘h < m’ >> simp []
+ >> qabbrev_tac ‘n = LAMl_size M0’
+ >> STRIP_TAC
+ >> qabbrev_tac ‘vs = FRESH_list n (X UNION FV M)’
+ >> Know ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (X UNION FV M) /\ LENGTH vs = n’
+ >- (rw [Abbr ‘vs’, FRESH_list_def])
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
+ >> qabbrev_tac ‘Y = X UNION set vs’
+ >> ‘FINITE Y’ by rw [Abbr ‘Y’]
+ >> Q.X_GEN_TAC ‘Z’
+ >> DISCH_TAC
+ >> qabbrev_tac ‘vs1 = FRESH_list n (Z UNION FV M)’
+ >> Know ‘ALL_DISTINCT vs1 /\ DISJOINT (set vs1) (Z UNION FV M) /\ LENGTH vs1 = n’
+ >- (rw [Abbr ‘vs1’, FRESH_list_def])
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
+ (* now the key is to choose the explicit representation of M0 such that both
+
+    principle_hnf (M0 @* MAP VAR vs)   and
+    principle_hnf (M0 @* MAP VAR vs1)
+
+    can be reduced to tpm of M0. It seems that defining another ‘vs2’ is a must.
+  *)
+ >> qabbrev_tac ‘vs2 = FRESH_list n (set vs UNION set vs1 UNION Z UNION FV M)’
+ >> ‘FINITE (set vs UNION set vs1 UNION Z UNION FV M)’ by rw []
+ >> Know ‘ALL_DISTINCT vs2 /\
+          DISJOINT (set vs2) (set vs UNION set vs1 UNION Z UNION FV M) /\
+          LENGTH vs2 = n’
+ >- (rw [Abbr ‘vs2’, FRESH_list_def])
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
+ >> ‘hnf M0’ by PROVE_TAC [hnf_principle_hnf']
+ >> Know ‘DISJOINT (set vs2) (FV M0)’
+ >- (MATCH_MP_TAC DISJOINT_SUBSET \\
+     Q.EXISTS_TAC ‘FV M’ >> art [] \\
+     qunabbrev_tac ‘M0’ >> MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
+ >> DISCH_TAC
+ >> hnf_tac (“M0 :term”, “vs2 :string list”,
+             “M1 :term”, “y :string”, “args :term list”)
+ >> ‘TAKE n vs2 = vs2’ by rw [TAKE_LENGTH_ID_rwt]
+ >> POP_ASSUM (rfs o wrap)
+ (* stage work *)
+ (*
+ >> qunabbrev_tac ‘M1’
+ >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
+ >> ‘hnf_children M1 = args’ by rw [hnf_children_hnf]
+ >> POP_ASSUM (rfs o wrap)
+ >> ‘FINITE (Z UNION FV M UNION set vs)’ by rw []
+ >> Know ‘ALL_DISTINCT vs' /\ DISJOINT (set vs') (Z UNION FV M) /\ LENGTH vs' = n’
+ >- (rw [Abbr ‘vs'’, FRESH_list_def])
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
+ (* applying principle_hnf_LAMl_appstar *)
+ >> qabbrev_tac ‘t = VAR y @* args’
+ >> Know ‘principle_hnf (LAMl vs t @* MAP VAR vs') = tpm (ZIP (vs,vs')) t’
+ >- (MATCH_MP_TAC principle_hnf_LAMl_appstar \\
+    ‘hnf t’ by rw [Abbr ‘t’, hnf_appstar] >> simp [] \\
+     CONJ_TAC >- rw [Once DISJOINT_SYM] \\
+     MATCH_MP_TAC DISJOINT_SUBSET \\
+     Q.EXISTS_TAC ‘set vs UNION FV M’ \\
+     CONJ_TAC >- rw [DISJOINT_UNION'] \\
+     MATCH_MP_TAC SUBSET_TRANS \\
+     Q.EXISTS_TAC ‘set vs UNION FV M0’ \\
+     reverse CONJ_TAC >- (Suff ‘FV M0 SUBSET FV M’ >- SET_TAC [] \\
+                          qunabbrev_tac ‘M0’ \\
+                          MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art []) \\
+     rw [FV_LAMl])
+ >> Rewr'
+ *)
+ >> cheat
+QED
+
 (*---------------------------------------------------------------------------*
  * FV (free variables) and BV (binding variables) of Boehm trees
  *---------------------------------------------------------------------------*)
@@ -1752,10 +1835,11 @@ Proof
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> ‘hnf M0’ by PROVE_TAC [hnf_principle_hnf, solvable_iff_has_hnf]
  >> qabbrev_tac ‘n = LAMl_size M0’
- (* NOTE: the following excluded set can be ‘X UNION FV M’ *)
- >> qabbrev_tac ‘vs = FRESH_list n (FV M)’
- >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\ LENGTH vs = n’
-       by (rw [Abbr ‘vs’, FRESH_list_def])
+ >> qabbrev_tac ‘vs = FRESH_list n (X UNION FV M)’
+ >> ‘FINITE (X UNION FV M)’ by rw []
+ >> Know ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (X UNION FV M) /\ LENGTH vs = n’
+ >- (rw [Abbr ‘vs’, FRESH_list_def])
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
  (* applying the shared hnf_tac to decompose M0 *)
  >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR (TAKE n vs))’
  >> Know ‘?y args. M0 = LAMl (TAKE n vs) (VAR y @* args)’
@@ -1881,18 +1965,23 @@ Proof
     subterm' Z (apply (p3 ++ p2 ++ p1) M) p ==
     subterm' Z (VAR b @* args' @* MAP VAR as) p
    *)
- >> Q.EXISTS_TAC ‘FV M UNION set vs’
+ >> qabbrev_tac ‘Z = X UNION FV M UNION set vs’
+ >> Q.EXISTS_TAC ‘Z’
  >> MATCH_MP_TAC lameq_TRANS
- >> Q.EXISTS_TAC ‘(FEMPTY |+ (y,P)) ' (subterm' (FV M UNION set vs) M0 p)’
+ >> Q.EXISTS_TAC ‘(FEMPTY |+ (y,P)) ' (subterm' Z M0 p)’
  >> reverse CONJ_TAC
  >- (MATCH_MP_TAC lameq_ssub_cong \\
      MATCH_MP_TAC lameq_subterm_cong \\
-     CONJ_TAC >- simp [] (* FINITE *) \\
-     CONJ_TAC >- (Suff ‘FV M0 SUBSET FV M’ >- SET_TAC [] \\
+     CONJ_TAC >- (simp [Abbr ‘Z’]) (* FINITE *) \\
+     CONJ_TAC >- (qunabbrev_tac ‘Z’ \\
+                  Suff ‘FV M0 SUBSET FV M’ >- SET_TAC [] \\
                   qunabbrev_tac ‘M0’ \\
                   MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art []) \\
      CONJ_TAC >- (qunabbrev_tac ‘M0’ \\
                   MATCH_MP_TAC lameq_principle_hnf_reduce' >> art []) \\
+     reverse CONJ_TAC
+     >- (MATCH_MP_TAC subterm_not_none_forall_lemma \\
+         Q.EXISTS_TAC ‘X’ >> art []) \\
      cheat)
  >> cheat
 QED
