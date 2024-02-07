@@ -203,7 +203,7 @@ end;
    NOTE: X is an sufficiently large finite set of names covering all FVs of
          M and N. The Boehm trees of M and N are generated with help of this set.
 
-   TODO: this theorem can be improved to an iff: M == N <=> BTe X M = BTe X N
+   NOTE2: this theorem can be improved to an iff: M == N <=> BTe X M = BTe X N
  *)
 Theorem lameq_BT_cong :
     !X M N. FINITE X /\ FV M UNION FV N SUBSET X ==>
@@ -403,9 +403,10 @@ QED
         (instead of ‘FV M’) in the definition of [subterm_def].
  *)
 Theorem subterm_of_principle_hnf :
-    !X M p. solvable M /\ p <> [] ==> subterm X M p = subterm X (principle_hnf M) p
+    !X M p. solvable M /\ p <> [] ==> subterm X (principle_hnf M) p = subterm X M p
 Proof
     rpt STRIP_TAC
+ >> ONCE_REWRITE_TAC [EQ_SYM_EQ]
  >> Cases_on ‘p’ >> fs []
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> ‘solvable M0’ by PROVE_TAC [solvable_principle_hnf]
@@ -2005,23 +2006,15 @@ Proof
  >> qabbrev_tac ‘Z = X UNION FV M UNION set vs’
  >> ‘FINITE Z’ by rw [Abbr ‘Z’]
  >> Q.EXISTS_TAC ‘Z’
+ (* RHS rewriting from M to M0 *)
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘(FEMPTY |+ (y,P)) ' (subterm' Z M0 p)’
  >> reverse CONJ_TAC
  >- (MATCH_MP_TAC lameq_ssub_cong \\
-     MATCH_MP_TAC lameq_subterm_cong \\
-     CONJ_TAC >- (simp [Abbr ‘Z’]) (* FINITE *) \\
-     CONJ_TAC >- (qunabbrev_tac ‘Z’ \\
-                  Suff ‘FV M0 SUBSET FV M’ >- SET_TAC [] \\
-                  qunabbrev_tac ‘M0’ \\
-                  MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art []) \\
-     CONJ_TAC >- (qunabbrev_tac ‘M0’ \\
-                  MATCH_MP_TAC lameq_principle_hnf_reduce' >> art []) \\
-     ONCE_REWRITE_TAC [CONJ_COMM] \\
-     STRONG_CONJ_TAC
-     >- (irule subterm_not_none_imp_forall >> art [] \\
-         Q.EXISTS_TAC ‘X’ >> art []) \\
-     cheat)
+     Suff ‘subterm Z M0 p = subterm Z M p’ >- rw [] \\
+     qunabbrev_tac ‘M0’ \\
+     MATCH_MP_TAC subterm_of_principle_hnf >> art [])
+ (* stage work *)
  >> cheat
 QED
 
