@@ -100,7 +100,6 @@ End
 
 Overload BTe = “\X M. BT (X,M)”
 
-(* BTe is actually the Curry-ized version of BT *)
 Theorem BTe_def :
     !X M. BTe X M = CURRY BT X M
 Proof
@@ -143,6 +142,21 @@ Theorem BT_of_unsolvables_EQ :
     !X M N. unsolvable M /\ unsolvable N ==> BTe X M = BTe X N
 Proof
     rw [BT_of_unsolvables]
+QED
+
+Theorem BT_of_principle_hnf :
+    !X M. solvable M ==> BTe X (principle_hnf M) = BTe X M
+Proof
+    reverse (RW_TAC std_ss [BT_def, BT_generator_def, ltree_unfold])
+ >- (Q.PAT_X_ASSUM ‘unsolvable M0’ MP_TAC >> simp [] \\
+     rw [Abbr ‘M0’, solvable_iff_has_hnf] \\
+     MATCH_MP_TAC hnf_has_hnf \\
+     MATCH_MP_TAC hnf_principle_hnf' >> art [])
+ >> ‘M0' = M0’ by rw [Abbr ‘M0'’, Abbr ‘M0’, principle_hnf_stable']
+ >> qunabbrev_tac ‘M0'’
+ >> POP_ASSUM (rfs o wrap)
+ >> ‘principle_hnf M0 = M0’ by rw [Abbr ‘M0’, principle_hnf_stable']
+ >> POP_ASSUM (rfs o wrap)
 QED
 
 Theorem BT_finite_branching :
@@ -766,7 +780,8 @@ QED
    something else shouldn't change the properties of ‘subterm X M p’, as long as
    these properties are not directly related to specific choices of ‘vs’.
 
-   NOTE2: this (unfinished but possible) theorem is no more needed.
+   NOTE2: this (unfinished but possible) theorem is no more needed. But if it's
+   still needed, the theorem [subterm_tpm] must be proved first.
  *)
 Theorem subterm_not_none_imp_forall :
     !p M. (?X. FINITE X /\ subterm X M p <> NONE) ==>
