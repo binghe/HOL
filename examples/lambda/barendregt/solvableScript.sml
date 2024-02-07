@@ -691,7 +691,18 @@ QED
 
 (* |- !M. solvable M ==> hnf (principle_hnf M) *)
 Theorem hnf_principle_hnf' =
-   REWRITE_RULE [GSYM solvable_iff_has_hnf] hnf_principle_hnf
+    REWRITE_RULE [GSYM solvable_iff_has_hnf] hnf_principle_hnf
+
+Theorem solvable_principle_hnf :
+    !M. solvable M ==> solvable (principle_hnf M)
+Proof
+    rw [solvable_iff_has_hnf]
+ >> MATCH_MP_TAC hnf_has_hnf
+ >> MATCH_MP_TAC hnf_principle_hnf >> art []
+QED
+
+Theorem principle_hnf_has_hnf =
+    REWRITE_RULE [solvable_iff_has_hnf] solvable_principle_hnf
 
 Theorem principle_hnf_reduce[simp] :
     !M. hnf M ==> principle_hnf M = M

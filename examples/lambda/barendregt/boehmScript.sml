@@ -82,7 +82,7 @@ Definition BT_generator_def :
       if solvable M then
          let M0 = principle_hnf M;
               n = LAMl_size M0;
-             vs = FRESH_list n (X UNION FV M);
+             vs = FRESH_list n (X UNION FV M0);
              M1 = principle_hnf (M0 @* (MAP VAR vs));
              Ms = hnf_children M1;
               l = MAP ($, (X UNION set vs)) Ms;
@@ -168,7 +168,7 @@ Proof
  >> rw [every_fromList_EVERY, LMAP_fromList, EVERY_MAP, Abbr ‘P’, EVERY_MEM]
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> qabbrev_tac ‘n = LAMl_size M0’
- >> qabbrev_tac ‘vs = FRESH_list n (X UNION FV M)’
+ >> qabbrev_tac ‘vs = FRESH_list n (X UNION FV M0)’
  >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
  >> rename1 ‘MEM N (hnf_children M1)’
  >> qexistsl_tac [‘X UNION set vs’, ‘N’] >> rw [BT_def]
@@ -227,8 +227,8 @@ Proof
  >> qabbrev_tac ‘Q0 = principle_hnf Q’
  >> qabbrev_tac ‘n  = LAMl_size P0’
  >> qabbrev_tac ‘n' = LAMl_size Q0’
- >> qabbrev_tac ‘vs = FRESH_list n (Y UNION FV P)’
- >> qabbrev_tac ‘vs' = FRESH_list n' (Y UNION FV Q)’
+ >> qabbrev_tac ‘vs = FRESH_list n  (Y UNION FV P0)’
+ >> qabbrev_tac ‘vs'= FRESH_list n' (Y UNION FV Q0)’
  >> qabbrev_tac ‘P1 = principle_hnf (P0 @* MAP VAR vs)’
  >> qabbrev_tac ‘Q1 = principle_hnf (Q0 @* MAP VAR vs')’
  >> qabbrev_tac ‘Ps = hnf_children P1’
@@ -248,8 +248,11 @@ Proof
  (* now both P and Q are solvable *)
  >> ‘solvable Q’ by PROVE_TAC [lameq_solvable_cong]
  (* clean up definitions of vs and vs' by using ‘FV M UNION FV N SUBSET X’ *)
- >> Know ‘Y UNION FV P = Y /\ Y UNION FV Q = Y’
- >- (Q.PAT_X_ASSUM ‘FV P UNION FV Q SUBSET Y’ MP_TAC >> SET_TAC [])
+ >> Know ‘Y UNION FV P0 = Y /\ Y UNION FV Q0 = Y’
+ >- (Q.PAT_X_ASSUM ‘FV P UNION FV Q SUBSET Y’ MP_TAC \\
+    ‘FV P0 SUBSET FV P’ by METIS_TAC [principle_hnf_FV_SUBSET'] \\
+    ‘FV Q0 SUBSET FV Q’ by METIS_TAC [principle_hnf_FV_SUBSET'] \\
+     NTAC 2 (POP_ASSUM MP_TAC) >> SET_TAC [])
  >> DISCH_THEN (fs o wrap)
  >> Know ‘n = n' /\ vs = vs'’
  >- (reverse CONJ_ASM1_TAC >- rw [Abbr ‘vs’, Abbr ‘vs'’] \\
@@ -359,7 +362,7 @@ Definition subterm_def :
         let M0 = principle_hnf M;
              n = LAMl_size M0;
              m = hnf_children_size M0;
-            vs = FRESH_list n (X UNION FV M);
+            vs = FRESH_list n (X UNION FV M0);
             M1 = principle_hnf (M0 @* (MAP VAR vs));
             Ms = hnf_children M1
         in
@@ -370,11 +373,11 @@ End
 
 Theorem subterm_of_solvables :
     !X M x xs. solvable M ==>
-               subterm X M (x::xs) =
+      subterm X M (x::xs) =
         let M0 = principle_hnf M;
              n = LAMl_size M0;
              m = hnf_children_size M0;
-            vs = FRESH_list n (X UNION FV M);
+            vs = FRESH_list n (X UNION FV M0);
             M1 = principle_hnf (M0 @* (MAP VAR vs));
             Ms = hnf_children M1
         in
@@ -396,6 +399,25 @@ Proof
     rw [subterm_NIL]
 QED
 
+(* NOTE: This theorem is only possible when ‘vs = FRESH_list n (X UNION FV M0)’
+        (instead of ‘FV M’) in the definition of [subterm_def].
+ *)
+Theorem subterm_of_principle_hnf :
+    !X M p. solvable M /\ p <> [] ==> subterm X M p = subterm X (principle_hnf M) p
+Proof
+    rpt STRIP_TAC
+ >> Cases_on ‘p’ >> fs []
+ >> qabbrev_tac ‘M0 = principle_hnf M’
+ >> ‘solvable M0’ by PROVE_TAC [solvable_principle_hnf]
+ >> RW_TAC std_ss [subterm_of_solvables]
+ >> ‘M0' = M0’ by rw [Abbr ‘M0'’, Abbr ‘M0’, principle_hnf_stable']
+ >> qunabbrev_tac ‘M0'’
+ >> POP_ASSUM (fs o wrap)
+ >> ‘vs' = vs’ by rw [Abbr ‘vs’, Abbr ‘vs'’]
+ >> POP_ASSUM (fs o wrap)
+ >> PROVE_TAC []
+QED
+
 (* Lemma 10.1.15 [1, p.222] *)
 Theorem BT_subterm_thm :
     !p X M. p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
@@ -406,7 +428,7 @@ Proof
  >> rw [subterm_def, ltree_lookup]
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> qabbrev_tac ‘n = LAMl_size M0’
- >> qabbrev_tac ‘vs = FRESH_list n (X UNION FV M)’
+ >> qabbrev_tac ‘vs = FRESH_list n (X UNION FV M0)’
  >> qabbrev_tac ‘M1 = principle_hnf (M0 @* (MAP VAR vs))’
  >> qabbrev_tac ‘Ms = hnf_children M1’
  >> Know ‘BTe X M = ltree_unfold BT_generator (X,M)’ >- rw [BT_def]
@@ -436,7 +458,7 @@ Proof
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> qabbrev_tac ‘n = LAMl_size M0’
  >> qabbrev_tac ‘m = hnf_children_size M0’
- >> qabbrev_tac ‘vs = FRESH_list n (X UNION FV M)’
+ >> qabbrev_tac ‘vs = FRESH_list n (X UNION FV M0)’
  >> qabbrev_tac ‘M1 = principle_hnf (M0 @* (MAP VAR vs))’
  >> qabbrev_tac ‘Ms = hnf_children M1’
  >> reverse (Cases_on ‘solvable M’)
@@ -446,16 +468,14 @@ Proof
  >> simp []
  >> Know ‘m = LENGTH Ms’
  >- (qunabbrev_tac ‘M1’ \\
-    ‘ALL_DISTINCT vs /\ LENGTH vs = n /\ DISJOINT (set vs) (X UNION FV M)’
-        by (rw [Abbr ‘vs’, FRESH_list_def]) \\
+    ‘ALL_DISTINCT vs /\ LENGTH vs = n /\ DISJOINT (set vs) (X UNION FV M0)’
+       by (rw [Abbr ‘vs’, FRESH_list_def]) \\
     ‘hnf M0’ by rw [hnf_principle_hnf', Abbr ‘M0’] \\
      Know ‘?y args. M0 = LAMl (TAKE n vs) (VAR y @* args)’
      >- (qunabbrev_tac ‘n’ >> irule (iffLR hnf_cases_shared) >> rw [] \\
          MATCH_MP_TAC DISJOINT_SUBSET \\
-         Q.EXISTS_TAC ‘X UNION FV M’ >> art [] \\
-         Suff ‘FV M0 SUBSET FV M’ >- SET_TAC [] \\
-         qunabbrev_tac ‘M0’ >> MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art []) \\
-     STRIP_TAC \\
+         Q.EXISTS_TAC ‘X UNION FV M0’ >> art [] \\
+         SET_TAC []) >> STRIP_TAC \\
     ‘TAKE n vs = vs’ by rw [] \\
      POP_ASSUM (REV_FULL_SIMP_TAC std_ss o wrap) \\
      qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’ \\
@@ -532,8 +552,11 @@ Proof
      Cases_on ‘p’ >> fs [subterm_def])
  >> ‘solvable N’ by METIS_TAC [lameq_solvable_cong]
  >> RW_TAC std_ss [subterm_of_solvables]
- >> Know ‘X UNION FV M = X /\ X UNION FV N = X’
- >- (Q.PAT_X_ASSUM ‘FV M UNION FV N SUBSET X’ MP_TAC >> SET_TAC [])
+ >> Know ‘X UNION FV M0 = X /\ X UNION FV M0' = X’
+ >- (Q.PAT_X_ASSUM ‘FV M UNION FV N SUBSET X’ MP_TAC \\
+    ‘FV M0 SUBSET FV M’ by METIS_TAC [principle_hnf_FV_SUBSET'] \\
+    ‘FV M0' SUBSET FV N’ by METIS_TAC [principle_hnf_FV_SUBSET'] \\
+     NTAC 2 (POP_ASSUM MP_TAC) >> SET_TAC [])
  >> DISCH_THEN (fs o wrap)
  >> Know ‘n = n' /\ vs = vs'’
  >- (reverse CONJ_ASM1_TAC >- rw [Abbr ‘vs’, Abbr ‘vs'’] \\
@@ -645,7 +668,12 @@ Proof
  >> Q.PAT_X_ASSUM ‘subterm X M (h::p) <> NONE’ MP_TAC
  >> RW_TAC std_ss [subterm_of_solvables]
  >> gs []
- >> Know ‘X UNION FV M = X /\ X UNION FV N = X’ >- ASM_SET_TAC []
+ >> Know ‘X UNION FV M0 = X /\ X UNION FV M0' = X’
+ >- (Q.PAT_X_ASSUM ‘FV M SUBSET X’ MP_TAC \\
+     Q.PAT_X_ASSUM ‘FV N SUBSET X’ MP_TAC \\
+    ‘FV M0 SUBSET FV M’ by METIS_TAC [principle_hnf_FV_SUBSET'] \\
+    ‘FV M0' SUBSET FV N’ by METIS_TAC [principle_hnf_FV_SUBSET'] \\
+     NTAC 2 (POP_ASSUM MP_TAC) >> SET_TAC [])
  >> DISCH_THEN (fs o wrap)
  >> Know ‘n = n' /\ vs = vs'’
  >- (reverse CONJ_ASM1_TAC >- rw [Abbr ‘vs’, Abbr ‘vs'’] \\
@@ -754,16 +782,16 @@ Proof
  >> Cases_on ‘h < m’ >> simp []
  >> qabbrev_tac ‘n = LAMl_size M0’
  >> STRIP_TAC
- >> qabbrev_tac ‘vs0 = FRESH_list n (X UNION FV M)’
- >> Know ‘ALL_DISTINCT vs0 /\ DISJOINT (set vs0) (X UNION FV M) /\ LENGTH vs0 = n’
+ >> qabbrev_tac ‘vs0 = FRESH_list n (X UNION FV M0)’
+ >> Know ‘ALL_DISTINCT vs0 /\ DISJOINT (set vs0) (X UNION FV M0) /\ LENGTH vs0 = n’
  >- (rw [Abbr ‘vs0’, FRESH_list_def])
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
  >> qabbrev_tac ‘Y = X UNION set vs0’
  >> ‘FINITE Y’ by rw [Abbr ‘Y’]
  >> Q.X_GEN_TAC ‘Z’
  >> DISCH_TAC
- >> qabbrev_tac ‘vs1 = FRESH_list n (Z UNION FV M)’
- >> Know ‘ALL_DISTINCT vs1 /\ DISJOINT (set vs1) (Z UNION FV M) /\ LENGTH vs1 = n’
+ >> qabbrev_tac ‘vs1 = FRESH_list n (Z UNION FV M0)’
+ >> Know ‘ALL_DISTINCT vs1 /\ DISJOINT (set vs1) (Z UNION FV M0) /\ LENGTH vs1 = n’
  >- (rw [Abbr ‘vs1’, FRESH_list_def])
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
  (* now the key is to choose the explicit representation of M0 such that both
@@ -773,20 +801,15 @@ Proof
 
     can be reduced to tpm of M0. It seems that defining another ‘vs2’ is a must.
   *)
- >> qabbrev_tac ‘vs2 = FRESH_list n (set vs0 UNION set vs1 UNION Z UNION FV M)’
- >> ‘FINITE (set vs0 UNION set vs1 UNION Z UNION FV M)’ by rw []
+ >> qabbrev_tac ‘vs2 = FRESH_list n (set vs0 UNION set vs1 UNION Z UNION FV M0)’
+ >> ‘FINITE (set vs0 UNION set vs1 UNION Z UNION FV M0)’ by rw []
  >> Know ‘ALL_DISTINCT vs2 /\
-          DISJOINT (set vs2) (set vs0 UNION set vs1 UNION Z UNION FV M) /\
+          DISJOINT (set vs2) (set vs0 UNION set vs1 UNION Z UNION FV M0) /\
           LENGTH vs2 = n’
  >- (rw [Abbr ‘vs2’, FRESH_list_def])
- >> Q.PAT_X_ASSUM ‘FINITE (set vs0 UNION set vs1 UNION Z UNION FV M)’ K_TAC
+ >> Q.PAT_X_ASSUM ‘FINITE (set vs0 UNION set vs1 UNION Z UNION FV M0)’ K_TAC
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
  >> ‘hnf M0’ by PROVE_TAC [hnf_principle_hnf']
- >> Know ‘DISJOINT (set vs2) (FV M0)’
- >- (MATCH_MP_TAC DISJOINT_SUBSET \\
-     Q.EXISTS_TAC ‘FV M’ >> art [] \\
-     qunabbrev_tac ‘M0’ >> MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
- >> DISCH_TAC
  >> hnf_tac (“M0 :term”, “vs2 :string list”,
              “M1 :term”, “y :string”, “args :term list”)
  >> ‘TAKE n vs2 = vs2’ by rw [TAKE_LENGTH_ID_rwt]
