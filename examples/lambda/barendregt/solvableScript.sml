@@ -969,6 +969,7 @@ Proof
     ‘FINITE (FV M UNION FV N)’ by rw [] \\
      simp [SET_TO_LIST_INV] >> SET_TAC [])
  >> STRIP_TAC
+ (* applying solvable_iff_LAMl *)
  >> ‘solvable M <=> solvable M0’ by (rw [Abbr ‘M0’]) >> POP_ORW
  >> ‘solvable N <=> solvable N0’ by (rw [Abbr ‘N0’]) >> POP_ORW
  >> ‘M0 == N0’ by (rw [Abbr ‘M0’, Abbr ‘N0’, lameq_LAMl_cong])
@@ -1169,7 +1170,7 @@ QED
 Theorem lameq_principle_hnf_size_eq' =
         lameq_principle_hnf_size_eq |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
 
-Theorem lameq_principle_hnf_headvar_eq :
+Theorem lameq_principle_hnf_head_eq :
     !X M N M0 N0 n vs M1 N1.
          FINITE X /\ FV M UNION FV N SUBSET X /\
          has_hnf M /\ has_hnf N /\ M == N /\
@@ -1203,8 +1204,8 @@ Proof
  >> METIS_TAC [principle_hnf_FV_SUBSET, SUBSET_TRANS]
 QED
 
-Theorem lameq_principle_hnf_headvar_eq' =
-        lameq_principle_hnf_headvar_eq |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
+Theorem lameq_principle_hnf_head_eq' =
+        lameq_principle_hnf_head_eq |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
 
 (* Corollary 8.3.17 (ii) [1, p.176] (outer part) *)
 Theorem lameq_principle_hnf_thm :

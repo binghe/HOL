@@ -264,7 +264,7 @@ Proof
  (* proving y = y' *)
  >> STRONG_CONJ_TAC
  >- (MP_TAC (Q.SPECL [‘Y’, ‘P’, ‘Q’, ‘P0’, ‘Q0’, ‘n’, ‘vs’, ‘P1’, ‘Q1’]
-                     lameq_principle_hnf_headvar_eq') >> simp [])
+                     lameq_principle_hnf_head_eq') >> simp [])
  >> DISCH_THEN (rfs o wrap o GSYM)
  >> qunabbrevl_tac [‘y’, ‘y'’]
  (* applying lameq_principle_hnf_thm' *)
@@ -765,6 +765,8 @@ QED
 (* NOTE: since ‘subterm X M p’ is correct for whatever X supplied, changing ‘X’ to
    something else shouldn't change the properties of ‘subterm X M p’, as long as
    these properties are not directly related to specific choices of ‘vs’.
+
+   NOTE2: this (unfinished but possible) theorem is no more needed.
  *)
 Theorem subterm_not_none_imp_forall :
     !p M. (?X. FINITE X /\ subterm X M p <> NONE) ==>
@@ -1874,7 +1876,6 @@ Proof
  >> ‘hnf M0’ by PROVE_TAC [hnf_principle_hnf, solvable_iff_has_hnf]
  >> qabbrev_tac ‘n = LAMl_size M0’
  >> qabbrev_tac ‘vs = FRESH_list n (X UNION FV M)’
- >> ‘FINITE (X UNION FV M)’ by rw []
  >> Know ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (X UNION FV M) /\ LENGTH vs = n’
  >- (rw [Abbr ‘vs’, FRESH_list_def])
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
@@ -1914,13 +1915,14 @@ Proof
     But since P is a closed term, these fresh variables seem irrelevant...
   *)
  >> qabbrev_tac ‘P = permutator q’
- >> ‘FV P = {}’ by rw [Abbr ‘P’, closed_permutator, GSYM closed_def]
  >> qabbrev_tac ‘p2 = [[P/y]]’
  >> ‘Boehm_transform p2’ by rw [Abbr ‘p2’]
  >> ‘apply p2 M1 = P @* MAP [P/y] args’ by rw [Abbr ‘p2’, appstar_SUB]
  >> qabbrev_tac ‘args' = MAP [P/y] args’
- >> ‘!i. i < m ==> FV (EL i args') SUBSET FV (EL i args)’
-         by rw [Abbr ‘args'’, EL_MAP, FV_SUB]
+ >> Know ‘!i. i < m ==> FV (EL i args') SUBSET FV (EL i args)’
+ >- (rw [Abbr ‘args'’, EL_MAP, FV_SUB] \\
+     rw [Abbr ‘P’, closed_permutator, GSYM closed_def])
+ >> DISCH_TAC
  >> ‘LENGTH args' = m’ by rw [Abbr ‘args'’, Abbr ‘m’]
   (* Key: “args'” has less free variables than “args” *)
  >> Know ‘BIGUNION (IMAGE FV (set args')) SUBSET
@@ -2015,6 +2017,24 @@ Proof
      qunabbrev_tac ‘M0’ \\
      MATCH_MP_TAC subterm_of_principle_hnf >> art [])
  (* stage work *)
+ >> Know ‘principle_hnf (apply (p3 ++ p2 ++ p1) M) =
+          VAR b @* args' @* MAP VAR as’
+ >- (
+     cheat)
+ >> DISCH_TAC
+ >> Know ‘subterm' Z (apply (p3 ++ p2 ++ p1) M) p =
+          subterm' Z (VAR b @* args' @* MAP VAR as) p’
+ >- (POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM) \\
+     qabbrev_tac ‘t = apply (p3 ++ p2 ++ p1) M’ \\
+     Suff ‘subterm Z (principle_hnf t) p = subterm Z t p’ >- rw [] \\
+     MATCH_MP_TAC subterm_of_principle_hnf >> art [] \\
+     Suff ‘solvable (VAR b @* args' @* MAP VAR as)’
+     >- PROVE_TAC [lameq_solvable_cong] \\
+     rw [solvable_iff_has_hnf] \\
+     MATCH_MP_TAC hnf_has_hnf \\
+     rw [hnf_appstar, GSYM appstar_APPEND])
+ >> Rewr'
+ >> REWRITE_TAC [single_ssub]
  >> cheat
 QED
 
