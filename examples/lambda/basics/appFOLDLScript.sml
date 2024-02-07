@@ -184,8 +184,8 @@ Proof
 QED
 
 (* A special case of FV_appstar *)
-Theorem FV_appstar_MAP_VAR :
-    !M vs. FV (M @* MAP VAR vs) = FV M UNION set vs
+Theorem FV_appstar_MAP_VAR[simp] :
+    FV (M @* MAP VAR vs) = FV M UNION set vs
 Proof
     rw [FV_appstar]
  >> Suff ‘BIGUNION (IMAGE FV (set (MAP VAR vs))) = set vs’ >- rw []

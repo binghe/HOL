@@ -1171,8 +1171,8 @@ Proof
  >> ‘Z <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
  >> qabbrev_tac ‘z = LAST Z’
  >> ‘MEM z Z’ by rw [Abbr ‘z’, MEM_LAST_NOT_NIL]
- >> Suff ‘FV (VAR z @* MAP VAR (FRONT Z)) SUBSET set Z’ >- SET_TAC []
- >> rw [FV_appstar, SUBSET_DEF, MEM_MAP] >- art []
+ >> Suff ‘{z} UNION set (FRONT Z) SUBSET set Z’ >- SET_TAC []
+ >> rw [SUBSET_DEF]
  >> rfs [MEM_FRONT_NOT_NIL]
 QED
 
