@@ -702,6 +702,9 @@ Proof
       fs [Abbr ‘n’] ]
 QED
 
+Theorem principle_hnf_thm' =
+        principle_hnf_thm |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
+
 (* principle hnf has less (or equal) free variables
 
    NOTE: this theorem depends on finite_head_reduction_path_to_list_11 and
@@ -1036,7 +1039,7 @@ Proof
  >> MATCH_MP_TAC lameq_solvable_cong_lemma >> art []
 QED
 
-Theorem lameq_principle_hnf_reduce :
+Theorem lameq_principle_hnf :
     !M. has_hnf M ==> principle_hnf M == M
 Proof
     rpt STRIP_TAC
@@ -1052,8 +1055,8 @@ Proof
 QED
 
 (* |- !M. solvable M ==> principle_hnf M == M *)
-Theorem lameq_principle_hnf_reduce' =
-        lameq_principle_hnf_reduce |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
+Theorem lameq_principle_hnf' =
+        lameq_principle_hnf |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
 
 Theorem hnf_ccbeta_appstar_rwt[local] :
     !y Ms N. VAR y @* Ms -b-> N /\ Ms <> [] ==>
@@ -1211,11 +1214,11 @@ Proof
  >> Know ‘M0 == N0’
  >- (MATCH_MP_TAC lameq_TRANS >> Q.EXISTS_TAC ‘M’ \\
      CONJ_TAC >- (qunabbrev_tac ‘M0’ \\
-                  MATCH_MP_TAC lameq_principle_hnf_reduce >> art []) \\
+                  MATCH_MP_TAC lameq_principle_hnf >> art []) \\
      MATCH_MP_TAC lameq_TRANS >> Q.EXISTS_TAC ‘N’ >> art [] \\
      MATCH_MP_TAC lameq_SYM \\
      qunabbrev_tac ‘N0’ \\
-     MATCH_MP_TAC lameq_principle_hnf_reduce >> art [])
+     MATCH_MP_TAC lameq_principle_hnf >> art [])
  >> DISCH_TAC
  >> ‘hnf M0 /\ hnf N0’ by METIS_TAC [hnf_principle_hnf]
  >> qabbrev_tac ‘X = FV M0 UNION FV N0’
@@ -1250,11 +1253,11 @@ Proof
  >> Know ‘M0 == N0’
  >- (MATCH_MP_TAC lameq_TRANS >> Q.EXISTS_TAC ‘M’ \\
      CONJ_TAC >- (qunabbrev_tac ‘M0’ \\
-                  MATCH_MP_TAC lameq_principle_hnf_reduce >> art []) \\
+                  MATCH_MP_TAC lameq_principle_hnf >> art []) \\
      MATCH_MP_TAC lameq_TRANS >> Q.EXISTS_TAC ‘N’ >> art [] \\
      MATCH_MP_TAC lameq_SYM \\
      qunabbrev_tac ‘N0’ \\
-     MATCH_MP_TAC lameq_principle_hnf_reduce >> art [])
+     MATCH_MP_TAC lameq_principle_hnf >> art [])
  >> DISCH_TAC
  >> ‘hnf M0 /\ hnf N0’ by METIS_TAC [hnf_principle_hnf]
  (* applying lameq_principle_hnf_lemma *)
@@ -1293,11 +1296,11 @@ Proof
  >> Know ‘M0 == N0’
  >- (MATCH_MP_TAC lameq_TRANS >> Q.EXISTS_TAC ‘M’ \\
      CONJ_TAC >- (qunabbrev_tac ‘M0’ \\
-                  MATCH_MP_TAC lameq_principle_hnf_reduce >> art []) \\
+                  MATCH_MP_TAC lameq_principle_hnf >> art []) \\
      MATCH_MP_TAC lameq_TRANS >> Q.EXISTS_TAC ‘N’ >> art [] \\
      MATCH_MP_TAC lameq_SYM \\
      qunabbrev_tac ‘N0’ \\
-     MATCH_MP_TAC lameq_principle_hnf_reduce >> art [])
+     MATCH_MP_TAC lameq_principle_hnf >> art [])
  >> DISCH_TAC
  >> ‘hnf M0 /\ hnf N0’ by METIS_TAC [hnf_principle_hnf]
  (* applying lameq_principle_hnf_lemma *)
@@ -1310,14 +1313,50 @@ QED
 Theorem lameq_principle_hnf_thm' =
         lameq_principle_hnf_thm |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
 
-(* ‘principle_hnf’ can be used to "denude" the outer LAMl of a solvable term *)
+(* This is an important theroem, hard to prove.
+
+   To use this theorem, first one defines ‘M0 = principle_hnf M’ as an abbreviation,
+   then define ‘n = LAMl_size M0’ and ‘vs = FRESH_list n (FV M)’ (or ‘FV M0’, or
+  ‘X UNION FV M0’, ‘X UNION FV M’, etc.), and this give us the needed antecedents:
+
+       ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\ LENGTH vs = n
+
+   Then use hnf_cases_shared to derive ‘M0 = LAMl vs (VAR y @* args)’ and then
+   ‘M1 = principle_hnf (M0 @* MAP VAR vs) = VAR y @* args’.
+
+   The conclusion is that ‘principle_hnf (M @* MAP VAR vs) = M1’.
+
+   Now ‘principle_hnf’ can be used to "denude" the outer LAMl of a solvable term.
+ *)
 Theorem principle_hnf_denude_lemma :
-    !M vs y args. solvable M /\ ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
+    !M vs y args. solvable M /\
+                  ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
+                  LENGTH vs = LAMl_size (principle_hnf M) /\
                   principle_hnf M = LAMl vs (VAR y @* args) ==>
+                  solvable (M @* MAP VAR vs) /\
                   principle_hnf (M @* MAP VAR vs) = VAR y @* args
 Proof
-    rpt STRIP_TAC
+    rpt GEN_TAC >> STRIP_TAC
  >> qabbrev_tac ‘M0 = principle_hnf M’
+ (* applying principle_hnf_thm' *)
+ >> Know ‘principle_hnf M = M0’ >- rw [Abbr ‘M0’]
+ >> simp [principle_hnf_thm', hnf_appstar]
+ >> DISCH_TAC
+ >> CONJ_ASM1_TAC
+ >- (‘M0 == M’ by rw [lameq_principle_hnf', Abbr ‘M0’] \\
+     ‘M0 @* MAP VAR vs == VAR y @* args’ by rw [] \\
+     ‘M0 @* MAP VAR vs == M @* MAP VAR vs’ by rw [lameq_appstar_cong] \\
+     ‘M @* MAP VAR vs == VAR y @* args’ by PROVE_TAC [lameq_SYM, lameq_TRANS] \\
+     Suff ‘solvable (VAR y @* args)’ >- PROVE_TAC [lameq_solvable_cong] \\
+     rw [solvable_iff_has_hnf] \\
+     MATCH_MP_TAC hnf_has_hnf >> rw [hnf_appstar])
+ (* eliminate M0 *)
+ >> Q.PAT_X_ASSUM ‘M0 = _’ K_TAC
+ >> qunabbrev_tac ‘M0’
+ (* applying again principle_hnf_thm' *)
+ >> simp [principle_hnf_thm', hnf_appstar]
+ >> Q.PAT_X_ASSUM ‘_ = LAMl_size (principle_hnf M)’ K_TAC
+ (* now all ‘principle_hnf’ are eliminated, leaving only -h->* *)
  >> cheat
 QED
 

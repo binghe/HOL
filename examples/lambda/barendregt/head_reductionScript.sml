@@ -28,6 +28,14 @@ val _ = overload_on ("-h->", ``hreduce1``)
 val _ = set_fixity "-h->*" (Infix(NONASSOC, 450))
 val _ = overload_on ("-h->*", ``hreduce1^*``)
 
+Theorem hreduce_TRANS :
+    !M0 M1 M2. M0 -h->* M1 /\ M1 -h->* M2 ==> M0 -h->* M2
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC (REWRITE_RULE [transitive_def] RTC_TRANSITIVE)
+ >> Q.EXISTS_TAC ‘M1’ >> art []
+QED
+
 val hreduce_ccbeta = store_thm(
   "hreduce_ccbeta",
   ``∀M N. M -h-> N ⇒ M -β-> N``,

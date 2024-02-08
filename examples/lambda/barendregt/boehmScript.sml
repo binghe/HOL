@@ -1812,7 +1812,7 @@ Proof
      CONJ_TAC >- art [] \\
      qunabbrev_tac ‘M0’ \\
      MATCH_MP_TAC lameq_SYM \\
-     MATCH_MP_TAC lameq_principle_hnf_reduce' >> art [])
+     MATCH_MP_TAC lameq_principle_hnf' >> art [])
  >> ONCE_REWRITE_TAC [Boehm_apply_APPEND]
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘apply (p3 ++ p2) M1’
@@ -1989,7 +1989,7 @@ Proof
                   CONJ_TAC >- art [] \\
                   qunabbrev_tac ‘M0’ \\
                   MATCH_MP_TAC lameq_SYM \\
-                  MATCH_MP_TAC lameq_principle_hnf_reduce' >> art []) \\
+                  MATCH_MP_TAC lameq_principle_hnf' >> art []) \\
      ONCE_REWRITE_TAC [Boehm_apply_APPEND] \\
      MATCH_MP_TAC lameq_TRANS \\
      Q.EXISTS_TAC ‘apply (p3 ++ p2) M1’ \\
@@ -2402,7 +2402,7 @@ Proof
        Q.EXISTS_TAC ‘apply (p1 ++ p0) N0’ \\
        CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
                     qunabbrev_tac ‘N0’ >> MATCH_MP_TAC lameq_SYM \\
-                    MATCH_MP_TAC lameq_principle_hnf_reduce >> art [GSYM solvable_iff_has_hnf]) \\
+                    MATCH_MP_TAC lameq_principle_hnf >> art [GSYM solvable_iff_has_hnf]) \\
     (* eliminating p0 *)
        REWRITE_TAC [Boehm_apply_APPEND] \\
        MATCH_MP_TAC lameq_TRANS \\
@@ -2440,7 +2440,7 @@ Proof
        CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
                     qunabbrev_tac ‘M0’ \\
                     MATCH_MP_TAC lameq_SYM \\
-                    MATCH_MP_TAC lameq_principle_hnf_reduce >> art [GSYM solvable_iff_has_hnf]) \\
+                    MATCH_MP_TAC lameq_principle_hnf >> art [GSYM solvable_iff_has_hnf]) \\
     (* eliminating p0 *)
        REWRITE_TAC [Boehm_apply_APPEND] \\
        MATCH_MP_TAC lameq_TRANS \\
@@ -2528,7 +2528,7 @@ Proof
        Q.EXISTS_TAC ‘apply (pi ++ p0) M0’ \\
        CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
                     qunabbrev_tac ‘M0’ >> MATCH_MP_TAC lameq_SYM \\
-                    MATCH_MP_TAC lameq_principle_hnf_reduce \\
+                    MATCH_MP_TAC lameq_principle_hnf \\
                     ASM_REWRITE_TAC [GSYM solvable_iff_has_hnf]) \\
        REWRITE_TAC [Boehm_apply_APPEND] \\
        MATCH_MP_TAC lameq_TRANS \\
@@ -2541,7 +2541,7 @@ Proof
        Q.EXISTS_TAC ‘apply (pi ++ p0) N0’ \\
        CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
                     qunabbrev_tac ‘N0’ >> MATCH_MP_TAC lameq_SYM \\
-                    MATCH_MP_TAC lameq_principle_hnf_reduce \\
+                    MATCH_MP_TAC lameq_principle_hnf \\
                     ASM_REWRITE_TAC [GSYM solvable_iff_has_hnf]) \\
        REWRITE_TAC [Boehm_apply_APPEND] \\
        MATCH_MP_TAC lameq_TRANS \\
