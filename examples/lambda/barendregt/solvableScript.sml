@@ -967,6 +967,7 @@ Proof
  >> rw [lameq_SYM]
 QED
 
+(* NOTE: this proof has used first principles of solvable terms *)
 Theorem lameq_solvable_cong :
     !M N. M == N ==> (solvable M <=> solvable N)
 Proof
@@ -1259,6 +1260,17 @@ QED
 
 Theorem lameq_principle_hnf_thm' =
         lameq_principle_hnf_thm |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
+
+(* ‘principle_hnf’ can be used to "denude" the outer LAMl of a solvable term *)
+Theorem principle_hnf_denude_lemma :
+    !M vs y args. solvable M /\ ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
+                  principle_hnf M = LAMl vs (VAR y @* args) ==>
+                  principle_hnf (M @* MAP VAR vs) = VAR y @* args
+Proof
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘M0 = principle_hnf M’
+ >> cheat
+QED
 
 val _ = export_theory ();
 val _ = html_theory "solvable";
