@@ -926,11 +926,13 @@ End
 
 Overload FV = “FV_of_ltree”
 
+(*
 Theorem FV_of_ltree_empty_imp_closed :
     !X M. FV (BTe X M) = {} ==> closed M
 Proof
-    cheat
+    ...
 QED
+*)
 
 (*---------------------------------------------------------------------------*
  *  Infinite eta reduction for trees
@@ -952,6 +954,7 @@ Definition fromPaths_def :
        gen_ltree (\p. ({},SOME (CARD {x | SNOC x p IN X})))
 End
 
+(*
 Theorem ltree_paths_fromPaths :
     !X. ltree_paths (fromPaths X) = X
 Proof
@@ -974,6 +977,7 @@ Theorem denude_alt :
 Proof
     cheat
 QED
+ *)
 
 (* Definition 10.2.8 (i) [1, p.232]:
 
@@ -1058,12 +1062,13 @@ Proof
     rw [tree_le_eta_def, SUBSET_DEF]
 QED
 
-(* This theorem connects ‘le_eta’ and ‘expansion’ (‘eta_generator’) *)
+(* This theorem connects ‘le_eta’ and ‘expansion’ (‘eta_generator’)
 Theorem le_eta_expansion :
     !A B ts. ts extends A ==> le_eta A (eta_generate A ts)
 Proof
     cheat
 QED
+ *)
 
 (*---------------------------------------------------------------------------*
  *  Equivalent terms
@@ -1314,8 +1319,7 @@ Proof
         = principle_hnf (
    *)
      Know ‘N1 = LAM v (LAM z (VAR v @@ M @@ N)) @@ VAR v0 @@ VAR v1’
-     >- cheat \\
-     cheat)
+...
 QED
  *)
 
@@ -1379,12 +1383,13 @@ val _ = set_fixity "=e=" (Infixr 490);
 
 Overload "=e=" = “tree_eta_equiv”
 
-(* Theorem 10.2.31, (i) <=> (iv) [1, p.244] *)
+(* Theorem 10.2.31, (i) <=> (iv) [1, p.244]
 Theorem tree_eta_equiv_thm :
     !A B. tree_eta_equiv A B <=> !p. subtree_eta_equiv p A B
 Proof
     cheat
 QED
+ *)
 
 (* Definition 10.2.32 (iii) [1, p.245] *)
 Definition term_le_eta_def :
@@ -2034,7 +2039,7 @@ Proof
  (* stage work *)
  >> Know ‘principle_hnf (apply (p3 ++ p2 ++ p1) M) =
           VAR b @* args' @* MAP VAR as’
- >- (
+ >- (simp [Boehm_apply_APPEND] \\
      cheat)
  >> DISCH_TAC
  >> Know ‘subterm' Z (apply (p3 ++ p2 ++ p1) M) p =
@@ -2050,6 +2055,8 @@ Proof
      rw [hnf_appstar, GSYM appstar_APPEND])
  >> Rewr'
  >> REWRITE_TAC [single_ssub]
+ >> Cases_on ‘p’ >- FULL_SIMP_TAC std_ss []
+ (* now p becomes h::t *)
  >> cheat
 QED
 

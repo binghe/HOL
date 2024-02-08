@@ -761,6 +761,16 @@ Proof
  >> rw [Abbr ‘q’, Abbr ‘p’, Once is_head_reduction_thm]
 QED
 
+(* NOTE: this useful theorem can be used to rewrite ‘principle_hnf M’ to
+  ‘principle_hnf N’, if one can prove ‘M -h->* N’. *)
+Theorem principle_hnf_hreduce :
+    !M N. M -h->* N ==> principle_hnf M = principle_hnf N
+Proof
+    HO_MATCH_MP_TAC RTC_INDUCT >> rw []
+ >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM)
+ >> MATCH_MP_TAC principle_hnf_hreduce1 >> art []
+QED
+
 Theorem principle_hnf_LAMl_appstar_lemma[local] :
     !t. hnf t /\
         ALL_DISTINCT (MAP FST pi) /\
