@@ -642,6 +642,66 @@ Definition principle_hnf_def :
     principle_hnf = last o head_reduction_path
 End
 
+(* NOTE: This theorem fully captures the characteristics of principle hnf *)
+Theorem principle_hnf_thm :
+    !M N. has_hnf M ==> (principle_hnf M = N <=> M -h->* N /\ hnf N)
+Proof
+    rw [corollary11_4_8]
+ >> qabbrev_tac ‘p = head_reduction_path M’
+ >> MP_TAC (Q.SPECL [‘M’, ‘p’] finite_head_reduction_path_to_list_11)
+ >> RW_TAC std_ss [principle_hnf_def]
+ >> simp [finite_last_el]
+ >> Q.PAT_X_ASSUM ‘LENGTH l = THE (length p)’ (ONCE_REWRITE_TAC o wrap o SYM)
+ >> qabbrev_tac ‘n = PRE (LENGTH l)’
+ >> ‘LENGTH l <> 0’ by rw [GSYM NOT_NIL_EQ_LENGTH_NOT_0]
+ >> ‘n < LENGTH l’ by rw [Abbr ‘n’]
+ >> Q.PAT_X_ASSUM ‘!i. i < LENGTH l ==> EL i l = el i p’ (fn th => rw [GSYM th])
+ (* now the path p is not needed *)
+ >> Q.PAT_X_ASSUM ‘finite p’ K_TAC
+ >> qunabbrev_tac ‘p’
+ (* easier direction first *)
+ >> EQ_TAC
+ >- (DISCH_THEN (ONCE_REWRITE_TAC o wrap o SYM) \\
+     reverse CONJ_TAC
+     >- (Suff ‘EL n l = LAST l’ >- rw [] \\
+         rw [LAST_EL, Abbr ‘n’]) \\
+     POP_ASSUM MP_TAC \\
+     Q.SPEC_TAC (‘n’, ‘i’) \\
+     Induct_on ‘i’ >> rw [] \\
+     MATCH_MP_TAC hreduce_TRANS \\
+     Q.EXISTS_TAC ‘EL i l’ >> rw [])
+ (* stage work *)
+ >> rpt STRIP_TAC
+ >> qabbrev_tac ‘M = HD l’
+ (* now both ‘LAST l’ and ‘N’ is hnf, they must be the same, because a hnf has
+    no further head reductions, and we know N is in the head reduction path.
+
+    But first, we need to prove |- ?i. i < LENGTH l /\ N = EL i l, because
+    head reduction is deterministic, thus all reductions from ‘HD l’ must lie
+    in the list l.
+ *)
+ >> Know ‘!N0. M -h->* N0 ==> ?i. i < LENGTH l /\ N0 = EL i l’
+ >- (HO_MATCH_MP_TAC RTC_ALT_RIGHT_INDUCT >> rw []
+     >- (Q.EXISTS_TAC ‘0’ >> rw [Abbr ‘M’]) \\
+    ‘SUC i < LENGTH l \/ i = n’ by rw [Abbr ‘n’]
+     >- (‘EL i l -h-> EL (SUC i) l’ by PROVE_TAC [] \\
+         Q.EXISTS_TAC ‘SUC i’ >> art [] \\
+         PROVE_TAC [hreduce1_unique]) \\
+    ‘EL i l = LAST l’ by rw [LAST_EL, Abbr ‘n’] \\
+     METIS_TAC [hnf_def])
+ >> DISCH_THEN (MP_TAC o (Q.SPEC ‘N’))
+ >> RW_TAC std_ss []
+ >> ‘i = n \/ i < n \/ n < i’ by rw []
+ >| [ (* goal 1 (of 3) *)
+      rw [],
+      (* goal 2 (of 3) *)
+     ‘SUC i < LENGTH l’ by rw [Abbr ‘n’] \\
+     ‘EL i l -h-> EL (SUC i) l’ by PROVE_TAC [] \\
+      METIS_TAC [hnf_def],
+      (* goal 3 (of 3) *)
+      fs [Abbr ‘n’] ]
+QED
+
 (* principle hnf has less (or equal) free variables
 
    NOTE: this theorem depends on finite_head_reduction_path_to_list_11 and
@@ -650,31 +710,20 @@ End
 Theorem principle_hnf_FV_SUBSET :
     !M. has_hnf M ==> FV (principle_hnf M) SUBSET FV M
 Proof
-    rw [corollary11_4_8]
- >> qabbrev_tac ‘p = head_reduction_path M’
- >> MP_TAC (Q.SPECL [‘M’, ‘p’] finite_head_reduction_path_to_list_11)
- >> rw [principle_hnf_def, combinTheory.o_DEF]
- >> simp [finite_last_el]
- >> Q.PAT_X_ASSUM ‘LENGTH l = _’ (ONCE_REWRITE_TAC o wrap o SYM)
- >> qabbrev_tac ‘n = PRE (LENGTH l)’
- >> ‘LENGTH l <> 0’ by rw [GSYM NOT_NIL_EQ_LENGTH_NOT_0]
- >> Know ‘el n p = EL n l’
- >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
-     FIRST_X_ASSUM MATCH_MP_TAC >> rw [Abbr ‘n’])
- >> Rewr'
- >> REWRITE_TAC [GSYM EL]
- (* preparing for induction *)
- >> Suff ‘!j. j < LENGTH l ==> FV (EL j l) SUBSET FV (EL 0 l)’
- >- (DISCH_THEN MATCH_MP_TAC >> rw [Abbr ‘n’])
- >> Q.PAT_X_ASSUM ‘!i. i < LENGTH l ==> EL i l = el i p’ K_TAC
- >> Induct_on ‘j’
- >> RW_TAC std_ss [SUBSET_REFL] (* only one goal is left *)
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘N = principle_hnf M’
+ (* applying principle_hnf_thm *)
+ >> Know ‘principle_hnf M = N’ >- rw [Abbr ‘N’]
+ >> rw [principle_hnf_thm]
+ >> Q.PAT_X_ASSUM ‘M -h->* N’ MP_TAC
+ >> Q.ID_SPEC_TAC ‘N’
+ >> HO_MATCH_MP_TAC RTC_ALT_RIGHT_INDUCT >> rw []
+ >> rename1 ‘N0 -h-> N1’
  >> MATCH_MP_TAC SUBSET_TRANS
- >> Q.EXISTS_TAC ‘FV (EL j l)’
- >> reverse CONJ_TAC
- >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [])
- >> MATCH_MP_TAC hreduce1_FV_SUBSET
- >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+ >> Q.EXISTS_TAC ‘FV N0’ >> art []
+ >> rw [SUBSET_DEF]
+ >> irule hreduce1_FV
+ >> Q.EXISTS_TAC ‘N1’ >> art []
 QED
 
 (* |- !M. solvable M ==> FV (principle_hnf M) SUBSET FV M *)
