@@ -2058,7 +2058,6 @@ Proof
  >> Know ‘principle_hnf (apply (p3 ++ p2 ++ p1) M) =
           VAR b @* args' @* MAP VAR as’
  >- (simp [Boehm_apply_APPEND] \\
-
      cheat)
  >> DISCH_TAC
  (* LHS rewriting from M to M0 *)
@@ -2076,7 +2075,22 @@ Proof
  >> Rewr'
  >> REWRITE_TAC [single_ssub]
  >> Cases_on ‘p’ >- FULL_SIMP_TAC std_ss []
- (* now p becomes h::t *)
+ (* NOTE: This needs ‘h::t IN ltree_paths (BTe X M)’ *)
+ >> ‘h < m’ by cheat
+ (* applying subterm_of_absfree_hnf *)
+ >> Know ‘subterm' Z (VAR b @* args' @* MAP VAR as) (h::t) =
+          subterm' Z (EL h args') t’
+ >- (
+     cheat)
+ >> Rewr'
+ >> Know ‘subterm' Z M0 (h::t) = subterm' (Z UNION set vs) (EL h args) t’
+ >- (
+     cheat)
+ >> Rewr'
+ >> Know ‘Z UNION set vs = Z’
+ >- (qunabbrev_tac ‘Z’ >> SET_TAC [])
+ >> Rewr'
+ (* final goal: subterm' Z (EL h args') t == [P/y] (subterm' Z (EL h args) t) *)
  >> cheat
 QED
 
