@@ -164,6 +164,13 @@ Also commonly used when rewriting are:
     using `Cong AND_CONG` allows use of each conjunct in a conjunction to rewrite the others; and
     the goal `(∀ e. MEM e l ==> f e = g e) ==> h (MAP f l) = h (MAP g l)` is solved by `simp[Cong MAP_CONG]`.
 
+<code>oneline <i>theorem</i></code>
+: Converts a definition with multiple clauses into a single clause, turning pattern-matches into `case`-expressions.
+  For example, `oneline listTheory.MAP` gives `⊢ MAP f v = case v of [] => [] | h::t => f h::MAP f t`.
+
+<code>lambdify <i>theorem</i></code>
+: Converts a definition of the form `⊢ ∀ x y z. f x y z = ...` into one of the form `⊢ f = (λx y z. ...)`.
+
 <br>
 Note that the above are termed *rules* - these transform theorems to other theorems, allowing the above to be combined (e.g. `simp[Once $ GSYM thm]`).
 There are many other useful rules - see the HOL4 documentation for more details.
@@ -190,6 +197,13 @@ This is most useful for certain simpset fragments:
 
 `DNF_ss`
 : Rewrites to convert to disjunctive normal form.
+
+<br>
+Conversely, `ExclSF` is like `Excl` above, but can be used to *exclude* a set of rewrites.
+
+<code>ExclSF <i>"simpset fragment name"</i></code>
+: Do not use the supplied simpset fragment when rewriting.
+  This allows temporary exclusion of a fragment from the stateful simpset.
 
 
 ## Provers
@@ -347,6 +361,9 @@ In many cases, we may want to state exactly how the goal should be taken apart (
 
 `MK_COMB_TAC`
 : Reduces a goal of the form `f x = g y` to two subgoals, `f = g` and `x = y`.
+
+`iff_tac`<br>`eq_tac`
+: Reduces a goal of the form `P <=> Q` to two subgoals, `P ==> Q` and `Q ==> P`.
 
 `impl_tac`
 : For a goal of the form `(A ==> B) ==> C`, splits into the two subgoals `A` and `B ==> C`.
