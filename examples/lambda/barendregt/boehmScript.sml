@@ -401,6 +401,28 @@ Proof
  >> rw [subterm_def]
 QED
 
+(* In the extreme case, M is a absfree hnf (i.e. VAR y @* args), and the
+   definition of subterm can be greatly simplified.
+ *)
+Theorem subterm_of_absfree_hnf :
+    !X M x xs. FINITE X /\ hnf M /\ ~is_abs M ==>
+      subterm X M (x::xs) =
+        let  m = hnf_children_size M;
+            Ms = hnf_children M
+        in
+            if x < m then subterm X (EL x Ms) xs else NONE
+Proof
+    rpt STRIP_TAC
+ >> ‘solvable M’ by PROVE_TAC [solvable_iff_has_hnf, hnf_has_hnf]
+ >> RW_TAC std_ss [subterm_of_solvables]
+ >> ‘?y args. M = VAR y @* args’ by PROVE_TAC [absfree_hnf_cases]
+ >> gs [Abbr ‘m’, Abbr ‘M0’, Abbr ‘Ms’, Abbr ‘n’, hnf_children_hnf, hnf_appstar]
+ >> ‘FINITE (X UNION FV (VAR y @* args))’ by rw []
+ >> POP_ASSUM (MP_TAC o (Q.SPEC ‘0’) o (MATCH_MP FRESH_list_def))
+ >> rw []
+ >> gs [Abbr ‘Ms'’, Abbr ‘M1’, hnf_children_hnf]
+QED
+
 (* NOTE: The uses of ‘subterm' X M p’ assumes ‘subterm X M p <> NONE’ *)
 Overload subterm' = “\X M p. SND (THE (subterm X M p))”
 
@@ -2020,11 +2042,7 @@ Proof
      Q.EXISTS_TAC ‘e’ >> art [])
  (* stage work *)
  >> Q.EXISTS_TAC ‘FEMPTY |+ (y,P)’
- (* NOTE: here, whatever Z it is, the first step is to establish
-
-    subterm' Z (apply (p3 ++ p2 ++ p1) M) p ==
-    subterm' Z (VAR b @* args' @* MAP VAR as) p
-   *)
+ (* NOTE: here, for rewriting M to M0 in the goal, Z can be anything. *)
  >> qabbrev_tac ‘Z = X UNION FV M UNION set vs’
  >> ‘FINITE Z’ by rw [Abbr ‘Z’]
  >> Q.EXISTS_TAC ‘Z’
@@ -2040,8 +2058,10 @@ Proof
  >> Know ‘principle_hnf (apply (p3 ++ p2 ++ p1) M) =
           VAR b @* args' @* MAP VAR as’
  >- (simp [Boehm_apply_APPEND] \\
+     
      cheat)
  >> DISCH_TAC
+ (* LHS rewriting from M to M0 *)
  >> Know ‘subterm' Z (apply (p3 ++ p2 ++ p1) M) p =
           subterm' Z (VAR b @* args' @* MAP VAR as) p’
  >- (POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM) \\

@@ -1327,14 +1327,17 @@ Theorem lameq_principle_hnf_thm' =
    The conclusion is that ‘principle_hnf (M @* MAP VAR vs) = M1’.
 
    Now ‘principle_hnf’ can be used to "denude" the outer LAMl of a solvable term.
- *)
+
+   TODO: an extra list of free variables l may need to append after MAP VAR vs.
+
 Theorem principle_hnf_denude_lemma :
-    !M vs y args. solvable M /\
+    !M vs l y args. solvable M /\
                   ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
                   LENGTH vs = LAMl_size (principle_hnf M) /\
                   principle_hnf M = LAMl vs (VAR y @* args) ==>
-                  solvable (M @* MAP VAR vs) /\
-                  principle_hnf (M @* MAP VAR vs) = VAR y @* args
+                  solvable (M @* MAP VAR vs @* MAP VAR l) /\
+                  principle_hnf (M @* MAP VAR vs @* MAP VAR l) =
+                  VAR y @* args @* MAP VAR l
 Proof
     rpt GEN_TAC >> STRIP_TAC
  >> qabbrev_tac ‘M0 = principle_hnf M’
@@ -1359,6 +1362,7 @@ Proof
  (* now all ‘principle_hnf’ are eliminated, leaving only -h->* *)
  >> cheat
 QED
+ *)
 
 val _ = export_theory ();
 val _ = html_theory "solvable";
