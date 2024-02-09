@@ -540,7 +540,7 @@ Proof
          MATCH_MP_TAC principle_hnf_beta_reduce >> rw [hnf_appstar]) \\
      qunabbrev_tac ‘Ms’ \\
      Rewr' >> simp [hnf_children_hnf] \\
-     qunabbrev_tac ‘m’ >> simp [hnf_children_size_hnf])
+     qunabbrev_tac ‘m’ >> simp [])
  >> DISCH_TAC
  (* stage work, now M is solvable *)
  >> Cases_on ‘p = []’
@@ -907,7 +907,7 @@ Proof
      simp [hnf_appstar])
  >> Rewr'
  >> simp [tpm_appstar, hnf_children_hnf]
- >> ‘m = LENGTH args’ by (rw [Abbr ‘m’, hnf_children_size_hnf])
+ >> ‘m = LENGTH args’ by (rw [Abbr ‘m’])
  >> Cases_on ‘p = []’ >> rw []
  >> cheat
 QED
