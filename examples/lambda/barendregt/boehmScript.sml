@@ -401,6 +401,25 @@ Proof
  >> rw [subterm_def]
 QED
 
+(* M0 is not needed if M is already an hnf *)
+Theorem subterm_of_hnf :
+    !X M x xs. FINITE X /\ hnf M ==>
+      subterm X M (x::xs) =
+        let  n = LAMl_size M;
+             m = hnf_children_size M;
+            vs = FRESH_list n (X UNION FV M);
+            M1 = principle_hnf (M @* (MAP VAR vs));
+            Ms = hnf_children M1
+        in
+            if x < m then subterm (X UNION set vs) (EL x Ms) xs else NONE
+Proof
+    rpt STRIP_TAC
+ >> ‘solvable M’ by PROVE_TAC [solvable_iff_has_hnf, hnf_has_hnf]
+ >> RW_TAC std_ss [subterm_of_solvables]
+ >> ‘M0 = M’ by rw [Abbr ‘M0’, principle_hnf_reduce]
+ >> POP_ASSUM (fn th => gs [Abbr ‘M0’, th])
+QED
+
 (* In the extreme case, M is a absfree hnf (i.e. VAR y @* args), and the
    definition of subterm can be greatly simplified.
  *)

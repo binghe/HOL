@@ -1383,35 +1383,6 @@ Proof
  >> rw [appstar_SNOC]
 QED
 
-(* ‘LAMl_vars X M’ is the "canonical" binding variables by FRESH_list *)
-Definition LAMl_vars_def :
-    LAMl_vars X M = FRESH_list (LAMl_size M) (X UNION FV M)
-End
-
-Theorem LAMl_vars_thm :
-    !X M. FINITE X ==>
-          ALL_DISTINCT (LAMl_vars X M) /\
-         (LENGTH (LAMl_vars X M) = LAMl_size M) /\
-          DISJOINT (set (LAMl_vars X M)) X /\
-          DISJOINT (set (LAMl_vars X M)) (FV M)
-Proof
-    rpt GEN_TAC >> DISCH_TAC
- >> simp [LAMl_vars_def]
- >> qabbrev_tac ‘n = LAMl_size M’
- >> qabbrev_tac ‘Z = X UNION FV M’
- >> MP_TAC (Q.SPECL [‘n’, ‘Z’] FRESH_list_def)
- >> ‘FINITE Z’ by rw [Abbr ‘Z’]
- >> qabbrev_tac ‘vs = FRESH_list n Z’
- >> ASM_SIMP_TAC std_ss [Abbr ‘Z’, DISJOINT_UNION']
-QED
-
-(* |- !M. ALL_DISTINCT (LAMl_vars {} M) /\
-         (LENGTH (LAMl_vars {} M) = LAMl_size M) /\
-          DISJOINT (set (LAMl_vars {} M)) (FV M)
- *)
-Theorem LAMl_vars_thm' =
-    SIMP_RULE (srw_ss()) [] (Q.SPEC ‘{}’ LAMl_vars_thm)
-
 (*---------------------------------------------------------------------------*
  *  hnf_children_size (of hnf)
  *---------------------------------------------------------------------------*)
@@ -1429,7 +1400,7 @@ Proof
     Induct_on ‘vs’ >> rw []
 QED
 
-Theorem hnf_children_size_hnf[simp] :
+Theorem hnf_children_size_appstar[simp] :
     hnf_children_size (VAR y @* Ms) = LENGTH Ms
 Proof
     Induct_on ‘Ms’ using SNOC_INDUCT >- rw []
