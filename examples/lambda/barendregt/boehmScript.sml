@@ -2058,7 +2058,7 @@ Proof
  >> Know ‘principle_hnf (apply (p3 ++ p2 ++ p1) M) =
           VAR b @* args' @* MAP VAR as’
  >- (simp [Boehm_apply_APPEND] \\
-     
+
      cheat)
  >> DISCH_TAC
  (* LHS rewriting from M to M0 *)
