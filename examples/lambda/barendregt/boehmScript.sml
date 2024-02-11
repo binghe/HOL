@@ -1995,14 +1995,37 @@ Proof
      Suff ‘FV (EL n args') SUBSET FV (EL n args)’ >- METIS_TAC [SUBSET_DEF] \\
      FIRST_X_ASSUM MATCH_MP_TAC >> art [])
  >> DISCH_TAC
- >> qabbrev_tac ‘Y = BIGUNION (IMAGE FV (set args))’
- >> qabbrev_tac ‘l = FRESH_list (q - m + 1) Y’
- >> Know ‘FINITE Y’
- >- (rw [Abbr ‘Y’] >> rw [])
+ (* NOTE: Z contains ‘vs’ in addition to X and FV M *)
+ >> qabbrev_tac ‘Z = X UNION FV M UNION set vs’
+ >> Know ‘FV M1 SUBSET Z’
+ >- (MATCH_MP_TAC SUBSET_TRANS \\
+     Q.EXISTS_TAC ‘FV M0 UNION set vs’ \\
+     reverse CONJ_TAC
+     >- (qunabbrev_tac ‘Z’ \\
+         Suff ‘FV M0 SUBSET FV M’ >- SET_TAC [] \\
+         qunabbrev_tac ‘M0’ \\
+         MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art []) \\
+     ‘FV M0 UNION set vs = FV (M0 @* MAP VAR vs)’ by rw [FV_appstar_MAP_VAR] \\
+      POP_ORW \\
+      Suff ‘solvable (M0 @* MAP VAR vs)’
+      >- (DISCH_TAC >> qunabbrev_tac ‘M1’ \\
+          MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art []) \\
+     ‘hnf M1’ by rw [hnf_appstar] \\
+     ‘solvable M1’ by rw [solvable_iff_has_hnf, hnf_has_hnf] \\
+      Suff ‘M0 @* MAP VAR vs == M1’ >- PROVE_TAC [lameq_solvable_cong] \\
+      rw [])
  >> DISCH_TAC
- >> Know ‘ALL_DISTINCT l /\ DISJOINT (set l) Y /\ LENGTH l = q - m + 1’
+ >> qabbrev_tac ‘l = FRESH_list (q - m + 1) Z’
+ >> ‘FINITE Z’ by (rw [Abbr ‘Z’] >> rw [])
+ >> Know ‘ALL_DISTINCT l /\ DISJOINT (set l) Z /\ LENGTH l = q - m + 1’
  >- (rw [Abbr ‘l’, FRESH_list_def])
  >> STRIP_TAC
+ (* now recover the old definition of Y *)
+ >> Know ‘DISJOINT (set l) (FV M1)’
+ >- (MATCH_MP_TAC DISJOINT_SUBSET \\
+     Q.EXISTS_TAC ‘Z’ >> art [])
+ >> art [FV_appstar, FV_thm]
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
  >> ‘l <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
  >> qabbrev_tac ‘as = FRONT l’
  >> ‘LENGTH as = q - m’ by rw [Abbr ‘as’, LENGTH_FRONT]
@@ -2051,8 +2074,9 @@ Proof
          Q.PAT_X_ASSUM ‘ALL_DISTINCT l’ MP_TAC \\
          Q.PAT_X_ASSUM ‘l = SNOC (LAST l) (FRONT l)’ (ONCE_REWRITE_TAC o wrap) \\
          rw [ALL_DISTINCT_SNOC] >> PROVE_TAC []) \\
-     rw [EVERY_MEM] \\
-     fs [LIST_TO_SET_SNOC] \\
+     rw [EVERY_MEM, MEM_MAP] \\
+     qabbrev_tac ‘Y = BIGUNION (IMAGE FV (set args))’ \\
+     rfs [LIST_TO_SET_SNOC] \\
      Suff ‘FV e SUBSET Y’ >- METIS_TAC [SUBSET_DEF] \\
      qunabbrev_tac ‘Y’ \\
      MATCH_MP_TAC SUBSET_TRANS \\
@@ -2062,8 +2086,6 @@ Proof
  (* stage work *)
  >> Q.EXISTS_TAC ‘FEMPTY |+ (y,P)’
  (* NOTE: here, for rewriting M to M0 in the goal, Z can be anything. *)
- >> qabbrev_tac ‘Z = X UNION FV M UNION set vs’
- >> ‘FINITE Z’ by rw [Abbr ‘Z’]
  >> Q.EXISTS_TAC ‘Z’
  (* RHS rewriting from M to M0 *)
  >> MATCH_MP_TAC lameq_TRANS
@@ -2074,9 +2096,17 @@ Proof
      qunabbrev_tac ‘M0’ \\
      MATCH_MP_TAC subterm_of_principle_hnf >> art [])
  (* stage work *)
- >> Know ‘principle_hnf (apply (p3 ++ p2 ++ p1) M) =
-          VAR b @* args' @* MAP VAR as’
+ >> Know ‘principle_hnf (apply (p3 ++ p2 ++ p1) M) = VAR b @* args' @* MAP VAR as’
  >- (simp [Boehm_apply_APPEND] \\
+     Q.PAT_X_ASSUM ‘Boehm_transform p1’ K_TAC \\
+     Q.PAT_X_ASSUM ‘apply p1 M0 == M1’ K_TAC \\
+     simp [Abbr ‘p1’, Boehm_apply_MAP_rightctxt'] \\
+     Q.PAT_X_ASSUM ‘Boehm_transform p2’ K_TAC \\
+     Q.PAT_X_ASSUM ‘apply p2 M1 = P @* args'’ K_TAC \\
+     simp [Abbr ‘p2’] \\
+     Q.PAT_X_ASSUM ‘Boehm_transform p3’ K_TAC \\
+     Q.PAT_X_ASSUM ‘apply p3 (P @* args') == _’ K_TAC \\
+     simp [Abbr ‘p3’, Boehm_apply_MAP_rightctxt'] \\
      cheat)
  >> DISCH_TAC
  (* LHS rewriting from M to M0 *)
