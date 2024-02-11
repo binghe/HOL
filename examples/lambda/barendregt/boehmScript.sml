@@ -2767,7 +2767,7 @@ Theorem distinct_benf_imp_incompatible =
 
    Also know as "Hilbert-Post completeness of lambda(beta)+eta".
  *)
-Theorem has_bnf_imp_lameta_complete :
+Theorem lameta_complete :
     !M N. has_bnf M /\ has_bnf N ==>
           lameta M N \/ ~consistent (conversion (RINSERT (beta RUNION eta) M N))
 Proof
