@@ -2097,7 +2097,8 @@ Proof
      MATCH_MP_TAC subterm_of_principle_hnf >> art [])
  (* stage work *)
  >> Know ‘principle_hnf (apply (p3 ++ p2 ++ p1) M) = VAR b @* args' @* MAP VAR as’
- >- (simp [Boehm_apply_APPEND] \\
+ >- (POP_ASSUM MP_TAC >> simp [Boehm_apply_APPEND] \\
+     Q.PAT_X_ASSUM ‘Boehm_transform (p3 ++ p2 ++ p1)’ K_TAC \\
      Q.PAT_X_ASSUM ‘Boehm_transform p1’ K_TAC \\
      Q.PAT_X_ASSUM ‘apply p1 M0 == M1’ K_TAC \\
      simp [Abbr ‘p1’, Boehm_apply_MAP_rightctxt'] \\
@@ -2107,6 +2108,36 @@ Proof
      Q.PAT_X_ASSUM ‘Boehm_transform p3’ K_TAC \\
      Q.PAT_X_ASSUM ‘apply p3 (P @* args') == _’ K_TAC \\
      simp [Abbr ‘p3’, Boehm_apply_MAP_rightctxt'] \\
+     Know ‘[P/y] (M @* MAP VAR vs) @* MAP VAR (SNOC b as) =
+           [P/y] (M @* MAP VAR vs @* MAP VAR (SNOC b as))’
+     >- (simp [appstar_SUB] \\
+         Suff ‘MAP [P/y] (MAP VAR (SNOC b as)) = MAP VAR (SNOC b as)’ >- Rewr \\
+         Q.PAT_X_ASSUM ‘l = SNOC b as’ (ONCE_REWRITE_TAC o wrap o SYM) \\
+         Q.PAT_X_ASSUM ‘LENGTH l = q - m + 1’ K_TAC \\
+         rw [LIST_EQ_REWRITE, EL_MAP] \\
+         MATCH_MP_TAC lemma14b \\
+         REWRITE_TAC [FV_thm, IN_SING] \\
+         Suff ‘~MEM y l’ >- (rw [MEM_EL] >> METIS_TAC []) \\
+         Q.PAT_X_ASSUM ‘DISJOINT (set l) {y}’ MP_TAC \\
+         rw [DISJOINT_ALT']) >> Rewr' \\
+     DISCH_TAC (* [P/y] ... == ... *) \\
+  (* applying principle_hnf_permutator *)
+     Know ‘VAR b @* args' @* MAP VAR as =
+           principle_hnf ([P/y] (VAR y @* args @* MAP VAR (SNOC b as)))’
+     >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+         simp [appstar_SUB, appstar_SNOC, MAP_SNOC] \\
+         Q.PAT_X_ASSUM ‘DISJOINT (set l) {y}’ MP_TAC \\
+         rw [DISJOINT_ALT'] \\
+         Know ‘MAP [P/y] (MAP VAR as) = MAP VAR as’
+         >- (Q.PAT_X_ASSUM ‘LENGTH as = _’ K_TAC \\
+             rw [LIST_EQ_REWRITE, EL_MAP] \\
+             MATCH_MP_TAC lemma14b >> rw [] \\
+             Q.PAT_X_ASSUM ‘~MEM y as’ MP_TAC \\
+             rw [MEM_EL] >> PROVE_TAC []) >> Rewr' \\
+         simp [Abbr ‘P’, GSYM appstar_APPEND] \\
+         MATCH_MP_TAC principle_hnf_permutator >> rw []) >> Rewr' \\
+  (* applying principle_hnf_substitutive *)
+     MATCH_MP_TAC principle_hnf_substitutive \\
      cheat)
  >> DISCH_TAC
  (* LHS rewriting from M to M0 *)
