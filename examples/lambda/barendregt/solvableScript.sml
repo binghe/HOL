@@ -1412,8 +1412,9 @@ val _ = hide "Y"; (* chap2Theory *)
 
 (* NOTE: this theroem is more general than principle_hnf_LAMl_appstar *)
 Theorem hreduce_LAMl_appstar :
-    !t xs Ns. hnf t /\ ALL_DISTINCT xs /\ LENGTH xs = LENGTH Ns
-          ==> LAMl xs t @* Ns -h->* (FEMPTY |++ (ZIP (xs,Ns))) ' t
+    !t xs Ns. ALL_DISTINCT xs /\ LENGTH xs = LENGTH Ns /\
+              EVERY (\e. DISJOINT (FV e) (set vs)) Ns
+          ==> LAMl xs t @* Ns -h->* fromPairs xs Ns ' t
 Proof
     cheat
 (*
@@ -1436,8 +1437,7 @@ QED
 
 Theorem principle_hnf_permutator_lemma[local] :
     !vs Ns. ALL_DISTINCT vs /\ ~MEM y vs /\ LENGTH vs = LENGTH Ns /\
-            EVERY (\e. DISJOINT (FV e) (set (SNOC y vs))) Ns /\
-            hnf N /\ ~is_abs N ==>
+            EVERY (\e. DISJOINT (FV e) (set (SNOC y vs))) (SNOC N Ns) ==>
             LAMl vs (LAM y (VAR y @* MAP VAR vs)) @* Ns @@ N -h->* N @* Ns
 Proof
     rpt STRIP_TAC
@@ -1445,8 +1445,41 @@ Proof
  >> qabbrev_tac ‘vs' = SNOC y vs’
  >> qabbrev_tac ‘Ns' = SNOC N Ns’
  >> qabbrev_tac ‘t = VAR y @* MAP VAR vs’
- >> qabbrev_tac ‘pi = ZIP (vs',Ns')’
- >> cheat
+ >> Suff ‘N @* Ns = fromPairs vs' Ns' ' t’
+ >- (Rewr' \\
+     MATCH_MP_TAC hreduce_LAMl_appstar \\
+     rw [Abbr ‘vs'’, Abbr ‘Ns'’, ALL_DISTINCT_SNOC] \\
+     Q.PAT_X_ASSUM ‘EVERY _ (SNOC N Ns)’ MP_TAC \\
+     rw [EVERY_MEM, LIST_TO_SET_SNOC] \\ (* 2 subgoals, same tactics *)
+     METIS_TAC [])
+ >> ‘LENGTH vs' = LENGTH Ns'’ by rw [Abbr ‘vs'’, Abbr ‘Ns'’]
+ >> ‘y IN FDOM (fromPairs vs' Ns')’ by rw [FDOM_fromPairs, Abbr ‘vs'’]
+ >> simp [Abbr ‘t’, ssub_appstar]
+ >> Know ‘fromPairs vs' Ns' ' y = N’
+ >- (‘y = LAST vs'’ by rw [Abbr ‘vs'’, LAST_SNOC] >> POP_ORW \\
+     ‘vs' <> []’ by rw [Abbr ‘vs'’] \\
+     rw [LAST_EL] \\
+     qabbrev_tac ‘n = PRE (LENGTH Ns')’ \\
+     Know ‘fromPairs vs' Ns' ' (EL n vs') = EL n Ns'’
+     >- (MATCH_MP_TAC fromPairs_FAPPLY_EL \\
+         rw [Abbr ‘vs'’, Abbr ‘Ns'’, ALL_DISTINCT_SNOC, Abbr ‘n’]) >> Rewr' \\
+    ‘Ns' <> []’ by rw [Abbr ‘Ns'’] \\
+    ‘EL n Ns' = LAST Ns'’ by rw [LAST_EL, Abbr ‘n’] >> POP_ORW \\
+     rw [Abbr ‘Ns'’, LAST_SNOC])
+ >> Rewr'
+ >> Suff ‘MAP ($' (fromPairs vs' Ns')) (MAP VAR vs) = Ns’ >- rw []
+ >> rw [LIST_EQ_REWRITE]
+ >> rename1 ‘i < LENGTH Ns’
+ >> Know ‘EL i vs IN FDOM (fromPairs vs' Ns')’
+ >- (rw [FDOM_fromPairs] \\
+     rw [Abbr ‘vs'’, MEM_EL] \\
+     DISJ2_TAC >> Q.EXISTS_TAC ‘i’ >> art [])
+ >> rw [EL_MAP]
+ >> Know ‘EL i vs = EL i vs' /\ EL i Ns = EL i Ns'’
+ >- ASM_SIMP_TAC std_ss [EL_SNOC, Abbr ‘vs'’, Abbr ‘Ns'’]
+ >> rw []
+ >> MATCH_MP_TAC fromPairs_FAPPLY_EL
+ >> rw [Abbr ‘vs'’, Abbr ‘Ns'’, ALL_DISTINCT_SNOC]
 QED
 
 Theorem principle_hnf_permutator :
@@ -1471,13 +1504,12 @@ Proof
  >> ‘MEM z Z’ by rw [Abbr ‘z’, MEM_LAST_NOT_NIL]
  >> qabbrev_tac ‘M = VAR z @* MAP VAR (FRONT Z)’
  (* preparing for LAMl_ALPHA_ssub *)
- >> qabbrev_tac
-     ‘Y = FRESH_list (n + 1) (set Z UNION (BIGUNION (IMAGE FV (set Ns))))’
- >> Know ‘FINITE (set Z UNION (BIGUNION (IMAGE FV (set Ns))))’
- >- (rw [] >> rw [FINITE_FV])
- >> DISCH_TAC
+ >> qabbrev_tac ‘Y = FRESH_list (n + 1)
+                       (set Z UNION (FV N) UNION (BIGUNION (IMAGE FV (set Ns))))’
+ >> ‘FINITE (set Z UNION (FV N) UNION (BIGUNION (IMAGE FV (set Ns))))’
+       by (rw [] >> rw [FINITE_FV])
  >> Know ‘ALL_DISTINCT Y /\
-          DISJOINT (set Y) (set Z UNION (BIGUNION (IMAGE FV (set Ns)))) /\
+          DISJOINT (set Y) (set Z UNION (FV N) UNION (BIGUNION (IMAGE FV (set Ns)))) /\
           LENGTH Y = n + 1’
  >- (ASM_SIMP_TAC std_ss [FRESH_list_def, Abbr ‘Y’])
  >> rw []
@@ -1538,7 +1570,7 @@ Proof
  >> STRIP_TAC
  >> MATCH_MP_TAC principle_hnf_permutator_lemma
  >> ‘SNOC y vs = Y’ by METIS_TAC [SNOC_LAST_FRONT] >> POP_ORW
- >> rw [EVERY_MEM, Abbr ‘vs’, LENGTH_FRONT]
+ >> rw [EVERY_MEM, Abbr ‘vs’, LENGTH_FRONT] >- art []
  >> FIRST_X_ASSUM MATCH_MP_TAC
  >> Q.EXISTS_TAC ‘e’ >> art []
 QED
