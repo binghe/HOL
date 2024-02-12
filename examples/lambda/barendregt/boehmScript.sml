@@ -2138,7 +2138,54 @@ Proof
          MATCH_MP_TAC principle_hnf_permutator >> rw []) >> Rewr' \\
   (* applying principle_hnf_substitutive *)
      MATCH_MP_TAC principle_hnf_substitutive \\
-     cheat)
+     CONJ_TAC (* has_hnf #1 *)
+     >- (simp [GSYM solvable_iff_has_hnf, GSYM appstar_APPEND] \\
+        ‘M0 == M’ by rw [lameq_principle_hnf', Abbr ‘M0’] \\
+        ‘M0 @* (MAP VAR vs ++ MAP VAR (SNOC b as)) ==
+          M @* (MAP VAR vs ++ MAP VAR (SNOC b as))’ by rw [lameq_appstar_cong] \\
+         Suff ‘solvable (M0 @* (MAP VAR vs ++ MAP VAR (SNOC b as)))’
+         >- PROVE_TAC [lameq_solvable_cong] \\
+         NTAC 2 (POP_ASSUM K_TAC) \\
+         REWRITE_TAC [appstar_APPEND] \\
+         qabbrev_tac ‘M0' = M0 @* MAP VAR vs’ \\
+        ‘M0' == M1’ by rw [Abbr ‘M0'’] \\
+        ‘M0' @* MAP VAR (SNOC b as) == M1 @* MAP VAR (SNOC b as)’
+           by rw [lameq_appstar_cong] \\
+         Suff ‘solvable (M1 @* MAP VAR (SNOC b as))’
+         >- PROVE_TAC [lameq_solvable_cong] \\
+         REWRITE_TAC [solvable_iff_has_hnf] \\
+         MATCH_MP_TAC hnf_has_hnf \\
+         rw [hnf_appstar]) \\
+     CONJ_TAC (* has_hnf #2 *)
+     >- (REWRITE_TAC [GSYM solvable_iff_has_hnf] \\
+         Suff ‘solvable (VAR b @* args' @* MAP VAR as)’
+         >- PROVE_TAC [lameq_solvable_cong] \\
+         REWRITE_TAC [solvable_iff_has_hnf] \\
+         MATCH_MP_TAC hnf_has_hnf \\
+         rw [hnf_appstar]) \\
+     CONJ_TAC
+     >- (simp [appstar_SUB, MAP_SNOC] \\
+         Q.PAT_X_ASSUM ‘DISJOINT (set l) {y}’ MP_TAC \\
+         rw [DISJOINT_ALT'] \\
+         Know ‘MAP [P/y] (MAP VAR as) = MAP VAR as’
+         >- (Q.PAT_X_ASSUM ‘LENGTH as = _’ K_TAC \\
+             rw [LIST_EQ_REWRITE, EL_MAP] \\
+             MATCH_MP_TAC lemma14b >> rw [] \\
+             Q.PAT_X_ASSUM ‘~MEM y as’ MP_TAC \\
+             rw [MEM_EL] >> PROVE_TAC []) >> Rewr' \\
+         simp [Abbr ‘P’, GSYM appstar_APPEND] \\
+         REWRITE_TAC [GSYM solvable_iff_has_hnf] \\
+         Know ‘permutator q @* (args' ++ MAP VAR as) @@ VAR b ==
+               VAR b @* (args' ++ MAP VAR as)’
+         >- (MATCH_MP_TAC permutator_thm >> rw []) >> DISCH_TAC \\
+         Suff ‘solvable (VAR b @* (args' ++ MAP VAR as))’
+         >- PROVE_TAC [lameq_solvable_cong] \\
+         REWRITE_TAC [solvable_iff_has_hnf] \\
+         MATCH_MP_TAC hnf_has_hnf \\
+         rw [hnf_appstar]) \\
+   (* applying principle_hnf_denude_lemma (hard to prove) *)
+      MATCH_MP_TAC principle_hnf_denude_lemma >> art [] \\
+      rw [Abbr ‘M0’])
  >> DISCH_TAC
  (* LHS rewriting from M to M0 *)
  >> Know ‘subterm' Z (apply (p3 ++ p2 ++ p1) M) p =
@@ -2149,28 +2196,20 @@ Proof
      MATCH_MP_TAC subterm_of_principle_hnf >> art [] \\
      Suff ‘solvable (VAR b @* args' @* MAP VAR as)’
      >- PROVE_TAC [lameq_solvable_cong] \\
-     rw [solvable_iff_has_hnf] \\
+     REWRITE_TAC [solvable_iff_has_hnf] \\
      MATCH_MP_TAC hnf_has_hnf \\
-     rw [hnf_appstar, GSYM appstar_APPEND])
+     rw [hnf_appstar])
  >> Rewr'
+ (* stage work, now ‘M’ is eliminated from both sides! *)
  >> REWRITE_TAC [single_ssub]
  >> Cases_on ‘p’ >- FULL_SIMP_TAC std_ss []
  (* NOTE: This needs ‘h::t IN ltree_paths (BTe X M)’ *)
  >> ‘h < m’ by cheat
  (* applying subterm_of_absfree_hnf *)
- >> Know ‘subterm' Z (VAR b @* args' @* MAP VAR as) (h::t) =
-          subterm' Z (EL h args') t’
- >- (
-     cheat)
- >> Rewr'
- >> Know ‘subterm' Z M0 (h::t) = subterm' (Z UNION set vs) (EL h args) t’
- >- (
-     cheat)
- >> Rewr'
- >> Know ‘Z UNION set vs = Z’
- >- (qunabbrev_tac ‘Z’ >> SET_TAC [])
- >> Rewr'
- (* final goal: subterm' Z (EL h args') t == [P/y] (subterm' Z (EL h args) t) *)
+ >> MP_TAC (Q.SPECL [‘Z’, ‘VAR b @* args' @* MAP VAR as’, ‘h’, ‘t’]
+                    subterm_of_absfree_hnf)
+ >> simp [hnf_appstar, GSYM appstar_APPEND, hnf_children_appstar]
+ >> DISCH_THEN K_TAC (* already used *)
  >> cheat
 QED
 
