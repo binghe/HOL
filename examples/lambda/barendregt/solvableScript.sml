@@ -41,7 +41,6 @@ Proof
 QED
 
 val _ = reveal "Y"; (* from chap2Theory *)
-
 Theorem solvable_Y :
     solvable Y
 Proof
@@ -49,6 +48,7 @@ Proof
  >> Q.EXISTS_TAC ‘[K @@ I]’ >> simp []
  >> ASM_SIMP_TAC (betafy (srw_ss())) [YYf, Once YffYf, lameq_K]
 QED
+val _ = hide "Y";
 
 Theorem closure_VAR[simp] :
     closure (VAR x) = I
@@ -831,9 +831,9 @@ Theorem principle_hnf_LAMl_appstar_lemma[local] :
        (!y. MEM y (MAP SND pi) ==> y # t) ==>
         principle_hnf (LAMl (MAP FST pi) t @* MAP VAR (MAP SND pi)) = tpm pi t
 Proof
-    Induct_on ‘pi’ (* using SNOC_INDUCT *)
+    Induct_on ‘pi’
  >- rw [principle_hnf_reduce]
- >> rw [] (* rw [FOLDR_SNOC, MAP_SNOC] *)
+ >> rw []
  >> Cases_on ‘h’ (* ‘x’ *) >> fs []
  >> qabbrev_tac ‘M = LAMl (MAP FST pi) t’
  >> ‘hnf M’ by rw [Abbr ‘M’, hnf_LAMl]
@@ -1408,22 +1408,39 @@ Proof
  >> MATCH_MP_TAC  principle_hnf_denude_lemma >> art []
 QED
 
-val _ = hide "Y"; (* chap2Theory *)
+Theorem hreduce_LAMl_appstar_lemma[local] :
+    !pi. ALL_DISTINCT (MAP FST pi) /\
+         EVERY (\e. DISJOINT (FV e) (set (MAP FST pi))) (MAP SND pi) ==>
+         LAMl (MAP FST pi) t @* MAP SND pi -h->* (FEMPTY |++ pi) ' t
+Proof
+    Induct_on ‘pi’
+ >- rw [FUPDATE_LIST_THM]
+ >> rw []
+ >> Q.PAT_X_ASSUM ‘_ ==> LAMl (MAP FST pi) t @* MAP SND pi -h->* (FEMPTY |++ pi) ' t’
+                  MP_TAC
+ >> Know ‘EVERY (\e. DISJOINT (FV e) (set (MAP FST pi))) (MAP SND pi)’
+ >- (POP_ASSUM MP_TAC \\
+     rw [EVERY_MEM, MEM_MAP])
+ >> RW_TAC std_ss []
+ (* stage work *)
+ >> qabbrev_tac ‘vs = MAP FST pi’
+ >> qabbrev_tac ‘Ns = MAP SND pi’
+ >> cheat
+QED
 
-(* NOTE: this theroem is more general than principle_hnf_LAMl_appstar *)
 Theorem hreduce_LAMl_appstar :
     !t xs Ns. ALL_DISTINCT xs /\ LENGTH xs = LENGTH Ns /\
-              EVERY (\e. DISJOINT (FV e) (set vs)) Ns
+              EVERY (\e. DISJOINT (FV e) (set xs)) Ns
           ==> LAMl xs t @* Ns -h->* fromPairs xs Ns ' t
 Proof
-    cheat
-(*
     RW_TAC std_ss []
  >> qabbrev_tac ‘n = LENGTH xs’
- >> qabbrev_tac ‘pi = ZIP (xs,ys)’
+ >> REWRITE_TAC [fromPairs_def]
+ >> qabbrev_tac ‘pi = ZIP (xs,Ns)’
  >> ‘xs = MAP FST pi’ by rw [Abbr ‘pi’, MAP_ZIP]
- >> ‘ys = MAP SND pi’ by rw [Abbr ‘pi’, MAP_ZIP]
- >> Know ‘!y. MEM y (MAP SND pi) ==> y # t’
+ >> ‘Ns = MAP SND pi’ by rw [Abbr ‘pi’, MAP_ZIP]
+ (*
+ >> Know ‘!y. MEM y (MAP SND pi) ==> DISJOINT (FV y) (FV t)’
  >- (Q.PAT_X_ASSUM ‘DISJOINT (set vs) (FV t)’ MP_TAC \\
      rw [DISJOINT_ALT, Abbr ‘pi’, MEM_MAP, MEM_ZIP, MEM_EL] \\
      simp [] \\
@@ -1431,8 +1448,9 @@ Proof
      Q.EXISTS_TAC ‘n’ >> art [])
  >> DISCH_TAC
  >> simp []
- >> MATCH_MP_TAC principle_hnf_LAMl_appstar_lemma >> rw []
- *)
+  *)
+ >> simp []
+ >> MATCH_MP_TAC hreduce_LAMl_appstar_lemma >> rw []
 QED
 
 Theorem principle_hnf_permutator_lemma[local] :
