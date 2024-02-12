@@ -1445,6 +1445,96 @@ Proof
  >> METIS_TAC []
 QED
 
+(*---------------------------------------------------------------------------*
+ *  hreduce, LAMl and appstar
+ *---------------------------------------------------------------------------*)
+
+Theorem hreduce_LAMl_appstar_lemma[local] :
+    !pi. ALL_DISTINCT (MAP FST pi) /\
+         EVERY (\e. DISJOINT (FV e) (set (MAP FST pi))) (MAP SND pi) ==>
+         LAMl (MAP FST pi) t @* MAP SND pi -h->* (FEMPTY |++ pi) ' t
+Proof
+    Induct_on ‘pi’
+ >> rw [FUPDATE_LIST_THM] (* only one goal left *)
+ (* cleanup antecedents of IH *)
+ >> Q.PAT_X_ASSUM
+     ‘_ ==> LAMl (MAP FST pi) t @* MAP SND pi -h->* (FEMPTY |++ pi) ' t’ MP_TAC
+ >> Know ‘EVERY (\e. DISJOINT (FV e) (set (MAP FST pi))) (MAP SND pi)’
+ >- (POP_ASSUM MP_TAC \\
+     rw [EVERY_MEM, MEM_MAP])
+ >> RW_TAC std_ss []
+ (* stage work *)
+ >> qabbrev_tac ‘vs = MAP FST pi’
+ >> qabbrev_tac ‘Ns = MAP SND pi’
+ >> simp [Once RTC_CASES1]
+ >> DISJ2_TAC
+ (* preparing for hreduce1_rules_appstar *)
+ >> qabbrev_tac ‘v = FST h’
+ >> qabbrev_tac ‘N = SND h’
+ >> Q.EXISTS_TAC ‘[N/v] (LAMl vs t) @* Ns’
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC hreduce1_rules_appstar >> simp [] \\
+     rw [Once hreduce1_cases] \\
+     qexistsl_tac [‘v’, ‘LAMl vs t’] >> rw [])
+ >> Know ‘[N/v] (LAMl vs t) @* Ns =
+          [N/v] (LAMl vs t @* Ns)’
+ >- (simp [appstar_SUB] \\
+     Suff ‘MAP [N/v] Ns = Ns’ >- rw [] \\
+     rw [LIST_EQ_REWRITE, EL_MAP] \\
+     MATCH_MP_TAC lemma14b \\
+     rename1 ‘i < LENGTH Ns’ \\
+     Q.PAT_X_ASSUM ‘EVERY (\e. DISJOINT (FV e) (set vs) /\ v # e) Ns’ MP_TAC \\
+     rw [EVERY_MEM] \\
+     POP_ASSUM (MP_TAC o (Q.SPEC ‘EL i Ns’)) \\
+     Suff ‘MEM (EL i Ns) Ns’ >- rw [] \\
+     rw [MEM_EL] >> Q.EXISTS_TAC ‘i’ >> art [])
+ >> Rewr'
+ >> ‘h = (v,N)’ by rw [Abbr ‘v’, Abbr ‘N’] >> POP_ORW
+ >> simp [FUPDATE_LIST_THM]
+ (* applying FUPDATE_FUPDATE_LIST_COMMUTES *)
+ >> Know ‘FEMPTY |+ (v,N) |++ pi = (FEMPTY |++ pi) |+ (v,N)’
+ >- (MATCH_MP_TAC FUPDATE_FUPDATE_LIST_COMMUTES >> rw [])
+ >> Rewr'
+ >> qabbrev_tac ‘fm = FEMPTY |++ pi’
+ >> ‘FDOM fm = set vs’ by rw [Abbr ‘fm’, FDOM_FUPDATE_LIST]
+ (* applying ssub_update_apply_SUBST' *)
+ >> Know ‘(fm |+ (v,N)) ' t = [fm ' N/v] (fm ' t)’
+ >- (MATCH_MP_TAC ssub_update_apply_SUBST' \\
+     rw [Once DISJOINT_SYM, MEM_EL, Abbr ‘fm’] \\
+     Know ‘(FEMPTY |++ pi) ' (EL n vs) = EL n Ns’
+     >- (MATCH_MP_TAC FUPDATE_LIST_APPLY_MEM \\
+        ‘LENGTH pi = LENGTH vs’ by rw [Abbr ‘vs’] \\
+         Q.EXISTS_TAC ‘n’ >> rw [] \\
+         Q.PAT_X_ASSUM ‘ALL_DISTINCT vs’ MP_TAC \\
+         rw [EL_ALL_DISTINCT_EL_EQ]) >> Rewr' \\
+     Q.PAT_X_ASSUM ‘EVERY (\e. DISJOINT (FV e) (set vs) /\ v # e) Ns’ MP_TAC \\
+     rw [EVERY_MEM] \\
+     POP_ASSUM (MP_TAC o (Q.SPEC ‘EL n Ns’)) \\
+     Suff ‘MEM (EL n Ns) Ns’ >- rw [] \\
+     rw [MEM_EL] >> Q.EXISTS_TAC ‘n’ >> art [] \\
+     Suff ‘LENGTH Ns = LENGTH vs’ >- rw [] \\
+     rw [Abbr ‘Ns’, Abbr ‘vs’])
+ >> Rewr'
+ >> Know ‘fm ' N = N’
+ >- (MATCH_MP_TAC ssub_14b >> rw [GSYM DISJOINT_DEF])
+ >> Rewr'
+ >> MATCH_MP_TAC hreduce_substitutive >> art []
+QED
+
+Theorem hreduce_LAMl_appstar :
+    !t xs Ns. ALL_DISTINCT xs /\ (LENGTH xs = LENGTH Ns) /\
+              EVERY (\e. DISJOINT (FV e) (set xs)) Ns
+          ==> LAMl xs t @* Ns -h->* (FEMPTY |++ ZIP (xs,Ns)) ' t
+Proof
+    RW_TAC std_ss []
+ >> qabbrev_tac ‘n = LENGTH xs’
+ >> qabbrev_tac ‘pi = ZIP (xs,Ns)’
+ >> ‘xs = MAP FST pi’ by rw [Abbr ‘pi’, MAP_ZIP]
+ >> ‘Ns = MAP SND pi’ by rw [Abbr ‘pi’, MAP_ZIP]
+ >> simp []
+ >> MATCH_MP_TAC hreduce_LAMl_appstar_lemma >> rw []
+QED
+
 val _ = export_theory()
 val _ = html_theory "head_reduction";
 
