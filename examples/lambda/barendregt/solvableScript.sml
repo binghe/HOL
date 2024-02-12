@@ -1414,8 +1414,7 @@ Theorem hreduce_LAMl_appstar_lemma[local] :
          LAMl (MAP FST pi) t @* MAP SND pi -h->* (FEMPTY |++ pi) ' t
 Proof
     Induct_on ‘pi’
- >- rw [FUPDATE_LIST_THM]
- >> rw []
+ >> rw [FUPDATE_LIST_THM] (* only one goal left *)
  (* cleanup antecedents of IH *)
  >> Q.PAT_X_ASSUM
      ‘_ ==> LAMl (MAP FST pi) t @* MAP SND pi -h->* (FEMPTY |++ pi) ' t’ MP_TAC
@@ -1476,8 +1475,7 @@ Proof
      rw [Abbr ‘Ns’, Abbr ‘vs’])
  >> Rewr'
  >> Know ‘fm ' N = N’
- >- (MATCH_MP_TAC ssub_14b \\
-     rw [GSYM DISJOINT_DEF])
+ >- (MATCH_MP_TAC ssub_14b >> rw [GSYM DISJOINT_DEF])
  >> Rewr'
  >> MATCH_MP_TAC hreduce_substitutive >> art []
 QED
@@ -1493,16 +1491,6 @@ Proof
  >> qabbrev_tac ‘pi = ZIP (xs,Ns)’
  >> ‘xs = MAP FST pi’ by rw [Abbr ‘pi’, MAP_ZIP]
  >> ‘Ns = MAP SND pi’ by rw [Abbr ‘pi’, MAP_ZIP]
- (*
- >> Know ‘!y. MEM y (MAP SND pi) ==> DISJOINT (FV y) (FV t)’
- >- (Q.PAT_X_ASSUM ‘DISJOINT (set vs) (FV t)’ MP_TAC \\
-     rw [DISJOINT_ALT, Abbr ‘pi’, MEM_MAP, MEM_ZIP, MEM_EL] \\
-     simp [] \\
-     FIRST_X_ASSUM MATCH_MP_TAC \\
-     Q.EXISTS_TAC ‘n’ >> art [])
- >> DISCH_TAC
- >> simp []
-  *)
  >> simp []
  >> MATCH_MP_TAC hreduce_LAMl_appstar_lemma >> rw []
 QED
