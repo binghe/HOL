@@ -1410,13 +1410,43 @@ QED
 
 val _ = hide "Y"; (* chap2Theory *)
 
+(* NOTE: this theroem is more general than principle_hnf_LAMl_appstar *)
+Theorem hreduce_LAMl_appstar :
+    !t xs Ns. hnf t /\ ALL_DISTINCT xs /\ LENGTH xs = LENGTH Ns
+          ==> LAMl xs t @* Ns -h->* (FEMPTY |++ (ZIP (xs,Ns))) ' t
+Proof
+    cheat
+(*
+    RW_TAC std_ss []
+ >> qabbrev_tac ‘n = LENGTH xs’
+ >> qabbrev_tac ‘pi = ZIP (xs,ys)’
+ >> ‘xs = MAP FST pi’ by rw [Abbr ‘pi’, MAP_ZIP]
+ >> ‘ys = MAP SND pi’ by rw [Abbr ‘pi’, MAP_ZIP]
+ >> Know ‘!y. MEM y (MAP SND pi) ==> y # t’
+ >- (Q.PAT_X_ASSUM ‘DISJOINT (set vs) (FV t)’ MP_TAC \\
+     rw [DISJOINT_ALT, Abbr ‘pi’, MEM_MAP, MEM_ZIP, MEM_EL] \\
+     simp [] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘n’ >> art [])
+ >> DISCH_TAC
+ >> simp []
+ >> MATCH_MP_TAC principle_hnf_LAMl_appstar_lemma >> rw []
+ *)
+QED
+
 Theorem principle_hnf_permutator_lemma[local] :
     !vs Ns. ALL_DISTINCT vs /\ ~MEM y vs /\ LENGTH vs = LENGTH Ns /\
             EVERY (\e. DISJOINT (FV e) (set (SNOC y vs))) Ns /\
             hnf N /\ ~is_abs N ==>
             LAMl vs (LAM y (VAR y @* MAP VAR vs)) @* Ns @@ N -h->* N @* Ns
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> REWRITE_TAC [GSYM LAMl_SNOC, GSYM appstar_SNOC]
+ >> qabbrev_tac ‘vs' = SNOC y vs’
+ >> qabbrev_tac ‘Ns' = SNOC N Ns’
+ >> qabbrev_tac ‘t = VAR y @* MAP VAR vs’
+ >> qabbrev_tac ‘pi = ZIP (vs',Ns')’
+ >> cheat
 QED
 
 Theorem principle_hnf_permutator :
