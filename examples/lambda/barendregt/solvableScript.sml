@@ -1367,27 +1367,37 @@ QED
 Theorem principle_hnf_denude_lemma :
     !M vs l y args. solvable M /\
        ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
+       M -h->* LAMl vs (VAR y @* args) /\
+       solvable (M @* MAP VAR vs @* MAP VAR l) ==>
+       M @* MAP VAR vs @* MAP VAR l -h->* VAR y @* args @* MAP VAR l
+Proof
+    cheat
+QED
+
+Theorem principle_hnf_denude_thm :
+    !M vs l y args. solvable M /\
+       ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
        LENGTH vs = LAMl_size (principle_hnf M) /\
        principle_hnf M = LAMl vs (VAR y @* args) ==>
        principle_hnf (M @* MAP VAR vs @* MAP VAR l) = VAR y @* args @* MAP VAR l
 Proof
-    cheat
-QED
-(*
     rpt GEN_TAC >> STRIP_TAC
  >> qabbrev_tac ‘M0 = principle_hnf M’
  (* applying principle_hnf_thm' *)
  >> Know ‘principle_hnf M = M0’ >- rw [Abbr ‘M0’]
  >> simp [principle_hnf_thm', hnf_appstar]
  >> DISCH_TAC
- >> CONJ_ASM1_TAC
+ >> Know ‘solvable (M @* MAP VAR vs @* MAP VAR l)’
  >- (‘M0 == M’ by rw [lameq_principle_hnf', Abbr ‘M0’] \\
      ‘M0 @* MAP VAR vs == VAR y @* args’ by rw [] \\
      ‘M0 @* MAP VAR vs == M @* MAP VAR vs’ by rw [lameq_appstar_cong] \\
-     ‘M @* MAP VAR vs == VAR y @* args’ by PROVE_TAC [lameq_SYM, lameq_TRANS] \\
-     Suff ‘solvable (VAR y @* args)’ >- PROVE_TAC [lameq_solvable_cong] \\
-     rw [solvable_iff_has_hnf] \\
+     Know ‘M @* MAP VAR vs @* MAP VAR l == VAR y @* args @* MAP VAR l’
+     >- (MATCH_MP_TAC lameq_appstar_cong \\
+         PROVE_TAC [lameq_SYM, lameq_TRANS]) >> DISCH_TAC \\
+     Suff ‘solvable (VAR y @* args @* MAP VAR l)’ >- PROVE_TAC [lameq_solvable_cong] \\
+     REWRITE_TAC [solvable_iff_has_hnf] \\
      MATCH_MP_TAC hnf_has_hnf >> rw [hnf_appstar])
+ >> DISCH_TAC
  (* eliminate M0 *)
  >> Q.PAT_X_ASSUM ‘M0 = _’ K_TAC
  >> qunabbrev_tac ‘M0’
@@ -1395,24 +1405,39 @@ QED
  >> simp [principle_hnf_thm', hnf_appstar]
  >> Q.PAT_X_ASSUM ‘_ = LAMl_size (principle_hnf M)’ K_TAC
  (* now all ‘principle_hnf’ are eliminated, leaving only -h->* *)
- >> cheat
+ >> MATCH_MP_TAC  principle_hnf_denude_lemma >> art []
 QED
- *)
+
+val _ = hide "Y"; (* chap2Theory *)
+
+Theorem principle_hnf_permutator_lemma[local] :
+    !vs Ns. ALL_DISTINCT vs /\ ~MEM y vs /\ LENGTH vs = LENGTH Ns /\
+            EVERY (\e. DISJOINT (FV e) (set (SNOC y vs))) Ns /\
+            hnf N /\ ~is_abs N ==>
+            LAMl vs (LAM y (VAR y @* MAP VAR vs)) @* Ns @@ N -h->* N @* Ns
+Proof
+    cheat
+QED
 
 Theorem principle_hnf_permutator :
     !n N Ns. hnf N /\ ~is_abs N /\ LENGTH Ns = n ==>
              principle_hnf (permutator n @* Ns @@ N) = N @* Ns
 Proof
-    cheat
-QED
-(*
-    RW_TAC std_ss [permutator_def]
+    rpt STRIP_TAC
+ >> Know ‘solvable (permutator n @* Ns @@ N)’
+ >- (‘permutator n @* Ns @@ N == N @* Ns’
+       by PROVE_TAC [permutator_thm] \\
+     Suff ‘solvable (N @* Ns)’ >- PROVE_TAC [lameq_solvable_cong] \\
+     REWRITE_TAC [solvable_iff_has_hnf] \\
+     MATCH_MP_TAC hnf_has_hnf \\
+     rw [hnf_appstar])
+ >> DISCH_TAC
+ >> rw [principle_hnf_thm', hnf_appstar]
+ >> RW_TAC std_ss [permutator_def]
  >> qabbrev_tac ‘n = LENGTH Ns’
- >> qabbrev_tac ‘Z = GENLIST n2s (n + 1)’
  >> ‘ALL_DISTINCT Z /\ LENGTH Z = n + 1’
        by (rw [Abbr ‘Z’, ALL_DISTINCT_GENLIST])
  >> ‘Z <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
- >> qabbrev_tac ‘z = LAST Z’
  >> ‘MEM z Z’ by rw [Abbr ‘z’, MEM_LAST_NOT_NIL]
  >> qabbrev_tac ‘M = VAR z @* MAP VAR (FRONT Z)’
  (* preparing for LAMl_ALPHA_ssub *)
@@ -1475,95 +1500,18 @@ QED
      >- (MATCH_MP_TAC fromPairs_FAPPLY_EL >> rw []) >> Rewr' \\
      rw [EL_MAP])
  >> Rewr'
- (* stage work *)
- >> qabbrev_tac ‘t = LAM y (VAR y @* MAP VAR (FRONT Y))’
- >> MATCH_MP_TAC lameq_TRANS
- >> Q.EXISTS_TAC ‘((FEMPTY |++ ZIP (FRONT Y,Ns)) ' t) @@ N’
- >> CONJ_TAC
- >- (MATCH_MP_TAC lameq_APPL \\
-     MATCH_MP_TAC lameq_LAMl_appstar_ssub \\
-     rw [ALL_DISTINCT_FRONT, LENGTH_FRONT] \\
-     MATCH_MP_TAC DISJOINT_SUBSET' \\
-     Q.EXISTS_TAC ‘set Y’ \\
-     reverse CONJ_TAC >- rw [SUBSET_DEF, MEM_FRONT_NOT_NIL] \\
-     ONCE_REWRITE_TAC [DISJOINT_SYM] \\
-     FIRST_X_ASSUM MATCH_MP_TAC \\
-     Q.EXISTS_TAC ‘x’ >> art [])
- (* cleanup ‘fm’ *)
- >> Q.PAT_X_ASSUM ‘FDOM fm = set Z’ K_TAC
- >> qunabbrev_tac ‘fm’
- (* stage work *)
- >> REWRITE_TAC [GSYM fromPairs_def]
- >> qabbrev_tac ‘fm = fromPairs (FRONT Y) Ns’
- >> ‘FDOM fm = set (FRONT Y)’ by rw [Abbr ‘fm’, FDOM_fromPairs, LENGTH_FRONT]
- >> qunabbrev_tac ‘t’
- >> qabbrev_tac ‘t = VAR y @* MAP VAR (FRONT Y)’
- >> Know ‘fm ' (LAM y t) = LAM y (fm ' t)’
- >- (MATCH_MP_TAC ssub_LAM \\
-     simp [Abbr ‘y’, LAST_EL] \\
-     CONJ_TAC
-     >- (simp [MEM_EL, LENGTH_FRONT, GSYM ADD1] \\
-         Q.X_GEN_TAC ‘i’ \\
-         ONCE_REWRITE_TAC [DECIDE “P ==> ~Q <=> Q ==> ~P”] \\
-         DISCH_TAC \\
-         Know ‘EL i (FRONT Y) = EL i Y’
-         >- (MATCH_MP_TAC EL_FRONT >> rw [LENGTH_FRONT, NULL_EQ, GSYM ADD1]) >> Rewr' \\
-         rw [ALL_DISTINCT_EL_IMP]) \\
-     Q.X_GEN_TAC ‘y’ \\
-     rw [MEM_EL, GSYM ADD1] >> rename1 ‘i < LENGTH (FRONT Y)’ \\
-     qunabbrev_tac ‘fm’ \\
-     Know ‘fromPairs (FRONT Y) Ns ' (EL i (FRONT Y)) = EL i Ns’
-     >- (MATCH_MP_TAC fromPairs_FAPPLY_EL \\
-         rw [ALL_DISTINCT_FRONT, LENGTH_FRONT]) >> Rewr' \\
-     Know ‘DISJOINT (FV (EL i Ns)) (set Y)’
-     >- (FIRST_X_ASSUM MATCH_MP_TAC \\
-         Q.EXISTS_TAC ‘EL i Ns’ >> rw [MEM_EL] \\
-         Q.EXISTS_TAC ‘i’ >> rfs [LENGTH_FRONT]) \\
-     ONCE_REWRITE_TAC [DISJOINT_SYM] \\
-     rw [DISJOINT_ALT] \\
-     POP_ASSUM MATCH_MP_TAC >> rw [MEM_EL] \\
-     Q.EXISTS_TAC ‘n’ >> rw [])
- >> Rewr'
- >> Q.PAT_X_ASSUM ‘FDOM fm = set (FRONT Y)’ K_TAC
- >> simp [Abbr ‘fm’]
- >> ‘FDOM (fromPairs (FRONT Y) Ns) = set (FRONT Y)’
-       by rw [FDOM_fromPairs, LENGTH_FRONT]
- >> Know ‘~MEM y (FRONT Y)’
- >- (simp [Abbr ‘y’, MEM_EL, LAST_EL, LENGTH_FRONT, GSYM ADD1] \\
-     Q.X_GEN_TAC ‘i’ \\
-     ONCE_REWRITE_TAC [DECIDE “P ==> ~Q <=> Q ==> ~P”] \\
-     DISCH_TAC \\
-     Know ‘EL i (FRONT Y) = EL i Y’
-     >- (MATCH_MP_TAC EL_FRONT >> rw [LENGTH_FRONT, NULL_EQ]) >> Rewr' \\
-     rw [ALL_DISTINCT_EL_IMP])
- >> DISCH_TAC
- >> simp [Abbr ‘t’, ssub_appstar]
- >> Know ‘MAP ($' (fromPairs (FRONT Y) Ns)) (MAP VAR (FRONT Y)) = Ns’
- >- (rw [LIST_EQ_REWRITE, LENGTH_FRONT] \\
-     rw [MAP_MAP_o, LENGTH_FRONT, EL_MAP]
-     >- (MATCH_MP_TAC fromPairs_FAPPLY_EL \\
-         rw [LENGTH_FRONT, ALL_DISTINCT_FRONT]) \\
-     NTAC 2 (POP_ASSUM MP_TAC) \\
-     simp [GSYM ADD1, MEM_EL, LENGTH_FRONT] \\
-     METIS_TAC [])
- >> Rewr'
- >> Suff ‘N @* Ns = [N/y] (VAR y @* Ns)’
- >- (Rewr' >> rw [lameq_BETA])
- >> simp [appstar_SUB]
- >> Suff ‘MAP [N/y] Ns = Ns’ >- rw []
- >> rw [LIST_EQ_REWRITE, EL_MAP]
- >> rename1 ‘i < n’
- >> MATCH_MP_TAC lemma14b
- >> Know ‘DISJOINT (FV (EL i Ns)) (set Y)’
- >- (FIRST_X_ASSUM MATCH_MP_TAC \\
-     Q.EXISTS_TAC ‘EL i Ns’ >> rw [MEM_EL] \\
-     Q.EXISTS_TAC ‘i’ >> art [])
- >> ONCE_REWRITE_TAC [DISJOINT_SYM]
- >> rw [DISJOINT_ALT]
- >> POP_ASSUM MATCH_MP_TAC
- >> rw [Abbr ‘y’, MEM_LAST_NOT_NIL]
+ >> qabbrev_tac ‘vs = FRONT Y’
+ >> Know ‘ALL_DISTINCT vs /\ ~MEM y vs’
+ >- (Q.PAT_X_ASSUM ‘ALL_DISTINCT Y’ MP_TAC \\
+    ‘Y = SNOC y vs’ by METIS_TAC [SNOC_LAST_FRONT] >> POP_ORW \\
+     rw [ALL_DISTINCT_SNOC])
+ >> STRIP_TAC
+ >> MATCH_MP_TAC principle_hnf_permutator_lemma
+ >> ‘SNOC y vs = Y’ by METIS_TAC [SNOC_LAST_FRONT] >> POP_ORW
+ >> rw [EVERY_MEM, Abbr ‘vs’, LENGTH_FRONT]
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘e’ >> art []
 QED
-*)
 
 val _ = export_theory ();
 val _ = html_theory "solvable";

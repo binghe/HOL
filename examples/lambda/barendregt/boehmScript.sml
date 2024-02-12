@@ -2184,7 +2184,7 @@ Proof
          MATCH_MP_TAC hnf_has_hnf \\
          rw [hnf_appstar]) \\
    (* applying principle_hnf_denude_lemma (hard to prove) *)
-      MATCH_MP_TAC principle_hnf_denude_lemma >> art [] \\
+      MATCH_MP_TAC principle_hnf_denude_thm >> art [] \\
       rw [Abbr ‘M0’])
  >> DISCH_TAC
  (* LHS rewriting from M to M0 *)
