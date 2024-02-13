@@ -1390,15 +1390,23 @@ Proof
  >- (fs [] >> CCONTR_TAC >> fs [] \\
     ‘is_abs (VAR y @* Ns)’ by PROVE_TAC [hreduce_abs] >> fs [])
  (* now l is eliminated *)
- >> NTAC 3 (POP_ASSUM MP_TAC)
- >> Suff ‘!M0. M -h->* M0 ==>
-              !vs t. ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
-                     M0 = LAMl vs t /\ ~is_abs t ==>
-                     M @* MAP VAR vs -h->* t’
- >- (rpt STRIP_TAC \\
-     FIRST_X_ASSUM irule >> rw [])
- >> HO_MATCH_MP_TAC RTC_ALT_RIGHT_INDUCT
+ >> NTAC 4 (POP_ASSUM MP_TAC)
+ >> Suff ‘!M M0. M -h->* M0 ==>
+                 solvable M ==>
+                   !vs t. ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
+                          M0 = LAMl vs t /\ ~is_abs t ==>
+                          M @* MAP VAR vs -h->* t’
+ >- (rpt STRIP_TAC >> FIRST_X_ASSUM irule >> rw [])
+ >> HO_MATCH_MP_TAC RTC_STRONG_INDUCT_RIGHT1
  >> rw [hreduce_BETA] (* only one goal is left *)
+ >> Q.PAT_X_ASSUM ‘solvable M ==> P’ MP_TAC
+ >> RW_TAC std_ss []
+ (* NOTE: this assumption is only possible with RTC_STRONG_INDUCT, etc. *)
+ >> Know ‘DISJOINT (set vs) (FV M0)’
+ >- (MATCH_MP_TAC DISJOINT_SUBSET \\
+     Q.EXISTS_TAC ‘FV M’ >> art [] \\
+     MATCH_MP_TAC hreduce_FV_SUBSET >> art [])
+ >> DISCH_TAC
  (* stage work.
 
     Now we need to discuss the possible shapes of M0:
@@ -1423,7 +1431,8 @@ Proof
     The possible fact ‘hnf t’ is not used in the above reduction process.
  *)
  (* applying hreduce1_LAMl_cases *)
- >> Know ‘M0 -h-> LAMl vs t /\ ~is_abs t’ >- art []
+ >> Know ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M0) /\ M0 -h-> LAMl vs t /\ ~is_abs t’
+ >- art []
  >> DISCH_THEN (STRIP_ASSUME_TAC o (MATCH_MP hreduce1_LAMl_cases))
  (* stage work *)
  >> Q.PAT_X_ASSUM ‘!vs t. P’ (MP_TAC o (Q.SPECL [‘vs1’, ‘N’]))
