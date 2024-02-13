@@ -774,6 +774,24 @@ Proof
  >> SRW_TAC [][]
 QED
 
+Theorem term_cases_disjoint :
+    !t. ~(is_comb t /\ is_abs t) /\
+        ~(is_comb t /\ is_var t) /\
+        ~(is_abs t /\ is_var t)
+Proof
+    Q.X_GEN_TAC ‘t’
+ >> rpt CONJ_TAC
+ >| [ (* goal 1 (of 3) *)
+      Suff ‘is_abs t ==> ~is_comb t’ >- PROVE_TAC [] \\
+      rw [is_abs_cases] >> rw [],
+      (* goal 2 (of 3) *)
+      Suff ‘is_var t ==> ~is_comb t’ >- PROVE_TAC [] \\
+      rw [is_var_cases] >> rw [],
+      (* goal 3 (of 3) *)
+      Suff ‘is_abs t ==> ~is_var t’ >- PROVE_TAC [] \\
+      rw [is_abs_cases] >> rw [] ]
+QED
+
 Theorem term_laml_cases:
   ∀X. FINITE X ⇒
       ∀t. (∃s. t = VAR s) ∨ (∃M1 M2. t = M1 @@ M2) ∨

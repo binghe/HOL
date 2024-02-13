@@ -949,7 +949,7 @@ Proof
 QED
 
 Theorem principle_hnf_beta_reduce :
-    !xs t. hnf t ==> principle_hnf (LAMl xs t @* (MAP VAR xs)) = t
+    !xs t. hnf t ==> principle_hnf (LAMl xs t @* MAP VAR xs) = t
 Proof
     Induct_on ‘xs’
  >> rw [principle_hnf_reduce]
@@ -961,6 +961,19 @@ Proof
      MATCH_MP_TAC hreduce1_rules_appstar >> rw [hreduce1_BETA])
  >> Rewr'
  >> simp [Abbr ‘M’]
+QED
+
+Theorem hreduce_BETA :
+    !vs t. LAMl vs t @* MAP VAR vs -h->* t
+Proof
+    Induct_on ‘vs’
+ >> rw [Once RTC_CASES1] (* only 1 goal is left *)
+ >> DISJ2_TAC
+ >> qabbrev_tac ‘M = LAMl vs t’
+ >> Q.EXISTS_TAC ‘[VAR h/h] M @* MAP VAR vs’
+ >> reverse CONJ_TAC >- rw [Abbr ‘M’]
+ >> MATCH_MP_TAC hreduce1_rules_appstar
+ >> rw [hreduce1_BETA]
 QED
 
 (* Example 8.3.2 [1, p.171] *)
@@ -1349,20 +1362,20 @@ QED
 
 (* This is an important theroem, hard to prove.
 
-   To use this theorem, first one defines ‘M0 = principle_hnf M’ as an abbreviation,
+   To use this theorem, first one defines ‘M0 = principle_hnf M’ as abbreviation,
    then define ‘n = LAMl_size M0’ and ‘vs = FRESH_list n (FV M)’ (or ‘FV M0’, or
-  ‘X UNION FV M0’, ‘X UNION FV M’, etc.), and this give us the needed antecedents:
+  ‘X UNION FV M0’, ‘X UNION FV M’), and this give us the needed antecedents:
 
        ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\ LENGTH vs = n
 
    Then use hnf_cases_shared to derive ‘M0 = LAMl vs (VAR y @* args)’ and then
-   ‘M1 = principle_hnf (M0 @* MAP VAR vs) = VAR y @* args’.
+  ‘M1 = principle_hnf (M0 @* MAP VAR vs) = VAR y @* args’.
 
    The conclusion is that ‘principle_hnf (M @* MAP VAR vs) = M1’.
 
    Now ‘principle_hnf’ can be used to "denude" the outer LAMl of a solvable term.
 
-   TODO: an extra list of free variables l may need to append after MAP VAR vs.
+   An extra list of free variables ‘l’ may need to append after MAP VAR vs.
  *)
 Theorem principle_hnf_denude_lemma[local] :
     !M vs l y Ns. solvable M /\
@@ -1370,32 +1383,21 @@ Theorem principle_hnf_denude_lemma[local] :
                   M -h->* LAMl vs (VAR y @* Ns) ==>
                   M @* MAP VAR vs @* MAP VAR l -h->* VAR y @* Ns @* MAP VAR l
 Proof
-    rpt GEN_TAC
- >> STRIP_TAC
- >> Cases_on ‘vs = []’
- >- (POP_ASSUM (fn th => fs [th, MAP]) \\
-     MATCH_MP_TAC hreduce_rules_appstar \\
-     STRONG_CONJ_TAC
-     >- (CCONTR_TAC >> fs [] \\
-        ‘is_abs (VAR y @* Ns)’ by PROVE_TAC [hreduce_abs] >> fs []) \\
-     rw [] \\
-     cheat (* hard, but possible *))
+    rpt STRIP_TAC
  (* eliminating MAP VAR l *)
- >> MATCH_MP_TAC hreduce_rules_appstar
- >> CONJ_TAC >- rw [is_abs_appstar] (* only if vs <> [] *)
- >> ONCE_REWRITE_TAC [DECIDE “P /\ Q <=> (Q ==> P) /\ Q”]
- >> CONJ_TAC
- >- cheat (* hard, but possible *)
+ >> MATCH_MP_TAC hreduce_rules_appstar'
+ >> rw [is_abs_appstar]
+ >- (fs [] >> CCONTR_TAC >> fs [] \\
+    ‘is_abs (VAR y @* Ns)’ by PROVE_TAC [hreduce_abs] >> fs [])
  (* now l is eliminated *)
- >> NTAC 4 (POP_ASSUM MP_TAC)
+ >> NTAC 3 (POP_ASSUM MP_TAC)
  >> Suff ‘!M0. M -h->* M0 ==>
               !vs t. ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
                      M0 = LAMl vs t ==>
                      M @* MAP VAR vs -h->* t’
  >- METIS_TAC []
  >> HO_MATCH_MP_TAC RTC_ALT_RIGHT_INDUCT
- >> rw []
- >- cheat (* hard, but possible *)
+ >> rw [hreduce_BETA] (* only one goal is left *)
  (* stage work.
 
     Now we need to discuss the possible shapes of M0:
@@ -1414,12 +1416,39 @@ Proof
     then do it again to ‘LAMl vs2 t’, i.e.
 
     M @* MAP VAR vs1 @* MAP VAR vs2 -h->* P @@ Q @* MAP VAR vs2
-                                    -h->* LAMl vs2 t @* MAP VAR vs2
+                                    -h-> LAMl vs2 t @* MAP VAR vs2
                                     -h->* t (QED)
 
     The possible fact ‘hnf t’ is not used in the above reduction process.
  *)
- >> cheat
+ (* applying hreduce1_LAMl_cases *)
+ >> Q.PAT_X_ASSUM ‘M0 -h-> LAMl vs t’
+       (STRIP_ASSUME_TAC o (REWRITE_RULE [Once hreduce1_LAMl_cases]))
+ (* stage work *)
+ >> Q.PAT_X_ASSUM ‘!vs t. P’ (MP_TAC o (Q.SPECL [‘vs1’, ‘N’]))
+ >> Know ‘ALL_DISTINCT vs1’
+ >- (Q.PAT_X_ASSUM ‘ALL_DISTINCT vs’ MP_TAC \\
+     rw [ALL_DISTINCT_APPEND])
+ >> Know ‘DISJOINT (set vs1) (FV M)’
+ >- (Q.PAT_X_ASSUM ‘DISJOINT (set vs) (FV M)’ MP_TAC \\
+     rw [LIST_TO_SET_APPEND])
+ >> RW_TAC std_ss []
+ >> simp [appstar_APPEND]
+ >> MATCH_MP_TAC hreduce_TRANS
+ >> Q.EXISTS_TAC ‘LAMl vs2 t @* MAP VAR vs2’
+ >> reverse CONJ_TAC >- rw [hreduce_BETA]
+ >> rw [Once RTC_CASES2] >> DISJ2_TAC
+ >> Q.EXISTS_TAC ‘N @* MAP VAR vs2’
+ >> reverse CONJ_TAC
+ >- (MATCH_MP_TAC hreduce1_rules_appstar >> art [] \\
+     fs [is_comb_APP_EXISTS])
+ >> MATCH_MP_TAC hreduce_rules_appstar' >> art []
+ >> reverse CONJ_TAC
+ >- METIS_TAC [term_cases_disjoint]
+ >> rw [is_abs_appstar]
+ >> CCONTR_TAC >> fs []
+ >> ‘is_abs N’ by PROVE_TAC [hreduce_abs]
+ >> METIS_TAC [term_cases_disjoint]
 QED
 
 Theorem principle_hnf_denude_solvable :

@@ -122,6 +122,14 @@ Proof
  >> fs [hreduce1_rules]
 QED
 
+Theorem hreduce1_LAMl :
+    !vs M1 M2. M1 -h-> M2 ==> LAMl vs M1 -h-> LAMl vs M2
+Proof
+    Induct_on ‘vs’ >> rw []
+ >> MATCH_MP_TAC hreduce1_LAM
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+QED
+
 Theorem hreduce1_abs :
     !M N. M -h-> N ==> is_abs M ==> is_abs N
 Proof
@@ -169,7 +177,7 @@ QED
 
 (* slight weaker but more useful *)
 Theorem hreduce_rules_appstar' :
-    !M1 M2 Ns. ~is_abs M1 /\ ~is_abs M2 ==> M1 -h->* M2 ==> M1 @* Ns -h->* M2 @* Ns
+    !M1 M2 Ns. ~is_abs M1 /\ ~is_abs M2 /\ M1 -h->* M2 ==> M1 @* Ns -h->* M2 @* Ns
 Proof
     rpt STRIP_TAC
  >> MATCH_MP_TAC hreduce_rules_appstar >> art []
@@ -251,6 +259,21 @@ Theorem substitutive_hreduce :
     substitutive (-h->*)
 Proof
     rw [substitutive_def, hreduce_substitutive]
+QED
+
+Theorem hreduce1_LAMl_cases :
+    !M vs t. M -h-> LAMl vs t <=>
+             ?vs1 vs2 N. (vs = vs1 ++ vs2) /\ (M = LAMl vs1 N) /\ is_comb N /\
+                         N -h-> LAMl vs2 t
+Proof
+    rpt GEN_TAC
+ >> reverse EQ_TAC
+ >- (RW_TAC std_ss [] \\
+     REWRITE_TAC [FOLDR_APPEND] \\
+     MATCH_MP_TAC hreduce1_LAMl >> art [])
+ (* stage work *)
+ >> rw [Once hreduce1_cases]
+ >> cheat
 QED
 
 (* ----------------------------------------------------------------------
