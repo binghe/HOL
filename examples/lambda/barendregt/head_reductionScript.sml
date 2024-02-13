@@ -167,6 +167,16 @@ Proof
  >> PROVE_TAC []
 QED
 
+(* slight weaker but more useful *)
+Theorem hreduce_rules_appstar' :
+    !M1 M2 Ns. ~is_abs M1 /\ ~is_abs M2 ==> M1 -h->* M2 ==> M1 @* Ns -h->* M2 @* Ns
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC hreduce_rules_appstar >> art []
+ >> rpt STRIP_TAC
+ >> PROVE_TAC [hreduce1_abs]
+QED
+
 Theorem hreduce1_gen_bvc_ind :
   !P f. (!x. FINITE (f x)) /\
         (!v M N x. v NOTIN f x ==> P (LAM v M @@ N) ([N/v] M) x) /\
