@@ -1370,18 +1370,55 @@ Theorem principle_hnf_denude_lemma[local] :
                   M -h->* LAMl vs (VAR y @* Ns) ==>
                   M @* MAP VAR vs @* MAP VAR l -h->* VAR y @* Ns @* MAP VAR l
 Proof
-    rpt STRIP_TAC
- >> NTAC 3 (POP_ASSUM MP_TAC)
+    rpt GEN_TAC
+ >> STRIP_TAC
+ >> Cases_on ‘vs = []’
+ >- (POP_ASSUM (fn th => fs [th, MAP]) \\
+     MATCH_MP_TAC hreduce_rules_appstar \\
+     STRONG_CONJ_TAC
+     >- (CCONTR_TAC >> fs [] \\
+        ‘is_abs (VAR y @* Ns)’ by PROVE_TAC [hreduce_abs] >> fs []) \\
+     rw [] \\
+     cheat (* hard, but possible *))
+ (* eliminating MAP VAR l *)
+ >> MATCH_MP_TAC hreduce_rules_appstar
+ >> CONJ_TAC >- rw [is_abs_appstar] (* only if vs <> [] *)
+ >> ONCE_REWRITE_TAC [DECIDE “P /\ Q <=> (Q ==> P) /\ Q”]
+ >> CONJ_TAC
+ >- cheat (* hard, but possible *)
+ (* now l is eliminated *)
+ >> NTAC 4 (POP_ASSUM MP_TAC)
  >> Suff ‘!M0. M -h->* M0 ==>
-               !vs l y Ns. ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
-                           M0 = LAMl vs (VAR y @* Ns) ==>
-                   M @* MAP VAR vs @* MAP VAR l -h->* VAR y @* Ns @* MAP VAR l’
+              !vs t. ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
+                     M0 = LAMl vs t ==>
+                     M @* MAP VAR vs -h->* t’
  >- METIS_TAC []
- >> HO_MATCH_MP_TAC RTC_ALT_RIGHT_INDUCT >> rw [] (* 2 subgoals *)
- >- (fs [FV_LAMl] \\
-  (* MATCH_MP_TAC hreduce_rules_appstar *)
-     cheat)
- (* stage work *)
+ >> HO_MATCH_MP_TAC RTC_ALT_RIGHT_INDUCT
+ >> rw []
+ >- cheat (* hard, but possible *)
+ (* stage work.
+
+    Now we need to discuss the possible shapes of M0:
+
+    1. M0 := LAMl vs (P @@ Q), where P @@ Q -h-> t
+    2. M0 := LAMl vs1 (P @@ Q), where P @@ Q -h-> LAMl vs2 t, vs = vs1 ++ vs2
+
+    The first case is included in the second case.
+
+    Using IH, we have: M @* MAP VAR vs1 -h->* P @@ Q -h-> LAMl vs2 t (hnf)
+    Thus (using RTC transitivity): M @* MAP VAR vs1 -h->* LAMl vs2 t (hnf)
+
+    Since M @* MAP VAR vs = M @* MAP VAR vs1 @* MAP VAR vs2, the head reduction
+    process should proceed with the part ‘M @* MAP VAR vs1’ until arrive at
+   ‘P @@ Q’ (APP) without showing any LAM (otherwise it cannot be P @@ Q), and
+    then do it again to ‘LAMl vs2 t’, i.e.
+
+    M @* MAP VAR vs1 @* MAP VAR vs2 -h->* P @@ Q @* MAP VAR vs2
+                                    -h->* LAMl vs2 t @* MAP VAR vs2
+                                    -h->* t (QED)
+
+    The possible fact ‘hnf t’ is not used in the above reduction process.
+ *)
  >> cheat
 QED
 

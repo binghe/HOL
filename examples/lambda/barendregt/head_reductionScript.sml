@@ -122,24 +122,49 @@ Proof
  >> fs [hreduce1_rules]
 QED
 
-(* NOTE: Initially M1 is an APP, eventually it may become a VAR, never be LAM *)
+Theorem hreduce1_abs :
+    !M N. M -h-> N ==> is_abs M ==> is_abs N
+Proof
+    rw [Once hreduce1_cases] >> fs []
+QED
+
+Theorem hreduce_abs :
+    !M N. M -h->* N ==> is_abs M ==> is_abs N
+Proof
+    HO_MATCH_MP_TAC RTC_STRONG_INDUCT_RIGHT1
+ >> rw []
+ >> irule hreduce1_abs
+ >> Q.EXISTS_TAC ‘N’ >> art []
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+QED
+
+(* NOTE: Initially M1 is an APP, eventually it may become a VAR, never be LAM
+
+   The antecedent ‘!M. M1 -h->* M /\ M -h-> M2 ==> ~is_abs M’ says that
+   only head reductions between M1 and M2 (excluded) must not be abstractions,
+   i.e. starting from M2 it can be abstractions.
+ *)
 Theorem hreduce_rules_appstar :
-    !M1 M2 Ns. ~is_abs M1 /\ (!M. M1 -h->* M ==> ~is_abs M) /\ M1 -h->* M2 ==>
-               M1 @* Ns -h->* M2 @* Ns
+    !M1 M2 Ns. ~is_abs M1 /\ (!M. M1 -h->* M /\ M -h-> M2 ==> ~is_abs M) /\
+               M1 -h->* M2 ==> M1 @* Ns -h->* M2 @* Ns
 Proof
     rpt STRIP_TAC
  >> Q.PAT_X_ASSUM ‘~is_abs M1’ MP_TAC
- >> Q.PAT_X_ASSUM ‘!M. M1 -h->* M ==> ~is_abs M’ MP_TAC
- >> POP_ASSUM MP_TAC 
+ >> Q.PAT_X_ASSUM ‘!M. P’ MP_TAC
+ >> POP_ASSUM MP_TAC
  >> Q.ID_SPEC_TAC ‘M2’
  >> Q.ID_SPEC_TAC ‘M1’
  >> HO_MATCH_MP_TAC RTC_STRONG_INDUCT_RIGHT1 >> rw []
- >> rw [Once RTC_CASES2]
- >> DISJ2_TAC
+ >> rw [Once RTC_CASES2] >> DISJ2_TAC
  >> Q.EXISTS_TAC ‘M2 @* Ns’
- >> CONJ_TAC >- (FIRST_X_ASSUM MATCH_MP_TAC >> art [])
- >> MATCH_MP_TAC hreduce1_rules_appstar >> art []
- >> POP_ASSUM MATCH_MP_TAC >> art []
+ >> reverse CONJ_TAC
+ >- (MATCH_MP_TAC hreduce1_rules_appstar >> art [] \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> art [])
+ >> FIRST_X_ASSUM irule >> rw []
+ >> CCONTR_TAC >> fs []
+ >> ‘is_abs M2’ by PROVE_TAC [hreduce1_abs]
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+ >> PROVE_TAC []
 QED
 
 Theorem hreduce1_gen_bvc_ind :
