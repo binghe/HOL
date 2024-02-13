@@ -1393,9 +1393,10 @@ Proof
  >> NTAC 3 (POP_ASSUM MP_TAC)
  >> Suff ‘!M0. M -h->* M0 ==>
               !vs t. ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
-                     M0 = LAMl vs t ==>
+                     M0 = LAMl vs t /\ ~is_abs t ==>
                      M @* MAP VAR vs -h->* t’
- >- METIS_TAC []
+ >- (rpt STRIP_TAC \\
+     FIRST_X_ASSUM irule >> rw [])
  >> HO_MATCH_MP_TAC RTC_ALT_RIGHT_INDUCT
  >> rw [hreduce_BETA] (* only one goal is left *)
  (* stage work.
@@ -1422,8 +1423,8 @@ Proof
     The possible fact ‘hnf t’ is not used in the above reduction process.
  *)
  (* applying hreduce1_LAMl_cases *)
- >> Q.PAT_X_ASSUM ‘M0 -h-> LAMl vs t’
-       (STRIP_ASSUME_TAC o (REWRITE_RULE [Once hreduce1_LAMl_cases]))
+ >> Know ‘M0 -h-> LAMl vs t /\ ~is_abs t’ >- art []
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (MATCH_MP hreduce1_LAMl_cases))
  (* stage work *)
  >> Q.PAT_X_ASSUM ‘!vs t. P’ (MP_TAC o (Q.SPECL [‘vs1’, ‘N’]))
  >> Know ‘ALL_DISTINCT vs1’
@@ -1443,12 +1444,9 @@ Proof
  >- (MATCH_MP_TAC hreduce1_rules_appstar >> art [] \\
      fs [is_comb_APP_EXISTS])
  >> MATCH_MP_TAC hreduce_rules_appstar' >> art []
- >> reverse CONJ_TAC
- >- METIS_TAC [term_cases_disjoint]
  >> rw [is_abs_appstar]
  >> CCONTR_TAC >> fs []
  >> ‘is_abs N’ by PROVE_TAC [hreduce_abs]
- >> METIS_TAC [term_cases_disjoint]
 QED
 
 Theorem principle_hnf_denude_solvable :

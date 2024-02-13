@@ -261,18 +261,13 @@ Proof
     rw [substitutive_def, hreduce_substitutive]
 QED
 
+(* NOTE: ‘~is_abs t’ is necessary for the case ‘vs = []’ *)
 Theorem hreduce1_LAMl_cases :
-    !M vs t. M -h-> LAMl vs t <=>
-             ?vs1 vs2 N. (vs = vs1 ++ vs2) /\ (M = LAMl vs1 N) /\ is_comb N /\
+    !M vs t. M -h-> LAMl vs t /\ ~is_abs t ==>
+             ?vs1 vs2 N. (vs = vs1 ++ vs2) /\ (M = LAMl vs1 N) /\ ~is_abs N /\
                          N -h-> LAMl vs2 t
 Proof
-    rpt GEN_TAC
- >> reverse EQ_TAC
- >- (RW_TAC std_ss [] \\
-     REWRITE_TAC [FOLDR_APPEND] \\
-     MATCH_MP_TAC hreduce1_LAMl >> art [])
- (* stage work *)
- >> rw [Once hreduce1_cases]
+    HO_MATCH_MP_TAC simple_induction >> rw []
  >> cheat
 QED
 
