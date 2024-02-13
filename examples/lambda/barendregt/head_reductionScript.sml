@@ -122,6 +122,26 @@ Proof
  >> fs [hreduce1_rules]
 QED
 
+(* NOTE: Initially M1 is an APP, eventually it may become a VAR, never be LAM *)
+Theorem hreduce_rules_appstar :
+    !M1 M2 Ns. ~is_abs M1 /\ (!M. M1 -h->* M ==> ~is_abs M) /\ M1 -h->* M2 ==>
+               M1 @* Ns -h->* M2 @* Ns
+Proof
+    rpt STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘~is_abs M1’ MP_TAC
+ >> Q.PAT_X_ASSUM ‘!M. M1 -h->* M ==> ~is_abs M’ MP_TAC
+ >> POP_ASSUM MP_TAC 
+ >> Q.ID_SPEC_TAC ‘M2’
+ >> Q.ID_SPEC_TAC ‘M1’
+ >> HO_MATCH_MP_TAC RTC_STRONG_INDUCT_RIGHT1 >> rw []
+ >> rw [Once RTC_CASES2]
+ >> DISJ2_TAC
+ >> Q.EXISTS_TAC ‘M2 @* Ns’
+ >> CONJ_TAC >- (FIRST_X_ASSUM MATCH_MP_TAC >> art [])
+ >> MATCH_MP_TAC hreduce1_rules_appstar >> art []
+ >> POP_ASSUM MATCH_MP_TAC >> art []
+QED
+
 Theorem hreduce1_gen_bvc_ind :
   !P f. (!x. FINITE (f x)) /\
         (!v M N x. v NOTIN f x ==> P (LAM v M @@ N) ([N/v] M) x) /\

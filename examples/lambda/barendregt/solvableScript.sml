@@ -1364,13 +1364,25 @@ QED
 
    TODO: an extra list of free variables l may need to append after MAP VAR vs.
  *)
-Theorem principle_hnf_denude_lemma :
-    !M vs l y args. solvable M /\
-                    ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
-                    M -h->* LAMl vs (VAR y @* args) ==>
-                    M @* MAP VAR vs @* MAP VAR l -h->* VAR y @* args @* MAP VAR l
+Theorem principle_hnf_denude_lemma[local] :
+    !M vs l y Ns. solvable M /\
+                  ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
+                  M -h->* LAMl vs (VAR y @* Ns) ==>
+                  M @* MAP VAR vs @* MAP VAR l -h->* VAR y @* Ns @* MAP VAR l
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> NTAC 3 (POP_ASSUM MP_TAC)
+ >> Suff ‘!M0. M -h->* M0 ==>
+               !vs l y Ns. ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
+                           M0 = LAMl vs (VAR y @* Ns) ==>
+                   M @* MAP VAR vs @* MAP VAR l -h->* VAR y @* Ns @* MAP VAR l’
+ >- METIS_TAC []
+ >> HO_MATCH_MP_TAC RTC_ALT_RIGHT_INDUCT >> rw [] (* 2 subgoals *)
+ >- (fs [FV_LAMl] \\
+  (* MATCH_MP_TAC hreduce_rules_appstar *)
+     cheat)
+ (* stage work *)
+ >> cheat
 QED
 
 Theorem principle_hnf_denude_solvable :
