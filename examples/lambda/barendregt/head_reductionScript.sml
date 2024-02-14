@@ -269,7 +269,12 @@ Proof
     rw [substitutive_def, hreduce_substitutive]
 QED
 
-(* NOTE: ‘~is_abs t’ is necessary for the case ‘vs = []’ *)
+(* This nice and hard-to-prove theorem gives a precise explicit form for any
+   lambda term whose single-step head reduction is in the form of ‘LAMl vs t’.
+
+   NOTE: This proof is hard in the sense that some primitive theorems from
+   nomsetTheory are used. And ‘~is_abs t’ is necessary for the case vs = [].
+ *)
 Theorem hreduce1_LAMl_cases :
     !M vs t. ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
              M -h-> LAMl vs t /\ ~is_abs t ==>
@@ -339,7 +344,7 @@ Proof
        (* goal 4 (of 4) *)
        METIS_TAC [] ])
  (* v <> v' *)
- >> fs [tpm_eql, LAM_eq_thm] (* another 4 subgoals *)
+ >> fs [tpm_eql, LAM_eq_thm] (* another 4 subgoals, even harder *)
  >| [ (* goal 1 (of 4) *)
       Q.PAT_X_ASSUM ‘h = v'’ (fs o wrap o SYM) \\
       Q.PAT_X_ASSUM ‘T’ K_TAC \\
@@ -348,19 +353,125 @@ Proof
       FULL_SIMP_TAC std_ss [tpm_LAMl] \\
       qabbrev_tac ‘vs' = listpm string_pmact [(v,h)] vs’ \\
       qabbrev_tac ‘t' = tpm [(v,h)] t’ \\
-      (*
+     ‘ALL_DISTINCT vs'’ by rw [ALL_DISTINCT_listpm, Abbr ‘vs'’] \\
+     ‘~is_abs t'’ by rw [Abbr ‘t'’, is_abs_cases] \\
+      Know ‘DISJOINT (set vs') (FV (tpm [(v,h)] M1))’
+      >- (rw [DISJOINT_ALT', FV_tpm, Abbr ‘vs'’, MEM_listpm] \\
+          Cases_on ‘x = v’ >- rw [] \\
+          Cases_on ‘x = h’ >- fs [] \\
+          fs [] (* eliminate swapstr *) \\
+          Q.PAT_X_ASSUM ‘DISJOINT (set vs) (FV (tpm [(v,h)] M1) DELETE v)’ MP_TAC \\
+          rw [DISJOINT_ALT', MEM_listpm]) >> DISCH_TAC \\
       Q.PAT_X_ASSUM ‘!vs t. P’ (MP_TAC o (Q.SPECL [‘vs'’, ‘t'’])) \\
-      Know ‘~is_abs t'’ >- rw [Abbr ‘t'’, is_abs_cases] >> rw [] \\
-       *)
-      cheat,
-      (* goal 2 (of 4) *)
-      cheat,
-      (* goal 3 (of 4) *)
+      RW_TAC std_ss [] \\
+      fs [tpm_LAMl] \\
+      Know ‘vs = listpm string_pmact [(v,h)] (vs1 ++ vs2)’
+      >- (Q.PAT_X_ASSUM ‘_ = vs1 ++ vs2’ MP_TAC \\
+          NTAC 2 (rw [Once LIST_EQ_REWRITE]) \\
+          Know ‘EL x (vs1 ++ vs2) = swapstr h v (EL x vs)’
+          >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+              FIRST_X_ASSUM MATCH_MP_TAC >> art []) >> Rewr' \\
+          simp []) >> Rewr' \\
+      qexistsl_tac [‘h::listpm string_pmact [(v,h)] vs1’,
+                    ‘listpm string_pmact [(v,h)] vs2’, ‘tpm [(v,h)] N’] \\
+      simp [listpm_APPENDlist] \\
+      reverse CONJ_TAC
+      >- (Know ‘LAMl (listpm string_pmact [(v,h)] vs2) t = tpm [(v,h)] (LAMl vs2 t')’
+          >- (rw [Abbr ‘t'’, tpm_LAMl] \\
+              rw [Once tpm_eqr, pmact_flip_args]) >> Rewr' \\
+          rw [tpm_hreduce]) \\
+      Know ‘LAMl (listpm string_pmact [(v,h)] vs1) (tpm [(v,h)] N) =
+            tpm [(v,h)] (LAMl vs1 N)’ >- rw [tpm_LAMl] \\
+      DISCH_THEN (fs o wrap) \\
+      simp [LAM_eq_thm, pmact_flip_args],
+      (* goal 2 (of 4): this is the most difficult subgoal... *)
+      fs [tpm_eqr, tpm_LAMl] \\
+      qabbrev_tac ‘vs' = listpm string_pmact [(h,v')] vs’ \\
+      qabbrev_tac ‘t' = tpm [(h,v')] t’ \\
+      Q.PAT_X_ASSUM ‘LAMl vs' t' = M2’ (fs o wrap o SYM) \\
+     ‘tpm [(v,v')] M1 -h-> tpm [(v,v')] (LAMl vs' t')’ by rw [tpm_hreduce] \\
+      FULL_SIMP_TAC std_ss [tpm_LAMl] \\
+      qabbrev_tac ‘vs'' = listpm string_pmact [(v,v')] vs'’ \\
+      qabbrev_tac ‘t'' = tpm [(v,v')] t'’ \\
+     ‘ALL_DISTINCT vs'’ by rw [ALL_DISTINCT_listpm, Abbr ‘vs'’] \\
+     ‘ALL_DISTINCT vs''’ by rw [ALL_DISTINCT_listpm, Abbr ‘vs''’] \\
+     ‘~is_abs t'’ by rw [Abbr ‘t'’, is_abs_cases] \\
+     ‘~is_abs t''’ by rw [Abbr ‘t''’, is_abs_cases] \\
+      Know ‘DISJOINT (set vs'') (FV (tpm [(v,v')] M1))’
+      >- (rw [DISJOINT_ALT', FV_tpm, Abbr ‘vs''’, MEM_listpm] \\
+          simp [Abbr ‘vs'’, MEM_listpm] \\
+          Cases_on ‘x = v'’ >- fs [] \\
+          Cases_on ‘x = v’ >> fs [] \\
+          Cases_on ‘x = h’ >> fs [] \\
+          Q.PAT_X_ASSUM ‘DISJOINT (set vs) (FV (tpm [(v,v')] M1) DELETE v)’ MP_TAC \\
+          rw [DISJOINT_ALT', MEM_listpm]) >> DISCH_TAC \\
+      Q.PAT_X_ASSUM ‘!vs t. P’ (MP_TAC o (Q.SPECL [‘vs''’, ‘t''’])) \\
+      RW_TAC std_ss [] \\
+      qabbrev_tac ‘vs'' = listpm string_pmact [(v,v')] vs'’ \\
+      Know ‘vs = listpm string_pmact [(h,v')] vs'’
+      >- (rw [Once LIST_EQ_REWRITE, Abbr ‘vs'’]) >> Rewr' \\
+      Know ‘vs' = listpm string_pmact [(v,v')] vs''’
+      >- (rw [Once LIST_EQ_REWRITE, Abbr ‘vs''’]) >> Rewr' \\
+      Q.PAT_X_ASSUM ‘vs'' = vs1 ++ vs2’ (ONCE_REWRITE_TAC o wrap) \\
+      qunabbrev_tac ‘vs''’ \\
+      qexistsl_tac [‘h::listpm string_pmact [(h,v')] (listpm string_pmact [(v,v')] vs1)’,
+                    ‘listpm string_pmact [(h,v')] (listpm string_pmact [(v,v')] vs2)’,
+                    ‘tpm [(h,v')] (tpm [(v,v')] N)’] \\
+      simp [listpm_APPENDlist] \\
+      reverse CONJ_TAC
+      >- (qabbrev_tac ‘vs2' = listpm string_pmact [(v,v')] vs2’ \\
+          Know ‘LAMl (listpm string_pmact [(h,v')] vs2') t = tpm [(h,v')] (LAMl vs2' t')’
+          >- (rw [Abbr ‘t'’, tpm_LAMl]) >> Rewr' \\
+          rw [tpm_hreduce, Abbr ‘vs2'’] \\
+          Know ‘LAMl (listpm string_pmact [(v,v')] vs2) t' = tpm [(v,v')] (LAMl vs2 t'')’
+          >- (rw [Abbr ‘t''’, tpm_LAMl]) >> Rewr' \\
+          rw [tpm_hreduce]) \\
+      qabbrev_tac ‘vs1' = listpm string_pmact [(v,v')] vs1’ \\
+      qabbrev_tac ‘N' = tpm [(v,v')] N’ \\
+      Know ‘LAMl (listpm string_pmact [(h,v')] vs1') (tpm [(h,v')] N') =
+            tpm [(h,v')] (LAMl vs1' N')’ >- rw [tpm_LAMl] >> Rewr' \\
+      qunabbrevl_tac [‘vs1'’, ‘N'’] \\
+      Know ‘LAMl (listpm string_pmact [(v,v')] vs1) (tpm [(v,v')] N) =
+            tpm [(v,v')] (LAMl vs1 N)’ >- rw [tpm_LAMl] >> Rewr' \\
+      Cases_on ‘h = v’ >> fs [] \\
+      simp [LAM_eq_thm, pmact_flip_args] \\
+      Q.PAT_X_ASSUM ‘tpm [(v,v')] M1 = LAMl vs1 N’ (REWRITE_TAC o wrap o SYM) \\
+      rw [FV_tpm] \\
+   (* applying fresh_tpm_subst *)
+      simp [fresh_tpm_subst] \\
+      qabbrev_tac ‘M = [VAR h/v'] M1’ \\
+      Know ‘tpm [(h,v)] M = [VAR v/h] M’
+      >- (rw [Once pmact_flip_args] \\
+          MATCH_MP_TAC fresh_tpm_subst \\
+          rw [FV_SUB, Abbr ‘M’]) >> Rewr' \\
+      qunabbrev_tac ‘M’ \\
+   (* applying lemma15a *)
+      ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+      MATCH_MP_TAC lemma15a >> art [],
+      (* goal 3 (of 4): conflicts of assumptions *)
       METIS_TAC [],
-      (* goal 4 (of 4) *)
+      (* goal 4 (of 4): cannot be harder than others *)
       Q.PAT_X_ASSUM ‘h = v’ (fs o wrap) \\
       Q.PAT_X_ASSUM ‘T’ K_TAC \\
-      cheat ]
+      fs [tpm_eqr, tpm_LAMl] \\
+      qabbrev_tac ‘vs' = listpm string_pmact [(v,v')] vs’ \\
+      qabbrev_tac ‘t' = tpm [(v,v')] t’ \\
+      Q.PAT_X_ASSUM ‘LAMl vs' t' = M2’ (fs o wrap o SYM) \\
+     ‘tpm [(v,v')] M1 -h-> tpm [(v,v')] (LAMl vs' t')’ by rw [tpm_hreduce] \\
+      FULL_SIMP_TAC std_ss [tpm_LAMl] \\
+      Know ‘listpm string_pmact [(v,v')] vs' = vs’
+      >- (rw [Once LIST_EQ_REWRITE, Abbr ‘vs'’]) >> DISCH_THEN (fs o wrap) \\
+      Know ‘tpm [(v,v')] t' = t’
+      >- (rw [Abbr ‘t'’]) >> DISCH_THEN (fs o wrap) \\
+      Know ‘DISJOINT (set vs) (FV (tpm [(v,v')] M1))’
+      >- (Q.PAT_X_ASSUM ‘DISJOINT (set vs) (FV (tpm [(v,v')] M1) DELETE v)’ MP_TAC \\
+          rw [DISJOINT_ALT', FV_tpm] \\
+          Cases_on ‘x = v’ >- fs [] \\
+          Cases_on ‘x = v'’ >> fs []) >> DISCH_TAC \\
+      Q.PAT_X_ASSUM ‘!vs t. P’ (MP_TAC o (Q.SPECL [‘vs’, ‘t’])) \\
+      RW_TAC std_ss [] \\
+      qexistsl_tac [‘v::vs1’, ‘vs2’, ‘N’] \\
+      simp [listpm_APPENDlist] ]
 QED
 
 (* ----------------------------------------------------------------------
