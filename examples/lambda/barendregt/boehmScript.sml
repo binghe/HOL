@@ -1886,7 +1886,7 @@ Theorem Boehm_transform_exists_lemma2 :
     !X M p. FINITE X /\
             p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
             ?pi. Boehm_transform pi /\ is_ready (apply pi M) /\
-                 ?fm Z. subterm' Z (apply pi M) p == fm ' (subterm' Z M p)
+                 ?fm Z Z'. subterm' Z (apply pi M) p == fm ' (subterm' Z' M p)
 Proof
     rpt STRIP_TAC
  (* applying subterm_is_none_iff_children *)
@@ -1928,7 +1928,8 @@ Proof
  (* trivial case: unsolvable M (useless) *)
  >> reverse (Cases_on ‘solvable M’)
  >- (Q.EXISTS_TAC ‘[]’ >> rw [is_ready_def] \\
-     Q.EXISTS_TAC ‘FEMPTY’ >> rw [])
+     Q.EXISTS_TAC ‘FEMPTY’ >> simp [] \\
+     qexistsl_tac [‘X’, ‘X’] >> rw [])
  (* stage work (all correct until here)
 
     M0 is meaningful given M is now solvable:
@@ -2084,20 +2085,6 @@ Proof
      rw [SUBSET_DEF, IN_BIGUNION_IMAGE] \\
      Q.EXISTS_TAC ‘e’ >> art [])
  (* stage work *)
- >> Q.EXISTS_TAC ‘FEMPTY |+ (y,P)’
- (* NOTE: here, for rewriting M to M0 in the goal, Z can be anything. *)
- >> Q.ABBREV_TAC ‘Y = X UNION FV M’
- >> ‘FINITE Y’ by rw [Abbr ‘Y’]
- >> Q.EXISTS_TAC ‘Y’
- (* RHS rewriting from M to M0 *)
- >> MATCH_MP_TAC lameq_TRANS
- >> Q.EXISTS_TAC ‘(FEMPTY |+ (y,P)) ' (subterm' Y M0 p)’
- >> reverse CONJ_TAC
- >- (MATCH_MP_TAC lameq_ssub_cong \\
-     Suff ‘subterm Y M0 p = subterm Y M p’ >- rw [] \\
-     qunabbrev_tac ‘M0’ \\
-     MATCH_MP_TAC subterm_of_principle_hnf >> art [])
- (* stage work *)
  >> Know ‘principle_hnf (apply (p3 ++ p2 ++ p1) M) = VAR b @* args' @* MAP VAR as’
  >- (Q.PAT_X_ASSUM ‘apply (p3 ++ p2 ++ p1) M == _’ MP_TAC \\
      simp [Boehm_apply_APPEND] \\
@@ -2190,12 +2177,28 @@ Proof
       MATCH_MP_TAC principle_hnf_denude_thm >> art [] \\
       rw [Abbr ‘M0’])
  >> DISCH_TAC
+ (* stage work, there's no other choice for this fm *)
+ >> Q.EXISTS_TAC ‘FEMPTY |+ (y,P)’
+ >> REWRITE_TAC [single_ssub]
+ (* NOTE: for rewriting M to M0 in the goal, Z can be anything. *)
+ >> Q.ABBREV_TAC ‘Y = X UNION FV M’
+ >> ‘FINITE Y’ by rw [Abbr ‘Y’]
+ >> qexistsl_tac [‘Z’, ‘Y’]
+ (* RHS rewriting from M to M0 *)
+ >> MATCH_MP_TAC lameq_TRANS
+ >> Q.EXISTS_TAC ‘[P/y] (subterm' Y M0 p)’
+ >> reverse CONJ_TAC
+ >- (irule lameq_sub_cong \\
+     Suff ‘subterm Y M0 p = subterm Y M p’ >- rw [] \\
+     qunabbrev_tac ‘M0’ \\
+     MATCH_MP_TAC subterm_of_principle_hnf >> art [])
  (* LHS rewriting from M to M0 *)
- >> Know ‘subterm' Y (apply (p3 ++ p2 ++ p1) M) p =
-          subterm' Y (VAR b @* args' @* MAP VAR as) p’
- >- (POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM) \\
+ >> Know ‘subterm' Z (apply (p3 ++ p2 ++ p1) M) p =
+          subterm' Z (VAR b @* args' @* MAP VAR as) p’
+ >- (Q.PAT_X_ASSUM ‘_ = VAR b @* args' @* MAP VAR as’
+       (ONCE_REWRITE_TAC o wrap o SYM) \\
      qabbrev_tac ‘t = apply (p3 ++ p2 ++ p1) M’ \\
-     Suff ‘subterm Y (principle_hnf t) p = subterm Y t p’ >- rw [] \\
+     Suff ‘subterm Z (principle_hnf t) p = subterm Z t p’ >- rw [] \\
      MATCH_MP_TAC subterm_of_principle_hnf >> art [] \\
      Suff ‘solvable (VAR b @* args' @* MAP VAR as)’
      >- PROVE_TAC [lameq_solvable_cong] \\
@@ -2204,14 +2207,13 @@ Proof
      rw [hnf_appstar])
  >> Rewr'
  (* stage work, now ‘M’ is eliminated from both sides! *)
- >> REWRITE_TAC [single_ssub]
  >> Cases_on ‘p’ >- FULL_SIMP_TAC std_ss []
  >> Know ‘h < m’
  >- (Q.PAT_X_ASSUM ‘subterm X M (h::t) <> NONE’ MP_TAC \\
      RW_TAC std_ss [subterm_of_solvables] >> fs [])
  >> DISCH_TAC
  (* applying subterm_of_absfree_hnf *)
- >> MP_TAC (Q.SPECL [‘Y’, ‘VAR b @* args' @* MAP VAR as’, ‘h’, ‘t’]
+ >> MP_TAC (Q.SPECL [‘Z’, ‘VAR b @* args' @* MAP VAR as’, ‘h’, ‘t’]
                     subterm_of_absfree_hnf)
  >> simp [hnf_appstar, GSYM appstar_APPEND, hnf_children_appstar]
  >> DISCH_THEN K_TAC (* already used *)
@@ -2231,6 +2233,10 @@ Proof
          qunabbrev_tac ‘Y’ >> SET_TAC []) >> Rewr' \\
      simp [hnf_children_hnf])
  >> Rewr'
+ (* Now: subterm' Z (EL h args') t == [P/y] (subterm' Z (EL h args) t)
+
+    This looks possible (‘subterm' Z’ on both sides). Let's see...
+  *)
  >> cheat
 QED
 
