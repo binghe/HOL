@@ -1485,7 +1485,7 @@ Proof
 QED
 
 Theorem principle_hnf_denude_thm :
-    !M vs l y args. solvable M /\
+    !l M vs y args. solvable M /\
        ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
        LENGTH vs = LAMl_size (principle_hnf M) /\
        principle_hnf M = LAMl vs (VAR y @* args) ==>
@@ -1508,6 +1508,15 @@ Proof
  (* now all ‘principle_hnf’ are eliminated, leaving only -h->* *)
  >> MATCH_MP_TAC principle_hnf_denude_lemma >> art []
 QED
+
+(* |- !M vs y args.
+        solvable M /\ ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
+        LENGTH vs = LAMl_size (principle_hnf M) /\
+        principle_hnf M = LAMl vs (VAR y @* args) ==>
+        principle_hnf (M @* MAP VAR vs) = VAR y @* args
+ *)
+Theorem principle_hnf_denude_thm' =
+        principle_hnf_denude_thm |> Q.SPEC ‘[]’ |> SIMP_RULE (srw_ss()) []
 
 Theorem principle_hnf_permutator_lemma[local] :
     !vs Ns. ALL_DISTINCT vs /\ ~MEM y vs /\ LENGTH vs = LENGTH Ns /\
