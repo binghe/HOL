@@ -1888,7 +1888,7 @@ QED
           Z' = X UNION FV M
 
    where  vs = FRESH_list (LAMl_size (principle_hnf M) (X UNION FV M)) = f (X,M)
-         (vs is a function of X and M, assuming M is solvable, otherwise trivial)
+         (vs is function of X and M, assuming M is solvable, otherwise trivial.)
  *)
 Theorem Boehm_transform_exists_lemma2 :
     !X M p. FINITE X /\

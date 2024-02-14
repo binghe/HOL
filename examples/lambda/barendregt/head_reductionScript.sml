@@ -278,8 +278,8 @@ QED
 Theorem hreduce1_LAMl_cases :
     !M vs t. ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
              M -h-> LAMl vs t /\ ~is_abs t ==>
-             ?vs1 vs2 N. (vs = vs1 ++ vs2) /\ (M = LAMl vs1 N) /\ ~is_abs N /\
-                         N -h-> LAMl vs2 t
+        ?vs1 vs2 N. (vs = vs1 ++ vs2) /\ (M = LAMl vs1 N) /\ ~is_abs N /\
+                    N -h-> LAMl vs2 t
 Proof
     HO_MATCH_MP_TAC simple_induction >> rw []
  >> Cases_on ‘vs = []’
