@@ -1881,6 +1881,14 @@ QED
                        ?fm. apply pi M == fm ' M
 
    which is impossible if M is not already "is_ready".
+
+   NOTE4: The precise forms of Z and Z' in the conclusion, are:
+
+          Z  = X UNION FV M UNION set vs
+          Z' = X UNION FV M
+
+   where  vs = FRESH_list (LAMl_size (principle_hnf M) (X UNION FV M)) = f (X,M)
+         (vs is a function of X and M, assuming M is solvable, otherwise trivial)
  *)
 Theorem Boehm_transform_exists_lemma2 :
     !X M p. FINITE X /\
@@ -2221,7 +2229,7 @@ Proof
  >> Know ‘EL h (args' ++ MAP VAR as) = EL h args'’
  >- (MATCH_MP_TAC EL_APPEND1 >> rw [])
  >> Rewr'
- (* eliminating ‘vs’ *)
+ (* eliminating ‘vs’, NOTE: ‘subterm Y’ changed to ‘subterm Z’ at next level *)
  >> Know ‘subterm Y (LAMl vs (VAR y @* args)) (h::t) =
           subterm Z (EL h args) t’
  >- (MP_TAC (Q.SPECL [‘Y’, ‘LAMl vs (VAR y @* args)’, ‘h’, ‘t’] subterm_of_hnf) \\
@@ -2236,6 +2244,8 @@ Proof
  (* Now: subterm' Z (EL h args') t == [P/y] (subterm' Z (EL h args) t)
 
     This looks possible (‘subterm' Z’ on both sides). Let's see...
+
+    It's better to use a lemma here as the assumption list is too long.
   *)
  >> cheat
 QED
