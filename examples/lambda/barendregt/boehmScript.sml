@@ -1873,9 +1873,9 @@ QED
    there exists no universal ‘pi’ for which the conclusion holds for arbitrary ‘p’.
 
    NOTE2: Added ‘subterm X M p <> NONE’ to antecedents so that ‘subterm' X M p’ is
-   specified. ‘subterm X (apply pi M) p <> NONE’ can be proved.
+   specified. ‘subterm X (apply pi M) p <> NONE’ can be derived (if needed).
 
-   NOTE3: ‘p <> []’ must be added into antecedents. Otherwise the statement became:
+   NOTE3: ‘p <> []’ must be added into antecedents, otherwise the statement becomes:
 
    [...] |- !X M. ?pi. Boehm_transform pi /\ is_ready (apply pi M) /\
                        ?fm. apply pi M == fm ' M
@@ -2086,18 +2086,21 @@ Proof
  (* stage work *)
  >> Q.EXISTS_TAC ‘FEMPTY |+ (y,P)’
  (* NOTE: here, for rewriting M to M0 in the goal, Z can be anything. *)
- >> Q.EXISTS_TAC ‘Z’
+ >> Q.ABBREV_TAC ‘Y = X UNION FV M’
+ >> ‘FINITE Y’ by rw [Abbr ‘Y’]
+ >> Q.EXISTS_TAC ‘Y’
  (* RHS rewriting from M to M0 *)
  >> MATCH_MP_TAC lameq_TRANS
- >> Q.EXISTS_TAC ‘(FEMPTY |+ (y,P)) ' (subterm' Z M0 p)’
+ >> Q.EXISTS_TAC ‘(FEMPTY |+ (y,P)) ' (subterm' Y M0 p)’
  >> reverse CONJ_TAC
  >- (MATCH_MP_TAC lameq_ssub_cong \\
-     Suff ‘subterm Z M0 p = subterm Z M p’ >- rw [] \\
+     Suff ‘subterm Y M0 p = subterm Y M p’ >- rw [] \\
      qunabbrev_tac ‘M0’ \\
      MATCH_MP_TAC subterm_of_principle_hnf >> art [])
  (* stage work *)
  >> Know ‘principle_hnf (apply (p3 ++ p2 ++ p1) M) = VAR b @* args' @* MAP VAR as’
- >- (POP_ASSUM MP_TAC >> simp [Boehm_apply_APPEND] \\
+ >- (Q.PAT_X_ASSUM ‘apply (p3 ++ p2 ++ p1) M == _’ MP_TAC \\
+     simp [Boehm_apply_APPEND] \\
      Q.PAT_X_ASSUM ‘Boehm_transform (p3 ++ p2 ++ p1)’ K_TAC \\
      Q.PAT_X_ASSUM ‘Boehm_transform p1’ K_TAC \\
      Q.PAT_X_ASSUM ‘apply p1 M0 == M1’ K_TAC \\
@@ -2183,16 +2186,16 @@ Proof
          REWRITE_TAC [solvable_iff_has_hnf] \\
          MATCH_MP_TAC hnf_has_hnf \\
          rw [hnf_appstar]) \\
-   (* applying principle_hnf_denude_lemma (hard to prove) *)
+   (* applying the celebrating principle_hnf_denude_thm *)
       MATCH_MP_TAC principle_hnf_denude_thm >> art [] \\
       rw [Abbr ‘M0’])
  >> DISCH_TAC
  (* LHS rewriting from M to M0 *)
- >> Know ‘subterm' Z (apply (p3 ++ p2 ++ p1) M) p =
-          subterm' Z (VAR b @* args' @* MAP VAR as) p’
+ >> Know ‘subterm' Y (apply (p3 ++ p2 ++ p1) M) p =
+          subterm' Y (VAR b @* args' @* MAP VAR as) p’
  >- (POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM) \\
      qabbrev_tac ‘t = apply (p3 ++ p2 ++ p1) M’ \\
-     Suff ‘subterm Z (principle_hnf t) p = subterm Z t p’ >- rw [] \\
+     Suff ‘subterm Y (principle_hnf t) p = subterm Y t p’ >- rw [] \\
      MATCH_MP_TAC subterm_of_principle_hnf >> art [] \\
      Suff ‘solvable (VAR b @* args' @* MAP VAR as)’
      >- PROVE_TAC [lameq_solvable_cong] \\
@@ -2203,13 +2206,31 @@ Proof
  (* stage work, now ‘M’ is eliminated from both sides! *)
  >> REWRITE_TAC [single_ssub]
  >> Cases_on ‘p’ >- FULL_SIMP_TAC std_ss []
- (* NOTE: This needs ‘h::t IN ltree_paths (BTe X M)’ *)
- >> ‘h < m’ by cheat
+ >> Know ‘h < m’
+ >- (Q.PAT_X_ASSUM ‘subterm X M (h::t) <> NONE’ MP_TAC \\
+     RW_TAC std_ss [subterm_of_solvables] >> fs [])
+ >> DISCH_TAC
  (* applying subterm_of_absfree_hnf *)
- >> MP_TAC (Q.SPECL [‘Z’, ‘VAR b @* args' @* MAP VAR as’, ‘h’, ‘t’]
+ >> MP_TAC (Q.SPECL [‘Y’, ‘VAR b @* args' @* MAP VAR as’, ‘h’, ‘t’]
                     subterm_of_absfree_hnf)
  >> simp [hnf_appstar, GSYM appstar_APPEND, hnf_children_appstar]
  >> DISCH_THEN K_TAC (* already used *)
+ (* eliminating ‘MAP VAR as’ *)
+ >> Know ‘EL h (args' ++ MAP VAR as) = EL h args'’
+ >- (MATCH_MP_TAC EL_APPEND1 >> rw [])
+ >> Rewr'
+ (* eliminating ‘vs’ *)
+ >> Know ‘subterm Y (LAMl vs (VAR y @* args)) (h::t) =
+          subterm Z (EL h args) t’
+ >- (MP_TAC (Q.SPECL [‘Y’, ‘LAMl vs (VAR y @* args)’, ‘h’, ‘t’] subterm_of_hnf) \\
+     simp [hnf_LAMl, hnf_appstar] \\
+     DISCH_THEN K_TAC (* already used *) \\
+     Q.PAT_X_ASSUM ‘M0 = LAMl vs (VAR y @* args)’ (REWRITE_TAC o wrap o SYM) \\
+     Know ‘Y UNION FV M0 = Y’
+     >- (Know ‘FV M0 SUBSET FV M’ >- rw [Abbr ‘M0’, principle_hnf_FV_SUBSET'] \\
+         qunabbrev_tac ‘Y’ >> SET_TAC []) >> Rewr' \\
+     simp [hnf_children_hnf])
+ >> Rewr'
  >> cheat
 QED
 
