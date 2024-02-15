@@ -829,10 +829,13 @@ QED
    NOTE2: this (unfinished but possible) theorem is no more needed. But if it's
    still needed, the theorem [subterm_tpm] must be proved first.
  *)
-Theorem subterm_not_none_imp_forall :
-    !p M. (?X. FINITE X /\ subterm X M p <> NONE) ==>
-           !X. FINITE X ==> subterm X M p <> NONE
+Theorem subterm_some_none_cong :
+    !p M X Y. FINITE X /\ FINITE Y ==>
+             (subterm X M p = NONE <=> subterm Y M p = NONE)
 Proof
+    cheat
+QED
+(*
     Induct_on ‘p’ >- rw []
  >> rpt GEN_TAC
  >> simp [subterm_def]
@@ -914,6 +917,17 @@ Proof
  >> simp [tpm_appstar, hnf_children_hnf]
  >> ‘m = LENGTH args’ by (rw [Abbr ‘m’])
  >> Cases_on ‘p = []’ >> rw []
+QED
+*)
+
+(* NOTE: ‘subterm Y M p <> NONE’ can be derived from ‘subterm X M p <> NONE’ *)
+Theorem subterm_hnf_children_size_cong :
+    !X Y M p. FINITE X /\ FINITE Y /\ subterm X M p <> NONE ==>
+              hnf_children_size (pH (subterm' X M p)) =
+              hnf_children_size (pH (subterm' Y M p))
+Proof
+    rpt STRIP_TAC
+ >> ‘subterm Y M p <> NONE’ by PROVE_TAC [subterm_some_none_cong]
  >> cheat
 QED
 
@@ -1893,7 +1907,8 @@ End
             hnf_children_size (pH (subterm' Y M p)
  *)
 Theorem subterm_width_thm :
-    !X M p p'. p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE /\
+    !X M p p'. FINITE X /\
+               p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE /\
                p' <<= FRONT p ==>
                hnf_children_size (pH (subterm' X M p')) <= subterm_width M p
 Proof
@@ -1917,7 +1932,16 @@ Proof
  >> reverse CONJ_TAC
  >- (rw [Abbr ‘Ms’] \\
      Q.EXISTS_TAC ‘p'’ >> art [])
- >> cheat
+ (* applying subterm_hnf_children_size_cong *)
+ >> MATCH_MP_TAC subterm_hnf_children_size_cong >> rw []
+ (* subgoal: subterm X M p' <> NONE *)
+ >> CCONTR_TAC
+ (* applying subterm_is_none_iff_children *)
+ >> POP_ASSUM (MP_TAC o (REWRITE_RULE [Once subterm_is_none_iff_children]))
+ >> DISCH_THEN (MP_TAC o (Q.SPEC ‘p’)) >> rw []
+ >> MATCH_MP_TAC IS_PREFIX_TRANS
+ >> Q.EXISTS_TAC ‘FRONT p’ >> art []
+ >> MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []
 QED
 
 (* Lemma 10.3.6 (ii) [1, p.247]:
@@ -1958,26 +1982,6 @@ Proof
  >- (Q.EXISTS_TAC ‘[]’ >> rw [is_ready_def] \\
      Q.EXISTS_TAC ‘FEMPTY’ >> simp [] \\
      qexistsl_tac [‘X’, ‘X’] >> rw [])
- (* (not used)
- (* applying subterm_is_none_iff_children *)
- >> Know ‘!p'. p' <<= p ==> subterm X M p' <> NONE’
- >- (Q.X_GEN_TAC ‘p'’ >> STRIP_TAC \\
-     CCONTR_TAC \\
-     POP_ASSUM (MP_TAC o (REWRITE_RULE [Once subterm_is_none_iff_children])) \\
-     DISCH_THEN (MP_TAC o (Q.SPEC ‘p’)) >> rw [])
- >> DISCH_TAC
- (* applying subterm_is_none_iff_parent_unsolvable *)
- >> Know ‘!p'. p' <> [] /\ p' <<= p ==> solvable (subterm' X M (FRONT p'))’
- >- (rpt STRIP_TAC \\
-     MP_TAC (Q.SPECL [‘p'’, ‘X’, ‘M’] subterm_is_none_iff_parent_unsolvable) \\
-    ‘p' IN ltree_paths (BTe X M)’ by PROVE_TAC [ltree_paths_inclusive] \\
-     Know ‘subterm X M (FRONT p') <> NONE’
-     >- (FIRST_X_ASSUM MATCH_MP_TAC \\
-         MATCH_MP_TAC IS_PREFIX_TRANS \\
-         Q.EXISTS_TAC ‘p'’ >> rw [] \\
-         MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []) >> rw [])
- >> DISCH_TAC
-  *)
  (* stage work (all correct until here)
 
     M0 is meaningful given M is now solvable:
@@ -2346,6 +2350,26 @@ Proof
   *)
  >> cheat
 QED
+ (* (not used)
+ (* applying subterm_is_none_iff_children *)
+ >> Know ‘!p'. p' <<= p ==> subterm X M p' <> NONE’
+ >- (Q.X_GEN_TAC ‘p'’ >> STRIP_TAC \\
+     CCONTR_TAC \\
+     POP_ASSUM (MP_TAC o (REWRITE_RULE [Once subterm_is_none_iff_children])) \\
+     DISCH_THEN (MP_TAC o (Q.SPEC ‘p’)) >> rw [])
+ >> DISCH_TAC
+ (* applying subterm_is_none_iff_parent_unsolvable *)
+ >> Know ‘!p'. p' <> [] /\ p' <<= p ==> solvable (subterm' X M (FRONT p'))’
+ >- (rpt STRIP_TAC \\
+     MP_TAC (Q.SPECL [‘p'’, ‘X’, ‘M’] subterm_is_none_iff_parent_unsolvable) \\
+    ‘p' IN ltree_paths (BTe X M)’ by PROVE_TAC [ltree_paths_inclusive] \\
+     Know ‘subterm X M (FRONT p') <> NONE’
+     >- (FIRST_X_ASSUM MATCH_MP_TAC \\
+         MATCH_MP_TAC IS_PREFIX_TRANS \\
+         Q.EXISTS_TAC ‘p'’ >> rw [] \\
+         MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []) >> rw [])
+ >> DISCH_TAC
+  *)
 
 (* Proposition 10.3.7 (i) [1, p.248] (Boehm out lemma)
 
