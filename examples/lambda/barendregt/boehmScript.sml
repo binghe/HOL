@@ -234,9 +234,7 @@ Proof
  >> rw [ltree_bisimulation]
  (* NOTE: ‘solvable P /\ solvable Q’ cannot be added here *)
  >> Q.EXISTS_TAC ‘\x y. ?P Q Y. FINITE Y /\ FV P UNION FV Q SUBSET Y /\
-                                P == Q /\
-                                x = BTe Y P /\
-                                y = BTe Y Q’
+                                P == Q /\ x = BTe Y P /\ y = BTe Y Q’
  >> BETA_TAC
  >> CONJ_TAC
  >- (qexistsl_tac [‘M’, ‘N’, ‘X’] >> rw [])
@@ -255,9 +253,9 @@ Proof
  >> qabbrev_tac ‘y  = hnf_head P1’
  >> qabbrev_tac ‘y' = hnf_head Q1’
  (* applying ltree_unfold *)
- >> Q.PAT_X_ASSUM ‘_ = BTe Y Q0’ MP_TAC
+ >> Q.PAT_X_ASSUM ‘_ = BTe Y Q’ MP_TAC
  >> simp [BT_def, Once ltree_unfold, BT_generator_def]
- >> Q.PAT_X_ASSUM ‘_ = BTe Y P0’ MP_TAC
+ >> Q.PAT_X_ASSUM ‘_ = BTe Y P’ MP_TAC
  >> simp [BT_def, Once ltree_unfold, BT_generator_def]
  >> NTAC 2 STRIP_TAC
  (* easy case: unsolvable P (and Q) *)
