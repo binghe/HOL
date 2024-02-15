@@ -1898,24 +1898,25 @@ Theorem Boehm_transform_exists_lemma2 :
 Proof
     rpt STRIP_TAC
  (* applying subterm_is_none_iff_children *)
- >> Know ‘!p1. p1 <<= p ==> subterm X M p1 <> NONE’
- >- (Q.X_GEN_TAC ‘p1’ >> STRIP_TAC \\
+ >> Know ‘!p'. p' <<= p ==> subterm X M p' <> NONE’
+ >- (Q.X_GEN_TAC ‘p'’ >> STRIP_TAC \\
      CCONTR_TAC \\
      POP_ASSUM (MP_TAC o (REWRITE_RULE [Once subterm_is_none_iff_children])) \\
      DISCH_THEN (MP_TAC o (Q.SPEC ‘p’)) >> rw [])
  >> DISCH_TAC
  (* applying subterm_is_none_iff_parent_unsolvable *)
- >> Know ‘!p1. p1 <> [] /\ p1 <<= p ==> solvable (subterm' X M (FRONT p1))’
+ >> Know ‘!p'. p' <> [] /\ p' <<= p ==> solvable (subterm' X M (FRONT p'))’
  >- (rpt STRIP_TAC \\
-     MP_TAC (Q.SPECL [‘p1’, ‘X’, ‘M’] subterm_is_none_iff_parent_unsolvable) \\
-    ‘p1 IN ltree_paths (BTe X M)’ by PROVE_TAC [ltree_paths_inclusive] \\
-     Know ‘subterm X M (FRONT p1) <> NONE’
+     MP_TAC (Q.SPECL [‘p'’, ‘X’, ‘M’] subterm_is_none_iff_parent_unsolvable) \\
+    ‘p' IN ltree_paths (BTe X M)’ by PROVE_TAC [ltree_paths_inclusive] \\
+     Know ‘subterm X M (FRONT p') <> NONE’
      >- (FIRST_X_ASSUM MATCH_MP_TAC \\
-         MATCH_MP_TAC IS_PREFIX_TRANS >> Q.EXISTS_TAC ‘p1’ >> rw [] \\
+         MATCH_MP_TAC IS_PREFIX_TRANS \\
+         Q.EXISTS_TAC ‘p'’ >> rw [] \\
          MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []) >> rw [])
  >> DISCH_TAC
  (* s is the set of all non-empty prefix of p *)
- >> qabbrev_tac ‘s = {p1 | p1 <> [] /\ p1 <<= p}’
+ >> qabbrev_tac ‘s = {p' | p' <> [] /\ p' <<= p}’
  (* J collects all hnf_children_size(s) along the fixed path p *)
  >> qabbrev_tac ‘J = IMAGE (\e. hnf_children_size
                                   (principle_hnf (subterm' X M (FRONT e)))) s’
@@ -1926,7 +1927,7 @@ Proof
  >> Know ‘FINITE J’
  >- (qunabbrev_tac ‘J’ >> MATCH_MP_TAC IMAGE_FINITE \\
   (* below is the proof of ‘FINITE s’ *)
-     irule SUBSET_FINITE >> Q.EXISTS_TAC ‘{p1 | p1 <<= p}’ \\
+     irule SUBSET_FINITE >> Q.EXISTS_TAC ‘{p' | p' <<= p}’ \\
      reverse CONJ_TAC >- rw [Abbr ‘s’, SUBSET_DEF] \\
      REWRITE_TAC [FINITE_prefix])
  >> DISCH_TAC
@@ -2033,8 +2034,10 @@ Proof
  >> Know ‘DISJOINT (set l) (FV M1)’
  >- (MATCH_MP_TAC DISJOINT_SUBSET \\
      Q.EXISTS_TAC ‘Z’ >> art [])
- >> art [FV_appstar, FV_thm]
+ >> ASM_REWRITE_TAC [FV_appstar, FV_thm]
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
+ >> Q.PAT_X_ASSUM ‘DISJOINT (set l) {y}’ (* ~MEM y l *)
+       (STRIP_ASSUME_TAC o (SIMP_RULE (srw_ss()) [DISJOINT_ALT']))
  >> ‘l <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
  >> qabbrev_tac ‘as = FRONT l’
  >> ‘LENGTH as = q - m’ by rw [Abbr ‘as’, LENGTH_FRONT]
@@ -2115,23 +2118,22 @@ Proof
          rw [LIST_EQ_REWRITE, EL_MAP] \\
          MATCH_MP_TAC lemma14b \\
          REWRITE_TAC [FV_thm, IN_SING] \\
-         Suff ‘~MEM y l’ >- (rw [MEM_EL] >> METIS_TAC []) \\
-         Q.PAT_X_ASSUM ‘DISJOINT (set l) {y}’ MP_TAC \\
-         rw [DISJOINT_ALT']) >> Rewr' \\
+         Q.PAT_X_ASSUM ‘~MEM y l’ MP_TAC \\
+         rw [MEM_EL] >> METIS_TAC []) >> Rewr' \\
      DISCH_TAC (* [P/y] ... == ... *) \\
   (* applying principle_hnf_permutator *)
      Know ‘VAR b @* args' @* MAP VAR as =
            principle_hnf ([P/y] (VAR y @* args @* MAP VAR (SNOC b as)))’
      >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
          simp [appstar_SUB, appstar_SNOC, MAP_SNOC] \\
-         Q.PAT_X_ASSUM ‘DISJOINT (set l) {y}’ MP_TAC \\
-         rw [DISJOINT_ALT'] \\
          Know ‘MAP [P/y] (MAP VAR as) = MAP VAR as’
          >- (Q.PAT_X_ASSUM ‘LENGTH as = _’ K_TAC \\
              rw [LIST_EQ_REWRITE, EL_MAP] \\
              MATCH_MP_TAC lemma14b >> rw [] \\
-             Q.PAT_X_ASSUM ‘~MEM y as’ MP_TAC \\
+             Q.PAT_X_ASSUM ‘~MEM y (SNOC b as)’ MP_TAC \\
              rw [MEM_EL] >> PROVE_TAC []) >> Rewr' \\
+         Know ‘[P/y] (VAR b) = VAR b’
+         >- (MATCH_MP_TAC lemma14b >> fs [MEM_SNOC]) >> Rewr' \\
          simp [Abbr ‘P’, GSYM appstar_APPEND] \\
          MATCH_MP_TAC principle_hnf_permutator >> rw []) >> Rewr' \\
   (* applying principle_hnf_substitutive *)
@@ -2163,14 +2165,14 @@ Proof
          rw [hnf_appstar]) \\
      CONJ_TAC
      >- (simp [appstar_SUB, MAP_SNOC] \\
-         Q.PAT_X_ASSUM ‘DISJOINT (set l) {y}’ MP_TAC \\
-         rw [DISJOINT_ALT'] \\
          Know ‘MAP [P/y] (MAP VAR as) = MAP VAR as’
          >- (Q.PAT_X_ASSUM ‘LENGTH as = _’ K_TAC \\
              rw [LIST_EQ_REWRITE, EL_MAP] \\
              MATCH_MP_TAC lemma14b >> rw [] \\
-             Q.PAT_X_ASSUM ‘~MEM y as’ MP_TAC \\
+             Q.PAT_X_ASSUM ‘~MEM y (SNOC b as)’ MP_TAC \\
              rw [MEM_EL] >> PROVE_TAC []) >> Rewr' \\
+         Know ‘[P/y] (VAR b) = VAR b’
+         >- (MATCH_MP_TAC lemma14b >> fs [MEM_SNOC]) >> Rewr' \\
          simp [Abbr ‘P’, GSYM appstar_APPEND] \\
          REWRITE_TAC [GSYM solvable_iff_has_hnf] \\
          Know ‘permutator q @* (args' ++ MAP VAR as) @@ VAR b ==
@@ -2179,11 +2181,9 @@ Proof
          Suff ‘solvable (VAR b @* (args' ++ MAP VAR as))’
          >- PROVE_TAC [lameq_solvable_cong] \\
          REWRITE_TAC [solvable_iff_has_hnf] \\
-         MATCH_MP_TAC hnf_has_hnf \\
-         rw [hnf_appstar]) \\
+         MATCH_MP_TAC hnf_has_hnf >> rw [hnf_appstar]) \\
    (* applying the celebrating principle_hnf_denude_thm *)
-      MATCH_MP_TAC principle_hnf_denude_thm >> art [] \\
-      rw [Abbr ‘M0’])
+      MATCH_MP_TAC principle_hnf_denude_thm >> rw [])
  >> DISCH_TAC
  (* stage work, there's no other choice for this fm *)
  >> Q.EXISTS_TAC ‘FEMPTY |+ (y,P)’
@@ -2191,6 +2191,11 @@ Proof
  (* NOTE: for rewriting M to M0 in the goal, Z can be anything. *)
  >> Q.ABBREV_TAC ‘Y = X UNION FV M’
  >> ‘FINITE Y’ by rw [Abbr ‘Y’]
+ (* stage work
+
+    The choices of Z and Y here is to make sure that later we have a goal
+    like ‘subterm Z ... == [P/y] subterm Z ...’, where Z = Y UNION set vs.
+  *)
  >> qexistsl_tac [‘Z’, ‘Y’]
  (* RHS rewriting from M to M0 *)
  >> MATCH_MP_TAC lameq_TRANS
@@ -2211,9 +2216,12 @@ Proof
      Suff ‘solvable (VAR b @* args' @* MAP VAR as)’
      >- PROVE_TAC [lameq_solvable_cong] \\
      REWRITE_TAC [solvable_iff_has_hnf] \\
-     MATCH_MP_TAC hnf_has_hnf \\
-     rw [hnf_appstar])
+     MATCH_MP_TAC hnf_has_hnf >> rw [hnf_appstar])
  >> Rewr'
+ (* stage cleanups *)
+ >> Q.PAT_X_ASSUM ‘principle_hnf (apply (p3 ++ p2 ++ p1) M) = _’ K_TAC
+ >> Q.PAT_X_ASSUM ‘apply (p3 ++ p2 ++ p1) M == _’                K_TAC
+ >> Q.PAT_X_ASSUM ‘Boehm_transform (p3 ++ p2 ++ p1)’             K_TAC
  (* stage work, now ‘M’ is eliminated from both sides! *)
  >> Cases_on ‘p’ >- FULL_SIMP_TAC std_ss []
  >> Know ‘h < m’
@@ -2245,8 +2253,15 @@ Proof
 
     This looks possible (‘subterm' Z’ on both sides). Let's see...
 
-    It's better to use a lemma here as the assumption list is too long.
+    First of all, those assumptions about p1,p3 are no more needed.
   *)
+ >> Q.PAT_X_ASSUM ‘Boehm_transform p1’         K_TAC
+ >> Q.PAT_X_ASSUM ‘apply p1 M0 == M1’          K_TAC
+ >> qunabbrev_tac ‘p1’
+ >> Q.PAT_X_ASSUM ‘Boehm_transform p3’         K_TAC
+ >> Q.PAT_X_ASSUM ‘apply p3 (P @* args') == _’ K_TAC
+ >> qunabbrev_tac ‘p3’
+ >> Q.PAT_X_ASSUM ‘h::t <> []’                 K_TAC (* too obvious *)
  >> cheat
 QED
 
