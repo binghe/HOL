@@ -20,7 +20,7 @@ val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
 
 val o_DEF = combinTheory.o_DEF;
 
-Overload pH[local] = “principle_hnf”
+(* Overload pH[local] = “principle_hnf” *)
 
 (*---------------------------------------------------------------------------*
  *  ltreeTheory extras
@@ -236,8 +236,7 @@ Proof
  >> Q.EXISTS_TAC ‘\x y. ?P Q Y. FINITE Y /\ FV P UNION FV Q SUBSET Y /\
                                 P == Q /\ x = BTe Y P /\ y = BTe Y Q’
  >> BETA_TAC
- >> CONJ_TAC
- >- (qexistsl_tac [‘M’, ‘N’, ‘X’] >> rw [])
+ >> CONJ_TAC >- (qexistsl_tac [‘M’, ‘N’, ‘X’] >> rw [])
  (* stage work *)
  >> qx_genl_tac [‘a1’, ‘ts1’, ‘a2’, ‘ts2’] >> STRIP_TAC
  >> qabbrev_tac ‘P0 = principle_hnf P’
@@ -596,6 +595,7 @@ Proof
  >> Cases_on ‘p'’ >> fs [subterm_def]
 QED
 
+(* NOTE: cf. [subterm_some_none_cong] when X changes but M remains *)
 Theorem lameq_subterm_cong_none :
     !p X M N. FINITE X /\ FV M UNION FV N SUBSET X /\ M == N ==>
              (subterm X M p = NONE <=> subterm X N p = NONE)
@@ -823,64 +823,44 @@ QED
 (* NOTE: since ‘subterm X M p’ is correct for whatever X supplied, changing ‘X’ to
    something else shouldn't change the properties of ‘subterm X M p’, as long as
    these properties are not directly related to specific choices of ‘vs’.
-
-   NOTE2: this (unfinished but possible) theorem is no more needed. But if it's
-   still needed, the theorem [subterm_tpm] must be proved first.
  *)
 Theorem subterm_some_none_cong :
     !p M X Y. FINITE X /\ FINITE Y ==>
              (subterm X M p = NONE <=> subterm Y M p = NONE)
 Proof
-    cheat
-QED
-(*
     Induct_on ‘p’ >- rw []
- >> rpt GEN_TAC
- >> simp [subterm_def]
- >> Cases_on ‘solvable M’ >> simp []
- >> qabbrev_tac ‘M0 = principle_hnf M’
- >> Know ‘FV M0 SUBSET FV M’
- >- (qunabbrev_tac ‘M0’ \\
-     MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
- >> DISCH_TAC
- >> qabbrev_tac ‘m = hnf_children_size M0’
+ >> rpt STRIP_TAC
+ >> reverse (Cases_on ‘solvable M’)
+ >- (rw [subterm_def])
+ >> RW_TAC std_ss [subterm_of_solvables]
+ >> rfs [] (* this eliminates Abbrevs m' and n' *)
+ >> Q.PAT_X_ASSUM ‘m = m'’ (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘n = n'’ (fs o wrap o SYM)
  >> Cases_on ‘h < m’ >> simp []
- >> qabbrev_tac ‘n = LAMl_size M0’
- >> STRIP_TAC
- >> qabbrev_tac ‘vs0 = FRESH_list n (X UNION FV M0)’
- >> Know ‘ALL_DISTINCT vs0 /\ DISJOINT (set vs0) (X UNION FV M0) /\ LENGTH vs0 = n’
- >- (rw [Abbr ‘vs0’, FRESH_list_def])
+ >> Know ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (X UNION FV M0) /\ LENGTH vs = n’
+ >- rw [Abbr ‘vs’, FRESH_list_def]
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
- >> qabbrev_tac ‘Y = X UNION set vs0’
- >> ‘FINITE Y’ by rw [Abbr ‘Y’]
- >> Q.X_GEN_TAC ‘Z’
- >> DISCH_TAC
- >> qabbrev_tac ‘vs1 = FRESH_list n (Z UNION FV M0)’
- >> Know ‘ALL_DISTINCT vs1 /\ DISJOINT (set vs1) (Z UNION FV M0) /\ LENGTH vs1 = n’
- >- (rw [Abbr ‘vs1’, FRESH_list_def])
+ >> Know ‘ALL_DISTINCT vs' /\ DISJOINT (set vs') (Y UNION FV M0) /\ LENGTH vs' = n’
+ >- rw [Abbr ‘vs'’, FRESH_list_def]
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
- (* now the key is to choose the explicit representation of M0 such that both
-
-    principle_hnf (M0 @* MAP VAR vs)   and
-    principle_hnf (M0 @* MAP VAR vs1)
-
-    can be reduced to tpm of M0. It seems that defining another ‘vs2’ is a must.
-  *)
- >> qabbrev_tac ‘vs2 = FRESH_list n (set vs0 UNION set vs1 UNION Z UNION FV M0)’
- >> ‘FINITE (set vs0 UNION set vs1 UNION Z UNION FV M0)’ by rw []
- >> Know ‘ALL_DISTINCT vs2 /\
-          DISJOINT (set vs2) (set vs0 UNION set vs1 UNION Z UNION FV M0) /\
-          LENGTH vs2 = n’
- >- (rw [Abbr ‘vs2’, FRESH_list_def])
- >> Q.PAT_X_ASSUM ‘FINITE (set vs0 UNION set vs1 UNION Z UNION FV M0)’ K_TAC
+ (* Z is the union of all known variables so far *)
+ >> qabbrev_tac ‘Z = set vs UNION set vs' UNION X UNION Y UNION FV M0’
+ >> ‘FINITE Z’ by rw [Abbr ‘Z’]
+ >> qabbrev_tac ‘vs2 = FRESH_list n Z’
+ >> Know ‘ALL_DISTINCT vs2 /\ DISJOINT (set vs2) Z /\ LENGTH vs2 = n’
+ >- rw [Abbr ‘vs2’, FRESH_list_def]
+ >> Q.PAT_X_ASSUM ‘FINITE Z’ K_TAC
+ >> qunabbrev_tac ‘Z’
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
+ (* stage work *)
  >> ‘hnf M0’ by PROVE_TAC [hnf_principle_hnf']
  >> hnf_tac (“M0 :term”, “vs2 :string list”,
-             “M1 :term”, “y :string”, “args :term list”)
+             “M2 :term”, “y :string”, “args :term list”)
  >> ‘TAKE n vs2 = vs2’ by rw [TAKE_LENGTH_ID_rwt]
  >> POP_ASSUM (rfs o wrap)
- >> ‘hnf M1’ by rw [hnf_appstar]
- >> Know ‘DISJOINT (set vs0) (FV M1) /\ DISJOINT (set vs1) (FV M1)’
+ >> ‘hnf M2’ by rw [hnf_appstar]
+ (*
+ >> Know ‘DISJOINT (set vs) (FV M2) /\ DISJOINT (set vs') (FV M2)’
  >- (CONJ_TAC (* 2 subgoals, same tactics *) \\
      ( MATCH_MP_TAC DISJOINT_SUBSET \\
        Q.EXISTS_TAC ‘FV M0 UNION set vs2’ \\
@@ -915,14 +895,14 @@ QED
  >> simp [tpm_appstar, hnf_children_hnf]
  >> ‘m = LENGTH args’ by (rw [Abbr ‘m’])
  >> Cases_on ‘p = []’ >> rw []
+ *)
 QED
-*)
 
 (* NOTE: ‘subterm Y M p <> NONE’ can be derived from ‘subterm X M p <> NONE’ *)
 Theorem subterm_hnf_children_size_cong :
     !X Y M p. FINITE X /\ FINITE Y /\ subterm X M p <> NONE ==>
-              hnf_children_size (pH (subterm' X M p)) =
-              hnf_children_size (pH (subterm' Y M p))
+              hnf_children_size (principle_hnf (subterm' X M p)) =
+              hnf_children_size (principle_hnf (subterm' Y M p))
 Proof
     rpt STRIP_TAC
  >> ‘subterm Y M p <> NONE’ by PROVE_TAC [subterm_some_none_cong]
@@ -1896,7 +1876,7 @@ QED
  *)
 Definition subterm_width_def :
     subterm_width M p = let Ms = {subterm' {} M p' | p' <<= FRONT p} in
-                            MAX_SET (IMAGE (hnf_children_size o pH) Ms)
+                          MAX_SET (IMAGE (hnf_children_size o principle_hnf) Ms)
 End
 
 (* NOTE: The actual difficulty of this theorem is to prove that
@@ -1908,10 +1888,10 @@ Theorem subterm_width_thm :
     !X M p p'. FINITE X /\
                p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE /\
                p' <<= FRONT p ==>
-               hnf_children_size (pH (subterm' X M p')) <= subterm_width M p
+       hnf_children_size (principle_hnf (subterm' X M p')) <= subterm_width M p
 Proof
     RW_TAC std_ss [subterm_width_def]
- >> qabbrev_tac ‘J = IMAGE (hnf_children_size o pH) Ms’
+ >> qabbrev_tac ‘J = IMAGE (hnf_children_size o principle_hnf) Ms’
  >> Know ‘J <> {}’
  >- (rw [Abbr ‘J’, GSYM MEMBER_NOT_EMPTY, Abbr ‘Ms’] \\
      Q.EXISTS_TAC ‘[]’ >> rw [])
@@ -1923,7 +1903,7 @@ Proof
      MATCH_MP_TAC IMAGE_FINITE \\
      rw [FINITE_prefix])
  >> DISCH_TAC
- >> qabbrev_tac ‘m = hnf_children_size (pH (subterm' X M p'))’
+ >> qabbrev_tac ‘m = hnf_children_size (principle_hnf (subterm' X M p'))’
  >> Suff ‘m IN J’ >- PROVE_TAC [MAX_SET_DEF]
  >> rw [Abbr ‘m’, Abbr ‘J’]
  >> Q.EXISTS_TAC ‘subterm' {} M p'’
