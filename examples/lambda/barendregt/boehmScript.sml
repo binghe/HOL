@@ -825,7 +825,14 @@ Theorem subterm_tpm :
                (!Y N. subterm X M p = SOME (Y,N) ==>
                       subterm X (tpm pi M) p = SOME (Y,tpm pi N))
 Proof
-    cheat
+    Induct_on ‘p’
+ >- simp []
+ >> rpt GEN_TAC
+ (*
+ >> reverse (Cases_on ‘solvable M’)
+ >- (CONJ_TAC >- simp [subterm_of_solvables]
+  *)
+ >> cheat 
 QED
 
 (* NOTE: since ‘subterm X M p’ is correct for whatever X supplied, changing ‘X’ to

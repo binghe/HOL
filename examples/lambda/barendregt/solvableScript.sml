@@ -626,6 +626,19 @@ Proof
  >> MATCH_MP_TAC lameq_appstar_cong >> rw [lameq_K]
 QED
 
+Theorem solvable_tpm_I[local] :
+    !pi M. solvable M ==> solvable (tpm pi M)
+Proof
+    rw [solvable_iff_has_hnf, has_hnf_thm]
+ >> Q.EXISTS_TAC ‘tpm pi N’ >> rw []
+QED
+
+Theorem solvable_tpm :
+    !pi M. solvable (tpm pi M) <=> solvable M
+Proof
+    METIS_TAC [pmact_inverse, solvable_tpm_I]
+QED
+
 (*---------------------------------------------------------------------------*
  *  Principle Head Normal Forms (principle_hnf)
  *---------------------------------------------------------------------------*)
@@ -1657,19 +1670,15 @@ Proof
 QED
 
 Theorem principle_hnf_tpm :
-    !pi M. has_hnf M ==> has_hnf (tpm pi M) /\
-                         principle_hnf (tpm pi M) = tpm pi (principle_hnf M)
+    !pi M. has_hnf M ==> principle_hnf (tpm pi M) = tpm pi (principle_hnf M)
 Proof
     rpt GEN_TAC >> DISCH_TAC
  >> qabbrev_tac ‘N = principle_hnf M’
  >> Know ‘principle_hnf M = N’ >- rw [Abbr ‘N’]
  >> DISCH_THEN (STRIP_ASSUME_TAC o
                 (REWRITE_RULE [MATCH_MP principle_hnf_thm (ASSUME “has_hnf M”)]))
- >> STRONG_CONJ_TAC
- >- (rw [has_hnf_thm] \\
-     Q.EXISTS_TAC ‘tpm pi N’ >> rw [hnf_tpm])
- >> DISCH_TAC
- >> rw [principle_hnf_thm]
+ >> ‘solvable (tpm pi M)’ by rw [solvable_tpm, solvable_iff_has_hnf]
+ >> rw [principle_hnf_thm']
 QED
 
 Theorem principle_hnf_tpm' =
