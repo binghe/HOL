@@ -1982,8 +1982,8 @@ End
 
 (* NOTE: The actual difficulty of this theorem is to prove that
 
-   |- !X Y. hnf_children_size (pH (subterm' X M p) =
-            hnf_children_size (pH (subterm' Y M p)
+   |- !X Y. hnf_children_size (principle_hnf (subterm' X M p) =
+            hnf_children_size (principle_hnf (subterm' Y M p)
  *)
 Theorem subterm_width_thm :
     !X M p p'. FINITE X /\
@@ -1992,6 +1992,7 @@ Theorem subterm_width_thm :
        hnf_children_size (principle_hnf (subterm' X M p')) <= subterm_width M p
 Proof
     RW_TAC std_ss [subterm_width_def]
+ >> ‘0 < LENGTH p’ by rw [GSYM NOT_NIL_EQ_LENGTH_NOT_0]
  >> qabbrev_tac ‘J = IMAGE (hnf_children_size o principle_hnf) Ms’
  >> Know ‘J <> {}’
  >- (rw [Abbr ‘J’, GSYM MEMBER_NOT_EMPTY, Abbr ‘Ms’] \\
@@ -2011,15 +2012,44 @@ Proof
  >> reverse CONJ_TAC
  >- (rw [Abbr ‘Ms’] \\
      Q.EXISTS_TAC ‘p'’ >> art [])
+ >> Know ‘!p'. p' <<= p ==> subterm X M p' <> NONE’
+ >- (Q.X_GEN_TAC ‘p'’ >> STRIP_TAC \\
+     CCONTR_TAC \\
+     POP_ASSUM (MP_TAC o (REWRITE_RULE [Once subterm_is_none_iff_children])) \\
+     DISCH_THEN (MP_TAC o (Q.SPEC ‘p’)) >> rw [])
+ >> DISCH_TAC
  (* applying subterm_hnf_children_size_cong *)
  >> MATCH_MP_TAC subterm_hnf_children_size_cong >> rw []
- (* subgoal: subterm X M p' <> NONE *)
- >> CCONTR_TAC
- (* applying subterm_is_none_iff_children *)
- >> POP_ASSUM (MP_TAC o (REWRITE_RULE [Once subterm_is_none_iff_children]))
- >> DISCH_THEN (MP_TAC o (Q.SPEC ‘p’)) >> rw []
+ >- (POP_ASSUM MATCH_MP_TAC \\
+     MATCH_MP_TAC IS_PREFIX_TRANS \\
+     Q.EXISTS_TAC ‘FRONT p’ >> art [] \\
+     MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art [])
+ (* stage work *)
+ >> Q.PAT_X_ASSUM ‘p' <<= FRONT p’ MP_TAC
+ >> Suff ‘!l. l <> [] /\ l <<= p ==> solvable (subterm' X M (FRONT l))’
+ >- (DISCH_TAC \\
+     DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [IS_PREFIX_EQ_TAKE])) \\
+     Know ‘p' = FRONT (TAKE (SUC n) p)’
+     >- (Know ‘FRONT (TAKE (SUC n) p) = TAKE (SUC n - 1) p’
+         >- (MATCH_MP_TAC FRONT_TAKE \\
+             rfs [LENGTH_FRONT]) >> Rewr' \\
+         POP_ASSUM (ONCE_REWRITE_TAC o wrap) >> simp [] \\
+         MATCH_MP_TAC TAKE_FRONT >> rfs [LENGTH_FRONT]) >> Rewr' \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     qabbrev_tac ‘l = TAKE (SUC n) p’ \\
+     CONJ_TAC
+     >- (rfs [LENGTH_FRONT, NOT_NIL_EQ_LENGTH_NOT_0, Abbr ‘l’, LENGTH_TAKE]) \\
+     rw [IS_PREFIX_EQ_TAKE] \\
+     Q.EXISTS_TAC ‘SUC n’ >> rw [Abbr ‘l’] \\
+     rfs [LENGTH_FRONT])
+ >> rpt STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘l’, ‘X’, ‘M’] subterm_is_none_iff_parent_unsolvable)
+ >> ‘l IN ltree_paths (BTe X M)’ by PROVE_TAC [ltree_paths_inclusive]
+ >> simp []
+ >> Suff ‘subterm X M (FRONT l) <> NONE’ >- PROVE_TAC []
+ >> FIRST_X_ASSUM MATCH_MP_TAC
  >> MATCH_MP_TAC IS_PREFIX_TRANS
- >> Q.EXISTS_TAC ‘FRONT p’ >> art []
+ >> Q.EXISTS_TAC ‘l’ >> rw []
  >> MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []
 QED
 
