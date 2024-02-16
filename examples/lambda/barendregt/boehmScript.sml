@@ -2596,7 +2596,7 @@ QED
 Theorem separability_lemma0[local] :
     !M N. solvable (M :term) /\ solvable N /\
           LAMl_size (principle_hnf M) <= LAMl_size (principle_hnf N) ==>
-          equivalent M N /\
+          equivalent M N \/
           !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q
 Proof
     RW_TAC std_ss [equivalent_of_solvables]
