@@ -820,19 +820,48 @@ Proof
       qunabbrev_tac ‘M0'’ >> MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [] ]
 QED
 
+(* In ‘subterm X (tpm pi M) p’, the original free variables of M are permutated by
+   pi, the binding variables are completely different, but due to alpha conversion
+   they make no difference in the equality of ‘subterm X (tpm pi M) p’ and
+  ‘tpm pi (subterm X M p)’, thus eventually we should be able to say that
+
+   |- subterm' X (tpm pi M) p = tpm pi (subterm' X M p)
+ *)
 Theorem subterm_tpm :
-    !p X M pi. (subterm X M p = NONE ==> subterm X (tpm pi M) p = NONE) /\
-               (!Y N. subterm X M p = SOME (Y,N) ==>
-                      subterm X (tpm pi M) p = SOME (Y,tpm pi N))
+    !p X M pi. FINITE X ==>
+              (subterm X M p = NONE ==> subterm X (tpm pi M) p = NONE) /\
+              (!Y N. subterm X M p = SOME (Y,N) ==>
+                     subterm X (tpm pi M) p = SOME (Y,tpm pi N))
 Proof
-    Induct_on ‘p’
- >- simp []
+    Induct_on ‘p’ >- simp []
  >> rpt GEN_TAC
- (*
  >> reverse (Cases_on ‘solvable M’)
- >- (CONJ_TAC >- simp [subterm_of_solvables]
-  *)
- >> cheat 
+ >- (‘unsolvable (tpm pi M)’ by PROVE_TAC [solvable_tpm] \\
+     rw [subterm_def])
+ >> DISCH_TAC
+ >> ‘solvable (tpm pi M)’ by PROVE_TAC [solvable_tpm]
+ >> CONV_TAC (UNBETA_CONV “subterm X M (h::p)”)
+ >> qmatch_abbrev_tac ‘P _’
+ >> RW_TAC bool_ss [subterm_of_solvables]
+ >> simp [Abbr ‘P’]
+ >> CONV_TAC (UNBETA_CONV “subterm X (tpm pi M) (h::p)”)
+ >> qmatch_abbrev_tac ‘P _’
+ >> RW_TAC bool_ss [subterm_of_solvables]
+ >> simp [Abbr ‘P’]
+ (* applying principle_hnf_tpm' *)
+ >> Know ‘M0' = tpm pi M0’
+ >- (qunabbrevl_tac [‘M0’, ‘M0'’] \\
+     MATCH_MP_TAC principle_hnf_tpm' >> art [])
+ >> DISCH_TAC
+ >> Know ‘m' = m’
+ >- (rw [Abbr ‘m’, Abbr ‘m'’, hnf_children_size_tpm])
+ >> DISCH_THEN (fs o wrap)
+ >> Q.PAT_X_ASSUM ‘n = n'’ (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘T’ K_TAC
+ >> Cases_on ‘h < m’ >> simp []
+ >> Q.PAT_X_ASSUM ‘M0' = tpm pi M0’ K_TAC
+ >> qunabbrev_tac ‘M0'’
+ >> cheat
 QED
 
 (* NOTE: since ‘subterm X M p’ is correct for whatever X supplied, changing ‘X’ to
