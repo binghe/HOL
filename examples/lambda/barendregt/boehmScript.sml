@@ -9,7 +9,7 @@ open optionTheory arithmeticTheory pred_setTheory listTheory rich_listTheory
      llistTheory relationTheory ltreeTheory pathTheory posetTheory hurdUtils
      finite_mapTheory;
 
-open binderLib termTheory appFOLDLTheory chap2Theory chap3Theory
+open binderLib termTheory appFOLDLTheory chap2Theory chap3Theory nomsetTheory
      head_reductionTheory standardisationTheory solvableTheory reductionEval;
 
 open horeductionTheory takahashiS3Theory;
@@ -820,6 +820,14 @@ Proof
       qunabbrev_tac ‘M0'’ >> MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [] ]
 QED
 
+Theorem subterm_tpm :
+    !p X M pi. (subterm X M p = NONE ==> subterm X (tpm pi M) p = NONE) /\
+               (!Y N. subterm X M p = SOME (Y,N) ==>
+                      subterm X (tpm pi M) p = SOME (Y,tpm pi N))
+Proof
+    cheat
+QED
+
 (* NOTE: since ‘subterm X M p’ is correct for whatever X supplied, changing ‘X’ to
    something else shouldn't change the properties of ‘subterm X M p’, as long as
    these properties are not directly related to specific choices of ‘vs’.
@@ -828,7 +836,7 @@ QED
    because head reductions are congruence w.r.t. tpm.
  *)
 Theorem subterm_tpm_cong :
-    !p M X Y. FINITE X /\ FINITE Y ==>
+    !p X Y M. FINITE X /\ FINITE Y ==>
              (subterm X M p = NONE <=> subterm Y M p = NONE) /\
              (subterm X M p <> NONE ==>
               ?pi. tpm pi (subterm' X M p) = subterm' Y M p)
@@ -845,7 +853,7 @@ Proof
     handle ‘subterm' X M (h::p)’ (and ‘subterm' Y M (h::p)’) hidden behind
     existential quantifiers (‘?pi. ...’), thus UNBETA_CONV is still the best.
 
-    BEGIN of amazing tactics:
+    BEGINNING of Michael's tactics:
   *)
  >> CONV_TAC (UNBETA_CONV “subterm X M (h::p)”)
  >> qmatch_abbrev_tac ‘P _’
@@ -855,7 +863,7 @@ Proof
  >> qmatch_abbrev_tac ‘P _’
  >> RW_TAC bool_ss [subterm_of_solvables] (* Excl "BETA_CONV" *)
  >> simp [Abbr ‘P’]
- (* END of amazing tactics. *)
+ (* END of Michael's tactics. *)
  >> fs [] (* eliminated abbrevs m' and n', leaving only m and n *)
  >> Q.PAT_X_ASSUM ‘m = m'’ (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘n = n'’ (fs o wrap o SYM)
@@ -913,23 +921,93 @@ Proof
      MATCH_MP_TAC principle_hnf_LAMl_appstar \\
      Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) >> art [])
  >> DISCH_TAC
- >> cheat
-(*
- >> simp [tpm_appstar, hnf_children_hnf]
- >> ‘m = LENGTH args’ by (rw [Abbr ‘m’])
- >> Cases_on ‘p = []’ >> rw []
- *)
+ (* applying hnf_children_tpm *)
+ >> qabbrev_tac ‘pi = ZIP (vs2,vs)’
+ >> qabbrev_tac ‘pi' = ZIP (vs2,vs')’
+ >> Know ‘Ms = MAP (tpm pi) args’
+ >- (simp [Abbr ‘Ms’] \\
+    ‘hnf_children M2 = args’ by rw [hnf_children_hnf] \\
+     Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) \\
+     rw [hnf_children_tpm])
+ >> Rewr'
+ >> Know ‘Ms' = MAP (tpm pi') args’
+ >- (simp [Abbr ‘Ms'’] \\
+    ‘hnf_children M2 = args’ by rw [hnf_children_hnf] \\
+     Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) \\
+     rw [hnf_children_tpm])
+ >> Rewr'
+ >> ‘LENGTH args = m’ by rw [Abbr ‘m’]
+ >> simp [EL_MAP]
+ >> qabbrev_tac ‘N = EL h args’
+ >> qabbrev_tac ‘X' = X UNION set vs’
+ >> qabbrev_tac ‘Y' = Y UNION set vs'’
+ >> ‘FINITE X' /\ FINITE Y'’ by rw [Abbr ‘X'’, Abbr ‘Y'’]
+ (* applying (cj 1 subterm_tpm) *)
+ >> STRONG_CONJ_TAC
+ >- (EQ_TAC >> DISCH_TAC >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       Know ‘subterm X' (tpm (REVERSE pi) (tpm pi N)) p = NONE’
+       >- (MATCH_MP_TAC (cj 1 subterm_tpm) >> art []) \\
+       simp [] (* subterm X' N p = NONE *) \\
+       DISCH_TAC \\
+       MATCH_MP_TAC (cj 1 subterm_tpm) \\
+       PROVE_TAC [] (* IH *),
+       (* goal 2 (of 2) *)
+       Know ‘subterm Y' (tpm (REVERSE pi') (tpm pi' N)) p = NONE’
+       >- (MATCH_MP_TAC (cj 1 subterm_tpm) >> art []) \\
+       simp [] (* subterm Y' N p = NONE *) \\
+       DISCH_TAC \\
+       MATCH_MP_TAC (cj 1 subterm_tpm) \\
+       PROVE_TAC [] (* IH *) ])
+ >> NTAC 2 DISCH_TAC
+ >> ‘subterm Y' (tpm pi' N) p <> NONE’ by PROVE_TAC []
+ >> Q.PAT_X_ASSUM ‘subterm X' (tpm pi N) p = NONE <=> _’ K_TAC
+ (* stage work *)
+ >> ‘?p1. subterm X' (tpm pi N) p = SOME p1’
+      by METIS_TAC [IS_SOME_EQ_NOT_NONE, IS_SOME_EXISTS]
+ >> ‘?p2. subterm Y' (tpm pi' N) p = SOME p2’
+      by METIS_TAC [IS_SOME_EQ_NOT_NONE, IS_SOME_EXISTS]
+ >> Cases_on ‘p1’ >> Cases_on ‘p2’
+ (* applying (cj 2 subterm_tpm) *)
+ >> Know ‘subterm X' (tpm (REVERSE pi) (tpm pi N)) p = SOME (q,tpm (REVERSE pi) r)’
+ >- (MATCH_MP_TAC (cj 2 subterm_tpm) >> art [])
+ >> Know ‘subterm Y' (tpm (REVERSE pi') (tpm pi' N)) p = SOME (q',tpm (REVERSE pi') r')’
+ >- (MATCH_MP_TAC (cj 2 subterm_tpm) >> art [])
+ >> simp []
+ >> DISCH_TAC >> ‘tpm (REVERSE pi') r' = subterm' Y' N p’ by rw []
+ >> POP_ASSUM (MP_TAC o (SIMP_RULE (srw_ss()) [tpm_eql])) >> Rewr'
+ >> DISCH_TAC >> ‘tpm (REVERSE pi) r = subterm' X' N p’ by rw []
+ >> POP_ASSUM (MP_TAC o (SIMP_RULE (srw_ss()) [tpm_eql])) >> Rewr'
+ >> Know ‘?pi2. tpm pi2 (subterm' X' N p) = subterm' Y' N p’
+ >- METIS_TAC [NOT_NONE_SOME] (* IH *)
+ >> STRIP_TAC
+ >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM)
+ (* final stage *)
+ >> NTAC 4 (POP_ASSUM K_TAC)
+ >> qabbrev_tac ‘P = subterm' X' N p’
+ >> ‘tpm pi' (tpm pi2 P) = tpm (pi' ++ pi2) P’ by rw [pmact_decompose]
+ >> POP_ORW
+ >> qabbrev_tac ‘pi3 = pi' ++ pi2’
+ >> simp [tpm_eql]
+ (* NOTE: REVERSE ? = pi ++ REVERSE pi3 <=> ? = pi3 ++ REVERSE pi *)
+ >> Q.EXISTS_TAC ‘pi3 ++ REVERSE pi’
+ >> rw [REVERSE_APPEND, pmact_decompose]
 QED
 
 (* NOTE: ‘subterm Y M p <> NONE’ can be derived from ‘subterm X M p <> NONE’ *)
 Theorem subterm_hnf_children_size_cong :
-    !X Y M p. FINITE X /\ FINITE Y /\ subterm X M p <> NONE ==>
+    !X Y M p. FINITE X /\ FINITE Y /\
+              subterm X M p <> NONE /\ solvable (subterm' X M p) ==>
               hnf_children_size (principle_hnf (subterm' X M p)) =
               hnf_children_size (principle_hnf (subterm' Y M p))
 Proof
     rpt STRIP_TAC
  >> ‘subterm Y M p <> NONE’ by PROVE_TAC [subterm_tpm_cong]
- >> cheat
+ >> ‘?pi. tpm pi (subterm' X M p) = subterm' Y M p’
+       by METIS_TAC [subterm_tpm_cong]
+ >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM)
+ >> qabbrev_tac ‘N = subterm' X M p’
+ >> rw [principle_hnf_tpm']
 QED
 
 (*---------------------------------------------------------------------------*

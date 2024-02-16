@@ -78,10 +78,26 @@ val tpm_hreduce_I = store_thm(
   ``∀M N. M -h-> N ⇒ ∀π. π·M -h-> π·N``,
   HO_MATCH_MP_TAC hreduce1_ind THEN SRW_TAC [][tpm_subst, hreduce1_rules]);
 
+(* NOTE: this theorem should have been called [tpm_hreduce1] but it's too late *)
 Theorem tpm_hreduce[simp] :
     ∀M N π. π·M -h-> π·N ⇔ M -h-> N
 Proof
   METIS_TAC [pmact_inverse, tpm_hreduce_I]
+QED
+
+Theorem tpm_hreduces_I[local] :
+    !M N. M -h->* N ==> tpm pi M -h->* tpm pi N
+Proof
+    HO_MATCH_MP_TAC RTC_INDUCT >> rw []
+ >> rw [Once RTC_CASES1]
+ >> DISJ2_TAC
+ >> Q.EXISTS_TAC ‘tpm pi M'’ >> rw []
+QED
+
+Theorem tpm_hreduces[simp] :
+    !pi M N. tpm pi M -h->* tpm pi N <=> M -h->* N
+Proof
+    METIS_TAC [pmact_inverse, tpm_hreduces_I]
 QED
 
 val hreduce1_rwts = store_thm(
@@ -1704,6 +1720,12 @@ Theorem hnf_children_size_appstar[simp] :
 Proof
     Induct_on ‘Ms’ using SNOC_INDUCT >- rw []
  >> rw [appstar_SNOC]
+QED
+
+Theorem hnf_children_size_tpm[simp] :
+    !M. hnf_children_size (tpm pi M) = hnf_children_size M
+Proof
+    HO_MATCH_MP_TAC simple_induction >> rw []
 QED
 
 (*---------------------------------------------------------------------------*

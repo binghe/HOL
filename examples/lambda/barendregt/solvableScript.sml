@@ -1656,6 +1656,25 @@ Proof
  >> Q.EXISTS_TAC ‘e’ >> art []
 QED
 
+Theorem principle_hnf_tpm :
+    !pi M. has_hnf M ==> has_hnf (tpm pi M) /\
+                         principle_hnf (tpm pi M) = tpm pi (principle_hnf M)
+Proof
+    rpt GEN_TAC >> DISCH_TAC
+ >> qabbrev_tac ‘N = principle_hnf M’
+ >> Know ‘principle_hnf M = N’ >- rw [Abbr ‘N’]
+ >> DISCH_THEN (STRIP_ASSUME_TAC o
+                (REWRITE_RULE [MATCH_MP principle_hnf_thm (ASSUME “has_hnf M”)]))
+ >> STRONG_CONJ_TAC
+ >- (rw [has_hnf_thm] \\
+     Q.EXISTS_TAC ‘tpm pi N’ >> rw [hnf_tpm])
+ >> DISCH_TAC
+ >> rw [principle_hnf_thm]
+QED
+
+Theorem principle_hnf_tpm' =
+        principle_hnf_tpm |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
+
 val _ = export_theory ();
 val _ = html_theory "solvable";
 
