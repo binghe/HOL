@@ -829,9 +829,9 @@ QED
  *)
 Theorem subterm_tpm :
     !p X M pi. FINITE X ==>
-              (subterm X M p = NONE ==> subterm X (tpm pi M) p = NONE) /\
-              (!Y N. subterm X M p = SOME (Y,N) ==>
-                     subterm X (tpm pi M) p = SOME (Y,tpm pi N))
+              (subterm X M p = NONE <=> subterm X (tpm pi M) p = NONE) /\
+              (subterm X M p <> NONE ==>
+               subterm' X (tpm pi M) p = tpm pi (subterm' X M p))
 Proof
     Induct_on ‘p’ >- simp []
  >> rpt GEN_TAC
@@ -978,23 +978,21 @@ Proof
  >> qabbrev_tac ‘X' = X UNION set vs’
  >> qabbrev_tac ‘Y' = Y UNION set vs'’
  >> ‘FINITE X' /\ FINITE Y'’ by rw [Abbr ‘X'’, Abbr ‘Y'’]
- (* applying (cj 1 subterm_tpm) *)
+ (* applying subterm_tpm *)
  >> STRONG_CONJ_TAC
  >- (EQ_TAC >> DISCH_TAC >| (* 2 subgoals *)
      [ (* goal 1 (of 2) *)
        Know ‘subterm X' (tpm (REVERSE pi) (tpm pi N)) p = NONE’
-       >- (MATCH_MP_TAC (cj 1 subterm_tpm) >> art []) \\
+       >- PROVE_TAC [subterm_tpm] \\
        simp [] (* subterm X' N p = NONE *) \\
        DISCH_TAC \\
-       MATCH_MP_TAC (cj 1 subterm_tpm) \\
-       PROVE_TAC [] (* IH *),
+       PROVE_TAC [subterm_tpm] (* with IH *),
        (* goal 2 (of 2) *)
        Know ‘subterm Y' (tpm (REVERSE pi') (tpm pi' N)) p = NONE’
-       >- (MATCH_MP_TAC (cj 1 subterm_tpm) >> art []) \\
+       >- PROVE_TAC [subterm_tpm] \\
        simp [] (* subterm Y' N p = NONE *) \\
        DISCH_TAC \\
-       MATCH_MP_TAC (cj 1 subterm_tpm) \\
-       PROVE_TAC [] (* IH *) ])
+       PROVE_TAC [subterm_tpm] (* with IH *) ])
  >> NTAC 2 DISCH_TAC
  >> ‘subterm Y' (tpm pi' N) p <> NONE’ by PROVE_TAC []
  >> Q.PAT_X_ASSUM ‘subterm X' (tpm pi N) p = NONE <=> _’ K_TAC
@@ -1004,15 +1002,19 @@ Proof
  >> ‘?p2. subterm Y' (tpm pi' N) p = SOME p2’
       by METIS_TAC [IS_SOME_EQ_NOT_NONE, IS_SOME_EXISTS]
  >> Cases_on ‘p1’ >> Cases_on ‘p2’
+ >> ‘subterm' X' (tpm pi N) p = r’ by rw []
+ >> ‘subterm' Y' (tpm pi' N) p = r'’ by rw []
  (* applying (cj 2 subterm_tpm) *)
- >> Know ‘subterm X' (tpm (REVERSE pi) (tpm pi N)) p = SOME (q,tpm (REVERSE pi) r)’
- >- (MATCH_MP_TAC (cj 2 subterm_tpm) >> art [])
- >> Know ‘subterm Y' (tpm (REVERSE pi') (tpm pi' N)) p = SOME (q',tpm (REVERSE pi') r')’
- >- (MATCH_MP_TAC (cj 2 subterm_tpm) >> art [])
+ >> Know ‘subterm' X' (tpm (REVERSE pi) (tpm pi N)) p = tpm (REVERSE pi) r /\
+          subterm X' N p <> NONE’
+ >- METIS_TAC [subterm_tpm]
+ >> Know ‘subterm' Y' (tpm (REVERSE pi') (tpm pi' N)) p = tpm (REVERSE pi') r' /\
+          subterm Y' N p <> NONE’
+ >- METIS_TAC [subterm_tpm]
  >> simp []
- >> DISCH_TAC >> ‘tpm (REVERSE pi') r' = subterm' Y' N p’ by rw []
+ >> STRIP_TAC >> ‘tpm (REVERSE pi') r' = subterm' Y' N p’ by rw []
  >> POP_ASSUM (MP_TAC o (SIMP_RULE (srw_ss()) [tpm_eql])) >> Rewr'
- >> DISCH_TAC >> ‘tpm (REVERSE pi) r = subterm' X' N p’ by rw []
+ >> STRIP_TAC >> ‘tpm (REVERSE pi) r = subterm' X' N p’ by rw []
  >> POP_ASSUM (MP_TAC o (SIMP_RULE (srw_ss()) [tpm_eql])) >> Rewr'
  >> Know ‘?pi2. tpm pi2 (subterm' X' N p) = subterm' Y' N p’
  >- METIS_TAC [NOT_NONE_SOME] (* IH *)
