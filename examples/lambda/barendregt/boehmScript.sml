@@ -841,6 +841,10 @@ Proof
  (* NOTE: the following tactics were suggested by Michael Norrish for doing
     LET_ELIM_TAC (part of RW_TAC) without CONJ_TAC on the goal.
 
+    NOTE2: The new LET_ELIM_TAC has avoided CONJ_TAC, but here it still cannot
+    handle ‘subterm' X M (h::p)’ (and ‘subterm' Y M (h::p)’) hidden behind
+    existential quantifiers (‘?pi. ...’), thus UNBETA_CONV is still the best.
+
     BEGIN of amazing tactics:
   *)
  >> CONV_TAC (UNBETA_CONV “subterm X M (h::p)”)
@@ -879,8 +883,6 @@ Proof
  >> ‘TAKE n vs2 = vs2’ by rw [TAKE_LENGTH_ID_rwt]
  >> POP_ASSUM (rfs o wrap)
  >> ‘hnf M2’ by rw [hnf_appstar]
- >> cheat
- (*
  >> Know ‘DISJOINT (set vs) (FV M2) /\ DISJOINT (set vs') (FV M2)’
  >- (CONJ_TAC (* 2 subgoals, same tactics *) \\
      ( MATCH_MP_TAC DISJOINT_SUBSET \\
@@ -890,29 +892,29 @@ Proof
                     MATCH_MP_TAC DISJOINT_SUBSET \\
                     Q.EXISTS_TAC ‘FV M’ >> art []) \\
       ‘FV M0 UNION set vs2 = FV (M0 @* MAP VAR vs2)’ by rw [] >> POP_ORW \\
-       qunabbrev_tac ‘M1’ \\
+       qunabbrev_tac ‘M2’ \\
        MATCH_MP_TAC principle_hnf_FV_SUBSET' \\
        Know ‘solvable (VAR y @* args)’
        >- (rw [solvable_iff_has_hnf] \\
            MATCH_MP_TAC hnf_has_hnf \\
            rw [hnf_appstar]) >> DISCH_TAC \\
-       Suff ‘M0 @* MAP VAR vs2 == VAR y @* args’ >- PROVE_TAC [lameq_solvable_cong] \\
+       Suff ‘M0 @* MAP VAR vs2 == VAR y @* args’
+       >- PROVE_TAC [lameq_solvable_cong] \\
        rw [lameq_LAMl_appstar_VAR] ))
  >> STRIP_TAC
  (* stage work *)
- >> Know ‘principle_hnf (LAMl vs2 (VAR y @* args) @* MAP VAR vs1) =
-          tpm (ZIP (vs2,vs1)) (VAR y @* args)’
- >- (MATCH_MP_TAC principle_hnf_LAMl_appstar \\
-     Q.PAT_X_ASSUM ‘M1 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) \\
-     simp [hnf_appstar])
- >> Rewr'
- >> Q.PAT_X_ASSUM ‘subterm Y (EL h _) p <> NONE’ MP_TAC
- >> Know ‘principle_hnf (M0 @* MAP VAR vs0) = tpm (ZIP (vs2,vs0)) (VAR y @* args)’
- >- (simp [] \\
+ >> Know ‘M1 = tpm (ZIP (vs2,vs)) M2’
+ >- (simp [Abbr ‘M1’] \\
      MATCH_MP_TAC principle_hnf_LAMl_appstar \\
-     Q.PAT_X_ASSUM ‘M1 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) \\
-     simp [hnf_appstar])
- >> Rewr'
+     Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) >> art [])
+ >> DISCH_TAC
+ >> Know ‘M1' = tpm (ZIP (vs2,vs')) M2’
+ >- (simp [Abbr ‘M1'’] \\
+     MATCH_MP_TAC principle_hnf_LAMl_appstar \\
+     Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) >> art [])
+ >> DISCH_TAC
+ >> cheat
+(*
  >> simp [tpm_appstar, hnf_children_hnf]
  >> ‘m = LENGTH args’ by (rw [Abbr ‘m’])
  >> Cases_on ‘p = []’ >> rw []

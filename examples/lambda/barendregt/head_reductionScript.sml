@@ -1607,6 +1607,29 @@ Proof
  >> rw [DISJOINT_ALT]
 QED
 
+Theorem hnf_children_tpm :
+    !pi M. hnf M ==> (hnf_children (tpm pi M) = MAP (tpm pi) (hnf_children M))
+Proof
+    rpt STRIP_TAC
+ >> Cases_on ‘~is_comb M’
+ >- (‘is_var M \/ is_abs M’ by METIS_TAC [term_cases]
+     >- (‘?y. M = VAR y’ by METIS_TAC [is_var_cases] \\
+         NTAC 2 (rw [Once hnf_children_def])) \\
+    ‘?v t. M = LAM v t’ by METIS_TAC [is_abs_cases] \\
+     NTAC 2 (rw [Once hnf_children_def]))
+ >> fs []
+ >> ‘?t args. (M = t @* args) /\ args <> [] /\ ~is_comb t’
+      by METIS_TAC [is_comb_appstar_exists]
+ >> rw [tpm_appstar]
+ >> Know ‘~is_abs t’
+ >- (CCONTR_TAC >> fs [hnf_appstar])
+ >> DISCH_TAC
+ >> ‘is_var t’ by METIS_TAC [term_cases]
+ >> ‘?y. t = VAR y’ by METIS_TAC [is_var_cases]
+ >> rw [hnf_children_hnf]
+ >> rw [LIST_EQ_REWRITE, EL_MAP]
+QED
+
 (*---------------------------------------------------------------------------*
  *  LAMl_size (of hnf)
  *---------------------------------------------------------------------------*)
