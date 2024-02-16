@@ -2,7 +2,7 @@
  * boehmScript.sml: (Effective) Boehm Trees (Chapter 10 of [1])              *
  *---------------------------------------------------------------------------*)
 
-open HolKernel boolLib Parse bossLib;
+open HolKernel boolLib Parse bossLib BasicProvers;
 
 (* core theories *)
 open optionTheory arithmeticTheory pred_setTheory listTheory rich_listTheory
@@ -823,19 +823,39 @@ QED
 (* NOTE: since ‘subterm X M p’ is correct for whatever X supplied, changing ‘X’ to
    something else shouldn't change the properties of ‘subterm X M p’, as long as
    these properties are not directly related to specific choices of ‘vs’.
+
+   In this way, two such terms have the same ‘hnf_children_size o principle_hnf’,
+   because head reductions are congruence w.r.t. tpm.
  *)
-Theorem subterm_some_none_cong :
+Theorem subterm_tpm_cong :
     !p M X Y. FINITE X /\ FINITE Y ==>
-             (subterm X M p = NONE <=> subterm Y M p = NONE)
+             (subterm X M p = NONE <=> subterm Y M p = NONE) /\
+             (subterm X M p <> NONE ==>
+              ?pi. tpm pi (subterm' X M p) = subterm' Y M p)
 Proof
-    Induct_on ‘p’ >- rw []
- >> rpt STRIP_TAC
+    Induct_on ‘p’
+ >- (rw [] >> Q.EXISTS_TAC ‘[]’ >> rw [])
+ >> rpt GEN_TAC >> STRIP_TAC
  >> reverse (Cases_on ‘solvable M’)
- >- (rw [subterm_def])
- >> RW_TAC std_ss [subterm_of_solvables]
- >> rfs [] (* this eliminates Abbrevs m' and n' *)
+ >- rw [subterm_def]
+ (* NOTE: the following tactics were suggested by Michael Norrish for doing
+    LET_ELIM_TAC (part of RW_TAC) without CONJ_TAC on the goal.
+
+    BEGIN of amazing tactics:
+  *)
+ >> CONV_TAC (UNBETA_CONV “subterm X M (h::p)”)
+ >> qmatch_abbrev_tac ‘P _’
+ >> RW_TAC bool_ss [subterm_of_solvables] (* Excl "BETA_CONV" *)
+ >> simp [Abbr ‘P’]
+ >> CONV_TAC (UNBETA_CONV “subterm Y M (h::p)”)
+ >> qmatch_abbrev_tac ‘P _’
+ >> RW_TAC bool_ss [subterm_of_solvables] (* Excl "BETA_CONV" *)
+ >> simp [Abbr ‘P’]
+ (* END of amazing tactics. *)
+ >> fs [] (* eliminated abbrevs m' and n', leaving only m and n *)
  >> Q.PAT_X_ASSUM ‘m = m'’ (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘n = n'’ (fs o wrap o SYM)
+ (* ~(h < m) is trivial *)
  >> Cases_on ‘h < m’ >> simp []
  >> Know ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (X UNION FV M0) /\ LENGTH vs = n’
  >- rw [Abbr ‘vs’, FRESH_list_def]
@@ -859,6 +879,7 @@ Proof
  >> ‘TAKE n vs2 = vs2’ by rw [TAKE_LENGTH_ID_rwt]
  >> POP_ASSUM (rfs o wrap)
  >> ‘hnf M2’ by rw [hnf_appstar]
+ >> cheat
  (*
  >> Know ‘DISJOINT (set vs) (FV M2) /\ DISJOINT (set vs') (FV M2)’
  >- (CONJ_TAC (* 2 subgoals, same tactics *) \\
@@ -905,7 +926,7 @@ Theorem subterm_hnf_children_size_cong :
               hnf_children_size (principle_hnf (subterm' Y M p))
 Proof
     rpt STRIP_TAC
- >> ‘subterm Y M p <> NONE’ by PROVE_TAC [subterm_some_none_cong]
+ >> ‘subterm Y M p <> NONE’ by PROVE_TAC [subterm_tpm_cong]
  >> cheat
 QED
 
@@ -2575,7 +2596,7 @@ QED
 Theorem separability_lemma0[local] :
     !M N. solvable (M :term) /\ solvable N /\
           LAMl_size (principle_hnf M) <= LAMl_size (principle_hnf N) ==>
-          equivalent M N \/
+          equivalent M N /\
           !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q
 Proof
     RW_TAC std_ss [equivalent_of_solvables]
