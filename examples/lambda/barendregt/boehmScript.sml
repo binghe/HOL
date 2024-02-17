@@ -820,26 +820,24 @@ Proof
       qunabbrev_tac ‘M0'’ >> MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [] ]
 QED
 
-(* In ‘subterm X (tpm pi M) p’, the original free variables of M are permutated by
-   pi, the binding variables are completely different, but due to alpha conversion
-   they make no difference in the equality of ‘subterm X (tpm pi M) p’ and
-  ‘tpm pi (subterm X M p)’, thus eventually we should be able to say that
-
-   |- subterm' X (tpm pi M) p = tpm pi (subterm' X M p)
- *)
-Theorem subterm_tpm :
+Theorem subterm_tpm_lemma :
     !p X M pi. FINITE X ==>
-              (subterm X M p = NONE <=> subterm X (tpm pi M) p = NONE) /\
+              (subterm X M p = NONE ==> ?Y. FINITE Y /\ subterm Y (tpm pi M) p = NONE) /\
               (subterm X M p <> NONE ==>
-               subterm' X (tpm pi M) p = tpm pi (subterm' X M p))
+               subterm X (tpm pi M) p <> NONE /\
+               ?pi' Y. FINITE Y /\ subterm Y M p <> NONE /\
+                       subterm' X (tpm pi M) p = tpm pi' (subterm' Y M p))
 Proof
-    Induct_on ‘p’ >- simp []
- >> rpt GEN_TAC
+    Induct_on ‘p’
+ >- (rw [] >> qexistsl_tac [‘pi’, ‘X’] >> art [])
+ >> rpt GEN_TAC >> STRIP_TAC
+ (* special case *)
  >> reverse (Cases_on ‘solvable M’)
  >- (‘unsolvable (tpm pi M)’ by PROVE_TAC [solvable_tpm] \\
-     rw [subterm_def])
- >> DISCH_TAC
+     rw [subterm_def] \\
+     Q.EXISTS_TAC ‘X’ >> art [])
  >> ‘solvable (tpm pi M)’ by PROVE_TAC [solvable_tpm]
+ (* BEGIN Michael Norrish's tactics *)
  >> CONV_TAC (UNBETA_CONV “subterm X M (h::p)”)
  >> qmatch_abbrev_tac ‘P _’
  >> RW_TAC bool_ss [subterm_of_solvables]
@@ -848,7 +846,7 @@ Proof
  >> qmatch_abbrev_tac ‘P _’
  >> RW_TAC bool_ss [subterm_of_solvables]
  >> simp [Abbr ‘P’]
- (* applying principle_hnf_tpm' *)
+ (* END Michael Norish's tactics. *)
  >> Know ‘M0' = tpm pi M0’
  >- (qunabbrevl_tac [‘M0’, ‘M0'’] \\
      MATCH_MP_TAC principle_hnf_tpm' >> art [])
@@ -858,10 +856,61 @@ Proof
  >> DISCH_THEN (fs o wrap)
  >> Q.PAT_X_ASSUM ‘n = n'’ (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘T’ K_TAC
- >> Cases_on ‘h < m’ >> simp []
+ (* special case *)
+ >> reverse (Cases_on ‘h < m’)
+ >- (rw [] \\
+     Q.EXISTS_TAC ‘X’ >> rw [subterm_of_solvables])
+ (* stage work, now h < m *)
  >> Q.PAT_X_ASSUM ‘M0' = tpm pi M0’ K_TAC
  >> qunabbrev_tac ‘M0'’
  >> cheat
+(*
+ >> Know ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (X UNION FV M0) /\ LENGTH vs = n’
+ >- rw [Abbr ‘vs’, FRESH_list_def]
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
+ >> Know ‘ALL_DISTINCT vs' /\ DISJOINT (set vs') (X UNION FV (tpm pi M0)) /\
+          LENGTH vs' = n’
+ >- rw [Abbr ‘vs'’, FRESH_list_def]
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
+ (* Z is the union of all known variables so far *)
+ >> qabbrev_tac ‘Z = set vs UNION set vs' UNION X UNION FV M0 UNION
+                     set (MAP FST pi) UNION set (MAP SND pi)’
+ >> ‘FINITE Z’ by rw [Abbr ‘Z’]
+ >> qabbrev_tac ‘vs2 = FRESH_list n Z’
+ >> Know ‘ALL_DISTINCT vs2 /\ DISJOINT (set vs2) Z /\ LENGTH vs2 = n’
+ >- rw [Abbr ‘vs2’, FRESH_list_def]
+ >> Q.PAT_X_ASSUM ‘FINITE Z’ K_TAC
+ >> qunabbrev_tac ‘Z’
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
+ (* stage work *)
+ >> ‘hnf M0’ by PROVE_TAC [hnf_principle_hnf']
+ >> hnf_tac (“M0 :term”, “vs2 :string list”,
+             “M2 :term”, “y :string”, “args :term list”)
+ >> ‘TAKE n vs2 = vs2’ by rw [TAKE_LENGTH_ID_rwt]
+ >> POP_ASSUM (rfs o wrap)
+ >> ‘hnf M2’ by rw [hnf_appstar]
+ >> Know ‘DISJOINT (set vs) (FV M2)’
+ >- (MATCH_MP_TAC DISJOINT_SUBSET \\
+     Q.EXISTS_TAC ‘FV M0 UNION set vs2’ \\
+     CONJ_TAC >- (Q.PAT_X_ASSUM ‘M0 = LAMl vs2 (VAR y @* args)’ K_TAC \\
+                  rw [DISJOINT_UNION'] >> rw [Once DISJOINT_SYM]) \\
+    ‘FV M0 UNION set vs2 = FV (M0 @* MAP VAR vs2)’ by rw [] >> POP_ORW \\
+     qunabbrev_tac ‘M2’ \\
+     MATCH_MP_TAC principle_hnf_FV_SUBSET' \\
+     Know ‘solvable (VAR y @* args)’
+     >- (rw [solvable_iff_has_hnf] \\
+         MATCH_MP_TAC hnf_has_hnf \\
+         rw [hnf_appstar]) >> DISCH_TAC \\
+     Suff ‘M0 @* MAP VAR vs2 == VAR y @* args’
+     >- PROVE_TAC [lameq_solvable_cong] \\
+     rw [lameq_LAMl_appstar_VAR])
+ >> DISCH_TAC
+ (* stage work *)
+ >> qabbrev_tac ‘pi  = ZIP (vs2,vs)’
+ >> qabbrev_tac ‘pi' = ZIP (vs2,vs')’
+ >> Know ‘DISJOINT (set vs') (FV M2)’
+ >- (cheat)
+ *)
 QED
 
 (* NOTE: since ‘subterm X M p’ is correct for whatever X supplied, changing ‘X’ to
@@ -888,9 +937,8 @@ Proof
     NOTE2: The new LET_ELIM_TAC has avoided CONJ_TAC, but here it still cannot
     handle ‘subterm' X M (h::p)’ (and ‘subterm' Y M (h::p)’) hidden behind
     existential quantifiers (‘?pi. ...’), thus UNBETA_CONV is still the best.
-
-    BEGINNING of Michael's tactics:
   *)
+ (* BEGIN Michael Norrish's tactics *)
  >> CONV_TAC (UNBETA_CONV “subterm X M (h::p)”)
  >> qmatch_abbrev_tac ‘P _’
  >> RW_TAC bool_ss [subterm_of_solvables] (* Excl "BETA_CONV" *)
@@ -899,7 +947,7 @@ Proof
  >> qmatch_abbrev_tac ‘P _’
  >> RW_TAC bool_ss [subterm_of_solvables] (* Excl "BETA_CONV" *)
  >> simp [Abbr ‘P’]
- (* END of Michael's tactics. *)
+ (* END Michael Norish's tactics. *)
  >> fs [] (* eliminated abbrevs m' and n', leaving only m and n *)
  >> Q.PAT_X_ASSUM ‘m = m'’ (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘n = n'’ (fs o wrap o SYM)
@@ -978,58 +1026,71 @@ Proof
  >> qabbrev_tac ‘X' = X UNION set vs’
  >> qabbrev_tac ‘Y' = Y UNION set vs'’
  >> ‘FINITE X' /\ FINITE Y'’ by rw [Abbr ‘X'’, Abbr ‘Y'’]
- (* applying subterm_tpm *)
+ (* applying subterm_tpm (1st part) *)
  >> STRONG_CONJ_TAC
  >- (EQ_TAC >> DISCH_TAC >| (* 2 subgoals *)
      [ (* goal 1 (of 2) *)
-       Know ‘subterm X' (tpm (REVERSE pi) (tpm pi N)) p = NONE’
-       >- PROVE_TAC [subterm_tpm] \\
-       simp [] (* subterm X' N p = NONE *) \\
-       DISCH_TAC \\
-       PROVE_TAC [subterm_tpm] (* with IH *),
+       Know ‘?X''. FINITE X'' /\ subterm X'' (tpm (REVERSE pi) (tpm pi N)) p = NONE’
+       >- PROVE_TAC [cj 1 subterm_tpm_lemma] \\
+       simp [] >> STRIP_TAC (* subterm X'' N p = NONE *) \\
+       Know ‘?X3. FINITE X3 /\ subterm X3 (tpm pi' N) p = NONE’
+       >- PROVE_TAC [subterm_tpm_lemma] >> STRIP_TAC \\
+       METIS_TAC [] (* using IH *),
        (* goal 2 (of 2) *)
-       Know ‘subterm Y' (tpm (REVERSE pi') (tpm pi' N)) p = NONE’
-       >- PROVE_TAC [subterm_tpm] \\
-       simp [] (* subterm Y' N p = NONE *) \\
-       DISCH_TAC \\
-       PROVE_TAC [subterm_tpm] (* with IH *) ])
+       Know ‘?Y''. FINITE Y'' /\ subterm Y'' (tpm (REVERSE pi') (tpm pi' N)) p = NONE’
+       >- PROVE_TAC [subterm_tpm_lemma] \\
+       simp [] >> STRIP_TAC (* subterm Y'' N p = NONE *) \\
+       Know ‘?Y3. FINITE Y3 /\ subterm Y3 (tpm pi N) p = NONE’
+       >- PROVE_TAC [subterm_tpm_lemma] >> STRIP_TAC \\
+       METIS_TAC [] (* using IH *) ])
  >> NTAC 2 DISCH_TAC
  >> ‘subterm Y' (tpm pi' N) p <> NONE’ by PROVE_TAC []
  >> Q.PAT_X_ASSUM ‘subterm X' (tpm pi N) p = NONE <=> _’ K_TAC
- (* stage work *)
- >> ‘?p1. subterm X' (tpm pi N) p = SOME p1’
-      by METIS_TAC [IS_SOME_EQ_NOT_NONE, IS_SOME_EXISTS]
- >> ‘?p2. subterm Y' (tpm pi' N) p = SOME p2’
-      by METIS_TAC [IS_SOME_EQ_NOT_NONE, IS_SOME_EXISTS]
- >> Cases_on ‘p1’ >> Cases_on ‘p2’
- >> ‘subterm' X' (tpm pi N) p = r’ by rw []
- >> ‘subterm' Y' (tpm pi' N) p = r'’ by rw []
- (* applying (cj 2 subterm_tpm) *)
- >> Know ‘subterm' X' (tpm (REVERSE pi) (tpm pi N)) p = tpm (REVERSE pi) r /\
-          subterm X' N p <> NONE’
- >- METIS_TAC [subterm_tpm]
- >> Know ‘subterm' Y' (tpm (REVERSE pi') (tpm pi' N)) p = tpm (REVERSE pi') r' /\
-          subterm Y' N p <> NONE’
- >- METIS_TAC [subterm_tpm]
- >> simp []
- >> STRIP_TAC >> ‘tpm (REVERSE pi') r' = subterm' Y' N p’ by rw []
- >> POP_ASSUM (MP_TAC o (SIMP_RULE (srw_ss()) [tpm_eql])) >> Rewr'
- >> STRIP_TAC >> ‘tpm (REVERSE pi) r = subterm' X' N p’ by rw []
- >> POP_ASSUM (MP_TAC o (SIMP_RULE (srw_ss()) [tpm_eql])) >> Rewr'
- >> Know ‘?pi2. tpm pi2 (subterm' X' N p) = subterm' Y' N p’
- >- METIS_TAC [NOT_NONE_SOME] (* IH *)
- >> STRIP_TAC
+ (* applying subterm_tpm (2nd part) *)
+ >> MP_TAC (Q.SPECL [‘p’, ‘X'’, ‘tpm pi N’, ‘REVERSE pi’] (cj 2 subterm_tpm_lemma))
+ >> simp [] >> STRIP_TAC
+ >> rename1 ‘subterm' X' N p = tpm pp (subterm' X2 (tpm pi N) p)’
+ >> POP_ASSUM (STRIP_ASSUME_TAC o (REWRITE_RULE [tpm_eqr]))
+ >> MP_TAC (Q.SPECL [‘p’, ‘Y'’, ‘tpm pi' N’, ‘REVERSE pi'’] (cj 2 subterm_tpm_lemma))
+ >> simp [] >> STRIP_TAC
+ >> rename1 ‘subterm' Y' N p = tpm pp' (subterm' Y2 (tpm pi' N) p)’
+ >> POP_ASSUM (STRIP_ASSUME_TAC o (REWRITE_RULE [tpm_eqr]))
+ >> ‘?piX. tpm piX (subterm' X' (tpm pi N) p) = subterm' X2 (tpm pi N) p’
+       by METIS_TAC [] (* using IH *)
+ >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o (REWRITE_RULE [tpm_eql]))
+ >> ‘?piY. tpm piY (subterm' Y' (tpm pi' N) p) = subterm' Y2 (tpm pi' N) p’
+       by METIS_TAC [] (* using IH *)
+ >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o (REWRITE_RULE [tpm_eql]))
+ >> Q.PAT_X_ASSUM ‘_ = subterm' X2 (tpm pi N) p’  (ONCE_REWRITE_TAC o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘_ = subterm' Y2 (tpm pi' N) p’ (ONCE_REWRITE_TAC o wrap o SYM)
+ >> ‘?piZ. tpm piZ (subterm' X' N p) = subterm' Y' N p’
+       by METIS_TAC [] (* using IH *)
  >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM)
- (* final stage *)
- >> NTAC 4 (POP_ASSUM K_TAC)
  >> qabbrev_tac ‘P = subterm' X' N p’
- >> ‘tpm pi' (tpm pi2 P) = tpm (pi' ++ pi2) P’ by rw [pmact_decompose]
- >> POP_ORW
- >> qabbrev_tac ‘pi3 = pi' ++ pi2’
- >> simp [tpm_eql]
- (* NOTE: REVERSE ? = pi ++ REVERSE pi3 <=> ? = pi3 ++ REVERSE pi *)
- >> Q.EXISTS_TAC ‘pi3 ++ REVERSE pi’
- >> rw [REVERSE_APPEND, pmact_decompose]
+ >> KILL_TAC
+ >> rw [GSYM pmact_decompose]
+ >> qabbrev_tac ‘l = REVERSE piY ++ REVERSE pp' ++ piZ’
+ >> REWRITE_TAC [GSYM APPEND_ASSOC]
+ >> qabbrev_tac ‘l' = REVERSE piX ++ REVERSE pp’
+ >> rw [pmact_decompose]
+ >> Q.EXISTS_TAC ‘l ++ REVERSE l'’
+ >> rw [pmact_decompose]
+QED
+
+Theorem subterm_tpm_cong' :
+    !p X Y M. FINITE X /\ FINITE Y ==>
+             (subterm X M p = NONE <=> subterm Y M p = NONE) /\
+             (subterm X M p <> NONE ==>
+              ?pi. subterm' X M p = tpm pi (subterm' Y M p))
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC (cj 1 subterm_tpm_cong) >> art [])
+ >> DISCH_TAC
+ >> MP_TAC (Q.SPECL [‘p’, ‘X’, ‘Y’, ‘M’] (cj 2 subterm_tpm_cong))
+ >> RW_TAC std_ss []
+ >> REWRITE_TAC [tpm_eqr]
+ >> Q.EXISTS_TAC ‘REVERSE pi’ >> rw []
 QED
 
 (* NOTE: ‘subterm Y M p <> NONE’ can be derived from ‘subterm X M p <> NONE’ *)
