@@ -1033,7 +1033,28 @@ Proof
      MATCH_MP_TAC principle_hnf_LAMl_appstar \\
      Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) >> art [])
  >> DISCH_TAC
- >> qabbrev_tac ‘p1 = ZIP (vs2,vs)’
+ >> qabbrev_tac ‘pm1 = ZIP (vs2,vs)’
+ >> Know ‘principle_hnf (tpm pi (M0 @* MAP VAR vs'')) =
+          tpm pi (principle_hnf (M0 @* MAP VAR vs''))’
+ >- (MATCH_MP_TAC principle_hnf_tpm >> art [] \\
+     REWRITE_TAC [has_hnf_thm] \\
+     Q.EXISTS_TAC ‘(FEMPTY |++ ZIP (vs2,MAP VAR vs'')) ' (VAR y @* args)’ \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC hreduce_LAMl_appstar \\
+         rw [EVERY_MEM, MEM_MAP] >> rw [] \\
+         Q.PAT_X_ASSUM ‘DISJOINT (set vs2) (set vs'')’ MP_TAC \\
+         rw [DISJOINT_ALT']) \\
+     REWRITE_TAC [GSYM fromPairs_def] \\
+    ‘FDOM (fromPairs vs2 (MAP VAR vs'')) = set vs2’ by rw [FDOM_fromPairs] \\
+     Cases_on ‘MEM y vs2’
+     >- (simp [ssub_thm, ssub_appstar, hnf_appstar] \\
+         fs [MEM_EL] >> rename1 ‘i < LENGTH vs2’ \\
+         Know ‘fromPairs vs2 (MAP VAR vs'') ' (EL i vs2) = EL i (MAP VAR vs'')’
+         >- (MATCH_MP_TAC fromPairs_FAPPLY_EL >> rw []) >> Rewr' \\
+         rw [EL_MAP]) \\
+     simp [ssub_thm, ssub_appstar, hnf_appstar])
+ >> DISCH_THEN (rfs o wrap) (* this modifies ‘Abbrev (M1' = tpm pi ...)’ *)
+ (* stage work *)
  >> cheat
 QED
 
