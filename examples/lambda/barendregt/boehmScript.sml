@@ -91,6 +91,30 @@ Proof
  >> Q.EXISTS_TAC ‘M2’ >> art []
 QED
 
+Theorem tpm_rel_reduce[simp] :
+    tpm_rel (tpm pi M) M /\ tpm_rel M (tpm pi M)
+Proof
+    CONJ_ASM1_TAC
+ >- (REWRITE_TAC [tpm_rel_alt] \\
+     Q.EXISTS_TAC ‘pi’ >> REWRITE_TAC [])
+ >> MATCH_MP_TAC tpm_rel_SYM >> art []
+QED
+
+Theorem tpm_rel_cong :
+    !M M' N N'. tpm_rel M M' /\ tpm_rel N N' ==> (tpm_rel M N <=> tpm_rel M' N')
+Proof
+    rpt STRIP_TAC
+ >> EQ_TAC >> STRIP_TAC
+ >| [ (* goal 1 (of 2) *)
+      MATCH_MP_TAC tpm_rel_TRANS >> Q.EXISTS_TAC ‘N’ >> art [] \\
+      MATCH_MP_TAC tpm_rel_TRANS >> Q.EXISTS_TAC ‘M’ >> art [] \\
+      MATCH_MP_TAC tpm_rel_SYM >> art [],
+      (* goal 2 (of 2) *)
+      MATCH_MP_TAC tpm_rel_TRANS >> Q.EXISTS_TAC ‘M'’ >> art [] \\
+      MATCH_MP_TAC tpm_rel_TRANS >> Q.EXISTS_TAC ‘N'’ >> art [] \\
+      MATCH_MP_TAC tpm_rel_SYM >> art [] ]
+QED
+
 (*---------------------------------------------------------------------------*
  *  ltreeTheory extras
  *---------------------------------------------------------------------------*)
@@ -894,11 +918,11 @@ Theorem subterm_tpm_lemma :
               (subterm X M p = NONE ==> ?Y. FINITE Y /\ subterm Y (tpm pi M) p = NONE) /\
               (subterm X M p <> NONE ==>
                subterm X (tpm pi M) p <> NONE /\
-               ?pi' Y. FINITE Y /\ subterm Y M p <> NONE /\
-                       subterm' X (tpm pi M) p = tpm pi' (subterm' Y M p))
+               ?Y. FINITE Y /\ subterm Y M p <> NONE /\
+                   tpm_rel (subterm' X (tpm pi M) p) (subterm' Y M p))
 Proof
     Induct_on ‘p’
- >- (rw [] >> qexistsl_tac [‘pi’, ‘X’] >> art [])
+ >- (rw [] >> Q.EXISTS_TAC ‘X’ >> art [])
  >> rpt GEN_TAC >> STRIP_TAC
  (* special case *)
  >> reverse (Cases_on ‘solvable M’)
@@ -992,8 +1016,7 @@ QED
 Theorem subterm_tpm_cong :
     !p X Y M. FINITE X /\ FINITE Y ==>
              (subterm X M p = NONE <=> subterm Y M p = NONE) /\
-             (subterm X M p <> NONE ==>
-              ?pi. tpm pi (subterm' X M p) = subterm' Y M p)
+             (subterm X M p <> NONE ==> tpm_rel (subterm' X M p) (subterm' Y M p))
 Proof
     Induct_on ‘p’
  >- (rw [] >> Q.EXISTS_TAC ‘[]’ >> rw [])
@@ -1118,48 +1141,33 @@ Proof
  (* applying subterm_tpm (2nd part) *)
  >> MP_TAC (Q.SPECL [‘p’, ‘X'’, ‘tpm pi N’, ‘REVERSE pi’] (cj 2 subterm_tpm_lemma))
  >> simp [] >> STRIP_TAC
- >> rename1 ‘subterm' X' N p = tpm pp (subterm' X2 (tpm pi N) p)’
- >> POP_ASSUM (STRIP_ASSUME_TAC o (REWRITE_RULE [tpm_eqr]))
+ >> rename1 ‘tpm_rel (subterm' X' N p) (subterm' X2 (tpm pi N) p)’
+ >> POP_ASSUM (STRIP_ASSUME_TAC o (ONCE_REWRITE_RULE [tpm_rel_SYM_EQ]))
  >> MP_TAC (Q.SPECL [‘p’, ‘Y'’, ‘tpm pi' N’, ‘REVERSE pi'’] (cj 2 subterm_tpm_lemma))
  >> simp [] >> STRIP_TAC
- >> rename1 ‘subterm' Y' N p = tpm pp' (subterm' Y2 (tpm pi' N) p)’
- >> POP_ASSUM (STRIP_ASSUME_TAC o (REWRITE_RULE [tpm_eqr]))
- >> ‘?piX. tpm piX (subterm' X' (tpm pi N) p) = subterm' X2 (tpm pi N) p’
+ >> rename1 ‘tpm_rel (subterm' Y' N p) (subterm' Y2 (tpm pi' N) p)’
+ >> POP_ASSUM (STRIP_ASSUME_TAC o (ONCE_REWRITE_RULE [tpm_rel_SYM_EQ]))
+ >> ‘tpm_rel (subterm' X' (tpm pi N) p) (subterm' X2 (tpm pi N) p)’
        by METIS_TAC [] (* using IH *)
- >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o (REWRITE_RULE [tpm_eql]))
- >> ‘?piY. tpm piY (subterm' Y' (tpm pi' N) p) = subterm' Y2 (tpm pi' N) p’
+ >> ‘tpm_rel (subterm' Y' (tpm pi' N) p) (subterm' Y2 (tpm pi' N) p)’
        by METIS_TAC [] (* using IH *)
- >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o (REWRITE_RULE [tpm_eql]))
- >> Q.PAT_X_ASSUM ‘_ = subterm' X2 (tpm pi N) p’  (ONCE_REWRITE_TAC o wrap o SYM)
- >> Q.PAT_X_ASSUM ‘_ = subterm' Y2 (tpm pi' N) p’ (ONCE_REWRITE_TAC o wrap o SYM)
- >> ‘?piZ. tpm piZ (subterm' X' N p) = subterm' Y' N p’
-       by METIS_TAC [] (* using IH *)
- >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM)
- >> qabbrev_tac ‘P = subterm' X' N p’
- >> KILL_TAC
- >> rw [GSYM pmact_decompose]
- >> qabbrev_tac ‘l = REVERSE piY ++ REVERSE pp' ++ piZ’
- >> REWRITE_TAC [GSYM APPEND_ASSOC]
- >> qabbrev_tac ‘l' = REVERSE piX ++ REVERSE pp’
- >> rw [pmact_decompose]
- >> Q.EXISTS_TAC ‘l ++ REVERSE l'’
- >> rw [pmact_decompose]
-QED
+ (* final stage:
 
-Theorem subterm_tpm_cong' :
-    !p X Y M. FINITE X /\ FINITE Y ==>
-             (subterm X M p = NONE <=> subterm Y M p = NONE) /\
-             (subterm X M p <> NONE ==>
-              ?pi. subterm' X M p = tpm pi (subterm' Y M p))
-Proof
-    rpt GEN_TAC >> STRIP_TAC
- >> CONJ_TAC
- >- (MATCH_MP_TAC (cj 1 subterm_tpm_cong) >> art [])
- >> DISCH_TAC
- >> MP_TAC (Q.SPECL [‘p’, ‘X’, ‘Y’, ‘M’] (cj 2 subterm_tpm_cong))
- >> RW_TAC std_ss []
- >> REWRITE_TAC [tpm_eqr]
- >> Q.EXISTS_TAC ‘REVERSE pi’ >> rw []
+    subterm' X' (tpm pi N)   ~   subterm' X2 (tpm pi N) p  ~  subterm' X' N p
+                           (by IH)
+                                                                 ~ (by IH)
+                           (by IH)
+    subterm' Y' (tpm pi' N)  ~   subterm' Y2 (tpm pi' N)   ~  subterm' Y' N p
+  *)
+ >> Know ‘tpm_rel (subterm' X' (tpm pi N) p) (subterm' Y' (tpm pi' N) p) <=>
+          tpm_rel (subterm' X2 (tpm pi N) p) (subterm' Y2 (tpm pi' N) p)’
+ >- (MATCH_MP_TAC tpm_rel_cong >> art [])
+ >> Rewr'
+ >> Know ‘tpm_rel (subterm' X2 (tpm pi N) p) (subterm' Y2 (tpm pi' N) p) <=>
+          tpm_rel (subterm' X' N p) (subterm' Y' N p)’
+ >- (MATCH_MP_TAC tpm_rel_cong >> art [])
+ >> Rewr'
+ >> PROVE_TAC []
 QED
 
 (* NOTE: ‘subterm Y M p <> NONE’ can be derived from ‘subterm X M p <> NONE’ *)
@@ -1171,8 +1179,8 @@ Theorem subterm_hnf_children_size_cong :
 Proof
     rpt STRIP_TAC
  >> ‘subterm Y M p <> NONE’ by PROVE_TAC [subterm_tpm_cong]
- >> ‘?pi. tpm pi (subterm' X M p) = subterm' Y M p’
-       by METIS_TAC [subterm_tpm_cong]
+ >> ‘tpm_rel (subterm' X M p) (subterm' Y M p)’ by METIS_TAC [subterm_tpm_cong]
+ >> fs [tpm_rel_def]
  >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM)
  >> qabbrev_tac ‘N = subterm' X M p’
  >> rw [principle_hnf_tpm']
