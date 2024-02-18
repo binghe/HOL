@@ -913,9 +913,18 @@ Proof
       qunabbrev_tac ‘M0'’ >> MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [] ]
 QED
 
-Theorem subterm_tpm_lemma :
-    !p X M pi. FINITE X ==>
-              (subterm X M p = NONE ==> ?Y. FINITE Y /\ subterm Y (tpm pi M) p = NONE) /\
+(* NOTE: for the variables in ‘pi’, we still have some freedoms in assuming their
+   freshness, in either ‘MAP FST pi’ or ‘MAP SND pi’ (but not both). Perhaps
+   another version of this lemma must be provided, with the other choice.
+
+   NOTE2: The concl of 1st part ‘?Y. FINITE Y /\ subterm Y (tpm pi M) p = NONE’
+   was ‘subterm X (tpm pi M) p = NONE’, but the user of this lemma allows the
+   present weakened form. Similar for the concl of 2nd part.
+ *)
+Theorem subterm_tpm_lemma_real :
+    !p X M pi. FINITE X /\ DISJOINT (set (MAP FST pi)) (FV M) ==>
+              (subterm X M p = NONE ==>
+               ?Y. FINITE Y /\ subterm Y (tpm pi M) p = NONE) /\
               (subterm X M p <> NONE ==>
                subterm X (tpm pi M) p <> NONE /\
                ?Y. FINITE Y /\ subterm Y M p <> NONE /\
@@ -927,8 +936,7 @@ Proof
  (* special case *)
  >> reverse (Cases_on ‘solvable M’)
  >- (‘unsolvable (tpm pi M)’ by PROVE_TAC [solvable_tpm] \\
-     rw [subterm_def] \\
-     Q.EXISTS_TAC ‘X’ >> art [])
+     rw [subterm_def] >> Q.EXISTS_TAC ‘X’ >> art [])
  >> ‘solvable (tpm pi M)’ by PROVE_TAC [solvable_tpm]
  (* BEGIN Michael Norrish's tactics *)
  >> CONV_TAC (UNBETA_CONV “subterm X M (h::p)”)
@@ -944,8 +952,7 @@ Proof
  >- (qunabbrevl_tac [‘M0’, ‘M0'’] \\
      MATCH_MP_TAC principle_hnf_tpm' >> art [])
  >> DISCH_TAC
- >> Know ‘m' = m’
- >- (rw [Abbr ‘m’, Abbr ‘m'’, hnf_children_size_tpm])
+ >> Know ‘m' = m’ >- (rw [Abbr ‘m’, Abbr ‘m'’, hnf_children_size_tpm])
  >> DISCH_THEN (fs o wrap)
  >> Q.PAT_X_ASSUM ‘n = n'’ (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘T’ K_TAC
@@ -956,8 +963,6 @@ Proof
  (* stage work, now h < m *)
  >> Q.PAT_X_ASSUM ‘M0' = tpm pi M0’ K_TAC
  >> qunabbrev_tac ‘M0'’
- >> cheat
-(*
  >> Know ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (X UNION FV M0) /\ LENGTH vs = n’
  >- rw [Abbr ‘vs’, FRESH_list_def]
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
@@ -965,6 +970,8 @@ Proof
           LENGTH vs' = n’
  >- rw [Abbr ‘vs'’, FRESH_list_def]
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
+ >> cheat
+ (*
  (* Z is the union of all known variables so far *)
  >> qabbrev_tac ‘Z = set vs UNION set vs' UNION X UNION FV M0 UNION
                      set (MAP FST pi) UNION set (MAP SND pi)’
@@ -1004,6 +1011,19 @@ Proof
  >> Know ‘DISJOINT (set vs') (FV M2)’
  >- (cheat)
  *)
+QED
+
+(* the fake one *)
+Theorem subterm_tpm_lemma :
+    !p X M pi. FINITE X ==>
+              (subterm X M p = NONE ==>
+               ?Y. FINITE Y /\ subterm Y (tpm pi M) p = NONE) /\
+              (subterm X M p <> NONE ==>
+               subterm X (tpm pi M) p <> NONE /\
+               ?Y. FINITE Y /\ subterm Y M p <> NONE /\
+                   tpm_rel (subterm' X (tpm pi M) p) (subterm' Y M p))
+Proof
+    cheat
 QED
 
 (* NOTE: since ‘subterm X M p’ is correct for whatever X supplied, changing ‘X’ to
@@ -1147,17 +1167,17 @@ Proof
  >> simp [] >> STRIP_TAC
  >> rename1 ‘tpm_rel (subterm' Y' N p) (subterm' Y2 (tpm pi' N) p)’
  >> POP_ASSUM (STRIP_ASSUME_TAC o (ONCE_REWRITE_RULE [tpm_rel_SYM_EQ]))
- >> ‘tpm_rel (subterm' X' (tpm pi N) p) (subterm' X2 (tpm pi N) p)’
+ >> ‘tpm_rel (subterm' X' (tpm pi N) p)  (subterm' X2 (tpm pi N) p)’
        by METIS_TAC [] (* using IH *)
  >> ‘tpm_rel (subterm' Y' (tpm pi' N) p) (subterm' Y2 (tpm pi' N) p)’
        by METIS_TAC [] (* using IH *)
  (* final stage:
 
-    subterm' X' (tpm pi N)   ~   subterm' X2 (tpm pi N) p  ~  subterm' X' N p
+    subterm' X' (tpm pi N)   ~   subterm' X2 (tpm pi N) p   ~ subterm' X' N p
                            (by IH)
                                                                  ~ (by IH)
                            (by IH)
-    subterm' Y' (tpm pi' N)  ~   subterm' Y2 (tpm pi' N)   ~  subterm' Y' N p
+    subterm' Y' (tpm pi' N)  ~   subterm' Y2 (tpm pi' N) p  ~ subterm' Y' N p
   *)
  >> Know ‘tpm_rel (subterm' X' (tpm pi N) p) (subterm' Y' (tpm pi' N) p) <=>
           tpm_rel (subterm' X2 (tpm pi N) p) (subterm' Y2 (tpm pi' N) p)’
