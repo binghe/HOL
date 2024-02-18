@@ -914,15 +914,14 @@ Proof
 QED
 
 (* NOTE: for the variables in ‘pi’, we still have some freedoms in assuming their
-   freshness, in either ‘MAP FST pi’ or ‘MAP SND pi’ (but not both). Perhaps
-   another version of this lemma must be provided, with the other choice.
+   freshness, in either ‘MAP FST pi’ or ‘MAP SND pi’ (but not both).
 
    NOTE2: The concl of 1st part ‘?Y. FINITE Y /\ subterm Y (tpm pi M) p = NONE’
    was ‘subterm X (tpm pi M) p = NONE’, but the user of this lemma allows the
    present weakened form. Similar for the concl of 2nd part.
  *)
-Theorem subterm_tpm_lemma_real :
-    !p X M pi. FINITE X /\ DISJOINT (set (MAP FST pi)) (FV M) ==>
+Theorem subterm_tpm_lemma_temp :
+    !p X M pi. FINITE X /\ DISJOINT (set (MAP SND pi)) (FV M) ==>
               (subterm X M p = NONE ==>
                ?Y. FINITE Y /\ subterm Y (tpm pi M) p = NONE) /\
               (subterm X M p <> NONE ==>
@@ -970,11 +969,28 @@ Proof
           LENGTH vs' = n’
  >- rw [Abbr ‘vs'’, FRESH_list_def]
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
- >> cheat
+ (* vs'' is a permutated version of vs', to be used as first principles *)
+ >> qabbrev_tac ‘vs'' = listpm string_pmact (REVERSE pi) vs'’
+ (* rewriting inside the abbreviation of M1' *)
+ >> Know ‘tpm pi M0 @* MAP VAR vs' = tpm pi (M0 @* MAP VAR vs'')’
+ >- (rw [Abbr ‘vs''’, tpm_appstar] \\
+     Suff ‘listpm term_pmact pi (MAP VAR (listpm string_pmact (REVERSE pi) vs')) =
+           MAP VAR vs'’ >- rw [] \\
+     rw [LIST_EQ_REWRITE, EL_MAP])
+ >> DISCH_THEN (fs o wrap)
+ (* prove that ‘M0 @* MAP VAR vs''’ correctly denude M0 *)
+ >> Know ‘DISJOINT (set vs'') (FV M0)’
+ >- (rw [DISJOINT_ALT', Abbr ‘vs''’, MEM_listpm] \\
+     Q.PAT_X_ASSUM ‘DISJOINT (set vs') (FV (tpm pi M0))’ MP_TAC \\
+     rw [DISJOINT_ALT', FV_tpm])
+ >> DISCH_TAC
  (*
- (* Z is the union of all known variables so far *)
- >> qabbrev_tac ‘Z = set vs UNION set vs' UNION X UNION FV M0 UNION
-                     set (MAP FST pi) UNION set (MAP SND pi)’
+ (* now create Z and vs2
+
+    Z is the union of all known variables so far, no harm to include even more.
+  *)
+ >> qabbrev_tac ‘Z = X UNION FV M0 UNION set vs UNION set vs' UNION vs''
+                     UNION set (MAP FST pi) UNION set (MAP SND pi)’
  >> ‘FINITE Z’ by rw [Abbr ‘Z’]
  >> qabbrev_tac ‘vs2 = FRESH_list n Z’
  >> Know ‘ALL_DISTINCT vs2 /\ DISJOINT (set vs2) Z /\ LENGTH vs2 = n’
@@ -1006,11 +1022,14 @@ Proof
      rw [lameq_LAMl_appstar_VAR])
  >> DISCH_TAC
  (* stage work *)
- >> qabbrev_tac ‘pi  = ZIP (vs2,vs)’
- >> qabbrev_tac ‘pi' = ZIP (vs2,vs')’
- >> Know ‘DISJOINT (set vs') (FV M2)’
- >- (cheat)
+ >> Know ‘M1 = tpm (ZIP (vs2,vs)) M2’
+ >- (simp [Abbr ‘M1’] \\
+     MATCH_MP_TAC principle_hnf_LAMl_appstar \\
+     Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) >> art [])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘p1 = ZIP (vs2,vs)’
  *)
+ >> cheat
 QED
 
 (* the fake one *)
