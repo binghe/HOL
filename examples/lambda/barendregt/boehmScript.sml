@@ -920,18 +920,19 @@ QED
    was ‘subterm X (tpm pi M) p = NONE’, but the user of this lemma allows the
    present weakened form. Similar for the concl of 2nd part.
  *)
-Theorem subterm_tpm_lemma_temp :
-    !p X M pi. FINITE X /\ DISJOINT (set (MAP SND pi)) (FV M) ==>
-              (subterm X M p = NONE ==>
-               ?Y. FINITE Y /\ subterm Y (tpm pi M) p = NONE) /\
-              (subterm X M p <> NONE ==>
-               subterm X (tpm pi M) p <> NONE /\
-               ?Y. FINITE Y /\ subterm Y M p <> NONE /\
-                   tpm_rel (subterm' X (tpm pi M) p) (subterm' Y M p))
+Theorem subterm_tpm_lemma :
+    !p X M pi. FINITE X (* /\ DISJOINT (set (MAP SND pi)) (FV M) *) ==>
+      (subterm X M p = NONE ==> ?Y. FINITE Y /\ subterm Y (tpm pi M) p = NONE) /\
+      (subterm X M p <> NONE ==> subterm X (tpm pi M) p <> NONE /\
+       ?Y. FINITE Y /\ subterm Y M p <> NONE /\
+           tpm_rel (subterm' X (tpm pi M) p) (subterm' Y M p))
 Proof
     Induct_on ‘p’
+ (* base case (easy) *)
  >- (rw [] >> Q.EXISTS_TAC ‘X’ >> art [])
  >> rpt GEN_TAC >> STRIP_TAC
+ (* temporarily added, to simulate antecedents of the lemma *)
+ >> ‘DISJOINT (set (MAP SND pi)) (FV M)’ by cheat
  (* special case *)
  >> reverse (Cases_on ‘solvable M’)
  >- (‘unsolvable (tpm pi M)’ by PROVE_TAC [solvable_tpm] \\
@@ -957,8 +958,7 @@ Proof
  >> Q.PAT_X_ASSUM ‘T’ K_TAC
  (* special case *)
  >> reverse (Cases_on ‘h < m’)
- >- (rw [] \\
-     Q.EXISTS_TAC ‘X’ >> rw [subterm_of_solvables])
+ >- (rw [] >> Q.EXISTS_TAC ‘X’ >> rw [subterm_of_solvables])
  (* stage work, now h < m *)
  >> Q.PAT_X_ASSUM ‘M0' = tpm pi M0’ K_TAC
  >> qunabbrev_tac ‘M0'’
@@ -978,19 +978,22 @@ Proof
            MAP VAR vs'’ >- rw [] \\
      rw [LIST_EQ_REWRITE, EL_MAP])
  >> DISCH_THEN (fs o wrap)
- (* prove that ‘M0 @* MAP VAR vs''’ correctly denude M0 *)
+ (* prove that ‘M0 @* MAP VAR vs''’ correctly denude M0
+
+    NOTE: ‘DISJOINT (set vs'') X’ seems NOT true (but seems not needed)
+  *)
  >> Know ‘DISJOINT (set vs'') (FV M0)’
- >- (rw [DISJOINT_ALT', Abbr ‘vs''’, MEM_listpm] \\
+ >- (rw [Abbr ‘vs''’, DISJOINT_ALT', MEM_listpm] \\
      Q.PAT_X_ASSUM ‘DISJOINT (set vs') (FV (tpm pi M0))’ MP_TAC \\
      rw [DISJOINT_ALT', FV_tpm])
  >> DISCH_TAC
- (*
+ >> ‘LENGTH vs'' = n’ by rw [Abbr ‘vs''’, LENGTH_listpm]
  (* now create Z and vs2
 
     Z is the union of all known variables so far, no harm to include even more.
   *)
- >> qabbrev_tac ‘Z = X UNION FV M0 UNION set vs UNION set vs' UNION vs''
-                     UNION set (MAP FST pi) UNION set (MAP SND pi)’
+ >> qabbrev_tac ‘Z = X UNION FV M0 UNION set vs UNION set vs'' UNION
+                     set (MAP FST pi) UNION set (MAP SND pi)’
  >> ‘FINITE Z’ by rw [Abbr ‘Z’]
  >> qabbrev_tac ‘vs2 = FRESH_list n Z’
  >> Know ‘ALL_DISTINCT vs2 /\ DISJOINT (set vs2) Z /\ LENGTH vs2 = n’
@@ -1005,22 +1008,25 @@ Proof
  >> ‘TAKE n vs2 = vs2’ by rw [TAKE_LENGTH_ID_rwt]
  >> POP_ASSUM (rfs o wrap)
  >> ‘hnf M2’ by rw [hnf_appstar]
- >> Know ‘DISJOINT (set vs) (FV M2)’
- >- (MATCH_MP_TAC DISJOINT_SUBSET \\
-     Q.EXISTS_TAC ‘FV M0 UNION set vs2’ \\
-     CONJ_TAC >- (Q.PAT_X_ASSUM ‘M0 = LAMl vs2 (VAR y @* args)’ K_TAC \\
-                  rw [DISJOINT_UNION'] >> rw [Once DISJOINT_SYM]) \\
-    ‘FV M0 UNION set vs2 = FV (M0 @* MAP VAR vs2)’ by rw [] >> POP_ORW \\
-     qunabbrev_tac ‘M2’ \\
-     MATCH_MP_TAC principle_hnf_FV_SUBSET' \\
-     Know ‘solvable (VAR y @* args)’
-     >- (rw [solvable_iff_has_hnf] \\
-         MATCH_MP_TAC hnf_has_hnf \\
-         rw [hnf_appstar]) >> DISCH_TAC \\
-     Suff ‘M0 @* MAP VAR vs2 == VAR y @* args’
-     >- PROVE_TAC [lameq_solvable_cong] \\
-     rw [lameq_LAMl_appstar_VAR])
- >> DISCH_TAC
+ >> Know ‘DISJOINT (set vs) (FV M2) /\ DISJOINT (set vs'') (FV M2)’
+ >- (CONJ_TAC (* 2 subgoals, same tactics *) \\
+     ( MATCH_MP_TAC DISJOINT_SUBSET \\
+       Q.EXISTS_TAC ‘FV M0 UNION set vs2’ \\
+       CONJ_TAC >- (Q.PAT_X_ASSUM ‘M0 = LAMl vs2 (VAR y @* args)’ K_TAC \\
+                    reverse (rw [DISJOINT_UNION']) >- rw [Once DISJOINT_SYM] \\
+                    MATCH_MP_TAC DISJOINT_SUBSET \\
+                    Q.EXISTS_TAC ‘FV M’ >> art []) \\
+      ‘FV M0 UNION set vs2 = FV (M0 @* MAP VAR vs2)’ by rw [] >> POP_ORW \\
+       qunabbrev_tac ‘M2’ \\
+       MATCH_MP_TAC principle_hnf_FV_SUBSET' \\
+       Know ‘solvable (VAR y @* args)’
+       >- (rw [solvable_iff_has_hnf] \\
+           MATCH_MP_TAC hnf_has_hnf \\
+           rw [hnf_appstar]) >> DISCH_TAC \\
+       Suff ‘M0 @* MAP VAR vs2 == VAR y @* args’
+       >- PROVE_TAC [lameq_solvable_cong] \\
+       rw [lameq_LAMl_appstar_VAR] ))
+ >> STRIP_TAC
  (* stage work *)
  >> Know ‘M1 = tpm (ZIP (vs2,vs)) M2’
  >- (simp [Abbr ‘M1’] \\
@@ -1028,21 +1034,7 @@ Proof
      Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) >> art [])
  >> DISCH_TAC
  >> qabbrev_tac ‘p1 = ZIP (vs2,vs)’
- *)
  >> cheat
-QED
-
-(* the fake one *)
-Theorem subterm_tpm_lemma :
-    !p X M pi. FINITE X ==>
-              (subterm X M p = NONE ==>
-               ?Y. FINITE Y /\ subterm Y (tpm pi M) p = NONE) /\
-              (subterm X M p <> NONE ==>
-               subterm X (tpm pi M) p <> NONE /\
-               ?Y. FINITE Y /\ subterm Y M p <> NONE /\
-                   tpm_rel (subterm' X (tpm pi M) p) (subterm' Y M p))
-Proof
-    cheat
 QED
 
 (* NOTE: since ‘subterm X M p’ is correct for whatever X supplied, changing ‘X’ to
