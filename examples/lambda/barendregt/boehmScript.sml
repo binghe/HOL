@@ -20,7 +20,76 @@ val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
 
 val o_DEF = combinTheory.o_DEF;
 
-(* Overload pH[local] = “principle_hnf” *)
+(*---------------------------------------------------------------------------*
+ *  ‘tpm’ as an equivalence relation between terms
+ *---------------------------------------------------------------------------*)
+
+Definition tpm_rel_def :
+    tpm_rel M N = ?pi. tpm pi M = N
+End
+
+Theorem tpm_rel_alt :
+    !M N. tpm_rel M N <=> ?pi. M = tpm pi N
+Proof
+    rw [tpm_rel_def]
+ >> EQ_TAC >> rpt STRIP_TAC
+ >| [ (* goal 1 (of 2) *)
+      fs [tpm_eql] >> Q.EXISTS_TAC ‘REVERSE pi’ >> rw [],
+      (* goal 2 (of 2) *)
+      fs [tpm_eqr] >> Q.EXISTS_TAC ‘REVERSE pi’ >> rw [] ]
+QED
+
+Theorem equivalence_tpm_rel :
+    equivalence tpm_rel
+Proof
+    rw [equivalence_def, reflexive_def, symmetric_def, transitive_def]
+ >| [ (* goal 1 (of 3) *)
+      rw [tpm_rel_def] >> Q.EXISTS_TAC ‘[]’ >> rw [],
+      (* goal 2 (of 3) *)
+      rw [tpm_rel_def] >> EQ_TAC >> rpt STRIP_TAC >| (* 2 subgoals *)
+      [ (* goal 2.1 (of 2) *)
+        ONCE_REWRITE_TAC [EQ_SYM_EQ] >> fs [tpm_eql] \\
+        Q.EXISTS_TAC ‘REVERSE pi’ >> rw [],
+        (* goal 2.2 (of 2) *)
+        ONCE_REWRITE_TAC [EQ_SYM_EQ] >> fs [tpm_eql] \\
+        Q.EXISTS_TAC ‘REVERSE pi’ >> rw [] ],
+      (* goal 3 (of 3) *)
+      fs [tpm_rel_def] \\
+      POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM) \\
+      POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM) \\
+      Q.EXISTS_TAC ‘pi' ++ pi’ \\
+      rw [pmact_decompose] ]
+QED
+
+val tpm_rel_thm = equivalence_tpm_rel |>
+    REWRITE_RULE [equivalence_def, reflexive_def, symmetric_def, transitive_def];
+
+(* below are easy-to-use forms of [equivalence_tpm_rel] *)
+Theorem tpm_rel_REFL[simp] :
+    tpm_rel M M
+Proof
+    rw [tpm_rel_thm]
+QED
+
+Theorem tpm_rel_SYM :
+    !M N. tpm_rel M N ==> tpm_rel N M
+Proof
+    rw [tpm_rel_thm]
+QED
+
+Theorem tpm_rel_SYM_EQ :
+    !M N. tpm_rel M N <=> tpm_rel N M
+Proof
+    rw [tpm_rel_thm]
+QED
+
+Theorem tpm_rel_TRANS :
+    !M1 M2 M3. tpm_rel M1 M2 /\ tpm_rel M2 M3 ==> tpm_rel M1 M3
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC (cj 3 tpm_rel_thm)
+ >> Q.EXISTS_TAC ‘M2’ >> art []
+QED
 
 (*---------------------------------------------------------------------------*
  *  ltreeTheory extras
