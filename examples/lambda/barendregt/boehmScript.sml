@@ -971,6 +971,7 @@ Proof
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
  (* vs'' is a permutated version of vs', to be used as first principles *)
  >> qabbrev_tac ‘vs'' = listpm string_pmact (REVERSE pi) vs'’
+ >> ‘ALL_DISTINCT vs''’ by rw [Abbr ‘vs''’]
  (* rewriting inside the abbreviation of M1' *)
  >> Know ‘tpm pi M0 @* MAP VAR vs' = tpm pi (M0 @* MAP VAR vs'')’
  >- (rw [Abbr ‘vs''’, tpm_appstar] \\
@@ -1027,16 +1028,16 @@ Proof
        >- PROVE_TAC [lameq_solvable_cong] \\
        rw [lameq_LAMl_appstar_VAR] ))
  >> STRIP_TAC
- (* stage work *)
+ (* rewriting M1 and M1' (much harder) by tpm of M2 *)
  >> Know ‘M1 = tpm (ZIP (vs2,vs)) M2’
  >- (simp [Abbr ‘M1’] \\
      MATCH_MP_TAC principle_hnf_LAMl_appstar \\
      Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) >> art [])
  >> DISCH_TAC
  >> qabbrev_tac ‘pm1 = ZIP (vs2,vs)’
- >> Know ‘principle_hnf (tpm pi (M0 @* MAP VAR vs'')) =
-          tpm pi (principle_hnf (M0 @* MAP VAR vs''))’
- >- (MATCH_MP_TAC principle_hnf_tpm >> art [] \\
+ >> Know ‘M1' = tpm pi (principle_hnf (M0 @* MAP VAR vs''))’
+ >- (qunabbrev_tac ‘M1'’ \\
+     MATCH_MP_TAC principle_hnf_tpm >> art [] \\
      REWRITE_TAC [has_hnf_thm] \\
      Q.EXISTS_TAC ‘(FEMPTY |++ ZIP (vs2,MAP VAR vs'')) ' (VAR y @* args)’ \\
      CONJ_TAC
@@ -1053,8 +1054,30 @@ Proof
          >- (MATCH_MP_TAC fromPairs_FAPPLY_EL >> rw []) >> Rewr' \\
          rw [EL_MAP]) \\
      simp [ssub_thm, ssub_appstar, hnf_appstar])
- >> DISCH_THEN (rfs o wrap) (* this modifies ‘Abbrev (M1' = tpm pi ...)’ *)
- (* stage work *)
+ >> DISCH_TAC
+ >> Know ‘M1' = tpm pi (tpm (ZIP (vs2,vs'')) M2)’
+ >- (POP_ORW >> simp [] \\
+     MATCH_MP_TAC principle_hnf_LAMl_appstar \\
+     Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) >> art [])
+ >> REWRITE_TAC [GSYM pmact_decompose]
+ >> qabbrev_tac ‘pm2 = pi ++ ZIP (vs2,vs'')’
+ >> DISCH_TAC
+ (* applying hnf_children_tpm *)
+ >> Know ‘Ms = MAP (tpm pm1) args’
+ >- (simp [Abbr ‘Ms’] \\
+    ‘hnf_children M2 = args’ by rw [hnf_children_hnf] \\
+     Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) \\
+     rw [hnf_children_tpm])
+ >> Rewr'
+ >> Know ‘Ms' = MAP (tpm pm2) args’
+ >- (simp [Abbr ‘Ms'’] \\
+    ‘hnf_children M2 = args’ by rw [hnf_children_hnf] \\
+     Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) \\
+     rw [hnf_children_tpm])
+ >> Rewr'
+ >> ‘LENGTH args = m’ by rw [Abbr ‘m’]
+ (* cleanups, the definition details of vs2 are useless *)
+ >> Q.PAT_X_ASSUM ‘Abbrev (vs2 = _)’ K_TAC
  >> cheat
 QED
 
@@ -1138,7 +1161,7 @@ Proof
        >- PROVE_TAC [lameq_solvable_cong] \\
        rw [lameq_LAMl_appstar_VAR] ))
  >> STRIP_TAC
- (* stage work *)
+ (* rewriting M1 and M1' by tpm of M2 *)
  >> Know ‘M1 = tpm (ZIP (vs2,vs)) M2’
  >- (simp [Abbr ‘M1’] \\
      MATCH_MP_TAC principle_hnf_LAMl_appstar \\
@@ -1149,9 +1172,9 @@ Proof
      MATCH_MP_TAC principle_hnf_LAMl_appstar \\
      Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) >> art [])
  >> DISCH_TAC
- (* applying hnf_children_tpm *)
  >> qabbrev_tac ‘pi = ZIP (vs2,vs)’
  >> qabbrev_tac ‘pi' = ZIP (vs2,vs')’
+ (* applying hnf_children_tpm *)
  >> Know ‘Ms = MAP (tpm pi) args’
  >- (simp [Abbr ‘Ms’] \\
     ‘hnf_children M2 = args’ by rw [hnf_children_hnf] \\
