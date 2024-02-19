@@ -913,6 +913,10 @@ Proof
       qunabbrev_tac ‘M0'’ >> MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [] ]
 QED
 
+(* NOTE: This lemma is more general than subterm_tpm_cong, which cannot be
+   directly proved. The current statements of this lemma, suitable for doing
+   induction, were due to repeated experiments.  -- Chun Tian, 19 feb 2024.
+ *)
 Theorem subterm_tpm_lemma :
     !p X Y M pi. FINITE X /\ FINITE Y ==>
                 (subterm X M p = NONE ==> subterm Y (tpm pi M) p = NONE) /\
@@ -931,8 +935,7 @@ Proof
  >> RW_TAC bool_ss [subterm_of_solvables]
  >> simp [Abbr ‘P’]
  (* END Michael Norish's tactics.
-    preparing for expanding ‘subterm' Y (tpm pi M) (h::p)’
-  *)
+    preparing for expanding ‘subterm' Y (tpm pi M) (h::p)’ *)
  >> qabbrev_tac ‘M0' = principle_hnf (tpm pi M)’
  >> Know ‘M0' = tpm pi M0’
  >- (qunabbrevl_tac [‘M0’, ‘M0'’] \\
@@ -1033,7 +1036,7 @@ Proof
      MATCH_MP_TAC principle_hnf_LAMl_appstar \\
      Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) >> art [])
  >> DISCH_TAC
- >> qabbrev_tac ‘pm1 = ZIP (vs2,vs)’
+ >> qabbrev_tac ‘p1 = ZIP (vs2,vs)’
  >> Know ‘M1' = tpm pi (principle_hnf (M0 @* MAP VAR vs1p))’
  >- (qunabbrev_tac ‘M1'’ \\
      MATCH_MP_TAC principle_hnf_tpm >> art [] \\
@@ -1060,18 +1063,18 @@ Proof
      Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) >> art [])
  >> POP_ASSUM K_TAC (* M1' = ... (already used) *)
  >> REWRITE_TAC [GSYM pmact_decompose]
- >> qabbrev_tac ‘pm2 = pi ++ ZIP (vs2,vs1p)’
+ >> qabbrev_tac ‘p2 = pi ++ ZIP (vs2,vs1p)’
  >> DISCH_TAC
  (* cleanups, the definition details of vs2 are useless *)
  >> Q.PAT_X_ASSUM ‘Abbrev (vs2 = _)’ K_TAC
  (* applying hnf_children_tpm *)
- >> Know ‘Ms = MAP (tpm pm1) args’
+ >> Know ‘Ms = MAP (tpm p1) args’
  >- (simp [Abbr ‘Ms’] \\
     ‘hnf_children M2 = args’ by rw [hnf_children_hnf] \\
      Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) \\
      rw [hnf_children_tpm])
  >> Rewr'
- >> Know ‘Ms' = MAP (tpm pm2) args’
+ >> Know ‘Ms' = MAP (tpm p2) args’
  >- (simp [Abbr ‘Ms'’] \\
     ‘hnf_children M2 = args’ by rw [hnf_children_hnf] \\
      Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) \\
@@ -1081,13 +1084,14 @@ Proof
  >> simp [EL_MAP]
  >> qabbrev_tac ‘N = EL h args’
  (* final stage *)
- >> Know ‘?pi'. tpm pm2 N = tpm pi' (tpm pm1 N)’
- >- (Q.EXISTS_TAC ‘pm2 ++ REVERSE pm1’ \\
+ >> Know ‘?pi'. tpm p2 N = tpm pi' (tpm p1 N)’
+ >- (Q.EXISTS_TAC ‘p2 ++ REVERSE p1’ \\
      rw [pmact_decompose])
  >> STRIP_TAC
- >> Q.PAT_X_ASSUM ‘!X Y M pi. P’
-      (MP_TAC o (Q.SPECL [‘X UNION set vs’, ‘Y UNION set vs'’, ‘tpm pm1 N’, ‘pi'’]))
- >> rw []
+ >> POP_ORW
+ >> qabbrev_tac ‘N' = tpm p1 N’
+ (* finally, using IH *)
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> rw []
 QED
 
 (* NOTE: since ‘subterm X M p’ is correct for whatever X supplied, changing ‘X’ to
