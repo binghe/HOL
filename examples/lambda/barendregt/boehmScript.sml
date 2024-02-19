@@ -2749,28 +2749,11 @@ Proof
 
     current goal: subterm' Z ([P/y] N) t == [P/y] (subterm' Z N t)
   *)
+ >> Q.PAT_X_ASSUM ‘FINITE Y’ K_TAC
+ >> qunabbrev_tac ‘Y’
+ (* applying subterm_width_thm and subterm_hnf_children_size_cong *)
  >> cheat
 QED
- (* (not used)
- (* applying subterm_is_none_iff_children *)
- >> Know ‘!p'. p' <<= p ==> subterm X M p' <> NONE’
- >- (Q.X_GEN_TAC ‘p'’ >> STRIP_TAC \\
-     CCONTR_TAC \\
-     POP_ASSUM (MP_TAC o (REWRITE_RULE [Once subterm_is_none_iff_children])) \\
-     DISCH_THEN (MP_TAC o (Q.SPEC ‘p’)) >> rw [])
- >> DISCH_TAC
- (* applying subterm_is_none_iff_parent_unsolvable *)
- >> Know ‘!p'. p' <> [] /\ p' <<= p ==> solvable (subterm' X M (FRONT p'))’
- >- (rpt STRIP_TAC \\
-     MP_TAC (Q.SPECL [‘p'’, ‘X’, ‘M’] subterm_is_none_iff_parent_unsolvable) \\
-    ‘p' IN ltree_paths (BTe X M)’ by PROVE_TAC [ltree_paths_inclusive] \\
-     Know ‘subterm X M (FRONT p') <> NONE’
-     >- (FIRST_X_ASSUM MATCH_MP_TAC \\
-         MATCH_MP_TAC IS_PREFIX_TRANS \\
-         Q.EXISTS_TAC ‘p'’ >> rw [] \\
-         MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []) >> rw [])
- >> DISCH_TAC
-  *)
 
 (* Proposition 10.3.7 (i) [1, p.248] (Boehm out lemma)
 
