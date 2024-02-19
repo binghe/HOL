@@ -1009,23 +1009,23 @@ Proof
  >> ‘hnf M2’ by rw [hnf_appstar]
  >> Know ‘DISJOINT (set vs) (FV M2) /\
           DISJOINT (set vs1p) (FV M2)’
- >- (rpt CONJ_TAC (* 2 or 3 subgoals, same tactics *) \\
-     ( MATCH_MP_TAC DISJOINT_SUBSET \\
-       Q.EXISTS_TAC ‘FV M0 UNION set vs2’ \\
-       CONJ_TAC >- (Q.PAT_X_ASSUM ‘M0 = LAMl vs2 (VAR y @* args)’ K_TAC \\
-                    reverse (rw [DISJOINT_UNION']) >- rw [Once DISJOINT_SYM] \\
-                    MATCH_MP_TAC DISJOINT_SUBSET \\
-                    Q.EXISTS_TAC ‘FV M’ >> art []) \\
-      ‘FV M0 UNION set vs2 = FV (M0 @* MAP VAR vs2)’ by rw [] >> POP_ORW \\
-       qunabbrev_tac ‘M2’ \\
-       MATCH_MP_TAC principle_hnf_FV_SUBSET' \\
-       Know ‘solvable (VAR y @* args)’
-       >- (rw [solvable_iff_has_hnf] \\
-           MATCH_MP_TAC hnf_has_hnf \\
-           rw [hnf_appstar]) >> DISCH_TAC \\
-       Suff ‘M0 @* MAP VAR vs2 == VAR y @* args’
-       >- PROVE_TAC [lameq_solvable_cong] \\
-       rw [lameq_LAMl_appstar_VAR] ))
+ >- (rpt CONJ_TAC (* 2 subgoals, same tactics *) \\
+     (MATCH_MP_TAC DISJOINT_SUBSET \\
+      Q.EXISTS_TAC ‘FV M0 UNION set vs2’ \\
+      CONJ_TAC >- (Q.PAT_X_ASSUM ‘M0 = LAMl vs2 (VAR y @* args)’ K_TAC \\
+                   reverse (rw [DISJOINT_UNION']) >- rw [Once DISJOINT_SYM] \\
+                   MATCH_MP_TAC DISJOINT_SUBSET \\
+                   Q.EXISTS_TAC ‘FV M’ >> art []) \\
+     ‘FV M0 UNION set vs2 = FV (M0 @* MAP VAR vs2)’ by rw [] >> POP_ORW \\
+      qunabbrev_tac ‘M2’ \\
+      MATCH_MP_TAC principle_hnf_FV_SUBSET' \\
+      Know ‘solvable (VAR y @* args)’
+      >- (rw [solvable_iff_has_hnf] \\
+          MATCH_MP_TAC hnf_has_hnf \\
+          rw [hnf_appstar]) >> DISCH_TAC \\
+      Suff ‘M0 @* MAP VAR vs2 == VAR y @* args’
+      >- PROVE_TAC [lameq_solvable_cong] \\
+      rw [lameq_LAMl_appstar_VAR]))
  >> STRIP_TAC
  (* rewriting M1 and M1' (much harder) by tpm of M2 *)
  >> Know ‘M1 = tpm (ZIP (vs2,vs)) M2’
@@ -1090,7 +1090,6 @@ Proof
  >> rw []
 QED
 
-
 (* NOTE: since ‘subterm X M p’ is correct for whatever X supplied, changing ‘X’ to
    something else shouldn't change the properties of ‘subterm X M p’, as long as
    these properties are not directly related to specific choices of ‘vs’.
@@ -1115,8 +1114,8 @@ Theorem subterm_hnf_children_size_cong :
               hnf_children_size (principle_hnf (subterm' Y M p))
 Proof
     rpt STRIP_TAC
- >> ‘subterm Y M p <> NONE’ by PROVE_TAC [subterm_tpm_cong]
- >> ‘tpm_rel (subterm' X M p) (subterm' Y M p)’ by METIS_TAC [subterm_tpm_cong]
+ >> ‘subterm Y M p <> NONE /\
+     tpm_rel (subterm' X M p) (subterm' Y M p)’ by METIS_TAC [subterm_tpm_cong]
  >> fs [tpm_rel_def]
  >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM)
  >> qabbrev_tac ‘N = subterm' X M p’
