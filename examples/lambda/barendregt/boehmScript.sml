@@ -913,59 +913,65 @@ Proof
       qunabbrev_tac ‘M0'’ >> MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [] ]
 QED
 
-(* NOTE: for the variables in ‘pi’, we still have some freedoms in assuming their
-   freshness, in either ‘MAP FST pi’ or ‘MAP SND pi’ (but not both).
-
-   NOTE2: The concl of 1st part ‘?Y. FINITE Y /\ subterm Y (tpm pi M) p = NONE’
+(* NOTE2: The concl of 1st part ‘?Y. FINITE Y /\ subterm Y (tpm pi M) p = NONE’
    was ‘subterm X (tpm pi M) p = NONE’, but the user of this lemma allows the
    present weakened form. Similar for the concl of 2nd part.
- *)
-Theorem subterm_tpm_lemma :
-    !p X M pi. FINITE X (* /\ DISJOINT (set (MAP SND pi)) (FV M) *) ==>
-      (subterm X M p = NONE ==> ?Y. FINITE Y /\ subterm Y (tpm pi M) p = NONE) /\
+
       (subterm X M p <> NONE ==> subterm X (tpm pi M) p <> NONE /\
        ?Y. FINITE Y /\ subterm Y M p <> NONE /\
            tpm_rel (subterm' X (tpm pi M) p) (subterm' Y M p))
+
+ *)
+Theorem subterm_tpm_lemma1 :
+    !p X M pi. FINITE X ==>
+              (subterm X M p = NONE ==> !Y. FINITE Y ==> subterm Y (tpm pi M) p = NONE)
 Proof
     Induct_on ‘p’
- (* base case (easy) *)
- >- (rw [] >> Q.EXISTS_TAC ‘X’ >> art [])
+ >- (rw [] (* >> Q.EXISTS_TAC ‘X’ >> art [] *))
  >> rpt GEN_TAC >> STRIP_TAC
- (* temporarily added, to simulate antecedents of the lemma *)
- >> ‘DISJOINT (set (MAP SND pi)) (FV M)’ by cheat
- (* special case *)
  >> reverse (Cases_on ‘solvable M’)
  >- (‘unsolvable (tpm pi M)’ by PROVE_TAC [solvable_tpm] \\
-     rw [subterm_def] >> Q.EXISTS_TAC ‘X’ >> art [])
+     simp [subterm_def] (* >> Q.EXISTS_TAC ‘X’ >> art [] *))
  >> ‘solvable (tpm pi M)’ by PROVE_TAC [solvable_tpm]
  (* BEGIN Michael Norrish's tactics *)
  >> CONV_TAC (UNBETA_CONV “subterm X M (h::p)”)
  >> qmatch_abbrev_tac ‘P _’
  >> RW_TAC bool_ss [subterm_of_solvables]
  >> simp [Abbr ‘P’]
- >> CONV_TAC (UNBETA_CONV “subterm X (tpm pi M) (h::p)”)
- >> qmatch_abbrev_tac ‘P _’
- >> RW_TAC bool_ss [subterm_of_solvables]
- >> simp [Abbr ‘P’]
  (* END Michael Norish's tactics. *)
+ >> qabbrev_tac ‘M0' = principle_hnf (tpm pi M)’
  >> Know ‘M0' = tpm pi M0’
  >- (qunabbrevl_tac [‘M0’, ‘M0'’] \\
      MATCH_MP_TAC principle_hnf_tpm' >> art [])
  >> DISCH_TAC
+ >> qabbrev_tac ‘m' = hnf_children_size M0'’
  >> Know ‘m' = m’ >- (rw [Abbr ‘m’, Abbr ‘m'’, hnf_children_size_tpm])
- >> DISCH_THEN (fs o wrap)
- >> Q.PAT_X_ASSUM ‘n = n'’ (fs o wrap o SYM)
- >> Q.PAT_X_ASSUM ‘T’ K_TAC
- (* special case *)
+ >> DISCH_TAC
+ >> qabbrev_tac ‘n' = LAMl_size M0'’
+ >> Know ‘n' = n’ >- (rw [Abbr ‘n’, Abbr ‘n'’, LAMl_size_tpm])
+ >> DISCH_TAC
+  (* special case *)
  >> reverse (Cases_on ‘h < m’)
- >- (rw [] >> Q.EXISTS_TAC ‘X’ >> rw [subterm_of_solvables])
+ >- (rw [] >> rw [subterm_of_solvables])
  (* stage work, now h < m *)
- >> Q.PAT_X_ASSUM ‘M0' = tpm pi M0’ K_TAC
- >> qunabbrev_tac ‘M0'’
+ >> simp []
+ >> rpt STRIP_TAC
+ (* BEGIN Michael Norrish's tactics, again *)
+ >> CONV_TAC (UNBETA_CONV “subterm Y (tpm pi M) (h::p)”)
+ >> qmatch_abbrev_tac ‘P _’
+ >> RW_TAC bool_ss [subterm_of_solvables]
+ >> simp [Abbr ‘P’]
+ (* END Michael Norish's tactics. *)
+ >> Q.PAT_X_ASSUM ‘tpm pi M0 = principle_hnf (tpm pi M)’ (rfs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘n = n'’ (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘n = n''’ (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘m' = m''’ (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘m = m'’ (fs o wrap o SYM)
+ (* stage work *)
  >> Know ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (X UNION FV M0) /\ LENGTH vs = n’
  >- rw [Abbr ‘vs’, FRESH_list_def]
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
- >> Know ‘ALL_DISTINCT vs' /\ DISJOINT (set vs') (X UNION FV (tpm pi M0)) /\
+ >> Know ‘ALL_DISTINCT vs' /\ DISJOINT (set vs') (Y UNION FV (tpm pi M0)) /\
           LENGTH vs' = n’
  >- rw [Abbr ‘vs'’, FRESH_list_def]
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
@@ -993,8 +999,7 @@ Proof
 
     Z is the union of all known variables so far, no harm to include even more.
   *)
- >> qabbrev_tac ‘Z = X UNION FV M0 UNION set vs UNION set vs'' UNION
-                     set (MAP FST pi) UNION set (MAP SND pi)’
+ >> qabbrev_tac ‘Z = X UNION Y UNION FV M0 UNION set vs UNION set vs''’
  >> ‘FINITE Z’ by rw [Abbr ‘Z’]
  >> qabbrev_tac ‘vs2 = FRESH_list n Z’
  >> Know ‘ALL_DISTINCT vs2 /\ DISJOINT (set vs2) Z /\ LENGTH vs2 = n’
@@ -1059,9 +1064,11 @@ Proof
  >- (POP_ORW >> simp [] \\
      MATCH_MP_TAC principle_hnf_LAMl_appstar \\
      Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) >> art [])
+ >> POP_ASSUM K_TAC (* M1' = ... (already used) *)
  >> REWRITE_TAC [GSYM pmact_decompose]
  >> qabbrev_tac ‘pm2 = pi ++ ZIP (vs2,vs'')’
  >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘subterm (X UNION set vs) (EL h Ms) p = NONE’ MP_TAC
  (* applying hnf_children_tpm *)
  >> Know ‘Ms = MAP (tpm pm1) args’
  >- (simp [Abbr ‘Ms’] \\
@@ -1078,7 +1085,39 @@ Proof
  >> ‘LENGTH args = m’ by rw [Abbr ‘m’]
  (* cleanups, the definition details of vs2 are useless *)
  >> Q.PAT_X_ASSUM ‘Abbrev (vs2 = _)’ K_TAC
- >> cheat
+ >> simp [EL_MAP]
+ >> qabbrev_tac ‘N = EL h args’
+ >> Know ‘?pi'. tpm pm2 N = tpm pi' (tpm pm1 N)’
+ >- (Q.EXISTS_TAC ‘pm2 ++ REVERSE pm1’ \\
+     rw [pmact_decompose])
+ >> STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘!X M pi. FINITE X ==> _’
+      (MP_TAC o (Q.SPECL [‘X UNION set vs’, ‘tpm pm1 N’, ‘pi'’]))
+ >> rw []
+QED
+
+Theorem subterm_tpm_cong_none :
+    !p X Y M. FINITE X /\ FINITE Y ==>
+             (subterm X M p = NONE <=> subterm Y M p = NONE)
+Proof
+    rpt STRIP_TAC
+ >> EQ_TAC >> DISCH_TAC
+ >| [ (* goal 1 (of 2) *)
+      MP_TAC (Q.SPECL [‘p’, ‘X’, ‘M’, ‘[]’] subterm_tpm_lemma1) \\
+      rw [],
+      (* goal 2 (of 2) *)
+      MP_TAC (Q.SPECL [‘p’, ‘Y’, ‘M’, ‘[]’] subterm_tpm_lemma1) \\
+      rw [] ]
+QED
+
+Theorem subterm_tpm_lemma :
+    !p X M pi. FINITE X (* /\ DISJOINT (set (MAP SND pi)) (FV M) *) ==>
+      (subterm X M p = NONE ==> ?Y. FINITE Y /\ subterm Y (tpm pi M) p = NONE) /\
+      (subterm X M p <> NONE ==> subterm X (tpm pi M) p <> NONE /\
+       ?Y. FINITE Y /\ subterm Y M p <> NONE /\
+           tpm_rel (subterm' X (tpm pi M) p) (subterm' Y M p))
+Proof
+    cheat
 QED
 
 (* NOTE: since ‘subterm X M p’ is correct for whatever X supplied, changing ‘X’ to

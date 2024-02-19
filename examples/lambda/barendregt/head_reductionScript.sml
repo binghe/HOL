@@ -1698,6 +1698,12 @@ Proof
  >> rw [appstar_SNOC]
 QED
 
+Theorem LAMl_size_tpm[simp] :
+    !M. LAMl_size (tpm pi M) = LAMl_size M
+Proof
+    HO_MATCH_MP_TAC simple_induction >> rw []
+QED
+
 (*---------------------------------------------------------------------------*
  *  hnf_children_size (of hnf)
  *---------------------------------------------------------------------------*)
