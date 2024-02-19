@@ -639,6 +639,10 @@ Proof
     METIS_TAC [pmact_inverse, solvable_tpm_I]
 QED
 
+(* |- !M N z. solvable ([N/z] M) ==> solvable M *)
+Theorem solvable_from_subst =
+        has_hnf_SUB_E |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
+
 (*---------------------------------------------------------------------------*
  *  Principle Head Normal Forms (principle_hnf)
  *---------------------------------------------------------------------------*)

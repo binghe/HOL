@@ -688,6 +688,47 @@ Proof
  >> Cases_on ‘p'’ >> fs [subterm_def]
 QED
 
+Theorem subterm_solvable_lemma :
+    !X M p. FINITE X /\ p <> [] /\
+            p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
+           (!q. q <<= p ==> subterm X M q <> NONE) /\
+           (!q. q <<= FRONT p ==> solvable (subterm' X M q))
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> CONJ_ASM1_TAC
+ >- (Q.X_GEN_TAC ‘q’ >> DISCH_TAC \\
+     CCONTR_TAC \\
+     POP_ASSUM (MP_TAC o (REWRITE_RULE [Once subterm_is_none_iff_children])) \\
+     DISCH_THEN (MP_TAC o (Q.SPEC ‘p’)) >> rw [])
+ >> ‘0 < LENGTH p’ by rw [GSYM NOT_NIL_EQ_LENGTH_NOT_0]
+ >> Q.X_GEN_TAC ‘q’
+ >> Suff ‘!l. l <> [] /\ l <<= p ==> solvable (subterm' X M (FRONT l))’
+ >- (DISCH_TAC \\
+     DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [IS_PREFIX_EQ_TAKE])) \\
+     Know ‘q = FRONT (TAKE (SUC n) p)’
+     >- (Know ‘FRONT (TAKE (SUC n) p) = TAKE (SUC n - 1) p’
+         >- (MATCH_MP_TAC FRONT_TAKE \\
+             rfs [LENGTH_FRONT]) >> Rewr' \\
+         POP_ASSUM (ONCE_REWRITE_TAC o wrap) >> simp [] \\
+         MATCH_MP_TAC TAKE_FRONT >> rfs [LENGTH_FRONT]) >> Rewr' \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     qabbrev_tac ‘l = TAKE (SUC n) p’ \\
+     CONJ_TAC
+     >- (rfs [LENGTH_FRONT, NOT_NIL_EQ_LENGTH_NOT_0, Abbr ‘l’, LENGTH_TAKE]) \\
+     rw [IS_PREFIX_EQ_TAKE] \\
+     Q.EXISTS_TAC ‘SUC n’ >> rw [Abbr ‘l’] \\
+     rfs [LENGTH_FRONT])
+ >> rpt STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘l’, ‘X’, ‘M’] subterm_is_none_iff_parent_unsolvable)
+ >> ‘l IN ltree_paths (BTe X M)’ by PROVE_TAC [ltree_paths_inclusive]
+ >> simp []
+ >> Suff ‘subterm X M (FRONT l) <> NONE’ >- PROVE_TAC []
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> MATCH_MP_TAC IS_PREFIX_TRANS
+ >> Q.EXISTS_TAC ‘l’ >> rw []
+ >> MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []
+QED
+
 (* NOTE: cf. [subterm_some_none_cong] when X changes but M remains *)
 Theorem lameq_subterm_cong_none :
     !p X M N. FINITE X /\ FV M UNION FV N SUBSET X /\ M == N ==>
@@ -1106,7 +1147,9 @@ Proof
     rpt GEN_TAC >> STRIP_TAC
  >> CONJ_ASM1_TAC
  >- (EQ_TAC >> DISCH_TAC >| (* 2 subgoals *)
-     [ MP_TAC (Q.SPECL [‘p’, ‘X’, ‘Y’, ‘M’, ‘[]’] subterm_tpm_lemma) >> rw [],
+     [ (* goal 1 (of 2) *)
+       MP_TAC (Q.SPECL [‘p’, ‘X’, ‘Y’, ‘M’, ‘[]’] subterm_tpm_lemma) >> rw [],
+       (* goal 2 (of 2) *)
        MP_TAC (Q.SPECL [‘p’, ‘Y’, ‘X’, ‘M’, ‘[]’] subterm_tpm_lemma) >> rw [] ])
  >> DISCH_TAC
  >> MP_TAC (Q.SPECL [‘p’, ‘X’, ‘Y’, ‘M’, ‘[]’] (cj 2 subterm_tpm_lemma))
@@ -1129,6 +1172,49 @@ Proof
  >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM)
  >> qabbrev_tac ‘N = subterm' X M p’
  >> rw [principle_hnf_tpm']
+QED
+
+(* needs: subterm_width_thm, subterm_hnf_children_size_cong
+
+        subterm' Z ([P/y] N) t = [P/y] (subterm' Z N t)
+   ------------------------------------
+    0.  FINITE X
+    1.  h::t IN ltree_paths (BTe X M)
+    2.  subterm X M (h::t) <> NONE
+    3.  solvable M
+    4.  Abbrev (M0 = principle_hnf M)
+    5.  hnf M0
+    6.  Abbrev (n = LAMl_size M0)
+    7.  Abbrev (vs = FRESH_list n (X UNION FV M))
+   11.  LENGTH vs = n
+   12.  Abbrev (M1 = principle_hnf (M0 @* MAP VAR vs))
+   13.  M0 = LAMl vs (VAR y @* args)
+   14.  M1 = VAR y @* args
+   15.  Abbrev (m = LENGTH args)
+   16.  Abbrev (w = subterm_width M (h::t))
+   17.  m <= w
+   18.  Abbrev (P = permutator w)
+   19.  Abbrev (Z = X UNION FV M UNION set vs)
+   20.  FINITE Z
+   21.  FV M1 SUBSET Z
+   22.  h < m
+   23.  Abbrev (N = EL h args)
+ *)
+Theorem subterm_subst_cong :
+    !p X M P. FINITE X ==> (*
+              p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE /\
+              P = permutator (subterm_width M p) ==> *)
+              subterm' X ([P/y] M) p = [P/y] (subterm' X M p)
+Proof
+    Induct_on ‘p’ >- rw []
+ >> rpt STRIP_TAC
+ (* BEGIN Michael Norrish's tactics *)
+ >> CONV_TAC (UNBETA_CONV “subterm X M (h::p)”)
+ >> qmatch_abbrev_tac ‘f _’
+ >> RW_TAC bool_ss [subterm_of_solvables]
+ >> simp [Abbr ‘f’]
+ (* END Michael Norish's tactics. *)
+ >> cheat
 QED
 
 (*---------------------------------------------------------------------------*
@@ -2133,45 +2219,15 @@ Proof
  >> reverse CONJ_TAC
  >- (rw [Abbr ‘Ms’] \\
      Q.EXISTS_TAC ‘p'’ >> art [])
- >> Know ‘!p'. p' <<= p ==> subterm X M p' <> NONE’
- >- (Q.X_GEN_TAC ‘p'’ >> STRIP_TAC \\
-     CCONTR_TAC \\
-     POP_ASSUM (MP_TAC o (REWRITE_RULE [Once subterm_is_none_iff_children])) \\
-     DISCH_THEN (MP_TAC o (Q.SPEC ‘p’)) >> rw [])
- >> DISCH_TAC
+ >> ‘!p'. p' <<= p ==> subterm X M p' <> NONE’
+       by PROVE_TAC [cj 1 subterm_solvable_lemma]
  (* applying subterm_hnf_children_size_cong *)
  >> MATCH_MP_TAC subterm_hnf_children_size_cong >> rw []
  >- (POP_ASSUM MATCH_MP_TAC \\
      MATCH_MP_TAC IS_PREFIX_TRANS \\
      Q.EXISTS_TAC ‘FRONT p’ >> art [] \\
      MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art [])
- (* stage work *)
- >> Q.PAT_X_ASSUM ‘p' <<= FRONT p’ MP_TAC
- >> Suff ‘!l. l <> [] /\ l <<= p ==> solvable (subterm' X M (FRONT l))’
- >- (DISCH_TAC \\
-     DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [IS_PREFIX_EQ_TAKE])) \\
-     Know ‘p' = FRONT (TAKE (SUC n) p)’
-     >- (Know ‘FRONT (TAKE (SUC n) p) = TAKE (SUC n - 1) p’
-         >- (MATCH_MP_TAC FRONT_TAKE \\
-             rfs [LENGTH_FRONT]) >> Rewr' \\
-         POP_ASSUM (ONCE_REWRITE_TAC o wrap) >> simp [] \\
-         MATCH_MP_TAC TAKE_FRONT >> rfs [LENGTH_FRONT]) >> Rewr' \\
-     FIRST_X_ASSUM MATCH_MP_TAC \\
-     qabbrev_tac ‘l = TAKE (SUC n) p’ \\
-     CONJ_TAC
-     >- (rfs [LENGTH_FRONT, NOT_NIL_EQ_LENGTH_NOT_0, Abbr ‘l’, LENGTH_TAKE]) \\
-     rw [IS_PREFIX_EQ_TAKE] \\
-     Q.EXISTS_TAC ‘SUC n’ >> rw [Abbr ‘l’] \\
-     rfs [LENGTH_FRONT])
- >> rpt STRIP_TAC
- >> MP_TAC (Q.SPECL [‘l’, ‘X’, ‘M’] subterm_is_none_iff_parent_unsolvable)
- >> ‘l IN ltree_paths (BTe X M)’ by PROVE_TAC [ltree_paths_inclusive]
- >> simp []
- >> Suff ‘subterm X M (FRONT l) <> NONE’ >- PROVE_TAC []
- >> FIRST_X_ASSUM MATCH_MP_TAC
- >> MATCH_MP_TAC IS_PREFIX_TRANS
- >> Q.EXISTS_TAC ‘l’ >> rw []
- >> MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []
+ >> PROVE_TAC [cj 2 subterm_solvable_lemma]
 QED
 
 (* Lemma 10.3.6 (ii) [1, p.247]:
@@ -2204,7 +2260,7 @@ Theorem Boehm_transform_exists_lemma2 :
     !X M p. FINITE X /\
             p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
             ?pi. Boehm_transform pi /\ is_ready (apply pi M) /\
-                 ?fm Z Z'. subterm' Z (apply pi M) p == fm ' (subterm' Z' M p)
+                 ?fm Z Z'. subterm' Z (apply pi M) p = fm ' (subterm' Z' M p)
 Proof
     rpt STRIP_TAC
  (* trivial case: unsolvable M (useless) *)
@@ -2473,13 +2529,10 @@ Proof
   *)
  >> qexistsl_tac [‘Z’, ‘Y’]
  (* RHS rewriting from M to M0 *)
- >> MATCH_MP_TAC lameq_TRANS
- >> Q.EXISTS_TAC ‘[P/y] (subterm' Y M0 p)’
- >> reverse CONJ_TAC
- >- (irule lameq_sub_cong \\
-     Suff ‘subterm Y M0 p = subterm Y M p’ >- rw [] \\
-     qunabbrev_tac ‘M0’ \\
+ >> Know ‘subterm Y M0 p = subterm Y M p’
+ >- (qunabbrev_tac ‘M0’ \\
      MATCH_MP_TAC subterm_of_principle_hnf >> art [])
+ >> DISCH_THEN (ONCE_REWRITE_TAC o wrap o SYM)
  (* LHS rewriting from M to M0 *)
  >> Know ‘subterm' Z (apply (p3 ++ p2 ++ p1) M) p =
           subterm' Z (VAR b @* args' @* MAP VAR as) p’
@@ -2557,31 +2610,10 @@ Proof
  >> Q.PAT_X_ASSUM ‘~MEM y l’                   K_TAC
  >> Q.PAT_X_ASSUM ‘LENGTH as = q - m’          K_TAC
  >> qunabbrevl_tac [‘l’, ‘as’, ‘b’]
- (*
-    NOTE: here, the main problem is that we must access the property of q, i.e.
-    it's size is large enough for all subterms until ‘subterm ? M p’. But the
-    related assumptions are in ‘subterm' X M’:
-
-    5.  Abbrev (s = {p' | p' <> [] /\ p' <<= h::t})
-    6.  Abbrev (J = IMAGE (\e. hnf_children_size (principle_hnf (subterm' X M (FRONT e)))) s)
-    9.  Abbrev (q = MAX_SET J)
-
-    Let N0 = subterm' X M (FRONT t), where t <> [] /\ t <<= h::t (:= p), now I think
-    we must prove that the above well-defined ‘q’ is not a function of X, i.e. changing X
-    to Y or Z doesn't change the value of q.
-
-    This is possible, because our definition of ‘subterm’ (and also ‘BT_generator’) is
-    guaranteed to be correct for whatever input excluded list, and any number resulting
-    from them, e.g. hnf_children_size (principle_hnf (subterm' ...)), must be stable.
-
-    For now, let's proceed with the current goal and see when we start to need that.
-
-    current goal: subterm' Z ([P/y] N) t == [P/y] (subterm' Z N t)
-  *)
- >> Q.PAT_X_ASSUM ‘FINITE Y’ K_TAC
+ >> Q.PAT_X_ASSUM ‘FINITE Y’                   K_TAC
  >> qunabbrev_tac ‘Y’
- (* applying subterm_width_thm and subterm_hnf_children_size_cong *)
- >> cheat
+ (* applying subterm_subst_cong *)
+ >> MATCH_MP_TAC subterm_subst_cong >> art []
 QED
 
 (* Proposition 10.3.7 (i) [1, p.248] (Boehm out lemma)
