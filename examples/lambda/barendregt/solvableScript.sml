@@ -1500,7 +1500,6 @@ Proof
  >> MATCH_MP_TAC hnf_has_hnf >> rw [hnf_appstar]
 QED
 
-(* NOTE: ‘DISJOINT (set vs) (FV M)’ cannot be further improved with a smaller M *)
 Theorem principle_hnf_denude_thm :
     !l M vs y args. solvable M /\
        ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
