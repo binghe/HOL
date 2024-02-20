@@ -1174,49 +1174,6 @@ Proof
  >> rw [principle_hnf_tpm']
 QED
 
-(* needs: subterm_width_thm, subterm_hnf_children_size_cong
-
-        subterm' Z ([P/y] N) t = [P/y] (subterm' Z N t)
-   ------------------------------------
-    0.  FINITE X
-    1.  h::t IN ltree_paths (BTe X M)
-    2.  subterm X M (h::t) <> NONE
-    3.  solvable M
-    4.  Abbrev (M0 = principle_hnf M)
-    5.  hnf M0
-    6.  Abbrev (n = LAMl_size M0)
-    7.  Abbrev (vs = FRESH_list n (X UNION FV M))
-   11.  LENGTH vs = n
-   12.  Abbrev (M1 = principle_hnf (M0 @* MAP VAR vs))
-   13.  M0 = LAMl vs (VAR y @* args)
-   14.  M1 = VAR y @* args
-   15.  Abbrev (m = LENGTH args)
-   16.  Abbrev (w = subterm_width M (h::t))
-   17.  m <= w
-   18.  Abbrev (P = permutator w)
-   19.  Abbrev (Z = X UNION FV M UNION set vs)
-   20.  FINITE Z
-   21.  FV M1 SUBSET Z
-   22.  h < m
-   23.  Abbrev (N = EL h args)
- *)
-Theorem subterm_subst_cong :
-    !p X M P. FINITE X ==> (*
-              p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE /\
-              P = permutator (subterm_width M p) ==> *)
-              subterm' X ([P/y] M) p = [P/y] (subterm' X M p)
-Proof
-    Induct_on ‘p’ >- rw []
- >> rpt STRIP_TAC
- (* BEGIN Michael Norrish's tactics *)
- >> CONV_TAC (UNBETA_CONV “subterm X M (h::p)”)
- >> qmatch_abbrev_tac ‘f _’
- >> RW_TAC bool_ss [subterm_of_solvables]
- >> simp [Abbr ‘f’]
- (* END Michael Norish's tactics. *)
- >> cheat
-QED
-
 (*---------------------------------------------------------------------------*
  * FV (free variables) and BV (binding variables) of Boehm trees
  *---------------------------------------------------------------------------*)
@@ -2230,6 +2187,96 @@ Proof
  >> PROVE_TAC [cj 2 subterm_solvable_lemma]
 QED
 
+(* needs: subterm_width_thm, subterm_hnf_children_size_cong, subterm_solvable_lemma
+
+        subterm' Z ([P/y] N) t = [P/y] (subterm' Z N t)
+   ------------------------------------
+    0.  FINITE X
+    1.  h::t IN ltree_paths (BTe X M)
+    2.  subterm X M (h::t) <> NONE
+    3.  solvable M
+    4.  Abbrev (M0 = principle_hnf M)
+    5.  hnf M0
+    6.  Abbrev (n = LAMl_size M0)
+    7.  Abbrev (vs = FRESH_list n (X UNION FV M))
+   11.  LENGTH vs = n
+   12.  Abbrev (M1 = principle_hnf (M0 @* MAP VAR vs))
+   13.  M0 = LAMl vs (VAR y @* args)
+   14.  M1 = VAR y @* args
+   15.  Abbrev (m = LENGTH args)
+   16.  Abbrev (w = subterm_width M (h::t))
+   17.  m <= w
+   18.  Abbrev (P = permutator w)
+   19.  Abbrev (Z = X UNION FV M UNION set vs)
+   20.  FINITE Z
+   21.  FV M1 SUBSET Z
+   22.  h < m
+   23.  Abbrev (N = EL h args)
+ *)
+Theorem subterm_subst_cong_lemma :
+    !X. FINITE X ==>
+        !l p M P d. l <<= p /\ p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE /\
+                    P = permutator d /\ subterm_width M p <= d ==>
+                    subterm' X ([P/y] M) l = [P/y] (subterm' X M l)
+Proof
+    rpt GEN_TAC >> DISCH_TAC (* FINITE X *)
+ >> Induct_on ‘l’ >- rw [] (* one goal left *)
+ >> RW_TAC std_ss []
+ (* common properties of ‘p’ *)
+ >> ‘(!q. q <<= p ==> subterm X M q <> NONE) /\
+     (!q. q <<= FRONT p ==> solvable (subterm' X M q))’
+       by PROVE_TAC [subterm_solvable_lemma]
+ (* rewriting ‘h::l <<= p’ *)
+ >> Cases_on ‘p’ >> fs []
+ >> Q.PAT_X_ASSUM ‘h = h'’ (fs o wrap o SYM)
+ >> rpt (Q.PAT_X_ASSUM ‘T’ K_TAC)
+ >> qabbrev_tac ‘P = permutator d’
+ >> Know ‘solvable M’
+ >- (Q.PAT_X_ASSUM ‘!q. q <<= FRONT (h::t) ==> solvable (subterm' X M q)’
+       (MP_TAC o (Q.SPEC ‘[]’)) >> rw [])
+ >> DISCH_TAC
+ >> Know ‘subterm X M (h::l) <> NONE’
+ >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [])
+ (* BEGIN Michael Norrish's tactics *)
+ >> CONV_TAC (UNBETA_CONV “subterm X M (h::l)”)
+ >> qmatch_abbrev_tac ‘f _’
+ >> RW_TAC bool_ss [subterm_of_solvables]
+ >> simp [Abbr ‘f’]
+ (* END Michael Norish's tactics. *)
+ >> STRIP_TAC
+ >> Know ‘solvable ([P/y] M)’
+ >- (
+     cheat)
+ >> DISCH_TAC
+ (* how to prove this? *)
+ >> Know ‘subterm X ([P/y] M) (h::l) <> NONE’
+ >- (
+     cheat)
+ (* BEGIN Michael Norrish's tactics *)
+ >> CONV_TAC (UNBETA_CONV “subterm X ([P/y] M) (h::l)”)
+ >> qmatch_abbrev_tac ‘f _’
+ >> RW_TAC bool_ss [subterm_of_solvables]
+ >> simp [Abbr ‘f’]
+ (* END Michael Norish's tactics. *)
+ >> Know ‘m' = m’ (* this requries property of P *)
+ >- (
+     cheat)
+ >> DISCH_THEN (rw o wrap)
+ (* stage work *)
+ >> cheat
+QED
+
+Theorem subterm_subst_cong :
+    !p X M y P d. FINITE X /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE /\
+                  P = permutator d /\ subterm_width M p <= d ==>
+                  subterm' X ([P/y] M) p = [P/y] (subterm' X M p)
+Proof
+    rpt STRIP_TAC
+ >> Cases_on ‘p = []’ >- rw []
+ >> irule subterm_subst_cong_lemma >> art []
+ >> qexistsl_tac [‘d’, ‘p’] >> rw []
+QED
+
 (* Lemma 10.3.6 (ii) [1, p.247]:
 
    NOTE: The construction of ‘pi’ needs a fixed ltree path ‘p’, so that we can
@@ -2300,10 +2347,10 @@ Proof
  >> DISCH_TAC
  >> qabbrev_tac ‘m = LENGTH args’
  (* using ‘subterm_width’ and applying subterm_width_thm *)
- >> qabbrev_tac ‘w = subterm_width M p’
- >> Know ‘m <= w’
+ >> qabbrev_tac ‘d = subterm_width M p’
+ >> Know ‘m <= d’
  >- (MP_TAC (Q.SPECL [‘X’, ‘M’, ‘p’, ‘[]’] subterm_width_thm) \\
-     rw [Abbr ‘w’])
+     rw [Abbr ‘d’])
  >> DISCH_TAC
  (* p1 is the first Boehm transformation for removing abstractions of M0 *)
  >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE (MAP VAR vs))’
@@ -2315,7 +2362,7 @@ Proof
     variables. The excluded list is at least X and FV M, and then ‘vs’.
     But since P is a closed term, these fresh variables seem irrelevant...
   *)
- >> qabbrev_tac ‘P = permutator w’
+ >> qabbrev_tac ‘P = permutator d’
  >> qabbrev_tac ‘p2 = [[P/y]]’
  >> ‘Boehm_transform p2’ by rw [Abbr ‘p2’]
  >> ‘apply p2 M1 = P @* MAP [P/y] args’ by rw [Abbr ‘p2’, appstar_SUB]
@@ -2346,8 +2393,8 @@ Proof
       Suff ‘M0 @* MAP VAR vs == M1’ >- PROVE_TAC [lameq_solvable_cong] \\
       rw [])
  >> DISCH_TAC
- >> qabbrev_tac ‘l = FRESH_list (w - m + 1) Z’
- >> Know ‘ALL_DISTINCT l /\ DISJOINT (set l) Z /\ LENGTH l = w - m + 1’
+ >> qabbrev_tac ‘l = FRESH_list (d - m + 1) Z’
+ >> Know ‘ALL_DISTINCT l /\ DISJOINT (set l) Z /\ LENGTH l = d - m + 1’
  >- (rw [Abbr ‘l’, FRESH_list_def])
  >> STRIP_TAC
  (* now recover the old definition of Y *)
@@ -2360,7 +2407,7 @@ Proof
        (STRIP_ASSUME_TAC o (SIMP_RULE (srw_ss()) [DISJOINT_ALT']))
  >> ‘l <> []’ by rw [NOT_NIL_EQ_LENGTH_NOT_0]
  >> qabbrev_tac ‘as = FRONT l’
- >> ‘LENGTH as = w - m’ by rw [Abbr ‘as’, LENGTH_FRONT]
+ >> ‘LENGTH as = d - m’ by rw [Abbr ‘as’, LENGTH_FRONT]
  >> qabbrev_tac ‘b = LAST l’
  >> Know ‘l = SNOC b as’
  >- (ASM_SIMP_TAC std_ss [Abbr ‘as’, Abbr ‘b’, SNOC_LAST_FRONT])
@@ -2441,7 +2488,7 @@ Proof
      >- (simp [appstar_SUB] \\
          Suff ‘MAP [P/y] (MAP VAR (SNOC b as)) = MAP VAR (SNOC b as)’ >- Rewr \\
          Q.PAT_X_ASSUM ‘l = SNOC b as’ (ONCE_REWRITE_TAC o wrap o SYM) \\
-         Q.PAT_X_ASSUM ‘LENGTH l = w - m + 1’ K_TAC \\
+         Q.PAT_X_ASSUM ‘LENGTH l = d - m + 1’ K_TAC \\
          rw [LIST_EQ_REWRITE, EL_MAP] \\
          MATCH_MP_TAC lemma14b \\
          REWRITE_TAC [FV_thm, IN_SING] \\
@@ -2502,7 +2549,7 @@ Proof
          >- (MATCH_MP_TAC lemma14b >> fs [MEM_SNOC]) >> Rewr' \\
          simp [Abbr ‘P’, GSYM appstar_APPEND] \\
          REWRITE_TAC [GSYM solvable_iff_has_hnf] \\
-         Know ‘permutator w @* (args' ++ MAP VAR as) @@ VAR b ==
+         Know ‘permutator d @* (args' ++ MAP VAR as) @@ VAR b ==
                VAR b @* (args' ++ MAP VAR as)’
          >- (MATCH_MP_TAC permutator_thm >> rw []) >> DISCH_TAC \\
          Suff ‘solvable (VAR b @* (args' ++ MAP VAR as))’
@@ -2613,7 +2660,9 @@ Proof
  >> Q.PAT_X_ASSUM ‘FINITE Y’                   K_TAC
  >> qunabbrev_tac ‘Y’
  (* applying subterm_subst_cong *)
- >> MATCH_MP_TAC subterm_subst_cong >> art []
+ >> MATCH_MP_TAC subterm_subst_cong
+ >> Q.EXISTS_TAC ‘d’ >> simp [Abbr ‘P’]
+ >> cheat (* not hard *)
 QED
 
 (* Proposition 10.3.7 (i) [1, p.248] (Boehm out lemma)
