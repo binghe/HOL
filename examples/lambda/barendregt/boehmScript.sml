@@ -962,9 +962,10 @@ Theorem subterm_tpm_lemma :
     !p X Y M pi. FINITE X /\ FINITE Y ==>
                 (subterm X M p = NONE ==> subterm Y (tpm pi M) p = NONE) /\
                 (subterm X M p <> NONE ==>
-                 tpm_rel (subterm' X M p) (subterm' Y (tpm pi M) p))
+                 ?pi'. tpm pi' (subterm' X M p) = subterm' Y (tpm pi M) p)
 Proof
-    Induct_on ‘p’ >- rw []
+    Induct_on ‘p’
+ >- (rw [] >> Q.EXISTS_TAC ‘pi’ >> rw [])
  >> rpt GEN_TAC >> STRIP_TAC
  >> reverse (Cases_on ‘solvable M’)
  >- (‘unsolvable (tpm pi M)’ by PROVE_TAC [solvable_tpm] \\
@@ -1142,7 +1143,7 @@ QED
 Theorem subterm_tpm_cong :
     !p X Y M. FINITE X /\ FINITE Y ==>
              (subterm X M p = NONE <=> subterm Y M p = NONE) /\
-             (subterm X M p <> NONE ==> tpm_rel (subterm' X M p) (subterm' Y M p))
+             (subterm X M p <> NONE ==> ?pi. tpm pi (subterm' X M p) = subterm' Y M p)
 Proof
     rpt GEN_TAC >> STRIP_TAC
  >> CONJ_ASM1_TAC
@@ -1167,8 +1168,7 @@ Theorem subterm_hnf_children_size_cong :
 Proof
     rpt STRIP_TAC
  >> ‘subterm Y M p <> NONE /\
-     tpm_rel (subterm' X M p) (subterm' Y M p)’ by METIS_TAC [subterm_tpm_cong]
- >> fs [tpm_rel_def]
+     ?pi. tpm pi (subterm' X M p) = subterm' Y M p’ by METIS_TAC [subterm_tpm_cong]
  >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM)
  >> qabbrev_tac ‘N = subterm' X M p’
  >> rw [principle_hnf_tpm']

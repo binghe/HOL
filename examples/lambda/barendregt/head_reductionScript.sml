@@ -1863,8 +1863,8 @@ Proof
 QED
 
 (* NOTE: ‘permutator n’ contains n + 1 binding variables. By appending at most n
-   arbitrary terms, each head reduction step consumes just one of them, eventuall
-   there should be one more fresh variable left, forming a hnf.
+   arbitrary terms, each head reduction step consumes just one of them,
+   eventually there should be one more fresh variable left, forming a hnf.
 
    NOTE2: ‘LENGTH xs = n - LENGTH Ns’ can be part of the conclusion.
  *)
