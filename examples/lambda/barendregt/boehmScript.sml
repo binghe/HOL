@@ -975,7 +975,7 @@ Proof
  >> qmatch_abbrev_tac ‘P _’
  >> RW_TAC bool_ss [subterm_of_solvables]
  >> simp [Abbr ‘P’]
- (* END Michael Norish's tactics.
+ (* END Michael Norrish's tactics.
     preparing for expanding ‘subterm' Y (tpm pi M) (h::p)’ *)
  >> qabbrev_tac ‘M0' = principle_hnf (tpm pi M)’
  >> Know ‘M0' = tpm pi M0’
@@ -998,7 +998,7 @@ Proof
  >> qmatch_abbrev_tac ‘P _’
  >> RW_TAC bool_ss [subterm_of_solvables]
  >> simp [Abbr ‘P’]
- (* END Michael Norish's tactics. *)
+ (* END Michael Norrish's tactics. *)
  >> Q.PAT_X_ASSUM ‘tpm pi M0 = principle_hnf (tpm pi M)’ (rfs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘n  = n'’  (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘n  = n''’ (fs o wrap o SYM)
@@ -1261,13 +1261,11 @@ End
 Theorem ltree_paths_fromPaths :
     !X. ltree_paths (fromPaths X) = X
 Proof
-    cheat
 QED
 
 Theorem fromPaths_ltree_paths :
     !(A :naked_tree). fromPaths (ltree_paths A) = A
 Proof
-    cheat
 QED
 
 (* ‘denude (A :'a ltree)’ (or |A| in textbook) is the underlying naked tree of A *)
@@ -1278,7 +1276,6 @@ End
 Theorem denude_alt :
     !A. denude A = fromPaths (ltree_paths A)
 Proof
-    cheat
 QED
  *)
 
@@ -1369,7 +1366,6 @@ QED
 Theorem le_eta_expansion :
     !A B ts. ts extends A ==> le_eta A (eta_generate A ts)
 Proof
-    cheat
 QED
  *)
 
@@ -1690,7 +1686,6 @@ Overload "=e=" = “tree_eta_equiv”
 Theorem tree_eta_equiv_thm :
     !A B. tree_eta_equiv A B <=> !p. subtree_eta_equiv p A B
 Proof
-    cheat
 QED
  *)
 
@@ -2217,7 +2212,7 @@ Theorem subterm_subst_cong_lemma :
     !X. FINITE X ==>
         !l p M P d. l <<= p /\ p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE /\
                     P = permutator d /\ subterm_width M p <= d ==>
-                    subterm' X ([P/y] M) l = [P/y] (subterm' X M l)
+                    subterm' X ([P/v] M) l = [P/v] (subterm' X M l)
 Proof
     rpt GEN_TAC >> DISCH_TAC (* FINITE X *)
  >> Induct_on ‘l’ >- rw [] (* one goal left *)
@@ -2226,6 +2221,7 @@ Proof
  >> ‘(!q. q <<= p ==> subterm X M q <> NONE) /\
      (!q. q <<= FRONT p ==> solvable (subterm' X M q))’
        by PROVE_TAC [subterm_solvable_lemma]
+ >> qabbrev_tac ‘w = subterm_width M p’
  (* rewriting ‘h::l <<= p’ *)
  >> Cases_on ‘p’ >> fs []
  >> Q.PAT_X_ASSUM ‘h = h'’ (fs o wrap o SYM)
@@ -2242,13 +2238,52 @@ Proof
  >> qmatch_abbrev_tac ‘f _’
  >> RW_TAC bool_ss [subterm_of_solvables]
  >> simp [Abbr ‘f’]
- (* END Michael Norish's tactics. *)
+ (* END Michael Norrish's tactics. *)
  >> STRIP_TAC
- >> Know ‘solvable ([P/y] M)’
- >- (
-     cheat)
+ (* getting explicit representation of M0 *)
+ >> Know ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (X UNION FV M0) /\ LENGTH vs = n’
+ >- rw [Abbr ‘vs’, FRESH_list_def]
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
+ >> ‘hnf M0’ by PROVE_TAC [hnf_principle_hnf']
+ >> qunabbrev_tac ‘M1’
+ >> hnf_tac (“M0 :term”, “vs :string list”,
+             “M1 :term”, “y :string”, “args :term list”)
+ >> ‘TAKE n vs = vs’ by rw [TAKE_LENGTH_ID_rwt]
+ >> POP_ASSUM (rfs o wrap)
+ >> ‘hnf M1’ by rw [hnf_appstar]
+ >> ‘LENGTH args = m’ by rw [Abbr ‘m’]
+ >> Know ‘m <= w’
+ >- (MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’, ‘[]’] subterm_width_thm) \\
+     rw [Abbr ‘w’])
  >> DISCH_TAC
- (* how to prove this? *)
+ (* NOTE: ‘[P/v] M’ is solvable iff ‘[P/v] M0’ is solvable, the latter is either
+    already a hnf (v <> y), or can be head-reduced to a hnf (v = y).
+  *)
+ >> Know ‘solvable ([P/v] M)’
+ >- (‘M0 == M’ by rw [Abbr ‘M0’, lameq_principle_hnf'] \\
+     ‘[P/v] M0 == [P/v] M’ by rw [lameq_sub_cong] \\
+     Suff ‘solvable ([P/v] M0)’ >- PROVE_TAC [lameq_solvable_cong] \\
+     Cases_on ‘MEM v vs’
+     >- (Suff ‘[P/v] M0 = M0’
+         >- (rw [solvable_iff_has_hnf] \\
+             MATCH_MP_TAC hnf_has_hnf >> rw [hnf_appstar]) \\
+         MATCH_MP_TAC lemma14b \\
+         rw [FV_LAMl]) \\
+    ‘FV P = {}’ by rw [Abbr ‘P’, FV_permutator] \\
+    ‘DISJOINT (set vs) (FV P)’ by rw [DISJOINT_ALT'] \\
+     simp [LAMl_SUB, appstar_SUB] \\
+     reverse (Cases_on ‘y = v’)
+     >- (simp [SUB_THM, solvable_iff_has_hnf] \\
+         MATCH_MP_TAC hnf_has_hnf >> rw [hnf_appstar]) \\
+     simp [solvable_iff_has_hnf, has_hnf_thm] \\
+     qabbrev_tac ‘args' = MAP [P/v] args’ \\
+    ‘LENGTH args' = m’ by rw [Abbr ‘args'’] \\
+  (* applying permutator_hreduce_thm *)
+     MP_TAC (Q.SPECL [‘d’, ‘args'’] permutator_hreduce_thm) \\
+     rw [Abbr ‘P’] \\
+     Q.EXISTS_TAC ‘LAMl xs (VAR y @* args')’ >> rw [hnf_appstar])
+ >> DISCH_TAC
+ (* How to prove this? perhaps “m = m'” is needed first *)
  >> Know ‘subterm X ([P/y] M) (h::l) <> NONE’
  >- (
      cheat)
@@ -2257,7 +2292,7 @@ Proof
  >> qmatch_abbrev_tac ‘f _’
  >> RW_TAC bool_ss [subterm_of_solvables]
  >> simp [Abbr ‘f’]
- (* END Michael Norish's tactics. *)
+ (* END Michael Norrish's tactics. *)
  >> Know ‘m' = m’ (* this requries property of P *)
  >- (
      cheat)
