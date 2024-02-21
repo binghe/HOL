@@ -1,6 +1,6 @@
 (* Copyright (c) 2009-2012 Tjark Weber. All rights reserved. *)
 
-(* Unit tests for HolSmtLib *)
+(* HolSmtLib tests *)
 open HolKernel Parse boolLib bossLib;
 
 val _ = print "Testing HolSmtLib\n"
@@ -40,13 +40,9 @@ val _ = if Z3.is_configured () then () else
 
 local
 
-fun die s =
-  if !Globals.interactive then
-    raise (Fail s)
-  else (
-    print ("\n" ^ s ^ "\n");
-    OS.Process.exit OS.Process.failure
-  )
+val die = Unittest.die
+
+fun term_with_types t = Lib.with_flag(show_types, true) Hol_pp.term_to_string t
 
 (* provable terms: theorem expected *)
 fun expect_thm name smt_tac t =
@@ -55,14 +51,14 @@ fun expect_thm name smt_tac t =
     val thm = Tactical.TAC_PROOF (([], t), smt_tac)
       handle Feedback.HOL_ERR {origin_structure, origin_function, message} =>
         die ("Test of solver '" ^ name ^ "' failed on term '" ^
-          Hol_pp.term_to_string t ^ "': exception HOL_ERR (in " ^
+          term_with_types t ^ "': exception HOL_ERR (in " ^
           origin_structure ^ "." ^ origin_function ^ ", message: " ^ message ^
           ")")
   in
     if null (Thm.hyp thm) andalso Thm.concl thm ~~ t then ()
     else
       die ("Test of solver '" ^ name ^ "' failed on term '" ^
-        Hol_pp.term_to_string t ^ "': theorem differs (" ^
+        term_with_types t ^ "': theorem differs (" ^
         Hol_pp.thm_to_string thm ^ ")")
   end
 
@@ -72,7 +68,7 @@ fun expect_sat name smt_tac t =
     val _ = Tactical.TAC_PROOF (([], t), smt_tac)
   in
     die ("Test of solver '" ^ name ^ "' failed on term '" ^
-      Hol_pp.term_to_string t ^ "': exception expected")
+      term_with_types t ^ "': exception expected")
   end handle Feedback.HOL_ERR {origin_structure, origin_function, message} =>
     if origin_structure = "HolSmtLib" andalso
        origin_function = "GENERIC_SMT_TAC" andalso
@@ -82,7 +78,7 @@ fun expect_sat name smt_tac t =
       ()
     else
       die ("Test of solver '" ^ name ^ "' failed on term '" ^
-        Hol_pp.term_to_string t ^
+        term_with_types t ^
         "': exception HOL_ERR has unexpected argument values (in " ^
         origin_structure ^ "." ^ origin_function ^ ", message: " ^ message ^
         ")")
@@ -292,12 +288,14 @@ in
     (``(z:num) < x /\ z < y ==> z < MIN x y``, [thm_AUTO, thm_YO]),
     (``MIN (x:num) y < x``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
     (``MIN (x:num) 0 = 0``, [thm_AUTO, thm_YO]),
+    (``MIN (x:num) y = a ==> MIN a z <= x``, [thm_AUTO]),
 
-    (``MAX (x:num) y >= x``, [(*thm_AUTO,*) thm_YO]),
-    (``MAX (x:num) y >= y``, [(*thm_AUTO,*) thm_YO]),
-    (``(z:num) > x /\ z > y ==> z > MAX x y``, [(*thm_AUTO,*) thm_YO]),
+    (``MAX (x:num) y >= x``, [thm_AUTO, thm_YO]),
+    (``MAX (x:num) y >= y``, [thm_AUTO, thm_YO]),
+    (``(z:num) > x /\ z > y ==> z > MAX x y``, [thm_AUTO, thm_YO]),
     (``MAX (x:num) y > x``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
     (``MAX (x:num) 0 = x``, [thm_AUTO, thm_YO]),
+    (``MAX (x:num) y = a ==> x <= MAX a z``, [thm_AUTO]),
 
     (* int *)
 
@@ -407,9 +405,9 @@ in
 
     (``ABS (x:int) >= 0``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
     (``(ABS (x:int) = 0) = (x = 0)``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
-    (``(x:int) >= 0 ==> (ABS x = x)``, [thm_AUTO, thm_YO, thm_Z3, thm_Z3p]),
-    (``(x:int) <= 0 ==> (ABS x = ~x)``, [thm_AUTO, thm_YO, thm_Z3, thm_Z3p]),
-    (``ABS (ABS (x:int)) = ABS x``, [thm_AUTO, thm_YO, thm_Z3, thm_Z3p]),
+    (``(x:int) >= 0 ==> (ABS x = x)``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+    (``(x:int) <= 0 ==> (ABS x = ~x)``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+    (``ABS (ABS (x:int)) = ABS x``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
     (``ABS (x:int) = x``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
 
     (``int_min (x:int) y <= x``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
@@ -418,12 +416,14 @@ in
     (``int_min (x:int) y < x``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
     (``int_min (x:int) 0 = 0``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
     (``(x:int) >= 0 ==> (int_min x 0 = 0)``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+    (``int_min (x:int) y = a ==> int_min a z <= x``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p]),
 
     (``int_max (x:int) y >= x``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
     (``int_max (x:int) y >= y``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
     (``(z:int) > x /\ z > y ==> z > int_max x y``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
     (``int_max (x:int) y > x``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
     (``(x:int) >= 0 ==> (int_max x 0 = x)``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+    (``int_max (x:int) y = a ==> x <= int_max a z``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p]),
 
     (* real *)
 
@@ -448,8 +448,8 @@ in
     (``(x:real) * 42 = 42 * x``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
 
     (``(x:real) / 1 = x``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
-    (``x > 0 ==> (x:real) / 42 < x``, [(*thm_AUTO,*) thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
-    (``x < 0 ==> (x:real) / 42 > x``, [(*thm_AUTO,*) thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+    (``x > 0 ==> (x:real) / 42 < x``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+    (``x < 0 ==> (x:real) / 42 > x``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
 
     (``abs (x:real) >= 0``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
     (``(abs (x:real) = 0) = (x = 0)``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
@@ -458,18 +458,20 @@ in
     (``abs (abs (x:real)) = abs x``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
     (``abs (x:real) = x``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
 
-    (``min (x:real) y <= x``, [(*thm_AUTO,*) thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
-    (``min (x:real) y <= y``, [(*thm_AUTO,*) thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
-    (``(z:real) < x /\ z < y ==> z < min x y``, [(*thm_AUTO,*) thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+    (``min (x:real) y <= x``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+    (``min (x:real) y <= y``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+    (``(z:real) < x /\ z < y ==> z < min x y``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
     (``min (x:real) y < x``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
     (``min (x:real) 0 = 0``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
-    (``(x:real) >= 0 ==> (min x 0 = 0)``, [(*thm_AUTO,*) thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+    (``(x:real) >= 0 ==> (min x 0 = 0)``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+    (``min (x:real) y = a ==> min a z <= x``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p]),
 
-    (``max (x:real) y >= x``, [(*thm_AUTO,*) thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
-    (``max (x:real) y >= y``, [(*thm_AUTO,*) thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
-    (``(z:real) > x /\ z > y ==> z > max x y``, [(*thm_AUTO,*) thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+    (``max (x:real) y >= x``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+    (``max (x:real) y >= y``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+    (``(z:real) > x /\ z > y ==> z > max x y``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
     (``max (x:real) y > x``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
-    (``(x:real) >= 0 ==> (max x 0 = x)``, [(*thm_AUTO,*) thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+    (``(x:real) >= 0 ==> (max x 0 = x)``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+    (``max (x:real) y = a ==> x <= max a z``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p]),
 
     (* arithmetic inequalities: <, <=, >, >= *)
 
@@ -579,7 +581,7 @@ in
     (``(x = y) ==> (f x = f y)``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
     (``(x = y) ==> (f x y = f y x)``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
     (``(f (f x) = x) /\ (f (f (f (f (f x)))) = x) ==> (f x = x)``,
-      [(*thm_AUTO,*) thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+      [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
     (``(f x = f y) ==> (x = y)``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
 
     (* predicates *)
@@ -639,9 +641,9 @@ in
     (``(x, y) = (x, z)``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
     (``(x, y) = (z, y)``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
     (``(x, y) = (y, x)``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
-    (``((x, y) = (y, x)) = (x = y)``, [(*thm_AUTO,*) thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+    (``((x, y) = (y, x)) = (x = y)``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
     (``((x, y, z) = (y, z, x)) <=> (x = y) /\ (y = z)``,
-      [(*thm_AUTO,*) thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+      [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
     (``((x, y) = (u, v)) <=> (x = u) /\ (y = v)``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
 
     (``y = FST (x, y)``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
@@ -1052,6 +1054,9 @@ end
 (* actually perform tests                                                    *)
 (*****************************************************************************)
 
+val () = Unittest.run_unittests ()
+
+val () = print "Running functional tests...\n"
 val _ = map (fn (term, test_funs) =>
                map (fn test_fun => test_fun term) test_funs) tests
 

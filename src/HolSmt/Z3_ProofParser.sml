@@ -98,6 +98,7 @@ local
     ("elim-unused",     zero_prems "elim-unused"),
     ("hypothesis",      zero_prems "hypothesis"),
     ("iff-true",        one_prem "iff-true"),
+    ("intro-def",       zero_prems "intro-def"),
     ("lemma",           one_prem "lemma"),
     ("monotonicity",    list_prems "monotonicity"),
     ("mp",              two_prems "mp"),
@@ -124,6 +125,7 @@ local
           list_prems name token [] prems
         end)),
     ("trans",           two_prems "trans"),
+    ("trans*",          list_prems "trans*"),
     ("true-axiom",      zero_prems "true-axiom"),
     ("unit-resolution", list_prems "unit-resolution"),
 
@@ -296,6 +298,7 @@ local
       ("elim-unused",     zero_prems_pt ELIM_UNUSED),
       ("hypothesis",      zero_prems_pt HYPOTHESIS),
       ("iff-true",        one_prem_pt IFF_TRUE),
+      ("intro-def",       zero_prems_pt INTRO_DEF),
       ("lemma",           one_prem_pt LEMMA),
       ("monotonicity",    list_prems_pt MONOTONICITY),
       ("mp",              two_prems_pt MP),
@@ -308,6 +311,7 @@ local
       ("th-lemma-basic",  list_prems_pt TH_LEMMA_BASIC),
       ("th-lemma-bv",     list_prems_pt TH_LEMMA_BV),
       ("trans",           two_prems_pt TRANS),
+      ("trans*",          list_prems_pt TRANS_STAR),
       ("true-axiom",      zero_prems_pt TRUE_AXIOM),
       ("unit-resolution", list_prems_pt UNIT_RESOLUTION)
     ]
@@ -317,15 +321,15 @@ local
   (***************************************************************************)
 
   (* returns an extended proof; 't' must encode a proofterm *)
-  fun extend_proof proof (id, t) =
+  fun extend_proof (steps, vars) (id, t) =
   let
     val _ = if !Library.trace > 0 andalso
-      Option.isSome (Redblackmap.peek (proof, id)) then
+      Option.isSome (Redblackmap.peek (steps, id)) then
         WARNING "extend_proof"
           ("proofterm ID " ^ Int.toString id ^ " defined more than once")
       else ()
   in
-    Redblackmap.insert (proof, id, proofterm_of_term t)
+    (Redblackmap.insert (steps, id, proofterm_of_term t), vars)
   end
 
   (* distinguishes between a term definition and a proofterm
@@ -354,37 +358,94 @@ local
         proof)
   end
 
-  (* entry point into the parser (i.e., the grammar's start symbol) *)
-  fun parse_proof get_token (tydict, tmdict, proof) (rpars : int) =
+  fun undo_look_ahead symbols get_token =
   let
-    val _ = Library.expect_token "(" (get_token ())
+    val buffer = ref symbols
+    fun get_token' () =
+      case !buffer of
+        [] => get_token ()
+      | x::xs => (buffer := xs; x)
+  in
+    get_token'
+  end
+
+  fun parse_proof_inner get_token (tydict, tmdict, proof) (rpars : int) =
+  let
+    val () = Library.expect_token "(" (get_token ())
     val head = get_token ()
   in
-    if head = "let" then
+    if head = "proof" then
+      parse_proof_inner get_token (tydict, tmdict, proof) (rpars + 1)
+    else if head = "declare-fun" then
+      let
+        val (tm, tmdict) = SmtLib_Parser.parse_declare_fun get_token (tydict, tmdict)
+        val proof = Lib.apsnd (fn set => HOLset.add (set, tm)) proof
+      in
+        parse_proof_inner get_token (tydict, tmdict, proof) rpars
+      end
+    else if head = "let" then
       let
         val (tmdict, proof) = parse_definition get_token (tydict, tmdict, proof)
       in
-        parse_proof get_token (tydict, tmdict, proof) (rpars + 1)
+        parse_proof_inner get_token (tydict, tmdict, proof) (rpars + 1)
       end
     else if head = "error" then (
       (* some (otherwise valid) proofs are preceded by an error message,
          which we simply ignore *)
       get_token ();
       Library.expect_token ")" (get_token ());
-      parse_proof get_token (tydict, tmdict, proof) rpars
+      parse_proof_inner get_token (tydict, tmdict, proof) rpars
     ) else
       let
         (* undo look-ahead of 2 tokens *)
-        val buffer = ref ["(", head]
-        fun get_token' () =
-          case !buffer of
-            [] => get_token ()
-          | x::xs => (buffer := xs; x)
+        val get_token' = undo_look_ahead ["(", head] get_token
         val t = SmtLib_Parser.parse_term get_token' (tydict, tmdict)
       in
         (* Z3 assigns no ID to the final proof step; we use ID 0 *)
         extend_proof proof (0, t) before Lib.funpow rpars
           (fn () => Library.expect_token ")" (get_token ())) ()
+      end
+  end
+
+  (* entry point into the parser (i.e., the grammar's start symbol)
+
+     Z3 v2.19 proofs begin with:
+     ```
+     (error "...")          ; may or may not be present
+     (let ...
+     ```
+
+     Z3 v4 proofs begin with:
+     ```
+     (                      ; note the extra parenthesis
+       (declare-fun ...)    ; any number of these, maybe none
+       (proof
+         (let ...
+     ```
+     We'll try to seamlessly handle both styles of proof here. Namely,
+     for v4 proofs we'll consume the extra parenthesis here and then
+     continue parsing as normal. *)
+  fun parse_proof get_token state =
+  let
+    val () = Library.expect_token "(" (get_token ())
+    val token = get_token ()
+  in
+    if token = "let" orelse token = "error" then
+      (* Z3 v2.19 proof *)
+      let
+        (* undo look-ahead of the 2 tokens *)
+        val get_token' = undo_look_ahead ["(", token] get_token
+      in
+        parse_proof_inner get_token' state 0
+      end
+    else
+      (* Must be a Z3 v4 proof then *)
+      let
+        val () = Library.expect_token "(" token
+        (* leave the 1st parenthesis consumed and undo the 2nd *)
+        val get_token' = undo_look_ahead ["("] get_token
+      in
+        parse_proof_inner get_token' state 1
       end
   end
 
@@ -404,8 +465,9 @@ in
         Feedback.HOL_MESG "HolSmtLib: parsing Z3 proof"
       else ()
     val get_token = Library.get_token (Library.get_buffered_char instream)
+    val empty_proof = (Redblackmap.mkDict Int.compare, Term.empty_tmset)
     val proof = parse_proof get_token
-      (tydict, tmdict, Redblackmap.mkDict Int.compare) 0
+      (tydict, tmdict, empty_proof)
     val _ = if !Library.trace > 0 then
         WARNING "parse_stream" ("ignoring token '" ^ get_token () ^
           "' (and perhaps others) after proof")

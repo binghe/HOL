@@ -56,21 +56,39 @@ local
     (* keeps track of assumptions; (only) these may remain in the
        final theorem *)
     asserted_hyps : Term.term HOLset.set,
+    (* keeps track of definitions introduced by Z3; these get added during the
+       proof and are deleted at the end, just before returning the final theorem.
+       all of them should be of the form: ``name = term`` *)
+    definition_hyps : Term.term HOLset.set,
     (* stores certain theorems (proved by 'rewrite' or 'th_lemma') for
        later retrieval, to avoid re-reproving them *)
-    thm_cache : Thm.thm Net.net
+    thm_cache : Thm.thm Net.net,
+    (* contains all of the variables that Z3 has defined *)
+    var_set : Term.term HOLset.set
   }
 
   fun state_assert (s : state) (t : Term.term) : state =
     {
       asserted_hyps = HOLset.add (#asserted_hyps s, t),
-      thm_cache = #thm_cache s
+      definition_hyps = #definition_hyps s,
+      thm_cache = #thm_cache s,
+      var_set = #var_set s
+    }
+
+  fun state_define (s : state) (terms : Term.term list) : state =
+    {
+      asserted_hyps = #asserted_hyps s,
+      definition_hyps = HOLset.addList (#definition_hyps s, terms),
+      thm_cache = #thm_cache s,
+      var_set = #var_set s
     }
 
   fun state_cache_thm (s : state) (thm : Thm.thm) : state =
     {
       asserted_hyps = #asserted_hyps s,
-      thm_cache = Net.insert (Thm.concl thm, thm) (#thm_cache s)
+      definition_hyps = #definition_hyps s,
+      thm_cache = Net.insert (Thm.concl thm, thm) (#thm_cache s),
+      var_set = #var_set s
     }
 
   fun state_inst_cached_thm (s : state) (t : Term.term) : Thm.thm =
@@ -595,6 +613,64 @@ local
   fun z3_iff_true (state, thm, _) =
     (state, Thm.MP (Thm.SPEC (Thm.concl thm) VALID_IFF_TRUE) thm)
 
+  (* `intro-def` introduces a name for a term.
+
+     `t` will be in one of the following schematic forms:
+
+     1. name = term
+
+     2. ~name \/ term
+
+     3. (name \/ ~term) /\ (~name \/ term)
+
+     ... or, when the term is of the form `if cond then t1 else t2`:
+
+     4. (~cond \/ (name = t1)) /\ (cond \/ (name = t2))
+
+     We then instantiate the following theorem:
+
+     name = term |- t
+
+     The introduced assumption is added to a set of hypotheses (i.e. the set
+     of introduced definitions) stored in `state`. Since the variable names
+     used in these definitions are local names introduced by Z3 for the
+     purposes of completing the proof and should not otherwise be relevant in
+     either the remaining hypotheses or the conclusion of the final theorem,
+     we can remove all such definitions at the end of the proof.
+
+     We must take an additional precaution: if `term` is a Z3-defined variable
+     and it is "smaller" than `name`, then we must actually return the theorem:
+
+     term = name |- t
+
+     This is done to avoid ending up with circular definitions in the final
+     theorem. *)
+
+  fun z3_intro_def (state, t) =
+  let
+    val thm = List.hd (Net.match t Z3_ProformaThms.intro_def_thms)
+    val substs = Term.match_term (Thm.concl thm) t
+    val term_substs = Lib.fst substs
+    (* Check if the hypothesis should be changed from `name = term` to
+       `term = name`. Note that `name` and `term` are actually called `n` and
+       `t` in `intro_def_thms`, except for the 4th schematic form which doesn't
+       have `t` (nor does it need to be oriented). *)
+    fun is_varname s tm = Lib.fst (Term.dest_var tm) = s
+    val name = Option.valOf (Lib.subst_assoc (is_varname "n") term_substs)
+    val term_opt = Lib.subst_assoc (is_varname "t") term_substs
+    val is_oriented =
+      case term_opt of
+        NONE => true (* `term_opt` will be NONE in the 4th schematic form *)
+      | SOME term => Library.is_def_oriented (#var_set state) (name, term)
+    (* Orient the hypothesis if necessary *)
+    val thm = if is_oriented then thm else
+      Conv.HYP_CONV_RULE (fn _ => true) Conv.SYM_CONV thm
+    val inst_thm = Drule.INST_TY_TERM substs thm
+    val asl = Thm.hyp inst_thm
+  in
+    (state_define state asl, inst_thm)
+  end
+
   (*  [l1, ..., ln] |- F
      --------------------
      |- ~l1 \/ ... \/ ~ln
@@ -797,12 +873,48 @@ local
         profile "rewrite(10)(BBLAST)" blastLib.BBLAST_PROVE t
         handle Feedback.HOL_ERR _ =>
 
-        if term_contains_real_ty t then
+        if profile "rewrite(11.0)(contains_real)" term_contains_real_ty t then
           profile "rewrite(11.1)(REAL_ARITH)" RealField.REAL_ARITH t
         else
           profile "rewrite(11.2)(ARITH_PROVE)" intLib.ARITH_PROVE t
     in
       (state_cache_thm state thm, thm)
+    end
+
+    handle Feedback.HOL_ERR _ =>
+
+    (* If nothing worked, let's try unifying terms.
+       As a motivating example, when proving `(if x < y then x else y) <= x`,
+       Z3 v4.12.4 asks us to prove the following rewrite as one of the proof
+       steps:
+
+       ~(x + -1 * (if x + -1 * y >= 0 then y else x) >= 0) <=>
+       ~(x + -1 * $var$(z3name!0) >= 0)
+
+       ... where z3name!0 is a variable declared by Z3 at the beginning of its
+       proof certificate, but which we know nothing about at this point.
+
+       We use the following function to unify both sides of the equality such
+       that we obtain instantiations for these variables invented by Z3 (i.e. in
+       this example, we'll obtain ``z3name!0 = if x + -1 * y >= 0 then y else x``):
+
+       > Unify.simp_unify_terms [] ``<lhs>`` ``<rhs>``;
+
+       val it = [{redex = ``$var$(z3name!0)``, residue =
+         ``if x + -1 * y >= 0 then y else x``}]: (term, term) subst
+
+       We then prove the theorem by substituting the variable(s) and add
+       ``z3name!0 = if ... then y else x`` to the list of Z3-provided
+       definitions (as in the `z3_intro_def` handler), to make sure it gets
+       removed from the set of hypotheses of the final theorem. *)
+
+    let
+      val (lhs, rhs) = boolSyntax.dest_eq t
+      val thm = profile "rewrite(12)(unification)" Library.gen_instantiation
+        (lhs, rhs, #var_set state)
+      val asl = Thm.hyp thm
+    in
+      (state_define (state_cache_thm state thm) asl, thm)
     end
   end
 
@@ -889,6 +1001,35 @@ local
 
   fun z3_trans (state, thm1, thm2, t) =
     (state, Thm.TRANS thm1 thm2)
+
+  (* `z3_trans_star` is supposed to handle multiple symmetry and transitivity
+     rules. Z3 provides the following example:
+
+     A1 |- R a b   A2 |- R c b   A3 |- R c d
+     --------------------------------------- trans*
+                A1 u A2 u A3 |- R a d
+
+     Although more generally, the proof rule is supposed to handle any number of
+     theorems passed as arguments and any path between the elements.
+
+     R must be a symmetric and transitive relation. So far only equality has
+     been observed to be used as `R` (same as in the `symm` and `trans` rules),
+     although it's not inconceivable that it may be used for other relations as
+     well.
+
+     For the initial implementation, we rely on metisLib.METIS_TAC to find a
+     proof. However, if it becomes a bottleneck, a more specialized proof
+     handler could be implemented to improve performance. *)
+
+  fun z3_trans_star (state, thms, t) =
+  let
+    (* Gather all the hypotheses of all theorems together into a set of assumptions *)
+    fun join_fn (thm, asm_set) = HOLset.union (asm_set, Thm.hypset thm)
+    val asms = List.foldl join_fn Term.empty_tmset thms
+    val thm = Tactical.TAC_PROOF ((HOLset.listItems asms, t), metisLib.METIS_TAC thms)
+  in
+    (state, thm)
+  end
 
   fun z3_true_axiom (state, t) =
     (state, boolTheory.TRUTH)
@@ -1017,6 +1158,8 @@ local
         zero_prems state_proof "hypothesis" z3_hypothesis x continuation
     | thm_of_proofterm (state_proof, IFF_TRUE x) continuation =
         one_prem state_proof "iff_true" z3_iff_true x continuation
+    | thm_of_proofterm (state_proof, INTRO_DEF x) continuation =
+        zero_prems state_proof "intro_def" z3_intro_def x continuation
     | thm_of_proofterm (state_proof, LEMMA x) continuation =
         one_prem state_proof "lemma" z3_lemma x continuation
     | thm_of_proofterm (state_proof, MONOTONICITY x) continuation =
@@ -1044,26 +1187,28 @@ local
         list_prems state_proof "th_lemma[bv]" z3_th_lemma_bv x continuation []
     | thm_of_proofterm (state_proof, TRANS x) continuation =
         two_prems state_proof "trans" z3_trans x continuation
+    | thm_of_proofterm (state_proof, TRANS_STAR x) continuation =
+        list_prems state_proof "trans*" z3_trans_star x continuation []
     | thm_of_proofterm (state_proof, TRUE_AXIOM x) continuation =
         zero_prems state_proof "true_axiom" z3_true_axiom x continuation
     | thm_of_proofterm (state_proof, UNIT_RESOLUTION x) continuation =
         list_prems state_proof "unit_resolution" z3_unit_resolution x
           continuation []
     | thm_of_proofterm ((state, proof), ID id) continuation =
-        (case Redblackmap.peek (proof, id) of
+        (case Redblackmap.peek (Lib.fst proof, id) of
           SOME (THEOREM thm) =>
             continuation ((state, proof), thm)
         | SOME pt =>
             thm_of_proofterm ((state, proof), pt) (continuation o
               (* update the proof, replacing the original proofterm with
                  the theorem just derived *)
-              (fn ((state, proof), thm) =>
+              (fn ((state, (steps, vars)), thm) =>
                 (
                   if !Library.trace > 2 then
                     Feedback.HOL_MESG
                       ("HolSmtLib: updating proof at ID " ^ Int.toString id)
                   else ();
-                  ((state, Redblackmap.insert (proof, id, THEOREM thm)), thm)
+                  ((state, (Redblackmap.insert (steps, id, THEOREM thm), vars)), thm)
                 )))
         | NONE =>
             raise ERR "thm_of_proofterm"
@@ -1071,7 +1216,143 @@ local
     | thm_of_proofterm (state_proof, THEOREM thm) continuation =
         continuation (state_proof, thm)
 
+  (* Remove the definitions `defs` from the set of hypotheses in `thm`,
+     returning the resulting theorem, i.e.:
+
+     A u defs |- t
+     -------------  remove_definitions (defs, var_set)
+       A |- t
+
+     Each definition in `defs` must be of the form ``var = term``, where `var`
+     must not be free in `t` nor in `A` and must be in `var_set`.
+
+     There is a major complication: some definitions reference variables in
+     other definitions and they may even be duplicated (with and without
+     expansion), e.g.:
+
+     z1 = x + 1
+     z2 = x + 1 + 2
+     z2 = z1 + 2
+     z3 = 3 + y
+
+     Furthermore, another major complication is that such nested definitions
+     can easily cause exponential term blow-up in case all such definitions were
+     to be fully expanded (e.g. by substituting each variable with one of its
+     definitions), which might occur in a naive attempt at removing these
+     definitions. Therefore, a more careful implementation is warranted.
+
+     In general, the variable references can form a directed acyclic graph. For
+     efficiency purposes (explained later), we first find a variable that is not
+     referenced in any definition of the other variables.
+
+     In the above example, one such variable could be `z2` or `z3` (we'll pick
+     `z2` for this example), but not `z1`, since it is referenced in one of the
+     definitions of `z2`.
+
+     We then perform the following:
+
+     1. Gather all definitions of this variable. In this example, the
+     definitions for ``z2`` would be:
+
+     z2 = z1 + 2
+     z2 = x + 1 + 2
+
+     2. Instantiate the variable with one of its definitions (chosen
+     arbitrarily). In this example, it could result in the following hypotheses:
+
+     z1 + 2 = z1 + 2
+     z1 + 2 = x + 1 + 2
+
+     3. For each of these hypotheses, we create a theorem proving the hypothesis
+     so that we can remove it with Drule.PROVE_HYP. To prove such a theorem,
+     first we unify the terms on both sides of the equality, such that we obtain
+     new definitions for the variables in these hypotheses. For the first one,
+     no new definitions are needed, which means such a theorem can be proven
+     with REFL. For the second one, we get:
+
+     z1 = x + 1
+
+     We can then substitute `z1` with `x + 1`, then use REFL to prove the
+     theorem. This is implemented in `Library.gen_instantiation`. Note that this
+     theorem will have `z1 = x + 1` in its set of hypotheses, which
+     Drule.PROVE_HYP then adds to the set of hypotheses of `thm`.
+
+     However, this new hypothesis will be removed later when we process `z1`.
+     Often, these additional hypotheses are identical to pre-existing ones, so
+     they get deduplicated when added to the set of hypotheses of `thm`. By
+     processing variables in this specific order, we thus avoid doing a lot of
+     repeated work of removing the same definitions over and over again.
+
+     Once all the definitions of the variable we've chosen are removed, we
+     recurse into this same function, with the new set of definitions that are
+     to be removed (corresponding to one less variable). Note that in general,
+     at no point we needed to fully expand a definition (unless it's already
+     expanded). *)
+
+  fun remove_definitions (defs, var_set, thm): Thm.thm =
+    if HOLset.isEmpty defs then
+      thm
+    else
+      let
+        (* For convenience, `dest_defs` will contain a list of `(lhs, rhs)`
+           pairs, where `lhs` is the var being defined and `rhs` its
+           definition. *)
+        val dest_defs = List.map boolSyntax.dest_eq (HOLset.listItems defs)
+        val (lhs_l, rhs_l) = ListPair.unzip dest_defs
+        (* `ref_set` will contain the set of all variables being referenced *)
+        val ref_set = Term.FVL rhs_l Term.empty_tmset
+        (* `def_set` will contain the set of all variables being defined.
+           It should always be a subset of `var_set`. *)
+        val def_set = List.foldl (Lib.flip HOLset.add) Term.empty_tmset lhs_l
+
+        (* `unref_set` will contain the set of all the variables being defined
+           but not being referenced *)
+        val unref_set = HOLset.difference (def_set, ref_set)
+
+        val () =
+          if HOLset.isEmpty unref_set then
+            raise ERR "remove_definitions" "no unreferenced variables"
+          else
+            ()
+
+        (* Pick an arbitrary variable from `unref_set` *)
+        val var = Option.valOf (HOLset.find (fn _ => true) unref_set)
+
+        (* Get all the variable's definitions *)
+        fun filter_def (v, d) = if Term.term_eq v var then SOME d else NONE
+        val defs_to_remove = List.mapPartial filter_def dest_defs
+
+        (* Pick an arbitrary definition for instantiation *)
+        val inst = List.hd defs_to_remove
+
+        (* Instantiate the variable with the definition *)
+        val thm = Thm.INST [{redex = var, residue = inst}] thm
+
+        (* For each definition corresponding to this variable, create a theorem
+           that can eliminate the definition from the set of hypotheses of `thm` *)
+        val hyp_thms = List.map (fn def => Library.gen_instantiation (inst, def,
+          var_set)) defs_to_remove
+
+        (* Remove all the definitions corresponding to this variable *)
+        fun remove_hyp (hyp_thm, thm) = Drule.PROVE_HYP hyp_thm thm
+        val thm = List.foldl remove_hyp thm hyp_thms
+
+        (* Compute the new set of definitions to remove when recursing.
+           Basically, it's all the definitions in `thm`, i.e. all hypotheses of
+           the form ``var = def``, where ``var`` is in `var_set` *)
+        fun is_definition hyp = boolSyntax.is_eq hyp andalso
+          HOLset.member (var_set, Lib.fst (boolSyntax.dest_eq hyp))
+        fun add_def (hyp, set) =
+          if is_definition hyp then HOLset.add (set, hyp) else set
+        val new_defs = HOLset.foldl add_def Term.empty_tmset (Thm.hypset thm)
+      in
+        (* Recurse to remove the remaining variables' definitions *)
+        remove_definitions (new_defs, var_set, thm)
+      end
 in
+
+  (* For unit tests *)
+  val remove_definitions = remove_definitions
 
   (* returns a theorem that concludes ``F``, with its hypotheses (a
      subset of) those asserted in the proof *)
@@ -1084,7 +1365,9 @@ in
     (* initial state *)
     val state = {
       asserted_hyps = Term.empty_tmset,
-      thm_cache = Net.empty
+      definition_hyps = Term.empty_tmset,
+      thm_cache = Net.empty,
+      var_set = Lib.snd proof
     }
 
     (* ID 0 denotes the proof's root node *)
@@ -1093,13 +1376,17 @@ in
     val _ = Feq (Thm.concl thm) orelse
       raise ERR "check_proof" "final conclusion is not 'F'"
 
+    (* remove the definitions introduced by Z3 from the set of hypotheses *)
+    val final_thm = profile "check_proof(remove_definitions)" remove_definitions
+      (#definition_hyps state, #var_set state, thm)
+
     (* check that the final theorem contains no hyps other than those
        that have been asserted *)
-    val _ = profile "check_proof(hypcheck)" HOLset.isSubset (Thm.hypset thm,
+    val _ = profile "check_proof(hypcheck)" HOLset.isSubset (Thm.hypset final_thm,
         #asserted_hyps state) orelse
       raise ERR "check_proof" "final theorem contains additional hyp(s)"
   in
-    thm
+    final_thm
   end
 
 end  (* local *)

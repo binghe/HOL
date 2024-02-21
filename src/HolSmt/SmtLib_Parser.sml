@@ -399,7 +399,7 @@ local
       else
         raise ERR ("<" ^ name ^ ">") "wrong number of arguments"
   in
-    Library.extend_dict ((name, parsefn), tmdict)
+    (tm, Library.extend_dict ((name, parsefn), tmdict))
   end
 
   (* returns an extended 'tmdict', and the definition (as a formula) *)
@@ -474,7 +474,7 @@ local
     | "declare-fun" =>
       let
         val (logic, tydict, tmdict, asserted) = dest_state "declare-fun"
-        val tmdict = parse_declare_fun get_token (tydict, tmdict)
+        val (_, tmdict) = parse_declare_fun get_token (tydict, tmdict)
       in
         parse_commands get_token (SOME (logic, tydict, tmdict, asserted))
       end
@@ -524,6 +524,8 @@ local
     parse_commands get_token NONE
 
 in
+
+  val parse_declare_fun = parse_declare_fun
 
   val parse_type = parse_type
   val parse_type_list = parse_type_list
