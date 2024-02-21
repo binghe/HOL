@@ -2261,18 +2261,26 @@ Proof
  >> qmatch_abbrev_tac ‘f _’
  >> ASM_SIMP_TAC std_ss [subterm_of_solvables]
  >> LET_ELIM_TAC
+ >> Q.PAT_X_ASSUM ‘subterm _ (EL h (hnf_children M1)) l <> NONE’ MP_TAC
  >> simp [Abbr ‘f’, hnf_children_hnf]
- (* NOTE: Now we need to know the exact form of ‘principle_hnf ([P/v] M)’.
+ >> DISCH_TAC
+ >> qunabbrev_tac ‘Ms’ (* Ms is nowhere used (‘args’ was part of it) *)
+ (* NOTE:
+
+    Now we need to know the exact form of ‘principle_hnf ([P/v] M)’.
 
     First of all, we know that ‘principle_hnf M = LAMl vs (VAR y @* args)’. This
     means ‘M -h->* LAMl vs (VAR y @* args)’. Meanwhile, -h->* is substitutive,
-    thus ‘[P/v] M -h->* [P/v] LAMl vs (VAR y @* args)’. Depends on the nature
+    thus ‘[P/v] M -h->* [P/v] LAMl vs (VAR y @* args)’. Depending on the nature
     of ‘v’, the ending term ‘[P/v] LAMl vs (VAR y @* args)’ may or may not be
     a hnf. But it indeed has a hnf, as ‘solvable ([P/v] M)’ has been proved.
 
     Case 1 (MEM v vs): [P/v] LAMl vs (VAR y @* args) = LAMl vs (VAR y @* args)
     Case 2 (v <> y):   [P/v] LAMl vs (VAR y @* args) = LAMl vs (VAR y @* args')
-    Case 3 (v = y):    [P/v] LAMl vs (VAR y @* args) = LAMl vs (P @* args')
+    Case 3 (v = y):    [P/v] LAMl vs (VAR y @* args) = LAMl vs (P @* args'),
+        where LAMl vs (P @* args') -h->*
+              LAMl vs (LAMl xs (LAM z (VAR z @* args' @* MAP VAR xs))) =
+              LAMl (vs ++ xs ++ [z]) (VAR z @* args' @* MAP VAR xs), a hnf
 
     Only Case 3 needs further head reductions, but the final hnf is already clear
     when proving ‘solvable ([P/v] M)’. Easy.
