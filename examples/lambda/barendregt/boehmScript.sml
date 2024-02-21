@@ -2281,7 +2281,8 @@ Proof
   (* applying permutator_hreduce_thm *)
      MP_TAC (Q.SPECL [‘d’, ‘args'’] permutator_hreduce_thm) \\
      rw [Abbr ‘P’] \\
-     Q.EXISTS_TAC ‘LAMl xs (VAR y @* args')’ >> rw [hnf_appstar])
+     Q.EXISTS_TAC ‘LAMl xs (VAR y @* args' @* MAP VAR xs)’ \\
+     rw [hnf_appstar])
  >> DISCH_TAC
  (* How to prove this? perhaps “m = m'” is needed first *)
  >> Know ‘subterm X ([P/y] M) (h::l) <> NONE’

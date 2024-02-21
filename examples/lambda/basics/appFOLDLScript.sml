@@ -261,6 +261,15 @@ Proof
  >> Induct_on ‘vs’ >> rw []
 QED
 
+(* LAMl_ssub = ssub_LAM + LAMl_SUB *)
+Theorem LAMl_ssub :
+    !vs fm t. DISJOINT (FDOM fm) (set vs) /\
+             (!y. y IN FDOM fm ==> DISJOINT (FV (fm ' y)) (set vs)) ==>
+              fm ' (LAMl vs t) = LAMl vs (fm ' t)
+Proof
+    Induct_on ‘vs’ >> rw []
+QED
+
 Theorem tpm_LAMl:
   tpm π (LAMl vs M) = LAMl (listpm string_pmact π vs) (tpm π M)
 Proof
