@@ -1867,14 +1867,10 @@ val _ = hide "Y";
 (* NOTE: ‘permutator n’ contains n + 1 binding variables. Appending at most n
    arbitrary terms, each head reduction step consumes just one of them,
    eventually there should be one more fresh variable left, forming a hnf.
-
-   NOTE2: ‘LENGTH xs = n - LENGTH Ns’ can be part of the conclusion.
-
-   NOTE3: hreduce_LAMl_appstar can be used, after LAMl_ALPHA_ssub.
  *)
 Theorem permutator_hreduce_thm :
     !n Ns. LENGTH Ns <= n ==>
-           ?xs y. permutator n @* Ns -h->* LAMl xs (VAR y @* Ns @* MAP VAR xs)
+           ?xs y. permutator n @* Ns -h->* LAMl xs (LAM y (VAR y @* Ns @* MAP VAR xs))
 Proof
     rw [permutator_def]
  >> qabbrev_tac ‘Z = GENLIST n2s (n + 1)’
@@ -2008,8 +2004,8 @@ Proof
  >> Rewr'
  (* stage work *)
  >> qunabbrev_tac ‘t’
- (* applying ssub_LAM *)
  >> qabbrev_tac ‘t = VAR y @* MAP VAR vs’
+ (* applying ssub_LAM to move ‘LAM y’ out of ssub *)
  >> Know ‘fromPairs vs1 Ns ' (LAM y t) = LAM y (fromPairs vs1 Ns ' t)’
  >- (MATCH_MP_TAC ssub_LAM >> simp [] \\
      Q.PAT_X_ASSUM ‘ALL_DISTINCT Y’ MP_TAC \\
@@ -2049,7 +2045,37 @@ Proof
      qunabbrev_tac ‘vs1’ >> PROVE_TAC [MEM_TAKE])
  >> DISCH_TAC
  >> simp [Abbr ‘t’, ssub_appstar]
- >> cheat
+ >> ‘vs = vs1 ++ vs2’ by rw [Abbr ‘vs1’, Abbr ‘vs2’, TAKE_DROP]
+ >> POP_ORW
+ >> REWRITE_TAC [MAP_APPEND]
+ >> Know ‘MAP ($' (fromPairs vs1 Ns)) (MAP VAR vs1) = Ns’
+ >- (rw [LIST_EQ_REWRITE] >- rw [Abbr ‘vs1’] \\
+     rename1 ‘i < LENGTH vs1’ \\
+     simp [EL_MAP] \\
+     Know ‘MEM (EL i vs1) vs1’
+     >- (rw [MEM_EL] >> Q.EXISTS_TAC ‘i’ >> art []) >> Rewr \\
+     MATCH_MP_TAC fromPairs_FAPPLY_EL >> rw []
+     >- (Q.PAT_X_ASSUM ‘ALL_DISTINCT vs’ MP_TAC \\
+        ‘vs = vs1 ++ vs2’ by rw [Abbr ‘vs1’, Abbr ‘vs2’, TAKE_DROP] \\
+         POP_ORW \\
+         rw [ALL_DISTINCT_APPEND, DISJOINT_ALT]) \\
+     rw [Abbr ‘vs1’])
+ >> Rewr'
+ >> Know ‘MAP ($' (fromPairs vs1 Ns)) (MAP VAR vs2) = MAP VAR vs2’
+ >- (rw [LIST_EQ_REWRITE] \\
+     rename1 ‘i < LENGTH vs2’ \\
+     rw [EL_MAP, MEM_EL] \\
+  (* NOTE: below we show conflicts in assumptions *)
+     Q.PAT_X_ASSUM ‘ALL_DISTINCT vs’ MP_TAC \\
+    ‘vs = vs1 ++ vs2’ by rw [Abbr ‘vs1’, Abbr ‘vs2’, TAKE_DROP] \\
+     POP_ORW \\
+     rw [ALL_DISTINCT_APPEND, DISJOINT_ALT] \\
+     METIS_TAC [MEM_EL])
+ >> Rewr'
+ (* final stage *)
+ >> REWRITE_TAC [appstar_APPEND]
+ >> DISCH_TAC
+ >> qexistsl_tac [‘vs2’, ‘y’] >> art []
 QED
 
 val _ = export_theory()

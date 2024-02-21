@@ -2182,35 +2182,10 @@ Proof
  >> PROVE_TAC [cj 2 subterm_solvable_lemma]
 QED
 
-(* needs: subterm_width_thm, subterm_hnf_children_size_cong, subterm_solvable_lemma
-
-        subterm' Z ([P/y] N) t = [P/y] (subterm' Z N t)
-   ------------------------------------
-    0.  FINITE X
-    1.  h::t IN ltree_paths (BTe X M)
-    2.  subterm X M (h::t) <> NONE
-    3.  solvable M
-    4.  Abbrev (M0 = principle_hnf M)
-    5.  hnf M0
-    6.  Abbrev (n = LAMl_size M0)
-    7.  Abbrev (vs = FRESH_list n (X UNION FV M))
-   11.  LENGTH vs = n
-   12.  Abbrev (M1 = principle_hnf (M0 @* MAP VAR vs))
-   13.  M0 = LAMl vs (VAR y @* args)
-   14.  M1 = VAR y @* args
-   15.  Abbrev (m = LENGTH args)
-   16.  Abbrev (w = subterm_width M (h::t))
-   17.  m <= w
-   18.  Abbrev (P = permutator w)
-   19.  Abbrev (Z = X UNION FV M UNION set vs)
-   20.  FINITE Z
-   21.  FV M1 SUBSET Z
-   22.  h < m
-   23.  Abbrev (N = EL h args)
- *)
 Theorem subterm_subst_cong_lemma :
     !X. FINITE X ==>
-        !l p M P d. l <<= p /\ p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE /\
+        !l p M P d. l <<= p /\ p <> [] /\ p IN ltree_paths (BTe X M) /\
+                    subterm X M p <> NONE /\
                     P = permutator d /\ subterm_width M p <= d ==>
                     subterm' X ([P/v] M) l = [P/v] (subterm' X M l)
 Proof
@@ -2281,8 +2256,8 @@ Proof
   (* applying permutator_hreduce_thm *)
      MP_TAC (Q.SPECL [‘d’, ‘args'’] permutator_hreduce_thm) \\
      rw [Abbr ‘P’] \\
-     Q.EXISTS_TAC ‘LAMl xs (VAR y @* args' @* MAP VAR xs)’ \\
-     rw [hnf_appstar])
+     Q.EXISTS_TAC ‘LAMl xs (LAM y (VAR y @* args' @* MAP VAR xs))’ \\
+     rw [hnf_appstar, hnf_thm])
  >> DISCH_TAC
  (* How to prove this? perhaps “m = m'” is needed first *)
  >> Know ‘subterm X ([P/y] M) (h::l) <> NONE’
