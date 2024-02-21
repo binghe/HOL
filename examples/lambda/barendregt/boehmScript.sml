@@ -2182,15 +2182,13 @@ Proof
  >> PROVE_TAC [cj 2 subterm_solvable_lemma]
 QED
 
-Theorem subterm_subst_cong_lemma :
-    !X. FINITE X ==>
-        !l p M P d. l <<= p /\ p <> [] /\ p IN ltree_paths (BTe X M) /\
-                    subterm X M p <> NONE /\
-                    P = permutator d /\ subterm_width M p <= d ==>
-                    subterm' X ([P/v] M) l = [P/v] (subterm' X M l)
+Theorem subterm_subst_cong_lemma[local] :
+    !l X M p P d. l <<= p /\ p <> [] /\ FINITE X /\
+                  p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE /\
+                  P = permutator d /\ subterm_width M p <= d ==>
+                  subterm' X ([P/v] M) l = [P/v] (subterm' X M l)
 Proof
-    rpt GEN_TAC >> DISCH_TAC (* FINITE X *)
- >> Induct_on ‘l’ >- rw [] (* one goal left *)
+    Induct_on ‘l’ >- rw []
  >> RW_TAC std_ss []
  (* common properties of ‘p’ *)
  >> ‘(!q. q <<= p ==> subterm X M q <> NONE) /\
@@ -2259,20 +2257,30 @@ Proof
      Q.EXISTS_TAC ‘LAMl xs (LAM y (VAR y @* args' @* MAP VAR xs))’ \\
      rw [hnf_appstar, hnf_thm])
  >> DISCH_TAC
- (* How to prove this? perhaps “m = m'” is needed first *)
- >> Know ‘subterm X ([P/y] M) (h::l) <> NONE’
- >- (
-     cheat)
- (* BEGIN Michael Norrish's tactics *)
- >> CONV_TAC (UNBETA_CONV “subterm X ([P/y] M) (h::l)”)
+ >> CONV_TAC (UNBETA_CONV “subterm X ([P/v] M) (h::l)”)
  >> qmatch_abbrev_tac ‘f _’
- >> RW_TAC bool_ss [subterm_of_solvables]
- >> simp [Abbr ‘f’]
- (* END Michael Norrish's tactics. *)
- >> Know ‘m' = m’ (* this requries property of P *)
- >- (
-     cheat)
- >> DISCH_THEN (rw o wrap)
+ >> ASM_SIMP_TAC std_ss [subterm_of_solvables]
+ >> LET_ELIM_TAC
+ >> simp [Abbr ‘f’, hnf_children_hnf]
+ (* NOTE: Now we need to know the exact form of ‘principle_hnf ([P/v] M)’.
+
+    First of all, we know that ‘principle_hnf M = LAMl vs (VAR y @* args)’. This
+    means ‘M -h->* LAMl vs (VAR y @* args)’. Meanwhile, -h->* is substitutive,
+    thus ‘[P/v] M -h->* [P/v] LAMl vs (VAR y @* args)’. Depends on the nature
+    of ‘v’, the ending term ‘[P/v] LAMl vs (VAR y @* args)’ may or may not be
+    a hnf. But it indeed has a hnf, as ‘solvable ([P/v] M)’ has been proved.
+
+    Case 1 (MEM v vs): [P/v] LAMl vs (VAR y @* args) = LAMl vs (VAR y @* args)
+    Case 2 (v <> y):   [P/v] LAMl vs (VAR y @* args) = LAMl vs (VAR y @* args')
+    Case 3 (v = y):    [P/v] LAMl vs (VAR y @* args) = LAMl vs (P @* args')
+
+    Only Case 3 needs further head reductions, but the final hnf is already clear
+    when proving ‘solvable ([P/v] M)’. Easy.
+
+    In all these cases, ‘h < hnf_children_size (principle_hnf ([P/v] M))’ holds:
+    In Case 1 & 2, ‘hnf_children_size (principle_hnf ([P/v] M)) = LENGTH args’.
+    In Case 3, ‘hnf_children_size (principle_hnf ([P/v] M)) > or = LENGTH args’.
+  *)
  (* stage work *)
  >> cheat
 QED
@@ -2284,8 +2292,8 @@ Theorem subterm_subst_cong :
 Proof
     rpt STRIP_TAC
  >> Cases_on ‘p = []’ >- rw []
- >> irule subterm_subst_cong_lemma >> art []
- >> qexistsl_tac [‘d’, ‘p’] >> rw []
+ >> MATCH_MP_TAC subterm_subst_cong_lemma
+ >> qexistsl_tac [‘p’, ‘d’] >> rw []
 QED
 
 (* Lemma 10.3.6 (ii) [1, p.247]:
