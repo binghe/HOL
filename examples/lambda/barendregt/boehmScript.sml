@@ -2161,16 +2161,14 @@ Proof
  >- (qunabbrev_tac ‘J’ >> MATCH_MP_TAC IMAGE_FINITE \\
     ‘Ms = IMAGE (subterm' {} M) {p' | p' <<= FRONT p}’
        by (rw [Abbr ‘Ms’, Once EXTENSION]) >> POP_ORW \\
-     MATCH_MP_TAC IMAGE_FINITE \\
-     rw [FINITE_prefix])
+     MATCH_MP_TAC IMAGE_FINITE >> rw [FINITE_prefix])
  >> DISCH_TAC
  >> qabbrev_tac ‘m = hnf_children_size (principle_hnf (subterm' X M p'))’
  >> Suff ‘m IN J’ >- PROVE_TAC [MAX_SET_DEF]
  >> rw [Abbr ‘m’, Abbr ‘J’]
  >> Q.EXISTS_TAC ‘subterm' {} M p'’
  >> reverse CONJ_TAC
- >- (rw [Abbr ‘Ms’] \\
-     Q.EXISTS_TAC ‘p'’ >> art [])
+ >- (rw [Abbr ‘Ms’] >> Q.EXISTS_TAC ‘p'’ >> art [])
  >> ‘!p'. p' <<= p ==> subterm X M p' <> NONE’
        by PROVE_TAC [cj 1 subterm_solvable_lemma]
  (* applying subterm_hnf_children_size_cong *)
@@ -2183,7 +2181,7 @@ Proof
 QED
 
 Theorem subterm_subst_cong_lemma[local] :
-    !l X M p P d. l <<= p /\ p <> [] /\ FINITE X /\
+    !l X M p P d. l <<= p /\ p <> [] /\ FINITE X /\ v IN X /\
                   p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE /\
                   P = permutator d /\ subterm_width M p <= d ==>
                   subterm' X ([P/v] M) l = [P/v] (subterm' X M l)
@@ -2229,6 +2227,13 @@ Proof
  >- (MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’, ‘[]’] subterm_width_thm) \\
      rw [Abbr ‘w’])
  >> DISCH_TAC
+ (* NOTE: this is why we require ‘v IN X’ in this lemma. If ‘MEM v vs’, this is
+    a disaster for [P/v] to be passed inside ‘LAMl vs ...’.
+  *)
+ >> Know ‘~MEM v vs’
+ >- (Q.PAT_X_ASSUM ‘DISJOINT (set vs) X’ MP_TAC \\
+     rw [DISJOINT_ALT'])
+ >> DISCH_TAC
  (* NOTE: ‘[P/v] M’ is solvable iff ‘[P/v] M0’ is solvable, the latter is either
     already a hnf (v <> y), or can be head-reduced to a hnf (v = y).
   *)
@@ -2236,12 +2241,6 @@ Proof
  >- (‘M0 == M’ by rw [Abbr ‘M0’, lameq_principle_hnf'] \\
      ‘[P/v] M0 == [P/v] M’ by rw [lameq_sub_cong] \\
      Suff ‘solvable ([P/v] M0)’ >- PROVE_TAC [lameq_solvable_cong] \\
-     Cases_on ‘MEM v vs’
-     >- (Suff ‘[P/v] M0 = M0’
-         >- (rw [solvable_iff_has_hnf] \\
-             MATCH_MP_TAC hnf_has_hnf >> rw [hnf_appstar]) \\
-         MATCH_MP_TAC lemma14b \\
-         rw [FV_LAMl]) \\
     ‘FV P = {}’ by rw [Abbr ‘P’, FV_permutator] \\
     ‘DISJOINT (set vs) (FV P)’ by rw [DISJOINT_ALT'] \\
      simp [LAMl_SUB, appstar_SUB] \\
@@ -2265,9 +2264,7 @@ Proof
  >> simp [Abbr ‘f’, hnf_children_hnf]
  >> DISCH_TAC
  >> qunabbrev_tac ‘Ms’ (* Ms is nowhere used (‘args’ was part of it) *)
- (* NOTE:
-
-    Now we need to know the exact form of ‘principle_hnf ([P/v] M)’.
+ (* Now we need to know the exact form of ‘principle_hnf ([P/v] M)’.
 
     First of all, we know that ‘principle_hnf M = LAMl vs (VAR y @* args)’. This
     means ‘M -h->* LAMl vs (VAR y @* args)’. Meanwhile, -h->* is substitutive,
@@ -2275,26 +2272,59 @@ Proof
     of ‘v’, the ending term ‘[P/v] LAMl vs (VAR y @* args)’ may or may not be
     a hnf. But it indeed has a hnf, as ‘solvable ([P/v] M)’ has been proved.
 
-    Case 1 (MEM v vs): [P/v] LAMl vs (VAR y @* args) = LAMl vs (VAR y @* args)
+    Case 1 (MEM v vs): now impossible due to ‘v IN X’
     Case 2 (v <> y):   [P/v] LAMl vs (VAR y @* args) = LAMl vs (VAR y @* args')
     Case 3 (v = y):    [P/v] LAMl vs (VAR y @* args) = LAMl vs (P @* args'),
         where LAMl vs (P @* args') -h->*
               LAMl vs (LAMl xs (LAM z (VAR z @* args' @* MAP VAR xs))) =
               LAMl (vs ++ xs ++ [z]) (VAR z @* args' @* MAP VAR xs), a hnf
 
-    Only Case 3 needs further head reductions, but the final hnf is already clear
+    Only Case 3 needs further head-reductions, but the final hnf is already clear
     when proving ‘solvable ([P/v] M)’. Easy.
 
     In all these cases, ‘h < hnf_children_size (principle_hnf ([P/v] M))’ holds:
     In Case 1 & 2, ‘hnf_children_size (principle_hnf ([P/v] M)) = LENGTH args’.
     In Case 3, ‘hnf_children_size (principle_hnf ([P/v] M)) > or = LENGTH args’.
   *)
- (* stage work *)
+ >> ‘M -h->* M0’ by METIS_TAC [principle_hnf_thm']
+ >> ‘[P/v] M -h->* [P/v] M0’ by PROVE_TAC [hreduce_substitutive]
+ >> POP_ASSUM MP_TAC
+ >> ‘DISJOINT (set vs) (FV P)’ by rw [DISJOINT_ALT', FV_permutator, Abbr ‘P’]
+ >> simp [LAMl_SUB, appstar_SUB]
+ (* Case 2 *)
+ >> reverse (Cases_on ‘y = v’)
+ >- (simp [] >> DISCH_TAC \\
+     qabbrev_tac ‘args' = MAP [P/v] args’ \\
+    ‘hnf (LAMl vs (VAR y @* args'))’ by rw [hnf_appstar] \\
+    ‘M0' = LAMl vs (VAR y @* args')’ by METIS_TAC [principle_hnf_thm'] \\
+     Know ‘m' = m’
+     >- (qunabbrevl_tac [‘m’, ‘m'’] >> art [] \\
+         Q.PAT_X_ASSUM ‘LENGTH args = hnf_children_size M0’ K_TAC \\
+         simp [hnf_children_size_appstar, Abbr ‘args'’]) \\
+     DISCH_THEN (fs o wrap) \\
+     qunabbrev_tac ‘m'’ \\
+     qunabbrev_tac ‘n'’ >> rfs [] \\
+     rpt (Q.PAT_X_ASSUM ‘T’ K_TAC) \\
+     cheat)
+ (* Case 3 *)
  >> cheat
 QED
 
+(* NOTE: ‘y IN X’ must hold to make sure that ‘~MEM y vs’, where ‘set vs’ is disjoint
+          with X, otherwise disaster happens.
+
+   How to make sure ‘y IN X’? When calling this theorem, X should be a combination of
+   the following sets:
+
+   1. The original X from the caller theorem, which is arbitrary.
+   2. FV M, the free variables of M, which contains ‘FV M0’ (principle_hnf of M)
+   3. ‘set vs’, which is defined by ‘FRESH_list n (X UNION FV M)’
+
+   The head variable ‘y’ of M0 (= LAMl vs (VAR y @* args)) must come from 2 and 3
+ *)
 Theorem subterm_subst_cong :
-    !p X M y P d. FINITE X /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE /\
+    !p X M y P d. FINITE X /\ y IN X /\
+                  p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE /\
                   P = permutator d /\ subterm_width M p <= d ==>
                   subterm' X ([P/y] M) p = [P/y] (subterm' X M p)
 Proof
@@ -2402,6 +2432,12 @@ Proof
  (* NOTE: Z contains ‘vs’ in addition to X and FV M *)
  >> qabbrev_tac ‘Z = X UNION FV M UNION set vs’
  >> ‘FINITE Z’ by (rw [Abbr ‘Z’] >> rw [])
+ >> Know ‘solvable (M0 @* MAP VAR vs)’
+ >- (‘hnf M1’ by rw [hnf_appstar] \\
+     ‘solvable M1’ by rw [solvable_iff_has_hnf, hnf_has_hnf] \\
+     Suff ‘M0 @* MAP VAR vs == M1’ >- PROVE_TAC [lameq_solvable_cong] \\
+     rw [])
+ >> DISCH_TAC
  >> Know ‘FV M1 SUBSET Z’
  >- (MATCH_MP_TAC SUBSET_TRANS \\
      Q.EXISTS_TAC ‘FV M0 UNION set vs’ \\
@@ -2412,13 +2448,8 @@ Proof
          MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art []) \\
      ‘FV M0 UNION set vs = FV (M0 @* MAP VAR vs)’ by rw [FV_appstar_MAP_VAR] \\
       POP_ORW \\
-      Suff ‘solvable (M0 @* MAP VAR vs)’
-      >- (DISCH_TAC >> qunabbrev_tac ‘M1’ \\
-          MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art []) \\
-     ‘hnf M1’ by rw [hnf_appstar] \\
-     ‘solvable M1’ by rw [solvable_iff_has_hnf, hnf_has_hnf] \\
-      Suff ‘M0 @* MAP VAR vs == M1’ >- PROVE_TAC [lameq_solvable_cong] \\
-      rw [])
+      qunabbrev_tac ‘M1’ \\
+      MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
  >> DISCH_TAC
  >> qabbrev_tac ‘l = FRESH_list (d - m + 1) Z’
  >> Know ‘ALL_DISTINCT l /\ DISJOINT (set l) Z /\ LENGTH l = d - m + 1’
@@ -2686,6 +2717,22 @@ Proof
  >> qunabbrevl_tac [‘l’, ‘as’, ‘b’]
  >> Q.PAT_X_ASSUM ‘FINITE Y’                   K_TAC
  >> qunabbrev_tac ‘Y’
+ (* NOTE: this is a key requirements for applying subterm_subst_cong *)
+ >> Know ‘y IN Z’
+ >- (qunabbrev_tac ‘Z’ \\
+     Suff ‘y IN FV M UNION set vs’ >- SET_TAC [] \\
+    ‘y IN FV M1’ by rw [FV_appstar] \\
+     Suff ‘FV M1 SUBSET FV M UNION set vs’ >- rw [SUBSET_DEF] \\
+     qunabbrev_tac ‘M1’ \\
+     MATCH_MP_TAC SUBSET_TRANS \\
+     Q.EXISTS_TAC ‘FV (M0 @* MAP VAR vs)’ \\
+     CONJ_TAC >- (MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art []) \\
+     Q.PAT_X_ASSUM ‘M0 = LAMl vs (VAR y @* args)’ K_TAC \\
+     simp [FV_appstar] \\
+     Suff ‘FV M0 SUBSET FV M’ >- SET_TAC [] \\
+     qunabbrev_tac ‘M0’ \\
+     MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
+ >> DISCH_TAC
  (* applying subterm_subst_cong *)
  >> MATCH_MP_TAC subterm_subst_cong
  >> Q.EXISTS_TAC ‘d’ >> simp [Abbr ‘P’]
