@@ -5,7 +5,8 @@ open boolSimps relationTheory pred_setTheory listTheory finite_mapTheory
      hurdUtils;
 
 open termTheory appFOLDLTheory chap2Theory chap3Theory nomsetTheory binderLib
-     horeductionTheory term_posnsTheory finite_developmentsTheory;
+     horeductionTheory term_posnsTheory finite_developmentsTheory
+     basic_swapTheory;
 
 val _ = new_theory "head_reduction"
 
@@ -1882,14 +1883,14 @@ Proof
  >> qabbrev_tac ‘M = VAR z @* MAP VAR (FRONT Z)’
  (* preparing for LAMl_ALPHA_ssub *)
  >> qabbrev_tac
-     ‘Y = FRESH_list (n + 1) (set Z UNION (BIGUNION (IMAGE FV (set Ns))))’
+     ‘Y = NEWS (n + 1) (set Z UNION (BIGUNION (IMAGE FV (set Ns))))’
  >> Know ‘FINITE (set Z UNION (BIGUNION (IMAGE FV (set Ns))))’
  >- (rw [] >> rw [FINITE_FV])
  >> DISCH_TAC
  >> Know ‘ALL_DISTINCT Y /\
           DISJOINT (set Y) (set Z UNION (BIGUNION (IMAGE FV (set Ns)))) /\
          (LENGTH Y = n + 1)’
- >- (ASM_SIMP_TAC std_ss [FRESH_list_def, Abbr ‘Y’])
+ >- (ASM_SIMP_TAC std_ss [NEWS_def, Abbr ‘Y’])
  >> rw []
  (* applying LAMl_ALPHA_ssub *)
  >> Know ‘LAMl Z M = LAMl Y ((FEMPTY |++ ZIP (Z,MAP VAR Y)) ' M)’
