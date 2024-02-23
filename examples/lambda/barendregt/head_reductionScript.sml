@@ -144,23 +144,36 @@ Proof
  >> fs [hreduce1_rules]
 QED
 
-Theorem hreduce1_LAMl :
-    !vs M1 M2. M1 -h-> M2 ==> LAMl vs M1 -h-> LAMl vs M2
+Theorem hreduce1_LAMl[simp] :
+    !vs M1 M2. LAMl vs M1 -h-> LAMl vs M2 <=> M1 -h-> M2
 Proof
     Induct_on ‘vs’ >> rw []
- >> MATCH_MP_TAC hreduce1_LAM
- >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+ >> rw [Once hreduce1_rwts]
 QED
 
-Theorem hreduce_LAMl :
-    !vs M1 M2. M1 -h->* M2 ==> LAMl vs M1 -h->* LAMl vs M2
+Theorem hreduce_LAMl[simp] :
+    !vs M1 M2. LAMl vs M1 -h->* LAMl vs M2 <=> M1 -h->* M2
 Proof
-    Q.X_GEN_TAC ‘vs’
- >> HO_MATCH_MP_TAC RTC_INDUCT >> rw []
- >> ONCE_REWRITE_TAC [RTC_CASES1]
- >> DISJ2_TAC
- >> Q.EXISTS_TAC ‘LAMl vs M1'’ >> art []
- >> MATCH_MP_TAC hreduce1_LAMl >> art []
+    rpt GEN_TAC
+ >> reverse EQ_TAC
+ >- (Q.ID_SPEC_TAC ‘M2’ \\
+     Q.ID_SPEC_TAC ‘M1’ \\
+     HO_MATCH_MP_TAC RTC_INDUCT >> rw [] \\
+     ONCE_REWRITE_TAC [RTC_CASES1] >> DISJ2_TAC \\
+     Q.EXISTS_TAC ‘LAMl vs M1'’ >> rw [])
+ >> Q.ID_SPEC_TAC ‘vs’
+ >> Induct_on ‘vs’ >> rw []
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> POP_ASSUM MP_TAC
+ >> Suff ‘!M2 M. M -h->* LAM h M2 ==> !M1. (M = LAM h M1) ==> M1 -h->* M2’
+ >- PROVE_TAC []
+ >> Q.X_GEN_TAC ‘M2’
+ >> HO_MATCH_MP_TAC RTC_ALT_INDUCT >> rw []
+ >> Q.PAT_X_ASSUM ‘LAM h M1 -h-> M'’ MP_TAC
+ >> rw [Once hreduce1_rwts]
+ >> rename1 ‘M1 -h-> M0’
+ >> ONCE_REWRITE_TAC [RTC_CASES1] >> DISJ2_TAC
+ >> Q.EXISTS_TAC ‘M0’ >> rw []
 QED
 
 Theorem hreduce1_abs :
