@@ -2440,11 +2440,43 @@ Proof
      qunabbrev_tac ‘Z’ \\
      Q.PAT_X_ASSUM ‘y IN X’ MP_TAC \\
      fs [] >> SET_TAC [])
+ >> Q.PAT_X_ASSUM ‘!i. i < m ==> _’           K_TAC
  >> Q.PAT_X_ASSUM ‘s = s' \/ s = y INSERT s'’ K_TAC
- >> Q.PAT_X_ASSUM ‘M0 = _’ ASSUME_TAC
- >> Q.PAT_X_ASSUM ‘M1 = _’ ASSUME_TAC
- >> DISCH_THEN (REV_FULL_SIMP_TAC std_ss o wrap)
+ >> qunabbrevl_tac [‘s’, ‘s'’]
+ >> Q.PAT_X_ASSUM ‘M0 = _’          (ASSUME_TAC o SYM)
+ >> Q.PAT_X_ASSUM ‘M1 = _’          (ASSUME_TAC o SYM)
+ >> Q.PAT_X_ASSUM ‘M0' = LAMl vs _’ (ASSUME_TAC o SYM)
+ >> DISCH_THEN (FULL_SIMP_TAC std_ss o wrap)
  (* stage work *)
+ >> Know ‘n < n'’
+ >- (qunabbrevl_tac [‘n’, ‘n'’] \\
+     Q.PAT_X_ASSUM ‘_ = M0’  (REWRITE_TAC o wrap o SYM) \\
+     Q.PAT_X_ASSUM ‘_ = M0'’ (REWRITE_TAC o wrap o SYM) \\
+    ‘!t. LAMl vs (LAMl xs (LAM z t)) = LAMl (vs ++ xs ++ [z]) t’
+        by rw [FOLDR_APPEND] >> POP_ORW \\
+     Q.PAT_X_ASSUM ‘_ = M1’  (REWRITE_TAC o wrap o SYM) \\
+     simp [LAMl_size_LAMl])
+ >> DISCH_TAC
+ (* applying NEWS_prefix !!! *)
+ >> Know ‘vs <<= vs'’
+ >- (qunabbrevl_tac [‘vs’, ‘vs'’] \\
+     MATCH_MP_TAC NEWS_prefix >> rw [])
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [IS_PREFIX_APPEND]))
+ >> rename1 ‘vs' = vs ++ ys’
+ >> POP_ASSUM (fn th => fs [th, MAP_APPEND, appstar_APPEND])
+ >> Know ‘M0' @* MAP VAR vs -h->* LAMl xs (LAM z (VAR z @* args' @* MAP VAR xs))’
+ >- (Q.PAT_X_ASSUM ‘_ = M0'’ (REWRITE_TAC o wrap o SYM) \\
+     REWRITE_TAC [hreduce_BETA])
+ >> DISCH_TAC
+ (* special case: vs = []
+ >> Cases_on ‘vs = []’
+ >> Know ‘M0' @* MAP VAR vs' -h->*
+          LAMl xs (LAM z (VAR z @* args' @* MAP VAR xs)) @* MAP VAR ys’
+ >- (Q.PAT_X_ASSUM ‘vs' = vs ++ ys’ (REWRITE_TAC o wrap) \\
+     REWRITE_TAC [MAP_APPEND, appstar_APPEND] \\
+     MATCH_MP_TAC hreduce_rules_appstar \\
+     simp [])
+  *)
  >> cheat
 QED
 
