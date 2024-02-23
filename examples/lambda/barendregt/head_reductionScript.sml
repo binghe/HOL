@@ -152,6 +152,17 @@ Proof
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
 QED
 
+Theorem hreduce_LAMl :
+    !vs M1 M2. M1 -h->* M2 ==> LAMl vs M1 -h->* LAMl vs M2
+Proof
+    Q.X_GEN_TAC ‘vs’
+ >> HO_MATCH_MP_TAC RTC_INDUCT >> rw []
+ >> ONCE_REWRITE_TAC [RTC_CASES1]
+ >> DISJ2_TAC
+ >> Q.EXISTS_TAC ‘LAMl vs M1'’ >> art []
+ >> MATCH_MP_TAC hreduce1_LAMl >> art []
+QED
+
 Theorem hreduce1_abs :
     !M N. M -h-> N ==> is_abs M ==> is_abs N
 Proof

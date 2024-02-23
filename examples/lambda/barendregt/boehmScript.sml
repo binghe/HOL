@@ -2386,6 +2386,13 @@ Proof
      cheat)
  (* Case 3 *)
  >> POP_ASSUM (fs o wrap o SYM)
+ >> simp [Abbr ‘P’] >> DISCH_TAC
+ (* now calculating head-reductions of LAMl vs (permutator d @* args') *)
+ (* applying permutator_hreduce_thm *)
+ >> Know ‘?xs z. permutator d @* args' -h->*
+                 LAMl xs (LAM z (VAR z @* args' @* MAP VAR xs))’
+ >- (MATCH_MP_TAC permutator_hreduce_thm >> rw [])
+ >> STRIP_TAC
  >> cheat
 QED
 
