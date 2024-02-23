@@ -2292,10 +2292,11 @@ Proof
  >> POP_ASSUM MP_TAC
  >> ‘DISJOINT (set vs) (FV P)’ by rw [DISJOINT_ALT', FV_permutator, Abbr ‘P’]
  >> simp [LAMl_SUB, appstar_SUB]
+ >> qabbrev_tac ‘args' = MAP [P/v] args’
+ >> ‘LENGTH args' = LENGTH args’ by rw [Abbr ‘args'’]
  (* Case 2 *)
  >> reverse (Cases_on ‘y = v’)
  >- (simp [] >> DISCH_TAC \\
-     qabbrev_tac ‘args' = MAP [P/v] args’ \\
     ‘hnf (LAMl vs (VAR y @* args'))’ by rw [hnf_appstar] \\
     ‘M0' = LAMl vs (VAR y @* args')’ by METIS_TAC [principle_hnf_thm'] \\
      Know ‘m' = m’
@@ -2317,7 +2318,7 @@ Proof
                              FV (EL i args) = v INSERT FV (EL i args')’
          >- (rpt STRIP_TAC \\
              Know ‘EL i args' = [P/v] (EL i args)’
-             >- (rw [Abbr ‘args'’, EL_MAP]) >> Rewr' \\
+             >- (rw [Abbr ‘m’, Abbr ‘args'’, EL_MAP]) >> Rewr' \\
              qabbrev_tac ‘N = EL i args’ \\
              qabbrev_tac ‘N' = EL i args'’ \\
             ‘FV P = {}’ by rw [Abbr ‘P’, FV_permutator] \\
@@ -2326,7 +2327,6 @@ Proof
       (* now generalize to BIGUNION (IMAGE FV (set args)), etc. *)
          qabbrev_tac ‘s  = BIGUNION (IMAGE FV (set args))’ \\
          qabbrev_tac ‘s' = BIGUNION (IMAGE FV (set args'))’ \\
-        ‘LENGTH args' = LENGTH args’ by rw [Abbr ‘args'’] \\
          Know ‘s = s' \/ s = v INSERT s'’
          >- (Cases_on ‘!i. i < m ==> FV (EL i args) = FV (EL i args')’
              >- (DISJ1_TAC \\
@@ -2379,13 +2379,13 @@ Proof
      fs [Abbr ‘M1'’, hnf_children_hnf] \\
      Q.PAT_X_ASSUM ‘args' = Ms'’ (fs o wrap o SYM) \\
      rpt (Q.PAT_X_ASSUM ‘T’ K_TAC) \\
-    ‘LENGTH args' = LENGTH args’ by rw [Abbr ‘args'’] \\
   (* now applying IH *)
-     simp [Abbr ‘args'’, EL_MAP, Abbr ‘P’] \\
+     simp [Abbr ‘m’, Abbr ‘args'’, EL_MAP, Abbr ‘P’] \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
      Q.EXISTS_TAC ‘t’ >> simp [] \\
      cheat)
  (* Case 3 *)
+ >> POP_ASSUM (fs o wrap o SYM)
  >> cheat
 QED
 
