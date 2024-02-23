@@ -2222,7 +2222,6 @@ Proof
              “M1 :term”, “y :string”, “args :term list”)
  >> ‘TAKE n vs = vs’ by rw [TAKE_LENGTH_ID_rwt]
  >> POP_ASSUM (rfs o wrap)
- >> ‘hnf M1’ by rw [hnf_appstar]
  >> ‘LENGTH args = m’ by rw [Abbr ‘m’]
  >> Know ‘m <= w’
  >- (MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’, ‘[]’] subterm_width_thm) \\
@@ -2264,7 +2263,7 @@ Proof
  >> Q.PAT_X_ASSUM ‘subterm _ (EL h (hnf_children M1)) l <> NONE’ MP_TAC
  >> simp [Abbr ‘f’, hnf_children_hnf]
  >> DISCH_TAC
- >> qunabbrev_tac ‘Ms’ (* Ms is nowhere used (‘args’ was part of it) *)
+ >> qunabbrev_tac ‘Ms’
  (* Now we need to know the exact form of ‘principle_hnf ([P/v] M)’.
 
     First of all, we know that ‘principle_hnf M = LAMl vs (VAR y @* args)’. This
@@ -2292,8 +2291,67 @@ Proof
  >> POP_ASSUM MP_TAC
  >> ‘DISJOINT (set vs) (FV P)’ by rw [DISJOINT_ALT', FV_permutator, Abbr ‘P’]
  >> simp [LAMl_SUB, appstar_SUB]
+ >> POP_ASSUM K_TAC
  >> qabbrev_tac ‘args' = MAP [P/v] args’
  >> ‘LENGTH args' = LENGTH args’ by rw [Abbr ‘args'’]
+ (* shared properties of args and args' *)
+ >> Know ‘!i. i < m ==> FV (EL i args) = FV (EL i args') \/
+                        FV (EL i args) = v INSERT FV (EL i args')’
+ >- (rpt STRIP_TAC \\
+     Know ‘EL i args' = [P/v] (EL i args)’
+     >- (rw [Abbr ‘args'’, EL_MAP]) >> Rewr' \\
+     qabbrev_tac ‘N = EL i args’ \\
+     qabbrev_tac ‘N' = EL i args'’ \\
+    ‘FV P = {}’ by rw [Abbr ‘P’, FV_permutator] \\
+     simp [FV_SUB] \\
+     Cases_on ‘v IN FV N’ >> simp [])
+ >> DISCH_TAC
+ (* s and s' will appear later *)
+ >> qabbrev_tac ‘s  = BIGUNION (IMAGE FV (set args))’
+ >> qabbrev_tac ‘s' = BIGUNION (IMAGE FV (set args'))’
+ >> Know ‘s = s' \/ s = v INSERT s'’
+ >- (Cases_on ‘!i. i < m ==> FV (EL i args) = FV (EL i args')’
+     >- (DISJ1_TAC \\
+         rw [Abbr ‘s’, Abbr ‘s'’, Once EXTENSION, IN_BIGUNION_IMAGE] \\
+         EQ_TAC >> rw [MEM_EL] >| (* 2 symmetric subgoals *)
+         [ (* goal 1 (of 2) *)
+           Q.EXISTS_TAC ‘EL n args'’ \\
+           reverse CONJ_TAC >- (Suff ‘FV (EL n args') = FV (EL n args)’
+                                >- DISCH_THEN (art o wrap) >> rw []) \\
+           Q.EXISTS_TAC ‘n’ >> art [],
+           (* goal 2 (of 2) *)
+           Q.EXISTS_TAC ‘EL n args’ \\
+           reverse CONJ_TAC >- (Suff ‘FV (EL n args) = FV (EL n args')’
+                                >- DISCH_THEN (art o wrap) >> rw []) \\
+           Q.EXISTS_TAC ‘n’ >> art [] ]) \\
+     fs [] (* This asserts a special ‘i’ *) \\
+    ‘FV (EL i args) = v INSERT FV (EL i args')’ by PROVE_TAC [] \\
+     DISJ2_TAC \\
+     rw [Abbr ‘s’, Abbr ‘s'’, Once EXTENSION, IN_BIGUNION_IMAGE] \\
+     EQ_TAC >> rw [MEM_EL] >| (* 3 subgoals *)
+     [ (* goal 1 (of 3) *)
+       Cases_on ‘x = v’ >> rw [] \\
+       Q.PAT_X_ASSUM ‘x IN FV (EL n args)’ MP_TAC \\
+      ‘FV (EL n args) = FV (EL n args') \/
+       FV (EL n args) = v INSERT FV (EL n args')’ by PROVE_TAC []
+       >- (rw [] \\
+           Q.EXISTS_TAC ‘EL n args'’ >> art [] \\
+           Q.EXISTS_TAC ‘n’ >> art []) \\
+       rw [] \\
+       Q.EXISTS_TAC ‘EL n args'’ >> art [] \\
+       Q.EXISTS_TAC ‘n’ >> art [],
+       (* goal 2 (of 3) *)
+       Q.EXISTS_TAC ‘EL i args’ \\
+       CONJ_TAC >- (Q.EXISTS_TAC ‘i’ >> art []) \\
+       POP_ORW >> rw [],
+       (* goal 2 (of 3) *)
+       Q.EXISTS_TAC ‘EL n args’ \\
+       CONJ_TAC >- (Q.EXISTS_TAC ‘n’ >> art []) \\
+       Suff ‘FV (EL n args') SUBSET FV (EL n args)’ >- rw [SUBSET_DEF] \\
+      ‘FV (EL n args) = FV (EL n args') \/
+       FV (EL n args) = v INSERT FV (EL n args')’ by PROVE_TAC [] >- rw [] \\
+       POP_ORW >> SET_TAC [] ])
+ >> DISCH_TAC
  (* Case 2 *)
  >> reverse (Cases_on ‘y = v’)
  >- (simp [] >> DISCH_TAC \\
@@ -2303,77 +2361,23 @@ Proof
      >- (qunabbrevl_tac [‘m’, ‘m'’] >> art [] \\
          Q.PAT_X_ASSUM ‘LENGTH args = hnf_children_size M0’ K_TAC \\
          simp [hnf_children_size_appstar, Abbr ‘args'’]) \\
-     DISCH_THEN (fs o wrap) \\
+     DISCH_TAC \\
+     Q.PAT_X_ASSUM ‘s = s' \/ s = v INSERT s'’ MP_TAC \\
+     POP_ASSUM (fs o wrap) (* m' = m *) \\
      qunabbrev_tac ‘m'’ \\
      qunabbrev_tac ‘n'’ >> rfs [] \\
      rpt (Q.PAT_X_ASSUM ‘T’ K_TAC) \\
   (* KEY: now we show that vs and vs' are actually the same, generated from the
      same excluded set! *)
+     DISCH_TAC \\
      Know ‘vs' = vs’
      >- (Suff ‘X UNION FV (LAMl vs (VAR y @* args)) =
                X UNION FV (LAMl vs (VAR y @* args'))’ >- DISCH_THEN (fs o wrap) \\
          simp [FV_LAMl, FV_appstar] \\
-      (* key idea for each element in args/args' *)
-         Know ‘!i. i < m ==> FV (EL i args) = FV (EL i args') \/
-                             FV (EL i args) = v INSERT FV (EL i args')’
-         >- (rpt STRIP_TAC \\
-             Know ‘EL i args' = [P/v] (EL i args)’
-             >- (rw [Abbr ‘m’, Abbr ‘args'’, EL_MAP]) >> Rewr' \\
-             qabbrev_tac ‘N = EL i args’ \\
-             qabbrev_tac ‘N' = EL i args'’ \\
-            ‘FV P = {}’ by rw [Abbr ‘P’, FV_permutator] \\
-             simp [FV_SUB] \\
-             Cases_on ‘v IN FV N’ >> simp []) >> DISCH_TAC \\
-      (* now generalize to BIGUNION (IMAGE FV (set args)), etc. *)
-         qabbrev_tac ‘s  = BIGUNION (IMAGE FV (set args))’ \\
-         qabbrev_tac ‘s' = BIGUNION (IMAGE FV (set args'))’ \\
-         Know ‘s = s' \/ s = v INSERT s'’
-         >- (Cases_on ‘!i. i < m ==> FV (EL i args) = FV (EL i args')’
-             >- (DISJ1_TAC \\
-                 rw [Abbr ‘s’, Abbr ‘s'’, Once EXTENSION, IN_BIGUNION_IMAGE] \\
-                 EQ_TAC >> rw [MEM_EL] >| (* 2 symmetric subgoals *)
-                 [ (* goal 1 (of 2) *)
-                   Q.EXISTS_TAC ‘EL n args'’ \\
-                   reverse CONJ_TAC
-                   >- (Suff ‘FV (EL n args') = FV (EL n args)’
-                       >- DISCH_THEN (art o wrap) >> rw []) \\
-                   Q.EXISTS_TAC ‘n’ >> art [],
-                   (* goal 2 (of 2) *)
-                   Q.EXISTS_TAC ‘EL n args’ \\
-                   reverse CONJ_TAC
-                   >- (Suff ‘FV (EL n args) = FV (EL n args')’
-                       >- DISCH_THEN (art o wrap) >> rw []) \\
-                   Q.EXISTS_TAC ‘n’ >> art [] ]) \\
-             fs [] (* This asserts a special ‘i’ *) \\
-            ‘FV (EL i args) = v INSERT FV (EL i args')’ by PROVE_TAC [] \\
-             DISJ2_TAC \\
-             rw [Abbr ‘s’, Abbr ‘s'’, Once EXTENSION, IN_BIGUNION_IMAGE] \\
-             EQ_TAC >> rw [MEM_EL] >| (* 3 subgoals *)
-             [ (* goal 1 (of 3) *)
-               Cases_on ‘x = v’ >> rw [] \\
-               Q.PAT_X_ASSUM ‘x IN FV (EL n args)’ MP_TAC \\
-              ‘FV (EL n args) = FV (EL n args') \/
-               FV (EL n args) = v INSERT FV (EL n args')’ by PROVE_TAC []
-               >- (rw [] \\
-                   Q.EXISTS_TAC ‘EL n args'’ >> art [] \\
-                   Q.EXISTS_TAC ‘n’ >> art []) \\
-               rw [] \\
-               Q.EXISTS_TAC ‘EL n args'’ >> art [] \\
-               Q.EXISTS_TAC ‘n’ >> art [],
-               (* goal 2 (of 3) *)
-               Q.EXISTS_TAC ‘EL i args’ \\
-               CONJ_TAC >- (Q.EXISTS_TAC ‘i’ >> art []) \\
-               POP_ORW >> rw [],
-               (* goal 2 (of 3) *)
-               Q.EXISTS_TAC ‘EL n args’ \\
-               CONJ_TAC >- (Q.EXISTS_TAC ‘n’ >> art []) \\
-               Suff ‘FV (EL n args') SUBSET FV (EL n args)’ >- rw [SUBSET_DEF] \\
-              ‘FV (EL n args) = FV (EL n args') \/
-               FV (EL n args) = v INSERT FV (EL n args')’ by PROVE_TAC [] >- rw [] \\
-               POP_ORW >> SET_TAC [] ]) \\
-         rw [] (* one goal left *) \\
+         fs [] (* only ‘s = v INSERT s'’ is left *) \\
          Q.PAT_X_ASSUM ‘v IN X’ MP_TAC \\
          SET_TAC [] (* amazing ... *)) \\
+     POP_ASSUM K_TAC (* s = s' \/ ... *) \\
      DISCH_THEN (fs o wrap) >> qunabbrev_tac ‘vs'’ \\
      fs [principle_hnf_beta_reduce, hnf_appstar] \\
      fs [Abbr ‘M1'’, hnf_children_hnf] \\
@@ -2385,19 +2389,21 @@ Proof
      Q.EXISTS_TAC ‘t’ >> simp [] \\
      cheat)
  (* Case 3 *)
- >> POP_ASSUM (fs o wrap o SYM)
- >> simp [Abbr ‘P’] >> DISCH_TAC
- (* now calculating head-reductions of LAMl vs (permutator d @* args') *)
- (* applying permutator_hreduce_thm *)
- >> Know ‘?xs z. permutator d @* args' -h->*
-                 LAMl xs (LAM z (VAR z @* args' @* MAP VAR xs))’
- >- (MATCH_MP_TAC permutator_hreduce_thm >> rw [])
- >> STRIP_TAC (* this asserts ‘xs’ and ‘z’ *)
+ >> Q.PAT_X_ASSUM ‘s = s' \/ s = v INSERT s'’ MP_TAC
+ >> POP_ASSUM (fs o wrap o SYM) (* y = v *)
+ >> simp [Abbr ‘P’]
+ >> NTAC 2 DISCH_TAC
+ >> ‘m <= d’ by rw []
+ (* applying permutator_hreduce_thm, asserting z and xs *)
+ >> ‘?xs z. permutator d @* args' -h->*
+            LAMl xs (LAM z (VAR z @* args' @* MAP VAR xs)) /\
+            ALL_DISTINCT (SNOC z xs) /\
+            !N. MEM N args' ==> DISJOINT (FV N) (set (SNOC z xs))’
+        by METIS_TAC [permutator_hreduce_thm]
  >> Know ‘[permutator d/y] M -h->*
           LAMl vs (LAMl xs (LAM z (VAR z @* args' @* MAP VAR xs)))’
  >- (MATCH_MP_TAC hreduce_TRANS \\
      Q.EXISTS_TAC ‘LAMl vs (permutator d @* args')’ >> rw [])
-     
  >> DISCH_TAC
  >> ‘hnf (LAMl vs (LAMl xs (LAM z (VAR z @* args' @* MAP VAR xs))))’
        by rw [hnf_LAMl, hnf_appstar]
@@ -2411,7 +2417,34 @@ Proof
      Q.EXISTS_TAC ‘m’ >> art [] \\
      Q.PAT_X_ASSUM ‘LENGTH args = m’ K_TAC \\
      simp [Abbr ‘m’, Abbr ‘m'’, GSYM appstar_APPEND])
- >> Rewr (* ‘if then else’ is eliminated from the goal *)
+ >> Rewr (* ‘if then else’ in the goal is eliminated *)
+ (* NOTE: now we show that vs and vs' are generated from the same excluded list *)
+ >> Know ‘X UNION FV M0' = X UNION FV M0’
+ >- (simp [FV_LAMl, FV_appstar] \\
+  (* NOTE: we want to show Z = s' *)
+     qabbrev_tac ‘Z = {z} UNION s' UNION set xs DELETE z DIFF set xs’ \\
+     Know ‘Z = s'’
+     >- (qunabbrev_tac ‘Z’ \\
+         Suff ‘z NOTIN s' /\ set xs INTER s' = {}’ >- SET_TAC [] \\
+         REWRITE_TAC [GSYM DISJOINT_DEF] \\
+         Suff ‘DISJOINT (set (SNOC z xs)) s'’
+         >- simp [LIST_TO_SET_SNOC, DISJOINT_UNION] \\
+         qabbrev_tac ‘ll = SNOC z xs’ \\
+         simp [DISJOINT_ALT', Abbr ‘s'’, IN_BIGUNION_IMAGE] \\
+         NTAC 2 STRIP_TAC \\
+         rename1 ‘s1 = FV N’ \\
+         Q.PAT_X_ASSUM ‘s1 = FV N’ (ONCE_REWRITE_TAC o wrap) \\
+         Q.PAT_X_ASSUM ‘!N. MEM N args' ==> DISJOINT (FV N) (set ll)’
+           (MP_TAC o (Q.SPEC ‘N’)) \\
+         rw [DISJOINT_ALT]) >> Rewr' \\
+     qunabbrev_tac ‘Z’ \\
+     Q.PAT_X_ASSUM ‘y IN X’ MP_TAC \\
+     fs [] >> SET_TAC [])
+ >> Q.PAT_X_ASSUM ‘s = s' \/ s = y INSERT s'’ K_TAC
+ >> Q.PAT_X_ASSUM ‘M0 = _’ ASSUME_TAC
+ >> Q.PAT_X_ASSUM ‘M1 = _’ ASSUME_TAC
+ >> DISCH_THEN (REV_FULL_SIMP_TAC std_ss o wrap)
+ (* stage work *)
  >> cheat
 QED
 

@@ -1892,10 +1892,14 @@ val _ = hide "Y";
 (* NOTE: ‘permutator n’ contains n + 1 binding variables. Appending at most n
    arbitrary terms, each head reduction step consumes just one of them,
    eventually there should be one more fresh variable left, forming a hnf.
+
+   NOTE2: added one global excluded list X and more disjointness conclusions.
  *)
 Theorem permutator_hreduce_thm :
     !n Ns. LENGTH Ns <= n ==>
-           ?xs y. permutator n @* Ns -h->* LAMl xs (LAM y (VAR y @* Ns @* MAP VAR xs))
+           ?xs y. permutator n @* Ns -h->* LAMl xs (LAM y (VAR y @* Ns @* MAP VAR xs)) /\
+                  ALL_DISTINCT (SNOC y xs) /\
+                  !N. MEM N Ns ==> DISJOINT (FV N) (set (SNOC y xs))
 Proof
     rw [permutator_def]
  >> qabbrev_tac ‘Z = GENLIST n2s (n + 1)’
@@ -2101,6 +2105,36 @@ Proof
  >> REWRITE_TAC [appstar_APPEND]
  >> DISCH_TAC
  >> qexistsl_tac [‘vs2’, ‘y’] >> art []
+ (* extra goals *)
+ >> CONJ_TAC
+ >- (reverse (rw [ALL_DISTINCT_SNOC])
+     >- (qunabbrev_tac ‘vs2’ \\
+         MATCH_MP_TAC ALL_DISTINCT_DROP >> art []) \\
+     Q.PAT_X_ASSUM ‘ALL_DISTINCT Y’ MP_TAC \\
+     Know ‘SNOC y vs = Y’
+     >- (qunabbrevl_tac [‘y’, ‘vs’] \\
+         MATCH_MP_TAC SNOC_LAST_FRONT >> art []) \\
+     DISCH_THEN (ONCE_REWRITE_TAC o wrap o SYM) \\
+     rw [ALL_DISTINCT_SNOC] \\
+     CCONTR_TAC >> fs [Abbr ‘vs2’] \\
+     PROVE_TAC [MEM_DROP_IMP])
+ >> reverse (rw [LIST_TO_SET_SNOC])
+ >- (Suff ‘DISJOINT (FV N) (set Y)’
+     >- (rw [DISJOINT_ALT'] >> POP_ASSUM MATCH_MP_TAC \\
+         rw [Abbr ‘y’, MEM_LAST_NOT_NIL]) \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘N’ >> art [])
+ >> MATCH_MP_TAC DISJOINT_SUBSET
+ >> Q.EXISTS_TAC ‘set Y’
+ >> CONJ_TAC >- (FIRST_X_ASSUM MATCH_MP_TAC \\
+                 Q.EXISTS_TAC ‘N’ >> art [])
+ >> MATCH_MP_TAC SUBSET_TRANS
+ >> Q.EXISTS_TAC ‘set vs’
+ >> reverse CONJ_TAC
+ >- (rw [SUBSET_DEF, Abbr ‘vs’] \\
+     MATCH_MP_TAC MEM_FRONT_NOT_NIL >> art [])
+ >> rw [SUBSET_DEF, Abbr ‘vs2’]
+ >> PROVE_TAC [MEM_DROP_IMP]
 QED
 
 val _ = export_theory()
