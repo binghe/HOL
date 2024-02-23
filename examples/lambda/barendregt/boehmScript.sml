@@ -2392,7 +2392,26 @@ Proof
  >> Know ‘?xs z. permutator d @* args' -h->*
                  LAMl xs (LAM z (VAR z @* args' @* MAP VAR xs))’
  >- (MATCH_MP_TAC permutator_hreduce_thm >> rw [])
- >> STRIP_TAC
+ >> STRIP_TAC (* this asserts ‘xs’ and ‘z’ *)
+ >> Know ‘[permutator d/y] M -h->*
+          LAMl vs (LAMl xs (LAM z (VAR z @* args' @* MAP VAR xs)))’
+ >- (MATCH_MP_TAC hreduce_TRANS \\
+     Q.EXISTS_TAC ‘LAMl vs (permutator d @* args')’ >> rw [])
+     
+ >> DISCH_TAC
+ >> ‘hnf (LAMl vs (LAMl xs (LAM z (VAR z @* args' @* MAP VAR xs))))’
+       by rw [hnf_LAMl, hnf_appstar]
+ >> ‘M0' = LAMl vs (LAMl xs (LAM z (VAR z @* args' @* MAP VAR xs)))’
+       by METIS_TAC [principle_hnf_thm']
+ >> Q.PAT_X_ASSUM ‘permutator d @* args' -h->* _’ K_TAC
+ >> NTAC 2 (Q.PAT_X_ASSUM ‘[permutator d/y] M -h->* _’ K_TAC)
+ (* NOTE: this proof includes ‘m <= m'’ *)
+ >> Know ‘h < m'’
+ >- (MATCH_MP_TAC LESS_LESS_EQ_TRANS \\
+     Q.EXISTS_TAC ‘m’ >> art [] \\
+     Q.PAT_X_ASSUM ‘LENGTH args = m’ K_TAC \\
+     simp [Abbr ‘m’, Abbr ‘m'’, GSYM appstar_APPEND])
+ >> Rewr (* ‘if then else’ is eliminated from the goal *)
  >> cheat
 QED
 

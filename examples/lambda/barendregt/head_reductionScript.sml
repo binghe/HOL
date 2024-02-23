@@ -147,7 +147,7 @@ QED
 Theorem hreduce1_LAMl[simp] :
     !vs M1 M2. LAMl vs M1 -h-> LAMl vs M2 <=> M1 -h-> M2
 Proof
-    Induct_on ‘vs’ >> rw []
+    Induct_on ‘vs’
  >> rw [Once hreduce1_rwts]
 QED
 
