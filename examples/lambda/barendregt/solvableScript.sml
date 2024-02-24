@@ -981,19 +981,6 @@ Proof
  >> simp [Abbr ‘M’]
 QED
 
-Theorem hreduce_BETA :
-    !vs t. LAMl vs t @* MAP VAR vs -h->* t
-Proof
-    Induct_on ‘vs’
- >> rw [Once RTC_CASES1] (* only 1 goal is left *)
- >> DISJ2_TAC
- >> qabbrev_tac ‘M = LAMl vs t’
- >> Q.EXISTS_TAC ‘[VAR h/h] M @* MAP VAR vs’
- >> reverse CONJ_TAC >- rw [Abbr ‘M’]
- >> MATCH_MP_TAC hreduce1_rules_appstar
- >> rw [hreduce1_BETA]
-QED
-
 (* Example 8.3.2 [1, p.171] *)
 Theorem unsolvable_Omega :
     unsolvable Omega

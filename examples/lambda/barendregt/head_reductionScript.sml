@@ -1,3 +1,7 @@
+(*---------------------------------------------------------------------------*
+ * Head Reductions of Lambda Terms                                           *
+ *---------------------------------------------------------------------------*)
+
 open HolKernel Parse boolLib bossLib BasicProvers;
 
 open boolSimps relationTheory pred_setTheory listTheory finite_mapTheory
@@ -143,6 +147,26 @@ Proof
  >> rw [appstar_SNOC]
  >> fs [hreduce1_rules]
 QED
+
+Theorem hreduce_BETA_extended :
+    !l vs t. LAMl vs t @* MAP VAR vs @* MAP VAR l -h->* t @* MAP VAR l
+Proof
+    Q.X_GEN_TAC ‘l’
+ >> Induct_on ‘vs’ >- rw []
+ >> rw [Once RTC_CASES1]
+ >> DISJ2_TAC
+ >> qabbrev_tac ‘M = LAMl vs t’
+ >> Q.EXISTS_TAC ‘[VAR h/h] M @* MAP VAR vs @* MAP VAR l’
+ >> reverse CONJ_TAC >- rw [Abbr ‘M’]
+ >> REWRITE_TAC [GSYM appstar_APPEND]
+ >> MATCH_MP_TAC hreduce1_rules_appstar
+ >> rw [hreduce1_BETA]
+QED
+
+(* |- !vs t. LAMl vs t @* MAP VAR vs -h->* t *)
+Theorem hreduce_BETA =
+        hreduce_BETA_extended |> Q.SPEC ‘[]’
+                              |> REWRITE_RULE [MAP, appstar_empty]
 
 Theorem hreduce1_LAMl[simp] :
     !vs M1 M2. LAMl vs M1 -h-> LAMl vs M2 <=> M1 -h-> M2
@@ -1896,10 +1920,12 @@ val _ = hide "Y";
    NOTE2: added one global excluded list X and more disjointness conclusions.
  *)
 Theorem permutator_hreduce_thm :
-    !n Ns. LENGTH Ns <= n ==>
-           ?xs y. permutator n @* Ns -h->* LAMl xs (LAM y (VAR y @* Ns @* MAP VAR xs)) /\
-                  ALL_DISTINCT (SNOC y xs) /\
-                  !N. MEM N Ns ==> DISJOINT (FV N) (set (SNOC y xs))
+    !X n Ns. FINITE X /\ LENGTH Ns <= n ==>
+             ?xs y. permutator n @* Ns -h->*
+                    LAMl xs (LAM y (VAR y @* Ns @* MAP VAR xs)) /\
+                    ALL_DISTINCT (SNOC y xs) /\
+                    DISJOINT X (set (SNOC y xs)) /\
+                    !N. MEM N Ns ==> DISJOINT (FV N) (set (SNOC y xs))
 Proof
     rw [permutator_def]
  >> qabbrev_tac ‘Z = GENLIST n2s (n + 1)’
@@ -1911,15 +1937,15 @@ Proof
  >> qabbrev_tac ‘M = VAR z @* MAP VAR (FRONT Z)’
  (* preparing for LAMl_ALPHA_ssub *)
  >> qabbrev_tac
-     ‘Y = NEWS (n + 1) (set Z UNION (BIGUNION (IMAGE FV (set Ns))))’
- >> Know ‘FINITE (set Z UNION (BIGUNION (IMAGE FV (set Ns))))’
+     ‘Y = NEWS (n + 1) (X UNION set Z UNION (BIGUNION (IMAGE FV (set Ns))))’
+ >> Know ‘FINITE (X UNION set Z UNION (BIGUNION (IMAGE FV (set Ns))))’
  >- (rw [] >> rw [FINITE_FV])
  >> DISCH_TAC
  >> Know ‘ALL_DISTINCT Y /\
-          DISJOINT (set Y) (set Z UNION (BIGUNION (IMAGE FV (set Ns)))) /\
+          DISJOINT (set Y) (X UNION set Z UNION (BIGUNION (IMAGE FV (set Ns)))) /\
          (LENGTH Y = n + 1)’
  >- (ASM_SIMP_TAC std_ss [NEWS_def, Abbr ‘Y’])
- >> rw []
+ >> rw [] (* all disjointness are separated *)
  (* applying LAMl_ALPHA_ssub *)
  >> Know ‘LAMl Z M = LAMl Y ((FEMPTY |++ ZIP (Z,MAP VAR Y)) ' M)’
  >- (MATCH_MP_TAC LAMl_ALPHA_ssub >> rw [DISJOINT_SYM] \\
@@ -2105,7 +2131,7 @@ Proof
  >> REWRITE_TAC [appstar_APPEND]
  >> DISCH_TAC
  >> qexistsl_tac [‘vs2’, ‘y’] >> art []
- (* extra goals *)
+ (* extra goal: ALL_DISTINCT *)
  >> CONJ_TAC
  >- (reverse (rw [ALL_DISTINCT_SNOC])
      >- (qunabbrev_tac ‘vs2’ \\
@@ -2118,12 +2144,31 @@ Proof
      rw [ALL_DISTINCT_SNOC] \\
      CCONTR_TAC >> fs [Abbr ‘vs2’] \\
      PROVE_TAC [MEM_DROP_IMP])
+ (* extra goal: DISJOINT *)
+ >> CONJ_TAC
+ >- (reverse (rw [LIST_TO_SET_SNOC])
+     >- (Q.PAT_X_ASSUM ‘DISJOINT X (set Y)’ MP_TAC \\
+         rw [DISJOINT_ALT'] \\
+         POP_ASSUM MATCH_MP_TAC \\
+         rw [Abbr ‘y’, MEM_LAST_NOT_NIL]) \\
+     MATCH_MP_TAC DISJOINT_SUBSET \\
+     Q.EXISTS_TAC ‘set Y’ >> art [] \\
+     MATCH_MP_TAC SUBSET_TRANS \\
+     Q.EXISTS_TAC ‘set vs’ \\
+     reverse CONJ_TAC
+     >- (rw [SUBSET_DEF, Abbr ‘vs’] \\
+         MATCH_MP_TAC MEM_FRONT_NOT_NIL >> art []) \\
+     rw [SUBSET_DEF, Abbr ‘vs2’] \\
+     PROVE_TAC [MEM_DROP_IMP])
+ (* final stage *)
  >> reverse (rw [LIST_TO_SET_SNOC])
  >- (Suff ‘DISJOINT (FV N) (set Y)’
-     >- (rw [DISJOINT_ALT'] >> POP_ASSUM MATCH_MP_TAC \\
+     >- (rw [DISJOINT_ALT'] \\
+         POP_ASSUM MATCH_MP_TAC \\
          rw [Abbr ‘y’, MEM_LAST_NOT_NIL]) \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
      Q.EXISTS_TAC ‘N’ >> art [])
+ (* DISJOINT (FV N) (set vs2) *)
  >> MATCH_MP_TAC DISJOINT_SUBSET
  >> Q.EXISTS_TAC ‘set Y’
  >> CONJ_TAC >- (FIRST_X_ASSUM MATCH_MP_TAC \\

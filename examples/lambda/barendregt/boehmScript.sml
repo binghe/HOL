@@ -2251,7 +2251,7 @@ Proof
      qabbrev_tac ‘args' = MAP [P/v] args’ \\
     ‘LENGTH args' = m’ by rw [Abbr ‘args'’] \\
   (* applying permutator_hreduce_thm *)
-     MP_TAC (Q.SPECL [‘d’, ‘args'’] permutator_hreduce_thm) \\
+     MP_TAC (Q.SPECL [‘{}’, ‘d’, ‘args'’] permutator_hreduce_thm) \\
      rw [Abbr ‘P’] \\
      Q.EXISTS_TAC ‘LAMl xs (LAM y (VAR y @* args' @* MAP VAR xs))’ \\
      rw [hnf_appstar, hnf_thm])
@@ -2393,13 +2393,11 @@ Proof
  >> POP_ASSUM (fs o wrap o SYM) (* y = v *)
  >> simp [Abbr ‘P’]
  >> NTAC 2 DISCH_TAC
- >> ‘m <= d’ by rw []
- (* applying permutator_hreduce_thm, asserting z and xs *)
- >> ‘?xs z. permutator d @* args' -h->*
-            LAMl xs (LAM z (VAR z @* args' @* MAP VAR xs)) /\
-            ALL_DISTINCT (SNOC z xs) /\
-            !N. MEM N args' ==> DISJOINT (FV N) (set (SNOC z xs))’
-        by METIS_TAC [permutator_hreduce_thm]
+ (* applying permutator_hreduce_thm with a suitable excluded list *)
+ >> MP_TAC (Q.SPECL [‘set vs’, ‘d’, ‘args'’] permutator_hreduce_thm)
+ >> simp []
+ >> STRIP_TAC >> rename1 ‘ALL_DISTINCT (SNOC z xs)’
+ (* calculating head reductions of ‘[permutator d/y] M’ *)
  >> Know ‘[permutator d/y] M -h->*
           LAMl vs (LAMl xs (LAM z (VAR z @* args' @* MAP VAR xs)))’
  >- (MATCH_MP_TAC hreduce_TRANS \\
@@ -2417,11 +2415,13 @@ Proof
      Q.EXISTS_TAC ‘m’ >> art [] \\
      Q.PAT_X_ASSUM ‘LENGTH args = m’ K_TAC \\
      simp [Abbr ‘m’, Abbr ‘m'’, GSYM appstar_APPEND])
- >> Rewr (* ‘if then else’ in the goal is eliminated *)
- (* NOTE: now we show that vs and vs' are generated from the same excluded list *)
+ >> Rewr
+ (* NOTE: now we show that vs and vs' are generated from the same excluded list.
+    For this purpose, hreduce_LAMl_appstar has been enhanced to provide extra
+    disjointness information for xs and z.
+  *)
  >> Know ‘X UNION FV M0' = X UNION FV M0’
  >- (simp [FV_LAMl, FV_appstar] \\
-  (* NOTE: we want to show Z = s' *)
      qabbrev_tac ‘Z = {z} UNION s' UNION set xs DELETE z DIFF set xs’ \\
      Know ‘Z = s'’
      >- (qunabbrev_tac ‘Z’ \\
