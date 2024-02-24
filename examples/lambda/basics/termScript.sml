@@ -936,6 +936,9 @@ Proof
   SRW_TAC [][SUB_THM, SUB_VAR, pred_setTheory.EXTENSION] THEN METIS_TAC []
 QED
 
+(* |- !t. DISJOINT (FV t) (FDOM phi) ==> phi ' t = t *)
+Theorem ssub_14b' = ssub_14b |> REWRITE_RULE [GSYM DISJOINT_DEF]
+
 val ssub_value = store_thm(
   "ssub_value",
   ``(FV t = EMPTY) ==> ((phi : string |-> term) ' t = t)``,
