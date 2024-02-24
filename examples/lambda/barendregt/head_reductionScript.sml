@@ -336,7 +336,7 @@ Proof
        Q.PAT_X_ASSUM ‘h = v’ (fs o wrap) \\
       ‘FV M DELETE v = FV M’ by ASM_SET_TAC [] >> fs [] \\
        Q.PAT_X_ASSUM ‘!vs t. P’ (MP_TAC o (Q.SPECL [‘vs’, ‘t’])) >> rw [] \\
-       fs [FOLDR_APPEND] \\
+       fs [LAMl_APPEND] \\
        qexistsl_tac [‘v::vs1’, ‘vs2’, ‘N’] >> rw [],
        (* goal 2 (of 4) *)
        fs [tpm_eqr, tpm_LAMl] \\
@@ -1982,7 +1982,7 @@ Proof
  >> DISCH_TAC
  >> ‘vs = vs1 ++ vs2’ by rw [Abbr ‘vs1’, Abbr ‘vs2’, TAKE_DROP]
  >> POP_ORW
- >> REWRITE_TAC [FOLDR_APPEND]
+ >> REWRITE_TAC [LAMl_APPEND]
  >> qabbrev_tac ‘t1 = LAMl vs2 t’
  (* applying hreduce_LAMl_appstar *)
  >> Know ‘LAMl vs1 t1 @* Ns -h->* (FEMPTY |++ ZIP (vs1,Ns)) ' t1’

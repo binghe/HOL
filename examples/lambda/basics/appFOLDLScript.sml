@@ -202,16 +202,13 @@ QED
 
 Overload "LAMl" = “\vs (t :term). FOLDR LAM t vs”
 
-Theorem LAMl_def :
-  LAMl vs (t : term) = FOLDR LAM t vs
-Proof
-    rw []
-QED
+(* |- !e l1 l2. LAMl (l1 ++ l2) e = LAMl l1 (LAMl l2 e) *)
+Theorem LAMl_APPEND = Q.ISPEC ‘LAM’ FOLDR_APPEND
 
 Theorem LAMl_thm[simp]:
   (LAMl [] M = M) /\
   (LAMl (h::t) M = LAM h (LAMl t M))
-Proof SRW_TAC [][LAMl_def]
+Proof SRW_TAC [][]
 QED
 
 Theorem LAMl_11[simp]:

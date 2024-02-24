@@ -2453,7 +2453,7 @@ Proof
      Q.PAT_X_ASSUM ‘_ = M0’  (REWRITE_TAC o wrap o SYM) \\
      Q.PAT_X_ASSUM ‘_ = M0'’ (REWRITE_TAC o wrap o SYM) \\
     ‘!t. LAMl vs (LAMl xs (LAM z t)) = LAMl (vs ++ xs ++ [z]) t’
-        by rw [FOLDR_APPEND] >> POP_ORW \\
+        by rw [LAMl_APPEND] >> POP_ORW \\
      Q.PAT_X_ASSUM ‘_ = M1’  (REWRITE_TAC o wrap o SYM) \\
      simp [LAMl_size_LAMl])
  >> DISCH_TAC
@@ -2463,13 +2463,12 @@ Proof
      MATCH_MP_TAC NEWS_prefix >> rw [])
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [IS_PREFIX_APPEND]))
  >> rename1 ‘vs' = vs ++ ys’
+ (* applying hreduce_LAMl_appstar
  >> POP_ASSUM (fn th => fs [th, MAP_APPEND, appstar_APPEND])
  >> Know ‘M0' @* MAP VAR vs -h->* LAMl xs (LAM z (VAR z @* args' @* MAP VAR xs))’
  >- (Q.PAT_X_ASSUM ‘_ = M0'’ (REWRITE_TAC o wrap o SYM) \\
      REWRITE_TAC [hreduce_BETA])
  >> DISCH_TAC
- (* special case: vs = []
- >> Cases_on ‘vs = []’
  >> Know ‘M0' @* MAP VAR vs' -h->*
           LAMl xs (LAM z (VAR z @* args' @* MAP VAR xs)) @* MAP VAR ys’
  >- (Q.PAT_X_ASSUM ‘vs' = vs ++ ys’ (REWRITE_TAC o wrap) \\
