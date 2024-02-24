@@ -2565,7 +2565,7 @@ Proof
     rpt STRIP_TAC
  >> Cases_on ‘p = []’ >- rw []
  >> MATCH_MP_TAC subterm_subst_cong_lemma
- >> qexistsl_tac [‘p’, ‘d’] >> rw []
+ >> qexistsl_tac [‘p’] >> rw []
 QED
 
 (* Lemma 10.3.6 (ii) [1, p.247]:
