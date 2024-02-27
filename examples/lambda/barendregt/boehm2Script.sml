@@ -2159,7 +2159,7 @@ QED
   ‘v IN X’ or ‘v IN FV M0’ - former is hard or impossible, latter is not true.
  *)
 Theorem subterm_subst_cong_lemma[local] :
-    !l X M p. l <<= p /\ FINITE X /\
+    !l X M p. l <<= p /\ FINITE X /\ v IN X /\
               p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE /\
               P = permutator d /\ subterm_width M p <= d ==>
               subterm' X ([P/v] M) l = [P/v] (subterm' X M l)
@@ -2876,11 +2876,10 @@ Proof
  >> Know ‘EL h (args' ++ MAP VAR as) = EL h args'’
  >- (MATCH_MP_TAC EL_APPEND1 >> rw [])
  >> Rewr'
- (* NOTE: vs = NEWS n Y ..., and for this reason, Y must be chosen.
+ (* NOTE: vs = NEWS n Y ..., and for this reason, Y must have been used
 
     vs = NEWS n ((X UNION FV M) UNION FV M0)
-
- *)oe
+ *)
  >> Know ‘subterm Y (LAMl vs (VAR y @* args)) (h::t) =
           subterm Y (EL h args) t’
  >- (MP_TAC (Q.SPECL [‘Y’, ‘LAMl vs (VAR y @* args)’, ‘h’, ‘t’] subterm_of_hnf) \\
@@ -2927,6 +2926,7 @@ Proof
  >> qunabbrevl_tac [‘l’, ‘as’, ‘b’]
  >> Q.PAT_X_ASSUM ‘FINITE Y’                   K_TAC
  >> qunabbrev_tac ‘Y’
+ (* final stage: applying subterm_subst_cong *)
  >> MATCH_MP_TAC subterm_subst_cong
  >> Q.EXISTS_TAC ‘d’ >> simp [Abbr ‘P’]
  >> cheat (* not hard *)
