@@ -2180,11 +2180,17 @@ Proof
  >> PROVE_TAC [cj 2 subterm_solvable_lemma]
 QED
 
+(* NOTE: without ‘v in X’, this lemma may not hold
+
+   subterm' X M p = subterm' (X UNION set vs) (EL h Ms) l
+
+   subterm' X ([P/v] M) p =
+ *)
 Theorem subterm_subst_cong_lemma[local] :
-    !l X M p. l <<= p /\ FINITE X /\ v IN X /\
+    !l X X' M p. l <<= p /\ FINITE X /\ v IN X /\
               p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE /\
               P = permutator d /\ subterm_width M p <= d ==>
-              subterm' X ([P/v] M) l = [P/v] (subterm' X M l)
+              subterm' X' ([P/v] M) l = [P/v] (subterm' X M l)
 Proof
     Induct_on ‘l’ >- rw []
  >> RW_TAC std_ss []
@@ -2256,14 +2262,25 @@ Proof
      Q.EXISTS_TAC ‘LAMl xs (LAM y (VAR y @* args' @* MAP VAR xs))’ \\
      rw [hnf_appstar, hnf_thm])
  >> DISCH_TAC
- >> CONV_TAC (UNBETA_CONV “subterm X ([P/v] M) (h::l)”)
- >> qmatch_abbrev_tac ‘f _’
- >> ASM_SIMP_TAC std_ss [subterm_of_solvables]
- >> LET_ELIM_TAC
- >> Q.PAT_X_ASSUM ‘subterm _ (EL h (hnf_children M1)) l <> NONE’ MP_TAC
- >> simp [Abbr ‘f’, hnf_children_hnf]
- >> DISCH_TAC
- >> qunabbrev_tac ‘Ms’
+ (* shared subgoals needed at the end (before handling ‘[P/v] M’):
+
+    1. t IN ltree_paths (BTe (X UNION set vs) (EL h args))
+    2. subterm (X UNION set vs) (EL h args) t <> NONE
+    3. subterm_width (EL h args) t <= d
+  *)
+ >> Know ‘t IN ltree_paths (BTe (X UNION set vs) (EL h args)) /\
+          subterm (X UNION set vs) (EL h args) t <> NONE /\
+          subterm_width (EL h args) t <= d’
+ >- (rpt CONJ_TAC >| (* 3 subgoals *)
+     [ (* goal 1 (of 3) *)
+       Q.PAT_X_ASSUM ‘h::t IN ltree_paths (BTe X M)’ MP_TAC \\
+       rw [ltree_paths_def, ltree_lookup, LNTH_fromList, GSYM BT_def, EL_MAP] \\
+       cheat,
+       (* goal 2 (of 3) *)
+       cheat,
+       (* goal 3 (of 3) *)
+       cheat ])
+ >> STRIP_TAC
  (* Now we need to know the exact form of ‘principle_hnf ([P/v] M)’.
 
     First of all, we know that ‘principle_hnf M = LAMl vs (VAR y @* args)’. This
@@ -2291,7 +2308,7 @@ Proof
  >> POP_ASSUM MP_TAC
  >> ‘DISJOINT (set vs) (FV P)’ by rw [DISJOINT_ALT', FV_permutator, Abbr ‘P’]
  >> simp [LAMl_SUB, appstar_SUB]
- >> POP_ASSUM K_TAC
+ >> POP_ASSUM K_TAC (* DISJOINT (set vs) (FV P) *)
  >> qabbrev_tac ‘args' = MAP [P/v] args’
  >> ‘LENGTH args' = LENGTH args’ by rw [Abbr ‘args'’]
  (* shared properties of args and args' *)
@@ -2352,6 +2369,23 @@ Proof
        FV (EL n args) = v INSERT FV (EL n args')’ by PROVE_TAC [] >- rw [] \\
        POP_ORW >> SET_TAC [] ])
  >> DISCH_TAC
+ >> gs [hnf_children_hnf]
+ >> Q.PAT_X_ASSUM ‘args = Ms’ (fs o wrap o SYM)
+
+
+ (* LHS rewriting (of args')
+
+    NOTE: until this moment, the "X" of ‘subterm X ([P/v] M) (h::l)’
+    can be anything else.
+  *)
+ >> CONV_TAC (UNBETA_CONV “subterm X ([P/v] M) (h::l)”)
+ >> qmatch_abbrev_tac ‘f _’
+ >> ASM_SIMP_TAC std_ss [subterm_of_solvables]
+ >> LET_ELIM_TAC
+ >> Q.PAT_X_ASSUM ‘subterm _ (EL h (hnf_children M1)) l <> NONE’ MP_TAC
+ >> simp [Abbr ‘f’]
+ >> DISCH_TAC
+
  (* Case 2 *)
  >> reverse (Cases_on ‘y = v’)
  >- (simp [] >> DISCH_TAC \\
