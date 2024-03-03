@@ -19,6 +19,7 @@ val _ = new_theory "boehm";
 val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
 
 val o_DEF = combinTheory.o_DEF;
+val _ = hide "Y";
 
 (*---------------------------------------------------------------------------*
  *  ‘tpm’ as an equivalence relation between terms
@@ -2133,11 +2134,72 @@ QED
    NOTE: This definition assumes ‘p <> []’ and ‘p IN ltree_paths (BTe X M)’ and
   ‘subterm X M p <> NONE’, because otherwise there will be no hnf children to
    consider.
+
+   NOTE2: we forcely define ‘subterm_width M [] = 0’ since in this case the width
+   is irrelevant. This setting is also perfect for induction.
  *)
 Definition subterm_width_def :
-    subterm_width M p = let Ms = {subterm' {} M p' | p' <<= FRONT p} in
-                          MAX_SET (IMAGE (hnf_children_size o principle_hnf) Ms)
+    subterm_width M     [] = 0 /\
+    subterm_width M (h::t) =
+      let Ms = {subterm' {} M p' | p' <<= FRONT (h::t)} in
+          MAX_SET (IMAGE (hnf_children_size o principle_hnf) Ms)
 End
+
+(* |- !M. subterm_width M [] = 0 *)
+Theorem subterm_width_NIL[simp] = cj 1 subterm_width_def
+
+Theorem subterm_width_alt :
+    !X M p. FINITE X /\
+            p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
+            subterm_width M p =
+              let Ms = {subterm' X M p' | p' <<= FRONT p} in
+                  MAX_SET (IMAGE (hnf_children_size o principle_hnf) Ms)
+Proof
+    rpt STRIP_TAC
+ >> Cases_on ‘p’ >> rw [subterm_width_def]
+ >> qabbrev_tac ‘p = h::t’
+ (* preparing for subterm_hnf_children_size_cong *)
+ >> Know ‘!Y. IMAGE (hnf_children_size o principle_hnf)
+                    {subterm' Y M p' | p' <<= FRONT p} =
+             {hnf_children_size (principle_hnf (subterm' Y M p')) | p' <<= FRONT p}’
+ >- (rw [Once EXTENSION] \\
+     EQ_TAC >> rw [] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       rename1 ‘q <<= FRONT p’ \\
+       Q.EXISTS_TAC ‘q’ >> rw [],
+       (* goal 2 (of 2) *)
+       rename1 ‘q <<= FRONT p’ \\
+       Q.EXISTS_TAC ‘subterm' Y M q’ >> art [] \\
+       Q.EXISTS_TAC ‘q’ >> art [] ])
+ >> Rewr
+ (* applying subterm_hnf_children_size_cong *)
+ >> Suff ‘{hnf_children_size (principle_hnf (subterm' {} M p')) | p' <<= FRONT p} =
+          {hnf_children_size (principle_hnf (subterm' X M p')) | p' <<= FRONT p}’
+ >- Rewr
+ >> Suff ‘!q. q <<= FRONT p ==>
+              hnf_children_size (principle_hnf (subterm' X M q)) =
+              hnf_children_size (principle_hnf (subterm' {} M q))’
+ >- (DISCH_TAC \\
+     rw [Once EXTENSION] \\
+     EQ_TAC >> rw [] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       rename1 ‘q <<= FRONT p’ \\
+       Q.EXISTS_TAC ‘q’ >> rw [],
+       (* goal 2 (of 2) *)
+       rename1 ‘q <<= FRONT p’ \\
+       Q.EXISTS_TAC ‘q’ >> rw [] ])
+ >> rpt STRIP_TAC
+ >> MATCH_MP_TAC subterm_hnf_children_size_cong
+ >> simp []
+ >> ‘p <> []’ by rw [Abbr ‘p’]
+ (* applying subterm_solvable_lemma *)
+ >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘p’] subterm_solvable_lemma)
+ >> rw []
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> MATCH_MP_TAC IS_PREFIX_TRANS
+ >> Q.EXISTS_TAC ‘FRONT p’ >> art []
+ >> MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []
+QED
 
 (* NOTE: The actual difficulty of this theorem is to prove that
 
@@ -2150,7 +2212,11 @@ Theorem subterm_width_thm :
                p' <<= FRONT p ==>
        hnf_children_size (principle_hnf (subterm' X M p')) <= subterm_width M p
 Proof
-    RW_TAC std_ss [subterm_width_def]
+    rpt STRIP_TAC
+ >> Cases_on ‘p’
+ >> RW_TAC std_ss [subterm_width_def]
+ >> qabbrev_tac ‘p = h::t’
+ >> ‘p <> []’ by rw [Abbr ‘p’]
  >> ‘0 < LENGTH p’ by rw [GSYM NOT_NIL_EQ_LENGTH_NOT_0]
  >> qabbrev_tac ‘J = IMAGE (hnf_children_size o principle_hnf) Ms’
  >> Know ‘J <> {}’
@@ -2180,17 +2246,12 @@ Proof
  >> PROVE_TAC [cj 2 subterm_solvable_lemma]
 QED
 
-(* NOTE: without ‘v in X’, this lemma may not hold
-
-   subterm' X M p = subterm' (X UNION set vs) (EL h Ms) l
-
-   subterm' X ([P/v] M) p =
- *)
+(* NOTE: this lemma does not hold without ‘v IN X’. *)
 Theorem subterm_subst_cong_lemma[local] :
     !l X X' M p. l <<= p /\ FINITE X /\ v IN X /\
-              p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE /\
-              P = permutator d /\ subterm_width M p <= d ==>
-              subterm' X' ([P/v] M) l = [P/v] (subterm' X M l)
+                 p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE /\
+                 P = permutator d /\ subterm_width M p <= d
+             ==> subterm' X' ([P/v] M) l = [P/v] (subterm' X M l)
 Proof
     Induct_on ‘l’ >- rw []
  >> RW_TAC std_ss []
@@ -2228,14 +2289,85 @@ Proof
              “M1 :term”, “y :string”, “args :term list”)
  >> ‘TAKE n vs = vs’ by rw [TAKE_LENGTH_ID_rwt]
  >> POP_ASSUM (rfs o wrap)
- >> ‘LENGTH args = m’ by rw [Abbr ‘m’]
  >> Know ‘m <= w’
  >- (MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’, ‘[]’] subterm_width_thm) \\
      rw [Abbr ‘w’])
  >> DISCH_TAC
- (* NOTE: this is why we require ‘v IN X’ in this lemma. If ‘MEM v vs’, this is
-    a disaster for [P/v] to be passed inside ‘LAMl vs ...’.
+ >> ‘Ms = args’ by rw [Abbr ‘Ms’, hnf_children_hnf]
+ >> ‘LENGTH args = m’ by rw [Abbr ‘m’]
+ >> Q.PAT_X_ASSUM ‘M0 = LAMl vs (VAR y @* args)’ (ASSUME_TAC o SYM)
+ >> Q.PAT_X_ASSUM ‘M1 = VAR y @* args’           (ASSUME_TAC o SYM)
+ >> fs []
+ (* shared subgoals needed at the end (before handling ‘[P/v] M’):
+
+    1. t IN ltree_paths (BTe (X UNION set vs) (EL h args))
+    2. subterm (X UNION set vs) (EL h args) t <> NONE
+    3. subterm_width (EL h args) t <= d
   *)
+ >> Know ‘t IN ltree_paths (BTe (X UNION set vs) (EL h args)) /\
+          subterm (X UNION set vs) (EL h args) t <> NONE /\
+          subterm_width (EL h args) t <= d’
+ >- (CONJ_ASM1_TAC (* t IN ltree_paths ... *)
+     >- (Q.PAT_X_ASSUM ‘h::t IN ltree_paths (BTe X M)’ MP_TAC \\
+         simp [ltree_paths_def, ltree_lookup] \\
+         Know ‘BTe X M = ltree_unfold BT_generator (X,M)’ >- rw [BT_def] \\
+         simp [Once ltree_unfold, BT_generator_def, LNTH_fromList] \\
+         rw [GSYM BT_def, EL_MAP]) \\
+     CONJ_ASM1_TAC (* subterm (X UNION set vs) (EL h args) t <> NONE *)
+     >- (Q.PAT_X_ASSUM ‘!q. q <<= h::t ==> subterm X M q <> NONE’
+           (MP_TAC o (Q.SPEC ‘h::t’)) \\
+         simp [subterm_of_solvables]) \\
+  (* goal: subterm_width (EL h args) t <= d *)
+     MATCH_MP_TAC LESS_EQ_TRANS \\
+     Q.EXISTS_TAC ‘w’ >> art [] \\
+     qunabbrev_tac ‘w’ \\
+  (* applying subterm_width_alt *)
+     MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’] subterm_width_alt) \\
+     simp [] >> DISCH_THEN K_TAC \\
+     qabbrev_tac ‘p = h::t’ \\
+     Know ‘!Y. IMAGE (hnf_children_size o principle_hnf)
+                     {subterm' Y M p' | p' <<= FRONT p} =
+               {hnf_children_size (principle_hnf (subterm' Y M p')) | p' <<= FRONT p}’
+     >- (rw [Once EXTENSION] \\
+         EQ_TAC >> rw [] >| (* 2 subgoals *)
+         [ (* goal 1 (of 2) *)
+           rename1 ‘q <<= FRONT p’ \\
+           Q.EXISTS_TAC ‘q’ >> rw [],
+           (* goal 2 (of 2) *)
+           rename1 ‘q <<= FRONT p’ \\
+           Q.EXISTS_TAC ‘subterm' Y M q’ >> art [] \\
+           Q.EXISTS_TAC ‘q’ >> art [] ]) >> Rewr' \\
+     qunabbrev_tac ‘p’ \\
+     Cases_on ‘t = []’ >- rw [] \\
+  (* applying subterm_width_alt again *)
+     MP_TAC (Q.SPECL [‘X UNION set vs’, ‘EL h args’, ‘t’] subterm_width_alt) \\
+     simp [] >> DISCH_THEN K_TAC \\
+  (* applying SUBSET_MAX_SET *)
+     MATCH_MP_TAC SUBSET_MAX_SET \\
+     CONJ_TAC >- (MATCH_MP_TAC IMAGE_FINITE \\
+                 ‘{subterm' (X UNION set vs) (EL h args) p' | p' <<= FRONT t} =
+                  IMAGE (subterm' (X UNION set vs) (EL h args))
+                        {p' | p' <<= FRONT t}’
+                     by rw [Once EXTENSION] >> POP_ORW \\
+                  MATCH_MP_TAC IMAGE_FINITE >> rw [FINITE_prefix]) \\
+     CONJ_TAC >- (‘{hnf_children_size (principle_hnf (subterm' X M p')) |
+                    p' <<= FRONT (h::t)} =
+                   IMAGE (\p'. hnf_children_size (principle_hnf (subterm' X M p')))
+                         {p' | p' <<= FRONT (h::t)}’
+                     by rw [Once EXTENSION] >> POP_ORW \\
+                  MATCH_MP_TAC IMAGE_FINITE >> rw [FINITE_prefix]) \\
+     rw [SUBSET_DEF] (* this asserts ‘p' <<= FRONT t’ *) \\
+     Q.EXISTS_TAC ‘h::p'’ \\
+    ‘FRONT (h::t) <> []’ by rw [] \\
+     Know ‘h::p' <<= FRONT (h::t)’
+     >- (simp [] >> Cases_on ‘t’ >> fs []) >> Rewr \\
+  (* Michael Norrish's tactics *)
+     CONV_TAC (UNBETA_CONV “subterm X M (h::p')”) \\
+     qmatch_abbrev_tac ‘f _’ \\
+     RW_TAC bool_ss [subterm_of_solvables] \\
+     simp [Abbr ‘f’])
+ >> STRIP_TAC
+ (* NOTE: This is how ‘v IN X’ gets used in this proof *)
  >> Know ‘~MEM v vs’
  >- (Q.PAT_X_ASSUM ‘DISJOINT (set vs) X’ MP_TAC \\
      rw [DISJOINT_ALT'])
@@ -2245,7 +2377,7 @@ Proof
   *)
  >> Know ‘solvable ([P/v] M)’
  >- (‘M0 == M’ by rw [Abbr ‘M0’, lameq_principle_hnf'] \\
-     ‘[P/v] M0 == [P/v] M’ by rw [lameq_sub_cong] \\
+    ‘[P/v] M0 == [P/v] M’ by rw [lameq_sub_cong] \\
      Suff ‘solvable ([P/v] M0)’ >- PROVE_TAC [lameq_solvable_cong] \\
     ‘FV P = {}’ by rw [Abbr ‘P’, FV_permutator] \\
     ‘DISJOINT (set vs) (FV P)’ by rw [DISJOINT_ALT'] \\
@@ -2262,25 +2394,6 @@ Proof
      Q.EXISTS_TAC ‘LAMl xs (LAM y (VAR y @* args' @* MAP VAR xs))’ \\
      rw [hnf_appstar, hnf_thm])
  >> DISCH_TAC
- (* shared subgoals needed at the end (before handling ‘[P/v] M’):
-
-    1. t IN ltree_paths (BTe (X UNION set vs) (EL h args))
-    2. subterm (X UNION set vs) (EL h args) t <> NONE
-    3. subterm_width (EL h args) t <= d
-  *)
- >> Know ‘t IN ltree_paths (BTe (X UNION set vs) (EL h args)) /\
-          subterm (X UNION set vs) (EL h args) t <> NONE /\
-          subterm_width (EL h args) t <= d’
- >- (rpt CONJ_TAC >| (* 3 subgoals *)
-     [ (* goal 1 (of 3) *)
-       Q.PAT_X_ASSUM ‘h::t IN ltree_paths (BTe X M)’ MP_TAC \\
-       rw [ltree_paths_def, ltree_lookup, LNTH_fromList, GSYM BT_def, EL_MAP] \\
-       cheat,
-       (* goal 2 (of 3) *)
-       cheat,
-       (* goal 3 (of 3) *)
-       cheat ])
- >> STRIP_TAC
  (* Now we need to know the exact form of ‘principle_hnf ([P/v] M)’.
 
     First of all, we know that ‘principle_hnf M = LAMl vs (VAR y @* args)’. This
@@ -2301,7 +2414,7 @@ Proof
 
     In all these cases, ‘h < hnf_children_size (principle_hnf ([P/v] M))’ holds:
     In Case 1 & 2, ‘hnf_children_size (principle_hnf ([P/v] M)) = LENGTH args’.
-    In Case 3, ‘hnf_children_size (principle_hnf ([P/v] M)) > or = LENGTH args’.
+    In Case 3, ‘hnf_children_size (principle_hnf ([P/v] M)) >= LENGTH args’.
   *)
  >> ‘M -h->* M0’ by METIS_TAC [principle_hnf_thm']
  >> ‘[P/v] M -h->* [P/v] M0’ by PROVE_TAC [hreduce_substitutive]
