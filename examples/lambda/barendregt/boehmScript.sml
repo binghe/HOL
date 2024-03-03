@@ -2690,6 +2690,12 @@ Proof
  >> simp [Abbr ‘args'’, EL_MAP]
  >> qabbrev_tac ‘N = EL h args’
  >> qabbrev_tac ‘P = permutator d’
+ (* goal: subterm' (X UNION (set vs UNION set ys)) ([P/y] (EL h Ms)) l =
+          [P/y] (subterm' (X UNION set vs) (EL h Ms) l)
+
+    NOTE: LHS has ‘X UNION (set vs UNION set ys)’ while RHS has ‘X UNION set vs’.
+          I think this equation is actually a tpm.
+  *)
  >> cheat
 QED
 
@@ -2742,6 +2748,13 @@ QED
 
    where  vs = NEWS (LAMl_size (principle_hnf M) (X UNION FV M)) = f (X,M)
          (vs is function of X and M, assuming M is solvable, otherwise trivial.)
+
+   NOTE5: It's possible that the two terms in the final conclusion:
+
+   1. subterm' Z (apply pi M) p
+   2. fm ' (subterm' Z' M p)
+
+   are not equal, nor are they beta-equivalent, but they differ by a tpm!
  *)
 Theorem Boehm_transform_exists_lemma2 :
     !X M p. FINITE X /\
@@ -3119,7 +3132,76 @@ Proof
  (* applying subterm_subst_cong *)
  >> MATCH_MP_TAC subterm_subst_cong
  >> Q.EXISTS_TAC ‘d’ >> simp [Abbr ‘P’]
- >> cheat (* not hard *)
+ (* NOTE: Here, we need the following new lemma:
+
+   |- !X Y. ltree_paths (BTe X M) = ltree_paths (BTe Y M)
+
+   to convert ‘subterm X M (h::t) <> NONE’ to ‘subterm Z M (h::t) <> NONE’.
+  *)
+ >> cheat
+ (*
+ >> CONJ_ASM1_TAC (* t IN ltree_paths ... *)
+ >- (Q.PAT_X_ASSUM ‘h::t IN ltree_paths (BTe X M)’ MP_TAC \\
+     simp [ltree_paths_def, ltree_lookup] \\
+         Know ‘BTe X M = ltree_unfold BT_generator (X,M)’ >- rw [BT_def] \\
+         simp [Once ltree_unfold, BT_generator_def, LNTH_fromList] \\
+         rw [GSYM BT_def, EL_MAP, hnf_children_hnf])
+ >> CONJ_ASM1_TAC (* subterm (X UNION set vs) (EL h args) t <> NONE *)
+ >- (Q.PAT_X_ASSUM ‘!q. q <<= h::t ==> subterm X M q <> NONE’
+       (MP_TAC o (Q.SPEC ‘h::t’)) \\
+     simp [subterm_of_solvables] >> fs [])
+ (* final goal: subterm_width (EL h args) t <= d *)
+ >> MATCH_MP_TAC LESS_EQ_TRANS
+ >> Q.EXISTS_TAC ‘w’ >> art []
+ >> qunabbrev_tac ‘w’
+ (* applying subterm_width_alt *)
+ >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’] subterm_width_alt)
+ >> simp [] >> DISCH_THEN K_TAC
+ >> qabbrev_tac ‘p = h::t’
+ >> Know ‘!Y. IMAGE (hnf_children_size o principle_hnf)
+                    {subterm' Y M p' | p' <<= FRONT p} =
+             {hnf_children_size (principle_hnf (subterm' Y M p')) | p' <<= FRONT p}’
+ >- (rw [Once EXTENSION] \\
+     EQ_TAC >> rw [] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       rename1 ‘q <<= FRONT p’ \\
+       Q.EXISTS_TAC ‘q’ >> rw [],
+       (* goal 2 (of 2) *)
+       rename1 ‘q <<= FRONT p’ \\
+       Q.EXISTS_TAC ‘subterm' Y M q’ >> art [] \\
+       Q.EXISTS_TAC ‘q’ >> art [] ])
+ >> Rewr'
+ >> qunabbrev_tac ‘p’
+ >> Cases_on ‘t = []’ >- rw []
+ (* applying subterm_width_alt again *)
+ >> MP_TAC (Q.SPECL [‘X UNION set vs’, ‘EL h args’, ‘t’] subterm_width_alt)
+ >> simp [] >> DISCH_THEN K_TAC
+ (* applying SUBSET_MAX_SET *)
+ >> MATCH_MP_TAC SUBSET_MAX_SET
+ >> CONJ_TAC >- (MATCH_MP_TAC IMAGE_FINITE \\
+                ‘{subterm' (X UNION set vs) (EL h args) p' | p' <<= FRONT t} =
+                   IMAGE (subterm' (X UNION set vs) (EL h args))
+                         {p' | p' <<= FRONT t}’
+                    by rw [Once EXTENSION] >> POP_ORW \\
+                 MATCH_MP_TAC IMAGE_FINITE >> rw [FINITE_prefix])
+ >> CONJ_TAC >- (‘{hnf_children_size (principle_hnf (subterm' X M p')) |
+                   p' <<= FRONT (h::t)} =
+                  IMAGE (\p'. hnf_children_size (principle_hnf (subterm' X M p')))
+                        {p' | p' <<= FRONT (h::t)}’
+                    by rw [Once EXTENSION] >> POP_ORW \\
+                 MATCH_MP_TAC IMAGE_FINITE >> rw [FINITE_prefix])
+ >> rw [SUBSET_DEF] (* this asserts ‘p' <<= FRONT t’ *)
+ >> Q.EXISTS_TAC ‘h::p'’
+ >> ‘FRONT (h::t) <> []’ by rw []
+ >> Know ‘h::p' <<= FRONT (h::t)’
+ >- (simp [] >> Cases_on ‘t’ >> fs [])
+ >> Rewr
+ (* Michael Norrish's tactics *)
+ >> CONV_TAC (UNBETA_CONV “subterm X M (h::p')”)
+ >> qmatch_abbrev_tac ‘f _’
+ >> RW_TAC bool_ss [subterm_of_solvables]
+ >> simp [Abbr ‘f’, hnf_children_hnf]
+  *)
 QED
 
 (* Proposition 10.3.7 (i) [1, p.248] (Boehm out lemma)
