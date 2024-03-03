@@ -2248,10 +2248,10 @@ QED
 
 (* NOTE: this lemma does not hold without ‘v IN X’. *)
 Theorem subterm_subst_cong_lemma[local] :
-    !l X X' M p. l <<= p /\ FINITE X /\ v IN X /\
-                 p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE /\
-                 P = permutator d /\ subterm_width M p <= d
-             ==> subterm' X' ([P/v] M) l = [P/v] (subterm' X M l)
+    !l X M p. l <<= p /\ FINITE X /\ v IN X /\
+              p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE /\
+              P = permutator d /\ subterm_width M p <= d
+          ==> subterm' X ([P/v] M) l = [P/v] (subterm' X M l)
 Proof
     Induct_on ‘l’ >- rw []
  >> RW_TAC std_ss []
@@ -2417,11 +2417,8 @@ Proof
     In Case 3, ‘hnf_children_size (principle_hnf ([P/v] M)) >= LENGTH args’.
   *)
  >> ‘M -h->* M0’ by METIS_TAC [principle_hnf_thm']
- >> ‘[P/v] M -h->* [P/v] M0’ by PROVE_TAC [hreduce_substitutive]
- (* NOTE: the last assumption is pushed into goal, because we will need to
-    further do head reductions on ‘[P/v] M0’ in the 2nd case.
-  *)
- >> POP_ASSUM MP_TAC
+ (* NOTE: we will need to further do head reductions on ‘[P/v] M0’ *)
+ >> Know ‘[P/v] M -h->* [P/v] M0’ >- PROVE_TAC [hreduce_substitutive]
  >> ‘DISJOINT (set vs) (FV P)’ by rw [DISJOINT_ALT', FV_permutator, Abbr ‘P’]
  >> simp [LAMl_SUB, appstar_SUB]
  >> POP_ASSUM K_TAC (* DISJOINT (set vs) (FV P) *)
@@ -2491,7 +2488,7 @@ Proof
     NOTE: until this moment, the "X" of ‘subterm X ([P/v] M) (h::l)’
     can be anything else.
   *)
- >> CONV_TAC (UNBETA_CONV “subterm X' ([P/v] M) (h::l)”)
+ >> CONV_TAC (UNBETA_CONV “subterm X ([P/v] M) (h::l)”)
  >> qmatch_abbrev_tac ‘f _’
  >> ASM_SIMP_TAC std_ss [subterm_of_solvables]
  >> LET_ELIM_TAC
@@ -2521,6 +2518,7 @@ Proof
            Instead, ‘LAMl vs (VAR y @* args') @* MAP VAR vs'’ is now a tpm of
           ‘VAR y @* args'’. This means that the lemma statements must also have
            some tpms. --Chun Tian, 3 mar 2024
+   *)
      Know ‘vs' = vs’
      >- (Suff ‘X UNION FV (LAMl vs (VAR y @* args)) =
                X UNION FV (LAMl vs (VAR y @* args'))’ >- DISCH_THEN (fs o wrap) \\
@@ -2537,13 +2535,13 @@ Proof
   (* now applying IH *)
      simp [Abbr ‘m’, Abbr ‘args'’, EL_MAP, Abbr ‘P’] \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
-     Q.EXISTS_TAC ‘t’ >> simp [] *)
-     cheat)
+     Q.EXISTS_TAC ‘t’ >> simp [])
  (* Case 3 *)
  >> Q.PAT_X_ASSUM ‘s = s' \/ s = v INSERT s'’ MP_TAC
  >> POP_ASSUM (fs o wrap o SYM) (* y = v *)
  >> simp [Abbr ‘P’]
- >> NTAC 2 DISCH_TAC
+ >> DISCH_TAC (* s = s' \/ s = y INSERT s' *)
+ >> DISCH_TAC (* [permutator d/y] M -h->* ... *)
  (* applying permutator_hreduce_thm with a suitable excluded list
 
     NOTE: ‘vs'’ is to be proved extending vs (vs' = vs ++ ys), and we will need
@@ -2716,7 +2714,7 @@ Proof
     rpt STRIP_TAC
  >> Cases_on ‘p = []’ >- rw []
  >> MATCH_MP_TAC subterm_subst_cong_lemma
- >> qexistsl_tac [‘p’] >> rw []
+ >> Q.EXISTS_TAC ‘p’ >> rw []
 QED
 
 (* Lemma 10.3.6 (ii) [1, p.247]:
