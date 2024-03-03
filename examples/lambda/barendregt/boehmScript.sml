@@ -2295,14 +2295,14 @@ Proof
  >> DISCH_TAC
  >> ‘Ms = args’ by rw [Abbr ‘Ms’, hnf_children_hnf]
  >> ‘LENGTH args = m’ by rw [Abbr ‘m’]
- >> Q.PAT_X_ASSUM ‘M0 = LAMl vs (VAR y @* args)’ (ASSUME_TAC o SYM)
- >> Q.PAT_X_ASSUM ‘M1 = VAR y @* args’           (ASSUME_TAC o SYM)
- >> fs []
- (* shared subgoals needed at the end (before handling ‘[P/v] M’):
+ (* KEY: some shared subgoals needed at the end, before rewriting ‘[P/v] M’:
 
     1. t IN ltree_paths (BTe (X UNION set vs) (EL h args))
     2. subterm (X UNION set vs) (EL h args) t <> NONE
     3. subterm_width (EL h args) t <= d
+
+    NOTE: the last subgoal requires deep properties of ‘subterm_width’. The
+    involved tactics are not to be repeated in other parts of this lemma.
   *)
  >> Know ‘t IN ltree_paths (BTe (X UNION set vs) (EL h args)) /\
           subterm (X UNION set vs) (EL h args) t <> NONE /\
@@ -2312,11 +2312,11 @@ Proof
          simp [ltree_paths_def, ltree_lookup] \\
          Know ‘BTe X M = ltree_unfold BT_generator (X,M)’ >- rw [BT_def] \\
          simp [Once ltree_unfold, BT_generator_def, LNTH_fromList] \\
-         rw [GSYM BT_def, EL_MAP]) \\
+         rw [GSYM BT_def, EL_MAP, hnf_children_hnf]) \\
      CONJ_ASM1_TAC (* subterm (X UNION set vs) (EL h args) t <> NONE *)
      >- (Q.PAT_X_ASSUM ‘!q. q <<= h::t ==> subterm X M q <> NONE’
            (MP_TAC o (Q.SPEC ‘h::t’)) \\
-         simp [subterm_of_solvables]) \\
+         simp [subterm_of_solvables] >> fs []) \\
   (* goal: subterm_width (EL h args) t <= d *)
      MATCH_MP_TAC LESS_EQ_TRANS \\
      Q.EXISTS_TAC ‘w’ >> art [] \\
@@ -2365,7 +2365,7 @@ Proof
      CONV_TAC (UNBETA_CONV “subterm X M (h::p')”) \\
      qmatch_abbrev_tac ‘f _’ \\
      RW_TAC bool_ss [subterm_of_solvables] \\
-     simp [Abbr ‘f’])
+     simp [Abbr ‘f’, hnf_children_hnf])
  >> STRIP_TAC
  (* NOTE: This is how ‘v IN X’ gets used in this proof *)
  >> Know ‘~MEM v vs’
@@ -2377,7 +2377,7 @@ Proof
   *)
  >> Know ‘solvable ([P/v] M)’
  >- (‘M0 == M’ by rw [Abbr ‘M0’, lameq_principle_hnf'] \\
-    ‘[P/v] M0 == [P/v] M’ by rw [lameq_sub_cong] \\
+     ‘[P/v] M0 == [P/v] M’ by rw [lameq_sub_cong] \\
      Suff ‘solvable ([P/v] M0)’ >- PROVE_TAC [lameq_solvable_cong] \\
     ‘FV P = {}’ by rw [Abbr ‘P’, FV_permutator] \\
     ‘DISJOINT (set vs) (FV P)’ by rw [DISJOINT_ALT'] \\
@@ -2418,6 +2418,9 @@ Proof
   *)
  >> ‘M -h->* M0’ by METIS_TAC [principle_hnf_thm']
  >> ‘[P/v] M -h->* [P/v] M0’ by PROVE_TAC [hreduce_substitutive]
+ (* NOTE: the last assumption is pushed into goal, because we will need to
+    further do head reductions on ‘[P/v] M0’ in the 2nd case.
+  *)
  >> POP_ASSUM MP_TAC
  >> ‘DISJOINT (set vs) (FV P)’ by rw [DISJOINT_ALT', FV_permutator, Abbr ‘P’]
  >> simp [LAMl_SUB, appstar_SUB]
@@ -2440,7 +2443,8 @@ Proof
  >> qabbrev_tac ‘s  = BIGUNION (IMAGE FV (set args))’
  >> qabbrev_tac ‘s' = BIGUNION (IMAGE FV (set args'))’
  >> Know ‘s = s' \/ s = v INSERT s'’
- >- (Cases_on ‘!i. i < m ==> FV (EL i args) = FV (EL i args')’
+ >- (Q.PAT_X_ASSUM ‘Ms = args’ K_TAC \\
+     Cases_on ‘!i. i < m ==> FV (EL i args) = FV (EL i args')’
      >- (DISJ1_TAC \\
          rw [Abbr ‘s’, Abbr ‘s'’, Once EXTENSION, IN_BIGUNION_IMAGE] \\
          EQ_TAC >> rw [MEM_EL] >| (* 2 symmetric subgoals *)
@@ -2482,26 +2486,24 @@ Proof
        FV (EL n args) = v INSERT FV (EL n args')’ by PROVE_TAC [] >- rw [] \\
        POP_ORW >> SET_TAC [] ])
  >> DISCH_TAC
- >> gs [hnf_children_hnf]
- >> Q.PAT_X_ASSUM ‘args = Ms’ (fs o wrap o SYM)
-
-
- (* LHS rewriting (of args')
+ (* LHS rewriting of args'
 
     NOTE: until this moment, the "X" of ‘subterm X ([P/v] M) (h::l)’
     can be anything else.
   *)
- >> CONV_TAC (UNBETA_CONV “subterm X ([P/v] M) (h::l)”)
+ >> CONV_TAC (UNBETA_CONV “subterm X' ([P/v] M) (h::l)”)
  >> qmatch_abbrev_tac ‘f _’
  >> ASM_SIMP_TAC std_ss [subterm_of_solvables]
  >> LET_ELIM_TAC
  >> Q.PAT_X_ASSUM ‘subterm _ (EL h (hnf_children M1)) l <> NONE’ MP_TAC
- >> simp [Abbr ‘f’]
+ >> simp [Abbr ‘f’, hnf_children_hnf]
  >> DISCH_TAC
-
  (* Case 2 *)
  >> reverse (Cases_on ‘y = v’)
- >- (simp [] >> DISCH_TAC \\
+ >- (‘FV P = {}’ by rw [Abbr ‘P’, FV_permutator] \\
+     ‘DISJOINT (set vs) (FV P)’ by rw [DISJOINT_ALT'] \\
+     simp [LAMl_SUB, appstar_SUB] \\
+     DISCH_TAC (* [P/v] M -h->* LAMl vs (VAR y @* args') *) \\
     ‘hnf (LAMl vs (VAR y @* args'))’ by rw [hnf_appstar] \\
     ‘M0' = LAMl vs (VAR y @* args')’ by METIS_TAC [principle_hnf_thm'] \\
      Know ‘m' = m’
@@ -2514,9 +2516,11 @@ Proof
      qunabbrev_tac ‘m'’ \\
      qunabbrev_tac ‘n'’ >> rfs [] \\
      rpt (Q.PAT_X_ASSUM ‘T’ K_TAC) \\
-  (* KEY: now we show that vs and vs' are actually the same, generated from the
-     same excluded set! *)
-     DISCH_TAC \\
+     DISCH_TAC (* s = s' \/ s = v INSERT s' *) \\
+  (* NOTE: now X' and X are different, thus ‘vs' = vs’ never holds!
+           Instead, ‘LAMl vs (VAR y @* args') @* MAP VAR vs'’ is now a tpm of
+          ‘VAR y @* args'’. This means that the lemma statements must also have
+           some tpms. --Chun Tian, 3 mar 2024
      Know ‘vs' = vs’
      >- (Suff ‘X UNION FV (LAMl vs (VAR y @* args)) =
                X UNION FV (LAMl vs (VAR y @* args'))’ >- DISCH_THEN (fs o wrap) \\
@@ -2533,7 +2537,7 @@ Proof
   (* now applying IH *)
      simp [Abbr ‘m’, Abbr ‘args'’, EL_MAP, Abbr ‘P’] \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
-     Q.EXISTS_TAC ‘t’ >> simp [] \\
+     Q.EXISTS_TAC ‘t’ >> simp [] *)
      cheat)
  (* Case 3 *)
  >> Q.PAT_X_ASSUM ‘s = s' \/ s = v INSERT s'’ MP_TAC
