@@ -3207,14 +3207,22 @@ QED
 (* Proposition 10.3.7 (i) [1, p.248] (Boehm out lemma)
 
    NOTE: this time the case ‘p = []’ is included, but it's a trvial case.
+
+   NOTE2: now there's no LHS ‘subterm' Z (apply pi M) p’ as in the lemma, and
+  ‘subterm’ (subterm') only occurs at RHS in the goal. If the conclusion of
+   the previous lemma has to be
+
+   tpm_rel (subterm' Z (apply pi M) p) (fm ' (subterm' Z' M p))
+
+   Then, in theory, this additional tpm can be simulated by another finite map,
+   in addition to the existing one constructed per textbook proofs.
  *)
 Theorem Boehm_out_lemma :
     !p X M. FINITE X /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
-            ?pi fm. apply pi M == fm ' (subterm' X M p)
+            ?pi fm. apply pi M = fm ' (subterm' X M p)
 Proof
     Induct_on ‘p’
- >- (rw [] \\
-     qexistsl_tac [‘[]’, ‘FEMPTY’] >> rw [])
+ >- (rw [] >> qexistsl_tac [‘[]’, ‘FEMPTY’] >> rw [])
  (* stage work *)
  >> rpt STRIP_TAC
  >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::p’] Boehm_transform_exists_lemma2)
