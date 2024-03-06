@@ -164,7 +164,7 @@ Proof
 QED
 
 (* |- !vs t. LAMl vs t @* MAP VAR vs -h->* t *)
-Theorem hreduce_BETA =
+Theorem hreduce_BETA[simp] =
         hreduce_BETA_extended |> Q.SPEC ‘[]’
                               |> REWRITE_RULE [MAP, appstar_empty]
 
