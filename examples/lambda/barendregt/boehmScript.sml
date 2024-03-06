@@ -956,8 +956,11 @@ Proof
 QED
 
 (* NOTE: This lemma is more general than subterm_tpm_cong, which cannot be
-   directly proved. The current statements of this lemma, suitable for doing
-   induction, were due to repeated experiments.  -- Chun Tian, 19 feb 2024.
+   directly proved. The current form of this lemma, suitable for doing
+   induction, was due to repeated experiments.  -- Chun Tian, 19 feb 2024.
+
+   NOTE2: more details about ‘pi’ and ‘pi'’ are needed for expressing them in
+   normal (single-direction) substitutions.
  *)
 Theorem subterm_tpm_lemma :
     !p X Y M pi. FINITE X /\ FINITE Y ==>
@@ -2161,7 +2164,7 @@ Proof
  >> PROVE_TAC [cj 2 subterm_solvable_lemma]
 QED
 
-(* NOTE: this lemma does not hold without ‘v IN X’. *)
+(* NOTE: This lemma does not hold without ‘v IN X’. *)
 Theorem subterm_subst_cong_lemma[local] :
     !l X M p. l <<= p /\ FINITE X /\ v IN X /\
               p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE /\
@@ -2372,16 +2375,16 @@ Proof
            reverse CONJ_TAC >- (Suff ‘FV (EL n args) = FV (EL n args')’
                                 >- DISCH_THEN (art o wrap) >> rw []) \\
            Q.EXISTS_TAC ‘n’ >> art [] ]) \\
-     fs [] (* This asserts a special ‘i’ *) \\
+     fs [] (* This asserts ‘i’ such that ‘FV (EL i args) <> FV (EL i args')’ *) \\
     ‘FV (EL i args) = v INSERT FV (EL i args')’ by PROVE_TAC [] \\
      DISJ2_TAC \\
      rw [Abbr ‘s’, Abbr ‘s'’, Once EXTENSION, IN_BIGUNION_IMAGE] \\
      EQ_TAC >> rw [MEM_EL] >| (* 3 subgoals *)
      [ (* goal 1 (of 3) *)
        Cases_on ‘x = v’ >> rw [] \\
-       Q.PAT_X_ASSUM ‘x IN FV (EL n args)’ MP_TAC \\
-      ‘FV (EL n args) = FV (EL n args') \/
-       FV (EL n args) = v INSERT FV (EL n args')’ by PROVE_TAC []
+       Q.PAT_X_ASSUM ‘x IN FV (EL n Ms)’ MP_TAC \\
+      ‘FV (EL n Ms) = FV (EL n args') \/
+       FV (EL n Ms) = v INSERT FV (EL n args')’ by PROVE_TAC []
        >- (rw [] \\
            Q.EXISTS_TAC ‘EL n args'’ >> art [] \\
            Q.EXISTS_TAC ‘n’ >> art []) \\
@@ -2389,15 +2392,15 @@ Proof
        Q.EXISTS_TAC ‘EL n args'’ >> art [] \\
        Q.EXISTS_TAC ‘n’ >> art [],
        (* goal 2 (of 3) *)
-       Q.EXISTS_TAC ‘EL i args’ \\
+       Q.EXISTS_TAC ‘EL i Ms’ \\
        CONJ_TAC >- (Q.EXISTS_TAC ‘i’ >> art []) \\
        POP_ORW >> rw [],
        (* goal 2 (of 3) *)
-       Q.EXISTS_TAC ‘EL n args’ \\
+       Q.EXISTS_TAC ‘EL n Ms’ \\
        CONJ_TAC >- (Q.EXISTS_TAC ‘n’ >> art []) \\
-       Suff ‘FV (EL n args') SUBSET FV (EL n args)’ >- rw [SUBSET_DEF] \\
-      ‘FV (EL n args) = FV (EL n args') \/
-       FV (EL n args) = v INSERT FV (EL n args')’ by PROVE_TAC [] >- rw [] \\
+       Suff ‘FV (EL n args') SUBSET FV (EL n Ms)’ >- rw [SUBSET_DEF] \\
+      ‘FV (EL n Ms) = FV (EL n args') \/
+       FV (EL n Ms) = v INSERT FV (EL n args')’ by PROVE_TAC [] >- rw [] \\
        POP_ORW >> SET_TAC [] ])
  >> DISCH_TAC
  (* LHS rewriting of args'
@@ -2683,8 +2686,9 @@ Theorem Boehm_transform_exists_lemma :
             ?pi. Boehm_transform pi /\
                 (solvable M ==> solvable (apply pi M)) /\
                  is_ready (apply pi M) /\
-                 ?Z Z'. FINITE Z /\ FINITE Z' /\ subterm Z (apply pi M) p <> NONE /\
-                        ?fm. subterm' Z (apply pi M) p = fm ' (subterm' Z' M p)
+                ?Z Z' fm. FINITE Z /\ FINITE Z' /\
+                          subterm Z (apply pi M) p <> NONE /\
+                          tpm_rel (subterm' Z (apply pi M) p) (fm ' (subterm' Z' M p))
 Proof
     rpt STRIP_TAC
  (* trivial case: unsolvable M (useless) *)
@@ -2951,10 +2955,6 @@ Proof
          FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
      rw [SUBSET_DEF, IN_BIGUNION_IMAGE] \\
      Q.EXISTS_TAC ‘e’ >> art [])
- (* stage work, there's no other choice for this fm
- >> Q.EXISTS_TAC ‘FEMPTY |+ (y,P)’
- >> REWRITE_TAC [single_ssub]
-  *)
  (* NOTE: for rewriting M to M0 in the goal, Z can be anything. *)
  >> Q.ABBREV_TAC ‘Y = X UNION FV M’
  >> ‘FINITE Y’ by rw [Abbr ‘Y’]
@@ -3065,17 +3065,20 @@ Proof
      qunabbrev_tac ‘M0’ \\
      MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
  >> DISCH_TAC
+ (* stage work, there's no other choice for this fm *)
+ >> Q.EXISTS_TAC ‘FEMPTY |+ (y,P)’
+ >> REWRITE_TAC [single_ssub]
  (* applying subterm_subst_cong *)
- >> MP_TAC (Q.SPECL [‘t’, ‘Z’, ‘N’, ‘y’, ‘P’, ‘d’] subterm_subst_cong)
+ >> MATCH_MP_TAC subterm_subst_cong
+ >> Q.EXISTS_TAC ‘d’
+ >> simp [Abbr ‘P’]
+ >> cheat
  (* NOTE: Here, we need the following new lemma:
 
    |- !X Y. ltree_paths (BTe X M) = ltree_paths (BTe Y M)
 
    to convert ‘subterm X M (h::t) <> NONE’ to ‘subterm Z M (h::t) <> NONE’.
-  *)
- >> Know ‘t IN ltree_paths (BTe Z N) /\ subterm Z N t <> NONE /\ subterm_width N t <= d’
- >- cheat
- (*
+
  >> CONJ_ASM1_TAC (* t IN ltree_paths ... *)
  >- (Q.PAT_X_ASSUM ‘h::t IN ltree_paths (BTe X M)’ MP_TAC \\
      simp [ltree_paths_def, ltree_lookup] \\
@@ -3138,10 +3141,6 @@ Proof
  >> RW_TAC bool_ss [subterm_of_solvables]
  >> simp [Abbr ‘f’, hnf_children_hnf]
   *)
- >> simp [Abbr ‘P’]
- >> STRIP_TAC (* t IN ltree_paths (BTe Z N) /\ ... *)
- >> STRIP_TAC (* tpm_rel *)
- >> cheat
 QED
 
 (* Proposition 10.3.7 (i) [1, p.248] (Boehm out lemma)
@@ -3175,19 +3174,12 @@ Proof
  >> DISCH_TAC
  >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’] Boehm_transform_exists_lemma)
  >> rw [] (* this asserts ‘pi’ and ‘fm’, both to be renamed *)
- >> rename1 ‘subterm' Z (apply p0 M) p = f0 ' (subterm' Z' M p)’
- >> qabbrev_tac ‘M' = apply p0 M’
+ >> qabbrev_tac ‘M' = apply pi M’
  >> ‘?y Ms. M' -h->* VAR y @* Ms /\ EVERY (\e. y # e) Ms’
        by METIS_TAC [is_ready_alt]
- >> qunabbrev_tac ‘p’
- (* Here, M' == VAR y @* Ms (hnf), then what's the relationship between
-   ‘subterm' Z M' (h::t)’ and ‘subterm' Z Ms t’?
-
-    Note that we don't know if ‘principle_hnf M' = VAR y @* Ms’, thus actually
-    there's no relationship (the above two terms) at all, unless this principle
-    hnf conclusion is directly provided by Boehm_transform_exists_lemma.
-  *)
  >> ‘principle_hnf M' = VAR y @* Ms’ by rw [principle_hnf_thm', hnf_appstar]
+ (* stage work *)
+ >> qunabbrev_tac ‘p’
  >> Know ‘h < LENGTH Ms’
  >- (Q.PAT_X_ASSUM ‘subterm Z M' (h::t) <> NONE’ MP_TAC \\
      RW_TAC std_ss [subterm_of_solvables] >> fs [])
