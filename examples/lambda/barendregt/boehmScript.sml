@@ -3151,14 +3151,24 @@ QED
   ‘subterm’ (subterm') only occurs at RHS in the goal. If the conclusion of
    the previous lemma has to be
 
-   tpm_rel (subterm' Z (apply pi M) p) (fm ' (subterm' Z' M p))
+      tpm_rel (subterm' Z (apply pi M) p) (fm ' (subterm' Z' M p))
 
-   Then, in theory, this additional tpm can be simulated by another finite map,
-   in addition to the existing one constructed per textbook proofs.
+   Then the conclusion should be also changed to
+
+      tpm_rel (apply pi M) (fm ' (subterm' Z M p))
+
+   Instead of ‘apply pi M = fm ' (subterm' Z M p)’.
+
+   NOTE3: In textbook, ‘fm’ is a closed substitution (but how it's going to be
+   used in later theorems is unknown so far). Perhaps it's possible to convert
+   this extra tpm into ‘fm’, or into an equivalent ISUB (if the fresh variables
+   in the tpm can be correctly identified, see [fresh_tpm_subst]), but this is
+   unnecessary at this moment. Even later, handling one extra tpm shouldn't be
+   a big problem.
  *)
 Theorem Boehm_out_lemma :
     !p X M. FINITE X /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
-            ?Z pi fm. apply pi M = fm ' (subterm' Z M p)
+            ?Z pi fm. tpm_rel (apply pi M) (fm ' (subterm' Z M p))
 Proof
     Induct_on ‘p’
  >- (rw [] >> qexistsl_tac [‘[]’, ‘FEMPTY’] >> rw [])
