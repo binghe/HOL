@@ -1953,6 +1953,7 @@ Proof
  >> rw [Boehm_apply_MAP_rightctxt]
 QED
 
+(* NOTE: if M is solvable, ‘apply pi M’ may not be solvable. *)
 Theorem Boehm_apply_unsolvable :
     !pi M. Boehm_transform pi /\ unsolvable M ==> unsolvable (apply pi M)
 Proof
@@ -2755,11 +2756,19 @@ QED
    2. fm ' (subterm' Z' M p)
 
    are not equal, nor are they beta-equivalent, but they differ by a tpm!
+
+   NOTE6: In general ‘apply pi M’ is not solvable even if M is solable (see also
+         [Boehm_apply_unsolvable], but in this case it is, and this is needed in
+          Boehm_out_lemma when rewriting ‘apply pi M’ to explicit forms using
+         [is_ready_alt] (assuming M is solvable). The extra conclusion is added:
+         ‘solvable M ==> solvable (apply pi M)’, which is not provable outside
+          the proof of this lemma.
  *)
 Theorem Boehm_transform_exists_lemma2 :
     !X M p. FINITE X /\
             p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
             ?pi. Boehm_transform pi /\ is_ready (apply pi M) /\
+                (solvable M ==> solvable (apply pi M)) /\
                  ?fm Z Z'. subterm' Z (apply pi M) p = fm ' (subterm' Z' M p)
 Proof
     rpt STRIP_TAC
@@ -3017,6 +3026,12 @@ Proof
     *)
       MATCH_MP_TAC principle_hnf_denude_thm >> rw [])
  >> DISCH_TAC
+ (* extra subgoal: solvable (apply (p3 ++ p2 ++ p1) M) *)
+ >> CONJ_ASM1_TAC
+ >- (Suff ‘solvable (VAR b @* args' @* MAP VAR as)’
+     >- PROVE_TAC [lameq_solvable_cong] \\
+     REWRITE_TAC [solvable_iff_has_hnf] \\
+     MATCH_MP_TAC hnf_has_hnf >> rw [hnf_appstar])
  (* stage work, there's no other choice for this fm *)
  >> Q.EXISTS_TAC ‘FEMPTY |+ (y,P)’
  >> REWRITE_TAC [single_ssub]
@@ -3041,13 +3056,10 @@ Proof
        (ONCE_REWRITE_TAC o wrap o SYM) \\
      qabbrev_tac ‘t = apply (p3 ++ p2 ++ p1) M’ \\
      Suff ‘subterm Z (principle_hnf t) p = subterm Z t p’ >- rw [] \\
-     MATCH_MP_TAC subterm_of_principle_hnf >> art [] \\
-     Suff ‘solvable (VAR b @* args' @* MAP VAR as)’
-     >- PROVE_TAC [lameq_solvable_cong] \\
-     REWRITE_TAC [solvable_iff_has_hnf] \\
-     MATCH_MP_TAC hnf_has_hnf >> rw [hnf_appstar])
+     MATCH_MP_TAC subterm_of_principle_hnf >> art [])
  >> Rewr'
  (* stage cleanups *)
+ >> Q.PAT_X_ASSUM ‘solvable (apply (p3 ++ p2 ++ p1) M)’          K_TAC
  >> Q.PAT_X_ASSUM ‘principle_hnf (apply (p3 ++ p2 ++ p1) M) = _’ K_TAC
  >> Q.PAT_X_ASSUM ‘apply (p3 ++ p2 ++ p1) M == _’                K_TAC
  >> Q.PAT_X_ASSUM ‘Boehm_transform (p3 ++ p2 ++ p1)’             K_TAC
@@ -3223,11 +3235,22 @@ Theorem Boehm_out_lemma :
 Proof
     Induct_on ‘p’
  >- (rw [] >> qexistsl_tac [‘[]’, ‘FEMPTY’] >> rw [])
- (* stage work *)
  >> rpt STRIP_TAC
- >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::p’] Boehm_transform_exists_lemma2)
- >> rw [] (* this asserts ‘pi’ (to be renamed to ‘p0’) and ‘fm’ *)
- >> rename1 ‘Boehm_transform p0’
+ >> rename1 ‘subterm X M (h::t) <> NONE’
+ >> qabbrev_tac ‘p = h::t’
+ >> ‘p <> []’ by rw [Abbr ‘p’]
+ >> ‘(!q. q <<= p ==> subterm X M q <> NONE) /\
+      !q. q <<= FRONT p ==> solvable (subterm' X M q)’
+         by METIS_TAC [subterm_solvable_lemma]
+ >> Know ‘solvable M’
+ >- (POP_ASSUM (MP_TAC o Q.SPEC ‘[]’) >> rw [])
+ >> DISCH_TAC
+ >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’] Boehm_transform_exists_lemma2)
+ >> rw [] (* this asserts ‘pi’ and ‘fm’, both to be renamed *)
+ >> rename1 ‘subterm' Z (apply p0 M) p = fm0 ' (subterm' Z' M p)’
+ >> qabbrev_tac ‘M' = apply p0 M’
+ >> ‘?y Ms. M' == VAR y @* Ms /\ EVERY (\e. y # e) Ms’
+       by METIS_TAC [is_ready_alt]
  >> cheat
 QED
 
