@@ -1594,7 +1594,7 @@ Proof
  >> rw [Once hnf_children_def]
 QED
 
-Theorem hnf_children_hnf :
+Theorem hnf_children_hnf[simp] :
     !y args. hnf_children (VAR y @* args) = args
 Proof
     rpt GEN_TAC

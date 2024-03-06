@@ -141,6 +141,12 @@ Definition NEWS :
     NEWS (SUC n) s = NEW s :: NEWS n (NEW s INSERT s)
 End
 
+Theorem NEWS_0[simp] :
+    NEWS 0 s = []
+Proof
+    rw [NEWS]
+QED
+
 (* NOTE: this is the old FRESH_list_def *)
 Theorem NEWS_def :
     !n s. FINITE s ==>
