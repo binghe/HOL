@@ -580,7 +580,7 @@ Proof
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> qabbrev_tac ‘n = LAMl_size M0’
  >> qabbrev_tac ‘vs = NEWS n (X UNION FV M0)’
- >> qabbrev_tac ‘M1 = principle_hnf (M0 @* (MAP VAR vs))’
+ >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
  >> qabbrev_tac ‘Ms = hnf_children M1’
  >> Know ‘BTe X M = ltree_unfold BT_generator (X,M)’ >- rw [BT_def]
  >> simp [Once ltree_unfold, BT_generator_def]
@@ -591,12 +591,57 @@ Proof
  >> rw [ltree_paths_def, ltree_lookup_def, LNTH_fromList, GSYM BT_def, EL_MAP]
 QED
 
+Theorem BT_ltree_lookup_lemma :
+    !p X Y M pi. FINITE X /\ FINITE Y /\
+                 ltree_lookup (BTe X M) p <> NONE ==>
+                 ltree_lookup (BTe Y (tpm pi M)) p <> NONE)
+Proof
+    cheat
+QED
+(*
+    Induct_on ‘p’ >- rw [ltree_lookup_def]
+ >> rpt GEN_TAC
+ >> reverse (Cases_on ‘solvable M’)
+ >- rw [BT_of_unsolvables]
+ >> simp [ltree_lookup]
+ >> qabbrev_tac ‘M0 = principle_hnf M’
+ >> qabbrev_tac ‘n = LAMl_size M0’
+ >> qabbrev_tac ‘vs = NEWS n (X UNION FV M0)’
+ >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
+ >> qabbrev_tac ‘Ms = hnf_children M1’
+ >> Know ‘BTe X M = ltree_unfold BT_generator (X,M)’ >- rw [BT_def]
+ >> simp [Once ltree_unfold, BT_generator_def, LNTH_fromList, LMAP_fromList]
+ >> DISCH_THEN K_TAC
+ >> REWRITE_TAC [GSYM BT_def]
+ >> Cases_on ‘h < LENGTH Ms’ >> simp [EL_MAP]
+ (* stage work *)
+ >> qabbrev_tac ‘vs' = NEWS n (Y UNION FV M0)’
+ >> qabbrev_tac ‘M1' = principle_hnf (M0 @* MAP VAR vs')’
+ >> qabbrev_tac ‘Ms' = hnf_children M1'’
+ >> Know ‘BTe Y M = ltree_unfold BT_generator (Y,M)’ >- rw [BT_def]
+ >> simp [Once ltree_unfold, BT_generator_def, LNTH_fromList, LMAP_fromList]
+ >> DISCH_THEN K_TAC
+ >> Know ‘LENGTH Ms' = LENGTH Ms’
+ >- cheat
+ >> rw []
+ >> REWRITE_TAC [GSYM BT_def]
+ >> simp [EL_MAP]
+ >> cheat
+ *)
+
 (* The set of ltree paths of BT is unique w.r.t. excluded list *)
 Theorem BT_ltree_paths_unique :
     !X Y M. FINITE X /\ FINITE Y ==>
             ltree_paths (BTe X M) = ltree_paths (BTe Y M)
 Proof
-    cheat
+    rw [ltree_paths_def]
+ >> MATCH_MP_TAC SUBSET_ANTISYM
+ >> rw [SUBSET_DEF]
+ >| [ (* goal 1 (of 2) *)
+      MP_TAC (Q.SPECL [‘x’, ‘X’, ‘Y’, ‘M’, ‘[]’] BT_ltree_lookup_lemma),
+      (* goal 2 (of 2) *)
+      MP_TAC (Q.SPECL [‘x’, ‘Y’, ‘X’, ‘M’, ‘[]’] BT_ltree_lookup_lemma) ]
+ >> rw [] (* shared ending tactics *)
 QED
 
 (* NOTE: In the above theorem, when the antecedents hold, i.e.
@@ -3252,7 +3297,20 @@ Proof
  (* applying subterm_hnf_children_size_cong *)
  >> MATCH_MP_TAC subterm_hnf_children_size_cong >> art []
  (* subgoals: subterm X M (h::p') <> NONE /\ solvable (subterm' X M (h::p')) *)
- >> cheat
+ >> qabbrev_tac ‘p = h::t’
+ >> ‘p <> []’ by rw [Abbr ‘p’]
+ >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘p’] subterm_solvable_lemma)
+ >> simp [] >> STRIP_TAC
+ >> qunabbrev_tac ‘p’
+ >> CONJ_TAC (* subterm X M (h::p') <> NONE *)
+ >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [] \\
+     MATCH_MP_TAC IS_PREFIX_TRANS \\
+     Q.EXISTS_TAC ‘FRONT t’ >> art [] \\
+     MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art [])
+ (* final goal: solvable (subterm' X M (h::p')) *)
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> rw []
+ >> Cases_on ‘t’ >> fs []
 QED
 
 (* Proposition 10.3.7 (i) [1, p.248] (Boehm out lemma)
