@@ -2600,11 +2600,89 @@ Proof
  >> qunabbrev_tac ‘l'’
  >> qunabbrev_tac ‘fm’
  >> simp [Abbr ‘args'’, EL_MAP]
+ >> Q.PAT_X_ASSUM ‘args = Ms’ (fs o wrap o SYM)
  >> qabbrev_tac ‘N = EL h args’
  >> qabbrev_tac ‘P = permutator d’
  (* NOTE: left side has ‘X UNION (set vs UNION set ys)’ and
           right side RHS has ‘X UNION set vs’... *)
- >> cheat
+ >> REWRITE_TAC [UNION_ASSOC]
+ >> qabbrev_tac ‘Y = X UNION set vs’
+ >> ‘FINITE Y’ by rw [Abbr ‘Y’]
+ >> qabbrev_tac ‘Z = Y UNION set ys’
+ >> ‘FINITE Z’ by rw [Abbr ‘Z’]
+ >> Suff ‘subterm Y ([P/y] N) l <> NONE /\
+          tpm_rel (subterm' Y ([P/y] N) l) ([P/y] (subterm' Y N l))’
+ >- (STRIP_TAC \\
+     CONJ_ASM1_TAC >- PROVE_TAC [subterm_tpm_cong] \\
+  (* applying tpm_rel_cong and subterm_tpm_cong *)
+     Suff ‘tpm_rel (subterm' Z ([P/y] N) l) ([P/y] (subterm' Y N l)) <=>
+           tpm_rel (subterm' Y ([P/y] N) l) ([P/y] (subterm' Y N l))’ >- rw [] \\
+     MATCH_MP_TAC tpm_rel_cong >> simp [] \\
+     PROVE_TAC [subterm_tpm_cong])
+ (* applying IH, finally *)
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘l’ >> simp []
+ >> CONJ_TAC >- rw [Abbr ‘Y’] (* y IN Y *)
+ (* applying ltree_paths_inclusive *)
+ >> CONJ_ASM1_TAC (* l IN ltree_paths ... *)
+ >- (MATCH_MP_TAC ltree_paths_inclusive \\
+     Q.EXISTS_TAC ‘t’ >> art [])
+ (* final goal *)
+ >> MATCH_MP_TAC LESS_EQ_TRANS
+ >> Q.EXISTS_TAC ‘w’ >> art []
+ >> qunabbrevl_tac [‘N’, ‘w’]
+ (* applying subterm_width_alt *)
+ >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’] subterm_width_alt)
+ >> simp [] >> DISCH_THEN K_TAC
+ >> qabbrev_tac ‘p = h::t’
+ >> Know ‘IMAGE (hnf_children_size o principle_hnf)
+                {subterm' X M p' | p' <<= FRONT p} =
+          {hnf_children_size (principle_hnf (subterm' X M p')) | p' <<= FRONT p}’
+ >- (rw [Once EXTENSION] \\
+     EQ_TAC >> rw [] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       rename1 ‘q <<= FRONT p’ \\
+       Q.EXISTS_TAC ‘q’ >> rw [],
+       (* goal 2 (of 2) *)
+       rename1 ‘q <<= FRONT p’ \\
+       Q.EXISTS_TAC ‘subterm' X M q’ >> art [] \\
+       Q.EXISTS_TAC ‘q’ >> art [] ])
+ >> Rewr'
+ >> qunabbrev_tac ‘p’
+ (* if t = [], then l = [] *)
+ >> Cases_on ‘t = []’ >- fs []
+ >> Cases_on ‘l = []’ >> rw []
+ (* applying subterm_width_alt again *)
+ >> MP_TAC (Q.SPECL [‘X UNION set vs’, ‘EL h args’, ‘l’] subterm_width_alt)
+ >> simp [] >> DISCH_THEN K_TAC
+ (* applying SUBSET_MAX_SET *)
+ >> MATCH_MP_TAC SUBSET_MAX_SET
+ >> CONJ_TAC (* FINITE #1 *)
+ >- (MATCH_MP_TAC IMAGE_FINITE \\
+    ‘{subterm' Y (EL h args) p' | p' <<= FRONT l} =
+       IMAGE (subterm' Y (EL h args)) {p' | p' <<= FRONT l}’
+       by rw [Once EXTENSION] >> POP_ORW \\
+     MATCH_MP_TAC IMAGE_FINITE >> rw [FINITE_prefix])
+ >> CONJ_TAC (* FINITE #2 *)
+ >- (‘{hnf_children_size (principle_hnf (subterm' X M p')) | p' <<= FRONT (h::t)} =
+         IMAGE (\p'. hnf_children_size (principle_hnf (subterm' X M p')))
+               {p' | p' <<= FRONT (h::t)}’
+       by rw [Once EXTENSION] >> POP_ORW \\
+     MATCH_MP_TAC IMAGE_FINITE >> rw [FINITE_prefix])
+ >> rw [SUBSET_DEF] (* this asserts ‘p' <<= FRONT l’ *)
+ >> Q.EXISTS_TAC ‘h::p'’
+ >> ‘FRONT (h::t) <> []’ by rw []
+ >> Know ‘h::p' <<= FRONT (h::t)’
+ >- (simp [] >> Cases_on ‘t’ >> fs [] \\
+     MATCH_MP_TAC IS_PREFIX_TRANS \\
+     Q.EXISTS_TAC ‘FRONT l’ >> rw [] \\
+     cheat)
+ >> Rewr
+  (* Michael Norrish's tactics *)
+ >> CONV_TAC (UNBETA_CONV “subterm X M (h::p')”)
+ >> qmatch_abbrev_tac ‘f _’
+ >> RW_TAC bool_ss [subterm_of_solvables]
+ >> simp [Abbr ‘f’, hnf_children_hnf]
 QED
 
 (* NOTE: ‘y IN X’ must hold to make sure that ‘~MEM y vs’, where ‘set vs’ is disjoint
