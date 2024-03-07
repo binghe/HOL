@@ -681,6 +681,12 @@ End
 
 val _ = set_fixity "ISUB" (Infixr 501);
 
+Theorem ISUB_NIL[simp] :
+    t ISUB [] = t
+Proof
+    rw [ISUB_def]
+QED
+
 Definition DOM_DEF :
    (DOM [] = {}) /\
    (DOM ((x,y)::rst) = {y} UNION DOM rst)

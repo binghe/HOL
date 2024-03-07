@@ -2670,15 +2670,20 @@ QED
 
    NOTE6: In general ‘apply pi M’ is not solvable even if M is solable (see also
          [Boehm_apply_unsolvable], but in this case it is, and this is needed in
-          Boehm_out_lemma when rewriting ‘apply pi M’ to explicit forms using
+         [Boehm_out_lemma] when rewriting ‘apply pi M’ to explicit forms using
          [is_ready_alt] (assuming M is solvable). The extra conclusion is added:
-         ‘solvable M ==> solvable (apply pi M)’, which is not provable outside
-          the proof of this lemma.
+        ‘solvable M ==> solvable (apply pi M)’, which is not provable outside
+         the proof of this lemma.
 
    NOTE7: The core textbook proof steps of this lemma is actually in the proof of
          [subterm_subst_cong], which has to have a ‘tpm_rel’ in the conclusion.
           But the conclusion of the present lemma may still be ‘=’, because ‘tpm’
           may be represent by a ssub (fm), which can be combined with [P/y].
+
+   NOTE8: Instead of ssub, the conclusion has used ‘ISUB’. This is because later,
+          in [Boehm_out_lemma], we need to concatenate two ISUBs into a single one,
+          but there's no clear relationship on their keys. ISUB is straightforward
+          for this purposes.
  *)
 Theorem Boehm_transform_exists_lemma :
     !X M p. FINITE X /\
@@ -2686,16 +2691,17 @@ Theorem Boehm_transform_exists_lemma :
             ?pi. Boehm_transform pi /\
                 (solvable M ==> solvable (apply pi M)) /\
                  is_ready (apply pi M) /\
-                ?Z Z' fm. FINITE Z /\ FINITE Z' /\
+                ?Z Z' ss. FINITE Z /\ FINITE Z' /\
                           subterm Z (apply pi M) p <> NONE /\
-                          tpm_rel (subterm' Z (apply pi M) p) (fm ' (subterm' Z' M p))
+                          tpm_rel (subterm' Z (apply pi M) p)
+                                  ((subterm' Z' M p) ISUB ss)
 Proof
     rpt STRIP_TAC
  (* trivial case: unsolvable M (useless) *)
  >> reverse (Cases_on ‘solvable M’)
  >- (Q.EXISTS_TAC ‘[]’ >> rw [is_ready_def] \\
      qexistsl_tac [‘X’, ‘X’] >> rw [] \\
-     Q.EXISTS_TAC ‘FEMPTY’ >> rw [])
+     Q.EXISTS_TAC ‘[]’ >> rw [])
  (* stage work (all correct until here)
 
     M0 is meaningful given M is now solvable:
@@ -3065,9 +3071,9 @@ Proof
      qunabbrev_tac ‘M0’ \\
      MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
  >> DISCH_TAC
- (* stage work, there's no other choice for this fm *)
- >> Q.EXISTS_TAC ‘FEMPTY |+ (y,P)’
- >> REWRITE_TAC [single_ssub]
+ (* stage work, there's the textbook choice *)
+ >> Q.EXISTS_TAC ‘[(P,y)]’
+ >> REWRITE_TAC [GSYM SUB_ISUB_SINGLETON]
  (* applying subterm_subst_cong *)
  >> MATCH_MP_TAC subterm_subst_cong
  >> Q.EXISTS_TAC ‘d’
@@ -3168,13 +3174,16 @@ QED
  *)
 Theorem Boehm_out_lemma :
     !p X M. FINITE X /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
-            ?Z pi fm. tpm_rel (apply pi M) (fm ' (subterm' Z M p))
+            ?Z pi ss. tpm_rel (apply pi M) ((subterm' Z M p) ISUB ss)
 Proof
     Induct_on ‘p’
- >- (rw [] >> qexistsl_tac [‘[]’, ‘FEMPTY’] >> rw [])
+ >- (rw [] \\
+     qexistsl_tac [‘[]’ (* Boehm transform *),
+                   ‘[]’ (* ISUB *)] >> rw [])
  >> rpt STRIP_TAC
- >> rename1 ‘subterm X M (h::t) <> NONE’
- >> qabbrev_tac ‘p = h::t’
+ (* NOTE: following textbook symbols, p (alpha) := j :: b (beta) *)
+ >> rename1 ‘subterm X M (j::b) <> NONE’
+ >> qabbrev_tac ‘p = j::b’
  >> ‘p <> []’ by rw [Abbr ‘p’]
  >> ‘(!q. q <<= p ==> subterm X M q <> NONE) /\
       !q. q <<= FRONT p ==> solvable (subterm' X M q)’
@@ -3182,7 +3191,7 @@ Proof
  >> Know ‘solvable M’
  >- (POP_ASSUM (MP_TAC o Q.SPEC ‘[]’) >> rw [])
  >> DISCH_TAC
- >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’] Boehm_transform_exists_lemma)
+ >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘j::b’] Boehm_transform_exists_lemma)
  >> rw [] (* this asserts ‘pi’ and ‘fm’, both to be renamed *)
  >> qabbrev_tac ‘M' = apply pi M’
  >> ‘?y Ms. M' -h->* VAR y @* Ms /\ EVERY (\e. y # e) Ms’
@@ -3190,16 +3199,18 @@ Proof
  >> ‘principle_hnf M' = VAR y @* Ms’ by rw [principle_hnf_thm', hnf_appstar]
  (* stage work *)
  >> qunabbrev_tac ‘p’
- >> Know ‘h < LENGTH Ms’
- >- (Q.PAT_X_ASSUM ‘subterm Z M' (h::t) <> NONE’ MP_TAC \\
+ >> Know ‘j < LENGTH Ms’
+ >- (Q.PAT_X_ASSUM ‘subterm Z M' (j::b) <> NONE’ MP_TAC \\
      RW_TAC std_ss [subterm_of_solvables] >> fs [])
  >> DISCH_TAC
- (* is this needed?
- >> Know ‘subterm' Z M' (h::t) = subterm' Z (EL h Ms) t’
- >- (Q.PAT_X_ASSUM ‘subterm' Z M' (h::t) = _’ K_TAC \\
-     rw [subterm_of_solvables])
- >> DISCH_THEN (fs o wrap)
+ (* NOTE: This is the second ‘=’ of (2) [1, p.249], while the first ‘=’ is
+    now a tpm_rel in assumptions:
+
+   14.  tpm_rel (subterm' Z M' (j::b)) (subterm' Z' M (j::b) ISUB ss)
   *)
+ >> ‘subterm' Z M' (j::b) = subterm' Z (EL j Ms) b’
+       by rw [subterm_of_solvables]
+ >> rename1 ‘Boehm_transform p0’
  >> cheat
 QED
 
