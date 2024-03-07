@@ -958,18 +958,14 @@ QED
 (* NOTE: This lemma is more general than subterm_tpm_cong, which cannot be
    directly proved. The current form of this lemma, suitable for doing
    induction, was due to repeated experiments.  -- Chun Tian, 19 feb 2024.
-
-   NOTE2: more details about ‘pi’ and ‘pi'’ are needed for expressing them in
-   normal (single-direction) substitutions.
  *)
 Theorem subterm_tpm_lemma :
     !p X Y M pi. FINITE X /\ FINITE Y ==>
                 (subterm X M p = NONE ==> subterm Y (tpm pi M) p = NONE) /\
                 (subterm X M p <> NONE ==>
-                 ?pi'. tpm pi' (subterm' X M p) = subterm' Y (tpm pi M) p)
+                 tpm_rel (subterm' X M p) (subterm' Y (tpm pi M) p))
 Proof
-    Induct_on ‘p’
- >- (rw [] >> Q.EXISTS_TAC ‘pi’ >> rw [])
+    Induct_on ‘p’ >- rw []
  >> rpt GEN_TAC >> STRIP_TAC
  >> reverse (Cases_on ‘solvable M’)
  >- (‘unsolvable (tpm pi M)’ by PROVE_TAC [solvable_tpm] \\
@@ -1147,7 +1143,7 @@ QED
 Theorem subterm_tpm_cong :
     !p X Y M. FINITE X /\ FINITE Y ==>
              (subterm X M p = NONE <=> subterm Y M p = NONE) /\
-             (subterm X M p <> NONE ==> ?pi. tpm pi (subterm' X M p) = subterm' Y M p)
+             (subterm X M p <> NONE ==> tpm_rel (subterm' X M p) (subterm' Y M p))
 Proof
     rpt GEN_TAC >> STRIP_TAC
  >> CONJ_ASM1_TAC
@@ -1172,7 +1168,8 @@ Theorem subterm_hnf_children_size_cong :
 Proof
     rpt STRIP_TAC
  >> ‘subterm Y M p <> NONE /\
-     ?pi. tpm pi (subterm' X M p) = subterm' Y M p’ by METIS_TAC [subterm_tpm_cong]
+     tpm_rel (subterm' X M p) (subterm' Y M p)’ by METIS_TAC [subterm_tpm_cong]
+ >> fs [tpm_rel_def]
  >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM)
  >> qabbrev_tac ‘N = subterm' X M p’
  >> rw [principle_hnf_tpm']
@@ -2691,21 +2688,17 @@ Theorem Boehm_transform_exists_lemma :
             ?pi. Boehm_transform pi /\
                 (solvable M ==> solvable (apply pi M)) /\
                  is_ready (apply pi M) /\
-                ?Z Z' ss. FINITE Z /\ FINITE Z' /\
-                          subterm Z (apply pi M) p <> NONE /\
-                          tpm_rel (subterm' Z (apply pi M) p)
-                                  ((subterm' Z' M p) ISUB ss)
+                ?Z ss. FINITE Z /\ subterm Z (apply pi M) p <> NONE /\
+                       tpm_rel (subterm' Z (apply pi M) p)
+                               ((subterm' Z M p) ISUB ss)
 Proof
     rpt STRIP_TAC
  (* trivial case: unsolvable M (useless) *)
  >> reverse (Cases_on ‘solvable M’)
  >- (Q.EXISTS_TAC ‘[]’ >> rw [is_ready_def] \\
-     qexistsl_tac [‘X’, ‘X’] >> rw [] \\
+     Q.EXISTS_TAC ‘X’ >> rw [] \\
      Q.EXISTS_TAC ‘[]’ >> rw [])
- (* stage work (all correct until here)
-
-    M0 is meaningful given M is now solvable:
-  *)
+ (* M0 is now meaningful since M is solvable *)
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> ‘hnf M0’ by PROVE_TAC [hnf_principle_hnf, solvable_iff_has_hnf]
  >> qabbrev_tac ‘n = LAMl_size M0’
@@ -2964,24 +2957,20 @@ Proof
  (* NOTE: for rewriting M to M0 in the goal, Z can be anything. *)
  >> Q.ABBREV_TAC ‘Y = X UNION FV M’
  >> ‘FINITE Y’ by rw [Abbr ‘Y’]
- (* stage work
-
-    The choices of Z and Y here is to make sure that later we have a goal
-    like ‘subterm Z ... == [P/y] subterm Z ...’, where Z = Y UNION set vs.
-  *)
- >> qexistsl_tac [‘Z’, ‘Y’] >> art []
+ (* stage work, there's no other choice for RHS *)
+ >> Q.EXISTS_TAC ‘Y’ >> art []
  (* RHS rewriting from M to M0 *)
  >> Know ‘subterm Y M0 p = subterm Y M p’
  >- (qunabbrev_tac ‘M0’ \\
      MATCH_MP_TAC subterm_of_principle_hnf >> art [])
  >> DISCH_THEN (ONCE_REWRITE_TAC o wrap o SYM)
  (* LHS rewriting from M to M0 *)
- >> Know ‘subterm Z (apply (p3 ++ p2 ++ p1) M) p =
-          subterm Z (VAR b @* args' @* MAP VAR as) p’
+ >> Know ‘subterm Y (apply (p3 ++ p2 ++ p1) M) p =
+          subterm Y (VAR b @* args' @* MAP VAR as) p’
  >- (Q.PAT_X_ASSUM ‘_ = VAR b @* args' @* MAP VAR as’
        (ONCE_REWRITE_TAC o wrap o SYM) \\
      qabbrev_tac ‘t = apply (p3 ++ p2 ++ p1) M’ \\
-     Suff ‘subterm Z (principle_hnf t) p = subterm Z t p’ >- rw [] \\
+     Suff ‘subterm Y (principle_hnf t) p = subterm Y t p’ >- rw [] \\
      MATCH_MP_TAC subterm_of_principle_hnf >> art [])
  >> Rewr'
  (* stage cleanups *)
@@ -2996,7 +2985,7 @@ Proof
      RW_TAC std_ss [subterm_of_solvables] >> fs [])
  >> DISCH_TAC
  (* applying subterm_of_absfree_hnf *)
- >> MP_TAC (Q.SPECL [‘Z’, ‘VAR b @* args' @* MAP VAR as’, ‘h’, ‘t’]
+ >> MP_TAC (Q.SPECL [‘Y’, ‘VAR b @* args' @* MAP VAR as’, ‘h’, ‘t’]
                     subterm_of_absfree_hnf)
  >> simp [hnf_appstar, GSYM appstar_APPEND, hnf_children_appstar]
  >> DISCH_THEN K_TAC (* already used *)
@@ -3053,11 +3042,9 @@ Proof
  >> Q.PAT_X_ASSUM ‘~MEM y l’                   K_TAC
  >> Q.PAT_X_ASSUM ‘LENGTH as = q - m’          K_TAC
  >> qunabbrevl_tac [‘l’, ‘as’, ‘b’]
- >> Q.PAT_X_ASSUM ‘FINITE Y’                   K_TAC
- >> qunabbrev_tac ‘Y’
  (* NOTE: this is a key requirements for applying subterm_subst_cong *)
  >> Know ‘y IN Z’
- >- (qunabbrev_tac ‘Z’ \\
+ >- (qunabbrevl_tac [‘Y’, ‘Z’] \\
      Suff ‘y IN FV M UNION set vs’ >- SET_TAC [] \\
     ‘y IN FV M1’ by rw [FV_appstar] \\
      Suff ‘FV M1 SUBSET FV M UNION set vs’ >- rw [SUBSET_DEF] \\
@@ -3074,6 +3061,16 @@ Proof
  (* stage work, there's the textbook choice *)
  >> Q.EXISTS_TAC ‘[(P,y)]’
  >> REWRITE_TAC [GSYM SUB_ISUB_SINGLETON]
+ (* preparing for subterm_subst_cong *)
+ >> Suff ‘subterm Z ([P/y] N) t <> NONE /\
+          tpm_rel (subterm' Z ([P/y] N) t) ([P/y] (subterm' Z N t))’
+ >- (STRIP_TAC \\
+     CONJ_ASM1_TAC >- PROVE_TAC [subterm_tpm_cong] \\
+  (* applying tpm_rel_cong and subterm_tpm_cong *)
+     Suff ‘tpm_rel (subterm' Y ([P/y] N) t) ([P/y] (subterm' Z N t)) <=>
+           tpm_rel (subterm' Z ([P/y] N) t) ([P/y] (subterm' Z N t))’ >- rw [] \\
+     MATCH_MP_TAC tpm_rel_cong >> simp [] \\
+     PROVE_TAC [subterm_tpm_cong])
  (* applying subterm_subst_cong *)
  >> MATCH_MP_TAC subterm_subst_cong
  >> Q.EXISTS_TAC ‘d’
@@ -3174,7 +3171,7 @@ QED
  *)
 Theorem Boehm_out_lemma :
     !p X M. FINITE X /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
-            ?Z pi ss. tpm_rel (apply pi M) ((subterm' Z M p) ISUB ss)
+            ?pi ss Z. tpm_rel (apply pi M) ((subterm' Z M p) ISUB ss)
 Proof
     Induct_on ‘p’
  >- (rw [] \\
@@ -3192,7 +3189,7 @@ Proof
  >- (POP_ASSUM (MP_TAC o Q.SPEC ‘[]’) >> rw [])
  >> DISCH_TAC
  >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘j::b’] Boehm_transform_exists_lemma)
- >> rw [] (* this asserts ‘pi’ and ‘fm’, both to be renamed *)
+ >> rw [] (* this asserts ‘pi’, ‘ss’ and ‘Z’ *)
  >> qabbrev_tac ‘M' = apply pi M’
  >> ‘?y Ms. M' -h->* VAR y @* Ms /\ EVERY (\e. y # e) Ms’
        by METIS_TAC [is_ready_alt]
@@ -3208,9 +3205,29 @@ Proof
 
    14.  tpm_rel (subterm' Z M' (j::b)) (subterm' Z' M (j::b) ISUB ss)
   *)
- >> ‘subterm' Z M' (j::b) = subterm' Z (EL j Ms) b’
-       by rw [subterm_of_solvables]
+ >> qabbrev_tac ‘M_j = EL j Ms’
+ >> ‘subterm' Z M' (j::b) = subterm' Z M_j b’
+       by (rw [subterm_of_solvables, Abbr ‘M_j’])
+ >> POP_ASSUM (fs o wrap)
  >> rename1 ‘Boehm_transform p0’
+ (* Now define a selector *)
+ >> qabbrev_tac ‘m = LENGTH Ms’
+ >> qabbrev_tac ‘U = selector j m’
+ >> qabbrev_tac ‘p1 = [[U/y]]’
+ >> ‘Boehm_transform p1’ by rw [Abbr ‘p1’]
+ >> qabbrev_tac ‘p10 = p1 ++ p0’
+ >> ‘Boehm_transform p10’ by rw [Abbr ‘p10’, Boehm_transform_APPEND]
+ (* applying properties of selector (U) *)
+ >> Know ‘apply p10 M -h->* M_j’
+ >- cheat
+ >> DISCH_TAC
+ (* stage work, now using IH *)
+ >> Q.PAT_X_ASSUM ‘!X M. P’ (MP_TAC o (Q.SPECL [‘Z’, ‘M_j’]))
+ >> Know ‘b IN ltree_paths (BTe Z M_j) /\ subterm Z M_j b <> NONE’
+ >- cheat
+ (* NOTE: this asserts Z', but it's hard to use it *)
+ >> RW_TAC std_ss []
+ >> rename1 ‘tpm_rel (apply p2 M_j) (subterm' Z' M_j b ISUB ss')’
  >> cheat
 QED
 
