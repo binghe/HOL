@@ -2676,7 +2676,7 @@ Proof
  >- (simp [] >> Cases_on ‘t’ >> fs [] \\
      MATCH_MP_TAC IS_PREFIX_TRANS \\
      Q.EXISTS_TAC ‘FRONT l’ >> rw [] \\
-     cheat)
+     MATCH_MP_TAC IS_PREFIX_FRONT_MONO >> rw [])
  >> Rewr
   (* Michael Norrish's tactics *)
  >> CONV_TAC (UNBETA_CONV “subterm X M (h::p')”)
