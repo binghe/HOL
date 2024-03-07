@@ -591,6 +591,14 @@ Proof
  >> rw [ltree_paths_def, ltree_lookup_def, LNTH_fromList, GSYM BT_def, EL_MAP]
 QED
 
+(* The set of ltree paths of BT is unique w.r.t. excluded list *)
+Theorem BT_ltree_paths_unique :
+    !X Y M. FINITE X /\ FINITE Y ==>
+            ltree_paths (BTe X M) = ltree_paths (BTe Y M)
+Proof
+    cheat
+QED
+
 (* NOTE: In the above theorem, when the antecedents hold, i.e.
 
          p IN ltree_paths (BTe X M) /\ subterm X M p = NONE
@@ -3153,34 +3161,45 @@ Proof
  >> MATCH_MP_TAC subterm_subst_cong
  >> Q.EXISTS_TAC ‘d’
  >> simp [Abbr ‘P’]
- >> cheat
  (* NOTE: Here, we need the following new lemma:
 
    |- !X Y. ltree_paths (BTe X M) = ltree_paths (BTe Y M)
 
    to convert ‘subterm X M (h::t) <> NONE’ to ‘subterm Z M (h::t) <> NONE’.
-
+  *)
  >> CONJ_ASM1_TAC (* t IN ltree_paths ... *)
  >- (Q.PAT_X_ASSUM ‘h::t IN ltree_paths (BTe X M)’ MP_TAC \\
+    ‘ltree_paths (BTe X M) = ltree_paths (BTe Y M)’
+      by PROVE_TAC [BT_ltree_paths_unique] >> POP_ORW \\
      simp [ltree_paths_def, ltree_lookup] \\
-         Know ‘BTe X M = ltree_unfold BT_generator (X,M)’ >- rw [BT_def] \\
-         simp [Once ltree_unfold, BT_generator_def, LNTH_fromList] \\
-         rw [GSYM BT_def, EL_MAP, hnf_children_hnf])
- >> CONJ_ASM1_TAC (* subterm (X UNION set vs) (EL h args) t <> NONE *)
- >- (Q.PAT_X_ASSUM ‘!q. q <<= h::t ==> subterm X M q <> NONE’
-       (MP_TAC o (Q.SPEC ‘h::t’)) \\
-     simp [subterm_of_solvables] >> fs [])
+     Know ‘BTe Y M = ltree_unfold BT_generator (Y,M)’ >- rw [BT_def] \\
+     Q.PAT_X_ASSUM ‘M0 = _’ K_TAC \\
+     simp [Once ltree_unfold, BT_generator_def, LNTH_fromList] \\
+     Know ‘Y UNION FV M0 = Y’
+     >- (Know ‘FV M0 SUBSET FV M’ >- rw [Abbr ‘M0’, principle_hnf_FV_SUBSET'] \\
+         qunabbrev_tac ‘Y’ >> SET_TAC []) >> Rewr' \\
+     simp [hnf_children_hnf] \\
+     simp [GSYM BT_def, EL_MAP, hnf_children_hnf])
+ (* stage work *)
+ >> CONJ_ASM1_TAC (* subterm Z N t <> NONE *)
+ >- (Q.PAT_X_ASSUM ‘subterm X M (h::t) <> NONE’ MP_TAC \\
+    ‘subterm X M (h::t) <> NONE <=>
+     subterm Y M (h::t) <> NONE’ by PROVE_TAC [subterm_tpm_cong] >> POP_ORW \\
+     Q.PAT_X_ASSUM ‘M0 = _’ K_TAC \\
+     simp [subterm_of_solvables] \\
+     Know ‘Y UNION FV M0 = Y’
+     >- (Know ‘FV M0 SUBSET FV M’ >- rw [Abbr ‘M0’, principle_hnf_FV_SUBSET'] \\
+         qunabbrev_tac ‘Y’ >> SET_TAC []) >> Rewr' \\
+     simp [hnf_children_hnf])
  (* final goal: subterm_width (EL h args) t <= d *)
- >> MATCH_MP_TAC LESS_EQ_TRANS
- >> Q.EXISTS_TAC ‘w’ >> art []
- >> qunabbrev_tac ‘w’
+ >> qunabbrev_tac ‘d’
  (* applying subterm_width_alt *)
  >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’] subterm_width_alt)
  >> simp [] >> DISCH_THEN K_TAC
  >> qabbrev_tac ‘p = h::t’
- >> Know ‘!Y. IMAGE (hnf_children_size o principle_hnf)
-                    {subterm' Y M p' | p' <<= FRONT p} =
-             {hnf_children_size (principle_hnf (subterm' Y M p')) | p' <<= FRONT p}’
+ >> Know ‘IMAGE (hnf_children_size o principle_hnf)
+                {subterm' X M p' | p' <<= FRONT p} =
+          {hnf_children_size (principle_hnf (subterm' X M p')) | p' <<= FRONT p}’
  >- (rw [Once EXTENSION] \\
      EQ_TAC >> rw [] >| (* 2 subgoals *)
      [ (* goal 1 (of 2) *)
@@ -3188,40 +3207,52 @@ Proof
        Q.EXISTS_TAC ‘q’ >> rw [],
        (* goal 2 (of 2) *)
        rename1 ‘q <<= FRONT p’ \\
-       Q.EXISTS_TAC ‘subterm' Y M q’ >> art [] \\
+       Q.EXISTS_TAC ‘subterm' X M q’ >> art [] \\
        Q.EXISTS_TAC ‘q’ >> art [] ])
  >> Rewr'
  >> qunabbrev_tac ‘p’
  >> Cases_on ‘t = []’ >- rw []
  (* applying subterm_width_alt again *)
- >> MP_TAC (Q.SPECL [‘X UNION set vs’, ‘EL h args’, ‘t’] subterm_width_alt)
+ >> MP_TAC (Q.SPECL [‘Z’, ‘N’, ‘t’] subterm_width_alt)
  >> simp [] >> DISCH_THEN K_TAC
  (* applying SUBSET_MAX_SET *)
  >> MATCH_MP_TAC SUBSET_MAX_SET
- >> CONJ_TAC >- (MATCH_MP_TAC IMAGE_FINITE \\
-                ‘{subterm' (X UNION set vs) (EL h args) p' | p' <<= FRONT t} =
-                   IMAGE (subterm' (X UNION set vs) (EL h args))
-                         {p' | p' <<= FRONT t}’
-                    by rw [Once EXTENSION] >> POP_ORW \\
-                 MATCH_MP_TAC IMAGE_FINITE >> rw [FINITE_prefix])
- >> CONJ_TAC >- (‘{hnf_children_size (principle_hnf (subterm' X M p')) |
-                   p' <<= FRONT (h::t)} =
-                  IMAGE (\p'. hnf_children_size (principle_hnf (subterm' X M p')))
-                        {p' | p' <<= FRONT (h::t)}’
-                    by rw [Once EXTENSION] >> POP_ORW \\
-                 MATCH_MP_TAC IMAGE_FINITE >> rw [FINITE_prefix])
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC IMAGE_FINITE \\
+   ‘{subterm' Z N p' | p' <<= FRONT t} =
+    IMAGE (subterm' Z N) {p' | p' <<= FRONT t}’
+      by rw [Once EXTENSION] >> POP_ORW \\
+    MATCH_MP_TAC IMAGE_FINITE >> rw [FINITE_prefix])
+ >> CONJ_TAC
+ >- (‘{hnf_children_size (principle_hnf (subterm' X M p')) |
+       p' <<= FRONT (h::t)} =
+      IMAGE (\p'. hnf_children_size (principle_hnf (subterm' X M p')))
+            {p' | p' <<= FRONT (h::t)}’
+        by rw [Once EXTENSION] >> POP_ORW \\
+     MATCH_MP_TAC IMAGE_FINITE >> rw [FINITE_prefix])
+ >> ‘hnf_children_size M0 = m’ by rw [Abbr ‘m’]
+ >> Q.PAT_X_ASSUM ‘M0 = _’ K_TAC
  >> rw [SUBSET_DEF] (* this asserts ‘p' <<= FRONT t’ *)
  >> Q.EXISTS_TAC ‘h::p'’
  >> ‘FRONT (h::t) <> []’ by rw []
  >> Know ‘h::p' <<= FRONT (h::t)’
  >- (simp [] >> Cases_on ‘t’ >> fs [])
  >> Rewr
- (* Michael Norrish's tactics *)
- >> CONV_TAC (UNBETA_CONV “subterm X M (h::p')”)
- >> qmatch_abbrev_tac ‘f _’
- >> RW_TAC bool_ss [subterm_of_solvables]
- >> simp [Abbr ‘f’, hnf_children_hnf]
-  *)
+ >> Suff ‘hnf_children_size (principle_hnf (subterm' X M (h::p'))) =
+          hnf_children_size (principle_hnf (subterm' Y M (h::p')))’
+ >- (Rewr' \\
+     CONV_TAC (UNBETA_CONV “subterm Y M (h::p')”) \\
+     qmatch_abbrev_tac ‘f _’ \\
+     RW_TAC std_ss [subterm_of_solvables] \\
+     simp [Abbr ‘f’, hnf_children_hnf] \\
+     Know ‘Y UNION FV M0 = Y’
+     >- (Know ‘FV M0 SUBSET FV M’ >- rw [Abbr ‘M0’, principle_hnf_FV_SUBSET'] \\
+         qunabbrev_tac ‘Y’ >> SET_TAC []) >> Rewr' \\
+     simp [hnf_children_hnf])
+ (* applying subterm_hnf_children_size_cong *)
+ >> MATCH_MP_TAC subterm_hnf_children_size_cong >> art []
+ (* subgoals: subterm X M (h::p') <> NONE /\ solvable (subterm' X M (h::p')) *)
+ >> cheat
 QED
 
 (* Proposition 10.3.7 (i) [1, p.248] (Boehm out lemma)
