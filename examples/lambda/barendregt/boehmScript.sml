@@ -622,6 +622,7 @@ Proof
  >> rw [ltree_paths_def, ltree_lookup_def, LNTH_fromList, GSYM BT_def, EL_MAP]
 QED
 
+(* NOTE: This proof shares a lot of tactics with [subterm_tpm_lemma] *)
 Theorem BT_ltree_lookup_lemma :
     !p X Y M pi. FINITE X /\ FINITE Y /\
                  ltree_lookup (BTe X M) p <> NONE ==>
@@ -691,14 +692,95 @@ Proof
  >> Q.PAT_X_ASSUM ‘FINITE Z’ K_TAC
  >> qunabbrev_tac ‘Z’
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
- (* stage work
- >> Know ‘LENGTH Ms' = LENGTH Ms’
- >- cheat
- >> rw []
- >> REWRITE_TAC [GSYM BT_def]
- >> simp [EL_MAP]
-  *)
- >> cheat
+ (* stage work *)
+ >> ‘hnf M0’ by PROVE_TAC [hnf_principle_hnf']
+ >> hnf_tac (“M0 :term”, “vs2 :string list”,
+             “M2 :term”, “y :string”, “args :term list”)
+ >> ‘TAKE n vs2 = vs2’ by rw [TAKE_LENGTH_ID_rwt]
+ >> POP_ASSUM (rfs o wrap)
+ >> ‘hnf M2’ by rw [hnf_appstar]
+ >> Know ‘DISJOINT (set vs) (FV M2) /\
+          DISJOINT (set vs1p) (FV M2)’
+ >- (rpt CONJ_TAC (* 2 subgoals, same tactics *) \\
+     (MATCH_MP_TAC DISJOINT_SUBSET \\
+      Q.EXISTS_TAC ‘FV M0 UNION set vs2’ \\
+      CONJ_TAC >- (Q.PAT_X_ASSUM ‘M0 = LAMl vs2 (VAR y @* args)’ K_TAC \\
+                   reverse (rw [DISJOINT_UNION']) >- rw [Once DISJOINT_SYM] \\
+                   MATCH_MP_TAC DISJOINT_SUBSET \\
+                   Q.EXISTS_TAC ‘FV M’ >> art []) \\
+     ‘FV M0 UNION set vs2 = FV (M0 @* MAP VAR vs2)’ by rw [] >> POP_ORW \\
+      qunabbrev_tac ‘M2’ \\
+      MATCH_MP_TAC principle_hnf_FV_SUBSET' \\
+      Know ‘solvable (VAR y @* args)’
+      >- (rw [solvable_iff_has_hnf] \\
+          MATCH_MP_TAC hnf_has_hnf \\
+          rw [hnf_appstar]) >> DISCH_TAC \\
+      Suff ‘M0 @* MAP VAR vs2 == VAR y @* args’
+      >- PROVE_TAC [lameq_solvable_cong] \\
+      rw [lameq_LAMl_appstar_VAR]))
+ >> STRIP_TAC
+ >> Know ‘M1 = tpm (ZIP (vs2,vs)) M2’
+ >- (simp [Abbr ‘M1’] \\
+     MATCH_MP_TAC principle_hnf_LAMl_appstar \\
+     Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) >> art [])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘p1 = ZIP (vs2,vs)’
+ >> Know ‘M1' = tpm pi (principle_hnf (M0 @* MAP VAR vs1p))’
+ >- (qunabbrev_tac ‘M1'’ \\
+     MATCH_MP_TAC principle_hnf_tpm >> art [] \\
+     REWRITE_TAC [has_hnf_thm] \\
+     Q.EXISTS_TAC ‘(FEMPTY |++ ZIP (vs2,MAP VAR vs1p)) ' (VAR y @* args)’ \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC hreduce_LAMl_appstar \\
+         rw [EVERY_MEM, MEM_MAP] >> rw [] \\
+         Q.PAT_X_ASSUM ‘DISJOINT (set vs2) (set vs1p)’ MP_TAC \\
+         rw [DISJOINT_ALT']) \\
+     REWRITE_TAC [GSYM fromPairs_def] \\
+    ‘FDOM (fromPairs vs2 (MAP VAR vs1p)) = set vs2’ by rw [FDOM_fromPairs] \\
+     Cases_on ‘MEM y vs2’
+     >- (simp [ssub_thm, ssub_appstar, hnf_appstar] \\
+         fs [MEM_EL] >> rename1 ‘i < LENGTH vs2’ \\
+         Know ‘fromPairs vs2 (MAP VAR vs1p) ' (EL i vs2) = EL i (MAP VAR vs1p)’
+         >- (MATCH_MP_TAC fromPairs_FAPPLY_EL >> rw []) >> Rewr' \\
+         rw [EL_MAP]) \\
+     simp [ssub_thm, ssub_appstar, hnf_appstar])
+ >> DISCH_TAC
+ >> Know ‘M1' = tpm pi (tpm (ZIP (vs2,vs1p)) M2)’
+ >- (POP_ORW >> simp [] \\
+     MATCH_MP_TAC principle_hnf_LAMl_appstar \\
+     Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) >> art [])
+ >> POP_ASSUM K_TAC (* M1' = ... (already used) *)
+ >> REWRITE_TAC [GSYM pmact_decompose]
+ >> qabbrev_tac ‘p2 = pi ++ ZIP (vs2,vs1p)’
+ >> DISCH_TAC
+ (* pop all assumptions about ‘Ms’ *)
+ >> Q.PAT_X_ASSUM ‘ltree_lookup (BTe (X UNION set vs) (EL h Ms)) p <> NONE’ MP_TAC
+ >> Q.PAT_X_ASSUM ‘h < LENGTH Ms’ MP_TAC
+ (* applying hnf_children_tpm to rewrite Ms and Ms' *)
+ >> Know ‘Ms = MAP (tpm p1) args’
+ >- (simp [Abbr ‘Ms’] \\
+    ‘hnf_children M2 = args’ by rw [hnf_children_hnf] \\
+     Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) \\
+     rw [hnf_children_tpm])
+ >> Rewr'
+ >> Know ‘Ms' = MAP (tpm p2) args’
+ >- (simp [Abbr ‘Ms'’] \\
+    ‘hnf_children M2 = args’ by rw [hnf_children_hnf] \\
+     Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) \\
+     rw [hnf_children_tpm])
+ >> Rewr'
+ >> simp [EL_MAP, GSYM BT_def]
+ >> qabbrev_tac ‘N = EL h args’
+ >> Know ‘?pi'. tpm p2 N = tpm pi' (tpm p1 N)’
+ >- (Q.EXISTS_TAC ‘p2 ++ REVERSE p1’ \\
+     rw [pmact_decompose])
+ >> STRIP_TAC
+ >> POP_ORW
+ >> qabbrev_tac ‘N' = tpm p1 N’
+ (* finally, using IH in a bulk way *)
+ >> NTAC 2 DISCH_TAC
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘X UNION set vs’ >> rw []
 QED
 
 (* The set of ltree paths of BT is unique w.r.t. excluded list *)
