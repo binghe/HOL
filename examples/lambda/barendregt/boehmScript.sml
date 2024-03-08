@@ -3504,7 +3504,9 @@ Proof
  >- (POP_ASSUM (MP_TAC o Q.SPEC ‘[]’) >> rw [])
  >> DISCH_TAC
  >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘j::b’] Boehm_transform_exists_lemma)
- >> rw [] (* this asserts ‘pi’, ‘ss’ and ‘Z’ *)
+ >> rw [] (* this asserts ‘pi’, ‘ss’ *)
+ >> qabbrev_tac ‘Z = X UNION FV M’ (* Z is now unique *)
+ >> ‘FINITE Z’ by rw [Abbr ‘Z’]
  >> qabbrev_tac ‘M' = apply pi M’
  >> ‘?y Ms. M' -h->* VAR y @* Ms /\ EVERY (\e. y # e) Ms’
        by METIS_TAC [is_ready_alt]
@@ -3532,6 +3534,7 @@ Proof
  >> ‘Boehm_transform p1’ by rw [Abbr ‘p1’]
  >> qabbrev_tac ‘p10 = p1 ++ p0’
  >> ‘Boehm_transform p10’ by rw [Abbr ‘p10’, Boehm_transform_APPEND]
+ >> Q.PAT_X_ASSUM ‘T’ K_TAC
  (* applying properties of selector (U) *)
  >> Know ‘apply p10 M -h->* M_j’
  >- cheat
@@ -3542,6 +3545,7 @@ Proof
  >- cheat
  (* NOTE: this asserts Z', but it's hard to use it *)
  >> RW_TAC std_ss []
+ (* rename ‘pi’ to ‘p2’ *)
  >> rename1 ‘tpm_rel (apply p2 M_j) (subterm' Z' M_j b ISUB ss')’
  >> cheat
 QED
