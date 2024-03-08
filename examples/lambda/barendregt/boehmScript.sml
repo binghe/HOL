@@ -627,9 +627,6 @@ Theorem BT_ltree_lookup_lemma :
                  ltree_lookup (BTe X M) p <> NONE ==>
                  ltree_lookup (BTe Y (tpm pi M)) p <> NONE
 Proof
-    cheat
-QED
-(*
     Induct_on ‘p’ >- rw [ltree_lookup_def]
  >> rpt GEN_TAC
  >> reverse (Cases_on ‘solvable M’)
@@ -646,19 +643,63 @@ QED
  >> REWRITE_TAC [GSYM BT_def]
  >> Cases_on ‘h < LENGTH Ms’ >> simp [EL_MAP]
  (* stage work *)
- >> qabbrev_tac ‘vs' = NEWS n (Y UNION FV M0)’
- >> qabbrev_tac ‘M1' = principle_hnf (M0 @* MAP VAR vs')’
- >> qabbrev_tac ‘Ms' = hnf_children M1'’
- >> Know ‘BTe Y M = ltree_unfold BT_generator (Y,M)’ >- rw [BT_def]
+ >> Know ‘BTe Y (tpm pi M) = ltree_unfold BT_generator (Y,tpm pi M)’ >- rw [BT_def]
  >> simp [Once ltree_unfold, BT_generator_def, LNTH_fromList, LMAP_fromList]
  >> DISCH_THEN K_TAC
+ >> qabbrev_tac ‘M0' = principle_hnf (tpm pi M)’
+ >> qabbrev_tac ‘n' = LAMl_size M0'’
+ >> qabbrev_tac ‘vs' = NEWS n' (Y UNION FV M0')’
+ >> qabbrev_tac ‘M1' = principle_hnf (M0' @* MAP VAR vs')’
+ >> qabbrev_tac ‘Ms' = hnf_children M1'’
+ >> Know ‘M0' = tpm pi M0’
+ >- (qunabbrevl_tac [‘M0’, ‘M0'’] \\
+     MATCH_MP_TAC principle_hnf_tpm' >> art [])
+ >> DISCH_TAC
+ >> ‘n' = n’ by rw [Abbr ‘n’, Abbr ‘n'’, LAMl_size_tpm]
+ >> STRIP_TAC
+ >> Know ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (X UNION FV M0) /\ LENGTH vs = n’
+ >- rw [Abbr ‘vs’, NEWS_def]
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
+ >> Know ‘ALL_DISTINCT vs' /\ DISJOINT (set vs') (Y UNION FV (tpm pi M0)) /\
+          LENGTH vs' = n’
+ >- rw [Abbr ‘vs'’, NEWS_def]
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
+ >> qabbrev_tac ‘vs1p = listpm string_pmact (REVERSE pi) vs'’
+ >> ‘ALL_DISTINCT vs1p’ by rw [Abbr ‘vs1p’]
+ (* rewriting inside the abbreviation of M1' *)
+ >> Know ‘tpm pi M0 @* MAP VAR vs' = tpm pi (M0 @* MAP VAR vs1p)’
+ >- (rw [Abbr ‘vs1p’, tpm_appstar] \\
+     Suff ‘listpm term_pmact pi (MAP VAR (listpm string_pmact (REVERSE pi) vs')) =
+           MAP VAR vs'’ >- rw [] \\
+     rw [LIST_EQ_REWRITE, EL_MAP])
+ >> DISCH_THEN (fs o wrap)
+ >> qunabbrev_tac ‘n'’
+ >> Q.PAT_X_ASSUM ‘LAMl_size M0 = n’ (fs o wrap o SYM)
+ >> qabbrev_tac ‘n = LAMl_size M0’
+ >> Q.PAT_X_ASSUM ‘T’ K_TAC
+ >> Know ‘DISJOINT (set vs1p) (FV M0)’
+ >- (rw [Abbr ‘vs1p’, DISJOINT_ALT', MEM_listpm] \\
+     Q.PAT_X_ASSUM ‘DISJOINT (set vs') (FV (tpm pi M0))’ MP_TAC \\
+     rw [DISJOINT_ALT', FV_tpm])
+ >> DISCH_TAC
+ >> ‘LENGTH vs1p = n’ by rw [Abbr ‘vs1p’, LENGTH_listpm]
+ >> qabbrev_tac ‘Z = X UNION Y UNION FV M0 UNION set vs UNION set vs1p’
+ >> ‘FINITE Z’ by rw [Abbr ‘Z’]
+ >> qabbrev_tac ‘vs2 = NEWS n Z’
+ >> Know ‘ALL_DISTINCT vs2 /\ DISJOINT (set vs2) Z /\ LENGTH vs2 = n’
+ >- rw [Abbr ‘vs2’, NEWS_def]
+ >> Q.PAT_X_ASSUM ‘FINITE Z’ K_TAC
+ >> qunabbrev_tac ‘Z’
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
+ (* stage work
  >> Know ‘LENGTH Ms' = LENGTH Ms’
  >- cheat
  >> rw []
  >> REWRITE_TAC [GSYM BT_def]
  >> simp [EL_MAP]
+  *)
  >> cheat
- *)
+QED
 
 (* The set of ltree paths of BT is unique w.r.t. excluded list *)
 Theorem BT_ltree_paths_unique :
