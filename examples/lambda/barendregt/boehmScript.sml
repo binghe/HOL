@@ -140,6 +140,37 @@ Definition ltree_subset_def :
 End
 
 (*---------------------------------------------------------------------------*
+ *  Canonical binding list of a term w.r.t. excluded variables
+ *---------------------------------------------------------------------------*)
+
+(* NOTE: This definition assumes ‘solvable M’ (or ‘has_hnf M’) *)
+Definition canonical_vars_def :
+    canonical_vars X M =
+       let M0 = principle_hnf M;
+            n = LAMl_size M0
+        in
+           NEWS n (X UNION FV M0)
+End
+
+Theorem canonical_vars_thm :
+    !X M M0 vs. FINITE X /\ solvable M /\
+                M0 = principle_hnf M /\ vs = canonical_vars X M
+            ==> ALL_DISTINCT vs /\ DISJOINT (set vs) (X UNION FV M0) /\
+                LENGTH vs = LAMl_size M0
+Proof
+    rpt GEN_TAC
+ >> simp [canonical_vars_def]
+ >> STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘M0 = _’ K_TAC
+ >> qabbrev_tac ‘M0 = principle_hnf M’
+ >> qabbrev_tac ‘n = LAMl_size M0’
+ >> Q.PAT_X_ASSUM ‘vs = _’ K_TAC
+ >> qabbrev_tac ‘vs = NEWS n (X UNION FV M0)’
+ >> MP_TAC (Q.SPECL [‘n’, ‘X UNION FV (M0 :term)’] NEWS_def)
+ >> simp []
+QED
+
+(*---------------------------------------------------------------------------*
  *  Boehm tree
  *---------------------------------------------------------------------------*)
 
@@ -594,7 +625,7 @@ QED
 Theorem BT_ltree_lookup_lemma :
     !p X Y M pi. FINITE X /\ FINITE Y /\
                  ltree_lookup (BTe X M) p <> NONE ==>
-                 ltree_lookup (BTe Y (tpm pi M)) p <> NONE)
+                 ltree_lookup (BTe Y (tpm pi M)) p <> NONE
 Proof
     cheat
 QED
