@@ -3462,8 +3462,7 @@ Proof
      Q.EXISTS_TAC ‘FRONT t’ >> art [] \\
      MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art [])
  (* final goal: solvable (subterm' X M (h::p')) *)
- >> FIRST_X_ASSUM MATCH_MP_TAC
- >> rw []
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> rw []
  >> Cases_on ‘t’ >> fs []
 QED
 
