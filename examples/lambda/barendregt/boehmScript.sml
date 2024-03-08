@@ -2966,11 +2966,9 @@ QED
           in [Boehm_out_lemma], we need to concatenate two ISUBs into a single one,
           but there's no clear relationship on their keys. ISUB is straightforward
           for this purposes.
-
-   NOTE9: To have an explicit form of Z, now we directly assume ‘solvable M’.
  *)
 Theorem Boehm_transform_exists_lemma :
-    !X M p. FINITE X /\ solvable M /\
+    !X M p. FINITE X /\
             p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
            ?pi. Boehm_transform pi /\
                 solvable (apply pi M) /\ is_ready (apply pi M) /\
@@ -2980,6 +2978,12 @@ Theorem Boehm_transform_exists_lemma :
                               ((subterm' Z M p) ISUB ss)
 Proof
     rpt STRIP_TAC
+ >> ‘(!q. q <<= p ==> subterm X M q <> NONE) /\
+      !q. q <<= FRONT p ==> solvable (subterm' X M q)’
+         by METIS_TAC [subterm_solvable_lemma]
+ >> Know ‘solvable M’
+ >- (POP_ASSUM (MP_TAC o Q.SPEC ‘[]’) >> rw [])
+ >> DISCH_TAC
  (* M0 is now meaningful since M is solvable *)
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> ‘hnf M0’ by PROVE_TAC [hnf_principle_hnf, solvable_iff_has_hnf]
@@ -3446,19 +3450,14 @@ Proof
  (* applying subterm_hnf_children_size_cong *)
  >> MATCH_MP_TAC subterm_hnf_children_size_cong >> art []
  (* subgoals: subterm X M (h::p') <> NONE /\ solvable (subterm' X M (h::p')) *)
- >> qabbrev_tac ‘p = h::t’
- >> ‘p <> []’ by rw [Abbr ‘p’]
- >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘p’] subterm_solvable_lemma)
- >> simp [] >> STRIP_TAC
- >> qunabbrev_tac ‘p’
- >> CONJ_TAC (* subterm X M (h::p') <> NONE *)
+ >> reverse CONJ_TAC
  >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [] \\
-     MATCH_MP_TAC IS_PREFIX_TRANS \\
-     Q.EXISTS_TAC ‘FRONT t’ >> art [] \\
-     MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art [])
- (* final goal: solvable (subterm' X M (h::p')) *)
+     Cases_on ‘t’ >> fs [])
+ (* final goal: subterm X M (h::p') <> NONE *)
  >> FIRST_X_ASSUM MATCH_MP_TAC >> rw []
- >> Cases_on ‘t’ >> fs []
+ >> MATCH_MP_TAC IS_PREFIX_TRANS
+ >> Q.EXISTS_TAC ‘FRONT t’ >> art []
+ >> MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []
 QED
 
 (* Proposition 10.3.7 (i) [1, p.248] (Boehm out lemma)
@@ -3489,9 +3488,7 @@ Theorem Boehm_out_lemma :
             ?pi ss Z. tpm_rel (apply pi M) ((subterm' Z M p) ISUB ss)
 Proof
     Induct_on ‘p’
- >- (rw [] \\
-     qexistsl_tac [‘[]’ (* Boehm transform *),
-                   ‘[]’ (* ISUB *)] >> rw [])
+ >- (rw [] >> qexistsl_tac [‘[]’, ‘[]’] >> rw [])
  >> rpt STRIP_TAC
  (* NOTE: following textbook symbols, p (alpha) := j :: b (beta) *)
  >> rename1 ‘subterm X M (j::b) <> NONE’
@@ -3545,8 +3542,6 @@ Proof
  >- cheat
  (* NOTE: this asserts Z', but it's hard to use it *)
  >> RW_TAC std_ss []
- (* rename ‘pi’ to ‘p2’ *)
- >> rename1 ‘tpm_rel (apply p2 M_j) (subterm' Z' M_j b ISUB ss')’
  >> cheat
 QED
 
