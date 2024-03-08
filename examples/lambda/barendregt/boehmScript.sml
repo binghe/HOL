@@ -1021,7 +1021,7 @@ Proof
  >> qabbrev_tac ‘m = LENGTH Ms'’
  >> Cases_on ‘h < m’ >> simp []
  >> Cases_on ‘p = []’ >> fs []
-  (* final stage *)
+ (* final stage *)
  >> FIRST_X_ASSUM MATCH_MP_TAC >> simp []
  >> CONJ_TAC (* 2 subgoals *)
  >| [ (* goal 1 (of 2) *)
@@ -1117,7 +1117,7 @@ Proof
  >> Q.PAT_X_ASSUM ‘n = LAMl_size M0'’ (rfs o wrap o SYM)
  >> ‘TAKE n vs = vs’ by rw [TAKE_LENGTH_ID_rwt]
  >> POP_ASSUM (rfs o wrap)
-  (* refine P1 and Q1 again for clear assumptions using them *)
+ (* refine P1 and Q1 again for clear assumptions using them *)
  >> qunabbrevl_tac [‘M1’, ‘M1'’]
  >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
  >> qabbrev_tac ‘M1' = principle_hnf (M0' @* MAP VAR vs)’
@@ -1196,7 +1196,7 @@ Proof
  >> qabbrev_tac ‘n' = LAMl_size M0'’
  >> Know ‘n' = n’ >- (rw [Abbr ‘n’, Abbr ‘n'’, LAMl_size_tpm])
  >> DISCH_TAC
-  (* special case *)
+ (* special case *)
  >> reverse (Cases_on ‘h < m’)
  >- (rw [] >> rw [subterm_of_solvables])
  (* stage work, now h < m *)
@@ -2885,7 +2885,7 @@ Proof
      Q.EXISTS_TAC ‘FRONT l’ >> rw [] \\
      MATCH_MP_TAC IS_PREFIX_FRONT_MONO >> rw [])
  >> Rewr
-  (* Michael Norrish's tactics *)
+ (* Michael Norrish's tactics *)
  >> CONV_TAC (UNBETA_CONV “subterm X M (h::p')”)
  >> qmatch_abbrev_tac ‘f _’
  >> RW_TAC bool_ss [subterm_of_solvables]
