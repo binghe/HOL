@@ -2966,23 +2966,20 @@ QED
           in [Boehm_out_lemma], we need to concatenate two ISUBs into a single one,
           but there's no clear relationship on their keys. ISUB is straightforward
           for this purposes.
+
+   NOTE9: To have an explicit form of Z, now we directly assume ‘solvable M’.
  *)
 Theorem Boehm_transform_exists_lemma :
-    !X M p. FINITE X /\
+    !X M p. FINITE X /\ solvable M /\
             p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
-            ?pi. Boehm_transform pi /\
-                (solvable M ==> solvable (apply pi M)) /\
-                 is_ready (apply pi M) /\
-                ?Z ss. FINITE Z /\ subterm Z (apply pi M) p <> NONE /\
-                       tpm_rel (subterm' Z (apply pi M) p)
-                               ((subterm' Z M p) ISUB ss)
+           ?pi. Boehm_transform pi /\
+                solvable (apply pi M) /\ is_ready (apply pi M) /\
+               ?Z ss. Z = X UNION FV M /\
+                      subterm Z (apply pi M) p <> NONE /\
+                      tpm_rel (subterm' Z (apply pi M) p)
+                              ((subterm' Z M p) ISUB ss)
 Proof
     rpt STRIP_TAC
- (* trivial case: unsolvable M (useless) *)
- >> reverse (Cases_on ‘solvable M’)
- >- (Q.EXISTS_TAC ‘[]’ >> rw [is_ready_def] \\
-     Q.EXISTS_TAC ‘X’ >> rw [] \\
-     Q.EXISTS_TAC ‘[]’ >> rw [])
  (* M0 is now meaningful since M is solvable *)
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> ‘hnf M0’ by PROVE_TAC [hnf_principle_hnf, solvable_iff_has_hnf]
@@ -3242,8 +3239,6 @@ Proof
  (* NOTE: for rewriting M to M0 in the goal, Z can be anything. *)
  >> Q.ABBREV_TAC ‘Y = X UNION FV M’
  >> ‘FINITE Y’ by rw [Abbr ‘Y’]
- (* stage work, there's no other choice for RHS *)
- >> Q.EXISTS_TAC ‘Y’ >> art []
  (* RHS rewriting from M to M0 *)
  >> Know ‘subterm Y M0 p = subterm Y M p’
  >- (qunabbrev_tac ‘M0’ \\
