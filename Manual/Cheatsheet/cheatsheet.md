@@ -19,16 +19,16 @@ header-includes:
       At first, you should use the [`vimhol.sh`](https://github.com/HOL-Theorem-Prover/HOL/blob/master/tools/vim/README.md#vimholsh-script) script to run side-by-side Vim and HOL4 using `tmux`.
 
   - Add the following to your `.hol-config.sml` (in your home directory):
-    ```
+```
     val m = Hol_pp.print_apropos;
     val f = Hol_pp.print_find;
-    ```
+```
     This allows you to use the following in your HOL4 REPL:
     - <code>m &grave;&grave;<i>pattern</i>&grave;&grave;</code> to search for theorems with subterms matching the supplied pattern.
     - <code>f "<i>string</i>"</code> to search for theorems with names matching the supplied string.
 
   - You can also add the following if you wish:
-    ```
+```
     local
       val pp = print o Hol_pp.data_list_to_string;
     in
@@ -37,7 +37,7 @@ header-includes:
       fun fm x y = DB.apropos y |> DB.find_in x    |> pp;
       fun mf x y = DB.find y    |> DB.apropos_in x |> pp;
     end;
-    ```
+```
     These functions combine the functionality of `m` and `f` above, allowing you to nest two searches.
 
   - Use <code>help "<i>string</i>"</code> in the HOL4 REPL to examine documentation for ML-level identifiers.
