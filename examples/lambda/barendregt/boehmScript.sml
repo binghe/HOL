@@ -2954,8 +2954,8 @@ QED
          [Boehm_apply_unsolvable], but in this case it is, and this is needed in
          [Boehm_out_lemma] when rewriting ‘apply pi M’ to explicit forms using
          [is_ready_alt] (assuming M is solvable). The extra conclusion is added:
-        ‘solvable M ==> solvable (apply pi M)’, which is not provable outside
-         the proof of this lemma.
+         ‘solvable M ==> solvable (apply pi M)’, which is not provable outside
+          the proof of this lemma.
 
    NOTE7: The core textbook proof steps of this lemma is actually in the proof of
          [subterm_subst_cong], which has to have a ‘tpm_rel’ in the conclusion.
@@ -2972,10 +2972,9 @@ Theorem Boehm_transform_exists_lemma :
             p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
            ?pi. Boehm_transform pi /\
                 solvable (apply pi M) /\ is_ready (apply pi M) /\
-               ?Z ss. Z = X UNION FV M /\
-                      subterm Z (apply pi M) p <> NONE /\
-                      tpm_rel (subterm' Z (apply pi M) p)
-                              ((subterm' Z M p) ISUB ss)
+               ?Z v N. Z = X UNION FV M /\
+                       subterm Z (apply pi M) p <> NONE /\
+                       tpm_rel (subterm' Z (apply pi M) p) ([N/v] (subterm' Z M p))
 Proof
     rpt STRIP_TAC
  >> ‘(!q. q <<= p ==> subterm X M q <> NONE) /\
@@ -3343,7 +3342,7 @@ Proof
      MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
  >> DISCH_TAC
  (* stage work, there's the textbook choice *)
- >> Q.EXISTS_TAC ‘[(P,y)]’
+ >> qexistsl_tac [‘y’, ‘P’]
  >> REWRITE_TAC [GSYM SUB_ISUB_SINGLETON]
  (* preparing for subterm_subst_cong *)
  >> Suff ‘subterm Z ([P/y] N) t <> NONE /\
@@ -3485,12 +3484,11 @@ QED
  *)
 Theorem Boehm_out_lemma :
     !p X M. FINITE X /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
-            ?pi ss Z. tpm_rel (apply pi M) ((subterm' Z M p) ISUB ss)
+           ?pi ss. tpm_rel (apply pi M) ((subterm' (X UNION FV M) M p) ISUB ss)
 Proof
     Induct_on ‘p’
  >- (rw [] >> qexistsl_tac [‘[]’, ‘[]’] >> rw [])
  >> rpt STRIP_TAC
- (* NOTE: following textbook symbols, p (alpha) := j :: b (beta) *)
  >> rename1 ‘subterm X M (j::b) <> NONE’
  >> qabbrev_tac ‘p = j::b’
  >> ‘p <> []’ by rw [Abbr ‘p’]
@@ -3501,7 +3499,7 @@ Proof
  >- (POP_ASSUM (MP_TAC o Q.SPEC ‘[]’) >> rw [])
  >> DISCH_TAC
  >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘j::b’] Boehm_transform_exists_lemma)
- >> rw [] (* this asserts ‘pi’, ‘ss’ *)
+ >> rw [] (* this asserts pi and [N/v] *)
  >> qabbrev_tac ‘Z = X UNION FV M’ (* Z is now unique *)
  >> ‘FINITE Z’ by rw [Abbr ‘Z’]
  >> qabbrev_tac ‘M' = apply pi M’
@@ -3519,9 +3517,9 @@ Proof
 
    14.  tpm_rel (subterm' Z M' (j::b)) (subterm' Z' M (j::b) ISUB ss)
   *)
- >> qabbrev_tac ‘M_j = EL j Ms’
- >> ‘subterm' Z M' (j::b) = subterm' Z M_j b’
-       by (rw [subterm_of_solvables, Abbr ‘M_j’])
+ >> qabbrev_tac ‘Mj = EL j Ms’
+ >> ‘subterm' Z M' (j::b) = subterm' Z Mj b’
+       by (rw [subterm_of_solvables, Abbr ‘Mj’])
  >> POP_ASSUM (fs o wrap)
  >> rename1 ‘Boehm_transform p0’
  (* Now define a selector *)
@@ -3533,12 +3531,12 @@ Proof
  >> ‘Boehm_transform p10’ by rw [Abbr ‘p10’, Boehm_transform_APPEND]
  >> Q.PAT_X_ASSUM ‘T’ K_TAC
  (* applying properties of selector (U) *)
- >> Know ‘apply p10 M -h->* M_j’
+ >> Know ‘apply p10 M -h->* Mj’
  >- cheat
  >> DISCH_TAC
  (* stage work, now using IH *)
- >> Q.PAT_X_ASSUM ‘!X M. P’ (MP_TAC o (Q.SPECL [‘Z’, ‘M_j’]))
- >> Know ‘b IN ltree_paths (BTe Z M_j) /\ subterm Z M_j b <> NONE’
+ >> Q.PAT_X_ASSUM ‘!X M. P’ (MP_TAC o (Q.SPECL [‘Z’, ‘Mj’]))
+ >> Know ‘b IN ltree_paths (BTe Z Mj) /\ subterm Z Mj b <> NONE’
  >- cheat
  (* NOTE: this asserts Z', but it's hard to use it *)
  >> RW_TAC std_ss []
