@@ -2972,7 +2972,7 @@ Theorem Boehm_transform_exists_lemma :
             p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
            ?pi. Boehm_transform pi /\
                 solvable (apply pi M) /\ is_ready (apply pi M) /\
-               ?Z v N. Z = X UNION FV M /\
+               ?Z v N. Z = X UNION FV M /\ closed N /\
                        subterm Z (apply pi M) p <> NONE /\
                        tpm_rel (subterm' Z (apply pi M) p) ([N/v] (subterm' Z M p))
 Proof
@@ -3028,13 +3028,14 @@ Proof
     But since P is a closed term, these fresh variables seem irrelevant...
   *)
  >> qabbrev_tac ‘P = permutator d’
+ >> ‘closed P’ by rw [Abbr ‘P’, closed_permutator]
  >> qabbrev_tac ‘p2 = [[P/y]]’
  >> ‘Boehm_transform p2’ by rw [Abbr ‘p2’]
  >> ‘apply p2 M1 = P @* MAP [P/y] args’ by rw [Abbr ‘p2’, appstar_SUB]
  >> qabbrev_tac ‘args' = MAP [P/y] args’
  >> Know ‘!i. i < m ==> FV (EL i args') SUBSET FV (EL i args)’
  >- (rw [Abbr ‘args'’, EL_MAP, FV_SUB] \\
-     rw [Abbr ‘P’, closed_permutator, GSYM closed_def])
+     fs [closed_def])
  >> DISCH_TAC
  >> ‘LENGTH args' = m’ by rw [Abbr ‘args'’, Abbr ‘m’]
  (* NOTE: Z contains ‘vs’ in addition to X and FV M *)
@@ -3342,7 +3343,7 @@ Proof
      MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
  >> DISCH_TAC
  (* stage work, there's the textbook choice *)
- >> qexistsl_tac [‘y’, ‘P’]
+ >> qexistsl_tac [‘y’, ‘P’] >> art []
  >> REWRITE_TAC [GSYM SUB_ISUB_SINGLETON]
  (* preparing for subterm_subst_cong *)
  >> Suff ‘subterm Z ([P/y] N) t <> NONE /\
