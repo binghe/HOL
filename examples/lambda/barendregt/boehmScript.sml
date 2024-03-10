@@ -92,7 +92,7 @@ Proof
  >> Q.EXISTS_TAC ‘M2’ >> art []
 QED
 
-Theorem tpm_rel_reduce[simp] :
+Theorem tpm_rel_tpm[simp] :
     tpm_rel (tpm pi M) M /\ tpm_rel M (tpm pi M)
 Proof
     CONJ_ASM1_TAC
@@ -2471,7 +2471,7 @@ Proof
      CONJ_TAC >- (MATCH_MP_TAC IMAGE_FINITE \\
                  ‘{subterm' (X UNION set vs) (EL h args) p' | p' <<= FRONT t} =
                   IMAGE (subterm' (X UNION set vs) (EL h args))
-                        {p' | p' <<= FRONT t}’
+                     {p' | p' <<= FRONT t}’
                      by rw [Once EXTENSION] >> POP_ORW \\
                   MATCH_MP_TAC IMAGE_FINITE >> rw [FINITE_prefix]) \\
      CONJ_TAC >- (‘{hnf_children_size (principle_hnf (subterm' X M p')) |
@@ -3541,6 +3541,7 @@ Proof
  >- cheat
  (* NOTE: this asserts Z', but it's hard to use it *)
  >> RW_TAC std_ss []
+ >> rename1 ‘tpm_rel (apply p2 Mj) _’ (* rename ‘pi’ to ‘p2’ *)
  >> cheat
 QED
 
