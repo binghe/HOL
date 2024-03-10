@@ -2972,9 +2972,9 @@ Theorem Boehm_transform_exists_lemma :
             p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
            ?pi. Boehm_transform pi /\
                 solvable (apply pi M) /\ is_ready (apply pi M) /\
-               ?Z v N. Z = X UNION FV M /\ closed N /\
+               ?Z v P. Z = X UNION FV M /\ closed P /\
                        subterm Z (apply pi M) p <> NONE /\
-                       tpm_rel (subterm' Z (apply pi M) p) ([N/v] (subterm' Z M p))
+                       tpm_rel (subterm' Z (apply pi M) p) ([P/v] (subterm' Z M p))
 Proof
     rpt STRIP_TAC
  >> ‘(!q. q <<= p ==> subterm X M q <> NONE) /\
@@ -3490,58 +3490,52 @@ Proof
     Induct_on ‘p’
  >- (rw [] >> qexistsl_tac [‘[]’, ‘[]’] >> rw [])
  >> rpt STRIP_TAC
- >> rename1 ‘subterm X M (j::b) <> NONE’
- >> qabbrev_tac ‘p = j::b’
+ >> rename1 ‘subterm X M (h::t) <> NONE’
+ >> qabbrev_tac ‘p = h::t’ (* head and tail *)
  >> ‘p <> []’ by rw [Abbr ‘p’]
  >> ‘(!q. q <<= p ==> subterm X M q <> NONE) /\
       !q. q <<= FRONT p ==> solvable (subterm' X M q)’
          by METIS_TAC [subterm_solvable_lemma]
- >> Know ‘solvable M’
- >- (POP_ASSUM (MP_TAC o Q.SPEC ‘[]’) >> rw [])
- >> DISCH_TAC
- >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘j::b’] Boehm_transform_exists_lemma)
- >> rw [] (* this asserts pi and [N/v] *)
+ >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’] Boehm_transform_exists_lemma)
+ >> rw [] (* this asserts pi and [P/v] *)
+ >> rename1 ‘Boehm_transform p0’
  >> qabbrev_tac ‘Z = X UNION FV M’ (* Z is now unique *)
  >> ‘FINITE Z’ by rw [Abbr ‘Z’]
- >> qabbrev_tac ‘M' = apply pi M’
+ >> qabbrev_tac ‘M' = apply p0 M’
  >> ‘?y Ms. M' -h->* VAR y @* Ms /\ EVERY (\e. y # e) Ms’
        by METIS_TAC [is_ready_alt]
  >> ‘principle_hnf M' = VAR y @* Ms’ by rw [principle_hnf_thm', hnf_appstar]
  (* stage work *)
  >> qunabbrev_tac ‘p’
- >> Know ‘j < LENGTH Ms’
- >- (Q.PAT_X_ASSUM ‘subterm Z M' (j::b) <> NONE’ MP_TAC \\
+ >> Know ‘h < LENGTH Ms’
+ >- (Q.PAT_X_ASSUM ‘subterm Z M' (h::t) <> NONE’ MP_TAC \\
      RW_TAC std_ss [subterm_of_solvables] >> fs [])
  >> DISCH_TAC
- (* NOTE: This is the second ‘=’ of (2) [1, p.249], while the first ‘=’ is
-    now a tpm_rel in assumptions:
-
-   14.  tpm_rel (subterm' Z M' (j::b)) (subterm' Z' M (j::b) ISUB ss)
-  *)
- >> qabbrev_tac ‘Mj = EL j Ms’
- >> ‘subterm' Z M' (j::b) = subterm' Z Mj b’
-       by (rw [subterm_of_solvables, Abbr ‘Mj’])
- >> POP_ASSUM (fs o wrap)
- >> rename1 ‘Boehm_transform p0’
- (* Now define a selector *)
  >> qabbrev_tac ‘m = LENGTH Ms’
- >> qabbrev_tac ‘U = selector j m’
+ (* NOTE: This is the second ‘=’ of (2) [1, p.249], while the first ‘=’ is
+    now a tpm_rel in assumptions. *)
+ >> qabbrev_tac ‘N = EL h Ms’
+ (* NOTE: Z is still there when going to subterm, not changed *)
+ >> ‘subterm' Z M' (h::t) = subterm' Z N t’
+       by (rw [subterm_of_solvables, Abbr ‘N’])
+ >> POP_ASSUM (fs o wrap)
+ (* stage work, now define a selector *)
+ >> qabbrev_tac ‘U = selector h m’
  >> qabbrev_tac ‘p1 = [[U/y]]’
  >> ‘Boehm_transform p1’ by rw [Abbr ‘p1’]
  >> qabbrev_tac ‘p10 = p1 ++ p0’
  >> ‘Boehm_transform p10’ by rw [Abbr ‘p10’, Boehm_transform_APPEND]
- >> Q.PAT_X_ASSUM ‘T’ K_TAC
+ >> rpt (Q.PAT_X_ASSUM ‘T’ K_TAC)
  (* applying properties of selector (U) *)
- >> Know ‘apply p10 M -h->* Mj’
+ >> Know ‘apply p10 M -h->* N’
  >- cheat
  >> DISCH_TAC
  (* stage work, now using IH *)
- >> Q.PAT_X_ASSUM ‘!X M. P’ (MP_TAC o (Q.SPECL [‘Z’, ‘Mj’]))
- >> Know ‘b IN ltree_paths (BTe Z Mj) /\ subterm Z Mj b <> NONE’
+ >> Q.PAT_X_ASSUM ‘!X M. _’ (MP_TAC o (Q.SPECL [‘Z’, ‘N’]))
+ >> Know ‘t IN ltree_paths (BTe Z N) /\ subterm Z N t <> NONE’
  >- cheat
- (* NOTE: this asserts Z', but it's hard to use it *)
  >> RW_TAC std_ss []
- >> rename1 ‘tpm_rel (apply p2 Mj) _’ (* rename ‘pi’ to ‘p2’ *)
+ >> rename1 ‘tpm_rel (apply p2 N) _’ (* rename ‘pi’ to ‘p2’ *)
  >> cheat
 QED
 
