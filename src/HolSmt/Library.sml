@@ -132,6 +132,17 @@ struct
       end
   end
 
+  fun undo_look_ahead symbols get_token =
+  let
+    val buffer = ref symbols
+    fun get_token' () =
+      case !buffer of
+        [] => get_token ()
+      | x::xs => (buffer := xs; x)
+  in
+    get_token'
+  end
+
   fun parse_arbnum (s : string) =
     let
       fun handle_err () =
@@ -161,6 +172,21 @@ struct
     Redblackmap.insert (dict, key, value :: values)
   end
 
+  (* the same as `extend_dict`, but ensures the key did not contain any
+     associated value in the dictionary prior to this call *)
+  fun extend_dict_unique ((key, value), dict) =
+  let
+    val values = Redblackmap.find (dict, key)
+      handle Redblackmap.NotFound => []
+    val new_dict = Redblackmap.insert (dict, key, value :: values)
+  in
+    if not (List.null values) then
+      raise Feedback.mk_HOL_ERR "Library" "extend_dict_unique"
+          ("key '" ^ key ^ "' already contained a value")
+    else
+      new_dict
+  end
+
   (* entries in 'dict2' are prepended to entries in 'dict1' *)
   fun union_dict dict1 dict2 = Redblackmap.foldl (fn (key, vals, dict) =>
     let
@@ -172,7 +198,7 @@ struct
 
   (* creates a dictionary that maps strings to lists of parsing functions *)
   fun dict_from_list xs
-      : (string, (string -> string list -> 'a list -> 'a) list)
+      : (string, (string -> Term.term list -> 'a list -> 'a) list)
         Redblackmap.dict =
     List.foldl extend_dict (Redblackmap.mkDict String.compare) xs
 

@@ -556,33 +556,105 @@ local
 
 in
 
+  (* Controls whether HolSmt will try to include relevant theorems when trying
+     to prove the goal, including theorems necessary for solving goals that
+     have terms of type `num`. Unfortunately, these theorems may also hinder
+     SMT performance in some cases, hence this escape hatch. *)
+  val include_theorems = ref true
+
   fun goal_to_SmtLib logic =
     Lib.apsnd (fn xs => xs @ ["(exit)\n"]) o (goal_to_SmtLib_aux logic)
 
   fun goal_to_SmtLib_with_get_proof logic =
     Lib.apsnd (fn xs => xs @ ["(get-proof)\n", "(exit)\n"]) o (goal_to_SmtLib_aux logic)
 
-  (* eliminates some HOL terms that are not supported by the SMT-LIB
-     translation *)
-  fun SIMP_TAC simp_let =
+  (* convert `num` literals into integer literals *)
+  fun NUM_TO_INT_CONV tm =
+  let
+    fun conv_term tm =
+      if numSyntax.is_numeral tm then
+        Thm.SYM (Thm.SPEC tm integerTheory.NUM_OF_INT)
+      else
+        raise Conv.UNCHANGED
+    fun is_builtin_num_sym tm =
     let
-      open Tactical simpLib
-      (* TODO: In the future it'd probably be better to translate the
-         definitions of `ABS`, `int_min`, `int_max`, etc, or any other needed
-         user-defined functions automatically and pass those on to the SMT
-         solver, instead of doing these special-case rewrites here. *)
+      val sym = Lib.fst (boolSyntax.strip_comb tm)
     in
-      REPEAT Tactic.GEN_TAC THEN
-      (if simp_let then Library.LET_SIMP_TAC else ALL_TAC) THEN
-      SIMP_TAC pureSimps.pure_ss
-        [integerTheory.INT_MIN, integerTheory.INT_MAX, integerTheory.INT_ABS,
-         realaxTheory.real_min, realaxTheory.real_max, realTheory.abs,
-         pairTheory.PAIR_EQ, pairTheory.FST, pairTheory.SND] THEN
-      Library.WORD_SIMP_TAC THEN
-      Library.SET_SIMP_TAC THEN
-      Tactic.BETA_TAC
+    (* The following are symbols that take numerals as arguments but which we
+       already have special handlers to convert into SMT-LIB syntax (therefore
+       we don't need to convert their arguments into integer literals) *)
+      List.exists (Term.same_const sym) [
+        wordsSyntax.word_extract_tm, wordsSyntax.word_replicate_tm,
+        wordsSyntax.word_rol_tm, wordsSyntax.word_ror_tm
+      ]
     end
+  in
+    (* Don't descend when encountering integer, rational, real or word literals,
+       otherwise we'll be inadvertently converting those as well. Also, don't
+       descend when encountering symbols that take numerals as arguments and
+       which we already handle specially. *)
+    if intSyntax.is_int_literal tm orelse ratSyntax.is_literal tm orelse
+       realSyntax.is_real_literal tm orelse wordsSyntax.is_word_literal tm orelse
+       is_builtin_num_sym tm then
+      raise Conv.UNCHANGED
+    else
+      (Conv.THENC (Conv.SUB_CONV NUM_TO_INT_CONV, conv_term)) tm
+  end
 
+  (* Applies NUM_TO_INT_CONV to both the assumptions and the conclusion *)
+  val NUM_TO_INT_TAC =
+  let
+    open Tactic Tactical
+  in
+    RULE_ASSUM_TAC (Conv.CONV_RULE NUM_TO_INT_CONV) THEN
+    CONV_TAC NUM_TO_INT_CONV
+  end
+
+  (* Eliminates some HOL terms that are not supported by the SMT-LIB
+     translation. It also adds some useful theorems to the list of assumptions
+     so that SMT solvers can reason about some symbols defined in HOL4 theories. *)
+  fun SIMP_TAC simp_let =
+  let
+    open Tactical simpLib
+    (* TODO: In the future we should add all relevant theorems automatically,
+       either based on which symbols are used (recursively) or, perhaps more
+       simply, just translate all the theorems defined in all the theories that
+       are being used. For now we just manually add a few useful ones. *)
+    val facts =
+    let
+      open arithmeticTheory integerTheory
+    in
+      if !include_theorems then [
+        (* arithmeticTheory *)
+        GREATER_DEF, GREATER_EQ, MIN_DEF, MAX_DEF,
+        (* integerTheory *)
+        INT, INT_ADD, INT_INJ, INT_LE, INT_LT, INT_MAX, INT_MIN, INT_MUL,
+        INT_OF_NUM, INT_POS,
+        (* others *)
+        int_arithTheory.INT_NUM_SUB,
+        realaxTheory.real_min, realaxTheory.real_max, realTheory.abs
+      ] else []
+    end
+  in
+    REPEAT Tactic.GEN_TAC THEN
+    (if simp_let then Library.LET_SIMP_TAC else ALL_TAC) THEN
+    SIMP_TAC pureSimps.pure_ss [
+      (* FIXME: polymorphic functions seem to be highly problematic at the
+         moment because after HolSmt's translation, the symbols in these
+         theorems (e.g. ``FST``, ``SND``, ``$,``, etc) won't be the same as the
+         ones in the goal, apparently because they have different types (due to
+         type instantiation). This means that currently, passing these theorems
+         as facts/assumptions will be useless in most circumstances. We try to
+         use these theorems in simplification here but this only helps solving
+         the simpler goals. *)
+      pairTheory.PAIR_EQ, pairTheory.FST, pairTheory.SND
+    ] THEN
+    Library.WORD_SIMP_TAC THEN
+    Library.SET_SIMP_TAC THEN
+    Tactic.BETA_TAC THEN
+    MAP_EVERY Tactic.ASSUME_TAC facts THEN
+    NUM_TO_INT_TAC
+  end
 end  (* local *)
 
 end

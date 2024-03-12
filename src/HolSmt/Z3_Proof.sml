@@ -42,9 +42,15 @@ struct
                      | LEMMA of proofterm * Term.term
                      | MONOTONICITY of proofterm list * Term.term
                      | MP of proofterm * proofterm * Term.term
+                     | MP_EQ of proofterm * proofterm * Term.term
+                     | NNF_NEG of proofterm list * Term.term
+                     | NNF_POS of proofterm list * Term.term
                      | NOT_OR_ELIM of proofterm * Term.term
+                     | QUANT_INST of Term.term list * Term.term
                      | QUANT_INTRO of proofterm * Term.term
+                     | REFL of Term.term
                      | REWRITE of Term.term
+                     | SKOLEM of Term.term
                      | SYMM of proofterm * Term.term
                      | TH_LEMMA_ARITH of proofterm list * Term.term
                      | TH_LEMMA_ARRAY of proofterm list * Term.term

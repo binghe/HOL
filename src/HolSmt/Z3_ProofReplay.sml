@@ -484,6 +484,19 @@ local
     aux (Redblackmap.mkDict Term.compare, t)
   end
 
+  (* Returns a proof of `t` given a list of theorems as inputs. It relies on
+     `metisLib.METIS_TAC` to find a proof. The returned theorem will have as
+     hypotheses all the hypotheses of all the input theorems. *)
+  fun metis_prove (thms, t) =
+  let
+    (* Gather all the hypotheses of all theorems together into a set of
+       assumptions *)
+    fun join_fn (thm, asm_set) = HOLset.union (asm_set, Thm.hypset thm)
+    val asms = List.foldl join_fn Term.empty_tmset thms
+  in
+    Tactical.TAC_PROOF ((HOLset.listItems asms, t), metisLib.METIS_TAC thms)
+  end
+
   (***************************************************************************)
   (* implementation of Z3's inference rules                                  *)
   (***************************************************************************)
@@ -582,24 +595,43 @@ local
       (state, Drule.IMP_ELIM (Lib.fst (Thm.EQ_IMP_RULE l_eq_r)))
     end
 
-  (* (!x y z. P) = P *)
+  (* (!x. ?y. !z. P) = P *)
   fun z3_elim_unused (state, t) =
   let
     val (lhs, rhs) = boolSyntax.dest_eq t
-    fun strip_some_foralls forall =
+    fun get_forall_thms term : term * thm * thm =
     let
-      val (var, body) = boolSyntax.dest_forall forall
-      val th1 = Thm.DISCH forall (Thm.SPEC var (Thm.ASSUME forall))
+      val (var, body) = boolSyntax.dest_forall term
+      val th1 = Thm.DISCH term (Thm.SPEC var (Thm.ASSUME term))
       val th2 = Thm.DISCH body (Thm.GEN var (Thm.ASSUME body))
+    in
+      (body, th1, th2)
+    end
+    fun get_exists_thms term : term * thm * thm =
+    let
+      val (var, body) = boolSyntax.dest_exists term
+      val th1 = Thm.DISCH term (Thm.CHOOSE (var, Thm.ASSUME term)
+        (Thm.ASSUME body))
+      val th2 = Thm.DISCH body (Thm.EXISTS (term, var) (Thm.ASSUME body))
+    in
+      (body, th1, th2)
+    end
+    fun strip_some_quants term =
+    let
+      val (body, th1, th2) =
+        if boolSyntax.is_forall term then
+          get_forall_thms term
+        else
+          get_exists_thms term
       val strip_th = Drule.IMP_ANTISYM_RULE th1 th2
     in
       if body ~~ rhs then
         strip_th  (* stripped enough quantifiers *)
       else
-        Thm.TRANS strip_th (strip_some_foralls body)
+        Thm.TRANS strip_th (strip_some_quants body)
       end
   in
-    (state, strip_some_foralls lhs)
+    (state, strip_some_quants lhs)
   end
 
   (* introduces a local hypothesis (which must be discharged by
@@ -768,6 +800,26 @@ local
   fun z3_mp (state, thm1, thm2, t) =
     (state, Thm.MP thm2 thm1 handle Feedback.HOL_ERR _ => Thm.EQ_MP thm2 thm1)
 
+  (* `z3_mp_eq` implements the inference rule corresponding to `Thm.EQ_MP` *)
+  fun z3_mp_eq (state, thm1, thm2, t) =
+    (state, Thm.EQ_MP thm2 thm1)
+
+  (* `z3_nnf_neg` creates a proof for a negative NNF step.
+
+     For the initial implementation, we rely on metisLib.METIS_TAC to find a
+     proof. However, if it becomes a bottleneck, a more specialized proof
+     handler could be implemented to improve performance. *)
+  fun z3_nnf_neg (state, thms, t) =
+    (state, metis_prove (thms, t))
+
+  (* `z3_nnf_pos` creates a proof for a positive NNF step.
+
+     For the initial implementation, we rely on metisLib.METIS_TAC to find a
+     proof. However, if it becomes a bottleneck, a more specialized proof
+     handler could be implemented to improve performance. *)
+  fun z3_nnf_pos (state, thms, t) =
+    (state, metis_prove (thms, t))
+
   (* ~(... \/ p \/ ...)
      ------------------
              ~p         *)
@@ -787,35 +839,88 @@ local
     (state, if is_neg then th1 else Thm.MP (Thm.SPEC t NOT_NOT_ELIM) th1)
   end
 
-  (*         P = Q
-     ---------------------
-     (!x. P x) = (!y. Q y) *)
+  (*
+     ------------------------------------------  QUANT_INST [u1,...,un]
+       |- ~(!x1...xn. t) \/ t[u1/x1]...[un/xn]
+  *)
+  fun z3_quant_inst (state, terms, t) =
+  let
+    val t1 = Lib.fst (boolSyntax.dest_disj t)
+    val t2 = boolSyntax.dest_neg t1
+    val p_term = Term.mk_var ("p", Type.bool)
+    val thm1 = Thm.INST [{redex = p_term, residue = t2}] HolSmtTheory.NOT_P_OR_P
+    val thm2 = Thm.ASSUME t1
+    val thm3_quant = Thm.ASSUME t2
+    val thm3 = Drule.SPECL terms thm3_quant
+    val thm = Drule.DISJ_CASES_UNION thm1 thm2 thm3
+    (* The following is a quick workaround for the following Z3 issue:
+       https://github.com/Z3Prover/z3/issues/7154
+       The fix seems to be scheduled to be released in the Z3 version after
+       v4.12.6. *)
+    val thm' =
+      if Thm.concl thm !~ t then
+        metis_prove ([thm], t)
+      else
+        thm
+  in
+    (state, thm')
+  end
+
+  (*                     P = Q
+     ---------------------------------------------
+     (!x. ?y. !z. P x y z) = (!a. ?b. !c. Q a b c) *)
   fun z3_quant_intro (state, thm, t) =
   let
+    (* Removes the outer quantifier and returns a function that inserts it into
+       a theorem on both sides of an quality, and the term without the
+       quantifier. *)
+    fun dest_quant term : ((thm -> thm) * term) option =
+      if boolSyntax.is_forall term then
+        SOME (Lib.apfst Drule.FORALL_EQ (boolSyntax.dest_forall term))
+      else if boolSyntax.is_exists term then
+        SOME (Lib.apfst Drule.EXISTS_EQ (boolSyntax.dest_exists term))
+      else
+        NONE
+    (* Removes all quantifiers and returns a list of functions that insert them
+       back into a theorem, and the term without the quantifiers *)
+    fun strip_quant term acc : (thm -> thm) list * term =
+      case dest_quant term of
+        NONE => (List.rev acc, term)
+      | SOME (f, t) => strip_quant t (f :: acc)
+
     val (lhs, rhs) = boolSyntax.dest_eq t
-    val (bvars, _) = boolSyntax.strip_forall lhs
+    val (quantfs, _) = strip_quant lhs []
     (* P may be a quantified proposition itself; only retain *new*
        quantifiers *)
     val (P, _) = boolSyntax.dest_eq (Thm.concl thm)
-    val bvars = List.take (bvars, List.length bvars -
-      List.length (Lib.fst (boolSyntax.strip_forall P)))
+    val quantfs = List.take (quantfs, List.length quantfs -
+      List.length (Lib.fst (strip_quant P [])))
     (* P and Q in the conclusion may require variable renaming to match
        the premise -- we only look at P and hope Q will come out right *)
-    fun strip_some_foralls 0 term =
-      term
-      | strip_some_foralls n term =
-      strip_some_foralls (n - 1) (Lib.snd (boolSyntax.dest_forall term))
-    val len = List.length bvars
-    val (tmsubst, _) = Term.match_term P (strip_some_foralls len lhs)
+    fun strip_some_quants 0 term = term
+      | strip_some_quants n term =
+          strip_some_quants (n - 1) (Lib.snd (Option.valOf (dest_quant term)))
+    val len = List.length quantfs
+    val (tmsubst, _) = Term.match_term P (strip_some_quants len lhs)
     val thm = Thm.INST tmsubst thm
     (* add quantifiers (on both sides) *)
-    val thm = List.foldr (fn (bvar, th) => Drule.FORALL_EQ bvar th)
-      thm bvars
-    (* rename bvars on rhs if necessary *)
+    val thm = List.foldr (fn (quantf, th) => quantf th)
+      thm quantfs
+    (* rename variables on rhs if necessary *)
     val (_, intermediate_rhs) = boolSyntax.dest_eq (Thm.concl thm)
     val thm = Thm.TRANS thm (Thm.ALPHA intermediate_rhs rhs)
   in
     (state, thm)
+  end
+
+  (* A proof for `R t t`, where R is a reflexive relation. The only `R` that are
+     used are equivalence modulo namings, equality and equivalence, i.e. `~`,
+     `=` or `iff`, all represented in HOL4 terms as `boolSyntax.mk_eq`. *)
+  fun z3_refl (state, t) =
+  let
+    val (lhs, rhs) = boolSyntax.dest_eq t
+  in
+    (state, Thm.ALPHA lhs rhs)
   end
 
   fun z3_rewrite (state, t) =
@@ -918,6 +1023,29 @@ local
     end
   end
 
+  (* |- ~(!x. P x y) <=> ~(P (sk y) y)
+     |- (?x. P x y) <=> P (sk y) y *)
+  fun z3_skolem (state, t) =
+  let
+    val lhs = Lib.fst (boolSyntax.dest_eq t)
+    val thm1 =
+      if boolSyntax.is_exists lhs then
+        HolSmtTheory.SKOLEM_EXISTS
+      else
+        HolSmtTheory.SKOLEM_FORALL
+    val thm2 = Drule.SELECT_RULE thm1
+    val thm3 = Conv.HO_REWR_CONV thm2 lhs
+    val substs = Term.match_term t (Thm.concl thm3)
+    val {redex, residue} = List.hd (Lib.fst substs)
+    val thm4 = Thm.SYM (Thm.ASSUME (boolSyntax.mk_eq (redex, residue)))
+    val thm5 = Drule.SUBST_CONV [{redex = redex, residue = thm4}] t
+      (Thm.concl thm3)
+    val thm = Thm.EQ_MP thm5 thm3
+    val asl = Thm.hyp thm
+  in
+    (state_define state asl, thm)
+  end
+
   fun z3_symm (state, thm, t) =
     (state, Thm.SYM thm)
 
@@ -950,7 +1078,9 @@ local
              arithmetic *)
           profile "th_lemma[arith](3.1)(real)" RealField.REAL_ARITH t'
         else
-          profile "th_lemma[arith](3.2)(int)" intLib.ARITH_PROVE t'
+          (* the following should be reverted to use ARITH_PROVE instead of
+             COOPER_PROVE when issue HOL-Theorem-Prover/HOL#1203 is fixed *)
+          profile "th_lemma[arith](3.2)(int)" intLib.COOPER_PROVE t'
       val subst = List.map (fn (term, var) => {redex = var, residue = term})
         (Redblackmap.listItems dict)
     in
@@ -1022,14 +1152,7 @@ local
      handler could be implemented to improve performance. *)
 
   fun z3_trans_star (state, thms, t) =
-  let
-    (* Gather all the hypotheses of all theorems together into a set of assumptions *)
-    fun join_fn (thm, asm_set) = HOLset.union (asm_set, Thm.hypset thm)
-    val asms = List.foldl join_fn Term.empty_tmset thms
-    val thm = Tactical.TAC_PROOF ((HOLset.listItems asms, t), metisLib.METIS_TAC thms)
-  in
-    (state, thm)
-  end
+    (state, metis_prove (thms, t))
 
   fun z3_true_axiom (state, t) =
     (state, boolTheory.TRUTH)
@@ -1070,6 +1193,21 @@ local
       : (state * proof) * Thm.thm =
   let
     val (state, thm) = profile name z3_rule_fn (state, concl)
+      handle Feedback.HOL_ERR _ =>
+        raise ERR name (Hol_pp.term_to_string concl)
+    val _ = profile "check_thm" check_thm (name, thm, concl)
+  in
+    continuation ((state, proof), thm)
+  end
+
+  fun one_arg_zero_prems (state : state, proof : proof)
+      (name : string)
+      (z3_rule_fn : state * 'a * Term.term -> state * Thm.thm)
+      (arg : 'a, concl : Term.term)
+      (continuation : (state * proof) * Thm.thm -> (state * proof) * Thm.thm)
+      : (state * proof) * Thm.thm =
+  let
+    val (state, thm) = profile name z3_rule_fn (state, arg, concl)
       handle Feedback.HOL_ERR _ =>
         raise ERR name (Hol_pp.term_to_string concl)
     val _ = profile "check_thm" check_thm (name, thm, concl)
@@ -1166,12 +1304,24 @@ local
         list_prems state_proof "monotonicity" z3_monotonicity x continuation []
     | thm_of_proofterm (state_proof, MP x) continuation =
         two_prems state_proof "mp" z3_mp x continuation
+    | thm_of_proofterm (state_proof, MP_EQ x) continuation =
+        two_prems state_proof "mp~" z3_mp_eq x continuation
+    | thm_of_proofterm (state_proof, NNF_NEG x) continuation =
+        list_prems state_proof "nnf_neg" z3_nnf_neg x continuation []
+    | thm_of_proofterm (state_proof, NNF_POS x) continuation =
+        list_prems state_proof "nnf_pos" z3_nnf_pos x continuation []
     | thm_of_proofterm (state_proof, NOT_OR_ELIM x) continuation =
         one_prem state_proof "not_or_elim" z3_not_or_elim x continuation
+    | thm_of_proofterm (state_proof, QUANT_INST x) continuation =
+        one_arg_zero_prems state_proof "quant_inst" z3_quant_inst x continuation
     | thm_of_proofterm (state_proof, QUANT_INTRO x) continuation =
         one_prem state_proof "quant_intro" z3_quant_intro x continuation
+    | thm_of_proofterm (state_proof, REFL x) continuation =
+        zero_prems state_proof "refl" z3_refl x continuation
     | thm_of_proofterm (state_proof, REWRITE x) continuation =
         zero_prems state_proof "rewrite" z3_rewrite x continuation
+    | thm_of_proofterm (state_proof, SKOLEM x) continuation =
+        zero_prems state_proof "skolem" z3_skolem x continuation
     | thm_of_proofterm (state_proof, SYMM x) continuation =
         one_prem state_proof "symm" z3_symm x continuation
     | thm_of_proofterm (state_proof, TH_LEMMA_ARITH x) continuation =
@@ -1349,14 +1499,38 @@ local
         (* Recurse to remove the remaining variables' definitions *)
         remove_definitions (new_defs, var_set, thm)
       end
-in
 
+  (* this function identifies hypotheses in the final theorem that are not in
+     the original list of assumptions and then tries to remove them; it's a
+     workaround for the following Z3 issue, whose fix is currently still in
+     progress:
+
+     https://github.com/Z3Prover/z3/pull/7157 *)
+  fun remove_hyps (asl, g, thm) : Thm.thm =
+  let
+    val hyps = Thm.hypset thm
+    (* add the negation of the conclusion of the goal to the list of
+       expected hypotheses *)
+    val asl = (boolSyntax.mk_neg g) :: asl
+    val asms = HOLset.addList (Term.empty_tmset, asl)
+    val bad_hyps = HOLset.difference (hyps, asms)
+    fun remove_hyp (hyp, thm) : Thm.thm =
+    let
+      val hyp_thm = Tactical.TAC_PROOF ((asl, hyp), metisLib.METIS_TAC [])
+    in
+      Drule.PROVE_HYP hyp_thm thm
+    end
+  in
+    HOLset.foldl remove_hyp thm bad_hyps
+  end
+
+in
   (* For unit tests *)
   val remove_definitions = remove_definitions
 
   (* returns a theorem that concludes ``F``, with its hypotheses (a
      subset of) those asserted in the proof *)
-  fun check_proof proof : Thm.thm =
+  fun check_proof (asl, g, proof) : Thm.thm =
   let
     val _ = if !Library.trace > 1 then
         Feedback.HOL_MESG "HolSmtLib: checking Z3 proof"
@@ -1385,6 +1559,12 @@ in
     val _ = profile "check_proof(hypcheck)" HOLset.isSubset (Thm.hypset final_thm,
         #asserted_hyps state) orelse
       raise ERR "check_proof" "final theorem contains additional hyp(s)"
+
+    (* if the final theorem contains hyps that are not in `asl`, it likely means
+       that we've run into a Z3 issue where it slightly modifies the original
+       assumptions; as a workaround we try to remove those hyps here *)
+    val final_thm = profile "check_proof(hyp_removal)" remove_hyps
+      (asl, g, final_thm)
   in
     final_thm
   end
