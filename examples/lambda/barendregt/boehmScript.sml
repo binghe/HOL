@@ -2934,38 +2934,6 @@ QED
                        ?fm. apply pi M == fm ' M
 
    which is impossible if M is not already "is_ready".
-
-   NOTE4: The precise forms of Z and Z' in the conclusion, are:
-
-          Z  = X UNION FV M UNION set vs
-          Z' = X UNION FV M
-
-   where  vs = NEWS (LAMl_size (principle_hnf M) (X UNION FV M)) = f (X,M)
-         (vs is function of X and M, assuming M is solvable, otherwise trivial.)
-
-   NOTE5: It's possible that the two terms in the final conclusion:
-
-   1. subterm' Z (apply pi M) p
-   2. fm ' (subterm' Z' M p)
-
-   are not equal, nor are they beta-equivalent, but they differ by a tpm!
-
-   NOTE6: In general ‘apply pi M’ is not solvable even if M is solable (see also
-         [Boehm_apply_unsolvable], but in this case it is, and this is needed in
-         [Boehm_out_lemma] when rewriting ‘apply pi M’ to explicit forms using
-         [is_ready_alt] (assuming M is solvable). The extra conclusion is added:
-         ‘solvable M ==> solvable (apply pi M)’, which is not provable outside
-          the proof of this lemma.
-
-   NOTE7: The core textbook proof steps of this lemma is actually in the proof of
-         [subterm_subst_cong], which has to have a ‘tpm_rel’ in the conclusion.
-          But the conclusion of the present lemma may still be ‘=’, because ‘tpm’
-          may be represent by a ssub (fm), which can be combined with [P/y].
-
-   NOTE8: Instead of ssub, the conclusion has used ‘ISUB’. This is because later,
-          in [Boehm_out_lemma], we need to concatenate two ISUBs into a single one,
-          but there's no clear relationship on their keys. ISUB is straightforward
-          for this purposes.
  *)
 Theorem Boehm_transform_exists_lemma :
     !X M p. FINITE X /\
@@ -2974,7 +2942,8 @@ Theorem Boehm_transform_exists_lemma :
                 solvable (apply pi M) /\ is_ready (apply pi M) /\
                ?Z v P. Z = X UNION FV M /\ closed P /\
                        subterm Z (apply pi M) p <> NONE /\
-                       tpm_rel (subterm' Z (apply pi M) p) ([P/v] (subterm' Z M p))
+                       tpm_rel (subterm' Z (apply pi M) p)
+                               ([P/v] (subterm' Z M p))
 Proof
     rpt STRIP_TAC
  >> ‘(!q. q <<= p ==> subterm X M q <> NONE) /\
