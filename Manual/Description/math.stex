@@ -75,8 +75,8 @@ Cardinality is defined in terms of bijective functions:
 \end{alltt}
 \end{hol}
 
-\section{General Topology}
-\label{sec:top}
+%\section{General Topology}
+%\label{sec:top}
 
 \section{Topology of One-Dimensional Euclidean Space}
 \label{sec:topology}
@@ -132,6 +132,7 @@ The concept of open (and closed) sets is fundamental and is needed, for example,
 \begin{hol}
 \begin{alltt}
 ##thm real_topologyTheory.open_def
+
 ##thm real_topologyTheory.closed_def
 \end{alltt}
 \end{hol}
@@ -200,8 +201,7 @@ Expanding out the definition, we see that the definition is much as an analyst m
 \begin{figure}[ht]
   \centering
   \includegraphics{figs/0.mps}
-  \caption{The differentiation process of \holtxt{(f diffl l) x}, where $l$ is the derivative
-    and $l = \mathrm{tan}\,\alpha = \displaystyle\lim_{h\rightarrow 0}\frac{f(x+h) - f(x)}{h}$}
+  \caption{The differentiation process of \holtxt{(f diffl l) x}}
   \label{fig:diffl}
 \end{figure}
 
@@ -222,9 +222,7 @@ Expanding out the definition, we see that the definition is much as an analyst m
 \begin{figure}[ht]
   \centering
   \includegraphics{figs/1.mps}
-  \caption{The differentiation process of \holtxt{f has_derivative f'}, where
-    $f'$ is linear and
-    $\displaystyle\frac{|f(x')-f(x)-f'(x'-x)|}{|x'-x|}\rightarrow 0$ when $|x'-x|\rightarrow 0$.}
+  \caption{The differentiation process of \holtxt{f has_derivative f'}}
   \label{fig:hasDerivative}
 \end{figure}
 
@@ -293,7 +291,7 @@ i.e.~\holtxt{f continuous (at x within s)}.
 The global version of \holtxt{continuous} for a set of points (usually an open or closed interval)
 is called \holtxt{continuous_on}.\footnote{There is also another closely related
   \holtxt{uniformly_continuous_on} which implies \holtxt{continuous_on}. See \theoryimp{UNIFORMLY_CONTINUOUS_IMP_CONTINUOUS},
-\theoryimp{COMPACT_UNIFORMLY_CONTINUOUS}, etc. in \theoryimp{real_topologyTheory}.}
+\theoryimp{COMPACT_UNIFORMLY_CONTINUOUS}, etc.~in \theoryimp{real_topologyTheory}.}
 \begin{hol}
 \begin{alltt}
 ##thm real_topologyTheory.continuous_on
@@ -344,8 +342,8 @@ integrable.)
 If $f$ is integrable on a closed interval $[a,b]$,
 then the usual integration of $f$ on $[a,b]$, \ie,~$\displaystyle\int_a^b f \mathrm{d}x$,
 is denoted by \holtxt{integral (interval [a,b]) f} in HOL.
-(In general, the integration of $f$ on a set $s$ of real numbers is
-\holtxt{integral s f}.)
+In general, the integration of $f$ on a set $s$ of real numbers is
+\holtxt{integral s f}.
 
 \begin{hol}
 \begin{alltt}
@@ -364,6 +362,9 @@ is denoted by \holtxt{integral (interval [a,b]) f} in HOL.
 ##thm integralTheory.integral
 \end{alltt}
 \end{hol}
+
+In \theoryimp{integration}, ported from HOL Light, a more general form of
+Henstock-Kurzweil integration has been defined:
 
 \begin{hol}
 \begin{alltt}
@@ -407,11 +408,15 @@ improvement, as shown in the following strong version of the
 \end{alltt}
 \end{hol}
 
-% \begin{hol}
-% \begin{alltt}
-% ##thm integral
-% \end{alltt}
-% \end{hol}
+Finally, the following two bridging theorems can be used to convert between integrals
+of the \theoryimp{integral} and \theoryimp{integration} theories:
+\begin{hol}
+\begin{alltt}
+##thm integralTheory.integral_old_to_new
+
+##thm integralTheory.integral_new_to_old
+\end{alltt}
+\end{hol}
 
 \section{Measure Theory}
 \label{sec:measure}
@@ -459,6 +464,7 @@ defined below:
 \begin{hol}
 \begin{alltt}
 ##thm algebra_def
+
 ##thm sigma_algebra_def
 \end{alltt}
 \end{hol}
@@ -485,7 +491,9 @@ measure space must be both \holtxt{positive} and \holtxt{countably_additive}:
 >>__ load "measureTheory";
 >>__ open measureTheory;
 ##thm measure_space_def
+
 ##thm positive_def
+
 ##thm countably_additive_def
 \end{alltt}
 \end{hol}
@@ -521,7 +529,9 @@ $\sigma$-algebra containing it (also called the $\sigma$-algebra
 \begin{hol}
 \begin{alltt}
 ##thm sigma_def
+
 ##thm SIGMA_ALGEBRA_SIGMA
+
 ##thm SIGMA_SUBSET_SUBSETS
 \end{alltt}
 \end{hol}
@@ -542,6 +552,7 @@ generators are stable under $\cap$ and $\sigma$-finite:
 >>__ load "martingaleTheory";
 >>__ open martingaleTheory;
 ##thm sigma_finite_def
+
 ##thm sigma_finite_measure_space_def
 
 ##thm UNIQUENESS_OF_MEASURE
@@ -617,6 +628,7 @@ is in \theoryimp{sigma_algebra} theory)
 ##thm measurable_def
 \end{alltt}
 \end{hol}
+
 A function is called \emph{Borel-measurable} if it is a measurable map from
 any measurable space to \holtxt{borel} or \holtxt{Borel}:
 \begin{hol}
@@ -681,7 +693,9 @@ construction of \holtxt{lborel} is done by extending a premeasure in the followi
 \begin{hol}
 \begin{alltt}
 ##thm right_open_interval
+
 ##thm right_open_intervals
+
 ##thm lambda0_def
 \end{alltt}
 \end{hol}
@@ -763,6 +777,7 @@ it is defined directly by Henstock-Kurzweil Integration
 >>__ load "lebesgue_measureTheory";
 >>__ open lebesgue_measureTheory;
 ##thm lebesgue_def
+
 ##thm line
 \end{alltt}
 \end{hol}
@@ -850,7 +865,9 @@ as the supremum of all positive simple functions $g$ which is pointwise smaller 
 \begin{hol}
 \begin{alltt}
 ##thm pos_fn_integral_def
+
 ##thm psfs_def
+
 ##thm psfis_def
 \end{alltt}
 \end{hol}
@@ -873,7 +890,9 @@ by the subtraction of integrations of its positive and negative parts:
 \begin{hol}
 \begin{alltt}
 ##thm integral_def
+
 ##thm fn_plus_def
+
 ##thm fn_minus_def
 \end{alltt}
 \end{hol}
@@ -1258,7 +1277,9 @@ that probability is increasing, additive and countably additive, respectively:
 \begin{hol}
 \begin{alltt}
 ##thm PROB_INCREASING
+
 ##thm PROB_ADDITIVE
+
 ##thm PROB_COUNTABLY_ADDITIVE
 \end{alltt}
 \end{hol}
@@ -1313,6 +1334,7 @@ They are called \holtxt{real_random_variable}:
 \begin{hol}
 \begin{alltt}
 ##thm random_variable_def
+
 ##thm real_random_variable_def
 \end{alltt}
 \end{hol}
@@ -1324,6 +1346,7 @@ is a special distribution defined on half spaces $(-\infty,x]$:
 \begin{hol}
 \begin{alltt}
 ##thm distribution_def
+
 ##thm distribution_function
 \end{alltt}
 \end{hol}
@@ -1350,6 +1373,7 @@ two of them are independent:
 \begin{hol}
 \begin{alltt}
 ##thm indep_def
+
 ##thm pairwise_indep_events_def
 \end{alltt}
 \end{hol}
@@ -1415,9 +1439,11 @@ or formally
 \begin{hol}
 \begin{alltt}
 ##thm set_limsup_def
+
 ##thm set_liminf_def
 
 ##thm EVENTS_LIMSUP
+
 ##thm EVENTS_LIMINF
 \end{alltt}
 \end{hol}
@@ -1502,6 +1528,7 @@ $\mathscr{E}((X - a)^r)$ is the corresponding \emph{moment}:
 \begin{hol}
 \begin{alltt}
 ##thm absolute_moment_def
+
 ##thm moment_def
 \end{alltt}
 \end{hol}
@@ -1513,7 +1540,9 @@ denoted by $\sigma^2(X)$ or $\mathrm{var}(X)$:
 \begin{hol}
 \begin{alltt}
 ##thm central_moment_def
+
 ##thm variance_def
+
 ##thm variance_alt
 \end{alltt}
 \end{hol}
@@ -1523,6 +1552,7 @@ probability, so is Chebyshev's inequality:
 \begin{hol}
 \begin{alltt}
 ##thm variance_eq
+
 ##thm chebyshev_ineq_variance
 \end{alltt}
 \end{hol}
@@ -1534,7 +1564,9 @@ Note that, for the above formulae to hold, the r.v.~$X$ must have
 ##thm finite_second_moments_def
 
 ##thm finite_second_moments_literally
+
 ##thm finite_second_moments_eq_integrable_square
+
 ##thm finite_second_moments_eq_finite_variance
 \end{alltt}
 \end{hol}
@@ -1715,8 +1747,6 @@ the Strong and Weak Law of Large Numbers are also proven:
 ##thm WLLN_IID
 
 ##thm SLLN_IID
-or
-##thm SLLN_IID_applied
 \end{alltt}
 \end{hol}
 

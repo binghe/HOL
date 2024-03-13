@@ -3488,13 +3488,13 @@ Proof
  >> ‘subterm' Z M' (h::t) = subterm' Z N t’
        by (rw [subterm_of_solvables, Abbr ‘N’])
  >> POP_ASSUM (fs o wrap)
+ >> rpt (Q.PAT_X_ASSUM ‘T’ K_TAC)
  (* stage work, now define a selector *)
  >> qabbrev_tac ‘U = selector h m’
  >> qabbrev_tac ‘p1 = [[U/y]]’
  >> ‘Boehm_transform p1’ by rw [Abbr ‘p1’]
  >> qabbrev_tac ‘p10 = p1 ++ p0’
  >> ‘Boehm_transform p10’ by rw [Abbr ‘p10’, Boehm_transform_APPEND]
- >> rpt (Q.PAT_X_ASSUM ‘T’ K_TAC)
  (* applying properties of selector (U) *)
  >> Know ‘apply p10 M -h->* N’
  >- cheat
