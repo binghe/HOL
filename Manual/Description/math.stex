@@ -714,7 +714,9 @@ eventually a \holtxt{premeasure} (\holtxt{positive} and \holtxt{countably_additi
 \begin{hol}
 \begin{alltt}
 ##thm lborel0_additive
+
 ##thm lborel0_finite_additive
+
 ##thm lborel0_premeasure
 \end{alltt}
 \end{hol}
@@ -735,8 +737,11 @@ typical Borel sets are proved as theorems:
 \begin{hol}
 \begin{alltt}
 ##thm lambda_prop
+
 ##thm lambda_sing
+
 ##thm lambda_open_interval
+
 ##thm lambda_closed_interval
 \end{alltt}
 \end{hol}
