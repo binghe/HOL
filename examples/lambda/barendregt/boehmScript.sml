@@ -784,7 +784,7 @@ Proof
 QED
 
 (* The set of ltree paths of BT is unique w.r.t. excluded list *)
-Theorem BT_ltree_paths_unique :
+Theorem BT_ltree_paths_cong :
     !X Y M. FINITE X /\ FINITE Y ==>
             ltree_paths (BTe X M) = ltree_paths (BTe Y M)
 Proof
@@ -2934,12 +2934,16 @@ QED
                        ?fm. apply pi M == fm ' M
 
    which is impossible if M is not already "is_ready".
+
+   NOTE4: Added ‘p IN ltree_paths (BTe X (apply pi M))’ into conclusions for the
+   needs in the user theorem.
  *)
 Theorem Boehm_transform_exists_lemma :
     !X M p. FINITE X /\
             p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
            ?pi. Boehm_transform pi /\
                 solvable (apply pi M) /\ is_ready (apply pi M) /\
+                p IN ltree_paths (BTe X (apply pi M)) /\
                ?Z v P. Z = X UNION FV M /\ closed P /\
                        subterm Z (apply pi M) p <> NONE /\
                        tpm_rel (subterm' Z (apply pi M) p)
@@ -3209,6 +3213,10 @@ Proof
          FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
      rw [SUBSET_DEF, IN_BIGUNION_IMAGE] \\
      Q.EXISTS_TAC ‘e’ >> art [])
+ (* p IN ltree_paths (BTe X (apply (p3 ++ p2 ++ p1) M)) *)
+ >> CONJ_TAC
+ >- (
+     cheat)
  (* NOTE: for rewriting M to M0 in the goal, Z can be anything. *)
  >> Q.ABBREV_TAC ‘Y = X UNION FV M’
  >> ‘FINITE Y’ by rw [Abbr ‘Y’]
@@ -3337,7 +3345,7 @@ Proof
  >> CONJ_ASM1_TAC (* t IN ltree_paths ... *)
  >- (Q.PAT_X_ASSUM ‘h::t IN ltree_paths (BTe X M)’ MP_TAC \\
     ‘ltree_paths (BTe X M) = ltree_paths (BTe Y M)’
-      by PROVE_TAC [BT_ltree_paths_unique] >> POP_ORW \\
+      by PROVE_TAC [BT_ltree_paths_cong] >> POP_ORW \\
      simp [ltree_paths_def, ltree_lookup] \\
      Know ‘BTe Y M = ltree_unfold BT_generator (Y,M)’ >- rw [BT_def] \\
      Q.PAT_X_ASSUM ‘M0 = _’ K_TAC \\
@@ -3435,6 +3443,7 @@ Theorem Boehm_transform_exists_lemma' :
             p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
            ?pi. Boehm_transform pi /\
                 solvable (apply pi M) /\ is_ready (apply pi M) /\
+                p IN ltree_paths (BTe X (apply pi M)) /\
                ?Z ss. Z = X UNION FV M /\
                       subterm Z (apply pi M) p <> NONE /\
                       subterm' Z (apply pi M) p = (subterm' Z M p) ISUB ss
@@ -3492,10 +3501,12 @@ Proof
     now a tpm_rel in assumptions. *)
  >> qabbrev_tac ‘N = EL h Ms’
  (* NOTE: Z is still there when going to subterm, not changed *)
- >> Know ‘subterm' Z M' (h::t) = subterm' Z N t’
+ >> Know ‘subterm' Z M' (h::t) = subterm' Z N t /\ subterm Z N t <> NONE’
  >- (Q.PAT_X_ASSUM ‘subterm' Z M' (h::t) = subterm' Z M (h::t) ISUB ss’ K_TAC \\
+     Q.PAT_X_ASSUM ‘subterm Z M' (h::t) <> NONE’ MP_TAC \\
      rw [subterm_of_solvables, Abbr ‘N’])
- >> DISCH_THEN (fs o wrap)
+ >> STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘subterm' Z M' (h::t) = subterm' Z N t’ (fs o wrap)
  >> rpt (Q.PAT_X_ASSUM ‘T’ K_TAC)
  (* stage work, now define a selector *)
  >> qabbrev_tac ‘U = selector h m’
@@ -3524,9 +3535,15 @@ Proof
      MATCH_MP_TAC selector_thm >> rw [Abbr ‘m’])
  >> DISCH_TAC
  (* stage work, now using IH *)
- >> Q.PAT_X_ASSUM ‘!X M. _’ (MP_TAC o (Q.SPECL [‘Z’, ‘N’]))
- >> Know ‘t IN ltree_paths (BTe Z N) /\ subterm Z N t <> NONE’
- >- cheat
+ >> Q.PAT_X_ASSUM ‘!X M. _’ (MP_TAC o (Q.SPECL [‘Z’, ‘N’])) >> simp []
+ >> Know ‘t IN ltree_paths (BTe Z N)’
+ >- (Know ‘ltree_paths (BTe Z N) = ltree_paths (BTe X N)’
+     >- (MATCH_MP_TAC BT_ltree_paths_cong >> art []) >> Rewr' \\
+     Q.PAT_X_ASSUM ‘h::t IN ltree_paths (BTe X M')’ MP_TAC \\
+     simp [ltree_paths_def, ltree_lookup] \\
+     Know ‘BTe X M' = ltree_unfold BT_generator (X,M')’ >- rw [BT_def] \\
+     simp [Once ltree_unfold, BT_generator_def, LNTH_fromList] \\
+     rw [GSYM BT_def, EL_MAP, hnf_children_hnf])
  >> RW_TAC std_ss []
  >> rename1 ‘apply p2 N == _’
  >> POP_ASSUM MP_TAC
