@@ -3436,8 +3436,8 @@ Theorem Boehm_transform_exists_lemma' :
            ?pi. Boehm_transform pi /\
                 solvable (apply pi M) /\ is_ready (apply pi M) /\
                ?Z ss. Z = X UNION FV M /\
-                       subterm Z (apply pi M) p <> NONE /\
-                       subterm' Z (apply pi M) p = (subterm' Z M p) ISUB ss
+                      subterm Z (apply pi M) p <> NONE /\
+                      subterm' Z (apply pi M) p = (subterm' Z M p) ISUB ss
 Proof
     rpt STRIP_TAC
  >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘p’] Boehm_transform_exists_lemma)
@@ -3458,29 +3458,10 @@ QED
 (* Proposition 10.3.7 (i) [1, p.248] (Boehm out lemma)
 
    NOTE: this time the case ‘p = []’ is included, but it's a trvial case.
-
-   NOTE2: now there's no LHS ‘subterm' Z (apply pi M) p’ as in the lemma, and
-  ‘subterm’ (subterm') only occurs at RHS in the goal. If the conclusion of
-   the previous lemma has to be
-
-      tpm_rel (subterm' Z (apply pi M) p) (fm ' (subterm' Z' M p))
-
-   Then the conclusion should be also changed to
-
-      tpm_rel (apply pi M) (fm ' (subterm' Z M p))
-
-   Instead of ‘apply pi M = fm ' (subterm' Z M p)’.
-
-   NOTE3: In textbook, ‘fm’ is a closed substitution (but how it's going to be
-   used in later theorems is unknown so far). Perhaps it's possible to convert
-   this extra tpm into ‘fm’, or into an equivalent ISUB (if the fresh variables
-   in the tpm can be correctly identified, see [fresh_tpm_subst]), but this is
-   unnecessary at this moment. Even later, handling one extra tpm shouldn't be
-   a big problem.
  *)
 Theorem Boehm_out_lemma :
     !p X M. FINITE X /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
-           ?pi ss. apply pi M == (subterm' (X UNION FV M) M p) ISUB ss
+           ?pi ss. Boehm_transform pi /\ apply pi M == subterm' X M p ISUB ss
 Proof
     Induct_on ‘p’
  >- (rw [] >> qexistsl_tac [‘[]’, ‘[]’] >> rw [])
@@ -3523,31 +3504,51 @@ Proof
  >> qabbrev_tac ‘p10 = p1 ++ p0’
  >> ‘Boehm_transform p10’ by rw [Abbr ‘p10’, Boehm_transform_APPEND]
  (* applying properties of selector (U) *)
- >> Know ‘apply p10 M -h->* N’
- >- cheat
+ >> Know ‘apply p10 M == N’
+ >- (rw [Abbr ‘p10’, Boehm_apply_APPEND] \\
+     MATCH_MP_TAC lameq_TRANS \\
+     Q.EXISTS_TAC ‘apply p1 (principle_hnf M')’ \\
+     CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong \\
+                  CONJ_TAC >- art [] \\
+                  MATCH_MP_TAC lameq_SYM \\
+                  MATCH_MP_TAC lameq_principle_hnf' >> art []) \\
+     rw [Abbr ‘p1’, appstar_SUB] \\
+     Know ‘MAP [U/y] Ms = Ms’
+     >- (rw [LIST_EQ_REWRITE, EL_MAP] \\
+         MATCH_MP_TAC lemma14b \\
+         Q.PAT_X_ASSUM ‘EVERY (\e. y # e) Ms’ MP_TAC \\
+         rw [EVERY_MEM, MEM_EL] \\
+         POP_ASSUM MATCH_MP_TAC >> rename1 ‘i < m’ \\
+         Q.EXISTS_TAC ‘i’ >> art []) >> Rewr' \\
+     qunabbrevl_tac [‘U’, ‘N’] \\
+     MATCH_MP_TAC selector_thm >> rw [Abbr ‘m’])
  >> DISCH_TAC
  (* stage work, now using IH *)
  >> Q.PAT_X_ASSUM ‘!X M. _’ (MP_TAC o (Q.SPECL [‘Z’, ‘N’]))
  >> Know ‘t IN ltree_paths (BTe Z N) /\ subterm Z N t <> NONE’
  >- cheat
  >> RW_TAC std_ss []
- >> rename1 ‘apply p2 N == subterm' (Z UNION FV N) N t ISUB ss'’
+ >> rename1 ‘apply p2 N == _’
+ >> POP_ASSUM MP_TAC
  (* applying subterm_tpm_cong *)
- >> Know ‘tpm_rel (subterm' Z N t) (subterm' (Z UNION FV N) N t)’
- >- (MP_TAC (Q.SPECL [‘t’, ‘Z’, ‘Z UNION FV (N :term)’, ‘N’] subterm_tpm_cong) \\
-     rw [])
- >> rw [tpm_rel_def]
- >> POP_ASSUM (fs o wrap o SYM)
- >> POP_ASSUM MP_TAC (* apply p2 N == ... *)
- >> qabbrev_tac ‘N' = subterm' Z M (h::t) ISUB ss’
+ >> Know ‘tpm_rel (subterm' Z M (h::t)) (subterm' X M (h::t))’
+ >- (MP_TAC (Q.SPECL [‘h::t’, ‘Z’, ‘X’, ‘M’] subterm_tpm_cong) >> rw [])
+ >> rw [tpm_rel_alt]
+ >> qabbrev_tac ‘N' = subterm' X M (h::t)’
  (* applying tpm_ISUB_exists *)
- >> STRIP_ASSUME_TAC (Q.SPECL [‘pi’, ‘N'’] tpm_ISUB_exists) >> POP_ORW
+ >> STRIP_ASSUME_TAC (Q.SPECL [‘pi’, ‘N'’] tpm_ISUB_exists)
+ >> Q.PAT_X_ASSUM ‘apply p2 N == _’ MP_TAC
+ >> Q.PAT_X_ASSUM ‘subterm' Z M (h::t) = tpm pi N'’ (ONCE_REWRITE_TAC o wrap)
+ >> Q.PAT_X_ASSUM ‘tpm pi N' = N' ISUB ss''’ (ONCE_REWRITE_TAC o wrap)
  >> simp [Abbr ‘N'’, ISUB_APPEND] >> DISCH_TAC
  (* final stage *)
- >> qexistsl_tac [‘p10 ++ p2’, ‘ss ++ ss'' ++ ss'’]
+ >> qexistsl_tac [‘p2 ++ p10’, ‘ss'' ++ ss ++ ss'’]
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC Boehm_transform_APPEND >> art [])
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘apply p2 N’ >> art []
- >> cheat
+ >> rw [Boehm_apply_APPEND]
+ >> MATCH_MP_TAC Boehm_apply_lameq_cong >> art []
 QED
 
 (*---------------------------------------------------------------------------*
