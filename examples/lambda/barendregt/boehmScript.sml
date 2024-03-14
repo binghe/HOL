@@ -3429,6 +3429,32 @@ Proof
  >> MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []
 QED
 
+(* Another version with ‘tpm_rel’ but with ‘ISUB’ *)
+Theorem Boehm_transform_exists_lemma' :
+    !X M p. FINITE X /\
+            p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
+           ?pi. Boehm_transform pi /\
+                solvable (apply pi M) /\ is_ready (apply pi M) /\
+               ?Z ss. Z = X UNION FV M /\
+                       subterm Z (apply pi M) p <> NONE /\
+                       subterm' Z (apply pi M) p = (subterm' Z M p) ISUB ss
+Proof
+    rpt STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘p’] Boehm_transform_exists_lemma)
+ >> RW_TAC std_ss []
+ >> Q.EXISTS_TAC ‘pi’ >> rw []
+ >> POP_ASSUM MP_TAC (* tpm_rel ... *)
+ >> qabbrev_tac ‘t = [P/v] (subterm' (X UNION FV M) M p)’
+ >> rw [tpm_rel_alt]
+ >> POP_ORW
+ (* applying tpm_ISUB_exists *)
+ >> STRIP_ASSUME_TAC (Q.SPECL [‘pi'’, ‘t’] tpm_ISUB_exists)
+ >> POP_ORW
+ >> qunabbrev_tac ‘t’
+ >> Q.EXISTS_TAC ‘[(P,v)] ++ ss’
+ >> rw [GSYM ISUB_APPEND]
+QED
+
 (* Proposition 10.3.7 (i) [1, p.248] (Boehm out lemma)
 
    NOTE: this time the case ‘p = []’ is included, but it's a trvial case.
@@ -3454,7 +3480,7 @@ QED
  *)
 Theorem Boehm_out_lemma :
     !p X M. FINITE X /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
-           ?pi ss. tpm_rel (apply pi M) ((subterm' (X UNION FV M) M p) ISUB ss)
+           ?pi ss. apply pi M == (subterm' (X UNION FV M) M p) ISUB ss
 Proof
     Induct_on ‘p’
  >- (rw [] >> qexistsl_tac [‘[]’, ‘[]’] >> rw [])
@@ -3465,7 +3491,7 @@ Proof
  >> ‘(!q. q <<= p ==> subterm X M q <> NONE) /\
       !q. q <<= FRONT p ==> solvable (subterm' X M q)’
          by METIS_TAC [subterm_solvable_lemma]
- >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’] Boehm_transform_exists_lemma)
+ >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’] Boehm_transform_exists_lemma')
  >> rw [] (* this asserts pi and [P/v] *)
  >> rename1 ‘Boehm_transform p0’
  >> qabbrev_tac ‘Z = X UNION FV M’ (* Z is now unique *)
@@ -3485,9 +3511,10 @@ Proof
     now a tpm_rel in assumptions. *)
  >> qabbrev_tac ‘N = EL h Ms’
  (* NOTE: Z is still there when going to subterm, not changed *)
- >> ‘subterm' Z M' (h::t) = subterm' Z N t’
-       by (rw [subterm_of_solvables, Abbr ‘N’])
- >> POP_ASSUM (fs o wrap)
+ >> Know ‘subterm' Z M' (h::t) = subterm' Z N t’
+ >- (Q.PAT_X_ASSUM ‘subterm' Z M' (h::t) = subterm' Z M (h::t) ISUB ss’ K_TAC \\
+     rw [subterm_of_solvables, Abbr ‘N’])
+ >> DISCH_THEN (fs o wrap)
  >> rpt (Q.PAT_X_ASSUM ‘T’ K_TAC)
  (* stage work, now define a selector *)
  >> qabbrev_tac ‘U = selector h m’
@@ -3504,7 +3531,22 @@ Proof
  >> Know ‘t IN ltree_paths (BTe Z N) /\ subterm Z N t <> NONE’
  >- cheat
  >> RW_TAC std_ss []
- >> rename1 ‘tpm_rel (apply p2 N) _’ (* rename ‘pi’ to ‘p2’ *)
+ >> rename1 ‘apply p2 N == subterm' (Z UNION FV N) N t ISUB ss'’
+ (* applying subterm_tpm_cong *)
+ >> Know ‘tpm_rel (subterm' Z N t) (subterm' (Z UNION FV N) N t)’
+ >- (MP_TAC (Q.SPECL [‘t’, ‘Z’, ‘Z UNION FV (N :term)’, ‘N’] subterm_tpm_cong) \\
+     rw [])
+ >> rw [tpm_rel_def]
+ >> POP_ASSUM (fs o wrap o SYM)
+ >> POP_ASSUM MP_TAC (* apply p2 N == ... *)
+ >> qabbrev_tac ‘N' = subterm' Z M (h::t) ISUB ss’
+ (* applying tpm_ISUB_exists *)
+ >> STRIP_ASSUME_TAC (Q.SPECL [‘pi’, ‘N'’] tpm_ISUB_exists) >> POP_ORW
+ >> simp [Abbr ‘N'’, ISUB_APPEND] >> DISCH_TAC
+ (* final stage *)
+ >> qexistsl_tac [‘p10 ++ p2’, ‘ss ++ ss'' ++ ss'’]
+ >> MATCH_MP_TAC lameq_TRANS
+ >> Q.EXISTS_TAC ‘apply p2 N’ >> art []
  >> cheat
 QED
 
