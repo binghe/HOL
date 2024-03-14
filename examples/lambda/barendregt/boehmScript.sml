@@ -600,8 +600,55 @@ Proof
  >> PROVE_TAC []
 QED
 
+(* NOTE: when subterm X M p = NONE, either 1) M or its subterm is unsolvable,
+   or 2) p runs out of ltree_paths (BTe X M). If we knew subterm X M p <> NONE
+   a priori, then p IN ltree_paths (BTe X M) must hold.
+ *)
+Theorem subterm_imp_ltree_paths :
+    !p X M. FINITE X /\ subterm X M p <> NONE ==> p IN ltree_paths (BTe X M)
+Proof
+    Induct_on ‘p’ >- rw []
+ >> rpt GEN_TAC
+ >> STRIP_TAC
+ >> POP_ASSUM MP_TAC
+ >> Cases_on ‘solvable M’
+ >> simp [subterm_def, ltree_paths_def, ltree_lookup]
+ >> qabbrev_tac ‘M0 = principle_hnf M’
+ >> qabbrev_tac ‘n = LAMl_size M0’
+ >> qabbrev_tac ‘vs = NEWS n (X UNION FV M0)’
+ >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
+ >> qabbrev_tac ‘Ms = hnf_children M1’
+ >> qabbrev_tac ‘m = hnf_children_size M0’
+ >> Know ‘BTe X M = ltree_unfold BT_generator (X,M)’ >- rw [BT_def]
+ >> simp [Once ltree_unfold, BT_generator_def, LNTH_fromList, EL_MAP]
+ >> DISCH_THEN K_TAC
+ >> Know ‘m = LENGTH Ms’
+ >- (qunabbrev_tac ‘M1’ \\
+    ‘ALL_DISTINCT vs /\ LENGTH vs = n /\ DISJOINT (set vs) (X UNION FV M0)’
+       by (rw [Abbr ‘vs’, NEWS_def]) \\
+    ‘hnf M0’ by rw [hnf_principle_hnf', Abbr ‘M0’] \\
+     Know ‘?y args. M0 = LAMl (TAKE n vs) (VAR y @* args)’
+     >- (qunabbrev_tac ‘n’ >> irule (iffLR hnf_cases_shared) >> rw [] \\
+         MATCH_MP_TAC DISJOINT_SUBSET \\
+         Q.EXISTS_TAC ‘X UNION FV M0’ >> art [] \\
+         SET_TAC []) >> STRIP_TAC \\
+    ‘TAKE n vs = vs’ by rw [] \\
+     POP_ASSUM (REV_FULL_SIMP_TAC std_ss o wrap) \\
+     qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’ \\
+     Know ‘M1 = VAR y @* args’
+     >- (qunabbrev_tac ‘M1’ >> POP_ORW \\
+         MATCH_MP_TAC principle_hnf_beta_reduce >> rw [hnf_appstar]) \\
+     qunabbrev_tac ‘Ms’ \\
+     Rewr' >> simp [hnf_children_hnf] \\
+     qunabbrev_tac ‘m’ >> simp [])
+ >> DISCH_TAC
+ >> Cases_on ‘h < m’ >> rw []
+ >> simp [GSYM BT_def]
+ >> fs [ltree_paths_def]
+QED
+
 (* Lemma 10.1.15 [1, p.222] *)
-Theorem BT_subterm_thm :
+Theorem BT_subterm_thm_old[local] :
     !p X M. p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
             BT (THE (subterm X M p)) = THE (ltree_lookup (BTe X M) p)
 Proof
@@ -620,6 +667,15 @@ Proof
  >> Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BTe X M)’ MP_TAC
  >> POP_ORW
  >> rw [ltree_paths_def, ltree_lookup_def, LNTH_fromList, GSYM BT_def, EL_MAP]
+QED
+
+Theorem BT_subterm_thm :
+    !p X M. FINITE X /\ subterm X M p <> NONE ==>
+            BT (THE (subterm X M p)) = THE (ltree_lookup (BTe X M) p)
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC BT_subterm_thm_old >> art []
+ >> MATCH_MP_TAC subterm_imp_ltree_paths >> art []
 QED
 
 (* NOTE: This proof shares a lot of tactics with [subterm_tpm_lemma] *)
@@ -2271,13 +2327,13 @@ End
 Theorem subterm_width_NIL[simp] = cj 1 subterm_width_def
 
 Theorem subterm_width_alt :
-    !X M p. FINITE X /\
-            p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
+    !X M p. FINITE X /\ p <> [] /\ subterm X M p <> NONE ==>
             subterm_width M p =
               let Ms = {subterm' X M p' | p' <<= FRONT p} in
                   MAX_SET (IMAGE (hnf_children_size o principle_hnf) Ms)
 Proof
     rpt STRIP_TAC
+ >> ‘p IN ltree_paths (BTe X M)’ by PROVE_TAC [subterm_imp_ltree_paths]
  >> Cases_on ‘p’ >> rw [subterm_width_def]
  >> qabbrev_tac ‘p = h::t’
  (* preparing for subterm_hnf_children_size_cong *)
@@ -2329,12 +2385,12 @@ QED
             hnf_children_size (principle_hnf (subterm' Y M p)
  *)
 Theorem subterm_width_thm :
-    !X M p p'. FINITE X /\
-               p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE /\
+    !X M p p'. FINITE X /\ p <> [] /\ subterm X M p <> NONE /\
                p' <<= FRONT p ==>
        hnf_children_size (principle_hnf (subterm' X M p')) <= subterm_width M p
 Proof
     rpt STRIP_TAC
+ >> ‘p IN ltree_paths (BTe X M)’ by PROVE_TAC [subterm_imp_ltree_paths]
  >> Cases_on ‘p’
  >> RW_TAC std_ss [subterm_width_def]
  >> qabbrev_tac ‘p = h::t’
@@ -2369,7 +2425,7 @@ Proof
 QED
 
 (* NOTE: This lemma does not hold without ‘v IN X’. *)
-Theorem subterm_subst_cong_lemma[local] :
+Theorem subterm_subst_cong_lemma_old[local] :
     !l X M p. l <<= p /\ FINITE X /\ v IN X /\
               p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE /\
               P = permutator d /\ subterm_width M p <= d
@@ -2892,6 +2948,20 @@ Proof
  >> simp [Abbr ‘f’, hnf_children_hnf]
 QED
 
+Theorem subterm_subst_cong_lemma[local] :
+    !l X M p. l <<= p /\ FINITE X /\ v IN X /\
+              subterm X M p <> NONE /\
+              P = permutator d /\ subterm_width M p <= d
+          ==> subterm X ([P/v] M) l <> NONE /\
+              tpm_rel (subterm' X ([P/v] M) l) ([P/v] (subterm' X M l))
+Proof
+    rpt GEN_TAC
+ >> STRIP_TAC
+ >> MATCH_MP_TAC subterm_subst_cong_lemma_old
+ >> Q.EXISTS_TAC ‘p’ >> art []
+ >> MATCH_MP_TAC subterm_imp_ltree_paths >> art []
+QED
+
 (* NOTE: ‘y IN X’ must hold to make sure that ‘~MEM y vs’, where ‘set vs’ is disjoint
           with X, otherwise disaster happens.
 
@@ -2906,7 +2976,7 @@ QED
  *)
 Theorem subterm_subst_cong :
     !p X M y P d. FINITE X /\ y IN X /\
-                  p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE /\
+                  subterm X M p <> NONE /\
                   P = permutator d /\ subterm_width M p <= d ==>
                   subterm X ([P/y] M) p <> NONE /\
                   tpm_rel (subterm' X ([P/y] M) p) ([P/y] (subterm' X M p))
@@ -2939,8 +3009,7 @@ QED
    needs in the user theorem.
  *)
 Theorem Boehm_transform_exists_lemma :
-    !X M p. FINITE X /\
-            p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
+    !X M p. FINITE X /\ p <> [] /\ subterm X M p <> NONE ==>
            ?pi. Boehm_transform pi /\
                 solvable (apply pi M) /\ is_ready (apply pi M) /\
                ?Z v P. Z = X UNION FV M /\ closed P /\
@@ -2949,6 +3018,7 @@ Theorem Boehm_transform_exists_lemma :
                                ([P/v] (subterm' Z M p))
 Proof
     rpt STRIP_TAC
+ >> ‘p IN ltree_paths (BTe X M)’ by PROVE_TAC [subterm_imp_ltree_paths]
  >> ‘(!q. q <<= p ==> subterm X M q <> NONE) /\
       !q. q <<= FRONT p ==> solvable (subterm' X M q)’
          by METIS_TAC [subterm_solvable_lemma]
@@ -3337,7 +3407,7 @@ Proof
 
    to convert ‘subterm X M (h::t) <> NONE’ to ‘subterm Z M (h::t) <> NONE’.
   *)
- >> CONJ_ASM1_TAC (* t IN ltree_paths ... *)
+ >> Know ‘t IN ltree_paths (BTe Z N)’
  >- (Q.PAT_X_ASSUM ‘h::t IN ltree_paths (BTe X M)’ MP_TAC \\
     ‘ltree_paths (BTe X M) = ltree_paths (BTe Y M)’
       by PROVE_TAC [BT_ltree_paths_cong] >> POP_ORW \\
@@ -3350,6 +3420,7 @@ Proof
          qunabbrev_tac ‘Y’ >> SET_TAC []) >> Rewr' \\
      simp [hnf_children_hnf] \\
      simp [GSYM BT_def, EL_MAP, hnf_children_hnf])
+ >> DISCH_TAC
  (* stage work *)
  >> CONJ_ASM1_TAC (* subterm Z N t <> NONE *)
  >- (Q.PAT_X_ASSUM ‘subterm X M (h::t) <> NONE’ MP_TAC \\
@@ -3438,8 +3509,7 @@ QED
    the conclusion, which has to be proved.
  *)
 Theorem Boehm_transform_exists_lemma' :
-    !X M p. FINITE X /\
-            p <> [] /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
+    !X M p. FINITE X /\ p <> [] /\ subterm X M p <> NONE ==>
            ?pi. Boehm_transform pi /\
                 solvable (apply pi M) /\ is_ready (apply pi M) /\
                ?Z ss. Z = X UNION FV M /\
@@ -3463,14 +3533,16 @@ Proof
  >> rw [GSYM ISUB_APPEND]
  (* final goal: p IN ltree_paths (BTe (X UNION FV M) (apply pi M)) *)
  >> qabbrev_tac ‘N = apply pi M’
- >> cheat
+ >> qabbrev_tac ‘Z = X UNION FV M’
+ >> MATCH_MP_TAC subterm_imp_ltree_paths >> art []
+ >> rw [Abbr ‘Z’]
 QED
 
 (* Proposition 10.3.7 (i) [1, p.248] (Boehm out lemma)
 
    NOTE: this time the case ‘p = []’ is included, but it's a trvial case.
  *)
-Theorem Boehm_out_lemma :
+Theorem Boehm_out_lemma_old[local] :
     !p X M. FINITE X /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
            ?pi ss. Boehm_transform pi /\ apply pi M == subterm' X M p ISUB ss
 Proof
@@ -3566,6 +3638,15 @@ Proof
  >> Q.EXISTS_TAC ‘apply p2 N’ >> art []
  >> rw [Boehm_apply_APPEND]
  >> MATCH_MP_TAC Boehm_apply_lameq_cong >> art []
+QED
+
+Theorem Boehm_out_lemma :
+    !p X M. FINITE X /\ subterm X M p <> NONE ==>
+           ?pi ss. Boehm_transform pi /\ apply pi M == subterm' X M p ISUB ss
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC Boehm_out_lemma_old >> art []
+ >> MATCH_MP_TAC subterm_imp_ltree_paths >> art []
 QED
 
 (*---------------------------------------------------------------------------*
