@@ -11247,26 +11247,45 @@ Proof
     simp[]
 QED
 
-Theorem integral_sum':
+(* NOTE: reworked proof for "HOL warning: Type.mk_vartype: non-standard syntax" *)
+Theorem integral_sum' :
     !m f s. FINITE s /\ measure_space m /\ (!i. i IN s ==> integrable m (f i)) ==>
-        integral m (λx. SIGMA (λi. f i x) s) = SIGMA (λi. integral m (f i)) s
+            integral m (λx. SIGMA (λi. f i x) s) = SIGMA (λi. integral m (f i)) s
 Proof
-    rw[] >>
-    resolve_then Any (resolve_then (Pos $ el 2)
-        (qspecl_then [‘zzz’,‘xxx’,‘s’,‘m’,‘λi. Normal o real o f i’] irule) integral_sum) EQ_TRANS EQ_TRANS >>
-    qexistsl_tac [‘f’,‘m’,‘s’] >> simp[] >>
-    first_assum $ C (resolve_then Any assume_tac) integrable_AE_finite >> rfs[] >>
-    qspecl_then [‘m’,‘λi x. f i x = Normal (real (f i x))’,‘s’] assume_tac AE_BIGINTER >>
-    rfs[finite_countable] >> rw[]
-    >- (irule integrable_eq_AE_alt >> simp[integrable_measurable,IN_MEASURABLE_BOREL_NORMAL_REAL] >>
-        qexists_tac ‘f i’ >> simp[])
-    >- (irule integral_cong_AE >> simp[] >>
-        qspecl_then [‘m’,‘λx. !n. n IN s ==> f n x = Normal (real (f n x))’,
-            ‘λx. SIGMA (λi. f i x) s = SIGMA (λi. Normal (real (f i x))) s’]
-            (irule o SIMP_RULE (srw_ss ()) []) AE_subset >>
-        rw[] >> irule EXTREAL_SUM_IMAGE_EQ' >> simp[])
-    >- (irule EXTREAL_SUM_IMAGE_EQ' >> simp[] >>
-        rw[] >> irule integral_cong_AE >> simp[Once EQ_SYM_EQ])
+    rpt STRIP_TAC
+ (* applying integral_sum *)
+ >> MP_TAC (Q.SPECL [‘m’, ‘\i. Normal o real o f i’, ‘s’] integral_sum)
+ >> simp []
+ >> qabbrev_tac ‘g = \i. Normal o real o f i’ >> simp []
+ >> Know ‘!i. i IN s ==> integrable m (g i)’
+ >- (rw [Abbr ‘g’] \\
+     MATCH_MP_TAC integrable_eq_AE_alt \\
+     Q.EXISTS_TAC ‘f i’ >> ASM_SIMP_TAC bool_ss [] \\
+     CONJ_TAC >- (MATCH_MP_TAC integrable_AE_finite >> rw []) \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_NORMAL_REAL \\
+     fs [measure_space_def, integrable_def])
+ >> RW_TAC std_ss []
+ (* rewrite RHS from f to g *)
+ >> MATCH_MP_TAC EQ_TRANS
+ >> Q.EXISTS_TAC ‘SIGMA (\i. integral m (g i)) s’
+ >> reverse CONJ_TAC
+ >- (irule EXTREAL_SUM_IMAGE_EQ' >> rw [] \\
+     ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+     MATCH_MP_TAC integral_cong_AE >> RW_TAC bool_ss [Abbr ‘g’] \\
+     MATCH_MP_TAC integrable_AE_finite >> rw [])
+ (* rewrite LHS from f to g *)
+ >> MATCH_MP_TAC EQ_TRANS
+ >> Q.EXISTS_TAC ‘integral m (\x. SIGMA (\i. g i x) s)’
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC integral_cong_AE >> rw [] \\
+     HO_MATCH_MP_TAC AE_subset \\
+     Q.EXISTS_TAC ‘\x. !i. i IN s ==> f i x = g i x’ >> simp [] \\
+     reverse CONJ_TAC >- (rpt STRIP_TAC \\
+                          irule EXTREAL_SUM_IMAGE_EQ' >> rw []) \\
+     HO_MATCH_MP_TAC AE_BIGINTER \\
+     RW_TAC bool_ss [finite_countable, Abbr ‘g’] \\
+     MATCH_MP_TAC integrable_AE_finite >> rw [])
+ >> simp [Abbr ‘g’]
 QED
 
 Theorem integrable_sum':

@@ -1757,7 +1757,7 @@ Theorem has_exhausting_sequence_alt =
 
    The new definition based on ‘exhausting_sequence’ (was in martingaleTheory):
  *)
-Definition sigma_finite_def0 :
+Definition sigma_finite :
     sigma_finite m = ?f. exhausting_sequence (m_space m,measurable_sets m) f /\
                          !n. measure m (f n) < PosInf
 End
@@ -1772,7 +1772,7 @@ Theorem sigma_finite_def :
            (BIGUNION (IMAGE f UNIV) = m_space m) /\
            (!n. measure m (f n) < PosInf)
 Proof
-    rw [sigma_finite_def0, exhausting_sequence_def]
+    rw [sigma_finite, exhausting_sequence_def]
  >> METIS_TAC []
 QED
 
@@ -4731,7 +4731,7 @@ Proof
  (* applying UNIQUENESS_OF_MEASURE *)
  >> Know ‘!s. s IN subsets (sigma sp sts) ==> v s = v'' s’
  >- (‘!s. s IN sts ==> v s = v'' s’ by METIS_TAC [] \\
-     MATCH_MP_TAC UNIQUENESS_OF_MEASURE >> simp [sigma_finite_def0] \\
+     MATCH_MP_TAC UNIQUENESS_OF_MEASURE >> simp [sigma_finite] \\
      fs [semiring_def, has_exhausting_sequence] \\
      CONJ_TAC >- (Q.EXISTS_TAC ‘f’ >> art [] \\
                   fs [exhausting_sequence_def, IN_FUNSET]) \\
@@ -5093,7 +5093,8 @@ Proof
       Q.EXISTS_TAC `n` >> REWRITE_TAC [] ]
 QED
 
-Theorem sigma_finite :
+(* NOTE: was ‘sigma_finite’ (name conflicted with its original definition) *)
+Theorem sigma_finite_thm :
     !m. measure_space m /\ sigma_finite m ==>
         ?A. IMAGE A UNIV SUBSET measurable_sets m /\
             (BIGUNION {A i | i IN UNIV} = m_space m) /\
@@ -5125,7 +5126,7 @@ Proof
     RW_TAC std_ss []
  >> `?A. IMAGE A univ(:num) SUBSET measurable_sets m /\
        (BIGUNION {A i | i IN univ(:num)} = m_space m) /\
-       !i. measure m (A i) <> PosInf` by METIS_TAC [sigma_finite]
+       !i. measure m (A i) <> PosInf` by METIS_TAC [sigma_finite_thm]
  >> Know `!i. measure m (disjointed A i) <= measure m (A i)`
  >- (GEN_TAC THEN
      MATCH_MP_TAC INCREASING THEN SIMP_TAC std_ss [disjointed_subset] \\
