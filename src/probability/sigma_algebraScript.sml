@@ -3882,7 +3882,7 @@ Proof
     irule MEASURABLE_PROD_SIGMA' >> simp[o_DEF,ETA_AX]
 QED
 
-Theorem algebra_finite_imp_sigma_algebra :
+Theorem algebra_finite_subsets_imp_sigma_algebra :
     !a. algebra a /\ FINITE (subsets a) ==> sigma_algebra a
 Proof
     rw [sigma_algebra_def]
