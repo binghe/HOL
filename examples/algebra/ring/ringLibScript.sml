@@ -1,10 +1,10 @@
 (* ========================================================================= *)
-(*  HOL-Light's ringtheory.ml (partial, for ringLib.RING_RULE)               *)
+(*  HOL-Light's ringtheory.ml (partial)                                      *)
 (*                                                                           *)
 (*       John Harrison, University of Cambridge Computer Laboratory          *)
 (*            (c) Copyright, University of Cambridge 1998                    *)
 (*                                                                           *)
-(*  Ported to HOL4 by Chun Tian                                              *)
+(*  Ported to HOL4 by Chun Tian (March 2024)                                 *)
 (* ========================================================================= *)
 
 open HolKernel boolLib bossLib Parse;
@@ -12,8 +12,8 @@ open HolKernel boolLib bossLib Parse;
 open pred_setTheory cardinalTheory arithmeticTheory integerTheory intLib
      hurdUtils mesonLib;
 
-open ringTheory ringMapTheory groupMapTheory monoidTheory monoidMapTheory
-     monoidOrderTheory;
+open monoidTheory monoidMapTheory monoidOrderTheory;
+open groupTheory groupMapTheory ringTheory ringMapTheory;
 
 val _ = new_theory "ringLib";
 
@@ -21,50 +21,155 @@ val _ = deprecate_int ();
 val INT_ARITH = intLib.ARITH_PROVE;
 
 (* ------------------------------------------------------------------------- *)
+(*  'a Ring as type bijections of a subset of 'a ring                        *)
+(* ------------------------------------------------------------------------- *)
+
+(* NOTE: The ring construction here follows ring_tybij in ringtheory.ml *)
+Theorem EXISTS_Ring[local] :
+    ?r. Ring r
+Proof
+    Q.EXISTS_TAC ‘<| carrier := {ARB};
+                         sum := <| carrier := {ARB};
+                                        op := (\x y. ARB);
+                                        id := ARB |>;
+                        prod := <| carrier := {ARB};
+                                        op := (\x y. ARB);
+                                        id := ARB |> |>’
+ >> RW_TAC std_ss [Ring_def]
+ >| [ (* goal 1 (of 2) *)
+      RW_TAC std_ss [AbelianGroup_def, Group_def, Monoid_def, IN_SING,
+                     monoid_invertibles_def] \\
+      simp [],
+      (* goal 2 (of 2) *)
+      RW_TAC std_ss [AbelianMonoid_def, Monoid_def, IN_SING] ]
+QED
+
+(* This defines a new type “:'a Ring” *)
+val Ring_tydef = new_type_definition ("Ring", EXISTS_Ring);
+
+val Ring_tybij = define_new_type_bijections
+   {name = "Ring_tybij",
+     ABS = "Ring_abs", REP = "Ring_rep", tyax = Ring_tydef};
+
+(* ------------------------------------------------------------------------- *)
 (* The ring operations, primitive plus subtraction as a derived operation.   *)
 (* ------------------------------------------------------------------------- *)
 
-Overload ring_carrier[local]      = “\r. r.carrier”
-Overload ring_0[local]            = “\r. r.sum.id”
-Overload ring_1[local]            = “\r. r.prod.id”
-Overload ring_neg[local]          = “\r x. r.sum.inv x”
-Overload ring_add[local]          = “\r x y. r.sum.op x y”
-Overload ring_mul[local]          = “\r x y. r.prod.op x y”
-Overload ring_pow[local]          = “\r x n. r.prod.exp x n”
+Overload ring_carrier[local]      = “\r.     (Ring_rep r).carrier”
+Overload ring_0[local]            = “\r.     (Ring_rep r).sum.id”
+Overload ring_1[local]            = “\r.     (Ring_rep r).prod.id”
+Overload ring_neg[local]          = “\r x.   (Ring_rep r).sum.inv x”
+Overload ring_add[local]          = “\r x y. (Ring_rep r).sum.op x y”
+Overload ring_mul[local]          = “\r x y. (Ring_rep r).prod.op x y”
+Overload ring_pow[local]          = “\r x n. (Ring_rep r).prod.exp x n”
+Overload ring_sub[local]          = “\r.     ring$ring_sub (Ring_rep r)”
 
-(* |- !r. Ring r ==> ring_0 r IN ring_carrier r *)
-Theorem RING_0 = ring_zero_element
+(* NOTE: Now the following theorems have exactly the same statements with their
+         HOL-Light versions.
+ *)
+Theorem RING_0 :
+    !r. ring_0 r IN ring_carrier r
+Proof
+    Q.X_GEN_TAC ‘r’
+ >> qabbrev_tac ‘r0 = Ring_rep r’
+ >> MATCH_MP_TAC ring_zero_element
+ >> rw [Ring_tybij, Abbr ‘r0’]
+QED
 
-(* |- !r. Ring r ==> ring_1 r IN ring_carrier r *)
-Theorem RING_1 = ring_one_element
+Theorem RING_1 :
+    !r. ring_1 r IN ring_carrier r
+Proof
+    Q.X_GEN_TAC ‘r’
+ >> qabbrev_tac ‘r0 = Ring_rep r’
+ >> MATCH_MP_TAC ring_one_element
+ >> rw [Ring_tybij, Abbr ‘r0’]
+QED
 
-(* |- !r. Ring r ==> !x. x IN R ==> ring_neg r x IN ring_carrier r *)
-Theorem RING_NEG = ring_neg_element
+Theorem RING_NEG :
+    !r x. x IN ring_carrier r ==> ring_neg r x IN ring_carrier r
+Proof
+    rpt GEN_TAC
+ >> qabbrev_tac ‘r0 = Ring_rep r’
+ >> MATCH_MP_TAC ring_neg_element
+ >> rw [Ring_tybij, Abbr ‘r0’]
+QED
 
-(* |- !r. Ring r ==> ring_neg r (ring_0 r) = ring_0 r *)
-Theorem RING_NEG_0 = ring_neg_zero
+Theorem RING_NEG_0 :
+    !r. ring_neg r (ring_0 r) = ring_0 r
+Proof
+    Q.X_GEN_TAC ‘r’
+ >> qabbrev_tac ‘r0 = Ring_rep r’
+ >> MATCH_MP_TAC ring_neg_zero
+ >> rw [Ring_tybij, Abbr ‘r0’]
+QED
 
-(* |- !r. Ring r ==> !x. x IN R ==> !n. ring_pow r x n IN R *)
-Theorem RING_POW = ring_exp_element
+Theorem RING_POW :
+    !r x n. x IN ring_carrier r ==> ring_pow r x n IN ring_carrier r
+Proof
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘r0 = Ring_rep r’
+ >> irule ring_exp_element >> art []
+ >> rw [Ring_tybij, Abbr ‘r0’]
+QED
 
-(* |- !r. Ring r ==> !x y. x IN R /\ y IN R ==> ring_add r x y IN R *)
-Theorem RING_ADD = ring_add_element
+Theorem RING_ADD :
+    !r x y. x IN ring_carrier r /\ y IN ring_carrier r ==>
+            ring_add r x y IN ring_carrier r
+Proof
+    Q.X_GEN_TAC ‘r’
+ >> qabbrev_tac ‘r0 = Ring_rep r’
+ >> MATCH_MP_TAC ring_add_element
+ >> rw [Ring_tybij, Abbr ‘r0’]
+QED
 
-(* |- !r. Ring r ==> !x y. x IN R /\ y IN R ==> x - y IN R *)
-Theorem RING_SUB = ring_sub_element
+Theorem RING_SUB :
+    !r x y. x IN ring_carrier r /\ y IN ring_carrier r ==>
+            ring_sub r x y IN ring_carrier r
+Proof
+    Q.X_GEN_TAC ‘r’
+ >> qabbrev_tac ‘r0 = Ring_rep r’
+ >> MATCH_MP_TAC ring_sub_element
+ >> rw [Ring_tybij, Abbr ‘r0’]
+QED
 
-(* |- !r. Ring r ==> !x y. x IN R /\ y IN R ==> ring_mul r x y IN R *)
-Theorem RING_MUL = ring_mult_element
+Theorem RING_MUL :
+    !r x y. x IN ring_carrier r /\ y IN ring_carrier r ==>
+            ring_mul r x y IN ring_carrier r
+Proof
+    Q.X_GEN_TAC ‘r’
+ >> qabbrev_tac ‘r0 = Ring_rep r’
+ >> MATCH_MP_TAC ring_mult_element
+ >> rw [Ring_tybij, Abbr ‘r0’]
+QED
 
-(* |- !r. Ring r ==> !x. x IN R ==> ring_add r #0 x = x *)
-Theorem RING_ADD_LZERO = ring_add_lzero
+Theorem RING_ADD_LZERO :
+    !r x. x IN ring_carrier r ==> ring_add r (ring_0 r) x = x
+Proof
+    Q.X_GEN_TAC ‘r’
+ >> qabbrev_tac ‘r0 = Ring_rep r’
+ >> MATCH_MP_TAC ring_add_lzero
+ >> rw [Ring_tybij, Abbr ‘r0’]
+QED
 
-(* |- !r. Ring r ==> !x. x IN R ==> ring_mul r #1 x = x *)
-Theorem RING_MUL_LID = ring_mult_lone
+Theorem RING_MUL_LID :
+    !r x. x IN ring_carrier r ==> ring_mul r (ring_1 r) x = x
+Proof
+    Q.X_GEN_TAC ‘r’
+ >> qabbrev_tac ‘r0 = Ring_rep r’
+ >> MATCH_MP_TAC ring_mult_lone
+ >> rw [Ring_tybij, Abbr ‘r0’]
+QED
 
-(* |- !r. Ring r ==> !x. x IN R ==> ring_mul r #0 x = #0 *)
-Theorem RING_MUL_LZERO = ring_mult_lzero
+Theorem RING_MUL_LZERO :
+    !r x. x IN ring_carrier r ==> ring_mul r (ring_0 r) x = ring_0 r
+Proof
+    Q.X_GEN_TAC ‘r’
+ >> qabbrev_tac ‘r0 = Ring_rep r’
+ >> MATCH_MP_TAC ring_mult_lzero
+ >> rw [Ring_tybij, Abbr ‘r0’]
+QED
 
+(*
 (* ------------------------------------------------------------------------- *)
 (* Homomorphisms etc.                                                        *)
 (* ------------------------------------------------------------------------- *)
@@ -469,6 +574,7 @@ Proof
     EXISTS_TAC `product_ring (:num#A) (\i. (r:A ring))` THEN
     REWRITE_TAC[RING_MONOMORPHISM_DIAGONAL_UNIV] THEN
     ASM_SIMP_TAC[RING_ISOMORPHISM_IMP_MONOMORPHISM]) in
+*)
 *)
 
 val _ = export_theory();
