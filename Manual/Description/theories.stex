@@ -2050,8 +2050,7 @@ Constant & Overloaded symbol & Strength & Associativity \\ \hline
 \end{center}
 
 On the basis of {\small\verb+realTheory+}, the following sequence of
-theories is constructed (for more details of some of these theories, please
-go to corresponding sections):
+theories is constructed:
 
 \begin{description}
 \item [real_sigma] Summation of real numbers (the $\Sigma$ operator, etc.)
