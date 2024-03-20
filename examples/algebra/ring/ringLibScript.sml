@@ -352,43 +352,52 @@ Definition ring_of_int :
         else ring_neg r (ring_of_num r (num_of_int (-n)))
 End
 
-(*
-(* |- !r. Ring r ==> !n. ring_of_num r n IN R *)
-Theorem RING_OF_NUM = ring_num_element
+Theorem RING_OF_NUM :
+    !r n. ring_of_num r n IN ring_carrier r
+Proof
+    qx_genl_tac [‘r0’, ‘n’]
+ >> qabbrev_tac ‘r = fromRing r0’
+ >> MATCH_MP_TAC ring_num_element
+ >> rw [Abbr ‘r’, Ring_tybij]
+QED
 
 Theorem RING_OF_INT :
-     !(r:'a ring) n. Ring r ==> ring_of_int r n IN ring_carrier r
+     !r n. ring_of_int r n IN ring_carrier r
 Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[ring_of_int] THEN COND_CASES_TAC THEN
   ASM_SIMP_TAC std_ss [RING_NEG, RING_OF_NUM]
 QED
 
 (* |- !n. num_of_int(&n) = n *)
-val NUM_OF_INT_OF_NUM = NUM_OF_INT;
+Theorem NUM_OF_INT_OF_NUM = NUM_OF_INT;
 
 Theorem RING_OF_INT_OF_NUM :
-    !(r :'a ring) n. ring_of_int r (&n) = ring_of_num r n
+    !r n. ring_of_int r (&n) = ring_of_num r n
 Proof
   REWRITE_TAC[ring_of_int, INT_POS, NUM_OF_INT_OF_NUM]
 QED
 
 Theorem RING_HOMOMORPHISM_RING_OF_NUM :
-    !r r' (f :'a -> 'b).
-        Ring r /\ Ring r' /\ ring_homomorphism(r,r') f
+    !r r' (f :'a -> 'b). ring_homomorphism(r,r') f
         ==> !n. f(ring_of_num r n) = ring_of_num r' n
 Proof
-    rw [ring_homo_num]
+    qx_genl_tac [‘r0’, ‘r1’, ‘f’]
+ >> rw [ring_homomorphism_def]
+ >> qabbrev_tac ‘r  = fromRing r0’
+ >> qabbrev_tac ‘r' = fromRing r1’
+ >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’, Ring_tybij]
+ >> irule ring_homo_num >> art []
 QED
 
 (* |- |- !x. --x = x *)
-val INT_NEG_NEG = INT_NEGNEG;
+Theorem INT_NEG_NEG = INT_NEGNEG
 
 (* |- !m n. &m = &n <=> m = n *)
-val INT_OF_NUM_EQ = INT_INJ;
+Theorem INT_OF_NUM_EQ = INT_INJ
 
 Theorem RING_OF_INT_CASES :
-   (!(r :'a ring) n. ring_of_int r (&n) = ring_of_num r n) /\
-   (!(r :'a ring) n. Ring r ==> ring_of_int r (-&n) = ring_neg r (ring_of_num r n))
+   (!r n. ring_of_int r (&n) = ring_of_num r n) /\
+   (!r n. ring_of_int r (-&n) = ring_neg r (ring_of_num r n))
 Proof
     rpt STRIP_TAC
  >- REWRITE_TAC[RING_OF_INT_OF_NUM]
@@ -397,9 +406,9 @@ Proof
  >> COND_CASES_TAC THEN ASM_SIMP_TAC std_ss [ring_of_num, RING_NEG_0]
 QED
 
+(*
 Theorem RING_HOMOMORPHISM_RING_OF_INT :
-    !r r' (f :'a -> 'b).
-        Ring r /\ Ring r' /\ ring_homomorphism(r,r') f
+    !r r' (f :'a -> 'b). ring_homomorphism(r,r') f
         ==> !n. f(ring_of_int r n) = ring_of_int r' n
 Proof
     rpt GEN_TAC >> STRIP_TAC
