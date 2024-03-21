@@ -643,7 +643,6 @@ Proof
     REWRITE_TAC[RING_MONOMORPHISM_DIAGONAL_UNIV] THEN
     ASM_SIMP_TAC[RING_ISOMORPHISM_IMP_MONOMORPHISM]) in
 *)
-*)
 
 val _ = export_theory();
 val _ = html_theory "ringLib";
