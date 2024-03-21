@@ -51,6 +51,12 @@ val Ring_tydef = new_type_definition ("Ring", EXISTS_Ring);
 
    |- (!a. toRing (fromRing a) = a) /\
        !r. Ring r <=> fromRing (toRing r) = r
+
+   NOTE: cf. HOL-Light's "ring_tybij":
+
+   |- (!a. ring (ring_operations a) = a) /\
+      (!r. ... <=>
+           ring_operations (ring r) = r)
  *)
 val Ring_tybij = define_new_type_bijections
    {name = "Ring_tybij",
@@ -527,12 +533,9 @@ End
 
 (* ------------------------------------------------------------------------- *)
 
-(* The negation operation (\x. RESTRICTION k (\i. ring_neg (r i) (x i))) needs
-   a proof.
- *)
-Definition product_ring :
-    product_ring k (r :'k -> 'a Ring) =
-        let c = cartesian_product k (\i. ring_carrier(r i));
+Definition raw_product_ring_def :
+    raw_product_ring k (r :'k -> 'a Ring) =
+        let c = cartesian_product k (\i. ring_carrier ((r :'k -> 'a Ring) i));
             g = <| carrier := c;
                    op := (\x y. RESTRICTION k (\i. ring_add (r i) (x i) (y i)));
                    id := RESTRICTION k (\i. ring_0 (r i)) |>;
@@ -540,9 +543,27 @@ Definition product_ring :
                    op := (\x y. RESTRICTION k (\i. ring_mul (r i) (x i) (y i)));
                    id := RESTRICTION k (\i. ring_1 (r i)) |>
         in
-          toRing <| carrier := c; sum := g; prod := m |>
+           <| carrier := c; sum := g; prod := m |>
 End
 
+Theorem Ring_raw_product_ring[local] :
+    !k (r :'k -> 'a Ring). Ring (raw_product_ring k r)
+Proof
+    rw [raw_product_ring_def]
+ >> rw [Once Ring_def] (* 3 subgoals *)
+ >| [ (* goal 1 (of 3): AbelianGroup *)
+      cheat,
+      (* goal 2 (of 3): AbelianMonoid *)
+      cheat,
+      (* goal 3 (of 3): RESTRICTION *)
+      cheat ]
+QED
+
+Definition product_ring :
+    product_ring k (r :'k -> 'a Ring) = toRing (raw_product_ring k r)
+End
+
+(* NOTE: This proof is new *)
 Theorem PRODUCT_RING :
    (!k (r :'k -> 'a Ring).
         ring_carrier(product_ring k r) =
@@ -563,7 +584,13 @@ Theorem PRODUCT_RING :
         ring_mul (product_ring k r) =
           (\x y. RESTRICTION k (\i. ring_mul (r i) (x i) (y i))))
 Proof
-    cheat
+    rw [product_ring] (* 6 subgoals, same initial tactics *)
+ >> (‘fromRing (toRing (raw_product_ring k r)) = raw_product_ring k r’
+        by (rw [GSYM Ring_tybij, Ring_raw_product_ring]) >> POP_ORW \\
+     rw [raw_product_ring_def])
+ (* only one goal (ring_neg) is left *)
+ >> rw [Once FUN_EQ_THM]
+ >> cheat
 (*
   REWRITE_TAC[AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
   MP_TAC(fst(EQ_IMP_RULE
@@ -577,6 +604,7 @@ Proof
     ASM_SIMP_TAC[RING_ADD_LDISTRIB; RING_ADD_LZERO; RING_ADD_LNEG;
       RING_MUL_LID; RING_0; RING_1; RING_NEG; RING_ADD; RING_MUL] THEN
     ASM_SIMP_TAC[RING_MUL_AC; RING_ADD_AC; RING_ADD; RING_MUL];
+
     DISCH_TAC THEN
     ASM_REWRITE_TAC[ring_carrier, ring_0, ring_1,
                     ring_neg, ring_add, ring_mul]]
