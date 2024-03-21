@@ -9,8 +9,8 @@
 
 open HolKernel boolLib bossLib Parse;
 
-open pred_setTheory cardinalTheory arithmeticTheory integerTheory intLib
-     hurdUtils mesonLib;
+open pred_setTheory arithmeticTheory integerTheory intLib mesonLib hurdUtils
+     cardinalTheory;
 
 open monoidTheory monoidMapTheory monoidOrderTheory;
 open groupTheory groupMapTheory ringTheory ringMapTheory;
@@ -407,34 +407,34 @@ Theorem INT_NEG_NEG = INT_NEGNEG
 (* |- !m n. &m = &n <=> m = n *)
 Theorem INT_OF_NUM_EQ = INT_INJ
 
+(* NOTE: The proof is a direct translation from OCaml to SML *)
 Theorem RING_OF_INT_CASES :
    (!r n. ring_of_int r (&n) = ring_of_num r n) /\
    (!r n. ring_of_int r (-&n) = ring_neg r (ring_of_num r n))
 Proof
-    rpt STRIP_TAC
- >- REWRITE_TAC[RING_OF_INT_OF_NUM]
- >> REWRITE_TAC[ring_of_int, INT_ARITH ``&0:int <= - &n <=> &n:int = &0``]
- >> SIMP_TAC std_ss [INT_NEG_NEG, INT_OF_NUM_EQ, INT_NEG_0, NUM_OF_INT_OF_NUM]
- >> COND_CASES_TAC THEN ASM_SIMP_TAC std_ss [ring_of_num, RING_NEG_0]
+  REPEAT STRIP_TAC THEN REWRITE_TAC[RING_OF_INT_OF_NUM] THEN
+  REWRITE_TAC[ring_of_int, INT_ARITH “0:int <= - &n <=> &n:int = &0”] THEN
+  SIMP_TAC std_ss[INT_NEG_NEG, INT_OF_NUM_EQ, INT_NEG_0, NUM_OF_INT_OF_NUM] THEN
+  COND_CASES_TAC THEN ASM_REWRITE_TAC[ring_of_num, RING_NEG_0]
 QED
 
-(*
+(* NOTE: The proof is a direct translation from OCaml to SML *)
 Theorem RING_HOMOMORPHISM_RING_OF_INT :
     !r r' (f :'a -> 'b). ring_homomorphism(r,r') f
         ==> !n. f(ring_of_int r n) = ring_of_int r' n
 Proof
-    rpt GEN_TAC >> STRIP_TAC
- >> ASM_SIMP_TAC std_ss [FORALL_INT_CASES, RING_OF_INT_CASES]
- >> Know ‘Ring r /\ Ring r' /\ ring_homomorphism (r,r') f’ >- art []
- >> DISCH_THEN (ASSUME_TAC o (MATCH_MP RING_HOMOMORPHISM_NEG))
- >> Know ‘Ring r /\ Ring r' /\ ring_homomorphism (r,r') f’ >- art []
- >> DISCH_THEN (ASSUME_TAC o (MATCH_MP RING_HOMOMORPHISM_RING_OF_NUM))
- >> ASM_SIMP_TAC std_ss [RING_NEG, RING_OF_NUM]
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  SIMP_TAC std_ss [FORALL_INT_CASES, RING_OF_INT_CASES] THEN
+  FIRST_ASSUM(fn th => ASM_SIMP_TAC std_ss
+   [RING_NEG, RING_OF_NUM, MATCH_MP RING_HOMOMORPHISM_NEG th]) THEN
+  FIRST_ASSUM(fn th =>
+   ASM_SIMP_TAC std_ss [MATCH_MP RING_HOMOMORPHISM_RING_OF_NUM th])
 QED
 
-Theorem RING_MONOMORPHIC_IMAGE_THM :
+(* NOTE: This theorem was part of HOL-Light's RING_MONOMORPHIC_IMAGE_RULE *)
+Theorem RING_MONOMORPHIC_IMAGE_RULE_THM :
     !r r' (f :'a -> 'b).
-          Ring r /\ Ring r' /\ ring_monomorphism(r,r') f
+          ring_monomorphism(r,r') f
           ==> (!x x' y y'.
                   (x IN ring_carrier r /\ f x = x') /\
                   (y IN ring_carrier r /\ f y = y')
@@ -471,8 +471,7 @@ Theorem RING_MONOMORPHIC_IMAGE_THM :
                       f(ring_mul r x y) = ring_mul r' x' y')
 Proof
     rpt GEN_TAC >> REWRITE_TAC[ring_monomorphism]
- >> ONCE_REWRITE_TAC [DECIDE “(a /\ b /\ c /\ d ==> e) <=>
-                              (d /\ a /\ b /\ c ==> e)”]
+ >> GEN_REWRITE_TAC LAND_CONV empty_rewrites [CONJ_SYM]
  >> MATCH_MP_TAC MONO_AND
  >> CONJ_TAC >- MESON_TAC[]
  >> METIS_TAC[RING_0, RING_1, RING_OF_NUM, RING_OF_INT, RING_NEG,
@@ -489,11 +488,11 @@ QED
 (* ------------------------------------------------------------------------- *)
 
 Definition trivial_ring :
-    trivial_ring r <=> Ring r /\ ring_carrier r = {ring_0 r}
+    trivial_ring r <=> ring_carrier r = {ring_0 r}
 End
 
 Theorem TRIVIAL_RING_10 :
-    !r :'a ring. trivial_ring r <=> Ring r /\ ring_1 r = ring_0 r
+    !r. trivial_ring r <=> ring_1 r = ring_0 r
 Proof
   REWRITE_TAC[trivial_ring, EXTENSION, IN_SING] THEN
   MESON_TAC[RING_1, RING_0, RING_MUL_LID, RING_MUL_LZERO]
@@ -532,7 +531,7 @@ End
    a proof.
  *)
 Definition product_ring :
-    product_ring k (r :'k -> 'a ring) =
+    product_ring k (r :'k -> 'a Ring) =
         let c = cartesian_product k (\i. ring_carrier(r i));
             g = <| carrier := c;
                    op := (\x y. RESTRICTION k (\i. ring_add (r i) (x i) (y i)));
@@ -541,31 +540,30 @@ Definition product_ring :
                    op := (\x y. RESTRICTION k (\i. ring_mul (r i) (x i) (y i)));
                    id := RESTRICTION k (\i. ring_1 (r i)) |>
         in
-          <| carrier := c; sum := g; prod := m |>
+          toRing <| carrier := c; sum := g; prod := m |>
 End
 
 Theorem PRODUCT_RING :
-   (!k (r :'k -> 'a ring).
+   (!k (r :'k -> 'a Ring).
         ring_carrier(product_ring k r) =
           cartesian_product k (\i. ring_carrier(r i))) /\
-   (!k (r :'k -> 'a ring).
+   (!k (r :'k -> 'a Ring).
         ring_0 (product_ring k r) =
           RESTRICTION k (\i. ring_0 (r i))) /\
-   (!k (r :'k -> 'a ring).
+   (!k (r :'k -> 'a Ring).
         ring_1 (product_ring k r) =
           RESTRICTION k (\i. ring_1 (r i))) /\
-   (!k (r :'k -> 'a ring).
+   (!k (r :'k -> 'a Ring).
         ring_neg (product_ring k r) =
           \x. RESTRICTION k (\i. ring_neg (r i) (x i))) /\
-   (!k (r :'k -> 'a ring).
+   (!k (r :'k -> 'a Ring).
         ring_add (product_ring k r) =
           (\x y. RESTRICTION k (\i. ring_add (r i) (x i) (y i)))) /\
-   (!k (r :'k -> 'a ring).
+   (!k (r :'k -> 'a Ring).
         ring_mul (product_ring k r) =
           (\x y. RESTRICTION k (\i. ring_mul (r i) (x i) (y i))))
 Proof
     cheat
-QED
 (*
   REWRITE_TAC[AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
   MP_TAC(fst(EQ_IMP_RULE
@@ -582,8 +580,10 @@ QED
     DISCH_TAC THEN
     ASM_REWRITE_TAC[ring_carrier, ring_0, ring_1,
                     ring_neg, ring_add, ring_mul]]
+ *)
 QED
 
+(*
 Theorem RING_TOTALIZATION_lemma :
     !r :'a ring.
             ~(trivial_ring r) /\ INFINITE univ(:'b) /\ univ(:'a) <=_c univ(:'b)
