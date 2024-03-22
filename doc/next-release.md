@@ -115,6 +115,9 @@ New tools:
 
   The definitions of `DIV` and `MOD` over natural numbers `num` have been given specifications for the case when the second operand is zero. We follow HOL Light and Candle in defining `n DIV 0 = 0` and `n MOD 0 = n`. These changes make `DIV` and `MOD` match the way Candle's compute primitive handles `DIV` and `MOD`.
 
+-   **Polarity-aware theorem-search**. Extending what is available through `DB.find` and `DB.match`, the `DB.polarity_search` allows the user to search for explicitly negative or positive occurrences of the specified pattern.
+    Thanks to Eric Hall for this contribution.
+
 New examples:
 -------------
 
