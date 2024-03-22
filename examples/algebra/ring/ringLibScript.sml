@@ -52,7 +52,11 @@ val Ring_tydef = rich_new_type {tyname = "Ring",
                                 ABS = "toRing",
                                 REP = "fromRing" };
 
+(* |- Ring (fromRing g) *)
 Theorem Ring_fromRing[simp] = #termP_term_REP Ring_tydef
+
+(* |- !r. Ring r ==> fromRing (toRing r) = r *)
+Theorem fromRing_toRing = #repabs_pseudo_id Ring_tydef
 
 (* ------------------------------------------------------------------------- *)
 (* The ring operations, primitive plus subtraction as a derived operation.   *)
@@ -590,7 +594,8 @@ Theorem PRODUCT_RING :
 Proof
     rw [product_ring] (* 6 subgoals, same initial tactics *)
  >> (‘fromRing (toRing (raw_product_ring k r)) = raw_product_ring k r’
-        by (rw [GSYM Ring_tybij, Ring_raw_product_ring]) >> POP_ORW \\
+        by (MATCH_MP_TAC fromRing_toRing \\
+            rw [Ring_raw_product_ring]) >> POP_ORW \\
      rw [raw_product_ring_def])
  (* only one goal (ring_neg) is left *)
  >> rw [Once FUN_EQ_THM]
