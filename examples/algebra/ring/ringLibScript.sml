@@ -50,13 +50,19 @@ QED
 val Ring_tydef = rich_new_type {tyname = "Ring",
                                 exthm = EXISTS_Ring,
                                 ABS = "toRing",
-                                REP = "fromRing" };
+                                REP = "fromRing"};
 
 (* |- Ring (fromRing g) *)
 Theorem Ring_fromRing[simp] = #termP_term_REP Ring_tydef
 
 (* |- !r. Ring r ==> fromRing (toRing r) = r *)
 Theorem fromRing_toRing = #repabs_pseudo_id Ring_tydef
+
+(* |- !g h. fromRing g = fromRing h <=> g = h *)
+Theorem fromRing_11 = #term_REP_11 Ring_tydef |> Q.GENL [‘g’, ‘h’]
+
+(* NOTE: this is the old Ring_tybij, returned by define_new_type_bijections. *)
+val Ring_ABSREP = DB.fetch "-" "Ring_ABSREP";
 
 (* ------------------------------------------------------------------------- *)
 (* The ring operations, primitive plus subtraction as a derived operation.   *)
@@ -517,6 +523,8 @@ Proof
     RW_TAC std_ss' [RESTRICTION, cartesian_product, EXTENSIONAL]
 QED
 
+(* ------------------------------------------------------------------------- *)
+(* Direct products of rings                                                  *)
 (* ------------------------------------------------------------------------- *)
 
 Definition raw_product_ring_def :
