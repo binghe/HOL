@@ -493,28 +493,6 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
-(* "Extensional" functions, mapping to a fixed value ARB outside the domain. *)
-(* Even though these are still total, they're a conveniently better model    *)
-(* of the partial function space (e.g. the space has the right cardinality). *)
-(*                                                                           *)
-(* (TODO: go to pred_setTheory)                                              *)
-(* ------------------------------------------------------------------------- *)
-
-Definition EXTENSIONAL :
-    EXTENSIONAL s = {f :'a -> 'b | !x. ~(x IN s) ==> f x = ARB}
-End
-
-(* ------------------------------------------------------------------------- *)
-(* Restriction of a function to an EXTENSIONAL one on a subset.              *)
-(*    (TODO: go to combinTheory)                                             *)
-(* ------------------------------------------------------------------------- *)
-
-Definition RESTRICTION :
-    RESTRICTION s (f :'a -> 'b) x = if x IN s then f x else ARB
-End
-(* RRESTRICT R f x = RESTRICTION {y | R x y} f x *)
-
-(* ------------------------------------------------------------------------- *)
 (* General Cartesian product / dependent function space (from sets.ml)       *)
 (* ------------------------------------------------------------------------- *)
 
