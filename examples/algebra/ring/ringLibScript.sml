@@ -9,8 +9,8 @@
 
 open HolKernel boolLib bossLib Parse;
 
-open pred_setTheory pred_setLib arithmeticTheory integerTheory intLib mesonLib
-     hurdUtils cardinalTheory newtypeTools;
+open combinTheory pred_setTheory pred_setLib arithmeticTheory integerTheory
+     intLib mesonLib hurdUtils cardinalTheory newtypeTools;
 
 open monoidTheory monoidMapTheory monoidOrderTheory;
 open groupTheory groupMapTheory ringTheory ringMapTheory;
