@@ -9,8 +9,8 @@
 
 open HolKernel boolLib bossLib Parse;
 
-open pred_setTheory arithmeticTheory integerTheory intLib mesonLib hurdUtils
-     cardinalTheory;
+open pred_setTheory pred_setLib arithmeticTheory integerTheory intLib mesonLib
+     hurdUtils cardinalTheory newtypeTools;
 
 open monoidTheory monoidMapTheory monoidOrderTheory;
 open groupTheory groupMapTheory ringTheory ringMapTheory;
@@ -19,6 +19,8 @@ val _ = new_theory "ringLib";
 
 val _ = deprecate_int ();
 val INT_ARITH = intLib.ARITH_PROVE;
+
+val std_ss' = std_ss ++ PRED_SET_ss;
 
 (* ------------------------------------------------------------------------- *)
 (*  'a Ring as type bijections of a subset of 'a ring                        *)
@@ -45,30 +47,12 @@ Proof
 QED
 
 (* This defines a new type “:'a Ring” *)
-val Ring_tydef = new_type_definition ("Ring", EXISTS_Ring);
+val Ring_tydef = rich_new_type {tyname = "Ring",
+                                exthm = EXISTS_Ring,
+                                ABS = "toRing",
+                                REP = "fromRing" };
 
-(* This defines fromRing (REP) and toRing (ABS)
-
-   |- (!a. toRing (fromRing a) = a) /\
-       !r. Ring r <=> fromRing (toRing r) = r
-
-   NOTE: cf. HOL-Light's "ring_tybij":
-
-   |- (!a. ring (ring_operations a) = a) /\
-      (!r. ... <=>
-           ring_operations (ring r) = r)
- *)
-val Ring_tybij = define_new_type_bijections
-   {name = "Ring_tybij",
-     ABS = "toRing", REP = "fromRing", tyax = Ring_tydef};
-
-Theorem Ring_fromRing[simp] :
-    !r. Ring (fromRing r)
-Proof
-    Q.X_GEN_TAC ‘r0’
- >> Q.ABBREV_TAC ‘r = fromRing r0’
- >> rw [Ring_tybij, Abbr ‘r’]
-QED
+Theorem Ring_fromRing[simp] = #termP_term_REP Ring_tydef
 
 (* ------------------------------------------------------------------------- *)
 (* The ring operations, primitive plus subtraction as a derived operation.   *)
@@ -227,7 +211,7 @@ Proof
  >> RW_TAC std_ss [RingHomo_def]
  >> Q.ABBREV_TAC ‘r  = fromRing r0’
  >> Q.ABBREV_TAC ‘r' = fromRing r1’
- >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’, Ring_tybij]
+ >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’]
  >> EQ_TAC >> STRIP_TAC (* 2 subgoals *)
  >| [ (* goal 1 (of 2) *)
       CONJ_TAC >- (rw [SUBSET_DEF] >> FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
@@ -255,7 +239,7 @@ Proof
  >> rw [ring_homomorphism_def]
  >> Q.ABBREV_TAC ‘r  = fromRing r0’
  >> Q.ABBREV_TAC ‘r' = fromRing r1’
- >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’, Ring_tybij]
+ >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’]
  >> MATCH_MP_TAC ring_homo_zero >> rw []
 QED
 
@@ -266,7 +250,7 @@ Proof
  >> rw [ring_homomorphism_def]
  >> Q.ABBREV_TAC ‘r  = fromRing r0’
  >> Q.ABBREV_TAC ‘r' = fromRing r1’
- >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’, Ring_tybij]
+ >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’]
  >> MATCH_MP_TAC ring_homo_one >> rw []
 QED
 
@@ -279,7 +263,7 @@ Proof
  >> rw [ring_homomorphism_def]
  >> Q.ABBREV_TAC ‘r  = fromRing r0’
  >> Q.ABBREV_TAC ‘r' = fromRing r1’
- >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’, Ring_tybij]
+ >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’]
  >> irule ring_homo_neg >> art []
 QED
 
@@ -292,7 +276,7 @@ Proof
  >> rw [ring_homomorphism_def]
  >> Q.ABBREV_TAC ‘r  = fromRing r0’
  >> Q.ABBREV_TAC ‘r' = fromRing r1’
- >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’, Ring_tybij]
+ >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’]
  >> irule ring_homo_add >> art []
 QED
 
@@ -305,7 +289,7 @@ Proof
  >> rw [ring_homomorphism_def]
  >> Q.ABBREV_TAC ‘r  = fromRing r0’
  >> Q.ABBREV_TAC ‘r' = fromRing r1’
- >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’, Ring_tybij]
+ >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’]
  >> irule ring_homo_mult >> art []
 QED
 
@@ -318,7 +302,7 @@ Proof
  >> rw [ring_homomorphism_def]
  >> Q.ABBREV_TAC ‘r  = fromRing r0’
  >> Q.ABBREV_TAC ‘r' = fromRing r1’
- >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’, Ring_tybij]
+ >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’]
  >> irule (REWRITE_RULE [ring_sub_def] ring_homo_sub) >> art []
 QED
 
@@ -331,7 +315,7 @@ Proof
  >> rw [ring_homomorphism_def]
  >> Q.ABBREV_TAC ‘r  = fromRing r0’
  >> Q.ABBREV_TAC ‘r' = fromRing r1’
- >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’, Ring_tybij]
+ >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’]
  >> irule ring_homo_exp >> art []
 QED
 
@@ -355,7 +339,7 @@ Proof
     Q.X_GEN_TAC ‘r0’
  >> RW_TAC std_ss [ring_num_0]
  >> Q.ABBREV_TAC ‘r = fromRing r0’
- >> ‘Ring r’ by rw [Abbr ‘r’, Ring_tybij]
+ >> ‘Ring r’ by rw [Abbr ‘r’]
  >> Know ‘##n + #1 = #1 + ##n’
  >- (irule ring_add_comm >> rw [])
  >> Rewr'
@@ -376,7 +360,7 @@ Proof
     qx_genl_tac [‘r0’, ‘n’]
  >> Q.ABBREV_TAC ‘r = fromRing r0’
  >> MATCH_MP_TAC ring_num_element
- >> rw [Abbr ‘r’, Ring_tybij]
+ >> rw [Abbr ‘r’]
 QED
 
 Theorem RING_OF_INT :
@@ -403,7 +387,7 @@ Proof
  >> rw [ring_homomorphism_def]
  >> Q.ABBREV_TAC ‘r  = fromRing r0’
  >> Q.ABBREV_TAC ‘r' = fromRing r1’
- >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’, Ring_tybij]
+ >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’]
  >> irule ring_homo_num >> art []
 QED
 
@@ -508,6 +492,8 @@ QED
 (* "Extensional" functions, mapping to a fixed value ARB outside the domain. *)
 (* Even though these are still total, they're a conveniently better model    *)
 (* of the partial function space (e.g. the space has the right cardinality). *)
+(*                                                                           *)
+(* (TODO: go to pred_setTheory)                                              *)
 (* ------------------------------------------------------------------------- *)
 
 Definition EXTENSIONAL :
@@ -516,20 +502,38 @@ End
 
 (* ------------------------------------------------------------------------- *)
 (* Restriction of a function to an EXTENSIONAL one on a subset.              *)
+(*    (TODO: go to combinTheory)                                             *)
 (* ------------------------------------------------------------------------- *)
 
 Definition RESTRICTION :
     RESTRICTION s (f :'a -> 'b) x = if x IN s then f x else ARB
 End
+(* RRESTRICT R f x = RESTRICTION {y | R x y} f x *)
 
 (* ------------------------------------------------------------------------- *)
-(* General Cartesian product / dependent function space.                     *)
+(* General Cartesian product / dependent function space (from sets.ml)       *)
 (* ------------------------------------------------------------------------- *)
 
 Definition cartesian_product :
     cartesian_product k s =
         {f :'k -> 'a | EXTENSIONAL k f /\ !i. i IN k ==> f i IN s i}
 End
+
+Theorem IN_CARTESIAN_PRODUCT :
+    !k s (x:'a -> 'a).
+        x IN cartesian_product k s <=>
+        EXTENSIONAL k x /\ (!i. i IN k ==> x i IN s i)
+Proof
+    RW_TAC std_ss' [cartesian_product]
+QED
+
+Theorem RESTRICTION_IN_CARTESIAN_PRODUCT :
+    !k s (f :'k -> 'a).
+        RESTRICTION k f IN cartesian_product k s <=>
+        !i. i IN k ==> (f i) IN (s i)
+Proof
+    RW_TAC std_ss' [RESTRICTION, cartesian_product, EXTENSIONAL]
+QED
 
 (* ------------------------------------------------------------------------- *)
 
