@@ -3906,14 +3906,40 @@ Proof
  >> MATCH_MP_TAC ALGEBRA_FINITE_UNION >> art []
 QED
 
+(* NOTE: The trivial algebras below are also sigma-algebra by above lemmas *)
+Theorem trivial_algebra_of_space :
+    !sp. algebra (sp, {{}; sp})
+Proof
+    rw [algebra_def, subset_class_def]
+ >> SET_TAC []
+QED
+
+Theorem trivial_algebra_of_one_set :
+    !sp s. s SUBSET sp ==> algebra (sp, {{}; s; sp DIFF s; sp})
+Proof
+    rw [algebra_def, subset_class_def]
+ >> ASM_SET_TAC []
+QED
+
+(* NOTE: This is head (h) and tail (t) of one-time coin tossing *)
+Theorem trivial_algebra_of_two_points :
+    !h t. algebra ({h; t}, {{}; {h}; {t}; {h; t}})
+Proof
+    rw [algebra_def, subset_class_def]
+ >> ASM_SET_TAC []
+QED
+
 val _ = export_theory ();
 
 (* References:
 
-  [1] Hurd, J.: Formal verification of probabilistic algorithms. University of Cambridge (2001).
-  [2] Coble, A.R.: Anonymity, information, and machine-assisted proof. University of Cambridge (2010).
-  [3] Mhamdi, T., Hasan, O., Tahar, S.: Formalization of Measure Theory and Lebesgue Integration
-      for Probabilistic Analysis in HOL. ACM Trans. Embedded Comput. Syst. 12, 1--23 (2013).
+  [1] Hurd, J.: Formal verification of probabilistic algorithms. University of
+      Cambridge (2001).
+  [2] Coble, A.R.: Anonymity, information, and machine-assisted proof.
+      University of Cambridge (2010).
+  [3] Mhamdi, T., Hasan, O., Tahar, S.: Formalization of Measure Theory and
+      Lebesgue Integration for Probabilistic Analysis in HOL. ACM Trans.
+      Embedded Comput. Syst. 12, 1--23 (2013).
   [4] Wikipedia: https://en.wikipedia.org/wiki/Ring_of_sets
   [5] Wikipedia: https://en.wikipedia.org/wiki/Eugene_Dynkin
   [6] Wikipedia: https://en.wikipedia.org/wiki/Dynkin_system
