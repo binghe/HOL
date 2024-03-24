@@ -3914,7 +3914,7 @@ Proof
  >> SET_TAC []
 QED
 
-Theorem trivial_algebra_of_one_set :
+Theorem trivial_algebra_of_two_sets :
     !sp s. s SUBSET sp ==> algebra (sp, {{}; s; sp DIFF s; sp})
 Proof
     rw [algebra_def, subset_class_def]
