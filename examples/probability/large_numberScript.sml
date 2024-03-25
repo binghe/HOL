@@ -6557,9 +6557,18 @@ Proof
  >> Know ‘!i. i <= N ==> expectation p (\x. W i x * D i x) =
                          expectation p (W i) * expectation p (D i)’
  >- (Q.X_GEN_TAC ‘n’ >> DISCH_TAC \\
-     MATCH_MP_TAC indep_vars_expectation >> art [] \\
-  (* TODO: ‘indep_vars p (W i) (D i) Borel Borel’ *)
+  (* NOTE: here we have the following subgoal:
 
+     expectation p (\x. W n x * D n x) = expectation p (W n) * expectation p (D n)
+
+     where D n x = Z N x - Z n x (n <= N) and
+           W n x = Z i x * indicator_fn (a i) x
+
+     so these are two measurable functions generated from disjoint subsets of Z.
+
+     One way is to use [indep_vars_expectation], and the other way is to
+     prove it directly.
+   *)
      cheat)
  >> DISCH_TAC
  (* stage work *)

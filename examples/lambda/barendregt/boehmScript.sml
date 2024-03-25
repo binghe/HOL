@@ -3640,6 +3640,11 @@ Proof
  >> MATCH_MP_TAC Boehm_apply_lameq_cong >> art []
 QED
 
+(* NOTE: The original lemma in textbook requires ‘p IN ltree_paths (BTe X M)’,
+   but this seems wrong, as ‘subterm X M p’ may not be defined if only ‘p’ is
+   valid path (i.e. the subterm could be a bottom (\bot) as the result of un-
+   solvable terms).
+ *)
 Theorem Boehm_out_lemma :
     !p X M. FINITE X /\ subterm X M p <> NONE ==>
            ?pi ss. Boehm_transform pi /\ apply pi M == subterm' X M p ISUB ss
