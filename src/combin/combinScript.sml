@@ -540,7 +540,7 @@ QED
 
 (* NOTE: HOL-Light doesn't have this theorem. *)
 Theorem EXTENSIONAL_RESTRICTION :
-    EXTENSIONAL s (RESTRICTION s (f :'a -> 'b))
+    !s (f :'a->'b). EXTENSIONAL s (RESTRICTION s (f :'a -> 'b))
 Proof
     REWRITE_TAC [EXTENSIONAL_def, RESTRICTION, IN_DEF]
  >> BETA_TAC

@@ -189,6 +189,17 @@ Proof
  >> rw [Abbr ‘r’]
 QED
 
+Theorem RING_MUL_SYM :
+    !r x y. x IN ring_carrier r /\ y IN ring_carrier r
+             ==> ring_mul r x y = ring_mul r y x
+Proof
+    qx_genl_tac [‘r0’, ‘x’, ‘y’]
+ >> STRIP_TAC
+ >> Q.ABBREV_TAC ‘r = fromRing r0’
+ >> irule ring_mult_comm
+ >> rw [Abbr ‘r’]
+QED
+
 (* ------------------------------------------------------------------------- *)
 (* Homomorphisms etc.                                                        *)
 (* ------------------------------------------------------------------------- *)
@@ -508,7 +519,7 @@ Definition cartesian_product :
 End
 
 Theorem IN_CARTESIAN_PRODUCT :
-    !k s (x:'a -> 'a).
+    !k s (x :'k -> 'a).
         x IN cartesian_product k s <=>
         EXTENSIONAL k x /\ (!i. i IN k ==> x i IN s i)
 Proof
@@ -544,13 +555,23 @@ Theorem Ring_raw_product_ring[local] :
     !k (r :'k -> 'a Ring). Ring (raw_product_ring k r)
 Proof
     rw [raw_product_ring_def]
- >> rw [Once Ring_def] (* 3 subgoals *)
- >| [ (* goal 1 (of 3): AbelianGroup *)
-      cheat,
-      (* goal 2 (of 3): AbelianMonoid *)
-      cheat,
-      (* goal 3 (of 3): RESTRICTION *)
-      cheat ]
+ >> simp [Once Ring_def]
+ >> ONCE_REWRITE_TAC [CONJ_ASSOC]
+ >> reverse CONJ_TAC
+ >- (rw [IN_CARTESIAN_PRODUCT] \\
+     rw [RESTRICTION_EXTENSION] \\
+     rw [RESTRICTION_DEFINED])
+ (* AbelianMonoid ... (easier) *)
+ >> reverse CONJ_TAC
+ >- (simp [AbelianMonoid_def] \\
+     reverse CONJ_TAC
+     >- (rw [IN_CARTESIAN_PRODUCT, RESTRICTION_EXTENSION] \\
+         MATCH_MP_TAC RING_MUL_SYM >> rw []) \\
+     rw [Once Monoid_def, IN_CARTESIAN_PRODUCT] \\ (* 7 subgoals *)
+     cheat)
+ (* AbelianMonoid ... *)
+ >> rw [AbelianGroup_def, Group_def]
+ >> cheat
 QED
 
 Definition product_ring :
