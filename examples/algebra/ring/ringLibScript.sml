@@ -101,7 +101,8 @@ QED
 Theorem RING_NEG :
     !r x. x IN ring_carrier r ==> ring_neg r x IN ring_carrier r
 Proof
-    qx_genl_tac [‘r0’, ‘x’]
+    Q.X_GEN_TAC ‘r0’
+ >> GEN_TAC
  >> Q.ABBREV_TAC ‘r = fromRing r0’
  >> MATCH_MP_TAC ring_neg_element
  >> rw [Abbr ‘r’]
@@ -119,7 +120,8 @@ QED
 Theorem RING_POW :
     !r x n. x IN ring_carrier r ==> ring_pow r x n IN ring_carrier r
 Proof
-    qx_genl_tac [‘r0’, ‘x’, ‘n’]
+    Q.X_GEN_TAC ‘r0’
+ >> rpt GEN_TAC
  >> STRIP_TAC
  >> Q.ABBREV_TAC ‘r = fromRing r0’
  >> irule ring_exp_element
@@ -130,7 +132,8 @@ Theorem RING_ADD :
     !r x y. x IN ring_carrier r /\ y IN ring_carrier r ==>
             ring_add r x y IN ring_carrier r
 Proof
-    qx_genl_tac [‘r0’, ‘x’, ‘y’]
+    Q.X_GEN_TAC ‘r0’
+ >> rpt GEN_TAC
  >> STRIP_TAC
  >> Q.ABBREV_TAC ‘r = fromRing r0’
  >> irule ring_add_element
@@ -141,7 +144,8 @@ Theorem RING_SUB :
     !r x y. x IN ring_carrier r /\ y IN ring_carrier r ==>
             ring_sub r x y IN ring_carrier r
 Proof
-    qx_genl_tac [‘r0’, ‘x’, ‘y’]
+    Q.X_GEN_TAC ‘r0’
+ >> rpt GEN_TAC
  >> STRIP_TAC
  >> Q.ABBREV_TAC ‘r = fromRing r0’
  >> irule ring_sub_element
@@ -152,7 +156,8 @@ Theorem RING_MUL :
     !r x y. x IN ring_carrier r /\ y IN ring_carrier r ==>
             ring_mul r x y IN ring_carrier r
 Proof
-    qx_genl_tac [‘r0’, ‘x’, ‘y’]
+    Q.X_GEN_TAC ‘r0’
+ >> rpt GEN_TAC
  >> STRIP_TAC
  >> Q.ABBREV_TAC ‘r = fromRing r0’
  >> irule ring_mult_element
@@ -162,7 +167,8 @@ QED
 Theorem RING_ADD_LZERO :
     !r x. x IN ring_carrier r ==> ring_add r (ring_0 r) x = x
 Proof
-    qx_genl_tac [‘r0’, ‘x’]
+    Q.X_GEN_TAC ‘r0’
+ >> rpt GEN_TAC
  >> STRIP_TAC
  >> Q.ABBREV_TAC ‘r = fromRing r0’
  >> irule ring_add_lzero
@@ -173,17 +179,32 @@ Theorem RING_ADD_SYM :
     !r x y. x IN ring_carrier r /\ y IN ring_carrier r
              ==> ring_add r x y = ring_add r y x
 Proof
-    qx_genl_tac [‘r0’, ‘x’, ‘y’]
+    Q.X_GEN_TAC ‘r0’
+ >> rpt GEN_TAC
  >> STRIP_TAC
  >> Q.ABBREV_TAC ‘r = fromRing r0’
  >> irule ring_add_comm
  >> rw [Abbr ‘r’]
 QED
 
+Theorem RING_ADD_ASSOC :
+    !r x y z.
+        x IN ring_carrier r /\ y IN ring_carrier r /\ z IN ring_carrier r
+        ==> ring_add r x (ring_add r y z) = ring_add r (ring_add r x y) z
+Proof
+    Q.X_GEN_TAC ‘r0’
+ >> rpt GEN_TAC
+ >> STRIP_TAC
+ >> Q.ABBREV_TAC ‘r = fromRing r0’
+ >> irule (GSYM ring_add_assoc)
+ >> rw [Abbr ‘r’]
+QED
+
 Theorem RING_MUL_LID :
     !r x. x IN ring_carrier r ==> ring_mul r (ring_1 r) x = x
 Proof
-    qx_genl_tac [‘r0’, ‘x’]
+    Q.X_GEN_TAC ‘r0’
+ >> rpt GEN_TAC
  >> STRIP_TAC
  >> Q.ABBREV_TAC ‘r = fromRing r0’
  >> irule ring_mult_lone
@@ -193,7 +214,8 @@ QED
 Theorem RING_MUL_LZERO :
     !r x. x IN ring_carrier r ==> ring_mul r (ring_0 r) x = ring_0 r
 Proof
-    qx_genl_tac [‘r0’, ‘x’]
+    Q.X_GEN_TAC ‘r0’
+ >> rpt GEN_TAC
  >> STRIP_TAC
  >> Q.ABBREV_TAC ‘r = fromRing r0’
  >> irule ring_mult_lzero
@@ -204,7 +226,8 @@ Theorem RING_MUL_SYM :
     !r x y. x IN ring_carrier r /\ y IN ring_carrier r
              ==> ring_mul r x y = ring_mul r y x
 Proof
-    qx_genl_tac [‘r0’, ‘x’, ‘y’]
+    Q.X_GEN_TAC ‘r0’
+ >> rpt GEN_TAC
  >> STRIP_TAC
  >> Q.ABBREV_TAC ‘r = fromRing r0’
  >> irule ring_mult_comm
@@ -216,7 +239,8 @@ Theorem RING_MUL_ASSOC :
         x IN ring_carrier r /\ y IN ring_carrier r /\ z IN ring_carrier r
         ==> ring_mul r x (ring_mul r y z) = ring_mul r (ring_mul r x y) z
 Proof
-    qx_genl_tac [‘r0’, ‘x’, ‘y’, ‘z’]
+    Q.X_GEN_TAC ‘r0’
+ >> rpt GEN_TAC
  >> STRIP_TAC
  >> Q.ABBREV_TAC ‘r = fromRing r0’
  >> irule (GSYM ring_mult_assoc)
@@ -613,6 +637,25 @@ Proof
  >- (rw [IN_CARTESIAN_PRODUCT] \\
      rw [RESTRICTION_EXTENSION] \\
      MATCH_MP_TAC RING_ADD_SYM >> rw [])
+ >> CONJ_TAC (* Monoid ... *)
+ >- (rw [Once Monoid_def, IN_CARTESIAN_PRODUCT, EXTENSIONAL_RESTRICTION] >| (* 5 subgoals *)
+     [ (* goal 1 (of 5) *)
+       rw [RESTRICTION_DEFINED],
+       (* goal 2 (of 5) *)
+       rw [RESTRICTION_EXTENSION] \\
+       rw [RESTRICTION_DEFINED] \\
+       MATCH_MP_TAC (GSYM RING_ADD_ASSOC) >> rw [],
+       (* goal 3 (of 5) *)
+       rw [RESTRICTION_DEFINED],
+       (* goal 4 (of 5) *)
+       simp [RESTRICTION, FUN_EQ_THM] \\
+       Q.X_GEN_TAC ‘i’ \\
+       Cases_on ‘i IN k’ >> fs [EXTENSIONAL_def],
+       (* goal 5 (of 5) *)
+       simp [RESTRICTION, FUN_EQ_THM] \\
+       Q.X_GEN_TAC ‘i’ \\
+       Cases_on ‘i IN k’ >> fs [EXTENSIONAL_def] ])
+ (* monoid_invertibles *)
  >> cheat
 QED
 
