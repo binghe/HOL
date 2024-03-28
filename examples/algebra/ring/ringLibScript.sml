@@ -169,6 +169,17 @@ Proof
  >> rw [Abbr ‘r’]
 QED
 
+Theorem RING_ADD_SYM :
+    !r x y. x IN ring_carrier r /\ y IN ring_carrier r
+             ==> ring_add r x y = ring_add r y x
+Proof
+    qx_genl_tac [‘r0’, ‘x’, ‘y’]
+ >> STRIP_TAC
+ >> Q.ABBREV_TAC ‘r = fromRing r0’
+ >> irule ring_add_comm
+ >> rw [Abbr ‘r’]
+QED
+
 Theorem RING_MUL_LID :
     !r x. x IN ring_carrier r ==> ring_mul r (ring_1 r) x = x
 Proof
@@ -197,6 +208,18 @@ Proof
  >> STRIP_TAC
  >> Q.ABBREV_TAC ‘r = fromRing r0’
  >> irule ring_mult_comm
+ >> rw [Abbr ‘r’]
+QED
+
+Theorem RING_MUL_ASSOC :
+    !r x y z.
+        x IN ring_carrier r /\ y IN ring_carrier r /\ z IN ring_carrier r
+        ==> ring_mul r x (ring_mul r y z) = ring_mul r (ring_mul r x y) z
+Proof
+    qx_genl_tac [‘r0’, ‘x’, ‘y’, ‘z’]
+ >> STRIP_TAC
+ >> Q.ABBREV_TAC ‘r = fromRing r0’
+ >> irule (GSYM ring_mult_assoc)
  >> rw [Abbr ‘r’]
 QED
 
@@ -567,10 +590,29 @@ Proof
      reverse CONJ_TAC
      >- (rw [IN_CARTESIAN_PRODUCT, RESTRICTION_EXTENSION] \\
          MATCH_MP_TAC RING_MUL_SYM >> rw []) \\
-     rw [Once Monoid_def, IN_CARTESIAN_PRODUCT] \\ (* 7 subgoals *)
-     cheat)
- (* AbelianMonoid ... *)
- >> rw [AbelianGroup_def, Group_def]
+     rw [Once Monoid_def, IN_CARTESIAN_PRODUCT, EXTENSIONAL_RESTRICTION] >| (* 5 subgoals *)
+     [ (* goal 1 (of 5) *)
+       rw [RESTRICTION_DEFINED],
+       (* goal 2 (of 5) *)
+       rw [RESTRICTION_EXTENSION] \\
+       rw [RESTRICTION_DEFINED] \\
+       MATCH_MP_TAC (GSYM RING_MUL_ASSOC) >> rw [],
+       (* goal 3 (of 5) *)
+       rw [RESTRICTION_DEFINED],
+       (* goal 4 (of 5) *)
+       simp [RESTRICTION, FUN_EQ_THM] \\
+       Q.X_GEN_TAC ‘i’ \\
+       Cases_on ‘i IN k’ >> fs [EXTENSIONAL_def],
+       (* goal 5 (of 5) *)
+       simp [RESTRICTION, FUN_EQ_THM] \\
+       Q.X_GEN_TAC ‘i’ \\
+       Cases_on ‘i IN k’ >> fs [EXTENSIONAL_def] ])
+ (* AbelianMonoid ... (harder) *)
+ >> simp [AbelianGroup_def, Group_def]
+ >> reverse CONJ_TAC
+ >- (rw [IN_CARTESIAN_PRODUCT] \\
+     rw [RESTRICTION_EXTENSION] \\
+     MATCH_MP_TAC RING_ADD_SYM >> rw [])
  >> cheat
 QED
 
