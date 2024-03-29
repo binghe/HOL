@@ -56,7 +56,7 @@ val Ring_tydef = rich_new_type {tyname = "Ring",
 Theorem Ring_fromRing[simp] = #termP_term_REP Ring_tydef
 
 (* |- !r. Ring r ==> fromRing (toRing r) = r *)
-Theorem fromRing_toRing = #repabs_pseudo_id Ring_tydef
+Theorem from_toRing = #repabs_pseudo_id Ring_tydef
 
 (* |- !g h. fromRing g = fromRing h <=> g = h *)
 Theorem fromRing_11 = #term_REP_11 Ring_tydef |> Q.GENL [‘g’, ‘h’]
@@ -690,7 +690,6 @@ Definition product_ring :
     product_ring k (r :'k -> 'a Ring) = toRing (raw_product_ring k r)
 End
 
-(* NOTE: This proof is new *)
 Theorem PRODUCT_RING :
    (!k (r :'k -> 'a Ring).
         ring_carrier(product_ring k r) =
@@ -712,31 +711,41 @@ Theorem PRODUCT_RING :
           (\x y. RESTRICTION k (\i. ring_mul (r i) (x i) (y i))))
 Proof
     rw [product_ring] (* 6 subgoals, same initial tactics *)
- >> (‘fromRing (toRing (raw_product_ring k r)) = raw_product_ring k r’
-        by (MATCH_MP_TAC fromRing_toRing \\
-            rw [Ring_raw_product_ring]) >> POP_ORW \\
-     rw [raw_product_ring_def])
+ >> ‘fromRing (toRing (raw_product_ring k r)) = raw_product_ring k r’
+       by (MATCH_MP_TAC from_toRing \\
+           rw [Ring_raw_product_ring])
+ >> POP_ORW
+ >> MP_TAC (Q.SPECL [‘k’, ‘r’] Ring_raw_product_ring)
+ >> rw [raw_product_ring_def]
  (* only one goal (ring_neg) is left *)
  >> rw [Once FUN_EQ_THM]
+ >> fs [Once Ring_def]
+ (* cleanup irrelevant assumptions *)
+ >> POP_ASSUM K_TAC
+ >> Q.PAT_X_ASSUM ‘AbelianMonoid _’ K_TAC
+ >> fs [AbelianGroup_def]
+ >> POP_ASSUM K_TAC
+ >> Q.ABBREV_TAC
+     ‘g = <|carrier := cartesian_product k (\i. ring_carrier (r i));
+            op := (\x y. RESTRICTION k (\i. ring_add (r i) (x i) (y i)));
+            id := RESTRICTION k (\i. ring_0 (r i))|>’
+ >> fs [Group_def]
  >> cheat
-(*
-  REWRITE_TAC[AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
-  MP_TAC(fst(EQ_IMP_RULE
-   (ISPEC(rand(rand(snd(strip_forall(concl product_ring)))))
-   (CONJUNCT2 ring_tybij)))) THEN
-  REWRITE_TAC[GSYM product_ring] THEN ANTS_TAC THENL
-   [REWRITE_TAC[cartesian_product; RESTRICTION; EXTENSIONAL; IN_ELIM_THM] THEN
-    REWRITE_TAC[FUN_EQ_THM; RESTRICTION] THEN
-    REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
-    REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[]) THEN
-    ASM_SIMP_TAC[RING_ADD_LDISTRIB; RING_ADD_LZERO; RING_ADD_LNEG;
-      RING_MUL_LID; RING_0; RING_1; RING_NEG; RING_ADD; RING_MUL] THEN
-    ASM_SIMP_TAC[RING_MUL_AC; RING_ADD_AC; RING_ADD; RING_MUL];
-
-    DISCH_TAC THEN
-    ASM_REWRITE_TAC[ring_carrier, ring_0, ring_1,
-                    ring_neg, ring_add, ring_mul]]
- *)
+ (*
+ >> simp [FUN_EQ_THM]
+ >> Q.X_GEN_TAC ‘i’
+ >> reverse (Cases_on ‘i IN k’)
+ >- (rw [RESTRICTION_UNDEFINED] \\
+     cheat)
+  *)
+ (* applying monoid_inv_def
+ >> MP_TAC (Q.SPECL [‘g’, ‘x’]
+                    (INST_TYPE [“:'a” |-> “:'k -> 'a”] monoid_inv_def))
+ >> simp []
+ >> Know ‘x IN g.carrier’
+ >- (rw [Abbr ‘g’] \\
+     rw [IN_CARTESIAN_PRODUCT]
+  *)
 QED
 
 (*
