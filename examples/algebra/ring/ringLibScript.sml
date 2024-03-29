@@ -187,6 +187,28 @@ Proof
  >> rw [Abbr ‘r’]
 QED
 
+Theorem RING_ADD_LNEG :
+    !r x. x IN ring_carrier r ==> ring_add r (ring_neg r x) x = ring_0 r
+Proof
+    Q.X_GEN_TAC ‘r0’
+ >> rpt GEN_TAC
+ >> STRIP_TAC
+ >> Q.ABBREV_TAC ‘r = fromRing r0’
+ >> irule ring_add_lneg
+ >> rw [Abbr ‘r’]
+QED
+
+Theorem RING_ADD_RNEG :
+    !r x. x IN ring_carrier r ==> ring_add r x (ring_neg r x) = ring_0 r
+Proof
+    Q.X_GEN_TAC ‘r0’
+ >> rpt GEN_TAC
+ >> STRIP_TAC
+ >> Q.ABBREV_TAC ‘r = fromRing r0’
+ >> irule ring_add_rneg
+ >> rw [Abbr ‘r’]
+QED
+
 Theorem RING_ADD_ASSOC :
     !r x y z.
         x IN ring_carrier r /\ y IN ring_carrier r /\ z IN ring_carrier r
@@ -656,7 +678,12 @@ Proof
        Q.X_GEN_TAC ‘i’ \\
        Cases_on ‘i IN k’ >> fs [EXTENSIONAL_def] ])
  (* monoid_invertibles *)
- >> cheat
+ >> rw [monoid_invertibles_def] (* key *)
+ >> rw [Once EXTENSION, IN_CARTESIAN_PRODUCT]
+ >> EQ_TAC >> rw [] (* one goal left *)
+ >> Q.EXISTS_TAC ‘RESTRICTION k (\i. ring_neg (r i) (x i))’
+ >> rw [RESTRICTION_EXTENSION, EXTENSIONAL_RESTRICTION] (* 3 subgoals, same tactic *)
+ >> rw [RESTRICTION_DEFINED]
 QED
 
 Definition product_ring :
