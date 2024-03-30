@@ -690,6 +690,7 @@ Definition product_ring :
     product_ring k (r :'k -> 'a Ring) = toRing (raw_product_ring k r)
 End
 
+(* NOTE: This theorem missed the part of ‘ring_neg’ from the original version *)
 Theorem PRODUCT_RING :
    (!k (r :'k -> 'a Ring).
         ring_carrier(product_ring k r) =
@@ -700,9 +701,6 @@ Theorem PRODUCT_RING :
    (!k (r :'k -> 'a Ring).
         ring_1 (product_ring k r) =
           RESTRICTION k (\i. ring_1 (r i))) /\
-   (!k (r :'k -> 'a Ring).
-        ring_neg (product_ring k r) =
-          \x. RESTRICTION k (\i. ring_neg (r i) (x i))) /\
    (!k (r :'k -> 'a Ring).
         ring_add (product_ring k r) =
           (\x y. RESTRICTION k (\i. ring_add (r i) (x i) (y i)))) /\
@@ -717,35 +715,47 @@ Proof
  >> POP_ORW
  >> MP_TAC (Q.SPECL [‘k’, ‘r’] Ring_raw_product_ring)
  >> rw [raw_product_ring_def]
- (* only one goal (ring_neg) is left *)
- >> rw [Once FUN_EQ_THM]
+QED
+
+(* NOTE: This theorem was part of HOL-Light's PRODUCT_RING, with additional
+         ring_carrier antecedents.
+ *)
+Theorem PRODUCT_RING_NEG :
+    !k (r :'k -> 'a Ring) x.
+        x IN ring_carrier (product_ring k r) ==>
+        ring_neg (product_ring k r) x =
+        RESTRICTION k (\i. ring_neg (r i) (x i))
+Proof
+    rpt GEN_TAC
+ >> simp [product_ring]
+ >> ‘fromRing (toRing (raw_product_ring k r)) = raw_product_ring k r’
+       by (MATCH_MP_TAC from_toRing \\
+           rw [Ring_raw_product_ring])
+ >> POP_ORW
+ (* now it's about ‘raw_product_ring k r’ *)
+ >> MP_TAC (Q.SPECL [‘k’, ‘r’] Ring_raw_product_ring)
+ >> rw [raw_product_ring_def]
  >> fs [Once Ring_def]
  (* cleanup irrelevant assumptions *)
- >> POP_ASSUM K_TAC
+ >> Q.PAT_X_ASSUM ‘!x y z. P’       K_TAC
  >> Q.PAT_X_ASSUM ‘AbelianMonoid _’ K_TAC
  >> fs [AbelianGroup_def]
- >> POP_ASSUM K_TAC
+ >> Q.PAT_X_ASSUM ‘!x y. P’         K_TAC
  >> Q.ABBREV_TAC
      ‘g = <|carrier := cartesian_product k (\i. ring_carrier (r i));
             op := (\x y. RESTRICTION k (\i. ring_add (r i) (x i) (y i)));
             id := RESTRICTION k (\i. ring_0 (r i))|>’
+ (* now we know ‘x IN cartesian_product k (\i. ring_carrier (r i))’ *)
  >> fs [Group_def]
- >> cheat
- (*
- >> simp [FUN_EQ_THM]
- >> Q.X_GEN_TAC ‘i’
- >> reverse (Cases_on ‘i IN k’)
- >- (rw [RESTRICTION_UNDEFINED] \\
-     cheat)
-  *)
- (* applying monoid_inv_def
+ (* applying monoid_inv_def *)
  >> MP_TAC (Q.SPECL [‘g’, ‘x’]
                     (INST_TYPE [“:'a” |-> “:'k -> 'a”] monoid_inv_def))
  >> simp []
  >> Know ‘x IN g.carrier’
  >- (rw [Abbr ‘g’] \\
-     rw [IN_CARTESIAN_PRODUCT]
-  *)
+     rw [IN_CARTESIAN_PRODUCT])
+ >> rw []
+ >> cheat
 QED
 
 (*
