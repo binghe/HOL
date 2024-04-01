@@ -185,7 +185,11 @@ QED
       such as ‘LAMl (vs ++ [z0;z1]) t’ (with two extra children ‘z0’ and ‘z1’)
       without changing the head variable (VAR y).
  *)
-Type boehm_tree[pp] = “:(string list # string) option ltree”
+
+(* The type of each Boehm tree node (the type variable 'a of general ltree) *)
+Type BT_node[pp]    = “:(string list # string) option”
+
+Type boehm_tree[pp] = “:BT_node ltree”
 
 (* Definition 10.1.9 [1, p.221] (Effective Boehm Tree)
 
@@ -251,8 +255,8 @@ End
  *)
 Overload bot = “Branch NONE (LNIL :boehm_tree llist)”
 
-(* Another form of ‘bot’, usually returned by “THE (ltree_el A p)”. *)
-Overload bot = “(NONE :(string list # string) option, SOME 0)”
+(* Another form of ‘bot’, usually returned by “THE (ltree_el A p)” *)
+Overload bot = “(NONE, SOME 0) :(BT_node # num option)”
 
 (* Unicode name: "base" *)
 val _ = Unicode.unicode_version {u = UTF8.chr 0x22A5, tmnm = "bot"};
@@ -1895,20 +1899,23 @@ QED
 (* Definition 10.2.21 (i) [1, p.238]
 
    NOTE: ‘A’ and ‘B’ are ltree nodes returned by ‘THE (ltree_el (BT M) p)’
+
+   NOTE2: This definition needs to consider alpha-equivalence (TODO)
  *)
 Definition head_equivalent_def :
-    head_equivalent (A :(string list # string) option # num option) B =
-        if IS_SOME (FST A) /\ IS_SOME (FST B) then
-           let (vs1,y ) = THE (FST A);
-               (vs2,y') = THE (FST B);
-               n  = LENGTH vs1;
-               n' = LENGTH vs2;
-               m  = THE (SND A);
-               m' = THE (SND B)
-            in
-               y = y' /\ n + m' = n' + m
-        else
-            IS_NONE (FST A) /\ IS_NONE (FST B)
+    head_equivalent (A :BT_node # num option)
+                    (B :BT_node # num option) =
+      if IS_SOME (FST A) /\ IS_SOME (FST B) then
+         let (vs1,y ) = THE (FST A);
+             (vs2,y') = THE (FST B);
+                   n  = LENGTH vs1;
+                   n' = LENGTH vs2;
+                   m  = THE (SND A);
+                   m' = THE (SND B);
+         in
+             y = y' /\ n + m' = n' + m
+      else
+         IS_NONE (FST A) /\ IS_NONE (FST B)
 End
 
 (* Definition 10.2.21 (ii) [1, p.238] *)
@@ -3660,8 +3667,8 @@ QED
 
  (* Definition 10.3.10 (ii) [1, p.251] *)
 Definition is_faithful_def :
-    is_faithful p Fs pi =
-      !M N. M IN Fs /\ N IN Fs ==>
+    is_faithful p Ns pi =
+      !M N. M IN Ns /\ N IN Ns ==>
             (subterm_eta_equiv p M N <=> equivalent (apply pi M) (apply pi N)) /\
             (!X. IS_SOME (ltree_lookup (BTe X M) p) <=>
                  solvable (apply pi M))
@@ -3675,14 +3682,14 @@ End
 (* Definition 10.3.10 (iv) *)
 val _ = set_fixity "agrees_upto" (Infixr 490);
 Definition agrees_upto_def :
-    $agrees_upto Fs p = !M N. M IN Fs /\ N IN Fs ==> term_agrees_upto M N p
+    $agrees_upto Ns p = !M N. M IN Ns /\ N IN Ns ==> term_agrees_upto M N p
 End
 
 (* Lemma 10.3.11 (3) [1. p.251] *)
 Theorem agrees_upto_lemma :
-    !Fs p. Fs agrees_upto p ==>
+    !Ns p. Ns agrees_upto p ==>
            ?pi. Boehm_transform pi /\
-                !M N. M IN Fs /\ N IN Fs ==>
+                !M N. M IN Ns /\ N IN Ns ==>
                      (subterm_eta_equiv p M N <=>
                       subterm_eta_equiv p (apply pi M) (apply pi N))
 Proof
@@ -3691,7 +3698,7 @@ QED
 
 (* Proposition 10.3.13 [1, p.253] *)
 Theorem agrees_upto_thm :
-    !Fs p. Fs agrees_upto p ==> ?pi. Boehm_transform pi /\ is_faithful p Fs pi
+    !Ns p. Ns agrees_upto p ==> ?pi. Boehm_transform pi /\ is_faithful p Ns pi
 Proof
     cheat
 QED

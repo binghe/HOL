@@ -740,6 +740,7 @@ Proof
  >> Q.PAT_X_ASSUM ‘!x y z. P’       K_TAC
  >> Q.PAT_X_ASSUM ‘AbelianMonoid _’ K_TAC
  >> fs [AbelianGroup_def]
+ (* cleanup irrelevant assumptions *)
  >> Q.PAT_X_ASSUM ‘!x y. P’         K_TAC
  >> Q.ABBREV_TAC
      ‘g = <|carrier := cartesian_product k (\i. ring_carrier (r i));
@@ -755,6 +756,13 @@ Proof
  >- (rw [Abbr ‘g’] \\
      rw [IN_CARTESIAN_PRODUCT])
  >> rw []
+ (* additional assumptions:
+    4.  x IN g.carrier
+    5.  g.inv x IN g.carrier
+    6.  g.op x (g.inv x) = g.id
+    7.  g.op (g.inv x) x = g.id
+  *)
+ (* applying monoid_invertibles_def *)
  >> cheat
 QED
 
