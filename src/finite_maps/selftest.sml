@@ -1,6 +1,6 @@
 open HolKernel Parse boolLib bossLib sptreeSyntax testutils
 open totoTheory  totoTacs tcTacs enumTacs fmapalTacs;
-open alist_treeLib
+open alist_treeLib EmitTeX;
 
 fun optionToString f NONE = "NONE"
   | optionToString f (SOME x) = "SOME("^f x^")"
