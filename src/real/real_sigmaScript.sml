@@ -998,6 +998,7 @@ val jensen_pos_concave_SIGMA = store_thm
 (* Rational numbers as a subset of real numbers (moved here from util_prob)  *)
 (* ========================================================================= *)
 
+(* NOTE: [real_rat_set_def] is not directly used below ([q_set_def] is used) *)
 Definition real_rat_set_def :
     real_rat_set = {x:real | ?a b. (x = (&a/(&b))) /\ (0:real < &b)} UNION
                    {x:real | ?a b. (x = -(&a/(&b))) /\ (0:real < &b)}

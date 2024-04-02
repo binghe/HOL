@@ -1722,6 +1722,8 @@ QED
 val Num = new_definition("Num",
   Term `Num (i:int) = @n. if 0 <= i then i = &n else i = - &n`);
 
+Overload num_of_int = “Num” (* from HOL Light *)
+
 Theorem NUM_OF_INT[simp,compute]:
   !n. Num(&n) = n
 Proof

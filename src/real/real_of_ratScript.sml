@@ -1,10 +1,11 @@
 (*---------------------------------------------------------------------------*)
-(* real_of_ratTheory, rational subset of real numbers                        *)
+(* real_of_ratTheory, one-one mapping between rationals and subset of reals  *)
 (*---------------------------------------------------------------------------*)
 
 open HolKernel Parse boolLib bossLib;
 
-open realaxTheory ratTheory integerTheory intrealTheory realTheory;
+open realaxTheory ratTheory integerTheory intrealTheory realTheory
+     pred_setTheory;
 
 val _ = augment_srw_ss [intSimps.INT_ARITH_ss]
 
@@ -340,6 +341,36 @@ Theorem REAL_OF_RAT_MIN:
   min (real_of_rat r) (real_of_rat q) = real_of_rat (rat_min r q)
 Proof
   Cases_on ‘r<q’ >> simp[Once $ cj 1 REAL_MIN_ACI,rat_min_def,GSYM REAL_NOT_LT,real_min,REAL_OF_RAT_LT]
+QED
+
+(* ========================================================================= *)
+(*  Rational numbers as a subset of real numbers (real_rat_set or q_set)     *)
+(*    (was in util_probTheory and then in real_sigmaTheory)                  *)
+(* ========================================================================= *)
+
+Definition real_rat_set_def :
+    q_set = {r | ?q. r = real_of_rat q}
+End
+
+(* Unicode Character 'DOUBLE-STRUCK CAPITAL Q' (U+211A) *)
+val _ = Unicode.unicode_version {u = UTF8.chr 0x211A, tmnm = "q_set"};
+val _ = TeX_notation {hol = "q_set", TeX = ("\\ensuremath{\\mathbb{Q}}", 1)};
+
+(* The original definition now becomes a theorem *)
+Theorem q_set_def :
+    q_set = {x:real | ?a b. (x = (&a/(&b))) /\ (0:real < &b)} UNION
+            {x:real | ?a b. (x = -(&a/(&b))) /\ (0:real < &b)}
+Proof
+    rw [real_rat_set_def, real_of_rat_def]
+ >> MATCH_MP_TAC SUBSET_ANTISYM
+ >> reverse CONJ_TAC
+ >- (rw [SUBSET_DEF] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       cheat,
+       (* goal 2 (of 2) *)
+       cheat ])
+ (* stage work *)
+ >> cheat
 QED
 
 val _ = export_theory();
