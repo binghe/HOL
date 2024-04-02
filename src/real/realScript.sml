@@ -4082,7 +4082,7 @@ val NUM_CEILING_LE = store_thm
    THEN numLib.LEAST_ELIM_TAC
    THEN METIS_TAC [NOT_LESS_EQUAL]);
 
-Theorem NUM_CEILING_UPPER_BOUND : (* was: util_probTheory.CLG_UBOUND *)
+Theorem NUM_CEILING_UPPER_BOUND :
     !x. 0 <= x ==> &(clg x) < x + 1
 Proof
     RW_TAC std_ss [NUM_CEILING_def]
@@ -4104,6 +4104,9 @@ Proof
  >> `&n - 1 < x` by RW_TAC arith_ss [REAL_SUB]
  >> FULL_SIMP_TAC std_ss [REAL_LT_SUB_RADD]
 QED
+
+(* backward compatible name of NUM_CEILING_UPPER_BOUND *)
+Theorem CLG_UBOUND = NUM_CEILING_UPPER_BOUND
 
 (* ----------------------------------------------------------------------
     nonzerop : real -> real
