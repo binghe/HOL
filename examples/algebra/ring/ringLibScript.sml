@@ -436,8 +436,6 @@ Proof
  >> MATCH_MP_TAC ring_num_SUC >> art []
 QED
 
-Overload num_of_int[local] = “integer$Num”
-
 Definition ring_of_int :
     ring_of_int (r :'a Ring) (n :int) =
         if &0 <= n then ring_of_num r (num_of_int n)

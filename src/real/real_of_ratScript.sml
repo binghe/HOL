@@ -1,5 +1,5 @@
 (*---------------------------------------------------------------------------*)
-(* real_of_ratTheory, one-one mapping between rationals and subset of reals  *)
+(* real_of_ratTheory, mapping between rationals and a subset of reals        *)
 (*---------------------------------------------------------------------------*)
 
 open HolKernel Parse boolLib bossLib;
@@ -363,14 +363,22 @@ Theorem q_set_def :
 Proof
     rw [real_rat_set_def, real_of_rat_def]
  >> MATCH_MP_TAC SUBSET_ANTISYM
- >> reverse CONJ_TAC
- >- (rw [SUBSET_DEF] >| (* 2 subgoals *)
-     [ (* goal 1 (of 2) *)
-       cheat,
-       (* goal 2 (of 2) *)
-       cheat ])
- (* stage work *)
- >> cheat
+ >> CONJ_TAC
+ >- (rw [SUBSET_DEF] \\
+     Q.ABBREV_TAC ‘i = RATN q’ \\
+     reverse (Cases_on ‘i < 0’)
+     >- (DISJ1_TAC >> rw [real_of_int_def] \\
+         qexistsl_tac [‘num_of_int i’, ‘RATD q’] >> rw [RATD_NZERO]) \\
+     DISJ2_TAC >> rw [real_of_int_def] \\
+     qexistsl_tac [‘num_of_int i’, ‘RATD q’] >> rw [RATD_NZERO] \\
+    ‘i <= 0’ by rw [] \\
+    ‘?n. i = -&n’ by PROVE_TAC [NUM_NEGINT_EXISTS] \\
+     simp [neg_rat])
+ >> rw [SUBSET_DEF]
+ >| [ (* goal 1 (of 2) *)
+      cheat,
+      (* goal 2 (of 2) *)
+      cheat ]
 QED
 
 val _ = export_theory();
