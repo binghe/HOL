@@ -241,7 +241,7 @@ QED
    to lambda terms in form of ‘SOME (LAMl vs (VAR y))’ or ‘NONE’.
  *)
 Definition fromNode_def :
-    fromNode = OPTION_MAP (\(vs,y). LAMl vs (VAR y))
+    fromNode = OPTION_MAP (\ (vs,y). LAMl vs (VAR y))
 End
 
 (* Boehm tree of a single (free) variable ‘VAR s’ *)
@@ -1899,28 +1899,26 @@ QED
 (* Definition 10.2.21 (i) [1, p.238]
 
    NOTE: ‘A’ and ‘B’ are ltree nodes returned by ‘THE (ltree_el (BT M) p)’
-
-   NOTE2: This definition needs to consider alpha-equivalence (TODO)
  *)
 Definition head_equivalent_def :
     head_equivalent (A :BT_node # num option)
                     (B :BT_node # num option) =
       if IS_SOME (FST A) /\ IS_SOME (FST B) then
-         let (vs1,y ) = THE (FST A);
-             (vs2,y') = THE (FST B);
-                   n  = LENGTH vs1;
-                   n' = LENGTH vs2;
+         let (vs ,y ) = THE (FST A);
+             (vs',y') = THE (FST B);
+                   n  = LENGTH vs;
+                   n' = LENGTH vs';
                    m  = THE (SND A);
-                   m' = THE (SND B);
+                   m' = THE (SND B)
          in
-             y = y' /\ n + m' = n' + m
+             LAMl vs (VAR y) = LAMl vs' (VAR y') /\ n + m' = n' + m
       else
          IS_NONE (FST A) /\ IS_NONE (FST B)
 End
 
 (* Definition 10.2.21 (ii) [1, p.238] *)
-Definition subtree_eta_equiv_def :
-    subtree_eta_equiv p (A :boehm_tree) (B :boehm_tree) =
+Definition subtree_equivalent_def :
+    subtree_equivalent p (A :boehm_tree) (B :boehm_tree) =
         let A' = ltree_el A p;
             B' = ltree_el B p
         in
@@ -1930,7 +1928,7 @@ Definition subtree_eta_equiv_def :
                IS_NONE A' /\ IS_NONE B'
 End
 
-Overload eta_sub_equiv = “subtree_eta_equiv”
+Overload eta_sub_equiv = “subtree_equivalent”
 
 (* Definition 10.2.23 (i) [1, p.239] *)
 Definition eta_subset_def :
@@ -1955,7 +1953,7 @@ Overload "=e=" = “tree_eta_equiv”
 
 (* Theorem 10.2.31, (i) <=> (iv) [1, p.244]
 Theorem tree_eta_equiv_thm :
-    !A B. tree_eta_equiv A B <=> !p. subtree_eta_equiv p A B
+    !A B. tree_eta_equiv A B <=> !p. subtree_equivalent p A B
 Proof
 QED
  *)
@@ -1980,7 +1978,7 @@ Overload eta_equiv = “term_eta_equiv”
 Definition subterm_eta_equiv_def :
     subterm_eta_equiv p M N =
         let X = FV M UNION FV N in
-            subtree_eta_equiv p (BTe X M) (BTe X N)
+            subtree_equivalent p (BTe X M) (BTe X N)
 End
 
 Overload eta_sub_equiv = “subterm_eta_equiv”
