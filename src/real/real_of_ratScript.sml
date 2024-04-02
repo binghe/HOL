@@ -189,23 +189,17 @@ Proof
 QED
 
 (* much, but not all, of the below is just for fun, mostly looking at proving Q is dense in R*)
-
 Theorem INT_BI_INDUCTION:
-  (P (0:int) /\ !x. (P x <=> P (x+1))) <=> !x. P x
+  !P. (P (0:int) /\ !x. (P x <=> P (x+1))) <=> !x. P x
 Proof
   rw[EQ_IMP_THM] >> Cases_on ‘x’ >> simp[]
-  >- (‘!m. P (&m)’ by (
-       Induct_on ‘m’ >> simp[INT]
-       )
-      >> simp[]
-     )
-  >- (‘!m. P (-&m)’ by (
-       Induct_on ‘m’
-       >- simp[]
-       >- (‘P ((-&m + -1) + 1)’ by simp[INT_ADD_LINV,GSYM INT_ADD_ASSOC] >> simp[INT,INT_NEG_ADD])
-       )
-      >> simp[]
-     )
+  >- (‘!m. P (&m)’ by (Induct_on ‘m’ >> simp[INT])
+      >> simp[])
+  >> ‘!m. P (-&m)’ by (
+       Induct_on ‘m’ >- simp[] \\
+       ‘P ((-&m + -1) + 1)’ by simp[INT_ADD_LINV,GSYM INT_ADD_ASSOC] \\
+       simp[INT,INT_NEG_ADD])
+  >> simp[]
 QED
 
 Theorem INT_FLOOR_REAL_OF_INT:
@@ -321,10 +315,9 @@ Proof
       >> ‘!x. x-2+1=x-1:real’ by simp[real_sub,GSYM REAL_ADD_ASSOC,add_ints]
       >> simp[REAL_MUL_ASSOC, INT_FLOOR_BOUNDS']
      )
-  >- (simp[REAL_LT_LDIV_EQ,REAL_LT_MUL',real_of_int_num]
-      >> ‘-1 < 0:real’ by simp[]
-      >> metis_tac[REAL_ADD_RID,REAL_LTE_ADD2,INT_FLOOR_BOUNDS,REAL_ADD_SYM,REAL_MUL_ASSOC,real_sub]
-     )
+  >> simp[REAL_LT_LDIV_EQ,REAL_LT_MUL',real_of_int_num]
+  >> ‘-1 < 0:real’ by simp[]
+  >> metis_tac[REAL_ADD_RID,REAL_LTE_ADD2,INT_FLOOR_BOUNDS,REAL_ADD_SYM,REAL_MUL_ASSOC,real_sub]
 QED
 
 Theorem REAL_OF_RAT_NUM_CLAUSES:
