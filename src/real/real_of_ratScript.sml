@@ -1,3 +1,7 @@
+(*---------------------------------------------------------------------------*)
+(* real_of_ratTheory, rational subset of real numbers                        *)
+(*---------------------------------------------------------------------------*)
+
 open HolKernel Parse boolLib bossLib;
 
 open realaxTheory ratTheory integerTheory intrealTheory realTheory;
@@ -6,14 +10,11 @@ val _ = augment_srw_ss [intSimps.INT_ARITH_ss]
 
 val _ = new_theory "real_of_rat";
 
-Theorem REAL_NEG_EQ:
-  -r1:real = -r2 <=> r1=r2
-Proof
-  metis_tac[REAL_NEG_NEG]
-QED
-
 Theorem NUM_OPP_SIGNS_COMPARE:
-  i1 <= 0 /\ 0 <= i2 ==> (Num i1 < Num i2 <=> 0 < i1 + i2) /\ (Num i2 < Num i1 <=> i1 + i2 < 0) /\ (Num i1 = Num i2 <=> i1 + i2 = 0)
+    !i1 i2. i1 <= 0 /\ 0 <= i2 ==>
+           (Num i1 < Num i2 <=> 0 < i1 + i2) /\
+           (Num i2 < Num i1 <=> i1 + i2 < 0) /\
+           (Num i1 = Num i2 <=> i1 + i2 = 0)
 Proof
   rw[]
   >> ‘i1 = - ABS i1’ by (Cases_on ‘i1=0’ >- simp[] >- metis_tac[INT_ABS,INT_LE_LT,INT_NEGNEG])
@@ -27,32 +28,16 @@ Proof
   Cases_on ‘i’ >> rw[]
 QED
 
-Theorem REAL_OF_NUM_SUB:
-  !m n. m <= n ==> &(n-m):real = &n - &m
-Proof
-  rw[] >> ‘?d. n=m+d’ by (irule arithmeticTheory.LESS_EQUAL_ADD >> simp[])
-  >> simp[arithmeticTheory.SUB_RIGHT_EQ]
-  >> once_rewrite_tac[GSYM REAL_ADD]
-  >> simp[REAL_ADD_RINV,AC REAL_ADD_ASSOC REAL_ADD_SYM,real_sub,REAL_ADD_LID']
-QED
-
 Theorem NUM_NEG:
   Num (-i) = Num i
 Proof
   Cases_on ‘i’ >> simp[]
 QED
 
-
 Theorem NUM_LT_NEG:
-  i1 <= 0 /\ i2 <= 0 ==> (Num i1 < Num i2 <=> i2 < i1)
+  !i1 i2. i1 <= 0 /\ i2 <= 0 ==> (Num i1 < Num i2 <=> i2 < i1)
 Proof
   rw[] >> once_rewrite_tac[GSYM NUM_NEG] >> once_rewrite_tac[GSYM INT_LT_NEG] >> simp[NUM_LT,INT_NEG_GE0]
-QED
-
-Theorem EQUIV_NOT_POS:
-  !A B. (~A<=>B)<=>(A<=>~B)
-Proof
-  rpt strip_tac >> iff_tac >> rw[] >> rw[NOT_CLAUSES]
 QED
 
 Definition real_of_rat_def:
@@ -75,17 +60,6 @@ Theorem REAL_OF_RAT_OF_INT:
   real_of_rat (rat_of_int i) = real_of_int i
 Proof
   simp[real_of_rat_def]
-QED
-
-Theorem RAT_LEMMA5_BETTER:
-  y1 <> 0:real /\ y2 <> 0 ==> (x1 / y1 = x2 / y2 <=> x1 * y2 = x2 * y1)
-Proof
-  rw[] >> ‘y1*y2 <> 0’ by simp[] >> simp[real_div]
-  >> ‘x1 * inv y1 = x2 * inv y2 <=> x1 * inv y1 * (y1 * y2) = x2 * inv y2 * (y1 * y2)’ by simp[REAL_EQ_RMUL]
-  >> ‘x1 * inv y1 * (y1 * y2) = x2 * inv y2 * (y1 * y2) <=> x1 * y2 * (inv y1 * y1) = x2 * y1 * (inv y2 * y2)’ by
-    metis_tac[REAL_MUL_ASSOC, REAL_MUL_SYM]
-  >> ‘x1 * y2 * (inv y1 * y1) = x2 * y1 * (inv y2 * y2) <=> x1 * y2 = x2 * y1’ by simp[REAL_MUL_LINV]
-  >> metis_tac[]
 QED
 
 Theorem RAT_DIV_LEMMA:
@@ -145,12 +119,6 @@ Proof
   >> once_rewrite_tac[GSYM rat_of_int_of_num] >> simp[rat_of_int_MUL,rat_of_int_ADD] >> metis_tac[INT_MUL_COMM]
 QED
 
-Theorem REAL_DIV_PROD:
-  a/b:real * (c/d) = (a*c)/(b*d)
-Proof
-  simp[real_div,REAL_INV_MUL'] >> metis_tac[REAL_MUL_ASSOC,REAL_MUL_SYM]
-QED
-
 val _ = temp_delsimps ["real_of_int_num"]
 
 Theorem REAL_OF_RAT_MUL:
@@ -195,19 +163,6 @@ Proof
 QED
 
 val _ = temp_delsimps ["RATN_DIV_RATD"]
-
-Theorem REAL_DIV_LT:
-  0<b*d:real ==> (a/b<c/d <=> a*d<c*b)
-Proof
-  rw[real_div]
-  >> ‘b<>0 /\ d<>0’ by (CCONTR_TAC >> gs[])
-  >> ‘a * inv b <c * inv d <=> a * inv b * (b*d) < c * inv d * (b*d)’ by simp[REAL_LT_RMUL]
-  >> ‘a * inv b * (b*d) = a*d * (inv b * b)’ by metis_tac[REAL_MUL_ASSOC,REAL_MUL_SYM]
-  >> ‘_ = a*d’ by simp[REAL_MUL_RID,REAL_MUL_LINV]
-  >> ‘c * inv d * (b*d) = c*b * (inv d * d)’ by metis_tac[REAL_MUL_ASSOC,REAL_MUL_SYM]
-  >> ‘_ = c*b’ by simp[REAL_MUL_RID,REAL_MUL_LINV]
-  >> simp[]
-QED
 
 Theorem REAL_OF_RAT_OF_NUM:
   real_of_rat (&n) = &n
