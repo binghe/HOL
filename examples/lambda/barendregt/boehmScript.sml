@@ -1975,13 +1975,11 @@ End
 Overload eta_equiv = “term_eta_equiv”
 
 (* Definition 10.2.32 (v) [1, p.245] *)
-Definition subterm_eta_equiv_def :
-    subterm_eta_equiv p M N =
+Definition subterm_equivalent_def :
+    subterm_equivalent p M N =
         let X = FV M UNION FV N in
             subtree_equivalent p (BTe X M) (BTe X N)
 End
-
-Overload eta_sub_equiv = “subterm_eta_equiv”
 
 (*---------------------------------------------------------------------------*
  *  Boehm transformations
@@ -3667,7 +3665,7 @@ QED
 Definition is_faithful_def :
     is_faithful p Ns pi =
       !M N. M IN Ns /\ N IN Ns ==>
-            (subterm_eta_equiv p M N <=> equivalent (apply pi M) (apply pi N)) /\
+            (subterm_equivalent p M N <=> equivalent (apply pi M) (apply pi N)) /\
             (!X. IS_SOME (ltree_lookup (BTe X M) p) <=>
                  solvable (apply pi M))
 End
@@ -3688,8 +3686,8 @@ Theorem agrees_upto_lemma :
     !Ns p. Ns agrees_upto p ==>
            ?pi. Boehm_transform pi /\
                 !M N. M IN Ns /\ N IN Ns ==>
-                     (subterm_eta_equiv p M N <=>
-                      subterm_eta_equiv p (apply pi M) (apply pi N))
+                     (subterm_equivalent p M N <=>
+                      subterm_equivalent p (apply pi M) (apply pi N))
 Proof
     cheat
 QED
@@ -4206,8 +4204,8 @@ QED
 
    NOTE: the actual statements have ‘has_benf M /\ has_benf N’
  *)
-Theorem distinct_benf_no_subterm_eta_equiv :
-    !M N. benf M /\ benf N /\ M <> N ==> ?p. ~subterm_eta_equiv p M N
+Theorem distinct_benf_no_subterm_equivalent :
+    !M N. benf M /\ benf N /\ M <> N ==> ?p. ~subterm_equivalent p M N
 Proof
     cheat
 QED
@@ -4219,8 +4217,8 @@ Theorem separability_thm :
 Proof
     rpt STRIP_TAC
  (* TODO: find p with minimal length for ‘agrees_upto {M;N} p’ to hold *)
- >> ‘?p. ~subterm_eta_equiv p M N’
-       by METIS_TAC [distinct_benf_no_subterm_eta_equiv]
+ >> ‘?p. ~subterm_equivalent p M N’
+       by METIS_TAC [distinct_benf_no_subterm_equivalent]
  >> Know ‘{M; N} agrees_upto p’
  >- (cheat)
  >> DISCH_THEN (STRIP_ASSUME_TAC o (MATCH_MP agrees_upto_thm))
