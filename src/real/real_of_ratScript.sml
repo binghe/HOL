@@ -382,18 +382,25 @@ Proof
       >- (rw [REAL_DIV_LZERO] >> Q.EXISTS_TAC ‘0’ >> rw [real_of_int_num]) \\
       qabbrev_tac ‘c = gcd a b’ \\
       MP_TAC (Q.SPECL [‘a’, ‘b’] FACTOR_OUT_GCD) >> rw [] \\
-      Q.EXISTS_TAC ‘rat_of_num p / rat_of_num q’ \\
       REWRITE_TAC [GSYM REAL_OF_NUM_MUL] \\
       Know ‘((&c) :real) * &p / (&c * &q) = &p / &q’
-      >- (MATCH_MP_TAC REAL_DIV_LMUL_CANCEL >> rw [] >> CCONTR_TAC >> rfs []) \\
-      Rewr' \\
+      >- (MATCH_MP_TAC REAL_DIV_LMUL_CANCEL >> rw [] \\
+          CCONTR_TAC >> rfs []) >> Rewr' \\
+      Q.EXISTS_TAC ‘rat_of_num p / rat_of_num q’ \\
      ‘q <> 0’ by fs [] \\
-      Q.PAT_X_ASSUM ‘0 < c * q’ K_TAC \\
-      Q.PAT_X_ASSUM ‘c * p <> 0’ K_TAC \\
-      qunabbrev_tac ‘c’ \\
-      cheat,
+      rw [RATN_of_coprimes, RATD_of_coprimes, real_of_int_num],
       (* goal 2 (of 2) *)
-      cheat ]
+      Cases_on ‘a = 0’
+      >- (rw [REAL_DIV_LZERO] >> Q.EXISTS_TAC ‘0’ >> rw [real_of_int_num]) \\
+      qabbrev_tac ‘c = gcd a b’ \\
+      MP_TAC (Q.SPECL [‘a’, ‘b’] FACTOR_OUT_GCD) >> rw [] \\
+      REWRITE_TAC [GSYM REAL_OF_NUM_MUL] \\
+      Know ‘((&c) :real) * &p / (&c * &q) = &p / &q’
+      >- (MATCH_MP_TAC REAL_DIV_LMUL_CANCEL >> rw [] \\
+          CCONTR_TAC >> rfs []) >> Rewr' \\
+      Q.EXISTS_TAC ‘-rat_of_num p / rat_of_num q’ \\
+     ‘q <> 0’ by fs [] \\
+      rw [RATN_of_coprimes', RATD_of_coprimes', neg_rat, real_of_int_num] ]
 QED
 
 Theorem real_rat_set_def = q_set_def

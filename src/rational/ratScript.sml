@@ -3055,6 +3055,30 @@ Proof
   simp[ABS_RATFRAC_DIV]
 QED
 
+Theorem RATN_of_coprimes :
+    !p q. gcd p q = 1 /\ q <> 0 ==> RATN (&p / &q) = &p
+Proof
+    cheat
+QED
+
+Theorem RATD_of_coprimes :
+    !p q. gcd p q = 1 /\ q <> 0 ==> RATD (&p / &q) = q
+Proof
+    cheat
+QED
+
+Theorem RATN_of_coprimes' :
+    !p q. gcd p q = 1 /\ q <> 0 ==> RATN (-&p / &q) = -&p
+Proof
+    rw [GSYM RAT_DIV_AINV, RATN_of_coprimes]
+QED
+
+Theorem RATD_of_coprimes' :
+    !p q. gcd p q = 1 /\ q <> 0 ==> RATD (-&p / &q) = q
+Proof
+    rw [GSYM RAT_DIV_AINV, RATD_of_coprimes]
+QED
+
 (* ----------------------------------------------------------------------
     rational min and max
    ---------------------------------------------------------------------- *)
