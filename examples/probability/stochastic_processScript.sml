@@ -31,6 +31,9 @@ val _ = new_theory "stochastic_process";
 val set_ss = std_ss ++ PRED_SET_ss;
 val fcp_ss = std_ss ++ FCP_ss ++ PRED_SET_ss;
 
+val _ = intLib.deprecate_int ();
+val _ = ratLib.deprecate_rat ();
+
 (* ------------------------------------------------------------------------- *)
 (*  General filtration/martingale with poset indexes (Chapter 25 of [9])     *)
 (*  (moved here from martingaleTheory)                                       *)

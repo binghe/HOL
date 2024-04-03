@@ -39,6 +39,15 @@ val set_ss = std_ss ++ PRED_SET_ss;
 val _ = hide "S";
 val _ = hide "W";
 
+val _ = intLib.deprecate_int ();
+val _ = ratLib.deprecate_rat ();
+
+(* NOTE: The above deprecate settings do not cover "flr" and "clg", which
+   are overloaded again in intrealTheory.
+ *)
+val _ = bring_to_front_overload "flr" {Name = "NUM_FLOOR",   Thy = "real"};
+val _ = bring_to_front_overload "clg" {Name = "NUM_CEILING", Thy = "real"};
+
 (* ------------------------------------------------------------------------- *)
 (*  Definitions                                                              *)
 (* ------------------------------------------------------------------------- *)
@@ -3046,7 +3055,7 @@ Proof
         ‘?r. a i = Normal r’ by METIS_TAC [extreal_cases] \\
         ‘0 <= r /\ r <= &i’ by METIS_TAC [extreal_of_num_def, extreal_le_eq] \\
          rw [Abbr ‘b’, real_normal]) >> DISCH_TAC \\
-     Q.ABBREV_TAC ‘k = flr (b n)’ \\
+     Q.ABBREV_TAC ‘k :num = flr (b n)’ \\
      Know ‘&k <= a n’
      >- (Know ‘!i. a i = Normal (b i)’
          >- (rw [Abbr ‘b’, normal_real]) >> Rewr' \\
