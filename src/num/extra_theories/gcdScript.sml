@@ -17,14 +17,19 @@ fun DECIDE_TAC (g as (asl,_)) =
     CONV_TAC Arith.ARITH_CONV)
    ORELSE tautLib.TAUT_TAC) g;
 
-val metis_tac  = METIS_TAC;
+val decide_tac = DECIDE_TAC;
+val metis_tac = METIS_TAC;
+val rw = srw_tac[];
+val qabbrev_tac = Q.ABBREV_TAC;
 
 val _ = new_theory "gcd";
 
-val IS_GCD = Q.new_definition
+val is_gcd_def = Q.new_definition
  ("is_gcd_def",
   `is_gcd a b c <=> divides c a /\ divides c b /\
                     !d. divides d a /\ divides d b ==> divides d c`);
+
+val IS_GCD = is_gcd_def;
 
 val IS_GCD_UNIQUE = store_thm("IS_GCD_UNIQUE",
   Term `!a b c d. is_gcd a b c /\ is_gcd a b d ==> (c = d)`,
@@ -479,5 +484,109 @@ Proof
   rewrite_tac[ADD_SUC] >>
   rewrite_tac[LESS_EQ_ADD]
 QED
+
+(* Theorem: If 0 < n, 0 < m, let g = gcd n m, then 0 < g and n MOD g = 0 and m MOD g = 0 *)
+(* Proof:
+   0 < n ==> n <> 0, 0 < m ==> m <> 0,              by NOT_ZERO_LT_ZERO
+   hence  g = gcd n m <> 0, or 0 < g.               by GCD_EQ_0
+   g = gcd n m ==> (g divides n) /\ (g divides m)   by GCD_IS_GCD, is_gcd_def
+               ==> (n MOD g = 0) /\ (m MOD g = 0)   by DIVIDES_MOD_0
+*)
+val GCD_DIVIDES = store_thm(
+  "GCD_DIVIDES",
+  ``!m n. 0 < n /\ 0 < m ==> 0 < gcd n m /\ (n MOD (gcd n m) = 0) /\ (m MOD (gcd n m) = 0)``,
+  ntac 3 strip_tac >>
+  conj_asm1_tac >-
+  metis_tac[GCD_EQ_0, NOT_ZERO_LT_ZERO] >>
+  metis_tac[GCD_IS_GCD, is_gcd_def, DIVIDES_MOD_0]);
+
+(* Theorem: gcd n (gcd n m) = gcd n m *)
+(* Proof:
+   If n = 0,
+      gcd 0 (gcd n m) = gcd n m   by GCD_0L
+   If m = 0,
+      gcd n (gcd n 0)
+    = gcd n n                     by GCD_0R
+    = n = gcd n 0                 by GCD_REF
+   If n <> 0, m <> 0, d <> 0      by GCD_EQ_0
+   Since d divides n, n MOD d = 0
+     gcd n d
+   = gcd d n             by GCD_SYM
+   = gcd (n MOD d) d     by GCD_EFFICIENTLY, d <> 0
+   = gcd 0 d             by GCD_DIVIDES
+   = d                   by GCD_0L
+*)
+val GCD_GCD = store_thm(
+  "GCD_GCD",
+  ``!m n. gcd n (gcd n m) = gcd n m``,
+  rpt strip_tac >>
+  Cases_on `n = 0` >- rw[] >>
+  Cases_on `m = 0` >- rw[] >>
+  `0 < n /\ 0 < m` by decide_tac >>
+  metis_tac[GCD_SYM, GCD_EFFICIENTLY, GCD_DIVIDES, GCD_EQ_0, GCD_0L]);
+
+(* Theorem: GCD m n * LCM m n = m * n *)
+(* Proof:
+   By lcm_def:
+   lcm m n = if (m = 0) \/ (n = 0) then 0 else m * n DIV gcd m n
+   If m = 0,
+   gcd 0 n * lcm 0 n = n * 0 = 0 = 0 * n, hence true.
+   If n = 0,
+   gcd m 0 * lcm m 0 = m * 0 = 0 = m * 0, hence true.
+   If m <> 0, n <> 0,
+   gcd m n * lcm m n = gcd m n * (m * n DIV gcd m n) = m * n.
+*)
+val GCD_LCM = store_thm(
+  "GCD_LCM",
+  ``!m n. gcd m n * lcm m n = m * n``,
+  rw[lcm_def] >>
+  `0 < m /\ 0 < n` by decide_tac >>
+  `0 < gcd m n /\ (n MOD gcd m n = 0)` by rw[GCD_DIVIDES] >>
+  qabbrev_tac `d = gcd m n` >>
+  `m * n = (m * n) DIV d * d + (m * n) MOD d` by rw[DIVISION] >>
+  `(m * n) MOD d = 0` by metis_tac[MOD_TIMES2, ZERO_MOD, MULT_0] >>
+  metis_tac[ADD_0, MULT_COMM]);
+
+(* make divides infix (temporarily) *)
+val _ = temp_set_fixity "divides" (Infixl 480); (* relation is 450, +/- is 500, * is 600. *)
+
+(* Theorem: m divides (lcm m n) /\ n divides (lcm m n) *)
+(* Proof: by LCM_IS_LEAST_COMMON_MULTIPLE *)
+val LCM_DIVISORS = store_thm(
+  "LCM_DIVISORS",
+  ``!m n. m divides (lcm m n) /\ n divides (lcm m n)``,
+  rw[LCM_IS_LEAST_COMMON_MULTIPLE]);
+
+(* Theorem: m divides p /\ n divides p ==> (lcm m n) divides p *)
+(* Proof: by LCM_IS_LEAST_COMMON_MULTIPLE *)
+val LCM_IS_LCM = store_thm(
+  "LCM_IS_LCM",
+  ``!m n p. m divides p /\ n divides p ==> (lcm m n) divides p``,
+  rw[LCM_IS_LEAST_COMMON_MULTIPLE]);
+
+(* Theorem: (lcm m n = 0) <=> ((m = 0) \/ (n = 0)) *)
+(* Proof:
+   If part: lcm m n = 0 ==> m = 0 \/ n = 0
+      By contradiction, suppse m = 0 /\ n = 0.
+      Then gcd m n = 0                     by GCD_EQ_0
+       and m * n = 0                       by MULT_EQ_0
+       but (gcd m n) * (lcm m n) = m * n   by GCD_LCM
+        so RHS <> 0, but LHS = 0           by MULT_0
+       This is a contradiction.
+   Only-if part: m = 0 \/ n = 0 ==> lcm m n = 0
+      True by LCM_0
+*)
+val LCM_EQ_0 = store_thm(
+  "LCM_EQ_0",
+  ``!m n. (lcm m n = 0) <=> ((m = 0) \/ (n = 0))``,
+  rw[EQ_IMP_THM] >| [
+    spose_not_then strip_assume_tac >>
+    `(gcd m n) * (lcm m n) = m * n` by rw[GCD_LCM] >>
+    `gcd m n <> 0` by rw[GCD_EQ_0] >>
+    `m * n <> 0` by rw[MULT_EQ_0] >>
+    metis_tac[MULT_0],
+    rw[LCM_0],
+    rw[LCM_0]
+  ]);
 
 val _ = export_theory();
