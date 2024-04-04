@@ -1331,6 +1331,8 @@ val LESS_LESS_CASES = store_thm ("LESS_LESS_CASES",
       REPEAT_TCL DISJ_CASES_THEN (fn t => REWRITE_TAC[t]) th
    end);
 
+Theorem num_nchotomy = LESS_LESS_CASES (* from examples/algebra *)
+
 Theorem GREATER_EQ:
   !n m. n >= m <=> m <= n
 Proof

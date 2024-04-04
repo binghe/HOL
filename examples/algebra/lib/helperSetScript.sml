@@ -4439,5 +4439,6 @@ val PROD_SET_EUCLID = store_thm(
 
 (* export theory at end *)
 val _ = export_theory();
+val _ = html_theory "helperSet";
 
 (*===========================================================================*)

@@ -4,8 +4,8 @@
 
 open HolKernel Parse boolLib bossLib;
 
-open realaxTheory ratTheory integerTheory realTheory hurdUtils;
-open arithmeticTheory gcdTheory dividesTheory intrealTheory pred_setTheory;
+open realaxTheory ratTheory integerTheory realTheory intrealTheory hurdUtils;
+open pred_setTheory gcdTheory;
 
 val _ = augment_srw_ss [intSimps.INT_ARITH_ss]
 

@@ -75,6 +75,7 @@ val GCD =
 
 val gcd_ind = GEN_ALL (DB.fetch "-" "gcd_ind");
 
+Overload coprime = “\x y. gcd x y = 1” (* from examples/algebra *)
 
 val GCD_IS_GCD =
   store_thm("GCD_IS_GCD",

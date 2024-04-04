@@ -1724,6 +1724,11 @@ val Num = new_definition("Num",
 
 Overload num_of_int = “Num” (* from HOL Light *)
 
+(* NOTE: In HOL-Light, “num_of_int x” is unspecified for negative integers:
+  |- !x. num_of_int x = (@n. &n = x) (int.ml, line 2056)
+ *)
+Theorem num_of_int = Num
+
 Theorem NUM_OF_INT[simp,compute]:
   !n. Num(&n) = n
 Proof

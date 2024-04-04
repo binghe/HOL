@@ -15,6 +15,8 @@ open arithmeticTheory pred_setTheory
         fracTheory fracLib ratUtils
         quotient schneiderUtils;
 
+open gcdTheory dividesTheory primeFactorTheory;
+
 val arith_ss = old_arith_ss
 
 val _ = new_theory "rat";

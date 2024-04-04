@@ -1,29 +1,11 @@
 (* ------------------------------------------------------------------------- *)
-(* Helper Theorems - a collection of useful results -- for Numbers.          *)
+(* Elementary Number Theory - a collection of useful results for Numbers.    *)
 (* ------------------------------------------------------------------------- *)
 
-(*===========================================================================*)
-
-(* add all dependent libraries for script *)
 open HolKernel boolLib bossLib Parse;
+open pred_setTheory arithmeticTheory dividesTheory gcdTheory;
 
-(* declare new theory at start *)
-val _ = new_theory "helperNum";
-
-(* ------------------------------------------------------------------------- *)
-
-
-(* val _ = load "jcLib"; *)
-open jcLib;
-
-(* open dependent theories *)
-open pred_setTheory;
-
-(* val _ = load "dividesTheory"; *)
-(* val _ = load "gcdTheory"; *)
-open arithmeticTheory dividesTheory
-open gcdTheory; (* for P_EUCLIDES *)
-
+val _ = new_theory "number"; (* was: "helperNum" *)
 
 (* ------------------------------------------------------------------------- *)
 (* HelperNum Documentation                                                   *)
@@ -404,10 +386,6 @@ val _ = overload_on("TWICE", ``\n. 2 * n``);
 
 (* make divides infix *)
 val _ = set_fixity "divides" (Infixl 480); (* relation is 450, +/- is 500, * is 600. *)
-
-(* Theorem alias *)
-Theorem num_nchotomy = arithmeticTheory.LESS_LESS_CASES;
-(* val num_nchotomy = |- !m n. m = n \/ m < n \/ n < m: thm *)
 
 (* Theorem alias *)
 Theorem ZERO_LE_ALL = arithmeticTheory.ZERO_LESS_EQ;
@@ -2845,9 +2823,6 @@ val DIV_DIV_MULT = store_thm(
 (* ------------------------------------------------------------------------- *)
 (* Basic Divisibility                                                        *)
 (* ------------------------------------------------------------------------- *)
-
-(* Overload on coprime for GCD equals 1 *)
-val _ = overload_on ("coprime", ``\x y. gcd x y = 1``);
 
 (* Idea: a little trick to make divisibility to mean equality. *)
 
