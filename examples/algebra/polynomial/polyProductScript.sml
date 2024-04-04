@@ -48,7 +48,7 @@ open polyRootTheory;
 (* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
 (* (* val _ = load "helperListTheory"; *) *)
 (* (* val _ = load "helperFunctionTheory"; *) *)
-open helperNumTheory helperSetTheory helperListTheory helperFunctionTheory;
+open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
 
 (* open dependent theories *)
 open pred_setTheory listTheory arithmeticTheory;

@@ -21,13 +21,7 @@ open jcLib;
 
 (* Get dependent theories local *)
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperFunctionTheory"; -- in ringTheory *) *)
-(* (* val _ = load "helperListTheory"; -- in polyRingTheory *) *)
-(* val _ = load "logPowerTheory"; *)
-open helperNumTheory helperSetTheory helperListTheory helperFunctionTheory;
+open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
 open pred_setTheory listTheory arithmeticTheory;
 
 open logPowerTheory; (* for LOG2, SQRT, and Perfect Power, Power Free *)

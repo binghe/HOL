@@ -26,9 +26,7 @@ open polyFieldModuloTheory;
 (* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
 open pred_setTheory arithmeticTheory dividesTheory gcdTheory;
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-open helperNumTheory helperSetTheory;
+open numberTheory helperSetTheory;
 
 (* (* val _ = load "fieldTheory"; *) *)
 open monoidTheory groupTheory ringTheory fieldTheory;

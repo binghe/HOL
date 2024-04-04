@@ -31,10 +31,7 @@ val _ = new_theory "FLTnecklace";
 
 (* ------------------------------------------------------------------------- *)
 
-
-(* open dependent theories *)
-(* val _ = load "patternTheory"; *)
-open helperNumTheory helperSetTheory;
+open numberTheory helperSetTheory;
 open arithmeticTheory pred_setTheory;
 
 open cycleTheory patternTheory;

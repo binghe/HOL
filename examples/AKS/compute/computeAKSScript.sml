@@ -37,10 +37,7 @@ open monoidOrderTheory;
 *)
 open ringInstancesTheory; (* for ZN_ring *)
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
-open helperNumTheory helperSetTheory;
+open numberTheory helperSetTheory;
 
 (* open dependent theories *)
 open pred_setTheory listTheory arithmeticTheory;

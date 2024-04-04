@@ -39,10 +39,7 @@ open fieldTheory;
 (* open dependent theories *)
 open pred_setTheory listTheory arithmeticTheory;
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
-open helperNumTheory helperSetTheory helperListTheory;
+open numberTheory helperSetTheory helperListTheory;
 open rich_listTheory; (* for NOT_SNOC_NIL *)
 
 (* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)

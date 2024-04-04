@@ -48,7 +48,7 @@ val _ = new_theory "FLTeuler";
 open arithmeticTheory pred_setTheory;
 open dividesTheory gcdTheory; (* for GCD_0R *)
 
-open helperNumTheory; (* for MOD_EXP *)
+open numberTheory; (* for MOD_EXP *)
 
 (* val _ = load "finiteGroupTheory"; *)
 (* val _ = load "groupInstancesTheory"; *)

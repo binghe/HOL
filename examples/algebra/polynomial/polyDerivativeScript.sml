@@ -38,11 +38,7 @@ open fieldTheory;
 (* open dependent theories *)
 open pred_setTheory listTheory arithmeticTheory;
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
-open helperNumTheory helperSetTheory;
-
+open numberTheory helperSetTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Formal Derivative of Polynomials Documentation                            *)

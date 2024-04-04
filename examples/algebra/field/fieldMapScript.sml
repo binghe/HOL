@@ -33,10 +33,7 @@ open ringDividesTheory;
 open monoidMapTheory groupMapTheory ringMapTheory;
 open quotientGroupTheory subgroupTheory;
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
-open helperNumTheory helperSetTheory;
+open numberTheory helperSetTheory;
 
 (* open dependent theories *)
 (* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)

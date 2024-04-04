@@ -17,7 +17,7 @@ val _ = new_theory "iteration";
 (* open helperTwosqTheory; *)
 open helperFunctionTheory;
 open helperSetTheory;
-open helperNumTheory;
+open numberTheory;
 
 (* arithmeticTheory -- load by default *)
 open arithmeticTheory pred_setTheory;

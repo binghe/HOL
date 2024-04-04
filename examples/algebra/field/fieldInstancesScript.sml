@@ -38,9 +38,7 @@ open monoidMapTheory groupMapTheory ringMapTheory fieldMapTheory;
 (* (* val _ = load "groupInstancesTheory"; -- in ringInstancesTheory *) *)
 open monoidInstancesTheory groupInstancesTheory ringInstancesTheory;
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-open helperNumTheory helperSetTheory;
+open numberTheory helperSetTheory;
 
 (* open dependent theories *)
 (* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)

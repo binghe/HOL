@@ -18,7 +18,7 @@ val _ = new_theory "combinatorics";
 
 (* val _ = load "helperCountTheory"; *)
 open helperCountTheory;
-open helperNumTheory;
+open numberTheory;
 open helperSetTheory;
 open helperFunctionTheory;
 open arithmeticTheory pred_setTheory;

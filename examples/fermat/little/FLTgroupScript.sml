@@ -37,22 +37,13 @@ which is Euler's generalization of Fermat's Little Theorem.
 (* add all dependent libraries for script *)
 open HolKernel boolLib bossLib Parse;
 
-(* declare new theory at start *)
-val _ = new_theory "FLTgroup";
-
-(* ------------------------------------------------------------------------- *)
-
-
-(* open dependent theories *)
-(* val _ = load "dividesTheory"; *)
-open arithmeticTheory pred_setTheory;
+open arithmeticTheory pred_setTheory numberTheory;
 open dividesTheory; (* for PRIME_POS *)
 
-(* val _ = load "finiteGroupTheory"; *)
-(* val _ = load "groupInstancesTheory"; *)
 open groupTheory; (* for FiniteGroup_def *)
 open groupOrderTheory; (* for finite_group_Fermat *)
 
+val _ = new_theory "FLTgroup";
 
 (* ------------------------------------------------------------------------- *)
 (* Fermat's Little Theorem by Number Group Documentation                     *)
@@ -98,22 +89,6 @@ open groupOrderTheory; (* for finite_group_Fermat *)
 (* ------------------------------------------------------------------------- *)
 (* Establish the existence of multiplicative inverse when p is prime.        *)
 (* ------------------------------------------------------------------------- *)
-
-val EUCLID_LEMMA = helperNumTheory.EUCLID_LEMMA;
-(* |- !p x y. prime p ==> ((x * y) MOD p = 0 <=> x MOD p = 0 \/ y MOD p = 0)
-[Euclid's Lemma in MOD notation]
-A prime divides a product iff the prime divides a factor. *)
-
-val MOD_MULT_INV_EXISTS = helperNumTheory.MOD_MULT_INV_EXISTS;
-(* |- !p x. prime p /\ 0 < x /\ x < p ==>
-        ?y. 0 < y /\ y < p /\ ((y * x) MOD p = 1)
-[Existence of Inverse] For prime p, 0 < x < p ==> ?y. (y * x) MOD p = 1 *)
-
-(* Convert this into an existence definition *)
-val MOD_MULT_INV_DEF = helperNumTheory.MOD_MULT_INV_DEF;
-(* |- !p x. prime p /\ 0 < x /\ x < p ==>
-            0 < MOD_MULT_INV p x /\ MOD_MULT_INV p x < p /\
-          (MOD_MULT_INV p x * x) MOD p = 1 *)
 
 (* Part 2: General Theory -------------------------------------------------- *)
 

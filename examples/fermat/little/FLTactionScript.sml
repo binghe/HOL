@@ -38,7 +38,7 @@ val _ = new_theory "FLTaction";
 
 (* open dependent theories *)
 (* val _ = load "FLTnecklaceTheory"; *)
-open helperNumTheory helperSetTheory;
+open numberTheory helperSetTheory;
 open arithmeticTheory pred_setTheory;
 (* val _ = load "helperFunctionTheory"; *)
 open helperFunctionTheory; (* for prime_power_divisor, PRIME_EXP_FACTOR *)

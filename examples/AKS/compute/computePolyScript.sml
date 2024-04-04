@@ -24,10 +24,7 @@ open jcLib;
 (* open dependent theories *)
 (* val _ = load "fieldInstancesTheory"; *)
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
-open helperNumTheory helperSetTheory helperListTheory;
+open numberTheory helperSetTheory helperListTheory;
 open pred_setTheory listTheory arithmeticTheory;
 
 (* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)

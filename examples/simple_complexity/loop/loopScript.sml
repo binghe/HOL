@@ -19,7 +19,7 @@ open jcLib;
 
 (* Get dependent theories in lib *)
 (* val _ = load "logPowerTheory"; (* has helperNum, helperSet, helperFunction *) *)
-open helperNumTheory helperSetTheory helperListTheory helperFunctionTheory;
+open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
 
 (* open dependent theories *)
 open listTheory rich_listTheory;

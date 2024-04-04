@@ -34,7 +34,7 @@ val _ = new_theory "FLTfixedpoint";
 
 (* open dependent theories *)
 (* val _ = load "FLTactionTheory"; *)
-open helperNumTheory helperSetTheory;
+open numberTheory helperSetTheory;
 open arithmeticTheory pred_setTheory;
 open dividesTheory; (* for PRIME_POS *)
 

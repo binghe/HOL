@@ -44,8 +44,7 @@ open ringUnitTheory;
 (* open dependent theories *)
 open prim_recTheory pred_setTheory listTheory arithmeticTheory;
 
-(* Get dependent theories in lib *)
-open helperNumTheory helperSetTheory helperListTheory;
+open numberTheory helperSetTheory helperListTheory;
 open helperFunctionTheory;
 
 open dividesTheory gcdTheory;

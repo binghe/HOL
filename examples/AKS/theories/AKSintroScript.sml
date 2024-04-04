@@ -64,10 +64,7 @@ open ringInstancesTheory;
 (* val _ = load "computeRingTheory"; *)
 open computeRingTheory; (* for overloads on x^, x+^, x^+, x^- *)
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
-open helperNumTheory helperSetTheory helperFunctionTheory;
+open numberTheory helperSetTheory helperFunctionTheory;
 open helperListTheory; (* for listRangeINC_EVERY *)
 
 (* open dependent theories *)

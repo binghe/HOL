@@ -46,8 +46,7 @@ open polyCyclicTheory;
 open subgroupTheory;
 open groupOrderTheory;
 
-(* Get dependent theories in lib *)
-open helperNumTheory helperSetTheory;
+open numberTheory helperSetTheory;
 
 (* open dependent theories *)
 open prim_recTheory pred_setTheory listTheory arithmeticTheory;

@@ -37,11 +37,7 @@ open subgroupTheory;
 (* val _ = load "groupCyclicTheory"; *)
 open groupCyclicTheory;
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperFunctionTheory"; -- in ringTheory *) *)
-open helperNumTheory helperSetTheory helperFunctionTheory;
+open numberTheory helperSetTheory helperFunctionTheory;
 open dividesTheory gcdTheory;
 
 open GaussTheory;

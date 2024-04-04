@@ -17,7 +17,7 @@ val _ = new_theory "involute";
 (* arithmeticTheory -- load by default *)
 
 (* val _ = load "helperTwosqTheory"; *)
-open helperNumTheory;
+open numberTheory;
 open helperSetTheory;
 open helperFunctionTheory;
 open helperTwosqTheory; (* for FUNPOW_closure *)

@@ -76,10 +76,7 @@ val _ = new_theory "FLTnumber";
 
 (* ------------------------------------------------------------------------- *)
 
-
-(* Get dependent theories in lib *)
-(* val _ = load "helperFunctionTheory"; *)
-open helperNumTheory helperSetTheory;
+open numberTheory helperSetTheory;
 open arithmeticTheory pred_setTheory;
 open helperFunctionTheory; (* for FACT_0, FACT_MOD_PRIME *)
 

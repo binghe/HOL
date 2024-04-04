@@ -48,9 +48,7 @@ open jcLib;
 (* val _ = load "fieldTheory"; *)
 open groupTheory fieldTheory;
 
-(* Get dependent theories in lib *)
-(* val _ = load "helperListTheory"; *)
-open helperNumTheory helperSetTheory helperListTheory;
+open numberTheory helperSetTheory helperListTheory;
 
 (* open dependent theories *)
 open pred_setTheory listTheory arithmeticTheory;

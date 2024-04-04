@@ -16,7 +16,7 @@ val _ = new_theory "involuteFix";
 (* open dependent theories *)
 open helperFunctionTheory; (* for FUNPOW_2 *)
 open helperSetTheory; (* for BIJ_ELEMENT *)
-open helperNumTheory; (* for MOD_EQ *)
+open numberTheory; (* for MOD_EQ *)
 open helperTwosqTheory; (* for doublet_finite, doublet_card *)
 open involuteTheory;
 

@@ -56,10 +56,7 @@ open groupOrderTheory;
 open monoidMapTheory groupMapTheory ringMapTheory;
 (* open ringUnitTheory; *)
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
-open helperNumTheory helperSetTheory helperListTheory;
+open numberTheory helperSetTheory helperListTheory;
 
 (* open dependent theories *)
 open pred_setTheory listTheory arithmeticTheory;

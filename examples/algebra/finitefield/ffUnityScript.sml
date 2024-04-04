@@ -31,11 +31,7 @@ open ffMasterTheory;
 open arithmeticTheory pred_setTheory listTheory;
 open dividesTheory gcdTheory;
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open helperNumTheory helperSetTheory helperListTheory helperFunctionTheory;
+open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
 
 (* Get dependent theories local *)
 (* (* val _ = load "groupInstancesTheory"; -- in ringInstancesTheory *) *)

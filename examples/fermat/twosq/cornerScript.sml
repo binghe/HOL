@@ -18,7 +18,7 @@ val _ = new_theory "corner";
 
 (* val _ = load "quarityTheory"; *)
 open helperTwosqTheory;
-open helperNumTheory;
+open numberTheory;
 open helperSetTheory;
 open helperFunctionTheory;
 open arithmeticTheory pred_setTheory;

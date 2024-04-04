@@ -45,7 +45,7 @@ val _ = new_theory "necklace";
 (* open dependent theories *)
 (* val _ = load "helperFunctionTheory"; *)
 open arithmeticTheory pred_setTheory listTheory;
-open helperNumTheory helperSetTheory;
+open numberTheory helperSetTheory;
 open helperListTheory; (* for LENGTH_NON_NIL, LIST_TO_SET_SING_IFF *)
 
 

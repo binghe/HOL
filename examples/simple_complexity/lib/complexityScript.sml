@@ -21,7 +21,7 @@ open jcLib;
 open bitsizeTheory;
 open logrootTheory; (* for LOG_1 *)
 
-open helperNumTheory helperSetTheory helperListTheory helperFunctionTheory;
+open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
 open logPowerTheory; (* for ulog_pos *)
 
 (* open dependent theories *)

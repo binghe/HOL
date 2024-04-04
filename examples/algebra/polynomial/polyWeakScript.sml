@@ -35,11 +35,7 @@ open pairTheory bagTheory pred_setTheory listTheory arithmeticTheory;
 (* (* val _ = load "gcdTheory"; *) *)
 (* open dividesTheory gcdTheory; *)
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
-(* val _ = load "helperListTheory"; *)
-open helperNumTheory helperListTheory;
+open numberTheory helperListTheory;
 open rich_listTheory; (* for MEM_LAST *)
 
 (* val _ = load "sublistTheory"; *)

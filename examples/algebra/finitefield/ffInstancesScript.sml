@@ -24,9 +24,7 @@ open ffBasicTheory;
 (* open dependent theories *)
 open pred_setTheory arithmeticTheory listTheory;
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-open helperNumTheory;
+open numberTheory;
 
 (* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
 (* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)

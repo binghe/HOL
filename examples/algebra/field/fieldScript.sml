@@ -39,10 +39,7 @@ open subgroupTheory; (* for field subgroups *)
 (* val _ = load "ringDividesTheory"; *)
 open ringDividesTheory;
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
-open helperNumTheory helperSetTheory;
+open numberTheory helperSetTheory;
 
 (* open dependent theories *)
 (* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)

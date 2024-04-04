@@ -34,9 +34,7 @@ open FiniteVSpaceTheory;
 (* open dependent theories *)
 open arithmeticTheory pred_setTheory listTheory;
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-open helperNumTheory helperSetTheory helperListTheory;
+open numberTheory helperSetTheory helperListTheory;
 
 (* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
 (* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)

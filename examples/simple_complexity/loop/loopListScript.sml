@@ -26,7 +26,7 @@ open bitsizeTheory;
 
 (* open dependent theories *)
 open arithmeticTheory dividesTheory;
-open helperNumTheory helperListTheory helperFunctionTheory;
+open numberTheory helperListTheory helperFunctionTheory;
 open listTheory rich_listTheory;
 open listRangeTheory;
 

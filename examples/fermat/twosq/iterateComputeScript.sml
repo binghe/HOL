@@ -16,7 +16,7 @@ val _ = new_theory "iterateCompute";
 (* open dependent theories *)
 open helperFunctionTheory;
 open helperSetTheory;
-open helperNumTheory;
+open numberTheory;
 
 (* arithmeticTheory -- load by default *)
 open arithmeticTheory pred_setTheory;

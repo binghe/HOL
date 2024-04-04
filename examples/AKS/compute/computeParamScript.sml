@@ -24,7 +24,7 @@ open ringTheory ringInstancesTheory; (* for ZN_coprime_order_alt *)
 open monoidOrderTheory;
 
 (* Get dependent theories in lib *)
-open helperNumTheory helperSetTheory;
+open numberTheory helperSetTheory;
 
 (* open dependent theories *)
 open prim_recTheory pred_setTheory listTheory arithmeticTheory;

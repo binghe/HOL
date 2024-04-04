@@ -46,10 +46,7 @@ open polyIrreducibleTheory;
 (* open dependent theories *)
 open pred_setTheory listTheory arithmeticTheory;
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
-open helperNumTheory helperSetTheory;
+open numberTheory helperSetTheory;
 
 (* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
 (* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)

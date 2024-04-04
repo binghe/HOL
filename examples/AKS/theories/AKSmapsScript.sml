@@ -49,8 +49,7 @@ open groupOrderTheory;
 (* open dependent theories *)
 open prim_recTheory pred_setTheory listTheory arithmeticTheory;
 
-(* Get dependent theories in lib *)
-open helperNumTheory helperSetTheory helperFunctionTheory;
+open numberTheory helperSetTheory helperFunctionTheory;
 
 open dividesTheory gcdTheory;
 

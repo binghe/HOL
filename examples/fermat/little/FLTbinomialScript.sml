@@ -32,17 +32,10 @@ Proof:
 (* add all dependent libraries for script *)
 open HolKernel boolLib bossLib Parse;
 
+open arithmeticTheory dividesTheory numberTheory;
+
 (* declare new theory at start *)
 val _ = new_theory "FLTbinomial";
-
-(* ------------------------------------------------------------------------- *)
-
-
-(* open dependent theories *)
-(* val _ = load "binomialTheory"; *)
-open arithmeticTheory; (* for MOD and EXP *)
-open dividesTheory; (* for PRIME_POS *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Fermat's Little Theorem by Binomial Documentation                         *)
@@ -96,12 +89,6 @@ open dividesTheory; (* for PRIME_POS *)
 (* Part 1: Basic ----------------------------------------------------------- *)
 
 (* Part 2: General Theory -------------------------------------------------- *)
-
-val PRIME_FACTOR_PROPER = helperNumTheory.PRIME_FACTOR_PROPER;
-(* |- !n. 1 < n /\ ~prime n ==> ?p. prime p /\ p < n /\ p divides n *)
-
-val MULTIPLE_INTERVAL = helperNumTheory.MULTIPLE_INTERVAL;
-(* |- !n m. n divides m ==> !x. m - n < x /\ x < m + n /\ n divides x ==> x = m *)
 
 val PROD_SET_EUCLID = helperSetTheory.PROD_SET_EUCLID;
 (* |- !s. FINITE s ==> !p. prime p /\ p divides PROD_SET s ==> ?b. b IN s /\ p divides b *)

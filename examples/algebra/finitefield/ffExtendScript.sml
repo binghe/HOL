@@ -28,10 +28,7 @@ open ffMinimalTheory;
 open ffConjugateTheory;
 open ffExistTheory;
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
-open helperNumTheory helperListTheory helperSetTheory;
+open numberTheory helperListTheory helperSetTheory;
 
 (* open dependent theories *)
 open pred_setTheory listTheory arithmeticTheory;

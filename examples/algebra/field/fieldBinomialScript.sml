@@ -39,11 +39,7 @@ open monoidMapTheory groupMapTheory ringMapTheory fieldMapTheory;
 (* val _ = load "ringBinomialTheory"; *)
 open ringBinomialTheory;
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
-open helperNumTheory helperSetTheory;
-
+open numberTheory helperSetTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Field Binomial Documentation                                              *)

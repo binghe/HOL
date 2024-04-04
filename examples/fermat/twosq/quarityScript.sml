@@ -12,18 +12,13 @@ val _ = new_theory "quarity";
 
 (* ------------------------------------------------------------------------- *)
 
-
-(* open dependent theories *)
-(* arithmeticTheory -- load by default *)
-(* val _ = load "helperTwosqTheory"; *)
 open helperTwosqTheory;
-open helperNumTheory;
+open numberTheory;
 open helperSetTheory;
 open helperListTheory;
 open helperFunctionTheory;
 open arithmeticTheory pred_setTheory;
 open listTheory rich_listTheory listRangeTheory;
-(* val _ = load "dividesTheory"; *)
 open dividesTheory;
 
 (* val _ = load "windmillTheory"; *)

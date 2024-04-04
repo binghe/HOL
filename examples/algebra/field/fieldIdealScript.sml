@@ -33,10 +33,7 @@ open ringIdealTheory quotientRingTheory;
 (* val _ = load "fieldTheory"; *)
 open fieldTheory;
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
-open helperNumTheory helperSetTheory;
+open numberTheory helperSetTheory;
 
 (* open dependent theories *)
 open pred_setTheory arithmeticTheory;

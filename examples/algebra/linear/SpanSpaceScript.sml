@@ -21,10 +21,7 @@ open jcLib;
 open VectorSpaceTheory;
 open monoidTheory groupTheory fieldTheory;
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-(* val _ = load "helperListTheory"; *)
-open helperNumTheory helperSetTheory helperListTheory;
+open numberTheory helperSetTheory helperListTheory;
 
 (* open dependent theories *)
 open pred_setTheory arithmeticTheory listTheory;

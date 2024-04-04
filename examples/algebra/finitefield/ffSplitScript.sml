@@ -34,7 +34,7 @@ open bagTheory; (* also has MEMBER_NOT_EMPTY *)
 (* open dependent theories *)
 open prim_recTheory pred_setTheory listTheory arithmeticTheory;
 
-open helperNumTheory helperSetTheory helperListTheory helperFunctionTheory;
+open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
 
 open dividesTheory gcdTheory;
 

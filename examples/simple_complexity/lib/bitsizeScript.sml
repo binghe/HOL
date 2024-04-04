@@ -16,11 +16,8 @@ val _ = new_theory "bitsize";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* Get dependent theories in lib *)
-(* val _ = load "helperFunctionTheory"; (* has helperNum, helperSet *) *)
-(* val _ = load "helperListTheory"; *)
 open pred_setTheory arithmeticTheory dividesTheory gcdTheory;
-open helperNumTheory helperSetTheory helperListTheory helperFunctionTheory; (* for DIV_EQ_0 *)
+open numberTheory helperSetTheory helperListTheory helperFunctionTheory; (* for DIV_EQ_0 *)
 
 (* open dependent theories *)
 open listTheory rich_listTheory;

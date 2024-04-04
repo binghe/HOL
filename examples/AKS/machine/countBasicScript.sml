@@ -28,10 +28,7 @@ open loopIncreaseTheory loopDecreaseTheory;
 open loopDivideTheory;
 open loopMultiplyTheory; (* for loop2_mul_rise_steps_le *)
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
-open helperNumTheory helperSetTheory helperListTheory;
+open numberTheory helperSetTheory helperListTheory;
 open pred_setTheory listTheory arithmeticTheory;
 
 (* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)

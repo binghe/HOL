@@ -120,7 +120,7 @@ val _ = new_theory "pattern";
 (* open dependent theories *)
 (* val _ = load "cycleTheory"; *)
 open arithmeticTheory pred_setTheory listTheory;
-open helperNumTheory helperSetTheory;
+open numberTheory helperSetTheory;
 open helperListTheory; (* for LENGTH_NON_NIL *)
 
 open cycleTheory;
