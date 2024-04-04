@@ -3057,28 +3057,20 @@ Proof
   simp[ABS_RATFRAC_DIV]
 QED
 
-Theorem RATN_of_coprimes :
-    !p q. gcd p q = 1 /\ q <> 0 ==> RATN (&p / &q) = &p
+Theorem RATND_of_coprimes :
+    !p q. gcd p q = 1 /\ q <> 0 ==> RATN (&p / &q) = &p /\ RATD (&p / &q) = q
 Proof
-    cheat
+    rpt GEN_TAC >> STRIP_TAC
+ >> qabbrev_tac ‘n = int_of_num p’
+ >> ‘&p = rat_of_int n’ by rw [rat_of_int_def] >> POP_ORW
+ >> ‘coprime (Num n) q’ by rw [Abbr ‘n’]
+ >> rw [RATND_suff_eq]
 QED
 
-Theorem RATD_of_coprimes :
-    !p q. gcd p q = 1 /\ q <> 0 ==> RATD (&p / &q) = q
+Theorem RATND_of_coprimes' :
+    !p q. gcd p q = 1 /\ q <> 0 ==> RATN (-&p / &q) = -&p /\ RATD (-&p / &q) = q
 Proof
-    cheat
-QED
-
-Theorem RATN_of_coprimes' :
-    !p q. gcd p q = 1 /\ q <> 0 ==> RATN (-&p / &q) = -&p
-Proof
-    rw [GSYM RAT_DIV_AINV, RATN_of_coprimes]
-QED
-
-Theorem RATD_of_coprimes' :
-    !p q. gcd p q = 1 /\ q <> 0 ==> RATD (-&p / &q) = q
-Proof
-    rw [GSYM RAT_DIV_AINV, RATD_of_coprimes]
+    rw [GSYM RAT_DIV_AINV, RATND_of_coprimes]
 QED
 
 (* ----------------------------------------------------------------------

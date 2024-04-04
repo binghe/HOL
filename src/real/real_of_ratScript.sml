@@ -388,7 +388,7 @@ Proof
           CCONTR_TAC >> rfs []) >> Rewr' \\
       Q.EXISTS_TAC ‘rat_of_num p / rat_of_num q’ \\
      ‘q <> 0’ by fs [] \\
-      rw [RATN_of_coprimes, RATD_of_coprimes, real_of_int_num],
+      rw [RATND_of_coprimes, real_of_int_num],
       (* goal 2 (of 2) *)
       Cases_on ‘a = 0’
       >- (rw [REAL_DIV_LZERO] >> Q.EXISTS_TAC ‘0’ >> rw [real_of_int_num]) \\
@@ -400,7 +400,7 @@ Proof
           CCONTR_TAC >> rfs []) >> Rewr' \\
       Q.EXISTS_TAC ‘-rat_of_num p / rat_of_num q’ \\
      ‘q <> 0’ by fs [] \\
-      rw [RATN_of_coprimes', RATD_of_coprimes', neg_rat, real_of_int_num] ]
+      rw [RATND_of_coprimes', neg_rat, real_of_int_num] ]
 QED
 
 Theorem real_rat_set_def = q_set_def
