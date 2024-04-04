@@ -4,7 +4,8 @@
 (* Author: Hing-Lun Chan (Australian National University, 2015)              *)
 (* ------------------------------------------------------------------------- *)
 
-open HolKernel boolLib bossLib Parse;
+open HolKernel boolLib Parse bossLib;
+
 open pred_setTheory arithmeticTheory dividesTheory gcdTheory;
 
 val _ = new_theory "number"; (* was: "helperNum" *)

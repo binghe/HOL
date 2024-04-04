@@ -1836,14 +1836,6 @@ QED
 (* Basic GCD, LCM Theorems                                                   *)
 (* ------------------------------------------------------------------------- *)
 
-(* Note: gcd Theory has: GCD_SYM   |- !a b. gcd a b = gcd b a
-                    but: LCM_COMM  |- lcm a b = lcm b a
-*)
-val GCD_COMM = save_thm("GCD_COMM", GCD_SYM);
-(* val GCD_COMM = |- !a b. gcd a b = gcd b a: thm *)
-val LCM_SYM = save_thm("LCM_SYM", LCM_COMM |> GEN ``b:num`` |> GEN ``a:num``);
-(* val val LCM_SYM = |- !a b. lcm a b = lcm b a: thm *)
-
 (* Note:
 gcdTheory.LCM_0  |- (lcm 0 x = 0) /\ (lcm x 0 = 0)
 gcdTheory.LCM_1  |- (lcm 1 x = x) /\ (lcm x 1 = x)

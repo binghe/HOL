@@ -101,6 +101,9 @@ val GCD_SYM = store_thm("GCD_SYM",
                         Term `!a b. gcd a b = gcd b a`,
                         PROVE_TAC[GCD_IS_GCD,IS_GCD_UNIQUE,IS_GCD_SYM]);
 
+(* |- gcd a b = gcd b a *)
+val GCD_COMM = save_thm("GCD_COMM", GCD_SYM |> SPEC_ALL);
+
 val GCD_0R = store_thm("GCD_0R",
                         Term `!a. gcd a 0 = a`,
                         PROVE_TAC[GCD_IS_GCD,IS_GCD_UNIQUE,IS_GCD_0R]);
@@ -363,6 +366,9 @@ val LCM_COMM = store_thm(
   "LCM_COMM",
   ``lcm a b = lcm b a``,
   SRW_TAC [][lcm_def, GCD_SYM, MULT_COMM]);
+
+(* |- !a b. lcm a b = lcm b a *)
+val LCM_SYM = save_thm("LCM_SYM", LCM_COMM |> GEN ``b:num`` |> GEN ``a:num``);
 
 val LCM_LE = store_thm(
   "LCM_LE",
