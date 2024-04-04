@@ -10,7 +10,7 @@ zc2hs:
 	ln -fs ../minisat/Global.h
 	ln -fs ../minisat/Sort.h
 	ln -fs ../minisat/SolverTypes.h
-	g++ -O3 Proof.o File.o zc2hs.cpp -o zc2hs
+	g++-mp-13 -O3 Proof.o File.o zc2hs.cpp -o zc2hs
 
 clean:
 	@rm -f zc2hs *.h *.o
