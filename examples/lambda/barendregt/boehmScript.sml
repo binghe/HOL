@@ -1450,7 +1450,7 @@ QED
 
   ‘BV_of_ltree_node’ directly takes out the binding variable list stored in
    the Boehm tree.
- *)
+
 Definition BV_of_ltree_node_def :
     BV_of_ltree_node (M :boehm_tree) p =
        let node = ltree_el M p in
@@ -1497,7 +1497,6 @@ End
 
 Overload FV = “FV_of_ltree”
 
-(*
 Theorem FV_of_ltree_empty_imp_closed :
     !X M. FV (BTe X M) = {} ==> closed M
 Proof
@@ -1513,7 +1512,7 @@ QED
 
    NOTE: When building an Boehm tree expansion, the naked tree may be used for
    holding the combined set of binding variables up to the current tree node.
- *)
+
 Type naked_tree[pp] = “:string set ltree”
 
 (* from a set of ltree paths to a naked ltree.
@@ -1635,6 +1634,7 @@ Theorem le_eta_expansion :
     !A B ts. ts extends A ==> le_eta A (eta_generate A ts)
 Proof
 QED
+ *)
  *)
 
 (*---------------------------------------------------------------------------*
@@ -1896,38 +1896,7 @@ Proof
     rw [equivalent_def]
 QED
 
-(* Definition 10.2.21 (i) [1, p.238]
-
-   NOTE: ‘A’ and ‘B’ are ltree nodes returned by ‘THE (ltree_el (BT M) p)’
- *)
-Definition head_equivalent_def :
-    head_equivalent (A :BT_node # num option)
-                    (B :BT_node # num option) =
-      if IS_SOME (FST A) /\ IS_SOME (FST B) then
-         let (vs ,y ) = THE (FST A);
-             (vs',y') = THE (FST B);
-                   n  = LENGTH vs;
-                   n' = LENGTH vs';
-                   m  = THE (SND A);
-                   m' = THE (SND B)
-         in
-             LAMl vs (VAR y) = LAMl vs' (VAR y') /\ n + m' = n' + m
-      else
-         IS_NONE (FST A) /\ IS_NONE (FST B)
-End
-
-(* Definition 10.2.21 (ii) [1, p.238] *)
-Definition subtree_equivalent_def :
-    subtree_equivalent p (A :boehm_tree) (B :boehm_tree) =
-        let A' = ltree_el A p;
-            B' = ltree_el B p
-        in
-            if IS_SOME A' /\ IS_SOME B' then
-               head_equivalent (THE A') (THE B')
-            else
-               IS_NONE A' /\ IS_NONE B'
-End
-
+(*
 Overload eta_sub_equiv = “subtree_equivalent”
 
 (* Definition 10.2.23 (i) [1, p.239] *)
@@ -1973,13 +1942,7 @@ Definition term_eta_equiv_def :
 End
 
 Overload eta_equiv = “term_eta_equiv”
-
-(* Definition 10.2.32 (v) [1, p.245] *)
-Definition subterm_equivalent_def :
-    subterm_equivalent p M N =
-        let X = FV M UNION FV N in
-            subtree_equivalent p (BTe X M) (BTe X N)
-End
+ *)
 
 (*---------------------------------------------------------------------------*
  *  Boehm transformations
@@ -3661,7 +3624,46 @@ QED
  *  Faithfulness and agreements of terms
  *---------------------------------------------------------------------------*)
 
- (* Definition 10.3.10 (ii) [1, p.251] *)
+(* Definition 10.2.21 (i) [1, p.238]
+
+   NOTE: ‘A’ and ‘B’ are ltree nodes returned by ‘THE (ltree_el (BT M) p)’
+ *)
+Definition head_equivalent_def :
+    head_equivalent (A :BT_node # num option)
+                    (B :BT_node # num option) =
+      if IS_SOME (FST A) /\ IS_SOME (FST B) then
+         let (vs ,y ) = THE (FST A);
+             (vs',y') = THE (FST B);
+                   n  = LENGTH vs;
+                   n' = LENGTH vs';
+                   m  = THE (SND A);
+                   m' = THE (SND B)
+         in
+             LAMl vs (VAR y) = LAMl vs' (VAR y') /\ n + m' = n' + m
+      else
+         IS_NONE (FST A) /\ IS_NONE (FST B)
+End
+
+(* Definition 10.2.21 (ii) [1, p.238] *)
+Definition subtree_equivalent_def :
+    subtree_equivalent p (A :boehm_tree) (B :boehm_tree) =
+        let A' = ltree_el A p;
+            B' = ltree_el B p
+        in
+            if IS_SOME A' /\ IS_SOME B' then
+               head_equivalent (THE A') (THE B')
+            else
+               IS_NONE A' /\ IS_NONE B'
+End
+
+(* Definition 10.2.32 (v) [1, p.245] *)
+Definition subterm_equivalent_def :
+    subterm_equivalent p M N =
+        let X = FV M UNION FV N in
+            subtree_equivalent p (BTe X M) (BTe X N)
+End
+
+(* Definition 10.3.10 (ii) [1, p.251] *)
 Definition is_faithful_def :
     is_faithful p Ns pi =
       !M N. M IN Ns /\ N IN Ns ==>
