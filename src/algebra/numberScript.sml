@@ -394,10 +394,6 @@ val _ = set_fixity "divides" (Infixl 480); (* relation is 450, +/- is 500, * is 
 Theorem ZERO_LE_ALL = arithmeticTheory.ZERO_LESS_EQ;
 (* val ZERO_LE_ALL = |- !n. 0 <= n: thm *)
 
-(* Theorem alias *)
-Theorem NOT_ZERO = arithmeticTheory.NOT_ZERO_LT_ZERO;
-(* val NOT_ZERO = |- !n. n <> 0 <=> 0 < n: thm *)
-
 (* Extract theorem *)
 Theorem ONE_NOT_0  = DECIDE``1 <> 0``;
 (* val ONE_NOT_0 = |- 1 <> 0: thm *)
@@ -3643,18 +3639,6 @@ val EXP_2_PRE_ODD = store_thm(
 (* ------------------------------------------------------------------------- *)
 (* Modulo Inverse                                                            *)
 (* ------------------------------------------------------------------------- *)
-
-(*
-> LINEAR_GCD |> SPEC ``j:num`` |> SPEC ``k:num``;
-val it = |- j <> 0 ==> ?p q. p * j = q * k + gcd k j: thm
-*)
-
-(* Theorem: 0 < j ==> ?p q. p * j = q * k + gcd j k *)
-(* Proof: by LINEAR_GCD, GCD_SYM *)
-val GCD_LINEAR = store_thm(
-  "GCD_LINEAR",
-  ``!j k. 0 < j ==> ?p q. p * j = q * k + gcd j k``,
-  metis_tac[LINEAR_GCD, GCD_SYM, NOT_ZERO]);
 
 (* Theorem: [Euclid's Lemma] A prime a divides product iff the prime a divides factor.
             [in MOD notation] For prime p, x*y MOD p = 0 <=> x MOD p = 0 or y MOD p = 0 *)

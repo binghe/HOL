@@ -1836,21 +1836,6 @@ QED
 (* Basic GCD, LCM Theorems                                                   *)
 (* ------------------------------------------------------------------------- *)
 
-(* Note:
-gcdTheory.LCM_0  |- (lcm 0 x = 0) /\ (lcm x 0 = 0)
-gcdTheory.LCM_1  |- (lcm 1 x = x) /\ (lcm x 1 = x)
-gcdTheory.GCD_1  |- coprime 1 x /\ coprime x 1
-but only GCD_0L, GCD_0R
-gcdTheory.GCD_EQ_0 |- !n m. (gcd n m = 0) <=> (n = 0) /\ (m = 0)
-*)
-
-(* Theorem: (gcd 0 x = x) /\ (gcd x 0 = x) *)
-(* Proof: by GCD_0L, GCD_0R *)
-val GCD_0 = store_thm(
-  "GCD_0",
-  ``!x. (gcd 0 x = x) /\ (gcd x 0 = x)``,
-  rw_tac std_ss[GCD_0L, GCD_0R]);
-
 (* Theorem: gcd(n, m) = 1 ==> n divides (c * m) ==> n divides c *)
 (* Proof:
    This is L_EUCLIDES:  (Euclid's Lemma)

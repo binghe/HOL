@@ -17,13 +17,14 @@ fun DECIDE_TAC (g as (asl,_)) =
     CONV_TAC Arith.ARITH_CONV)
    ORELSE tautLib.TAUT_TAC) g;
 
+val metis_tac  = METIS_TAC;
+
 val _ = new_theory "gcd";
 
 val IS_GCD = Q.new_definition
  ("is_gcd_def",
   `is_gcd a b c <=> divides c a /\ divides c b /\
                     !d. divides d a /\ divides d b ==> divides d c`);
-
 
 val IS_GCD_UNIQUE = store_thm("IS_GCD_UNIQUE",
   Term `!a b c d. is_gcd a b c /\ is_gcd a b d ==> (c = d)`,
@@ -113,6 +114,13 @@ val GCD_0L = store_thm("GCD_0L",
                         Term `!a. gcd 0 a = a`,
                         PROVE_TAC[GCD_IS_GCD,IS_GCD_UNIQUE,IS_GCD_0L]);
 val _ = export_rewrites ["GCD_0L"]
+
+(* Theorem: (gcd 0 x = x) /\ (gcd x 0 = x) *)
+(* Proof: by GCD_0L, GCD_0R *)
+val GCD_0 = store_thm(
+  "GCD_0",
+  ``!x. (gcd 0 x = x) /\ (gcd x 0 = x)``,
+  rw_tac bool_ss[GCD_0L, GCD_0R]);
 
 val GCD_ADD_R = store_thm("GCD_ADD_R",
                         Term `!a b. gcd a (a+b) = gcd a b`,
@@ -267,6 +275,13 @@ val LINEAR_GCD = store_thm(
     Q.EXISTS_TAC `1` THEN ARW[GCD_0L],
     PROVE_TAC[LINEAR_GCD_AUX]
   ]);
+
+(* Theorem: 0 < j ==> ?p q. p * j = q * k + gcd j k *)
+(* Proof: by LINEAR_GCD, GCD_SYM *)
+val GCD_LINEAR = store_thm(
+  "GCD_LINEAR",
+  ``!j k. 0 < j ==> ?p q. p * j = q * k + gcd j k``,
+  metis_tac[LINEAR_GCD, GCD_SYM, NOT_ZERO]);
 
 val gcd_lemma0 = prove(
   ``!a b. gcd a b = if b <= a then gcd (a - b) b
