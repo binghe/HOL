@@ -1,5 +1,7 @@
 (* ------------------------------------------------------------------------- *)
 (* Elementary Number Theory - a collection of useful results for Numbers.    *)
+(*                                                                           *)
+(* Author: Hing-Lun Chan (Australian National University, 2015)              *)
 (* ------------------------------------------------------------------------- *)
 
 open HolKernel boolLib bossLib Parse;

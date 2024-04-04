@@ -1722,10 +1722,10 @@ QED
 val Num = new_definition("Num",
   Term `Num (i:int) = @n. if 0 <= i then i = &n else i = - &n`);
 
-Overload num_of_int = “Num” (* from HOL Light *)
+Overload num_of_int[inferior] = “Num” (* from HOL Light *)
 
-(* NOTE: In HOL-Light, “num_of_int x” is unspecified for negative integers:
-  |- !x. num_of_int x = (@n. &n = x) (int.ml, line 2056)
+(* NOTE: In HOL-Light, num_of_int is unspecified for negative integers:
+   |- !x. num_of_int x = (@n. &n = x) (int.ml, line 2056)
  *)
 Theorem num_of_int = Num
 
