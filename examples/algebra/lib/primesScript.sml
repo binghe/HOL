@@ -12,14 +12,11 @@ val _ = new_theory "primes";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* open dependent theories *)
 (* val _ = load "logPowerTheory"; *)
 open logPowerTheory; (* for SQRT *)
-open helperNumTheory helperFunctionTheory;
+open numberTheory helperFunctionTheory;
 open arithmeticTheory dividesTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Primality Tests Documentation                                             *)

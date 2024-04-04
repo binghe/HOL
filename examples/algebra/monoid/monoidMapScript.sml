@@ -23,10 +23,7 @@ open monoidTheory monoidOrderTheory;
 (* open dependent theories *)
 open pred_setTheory arithmeticTheory;
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- from monoidTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- from monoidTheory *) *)
-open helperNumTheory helperSetTheory;
+open numberTheory helperSetTheory;
 
 
 (* ------------------------------------------------------------------------- *)

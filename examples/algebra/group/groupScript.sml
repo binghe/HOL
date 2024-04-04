@@ -36,11 +36,7 @@ open pred_setTheory arithmeticTheory;
 (* val _ = load "monoidOrderTheory"; *)
 open monoidTheory monoidOrderTheory; (* for G*, monoid_invertibles_is_monoid *)
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
-open helperNumTheory helperSetTheory;
-
+open numberTheory helperSetTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Group Documentation                                                      *)

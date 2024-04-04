@@ -30,10 +30,7 @@ open jcLib;
 (* open dependent theories *)
 open pred_setTheory arithmeticTheory;
 
-(* Get dependent theories in lib *)
-(* val _ = load "helperNumTheory"; *)
-(* val _ = load "helperSetTheory"; *)
-open helperNumTheory helperSetTheory;
+open numberTheory helperSetTheory;
 
 
 (* ------------------------------------------------------------------------- *)

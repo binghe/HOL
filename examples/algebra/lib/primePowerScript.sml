@@ -19,9 +19,7 @@ open jcLib;
 
 (* val _ = load "SatisfySimps"; (* for SatisfySimps.SATISFY_ss *) *)
 
-(* Get dependent theories in lib *)
-(* val _ = load "logPowerTheory"; *)
-open helperNumTheory;
+open numberTheory;
 open helperSetTheory;
 open helperFunctionTheory;
 open logPowerTheory;

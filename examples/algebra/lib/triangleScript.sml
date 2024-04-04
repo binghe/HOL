@@ -25,10 +25,8 @@ open jcLib;
 (* Get dependent theories in lib *)
 (* val _ = load "EulerTheory"; *)
 open EulerTheory; (* for upto_by_count *)
-(* (* val _ = load "helperFunctionTheory"; -- in EulerTheory *) *)
-(* (* val _ = load "helperNumTheory"; -- in helperFunctionTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in helperFunctionTheory *) *)
-open helperNumTheory helperSetTheory helperFunctionTheory;
+
+open numberTheory helperSetTheory helperFunctionTheory;
 
 (* val _ = load "helperListTheory"; *)
 open helperListTheory;

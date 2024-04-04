@@ -16,8 +16,7 @@ val _ = new_theory "helperFunction";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* val _ = load "helperListTheory"; *)
-open helperNumTheory helperListTheory;
+open numberTheory helperListTheory;
 
 (* val _ = load "helperSetTheory"; *)
 open helperSetTheory;

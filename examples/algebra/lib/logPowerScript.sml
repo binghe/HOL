@@ -23,7 +23,7 @@ open jcLib;
 
 (* Get dependent theories in lib *)
 (* val _ = load "helperNumTheory"; *)
-open helperNumTheory;
+open numberTheory;
 
 (* val _ = load "helperFunctionTheory"; *)
 open helperFunctionTheory;

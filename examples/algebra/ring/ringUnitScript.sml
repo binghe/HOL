@@ -29,11 +29,7 @@ open groupTheory;
 open monoidTheory;
 open monoidOrderTheory groupOrderTheory;
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
-open helperNumTheory helperSetTheory;
-
+open numberTheory helperSetTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Ring Units Documentation                                                  *)

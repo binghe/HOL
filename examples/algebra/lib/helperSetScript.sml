@@ -19,8 +19,7 @@ open jcLib;
 (* open dependent theories *)
 open pred_setTheory;
 
-(* val _ = load "helperNumTheory"; *)
-open helperNumTheory;
+open numberTheory;
 
 (* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
 (* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)

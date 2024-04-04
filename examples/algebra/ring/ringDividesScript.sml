@@ -34,10 +34,7 @@ val MEMBER_NOT_EMPTY = pred_setTheory.MEMBER_NOT_EMPTY;
 
 open ringMapTheory monoidMapTheory groupMapTheory;
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
-open helperNumTheory helperSetTheory;
+open numberTheory helperSetTheory;
 
 (* (* val _ = load "subgroupTheory"; *) *)
 (* val _ = load "quotientGroupTheory"; *)

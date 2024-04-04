@@ -30,7 +30,7 @@ open pred_setTheory listTheory arithmeticTheory;
 (* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
 (* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
 (* val _ = load "helperListTheory"; *)
-open helperNumTheory helperSetTheory helperListTheory;
+open numberTheory helperSetTheory helperListTheory;
 
 (* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
 (* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)

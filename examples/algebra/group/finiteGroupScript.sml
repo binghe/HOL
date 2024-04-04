@@ -32,10 +32,7 @@ open subgroupTheory;
 (* val _ = load "groupProductTheory"; *)
 open groupProductTheory;
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory";  loaded by monoidTheory *) *)
-(* (* val _ = load "helperSetTheory";  loaded by monoidTheory *) *)
-open helperNumTheory helperSetTheory;
+open numberTheory helperSetTheory;
 
 (* val _ = load "helperListTheory"; *)
 open helperListTheory;

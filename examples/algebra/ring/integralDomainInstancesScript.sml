@@ -38,15 +38,9 @@ open monoidInstancesTheory;
 (* val _ = load "groupInstancesTheory"; *)
 open groupInstancesTheory;
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-open helperNumTheory;
+open numberTheory;
 
-(* open dependent theories *)
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
 open pred_setTheory arithmeticTheory dividesTheory gcdTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Integral Domain Instances Documentation                                   *)

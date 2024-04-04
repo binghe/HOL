@@ -37,7 +37,7 @@ open subgroupTheory;
 (* val _ = load "groupProductTheory"; *)
 open groupProductTheory;
 
-open helperNumTheory helperSetTheory helperFunctionTheory;
+open numberTheory helperSetTheory helperFunctionTheory;
 
 (* open dependent theories *)
 open prim_recTheory pred_setTheory arithmeticTheory dividesTheory gcdTheory;

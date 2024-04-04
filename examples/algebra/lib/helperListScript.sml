@@ -19,8 +19,7 @@ open jcLib;
 (* open dependent theories *)
 open pred_setTheory listTheory rich_listTheory;
 
-(* val _ = load "helperNumTheory"; *)
-open helperNumTheory;
+open numberTheory;
 
 (* val _ = load "helperSetTheory"; *)
 open helperSetTheory;

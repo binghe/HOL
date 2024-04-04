@@ -19,11 +19,7 @@ open jcLib;
 open numberTheory helperSetTheory helperFunctionTheory;
 
 (* open dependent theories *)
-open pred_setTheory listTheory;
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open arithmeticTheory dividesTheory gcdTheory;
-
+open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Euler Set and Totient Function Documentation                              *)

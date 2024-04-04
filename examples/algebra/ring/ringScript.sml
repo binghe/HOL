@@ -27,11 +27,7 @@ val _ = new_theory "ring";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* Get dependent theories in lib *)
-(* val _ = load "helperFunctionTheory"; *)
-(* (* val _ = load "helperNumTheory"; -- in helperFunctionTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in helperFunctionTheory *) *)
-open helperNumTheory helperSetTheory helperFunctionTheory;
+open numberTheory helperSetTheory helperFunctionTheory;
 
 (* Get arithmetic for Ring characteristics *)
 open pred_setTheory arithmeticTheory dividesTheory gcdTheory;

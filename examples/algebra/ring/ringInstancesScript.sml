@@ -32,7 +32,7 @@ open monoidOrderTheory groupOrderTheory;
 
 open monoidMapTheory groupMapTheory ringMapTheory;
 
-open helperNumTheory helperFunctionTheory;
+open numberTheory helperFunctionTheory;
 
 open prim_recTheory pred_setTheory arithmeticTheory dividesTheory gcdTheory;
 open EulerTheory;

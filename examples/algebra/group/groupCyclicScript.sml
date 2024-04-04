@@ -28,10 +28,7 @@ open groupMapTheory;
 (* val _ = load "groupInstancesTheory"; *)
 open groupInstancesTheory;
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
-open helperNumTheory helperSetTheory;
+open numberTheory helperSetTheory;
 
 (* val _ = load "helperFunctionTheory"; *)
 open helperFunctionTheory;

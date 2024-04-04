@@ -20,7 +20,7 @@ open jcLib;
 open pred_setTheory listTheory;
 open prim_recTheory arithmeticTheory dividesTheory gcdTheory;
 
-open helperNumTheory helperSetTheory helperListTheory;
+open numberTheory helperSetTheory helperListTheory;
 
 open GaussTheory;
 open EulerTheory;

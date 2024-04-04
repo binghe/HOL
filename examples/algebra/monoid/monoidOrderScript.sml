@@ -42,7 +42,7 @@ open jcLib;
 (* val _ = load "helperFunctionTheory"; *)
 (* (* val _ = load "helperNumTheory"; -- in helperFunctionTheory *) *)
 (* (* val _ = load "helperSetTheory"; -- in helperFunctionTheory *) *)
-open helperNumTheory helperSetTheory helperFunctionTheory;
+open numberTheory helperSetTheory helperFunctionTheory;
 
 (* open dependent theories *)
 open pred_setTheory arithmeticTheory;
