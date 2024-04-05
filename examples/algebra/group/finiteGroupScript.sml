@@ -18,7 +18,7 @@ val _ = new_theory "finiteGroup";
 open jcLib;
 
 (* open dependent theories *)
-open pred_setTheory arithmeticTheory;
+open pred_setTheory arithmeticTheory dividesTheory;
 
 (* Get dependent theories local *)
 (* val _ = load "groupOrderTheory"; *)
