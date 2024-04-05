@@ -131,9 +131,6 @@ val PRODUCT_WITH_GCD_ONE = helperFunctionTheory.PRODUCT_WITH_GCD_ONE;
 val MOD_WITH_GCD_ONE = helperFunctionTheory.MOD_WITH_GCD_ONE;
 (* |- !n x. 0 < n /\ coprime n x ==> coprime n (x MOD n) *)
 
-val GCD_DIVIDES = helperFunctionTheory.GCD_DIVIDES;
-(* |- !m n. 0 < n /\ 0 < m ==> 0 < gcd n m /\ n MOD gcd n m = 0 /\ m MOD gcd n m = 0 *)
-
 val GCD_ONE_PROPERTY = helperFunctionTheory.GCD_ONE_PROPERTY;
 (* |- !n x. 1 < n /\ coprime n x ==> ?k. (k * x) MOD n = 1 /\ coprime n k *)
 

@@ -60,12 +60,15 @@ and RTC_IM_TC     = prim_recTheory.RTC_IM_TC
 and TC_IM_RTC_SUC = prim_recTheory.TC_IM_RTC_SUC
 and LESS_ALT      = prim_recTheory.LESS_ALT;
 
-
+val metis_tac = METIS_TAC;
 fun bossify stac ths = stac (srw_ss()) ths
 val simp = bossify asm_simp_tac
 val fs = bossify full_simp_tac
 val gvs = bossify (global_simp_tac {droptrues = true, elimvars = true,
                                     oldestfirst = true, strip = true})
+val rw = srw_tac[];
+val std_ss = bool_ss;
+val qabbrev_tac = Q.ABBREV_TAC;
 
 (*---------------------------------------------------------------------------*
  * The basic arithmetic operations.                                          *
@@ -4589,5 +4592,178 @@ Proof
         (* goal 2.2 (of 2) *)
         ASM_REWRITE_TAC[] ] ]
 QED
+
+(* ------------------------------------------------------------------------- *)
+(* Arithmetic Manipulations (from examples/algebra)                          *)
+(* ------------------------------------------------------------------------- *)
+
+(* Theorem: n * p = m * p <=> p = 0 \/ n = m *)
+(* Proof:
+       n * p = m * p
+   <=> n * p - m * p = 0      by SUB_EQUAL_0
+   <=>   (n - m) * p = 0      by RIGHT_SUB_DISTRIB
+   <=>   n - m = 0  or p = 0  by MULT_EQ_0
+   <=>    n = m  or p = 0     by SUB_EQUAL_0
+*)
+val MULT_RIGHT_CANCEL = store_thm(
+  "MULT_RIGHT_CANCEL",
+  ``!m n p. (n * p = m * p) <=> (p = 0) \/ (n = m)``,
+  rw[]);
+
+(* Theorem: p * n = p * m <=> p = 0 \/ n = m *)
+(* Proof: by MULT_RIGHT_CANCEL and MULT_COMM. *)
+val MULT_LEFT_CANCEL = store_thm(
+  "MULT_LEFT_CANCEL",
+  ``!m n p. (p * n = p * m) <=> (p = 0) \/ (n = m)``,
+  rw[MULT_RIGHT_CANCEL, MULT_COMM]);
+
+(* ------------------------------------------------------------------------- *)
+(* Modulo Theorems (from examples/algebra)                                   *)
+(* ------------------------------------------------------------------------- *)
+
+(* Theorem: 0 < n ==> !a b. (a MOD n = b) <=> ?c. (a = c * n + b) /\ (b < n) *)
+(* Proof:
+   If part: (a MOD n = b) ==> ?c. (a = c * n + b) /\ (b < n)
+      Or to show: ?c. (a = c * n + a MOD n) /\ a MOD n < n
+      Taking c = a DIV n, this is true     by DIVISION
+   Only-if part: (a = c * n + b) /\ (b < n) ==> (a MOD n = b)
+      Or to show: b < n ==> (c * n + b) MOD n = b
+        (c * n + b) MOD n
+      = ((c * n) MOD n + b MOD n) MOD n    by MOD_PLUS
+      = (0 + b MOD n) MOD n                by MOD_EQ_0
+      = b MOD n                            by MOD_MOD
+      = b                                  by LESS_MOD, b < n
+*)
+val MOD_EQN = store_thm(
+  "MOD_EQN",
+  ``!n. 0 < n ==> !a b. (a MOD n = b) <=> ?c. (a = c * n + b) /\ (b < n)``,
+  rw_tac std_ss[EQ_IMP_THM] >-
+  metis_tac[DIVISION] >>
+  metis_tac[MOD_PLUS, MOD_EQ_0, ADD, MOD_MOD, LESS_MOD]);
+
+(* Theorem: If n > 0, k MOD n = 0 ==> !x. (k*x) MOD n = 0 *)
+(* Proof:
+   (k*x) MOD n = (k MOD n * x MOD n) MOD n    by MOD_TIMES2
+               = (0 * x MOD n) MOD n          by given
+               = 0 MOD n                      by MULT_0 and MULT_COMM
+               = 0                            by ZERO_MOD
+*)
+Theorem MOD_MULTIPLE_ZERO :
+    !n k. 0 < n /\ (k MOD n = 0) ==> !x. ((k*x) MOD n = 0)
+Proof
+  metis_tac[MOD_TIMES2, MULT_0, MULT_COMM, ZERO_MOD]
+QED
+
+(* Theorem: (x + y + z) MOD n = (x MOD n + y MOD n + z MOD n) MOD n *)
+(* Proof:
+     (x + y + z) MOD n
+   = ((x + y) MOD n + z MOD n) MOD n               by MOD_PLUS
+   = ((x MOD n + y MOD n) MOD n + z MOD n) MOD n   by MOD_PLUS
+   = (x MOD n + y MOD n + z MOD n) MOD n           by MOD_MOD
+*)
+val MOD_PLUS3 = store_thm(
+  "MOD_PLUS3",
+  ``!n. 0 < n ==> !x y z. (x + y + z) MOD n = (x MOD n + y MOD n + z MOD n) MOD n``,
+  metis_tac[MOD_PLUS, MOD_MOD]);
+
+(* Theorem: Addition is associative in MOD: if x, y, z all < n,
+            ((x + y) MOD n + z) MOD n = (x + (y + z) MOD n) MOD n. *)
+(* Proof:
+     ((x * y) MOD n * z) MOD n
+   = (((x * y) MOD n) MOD n * z MOD n) MOD n     by MOD_TIMES2
+   = ((x * y) MOD n * z MOD n) MOD n             by MOD_MOD
+   = (x * y * z) MOD n                           by MOD_TIMES2
+   = (x * (y * z)) MOD n                         by MULT_ASSOC
+   = (x MOD n * (y * z) MOD n) MOD n             by MOD_TIMES2
+   = (x MOD n * ((y * z) MOD n) MOD n) MOD n     by MOD_MOD
+   = (x * (y * z) MOD n) MOD n                   by MOD_TIMES2
+   or
+     ((x + y) MOD n + z) MOD n
+   = ((x + y) MOD n + z MOD n) MOD n     by LESS_MOD, z < n
+   = (x + y + z) MOD n                   by MOD_PLUS
+   = (x + (y + z)) MOD n                 by ADD_ASSOC
+   = (x MOD n + (y + z) MOD n) MOD n     by MOD_PLUS
+   = (x + (y + z) MOD n) MOD n           by LESS_MOD, x < n
+*)
+val MOD_ADD_ASSOC = store_thm(
+  "MOD_ADD_ASSOC",
+  ``!n x y z. 0 < n /\ x < n /\ y < n /\ z < n ==>
+              ((x + y) MOD n + z) MOD n = (x + (y + z) MOD n) MOD n``,
+  metis_tac[LESS_MOD, MOD_PLUS, ADD_ASSOC]);
+
+(* Theorem: mutliplication is associative in MOD:
+            (x*y MOD n * z) MOD n = (x * y*Z MOD n) MOD n  *)
+(* Proof:
+     ((x * y) MOD n * z) MOD n
+   = (((x * y) MOD n) MOD n * z MOD n) MOD n     by MOD_TIMES2
+   = ((x * y) MOD n * z MOD n) MOD n             by MOD_MOD
+   = (x * y * z) MOD n                           by MOD_TIMES2
+   = (x * (y * z)) MOD n                         by MULT_ASSOC
+   = (x MOD n * (y * z) MOD n) MOD n             by MOD_TIMES2
+   = (x MOD n * ((y * z) MOD n) MOD n) MOD n     by MOD_MOD
+   = (x * (y * z) MOD n) MOD n                   by MOD_TIMES2
+   or
+     ((x * y) MOD n * z) MOD n
+   = ((x * y) MOD n * z MOD n) MOD n    by LESS_MOD, z < n
+   = (((x * y) * z) MOD n) MOD n        by MOD_TIMES2
+   = ((x * (y * z)) MOD n) MOD n        by MULT_ASSOC
+   = (x MOD n * (y * z) MOD n) MOD n    by MOD_TIMES2
+   = (x * (y * z) MOD n) MOD n          by LESS_MOD, x < n
+*)
+val MOD_MULT_ASSOC = store_thm(
+  "MOD_MULT_ASSOC",
+  ``!n x y z. 0 < n /\ x < n /\ y < n /\ z < n ==>
+              ((x * y) MOD n * z) MOD n = (x * (y * z) MOD n) MOD n``,
+  metis_tac[LESS_MOD, MOD_TIMES2, MULT_ASSOC]);
+
+(* Theorem: If n > 0, ((n - x) MOD n + x) MOD n = 0  for x < n. *)
+(* Proof:
+     ((n - x) MOD n + x) MOD n
+   = ((n - x) MOD n + x MOD n) MOD n    by LESS_MOD
+   = (n - x + x) MOD n                  by MOD_PLUS
+   = n MOD n                            by SUB_ADD and 0 <= n
+   = (1*n) MOD n                        by MULT_LEFT_1
+   = 0                                  by MOD_EQ_0
+*)
+val MOD_ADD_INV = store_thm(
+  "MOD_ADD_INV",
+  ``!n x. 0 < n /\ x < n ==> (((n - x) MOD n + x) MOD n = 0)``,
+  metis_tac[LESS_MOD, MOD_PLUS, SUB_ADD, LESS_IMP_LESS_OR_EQ, MOD_EQ_0, MULT_LEFT_1]);
+
+(* Theorem: n < m ==> ((n MOD m = 0) <=> (n = 0)) *)
+(* Proof:
+   Note n < m ==> (n MOD m = n)    by LESS_MOD
+   Thus (n MOD m = 0) <=> (n = 0)  by above
+*)
+val MOD_EQ_0_IFF = store_thm(
+  "MOD_EQ_0_IFF",
+  ``!m n. n < m ==> ((n MOD m = 0) <=> (n = 0))``,
+  rw_tac bool_ss[LESS_MOD]);
+
+(* Theorem: ((a MOD n) ** m) MOD n = (a ** m) MOD n  *)
+(* Proof: by induction on m.
+   Base case: (a MOD n) ** 0 MOD n = a ** 0 MOD n
+       (a MOD n) ** 0 MOD n
+     = 1 MOD n              by EXP
+     = a ** 0 MOD n         by EXP
+   Step case: (a MOD n) ** m MOD n = a ** m MOD n ==> (a MOD n) ** SUC m MOD n = a ** SUC m MOD n
+       (a MOD n) ** SUC m MOD n
+     = ((a MOD n) * (a MOD n) ** m) MOD n             by EXP
+     = ((a MOD n) * (((a MOD n) ** m) MOD n)) MOD n   by MOD_TIMES2, MOD_MOD
+     = ((a MOD n) * (a ** m MOD n)) MOD n             by induction hypothesis
+     = (a * a ** m) MOD n                             by MOD_TIMES2
+     = a ** SUC m MOD n                               by EXP
+*)
+val MOD_EXP = store_thm(
+  "MOD_EXP",
+  ``!n. 0 < n ==> !a m. ((a MOD n) ** m) MOD n = (a ** m) MOD n``,
+  rpt strip_tac >>
+  Induct_on `m` >-
+  rw[EXP] >>
+  `(a MOD n) ** SUC m MOD n = ((a MOD n) * (a MOD n) ** m) MOD n` by rw[EXP] >>
+  `_ = ((a MOD n) * (((a MOD n) ** m) MOD n)) MOD n` by metis_tac[MOD_TIMES2, MOD_MOD] >>
+  `_ = ((a MOD n) * (a ** m MOD n)) MOD n` by rw[] >>
+  `_ = (a * a ** m) MOD n` by rw[MOD_TIMES2] >>
+  rw[EXP]);
 
 val _ = export_theory()
