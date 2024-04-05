@@ -892,4 +892,37 @@ val GCD_SUB_R = store_thm(
   ``!a b. a <= b ==> (gcd a (b - a) = gcd a b)``,
   metis_tac[GCD_SYM, GCD_SUB_L]);
 
+(* Theorem: prime a ==> a divides b iff a divides b ** n for any n *)
+(* Proof:
+   by induction on n.
+   Base case: 0 < 0 ==> (a divides b <=> a divides (b ** 0))
+     True since 0 < 0 is False.
+   Step case: 0 < n ==> (a divides b <=> a divides (b ** n)) ==>
+              0 < SUC n ==> (a divides b <=> a divides (b ** SUC n))
+     i.e. 0 < n ==> (a divides b <=> a divides (b ** n))==>
+                    a divides b <=> a divides (b * b ** n)    by EXP
+     If n = 0, b ** 0 = 1   by EXP
+     Hence true.
+     If n <> 0, 0 < n,
+     If part: a divides b /\ 0 < n ==> (a divides b <=> a divides (b ** n)) ==> a divides (b ** n)
+       True by DIVIDES_MULT.
+     Only-if part: a divides (b * b ** n) /\ 0 < n ==> (a divides b <=> a divides (b ** n)) ==> a divides (b ** n)
+       Since prime a, a divides b, or a divides (b ** n)  by P_EUCLIDES
+       Either case is true.
+*)
+val DIVIDES_EXP_BASE = store_thm(
+  "DIVIDES_EXP_BASE",
+  ``!a b n. prime a /\ 0 < n ==> (a divides b <=> a divides (b ** n))``,
+  rpt strip_tac >>
+  Induct_on `n` >-
+  rw[] >>
+  rw[EXP] >>
+  Cases_on `n = 0` >-
+  rw[EXP] >>
+  `0 < n` by decide_tac >>
+  rw[EQ_IMP_THM] >-
+  metis_tac[DIVIDES_MULT] >>
+  `a divides b \/ a divides (b ** n)` by rw[P_EUCLIDES] >>
+  metis_tac[]);
+
 val _ = export_theory();

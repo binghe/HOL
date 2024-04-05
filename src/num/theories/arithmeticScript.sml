@@ -285,6 +285,14 @@ val num_case_compute = store_thm ("num_case_compute",
 val SUC_NOT = save_thm ("SUC_NOT",
     GEN (“n:num”) (NOT_EQ_SYM (SPEC (“n:num”) NOT_SUC)));
 
+(* Theorem: 0 < SUC n *)
+(* Proof: by arithmetic. *)
+val SUC_POS = save_thm("SUC_POS", LESS_0);
+
+(* Theorem: 0 < SUC n *)
+(* Proof: by arithmetic. *)
+val SUC_NOT_ZERO = save_thm("SUC_NOT_ZERO", NOT_SUC);
+
 val ADD_0 = store_thm ("ADD_0",
    “!m. m + 0 = m”,
    INDUCT_TAC THEN ASM_REWRITE_TAC[ADD]);
