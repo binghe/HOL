@@ -113,42 +113,6 @@ open groupOrderTheory; (* for finite_group_Fermat *)
 (* ------------------------------------------------------------------------- *)
 
 (* ------------------------------------------------------------------------- *)
-(* Relatively prime, or Coprime.                                             *)
-(* ------------------------------------------------------------------------- *)
-
-val coprime_mod = helperFunctionTheory.coprime_mod;
-(* |- !m n. 0 < m /\ coprime m n ==> coprime m (n MOD m) *)
-
-val coprime_sym = helperFunctionTheory.coprime_sym;
-(* |- !x y. coprime x y <=> coprime y x *)
-
-val MOD_NONZERO_WHEN_GCD_ONE = helperFunctionTheory.MOD_NONZERO_WHEN_GCD_ONE;
-(* |- !n. 1 < n ==> !x. coprime n x ==> 0 < x /\ 0 < x MOD n *)
-
-val PRODUCT_WITH_GCD_ONE = helperFunctionTheory.PRODUCT_WITH_GCD_ONE;
-(* |- !n x y. coprime n x /\ coprime n y ==> coprime n (x * y) *)
-
-val MOD_WITH_GCD_ONE = helperFunctionTheory.MOD_WITH_GCD_ONE;
-(* |- !n x. 0 < n /\ coprime n x ==> coprime n (x MOD n) *)
-
-val GCD_ONE_PROPERTY = helperFunctionTheory.GCD_ONE_PROPERTY;
-(* |- !n x. 1 < n /\ coprime n x ==> ?k. (k * x) MOD n = 1 /\ coprime n k *)
-
-(* ------------------------------------------------------------------------- *)
-(* Establish the existence of multiplicative inverse when p is prime.        *)
-(* ------------------------------------------------------------------------- *)
-
-val GCD_MOD_MULT_INV = helperFunctionTheory.GCD_MOD_MULT_INV;
-(* |- !n x. 1 < n /\ coprime n x /\ 0 < x /\ x < n ==>
-        ?y. 0 < y /\ y < n /\ coprime n y /\ (y * x) MOD n = 1 *)
-
-(* Convert this into an existence definition *)
-val GEN_MULT_INV_DEF = helperFunctionTheory.GEN_MULT_INV_DEF;
-(* |- !n x. 1 < n /\ coprime n x /\ 0 < x /\ x < n ==>
-            0 < GCD_MOD_MUL_INV n x /\ GCD_MOD_MUL_INV n x < n /\
-            coprime n (GCD_MOD_MUL_INV n x) /\ (GCD_MOD_MUL_INV n x * x) MOD n = 1 *)
-
-(* ------------------------------------------------------------------------- *)
 (* Euler's set and totient function                                          *)
 (* ------------------------------------------------------------------------- *)
 

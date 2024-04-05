@@ -3942,6 +3942,386 @@ val GEN_MULT_INV_DEF = new_specification(
        0 < GCD_MOD_MUL_INV n x /\ GCD_MOD_MUL_INV n x < n /\ coprime n (GCD_MOD_MUL_INV n x) /\
        ((GCD_MOD_MUL_INV n x * x) MOD n = 1) : thm *)
 
+(* Theorem: If 1/c = 1/b - 1/a, then lcm a b = lcm a c.
+            a * b = c * (a - b) ==> lcm a b = lcm a c *)
+(* Proof:
+   Idea:
+     lcm a c
+   = (a * c) DIV (gcd a c)              by lcm_def
+   = (a * b * c) DIV (gcd a c) DIV b    by MULT_DIV
+   = (a * b * c) DIV b * (gcd a c)      by DIV_DIV_DIV_MULT
+   = (a * b * c) DIV gcd b*a b*c        by GCD_COMMON_FACTOR
+   = (a * b * c) DIV gcd c*(a-b) c*b    by given
+   = (a * b * c) DIV c * gcd (a-b) b    by GCD_COMMON_FACTOR
+   = (a * b * c) DIV c * gcd a b        by GCD_SUB_L
+   = (a * b * c) DIV c DIV gcd a b      by DIV_DIV_DIV_MULT
+   = a * b DIV gcd a b                  by MULT_DIV
+   = lcm a b                            by lcm_def
+
+   Details:
+   If a = 0,
+      lcm 0 b = 0 = lcm 0 c          by LCM_0
+   If a <> 0,
+      If b = 0, a * b = 0 = c * a    by MULT_0, SUB_0
+      Hence c = 0, hence true        by MULT_EQ_0
+      If b <> 0, c <> 0.             by MULT_EQ_0
+      So 0 < gcd a c, 0 < gcd a b    by GCD_EQ_0
+      and  (gcd a c) divides a       by GCD_IS_GREATEST_COMMON_DIVISOR
+      thus (gcd a c) divides (a * c) by DIVIDES_MULT
+      Note (a - b) <> 0              by MULT_EQ_0
+       so  ~(a <= b)                 by SUB_EQ_0
+       or  b < a, or b <= a          for GCD_SUB_L later.
+   Now,
+      lcm a c
+    = (a * c) DIV (gcd a c)                      by lcm_def
+    = (b * ((a * c) DIV (gcd a c))) DIV b        by MULT_COMM, MULT_DIV
+    = ((b * (a * c)) DIV (gcd a c)) DIV b        by MULTIPLY_DIV
+    = (b * (a * c)) DIV ((gcd a c) * b)          by DIV_DIV_DIV_MULT
+    = (b * a * c) DIV ((gcd a c) * b)            by MULT_ASSOC
+    = c * (a * b) DIV (b * (gcd a c))            by MULT_COMM
+    = c * (a * b) DIV (gcd (b * a) (b * c))      by GCD_COMMON_FACTOR
+    = c * (a * b) DIV (gcd (a * b) (c * b))      by MULT_COMM
+    = c * (a * b) DIV (gcd (c * (a-b)) (c * b))  by a * b = c * (a - b)
+    = c * (a * b) DIV (c * gcd (a-b) b)          by GCD_COMMON_FACTOR
+    = c * (a * b) DIV (c * gcd a b)              by GCD_SUB_L
+    = c * (a * b) DIV c DIV (gcd a b)            by DIV_DIV_DIV_MULT
+    = a * b DIV gcd a b                          by MULT_COMM, MULT_DIV
+    = lcm a b                                    by lcm_def
+*)
+val LCM_EXCHANGE = store_thm(
+  "LCM_EXCHANGE",
+  ``!a b c. (a * b = c * (a - b)) ==> (lcm a b = lcm a c)``,
+  rpt strip_tac >>
+  Cases_on `a = 0` >-
+  rw[] >>
+  Cases_on `b = 0` >| [
+    `c = 0` by metis_tac[MULT_EQ_0, SUB_0] >>
+    rw[],
+    `c <> 0` by metis_tac[MULT_EQ_0] >>
+    `0 < b /\ 0 < c` by decide_tac >>
+    `(gcd a c) divides a` by rw[GCD_IS_GREATEST_COMMON_DIVISOR] >>
+    `(gcd a c) divides (a * c)` by rw[DIVIDES_MULT] >>
+    `0 < gcd a c /\ 0 < gcd a b` by metis_tac[GCD_EQ_0, NOT_ZERO_LT_ZERO] >>
+    `~(a <= b)` by metis_tac[SUB_EQ_0, MULT_EQ_0] >>
+    `b <= a` by decide_tac >>
+    `lcm a c = (a * c) DIV (gcd a c)` by rw[lcm_def] >>
+    `_ = (b * ((a * c) DIV (gcd a c))) DIV b` by metis_tac[MULT_COMM, MULT_DIV] >>
+    `_ = ((b * (a * c)) DIV (gcd a c)) DIV b` by rw[MULTIPLY_DIV] >>
+    `_ = (b * (a * c)) DIV ((gcd a c) * b)` by rw[DIV_DIV_DIV_MULT] >>
+    `_ = (b * a * c) DIV ((gcd a c) * b)` by rw[MULT_ASSOC] >>
+    `_ = c * (a * b) DIV (b * (gcd a c))` by rw_tac std_ss[MULT_COMM] >>
+    `_ = c * (a * b) DIV (gcd (b * a) (b * c))` by rw[GCD_COMMON_FACTOR] >>
+    `_ = c * (a * b) DIV (gcd (a * b) (c * b))` by rw_tac std_ss[MULT_COMM] >>
+    `_ = c * (a * b) DIV (gcd (c * (a-b)) (c * b))` by rw[] >>
+    `_ = c * (a * b) DIV (c * gcd (a-b) b)` by rw[GCD_COMMON_FACTOR] >>
+    `_ = c * (a * b) DIV (c * gcd a b)` by rw[GCD_SUB_L] >>
+    `_ = c * (a * b) DIV c DIV (gcd a b)` by rw[DIV_DIV_DIV_MULT] >>
+    `_ = a * b DIV gcd a b` by metis_tac[MULT_COMM, MULT_DIV] >>
+    `_ = lcm a b` by rw[lcm_def] >>
+    decide_tac
+  ]);
+
+(* Theorem: LCM (k * m) (k * n) = k * LCM m n *)
+(* Proof:
+   If m = 0 or n = 0, LHS = 0 = RHS.
+   If m <> 0 and n <> 0,
+     lcm (k * m) (k * n)
+   = (k * m) * (k * n) / gcd (k * m) (k * n)    by GCD_LCM
+   = (k * m) * (k * n) / k * (gcd m n)          by GCD_COMMON_FACTOR
+   = k * m * n / (gcd m n)
+   = k * LCM m n                                by GCD_LCM
+*)
+val LCM_COMMON_FACTOR = store_thm(
+  "LCM_COMMON_FACTOR",
+  ``!m n k. lcm (k * m) (k * n) = k * lcm m n``,
+  rpt strip_tac >>
+  `k * (k * (m * n)) = (k * m) * (k * n)` by rw_tac arith_ss[] >>
+  `_ = gcd (k * m) (k * n) * lcm (k * m) (k * n) ` by rw[GCD_LCM] >>
+  `_ = k * (gcd m n) * lcm (k * m) (k * n)` by rw[GCD_COMMON_FACTOR] >>
+  `_ = k * ((gcd m n) * lcm (k * m) (k * n))` by rw_tac arith_ss[] >>
+  Cases_on `k = 0` >-
+  rw[] >>
+  `(gcd m n) * lcm (k * m) (k * n) = k * (m * n)` by metis_tac[MULT_LEFT_CANCEL] >>
+  `_ = k * ((gcd m n) * (lcm m n))` by rw_tac std_ss[GCD_LCM] >>
+  `_ = (gcd m n) * (k * (lcm m n))` by rw_tac arith_ss[] >>
+  Cases_on `n = 0` >-
+  rw[] >>
+  metis_tac[MULT_LEFT_CANCEL, GCD_EQ_0]);
+
+(* Theorem: coprime a b ==> !c. lcm (a * c) (b * c) = a * b * c *)
+(* Proof:
+     lcm (a * c) (b * c)
+   = lcm (c * a) (c * b)     by MULT_COMM
+   = c * (lcm a b)           by LCM_COMMON_FACTOR
+   = (lcm a b) * c           by MULT_COMM
+   = a * b * c               by LCM_COPRIME
+*)
+val LCM_COMMON_COPRIME = store_thm(
+  "LCM_COMMON_COPRIME",
+  ``!a b. coprime a b ==> !c. lcm (a * c) (b * c) = a * b * c``,
+  metis_tac[LCM_COMMON_FACTOR, LCM_COPRIME, MULT_COMM]);
+
+(* Theorem: 0 < n /\ m MOD n = 0 ==> gcd m n = n *)
+(* Proof:
+   Since m MOD n = 0
+         ==> n divides m     by DIVIDES_MOD_0
+   Hence gcd m n = gcd n m   by GCD_SYM
+                 = n         by divides_iff_gcd_fix
+*)
+val GCD_MULTIPLE = store_thm(
+  "GCD_MULTIPLE",
+  ``!m n. 0 < n /\ (m MOD n = 0) ==> (gcd m n = n)``,
+  metis_tac[DIVIDES_MOD_0, divides_iff_gcd_fix, GCD_SYM]);
+
+(* Theorem: gcd (m * n) n = n *)
+(* Proof:
+     gcd (m * n) n
+   = gcd (n * m) n          by MULT_COMM
+   = gcd (n * m) (n * 1)    by MULT_RIGHT_1
+   = n * (gcd m 1)          by GCD_COMMON_FACTOR
+   = n * 1                  by GCD_1
+   = n                      by MULT_RIGHT_1
+*)
+val GCD_MULTIPLE_ALT = store_thm(
+  "GCD_MULTIPLE_ALT",
+  ``!m n. gcd (m * n) n = n``,
+  rpt strip_tac >>
+  `gcd (m * n) n = gcd (n * m) n` by rw[MULT_COMM] >>
+  `_ = gcd (n * m) (n * 1)` by rw[] >>
+  rw[GCD_COMMON_FACTOR]);
+
+
+(* Theorem: k * a <= b ==> gcd a b = gcd a (b - k * a) *)
+(* Proof:
+   By induction on k.
+   Base case: 0 * a <= b ==> gcd a b = gcd a (b - 0 * a)
+     True since b - 0 * a = b       by MULT, SUB_0
+   Step case: k * a <= b ==> (gcd a b = gcd a (b - k * a)) ==>
+              SUC k * a <= b ==> (gcd a b = gcd a (b - SUC k * a))
+         SUC k * a <= b
+     ==> k * a + a <= b             by MULT
+        so       a <= b - k * a     by arithmetic [1]
+       and   k * a <= b             by 0 <= b - k * a, [2]
+       gcd a (b - SUC k * a)
+     = gcd a (b - (k * a + a))      by MULT
+     = gcd a (b - k * a - a)        by arithmetic
+     = gcd a (b - k * a - a + a)    by GCD_ADD_L, ADD_COMM
+     = gcd a (b - k * a)            by SUB_ADD, a <= b - k * a [1]
+     = gcd a b                      by induction hypothesis, k * a <= b [2]
+*)
+val GCD_SUB_MULTIPLE = store_thm(
+  "GCD_SUB_MULTIPLE",
+  ``!a b k. k * a <= b ==> (gcd a b = gcd a (b - k * a))``,
+  rpt strip_tac >>
+  Induct_on `k` >-
+  rw[] >>
+  rw_tac std_ss[] >>
+  `k * a + a <= b` by metis_tac[MULT] >>
+  `a <= b - k * a` by decide_tac >>
+  `k * a <= b` by decide_tac >>
+  `gcd a (b - SUC k * a) = gcd a (b - (k * a + a))` by rw[MULT] >>
+  `_ = gcd a (b - k * a - a)` by rw_tac arith_ss[] >>
+  `_ = gcd a (b - k * a - a + a)` by rw[GCD_ADD_L, ADD_COMM] >>
+  rw_tac std_ss[SUB_ADD]);
+
+(* Theorem: k * a <= b ==> (gcd b a = gcd a (b - k * a)) *)
+(* Proof: by GCD_SUB_MULTIPLE, GCD_SYM *)
+val GCD_SUB_MULTIPLE_COMM = store_thm(
+  "GCD_SUB_MULTIPLE_COMM",
+  ``!a b k. k * a <= b ==> (gcd b a = gcd a (b - k * a))``,
+  metis_tac[GCD_SUB_MULTIPLE, GCD_SYM]);
+
+(* Idea: a crude upper bound for greatest common divisor.
+         A better upper bound is: gcd m n <= MIN m n, by MIN_LE *)
+
+(* Theorem: 0 < m /\ 0 < n ==> gcd m n <= m /\ gcd m n <= n *)
+(* Proof:
+   Let g = gcd m n.
+   Then g divides m /\ g divides n   by GCD_PROPERTY
+     so g <= m /\ g <= n             by DIVIDES_LE,  0 < m, 0 < n
+*)
+Theorem gcd_le:
+  !m n. 0 < m /\ 0 < n ==> gcd m n <= m /\ gcd m n <= n
+Proof
+  ntac 3 strip_tac >>
+  qabbrev_tac `g = gcd m n` >>
+  `g divides m /\ g divides n` by metis_tac[GCD_PROPERTY] >>
+  simp[DIVIDES_LE]
+QED
+
+(* Idea: a generalisation of GCD_LINEAR:
+|- !j k. 0 < j ==> ?p q. p * j = q * k + gcd j k
+   This imposes a condition for (gcd a b) divides c.
+*)
+
+(* Theorem: 0 < a ==> ((gcd a b) divides c <=> ?p q. p * a = q * b + c) *)
+(* Proof:
+   Let d = gcd a b.
+   If part: d divides c ==> ?p q. p * a = q * b + c
+      Note ?k. c = k * d                 by divides_def
+       and ?u v. u * a = v * b + d       by GCD_LINEAR, 0 < a
+        so (k * u) * a = (k * v) * b + (k * d)
+      Take p = k * u, q = k * v,
+      Then p * q = q * b + c
+   Only-if part: p * a = q * b + c ==> d divides c
+      Note d divides a /\ d divides b    by GCD_PROPERTY
+        so d divides c                   by divides_linear_sub
+*)
+Theorem gcd_divides_iff:
+  !a b c. 0 < a ==> ((gcd a b) divides c <=> ?p q. p * a = q * b + c)
+Proof
+  rpt strip_tac >>
+  qabbrev_tac `d = gcd a b` >>
+  rw_tac bool_ss[EQ_IMP_THM] >| [
+    `?k. c = k * d` by rw[GSYM divides_def] >>
+    `?p q. p * a = q * b + d` by rw[GCD_LINEAR, Abbr`d`] >>
+    `k * (p * a) = k * (q * b + d)` by fs[] >>
+    `_ = k * (q * b) + k * d` by decide_tac >>
+    metis_tac[MULT_ASSOC],
+    `d divides a /\ d divides b` by metis_tac[GCD_PROPERTY] >>
+    metis_tac[divides_linear_sub]
+  ]
+QED
+
+(* Theorem alias *)
+Theorem gcd_linear_thm = gcd_divides_iff;
+(* val gcd_linear_thm =
+|- !a b c. 0 < a ==> (gcd a b divides c <=> ?p q. p * a = q * b + c): thm *)
+
+(* Idea: a version of GCD_LINEAR for MOD, without negatives.
+   That is: in MOD n. gcd (a b) can be expressed as a linear combination of a b. *)
+
+(* Theorem: 0 < n /\ 0 < a ==> ?p q. (p * a + q * b) MOD n = gcd a b MOD n *)
+(* Proof:
+   Let d = gcd a b.
+   Then ?h k. h * a = k * b + d                by GCD_LINEAR, 0 < a
+   Let p = h, q = k * n - k.
+   Then q + k = k * n.
+          (p * a) MOD n = (k * b + d) MOD n
+   <=>    (p * a + q * b) MOD n = (q * b + k * b + d) MOD n    by ADD_MOD
+   <=>    (p * a + q * b) MOD n = (k * b * n + d) MOD n        by above
+   <=>    (p * a + q * b) MOD n = d MOD n                      by MOD_TIMES
+*)
+Theorem gcd_linear_mod_thm:
+  !n a b. 0 < n /\ 0 < a ==> ?p q. (p * a + q * b) MOD n = gcd a b MOD n
+Proof
+  rpt strip_tac >>
+  qabbrev_tac `d = gcd a b` >>
+  `?p k. p * a = k * b + d` by rw[GCD_LINEAR, Abbr`d`] >>
+  `k <= k * n` by fs[] >>
+  `k * n - k + k = k * n` by decide_tac >>
+  qabbrev_tac `q = k * n - k` >>
+  qexists_tac `p` >>
+  qexists_tac `q` >>
+  `(p * a + q * b) MOD n = (q * b + k * b + d) MOD n` by rw[ADD_MOD] >>
+  `_ = ((q + k) * b + d) MOD n` by decide_tac >>
+  `_ = (k * b * n + d) MOD n` by rfs[] >>
+  simp[MOD_TIMES]
+QED
+
+(* Idea: a simplification of gcd_linear_mod_thm when n = a. *)
+
+(* Theorem: 0 < a ==> ?q. (q * b) MOD a = (gcd a b) MOD a *)
+(* Proof:
+   Let g = gcd a b.
+   Then ?p q. (p * a + q * b) MOD a = g MOD a  by gcd_linear_mod_thm, n = a
+     so               (q * b) MOD a = g MOD a  by MOD_TIMES
+*)
+Theorem gcd_linear_mod_1:
+  !a b. 0 < a ==> ?q. (q * b) MOD a = (gcd a b) MOD a
+Proof
+  metis_tac[gcd_linear_mod_thm, MOD_TIMES]
+QED
+
+(* Idea: symmetric version of of gcd_linear_mod_1. *)
+
+(* Theorem: 0 < b ==> ?p. (p * a) MOD b = (gcd a b) MOD b *)
+(* Proof:
+   Note ?p. (p * a) MOD b = (gcd b a) MOD b    by gcd_linear_mod_1
+     or                   = (gcd a b) MOD b    by GCD_SYM
+*)
+Theorem gcd_linear_mod_2:
+  !a b. 0 < b ==> ?p. (p * a) MOD b = (gcd a b) MOD b
+Proof
+  metis_tac[gcd_linear_mod_1, GCD_SYM]
+QED
+
+(* Idea: replacing n = a * b in gcd_linear_mod_thm. *)
+
+(* Theorem: 0 < a /\ 0 < b ==> ?p q. (p * a + q * b) MOD (a * b) = (gcd a b) MOD (a * b) *)
+(* Proof: by gcd_linear_mod_thm, n = a * b. *)
+Theorem gcd_linear_mod_prod:
+  !a b. 0 < a /\ 0 < b ==> ?p q. (p * a + q * b) MOD (a * b) = (gcd a b) MOD (a * b)
+Proof
+  simp[gcd_linear_mod_thm]
+QED
+
+(* Idea: specialise gcd_linear_mod_prod for coprime a b. *)
+
+(* Theorem: 0 < a /\ 0 < b /\ coprime a b ==>
+            ?p q. (p * a + q * b) MOD (a * b) = 1 MOD (a * b) *)
+(* Proof: by gcd_linear_mod_prod. *)
+Theorem coprime_linear_mod_prod:
+  !a b. 0 < a /\ 0 < b /\ coprime a b ==>
+  ?p q. (p * a + q * b) MOD (a * b) = 1 MOD (a * b)
+Proof
+  metis_tac[gcd_linear_mod_prod]
+QED
+
+(* Idea: generalise gcd_linear_mod_thm for multiple of gcd a b. *)
+
+(* Theorem: 0 < n /\ 0 < a /\ gcd a b divides c ==>
+            ?p q. (p * a + q * b) MOD n = c MOD n *)
+(* Proof:
+   Let d = gcd a b.
+   Note k. c = k * d                           by divides_def
+    and ?p q. (p * a + q * b) MOD n = d MOD n  by gcd_linear_mod_thm
+   Thus (k * d) MOD n
+      = (k * (p * a + q * b)) MOD n            by MOD_TIMES2, 0 < n
+      = (k * p * a + k * q * b) MOD n          by LEFT_ADD_DISTRIB
+   Take (k * p) and (k * q) for the eventual p and q.
+*)
+Theorem gcd_multiple_linear_mod_thm:
+  !n a b c. 0 < n /\ 0 < a /\ gcd a b divides c ==>
+            ?p q. (p * a + q * b) MOD n = c MOD n
+Proof
+  rpt strip_tac >>
+  qabbrev_tac `d = gcd a b` >>
+  `?k. c = k * d` by rw[GSYM divides_def] >>
+  `?p q. (p * a + q * b) MOD n = d MOD n` by metis_tac[gcd_linear_mod_thm] >>
+  `(k * (p * a + q * b)) MOD n = (k * d) MOD n` by metis_tac[MOD_TIMES2] >>
+  `k * (p * a + q * b) = k * p * a + k * q * b` by decide_tac >>
+  metis_tac[]
+QED
+
+(* Idea: specialise gcd_multiple_linear_mod_thm for n = a * b. *)
+
+(* Theorem: 0 < a /\ 0 < b /\ gcd a b divides c ==>
+            ?p q. (p * a + q * b) MOD (a * b) = c MOD (a * b)) *)
+(* Proof: by gcd_multiple_linear_mod_thm. *)
+Theorem gcd_multiple_linear_mod_prod:
+  !a b c. 0 < a /\ 0 < b /\ gcd a b divides c ==>
+          ?p q. (p * a + q * b) MOD (a * b) = c MOD (a * b)
+Proof
+  simp[gcd_multiple_linear_mod_thm]
+QED
+
+(* Idea: specialise gcd_multiple_linear_mod_prod for coprime a b. *)
+
+(* Theorem: 0 < a /\ 0 < b /\ coprime a b ==>
+            ?p q. (p * a + q * b) MOD (a * b) = c MOD (a * b) *)
+(* Proof:
+   Note coprime a b means gcd a b = 1    by notation
+    and 1 divides c                      by ONE_DIVIDES_ALL
+     so the result follows               by gcd_multiple_linear_mod_prod
+*)
+Theorem coprime_multiple_linear_mod_prod:
+  !a b c. 0 < a /\ 0 < b /\ coprime a b ==>
+          ?p q. (p * a + q * b) MOD (a * b) = c MOD (a * b)
+Proof
+  metis_tac[gcd_multiple_linear_mod_prod, ONE_DIVIDES_ALL]
+QED
+
 (* export theory at end *)
 val _ = export_theory();
 

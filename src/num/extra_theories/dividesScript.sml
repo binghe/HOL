@@ -449,6 +449,17 @@ val ZERO_LT_PRIMES = Q.store_thm
  `!n. 0 < PRIMES n`,
   METIS_TAC [LESS_TRANS, ONE_LT_PRIMES, DECIDE ``0 < 1``]);
 
+(* Theorem: !n. ?p. prime p /\ n < p *)
+(* Proof:
+   Since ?i. n < PRIMES i   by NEXT_LARGER_PRIME
+     and prime (PRIMES i)   by primePRIMES
+   Take p = PRIMES i.
+*)
+val prime_always_bigger = store_thm(
+  "prime_always_bigger",
+  ``!n. ?p. prime p /\ n < p``,
+  metis_tac[NEXT_LARGER_PRIME, primePRIMES]);
+
 (*---------------------------------------------------------------------------*)
 (* Directly computable version of divides                                    *)
 (*---------------------------------------------------------------------------*)
