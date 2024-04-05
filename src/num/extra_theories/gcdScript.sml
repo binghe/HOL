@@ -3,27 +3,27 @@
 open HolKernel Parse boolLib BasicProvers
 
 open prim_recTheory arithmeticTheory dividesTheory simpLib boolSimps
-     Induction TotalDefn;
+     Induction TotalDefn numSimps;
 
 open numSimps metisLib;
 
-val arith_ss = bool_ss ++ numSimps.ARITH_ss
+val arith_ss = bool_ss ++ ARITH_ss;
 val std_ss = arith_ss;
 val ARW = RW_TAC arith_ss
 
 val DECIDE = Drule.EQT_ELIM o Arith.ARITH_CONV;
 
 fun DECIDE_TAC (g as (asl,_)) =
-  ((MAP_EVERY UNDISCH_TAC (filter numSimps.is_arith asl) THEN
+  ((MAP_EVERY UNDISCH_TAC (filter is_arith asl) THEN
     CONV_TAC Arith.ARITH_CONV)
    ORELSE tautLib.TAUT_TAC) g;
 
 val decide_tac = DECIDE_TAC;
 val metis_tac = METIS_TAC;
-val rw = srw_tac[];
+val rw = SRW_TAC [ARITH_ss];
 val qabbrev_tac = Q.ABBREV_TAC;
-val simp = SIMP_TAC (srw_ss());
-val fs = FULL_SIMP_TAC (srw_ss());
+val simp = ASM_SIMP_TAC (srw_ss() ++ ARITH_ss);
+val fs = FULL_SIMP_TAC (srw_ss() ++ ARITH_ss);
 
 val _ = new_theory "gcd";
 

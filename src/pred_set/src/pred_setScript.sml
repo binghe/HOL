@@ -19,6 +19,7 @@ val AP = numLib.ARITH_PROVE
 val ARITH_ss = numSimps.ARITH_ss
 val arith_ss = bool_ss ++ ARITH_ss
 val DECIDE = numLib.ARITH_PROVE
+val metis_tac = METIS_TAC;
 
 (* don't eta-contract these; that will force tactics to use one fixed version
    of srw_ss() *)
@@ -5293,6 +5294,18 @@ val PROD_SET_IMAGE_REDUCTION = store_thm(
      (PROD_SET (IMAGE f (x INSERT s)) = (f x) * PROD_SET (IMAGE f s))``,
   METIS_TAC [DELETE_NON_ELEMENT, IMAGE_INSERT, PROD_SET_THM]);
 
+(* PROD_SET_IMAGE_REDUCTION |> ISPEC ``I:num -> num``; *)
+
+(* Theorem: FINITE s /\ x NOTIN s ==> (PROD_SET (x INSERT s) = x * PROD_SET s) *)
+(* Proof:
+   Since !x. I x = x         by I_THM
+     and !s. IMAGE I s = s   by IMAGE_I
+    thus the result follows  by PROD_SET_IMAGE_REDUCTION
+*)
+val PROD_SET_INSERT = store_thm(
+  "PROD_SET_INSERT",
+  ``!x s. FINITE s /\ x NOTIN s ==> (PROD_SET (x INSERT s) = x * PROD_SET s)``,
+  metis_tac[PROD_SET_IMAGE_REDUCTION, combinTheory.I_THM, IMAGE_I]);
 
 (* every finite, non-empty set of natural numbers has a maximum element *)
 

@@ -3312,19 +3312,6 @@ val PROD_SET_DIVISORS = store_thm(
   metis_tac[DIVIDES_MULTIPLE, MULT_COMM] >>
   metis_tac[DIVIDES_MULTIPLE]);
 
-(* PROD_SET_IMAGE_REDUCTION |> ISPEC ``I:num -> num``; *)
-
-(* Theorem: FINITE s /\ x NOTIN s ==> (PROD_SET (x INSERT s) = x * PROD_SET s) *)
-(* Proof:
-   Since !x. I x = x         by I_THM
-     and !s. IMAGE I s = s   by IMAGE_I
-    thus the result follows  by PROD_SET_IMAGE_REDUCTION
-*)
-val PROD_SET_INSERT = store_thm(
-  "PROD_SET_INSERT",
-  ``!x s. FINITE s /\ x NOTIN s ==> (PROD_SET (x INSERT s) = x * PROD_SET s)``,
-  metis_tac[PROD_SET_IMAGE_REDUCTION, combinTheory.I_THM, IMAGE_I]);
-
 (* Theorem: FINITE s ==> !f. INJ f s UNIV ==> (PROD_SET (IMAGE f s) = PI f s) *)
 (* Proof:
    By finite induction on s.
