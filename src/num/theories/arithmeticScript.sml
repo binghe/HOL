@@ -1397,6 +1397,8 @@ val LESS_MULT2 = store_thm ("LESS_MULT2",
   REPEAT GEN_TAC THEN CONV_TAC CONTRAPOS_CONV THEN
   REWRITE_TAC[NOT_LESS, LESS_EQ_0, DE_MORGAN_THM, MULT_EQ_0]);
 
+val MULT_POS = save_thm("MULT_POS", LESS_MULT2);
+
 Theorem ZERO_LESS_MULT[simp]:
   !m n. 0 < m * n <=> 0 < m /\ 0 < n
 Proof
@@ -4616,6 +4618,59 @@ val MULT_LEFT_CANCEL = store_thm(
   "MULT_LEFT_CANCEL",
   ``!m n p. (p * n = p * m) <=> (p = 0) \/ (n = m)``,
   rw[MULT_RIGHT_CANCEL, MULT_COMM]);
+
+(* Theorem: m * (n * p) = n * (m * p) *)
+(* Proof:
+     m * (n * p)
+   = (m * n) * p       by MULT_ASSOC
+   = (n * m) * p       by MULT_COMM
+   = n * (m * p)       by MULT_ASSOC
+*)
+val MULT_COMM_ASSOC = store_thm(
+  "MULT_COMM_ASSOC",
+  ``!m n p. m * (n * p) = n * (m * p)``,
+  metis_tac[MULT_COMM, MULT_ASSOC]);
+
+(* Theorem: 0 < n ==> ((n * m) DIV n = m) *)
+(* Proof:
+   Since n * m = m * n        by MULT_COMM
+               = m * n + 0    by ADD_0
+     and 0 < n                by given
+   Hence (n * m) DIV n = m    by DIV_UNIQUE:
+   |- !n k q. (?r. (k = q * n + r) /\ r < n) ==> (k DIV n = q)
+*)
+val MULT_TO_DIV = store_thm(
+  "MULT_TO_DIV",
+  ``!m n. 0 < n ==> ((n * m) DIV n = m)``,
+  metis_tac[MULT_COMM, ADD_0, DIV_UNIQUE]);
+(* This is commutative version of:
+arithmeticTheory.MULT_DIV |- !n q. 0 < n ==> (q * n DIV n = q)
+*)
+
+(* Theorem: m * (n * p) = m * p * n *)
+(* Proof: by MULT_ASSOC, MULT_COMM *)
+val MULT_ASSOC_COMM = store_thm(
+  "MULT_ASSOC_COMM",
+  ``!m n p. m * (n * p) = m * p * n``,
+  metis_tac[MULT_ASSOC, MULT_COMM]);
+
+(* Theorem: 0 < n ==> !m. (m * n = n) <=> (m = 1) *)
+(* Proof: by MULT_EQ_ID *)
+val MULT_LEFT_ID = store_thm(
+  "MULT_LEFT_ID",
+  ``!n. 0 < n ==> !m. (m * n = n) <=> (m = 1)``,
+  metis_tac[MULT_EQ_ID, NOT_ZERO_LT_ZERO]);
+
+(* Theorem: 0 < n ==> !m. (n * m = n) <=> (m = 1) *)
+(* Proof: by MULT_EQ_ID *)
+val MULT_RIGHT_ID = store_thm(
+  "MULT_RIGHT_ID",
+  ``!n. 0 < n ==> !m. (n * m = n) <=> (m = 1)``,
+  metis_tac[MULT_EQ_ID, MULT_COMM, NOT_ZERO_LT_ZERO]);
+
+(* Theorem alias *)
+Theorem MULT_EQ_SELF = MULT_RIGHT_ID;
+(* val MULT_EQ_SELF = |- !n. 0 < n ==> !m. (n * m = n) <=> (m = 1): thm *)
 
 (* ------------------------------------------------------------------------- *)
 (* Modulo Theorems (from examples/algebra)                                   *)

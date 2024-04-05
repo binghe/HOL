@@ -1,360 +1,17 @@
 (* ------------------------------------------------------------------------- *)
-(* Elementary Number Theory - a collection of useful results for Numbers.    *)
+(* Elementary Number Theory - a collection of useful results for Numbers     *)
 (*                                                                           *)
-(* Author: Hing-Lun Chan (Australian National University, 2015)              *)
+(* Author: Hing-Lun Chan (Australian National University, 2019)              *)
 (* ------------------------------------------------------------------------- *)
 
 open HolKernel boolLib Parse bossLib;
 
 open pred_setTheory arithmeticTheory dividesTheory gcdTheory;
 
-val _ = new_theory "number"; (* was: "helperNum" *)
+val _ = new_theory "number";
 
 (* ------------------------------------------------------------------------- *)
-(* HelperNum Documentation                                                   *)
-(* ------------------------------------------------------------------------- *)
-(* Overloading:
-   SQ n           = n * n
-   HALF n         = n DIV 2
-   TWICE n        = 2 * n
-   n divides m    = divides n m
-   coprime x y    = gcd x y = 1
-*)
-(* Definitions and Theorems (# are exported):
-
-   Arithmetic Theorems:
-   THREE             |- 3 = SUC 2
-   FOUR              |- 4 = SUC 3
-   FIVE              |- 5 = SUC 4
-   num_nchotomy      |- !m n. m = n \/ m < n \/ n < m
-   ZERO_LE_ALL       |- !n. 0 <= n
-   NOT_ZERO          |- !n. n <> 0 <=> 0 < n
-   ONE_NOT_0         |- 1 <> 0
-   ONE_LT_POS        |- !n. 1 < n ==> 0 < n
-   ONE_LT_NONZERO    |- !n. 1 < n ==> n <> 0
-   NOT_LT_ONE        |- !n. ~(1 < n) <=> (n = 0) \/ (n = 1)
-   NOT_ZERO_GE_ONE   |- !n. n <> 0 <=> 1 <= n
-   LE_ONE            |- !n. n <= 1 <=> (n = 0) \/ (n = 1)
-   LESS_SUC          |- !n. n < SUC n
-   PRE_LESS          |- !n. 0 < n ==> PRE n < n
-   SUC_EXISTS        |- !n. 0 < n ==> ?m. n = SUC m
-   SUC_POS           |- !n. 0 < SUC n
-   SUC_NOT_ZERO      |- !n. SUC n <> 0
-   ONE_NOT_ZERO      |- 1 <> 0
-   SUC_ADD_SUC       |- !m n. SUC m + SUC n = m + n + 2
-   SUC_MULT_SUC      |- !m n. SUC m * SUC n = m * n + m + n + 1
-   SUC_EQ            |- !m n. (SUC m = SUC n) <=> (m = n)
-   TWICE_EQ_0        |- !n. (TWICE n = 0) <=> (n = 0)
-   SQ_EQ_0           |- !n. (SQ n = 0) <=> (n = 0)
-   SQ_EQ_1           |- !n. (SQ n = 1) <=> (n = 1)
-   MULT3_EQ_0        |- !x y z. (x * y * z = 0) <=> ((x = 0) \/ (y = 0) \/ (z = 0))
-   MULT3_EQ_1        |- !x y z. (x * y * z = 1) <=> ((x = 1) /\ (y = 1) /\ (z = 1))
-   SQ_0              |- 0 ** 2 = 0
-   EXP_2_EQ_0        |- !n. (n ** 2 = 0) <=> (n = 0)
-   LE_MULT_LCANCEL_IMP |- !m n p. n <= p ==> m * n <= m * p
-
-   Maximum and minimum:
-   MAX_ALT           |- !m n. MAX m n = if m <= n then n else m
-   MIN_ALT           |- !m n. MIN m n = if m <= n then m else n
-   MAX_SWAP          |- !f. (!x y. x <= y ==> f x <= f y) ==> !x y. f (MAX x y) = MAX (f x) (f y)
-   MIN_SWAP          |- !f. (!x y. x <= y ==> f x <= f y) ==> !x y. f (MIN x y) = MIN (f x) (f y)
-   SUC_MAX           |- !m n. SUC (MAX m n) = MAX (SUC m) (SUC n)
-   SUC_MIN           |- !m n. SUC (MIN m n) = MIN (SUC m) (SUC n)
-   MAX_SUC           |- !m n. MAX (SUC m) (SUC n) = SUC (MAX m n)
-   MIN_SUC           |- !m n. MIN (SUC m) (SUC n) = SUC (MIN m n)
-   MAX_LESS          |- !x y n. x < n /\ y < n ==> MAX x y < n
-   MAX_CASES         |- !m n. (MAX n m = n) \/ (MAX n m = m)
-   MIN_CASES         |- !m n. (MIN n m = n) \/ (MIN n m = m)
-   MAX_EQ_0          |- !m n. (MAX n m = 0) <=> (n = 0) /\ (m = 0)
-   MIN_EQ_0          |- !m n. (MIN n m = 0) <=> (n = 0) \/ (m = 0)
-   MAX_IS_MAX        |- !m n. m <= MAX m n /\ n <= MAX m n
-   MIN_IS_MIN        |- !m n. MIN m n <= m /\ MIN m n <= n
-   MAX_ID            |- !m n. MAX (MAX m n) n = MAX m n /\ MAX m (MAX m n) = MAX m n
-   MIN_ID            |- !m n. MIN (MIN m n) n = MIN m n /\ MIN m (MIN m n) = MIN m n
-   MAX_LE_PAIR       |- !a b c d. a <= b /\ c <= d ==> MAX a c <= MAX b d
-   MIN_LE_PAIR       |- !a b c d. a <= b /\ c <= d ==> MIN a c <= MIN b d
-   MAX_ADD           |- !a b c. MAX a (b + c) <= MAX a b + MAX a c
-   MIN_ADD           |- !a b c. MIN a (b + c) <= MIN a b + MIN a c
-   MAX_1_POS         |- !n. 0 < n ==> MAX 1 n = n
-   MIN_1_POS         |- !n. 0 < n ==> MIN 1 n = 1
-   MAX_LE_SUM        |- !m n. MAX m n <= m + n
-   MIN_LE_SUM        |- !m n. MIN m n <= m + n
-   MAX_1_EXP         |- !n m. MAX 1 (m ** n) = MAX 1 m ** n
-   MIN_1_EXP         |- !n m. MIN 1 (m ** n) = MIN 1 m ** n
-
-   Arithmetic Manipulations:
-   MULT_POS          |- !m n. 0 < m /\ 0 < n ==> 0 < m * n
-   MULT_COMM_ASSOC   |- !m n p. m * (n * p) = n * (m * p)
-   MULT_RIGHT_CANCEL |- !m n p. (n * p = m * p) <=> (p = 0) \/ (n = m)
-   MULT_LEFT_CANCEL  |- !m n p. (p * n = p * m) <=> (p = 0) \/ (n = m)
-   MULT_TO_DIV       |- !m n. 0 < n ==> (n * m DIV n = m)
-   MULT_ASSOC_COMM   |- !m n p. m * (n * p) = m * p * n
-   MULT_LEFT_ID      |- !n. 0 < n ==> !m. (m * n = n) <=> (m = 1)
-   MULT_RIGHT_ID     |- !n. 0 < n ==> !m. (n * m = n) <=> (m = 1)
-   MULT_EQ_SELF      |- !n. 0 < n ==> !m. (n * m = n) <=> (m = 1)
-   SQ_EQ_SELF        |- !n. (n * n = n) <=> (n = 0) \/ (n = 1)
-   EXP_EXP_BASE_LE   |- !b c m n. m <= n /\ 0 < c ==> b ** c ** m <= b ** c ** n
-   EXP_EXP_LE_MONO_IMP |- !a b n. a <= b ==> a ** n <= b ** n
-   EXP_BY_ADD_SUB_LE |- !m n. m <= n ==> !p. p ** n = p ** m * p ** (n - m)
-   EXP_BY_ADD_SUB_LT |- !m n. m < n ==> !p. p ** n = p ** m * p ** (n - m)
-   EXP_SUC_DIV       |- !m n. 0 < m ==> m ** SUC n DIV m = m ** n
-   SELF_LE_SQ        |- !n. n <= n ** 2
-   LE_MONO_ADD2      |- !a b c d. a <= b /\ c <= d ==> a + c <= b + d
-   LT_MONO_ADD2      |- !a b c d. a < b /\ c < d ==> a + c < b + d
-   LE_MONO_MULT2     |- !a b c d. a <= b /\ c <= d ==> a * c <= b * d
-   LT_MONO_MULT2     |- !a b c d. a < b /\ c < d ==> a * c < b * d
-   SUM_LE_PRODUCT    |- !m n. 1 < m /\ 1 < n ==> m + n <= m * n
-   MULTIPLE_SUC_LE   |- !n k. 0 < n ==> k * n + 1 <= (k + 1) * n
-
-   Simple Theorems:
-   ADD_EQ_2          |- !m n. 0 < m /\ 0 < n /\ (m + n = 2) ==> (m = 1) /\ (n = 1)
-   EVEN_0            |- EVEN 0
-   ODD_1             |- ODD 1
-   EVEN_2            |- EVEN 2
-   EVEN_SQ           |- !n. EVEN (n ** 2) <=> EVEN n
-   ODD_SQ            |- !n. ODD (n ** 2) <=> ODD n
-   EQ_PARITY         |- !a b. EVEN (2 * a + b) <=> EVEN b
-   ODD_MOD2          |- !x. ODD x <=> (x MOD 2 = 1)
-   EVEN_ODD_SUC      |- !n. (EVEN n <=> ODD (SUC n)) /\ (ODD n <=> EVEN (SUC n))
-   EVEN_ODD_PRE      |- !n. 0 < n ==> (EVEN n <=> ODD (PRE n)) /\ (ODD n <=> EVEN (PRE n))
-   EVEN_PARTNERS     |- !n. EVEN (n * (n + 1))
-   EVEN_HALF         |- !n. EVEN n ==> (n = 2 * HALF n)
-   ODD_HALF          |- !n. ODD n ==> (n = 2 * HALF n + 1)
-   EVEN_SUC_HALF     |- !n. EVEN n ==> (HALF (SUC n) = HALF n)
-   ODD_SUC_HALF      |- !n. ODD n ==> (HALF (SUC n) = SUC (HALF n))
-   HALF_EQ_0         |- !n. (HALF n = 0) <=> (n = 0) \/ (n = 1)
-   HALF_EQ_SELF      |- !n. (HALF n = n) <=> (n = 0)
-   HALF_LT           |- !n. 0 < n ==> HALF n < n
-   HALF_ADD1_LT      |- !n. 2 < n ==> 1 + HALF n < n
-   HALF_TWICE        |- !n. HALF (TWICE n) = n
-   HALF_MULT         |- !m n. n * HALF m <= HALF (n * m)
-   TWO_HALF_LE_THM   |- !n. 2 * HALF n <= n /\ n <= SUC (2 * HALF n)
-   TWO_HALF_TIMES_LE |- !m n. TWICE (HALF n * m) <= n * m
-   HALF_ADD1_LE      |- !n. 0 < n ==> 1 + HALF n <= n
-   HALF_SQ_LE        |- !n. HALF n ** 2 <= n ** 2 DIV 4
-   HALF_LE           |- !n. HALF n <= n
-   HALF_LE_MONO      |- !x y. x <= y ==> HALF x <= HALF y
-   HALF_SUC          |- !n. HALF (SUC n) <= n
-   HALF_SUC_SUC      |- !n. 0 < n ==> HALF (SUC (SUC n)) <= n
-   HALF_SUC_LE       |- !n m. n < HALF (SUC m) ==> 2 * n + 1 <= m
-   HALF_EVEN_LE      |- !n m. 2 * n < m ==> n <= HALF m
-   HALF_ODD_LT       |- !n m. 2 * n + 1 < m ==> n < HALF m
-   MULT_EVEN         |- !n. EVEN n ==> !m. m * n = TWICE m * HALF n
-   MULT_ODD          |- !n. ODD n ==> !m. m * n = m + TWICE m * HALF n
-   EVEN_MOD_EVEN     |- !m. EVEN m /\ m <> 0 ==> !n. EVEN n <=> EVEN (n MOD m)
-   EVEN_MOD_ODD      |- !m. EVEN m /\ m <> 0 ==> !n. ODD n <=> ODD (n MOD m)
-
-   SUB_SUB_SUB           |- !a b c. c <= a ==> (a - b - (a - c) = c - b)
-   ADD_SUB_SUB           |- !a b c. c <= a ==> (a + b - (a - c) = c + b)
-   SUB_EQ_ADD            |- !p. 0 < p ==> !m n. (m - n = p) <=> (m = n + p)
-   MULT_EQ_LESS_TO_MORE  |- !a b c d. 0 < a /\ 0 < b /\ a < c /\ (a * b = c * d) ==> d < b
-   LE_IMP_REVERSE_LT     |- !a b c d. 0 < c /\ 0 < d /\ a * b <= c * d /\ d < b ==> a < c
-
-   Exponential Theorems:
-   EXP_0             |- !n. n ** 0 = 1
-   EXP_2             |- !n. n ** 2 = n * n
-   EXP_NONZERO       |- !m n. m <> 0 ==> m ** n <> 0
-   EXP_POS           |- !m n. 0 < m ==> 0 < m ** n
-   EXP_EQ_SELF       |- !n m. 0 < m ==> (n ** m = n) <=> (m = 1) \/ (n = 0) \/ (n = 1)
-   EXP_LE            |- !n b. 0 < n ==> b <= b ** n
-   EXP_LT            |- !n b. 1 < b /\ 1 < n ==> b < b ** n
-   EXP_LCANCEL       |- !a b c n m. 0 < a /\ n < m /\ (a ** n * b = a ** m * c) ==> ?d. 0 < d /\ (b = a ** d * c)
-   EXP_RCANCEL       |- !a b c n m. 0 < a /\ n < m /\ (b * a ** n = c * a ** m) ==> ?d. 0 < d /\ (b = c * a ** d)
-   ONE_LE_EXP        |- !m n. 0 < m ==> 1 <= m ** n
-   EXP_EVEN          |- !n. EVEN n ==> !m. m ** n = SQ m ** HALF n
-   EXP_ODD           |- !n. ODD n ==> !m. m ** n = m * SQ m ** HALF n
-   EXP_THM           |- !m n. m ** n =
-                              if n = 0 then 1 else if n = 1 then m
-                              else if EVEN n then SQ m ** HALF n
-                                   else m * SQ m ** HALF n
-   EXP_EQN           |- !m n. m ** n =
-                              if n = 0 then 1
-                              else if EVEN n then SQ m ** HALF n
-                              else m * SQ m ** HALF n
-   EXP_EQN_ALT       |- !m n. m ** n =
-                              if n = 0 then 1 else (if EVEN n then 1 else m) * SQ m ** HALF n
-   EXP_ALT_EQN       |- !m n. m ** n =
-                              if n = 0 then 1 else (if EVEN n then 1 else m) * (m ** 2) ** HALF n
-   EXP_MOD_EQN       |- !b n m. 1 < m ==>
-                                (b ** n MOD m =
-                                 if n = 0 then 1
-                                 else (let result = SQ b ** HALF n MOD m
-                                        in if EVEN n then result else (b * result) MOD m))
-   EXP_MOD_ALT       |- !b n m. 1 < m ==>
-                                (b ** n MOD m =
-                                 if n = 0 then 1
-                                 else ((if EVEN n then 1 else b) * SQ b ** HALF n MOD m) MOD m)
-   EXP_EXP_SUC       |- !x y n. x ** y ** SUC n = (x ** y) ** y ** n
-   EXP_LOWER_LE_LOW  |- !n m. 1 + n * m <= (1 + m) ** n
-   EXP_LOWER_LT_LOW  |- !n m. 0 < m /\ 1 < n ==> 1 + n * m < (1 + m) ** n
-   EXP_LOWER_LE_HIGH |- !n m. n * m ** (n - 1) + m ** n <= (1 + m) ** n
-   SUC_X_LT_2_EXP_X  |- !n. 1 < n ==> SUC n < 2 ** n
-
-   DIVIDES Theorems:
-   DIV_EQUAL_0       |- !m n. 0 < n ==> ((m DIV n = 0) <=> m < n)
-   DIV_POS           |- !m n. 0 < m /\ m <= n ==> 0 < n DIV m
-   DIV_EQ            |- !x y z. 0 < z ==> (x DIV z = y DIV z <=> x - x MOD z = y - y MOD z)
-   ADD_DIV_EQ        |- !n a b. a MOD n + b < n ==> (a + b) DIV n = a DIV n
-   DIV_LE            |- !x y z. 0 < y /\ x <= y * z ==> x DIV y <= z
-   DIV_SOLVE         |- !n. 0 < n ==> !x y. (x * n = y) ==> (x = y DIV n)
-   DIV_SOLVE_COMM    |- !n. 0 < n ==> !x y. (n * x = y) ==> (x = y DIV n)
-   ONE_DIV           |- !n. 1 < n ==> (1 DIV n = 0)
-   DIVIDES_ODD       |- !n. ODD n ==> !m. m divides n ==> ODD m
-   DIVIDES_EVEN      |- !m. EVEN m ==> !n. m divides n ==> EVEN n
-   EVEN_ALT          |- !n. EVEN n <=> 2 divides n
-   ODD_ALT           |- !n. ODD n <=> ~(2 divides n)
-
-   DIV_MULT_LE       |- !n. 0 < n ==> !q. q DIV n * n <= q
-   DIV_MULT_EQ       |- !n. 0 < n ==> !q. n divides q <=> (q DIV n * n = q)
-   DIV_MULT_LESS_EQ  |- !m n. 0 < m ==> m * (n DIV m) <= n /\ n < m * SUC (n DIV m)
-   DIV_LE_MONOTONE_REVERSE  |- !x y. 0 < x /\ 0 < y /\ x <= y ==> !n. n DIV y <= n DIV x
-   DIVIDES_EQN       |- !n. 0 < n ==> !m. n divides m <=> (m = m DIV n * n)
-   DIVIDES_EQN_COMM  |- !n. 0 < n ==> !m. n divides m <=> (m = n * (m DIV n))
-   SUB_DIV           |- !m n. 0 < n /\ n <= m ==> ((m - n) DIV n = m DIV n - 1)
-   SUB_DIV_EQN       |- !m n. 0 < n ==> ((m - n) DIV n = if m < n then 0 else m DIV n - 1)
-   SUB_MOD_EQN       |- !m n. 0 < n ==> ((m - n) MOD n = if m < n then 0 else m MOD n)
-   DIV_EQ_MULT       |- !n. 0 < n ==> !k m. (m MOD n = 0) ==> ((k * n = m) <=> (k = m DIV n))
-   MULT_LT_DIV       |- !n. 0 < n ==> !k m. (m MOD n = 0) ==> (k * n < m <=> k < m DIV n)
-   LE_MULT_LE_DIV    |- !n. 0 < n ==> !k m. (m MOD n = 0) ==> (m <= n * k <=> m DIV n <= k)
-   DIV_MOD_EQ_0      |- !m n. 0 < m ==> (n DIV m = 0 /\ n MOD m = 0 <=> n = 0)
-   DIV_LT_SUC        |- !m n. 0 < m /\ 0 < n /\ n MOD m = 0 ==> n DIV SUC m < n DIV m
-   DIV_LT_MONOTONE_REVERSE  |- !x y. 0 < x /\ 0 < y /\ x < y ==>
-                               !n. 0 < n /\ n MOD x = 0 ==> n DIV y < n DIV x
-
-   EXP_DIVIDES            |- !a b n. 0 < n /\ a ** n divides b ==> a divides b
-   DIVIDES_EXP_BASE       |- !a b n. prime a /\ 0 < n ==> (a divides b <=> a divides (b ** n))
-   DIVIDES_MULTIPLE       |- !m n. n divides m ==> !k. n divides (k * m)
-   DIVIDES_MULTIPLE_IFF   |- !m n k. k <> 0 ==> (m divides n <=> k * m divides k * n)
-   DIVIDES_FACTORS        |- !m n. 0 < n /\ n divides m ==> (m = n * (m DIV n))
-   DIVIDES_COFACTOR       |- !m n. 0 < n /\ n divides m ==> (m DIV n) divides m
-   MULTIPLY_DIV           |- !n p q. 0 < n /\ n divides q ==> (p * (q DIV n) = p * q DIV n)
-   DIVIDES_MOD_MOD        |- !m n. 0 < n /\ m divides n ==> !x. x MOD n MOD m = x MOD m
-   DIVIDES_CANCEL         |- !k. 0 < k ==> !m n. m divides n <=> (m * k) divides (n * k)
-   DIVIDES_CANCEL_COMM    |- !a b k. a divides b ==> (k * a) divides (k * b)
-   DIV_COMMON_FACTOR      |- !m n. 0 < n /\ 0 < m ==> !x. n divides x ==> (m * x DIV (m * n) = x DIV n)
-   DIV_DIV_MULT           |- !m n x. 0 < n /\ 0 < m /\ 0 < m DIV n /\ n divides m /\ m divides x /\
-                                     (m DIV n) divides x ==> (x DIV (m DIV n) = n * (x DIV m))
-
-   Basic Divisibility:
-   divides_iff_equal   |- !m n. 0 < n /\ n < 2 * m ==> (m divides n <=> n = m)
-   dividend_divides_divisor_multiple
-                       |- !m n. 0 < m /\ n divides m ==> !t. m divides t * n <=> m DIV n divides t
-   divisor_pos         |- !m n. 0 < n /\ m divides n ==> 0 < m
-   divides_pos         |- !m n. 0 < n /\ m divides n ==> 0 < m /\ m <= n
-   divide_by_cofactor  |- !m n. 0 < n /\ m divides n ==> (n DIV (n DIV m) = m)
-   divides_exp         |- !n. 0 < n ==> !a b. a divides b ==> a divides b ** n
-   divides_linear      |- !a b c. c divides a /\ c divides b ==> !h k. c divides h * a + k * b
-   divides_linear_sub  |- !a b c. c divides a /\ c divides b ==>
-                          !h k d. (h * a = k * b + d) ==> c divides d
-   power_divides_iff        |- !p. 1 < p ==> !m n. p ** m divides p ** n <=> m <= n
-   prime_power_divides_iff  |- !p. prime p ==> !m n. p ** m divides p ** n <=> m <= n
-   divides_self_power       |- !n p. 0 < n /\ 1 < p ==> p divides p ** n
-   divides_eq_thm      |- !a b. a divides b /\ 0 < b /\ b < 2 * a ==> (b = a)
-   factor_eq_cofactor  |- !m n. 0 < m /\ m divides n ==> (m = n DIV m <=> n = m ** 2)
-   euclid_prime        |- !p a b. prime p /\ p divides a * b ==> p divides a \/ p divides b
-   euclid_coprime      |- !a b c. coprime a b /\ b divides a * c ==> b divides c
-
-   Modulo Theorems:
-   MOD_EQN             |- !n. 0 < n ==> !a b. (a MOD n = b) <=> ?c. (a = c * n + b) /\ b < n
-   MOD_MOD_EQN         |- !n a b. 0 < n /\ b <= a ==> (a MOD n = b MOD n <=> ?c. a = b + c * n)
-   MOD_PLUS2           |- !n x y. 0 < n ==> (x + y) MOD n = (x + y MOD n) MOD n
-   MOD_PLUS3           |- !n. 0 < n ==> !x y z. (x + y + z) MOD n = (x MOD n + y MOD n + z MOD n) MOD n
-   MOD_ADD_ASSOC       |- !n x y z. 0 < n /\ x < n /\ y < n /\ z < n ==>
-                          (((x + y) MOD n + z) MOD n = (x + (y + z) MOD n) MOD n)
-   MOD_MULT_ASSOC      |- !n x y z. 0 < n /\ x < n /\ y < n /\ z < n ==>
-                          (((x * y) MOD n * z) MOD n = (x * (y * z) MOD n) MOD n)
-   MOD_ADD_INV         |- !n x. 0 < n /\ x < n ==> (((n - x) MOD n + x) MOD n = 0)
-   MOD_MULITPLE_ZERO   |- !n k. 0 < n /\ (k MOD n = 0) ==> !x. (k * x) MOD n = 0
-   MOD_EQ_DIFF         |- !n a b. 0 < n /\ (a MOD n = b MOD n) ==> ((a - b) MOD n = 0)
-   MOD_EQ              |- !n a b. 0 < n /\ b <= a ==> (((a - b) MOD n = 0) <=> (a MOD n = b MOD n))
-   MOD_EQ_0_IFF        |- !m n. n < m ==> ((n MOD m = 0) <=> (n = 0))
-   MOD_EXP             |- !n. 0 < n ==> !a m. (a MOD n) ** m MOD n = a ** m MOD n
-   mod_add_eq_sub      |- !n a b c d. b < n /\ c < n ==>
-                                      ((a + b) MOD n = (c + d) MOD n <=>
-                                       (a + (n - c)) MOD n = (d + (n - b)) MOD n)
-   mod_add_eq_sub_eq   |- !n a b c d. 0 < n ==>
-                                      ((a + b) MOD n = (c + d) MOD n <=>
-                                       (a + (n - c MOD n)) MOD n = (d + (n - b MOD n)) MOD n)
-   mod_divides         |- !n a b. 0 < n /\ b divides n /\ b divides a MOD n ==> b divides a
-   mod_divides_iff     |- !n a b. 0 < n /\ b divides n ==> (b divides a MOD n <=> b divides a)
-   mod_divides_divides |- !n a b c. 0 < n /\ a MOD n = b /\ c divides n /\ c divides a ==> c divides b
-   mod_divides_divides_iff
-                       |- !n a b c. 0 < n /\ a MOD n = b /\ c divides n ==>
-                                    (c divides a <=> c divides b)
-   mod_eq_divides      |- !n a b c. 0 < n /\ a MOD n = b MOD n /\ c divides n /\ c divides a ==>
-                                    c divides b
-   mod_eq_divides_iff  |- !n a b c. 0 < n /\ a MOD n = b MOD n /\ c divides n ==>
-                                    (c divides a <=> c divides b)
-   mod_mult_eq_mult    |- !m n a b. coprime m n /\ 0 < a /\ a < 2 * n /\ 0 < b /\ b < 2 * m /\
-                                    (m * a) MOD (m * n) = (n * b) MOD (m * n) ==> a = n /\ b = m
-
-   Even and Odd Parity:
-   EVEN_EXP            |- !m n. 0 < n /\ EVEN m ==> EVEN (m ** n)
-   ODD_EXP             |- !m n. 0 < n /\ ODD m ==> ODD (m ** n)
-   power_parity        |- !n. 0 < n ==> !m. (EVEN m <=> EVEN (m ** n)) /\ (ODD m <=> ODD (m ** n))
-   EXP_2_EVEN          |- !n. 0 < n ==> EVEN (2 ** n)
-   EXP_2_PRE_ODD       |- !n. 0 < n ==> ODD (2 ** n - 1)
-
-   Modulo Inverse:
-   GCD_LINEAR          |- !j k. 0 < j ==> ?p q. p * j = q * k + gcd j k
-   EUCLID_LEMMA        |- !p x y. prime p ==> (((x * y) MOD p = 0) <=> (x MOD p = 0) \/ (y MOD p = 0))
-   MOD_MULT_LCANCEL    |- !p x y z. prime p /\ (x * y) MOD p = (x * z) MOD p /\ x MOD p <> 0 ==>
-                                    y MOD p = z MOD p
-   MOD_MULT_RCANCEL    |- !p x y z. prime p /\ (y * x) MOD p = (z * x) MOD p /\ x MOD p <> 0 ==>
-                                    y MOD p = z MOD p
-   MOD_MULT_INV_EXISTS |- !p x. prime p /\ 0 < x /\ x < p ==> ?y. 0 < y /\ y < p /\ ((y * x) MOD p = 1)
-   MOD_MULT_INV_DEF    |- !p x. prime p /\ 0 < x /\ x < p ==>
-                           0 < MOD_MULT_INV p x /\ MOD_MULT_INV p x < p /\ ((MOD_MULT_INV p x * x) MOD p = 1)
-
-   FACTOR Theorems:
-   PRIME_FACTOR_PROPER |- !n. 1 < n /\ ~prime n ==> ?p. prime p /\ p < n /\ (p divides n)
-   FACTOR_OUT_POWER    |- !n p. 0 < n /\ 1 < p /\ p divides n ==>
-                                ?m. (p ** m) divides n /\ ~(p divides (n DIV p ** m))
-
-   Useful Theorems:
-   binomial_add         |- !a b. (a + b) ** 2 = a ** 2 + b ** 2 + 2 * a * b
-   binomial_sub         |- !a b. b <= a ==> ((a - b) ** 2 = a ** 2 + b ** 2 - 2 * a * b)
-   binomial_means       |- !a b. 2 * a * b <= a ** 2 + b ** 2
-   binomial_sub_sum     |- !a b. b <= a ==> (a - b) ** 2 + 2 * a * b = a ** 2 + b ** 2
-   binomial_sub_add     |- !a b. b <= a ==> ((a - b) ** 2 + 4 * a * b = (a + b) ** 2)
-   difference_of_squares|- !a b. a ** 2 - b ** 2 = (a - b) * (a + b)
-   difference_of_squares_alt
-                        |- !a b. a * a - b * b = (a - b) * (a + b)
-   binomial_2           |- !m n. (m + n) ** 2 = m ** 2 + n ** 2 + TWICE m * n
-   SUC_SQ               |- !n. SUC n ** 2 = SUC (n ** 2) + TWICE n
-   SQ_LE                |- !m n. m <= n ==> SQ m <= SQ n
-   EVEN_PRIME           |- !n. EVEN n /\ prime n <=> n = 2
-   ODD_PRIME            |- !n. prime n /\ n <> 2 ==> ODD n
-   TWO_LE_PRIME         |- !p. prime p ==> 2 <= p
-   NOT_PRIME_4          |- ~prime 4
-   prime_divides_prime  |- !n m. prime n /\ prime m ==> (n divides m <=> (n = m))
-   ALL_PRIME_FACTORS_MOD_EQ_1  |- !m n. 0 < m /\ 1 < n /\
-                                   (!p. prime p /\ p divides m ==> (p MOD n = 1)) ==> (m MOD n = 1)
-   prime_divides_power         |- !p n. prime p /\ 0 < n ==> !b. p divides b ** n <=> p divides b
-   prime_divides_self_power    |- !p. prime p ==> !n. 0 < n ==> p divides p ** n
-   power_eq_prime_power        |- !p. prime p ==> !b n m. 0 < m /\ (b ** n = p ** m) ==>
-                                  ?k. (b = p ** k) /\ (k * n = m)
-   POWER_EQ_SELF        |- !n. 1 < n ==> !m. (n ** m = n) <=> (m = 1)
-
-   LESS_HALF_IFF        |- !n k. k < HALF n <=> k + 1 < n - k
-   MORE_HALF_IMP        |- !n k. HALF n < k ==> n - k <= HALF n
-   MONOTONE_MAX         |- !f m. (!k. k < m ==> f k < f (k + 1)) ==> !k. k < m ==> f k < f m
-   MULTIPLE_INTERVAL    |- !n m. n divides m ==> !x. m - n < x /\ x < m + n /\ n divides x ==> (x = m)
-   MOD_SUC_EQN          |- !m n. 0 < m ==> (SUC (n MOD m) = SUC n MOD m + (SUC n DIV m - n DIV m) * m)
-   ONE_LT_HALF_SQ       |- !n. 1 < n ==> 1 < HALF (n ** 2)
-   EXP_2_HALF           |- !n. 0 < n ==> (HALF (2 ** n) = 2 ** (n - 1))
-   HALF_MULT_EVEN       |- !m n. EVEN n ==> (HALF (m * n) = m * HALF n)
-   MULT_LT_IMP_LT       |- !m n k. 0 < k /\ k * m < n ==> m < n
-   MULT_LE_IMP_LE       |- !m n k. 0 < k /\ k * m <= n ==> m <= n
-   HALF_EXP_5           |- !n. n * HALF (SQ n ** 2) <= HALF (n ** 5)
-   LE_TWICE_ALT         |- !m n. n <= TWICE m <=> n <> 0 ==> HALF (n - 1) < m
-   HALF_DIV_TWO_POWER   |- !m n. HALF n DIV 2 ** m = n DIV 2 ** SUC m
-   fit_for_10           |- 1 + 2 + 3 + 4 = 10
-   fit_for_100          |- 1 * 2 + 3 * 4 + 5 * 6 + 7 * 8 = 100
-*)
-
-(* ------------------------------------------------------------------------- *)
-(* Arithmetic Theorems                                                       *)
+(* Arithmetic Theorems (from examples/algebra)                               *)
 (* ------------------------------------------------------------------------- *)
 
 (* Theorem: 3 = SUC 2 *)
@@ -840,63 +497,6 @@ val MIN_1_EXP = store_thm(
 (* ------------------------------------------------------------------------- *)
 (* Arithmetic Manipulations                                                  *)
 (* ------------------------------------------------------------------------- *)
-
-(* Rename theorem *)
-val MULT_POS = save_thm("MULT_POS", LESS_MULT2);
-(* val MULT_POS = |- !m n. 0 < m /\ 0 < n ==> 0 < m * n: thm *)
-
-(* Theorem: m * (n * p) = n * (m * p) *)
-(* Proof:
-     m * (n * p)
-   = (m * n) * p       by MULT_ASSOC
-   = (n * m) * p       by MULT_COMM
-   = n * (m * p)       by MULT_ASSOC
-*)
-val MULT_COMM_ASSOC = store_thm(
-  "MULT_COMM_ASSOC",
-  ``!m n p. m * (n * p) = n * (m * p)``,
-  metis_tac[MULT_COMM, MULT_ASSOC]);
-
-(* Theorem: 0 < n ==> ((n * m) DIV n = m) *)
-(* Proof:
-   Since n * m = m * n        by MULT_COMM
-               = m * n + 0    by ADD_0
-     and 0 < n                by given
-   Hence (n * m) DIV n = m    by DIV_UNIQUE:
-   |- !n k q. (?r. (k = q * n + r) /\ r < n) ==> (k DIV n = q)
-*)
-val MULT_TO_DIV = store_thm(
-  "MULT_TO_DIV",
-  ``!m n. 0 < n ==> ((n * m) DIV n = m)``,
-  metis_tac[MULT_COMM, ADD_0, DIV_UNIQUE]);
-(* This is commutative version of:
-arithmeticTheory.MULT_DIV |- !n q. 0 < n ==> (q * n DIV n = q)
-*)
-
-(* Theorem: m * (n * p) = m * p * n *)
-(* Proof: by MULT_ASSOC, MULT_COMM *)
-val MULT_ASSOC_COMM = store_thm(
-  "MULT_ASSOC_COMM",
-  ``!m n p. m * (n * p) = m * p * n``,
-  metis_tac[MULT_ASSOC, MULT_COMM]);
-
-(* Theorem: 0 < n ==> !m. (m * n = n) <=> (m = 1) *)
-(* Proof: by MULT_EQ_ID *)
-val MULT_LEFT_ID = store_thm(
-  "MULT_LEFT_ID",
-  ``!n. 0 < n ==> !m. (m * n = n) <=> (m = 1)``,
-  metis_tac[MULT_EQ_ID, NOT_ZERO_LT_ZERO]);
-
-(* Theorem: 0 < n ==> !m. (n * m = n) <=> (m = 1) *)
-(* Proof: by MULT_EQ_ID *)
-val MULT_RIGHT_ID = store_thm(
-  "MULT_RIGHT_ID",
-  ``!n. 0 < n ==> !m. (n * m = n) <=> (m = 1)``,
-  metis_tac[MULT_EQ_ID, MULT_COMM, NOT_ZERO_LT_ZERO]);
-
-(* Theorem alias *)
-Theorem MULT_EQ_SELF = MULT_RIGHT_ID;
-(* val MULT_EQ_SELF = |- !n. 0 < n ==> !m. (n * m = n) <=> (m = 1): thm *)
 
 (* Theorem: (n * n = n) <=> ((n = 0) \/ (n = 1)) *)
 (* Proof:
@@ -2169,91 +1769,6 @@ val SUC_X_LT_2_EXP_X = store_thm(
 (* ------------------------------------------------------------------------- *)
 (* DIVIDES Theorems                                                          *)
 (* ------------------------------------------------------------------------- *)
-
-(* arithmeticTheory.LESS_DIV_EQ_ZERO = |- !r n. r < n ==> (r DIV n = 0) *)
-
-(* Theorem: 0 < n ==> ((m DIV n = 0) <=> m < n) *)
-(* Proof:
-   If part: 0 < n /\ m DIV n = 0 ==> m < n
-      Since m = m DIV n * n + m MOD n) /\ (m MOD n < n)   by DIVISION, 0 < n
-         so m = 0 * n + m MOD n            by m DIV n = 0
-              = 0 + m MOD n                by MULT
-              = m MOD n                    by ADD
-      Since m MOD n < n, m < n.
-   Only-if part: 0 < n /\ m < n ==> m DIV n = 0
-      True by LESS_DIV_EQ_ZERO.
-*)
-val DIV_EQUAL_0 = store_thm(
-  "DIV_EQUAL_0",
-  ``!m n. 0 < n ==> ((m DIV n = 0) <=> m < n)``,
-  rw[EQ_IMP_THM] >-
-  metis_tac[DIVISION, MULT, ADD] >>
-  rw[LESS_DIV_EQ_ZERO]);
-(* This is an improvement of
-   arithmeticTheory.DIV_EQ_0 = |- 1 < b ==> (n DIV b = 0 <=> n < b) *)
-
-(* Theorem: 0 < m /\ m <= n ==> 0 < n DIV m *)
-(* Proof:
-   Note n = (n DIV m) * m + n MOD m /\
-        n MDO m < m                            by DIVISION, 0 < m
-    ==> n MOD m < n                            by m <= n
-   Thus 0 < (n DIV m) * m                      by inequality
-     so 0 < n DIV m                            by ZERO_LESS_MULT
-*)
-Theorem DIV_POS:
-  !m n. 0 < m /\ m <= n ==> 0 < n DIV m
-Proof
-  rpt strip_tac >>
-  imp_res_tac (DIVISION |> SPEC_ALL) >>
-  first_x_assum (qspec_then `n` strip_assume_tac) >>
-  first_x_assum (qspec_then `n` strip_assume_tac) >>
-  `0 < (n DIV m) * m` by decide_tac >>
-  metis_tac[ZERO_LESS_MULT]
-QED
-
-(* Theorem: 0 < z ==> (x DIV z = y DIV z <=> x - x MOD z = y - y MOD z) *)
-(* Proof:
-   Note x = (x DIV z) * z + x MOD z            by DIVISION
-    and y = (y DIV z) * z + y MDO z            by DIVISION
-        x DIV z = y DIV z
-    <=> (x DIV z) * z = (y DIV z) * z          by EQ_MULT_RCANCEL
-    <=> x - x MOD z = y - y MOD z              by arithmetic
-*)
-Theorem DIV_EQ:
-  !x y z. 0 < z ==> (x DIV z = y DIV z <=> x - x MOD z = y - y MOD z)
-Proof
-  rpt strip_tac >>
-  `x = (x DIV z) * z + x MOD z` by simp[DIVISION] >>
-  `y = (y DIV z) * z + y MOD z` by simp[DIVISION] >>
-  `x DIV z = y DIV z <=> (x DIV z) * z = (y DIV z) * z` by simp[] >>
-  decide_tac
-QED
-
-(* Theorem: a MOD n + b < n ==> (a + b) DIV n = a DIV n *)
-(* Proof:
-   Note 0 < n                                  by a MOD n + b < n
-     a + b
-   = ((a DIV n) * n + a MOD n) + b             by DIVISION, 0 < n
-   = (a DIV n) * n + (a MOD n + b)             by ADD_ASSOC
-
-   If a MOD n + b < n,
-   Then (a + b) DIV n = a DIV n /\
-        (a + b) MOD n = a MOD n + b            by DIVMOD_UNIQ
-*)
-Theorem ADD_DIV_EQ:
-  !n a b. a MOD n + b < n ==> (a + b) DIV n = a DIV n
-Proof
-  rpt strip_tac >>
-  `0 < n` by decide_tac >>
-  `a = (a DIV n) * n + a MOD n` by simp[DIVISION] >>
-  `a + b = (a DIV n) * n + (a MOD n + b)` by decide_tac >>
-  metis_tac[DIVMOD_UNIQ]
-QED
-
-(*
-DIV_LE_MONOTONE  |- !n x y. 0 < n /\ x <= y ==> x DIV n <= y DIV n
-DIV_LE_X         |- !x y z. 0 < z ==> (y DIV z <= x <=> y < (x + 1) * z)
-*)
 
 (* Theorem: 0 < y /\ x <= y * z ==> x DIV y <= z *)
 (* Proof:
@@ -4574,6 +4089,191 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
+
+(* Theorem: If prime p divides n, ?m. 0 < m /\ (p ** m) divides n /\ n DIV (p ** m) has no p *)
+(* Proof:
+   Let s = {j | (p ** j) divides n }
+   Since p ** 1 = p, 1 IN s, so s <> {}.
+       (p ** j) divides n
+   ==> p ** j <= n                  by DIVIDES_LE
+   ==> p ** j <= p ** z             by EXP_ALWAYS_BIG_ENOUGH
+   ==>      j <= z                  by EXP_BASE_LE_MONO
+   ==> s SUBSET count (SUC z),
+   so FINITE s                      by FINITE_COUNT, SUBSET_FINITE
+   Let m = MAX_SET s,
+   m IN s, so (p ** m) divides n    by MAX_SET_DEF
+   1 <= m, or 0 < m.
+   ?q. n = q * (p ** m)             by divides_def
+   To prove: !k. gcd (p ** k) (n DIV (p ** m)) = 1
+   By contradiction, suppose there is a k such that
+   gcd (p ** k) (n DIV (p ** m)) <> 1
+   So there is a prime pp that divides this gcd, by PRIME_FACTOR
+   but pp | p ** k, a pure prime, so pp = p      by DIVIDES_EXP_BASE, prime_divides_only_self
+       pp | n DIV (p ** m)
+   or  pp * p ** m | n
+       p * SUC m | n, making m not MAX_SET s.
+*)
+val FACTOR_OUT_PRIME = store_thm(
+  "FACTOR_OUT_PRIME",
+  ``!n p. 0 < n /\ prime p /\ p divides n ==> ?m. 0 < m /\ (p ** m) divides n /\ !k. gcd (p ** k) (n DIV (p ** m)) = 1``,
+  rpt strip_tac >>
+  qabbrev_tac `s = {j | (p ** j) divides n }` >>
+  `!j. j IN s <=> (p ** j) divides n` by rw[Abbr`s`] >>
+  `p ** 1 = p` by rw[] >>
+  `1 IN s` by metis_tac[] >>
+  `1 < p` by rw[ONE_LT_PRIME] >>
+  `?z. n <= p ** z` by rw[EXP_ALWAYS_BIG_ENOUGH] >>
+  `!j. j IN s ==> p ** j <= n` by metis_tac[DIVIDES_LE] >>
+  `!j. j IN s ==> p ** j <= p ** z` by metis_tac[LESS_EQ_TRANS] >>
+  `!j. j IN s ==> j <= z` by metis_tac[EXP_BASE_LE_MONO] >>
+  `!j. j <= z <=> j < SUC z` by decide_tac >>
+  `!j. j < SUC z <=> j IN count (SUC z)` by rw[] >>
+  `s SUBSET count (SUC z)` by metis_tac[SUBSET_DEF] >>
+  `FINITE s` by metis_tac[FINITE_COUNT, SUBSET_FINITE] >>
+  `s <> {}` by metis_tac[MEMBER_NOT_EMPTY] >>
+  qabbrev_tac `m = MAX_SET s` >>
+  `m IN s /\ !y. y IN s ==> y <= m`by rw[MAX_SET_DEF, Abbr`m`] >>
+  qexists_tac `m` >>
+  CONJ_ASM1_TAC >| [
+    `1 <= m` by metis_tac[] >>
+    decide_tac,
+    CONJ_ASM1_TAC >-
+    metis_tac[] >>
+    qabbrev_tac `pm = p ** m` >>
+    `0 < p` by decide_tac >>
+    `0 < pm` by rw[ZERO_LT_EXP, Abbr`pm`] >>
+    `n MOD pm = 0` by metis_tac[DIVIDES_MOD_0] >>
+    `n = n DIV pm * pm` by metis_tac[DIVISION, ADD_0] >>
+    qabbrev_tac `qm = n DIV pm` >>
+    spose_not_then strip_assume_tac >>
+    `?q. prime q /\ q divides (gcd (p ** k) qm)` by rw[PRIME_FACTOR] >>
+    `0 <> pm /\ n <> 0` by decide_tac >>
+    `qm <> 0` by metis_tac[MULT] >>
+    `0 < qm` by decide_tac >>
+    qabbrev_tac `pk = p ** k` >>
+    `0 < pk` by rw[ZERO_LT_EXP, Abbr`pk`] >>
+    `(gcd pk qm) divides pk /\ (gcd pk qm) divides qm` by metis_tac[GCD_DIVIDES, DIVIDES_MOD_0] >>
+    `q divides pk /\ q divides qm` by metis_tac[DIVIDES_TRANS] >>
+    `k <> 0` by metis_tac[EXP, GCD_1] >>
+    `0 < k` by decide_tac >>
+    `q divides p` by metis_tac[DIVIDES_EXP_BASE] >>
+    `q = p` by rw[prime_divides_only_self] >>
+    `?x. qm = x * q` by rw[GSYM divides_def] >>
+    `n = x * p * pm` by metis_tac[] >>
+    `_ = x * (p * pm)` by rw_tac arith_ss[] >>
+    `_ = x * (p ** SUC m)` by rw[EXP, Abbr`pm`] >>
+    `(p ** SUC m) divides n` by metis_tac[divides_def] >>
+    `SUC m <= m` by metis_tac[] >>
+    decide_tac
+  ]);
+
+(* ------------------------------------------------------------------------- *)
+(* Consequences of Coprime.                                                  *)
+(* ------------------------------------------------------------------------- *)
+
+(* Theorem: If 1 < n, !x. coprime n x ==> 0 < x /\ 0 < x MOD n *)
+(* Proof:
+   If x = 0, gcd n x = n. But n <> 1, hence x <> 0, or 0 < x.
+   x MOD n = 0 ==> x a multiple of n ==> gcd n x = n <> 1  if n <> 1.
+   Hence if 1 < n, coprime n x ==> x MOD n <> 0, or 0 < x MOD n.
+*)
+val MOD_NONZERO_WHEN_GCD_ONE = store_thm(
+  "MOD_NONZERO_WHEN_GCD_ONE",
+  ``!n. 1 < n ==> !x. coprime n x ==> 0 < x /\ 0 < x MOD n``,
+  ntac 4 strip_tac >>
+  conj_asm1_tac >| [
+    `1 <> n` by decide_tac >>
+    `x <> 0` by metis_tac[GCD_0R] >>
+    decide_tac,
+    `1 <> n /\ x <> 0` by decide_tac >>
+    `?k q. k * x = q * n + 1` by metis_tac[LINEAR_GCD] >>
+    `(k*x) MOD n = 1` by rw_tac std_ss[MOD_MULT] >>
+    spose_not_then strip_assume_tac >>
+    `(x MOD n = 0) /\ 0 < n /\ 1 <> 0` by decide_tac >>
+    metis_tac[MOD_MULTIPLE_ZERO, MULT_COMM]
+  ]);
+
+(* Theorem: If 1 < n, coprime n x ==> ?k. ((k * x) MOD n = 1) /\ coprime n k *)
+(* Proof:
+       gcd n x = 1 ==> x <> 0               by GCD_0R
+   Also,
+       gcd n x = 1
+   ==> ?k q. k * x = q * n + 1              by LINEAR_GCD
+   ==> (k * x) MOD n = (q * n + 1) MOD n    by arithmetic
+   ==> (k * x) MOD n = 1                    by MOD_MULT, 1 < n.
+
+   Let g = gcd n k.
+   Since 1 < n, 0 < n.
+   Since q * n+1 <> 0, x <> 0, k <> 0, hence 0 < k.
+   Hence 0 < g /\ (n MOD g = 0) /\ (k MOD g = 0)    by GCD_DIVIDES.
+   Or  n = a * g /\ k = b * g    for some a, b.
+   Therefore:
+        (b * g) * x = q * (a * g) + 1
+        (b * x) * g = (q * a) * g + 1      by arithmetic
+   Hence g divides 1, or g = 1     since 0 < g.
+*)
+val GCD_ONE_PROPERTY = store_thm(
+  "GCD_ONE_PROPERTY",
+  ``!n x. 1 < n /\ coprime n x ==> ?k. ((k * x) MOD n = 1) /\ coprime n k``,
+  rpt strip_tac >>
+  `n <> 1` by decide_tac >>
+  `x <> 0` by metis_tac[GCD_0R] >>
+  `?k q. k * x = q * n + 1` by metis_tac[LINEAR_GCD] >>
+  `(k * x) MOD n = 1` by rw_tac std_ss[MOD_MULT] >>
+  `?g. g = gcd n k` by rw[] >>
+  `n <> 0 /\ q*n + 1 <> 0` by decide_tac >>
+  `k <> 0` by metis_tac[MULT_EQ_0] >>
+  `0 < g /\ (n MOD g = 0) /\ (k MOD g = 0)` by metis_tac[GCD_DIVIDES, NOT_ZERO_LT_ZERO] >>
+  `g divides n /\ g divides k` by rw[DIVIDES_MOD_0] >>
+  `g divides (n * q) /\ g divides (k*x)` by rw[DIVIDES_MULT] >>
+  `g divides (n * q + 1)` by metis_tac [MULT_COMM] >>
+  `g divides 1` by metis_tac[DIVIDES_ADD_2] >>
+  metis_tac[DIVIDES_ONE]);
+
+(* Theorem: For 1 < n /\ 0 < x /\ x < n /\ coprime n x ==>
+            ?y. 0 < y /\ y < n /\ coprime n y /\ ((y * x) MOD n = 1) *)
+(* Proof:
+       gcd n x = 1
+   ==> ?k. (k * x) MOD n = 1 /\ coprime n k   by GCD_ONE_PROPERTY
+       (k * x) MOD n = 1
+   ==> (k MOD n * x MOD n) MOD n = 1          by MOD_TIMES2
+   ==> ((k MOD n) * x) MOD n = 1              by LESS_MOD, x < n.
+
+   Now   k MOD n < n                          by MOD_LESS
+   and   0 < k MOD n                          by MOD_MULTIPLE_ZERO and 1 <> 0.
+
+   Hence take y = k MOD n, then 0 < y < n.
+   and gcd n k = 1 ==> gcd n (k MOD n) = 1    by MOD_WITH_GCD_ONE.
+*)
+val GCD_MOD_MULT_INV = store_thm(
+  "GCD_MOD_MULT_INV",
+  ``!n x. 1 < n /\ 0 < x /\ x < n /\ coprime n x ==>
+      ?y. 0 < y /\ y < n /\ coprime n y /\ ((y * x) MOD n = 1)``,
+  rpt strip_tac >>
+  `?k. ((k * x) MOD n = 1) /\ coprime n k` by rw_tac std_ss[GCD_ONE_PROPERTY] >>
+  `0 < n` by decide_tac >>
+  `(k MOD n * x MOD n) MOD n = 1` by rw_tac std_ss[MOD_TIMES2] >>
+  `((k MOD n) * x) MOD n = 1` by metis_tac[LESS_MOD] >>
+  `k MOD n < n` by rw_tac std_ss[MOD_LESS] >>
+  `1 <> 0` by decide_tac >>
+  `0 <> k MOD n` by metis_tac[MOD_MULTIPLE_ZERO] >>
+  `0 < k MOD n` by decide_tac >>
+  metis_tac[MOD_WITH_GCD_ONE]);
+
+(* Convert this into an existence definition *)
+val lemma = prove(
+  ``!n x. ?y. 1 < n /\ 0 < x /\ x < n /\ coprime n x ==>
+              0 < y /\ y < n /\ coprime n y /\ ((y * x) MOD n = 1)``,
+  metis_tac[GCD_MOD_MULT_INV]);
+
+val GEN_MULT_INV_DEF = new_specification(
+  "GEN_MULT_INV_DEF",
+  ["GCD_MOD_MUL_INV"],
+  SIMP_RULE (srw_ss()) [SKOLEM_THM] lemma);
+(* > val GEN_MULT_INV_DEF =
+    |- !n x. 1 < n /\ 0 < x /\ x < n /\ coprime n x ==>
+       0 < GCD_MOD_MUL_INV n x /\ GCD_MOD_MUL_INV n x < n /\ coprime n (GCD_MOD_MUL_INV n x) /\
+       ((GCD_MOD_MUL_INV n x * x) MOD n = 1) : thm *)
 
 (* export theory at end *)
 val _ = export_theory();

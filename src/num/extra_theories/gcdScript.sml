@@ -551,7 +551,7 @@ val GCD_LCM = store_thm(
   `(m * n) MOD d = 0` by metis_tac[MOD_TIMES2, ZERO_MOD, MULT_0] >>
   metis_tac[ADD_0, MULT_COMM]);
 
-(* make divides infix (temporarily) *)
+(* temporarily make divides an infix *)
 val _ = temp_set_fixity "divides" (Infixl 480); (* relation is 450, +/- is 500, * is 600. *)
 
 (* Theorem: m divides (lcm m n) /\ n divides (lcm m n) *)
@@ -704,5 +704,192 @@ val divides_iff_lcm_fix = store_thm(
   Cases_on `n = 0` >-
   metis_tac[ZERO_DIVIDES, LCM_0] >>
   metis_tac[GCD_LCM, MULT_LEFT_CANCEL, MULT_RIGHT_CANCEL, divides_iff_gcd_fix, ALL_DIVIDES_0]);
+
+(* ------------------------------------------------------------------------- *)
+(* Consequences of Coprime.                                                  *)
+(* ------------------------------------------------------------------------- *)
+
+(* Theorem: coprime n x /\ coprime n y ==> coprime n (x * y) *)
+(* Proof:
+   gcd n x = 1 ==> no common factor between x and n
+   gcd n y = 1 ==> no common factor between y and n
+   Hence there is no common factor between (x * y) and n, or gcd n (x * y) = 1
+
+   gcd n (x * y) = gcd n y     by GCD_CANCEL_MULT, since coprime n x.
+                 = 1           by given
+*)
+val PRODUCT_WITH_GCD_ONE = store_thm(
+  "PRODUCT_WITH_GCD_ONE",
+  ``!n x y. coprime n x /\ coprime n y ==> coprime n (x * y)``,
+  metis_tac[GCD_CANCEL_MULT]);
+
+(* Theorem: For 0 < n, coprime n x ==> coprime n (x MOD n) *)
+(* Proof:
+   Since n <> 0,
+   1 = gcd n x            by given
+     = gcd (x MOD n) n    by GCD_EFFICIENTLY
+     = gcd n (x MOD n)    by GCD_SYM
+*)
+val MOD_WITH_GCD_ONE = store_thm(
+  "MOD_WITH_GCD_ONE",
+  ``!n x. 0 < n /\ coprime n x ==> coprime n (x MOD n)``,
+  rpt strip_tac >>
+  `0 <> n` by decide_tac >>
+  metis_tac[GCD_EFFICIENTLY, GCD_SYM]);
+
+(* Theorem: (c = gcd a b) <=>
+            c divides a /\ c divides b /\ !x. x divides a /\ x divides b ==> x divides c *)
+(* Proof:
+   By GCD_IS_GREATEST_COMMON_DIVISOR
+       (gcd a b) divides a     [1]
+   and (gcd a b) divides b     [2]
+   and !p. p divides a /\ p divides b ==> p divides (gcd a b)   [3]
+   Hence if part is true, and for the only-if part,
+   We have c divides (gcd a b)   by [3] above,
+       and (gcd a b) divides c   by [1], [2] and the given implication
+   Therefore c = gcd a b         by DIVIDES_ANTISYM
+*)
+val GCD_PROPERTY = store_thm(
+  "GCD_PROPERTY",
+  ``!a b c. (c = gcd a b) <=>
+   c divides a /\ c divides b /\ !x. x divides a /\ x divides b ==> x divides c``,
+  rw[GCD_IS_GREATEST_COMMON_DIVISOR, DIVIDES_ANTISYM, EQ_IMP_THM]);
+
+(* Theorem: gcd a (gcd b c) = gcd (gcd a b) c *)
+(* Proof:
+   Since (gcd a (gcd b c)) divides a    by GCD_PROPERTY
+         (gcd a (gcd b c)) divides b    by GCD_PROPERTY, DIVIDES_TRANS
+         (gcd a (gcd b c)) divides c    by GCD_PROPERTY, DIVIDES_TRANS
+         (gcd (gcd a b) c) divides a    by GCD_PROPERTY, DIVIDES_TRANS
+         (gcd (gcd a b) c) divides b    by GCD_PROPERTY, DIVIDES_TRANS
+         (gcd (gcd a b) c) divides c    by GCD_PROPERTY
+   We have
+         (gcd (gcd a b) c) divides (gcd b c)           by GCD_PROPERTY
+     and (gcd (gcd a b) c) divides (gcd a (gcd b c))   by GCD_PROPERTY
+    Also (gcd a (gcd b c)) divides (gcd a b)           by GCD_PROPERTY
+     and (gcd a (gcd b c)) divides (gcd (gcd a b) c)   by GCD_PROPERTY
+   Therefore gcd a (gcd b c) = gcd (gcd a b) c         by DIVIDES_ANTISYM
+*)
+val GCD_ASSOC = store_thm(
+  "GCD_ASSOC",
+  ``!a b c. gcd a (gcd b c) = gcd (gcd a b) c``,
+  rpt strip_tac >>
+  `(gcd a (gcd b c)) divides a` by metis_tac[GCD_PROPERTY] >>
+  `(gcd a (gcd b c)) divides b` by metis_tac[GCD_PROPERTY, DIVIDES_TRANS] >>
+  `(gcd a (gcd b c)) divides c` by metis_tac[GCD_PROPERTY, DIVIDES_TRANS] >>
+  `(gcd (gcd a b) c) divides a` by metis_tac[GCD_PROPERTY, DIVIDES_TRANS] >>
+  `(gcd (gcd a b) c) divides b` by metis_tac[GCD_PROPERTY, DIVIDES_TRANS] >>
+  `(gcd (gcd a b) c) divides c` by metis_tac[GCD_PROPERTY] >>
+  `(gcd (gcd a b) c) divides (gcd a (gcd b c))` by metis_tac[GCD_PROPERTY] >>
+  `(gcd a (gcd b c)) divides (gcd (gcd a b) c)` by metis_tac[GCD_PROPERTY] >>
+  rw[DIVIDES_ANTISYM]);
+
+(* Note:
+   With identity by GCD_1: (gcd 1 x = 1) /\ (gcd x 1 = 1)
+   GCD forms a monoid in numbers.
+*)
+
+(* Theorem: gcd a (gcd b c) = gcd b (gcd a c) *)
+(* Proof:
+     gcd a (gcd b c)
+   = gcd (gcd a b) c    by GCD_ASSOC
+   = gcd (gcd b a) c    by GCD_SYM
+   = gcd b (gcd a c)    by GCD_ASSOC
+*)
+val GCD_ASSOC_COMM = store_thm(
+  "GCD_ASSOC_COMM",
+  ``!a b c. gcd a (gcd b c) = gcd b (gcd a c)``,
+  metis_tac[GCD_ASSOC, GCD_SYM]);
+
+(* Theorem: (c = lcm a b) <=>
+            a divides c /\ b divides c /\ !x. a divides x /\ b divides x ==> c divides x *)
+(* Proof:
+   By LCM_IS_LEAST_COMMON_MULTIPLE
+       a divides (lcm a b)    [1]
+   and b divides (lcm a b)    [2]
+   and !p. a divides p /\ divides b p ==> divides (lcm a b) p  [3]
+   Hence if part is true, and for the only-if part,
+   We have c divides (lcm a b)   by implication and [1], [2]
+       and (lcm a b) divides c   by [3]
+   Therefore c = lcm a b         by DIVIDES_ANTISYM
+*)
+val LCM_PROPERTY = store_thm(
+  "LCM_PROPERTY",
+  ``!a b c. (c = lcm a b) <=>
+   a divides c /\ b divides c /\ !x. a divides x /\ b divides x ==> c divides x``,
+  rw[LCM_IS_LEAST_COMMON_MULTIPLE, DIVIDES_ANTISYM, EQ_IMP_THM]);
+
+(* Theorem: lcm a (lcm b c) = lcm (lcm a b) c *)
+(* Proof:
+   Since a divides (lcm a (lcm b c))   by LCM_PROPERTY
+         b divides (lcm a (lcm b c))   by LCM_PROPERTY, DIVIDES_TRANS
+         c divides (lcm a (lcm b c))   by LCM_PROPERTY, DIVIDES_TRANS
+         a divides (lcm (lcm a b) c)   by LCM_PROPERTY, DIVIDES_TRANS
+         b divides (lcm (lcm a b) c)   by LCM_PROPERTY, DIVIDES_TRANS
+         c divides (lcm (lcm a b) c)   by LCM_PROPERTY
+   We have
+         (lcm b c) divides (lcm (lcm a b) c)           by LCM_PROPERTY
+     and (lcm a (lcm b c)) divides (lcm (lcm a b) c)   by LCM_PROPERTY
+    Also (lcm a b) divides (lcm a (lcm b c))           by LCM_PROPERTY
+     and (lcm (lcm a b) c) divides (lcm a (lcm b c))   by LCM_PROPERTY
+    Therefore lcm a (lcm b c) = lcm (lcm a b) c        by DIVIDES_ANTISYM
+*)
+val LCM_ASSOC = store_thm(
+  "LCM_ASSOC",
+  ``!a b c. lcm a (lcm b c) = lcm (lcm a b) c``,
+  rpt strip_tac >>
+  `a divides (lcm a (lcm b c))` by metis_tac[LCM_PROPERTY] >>
+  `b divides (lcm a (lcm b c))` by metis_tac[LCM_PROPERTY, DIVIDES_TRANS] >>
+  `c divides (lcm a (lcm b c))` by metis_tac[LCM_PROPERTY, DIVIDES_TRANS] >>
+  `a divides (lcm (lcm a b) c)` by metis_tac[LCM_PROPERTY, DIVIDES_TRANS] >>
+  `b divides (lcm (lcm a b) c)` by metis_tac[LCM_PROPERTY, DIVIDES_TRANS] >>
+  `c divides (lcm (lcm a b) c)` by metis_tac[LCM_PROPERTY] >>
+  `(lcm a (lcm b c)) divides (lcm (lcm a b) c)` by metis_tac[LCM_PROPERTY] >>
+  `(lcm (lcm a b) c) divides (lcm a (lcm b c))` by metis_tac[LCM_PROPERTY] >>
+  rw[DIVIDES_ANTISYM]);
+
+(* Note:
+   With the identity by LCM_0: (lcm 0 x = 0) /\ (lcm x 0 = 0)
+   LCM forms a monoid in numbers.
+*)
+
+(* Theorem: lcm a (lcm b c) = lcm b (lcm a c) *)
+(* Proof:
+     lcm a (lcm b c)
+   = lcm (lcm a b) c   by LCM_ASSOC
+   = lcm (lcm b a) c   by LCM_COMM
+   = lcm b (lcm a c)   by LCM_ASSOC
+*)
+val LCM_ASSOC_COMM = store_thm(
+  "LCM_ASSOC_COMM",
+  ``!a b c. lcm a (lcm b c) = lcm b (lcm a c)``,
+  metis_tac[LCM_ASSOC, LCM_COMM]);
+
+(* Theorem: b <= a ==> gcd (a - b) b = gcd a b *)
+(* Proof:
+     gcd (a - b) b
+   = gcd b (a - b)         by GCD_SYM
+   = gcd (b + (a - b)) b   by GCD_ADD_L
+   = gcd (a - b + b) b     by ADD_COMM
+   = gcd a b               by SUB_ADD, b <= a.
+
+Note: If a < b, a - b = 0  for num, hence gcd (a - b) b = gcd 0 b = b.
+*)
+val GCD_SUB_L = store_thm(
+  "GCD_SUB_L",
+  ``!a b. b <= a ==> (gcd (a - b) b = gcd a b)``,
+  metis_tac[GCD_SYM, GCD_ADD_L, ADD_COMM, SUB_ADD]);
+
+(* Theorem: a <= b ==> gcd a (b - a) = gcd a b *)
+(* Proof:
+     gcd a (b - a)
+   = gcd (b - a) a         by GCD_SYM
+   = gcd b a               by GCD_SUB_L
+   = gcd a b               by GCD_SYM
+*)
+val GCD_SUB_R = store_thm(
+  "GCD_SUB_R",
+  ``!a b. a <= b ==> (gcd a (b - a) = gcd a b)``,
+  metis_tac[GCD_SYM, GCD_SUB_L]);
 
 val _ = export_theory();

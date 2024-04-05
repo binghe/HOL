@@ -6,7 +6,17 @@ val CALC = EQT_ELIM o reduceLib.REDUCE_CONV;
 val ARITH_TAC = CONV_TAC Arith.ARITH_CONV;
 val DECIDE = EQT_ELIM o Arith.ARITH_CONV;
 
+fun DECIDE_TAC (g as (asl,_)) =
+  ((MAP_EVERY UNDISCH_TAC (filter numSimps.is_arith asl) THEN
+    CONV_TAC Arith.ARITH_CONV)
+   ORELSE tautLib.TAUT_TAC) g;
+
+val decide_tac = DECIDE_TAC;
+val metis_tac = METIS_TAC;
 val arith_ss = numLib.arith_ss;
+val rw = srw_tac[];
+val qabbrev_tac = Q.ABBREV_TAC;
+val qspec_then = Q.SPEC_THEN;
 
 fun simp ths = asm_simp_tac (srw_ss() ++ numSimps.ARITH_ss) ths
 fun gvs ths = global_simp_tac {droptrues = true, elimvars = true,
@@ -465,5 +475,91 @@ Proof
                ADD_CLAUSES]
   ]
 QED
+
+(* ------------------------------------------------------------------------- *)
+(* DIVIDES Theorems (from examples/algebra)                                  *)
+(* ------------------------------------------------------------------------- *)
+
+(* temporarily make divides an infix *)
+val _ = temp_set_fixity "divides" (Infixl 480);
+
+(* Theorem: 0 < n ==> ((m DIV n = 0) <=> m < n) *)
+(* Proof:
+   If part: 0 < n /\ m DIV n = 0 ==> m < n
+      Since m = m DIV n * n + m MOD n) /\ (m MOD n < n)   by DIVISION, 0 < n
+         so m = 0 * n + m MOD n            by m DIV n = 0
+              = 0 + m MOD n                by MULT
+              = m MOD n                    by ADD
+      Since m MOD n < n, m < n.
+   Only-if part: 0 < n /\ m < n ==> m DIV n = 0
+      True by LESS_DIV_EQ_ZERO.
+*)
+val DIV_EQUAL_0 = store_thm(
+  "DIV_EQUAL_0",
+  ``!m n. 0 < n ==> ((m DIV n = 0) <=> m < n)``,
+  rw[EQ_IMP_THM] >-
+  metis_tac[DIVISION, MULT, ADD] >>
+  rw[LESS_DIV_EQ_ZERO]);
+(* This is an improvement of
+   arithmeticTheory.DIV_EQ_0 = |- 1 < b ==> (n DIV b = 0 <=> n < b) *)
+
+(* Theorem: 0 < m /\ m <= n ==> 0 < n DIV m *)
+(* Proof:
+   Note n = (n DIV m) * m + n MOD m /\
+        n MDO m < m                            by DIVISION, 0 < m
+    ==> n MOD m < n                            by m <= n
+   Thus 0 < (n DIV m) * m                      by inequality
+     so 0 < n DIV m                            by ZERO_LESS_MULT
+*)
+Theorem DIV_POS:
+  !m n. 0 < m /\ m <= n ==> 0 < n DIV m
+Proof
+  rpt strip_tac >>
+  imp_res_tac (DIVISION |> SPEC_ALL) >>
+  first_x_assum (qspec_then `n` strip_assume_tac) >>
+  first_x_assum (qspec_then `n` strip_assume_tac) >>
+  `0 < (n DIV m) * m` by decide_tac >>
+  metis_tac[ZERO_LESS_MULT]
+QED
+
+(* Theorem: 0 < z ==> (x DIV z = y DIV z <=> x - x MOD z = y - y MOD z) *)
+(* Proof:
+   Note x = (x DIV z) * z + x MOD z            by DIVISION
+    and y = (y DIV z) * z + y MDO z            by DIVISION
+        x DIV z = y DIV z
+    <=> (x DIV z) * z = (y DIV z) * z          by EQ_MULT_RCANCEL
+    <=> x - x MOD z = y - y MOD z              by arithmetic
+*)
+Theorem DIV_EQ:
+  !x y z. 0 < z ==> (x DIV z = y DIV z <=> x - x MOD z = y - y MOD z)
+Proof
+  rpt strip_tac >>
+  `x = (x DIV z) * z + x MOD z` by simp[DIVISION] >>
+  `y = (y DIV z) * z + y MOD z` by simp[DIVISION] >>
+  `x DIV z = y DIV z <=> (x DIV z) * z = (y DIV z) * z` by simp[] >>
+  decide_tac
+QED
+
+(* Theorem: a MOD n + b < n ==> (a + b) DIV n = a DIV n *)
+(* Proof:
+   Note 0 < n                                  by a MOD n + b < n
+     a + b
+   = ((a DIV n) * n + a MOD n) + b             by DIVISION, 0 < n
+   = (a DIV n) * n + (a MOD n + b)             by ADD_ASSOC
+
+   If a MOD n + b < n,
+   Then (a + b) DIV n = a DIV n /\
+        (a + b) MOD n = a MOD n + b            by DIVMOD_UNIQ
+*)
+Theorem ADD_DIV_EQ:
+  !n a b. a MOD n + b < n ==> (a + b) DIV n = a DIV n
+Proof
+  rpt strip_tac >>
+  `0 < n` by decide_tac >>
+  `a = (a DIV n) * n + a MOD n` by simp[DIVISION] >>
+  `a + b = (a DIV n) * n + (a MOD n + b)` by decide_tac >>
+  metis_tac[DIVMOD_UNIQ]
+QED
+
 
 val _ = export_theory();
