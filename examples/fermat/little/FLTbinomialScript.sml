@@ -90,13 +90,6 @@ val _ = new_theory "FLTbinomial";
 
 (* Part 2: General Theory -------------------------------------------------- *)
 
-val PROD_SET_EUCLID = helperSetTheory.PROD_SET_EUCLID;
-(* |- !s. FINITE s ==> !p. prime p /\ p divides PROD_SET s ==> ?b. b IN s /\ p divides b *)
-(* This is: Generalized Euclid's Lemma. *)
-
-val PRIME_BIG_NOT_DIVIDES_FACT = helperFunctionTheory.PRIME_BIG_NOT_DIVIDES_FACT;
-(* |- !p k. prime p /\ k < p ==> ~(p divides FACT k) *)
-
 val FACT_EQ_PROD = helperFunctionTheory.FACT_EQ_PROD;
 (* |- !n. FACT n = PROD_SET (IMAGE SUC (count n)) *)
 
