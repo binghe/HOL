@@ -1,5 +1,5 @@
 (* ------------------------------------------------------------------------- *)
-(* Elementary Number Theory - a collection of useful results for Numbers     *)
+(* Elementary Number Theory - a collection of useful results for numbers     *)
 (*                                                                           *)
 (* Author: Hing-Lun Chan (Australian National University, 2019)              *)
 (* ------------------------------------------------------------------------- *)

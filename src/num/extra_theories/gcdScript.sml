@@ -1,4 +1,9 @@
-(* gcd = greatest common divisor *)
+(* ------------------------------------------------------------------------- *)
+(* Elementary Number Theory - a collection of useful results for numbers     *)
+(* (gcd = greatest common divisor)                                           *)
+(*                                                                           *)
+(* Author: Hing-Lun Chan (Australian National University, 2019)              *)
+(* ------------------------------------------------------------------------- *)
 
 open HolKernel Parse boolLib BasicProvers
 
