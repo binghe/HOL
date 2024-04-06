@@ -2316,6 +2316,21 @@ Proof
       PROVE_TAC [] ]
 QED
 
+(* Theorem: BIJ f s t <=> (!x. x IN s ==> f x IN t) /\ (!y. y IN t ==> ?!x. x IN s /\ (f x = y)) *)
+(* Proof:
+   This is to prove:
+   (1) y IN t ==> ?!x. x IN s /\ (f x = y)
+       x exists by SURJ_DEF, and x is unique by INJ_DEF.
+   (2) x IN s /\ y IN s /\ f x = f y ==> x = y
+       true by INJ_DEF.
+   (3) x IN t ==> ?y. y IN s /\ (f y = x)
+       true by SURJ_DEF.
+*)
+val BIJ_THM = store_thm(
+  "BIJ_THM",
+  ``!f s t. BIJ f s t <=> (!x. x IN s ==> f x IN t) /\ (!y. y IN t ==> ?!x. x IN s /\ (f x = y))``,
+  RW_TAC std_ss [BIJ_DEF, INJ_DEF, SURJ_DEF, EQ_IMP_THM] >> metis_tac[]);
+
 val BIJ_INSERT_IMP = store_thm (* from util_prob *)
   ("BIJ_INSERT_IMP",
   ``!f e s t.

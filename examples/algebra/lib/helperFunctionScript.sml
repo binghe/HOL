@@ -12,20 +12,14 @@ val _ = new_theory "helperFunction";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-open numberTheory helperListTheory;
-
-(* val _ = load "helperSetTheory"; *)
-open helperSetTheory;
-
-(* open dependent theories *)
 open pred_setTheory prim_recTheory arithmeticTheory;
 open listTheory rich_listTheory listRangeTheory;
-open dividesTheory gcdTheory;
+open dividesTheory gcdTheory gcdsetTheory;
 
+open numberTheory helperListTheory helperSetTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Helper Function Documentation                                             *)

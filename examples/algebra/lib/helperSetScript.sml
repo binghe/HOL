@@ -12,20 +12,11 @@ val _ = new_theory "helperSet";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* open dependent theories *)
-open pred_setTheory;
-
-open numberTheory;
-
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open arithmeticTheory dividesTheory;
-open gcdTheory; (* for P_EUCLIDES *)
-
+open arithmeticTheory dividesTheory gcdTheory;
+open pred_setTheory gcdsetTheory numberTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* HelperSet Documentation                                                   *)

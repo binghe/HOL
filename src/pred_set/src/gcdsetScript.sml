@@ -109,12 +109,6 @@ val _ = export_rewrites ["gcdset_INSERT"]
 (* Set Theorems (from examples/algebra)                                      *)
 (* ------------------------------------------------------------------------- *)
 
-(* use of IN_SUBSET *)
-val IN_SUBSET = save_thm("IN_SUBSET", SUBSET_DEF);
-(*
-val IN_SUBSET = |- !s t. s SUBSET t <=> !x. x IN s ==> x IN t: thm
-*)
-
 (* Theorem: DISJOINT (s DIFF t) t /\ DISJOINT t (s DIFF t) *)
 (* Proof:
        DISJOINT (s DIFF t) t
@@ -629,21 +623,6 @@ val INJ_I_IMAGE = store_thm(
   "INJ_I_IMAGE",
   ``!s f. INJ I (IMAGE f s) univ(:'b)``,
   rw[INJ_DEF]);
-
-(* Theorem: BIJ f s t <=> (!x. x IN s ==> f x IN t) /\ (!y. y IN t ==> ?!x. x IN s /\ (f x = y)) *)
-(* Proof:
-   This is to prove:
-   (1) y IN t ==> ?!x. x IN s /\ (f x = y)
-       x exists by SURJ_DEF, and x is unique by INJ_DEF.
-   (2) x IN s /\ y IN s /\ f x = f y ==> x = y
-       true by INJ_DEF.
-   (3) x IN t ==> ?y. y IN s /\ (f y = x)
-       true by SURJ_DEF.
-*)
-val BIJ_THM = store_thm(
-  "BIJ_THM",
-  ``!f s t. BIJ f s t <=> (!x. x IN s ==> f x IN t) /\ (!y. y IN t ==> ?!x. x IN s /\ (f x = y))``,
-  rw_tac std_ss [BIJ_DEF, INJ_DEF, SURJ_DEF, EQ_IMP_THM] >> metis_tac[]);
 
 (* Theorem: BIJ f s t ==> !x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y) *)
 (* Proof: by BIJ_DEF, INJ_DEF *)
