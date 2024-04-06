@@ -12,13 +12,9 @@ val _ = new_theory "iterateCompose";
 
 (* ------------------------------------------------------------------------- *)
 
-
-(* open dependent theories *)
-(* arithmeticTheory -- load by default *)
-
 (* val _ = load "helperTwosqTheory"; *)
 open helperTwosqTheory;
-open numberTheory;
+open gcdsetTheory numberTheory;
 open helperSetTheory;
 open helperFunctionTheory;
 open arithmeticTheory pred_setTheory;
@@ -31,7 +27,6 @@ open involuteFixTheory;
 (* val _ = load "iterateComputeTheory"; *)
 open iterationTheory;
 open iterateComputeTheory; (* for iterate_while_thm *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Iteration of Involution Composition Documentation                         *)

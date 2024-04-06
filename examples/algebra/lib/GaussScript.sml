@@ -28,14 +28,11 @@ open EulerTheory;
 
 open numberTheory helperSetTheory helperFunctionTheory;
 
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open dividesTheory gcdTheory;
+open dividesTheory gcdTheory gcdsetTheory;
 
 (* for SQRT and related theorems *)
 (* val _ = load "logPowerTheory"; *)
 open logrootTheory logPowerTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Gauss' Little Theorem                                                     *)

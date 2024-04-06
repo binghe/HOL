@@ -12,13 +12,10 @@ val _ = new_theory "symmetry";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib; (* for stripDup *)
 
-(* open dependent theories *)
-(* val _ = load "mapCountTheory"; *)
-open pred_setTheory arithmeticTheory;
+open pred_setTheory arithmeticTheory gcdsetTheory;
 open helperCountTheory;
 open helperSetTheory;
 
@@ -32,7 +29,6 @@ open ringTheory fieldTheory;
 open submonoidTheory subgroupTheory;
 open monoidMapTheory groupMapTheory;
 open ringMapTheory fieldMapTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Symmetry Group Documentation                                              *)

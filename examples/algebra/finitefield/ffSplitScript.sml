@@ -12,10 +12,7 @@ val _ = new_theory "ffSplit";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 open jcLib;
-
 
 (* Get dependent theories local *)
 open ffBasicTheory;
@@ -36,7 +33,7 @@ open prim_recTheory pred_setTheory listTheory arithmeticTheory;
 
 open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
 
-open dividesTheory gcdTheory;
+open dividesTheory gcdTheory gcdsetTheory;
 
 open monoidTheory groupTheory ringTheory fieldTheory;
 open monoidInstancesTheory;
@@ -72,7 +69,6 @@ open polyMapTheory;
 open polyProductTheory; (* for PPROD *)
 
 open GaussTheory; (* for divisors *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Splitting Field Documentation                                             *)

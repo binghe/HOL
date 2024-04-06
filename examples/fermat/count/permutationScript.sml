@@ -12,13 +12,10 @@ val _ = new_theory "permutation";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib; (* for stripDup *)
 
-(* open dependent theories *)
-(* val _ = load "symmetryTheory"; *)
-open pred_setTheory arithmeticTheory;
+open pred_setTheory arithmeticTheory gcdsetTheory;
 open helperCountTheory;
 open helperSetTheory;
 
@@ -35,7 +32,6 @@ open monoidMapTheory groupMapTheory;
 open quotientGroupTheory; (* for homo_image_def *)
 
 open symmetryTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Permutation Group Documentation                                           *)

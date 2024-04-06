@@ -12,15 +12,11 @@ val _ = new_theory "groupCyclic";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* Get dependent theories local *)
-(* (* val _ = load "monoidTheory"; *) *)
-(* (* val _ = load "groupTheory"; *) *)
-(* (* val _ = load "subgroupTheory"; *) *)
-(* val _ = load "groupOrderTheory"; *)
+open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory;
+
 open monoidTheory monoidOrderTheory;
 open groupTheory subgroupTheory groupOrderTheory;
 open groupMapTheory;
@@ -28,7 +24,7 @@ open groupMapTheory;
 (* val _ = load "groupInstancesTheory"; *)
 open groupInstancesTheory;
 
-open numberTheory helperSetTheory;
+open numberTheory helperSetTheory gcdsetTheory;
 
 (* val _ = load "helperFunctionTheory"; *)
 open helperFunctionTheory;
@@ -36,13 +32,6 @@ open helperFunctionTheory;
 (* val _ = load "GaussTheory"; *)
 open GaussTheory;
 open EulerTheory;
-
-(* open dependent theories *)
-open pred_setTheory listTheory arithmeticTheory;
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open dividesTheory gcdTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Cyclic Group Documentation                                                *)

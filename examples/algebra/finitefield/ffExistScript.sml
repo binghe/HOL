@@ -34,9 +34,7 @@ open arithmeticTheory pred_setTheory listTheory;
 
 open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
 
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open dividesTheory gcdTheory;
+open dividesTheory gcdTheory gcdsetTheory;
 
 (* (* val _ = load "groupInstancesTheory"; -- in ringInstancesTheory *) *)
 (* (* val _ = load "ringInstancesTheory"; *) *)

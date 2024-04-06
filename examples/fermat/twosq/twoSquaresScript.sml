@@ -12,13 +12,9 @@ val _ = new_theory "twoSquares";
 
 (* ------------------------------------------------------------------------- *)
 
-
-(* open dependent theories *)
-(* arithmeticTheory -- load by default *)
-
 (* val _ = load "windmillTheory"; *)
 open helperTwosqTheory;
-open numberTheory;
+open numberTheory gcdsetTheory;
 open helperSetTheory;
 open helperFunctionTheory;
 open arithmeticTheory pred_setTheory;

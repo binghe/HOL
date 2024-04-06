@@ -33,15 +33,11 @@ open rich_listTheory;
 (* open dependent theories *)
 open arithmeticTheory pred_setTheory listTheory;
 
-(* open dependent theories *)
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open dividesTheory gcdTheory;
+open dividesTheory gcdTheory gcdsetTheory;
 
 open EulerTheory; (* for natural_finite *)
 open logrootTheory; (* for LOG *)
 open optionTheory; (* for Consecutive LCM Function *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Prime Power Documentation                                                 *)

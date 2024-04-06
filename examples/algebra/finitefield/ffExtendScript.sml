@@ -12,8 +12,6 @@ val _ = new_theory "ffExtend";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
@@ -32,9 +30,8 @@ open numberTheory helperListTheory helperSetTheory;
 
 (* open dependent theories *)
 open pred_setTheory listTheory arithmeticTheory;
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open dividesTheory gcdTheory;
+
+open dividesTheory gcdTheory gcdsetTheory;
 
 (* (* val _ = load "fieldTheory"; *) *)
 (* (* val _ = load "ringUnitTheory"; *) *)

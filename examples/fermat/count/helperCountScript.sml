@@ -12,14 +12,9 @@ val _ = new_theory "helperCount";
 
 (* ------------------------------------------------------------------------- *)
 
-
-(* open dependent theories *)
-(* val _ = load "EulerTheory"; *)
-open numberTheory;
 open helperSetTheory;
 open helperFunctionTheory;
-open arithmeticTheory pred_setTheory;
-
+open arithmeticTheory pred_setTheory gcdsetTheory numberTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Count Helper Documentation                                                *)

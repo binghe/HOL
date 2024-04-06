@@ -16,13 +16,6 @@ val _ = new_theory "polyRoot";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* Get dependent theories local *)
-(* (* val _ = load "monoidTheory"; *) *)
-(* (* val _ = load "groupTheory"; *) *)
-(* (* val _ = load "ringTheory"; *) *)
-(* val _ = load "ringUnitTheory"; (* this overloads |/ as r*.inv *) *)
-(* (* val _ = load "integralDomainTheory"; *) *)
-(* val _ = load "fieldTheory"; (* see poly_roots_mult, this overload |/ as (r.prod excluding #0).inv *) *)
 open monoidTheory groupTheory ringTheory ringUnitTheory fieldTheory;
 
 (* (* val _ = load "polyWeakTheory"; *) *)
@@ -46,12 +39,9 @@ open pred_setTheory listTheory arithmeticTheory;
 
 open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
 
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open dividesTheory gcdTheory;
+open dividesTheory gcdTheory gcdsetTheory;
 
 open integralDomainTheory; (* for poly_roots_mult_id *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Polynomials Factors and Roots Documentation                               *)

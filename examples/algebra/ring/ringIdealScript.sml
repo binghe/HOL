@@ -12,8 +12,6 @@ val _ = new_theory "ringIdeal";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
@@ -32,7 +30,7 @@ open monoidMapTheory groupMapTheory ringMapTheory;
 (* val _ = load "ringUnitTheory"; *)
 open ringUnitTheory;
 
-open numberTheory helperSetTheory;
+open numberTheory helperSetTheory gcdsetTheory;
 
 (* (* val _ = load "subgroupTheory"; *) *)
 (* val _ = load "quotientGroupTheory"; *)

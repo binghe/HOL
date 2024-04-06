@@ -35,8 +35,7 @@ open prim_recTheory pred_setTheory listTheory arithmeticTheory;
 
 open numberTheory helperSetTheory;
 
-open dividesTheory gcdTheory;
-
+open dividesTheory gcdTheory gcdsetTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Multiple Roots of Polynomials Documentation                               *)

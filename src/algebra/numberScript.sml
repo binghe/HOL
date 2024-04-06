@@ -11,6 +11,9 @@ open prim_recTheory arithmeticTheory dividesTheory gcdTheory gcdsetTheory
 
 val _ = new_theory "number";
 
+(* use of IN_SUBSET (not recommended) *)
+val IN_SUBSET = save_thm("IN_SUBSET", SUBSET_DEF);
+
 (* ------------------------------------------------------------------------- *)
 (* Set of Proper Subsets (from examples/algebra)                             *)
 (* ------------------------------------------------------------------------- *)

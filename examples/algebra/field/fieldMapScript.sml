@@ -16,6 +16,8 @@ val _ = new_theory "fieldMap";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
+open pred_setTheory arithmeticTheory dividesTheory gcdTheory gcdsetTheory;
+
 (* Get dependent theories local *)
 (* (* val _ = load "monoidTheory"; *) *)
 (* (* val _ = load "groupTheory"; *) *)
@@ -34,12 +36,6 @@ open monoidMapTheory groupMapTheory ringMapTheory;
 open quotientGroupTheory subgroupTheory;
 
 open numberTheory helperSetTheory;
-
-(* open dependent theories *)
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open pred_setTheory arithmeticTheory dividesTheory gcdTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Field Maps Documentation                                                  *)

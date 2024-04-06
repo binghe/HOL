@@ -26,7 +26,7 @@ val _ = new_theory "subgroup";
 open jcLib;
 
 (* open dependent theories *)
-open pred_setTheory arithmeticTheory;
+open pred_setTheory arithmeticTheory numberTheory;
 
 (* Get dependent theories local *)
 (* val _ = load "groupMapTheory"; *)

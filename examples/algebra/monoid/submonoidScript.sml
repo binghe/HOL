@@ -12,8 +12,6 @@ val _ = new_theory "submonoid";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
@@ -23,9 +21,7 @@ open jcLib;
 (* val _ = load "monoidMapTheory"; *)
 open monoidTheory monoidMapTheory;
 
-open pred_setTheory;
-open helperSetTheory;
-
+open pred_setTheory helperSetTheory numberTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Submonoid Documentation                                                   *)

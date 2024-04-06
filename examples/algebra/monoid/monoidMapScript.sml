@@ -12,19 +12,12 @@ val _ = new_theory "monoidMap";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* Get dependent theories local *)
-(* val _ = load "monoidOrderTheory"; *)
 open monoidTheory monoidOrderTheory;
 
-(* open dependent theories *)
-open pred_setTheory arithmeticTheory;
-
-open numberTheory helperSetTheory;
-
+open pred_setTheory arithmeticTheory gcdsetTheory numberTheory helperSetTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Monoid Maps Documentation                                                 *)

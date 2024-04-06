@@ -12,14 +12,11 @@ val _ = new_theory "Euler";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-open numberTheory helperSetTheory helperFunctionTheory;
-
-(* open dependent theories *)
 open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory;
+open numberTheory helperSetTheory helperFunctionTheory gcdsetTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Euler Set and Totient Function Documentation                              *)

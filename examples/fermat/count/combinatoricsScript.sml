@@ -18,11 +18,10 @@ val _ = new_theory "combinatorics";
 
 (* val _ = load "helperCountTheory"; *)
 open helperCountTheory;
-open numberTheory;
 open helperSetTheory;
 open helperFunctionTheory;
 open arithmeticTheory pred_setTheory;
-open dividesTheory; (* for divides_def, prime_def *)
+open dividesTheory gcdsetTheory numberTheory;
 open EulerTheory; (* for upto_delete *)
 
 (* for later computation *)

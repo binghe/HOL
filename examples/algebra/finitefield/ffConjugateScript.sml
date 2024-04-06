@@ -16,8 +16,6 @@ val _ = new_theory "ffConjugate";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* val _ = load "SatisfySimps"; (* for SatisfySimps.SATISFY_ss *) *)
-
 (* Get dependent theories local *)
 (* val _ = load "ffMinimalTheory"; *)
 open ffBasicTheory;
@@ -31,16 +29,9 @@ open ffMinimalTheory;
 (* open dependent theories *)
 open arithmeticTheory pred_setTheory listTheory;
 
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperNumTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
-(* (* val _ = load "helperFunctionTheory"; -- in ringTheory *) *)
-(* (* val _ = load "helperListTheory"; -- in polyRingTheory *) *)
 open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
 
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open dividesTheory gcdTheory;
+open dividesTheory gcdTheory gcdsetTheory;
 
 (* (* val _ = load "groupInstancesTheory"; -- in ringInstancesTheory *) *)
 (* (* val _ = load "ringInstancesTheory"; *) *)

@@ -12,7 +12,6 @@ val _ = new_theory "ringMap";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
@@ -33,11 +32,7 @@ open quotientGroupTheory;
 
 open numberTheory helperSetTheory;
 
-(* Get arithmetic for Ring characteristics *)
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open pred_setTheory arithmeticTheory dividesTheory gcdTheory;
-
+open pred_setTheory arithmeticTheory dividesTheory gcdTheory gcdsetTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Ring Maps Documentation                                                   *)

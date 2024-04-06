@@ -24,7 +24,7 @@ open monoidTheory monoidOrderTheory monoidMapTheory;
 open groupTheory;
 
 (* open dependent theories *)
-open pred_setTheory arithmeticTheory;
+open pred_setTheory arithmeticTheory gcdsetTheory;
 
 open numberTheory helperSetTheory;
 
