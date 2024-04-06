@@ -1,9 +1,17 @@
 open HolKernel Parse boolLib BasicProvers
 
-open dividesTheory pred_setTheory
-open gcdTheory simpLib metisLib
+open arithmeticTheory dividesTheory gcdTheory pred_setTheory simpLib metisLib;
 
-val ARITH_ss = numSimps.ARITH_ss
+val ARITH_ss = numSimps.ARITH_ss;
+val DECIDE = numLib.ARITH_PROVE;
+
+fun DECIDE_TAC (g as (asl,_)) =
+  ((MAP_EVERY UNDISCH_TAC (filter numSimps.is_arith asl) THEN
+    CONV_TAC Arith.ARITH_CONV)
+   ORELSE tautLib.TAUT_TAC) g;
+
+val decide_tac = DECIDE_TAC;
+val qexists_tac = Q.EXISTS_TAC;
 
 val _ = new_theory "gcdset"
 
@@ -38,7 +46,6 @@ val gcdset_divides = store_thm(
   ASM_SIMP_TAC (srw_ss()) [FINITE_INTER, FINITE_LEQ_MIN_SET,
                            NON_EMPTY_INTERSECTION]);
 
-val DECIDE = numLib.ARITH_PROVE
 val gcdset_greatest = store_thm(
   "gcdset_greatest",
   ``(!e. e IN s ==> divides g e) ==> divides g (gcdset s)``,
@@ -83,6 +90,5 @@ val gcdset_INSERT = store_thm(
     METIS_TAC [gcdset_divides, DIVIDES_TRANS]
   ]);
 val _ = export_rewrites ["gcdset_INSERT"]
-
 
 val _ = export_theory()

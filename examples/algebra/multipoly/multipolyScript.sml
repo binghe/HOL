@@ -1,14 +1,14 @@
-open HolKernel boolLib bossLib Parse dep_rewrite
+open HolKernel boolLib bossLib Parse;
+
+open dep_rewrite
      pairTheory pred_setTheory listTheory helperListTheory bagTheory ringTheory
      gbagTheory polynomialTheory polyWeakTheory polyRingTheory polyEvalTheory
      polyFieldTheory integralDomainTheory
      monoidMapTheory groupMapTheory ringMapTheory
 
-val _ = new_theory"multipoly"
+open monoidTheory groupTheory helperSetTheory;
 
-(* stuff that should be moved *)
-
-open monoidTheory groupTheory helperSetTheory
+val _ = new_theory"multipoly";
 
 Theorem GBAG_IMAGE_GBAG_BAG_OF_SET:
   AbelianMonoid g ==>
@@ -3529,7 +3529,7 @@ Proof
              \\ fs[monomials_def] \\ NO_TAC)
       \\ metis_tac[] )
     \\ simp[]
-    \\ simp[helperSetTheory.INTER_SING] )
+    \\ simp[INTER_SING] )
   \\ qmatch_goalsub_abbrev_tac`CARD s`
   \\ `s = {}` suffices_by rw[]
   \\ simp[Abbr`s`, Once EXTENSION]

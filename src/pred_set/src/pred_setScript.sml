@@ -1686,7 +1686,17 @@ Proof
       ASM_REWRITE_TAC [EXTENSION,IN_SING,CHOICE_SING]]
 QED
 
-
+(* Theorem: !x. x IN s ==> s INTER {x} = {x} *)
+(* Proof:
+     s INTER {x}
+   = {x | x IN s /\ x IN {x}}   by INTER_DEF
+   = {x' | x' IN s /\ x' = x}   by IN_SING
+   = {x}                        by EXTENSION
+*)
+val INTER_SING = store_thm(
+  "INTER_SING",
+  ``!s x. x IN s ==> (s INTER {x} = {x})``,
+  rw[INTER_DEF, EXTENSION, EQ_IMP_THM]);
 
 (* ===================================================================== *)
 (* The image of a function on a set.                                     *)

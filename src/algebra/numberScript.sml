@@ -6,9 +6,75 @@
 
 open HolKernel boolLib Parse bossLib;
 
-open pred_setTheory prim_recTheory arithmeticTheory dividesTheory gcdTheory;
+open prim_recTheory arithmeticTheory dividesTheory gcdTheory gcdsetTheory
+     pred_setTheory;
 
 val _ = new_theory "number";
+
+(* ------------------------------------------------------------------------- *)
+(* Set of Proper Subsets (from examples/algebra)                             *)
+(* ------------------------------------------------------------------------- *)
+
+(* Define the set of all proper subsets of a set *)
+val _ = overload_on ("PPOW", ``\s. (POW s) DIFF {s}``);
+
+(* Theorem: !s e. e IN PPOW s ==> e PSUBSET s *)
+(* Proof:
+     e IN PPOW s
+   = e IN ((POW s) DIFF {s})       by notation
+   = (e IN POW s) /\ e NOTIN {s}   by IN_DIFF
+   = (e SUBSET s) /\ e NOTIN {s}   by IN_POW
+   = (e SUBSET s) /\ e <> s        by IN_SING
+   = e PSUBSET s                   by PSUBSET_DEF
+*)
+val IN_PPOW = store_thm(
+  "IN_PPOW",
+  ``!s e. e IN PPOW s ==> e PSUBSET s``,
+  rw[PSUBSET_DEF, IN_POW]);
+
+(* Theorem: FINITE (PPOW s) *)
+(* Proof:
+   Since PPOW s = (POW s) DIFF {s},
+       FINITE s
+   ==> FINITE (POW s)     by FINITE_POW
+   ==> FINITE ((POW s) DIFF {s})  by FINITE_DIFF
+   ==> FINITE (PPOW s)            by above
+*)
+val FINITE_PPOW = store_thm(
+  "FINITE_PPOW",
+  ``!s. FINITE s ==> FINITE (PPOW s)``,
+  rw[FINITE_POW]);
+
+(* Theorem: FINITE s ==> CARD (PPOW s) = PRE (2 ** CARD s) *)
+(* Proof:
+     CARD (PPOW s)
+   = CARD ((POW s) DIFF {s})      by notation
+   = CARD (POW s) - CARD ((POW s) INTER {s})   by CARD_DIFF
+   = CARD (POW s) - CARD {s}      by INTER_SING, since s IN POW s
+   = 2 ** CARD s  - CARD {s}      by CARD_POW
+   = 2 ** CARD s  - 1             by CARD_SING
+   = PRE (2 ** CARD s)            by PRE_SUB1
+*)
+val CARD_PPOW = store_thm(
+  "CARD_PPOW",
+  ``!s. FINITE s ==> (CARD (PPOW s) = PRE (2 ** CARD s))``,
+  rpt strip_tac >>
+  `FINITE {s}` by rw[FINITE_SING] >>
+  `FINITE (POW s)` by rw[FINITE_POW] >>
+  `s IN (POW s)` by rw[IN_POW, SUBSET_REFL] >>
+  `CARD (PPOW s) = CARD (POW s) - CARD ((POW s) INTER {s})` by rw[CARD_DIFF] >>
+  `_ = CARD (POW s) - CARD {s}` by rw[INTER_SING] >>
+  `_ = 2 ** CARD s  - CARD {s}` by rw[CARD_POW] >>
+  `_ = 2 ** CARD s  - 1` by rw[CARD_SING] >>
+  `_ = PRE (2 ** CARD s)` by rw[PRE_SUB1] >>
+  rw[]);
+
+(* Theorem: FINITE s ==> CARD (PPOW s) = PRE (2 ** CARD s) *)
+(* Proof: by CARD_PPOW *)
+val CARD_PPOW_EQN = store_thm(
+  "CARD_PPOW_EQN",
+  ``!s. FINITE s ==> (CARD (PPOW s) = (2 ** CARD s) - 1)``,
+  rw[CARD_PPOW]);
 
 (* ------------------------------------------------------------------------- *)
 (* Arithmetic Theorems (from examples/algebra)                               *)
@@ -5308,6 +5374,60 @@ val coprime_power_and_power_successor = store_thm(
   `coprime z (z + 1)` by rw[coprime_SUC] >>
   `coprime (z ** (n DIV m)) (z + 1)` by rw[coprime_exp] >>
   metis_tac[GCD_SYM, GCD_CANCEL_MULT, MOD_LESS]);
+
+(* ------------------------------------------------------------------------- *)
+(* Useful Theorems                                                           *)
+(* ------------------------------------------------------------------------- *)
+
+(* Note:
+> type_of ``prime``;
+val it = ":num -> bool": hol_type
+
+Thus prime is also a set, or prime = {p | prime p}
+*)
+
+(* Theorem: p IN prime <=> prime p *)
+(* Proof: by IN_DEF *)
+val in_prime = store_thm(
+  "in_prime",
+  ``!p. p IN prime <=> prime p``,
+  rw[IN_DEF]);
+
+(* Theorem: (Generalized Euclid's Lemma)
+            If prime p divides a PROD_SET, it divides a member of the PROD_SET.
+            FINITE s ==> !p. prime p /\ p divides (PROD_SET s) ==> ?b. b IN s /\ p divides b *)
+(* Proof: by induction of the PROD_SET, apply Euclid's Lemma.
+- P_EUCLIDES;
+> val it =
+    |- !p a b. prime p /\ p divides (a * b) ==> p divides a \/ p divides b : thm
+   By finite induction on s.
+   Base case: prime p /\ p divides (PROD_SET {}) ==> F
+     Since PROD_SET {} = 1        by PROD_SET_THM
+       and p divides 1 <=> p = 1  by DIVIDES_ONE
+       but prime p ==> p <> 1     by NOT_PRIME_1
+       This gives the contradiction.
+   Step case: FINITE s /\ (!p. prime p /\ p divides (PROD_SET s) ==> ?b. b IN s /\ p divides b) /\
+              e NOTIN s /\ prime p /\ p divides (PROD_SET (e INSERT s)) ==>
+              ?b. ((b = e) \/ b IN s) /\ p divides b
+     Note PROD_SET (e INSERT s) = e * PROD_SET s   by PROD_SET_THM, DELETE_NON_ELEMENT, e NOTIN s.
+     So prime p /\ p divides (PROD_SET (e INSERT s))
+     ==> p divides e, or p divides (PROD_SET s)    by P_EUCLIDES
+     If p divides e, just take b = e.
+     If p divides (PROD_SET s), there is such b    by induction hypothesis
+*)
+val PROD_SET_EUCLID = store_thm(
+  "PROD_SET_EUCLID",
+  ``!s. FINITE s ==> !p. prime p /\ p divides (PROD_SET s) ==> ?b. b IN s /\ p divides b``,
+  ho_match_mp_tac FINITE_INDUCT >>
+  rw[] >-
+  metis_tac[PROD_SET_EMPTY, DIVIDES_ONE, NOT_PRIME_1] >>
+  `PROD_SET (e INSERT s) = e * PROD_SET s`
+    by metis_tac[PROD_SET_THM, DELETE_NON_ELEMENT] >>
+  Cases_on `p divides e` >-
+  metis_tac[] >>
+  metis_tac[P_EUCLIDES]);
+
+
 
 (* export theory at end *)
 val _ = export_theory();
