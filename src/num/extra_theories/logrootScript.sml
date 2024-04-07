@@ -1,6 +1,6 @@
-open HolKernel boolLib Parse
-open Parse BasicProvers metisLib simpLib
-open arithmeticTheory pairTheory combinTheory
+open HolKernel boolLib Parse BasicProvers;
+
+open metisLib simpLib arithmeticTheory pairTheory combinTheory;
 
 val _ = new_theory "logroot";
 
@@ -14,8 +14,17 @@ fun DECIDE_TAC (g as (asl, _)) =
    (MAP_EVERY UNDISCH_TAC (filter numSimps.is_arith_asm asl)
     THEN CONV_TAC Arith.ARITH_CONV) g
 
-val DECIDE = EQT_ELIM o Arith.ARITH_CONV
-fun simp ths = ASM_SIMP_TAC (srw_ss() ++ ARITH_ss) ths
+val decide_tac = DECIDE_TAC;
+val metis_tac = METIS_TAC;
+
+val DECIDE = EQT_ELIM o Arith.ARITH_CONV;
+val rw = SRW_TAC [ARITH_ss];
+val std_ss = arith_ss;
+val qabbrev_tac = Q.ABBREV_TAC;
+val qexists_tac = Q.EXISTS_TAC;
+val simp = ASM_SIMP_TAC (srw_ss() ++ ARITH_ss);
+val fs = FULL_SIMP_TAC (srw_ss() ++ ARITH_ss);
+val rfs = REV_FULL_SIMP_TAC (srw_ss() ++ ARITH_ss);
 
 val Define = TotalDefn.Define
 val zDefine = Lib.with_flag (computeLib.auto_import_definitions, false) Define
@@ -28,6 +37,10 @@ val lt_mult2 = Q.prove(
    THEN `0 < d` by DECIDE_TAC
    THEN METIS_TAC [LE_MULT_LCANCEL, LT_MULT_RCANCEL, LESS_EQ_LESS_TRANS,
                    LESS_OR_EQ]);
+
+(* ------------------------------------------------------------------------- *)
+(* Exponential Theorems                                                      *)
+(* ------------------------------------------------------------------------- *)
 
 val exp_lemma2 = Q.prove(
    `!a b r. 0 < r ==> a < b ==> a ** r < b ** r`,
@@ -84,6 +97,134 @@ val EXP_LT_ISO = Q.store_thm("EXP_LT_ISO",
 val EXP_LE_ISO = Q.store_thm("EXP_LE_ISO",
    `!a b r. 0 < r ==> (a <= b <=> a ** r <= b ** r)`,
    PROVE_TAC [NOT_LESS, exp_lemma3, exp_lemma2, LESS_OR_EQ, NOT_LESS]);
+
+(* Theorem: n ** 0 = 1 *)
+(* Proof: by EXP *)
+val EXP_0 = store_thm(
+  "EXP_0",
+  ``!n. n ** 0 = 1``,
+  rw_tac std_ss[EXP]);
+
+(* Theorem: n ** 2 = n * n *)
+(* Proof:
+   n ** 2 = n * (n ** 1) = n * (n * (n ** 0)) = n * (n * 1) = n * n
+   or n ** 2 = n * (n ** 1) = n * n  by EXP_1:  !n. (1 ** n = 1) /\ (n ** 1 = n)
+*)
+val EXP_2 = store_thm(
+  "EXP_2",
+  ``!n. n ** 2 = n * n``,
+  metis_tac[EXP, TWO, EXP_1]);
+
+(* Theorem: m <> 0 ==> m ** n <> 0 *)
+(* Proof: by EXP_EQ_0 *)
+val EXP_NONZERO = store_thm(
+  "EXP_NONZERO",
+  ``!m n. m <> 0 ==> m ** n <> 0``,
+  metis_tac[EXP_EQ_0]);
+
+(* Theorem: 0 < m ==> 0 < m ** n *)
+(* Proof: by EXP_NONZERO *)
+val EXP_POS = store_thm(
+  "EXP_POS",
+  ``!m n. 0 < m ==> 0 < m ** n``,
+  rw[EXP_NONZERO]);
+
+(* Theorem: 0 < m ==> ((n ** m = n) <=> ((m = 1) \/ (n = 0) \/ (n = 1))) *)
+(* Proof:
+   If part: n ** m = n ==> n = 0 \/ n = 1
+      By contradiction, assume n <> 0 /\ n <> 1.
+      Then ?k. m = SUC k            by num_CASES, 0 < m
+        so  n ** SUC k = n          by n ** m = n
+        or  n * n ** k = n          by EXP
+       ==>      n ** k = 1          by MULT_EQ_SELF, 0 < n
+       ==>      n = 1 or k = 0      by EXP_EQ_1
+       ==>      n = 1 or m = 1,
+      These contradict n <> 1 and m <> 1.
+   Only-if part: n ** 1 = n /\ 0 ** m = 0 /\ 1 ** m = 1
+      These are true   by EXP_1, ZERO_EXP.
+*)
+val EXP_EQ_SELF = store_thm(
+  "EXP_EQ_SELF",
+  ``!n m. 0 < m ==> ((n ** m = n) <=> ((m = 1) \/ (n = 0) \/ (n = 1)))``,
+  rw_tac std_ss[EQ_IMP_THM] >| [
+    spose_not_then strip_assume_tac >>
+    `m <> 0` by decide_tac >>
+    `?k. m = SUC k` by metis_tac[num_CASES] >>
+    `n * n ** k = n` by fs[EXP] >>
+    `n ** k = 1` by metis_tac[MULT_EQ_SELF, NOT_ZERO_LT_ZERO] >>
+    fs[EXP_EQ_1],
+    rw[],
+    rw[],
+    rw[]
+  ]);
+
+(* Obtain a theorem *)
+val EXP_LE = save_thm("EXP_LE", X_LE_X_EXP |> GEN ``x:num`` |> SPEC ``b:num`` |> GEN_ALL);
+(* val EXP_LE = |- !n b. 0 < n ==> b <= b ** n: thm *)
+
+(* Theorem: 1 < b /\ 1 < n ==> b < b ** n *)
+(* Proof:
+   By contradiction, assume ~(b < b ** n).
+   Then b ** n <= b       by arithmetic
+    But b <= b ** n       by EXP_LE, 0 < n
+    ==> b ** n = b        by EQ_LESS_EQ
+    ==> b = 1 or n = 0 or n = 1.
+   All these contradict 1 < b and 1 < n.
+*)
+val EXP_LT = store_thm(
+  "EXP_LT",
+  ``!n b. 1 < b /\ 1 < n ==> b < b ** n``,
+  spose_not_then strip_assume_tac >>
+  `b <= b ** n` by rw[EXP_LE] >>
+  `b ** n = b` by decide_tac >>
+  rfs[EXP_EQ_SELF]);
+
+(* Theorem: 0 < a /\ n < m /\ (a ** n * b = a ** m * c) ==> ?d. 0 < d /\ (b = a ** d * c) *)
+(* Proof:
+   Let d = m - n.
+   Then 0 < d, and  m = n + d       by arithmetic
+    and 0 < a ==> a ** n <> 0       by EXP_EQ_0
+      a ** n * b
+    = a ** (n + d) * c              by m = n + d
+    = (a ** n * a ** d) * c         by EXP_ADD
+    = a ** n * (a ** d * c)         by MULT_ASSOC
+   The result follows               by MULT_LEFT_CANCEL
+*)
+val EXP_LCANCEL = store_thm(
+  "EXP_LCANCEL",
+  ``!a b c n m. 0 < a /\ n < m /\ (a ** n * b = a ** m * c) ==> ?d. 0 < d /\ (b = a ** d * c)``,
+  rpt strip_tac >>
+  `0 < m - n /\ (m = n + (m - n))` by decide_tac >>
+  qabbrev_tac `d = m - n` >>
+  `a ** n <> 0` by metis_tac[EXP_EQ_0, NOT_ZERO_LT_ZERO] >>
+  metis_tac[EXP_ADD, MULT_ASSOC, MULT_LEFT_CANCEL]);
+
+(* Theorem: 0 < a /\ n < m /\ (a ** n * b = a ** m * c) ==> ?d. 0 < d /\ (b = a ** d * c) *)
+(* Proof: by EXP_LCANCEL, MULT_COMM. *)
+val EXP_RCANCEL = store_thm(
+  "EXP_RCANCEL",
+  ``!a b c n m. 0 < a /\ n < m /\ (b * a ** n = c * a ** m) ==> ?d. 0 < d /\ (b = c * a ** d)``,
+  metis_tac[EXP_LCANCEL, MULT_COMM]);
+
+(*
+EXP_POS      |- !m n. 0 < m ==> 0 < m ** n
+ONE_LT_EXP   |- !x y. 1 < x ** y <=> 1 < x /\ 0 < y
+ZERO_LT_EXP  |- 0 < x ** y <=> 0 < x \/ (y = 0)
+*)
+
+(* Theorem: 0 < m ==> 1 <= m ** n *)
+(* Proof:
+   0 < m ==>  0 < m ** n      by EXP_POS
+          or 1 <= m ** n      by arithmetic
+*)
+val ONE_LE_EXP = store_thm(
+  "ONE_LE_EXP",
+  ``!m n. 0 < m ==> 1 <= m ** n``,
+  metis_tac[EXP_POS, DECIDE``!x. 0 < x <=> 1 <= x``]);
+
+(* ------------------------------------------------------------------------- *)
+(* ROOT and LOG                                                              *)
+(* ------------------------------------------------------------------------- *)
 
 val ROOT_exists = Q.store_thm("ROOT_exists",
    `!r n. 0 < r ==> ?rt. rt ** r <= n /\ n < SUC rt ** r`,
@@ -198,7 +339,6 @@ val LOG_BASE = Q.store_thm("LOG_BASE",
    THEN Induct_on `a`
    THEN RW_TAC arith_ss [LEFT_ADD_DISTRIB, RIGHT_ADD_DISTRIB, EXP_ADD, ADD1,
                          EXP_1, square]);
-
 
 val LOG_EXP = Q.store_thm("LOG_EXP",
    `!n a b. 1n < a /\ 0 < b ==> (LOG a (a ** n * b) = n + LOG a b)`,
@@ -686,6 +826,272 @@ Proof REWRITE_TAC [FST, SQRTd_def, NUMERAL_DEF]
 QED
 
 val () = Theory.delete_const "iSQRTd"
+
+(* ------------------------------------------------------------------------- *)
+(* ROOT Computation                                                          *)
+(* ------------------------------------------------------------------------- *)
+
+(* Theorem: ROOT n (a ** n) = a *)
+(* Proof:
+   Since   a < SUC a         by LESS_SUC
+      a ** n < (SUC a) ** n  by EXP_BASE_LT_MONO
+   Let b = a ** n,
+   Then  a ** n <= b         by LESS_EQ_REFL
+    and  b < (SUC a) ** n    by above
+   Hence a = ROOT n b        by ROOT_UNIQUE
+*)
+val ROOT_POWER = store_thm(
+  "ROOT_POWER",
+  ``!a n. 1 < a /\ 0 < n ==> (ROOT n (a ** n) = a)``,
+  rw[EXP_BASE_LT_MONO, ROOT_UNIQUE]);
+
+(* Theorem: 0 < m /\ (b ** m = n) ==> (b = ROOT m n) *)
+(* Proof:
+   Note n <= n                  by LESS_EQ_REFL
+     so b ** m <= n             by b ** m = n
+   Also b < SUC b               by LESS_SUC
+     so b ** m < (SUC b) ** m   by EXP_EXP_LT_MONO, 0 < m
+     so n < (SUC b) ** m        by b ** m = n
+   Thus b = ROOT m n            by ROOT_UNIQUE
+*)
+val ROOT_FROM_POWER = store_thm(
+  "ROOT_FROM_POWER",
+  ``!m n b. 0 < m /\ (b ** m = n) ==> (b = ROOT m n)``,
+  rpt strip_tac >>
+  rw[ROOT_UNIQUE]);
+
+(* Theorem: 0 < m ==> (ROOT m 0 = 0) *)
+(* Proof:
+   Note 0 ** m = 0    by EXP_0
+   Thus 0 = ROOT m 0  by ROOT_FROM_POWER
+*)
+val ROOT_OF_0 = store_thm(
+  "ROOT_OF_0[simp]",
+  ``!m. 0 < m ==> (ROOT m 0 = 0)``,
+  rw[ROOT_FROM_POWER]);
+
+(* Theorem: 0 < m ==> (ROOT m 1 = 1) *)
+(* Proof:
+   Note 1 ** m = 1    by EXP_1
+   Thus 1 = ROOT m 1  by ROOT_FROM_POWER
+*)
+val ROOT_OF_1 = store_thm(
+  "ROOT_OF_1[simp]",
+  ``!m. 0 < m ==> (ROOT m 1 = 1)``,
+  rw[ROOT_FROM_POWER]);
+
+(* Theorem: 0 < r ==> !n p. (ROOT r n = p) <=> (p ** r <= n /\ n < SUC p ** r) *)
+(* Proof:
+   If part: 0 < r ==> ROOT r n ** r <= n /\ n < SUC (ROOT r n) ** r
+      This is true             by ROOT, 0 < r
+   Only-if part: p ** r <= n /\ n < SUC p ** r ==> ROOT r n = p
+      This is true             by ROOT_UNIQUE
+*)
+val ROOT_THM = store_thm(
+  "ROOT_THM",
+  ``!r. 0 < r ==> !n p. (ROOT r n = p) <=> (p ** r <= n /\ n < SUC p ** r)``,
+  metis_tac[ROOT, ROOT_UNIQUE]);
+
+(* Theorem: 0 < m ==> !n. (ROOT m n = 0) <=> (n = 0) *)
+(* Proof:
+   If part: ROOT m n = 0 ==> n = 0
+      Note n < SUC (ROOT m n) ** r      by ROOT
+        or n < SUC 0 ** m               by ROOT m n = 0
+        so n < 1                        by ONE, EXP_1
+        or n = 0                        by arithmetic
+   Only-if part: ROOT m 0 = 0, true     by ROOT_OF_0
+*)
+val ROOT_EQ_0 = store_thm(
+  "ROOT_EQ_0",
+  ``!m. 0 < m ==> !n. (ROOT m n = 0) <=> (n = 0)``,
+  rw[EQ_IMP_THM] >>
+  `n < 1` by metis_tac[ROOT, EXP_1, ONE] >>
+  decide_tac);
+
+(* Theorem: ROOT 1 n = n *)
+(* Proof:
+   Note n ** 1 = n      by EXP_1
+     so n ** 1 <= n
+   Also n < SUC n       by LESS_SUC
+     so n < SUC n ** 1  by EXP_1
+   Thus ROOT 1 n = n    by ROOT_UNIQUE
+*)
+val ROOT_1 = store_thm(
+  "ROOT_1[simp]",
+  ``!n. ROOT 1 n = n``,
+  rw[ROOT_UNIQUE]);
+
+(* Theorem: 0 < r ==>
+            (ROOT r (SUC n) = ROOT r n + if SUC n = (SUC (ROOT r n)) ** r then 1 else 0) *)
+(* Proof:
+   Let x = ROOT r n, y = ROOT r (SUC n).  x <= y.
+   Note n < (SUC x) ** r /\ x ** r <= n          by ROOT_THM
+    and SUC n < (SUC y) ** r /\ y ** r <= SUC n  by ROOT_THM
+   Since n < (SUC x) ** r,
+    SUC n <= (SUC x) ** r.
+   If SUC n = (SUC x) ** r,
+      Then y = ROOT r (SUC n)
+             = ROOT r ((SUC x) ** r)
+             = SUC x                             by ROOT_POWER
+   If SUC n < (SUC x) ** r,
+      Then x ** r <= n < SUC n                   by LESS_SUC
+      Thus x = y                                 by ROOT_THM
+*)
+val ROOT_SUC = store_thm(
+  "ROOT_SUC",
+  ``!r n. 0 < r ==>
+   (ROOT r (SUC n) = ROOT r n + if SUC n = (SUC (ROOT r n)) ** r then 1 else 0)``,
+  rpt strip_tac >>
+  qabbrev_tac `x = ROOT r n` >>
+  qabbrev_tac `y = ROOT r (SUC n)` >>
+  Cases_on `n = 0` >| [
+    `x = 0` by rw[ROOT_OF_0, Abbr`x`] >>
+    `y = 1` by rw[ROOT_OF_1, Abbr`y`] >>
+    simp[],
+    `x <> 0` by rw[ROOT_EQ_0, Abbr`x`] >>
+    `n < (SUC x) ** r /\ x ** r <= n` by metis_tac[ROOT_THM] >>
+    `SUC n < (SUC y) ** r /\ y ** r <= SUC n` by metis_tac[ROOT_THM] >>
+    `(SUC n = (SUC x) ** r) \/ SUC n < (SUC x) ** r` by decide_tac >| [
+      `1 < SUC x` by decide_tac >>
+      `y = SUC x` by metis_tac[ROOT_POWER] >>
+      simp[],
+      `x ** r <= SUC n` by decide_tac >>
+      `x = y` by metis_tac[ROOT_THM] >>
+      simp[]
+    ]
+  ]);
+
+(*
+ROOT_SUC;
+|- !r n. 0 < r ==> ROOT r (SUC n) = ROOT r n + if SUC n = SUC (ROOT r n) ** r then 1 else 0
+Let z = ROOT r n.
+
+   z(n)
+   -------------------------------------------------
+                      n   (n+1=(z+1)**r)
+
+> EVAL ``MAP (ROOT 2) [1 .. 20]``;
+val it = |- MAP (ROOT 2) [1 .. 20] =
+      [1; 1; 1; 2; 2; 2; 2; 2; 3; 3; 3; 3; 3; 3; 3; 4; 4; 4; 4; 4]: thm
+       1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
+*)
+
+(* Theorem: 0 < m ==> !n. (ROOT m n = 1) <=> (0 < n /\ n < 2 ** m) *)
+(* Proof:
+       ROOT m n = 1
+   <=> 1 ** m <= n /\ n < (SUC 1) ** m    by ROOT_THM, 0 < m
+   <=> 1 <= n /\ n < 2 ** m               by TWO, EXP_1
+   <=> 0 < n /\ n < 2 ** m                by arithmetic
+*)
+val ROOT_EQ_1 = store_thm(
+  "ROOT_EQ_1",
+  ``!m. 0 < m ==> !n. (ROOT m n = 1) <=> (0 < n /\ n < 2 ** m)``,
+  rpt strip_tac >>
+  `!n. 0 < n <=> 1 <= n` by decide_tac >>
+  metis_tac[ROOT_THM, TWO, EXP_1]);
+
+(* Theorem: 0 < m ==> ROOT m n <= n *)
+(* Proof:
+   Let r = ROOT m n.
+   Note r <= r ** m   by X_LE_X_EXP, 0 < m
+          <= n        by ROOT
+*)
+val ROOT_LE_SELF = store_thm(
+  "ROOT_LE_SELF",
+  ``!m n. 0 < m ==> ROOT m n <= n``,
+  metis_tac[X_LE_X_EXP, ROOT, LESS_EQ_TRANS]);
+
+(* Theorem: 0 < m ==> ((ROOT m n = n) <=> ((m = 1) \/ (n = 0) \/ (n = 1))) *)
+(* Proof:
+   If part: ROOT m n = n ==> m = 1 \/ n = 0 \/ n = 1
+      Note n ** m <= n               by ROOT, 0 < r
+       But n <= n ** m               by X_LE_X_EXP, 0 < m
+        so n ** m = n                by EQ_LESS_EQ
+       ==> m = 1 or n = 0 or n = 1   by EXP_EQ_SELF
+   Only-if part: ROOT 1 n = n /\ ROOT m 0 = 0 /\ ROOT m 1 = 1
+      True by ROOT_1, ROOT_OF_0, ROOT_OF_1.
+*)
+Theorem ROOT_EQ_SELF:
+  !m n. 0 < m ==> (ROOT m n = n <=> m = 1 \/ n = 0 \/ n = 1)
+Proof
+  rw_tac std_ss[EQ_IMP_THM] >> rw[] >>
+  `n ** m <= n` by metis_tac[ROOT] >>
+  `n <= n ** m` by rw[X_LE_X_EXP] >>
+  `n ** m = n` by decide_tac >>
+  fs[]
+QED
+
+(* Theorem: 0 < m ==> (n <= ROOT m n <=> ((m = 1) \/ (n = 0) \/ (n = 1))) *)
+(* Proof:
+   Note ROOT m n <= n                     by ROOT_LE_SELF
+   Thus n <= ROOT m n <=> ROOT m n = n    by EQ_LESS_EQ
+   The result follows                     by ROOT_EQ_SELF
+*)
+val ROOT_GE_SELF = store_thm(
+  "ROOT_GE_SELF",
+  ``!m n. 0 < m ==> (n <= ROOT m n <=> ((m = 1) \/ (n = 0) \/ (n = 1)))``,
+  metis_tac[ROOT_LE_SELF, ROOT_EQ_SELF, EQ_LESS_EQ]);
+
+(*
+EVAL ``MAP (\k. ROOT k 100)  [1 .. 10]``; = [100; 10; 4; 3; 2; 2; 1; 1; 1; 1]: thm
+
+This shows (ROOT k) is a decreasing function of k,
+but this is very hard to prove without some real number theory.
+Even this is hard to prove: ROOT 3 n <= ROOT 2 n
+
+No! -- this can be proved, see below.
+*)
+
+(* Theorem: 0 < a /\ a <= b ==> ROOT b n <= ROOT a n *)
+(* Proof:
+   Let x = ROOT a n, y = ROOT b n. To show: y <= x.
+   By contradiction, suppose x < y.
+   Then SUC x <= y.
+   Note x ** a <= n /\ n < (SUC x) ** a     by ROOT
+    and y ** b <= n /\ n < (SUC y) ** b     by ROOT
+    But a <= b
+        (SUC x) ** a
+     <= (SUC x) ** b       by EXP_BASE_LEQ_MONO_IMP, 0 < SUC x, a <= b
+     <=       y ** b       by EXP_EXP_LE_MONO, 0 < b
+   This leads to n < (SUC x) ** a <= y ** b <= n, a contradiction.
+*)
+val ROOT_LE_REVERSE = store_thm(
+  "ROOT_LE_REVERSE",
+  ``!a b n. 0 < a /\ a <= b ==> ROOT b n <= ROOT a n``,
+  rpt strip_tac >>
+  qabbrev_tac `x = ROOT a n` >>
+  qabbrev_tac `y = ROOT b n` >>
+  spose_not_then strip_assume_tac >>
+  `0 < b /\ SUC x <= y` by decide_tac >>
+  `x ** a <= n /\ n < (SUC x) ** a` by rw[ROOT, Abbr`x`] >>
+  `y ** b <= n /\ n < (SUC y) ** b` by rw[ROOT, Abbr`y`] >>
+  `(SUC x) ** a <= (SUC x) ** b` by rw[EXP_BASE_LEQ_MONO_IMP] >>
+  `(SUC x) ** b <= y ** b` by rw[EXP_EXP_LE_MONO] >>
+  decide_tac);
+
+(* ------------------------------------------------------------------------- *)
+(* Square Root                                                               *)
+(* ------------------------------------------------------------------------- *)
+(* Use overload for SQRT *)
+val _ = overload_on ("SQRT", ``\n. ROOT 2 n``);
+
+(* Theorem: 0 < n ==> (SQRT n) ** 2 <= n /\ n < SUC (SQRT n) ** 2 *)
+(* Proof: by ROOT:
+   |- !r n. 0 < r ==> ROOT r n ** r <= n /\ n < SUC (ROOT r n) ** r
+*)
+val SQRT_PROPERTY = store_thm(
+  "SQRT_PROPERTY",
+  ``!n. (SQRT n) ** 2 <= n /\ n < SUC (SQRT n) ** 2``,
+  rw[ROOT]);
+
+(* Get a useful theorem *)
+Theorem SQRT_UNIQUE = ROOT_UNIQUE |> SPEC ``2``;
+(* val SQRT_UNIQUE = |- !n p. p ** 2 <= n /\ n < SUC p ** 2 ==> SQRT n = p: thm *)
+
+(* Obtain a theorem *)
+val SQRT_THM = save_thm("SQRT_THM",
+    ROOT_THM |> SPEC ``2`` |> SIMP_RULE (srw_ss())[]);
+(* val SQRT_THM = |- !n p. (SQRT n = p) <=> p ** 2 <= n /\ n < SUC p ** 2: thm *)
 
 (* ----------------------------------------------------------------------- *)
 

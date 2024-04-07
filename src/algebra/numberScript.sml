@@ -7,7 +7,7 @@
 open HolKernel boolLib Parse bossLib;
 
 open prim_recTheory arithmeticTheory dividesTheory gcdTheory gcdsetTheory
-     pred_setTheory;
+     logrootTheory pred_setTheory;
 
 val _ = new_theory "number";
 
@@ -1399,130 +1399,6 @@ val LE_IMP_REVERSE_LT = store_thm(
 (* ------------------------------------------------------------------------- *)
 (* Exponential Theorems                                                      *)
 (* ------------------------------------------------------------------------- *)
-
-(* Theorem: n ** 0 = 1 *)
-(* Proof: by EXP *)
-val EXP_0 = store_thm(
-  "EXP_0",
-  ``!n. n ** 0 = 1``,
-  rw_tac std_ss[EXP]);
-
-(* Theorem: n ** 2 = n * n *)
-(* Proof:
-   n ** 2 = n * (n ** 1) = n * (n * (n ** 0)) = n * (n * 1) = n * n
-   or n ** 2 = n * (n ** 1) = n * n  by EXP_1:  !n. (1 ** n = 1) /\ (n ** 1 = n)
-*)
-val EXP_2 = store_thm(
-  "EXP_2",
-  ``!n. n ** 2 = n * n``,
-  metis_tac[EXP, TWO, EXP_1]);
-
-(* Theorem: m <> 0 ==> m ** n <> 0 *)
-(* Proof: by EXP_EQ_0 *)
-val EXP_NONZERO = store_thm(
-  "EXP_NONZERO",
-  ``!m n. m <> 0 ==> m ** n <> 0``,
-  metis_tac[EXP_EQ_0]);
-
-(* Theorem: 0 < m ==> 0 < m ** n *)
-(* Proof: by EXP_NONZERO *)
-val EXP_POS = store_thm(
-  "EXP_POS",
-  ``!m n. 0 < m ==> 0 < m ** n``,
-  rw[EXP_NONZERO]);
-
-(* Theorem: 0 < m ==> ((n ** m = n) <=> ((m = 1) \/ (n = 0) \/ (n = 1))) *)
-(* Proof:
-   If part: n ** m = n ==> n = 0 \/ n = 1
-      By contradiction, assume n <> 0 /\ n <> 1.
-      Then ?k. m = SUC k            by num_CASES, 0 < m
-        so  n ** SUC k = n          by n ** m = n
-        or  n * n ** k = n          by EXP
-       ==>      n ** k = 1          by MULT_EQ_SELF, 0 < n
-       ==>      n = 1 or k = 0      by EXP_EQ_1
-       ==>      n = 1 or m = 1,
-      These contradict n <> 1 and m <> 1.
-   Only-if part: n ** 1 = n /\ 0 ** m = 0 /\ 1 ** m = 1
-      These are true   by EXP_1, ZERO_EXP.
-*)
-val EXP_EQ_SELF = store_thm(
-  "EXP_EQ_SELF",
-  ``!n m. 0 < m ==> ((n ** m = n) <=> ((m = 1) \/ (n = 0) \/ (n = 1)))``,
-  rw_tac std_ss[EQ_IMP_THM] >| [
-    spose_not_then strip_assume_tac >>
-    `m <> 0` by decide_tac >>
-    `?k. m = SUC k` by metis_tac[num_CASES] >>
-    `n * n ** k = n` by fs[EXP] >>
-    `n ** k = 1` by metis_tac[MULT_EQ_SELF, NOT_ZERO_LT_ZERO] >>
-    fs[EXP_EQ_1],
-    rw[],
-    rw[],
-    rw[]
-  ]);
-
-(* Obtain a theorem *)
-val EXP_LE = save_thm("EXP_LE", X_LE_X_EXP |> GEN ``x:num`` |> SPEC ``b:num`` |> GEN_ALL);
-(* val EXP_LE = |- !n b. 0 < n ==> b <= b ** n: thm *)
-
-(* Theorem: 1 < b /\ 1 < n ==> b < b ** n *)
-(* Proof:
-   By contradiction, assume ~(b < b ** n).
-   Then b ** n <= b       by arithmetic
-    But b <= b ** n       by EXP_LE, 0 < n
-    ==> b ** n = b        by EQ_LESS_EQ
-    ==> b = 1 or n = 0 or n = 1.
-   All these contradict 1 < b and 1 < n.
-*)
-val EXP_LT = store_thm(
-  "EXP_LT",
-  ``!n b. 1 < b /\ 1 < n ==> b < b ** n``,
-  spose_not_then strip_assume_tac >>
-  `b <= b ** n` by rw[EXP_LE] >>
-  `b ** n = b` by decide_tac >>
-  rfs[EXP_EQ_SELF]);
-
-(* Theorem: 0 < a /\ n < m /\ (a ** n * b = a ** m * c) ==> ?d. 0 < d /\ (b = a ** d * c) *)
-(* Proof:
-   Let d = m - n.
-   Then 0 < d, and  m = n + d       by arithmetic
-    and 0 < a ==> a ** n <> 0       by EXP_EQ_0
-      a ** n * b
-    = a ** (n + d) * c              by m = n + d
-    = (a ** n * a ** d) * c         by EXP_ADD
-    = a ** n * (a ** d * c)         by MULT_ASSOC
-   The result follows               by MULT_LEFT_CANCEL
-*)
-val EXP_LCANCEL = store_thm(
-  "EXP_LCANCEL",
-  ``!a b c n m. 0 < a /\ n < m /\ (a ** n * b = a ** m * c) ==> ?d. 0 < d /\ (b = a ** d * c)``,
-  rpt strip_tac >>
-  `0 < m - n /\ (m = n + (m - n))` by decide_tac >>
-  qabbrev_tac `d = m - n` >>
-  `a ** n <> 0` by metis_tac[EXP_EQ_0, NOT_ZERO_LT_ZERO] >>
-  metis_tac[EXP_ADD, MULT_ASSOC, MULT_LEFT_CANCEL]);
-
-(* Theorem: 0 < a /\ n < m /\ (a ** n * b = a ** m * c) ==> ?d. 0 < d /\ (b = a ** d * c) *)
-(* Proof: by EXP_LCANCEL, MULT_COMM. *)
-val EXP_RCANCEL = store_thm(
-  "EXP_RCANCEL",
-  ``!a b c n m. 0 < a /\ n < m /\ (b * a ** n = c * a ** m) ==> ?d. 0 < d /\ (b = c * a ** d)``,
-  metis_tac[EXP_LCANCEL, MULT_COMM]);
-
-(*
-EXP_POS      |- !m n. 0 < m ==> 0 < m ** n
-ONE_LT_EXP   |- !x y. 1 < x ** y <=> 1 < x /\ 0 < y
-ZERO_LT_EXP  |- 0 < x ** y <=> 0 < x \/ (y = 0)
-*)
-
-(* Theorem: 0 < m ==> 1 <= m ** n *)
-(* Proof:
-   0 < m ==>  0 < m ** n      by EXP_POS
-          or 1 <= m ** n      by arithmetic
-*)
-val ONE_LE_EXP = store_thm(
-  "ONE_LE_EXP",
-  ``!m n. 0 < m ==> 1 <= m ** n``,
-  metis_tac[EXP_POS, DECIDE``!x. 0 < x <=> 1 <= x``]);
 
 (* Theorem: EVEN n ==> !m. m ** n = (SQ m) ** (HALF n) *)
 (* Proof:
