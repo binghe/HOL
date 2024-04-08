@@ -14,6 +14,12 @@ val _ = new_theory "AKSimproved";
 
 open jcLib;
 
+(* open dependent theories *)
+open prim_recTheory pred_setTheory listTheory arithmeticTheory logrootTheory;
+
+open numberTheory helperSetTheory helperListTheory;
+open helperFunctionTheory dividesTheory gcdTheory;
+
 (* Get dependent theories local *)
 open AKSrevisedTheory;
 open AKStheoremTheory;
@@ -46,14 +52,6 @@ open groupOrderTheory;
 open monoidOrderTheory;
 open fieldMapTheory;
 open ringUnitTheory;
-
-(* open dependent theories *)
-open prim_recTheory pred_setTheory listTheory arithmeticTheory;
-
-open numberTheory helperSetTheory helperListTheory;
-open helperFunctionTheory;
-
-open dividesTheory gcdTheory;
 
 open triangleTheory;
 open binomialTheory;
