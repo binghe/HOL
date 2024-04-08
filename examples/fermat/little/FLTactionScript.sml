@@ -48,7 +48,7 @@ open necklaceTheory;
 open groupTheory;
 open groupActionTheory;
 
-open dividesTheory; (* for divides_def, prime_def *)
+open dividesTheory logrootTheory; (* for divides_def, prime_def *)
 
 (* ------------------------------------------------------------------------- *)
 (* Fermat's Little Theorem by Action Documentation                           *)

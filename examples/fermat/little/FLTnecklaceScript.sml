@@ -32,15 +32,12 @@ val _ = new_theory "FLTnecklace";
 (* ------------------------------------------------------------------------- *)
 
 open numberTheory helperSetTheory;
-open arithmeticTheory pred_setTheory;
+open arithmeticTheory dividesTheory logrootTheory gcdTheory pred_setTheory;
 
 open cycleTheory patternTheory;
 
 (* val _ = load "necklaceTheory"; *)
 open necklaceTheory;
-open dividesTheory; (* for PRIME_POS *)
-open gcdTheory; (* for PRIME_GCD *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Fermat's Little Theorem by necklace Documentation                         *)

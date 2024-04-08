@@ -31,9 +31,8 @@ val _ = new_theory "FLTpetersen";
 
 (* ------------------------------------------------------------------------- *)
 
-open numberTheory helperSetTheory;
-open arithmeticTheory pred_setTheory;
-open dividesTheory; (* for PRIME_POS *)
+open arithmeticTheory dividesTheory numberTheory logrootTheory helperSetTheory;
+open pred_setTheory;
 
 open necklaceTheory; (* for multicoloured_finite *)
 
