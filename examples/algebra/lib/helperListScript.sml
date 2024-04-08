@@ -26,7 +26,7 @@ open helperSetTheory;
 
 (* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
 (* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open arithmeticTheory dividesTheory gcdTheory;
+open arithmeticTheory dividesTheory gcdTheory logrootTheory;
 
 (* use listRange: [1 .. 3] = [1; 2; 3], [1 ..< 3] = [1; 2] *)
 (* val _ = load "listRangeTheory"; *)

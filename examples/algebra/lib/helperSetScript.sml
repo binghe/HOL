@@ -15,7 +15,7 @@ val _ = new_theory "helperSet";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-open arithmeticTheory dividesTheory gcdTheory;
+open arithmeticTheory dividesTheory gcdTheory logrootTheory;
 open pred_setTheory gcdsetTheory numberTheory;
 
 (* ------------------------------------------------------------------------- *)

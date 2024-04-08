@@ -3099,11 +3099,32 @@ Theorem ZERO_LT_EXP[simp]:
 Proof METIS_TAC [NOT_ZERO_LT_ZERO, EXP_EQ_0]
 QED
 
+(* Theorem: m <> 0 ==> m ** n <> 0 *)
+(* Proof: by EXP_EQ_0 *)
+val EXP_NONZERO = store_thm(
+  "EXP_NONZERO",
+  ``!m n. m <> 0 ==> m ** n <> 0``,
+  metis_tac[EXP_EQ_0]);
+
+(* Theorem: 0 < m ==> 0 < m ** n *)
+(* Proof: by EXP_NONZERO *)
+val EXP_POS = store_thm(
+  "EXP_POS",
+  ``!m n. 0 < m ==> 0 < m ** n``,
+  rw[EXP_NONZERO]);
+
 Theorem ONE_LE_EXP[simp]:
   1 <= x EXP y <=> 0 < x \/ y = 0
 Proof
   REWRITE_TAC[LESS_EQ_IFF_LESS_SUC, ONE, LESS_MONO_EQ, ZERO_LT_EXP]
 QED
+
+(* Theorem: n ** 0 = 1 *)
+(* Proof: by EXP *)
+val EXP_0 = store_thm(
+  "EXP_0",
+  ``!n. n ** 0 = 1``,
+  rw_tac std_ss[EXP]);
 
 Theorem EXP_1[simp]:
   !n. (1 EXP n = 1) /\ (n EXP 1 = n)
@@ -3112,6 +3133,16 @@ Proof
   REWRITE_TAC [EXP, MULT_CLAUSES] THEN
   INDUCT_TAC THEN ASM_REWRITE_TAC [MULT_EQ_1, EXP]
 QED
+
+(* Theorem: n ** 2 = n * n *)
+(* Proof:
+   n ** 2 = n * (n ** 1) = n * (n * (n ** 0)) = n * (n * 1) = n * n
+   or n ** 2 = n * (n ** 1) = n * n  by EXP_1:  !n. (1 ** n = 1) /\ (n ** 1 = n)
+*)
+val EXP_2 = store_thm(
+  "EXP_2",
+  ``!n. n ** 2 = n * n``,
+  metis_tac[EXP, TWO, EXP_1]);
 
 Theorem EXP_EQ_1[simp]:
   !n m. (n EXP m = 1) <=> (n = 1) \/ (m = 0)

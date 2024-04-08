@@ -14,7 +14,7 @@ val _ = new_theory "primes";
 
 (* open dependent theories *)
 (* val _ = load "logPowerTheory"; *)
-open logPowerTheory; (* for SQRT *)
+open logrootTheory logPowerTheory; (* for SQRT *)
 open numberTheory helperFunctionTheory;
 open arithmeticTheory dividesTheory;
 

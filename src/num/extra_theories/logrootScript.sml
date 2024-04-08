@@ -98,37 +98,6 @@ val EXP_LE_ISO = Q.store_thm("EXP_LE_ISO",
    `!a b r. 0 < r ==> (a <= b <=> a ** r <= b ** r)`,
    PROVE_TAC [NOT_LESS, exp_lemma3, exp_lemma2, LESS_OR_EQ, NOT_LESS]);
 
-(* Theorem: n ** 0 = 1 *)
-(* Proof: by EXP *)
-val EXP_0 = store_thm(
-  "EXP_0",
-  ``!n. n ** 0 = 1``,
-  rw_tac std_ss[EXP]);
-
-(* Theorem: n ** 2 = n * n *)
-(* Proof:
-   n ** 2 = n * (n ** 1) = n * (n * (n ** 0)) = n * (n * 1) = n * n
-   or n ** 2 = n * (n ** 1) = n * n  by EXP_1:  !n. (1 ** n = 1) /\ (n ** 1 = n)
-*)
-val EXP_2 = store_thm(
-  "EXP_2",
-  ``!n. n ** 2 = n * n``,
-  metis_tac[EXP, TWO, EXP_1]);
-
-(* Theorem: m <> 0 ==> m ** n <> 0 *)
-(* Proof: by EXP_EQ_0 *)
-val EXP_NONZERO = store_thm(
-  "EXP_NONZERO",
-  ``!m n. m <> 0 ==> m ** n <> 0``,
-  metis_tac[EXP_EQ_0]);
-
-(* Theorem: 0 < m ==> 0 < m ** n *)
-(* Proof: by EXP_NONZERO *)
-val EXP_POS = store_thm(
-  "EXP_POS",
-  ``!m n. 0 < m ==> 0 < m ** n``,
-  rw[EXP_NONZERO]);
-
 (* Theorem: 0 < m ==> ((n ** m = n) <=> ((m = 1) \/ (n = 0) \/ (n = 1))) *)
 (* Proof:
    If part: n ** m = n ==> n = 0 \/ n = 1
@@ -1072,6 +1041,7 @@ val ROOT_LE_REVERSE = store_thm(
 (* ------------------------------------------------------------------------- *)
 (* Square Root                                                               *)
 (* ------------------------------------------------------------------------- *)
+
 (* Use overload for SQRT *)
 val _ = overload_on ("SQRT", ``\n. ROOT 2 n``);
 
