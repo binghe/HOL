@@ -3135,7 +3135,7 @@ Proof
     rpt GEN_TAC >> STRIP_TAC
  >> qabbrev_tac ‘n = int_of_num p’
  >> ‘&p = rat_of_int n’ by rw [rat_of_int_def]
- >> ‘coprime (Num n) q’ by rw [Abbr ‘n’]
+ >> ‘gcd (Num n) q = 1’ by rw [Abbr ‘n’]
  >> rw [RATND_suff_eq]
 QED
 

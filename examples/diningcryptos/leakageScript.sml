@@ -18,10 +18,8 @@ open util_probTheory sigma_algebraTheory real_measureTheory real_lebesgueTheory
 
 open informationTheory;
 
-(*
 val _ = intLib.deprecate_int();
 val _ = ratLib.deprecate_rat();
- *)
 
 (* ------------------------------------------------------------------------- *)
 (* Start a new theory called "information"                                   *)

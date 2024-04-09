@@ -227,7 +227,7 @@ val linear = new_definition ("linear",
         (!x y. f(x + y) = f(x) + f(y)) /\
         (!c x. f(c * x) = c * f(x))``);
 
-(* Courtesy of Thomas Sewell for providing this proof (first) on Slack
+(* Courtesy to Thomas Sewell for providing this proof (first) on Slack
 
    NOTE: The explicit-form of linear functions (linear_repr and linear_alt) does
          NOT hold in higher dimensional spaces, e.g. (f:real['M]->real['N]), cf.

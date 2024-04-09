@@ -3514,6 +3514,7 @@ val LEAST_INT_DEF = new_definition ("LEAST_INT_DEF",
 
 val _ = set_fixity "LEAST_INT" Binder
 
+(* NOTE: Ported from HOL-Light *)
 Theorem FORALL_INT_CASES :
     !(P :int -> bool). (!x. P x) <=> (!n. P (&n)) /\ (!n. P (-&n))
 Proof
