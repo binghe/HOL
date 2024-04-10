@@ -170,14 +170,6 @@ Proof
     metis_tac[SING_DEF, IN_SING, SUBSET_DEF]
 QED
 
-(* Theorem: A non-empty set with all elements equal to a is the singleton {a} *)
-(* Proof: by singleton definition. *)
-val ONE_ELEMENT_SING = store_thm(
-  "ONE_ELEMENT_SING",
-  ``!s a. s <> {} /\ (!k. k IN s ==> (k = a)) ==> (s = {a})``,
-  rw[EXTENSION, EQ_IMP_THM] >>
-  metis_tac[]);
-
 (* Theorem: s <> {} ==> (SING s <=> !x y. x IN s /\ y IN s ==> (x = y)) *)
 (* Proof:
    If part: SING s ==> !x y. x IN s /\ y IN s ==> (x = y))

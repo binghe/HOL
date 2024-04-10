@@ -19,7 +19,10 @@ val AP = numLib.ARITH_PROVE
 val ARITH_ss = numSimps.ARITH_ss
 val arith_ss = bool_ss ++ ARITH_ss
 val DECIDE = numLib.ARITH_PROVE
+
+val decide_tac = DECIDE_TAC;
 val metis_tac = METIS_TAC;
+val qabbrev_tac = Q.ABBREV_TAC;
 
 (* don't eta-contract these; that will force tactics to use one fixed version
    of srw_ss() *)
@@ -1685,6 +1688,14 @@ Proof
       IMP_RES_THEN (SUBST1_TAC o SYM) CHOICE_INSERT_REST THEN
       ASM_REWRITE_TAC [EXTENSION,IN_SING,CHOICE_SING]]
 QED
+
+(* Theorem: A non-empty set with all elements equal to a is the singleton {a} *)
+(* Proof: by singleton definition. *)
+val ONE_ELEMENT_SING = store_thm(
+  "ONE_ELEMENT_SING",
+  ``!s a. s <> {} /\ (!k. k IN s ==> (k = a)) ==> (s = {a})``,
+  rw[EXTENSION, EQ_IMP_THM] >>
+  metis_tac[]);
 
 (* Theorem: !x. x IN s ==> s INTER {x} = {x} *)
 (* Proof:
@@ -5332,8 +5343,11 @@ val PROD_SET_INSERT = store_thm(
   ``!x s. FINITE s /\ x NOTIN s ==> (PROD_SET (x INSERT s) = x * PROD_SET s)``,
   metis_tac[PROD_SET_IMAGE_REDUCTION, combinTheory.I_THM, IMAGE_I]);
 
-(* every finite, non-empty set of natural numbers has a maximum element *)
+(* ------------------------------------------------------------------------- *)
+(* Maximum and Minimum of a Set                                              *)
+(* ------------------------------------------------------------------------- *)
 
+(* every finite, non-empty set of natural numbers has a maximum element *)
 val max_lemma = prove(
   ``!s. FINITE s ==> ?x. (s <> {} ==> x IN s /\ !y. y IN s ==> y <= x) /\
                          ((s = {}) ==> (x = 0))``,
@@ -5548,6 +5562,168 @@ Proof
   ‘CARD s <= CARD (count (MAX_SET s + 1))’ by simp[CARD_SUBSET] >>
   full_simp_tac (srw_ss()) []
 QED
+
+(* Theorem: FINITE s /\ MAX_SET s < n ==> !x. x IN s ==> x < n *)
+(* Proof:
+   Since x IN s, s <> {}     by MEMBER_NOT_EMPTY
+   Hence x <= MAX_SET s      by MAX_SET_DEF
+    Thus x < n               by LESS_EQ_LESS_TRANS
+*)
+val MAX_SET_LESS = store_thm(
+  "MAX_SET_LESS",
+  ``!s n. FINITE s /\ MAX_SET s < n ==> !x. x IN s ==> x < n``,
+  metis_tac[MEMBER_NOT_EMPTY, MAX_SET_DEF, LESS_EQ_LESS_TRANS]);
+
+(* Theorem: FINITE s /\ s <> {} ==> !x. x IN s /\ (!y. y IN s ==> y <= x) ==> (x = MAX_SET s) *)
+(* Proof:
+   Let m = MAX_SET s.
+   Since m IN s /\ x <= m       by MAX_SET_DEF
+     and m IN s ==> m <= x      by implication
+   Hence x = m.
+*)
+val MAX_SET_TEST = store_thm(
+  "MAX_SET_TEST",
+  ``!s. FINITE s /\ s <> {} ==> !x. x IN s /\ (!y. y IN s ==> y <= x) ==> (x = MAX_SET s)``,
+  rpt strip_tac >>
+  qabbrev_tac `m = MAX_SET s` >>
+  `m IN s /\ x <= m` by rw[MAX_SET_DEF, Abbr`m`] >>
+  `m <= x` by rw[] >>
+  decide_tac);
+
+(* Theorem: s <> {} ==> !x. x IN s /\ (!y. y IN s ==> x <= y) ==> (x = MIN_SET s) *)
+(* Proof:
+   Let m = MIN_SET s.
+   Since m IN s /\ m <= x     by MIN_SET_LEM
+     and m IN s ==> x <= m    by implication
+   Hence x = m.
+*)
+val MIN_SET_TEST = store_thm(
+  "MIN_SET_TEST",
+  ``!s. s <> {} ==> !x. x IN s /\ (!y. y IN s ==> x <= y) ==> (x = MIN_SET s)``,
+  rpt strip_tac >>
+  qabbrev_tac `m = MIN_SET s` >>
+  `m IN s /\ m <= x` by rw[MIN_SET_LEM, Abbr`m`] >>
+  `x <= m` by rw[] >>
+  decide_tac);
+
+(* Theorem: FINITE s /\ s <> {} ==> !x. x IN s ==> ((MAX_SET s = x) <=> (!y. y IN s ==> y <= x)) *)
+(* Proof:
+   Let m = MAX_SET s.
+   If part: y IN s ==> y <= m, true  by MAX_SET_DEF
+   Only-if part: !y. y IN s ==> y <= x ==> m = x
+      Note m IN s /\ x <= m          by MAX_SET_DEF
+       and m IN s ==> m <= x         by implication
+   Hence x = m.
+*)
+Theorem MAX_SET_TEST_IFF:
+  !s. FINITE s /\ s <> {} ==>
+      !x. x IN s ==> ((MAX_SET s = x) <=> (!y. y IN s ==> y <= x))
+Proof
+  rpt strip_tac >>
+  qabbrev_tac `m = MAX_SET s` >>
+  rw[EQ_IMP_THM] >- rw[MAX_SET_DEF, Abbr‘m’] >>
+  `m IN s /\ x <= m` by rw[MAX_SET_DEF, Abbr`m`] >>
+  `m <= x` by rw[] >>
+  decide_tac
+QED
+
+(* Theorem: s <> {} ==> !x. x IN s ==> ((MIN_SET s = x) <=> (!y. y IN s ==> x <= y)) *)
+(* Proof:
+   Let m = MIN_SET s.
+   If part: y IN s ==> m <= y, true by  MIN_SET_LEM
+   Only-if part: !y. y IN s ==> x <= y ==> m = x
+      Note m IN s /\ m <= x     by MIN_SET_LEM
+       and m IN s ==> x <= m    by implication
+   Hence x = m.
+*)
+Theorem MIN_SET_TEST_IFF:
+  !s. s <> {} ==> !x. x IN s ==> ((MIN_SET s = x) <=> (!y. y IN s ==> x <= y))
+Proof
+  rpt strip_tac >>
+  qabbrev_tac `m = MIN_SET s` >>
+  rw[EQ_IMP_THM] >- rw[MIN_SET_LEM, Abbr‘m’] >>
+  `m IN s /\ m <= x` by rw[MIN_SET_LEM, Abbr`m`] >>
+  `x <= m` by rw[] >> decide_tac
+QED
+
+(* Theorem: MAX_SET {} = 0 *)
+(* Proof: by MAX_SET_REWRITES *)
+val MAX_SET_EMPTY = save_thm("MAX_SET_EMPTY", MAX_SET_REWRITES |> CONJUNCT1);
+(* val MAX_SET_EMPTY = |- MAX_SET {} = 0: thm *)
+
+(* Theorem: MAX_SET {e} = e *)
+(* Proof: by MAX_SET_REWRITES *)
+val MAX_SET_SING = save_thm("MAX_SET_SING", MAX_SET_REWRITES |> CONJUNCT2 |> GEN_ALL);
+(* val MAX_SET_SING = |- !e. MAX_SET {e} = e: thm *)
+
+(* Theorem: FINITE s /\ s <> {} ==> MAX_SET s IN s *)
+(* Proof: by MAX_SET_DEF *)
+val MAX_SET_IN_SET = store_thm(
+  "MAX_SET_IN_SET",
+  ``!s. FINITE s /\ s <> {} ==> MAX_SET s IN s``,
+  rw[MAX_SET_DEF]);
+
+(* Theorem: FINITE s ==> !x. x IN s ==> x <= MAX_SET s *)
+(* Proof: by in_max_set *)
+val MAX_SET_PROPERTY = save_thm("MAX_SET_PROPERTY", in_max_set);
+(* val MAX_SET_PROPERTY = |- !s. FINITE s ==> !x. x IN s ==> x <= MAX_SET s: thm *)
+
+(* Note: MIN_SET {} is undefined. *)
+
+(* Theorem: MIN_SET {e} = e *)
+(* Proof: by MIN_SET_THM *)
+val MIN_SET_SING = save_thm("MIN_SET_SING", MIN_SET_THM |> CONJUNCT1);
+(* val MIN_SET_SING = |- !e. MIN_SET {e} = e: thm *)
+
+(* Theorem: s <> {} ==> MIN_SET s IN s *)
+(* Proof: by MIN_SET_LEM *)
+val MIN_SET_IN_SET = save_thm("MIN_SET_IN_SET",
+    MIN_SET_LEM |> SPEC_ALL |> UNDISCH |> CONJUNCT1 |> DISCH_ALL |> GEN_ALL);
+(* val MIN_SET_IN_SET = |- !s. s <> {} ==> MIN_SET s IN s: thm *)
+
+(* Theorem: s <> {} ==> !x. x IN s ==> MIN_SET s <= x *)
+(* Proof: by MIN_SET_LEM *)
+val MIN_SET_PROPERTY = save_thm("MIN_SET_PROPERTY",
+    MIN_SET_LEM |> SPEC_ALL |> UNDISCH |> CONJUNCT2 |> DISCH_ALL |> GEN_ALL);
+(* val MIN_SET_PROPERTY =|- !s. s <> {} ==> !x. x IN s ==> MIN_SET s <= x: thm *)
+
+(* Theorem: FINITE s ==> ((MAX_SET s = 0) <=> (s = {}) \/ (s = {0})) *)
+(* Proof:
+   If part: MAX_SET s = 0 ==> (s = {}) \/ (s = {0})
+      By contradiction, suppose s <> {} /\ s <> {0}.
+      Then ?x. x IN s /\ x <> 0      by ONE_ELEMENT_SING
+      Thus x <= MAX_SET s            by in_max_set
+        so MAX_SET s <> 0            by x <> 0
+      This contradicts MAX_SET s = 0.
+   Only-if part: (s = {}) \/ (s = {0}) ==> MAX_SET s = 0
+      If s = {}, MAX_SET s = 0       by MAX_SET_EMPTY
+      If s = {0}, MAX_SET s = 0      by MAX_SET_SING
+*)
+val MAX_SET_EQ_0 = store_thm(
+  "MAX_SET_EQ_0",
+  ``!s. FINITE s ==> ((MAX_SET s = 0) <=> (s = {}) \/ (s = {0}))``,
+  (rw[EQ_IMP_THM] >> simp[]) >>
+  CCONTR_TAC >>
+  `s <> {} /\ s <> {0}` by metis_tac[] >>
+  `?x. x IN s /\ x <> 0` by metis_tac[ONE_ELEMENT_SING] >>
+  `x <= MAX_SET s` by rw[in_max_set] >>
+  decide_tac);
+
+(* Theorem: s <> {} ==> ((MIN_SET s = 0) <=> 0 IN s) *)
+(* Proof:
+   If part: MIN_SET s = 0 ==> 0 IN s
+      This is true by MIN_SET_IN_SET.
+   Only-if part: 0 IN s ==> MIN_SET s = 0
+      Note MIN_SET s <= 0   by MIN_SET_LEM, 0 IN s
+      Thus MIN_SET s = 0    by arithmetic
+*)
+val MIN_SET_EQ_0 = store_thm(
+  "MIN_SET_EQ_0",
+  ``!s. s <> {} ==> ((MIN_SET s = 0) <=> 0 IN s)``,
+  rw[EQ_IMP_THM] >-
+  metis_tac[MIN_SET_IN_SET] >>
+  `MIN_SET s <= 0` by rw[MIN_SET_LEM] >>
+  decide_tac);
 
 (*---------------------------------------------------------------------------*)
 (* POW s is the powerset of s                                                *)
