@@ -389,8 +389,8 @@ val BOOL_EQ = store_thm(
 
 (* Theorem: b /\ (c ==> d) ==> ((b ==> c) ==> d) *)
 (* Proof: by logical implication. *)
-val IMP_IMP = store_thm(
-  "IMP_IMP",
+val AND_IMP_IMP = store_thm((* was: IMP_IMP *)
+  "AND_IMP_IMP",
   ``!b c d. b /\ (c ==> d) ==> ((b ==> c) ==> d)``,
   metis_tac[]);
 
