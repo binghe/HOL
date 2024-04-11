@@ -90,13 +90,6 @@ val _ = new_theory "FLTbinomial";
 
 (* Part 2: General Theory -------------------------------------------------- *)
 
-val FACT_EQ_PROD = helperFunctionTheory.FACT_EQ_PROD;
-(* |- !n. FACT n = PROD_SET (IMAGE SUC (count n)) *)
-
-val FACT_REDUCTION = helperFunctionTheory.FACT_REDUCTION;
-(* |- !n m. m < n ==> FACT n = PROD_SET (IMAGE SUC (count n DIFF count m)) * FACT m *)
-(* That is: n!/m! = product of (m+1) to n *)
-
 (* Part 3: Actual Proof ---------------------------------------------------- *)
 
 (* ------------------------------------------------------------------------- *)

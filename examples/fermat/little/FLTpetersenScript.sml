@@ -31,14 +31,13 @@ val _ = new_theory "FLTpetersen";
 
 (* ------------------------------------------------------------------------- *)
 
-open arithmeticTheory dividesTheory numberTheory logrootTheory helperSetTheory;
-open pred_setTheory;
+open arithmeticTheory dividesTheory gcdTheory logrootTheory numberTheory;
+open pred_setTheory helperSetTheory;
 
 open necklaceTheory; (* for multicoloured_finite *)
 
 open groupTheory;
 open groupActionTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Fermat's Little Theorem by Action Documentation                           *)

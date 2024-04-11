@@ -7,6 +7,10 @@
 (* add all dependent libraries for script *)
 open HolKernel boolLib bossLib Parse;
 
+open arithmeticTheory pred_setTheory pairTheory;
+open listTheory rich_listTheory listRangeTheory;
+open dividesTheory gcdTheory logrootTheory;
+
 (* declare new theory at start *)
 val _ = new_theory "quarity";
 
@@ -17,18 +21,11 @@ open numberTheory;
 open helperSetTheory;
 open helperListTheory;
 open helperFunctionTheory;
-open arithmeticTheory pred_setTheory;
-open listTheory rich_listTheory listRangeTheory;
-open dividesTheory;
 
 (* val _ = load "windmillTheory"; *)
 open windmillTheory;
 
-open pairTheory; (* for FORALL_PROD, PAIR_EQ *)
-
-(* val _ = load "GaussTheory"; *)
-open logrootTheory logPowerTheory GaussTheory EulerTheory; (* for SQRT, divisors_upper_bound *)
-
+open logPowerTheory GaussTheory EulerTheory; (* for SQRT, divisors_upper_bound *)
 
 (* ------------------------------------------------------------------------- *)
 (* Quarity Documentation                                                     *)

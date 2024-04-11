@@ -35,10 +35,10 @@ val _ = new_theory "FLTaction";
 
 (* ------------------------------------------------------------------------- *)
 
-open arithmeticTheory pred_setTheory numberTheory helperSetTheory gcdsetTheory;
+open arithmeticTheory pred_setTheory dividesTheory gcdTheory gcdsetTheory
+     logrootTheory numberTheory;
 
-(* val _ = load "helperFunctionTheory"; *)
-open helperFunctionTheory; (* for prime_power_divisor, PRIME_EXP_FACTOR *)
+open helperSetTheory helperFunctionTheory;
 
 open cycleTheory;
 open necklaceTheory;
@@ -47,8 +47,6 @@ open necklaceTheory;
 (* val _ = load "groupActionTheory"; *)
 open groupTheory;
 open groupActionTheory;
-
-open dividesTheory logrootTheory; (* for divides_def, prime_def *)
 
 (* ------------------------------------------------------------------------- *)
 (* Fermat's Little Theorem by Action Documentation                           *)
