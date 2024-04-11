@@ -94,7 +94,69 @@ val _ = add_rule {block_style = (AroundEachPhrase, (PP.CONSISTENT, 2)),
                   pp_elements = [HardSpace 1, TOK "=|=", HardSpace 1, TM,
                                  BreakSpace(1,1), TOK "#", BreakSpace(1,1)]};
 
+(* Theorem: FINITE s ==> !u v. s =|= u # v ==> (PROD_SET s = PROD_SET u * PROD_SET v) *)
+(* Proof:
+   By finite induction on s.
+   Base: {} = u UNION v ==> PROD_SET {} = PROD_SET u * PROD_SET v
+      Note u = {} and v = {}       by EMPTY_UNION
+       and PROD_SET {} = 1         by PROD_SET_EMPTY
+      Hence true.
+   Step: !u v. (s = u UNION v) /\ DISJOINT u v ==> (PROD_SET s = PROD_SET u * PROD_SET v) ==>
+         e NOTIN s /\ e INSERT s = u UNION v ==> PROD_SET (e INSERT s) = PROD_SET u * PROD_SET v
+      Note e IN u \/ e IN v        by IN_INSERT, IN_UNION
+      If e IN u,
+         Then e NOTIN v            by IN_DISJOINT
+         Let w = u DELETE e.
+         Then e NOTIN w            by IN_DELETE
+          and u = e INSERT w       by INSERT_DELETE
+         Note s = w UNION v        by EXTENSION, IN_INSERT, IN_UNION
+          ==> FINITE w             by FINITE_UNION
+          and DISJOINT w v         by DISJOINT_INSERT
+        PROD_SET (e INSERT s)
+      = e * PROD_SET s                       by PROD_SET_INSERT, FINITE s
+      = e * (PROD_SET w * PROD_SET v)        by induction hypothesis
+      = (e * PROD_SET w) * PROD_SET v        by MULT_ASSOC
+      = PROD_SET (e INSERT w) * PROD_SET v   by PROD_SET_INSERT, FINITE w
+      = PROD_SET u * PROD_SET v
 
+      Similarly for e IN v.
+*)
+val PROD_SET_PRODUCT_BY_PARTITION = store_thm(
+  "PROD_SET_PRODUCT_BY_PARTITION",
+  ``!s. FINITE s ==> !u v. s =|= u # v ==> (PROD_SET s = PROD_SET u * PROD_SET v)``,
+  Induct_on `FINITE` >>
+  rpt strip_tac >-
+  fs[PROD_SET_EMPTY] >>
+  `e IN u \/ e IN v` by metis_tac[IN_INSERT, IN_UNION] >| [
+    qabbrev_tac `w = u DELETE e` >>
+    `u = e INSERT w` by rw[Abbr`w`] >>
+    `e NOTIN w` by rw[Abbr`w`] >>
+    `e NOTIN v` by metis_tac[IN_DISJOINT] >>
+    `s = w UNION v` by
+  (rw[EXTENSION] >>
+    metis_tac[IN_INSERT, IN_UNION]) >>
+    `FINITE w` by metis_tac[FINITE_UNION] >>
+    `DISJOINT w v` by metis_tac[DISJOINT_INSERT] >>
+    `PROD_SET (e INSERT s) = e * PROD_SET s` by rw[PROD_SET_INSERT] >>
+    `_ = e * (PROD_SET w * PROD_SET v)` by rw[] >>
+    `_ = (e * PROD_SET w) * PROD_SET v` by rw[] >>
+    `_ = PROD_SET u * PROD_SET v` by rw[PROD_SET_INSERT] >>
+    rw[],
+    qabbrev_tac `w = v DELETE e` >>
+    `v = e INSERT w` by rw[Abbr`w`] >>
+    `e NOTIN w` by rw[Abbr`w`] >>
+    `e NOTIN u` by metis_tac[IN_DISJOINT] >>
+    `s = u UNION w` by
+  (rw[EXTENSION] >>
+    metis_tac[IN_INSERT, IN_UNION]) >>
+    `FINITE w` by metis_tac[FINITE_UNION] >>
+    `DISJOINT u w` by metis_tac[DISJOINT_INSERT, DISJOINT_SYM] >>
+    `PROD_SET (e INSERT s) = e * PROD_SET s` by rw[PROD_SET_INSERT] >>
+    `_ = e * (PROD_SET u * PROD_SET w)` by rw[] >>
+    `_ = PROD_SET u * (e * PROD_SET w)` by rw[] >>
+    `_ = PROD_SET u * PROD_SET v` by rw[PROD_SET_INSERT] >>
+    rw[]
+  ]);
 
 (* ------------------------------------------------------------------------- *)
 (* Arithmetic Theorems (from examples/algebra)                               *)
@@ -5718,6 +5780,14 @@ val pairwise_coprime_partition_coprime = store_thm(
     metis_tac[coprime_product_coprime_sym, PROD_SET_INSERT]
   ]);
 
+(* Theorem: FINITE s /\ PAIRWISE_COPRIME s ==> !u v. (s = u UNION v) /\ DISJOINT u v ==>
+            (PROD_SET s = PROD_SET u * PROD_SET v) /\ (coprime (PROD_SET u) (PROD_SET v)) *)
+(* Proof: by PROD_SET_PRODUCT_BY_PARTITION, pairwise_coprime_partition_coprime *)
+val pairwise_coprime_prod_set_partition = store_thm(
+  "pairwise_coprime_prod_set_partition",
+  ``!s. FINITE s /\ PAIRWISE_COPRIME s ==> !u v. (s = u UNION v) /\ DISJOINT u v ==>
+       (PROD_SET s = PROD_SET u * PROD_SET v) /\ (coprime (PROD_SET u) (PROD_SET v))``,
+  metis_tac[PROD_SET_PRODUCT_BY_PARTITION, pairwise_coprime_partition_coprime]);
 
 (* export theory at end *)
 val _ = export_theory();
