@@ -5006,10 +5006,6 @@ val prime_powers_coprime = store_thm(
   `d divides (p ** m) /\ d divides (q ** n)` by metis_tac[GCD_PROPERTY] >>
   metis_tac[prime_power_divisor, prime_powers_eq, EXP_0, NOT_ZERO_LT_ZERO]);
 
-(*
-val prime_powers_eq = |- !p q. prime p /\ prime q ==> !m n. 0 < m /\ (p ** m = q ** n) ==> (p = q) /\ (m = n): thm
-*)
-
 (* Theorem: prime p /\ prime q ==> !m n. 0 < m ==> ((p ** m divides q ** n) <=> (p = q) /\ (m <= n)) *)
 (* Proof:
    If part: p ** m divides q ** n ==> (p = q) /\ m <= n
@@ -5026,6 +5022,23 @@ val prime_powers_divide = store_thm(
   "prime_powers_divide",
   ``!p q. prime p /\ prime q ==> !m n. 0 < m ==> ((p ** m divides q ** n) <=> (p = q) /\ (m <= n))``,
   metis_tac[ONE_LT_PRIME, divides_self_power, prime_divides_prime_power, power_divides_iff, DIVIDES_TRANS]);
+
+(* Theorem: prime p /\ q divides (p ** n) ==> (q = 1) \/ (p divides q) *)
+(* Proof:
+   By contradiction, suppose q <> 1 /\ ~(p divides q).
+   Note ?j. j <= n /\ (q = p ** j)   by prime_power_divisor
+    and 0 < j                        by EXP_0, q <> 1
+   then p divides q                  by prime_divides_self_power, 0 < j
+   This contradicts ~(p divides q).
+*)
+Theorem PRIME_EXP_FACTOR:
+  !p q n. prime p /\ q divides (p ** n) ==> (q = 1) \/ (p divides q)
+Proof
+  spose_not_then strip_assume_tac >>
+  `?j. j <= n /\ (q = p ** j)` by rw[prime_power_divisor] >>
+  `0 < j` by fs[] >>
+  metis_tac[prime_divides_self_power]
+QED
 
 (* Theorem: gcd (b ** m) (b ** n) = b ** (MIN m n) *)
 (* Proof:
@@ -5219,10 +5232,6 @@ val coprime_power_and_power_successor = store_thm(
   `coprime z (z + 1)` by rw[coprime_SUC] >>
   `coprime (z ** (n DIV m)) (z + 1)` by rw[coprime_exp] >>
   metis_tac[GCD_SYM, GCD_CANCEL_MULT, MOD_LESS]);
-
-(* ------------------------------------------------------------------------- *)
-(* Useful Theorems                                                           *)
-(* ------------------------------------------------------------------------- *)
 
 (* Note:
 > type_of ``prime``;
@@ -5527,7 +5536,8 @@ val PROD_SET_LE_CONSTANT = store_thm(
 *)
 val PROD_SET_PRODUCT_GE_CONSTANT = store_thm(
   "PROD_SET_PRODUCT_GE_CONSTANT",
-  ``!s. FINITE s ==> !n f g. INJ f s univ(:num) /\ INJ g s univ(:num) /\ (!x. x IN s ==> n <= f x * g x) ==>
+  ``!s. FINITE s ==> !n f g. INJ f s univ(:num) /\ INJ g s univ(:num) /\
+                    (!x. x IN s ==> n <= f x * g x) ==>
        n ** CARD s <= PROD_SET (IMAGE f s) * PROD_SET (IMAGE g s)``,
   Induct_on `FINITE` >>
   rpt strip_tac >-

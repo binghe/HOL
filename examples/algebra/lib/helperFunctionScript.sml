@@ -1543,27 +1543,6 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
-(* Useful Theorems                                                           *)
-(* ------------------------------------------------------------------------- *)
-
-(* Theorem: prime p /\ q divides (p ** n) ==> (q = 1) \/ (p divides q) *)
-(* Proof:
-   By contradiction, suppose q <> 1 /\ ~(p divides q).
-   Note ?j. j <= n /\ (q = p ** j)   by prime_power_divisor
-    and 0 < j                        by EXP_0, q <> 1
-   then p divides q                  by prime_divides_self_power, 0 < j
-   This contradicts ~(p divides q).
-*)
-Theorem PRIME_EXP_FACTOR:
-  !p q n. prime p /\ q divides (p ** n) ==> (q = 1) \/ (p divides q)
-Proof
-  spose_not_then strip_assume_tac >>
-  `?j. j <= n /\ (q = p ** j)` by rw[prime_power_divisor] >>
-  `0 < j` by fs[] >>
-  metis_tac[prime_divides_self_power]
-QED
-
-(* ------------------------------------------------------------------------- *)
 
 (* export theory at end *)
 val _ = export_theory();
