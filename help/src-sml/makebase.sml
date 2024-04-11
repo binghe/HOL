@@ -233,7 +233,7 @@ fun process (libdir, helpfile, txtIndex,
  ; print ("\nWriting ASCII signature index in file " ^ txtIndex ^ "\n")
  ; Printbase.printASCIIBase(helpfile, txtIndex)
 
- ; print ("\nWriting Latex signature index in file " ^ texIndex ^ "\n")
+ ; print ("\nWriting LaTeX signature index in file " ^ texIndex ^ "\n")
  ; Printbase.printLatexBase(helpfile, texIndex)
 
  ; print ("\nCreating HTML versions of signature files\n")

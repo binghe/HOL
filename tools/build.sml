@@ -129,7 +129,7 @@ in
   finish_logging true;
   make_buildstamp();
   build_help build_theory_graph;
-  print "\nHol built successfully.\n"
+  print "\nHOL built successfully.\n"
 end
 
 
