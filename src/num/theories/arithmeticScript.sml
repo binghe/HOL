@@ -13,9 +13,9 @@
 
 open HolKernel boolLib Parse BasicProvers;
 
-open simpLib boolSimps mesonLib metisLib;
+open simpLib boolSimps mesonLib metisLib numTheory prim_recTheory;
 
-local open numTheory prim_recTheory SatisfySimps DefnBase in end
+local open SatisfySimps DefnBase in end
 
 local
   open OpenTheoryMap
@@ -33,32 +33,7 @@ val _ = new_theory "arithmetic";
 
 val _ = if !Globals.interactive then () else Feedback.emit_WARNING := false;
 
-val NOT_SUC     = numTheory.NOT_SUC
-and INV_SUC     = numTheory.INV_SUC
-and INDUCTION   = numTheory.INDUCTION;
-
-val num_Axiom     = prim_recTheory.num_Axiom
-Theorem num_case_def  = prim_recTheory.num_case_def
-
-val INV_SUC_EQ    = prim_recTheory.INV_SUC_EQ
-and LESS_REFL     = prim_recTheory.LESS_REFL
-and SUC_LESS      = prim_recTheory.SUC_LESS
-and NOT_LESS_0    = prim_recTheory.NOT_LESS_0
-and LESS_MONO     = prim_recTheory.LESS_MONO
-and LESS_SUC_REFL = prim_recTheory.LESS_SUC_REFL
-and LESS_SUC      = prim_recTheory.LESS_SUC
-and LESS_THM      = prim_recTheory.LESS_THM
-and LESS_SUC_IMP  = prim_recTheory.LESS_SUC_IMP
-and LESS_0        = prim_recTheory.LESS_0
-and EQ_LESS       = prim_recTheory.EQ_LESS
-and SUC_ID        = prim_recTheory.SUC_ID
-and NOT_LESS_EQ   = prim_recTheory.NOT_LESS_EQ
-and LESS_NOT_EQ   = prim_recTheory.LESS_NOT_EQ
-and LESS_SUC_SUC  = prim_recTheory.LESS_SUC_SUC
-and PRE           = prim_recTheory.PRE
-and RTC_IM_TC     = prim_recTheory.RTC_IM_TC
-and TC_IM_RTC_SUC = prim_recTheory.TC_IM_RTC_SUC
-and LESS_ALT      = prim_recTheory.LESS_ALT;
+Theorem num_case_def = num_case_def
 
 val metis_tac = METIS_TAC;
 fun bossify stac ths = stac (srw_ss()) ths
@@ -1439,6 +1414,43 @@ val FACT_LESS = store_thm ("FACT_LESS",
   “!n. 0 < FACT n”,
   INDUCT_TAC THEN REWRITE_TAC[FACT, ONE, LESS_SUC_REFL] THEN
   MATCH_MP_TAC LESS_MULT2 THEN ASM_REWRITE_TAC[LESS_0]);
+
+(* Theorem: 1 <= FACT n *)
+(* Proof:
+   Note 0 < FACT n    by FACT_LESS
+     so 1 <= FACT n   by arithmetic
+*)
+val FACT_GE_1 = store_thm(
+  "FACT_GE_1",
+  ``!n. 1 <= FACT n``,
+  metis_tac[FACT_LESS, LESS_OR, ONE]);
+
+(* Idea: test if a function f is factorial. *)
+
+(* Theorem: f = FACT <=> f 0 = 1 /\ !n. f (SUC n) = SUC n * f n *)
+(* Proof:
+   If part is true         by FACT
+   Only-if part, apply FUN_EQ_THM, this is to show:
+   !n. f n = FACT n.
+   By induction on n.
+   Base: f 0 = FACT 0
+           f 0
+         = 1               by given
+         = FACT 0          by FACT_0
+   Step: f n = FACT n ==> f (SUC n) = FACT (SUC n)
+           f (SUC n)
+         = SUC n * f n     by given
+         = SUC n * FACT n  by induction hypothesis
+         = FACT (SUC n)    by FACT
+*)
+Theorem FACT_iff:
+  !f. f = FACT <=> f 0 = 1 /\ !n. f (SUC n) = SUC n * f n
+Proof
+  rw[FACT, EQ_IMP_THM] >>
+  rw[FUN_EQ_THM] >>
+  Induct_on `x` >>
+  simp[FACT]
+QED
 
 (*---------------------------------------------------------------------------*)
 (* Theorems about evenness and oddity                    [JRH 92.07.14]      *)

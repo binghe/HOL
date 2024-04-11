@@ -1,5 +1,6 @@
-open HolKernel Parse boolLib simpLib BasicProvers
-     prim_recTheory arithmeticTheory boolSimps
+open HolKernel Parse boolLib BasicProvers;
+
+open simpLib computeLib prim_recTheory arithmeticTheory boolSimps
      metisLib numLib;
 
 val CALC = EQT_ELIM o reduceLib.REDUCE_CONV;
@@ -22,6 +23,9 @@ fun simp ths = asm_simp_tac (srw_ss() ++ numSimps.ARITH_ss) ths
 fun gvs ths = global_simp_tac {droptrues = true, elimvars = true,
                                oldestfirst = true, strip = true}
                               (srw_ss() ++ numSimps.ARITH_ss) ths
+
+val fs = FULL_SIMP_TAC (srw_ss() ++ numSimps.ARITH_ss);
+
 val op >~ = Q.>~
 
 val ARW = RW_TAC arith_ss;
@@ -844,5 +848,133 @@ val DIVIDES_MULTIPLE = store_thm(
   "DIVIDES_MULTIPLE",
   ``!m n. n divides m ==> !k. n divides (k * m)``,
   metis_tac[divides_def, MULT_ASSOC]);
+
+(* ------------------------------------------------------------------------- *)
+(* Factorial                                                                 *)
+(* ------------------------------------------------------------------------- *)
+
+(* Theorem: FACT 0 = 1 *)
+(* Proof: by FACT *)
+val FACT_0 = store_thm(
+  "FACT_0",
+  ``FACT 0 = 1``,
+  EVAL_TAC);
+
+(* Theorem: FACT 1 = 1 *)
+(* Proof:
+     FACT 1
+   = FACT (SUC 0)      by ONE
+   = (SUC 0) * FACT 0  by FACT
+   = (SUC 0) * 1       by FACT
+   = 1                 by ONE
+*)
+val FACT_1 = store_thm(
+  "FACT_1",
+  ``FACT 1 = 1``,
+  EVAL_TAC);
+
+(* Theorem: FACT 2 = 2 *)
+(* Proof:
+     FACT 2
+   = FACT (SUC 1)      by TWO
+   = (SUC 1) * FACT 1  by FACT
+   = (SUC 1) * 1       by FACT_1
+   = 2                 by TWO
+*)
+val FACT_2 = store_thm(
+  "FACT_2",
+  ``FACT 2 = 2``,
+  EVAL_TAC);
+
+(* Theorem: (FACT n = 1) <=> n <= 1 *)
+(* Proof:
+   If n = 0,
+      LHS = (FACT 0 = 1) = T         by FACT_0
+      RHS = 0 <= 1 = T               by arithmetic
+   If n <> 0, n = SUC m              by num_CASES
+      LHS = FACT (SUC m) = 1
+        <=> (SUC m) * FACT m = 1     by FACT
+        <=> SUC m = 1 /\ FACT m = 1  by  MULT_EQ_1
+        <=> m = 0  /\ FACT m = 1     by m = PRE 1 = 0
+        <=> m = 0                    by FACT_0
+      RHS = SUC m <= 1
+        <=> ~(1 <= m)                by NOT_LEQ
+        <=> m < 1                    by NOT_LESS_EQUAL
+        <=> m = 0                    by arithmetic
+*)
+val FACT_EQ_1 = store_thm(
+  "FACT_EQ_1",
+  ``!n. (FACT n = 1) <=> n <= 1``,
+  rpt strip_tac >>
+  Cases_on `n` >>
+  rw[FACT_0] >>
+  rw[FACT] >>
+  `!m. SUC m <= 1 <=> (m = 0)` by decide_tac >>
+  metis_tac[FACT_0]);
+
+(* Theorem: (FACT n = n) <=> (n = 1) \/ (n = 2) *)
+(* Proof:
+   If part: (FACT n = n) ==> (n = 1) \/ (n = 2)
+      Note n <> 0           by FACT_0: FACT 0 = 1
+       ==> ?m. n = SUC m    by num_CASES
+      Thus SUC m * FACT m = SUC m       by FACT
+                          = SUC m * 1   by MULT_RIGHT_1
+       ==> FACT m = 1                   by EQ_MULT_LCANCEL, SUC_NOT
+        or m <= 1           by FACT_EQ_1
+      Thus m = 0 or 1       by arithmetic
+        or n = 1 or 2       by ONE, TWO
+
+   Only-if part: (FACT 1 = 1) /\ (FACT 2 = 2)
+      Note FACT 1 = 1       by FACT_1
+       and FACT 2 = 2       by FACT_2
+*)
+val FACT_EQ_SELF = store_thm(
+  "FACT_EQ_SELF",
+  ``!n. (FACT n = n) <=> (n = 1) \/ (n = 2)``,
+  rw[EQ_IMP_THM] >| [
+    `n <> 0` by metis_tac[FACT_0, DECIDE``1 <> 0``] >>
+    `?m. n = SUC m` by metis_tac[num_CASES] >>
+    fs[FACT] >>
+    `FACT m = 1` by metis_tac[MULT_LEFT_1, EQ_MULT_RCANCEL, SUC_NOT] >>
+    `m <= 1` by rw[GSYM FACT_EQ_1] >>
+    decide_tac,
+    rw[FACT_1],
+    rw[FACT_2]
+  ]);
+
+(* Theorem: 0 < n ==> n <= FACT n *)
+(* Proof:
+   Note n <> 0             by 0 < n
+    ==> ?m. n = SUC m      by num_CASES
+   Thus FACT n
+      = FACT (SUC m)       by n = SUC m
+      = (SUC m) * FACT m   by FACT_LESS: 0 < FACT m
+      >= (SUC m)           by LE_MULT_CANCEL_LBARE
+      >= n                 by n = SUC m
+*)
+val FACT_GE_SELF = store_thm(
+  "FACT_GE_SELF",
+  ``!n. 0 < n ==> n <= FACT n``,
+  rpt strip_tac >>
+  `?m. n = SUC m` by metis_tac[num_CASES, NOT_ZERO_LT_ZERO] >>
+  rw[FACT] >>
+  rw[FACT_LESS]);
+
+(* Theorem: 0 < n ==> (FACT (n-1) = FACT n DIV n) *)
+(* Proof:
+   Since  n = SUC(n-1)                 by SUC_PRE, 0 < n.
+     and  FACT n = n * FACT (n-1)      by FACT
+                 = FACT (n-1) * n      by MULT_COMM
+                 = FACT (n-1) * n + 0  by ADD_0
+   Hence  FACT (n-1) = FACT n DIV n    by DIV_UNIQUE, 0 < n.
+*)
+val FACT_DIV = store_thm(
+  "FACT_DIV",
+  ``!n. 0 < n ==> (FACT (n-1) = FACT n DIV n)``,
+  rpt strip_tac >>
+  `n = SUC(n-1)` by decide_tac >>
+  `FACT n = n * FACT (n-1)` by metis_tac[FACT] >>
+  `_ = FACT (n-1) * n + 0` by rw[MULT_COMM] >>
+  metis_tac[DIV_UNIQUE]);
 
 val _ = export_theory();

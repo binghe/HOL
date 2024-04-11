@@ -2277,99 +2277,6 @@ Theorem euclid_prime = gcdTheory.P_EUCLIDES;
 Theorem euclid_coprime = gcdTheory.L_EUCLIDES;
 (* |- !a b c. coprime a b /\ b divides a * c ==> b divides c *)
 
-(* ------------------------------------------------------------------------- *)
-(* Modulo Theorems                                                           *)
-(* ------------------------------------------------------------------------- *)
-
-(* Idea: eliminate modulus n when a MOD n = b MOD n. *)
-
-(* Theorem: 0 < n /\ b <= a ==> (a MOD n = b MOD n <=> ?c. a = b + c * n) *)
-(* Proof:
-   If part: a MOD n = b MOD n ==> ?c. a = b + c * n
-      Note ?c. a = c * n + b MOD n       by MOD_EQN
-       and b = (b DIV n) * n + b MOD n   by DIVISION
-      Let q = b DIV n,
-      Then q * n <= c * n                by LE_ADD_RCANCEL, b <= a
-           a
-         = c * n + (b - q * n)           by above
-         = b + (c * n - q * n)           by arithmetic, q * n <= c * n
-         = b + (c - q) * n               by RIGHT_SUB_DISTRIB
-      Take (c - q) as c.
-   Only-if part: (b + c * n) MOD n = b MOD n
-      This is true                       by MOD_TIMES
-*)
-Theorem MOD_MOD_EQN:
-  !n a b. 0 < n /\ b <= a ==> (a MOD n = b MOD n <=> ?c. a = b + c * n)
-Proof
-  rw[EQ_IMP_THM] >| [
-    `?c. a = c * n + b MOD n` by metis_tac[MOD_EQN] >>
-    `b = (b DIV n) * n + b MOD n` by rw[DIVISION] >>
-    qabbrev_tac `q = b DIV n` >>
-    `q * n <= c * n` by metis_tac[LE_ADD_RCANCEL] >>
-    `a = b + (c * n - q * n)` by decide_tac >>
-    `_ = b + (c - q) * n` by decide_tac >>
-    metis_tac[],
-    simp[]
-  ]
-QED
-
-(* Idea: a convenient form of MOD_PLUS. *)
-
-(* Theorem: 0 < n ==> (x + y) MOD n = (x + y MOD n) MOD n *)
-(* Proof:
-   Let q = y DIV n, r = y MOD n.
-   Then y = q * n + r              by DIVISION, 0 < n
-        (x + y) MOD n
-      = (x + (q * n + r)) MOD n    by above
-      = (q * n + (x + r)) MOD n    by arithmetic
-      = (x + r) MOD n              by MOD_PLUS, MOD_EQ_0
-*)
-Theorem MOD_PLUS2:
-  !n x y. 0 < n ==> (x + y) MOD n = (x + y MOD n) MOD n
-Proof
-  rpt strip_tac >>
-  `y = (y DIV n) * n + y MOD n` by metis_tac[DIVISION] >>
-  simp[]
-QED
-
-(* Theorem: If n > 0, a MOD n = b MOD n ==> (a - b) MOD n = 0 *)
-(* Proof:
-   a = (a DIV n)*n + (a MOD n)   by DIVISION
-   b = (b DIV n)*n + (b MOD n)   by DIVISION
-   Hence  a - b = ((a DIV n) - (b DIV n))* n
-                = a multiple of n
-   Therefore (a - b) MOD n = 0.
-*)
-val MOD_EQ_DIFF = store_thm(
-  "MOD_EQ_DIFF",
-  ``!n a b. 0 < n /\ (a MOD n = b MOD n) ==> ((a - b) MOD n = 0)``,
-  rpt strip_tac >>
-  `a = a DIV n * n + a MOD n` by metis_tac[DIVISION] >>
-  `b = b DIV n * n + b MOD n` by metis_tac[DIVISION] >>
-  `a - b = (a DIV n - b DIV n) * n` by rw_tac arith_ss[] >>
-  metis_tac[MOD_EQ_0]);
-(* Note: The reverse is true only when a >= b:
-         (a-b) MOD n = 0 cannot imply a MOD n = b MOD n *)
-
-(* Theorem: if n > 0, a >= b, then (a - b) MOD n = 0 <=> a MOD n = b MOD n *)
-(* Proof:
-         (a-b) MOD n = 0
-   ==>   n divides (a-b)   by MOD_0_DIVIDES
-   ==>   (a-b) = k*n       for some k by divides_def
-   ==>       a = b + k*n   need b <= a to apply arithmeticTheory.SUB_ADD
-   ==> a MOD n = b MOD n   by arithmeticTheory.MOD_TIMES
-
-   The converse is given by MOD_EQ_DIFF.
-*)
-val MOD_EQ = store_thm(
-  "MOD_EQ",
-  ``!n a b. 0 < n /\ b <= a ==> (((a - b) MOD n = 0) <=> (a MOD n = b MOD n))``,
-  rw[EQ_IMP_THM] >| [
-    `?k. a - b = k * n` by metis_tac[DIVIDES_MOD_0, divides_def] >>
-    `a = k*n + b` by rw_tac arith_ss[] >>
-    metis_tac[MOD_TIMES],
-    metis_tac[MOD_EQ_DIFF]
-  ]);
 (* Both MOD_EQ_DIFF and MOD_EQ are required in MOD_MULT_LCANCEL *)
 
 (* Idea: equality exchange for MOD without negative. *)
@@ -2682,26 +2589,6 @@ val EXP_2_PRE_ODD = store_thm(
 (* ------------------------------------------------------------------------- *)
 (* Modulo Inverse                                                            *)
 (* ------------------------------------------------------------------------- *)
-
-(* Theorem: [Euclid's Lemma] A prime a divides product iff the prime a divides factor.
-            [in MOD notation] For prime p, x*y MOD p = 0 <=> x MOD p = 0 or y MOD p = 0 *)
-(* Proof:
-   The if part is already in P_EUCLIDES:
-   !p a b. prime p /\ divides p (a * b) ==> p divides a \/ p divides b
-   Convert the divides to MOD by DIVIDES_MOD_0.
-   The only-if part is:
-   (1) divides p x ==> divides p (x * y)
-   (2) divides p y ==> divides p (x * y)
-   Both are true by DIVIDES_MULT: !a b c. a divides b ==> a divides (b * c).
-   The symmetry of x and y can be taken care of by MULT_COMM.
-*)
-val EUCLID_LEMMA = store_thm(
-  "EUCLID_LEMMA",
-  ``!p x y. prime p ==> (((x * y) MOD p = 0) <=> (x MOD p = 0) \/ (y MOD p = 0))``,
-  rpt strip_tac >>
-  `0 < p` by rw[PRIME_POS] >>
-  rw[GSYM DIVIDES_MOD_0, EQ_IMP_THM] >>
-  metis_tac[P_EUCLIDES, DIVIDES_MULT, MULT_COMM]);
 
 (* Theorem: [Cancellation Law for MOD p]
    For prime p, if x MOD p <> 0,
@@ -5788,6 +5675,89 @@ val pairwise_coprime_prod_set_partition = store_thm(
   ``!s. FINITE s /\ PAIRWISE_COPRIME s ==> !u v. (s = u UNION v) /\ DISJOINT u v ==>
        (PROD_SET s = PROD_SET u * PROD_SET v) /\ (coprime (PROD_SET u) (PROD_SET v))``,
   metis_tac[PROD_SET_PRODUCT_BY_PARTITION, pairwise_coprime_partition_coprime]);
+
+(* Theorem: n! = PROD_SET (count (n+1))  *)
+(* Proof: by induction on n.
+   Base case: FACT 0 = PROD_SET (IMAGE SUC (count 0))
+     LHS = FACT 0
+         = 1                               by FACT
+         = PROD_SET {}                     by PROD_SET_THM
+         = PROD_SET (IMAGE SUC {})         by IMAGE_EMPTY
+         = PROD_SET (IMAGE SUC (count 0))  by COUNT_ZERO
+         = RHS
+   Step case: FACT n = PROD_SET (IMAGE SUC (count n)) ==>
+              FACT (SUC n) = PROD_SET (IMAGE SUC (count (SUC n)))
+     Note: (SUC n) NOTIN (IMAGE SUC (count n))  by IN_IMAGE, IN_COUNT [1]
+     LHS = FACT (SUC n)
+         = (SUC n) * (FACT n)                            by FACT
+         = (SUC n) * (PROD_SET (IMAGE SUC (count n)))    by induction hypothesis
+         = (SUC n) * (PROD_SET (IMAGE SUC (count n)) DELETE (SUC n))         by DELETE_NON_ELEMENT, [1]
+         = PROD_SET ((SUC n) INSERT ((IMAGE SUC (count n)) DELETE (SUC n)))  by PROD_SET_THM
+         = PROD_SET (IMAGE SUC (n INSERT (count n)))     by IMAGE_INSERT
+         = PROD_SET (IMAGE SUC (count (SUC n)))          by COUNT_SUC
+         = RHS
+*)
+val FACT_EQ_PROD = store_thm(
+  "FACT_EQ_PROD",
+  ``!n. FACT n = PROD_SET (IMAGE SUC (count n))``,
+  Induct_on `n` >-
+  rw[PROD_SET_THM, FACT] >>
+  rw[PROD_SET_THM, FACT, COUNT_SUC] >>
+  `(SUC n) NOTIN (IMAGE SUC (count n))` by rw[] >>
+  metis_tac[DELETE_NON_ELEMENT]);
+
+(* Theorem: n!/m! = product of (m+1) to n.
+            m < n ==> (FACT n = PROD_SET (IMAGE SUC ((count n) DIFF (count m))) * (FACT m)) *)
+(* Proof: by factorial formula.
+   By induction on n.
+   Base case: m < 0 ==> ...
+     True since m < 0 = F.
+   Step case: !m. m < n ==>
+              (FACT n = PROD_SET (IMAGE SUC (count n DIFF count m)) * FACT m) ==>
+              !m. m < SUC n ==>
+              (FACT (SUC n) = PROD_SET (IMAGE SUC (count (SUC n) DIFF count m)) * FACT m)
+     Note that m < SUC n ==> m <= n.
+      and FACT (SUC n) = (SUC n) * FACT n     by FACT
+     If m = n,
+        PROD_SET (IMAGE SUC (count (SUC n) DIFF count n)) * FACT n
+      = PROD_SET (IMAGE SUC {n}) * FACT n     by IN_DIFF, IN_COUNT
+      = PROD_SET {SUC n} * FACT n             by IN_IMAGE
+      = (SUC n) * FACT n                      by PROD_SET_THM
+     If m < n,
+        n NOTIN (count m)                     by IN_COUNT
+     so n INSERT ((count n) DIFF (count m))
+      = (n INSERT (count n)) DIFF (count m)   by INSERT_DIFF
+      = count (SUC n) DIFF (count m)          by EXTENSION
+     Since (SUC n) NOTIN (IMAGE SUC ((count n) DIFF (count m)))  by IN_IMAGE, IN_DIFF, IN_COUNT
+       and FINITE (IMAGE SUC ((count n) DIFF (count m)))         by IMAGE_FINITE, FINITE_DIFF, FINITE_COUNT
+     Hence PROD_SET (IMAGE SUC (count (SUC n) DIFF count m)) * FACT m
+         = ((SUC n) * PROD_SET (IMAGE SUC (count n DIFF count m))) * FACT m   by PROD_SET_IMAGE_REDUCTION
+         = (SUC n) * (PROD_SET (IMAGE SUC (count n DIFF count m))) * FACT m)  by MULT_ASSOC
+         = (SUC n) * FACT n                                      by induction hypothesis
+         = FACT (SUC n)                                          by FACT
+*)
+val FACT_REDUCTION = store_thm(
+  "FACT_REDUCTION",
+  ``!n m. m < n ==> (FACT n = PROD_SET (IMAGE SUC ((count n) DIFF (count m))) * (FACT m))``,
+  Induct_on `n` >-
+  rw[] >>
+  rw_tac std_ss[FACT] >>
+  `m <= n` by decide_tac >>
+  Cases_on `m = n` >| [
+    rw_tac std_ss[] >>
+    `count (SUC m) DIFF count m = {m}` by
+  (rw[DIFF_DEF] >>
+    rw[EXTENSION, EQ_IMP_THM]) >>
+    `PROD_SET (IMAGE SUC {m}) = SUC m` by rw[PROD_SET_THM] >>
+    metis_tac[],
+    `m < n` by decide_tac >>
+    `n NOTIN (count m)` by srw_tac[ARITH_ss][] >>
+    `n INSERT ((count n) DIFF (count m)) = (n INSERT (count n)) DIFF (count m)` by rw[] >>
+    `_ = count (SUC n) DIFF (count m)` by srw_tac[ARITH_ss][EXTENSION] >>
+    `(SUC n) NOTIN (IMAGE SUC ((count n) DIFF (count m)))` by rw[] >>
+    `FINITE (IMAGE SUC ((count n) DIFF (count m)))` by rw[] >>
+    metis_tac[PROD_SET_IMAGE_REDUCTION, MULT_ASSOC]
+  ]);
 
 (* export theory at end *)
 val _ = export_theory();

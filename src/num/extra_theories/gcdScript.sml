@@ -1496,4 +1496,157 @@ val divides_imp_coprime_with_successor = store_thm(
   `_ = 1` by rw[ONE_MOD] >>
   metis_tac[GCD_EFFICIENTLY, GCD_1]);
 
+(* ------------------------------------------------------------------------- *)
+(* Modulo Theorems                                                           *)
+(* ------------------------------------------------------------------------- *)
+
+(* Idea: eliminate modulus n when a MOD n = b MOD n. *)
+
+(* Theorem: 0 < n /\ b <= a ==> (a MOD n = b MOD n <=> ?c. a = b + c * n) *)
+(* Proof:
+   If part: a MOD n = b MOD n ==> ?c. a = b + c * n
+      Note ?c. a = c * n + b MOD n       by MOD_EQN
+       and b = (b DIV n) * n + b MOD n   by DIVISION
+      Let q = b DIV n,
+      Then q * n <= c * n                by LE_ADD_RCANCEL, b <= a
+           a
+         = c * n + (b - q * n)           by above
+         = b + (c * n - q * n)           by arithmetic, q * n <= c * n
+         = b + (c - q) * n               by RIGHT_SUB_DISTRIB
+      Take (c - q) as c.
+   Only-if part: (b + c * n) MOD n = b MOD n
+      This is true                       by MOD_TIMES
+*)
+Theorem MOD_MOD_EQN:
+  !n a b. 0 < n /\ b <= a ==> (a MOD n = b MOD n <=> ?c. a = b + c * n)
+Proof
+  rw[EQ_IMP_THM] >| [
+    `?c. a = c * n + b MOD n` by metis_tac[MOD_EQN] >>
+    `b = (b DIV n) * n + b MOD n` by rw[DIVISION] >>
+    qabbrev_tac `q = b DIV n` >>
+    `q * n <= c * n` by metis_tac[LE_ADD_RCANCEL] >>
+    `a = b + (c * n - q * n)` by decide_tac >>
+    `_ = b + (c - q) * n` by decide_tac >>
+    metis_tac[],
+    simp[]
+  ]
+QED
+
+(* Idea: a convenient form of MOD_PLUS. *)
+
+(* Theorem: 0 < n ==> (x + y) MOD n = (x + y MOD n) MOD n *)
+(* Proof:
+   Let q = y DIV n, r = y MOD n.
+   Then y = q * n + r              by DIVISION, 0 < n
+        (x + y) MOD n
+      = (x + (q * n + r)) MOD n    by above
+      = (q * n + (x + r)) MOD n    by arithmetic
+      = (x + r) MOD n              by MOD_PLUS, MOD_EQ_0
+*)
+Theorem MOD_PLUS2:
+  !n x y. 0 < n ==> (x + y) MOD n = (x + y MOD n) MOD n
+Proof
+  rpt strip_tac >>
+  `y = (y DIV n) * n + y MOD n` by metis_tac[DIVISION] >>
+  simp[]
+QED
+
+(* Theorem: If n > 0, a MOD n = b MOD n ==> (a - b) MOD n = 0 *)
+(* Proof:
+   a = (a DIV n)*n + (a MOD n)   by DIVISION
+   b = (b DIV n)*n + (b MOD n)   by DIVISION
+   Hence  a - b = ((a DIV n) - (b DIV n))* n
+                = a multiple of n
+   Therefore (a - b) MOD n = 0.
+*)
+val MOD_EQ_DIFF = store_thm(
+  "MOD_EQ_DIFF",
+  ``!n a b. 0 < n /\ (a MOD n = b MOD n) ==> ((a - b) MOD n = 0)``,
+  rpt strip_tac >>
+  `a = a DIV n * n + a MOD n` by metis_tac[DIVISION] >>
+  `b = b DIV n * n + b MOD n` by metis_tac[DIVISION] >>
+  `a - b = (a DIV n - b DIV n) * n` by rw_tac arith_ss[] >>
+  metis_tac[MOD_EQ_0]);
+(* Note: The reverse is true only when a >= b:
+         (a-b) MOD n = 0 cannot imply a MOD n = b MOD n *)
+
+(* Theorem: if n > 0, a >= b, then (a - b) MOD n = 0 <=> a MOD n = b MOD n *)
+(* Proof:
+         (a-b) MOD n = 0
+   ==>   n divides (a-b)   by MOD_0_DIVIDES
+   ==>   (a-b) = k*n       for some k by divides_def
+   ==>       a = b + k*n   need b <= a to apply arithmeticTheory.SUB_ADD
+   ==> a MOD n = b MOD n   by arithmeticTheory.MOD_TIMES
+
+   The converse is given by MOD_EQ_DIFF.
+*)
+val MOD_EQ = store_thm(
+  "MOD_EQ",
+  ``!n a b. 0 < n /\ b <= a ==> (((a - b) MOD n = 0) <=> (a MOD n = b MOD n))``,
+  rw[EQ_IMP_THM] >| [
+    `?k. a - b = k * n` by metis_tac[DIVIDES_MOD_0, divides_def] >>
+    `a = k*n + b` by rw_tac arith_ss[] >>
+    metis_tac[MOD_TIMES],
+    metis_tac[MOD_EQ_DIFF]
+  ]);
+
+(* Theorem: [Euclid's Lemma] A prime a divides product iff the prime a divides factor.
+            [in MOD notation] For prime p, x*y MOD p = 0 <=> x MOD p = 0 or y MOD p = 0 *)
+(* Proof:
+   The if part is already in P_EUCLIDES:
+   !p a b. prime p /\ divides p (a * b) ==> p divides a \/ p divides b
+   Convert the divides to MOD by DIVIDES_MOD_0.
+   The only-if part is:
+   (1) divides p x ==> divides p (x * y)
+   (2) divides p y ==> divides p (x * y)
+   Both are true by DIVIDES_MULT: !a b c. a divides b ==> a divides (b * c).
+   The symmetry of x and y can be taken care of by MULT_COMM.
+*)
+val EUCLID_LEMMA = store_thm(
+  "EUCLID_LEMMA",
+  ``!p x y. prime p ==> (((x * y) MOD p = 0) <=> (x MOD p = 0) \/ (y MOD p = 0))``,
+  rpt strip_tac >>
+  `0 < p` by rw[PRIME_POS] >>
+  rw[GSYM DIVIDES_MOD_0, EQ_IMP_THM] >>
+  metis_tac[P_EUCLIDES, DIVIDES_MULT, MULT_COMM]);
+
+(* Idea: For prime p, FACT (p-1) MOD p <> 0 *)
+
+(* Theorem: prime p /\ n < p ==> FACT n MOD p <> 0 *)
+(* Proof:
+   Note 1 < p                  by ONE_LT_PRIME
+   By induction on n.
+   Base: 0 < p ==> (FACT 0 MOD p = 0) ==> F
+      Note FACT 0 = 1          by FACT_0
+       and 1 MOD p = 1         by LESS_MOD, 1 < p
+       and 1 = 0 is F.
+   Step: n < p ==> (FACT n MOD p = 0) ==> F ==>
+         SUC n < p ==> (FACT (SUC n) MOD p = 0) ==> F
+      If n = 0, SUC 0 = 1      by ONE
+         Note FACT 1 = 1       by FACT_1
+          and 1 MOD p = 1      by LESS_MOD, 1 < p
+          and 1 = 0 is F.
+      If n <> 0, 0 < n.
+             (FACT (SUC n)) MOD p = 0
+         <=> (SUC n * FACT n) MOD p = 0      by FACT
+         Note (SUC n) MOD p <> 0             by MOD_LESS, SUC n < p
+          and (FACT n) MOD p <> 0            by induction hypothesis
+           so (SUC n * FACT n) MOD p <> 0    by EUCLID_LEMMA
+         This is a contradiction.
+*)
+Theorem FACT_MOD_PRIME:
+  !p n. prime p /\ n < p ==> FACT n MOD p <> 0
+Proof
+  rpt strip_tac >>
+  `1 < p` by rw[ONE_LT_PRIME] >>
+  Induct_on `n` >-
+  simp[FACT_0] >>
+  Cases_on `n = 0` >-
+  simp[FACT_1] >>
+  rw[FACT] >>
+  `n < p` by decide_tac >>
+  `(SUC n) MOD p <> 0` by fs[] >>
+  metis_tac[EUCLID_LEMMA]
+QED
+
 val _ = export_theory();
