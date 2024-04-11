@@ -3447,6 +3447,42 @@ val INJ_CARD_IMAGE_EQ = Q.store_thm ("INJ_CARD_IMAGE_EQ",
   `INJ f s t ==> FINITE s ==> (CARD (IMAGE f s) = CARD s)`,
   REPEAT STRIP_TAC THEN IMP_RES_TAC INJ_CARD_IMAGE) ;
 
+(* Theorem: For a 1-1 map f: s -> s, s and (IMAGE f s) are of the same size. *)
+(* Proof:
+   By finite induction on the set s:
+   Base case: CARD (IMAGE f {}) = CARD {}
+     True by IMAGE f {} = {}            by IMAGE_EMPTY
+   Step case: !s. FINITE s /\ (CARD (IMAGE f s) = CARD s) ==> !e. e NOTIN s ==> (CARD (IMAGE f (e INSERT s)) = CARD (e INSERT s))
+       CARD (IMAGE f (e INSERT s))
+     = CARD (f e INSERT IMAGE f s)      by IMAGE_INSERT
+     = SUC (CARD (IMAGE f s))           by CARD_INSERT: e NOTIN s, f e NOTIN s, for 1-1 map
+     = SUC (CARD s)                     by induction hypothesis
+     = CARD (e INSERT s)                by CARD_INSERT: e NOTIN s.
+*)
+Theorem FINITE_CARD_IMAGE:
+  !s f. (!x y. (f x = f y) <=> (x = y)) /\ FINITE s ==>
+        (CARD (IMAGE f s) = CARD s)
+Proof
+  Induct_on ‘FINITE’ >> rw[]
+QED
+
+(* Theorem: !s. FINITE s ==> CARD (IMAGE SUC s)) = CARD s *)
+(* Proof:
+   Since !n m. SUC n = SUC m <=> n = m    by numTheory.INV_SUC
+   This is true by FINITE_CARD_IMAGE.
+*)
+val CARD_IMAGE_SUC = store_thm(
+  "CARD_IMAGE_SUC",
+  ``!s. FINITE s ==> (CARD (IMAGE SUC s) = CARD s)``,
+  rw[FINITE_CARD_IMAGE]);
+
+(* Theorem: FINITE s /\ FINITE t /\ DISJOINT s t ==> (CARD (s UNION t) = CARD s + CARD t) *)
+(* Proof: by CARD_UNION_EQN, DISJOINT_DEF, CARD_EMPTY *)
+val CARD_UNION_DISJOINT = store_thm(
+  "CARD_UNION_DISJOINT",
+  ``!s t. FINITE s /\ FINITE t /\ DISJOINT s t ==> (CARD (s UNION t) = CARD s + CARD t)``,
+  rw_tac std_ss[CARD_UNION_EQN, DISJOINT_DEF, CARD_EMPTY]);
+
 (* ------------------------------------------------------------------------- *)
 (* Relational form of CARD (from cardinalTheory)                             *)
 (* ------------------------------------------------------------------------- *)

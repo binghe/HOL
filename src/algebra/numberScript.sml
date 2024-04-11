@@ -80,6 +80,23 @@ val CARD_PPOW_EQN = store_thm(
   rw[CARD_PPOW]);
 
 (* ------------------------------------------------------------------------- *)
+(* Partition Property                                                        *)
+(* ------------------------------------------------------------------------- *)
+
+(* Overload partition by split *)
+val _ = overload_on("split", ``\s u v. (s = u UNION v) /\ (DISJOINT u v)``);
+
+(* Pretty printing of partition by split *)
+val _ = add_rule {block_style = (AroundEachPhrase, (PP.CONSISTENT, 2)),
+                       fixity = Infix(NONASSOC, 450),
+                  paren_style = OnlyIfNecessary,
+                    term_name = "split",
+                  pp_elements = [HardSpace 1, TOK "=|=", HardSpace 1, TM,
+                                 BreakSpace(1,1), TOK "#", BreakSpace(1,1)]};
+
+
+
+(* ------------------------------------------------------------------------- *)
 (* Arithmetic Theorems (from examples/algebra)                               *)
 (* ------------------------------------------------------------------------- *)
 
@@ -5452,6 +5469,128 @@ val PROD_SET_EUCLID = store_thm(
   metis_tac[] >>
   metis_tac[P_EUCLIDES]);
 
+(* Theorem: FINITE s /\ x IN s ==> x divides PROD_SET s *)
+(* Proof:
+   Note !n x. x IN s /\ n divides x
+    ==> n divides PROD_SET s           by PROD_SET_DIVISORS
+    Put n = x, and x divides x = T     by DIVIDES_REFL
+    and the result follows.
+*)
+val PROD_SET_ELEMENT_DIVIDES = store_thm(
+  "PROD_SET_ELEMENT_DIVIDES",
+  ``!s x. FINITE s /\ x IN s ==> x divides PROD_SET s``,
+  metis_tac[PROD_SET_DIVISORS, DIVIDES_REFL]);
+
+(* Theorem: FINITE s ==> !f g. INJ f s univ(:num) /\ INJ g s univ(:num) /\
+            (!x. x IN s ==> f x <= g x) ==> PROD_SET (IMAGE f s) <= PROD_SET (IMAGE g s) *)
+(* Proof:
+   By finite induction on s.
+   Base: PROD_SET (IMAGE f {}) <= PROD_SET (IMAGE g {})
+      Note PROD_SET (IMAGE f {})
+         = PROD_SET {}              by IMAGE_EMPTY
+         = 1                        by PROD_SET_EMPTY
+      Thus true.
+   Step: !f g. (!x. x IN s ==> f x <= g x) ==> PROD_SET (IMAGE f s) <= PROD_SET (IMAGE g s) ==>
+        e NOTIN s /\ !x. x IN e INSERT s ==> f x <= g x ==>
+        PROD_SET (IMAGE f (e INSERT s)) <= PROD_SET (IMAGE g (e INSERT s))
+        Note INJ f s univ(:num)     by INJ_INSERT
+         and INJ g s univ(:num)     by INJ_INSERT
+         and f e NOTIN (IMAGE f s)  by IN_IMAGE
+         and g e NOTIN (IMAGE g s)  by IN_IMAGE
+       Applying LE_MONO_MULT2,
+          PROD_SET (IMAGE f (e INSERT s))
+        = PROD_SET (f e INSERT IMAGE f s)  by INSERT_IMAGE
+        = f e * PROD_SET (IMAGE f s)       by PROD_SET_INSERT
+       <= g e * PROD_SET (IMAGE f s)       by f e <= g e
+       <= g e * PROD_SET (IMAGE g s)       by induction hypothesis
+        = PROD_SET (g e INSERT IMAGE g s)  by PROD_SET_INSERT
+        = PROD_SET (IMAGE g (e INSERT s))  by INSERT_IMAGE
+*)
+val PROD_SET_LESS_EQ = store_thm(
+  "PROD_SET_LESS_EQ",
+  ``!s. FINITE s ==> !f g. INJ f s univ(:num) /\ INJ g s univ(:num) /\
+       (!x. x IN s ==> f x <= g x) ==> PROD_SET (IMAGE f s) <= PROD_SET (IMAGE g s)``,
+  Induct_on `FINITE` >>
+  rpt strip_tac >-
+  rw[PROD_SET_EMPTY] >>
+  fs[INJ_INSERT] >>
+  `f e NOTIN (IMAGE f s)` by metis_tac[IN_IMAGE] >>
+  `g e NOTIN (IMAGE g s)` by metis_tac[IN_IMAGE] >>
+  `f e <= g e` by rw[] >>
+  `PROD_SET (IMAGE f s) <= PROD_SET (IMAGE g s)` by rw[] >>
+  rw[PROD_SET_INSERT, LE_MONO_MULT2]);
+
+(* Theorem: FINITE s ==> !n. (!x. x IN s ==> x <= n) ==> PROD_SET s <= n ** CARD s *)
+(* Proof:
+   By finite induction on s.
+   Base: PROD_SET {} <= n ** CARD {}
+      Note PROD_SET {}
+         = 1             by PROD_SET_EMPTY
+         = n ** 0        by EXP_0
+         = n ** CARD {}  by CARD_EMPTY
+   Step: !n. (!x. x IN s ==> x <= n) ==> PROD_SET s <= n ** CARD s ==>
+         e NOTIN s /\ !x. x IN e INSERT s ==> x <= n ==> PROD_SET (e INSERT s) <= n ** CARD (e INSERT s)
+      Note !x. (x = e) \/ x IN s ==> x <= n   by IN_INSERT
+         PROD_SET (e INSERT s)
+       = e * PROD_SET s          by PROD_SET_INSERT
+      <= n * PROD_SET s          by e <= n
+      <= n * (n ** CARD s)       by induction hypothesis
+       = n ** (SUC (CARD s))     by EXP
+       = n ** CARD (e INSERT s)  by CARD_INSERT, e NOTIN s
+*)
+val PROD_SET_LE_CONSTANT = store_thm(
+  "PROD_SET_LE_CONSTANT",
+  ``!s. FINITE s ==> !n. (!x. x IN s ==> x <= n) ==> PROD_SET s <= n ** CARD s``,
+  Induct_on `FINITE` >>
+  rpt strip_tac >-
+  rw[PROD_SET_EMPTY, EXP_0] >>
+  fs[] >>
+  `e <= n /\ PROD_SET s <= n ** CARD s` by rw[] >>
+  rw[PROD_SET_INSERT, EXP, CARD_INSERT, LE_MONO_MULT2]);
+
+(* Theorem: FINITE s ==> !n f g. INJ f s univ(:num) /\ INJ g s univ(:num) /\ (!x. x IN s ==> n <= f x * g x) ==>
+            n ** CARD s <= PROD_SET (IMAGE f s) * PROD_SET (IMAGE g s) *)
+(* Proof:
+   By finite induction on s.
+   Base: n ** CARD {} <= PROD_SET (IMAGE f {}) * PROD_SET (IMAGE g {})
+      Note n ** CARD {}
+         = n ** 0           by CARD_EMPTY
+         = 1                by EXP_0
+       and PROD_SET (IMAGE f {})
+         = PROD_SET {}      by IMAGE_EMPTY
+         = 1                by PROD_SET_EMPTY
+   Step: !n f. INJ f s univ(:num) /\ INJ g s univ(:num) /\
+               (!x. x IN s ==> n <= f x * g x) ==>
+               n ** CARD s <= PROD_SET (IMAGE f s) * PROD_SET (IMAGE g s) ==>
+         e NOTIN s /\ INJ f (e INSERT s) univ(:num) /\ INJ g (e INSERT s) univ(:num) /\
+         !x. x IN e INSERT s ==> n <= f x * g x ==>
+         n ** CARD (e INSERT s) <= PROD_SET (IMAGE f (e INSERT s)) * PROD_SET (IMAGE g (e INSERT s))
+      Note INJ f s univ(:num) /\ INJ g s univ(:num)         by INJ_INSERT
+       and f e NOTIN (IMAGE f s) /\ g e NOTIN (IMAGE g s)   by IN_IMAGE
+         PROD_SET (IMAGE f (e INSERT s)) * PROD_SET (IMAGE g (e INSERT s))
+       = PROD_SET (f e INSERT (IMAGE f s)) * PROD_SET (g e INSERT (IMAGE g s))   by INSERT_IMAGE
+       = (f e * PROD_SET (IMAGE f s)) * (g e * PROD_SET (IMAGE g s))    by PROD_SET_INSERT
+       = (f e * g e) * (PROD_SET (IMAGE f s) * PROD_SET (IMAGE g s))    by MULT_ASSOC, MULT_COMM
+       >= n        * (PROD_SET (IMAGE f s) * PROD_SET (IMAGE g s))      by n <= f e * g e
+       >= n        * n ** CARD s                                        by induction hypothesis
+        = n ** (SUC (CARD s))                               by EXP
+        = n ** (CARD (e INSERT s))                          by CARD_INSERT
+*)
+val PROD_SET_PRODUCT_GE_CONSTANT = store_thm(
+  "PROD_SET_PRODUCT_GE_CONSTANT",
+  ``!s. FINITE s ==> !n f g. INJ f s univ(:num) /\ INJ g s univ(:num) /\ (!x. x IN s ==> n <= f x * g x) ==>
+       n ** CARD s <= PROD_SET (IMAGE f s) * PROD_SET (IMAGE g s)``,
+  Induct_on `FINITE` >>
+  rpt strip_tac >-
+  rw[PROD_SET_EMPTY, EXP_0] >>
+  fs[INJ_INSERT] >>
+  `f e NOTIN (IMAGE f s) /\ g e NOTIN (IMAGE g s)` by metis_tac[IN_IMAGE] >>
+  `n <= f e * g e /\ n ** CARD s <= PROD_SET (IMAGE f s) * PROD_SET (IMAGE g s)` by rw[] >>
+  `PROD_SET (f e INSERT IMAGE f s) * PROD_SET (g e INSERT IMAGE g s) =
+    (f e * PROD_SET (IMAGE f s)) * (g e * PROD_SET (IMAGE g s))` by rw[PROD_SET_INSERT] >>
+  `_ = (f e * g e) * (PROD_SET (IMAGE f s) * PROD_SET (IMAGE g s))` by metis_tac[MULT_ASSOC, MULT_COMM] >>
+  metis_tac[EXP, CARD_INSERT, LE_MONO_MULT2]);
+
 (* ------------------------------------------------------------------------- *)
 (* Pairwise Coprime Property                                                 *)
 (* ------------------------------------------------------------------------- *)
@@ -5468,6 +5607,116 @@ val pairwise_coprime_insert = store_thm(
         (!x. x IN s ==> coprime e x) /\ PAIRWISE_COPRIME s``,
   metis_tac[IN_INSERT]);
 
+(* Theorem: FINITE s /\ PAIRWISE_COPRIME s ==>
+            !t. t SUBSET s ==> (PROD_SET t) divides (PROD_SET s) *)
+(* Proof:
+   Note FINITE t    by SUBSET_FINITE
+   By finite induction on t.
+   Base case: PROD_SET {} divides PROD_SET s
+      Note PROD_SET {} = 1           by PROD_SET_EMPTY
+       and 1 divides (PROD_SET s)    by ONE_DIVIDES_ALL
+   Step case: t SUBSET s ==> PROD_SET t divides PROD_SET s ==>
+              e NOTIN t /\ e INSERT t SUBSET s ==> PROD_SET (e INSERT t) divides PROD_SET s
+      Let m = PROD_SET s.
+      Note e IN s /\ t SUBSET s                      by INSERT_SUBSET
+      Thus e divides m                               by PROD_SET_ELEMENT_DIVIDES
+       and (PROD_SET t) divides m                    by induction hypothesis
+      Also coprime e (PROD_SET t)                    by every_coprime_prod_set_coprime, SUBSET_DEF
+      Note PROD_SET (e INSERT t) = e * PROD_SET t    by PROD_SET_INSERT
+       ==> e * PROD_SET t divides m                  by coprime_product_divides
+*)
+val pairwise_coprime_prod_set_subset_divides = store_thm(
+  "pairwise_coprime_prod_set_subset_divides",
+  ``!s. FINITE s /\ PAIRWISE_COPRIME s ==>
+   !t. t SUBSET s ==> (PROD_SET t) divides (PROD_SET s)``,
+  rpt strip_tac >>
+  `FINITE t` by metis_tac[SUBSET_FINITE] >>
+  qpat_x_assum `t SUBSET s` mp_tac >>
+  qpat_x_assum `FINITE t` mp_tac >>
+  qid_spec_tac `t` >>
+  Induct_on `FINITE` >>
+  rpt strip_tac >-
+  rw[PROD_SET_EMPTY] >>
+  fs[] >>
+  `e divides PROD_SET s` by rw[PROD_SET_ELEMENT_DIVIDES] >>
+  `coprime e (PROD_SET t)` by prove_tac[every_coprime_prod_set_coprime, SUBSET_DEF] >>
+  rw[PROD_SET_INSERT, coprime_product_divides]);
+
+(* Theorem: FINITE s /\ PAIRWISE_COPRIME s ==>
+            !u v. (s = u UNION v) /\ DISJOINT u v ==> coprime (PROD_SET u) (PROD_SET v) *)
+(* Proof:
+   By finite induction on s.
+   Base: {} = u UNION v ==> coprime (PROD_SET u) (PROD_SET v)
+      Note u = {} and v = {}       by EMPTY_UNION
+       and PROD_SET {} = 1         by PROD_SET_EMPTY
+      Hence true                   by GCD_1
+   Step: PAIRWISE_COPRIME s ==>
+         !u v. (s = u UNION v) /\ DISJOINT u v ==> coprime (PROD_SET u) (PROD_SET v) ==>
+         e NOTIN s /\ e INSERT s = u UNION v ==> coprime (PROD_SET u) (PROD_SET v)
+      Note (!x. x IN s ==> coprime e x) /\
+           PAIRWISE_COPRIME s      by IN_INSERT
+      Note e IN u \/ e IN v        by IN_INSERT, IN_UNION
+      If e IN u,
+         Then e NOTIN v            by IN_DISJOINT
+         Let w = u DELETE e.
+         Then e NOTIN w            by IN_DELETE
+          and u = e INSERT w       by INSERT_DELETE
+         Note s = w UNION v        by EXTENSION, IN_INSERT, IN_UNION
+          ==> FINITE w             by FINITE_UNION
+          and DISJOINT w v         by DISJOINT_INSERT
+
+         Note coprime (PROD_SET w) (PROD_SET v)   by induction hypothesis
+          and !x. x IN v ==> coprime e x          by v SUBSET s
+         Also FINITE v                            by FINITE_UNION
+           so coprime e (PROD_SET v)              by every_coprime_prod_set_coprime, FINITE v
+          ==> coprime (e * PROD_SET w) PROD_SET v         by coprime_product_coprime
+           or coprime PROD_SET (e INSERT w) PROD_SET v    by PROD_SET_INSERT
+            = coprime PROD_SET u PROD_SET v               by above
+
+      Similarly for e IN v.
+*)
+val pairwise_coprime_partition_coprime = store_thm(
+  "pairwise_coprime_partition_coprime",
+  ``!s. FINITE s /\ PAIRWISE_COPRIME s ==>
+   !u v. (s = u UNION v) /\ DISJOINT u v ==> coprime (PROD_SET u) (PROD_SET v)``,
+  ntac 2 strip_tac >>
+  qpat_x_assum `PAIRWISE_COPRIME s` mp_tac >>
+  qpat_x_assum `FINITE s` mp_tac >>
+  qid_spec_tac `s` >>
+  Induct_on `FINITE` >>
+  rpt strip_tac >-
+  fs[PROD_SET_EMPTY] >>
+  `(!x. x IN s ==> coprime e x) /\ PAIRWISE_COPRIME s` by metis_tac[IN_INSERT] >>
+  `e IN u \/ e IN v` by metis_tac[IN_INSERT, IN_UNION] >| [
+    qabbrev_tac `w = u DELETE e` >>
+    `u = e INSERT w` by rw[Abbr`w`] >>
+    `e NOTIN w` by rw[Abbr`w`] >>
+    `e NOTIN v` by metis_tac[IN_DISJOINT] >>
+    `s = w UNION v` by
+  (rw[EXTENSION] >>
+    metis_tac[IN_INSERT, IN_UNION]) >>
+    `FINITE w` by metis_tac[FINITE_UNION] >>
+    `DISJOINT w v` by metis_tac[DISJOINT_INSERT] >>
+    `coprime (PROD_SET w) (PROD_SET v)` by rw[] >>
+    `(!x. x IN v ==> coprime e x)` by rw[] >>
+    `FINITE v` by metis_tac[FINITE_UNION] >>
+    `coprime e (PROD_SET v)` by rw[every_coprime_prod_set_coprime] >>
+    metis_tac[coprime_product_coprime, PROD_SET_INSERT],
+    qabbrev_tac `w = v DELETE e` >>
+    `v = e INSERT w` by rw[Abbr`w`] >>
+    `e NOTIN w` by rw[Abbr`w`] >>
+    `e NOTIN u` by metis_tac[IN_DISJOINT] >>
+    `s = u UNION w` by
+  (rw[EXTENSION] >>
+    metis_tac[IN_INSERT, IN_UNION]) >>
+    `FINITE w` by metis_tac[FINITE_UNION] >>
+    `DISJOINT u w` by metis_tac[DISJOINT_INSERT, DISJOINT_SYM] >>
+    `coprime (PROD_SET u) (PROD_SET w)` by rw[] >>
+    `(!x. x IN u ==> coprime e x)` by rw[] >>
+    `FINITE u` by metis_tac[FINITE_UNION] >>
+    `coprime (PROD_SET u) e` by rw[every_coprime_prod_set_coprime, coprime_sym] >>
+    metis_tac[coprime_product_coprime_sym, PROD_SET_INSERT]
+  ]);
 
 
 (* export theory at end *)
