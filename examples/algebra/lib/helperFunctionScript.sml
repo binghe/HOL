@@ -1794,22 +1794,6 @@ Proof
   simp[FACT]
 QED
 
-(* ------------------------------------------------------------------------- *)
-(* Pairwise Coprime Property                                                 *)
-(* ------------------------------------------------------------------------- *)
-
-(* Overload pairwise coprime set *)
-val _ = overload_on("PAIRWISE_COPRIME", ``\s. !x y. x IN s /\ y IN s /\ x <> y ==> coprime x y``);
-
-(* Theorem: e NOTIN s /\ PAIRWISE_COPRIME (e INSERT s) ==>
-            (!x. x IN s ==> coprime e x) /\ PAIRWISE_COPRIME s *)
-(* Proof: by IN_INSERT *)
-val pairwise_coprime_insert = store_thm(
-  "pairwise_coprime_insert",
-  ``!s e. e NOTIN s /\ PAIRWISE_COPRIME (e INSERT s) ==>
-        (!x. x IN s ==> coprime e x) /\ PAIRWISE_COPRIME s``,
-  metis_tac[IN_INSERT]);
-
 (* Theorem: FINITE s /\ PAIRWISE_COPRIME s ==>
             !t. t SUBSET s ==> (PROD_SET t) divides (PROD_SET s) *)
 (* Proof:

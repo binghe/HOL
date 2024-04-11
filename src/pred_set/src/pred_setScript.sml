@@ -23,6 +23,7 @@ val DECIDE = numLib.ARITH_PROVE
 val decide_tac = DECIDE_TAC;
 val metis_tac = METIS_TAC;
 val qabbrev_tac = Q.ABBREV_TAC;
+val qid_spec_tac = Q.ID_SPEC_TAC;
 
 (* don't eta-contract these; that will force tactics to use one fixed version
    of srw_ss() *)
@@ -5300,6 +5301,112 @@ Proof
   \\ REV_FULL_SIMP_TAC(srw_ss())[SUBSET_DEF, PULL_EXISTS]
   \\ METIS_TAC[DELETE_NON_ELEMENT]
 QED
+
+(* Theorem: PI f {} = 1 *)
+(* Proof: by PROD_IMAGE_THM *)
+val PROD_IMAGE_EMPTY = store_thm(
+  "PROD_IMAGE_EMPTY",
+  ``!f. PI f {} = 1``,
+  rw[PROD_IMAGE_THM]);
+
+(* Theorem: FINITE s ==> !f e. e NOTIN s ==> (PI f (e INSERT s) = (f e) * PI f s) *)
+(* Proof: by PROD_IMAGE_THM, DELETE_NON_ELEMENT *)
+val PROD_IMAGE_INSERT = store_thm(
+  "PROD_IMAGE_INSERT",
+  ``!s. FINITE s ==> !f e. e NOTIN s ==> (PI f (e INSERT s) = (f e) * PI f s)``,
+  rw[PROD_IMAGE_THM, DELETE_NON_ELEMENT]);
+
+(* Theorem: FINITE s ==> !f e. 0 < f e ==>
+            (PI f (s DELETE e) = if e IN s then ((PI f s) DIV (f e)) else PI f s) *)
+(* Proof:
+   If e IN s,
+     Note PI f (e INSERT s) = (f e) *  PI f (s DELETE e)   by PROD_IMAGE_THM
+     Thus PI f (s DELETE e) = PI f (e INSERT s) DIV (f e)  by DIV_SOLVE_COMM, 0 < f e
+                            = (PI f s) DIV (f e)           by ABSORPTION, e IN s.
+   If e NOTIN s,
+      PI f (s DELETE e) = PI f e                           by DELETE_NON_ELEMENT
+*)
+val PROD_IMAGE_DELETE = store_thm(
+  "PROD_IMAGE_DELETE",
+  ``!s. FINITE s ==> !f e. 0 < f e ==>
+       (PI f (s DELETE e) = if e IN s then ((PI f s) DIV (f e)) else PI f s)``,
+  rpt strip_tac >>
+  rw_tac std_ss[] >-
+  metis_tac[PROD_IMAGE_THM, DIV_SOLVE_COMM, ABSORPTION] >>
+  metis_tac[DELETE_NON_ELEMENT]);
+(* The original proof of SUM_IMAGE_DELETE is clumsy. *)
+
+(* Theorem: (!x. x IN s ==> (f1 x = f2 x)) ==> (PI f1 s = PI f2 s) *)
+(* Proof:
+   If INFINITE s,
+        PI f1 s
+      = ITSET (\e acc. f e * acc) s 1    by PROD_IMAGE_DEF
+      = ARB                              by ITSET_def
+      Similarly, PI f2 s = ARB = PI f1 s.
+   If FINITE s,
+      Apply finite induction on s.
+      Base: PI f1 {} = PI f2 {}, true     by PROD_IMAGE_EMPTY
+      Step: !f1 f2. (!x. x IN s ==> (f1 x = f2 x)) ==> (PI f1 s = PI f2 s) ==>
+            e NOTIN s /\ !x. x IN e INSERT s ==> (f1 x = f2 x) ==> PI f1 (e INSERT s) = PI f2 (e INSERT s)
+            Note !x. x IN e INSERT s ==> (f1 x = f2 x)
+             ==> (f1 e = f2 e) \/ !x. s IN s ==> (f1 x = f2 x)   by IN_INSERT
+              PI f1 (e INSERT s)
+            = (f1 e) * (PI f1 s)    by PROD_IMAGE_INSERT, e NOTIN s
+            = (f1 e) * (PI f2 s)    by induction hypothesis
+            = (f2 e) * (PI f2 s)    by f1 e = f2 e
+            = PI f2 (e INSERT s)    by PROD_IMAGE_INSERT, e NOTIN s
+*)
+val PROD_IMAGE_CONG = store_thm(
+  "PROD_IMAGE_CONG",
+  ``!s f1 f2. (!x. x IN s ==> (f1 x = f2 x)) ==> (PI f1 s = PI f2 s)``,
+  rpt strip_tac >>
+  reverse (Cases_on `FINITE s`) >| [
+    rw[PROD_IMAGE_DEF, Once ITSET_def] >>
+    rw[Once ITSET_def],
+    pop_assum mp_tac >>
+    pop_assum mp_tac >>
+    qid_spec_tac `s` >>
+    `!s. FINITE s ==> !f1 f2. (!x. x IN s ==> (f1 x = f2 x)) ==> (PI f1 s = PI f2 s)` suffices_by rw[] >>
+    Induct_on `FINITE` >>
+    rpt strip_tac >-
+    rw[PROD_IMAGE_EMPTY] >>
+    metis_tac[PROD_IMAGE_INSERT, IN_INSERT]
+  ]);
+
+(* Theorem: FINITE s ==> !f k. (!x. x IN s ==> (f x = k)) ==> (PI f s = k ** CARD s) *)
+(* Proof:
+   By finite induction on s.
+   Base: PI f {} = k ** CARD {}
+         PI f {}
+       = 1               by PROD_IMAGE_THM
+       = c ** 0          by EXP
+       = c ** CARD {}    by CARD_DEF
+   Step: !f k. (!x. x IN s ==> (f x = k)) ==> (PI f s = k ** CARD s) ==>
+         e NOTIN s ==> PI f (e INSERT s) = k ** CARD (e INSERT s)
+         PI f (e INSERT s)
+       = ((f e) * PI (K c) (s DELETE e)    by PROD_IMAGE_THM
+       = c * PI (K c) (s DELETE e)         by function application
+       = c * PI (K c) s                    by DELETE_NON_ELEMENT
+       = c * c ** CARD s                   by induction hypothesis
+       = c ** (SUC (CARD s))               by EXP
+       = c ** CARD (e INSERT s)            by CARD_INSERT, e NOTIN s
+*)
+val PI_CONSTANT = store_thm(
+  "PI_CONSTANT",
+  ``!s. FINITE s ==> !f k. (!x. x IN s ==> (f x = k)) ==> (PI f s = k ** CARD s)``,
+  Induct_on `FINITE` >>
+  rpt strip_tac >-
+  rw[PROD_IMAGE_THM] >>
+  rw[PROD_IMAGE_THM, CARD_INSERT] >>
+  fs[] >>
+  metis_tac[DELETE_NON_ELEMENT, EXP]);
+
+(* Theorem: FINITE s ==> !c. PI (K c) s = c ** (CARD s) *)
+(* Proof: by PI_CONSTANT. *)
+val PROD_IMAGE_CONSTANT = store_thm(
+  "PROD_IMAGE_CONSTANT",
+  ``!s. FINITE s ==> !c. PI (K c) s = c ** (CARD s)``,
+  rw[PI_CONSTANT]);
 
 (*---------------------------------------------------------------------------*)
 (* PROD_SET multiplies the elements of a set of natural numbers              *)

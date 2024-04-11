@@ -1,7 +1,7 @@
 (* ------------------------------------------------------------------------- *)
 (* Elementary Number Theory - a collection of useful results for numbers     *)
 (*                                                                           *)
-(* Author: Hing-Lun Chan (Australian National University, 2019)              *)
+(* Author: (Joseph) Hing-Lun Chan (Australian National University, 2019)     *)
 (* ------------------------------------------------------------------------- *)
 
 open HolKernel boolLib Parse bossLib;
@@ -15,7 +15,7 @@ val _ = new_theory "number";
 val IN_SUBSET = save_thm("IN_SUBSET", SUBSET_DEF);
 
 (* ------------------------------------------------------------------------- *)
-(* Set of Proper Subsets (from examples/algebra)                             *)
+(* Set of Proper Subsets                                                     *)
 (* ------------------------------------------------------------------------- *)
 
 (* Define the set of all proper subsets of a set *)
@@ -5272,6 +5272,152 @@ val in_prime = store_thm(
   ``!p. p IN prime <=> prime p``,
   rw[IN_DEF]);
 
+(* Theorem: PROD_SET {x} = x *)
+(* Proof:
+   Since FINITE {x}           by FINITE_SING
+     PROD_SET {x}
+   = PROD_SET (x INSERT {})   by SING_INSERT
+   = x * PROD_SET {}          by PROD_SET_THM
+   = x                        by PROD_SET_EMPTY
+*)
+val PROD_SET_SING = store_thm(
+  "PROD_SET_SING",
+  ``!x. PROD_SET {x} = x``,
+  rw[PROD_SET_THM, FINITE_SING]);
+
+(* Theorem: FINITE s /\ 0 NOTIN s ==> 0 < PROD_SET s *)
+(* Proof:
+   By FINITE_INDUCT on s.
+   Base case: 0 NOTIN {} ==> 0 < PROD_SET {}
+     Since PROD_SET {} = 1        by PROD_SET_THM
+     Hence true.
+   Step case: 0 NOTIN s ==> 0 < PROD_SET s ==>
+              e NOTIN s /\ 0 NOTIN e INSERT s ==> 0 < PROD_SET (e INSERT s)
+       PROD_SET (e INSERT s)
+     = e * PROD_SET (s DELETE e)          by PROD_SET_THM
+     = e * PROD_SET s                     by DELETE_NON_ELEMENT
+     But e IN e INSERT s                  by COMPONENT
+     Hence e <> 0, or 0 < e               by implication
+     and !x. x IN s ==> x IN (e INSERT s) by IN_INSERT
+     Thus 0 < PROD_SET s                  by induction hypothesis
+     Henec 0 < e * PROD_SET s             by ZERO_LESS_MULT
+*)
+val PROD_SET_NONZERO = store_thm(
+  "PROD_SET_NONZERO",
+  ``!s. FINITE s /\ 0 NOTIN s ==> 0 < PROD_SET s``,
+  `!s. FINITE s ==> 0 NOTIN s ==> 0 < PROD_SET s` suffices_by rw[] >>
+  ho_match_mp_tac FINITE_INDUCT >>
+  rpt strip_tac >-
+  rw[PROD_SET_THM] >>
+  fs[] >>
+  `0 < e` by decide_tac >>
+  `PROD_SET (e INSERT s) = e * PROD_SET (s DELETE e)` by rw[PROD_SET_THM] >>
+  `_ = e * PROD_SET s` by metis_tac[DELETE_NON_ELEMENT] >>
+  rw[ZERO_LESS_MULT]);
+
+(* Theorem: FINITE s /\ s <> {} /\ 0 NOTIN s ==>
+            !f. INJ f s univ(:num) /\ (!x. x < f x) ==> PROD_SET s < PROD_SET (IMAGE f s) *)
+(* Proof:
+   By FINITE_INDUCT on s.
+   Base case: {} <> {} ==> PROD_SET {} < PROD_SET (IMAGE f {})
+     True since {} <> {} is false.
+   Step case: s <> {} /\ 0 NOTIN s ==> !f. INJ f s univ(:num) ==> PROD_SET s < PROD_SET (IMAGE f s) ==>
+              e NOTIN s /\ e INSERT s <> {} /\ 0 NOTIN e INSERT s /\ INJ f (e INSERT s) univ(:num) ==>
+              PROD_SET (e INSERT s) < PROD_SET (IMAGE f (e INSERT s))
+     Note INJ f (e INSERT s) univ(:num)
+      ==> INJ f s univ(:num) /\
+          !y. y IN s /\ (f e = f y) ==> (e = y)   by INJ_INSERT
+     First,
+       PROD_SET (e INSERT s)
+     = e * PROD_SET (s DELETE e)           by PROD_SET_THM
+     = e * PROD_SET s                      by DELETE_NON_ELEMENT
+     Next,
+       FINITE (IMAGE f s)                  by IMAGE_FINITE
+       f e NOTIN IMAGE f s                 by IN_IMAGE, e NOTIN s
+       PROD_SET (IMAGE f (e INSERT s))
+     = f e * PROD_SET (IMAGE f s)          by PROD_SET_IMAGE_REDUCTION
+
+     If s = {},
+        to show: e * PROD_SET {} < f e * PROD_SET {}    by IMAGE_EMPTY
+        which is true since PROD_SET {} = 1             by PROD_SET_THM
+             and e < f e                                by given
+     If s <> {},
+     Since e IN e INSERT s                              by COMPONENT
+     Hence 0 < e                                        by e <> 0
+     and !x. x IN s ==> x IN (e INSERT s)               by IN_INSERT
+     Thus PROD_SET s < PROD_SET (IMAGE f s)             by induction hypothesis
+       or e * PROD_SET s < e * PROD_SET (IMAGE f s)     by LT_MULT_LCANCEL, 0 < e
+     Note 0 < PROD_SET (IMAGE f s)                      by IN_IMAGE, !x. x < f x /\ x <> 0
+       so e * PROD_SET (IMAGE f s) < f e * PROD_SET (IMAGE f s) by LT_MULT_LCANCEL, e < f e
+     Hence PROD_SET (e INSERT s) < PROD_SET (IMAGE f (e INSERT s))
+*)
+val PROD_SET_LESS = store_thm(
+  "PROD_SET_LESS",
+  ``!s. FINITE s /\ s <> {} /\ 0 NOTIN s ==>
+   !f. INJ f s univ(:num) /\ (!x. x < f x) ==> PROD_SET s < PROD_SET (IMAGE f s)``,
+  `!s. FINITE s ==> s <> {} /\ 0 NOTIN s ==>
+    !f. INJ f s univ(:num) /\ (!x. x < f x) ==> PROD_SET s < PROD_SET (IMAGE f s)` suffices_by rw[] >>
+  ho_match_mp_tac FINITE_INDUCT >>
+  rpt strip_tac >-
+  rw[] >>
+  `PROD_SET (e INSERT s) = e * PROD_SET (s DELETE e)` by rw[PROD_SET_THM] >>
+  `_ = e * PROD_SET s` by metis_tac[DELETE_NON_ELEMENT] >>
+  fs[INJ_INSERT] >>
+  `FINITE (IMAGE f s)` by rw[] >>
+  `f e NOTIN IMAGE f s` by metis_tac[IN_IMAGE] >>
+  `PROD_SET (IMAGE f (e INSERT s)) = f e * PROD_SET (IMAGE f s)` by rw[PROD_SET_IMAGE_REDUCTION] >>
+  Cases_on `s = {}` >-
+  rw[PROD_SET_SING, PROD_SET_THM] >>
+  `0 < e` by decide_tac >>
+  `PROD_SET s < PROD_SET (IMAGE f s)` by rw[] >>
+  `e * PROD_SET s < e * PROD_SET (IMAGE f s)` by rw[] >>
+  `e * PROD_SET (IMAGE f s) < (f e) * PROD_SET (IMAGE f s)` by rw[] >>
+  `(IMAGE f (e INSERT s)) = (f e INSERT IMAGE f s)` by rw[] >>
+  metis_tac[LESS_TRANS]);
+
+(* Theorem: FINITE s /\ s <> {} /\ 0 NOTIN s ==> PROD_SET s < PROD_SET (IMAGE SUC s) *)
+(* Proof:
+   Since !m n. SUC m = SUC n <=> m = n      by INV_SUC
+    thus INJ INJ SUC s univ(:num)           by INJ_DEF
+   Hence the result follows                 by PROD_SET_LESS
+*)
+val PROD_SET_LESS_SUC = store_thm(
+  "PROD_SET_LESS_SUC",
+  ``!s. FINITE s /\ s <> {} /\ 0 NOTIN s ==> PROD_SET s < PROD_SET (IMAGE SUC s)``,
+  rpt strip_tac >>
+  (irule PROD_SET_LESS >> simp[]) >>
+  rw[INJ_DEF]);
+
+(* Theorem: FINITE s ==> !n x. x IN s /\ n divides x ==> n divides (PROD_SET s) *)
+(* Proof:
+   By FINITE_INDUCT on s.
+   Base case: x IN {} /\ n divides x ==> n divides (PROD_SET {})
+     True since x IN {} is false   by NOT_IN_EMPTY
+   Step case: !n x. x IN s /\ n divides x ==> n divides (PROD_SET s) ==>
+              e NOTIN s /\ x IN e INSERT s /\ n divides x ==> n divides (PROD_SET (e INSERT s))
+       PROD_SET (e INSERT s)
+     = e * PROD_SET (s DELETE e)   by PROD_SET_THM
+     = e * PROD_SET s              by DELETE_NON_ELEMENT
+     If x = e,
+        n divides x
+        means n divides e
+        hence n divides PROD_SET (e INSERT s)   by DIVIDES_MULTIPLE, MULT_COMM
+     If x <> e, x IN s             by IN_INSERT
+        n divides (PROD_SET s)     by induction hypothesis
+        hence n divides PROD_SET (e INSERT s)   by DIVIDES_MULTIPLE
+*)
+val PROD_SET_DIVISORS = store_thm(
+  "PROD_SET_DIVISORS",
+  ``!s. FINITE s ==> !n x. x IN s /\ n divides x ==> n divides (PROD_SET s)``,
+  ho_match_mp_tac FINITE_INDUCT >>
+  rpt strip_tac >-
+  metis_tac[NOT_IN_EMPTY] >>
+  `PROD_SET (e INSERT s) = e * PROD_SET (s DELETE e)` by rw[PROD_SET_THM] >>
+  `_ = e * PROD_SET s` by metis_tac[DELETE_NON_ELEMENT] >>
+  `(x = e) \/ (x IN s)` by rw[GSYM IN_INSERT] >-
+  metis_tac[DIVIDES_MULTIPLE, MULT_COMM] >>
+  metis_tac[DIVIDES_MULTIPLE]);
+
 (* Theorem: (Generalized Euclid's Lemma)
             If prime p divides a PROD_SET, it divides a member of the PROD_SET.
             FINITE s ==> !p. prime p /\ p divides (PROD_SET s) ==> ?b. b IN s /\ p divides b *)
@@ -5305,6 +5451,22 @@ val PROD_SET_EUCLID = store_thm(
   Cases_on `p divides e` >-
   metis_tac[] >>
   metis_tac[P_EUCLIDES]);
+
+(* ------------------------------------------------------------------------- *)
+(* Pairwise Coprime Property                                                 *)
+(* ------------------------------------------------------------------------- *)
+
+(* Overload pairwise coprime set *)
+val _ = overload_on("PAIRWISE_COPRIME", ``\s. !x y. x IN s /\ y IN s /\ x <> y ==> coprime x y``);
+
+(* Theorem: e NOTIN s /\ PAIRWISE_COPRIME (e INSERT s) ==>
+            (!x. x IN s ==> coprime e x) /\ PAIRWISE_COPRIME s *)
+(* Proof: by IN_INSERT *)
+val pairwise_coprime_insert = store_thm(
+  "pairwise_coprime_insert",
+  ``!s e. e NOTIN s /\ PAIRWISE_COPRIME (e INSERT s) ==>
+        (!x. x IN s ==> coprime e x) /\ PAIRWISE_COPRIME s``,
+  metis_tac[IN_INSERT]);
 
 
 
