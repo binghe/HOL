@@ -6,7 +6,7 @@ open dep_rewrite
      polyFieldTheory integralDomainTheory
      monoidMapTheory groupMapTheory ringMapTheory
 
-open monoidTheory groupTheory helperSetTheory gcdsetTheory;
+open monoidTheory groupTheory helperSetTheory gcdsetTheory numberTheory;
 
 val _ = new_theory "multipoly";
 

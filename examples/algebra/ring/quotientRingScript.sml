@@ -24,12 +24,11 @@ val _ = new_theory "quotientRing";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
 (* open dependent theories *)
-open pred_setTheory;
+open arithmeticTheory dividesTheory pred_setTheory numberTheory;
 
 (* Get dependent theories local *)
 (* val _ = load "ringIdealTheory"; *)
@@ -45,11 +44,6 @@ open quotientGroupTheory;
 (* Get dependent theories in lib *)
 (* (* val _ = load "helperSetTheory"; -- in monoidTheory *) *)
 open helperSetTheory;
-
-(* Get arithmetic for Ring characteristics *)
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-open arithmeticTheory dividesTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Quotient Ring Documentation                                               *)

@@ -17,7 +17,7 @@ val _ = new_theory "groupProduct";
 open jcLib;
 
 (* open dependent theories *)
-open pred_setTheory arithmeticTheory;
+open pred_setTheory arithmeticTheory numberTheory;
 
 (* Get dependent theories local *)
 (* val _ = load "groupTheory"; *)

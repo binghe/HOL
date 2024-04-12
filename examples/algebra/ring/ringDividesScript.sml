@@ -963,7 +963,7 @@ Proof
   \\ impl_tac
   >- (
     `p = LINV f R (f p) /\ x = LINV f R (f x) /\ y = LINV f R (f y)`
-    by metis_tac[helperSetTheory.BIJ_LINV_THM]
+    by metis_tac[BIJ_LINV_THM]
     \\ ntac 3 (pop_assum SUBST1_TAC)
     \\ `r.prod.op (LINV f R (f x)) (LINV f R (f y)) =
         LINV f R (r_.prod.op (f x) (f y))`
