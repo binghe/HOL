@@ -6738,17 +6738,6 @@ val SUM_MAP3_K = store_thm(
 (* Bounds on Lists                                                           *)
 (* ------------------------------------------------------------------------- *)
 
-(* Overload non-decreasing functions with different arity. *)
-val _ = overload_on("MONO", ``\f:num -> num. !x y. x <= y ==> f x <= f y``);
-val _ = overload_on("MONO2", ``\f:num -> num -> num. !x1 y1 x2 y2. x1 <= x2 /\ y1 <= y2 ==> f x1 y1 <= f x2 y2``);
-val _ = overload_on("MONO3", ``\f:num -> num -> num -> num. !x1 y1 z1 x2 y2 z2. x1 <= x2 /\ y1 <= y2 /\ z1 <= z2 ==> f x1 y1 z1 <= f x2 y2 z2``);
-
-(* Overload non-increasing functions with different arity. *)
-val _ = overload_on("RMONO", ``\f:num -> num. !x y. x <= y ==> f y <= f x``);
-val _ = overload_on("RMONO2", ``\f:num -> num -> num. !x1 y1 x2 y2. x1 <= x2 /\ y1 <= y2 ==> f x2 y2 <= f x1 y1``);
-val _ = overload_on("RMONO3", ``\f:num -> num -> num -> num. !x1 y1 z1 x2 y2 z2. x1 <= x2 /\ y1 <= y2 /\ z1 <= z2 ==> f x2 y2 z2 <= f x1 y1 z1``);
-
-
 (* Theorem: SUM ls <= (MAX_LIST ls) * LENGTH ls *)
 (* Proof:
    By induction on ls.
