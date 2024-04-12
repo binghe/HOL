@@ -25,36 +25,6 @@ open numberTheory helperListTheory helperSetTheory;
 (* Function Iteration                                                        *)
 (* ------------------------------------------------------------------------- *)
 
-(* Theorem: FUNPOW f 2 x = f (f x) *)
-(* Proof: by definition. *)
-val FUNPOW_2 = store_thm(
-  "FUNPOW_2",
-  ``!f x. FUNPOW f 2 x = f (f x)``,
-  simp_tac bool_ss [FUNPOW, TWO, ONE]);
-
-(* Theorem: FUNPOW (K c) n x = if n = 0 then x else c *)
-(* Proof:
-   By induction on n.
-   Base: !x c. FUNPOW (K c) 0 x = if 0 = 0 then x else c
-           FUNPOW (K c) 0 x
-         = x                         by FUNPOW
-         = if 0 = 0 then x else c    by 0 = 0 is true
-   Step: !x c. FUNPOW (K c) n x = if n = 0 then x else c ==>
-         !x c. FUNPOW (K c) (SUC n) x = if SUC n = 0 then x else c
-           FUNPOW (K c) (SUC n) x
-         = FUNPOW (K c) n ((K c) x)         by FUNPOW
-         = if n = 0 then ((K c) c) else c   by induction hypothesis
-         = if n = 0 then c else c           by K_THM
-         = c                                by either case
-         = if SUC n = 0 then x else c       by SUC n = 0 is false
-*)
-val FUNPOW_K = store_thm(
-  "FUNPOW_K",
-  ``!n x c. FUNPOW (K c) n x = if n = 0 then x else c``,
-  Induct >-
-  rw[] >>
-  metis_tac[FUNPOW, combinTheory.K_THM, SUC_NOT_ZERO]);
-
 (* Theorem: 0 < k /\ FUNPOW f k e = e  ==> !n. FUNPOW f (n*k) e = e *)
 (* Proof:
    By induction on n:
@@ -91,14 +61,6 @@ val FUNPOW_MOD = store_thm(
   rpt strip_tac >>
   `n = (n MOD k) + (n DIV k) * k` by metis_tac[DIVISION, ADD_COMM] >>
   metis_tac[FUNPOW_ADD, FUNPOW_MULTIPLE]);
-
-(* Theorem: FUNPOW f m (FUNPOW f n x) = FUNPOW f n (FUNPOW f m x) *)
-(* Proof: by FUNPOW_ADD, ADD_COMM *)
-Theorem FUNPOW_COMM:
-  !f m n x. FUNPOW f m (FUNPOW f n x) = FUNPOW f n (FUNPOW f m x)
-Proof
-  metis_tac[FUNPOW_ADD, ADD_COMM]
-QED
 
 (* Overload a RISING function *)
 val _ = overload_on ("RISING", ``\f. !x:num. x <= f x``);
