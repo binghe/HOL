@@ -1088,15 +1088,15 @@ val lemma = prove(
  >> Cases_on ‘x IN G*’ >> rw []);
 
 (* Use Skolemization to generate the monoid_inv_from_invertibles function *)
-val ext_monoid_inv_def = new_specification(
-   "ext_monoid_inv_def", ["monoid_inv"], (* name of function *)
+val extensional_monoid_inv_def = new_specification(
+   "extensional_monoid_inv_def", ["monoid_inv"], (* name of function *)
   SIMP_RULE (srw_ss()) [SKOLEM_THM] lemma);
 
 (* |- !g x. Monoid g /\ x IN G* ==>
             monoid_inv g x IN G /\ (x * monoid_inv g x = #e) /\
                                    (monoid_inv g x * x = #e)
  *)
-Theorem monoid_inv_def = cj 1 ext_monoid_inv_def
+Theorem monoid_inv_def = cj 1 extensional_monoid_inv_def
 (*
 - type_of ``monoid_inv g``;
 > val it = ``:'a -> 'a`` : hol_type
