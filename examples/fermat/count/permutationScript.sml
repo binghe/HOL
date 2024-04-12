@@ -15,7 +15,7 @@ val _ = new_theory "permutation";
 (* val _ = load "jcLib"; *)
 open jcLib; (* for stripDup *)
 
-open pred_setTheory arithmeticTheory gcdsetTheory;
+open pred_setTheory arithmeticTheory gcdsetTheory numberTheory;
 open helperCountTheory;
 open helperSetTheory;
 
