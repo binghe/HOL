@@ -5,7 +5,7 @@
 open HolKernel Parse boolLib BasicProvers;
 
 open arithmeticTheory TotalDefn simpLib numSimps numLib listTheory metisLib
-     pred_setTheory listSimps rich_listTheory;
+     pred_setTheory listSimps rich_listTheory dividesTheory;
 
 val decide_tac = DECIDE_TAC;
 val metis_tac = METIS_TAC;
@@ -1068,5 +1068,29 @@ Theorem listRangeINC_EVERY_span_min:
 Proof
   simp[listRangeINC_EVERY, every_range_span_min]
 QED
+
+(* temporarily make divides an infix *)
+val _ = temp_set_fixity "divides" (Infixl 480);
+
+(* Theorem: 0 < n /\ m <= x /\ x divides n ==> MEM x [m .. n] *)
+(* Proof:
+   Note x divdes n ==> x <= n     by DIVIDES_LE, 0 < n
+     so MEM x [m .. n]            by listRangeINC_MEM
+*)
+val listRangeINC_has_divisors = store_thm(
+  "listRangeINC_has_divisors",
+  ``!m n x. 0 < n /\ m <= x /\ x divides n ==> MEM x [m .. n]``,
+  rw[listRangeINC_MEM, DIVIDES_LE]);
+
+(* Theorem: 0 < n /\ m <= x /\ x divides n ==> MEM x [m ..< n + 1] *)
+(* Proof:
+   Note the condition implies:
+        MEM x [m .. n]         by listRangeINC_has_divisors
+      = MEM x [m ..< n + 1]    by listRangeLHI_to_INC
+*)
+val listRangeLHI_has_divisors = store_thm(
+  "listRangeLHI_has_divisors",
+  ``!m n x. 0 < n /\ m <= x /\ x divides n ==> MEM x [m ..< n + 1]``,
+  metis_tac[listRangeINC_has_divisors, listRangeLHI_to_INC]);
 
 val _ = export_theory();

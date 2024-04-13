@@ -4889,16 +4889,6 @@ val listRangeINC_PROD = store_thm(
   `0 < PROD [1 .. (m - 1)]` by rw[listRangeINC_PROD_pos] >>
   metis_tac[MULT_TO_DIV]);
 
-(* Theorem: 0 < n /\ m <= x /\ x divides n ==> MEM x [m .. n] *)
-(* Proof:
-   Note x divdes n ==> x <= n     by DIVIDES_LE, 0 < n
-     so MEM x [m .. n]            by listRangeINC_MEM
-*)
-val listRangeINC_has_divisors = store_thm(
-  "listRangeINC_has_divisors",
-  ``!m n x. 0 < n /\ m <= x /\ x divides n ==> MEM x [m .. n]``,
-  rw[listRangeINC_MEM, DIVIDES_LE]);
-
 (* Theorem: 0 < m ==> 0 < PROD [m ..< n] *)
 (* Proof:
    Note MEM 0 [m ..< n] = F        by MEM_listRangeLHI
@@ -4947,17 +4937,6 @@ val listRangeLHI_PROD = store_thm(
     `_ = PROD [1 ..< n] DIV PROD [1 ..< m]` by rw[GSYM listRangeLHI_to_INC] >>
     rw[]
   ]);
-
-(* Theorem: 0 < n /\ m <= x /\ x divides n ==> MEM x [m ..< n + 1] *)
-(* Proof:
-   Note the condition implies:
-        MEM x [m .. n]         by listRangeINC_has_divisors
-      = MEM x [m ..< n + 1]    by listRangeLHI_to_INC
-*)
-val listRangeLHI_has_divisors = store_thm(
-  "listRangeLHI_has_divisors",
-  ``!m n x. 0 < n /\ m <= x /\ x divides n ==> MEM x [m ..< n + 1]``,
-  metis_tac[listRangeINC_has_divisors, listRangeLHI_to_INC]);
 
 (* ------------------------------------------------------------------------- *)
 (* List Summation and Product                                                *)
