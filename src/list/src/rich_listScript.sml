@@ -1084,9 +1084,7 @@ val NULL_FOLDL = Q.store_thm ("NULL_FOLDL",
    THEN REWRITE_TAC [NULL_DEF, FOLDL_SNOC, NULL_EQ, FOLDL,
                      GSYM NOT_NIL_SNOC]);
 
-val MAP_REVERSE = Q.store_thm ("MAP_REVERSE",
-   `!f l. MAP f (REVERSE l) = REVERSE (MAP f l)`,
-   GEN_TAC THEN LIST_INDUCT_TAC THEN ASM_REWRITE_TAC [REVERSE, MAP, MAP_SNOC]);
+val MAP_REVERSE = save_thm ("MAP_REVERSE", MAP_REVERSE);
 
 val SEG_LENGTH_ID = Q.store_thm ("SEG_LENGTH_ID",
    `!l. SEG (LENGTH l) 0 l = l`,

@@ -1789,7 +1789,6 @@ val FILTER_REVERSE = store_thm(
   ASM_SIMP_TAC bool_ss [FILTER, REVERSE_DEF, FILTER_APPEND_DISTRIB,
     COND_RAND, COND_RATOR, APPEND_NIL]);
 
-
 (* ----------------------------------------------------------------------
     FRONT and LAST
    ---------------------------------------------------------------------- *)
@@ -2829,6 +2828,13 @@ Theorem isPREFIX_SNOC[simp] :
 Proof
     Induct_on ‘l’ >> rw [SNOC, isPREFIX]
 QED
+
+local val REVERSE = REVERSE_SNOC_DEF
+in
+val MAP_REVERSE = Q.store_thm ("MAP_REVERSE",
+   `!f l. MAP f (REVERSE l) = REVERSE (MAP f l)`,
+   GEN_TAC THEN LIST_INDUCT_TAC THEN ASM_REWRITE_TAC [REVERSE, MAP, MAP_SNOC]);
+end;
 
 (*--------------------------------------------------------------*)
 (* List generator                                               *)

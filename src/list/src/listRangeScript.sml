@@ -5,7 +5,7 @@
 open HolKernel Parse boolLib BasicProvers;
 
 open arithmeticTheory TotalDefn simpLib numSimps numLib listTheory metisLib
-     pred_setTheory listSimps rich_listTheory dividesTheory;
+     pred_setTheory listSimps dividesTheory;
 
 val decide_tac = DECIDE_TAC;
 val metis_tac = METIS_TAC;
