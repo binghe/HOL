@@ -7,11 +7,14 @@ open HolKernel Parse boolLib BasicProvers;
 open arithmeticTheory TotalDefn simpLib numSimps numLib listTheory metisLib
      pred_setTheory;
 
-val _ = new_theory "listRange";
-
 val decide_tac = DECIDE_TAC;
 val metis_tac = METIS_TAC;
+val qabbrev_tac = Q.ABBREV_TAC;
+val simp = ASM_SIMP_TAC (srw_ss() ++ ARITH_ss);
+val fs = FULL_SIMP_TAC (srw_ss() ++ ARITH_ss);
 val rw = SRW_TAC [ARITH_ss];
+
+val _ = new_theory "listRange";
 
 val listRangeINC_def = Define`
   listRangeINC m n = GENLIST (\i. m + i) (n + 1 - m)

@@ -10033,6 +10033,154 @@ Proof
   rw[FUNPOW_LINV_EQ]
 QED
 
+(* Theorem: GENLIST (K e) (SUC n) = e :: GENLIST (K e) n *)
+(* Proof:
+     GENLIST (K e) (SUC n)
+   = (K e) 0::GENLIST ((K e) o SUC) n   by GENLIST_CONS
+   = e :: GENLIST ((K e) o SUC) n       by K_THM
+   = e :: GENLIST (K e) n               by K_o_THM
+*)
+val GENLIST_K_CONS = save_thm("GENLIST_K_CONS",
+    SIMP_CONV (srw_ss()) [GENLIST_CONS]
+      ``GENLIST (K e) (SUC n)`` |> GEN ``n:num`` |> GEN ``e``);
+(* val GENLIST_K_CONS = |- !e n. GENLIST (K e) (SUC n) = e::GENLIST (K e) n: thm  *)
+
+(* Theorem: GENLIST (K e) (n + m) = GENLIST (K e) m ++ GENLIST (K e) n *)
+(* Proof:
+   Note (\t. e) = K e    by FUN_EQ_THM
+     GENLIST (K e) (n + m)
+   = GENLIST (K e) m ++ GENLIST (\t. (K e) (t + m)) n    by GENLIST_APPEND
+   = GENLIST (K e) m ++ GENLIST (\t. e) n                by K_THM
+   = GENLIST (K e) m ++ GENLIST (K e) n                  by above
+*)
+val GENLIST_K_ADD = store_thm(
+  "GENLIST_K_ADD",
+  ``!e n m. GENLIST (K e) (n + m) = GENLIST (K e) m ++ GENLIST (K e) n``,
+  rpt strip_tac >>
+  `(\t. e) = K e` by rw[FUN_EQ_THM] >>
+  rw[GENLIST_APPEND] >>
+  metis_tac[]);
+
+(* Theorem: (!k. k < n ==> (f k = e)) ==> (GENLIST f n = GENLIST (K e) n) *)
+(* Proof:
+   By induction on n.
+   Base: GENLIST f 0 = GENLIST (K e) 0
+        GENLIST f 0
+      = []                          by GENLIST_0
+      = GENLIST (K e) 0             by GENLIST_0
+   Step: GENLIST f n = GENLIST (K e) n ==>
+         GENLIST f (SUC n) = GENLIST (K e) (SUC n)
+        GENLIST f (SUC n)
+      = SNOC (f n) (GENLIST f n)    by GENLIST
+      = SNOC e (GENLIST f n)        by applying f to n
+      = SNOC e (GENLIST (K e) n)    by induction hypothesis
+      = GENLIST (K e) (SUC n)       by GENLIST
+*)
+val GENLIST_K_LESS = store_thm(
+  "GENLIST_K_LESS",
+  ``!f e n. (!k. k < n ==> (f k = e)) ==> (GENLIST f n = GENLIST (K e) n)``,
+  rpt strip_tac >>
+  Induct_on `n` >>
+  rw[GENLIST]);
+
+(* Theorem: (!k. 0 < k /\ k <= n ==> (f k = e)) ==> (GENLIST (f o SUC) n = GENLIST (K e) n) *)
+(* Proof:
+   Base: GENLIST (f o SUC) 0 = GENLIST (K e) 0
+         GENLIST (f o SUC) 0
+       = []                                by GENLIST_0
+       = GENLIST (K e) 0                   by GENLIST_0
+   Step: GENLIST (f o SUC) n = GENLIST (K e) n ==>
+         GENLIST (f o SUC) (SUC n) = GENLIST (K e) (SUC n)
+         GENLIST (f o SUC) (SUC n)
+       = SNOC (f n) (GENLIST (f o SUC) n)  by GENLIST
+       = SNOC e (GENLIST (f o SUC) n)      by applying f to n
+       = SNOC e GENLIST (K e) n            by induction hypothesis
+       = GENLIST (K e) (SUC n)             by GENLIST
+*)
+val GENLIST_K_RANGE = store_thm(
+  "GENLIST_K_RANGE",
+  ``!f e n. (!k. 0 < k /\ k <= n ==> (f k = e)) ==> (GENLIST (f o SUC) n = GENLIST (K e) n)``,
+  rpt strip_tac >>
+  Induct_on `n` >>
+  rw[GENLIST]);
+
+(* Theorem: GENLIST (K c) a ++ GENLIST (K c) b = GENLIST (K c) (a + b) *)
+(* Proof:
+   Note (\t. c) = K c           by FUN_EQ_THM
+     GENLIST (K c) (a + b)
+   = GENLIST (K c) (b + a)                              by ADD_COMM
+   = GENLIST (K c) a ++ GENLIST (\t. (K c) (t + a)) b   by GENLIST_APPEND
+   = GENLIST (K c) a ++ GENLIST (\t. c) b               by applying constant function
+   = GENLIST (K c) a ++ GENLIST (K c) b                 by GENLIST_FUN_EQ
+*)
+val GENLIST_K_APPEND = store_thm(
+  "GENLIST_K_APPEND",
+  ``!a b c. GENLIST (K c) a ++ GENLIST (K c) b = GENLIST (K c) (a + b)``,
+  rpt strip_tac >>
+  `(\t. c) = K c` by rw[FUN_EQ_THM] >>
+  `GENLIST (K c) (a + b) = GENLIST (K c) (b + a)` by rw[] >>
+  `_ = GENLIST (K c) a ++ GENLIST (\t. (K c) (t + a)) b` by rw[GENLIST_APPEND] >>
+  rw[GENLIST_FUN_EQ]);
+
+(* Theorem: GENLIST (K c) n ++ [c] = [c] ++ GENLIST (K c) n *)
+(* Proof:
+     GENLIST (K c) n ++ [c]
+   = GENLIST (K c) n ++ GENLIST (K c) 1      by GENLIST_1
+   = GENLIST (K c) (n + 1)                   by GENLIST_K_APPEND
+   = GENLIST (K c) (1 + n)                   by ADD_COMM
+   = GENLIST (K c) 1 ++ GENLIST (K c) n      by GENLIST_K_APPEND
+   = [c] ++ GENLIST (K c) n                  by GENLIST_1
+*)
+val GENLIST_K_APPEND_K = store_thm(
+  "GENLIST_K_APPEND_K",
+  ``!c n. GENLIST (K c) n ++ [c] = [c] ++ GENLIST (K c) n``,
+  metis_tac[GENLIST_K_APPEND, GENLIST_1, ADD_COMM, combinTheory.K_THM]);
+
+(* Theorem: 0 < n ==> (MEM x (GENLIST (K c) n) <=> (x = c)) *)
+(* Proof:
+       MEM x (GENLIST (K c) n
+   <=> ?m. m < n /\ (x = (K c) m)    by MEM_GENLIST
+   <=> ?m. m < n /\ (x = c)          by K_THM
+   <=> (x = c)                       by taking m = 0, 0 < n
+*)
+Theorem GENLIST_K_MEM:
+  !x c n. 0 < n ==> (MEM x (GENLIST (K c) n) <=> (x = c))
+Proof
+  metis_tac[MEM_GENLIST, combinTheory.K_THM]
+QED
+
+(* Theorem: 0 < n ==> (set (GENLIST (K c) n) = {c}) *)
+(* Proof:
+   By induction on n.
+   Base: 0 < 0 ==> (set (GENLIST (K c) 0) = {c})
+      Since 0 < 0 = F, hence true.
+   Step: 0 < n ==> (set (GENLIST (K c) n) = {c}) ==>
+         0 < SUC n ==> (set (GENLIST (K c) (SUC n)) = {c})
+      If n = 0,
+        set (GENLIST (K c) (SUC 0)
+      = set (GENLIST (K c) 1          by ONE
+      = set [(K c) 0]                 by GENLIST_1
+      = set [c]                       by K_THM
+      = {c}                           by LIST_TO_SET
+      If n <> 0, 0 < n.
+        set (GENLIST (K c) (SUC n)
+      = set (SNOC ((K c) n) (GENLIST (K c) n))     by GENLIST
+      = set (SNOC c (GENLIST (K c) n)              by K_THM
+      = c INSERT set (GENLIST (K c) n)             by LIST_TO_SET_SNOC
+      = c INSERT {c}                               by induction hypothesis
+      = {c}                                        by IN_INSERT
+ *)
+Theorem GENLIST_K_SET:
+  !c n. 0 < n ==> (set (GENLIST (K c) n) = {c})
+Proof
+  rpt strip_tac >>
+  Induct_on `n` >-
+  simp[] >>
+  (Cases_on `n = 0` >> simp[]) >>
+  `0 < n` by decide_tac >>
+  simp[GENLIST, LIST_TO_SET_SNOC]
+QED
+
 (* export theory at end *)
 val _ = export_theory();
 
