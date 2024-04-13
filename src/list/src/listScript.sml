@@ -2975,6 +2975,26 @@ val GENLIST_NUMERALS = store_thm(
   REWRITE_TAC [GENLIST_GENLIST_AUX, GENLIST_AUX]);
 val _ = export_rewrites ["GENLIST_NUMERALS"]
 
+(* Theorem: GENLIST f 0 = [] *)
+(* Proof: by GENLIST *)
+val GENLIST_0 = store_thm(
+  "GENLIST_0",
+  ``!f. GENLIST f 0 = []``,
+  rw[]);
+
+(* Theorem: GENLIST f 1 = [f 0] *)
+(* Proof:
+      GENLIST f 1
+    = GENLIST f (SUC 0)          by ONE
+    = SNOC (f 0) (GENLIST f 0)   by GENLIST
+    = SNOC (f 0) []              by GENLIST
+    = [f 0]                      by SNOC
+*)
+val GENLIST_1 = store_thm(
+  "GENLIST_1",
+  ``!f. GENLIST f 1 = [f 0]``,
+  rw[]);
+
 val MEM_GENLIST = Q.store_thm(
 "MEM_GENLIST",
 ‘MEM x (GENLIST f n) <=> ?m. m < n /\ (x = f m)’,
@@ -3029,6 +3049,14 @@ Proof
   Prim_rec.INDUCT_THEN (TypeBase.induction_of “:num”) strip_assume_tac >>
   simp[GENLIST_CONS]
 QED
+
+(* Theorem alias *)
+Theorem GENLIST_EQ =
+   GENLIST_CONG |> GEN ``n:num`` |> GEN ``f2:num -> 'a``
+                |> GEN ``f1:num -> 'a``;
+(*
+val GENLIST_EQ = |- !f1 f2 n. (!m. m < n ==> f1 m = f2 m) ==> GENLIST f1 n = GENLIST f2 n: thm
+*)
 
 Theorem LIST_REL_O:
   !R1 R2. LIST_REL (R1 O R2) = LIST_REL R1 O LIST_REL R2
