@@ -29,7 +29,7 @@ ifdef HOLSELFTESTLEVEL
 EXDIRS = arm/arm6-verification arm/armv8-memory-model arm/experimental \
          CCS Crypto/RSA Hoare-for-divergence MLsyntax \
          PSL/1.01/executable-semantics PSL/1.1/official-semantics \
-	 STE algorithms computability countchars dependability dev \
+	 STE algorithms computability countchars cv_compute dependability dev \
          developers/ThmSetData \
 	 fermat \
 	 formal-languages formal-languages/context-free \
@@ -62,11 +62,6 @@ SRCTESTDIRS += n-bit/interactive_tests
 EXDIRS += RL_Environment
 endif
 
-# NOTE: these examples are very slow under the expk kernel
-ifeq ($(KERNELID),stdknl)
-EXDIRS += bootstrap cv_compute
-endif
-
 INCLUDES += ../../tfl/examples $(patsubst %,../../quotient/%,$(QUOTDIRS)) \
             $(patsubst %,../../../examples/%,$(EXDIRS)) \
             $(patsubst %,../../%,$(SRCTESTDIRS)) \
@@ -97,6 +92,11 @@ EX2DIRS += separationLogic/src/holfoot/poly logic/temporal_deep/src/examples
 endif
 
 INCLUDES += $(patsubst %,../../../examples/%,$(EX2DIRS))
+
+ifeq ($(KERNELID),stdknl)
+INCLUDES += ../../../examples/bootstrap
+endif
+
 endif
 
 ifeq($(HOLSELFTESTLEVEL),3)
