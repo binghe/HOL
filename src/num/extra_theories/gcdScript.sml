@@ -27,8 +27,8 @@ val decide_tac = DECIDE_TAC;
 val metis_tac = METIS_TAC;
 val rw = SRW_TAC [ARITH_ss];
 val qabbrev_tac = Q.ABBREV_TAC;
-val simp = ASM_SIMP_TAC (srw_ss() ++ ARITH_ss);
-val fs = FULL_SIMP_TAC (srw_ss() ++ ARITH_ss);
+fun simp l = ASM_SIMP_TAC (srw_ss() ++ ARITH_ss) l;
+fun fs l = FULL_SIMP_TAC (srw_ss() ++ ARITH_ss) l;
 
 val _ = new_theory "gcd";
 
