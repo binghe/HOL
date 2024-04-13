@@ -22,9 +22,9 @@ val rw = SRW_TAC [ARITH_ss];
 val std_ss = arith_ss;
 val qabbrev_tac = Q.ABBREV_TAC;
 val qexists_tac = Q.EXISTS_TAC;
-val simp = ASM_SIMP_TAC (srw_ss() ++ ARITH_ss);
-val fs = FULL_SIMP_TAC (srw_ss() ++ ARITH_ss);
-val rfs = REV_FULL_SIMP_TAC (srw_ss() ++ ARITH_ss);
+fun simp l = ASM_SIMP_TAC (srw_ss() ++ ARITH_ss) l;
+fun fs l = FULL_SIMP_TAC (srw_ss() ++ ARITH_ss) l;
+fun rfs l = REV_FULL_SIMP_TAC (srw_ss() ++ ARITH_ss) l;
 
 val Define = TotalDefn.Define
 val zDefine = Lib.with_flag (computeLib.auto_import_definitions, false) Define

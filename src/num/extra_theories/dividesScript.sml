@@ -24,7 +24,7 @@ fun gvs ths = global_simp_tac {droptrues = true, elimvars = true,
                                oldestfirst = true, strip = true}
                               (srw_ss() ++ numSimps.ARITH_ss) ths
 
-val fs = FULL_SIMP_TAC (srw_ss() ++ numSimps.ARITH_ss);
+fun fs l = FULL_SIMP_TAC (srw_ss() ++ numSimps.ARITH_ss) l;
 
 val op >~ = Q.>~
 
