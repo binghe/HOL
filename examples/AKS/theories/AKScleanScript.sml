@@ -26,7 +26,7 @@ open AKSshiftTheory;
 open countAKSTheory; (* for aks0_eq_aks *)
 
 (* open dependent theories *)
-open prim_recTheory pred_setTheory listTheory arithmeticTheory;
+open prim_recTheory pred_setTheory listTheory arithmeticTheory logrootTheory;
 
 open numberTheory helperSetTheory helperListTheory;
 open helperFunctionTheory;
@@ -53,8 +53,6 @@ open computeParamTheory;
 open computeAKSTheory;
 
 open GaussTheory; (* for phi_le *)
-
-
 
 (* ------------------------------------------------------------------------- *)
 (* AKS Clean Presentation Documentation                                      *)

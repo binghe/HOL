@@ -14,7 +14,8 @@ val _ = new_theory "computeParam";
 
 open jcLib;
 
-(* val _ = load "SatisfySimps"; (* for SatisfySimps.SATISFY_ss *) *)
+open prim_recTheory pred_setTheory listTheory arithmeticTheory logrootTheory;
+open dividesTheory gcdTheory numberTheory;
 
 (* Get dependent theories local *)
 open computeOrderTheory;
@@ -24,16 +25,11 @@ open ringTheory ringInstancesTheory; (* for ZN_coprime_order_alt *)
 open monoidOrderTheory;
 
 (* Get dependent theories in lib *)
-open numberTheory helperSetTheory;
-
-(* open dependent theories *)
-open prim_recTheory pred_setTheory listTheory arithmeticTheory;
-open dividesTheory gcdTheory;
+open helperSetTheory;
 
 open GaussTheory; (* for phi_pos *)
 open EulerTheory; (* for residue_def *)
 open triangleTheory; (* for list_lcm_pos *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* AKS Parameter Documentation                                               *)

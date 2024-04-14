@@ -12,17 +12,12 @@ val _ = new_theory "hopping";
 
 (* ------------------------------------------------------------------------- *)
 
-
-(* open dependent theories *)
-(* arithmeticTheory -- load by default *)
-
 (* val _ = load "quarityTheory"; *)
 open helperTwosqTheory;
 open numberTheory;
 open helperSetTheory;
 open helperFunctionTheory;
-open arithmeticTheory pred_setTheory;
-open dividesTheory; (* for divides_def, prime_def *)
+open arithmeticTheory pred_setTheory logrootTheory dividesTheory;
 open logPowerTheory; (* for square_alt *)
 
 open listTheory rich_listTheory;
@@ -43,7 +38,6 @@ open iterationTheory; (* for iterate_period_pos *)
 open iterateComposeTheory; (* for involute_involute_fix_orbit_fix_odd *)
 open iterateComputeTheory; (* for iterate_while_thm *)
 open twoSquaresTheory; (* for loop test found *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Node Hopping Algorithm Documentation                                      *)
