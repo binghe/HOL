@@ -1,13 +1,12 @@
-open HolKernel Parse boolLib BasicProvers
+open HolKernel Parse boolLib BasicProvers;
 
-open arithmeticTheory dividesTheory pred_setTheory
-open gcdTheory simpLib metisLib
+open arithmeticTheory dividesTheory pred_setTheory gcdTheory simpLib metisLib;
 
-local open TotalDefn numSimps in end;
+local open TotalDefn numSimps; in end;
 
-val ARITH_ss = numSimps.ARITH_ss
+val ARITH_ss = numSimps.ARITH_ss;
 val zDefine =
-   Lib.with_flag (computeLib.auto_import_definitions, false) TotalDefn.Define
+   Lib.with_flag (computeLib.auto_import_definitions, false) TotalDefn.Define;
 
 fun DECIDE_TAC (g as (asl,_)) =
   ((MAP_EVERY UNDISCH_TAC (filter numSimps.is_arith asl) THEN
@@ -16,9 +15,11 @@ fun DECIDE_TAC (g as (asl,_)) =
 
 val decide_tac = DECIDE_TAC;
 val metis_tac = METIS_TAC;
+val qabbrev_tac = Q.ABBREV_TAC;
+val qexists_tac = Q.EXISTS_TAC;
 val rw = SRW_TAC [ARITH_ss];
 
-val _ = new_theory "gcdset"
+val _ = new_theory "gcdset";
 
 val gcdset_def = new_definition(
   "gcdset_def",
@@ -209,5 +210,273 @@ val natural_suc = store_thm(
   "natural_suc",
   ``!n. natural (SUC n) = (SUC n) INSERT (natural n)``,
   rw[EXTENSION, EQ_IMP_THM]);
+
+(* temporarily make divides an infix *)
+val _ = temp_set_fixity "divides" (Infixl 480);
+
+(* Theorem: 0 < n /\ a IN (natural n) /\ b divides a ==> b IN (natural n) *)
+(* Proof:
+   By natural_element, this is to show:
+   (1) 0 < a /\ b divides a ==> 0 < b
+       True by divisor_pos
+   (2) 0 < a /\ b divides a ==> b <= n
+       Since b divides a
+         ==> b <= a                     by DIVIDES_LE, 0 < a
+         ==> b <= n                     by LESS_EQ_TRANS
+*)
+val natural_divisor_natural = store_thm(
+  "natural_divisor_natural",
+  ``!n a b. 0 < n /\ a IN (natural n) /\ b divides a ==> b IN (natural n)``,
+  rw[natural_element] >-
+  metis_tac[divisor_pos] >>
+  metis_tac[DIVIDES_LE, LESS_EQ_TRANS]);
+
+(* Theorem: 0 < n /\ 0 < a /\ b IN (natural n) /\ a divides b ==> (b DIV a) IN (natural n) *)
+(* Proof:
+   Let c = b DIV a.
+   By natural_element, this is to show:
+      0 < a /\ 0 < b /\ b <= n /\ a divides b ==> 0 < c /\ c <= n
+   Since a divides b ==> b = c * a               by DIVIDES_EQN, 0 < a
+      so b = a * c                               by MULT_COMM
+      or c divides b                             by divides_def
+    Thus 0 < c /\ c <= b                         by divides_pos
+      or c <= n                                  by LESS_EQ_TRANS
+*)
+val natural_cofactor_natural = store_thm(
+  "natural_cofactor_natural",
+  ``!n a b. 0 < n /\ 0 < a /\ b IN (natural n) /\ a divides b ==> (b DIV a) IN (natural n)``,
+  rewrite_tac[natural_element] >>
+  ntac 4 strip_tac >>
+  qabbrev_tac `c = b DIV a` >>
+  `b = c * a` by rw[GSYM DIVIDES_EQN, Abbr`c`] >>
+  `c divides b` by metis_tac[divides_def, MULT_COMM] >>
+  `0 < c /\ c <= b` by metis_tac[divides_pos] >>
+  decide_tac);
+
+(* Theorem: 0 < n /\ a divides n /\ b IN (natural n) /\ a divides b ==> (b DIV a) IN (natural (n DIV a)) *)
+(* Proof:
+   Let c = b DIV a.
+   By natural_element, this is to show:
+      0 < n /\ a divides b /\ 0 < b /\ b <= n /\ a divides b ==> 0 < c /\ c <= n DIV a
+   Note 0 < a                                    by ZERO_DIVIES, 0 < n
+   Since a divides b ==> b = c * a               by DIVIDES_EQN, 0 < a [1]
+      or c divides b                             by divides_def, MULT_COMM
+    Thus 0 < c, since 0 divides b means b = 0.   by ZERO_DIVIDES, b <> 0
+     Now n = (n DIV a) * a                       by DIVIDES_EQN, 0 < a [2]
+    With b <= n, c * a <= (n DIV a) * a          by [1], [2]
+   Hence c <= n DIV a                            by LE_MULT_RCANCEL, a <> 0
+*)
+val natural_cofactor_natural_reduced = store_thm(
+  "natural_cofactor_natural_reduced",
+  ``!n a b. 0 < n /\ a divides n /\
+           b IN (natural n) /\ a divides b ==> (b DIV a) IN (natural (n DIV a))``,
+  rewrite_tac[natural_element] >>
+  ntac 4 strip_tac >>
+  qabbrev_tac `c = b DIV a` >>
+  `a <> 0` by metis_tac[ZERO_DIVIDES, NOT_ZERO] >>
+  `(b = c * a) /\ (n = (n DIV a) * a)` by rw[GSYM DIVIDES_EQN, Abbr`c`] >>
+  `c divides b` by metis_tac[divides_def, MULT_COMM] >>
+  `0 < c` by metis_tac[ZERO_DIVIDES, NOT_ZERO] >>
+  metis_tac[LE_MULT_RCANCEL]);
+
+(* ------------------------------------------------------------------------- *)
+(* Coprimes                                                                  *)
+(* ------------------------------------------------------------------------- *)
+
+(* Define the coprimes set: integers from 1 to n that are coprime to n *)
+(*
+val coprimes_def = zDefine `
+   coprimes n = {j | 0 < j /\ j <= n /\ coprime j n}
+`;
+*)
+(* Note: j <= n ensures that coprimes n is finite. *)
+(* Note: 0 < j is only to ensure  coprimes 1 = {1} *)
+val coprimes_def = zDefine `
+   coprimes n = {j | j IN (natural n) /\ coprime j n}
+`;
+(* use zDefine as this is not computationally effective. *)
+
+(* Theorem: j IN coprimes n <=> 0 < j /\ j <= n /\ coprime j n *)
+(* Proof: by coprimes_def, natural_element *)
+val coprimes_element = store_thm(
+  "coprimes_element",
+  ``!n j. j IN coprimes n <=> 0 < j /\ j <= n /\ coprime j n``,
+  (rw[coprimes_def, natural_element] >> metis_tac[]));
+
+(* Theorem: coprimes n = (natural n) INTER {j | coprime j n} *)
+(* Proof: by coprimes_def, EXTENSION, IN_INTER *)
+val coprimes_alt = store_thm(
+  "coprimes_alt[compute]",
+  ``!n. coprimes n = (natural n) INTER {j | coprime j n}``,
+  rw[coprimes_def, EXTENSION]);
+(* This is effective, put in computeLib. *)
+
+(*
+> EVAL ``coprimes 10``;
+val it = |- coprimes 10 = {9; 7; 3; 1}: thm
+*)
+
+(* Theorem: coprimes n SUBSET natural n *)
+(* Proof: by coprimes_def, SUBSET_DEF *)
+val coprimes_subset = store_thm(
+  "coprimes_subset",
+  ``!n. coprimes n SUBSET natural n``,
+  rw[coprimes_def, SUBSET_DEF]);
+
+(* Theorem: FINITE (coprimes n) *)
+(* Proof:
+   Since (coprimes n) SUBSET (natural n)   by coprimes_subset
+     and !n. FINITE (natural n)            by natural_finite
+      so FINITE (coprimes n)               by SUBSET_FINITE
+*)
+val coprimes_finite = store_thm(
+  "coprimes_finite",
+  ``!n. FINITE (coprimes n)``,
+  metis_tac[coprimes_subset, natural_finite, SUBSET_FINITE]);
+
+(* Theorem: coprimes 0 = {} *)
+(* Proof:
+   By coprimes_element, 0 < j /\ j <= 0,
+   which is impossible, hence empty.
+*)
+val coprimes_0 = store_thm(
+  "coprimes_0",
+  ``coprimes 0 = {}``,
+  rw[coprimes_element, EXTENSION]);
+
+(* Theorem: coprimes 1 = {1} *)
+(* Proof:
+   By coprimes_element, 0 < j /\ j <= 1,
+   Only possible j is 1, and gcd 1 1 = 1.
+ *)
+val coprimes_1 = store_thm(
+  "coprimes_1",
+  ``coprimes 1 = {1}``,
+  rw[coprimes_element, EXTENSION]);
+
+(* Theorem: 0 < n ==> 1 IN (coprimes n) *)
+(* Proof: by coprimes_element, GCD_1 *)
+val coprimes_has_1 = store_thm(
+  "coprimes_has_1",
+  ``!n. 0 < n ==> 1 IN (coprimes n)``,
+  rw[coprimes_element]);
+
+(* Theorem: (coprimes n = {}) <=> (n = 0) *)
+(* Proof:
+   If part: coprimes n = {} ==> n = 0
+      By contradiction.
+      Suppose n <> 0, then 0 < n.
+      Then 1 IN (coprimes n)    by coprimes_has_1
+      hence (coprimes n) <> {}  by MEMBER_NOT_EMPTY
+      This contradicts (coprimes n) = {}.
+   Only-if part: n = 0 ==> coprimes n = {}
+      True by coprimes_0
+*)
+val coprimes_eq_empty = store_thm(
+  "coprimes_eq_empty",
+  ``!n. (coprimes n = {}) <=> (n = 0)``,
+  rw[EQ_IMP_THM] >-
+  metis_tac[coprimes_has_1, MEMBER_NOT_EMPTY, NOT_ZERO_LT_ZERO] >>
+  rw[coprimes_0]);
+
+(* Theorem: 0 NOTIN (coprimes n) *)
+(* Proof:
+   By coprimes_element, 0 < j /\ j <= n,
+   Hence j <> 0, or 0 NOTIN (coprimes n)
+*)
+val coprimes_no_0 = store_thm(
+  "coprimes_no_0",
+  ``!n. 0 NOTIN (coprimes n)``,
+  rw[coprimes_element]);
+
+(* Theorem: 1 < n ==> n NOTIN coprimes n *)
+(* Proof:
+   By coprimes_element, 0 < j /\ j <= n /\ gcd j n = 1
+   If j = n,  1 = gcd j n = gcd n n = n     by GCD_REF
+   which is excluded by 1 < n, so j <> n.
+*)
+val coprimes_without_last = store_thm(
+  "coprimes_without_last",
+  ``!n. 1 < n ==> n NOTIN coprimes n``,
+  rw[coprimes_element]);
+
+(* Theorem: n IN coprimes n <=> (n = 1) *)
+(* Proof:
+   By coprimes_element, 0 < j /\ j <= n /\ gcd j n = 1
+   If n IN coprimes n, 1 = gcd j n = gcd n n = n     by GCD_REF
+   If n = 1, 0 < n, n <= n, and gcd n n = n = 1      by GCD_REF
+*)
+val coprimes_with_last = store_thm(
+  "coprimes_with_last",
+  ``!n. n IN coprimes n <=> (n = 1)``,
+  rw[coprimes_element]);
+
+(* Theorem: 1 < n ==> (n - 1) IN (coprimes n) *)
+(* Proof: by coprimes_element, coprime_PRE, GCD_SYM *)
+val coprimes_has_last_but_1 = store_thm(
+  "coprimes_has_last_but_1",
+  ``!n. 1 < n ==> (n - 1) IN (coprimes n)``,
+  rpt strip_tac >>
+  `0 < n /\ 0 < n - 1` by decide_tac >>
+  rw[coprimes_element, coprime_PRE, GCD_SYM]);
+
+(* Theorem: 1 < n ==> !j. j IN coprimes n ==> j < n *)
+(* Proof:
+   Since j IN coprimes n ==> j <= n    by coprimes_element
+   If j = n, then gcd n n = n <> 1     by GCD_REF
+   Thus j <> n, or j < n.              or by coprimes_without_last
+*)
+val coprimes_element_less = store_thm(
+  "coprimes_element_less",
+  ``!n. 1 < n ==> !j. j IN coprimes n ==> j < n``,
+  metis_tac[coprimes_element, coprimes_without_last, LESS_OR_EQ]);
+
+(* Theorem: 1 < n ==> !j. j IN coprimes n <=> j < n /\ coprime j n *)
+(* Proof:
+   If part: j IN coprimes n ==> j < n /\ coprime j n
+      Note 0 < j /\ j <= n /\ coprime j n      by coprimes_element
+      By contradiction, suppose n <= j.
+      Then j = n, but gcd n n = n <> 1         by GCD_REF
+   Only-if part: j < n /\ coprime j n ==> j IN coprimes n
+      This is to show:
+           0 < j /\ j <= n /\ coprime j n      by coprimes_element
+      By contradiction, suppose ~(0 < j).
+      Then j = 0, but gcd 0 n = n <> 1         by GCD_0L
+*)
+val coprimes_element_alt = store_thm(
+  "coprimes_element_alt",
+  ``!n. 1 < n ==> !j. j IN coprimes n <=> j < n /\ coprime j n``,
+  rw[coprimes_element] >>
+  `n <> 1` by decide_tac >>
+  rw[EQ_IMP_THM] >| [
+    spose_not_then strip_assume_tac >>
+    `j = n` by decide_tac >>
+    metis_tac[GCD_REF],
+    spose_not_then strip_assume_tac >>
+    `j = 0` by decide_tac >>
+    metis_tac[GCD_0L]
+  ]);
+
+(* Theorem: 1 < n ==> (MAX_SET (coprimes n) = n - 1) *)
+(* Proof:
+   Let s = coprimes n, m = MAX_SET s.
+    Note (n - 1) IN s     by coprimes_has_last_but_1, 1 < n
+   Hence s <> {}          by MEMBER_NOT_EMPTY
+     and FINITE s         by coprimes_finite
+   Since !x. x IN s ==> x < n         by coprimes_element_less, 1 < n
+    also !x. x < n ==> x <= (n - 1)   by SUB_LESS_OR
+   Therefore MAX_SET s = n - 1        by MAX_SET_TEST
+*)
+val coprimes_max = store_thm(
+  "coprimes_max",
+  ``!n. 1 < n ==> (MAX_SET (coprimes n) = n - 1)``,
+  rpt strip_tac >>
+  qabbrev_tac `s = coprimes n` >>
+  `(n - 1) IN s` by rw[coprimes_has_last_but_1, Abbr`s`] >>
+  `s <> {}` by metis_tac[MEMBER_NOT_EMPTY] >>
+  `FINITE s` by rw[coprimes_finite, Abbr`s`] >>
+  `!x. x IN s ==> x < n` by rw[coprimes_element_less, Abbr`s`] >>
+  `!x. x < n ==> x <= (n - 1)` by decide_tac >>
+  metis_tac[MAX_SET_TEST]);
 
 val _ = export_theory()

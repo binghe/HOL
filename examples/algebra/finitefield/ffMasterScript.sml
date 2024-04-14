@@ -12,8 +12,6 @@ val _ = new_theory "ffMaster";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
@@ -26,14 +24,8 @@ open ffBasicTheory;
 open ffAdvancedTheory;
 open ffPolyTheory;
 
-(* Open theories in order *)
-
 (* open dependent theories *)
-open arithmeticTheory pred_setTheory listTheory;
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open dividesTheory gcdTheory;
-
+open arithmeticTheory pred_setTheory listTheory dividesTheory gcdTheory gcdsetTheory;
 open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
 
 (* Get dependent theories local *)
@@ -80,9 +72,6 @@ open EulerTheory;
 
 (* val _ = load "fieldBinomialTheory"; *)
 open fieldBinomialTheory; (* for finite_field_freshman_all *)
-
-(* (* val _ = load "MobiusTheory"; *) *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Finite Field Master Polynomial Documentation                              *)

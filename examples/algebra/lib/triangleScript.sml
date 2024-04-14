@@ -12,17 +12,9 @@ val _ = new_theory "triangle";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* val _ = load "SatisfySimps"; (* for SatisfySimps.SATISFY_ss *) *)
-
-(* Get dependent theories local *)
-
-(* Get dependent theories local *)
-
-(* Get dependent theories in lib *)
 (* val _ = load "EulerTheory"; *)
 open EulerTheory; (* for upto_by_count *)
 
@@ -32,24 +24,13 @@ open numberTheory helperSetTheory helperFunctionTheory;
 open helperListTheory;
 
 (* open dependent theories *)
-open arithmeticTheory;
-open pred_setTheory;
-open listTheory;
+open arithmeticTheory pred_setTheory listTheory;
 
-(* open dependent theories *)
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open dividesTheory gcdTheory;
+open dividesTheory gcdTheory gcdsetTheory;
+open listRangeTheory rich_listTheory relationTheory;
 
 (* val _ = load "binomialTheory"; *)
 open binomialTheory;
-
-(* use listRange: [1 .. 3] = [1; 2; 3], [1 ..< 3] = [1; 2] *)
-(* val _ = load "listRangeTheory"; *)
-open listRangeTheory;
-open rich_listTheory; (* for EVERY_REVERSE *)
-open relationTheory; (* for RTC *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Leibniz Harmonic Triangle Documentation                                   *)

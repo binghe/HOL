@@ -12,19 +12,16 @@ val _ = new_theory "Mobius";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 open jcLib;
 
 (* open dependent theories *)
 open pred_setTheory listTheory;
-open prim_recTheory arithmeticTheory dividesTheory gcdTheory;
+open prim_recTheory arithmeticTheory dividesTheory gcdTheory gcdsetTheory;
 
 open numberTheory helperSetTheory helperListTheory;
 
 open GaussTheory;
 open EulerTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Mobius Function and Inversion Documentation                               *)
