@@ -1674,6 +1674,15 @@ Definition equivalent_def :
            ~solvable M /\ ~solvable N
 End
 
+Theorem equivalent_reflexive :
+    reflexive equivalent
+Proof
+    rw [reflexive_def, equivalent_def]
+QED
+
+(* |- !x. equivalent x x *)
+Theorem equivalent_refl = REWRITE_RULE [reflexive_def] equivalent_reflexive
+
 Theorem equivalent_symmetric :
     symmetric equivalent
 Proof
@@ -3659,35 +3668,44 @@ End
 (* Definition 10.2.32 (v) [1, p.245] *)
 Definition subterm_equivalent_def :
     subterm_equivalent p M N =
-        let X = FV M UNION FV N in
-            subtree_equivalent p (BTe X M) (BTe X N)
+    subtree_equivalent p (BTe (FV M UNION FV N) M)
+                         (BTe (FV M UNION FV N) N)
 End
 
 (* Definition 10.3.10 (ii) [1, p.251] *)
 Definition is_faithful_def :
     is_faithful p Ns pi =
-      !M N. M IN Ns /\ N IN Ns ==>
+      !M N. MEM M Ns /\ MEM N Ns ==>
             (subterm_equivalent p M N <=> equivalent (apply pi M) (apply pi N)) /\
-            (!X. IS_SOME (ltree_lookup (BTe X M) p) <=>
-                 solvable (apply pi M))
+            (!X. solvable (apply pi M) <=> IS_SOME (ltree_lookup (BTe X M) p))
 End
 
 Definition term_agrees_upto_def :
     term_agrees_upto M N p =
-      !q. q <<= p ==> !X. ltree_el (BTe X M) q = ltree_el (BTe X N) q
+      !q. q <<= p ==>
+          ltree_el (BTe (FV M UNION FV N) M) q =
+          ltree_el (BTe (FV M UNION FV N) N) q
 End
 
 (* Definition 10.3.10 (iv) *)
 val _ = set_fixity "agrees_upto" (Infixr 490);
 Definition agrees_upto_def :
-    $agrees_upto Ns p = !M N. M IN Ns /\ N IN Ns ==> term_agrees_upto M N p
+    $agrees_upto Ns p = !M N. MEM M Ns /\ MEM N Ns ==> term_agrees_upto M N p
 End
 
+(* Lemma 10.3.11 (1) [1. p.251] *)
+Theorem agrees_upto_lemma_1 :
+    !Ns p. (!X M. MEM M Ns ==> p IN ltree_paths (BTe X M)) /\ Ns agrees_upto p ==>
+           ?pi. Boehm_transform pi /\ EVERY (\N. is_ready (apply pi N)) Ns
+Proof
+    cheat
+QED
+
 (* Lemma 10.3.11 (3) [1. p.251] *)
-Theorem agrees_upto_lemma :
-    !Ns p. Ns agrees_upto p ==>
+Theorem agrees_upto_lemma_3 :
+    !Ns p. (!X M. MEM M Ns ==> p IN ltree_paths (BTe X M)) /\ Ns agrees_upto p ==>
            ?pi. Boehm_transform pi /\
-                !M N. M IN Ns /\ N IN Ns ==>
+                !M N. MEM M Ns /\ MEM N Ns ==>
                      (subterm_equivalent p M N <=>
                       subterm_equivalent p (apply pi M) (apply pi N))
 Proof
@@ -4221,7 +4239,7 @@ Proof
  (* TODO: find p with minimal length for ‘agrees_upto {M;N} p’ to hold *)
  >> ‘?p. ~subterm_equivalent p M N’
        by METIS_TAC [distinct_benf_no_subterm_equivalent]
- >> Know ‘{M; N} agrees_upto p’
+ >> Know ‘[M; N] agrees_upto p’
  >- (cheat)
  >> DISCH_THEN (STRIP_ASSUME_TAC o (MATCH_MP agrees_upto_thm))
  >> Know ‘~equivalent (apply pi M) (apply pi N)’
