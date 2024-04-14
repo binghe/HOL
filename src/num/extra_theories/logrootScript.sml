@@ -1304,7 +1304,7 @@ val LOG_THM = store_thm(
             else if n < m then 0 else SUC (LOG m (n DIV m)) *)
 (* Proof: by LOG_RWT *)
 val LOG_EVAL = store_thm(
-  "LOG_EVAL[compute]",
+  "LOG_EVAL", (* was: "LOG_EVAL[compute]" *)
   ``!m n. LOG m n = if m <= 1 \/ (n = 0) then LOG m n
          else if n < m then 0 else SUC (LOG m (n DIV m))``,
   rw[LOG_RWT]);
