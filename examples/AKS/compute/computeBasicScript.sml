@@ -12,24 +12,14 @@ val _ = new_theory "computeBasic";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
-
-(* val _ = load "SatisfySimps"; (* for SatisfySimps.SATISFY_ss *) *)
-
-(* Get dependent theories local *)
 
 open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
 open pred_setTheory listTheory arithmeticTheory;
 
 open logPowerTheory; (* for LOG2, SQRT, and Perfect Power, Power Free *)
-open logrootTheory;
-
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open dividesTheory gcdTheory;
+open logrootTheory dividesTheory gcdTheory gcdsetTheory;
 
 (* val _ = load "GaussTheory"; *)
 open EulerTheory;
@@ -37,7 +27,6 @@ open GaussTheory;
 
 (* val _ = load "whileTheory"; *)
 open whileTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Basic Computations Documentation                                          *)

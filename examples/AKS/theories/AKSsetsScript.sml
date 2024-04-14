@@ -16,7 +16,7 @@ open jcLib;
 
 (* open dependent theories *)
 open prim_recTheory pred_setTheory listTheory arithmeticTheory;
-open dividesTheory gcdTheory logrootTheory;
+open dividesTheory gcdTheory gcdsetTheory logrootTheory;
 open numberTheory helperSetTheory helperFunctionTheory;
 
 (* Get dependent theories local *)
@@ -54,7 +54,6 @@ open ringInstancesTheory;
 open fieldInstancesTheory;
 
 open GaussTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Introspective Sets Documentation                                          *)

@@ -12,18 +12,13 @@ val _ = new_theory "fieldOrder";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
 (* open dependent theories *)
-open pred_setTheory listTheory arithmeticTheory;
+open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
+     gcdsetTheory numberTheory;
 
-(* Get dependent theories local *)
-(* (* val _ = load "groupTheory"; *) *)
-(* (* val _ = load "groupInstancesTheory"; *) *)
-(* (* val _ = load "ringTheory"; *) *)
-(* val _ = load "fieldTheory"; *)
 open fieldTheory;
 open integralDomainTheory;
 open ringTheory;
@@ -37,11 +32,9 @@ open subgroupTheory;
 (* val _ = load "groupCyclicTheory"; *)
 open groupCyclicTheory;
 
-open numberTheory helperSetTheory helperFunctionTheory;
-open dividesTheory gcdTheory;
+open helperSetTheory helperFunctionTheory;
 
 open GaussTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Order of Elements in a Field Documentation                                *)

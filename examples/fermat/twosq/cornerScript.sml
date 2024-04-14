@@ -12,17 +12,13 @@ val _ = new_theory "corner";
 
 (* ------------------------------------------------------------------------- *)
 
+open arithmeticTheory pred_setTheory dividesTheory gcdsetTheory;
 
-(* open dependent theories *)
-(* arithmeticTheory -- load by default *)
-
-(* val _ = load "quarityTheory"; *)
 open helperTwosqTheory;
 open numberTheory;
 open helperSetTheory;
 open helperFunctionTheory;
-open arithmeticTheory pred_setTheory;
-open dividesTheory; (* for divides_def, prime_def *)
+
 open EulerTheory; (* for natural_finite, natural_card *)
 
 open quarityTheory;
@@ -31,7 +27,6 @@ open pairTheory;
 (* val _ = load "involuteFixTheory"; *)
 open involuteTheory;
 open involuteFixTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Fermat Two Squares by Corners Documentation                               *)

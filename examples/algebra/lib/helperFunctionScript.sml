@@ -176,5 +176,6 @@ QED
 
 (* export theory at end *)
 val _ = export_theory();
+val _ = html_theory "helperFunction";
 
 (*===========================================================================*)

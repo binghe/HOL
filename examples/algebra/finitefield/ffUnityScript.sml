@@ -12,7 +12,6 @@ val _ = new_theory "ffUnity";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
@@ -28,8 +27,8 @@ open ffMasterTheory;
 (* Open theories in order *)
 
 (* open dependent theories *)
-open arithmeticTheory pred_setTheory listTheory;
-open dividesTheory gcdTheory;
+open arithmeticTheory pred_setTheory listTheory dividesTheory gcdTheory
+     gcdsetTheory;
 
 open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
 
@@ -80,7 +79,6 @@ open GaussTheory;
 
 (* val _ = load "polyCyclicTheory"; *)
 open polyCyclicTheory; (* for poly_unity_irreducible_factor_exists *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Finite Field Unity Polynomial Documentation                               *)
