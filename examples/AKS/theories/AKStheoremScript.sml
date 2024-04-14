@@ -16,13 +16,12 @@ open jcLib;
 
 (* open dependent theories *)
 open prim_recTheory pred_setTheory listTheory arithmeticTheory logrootTheory;
-open dividesTheory gcdTheory numberTheory helperSetTheory;
+open dividesTheory gcdTheory numberTheory listRangeTheory helperSetTheory;
 
 (* Get dependent theories local *)
 open AKSmapsTheory;
 open AKSsetsTheory;
 open AKSintroTheory;
-
 open AKSshiftTheory;
 
 open logPowerTheory;
@@ -66,7 +65,6 @@ open ffAdvancedTheory;
 open ffPolyTheory;
 open ffUnityTheory;
 open ffExistTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* AKS Main Theorem Documentation                                            *)

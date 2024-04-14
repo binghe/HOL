@@ -19,7 +19,7 @@ open pred_setTheory arithmeticTheory gcdsetTheory numberTheory;
 open helperCountTheory;
 open helperSetTheory;
 
-open listTheory rich_listTheory;
+open listTheory listRangeTheory rich_listTheory;
 open helperListTheory;
 
 open mapCountTheory;
