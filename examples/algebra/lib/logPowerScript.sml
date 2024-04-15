@@ -7,21 +7,15 @@
 (* add all dependent libraries for script *)
 open HolKernel boolLib bossLib Parse;
 
-(* declare new theory at start *)
-val _ = new_theory "logPower";
-
 (* ------------------------------------------------------------------------- *)
 
-(* val _ = load "jcLib"; *)
 open jcLib;
 
-(* val _ = load "helperFunctionTheory"; *)
-open helperFunctionTheory;
-open pred_setTheory;
-open helperSetTheory;
+open pred_setTheory arithmeticTheory dividesTheory gcdTheory logrootTheory
+     numberTheory combinatoricsTheory;
 
-(* open dependent theories *)
-open arithmeticTheory dividesTheory gcdTheory logrootTheory numberTheory;
+(* declare new theory at start *)
+val _ = new_theory "logPower";
 
 (* ------------------------------------------------------------------------- *)
 (* Integer Functions Computation Documentation                               *)

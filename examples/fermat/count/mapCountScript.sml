@@ -12,7 +12,6 @@ val _ = new_theory "mapCount";
 
 (* ------------------------------------------------------------------------- *)
 
-(* val _ = load "combinatoricsTheory"; *)
 open helperCountTheory;
 open gcdsetTheory numberTheory;
 open helperSetTheory;
@@ -24,7 +23,7 @@ open listRangeTheory;
 open helperListTheory;
 
 open necklaceTheory; (* for necklace_def *)
-open combinatoricsTheory;
+open combinatorics1Theory;
 
 (* ------------------------------------------------------------------------- *)
 (* Counting of maps between finite sets Documentation                        *)

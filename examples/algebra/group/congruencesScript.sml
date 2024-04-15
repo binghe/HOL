@@ -19,30 +19,15 @@ val _ = new_theory "congruences";
    For mult_mod p, show that MOD_MULT_INV can be evaluted by Fermat's Little Theorem.
 *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* Get required theories *)
-(* (* val _ = load "groupTheory"; *) *)
-(* val _ = load "subgroupTheory"; *)
-(* val _ = load "groupInstancesTheory"; *)
-open groupTheory subgroupTheory groupInstancesTheory;
-
-(* val _ = load "groupProductTheory"; *)
-open groupProductTheory;
-
-open numberTheory helperSetTheory;
-
-(* (* val _ = load "EulerTheory"; *) *)
-open EulerTheory;
-
 (* open dependent theories *)
-open arithmeticTheory;
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-open dividesTheory;
+open arithmeticTheory dividesTheory numberTheory combinatoricsTheory;
 
+open groupTheory subgroupTheory groupInstancesTheory groupProductTheory;
+
+open EulerTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Congruences Documentation                                                 *)

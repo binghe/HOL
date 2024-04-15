@@ -34,26 +34,17 @@ val _ = new_theory "monoidOrder";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* Get dependent theories in lib *)
-(* val _ = load "helperFunctionTheory"; *)
-(* (* val _ = load "helperNumTheory"; -- in helperFunctionTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in helperFunctionTheory *) *)
-open numberTheory helperSetTheory helperFunctionTheory;
-
 (* open dependent theories *)
-open pred_setTheory arithmeticTheory;
-open dividesTheory gcdTheory;
+open pred_setTheory arithmeticTheory dividesTheory gcdTheory numberTheory;
 
 (* val _ = load "monoidTheory"; *)
 open monoidTheory;
 
 (* val _ = load "primePowerTheory"; *)
 open primePowerTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Monoid Order and Invertibles Documentation                                *)

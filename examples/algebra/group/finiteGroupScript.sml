@@ -18,12 +18,10 @@ val _ = new_theory "finiteGroup";
 open jcLib;
 
 (* open dependent theories *)
-open pred_setTheory arithmeticTheory dividesTheory;
+open pred_setTheory arithmeticTheory dividesTheory numberTheory
+     combinatoricsTheory;
 
-(* Get dependent theories local *)
-(* val _ = load "groupOrderTheory"; *)
-open groupTheory monoidTheory;
-open groupOrderTheory monoidOrderTheory;
+open groupTheory monoidTheory groupOrderTheory monoidOrderTheory;
 
 (* val _ = load "subgroupTheory"; *)
 open submonoidTheory;
@@ -31,18 +29,6 @@ open subgroupTheory;
 
 (* val _ = load "groupProductTheory"; *)
 open groupProductTheory;
-
-open numberTheory helperSetTheory;
-
-(* val _ = load "helperListTheory"; *)
-open helperListTheory;
-
-(* val _ = load "helperFunctionTheory"; *)
-open helperFunctionTheory;
-
-(* Load dependent theories *)
-(* val _ = load "Satisfysimps"; *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Finite Group Theory Documentation                                         *)

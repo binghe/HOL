@@ -9,7 +9,7 @@ open HolKernel boolLib bossLib Parse;
 
 (* ------------------------------------------------------------------------- *)
 
-open pred_setTheory arithmeticTheory numberTheory helperSetTheory;
+open pred_setTheory arithmeticTheory numberTheory combinatoricsTheory;
 
 open groupTheory subgroupTheory;
 

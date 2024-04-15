@@ -12,21 +12,11 @@ val _ = new_theory "sublist";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* val _ = load "SatisfySimps"; (* for SatisfySimps.SATISFY_ss *) *)
-
-(* Get dependent theories *)
-(* val _ = load "helperListTheory"; *)
-open helperListTheory;
-
-(* open dependent theories *)
 open pred_setTheory listTheory rich_listTheory arithmeticTheory;
-open listRangeTheory; (* for listRangeINC_def *)
-open indexedListsTheory; (* for MEM_findi *)
-
+open listRangeTheory indexedListsTheory combinatoricsTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Sublist Theory Documentation                                              *)

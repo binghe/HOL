@@ -15,7 +15,8 @@ val _ = new_theory "groupCyclic";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory;
+open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
+     numberTheory combinatoricsTheory gcdsetTheory;
 
 open monoidTheory monoidOrderTheory;
 open groupTheory subgroupTheory groupOrderTheory;
@@ -23,11 +24,6 @@ open groupMapTheory;
 
 (* val _ = load "groupInstancesTheory"; *)
 open groupInstancesTheory;
-
-open numberTheory helperSetTheory gcdsetTheory;
-
-(* val _ = load "helperFunctionTheory"; *)
-open helperFunctionTheory;
 
 (* val _ = load "GaussTheory"; *)
 open GaussTheory;

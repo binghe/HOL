@@ -23,7 +23,7 @@ open listTheory listRangeTheory rich_listTheory;
 open helperListTheory;
 
 open mapCountTheory;
-open combinatoricsTheory;
+open combinatorics1Theory;
 
 (* Get dependent theories local *)
 open monoidTheory groupTheory;

@@ -15,9 +15,9 @@ val _ = new_theory "monoidMap";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-open monoidTheory monoidOrderTheory;
+open pred_setTheory arithmeticTheory gcdsetTheory numberTheory;
 
-open pred_setTheory arithmeticTheory gcdsetTheory numberTheory helperSetTheory;
+open monoidTheory monoidOrderTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Monoid Maps Documentation                                                 *)

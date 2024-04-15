@@ -12,27 +12,14 @@ val _ = new_theory "Gauss";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
 (* open dependent theories *)
-open arithmeticTheory pred_setTheory listTheory;
+open arithmeticTheory pred_setTheory listTheory dividesTheory logrootTheory
+     gcdTheory gcdsetTheory numberTheory logPowerTheory combinatoricsTheory;
 
-(* Get dependent theories in lib *)
-(* val _ = load "helperListTheory"; *)
-open helperListTheory;
-
-(* val _ = load "EulerTheory"; *)
 open EulerTheory;
-
-open numberTheory helperSetTheory helperFunctionTheory;
-
-open dividesTheory gcdTheory gcdsetTheory;
-
-(* for SQRT and related theorems *)
-(* val _ = load "logPowerTheory"; *)
-open logrootTheory logPowerTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Gauss' Little Theorem                                                     *)

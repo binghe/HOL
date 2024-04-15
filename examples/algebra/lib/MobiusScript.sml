@@ -14,11 +14,10 @@ val _ = new_theory "Mobius";
 
 open jcLib;
 
-(* open dependent theories *)
-open pred_setTheory listTheory;
-open prim_recTheory arithmeticTheory dividesTheory gcdTheory gcdsetTheory;
+open pred_setTheory listTheory prim_recTheory arithmeticTheory dividesTheory
+     gcdTheory gcdsetTheory;
 
-open numberTheory helperSetTheory helperListTheory;
+open numberTheory combinatoricsTheory;
 
 open GaussTheory;
 open EulerTheory;

@@ -12,24 +12,16 @@ val _ = new_theory "groupOrder";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-open numberTheory helperSetTheory helperFunctionTheory;
-
 (* open dependent theories *)
-open pred_setTheory listTheory arithmeticTheory;
-open dividesTheory gcdTheory;
+open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
+     numberTheory combinatoricsTheory;
 
-(* Get dependent theories local *)
-(* val _ = load "monoidOrderTheory"; *)
 open monoidTheory monoidOrderTheory;
 
-(* (* val _ = load "groupTheory"; *) *)
-(* val _ = load "subgroupTheory"; *)
 open groupTheory groupMapTheory subgroupTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Finite Group Order Documentation                                          *)

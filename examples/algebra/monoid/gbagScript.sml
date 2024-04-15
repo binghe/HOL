@@ -1,6 +1,6 @@
 open HolKernel boolLib bossLib Parse;
 
-open dep_rewrite pred_setTheory bagTheory helperSetTheory gcdsetTheory;
+open dep_rewrite pred_setTheory bagTheory gcdsetTheory;
 
 open numberTheory monoidTheory monoidMapTheory;
 

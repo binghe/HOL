@@ -24,27 +24,18 @@ val _ = new_theory "groupInstances";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* Get dependent theories local *)
-(* (* val _ = load "monoidTheory"; *) *)
-(* val _ = load "groupOrderTheory"; (* loads monoidTheory implicitly *) *)
-open monoidTheory groupTheory groupOrderTheory;
-open subgroupTheory;
+(* open dependent theories *)
+open prim_recTheory pred_setTheory arithmeticTheory dividesTheory gcdTheory
+     numberTheory;
 
-(* val _ = load "groupProductTheory"; *)
+open monoidTheory groupTheory groupOrderTheory subgroupTheory;
+
 open groupProductTheory;
 
-open numberTheory helperSetTheory helperFunctionTheory;
-
-(* open dependent theories *)
-open prim_recTheory pred_setTheory arithmeticTheory dividesTheory gcdTheory;
-
-(* val _ = load "GaussTheory"; *)
 open EulerTheory GaussTheory; (* for residue *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Group Instances Documentation                                             *)

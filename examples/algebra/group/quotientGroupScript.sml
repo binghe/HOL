@@ -29,7 +29,7 @@ val _ = new_theory "quotientGroup";
 open jcLib;
 
 (* open dependent theories *)
-open pred_setTheory numberTheory helperSetTheory;
+open pred_setTheory numberTheory combinatoricsTheory;
 
 (* Get dependent theories local *)
 (* val _ = load "monoidOrderTheory"; *)

@@ -26,25 +26,14 @@ val _ = new_theory "subgroup";
 open jcLib;
 
 (* open dependent theories *)
-open pred_setTheory arithmeticTheory numberTheory;
+open pred_setTheory arithmeticTheory numberTheory combinatoricsTheory;
 
-(* Get dependent theories local *)
-(* val _ = load "groupMapTheory"; *)
 open groupMapTheory;
 open groupTheory monoidTheory;
 open monoidOrderTheory;
 
 (* val _ = load "submonoidTheory"; *)
 open submonoidTheory;
-
-(* Get dependent theories in lib *)
-(* (* val _ = load "helperSetTheory";  loaded by monoidTheory *) *)
-open helperSetTheory;
-
-(* Load dependent theories *)
-(* val _ = load "Satisfysimps"; *)
-(* used in coset_id_eq_subgroup: srw_tac[SatisfySimps.SATISFY_ss] *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Subgroup Documentation                                                    *)

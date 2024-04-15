@@ -8,13 +8,9 @@
 open HolKernel boolLib bossLib Parse;
 
 (* declare new theory at start *)
-val _ = new_theory "combinatorics";
+val _ = new_theory "combinatorics1";
 
 (* ------------------------------------------------------------------------- *)
-
-
-(* open dependent theories *)
-(* arithmeticTheory -- load by default *)
 
 (* val _ = load "helperCountTheory"; *)
 open helperCountTheory;
@@ -25,17 +21,7 @@ open dividesTheory gcdsetTheory numberTheory;
 open EulerTheory; (* for upto_delete *)
 
 (* for later computation *)
-open listTheory;
-open rich_listTheory;
-open helperListTheory;
-open listRangeTheory;
-
-(* (* val _ = load "binomialTheory"; *) *)
-open binomialTheory; (* for binomial_iff, binomial_n_n, binomial_formula2 *)
-
-(* (* val _ = load "necklaceTheory"; *) *)
-open necklaceTheory; (* for necklace_def, necklace_finite *)
-
+open listTheory rich_listTheory listRangeTheory binomialTheory necklaceTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Combinatorics Documentation                                               *)

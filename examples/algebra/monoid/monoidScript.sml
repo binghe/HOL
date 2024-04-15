@@ -22,16 +22,11 @@ val _ = new_theory "monoid";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
 (* open dependent theories *)
-open pred_setTheory arithmeticTheory;
-
-open numberTheory helperSetTheory;
-
+open pred_setTheory arithmeticTheory numberTheory combinatoricsTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Monoid Documentation                                                      *)

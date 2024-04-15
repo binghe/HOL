@@ -20,7 +20,7 @@ open helperCountTheory;
 open helperSetTheory;
 
 open mapCountTheory; (* for on_def *)
-open combinatoricsTheory;
+open combinatorics1Theory;
 
 (* Get dependent theories local *)
 (* val _ = load "fieldMapTheory"; *)

@@ -12,32 +12,14 @@ val _ = new_theory "primePower";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* val _ = load "SatisfySimps"; (* for SatisfySimps.SATISFY_ss *) *)
+open arithmeticTheory pred_setTheory listTheory numberTheory dividesTheory
+     gcdTheory gcdsetTheory logrootTheory optionTheory rich_listTheory
+     listRangeTheory;
 
-open numberTheory;
-open helperSetTheory;
-open helperFunctionTheory;
-open logPowerTheory;
-
-(* val _ = load "triangleTheory"; *)
-open triangleTheory; (* for list_lcm, set_lcm *)
-open helperListTheory;
-open listRangeTheory;
-open rich_listTheory;
-
-(* open dependent theories *)
-open arithmeticTheory pred_setTheory listTheory;
-
-open dividesTheory gcdTheory gcdsetTheory;
-
-open EulerTheory; (* for natural_finite *)
-open logrootTheory; (* for LOG *)
-open optionTheory; (* for Consecutive LCM Function *)
+open logPowerTheory triangleTheory EulerTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Prime Power Documentation                                                 *)

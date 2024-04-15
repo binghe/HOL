@@ -23,27 +23,15 @@ val _ = new_theory "monoidInstances";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* Get dependent theories local *)
-(* val _ = load "monoidMapTheory"; *)
-open monoidTheory;
-open monoidMapTheory; (* for MonoidHomo and MonoidIso *)
-
-open numberTheory helperSetTheory helperFunctionTheory;
-
-(* open dependent theories *)
-(* (* val _ = load "dividesTheory"; -- in helperTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperTheory *) *)
 open pred_setTheory arithmeticTheory dividesTheory gcdTheory;
-open listTheory; (* for list concatenation example *)
+open listTheory rich_listTheory; 
 
-(* val _ = load "logPowerTheory"; *)
+open monoidTheory monoidMapTheory numberTheory combinatoricsTheory;
+
 open logrootTheory logPowerTheory; (* for LOG_EXACT_EXP *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Monoid Instances Documentation                                            *)

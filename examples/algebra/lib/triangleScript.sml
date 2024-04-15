@@ -15,22 +15,11 @@ val _ = new_theory "triangle";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* val _ = load "EulerTheory"; *)
-open EulerTheory; (* for upto_by_count *)
+open arithmeticTheory pred_setTheory listTheory rich_listTheory relationTheory
+     dividesTheory gcdTheory gcdsetTheory listRangeTheory numberTheory
+     combinatoricsTheory;
 
-open numberTheory helperSetTheory helperFunctionTheory;
-
-(* val _ = load "helperListTheory"; *)
-open helperListTheory;
-
-(* open dependent theories *)
-open arithmeticTheory pred_setTheory listTheory;
-
-open dividesTheory gcdTheory gcdsetTheory;
-open listRangeTheory rich_listTheory relationTheory;
-
-(* val _ = load "binomialTheory"; *)
-open binomialTheory;
+open binomialTheory EulerTheory; (* for upto_by_count *)
 
 (* ------------------------------------------------------------------------- *)
 (* Leibniz Harmonic Triangle Documentation                                   *)

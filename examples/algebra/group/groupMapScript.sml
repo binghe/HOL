@@ -12,9 +12,11 @@ val _ = new_theory "groupMap";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
+
+(* open dependent theories *)
+open pred_setTheory arithmeticTheory gcdsetTheory numberTheory combinatoricsTheory;
 
 (* Get dependent theories local *)
 (* val _ = load "monoidMapTheory"; *)
@@ -22,11 +24,6 @@ open monoidTheory monoidOrderTheory monoidMapTheory;
 
 (* val _ = load "groupTheory"; *)
 open groupTheory;
-
-(* open dependent theories *)
-open pred_setTheory arithmeticTheory gcdsetTheory;
-
-open numberTheory helperSetTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Group Maps Documentation                                                  *)

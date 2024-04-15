@@ -15,8 +15,8 @@ val _ = new_theory "Euler";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory;
-open numberTheory helperSetTheory helperFunctionTheory gcdsetTheory;
+open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
+     numberTheory gcdsetTheory combinatoricsTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Euler Set and Totient Function Documentation                              *)

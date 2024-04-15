@@ -25,18 +25,15 @@ val _ = new_theory "group";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
 (* open dependent theories *)
-open pred_setTheory arithmeticTheory;
+open pred_setTheory arithmeticTheory numberTheory combinatoricsTheory;
 
 (* Get dependent theories local *)
 (* val _ = load "monoidOrderTheory"; *)
 open monoidTheory monoidOrderTheory; (* for G*, monoid_invertibles_is_monoid *)
-
-open numberTheory helperSetTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Group Documentation                                                      *)
