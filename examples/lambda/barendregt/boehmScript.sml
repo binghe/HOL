@@ -3693,17 +3693,43 @@ Definition agrees_upto_def :
     $agrees_upto Ns p = !M N. MEM M Ns /\ MEM N Ns ==> term_agrees_upto M N p
 End
 
-(* Lemma 10.3.11 (1) [1. p.251] *)
+(* Lemma 10.3.11 (1) [1. p.251]
+
+   NOTE: ‘p <> []’ must be added, as otherwise each N in Ns cannot be "is_ready".
+
+   NOTE2: ‘!X M. MEM M Ns ==> subterm X M p <> NONE’ will be later assumed for
+   non-trivial cases. If any M in Ns doesn't satisfy this requirements, then
+  ‘subterm X M p = NONE’ (the unsolvable case) and doesn't have contribtions in
+  ‘pi’.
+
+   On the other hand, if any M in Ns is unsolvable (and p <> []), then p cannot
+   be in ‘ltree_paths (BTe X M)’. Thus all terms in Ns are solvable.
+   Let's first put ‘EVERY solvable Ns’ in assumption to focus on the non-trivial
+   part of this proof.
+ *)
 Theorem agrees_upto_lemma_1 :
-    !Ns p. (!X M. MEM M Ns ==> p IN ltree_paths (BTe X M)) /\ Ns agrees_upto p ==>
+    !Ns p. (!X M. MEM M Ns ==> p IN ltree_paths (BTe X M)) /\
+           Ns agrees_upto p /\ p <> [] /\ EVERY solvable Ns ==>
            ?pi. Boehm_transform pi /\ EVERY (\N. is_ready (apply pi N)) Ns
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> cheat
+QED
+
+(* NOTE: ‘p <> []’ can be removed now *)
+Theorem agrees_upto_lemma_2 :
+    !Ns p. (!X M. MEM M Ns ==> p IN ltree_paths (BTe X M)) /\
+           Ns agrees_upto p ==>
+           ?pi. Boehm_transform pi /\ (MAP (apply pi) Ns) agrees_upto p
+Proof
+    rpt STRIP_TAC
+ >> cheat
 QED
 
 (* Lemma 10.3.11 (3) [1. p.251] *)
 Theorem agrees_upto_lemma_3 :
-    !Ns p. (!X M. MEM M Ns ==> p IN ltree_paths (BTe X M)) /\ Ns agrees_upto p ==>
+    !Ns p. (!X M. MEM M Ns ==> p IN ltree_paths (BTe X M)) /\
+           Ns agrees_upto p ==>
            ?pi. Boehm_transform pi /\
                 !M N. MEM M Ns /\ MEM N Ns ==>
                      (subterm_equivalent p M N <=>
