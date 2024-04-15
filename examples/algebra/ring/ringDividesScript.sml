@@ -12,19 +12,12 @@ val _ = new_theory "ringDivides";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
 (* open dependent theories *)
 open pred_setTheory listTheory arithmeticTheory dep_rewrite;
 
-(* Get dependent theories local *)
-(* (* val _ = load "groupTheory"; *) *)
-(* (* val _ = load "ringTheory"; *) *)
-(* (* val _ = load "ringUnitTheory"; *) *)
-(* val _ = load "ringIdealTheory"; *)
 open ringIdealTheory;
 open ringUnitTheory;
 open ringTheory;
@@ -34,16 +27,9 @@ val MEMBER_NOT_EMPTY = pred_setTheory.MEMBER_NOT_EMPTY;
 
 open ringMapTheory monoidMapTheory groupMapTheory;
 
-open numberTheory helperSetTheory;
+open numberTheory combinatoricsTheory;
 
-(* (* val _ = load "subgroupTheory"; *) *)
-(* val _ = load "quotientGroupTheory"; *)
 open subgroupTheory quotientGroupTheory;
-
-(* Make srw_tac more powerful with SATISFY_ss *)
-(* (* val _ = load "SatisfySimps"; *) *)
-(* val _ = augment_srw_ss [SatisfySimps.SATISFY_ss]; *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Divisbility in Ring Documentation                                         *)

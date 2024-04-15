@@ -23,21 +23,15 @@ val _ = new_theory "ring";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-open numberTheory helperSetTheory helperFunctionTheory;
-
 (* Get arithmetic for Ring characteristics *)
-open pred_setTheory arithmeticTheory dividesTheory gcdTheory;
+open pred_setTheory arithmeticTheory dividesTheory gcdTheory numberTheory
+     combinatoricsTheory;
 
-(* Get dependent theories local *)
-(* (* val _ = load "monoidTheory"; *) *)
-(* val _ = load "groupOrderTheory"; (* loads monoidTheory implicitly *) *)
 open monoidTheory groupTheory;
 open monoidOrderTheory groupOrderTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Ring Documentation                                                       *)

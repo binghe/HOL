@@ -12,18 +12,12 @@ val _ = new_theory "polyMap";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* val _ = load "SatisfySimps"; (* for SatisfySimps.SATISFY_ss *) *)
+open arithmeticTheory pred_setTheory listTheory numberTheory combinatoricsTheory
+     dividesTheory gcdTheory;
 
-(* Get polynomial theory of Ring *)
-(* (* val _ = load "polyWeakTheory"; *) *)
-(* (* val _ = load "polyRingTheory"; *) *)
-(* (* val _ = load "polyDivisionTheory"; *) *)
-(* (* val _ = load "polyBinomialTheory"; *) *)
-(* val _ = load "polyMultiplicityTheory"; *)
 open polynomialTheory polyWeakTheory polyRingTheory polyDivisionTheory;
 
 (* (* val _ = load "polyEvalTheory"; *) *)
@@ -33,9 +27,6 @@ open polyMonicTheory polyEvalTheory;
 open polyRootTheory;
 open polyDividesTheory;
 
-(* (* val _ = load "polyFieldTheory"; *) *)
-(* (* val _ = load "polyFieldDivisionTheory"; *) *)
-(* (* val _ = load "polyFieldModuloTheory"; *) *)
 open polyFieldTheory;
 open polyFieldDivisionTheory;
 open polyFieldModuloTheory;
@@ -53,7 +44,6 @@ open subgroupTheory;
 
 open monoidMapTheory groupMapTheory ringMapTheory fieldMapTheory;
 
-
 (* (* val _ = load "binomialTheory"; *) *)
 open binomialTheory;
 
@@ -66,21 +56,6 @@ open ringUnitTheory;
 (* val _ = load "fieldOrderTheory"; *)
 open fieldOrderTheory; (* for field_order_eqn *)
 open groupCyclicTheory; (* for orders_def *)
-
-(* (* val _ = load "groupInstancesTheory"; -- in ringInstancesTheory *) *)
-(* (* val _ = load "ringInstancesTheory"; *) *)
-(* (* val _ = load "fieldInstancesTheory"; *) *)
-(* open groupInstancesTheory ringInstancesTheory fieldInstancesTheory; *)
-
-(* open dependent theories *)
-open arithmeticTheory pred_setTheory listTheory;
-
-open numberTheory helperSetTheory helperListTheory;
-
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open dividesTheory gcdTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Polynomial Maps Documentation                                             *)

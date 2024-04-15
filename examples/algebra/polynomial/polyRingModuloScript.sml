@@ -12,16 +12,13 @@ val _ = new_theory "polyRingModulo";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* Get polynomial theory of Ring *)
-(* (* val _ = load "polyWeakTheory"; *) *)
-(* (* val _ = load "polyRingTheory"; *) *)
-(* (* val _ = load "polyFieldTheory"; *) *)
-(* val _ = load "polyDividesTheory"; *)
+(* open dependent theories *)
+open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
+     dividesTheory gcdTheory;
+
 open polynomialTheory polyWeakTheory polyRingTheory;
 open polyDivisionTheory polyMonicTheory;
 open polyRootTheory polyEvalTheory;
@@ -40,16 +37,6 @@ open subgroupTheory;
 
 open monoidMapTheory groupMapTheory ringMapTheory;
 open ringUnitTheory;
-
-(* open dependent theories *)
-open pred_setTheory listTheory arithmeticTheory;
-
-open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
-
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open dividesTheory gcdTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Ring Polynomial Modulo Documentation                                      *)

@@ -15,13 +15,11 @@ val _ = new_theory "polyWeak";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-open monoidTheory gbagTheory groupTheory ringTheory polynomialTheory;
-
 (* open dependent theories *)
-open pairTheory bagTheory pred_setTheory listTheory arithmeticTheory;
+open pairTheory bagTheory pred_setTheory listTheory arithmeticTheory
+     numberTheory rich_listTheory combinatoricsTheory;
 
-open numberTheory helperListTheory;
-open rich_listTheory; (* for MEM_LAST *)
+open monoidTheory gbagTheory groupTheory ringTheory polynomialTheory;
 
 (* val _ = load "sublistTheory"; *)
 open sublistTheory; (* for sublist_every *)

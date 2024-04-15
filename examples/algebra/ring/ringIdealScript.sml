@@ -16,30 +16,16 @@ val _ = new_theory "ringIdeal";
 open jcLib;
 
 (* open dependent theories *)
-open pred_setTheory listTheory arithmeticTheory;
+open pred_setTheory listTheory arithmeticTheory gcdsetTheory;
+open numberTheory combinatoricsTheory;
 
-(* Get dependent theories local *)
-(* (* val _ = load "groupTheory"; *) *)
-(* (* val _ = load "ringTheory"; *) *)
-(* val _ = load "ringMapTheory"; *)
 open ringTheory;
 open groupTheory;
 open monoidTheory;
 open monoidMapTheory groupMapTheory ringMapTheory;
 
-(* val _ = load "ringUnitTheory"; *)
 open ringUnitTheory;
-
-open numberTheory helperSetTheory gcdsetTheory;
-
-(* (* val _ = load "subgroupTheory"; *) *)
-(* val _ = load "quotientGroupTheory"; *)
 open subgroupTheory quotientGroupTheory;
-
-(* Make srw_tac more powerful with SATISFY_ss *)
-(* (* val _ = load "SatisfySimps"; *) *)
-(* val _ = augment_srw_ss [SatisfySimps.SATISFY_ss]; *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Ideals in Ring Documentation                                              *)

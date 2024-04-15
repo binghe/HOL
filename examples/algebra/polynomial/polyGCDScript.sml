@@ -15,6 +15,10 @@ val _ = new_theory "polyGCD";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
+(* open dependent theories *)
+open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
+     dividesTheory gcdTheory gcdsetTheory;
+
 open monoidTheory groupTheory ringTheory ringUnitTheory fieldTheory;
 
 open subgroupTheory;
@@ -46,13 +50,6 @@ open polyProductTheory;
 
 (* val _ = load "polyDerivativeTheory"; *)
 open polyDerivativeTheory;
-
-(* open dependent theories *)
-open pred_setTheory listTheory arithmeticTheory;
-
-open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
-
-open dividesTheory gcdTheory gcdsetTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* GCD and LCM of Polynomials Documentation                                  *)

@@ -12,32 +12,18 @@ val _ = new_theory "polyRing";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* Get dependent theories local *)
-(* (* val _ = load "monoidTheory"; *) *)
-(* (* val _ = load "groupTheory"; *) *)
-(* (* val _ = load "ringTheory"; *) *)
-(* (* val _ = load "polynomialTheory"; *) *)
-(* val _ = load "polyWeakTheory"; *)
+(* open dependent theories *)
+open pred_setTheory arithmeticTheory listTheory rich_listTheory numberTheory
+     dividesTheory combinatoricsTheory;
+
 open monoidTheory groupTheory ringTheory;
 open polynomialTheory polyWeakTheory;
 
 (* val _ = load "ringUnitTheory"; *)
 open ringUnitTheory;
-
-(* open dependent theories *)
-open pred_setTheory arithmeticTheory listTheory rich_listTheory;
-
-open numberTheory helperSetTheory helperListTheory;
-
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open dividesTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Polynomials over a Ring R[x] Documentation                                *)

@@ -12,15 +12,15 @@ val _ = new_theory "polyRoot";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
+(* open dependent theories *)
+open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
+     dividesTheory gcdTheory gcdsetTheory;
+
 open monoidTheory groupTheory ringTheory ringUnitTheory fieldTheory;
 
-(* (* val _ = load "polyWeakTheory"; *) *)
-(* (* val _ = load "polyRingTheory"; *) *)
-(* val _ = load "polyDivisionTheory"; *)
 open polynomialTheory polyWeakTheory polyRingTheory polyDivisionTheory;
 
 (* val _ = load "polyFieldTheory"; *)
@@ -33,13 +33,6 @@ open monoidOrderTheory;
 
 (* val _ = load "polyMonicTheory"; *)
 open polyMonicTheory;
-
-(* open dependent theories *)
-open pred_setTheory listTheory arithmeticTheory;
-
-open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
-
-open dividesTheory gcdTheory gcdsetTheory;
 
 open integralDomainTheory; (* for poly_roots_mult_id *)
 

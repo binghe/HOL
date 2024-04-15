@@ -12,42 +12,26 @@ val _ = new_theory "polyModuloRing";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
 (* open dependent theories *)
-open pred_setTheory listTheory arithmeticTheory;
-(* Get dependent theories local *)
-(* (* val _ = load "monoidTheory"; *) *)
-(* (* val _ = load "groupTheory"; *) *)
-(* (* val _ = load "ringTheory"; *) *)
-(* val _ = load "ringUnitTheory"; *)
+open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
+     dividesTheory gcdTheory;
+
 open monoidTheory groupTheory ringTheory ringUnitTheory;
 
-open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
-
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open dividesTheory gcdTheory;
-
-(* (* val _ = load "ringIdealTheory"; *) *)
-(* val _ = load "quotientRingTheory"; *)
 open ringIdealTheory quotientRingTheory;
 open subgroupTheory;
 open quotientGroupTheory;
 
 open monoidMapTheory groupMapTheory ringMapTheory;
 
-(* (* val _ = load "polyWeakTheory"; *) *)
-(* val _ = load "polyDivisionTheory"; *)
 open polynomialTheory polyWeakTheory polyRingTheory;
 open polyDivisionTheory;
 
 (* val _ = load "polyFieldTheory"; *)
 open polyFieldTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Polynomial Quotient Ring by a Modulus Documentation                       *)

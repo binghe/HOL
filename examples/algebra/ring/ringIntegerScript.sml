@@ -12,22 +12,13 @@ val _ = new_theory "ringInteger";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
 (* open dependent theories *)
-open pred_setTheory listTheory arithmeticTheory;
+open pred_setTheory listTheory arithmeticTheory integerTheory numberTheory
+     combinatoricsTheory;
 
-(* val _ = load "integerTheory"; *)
-open integerTheory;
-
-(* Get dependent theories local *)
-(* (* val _ = load "groupTheory"; *) *)
-(* (* val _ = load "ringTheory"; *) *)
-(* (* val _ = load "ringIdealTheory"; *) *)
-(* val _ = load "quotientRingTheory"; *)
 open quotientRingTheory;
 open ringIdealTheory;
 open ringTheory;
@@ -35,19 +26,11 @@ open groupTheory;
 open monoidTheory;
 open monoidMapTheory groupMapTheory ringMapTheory;
 
-open numberTheory helperSetTheory;
-
-(* (* val _ = load "subgroupTheory"; *) *)
-(* val _ = load "quotientGroupTheory"; *)
 open subgroupTheory quotientGroupTheory;
 
-(* (* val _ = load "monoidInstancesTheory"; *) *)
-(* (* val _ = load "groupInstancesTheory"; *) *)
-(* val _ = load "ringInstancesTheory"; *)
 open groupInstancesTheory;
 open monoidInstancesTheory;
 open ringInstancesTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Integer Ring Documentation                                                *)

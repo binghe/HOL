@@ -1,10 +1,11 @@
 (* ------------------------------------------------------------------------- *)
 (* Reals as a ring.                                                          *)
 (* ------------------------------------------------------------------------- *)
-open HolKernel boolLib bossLib Parse dep_rewrite
-     realTheory ringTheory ringMapTheory ringUnitTheory
+open HolKernel boolLib bossLib Parse;
+
+open dep_rewrite realTheory ringTheory ringMapTheory ringUnitTheory
      ringDividesTheory monoidRealTheory groupRealTheory
-     pred_setTheory bagTheory gbagTheory real_sigmaTheory iterateTheory
+     pred_setTheory bagTheory gbagTheory real_sigmaTheory iterateTheory;
 
 val _ = new_theory"ringReal";
 

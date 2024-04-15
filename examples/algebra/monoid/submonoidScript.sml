@@ -15,13 +15,9 @@ val _ = new_theory "submonoid";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* val _ = load "SatisfySimps"; (* for SatisfySimps.SATISFY_ss *) *)
+open pred_setTheory numberTheory combinatoricsTheory;
 
-(* Get dependent theories local *)
-(* val _ = load "monoidMapTheory"; *)
 open monoidTheory monoidMapTheory;
-
-open pred_setTheory helperSetTheory numberTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Submonoid Documentation                                                   *)

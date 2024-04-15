@@ -12,25 +12,17 @@ val _ = new_theory "polyDivides";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* Get dependent theories local *)
-(* (* val _ = load "monoidTheory"; *) *)
-(* (* val _ = load "groupTheory"; *) *)
-(* (* val _ = load "ringTheory"; *) *)
-(* val _ = load "ringUnitTheory"; (* this overloads |/ as r*.inv *) *)
-(* (* val _ = load "integralDomainTheory"; *) *)
-(* val _ = load "fieldTheory"; (* see poly_roots_mult, this overload |/ as (r.prod excluding #0).inv *) *)
+(* open dependent theories *)
+open pred_setTheory listTheory arithmeticTheory numberTheory dividesTheory;
+
 open monoidTheory groupTheory ringTheory ringUnitTheory fieldTheory;
 
 open subgroupTheory;
 open monoidOrderTheory groupOrderTheory;
 
-(* (* val _ = load "polyWeakTheory"; *) *)
-(* (* val _ = load "polyRingTheory"; *) *)
-(* val _ = load "polyDivisionTheory"; *)
 open polynomialTheory polyWeakTheory polyRingTheory polyDivisionTheory;
 
 (* val _ = load "polyRootTheory"; *)
@@ -46,16 +38,6 @@ open ringDividesTheory;
 
 (* val _ = load "polyEvalTheory"; *)
 open polyEvalTheory;
-
-(* open dependent theories *)
-open pred_setTheory listTheory arithmeticTheory;
-
-open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
-
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open dividesTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Divisibility of Polynomials Documentation                                 *)

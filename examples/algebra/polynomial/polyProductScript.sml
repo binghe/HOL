@@ -15,7 +15,8 @@ val _ = new_theory "polyProduct";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-open pred_setTheory listTheory arithmeticTheory;
+open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
+     dividesTheory gcdTheory gcdsetTheory;
 
 open monoidTheory groupTheory ringTheory ringUnitTheory fieldTheory;
 
@@ -36,10 +37,6 @@ open polyFieldTheory;
 open polyFieldDivisionTheory;
 open polyEvalTheory;
 open polyRootTheory;
-
-open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
-
-open dividesTheory gcdTheory gcdsetTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Product of Polynomials Documentation                                      *)

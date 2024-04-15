@@ -13,16 +13,13 @@ val _ = new_theory "polyFieldModulo";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* Get dependent theories local *)
-(* (* val _ = load "polyWeakTheory"; *) *)
-(* (* val _ = load "polyRingTheory"; *) *)
-(* (* val _ = load "polyFieldTheory"; *) *)
-(* (* val _ = load "polyFieldDivisionTheory"; *) *)
-(* val _ = load "polyRingModuloTheory"; *)
+(* open dependent theories *)
+open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
+     dividesTheory gcdTheory;
+
 open polynomialTheory polyWeakTheory polyRingTheory polyFieldTheory;
 open polyDivisionTheory polyFieldDivisionTheory;
 open polyModuloRingTheory polyRingModuloTheory;
@@ -52,16 +49,6 @@ open ringDividesTheory ringUnitTheory;
 (* (* val _ = load "fieldIdealTheory"; *) *)
 open ringIdealTheory fieldIdealTheory;
 (* for EuclideanRing_def, quotient_field_by_maximal_ideal *)
-
-(* open dependent theories *)
-open pred_setTheory listTheory arithmeticTheory;
-
-open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
-
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open dividesTheory gcdTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Field Polynomial Modulo Documentation                                     *)
