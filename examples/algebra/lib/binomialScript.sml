@@ -12,25 +12,16 @@ val _ = new_theory "binomial";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* Get dependent theories in lib *)
-(* val _ = load "helperFunctionTheory"; *)
-(* (* val _ = load "helperNumTheory"; -- in helperFunctionTheory *) *)
-(* (* val _ = load "helperSetTheory"; -- in helperFunctionTheory *) *)
-open numberTheory helperSetTheory helperFunctionTheory;
+open helperSetTheory helperFunctionTheory;
 
 (* val _ = load "helperListTheory"; *)
 open helperListTheory;
 
-(* open dependent theories *)
-open pred_setTheory listTheory;
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open arithmeticTheory dividesTheory gcdTheory;
-
+open pred_setTheory listTheory rich_listTheory arithmeticTheory dividesTheory
+     gcdTheory numberTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Binomial scripts in HOL:
