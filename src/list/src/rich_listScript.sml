@@ -1,12 +1,17 @@
-open HolKernel Parse BasicProvers boolLib numLib metisLib simpLib
-open combinTheory arithmeticTheory prim_recTheory pred_setTheory
-local open listTheory listSimps pred_setSimps TotalDefn in end
+(* ===================================================================== *)
+(* FILE          : rich_listScript.sml                                   *)
+(* DESCRIPTION   : Enriched Theory of Lists                              *)
+(* ===================================================================== *)
 
-open listTheory
+open HolKernel Parse boolLib BasicProvers;
+
+open numLib metisLib simpLib combinTheory arithmeticTheory prim_recTheory
+     pred_setTheory listTheory pairTheory markerLib;
+
+local open listSimps pred_setSimps TotalDefn in end;
+
 val FILTER_APPEND = FILTER_APPEND_DISTRIB
 val REVERSE = REVERSE_SNOC_DEF
-
-open markerLib
 
 val () = new_theory "rich_list"
 
@@ -3184,7 +3189,6 @@ local
   fun simp ths = asm_simp_tac (simpss()) ths
   fun dsimp ths = asm_simp_tac (simpss() ++ boolSimps.DNF_ss) ths
   val decide_tac = numLib.DECIDE_TAC
-  open pred_setTheory open listTheory pairTheory;
 in
 
 val LIST_TO_SET_EQ_SING = Q.store_thm("LIST_TO_SET_EQ_SING",
@@ -3223,7 +3227,7 @@ Theorem ALL_DISTINCT_FRONT :
 Proof
     rpt STRIP_TAC
  >> ‘ALL_DISTINCT l = ALL_DISTINCT (SNOC (LAST l) (FRONT l))’
-      by rw [SNOC_LAST_FRONT]
+      by rw [SNOC_OF_LAST_FRONT]
  >> FULL_SIMP_TAC std_ss [ALL_DISTINCT_SNOC]
 QED
 
@@ -3503,8 +3507,6 @@ QED
 end
 (* end CakeML lemmas *)
 
-local open listTheory in
-
 Theorem nub_GENLIST:
   nub (GENLIST f n) =
     MAP f (FILTER (\i. !j. (i < j) /\ (j < n) ==> f i <> f j) (COUNT_LIST n))
@@ -3547,8 +3549,6 @@ Proof
     \\ simp[LESS_EQ] )
   \\ rw[]
 QED
-
-end
 
 (* alternative definition of UNIQUE *)
 val UNIQUE_LIST_ELEM_COUNT = store_thm (
@@ -3716,6 +3716,36 @@ Proof
     REWRITE_TAC [DELETE_ELEMENT_FILTER]
  >> REWRITE_TAC [GSYM FILTER_APPEND_DISTRIB]
 QED
+
+(* ------------------------------------------------------------------------- *)
+(* More List Theorems from examples/algebra                                  *)
+(* ------------------------------------------------------------------------- *)
+
+(* Theorem: l <> [] ==> (l = SNOC (LAST l) (FRONT l)) *)
+(* Proof:
+     l
+   = FRONT l ++ [LAST l]      by APPEND_FRONT_LAST, l <> []
+   = SNOC (LAST l) (FRONT l)  by SNOC_APPEND
+ *)
+val SNOC_LAST_FRONT = store_thm(
+   "SNOC_LAST_FRONT",
+  ``!l. l <> [] ==> (l = SNOC (LAST l) (FRONT l))``,
+  rw[APPEND_FRONT_LAST]);
+
+(* Theorem: 0 < LENGTH ls <=> (ls = HD ls::TL ls) *)
+(* Proof:
+   If part: 0 < LENGTH ls ==> (ls = HD ls::TL ls)
+      Note LENGTH ls <> 0                       by arithmetic
+        so ~(NULL l)                            by NULL_LENGTH
+        or ls = HD ls :: TL ls                  by CONS
+   Only-if part: (ls = HD ls::TL ls) ==> 0 < LENGTH ls
+      Note LENGTH ls = SUC (LENGTH (TL ls))     by LENGTH
+       but 0 < SUC (LENGTH (TL ls))             by SUC_POS
+*)
+val LIST_HEAD_TAIL = store_thm(
+  "LIST_HEAD_TAIL",
+  ``!ls. 0 < LENGTH ls <=> (ls = HD ls::TL ls)``,
+  metis_tac[LIST_NOT_NIL, NOT_NIL_EQ_LENGTH_NOT_0]);
 
 (* ------------------------------------------------------------------------ *)
 

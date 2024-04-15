@@ -101,15 +101,6 @@ open indexedListsTheory; (* for findi_def *)
    REVERSE_HD        |- !ls. ls <> [] ==> (HD (REVERSE ls) = LAST ls)
    REVERSE_TL        |- !ls. ls <> [] ==> (TL (REVERSE ls) = REVERSE (FRONT ls))
 
-   List Index:
-   findi_nil         |- !x. findi x [] = 0
-   findi_cons        |- !x h t. findi x (h::t) = if x = h then 0 else 1 + findi x t
-   findi_none        |- !ls x. ~MEM x ls ==> findi x ls = LENGTH ls
-   findi_APPEND      |- !l1 l2 x. findi x (l1 ++ l2) =
-                                  if MEM x l1 then findi x l1 else LENGTH l1 + findi x l2
-   findi_EL_iff      |- !ls x n. ALL_DISTINCT ls /\ MEM x ls /\ n < LENGTH ls ==>
-                                 (x = EL n ls <=> findi x ls = n)
-
    Extra List Theorems:
    EVERY_ELEMENT_PROPERTY  |- !p R. EVERY (\c. c IN R) p ==> !k. k < LENGTH p ==> EL k p IN R
    EVERY_MONOTONIC_MAP     |- !l f P Q. (!x. P x ==> (Q o f) x) /\ EVERY P l ==> EVERY Q (MAP f l)
@@ -398,65 +389,6 @@ open indexedListsTheory; (* for findi_def *)
                                   ((?j. a <= j /\ j <= b /\ f j) <=>
                                    f a \/ ?j. a + 1 <= j /\ j <= b /\ f j)
 
-   List Range:
-   listRangeINC_to_LHI       |- !m n. [m .. n] = [m ..< SUC n]
-   listRangeINC_SET          |- !n. set [1 .. n] = IMAGE SUC (count n)
-   listRangeINC_LEN          |- !m n. LENGTH [m .. n] = n + 1 - m
-   listRangeINC_NIL          |- !m n. ([m .. n] = []) <=> n + 1 <= m
-   listRangeINC_MEM          |- !m n x. MEM x [m .. n] <=> m <= x /\ x <= n
-   listRangeINC_EL           |- !m n i. m + i <= n ==> EL i [m .. n] = m + i
-   listRangeINC_EVERY        |- !P m n. EVERY P [m .. n] <=> !x. m <= x /\ x <= n ==> P x
-   listRangeINC_EXISTS       |- !P m n. EXISTS P [m .. n] <=> ?x. m <= x /\ x <= n /\ P x
-   listRangeINC_EVERY_EXISTS |- !P m n. EVERY P [m .. n] <=> ~EXISTS ($~ o P) [m .. n]
-   listRangeINC_EXISTS_EVERY |- !P m n. EXISTS P [m .. n] <=> ~EVERY ($~ o P) [m .. n]
-   listRangeINC_SNOC         |- !m n. m <= n + 1 ==> ([m .. n + 1] = SNOC (n + 1) [m .. n])
-   listRangeINC_FRONT        |- !m n. m <= n + 1 ==> (FRONT [m .. n + 1] = [m .. n])
-   listRangeINC_LAST         |- !m n. m <= n ==> (LAST [m .. n] = n)
-   listRangeINC_REVERSE      |- !m n. REVERSE [m .. n] = MAP (\x. n - x + m) [m .. n]
-   listRangeINC_REVERSE_MAP  |- !f m n. REVERSE (MAP f [m .. n]) = MAP (f o (\x. n - x + m)) [m .. n]
-   listRangeINC_MAP_SUC      |- !f m n. MAP f [m + 1 .. n + 1] = MAP (f o SUC) [m .. n]
-   listRangeINC_APPEND       |- !a b c. a <= b /\ b <= c ==> ([a .. b] ++ [b + 1 .. c] = [a .. c])
-   listRangeINC_SUM          |- !m n. SUM [m .. n] = SUM [1 .. n] - SUM [1 .. m - 1]
-   listRangeINC_PROD_pos     |- !m n. 0 < m ==> 0 < PROD [m .. n]
-   listRangeINC_PROD         |- !m n. 0 < m /\ m <= n ==> (PROD [m .. n] = PROD [1 .. n] DIV PROD [1 .. m - 1])
-   listRangeINC_has_divisors |- !m n x. 0 < n /\ m <= x /\ x divides n ==> MEM x [m .. n]
-   listRangeINC_1_n          |- !n. [1 .. n] = GENLIST SUC n
-   listRangeINC_MAP          |- !f n. MAP f [1 .. n] = GENLIST (f o SUC) n
-   listRangeINC_SUM_MAP      |- !f n. SUM (MAP f [1 .. SUC n]) = f (SUC n) + SUM (MAP f [1 .. n])
-   listRangeINC_SPLIT        |- !m n j. m < j /\ j <= n ==> [m .. n] = [m .. j - 1] ++ j::[j + 1 .. n]
-
-   listRangeLHI_to_INC       |- !m n. [m ..< n + 1] = [m .. n]
-   listRangeLHI_SET          |- !n. set [0 ..< n] = count n
-   listRangeLHI_LEN          |- !m n. LENGTH [m ..< n] = n - m
-   listRangeLHI_NIL          |- !m n. [m ..< n] = [] <=> n <= m
-   listRangeLHI_MEM          |- !m n x. MEM x [m ..< n] <=> m <= x /\ x < n
-   listRangeLHI_EL           |- !m n i. m + i < n ==> EL i [m ..< n] = m + i
-   listRangeLHI_EVERY        |- !P m n. EVERY P [m ..< n] <=> !x. m <= x /\ x < n ==> P x
-   listRangeLHI_SNOC         |- !m n. m <= n ==> [m ..< n + 1] = SNOC n [m ..< n]
-   listRangeLHI_FRONT        |- !m n. m <= n ==> (FRONT [m ..< n + 1] = [m ..< n])
-   listRangeLHI_LAST         |- !m n. m <= n ==> (LAST [m ..< n + 1] = n)
-   listRangeLHI_REVERSE      |- !m n. REVERSE [m ..< n] = MAP (\x. n - 1 - x + m) [m ..< n]
-   listRangeLHI_REVERSE_MAP  |- !f m n. REVERSE (MAP f [m ..< n]) = MAP (f o (\x. n - 1 - x + m)) [m ..< n]
-   listRangeLHI_MAP_SUC      |- !f m n. MAP f [m + 1 ..< n + 1] = MAP (f o SUC) [m ..< n]
-   listRangeLHI_APPEND       |- !a b c. a <= b /\ b <= c ==> [a ..< b] ++ [b ..< c] = [a ..< c]
-   listRangeLHI_SUM          |- !m n. SUM [m ..< n] = SUM [1 ..< n] - SUM [1 ..< m]
-   listRangeLHI_PROD_pos     |- !m n. 0 < m ==> 0 < PROD [m ..< n]
-   listRangeLHI_PROD         |- !m n. 0 < m /\ m <= n ==> PROD [m ..< n] = PROD [1 ..< n] DIV PROD [1 ..< m]
-   listRangeLHI_has_divisors |- !m n x. 0 < n /\ m <= x /\ x divides n ==> MEM x [m ..< n + 1]
-   listRangeLHI_0_n          |- !n. [0 ..< n] = GENLIST I n
-   listRangeLHI_MAP          |- !f n. MAP f [0 ..< n] = GENLIST f n
-   listRangeLHI_SUM_MAP      |- !f n. SUM (MAP f [0 ..< SUC n]) = f n + SUM (MAP f [0 ..< n])
-   listRangeLHI_SPLIT        |- !m n j. m <= j /\ j < n ==> [m ..< n] = [m ..< j] ++ j::[j + 1 ..< n]
-
-   listRangeINC_ALL_DISTINCT       |- !m n. ALL_DISTINCT [m .. n]
-   listRangeINC_EVERY_split_head   |- !P m n. m <= n ==> (EVERY P [m - 1 .. n] <=> P (m - 1) /\ EVERY P [m .. n])
-   listRangeINC_EVERY_split_last   |- !P m n. m <= n ==> (EVERY P [m .. n + 1] <=> P (n + 1) /\ EVERY P [m .. n])
-   listRangeINC_EVERY_less_last    |- !P m n. m <= n ==> (EVERY P [m .. n] <=> P n /\ EVERY P [m ..< n])
-   listRangeINC_EVERY_span_max     |- !P m n. m < n /\ P m /\ ~P n ==>
-                                              ?k. m <= k /\ k < n /\ EVERY P [m .. k] /\ ~P (SUC k)
-   listRangeINC_EVERY_span_min     |- !P m n. m < n /\ ~P m /\ P n ==>
-                                              ?k. m < k /\ k <= n /\ EVERY P [k .. n] /\ ~P (PRE k)
-
    List Summation and Product:
    sum_1_to_n_eq_tri_n       |- !n. SUM [1 .. n] = tri n
    sum_1_to_n_eqn            |- !n. SUM [1 .. n] = HALF (n * (n + 1))
@@ -588,37 +520,6 @@ open indexedListsTheory; (* for findi_def *)
 (* List Theorems                                                             *)
 (* ------------------------------------------------------------------------- *)
 
-(* Theorem: ls <> [] <=> (ls = HD ls::TL ls) *)
-(* Proof:
-   If part: ls <> [] ==> (ls = HD ls::TL ls)
-       ls <> []
-   ==> ?h t. ls = h::t         by list_CASES
-   ==> ls = (HD ls)::(TL ls)   by HD, TL
-   Only-if part: (ls = HD ls::TL ls) ==> ls <> []
-   This is true                by NOT_NIL_CONS
-*)
-val LIST_NOT_NIL = store_thm(
-  "LIST_NOT_NIL",
-  ``!ls. ls <> [] <=> (ls = HD ls::TL ls)``,
-  metis_tac[list_CASES, HD, TL, NOT_NIL_CONS]);
-
-(* NOT_NIL_EQ_LENGTH_NOT_0  |- x <> [] <=> 0 < LENGTH x *)
-
-(* Theorem: 0 < LENGTH ls <=> (ls = HD ls::TL ls) *)
-(* Proof:
-   If part: 0 < LENGTH ls ==> (ls = HD ls::TL ls)
-      Note LENGTH ls <> 0                       by arithmetic
-        so ~(NULL l)                            by NULL_LENGTH
-        or ls = HD ls :: TL ls                  by CONS
-   Only-if part: (ls = HD ls::TL ls) ==> 0 < LENGTH ls
-      Note LENGTH ls = SUC (LENGTH (TL ls))     by LENGTH
-       but 0 < SUC (LENGTH (TL ls))             by SUC_POS
-*)
-val LIST_HEAD_TAIL = store_thm(
-  "LIST_HEAD_TAIL",
-  ``!ls. 0 < LENGTH ls <=> (ls = HD ls::TL ls)``,
-  metis_tac[LIST_NOT_NIL, NOT_NIL_EQ_LENGTH_NOT_0]);
-
 (* Theorem: p <> [] /\ q <> [] ==> ((p = q) <=> ((HD p = HD q) /\ (TL p = TL q))) *)
 (* Proof: by cases on p and cases on q, CONS_11 *)
 val LIST_EQ_HEAD_TAIL = store_thm(
@@ -633,29 +534,6 @@ val LIST_SING_EQ = store_thm(
   "LIST_SING_EQ",
   ``!x y. ([x] = [y]) <=> (x = y)``,
   rw_tac bool_ss[]);
-
-(* Theorem: (LENGTH l = 1) <=> ?x. l = [x] *)
-(* Proof:
-   If part: (LENGTH l = 1) ==> ?x. l = [x]
-     Since LENGTH l <> 0, l <> []  by LENGTH_NIL
-        or ?h t. l = h::t          by list_CASES
-       and LENGTH t = 0            by LENGTH
-        so t = []                  by LENGTH_NIL
-     Hence l = [x]
-   Only-if part: (l = [x]) ==> (LENGTH l = 1)
-     True by LENGTH.
-*)
-val LENGTH_EQ_1 = store_thm(
-  "LENGTH_EQ_1",
-  ``!l. (LENGTH l = 1) <=> ?x. l = [x]``,
-  rw[EQ_IMP_THM] >| [
-    `LENGTH l <> 0` by decide_tac >>
-    `?h t. l = h::t` by metis_tac[LENGTH_NIL, list_CASES] >>
-    `SUC (LENGTH t) = 1` by metis_tac[LENGTH] >>
-    `LENGTH t = 0` by decide_tac >>
-    metis_tac[LENGTH_NIL],
-    rw[]
-  ]);
 
 (* Theorem: LENGTH [x] = 1 *)
 (* Proof: by LENGTH, ONE. *)
@@ -675,17 +553,6 @@ val SNOC_NIL = save_thm("SNOC_NIL", SNOC |> CONJUNCT1);
 (* > val SNOC_NIL = |- !x. SNOC x [] = [x]: thm *)
 val SNOC_CONS = save_thm("SNOC_CONS", SNOC |> CONJUNCT2);
 (* > val SNOC_CONS = |- !x x' l. SNOC x (x'::l) = x'::SNOC x l: thm *)
-
-(* Theorem: l <> [] ==> (l = SNOC (LAST l) (FRONT l)) *)
-(* Proof:
-     l
-   = FRONT l ++ [LAST l]      by APPEND_FRONT_LAST, l <> []
-   = SNOC (LAST l) (FRONT l)  by SNOC_APPEND
-*)
-val SNOC_LAST_FRONT = store_thm(
-  "SNOC_LAST_FRONT",
-  ``!l. l <> [] ==> (l = SNOC (LAST l) (FRONT l))``,
-  rw[APPEND_FRONT_LAST]);
 
 (* Theorem alias *)
 val MAP_COMPOSE = save_thm("MAP_COMPOSE", MAP_MAP_o);

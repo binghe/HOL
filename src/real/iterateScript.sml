@@ -138,12 +138,13 @@ val REAL_BOUNDS_LT = store_thm ("REAL_BOUNDS_LT",
  ``!x k:real. -k < x /\ x < k <=> abs(x) < k``,
   REAL_ARITH_TAC);
 
-Theorem LE_EXISTS: !m n:num. (m <= n) <=> (?d. n = m + d)
+Theorem LE_EXISTS :
+  !m n:num. (m <= n) <=> (?d. n = m + d)
 Proof
   simp[EQ_IMP_THM, PULL_EXISTS] >> rw[] >> qexists ‘n - m’ >> simp[]
 QED
 
-Theorem LT_EXISTS:
+Theorem LT_EXISTS :
   !m n. (m < n) <=> (?d. n = m + SUC d)
 Proof
   simp[EQ_IMP_THM] >> rw[] >> qexists ‘n - (m + 1)’ >> simp[]
@@ -1103,7 +1104,6 @@ End
 (* syntax is similar to the version also available for lists, where
    listRangeTheory has  [ m .. n ]
  *)
-
 val _ = add_rule { block_style = (AroundEachPhrase, (PP.CONSISTENT, 0)),
                    fixity = Closefix,
                    paren_style = OnlyIfNecessary,

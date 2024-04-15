@@ -34,6 +34,12 @@ val metis_tac = METIS_TAC
 fun fs l = FULL_SIMP_TAC (srw_ss()) l
 val std_ss = arith_ss ++ boolSimps.LET_ss;
 
+fun DECIDE_TAC (g as (asl,_)) =
+  ((MAP_EVERY UNDISCH_TAC (filter numSimps.is_arith asl) THEN
+    CONV_TAC Arith.ARITH_CONV)
+   ORELSE tautLib.TAUT_TAC) g;
+val decide_tac = DECIDE_TAC;
+
 val _ = new_theory "list";
 
 val _ = Rewrite.add_implicit_rewrites pairTheory.pair_rws;
@@ -431,6 +437,19 @@ val EQ_LIST = store_thm("EQ_LIST",
      REPEAT STRIP_TAC THEN
      ASM_REWRITE_TAC [CONS_11]);
 
+(* Theorem: ls <> [] <=> (ls = HD ls::TL ls) *)
+(* Proof:
+   If part: ls <> [] ==> (ls = HD ls::TL ls)
+       ls <> []
+   ==> ?h t. ls = h::t         by list_CASES
+   ==> ls = (HD ls)::(TL ls)   by HD, TL
+   Only-if part: (ls = HD ls::TL ls) ==> ls <> []
+   This is true                by NOT_NIL_CONS
+*)
+val LIST_NOT_NIL = store_thm(
+  "LIST_NOT_NIL",
+  ``!ls. ls <> [] <=> (ls = HD ls::TL ls)``,
+  metis_tac[list_CASES, HD, TL, NOT_NIL_CONS]);
 
 Theorem CONS:
   !l : 'a list. ~NULL l ==> HD l :: TL l = l
@@ -740,6 +759,30 @@ Theorem LENGTH1 :
 Proof
     Cases_on `l` >> srw_tac [][LENGTH_NIL]
 QED
+
+(* Theorem: (LENGTH l = 1) <=> ?x. l = [x] *)
+(* Proof:
+   If part: (LENGTH l = 1) ==> ?x. l = [x]
+     Since LENGTH l <> 0, l <> []  by LENGTH_NIL
+        or ?h t. l = h::t          by list_CASES
+       and LENGTH t = 0            by LENGTH
+        so t = []                  by LENGTH_NIL
+     Hence l = [x]
+   Only-if part: (l = [x]) ==> (LENGTH l = 1)
+     True by LENGTH.
+*)
+val LENGTH_EQ_1 = store_thm(
+  "LENGTH_EQ_1",
+  ``!l. (LENGTH l = 1) <=> ?x. l = [x]``,
+  rw [GSYM LENGTH1]
+(*rw[EQ_IMP_THM] >| [
+    `LENGTH l <> 0` by decide_tac >>
+    `?h t. l = h::t` by metis_tac[LENGTH_NIL, list_CASES] >>
+    `SUC (LENGTH t) = 1` by metis_tac[LENGTH] >>
+    `LENGTH t = 0` by decide_tac >>
+    metis_tac[LENGTH_NIL],
+    rw[]
+  ]*));
 
 Theorem LENGTH2 :
     (2 = LENGTH l) <=> ?a b. l = [a;b]
@@ -2686,8 +2729,12 @@ val SNOC_APPEND = store_thm("SNOC_APPEND",
    “!x (l:('a) list). SNOC x l = APPEND l [x]”,
    GEN_TAC THEN LIST_INDUCT_TAC THEN ASM_REWRITE_TAC [SNOC, APPEND]);
 
-(* |- !l. l <> [] ==> SNOC (LAST l) (FRONT l) = l *)
-Theorem SNOC_LAST_FRONT =
+(* |- !l. l <> [] ==> SNOC (LAST l) (FRONT l) = l
+
+   NOTE: was called "SNOC_LAST_FRONT", renamed due to name conflicts with
+         "examples/algebra" (cf. rich_listTheory.SNOC_LAST_FRONT)
+ *)
+Theorem SNOC_OF_LAST_FRONT =
      REWRITE_RULE [GSYM SNOC_APPEND] APPEND_FRONT_LAST
 
 val LIST_TO_SET_SNOC = Q.store_thm("LIST_TO_SET_SNOC",
