@@ -1,520 +1,19 @@
 (* ------------------------------------------------------------------------- *)
-(* Helper Theorems - a collection of useful results -- for Lists.            *)
+(* Combinatorics Theory                                                      *)
+(*  (Combined theory of Euler, Gauss, Mobius, triangle and binomial, etc.,   *)
+(*   originally under "examples/algebra/lib")                                *)
+(*                                                                           *)
+(* Author: (Joseph) Hing-Lun Chan (Australian National University, 2019)     *)
 (* ------------------------------------------------------------------------- *)
 
-(*===========================================================================*)
+open HolKernel boolLib Parse bossLib;
 
-(* add all dependent libraries for script *)
-open HolKernel boolLib bossLib Parse;
+open prim_recTheory arithmeticTheory dividesTheory gcdTheory gcdsetTheory
+     logrootTheory pred_setTheory listTheory numberTheory;
 
-(* declare new theory at start *)
-val _ = new_theory "helperList";
+open listRangeTheory rich_listTheory indexedListsTheory;
 
-(* ------------------------------------------------------------------------- *)
-
-
-(* val _ = load "jcLib"; *)
-open jcLib;
-
-(* open dependent theories *)
-open pred_setTheory listTheory rich_listTheory;
-
-open numberTheory;
-
-(* val _ = load "helperSetTheory"; *)
-open helperSetTheory;
-
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open arithmeticTheory dividesTheory gcdTheory logrootTheory;
-
-(* use listRange: [1 .. 3] = [1; 2; 3], [1 ..< 3] = [1; 2] *)
-(* val _ = load "listRangeTheory"; *)
-open listRangeTheory;
-open rich_listTheory; (* for EVERY_REVERSE *)
-open indexedListsTheory; (* for findi_def *)
-
-
-(* ------------------------------------------------------------------------- *)
-(* HelperList Documentation                                                  *)
-(* ------------------------------------------------------------------------- *)
-(* Overloading:
-   m downto n        = REVERSE [m .. n]
-   turn_exp l n      = FUNPOW turn n l
-   POSITIVE l        = !x. MEM x l ==> 0 < x
-   EVERY_POSITIVE l  = EVERY (\k. 0 < k) l
-   MONO f            = !x y. x <= y ==> f x <= f y
-   MONO2 f           = !x1 y1 x2 y2. x1 <= x2 /\ y1 <= y2 ==> f x1 y1 <= f x2 y2
-   MONO3 f           = !x1 y1 z1 x2 y2 z2. x1 <= x2 /\ y1 <= y2 /\ z1 <= z2 ==> f x1 y1 z1 <= f x2 y2 z2
-   RMONO f           = !x y. x <= y ==> f y <= f x
-   RMONO2 f          = !x1 y1 x2 y2. x1 <= x2 /\ y1 <= y2 ==> f x2 y2 <= f x1 y1
-   RMONO3 f          = !x1 y1 z1 x2 y2 z2. x1 <= x2 /\ y1 <= y2 /\ z1 <= z2 ==> f x2 y2 z2 <= f x1 y1 z1
-   MONO_INC ls       = !m n. m <= n /\ n < LENGTH ls ==> EL m ls <= EL n ls
-   MONO_DEC ls       = !m n. m <= n /\ n < LENGTH ls ==> EL n ls <= EL m ls
-*)
-
-(* Definitions and Theorems (# are exported):
-
-   List Theorems:
-   LIST_NOT_NIL     |- !ls. ls <> [] <=> (ls = HD ls::TL ls)
-   LIST_HEAD_TAIL   |- !ls. 0 < LENGTH ls <=> (ls = HD ls::TL ls)
-   LIST_EQ_HEAD_TAIL|- !p q. p <> [] /\ q <> [] ==> ((p = q) <=> (HD p = HD q) /\ (TL p = TL q))
-   LIST_SING_EQ     |- !x y. ([x] = [y]) <=> (x = y)
-   LENGTH_NON_NIL   |- !l. 0 < LENGTH l <=> l <> []
-   LENGTH_EQ_0      |- !l. (LENGTH l = 0) <=> (l = [])
-   LENGTH_EQ_1      |- !l. (LENGTH l = 1) <=> ?x. l = [x]
-   LENGTH_SING      |- !x. LENGTH [x] = 1
-   LENGTH_TL_LT     |- !ls. ls <> [] ==> LENGTH (TL ls) < LENGTH ls
-   SNOC_NIL         |- !x. SNOC x [] = [x]
-   SNOC_CONS        |- !x x' l. SNOC x (x'::l) = x'::SNOC x l
-   SNOC_LAST_FRONT  |- !l. l <> [] ==> (l = SNOC (LAST l) (FRONT l))
-   MAP_COMPOSE      |- !f g l. MAP f (MAP g l) = MAP (f o g) l
-   MAP_SING         |- !f x. MAP f [x] = [f x]
-   MAP_HD           |- !f ls. ls <> [] ==> HD (MAP f ls) = f (HD ls)
-   LAST_EL_CONS     |- !h t. t <> [] ==> LAST t = EL (LENGTH t) (h::t)
-   FRONT_LENGTH     |- !l. l <> [] ==> (LENGTH (FRONT l) = PRE (LENGTH l))
-   FRONT_EL         |- !l n. l <> [] /\ n < LENGTH (FRONT l) ==> (EL n (FRONT l) = EL n l)
-   FRONT_EQ_NIL     |- !l. LENGTH l = 1 ==> FRONT l = []
-   FRONT_NON_NIL    |- !l. 1 < LENGTH l ==> FRONT l <> []
-   HEAD_MEM         |- !ls. ls <> [] ==> MEM (HD ls) ls
-   LAST_MEM         |- !ls. ls <> [] ==> MEM (LAST ls) ls
-   LAST_EQ_HD       |- !h t. ~MEM h t /\ LAST (h::t) = h <=> t = []
-   MEM_FRONT_NOT_LAST|- !ls. ls <> [] /\ ALL_DISTINCT ls ==> ~MEM (LAST ls) (FRONT ls)
-   NIL_NO_MEM       |- !ls. ls = [] <=> !x. ~MEM x ls
-   MEM_APPEND_3     |- !l1 x l2 h. MEM h (l1 ++ [x] ++ l2) <=> MEM h (x::(l1 ++ l2))
-   DROP_1           |- !h t. DROP 1 (h::t) = t
-   FRONT_SING       |- !x. FRONT [x] = []
-   TAIL_BY_DROP     |- !ls. ls <> [] ==> TL ls = DROP 1 ls
-   FRONT_BY_TAKE    |- !ls. ls <> [] ==> FRONT ls = TAKE (LENGTH ls - 1) ls
-   HD_APPEND        |- !h t ls. HD (h::t ++ ls) = h
-   EL_TAIL          |- !h t n. 0 <> n ==> (EL (n - 1) t = EL n (h::t))
-   MONOLIST_SET_SING|- !c ls. ls <> [] /\ EVERY ($= c) ls ==> SING (set ls)
-!  LIST_TO_SET_EVAL |- !t h. set [] = {} /\ set (h::t) = h INSERT set t
-   set_list_eq_count|- !ls n. set ls = count n ==> !j. j < LENGTH ls ==> EL j ls < n
-   list_to_set_eq_el_image
-                    |- !ls. set ls = IMAGE (\j. EL j ls) (count (LENGTH ls))
-   all_distinct_list_el_inj
-                    |- !ls. ALL_DISTINCT ls ==> INJ (\j. EL j ls) (count (LENGTH ls)) univ(:'a)
-
-   List Reversal:
-   REVERSE_SING      |- !x. REVERSE [x] = [x]
-   REVERSE_HD        |- !ls. ls <> [] ==> (HD (REVERSE ls) = LAST ls)
-   REVERSE_TL        |- !ls. ls <> [] ==> (TL (REVERSE ls) = REVERSE (FRONT ls))
-
-   Extra List Theorems:
-   EVERY_ELEMENT_PROPERTY  |- !p R. EVERY (\c. c IN R) p ==> !k. k < LENGTH p ==> EL k p IN R
-   EVERY_MONOTONIC_MAP     |- !l f P Q. (!x. P x ==> (Q o f) x) /\ EVERY P l ==> EVERY Q (MAP f l)
-   EVERY_LT_IMP_EVERY_LE   |- !ls n. EVERY (\j. j < n) ls ==> EVERY (\j. j <= n) ls
-   ZIP_SNOC         |- !x1 x2 l1 l2. (LENGTH l1 = LENGTH l2) ==>
-                                     (ZIP (SNOC x1 l1,SNOC x2 l2) = SNOC (x1,x2) (ZIP (l1,l2)))
-   ZIP_MAP_MAP      |- !ls f g. ZIP (MAP f ls,MAP g ls) = MAP (\x. (f x,g x)) ls
-   MAP2_MAP_MAP     |- !ls f g1 g2. MAP2 f (MAP g1 ls) (MAP g2 ls) = MAP (\x. f (g1 x) (g2 x)) ls
-   EL_APPEND        |- !n l1 l2. EL n (l1 ++ l2) = if n < LENGTH l1 then EL n l1 else EL (n - LENGTH l1) l2
-   EL_SPLIT         |- !ls j. j < LENGTH ls ==> ?l1 l2. ls = l1 ++ EL j ls::l2
-   EL_SPLIT_2       |- !ls j k. j < k /\ k < LENGTH ls ==> ?l1 l2 l3. ls = l1 ++ EL j ls::l2 ++ EL k ls::l3
-   EL_ALL_PROPERTY  |- !h1 t1 h2 t2 P. (LENGTH (h1::t1) = LENGTH (h2::t2)) /\
-                         (!k. k < LENGTH (h1::t1) ==> P (EL k (h1::t1)) (EL k (h2::t2))) ==>
-                         P h1 h2 /\ !k. k < LENGTH t1 ==> P (EL k t1) (EL k t2)
-   APPEND_EQ_APPEND_EQ   |- !l1 l2 m1 m2.
-                            (l1 ++ l2 = m1 ++ m2) /\ (LENGTH l1 = LENGTH m1) <=> (l1 = m1) /\ (l2 = m2)
-   LUPDATE_LEN           |- !e n l. LENGTH (LUPDATE e n l) = LENGTH l
-   LUPDATE_EL            |- !e n l p. p < LENGTH l ==> EL p (LUPDATE e n l) = if p = n then e else EL p l
-   LUPDATE_SAME_SPOT     |- !ls n p q. LUPDATE q n (LUPDATE p n ls) = LUPDATE q n ls
-   LUPDATE_DIFF_SPOT     |- !ls m n p q. m <> n ==>
-                            LUPDATE q n (LUPDATE p m ls) = LUPDATE p m (LUPDATE q n ls)
-   EL_LENGTH_APPEND_0    |- !ls h t. EL (LENGTH ls) (ls ++ h::t) = h
-   EL_LENGTH_APPEND_1    |- !ls h k t. EL (LENGTH ls + 1) (ls ++ h::k::t) = k
-   LUPDATE_APPEND_0      |- !ls a h t. LUPDATE a (LENGTH ls) (ls ++ h::t) = ls ++ a::t
-   LUPDATE_APPEND_1      |- !ls b h k t. LUPDATE b (LENGTH ls + 1) (ls ++ h::k::t) = ls ++ h::b::t
-   LUPDATE_APPEND_0_1    |- !ls a b h k t. LUPDATE b (LENGTH ls + 1)
-                                          (LUPDATE a (LENGTH ls) (ls ++ h::k::t)) = ls ++ a::b::t
-
-   DROP and TAKE:
-   DROP_LENGTH_NIL       |- !l. DROP (LENGTH l) l = []
-   TL_DROP               |- !ls n. n < LENGTH ls ==> TL (DROP n ls) = DROP n (TL ls)
-   TAKE_1_APPEND         |- !x y. x <> [] ==> (TAKE 1 (x ++ y) = TAKE 1 x)
-   DROP_1_APPEND         |- !x y. x <> [] ==> (DROP 1 (x ++ y) = DROP 1 x ++ y)
-   DROP_SUC              |- !n x. DROP (SUC n) x = DROP 1 (DROP n x)
-   TAKE_SUC              |- !n x. TAKE (SUC n) x = TAKE n x ++ TAKE 1 (DROP n x)
-   TAKE_SUC_BY_TAKE      |- !k x. k < LENGTH x ==> (TAKE (SUC k) x = SNOC (EL k x) (TAKE k x))
-   DROP_BY_DROP_SUC      |- !k x. k < LENGTH x ==> (DROP k x = EL k x::DROP (SUC k) x)
-   DROP_HEAD_ELEMENT     |- !ls n. n < LENGTH ls ==> ?u. DROP n ls = [EL n ls] ++ u
-   DROP_TAKE_EQ_NIL      |- !ls n. DROP n (TAKE n ls) = []
-   TAKE_DROP_SWAP        |- !ls m n. TAKE m (DROP n ls) = DROP n (TAKE (n + m) ls)
-   TAKE_LENGTH_APPEND2   |- !l1 l2 x k. TAKE (LENGTH l1) (LUPDATE x (LENGTH l1 + k) (l1 ++ l2)) = l1
-   LENGTH_TAKE_LE        |- !n l. LENGTH (TAKE n l) <= LENGTH l
-   ALL_DISTINCT_TAKE     |- !ls n. ALL_DISTINCT ls ==> ALL_DISTINCT (TAKE n ls)
-   ALL_DISTINCT_TAKE_DROP|- !ls. ALL_DISTINCT ls ==>
-                            !k e. MEM e (TAKE k ls) /\ MEM e (DROP k ls) ==> F
-   ALL_DISTINCT_SWAP     |- !ls x y. ALL_DISTINCT (x::y::ls) <=> ALL_DISTINCT (y::x::ls)
-   ALL_DISTINCT_LAST_EL_IFF
-                         |- !ls j. ALL_DISTINCT ls /\ ls <> [] /\ j < LENGTH ls ==>
-                                   (EL j ls = LAST ls <=> j + 1 = LENGTH ls)
-   ALL_DISTINCT_FRONT    |- !ls. ls <> [] /\ ALL_DISTINCT ls ==> ALL_DISTINCT (FRONT ls)
-   ALL_DISTINCT_EL_APPEND
-                         |- !ls l1 l2 j. ALL_DISTINCT ls /\ j < LENGTH ls /\
-                                         ls = l1 ++ [EL j ls] ++ l2 ==> j = LENGTH l1
-   ALL_DISTINCT_APPEND_3 |- !l1 x l2. ALL_DISTINCT (l1 ++ [x] ++ l2) <=> ALL_DISTINCT (x::(l1 ++ l2))
-   MEM_SPLIT_APPEND_distinct
-                         |- !l. ALL_DISTINCT l ==>
-                            !x. MEM x l <=> ?p1 p2. (l = p1 ++ [x] ++ p2) /\ ~MEM x p1 /\ ~MEM x p2
-   MEM_SPLIT_TAKE_DROP_first
-                         |- !ls x. MEM x ls <=>
-                               ?k. k < LENGTH ls /\ x = EL k ls /\
-                                   ls = TAKE k ls ++ x::DROP (k + 1) ls /\ ~MEM x (TAKE k ls)
-   MEM_SPLIT_TAKE_DROP_last
-                         |- !ls x. MEM x ls <=>
-                               ?k. k < LENGTH ls /\ x = EL k ls /\
-                                   ls = TAKE k ls ++ x::DROP (k + 1) ls /\ ~MEM x (DROP (k + 1) ls)
-   MEM_SPLIT_TAKE_DROP_distinct
-                         |- !ls. ALL_DISTINCT ls ==>
-                             !x. MEM x ls <=>
-                             ?k. k < LENGTH ls /\ x = EL k ls /\
-                                 ls = TAKE k ls ++ x::DROP (k + 1) ls /\
-                                 ~MEM x (TAKE k ls) /\ ~MEM x (DROP (k + 1) ls)
-
-   List Filter:
-   FILTER_EL_IMP       |- !P ls l1 l2 x. (let fs = FILTER P ls
-                                           in ls = l1 ++ x::l2 /\ P x ==> x = EL (LENGTH (FILTER P l1)) fs)
-   FILTER_EL_IFF       |- !P ls l1 l2 x j. (let fs = FILTER P ls
-                                             in ALL_DISTINCT ls /\ ls = l1 ++ x::l2 /\ j < LENGTH fs ==>
-                                                (x = EL j fs <=> P x /\ j = LENGTH (FILTER P l1)))
-   FILTER_HD           |- !P ls l1 l2 x. ls = l1 ++ x::l2 /\ P x /\ FILTER P l1 = [] ==> x = HD (FILTER P ls)
-   FILTER_HD_IFF       |- !P ls l1 l2 x. ALL_DISTINCT ls /\ ls = l1 ++ x::l2 /\ P x ==>
-                                         (x = HD (FILTER P ls) <=> FILTER P l1 = [])
-   FILTER_LAST         |- !P ls l1 l2 x. ls = l1 ++ x::l2 /\ P x /\ FILTER P l2 = [] ==> x = LAST (FILTER P ls)
-   FILTER_LAST_IFF     |- !P ls l1 l2 x. ALL_DISTINCT ls /\ ls = l1 ++ x::l2 /\ P x ==>
-                                         (x = LAST (FILTER P ls) <=> FILTER P l2 = [])
-   FILTER_EL_NEXT      |- !P ls l1 l2 l3 x y. (let fs = FILTER P ls; j = LENGTH (FILTER P l1)
-                                                in ls = l1 ++ x::l2 ++ y::l3 /\ P x /\ P y /\ FILTER P l2 = [] ==>
-                                                   x = EL j fs /\ y = EL (j + 1) fs)
-   FILTER_EL_NEXT_IFF  |- !P ls l1 l2 l3 x y. (let fs = FILTER P ls; j = LENGTH (FILTER P l1)
-                                                in ALL_DISTINCT ls /\ ls = l1 ++ x::l2 ++ y::l3 /\ P x /\ P y ==>
-                                                   (x = EL j fs /\ y = EL (j + 1) fs <=> FILTER P l2 = []))
-   FILTER_EL_NEXT_IDX  |- !P ls l1 l2 l3 x y. (let fs = FILTER P ls
-                                                in ALL_DISTINCT ls /\ ls = l1 ++ x::l2 ++ y::l3 /\ P x /\ P y ==>
-                                                   (findi y fs = 1 + findi x fs <=> FILTER P l2 = []))
-
-   List Rotation:
-   rotate_def              |- !n l. rotate n l = DROP n l ++ TAKE n l
-   rotate_shift_element    |- !l n. n < LENGTH l ==> (rotate n l = EL n l::(DROP (SUC n) l ++ TAKE n l))
-   rotate_0                |- !l. rotate 0 l = l
-   rotate_nil              |- !n. rotate n [] = []
-   rotate_full             |- !l. rotate (LENGTH l) l = l
-   rotate_suc              |- !l n. n < LENGTH l ==> (rotate (SUC n) l = rotate 1 (rotate n l))
-   rotate_same_length      |- !l n. LENGTH (rotate n l) = LENGTH l
-   rotate_same_set         |- !l n. set (rotate n l) = set l
-   rotate_add              |- !n m l. n + m <= LENGTH l ==> (rotate n (rotate m l) = rotate (n + m) l)
-   rotate_lcancel          |- !k l. k < LENGTH l ==> (rotate (LENGTH l - k) (rotate k l) = l)
-   rotate_rcancel          |- !k l. k < LENGTH l ==> (rotate k (rotate (LENGTH l - k) l) = l)
-
-   List Turn:
-   turn_def         |- !l. turn l = if l = [] then [] else LAST l::FRONT l
-   turn_nil         |- turn [] = []
-   turn_not_nil     |- !l. l <> [] ==> (turn l = LAST l::FRONT l)
-   turn_length      |- !l. LENGTH (turn l) = LENGTH l
-   turn_eq_nil      |- !p. (turn p = []) <=> (p = [])
-   head_turn        |- !ls. ls <> [] ==> HD (turn ls) = LAST ls
-   tail_turn        |- !ls. ls <> [] ==> (TL (turn ls) = FRONT ls)
-   turn_snoc        |- !ls x. turn (SNOC x ls) = x::ls
-   turn_exp_0       |- !l. turn_exp l 0 = l
-   turn_exp_1       |- !l. turn_exp l 1 = turn l
-   turn_exp_2       |- !l. turn_exp l 2 = turn (turn l)
-   turn_exp_SUC     |- !l n. turn_exp l (SUC n) = turn_exp (turn l) n
-   turn_exp_suc     |- !l n. turn_exp l (SUC n) = turn (turn_exp l n)
-   turn_exp_length  |- !l n. LENGTH (turn_exp l n) = LENGTH l
-   head_turn_exp    |- !ls n. n < LENGTH ls ==>
-                              HD (turn_exp ls n) = EL (if n = 0 then 0 else (LENGTH ls - n)) ls
-
-   Unit-List and Mono-List:
-   LIST_TO_SET_SING |- !l. (LENGTH l = 1) ==> SING (set l)
-   MONOLIST_EQ      |- !l1 l2. SING (set l1) /\ SING (set l2) ==>
-                        ((l1 = l2) <=> (LENGTH l1 = LENGTH l2) /\ (set l1 = set l2))
-   NON_MONO_TAIL_PROPERTY |- !l. ~SING (set (h::t)) ==> ?h'. MEM h' t /\ h' <> h
-
-   GENLIST Theorems:
-   GENLIST_0           |- !f. GENLIST f 0 = []
-   GENLIST_1           |- !f. GENLIST f 1 = [f 0]
-   GENLIST_EQ          |- !f1 f2 n. (!m. m < n ==> f1 m = f2 m) ==> GENLIST f1 n = GENLIST f2 n
-   GENLIST_EQ_NIL      |- !f n. (GENLIST f n = []) <=> (n = 0)
-   GENLIST_LAST        |- !f n. LAST (GENLIST f (SUC n)) = f n
-   GENLIST_CONSTANT    |- !f n c. (!k. k < n ==> (f k = c)) <=> EVERY (\x. x = c) (GENLIST f n)
-   GENLIST_K_CONS      |- !e n. GENLIST (K e) (SUC n) = e::GENLIST (K e) n
-   GENLIST_K_ADD       |- !e n m. GENLIST (K e) (n + m) = GENLIST (K e) m ++ GENLIST (K e) n
-   GENLIST_K_LESS      |- !f e n. (!k. k < n ==> (f k = e)) ==> (GENLIST f n = GENLIST (K e) n)
-   GENLIST_K_RANGE     |- !f e n. (!k. 0 < k /\ k <= n ==> (f k = e)) ==> (GENLIST (f o SUC) n = GENLIST (K e) n)
-   GENLIST_K_APPEND    |- !a b c. GENLIST (K c) a ++ GENLIST (K c) b = GENLIST (K c) (a + b)
-   GENLIST_K_APPEND_K  |- !c n. GENLIST (K c) n ++ [c] = [c] ++ GENLIST (K c) n
-   GENLIST_K_MEM       |- !x c n. 0 < n ==> (MEM x (GENLIST (K c) n) <=> (x = c))
-   GENLIST_K_SET       |- !c n. 0 < n ==> (set (GENLIST (K c) n) = {c})
-   LIST_TO_SET_SING_IFF|- !ls. ls <> [] ==> (SING (set ls) <=> ?c. ls = GENLIST (K c) (LENGTH ls))
-
-   SUM Theorems:
-   SUM_NIL                |- SUM [] = 0
-   SUM_CONS               |- !h t. SUM (h::t) = h + SUM t
-   SUM_SING               |- !n. SUM [n] = n
-   SUM_MULT               |- !s k. k * SUM s = SUM (MAP ($* k) s)
-   SUM_RIGHT_ADD_DISTRIB  |- !s m n. (m + n) * SUM s = SUM (MAP ($* m) s) + SUM (MAP ($* n) s)
-   SUM_LEFT_ADD_DISTRIB   |- !s m n. SUM s * (m + n) = SUM (MAP ($* m) s) + SUM (MAP ($* n) s)
-
-   SUM_GENLIST            |- !f n. SUM (GENLIST f n) = SIGMA f (count n)
-   SUM_DECOMPOSE_FIRST    |- !f n. SUM (GENLIST f (SUC n)) = f 0 + SUM (GENLIST (f o SUC) n)
-   SUM_DECOMPOSE_LAST     |- !f n. SUM (GENLIST f (SUC n)) = SUM (GENLIST f n) + f n
-   SUM_ADD_GENLIST        |- !a b n. SUM (GENLIST a n) + SUM (GENLIST b n) =
-                                     SUM (GENLIST (\k. a k + b k) n)
-   SUM_GENLIST_APPEND     |- !a b n. SUM (GENLIST a n ++ GENLIST b n) = SUM (GENLIST (\k. a k + b k) n)
-   SUM_DECOMPOSE_FIRST_LAST  |- !f n. 0 < n ==>
-                                (SUM (GENLIST f (SUC n)) = f 0 + SUM (GENLIST (f o SUC) (PRE n)) + f n)
-   SUM_MOD           |- !n. 0 < n ==> !l. (SUM l) MOD n = (SUM (MAP (\x. x MOD n) l)) MOD n
-   SUM_EQ_0          |- !l. (SUM l = 0) <=> EVERY (\x. x = 0) l
-   SUM_GENLIST_MOD   |- !n. 0 < n ==> !f. SUM (GENLIST ((\k. f k) o SUC) (PRE n)) MOD n =
-                                          SUM (GENLIST ((\k. f k MOD n) o SUC) (PRE n)) MOD n
-   SUM_CONSTANT      |- !n x. SUM (GENLIST (\j. x) n) = n * x
-   SUM_GENLIST_K     |- !m n. SUM (GENLIST (K m) n) = m * n
-   SUM_LE            |- !l1 l2. (LENGTH l1 = LENGTH l2) /\
-                                (!k. k < LENGTH l1 ==> EL k l1 <= EL k l2) ==> SUM l1 <= SUM l2
-   SUM_LE_MEM        |- !l x. MEM x l ==> x <= SUM l:
-   SUM_LE_EL         |- !l n. n < LENGTH l ==> EL n l <= SUM l
-   SUM_LE_SUM_EL     |- !l m n. m < n /\ n < LENGTH l ==> EL m l + EL n l <= SUM l
-   SUM_DOUBLING_LIST |- !m n. SUM (GENLIST (\j. n * 2 ** j) m) = n * (2 ** m - 1)
-   list_length_le_sum|- !ls. EVERY_POSITIVE ls ==> LENGTH ls <= SUM ls
-   list_length_eq_sum|- !ls. EVERY_POSITIVE ls /\ LENGTH ls = SUM ls ==> EVERY (\x. x = 1) ls
-
-   Maximum of a List:
-   MAX_LIST_def        |- (MAX_LIST [] = 0) /\ !h t. MAX_LIST (h::t) = MAX h (MAX_LIST t)
-#  MAX_LIST_NIL        |- MAX_LIST [] = 0
-#  MAX_LIST_CONS       |- !h t. MAX_LIST (h::t) = MAX h (MAX_LIST t)
-   MAX_LIST_SING       |- !x. MAX_LIST [x] = x
-   MAX_LIST_EQ_0       |- !l. (MAX_LIST l = 0) <=> EVERY (\x. x = 0) l
-   MAX_LIST_MEM        |- !l. l <> [] ==> MEM (MAX_LIST l) l
-   MAX_LIST_PROPERTY   |- !l x. MEM x l ==> x <= MAX_LIST l
-   MAX_LIST_TEST       |- !l. l <> [] ==> !x. MEM x l /\ (!y. MEM y l ==> y <= x) ==> (x = MAX_LIST l)
-   MAX_LIST_LE         |- !h t. MAX_LIST t <= MAX_LIST (h::t)
-   MAX_LIST_MONO_MAP   |- !f. (!x y. x <= y ==> f x <= f y) ==>
-                              !ls. ls <> [] ==> MAX_LIST (MAP f ls) = f (MAX_LIST ls)
-
-   Minimum of a List:
-   MIN_LIST_def          |- !h t. MIN_LIST (h::t) = if t = [] then h else MIN h (MIN_LIST t)
-#  MIN_LIST_SING         |- !x. MIN_LIST [x] = x
-#  MIN_LIST_CONS         |- !h t. t <> [] ==> (MIN_LIST (h::t) = MIN h (MIN_LIST t))
-   MIN_LIST_MEM          |- !l. l <> [] ==> MEM (MIN_LIST l) l
-   MIN_LIST_PROPERTY     |- !l. l <> [] ==> !x. MEM x l ==> MIN_LIST l <= x
-   MIN_LIST_TEST         |- !l. l <> [] ==> !x. MEM x l /\ (!y. MEM y l ==> x <= y) ==> (x = MIN_LIST l)
-   MIN_LIST_LE_MAX_LIST  |- !l. l <> [] ==> MIN_LIST l <= MAX_LIST l
-   MIN_LIST_LE           |- !h t. t <> [] ==> MIN_LIST (h::t) <= MIN_LIST t
-   MIN_LIST_MONO_MAP     |- !f. (!x y. x <= y ==> f x <= f y) ==>
-                                !ls. ls <> [] ==> MIN_LIST (MAP f ls) = f (MIN_LIST ls)
-
-   List Nub and Set:
-   nub_nil             |- nub [] = []
-   nub_cons            |- !x l. nub (x::l) = if MEM x l then nub l else x::nub l
-   nub_sing            |- !x. nub [x] = [x]
-   nub_all_distinct    |- !l. ALL_DISTINCT (nub l)
-   CARD_LIST_TO_SET_EQ           |- !l. CARD (set l) = LENGTH (nub l)
-   MONO_LIST_TO_SET              |- !x. set [x] = {x}
-   DISTINCT_LIST_TO_SET_EQ_SING  |- !l x. ALL_DISTINCT l /\ (set l = {x}) <=> (l = [x])
-   LIST_TO_SET_REDUCTION         |- !l1 l2 h. ~MEM h l1 /\ (set (h::l1) = set l2) ==>
-                  ?p1 p2. ~MEM h p1 /\ ~MEM h p2 /\ (nub l2 = p1 ++ [h] ++ p2) /\ (set l1 = set (p1 ++ p2))
-
-   Constant List and Padding:
-   PAD_LEFT_NIL      |- !n c. PAD_LEFT c n [] = GENLIST (K c) n
-   PAD_RIGHT_NIL     |- !n c. PAD_RIGHT c n [] = GENLIST (K c) n
-   PAD_LEFT_LENGTH   |- !n c s. LENGTH (PAD_LEFT c n s) = MAX n (LENGTH s)
-   PAD_RIGHT_LENGTH  |- !n c s. LENGTH (PAD_RIGHT c n s) = MAX n (LENGTH s)
-   PAD_LEFT_ID       |- !l c n. n <= LENGTH l ==> (PAD_LEFT c n l = l)
-   PAD_RIGHT_ID      |- !l c n. n <= LENGTH l ==> (PAD_RIGHT c n l = l)
-   PAD_LEFT_0        |- !l c. PAD_LEFT c 0 l = l
-   PAD_RIGHT_0       |- !l c. PAD_RIGHT c 0 l = l
-   PAD_LEFT_CONS     |- !l n. LENGTH l <= n ==> !c. PAD_LEFT c (SUC n) l = c::PAD_LEFT c n l
-   PAD_RIGHT_SNOC    |- !l n. LENGTH l <= n ==> !c. PAD_RIGHT c (SUC n) l = SNOC c (PAD_RIGHT c n l)
-   PAD_RIGHT_CONS    |- !h t c n. h::PAD_RIGHT c n t = PAD_RIGHT c (SUC n) (h::t)
-   PAD_LEFT_LAST     |- !l c n. l <> [] ==> (LAST (PAD_LEFT c n l) = LAST l)
-   PAD_LEFT_EQ_NIL   |- !l c n. (PAD_LEFT c n l = []) <=> (l = []) /\ (n = 0)
-   PAD_RIGHT_EQ_NIL  |- !l c n. (PAD_RIGHT c n l = []) <=> (l = []) /\ (n = 0)
-   PAD_LEFT_NIL_EQ   |- !n c. 0 < n ==> (PAD_LEFT c n [] = PAD_LEFT c n [c])
-   PAD_RIGHT_NIL_EQ  |- !n c. 0 < n ==> (PAD_RIGHT c n [] = PAD_RIGHT c n [c])
-   PAD_RIGHT_BY_RIGHT|- !ls c n. PAD_RIGHT c n ls = ls ++ PAD_RIGHT c (n - LENGTH ls) []
-   PAD_RIGHT_BY_LEFT |- !ls c n. PAD_RIGHT c n ls = ls ++ PAD_LEFT c (n - LENGTH ls) []
-   PAD_LEFT_BY_RIGHT |- !ls c n. PAD_LEFT c n ls = PAD_RIGHT c (n - LENGTH ls) [] ++ ls
-   PAD_LEFT_BY_LEFT  |- !ls c n. PAD_LEFT c n ls = PAD_LEFT c (n - LENGTH ls) [] ++ ls
-
-   PROD for List, similar to SUM for List:
-   POSITIVE_THM      |- !ls. EVERY_POSITIVE ls <=> POSITIVE ls
-#  PROD              |- (PROD [] = 1) /\ !h t. PROD (h::t) = h * PROD t
-   PROD_NIL          |- PROD [] = 1
-   PROD_CONS         |- !h t. PROD (h::t) = h * PROD t
-   PROD_SING         |- !n. PROD [n] = n
-   PROD_eval         |- !ls. PROD ls = if ls = [] then 1 else HD ls * PROD (TL ls)
-   PROD_eq_1         |- !ls. (PROD ls = 1) <=> !x. MEM x ls ==> (x = 1)
-   PROD_SNOC         |- !x l. PROD (SNOC x l) = PROD l * x
-   PROD_APPEND       |- !l1 l2. PROD (l1 ++ l2) = PROD l1 * PROD l2
-   PROD_MAP_FOLDL    |- !ls f. PROD (MAP f ls) = FOLDL (\a e. a * f e) 1 ls
-   PROD_IMAGE_eq_PROD_MAP_SET_TO_LIST  |- !s. FINITE s ==> !f. PI f s = PROD (MAP f (SET_TO_LIST s))
-   PROD_ACC_DEF      |- (!acc. PROD_ACC [] acc = acc) /\
-                         !h t acc. PROD_ACC (h::t) acc = PROD_ACC t (h * acc)
-   PROD_ACC_PROD_LEM |- !L n. PROD_ACC L n = PROD L * n
-   PROD_PROD_ACC     |- !L. PROD L = PROD_ACC L 1
-   PROD_GENLIST_K    |- !m n. PROD (GENLIST (K m) n) = m ** n
-   PROD_CONSTANT     |- !n x. PROD (GENLIST (\j. x) n) = x ** n
-   PROD_EQ_0         |- !l. (PROD l = 0) <=> MEM 0 l
-   PROD_POS          |- !l. EVERY_POSITIVE l ==> 0 < PROD l
-   PROD_POS_ALT      |- !l. POSITIVE l ==> 0 < PROD l
-   PROD_SQUARING_LIST|- !m n. PROD (GENLIST (\j. n ** 2 ** j) m) = n ** (2 ** m - 1)
-
-   Range Conjunction and Disjunction:
-   every_range_sing    |- !a j. a <= j /\ j <= a <=> (j = a)
-   every_range_cons    |- !f a b. a <= b ==>
-                                  ((!j. a <= j /\ j <= b ==> f j) <=>
-                                   f a /\ !j. a + 1 <= j /\ j <= b ==> f j)
-   every_range_split_head
-                       |- !f a b. a <= b ==>
-                                  ((!j. PRE a <= j /\ j <= b ==> f j) <=>
-                                   f (PRE a) /\ !j. a <= j /\ j <= b ==> f j)
-   every_range_split_last
-                       |- !f a b. a <= b ==>
-                                  ((!j. a <= j /\ j <= SUC b ==> f j) <=>
-                                    f (SUC b) /\ !j. a <= j /\ j <= b ==> f j)
-   every_range_less_ends
-                       |- !f a b. a <= b ==>
-                                  ((!j. a <= j /\ j <= b ==> f j) <=>
-                                   f a /\ f b /\ !j. a < j /\ j < b ==> f j)
-   every_range_span_max|- !f a b. a < b /\ f a /\ ~f b ==>
-                                  ?m. a <= m /\ m < b /\
-                                      (!j. a <= j /\ j <= m ==> f j) /\ ~f (SUC m)
-   every_range_span_min|- !f a b. a < b /\ ~f a /\ f b ==>
-                                  ?m. a < m /\ m <= b /\
-                                      (!j. m <= j /\ j <= b ==> f j) /\ ~f (PRE m)
-   exists_range_sing   |- !a. ?j. a <= j /\ j <= a <=> (j = a)
-   exists_range_cons   |- !f a b. a <= b ==>
-                                  ((?j. a <= j /\ j <= b /\ f j) <=>
-                                   f a \/ ?j. a + 1 <= j /\ j <= b /\ f j)
-
-   List Summation and Product:
-   sum_1_to_n_eq_tri_n       |- !n. SUM [1 .. n] = tri n
-   sum_1_to_n_eqn            |- !n. SUM [1 .. n] = HALF (n * (n + 1))
-   sum_1_to_n_double         |- !n. TWICE (SUM [1 .. n]) = n * (n + 1)
-   prod_1_to_n_eq_fact_n     |- !n. PROD [1 .. n] = FACT n
-   power_predecessor_eqn     |- !t n. t ** n - 1 = (t - 1) * SUM (MAP (\j. t ** j) [0 ..< n])
-   geometric_sum_eqn         |- !t n. 1 < t ==> SUM (MAP (\j. t ** j) [0 ..< n]) = (t ** n - 1) DIV (t - 1)
-   geometric_sum_eqn_alt     |- !t n. 1 < t ==> SUM (MAP (\j. t ** j) [0 .. n]) = (t ** (n + 1) - 1) DIV (t - 1)
-   arithmetic_sum_eqn        |- !n. SUM [1 ..< n] = HALF (n * (n - 1))
-   arithmetic_sum_eqn_alt    |- !n. SUM [1 .. n] = HALF (n * (n + 1))
-   SUM_GENLIST_REVERSE       |- !f n. SUM (GENLIST (\j. f (n - j)) n) = SUM (MAP f [1 .. n])
-   SUM_IMAGE_count           |- !f n. SIGMA f (count n) = SUM (MAP f [0 ..< n])
-   SUM_IMAGE_upto            |- !f n. SIGMA f (count (SUC n)) = SUM (MAP f [0 .. n])
-
-   MAP of function with 3 list arguments:
-   MAP3_DEF    |- (!t3 t2 t1 h3 h2 h1 f.
-                    MAP3 f (h1::t1) (h2::t2) (h3::t3) = f h1 h2 h3::MAP3 f t1 t2 t3) /\
-                  (!z y f. MAP3 f [] y z = []) /\
-                  (!z v5 v4 f. MAP3 f (v4::v5) [] z = []) /\
-                   !v5 v4 v13 v12 f. MAP3 f (v4::v5) (v12::v13) [] = []
-   MAP3        |- (!f. MAP3 f [] [] [] = []) /\
-                   !f h1 t1 h2 t2 h3 t3.
-                    MAP3 f (h1::t1) (h2::t2) (h3::t3) = f h1 h2 h3::MAP3 f t1 t2 t3
-   LENGTH_MAP3 |- !lx ly lz f. LENGTH (MAP3 f lx ly lz) = MIN (MIN (LENGTH lx) (LENGTH ly)) (LENGTH lz)
-   EL_MAP3     |- !lx ly lz n. n < MIN (MIN (LENGTH lx) (LENGTH ly)) (LENGTH lz) ==>
-                  !f. EL n (MAP3 f lx ly lz) = f (EL n lx) (EL n ly) (EL n lz)
-   MEM_MAP2    |- !f x l1 l2. MEM x (MAP2 f l1 l2) ==>
-                  ?y1 y2. x = f y1 y2 /\ MEM y1 l1 /\ MEM y2 l2
-   MEM_MAP3    |- !f x l1 l2 l3. MEM x (MAP3 f l1 l2 l3) ==>
-                  ?y1 y2 y3. x = f y1 y2 y3 /\ MEM y1 l1 /\ MEM y2 l2 /\ MEM y3 l3
-   SUM_MAP_K   |- !ls c. SUM (MAP (K c) ls) = c * LENGTH ls
-   SUM_MAP_K_LE|- !ls a b. a <= b ==> SUM (MAP (K a) ls) <= SUM (MAP (K b) ls)
-   SUM_MAP2_K  |- !lx ly c. SUM (MAP2 (\x y. c) lx ly) = c * LENGTH (MAP2 (\x y. c) lx ly)
-   SUM_MAP3_K  |- !lx ly lz c. SUM (MAP3 (\x y z. c) lx ly lz) = c * LENGTH (MAP3 (\x y z. c) lx ly lz)
-
-   Bounds on Lists:
-   SUM_UPPER        |- !ls. SUM ls <= MAX_LIST ls * LENGTH ls
-   SUM_LOWER        |- !ls. MIN_LIST ls * LENGTH ls <= SUM ls
-   SUM_MAP_LE       |- !f g ls. EVERY (\x. f x <= g x) ls ==> SUM (MAP f ls) <= SUM (MAP g ls)
-   SUM_MAP_LT       |- !f g ls. EVERY (\x. f x < g x) ls /\ ls <> [] ==> SUM (MAP f ls) < SUM (MAP g ls)
-   MEM_MAP_UPPER    |- !f. MONO f ==> !ls e. MEM e (MAP f ls) ==> e <= f (MAX_LIST ls)
-   MEM_MAP2_UPPER   |- !f. MONO2 f ==>!lx ly e. MEM e (MAP2 f lx ly) ==> e <= f (MAX_LIST lx) (MAX_LIST ly)
-   MEM_MAP3_UPPER   |- !f. MONO3 f ==>
-                           !lx ly lz e. MEM e (MAP3 f lx ly lz) ==> e <= f (MAX_LIST lx) (MAX_LIST ly) (MAX_LIST lz)
-   MEM_MAP_LOWER    |- !f. MONO f ==> !ls e. MEM e (MAP f ls) ==> f (MIN_LIST ls) <= e
-   MEM_MAP2_LOWER   |- !f. MONO2 f ==> !lx ly e. MEM e (MAP2 f lx ly) ==> f (MIN_LIST lx) (MIN_LIST ly) <= e
-   MEM_MAP3_LOWER   |- !f. MONO3 f ==>
-                           !lx ly lz e. MEM e (MAP3 f lx ly lz) ==> f (MIN_LIST lx) (MIN_LIST ly) (MIN_LIST lz) <= e
-   MAX_LIST_MAP_LE  |- !f g. (!x. f x <= g x) ==>
-                       !ls. MAX_LIST (MAP f ls) <= MAX_LIST (MAP g ls)
-   MIN_LIST_MAP_LE  |- !f g. (!x. f x <= g x) ==>
-                       !ls. MIN_LIST (MAP f ls) <= MIN_LIST (MAP g ls)
-   MAP_LE           |- !f g. (!x. f x <= g x) ==> !ls n. EL n (MAP f ls) <= EL n (MAP g ls)
-   MAP2_LE          |- !f g. (!x y. f x y <= g x y) ==>
-                       !lx ly n. EL n (MAP2 f lx ly) <= EL n (MAP2 g lx ly)
-   MAP3_LE          |- !f g. (!x y z. f x y z <= g x y z) ==>
-                       !lx ly lz n. EL n (MAP3 f lx ly lz) <= EL n (MAP3 g lx ly lz)
-   SUM_MONO_MAP     |- !f1 f2. (!x. f1 x <= f2 x) ==> !ls. SUM (MAP f1 ls) <= SUM (MAP f2 ls)
-   SUM_MONO_MAP2    |- !f1 f2. (!x y. f1 x y <= f2 x y) ==>
-                               !lx ly. SUM (MAP2 f1 lx ly) <= SUM (MAP2 f2 lx ly)
-   SUM_MONO_MAP3    |- !f1 f2. (!x y z. f1 x y z <= f2 x y z) ==>
-                               !lx ly lz. SUM (MAP3 f1 lx ly lz) <= SUM (MAP3 f2 lx ly lz)
-   SUM_MAP_UPPER    |- !f. MONO f ==> !ls. SUM (MAP f ls) <= f (MAX_LIST ls) * LENGTH ls
-   SUM_MAP2_UPPER   |- !f. MONO2 f ==>
-                       !lx ly. SUM (MAP2 f lx ly) <= f (MAX_LIST lx) (MAX_LIST ly) * LENGTH (MAP2 f lx ly)
-   SUM_MAP3_UPPER   |- !f. MONO3 f ==>
-                       !lx ly lz. SUM (MAP3 f lx ly lz) <= f (MAX_LIST lx) (MAX_LIST ly) (MAX_LIST lz) * LENGTH (MAP3 f lx ly lz)
-
-   Increasing and decreasing list bounds:
-   MONO_INC_NIL        |- MONO_INC []
-   MONO_INC_CONS       |- !h t. MONO_INC (h::t) ==> MONO_INC t
-   MONO_INC_HD         |- !h t x. MONO_INC (h::t) /\ MEM x t ==> h <= x
-   MONO_DEC_NIL        |- MONO_DEC []
-   MONO_DEC_CONS       |- !h t. MONO_DEC (h::t) ==> MONO_DEC t
-   MONO_DEC_HD         |- !h t x. MONO_DEC (h::t) /\ MEM x t ==> x <= h
-   GENLIST_MONO_INC    |- !f n. MONO f ==> MONO_INC (GENLIST f n)
-   GENLIST_MONO_DEC    |- !f n. RMONO f ==> MONO_DEC (GENLIST f n)
-   MAX_LIST_MONO_INC   |- !ls. ls <> [] /\ MONO_INC ls ==> MAX_LIST ls = LAST ls
-   MAX_LIST_MONO_DEC   |- !ls. ls <> [] /\ MONO_DEC ls ==> MAX_LIST ls = HD ls
-   MIN_LIST_MONO_INC   |- !ls. ls <> [] /\ MONO_INC ls ==> MIN_LIST ls = HD ls
-   MIN_LIST_MONO_DEC   |- !ls. ls <> [] /\ MONO_DEC ls ==> MIN_LIST ls = LAST ls
-   listRangeINC_MONO_INC  |- !m n. MONO_INC [m .. n]
-   listRangeLHI_MONO_INC  |- !m n. MONO_INC [m ..< n]
-
-   List Dilation:
-
-   List Dilation (Multiplicative):
-   MDILATE_def    |- (!e n. MDILATE e n [] = []) /\
-        !e n h t. MDILATE e n (h::t) = if t = [] then [h] else h::GENLIST (K e) (PRE n) ++ MDILATE e n t
-#  MDILATE_NIL    |- !e n. MDILATE e n [] = []
-#  MDILATE_SING   |- !e n x. MDILATE e n [x] = [x]
-   MDILATE_CONS   |- !e n h t. MDILATE e n (h::t) =
-                               if t = [] then [h] else h::GENLIST (K e) (PRE n) ++ MDILATE e n t
-   MDILATE_1      |- !l e. MDILATE e 1 l = l
-   MDILATE_0      |- !l e. MDILATE e 0 l = l
-   MDILATE_LENGTH        |- !l e n. LENGTH (MDILATE e n l) =
-                              if n = 0 then LENGTH l else if l = [] then 0 else SUC (n * PRE (LENGTH l))
-   MDILATE_LENGTH_LOWER  |- !l e n. LENGTH l <= LENGTH (MDILATE e n l)
-   MDILATE_LENGTH_UPPER  |- !l e n. 0 < n ==> LENGTH (MDILATE e n l) <= SUC (n * PRE (LENGTH l))
-   MDILATE_EL     |- !l e n k. k < LENGTH (MDILATE e n l) ==>
-              (EL k (MDILATE e n l) = if n = 0 then EL k l else if k MOD n = 0 then EL (k DIV n) l else e)
-   MDILATE_EQ_NIL |- !l e n. (MDILATE e n l = []) <=> (l = [])
-   MDILATE_LAST   |- !l e n. LAST (MDILATE e n l) = LAST l
-
-   List Dilation (Additive):
-   DILATE_def       |- (!n m e. DILATE e n m [] = []) /\
-                       (!n m h e. DILATE e n m [h] = [h]) /\
-                       !v9 v8 n m h e. DILATE e n m (h::v8::v9) =
-                        h:: (TAKE n (v8::v9) ++ GENLIST (K e) m ++ DILATE e n m (DROP n (v8::v9)))
-#  DILATE_NIL       |- !n m e. DILATE e n m [] = []
-#  DILATE_SING      |- !n m h e. DILATE e n m [h] = [h]
-   DILATE_CONS      |- !n m h t e. DILATE e n m (h::t) =
-                        if t = [] then [h] else h::(TAKE n t ++ GENLIST (K e) m ++ DILATE e n m (DROP n t))
-   DILATE_0_CONS    |- !n h t e. DILATE e 0 n (h::t) =
-                        if t = [] then [h] else h::(GENLIST (K e) n ++ DILATE e 0 n t)
-   DILATE_0_0       |- !l e. DILATE e 0 0 l = l
-   DILATE_0_SUC     |- !l e n. DILATE e 0 (SUC n) l = DILATE e n 1 (DILATE e 0 n l)
-   DILATE_0_LENGTH  |- !l e n. LENGTH (DILATE e 0 n l) = if l = [] then 0 else SUC (SUC n * PRE (LENGTH l))
-   DILATE_0_LENGTH_LOWER  |- !l e n. LENGTH l <= LENGTH (DILATE e 0 n l)
-   DILATE_0_LENGTH_UPPER   |- !l e n. LENGTH (DILATE e 0 n l) <= SUC (SUC n * PRE (LENGTH l))
-   DILATE_0_EL      |- !l e n k. k < LENGTH (DILATE e 0 n l) ==>
-                        (EL k (DILATE e 0 n l) = if k MOD SUC n = 0 then EL (k DIV SUC n) l else e)
-   DILATE_0_EQ_NIL  |- !l e n. (DILATE e 0 n l = []) <=> (l = [])
-   DILATE_0_LAST    |- !l e n. LAST (DILATE e 0 n l) = LAST l
-
-*)
+val _ = new_theory "combinatorics";
 
 (* ------------------------------------------------------------------------- *)
 (* List Theorems                                                             *)
@@ -6818,9 +6317,156 @@ val DILATE_0_LAST = store_thm(
   rw[DILATE_0_EL]);
 
 (* ------------------------------------------------------------------------- *)
+(* FUNPOW with incremental cons.                                             *)
+(* ------------------------------------------------------------------------- *)
 
-(* export theory at end *)
-val _ = export_theory();
-val _ = html_theory "helperList";
+(* Note from HelperList: m downto n = REVERSE [m .. n] *)
 
-(*===========================================================================*)
+(* Idea: when applying incremental cons (f head) to a list for n times,
+         head of the result is f^n (head of list). *)
+
+(* Theorem: HD (FUNPOW (\ls. f (HD ls)::ls) n ls) = FUNPOW f n (HD ls) *)
+(* Proof:
+   Let h = (\ls. f (HD ls)::ls).
+   By induction on n.
+   Base: !ls. HD (FUNPOW h 0 ls) = FUNPOW f 0 (HD ls)
+           HD (FUNPOW h 0 ls)
+         = HD ls                by FUNPOW_0
+         = FUNPOW f 0 (HD ls)   by FUNPOW_0
+   Step: !ls. HD (FUNPOW h n ls) = FUNPOW f n (HD ls) ==>
+         !ls. HD (FUNPOW h (SUC n) ls) = FUNPOW f (SUC n) (HD ls)
+           HD (FUNPOW h (SUC n) ls)
+         = HD (FUNPOW h n (h ls))    by FUNPOW
+         = FUNPOW f n (HD (h ls))    by induction hypothesis
+         = FUNPOW f n (f (HD ls))    by definition of h
+         = FUNPOW f (SUC n) (HD ls)  by FUNPOW
+*)
+Theorem FUNPOW_cons_head:
+  !f n ls. HD (FUNPOW (\ls. f (HD ls)::ls) n ls) = FUNPOW f n (HD ls)
+Proof
+  strip_tac >>
+  qabbrev_tac `h = \ls. f (HD ls)::ls` >>
+  Induct >-
+  simp[] >>
+  rw[FUNPOW, Abbr`h`]
+QED
+
+(* Idea: when applying incremental cons (f head) to a singleton [u] for n times,
+         the result is the list [f^n(u), .... f(u), u]. *)
+
+(* Theorem: FUNPOW (\ls. f (HD ls)::ls) n [u] =
+            MAP (\j. FUNPOW f j u) (n downto 0) *)
+(* Proof:
+   Let g = (\ls. f (HD ls)::ls),
+       h = (\j. FUNPOW f j u).
+   By induction on n.
+   Base: FUNPOW g 0 [u] = MAP h (0 downto 0)
+           FUNPOW g 0 [u]
+         = [u]                       by FUNPOW_0
+         = [FUNPOW f 0 u]            by FUNPOW_0
+         = MAP h [0]                 by MAP
+         = MAP h (0 downto 0)  by REVERSE
+   Step: FUNPOW g n [u] = MAP h (n downto 0) ==>
+         FUNPOW g (SUC n) [u] = MAP h (SUC n downto 0)
+           FUNPOW g (SUC n) [u]
+         = g (FUNPOW g n [u])             by FUNPOW_SUC
+         = g (MAP h (n downto 0))   by induction hypothesis
+         = f (HD (MAP h (n downto 0))) ::
+             MAP h (n downto 0)     by definition of g
+         Now f (HD (MAP h (n downto 0)))
+           = f (HD (MAP h (MAP (\x. n - x) [0 .. n])))    by listRangeINC_REVERSE
+           = f (HD (MAP h o (\x. n - x) [0 .. n]))        by MAP_COMPOSE
+           = f ((h o (\x. n - x)) 0)                      by MAP
+           = f (h n)
+           = f (FUNPOW f n u)             by definition of h
+           = FUNPOW (n + 1) u             by FUNPOW_SUC
+           = h (n + 1)                    by definition of h
+          so h (n + 1) :: MAP h (n downto 0)
+           = MAP h ((n + 1) :: (n downto 0))         by MAP
+           = MAP h (REVERSE (SNOC (n+1) [0 .. n]))   by REVERSE_SNOC
+           = MAP h (SUC n downto 0)                  by listRangeINC_SNOC
+*)
+Theorem FUNPOW_cons_eq_map_0:
+  !f u n. FUNPOW (\ls. f (HD ls)::ls) n [u] =
+          MAP (\j. FUNPOW f j u) (n downto 0)
+Proof
+  ntac 2 strip_tac >>
+  Induct >-
+  rw[] >>
+  qabbrev_tac `g = \ls. f (HD ls)::ls` >>
+  qabbrev_tac `h = \j. FUNPOW f j u` >>
+  rw[] >>
+  `f (HD (MAP h (n downto 0))) = h (n + 1)` by
+  (`[0 .. n] = 0 :: [1 .. n]` by rw[listRangeINC_CONS] >>
+  fs[listRangeINC_REVERSE, MAP_COMPOSE, GSYM FUNPOW_SUC, ADD1, Abbr`h`]) >>
+  `FUNPOW g (SUC n) [u] = g (FUNPOW g n [u])` by rw[FUNPOW_SUC] >>
+  `_ = g (MAP h (n downto 0))` by fs[] >>
+  `_ = h (n + 1) :: MAP h (n downto 0)` by rw[Abbr`g`] >>
+  `_ = MAP h ((n + 1) :: (n downto 0))` by rw[] >>
+  `_ = MAP h (REVERSE (SNOC (n+1) [0 .. n]))` by rw[REVERSE_SNOC] >>
+  rw[listRangeINC_SNOC, ADD1]
+QED
+
+(* Idea: when applying incremental cons (f head) to a singleton [f(u)] for (n-1) times,
+         the result is the list [f^n(u), .... f(u)]. *)
+
+(* Theorem: 0 < n ==> (FUNPOW (\ls. f (HD ls)::ls) (n - 1) [f u] =
+            MAP (\j. FUNPOW f j u) (n downto 1)) *)
+(* Proof:
+   Let g = (\ls. f (HD ls)::ls),
+       h = (\j. FUNPOW f j u).
+   By induction on n.
+   Base: FUNPOW g 0 [f u] = MAP h (REVERSE [1 .. 1])
+           FUNPOW g 0 [f u]
+         = [f u]                     by FUNPOW_0
+         = [FUNPOW f 1 u]            by FUNPOW_1
+         = MAP h [1]                 by MAP
+         = MAP h (REVERSE [1 .. 1])  by REVERSE
+   Step: 0 < n ==> FUNPOW g (n-1) [f u] = MAP h (n downto 1) ==>
+         FUNPOW g n [f u] = MAP h (REVERSE [1 .. SUC n])
+         The case n = 0 is the base case. For n <> 0,
+           FUNPOW g n [f u]
+         = g (FUNPOW g (n-1) [f u])       by FUNPOW_SUC
+         = g (MAP h (n downto 1))         by induction hypothesis
+         = f (HD (MAP h (n downto 1))) ::
+             MAP h (n downto 1)           by definition of g
+         Now f (HD (MAP h (n downto 1)))
+           = f (HD (MAP h (MAP (\x. n + 1 - x) [1 .. n])))  by listRangeINC_REVERSE
+           = f (HD (MAP h o (\x. n + 1 - x) [1 .. n]))      by MAP_COMPOSE
+           = f ((h o (\x. n + 1 - x)) 1)                    by MAP
+           = f (h n)
+           = f (FUNPOW f n u)             by definition of h
+           = FUNPOW (n + 1) u             by FUNPOW_SUC
+           = h (n + 1)                    by definition of h
+          so h (n + 1) :: MAP h (n downto 1)
+           = MAP h ((n + 1) :: (n downto 1))         by MAP
+           = MAP h (REVERSE (SNOC (n+1) [1 .. n]))   by REVERSE_SNOC
+           = MAP h (REVERSE [1 .. SUC n])            by listRangeINC_SNOC
+*)
+Theorem FUNPOW_cons_eq_map_1:
+  !f u n. 0 < n ==> (FUNPOW (\ls. f (HD ls)::ls) (n - 1) [f u] =
+          MAP (\j. FUNPOW f j u) (n downto 1))
+Proof
+  ntac 2 strip_tac >>
+  Induct >-
+  simp[] >>
+  rw[] >>
+  qabbrev_tac `g = \ls. f (HD ls)::ls` >>
+  qabbrev_tac `h = \j. FUNPOW f j u` >>
+  Cases_on `n = 0` >-
+  rw[Abbr`g`, Abbr`h`] >>
+  `f (HD (MAP h (n downto 1))) = h (n + 1)` by
+  (`[1 .. n] = 1 :: [2 .. n]` by rw[listRangeINC_CONS] >>
+  fs[listRangeINC_REVERSE, MAP_COMPOSE, GSYM FUNPOW_SUC, ADD1, Abbr`h`]) >>
+  `n = SUC (n-1)` by decide_tac >>
+  `FUNPOW g n [f u] = g (FUNPOW g (n - 1) [f u])` by metis_tac[FUNPOW_SUC] >>
+  `_ = g (MAP h (n downto 1))` by fs[] >>
+  `_ = h (n + 1) :: MAP h (n downto 1)` by rw[Abbr`g`] >>
+  `_ = MAP h ((n + 1) :: (n downto 1))` by rw[] >>
+  `_ = MAP h (REVERSE (SNOC (n+1) [1 .. n]))` by rw[REVERSE_SNOC] >>
+  rw[listRangeINC_SNOC, ADD1]
+QED
+
+
+
+val _ = export_theory ();
