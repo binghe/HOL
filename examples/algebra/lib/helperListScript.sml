@@ -549,15 +549,6 @@ val LENGTH_TL_LT = store_thm(
   ``!ls. ls <> [] ==> LENGTH (TL ls) < LENGTH ls``,
   metis_tac[LENGTH_TL, LENGTH_EQ_0, NOT_ZERO_LT_ZERO, DECIDE``n <> 0 ==> n - 1 < n``]);
 
-val SNOC_NIL = save_thm("SNOC_NIL", SNOC |> CONJUNCT1);
-(* > val SNOC_NIL = |- !x. SNOC x [] = [x]: thm *)
-val SNOC_CONS = save_thm("SNOC_CONS", SNOC |> CONJUNCT2);
-(* > val SNOC_CONS = |- !x x' l. SNOC x (x'::l) = x'::SNOC x l: thm *)
-
-(* Theorem alias *)
-val MAP_COMPOSE = save_thm("MAP_COMPOSE", MAP_MAP_o);
-(* val MAP_COMPOSE = |- !f g l. MAP f (MAP g l) = MAP (f o g) l: thm *)
-
 (* Theorem: MAP f [x] = [f x] *)
 (* Proof: by MAP *)
 val MAP_SING = store_thm(

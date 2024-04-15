@@ -543,6 +543,10 @@ val MAP_MAP_o = store_thm("MAP_MAP_o",
     REPEAT GEN_TAC THEN REWRITE_TAC [MAP_o, o_DEF]
     THEN BETA_TAC THEN REFL_TAC);
 
+(* Theorem alias *)
+val MAP_COMPOSE = save_thm("MAP_COMPOSE", MAP_MAP_o);
+(* val MAP_COMPOSE = |- !f g l. MAP f (MAP g l) = MAP (f o g) l: thm *)
+
 val EL_MAP = store_thm("EL_MAP",
     (“!n l. n < (LENGTH l) ==> !f:'a->'b. EL n (MAP f l) = f (EL n l)”),
     INDUCT_TAC THEN LIST_INDUCT_TAC
@@ -2698,6 +2702,11 @@ val SNOC = new_recursive_definition {
   rec_axiom = list_Axiom
 };
 val _ = BasicProvers.export_rewrites ["SNOC"]
+
+val SNOC_NIL = save_thm("SNOC_NIL", SNOC |> CONJUNCT1);
+(* > val SNOC_NIL = |- !x. SNOC x [] = [x]: thm *)
+val SNOC_CONS = save_thm("SNOC_CONS", SNOC |> CONJUNCT2);
+(* > val SNOC_CONS = |- !x x' l. SNOC x (x'::l) = x'::SNOC x l: thm *)
 
 val LENGTH_SNOC = store_thm(
   "LENGTH_SNOC",
