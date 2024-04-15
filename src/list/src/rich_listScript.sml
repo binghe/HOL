@@ -6,12 +6,13 @@
 open HolKernel Parse boolLib BasicProvers;
 
 open numLib metisLib simpLib combinTheory arithmeticTheory prim_recTheory
-     pred_setTheory listTheory pairTheory markerLib;
+     pred_setTheory listTheory pairTheory markerLib TotalDefn;
 
-local open listSimps pred_setSimps TotalDefn in end;
+local open listSimps pred_setSimps in end;
 
 val FILTER_APPEND = FILTER_APPEND_DISTRIB
 val REVERSE = REVERSE_SNOC_DEF
+val decide_tac = numLib.DECIDE_TAC;
 
 val () = new_theory "rich_list"
 
@@ -3746,6 +3747,252 @@ val LIST_HEAD_TAIL = store_thm(
   "LIST_HEAD_TAIL",
   ``!ls. 0 < LENGTH ls <=> (ls = HD ls::TL ls)``,
   metis_tac[LIST_NOT_NIL, NOT_NIL_EQ_LENGTH_NOT_0]);
+
+(* ------------------------------------------------------------------------- *)
+(* Maximum of a List                                                         *)
+(* ------------------------------------------------------------------------- *)
+
+(* Define MAX of a list *)
+val MAX_LIST_def = Define`
+    (MAX_LIST [] = 0) /\
+    (MAX_LIST (h::t) = MAX h (MAX_LIST t))
+`;
+
+(* export simple recursive definition *)
+(* val _ = export_rewrites["MAX_LIST_def"]; *)
+
+(* Theorem: MAX_LIST [] = 0 *)
+(* Proof: by MAX_LIST_def *)
+val MAX_LIST_NIL = save_thm("MAX_LIST_NIL", MAX_LIST_def |> CONJUNCT1);
+(* val MAX_LIST_NIL = |- MAX_LIST [] = 0: thm *)
+
+(* Theorem: MAX_LIST (h::t) = MAX h (MAX_LIST t) *)
+(* Proof: by MAX_LIST_def *)
+val MAX_LIST_CONS = save_thm("MAX_LIST_CONS", MAX_LIST_def |> CONJUNCT2);
+(* val MAX_LIST_CONS = |- !h t. MAX_LIST (h::t) = MAX h (MAX_LIST t): thm *)
+
+(* export simple results *)
+val _ = export_rewrites["MAX_LIST_NIL", "MAX_LIST_CONS"];
+
+(* Theorem: MAX_LIST [x] = x *)
+(* Proof:
+     MAX_LIST [x]
+   = MAX x (MAX_LIST [])   by MAX_LIST_CONS
+   = MAX x 0               by MAX_LIST_NIL
+   = x                     by MAX_0
+*)
+val MAX_LIST_SING = store_thm(
+  "MAX_LIST_SING",
+  ``!x. MAX_LIST [x] = x``,
+  rw[]);
+
+(* Theorem: (MAX_LIST l = 0) <=> EVERY (\x. x = 0) l *)
+(* Proof:
+   By induction on l.
+   Base: (MAX_LIST [] = 0) <=> EVERY (\x. x = 0) []
+      LHS: MAX_LIST [] = 0, true           by MAX_LIST_NIL
+      RHS: EVERY (\x. x = 0) [], true      by EVERY_DEF
+   Step: (MAX_LIST l = 0) <=> EVERY (\x. x = 0) l ==>
+         !h. (MAX_LIST (h::l) = 0) <=> EVERY (\x. x = 0) (h::l)
+          MAX_LIST (h::l) = 0
+      <=> MAX h (MAX_LIST l) = 0           by MAX_LIST_CONS
+      <=> (h = 0) /\ (MAX_LIST l = 0)      by MAX_EQ_0
+      <=> (h = 0) /\ EVERY (\x. x = 0) l   by induction hypothesis
+      <=> EVERY (\x. x = 0) (h::l)         by EVERY_DEF
+*)
+val MAX_LIST_EQ_0 = store_thm(
+  "MAX_LIST_EQ_0",
+  ``!l. (MAX_LIST l = 0) <=> EVERY (\x. x = 0) l``,
+  Induct >>
+  rw[MAX_EQ_0]);
+
+(* Theorem: l <> [] ==> MEM (MAX_LIST l) l *)
+(* Proof:
+   By induction on l.
+   Base: [] <> [] ==> MEM (MAX_LIST []) []
+      Trivially true by [] <> [] = F.
+   Step: l <> [] ==> MEM (MAX_LIST l) l ==>
+         !h. h::l <> [] ==> MEM (MAX_LIST (h::l)) (h::l)
+      If l = [],
+         Note MAX_LIST [h] = h         by MAX_LIST_SING
+          and MEM h [h]                by MEM
+         Hence true.
+      If l <> [],
+         Let x = MAX_LIST (h::l)
+               = MAX h (MAX_LIST l)    by MAX_LIST_CONS
+         ==> x = h \/ x = MAX_LIST l   by MAX_CASES
+         If x = h, MEM x (h::l)        by MEM
+         If x = MAX_LIST l, MEM x l    by induction hypothesis
+*)
+val MAX_LIST_MEM = store_thm(
+  "MAX_LIST_MEM",
+  ``!l. l <> [] ==> MEM (MAX_LIST l) l``,
+  Induct >-
+  rw[] >>
+  rpt strip_tac >>
+  Cases_on `l = []` >-
+  rw[] >>
+  rw[] >>
+  metis_tac[MAX_CASES]);
+
+(* Theorem: MEM x l ==> x <= MAX_LIST l *)
+(* Proof:
+   By induction on l.
+   Base: !x. MEM x [] ==> x <= MAX_LIST []
+     Trivially true since MEM x [] = F             by MEM
+   Step: !x. MEM x l ==> x <= MAX_LIST l ==> !h x. MEM x (h::l) ==> x <= MAX_LIST (h::l)
+     Note MEM x (h::l) means (x = h) \/ MEM x l    by MEM
+      and MAX_LIST (h::l) = MAX h (MAX_LIST l)     by MAX_LIST_CONS
+     If x = h, x <= MAX h (MAX_LIST l)             by MAX_LE
+     If MEM x l, x <= MAX_LIST l                   by induction hypothesis
+     or          x <= MAX h (MAX_LIST l)           by MAX_LE, LESS_EQ_TRANS
+*)
+val MAX_LIST_PROPERTY = store_thm(
+  "MAX_LIST_PROPERTY",
+  ``!l x. MEM x l ==> x <= MAX_LIST l``,
+  Induct >-
+  rw[] >>
+  rw[MAX_LIST_CONS] >-
+  decide_tac >>
+  rw[]);
+
+(* Theorem: l <> [] ==> !x. MEM x l /\ (!y. MEM y l ==> y <= x) ==> (x = MAX_LIST l) *)
+(* Proof:
+   Let m = MAX_LIST l.
+   Since MEM x l /\ x <= m     by MAX_LIST_PROPERTY
+     and MEM m l ==> m <= x    by MAX_LIST_MEM, implication, l <> []
+   Hence x = m                 by EQ_LESS_EQ
+*)
+val MAX_LIST_TEST = store_thm(
+  "MAX_LIST_TEST",
+  ``!l. l <> [] ==> !x. MEM x l /\ (!y. MEM y l ==> y <= x) ==> (x = MAX_LIST l)``,
+  metis_tac[MAX_LIST_MEM, MAX_LIST_PROPERTY, EQ_LESS_EQ]);
+
+(* Theorem: MAX_LIST t <= MAX_LIST (h::t) *)
+(* Proof:
+   Note MAX_LIST (h::t) = MAX h (MAX_LIST t)   by MAX_LIST_def
+    and MAX_LIST t <= MAX h (MAX_LIST t)       by MAX_IS_MAX
+   Thus MAX_LIST t <= MAX_LIST (h::t)
+*)
+val MAX_LIST_LE = store_thm(
+  "MAX_LIST_LE",
+  ``!h t. MAX_LIST t <= MAX_LIST (h::t)``,
+  rw_tac std_ss[MAX_LIST_def]);
+
+(* ------------------------------------------------------------------------- *)
+(* Minimum of a List                                                         *)
+(* ------------------------------------------------------------------------- *)
+
+(* Define MIN of a list *)
+val MIN_LIST_def = Define`
+    MIN_LIST (h::t) = if t = [] then h else MIN h (MIN_LIST t)
+`;
+
+(* Theorem: MIN_LIST [x] = x *)
+(* Proof: by MIN_LIST_def *)
+val MIN_LIST_SING = store_thm(
+  "MIN_LIST_SING",
+  ``!x. MIN_LIST [x] = x``,
+  rw[MIN_LIST_def]);
+
+(* Theorem: t <> [] ==> (MIN_LIST (h::t) = MIN h (MIN_LIST t)) *)
+(* Proof: by MIN_LIST_def *)
+val MIN_LIST_CONS = store_thm(
+  "MIN_LIST_CONS",
+  ``!h t. t <> [] ==> (MIN_LIST (h::t) = MIN h (MIN_LIST t))``,
+  rw[MIN_LIST_def]);
+
+(* export simple results *)
+val _ = export_rewrites["MIN_LIST_SING", "MIN_LIST_CONS"];
+
+(* Theorem: l <> [] ==> MEM (MIN_LIST l) l *)
+(* Proof:
+   By induction on l.
+   Base: [] <> [] ==> MEM (MIN_LIST []) []
+      Trivially true by [] <> [] = F.
+   Step: l <> [] ==> MEM (MIN_LIST l) l ==>
+         !h. h::l <> [] ==> MEM (MIN_LIST (h::l)) (h::l)
+      If l = [],
+         Note MIN_LIST [h] = h         by MIN_LIST_SING
+          and MEM h [h]                by MEM
+         Hence true.
+      If l <> [],
+         Let x = MIN_LIST (h::l)
+               = MIN h (MIN_LIST l)    by MIN_LIST_CONS
+         ==> x = h \/ x = MIN_LIST l   by MIN_CASES
+         If x = h, MEM x (h::l)        by MEM
+         If x = MIN_LIST l, MEM x l    by induction hypothesis
+*)
+val MIN_LIST_MEM = store_thm(
+  "MIN_LIST_MEM",
+  ``!l. l <> [] ==> MEM (MIN_LIST l) l``,
+  Induct >-
+  rw[] >>
+  rpt strip_tac >>
+  Cases_on `l = []` >-
+  rw[] >>
+  rw[] >>
+  metis_tac[MIN_CASES]);
+
+(* Theorem: l <> [] ==> !x. MEM x l ==> (MIN_LIST l) <= x *)
+(* Proof:
+   By induction on l.
+   Base: [] <> [] ==> ...
+     Trivially true since [] <> [] = F
+   Step: l <> [] ==> !x. MEM x l ==> MIN_LIST l <= x ==>
+         !h. h::l <> [] ==> !x. MEM x (h::l) ==> MIN_LIST (h::l) <= x
+     Note MEM x (h::l) means (x = h) \/ MEM x l    by MEM
+     If l = [],
+        MEM x [h] means x = h                      by MEM
+        and MIN_LIST [h] = h, hence true           by MIN_LIST_SING
+     If l <> [],
+        MIN_LIST (h::l) = MIN h (MIN_LIST l)       by MIN_LIST_CONS
+        If x = h, MIN h (MIN_LIST l) <= x          by MIN_LE
+        If MEM x l, MIN_LIST l <= x                by induction hypothesis
+        or          MIN h (MIN_LIST l) <= x        by MIN_LE, LESS_EQ_TRANS
+*)
+val MIN_LIST_PROPERTY = store_thm(
+  "MIN_LIST_PROPERTY",
+  ``!l. l <> [] ==> !x. MEM x l ==> (MIN_LIST l) <= x``,
+  Induct >-
+  rw[] >>
+  rpt strip_tac >>
+  Cases_on `l = []` >-
+  fs[MIN_LIST_SING, MEM] >>
+  fs[MIN_LIST_CONS, MEM]);
+
+(* Theorem: l <> [] ==> !x. MEM x l /\ (!y. MEM y l ==> x <= y) ==> (x = MIN_LIST l) *)
+(* Proof:
+   Let m = MIN_LIST l.
+   Since MEM x l /\ m <= x     by MIN_LIST_PROPERTY
+     and MEM m l ==> x <= m    by MIN_LIST_MEM, implication, l <> []
+   Hence x = m                 by EQ_LESS_EQ
+*)
+val MIN_LIST_TEST = store_thm(
+  "MIN_LIST_TEST",
+  ``!l. l <> [] ==> !x. MEM x l /\ (!y. MEM y l ==> x <= y) ==> (x = MIN_LIST l)``,
+  metis_tac[MIN_LIST_MEM, MIN_LIST_PROPERTY, EQ_LESS_EQ]);
+
+(* Theorem: l <> [] ==> MIN_LIST l <= MAX_LIST l *)
+(* Proof:
+   Since MEM (MIN_LIST l) l          by MIN_LIST_MEM
+      so MIN_LIST l <= MAX_LIST l    by MAX_LIST_PROPERTY
+*)
+val MIN_LIST_LE_MAX_LIST = store_thm(
+  "MIN_LIST_LE_MAX_LIST",
+  ``!l. l <> [] ==> MIN_LIST l <= MAX_LIST l``,
+  rw[MIN_LIST_MEM, MAX_LIST_PROPERTY]);
+
+(* Theorem: t <> [] ==> MIN_LIST (h::t) <= MIN_LIST t *)
+(* Proof:
+   Note MIN_LIST (h::t) = MIN h (MIN_LIST t)   by MIN_LIST_def, t <> []
+    and MIN h (MIN_LIST t) <= MIN_LIST t       by MIN_IS_MIN
+   Thus MIN_LIST (h::t) <= MIN_LIST t
+*)
+val MIN_LIST_LE = store_thm(
+  "MIN_LIST_LE",
+  ``!h t. t <> [] ==> MIN_LIST (h::t) <= MIN_LIST t``,
+  rw_tac std_ss[MIN_LIST_def]);
 
 (* ------------------------------------------------------------------------ *)
 

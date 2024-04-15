@@ -1097,48 +1097,6 @@ val MAX_LESS = store_thm(
   ``!x y n. x < n /\ y < n ==> MAX x y < n``,
   rw[]);
 
-(* Theorem: (MAX n m = n) \/ (MAX n m = m) *)
-(* Proof: by MAX_DEF *)
-val MAX_CASES = store_thm(
-  "MAX_CASES",
-  ``!m n. (MAX n m = n) \/ (MAX n m = m)``,
-  rw[MAX_DEF]);
-
-(* Theorem: (MIN n m = n) \/ (MIN n m = m) *)
-(* Proof: by MIN_DEF *)
-val MIN_CASES = store_thm(
-  "MIN_CASES",
-  ``!m n. (MIN n m = n) \/ (MIN n m = m)``,
-  rw[MIN_DEF]);
-
-(* Theorem: (MAX n m = 0) <=> ((n = 0) /\ (m = 0)) *)
-(* Proof:
-   If part: MAX n m = 0 ==> n = 0 /\ m = 0
-      If n < m, 0 = MAX n m = m, hence m = 0     by MAX_DEF
-                but n < 0 is F                   by NOT_LESS_0
-      If ~(n < m), 0 = MAX n m = n, hence n = 0  by MAX_DEF
-                and ~(0 < m) ==> m = 0           by NOT_LESS
-   Only-if part: n = 0 /\ m = 0 ==> MAX n m = 0
-      True since MAX 0 0 = 0                     by MAX_0
-*)
-val MAX_EQ_0 = store_thm(
-  "MAX_EQ_0",
-  ``!m n. (MAX n m = 0) <=> ((n = 0) /\ (m = 0))``,
-  rw[MAX_DEF]);
-
-(* Theorem: (MIN n m = 0) <=> ((n = 0) \/ (m = 0)) *)
-(* Proof:
-   If part: MIN n m = 0 ==> n = 0 \/ m = 0
-      If n < m, 0 = MIN n m = n, hence n = 0     by MIN_DEF
-      If ~(n < m), 0 = MAX n m = m, hence m = 0  by MIN_DEF
-   Only-if part: n = 0 \/ m = 0 ==> MIN n m = 0
-      True since MIN 0 0 = 0                     by MIN_0
-*)
-val MIN_EQ_0 = store_thm(
-  "MIN_EQ_0",
-  ``!m n. (MIN n m = 0) <=> ((n = 0) \/ (m = 0))``,
-  rw[MIN_DEF]);
-
 (* Theorem: m <= MAX m n /\ n <= MAX m n *)
 (* Proof: by MAX_DEF *)
 val MAX_IS_MAX = store_thm(

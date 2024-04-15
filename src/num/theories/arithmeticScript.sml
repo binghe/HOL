@@ -3437,8 +3437,11 @@ QED
 
 val _ = print "Minimums and maximums\n"
 
-val MAX = new_definition("MAX_DEF", “MAX m n = if m < n then n else m”);
-val MIN = new_definition("MIN_DEF", “MIN m n = if m < n then m else n”);
+val MAX_DEF = new_definition("MAX_DEF", “MAX m n = if m < n then n else m”);
+val MIN_DEF = new_definition("MIN_DEF", “MIN m n = if m < n then m else n”);
+
+val MAX = MAX_DEF;
+val MIN = MIN_DEF;
 
 val ARW = RW_TAC bool_ss
 
@@ -3540,6 +3543,20 @@ val MIN_IDEM = store_thm ("MIN_IDEM",
 val MAX_IDEM = store_thm ("MAX_IDEM",
   “!n. MAX n n = n”,
   PROVE_TAC [MAX]);
+
+(* Theorem: (MAX n m = n) \/ (MAX n m = m) *)
+(* Proof: by MAX_DEF *)
+val MAX_CASES = store_thm(
+  "MAX_CASES",
+  ``!m n. (MAX n m = n) \/ (MAX n m = m)``,
+  rw[MAX_DEF]);
+
+(* Theorem: (MIN n m = n) \/ (MIN n m = m) *)
+(* Proof: by MIN_DEF *)
+val MIN_CASES = store_thm(
+  "MIN_CASES",
+  ``!m n. (MIN n m = n) \/ (MIN n m = m)``,
+  rw[MIN_DEF]);
 
 val EXISTS_GREATEST = store_thm ("EXISTS_GREATEST",
   “!P. (?x. P x) /\ (?x:num. !y. y > x ==> ~P y) <=>
@@ -4084,13 +4101,6 @@ val SUB_MOD = Q.store_thm ("SUB_MOD",
  `!m n. 0<n /\ n <= m ==> ((m-n) MOD n = m MOD n)`,
  METIS_TAC [ADD_MODULUS,ADD_SUB,LESS_EQ_EXISTS,ADD_SYM]);
 
-fun Cases (asl,g) =
- let val (v,_) = dest_forall g
- in GEN_TAC THEN STRUCT_CASES_TAC (SPEC v num_CASES)
- end (asl,g);
-
-fun Cases_on v (asl,g) = STRUCT_CASES_TAC (SPEC v num_CASES) (asl,g);
-
 val ONE_LT_MULT_IMP = Q.store_thm ("ONE_LT_MULT_IMP",
  `!p q. 1 < p /\ 0 < q ==> 1 < p * q`,
  REPEAT Cases THEN
@@ -4105,7 +4115,7 @@ val ONE_LT_MULT = Q.store_thm ("ONE_LT_MULT",
  REWRITE_TAC [ONE] THEN INDUCT_TAC THEN
  RW_TAC bool_ss [ADD_CLAUSES, MULT_CLAUSES,LESS_REFL,LESS_0] THENL
   [METIS_TAC [NOT_SUC_LESS_EQ_0,LESS_OR_EQ],
-   Cases_on “y:num” THEN
+   Cases_on ‘y’ THEN
    RW_TAC bool_ss [MULT_CLAUSES,ADD_CLAUSES,LESS_REFL,
            LESS_MONO_EQ,ZERO_LESS_ADD,LESS_0] THEN
    METIS_TAC [ZERO_LESS_MULT]]);
