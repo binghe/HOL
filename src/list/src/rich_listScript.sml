@@ -5271,8 +5271,8 @@ QED
          set l = {x}   by LIST_TO_SET_DEF
       or SING (set l)  by SING_DEF
 *)
-val LIST_TO_SET_SING = store_thm(
-  "LIST_TO_SET_SING",
+val SING_LIST_TO_SET = store_thm((* was: LIST_TO_SET_SING *)
+  "SING_LIST_TO_SET",
   ``!l. (LENGTH l = 1) ==> SING (set l)``,
   rw[LENGTH_EQ_1, SING_DEF] >>
   `set [x] = {x}` by rw[] >>

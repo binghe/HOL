@@ -466,13 +466,13 @@ QED
    this is to show:
       (LENGTH x = 1) /\ set x SUBSET count a /\ (x <> [] ==> SING (set x)) <=>
       (LENGTH x = 1) /\ set x SUBSET count a
-   This is true         by LIST_TO_SET_SING
+   This is true         by SING_LIST_TO_SET
 *)
 Theorem monocoloured_1:
   !a. monocoloured 1 a = necklace 1 a
 Proof
   rw[necklace_def, monocoloured_def, EXTENSION] >>
-  metis_tac[LIST_TO_SET_SING]
+  metis_tac[SING_LIST_TO_SET]
 QED
 
 (* Idea: Unit-length necklaces are monocoloured. *)
