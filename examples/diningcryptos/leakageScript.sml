@@ -18,9 +18,6 @@ open util_probTheory sigma_algebraTheory real_measureTheory real_lebesgueTheory
 
 open informationTheory;
 
-val _ = intLib.deprecate_int();
-val _ = ratLib.deprecate_rat();
-
 (* ------------------------------------------------------------------------- *)
 (* Start a new theory called "information"                                   *)
 (* ------------------------------------------------------------------------- *)
@@ -30,6 +27,9 @@ val _ = temp_set_fixity "CROSS" (Infixl 600)
 val std_ss = std_ss -* ["lift_disj_eq", "lift_imp_disj"];
 val real_ss = real_ss -* ["lift_disj_eq", "lift_imp_disj"];
 val list_ss = list_ss -* ["lift_disj_eq", "lift_imp_disj"];
+
+val _ = intLib.deprecate_int();
+val _ = ratLib.deprecate_rat();
 
 (* ************************************************************************* *)
 (* Basic Definitions                                                         *)
