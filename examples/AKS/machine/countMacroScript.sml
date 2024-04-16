@@ -20,8 +20,9 @@ open bitsizeTheory complexityTheory;
 open loopIncreaseTheory loopDecreaseTheory;
 open loopDivideTheory loopMultiplyTheory loopListTheory;
 
-open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
-     numberTheory combinatoricsTheory pairTheory optionTheory listRangeTheory;
+open pred_setTheory listTheory rich_listTheory arithmeticTheory dividesTheory
+     gcdTheory numberTheory combinatoricsTheory pairTheory optionTheory
+     listRangeTheory;
 
 open countMonadTheory logPowerTheory;
 

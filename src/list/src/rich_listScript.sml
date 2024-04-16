@@ -3736,6 +3736,75 @@ val SNOC_LAST_FRONT = store_thm(
   ``!l. l <> [] ==> (l = SNOC (LAST l) (FRONT l))``,
   rw[APPEND_FRONT_LAST]);
 
+(* Theorem: REVERSE [x] = [x] *)
+(* Proof:
+      REVERSE [x]
+    = [] ++ [x]       by REVERSE_DEF
+    = [x]             by APPEND
+*)
+val REVERSE_SING = store_thm(
+  "REVERSE_SING",
+  ``!x. REVERSE [x] = [x]``,
+  rw[]);
+
+(* Theorem: ls <> [] ==> (HD (REVERSE ls) = LAST ls) *)
+(* Proof:
+      HD (REVERSE ls)
+    = HD (REVERSE (SNOC (LAST ls) (FRONT ls)))   by SNOC_LAST_FRONT
+    = HD (LAST ls :: (REVERSE (FRONT ls))        by REVERSE_SNOC
+    = LAST ls                                    by HD
+*)
+Theorem REVERSE_HD:
+  !ls. ls <> [] ==> (HD (REVERSE ls) = LAST ls)
+Proof
+  metis_tac[SNOC_LAST_FRONT, REVERSE_SNOC, HD]
+QED
+
+(* Theorem: ls <> [] ==> (TL (REVERSE ls) = REVERSE (FRONT ls)) *)
+(* Proof:
+      TL (REVERSE ls)
+    = TL (REVERSE (SNOC (LAST ls) (FRONT ls)))   by SNOC_LAST_FRONT
+    = TL (LAST ls :: (REVERSE (FRONT ls))        by REVERSE_SNOC
+    = REVERSE (FRONT ls)                         by TL
+*)
+Theorem REVERSE_TL:
+  !ls. ls <> [] ==> (TL (REVERSE ls) = REVERSE (FRONT ls))
+Proof
+  metis_tac[SNOC_LAST_FRONT, REVERSE_SNOC, TL]
+QED
+
+(* Theorem: EL (LENGTH ls) (ls ++ h::t) = h *)
+(* Proof:
+   Let l2 = h::t.
+   Note ~NULL l2                      by NULL
+     so EL (LENGTH ls) (ls ++ h::t)
+      = EL (LENGTH ls) (ls ++ l2)     by notation
+      = HD l2                         by EL_LENGTH_APPEND
+      = HD (h::t) = h                 by notation
+*)
+val EL_LENGTH_APPEND_0 = store_thm(
+  "EL_LENGTH_APPEND_0",
+  ``!ls h t. EL (LENGTH ls) (ls ++ h::t) = h``,
+  rw[EL_LENGTH_APPEND]);
+
+(* Theorem: EL (LENGTH ls + 1) (ls ++ h::k::t) = k *)
+(* Proof:
+   Let l1 = ls ++ [h].
+   Then LENGTH l1 = LENGTH ls + 1    by LENGTH
+   Note ls ++ h::k::t = l1 ++ k::t   by APPEND
+        EL (LENGTH ls + 1) (ls ++ h::k::t)
+      = EL (LENGTH l1) (l1 ++ k::t)  by above
+      = k                            by EL_LENGTH_APPEND_0
+*)
+val EL_LENGTH_APPEND_1 = store_thm(
+  "EL_LENGTH_APPEND_1",
+  ``!ls h k t. EL (LENGTH ls + 1) (ls ++ h::k::t) = k``,
+  rpt strip_tac >>
+  qabbrev_tac `l1 = ls ++ [h]` >>
+  `LENGTH l1 = LENGTH ls + 1` by rw[Abbr`l1`] >>
+  `ls ++ h::k::t = l1 ++ k::t` by rw[Abbr`l1`] >>
+  metis_tac[EL_LENGTH_APPEND_0]);
+
 (* Theorem: 0 < LENGTH ls <=> (ls = HD ls::TL ls) *)
 (* Proof:
    If part: 0 < LENGTH ls ==> (ls = HD ls::TL ls)
@@ -4884,6 +4953,621 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
+(* More about List Filter.                                                   *)
+(* ------------------------------------------------------------------------- *)
+
+(* Idea: the j-th element of FILTER must have j elements filtered beforehand. *)
+
+(* Theorem: let fs = FILTER P ls in ls = l1 ++ x::l2 /\ P x ==>
+            x = EL (LENGTH (FILTER P l1)) fs *)
+(* Proof:
+   Let l3 = x::l2, then ls = l1 ++ l3.
+   Let j = LENGTH (FILTER P l1).
+     EL j fs
+   = EL j (FILTER P ls)                        by given
+   = EL j (FILTER P l1 ++ FILTER P l3)         by FILTER_APPEND_DISTRIB
+   = EL 0 (FILTER P l3)                        by EL_APPEND, j = LENGTH (FILTER P l1)
+   = EL 0 (FILTER P (x::l2))                   by notation
+   = EL 0 (x::FILTER P l2)                     by FILTER, P x
+   = x                                         by HD
+*)
+Theorem FILTER_EL_IMP:
+  !P ls l1 l2 x. let fs = FILTER P ls in ls = l1 ++ x::l2 /\ P x ==>
+                 x = EL (LENGTH (FILTER P l1)) fs
+Proof
+  rw_tac std_ss[] >>
+  qabbrev_tac `l3 = x::l2` >>
+  qabbrev_tac `j = LENGTH (FILTER P l1)` >>
+  `EL j fs = EL j (FILTER P l1 ++ FILTER P l3)` by simp[FILTER_APPEND_DISTRIB, Abbr`fs`] >>
+  `_ = EL 0 (FILTER P (x::l2))` by simp[EL_APPEND, Abbr`j`, Abbr`l3`] >>
+  fs[]
+QED
+
+(* Theorem: let fs = FILTER P ls in ALL_DISTINCT ls /\ ls = l1 ++ x::l2 /\ j < LENGTH fs ==>
+            (x = EL j fs <=> P x /\ j = LENGTH (FILTER P l1)) *)
+(* Proof:
+   Let k = LENGTH (FILTER P l1).
+   If part: j < LENGTH fs /\ x = EL j fs ==> P x /\ j = k
+      Note j < LENGTH fs /\ x = EL j fs        by given
+       ==> MEM x fs                            by MEM_EL
+       ==> P x                                 by MEM_FILTER
+      Thus x = EL k fs                         by FILTER_EL_IMP
+      Let l3 = x::l2, then ls = l1 ++ l3.
+      Then FILTER P l3 = x :: FILTER P l2      by FILTER
+        or FILTER P l3 <> []                   by NOT_NIL_CONS
+        or LENGTH (FILTER P l3) <> 0           by LENGTH_EQ_0, [1]
+
+           LENGTH fs
+         = LENGTH (FILTER P ls)                by notation
+         = LENGTH (FILTER P l1 ++ FILTER P l3) by FILTER_APPEND_DISTRIB
+         = k + LENGTH (FILTER P l3)            by LENGTH_APPEND
+      Thus k < LENGTH fs                       by [1]
+
+      Note ALL_DISTINCT ls
+       ==> ALL_DISTINCT fs                     by FILTER_ALL_DISTINCT
+      With x = EL j fs = EL k fs               by above
+       and j < LENGTH fs /\ k < LENGTH fs      by above
+       ==>           j = k                     by ALL_DISTINCT_EL_IMP
+
+   Only-if part: j < LENGTH fs /\ P x /\ j = k ==> x = EL j fs
+      This is true                             by FILTER_EL_IMP
+*)
+Theorem FILTER_EL_IFF:
+  !P ls l1 l2 x j. let fs = FILTER P ls in ALL_DISTINCT ls /\ ls = l1 ++ x::l2 /\ j < LENGTH fs ==>
+                   (x = EL j fs <=> P x /\ j = LENGTH (FILTER P l1))
+Proof
+  rw_tac std_ss[] >>
+  qabbrev_tac `k = LENGTH (FILTER P l1)` >>
+  simp[EQ_IMP_THM] >>
+  ntac 2 strip_tac >| [
+    `MEM x fs` by metis_tac[MEM_EL] >>
+    `P x` by fs[MEM_FILTER, Abbr`fs`] >>
+    qabbrev_tac `ls = l1 ++ x::l2` >>
+    `EL j fs = EL k fs` by metis_tac[FILTER_EL_IMP] >>
+    qabbrev_tac `l3 = x::l2` >>
+    `FILTER P l3 = x :: FILTER P l2` by simp[Abbr`l3`] >>
+    `LENGTH (FILTER P l3) <> 0` by fs[] >>
+    `fs = FILTER P l1 ++ FILTER P l3` by fs[FILTER_APPEND_DISTRIB, Abbr`fs`, Abbr`ls`] >>
+    `LENGTH fs = k + LENGTH (FILTER P l3)` by fs[Abbr`k`] >>
+    `k < LENGTH fs` by decide_tac >>
+    `ALL_DISTINCT fs` by simp[FILTER_ALL_DISTINCT, Abbr`fs`] >>
+    metis_tac[ALL_DISTINCT_EL_IMP],
+    metis_tac[FILTER_EL_IMP]
+  ]
+QED
+
+(* Derive theorems for head = (EL 0 fs) *)
+
+(* Theorem: ls = l1 ++ x::l2 /\ P x /\ FILTER P l1 = [] ==> x = HD (FILTER P ls) *)
+(* Proof:
+   Note FILTER P l1 = []           by given
+    ==> LENGTH (FILTER P l1) = 0   by LENGTH
+   Thus x = EL 0 (FILTER P ls)     by FILTER_EL_IMP
+          = HD (FILTER P ls)       by EL
+*)
+Theorem FILTER_HD:
+  !P ls l1 l2 x. ls = l1 ++ x::l2 /\ P x /\ FILTER P l1 = [] ==> x = HD (FILTER P ls)
+Proof
+  metis_tac[LENGTH, FILTER_EL_IMP, EL]
+QED
+
+(* Theorem: ALL_DISTINCT ls /\ ls = l1 ++ x::l2 /\ P x ==>
+            (x = HD (FILTER P ls) <=> FILTER P l1 = []) *)
+(* Proof:
+   Let fs = FILTER P ls.
+   Note MEM x ls                   by MEM_APPEND, MEM
+    and P x ==> fs <> []           by MEM_FILTER, NIL_NO_MEM
+     so 0 < LENGTH fs              by LENGTH_EQ_0
+   Thus x = HD fs
+          = EL 0 fs                by EL
+    <=> LENGTH (FILTER P l1) = 0   by FILTER_EL_IFF
+    <=> FILTER P l1 = []           by LENGTH_EQ_0
+*)
+Theorem FILTER_HD_IFF:
+  !P ls l1 l2 x. ALL_DISTINCT ls /\ ls = l1 ++ x::l2 /\ P x ==>
+                 (x = HD (FILTER P ls) <=> FILTER P l1 = [])
+Proof
+  rpt strip_tac >>
+  qabbrev_tac `fs = FILTER P ls` >>
+  `MEM x ls` by metis_tac[MEM_APPEND, MEM] >>
+  `MEM x fs` by fs[MEM_FILTER, Abbr`fs`] >>
+  `0 < LENGTH fs` by metis_tac[NIL_NO_MEM, LENGTH_EQ_0, NOT_ZERO] >>
+  metis_tac[FILTER_EL_IFF, EL, LENGTH_EQ_0]
+QED
+
+(* Derive theorems for last = (EL (LENGTH fs - 1) fs) *)
+
+(* Theorem: ls = l1 ++ x::l2 /\ P x /\ FILTER P l2 = [] ==>
+            x = LAST (FILTER P ls) *)
+(* Proof:
+   Let fs = FILTER P ls,
+        k = LENGTH fs.
+   Note MEM x ls                   by MEM_APPEND, MEM
+    and P x ==> fs <> []           by MEM_FILTER, NIL_NO_MEM
+     so 0 < LENGTH fs = k          by LENGTH_EQ_0
+
+   Note FILTER P l2 = []           by given
+    ==> LENGTH (FILTER P l2) = 0   by LENGTH
+    k = LENGTH fs
+      = LENGTH (FILTER P ls)       by notation
+      = LENGTH (FILTER P l1) + 1   by FILTER_APPEND_DISTRIB, ONE
+     or LENGTH (FILTER P l1) = PRE k
+   Thus x = EL (PRE k) fs          by FILTER_EL_IMP
+          = LAST fs                by LAST_EL, fs <> []
+*)
+Theorem FILTER_LAST:
+  !P ls l1 l2 x. ls = l1 ++ x::l2 /\ P x /\ FILTER P l2 = [] ==>
+                 x = LAST (FILTER P ls)
+Proof
+  rpt strip_tac >>
+  qabbrev_tac `fs = FILTER P ls` >>
+  qabbrev_tac `k = LENGTH fs` >>
+  `MEM x ls` by metis_tac[MEM_APPEND, MEM] >>
+  `MEM x fs` by fs[MEM_FILTER, Abbr`fs`] >>
+  `fs <> [] /\ 0 < k` by metis_tac[NIL_NO_MEM, LENGTH_EQ_0, NOT_ZERO] >>
+  `k = LENGTH (FILTER P l1) + 1` by fs[FILTER_APPEND_DISTRIB, Abbr`k`, Abbr`fs`] >>
+  `LENGTH (FILTER P l1) = PRE k` by decide_tac >>
+  metis_tac[FILTER_EL_IMP, LAST_EL]
+QED
+
+(* Theorem: ALL_DISTINCT ls /\ ls = l1 ++ x::l2 /\ P x ==>
+            (x = LAST (FILTER P ls) <=> FILTER P l2 = []) *)
+(* Proof:
+   Let fs = FILTER P ls,
+        k = LENGTH fs,
+        j = LENGTH (FILTER P l1).
+   Note MEM x ls                   by MEM_APPEND, MEM
+    and P x ==> fs <> []           by MEM_FILTER, NIL_NO_MEM
+     so 0 < LENGTH fs = k          by LENGTH_EQ_0
+    and PRE k < k                  by arithmetic
+
+    k = LENGTH fs
+      = LENGTH (FILTER P ls)                   by notation
+      = j + 1 + LENGTH (FILTER P l2)           by FILTER_APPEND_DISTRIB, ONE
+     so j = PRE k <=> LENGTH (FILTER P l2) = 0 by arithmetic
+
+   Thus x = LAST fs
+          = EL (PRE k) fs          by LAST_EL
+    <=> PRE k = j                  by FILTER_EL_IFF
+    <=> LENGTH (FILTER P l2) = 0   by above
+    <=> FILTER P l2 = []           by LENGTH_EQ_0
+*)
+Theorem FILTER_LAST_IFF:
+  !P ls l1 l2 x. ALL_DISTINCT ls /\ ls = l1 ++ x::l2 /\ P x ==>
+                 (x = LAST (FILTER P ls) <=> FILTER P l2 = [])
+Proof
+  rpt strip_tac >>
+  qabbrev_tac `fs = FILTER P ls` >>
+  qabbrev_tac `k = LENGTH fs` >>
+  qabbrev_tac `j = LENGTH (FILTER P l1)` >>
+  `MEM x ls` by metis_tac[MEM_APPEND, MEM] >>
+  `MEM x fs` by fs[MEM_FILTER, Abbr`fs`] >>
+  `fs <> [] /\ 0 < k` by metis_tac[NIL_NO_MEM, LENGTH_EQ_0, NOT_ZERO] >>
+  `k = j + 1 + LENGTH (FILTER P l2)` by fs[FILTER_APPEND_DISTRIB, Abbr`fs`, Abbr`k`, Abbr`j`] >>
+  `PRE k < k /\ (j = PRE k <=> LENGTH (FILTER P l2) = 0)` by decide_tac >>
+  metis_tac[FILTER_EL_IFF, LAST_EL, LENGTH_EQ_0]
+QED
+
+(* Idea: for FILTER over a range, the range between successive filter elements is filtered. *)
+
+(* Theorem: let fs = FILTER P ls; j = LENGTH (FILTER P l1) in
+            ls = l1 ++ x::l2 ++ y::l3 /\ P x /\ P y /\ FILTER P l2 = [] ==>
+            x = EL j fs /\ y = EL (j + 1) fs *)
+(* Proof:
+   Let l4 = y::l3, then
+       ls = l1 ++ x::l2 ++ l4
+          = l1 ++ x::(l2 ++ l4)                by APPEND_ASSOC_CONS
+   Thus x = EL j fs                            by FILTER_EL_IMP
+
+   Now let l5 = l1 ++ x::l2,
+           k = LENGTH (FILTER P l5).
+   Then ls = l5 ++ y::l3                       by APPEND_ASSOC
+    and y = EL k fs                            by FILTER_EL_IMP
+
+   Note FILTER P l5
+      = FILTER P l1 ++ FILTER P (x::l2)        by FILTER_APPEND_DISTRIB
+      = FILTER P l1 ++ x :: FILTER P l2        by FILTER
+      = FILTER P l1 ++ [x]                     by FILTER P l2 = []
+    and k = LENGTH (FILTER P l5)
+          = LENGTH (FILTER P l1 ++ [x])        by above
+          = j + 1                              by LENGTH_APPEND
+*)
+Theorem FILTER_EL_NEXT:
+  !P ls l1 l2 l3 x y. let fs = FILTER P ls; j = LENGTH (FILTER P l1) in
+                      ls = l1 ++ x::l2 ++ y::l3 /\ P x /\ P y /\ FILTER P l2 = [] ==>
+                      x = EL j fs /\ y = EL (j + 1) fs
+Proof
+  rw_tac std_ss[] >| [
+    qabbrev_tac `l4 = y::l3` >>
+    qabbrev_tac `ls = l1 ++ x::l2 ++ l4` >>
+    `ls = l1 ++ x::(l2 ++ l4)` by simp[Abbr`ls`] >>
+    metis_tac[FILTER_EL_IMP],
+    qabbrev_tac `l5 = l1 ++ x::l2` >>
+    qabbrev_tac `ls = l5 ++ y::l3` >>
+    `FILTER P l5 = FILTER P l1 ++ [x]` by fs[FILTER_APPEND_DISTRIB, Abbr`l5`] >>
+    `LENGTH (FILTER P l5) = j + 1` by fs[Abbr`j`] >>
+    metis_tac[FILTER_EL_IMP]
+  ]
+QED
+
+(* Theorem: let fs = FILTER P ls; j = LENGTH (FILTER P l1) in
+             ALL_DISTINCT ls /\ ls = l1 ++ x::l2 ++ y::l3 /\ P x /\ P y ==>
+             (x = EL j fs /\ y = EL (j + 1) fs <=> FILTER P l2 = []) *)
+(* Proof:
+   Note fs = FILTER P ls
+           = FILTER P (l1 ++ x::l2 ++ y::l3)   by given
+           = FILTER P l1 ++
+             x :: FILTER P l2 ++
+             y :: FILTER P l3                  by FILTER_APPEND_DISTRIB, FILTER
+   Thus LENGTH fs
+      = j + SUC (LENGTH (FILTER P l2))
+          + SUC (LENGTH (FILTER P l3))         by LENGTH_APPEND
+     or j + 2 <= LENGTH fs                     by arithmetic
+     or j < LENGTH fs, j + 1 < LENGTH fs       by inequality
+
+   Let l4 = y::l3, then
+       ls = l1 ++ x::l2 ++ l4
+          = l1 ++ x::(l2 ++ l4)                by APPEND_ASSOC_CONS
+   Thus x = EL j fs                            by FILTER_EL_IFF, j < LENGTH fs
+
+   Now let l5 = l1 ++ x::l2,
+           k = LENGTH (FILTER P l5).
+   Then ls = l5 ++ y::l3                       by APPEND_ASSOC
+    and fs = FILTER P l5 ++
+             y :: FILTER P l3                  by FILTER_APPEND_DISTRIB, FILTER
+     so LENGTH fs = k + SUC (LENGTH P l3)      by LENGTH_APPEND
+   Thus k < LENGTH fs
+    and y = EL k fs                            by FILTER_EL_IFF
+
+   Also FILTER P l5 = FILTER P l1 ++
+                      x :: FILTER P l2         by FILTER_APPEND_DISTRIB, FILTER
+     so k = j + SUC (LENGTH (FILTER P l2))     by LENGTH_APPEND
+   Thus k = j + 1
+    <=> LENGTH (FILTER P l2) = 0               by arithmetic
+
+   Note ALL_DISTINCT fs                        by FILTER_ALL_DISTINCT
+     so EL k fs = EL (j + 1) fs
+    <=> k = j + 1
+    <=> LENGTH (FILTER P l2) = 0               by above
+    <=> FILTER P l2 = []                       by LENGTH_EQ_0
+*)
+Theorem FILTER_EL_NEXT_IFF:
+  !P ls l1 l2 l3 x y. let fs = FILTER P ls; j = LENGTH (FILTER P l1) in
+                      ALL_DISTINCT ls /\ ls = l1 ++ x::l2 ++ y::l3 /\ P x /\ P y ==>
+                      (x = EL j fs /\ y = EL (j + 1) fs <=> FILTER P l2 = [])
+Proof
+  rw_tac std_ss[] >>
+  qabbrev_tac `ls = l1 ++ x::l2 ++ y::l3` >>
+  `j + 2 <= LENGTH fs` by
+  (`fs = FILTER P l1 ++ x::FILTER P l2 ++ y::FILTER P l3` by simp[FILTER_APPEND_DISTRIB, Abbr`fs`, Abbr`ls`] >>
+  `LENGTH fs = j + SUC (LENGTH (FILTER P l2)) + SUC (LENGTH (FILTER P l3))` by fs[Abbr`j`] >>
+  decide_tac) >>
+  `j < LENGTH fs` by decide_tac >>
+  qabbrev_tac `l4 = y::l3` >>
+  `ls = l1 ++ x::(l2 ++ l4)` by simp[Abbr`ls`] >>
+  `x = EL j fs` by metis_tac[FILTER_EL_IFF] >>
+  qabbrev_tac `l5 = l1 ++ x::l2` >>
+  qabbrev_tac `k = LENGTH (FILTER P l5)` >>
+  `ls = l5 ++ y::l3` by simp[Abbr`l5`, Abbr`ls`] >>
+  `k < LENGTH fs /\ (k = j + 1 <=> FILTER P l2 = [])` by
+    (`fs = FILTER P l5 ++ y::FILTER P l3` by rfs[FILTER_APPEND_DISTRIB, Abbr`fs`] >>
+  `LENGTH fs = k + SUC (LENGTH (FILTER P l3))` by fs[Abbr`k`] >>
+  `FILTER P l5 = FILTER P l1 ++ x :: FILTER P l2` by rfs[FILTER_APPEND_DISTRIB, Abbr`l5`] >>
+  `k = j + SUC (LENGTH (FILTER P l2))` by fs[Abbr`k`, Abbr`j`] >>
+  simp[]) >>
+  `y = EL k fs` by metis_tac[FILTER_EL_IFF] >>
+  `j + 1 < LENGTH fs` by decide_tac >>
+  `ALL_DISTINCT fs` by simp[FILTER_ALL_DISTINCT, Abbr`fs`] >>
+  metis_tac[ALL_DISTINCT_EL_IMP]
+QED
+
+(* ------------------------------------------------------------------------- *)
+(* Unit-List and Mono-List                                                   *)
+(* ------------------------------------------------------------------------- *)
+
+(* Theorem: (LENGTH l = 1) ==> SING (set l) *)
+(* Proof:
+   Since ?x. l = [x]   by LENGTH_EQ_1
+         set l = {x}   by LIST_TO_SET_DEF
+      or SING (set l)  by SING_DEF
+*)
+val LIST_TO_SET_SING = store_thm(
+  "LIST_TO_SET_SING",
+  ``!l. (LENGTH l = 1) ==> SING (set l)``,
+  rw[LENGTH_EQ_1, SING_DEF] >>
+  `set [x] = {x}` by rw[] >>
+  metis_tac[]);
+
+(* Mono-list Theory: a mono-list is a list l with SING (set l) *)
+
+(* Theorem: Two mono-lists are equal if their lengths and sets are equal.
+            SING (set l1) /\ SING (set l2) ==>
+            ((l1 = l2) <=> (LENGTH l1 = LENGTH l2) /\ (set l1 = set l2)) *)
+(* Proof:
+   By induction on l1.
+   Base case: !l2. SING (set []) /\ SING (set l2) ==>
+              (([] = l2) <=> (LENGTH [] = LENGTH l2) /\ (set [] = set l2))
+     True by SING (set []) is False, by SING_EMPTY.
+   Step case: !l2. SING (set l1) /\ SING (set l2) ==>
+              ((l1 = l2) <=> (LENGTH l1 = LENGTH l2) /\ (set l1 = set l2)) ==>
+              !h l2. SING (set (h::l1)) /\ SING (set l2) ==>
+              ((h::l1 = l2) <=> (LENGTH (h::l1) = LENGTH l2) /\ (set (h::l1) = set l2))
+     This is to show:
+     (1) 1 = LENGTH l2 /\ {h} = set l2 ==>
+         ([h] = l2) <=> (SUC (LENGTH []) = LENGTH l2) /\ (h INSERT set [] = set l2)
+         If-part, l2 = [h],
+              LENGTH l2 = 1 = SUC 0 = SUC (LENGTH [])   by LENGTH, ONE
+          and set l2 = set [h] = {h} = h INSERT set []  by LIST_TO_SET
+         Only-if part, LENGTH l2 = SUC 0 = 1            by ONE
+            Then ?x. l2 = [x]                           by LENGTH_EQ_1
+              so set l2 = {x} = {h}                     by LIST_TO_SET
+              or x = h, hence l2 = [h]                  by EQUAL_SING
+     (2) set l1 = {h} /\ SING (set l2) ==>
+         (h::l1 = l2) <=> (SUC (LENGTH l1) = LENGTH l2) /\ (h INSERT set l1 = set l2)
+         If part, h::l1 = l2.
+            Then LENGTH l2 = LENGTH (h::l1) = SUC (LENGTH l1)  by LENGTH
+             and set l2 = set (h::l1) = h INSERT set l1        by LIST_TO_SET
+         Only-if part, SUC (LENGTH l1) = LENGTH l2.
+            Since 0 < SUC (LENGTH l1)   by prim_recTheory.LESS_0
+                  0 < LENGTH l2         by LESS_TRANS
+               so ?k t. l2 = k::t       by LENGTH_NON_NIL, list_CASES
+            Since LENGTH l2 = SUC (LENGTH t)   by LENGTH
+                  LENGTH l1 = LENGTH t         by prim_recTheory.INV_SUC_EQ
+              and set l2 = k INSERT set t      by LIST_TO_SET
+            Given SING (set l2),
+            either (set t = {}), or (set t = {k})  by SING_INSERT
+            If set t = {},
+               then t = []              by LIST_TO_SET_EQ_EMPTY
+                and l1 = []             by LENGTH_NIL, LENGTH l1 = LENGTH t.
+                 so set l1 = {}         by LIST_TO_SET_EQ_EMPTY
+            contradicting set l1 = {h}  by NOT_SING_EMPTY
+            If set t = {k},
+               then set l2 = set t      by ABSORPTION, set l2 = k INSERT set {k}.
+                 or k = h               by IN_SING
+                 so l1 = t              by induction hypothesis
+             giving l2 = h::l1
+*)
+Theorem MONOLIST_EQ:
+  !l1 l2. SING (set l1) /\ SING (set l2) ==>
+          ((l1 = l2) <=> (LENGTH l1 = LENGTH l2) /\ (set l1 = set l2))
+Proof
+  Induct >> rw[NOT_SING_EMPTY, SING_INSERT] >| [
+    Cases_on `l2` >> rw[] >>
+    full_simp_tac (srw_ss()) [SING_INSERT, EQUAL_SING] >>
+    rw[LENGTH_NIL, NOT_SING_EMPTY, EQUAL_SING] >> metis_tac[],
+    Cases_on `l2` >> rw[] >>
+    full_simp_tac (srw_ss()) [SING_INSERT, LENGTH_NIL, NOT_SING_EMPTY,
+                              EQUAL_SING] >>
+    metis_tac[]
+  ]
+QED
+
+(* Theorem: A non-mono-list has at least one element in tail that is distinct from its head.
+           ~SING (set (h::t)) ==> ?h'. h' IN set t /\ h' <> h *)
+(* Proof:
+   By SING_INSERT, this is to show:
+      t <> [] /\ set t <> {h} ==> ?h'. MEM h' t /\ h' <> h
+   Now, t <> [] ==> set t <> {}   by LIST_TO_SET_EQ_EMPTY
+     so ?e. e IN set t            by MEMBER_NOT_EMPTY
+     hence MEM e t,
+       and MEM x t <=/=> (x = h)  by EXTENSION
+   Therefore, e <> h, so take h' = e.
+*)
+val NON_MONO_TAIL_PROPERTY = store_thm(
+  "NON_MONO_TAIL_PROPERTY",
+  ``!l. ~SING (set (h::t)) ==> ?h'. h' IN set t /\ h' <> h``,
+  rw[SING_INSERT] >>
+  `set t <> {}` by metis_tac[LIST_TO_SET_EQ_EMPTY] >>
+  `?e. e IN set t` by metis_tac[MEMBER_NOT_EMPTY] >>
+  full_simp_tac (srw_ss())[EXTENSION] >>
+  metis_tac[]);
+
+(* ------------------------------------------------------------------------- *)
+(* GENLIST Theorems                                                          *)
+(* ------------------------------------------------------------------------- *)
+
+(* Theorem: GENLIST (K e) (SUC n) = e :: GENLIST (K e) n *)
+(* Proof:
+     GENLIST (K e) (SUC n)
+   = (K e) 0::GENLIST ((K e) o SUC) n   by GENLIST_CONS
+   = e :: GENLIST ((K e) o SUC) n       by K_THM
+   = e :: GENLIST (K e) n               by K_o_THM
+*)
+val GENLIST_K_CONS = save_thm("GENLIST_K_CONS",
+    SIMP_CONV (srw_ss()) [GENLIST_CONS]
+      ``GENLIST (K e) (SUC n)`` |> GEN ``n:num`` |> GEN ``e``);
+(* val GENLIST_K_CONS = |- !e n. GENLIST (K e) (SUC n) = e::GENLIST (K e) n: thm  *)
+
+(* Theorem: GENLIST (K e) (n + m) = GENLIST (K e) m ++ GENLIST (K e) n *)
+(* Proof:
+   Note (\t. e) = K e    by FUN_EQ_THM
+     GENLIST (K e) (n + m)
+   = GENLIST (K e) m ++ GENLIST (\t. (K e) (t + m)) n    by GENLIST_APPEND
+   = GENLIST (K e) m ++ GENLIST (\t. e) n                by K_THM
+   = GENLIST (K e) m ++ GENLIST (K e) n                  by above
+*)
+val GENLIST_K_ADD = store_thm(
+  "GENLIST_K_ADD",
+  ``!e n m. GENLIST (K e) (n + m) = GENLIST (K e) m ++ GENLIST (K e) n``,
+  rpt strip_tac >>
+  `(\t. e) = K e` by rw[FUN_EQ_THM] >>
+  rw[GENLIST_APPEND] >>
+  metis_tac[]);
+
+(* Theorem: (!k. k < n ==> (f k = e)) ==> (GENLIST f n = GENLIST (K e) n) *)
+(* Proof:
+   By induction on n.
+   Base: GENLIST f 0 = GENLIST (K e) 0
+        GENLIST f 0
+      = []                          by GENLIST_0
+      = GENLIST (K e) 0             by GENLIST_0
+   Step: GENLIST f n = GENLIST (K e) n ==>
+         GENLIST f (SUC n) = GENLIST (K e) (SUC n)
+        GENLIST f (SUC n)
+      = SNOC (f n) (GENLIST f n)    by GENLIST
+      = SNOC e (GENLIST f n)        by applying f to n
+      = SNOC e (GENLIST (K e) n)    by induction hypothesis
+      = GENLIST (K e) (SUC n)       by GENLIST
+*)
+val GENLIST_K_LESS = store_thm(
+  "GENLIST_K_LESS",
+  ``!f e n. (!k. k < n ==> (f k = e)) ==> (GENLIST f n = GENLIST (K e) n)``,
+  rpt strip_tac >>
+  Induct_on `n` >>
+  rw[GENLIST]);
+
+(* Theorem: (!k. 0 < k /\ k <= n ==> (f k = e)) ==> (GENLIST (f o SUC) n = GENLIST (K e) n) *)
+(* Proof:
+   Base: GENLIST (f o SUC) 0 = GENLIST (K e) 0
+         GENLIST (f o SUC) 0
+       = []                                by GENLIST_0
+       = GENLIST (K e) 0                   by GENLIST_0
+   Step: GENLIST (f o SUC) n = GENLIST (K e) n ==>
+         GENLIST (f o SUC) (SUC n) = GENLIST (K e) (SUC n)
+         GENLIST (f o SUC) (SUC n)
+       = SNOC (f n) (GENLIST (f o SUC) n)  by GENLIST
+       = SNOC e (GENLIST (f o SUC) n)      by applying f to n
+       = SNOC e GENLIST (K e) n            by induction hypothesis
+       = GENLIST (K e) (SUC n)             by GENLIST
+*)
+val GENLIST_K_RANGE = store_thm(
+  "GENLIST_K_RANGE",
+  ``!f e n. (!k. 0 < k /\ k <= n ==> (f k = e)) ==> (GENLIST (f o SUC) n = GENLIST (K e) n)``,
+  rpt strip_tac >>
+  Induct_on `n` >>
+  rw[GENLIST]);
+
+(* Theorem: GENLIST (K c) a ++ GENLIST (K c) b = GENLIST (K c) (a + b) *)
+(* Proof:
+   Note (\t. c) = K c           by FUN_EQ_THM
+     GENLIST (K c) (a + b)
+   = GENLIST (K c) (b + a)                              by ADD_COMM
+   = GENLIST (K c) a ++ GENLIST (\t. (K c) (t + a)) b   by GENLIST_APPEND
+   = GENLIST (K c) a ++ GENLIST (\t. c) b               by applying constant function
+   = GENLIST (K c) a ++ GENLIST (K c) b                 by GENLIST_FUN_EQ
+*)
+val GENLIST_K_APPEND = store_thm(
+  "GENLIST_K_APPEND",
+  ``!a b c. GENLIST (K c) a ++ GENLIST (K c) b = GENLIST (K c) (a + b)``,
+  rpt strip_tac >>
+  `(\t. c) = K c` by rw[FUN_EQ_THM] >>
+  `GENLIST (K c) (a + b) = GENLIST (K c) (b + a)` by rw[] >>
+  `_ = GENLIST (K c) a ++ GENLIST (\t. (K c) (t + a)) b` by rw[GENLIST_APPEND] >>
+  rw[GENLIST_FUN_EQ]);
+
+(* Theorem: GENLIST (K c) n ++ [c] = [c] ++ GENLIST (K c) n *)
+(* Proof:
+     GENLIST (K c) n ++ [c]
+   = GENLIST (K c) n ++ GENLIST (K c) 1      by GENLIST_1
+   = GENLIST (K c) (n + 1)                   by GENLIST_K_APPEND
+   = GENLIST (K c) (1 + n)                   by ADD_COMM
+   = GENLIST (K c) 1 ++ GENLIST (K c) n      by GENLIST_K_APPEND
+   = [c] ++ GENLIST (K c) n                  by GENLIST_1
+*)
+val GENLIST_K_APPEND_K = store_thm(
+  "GENLIST_K_APPEND_K",
+  ``!c n. GENLIST (K c) n ++ [c] = [c] ++ GENLIST (K c) n``,
+  metis_tac[GENLIST_K_APPEND, GENLIST_1, ADD_COMM, combinTheory.K_THM]);
+
+(* Theorem: 0 < n ==> (MEM x (GENLIST (K c) n) <=> (x = c)) *)
+(* Proof:
+       MEM x (GENLIST (K c) n
+   <=> ?m. m < n /\ (x = (K c) m)    by MEM_GENLIST
+   <=> ?m. m < n /\ (x = c)          by K_THM
+   <=> (x = c)                       by taking m = 0, 0 < n
+*)
+Theorem GENLIST_K_MEM:
+  !x c n. 0 < n ==> (MEM x (GENLIST (K c) n) <=> (x = c))
+Proof
+  metis_tac[MEM_GENLIST, combinTheory.K_THM]
+QED
+
+(* Theorem: 0 < n ==> (set (GENLIST (K c) n) = {c}) *)
+(* Proof:
+   By induction on n.
+   Base: 0 < 0 ==> (set (GENLIST (K c) 0) = {c})
+      Since 0 < 0 = F, hence true.
+   Step: 0 < n ==> (set (GENLIST (K c) n) = {c}) ==>
+         0 < SUC n ==> (set (GENLIST (K c) (SUC n)) = {c})
+      If n = 0,
+        set (GENLIST (K c) (SUC 0)
+      = set (GENLIST (K c) 1          by ONE
+      = set [(K c) 0]                 by GENLIST_1
+      = set [c]                       by K_THM
+      = {c}                           by LIST_TO_SET
+      If n <> 0, 0 < n.
+        set (GENLIST (K c) (SUC n)
+      = set (SNOC ((K c) n) (GENLIST (K c) n))     by GENLIST
+      = set (SNOC c (GENLIST (K c) n)              by K_THM
+      = c INSERT set (GENLIST (K c) n)             by LIST_TO_SET_SNOC
+      = c INSERT {c}                               by induction hypothesis
+      = {c}                                        by IN_INSERT
+ *)
+Theorem GENLIST_K_SET:
+  !c n. 0 < n ==> (set (GENLIST (K c) n) = {c})
+Proof
+  rpt strip_tac >>
+  Induct_on `n` >-
+  simp[] >>
+  (Cases_on `n = 0` >> simp[]) >>
+  `0 < n` by decide_tac >>
+  simp[GENLIST, LIST_TO_SET_SNOC]
+QED
+
+(* Theorem: ls <> [] ==> (SING (set ls) <=> ?c. ls = GENLIST (K c) (LENGTH ls)) *)
+(* Proof:
+   By induction on ls.
+   Base: [] <> [] ==> (SING (set []) <=> ?c. [] = GENLIST (K c) (LENGTH []))
+     Since [] <> [] = F, hence true.
+   Step: ls <> [] ==> (SING (set ls) <=> ?c. ls = GENLIST (K c) (LENGTH ls)) ==>
+         !h. h::ls <> [] ==>
+             (SING (set (h::ls)) <=> ?c. h::ls = GENLIST (K c) (LENGTH (h::ls)))
+     Note h::ls <> [] = T.
+     If part: SING (set (h::ls)) ==> ?c. h::ls = GENLIST (K c) (LENGTH (h::ls))
+        Note SING (set (h::ls)) means
+             set ls = {h}                by LIST_TO_SET_DEF, IN_SING
+         Let n = LENGTH ls, 0 < n        by LENGTH_NON_NIL
+        Note ls <> []                    by LIST_TO_SET, IN_SING, MEMBER_NOT_EMPTY
+         and SING (set ls)               by SING_DEF
+         ==> ?c. ls = GENLIST (K c) n    by induction hypothesis
+          so set ls = {c}                by GENLIST_K_SET, 0 < n
+         ==> h = c                       by IN_SING
+           GENLIST (K c) (LENGTH (h::ls)
+         = (K c) h :: ls                 by GENLIST_K_CONS
+         = c :: ls                       by K_THM
+         = h::ls                         by h = c
+     Only-if part: ?c. h::ls = GENLIST (K c) (LENGTH (h::ls)) ==> SING (set (h::ls))
+           set (h::ls)
+         = set (GENLIST (K c) (LENGTH (h::ls)))        by given
+         = set ((K c) h :: GENLIST (K c) (LENGTH ls))  by GENLIST_K_CONS
+         = set (c :: GENLIST (K c) (LENGTH ls))        by K_THM
+         = c INSERT set (GENLIST (K c) (LENGTH ls))    by LIST_TO_SET
+         = c INSERT {c}                                by GENLIST_K_SET
+         = {c}                                         by IN_INSERT
+         Hence SING (set (h::ls))                      by SING_DEF
+*)
+Theorem LIST_TO_SET_SING_IFF:
+  !ls. ls <> [] ==> (SING (set ls) <=> ?c. ls = GENLIST (K c) (LENGTH ls))
+Proof
+  Induct >-
+  simp[] >>
+  (rw[EQ_IMP_THM] >> simp[]) >| [
+    qexists_tac `h` >>
+    qabbrev_tac `n = LENGTH ls` >>
+    `ls <> []` by metis_tac[LIST_TO_SET, IN_SING, MEMBER_NOT_EMPTY] >>
+    `SING (set ls)` by fs[SING_DEF] >>
+    fs[] >>
+    `0 < n` by metis_tac[LENGTH_NON_NIL] >>
+    `h = c` by metis_tac[GENLIST_K_SET, IN_SING] >>
+    simp[GENLIST_K_CONS],
+    spose_not_then strip_assume_tac >>
+    fs[GENLIST_K_CONS] >>
+    `0 < LENGTH ls` by metis_tac[LENGTH_NON_NIL] >>
+    metis_tac[GENLIST_K_SET]
+  ]
+QED
+
+(* ------------------------------------------------------------------------- *)
 (* Maximum of a List                                                         *)
 (* ------------------------------------------------------------------------- *)
 
@@ -5014,6 +5698,31 @@ val MAX_LIST_LE = store_thm(
   ``!h t. MAX_LIST t <= MAX_LIST (h::t)``,
   rw_tac std_ss[MAX_LIST_def]);
 
+(* Theorem: (!x. f x <= g x) ==> !ls. MAX_LIST (MAP f ls) <= MAX_LIST (MAP g ls) *)
+(* Proof:
+   By induction on ls.
+   Base: MAX_LIST (MAP f []) <= MAX_LIST (MAP g [])
+      LHS = MAX_LIST (MAP f []) = MAX_LIST []    by MAP
+      RHS = MAX_LIST (MAP g []) = MAX_LIST []    by MAP
+      Hence true.
+   Step: MAX_LIST (MAP f ls) <= MAX_LIST (MAP g ls) ==>
+         !h. MAX_LIST (MAP f (h::ls)) <= MAX_LIST (MAP g (h::ls))
+        MAX_LIST (MAP f (h::ls))
+      = MAX_LIST (f h::MAP f ls)                 by MAP
+      = MAX (f h) (MAX_LIST (MAP f ls))          by MAX_LIST_def
+     <= MAX (f h) (MAX_LIST (MAP g ls))          by induction hypothesis
+     <= MAX (g h) (MAX_LIST (MAP g ls))          by properties of f, g
+      = MAX_LIST (g h::MAP g ls)                 by MAX_LIST_def
+      = MAX_LIST (MAP g (h::ls))                 by MAP
+*)
+val MAX_LIST_MAP_LE = store_thm(
+  "MAX_LIST_MAP_LE",
+  ``!f g. (!x. f x <= g x) ==> !ls. MAX_LIST (MAP f ls) <= MAX_LIST (MAP g ls)``,
+  rpt strip_tac >>
+  Induct_on `ls` >-
+  rw[] >>
+  rw[]);
+
 (* ------------------------------------------------------------------------- *)
 (* Minimum of a List                                                         *)
 (* ------------------------------------------------------------------------- *)
@@ -5128,6 +5837,47 @@ val MIN_LIST_LE = store_thm(
   "MIN_LIST_LE",
   ``!h t. t <> [] ==> MIN_LIST (h::t) <= MIN_LIST t``,
   rw_tac std_ss[MIN_LIST_def]);
+
+(* Theorem: a <= b /\ c <= d ==> MIN a c <= MIN b d *)
+(* Proof: by MIN_DEF *)
+val MIN_LE_PAIR = prove(
+  ``!a b c d. a <= b /\ c <= d ==> MIN a c <= MIN b d``,
+  rw[]);
+
+(* Theorem: (!x. f x <= g x) ==> !ls. MIN_LIST (MAP f ls) <= MIN_LIST (MAP g ls) *)
+(* Proof:
+   By induction on ls.
+   Base: MIN_LIST (MAP f []) <= MIN_LIST (MAP g [])
+      LHS = MIN_LIST (MAP f []) = MIN_LIST []    by MAP
+      RHS = MIN_LIST (MAP g []) = MIN_LIST []    by MAP
+      Hence true.
+   Step: MIN_LIST (MAP f ls) <= MIN_LIST (MAP g ls) ==>
+         !h. MIN_LIST (MAP f (h::ls)) <= MIN_LIST (MAP g (h::ls))
+      If ls = [],
+        MIN_LIST (MAP f [h])
+      = MIN_LIST [f h]                           by MAP
+      = f h                                      by MIN_LIST_def
+     <= g h                                      by properties of f, g
+      = MIN_LIST [g h]                           by MIN_LIST_def
+      = MIN_LIST (MAP g [h])                     by MAP
+      Otherwise ls <> [],
+        MIN_LIST (MAP f (h::ls))
+      = MIN_LIST (f h::MAP f ls)                 by MAP
+      = MIN (f h) (MIN_LIST (MAP f ls))          by MIN_LIST_def
+     <= MIN (g h) (MIN_LIST (MAP g ls))          by MIN_LE_PAIR, induction hypothesis
+      = MIN_LIST (g h::MAP g ls)                 by MIN_LIST_def
+      = MIN_LIST (MAP g (h::ls))                 by MAP
+*)
+val MIN_LIST_MAP_LE = store_thm(
+  "MIN_LIST_MAP_LE",
+  ``!f g. (!x. f x <= g x) ==> !ls. MIN_LIST (MAP f ls) <= MIN_LIST (MAP g ls)``,
+  rpt strip_tac >>
+  Induct_on `ls` >-
+  rw[] >>
+  rpt strip_tac >>
+  Cases_on `ls = []` >-
+  rw[MIN_LIST_def] >>
+  rw[MIN_LIST_def, MIN_LE_PAIR]);
 
 (* ------------------------------------------------------------------------ *)
 
