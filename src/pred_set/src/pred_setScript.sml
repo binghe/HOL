@@ -10,10 +10,12 @@
 (* DATE:    January 1992                                                *)
 (* =====================================================================*)
 
-open HolKernel Parse boolLib Prim_rec pairLib numLib numpairTheory
+open HolKernel Parse boolLib BasicProvers;
+
+open Prim_rec pairLib numLib numpairTheory
      pairTheory numTheory prim_recTheory arithmeticTheory whileTheory
-     BasicProvers metisLib mesonLib simpLib boolSimps dividesTheory
-     combinTheory relationTheory optionTheory;
+     metisLib mesonLib simpLib boolSimps dividesTheory
+     combinTheory relationTheory optionTheory TotalDefn;
 
 val AP = numLib.ARITH_PROVE
 val ARITH_ss = numSimps.ARITH_ss
@@ -4889,6 +4891,281 @@ Proof
     rw[] >> fs[ITSET_THM]
 QED
 
+(* Theorem: FINITE s /\ s <> {} ==> (ITSET f s b = ITSET f (REST s) (f (CHOICE s) b)) *)
+(* Proof: by ITSET_THM. *)
+val ITSET_PROPERTY = store_thm(
+  "ITSET_PROPERTY",
+  ``!s f b. FINITE s /\ s <> {} ==> (ITSET f s b = ITSET f (REST s) (f (CHOICE s) b))``,
+  rw[ITSET_THM]);
+
+(* Theorem: (f = g) ==> (ITSET f = ITSET g) *)
+(* Proof: by congruence rule *)
+val ITSET_CONG = store_thm(
+  "ITSET_CONG",
+  ``!f g. (f = g) ==> (ITSET f = ITSET g)``,
+  rw[]);
+
+(* Reduction of ITSET *)
+
+(* Theorem: (!x y z. f x (f y z) = f y (f x z)) ==>
+             !s x b. FINITE s /\ x NOTIN s ==> (ITSET f (x INSERT s) b = f x (ITSET f s b)) *)
+(* Proof:
+   Since x NOTIN s ==> s DELETE x = s   by DELETE_NON_ELEMENT
+   The result is true                   by COMMUTING_ITSET_RECURSES
+*)
+val ITSET_REDUCTION = store_thm(
+  "ITSET_REDUCTION",
+  ``!f. (!x y z. f x (f y z) = f y (f x z)) ==>
+   !s x b. FINITE s /\ x NOTIN s ==> (ITSET f (x INSERT s) b = f x (ITSET f s b))``,
+  rw[COMMUTING_ITSET_RECURSES, DELETE_NON_ELEMENT]);
+
+(* ------------------------------------------------------------------------- *)
+(* Rework of ITSET Theorems                                                  *)
+(* ------------------------------------------------------------------------- *)
+
+(* Define a function that gives closure and is commute_associative *)
+val closure_comm_assoc_fun_def = Define`
+    closure_comm_assoc_fun f s <=>
+       (!x y. x IN s /\ y IN s ==> f x y IN s) /\ (* closure *)
+       (!x y z. x IN s /\ y IN s /\ z IN s ==> (f x (f y z) = f y (f x z))) (* comm_assoc *)
+`;
+
+(* Theorem: FINITE s /\ s SUBSET t /\ closure_comm_assoc_fun f t ==>
+            !(x b):: t. ITSET f (x INSERT s) b = ITSET f (s DELETE x) (f x b) *)
+(* Proof:
+   By complete induction on CARD s.
+   The goal is to show:
+   ITSET f (x INSERT s) b = ITSET f (s DELETE x) (f x b)  [1]
+   Applying ITSET_INSERT to LHS, this is to prove:
+   ITSET f z (f y b) = ITSET f (s DELETE x) (f x b)
+           |    |
+           |    y = CHOICE (x INSERT s)
+           +--- z = REST (x INSERT s)
+   Note y NOTIN z   by CHOICE_NOT_IN_REST
+   If x IN s,
+       then x INSERT s = s                      by ABSORPTION
+       thus y = CHOICE s, z = REST s            by x INSERT s = s
+
+       If x = y,
+       Since s = CHOICE s INSERT REST s         by CHOICE_INSERT_REST
+               = y INSERT z                     by above y, z
+       Hence z = s DELETE y                     by DELETE_INSERT
+       Since CARD z < CARD s, apply induction:
+       ITSET f (y INSERT z) b = ITSET f (z DELETE y) (f y b)  [2a]
+       For the original goal [1],
+       LHS = ITSET f (x INSERT s) b
+           = ITSET f s b                        by x INSERT s = s
+           = ITSET f (y INSERT z) b             by s = y INSERT z
+           = ITSET f (z DELETE y) (f y b)       by induction hypothesis [2a]
+           = ITSET f z (f y b)                  by DELETE_NON_ELEMENT, y NOTIN z
+           = ITSET f (s DELETE y) (f y b)       by z = s DELETE y
+           = ITSET f (s DELETE x) (f x b)       by x = y
+           = RHS
+
+       If x <> y, let u = z DELETE x.
+       Note REST s = z = x INSERT u             by INSERT_DELETE
+       Now s = x INSERT (y INSERT u)
+             = x INSERT v, where v = y INSERT u, and x NOTIN z.
+       Therefore (s DELETE x) = v               by DELETE_INSERT
+       Since CARD v < CARD s, apply induction:
+       ITSET f (x INSERT v) b = ITSET f (v DELETE x) (f x b)    [2b]
+       For the original goal [1],
+       LHS = ITSET f (x INSERT s) b
+           = ITSET f s b                        by x INSERT s = s
+           = ITSET f (x INSERT v) b             by s = x INSERT v
+           = ITSET f (v DELETE x) (f x b)       by induction hypothesis [2b]
+           = ITSET f v (f x b)                  by x NOTIN v
+           = ITSET f (s DELETE x) (f x b)       by v = s DELETE x
+           = RHS
+
+   If x NOTIN s,
+       then s DELETE x = x                      by DELETE_NON_ELEMENT
+       To prove: ITSET f (x INSERT s) b = ITSET f s (f x b)    by [1]
+       The CHOICE/REST of (x INSERT s) cannot be simplified, but can be replaced by:
+       Note (x INSERT s) <> {}                  by NOT_EMPTY_INSERT
+         y INSERT z
+       = CHOICE (x INSERT s) INSERT (REST (x INSERT s))  by y = CHOICE (x INSERT s), z = REST (x INSERT s)
+       = x INSERT s                                      by CHOICE_INSERT_REST
+
+       If y = x,
+          Then z = s                            by DELETE_INSERT, y INSERT z = x INSERT s, y = x.
+          because s = s DELETE x                by DELETE_NON_ELEMENT, x NOTIN s.
+                    = (x INSERT s) DELETE x     by DELETE_INSERT
+                    = (y INSERT z) DELETE x     by above
+                    = (y INSERT z) DELETE y     by y = x
+                    = z DELETE y                by DELETE_INSERT
+                    = z                         by DELETE_NON_ELEMENT, y NOTIN z.
+       For the modified goal [1],
+       LHS = ITSET f (x INSERT s) b
+           = ITSET f (REST (x INSERT s)) (f (CHOICE (x INSERT s)) b)  by ITSET_PROPERTY
+           = ITSET f z (f y b)                           by y = CHOICE (x INSERT s), z = REST (x INSERT s)
+           = ITSET f s (f x b)                           by z = s, y = x
+           = RHS
+
+       If y <> x,
+       Then x IN z and y IN s                   by IN_INSERT, x INSERT s = y INSERT z and x <> y.
+        and s = y INSERT (s DELETE y)           by INSERT_DELETE, y IN s
+              = y INSERT u  where u = s DELETE y
+       Then y NOTIN u                           by IN_DELETE
+        and z = x INSERT u,
+       because  x INSERT u
+              = x INSERT (s DELETE y)           by u = s DELETE y
+              = (x INSERT s) DELETE y           by DELETE_INSERT, x <> y
+              = (y INSERT z) DELETE y           by x INSERT s = y INSERT z
+              = z                               by INSERT_DELETE
+        and x NOTIN u                           by IN_DELETE, u = s DELETE y, but x NOTIN s.
+       Thus CARD u < CARD s                     by CARD_INSERT, s = y INSERT u.
+       Apply induction:
+       !x b. ITSET f (x INSERT u) b = ITSET f (u DELETE x) (f x b)  [2c]
+
+       For the modified goal [1],
+       LHS = ITSET f (x INSERT s) b
+           = ITSET f (REST (x INSERT s)) (f (CHOICE (x INSERT s)) b)  by ITSET_PROPERTY
+           = ITSET f z (f y b)                  by z = REST (x INSERT s), y = CHOICE (x INSERT s)
+           = ITSET f (x INSERT u) (f y b)       by z = x INSERT u
+           = ITSET f (u DELETE x) (f x (f y b)) by induction hypothesis, [2c]
+           = ITSET f u (f x (f y b))            by x NOTIN u
+       RHS = ITSET f s (f x b)
+           = ITSET f (y INSERT u) (f x b)       by s = y INSERT u
+           = ITSET f (u DELETE y) (f y (f x b)) by induction hypothesis, [2c]
+           = ITSET f u (f y (f x b))            by y NOTIN u
+       Applying the commute_associativity of f, LHS = RHS.
+*)
+Theorem SUBSET_COMMUTING_ITSET_INSERT:
+  !f s t. FINITE s /\ s SUBSET t /\ closure_comm_assoc_fun f t ==>
+          !(x b)::t. ITSET f (x INSERT s) b = ITSET f (s DELETE x) (f x b)
+Proof
+  completeInduct_on `CARD s` >>
+  rule_assum_tac(SIMP_RULE bool_ss[GSYM RIGHT_FORALL_IMP_THM, AND_IMP_INTRO]) >>
+  rw[RES_FORALL_THM] >>
+  rw[ITSET_INSERT] >>
+  qabbrev_tac `y = CHOICE (x INSERT s)` >>
+  qabbrev_tac `z = REST (x INSERT s)` >>
+  `y NOTIN z` by metis_tac[CHOICE_NOT_IN_REST] >>
+  `!x s. x IN s ==> (x INSERT s = s)` by rw[ABSORPTION] >>
+  `!x s. x NOTIN s ==> (s DELETE x = s)` by rw[DELETE_NON_ELEMENT] >>
+  Cases_on `x IN s` >| [
+    `s = y INSERT z` by metis_tac[NOT_IN_EMPTY, CHOICE_INSERT_REST] >>
+    `FINITE z` by metis_tac[REST_SUBSET, SUBSET_FINITE] >>
+    `CARD s = SUC (CARD z)` by rw[] >>
+    `CARD z < CARD s` by decide_tac >>
+    `z = s DELETE y` by metis_tac[DELETE_INSERT] >>
+    `z SUBSET t` by metis_tac[DELETE_SUBSET, SUBSET_TRANS] >>
+    Cases_on `x = y` >- metis_tac[] >>
+    `x IN z` by metis_tac[IN_INSERT] >>
+    qabbrev_tac `u = z DELETE x` >>
+    `z = x INSERT u` by rw[INSERT_DELETE, Abbr`u`] >>
+    `x NOTIN u` by metis_tac[IN_DELETE] >>
+    qabbrev_tac `v = y INSERT u` >>
+    `s = x INSERT v` by simp[INSERT_COMM, Abbr `v`] >>
+    `x NOTIN v` by rw[Abbr `v`] >>
+    `FINITE v` by metis_tac[FINITE_INSERT] >>
+    `CARD s = SUC (CARD v)` by metis_tac[CARD_INSERT] >>
+    `CARD v < CARD s` by decide_tac >>
+    `v SUBSET t` by metis_tac[INSERT_SUBSET, SUBSET_TRANS] >>
+    `s DELETE x = v` by rw[DELETE_INSERT, Abbr `v`] >>
+    `v = s DELETE x` by rw[] >>
+    `y IN t` by metis_tac[NOT_INSERT_EMPTY, CHOICE_DEF, SUBSET_DEF] >>
+    metis_tac[],
+    `x INSERT s <> {}` by rw[] >>
+    `y INSERT z = x INSERT s` by rw[CHOICE_INSERT_REST, Abbr`y`, Abbr`z`] >>
+    Cases_on `x = y` >- metis_tac[DELETE_INSERT, ITSET_PROPERTY] >>
+    `x IN z /\ y IN s` by metis_tac[IN_INSERT] >>
+    qabbrev_tac `u = s DELETE y` >>
+    `s = y INSERT u` by rw[INSERT_DELETE, Abbr`u`] >>
+    `y NOTIN u` by metis_tac[IN_DELETE] >>
+    `z = x INSERT u` by metis_tac[DELETE_INSERT, INSERT_DELETE] >>
+    `x NOTIN u` by metis_tac[IN_DELETE] >>
+    `FINITE u` by metis_tac[FINITE_DELETE, SUBSET_FINITE] >>
+    `CARD u < CARD s` by rw[] >>
+    `u SUBSET t` by metis_tac[DELETE_SUBSET, SUBSET_TRANS] >>
+    `y IN t` by metis_tac[CHOICE_DEF, SUBSET_DEF] >>
+    `f y b IN t /\ f x b IN t` by prove_tac[closure_comm_assoc_fun_def] >>
+    `ITSET f z (f y b) = ITSET f (x INSERT u) (f y b)` by rw[] >>
+    `_ = ITSET f (u DELETE x) (f x (f y b))` by metis_tac[] >>
+    `_ = ITSET f u (f x (f y b))` by rw[] >>
+    `ITSET f s (f x b) = ITSET f (y INSERT u) (f x b)` by rw[] >>
+    `_ = ITSET f (u DELETE y) (f y (f x b))` by metis_tac[] >>
+    `_ = ITSET f u (f y (f x b))` by rw[] >>
+    `f x (f y b) = f y (f x b)` by prove_tac[closure_comm_assoc_fun_def] >>
+    metis_tac[]
+  ]
+QED
+
+(* This is a generalisation of COMMUTING_ITSET_INSERT, removing the requirement
+   of commuting everywhere. *)
+
+(* Theorem: FINITE s /\ s SUBSET t /\ closure_comm_assoc_fun f t ==>
+            !(x b)::t. ITSET f s (f x b) = f x (ITSET f s b) *)
+(* Proof:
+   By complete induction on CARD s.
+   The goal is to show: ITSET f s (f x b) = f x (ITSET f s b)
+   Base: s = {},
+      LHS = ITSET f {} (f x b)
+          = f x b                          by ITSET_EMPTY
+          = f x (ITSET f {} b)             by ITSET_EMPTY
+          = RHS
+   Step: s <> {},
+   Let s = y INSERT z, where y = CHOICE s, z = REST s.
+   Then y NOTIN z                          by CHOICE_NOT_IN_REST
+    But y IN t                             by CHOICE_DEF, SUBSET_DEF
+    and z SUBSET t                         by REST_SUBSET, SUBSET_TRANS
+   Also FINITE z                           by REST_SUBSET, SUBSET_FINITE
+   Thus CARD s = SUC (CARD z)              by CARD_INSERT
+     or CARD z < CARD s
+   Note f x b IN t /\ f y b IN t           by closure_comm_assoc_fun_def
+
+     LHS = ITSET f s (f x b)
+         = ITSET f (y INSERT z) (f x b)        by s = y INSERT z
+         = ITSET f (z DELETE y) (f y (f x b))  by SUBSET_COMMUTING_ITSET_INSERT, y, f x b IN t
+         = ITSET f z (f y (f x b))             by DELETE_NON_ELEMENT, y NOTIN z
+         = ITSET f z (f x (f y b))             by closure_comm_assoc_fun_def, x, y, b IN t
+         = f x (ITSET f z (f y b))             by inductive hypothesis, CARD z < CARD s, x, f y b IN t
+         = f x (ITSET f (z DELETE y) (f y b))  by DELETE_NON_ELEMENT, y NOTIN z
+         = f x (ITSET f (y INSERT z) b)        by SUBSET_COMMUTING_ITSET_INSERT, y, f y b IN t
+         = f x (ITSET f s b)                   by s = y INSERT z
+         = RHS
+*)
+val SUBSET_COMMUTING_ITSET_REDUCTION = store_thm(
+  "SUBSET_COMMUTING_ITSET_REDUCTION",
+  ``!f s t. FINITE s /\ s SUBSET t /\ closure_comm_assoc_fun f t ==>
+     !(x b)::t. ITSET f s (f x b) = f x (ITSET f s b)``,
+  completeInduct_on `CARD s` >>
+  rule_assum_tac(SIMP_RULE bool_ss [GSYM RIGHT_FORALL_IMP_THM, AND_IMP_INTRO]) >>
+  rw[RES_FORALL_THM] >>
+  Cases_on `s = {}` >-
+  rw[ITSET_EMPTY] >>
+  `?y z. (y = CHOICE s) /\ (z = REST s) /\ (s = y INSERT z)` by rw[CHOICE_INSERT_REST] >>
+  `y NOTIN z` by metis_tac[CHOICE_NOT_IN_REST] >>
+  `y IN t` by metis_tac[CHOICE_DEF, SUBSET_DEF] >>
+  `z SUBSET t` by metis_tac[REST_SUBSET, SUBSET_TRANS] >>
+  `FINITE z` by metis_tac[REST_SUBSET, SUBSET_FINITE] >>
+  `CARD s = SUC (CARD z)` by rw[] >>
+  `CARD z < CARD s` by decide_tac >>
+  `f x b IN t /\ f y b IN t /\ (f y (f x b) = f x (f y b))`
+     by prove_tac[closure_comm_assoc_fun_def] >>
+  metis_tac[SUBSET_COMMUTING_ITSET_INSERT, DELETE_NON_ELEMENT]);
+
+(* This helps to prove the next generalisation. *)
+
+(* Theorem: FINITE s /\ s SUBSET t /\ closure_comm_assoc_fun f t ==>
+            !(x b):: t. ITSET f (x INSERT s) b = f x (ITSET f (s DELETE x) b) *)
+(* Proof:
+   Note (s DELETE x) SUBSET t       by DELETE_SUBSET, SUBSET_TRANS
+    and FINITE (s DELETE x)         by FINITE_DELETE, FINITE s
+     ITSET f (x INSERT s) b
+   = ITSET f (s DELETE x) (f x b)   by SUBSET_COMMUTING_ITSET_INSERT
+   = f x (ITSET f (s DELETE x) b)   by SUBSET_COMMUTING_ITSET_REDUCTION, (s DELETE x) SUBSET t
+*)
+val SUBSET_COMMUTING_ITSET_RECURSES = store_thm(
+  "SUBSET_COMMUTING_ITSET_RECURSES",
+  ``!f s t. FINITE s /\ s SUBSET t /\ closure_comm_assoc_fun f t ==>
+     !(x b):: t. ITSET f (x INSERT s) b = f x (ITSET f (s DELETE x) b)``,
+  rw[RES_FORALL_THM] >>
+  `(s DELETE x) SUBSET t` by metis_tac[DELETE_SUBSET, SUBSET_TRANS] >>
+  `FINITE (s DELETE x)` by rw[] >>
+  metis_tac[SUBSET_COMMUTING_ITSET_INSERT, SUBSET_COMMUTING_ITSET_REDUCTION]);
+
 (* ----------------------------------------------------------------------
     SUM_IMAGE
 
@@ -4924,6 +5201,24 @@ val SUM_IMAGE_THM = store_thm(
     MATCH_MP_TAC COMMUTING_ITSET_RECURSES THEN
     SRW_TAC [ARITH_ss][Abbr`g`]
   ]);
+
+(* Theorem: SIGMA f {} = 0 *)
+(* Proof: by SUM_IMAGE_THM *)
+val SUM_IMAGE_EMPTY = store_thm(
+  "SUM_IMAGE_EMPTY",
+  ``!f. SIGMA f {} = 0``,
+  rw[SUM_IMAGE_THM]);
+
+(* Theorem: FINITE s ==> !e. e NOTIN s ==> (SIGMA f (e INSERT s) = f e + (SIGMA f s)) *)
+(* Proof:
+     SIGMA f (e INSERT s)
+   = f e + SIGMA f (s DELETE e)    by SUM_IMAGE_THM
+   = f e + SIGMA f s               by DELETE_NON_ELEMENT
+*)
+val SUM_IMAGE_INSERT = store_thm(
+  "SUM_IMAGE_INSERT",
+  ``!f s. FINITE s ==> !e. e NOTIN s ==> (SIGMA f (e INSERT s) = f e + (SIGMA f s))``,
+  rw[SUM_IMAGE_THM, DELETE_NON_ELEMENT]);
 
 val SUM_IMAGE_SING = store_thm(
   "SUM_IMAGE_SING",
@@ -5098,6 +5393,12 @@ HO_MATCH_MP_TAC FINITE_INDUCT THEN
 SRW_TAC [][SUM_IMAGE_THM,SUM_IMAGE_DELETE]
 QED
 
+(* Theorem: (!x. x IN s ==> (f1 x = f2 x)) ==> (SIGMA f1 s = SIGMA f2 s) *)
+val SIGMA_CONG = store_thm(
+  "SIGMA_CONG",
+  ``!s f1 f2. (!x. x IN s ==> (f1 x = f2 x)) ==> (SIGMA f1 s = SIGMA f2 s)``,
+  rw[SUM_IMAGE_CONG]);
+
 Theorem SUM_IMAGE_ZERO:
   !s. FINITE s ==> ((SIGMA f s = 0) <=> (!x. x IN s ==> (f x = 0)))
 Proof
@@ -5106,6 +5407,45 @@ Proof
   SIMP_TAC bool_ss [SUM_IMAGE_THM,DELETE_NON_ELEMENT,ADD_EQ_0,IN_INSERT] THEN
   METIS_TAC []
 QED
+
+(* Theorem: FINITE s ==> (CARD s = SIGMA (\x. 1) s) *)
+(* Proof:
+   By finite induction:
+   Base case: CARD {} = SIGMA (\x. 1) {}
+     LHS = CARD {}
+         = 0                 by CARD_EMPTY
+     RHS = SIGMA (\x. 1) {}
+         = 0 = LHS           by SUM_IMAGE_THM
+   Step case: (CARD s = SIGMA (\x. 1) s) ==>
+              !e. e NOTIN s ==> (CARD (e INSERT s) = SIGMA (\x. 1) (e INSERT s))
+     CARD (e INSERT s)
+   = SUC (CARD s)                             by CARD_DEF
+   = SUC (SIGMA (\x. 1) s)                    by induction hypothesis
+   = 1 + SIGMA (\x. 1) s                      by ADD1, ADD_COMM
+   = (\x. 1) e + SIGMA (\x. 1) s              by function application
+   = (\x. 1) e + SIGMA (\x. 1) (s DELETE e)   by DELETE_NON_ELEMENT
+   = SIGMA (\x. 1) (e INSERT s)               by SUM_IMAGE_THM
+*)
+val CARD_AS_SIGMA = store_thm(
+  "CARD_AS_SIGMA",
+  ``!s. FINITE s ==> (CARD s = SIGMA (\x. 1) s)``,
+  ho_match_mp_tac FINITE_INDUCT >>
+  conj_tac >-
+  rw[SUM_IMAGE_THM] >>
+  rpt strip_tac >>
+  `CARD (e INSERT s) = SUC (SIGMA (\x. 1) s)` by rw[] >>
+  `_ = 1 + SIGMA (\x. 1) s` by rw_tac std_ss[ADD1, ADD_COMM] >>
+  `_ = (\x. 1) e + SIGMA (\x. 1) s` by rw[] >>
+  `_ = (\x. 1) e + SIGMA (\x. 1) (s DELETE e)` by metis_tac[DELETE_NON_ELEMENT] >>
+  `_ = SIGMA (\x. 1) (e INSERT s)` by rw[SUM_IMAGE_THM] >>
+  decide_tac);
+
+(* Theorem: FINITE s ==> (CARD s = SIGMA (K 1) s) *)
+(* Proof: by CARD_AS_SIGMA, SIGMA_CONG *)
+val CARD_EQ_SIGMA = store_thm(
+  "CARD_EQ_SIGMA",
+  ``!s. FINITE s ==> (CARD s = SIGMA (K 1) s)``,
+  rw[CARD_AS_SIGMA, SIGMA_CONG]);
 
 Theorem ABS_DIFF_SUM_IMAGE:
   !s. FINITE s ==>
@@ -5187,6 +5527,133 @@ Proof
  \\ fs[DELETE_NON_ELEMENT]
 QED
 
+(* Theorem: FINITE s ==> !f k. (!x. x IN s ==> (f x = k)) ==> (SIGMA f s = k * CARD s) *)
+(* Proof:
+   By finite induction on s.
+   Base: SIGMA f {} = k * CARD {}
+        SIGMA f {}
+      = 0              by SUM_IMAGE_EMPTY
+      = k * 0          by MULT_0
+      = k * CARD {}    by CARD_EMPTY
+   Step: SIGMA f s = k * CARD s /\ e NOTIN s /\ !x. x IN e INSERT s /\ f x = k ==>
+         SIGMA f (e INSERT s) = k * CARD (e INSERT s)
+      Note f e = k /\ !x. x IN s ==> f x = k   by IN_INSERT
+        SIGMA f (e INSERT s)
+      = f e + SIGMA f (s DELETE e)     by SUM_IMAGE_THM
+      = k + SIGMA f s                  by DELETE_NON_ELEMENT, f e = k
+      = k + k * CARD s                 by induction hypothesis
+      = k * (1 + CARD s)               by LEFT_ADD_DISTRIB
+      = k * SUC (CARD s)               by SUC_ONE_ADD
+      = k * CARD (e INSERT s)          by CARD_INSERT
+*)
+val SIGMA_CONSTANT = store_thm(
+  "SIGMA_CONSTANT",
+  ``!s. FINITE s ==> !f k. (!x. x IN s ==> (f x = k)) ==> (SIGMA f s = k * CARD s)``,
+  ho_match_mp_tac FINITE_INDUCT >>
+  rpt strip_tac >-
+  rw[SUM_IMAGE_EMPTY] >>
+  `(f e = k) /\ !x. x IN s ==> (f x = k)` by rw[] >>
+  `SIGMA f (e INSERT s) = f e + SIGMA f (s DELETE e)` by rw[SUM_IMAGE_THM] >>
+  `_ = k + SIGMA f s` by metis_tac[DELETE_NON_ELEMENT] >>
+  `_ = k + k * CARD s` by rw[] >>
+  `_ = k * (1 + CARD s)` by rw[] >>
+  `_ = k * SUC (CARD s)` by rw[ADD1] >>
+  `_ = k * CARD (e INSERT s)` by rw[CARD_INSERT] >>
+  rw[]);
+
+(* Theorem: FINITE s ==> !c. SIGMA (K c) s = c * CARD s *)
+(* Proof: by SIGMA_CONSTANT. *)
+val SUM_IMAGE_CONSTANT = store_thm(
+  "SUM_IMAGE_CONSTANT",
+  ``!s. FINITE s ==> !c. SIGMA (K c) s = c * CARD s``,
+  rw[SIGMA_CONSTANT]);
+
+(* Idea: If !e. e IN s, CARD e = n, SIGMA CARD s = n * CARD s. *)
+
+(* Theorem: FINITE s /\ (!e. e IN s ==> CARD e = n) ==> SIGMA CARD s = n * CARD s *)
+(* Proof: by SIGMA_CONSTANT, take f = CARD. *)
+Theorem SIGMA_CARD_CONSTANT:
+  !n s. FINITE s /\ (!e. e IN s ==> CARD e = n) ==> SIGMA CARD s = n * CARD s
+Proof
+  simp[SIGMA_CONSTANT]
+QED
+
+(* Theorem alias, or rename SIGMA_CARD_CONSTANT *)
+Theorem SIGMA_CARD_SAME_SIZE_SETS = SIGMA_CARD_CONSTANT;
+(* val SIGMA_CARD_SAME_SIZE_SETS =
+   |- !n s. FINITE s /\ (!e. e IN s ==> CARD e = n) ==> SIGMA CARD s = n * CARD s: thm *)
+
+(* Theorem: FINITE s ==> !f g. (!x. x IN s ==> f x <= g x) ==> (SIGMA f s <= SIGMA g s) *)
+(* Proof:
+   By finite induction:
+   Base case: !f g. (!x. x IN {} ==> f x <= g x) ==> SIGMA f {} <= SIGMA g {}
+      True since SIGMA f {} = 0      by SUM_IMAGE_THM
+   Step case: !f g. (!x. x IN s ==> f x <= g x) ==> SIGMA f s <= SIGMA g s ==>
+    e NOTIN s ==>
+    !x. x IN e INSERT s ==> f x <= g x ==> !f g. SIGMA f (e INSERT s) <= SIGMA g (e INSERT s)
+           SIGMA f (e INSERT s) <= SIGMA g (e INSERT s)
+    means  f e + SIGMA f (s DELETE e) <= g e + SIGMA g (s DELETE e)    by SUM_IMAGE_THM
+       or  f e + SIGMA f s <= g e + SIGMA g s                          by DELETE_NON_ELEMENT
+    Now, x IN e INSERT s ==> (x = e) or (x IN s)         by IN_INSERT
+    Therefore  f e <= g e, and !x IN s, f x <= g x       by x IN (e INSERT s) implication
+    or         f e <= g e, and SIGMA f s <= SIGMA g s    by induction hypothesis
+    Hence      f e + SIGMA f s <= g e + SIGMA g s        by arithmetic
+*)
+val SIGMA_LE_SIGMA = store_thm(
+  "SIGMA_LE_SIGMA",
+  ``!s. FINITE s ==> !f g. (!x. x IN s ==> f x <= g x) ==> (SIGMA f s <= SIGMA g s)``,
+  ho_match_mp_tac FINITE_INDUCT >>
+  conj_tac >-
+  rw[SUM_IMAGE_THM] >>
+  rw[SUM_IMAGE_THM, DELETE_NON_ELEMENT] >>
+  `f e <= g e /\ SIGMA f s <= SIGMA g s` by rw[] >>
+  decide_tac);
+
+(* Theorem: FINITE s /\ FINITE t ==> !f. SIGMA f (s UNION t) + SIGMA f (s INTER t) = SIGMA f s + SIGMA f t *)
+(* Proof:
+   Note SIGMA f (s UNION t)
+      = SIGMA f s + SIGMA f t - SIGMA f (s INTER t)    by SUM_IMAGE_UNION
+    now s INTER t SUBSET s /\ s INTER t SUBSET t       by INTER_SUBSET
+     so SIGMA f (s INTER t) <= SIGMA f s               by SUM_IMAGE_SUBSET_LE
+    and SIGMA f (s INTER t) <= SIGMA f t               by SUM_IMAGE_SUBSET_LE
+   thus SIGMA f (s INTER t) <= SIGMA f s + SIGMA f t   by arithmetic
+   The result follows                                  by ADD_EQ_SUB
+*)
+val SUM_IMAGE_UNION_EQN = store_thm(
+  "SUM_IMAGE_UNION_EQN",
+  ``!s t. FINITE s /\ FINITE t ==> !f. SIGMA f (s UNION t) + SIGMA f (s INTER t) = SIGMA f s + SIGMA f t``,
+  rpt strip_tac >>
+  `SIGMA f (s UNION t) = SIGMA f s + SIGMA f t - SIGMA f (s INTER t)` by rw[SUM_IMAGE_UNION] >>
+  `SIGMA f (s INTER t) <= SIGMA f s` by rw[SUM_IMAGE_SUBSET_LE, INTER_SUBSET] >>
+  `SIGMA f (s INTER t) <= SIGMA f t` by rw[SUM_IMAGE_SUBSET_LE, INTER_SUBSET] >>
+  `SIGMA f (s INTER t) <= SIGMA f s + SIGMA f t` by decide_tac >>
+  rw[ADD_EQ_SUB]);
+
+(* Theorem: FINITE s /\ FINITE t /\ DISJOINT s t ==> !f. SIGMA f (s UNION t) = SIGMA f s + SIGMA f t *)
+(* Proof:
+     SIGMA f (s UNION t)
+   = SIGMA f s + SIGMA f t - SIGMA f (s INTER t)    by SUM_IMAGE_UNION
+   = SIGMA f s + SIGMA f t - SIGMA f {}             by DISJOINT_DEF
+   = SIGMA f s + SIGMA f t - 0                      by SUM_IMAGE_EMPTY
+   = SIGMA f s + SIGMA f t                          by arithmetic
+*)
+val SUM_IMAGE_DISJOINT = store_thm(
+  "SUM_IMAGE_DISJOINT",
+  ``!s t. FINITE s /\ FINITE t /\ DISJOINT s t ==> !f. SIGMA f (s UNION t) = SIGMA f s + SIGMA f t``,
+  rw_tac std_ss[SUM_IMAGE_UNION, DISJOINT_DEF, SUM_IMAGE_EMPTY]);
+
+(* Theorem: FINITE s /\ s <> {} ==> !f g. (!x. x IN s ==> f x < g x) ==> SIGMA f s < SIGMA g s *)
+(* Proof:
+   Note s <> {} ==> ?x. x IN s       by MEMBER_NOT_EMPTY
+   Thus ?x. x IN s /\ f x < g x      by implication
+    and !x. x IN s ==> f x <= g x    by LESS_IMP_LESS_OR_EQ
+    ==> SIGMA f s < SIGMA g s        by SUM_IMAGE_MONO_LESS
+*)
+val SUM_IMAGE_MONO_LT = store_thm(
+  "SUM_IMAGE_MONO_LT",
+  ``!s. FINITE s /\ s <> {} ==> !f g. (!x. x IN s ==> f x < g x) ==> SIGMA f s < SIGMA g s``,
+  metis_tac[SUM_IMAGE_MONO_LESS, LESS_IMP_LESS_OR_EQ, MEMBER_NOT_EMPTY]);
+
 (*---------------------------------------------------------------------------*)
 (* SUM_SET sums the elements of a set of natural numbers                     *)
 (*---------------------------------------------------------------------------*)
@@ -5206,6 +5673,17 @@ Theorem SUM_SET_SING[simp]:
 Proof
   SRW_TAC [][SUM_SET_DEF, SUM_IMAGE_SING]
 QED
+
+(* Theorem: FINITE s /\ x NOTIN s ==> (SUM_SET (x INSERT s) = x + SUM_SET s) *)
+(* Proof:
+     SUM_SET (x INSERT s)
+   = x + SUM_SET (s DELETE x)  by SUM_SET_THM
+   = x + SUM_SET s             by DELETE_NON_ELEMENT
+*)
+val SUM_SET_INSERT = store_thm(
+  "SUM_SET_INSERT",
+  ``!s x. FINITE s /\ x NOTIN s ==> (SUM_SET (x INSERT s) = x + SUM_SET s)``,
+  rw[SUM_SET_THM, DELETE_NON_ELEMENT]);
 
 val SUM_SET_SUBSET_LE = store_thm(
   "SUM_SET_SUBSET_LE",
