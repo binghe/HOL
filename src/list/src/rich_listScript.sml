@@ -23,6 +23,9 @@ val metis_tac = METIS_TAC
 val rw = SRW_TAC[numSimps.ARITH_ss]
 fun simp thl = ASM_SIMP_TAC (srw_ss() ++ numSimps.ARITH_ss) thl
 fun fs thl = FULL_SIMP_TAC (srw_ss() ++ numSimps.ARITH_ss) thl
+fun rfs thl = REV_FULL_SIMP_TAC (srw_ss() ++ numSimps.ARITH_ss) thl;
+val qabbrev_tac = Q.ABBREV_TAC;
+val qexists_tac = Q.EXISTS_TAC;
 
 val DEF0 = Lib.with_flag (boolLib.def_suffix, "") TotalDefn.Define
 val DEF = Lib.with_flag (boolLib.def_suffix, "_DEF") TotalDefn.Define
@@ -3747,6 +3750,1138 @@ val LIST_HEAD_TAIL = store_thm(
   "LIST_HEAD_TAIL",
   ``!ls. 0 < LENGTH ls <=> (ls = HD ls::TL ls)``,
   metis_tac[LIST_NOT_NIL, NOT_NIL_EQ_LENGTH_NOT_0]);
+
+(* Theorem: p <> [] /\ q <> [] ==> ((p = q) <=> ((HD p = HD q) /\ (TL p = TL q))) *)
+(* Proof: by cases on p and cases on q, CONS_11 *)
+val LIST_EQ_HEAD_TAIL = store_thm(
+  "LIST_EQ_HEAD_TAIL",
+  ``!p q. p <> [] /\ q <> [] ==>
+         ((p = q) <=> ((HD p = HD q) /\ (TL p = TL q)))``,
+  (Cases_on `p` >> Cases_on `q` >> fs[]));
+
+(* Theorem: [x] = [y] <=> x = y *)
+(* Proof: by EQ_LIST and notation. *)
+val LIST_SING_EQ = store_thm(
+  "LIST_SING_EQ",
+  ``!x y. ([x] = [y]) <=> (x = y)``,
+  rw_tac bool_ss[]);
+
+(* Theorem: LENGTH [x] = 1 *)
+(* Proof: by LENGTH, ONE. *)
+val LENGTH_SING = store_thm(
+  "LENGTH_SING",
+  ``!x. LENGTH [x] = 1``,
+  rw_tac bool_ss[LENGTH, ONE]);
+
+(* Theorem: ls <> [] ==> LENGTH (TL ls) < LENGTH ls *)
+(* Proof: by LENGTH_TL, LENGTH_EQ_0 *)
+val LENGTH_TL_LT = store_thm(
+  "LENGTH_TL_LT",
+  ``!ls. ls <> [] ==> LENGTH (TL ls) < LENGTH ls``,
+  metis_tac[LENGTH_TL, LENGTH_EQ_0, NOT_ZERO_LT_ZERO, DECIDE``n <> 0 ==> n - 1 < n``]);
+
+(* Theorem: MAP f [x] = [f x] *)
+(* Proof: by MAP *)
+val MAP_SING = store_thm(
+  "MAP_SING",
+  ``!f x. MAP f [x] = [f x]``,
+  rw[]);
+
+(* listTheory.MAP_TL  |- !l f. MAP f (TL l) = TL (MAP f l) *)
+
+(* Theorem: ls <> [] ==> HD (MAP f ls) = f (HD ls) *)
+(* Proof:
+   Note 0 < LENGTH ls              by LENGTH_NON_NIL
+        HD (MAP f ls)
+      = EL 0 (MAP f ls)            by EL
+      = f (EL 0 ls)                by EL_MAP, 0 < LENGTH ls
+      = f (HD ls)                  by EL
+*)
+Theorem MAP_HD:
+  !ls f. ls <> [] ==> HD (MAP f ls) = f (HD ls)
+Proof
+  metis_tac[EL_MAP, EL, LENGTH_NON_NIL]
+QED
+
+(*
+LAST_EL  |- !ls. ls <> [] ==> LAST ls = EL (PRE (LENGTH ls)) ls
+*)
+
+(* Theorem: t <> [] ==> (LAST t = EL (LENGTH t) (h::t)) *)
+(* Proof:
+   Note LENGTH t <> 0                      by LENGTH_EQ_0
+     or 0 < LENGTH t
+        LAST t
+      = EL (PRE (LENGTH t)) t              by LAST_EL
+      = EL (SUC (PRE (LENGTH t))) (h::t)   by EL
+      = EL (LENGTH t) (h::t)               bu SUC_PRE, 0 < LENGTH t
+*)
+val LAST_EL_CONS = store_thm(
+  "LAST_EL_CONS",
+  ``!h t. t <> [] ==> (LAST t = EL (LENGTH t) (h::t))``,
+  rpt strip_tac >>
+  `0 < LENGTH t` by metis_tac[LENGTH_EQ_0, NOT_ZERO_LT_ZERO] >>
+  `LAST t = EL (PRE (LENGTH t)) t` by rw[LAST_EL] >>
+  `_ = EL (SUC (PRE (LENGTH t))) (h::t)` by rw[] >>
+  metis_tac[SUC_PRE]);
+
+(* Theorem alias *)
+val FRONT_LENGTH = save_thm ("FRONT_LENGTH", LENGTH_FRONT);
+(* val FRONT_LENGTH = |- !l. l <> [] ==> (LENGTH (FRONT l) = PRE (LENGTH l)): thm *)
+
+(* Theorem: l <> [] /\ n < LENGTH (FRONT l) ==> (EL n (FRONT l) = EL n l) *)
+(* Proof: by EL_FRONT, NULL *)
+val FRONT_EL = store_thm(
+  "FRONT_EL",
+  ``!l n. l <> [] /\ n < LENGTH (FRONT l) ==> (EL n (FRONT l) = EL n l)``,
+  metis_tac[EL_FRONT, NULL, list_CASES]);
+
+(* Theorem: (LENGTH l = 1) ==> (FRONT l = []) *)
+(* Proof:
+   Note ?x. l = [x]     by LENGTH_EQ_1
+     FRONT l
+   = FRONT [x]          by above
+   = []                 by FRONT_DEF
+*)
+val FRONT_EQ_NIL = store_thm(
+  "FRONT_EQ_NIL",
+  ``!l. (LENGTH l = 1) ==> (FRONT l = [])``,
+  rw[LENGTH_EQ_1] >>
+  rw[FRONT_DEF]);
+
+(* Theorem: 1 < LENGTH l ==> FRONT l <> [] *)
+(* Proof:
+   Note LENGTH l <> 0          by 1 < LENGTH l
+   Thus ?h s. l = h::s         by list_CASES
+     or 1 < 1 + LENGTH s
+     so 0 < LENGTH s           by arithmetic
+   Thus ?k t. s = k::t         by list_CASES
+      FRONT l
+    = FRONT (h::k::t)
+    = h::FRONT (k::t)          by FRONT_CONS
+    <> []                      by list_CASES
+*)
+val FRONT_NON_NIL = store_thm(
+  "FRONT_NON_NIL",
+  ``!l. 1 < LENGTH l ==> FRONT l <> []``,
+  rpt strip_tac >>
+  `LENGTH l <> 0` by decide_tac >>
+  `?h s. l = h::s` by metis_tac[list_CASES, LENGTH_EQ_0] >>
+  `LENGTH l = 1 + LENGTH s` by rw[] >>
+  `LENGTH s <> 0` by decide_tac >>
+  `?k t. s = k::t` by metis_tac[list_CASES, LENGTH_EQ_0] >>
+  `FRONT l = h::FRONT (k::t)` by fs[FRONT_CONS] >>
+  fs[]);
+
+(* Theorem: ls <> [] ==> MEM (HD ls) ls *)
+(* Proof:
+   Note ls = h::t      by list_CASES
+        MEM (HD (h::t)) (h::t)
+    <=> MEM h (h::t)   by HD
+    <=> T              by MEM
+*)
+val HEAD_MEM = store_thm(
+  "HEAD_MEM",
+  ``!ls. ls <> [] ==> MEM (HD ls) ls``,
+  (Cases_on `ls` >> simp[]));
+
+(* Theorem: ls <> [] ==> MEM (LAST ls) ls *)
+(* Proof:
+   By induction on ls.
+   Base: [] <> [] ==> MEM (LAST []) []
+      True by [] <> [] = F.
+   Step: ls <> [] ==> MEM (LAST ls) ls ==>
+         !h. h::ls <> [] ==> MEM (LAST (h::ls)) (h::ls)
+      If ls = [],
+             MEM (LAST [h]) [h]
+         <=> MEM h [h]          by LAST_DEF
+         <=> T                  by MEM
+      If ls <> [],
+             MEM (LAST [h::ls]) (h::ls)
+         <=> MEM (LAST ls) (h::ls)             by LAST_DEF
+         <=> LAST ls = h \/ MEM (LAST ls) ls   by MEM
+         <=> LAST ls = h \/ T                  by induction hypothesis
+         <=> T                                 by logical or
+*)
+val LAST_MEM = store_thm(
+  "LAST_MEM",
+  ``!ls. ls <> [] ==> MEM (LAST ls) ls``,
+  Induct >-
+  decide_tac >>
+  (Cases_on `ls = []` >> rw[LAST_DEF]));
+
+(* Idea: the last equals the head when there is no tail. *)
+
+(* Theorem: ~MEM h t /\ LAST (h::t) = h <=> t = [] *)
+(* Proof:
+   If part: ~MEM h t /\ LAST (h::t) = h ==> t = []
+      By contradiction, suppose t <> [].
+      Then h = LAST (h::t) = LAST t            by LAST_CONS_cond, t <> []
+        so MEM h t                             by LAST_MEM
+      This contradicts ~MEM h t.
+   Only-if part: t = [] ==> ~MEM h t /\ LAST (h::t) = h
+      Note MEM h [] = F, so ~MEM h [] = T      by MEM
+       and LAST [h] = h                        by LAST_CONS
+*)
+Theorem LAST_EQ_HD:
+  !h t. ~MEM h t /\ LAST (h::t) = h <=> t = []
+Proof
+  rw[EQ_IMP_THM] >>
+  spose_not_then strip_assume_tac >>
+  metis_tac[LAST_CONS_cond, LAST_MEM]
+QED
+
+(* Theorem: ls <> [] /\ ALL_DISTINCT ls ==> ~MEM (LAST ls) (FRONT ls) *)
+(* Proof:
+   Let k = LENGTH ls.
+   Then 0 < k                                  by LENGTH_EQ_0, NOT_ZERO
+    and LENGTH (FRONT ls) = PRE k              by LENGTH_FRONT, ls <> []
+     so ?n. n < PRE k /\
+        LAST ls = EL n (FRONT ls)              by MEM_EL
+                = EL n ls                      by FRONT_EL, ls <> []
+    but LAST ls = EL (PRE k) ls                by LAST_EL, ls <> []
+   Thus n = PRE k                              by ALL_DISTINCT_EL_IMP
+   This contradicts n < PRE k                  by arithmetic
+*)
+Theorem MEM_FRONT_NOT_LAST:
+  !ls. ls <> [] /\ ALL_DISTINCT ls ==> ~MEM (LAST ls) (FRONT ls)
+Proof
+  rpt strip_tac >>
+  qabbrev_tac `k = LENGTH ls` >>
+  `0 < k` by metis_tac[LENGTH_EQ_0, NOT_ZERO] >>
+  `LENGTH (FRONT ls) = PRE k` by fs[LENGTH_FRONT, Abbr`k`] >>
+  fs[MEM_EL] >>
+  `LAST ls = EL n ls` by fs[FRONT_EL] >>
+  `LAST ls = EL (PRE k) ls` by rfs[LAST_EL, Abbr`k`] >>
+  `n < k /\ PRE k < k` by decide_tac >>
+  `n = PRE k` by metis_tac[ALL_DISTINCT_EL_IMP] >>
+  decide_tac
+QED
+
+(* Theorem: ls = [] <=> !x. ~MEM x ls *)
+(* Proof:
+   If part: !x. ~MEM x [], true    by MEM
+   Only-if part: !x. ~MEM x ls ==> ls = []
+      By contradiction, suppose ls <> [].
+      Then ?h t. ls = h::t         by list_CASES
+       and MEM h ls                by MEM
+      which contradicts !x. ~MEM x ls.
+*)
+Theorem NIL_NO_MEM:
+  !ls. ls = [] <=> !x. ~MEM x ls
+Proof
+  rw[EQ_IMP_THM] >>
+  spose_not_then strip_assume_tac >>
+  metis_tac[list_CASES, MEM]
+QED
+
+(*
+el_append3
+|- !l1 x l2. EL (LENGTH l1) (l1 ++ [x] ++ l2) = x
+*)
+
+(* Theorem: MEM h (l1 ++ [x] ++ l2) <=> MEM h (x::(l1 ++ l2)) *)
+(* Proof:
+       MEM h (l1 ++ [x] ++ l2)
+   <=> MEM h l1 \/ h = x \/ MEM h l2     by MEM, MEM_APPEND
+   <=> h = x \/ MEM h l1 \/ MEM h l2
+   <=> h = x \/ MEM h (l1 ++ l2)         by MEM_APPEND
+   <=> MEM h (x::(l1 + l2))              by MEM
+*)
+Theorem MEM_APPEND_3:
+  !l1 x l2 h. MEM h (l1 ++ [x] ++ l2) <=> MEM h (x::(l1 ++ l2))
+Proof
+  rw[] >>
+  metis_tac[]
+QED
+
+(* Theorem: DROP 1 (h::t) = t *)
+(* Proof: DROP_def *)
+val DROP_1 = store_thm(
+  "DROP_1",
+  ``!h t. DROP 1 (h::t) = t``,
+  rw[]);
+
+(* Theorem: FRONT [x] = [] *)
+(* Proof: FRONT_def *)
+val FRONT_SING = store_thm(
+  "FRONT_SING",
+  ``!x. FRONT [x] = []``,
+  rw[]);
+
+(* Theorem: ls <> [] ==> (TL ls = DROP 1 ls) *)
+(* Proof:
+   Note ls = h::t        by list_CASES
+     so TL (h::t)
+      = t                by TL
+      = DROP 1 (h::t)    by DROP_def
+*)
+val TAIL_BY_DROP = store_thm(
+  "TAIL_BY_DROP",
+  ``!ls. ls <> [] ==> (TL ls = DROP 1 ls)``,
+  Cases_on `ls` >-
+  decide_tac >>
+  rw[]);
+
+(* Theorem: ls <> [] ==> (FRONT ls = TAKE (LENGTH ls - 1) ls) *)
+(* Proof:
+   By induction on ls.
+   Base: [] <> [] ==> FRONT [] = TAKE (LENGTH [] - 1) []
+      True by [] <> [] = F.
+   Step: ls <> [] ==> FRONT ls = TAKE (LENGTH ls - 1) ls ==>
+         !h. h::ls <> [] ==> FRONT (h::ls) = TAKE (LENGTH (h::ls) - 1) (h::ls)
+      If ls = [],
+           FRONT [h]
+         = []                          by FRONT_SING
+         = TAKE 0 [h]                  by TAKE_0
+         = TAKE (LENGTH [h] - 1) [h]   by LENGTH_SING
+      If ls <> [],
+           FRONT (h::ls)
+         = h::FRONT ls                        by FRONT_DEF
+         = h::TAKE (LENGTH ls - 1) ls         by induction hypothesis
+         = TAKE (LENGTH (h::ls) - 1) (h::ls)  by TAKE_def
+*)
+val FRONT_BY_TAKE = store_thm(
+  "FRONT_BY_TAKE",
+  ``!ls. ls <> [] ==> (FRONT ls = TAKE (LENGTH ls - 1) ls)``,
+  Induct >-
+  decide_tac >>
+  rpt strip_tac >>
+  Cases_on `ls = []` >-
+  rw[] >>
+  `LENGTH ls <> 0` by rw[] >>
+  rw[FRONT_DEF]);
+
+(* Theorem: HD (h::t ++ ls) = h *)
+(* Proof:
+     HD (h::t ++ ls)
+   = HD (h::(t ++ ls))     by APPEND
+   = h                     by HD
+*)
+Theorem HD_APPEND:
+  !h t ls. HD (h::t ++ ls) = h
+Proof
+  simp[]
+QED
+
+(* Theorem: 0 <> n ==> (EL (n-1) t = EL n (h::t)) *)
+(* Proof:
+   Note n = SUC k for some k         by num_CASES
+     so EL k t = EL (SUC k) (h::t)   by EL_restricted
+*)
+Theorem EL_TAIL:
+  !h t n. 0 <> n ==> (EL (n-1) t = EL n (h::t))
+Proof
+  rpt strip_tac >>
+  `n = SUC (n - 1)` by decide_tac >>
+  metis_tac[EL_restricted]
+QED
+
+(* Idea: If all elements are the same, the set is SING. *)
+
+(* Theorem: ls <> [] /\ EVERY ($= c) ls ==> SING (set ls) *)
+(* Proof:
+   Note set ls = {c}       by LIST_TO_SET_EQ_SING
+   thus SING (set ls)      by SING_DEF
+*)
+Theorem MONOLIST_SET_SING:
+  !c ls. ls <> [] /\ EVERY ($= c) ls ==> SING (set ls)
+Proof
+  metis_tac[LIST_TO_SET_EQ_SING, SING_DEF]
+QED
+
+(*
+> EVAL ``set [3;3;3]``;
+val it = |- set [3; 3; 3] = set [3; 3; 3]: thm
+*)
+
+(* Put LIST_TO_SET into compute
+(* Near: put to helperList *)
+Theorem LIST_TO_SET_EVAL[compute] = LIST_TO_SET |> GEN_ALL;
+(* val LIST_TO_SET_EVAL = |- !t h. set [] = {} /\ set (h::t) = h INSERT set t: thm *)
+(* cannot add to computeLib directly LIST_TO_SET, which is not in current theory. *)
+ *)
+
+(*
+> EVAL ``set [3;3;3]``;
+val it = |- set [3; 3; 3] = {3}: thm
+*)
+
+(* Theorem: set ls = count n ==> !j. j < LENGTH ls ==> EL j ls < n *)
+(* Proof:
+   Note MEM (EL j ls) ls       by EL_MEM
+     so EL j ls IN (count n)   by set ls = count n
+     or EL j ls < n            by IN_COUNT
+*)
+Theorem set_list_eq_count:
+  !ls n. set ls = count n ==> !j. j < LENGTH ls ==> EL j ls < n
+Proof
+  metis_tac[EL_MEM, IN_COUNT]
+QED
+
+(* Theorem: set ls = IMAGE (\j. EL j ls) (count (LENGTH ls)) *)
+(* Proof:
+   Let f = \j. EL j ls, n = LENGTH ls.
+       x IN IMAGE f (count n)
+   <=> ?j. x = f j /\ j IN (count n)     by IN_IMAGE
+   <=> ?j. x = EL j ls /\ j < n          by notation, IN_COUNT
+   <=> MEM x ls                          by MEM_EL
+   <=> x IN set ls                       by notation
+   Thus set ls = IMAGE f (count n)       by EXTENSION
+*)
+Theorem list_to_set_eq_el_image:
+  !ls. set ls = IMAGE (\j. EL j ls) (count (LENGTH ls))
+Proof
+  rw[EXTENSION] >>
+  metis_tac[MEM_EL]
+QED
+
+(* Theorem: ALL_DISTINCT ls ==> INJ (\j. EL j ls) (count (LENGTH ls)) univ(:num) *)
+(* Proof:
+   By INJ_DEF this is to show:
+   (1) EL j ls IN univ(:'a), true  by IN_UNIV, function type
+   (2) !x y. x < LENGTH ls /\ y < LENGTH ls /\ EL x ls = EL y ls ==> x = y
+       This is true                by ALL_DISTINCT_EL_IMP, ALL_DISTINCT ls
+*)
+Theorem all_distinct_list_el_inj:
+  !ls. ALL_DISTINCT ls ==> INJ (\j. EL j ls) (count (LENGTH ls)) univ(:'a)
+Proof
+  rw[INJ_DEF, ALL_DISTINCT_EL_IMP]
+QED
+
+(* MAP_ZIP_SAME  |- !ls f. MAP f (ZIP (ls,ls)) = MAP (\x. f (x,x)) ls *)
+
+(* Theorem: ZIP ((MAP f ls), (MAP g ls)) = MAP (\x. (f x, g x)) ls *)
+(* Proof:
+     ZIP ((MAP f ls), (MAP g ls))
+   = MAP (\(x, y). (f x, y)) (ZIP (ls, (MAP g ls)))                    by ZIP_MAP
+   = MAP (\(x, y). (f x, y)) (MAP (\(x, y). (x, g y)) (ZIP (ls, ls)))  by ZIP_MAP
+   = MAP (\(x, y). (f x, y)) (MAP (\j. (\(x, y). (x, g y)) (j,j)) ls)  by MAP_ZIP_SAME
+   = MAP (\(x, y). (f x, y)) o (\j. (\(x, y). (x, g y)) (j,j)) ls      by MAP_COMPOSE
+   = MAP (\x. (f x, g x)) ls                                           by FUN_EQ_THM
+*)
+val ZIP_MAP_MAP = store_thm(
+  "ZIP_MAP_MAP",
+  ``!ls f g. ZIP ((MAP f ls), (MAP g ls)) = MAP (\x. (f x, g x)) ls``,
+  rw[ZIP_MAP, MAP_COMPOSE] >>
+  qabbrev_tac `f1 = \p. (f (FST p),SND p)` >>
+  qabbrev_tac `f2 = \x. (x,g x)` >>
+  qabbrev_tac `f3 = \x. (f x,g x)` >>
+  `f1 o f2 = f3` by rw[FUN_EQ_THM, Abbr`f1`, Abbr`f2`, Abbr`f3`] >>
+  rw[]);
+
+(* Theorem: MAP2 f (MAP g1 ls) (MAP g2 ls) = MAP (\x. f (g1 x) (g2 x)) ls *)
+(* Proof:
+   Let k = LENGTH ls.
+     Note LENGTH (MAP g1 ls) = k      by LENGTH_MAP
+      and LENGTH (MAP g2 ls) = k      by LENGTH_MAP
+     MAP2 f (MAP g1 ls) (MAP g2 ls)
+   = MAP (UNCURRY f) (ZIP ((MAP g1 ls), (MAP g2 ls)))      by MAP2_MAP
+   = MAP (UNCURRY f) (MAP (\x. (g1 x, g2 x)) ls)           by ZIP_MAP_MAP
+   = MAP ((UNCURRY f) o (\x. (g1 x, g2 x))) ls             by MAP_COMPOSE
+   = MAP (\x. f (g1 x) (g2 y)) ls                          by FUN_EQ_THM
+*)
+val MAP2_MAP_MAP = store_thm(
+  "MAP2_MAP_MAP",
+  ``!ls f g1 g2. MAP2 f (MAP g1 ls) (MAP g2 ls) = MAP (\x. f (g1 x) (g2 x)) ls``,
+  rw[MAP2_MAP, ZIP_MAP_MAP, MAP_COMPOSE] >>
+  qabbrev_tac `f1 = UNCURRY f o (\x. (g1 x,g2 x))` >>
+  qabbrev_tac `f2 = \x. f (g1 x) (g2 x)` >>
+  `f1 = f2` by rw[FUN_EQ_THM, Abbr`f1`, Abbr`f2`] >>
+  rw[]);
+
+(* Theorem: EL n (l1 ++ l2) = if n < LENGTH l1 then EL n l1 else EL (n - LENGTH l1) l2 *)
+(* Proof: by EL_APPEND1, EL_APPEND2 *)
+val EL_APPEND = store_thm(
+  "EL_APPEND",
+  ``!n l1 l2. EL n (l1 ++ l2) = if n < LENGTH l1 then EL n l1 else EL (n - LENGTH l1) l2``,
+  rw[EL_APPEND1, EL_APPEND2]);
+
+(* Theorem: j < LENGTH ls ==> ?l1 l2. ls = l1 ++ (EL j ls)::l2 *)
+(* Proof:
+   Let x = EL j ls.
+   Then MEM x ls                   by EL_MEM, j < LENGTH ls
+     so ?l1 l2. l = l1 ++ x::l2    by MEM_SPLIT
+   Pick these l1 and l2.
+*)
+Theorem EL_SPLIT:
+  !ls j. j < LENGTH ls ==> ?l1 l2. ls = l1 ++ (EL j ls)::l2
+Proof
+  metis_tac[EL_MEM, MEM_SPLIT]
+QED
+
+(* Theorem: j < k /\ k < LENGTH ls ==>
+            ?l1 l2 l3. ls = l1 ++ (EL j ls)::l2 ++ (EL k ls)::l3 *)
+(* Proof:
+   Let a = EL j ls,
+       b = EL k ls.
+   Note j < LENGTH ls          by j < k, k < LENGTH ls
+     so MEM a ls /\ MEM b ls   by MEM_EL
+
+    Now ls
+      = TAKE k ls ++ DROP k ls                 by TAKE_DROP
+      = TAKE k ls ++ b::(DROP (k+1) ls)        by DROP_EL_CONS
+    Let lt = TAKE k ls.
+    Then LENGTH lt = k                         by LENGTH_TAKE
+     and a = EL j lt                           by EL_TAKE
+     and lt
+       = TAKE j lt ++ DROP j lt                by TAKE_DROP
+       = TAKE j lt ++ a::(DROP (j+1) lt)       by DROP_EL_CONS
+    Pick l1 = TAKE j lt, l2 = DROP (j+1) lt, l3 = DROP (k+1) ls.
+*)
+Theorem EL_SPLIT_2:
+  !ls j k. j < k /\ k < LENGTH ls ==>
+           ?l1 l2 l3. ls = l1 ++ (EL j ls)::l2 ++ (EL k ls)::l3
+Proof
+  rpt strip_tac >>
+  qabbrev_tac `a = EL j ls` >>
+  qabbrev_tac `b = EL k ls` >>
+  `j < LENGTH ls` by decide_tac >>
+  `MEM a ls /\ MEM b ls` by metis_tac[MEM_EL] >>
+  `ls = TAKE k ls ++ b::(DROP (k+1) ls)` by metis_tac[TAKE_DROP, DROP_EL_CONS] >>
+  qabbrev_tac `lt = TAKE k ls` >>
+  `LENGTH lt = k` by simp[Abbr`lt`] >>
+  `a = EL j lt` by simp[EL_TAKE, Abbr`a`, Abbr`lt`] >>
+  `lt = TAKE j lt ++ a::(DROP (j+1) lt)` by metis_tac[TAKE_DROP, DROP_EL_CONS] >>
+  metis_tac[]
+QED
+
+(* Theorem: (l1 ++ l2 = m1 ++ m2) /\ (LENGTH l1 = LENGTH m1) <=> (l1 = m1) /\ (l2 = m2) *)
+(* Proof:
+   By APPEND_EQ_APPEND,
+   ?l. (l1 = m1 ++ l) /\ (m2 = l ++ l2) \/ ?l. (m1 = l1 ++ l) /\ (l2 = l ++ m2).
+   Thus this is to show:
+   (1) LENGTH (m1 ++ l) = LENGTH m1 ==> m1 ++ l = m1, true since l = [] by LENGTH_APPEND, LENGTH_NIL
+   (2) LENGTH (m1 ++ l) = LENGTH m1 ==> l2 = l ++ l2, true since l = [] by LENGTH_APPEND, LENGTH_NIL
+   (3) LENGTH l1 = LENGTH (l1 ++ l) ==> l1 = l1 ++ l, true since l = [] by LENGTH_APPEND, LENGTH_NIL
+   (4) LENGTH l1 = LENGTH (l1 ++ l) ==> l ++ m2 = m2, true since l = [] by LENGTH_APPEND, LENGTH_NIL
+*)
+val APPEND_EQ_APPEND_EQ = store_thm(
+  "APPEND_EQ_APPEND_EQ",
+  ``!l1 l2 m1 m2. (l1 ++ l2 = m1 ++ m2) /\ (LENGTH l1 = LENGTH m1) <=> (l1 = m1) /\ (l2 = m2)``,
+  rw[APPEND_EQ_APPEND] >>
+  rw[EQ_IMP_THM] >-
+  fs[] >-
+  fs[] >-
+ (fs[] >>
+  `LENGTH l = 0` by decide_tac >>
+  fs[]) >>
+  fs[] >>
+  `LENGTH l = 0` by decide_tac >>
+  fs[]);
+
+(* ------------------------------------------------------------------------- *)
+(* More about DROP and TAKE                                                  *)
+(* ------------------------------------------------------------------------- *)
+
+(* listTheory.HD_DROP  |- !n l. n < LENGTH l ==> HD (DROP n l) = EL n l *)
+
+(* Theorem: n < LENGTH ls ==> TL (DROP n ls) = DROP n (TL ls) *)
+(* Proof:
+   Note 0 < LENGTH ls, so ls <> []             by LENGTH_NON_NIL
+     so ?h t. ls = h::t                        by NOT_NIL_CONS
+        TL (DROP n ls)
+      = TL (EL n ls::DROP (SUC n) ls)          by DROP_CONS_EL
+      = DROP (SUC n) ls                        by TL
+      = DROP (SUC n) (h::t)                    by above
+      = DROP n t                               by DROP
+      = DROP n (TL ls)                         by TL
+*)
+Theorem TL_DROP:
+  !ls n. n < LENGTH ls ==> TL (DROP n ls) = DROP n (TL ls)
+Proof
+  rpt strip_tac >>
+  `0 < LENGTH ls` by decide_tac >>
+  `TL (DROP n ls) = TL (EL n ls::DROP (SUC n) ls)` by simp[DROP_CONS_EL] >>
+  `_ = DROP (SUC n) ls` by simp[] >>
+  `_ = DROP (SUC n) (HD ls::TL ls)` by metis_tac[LIST_HEAD_TAIL] >>
+  simp[]
+QED
+
+(* Theorem: x <> [] ==> (TAKE 1 (x ++ y) = TAKE 1 x) *)
+(* Proof:
+   x <> [] means ?h t. x = h::t    by list_CASES
+     TAKE 1 (x ++ y)
+   = TAKE 1 ((h::t) ++ y)
+   = TAKE 1 (h:: t ++ y)      by APPEND
+   = h::TAKE 0 (t ++ y)       by TAKE_def
+   = h::TAKE 0 t              by TAKE_0
+   = TAKE 1 (h::t)            by TAKE_def
+*)
+val TAKE_1_APPEND = store_thm(
+  "TAKE_1_APPEND",
+  ``!x y. x <> [] ==> (TAKE 1 (x ++ y) = TAKE 1 x)``,
+  Cases_on `x`>> rw[]);
+
+(* Theorem: x <> [] ==> (DROP 1 (x ++ y) = (DROP 1 x) ++ y) *)
+(* Proof:
+   x <> [] means ?h t. x = h::t    by list_CASES
+     DROP 1 (x ++ y)
+   = DROP 1 ((h::t) ++ y)
+   = DROP 1 (h:: t ++ y)      by APPEND
+   = DROP 0 (t ++ y)          by DROP_def
+   = t ++ y                   by DROP_0
+   = (DROP 1 (h::t)) ++ y     by DROP_def
+*)
+val DROP_1_APPEND = store_thm(
+  "DROP_1_APPEND",
+  ``!x y. x <> [] ==> (DROP 1 (x ++ y) = (DROP 1 x) ++ y)``,
+  Cases_on `x` >> rw[]);
+
+(* Theorem: DROP (SUC n) x = DROP 1 (DROP n x) *)
+(* Proof:
+   By induction on x.
+   Base case: !n. DROP (SUC n) [] = DROP 1 (DROP n [])
+     LHS = DROP (SUC n) []  = []  by DROP_def
+     RHS = DROP 1 (DROP n [])
+         = DROP 1 []              by DROP_def
+         = [] = LHS               by DROP_def
+   Step case: !n. DROP (SUC n) x = DROP 1 (DROP n x) ==>
+              !h n. DROP (SUC n) (h::x) = DROP 1 (DROP n (h::x))
+     If n = 0,
+     LHS = DROP (SUC 0) (h::x)
+         = DROP 1 (h::x)          by ONE
+     RHS = DROP 1 (DROP 0 (h::x))
+         = DROP 1 (h::x) = LHS    by DROP_0
+     If n <> 0,
+     LHS = DROP (SUC n) (h::x)
+         = DROP n x               by DROP_def
+     RHS = DROP 1 (DROP n (h::x)
+         = DROP 1 (DROP (n-1) x)  by DROP_def
+         = DROP (SUC (n-1)) x     by induction hypothesis
+         = DROP n x = LHS         by SUC (n-1) = n, n <> 0.
+*)
+val DROP_SUC = store_thm(
+  "DROP_SUC",
+  ``!n x. DROP (SUC n) x = DROP 1 (DROP n x)``,
+  Induct_on `x` >>
+  rw[DROP_def] >>
+  `n = SUC (n-1)` by decide_tac >>
+  metis_tac[]);
+
+(* Theorem: TAKE (SUC n) x = (TAKE n x) ++ (TAKE 1 (DROP n x)) *)
+(* Proof:
+   By induction on x.
+   Base case: !n. TAKE (SUC n) [] = TAKE n [] ++ TAKE 1 (DROP n [])
+     LHS = TAKE (SUC n) [] = []    by TAKE_def
+     RHS = TAKE n [] ++ TAKE 1 (DROP n [])
+         = [] ++ TAKE 1 []         by TAKE_def, DROP_def
+         = TAKE 1 []               by APPEND
+         = [] = LHS                by TAKE_def
+   Step case: !n. TAKE (SUC n) x = TAKE n x ++ TAKE 1 (DROP n x) ==>
+              !h n. TAKE (SUC n) (h::x) = TAKE n (h::x) ++ TAKE 1 (DROP n (h::x))
+     If n = 0,
+     LHS = TAKE (SUC 0) (h::x)
+         = TAKE 1 (h::x)           by ONE
+     RHS = TAKE 0 (h::x) ++ TAKE 1 (DROP 0 (h::x))
+         = [] ++ TAKE 1 (h::x)     by TAKE_def, DROP_def
+         = TAKE 1 (h::x) = LHS     by APPEND
+     If n <> 0,
+     LHS = TAKE (SUC n) (h::x)
+         = h :: TAKE n x           by TAKE_def
+     RHS = TAKE n (h::x) ++ TAKE 1 (DROP n (h::x))
+         = (h:: TAKE (n-1) x) ++ TAKE 1 (DROP (n-1) x)   by TAKE_def, DROP_def, n <> 0.
+         = h :: (TAKE (n-1) x ++ TAKE 1 (DROP (n-1) x))  by APPEND
+         = h :: TAKE (SUC (n-1)) x  by induction hypothesis
+         = h :: TAKE n x            by SUC (n-1) = n, n <> 0.
+*)
+val TAKE_SUC = store_thm(
+  "TAKE_SUC",
+  ``!n x. TAKE (SUC n) x = (TAKE n x) ++ (TAKE 1 (DROP n x))``,
+  Induct_on `x` >>
+  rw[TAKE_def, DROP_def] >>
+  `n = SUC (n-1)` by decide_tac >>
+  metis_tac[]);
+
+(* Theorem: k < LENGTH x ==> (TAKE (SUC k) x = SNOC (EL k x) (TAKE k x)) *)
+(* Proof:
+   By induction on k.
+   Base case: !x. 0 < LENGTH x ==> (TAKE (SUC 0) x = SNOC (EL 0 x) (TAKE 0 x))
+         0 < LENGTH x
+     ==> ?h t. x = h::t   by LENGTH_NIL, list_CASES
+     LHS = TAKE (SUC 0) x
+         = TAKE 1 (h::t)   by ONE
+         = h::TAKE 0 t     by TAKE_def
+         = h::[]           by TAKE_0
+         = [h]
+         = SNOC h []       by SNOC
+         = SNOC h (TAKE 0 (h::t))             by TAKE_0
+         = SNOC (EL 0 (h::t)) (TAKE 0 (h::t)) by EL
+         = RHS
+   Step case: !x. k < LENGTH x ==> (TAKE (SUC k) x = SNOC (EL k x) (TAKE k x)) ==>
+     !x. SUC k < LENGTH x ==> (TAKE (SUC (SUC k)) x = SNOC (EL (SUC k) x) (TAKE (SUC k) x))
+     Since 0 < SUC k                        by prim_recTheory.LESS_0
+           0 < LENGTH x                     by LESS_TRANS
+       ==> ?h t. x = h::t                   by LENGTH_NIL, list_CASES
+       and LENGTH (h::t) = SUC (LENGTH t)   by LENGTH
+     hence k < LENGTH t                     by LESS_MONO_EQ
+     LHS = TAKE (SUC (SUC k)) (h::t)
+         = h :: TAKE (SUC k) t              by TAKE_def
+         = h :: SNOC (EL k t) (TAKE k t)    by induction hypothesis, k < LENGTH t.
+         = SNOC (EL k t) (h :: TAKE k t)    by SNOC
+         = SNOC (EL (SUC k) (h::t)) (h :: TAKE k t)         by EL_restricted
+         = SNOC (EL (SUC k) (h::t)) (TAKE (SUC k) (h::t))   by TAKE_def
+         = RHS
+*)
+val TAKE_SUC_BY_TAKE = store_thm(
+  "TAKE_SUC_BY_TAKE",
+  ``!k x. k < LENGTH x ==> (TAKE (SUC k) x = SNOC (EL k x) (TAKE k x))``,
+  Induct_on `k` >| [
+    rpt strip_tac >>
+    `LENGTH x <> 0` by decide_tac >>
+    `?h t. x = h::t` by metis_tac[LENGTH_NIL, list_CASES] >>
+    rw[],
+    rpt strip_tac >>
+    `LENGTH x <> 0` by decide_tac >>
+    `?h t. x = h::t` by metis_tac[LENGTH_NIL, list_CASES] >>
+    `k < LENGTH t` by metis_tac[LENGTH, LESS_MONO_EQ] >>
+    rw_tac std_ss[TAKE_def, SNOC, EL_restricted]
+  ]);
+
+(* Theorem: k < LENGTH x ==> (DROP k x = (EL k x) :: (DROP (SUC k) x)) *)
+(* Proof:
+   By induction on k.
+   Base case: !x. 0 < LENGTH x ==> (DROP 0 x = EL 0 x::DROP (SUC 0) x)
+         0 < LENGTH x
+     ==> ?h t. x = h::t   by LENGTH_NIL, list_CASES
+     LHS = DROP 0 (h::t)
+         = h::t                            by DROP_0
+         = (EL 0 (h::t))::t                by EL
+         = (EL 0 (h::t))::(DROP 1 (h::t))  by DROP_def
+         = EL 0 x::DROP (SUC 0) x          by ONE
+         = RHS
+   Step case: !x. k < LENGTH x ==> (DROP k x = EL k x::DROP (SUC k) x) ==>
+              !x. SUC k < LENGTH x ==> (DROP (SUC k) x = EL (SUC k) x::DROP (SUC (SUC k)) x)
+     Since 0 < SUC k                        by prim_recTheory.LESS_0
+           0 < LENGTH x                     by LESS_TRANS
+       ==> ?h t. x = h::t                   by LENGTH_NIL, list_CASES
+       and LENGTH (h::t) = SUC (LENGTH t)   by LENGTH
+     hence k < LENGTH t                     by LESS_MONO_EQ
+     LHS = DROP (SUC k) (h::t)
+         = DROP k t                         by DROP_def
+         = EL k x::DROP (SUC k) x           by induction hypothesis
+         = EL k t :: DROP (SUC (SUC k)) (h::t)           by DROP_def
+         = EL (SUC k) (h::t)::DROP (SUC (SUC k)) (h::t)  by EL
+         = RHS
+*)
+val DROP_BY_DROP_SUC = store_thm(
+  "DROP_BY_DROP_SUC",
+  ``!k x. k < LENGTH x ==> (DROP k x = (EL k x) :: (DROP (SUC k) x))``,
+  Induct_on `k` >| [
+    rpt strip_tac >>
+    `LENGTH x <> 0` by decide_tac >>
+    `?h t. x = h::t` by metis_tac[LENGTH_NIL, list_CASES] >>
+    rw[],
+    rpt strip_tac >>
+    `LENGTH x <> 0` by decide_tac >>
+    `?h t. x = h::t` by metis_tac[LENGTH_NIL, list_CASES] >>
+    `k < LENGTH t` by metis_tac[LENGTH, LESS_MONO_EQ] >>
+    rw[]
+  ]);
+
+(* Theorem: n < LENGTH ls ==> ?u. DROP n ls = [EL n ls] ++ u *)
+(* Proof:
+   By induction on n.
+   Base: !ls. 0 < LENGTH ls ==> ?u. DROP 0 ls = [EL 0 ls] ++ u
+       Note LENGTH ls <> 0        by 0 < LENGTH ls
+        ==> ls <> []              by LENGTH_NIL
+        ==> ?h t. ls = h::t       by list_CASES
+         DROP 0 ls
+       = ls                       by DROP_0
+       = [h] ++ t                 by ls = h::t, CONS_APPEND
+       = [EL 0 ls] ++ t           by EL
+       Take u = t.
+   Step: !ls. n < LENGTH ls ==> ?u. DROP n ls = [EL n ls] ++ u ==>
+         !ls. SUC n < LENGTH ls ==> ?u. DROP (SUC n) ls = [EL (SUC n) ls] ++ u
+       Note LENGTH ls <> 0                  by SUC n < LENGTH ls
+        ==> ?h t. ls = h::t                 by list_CASES, LENGTH_NIL
+        Now LENGTH ls = SUC (LENGTH t)      by LENGTH
+        ==> n < LENGTH t                    by SUC n < SUC (LENGTH t)
+       Thus ?u. DROP n t = [EL n t] ++ u    by induction hypothesis
+
+         DROP (SUC n) ls
+       = DROP (SUC n) (h::t)                by ls = h::t
+       = DROP n t                           by DROP_def
+       = [EL n t] ++ u                      by above
+       = [EL (SUC n) (h::t)] ++ u           by EL_restricted
+       Take this u.
+*)
+val DROP_HEAD_ELEMENT = store_thm(
+  "DROP_HEAD_ELEMENT",
+  ``!ls n. n < LENGTH ls ==> ?u. DROP n ls = [EL n ls] ++ u``,
+  Induct_on `n` >| [
+    rpt strip_tac >>
+    `LENGTH ls <> 0` by decide_tac >>
+    `?h t. ls = h::t` by metis_tac[list_CASES, LENGTH_NIL] >>
+    rw[],
+    rw[] >>
+    `LENGTH ls <> 0` by decide_tac >>
+    `?h t. ls = h::t` by metis_tac[list_CASES, LENGTH_NIL] >>
+    `LENGTH ls = SUC (LENGTH t)` by rw[] >>
+    `n < LENGTH t` by decide_tac >>
+    `?u. DROP n t = [EL n t] ++ u` by rw[] >>
+    rw[]
+  ]);
+
+(* Theorem: DROP n (TAKE n ls) = [] *)
+(* Proof:
+   If n <= LENGTH ls,
+      Then LENGTH (TAKE n ls) = n           by LENGTH_TAKE_EQ
+      Thus DROP n (TAKE n ls) = []          by DROP_LENGTH_TOO_LONG
+   If LENGTH ls < n
+      Then LENGTH (TAKE n ls) = LENGTH ls   by LENGTH_TAKE_EQ
+      Thus DROP n (TAKE n ls) = []          by DROP_LENGTH_TOO_LONG
+*)
+val DROP_TAKE_EQ_NIL = store_thm(
+  "DROP_TAKE_EQ_NIL",
+  ``!ls n. DROP n (TAKE n ls) = []``,
+  rw[LENGTH_TAKE_EQ, DROP_LENGTH_TOO_LONG]);
+
+(* Theorem: TAKE m (DROP n ls) = DROP n (TAKE (n + m) ls) *)
+(* Proof:
+   If n <= LENGTH ls,
+      Then LENGTH (TAKE n ls) = n                       by LENGTH_TAKE_EQ, n <= LENGTH ls
+        DROP n (TAKE (n + m) ls)
+      = DROP n (TAKE n ls ++ TAKE m (DROP n ls))        by TAKE_SUM
+      = DROP n (TAKE n ls) ++ DROP (n - LENGTH (TAKE n ls)) (TAKE m (DROP n ls))  by DROP_APPEND
+      = [] ++ DROP (n - LENGTH (TAKE n ls)) (TAKE m (DROP n ls))     by DROP_TAKE_EQ_NIL
+      = DROP (n - LENGTH (TAKE n ls)) (TAKE m (DROP n ls))           by APPEND
+      = DROP 0 (TAKE m (DROP n ls))                                  by above
+      = TAKE m (DROP n ls)                                           by DROP_0
+   If LENGTH ls < n,
+      Then DROP n ls = []         by DROP_LENGTH_TOO_LONG
+       and TAKE (n + m) ls = ls   by TAKE_LENGTH_TOO_LONG
+        DROP n (TAKE (n + m) ls)
+      = DROP n ls                 by TAKE_LENGTH_TOO_LONG
+      = []                        by DROP_LENGTH_TOO_LONG
+      = TAKE m []                 by TAKE_nil
+      = TAKE m (DROP n ls)        by DROP_LENGTH_TOO_LONG
+*)
+val TAKE_DROP_SWAP = store_thm(
+  "TAKE_DROP_SWAP",
+  ``!ls m n. TAKE m (DROP n ls) = DROP n (TAKE (n + m) ls)``,
+  rpt strip_tac >>
+  Cases_on `n <= LENGTH ls` >| [
+    qabbrev_tac `x = TAKE m (DROP n ls)` >>
+    `DROP n (TAKE (n + m) ls) = DROP n (TAKE n ls ++ x)` by rw[TAKE_SUM, Abbr`x`] >>
+    `_ = DROP n (TAKE n ls) ++ DROP (n - LENGTH (TAKE n ls)) x` by rw[DROP_APPEND] >>
+    `_ = DROP (n - LENGTH (TAKE n ls)) x` by rw[DROP_TAKE_EQ_NIL] >>
+    `_ = DROP 0 x` by rw[LENGTH_TAKE_EQ] >>
+    rw[],
+    `DROP n ls = []` by rw[DROP_LENGTH_TOO_LONG] >>
+    `TAKE (n + m) ls = ls` by rw[TAKE_LENGTH_TOO_LONG] >>
+    rw[]
+  ]);
+
+(* Theorem: TAKE (LENGTH l1) (LUPDATE x (LENGTH l1 + k) (l1 ++ l2)) = l1 *)
+(* Proof:
+      TAKE (LENGTH l1) (LUPDATE x (LENGTH l1 + k) (l1 ++ l2))
+    = TAKE (LENGTH l1) (l1 ++ LUPDATE x k l2)      by LUPDATE_APPEND2
+    = l1                                           by TAKE_LENGTH_APPEND
+*)
+val TAKE_LENGTH_APPEND2 = store_thm(
+  "TAKE_LENGTH_APPEND2",
+  ``!l1 l2 x k. TAKE (LENGTH l1) (LUPDATE x (LENGTH l1 + k) (l1 ++ l2)) = l1``,
+  rw_tac std_ss[LUPDATE_APPEND2, TAKE_LENGTH_APPEND]);
+
+(* Theorem: LENGTH (TAKE n l) <= LENGTH l *)
+(* Proof: by LENGTH_TAKE_EQ *)
+val LENGTH_TAKE_LE = store_thm(
+  "LENGTH_TAKE_LE",
+  ``!n l. LENGTH (TAKE n l) <= LENGTH l``,
+  rw[LENGTH_TAKE_EQ]);
+
+(* Theorem: ALL_DISTINCT ls ==>
+            !k e. MEM e (TAKE k ls) /\ MEM e (DROP k ls) ==> F *)
+(* Proof:
+   By induction on ls.
+   Base: ALL_DISTINCT [] ==> !k e. MEM e (TAKE k []) /\ MEM e (DROP k []) ==> F
+         MEM e (TAKE k []) = MEM e [] = F      by TAKE_nil, MEM
+         MEM e (DROP k []) = MEM e [] = F      by DROP_nil, MEM
+   Step: ALL_DISTINCT ls ==>
+             !k e. MEM e (TAKE k ls) /\ MEM e (DROP k ls) ==> F ==>
+         !h. ALL_DISTINCT (h::ls) ==>
+             !k e. MEM e (TAKE k (h::ls)) /\ MEM e (DROP k (h::ls)) ==> F
+         Note ~MEM h ls /\ ALL_DISTINCT ls     by ALL_DISTINCT
+         If k = 0,
+                MEM e (TAKE 0 (h::ls))
+            <=> MEM e [] = F                   by TAKE_0, MEM
+            hence true.
+         If k <> 0,
+                MEM e (TAKE k (h::ls))
+            <=> MEM e (h::TAKE (k - 1) ls)       by TAKE_def, k <> 0
+            <=> e = h \/ MEM e (TAKE (k - 1) ls) by MEM
+              MEM e (DROP k (h::ls))
+            <=> MEM e (DROP (k - 1) ls)          by DROP_def, k <> 0
+            ==> MEM e ls                         by MEM_DROP_IMP
+            If e = h,
+               this contradicts ~MEM h ls.
+            If MEM e (TAKE (k - 1) ls)
+               this contradicts the induction hypothesis.
+*)
+Theorem ALL_DISTINCT_TAKE_DROP:
+  !ls. ALL_DISTINCT ls ==>
+   !k e. MEM e (TAKE k ls) /\ MEM e (DROP k ls) ==> F
+Proof
+  Induct >-
+  simp[] >>
+  rw[] >>
+  Cases_on `k = 0` >-
+  fs[] >>
+  spose_not_then strip_assume_tac >>
+  rfs[] >-
+  metis_tac[MEM_DROP_IMP] >>
+  metis_tac[]
+QED
+
+(* Theorem: ALL_DISTINCT (x::y::ls) <=> ALL_DISTINCT (y::x::ls) *)
+(* Proof:
+   If x = y, this is trivial.
+   If x <> y,
+       ALL_DISTINCT (x::y::ls)
+   <=> (x <> y /\ ~MEM x ls) /\ ~MEM y ls /\ ALL_DISTINCT ls   by ALL_DISTINCT
+   <=> (y <> x /\ ~MEM y ls) /\ ~MEM x ls /\ ALL_DISTINCT ls
+   <=> ALL_DISTINCT (y::x::ls)                                 by ALL_DISTINCT
+*)
+Theorem ALL_DISTINCT_SWAP:
+  !ls x y. ALL_DISTINCT (x::y::ls) <=> ALL_DISTINCT (y::x::ls)
+Proof
+  rw[] >>
+  metis_tac[]
+QED
+
+(* Theorem: ALL_DISTINCT ls /\ ls <> [] /\ j < LENGTH ls ==> (EL j ls = LAST ls <=> j + 1 = LENGTH ls) *)
+(* Proof:
+   Note 0 < LENGTH ls                          by LENGTH_EQ_0
+       EL j ls = LAST ls
+   <=> EL j ls = EL (PRE (LENGTH ls)) ls       by LAST_EL
+   <=> j = PRE (LENGTH ls)                     by ALL_DISTINCT_EL_IMP, j < LENGTH ls
+   <=> j + 1 = LENGTH ls                       by SUC_PRE, ADD1, 0 < LENGTH ls
+*)
+Theorem ALL_DISTINCT_LAST_EL_IFF:
+  !ls j. ALL_DISTINCT ls /\ ls <> [] /\ j < LENGTH ls ==> (EL j ls = LAST ls <=> j + 1 = LENGTH ls)
+Proof
+  rw[LAST_EL] >>
+  `0 < LENGTH ls` by metis_tac[LENGTH_EQ_0, NOT_ZERO] >>
+  `PRE (LENGTH ls) + 1 = LENGTH ls` by decide_tac >>
+  `EL j ls = EL (PRE (LENGTH ls)) ls <=> j = PRE (LENGTH ls)` by fs[ALL_DISTINCT_EL_IMP] >>
+  simp[]
+QED
+
+(* Theorem: ALL_DISTINCT ls /\ j < LENGTH ls /\ ls = l1 ++ [EL j ls] ++ l2 ==> j = LENGTH l1 *)
+(* Proof:
+   Note EL j ls = EL (LENGTH l1) ls            by el_append3
+    and LENGTH l1 < LENGTH ls                  by LENGTH_APPEND
+     so j = LENGTH l1                          by ALL_DISTINCT_EL_IMP
+*)
+Theorem ALL_DISTINCT_EL_APPEND:
+  !ls l1 l2 j. ALL_DISTINCT ls /\ j < LENGTH ls /\ ls = l1 ++ [EL j ls] ++ l2 ==> j = LENGTH l1
+Proof
+  rpt strip_tac >>
+  `EL j ls = EL (LENGTH l1) ls` by metis_tac[el_append3] >>
+  `LENGTH ls = LENGTH l1 + 1 + LENGTH l2` by metis_tac[LENGTH_APPEND, LENGTH_SING] >>
+  `LENGTH l1 < LENGTH ls` by decide_tac >>
+  metis_tac[ALL_DISTINCT_EL_IMP]
+QED
+
+(* Theorem: ALL_DISTINCT (l1 ++ [x] ++ l2) <=> ALL_DISTINCT (x::(l1 ++ l2)) *)
+(* Proof:
+   By induction on l1.
+   Base: ALL_DISTINCT ([] ++ [x] ++ l2) <=> ALL_DISTINCT (x::([] ++ l2))
+             ALL_DISTINCT ([] ++ [x] ++ l2)
+         <=> ALL_DISTINCT (x::l2)                  by APPEND_NIL
+         <=> ALL_DISTINCT (x::([] ++ l2))          by APPEND_NIL
+   Step: ALL_DISTINCT (l1 ++ [x] ++ l2) <=> ALL_DISTINCT (x::(l1 ++ l2)) ==>
+         !h. ALL_DISTINCT (h::l1 ++ [x] ++ l2) <=> ALL_DISTINCT (x::(h::l1 ++ l2))
+
+             ALL_DISTINCT (h::l1 ++ [x] ++ l2)
+         <=> ALL_DISTINCT (h::(l1 ++ [x] ++ l2))   by APPEND
+         <=> ~MEM h (l1 ++ [x] ++ l2) /\
+             ALL_DISTINCT (l1 ++ [x] ++ l2)        by ALL_DISTINCT
+         <=> ~MEM h (l1 ++ [x] ++ l2) /\
+             ALL_DISTINCT (x::(l1 ++ l2))          by induction hypothesis
+         <=> ~MEM h (x::(l1 ++ l2)) /\
+             ALL_DISTINCT (x::(l1 ++ l2))          by MEM_APPEND_3
+         <=> ALL_DISTINCT (h::x::(l1 ++ l2))       by ALL_DISTINCT
+         <=> ALL_DISTINCT (x::h::(l1 ++ l2))       by ALL_DISTINCT_SWAP
+         <=> ALL_DISTINCT (x::(h::l1 ++ l2))       by APPEND
+*)
+Theorem ALL_DISTINCT_APPEND_3:
+  !l1 x l2. ALL_DISTINCT (l1 ++ [x] ++ l2) <=> ALL_DISTINCT (x::(l1 ++ l2))
+Proof
+  rpt strip_tac >>
+  Induct_on `l1` >-
+  simp[] >>
+  rpt strip_tac >>
+  `ALL_DISTINCT (h::l1 ++ [x] ++ l2) <=> ALL_DISTINCT (h::(l1 ++ [x] ++ l2))` by rw[] >>
+  `_ = (~MEM h (l1 ++ [x] ++ l2) /\ ALL_DISTINCT (l1 ++ [x] ++ l2))` by rw[] >>
+  `_ = (~MEM h (l1 ++ [x] ++ l2) /\ ALL_DISTINCT (x::(l1 ++ l2)))` by rw[] >>
+  `_ = (~MEM h (x::(l1 ++ l2)) /\ ALL_DISTINCT (x::(l1 ++ l2)))` by rw[MEM_APPEND_3] >>
+  `_ = ALL_DISTINCT (h::x::(l1 ++ l2))` by rw[] >>
+  `_ = ALL_DISTINCT (x::h::(l1 ++ l2))` by rw[ALL_DISTINCT_SWAP] >>
+  `_ = ALL_DISTINCT (x::(h::l1 ++ l2))` by metis_tac[APPEND] >>
+  simp[]
+QED
+
+(* Theorem: ALL_DISTINCT l ==> !x. MEM x l <=> ?p1 p2. (l = p1 ++ [x] ++ p2) /\ ~MEM x p1 /\ ~MEM x p2 *)
+(* Proof:
+   If part: MEM x l ==> ?p1 p2. (l = p1 ++ [x] ++ p2) /\ ~MEM x p1 /\ ~MEM x p2
+      Note ?p1 p2. (l = p1 ++ [x] ++ p2) /\ ~MEM x p2    by MEM_SPLIT_APPEND_last
+       Now ALL_DISTINCT (p1 ++ [x])              by ALL_DISTINCT_APPEND, ALL_DISTINCT l
+       But MEM x [x]                             by MEM
+        so ~MEM x p1                             by ALL_DISTINCT_APPEND
+
+   Only-if part: MEM x (p1 ++ [x] ++ p2), true   by MEM_APPEND
+*)
+Theorem MEM_SPLIT_APPEND_distinct:
+  !l. ALL_DISTINCT l ==> !x. MEM x l <=> ?p1 p2. (l = p1 ++ [x] ++ p2) /\ ~MEM x p1 /\ ~MEM x p2
+Proof
+  rw[EQ_IMP_THM] >-
+  metis_tac[MEM_SPLIT_APPEND_last, ALL_DISTINCT_APPEND, MEM] >>
+  rw[]
+QED
+
+(* Theorem: MEM x ls <=>
+            ?k. k < LENGTH ls /\ x = EL k ls /\
+                ls = TAKE k ls ++ x::DROP (k+1) ls /\ ~MEM x (TAKE k ls) *)
+(* Proof:
+   If part: MEM x ls ==> ?k. k < LENGTH ls /\ x = EL k ls /\
+                         ls = TAKE k ls ++ x::DROP (k+1) ls /\ ~MEM x (TAKE k ls)
+      Note ?pfx sfx. ls = pfx ++ [x] ++ sfx /\ ~MEM x pfx
+                                   by MEM_SPLIT_APPEND_first
+      Take k = LENGTH pfx.
+      Then k < LENGTH ls           by LENGTH_APPEND
+       and EL k ls
+         = EL k (pfx ++ [x] ++ sfx)
+         = x                       by el_append3
+       and TAKE k ls ++ x::DROP (k+1) ls
+         = TAKE k (pfx ++ [x] ++ sfx) ++
+           [x] ++
+           DROP (k+1) ((pfx ++ [x] ++ sfx))
+         = pfx ++ [x] ++           by TAKE_APPEND1
+           (DROP (k+1)(pfx + [x])
+           ++ sfx                  by DROP_APPEND1
+         = pfx ++ [x] ++ sfx       by DROP_LENGTH_NIL
+         = ls
+       and TAKE k ls = pfx         by TAKE_APPEND1
+   Only-if part: k < LENGTH ls /\ ls = TAKE k ls ++ [EL k ls] ++ DROP (k + 1) ls /\
+                 ~MEM (EL k ls) (TAKE k ls) ==> MEM (EL k ls) ls
+       This is true                by EL_MEM, just need k < LENGTH ls
+*)
+Theorem MEM_SPLIT_TAKE_DROP_first:
+  !ls x. MEM x ls <=>
+      ?k. k < LENGTH ls /\ x = EL k ls /\
+          ls = TAKE k ls ++ x::DROP (k+1) ls /\ ~MEM x (TAKE k ls)
+Proof
+  rw[EQ_IMP_THM] >| [
+    imp_res_tac MEM_SPLIT_APPEND_first >>
+    qexists_tac `LENGTH pfx` >>
+    rpt strip_tac >-
+    fs[] >-
+    fs[el_append3] >-
+    fs[TAKE_APPEND1, DROP_APPEND1] >>
+    `TAKE (LENGTH pfx) ls = pfx` by rw[TAKE_APPEND1] >>
+    fs[],
+    fs[EL_MEM]
+  ]
+QED
+
+(* Theorem: MEM x ls <=>
+            ?k. k < LENGTH ls /\ x = EL k ls /\
+                ls = TAKE k ls ++ x::DROP (k+1) ls /\ ~MEM x (DROP (k+1) ls) *)
+(* Proof:
+   If part: MEM x ls ==> ?k. k < LENGTH ls /\ x = EL k ls /\
+                         ls = TAKE k ls ++ x::DROP (k+1) ls /\ ~MEM x (DROP (k+1) ls)
+      Note ?pfx sfx. ls = pfx ++ [x] ++ sfx /\ ~MEM x sfx
+                                   by MEM_SPLIT_APPEND_last
+      Take k = LENGTH pfx.
+      Then k < LENGTH ls           by LENGTH_APPEND
+       and EL k ls
+         = EL k (pfx ++ [x] ++ sfx)
+         = x                       by el_append3
+       and TAKE k ls ++ x::DROP (k+1) ls
+         = TAKE k (pfx ++ [x] ++ sfx) ++
+           [x] ++
+           DROP (k+1) ((pfx ++ [x] ++ sfx))
+         = pfx ++ [x] ++           by TAKE_APPEND1
+           (DROP (k+1)(pfx + [x])
+           ++ sfx                  by DROP_APPEND1
+         = pfx ++ [x] ++ sfx       by DROP_LENGTH_NIL
+         = ls
+       and DROP (k + 1) ls) = sfx  by DROP_APPEND1, DROP_LENGTH_NIL
+   Only-if part: k < LENGTH ls /\ ls = TAKE k ls ++ [EL k ls] ++ DROP (k + 1) ls /\
+                 ~MEM (EL k ls) (DROP (k+1) ls)) ==> MEM (EL k ls) ls
+       This is true                by EL_MEM, just need k < LENGTH ls
+*)
+Theorem MEM_SPLIT_TAKE_DROP_last:
+  !ls x. MEM x ls <=>
+      ?k. k < LENGTH ls /\ x = EL k ls /\
+          ls = TAKE k ls ++ x::DROP (k+1) ls /\ ~MEM x (DROP (k+1) ls)
+Proof
+  rw[EQ_IMP_THM] >| [
+    imp_res_tac MEM_SPLIT_APPEND_last >>
+    qexists_tac `LENGTH pfx` >>
+    rpt strip_tac >-
+    fs[] >-
+    fs[el_append3] >-
+    fs[TAKE_APPEND1, DROP_APPEND1] >>
+    `DROP (LENGTH pfx + 1) ls = sfx` by rw[DROP_APPEND1] >>
+    fs[],
+    fs[EL_MEM]
+  ]
+QED
+
+(* Theorem: ALL_DISTINCT ls ==>
+           !x. MEM x ls <=>
+           ?k. k < LENGTH ls /\ x = EL k ls /\
+               ls = TAKE k ls ++ x::DROP (k+1) ls /\
+               ~MEM x (TAKE k ls) /\ ~MEM x (DROP (k+1) ls) *)
+(* Proof:
+   If part: MEM x ls ==> ?k. k < LENGTH ls /\ x = EL k ls /\
+                         ls = TAKE k ls ++ x::DROP (k+1) ls /\
+                          ~MEM x (TAKE k ls) /\ ~MEM x (DROP (k+1) ls)
+      Note ?p1 p2. ls = p1 ++ [x] ++ p2 /\ ~MEM x p1 /\ ~MEM x p2
+                                   by MEM_SPLIT_APPEND_distinct
+      Take k = LENGTH p1.
+      Then k < LENGTH ls           by LENGTH_APPEND
+       and EL k ls
+         = EL k (p1 ++ [x] ++ p2)
+         = x                       by el_append3
+       and TAKE k ls ++ x::DROP (k+1) ls
+         = TAKE k (p1 ++ [x] ++ p2) ++
+           [x] ++
+           DROP (k+1) ((p1 ++ [x] ++ p2))
+         = p1 ++ [x] ++            by TAKE_APPEND1
+           (DROP (k+1)(p1 + [x])
+           ++ p2                   by DROP_APPEND1
+         = p1 ++ [x] ++ p2         by DROP_LENGTH_NIL
+         = ls
+       and TAKE k ls = p1          by TAKE_APPEND1
+       and DROP (k + 1) ls) = p2   by DROP_APPEND1, DROP_LENGTH_NIL
+   Only-if part: k < LENGTH ls /\ ls = TAKE k ls ++ [EL k ls] ++ DROP (k + 1) ls /\
+                  ~MEM (EL k ls) (TAKE k ls) /\ ~MEM (EL k ls) (DROP (k+1) ls)) ==> MEM (EL k ls) ls
+       This is true                by EL_MEM, just need k < LENGTH ls
+*)
+Theorem MEM_SPLIT_TAKE_DROP_distinct:
+  !ls. ALL_DISTINCT ls ==>
+    !x. MEM x ls <=>
+    ?k. k < LENGTH ls /\ x = EL k ls /\
+        ls = TAKE k ls ++ x::DROP (k+1) ls /\
+         ~MEM x (TAKE k ls) /\ ~MEM x (DROP (k+1) ls)
+Proof
+  rw[EQ_IMP_THM] >| [
+    `?p1 p2. ls = p1 ++ [x] ++ p2 /\ ~MEM x p1 /\ ~MEM x p2` by rw[GSYM MEM_SPLIT_APPEND_distinct] >>
+    qexists_tac `LENGTH p1` >>
+    rpt strip_tac >-
+    fs[] >-
+    fs[el_append3] >-
+    fs[TAKE_APPEND1, DROP_APPEND1] >-
+    rfs[TAKE_APPEND1] >>
+    `DROP (LENGTH p1 + 1) ls = p2` by rw[DROP_APPEND1] >>
+    fs[],
+    fs[EL_MEM]
+  ]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Maximum of a List                                                         *)
