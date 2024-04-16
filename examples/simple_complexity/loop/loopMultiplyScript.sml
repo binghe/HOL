@@ -12,8 +12,6 @@ val _ = new_theory "loopMultiply";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
@@ -22,14 +20,11 @@ open jcLib;
 open loopTheory;
 
 (* open dependent theories *)
-open arithmeticTheory dividesTheory;
-open numberTheory helperListTheory helperFunctionTheory; (* for DIV_EQUAL_0 *)
-open listTheory rich_listTheory;
-open listRangeTheory;
+open arithmeticTheory dividesTheory numberTheory combinatoricsTheory listTheory
+     rich_listTheory listRangeTheory;
 
 (* val _ = load "logPowerTheory"; *)
 open logrootTheory logPowerTheory; (* for mop_eqn *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Loop Recurrence with Multiplying argument Documentation                   *)

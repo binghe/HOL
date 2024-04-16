@@ -12,8 +12,6 @@ val _ = new_theory "loopDecrease";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
@@ -22,12 +20,8 @@ open jcLib;
 open loopTheory;
 
 (* open dependent theories *)
-open arithmeticTheory;
-open dividesTheory;
-open numberTheory helperListTheory helperFunctionTheory; (* for DIV_EQUAL_0 *)
-open listTheory rich_listTheory;
-open listRangeTheory;
-
+open arithmeticTheory dividesTheory numberTheory combinatoricsTheory listTheory
+     rich_listTheory listRangeTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Loop Recurrence with Decreasing argument Documentation                    *)

@@ -15,7 +15,9 @@ val _ = new_theory "ffExtend";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* val _ = load "SatisfySimps"; (* for SatisfySimps.SATISFY_ss *) *)
+(* open dependent theories *)
+open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
+     gcdsetTheory numberTheory combinatoricsTheory;
 
 (* Get dependent theories local *)
 (* val _ = load "ffExistTheory"; *)
@@ -26,15 +28,6 @@ open ffMinimalTheory;
 open ffConjugateTheory;
 open ffExistTheory;
 
-open numberTheory helperListTheory helperSetTheory;
-
-(* open dependent theories *)
-open pred_setTheory listTheory arithmeticTheory;
-
-open dividesTheory gcdTheory gcdsetTheory;
-
-(* (* val _ = load "fieldTheory"; *) *)
-(* (* val _ = load "ringUnitTheory"; *) *)
 open monoidTheory groupTheory ringTheory fieldTheory;
 open subgroupTheory;
 open ringUnitTheory;

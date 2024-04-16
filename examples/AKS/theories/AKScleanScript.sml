@@ -14,6 +14,10 @@ val _ = new_theory "AKSclean";
 
 open jcLib;
 
+(* open dependent theories *)
+open prim_recTheory pred_setTheory listTheory arithmeticTheory logrootTheory
+     numberTheory combinatoricsTheory dividesTheory gcdTheory;
+
 (* Get dependent theories local *)
 open AKSimprovedTheory;
 open AKSrevisedTheory;
@@ -25,13 +29,6 @@ open AKSshiftTheory;
 
 open countAKSTheory; (* for aks0_eq_aks *)
 
-(* open dependent theories *)
-open prim_recTheory pred_setTheory listTheory arithmeticTheory logrootTheory;
-
-open numberTheory helperSetTheory helperListTheory;
-open helperFunctionTheory;
-
-open dividesTheory gcdTheory;
 open logPowerTheory;
 
 open fieldInstancesTheory;

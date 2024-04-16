@@ -12,24 +12,11 @@ val _ = new_theory "computePoly";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* val _ = load "SatisfySimps"; (* for SatisfySimps.SATISFY_ss *) *)
-
-(* Get dependent theories local *)
-
-(* open dependent theories *)
-(* val _ = load "fieldInstancesTheory"; *)
-
-open numberTheory helperSetTheory helperListTheory;
-open pred_setTheory listTheory arithmeticTheory;
-
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open dividesTheory gcdTheory;
+open pred_setTheory listTheory rich_listTheory arithmeticTheory numberTheory
+     combinatoricsTheory dividesTheory gcdTheory logrootTheory whileTheory;
 
 (* val _ = load "polyFieldModuloTheory"; *)
 open polynomialTheory polyWeakTheory polyRingTheory polyFieldTheory;
@@ -42,14 +29,7 @@ open polyBinomialTheory;
 open ringBinomialTheory;
 
 (* val _ = load "computeOrderTheory"; *)
-open computeBasicTheory computeOrderTheory;
-open logrootTheory logPowerTheory;
-
-(* val _ = load "whileTheory"; *)
-open whileTheory;
-
-open rich_listTheory; (* for FRONT and LAST *)
-
+open computeBasicTheory computeOrderTheory logPowerTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Polynomial Computations Documentation                                     *)

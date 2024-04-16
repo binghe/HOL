@@ -15,10 +15,8 @@ val _ = new_theory "AKSimproved";
 open jcLib;
 
 (* open dependent theories *)
-open prim_recTheory pred_setTheory listTheory arithmeticTheory logrootTheory;
-
-open numberTheory helperSetTheory helperListTheory;
-open helperFunctionTheory dividesTheory gcdTheory;
+open prim_recTheory pred_setTheory listTheory arithmeticTheory logrootTheory
+     numberTheory combinatoricsTheory dividesTheory gcdTheory;
 
 (* Get dependent theories local *)
 open AKSrevisedTheory;
@@ -99,7 +97,6 @@ open ffMinimalTheory;
 (* (* val _ = load "GaussTheory"; *) *)
 open EulerTheory;
 open GaussTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* AKS Bounds Improvement Documentation                                      *)

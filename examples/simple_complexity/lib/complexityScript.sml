@@ -12,22 +12,14 @@ val _ = new_theory "complexity";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* val _ = load "bitsizeTheory"; *)
-open bitsizeTheory;
-open logrootTheory; (* for LOG_1 *)
-
-open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
-open logPowerTheory; (* for ulog_pos *)
-
 (* open dependent theories *)
-open prim_recTheory pred_setTheory arithmeticTheory dividesTheory gcdTheory;
-open listTheory rich_listTheory;;
+open prim_recTheory pred_setTheory arithmeticTheory dividesTheory gcdTheory
+     listTheory rich_listTheory logrootTheory numberTheory combinatoricsTheory;
 
+open bitsizeTheory logPowerTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Computational Complexity Documentation                                    *)

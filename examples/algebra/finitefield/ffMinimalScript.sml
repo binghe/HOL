@@ -15,7 +15,8 @@ val _ = new_theory "ffMinimal";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-open arithmeticTheory pred_setTheory listTheory;
+open arithmeticTheory pred_setTheory listTheory numberTheory combinatoricsTheory
+     dividesTheory gcdTheory gcdsetTheory;
 
 (* Get dependent theories local *)
 (* val _ = load "ffUnityTheory"; *)
@@ -29,13 +30,6 @@ open SpanSpaceTheory;
 open LinearIndepTheory;
 open FiniteVSpaceTheory;
 
-open numberTheory helperSetTheory helperListTheory;
-
-open dividesTheory gcdTheory gcdsetTheory;
-
-(* (* val _ = load "groupInstancesTheory"; -- in ringInstancesTheory *) *)
-(* (* val _ = load "ringInstancesTheory"; *) *)
-(* (* val _ = load "fieldInstancesTheory"; *) *)
 open monoidTheory groupTheory ringTheory fieldTheory;
 open monoidOrderTheory groupOrderTheory fieldOrderTheory;
 open subgroupTheory;
@@ -60,7 +54,6 @@ open ringBinomialTheory;
 open ringDividesTheory;
 open ringIdealTheory;
 open ringUnitTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Finite Field Minimal Polynomial Documentation                             *)

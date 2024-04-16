@@ -12,14 +12,13 @@ val _ = new_theory "ffExist";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* val _ = load "SatisfySimps"; (* for SatisfySimps.SATISFY_ss *) *)
+(* open dependent theories *)
+open arithmeticTheory pred_setTheory listTheory numberTheory dividesTheory
+     combinatoricsTheory gcdTheory gcdsetTheory;
 
-(* Get dependent theories local *)
-(* val _ = load "ffConjugateTheory"; *)
 open ffBasicTheory;
 open ffAdvancedTheory;
 open ffPolyTheory;
@@ -29,16 +28,6 @@ open ffMinimalTheory;
 open ffMasterTheory;
 open ffConjugateTheory;
 
-(* open dependent theories *)
-open arithmeticTheory pred_setTheory listTheory;
-
-open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
-
-open dividesTheory gcdTheory gcdsetTheory;
-
-(* (* val _ = load "groupInstancesTheory"; -- in ringInstancesTheory *) *)
-(* (* val _ = load "ringInstancesTheory"; *) *)
-(* (* val _ = load "fieldInstancesTheory"; *) *)
 open monoidTheory groupTheory ringTheory fieldTheory;
 open monoidOrderTheory groupOrderTheory fieldOrderTheory;
 open subgroupTheory;
@@ -82,7 +71,6 @@ open MobiusTheory; (* for sigma_eq_perfect_power_bounds_2 *)
 
 (* val _ = load "cardinalTheory"; *)
 open cardinalTheory; (* for helpers: A_LIST_BIJ_A *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Finite Field Existence and Uniqueness Documentation                       *)

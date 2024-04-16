@@ -15,9 +15,8 @@ val _ = new_theory "AKSmaps";
 open jcLib;
 
 (* open dependent theories *)
-open prim_recTheory pred_setTheory listTheory arithmeticTheory;
-open numberTheory logrootTheory helperSetTheory helperFunctionTheory;
-open dividesTheory gcdTheory;
+open prim_recTheory pred_setTheory listTheory arithmeticTheory numberTheory
+     logrootTheory combinatoricsTheory dividesTheory gcdTheory;
 
 (* Get dependent theories local *)
 open AKSsetsTheory;
@@ -65,7 +64,6 @@ open ffBasicTheory;
 open ffAdvancedTheory;
 open ffPolyTheory;
 open ffUnityTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Mappings for Introspective Sets Documentation                             *)

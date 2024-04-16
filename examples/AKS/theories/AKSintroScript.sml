@@ -8,8 +8,8 @@
 open HolKernel boolLib bossLib Parse;
 
 (* open dependent theories *)
-open pred_setTheory listTheory arithmeticTheory listRangeTheory;
-open dividesTheory gcdTheory;
+open pred_setTheory listTheory arithmeticTheory listRangeTheory dividesTheory
+     gcdTheory numberTheory combinatoricsTheory;
 
 (* declare new theory at start *)
 val _ = new_theory "AKSintro";
@@ -54,9 +54,6 @@ open ringInstancesTheory;
 
 (* val _ = load "computeRingTheory"; *)
 open computeRingTheory; (* for overloads on x^, x+^, x^+, x^- *)
-
-open numberTheory helperSetTheory helperFunctionTheory;
-open helperListTheory; (* for listRangeINC_EVERY *)
 
 (* ------------------------------------------------------------------------- *)
 (* Introspective Relation for AKS Theorem Documentation                      *)

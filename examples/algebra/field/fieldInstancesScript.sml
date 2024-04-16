@@ -21,8 +21,6 @@ val _ = new_theory "fieldInstances";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
@@ -38,13 +36,8 @@ open monoidMapTheory groupMapTheory ringMapTheory fieldMapTheory;
 (* (* val _ = load "groupInstancesTheory"; -- in ringInstancesTheory *) *)
 open monoidInstancesTheory groupInstancesTheory ringInstancesTheory;
 
-open numberTheory helperSetTheory;
-
-(* open dependent theories *)
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open pred_setTheory arithmeticTheory dividesTheory gcdTheory;
-
+open pred_setTheory arithmeticTheory dividesTheory gcdTheory numberTheory
+     combinatoricsTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Field Instances Documentation                                              *)

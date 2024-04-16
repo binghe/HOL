@@ -14,6 +14,10 @@ val _ = new_theory "AKSrevised";
 
 open jcLib;
 
+(* open dependent theories *)
+open prim_recTheory pred_setTheory listTheory arithmeticTheory numberTheory
+     combinatoricsTheory dividesTheory gcdTheory;
+
 (* Get dependent theories local *)
 open AKStheoremTheory;
 open AKSmapsTheory;
@@ -40,14 +44,6 @@ open groupOrderTheory;
 open monoidOrderTheory;
 open fieldMapTheory;
 open ringUnitTheory;
-
-(* open dependent theories *)
-open prim_recTheory pred_setTheory listTheory arithmeticTheory;
-
-open numberTheory helperSetTheory helperListTheory;
-open helperFunctionTheory;
-
-open dividesTheory gcdTheory;
 
 open triangleTheory;
 open binomialTheory;
@@ -84,7 +80,6 @@ open ffMasterTheory;
 open ffMinimalTheory;
 
 open GaussTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* AKS parameter k revised (not required to be prime) Documentation          *)

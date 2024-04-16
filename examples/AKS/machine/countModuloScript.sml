@@ -12,12 +12,12 @@ val _ = new_theory "countModulo";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* val _ = load "SatisfySimps"; (* for SatisfySimps.SATISFY_ss *) *)
+open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
+     logrootTheory numberTheory combinatoricsTheory pairTheory optionTheory
+     listRangeTheory;
 
 (* Get dependent theories local *)
 (* val _ = load "countMacroTheory"; *)
@@ -26,31 +26,13 @@ open countMonadTheory countMacroTheory;
 open bitsizeTheory complexityTheory;
 open loopIncreaseTheory loopDecreaseTheory;
 open loopDivideTheory loopMultiplyTheory;
-
-open numberTheory helperSetTheory helperListTheory;
-open helperFunctionTheory;
-
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open pred_setTheory listTheory arithmeticTheory;
-open dividesTheory gcdTheory;
-
-(* (* val _ = load "logPowerTheory"; *) *)
-open logrootTheory logPowerTheory;
-
-(*
-(* val _ = load "computeBasicTheory"; *)
-open computeBasicTheory; (* for exp_mod_eqn *)
-*)
+open logPowerTheory;
 
 (* (* val _ = load "monadsyntax"; *) *)
 open monadsyntax;
-open pairTheory optionTheory;
-open listRangeTheory;
 
 val _ = monadsyntax.enable_monadsyntax();
 val _ = monadsyntax.enable_monad "Count";
-
 
 (* ------------------------------------------------------------------------- *)
 (* Modulo Computations with Count Monad Documentation                        *)

@@ -15,8 +15,7 @@ val _ = new_theory "computeBasic";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
-open pred_setTheory listTheory arithmeticTheory;
+open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory;
 
 open logPowerTheory; (* for LOG2, SQRT, and Perfect Power, Power Free *)
 open logrootTheory dividesTheory gcdTheory gcdsetTheory;

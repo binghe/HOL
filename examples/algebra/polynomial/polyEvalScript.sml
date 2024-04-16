@@ -16,7 +16,7 @@ val _ = new_theory "polyEval";
 open jcLib;
 
 (* open dependent theories *)
-open pred_setTheory listTheory arithmeticTheory numberTheory helperSetTheory
+open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
      dividesTheory gcdTheory;
 
 open monoidTheory groupTheory ringTheory ringUnitTheory;

@@ -17,16 +17,11 @@ val _ = new_theory "loop";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* Get dependent theories in lib *)
-(* val _ = load "logPowerTheory"; (* has helperNum, helperSet, helperFunction *) *)
-open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
-
 (* open dependent theories *)
 open listTheory rich_listTheory;
 open listRangeTheory;
 
-open arithmeticTheory;
-
+open arithmeticTheory open numberTheory combinatoricsTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Loop Recurrence Documentation                                             *)

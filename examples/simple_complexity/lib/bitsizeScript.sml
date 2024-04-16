@@ -12,19 +12,13 @@ val _ = new_theory "bitsize";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-open pred_setTheory arithmeticTheory dividesTheory gcdTheory;
-open numberTheory helperSetTheory helperListTheory helperFunctionTheory; (* for DIV_EQ_0 *)
+open pred_setTheory arithmeticTheory dividesTheory gcdTheory numberTheory
+     combinatoricsTheory listTheory rich_listTheory logrootTheory;
 
-(* open dependent theories *)
-open listTheory rich_listTheory;
-
-(* val _ = load "logPowerTheory"; *)
-open logrootTheory logPowerTheory; (* for LOG_1, ulog *)
-
+open logPowerTheory; (* for LOG_1, ulog *)
 
 (* ------------------------------------------------------------------------- *)
 (* Bit Size for Numbers Documentation                                        *)

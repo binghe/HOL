@@ -14,6 +14,10 @@ val _ = new_theory "ffSplit";
 
 open jcLib;
 
+(* open dependent theories *)
+open prim_recTheory pred_setTheory listTheory arithmeticTheory numberTheory
+     combinatoricsTheory dividesTheory gcdTheory gcdsetTheory;
+
 (* Get dependent theories local *)
 open ffBasicTheory;
 open ffAdvancedTheory;
@@ -27,13 +31,6 @@ open ffExistTheory;
 open ffExtendTheory;
 
 open bagTheory; (* also has MEMBER_NOT_EMPTY *)
-
-(* open dependent theories *)
-open prim_recTheory pred_setTheory listTheory arithmeticTheory;
-
-open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
-
-open dividesTheory gcdTheory gcdsetTheory;
 
 open monoidTheory groupTheory ringTheory fieldTheory;
 open monoidInstancesTheory;

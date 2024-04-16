@@ -12,31 +12,20 @@ val _ = new_theory "countOrder";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* val _ = load "SatisfySimps"; (* for SatisfySimps.SATISFY_ss *) *)
-
-(* Get dependent theories local *)
-(* val _ = load "countModuloTheory"; *)
 open countMonadTheory countMacroTheory;
 open countModuloTheory;
 
 open bitsizeTheory complexityTheory;
 open loopIncreaseTheory loopDecreaseTheory;
 
-open numberTheory helperSetTheory helperListTheory;
-open helperFunctionTheory;
+open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
+     numberTheory combinatoricsTheory logrootTheory pairTheory optionTheory
+     listRangeTheory;
 
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open pred_setTheory listTheory arithmeticTheory;
-open dividesTheory gcdTheory;
-
-(* (* val _ = load "logPowerTheory"; *) *)
-open logrootTheory logPowerTheory;
+open logPowerTheory;
 
 (* val _ = load "computeOrderTheory"; *)
 open computeOrderTheory; (* for ordz_seek and ordz_simple *)
@@ -44,12 +33,9 @@ open ringInstancesTheory; (* for ZN_order_mod_1, ZN_order_mod *)
 
 (* (* val _ = load "monadsyntax"; *) *)
 open monadsyntax;
-open pairTheory optionTheory;
-open listRangeTheory;
 
 val _ = monadsyntax.enable_monadsyntax();
 val _ = monadsyntax.enable_monad "Count";
-
 
 (* ------------------------------------------------------------------------- *)
 (* Order Computations with Count Monad Documentation                         *)

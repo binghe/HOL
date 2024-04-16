@@ -12,7 +12,6 @@ val _ = new_theory "loopDivide";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
@@ -24,14 +23,10 @@ open loopTheory;
 open bitsizeTheory;
 
 (* open dependent theories *)
-open arithmeticTheory dividesTheory;
-open numberTheory helperListTheory helperFunctionTheory; (* for DIV_EQUAL_0 *)
-open listTheory rich_listTheory;
-open listRangeTheory;
+open arithmeticTheory dividesTheory numberTheory combinatoricsTheory listTheory
+     rich_listTheory listRangeTheory logrootTheory;
 
-open logrootTheory; (* for LOG_EQ_0 *)
 open logPowerTheory; (* for LOG_LE_REVERSE *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Loop Recurrence with Dividing argument Documentation                      *)

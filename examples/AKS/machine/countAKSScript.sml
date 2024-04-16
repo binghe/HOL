@@ -12,8 +12,6 @@ val _ = new_theory "countAKS";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
@@ -35,26 +33,17 @@ open bitsizeTheory complexityTheory;
 open loopIncreaseTheory loopDecreaseTheory;
 open loopDivideTheory loopListTheory;
 
-open numberTheory helperSetTheory helperListTheory;
-open helperFunctionTheory;
+open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
+     rich_listTheory listRangeTheory numberTheory combinatoricsTheory
+     logrootTheory pairTheory optionTheory;
 
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open pred_setTheory listTheory arithmeticTheory;
-open dividesTheory gcdTheory;
-open rich_listTheory listRangeTheory;
+open logPowerTheory;
 
-(* (* val _ = load "logPowerTheory"; *) *)
-open logrootTheory logPowerTheory;
-
-(* (* val _ = load "monadsyntax"; *) *)
 open monadsyntax;
-open pairTheory optionTheory;
 
 (* val _ = load "ringInstancesTheory"; *)
 open ringInstancesTheory; (* for ZN order *)
 
-(* val _ = load "computeAKSTheory"; *)
 open computeParamTheory computeAKSTheory;
 open computeBasicTheory; (* for power_free_check_eqn *)
 
@@ -66,7 +55,6 @@ open polynomialTheory polyWeakTheory;
 
 val _ = monadsyntax.enable_monadsyntax();
 val _ = monadsyntax.enable_monad "Count";
-
 
 (* ------------------------------------------------------------------------- *)
 (* AKS computations in monadic style Documentation                           *)

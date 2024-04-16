@@ -12,15 +12,13 @@ val _ = new_theory "countParam";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* val _ = load "SatisfySimps"; (* for SatisfySimps.SATISFY_ss *) *)
+open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
+     logrootTheory pairTheory optionTheory listRangeTheory numberTheory
+     combinatoricsTheory;
 
-(* Get dependent theories local *)
-(* val _ = load "countPowerTheory"; *)
 open countMonadTheory countMacroTheory;
 open countBasicTheory countPowerTheory;
 
@@ -30,31 +28,19 @@ open countOrderTheory;
 open bitsizeTheory complexityTheory;
 open loopIncreaseTheory loopDecreaseTheory;
 
-open numberTheory helperSetTheory helperListTheory;
-open helperFunctionTheory;
-
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open pred_setTheory listTheory arithmeticTheory;
-open dividesTheory gcdTheory;
-
-(* (* val _ = load "logPowerTheory"; *) *)
-open logrootTheory logPowerTheory;
+open logPowerTheory;
 
 (* val _ = load "computeParamTheory"; *)
 open computeParamTheory; (* for param_search_result *)
 
 (* (* val _ = load "monadsyntax"; *) *)
 open monadsyntax;
-open pairTheory optionTheory;
-open listRangeTheory;
 
 (* val _ = load "ringInstancesTheory"; *)
 open ringInstancesTheory; (* for ZN order *)
 
 val _ = monadsyntax.enable_monadsyntax();
 val _ = monadsyntax.enable_monad "Count";
-
 
 (* ------------------------------------------------------------------------- *)
 (* AKS parameter with Count Monad Documentation                              *)

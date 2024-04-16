@@ -12,31 +12,17 @@ val _ = new_theory "ffCyclo";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* val _ = load "SatisfySimps"; (* for SatisfySimps.SATISFY_ss *) *)
+(* open dependent theories *)
+open arithmeticTheory pred_setTheory listTheory dividesTheory gcdTheory
+     numberTheory combinatoricsTheory;
 
-(* Loading theories *)
-(* val _ = load "ffPolyTheory"; *)
 open ffBasicTheory;
 open ffAdvancedTheory;
 open ffPolyTheory;
 
-(* Open theories in order *)
-
-(* open dependent theories *)
-open arithmeticTheory pred_setTheory listTheory;
-open dividesTheory gcdTheory;
-
-open numberTheory helperSetTheory helperListTheory;
-
-(* Get dependent theories local *)
-(* (* val _ = load "groupInstancesTheory"; -- in ringInstancesTheory *) *)
-(* (* val _ = load "ringInstancesTheory"; *) *)
-(* (* val _ = load "fieldInstancesTheory"; *) *)
 open monoidTheory groupTheory ringTheory fieldTheory;
 open monoidOrderTheory groupOrderTheory;
 open fieldOrderTheory;
@@ -56,7 +42,6 @@ open polyDividesTheory;
 open polyMonicTheory;
 open polyProductTheory;
 open polyGCDTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Finite Field Cyclotomic Polynomials Documentation                         *)

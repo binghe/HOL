@@ -15,23 +15,14 @@ val _ = new_theory "ffMaster";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* val _ = load "SatisfySimps"; (* for SatisfySimps.SATISFY_ss *) *)
+(* open dependent theories *)
+open arithmeticTheory pred_setTheory listTheory dividesTheory gcdTheory
+     gcdsetTheory numberTheory combinatoricsTheory;
 
-(* Loading theories *)
-(* (* val _ = load "ffCycloTheory"; *) *)
-(* val _ = load "ffPolyTheory"; *)
 open ffBasicTheory;
 open ffAdvancedTheory;
 open ffPolyTheory;
 
-(* open dependent theories *)
-open arithmeticTheory pred_setTheory listTheory dividesTheory gcdTheory gcdsetTheory;
-open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
-
-(* Get dependent theories local *)
-(* (* val _ = load "groupInstancesTheory"; -- in ringInstancesTheory *) *)
-(* (* val _ = load "ringInstancesTheory"; *) *)
-(* (* val _ = load "fieldInstancesTheory"; *) *)
 open monoidTheory groupTheory ringTheory fieldTheory;
 open monoidOrderTheory groupOrderTheory;
 open subgroupTheory;

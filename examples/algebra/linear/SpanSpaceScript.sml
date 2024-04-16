@@ -12,7 +12,6 @@ val _ = new_theory "SpanSpace";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
@@ -21,11 +20,8 @@ open jcLib;
 open VectorSpaceTheory;
 open monoidTheory groupTheory fieldTheory;
 
-open numberTheory helperSetTheory helperListTheory;
-
 (* open dependent theories *)
-open pred_setTheory arithmeticTheory listTheory;
-
+open pred_setTheory arithmeticTheory listTheory numberTheory combinatoricsTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Span Space Documentation                                                  *)

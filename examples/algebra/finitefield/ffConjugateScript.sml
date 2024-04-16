@@ -12,9 +12,12 @@ val _ = new_theory "ffConjugate";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
+
+(* open dependent theories *)
+open arithmeticTheory pred_setTheory listTheory numberTheory combinatoricsTheory
+     dividesTheory gcdTheory gcdsetTheory;
 
 (* Get dependent theories local *)
 (* val _ = load "ffMinimalTheory"; *)
@@ -26,16 +29,6 @@ open ffUnityTheory;
 open ffMasterTheory;
 open ffMinimalTheory;
 
-(* open dependent theories *)
-open arithmeticTheory pred_setTheory listTheory;
-
-open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
-
-open dividesTheory gcdTheory gcdsetTheory;
-
-(* (* val _ = load "groupInstancesTheory"; -- in ringInstancesTheory *) *)
-(* (* val _ = load "ringInstancesTheory"; *) *)
-(* (* val _ = load "fieldInstancesTheory"; *) *)
 open monoidTheory groupTheory ringTheory fieldTheory;
 open monoidOrderTheory groupOrderTheory;
 open subgroupTheory;
@@ -70,7 +63,6 @@ open ringUnitTheory;
 
 open binomialTheory;
 open GaussTheory;
-
 
 (* ------------------------------------------------------------------------- *)
 (* Finite Field Element Conjugates Documentation                             *)

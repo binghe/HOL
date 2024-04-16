@@ -14,18 +14,14 @@ val _ = new_theory "computeParam";
 
 open jcLib;
 
-open prim_recTheory pred_setTheory listTheory arithmeticTheory logrootTheory;
-open dividesTheory gcdTheory numberTheory;
+open prim_recTheory pred_setTheory listTheory arithmeticTheory logrootTheory
+     dividesTheory gcdTheory numberTheory combinatoricsTheory;
 
 (* Get dependent theories local *)
 open computeOrderTheory;
-open helperFunctionTheory; (* for SQRT_LE *)
 open logPowerTheory; (* for ulog *)
 open ringTheory ringInstancesTheory; (* for ZN_coprime_order_alt *)
 open monoidOrderTheory;
-
-(* Get dependent theories in lib *)
-open helperSetTheory;
 
 open GaussTheory; (* for phi_pos *)
 open EulerTheory; (* for residue_def *)

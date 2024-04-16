@@ -12,24 +12,11 @@ val _ = new_theory "computeOrder";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* val _ = load "SatisfySimps"; (* for SatisfySimps.SATISFY_ss *) *)
-
-(* Get dependent theories local *)
-
-(* open dependent theories *)
-(* val _ = load "fieldInstancesTheory"; *)
-
-open numberTheory helperSetTheory helperListTheory helperFunctionTheory;
-open pred_setTheory listTheory arithmeticTheory;
-
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open dividesTheory gcdTheory;
+open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
+     dividesTheory gcdTheory logrootTheory;
 
 (* val _ = load "fieldInstancesTheory"; *)
 open monoidInstancesTheory;
@@ -43,10 +30,7 @@ open monoidOrderTheory;
 open EulerTheory;
 open GaussTheory;
 
-(* val _ = load "computeBasicTheory"; *)
-open computeBasicTheory;
-open logrootTheory logPowerTheory;
-
+open computeBasicTheory logPowerTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Order Computations Documentation                                          *)

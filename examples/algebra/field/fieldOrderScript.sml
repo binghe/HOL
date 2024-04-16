@@ -17,7 +17,7 @@ open jcLib;
 
 (* open dependent theories *)
 open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
-     gcdsetTheory numberTheory;
+     gcdsetTheory numberTheory combinatoricsTheory;
 
 open fieldTheory;
 open integralDomainTheory;
@@ -31,8 +31,6 @@ open subgroupTheory;
 
 (* val _ = load "groupCyclicTheory"; *)
 open groupCyclicTheory;
-
-open helperSetTheory helperFunctionTheory;
 
 open GaussTheory;
 

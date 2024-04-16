@@ -12,15 +12,9 @@ val _ = new_theory "countPower";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* val _ = load "SatisfySimps"; (* for SatisfySimps.SATISFY_ss *) *)
-
-(* Get dependent theories local *)
-(* val _ = load "countBasicTheory"; *)
 open countMonadTheory countMacroTheory;
 open countBasicTheory;
 
@@ -28,28 +22,20 @@ open bitsizeTheory complexityTheory;
 open loopIncreaseTheory loopDecreaseTheory;
 open loopDivideTheory;
 
-open numberTheory helperSetTheory helperListTheory;
-open helperFunctionTheory;
+open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
+     numberTheory combinatoricsTheory logrootTheory pairTheory optionTheory
+     listRangeTheory;
 
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open pred_setTheory listTheory arithmeticTheory;
-open dividesTheory gcdTheory;
-
-(* (* val _ = load "logPowerTheory"; *) *)
-open logrootTheory logPowerTheory;
+open logPowerTheory;
 
 (* (* val _ = load "monadsyntax"; *) *)
 open monadsyntax;
-open pairTheory optionTheory;
-open listRangeTheory;
 
 (* (* val _ = load "sublistTheory"; -- from recurrence theory *) *)
 open sublistTheory; (* for MAP_SUBLIST, SUM_SUBLIST, listRangeINC_sublist *)
 
 val _ = monadsyntax.enable_monadsyntax();
 val _ = monadsyntax.enable_monad "Count";
-
 
 (* ------------------------------------------------------------------------- *)
 (* Power Computations with Count Monad Documentation                         *)

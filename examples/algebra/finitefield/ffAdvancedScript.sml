@@ -12,11 +12,12 @@ val _ = new_theory "ffAdvanced";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* Get dependent theories local *)
+(* open dependent theories *)
+open pred_setTheory arithmeticTheory dividesTheory gcdTheory numberTheory
+     combinatoricsTheory;
 
 (* val _ = load "ffBasicTheory"; *)
 open ffBasicTheory;
@@ -24,18 +25,6 @@ open ffBasicTheory;
 (* val _ = load "FiniteVSpaceTheory"; *)
 open VectorSpaceTheory FiniteVSpaceTheory;
 
-open numberTheory helperSetTheory helperFunctionTheory;
-
-(* open dependent theories *)
-open pred_setTheory arithmeticTheory;
-(* (* val _ = load "dividesTheory"; -- in helperNumTheory *) *)
-(* (* val _ = load "gcdTheory"; -- in helperNumTheory *) *)
-open dividesTheory gcdTheory;
-
-(* (* val _ = load "groupInstancesTheory"; -- in ringInstancesTheory *) *)
-(* (* val _ = load "ringInstancesTheory"; *) *)
-(* (* val _ = load "fieldInstancesTheory"; *) *)
-(* (* val _ = load "fieldTheory"; *) *)
 open monoidTheory groupTheory ringTheory fieldTheory;
 
 open groupInstancesTheory ringInstancesTheory;
@@ -67,7 +56,6 @@ open fieldOrderTheory;
 
 (* val _ = load "logPowerTheory"; *)
 open logPowerTheory; (* for perfect_power *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Finite Field Advanced Documentation                                       *)
