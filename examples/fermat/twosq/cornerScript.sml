@@ -12,17 +12,14 @@ val _ = new_theory "corner";
 
 (* ------------------------------------------------------------------------- *)
 
-open arithmeticTheory pred_setTheory dividesTheory gcdsetTheory;
+open arithmeticTheory pred_setTheory dividesTheory gcdsetTheory numberTheory
+     pairTheory combinatoricsTheory;
 
 open helperTwosqTheory;
-open numberTheory;
-open helperSetTheory;
-open helperFunctionTheory;
 
 open EulerTheory; (* for natural_finite, natural_card *)
 
 open quarityTheory;
-open pairTheory;
 
 (* val _ = load "involuteFixTheory"; *)
 open involuteTheory;

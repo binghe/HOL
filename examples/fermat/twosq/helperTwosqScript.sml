@@ -12,21 +12,11 @@ val _ = new_theory "helperTwosq";
 
 (* ------------------------------------------------------------------------- *)
 
-
-(* open dependent theories *)
-open helperFunctionTheory;
-open helperSetTheory;
-open numberTheory;
-
 (* arithmeticTheory -- load by default *)
-open arithmeticTheory pred_setTheory;
-open dividesTheory;
-open gcdTheory; (* for GCD_IS_GREATEST_COMMON_DIVISOR *)
+open arithmeticTheory pred_setTheory dividesTheory gcdTheory numberTheory
+     whileTheory combinatoricsTheory;
 
 open logPowerTheory; (* for SQRT *)
-
-open whileTheory; (* for HOARE_SPEC_DEF *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Helper Theorems Documentation                                             *)

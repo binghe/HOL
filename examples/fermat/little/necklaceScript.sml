@@ -36,16 +36,14 @@ Since S and M are disjoint, CARD M = CARD N - CARD S = a^n - a.
 (* add all dependent libraries for script *)
 open HolKernel boolLib bossLib Parse;
 
-(* declare new theory at start *)
-val _ = new_theory "necklace";
+(* open dependent theories *)
+open arithmeticTheory pred_setTheory listTheory gcdsetTheory logrootTheory
+     numberTheory combinatoricsTheory;
 
 (* ------------------------------------------------------------------------- *)
 
-(* open dependent theories *)
-(* val _ = load "helperFunctionTheory"; *)
-open arithmeticTheory pred_setTheory listTheory gcdsetTheory;
-open logrootTheory numberTheory helperSetTheory;
-open helperListTheory; (* for LENGTH_NON_NIL, LIST_TO_SET_SING_IFF *)
+(* declare new theory at start *)
+val _ = new_theory "necklace";
 
 (* ------------------------------------------------------------------------- *)
 (* Necklace Theory Documentation                                             *)

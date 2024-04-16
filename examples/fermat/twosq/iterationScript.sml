@@ -12,11 +12,8 @@ val _ = new_theory "iteration";
 
 (* ------------------------------------------------------------------------- *)
 
-open arithmeticTheory pred_setTheory dividesTheory gcdTheory;
-
-open helperFunctionTheory;
-open helperSetTheory;
-open numberTheory;
+open arithmeticTheory pred_setTheory dividesTheory gcdTheory numberTheory
+     combinatoricsTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Iteration Period Documentation                                            *)

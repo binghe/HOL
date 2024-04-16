@@ -36,15 +36,11 @@ val _ = new_theory "FLTaction";
 (* ------------------------------------------------------------------------- *)
 
 open arithmeticTheory pred_setTheory dividesTheory gcdTheory gcdsetTheory
-     logrootTheory numberTheory;
-
-open helperSetTheory helperFunctionTheory;
+     logrootTheory numberTheory combinatoricsTheory;
 
 open cycleTheory;
 open necklaceTheory;
 
-(* val _ = load "groupInstancesTheory"; *)
-(* val _ = load "groupActionTheory"; *)
 open groupTheory;
 open groupActionTheory;
 

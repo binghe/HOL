@@ -31,8 +31,8 @@ val _ = new_theory "FLTnecklace";
 
 (* ------------------------------------------------------------------------- *)
 
-open numberTheory helperSetTheory;
-open arithmeticTheory dividesTheory logrootTheory gcdTheory pred_setTheory;
+open arithmeticTheory dividesTheory logrootTheory gcdTheory pred_setTheory
+     numberTheory combinatoricsTheory;
 
 open cycleTheory patternTheory;
 

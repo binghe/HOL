@@ -15,9 +15,10 @@ val _ = new_theory "symmetry";
 (* val _ = load "jcLib"; *)
 open jcLib; (* for stripDup *)
 
-open pred_setTheory arithmeticTheory gcdsetTheory numberTheory;
+open pred_setTheory arithmeticTheory gcdsetTheory numberTheory
+     combinatoricsTheory;
+
 open helperCountTheory;
-open helperSetTheory;
 
 open mapCountTheory; (* for on_def *)
 open combinatorics1Theory;

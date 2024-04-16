@@ -42,19 +42,10 @@ val _ = new_theory "FLTeuler";
 
 (* ------------------------------------------------------------------------- *)
 
+open arithmeticTheory pred_setTheory dividesTheory gcdTheory numberTheory;
 
-(* open dependent theories *)
-(* val _ = load "EulerTheory"; *)
-open arithmeticTheory pred_setTheory;
-open dividesTheory gcdTheory; (* for GCD_0R *)
-
-open numberTheory; (* for MOD_EXP *)
-
-(* val _ = load "finiteGroupTheory"; *)
-(* val _ = load "groupInstancesTheory"; *)
 open groupTheory; (* for FiniteGroup_def *)
 open groupOrderTheory; (* for finite_group_Fermat *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Fermat's Little Theorem by Number Group Documentation                     *)

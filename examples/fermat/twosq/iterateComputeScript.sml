@@ -12,24 +12,13 @@ val _ = new_theory "iterateCompute";
 
 (* ------------------------------------------------------------------------- *)
 
-
-(* open dependent theories *)
-open helperFunctionTheory;
-open helperSetTheory;
-open numberTheory;
-
-(* arithmeticTheory -- load by default *)
-open arithmeticTheory pred_setTheory;
-open dividesTheory; (* for divides_def *)
+open arithmeticTheory pred_setTheory dividesTheory numberTheory listTheory
+     rich_listTheory listRangeTheory combinatoricsTheory whileTheory;
 
 open iterationTheory;
-open listTheory rich_listTheory listRangeTheory;
-open helperListTheory; (* for listRangeINC_SNOC *)
 
 (* val _ = load "helperTwosqTheory"; *)
 open helperTwosqTheory; (* for WHILE_RULE_PRE_POST *)
-open whileTheory; (* for WHILE definition *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Iteration Period Computation Documentation                                *)

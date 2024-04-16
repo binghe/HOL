@@ -17,10 +17,8 @@ open jcLib; (* for stripDup *)
 
 open pred_setTheory arithmeticTheory gcdsetTheory numberTheory;
 open helperCountTheory;
-open helperSetTheory;
 
-open listTheory listRangeTheory rich_listTheory;
-open helperListTheory;
+open listTheory listRangeTheory rich_listTheory combinatoricsTheory;
 
 open mapCountTheory;
 open combinatorics1Theory;

@@ -14,11 +14,10 @@ val _ = new_theory "twoSquares";
 
 (* val _ = load "windmillTheory"; *)
 open helperTwosqTheory;
-open numberTheory gcdsetTheory;
-open helperSetTheory;
-open helperFunctionTheory;
-open arithmeticTheory pred_setTheory;
-open dividesTheory; (* for divides_def, prime_def *)
+
+open arithmeticTheory pred_setTheory dividesTheory numberTheory gcdsetTheory
+     pairTheory listTheory rich_listTheory listRangeTheory combinatoricsTheory;
+
 open logPowerTheory; (* for prime_non_square *)
 
 open windmillTheory;
@@ -34,21 +33,11 @@ open iterateComposeTheory;
 (* val _ = load "iterateComputeTheory"; *)
 open iterateComputeTheory;
 
-(* for later computation *)
-open listTheory;
-open rich_listTheory; (* for MAP_REVERSE *)
-open helperListTheory; (* for listRangeINC_LEN *)
-open listRangeTheory; (* for listRangeINC_CONS *)
-
 (* for group action *)
 (* val _ = load "involuteActionTheory"; *)
 open involuteActionTheory;
 open groupActionTheory;
 open groupInstancesTheory;
-
-(* for pairs *)
-open pairTheory; (* for ELIM_UNCURRY, PAIR_FST_SND_EQ, PAIR_EQ, FORALL_PROD *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Windmills of the minds Documentation                                      *)

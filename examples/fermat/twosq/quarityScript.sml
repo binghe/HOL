@@ -7,9 +7,9 @@
 (* add all dependent libraries for script *)
 open HolKernel boolLib bossLib Parse;
 
-open arithmeticTheory pred_setTheory pairTheory;
-open listTheory rich_listTheory listRangeTheory;
-open dividesTheory gcdTheory logrootTheory;
+open arithmeticTheory pred_setTheory pairTheory listTheory rich_listTheory
+     listRangeTheory dividesTheory gcdTheory logrootTheory numberTheory
+     combinatoricsTheory;
 
 (* declare new theory at start *)
 val _ = new_theory "quarity";
@@ -17,10 +17,6 @@ val _ = new_theory "quarity";
 (* ------------------------------------------------------------------------- *)
 
 open helperTwosqTheory;
-open numberTheory;
-open helperSetTheory;
-open helperListTheory;
-open helperFunctionTheory;
 
 (* val _ = load "windmillTheory"; *)
 open windmillTheory;

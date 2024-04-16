@@ -12,9 +12,8 @@ val _ = new_theory "helperCount";
 
 (* ------------------------------------------------------------------------- *)
 
-open helperSetTheory;
-open helperFunctionTheory;
-open arithmeticTheory pred_setTheory gcdsetTheory numberTheory;
+open arithmeticTheory pred_setTheory gcdsetTheory numberTheory
+     combinatoricsTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Count Helper Documentation                                                *)
@@ -81,7 +80,10 @@ open arithmeticTheory pred_setTheory gcdsetTheory numberTheory;
 (* Set Theorems                                                              *)
 (* ------------------------------------------------------------------------- *)
 
-(* Overload a function from domain to range. *)
+(* Overload a function from domain to range.
+
+   NOTE: this is FUNSET --Chun Tian
+ *)
 val _ = overload_on("over", ``\f s t. !x. x IN s ==> f x IN t``);
 (* not easy to make this a good infix operator! *)
 

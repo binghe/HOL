@@ -12,29 +12,18 @@ val _ = new_theory "windmill";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* open dependent theories *)
-(* arithmeticTheory -- load by default *)
-(* val _ = load "helperTwosqTheory"; *)
 open helperTwosqTheory;
-open numberTheory;
-open helperSetTheory;
-open helperFunctionTheory;
-open arithmeticTheory pred_setTheory;
-(* val _ = load "dividesTheory"; *)
-open dividesTheory;
-(* val _ = load "gcdTheory"; *)
-open gcdTheory; (* for P_EUCLIDES *)
 
-open pairTheory; (* for FORALL_PROD, PAIR_EQ *)
+open arithmeticTheory pred_setTheory numberTheory combinatoricsTheory
+     dividesTheory gcdTheory pairTheory logrootTheory;
 
 (* val _ = load "involuteFixTheory"; *)
 open involuteTheory involuteFixTheory;
 
 (* val _ = load "GaussTheory"; *)
-open logrootTheory logPowerTheory; (* for SQRT, SQRT_LE *)
+open logPowerTheory; (* for SQRT, SQRT_LE *)
 open GaussTheory; (* for divisors_has_factor *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* Windmills and Involutions Documentation                                   *)

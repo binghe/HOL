@@ -14,14 +14,14 @@ val _ = new_theory "combinatorics1";
 
 (* val _ = load "helperCountTheory"; *)
 open helperCountTheory;
-open helperSetTheory;
-open helperFunctionTheory;
-open arithmeticTheory pred_setTheory;
-open dividesTheory gcdsetTheory numberTheory;
+
+open arithmeticTheory pred_setTheory dividesTheory gcdsetTheory numberTheory
+     listTheory rich_listTheory listRangeTheory combinatoricsTheory;
+
 open EulerTheory; (* for upto_delete *)
 
 (* for later computation *)
-open listTheory rich_listTheory listRangeTheory binomialTheory necklaceTheory;
+open binomialTheory necklaceTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Combinatorics Documentation                                               *)

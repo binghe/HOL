@@ -12,23 +12,16 @@ val _ = new_theory "hopping";
 
 (* ------------------------------------------------------------------------- *)
 
+open arithmeticTheory pred_setTheory logrootTheory dividesTheory pairTheory
+     listTheory rich_listTheory listRangeTheory indexedListsTheory
+     numberTheory combinatoricsTheory;
+
 (* val _ = load "quarityTheory"; *)
 open helperTwosqTheory;
-open numberTheory;
-open helperSetTheory;
-open helperFunctionTheory;
-open arithmeticTheory pred_setTheory logrootTheory dividesTheory;
+
 open logPowerTheory; (* for square_alt *)
-
-open listTheory rich_listTheory;
-open helperListTheory;
-open listRangeTheory; (* for listRangeLHI_ALL_DISTINCT *)
-open indexedListsTheory; (* for findi_EL and EL_findi *)
-
 open sublistTheory;
-
 open quarityTheory;
-open pairTheory;
 
 (* val _ = load "twoSquaresTheory"; *)
 open windmillTheory;

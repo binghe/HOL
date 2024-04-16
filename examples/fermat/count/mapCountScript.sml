@@ -13,14 +13,8 @@ val _ = new_theory "mapCount";
 (* ------------------------------------------------------------------------- *)
 
 open helperCountTheory;
-open gcdsetTheory numberTheory;
-open helperSetTheory;
-open helperFunctionTheory;
-open arithmeticTheory pred_setTheory;
-
-open listTheory rich_listTheory;
-open listRangeTheory;
-open helperListTheory;
+open arithmeticTheory pred_setTheory gcdsetTheory numberTheory listTheory
+     rich_listTheory listRangeTheory combinatoricsTheory;
 
 open necklaceTheory; (* for necklace_def *)
 open combinatorics1Theory;
