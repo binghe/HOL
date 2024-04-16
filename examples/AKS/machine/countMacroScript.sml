@@ -23,9 +23,7 @@ open loopDivideTheory loopMultiplyTheory loopListTheory;
 open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
      numberTheory combinatoricsTheory pairTheory optionTheory listRangeTheory;
 
-(* val _ = load "countMonadTheory"; *)
-open countMonadTheory 
-open logPowerTheory; (* for halves *)
+open countMonadTheory logPowerTheory;
 
 (* val _ = load "monadsyntax"; *)
 open monadsyntax;
