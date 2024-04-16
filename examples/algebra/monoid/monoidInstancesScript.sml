@@ -26,12 +26,10 @@ val _ = new_theory "monoidInstances";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-open pred_setTheory arithmeticTheory dividesTheory gcdTheory;
-open listTheory rich_listTheory; 
+open pred_setTheory arithmeticTheory dividesTheory gcdTheory listTheory
+     rich_listTheory logrootTheory numberTheory combinatoricsTheory;
 
-open monoidTheory monoidMapTheory numberTheory combinatoricsTheory;
-
-open logrootTheory logPowerTheory; (* for LOG_EXACT_EXP *)
+open monoidTheory monoidMapTheory logPowerTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Monoid Instances Documentation                                            *)
