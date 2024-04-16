@@ -44,7 +44,8 @@ val _ = new_theory "cycle";
 (* ------------------------------------------------------------------------- *)
 
 (* open dependent theories *)
-open arithmeticTheory gcdTheory pred_setTheory listTheory combinatoricsTheory;
+open arithmeticTheory gcdTheory pred_setTheory listTheory rich_listTheory
+     combinatoricsTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Cycle Theory Documentation                                                *)

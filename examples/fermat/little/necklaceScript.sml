@@ -37,8 +37,8 @@ Since S and M are disjoint, CARD M = CARD N - CARD S = a^n - a.
 open HolKernel boolLib bossLib Parse;
 
 (* open dependent theories *)
-open arithmeticTheory pred_setTheory listTheory gcdsetTheory logrootTheory
-     numberTheory combinatoricsTheory;
+open arithmeticTheory pred_setTheory listTheory rich_listTheory gcdsetTheory
+     logrootTheory numberTheory combinatoricsTheory;
 
 (* ------------------------------------------------------------------------- *)
 
