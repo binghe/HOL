@@ -1402,41 +1402,6 @@ val MONO_LIST_TO_SET = store_thm(
   ``!x. set [x] = {x}``,
   rw[]);
 
-(* Theorem: ALL_DISTINCT l /\ (set l = {x}) <=> (l = [x]) *)
-(* Proof:
-   If part: ALL_DISTINCT l /\ set l = {x} ==> l = [x]
-      Note set l = {x}
-       ==> l <> [] /\ EVERY ($= x) l   by LIST_TO_SET_EQ_SING
-      Let P = (S= x).
-      Note l <> [] ==> ?h t. l = h::t  by list_CASES
-        so h = x /\ EVERY P t             by EVERY_DEF
-       and ~(MEM h t) /\ ALL_DISTINCT t   by ALL_DISTINCT
-      By contradiction, suppose l <> [x].
-      Then t <> [] ==> ?u v. t = u::v     by list_CASES
-       and MEM u t                        by MEM
-       but u = h                          by EVERY_DEF
-       ==> MEM h t, which contradicts ~(MEM h t).
-
-   Only-if part: l = [x] ==> ALL_DISTINCT l /\ set l = {x}
-       Note ALL_DISTINCT [x] = T     by ALL_DISTINCT_SING
-        and set [x] = {x}            by MONO_LIST_TO_SET
-*)
-val DISTINCT_LIST_TO_SET_EQ_SING = store_thm(
-  "DISTINCT_LIST_TO_SET_EQ_SING",
-  ``!l x. ALL_DISTINCT l /\ (set l = {x}) <=> (l = [x])``,
-  rw[EQ_IMP_THM] >>
-  qabbrev_tac `P = ($= x)` >>
-  `!y. P y ==> (y = x)` by rw[Abbr`P`] >>
-  `l <> [] /\ EVERY P l` by metis_tac[LIST_TO_SET_EQ_SING, Abbr`P`] >>
-  `?h t. l = h::t` by metis_tac[list_CASES] >>
-  `(h = x) /\ (EVERY P t)` by metis_tac[EVERY_DEF] >>
-  `~(MEM h t) /\ ALL_DISTINCT t` by metis_tac[ALL_DISTINCT] >>
-  spose_not_then strip_assume_tac >>
-  `t <> []` by rw[] >>
-  `?u v. t = u::v` by metis_tac[list_CASES] >>
-  `MEM u t` by rw[] >>
-  metis_tac[EVERY_DEF]);
-
 (* Theorem: ~(MEM h l1) /\ (set (h::l1) = set l2) ==>
             ?p1 p2. ~(MEM h p1) /\ ~(MEM h p2) /\ (nub l2 = p1 ++ [h] ++ p2) /\ (set l1 = set (p1 ++ p2)) *)
 (* Proof:
