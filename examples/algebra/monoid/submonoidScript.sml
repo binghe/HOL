@@ -591,21 +591,21 @@ val submonoid_big_intersect_subset = store_thm(
        Since (smbINTER g).op x y IN (smbINTER g).carrier    by submonoid_big_intersect_op_element
          and (smbINTER g).op y z IN (smbINTER g).carrier    by submonoid_big_intersect_op_element
        So this is to show: (x * y) * z = x * (y * z)        by submonoid_big_intersect_property
-       Since x IN G, y IN G and z IN G                      by IN_SUBSET
+       Since x IN G, y IN G and z IN G                      by SUBSET_DEF
        This follows by monoid_assoc.
    (3) (smbINTER g).id IN (smbINTER g).carrier
        This is true by submonoid_big_intersect_has_id.
    (4) x IN (smbINTER g).carrier ==> (smbINTER g).op (smbINTER g).id x = x
        Since (smbINTER g).id IN (smbINTER g).carrier   by submonoid_big_intersect_op_element
          and (smbINTER g).id = #e                      by submonoid_big_intersect_property
-        also x IN G                                    by IN_SUBSET
+        also x IN G                                    by SUBSET_DEF
          (smbINTER g).op (smbINTER g).id x
        = #e * x                                        by submonoid_big_intersect_property
        = x                                             by monoid_id
    (5) x IN (smbINTER g).carrier ==> (smbINTER g).op x (smbINTER g).id = x
        Since (smbINTER g).id IN (smbINTER g).carrier   by submonoid_big_intersect_op_element
          and (smbINTER g).id = #e                      by submonoid_big_intersect_property
-        also x IN G                                    by IN_SUBSET
+        also x IN G                                    by SUBSET_DEF
          (smbINTER g).op x (smbINTER g).id
        = x * #e                                        by submonoid_big_intersect_property
        = x                                             by monoid_id
@@ -620,18 +620,18 @@ val submonoid_big_intersect_monoid = store_thm(
     `(smbINTER g).op x y IN (smbINTER g).carrier` by metis_tac[submonoid_big_intersect_op_element] >>
     `(smbINTER g).op y z IN (smbINTER g).carrier` by metis_tac[submonoid_big_intersect_op_element] >>
     `(x * y) * z = x * (y * z)` suffices_by rw[submonoid_big_intersect_property] >>
-    `x IN G /\ y IN G /\ z IN G` by metis_tac[IN_SUBSET] >>
+    `x IN G /\ y IN G /\ z IN G` by metis_tac[SUBSET_DEF] >>
     rw[monoid_assoc],
     metis_tac[submonoid_big_intersect_has_id],
     `(smbINTER g).id = #e` by rw[submonoid_big_intersect_property] >>
     `(smbINTER g).id IN (smbINTER g).carrier` by metis_tac[submonoid_big_intersect_has_id] >>
     `#e * x = x` suffices_by rw[submonoid_big_intersect_property] >>
-    `x IN G` by metis_tac[IN_SUBSET] >>
+    `x IN G` by metis_tac[SUBSET_DEF] >>
     rw[],
     `(smbINTER g).id = #e` by rw[submonoid_big_intersect_property] >>
     `(smbINTER g).id IN (smbINTER g).carrier` by metis_tac[submonoid_big_intersect_has_id] >>
     `x * #e = x` suffices_by rw[submonoid_big_intersect_property] >>
-    `x IN G` by metis_tac[IN_SUBSET] >>
+    `x IN G` by metis_tac[SUBSET_DEF] >>
     rw[]
   ]);
 

@@ -11,9 +11,6 @@ open prim_recTheory arithmeticTheory dividesTheory gcdTheory gcdsetTheory
 
 val _ = new_theory "number";
 
-(* use of IN_SUBSET (not recommended) *)
-val IN_SUBSET = save_thm("IN_SUBSET", SUBSET_DEF);
-
 (* Overload non-decreasing functions with different arity. *)
 val _ = overload_on("MONO", ``\f:num -> num. !x y. x <= y ==> f x <= f y``);
 val _ = overload_on("MONO2",
