@@ -32,7 +32,7 @@ Proof:
 (* add all dependent libraries for script *)
 open HolKernel boolLib bossLib Parse;
 
-open arithmeticTheory dividesTheory numberTheory;
+open arithmeticTheory dividesTheory numberTheory combinatoricsTheory;
 
 (* declare new theory at start *)
 val _ = new_theory "FLTbinomial";
@@ -91,44 +91,6 @@ val _ = new_theory "FLTbinomial";
 (* Part 2: General Theory -------------------------------------------------- *)
 
 (* Part 3: Actual Proof ---------------------------------------------------- *)
-
-(* ------------------------------------------------------------------------- *)
-(* Binomial Theorem for prime exponent and modulo.                           *)
-(* ------------------------------------------------------------------------- *)
-
-val prime_divides_binomials = binomialTheory.prime_divides_binomials;
-(* |- !n. prime n ==> 1 < n /\ !k. 0 < k /\ k < n ==> n divides binomial n k *)
-
-val prime_divisor_property = binomialTheory.prime_divisor_property;
-(* |- !n p. 1 < n /\ p < n /\ prime p /\ p divides n ==>
-         ~(p divides FACT (n - 1) DIV FACT (n - p)) *)
-
-val divides_binomials_imp_prime = binomialTheory.divides_binomials_imp_prime;
-(* !n. 1 < n /\ (!k. 0 < k /\ k < n ==> n divides binomial n k) ==> prime n *)
-
-val prime_iff_divides_binomials = binomialTheory.prime_iff_divides_binomials;
-(* |- !n. prime n <=> 1 < n /\ !k. 0 < k /\ k < n ==> n divides binomial n k *)
-
-val binomial_range_shift = binomialTheory.binomial_range_shift;
-(* |- !n. 0 < n ==> ((!k. 0 < k /\ k < n ==> binomial n k MOD n = 0) <=>
-                      !h. h < PRE n ==> binomial n (SUC h) MOD n = 0) *)
-
-val binomial_mod_zero = binomialTheory.binomial_mod_zero;
-(* |- !n. 0 < n ==> !k. binomial n k MOD n = 0 <=>
-                    !x y. (binomial n k * x ** (n - k) * y ** k) MOD n = 0 *)
-
-val binomial_range_shift_alt = binomialTheory.binomial_range_shift_alt;
-(* |- !n. 0 < n ==>
-       ((!k. 0 < k /\ k < n ==> !x y. (binomial n k * x ** (n - k) * y ** k) MOD n = 0) <=>
-         !h. h < PRE n ==> !x y. (binomial n (SUC h) * x ** (n - SUC h) * y ** SUC h) MOD n = 0) *)
-
-val binomial_mod_zero_alt = binomialTheory.binomial_mod_zero_alt;
-(* |- !n. 0 < n ==>
-       ((!k. 0 < k /\ k < n ==> binomial n k MOD n = 0) <=>
-         !x y. SUM (GENLIST ((\k. (binomial n k * x ** (n - k) * y ** k) MOD n) o SUC) (PRE n)) = 0) *)
-
-val binomial_thm_prime = binomialTheory.binomial_thm_prime;
-(* |- !p. prime p ==> !x y. (x + y) ** p MOD p = (x ** p + y ** p) MOD p *)
 
 (* ------------------------------------------------------------------------- *)
 (* Fermat's Little Theorem                                                   *)

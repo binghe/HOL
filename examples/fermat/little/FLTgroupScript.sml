@@ -37,8 +37,8 @@ which is Euler's generalization of Fermat's Little Theorem.
 (* add all dependent libraries for script *)
 open HolKernel boolLib bossLib Parse;
 
-open arithmeticTheory pred_setTheory numberTheory;
-open dividesTheory; (* for PRIME_POS *)
+open arithmeticTheory pred_setTheory dividesTheory numberTheory
+     combinatoricsTheory;
 
 open groupTheory; (* for FiniteGroup_def *)
 open groupOrderTheory; (* for finite_group_Fermat *)
@@ -99,18 +99,6 @@ val _ = new_theory "FLTgroup";
 (* ------------------------------------------------------------------------- *)
 (* Residue -- a close-relative of COUNT                                      *)
 (* ------------------------------------------------------------------------- *)
-
-val residue_def = EulerTheory.residue_def;
-(* |- !n. residue n = {i | 0 < i /\ i < n} *)
-
-val residue_count = EulerTheory.residue_count;
-(* |- !n. 0 < n ==> count n = 0 INSERT residue n *)
-
-val residue_finite = EulerTheory.residue_finite;
-(* |- !n. FINITE (residue n) *)
-
-val residue_card = EulerTheory.residue_card;
-(* |- !n. 0 < n ==> CARD (residue n) = n - 1 *)
 
 (* ------------------------------------------------------------------------- *)
 (* The Group Z^{*}[p] = Multiplication Modulo p, for prime p.                *)

@@ -42,7 +42,8 @@ val _ = new_theory "FLTeuler";
 
 (* ------------------------------------------------------------------------- *)
 
-open arithmeticTheory pred_setTheory dividesTheory gcdTheory numberTheory;
+open arithmeticTheory pred_setTheory dividesTheory gcdTheory numberTheory
+     combinatoricsTheory;
 
 open groupTheory; (* for FiniteGroup_def *)
 open groupOrderTheory; (* for finite_group_Fermat *)
@@ -102,19 +103,6 @@ open groupOrderTheory; (* for finite_group_Fermat *)
 (* ------------------------------------------------------------------------- *)
 (* Group-theoretic Proof appplied to E^{*}[n].                               *)
 (* ------------------------------------------------------------------------- *)
-
-(* ------------------------------------------------------------------------- *)
-(* Euler's set and totient function                                          *)
-(* ------------------------------------------------------------------------- *)
-
-val Euler_def = EulerTheory.Euler_def;
-(* |- !n. Euler n = {i | 0 < i /\ i < n /\ coprime n i} *)
-
-val totient_def = EulerTheory.totient_def;
-(* |- !n. totient n = CARD (Euler n) *)
-
-val Euler_card_prime = EulerTheory.Euler_card_prime;
-(* |- !p. prime p ==> totient p = p - 1 *)
 
 (* ------------------------------------------------------------------------- *)
 (* Euler's group of coprimes.                                                *)
