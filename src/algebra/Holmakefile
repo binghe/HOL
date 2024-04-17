@@ -1,3 +1,5 @@
+INCLUDES = ../bag
+
 ifdef HOLBUILD
 .PHONY: link-to-sigobj
 all: link-to-sigobj
