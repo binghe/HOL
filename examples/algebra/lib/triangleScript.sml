@@ -1826,7 +1826,7 @@ val list_lcm_by_FOLDL = store_thm(
 (* ------------------------------------------------------------------------- *)
 
 (* ------------------------------------------------------------------------- *)
-(* Veritcal Lists in Leibniz Triangle                                        *)
+(* Vertical Lists in Leibniz Triangle                                        *)
 (* ------------------------------------------------------------------------- *)
 
 (* Define Vertical List in Leibniz Triangle *)

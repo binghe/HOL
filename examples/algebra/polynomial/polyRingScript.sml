@@ -4806,7 +4806,7 @@ val poly_truncated_by_degree = store_thm(
     Then {p | poly p /\ deg p < n} SUBSET s          by SUBSET_DEF
      and BIJ chop {p | weak p /\ (LENGTH p = n)} s   by weak_poly_poly_bij, FINITE R /\ #0 IN R
      Now FINITE {p | weak p /\ (LENGTH p = n)}       by weak_poly_finite]);
-      so FINITE s                                    by FINITE_BIJ_PROPERTY
+      so FINITE s                                    by FINITE_BIJ
    Hence FINITE {p | poly p /\ deg p < n}            by SUBSET_FINITE
 *)
 val poly_truncated_by_degree_finite = store_thm(
@@ -4814,7 +4814,7 @@ val poly_truncated_by_degree_finite = store_thm(
   ``!r:'a ring. FINITE R /\ #0 IN R ==> !n. FINITE {p | poly p /\ deg p < n}``,
   rpt strip_tac >>
   `{p | poly p /\ deg p < n} SUBSET {p | poly p /\ ((p = []) \/ deg p < n)}` by rw[SUBSET_DEF] >>
-  metis_tac[weak_poly_poly_bij, weak_poly_finite, FINITE_BIJ_PROPERTY, SUBSET_FINITE]);
+  metis_tac[weak_poly_poly_bij, weak_poly_finite, FINITE_BIJ, SUBSET_FINITE]);
 
 (* ------------------------------------------------------------------------- *)
 (* Other Useful Theorems                                                     *)
