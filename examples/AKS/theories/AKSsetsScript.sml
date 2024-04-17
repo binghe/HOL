@@ -1090,7 +1090,7 @@ val reduceP_subset_setP = store_thm(
    Then PM SUBSET {p | poly p /\ ((p = []) \/ deg p < n)}  by SUBSET_DEF
    which is BIJ with {p | weak p /\ (LENGTH p = n)}        by weak_poly_poly_bij
    Since FINITE {p | weak p /\ (LENGTH p = n)}             by weak_poly_finite
-      so FINITE {p | poly p /\ ((p = []) \/ deg p < n)}    by FINITE_BIJ_PROPERTY
+      so FINITE {p | poly p /\ ((p = []) \/ deg p < n)}    by FINITE_BIJ
    Hence FINITE PM                                         by SUBSET_FINITE
 *)
 val reduceP_finite = store_thm(
@@ -1101,7 +1101,7 @@ val reduceP_finite = store_thm(
   `PM SUBSET {p | poly p /\ ((p = []) \/ deg p < n)}` by rw[SUBSET_DEF, reduceP_element, setP_element] >>
   `BIJ chop {p | weak p /\ (LENGTH p = n)} {p | poly p /\ ((p = []) \/ deg p < n)}` by rw[weak_poly_poly_bij] >>
   `FINITE {p | weak p /\ (LENGTH p = n)}` by rw[weak_poly_finite] >>
-  `FINITE {p | poly p /\ ((p = []) \/ deg p < n)}` by metis_tac[FINITE_BIJ_PROPERTY] >>
+  `FINITE {p | poly p /\ ((p = []) \/ deg p < n)}` by metis_tac[FINITE_BIJ] >>
   metis_tac[SUBSET_FINITE]);
 
 (* Theorem: 1 < k ==> |0| IN PM *)
