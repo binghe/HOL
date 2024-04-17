@@ -38,13 +38,11 @@ val _ = new_theory "monoidOrder";
 open jcLib;
 
 (* open dependent theories *)
-open pred_setTheory arithmeticTheory dividesTheory gcdTheory numberTheory;
+open pred_setTheory arithmeticTheory dividesTheory gcdTheory numberTheory
+     primeTheory;
 
 (* val _ = load "monoidTheory"; *)
 open monoidTheory;
-
-(* val _ = load "primePowerTheory"; *)
-open primePowerTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Monoid Order and Invertibles Documentation                                *)

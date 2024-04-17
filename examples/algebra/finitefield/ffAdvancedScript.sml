@@ -17,7 +17,7 @@ open jcLib;
 
 (* open dependent theories *)
 open pred_setTheory arithmeticTheory dividesTheory gcdTheory numberTheory
-     combinatoricsTheory;
+     combinatoricsTheory primeTheory;
 
 (* val _ = load "ffBasicTheory"; *)
 open ffBasicTheory;
@@ -53,9 +53,6 @@ open groupCyclicTheory;
 open monoidOrderTheory;
 open groupOrderTheory;
 open fieldOrderTheory;
-
-(* val _ = load "logPowerTheory"; *)
-open logPowerTheory; (* for perfect_power *)
 
 (* ------------------------------------------------------------------------- *)
 (* Finite Field Advanced Documentation                                       *)

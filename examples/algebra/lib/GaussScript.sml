@@ -17,9 +17,7 @@ open jcLib;
 
 (* open dependent theories *)
 open arithmeticTheory pred_setTheory listTheory dividesTheory logrootTheory
-     gcdTheory gcdsetTheory numberTheory logPowerTheory combinatoricsTheory;
-
-open EulerTheory;
+     gcdTheory gcdsetTheory numberTheory combinatoricsTheory primeTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Gauss' Little Theorem                                                     *)
