@@ -728,6 +728,22 @@ Proof
     rw [DES_def, desCore_CORRECT, LENGTH_KS]
 QED
 
+(*---------------------------------------------------------------------------*)
+(* Structural Properties of DES                                              *)
+(*---------------------------------------------------------------------------*)
+
+Definition w64_compl_def :
+    w64_compl (x :word64) = word_xor x (word_xnor 0w (0w :word64))
+End
+
+Overload DESEncrypt = “\k. FST (FullDES k)”
+
+Theorem complementation_property :
+    !k m. w64_compl (DESEncrypt k m) = DESEncrypt (w64_compl k) (w64_compl m)
+Proof
+    cheat
+QED
+
 val _ = export_theory();
 val _ = html_theory "des";
 
