@@ -22,9 +22,9 @@ open loopDivideTheory loopMultiplyTheory loopListTheory;
 
 open pred_setTheory listTheory rich_listTheory arithmeticTheory dividesTheory
      gcdTheory numberTheory combinatoricsTheory pairTheory optionTheory
-     listRangeTheory;
+     listRangeTheory primeTheory;
 
-open countMonadTheory logPowerTheory;
+open countMonadTheory;
 
 (* val _ = load "monadsyntax"; *)
 open monadsyntax;

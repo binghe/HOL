@@ -23,8 +23,7 @@ open loopTheory;
 open arithmeticTheory dividesTheory numberTheory combinatoricsTheory listTheory
      rich_listTheory listRangeTheory;
 
-(* val _ = load "logPowerTheory"; *)
-open logrootTheory logPowerTheory; (* for mop_eqn *)
+open logrootTheory primeTheory; (* for mop_eqn *)
 
 (* ------------------------------------------------------------------------- *)
 (* Loop Recurrence with Multiplying argument Documentation                   *)

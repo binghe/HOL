@@ -19,7 +19,7 @@ open jcLib;
 open prim_recTheory pred_setTheory arithmeticTheory dividesTheory gcdTheory
      listTheory rich_listTheory logrootTheory numberTheory combinatoricsTheory;
 
-open bitsizeTheory logPowerTheory;
+open bitsizeTheory primeTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Computational Complexity Documentation                                    *)

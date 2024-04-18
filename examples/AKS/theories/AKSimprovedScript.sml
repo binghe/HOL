@@ -16,7 +16,7 @@ open jcLib;
 
 (* open dependent theories *)
 open prim_recTheory pred_setTheory listTheory arithmeticTheory logrootTheory
-     numberTheory combinatoricsTheory dividesTheory gcdTheory;
+     numberTheory combinatoricsTheory dividesTheory gcdTheory primeTheory;
 
 (* Get dependent theories local *)
 open AKSrevisedTheory;
@@ -74,7 +74,6 @@ open fieldOrderTheory;
 
 open fieldProductTheory;
 
-open logPowerTheory;
 open computeBasicTheory;
 open computeOrderTheory;
 open computePolyTheory;

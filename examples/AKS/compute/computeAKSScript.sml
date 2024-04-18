@@ -17,7 +17,7 @@ open jcLib;
 
 (* open dependent theories *)
 open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
-     dividesTheory gcdTheory;
+     dividesTheory gcdTheory primeTheory;
 
 (* Get dependent theories local *)
 (* val _ = load "computeParamTheory"; *)
@@ -31,8 +31,6 @@ open polyWeakTheory polyRingTheory;
 open polyMonicTheory polyDivisionTheory;
 
 open ringInstancesTheory; (* for ZN_ring *)
-
-open logPowerTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* AKS Computations Documentation                                            *)

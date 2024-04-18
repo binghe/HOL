@@ -15,7 +15,7 @@ val _ = new_theory "computeParam";
 open jcLib;
 
 open prim_recTheory pred_setTheory listTheory arithmeticTheory logrootTheory
-     dividesTheory gcdTheory numberTheory combinatoricsTheory;
+     dividesTheory gcdTheory numberTheory combinatoricsTheory primeTheory;
 
 (* Get dependent theories local *)
 open computeOrderTheory;
@@ -24,8 +24,6 @@ open ringTheory ringInstancesTheory; (* for ZN_coprime_order_alt *)
 open monoidOrderTheory;
 
 open GaussTheory; (* for phi_pos *)
-open EulerTheory; (* for residue_def *)
-open triangleTheory; (* for list_lcm_pos *)
 
 (* ------------------------------------------------------------------------- *)
 (* AKS Parameter Documentation                                               *)

@@ -14,12 +14,11 @@ val _ = new_theory "hopping";
 
 open arithmeticTheory pred_setTheory logrootTheory dividesTheory pairTheory
      listTheory rich_listTheory listRangeTheory indexedListsTheory
-     numberTheory combinatoricsTheory;
+     numberTheory combinatoricsTheory primeTheory;
 
 (* val _ = load "quarityTheory"; *)
 open helperTwosqTheory;
 
-open logPowerTheory; (* for square_alt *)
 open sublistTheory;
 open quarityTheory;
 

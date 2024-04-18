@@ -16,9 +16,8 @@ val _ = new_theory "bitsize";
 open jcLib;
 
 open pred_setTheory arithmeticTheory dividesTheory gcdTheory numberTheory
-     combinatoricsTheory listTheory rich_listTheory logrootTheory;
-
-open logPowerTheory; (* for LOG_1, ulog *)
+     combinatoricsTheory listTheory rich_listTheory logrootTheory
+     primeTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Bit Size for Numbers Documentation                                        *)

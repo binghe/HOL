@@ -16,13 +16,12 @@ val _ = new_theory "windmill";
 open helperTwosqTheory;
 
 open arithmeticTheory pred_setTheory numberTheory combinatoricsTheory
-     dividesTheory gcdTheory pairTheory logrootTheory;
+     dividesTheory gcdTheory pairTheory logrootTheory primeTheory;
 
 (* val _ = load "involuteFixTheory"; *)
 open involuteTheory involuteFixTheory;
 
 (* val _ = load "GaussTheory"; *)
-open logPowerTheory; (* for SQRT, SQRT_LE *)
 open GaussTheory; (* for divisors_has_factor *)
 
 (* ------------------------------------------------------------------------- *)

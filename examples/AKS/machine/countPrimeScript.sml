@@ -22,12 +22,7 @@ open bitsizeTheory complexityTheory;
 open loopIncreaseTheory;
 
 open pred_setTheory listTheory arithmeticTheory dividesTheory numberTheory
-     combinatoricsTheory logrootTheory pairTheory optionTheory;
-
-open logPowerTheory;
-
-(* val _ = load "primesTheory"; *)
-open primesTheory;
+     combinatoricsTheory logrootTheory pairTheory optionTheory primeTheory;
 
 (* (* val _ = load "monadsyntax"; *) *)
 open monadsyntax;

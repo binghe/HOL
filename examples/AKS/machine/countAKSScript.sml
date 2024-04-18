@@ -15,7 +15,9 @@ val _ = new_theory "countAKS";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* val _ = load "SatisfySimps"; (* for SatisfySimps.SATISFY_ss *) *)
+open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
+     rich_listTheory listRangeTheory numberTheory combinatoricsTheory
+     logrootTheory pairTheory optionTheory primeTheory;
 
 (* Get dependent theories local *)
 (* val _ = load "countParamTheory"; *)
@@ -32,12 +34,6 @@ open countPolyTheory;
 open bitsizeTheory complexityTheory;
 open loopIncreaseTheory loopDecreaseTheory;
 open loopDivideTheory loopListTheory;
-
-open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
-     rich_listTheory listRangeTheory numberTheory combinatoricsTheory
-     logrootTheory pairTheory optionTheory;
-
-open logPowerTheory;
 
 open monadsyntax;
 

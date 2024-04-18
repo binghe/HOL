@@ -17,7 +17,7 @@ open jcLib;
 
 open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
      logrootTheory pairTheory optionTheory listRangeTheory numberTheory
-     combinatoricsTheory;
+     combinatoricsTheory primeTheory;
 
 open countMonadTheory countMacroTheory;
 open countBasicTheory countPowerTheory;
@@ -27,8 +27,6 @@ open countOrderTheory;
 
 open bitsizeTheory complexityTheory;
 open loopIncreaseTheory loopDecreaseTheory;
-
-open logPowerTheory;
 
 (* val _ = load "computeParamTheory"; *)
 open computeParamTheory; (* for param_search_result *)

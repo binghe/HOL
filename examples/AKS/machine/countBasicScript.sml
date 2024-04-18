@@ -24,9 +24,7 @@ open loopMultiplyTheory; (* for loop2_mul_rise_steps_le *)
 
 open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
      dividesTheory gcdTheory logrootTheory pairTheory optionTheory
-     listRangeTheory;
-
-open logPowerTheory;
+     listRangeTheory primeTheory;
 
 (* val _ = load "monadsyntax"; *)
 open monadsyntax;

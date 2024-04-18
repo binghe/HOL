@@ -24,11 +24,8 @@ open loopDivideTheory;
 
 open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
      numberTheory combinatoricsTheory logrootTheory pairTheory optionTheory
-     listRangeTheory;
+     listRangeTheory primeTheory;
 
-open logPowerTheory;
-
-(* (* val _ = load "monadsyntax"; *) *)
 open monadsyntax;
 
 (* (* val _ = load "sublistTheory"; -- from recurrence theory *) *)

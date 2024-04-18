@@ -16,9 +16,8 @@ val _ = new_theory "twoSquares";
 open helperTwosqTheory;
 
 open arithmeticTheory pred_setTheory dividesTheory numberTheory gcdsetTheory
-     pairTheory listTheory rich_listTheory listRangeTheory combinatoricsTheory;
-
-open logPowerTheory; (* for prime_non_square *)
+     pairTheory listTheory rich_listTheory listRangeTheory combinatoricsTheory
+     primeTheory;
 
 open windmillTheory;
 

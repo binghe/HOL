@@ -9,7 +9,7 @@ open HolKernel boolLib bossLib Parse;
 
 open arithmeticTheory pred_setTheory pairTheory listTheory rich_listTheory
      listRangeTheory dividesTheory gcdTheory logrootTheory numberTheory
-     combinatoricsTheory;
+     combinatoricsTheory primeTheory;
 
 (* declare new theory at start *)
 val _ = new_theory "quarity";
@@ -18,10 +18,7 @@ val _ = new_theory "quarity";
 
 open helperTwosqTheory;
 
-(* val _ = load "windmillTheory"; *)
-open windmillTheory;
-
-open logPowerTheory GaussTheory EulerTheory; (* for SQRT, divisors_upper_bound *)
+open windmillTheory GaussTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Quarity Documentation                                                     *)

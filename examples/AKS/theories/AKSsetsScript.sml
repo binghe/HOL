@@ -16,11 +16,11 @@ open jcLib;
 
 (* open dependent theories *)
 open prim_recTheory pred_setTheory listTheory arithmeticTheory dividesTheory
-     gcdTheory gcdsetTheory logrootTheory numberTheory combinatoricsTheory;
+     gcdTheory gcdsetTheory logrootTheory numberTheory combinatoricsTheory
+     primeTheory;
 
 (* Get dependent theories local *)
 open AKSintroTheory;
-open logPowerTheory; (* for perfect_power_condition *)
 
 open monoidTheory groupTheory ringTheory ringUnitTheory;
 

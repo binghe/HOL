@@ -18,10 +18,8 @@ open jcLib;
 open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory;
 
 open logPowerTheory; (* for LOG2, SQRT, and Perfect Power, Power Free *)
-open logrootTheory dividesTheory gcdTheory gcdsetTheory;
+open logrootTheory dividesTheory gcdTheory gcdsetTheory primeTheory;
 
-(* val _ = load "GaussTheory"; *)
-open EulerTheory;
 open GaussTheory;
 
 (* val _ = load "whileTheory"; *)
