@@ -652,11 +652,17 @@ Proof
 QED
 
 (* Lemma 10.1.15 [1, p.222] *)
-Theorem BT_subterm_thm_old[local] :
-    !p X M. p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
+Theorem BT_subterm_thm :
+    !p X M. FINITE X /\ subterm X M p <> NONE ==>
             BT (THE (subterm X M p)) = THE (ltree_lookup (BTe X M) p)
 Proof
-    Induct_on ‘p’
+    Suff ‘!p X M. p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
+                  BT (THE (subterm X M p)) = THE (ltree_lookup (BTe X M) p)’
+ >- (rpt STRIP_TAC \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
+     MATCH_MP_TAC subterm_imp_ltree_paths >> art [])
+ (* now the old proof *)
+ >> Induct_on ‘p’
  >- rw [subterm_def, ltree_lookup_def]
  >> rw [subterm_def, ltree_lookup]
  >> qabbrev_tac ‘M0 = principle_hnf M’
@@ -671,15 +677,6 @@ Proof
  >> Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BTe X M)’ MP_TAC
  >> POP_ORW
  >> rw [ltree_paths_def, ltree_lookup_def, LNTH_fromList, GSYM BT_def, EL_MAP]
-QED
-
-Theorem BT_subterm_thm :
-    !p X M. FINITE X /\ subterm X M p <> NONE ==>
-            BT (THE (subterm X M p)) = THE (ltree_lookup (BTe X M) p)
-Proof
-    rpt STRIP_TAC
- >> MATCH_MP_TAC BT_subterm_thm_old >> art []
- >> MATCH_MP_TAC subterm_imp_ltree_paths >> art []
 QED
 
 (* NOTE: This proof shares a lot of tactics with [subterm_tpm_lemma] *)
@@ -3517,11 +3514,25 @@ QED
 
    NOTE: this time the case ‘p = []’ is included, but it's a trvial case.
  *)
-Theorem Boehm_out_lemma_old[local] :
-    !p X M. FINITE X /\ p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
+
+(* NOTE: The original lemma in textbook requires ‘p IN ltree_paths (BTe X M)’,
+   but this seems wrong, as ‘subterm X M p’ may not be defined if only ‘p’ is
+   valid path (i.e. the subterm could be a bottom (\bot) as the result of un-
+   solvable terms).
+ *)
+Theorem Boehm_out_lemma :
+    !p X M. FINITE X /\ subterm X M p <> NONE ==>
            ?pi ss. Boehm_transform pi /\ apply pi M == subterm' X M p ISUB ss
 Proof
-    Induct_on ‘p’
+    Suff ‘!p X M. FINITE X /\ p IN ltree_paths (BTe X M) /\
+                  subterm X M p <> NONE ==>
+                 ?pi ss. Boehm_transform pi /\
+                         apply pi M == subterm' X M p ISUB ss’
+ >- (rpt STRIP_TAC \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
+     MATCH_MP_TAC subterm_imp_ltree_paths >> art [])
+ (* now the old proof *)
+ >> Induct_on ‘p’
  >- (rw [] >> qexistsl_tac [‘[]’, ‘[]’] >> rw [])
  >> rpt STRIP_TAC
  >> rename1 ‘subterm X M (h::t) <> NONE’
@@ -3615,20 +3626,6 @@ Proof
  >> MATCH_MP_TAC Boehm_apply_lameq_cong >> art []
 QED
 
-(* NOTE: The original lemma in textbook requires ‘p IN ltree_paths (BTe X M)’,
-   but this seems wrong, as ‘subterm X M p’ may not be defined if only ‘p’ is
-   valid path (i.e. the subterm could be a bottom (\bot) as the result of un-
-   solvable terms).
- *)
-Theorem Boehm_out_lemma :
-    !p X M. FINITE X /\ subterm X M p <> NONE ==>
-           ?pi ss. Boehm_transform pi /\ apply pi M == subterm' X M p ISUB ss
-Proof
-    rpt STRIP_TAC
- >> MATCH_MP_TAC Boehm_out_lemma_old >> art []
- >> MATCH_MP_TAC subterm_imp_ltree_paths >> art []
-QED
-
 (*---------------------------------------------------------------------------*
  *  Faithfulness and agreements of terms
  *---------------------------------------------------------------------------*)
@@ -3708,9 +3705,9 @@ End
    part of this proof.
  *)
 Theorem agrees_upto_lemma_1 :
-    !Ns p. (!X M. MEM M Ns ==> p IN ltree_paths (BTe X M)) /\
-           Ns agrees_upto p /\ p <> [] /\ EVERY solvable Ns ==>
-           ?pi. Boehm_transform pi /\ EVERY (\N. is_ready (apply pi N)) Ns
+    !Ns p. p <> [] /\ (!X M. MEM M Ns ==> p IN ltree_paths (BTe X M)) /\
+           Ns agrees_upto p ==>
+          ?pi. Boehm_transform pi /\ EVERY (\N. is_ready (apply pi N)) Ns
 Proof
     rpt STRIP_TAC
  >> cheat
