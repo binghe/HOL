@@ -10,7 +10,7 @@
 open HolKernel boolLib bossLib Parse;
 
 open combinTheory pred_setTheory pred_setLib arithmeticTheory integerTheory
-     intLib mesonLib hurdUtils cardinalTheory newtypeTools;
+     intLib mesonLib hurdUtils cardinalTheory oneTheory newtypeTools;
 
 open monoidTheory monoidMapTheory monoidOrderTheory;
 open groupTheory groupMapTheory ringTheory ringMapTheory;
@@ -776,8 +776,8 @@ Proof
  >> MP_TAC (Q.SPECL [‘g’, ‘x’]
                     (INST_TYPE [“:'a” |-> “:'k -> 'a”] monoid_inv_def))
  >> simp []
- >> ‘g.carrier = cartesian_product k (\i. ring_carrier (r i))’ by rw [Abbr ‘g’]
- >> POP_ORW
+ >> ‘g.carrier = cartesian_product k (\i. ring_carrier (r i))’
+       by rw [Abbr ‘g’] >> POP_ORW
  >> rw []
  >> Q.PAT_X_ASSUM ‘g.op x (g.inv x) = g.id’ MP_TAC
  >> ‘g.op = (\x y. RESTRICTION k (\i. ring_add (r i) (x i) (y i)))’
