@@ -6130,17 +6130,6 @@ val COUNT_NOT_SELF = store_thm(
   ``!n. n NOTIN (count n)``,
   rw[]);
 
-(* Theorem: (count n = {}) <=> (n = 0) *)
-(* Proof:
-   Since FINITE (count n)         by FINITE_COUNT
-     and CARD (count n) = n       by CARD_COUNT
-      so count n = {} <=> n = 0   by CARD_EQ_0
-*)
-val COUNT_EQ_EMPTY = store_thm(
-  "COUNT_EQ_EMPTY",
-  ``!n. (count n = {}) <=> (n = 0)``,
-  metis_tac[FINITE_COUNT, CARD_COUNT, CARD_EQ_0]);
-
 (* Theorem: m <= n ==> count m SUBSET count n *)
 (* Proof: by LENGTH_TAKE_EQ *)
 val COUNT_SUBSET = store_thm(

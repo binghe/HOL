@@ -1461,13 +1461,6 @@ Proof
   simp[set_exp_def, FUN_EQ_THM] >> metis_tac[]
 QED
 
-
-val COUNT_EQ_EMPTY = Q.store_thm(
-  "COUNT_EQ_EMPTY[simp]",
-  ‘(count n = {}) <=> (n = 0)’,
-  simp[EXTENSION, EQ_IMP_THM] >> CONV_TAC CONTRAPOS_CONV >> simp[] >>
-  strip_tac >> qexists_tac ‘n - 1’ >> simp[]);
-
 val POW_EQ_X_EXP_X = Q.store_thm(
   "POW_EQ_X_EXP_X",
   ‘INFINITE A ==> POW A =~ A ** A’,

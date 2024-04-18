@@ -3893,6 +3893,17 @@ val COUNT_NOT_EMPTY = store_thm (* from probabilityTheory *)
  >> MATCH_MP_TAC LESS_EQ_LESS_TRANS
  >> Q.EXISTS_TAC `x` >> ASM_REWRITE_TAC []);
 
+(* Theorem: (count n = {}) <=> (n = 0) *)
+(* Proof:
+   Since FINITE (count n)         by FINITE_COUNT
+     and CARD (count n) = n       by CARD_COUNT
+      so count n = {} <=> n = 0   by CARD_EQ_0
+*)
+val COUNT_EQ_EMPTY = store_thm(
+  "COUNT_EQ_EMPTY[simp]",
+  ``(count n = {}) <=> (n = 0)``,
+  metis_tac[FINITE_COUNT, CARD_COUNT, CARD_EQ_0]);
+
 (* =====================================================================*)
 (* Infiniteness                                                         *)
 (* =====================================================================*)
