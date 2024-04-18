@@ -269,6 +269,36 @@ Proof
  >> rw [Abbr ‘r’]
 QED
 
+Theorem RING_ADD_EQ_0 :
+    !r x y.
+        x IN ring_carrier r /\ y IN ring_carrier r
+        ==> (ring_add r x y = ring_0 r <=> ring_neg r x = y)
+Proof
+    Q.X_GEN_TAC ‘r0’
+ >> rpt GEN_TAC
+ >> STRIP_TAC
+ >> Q.ABBREV_TAC ‘r = fromRing r0’
+ >> ‘-x = y <=> y = -x’ by PROVE_TAC [] >> POP_ORW
+ >> irule ring_add_eq_zero
+ >> rw [Abbr ‘r’]
+QED
+
+Theorem RING_LNEG_UNIQUE :
+    !r x y.
+        x IN ring_carrier r /\ y IN ring_carrier r /\ ring_add r x y = ring_0 r
+        ==> ring_neg r x = y
+Proof        
+  MESON_TAC[RING_ADD_EQ_0]
+QED
+
+Theorem RING_RNEG_UNIQUE :
+    !r x y.
+        x IN ring_carrier r /\ y IN ring_carrier r /\ ring_add r x y = ring_0 r
+        ==> ring_neg r y = x
+Proof
+  MESON_TAC[RING_ADD_EQ_0, RING_ADD_SYM]
+QED
+
 (* ------------------------------------------------------------------------- *)
 (* Homomorphisms etc.                                                        *)
 (* ------------------------------------------------------------------------- *)
@@ -688,8 +718,7 @@ Definition product_ring :
     product_ring k (r :'k -> 'a Ring) = toRing (raw_product_ring k r)
 End
 
-(* NOTE: This theorem missed the part of ‘ring_neg’ from the original version *)
-Theorem PRODUCT_RING :
+Theorem PRODUCT_RING_NO_NEG :
    (!k (r :'k -> 'a Ring).
         ring_carrier(product_ring k r) =
           cartesian_product k (\i. ring_carrier(r i))) /\
@@ -706,7 +735,7 @@ Theorem PRODUCT_RING :
         ring_mul (product_ring k r) =
           (\x y. RESTRICTION k (\i. ring_mul (r i) (x i) (y i))))
 Proof
-    rw [product_ring] (* 6 subgoals, same initial tactics *)
+    rw [product_ring] (* 5 subgoals, same initial tactics *)
  >> ‘fromRing (toRing (raw_product_ring k r)) = raw_product_ring k r’
        by (MATCH_MP_TAC from_toRing \\
            rw [Ring_raw_product_ring])
@@ -715,24 +744,21 @@ Proof
  >> rw [raw_product_ring_def]
 QED
 
-(* NOTE: This theorem was part of HOL-Light's PRODUCT_RING, with additional
-         ring_carrier antecedents.
- *)
 Theorem PRODUCT_RING_NEG :
-    !k (r :'k -> 'a Ring) x.
-        x IN ring_carrier (product_ring k r) ==>
-        ring_neg (product_ring k r) x =
-        RESTRICTION k (\i. ring_neg (r i) (x i))
+    !k (r :'k -> 'a Ring).
+       !x. x IN ring_carrier (product_ring k r) ==>
+           ring_neg (product_ring k r) x =
+           RESTRICTION k (\i. ring_neg (r i) (x i))
 Proof
-    rpt GEN_TAC
- >> simp [product_ring]
+    rw [product_ring]
  >> ‘fromRing (toRing (raw_product_ring k r)) = raw_product_ring k r’
        by (MATCH_MP_TAC from_toRing \\
            rw [Ring_raw_product_ring])
- >> POP_ORW
- (* now it's about ‘raw_product_ring k r’ *)
+ >> POP_ASSUM (fs o wrap)
+ >> POP_ASSUM MP_TAC
  >> MP_TAC (Q.SPECL [‘k’, ‘r’] Ring_raw_product_ring)
  >> rw [raw_product_ring_def]
+ (* stage work *)
  >> fs [Once Ring_def]
  (* cleanup irrelevant assumptions *)
  >> Q.PAT_X_ASSUM ‘!x y z. P’       K_TAC
@@ -750,18 +776,25 @@ Proof
  >> MP_TAC (Q.SPECL [‘g’, ‘x’]
                     (INST_TYPE [“:'a” |-> “:'k -> 'a”] monoid_inv_def))
  >> simp []
- >> Know ‘x IN g.carrier’
- >- (rw [Abbr ‘g’] \\
-     rw [IN_CARTESIAN_PRODUCT])
+ >> ‘g.carrier = cartesian_product k (\i. ring_carrier (r i))’ by rw [Abbr ‘g’]
+ >> POP_ORW
  >> rw []
- (* additional assumptions:
-    4.  x IN g.carrier
-    5.  g.inv x IN g.carrier
-    6.  g.op x (g.inv x) = g.id
-    7.  g.op (g.inv x) x = g.id
-  *)
- (* applying monoid_invertibles_def *)
- >> cheat
+ >> Q.PAT_X_ASSUM ‘g.op x (g.inv x) = g.id’ MP_TAC
+ >> ‘g.op = (\x y. RESTRICTION k (\i. ring_add (r i) (x i) (y i)))’
+       by rw [Abbr ‘g’] >> POP_ORW
+ >> ‘g.id = RESTRICTION k (\i. ring_0 (r i))’
+       by rw [Abbr ‘g’] >> POP_ORW
+ >> rw [RESTRICTION_EXTENSION]
+ >> fs [EXTENSIONAL_def, IN_CARTESIAN_PRODUCT]
+ >> simp [FUN_EQ_THM]
+ >> Q.X_GEN_TAC ‘i’
+ >> reverse (Cases_on ‘i IN k’) >- rw [RESTRICTION]
+ >> rw [RESTRICTION_DEFINED]
+ >> Q.PAT_X_ASSUM ‘!i. i IN k ==> ring_add (r i) (x i) (g.inv x i) = ring_0 (r i)’
+      (MP_TAC o (Q.SPEC ‘i’))
+ >> rw []
+ >> ONCE_REWRITE_TAC [EQ_SYM_EQ]
+ >> MATCH_MP_TAC RING_LNEG_UNIQUE >> rw []
 QED
 
 (*

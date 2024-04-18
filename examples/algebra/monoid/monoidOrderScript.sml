@@ -1057,16 +1057,14 @@ val monoid_inv_from_invertibles = store_thm(
   ``!g:'a monoid. Monoid g ==> !x. x IN G* ==> ?y. y IN G /\ (x * y = #e) /\ (y * x = #e)``,
   rw[monoid_invertibles_def]);
 
-(* Convert this into the form: !g x. ?y. ..... for SKOLEM_THM
+(* Convert this into the form: !g x. ?y. ..... for SKOLEM_THM *)
 val lemma = prove(
   ``!(g:'a monoid) x. ?y. Monoid g /\ x IN G* ==> y IN G /\ (x * y = #e) /\ (y * x = #e)``,
   metis_tac[monoid_inv_from_invertibles]);
- *)
 
 (* Convert this into the form: !g x. ?y. ..... for SKOLEM_THM
 
    NOTE: added ‘(Monoid g /\ x NOTIN G* ==> y = ARB)’ to make it a total function.
- *)
 val lemma = prove(
    “!(g:'a monoid) x.
         ?y. (Monoid g /\ x IN G* ==> y IN G /\ (x * y = #e) /\ (y * x = #e)) /\
@@ -1075,17 +1073,15 @@ val lemma = prove(
  >> MP_TAC (Q.SPEC ‘g’ monoid_inv_from_invertibles)
  >> Cases_on ‘Monoid g’ >> rw []
  >> Cases_on ‘x IN G*’ >> rw []);
+ *)
 
 (* Use Skolemization to generate the monoid_inv_from_invertibles function *)
-val extensional_monoid_inv_def = new_specification(
-   "extensional_monoid_inv_def", ["monoid_inv"], (* name of function *)
+val monoid_inv_def = new_specification(
+   "monoid_inv_def", ["monoid_inv"], (* name of function *)
   SIMP_RULE (srw_ss()) [SKOLEM_THM] lemma);
-
 (* |- !g x. Monoid g /\ x IN G* ==>
             monoid_inv g x IN G /\ (x * monoid_inv g x = #e) /\
-                                   (monoid_inv g x * x = #e)
- *)
-Theorem monoid_inv_def = cj 1 extensional_monoid_inv_def
+                                   (monoid_inv g x * x = #e) *)
 (*
 - type_of ``monoid_inv g``;
 > val it = ``:'a -> 'a`` : hol_type
