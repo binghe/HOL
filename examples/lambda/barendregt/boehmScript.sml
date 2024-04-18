@@ -3705,22 +3705,35 @@ End
    part of this proof.
  *)
 Theorem agrees_upto_lemma_1 :
-    !Ns p. p <> [] /\ (!X M. MEM M Ns ==> p IN ltree_paths (BTe X M)) /\
-           Ns agrees_upto p ==>
-          ?pi. Boehm_transform pi /\ EVERY (\N. is_ready (apply pi N)) Ns
+    !X Ms p. p <> [] /\ (!M. MEM M Ms ==> p IN ltree_paths (BTe X M)) /\
+             EVERY solvable Ms ==>
+            ?pi. Boehm_transform pi /\ !M. MEM M Ms ==> is_ready (apply pi M)
 Proof
     rpt STRIP_TAC
+ >> qabbrev_tac ‘M0 = MAP principle_hnf Ms’
+ >> Know ‘EVERY hnf M0’
+ >- (rw [EVERY_MEM, EVERY_MAP, Abbr ‘M0’] \\
+     MATCH_MP_TAC hnf_principle_hnf \\
+     rw [GSYM solvable_iff_has_hnf] \\
+     fs [EVERY_MEM])
+ >> DISCH_TAC
+ (* ‘n’ is the longest LAMl of principle hnfs in M0 *)
+ >> qabbrev_tac ‘n = MAX_LIST (MAP LAMl_size M0)’
+ (* ‘vs’ excludes all free variables in M *)
+ >> qabbrev_tac ‘vs = NEWS n (X UNION (BIGUNION (IMAGE FV (set Ms))))’
+ >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE (MAP VAR vs))’
+ >> qabbrev_tac ‘d = MAX_LIST (MAP (\e. subterm_width e p) Ms)’
+ >> qabbrev_tac ‘P = permutator d’
  >> cheat
 QED
 
 (* NOTE: ‘p <> []’ can be removed now *)
 Theorem agrees_upto_lemma_2 :
-    !Ns p. (!X M. MEM M Ns ==> p IN ltree_paths (BTe X M)) /\
-           Ns agrees_upto p ==>
-           ?pi. Boehm_transform pi /\ (MAP (apply pi) Ns) agrees_upto p
+    !X Ms p. FINITE X /\ (!M. MEM M Ms ==> p IN ltree_paths (BTe X M)) /\
+             EVERY solvable Ms /\ Ms agrees_upto p ==>
+            ?pi. Boehm_transform pi /\ (MAP (apply pi) Ms) agrees_upto p
 Proof
-    rpt STRIP_TAC
- >> cheat
+    cheat
 QED
 
 (* Lemma 10.3.11 (3) [1. p.251] *)
