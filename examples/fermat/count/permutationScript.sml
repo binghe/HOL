@@ -21,7 +21,6 @@ open helperCountTheory;
 open listTheory listRangeTheory rich_listTheory combinatoricsTheory;
 
 open mapCountTheory;
-open combinatorics1Theory;
 
 (* Get dependent theories local *)
 open monoidTheory groupTheory;

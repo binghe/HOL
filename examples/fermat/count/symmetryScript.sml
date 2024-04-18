@@ -21,7 +21,6 @@ open pred_setTheory arithmeticTheory gcdsetTheory numberTheory
 open helperCountTheory;
 
 open mapCountTheory; (* for on_def *)
-open combinatorics1Theory;
 
 (* Get dependent theories local *)
 (* val _ = load "fieldMapTheory"; *)

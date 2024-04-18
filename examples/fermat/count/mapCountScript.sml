@@ -16,9 +16,6 @@ open helperCountTheory;
 open arithmeticTheory pred_setTheory gcdsetTheory numberTheory listTheory
      rich_listTheory listRangeTheory combinatoricsTheory;
 
-open necklaceTheory; (* for necklace_def *)
-open combinatorics1Theory;
-
 (* ------------------------------------------------------------------------- *)
 (* Counting of maps between finite sets Documentation                        *)
 (* ------------------------------------------------------------------------- *)
