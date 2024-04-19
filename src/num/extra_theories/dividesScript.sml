@@ -1,7 +1,7 @@
 open HolKernel Parse boolLib BasicProvers;
 
 open simpLib computeLib prim_recTheory arithmeticTheory boolSimps
-     metisLib numLib;
+     metisLib numLib TotalDefn;
 
 val CALC = EQT_ELIM o reduceLib.REDUCE_CONV;
 val ARITH_TAC = CONV_TAC Arith.ARITH_CONV;
