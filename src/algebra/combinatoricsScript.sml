@@ -14625,10 +14625,10 @@ Theorem sub_count_union:
         IMAGE (\s. n INSERT s) (sub_count n k) UNION sub_count n (k + 1)
 Proof
   rw[sub_count_def, EXTENSION, Once EQ_IMP_THM] >> simp[] >| [
-    rename [‘x ⊆ count (n + 1)’, ‘CARD x = k + 1’] >>
+    rename [‘x SUBSET count (n + 1)’, ‘CARD x = k + 1’] >>
     Cases_on `x SUBSET count n` >> simp[] >>
     `n IN x` by
-      (fs[SUBSET_DEF] >> rename [‘m ∈ x’, ‘¬(m < n)’] >>
+      (fs[SUBSET_DEF] >> rename [‘m IN x’, ‘~(m < n)’] >>
        `m < n + 1` by simp[] >>
        `m = n` by decide_tac >>
        fs[]) >>
@@ -14639,18 +14639,18 @@ Proof
     `count (n + 1) DELETE n = count n` by rw[EXTENSION] >>
     fs[],
 
-    rename [‘s ⊆ count n’, ‘x ⊆ count (n + 1)’] >>
+    rename [‘s SUBSET count n’, ‘x SUBSET count (n + 1)’] >>
     `x = n INSERT s` by fs[EXTENSION] >>
     `x SUBSET (n INSERT count n)` by rw[SUBSET_INSERT_BOTH] >>
     rfs[count_add1],
 
-    rename [‘s ⊆ count n’, ‘CARD x = CARD s + 1’] >>
+    rename [‘s SUBSET count n’, ‘CARD x = CARD s + 1’] >>
     `x = n INSERT s` by fs[EXTENSION] >>
     `n NOTIN s` by metis_tac[SUBSET_DEF, COUNT_NOT_SELF] >>
     `FINITE s` by metis_tac[SUBSET_FINITE, FINITE_COUNT] >>
     rw[],
 
-    metis_tac[COUNT_SUBSET, SUBSET_TRANS, DECIDE “n ≤ n + 1”]
+    metis_tac[COUNT_SUBSET, SUBSET_TRANS, DECIDE “n <= n + 1”]
   ]
 QED
 
@@ -14669,7 +14669,7 @@ Theorem sub_count_disjoint:
 Proof
   rw[DISJOINT_DEF, EXTENSION] >>
   spose_not_then strip_assume_tac >>
-  rename [‘s ∈ sub_count n k’, ‘x ∈ sub_count n (k + 1)’] >>
+  rename [‘s IN sub_count n k’, ‘x IN sub_count n (k + 1)’] >>
   `x = n INSERT s` by fs[EXTENSION] >>
   `n IN x` by fs[] >>
   metis_tac[sub_count_element_no_self]
