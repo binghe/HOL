@@ -15726,12 +15726,12 @@ val it = |- perm_count 3 =
 
 (* Historical note.
 This use of interleave to list all permutations is called
-the Steinhaus–Johnson–Trotter algorithm, due to re-discovery by various people.
+the Steinhaus-Johnson-Trotter algorithm, due to re-discovery by various people.
 Outside mathematics, this method was known already to 17th-century English change ringers.
 Equivalently, this algorithm finds a Hamiltonian cycle in the permutohedron.
 
-Steinhaus–Johnson–Trotter algorithm
-https://en.wikipedia.org/wiki/Steinhaus–Johnson–Trotter_algorithm
+Steinhaus-Johnson-Trotter algorithm
+https://en.wikipedia.org/wiki/Steinhaus-Johnson-Trotter_algorithm
 
 1677 A book by Fabian Stedman lists the solutions for up to six bells.
 1958 A book by Steinhaus describes a related puzzle of generating all permutations by a system of particles.

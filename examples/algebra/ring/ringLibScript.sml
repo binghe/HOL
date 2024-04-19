@@ -287,7 +287,7 @@ Theorem RING_LNEG_UNIQUE :
     !r x y.
         x IN ring_carrier r /\ y IN ring_carrier r /\ ring_add r x y = ring_0 r
         ==> ring_neg r x = y
-Proof        
+Proof
   MESON_TAC[RING_ADD_EQ_0]
 QED
 
@@ -825,7 +825,7 @@ Theorem RING_TOTALIZATION :
     !r :'a ring.
           (?r' f. ring_carrier r' = (:1) /\
                   ring_monomorphism(r,r') f) \/
-          (?r' f. ring_carrier r' = (:num#A->bool) /\
+          (?r' f. ring_carrier r' = univ(:(num # 'a) -> bool)/\
                   ring_monomorphism(r,r') f)
 Proof
     GEN_TAC THEN ASM_CASES_TAC `trivial_ring(r:A ring)` THENL
