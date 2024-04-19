@@ -26,6 +26,7 @@ fun fs thl = FULL_SIMP_TAC (srw_ss() ++ numSimps.ARITH_ss) thl
 fun rfs thl = REV_FULL_SIMP_TAC (srw_ss() ++ numSimps.ARITH_ss) thl;
 val qabbrev_tac = Q.ABBREV_TAC;
 val qexists_tac = Q.EXISTS_TAC;
+val qspecl_then = Q.SPECL_THEN;
 
 val DEF0 = Lib.with_flag (boolLib.def_suffix, "") TotalDefn.Define
 val DEF = Lib.with_flag (boolLib.def_suffix, "_DEF") TotalDefn.Define
@@ -5913,6 +5914,260 @@ val MIN_LIST_MAP_LE = store_thm(
   Cases_on `ls = []` >-
   rw[MIN_LIST_def] >>
   rw[MIN_LIST_def, MIN_LE_PAIR]);
+
+(* ------------------------------------------------------------------------- *)
+(* Increasing and decreasing list bounds                                     *)
+(* ------------------------------------------------------------------------- *)
+
+(* Overload increasing list and decreasing list *)
+val _ = overload_on("MONO_INC",
+          ``\ls:num list. !m n. m <= n /\ n < LENGTH ls ==> EL m ls <= EL n ls``);
+val _ = overload_on("MONO_DEC",
+          ``\ls:num list. !m n. m <= n /\ n < LENGTH ls ==> EL n ls <= EL m ls``);
+
+(* Theorem: MONO_INC []*)
+(* Proof: no member to falsify. *)
+Theorem MONO_INC_NIL:
+  MONO_INC []
+Proof
+  simp[]
+QED
+
+(* Theorem: MONO_INC (h::t) ==> MONO_INC t *)
+(* Proof:
+   This is to show: m <= n /\ n < LENGTH t ==> EL m t <= EL n t
+   Note m <= n <=> SUC m <= SUC n              by arithmetic
+    and n < LENGTH t <=> SUC n < LENGTH (h::t) by LENGTH
+   Thus EL (SUC m) (h::t) <= EL (SUC n) (h::t) by MONO_INC (h::t)
+     or            EL m t <= EL n t            by EL
+*)
+Theorem MONO_INC_CONS:
+  !h t. MONO_INC (h::t) ==> MONO_INC t
+Proof
+  rw[] >>
+  first_x_assum (qspecl_then [`SUC m`, `SUC n`] strip_assume_tac) >>
+  rfs[]
+QED
+
+(* Theorem: MONO_INC (h::t) /\ MEM x t ==> h <= x *)
+(* Proof:
+   Note MEM x t
+    ==> ?n. n < LENGTH t /\ x = EL n t         by MEM_EL
+     or SUC n < SUC (LENGTH t)                 by inequality
+    Now 0 < SUC n, or 0 <= SUC n,
+    and SUC n < SUC (LENGTH t) = LENGTH (h::t) by LENGTH
+     so EL 0 (h::t) <= EL (SUC n) (h::t)       by MONO_INC (h::t)
+     or           h <= EL n t = x              by EL
+*)
+Theorem MONO_INC_HD:
+  !h t x. MONO_INC (h::t) /\ MEM x t ==> h <= x
+Proof
+  rpt strip_tac >>
+  fs[MEM_EL] >>
+  last_x_assum (qspecl_then [`0`,`SUC n`] strip_assume_tac) >>
+  rfs[]
+QED
+
+(* Theorem: MONO_DEC []*)
+(* Proof: no member to falsify. *)
+Theorem MONO_DEC_NIL:
+  MONO_DEC []
+Proof
+  simp[]
+QED
+
+(* Theorem: MONO_DEC (h::t) ==> MONO_DEC t *)
+(* Proof:
+   This is to show: m <= n /\ n < LENGTH t ==> EL n t <= EL m t
+   Note m <= n <=> SUC m <= SUC n              by arithmetic
+    and n < LENGTH t <=> SUC n < LENGTH (h::t) by LENGTH
+   Thus EL (SUC n) (h::t) <= EL (SUC m) (h::t) by MONO_DEC (h::t)
+     or            EL n t <= EL m t            by EL
+*)
+Theorem MONO_DEC_CONS:
+  !h t. MONO_DEC (h::t) ==> MONO_DEC t
+Proof
+  rw[] >>
+  first_x_assum (qspecl_then [`SUC m`, `SUC n`] strip_assume_tac) >>
+  rfs[]
+QED
+
+(* Theorem: MONO_DEC (h::t) /\ MEM x t ==> x <= h *)
+(* Proof:
+   Note MEM x t
+    ==> ?n. n < LENGTH t /\ x = EL n t         by MEM_EL
+     or SUC n < SUC (LENGTH t)                 by inequality
+    Now 0 < SUC n, or 0 <= SUC n,
+    and SUC n < SUC (LENGTH t) = LENGTH (h::t) by LENGTH
+     so EL (SUC n) (h::t) <= EL 0 (h::t)       by MONO_DEC (h::t)
+     or        x = EL n t <= h                 by EL
+*)
+Theorem MONO_DEC_HD:
+  !h t x. MONO_DEC (h::t) /\ MEM x t ==> x <= h
+Proof
+  rpt strip_tac >>
+  fs[MEM_EL] >>
+  last_x_assum (qspecl_then [`0`,`SUC n`] strip_assume_tac) >>
+  rfs[]
+QED
+
+(* Theorem: ls <> [] /\ (!m n. m <= n ==> EL m ls <= EL n ls) ==> (MAX_LIST ls = LAST ls) *)
+(* Proof:
+   By induction on ls.
+   Base: [] <> [] /\ MONO_INC [] ==> MAX_LIST [] = LAST []
+       Note [] <> [] = F, hence true.
+   Step: ls <> [] /\ MONO_INC ls ==> MAX_LIST ls = LAST ls ==>
+         !h. h::ls <> [] /\ MONO_INC (h::ls) ==> MAX_LIST (h::ls) = LAST (h::ls)
+       If ls = [],
+         LHS = MAX_LIST [h] = h        by MAX_LIST_def
+         RHS = LAST [h] = h = LHS      by LAST_DEF
+       If ls <> [],
+         Note h <= LAST ls             by LAST_EL_CONS, increasing property
+          and MONO_INC ls              by EL, m <= n ==> SUC m <= SUC n
+         MAX_LIST (h::ls)
+       = MAX h (MAX_LIST ls)           by MAX_LIST_def
+       = MAX h (LAST ls)               by induction hypothesis
+       = LAST ls                       by MAX_DEF, h <= LAST ls
+       = LAST (h::ls)                  by LAST_DEF
+*)
+val MAX_LIST_MONO_INC = store_thm(
+  "MAX_LIST_MONO_INC",
+  ``!ls. ls <> [] /\ MONO_INC ls ==> (MAX_LIST ls = LAST ls)``,
+  Induct >-
+  rw[] >>
+  rpt strip_tac >>
+  Cases_on `ls = []` >-
+  rw[] >>
+  `h <= LAST ls` by
+  (`LAST ls = EL (LENGTH ls) (h::ls)` by rw[LAST_EL_CONS] >>
+  `h = EL 0 (h::ls)` by rw[] >>
+  `LENGTH ls < LENGTH (h::ls)` by rw[] >>
+  metis_tac[DECIDE``0 <= n``]) >>
+  `MONO_INC ls` by
+    (rpt strip_tac >>
+  `SUC m <= SUC n` by decide_tac >>
+  `EL (SUC m) (h::ls) <= EL (SUC n) (h::ls)` by rw[] >>
+  fs[]) >>
+  rw[MAX_DEF, LAST_DEF]);
+
+(* Theorem: ls <> [] /\ MONO_DEC ls ==> (MAX_LIST ls = HD ls) *)
+(* Proof:
+   By induction on ls.
+   Base: [] <> [] /\ MONO_DEC [] ==> MAX_LIST [] = HD []
+       Note [] <> [] = F, hence true.
+   Step: ls <> [] /\ MONO_DEC ls ==> MAX_LIST ls = HD ls ==>
+         !h. h::ls <> [] /\ MONO_DEC (h::ls) ==> MAX_LIST (h::ls) = HD (h::ls)
+       If ls = [],
+         LHS = MAX_LIST [h] = h        by MAX_LIST_def
+         RHS = HD [h] = h = LHS        by HD
+       If ls <> [],
+         Note HD ls <= h               by HD, decreasing property
+          and MONO_DEC ls              by EL, m <= n ==> SUC m <= SUC n
+         MAX_LIST (h::ls)
+       = MAX h (MAX_LIST ls)           by MAX_LIST_def
+       = MAX h (HD ls)                 by induction hypothesis
+       = h                             by MAX_DEF, HD ls <= h
+       = HD (h::ls)                    by HD
+*)
+val MAX_LIST_MONO_DEC = store_thm(
+  "MAX_LIST_MONO_DEC",
+  ``!ls. ls <> [] /\ MONO_DEC ls ==> (MAX_LIST ls = HD ls)``,
+  Induct >-
+  rw[] >>
+  rpt strip_tac >>
+  Cases_on `ls = []` >-
+  rw[] >>
+  `HD ls <= h` by
+  (`HD ls = EL 1 (h::ls)` by rw[] >>
+  `h = EL 0 (h::ls)` by rw[] >>
+  `0 < LENGTH ls` by metis_tac[LENGTH_EQ_0, NOT_ZERO_LT_ZERO] >>
+  `1 < LENGTH (h::ls)` by rw[] >>
+  metis_tac[DECIDE``0 <= 1``]) >>
+  `MONO_DEC ls` by
+    (rpt strip_tac >>
+  `SUC m <= SUC n` by decide_tac >>
+  `EL (SUC n) (h::ls) <= EL (SUC m) (h::ls)` by rw[] >>
+  fs[]) >>
+  rw[MAX_DEF]);
+
+(* Theorem: ls <> [] /\ MONO_INC ls ==> (MIN_LIST ls = HD ls) *)
+(* Proof:
+   By induction on ls.
+   Base: [] <> [] /\ MONO_INC [] ==> MIN_LIST [] = HD []
+       Note [] <> [] = F, hence true.
+   Step: ls <> [] /\ MONO_INC ls ==> MIN_LIST ls = HD ls ==>
+         !h. h::ls <> [] /\ MONO_INC (h::ls) ==> MIN_LIST (h::ls) = HD (h::ls)
+       If ls = [],
+         LHS = MIN_LIST [h] = h        by MIN_LIST_def
+         RHS = HD [h] = h = LHS        by HD
+       If ls <> [],
+         Note h <= HD ls               by HD, increasing property
+          and MONO_INC ls              by EL, m <= n ==> SUC m <= SUC n
+         MIN_LIST (h::ls)
+       = MIN h (MIN_LIST ls)           by MIN_LIST_def
+       = MIN h (HD ls)                 by induction hypothesis
+       = h                             by MIN_DEF, h <= HD ls
+       = HD (h::ls)                    by HD
+*)
+val MIN_LIST_MONO_INC = store_thm(
+  "MIN_LIST_MONO_INC",
+  ``!ls. ls <> [] /\ MONO_INC ls ==> (MIN_LIST ls = HD ls)``,
+  Induct >-
+  rw[] >>
+  rpt strip_tac >>
+  Cases_on `ls = []` >-
+  rw[] >>
+  `h <= HD ls` by
+  (`HD ls = EL 1 (h::ls)` by rw[] >>
+  `h = EL 0 (h::ls)` by rw[] >>
+  `0 < LENGTH ls` by metis_tac[LENGTH_EQ_0, NOT_ZERO_LT_ZERO] >>
+  `1 < LENGTH (h::ls)` by rw[] >>
+  metis_tac[DECIDE``0 <= 1``]) >>
+  `MONO_INC ls` by
+    (rpt strip_tac >>
+  `SUC m <= SUC n` by decide_tac >>
+  `EL (SUC m) (h::ls) <= EL (SUC n) (h::ls)` by rw[] >>
+  fs[]) >>
+  rw[MIN_DEF]);
+
+(* Theorem: ls <> [] /\ MONO_DEC ls ==> (MIN_LIST ls = LAST ls) *)
+(* Proof:
+   By induction on ls.
+   Base: [] <> [] /\ MONO_DEC [] ==> MIN_LIST [] = LAST []
+       Note [] <> [] = F, hence true.
+   Step: ls <> [] /\ MONO_DEC ls ==> MIN_LIST ls = LAST ls ==>
+         !h. h::ls <> [] /\ MONO_DEC (h::ls) ==> MAX_LIST (h::ls) = LAST (h::ls)
+       If ls = [],
+         LHS = MIN_LIST [h] = h        by MIN_LIST_def
+         RHS = LAST [h] = h = LHS      by LAST_DEF
+       If ls <> [],
+         Note LAST ls <= h             by LAST_EL_CONS, decreasing property
+          and MONO_DEC ls              by EL, m <= n ==> SUC m <= SUC n
+         MIN_LIST (h::ls)
+       = MIN h (MIN_LIST ls)           by MIN_LIST_def
+       = MIN h (LAST ls)               by induction hypothesis
+       = LAST ls                       by MIN_DEF, LAST ls <= h
+       = LAST (h::ls)                  by LAST_DEF
+*)
+val MIN_LIST_MONO_DEC = store_thm(
+  "MIN_LIST_MONO_DEC",
+  ``!ls. ls <> [] /\ MONO_DEC ls ==> (MIN_LIST ls = LAST ls)``,
+  Induct >-
+  rw[] >>
+  rpt strip_tac >>
+  Cases_on `ls = []` >-
+  rw[] >>
+  `LAST ls <= h` by
+  (`LAST ls = EL (LENGTH ls) (h::ls)` by rw[LAST_EL_CONS] >>
+  `h = EL 0 (h::ls)` by rw[] >>
+  `LENGTH ls < LENGTH (h::ls)` by rw[] >>
+  metis_tac[DECIDE``0 <= n``]) >>
+  `MONO_DEC ls` by
+    (rpt strip_tac >>
+  `SUC m <= SUC n` by decide_tac >>
+  `EL (SUC n) (h::ls) <= EL (SUC m) (h::ls)` by rw[] >>
+  fs[]) >>
+  rw[MIN_DEF, LAST_DEF]);
 
 (* ------------------------------------------------------------------------ *)
 

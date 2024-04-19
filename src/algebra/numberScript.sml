@@ -7,7 +7,7 @@
 open HolKernel boolLib Parse bossLib;
 
 open prim_recTheory arithmeticTheory dividesTheory gcdTheory gcdsetTheory
-     logrootTheory pred_setTheory listTheory;
+     logrootTheory pred_setTheory listTheory rich_listTheory;
 
 val _ = new_theory "number";
 
