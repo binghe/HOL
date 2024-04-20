@@ -30,6 +30,8 @@ open submonoidTheory subgroupTheory;
 open monoidMapTheory groupMapTheory;
 open ringMapTheory fieldMapTheory;
 
+val _ = temp_overload_on("over", ``\f s t. !x. x IN s ==> f x IN t``);
+
 (* ------------------------------------------------------------------------- *)
 (* Symmetry Group Documentation                                              *)
 (* ------------------------------------------------------------------------- *)

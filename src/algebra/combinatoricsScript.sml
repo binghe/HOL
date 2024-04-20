@@ -12461,7 +12461,7 @@ val list_lcm_prime_factor_member = store_thm(
 
    NOTE: this is FUNSET --Chun Tian
  *)
-val _ = overload_on("over", ``\f s t. !x. x IN s ==> f x IN t``);
+val _ = temp_overload_on("over", ``\f s t. !x. x IN s ==> f x IN t``);
 (* not easy to make this a good infix operator! *)
 
 (* Theorem: INJ f s t ==> over f s t *)

@@ -16,6 +16,8 @@ open helperCountTheory;
 open arithmeticTheory pred_setTheory gcdsetTheory numberTheory listTheory
      rich_listTheory listRangeTheory combinatoricsTheory;
 
+val _ = temp_overload_on("over", ``\f s t. !x. x IN s ==> f x IN t``);
+
 (* ------------------------------------------------------------------------- *)
 (* Counting of maps between finite sets Documentation                        *)
 (* ------------------------------------------------------------------------- *)

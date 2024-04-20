@@ -30,6 +30,8 @@ open quotientGroupTheory; (* for homo_image_def *)
 
 open symmetryTheory;
 
+val _ = temp_overload_on("over", ``\f s t. !x. x IN s ==> f x IN t``);
+
 (* ------------------------------------------------------------------------- *)
 (* Permutation Group Documentation                                           *)
 (* ------------------------------------------------------------------------- *)
