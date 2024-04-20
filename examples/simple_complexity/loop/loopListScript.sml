@@ -26,6 +26,9 @@ open bitsizeTheory;
 open arithmeticTheory dividesTheory numberTheory combinatoricsTheory listTheory
      rich_listTheory listRangeTheory;
 
+(* Overload sublist by infix operator *)
+val _ = temp_overload_on ("<=", ``sublist``);
+
 (* ------------------------------------------------------------------------- *)
 (* Loop Recurrence with List argument Documentation                          *)
 (* ------------------------------------------------------------------------- *)

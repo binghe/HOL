@@ -41,6 +41,9 @@ open polynomialTheory polyWeakTheory;
 val _ = monadsyntax.enable_monadsyntax();
 val _ = monadsyntax.enable_monad "Count";
 
+(* Overload sublist by infix operator *)
+val _ = temp_overload_on ("<=", ``sublist``);
+
 (* ------------------------------------------------------------------------- *)
 (* Polynomial computations in monadic style Documentation                    *)
 (* ------------------------------------------------------------------------- *)

@@ -10077,83 +10077,8 @@ Proof
   ]
 QED
 
-(* ------------------------------------------------------------------------- *)
-(* Sublist Theory Documentation                                              *)
-(* ------------------------------------------------------------------------- *)
-(* Datatypes and overloads:
-   l1 <= l2  = sublist l1 l2
-*)
-(* Definitions and Theorems (# are exported):
-
-   Sublist:
-   sublist_def           |- (!x. [] <= x <=> T) /\ (!t1 h1. h1::t1 <= [] <=> F) /\
-                             !t2 t1 h2 h1. h1::t1 <= h2::t2 <=>
-                              (h1 = h2) /\ t1 <= t2 \/ h1 <> h2 /\ h1::t1 <= t2
-   sublist_nil           |- !p. [] <= p
-   sublist_cons          |- !h p q. p <= q <=> h::p <= h::q
-   sublist_of_nil        |- !p. p <= [] <=> (p = [])
-   sublist_cons_eq       |- !h. (!p q. h::p <= q ==> p <= q) <=> !p q. p <= q ==> p <= h::q
-   sublist_cons_remove   |- !h p q. h::p <= q ==> p <= q
-   sublist_cons_include  |- !h p q. p <= q ==> p <= h::q
-   sublist_length        |- !p q. p <= q ==> LENGTH p <= LENGTH q
-   sublist_refl          |- !p. p <= p
-   sublist_antisym       |- !p q. p <= q /\ q <= p ==> (p = q)
-   sublist_trans         |- !p q r. p <= q /\ q <= r ==> p <= r
-   sublist_snoc          |- !h p q. p <= q ==> SNOC h p <= SNOC h q
-   sublist_member_sing   |- !ls x. MEM x ls ==> [x] <= ls
-   sublist_take          |- !ls n. TAKE n ls <= ls
-   sublist_drop          |- !ls n. DROP n ls <= ls
-   sublist_tail          |- !ls. ls <> [] ==> TL ls <= ls
-   sublist_front         |- !ls. ls <> [] ==> FRONT ls <= ls
-   sublist_head_sing     |- !ls. ls <> [] ==> [HD ls] <= ls
-   sublist_last_sing     |- !ls. ls <> [] ==> [LAST ls] <= ls
-   sublist_every         |- !l ls. l <= ls ==> !P. EVERY P ls ==> EVERY P l
-
-   More sublists:
-   sublist_induct          |- !P. (!y. P [] y) /\
-                                  (!h x y. P x y /\ x <= y ==> P (h::x) (h::y)) /\
-                                  (!h x y. P x y /\ x <= y ==> P x (h::y)) ==> !x y. x <= y ==> P x y
-   sublist_mem             |- !p q x. p <= q /\ MEM x p ==> MEM x q
-   sublist_subset          |- !ls sl. sl <= ls ==> set sl SUBSET set ls
-   sublist_ALL_DISTINCT    |- !p q. p <= q /\ ALL_DISTINCT q ==> ALL_DISTINCT p
-   sublist_append_remove   |- !p q x. x ++ p <= q ==> p <= q
-   sublist_append_include  |- !p q x. p <= q ==> p <= x ++ q
-   sublist_append_suffix   |- !p q. p <= p ++ q
-   sublist_append_prefix   |- !p q. p <= q ++ p
-   sublist_prefix          |- !x p q. p <= q <=> x ++ p <= x ++ q
-   sublist_prefix_nil      |- !p q. p ++ q <= q ==> (p = [])
-   sublist_append_if       |- !p q. p <= q ==> !h. p ++ [h] <= q ++ [h]
-   sublist_append_only_if  |- !p q h. p ++ [h] <= q ++ [h] ==> p <= q
-   sublist_append_iff      |- !p q h. p <= q <=> p ++ [h] <= q ++ [h]
-   sublist_suffix          |- !x p q. p <= q <=> p ++ x <= q ++ x
-   sublist_append_pair     |- !a b c d. a <= b /\ c <= d ==> a ++ c <= b ++ d
-   sublist_append_extend   |- !h t q. h::t <= q <=> ?x y. (q = x ++ h::y) /\ t <= y
-
-   Applications of sublist:
-   MAP_SUBLIST           |- !f p q. p <= q ==> MAP f p <= MAP f q
-   SUM_SUBLIST           |- !p q. p <= q ==> SUM p <= SUM q
-   listRangeINC_sublist  |- !m n. m < n ==> [m; n] <= [m .. n]
-   listRangeLHI_sublist  |- !m n. m + 1 < n ==> [m; n - 1] <= [m ..< n]
-   sublist_order         |- !ls sl x. sl <= ls /\ MEM x sl ==>
-                                      ?l1 l2 l3 l4. ls = l1 ++ [x] ++ l2 /\ sl = l3 ++ [x] ++ l4 /\
-                                                    l3 <= l1 /\ l4 <= l2
-   sublist_element_order |- !ls sl j h. sl <= ls /\ ALL_DISTINCT ls /\ j < h /\ h < LENGTH sl ==>
-                                        findi (EL j sl) ls < findi (EL h sl) ls
-   sublist_MONO_INC      |- !ls sl. sl <= ls /\ MONO_INC ls ==> MONO_INC sl
-   sublist_MONO_DEC      |- !ls sl. sl <= ls /\ MONO_DEC ls ==> MONO_DEC sl
-
-   FILTER as sublist:
-   FILTER_sublist        |- !P ls. FILTER P ls <= ls
-   FILTER_element_order  |- !P ls j h. (let fs = FILTER P ls
-                                         in ALL_DISTINCT ls /\ j < h /\ h < LENGTH fs ==>
-                                            findi (EL j fs) ls < findi (EL h fs) ls)
-   FILTER_MONO_INC       |- !P ls. MONO_INC ls ==> MONO_INC (FILTER P ls)
-   FILTER_MONO_DEC       |- !P ls. MONO_DEC ls ==> MONO_DEC (FILTER P ls)
-
-*)
-
 (* Overload sublist by infix operator *)
-val _ = overload_on ("<=", ``sublist``);
+val _ = temp_overload_on ("<=", ``sublist``);
 
 (* Theorem: m < n ==> [m; n] <= [m .. n] *)
 (* Proof:

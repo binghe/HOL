@@ -21,6 +21,9 @@ open pairTheory bagTheory pred_setTheory listTheory arithmeticTheory
 
 open monoidTheory gbagTheory groupTheory ringTheory polynomialTheory;
 
+(* Overload sublist by infix operator *)
+val _ = temp_overload_on ("<=", ``sublist``);
+
 (* ------------------------------------------------------------------------- *)
 (* Weak Polynomials Documentation                                            *)
 (* ------------------------------------------------------------------------- *)
