@@ -868,13 +868,13 @@ val GPROD_SET_PROPERTY = store_thm(
 
 Definition extend_def:
   extend m = <| carrier := UNIV; id := m.id;
-                op := λx y. if x ∈ m.carrier then
-                              if y ∈ m.carrier then m.op x y else y
+                op := λx y. if x IN m.carrier then
+                              if y IN m.carrier then m.op x y else y
                             else x |>
 End
 
 Theorem extend_is_monoid[simp]:
-  ∀m. Monoid m ⇒ Monoid (extend m)
+  !m. Monoid m ==> Monoid (extend m)
 Proof
   simp[extend_def, EQ_IMP_THM, Monoid_def] >> rw[] >> rw[] >>
   gvs[]
@@ -893,7 +893,7 @@ Proof
 QED
 
 Theorem extend_op:
-  x ∈ m.carrier ∧ y ∈ m.carrier ⇒ (extend m).op x y = m.op x y
+  x IN m.carrier /\ y IN m.carrier ==> (extend m).op x y = m.op x y
 Proof
   simp[extend_def]
 QED
@@ -1976,11 +1976,12 @@ val _ = add_rule{fixity = Suffix 2100,
                  term_name = "reciprocal",
                  block_style = (AroundEachPhrase, (PP.CONSISTENT, 0)),
                  paren_style = OnlyIfNecessary,
-                 pp_elements = [TOK "⁻¹"]};
+                 pp_elements = [TOK (UnicodeChars.sup_minus ^ UnicodeChars.sup_1)]};
 val _ = overload_on("reciprocal", ``monoid_inv g``);
 val _ = overload_on ("|/", ``reciprocal``); (* for non-unicode input *)
 
-(* This means: reciprocal will have the display ⁻¹, and here reciprocal is short-name for monoid_inv g *)
+(* This means: reciprocal will have the display $^{-1}$, and here reciprocal is
+   short-name for monoid_inv g *)
 
 (* - monoid_inv_def;
 > val it = |- !g x. Monoid g /\ x IN G* ==> |/ x IN G /\ (x * |/ x = #e) /\ ( |/ x * x = #e) : thm
@@ -4874,7 +4875,7 @@ Proof
   \\ simp[]
   \\ fs[AbelianMonoid_def]
   \\ qmatch_goalsub_abbrev_tac`_ * _ * gp * ( _ * gq)`
-  \\ `gp ∈ g.carrier ∧ gq ∈ g.carrier`
+  \\ `gp IN g.carrier /\ gq IN g.carrier`
   by (
     unabbrev_all_tac
     \\ conj_tac \\ irule GBAG_in_carrier
@@ -5003,12 +5004,12 @@ Proof
     \\ fs[] )
   \\ rpt strip_tac
   \\ fs[SET_OF_BAG_INSERT]
-  \\ `∃P. P IN s /\ P e` by metis_tac[]
-  \\ `∃s0. s = P INSERT s0 /\ P NOTIN s0` by metis_tac[DECOMPOSITION]
+  \\ `?P. P IN s /\ P e` by metis_tac[]
+  \\ `?s0. s = P INSERT s0 /\ P NOTIN s0` by metis_tac[DECOMPOSITION]
   \\ BasicProvers.VAR_EQ_TAC
   \\ simp[BAG_OF_SET_INSERT_NON_ELEMENT]
   \\ DEP_REWRITE_TAC[BAG_IMAGE_FINITE_INSERT]
-  \\ qpat_x_assum`_ ⇒ _`mp_tac
+  \\ qpat_x_assum`_ ==> _`mp_tac
   \\ impl_tac >- metis_tac[]
   \\ strip_tac
   \\ conj_tac >- metis_tac[FINITE_INSERT, FINITE_BAG_OF_SET]
@@ -5073,7 +5074,7 @@ QED
 
 Theorem GBAG_IMAGE_FILTER:
   AbelianMonoid g ==>
-  !b. FINITE_BAG b ==> IMAGE f (SET_OF_BAG b ∩ P) SUBSET g.carrier ==>
+  !b. FINITE_BAG b ==> IMAGE f (SET_OF_BAG b INTER P) SUBSET g.carrier ==>
   GBAG g (BAG_IMAGE f (BAG_FILTER P b)) =
   GBAG g (BAG_IMAGE (\x. if P x then f x else g.id) b)
 Proof
