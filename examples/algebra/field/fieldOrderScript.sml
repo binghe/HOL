@@ -17,7 +17,7 @@ open jcLib;
 
 (* open dependent theories *)
 open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
-     gcdsetTheory numberTheory combinatoricsTheory;
+     gcdsetTheory numberTheory combinatoricsTheory primeTheory;
 
 open fieldTheory;
 open integralDomainTheory;
@@ -25,14 +25,7 @@ open ringTheory;
 open groupTheory;
 open monoidTheory;
 
-(* val _ = load "groupOrderTheory"; *)
-open monoidOrderTheory groupOrderTheory;
-open subgroupTheory;
-
-(* val _ = load "groupCyclicTheory"; *)
-open groupCyclicTheory;
-
-open GaussTheory;
+open monoidOrderTheory groupOrderTheory subgroupTheory groupCyclicTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Order of Elements in a Field Documentation                                *)

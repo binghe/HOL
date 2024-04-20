@@ -16,18 +16,12 @@ val _ = new_theory "groupCyclic";
 open jcLib;
 
 open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
-     numberTheory combinatoricsTheory gcdsetTheory;
+     numberTheory combinatoricsTheory gcdsetTheory primeTheory;
 
 open monoidTheory monoidOrderTheory;
 open groupTheory subgroupTheory groupOrderTheory;
 open groupMapTheory;
-
-(* val _ = load "groupInstancesTheory"; *)
 open groupInstancesTheory;
-
-(* val _ = load "GaussTheory"; *)
-open GaussTheory;
-open EulerTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Cyclic Group Documentation                                                *)

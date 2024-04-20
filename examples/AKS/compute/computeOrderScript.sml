@@ -16,7 +16,7 @@ val _ = new_theory "computeOrder";
 open jcLib;
 
 open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
-     dividesTheory gcdTheory logrootTheory;
+     dividesTheory gcdTheory logrootTheory primeTheory;
 
 (* val _ = load "fieldInstancesTheory"; *)
 open monoidInstancesTheory;
@@ -26,11 +26,7 @@ open fieldInstancesTheory;
 open groupOrderTheory;
 open monoidOrderTheory;
 
-(* val _ = load "GaussTheory"; *)
-open EulerTheory;
-open GaussTheory;
-
-open computeBasicTheory logPowerTheory;
+open computeBasicTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Order Computations Documentation                                          *)

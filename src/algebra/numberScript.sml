@@ -10216,6 +10216,9 @@ QED
 
 *)
 
+(* Overload sublist by infix operator *)
+val _ = overload_on ("<=", ``sublist``);
+
 (* Theorem: m < n ==> [m; n] <= [m .. n] *)
 (* Proof:
    By induction on n.

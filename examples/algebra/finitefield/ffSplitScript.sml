@@ -16,7 +16,7 @@ open jcLib;
 
 (* open dependent theories *)
 open prim_recTheory pred_setTheory listTheory arithmeticTheory numberTheory
-     combinatoricsTheory dividesTheory gcdTheory gcdsetTheory;
+     combinatoricsTheory dividesTheory gcdTheory gcdsetTheory primeTheory;
 
 (* Get dependent theories local *)
 open ffBasicTheory;
@@ -64,8 +64,6 @@ open polyMultiplicityTheory;
 open polyMapTheory;
 
 open polyProductTheory; (* for PPROD *)
-
-open GaussTheory; (* for divisors *)
 
 (* ------------------------------------------------------------------------- *)
 (* Splitting Field Documentation                                             *)

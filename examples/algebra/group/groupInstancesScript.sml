@@ -29,13 +29,11 @@ open jcLib;
 
 (* open dependent theories *)
 open prim_recTheory pred_setTheory arithmeticTheory dividesTheory gcdTheory
-     numberTheory;
+     numberTheory primeTheory;
 
 open monoidTheory groupTheory groupOrderTheory subgroupTheory;
 
 open groupProductTheory;
-
-open EulerTheory GaussTheory; (* for residue *)
 
 (* ------------------------------------------------------------------------- *)
 (* Group Instances Documentation                                             *)

@@ -17,7 +17,7 @@ open jcLib;
 
 (* open dependent theories *)
 open arithmeticTheory pred_setTheory listTheory numberTheory combinatoricsTheory
-     dividesTheory gcdTheory gcdsetTheory;
+     dividesTheory gcdTheory gcdsetTheory primeTheory;
 
 (* Get dependent theories local *)
 (* val _ = load "ffMinimalTheory"; *)
@@ -60,9 +60,6 @@ open ringBinomialTheory;
 open ringDividesTheory;
 open ringIdealTheory;
 open ringUnitTheory;
-
-open binomialTheory;
-open GaussTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Finite Field Element Conjugates Documentation                             *)

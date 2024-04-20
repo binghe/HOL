@@ -17,7 +17,7 @@ open jcLib;
 
 (* open dependent theories *)
 open arithmeticTheory pred_setTheory listTheory dividesTheory gcdTheory
-     gcdsetTheory numberTheory combinatoricsTheory;
+     gcdsetTheory numberTheory combinatoricsTheory primeTheory;
 
 open ffBasicTheory;
 open ffAdvancedTheory;
@@ -56,10 +56,6 @@ open polyMapTheory;
 open polyDerivativeTheory;
 open polyEvalTheory;
 open polyRootTheory;
-open binomialTheory;
-
-open GaussTheory;
-open EulerTheory;
 
 (* val _ = load "fieldBinomialTheory"; *)
 open fieldBinomialTheory; (* for finite_field_freshman_all *)

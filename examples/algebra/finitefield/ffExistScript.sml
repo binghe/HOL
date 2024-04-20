@@ -17,7 +17,7 @@ open jcLib;
 
 (* open dependent theories *)
 open arithmeticTheory pred_setTheory listTheory numberTheory dividesTheory
-     combinatoricsTheory gcdTheory gcdsetTheory;
+     combinatoricsTheory gcdTheory gcdsetTheory primeTheory;
 
 open ffBasicTheory;
 open ffAdvancedTheory;
@@ -65,9 +65,6 @@ open ringUnitTheory;
 
 (* (* val _ = load "fieldBinomialTheory"; *) *)
 open fieldBinomialTheory;
-
-(* val _ = load "MobiusTheory"; *)
-open MobiusTheory; (* for sigma_eq_perfect_power_bounds_2 *)
 
 (* val _ = load "cardinalTheory"; *)
 open cardinalTheory; (* for helpers: A_LIST_BIJ_A *)

@@ -17,7 +17,7 @@ open jcLib;
 
 (* open dependent theories *)
 open arithmeticTheory pred_setTheory listTheory dividesTheory gcdTheory
-     gcdsetTheory numberTheory combinatoricsTheory;
+     gcdsetTheory numberTheory combinatoricsTheory primeTheory;
 
 open ffPolyTheory ffAdvancedTheory ffBasicTheory;
 open ffCycloTheory;
@@ -59,10 +59,6 @@ open polyMonicTheory;
 open polyProductTheory;
 open polyIrreducibleTheory;
 open polyGCDTheory;
-
-(* (* val _ = load "GaussTheory"; *) *)
-open binomialTheory;
-open GaussTheory;
 
 (* val _ = load "polyCyclicTheory"; *)
 open polyCyclicTheory; (* for poly_unity_irreducible_factor_exists *)

@@ -6183,7 +6183,7 @@ val sublist_def = Define`
 `;
 
 (* Overload sublist by infix operator *)
-val _ = overload_on ("<=", ``sublist``);
+val _ = temp_overload_on ("<=", ``sublist``);
 (*
 > sublist_def;
 val it = |- (!x. [] <= x <=> T) /\ (!t1 h1. h1::t1 <= [] <=> F) /\
