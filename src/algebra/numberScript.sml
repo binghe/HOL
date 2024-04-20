@@ -7,7 +7,8 @@
 open HolKernel boolLib Parse bossLib;
 
 open prim_recTheory arithmeticTheory dividesTheory gcdTheory gcdsetTheory
-     logrootTheory pred_setTheory listTheory rich_listTheory;
+     logrootTheory pred_setTheory listTheory rich_listTheory listRangeTheory
+     indexedListsTheory;
 
 val _ = new_theory "number";
 
@@ -10139,6 +10140,240 @@ Proof
     ]
   ]
 QED
+
+(* ------------------------------------------------------------------------- *)
+(* Sublist Theory Documentation                                              *)
+(* ------------------------------------------------------------------------- *)
+(* Datatypes and overloads:
+   l1 <= l2  = sublist l1 l2
+*)
+(* Definitions and Theorems (# are exported):
+
+   Sublist:
+   sublist_def           |- (!x. [] <= x <=> T) /\ (!t1 h1. h1::t1 <= [] <=> F) /\
+                             !t2 t1 h2 h1. h1::t1 <= h2::t2 <=>
+                              (h1 = h2) /\ t1 <= t2 \/ h1 <> h2 /\ h1::t1 <= t2
+   sublist_nil           |- !p. [] <= p
+   sublist_cons          |- !h p q. p <= q <=> h::p <= h::q
+   sublist_of_nil        |- !p. p <= [] <=> (p = [])
+   sublist_cons_eq       |- !h. (!p q. h::p <= q ==> p <= q) <=> !p q. p <= q ==> p <= h::q
+   sublist_cons_remove   |- !h p q. h::p <= q ==> p <= q
+   sublist_cons_include  |- !h p q. p <= q ==> p <= h::q
+   sublist_length        |- !p q. p <= q ==> LENGTH p <= LENGTH q
+   sublist_refl          |- !p. p <= p
+   sublist_antisym       |- !p q. p <= q /\ q <= p ==> (p = q)
+   sublist_trans         |- !p q r. p <= q /\ q <= r ==> p <= r
+   sublist_snoc          |- !h p q. p <= q ==> SNOC h p <= SNOC h q
+   sublist_member_sing   |- !ls x. MEM x ls ==> [x] <= ls
+   sublist_take          |- !ls n. TAKE n ls <= ls
+   sublist_drop          |- !ls n. DROP n ls <= ls
+   sublist_tail          |- !ls. ls <> [] ==> TL ls <= ls
+   sublist_front         |- !ls. ls <> [] ==> FRONT ls <= ls
+   sublist_head_sing     |- !ls. ls <> [] ==> [HD ls] <= ls
+   sublist_last_sing     |- !ls. ls <> [] ==> [LAST ls] <= ls
+   sublist_every         |- !l ls. l <= ls ==> !P. EVERY P ls ==> EVERY P l
+
+   More sublists:
+   sublist_induct          |- !P. (!y. P [] y) /\
+                                  (!h x y. P x y /\ x <= y ==> P (h::x) (h::y)) /\
+                                  (!h x y. P x y /\ x <= y ==> P x (h::y)) ==> !x y. x <= y ==> P x y
+   sublist_mem             |- !p q x. p <= q /\ MEM x p ==> MEM x q
+   sublist_subset          |- !ls sl. sl <= ls ==> set sl SUBSET set ls
+   sublist_ALL_DISTINCT    |- !p q. p <= q /\ ALL_DISTINCT q ==> ALL_DISTINCT p
+   sublist_append_remove   |- !p q x. x ++ p <= q ==> p <= q
+   sublist_append_include  |- !p q x. p <= q ==> p <= x ++ q
+   sublist_append_suffix   |- !p q. p <= p ++ q
+   sublist_append_prefix   |- !p q. p <= q ++ p
+   sublist_prefix          |- !x p q. p <= q <=> x ++ p <= x ++ q
+   sublist_prefix_nil      |- !p q. p ++ q <= q ==> (p = [])
+   sublist_append_if       |- !p q. p <= q ==> !h. p ++ [h] <= q ++ [h]
+   sublist_append_only_if  |- !p q h. p ++ [h] <= q ++ [h] ==> p <= q
+   sublist_append_iff      |- !p q h. p <= q <=> p ++ [h] <= q ++ [h]
+   sublist_suffix          |- !x p q. p <= q <=> p ++ x <= q ++ x
+   sublist_append_pair     |- !a b c d. a <= b /\ c <= d ==> a ++ c <= b ++ d
+   sublist_append_extend   |- !h t q. h::t <= q <=> ?x y. (q = x ++ h::y) /\ t <= y
+
+   Applications of sublist:
+   MAP_SUBLIST           |- !f p q. p <= q ==> MAP f p <= MAP f q
+   SUM_SUBLIST           |- !p q. p <= q ==> SUM p <= SUM q
+   listRangeINC_sublist  |- !m n. m < n ==> [m; n] <= [m .. n]
+   listRangeLHI_sublist  |- !m n. m + 1 < n ==> [m; n - 1] <= [m ..< n]
+   sublist_order         |- !ls sl x. sl <= ls /\ MEM x sl ==>
+                                      ?l1 l2 l3 l4. ls = l1 ++ [x] ++ l2 /\ sl = l3 ++ [x] ++ l4 /\
+                                                    l3 <= l1 /\ l4 <= l2
+   sublist_element_order |- !ls sl j h. sl <= ls /\ ALL_DISTINCT ls /\ j < h /\ h < LENGTH sl ==>
+                                        findi (EL j sl) ls < findi (EL h sl) ls
+   sublist_MONO_INC      |- !ls sl. sl <= ls /\ MONO_INC ls ==> MONO_INC sl
+   sublist_MONO_DEC      |- !ls sl. sl <= ls /\ MONO_DEC ls ==> MONO_DEC sl
+
+   FILTER as sublist:
+   FILTER_sublist        |- !P ls. FILTER P ls <= ls
+   FILTER_element_order  |- !P ls j h. (let fs = FILTER P ls
+                                         in ALL_DISTINCT ls /\ j < h /\ h < LENGTH fs ==>
+                                            findi (EL j fs) ls < findi (EL h fs) ls)
+   FILTER_MONO_INC       |- !P ls. MONO_INC ls ==> MONO_INC (FILTER P ls)
+   FILTER_MONO_DEC       |- !P ls. MONO_DEC ls ==> MONO_DEC (FILTER P ls)
+
+*)
+
+(* Theorem: m < n ==> [m; n] <= [m .. n] *)
+(* Proof:
+   By induction on n.
+   Base: !m. m < 0 ==> [m; 0] <= [m .. 0], true       by m < 0 = F.
+   Step: !m. m < n ==> [m; n] <= [m .. n] ==>
+         !m. m < SUC n ==> [m; SUC n] <= [m .. SUC n]
+        Note m < SUC n means m <= n.
+        If m = n, LHS = [n; SUC n]
+                  RHS = [n .. (n + 1)] = [n; SUC n]   by ADD1
+                      = LHS, thus true                by sublist_refl
+        If m < n,              [m; n] <= [m .. n]     by induction hypothesis
+                  SNOC (SUC n) [m; n] <= SNOC (SUC n) [m .. n] by sublist_snoc
+                        [m; n; SUC n] <= [m .. SUC n]          by SNOC, listRangeINC_SNOC
+           But [m; SUC n] <= [m; n; SUC n]            by sublist_def
+           Thus [m; SUC n] <= [m .. SUC n]            by sublist_trans
+*)
+val listRangeINC_sublist = store_thm(
+  "listRangeINC_sublist",
+  ``!m n. m < n ==> [m; n] <= [m .. n]``,
+  Induct_on `n` >-
+  rw[] >>
+  rpt strip_tac >>
+  `(m = n) \/ m < n` by decide_tac >| [
+    rw[listRangeINC_def, ADD1] >>
+    rw[sublist_refl],
+    `[m; n] <= [m .. n]` by rw[] >>
+    `SNOC (SUC n) [m; n] <= SNOC (SUC n) [m .. n]` by rw[sublist_snoc] >>
+    `SNOC (SUC n) [m; n] = [m; n; SUC n]` by rw[] >>
+    `SNOC (SUC n) [m .. n] = [m .. SUC n]` by rw[listRangeINC_SNOC, ADD1] >>
+    `[m; SUC n] <= [m; n; SUC n]` by rw[sublist_def] >>
+    metis_tac[sublist_trans]
+  ]);
+
+(* Theorem: m + 1 < n ==> [m; (n - 1)] <= [m ..< n] *)
+(* Proof:
+   By induction on n.
+   Base: !m. m + 1 < 0 ==> [m; 0 - 1] <= [m ..< 0], true  by m + 1 < 0 = F.
+   Step: !m. m + 1 < n ==> [m; n - 1] <= [m ..< n] ==>
+         !m. m + 1 < SUC n ==> [m; SUC n - 1] <= [m ..< SUC n]
+        Note m + 1 < SUC n means m + 1 <= n.
+        If m + 1 = n, LHS = [m; SUC n - 1] = [m; n]
+                  RHS = [m ..< (n + 1)] = [m; n]          by ADD1
+                      = LHS, thus true                    by sublist_refl
+        If m + 1 < n,    [m; n - 1] <= [m ..< n]          by induction hypothesis
+                  SNOC n [m; n - 1] <= SNOC n [m ..< n]   by sublist_snoc
+                      [m; n - 1; n] <= [m ..< SUC n]      by SNOC, listRangeLHI_SNOC, ADD1
+           But [m; SUC n - 1] <= [m; n] <= [m; n - 1; n]  by sublist_def
+           Thus [m; SUC n - 1] <= [m ..< SUC n]           by sublist_trans
+*)
+val listRangeLHI_sublist = store_thm(
+  "listRangeLHI_sublist",
+  ``!m n. m + 1 < n ==> [m; (n - 1)] <= [m ..< n]``,
+  Induct_on `n` >-
+  rw[] >>
+  rpt strip_tac >>
+  `SUC n - 1 = n` by decide_tac >>
+  `(m + 1 = n) \/ m + 1 < n` by decide_tac >| [
+    rw[listRangeLHI_def, ADD1] >>
+    rw[sublist_refl],
+    `[m; n - 1] <= [m ..< n]` by rw[] >>
+    `SNOC n [m; n - 1] <= SNOC n [m ..< n]` by rw[sublist_snoc] >>
+    `SNOC n [m; n - 1] = [m; n - 1; n]` by rw[] >>
+    `SNOC n [m ..< n] = [m ..< SUC n]` by rw[listRangeLHI_SNOC, ADD1] >>
+    `[m; SUC n - 1] <= [m; n - 1; n]` by rw[sublist_def] >>
+    metis_tac[sublist_trans]
+  ]);
+
+(* Theorem: sl <= ls /\ ALL_DISTINCT ls /\ j < h /\ h < LENGTH sl ==>
+            findi (EL j sl) ls < findi (EL h sl) ls *)
+(* Proof:
+   Let x = EL j sl,
+       y = EL h sl,
+       p = findi x ls,
+       q = findi y ls.
+   Then MEM x sl /\ MEM y sl                   by EL_MEM
+    and ALL_DISTINCT sl                        by sublist_ALL_DISTINCT
+
+   With MEM x sl,
+   Note ?l1 l2 l3 l4. ls = l1 ++ [x] ++ l2 /\
+                      sl = l3 ++ [x] ++ l4 /\
+                      l3 <= l1 /\ l4 <= l2     by sublist_order, sl <= ls
+   Thus j = LENGTH l3                          by ALL_DISTINCT_EL_APPEND, j < LENGTH sl
+
+   Claim: MEM y l4
+   Proof: By contradiction, suppose ~MEM y l4.
+          Note y <> x                          by ALL_DISTINCT_EL_IMP, j <> h
+           ==> MEM y l3                        by MEM_APPEND
+           ==> ?k. k < LENGTH l3 /\ y = EL k l3   by MEM_EL
+           But LENGTH l3 < LENGTH sl           by LENGTH_APPEND
+           and y = EL k sl                     by EL_APPEND1
+          Thus k = h                           by ALL_DISTINCT_EL_IMP, k < LENGTH sl
+            or h < j, contradicting j < h      by j = LENGTH l3
+
+   Thus ?l5 l6 l7 l8. l2 = l5 ++ [x] ++ l6 /\
+                      l4 = l7 ++ [x] ++ l8 /\
+                      l7 <= l5 /\ l8 <= l6     by sublist_order, l4 <= l2
+
+   Hence, ls = l1 ++ [x] ++ l5 ++ [y] ++ l6.
+    Now p < LENGTH ls /\ q < LENGTH ls         by MEM_findi
+     so x = EL p ls /\ y = EL q ls             by findi_EL_iff
+    and p = LENGTH l1                          by ALL_DISTINCT_EL_APPEND
+    and q = LENGTH (l1 ++ [x] ++ l5)           by ALL_DISTINCT_EL_APPEND
+   Thus p < q                                  by LENGTH_APPEND
+*)
+Theorem sublist_element_order:
+  !ls sl j h. sl <= ls /\ ALL_DISTINCT ls /\ j < h /\ h < LENGTH sl ==>
+              findi (EL j sl) ls < findi (EL h sl) ls
+Proof
+  rpt strip_tac >>
+  qabbrev_tac `x = EL j sl` >>
+  qabbrev_tac `y = EL h sl` >>
+  qabbrev_tac `p = findi x ls` >>
+  qabbrev_tac `q = findi y ls` >>
+  `MEM x sl /\ MEM y sl` by fs[EL_MEM, Abbr`x`, Abbr`y`] >>
+  assume_tac sublist_order >>
+  last_x_assum (qspecl_then [`ls`, `sl`, `x`] strip_assume_tac) >>
+  rfs[] >>
+  `ALL_DISTINCT sl` by metis_tac[sublist_ALL_DISTINCT] >>
+  `j = LENGTH l3` by metis_tac[ALL_DISTINCT_EL_APPEND, LESS_TRANS] >>
+  `MEM y l4` by
+  (spose_not_then strip_assume_tac >>
+  `y <> x` by fs[ALL_DISTINCT_EL_IMP, Abbr`x`, Abbr`y`] >>
+  `MEM y l3` by fs[] >>
+  `?k. k < LENGTH l3 /\ y = EL k l3` by simp[GSYM MEM_EL] >>
+  `LENGTH l3 < LENGTH sl` by fs[] >>
+  `y = EL k sl` by fs[EL_APPEND1] >>
+  `k = h` by metis_tac[ALL_DISTINCT_EL_IMP, LESS_TRANS] >>
+  decide_tac) >>
+  assume_tac sublist_order >>
+  last_x_assum (qspecl_then [`l2`, `l4`, `y`] strip_assume_tac) >>
+  rfs[] >>
+  rename1 `l2 = l5 ++ [y] ++ l6` >>
+  `p < LENGTH ls /\ q < LENGTH ls` by fs[MEM_findi, Abbr`p`, Abbr`q`] >>
+  `x = EL p ls /\ y = EL q ls` by fs[findi_EL_iff, Abbr`p`, Abbr`q`] >>
+  `p = LENGTH l1` by metis_tac[ALL_DISTINCT_EL_APPEND] >>
+  `ls = l1 ++ [x] ++ l5 ++ [y] ++ l6` by fs[] >>
+  `q = LENGTH (l1 ++ [x] ++ l5)` by metis_tac[ALL_DISTINCT_EL_APPEND] >>
+  fs[]
+QED
+
+(* Theorem: let fs = FILTER P ls in ALL_DISTINCT ls /\ j < h /\ h < LENGTH fs ==>
+            findi (EL j fs) ls < findi (EL h fs) l *)
+(* Proof:
+   Let fs = FILTER P ls.
+   Then fs <= ls                   by FILTER_sublist
+   Thus findi (EL j fs) ls
+      < findi (EL h fs) ls         by sublist_element_order
+*)
+Theorem FILTER_element_order:
+  !P ls j h. let fs = FILTER P ls in ALL_DISTINCT ls /\ j < h /\ h < LENGTH fs ==>
+             findi (EL j fs) ls < findi (EL h fs) ls
+Proof
+  rw_tac std_ss[] >>
+  `fs <= ls` by simp[FILTER_sublist, Abbr`fs`] >>
+  fs[sublist_element_order]
+QED
+
+(* ------------------------------------------------------------------------- *)
 
 (* export theory at end *)
 val _ = export_theory();
