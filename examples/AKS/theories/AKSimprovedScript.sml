@@ -51,9 +51,6 @@ open monoidOrderTheory;
 open fieldMapTheory;
 open ringUnitTheory;
 
-open triangleTheory;
-open binomialTheory;
-
 open ringBinomialTheory;
 open ringDividesTheory;
 
@@ -92,10 +89,6 @@ open ffExistTheory;
 open ffConjugateTheory;
 open ffMasterTheory;
 open ffMinimalTheory;
-
-(* (* val _ = load "GaussTheory"; *) *)
-open EulerTheory;
-open GaussTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* AKS Bounds Improvement Documentation                                      *)

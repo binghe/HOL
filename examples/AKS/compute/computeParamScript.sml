@@ -19,11 +19,8 @@ open prim_recTheory pred_setTheory listTheory arithmeticTheory logrootTheory
 
 (* Get dependent theories local *)
 open computeOrderTheory;
-open logPowerTheory; (* for ulog *)
 open ringTheory ringInstancesTheory; (* for ZN_coprime_order_alt *)
 open monoidOrderTheory;
-
-open GaussTheory; (* for phi_pos *)
 
 (* ------------------------------------------------------------------------- *)
 (* AKS Parameter Documentation                                               *)

@@ -16,11 +16,8 @@ val _ = new_theory "fieldBinomial";
 open jcLib;
 
 (* open dependent theories *)
-open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory;
-
-(* val _ = load "binomialTheory"; *)
-open binomialTheory;
-open dividesTheory;
+open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
+     dividesTheory;
 
 open fieldTheory;
 open ringTheory;

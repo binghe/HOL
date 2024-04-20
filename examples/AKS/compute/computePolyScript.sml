@@ -29,7 +29,7 @@ open polyBinomialTheory;
 open ringBinomialTheory;
 
 (* val _ = load "computeOrderTheory"; *)
-open computeBasicTheory computeOrderTheory logPowerTheory;
+open computeBasicTheory computeOrderTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Polynomial Computations Documentation                                     *)

@@ -16,9 +16,7 @@ val _ = new_theory "quarity";
 
 (* ------------------------------------------------------------------------- *)
 
-open helperTwosqTheory;
-
-open windmillTheory GaussTheory;
+open helperTwosqTheory windmillTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Quarity Documentation                                                     *)

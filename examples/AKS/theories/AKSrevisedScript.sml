@@ -44,9 +44,6 @@ open monoidOrderTheory;
 open fieldMapTheory;
 open ringUnitTheory;
 
-open triangleTheory;
-open binomialTheory;
-
 open ringBinomialTheory;
 open ringDividesTheory;
 
@@ -77,8 +74,6 @@ open ffExistTheory;
 open ffConjugateTheory;
 open ffMasterTheory;
 open ffMinimalTheory;
-
-open GaussTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* AKS parameter k revised (not required to be prime) Documentation          *)

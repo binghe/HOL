@@ -44,10 +44,6 @@ open subgroupTheory;
 
 open monoidMapTheory groupMapTheory ringMapTheory fieldMapTheory;
 
-(* (* val _ = load "binomialTheory"; *) *)
-open binomialTheory;
-
-(* (* val _ = load "ringBinomialTheory"; *) *)
 open ringBinomialTheory;
 open ringDividesTheory;
 open ringIdealTheory;

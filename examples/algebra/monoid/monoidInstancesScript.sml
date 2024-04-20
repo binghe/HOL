@@ -29,7 +29,7 @@ open jcLib;
 open pred_setTheory arithmeticTheory dividesTheory gcdTheory listTheory
      rich_listTheory logrootTheory numberTheory combinatoricsTheory;
 
-open monoidTheory monoidMapTheory logPowerTheory;
+open monoidTheory monoidMapTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Monoid Instances Documentation                                            *)

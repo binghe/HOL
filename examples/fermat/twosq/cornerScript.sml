@@ -17,8 +17,6 @@ open arithmeticTheory pred_setTheory dividesTheory gcdsetTheory numberTheory
 
 open helperTwosqTheory;
 
-open EulerTheory; (* for natural_finite, natural_card *)
-
 open quarityTheory;
 
 (* val _ = load "involuteFixTheory"; *)

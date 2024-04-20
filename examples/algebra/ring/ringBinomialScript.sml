@@ -18,11 +18,8 @@ val _ = new_theory "ringBinomial";
 open jcLib;
 
 (* open dependent theories *)
-open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory;
-
-(* val _ = load "binomialTheory"; *)
-open binomialTheory;
-open dividesTheory;
+open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
+     dividesTheory;
 
 open ringTheory;
 open groupTheory;

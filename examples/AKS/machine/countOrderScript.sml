@@ -15,19 +15,16 @@ val _ = new_theory "countOrder";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
+open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
+     numberTheory combinatoricsTheory logrootTheory pairTheory optionTheory
+     listRangeTheory;
+
 open countMonadTheory countMacroTheory;
 open countModuloTheory;
 
 open bitsizeTheory complexityTheory;
 open loopIncreaseTheory loopDecreaseTheory;
 
-open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
-     numberTheory combinatoricsTheory logrootTheory pairTheory optionTheory
-     listRangeTheory;
-
-open logPowerTheory;
-
-(* val _ = load "computeOrderTheory"; *)
 open computeOrderTheory; (* for ordz_seek and ordz_simple *)
 open ringInstancesTheory; (* for ZN_order_mod_1, ZN_order_mod *)
 

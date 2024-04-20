@@ -76,12 +76,8 @@ val _ = new_theory "FLTnumber";
 
 (* ------------------------------------------------------------------------- *)
 
-open arithmeticTheory pred_setTheory dividesTheory gcdTheory;
-
-open numberTheory combinatoricsTheory;
-
-(* val _ = load "EulerTheory"; *)
-open EulerTheory; (* for residue_def *)
+open arithmeticTheory pred_setTheory dividesTheory gcdTheory numberTheory
+     combinatoricsTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Fermat's Little Theorem by Number Theory Documentation                    *)

@@ -47,9 +47,6 @@ open polyIrreducibleTheory;
 open subgroupTheory;
 open groupOrderTheory;
 
-open GaussTheory; (* for phi_eq_0 *)
-
-open binomialTheory;
 open ringBinomialTheory;
 
 open monoidInstancesTheory;

@@ -15,6 +15,10 @@ val _ = new_theory "countPower";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
+open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
+     numberTheory combinatoricsTheory logrootTheory pairTheory optionTheory
+     listRangeTheory primeTheory;
+
 open countMonadTheory countMacroTheory;
 open countBasicTheory;
 
@@ -22,14 +26,7 @@ open bitsizeTheory complexityTheory;
 open loopIncreaseTheory loopDecreaseTheory;
 open loopDivideTheory;
 
-open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
-     numberTheory combinatoricsTheory logrootTheory pairTheory optionTheory
-     listRangeTheory primeTheory;
-
 open monadsyntax;
-
-(* (* val _ = load "sublistTheory"; -- from recurrence theory *) *)
-open sublistTheory; (* for MAP_SUBLIST, SUM_SUBLIST, listRangeINC_sublist *)
 
 val _ = monadsyntax.enable_monadsyntax();
 val _ = monadsyntax.enable_monad "Count";

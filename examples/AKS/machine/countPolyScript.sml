@@ -15,18 +15,16 @@ val _ = new_theory "countPoly";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
+open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
+     rich_listTheory listRangeTheory logrootTheory numberTheory
+     combinatoricsTheory pairTheory optionTheory primeTheory;
+
 open countMonadTheory countMacroTheory;
 open countModuloTheory;
 
 open bitsizeTheory complexityTheory;
 open loopIncreaseTheory loopDecreaseTheory;
 open loopDivideTheory loopListTheory;
-
-open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
-     rich_listTheory listRangeTheory logrootTheory numberTheory
-     combinatoricsTheory pairTheory optionTheory;
-
-open logPowerTheory;
 
 (* (* val _ = load "monadsyntax"; *) *)
 open monadsyntax;

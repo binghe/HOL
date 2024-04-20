@@ -47,7 +47,6 @@ open fieldTheory fieldMapTheory;
 
 (* (* val _ = load "ringBinomialTheory"; *) *)
 open ringBinomialTheory;
-open binomialTheory;
 
 (* (* val _ = load "ringInstancesTheory"; *) *)
 open ringInstancesTheory;

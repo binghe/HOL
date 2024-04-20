@@ -19,7 +19,6 @@ open arithmeticTheory pred_setTheory logrootTheory dividesTheory pairTheory
 (* val _ = load "quarityTheory"; *)
 open helperTwosqTheory;
 
-open sublistTheory;
 open quarityTheory;
 
 (* val _ = load "twoSquaresTheory"; *)

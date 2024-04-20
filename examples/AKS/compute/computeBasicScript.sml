@@ -15,12 +15,8 @@ val _ = new_theory "computeBasic";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory;
-
-open logPowerTheory; (* for LOG2, SQRT, and Perfect Power, Power Free *)
-open logrootTheory dividesTheory gcdTheory gcdsetTheory primeTheory;
-
-open GaussTheory;
+open pred_setTheory listTheory arithmeticTheory logrootTheory dividesTheory
+     gcdTheory gcdsetTheory numberTheory combinatoricsTheory primeTheory;
 
 (* val _ = load "whileTheory"; *)
 open whileTheory;

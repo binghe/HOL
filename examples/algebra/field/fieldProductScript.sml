@@ -19,9 +19,6 @@ open jcLib;
 open pred_setTheory listTheory arithmeticTheory dividesTheory numberTheory
      combinatoricsTheory;
 
-(* val _ = load "binomialTheory"; *)
-open binomialTheory;
-
 open fieldTheory;
 open ringTheory;
 open groupTheory;

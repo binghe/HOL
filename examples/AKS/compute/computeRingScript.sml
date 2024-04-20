@@ -18,13 +18,6 @@ open jcLib;
 open pred_setTheory listTheory rich_listTheory arithmeticTheory numberTheory
      combinatoricsTheory dividesTheory gcdTheory logrootTheory;
 
-(*
-polyBinomial.hol  polyEval.hol    polyGCD.hol   polyRing.hol
-polyDerivative.hol  polyField.hol   polyIrreducible.hol polyRoot.hol
-polyDivides.hol   polyFieldDivision.hol polyMonic.hol   polyWeak.hol
-polyDivision.hol  polyFieldModulo.hol polyProduct.hol   polynomial.hol
-*)
-
 (* val _ = load "polyFieldModuloTheory"; *)
 open polynomialTheory polyWeakTheory polyRingTheory polyFieldTheory;
 open polyMonicTheory polyEvalTheory;
@@ -36,7 +29,7 @@ open polyBinomialTheory;
 open ringBinomialTheory;
 
 (* val _ = load "computePolyTheory"; *)
-open computeBasicTheory computeOrderTheory computePolyTheory logPowerTheory;
+open computeBasicTheory computeOrderTheory computePolyTheory;
 open ringInstancesTheory;
 
 (* ------------------------------------------------------------------------- *)

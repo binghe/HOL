@@ -27,8 +27,6 @@ open arithmeticTheory dividesTheory numberTheory combinatoricsTheory;
 
 open groupTheory subgroupTheory groupInstancesTheory groupProductTheory;
 
-open EulerTheory;
-
 (* ------------------------------------------------------------------------- *)
 (* Congruences Documentation                                                 *)
 (* ------------------------------------------------------------------------- *)

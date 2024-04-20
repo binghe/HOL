@@ -26,9 +26,6 @@ open bitsizeTheory;
 open arithmeticTheory dividesTheory numberTheory combinatoricsTheory listTheory
      rich_listTheory listRangeTheory;
 
-(* val _ = load "sublistTheory"; *)
-open sublistTheory; (* for sublist_drop *)
-
 (* ------------------------------------------------------------------------- *)
 (* Loop Recurrence with List argument Documentation                          *)
 (* ------------------------------------------------------------------------- *)

@@ -21,9 +21,6 @@ open pairTheory bagTheory pred_setTheory listTheory arithmeticTheory
 
 open monoidTheory gbagTheory groupTheory ringTheory polynomialTheory;
 
-(* val _ = load "sublistTheory"; *)
-open sublistTheory; (* for sublist_every *)
-
 (* ------------------------------------------------------------------------- *)
 (* Weak Polynomials Documentation                                            *)
 (* ------------------------------------------------------------------------- *)

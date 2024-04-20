@@ -26,21 +26,12 @@ open fieldTheory fieldInstancesTheory;
 
 open polynomialTheory polyWeakTheory polyRingTheory polyDivisionTheory;
 
-(* val _ = load "polyMonicTheory"; *)
 open polyMonicTheory;
-
-(* val _ = load "polyEvalTheory"; *)
 open polyFieldTheory;
 open polyRootTheory;
 open polyEvalTheory;
 
-(* val _ = load "binomialTheory"; *)
-open binomialTheory;
-
-(* val _ = load "ringBinomialTheory"; *)
 open ringBinomialTheory;
-
-(* val _ = load "ringInstancesTheory"; *)
 open ringInstancesTheory;
 
 (* ------------------------------------------------------------------------- *)

@@ -43,16 +43,12 @@ open polyProductTheory;
 open subgroupTheory;
 open monoidOrderTheory groupOrderTheory;
 
-open binomialTheory;
-
 open ringBinomialTheory;
 
 open monoidInstancesTheory;
 open groupInstancesTheory;
 open ringInstancesTheory;
 open fieldInstancesTheory;
-
-open GaussTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Introspective Sets Documentation                                          *)

@@ -27,7 +27,6 @@ open AKSshiftTheory;
 
 open computeRingTheory;
 open computeParamTheory;
-open EulerTheory;
 
 open monoidTheory groupTheory ringTheory ringUnitTheory;
 
@@ -47,9 +46,6 @@ open polyCyclicTheory;
 
 open subgroupTheory;
 open groupOrderTheory;
-
-open binomialTheory;
-open GaussTheory; (* for phi *)
 
 open ringBinomialTheory;
 open ringDividesTheory;

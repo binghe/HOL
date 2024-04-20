@@ -1,1 +1,1 @@
-INCLUDES = ../lib $(HOLDIR)/src/real
+INCLUDES = $(HOLDIR)/src/real $(HOLDIR)/src/algebra

@@ -47,8 +47,6 @@ open computeRingTheory;
 open computeParamTheory;
 open computeAKSTheory;
 
-open GaussTheory; (* for phi_le *)
-
 (* ------------------------------------------------------------------------- *)
 (* AKS Clean Presentation Documentation                                      *)
 (* ------------------------------------------------------------------------- *)

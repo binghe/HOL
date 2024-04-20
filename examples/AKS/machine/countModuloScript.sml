@@ -19,14 +19,11 @@ open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
      logrootTheory numberTheory combinatoricsTheory pairTheory optionTheory
      listRangeTheory;
 
-(* Get dependent theories local *)
-(* val _ = load "countMacroTheory"; *)
 open countMonadTheory countMacroTheory;
 
 open bitsizeTheory complexityTheory;
 open loopIncreaseTheory loopDecreaseTheory;
 open loopDivideTheory loopMultiplyTheory;
-open logPowerTheory;
 
 (* (* val _ = load "monadsyntax"; *) *)
 open monadsyntax;

@@ -26,8 +26,6 @@ open bitsizeTheory;
 open arithmeticTheory dividesTheory numberTheory combinatoricsTheory listTheory
      rich_listTheory listRangeTheory logrootTheory;
 
-open logPowerTheory; (* for LOG_LE_REVERSE *)
-
 (* ------------------------------------------------------------------------- *)
 (* Loop Recurrence with Dividing argument Documentation                      *)
 (* ------------------------------------------------------------------------- *)

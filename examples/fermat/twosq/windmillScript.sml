@@ -21,9 +21,6 @@ open arithmeticTheory pred_setTheory numberTheory combinatoricsTheory
 (* val _ = load "involuteFixTheory"; *)
 open involuteTheory involuteFixTheory;
 
-(* val _ = load "GaussTheory"; *)
-open GaussTheory; (* for divisors_has_factor *)
-
 (* ------------------------------------------------------------------------- *)
 (* Windmills and Involutions Documentation                                   *)
 (* ------------------------------------------------------------------------- *)
