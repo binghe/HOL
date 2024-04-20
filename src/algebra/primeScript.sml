@@ -9143,9 +9143,9 @@ EVAL ``coprimes 2``; = {1}
 EVAL ``coprimes 3``; = {2; 1}
 EVAL ``coprimes 6``; = {5; 1}
 
-Let ϕ(n) = the set of remainders coprime to n and not exceeding n.
-Then ϕ(2) = {1}, ϕ(3) = {1,2}
-We shall show ϕ(6) = {z = (3 * x + 2 * y) mod 6 | x ∈ ϕ(2), y ∈ ϕ(3)}.
+Let phi(n) = the set of remainders coprime to n and not exceeding n.
+Then phi(2) = {1}, phi(3) = {1,2}
+We shall show phi(6) = {z = (3 * x + 2 * y) mod 6 | x IN phi(2), y IN phi(3)}.
 (1,1) corresponds to z = (3 * 1 + 2 * 1) mod 6 = 5, right!
 (1,2) corresponds to z = (3 * 1 + 2 * 2) mod 6 = 1, right!
 *)
