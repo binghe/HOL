@@ -3,7 +3,7 @@
 (* ------------------------------------------------------------------------- *)
 open HolKernel boolLib bossLib Parse;
 
-open dep_rewrite realTheory ringTheory ringMapTheory ringUnitTheory
+open dep_rewrite realTheory monoidTheory ringTheory ringMapTheory ringUnitTheory
      ringDividesTheory monoidRealTheory groupRealTheory
      pred_setTheory bagTheory gbagTheory real_sigmaTheory iterateTheory;
 
@@ -42,7 +42,7 @@ Proof
   \\ irule EQ_SYM
   \\ irule ring_unit_linv_unique
   \\ simp[]
-  \\ simp[Reals_def, REAL_MUL_LINV, monoidOrderTheory.Invertibles_carrier]
+  \\ simp[Reals_def, REAL_MUL_LINV, Invertibles_carrier]
 QED
 
 Theorem ring_divides_Reals:

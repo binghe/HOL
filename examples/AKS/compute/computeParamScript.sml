@@ -20,7 +20,7 @@ open prim_recTheory pred_setTheory listTheory arithmeticTheory logrootTheory
 (* Get dependent theories local *)
 open computeOrderTheory;
 open ringTheory ringInstancesTheory; (* for ZN_coprime_order_alt *)
-open monoidOrderTheory;
+open monoidTheory monoidOrderTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* AKS Parameter Documentation                                               *)
@@ -53,7 +53,6 @@ open monoidOrderTheory;
    coprime_candidates_ne_0      |- !n m. 1 < n ==> 0 NOTIN coprime_candidates n m
    coprime_candidates_ne_1      |- !n m. 1 < m ==> 1 NOTIN coprime_candidates n m
    ZN_order_good_enough         |- !n m. 1 < n /\ 1 < m ==> ?k. 1 < k /\ coprime k n /\ m <= ordz k n
-
 
    Smallest Candidate
    least_prime_candidates_property    |- !n m. 1 < n /\ 0 < m ==> !h. prime h /\ coprime h n /\
@@ -264,10 +263,6 @@ open monoidOrderTheory;
    param_nice_for_prime|- !n k. 1 < n /\ (param n = nice k) ==> (prime n <=> (k = n))
    param_good_range    |- !n k. (param n = good k) ==> 1 < n /\ 1 < k /\ k < n
 *)
-
-(* ------------------------------------------------------------------------- *)
-(* Helper Theorems                                                           *)
-(* ------------------------------------------------------------------------- *)
 
 (* ------------------------------------------------------------------------- *)
 (* AKS Parameter                                                             *)

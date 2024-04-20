@@ -375,7 +375,7 @@ local
 val gim = group_is_monoid |> SPEC_ALL |> UNDISCH
 in
 fun lift_monoid_order_thm suffix = let
-   val mth = DB.fetch "monoidOrder" ("monoid_order_" ^ suffix)
+   val mth = DB.fetch "monoid" ("monoid_order_" ^ suffix)
    val mth' = mth |> SPEC_ALL
 in
    save_thm("group_order_" ^ suffix, gim |> MP mth' |> DISCH_ALL |> GEN_ALL)

@@ -2548,7 +2548,7 @@ val monoid_bij_image_group = store_thm(
   rpt strip_tac >>
   rw_tac std_ss[Group_def] >-
   rw[monoid_bij_image_monoid] >>
-  rw[monoidOrderTheory.monoid_invertibles_def, monoid_bij_image_def, EXTENSION, EQ_IMP_THM] >>
+  rw[monoid_invertibles_def, monoid_bij_image_def, EXTENSION, EQ_IMP_THM] >>
   `g.inv x' IN G` by rw[] >>
   qexists_tac `f (g.inv x')` >>
   metis_tac[group_inv_thm]);

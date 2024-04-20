@@ -26,6 +26,7 @@ val decide_tac = DECIDE_TAC;
 val metis_tac = METIS_TAC;
 val qabbrev_tac = Q.ABBREV_TAC;
 val qid_spec_tac = Q.ID_SPEC_TAC;
+val qexists_tac = Q.EXISTS_TAC;
 
 (* don't eta-contract these; that will force tactics to use one fixed version
    of srw_ss() *)
@@ -1712,6 +1713,54 @@ val INTER_SING = store_thm(
   ``!s x. x IN s ==> (s INTER {x} = {x})``,
   rw[INTER_DEF, EXTENSION, EQ_IMP_THM]);
 
+(* Theorem: {x} INTER s = if x IN s then {x} else {} *)
+(* Proof: by EXTENSION *)
+val SING_INTER = store_thm(
+  "SING_INTER",
+  ``!s x. {x} INTER s = if x IN s then {x} else {}``,
+  rw[EXTENSION] >>
+  metis_tac[]);
+
+(* Theorem: s <> {} ==> (SING s <=> !x y. x IN s /\ y IN s ==> (x = y)) *)
+(* Proof:
+   If part: SING s ==> !x y. x IN s /\ y IN s ==> (x = y))
+      SING s ==> ?t. s = {t}    by SING_DEF
+      x IN s ==> x = t          by IN_SING
+      y IN s ==> y = t          by IN_SING
+      Hence x = y
+   Only-if part: !x y. x IN s /\ y IN s ==> (x = y)) ==> SING s
+     True by ONE_ELEMENT_SING
+*)
+val SING_ONE_ELEMENT = store_thm(
+  "SING_ONE_ELEMENT",
+  ``!s. s <> {} ==> (SING s <=> !x y. x IN s /\ y IN s ==> (x = y))``,
+  metis_tac[SING_DEF, IN_SING, ONE_ELEMENT_SING]);
+
+(* Theorem: SING s ==> (!x y. x IN s /\ y IN s ==> (x = y)) *)
+(* Proof:
+   Note SING s <=> ?z. s = {z}       by SING_DEF
+    and x IN {z} <=> x = z           by IN_SING
+    and y IN {z} <=> y = z           by IN_SING
+   Thus x = y
+*)
+val SING_ELEMENT = store_thm(
+  "SING_ELEMENT",
+  ``!s. SING s ==> (!x y. x IN s /\ y IN s ==> (x = y))``,
+  metis_tac[SING_DEF, IN_SING]);
+(* Note: the converse really needs s <> {} *)
+
+(* Theorem: SING s <=> s <> {} /\ (!x y. x IN s /\ y IN s ==> (x = y)) *)
+(* Proof:
+   If part: SING s ==> s <> {} /\ (!x y. x IN s /\ y IN s ==> (x = y))
+      True by SING_EMPTY, SING_ELEMENT.
+   Only-if part:  s <> {} /\ (!x y. x IN s /\ y IN s ==> (x = y)) ==> SING s
+      True by SING_ONE_ELEMENT.
+*)
+val SING_TEST = store_thm(
+  "SING_TEST",
+  ``!s. SING s <=> s <> {} /\ (!x y. x IN s /\ y IN s ==> (x = y))``,
+  metis_tac[SING_EMPTY, SING_ELEMENT, SING_ONE_ELEMENT]);
+
 (* ===================================================================== *)
 (* The image of a function on a set.                                     *)
 (* ===================================================================== *)
@@ -3351,6 +3400,21 @@ val CARD_SING =
      GEN_TAC THEN ASSUME_TAC FINITE_EMPTY THEN
      IMP_RES_THEN (ASSUME_TAC o SPEC (“x:'a”)) FINITE_INSERT THEN
      IMP_RES_TAC CARD_DEF THEN ASM_REWRITE_TAC [NOT_IN_EMPTY,CARD_DEF]);
+
+(* Theorem: SING s ==> (CARD s = 1) *)
+(* Proof:
+   Note s = {x} for some x   by SING_DEF
+     so CARD s = 1           by CARD_SING
+*)
+Theorem SING_CARD_1:
+  !s. SING s ==> (CARD s = 1)
+Proof
+  metis_tac[SING_DEF, CARD_SING]
+QED
+(* Note: SING s <=> (CARD s = 1) cannot be proved.
+Only SING_IFF_CARD1  |- !s. SING s <=> (CARD s = 1) /\ FINITE s
+That is: FINITE s /\ (CARD s = 1) ==> SING s
+*)
 
 Theorem SING_IFF_CARD1:
   !s:'a set. SING s <=> CARD s = 1 /\ FINITE s
