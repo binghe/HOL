@@ -6,7 +6,7 @@ open dep_rewrite pairTheory pred_setTheory listTheory rich_listTheory bagTheory
 open ringTheory polynomialTheory polyWeakTheory polyRingTheory polyEvalTheory
      polyFieldTheory integralDomainTheory groupMapTheory ringMapTheory;
 
-open monoidTheory groupTheory 
+open monoidTheory groupTheory;
 
 val _ = new_theory "multipoly";
 
