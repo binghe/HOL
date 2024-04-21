@@ -44,6 +44,10 @@ val _ = monadsyntax.enable_monad "Count";
 (* Overload sublist by infix operator *)
 val _ = temp_overload_on ("<=", ``sublist``);
 
+val _ = temp_overload_on("SQ", ``\n. n * (n :num)``);
+val _ = temp_overload_on("HALF", ``\n. n DIV 2``);
+val _ = temp_overload_on("TWICE", ``\n. 2 * n``);
+
 (* ------------------------------------------------------------------------- *)
 (* Polynomial computations in monadic style Documentation                    *)
 (* ------------------------------------------------------------------------- *)

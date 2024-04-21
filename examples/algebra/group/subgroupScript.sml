@@ -21,7 +21,6 @@ val _ = new_theory "subgroup";
 
 (* ------------------------------------------------------------------------- *)
 
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
@@ -30,10 +29,6 @@ open pred_setTheory arithmeticTheory numberTheory combinatoricsTheory;
 
 open groupMapTheory;
 open groupTheory monoidTheory;
-open monoidOrderTheory;
-
-(* val _ = load "submonoidTheory"; *)
-open submonoidTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Subgroup Documentation                                                    *)

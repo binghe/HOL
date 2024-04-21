@@ -25,15 +25,12 @@ val _ = new_theory "integralDomainInstances";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
+open pred_setTheory arithmeticTheory dividesTheory gcdTheory numberTheory;
+
 open monoidTheory groupTheory ringTheory integralDomainTheory;
-(* val _ = load "monoidInstancesTheory"; *)
-open monoidInstancesTheory;
+
 (* val _ = load "groupInstancesTheory"; *)
 open groupInstancesTheory;
-
-open numberTheory;
-
-open pred_setTheory arithmeticTheory dividesTheory gcdTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Integral Domain Instances Documentation                                   *)

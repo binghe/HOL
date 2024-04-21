@@ -19,7 +19,7 @@ open jcLib;
 open pairTheory bagTheory pred_setTheory listTheory arithmeticTheory
      numberTheory rich_listTheory combinatoricsTheory;
 
-open monoidTheory gbagTheory groupTheory ringTheory polynomialTheory;
+open monoidTheory groupTheory ringTheory polynomialTheory;
 
 (* Overload sublist by infix operator *)
 val _ = temp_overload_on ("<=", ``sublist``);

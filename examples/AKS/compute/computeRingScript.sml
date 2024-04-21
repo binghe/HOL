@@ -32,6 +32,10 @@ open ringBinomialTheory;
 open computeBasicTheory computeOrderTheory computePolyTheory;
 open ringInstancesTheory;
 
+val _ = temp_overload_on("SQ", ``\n. n * (n :num)``);
+val _ = temp_overload_on("HALF", ``\n. n DIV 2``);
+val _ = temp_overload_on("TWICE", ``\n. 2 * n``);
+
 (* ------------------------------------------------------------------------- *)
 (* Modulo Polynomial Computations in (ZN n) Ring Documentation               *)
 (* ------------------------------------------------------------------------- *)

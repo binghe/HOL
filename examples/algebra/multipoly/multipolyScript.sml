@@ -1,12 +1,12 @@
 open HolKernel boolLib bossLib Parse;
 
-open dep_rewrite
-     pairTheory pred_setTheory listTheory rich_listTheory bagTheory ringTheory
-     gbagTheory polynomialTheory polyWeakTheory polyRingTheory polyEvalTheory
-     polyFieldTheory integralDomainTheory
-     monoidMapTheory groupMapTheory ringMapTheory
+open dep_rewrite pairTheory pred_setTheory listTheory rich_listTheory bagTheory
+     gcdsetTheory numberTheory combinatoricsTheory;
 
-open monoidTheory groupTheory gcdsetTheory numberTheory combinatoricsTheory;
+open ringTheory polynomialTheory polyWeakTheory polyRingTheory polyEvalTheory
+     polyFieldTheory integralDomainTheory groupMapTheory ringMapTheory;
+
+open monoidTheory groupTheory 
 
 val _ = new_theory "multipoly";
 

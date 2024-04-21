@@ -16,19 +16,16 @@ val _ = new_theory "ringDivides";
 open jcLib;
 
 (* open dependent theories *)
-open pred_setTheory listTheory arithmeticTheory dep_rewrite;
+open pred_setTheory listTheory arithmeticTheory dep_rewrite numberTheory
+     combinatoricsTheory;
 
 open ringIdealTheory;
 open ringUnitTheory;
 open ringTheory;
 open groupTheory;
-open monoidTheory gbagTheory bagTheory containerTheory;
-val MEMBER_NOT_EMPTY = pred_setTheory.MEMBER_NOT_EMPTY;
+open monoidTheory bagTheory containerTheory;
 
-open ringMapTheory monoidMapTheory groupMapTheory;
-
-open numberTheory combinatoricsTheory;
-
+open ringMapTheory groupMapTheory;
 open subgroupTheory quotientGroupTheory;
 
 (* ------------------------------------------------------------------------- *)

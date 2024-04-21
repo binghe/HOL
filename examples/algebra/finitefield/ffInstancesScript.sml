@@ -23,23 +23,12 @@ open pred_setTheory arithmeticTheory listTheory numberTheory dividesTheory
 (* val _ = load "ffBasicTheory"; *)
 open ffBasicTheory;
 
-(* (* val _ = load "groupInstancesTheory"; -- in ringInstancesTheory *) *)
-(* (* val _ = load "ringInstancesTheory"; *) *)
-(* (* val _ = load "fieldInstancesTheory"; *) *)
 open monoidTheory groupTheory ringTheory fieldTheory;
-open monoidOrderTheory groupOrderTheory;
+open groupOrderTheory;
 open groupInstancesTheory ringInstancesTheory fieldInstancesTheory;
 
-(* Get polynomial theory of Ring *)
-(* (* val _ = load "polyWeakTheory"; *) *)
-(* (* val _ = load "polyRingTheory"; *) *)
-(* (* val _ = load "polyDivisionTheory"; *) *)
-(* (* val _ = load "polyBinomialTheory"; *) *)
 open polynomialTheory polyWeakTheory polyRingTheory;
 
-(* (* val _ = load "polyFieldTheory"; *) *)
-(* (* val _ = load "polyFieldDivisionTheory"; -- has polyDivisionTheory *) *)
-(* (* val _ = load "polyFieldModuloTheory"; *) *)
 open polyFieldTheory polyDivisionTheory polyFieldDivisionTheory;
 open polyModuloRingTheory polyFieldModuloTheory;
 

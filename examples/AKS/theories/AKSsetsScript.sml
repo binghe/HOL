@@ -41,11 +41,10 @@ open polyRootTheory;
 open polyProductTheory;
 
 open subgroupTheory;
-open monoidOrderTheory groupOrderTheory;
+open groupOrderTheory;
 
 open ringBinomialTheory;
 
-open monoidInstancesTheory;
 open groupInstancesTheory;
 open ringInstancesTheory;
 open fieldInstancesTheory;

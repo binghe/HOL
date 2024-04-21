@@ -27,8 +27,7 @@ open monoidTheory groupTheory ringTheory ringUnitTheory;
 open integralDomainTheory;
 open fieldTheory;
 
-(* val _ = load "groupCyclicTheory"; *)
-open monoidOrderTheory groupOrderTheory groupCyclicTheory;
+open groupOrderTheory groupCyclicTheory;
 
 (* Get polynomial theory of Ring *)
 (* val _ = load "polyIrreducibleTheory"; *)

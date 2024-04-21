@@ -21,11 +21,8 @@ open arithmeticTheory pred_setTheory listTheory numberTheory dividesTheory
 
 open ffAdvancedTheory ffBasicTheory;
 
-(* (* val _ = load "groupInstancesTheory"; -- in ringInstancesTheory *) *)
-(* (* val _ = load "ringInstancesTheory"; *) *)
-(* (* val _ = load "fieldInstancesTheory"; *) *)
 open monoidTheory groupTheory ringTheory fieldTheory;
-open monoidOrderTheory groupOrderTheory;
+open groupOrderTheory;
 open subgroupTheory;
 
 open fieldOrderTheory;
@@ -57,7 +54,7 @@ open polyIrreducibleTheory;
 open polyProductTheory;
 open polyMultiplicityTheory;
 open polyMapTheory;
-open monoidMapTheory groupMapTheory ringMapTheory fieldMapTheory;
+open groupMapTheory ringMapTheory fieldMapTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Finite Field Polynomials of Subfield Documentation                        *)

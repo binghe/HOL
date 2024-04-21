@@ -30,10 +30,9 @@ open ffUnityTheory;
 open ffExistTheory;
 open ffExtendTheory;
 
-open bagTheory; (* also has MEMBER_NOT_EMPTY *)
+open bagTheory;
 
 open monoidTheory groupTheory ringTheory fieldTheory;
-open monoidInstancesTheory;
 open groupInstancesTheory;
 open ringInstancesTheory;
 open fieldInstancesTheory;

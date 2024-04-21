@@ -29,7 +29,6 @@ open polyFieldTheory;
 (* val _ = load "fieldOrderTheory"; *)
 open fieldOrderTheory;
 open groupOrderTheory;
-open monoidOrderTheory;
 
 (* val _ = load "polyMonicTheory"; *)
 open polyMonicTheory;

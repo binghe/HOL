@@ -50,7 +50,6 @@ open groupOrderTheory;
 open ringBinomialTheory;
 open ringDividesTheory;
 
-open monoidInstancesTheory;
 open groupInstancesTheory;
 open ringInstancesTheory;
 open fieldInstancesTheory;
@@ -60,6 +59,10 @@ open ffAdvancedTheory;
 open ffPolyTheory;
 open ffUnityTheory;
 open ffExistTheory;
+
+val _ = temp_overload_on("SQ", ``\n. n * (n :num)``);
+val _ = temp_overload_on("HALF", ``\n. n DIV 2``);
+val _ = temp_overload_on("TWICE", ``\n. 2 * n``);
 
 (* ------------------------------------------------------------------------- *)
 (* AKS Main Theorem Documentation                                            *)

@@ -26,9 +26,6 @@ open groupOrderTheory;
 (* val _ = load "groupProductTheory"; *)
 open groupProductTheory;
 
-(* (* val _ = load "polyWeakTheory"; *) *)
-(* (* val _ = load "polyRingTheory"; *) *)
-(* val _ = load "polyDividesTheory"; *)
 open polyDividesTheory polyDivisionTheory;
 open polynomialTheory polyWeakTheory polyRingTheory;
 

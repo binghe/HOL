@@ -21,7 +21,7 @@ open pred_setTheory listTheory arithmeticTheory numberTheory dividesTheory;
 open monoidTheory groupTheory ringTheory ringUnitTheory fieldTheory;
 
 open subgroupTheory;
-open monoidOrderTheory groupOrderTheory;
+open groupOrderTheory;
 
 open polynomialTheory polyWeakTheory polyRingTheory polyDivisionTheory;
 

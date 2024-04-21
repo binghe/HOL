@@ -15,14 +15,14 @@ val _ = new_theory "countMacro";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
+open pred_setTheory listTheory rich_listTheory arithmeticTheory dividesTheory
+     gcdTheory numberTheory combinatoricsTheory pairTheory optionTheory
+     listRangeTheory primeTheory;
+
 open bitsizeTheory complexityTheory;
 
 open loopIncreaseTheory loopDecreaseTheory;
 open loopDivideTheory loopMultiplyTheory loopListTheory;
-
-open pred_setTheory listTheory rich_listTheory arithmeticTheory dividesTheory
-     gcdTheory numberTheory combinatoricsTheory pairTheory optionTheory
-     listRangeTheory primeTheory;
 
 open countMonadTheory;
 
@@ -31,6 +31,10 @@ open monadsyntax;
 
 val _ = monadsyntax.enable_monadsyntax();
 val _ = monadsyntax.enable_monad "Count";
+
+val _ = temp_overload_on("SQ", ``\n. n * n``);
+val _ = temp_overload_on("HALF", ``\n. n DIV 2``);
+val _ = temp_overload_on("TWICE", ``\n. 2 * n``);
 
 (* ------------------------------------------------------------------------- *)
 (* Macros of Count Monad Documentation                                       *)

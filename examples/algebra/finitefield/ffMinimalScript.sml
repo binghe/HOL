@@ -31,12 +31,10 @@ open LinearIndepTheory;
 open FiniteVSpaceTheory;
 
 open monoidTheory groupTheory ringTheory fieldTheory;
-open monoidOrderTheory groupOrderTheory fieldOrderTheory;
+open groupOrderTheory fieldOrderTheory;
 open subgroupTheory;
 open groupInstancesTheory ringInstancesTheory fieldInstancesTheory;
 
-(* Get polynomial theory of Ring *)
-(* (* val _ = load "polyFieldModuloTheory"; *) *)
 open polynomialTheory polyWeakTheory polyRingTheory polyDivisionTheory polyBinomialTheory;
 open polyMonicTheory polyEvalTheory;
 open polyDividesTheory;

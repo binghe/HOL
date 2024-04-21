@@ -12,16 +12,14 @@ val _ = new_theory "loop";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* open dependent theories *)
-open listTheory rich_listTheory;
-open listRangeTheory;
+open arithmeticTheory listTheory rich_listTheory listRangeTheory numberTheory
+     combinatoricsTheory;
 
-open arithmeticTheory open numberTheory combinatoricsTheory;
+val _ = temp_overload_on ("RISING", ``\f. !x:num. x <= f x``);
+val _ = temp_overload_on ("FALLING", ``\f. !x:num. f x <= x``);
 
 (* ------------------------------------------------------------------------- *)
 (* Loop Recurrence Documentation                                             *)

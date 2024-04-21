@@ -12,8 +12,6 @@ val _ = new_theory "ringBinomial";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
@@ -24,7 +22,7 @@ open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
 open ringTheory;
 open groupTheory;
 open monoidTheory;
-open monoidMapTheory groupMapTheory ringMapTheory;
+open groupMapTheory ringMapTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Ring Binomial Documentation                                               *)

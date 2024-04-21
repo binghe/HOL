@@ -21,10 +21,7 @@ open pred_setTheory arithmeticTheory numberTheory combinatoricsTheory;
 (* Get dependent theories local *)
 (* val _ = load "groupTheory"; *)
 open groupTheory monoidTheory;
-open monoidOrderTheory;
 
-(* val _ = load "subgroupTheory"; *)
-open submonoidTheory;
 open subgroupTheory;
 
 (* ------------------------------------------------------------------------- *)

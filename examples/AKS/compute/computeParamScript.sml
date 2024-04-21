@@ -20,7 +20,11 @@ open prim_recTheory pred_setTheory listTheory arithmeticTheory logrootTheory
 (* Get dependent theories local *)
 open computeOrderTheory;
 open ringTheory ringInstancesTheory; (* for ZN_coprime_order_alt *)
-open monoidTheory monoidOrderTheory;
+open monoidTheory;
+
+val _ = temp_overload_on("SQ", ``\n. n * (n :num)``);
+val _ = temp_overload_on("HALF", ``\n. n DIV 2``);
+val _ = temp_overload_on("TWICE", ``\n. 2 * n``);
 
 (* ------------------------------------------------------------------------- *)
 (* AKS Parameter Documentation                                               *)

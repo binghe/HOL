@@ -39,10 +39,10 @@ open polyMultiplicityTheory;
 open polyBinomialTheory; (* for coefficients *)
 
 open monoidTheory groupTheory ringTheory fieldTheory;
-open monoidOrderTheory groupOrderTheory;
+open groupOrderTheory;
 open subgroupTheory;
 
-open monoidMapTheory groupMapTheory ringMapTheory fieldMapTheory;
+open groupMapTheory ringMapTheory fieldMapTheory;
 
 open ringBinomialTheory;
 open ringDividesTheory;

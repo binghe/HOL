@@ -18,9 +18,7 @@ open jcLib;
 (* open dependent theories *)
 open pred_setTheory arithmeticTheory gcdsetTheory numberTheory combinatoricsTheory;
 
-(* Get dependent theories local *)
-(* val _ = load "monoidMapTheory"; *)
-open monoidTheory monoidOrderTheory monoidMapTheory;
+open monoidTheory;
 
 (* val _ = load "groupTheory"; *)
 open groupTheory;

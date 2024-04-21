@@ -24,7 +24,7 @@ open ringTheory;
 open groupTheory;
 open monoidTheory;
 
-open monoidMapTheory groupMapTheory ringMapTheory fieldMapTheory;
+open groupMapTheory ringMapTheory fieldMapTheory;
 
 (* val _ = load "ringBinomialTheory"; *)
 open ringBinomialTheory;

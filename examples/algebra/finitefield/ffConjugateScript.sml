@@ -30,7 +30,7 @@ open ffMasterTheory;
 open ffMinimalTheory;
 
 open monoidTheory groupTheory ringTheory fieldTheory;
-open monoidOrderTheory groupOrderTheory;
+open groupOrderTheory;
 open subgroupTheory;
 open groupInstancesTheory ringInstancesTheory fieldInstancesTheory;
 

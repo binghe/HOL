@@ -19,14 +19,14 @@ open pred_setTheory arithmeticTheory dividesTheory gcdTheory gcdsetTheory
      numberTheory combinatoricsTheory;
 
 open monoidTheory groupTheory;
-open monoidOrderTheory groupOrderTheory;
+open groupOrderTheory;
 
 (* val _ = load "ringUnitTheory"; *)
 open ringTheory ringUnitTheory;
 
 (* val _ = load "subgroupTheory"; *)
-open submonoidTheory subgroupTheory;
-open monoidMapTheory groupMapTheory;
+open subgroupTheory;
+open groupMapTheory;
 
 (* val _ = load "quotientGroupTheory"; *)
 open quotientGroupTheory;

@@ -12,8 +12,6 @@ val _ = new_theory "finiteGroup";
 
 (* ------------------------------------------------------------------------- *)
 
-
-
 (* val _ = load "jcLib"; *)
 open jcLib;
 
@@ -21,10 +19,8 @@ open jcLib;
 open pred_setTheory arithmeticTheory dividesTheory numberTheory
      combinatoricsTheory;
 
-open groupTheory monoidTheory groupOrderTheory monoidOrderTheory;
+open groupTheory monoidTheory groupOrderTheory;
 
-(* val _ = load "subgroupTheory"; *)
-open submonoidTheory;
 open subgroupTheory;
 
 (* val _ = load "groupProductTheory"; *)

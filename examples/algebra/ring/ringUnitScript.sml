@@ -21,7 +21,7 @@ open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
 open ringTheory;
 open groupTheory;
 open monoidTheory;
-open monoidOrderTheory groupOrderTheory;
+open groupOrderTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Ring Units Documentation                                                  *)

@@ -22,8 +22,8 @@ open polyFieldModuloTheory;
 
 (* (* val _ = load "fieldTheory"; *) *)
 open monoidTheory groupTheory ringTheory fieldTheory;
-open monoidOrderTheory groupOrderTheory;
-open monoidMapTheory groupMapTheory ringMapTheory fieldMapTheory;
+open groupOrderTheory;
+open groupMapTheory ringMapTheory fieldMapTheory;
 
 (* val _ = load "fieldInstancesTheory"; *)
 open groupInstancesTheory ringInstancesTheory;

@@ -3,7 +3,7 @@
 (* ------------------------------------------------------------------------- *)
 open HolKernel boolLib bossLib Parse;
 
-open pred_setTheory groupTheory monoidTheory monoidOrderTheory monoidRealTheory;
+open pred_setTheory groupTheory monoidTheory real_algebraTheory;
 
 val _ = new_theory"groupReal";
 

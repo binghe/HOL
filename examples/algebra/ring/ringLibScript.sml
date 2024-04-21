@@ -12,7 +12,7 @@ open HolKernel boolLib bossLib Parse;
 open combinTheory pred_setTheory pred_setLib arithmeticTheory integerTheory
      intLib mesonLib hurdUtils cardinalTheory oneTheory newtypeTools;
 
-open monoidTheory monoidMapTheory monoidOrderTheory;
+open monoidTheory;
 open groupTheory groupMapTheory ringTheory ringMapTheory;
 
 val _ = new_theory "ringLib";

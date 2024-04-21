@@ -25,8 +25,7 @@ open monoidTheory groupTheory ringTheory integralDomainTheory fieldTheory;
 (* val _ = load "fieldIdealTheory"; *)
 open ringIdealTheory fieldIdealTheory;
 
-(* (* val _ = load "groupOrderTheory"; *) *)
-open monoidOrderTheory groupOrderTheory;
+open groupOrderTheory;
 
 (* Get polynomial theory of Ring *)
 (* (* val _ = load "polyWeakTheory"; *) *)

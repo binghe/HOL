@@ -22,7 +22,7 @@ open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
 open monoidTheory groupTheory ringTheory ringUnitTheory fieldTheory;
 
 open subgroupTheory;
-open monoidOrderTheory groupOrderTheory;
+open groupOrderTheory;
 
 (* (* val _ = load "polyWeakTheory"; *) *)
 (* (* val _ = load "polyRingTheory"; *) *)

@@ -3,9 +3,10 @@
 (* ------------------------------------------------------------------------- *)
 open HolKernel boolLib bossLib Parse;
 
-open dep_rewrite realTheory monoidTheory ringTheory ringMapTheory ringUnitTheory
-     ringDividesTheory monoidRealTheory groupRealTheory
-     pred_setTheory bagTheory gbagTheory real_sigmaTheory iterateTheory;
+open dep_rewrite realTheory pred_setTheory bagTheory real_sigmaTheory
+     iterateTheory monoidTheory real_algebraTheory;
+
+open ringTheory ringMapTheory ringUnitTheory ringDividesTheory groupRealTheory;
 
 val _ = new_theory"ringReal";
 

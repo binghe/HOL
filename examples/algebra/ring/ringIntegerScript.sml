@@ -24,12 +24,11 @@ open ringIdealTheory;
 open ringTheory;
 open groupTheory;
 open monoidTheory;
-open monoidMapTheory groupMapTheory ringMapTheory;
+open groupMapTheory ringMapTheory;
 
 open subgroupTheory quotientGroupTheory;
 
 open groupInstancesTheory;
-open monoidInstancesTheory;
 open ringInstancesTheory;
 
 (* ------------------------------------------------------------------------- *)

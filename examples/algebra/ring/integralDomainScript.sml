@@ -29,12 +29,12 @@ val _ = new_theory "integralDomain";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-open pred_setTheory listTheory sortingTheory containerTheory gbagTheory
-     dep_rewrite arithmeticTheory dividesTheory;
+open pred_setTheory listTheory sortingTheory containerTheory dep_rewrite
+     arithmeticTheory dividesTheory;
 
 open groupTheory monoidTheory ringTheory ringUnitTheory ringIdealTheory;
-open monoidOrderTheory groupOrderTheory;
-open monoidMapTheory groupMapTheory ringMapTheory ringDividesTheory;
+open groupOrderTheory;
+open groupMapTheory ringMapTheory ringDividesTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Integral Domain Documentation                                             *)

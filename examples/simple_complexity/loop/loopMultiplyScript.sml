@@ -15,15 +15,14 @@ val _ = new_theory "loopMultiply";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
-(* Get dependent theories in lib *)
-(* val _ = load "loopTheory"; *)
-open loopTheory;
-
 (* open dependent theories *)
 open arithmeticTheory dividesTheory numberTheory combinatoricsTheory listTheory
-     rich_listTheory listRangeTheory;
+     rich_listTheory listRangeTheory logrootTheory primeTheory;
 
-open logrootTheory primeTheory; (* for mop_eqn *)
+open loopTheory;
+
+val _ = temp_overload_on ("RISING", ``\f. !x:num. x <= f x``);
+val _ = temp_overload_on ("FALLING", ``\f. !x:num. f x <= x``);
 
 (* ------------------------------------------------------------------------- *)
 (* Loop Recurrence with Multiplying argument Documentation                   *)

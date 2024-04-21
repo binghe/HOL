@@ -24,11 +24,12 @@ open ffAdvancedTheory;
 open ffPolyTheory;
 
 open monoidTheory groupTheory ringTheory fieldTheory;
-open monoidOrderTheory groupOrderTheory;
+open groupOrderTheory;
 open fieldOrderTheory;
 
 (* Get polynomial theory of Ring *)
-open polynomialTheory polyWeakTheory polyRingTheory polyDivisionTheory polyBinomialTheory;
+open polynomialTheory polyWeakTheory polyRingTheory polyDivisionTheory
+     polyBinomialTheory;
 
 (* (* val _ = load "polyFieldModuloTheory"; *) *)
 open polyFieldTheory;

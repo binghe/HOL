@@ -49,7 +49,6 @@ open groupOrderTheory;
 
 open ringBinomialTheory;
 
-open monoidInstancesTheory;
 open groupInstancesTheory;
 open ringInstancesTheory;
 open fieldInstancesTheory;

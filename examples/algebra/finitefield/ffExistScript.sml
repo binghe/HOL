@@ -17,7 +17,7 @@ open jcLib;
 
 (* open dependent theories *)
 open arithmeticTheory pred_setTheory listTheory numberTheory dividesTheory
-     combinatoricsTheory gcdTheory gcdsetTheory primeTheory;
+     combinatoricsTheory gcdTheory gcdsetTheory primeTheory cardinalTheory;
 
 open ffBasicTheory;
 open ffAdvancedTheory;
@@ -29,7 +29,7 @@ open ffMasterTheory;
 open ffConjugateTheory;
 
 open monoidTheory groupTheory ringTheory fieldTheory;
-open monoidOrderTheory groupOrderTheory fieldOrderTheory;
+open groupOrderTheory fieldOrderTheory;
 open subgroupTheory;
 open groupInstancesTheory ringInstancesTheory fieldInstancesTheory;
 open groupCyclicTheory;
@@ -50,7 +50,7 @@ open polyRingModuloTheory;
 open polyModuloRingTheory;
 
 open polyMapTheory;
-open monoidMapTheory groupMapTheory ringMapTheory fieldMapTheory;
+open groupMapTheory ringMapTheory fieldMapTheory;
 
 (* (* val _ = load "polyGCDTheory"; *) *)
 open polyGCDTheory;
@@ -65,9 +65,6 @@ open ringUnitTheory;
 
 (* (* val _ = load "fieldBinomialTheory"; *) *)
 open fieldBinomialTheory;
-
-(* val _ = load "cardinalTheory"; *)
-open cardinalTheory; (* for helpers: A_LIST_BIJ_A *)
 
 (* ------------------------------------------------------------------------- *)
 (* Finite Field Existence and Uniqueness Documentation                       *)

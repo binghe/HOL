@@ -12,7 +12,6 @@ val _ = new_theory "mapCount";
 
 (* ------------------------------------------------------------------------- *)
 
-open helperCountTheory;
 open arithmeticTheory pred_setTheory gcdsetTheory numberTheory listTheory
      rich_listTheory listRangeTheory combinatoricsTheory;
 

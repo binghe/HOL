@@ -18,13 +18,10 @@ open jcLib;
 open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
      dividesTheory gcdTheory logrootTheory primeTheory;
 
-(* val _ = load "fieldInstancesTheory"; *)
-open monoidInstancesTheory;
 open groupInstancesTheory;
 open ringInstancesTheory;
 open fieldInstancesTheory;
 open groupOrderTheory;
-open monoidOrderTheory;
 
 open computeBasicTheory;
 

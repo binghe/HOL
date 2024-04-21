@@ -17,9 +17,14 @@ open jcLib;
 
 (* open dependent theories *)
 open prim_recTheory pred_setTheory arithmeticTheory dividesTheory gcdTheory
-     listTheory rich_listTheory logrootTheory numberTheory combinatoricsTheory;
+     listTheory rich_listTheory logrootTheory numberTheory combinatoricsTheory
+     primeTheory;
 
-open bitsizeTheory primeTheory;
+open bitsizeTheory;
+
+val _ = temp_overload_on("SQ", ``\n. n * n``);
+val _ = temp_overload_on("HALF", ``\n. n DIV 2``);
+val _ = temp_overload_on("TWICE", ``\n. 2 * n``);
 
 (* ------------------------------------------------------------------------- *)
 (* Computational Complexity Documentation                                    *)

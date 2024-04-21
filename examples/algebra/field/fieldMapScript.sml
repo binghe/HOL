@@ -19,7 +19,7 @@ open pred_setTheory arithmeticTheory dividesTheory gcdTheory gcdsetTheory
      numberTheory combinatoricsTheory;
 
 open monoidTheory groupTheory;
-open monoidOrderTheory groupOrderTheory;
+open groupOrderTheory;
 open ringTheory ringUnitTheory integralDomainTheory;
 open fieldTheory fieldOrderTheory;
 
@@ -27,7 +27,7 @@ open fieldTheory fieldOrderTheory;
 open ringDividesTheory;
 
 (* val _ = load "ringMapTheory"; *)
-open monoidMapTheory groupMapTheory ringMapTheory;
+open groupMapTheory ringMapTheory;
 open quotientGroupTheory subgroupTheory;
 
 (* ------------------------------------------------------------------------- *)

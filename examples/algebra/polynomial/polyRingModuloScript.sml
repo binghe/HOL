@@ -32,10 +32,10 @@ open polyBinomialTheory;
 
 (* Get dependent theories local *)
 open monoidTheory groupTheory ringTheory
-open monoidOrderTheory groupOrderTheory;
+open groupOrderTheory;
 open subgroupTheory;
 
-open monoidMapTheory groupMapTheory ringMapTheory;
+open groupMapTheory ringMapTheory;
 open ringUnitTheory;
 
 (* ------------------------------------------------------------------------- *)

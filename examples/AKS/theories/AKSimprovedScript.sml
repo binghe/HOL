@@ -47,19 +47,16 @@ open monoidTheory groupTheory ringTheory fieldTheory;
 
 open subgroupTheory;
 open groupOrderTheory;
-open monoidOrderTheory;
 open fieldMapTheory;
 open ringUnitTheory;
 
 open ringBinomialTheory;
 open ringDividesTheory;
 
-open monoidInstancesTheory;
 open groupInstancesTheory;
 open ringInstancesTheory;
 open fieldInstancesTheory;
 open groupOrderTheory;
-open monoidOrderTheory;
 
 open groupCyclicTheory;
 

@@ -16,13 +16,13 @@ val _ = new_theory "ringIdeal";
 open jcLib;
 
 (* open dependent theories *)
-open pred_setTheory listTheory arithmeticTheory gcdsetTheory;
-open numberTheory combinatoricsTheory;
+open pred_setTheory listTheory arithmeticTheory gcdsetTheory numberTheory
+     combinatoricsTheory;
 
 open ringTheory;
 open groupTheory;
 open monoidTheory;
-open monoidMapTheory groupMapTheory ringMapTheory;
+open groupMapTheory ringMapTheory;
 
 open ringUnitTheory;
 open subgroupTheory quotientGroupTheory;

@@ -42,7 +42,7 @@ open polyModuloRingTheory;
 open polyFieldModuloTheory;
 open polyIrreducibleTheory;
 
-open monoidMapTheory groupMapTheory ringMapTheory fieldMapTheory;
+open groupMapTheory ringMapTheory fieldMapTheory;
 open ringDividesTheory;
 open ringIdealTheory;
 open ringUnitTheory;
@@ -50,7 +50,6 @@ open subgroupTheory;
 open quotientGroupTheory;
 
 open groupCyclicTheory;
-open monoidOrderTheory;
 open groupOrderTheory;
 open fieldOrderTheory;
 

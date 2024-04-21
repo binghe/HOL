@@ -25,7 +25,7 @@ open ringIdealTheory quotientRingTheory;
 open subgroupTheory;
 open quotientGroupTheory;
 
-open monoidMapTheory groupMapTheory ringMapTheory;
+open groupMapTheory ringMapTheory;
 
 open polynomialTheory polyWeakTheory polyRingTheory;
 open polyDivisionTheory;

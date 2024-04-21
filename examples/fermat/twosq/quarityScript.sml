@@ -11,12 +11,16 @@ open arithmeticTheory pred_setTheory pairTheory listTheory rich_listTheory
      listRangeTheory dividesTheory gcdTheory logrootTheory numberTheory
      combinatoricsTheory primeTheory;
 
+open helperTwosqTheory windmillTheory;
+
 (* declare new theory at start *)
 val _ = new_theory "quarity";
 
 (* ------------------------------------------------------------------------- *)
 
-open helperTwosqTheory windmillTheory;
+val _ = temp_overload_on("SQ", ``\n. n * (n :num)``);
+val _ = temp_overload_on("HALF", ``\n. n DIV 2``);
+val _ = temp_overload_on("TWICE", ``\n. 2 * n``);
 
 (* ------------------------------------------------------------------------- *)
 (* Quarity Documentation                                                     *)

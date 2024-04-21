@@ -24,7 +24,7 @@ open ffAdvancedTheory;
 open ffPolyTheory;
 
 open monoidTheory groupTheory ringTheory fieldTheory;
-open monoidOrderTheory groupOrderTheory;
+open groupOrderTheory;
 open subgroupTheory;
 
 open groupInstancesTheory ringInstancesTheory fieldInstancesTheory;
@@ -49,8 +49,7 @@ open polyDividesTheory;
 open polyGCDTheory;
 open polyIrreducibleTheory;
 
-(* (* val _ = load "polyMapTheory"; *) *)
-open monoidMapTheory groupMapTheory ringMapTheory fieldMapTheory;
+open groupMapTheory ringMapTheory fieldMapTheory;
 open polyMapTheory;
 
 open polyDerivativeTheory;

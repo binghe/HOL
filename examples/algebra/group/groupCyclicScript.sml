@@ -18,7 +18,7 @@ open jcLib;
 open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
      numberTheory combinatoricsTheory gcdsetTheory primeTheory;
 
-open monoidTheory monoidOrderTheory;
+open monoidTheory;
 open groupTheory subgroupTheory groupOrderTheory;
 open groupMapTheory;
 open groupInstancesTheory;

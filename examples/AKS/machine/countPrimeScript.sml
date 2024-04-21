@@ -15,20 +15,24 @@ val _ = new_theory "countPrime";
 (* val _ = load "jcLib"; *)
 open jcLib;
 
+open pred_setTheory listTheory arithmeticTheory dividesTheory numberTheory
+     combinatoricsTheory logrootTheory pairTheory optionTheory primeTheory;
+
 open countMonadTheory countMacroTheory;
 open countBasicTheory countPowerTheory;
 
 open bitsizeTheory complexityTheory;
 open loopIncreaseTheory;
 
-open pred_setTheory listTheory arithmeticTheory dividesTheory numberTheory
-     combinatoricsTheory logrootTheory pairTheory optionTheory primeTheory;
-
 (* (* val _ = load "monadsyntax"; *) *)
 open monadsyntax;
 
 val _ = monadsyntax.enable_monadsyntax();
 val _ = monadsyntax.enable_monad "Count";
+
+val _ = temp_overload_on("SQ", ``\n. n * n``);
+val _ = temp_overload_on("HALF", ``\n. n DIV 2``);
+val _ = temp_overload_on("TWICE", ``\n. 2 * n``);
 
 (* ------------------------------------------------------------------------- *)
 (* Primality Test in monadic style Documentation                             *)

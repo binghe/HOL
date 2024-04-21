@@ -31,14 +31,9 @@ open jcLib;
 open arithmeticTheory dividesTheory pred_setTheory numberTheory
      combinatoricsTheory;
 
-(* Get dependent theories local *)
-(* val _ = load "ringIdealTheory"; *)
 open monoidTheory groupTheory ringTheory ringIdealTheory;
-open monoidMapTheory groupMapTheory ringMapTheory;
+open groupMapTheory ringMapTheory;
 
-(* (* val _ = load "subgroupTheory"; *) *)
-(* open subgroupTheory; *)
-(* val _ = load "quotientGroupTheory"; *)
 open subgroupTheory;
 open quotientGroupTheory;
 

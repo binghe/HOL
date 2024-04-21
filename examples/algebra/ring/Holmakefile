@@ -1,1 +1,1 @@
-INCLUDES = ../monoid ../group
+INCLUDES = ../group

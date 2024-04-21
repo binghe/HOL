@@ -36,11 +36,10 @@ open polyMonicTheory;
 open polyProductTheory;
 
 open monoidTheory groupTheory ringTheory integralDomainTheory fieldTheory;
-open monoidOrderTheory groupOrderTheory;
+open groupOrderTheory;
 open subgroupTheory;
 
-(* val _ = load "fieldMapTheory"; *)
-open monoidMapTheory groupMapTheory ringMapTheory fieldMapTheory;
+open groupMapTheory ringMapTheory fieldMapTheory;
 
 (* (* val _ = load "ringDividesTheory"; *) *)
 open ringDividesTheory ringUnitTheory;

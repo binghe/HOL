@@ -31,13 +31,11 @@ open jcLib;
 (* open dependent theories *)
 open pred_setTheory numberTheory combinatoricsTheory;
 
-(* Get dependent theories local *)
-(* val _ = load "monoidOrderTheory"; *)
-open monoidTheory monoidOrderTheory;
+open monoidTheory;
 
 (* val _ = load "subgroupTheory"; *)
 open groupTheory subgroupTheory;
-open monoidMapTheory groupMapTheory;
+open groupMapTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Quotient Group Documentation                                              *)

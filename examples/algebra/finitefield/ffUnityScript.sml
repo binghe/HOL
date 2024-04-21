@@ -25,7 +25,7 @@ open ffMasterTheory;
 
 (* Open theories in order *)
 open monoidTheory groupTheory ringTheory fieldTheory;
-open monoidOrderTheory groupOrderTheory;
+open groupOrderTheory;
 open subgroupTheory;
 
 open groupInstancesTheory ringInstancesTheory fieldInstancesTheory;

@@ -31,7 +31,7 @@ open pred_setTheory arithmeticTheory dividesTheory gcdTheory numberTheory
      combinatoricsTheory;
 
 open monoidTheory groupTheory;
-open monoidOrderTheory groupOrderTheory;
+open groupOrderTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Ring Documentation                                                       *)

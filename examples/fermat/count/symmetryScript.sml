@@ -18,16 +18,12 @@ open jcLib; (* for stripDup *)
 open pred_setTheory arithmeticTheory gcdsetTheory numberTheory
      combinatoricsTheory;
 
-open helperCountTheory;
-
 open mapCountTheory; (* for on_def *)
 
-(* Get dependent theories local *)
-(* val _ = load "fieldMapTheory"; *)
 open monoidTheory groupTheory;
 open ringTheory fieldTheory;
-open submonoidTheory subgroupTheory;
-open monoidMapTheory groupMapTheory;
+open subgroupTheory;
+open groupMapTheory;
 open ringMapTheory fieldMapTheory;
 
 val _ = temp_overload_on("over", ``\f s t. !x. x IN s ==> f x IN t``);
