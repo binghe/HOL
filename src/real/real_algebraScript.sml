@@ -1,9 +1,12 @@
 (* ------------------------------------------------------------------------- *)
 (* The monoids of addition and multiplication of real numbers.               *)
 (* ------------------------------------------------------------------------- *)
-open HolKernel boolLib bossLib Parse monoidTheory realTheory
 
-val _ = new_theory"monoidReal";
+open HolKernel boolLib bossLib Parse;
+
+open realTheory monoidTheory;
+
+val _ = new_theory "real_algebra";
 
 Definition real_add_monoid_def:
   real_add_monoid : real monoid =
