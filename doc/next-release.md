@@ -70,6 +70,14 @@ New theories:
   in Ethereum, is included and was the basis for this work. A rudimentary
   computable version based on sptrees is included; faster evaluation using
   cvcompute is left for future work.
+  
+- `monoid` and `real_algebra`: These are combined theory using materials ever in
+  `examples/algebra/monoid`. A monoid as an algebraic structure: with a carrier set,
+   a binary operation and an identity element.
+
+- `number`, `combinatorics` and `prime`: These are combined theory using materials
+   from `examples/algebra/lib`, etc. They contain some more advanced results from
+   number theory (in particular properties of prime numbers) and combinatorics.
 
 New tools:
 ----------
