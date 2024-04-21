@@ -14,8 +14,8 @@ Definition real_add_monoid_def:
 End
 
 Theorem real_add_monoid_simps[simp]:
-  real_add_monoid.carrier = UNIV ∧
-  real_add_monoid.op = (real_add) ∧
+  real_add_monoid.carrier = UNIV /\
+  real_add_monoid.op = (real_add) /\
   real_add_monoid.id = 0
 Proof
   rw[real_add_monoid_def]
@@ -37,8 +37,8 @@ Definition real_mul_monoid_def:
 End
 
 Theorem real_mul_monoid_simps[simp]:
-  real_mul_monoid.carrier = UNIV ∧
-  real_mul_monoid.op = (real_mul) ∧
+  real_mul_monoid.carrier = UNIV /\
+  real_mul_monoid.op = (real_mul) /\
   real_mul_monoid.id = 1
 Proof
   rw[real_mul_monoid_def]
