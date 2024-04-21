@@ -36,9 +36,6 @@ open arithmeticTheory dividesTheory logrootTheory gcdTheory pred_setTheory
 
 open cycleTheory patternTheory;
 
-(* val _ = load "necklaceTheory"; *)
-open necklaceTheory;
-
 (* ------------------------------------------------------------------------- *)
 (* Fermat's Little Theorem by necklace Documentation                         *)
 (* ------------------------------------------------------------------------- *)
@@ -1186,7 +1183,6 @@ Proof
   `a <= a ** p` by rw[EXP_LE] >>
   metis_tac[DIVIDES_MOD_0, MOD_EQ]
 QED
-
 
 (* ------------------------------------------------------------------------- *)
 

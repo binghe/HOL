@@ -35,7 +35,6 @@ val _ = new_theory "FLTfixedpoint";
 open arithmeticTheory pred_setTheory dividesTheory numberTheory
      combinatoricsTheory;
 
-open necklaceTheory;
 open cycleTheory;
 
 (* val _ = load "groupInstancesTheory"; *)

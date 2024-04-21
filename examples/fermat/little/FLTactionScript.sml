@@ -39,7 +39,6 @@ open arithmeticTheory pred_setTheory dividesTheory gcdTheory gcdsetTheory
      logrootTheory numberTheory combinatoricsTheory;
 
 open cycleTheory;
-open necklaceTheory;
 
 open groupTheory;
 open groupActionTheory;
