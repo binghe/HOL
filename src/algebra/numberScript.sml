@@ -550,20 +550,20 @@ val FIVE = store_thm(
   ``5 = SUC 4``,
   decide_tac);
 
-(* Overload squaring *)
-val _ = overload_on("SQ", ``\n. n * n``); (* not n ** 2 *)
+(* Overload squaring (temporalized by Chun Tian) *)
+val _ = temp_overload_on("SQ", ``\n. n * n``); (* not n ** 2 *)
 
-(* Overload half of a number *)
-val _ = overload_on("HALF", ``\n. n DIV 2``);
+(* Overload half of a number (temporalized by Chun Tian) *)
+val _ = temp_overload_on("HALF", ``\n. n DIV 2``);
 
-(* Overload twice of a number *)
-val _ = overload_on("TWICE", ``\n. 2 * n``);
+(* Overload twice of a number (temporalized by Chun Tian) *)
+val _ = temp_overload_on("TWICE", ``\n. 2 * n``);
 
 (* make divides infix *)
 val _ = set_fixity "divides" (Infixl 480); (* relation is 450, +/- is 500, * is 600. *)
 
 (* Theorem alias *)
-Theorem ZERO_LE_ALL = arithmeticTheory.ZERO_LESS_EQ;
+Theorem ZERO_LE_ALL = ZERO_LESS_EQ;
 (* val ZERO_LE_ALL = |- !n. 0 <= n: thm *)
 
 (* Extract theorem *)
@@ -1383,7 +1383,7 @@ Proof
 QED
 
 (* Theorem alias *)
-Theorem HALF_TWICE = arithmeticTheory.MULT_DIV_2;
+Theorem HALF_TWICE = MULT_DIV_2;
 (* val HALF_TWICE = |- !n. HALF (2 * n) = n: thm *)
 
 (* Theorem: n * HALF m <= HALF (n * m) *)
@@ -8416,11 +8416,11 @@ val FUNPOW_MOD = store_thm(
   `n = (n MOD k) + (n DIV k) * k` by metis_tac[DIVISION, ADD_COMM] >>
   metis_tac[FUNPOW_ADD, FUNPOW_MULTIPLE]);
 
-(* Overload a RISING function *)
-val _ = overload_on ("RISING", ``\f. !x:num. x <= f x``);
+(* Overload a RISING function (temporalizaed by Chun Tian) *)
+val _ = temp_overload_on ("RISING", ``\f. !x:num. x <= f x``);
 
-(* Overload a FALLING function *)
-val _ = overload_on ("FALLING", ``\f. !x:num. f x <= x``);
+(* Overload a FALLING function (temporalizaed by Chun Tian) *)
+val _ = temp_overload_on ("FALLING", ``\f. !x:num. f x <= x``);
 
 (* Theorem: RISING f /\ m <= n ==> !x. FUNPOW f m x <= FUNPOW f n x *)
 (* Proof:

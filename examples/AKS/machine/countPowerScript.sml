@@ -31,6 +31,9 @@ open monadsyntax;
 val _ = monadsyntax.enable_monadsyntax();
 val _ = monadsyntax.enable_monad "Count";
 
+val _ = temp_overload_on ("RISING", ``\f. !x:num. x <= f x``);
+val _ = temp_overload_on ("FALLING", ``\f. !x:num. f x <= x``);
+
 (* ------------------------------------------------------------------------- *)
 (* Power Computations with Count Monad Documentation                         *)
 (* ------------------------------------------------------------------------- *)

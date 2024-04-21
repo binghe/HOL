@@ -1,17 +1,11 @@
 (* ------------------------------------------------------------------------- *)
 (* Integer Functions Computation (logPower)                                  *)
-(* ------------------------------------------------------------------------- *)
-(* ------------------------------------------------------------------------- *)
 (* Prime Power (primePower)                                                  *)
-(* ------------------------------------------------------------------------- *)
-(* ------------------------------------------------------------------------- *)
 (* Primality Tests (primes)                                                  *)
-(* ------------------------------------------------------------------------- *)
-(* ------------------------------------------------------------------------- *)
 (* Gauss' Little Theorem                                                     *)
-(* ------------------------------------------------------------------------- *)
-(* ------------------------------------------------------------------------- *)
 (* Mobius Function and Inversion.                                            *)
+(* ------------------------------------------------------------------------- *)
+(* Author: (Joseph) Hing-Lun Chan (Australian National University, 2019)     *)
 (* ------------------------------------------------------------------------- *)
 
 open HolKernel boolLib bossLib Parse;
@@ -21,6 +15,10 @@ open arithmeticTheory pred_setTheory dividesTheory gcdTheory logrootTheory
      numberTheory combinatoricsTheory prim_recTheory;
 
 val _ = new_theory "prime";
+
+val _ = temp_overload_on("SQ", ``\n. n * n``);
+val _ = temp_overload_on("HALF", ``\n. n DIV 2``);
+val _ = temp_overload_on("TWICE", ``\n. 2 * n``);
 
 (* ------------------------------------------------------------------------- *)
 (* Integer Functions Computation Documentation                               *)
@@ -584,238 +582,6 @@ Proof
   ]
 QED
 
-(* Overload LOG base 2 *)
-val _ = overload_on ("LOG2", ``\n. LOG 2 n``);
-
-(* Theorem: LOG2 1 = 0 *)
-(* Proof:
-   LOG_1 |> SPEC ``2``;
-   val it = |- 1 < 2 ==> LOG2 1 = 0: thm
-*)
-val LOG2_1 = store_thm(
-  "LOG2_1[simp]",
-  ``LOG2 1 = 0``,
-  rw[LOG_1]);
-
-(* Theorem: LOG2 2 = 1 *)
-(* Proof:
-   LOG_BASE |> SPEC ``2``;
-   val it = |- 1 < 2 ==> LOG2 2 = 1: thm
-*)
-val LOG2_2 = store_thm(
-  "LOG2_2[simp]",
-  ``LOG2 2 = 1``,
-  rw[LOG_BASE]);
-
-(* Obtain a theorem *)
-val LOG2_THM = save_thm("LOG2_THM",
-    LOG_THM |> SPEC ``2`` |> SIMP_RULE (srw_ss())[]);
-(* val LOG2_THM = |- !n. 0 < n ==> !p. (LOG2 n = p) <=> 2 ** p <= n /\ n < 2 ** SUC p: thm *)
-
-(* Obtain a theorem *)
-Theorem LOG2_PROPERTY = logrootTheory.LOG |> SPEC ``2`` |> SIMP_RULE (srw_ss())[];
-(* val LOG2_PROPERTY =  |- !n. 0 < n ==> 2 ** LOG2 n <= n /\ n < 2 ** SUC (LOG2 n): thm *)
-
-(* Theorem: 0 < n ==> 2 ** LOG2 n <= n) *)
-(* Proof: by LOG2_PROPERTY *)
-val TWO_EXP_LOG2_LE = store_thm(
-  "TWO_EXP_LOG2_LE",
-  ``!n. 0 < n ==> 2 ** LOG2 n <= n``,
-  rw[LOG2_PROPERTY]);
-
-(* Obtain a theorem *)
-val LOG2_UNIQUE = save_thm("LOG2_UNIQUE",
-    LOG_UNIQUE |> SPEC ``2`` |> SPEC ``n:num`` |> SPEC ``m:num`` |> GEN_ALL);
-(* val LOG2_UNIQUE = |- !n m. 2 ** m <= n /\ n < 2 ** SUC m ==> LOG2 n = m: thm *)
-
-(* Theorem: 0 < n ==> ((LOG2 n = 0) <=> (n = 1)) *)
-(* Proof:
-   LOG_EQ_0 |> SPEC ``2``;
-   |- !b. 1 < 2 /\ 0 < b ==> (LOG2 b = 0 <=> b < 2)
-*)
-val LOG2_EQ_0 = store_thm(
-  "LOG2_EQ_0",
-  ``!n. 0 < n ==> ((LOG2 n = 0) <=> (n = 1))``,
-  rw[LOG_EQ_0]);
-
-(* Theorem: 0 < n ==> LOG2 n = 1 <=> (n = 2) \/ (n = 3) *)
-(* Proof:
-   If part: LOG2 n = 1 ==> n = 2 \/ n = 3
-      Note  2 ** 1 <= n /\ n < 2 ** SUC 1  by LOG2_PROPERTY
-        or       2 <= n /\ n < 4           by arithmetic
-      Thus  n = 2 or n = 3.
-   Only-if part: LOG2 2 = 1 /\ LOG2 3 = 1
-      Note LOG2 2 = 1                      by LOG2_2
-       and LOG2 3 = 1                      by LOG2_UNIQUE
-     since 2 ** 1 <= 3 /\ 3 < 2 ** SUC 1 ==> (LOG2 3 = 1)
-*)
-val LOG2_EQ_1 = store_thm(
-  "LOG2_EQ_1",
-  ``!n. 0 < n ==> ((LOG2 n = 1) <=> ((n = 2) \/ (n = 3)))``,
-  rw_tac std_ss[EQ_IMP_THM] >| [
-    imp_res_tac LOG2_PROPERTY >>
-    rfs[],
-    rw[],
-    irule LOG2_UNIQUE >>
-    simp[]
-  ]);
-
-(* Obtain theorem *)
-val LOG2_LE_MONO = save_thm("LOG2_LE_MONO",
-    LOG_LE_MONO |> SPEC ``2`` |> SPEC ``n:num`` |> SPEC ``m:num``
-                |> SIMP_RULE (srw_ss())[] |> GEN_ALL);
-(* val LOG2_LE_MONO = |- !n m. 0 < n ==> n <= m ==> LOG2 n <= LOG2 m: thm *)
-
-(* Theorem: 0 < n /\ n <= m ==> LOG2 n <= LOG2 m *)
-(* Proof: by LOG_LE_MONO *)
-val LOG2_LE = store_thm(
-  "LOG2_LE",
-  ``!n m. 0 < n /\ n <= m ==> LOG2 n <= LOG2 m``,
-  rw[LOG_LE_MONO, DECIDE``1 < 2``]);
-
-(* Note: next is not LOG2_LT_MONO! *)
-
-(* Theorem: 0 < n /\ n < m ==> LOG2 n <= LOG2 m *)
-(* Proof:
-   Since n < m ==> n <= m   by LESS_IMP_LESS_OR_EQ
-   This is true             by LOG_LE_MONO
-*)
-val LOG2_LT = store_thm(
-  "LOG2_LT",
-  ``!n m. 0 < n /\ n < m ==> LOG2 n <= LOG2 m``,
-  rw[LOG_LE_MONO, LESS_IMP_LESS_OR_EQ, DECIDE``1 < 2``]);
-
-(* Theorem: 0 < n ==> LOG2 n < n *)
-(* Proof:
-       LOG2 n
-     < 2 ** (LOG2 n)     by X_LT_EXP_X, 1 < 2
-    <= n                 by LOG2_PROPERTY, 0 < n
-*)
-val LOG2_LT_SELF = store_thm(
-  "LOG2_LT_SELF",
-  ``!n. 0 < n ==> LOG2 n < n``,
-  rpt strip_tac >>
-  `LOG2 n < 2 ** (LOG2 n)` by rw[X_LT_EXP_X] >>
-  `2 ** LOG2 n <= n` by rw[LOG2_PROPERTY] >>
-  decide_tac);
-
-(* Theorem: 0 < n ==> LOG2 n <> n *)
-(* Proof:
-   Note n < LOG2 n     by LOG2_LT_SELF
-   Thus n <> LOG2 n    by arithmetic
-*)
-val LOG2_NEQ_SELF = store_thm(
-  "LOG2_NEQ_SELF",
-  ``!n. 0 < n ==> LOG2 n <> n``,
-  rpt strip_tac >>
-  `LOG2 n < n` by rw[LOG2_LT_SELF] >>
-  decide_tac);
-
-(* Theorem: LOG2 n = n ==> n = 0 *)
-(* Proof: by LOG2_NEQ_SELF *)
-val LOG2_EQ_SELF = store_thm(
-  "LOG2_EQ_SELF",
-  ``!n. (LOG2 n = n) ==> (n = 0)``,
-  metis_tac[LOG2_NEQ_SELF, DECIDE``~(0 < n) <=> (n = 0)``]);
-
-(* Theorem: 1 < n ==> 0 < LOG2 n *)
-(* Proof:
-       1 < n
-   ==> 2 <= n
-   ==> LOG2 2 <= LOG2 n     by LOG2_LE
-   ==>      1 <= LOG2 n     by LOG_BASE, LOG2 2 = 1
-    or      0 < LOG2 n
-*)
-val LOG2_POS = store_thm(
-  "LOG2_POS[simp]",
-  ``!n. 1 < n ==> 0 < LOG2 n``,
-  rpt strip_tac >>
-  `LOG2 2 = 1` by rw[LOG_BASE, DECIDE``1 < 2``] >>
-  `2 <= n` by decide_tac >>
-  `LOG2 2 <= LOG2 n` by rw[LOG2_LE] >>
-  decide_tac);
-
-(* Theorem: 1 < n ==> 1 < 2 * LOG2 n *)
-(* Proof:
-       1 < n
-   ==> 2 <= n
-   ==> LOG2 2 <= LOG2 n        by LOG2_LE
-   ==>      1 <= LOG2 n        by LOG_BASE, LOG2 2 = 1
-   ==>  2 * 1 <= 2 * LOG2 n    by LE_MULT_LCANCEL
-    or      1 < 2 * LOG2 n
-*)
-val LOG2_TWICE_LT = store_thm(
-  "LOG2_TWICE_LT",
-  ``!n. 1 < n ==> 1 < 2 * (LOG2 n)``,
-  rpt strip_tac >>
-  `LOG2 2 = 1` by rw[LOG_BASE, DECIDE``1 < 2``] >>
-  `2 <= n` by decide_tac >>
-  `LOG2 2 <= LOG2 n` by rw[LOG2_LE] >>
-  `1 <= LOG2 n` by decide_tac >>
-  `2 <= 2 * LOG2 n` by rw_tac arith_ss[LE_MULT_LCANCEL, DECIDE``0 < 2``] >>
-  decide_tac);
-
-(* Theorem: 1 < n ==> 4 <= (2 * (LOG2 n)) ** 2 *)
-(* Proof:
-       1 < n
-   ==> 2 <= n
-   ==> LOG2 2 <= LOG2 n              by LOG2_LE
-   ==>      1 <= LOG2 n              by LOG2_2, or LOG_BASE, LOG2 2 = 1
-   ==>  2 * 1 <= 2 * LOG2 n          by LE_MULT_LCANCEL
-   ==> 2 ** 2 <= (2 * LOG2 n) ** 2   by EXP_EXP_LE_MONO
-   ==>      4 <= (2 * LOG2 n) ** 2
-*)
-val LOG2_TWICE_SQ = store_thm(
-  "LOG2_TWICE_SQ",
-  ``!n. 1 < n ==> 4 <= (2 * (LOG2 n)) ** 2``,
-  rpt strip_tac >>
-  `LOG2 2 = 1` by rw[] >>
-  `2 <= n` by decide_tac >>
-  `LOG2 2 <= LOG2 n` by rw[LOG2_LE] >>
-  `1 <= LOG2 n` by decide_tac >>
-  `2 <= 2 * LOG2 n` by rw_tac arith_ss[LE_MULT_LCANCEL, DECIDE``0 < 2``] >>
-  `2 ** 2 <= (2 * LOG2 n) ** 2` by rw[EXP_EXP_LE_MONO, DECIDE``0 < 2``] >>
-  `2 ** 2 = 4` by rw_tac arith_ss[] >>
-  decide_tac);
-
-(* Theorem: 0 < n ==> 4 <= (2 * SUC (LOG2 n)) ** 2 *)
-(* Proof:
-       0 < n
-   ==> 1 <= n
-   ==> LOG2 1 <= LOG2 n                    by LOG2_LE
-   ==>      0 <= LOG2 n                    by LOG2_1, or LOG_BASE, LOG2 1 = 0
-   ==>      1 <= SUC (LOG2 n)              by LESS_EQ_MONO
-   ==>  2 * 1 <= 2 * SUC (LOG2 n)          by LE_MULT_LCANCEL
-   ==> 2 ** 2 <= (2 * SUC (LOG2 n)) ** 2   by EXP_EXP_LE_MONO
-   ==>      4 <= (2 * SUC (LOG2 n)) ** 2
-*)
-val LOG2_SUC_TWICE_SQ = store_thm(
-  "LOG2_SUC_TWICE_SQ",
-  ``!n. 0 < n ==> 4 <= (2 * SUC (LOG2 n)) ** 2``,
-  rpt strip_tac >>
-  `LOG2 1 = 0` by rw[] >>
-  `1 <= n` by decide_tac >>
-  `LOG2 1 <= LOG2 n` by rw[LOG2_LE] >>
-  `1 <= SUC (LOG2 n)` by decide_tac >>
-  `2 <= 2 * SUC (LOG2 n)` by rw_tac arith_ss[LE_MULT_LCANCEL, DECIDE``0 < 2``] >>
-  `2 ** 2 <= (2 * SUC (LOG2 n)) ** 2` by rw[EXP_EXP_LE_MONO, DECIDE``0 < 2``] >>
-  `2 ** 2 = 4` by rw_tac arith_ss[] >>
-  decide_tac);
-
-(* Theorem: 1 < n ==> 1 < (SUC (LOG2 n)) ** 2 *)
-(* Proof:
-   Note 0 < LOG2 n                 by LOG2_POS, 1 < n
-     so 1 < SUC (LOG2 n)           by arithmetic
-    ==> 1 < (SUC (LOG2 n)) ** 2    by ONE_LT_EXP, 0 < 2
-*)
-val LOG2_SUC_SQ = store_thm(
-  "LOG2_SUC_SQ",
-  ``!n. 1 < n ==> 1 < (SUC (LOG2 n)) ** 2``,
-  rpt strip_tac >>
-  `0 < LOG2 n` by rw[] >>
-  `1 < SUC (LOG2 n)` by decide_tac >>
-  rw[ONE_LT_EXP]);
-
 (* Theorem: 1 < m ==> 0 < SUC (LOG2 n) * (m ** 2 DIV 2) *)
 (* Proof:
    Since 1 < m ==> 1 < m ** 2 DIV 2             by ONE_LT_HALF_SQ
@@ -830,46 +596,6 @@ val LOG2_SUC_TIMES_SQ_DIV_2_POS = store_thm(
   `1 < m ** 2 DIV 2` by rw[ONE_LT_HALF_SQ] >>
   `0 < m ** 2 DIV 2 /\ 0 < SUC (LOG2 n)` by decide_tac >>
   rw[ZERO_LESS_MULT]);
-
-(* Theorem: LOG2 (2 ** n) = n *)
-(* Proof: by LOG_EXACT_EXP *)
-val LOG2_2_EXP = store_thm(
-  "LOG2_2_EXP",
-  ``!n. LOG2 (2 ** n) = n``,
-  rw[LOG_EXACT_EXP]);
-
-(* Theorem: (2 ** (LOG2 n) = n) <=> ?k. n = 2 ** k *)
-(* Proof:
-   If part: 2 ** LOG2 n = n ==> ?k. n = 2 ** k
-      True by taking k = LOG2 n.
-   Only-if part: 2 ** LOG2 (2 ** k) = 2 ** k
-      Note LOG2 n = k               by LOG_EXACT_EXP, 1 < 2
-        or n = 2 ** k = 2 ** LOG2 n.
-*)
-val LOG2_EXACT_EXP = store_thm(
-  "LOG2_EXACT_EXP",
-  ``!n. (2 ** (LOG2 n) = n) <=> ?k. n = 2 ** k``,
-  metis_tac[LOG2_2_EXP]);
-
-(* Theorem: 0 < n ==> LOG2 (n * 2 ** m) = (LOG2 n) + m *)
-(* Proof:
-   LOG_EXP |> SPEC ``m:num`` |> SPEC ``2`` |> SPEC ``n:num``;
-   val it = |- 1 < 2 /\ 0 < n ==> LOG2 (2 ** m * n) = m + LOG2 n: thm
-*)
-val LOG2_MULT_EXP = store_thm(
-  "LOG2_MULT_EXP",
-  ``!n m. 0 < n ==> (LOG2 (n * 2 ** m) = (LOG2 n) + m)``,
-  rw[GSYM LOG_EXP]);
-
-(* Theorem: 0 < n ==> (LOG2 (2 * n) = 1 + LOG2 n) *)
-(* Proof:
-   LOG_MULT |> SPEC ``2`` |> SPEC ``n:num``;
-   val it = |- 1 < 2 /\ 0 < n ==> LOG2 (TWICE n) = SUC (LOG2 n): thm
-*)
-val LOG2_TWICE = store_thm(
-  "LOG2_TWICE",
-  ``!n. 0 < n ==> (LOG2 (2 * n) = 1 + LOG2 n)``,
-  rw[LOG_MULT]);
 
 (* Theorem: 1 < n ==> LOG2 (HALF n) = (LOG2 n) - 1 *)
 (* Proof:

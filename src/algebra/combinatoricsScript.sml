@@ -5,6 +5,7 @@
 (*                                                                           *)
 (* Author: (Joseph) Hing-Lun Chan (Australian National University, 2019)     *)
 (* ------------------------------------------------------------------------- *)
+
 (* ------------------------------------------------------------------------- *)
 (* Necklace Theory - monocoloured and multicoloured.                         *)
 (* ------------------------------------------------------------------------- *)
@@ -42,6 +43,10 @@ open prim_recTheory arithmeticTheory dividesTheory gcdTheory gcdsetTheory
      listRangeTheory  indexedListsTheory relationTheory;
 
 val _ = new_theory "combinatorics";
+
+val _ = temp_overload_on("SQ", ``\n. n * n``);
+val _ = temp_overload_on("HALF", ``\n. n DIV 2``);
+val _ = temp_overload_on("TWICE", ``\n. 2 * n``);
 
 (* ------------------------------------------------------------------------- *)
 (* List Reversal.                                                            *)
