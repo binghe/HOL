@@ -11232,20 +11232,20 @@ Goolge: order of elements in a cyclic group.
 Pattern of orders of elements in a cyclic group
 http://math.stackexchange.com/questions/158281/pattern-of-orders-of-elements-in-a-cyclic-group
 
-The number of elements of order d, where d is a divisor of n, is φ(d).
+The number of elements of order d, where d is a divisor of n, is 'v(d).
 
 Let G be a cyclic group of order n, and let a in G be a generator. Let d be a divisor of n.
 
 Certainly, a^{n/d} is an element of G of order d (in other words, <a^{n/d}> is a subgroup of G of order d).
-If a^{t} in G is an element of order d, then (a^{t})^{d} = e, hence n ∣ td, and thus (n/d) ∣ t.
+If a^{t} in G is an element of order d, then (a^{t})^{d} = e, hence n | td, and thus (n/d) | t.
 This shows that a^{t} in <a^{n/d}>, and thus <a^{t}> = <a^{n/d}> (since they are both subgroups of order d).
 Thus, there is exactly one subgroup, let's call it H_{d}, of G of order d, for each divisor d of n,
 and all of these subgroups are themselves cyclic.
 
-Any cyclic group of order d has ϕ(d) generators, i.e. there are ϕ(d) elements of order d in H_{d},
-and hence there are ϕ(d) elements of order d in G. Here, ϕ is Euler's phi function.
+Any cyclic group of order d has phi(d) generators, i.e. there are phi(d) elements of order d in H_{d},
+and hence there are phi(d) elements of order d in G. Here, phi is Euler's phi function.
 
-This can be checked to make sense via the identity: n = SUM ϕ(d), over d | n.
+This can be checked to make sense via the identity: n = SUM phi(d), over d | n.
 *)
 
 (* Theorem: cyclic g /\ FINITE G ==> !n. n divides (CARD G) ==>
@@ -13418,7 +13418,7 @@ Proof
     `z IN G` by rw[act_by_def, Abbr`z`] >>
     rw[coset_def, IMAGE_DEF, EXTENSION] >>
     metis_tac[stabilizer_element, group_op_element],
-    rename [‘x'' ∈ G’, ‘_ ∈ a * stabilizer f g x’] >>
+    rename [‘x'' IN G’, ‘_ IN a * stabilizer f g x’] >>
     qexists_tac `f a x` >>
     rpt strip_tac >- metis_tac[orbit_element, action_closure, reach_def] >>
     qabbrev_tac `y = f a x` >>
@@ -14676,7 +14676,7 @@ val homo_restrict_same_kernel = store_thm(
       = CARD t2.carrier * CARD ((t1 / t2).carrier)   by homo_count_formula
 
    Let k = kernel f g1 g2.
-   Then k SUBSET (PREIMAGE f h.carrier ∩ g1.carrier)    by preimage_subgroup_kernel
+   Then k SUBSET (PREIMAGE f h.carrier INTER g1.carrier)    by preimage_subgroup_kernel
     and k SUBSET t1.carrier                             by preimage_group_def
     and t1.carrier SUBSET g1.carrier                    by preimage_group_def
    Note t2.carrier
@@ -14697,7 +14697,7 @@ val preimage_cardinality = store_thm(
     rpt strip_tac >>
     `Group g1` by fs[finite_group_is_group] >>
     `CARD (preimage_group f g1 g2 h.carrier).carrier = (CARD (kernel_group f (preimage_group f g1 g2 h.carrier) g2).carrier) * CARD (preimage_group f g1 g2 h.carrier / kernel_group f (preimage_group f g1 g2 h.carrier) g2).carrier` by metis_tac[homo_count_formula] >>
-    `(kernel f g1 g2) SUBSET (PREIMAGE f h.carrier ∩ g1.carrier)` by metis_tac[preimage_subgroup_kernel] >>
+    `(kernel f g1 g2) SUBSET (PREIMAGE f h.carrier INTER g1.carrier)` by metis_tac[preimage_subgroup_kernel] >>
     `(kernel f g1 g2) SUBSET (preimage_group f g1 g2 h.carrier).carrier` by fs[preimage_group_def] >>
     `(preimage_group f g1 g2 h.carrier).carrier SUBSET g1.carrier` by fs[preimage_group_def] >>
     `kernel f (preimage_group f g1 g2 h.carrier) g2 = kernel f g1 g2` by fs[homo_restrict_same_kernel] >>

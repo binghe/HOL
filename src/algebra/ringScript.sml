@@ -9836,7 +9836,7 @@ Theorem ring_prime_iso:
 Proof
   rw[ring_prime_def]
   \\ `BIJ f r.carrier r_.carrier` by fs[RingIso_def]
-  \\ `∃x y. a = f x /\ b = f y /\ x IN r.carrier /\ y IN r.carrier`
+  \\ `?x y. a = f x /\ b = f y /\ x IN r.carrier /\ y IN r.carrier`
   by (
     fs[BIJ_DEF, SURJ_DEF]
     \\ res_tac \\ rw[]
@@ -10906,7 +10906,7 @@ val quotient_ring_ring_sing = store_thm(
   rw[EQ_IMP_THM] >| [
     metis_tac[],
     qcase_tac `y o R` >>
-    qcase_tac `_ IN R' ⇒ _` >>
+    qcase_tac `_ IN R' ==> _` >>
     qcase_tac `z IN R'` >>
     `z = z - y + y` by rw[ring_sub_add] >>
     `_ = y + (z - y)` by rw[ring_add_comm] >>
@@ -11936,9 +11936,9 @@ Proof
     rename [‘0 < m’] >> spose_not_then strip_assume_tac >>
     `1 < m` by decide_tac >>
     `FUNPOW (\j. 0) 1 0 = 0` by rw[] >>
-    metis_tac[DECIDE “1 ≠ 0”],
+    metis_tac[DECIDE “1 <> 0”],
 
-    rename [‘m = n’, ‘n ≠ 1’] >>
+    rename [‘m = n’, ‘n <> 1’] >>
     ‘FUNPOW (\j. (j + 1) MOD n) n 0 = 0’ by rw_tac std_ss[ZN_lemma2] >>
     ‘~(n < m)’ by metis_tac[DECIDE “~(0 < 0)”] >>
     ‘~(m < n)’ suffices_by decide_tac >>
@@ -13325,7 +13325,7 @@ Proof
   rw[] >>
   `~(n < 2) /\ ~(2 < n)` suffices_by decide_tac >>
   spose_not_then strip_assume_tac >>
-  ‘~(2 < n)’ by metis_tac[DECIDE “2 ≠ 0”] >> gs[] >>
+  ‘~(2 < n)’ by metis_tac[DECIDE “2 <> 0”] >> gs[] >>
   `n = 1` by decide_tac >>
   gs[symdiff_def]
 QED
@@ -15187,16 +15187,16 @@ Proof
     simp[]
     \\ DEP_REWRITE_TAC[GBAG_INSERT]
     \\ fs[SUBSET_DEF] )
-  \\ `∃s. Unit r s /\ p = s * q` by metis_tac[ring_associates_def]
+  \\ `?s. Unit r s /\ p = s * q` by metis_tac[ring_associates_def]
   \\ qmatch_asmsub_abbrev_tac`r.prod.op p p1`
   \\ qmatch_asmsub_abbrev_tac`rassoc (p * p1) p2`
-  \\ `∃s2. Unit r s2 /\ p * p1 = s2 * p2` by metis_tac[ring_associates_def]
+  \\ `?s2. Unit r s2 /\ p * p1 = s2 * p2` by metis_tac[ring_associates_def]
   \\ qmatch_asmsub_abbrev_tac`q * q1`
   \\ `q1 IN r.prod.carrier`
   by ( qunabbrev_tac`q1` \\ irule GBAG_in_carrier \\ fs[SUBSET_DEF] )
   \\ `s IN r.carrier /\ s2 IN r.carrier` by metis_tac[ring_unit_property]
   \\ `r.prod.carrier = r.carrier` by simp[]
-  \\ `∃s3. s3 IN r.carrier /\ s * s3 = #1` by metis_tac[ring_unit_property]
+  \\ `?s3. s3 IN r.carrier /\ s * s3 = #1` by metis_tac[ring_unit_property]
   \\ `s3 * (s * q * p1) = s3 * (s2 * q * q1)` by metis_tac[ring_mult_assoc]
   \\ `q IN r.carrier` by fs[SUBSET_DEF]
   \\ `s3 * s * q * p1 = s3 * s2 * q * q1` by (
@@ -15214,7 +15214,7 @@ Proof
     DEP_REWRITE_TAC[GSYM ring_mult_rsub]
     \\ simp[] \\ fs[] )
   \\ `MEM q l2` by simp[]
-  \\ `ring_prime r q ∧ q <> #0 /\ ~Unit r q` by metis_tac[]
+  \\ `ring_prime r q /\ q <> #0 /\ ~Unit r q` by metis_tac[]
   \\ `u IN r.carrier` by metis_tac[ring_unit_property]
   \\ `u * q1 IN r.carrier` by metis_tac[ring_mult_element]
   \\ `ring_sub r p1 (u * q1) = #0`
