@@ -68,14 +68,14 @@ val Ring_ABSREP = DB.fetch "-" "Ring_ABSREP";
 (* The ring operations, primitive plus subtraction as a derived operation.   *)
 (* ------------------------------------------------------------------------- *)
 
-Overload ring_carrier[local]      = “\r.     (fromRing r).carrier”
-Overload ring_0[local]            = “\r.     (fromRing r).sum.id”
-Overload ring_1[local]            = “\r.     (fromRing r).prod.id”
-Overload ring_neg[local]          = “\r x.   (fromRing r).sum.inv x”
-Overload ring_add[local]          = “\r x y. (fromRing r).sum.op x y”
-Overload ring_mul[local]          = “\r x y. (fromRing r).prod.op x y”
-Overload ring_pow[local]          = “\r x n. (fromRing r).prod.exp x n”
-Overload ring_sub[local]          = “\r.     ring$ring_sub (fromRing r)”
+Overload ring_carrier      = “\r.     (fromRing r).carrier”
+Overload ring_0            = “\r.     (fromRing r).sum.id”
+Overload ring_1            = “\r.     (fromRing r).prod.id”
+Overload ring_neg          = “\r x.   (fromRing r).sum.inv x”
+Overload ring_add          = “\r x y. (fromRing r).sum.op x y”
+Overload ring_mul          = “\r x y. (fromRing r).prod.op x y”
+Overload ring_pow          = “\r x n. (fromRing r).prod.exp x n”
+Overload ring_sub          = “\r.     ring$ring_sub (fromRing r)”
 
 (* NOTE: Now the following theorems have exactly the same statements with their
          corresponding theorems in HOL-Light.
@@ -303,7 +303,7 @@ QED
 (* Homomorphisms etc.                                                        *)
 (* ------------------------------------------------------------------------- *)
 
-Overload ring_homomorphism[local] =
+Overload ring_homomorphism =
         “\(r,s) (f :'a -> 'b). RingHomo f (fromRing r) (fromRing s)”
 
 Theorem ring_homomorphism_def :
@@ -449,8 +449,7 @@ End
 (* Mapping natural numbers and integers into a ring in the obvious way.      *)
 (* ------------------------------------------------------------------------- *)
 
-Overload ring_of_num[local] =
-        “\r n. (fromRing r).sum.exp (ring_1 r) n” (* ##n *)
+Overload ring_of_num = “\r n. (fromRing r).sum.exp (ring_1 r) n” (* ##n *)
 
 Theorem ring_of_num :
     !r. ring_of_num r (0 :num) = ring_0 r /\

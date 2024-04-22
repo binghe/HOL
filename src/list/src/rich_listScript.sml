@@ -3733,8 +3733,8 @@ QED
    = FRONT l ++ [LAST l]      by APPEND_FRONT_LAST, l <> []
    = SNOC (LAST l) (FRONT l)  by SNOC_APPEND
  *)
-val SNOC_LAST_FRONT = store_thm(
-   "SNOC_LAST_FRONT",
+val SNOC_LAST_FRONT' = store_thm(
+   "SNOC_LAST_FRONT'",
   ``!l. l <> [] ==> (l = SNOC (LAST l) (FRONT l))``,
   rw[APPEND_FRONT_LAST]);
 

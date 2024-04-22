@@ -1363,7 +1363,7 @@ val weak_cmult_snoc = store_thm(
 (* Proof:
      c o p
    = MAP (\x. c * x) p                          by weak_cmult_map
-   = MAP (\x. c * x) (SNOC (LAST p) (FRONT p))  by SNOC_LAST_FRONT
+   = MAP (\x. c * x) (SNOC (LAST p) (FRONT p))  by SNOC_LAST_FRONT'
    = SNOC (\x. c * x) (LAST p) (MAP (\x. c * x) (FRONT p))
                                                 by MAP_SNOC
    = SNOC (c * LAST p) (c o FRONT p)            by weak_cmult_map
