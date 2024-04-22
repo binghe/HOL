@@ -33,8 +33,7 @@ open pred_setTheory listTheory sortingTheory containerTheory dep_rewrite
      arithmeticTheory dividesTheory;
 
 open groupTheory monoidTheory ringTheory ringUnitTheory ringIdealTheory;
-open groupOrderTheory;
-open groupMapTheory ringMapTheory ringDividesTheory;
+open ringMapTheory ringDividesTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Integral Domain Documentation                                             *)
@@ -695,7 +694,7 @@ Proof
     \\ `GBAG r.prod b0 IN r.prod.carrier`
     by ( irule GBAG_in_carrier \\ simp[SUBSET_DEF, Abbr`b0`, IN_LIST_TO_BAG] )
     \\ `!v. v IN r.carrier ==> r.prod.id <> r.prod.op h v`
-    by metis_tac[ringUnitTheory.ring_unit_property]
+    by metis_tac[ring_unit_property]
     \\ first_x_assum(qspec_then`r.prod.op s (GBAG r.prod b0)`mp_tac)
     \\ rfs[]
     \\ metis_tac[ring_unit_property, ring_mult_comm, ring_mult_assoc] )

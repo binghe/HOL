@@ -6,7 +6,7 @@ open HolKernel boolLib bossLib Parse;
 open dep_rewrite realTheory pred_setTheory bagTheory real_sigmaTheory
      iterateTheory monoidTheory real_algebraTheory;
 
-open ringTheory ringMapTheory ringUnitTheory ringDividesTheory groupRealTheory;
+open ringTheory ringMapTheory ringUnitTheory ringDividesTheory;
 
 val _ = new_theory"ringReal";
 
@@ -70,7 +70,7 @@ Proof
   rw[FUN_EQ_THM, Reals_def]
   \\ DEP_REWRITE_TAC[GSYM groupTheory.group_linv_unique]
   \\ simp[]
-  \\ metis_tac[groupRealTheory.real_add_group, groupTheory.AbelianGroup_def]
+  \\ metis_tac[real_add_group, groupTheory.AbelianGroup_def]
 QED
 
 Theorem GBAG_Reals_sum_BAG_IMAGE_BAG_OF_SET:

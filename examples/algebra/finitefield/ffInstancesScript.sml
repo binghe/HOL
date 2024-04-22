@@ -24,8 +24,7 @@ open pred_setTheory arithmeticTheory listTheory numberTheory dividesTheory
 open ffBasicTheory;
 
 open monoidTheory groupTheory ringTheory fieldTheory;
-open groupOrderTheory;
-open groupInstancesTheory ringInstancesTheory fieldInstancesTheory;
+open ringInstancesTheory fieldInstancesTheory;
 
 open polynomialTheory polyWeakTheory polyRingTheory;
 
@@ -41,8 +40,6 @@ open polyIrreducibleTheory;
 open ringDividesTheory;
 open ringIdealTheory;
 open ringUnitTheory;
-open subgroupTheory;
-open quotientGroupTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Finite Field Instances Documentation                                      *)

@@ -20,12 +20,6 @@ open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
 
 open monoidTheory groupTheory ringTheory ringUnitTheory fieldTheory;
 
-open subgroupTheory;
-open groupOrderTheory;
-
-(* val _ = load "groupProductTheory"; *)
-open groupProductTheory;
-
 open polyDividesTheory polyDivisionTheory;
 open polynomialTheory polyWeakTheory polyRingTheory;
 

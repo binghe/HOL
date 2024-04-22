@@ -22,10 +22,8 @@ open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
 open monoidTheory groupTheory ringTheory ringUnitTheory;
 
 open ringIdealTheory quotientRingTheory;
-open subgroupTheory;
-open quotientGroupTheory;
 
-open groupMapTheory ringMapTheory;
+open ringMapTheory;
 open polynomialTheory polyWeakTheory polyRingTheory;
 
 (* ------------------------------------------------------------------------- *)

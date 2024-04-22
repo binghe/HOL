@@ -22,15 +22,10 @@ open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
 (* Get dependet theories local *)
 open monoidTheory groupTheory ringTheory ringUnitTheory;
 
-(* (* val _ = load "integralDomainTheory"; *) *)
-(* val _ = load "fieldTheory"; *)
 open integralDomainTheory;
 open fieldTheory;
 
-open groupOrderTheory groupCyclicTheory;
-
 (* Get polynomial theory of Ring *)
-(* val _ = load "polyIrreducibleTheory"; *)
 open polynomialTheory polyWeakTheory polyRingTheory;
 open polyDivisionTheory;
 open polyMonicTheory;

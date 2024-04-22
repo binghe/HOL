@@ -33,17 +33,12 @@ open ffExtendTheory;
 open bagTheory;
 
 open monoidTheory groupTheory ringTheory fieldTheory;
-open groupInstancesTheory;
 open ringInstancesTheory;
 open fieldInstancesTheory;
 open ringUnitTheory;
 open ringMapTheory fieldMapTheory;
 
-open subgroupTheory;
-open groupOrderTheory;
 open fieldOrderTheory;
-
-open groupCyclicTheory;
 
 open ringBinomialTheory;
 

@@ -23,14 +23,10 @@ open monoidTheory groupTheory ringTheory ringUnitTheory fieldTheory;
 
 open polynomialTheory polyWeakTheory polyRingTheory polyDivisionTheory;
 
-(* val _ = load "polyFieldTheory"; *)
 open polyFieldTheory;
 
-(* val _ = load "fieldOrderTheory"; *)
 open fieldOrderTheory;
-open groupOrderTheory;
 
-(* val _ = load "polyMonicTheory"; *)
 open polyMonicTheory;
 
 open integralDomainTheory; (* for poly_roots_mult_id *)

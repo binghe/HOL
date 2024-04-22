@@ -24,10 +24,6 @@ open ringTheory;
 open groupTheory;
 open monoidTheory;
 
-(* val _ = load "groupProductTheory"; *)
-open groupProductTheory;
-open subgroupTheory;
-
 (* ------------------------------------------------------------------------- *)
 (* Product of a set of Field elements Documentation                          *)
 (* ------------------------------------------------------------------------- *)

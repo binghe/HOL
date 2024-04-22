@@ -46,11 +46,7 @@ open groupMapTheory ringMapTheory fieldMapTheory;
 open ringDividesTheory;
 open ringIdealTheory;
 open ringUnitTheory;
-open subgroupTheory;
-open quotientGroupTheory;
 
-open groupCyclicTheory;
-open groupOrderTheory;
 open fieldOrderTheory;
 
 (* ------------------------------------------------------------------------- *)

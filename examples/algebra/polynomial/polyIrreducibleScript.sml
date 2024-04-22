@@ -21,16 +21,8 @@ open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
 
 open monoidTheory groupTheory ringTheory integralDomainTheory fieldTheory;
 
-(* (* val _ = load "ringIdealTheory"; *) *)
-(* val _ = load "fieldIdealTheory"; *)
 open ringIdealTheory fieldIdealTheory;
 
-open groupOrderTheory;
-
-(* Get polynomial theory of Ring *)
-(* (* val _ = load "polyWeakTheory"; *) *)
-(* (* val _ = load "polyRingTheory"; *) *)
-(* val _ = load "polyFieldTheory"; *)
 open polynomialTheory polyWeakTheory polyRingTheory polyFieldTheory;
 
 (* val _ = load "polyFieldDivisionTheory"; *)

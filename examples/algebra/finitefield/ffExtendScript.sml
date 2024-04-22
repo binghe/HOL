@@ -29,24 +29,16 @@ open ffConjugateTheory;
 open ffExistTheory;
 
 open monoidTheory groupTheory ringTheory fieldTheory;
-open subgroupTheory;
 open ringUnitTheory;
-open groupOrderTheory;
-open groupMapTheory ringMapTheory fieldMapTheory;
+open ringMapTheory fieldMapTheory;
 
 (* (* val _ = load "ringBinomialTheory"; *) *)
 open ringBinomialTheory;
 
-(* (* val _ = load "groupCyclicTheory"; *) *)
-open groupCyclicTheory;
-
-open groupInstancesTheory;
 open ringInstancesTheory;
 open fieldInstancesTheory;
 
-(* (* val _ = load "quotientRingTheory"; *) *)
 open quotientRingTheory;
-open quotientGroupTheory;
 
 (* Get polynomial theory of Ring *)
 (* (* val _ = load "polyMapTheory"; *) *)

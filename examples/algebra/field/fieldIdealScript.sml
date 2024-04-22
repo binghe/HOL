@@ -18,17 +18,8 @@ open jcLib;
 open pred_setTheory arithmeticTheory gcdsetTheory numberTheory
      combinatoricsTheory;
 
-(* Get dependent theories local *)
-(* (* val _ = load "monoidTheory"; *) *)
-(* (* val _ = load "groupTheory"; *) *)
-(* (* val _ = load "ringTheory"; *) *)
-(* val _ = load "ringUnitTheory"; *)
-(* (* val _ = load "integralDomainTheory"; *) *)
 open monoidTheory groupTheory ringTheory ringUnitTheory;
 
-(* (* val _ = load "ringIdealTheory"; *) *)
-(* val _ = load "quotientRingTheory"; *)
-open subgroupTheory quotientGroupTheory;
 open ringIdealTheory quotientRingTheory;
 
 (* val _ = load "fieldTheory"; *)

@@ -12,7 +12,7 @@
 (* Applying Monoid Theory: Monoid Instances                                  *)
 (* Theory about folding a monoid (or group) operation over a bag of elements *)
 (* ------------------------------------------------------------------------- *)
-(* By: (Joseph) Hing-Lun Chan, The Australian National University, 2014-2019 *)
+(* (Joseph) Hing-Lun Chan, The Australian National University, 2014-2019     *)
 (* ------------------------------------------------------------------------- *)
 
 (*===========================================================================*)

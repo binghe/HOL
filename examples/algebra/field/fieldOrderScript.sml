@@ -25,8 +25,6 @@ open ringTheory;
 open groupTheory;
 open monoidTheory;
 
-open groupOrderTheory subgroupTheory groupCyclicTheory;
-
 (* ------------------------------------------------------------------------- *)
 (* Order of Elements in a Field Documentation                                *)
 (* ------------------------------------------------------------------------- *)

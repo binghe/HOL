@@ -4,7 +4,8 @@
 (*       John Harrison, University of Cambridge Computer Laboratory          *)
 (*            (c) Copyright, University of Cambridge 1998                    *)
 (*                                                                           *)
-(* Ported from HOL-Light (Library/ringtheory.ml) by Chun Tian on 29/01/2024  *)
+(* ------------------------------------------------------------------------- *)
+(* Ported by Chun Tian. The Australian National University (ANU), 2024       *)
 (* ========================================================================= *)
 
 structure ringLib :> ringLib =

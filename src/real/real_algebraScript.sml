@@ -6,7 +6,7 @@
 
 open HolKernel boolLib bossLib Parse;
 
-open pred_setTheory realTheory monoidTheory groupTheory;
+open pred_setTheory realTheory monoidTheory groupTheory ringTheory;
 
 val _ = new_theory "real_algebra";
 

@@ -1,1 +1,1 @@
-INCLUDES = ../group
+INCLUDES = $(HOLDIR)/src/algebra

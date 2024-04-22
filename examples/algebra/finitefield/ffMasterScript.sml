@@ -24,11 +24,8 @@ open ffAdvancedTheory;
 open ffPolyTheory;
 
 open monoidTheory groupTheory ringTheory fieldTheory;
-open groupOrderTheory;
-open subgroupTheory;
 
-open groupInstancesTheory ringInstancesTheory fieldInstancesTheory;
-open groupCyclicTheory;
+open ringInstancesTheory fieldInstancesTheory;
 
 open ringBinomialTheory;
 open ringDividesTheory;
@@ -49,7 +46,7 @@ open polyDividesTheory;
 open polyGCDTheory;
 open polyIrreducibleTheory;
 
-open groupMapTheory ringMapTheory fieldMapTheory;
+open ringMapTheory fieldMapTheory;
 open polyMapTheory;
 
 open polyDerivativeTheory;

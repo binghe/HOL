@@ -29,9 +29,6 @@ open pred_setTheory arithmeticTheory dividesTheory gcdTheory numberTheory;
 
 open monoidTheory groupTheory ringTheory integralDomainTheory;
 
-(* val _ = load "groupInstancesTheory"; *)
-open groupInstancesTheory;
-
 (* ------------------------------------------------------------------------- *)
 (* Integral Domain Instances Documentation                                   *)
 (* ------------------------------------------------------------------------- *)

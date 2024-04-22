@@ -24,7 +24,6 @@ open ffAdvancedTheory;
 open ffPolyTheory;
 
 open monoidTheory groupTheory ringTheory fieldTheory;
-open groupOrderTheory;
 open fieldOrderTheory;
 
 (* Get polynomial theory of Ring *)

@@ -24,9 +24,6 @@ open monoidTheory groupTheory ringTheory integralDomainTheory fieldTheory;
 
 open ringIdealTheory fieldIdealTheory;
 
-open groupOrderTheory;
-open subgroupTheory;
-
 open polynomialTheory polyWeakTheory polyRingTheory polyFieldTheory;
 
 (* val _ = load "polyMonicTheory"; *)

@@ -39,10 +39,8 @@ open polyMultiplicityTheory;
 open polyBinomialTheory; (* for coefficients *)
 
 open monoidTheory groupTheory ringTheory fieldTheory;
-open groupOrderTheory;
-open subgroupTheory;
 
-open groupMapTheory ringMapTheory fieldMapTheory;
+open ringMapTheory fieldMapTheory;
 
 open ringBinomialTheory;
 open ringDividesTheory;
@@ -51,7 +49,6 @@ open ringUnitTheory;
 
 (* val _ = load "fieldOrderTheory"; *)
 open fieldOrderTheory; (* for field_order_eqn *)
-open groupCyclicTheory; (* for orders_def *)
 
 (* ------------------------------------------------------------------------- *)
 (* Polynomial Maps Documentation                                             *)

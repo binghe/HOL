@@ -22,7 +22,6 @@ open pred_setTheory arithmeticTheory listTheory rich_listTheory numberTheory
 open monoidTheory groupTheory ringTheory;
 open polynomialTheory polyWeakTheory;
 
-(* val _ = load "ringUnitTheory"; *)
 open ringUnitTheory;
 
 val _ = temp_overload_on("SQ", ``\n. n * n``);

@@ -30,9 +30,7 @@ open ffMasterTheory;
 open ffMinimalTheory;
 
 open monoidTheory groupTheory ringTheory fieldTheory;
-open groupOrderTheory;
-open subgroupTheory;
-open groupInstancesTheory ringInstancesTheory fieldInstancesTheory;
+open ringInstancesTheory fieldInstancesTheory;
 
 (* Get polynomial theory of Ring *)
 (* (* val _ = load "polyFieldModuloTheory"; *) *)
@@ -51,8 +49,6 @@ open polyProductTheory;
 open polyGCDTheory;
 open polyIrreducibleTheory;
 
-(* (* val _ = load "groupProductTheory"; *) *)
-open groupProductTheory;
 open fieldOrderTheory;
 
 (* (* val _ = load "ringBinomialTheory"; *) *)

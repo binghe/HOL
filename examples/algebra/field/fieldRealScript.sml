@@ -4,7 +4,9 @@
 
 open HolKernel boolLib bossLib Parse;
 
-open groupTheory fieldTheory ringRealTheory groupRealTheory;
+open real_algebraTheory;
+
+open groupTheory fieldTheory ringRealTheory;
 
 val _ = new_theory"fieldReal";
 

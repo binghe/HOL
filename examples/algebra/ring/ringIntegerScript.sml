@@ -24,11 +24,8 @@ open ringIdealTheory;
 open ringTheory;
 open groupTheory;
 open monoidTheory;
-open groupMapTheory ringMapTheory;
+open ringMapTheory;
 
-open subgroupTheory quotientGroupTheory;
-
-open groupInstancesTheory;
 open ringInstancesTheory;
 
 (* ------------------------------------------------------------------------- *)

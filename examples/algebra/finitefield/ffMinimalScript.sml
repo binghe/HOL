@@ -19,7 +19,6 @@ open arithmeticTheory pred_setTheory listTheory numberTheory combinatoricsTheory
      dividesTheory gcdTheory gcdsetTheory;
 
 (* Get dependent theories local *)
-(* val _ = load "ffUnityTheory"; *)
 open ffBasicTheory;
 open ffAdvancedTheory;
 open ffPolyTheory;
@@ -31,9 +30,8 @@ open LinearIndepTheory;
 open FiniteVSpaceTheory;
 
 open monoidTheory groupTheory ringTheory fieldTheory;
-open groupOrderTheory fieldOrderTheory;
-open subgroupTheory;
-open groupInstancesTheory ringInstancesTheory fieldInstancesTheory;
+open fieldOrderTheory;
+open ringInstancesTheory fieldInstancesTheory;
 
 open polynomialTheory polyWeakTheory polyRingTheory polyDivisionTheory polyBinomialTheory;
 open polyMonicTheory polyEvalTheory;

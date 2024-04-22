@@ -22,11 +22,9 @@ open polyFieldModuloTheory;
 
 (* (* val _ = load "fieldTheory"; *) *)
 open monoidTheory groupTheory ringTheory fieldTheory;
-open groupOrderTheory;
-open groupMapTheory ringMapTheory fieldMapTheory;
+open ringMapTheory fieldMapTheory;
 
-(* val _ = load "fieldInstancesTheory"; *)
-open groupInstancesTheory ringInstancesTheory;
+open ringInstancesTheory;
 open fieldInstancesTheory; (* for GF_property, in prime field homomorphism *)
 
 (* Note:

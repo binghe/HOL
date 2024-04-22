@@ -22,11 +22,8 @@ open arithmeticTheory pred_setTheory listTheory numberTheory dividesTheory
 open ffAdvancedTheory ffBasicTheory;
 
 open monoidTheory groupTheory ringTheory fieldTheory;
-open groupOrderTheory;
-open subgroupTheory;
 
 open fieldOrderTheory;
-open groupCyclicTheory;
 
 open polynomialTheory polyWeakTheory polyRingTheory polyDivisionTheory polyBinomialTheory;
 
@@ -54,7 +51,7 @@ open polyIrreducibleTheory;
 open polyProductTheory;
 open polyMultiplicityTheory;
 open polyMapTheory;
-open groupMapTheory ringMapTheory fieldMapTheory;
+open ringMapTheory fieldMapTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Finite Field Polynomials of Subfield Documentation                        *)

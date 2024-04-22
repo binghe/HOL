@@ -27,27 +27,19 @@ open polyDividesTheory;
 open polyEvalTheory;
 open polyBinomialTheory;
 
-(* val _ = load "polyIrreducibleTheory"; *)
 open polyIrreducibleTheory;
 open polyRootTheory;
 open polyMonicTheory;
 
-(* val _ = load "polyProductTheory"; *)
 open polyProductTheory;
 
 open monoidTheory groupTheory ringTheory integralDomainTheory fieldTheory;
-open groupOrderTheory;
-open subgroupTheory;
 
-open groupMapTheory ringMapTheory fieldMapTheory;
+open ringMapTheory fieldMapTheory;
 
-(* (* val _ = load "ringDividesTheory"; *) *)
 open ringDividesTheory ringUnitTheory;
 
-(* (* val _ = load "ringIdealTheory"; *) *)
-(* (* val _ = load "fieldIdealTheory"; *) *)
 open ringIdealTheory fieldIdealTheory;
-(* for EuclideanRing_def, quotient_field_by_maximal_ideal *)
 
 (* ------------------------------------------------------------------------- *)
 (* Field Polynomial Modulo Documentation                                     *)

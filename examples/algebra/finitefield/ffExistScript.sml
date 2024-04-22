@@ -29,10 +29,8 @@ open ffMasterTheory;
 open ffConjugateTheory;
 
 open monoidTheory groupTheory ringTheory fieldTheory;
-open groupOrderTheory fieldOrderTheory;
-open subgroupTheory;
-open groupInstancesTheory ringInstancesTheory fieldInstancesTheory;
-open groupCyclicTheory;
+open fieldOrderTheory;
+open ringInstancesTheory fieldInstancesTheory;
 
 (* Get polynomial theory of Ring *)
 (* (* val _ = load "polyFieldDivisionTheory"; *) *)
@@ -50,7 +48,7 @@ open polyRingModuloTheory;
 open polyModuloRingTheory;
 
 open polyMapTheory;
-open groupMapTheory ringMapTheory fieldMapTheory;
+open ringMapTheory fieldMapTheory;
 
 (* (* val _ = load "polyGCDTheory"; *) *)
 open polyGCDTheory;

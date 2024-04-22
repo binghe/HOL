@@ -4,7 +4,8 @@
 (*       John Harrison, University of Cambridge Computer Laboratory          *)
 (*            (c) Copyright, University of Cambridge 1998                    *)
 (*                                                                           *)
-(*  Ported to HOL4 by Chun Tian (March 2024)                                 *)
+(* ------------------------------------------------------------------------- *)
+(* Ported by Chun Tian. The Australian National University (ANU), 2024       *)
 (* ========================================================================= *)
 
 open HolKernel boolLib bossLib Parse;
@@ -12,8 +13,7 @@ open HolKernel boolLib bossLib Parse;
 open combinTheory pred_setTheory pred_setLib arithmeticTheory integerTheory
      intLib mesonLib hurdUtils cardinalTheory oneTheory newtypeTools;
 
-open monoidTheory;
-open groupTheory groupMapTheory ringTheory ringMapTheory;
+open monoidTheory groupTheory ringTheory;
 
 val _ = new_theory "ringLib";
 
@@ -859,4 +859,3 @@ Proof
 *)
 
 val _ = export_theory();
-val _ = html_theory "ringLib";

@@ -25,11 +25,8 @@ open ffMasterTheory;
 
 (* Open theories in order *)
 open monoidTheory groupTheory ringTheory fieldTheory;
-open groupOrderTheory;
-open subgroupTheory;
 
-open groupInstancesTheory ringInstancesTheory fieldInstancesTheory;
-open groupCyclicTheory;
+open ringInstancesTheory fieldInstancesTheory;
 
 (* (* val _ = load "ringBinomialTheory"; *) *)
 open ringBinomialTheory;
