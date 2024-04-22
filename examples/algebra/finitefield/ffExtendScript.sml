@@ -20,7 +20,6 @@ open pred_setTheory listTheory arithmeticTheory dividesTheory gcdTheory
      gcdsetTheory numberTheory combinatoricsTheory cardinalTheory;
 
 (* Get dependent theories local *)
-(* val _ = load "ffExistTheory"; *)
 open ffBasicTheory;
 open ffAdvancedTheory;
 open ffPolyTheory;
@@ -29,19 +28,11 @@ open ffConjugateTheory;
 open ffExistTheory;
 
 open monoidTheory groupTheory ringTheory fieldTheory;
-open ringUnitTheory;
-open ringMapTheory fieldMapTheory;
+open fieldMapTheory;
 
-(* (* val _ = load "ringBinomialTheory"; *) *)
-open ringBinomialTheory;
-
-open ringInstancesTheory;
 open fieldInstancesTheory;
 
-open quotientRingTheory;
-
 (* Get polynomial theory of Ring *)
-(* (* val _ = load "polyMapTheory"; *) *)
 open polynomialTheory polyWeakTheory polyRingTheory polyDivisionTheory polyBinomialTheory;
 open polyMonicTheory;
 open polyDividesTheory;

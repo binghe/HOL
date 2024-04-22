@@ -19,15 +19,12 @@ open jcLib;
 open pred_setTheory arithmeticTheory dividesTheory gcdTheory numberTheory
      combinatoricsTheory primeTheory;
 
-(* val _ = load "ffBasicTheory"; *)
 open ffBasicTheory;
 
-(* val _ = load "FiniteVSpaceTheory"; *)
 open VectorSpaceTheory FiniteVSpaceTheory;
 
 open monoidTheory groupTheory ringTheory fieldTheory;
 
-open groupInstancesTheory ringInstancesTheory;
 open fieldInstancesTheory; (* for GF_finite_field, in finite_field_subfield_card *)
 
 open polynomialTheory polyWeakTheory polyRingTheory;
@@ -40,6 +37,8 @@ open polyFieldModuloTheory;
 open polyIrreducibleTheory;
 
 open fieldMapTheory fieldOrderTheory;
+
+val _ = intLib.deprecate_int ();
 
 (* ------------------------------------------------------------------------- *)
 (* Finite Field Advanced Documentation                                       *)

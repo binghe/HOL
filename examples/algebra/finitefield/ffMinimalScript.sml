@@ -31,25 +31,18 @@ open FiniteVSpaceTheory;
 
 open monoidTheory groupTheory ringTheory fieldTheory;
 open fieldOrderTheory;
-open ringInstancesTheory fieldInstancesTheory;
+open fieldInstancesTheory;
 
 open polynomialTheory polyWeakTheory polyRingTheory polyDivisionTheory polyBinomialTheory;
 open polyMonicTheory polyEvalTheory;
 open polyDividesTheory;
 open polyRootTheory;
 
-(* (* val _ = load "polyFieldDivisionTheory"; *) *)
 open fieldMapTheory;
 open polyFieldTheory;
 open polyFieldDivisionTheory;
 open polyFieldModuloTheory;
 open polyIrreducibleTheory;
-
-(* (* val _ = load "ringBinomialTheory"; *) *)
-open ringBinomialTheory;
-open ringDividesTheory;
-open ringIdealTheory;
-open ringUnitTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Finite Field Minimal Polynomial Documentation                             *)

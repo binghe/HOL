@@ -27,7 +27,6 @@ open fieldOrderTheory;
 
 open polynomialTheory polyWeakTheory polyRingTheory polyDivisionTheory polyBinomialTheory;
 
-(* (* val _ = load "polyEvalTheory"; *) *)
 open polyMonicTheory polyEvalTheory;
 
 open polyFieldTheory;
@@ -35,23 +34,15 @@ open polyFieldDivisionTheory;
 open polyFieldModuloTheory;
 open polyRingModuloTheory;
 
-(* (* val _ = load "polyRootTheory"; *) *)
 open polyRootTheory;
 open polyDividesTheory;
 
-(* (* val _ = load "ringBinomialTheory"; *) *)
-open ringBinomialTheory;
-open ringDividesTheory;
-open ringIdealTheory;
-open ringUnitTheory;
-
-(* val _ = load "polyMapTheory"; *)
 open polyGCDTheory;
 open polyIrreducibleTheory;
 open polyProductTheory;
 open polyMultiplicityTheory;
 open polyMapTheory;
-open ringMapTheory fieldMapTheory;
+open fieldMapTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Finite Field Polynomials of Subfield Documentation                        *)

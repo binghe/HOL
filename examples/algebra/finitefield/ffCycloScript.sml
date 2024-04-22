@@ -43,6 +43,8 @@ open polyMonicTheory;
 open polyProductTheory;
 open polyGCDTheory;
 
+val _ = intLib.deprecate_int ();
+
 (* ------------------------------------------------------------------------- *)
 (* Finite Field Cyclotomic Polynomials Documentation                         *)
 (* ------------------------------------------------------------------------- *)

@@ -25,12 +25,7 @@ open ffPolyTheory;
 
 open monoidTheory groupTheory ringTheory fieldTheory;
 
-open ringInstancesTheory fieldInstancesTheory;
-
-open ringBinomialTheory;
-open ringDividesTheory;
-open ringIdealTheory;
-open ringUnitTheory;
+open fieldInstancesTheory;
 
 (* Get polynomial theory of Ring *)
 open polynomialTheory polyWeakTheory polyRingTheory polyDivisionTheory polyBinomialTheory;
@@ -46,15 +41,16 @@ open polyDividesTheory;
 open polyGCDTheory;
 open polyIrreducibleTheory;
 
-open ringMapTheory fieldMapTheory;
+open fieldMapTheory;
 open polyMapTheory;
 
 open polyDerivativeTheory;
 open polyEvalTheory;
 open polyRootTheory;
 
-(* val _ = load "fieldBinomialTheory"; *)
 open fieldBinomialTheory; (* for finite_field_freshman_all *)
+
+val _ = intLib.deprecate_int ();
 
 (* ------------------------------------------------------------------------- *)
 (* Finite Field Master Polynomial Documentation                              *)
