@@ -1377,7 +1377,7 @@ val weak_cmult_front_last = store_thm(
   ntac 4 strip_tac >>
   qabbrev_tac `f = \(x:'a). c * x` >>
   `c o p = MAP f p` by rw[weak_cmult_map, Abbr`f`] >>
-  `_ = MAP f (SNOC (LAST p) (FRONT p))` by metis_tac[SNOC_LAST_FRONT, poly_zero] >>
+  `_ = MAP f (SNOC (LAST p) (FRONT p))` by metis_tac[SNOC_LAST_FRONT', poly_zero] >>
   `_ = SNOC (f (LAST p)) (MAP f (FRONT p))` by rw[MAP_SNOC] >>
   `_ = SNOC (c * LAST p) (c o FRONT p)` by rw[weak_cmult_map, weak_front_last, Abbr`f`] >>
   rw[]);
@@ -4217,7 +4217,7 @@ QED
    Note p <> []                         by poly_zero
    If part: lead p = #0 ==> chop (FRONT p) = chop p
       chop p
-    = chop (SNOC (LAST p) (FRONT p))    by SNOC_LAST_FRONT, p <> []
+    = chop (SNOC (LAST p) (FRONT p))    by SNOC_LAST_FRONT', p <> []
     = chop (SNOC (lead p) (FRONT p))    by poly_lead_alt], p <> |0|
     = chop (SNOC #0 (FRONT p))          by given
     = chop (FRONT p)                    by poly_chop_alt
@@ -4239,7 +4239,7 @@ val poly_chop_front = store_thm(
   rpt strip_tac >>
   `p <> []` by metis_tac[poly_zero] >>
   rw_tac std_ss[EQ_IMP_THM] >| [
-    `p = SNOC (LAST p) (FRONT p)` by rw[SNOC_LAST_FRONT] >>
+    `p = SNOC (LAST p) (FRONT p)` by rw[SNOC_LAST_FRONT'] >>
     `LAST p = lead p` by rw[GSYM poly_lead_alt] >>
     metis_tac[poly_chop_alt],
     spose_not_then strip_assume_tac >>
