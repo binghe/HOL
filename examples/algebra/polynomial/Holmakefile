@@ -1,1 +1,1 @@
-INCLUDES = ../ring ../field
+INCLUDES = ../field

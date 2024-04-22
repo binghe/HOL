@@ -28,8 +28,9 @@ val _ = new_theory "fieldInstances";
 open jcLib;
 
 open monoidTheory groupTheory ringTheory fieldTheory;
-open ringMapTheory fieldMapTheory;
-open ringInstancesTheory;
+open fieldMapTheory;
+
+val _ = intLib.deprecate_int ();
 
 (* ------------------------------------------------------------------------- *)
 (* Field Instances Documentation                                              *)

@@ -718,7 +718,11 @@ Definition product_ring :
     product_ring k (r :'k -> 'a Ring) = toRing (raw_product_ring k r)
 End
 
-Theorem PRODUCT_RING_NO_NEG :
+(* NOTE: the original version of this theorem in HOL Light has also a part for
+  ‘ring_neg’, but in HOL4 it cannot be proved as .inv is a derived operator.
+   See PRODUCT_RING_NEG for the modified theorem corresponding to that part.
+ *)
+Theorem PRODUCT_RING :
    (!k (r :'k -> 'a Ring).
         ring_carrier(product_ring k r) =
           cartesian_product k (\i. ring_carrier(r i))) /\

@@ -33,13 +33,12 @@ open polyMonicTheory;
 
 open polyProductTheory;
 
-open monoidTheory groupTheory ringTheory integralDomainTheory fieldTheory;
+open monoidTheory groupTheory ringTheory fieldTheory;
 
-open ringMapTheory fieldMapTheory;
+open fieldMapTheory;
+open fieldIdealTheory;
 
-open ringDividesTheory ringUnitTheory;
-
-open ringIdealTheory fieldIdealTheory;
+val _ = intLib.deprecate_int ();
 
 (* ------------------------------------------------------------------------- *)
 (* Field Polynomial Modulo Documentation                                     *)

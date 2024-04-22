@@ -4,11 +4,9 @@
 
 open HolKernel boolLib bossLib Parse;
 
-open real_algebraTheory;
+open groupTheory fieldTheory real_algebraTheory;
 
-open groupTheory fieldTheory ringRealTheory;
-
-val _ = new_theory"fieldReal";
+val _ = new_theory "fieldReal";
 
 Theorem FieldReals[simp]:
   Field Reals

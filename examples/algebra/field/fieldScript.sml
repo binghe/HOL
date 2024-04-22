@@ -29,10 +29,9 @@ open jcLib;
 open pred_setTheory arithmeticTheory dividesTheory gcdTheory gcdsetTheory
      numberTheory combinatoricsTheory;
 
-open monoidTheory groupTheory ringTheory ringUnitTheory integralDomainTheory;
+open monoidTheory groupTheory ringTheory;
 
-(* val _ = load "ringDividesTheory"; *)
-open ringDividesTheory;
+val _ = intLib.deprecate_int ();
 
 (* ------------------------------------------------------------------------- *)
 (* Field Documentation                                                       *)

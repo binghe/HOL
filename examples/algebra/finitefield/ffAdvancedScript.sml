@@ -30,9 +30,6 @@ open monoidTheory groupTheory ringTheory fieldTheory;
 open groupInstancesTheory ringInstancesTheory;
 open fieldInstancesTheory; (* for GF_finite_field, in finite_field_subfield_card *)
 
-(* Get polynomial theory of Ring *)
-(* (* val _ = load "polyFieldModuloTheory"; -- in ffBasic *) *)
-(* (* val _ = load "polyFieldTheory"; *) *)
 open polynomialTheory polyWeakTheory polyRingTheory;
 open polyMonicTheory polyEvalTheory;
 open polyDividesTheory;
@@ -42,12 +39,7 @@ open polyModuloRingTheory;
 open polyFieldModuloTheory;
 open polyIrreducibleTheory;
 
-open groupMapTheory ringMapTheory fieldMapTheory;
-open ringDividesTheory;
-open ringIdealTheory;
-open ringUnitTheory;
-
-open fieldOrderTheory;
+open fieldMapTheory fieldOrderTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Finite Field Advanced Documentation                                       *)

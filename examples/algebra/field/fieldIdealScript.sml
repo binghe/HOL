@@ -18,12 +18,7 @@ open jcLib;
 open pred_setTheory arithmeticTheory gcdsetTheory numberTheory
      combinatoricsTheory;
 
-open monoidTheory groupTheory ringTheory ringUnitTheory;
-
-open ringIdealTheory quotientRingTheory;
-
-(* val _ = load "fieldTheory"; *)
-open fieldTheory;
+open monoidTheory groupTheory ringTheory fieldTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Ideals in Field Documentation                                             *)

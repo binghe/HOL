@@ -40,15 +40,7 @@ open polyBinomialTheory; (* for coefficients *)
 
 open monoidTheory groupTheory ringTheory fieldTheory;
 
-open ringMapTheory fieldMapTheory;
-
-open ringBinomialTheory;
-open ringDividesTheory;
-open ringIdealTheory;
-open ringUnitTheory;
-
-(* val _ = load "fieldOrderTheory"; *)
-open fieldOrderTheory; (* for field_order_eqn *)
+open fieldMapTheory fieldOrderTheory;
 
 (* ------------------------------------------------------------------------- *)
 (* Polynomial Maps Documentation                                             *)

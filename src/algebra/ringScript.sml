@@ -12,6 +12,9 @@
 (* Divisibility in Ring                                                      *)
 (* Ring Theory -- Ideal and Quotient Ring.                                   *)
 (* Applying Ring Theory: Ring Instances                                      *)
+(* Integers as a Ring                                                        *)
+(* Integral Domain Theory                                                   *)
+(* Applying Integral Domain Theory: Integral Domain Instances                *)
 (* ------------------------------------------------------------------------- *)
 (* (Joseph) Hing-Lun Chan, The Australian National University, 2014-2019     *)
 (* ------------------------------------------------------------------------- *)
@@ -42,11 +45,13 @@ open jcLib;
 
 open prim_recTheory arithmeticTheory dividesTheory gcdTheory gcdsetTheory
      pred_setTheory listTheory bagTheory containerTheory dep_rewrite
-     whileTheory;
+     whileTheory sortingTheory integerTheory;
 
 open numberTheory combinatoricsTheory primeTheory;
 
 open monoidTheory groupTheory;
+
+val _ = intLib.deprecate_int ();
 
 (* ------------------------------------------------------------------------- *)
 (* Ring Documentation                                                       *)
@@ -915,14 +920,14 @@ val it = |- ##c = FUNPOW ($+ #1) c #0: thm
 
 (* Obtain a better theorem *)
 Theorem ring_num_0[simp] =
-    monoid_exp_def |> ISPEC “(r:'a ring).sum” |> ISPEC “#1” |> ISPEC “0”
+    monoid_exp_def |> ISPEC “(r:'a ring).sum” |> ISPEC “#1” |> ISPEC “0 :num”
                    |> SIMP_RULE bool_ss [FUNPOW_0] |> GEN “r:'a ring”
 (* val ring_num_0 = |- !r. ##0 = #0: thm *)
 
 (* Obtain another theorem *)
 Theorem ring_num_one =
-    monoid_exp_def |> ISPEC ``(r:'a ring).sum`` |> ISPEC ``#1`` |> ISPEC ``1``
-                   |> SIMP_RULE bool_ss [FUNPOW_1] |> GEN ``r:'a ring``
+    monoid_exp_def |> ISPEC “(r:'a ring).sum” |> ISPEC “#1” |> ISPEC “1 :num”
+                   |> SIMP_RULE bool_ss [FUNPOW_1] |> GEN “r:'a ring”
 (* val ring_num_one = |- !r. ##1 = #1 + #0: thm *)
 (* Do not export this one: an expansion. *)
 
@@ -2386,7 +2391,7 @@ val ring_binomial_4 = store_thm(
   `_ = x ** 4 + (##4 * x3y + (##(3 + 3) * x2y2 + (xy3 + ##3 * xy3 + y ** 4)))` by rw[ring_num_add_mult] >>
   `_ = x ** 4 + (##4 * x3y + (##(3 + 3) * x2y2 + (##4 * xy3 + y ** 4)))` by rw_tac std_ss[ring_single_add_mult] >>
   `_ = x ** 4 + ##4 * x3y + ##(3 + 3) * x2y2 + ##4 * xy3 + y ** 4` by rw[ring_add_assoc] >>
-  rw_tac std_ss[DECIDE ``3 + 3 = 6``]);
+  rw_tac std_ss[DECIDE “3 + 3 = (6 :num)”]);
 
 (* Can also use:
     (x + y) ** 4
@@ -13663,6 +13668,1751 @@ val ordz_eval = store_thm(
 > EVAL ``ordz 7 10``;
 val it = |- ordz 7 10 = 6: thm
 *)
+
+(* ------------------------------------------------------------------------- *)
+(* Integer Ring Documentation                                                *)
+(* ------------------------------------------------------------------------- *)
+(* Overloads:
+   Z*      = Z_ideal
+*)
+(* Definitions and Theorems (# are exported):
+
+   Integer Ring:
+   Z_add_def             |- Z_add = <|carrier := univ(:int); op := (\x y. x + y); id := 0|>
+   Z_mult_def            |- Z_mult = <|carrier := univ(:int); op := (\x y. x * y); id := 1|>
+   Z_def                 |- Z = <|carrier := univ(:int); sum := Z_add; prod := Z_mult|>
+
+   Z_add_group           |- Group Z_add
+   Z_add_abelian_group   |- AbelianGroup Z_add
+   Z_mult_monoid         |- Monoid Z_mult
+   Z_mult_abelian_monoid |- AbelianMonoid Z_mult
+   Z_ring                |- Ring
+
+   Ideals in Integer Ring:
+   Z_multiple_def        |- !n. Z_multiple n = {&n * z | z IN univ(:int)}
+   Z_ideal_def           |- !n. Z* n = <|carrier := Z_multiple n;
+                                             sum := <|carrier := Z_multiple n; op := Z.sum.op; id := Z.sum.id|>;
+                                            prod := <|carrier := Z_multiple n; op := Z.prod.op;
+                                              id := Z.prod.id|>
+                                        |>
+
+   Z_ideal_sum_group     |- !n. Group (Z* n).sum
+   Z_ideal_sum_subgroup  |- !n. (Z* n).sum <= Z.sum
+   Z_ideal_sum_normal    |- !n. (Z* n).sum << Z.sum
+   Z_ideal_thm           |- !n. Z* n << Z
+
+   Integer Quotient Ring isomorphic to Integer Modulo:
+   Z_add_inv               |- !z. z IN Z_add.carrier ==> (Z_add.inv z = -z)
+   Z_sum_cogen             |- !n. 0 < n ==> !x. x IN Z.sum.carrier ==>
+                              ?y. cogen Z.sum (Z* n).sum (coset Z.sum x (Z* n).sum.carrier) = x + &n * y
+   Z_sum_coset_eq          |- !n. 0 < n ==> !p. coset Z.sum p (Z* n).sum.carrier = coset Z.sum (p % &n) (Z* n).sum.carrier
+   Z_multiple_less_neg_eq  |- !n x y. 0 < n /\ x < n /\ y < n /\ -&x + &y IN Z_multiple n ==> (x = y)
+
+   Z_ideal_map_element     |- !n j. 0 < n /\ j IN (ZN n).carrier ==> coset Z.sum (&j) (Z* n).sum.carrier IN (Z / Z* n).carrier
+   Z_ideal_map_group_homo  |- !n. 0 < n ==> GroupHomo (\j. coset Z.sum (&j) (Z* n).sum.carrier) (ZN n).sum (Z / Z* n).sum
+   Z_ideal_map_monoid_homo |- !n. 0 < n ==> MonoidHomo (\j. coset Z.sum (&j) (Z* n).sum.carrier) (ZN n).prod (Z / Z* n).prod
+   Z_ideal_map_bij         |- !n. 0 < n ==> BIJ (\j. coset Z.sum (&j) (Z* n).sum.carrier) (ZN n).carrier (Z / Z* n).carrier
+   Z_quotient_iso_ZN       |- !n. 0 < n ==> RingIso (\j. coset Z.sum (&j) (Z* n).sum.carrier) (ZN n) (Z / Z* n)
+
+   Integer as Euclidean Ring:
+   Z_euclid_ring           |- EuclideanRing Z (Num o ABS)
+   Z_principal_ideal_ring  |- PrincipalIdealRing Z
+*)
+
+(* ------------------------------------------------------------------------- *)
+(* Integer Ring                                                              *)
+(* ------------------------------------------------------------------------- *)
+
+(* Integer Additive Group *)
+val Z_add_def = Define `
+  Z_add = <| carrier := univ(:int);
+                  op := \(x:int) (y:int). x + y;
+                  id := (0:int)
+           |>
+`;
+
+(* Integer Multiplicative Monoid *)
+val Z_mult_def = Define `
+  Z_mult = <| carrier := univ(:int);
+                   op := \(x:int) (y:int). x * y;
+                   id := (1:int)
+            |>
+`;
+
+(* Integer Ring *)
+val Z_def = Define `
+  Z = <| carrier := univ(:int);
+             sum := Z_add;
+            prod := Z_mult
+       |>
+`;
+
+(* Theorem: Z_add is a Group. *)
+(* Proof: check group axioms:
+   (1) x + y IN univ(:int), true.
+   (2) x + y + z = x + (y + z), true by INT_ADD_ASSOC.
+   (3) 0 IN univ(:int), true.
+   (4) 0 + x = x, true by INT_ADD_LID.
+   (5) !x. x IN univ(:int) ==> ?y. y IN univ(:int) /\ (y + x = 0)
+       Let y = -x, apply INT_ADD_LINV.
+*)
+val Z_add_group = store_thm(
+  "Z_add_group",
+  ``Group Z_add``,
+  rw_tac std_ss[Z_add_def, group_def_alt] >| [
+    rw[],
+    rw[INT_ADD_ASSOC],
+    rw[],
+    rw[],
+    qexists_tac `-x` >>
+    rw[]
+  ]);
+
+(* Theorem: Z_add is an Abelian Group. *)
+(* Proof: by Group Z_add and INT_ADD_COMM. *)
+val Z_add_abelian_group = store_thm(
+  "Z_add_abelian_group",
+  ``AbelianGroup Z_add``,
+  rw[AbelianGroup_def, Z_add_group, Z_add_def, INT_ADD_COMM]);
+
+(* Theorem: Z_mult is a Monoid. *)
+(* Proof: check monoid axioms:
+   (1) x * y IN univ(:int), true.
+   (2) x * y * z = x * (y * z), true by INT_MUL_ASSOC.
+   (3) 1 IN univ(:int), true.
+   (4) 1 * x = x, true by INT_MUL_LID.
+   (5) x * 1 = x, true by INT_MUL_RID.
+*)
+val Z_mult_monoid = store_thm(
+  "Z_mult_monoid",
+  ``Monoid Z_mult``,
+  rw_tac std_ss [Z_mult_def, Monoid_def] >>
+  rw[INT_MUL_ASSOC]);
+
+(* Theorem: Z_mult is an Abelian Monoid. *)
+(* Proof: by Monoid Z_mult and INT_MUL_COMM. *)
+val Z_mult_abelian_monoid = store_thm(
+  "Z_mult_abelian_monoid",
+  ``AbelianMonoid Z_mult``,
+  rw[AbelianMonoid_def, Z_mult_monoid, Z_mult_def, INT_MUL_COMM]);
+
+(* Theorem: Z is a Ring. *)
+(* Proof: check ring axioms.
+   (1) AbelianGroup Z_add, true by Z_add_abelian_group.
+   (2) AbelianMonoid Z_mult, true by Z_mult_abelian_monoid.
+   (3) Z_add.carrier = univ(:int), true by Z_add_def.
+   (4) Z_mult.carrier = univ(:int), true by Z_mult_def.
+   (5) Z_mult.op x (Z_add.op y z) = Z_add.op (Z_mult.op x y) (Z_mult.op x z)
+       or x * (y + z) = x * y + x * z, true by INT_LDISTRIB.
+*)
+val Z_ring = store_thm(
+  "Z_ring",
+  ``Ring Z``,
+  rw_tac std_ss [Ring_def, Z_def] >| [
+    rw[Z_add_abelian_group],
+    rw[Z_mult_abelian_monoid],
+    rw[Z_add_def],
+    rw[Z_mult_def],
+    rw[Z_add_def, Z_mult_def, INT_LDISTRIB]
+  ]);
+
+(* ------------------------------------------------------------------------- *)
+(* Ideals in Integer Ring                                                    *)
+(* ------------------------------------------------------------------------- *)
+
+(* Integer Multiples *)
+val Z_multiple_def = Define `Z_multiple (n:num) = {&n * z | z IN univ(:int)}`;
+
+(* Integer Ring Ideals are multiples *)
+val Z_ideal_def = Define `
+  Z_ideal (n:num) = <| carrier := Z_multiple n;
+                           sum := <| carrier := Z_multiple n; op := Z.sum.op; id := Z.sum.id |>;
+                          prod := <| carrier := Z_multiple n; op := Z.prod.op; id := Z.prod.id |>
+                     |>
+`;
+
+(* set overloading *)
+val _ = overload_on ("Z*", ``Z_ideal``);
+
+(* Theorem: Group (Z* n).sum *)
+(* Proof: check group axioms:
+   (1) x + y IN Z_multiple n
+       &n * x' + &n * y' = &n * (x' + y') by INT_LDISTRIB, hence true.
+   (2) x + y + z = x + (y + z)
+       Since t IN Z_multiple n ==> t IN univ(:int),
+       this is true by INT_ADD_ASSOC.
+   (3) 0 IN Z_multiple n
+       true by INT_MUL_RZERO.
+   (4) 0 + x = x
+       true by INT_ADD_LID.
+   (5) ?y. y IN Z_multiple n /\ (y + x = 0)
+       Since x = &n * x'
+       Let y = &n * (-x')
+       Then y IN Z_multiple n,
+       y + x = &n * (-x' + x') = 0   by INT_LDISTRIB, INT_ADD_LINV, hence true.
+*)
+val Z_ideal_sum_group = store_thm(
+  "Z_ideal_sum_group",
+  ``!n. Group (Z* n).sum``,
+  rpt strip_tac >>
+  `!t. t IN Z_multiple n ==> t IN univ(:int)` by rw[Z_multiple_def] >>
+  rw_tac std_ss[group_def_alt, Z_ideal_def, Z_def, Z_add_def] >| [
+    `!t. t IN Z_multiple n <=> ?(t':int). t = &n * t'` by rw[Z_multiple_def] >>
+    metis_tac[INT_LDISTRIB],
+    rw[INT_ADD_ASSOC],
+    `!t. t IN Z_multiple n <=> ?(t':int). t = &n * t'` by rw[Z_multiple_def] >>
+    metis_tac[INT_MUL_RZERO],
+    rw[],
+    `!t. t IN Z_multiple n <=> ?(t':int). t = &n * t'` by rw[Z_multiple_def] >>
+    `?x'. x = &n * x'` by metis_tac[] >>
+    qexists_tac `&n * (-x')` >>
+    `-x' IN univ(:int)` by rw[] >>
+    `&n * -x' + &n * x' = &n * (-x' + x')` by rw[INT_LDISTRIB] >>
+    `_ = 0` by rw[INT_ADD_LINV] >>
+    metis_tac[]
+  ]);
+
+(* Theorem: Monoid (Z* n).prod *)
+(* Not true: 1 IN Z_multiple n is FALSE. *)
+(* Note: Ideal is not a sub-ring. *)
+
+(* Theorem: (Z* n).sum <= Z.sum *)
+(* Proof:
+   (1) Group (Z* n).sum     true by Z_ideal_sum_group
+   (2) Group Z.sum          true by Z_ring, Ring_def
+   (3) (Z* n).sum.carrier SUBSET Z.sum.carrier   true by definitions
+   (4) (Z* n).sum.op x y = Z.sum.op x y          true by Z_ideal_def
+*)
+val Z_ideal_sum_subgroup = store_thm(
+  "Z_ideal_sum_subgroup",
+  ``!n. (Z* n).sum <= Z.sum``,
+  rw_tac std_ss[Subgroup_def] >| [
+    rw[Z_ideal_sum_group],
+    rw[Z_ring, Ring_def, AbelianGroup_def],
+    rw[Z_ideal_def, Z_def, Z_add_def],
+    rw[Z_ideal_def]
+  ]);
+
+(* Theorem: (Z* n).sum << Z.sum *)
+(* Proof:
+   (1) (Z* n).sum <= Z.sum
+       true by Z_ideal_sum_subgroup.
+   (2) !a. a IN Z.sum.carrier ==> coset Z.sum a (Z* n).sum.carrier = right_coset Z.sum (Z* n).sum.carrier a
+       i.e. IMAGE (\z. a + z) (Z_multiple n) = IMAGE (\z. z + a) (Z_multiple n)
+       true by INT_ADD_COMM.
+*)
+val Z_ideal_sum_normal = store_thm(
+  "Z_ideal_sum_normal",
+  ``!n. (Z* n).sum << Z.sum``,
+  rw[normal_subgroup_alt, coset_def, right_coset_def] >| [
+    rw[Z_ideal_sum_subgroup],
+    pop_assum mp_tac >>
+    rw_tac std_ss[Z_ideal_def, Z_def, Z_add_def] >>
+    rw[INT_ADD_COMM]
+  ]);
+
+(* Theorem: Z* n is an ideal of Z *)
+(* Proof:
+   (1) (Z* n).sum <= Z.sum
+       true by Z_ideal_sum_subgroup.
+   (2) x IN Z_multiple n ==> x * y IN Z_multiple n
+       (&n * x') * y = &n * (x' * y)  by INT_MUL_ASSOC, hence true.
+   (3) x IN Z_multiple n ==> y * x IN Z_multiple n
+       y * (&n * x') = &n * (y * x')  by INT_MUL_ASSOC, INT_MUL_COMM, hence true.
+*)
+val Z_ideal_thm = store_thm(
+  "Z_ideal_thm",
+  ``!n. (Z* n) << Z``,
+  rw_tac std_ss[ideal_def, Z_ideal_def, Z_def, Z_mult_def] >| [
+    `Z.sum = Z_add` by rw[Z_def] >>
+    `(Z* n).sum = <|carrier := Z_multiple n; op := Z_add.op; id := Z_add.id|>` by rw[Z_ideal_def] >>
+    metis_tac[Z_ideal_sum_subgroup],
+    `!t. t IN Z_multiple n <=> ?(t':int). t = &n * t'` by rw[Z_multiple_def] >>
+    metis_tac[INT_MUL_ASSOC],
+    `!t. t IN Z_multiple n <=> ?(t':int). t = &n * t'` by rw[Z_multiple_def] >>
+    metis_tac[INT_MUL_ASSOC, INT_MUL_COMM]
+  ]);
+
+(* ------------------------------------------------------------------------- *)
+(* Integer Quotient Ring isomorphic to Integer Modulo                        *)
+(* ------------------------------------------------------------------------- *)
+
+(* Theorem: Z_add.inv z = -z *)
+(* Proof:
+   Since -z + z = 0,
+   this follows by group_linv_unique.
+*)
+val Z_add_inv = store_thm(
+  "Z_add_inv",
+  ``!z. z IN Z_add.carrier ==> (Z_add.inv z = -z)``,
+  rpt strip_tac >>
+  `Group Z_add` by rw[Z_add_group] >>
+  `-z IN Z_add.carrier /\ (Z_add.op (-z) z = Z_add.id)` by rw[Z_add_def] >>
+  metis_tac[group_linv_unique]);
+
+(* Theorem: cogen Z.sum (Z* n).sum (coset Z.sum x (Z* n).sum.carrier) = x + &n * y  for some y. *)
+(* Proof:
+   (Z* n).sum <= Z.sum   by Z_ideal_sum_subgroup
+   hence  (coset Z.sum x (Z* n).sum.carrier) IN CosetPartition Z.sum (Z* n).sum  by definitions
+   By cogen_def, putting m = cogen Z.sum (Z* n).sum (coset Z.sum x (Z* n).sum.carrier)
+         m IN Z.sum.carrier,
+   and   coset Z.sum x (Z* n).sum.carrier = coset Z.sum m (Z* n).sum.carrier
+   Hence -x + m IN (Z* n).sum.carrier  by subgroup_coset_eq
+   or    -x + m IN Z_multiple n        by Z_ideal_def
+   or    -x + m = &n * y               by Z_multiple_def
+   or    m = x + &n * y
+*)
+val Z_sum_cogen = store_thm(
+  "Z_sum_cogen",
+  ``!n. 0 < n ==> !x. x IN Z.sum.carrier ==> ? y:int. cogen Z.sum (Z* n).sum (coset Z.sum x (Z* n).sum.carrier) = x + &n * y``,
+  rpt strip_tac >>
+  `(Z* n).sum <= Z.sum` by rw[Z_ideal_sum_subgroup] >>
+  `(coset Z.sum x (Z* n).sum.carrier) IN CosetPartition Z.sum (Z* n).sum` by
+  (rw[CosetPartition_def, partition_def, inCoset_def] >>
+  qexists_tac `x` >>
+  rw[EXTENSION] >>
+  metis_tac[subgroup_coset_subset]) >>
+  `cogen Z.sum (Z* n).sum (coset Z.sum x (Z* n).sum.carrier) IN Z.sum.carrier /\
+   (coset Z.sum x (Z* n).sum.carrier = coset Z.sum (cogen Z.sum (Z* n).sum (coset Z.sum x (Z* n).sum.carrier)) (Z* n).sum.carrier)` by rw[cogen_def] >>
+  `Z.sum.op (Z.sum.inv x) (cogen Z.sum (Z* n).sum (coset Z.sum x (Z* n).sum.carrier)) IN (Z* n).sum.carrier` by rw[GSYM subgroup_coset_eq] >>
+  `Z.sum = Z_add` by rw[Z_def] >>
+  `(Z* n).sum.carrier = Z_multiple n` by rw[Z_ideal_def] >>
+  qabbrev_tac `m = (cogen Z.sum (Z* n).sum (coset Z.sum x (Z* n).sum.carrier))` >>
+  `Z_add.op (- x) m IN Z_multiple n` by metis_tac[Z_add_inv] >>
+  `Z_add.op (- x) m = (- x) + m` by rw[Z_add_def] >>
+  `!y. y IN Z_multiple n ==> ?k. y = &n * k` by rw[Z_multiple_def] >>
+  `?k. -x + m = &n * k` by metis_tac[] >>
+  `x + &n * k = x + (-x + m)` by rw[] >>
+  `_ = (x + -x) + m` by rw[INT_ADD_ASSOC] >>
+  `_ = m` by rw[] >>
+  metis_tac[]);
+
+(* Theorem: coset Z.sum p (Z* n).sum.carrier = coset Z.sum (p % &n) (Z* n).sum.carrier *)
+(* Proof:
+   Since (Z* n).sum <= Z.sum   by Z_ideal_sum_subgroup
+   By subgroup_coset_eq, this is to show:
+       Z.sum.op (Z.sum.inv (p % &n)) p IN (Z* n).sum.carrier
+   or  -(p % &n) + p IN Z_multiple n
+     -(p % &n) + p
+   = -(p % &n) + ((p / &n) * &n + p % &n)   by INT_DIVISION
+   = -(p % &n) + (p % &n + (p / &n) * &n)   by INT_ADD_COMM
+   = -(p % &n) + p % &n + (p / &n) * &n     by INT_ADD_ASSOC
+   = (p / &n) * &n                          by INT_ADD_LINV, INT_ADD_LID
+   = &n * (p / &n)                          by INT_MUL_COMM
+   hence in Z_multiple n.
+*)
+val Z_sum_coset_eq = store_thm(
+  "Z_sum_coset_eq",
+  ``!n. 0 < n ==> !p. coset Z.sum p (Z* n).sum.carrier = coset Z.sum (p % &n) (Z* n).sum.carrier``,
+  rpt strip_tac >>
+  `n <> 0` by decide_tac >>
+  `&n <> (0 :int)` by rw[INT_INJ] >>
+  `(Z* n).sum <= Z.sum` by rw[Z_ideal_sum_subgroup] >>
+  `p IN Z.sum.carrier /\ p % &n IN Z.sum.carrier` by rw[Z_def, Z_add_def] >>
+  `Z.sum.op (Z.sum.inv (p % &n)) p IN (Z* n).sum.carrier` suffices_by rw[subgroup_coset_eq] >>
+  `Z.sum = Z_add` by rw[Z_def] >>
+  `Z.sum.op (- (p % &n)) p IN (Z* n).sum.carrier` suffices_by metis_tac[Z_add_inv] >>
+  `-(p % &n) + p IN Z_multiple n` suffices_by rw_tac std_ss[Z_def, Z_add_def, Z_ideal_def] >>
+  `-(p % &n) + p = -(p % &n) + ((p / &n) * &n + p % &n)` by metis_tac[INT_DIVISION] >>
+  `_ = -(p % &n) + (p % &n + (p / &n) * &n)` by rw[INT_ADD_COMM] >>
+  `_ = -(p % &n) + p % &n + (p / &n) * &n` by rw[INT_ADD_ASSOC] >>
+  `_ = (p / &n) * &n` by rw[INT_ADD_LINV, INT_ADD_LID] >>
+  `_ = &n * (p / &n)` by rw[INT_MUL_COMM] >>
+  rw[Z_multiple_def]);
+
+(* Theorem: x < n /\ y < n /\ -&x + &y IN Z_multiple n ==> (x = y) *)
+(* Proof:
+   By Z_multiple_def, this is to show:
+      -&x + &y = &n * z ==> x = y
+   or  &y = &n * z + &x ==> x = y
+   If z = 0,
+      &y = &n * z + &x
+         = 0 + &x         by INT_MUL_RZERO
+         = &x             by INT_ADD_LID
+      hence y = x         by INT_INJ
+   If z < 0,
+      z < -1 + 1          by INT_ADD_LINV, -1 + 1 = 0
+   or z <= -1             by INT_LE_LT1
+   &n * z <= &n * -1      by INT_LE_MONO
+           = - &n         by INT_NEG_RMUL, INT_MUL_RID
+   Now
+    x < n means &x < &n    by INT_INJ
+   i.e. -&n < -&x          by INT_LT_NEG
+   Combining inequalities,
+      &n * z <= -&n < -&x  by INT_LET_TRANS
+      &n * z < 0 - &x      by INT_SUB_LZERO
+   or &n * z + &x < 0      by INT_LT_SUB_LADD
+   i.e.        &y < 0
+   which contradicts ~(y < 0), y being :num.
+   If z > 0,
+      0 < z
+   or 1 - 1 < z            by INT_SUB_REFL
+   or 1 < z + 1            by INT_LT_SUB_RADD
+   or 1 <= z               by INT_LE_LT1
+      &n * 1 <= &n * z     by INT_LE_MONO
+          &n <= &n * z     by INT_MUL_RID
+     &n + &x <= &y         by INT_LE_RADD
+   Now
+     &n <= &n + &x
+   Combining inequalities
+     &n <= &y              by INT_LE_TRANS
+      n <= y               by INT_LE
+   but this contradicts y < n
+*)
+val Z_multiple_less_neg_eq = store_thm(
+  "Z_multiple_less_neg_eq",
+  ``!n x y. 0 < n /\ x < n /\ y < n /\ -&x + &y IN Z_multiple n ==> (x = y)``,
+  rw[Z_multiple_def] >>
+  `-&x + &y + &x = &n * z + &x` by rw[] >>
+  `--&x = &x` by rw[INT_NEGNEG] >>
+  `&y = &n * z + &x` by metis_tac[INT_ADD_SUB, int_sub] >>
+  Cases_on `z = 0` >| [
+    `&y = (&x) :int` by metis_tac[INT_MUL_RZERO, INT_ADD_LID] >>
+    metis_tac[INT_INJ],
+    Cases_on `z < 0` >| [
+      `z < -1 + 1` by rw[INT_ADD_LINV] >>
+      `z <= -1` by rw[INT_LE_LT1] >>
+      `&n * z <= &n * -1` by rw[INT_LE_MONO] >>
+      `&n * z <= - (&n * 1)` by rw[INT_NEG_RMUL] >>
+      `&n * z <= - &n` by metis_tac[INT_MUL_RID] >>
+      `- &n < - &x` by rw[] >>
+      `&n * z < - &x` by metis_tac[INT_LET_TRANS] >>
+      `&n * z < 0 - &x` by rw[INT_SUB_LZERO] >>
+      `&n * z + &x < 0` by rw[GSYM INT_LT_SUB_LADD] >>
+      `y < 0` by metis_tac[INT_LT] >>
+      decide_tac,
+      `0 <= z` by rw[GSYM INT_NOT_LT] >>
+      `0 < z` by metis_tac[INT_LE_LT] >>
+      `1 - 1 < z` by rw[INT_SUB_REFL] >>
+      `1 < z + 1` by rw[INT_LT_SUB_RADD] >>
+      `1 <= z` by rw[INT_LE_LT1] >>
+      `&n * 1 <= &n * z` by rw[INT_LE_MONO] >>
+      `&n <= &n * z` by metis_tac[INT_MUL_RID] >>
+      `&n + &x <= (&y) :int` by rw[INT_LE_RADD] >>
+      `&n <= &n + (&x) :int` by rw[] >>
+      `&n <= (&y) :int` by metis_tac[INT_LE_TRANS] >>
+      `n <= y` by rw[GSYM INT_LE] >>
+      decide_tac
+    ]
+  ]);
+
+(* Theorem: j IN (ZN n).carrier ==> coset Z.sum (&j) (Z* n).sum.carrier IN (Z / Z* n).carrier *)
+(* Proof: by definitions,
+   this is to show: 0 < n /\ j < n ==>
+   ?x. IMAGE (\z. &j + z) (Z_multiple n) = {y | ?z. (y = x + z) /\ z IN Z_multiple n}
+   Just take x = &j.
+*)
+val Z_ideal_map_element = store_thm(
+  "Z_ideal_map_element",
+  ``!n j. 0 < n /\ j IN (ZN n).carrier ==> coset Z.sum (&j) (Z* n).sum.carrier IN (Z / Z* n).carrier``,
+  rw_tac std_ss[quotient_ring_def, coset_def, ZN_def, Z_ideal_def, Z_def, Z_add_def,
+     CosetPartition_def, partition_def, inCoset_def, IN_COUNT] >>
+  rw[] >>
+  qexists_tac `&j` >>
+  rw[EXTENSION]);
+
+(* Theorem: GroupHomo (\j. coset Z.sum (&j) (Z* n).sum.carrier) (ZN n).sum (Z / Z* n).sum *)
+(* Proof: by GroupHomo_def, this is to show
+   (1) j IN (ZN n).sum.carrier ==> coset Z.sum (&j) (Z* n).sum.carrier IN (Z / Z* n).sum.carrier
+       Since
+       (ZN n).sum.carrier = (ZN n).carrier         by Ring_def, and Ring (ZN n)        by ZN_ring
+       (Z / Z* n).sum.carrier = (Z / Z* n).carrier by Ring_def, and Ring (Z / (Z* n))  by quotient_ring_ring
+       Hence true by Z_ideal_map_element.
+   (2) j IN (ZN n).sum.carrier /\ j' IN (ZN n).sum.carrier ==>
+       coset Z.sum (&(ZN n).sum.op j j') (Z* n).sum.carrier =
+       (Z / Z* n).sum.op (coset Z.sum (&j) (Z* n).sum.carrier) (coset Z.sum (&j') (Z* n).sum.carrier)
+       After expanding by definitions, this is to show:
+       coset Z.sum (&(ZN n).sum.op j j') (Z* n).sum.carrier =
+       coset Z.sum (Z.sum.op (cogen Z.sum (Z* n).sum (coset Z.sum (&j) (Z* n).sum.carrier))
+                             (cogen Z.sum (Z* n).sum (coset Z.sum (&j') (Z* n).sum.carrier))) (Z* n).carrier
+       Since (Z* n).sum << Z.sum     by Z_ideal_sum_normal
+       applying normal_coset_property:
+       coset Z.sum (Z.sum.op (cogen Z.sum (Z* n).sum (coset Z.sum (&j) (Z* n).sum.carrier))
+                             (cogen Z.sum (Z* n).sum (coset Z.sum (&j') (Z* n).sum.carrier))) (Z* n).carrier =
+       coset Z.sum (Z.sum.op (&j) (&j')) (Z* n).sum.carrier
+       So this is to show:
+       coset Z.sum (Z.sum.op (&j) (&j')) (Z* n).sum.carrier = coset Z.sum (&(ZN n).sum.op j j') (Z* n).sum.carrier
+       By subgroup_coset_eq, this is to show:
+       Z.sum.op (Z.sum.inv (Z.sum.op (&j) (&j'))) (&(ZN n).sum.op j j') IN  (Z* n).sum.carrier
+       or  -(&j + &j') + &((j + j') MOD n) IN Z_multiple n
+         -(&j + &j') + &((j + j') MOD n)
+       = -&(j + j') + &((j + j') MOD n)     by INT_ADD
+       = -&(j + j') + &(j + j') % &n        by INT_MOD
+       = -((&(j + j') / &n) * &n + (&(j + j') % &n)) + (&(j + j') % &n)   by INT_DIVISION
+       = -((&(j + j') / &n) * &n) - (&(j + j') % &n) + (&(j + j') % &n)   by INT_SUB_LNEG
+       = -((&(j + j') / &n) * &n)           by INT_SUB_ADD
+       = -(&(j + j') / &n) * &n             by INT_NEG_LMUL
+       = &n * -(&(j + j') / &n)             by INT_MUL_COMM]
+       Hence in Z_multiple n.
+*)
+val Z_ideal_map_group_homo = store_thm(
+  "Z_ideal_map_group_homo",
+  ``!n. 0 < n ==> GroupHomo (\j. coset Z.sum (&j) (Z* n).sum.carrier) (ZN n).sum (Z / Z* n).sum``,
+  rpt strip_tac >>
+  `!r. Ring r ==> (r.sum.carrier = R)` by rw_tac std_ss[Ring_def] >>
+  rw[GroupHomo_def] >| [
+    `Ring (ZN n)` by rw[ZN_ring] >>
+    `(Z* n) << Z` by rw[Z_ideal_thm] >>
+    `Ring Z` by rw[Z_ring] >>
+    `Ring (Z / (Z* n))` by rw[quotient_ring_ring] >>
+    `(ZN n).sum.carrier = (ZN n).carrier` by rw[] >>
+    `(Z / Z* n).sum.carrier = (Z / Z* n).carrier` by rw[] >>
+    metis_tac[Z_ideal_map_element],
+    rw[quotient_ring_def, quotient_ring_add_def] >>
+    `(Z* n).sum << Z.sum` by rw[Z_ideal_sum_normal] >>
+    `Ring Z` by rw[Z_ring] >>
+    `Ring (ZN n)` by rw[ZN_ring] >>
+    `(ZN n).sum.carrier = (ZN n).carrier` by rw[] >>
+    `Z.sum.carrier = Z.carrier` by rw[] >>
+    `!k. k IN (ZN n).carrier ==> &k IN Z.carrier` by rw[ZN_def, Z_def] >>
+    `&j IN Z.sum.carrier /\ &j' IN Z.sum.carrier` by metis_tac[] >>
+    `(Z* n).carrier = (Z* n).sum.carrier` by rw[Z_ideal_def] >>
+    `coset Z.sum (Z.sum.op (cogen Z.sum (Z* n).sum (coset Z.sum (&j) (Z* n).sum.carrier))
+                          (cogen Z.sum (Z* n).sum (coset Z.sum (&j') (Z* n).sum.carrier))) (Z* n).carrier =
+    coset Z.sum (Z.sum.op (&j) (&j')) (Z* n).sum.carrier` by rw[normal_coset_property] >>
+    `coset Z.sum (Z.sum.op (&j) (&j')) (Z* n).sum.carrier =
+     coset Z.sum (&(ZN n).sum.op j j') (Z* n).sum.carrier` suffices_by rw[] >>
+    `(Z* n).sum <= Z.sum` by rw[Z_ideal_sum_subgroup] >>
+    `(Z.sum.op (&j) (&j')) IN Z.sum.carrier` by rw[ring_add_group] >>
+    `&(ZN n).sum.op j j' IN Z.sum.carrier` by rw[Z_def] >>
+    `Z.sum.op (Z.sum.inv (Z.sum.op (&j) (&j'))) (&(ZN n).sum.op j j') IN  (Z* n).sum.carrier`
+      suffices_by metis_tac[subgroup_coset_eq] >>
+    pop_assum mp_tac >>
+    pop_assum mp_tac >>
+    `(Z.sum = Z_add)` by rw[Z_def] >>
+    `Z.sum.op (&j) (&j') IN Z_add.carrier` by rw[Z_def, Z_add_def] >>
+    `Z.sum.op (&j) (&j') IN Z.sum.carrier ==>
+    &(ZN n).sum.op j j' IN Z.sum.carrier ==>
+    Z.sum.op (-(Z.sum.op (&j) (&j'))) (&(ZN n).sum.op j j') IN (Z* n).sum.carrier` suffices_by metis_tac[Z_add_inv] >>
+    rw_tac std_ss[Z_def, Z_add_def, ZN_def, add_mod_def, Z_ideal_def] >>
+    `n <> 0` by decide_tac >>
+    `-(&j + &j') + &((j + j') MOD n) = -&(j + j') + &((j + j') MOD n)` by rw[INT_ADD] >>
+    `_ = -&(j + j') + &(j + j') % &n` by rw[INT_MOD] >>
+    `_ = -((&(j + j') / &n) * &n + (&(j + j') % &n)) + (&(j + j') % &n)` by rw[INT_DIVISION] >>
+    `_ = -((&(j + j') / &n) * &n) - (&(j + j') % &n) + (&(j + j') % &n)` by rw[INT_SUB_LNEG] >>
+    `_ = -((&(j + j') / &n) * &n)` by rw[INT_SUB_ADD] >>
+    `_ = -(&(j + j') / &n) * &n` by rw[INT_NEG_LMUL] >>
+    `_ = &n * -(&(j + j') / &n)` by rw[INT_MUL_COMM] >>
+    rw[Z_multiple_def]
+  ]);
+
+(* Theorem: MonoidHomo (\j. coset Z.sum (&j) (Z* n).sum.carrier) (ZN n).prod (Z / Z* n).prod *)
+(* Proof: by MonoidHomo_def, this is to show:
+   (1) j IN (ZN n).prod.carrier ==> coset Z.sum (&j) (Z* n).sum.carrier IN (Z / Z* n).prod.carrier
+       Since (ZN n).prod.carrier = (ZN n).carrier          by Ring_def
+             (Z / Z* n).prod.carrier = (Z / Z* n).carrier  by Ring_def
+       true by Z_ideal_map_element.
+   (2) j IN (ZN n).prod.carrier /\ j' IN (ZN n).prod.carrier ==>
+       coset Z.sum (&(ZN n).prod.op j j') (Z* n).sum.carrier =
+       (Z / Z* n).prod.op (coset Z.sum (&j) (Z* n).sum.carrier) (coset Z.sum (&j') (Z* n).sum.carrier)
+       Since (Z* n).sum <= Z.sum    by Z_ideal_sum_subgroup
+       and   ?k. cogen Z.sum (Z* n).sum (coset Z.sum (&j) (Z* n).sum.carrier) = &j + &n * k      by Z_sum_cogen
+       and   ?k'. cogen Z.sum (Z* n).sum (coset Z.sum (&j') (Z* n).sum.carrier) = &j' + &n * k'  by Z_sum_cogen
+       By subgroup_coset_eq, this reduces to:
+       Z.sum.op (Z.sum.inv (&(ZN n).prod.op j j')) (Z.prod.op (&j + &n * k) (&j' + &n * k')) IN (Z* n).sum.carrier
+       Now (Z* n).sum.carrier = (Z* n).carrier = Z_multiple n,
+         Z.prod.op (&j + &n * k) (&j' + &n * k')
+       = (&j + &n * k) * (&j' + &n * k')
+       = (&j) * (&j') + &n * h   for some h, by INT_LDISTRIB
+       = &(j * j') + &n * h      by INT_MUL
+       Hence the difference with &(ZN n).prod.op j j') = &((j * j') MOD n) = &(j * j') % &n
+       is a multiple of n, i.e. in (Z* n).sum.carrier.
+   (3) coset Z.sum (&(ZN n).prod.id) (Z* n).sum.carrier = (Z / Z* n).prod.id
+       Since (Z* n).sum <= Z.sum     by Z_ideal_sum_subgroup
+       expand by definition, this is to show:
+       coset Z.sum (&(ZN n).prod.id) (Z* n).sum.carrier = coset Z.sum Z.prod.id (Z* n).carrier
+       and by subgroup_coset_eq, this is to show:
+       Z.sum.op (- Z.prod.id) (&(ZN n).prod.id) IN (Z* n).sum.carrier
+       or    - 1 + &(ZN n).prod.id IN (Z* n).sum.carrier
+       Since (ZN n).prod.id = if n = 1 then 0 else 1, two cases:
+       If n = 1, to show -1 in (Z* 1).sum.carrier = Z_multiple 1, true.
+       If n <> 1, to show 0 in (Z* n).sum.carrier = Z_multiple n, true.
+*)
+val Z_ideal_map_monoid_homo = store_thm(
+  "Z_ideal_map_monoid_homo",
+  ``!n. 0 < n ==> MonoidHomo (\j. coset Z.sum (&j) (Z* n).sum.carrier) (ZN n).prod (Z / Z* n).prod``,
+  rpt strip_tac >>
+  rw[MonoidHomo_def] >| [
+    `Ring (ZN n)` by rw[ZN_ring] >>
+    `(Z* n) << Z` by rw[Z_ideal_thm] >>
+    `Ring Z` by rw[Z_ring] >>
+    `Ring (Z / (Z* n))` by rw[quotient_ring_ring] >>
+    `(ZN n).prod.carrier = (ZN n).carrier` by metis_tac[Ring_def] >>
+    `(Z / Z* n).prod.carrier = (Z / Z* n).carrier` by metis_tac[Ring_def] >>
+    `(ZN n).sum.carrier = (ZN n).carrier` by metis_tac[Ring_def] >>
+    metis_tac[Z_ideal_map_element],
+    rw[quotient_ring_def, quotient_ring_mult_def] >>
+    `(Z* n).sum <= Z.sum` by rw[Z_ideal_sum_subgroup] >>
+    `&j IN Z.sum.carrier /\ &j' IN Z.sum.carrier` by rw[Z_def, Z_add_def] >>
+    `?k. cogen Z.sum (Z* n).sum (coset Z.sum (&j) (Z* n).sum.carrier) = &j + &n * k` by rw[Z_sum_cogen] >>
+    `?k'. cogen Z.sum (Z* n).sum (coset Z.sum (&j') (Z* n).sum.carrier) = &j' + &n * k'` by rw[Z_sum_cogen] >>
+    `(Z* n).sum.carrier = (Z* n).carrier` by rw[Z_ideal_def] >>
+    `coset Z.sum (&(ZN n).prod.op j j') (Z* n).sum.carrier =
+     coset Z.sum (Z.prod.op (&j + &n * k) (&j' + &n * k')) (Z* n).sum.carrier` suffices_by metis_tac[] >>
+    `&(ZN n).prod.op j j' IN Z.sum.carrier` by rw[Z_def, Z_add_def] >>
+    `Z.prod.op (&j + &n * k) (&j' + &n * k') IN Z.sum.carrier` by rw[Z_def, Z_add_def] >>
+    `Z.sum.op (Z.sum.inv (&(ZN n).prod.op j j')) (Z.prod.op (&j + &n * k) (&j' + &n * k')) IN (Z* n).sum.carrier`
+      suffices_by rw[GSYM subgroup_coset_eq] >>
+    `Z.sum = Z_add` by rw[Z_def] >>
+    `Z.sum.op (- (&(ZN n).prod.op j j')) (Z.prod.op (&j + &n * k) (&j' + &n * k')) IN (Z* n).sum.carrier`
+      suffices_by metis_tac[Z_add_inv] >>
+    rw_tac std_ss[Z_def, Z_add_def, Z_mult_def, ZN_def, times_mod_def, Z_ideal_def] >>
+    `n <> 0` by decide_tac >>
+    `-&((j * j') MOD n) + (&j + &n * k) * (&j' + &n * k') = -(&(j * j') % &n) + (&j + &n * k) * (&j' + &n * k')` by rw[INT_MOD] >>
+    `_ = -(&(j * j') % &n) + (&j * (&j' + &n * k') + &n * k * (&j' + &n * k'))` by rw[INT_RDISTRIB] >>
+    `_ = -(&(j * j') % &n) + (&j * &j' + &j * (&n * k') + &n * k * (&j' + &n * k'))` by rw[INT_LDISTRIB] >>
+    `_ = -(&(j * j') % &n) + (&j * &j' + &n * k' * &j + &n * k * (&j' + &n * k'))` by rw[INT_MUL_COMM] >>
+    `_ = -(&(j * j') % &n) + (&j * &j' + (&n * k' * &j + &n * k * (&j' + &n * k')))` by rw[INT_ADD_ASSOC] >>
+    `_ = -(&(j * j') % &n) + (&j * &j' + (&n * (k' * &j) + &n * (k * (&j' + &n * k'))))` by rw[INT_MUL_ASSOC] >>
+    `_ = -(&(j * j') % &n) + (&j * &j' + &n * (k' * &j + k * (&j' + &n * k')))` by rw[GSYM INT_LDISTRIB] >>
+    `_ = -(&(j * j') % &n) + &j * &j' + &n * (k' * &j + k * (&j' + &n * k'))` by rw[INT_ADD_ASSOC] >>
+    `_ = -(&(j * j') % &n) + &(j * j') + &n * (k' * &j + k * (&j' + &n * k'))` by rw[INT_MUL] >>
+    `_ = -(&(j * j') % &n) + (&(j * j') / &n * &n + &(j * j') % &n) + &n * (k' * &j + k * (&j' + &n * k'))` by rw[INT_DIVISION] >>
+    `_ = -(&(j * j') % &n) + (&(j * j') % &n + &(j * j') / &n * &n) + &n * (k' * &j + k * (&j' + &n * k'))` by rw[INT_ADD_COMM] >>
+    `_ = -(&(j * j') % &n) + &(j * j') % &n + &(j * j') / &n * &n + &n * (k' * &j + k * (&j' + &n * k'))` by rw[INT_ADD_ASSOC] >>
+    `_ = &(j * j') / &n * &n + &n * (k' * &j + k * (&j' + &n * k'))` by rw[INT_ADD_LINV] >>
+    `_ = &n * (&(j * j') / &n) + &n * (k' * &j + k * (&j' + &n * k'))` by rw[INT_MUL_COMM] >>
+    `_ = &n * (&(j * j') / &n + (k' * &j + k * (&j' + &n * k')))` by rw[INT_LDISTRIB] >>
+    rw[Z_multiple_def],
+    rw[quotient_ring_def, quotient_ring_mult_def] >>
+    `(Z* n).sum <= Z.sum` by rw[Z_ideal_sum_subgroup] >>
+    `(Z* n).sum.carrier = (Z* n).carrier` by rw[Z_ideal_def] >>
+    `&(ZN n).prod.id IN Z.sum.carrier` by rw[Z_def, Z_add_def, ZN_def, times_mod_def] >>
+    `Z.prod.id IN Z.sum.carrier` by rw[Z_def, Z_add_def, Z_mult_def] >>
+    `Z.sum.op (Z.sum.inv Z.prod.id) &(ZN n).prod.id IN (Z* n).sum.carrier` suffices_by rw[GSYM subgroup_coset_eq] >>
+    `Z.sum = Z_add` by rw[Z_def] >>
+    `Z.sum.op (- Z.prod.id) (&(ZN n).prod.id) IN (Z* n).sum.carrier` suffices_by metis_tac[Z_add_inv] >>
+    `n <> 0` by decide_tac >>
+    rw[Z_def, Z_add_def, Z_mult_def, ZN_def, times_mod_def] >-
+    rw[Z_ideal_def, Z_multiple_def] >>
+    rw[Z_ideal_def, Z_multiple_def]
+  ]);
+
+(* Theorem: BIJ (\j. coset Z.sum (&j) (Z* n).sum.carrier) (ZN n).carrier (Z / Z* n).carrier *)
+(* Proof:
+   (1) j IN (ZN n).carrier ==> coset Z.sum (&j) (Z* n).sum.carrier IN (Z / Z* n).carrier
+       true by Z_ideal_map_element.
+   (2) coset Z.sum (&j) (Z* n).sum.carrier = coset Z.sum (&j') (Z* n).sum.carrier ==> j = j'
+       &j - &j' = multiple of n, but j < n and j' < n, hence j = j'.
+       true by Z_multiple_less_neg_eq.
+   (3) same as (1)
+   (4) x IN (Z / Z* n).carrier ==> ?j. j IN (ZN n).carrier /\ (coset Z.sum (&j) (Z* n).sum.carrier = x)
+       Expanding by definition, this is to show:
+       x IN CosetPartition Z.sum (Z* n).sum ==> ?j. j IN (ZN n).carrier /\ (coset Z.sum (&j) (Z* n).sum.carrier = x)
+       Let p = (cogen Z.sum (Z* n).sum x, then
+            p IN Z.sum.carrier     by cogen_element
+       thus p IN univ(:int)        by Z_def, Z_add_def
+       By coset_cogen_property, we have:  coset Z.sum p (Z* n).sum.carrier = x
+       So it is just choosing j, depending on p, to satisfy: j IN (ZN n).carrier
+       If p = 0, take j = 0, then 0 IN (ZN n).carrier,
+       If p <> 0, since by Z_sum_coset_eq,
+          coset Z.sum p (Z* n).sum.carrier = coset Z.sum (p % &n) (Z* n).sum.carrier
+       If p > 0, choose j = p MOD n,
+       then &j = &(p MOD n) = &p % &n, so true by INT_MOD
+       If p < 0, choose j = (n + (p MOD n)) MOD n,
+       then &j = &((n + (p MOD n)) MOD n)
+               = &(n + (p MOD n)) % &n      by INT_MOD
+               = (&n % &n + &(p MOD n) % &n) % &n   by INT_ADD
+               = &(p MOD n)                 by INT_MOD_ID, INT_MOD_MOD
+               = &p % &n                    by INT_MOD
+*)
+val Z_ideal_map_bij = store_thm(
+  "Z_ideal_map_bij",
+  ``!n. 0 < n ==> BIJ (\j. coset Z.sum (&j) (Z* n).sum.carrier) (ZN n).carrier (Z / Z* n).carrier``,
+  rw[BIJ_DEF, INJ_DEF, SURJ_DEF] >| [
+    rw[Z_ideal_map_element],
+    `(Z* n).sum <= Z.sum` by rw[Z_ideal_sum_subgroup] >>
+    `&j IN Z.sum.carrier` by rw[Z_def, Z_add_def] >>
+    `&j' IN Z.sum.carrier` by rw[Z_def, Z_add_def] >>
+    `Z.sum.op (Z.sum.inv &j) &j' IN (Z* n).sum.carrier` by rw[GSYM subgroup_coset_eq] >>
+    `Z.sum = Z_add` by rw[Z_def] >>
+    `Z.sum.op (- &j) &j' IN (Z* n).sum.carrier` by metis_tac[Z_add_inv] >>
+    `(Z* n).sum.carrier = Z_multiple n` by rw[Z_ideal_def] >>
+    `!x y. Z.sum.op x y = x + y` by rw[Z_def, Z_add_def] >>
+    `(- &j) +  &j' IN Z_multiple n` by metis_tac[] >>
+    `!x. x IN (ZN n).carrier ==> x < n` by rw[ZN_def] >>
+    metis_tac[Z_multiple_less_neg_eq],
+    rw[Z_ideal_map_element],
+    pop_assum mp_tac >>
+    rw[quotient_ring_def, quotient_ring_mult_def] >>
+    `(Z* n).sum <= Z.sum` by rw[Z_ideal_sum_subgroup] >>
+    `(cogen Z.sum (Z* n).sum x) IN Z.sum.carrier` by rw[cogen_element] >>
+    `(cogen Z.sum (Z* n).sum x) IN univ(:int)` by rw[Z_def, Z_add_def] >>
+    qabbrev_tac `p = (cogen Z.sum (Z* n).sum x)` >>
+    `coset Z.sum p (Z* n).sum.carrier = x` by rw[coset_cogen_property, Abbr`p`] >>
+    `!x. x IN (ZN n).carrier <=> x < n` by rw[ZN_def] >>
+    Cases_on `p = 0` >| [
+      qexists_tac `0` >>
+      rw[],
+      `n <> 0` by decide_tac >>
+      `&n <> 0` by rw[INT_INJ] >>
+      `coset Z.sum p (Z* n).sum.carrier = coset Z.sum (p % &n) (Z* n).sum.carrier` by rw[GSYM Z_sum_coset_eq] >>
+      Cases_on `0 <= p` >| [
+        `?k. p = &k` by metis_tac[NUM_POSINT] >>
+        qexists_tac `k MOD n` >>
+        rw[MOD_LESS, INT_MOD],
+        `p < 0` by rw[GSYM INT_NOT_LE] >>
+        `?k. p = -&k` by metis_tac[NUM_NEGINT_EXISTS, INT_LT_IMP_LE] >>
+        `k MOD n < n` by rw[MOD_LESS] >>
+        `p % &n = (- &k) % &n` by rw[] >>
+        `_ = (&n - &k) % &n` by rw[INT_MOD_NEG_NUMERATOR] >>
+        `_ = (&n % &n - &k % &n) % &n` by rw[INT_MOD_SUB] >>
+        `_ = (&n % &n - &k % &n % &n) % &n` by rw[INT_MOD_MOD] >>
+        `_ = (&n % &n - &(k MOD n) % &n) % &n` by rw[INT_MOD] >>
+        `_ = (&n  - &(k MOD n)) % &n` by rw[INT_MOD_SUB] >>
+        `_ = &(n - k MOD n) % &n` by rw[INT_SUB, LESS_IMP_LESS_OR_EQ] >>
+        `_ = &((n - k MOD n) MOD n)` by rw[INT_MOD] >>
+        qexists_tac `(n - k MOD n) MOD n` >>
+        rw[MOD_LESS]
+      ]
+    ]
+  ]);
+
+(* Theorem: (ZN n) isomorphic to Z / (Z* n) *)
+(* Proof:
+   The bijection is: j IN (ZN n) -> coset (Z* n).sum (&j) (Z* n).sum.carrier
+   where (Z* n).sum.carrier = Z_multiple n
+   (1) j IN (ZN n).carrier ==> coset Z.sum (&j) (Z* n).sum.carrier IN (Z / Z* n).carrier
+       true by Z_ideal_map_element.
+   (2) GroupHomo (\j. coset Z.sum (&j) (Z* n).sum.carrier) (ZN n).sum (Z / Z* n).sum
+       true by Z_ideal_map_group_homo.
+   (3) MonoidHomo (\j. coset Z.sum (&j) (Z* n).sum.carrier) (ZN n).prod (Z / Z* n).prod
+       true by Z_ideal_map_monoid_homo.
+   (4) BIJ (\j. coset Z.sum (&j) (Z* n).sum.carrier) (ZN n).carrier (Z / Z* n).carrier
+       true by Z_ideal_map_bij.
+*)
+val Z_quotient_iso_ZN = store_thm(
+  "Z_quotient_iso_ZN",
+  ``!n. 0 < n ==> RingIso (\(j:num). coset Z.sum (&j) (Z* n).sum.carrier) (ZN n) (Z / (Z* n))``,
+  rw[RingIso_def, RingHomo_def] >-
+  rw[Z_ideal_map_element] >-
+  rw[Z_ideal_map_group_homo] >-
+  rw[Z_ideal_map_monoid_homo] >>
+  rw[Z_ideal_map_bij]);
+
+(* ------------------------------------------------------------------------- *)
+(* Integer as Euclidean Ring.                                                *)
+(* ------------------------------------------------------------------------- *)
+
+(* Theorem: EuclideanRing Z *)
+(* Proof:
+   By EuclideanRing_def, this is to show:
+   (1) Ring Z, true       by Z_ring
+   (2) (Num (ABS x) = 0) <=> (x = 0)
+       If part: Num (ABS x) = 0 ==> x = 0
+       If ABS x = &n, n <> 0, Num (&n) = n  by NUM_OF_INT, or n = 0, contradicts n <> 0.
+       If ABS x = -&n, n <> 0, then -&n < 0, contradicts ~(ABS x < 0) by INT_ABS_LT0.
+       If ABS x = 0, this means ABS x <= 0, hence x = 0 by INT_ABS_LE0.
+       Only-if part: x = 0 ==> Num (ABS x) = 0
+       i.e to show: Num (ABS 0) = 0
+         Num (ABS 0)
+       = Num 0            by INT_ABS_EQ0, ABS 0 = 0
+       = 0                by NUM_OF_INT, Num (&n) = n
+   (3) !x y. y <> 0 ==> ?q t. (x = q * y + t) /\ Num (ABS t) < Num (ABS y)
+       Let q = x / y, t = x % y.
+       Then by INT_DIVISION,
+       (x = q * y + t) /\ if y < 0 then (y < t /\ t <= 0) else (0 <= t /\ t < y)
+       If y = &n, n <> 0, then ~(y < 0), hence 0 <= t /\ t < y
+       0 <= t ==> ?k. t = &k       by NUM_POSINT
+       So   Num (ABS t) = k        by INT_ABS_NUM, NUM_OF_INT
+       and  Num (ABS y) = n        by INT_ABS_NUM, NUM_OF_INT
+       and  &k < &n ==> k < n      by INT_LT
+       If y = -&n, n <> 0, then y < 0, hence y < t /\ t <= 0
+       t <= 0 ==> ?k. t = -&k      by NUM_NEGINT_EXISTS
+       But  Num (ABS t) = k        by INT_ABS_NEG, INT_ABS_NUM, NUM_OF_INT
+       and  Num (ABS y) = n        by INT_ABS_NEG, INT_ABS_NUM, NUM_OF_INT
+       and  -&n < -&k
+         ==> &k < &n               by INT_LT_CALCULATE
+         ==> k < n                 by INT_LT (or INT_LT_CALCULATE)
+*)
+
+Theorem Z_euclid_ring: EuclideanRing Z Num
+Proof
+  rw[EuclideanRing_def]
+  >- rw[Z_ring]
+  >- rw[Z_def, Z_add_def] >>
+  pop_assum mp_tac >>
+  pop_assum mp_tac >>
+  pop_assum mp_tac >>
+  rw[Z_def, Z_add_def, Z_mult_def] >>
+  qexists_tac ‘x / y’ >>
+  qexists_tac ‘x % y’ >>
+  ‘(x = x / y * y + x % y) /\
+   if y < 0 then (y < x % y /\ x % y <= 0) else (0 <= x % y /\ x % y < y)’
+    by rw[INT_DIVISION] >>
+  qabbrev_tac ‘q = x / y’ >>
+  qabbrev_tac ‘t = x % y’ >>
+  ‘(?n. (y = &n) /\ n <> 0) \/ (?n. (y = -&n) /\ n <> 0) \/ (y = 0)’
+    by rw[INT_NUM_CASES]
+  >- (‘~(y < 0)’ by rw[] >>
+      ‘0 <= t /\ t < y’ by metis_tac[] >>
+      ‘?k. t = &k’ by metis_tac[NUM_POSINT] >>
+      gvs[]) >>
+  ‘y < 0’ by rw[] >>
+  ‘y < t /\ t <= 0’ by metis_tac[] >>
+  ‘?k. t = -&k’ by metis_tac[NUM_NEGINT_EXISTS] >>
+  gvs[]
+QED
+
+(* Theorem: PrincipalIdealRing Z *)
+(* Proof:
+   Since EuclideanRing Z (Num o ABS)   by Z_euclid_ring
+   hence PrincipalIdealRing Z          by euclid_ring_principal_ideal_ring
+*)
+val Z_principal_ideal_ring = store_thm(
+  "Z_principal_ideal_ring",
+  ``PrincipalIdealRing Z``,
+  metis_tac[Z_euclid_ring, euclid_ring_principal_ideal_ring]);
+
+(* ------------------------------------------------------------------------- *)
+(* Integral Domain Documentation                                             *)
+(* ------------------------------------------------------------------------- *)
+(* An Integral Domains is a Ring with two additional properties:
+   a. distinct identities: #1 <> #0
+   b. no #0 divisors: x * y = #0 <=> x = 0 \/ y = 0
+
+   This implies:
+   1. The nonzero elements are closed under (ring) multiplication,
+      i.e. besides the multiplicative monoid with carrier = all elements,
+      there is also a multiplicative monoid with carrier = nonzero elements.
+   2. Every integral domain has at least two elements: #0 and #1.
+      The smallest integral domain is isomorphic to Z_2 = {0, 1}.
+      The typical integral domain is Z = {0, +/-1, +/-2, ... }
+   3. Finite integral domains are (finite) fields:
+      For any nonzero x, the sequence x, x^2, x^3, .... must wrap around, hence invertible.
+*)
+(* Data type:
+   The generic symbol for ring data is r.
+   r.carrier = Carrier set of Ring, overloaded as R.
+   r.sum     = Addition component of Ring, binary operation overloaded as +.
+   r.prod    = Multiplication component of Ring, binary operation overloaded as *.
+
+   Overloading:
+   +    = r.sum.op
+   #0   = r.sum.id
+   ##   = r.sum.exp
+   -    = r.sum.inv
+
+   *    = r.prod.op
+   #1   = r.prod.id
+   **   = r.prod.exp
+
+   R    = r.carrier
+   R+   = ring_nonzero r
+*)
+(* Definitions and Theorems (# are exported):
+
+   Definitions:
+   IntegralDomain_def       |- !r. IntegralDomain r <=>  Ring r /\ #1 <> #0 /\
+                                                         !x y. x IN R /\ y IN R ==> ((x * y = #0) <=> (x = #0) \/ (y = #0))
+   FiniteIntegralDomain_def |- !r. FiniteIntegralDomain r <=> IntegralDomain r /\ FINITE R
+
+   Simple theorems:
+   integral_domain_is_ring       |- !r. IntegralDomain r ==> Ring r
+#  integral_domain_one_ne_zero   |- !r. IntegralDomain r ==> #1 <> #0
+   integral_domain_mult_eq_zero  |- !r. IntegralDomain r ==> !x y. x IN R /\ y IN R ==> ((x * y = #0) <=> (x = #0) \/ (y = #0))
+   integral_domain_zero_product  |- !r. IntegralDomain r ==> !x y. x IN R /\ y IN R ==> ((x * y = #0) <=> (x = #0) \/ (y = #0))
+   integral_domain_zero_not_unit |- !r. IntegralDomain r ==> #0 NOTIN R*
+   integral_domain_one_nonzero   |- !r. IntegralDomain r ==> #1 IN R+
+   integral_domain_mult_nonzero  |- !r. IntegralDomain r ==> !x y. x IN R+ /\ y IN R+ ==> x * y IN R+
+   integral_domain_nonzero_mult_carrier  |- !r. IntegralDomain r ==> (F* = R+)
+   integral_domain_nonzero_mult_property |- !r. IntegralDomain r ==> (F* = R+) /\ (f*.id = #1) /\
+                                                                     (f*.op = $* ) /\ (f*.exp = $** )
+   integral_domain_nonzero_monoid       |- !r. IntegralDomain r ==> Monoid f*
+
+   Left and Right Multiplicative Cancellation:
+   integral_domain_mult_lcancel  |- !r. IntegralDomain r ==> !x y z. x IN R /\ y IN R /\ z IN R ==>
+                                        ((x * y = x * z) <=> (x = #0) \/ (y = z))
+   integral_domain_mult_rcancel  |- !r. IntegralDomain r ==> !x y z.  x IN R /\ y IN R /\ z IN R ==>
+                                        ((y * x = z * x) <=> (x = #0) \/ (y = z))
+
+   Non-zero multiplications form a Monoid:
+   monoid_of_ring_nonzero_mult_def         |- !r. monoid_of_ring_nonzero_mult r = <|carrier := R+; op := $*; id := #1|>
+   integral_domain_nonzero_mult_is_monoid  |- !r. IntegralDomain r ==> Monoid (monoid_of_ring_nonzero_mult r)
+
+   Theorems from Ring exponentiation:
+   integral_domain_exp_nonzero  |- !r. IntegralDomain r ==> !x. x IN R+ ==> !n. x ** n IN R+
+   integral_domain_exp_eq_zero  |- !r. IntegralDomain r ==> !x. x IN R ==> !n. (x ** n = #0) <=> n <> 0 /\ (x = #0)
+   integral_domain_exp_eq       |- !r. IntegralDomain r ==> !x. x IN R+ ==>
+                                                            !m n. m < n /\ (x ** m = x ** n) ==> (x ** (n - m) = #1)
+
+   Finite Integral Domain:
+   finite_integral_domain_period_exists
+                                |- !r. FiniteIntegralDomain r ==> !x. x IN R+ ==> ?k. 0 < k /\ (x ** k = #1)
+   finite_integral_domain_nonzero_invertible
+                                |- !r. FiniteIntegralDomain r ==> (monoid_invertibles r.prod = R+ )
+   finite_integral_domain_nonzero_invertible_alt
+                                |- !r. FiniteIntegralDomain r ==> (monoid_invertibles f* = F* )
+   finite_integral_domain_nonzero_group
+                                |- !r. FiniteIntegralDomain r ==> Group f*
+
+   Integral Domain Element Order:
+   integral_domain_nonzero_order  |- !r. IntegralDomain r ==> !x. order r.prod x = order f* x
+   integral_domain_order_zero     |- !r. IntegralDomain r ==> (order f* #0 = 0)
+   integral_domain_order_nonzero  |- !r. FiniteIntegralDomain r ==> !x. x IN R+ ==> order f* x <> 0
+   integral_domain_order_eq_0     |- !r. FiniteIntegralDomain r ==> !x. x IN R ==> ((order f* x = 0) <=> (x = #0))
+
+   Integral Domain Characteristic:
+   integral_domain_char         |- !r. IntegralDomain r ==> (char r = 0) \/ prime (char r)
+
+   Principal Ideals in Integral Domain:
+   principal_ideal_equal_principal_ideal  |- !r. IntegralDomain r ==>
+                                             !p q. p IN R /\ q IN R ==> ((<p> = <q>) <=> ?u. unit u /\ (p = q * u))
+*)
+(* ------------------------------------------------------------------------- *)
+(* Basic Definitions                                                         *)
+(* ------------------------------------------------------------------------- *)
+
+(* Integral Domain Definition:
+   An Integral Domain is a record r with elements of type 'a ring, such that
+   . r is a Ring
+   . #1 <> #0
+   . !x y IN R, x * y = #0 <=> x = #0 or y = #0
+*)
+val IntegralDomain_def = Define`
+  IntegralDomain (r:'a ring) <=>
+    Ring r /\
+    #1 <> #0 /\
+    (!x y. x IN R /\ y IN R ==> ((x * y = #0) <=> (x = #0) \/ (y = #0)))
+`;
+
+val FiniteIntegralDomain_def = Define`
+  FiniteIntegralDomain (r:'a ring) <=> IntegralDomain r /\ FINITE R
+`;
+
+(* ------------------------------------------------------------------------- *)
+(* Simple Theorems                                                           *)
+(* ------------------------------------------------------------------------- *)
+
+(* Theorem: Integral Domain is Ring. *)
+(* Proof: by definition. *)
+val integral_domain_is_ring = save_thm("integral_domain_is_ring",
+  IntegralDomain_def |> SPEC_ALL |> EQ_IMP_RULE |> #1 |> UNDISCH |> CONJUNCT1 |> DISCH_ALL |> GEN_ALL);
+(* > val integral_domain_is_ring = |- !r. IntegralDomain r ==> Ring r : thm *)
+
+(* Theorem: Integral Domain has #1 <> #0 *)
+(* Proof: by definition *)
+val integral_domain_one_ne_zero = save_thm("integral_domain_one_ne_zero",
+  IntegralDomain_def |> SPEC_ALL |> EQ_IMP_RULE |> #1 |> UNDISCH |> CONJUNCT2 |> CONJUNCT1 |> DISCH_ALL |> GEN_ALL);
+(* > val integral_domain_one_ne_zero = |- !r. IntegralDomain r ==> #1 <> #0 : thm *)
+
+val _ = export_rewrites ["integral_domain_one_ne_zero"];
+
+(* Theorem: No zero divisor in integral domain. *)
+(* Proof: by definition. *)
+val integral_domain_mult_eq_zero = save_thm("integral_domain_mult_eq_zero",
+  IntegralDomain_def |> SPEC_ALL |> EQ_IMP_RULE |> #1 |> UNDISCH |> CONJUNCT2 |> CONJUNCT2 |> DISCH_ALL |> GEN_ALL);
+(* > val integral_domain_mult_eq_zero =
+     |- !r. IntegralDomain r ==> !x y. x IN R /\ y IN R ==> ((x * y = #0) <=> (x = #0) \/ (y = #0)) : thm *)
+
+(* Alternative name for export *)
+val integral_domain_zero_product = save_thm("integral_domain_zero_product", integral_domain_mult_eq_zero);
+(* > val integral_domain_zero_product =
+    |- !r. IntegralDomain r ==> !x y. x IN R /\ y IN R ==> ((x * y = #0) <=> (x = #0) \/ (y = #0)) : thm *)
+
+(* Theorem: #0 is not a unit of integral domain. *)
+(* Proof: by ring_units_has_zero *)
+val integral_domain_zero_not_unit = store_thm(
+  "integral_domain_zero_not_unit",
+  ``!r:'a ring. IntegralDomain r ==> ~ (#0 IN R*)``,
+  rw[ring_units_has_zero, IntegralDomain_def]);
+
+(* Theorem: #1 IN R+ for integral domain. *)
+(* Proof: by #1 <> #0 and ring_nonzero_eq. *)
+val integral_domain_one_nonzero = store_thm(
+  "integral_domain_one_nonzero",
+  ``!r:'a ring. IntegralDomain r ==> #1 IN R+``,
+  rw[integral_domain_is_ring, ring_nonzero_eq]);
+
+(* Theorem: x IN R+ /\ y IN R+ <=> (x * y) IN R+ *)
+(* Proof: by definitions. *)
+val integral_domain_mult_nonzero = store_thm(
+  "integral_domain_mult_nonzero",
+  ``!r:'a ring. IntegralDomain r ==> !x y. x IN R+ /\ y IN R+ ==> (x * y) IN R+``,
+  rw[integral_domain_zero_product, integral_domain_is_ring, ring_nonzero_eq]);
+
+(* Theorem: IntegralDomain r ==> (F* = R+) *)
+(* Proof: by integral_domain_is_ring, ring_nonzero_mult_carrier *)
+val integral_domain_nonzero_mult_carrier = store_thm(
+  "integral_domain_nonzero_mult_carrier",
+  ``!r:'a ring. IntegralDomain r ==> (F* = R+)``,
+  rw_tac std_ss[integral_domain_is_ring, ring_nonzero_mult_carrier]);
+
+(* Theorem: properties of f*. *)
+(* Proof:
+   By IntegralDomain_def, excluding_def
+   For F* = R+
+         F*
+       = r.prod.carrier DIFF {#0}
+       = R DIFF {#0}            by ring_carriers
+       = R+                     by ring_nonzero_def
+   For f*.exp = r.prod.exp
+       This is true             by monoid_exp_def, FUN_EQ_THM
+*)
+val integral_domain_nonzero_mult_property = store_thm(
+  "integral_domain_nonzero_mult_property",
+  ``!r:'a ring. IntegralDomain r ==>
+               (F* = R+) /\ (f*.id = #1) /\ (f*.op = r.prod.op) /\ (f*.exp = r.prod.exp)``,
+  rw_tac std_ss[IntegralDomain_def, excluding_def, ring_carriers, ring_nonzero_def, monoid_exp_def, FUN_EQ_THM]);
+
+(* Theorem: IntegralDomain r ==> Monoid f* *)
+(* Proof:
+   Note IntegralDomain r ==> Ring r                by IntegralDomain_def
+   By Monoid_def, excluding_def, IN_DIFF, IN_SING, ring_carriers, this is to show:
+   (1) x IN R /\ y IN R ==> x * y IN R, true       by ring_mult_element
+   (2) x IN R /\ y IN R /\ z IN R ==> x * y * z = x * (y * z), true by ring_mult_assoc
+   (3) #1 IN R, true                               by ring_one_element
+   (4) x IN R ==> #1 * x = x, true                 by ring_mult_lone
+   (5) x IN R ==> x * #1 = x, true                 by ring_mult_rone
+*)
+val integral_domain_nonzero_monoid = store_thm(
+  "integral_domain_nonzero_monoid",
+  ``!r:'a ring. IntegralDomain r ==> Monoid f*``,
+  rw_tac std_ss[IntegralDomain_def] >>
+  rw_tac std_ss[Monoid_def, excluding_def, IN_DIFF, IN_SING, ring_carriers] >>
+  rw[ring_mult_assoc]);
+
+(* Another proof of the same result. *)
+
+(* Theorem: IntegralDomain r ==> Monoid f* *)
+(* Proof:
+   By IntegralDomain_def, Monoid_def, integral_domain_nonzero_mult_property, this is to show:
+   (1) x IN R+ /\ y IN R+ ==> x * y IN R+, true by ring_mult_element, ring_nonzero_eq
+   (2) x IN R+ /\ y IN R+ /\ z IN R+ ==> x * y * z = x * (y * z), true by ring_mult_assoc, ring_nonzero_eq
+   (3) #1 IN R+, true                       by ring_one_element, ring_nonzero_eq
+   (4) x IN R+ ==> #1 * x = x, true         by ring_mult_lone, ring_nonzero_eq
+   (5) x IN R+ ==> x * #1 = x, true         by ring_mult_rone, ring_nonzero_eq
+*)
+Theorem integral_domain_nonzero_monoid[allow_rebind]:
+  !r:'a ring. IntegralDomain r ==> Monoid f*
+Proof
+  rw_tac std_ss[IntegralDomain_def, Monoid_def,
+                integral_domain_nonzero_mult_property] >>
+  fs[ring_nonzero_eq, ring_mult_assoc]
+QED
+
+(* ring isomorphisms preserve domain properties *)
+
+Theorem integral_domain_ring_iso:
+  IntegralDomain r /\ Ring s /\ RingIso f r s ==> IntegralDomain s
+Proof
+  simp[IntegralDomain_def]
+  \\ strip_tac
+  \\ drule_then (drule_then drule) ring_iso_sym
+  \\ simp[RingIso_def, RingHomo_def]
+  \\ strip_tac
+  \\ qmatch_asmsub_abbrev_tac`BIJ g s.carrier r.carrier`
+  \\ `Group s.sum /\ Group r.sum` by metis_tac[Ring_def, AbelianGroup_def]
+  \\ `g s.sum.id = r.sum.id` by metis_tac[group_homo_id]
+  \\ conj_asm1_tac >- metis_tac[monoid_homo_id]
+  \\ rw[]
+  \\ first_x_assum(qspecl_then[`g x`,`g y`]mp_tac)
+  \\ impl_keep_tac >- metis_tac[BIJ_DEF, INJ_DEF]
+  \\ fs[MonoidHomo_def]
+  \\ `s.prod.carrier = s.carrier` by metis_tac[ring_carriers] \\ fs[]
+  \\ first_x_assum(qspecl_then[`x`,`y`]mp_tac)
+  \\ simp[]
+  \\ `s.sum.id IN s.carrier` by simp[]
+  \\ `s.prod.op x y IN s.carrier` by simp[]
+  \\ PROVE_TAC[BIJ_DEF, INJ_DEF]
+QED
+
+(* ------------------------------------------------------------------------- *)
+(* Left and Right Multiplicative Cancellation                                *)
+(* ------------------------------------------------------------------------- *)
+
+(* Theorem: IntegeralDomain r ==> x * y = x * z <=> x = #0 \/ y = z  *)
+(* Proof:
+        x * y = x * z
+   <=>  x * y - x * z = #0       by ring_sub_eq_zero
+   <=>  x * (y - z) = #0         by ring_mult_rsub
+   <=>  x = #0 or (y - z) = #0   by integral_domain_zero_product
+   <=>  x = #0 or y = z          by ring_sub_eq_zero
+*)
+val integral_domain_mult_lcancel = store_thm(
+  "integral_domain_mult_lcancel",
+  ``!r:'a ring. IntegralDomain r ==> !x y z. x IN R /\ y IN R /\ z IN R ==> ((x * y = x * z) <=> (x = #0) \/ (y = z))``,
+  rpt strip_tac >>
+  `Ring r` by rw[integral_domain_is_ring] >>
+  `(x * y = x * z) <=> (x * y - x * z = #0)` by rw[ring_sub_eq_zero] >>
+  `_ = (x * (y - z) = #0)` by rw_tac std_ss[ring_mult_rsub] >>
+  `_ = ((x = #0) \/ (y - z = #0))` by rw[integral_domain_zero_product] >>
+  `_ = ((x = #0) \/ (y = z))` by rw[ring_sub_eq_zero] >>
+  rw[]);
+
+(* Theorem: IntegeralDomain r ==> y * x = z * x <=> x = #0 \/ y = z  *)
+(* Proof: by integral_domain_mult_lcancel, ring_mult_comm. *)
+val integral_domain_mult_rcancel = store_thm(
+  "integral_domain_mult_rcancel",
+  ``!r:'a ring. IntegralDomain r ==> !x y z. x IN R /\ y IN R /\ z IN R ==> ((y * x = z * x) <=> (x = #0) \/ (y = z))``,
+  rw[integral_domain_mult_lcancel, ring_mult_comm, integral_domain_is_ring]);
+
+(* ------------------------------------------------------------------------- *)
+(* Non-zero multiplications form a Monoid.                                   *)
+(* ------------------------------------------------------------------------- *)
+
+(* Define monoid of ring nonzero multiplication. *)
+val monoid_of_ring_nonzero_mult_def = Define`
+  monoid_of_ring_nonzero_mult (r:'a ring) :'a monoid  =
+  <| carrier := R+;
+          op := r.prod.op;
+          id := #1
+    |>
+`;
+(*
+- type_of ``monoid_of_ring_nonzero_mult r``;
+> val it = ``:'a monoid`` : hol_type
+*)
+
+(* Theorem: Integral nonzero multiplication form a Monoid. *)
+(* Proof: by checking definition. *)
+val integral_domain_nonzero_mult_is_monoid = store_thm(
+  "integral_domain_nonzero_mult_is_monoid",
+  ``!r:'a ring. IntegralDomain r ==> Monoid (monoid_of_ring_nonzero_mult r)``,
+  rpt strip_tac >>
+  `Ring r` by rw_tac std_ss[integral_domain_is_ring] >>
+  rw_tac std_ss[Monoid_def, monoid_of_ring_nonzero_mult_def, RES_FORALL_THM] >-
+  rw_tac std_ss[integral_domain_mult_nonzero] >-
+  rw[ring_mult_assoc, ring_nonzero_element] >-
+  rw_tac std_ss[integral_domain_one_nonzero] >-
+  rw[ring_nonzero_element] >>
+  rw[ring_nonzero_element]);
+
+(* ------------------------------------------------------------------------- *)
+(* Theorems from Ring exponentiation.                                        *)
+(* ------------------------------------------------------------------------- *)
+
+(* Theorem: For integral domain: x ** n IN R+ *)
+(* Proof: by induction on n.
+   Base case: x ** 0 IN R+
+      since x ** 0 = #1  by ring_exp_0
+      hence true by integral_domain_one_nonzero.
+   Step case: x ** n IN R+ ==> x ** SUC n IN R+
+      since x ** SUC n = x * x ** n   by ring_exp_SUC
+      hence true by integral_domain_mult_nonzero, by induction hypothesis.
+*)
+val integral_domain_exp_nonzero = store_thm(
+  "integral_domain_exp_nonzero",
+  ``!r:'a ring. IntegralDomain r ==> !x. x IN R+ ==> !n. x ** n IN R+``,
+  rpt strip_tac >>
+  `Ring r` by rw_tac std_ss[integral_domain_is_ring] >>
+  Induct_on `n` >| [
+    rw[integral_domain_one_nonzero, ring_nonzero_element],
+    rw_tac std_ss[ring_exp_SUC, integral_domain_mult_nonzero, ring_nonzero_element]
+  ]);
+
+(* Theorem: For integral domain, x ** n = #0 <=> n <> 0 /\ x = #0 *)
+(* Proof: by integral_domain_exp_nonzero and ring_zero_exp. *)
+val integral_domain_exp_eq_zero = store_thm(
+  "integral_domain_exp_eq_zero",
+  ``!r:'a ring. IntegralDomain r ==> !x. x IN R ==> !n. (x ** n = #0) <=> n <> 0 /\ (x = #0)``,
+  rpt strip_tac >>
+  `Ring r /\ (#1 <> #0)` by rw[integral_domain_is_ring] >>
+  metis_tac[integral_domain_exp_nonzero, ring_nonzero_eq, ring_zero_exp, ring_exp_element]);
+
+(* Theorem: For m < n, x IN R+ /\ x ** m = x ** n ==> x ** (n-m) = #1 *)
+(* Proof:
+     x ** (n-m) * x ** m
+   = x ** ((n-m) + m)         by ring_exp_add
+   = x ** n                   by arithmetic, m < n
+   = x ** m                   by given
+   = #1 * x ** m              by ring_mult_lone
+
+   Hence (x ** (n-m) - #1) * x ** m = #0  by ring_mult_ladd
+   By no-zero-divisor property of Integral Domain,
+   x ** (n-m) - #1 = 0, or x ** (n-m) = #1.
+*)
+val integral_domain_exp_eq = store_thm(
+  "integral_domain_exp_eq",
+  ``!r:'a ring. IntegralDomain r ==> !x. x IN R+ ==> !m n. m < n /\ (x ** m = x ** n) ==> (x ** (n-m) = #1)``,
+  rpt strip_tac >>
+  `Ring r` by rw_tac std_ss[integral_domain_is_ring] >>
+  `#1 IN R+ /\ !k. x ** k IN R+` by rw_tac std_ss[integral_domain_one_nonzero, integral_domain_exp_nonzero] >>
+  `!z. z IN R+ ==> z IN R` by rw_tac std_ss[ring_nonzero_element] >>
+  `(n-m) + m = n` by decide_tac >>
+  `x ** (n-m) * x ** m = x ** ((n-m) + m)` by rw_tac std_ss[ring_exp_add] >>
+  `_ = #1 * x ** m` by rw_tac std_ss[ring_mult_lone] >>
+  `x ** (n - m) * x ** m - #1 * x ** m = #0` by rw_tac std_ss[ring_sub_eq_zero, ring_mult_element] >>
+  `x ** (n - m) * x ** m + (-#1) * x ** m = #0` by metis_tac[ring_sub_def, ring_neg_mult] >>
+  `(x ** (n-m) + (-#1)) * x ** m = #0` by rw_tac std_ss[ring_mult_ladd, ring_neg_element] >>
+  `(x ** (n-m) - #1) * x ** m = #0` by metis_tac[ring_sub_def] >>
+  `(x ** (n-m) - #1) IN R` by rw_tac std_ss[ring_sub_element] >>
+  metis_tac[ring_sub_eq_zero, integral_domain_zero_product, ring_nonzero_eq]);
+
+(* ------------------------------------------------------------------------- *)
+(* Finite Integral Domain.                                                   *)
+(* ------------------------------------------------------------------------- *)
+
+(* Theorem: FINITE IntegralDomain r ==> !x in R+, ?k. 0 < k /\ (x ** k = #1) *)
+(* Proof: by finite_monoid_exp_not_distinct and integral_domain_exp_eq. *)
+val finite_integral_domain_period_exists = store_thm(
+  "finite_integral_domain_period_exists",
+  ``!r:'a ring. FiniteIntegralDomain r ==> !x. x IN R+ ==> ?k. 0 < k /\ (x ** k = #1)``,
+  rpt strip_tac >>
+  `IntegralDomain r /\ FINITE R /\ Ring r` by metis_tac[FiniteIntegralDomain_def, IntegralDomain_def] >>
+  `Monoid r.prod /\ (r.prod.carrier = R)` by rw_tac std_ss[ring_mult_monoid] >>
+  `!z. z IN R+ ==> z IN R` by rw_tac std_ss[ring_nonzero_element] >>
+  `?h k. (x ** h = x ** k) /\ (h <> k)` by rw_tac std_ss[finite_monoid_exp_not_distinct, FiniteMonoid_def] >>
+  Cases_on `h < k` >| [
+    `0 < k - h` by decide_tac,
+    `k < h /\ 0 < h - k` by decide_tac
+  ] >> metis_tac[integral_domain_exp_eq]);
+
+(* Theorem: FINITE IntegralDomain r ==> all x IN R+ are invertible. *)
+(* Proof:
+   Eventually this reduces to:
+   (1) x * y = #1 /\ y * x = #1 ==> x <> #0
+       By contradiction.
+       If x = #0, then x * y = #0    by ring_mult_lzero
+       but contradicts x * y = #1    by given
+       as #1 <> #0 for Integral Domains.
+   (2) x <> #0 ==> ?y. y IN R /\ (x * y = #1) /\ (y * x = #1)
+       Since FINITE IntegralDomain r,
+       ?k. 0 < k /\ (x ** k = #1)    by finite_integral_domain_period_exists
+       i.e. 1 <= k, or 0 <= (k-1).
+       Let h = k - 1, then
+       x ** h * x = x ** k = #1      by ring_exp_add, and
+       x * x ** h = x ** k = #1      by ring_exp_add,
+       so just take y = x ** h.
+*)
+val finite_integral_domain_nonzero_invertible = store_thm(
+  "finite_integral_domain_nonzero_invertible",
+  ``!r:'a ring. FiniteIntegralDomain r ==> (monoid_invertibles r.prod = R+ )``,
+  rpt strip_tac >>
+  `IntegralDomain r` by metis_tac[FiniteIntegralDomain_def] >>
+  `Ring r /\ (#1 <> #0)` by rw[integral_domain_is_ring] >>
+  `Monoid r.prod /\ (r.prod.carrier = R) /\ (#1 = #1)` by rw[ring_mult_monoid] >>
+  rw_tac std_ss[monoid_invertibles_def, ring_nonzero_eq, EXTENSION, EQ_IMP_THM, GSPECIFICATION] >| [
+    metis_tac[ring_mult_lzero],
+    `x IN R+ /\ (x ** 1 = x)` by rw_tac std_ss[ring_nonzero_eq, ring_exp_1] >>
+    `?k. 0 < k /\ (x ** k = #1)` by rw_tac std_ss[finite_integral_domain_period_exists] >>
+    qexists_tac `x ** (k-1)` >>
+    `(1 + (k-1) = k) /\ ((k - 1) + 1 = k)` by decide_tac >>
+    metis_tac[ring_exp_add, ring_exp_element]
+  ]);
+
+(* Theorem: FiniteIntegralDomain r ==> (F* = monoid_invertibles f* *)
+(* Proof:
+   Note Ring r                               by integral_domain_is_ring
+    and #0 NOTIN R+                          by ring_nonzero_eq
+    But monoid_invertibles r.prod = R+       by finite_integral_domain_nonzero_invertible [1]
+   Thus #0 NOTIN monoid_invertibles r.prod   by above [2]
+   with AbelianMonoid r.prod                 by ring_mult_abelian_monoid, Ring r
+        F*
+      = R+                                   by ring_nonzero_mult_carrier
+      = monoid_invertibles r.prod            by above [1]
+      = monoid_invertibles f*                by abelian_monoid_invertible_excluding, [2]
+*)
+val finite_integral_domain_nonzero_invertible_alt = store_thm(
+  "finite_integral_domain_nonzero_invertible_alt",
+  ``!r:'a ring. FiniteIntegralDomain r ==> (monoid_invertibles f* = F* )``,
+  rpt (stripDup[FiniteIntegralDomain_def]) >>
+  `Ring r` by rw[integral_domain_is_ring] >>
+  `#0 NOTIN R+` by rw[ring_nonzero_eq] >>
+  `monoid_invertibles r.prod = R+` by rw_tac std_ss[finite_integral_domain_nonzero_invertible] >>
+  `AbelianMonoid r.prod` by rw[ring_mult_abelian_monoid] >>
+  `monoid_invertibles f* = monoid_invertibles r.prod` by rw[abelian_monoid_invertible_excluding] >>
+  rw[ring_nonzero_mult_carrier]);
+
+(* Theorem: FiniteIntegralDomain r ==> Group f* *)
+(* Proof:
+   By Group_def, this is to show:
+   (1) Monoid f*, true                  by integral_domain_nonzero_monoid
+   (2) monoid_invertibles f* = F*, true by finite_integral_domain_nonzero_invertible_alt
+*)
+val finite_integral_domain_nonzero_group = store_thm(
+  "finite_integral_domain_nonzero_group",
+  ``!r:'a ring. FiniteIntegralDomain r ==> Group f*``,
+  rpt (stripDup[FiniteIntegralDomain_def]) >>
+  rw_tac std_ss[Group_def] >-
+  rw[integral_domain_nonzero_monoid] >>
+  rw[finite_integral_domain_nonzero_invertible_alt]);
+
+(* ------------------------------------------------------------------------- *)
+(* Integral Domain Element Order                                             *)
+(* ------------------------------------------------------------------------- *)
+
+(* Theorem: IntegralDomain r ==> !x. order r.prod x = order f* x *)
+(* Proof:
+      forder x
+    = order f* x                                                        by notation
+    = case OLEAST k. period f* x k of NONE => 0 | SOME k => k           by order_def
+    = case OLEAST k. 0 < k /\ (f*.exp x k = f*.id) of NONE => 0 | SOME k => k  by period_def
+    = case OLEAST k. 0 < k /\ (x ** k = #1) of NONE => 0 | SOME k => k  by integral_domain_nonzero_mult_property
+    = case OLEAST k. period r.prod x k of NONE => 0 | SOME k => k       by period_def
+    = order r.prod x                                                    by order_def
+*)
+val integral_domain_nonzero_order = store_thm(
+  "integral_domain_nonzero_order",
+  ``!r:'a ring. IntegralDomain r ==> !x. order r.prod x = order f* x``,
+  rw_tac std_ss[order_def, period_def, integral_domain_nonzero_mult_property]);
+
+(* Theorem: IntegralDomain r ==> (order f* #0 = 0) *)
+(* Proof:
+   By order_def, period_def, integral_domain_nonzero_mult_property, this is to show that:
+      ((n = 0) \/ #0 ** n <> #1) \/ ?m. m < n /\ m <> 0 /\ (#0 ** m = #1)
+   By contradiction, suppose n <> 0 /\ #0 ** n = #1.
+   Note Ring r /\ #1 <> #0        by IntegralDomain_def
+   Thus #0 ** n = #0              by ring_zero_exp
+   This gives #0 = #1, contradicting #1 <> #0.
+*)
+Theorem integral_domain_order_zero:
+  !r:'a ring. IntegralDomain r ==> (order f* #0 = 0)
+Proof
+  rw_tac std_ss[order_def, period_def] >>
+  DEEP_INTRO_TAC whileTheory.OLEAST_INTRO >>
+  rw[] >>
+  rfs[integral_domain_nonzero_mult_property] >>
+  spose_not_then strip_assume_tac >>
+  fs[IntegralDomain_def] >> rfs[ring_zero_exp, AllCaseEqs()]
+QED
+
+(* Theorem: FiniteIntegralDomain r ==> !x. x IN R+ ==> (order f* x <> 0) *)
+(* Proof:
+   Note ?n. 0 < n /\ (n ** k = #1)           by finite_integral_domain_period_exists
+     or ?n. n <> 0 /\ (f*.exp x n = f*.id)   by integral_domain_nonzero_mult_property
+     or forder x <> 0                        by order_def, period_def
+*)
+val integral_domain_order_nonzero = store_thm(
+  "integral_domain_order_nonzero",
+  ``!r:'a ring. FiniteIntegralDomain r ==> !x. x IN R+ ==> (order f* x <> 0)``,
+  rw_tac std_ss[order_def, period_def] >>
+  DEEP_INTRO_TAC whileTheory.OLEAST_INTRO >>
+  rw[] >>
+  `IntegralDomain r` by fs[FiniteIntegralDomain_def] >>
+  metis_tac[finite_integral_domain_period_exists, integral_domain_nonzero_mult_property, NOT_ZERO_LT_ZERO]);
+
+(* Theorem: FiniteIntegralDomain r ==> !x. x IN R ==> ((order f* x = 0) <=> (x = #0)) *)
+(* Proof:
+   If part: x IN R /\ forder x = 0 ==> x = #0
+      By contradiction, suppose x <> #0.
+      Then x IN R+                      by ring_nonzero_eq
+       and forder x <> 0                by integral_domain_order_nonzero
+      This contradicts forder x = 0.
+   Only-if part: forder #0 = 0, true    by integral_domain_order_zero
+*)
+val integral_domain_order_eq_0 = store_thm(
+  "integral_domain_order_eq_0",
+  ``!r:'a ring. FiniteIntegralDomain r ==> !x. x IN R ==> ((order f* x = 0) <=> (x = #0))``,
+  rpt (stripDup[FiniteIntegralDomain_def]) >>
+  rw[EQ_IMP_THM] >-
+  metis_tac[integral_domain_order_nonzero, ring_nonzero_eq] >>
+  rw[integral_domain_order_zero]);
+
+(* ------------------------------------------------------------------------- *)
+(* Integral Domain Characteristic.                                           *)
+(* ------------------------------------------------------------------------- *)
+
+(* Theorem: IntegralDomain r ==> (char r = 0) \/ prime (char r) *)
+(* Proof:
+   If char r = 0, it is trivial.
+   If char r <> 0,
+   first note that  #1 <> #0      by integral_domain_one_ne_zero
+   Hence char r <> 1              by char_property
+   Now proceed by contradication.
+   Let p be a prime that divides (char r), 1 < p < (char r).
+   i.e.  char r = k * p           with k < (char r).
+   then  ##(char r) = #0          by char_property
+   means  ##(k * p) = #0          by substitution
+   or   ## k * ## p = #0          by ring_num_mult
+   ==>  ## k = #0  or ## p = #0   by integral_domain_zero_product
+   Either case, this violates the minimality of (char r) given by char_minimal.
+*)
+val integral_domain_char = store_thm(
+  "integral_domain_char",
+  ``!r:'a ring. IntegralDomain r ==> (char r = 0) \/ (prime (char r))``,
+  rpt strip_tac >>
+  Cases_on `char r = 0` >-
+  rw_tac std_ss[] >>
+  rw_tac std_ss[] >>
+  `Ring r /\ #1 <> #0` by rw[integral_domain_is_ring] >>
+  `char r <> 1` by metis_tac[char_property, ring_num_1] >>
+  (spose_not_then strip_assume_tac) >>
+  `?p. prime p /\ p divides (char r)` by rw_tac std_ss[PRIME_FACTOR] >>
+  `?k. char r = k * p` by rw_tac std_ss[GSYM divides_def] >>
+  `k divides (char r)` by metis_tac[divides_def, MULT_COMM] >>
+  `0 < p /\ 1 < p` by rw_tac std_ss[PRIME_POS, ONE_LT_PRIME] >>
+  `0 <> k` by metis_tac[MULT] >>
+  `0 < k /\ p <> 1` by decide_tac >>
+  `p <= char r /\ k <= char r` by rw_tac std_ss[DIVIDES_LE] >>
+  `p <> char r` by metis_tac[] >>
+  `k <> char r` by metis_tac[MULT_EQ_ID, MULT_COMM] >>
+  `p < char r /\ k < char r /\ 0 < char r` by decide_tac >>
+  `#0 = ##(char r)` by rw_tac std_ss[char_property] >>
+  `_ = ## k * ## p` by rw_tac std_ss[ring_num_mult] >>
+  metis_tac[integral_domain_zero_product, char_minimal, ring_num_element]);
+
+(* ------------------------------------------------------------------------- *)
+(* Primes are irreducible in an Integral Domain                              *)
+(* ------------------------------------------------------------------------- *)
+
+Theorem prime_is_irreducible:
+  !r p. IntegralDomain r /\ p IN r.carrier /\ ring_prime r p
+        /\ p <> r.sum.id /\ ~Unit r p
+        ==> irreducible r p
+Proof
+  rw[ring_prime_def]
+  \\ simp[irreducible_def, ring_nonzero_def]
+  \\ `Ring r` by fs[IntegralDomain_def]
+  \\ rw[]
+  \\ fs[ring_divides_def, PULL_EXISTS]
+  \\ simp[Invertibles_carrier, monoid_invertibles_element]
+  \\ Cases_on`x = #0` \\ gs[]
+  \\ Cases_on`y = #0` \\ gs[]
+  \\ first_x_assum(qspecl_then[`x`,`y`,`#1`]mp_tac)
+  \\ simp[] \\ strip_tac
+  >- (
+    `x = x * (s * y)` by metis_tac[ring_mult_assoc, ring_mult_comm]
+    \\ `#1 * x = x /\ x * #1 = x` by metis_tac[ring_mult_rone, ring_mult_lone]
+    \\ `x = (s * y) * x` by metis_tac[ring_mult_comm, ring_mult_element]
+    \\ qspec_then`r`mp_tac integral_domain_mult_lcancel
+    \\ impl_tac >- simp[]
+    \\ disch_then(qspecl_then[`x`,`#1`,`s * y`]mp_tac) \\ simp[]
+    \\ metis_tac[ring_mult_comm] )
+  >- (
+    `y = y * (s * x)` by metis_tac[ring_mult_assoc, ring_mult_comm]
+    \\ `#1 * y = y /\ y * #1 = y` by metis_tac[ring_mult_rone, ring_mult_lone]
+    \\ `y = (s * x) * y` by metis_tac[ring_mult_comm, ring_mult_element]
+    \\ qspec_then`r`mp_tac integral_domain_mult_lcancel
+    \\ impl_tac >- simp[]
+    \\ disch_then(qspecl_then[`y`,`#1`,`s * x`]mp_tac) \\ simp[]
+    \\ metis_tac[ring_mult_comm] )
+QED
+
+(* ------------------------------------------------------------------------- *)
+(* Prime factorizations are unique (up to order and associates)              *)
+(* ------------------------------------------------------------------------- *)
+
+Theorem integral_domain_divides_prime:
+  !r p x. IntegralDomain r /\ x IN r.carrier /\ p IN r.carrier /\
+          p <> r.sum.id /\ ring_prime r p /\ ~Unit r p /\ ~Unit r x /\
+          ring_divides r x p
+          ==>
+          ring_associates r x p
+Proof
+  rw[ring_associates_def]
+  \\ `Ring r` by metis_tac[IntegralDomain_def]
+  \\ drule_then (drule_then drule) prime_is_irreducible
+  \\ simp[]
+  \\ rw[irreducible_def]
+  \\ fs[ring_divides_def]
+  \\ `Unit r s` by metis_tac[]
+  \\ pop_assum mp_tac
+  \\ simp[ring_unit_property]
+  \\ simp[PULL_EXISTS]
+  \\ rpt strip_tac
+  \\ qexists_tac`v`
+  \\ qexists_tac`s`
+  \\ simp[]
+  \\ simp[Once ring_mult_comm]
+  \\ simp[GSYM ring_mult_assoc]
+  \\ metis_tac[ring_mult_comm, ring_mult_lone]
+QED
+
+Theorem integral_domain_prime_factors_unique:
+  IntegralDomain r ==>
+  !l1 l2.
+  (!m. MEM m l1 ==>
+       m IN r.carrier /\ ring_prime r m /\ m <> r.sum.id /\ ~Unit r m) /\
+  (!m. MEM m l2 ==>
+       m IN r.carrier /\ ring_prime r m /\ m <> r.sum.id /\ ~Unit r m) /\
+  ring_associates r
+    (GBAG r.prod (LIST_TO_BAG l1))
+    (GBAG r.prod (LIST_TO_BAG l2)) ==>
+  ?l3. PERM l2 l3 /\ LIST_REL (ring_associates r) l1 l3
+Proof
+  strip_tac
+  \\ `Ring r` by metis_tac[IntegralDomain_def]
+  \\ Induct \\ simp[]
+  >- (
+    Cases \\ rw[]
+    \\ spose_not_then strip_assume_tac
+    \\ pop_assum mp_tac
+    \\ DEP_REWRITE_TAC[GBAG_INSERT]
+    \\ simp[SUBSET_DEF, IN_LIST_TO_BAG]
+    \\ conj_asm1_tac >- metis_tac[Ring_def]
+    \\ simp[ring_associates_def]
+    \\ rpt strip_tac
+    \\ qmatch_asmsub_abbrev_tac`GBAG r.prod b0`
+    \\ `GBAG r.prod b0 IN r.prod.carrier`
+    by ( irule GBAG_in_carrier \\ simp[SUBSET_DEF, Abbr`b0`, IN_LIST_TO_BAG] )
+    \\ `!v. v IN r.carrier ==> r.prod.id <> r.prod.op h v`
+    by metis_tac[ring_unit_property]
+    \\ first_x_assum(qspec_then`r.prod.op s (GBAG r.prod b0)`mp_tac)
+    \\ rfs[]
+    \\ metis_tac[ring_unit_property, ring_mult_comm, ring_mult_assoc] )
+  \\ rpt strip_tac
+  \\ pop_assum mp_tac
+  \\ DEP_REWRITE_TAC[GBAG_INSERT]
+  \\ simp[SUBSET_DEF, IN_LIST_TO_BAG]
+  \\ conj_asm1_tac >- metis_tac[Ring_def]
+  \\ `GBAG r.prod (LIST_TO_BAG l1) IN r.prod.carrier`
+  by ( irule GBAG_in_carrier \\ simp[SUBSET_DEF, IN_LIST_TO_BAG] )
+  \\ `GBAG r.prod (LIST_TO_BAG l2) IN r.prod.carrier`
+  by ( irule GBAG_in_carrier \\ simp[SUBSET_DEF, IN_LIST_TO_BAG] )
+  \\ strip_tac
+  \\ `ring_divides r h (GBAG r.prod (LIST_TO_BAG l2))`
+  by (
+    simp[ring_divides_def] \\ rfs[ring_associates_def]
+    \\ pop_assum mp_tac \\ simp[ring_unit_property]
+    \\ strip_tac
+    \\ qexists_tac`r.prod.op (GBAG r.prod (LIST_TO_BAG l1)) v`
+    \\ simp[]
+    \\ last_x_assum(mp_tac o Q.AP_TERM`r.prod.op v`)
+    \\ simp[GSYM ring_mult_assoc]
+    \\ simp[Once ring_mult_comm]
+    \\ simp[GSYM ring_mult_assoc]
+    \\ metis_tac[ring_mult_comm, ring_mult_lone])
+  \\ simp[PULL_EXISTS]
+  \\ `SET_OF_BAG (LIST_TO_BAG l2) SUBSET r.carrier`
+  by simp[SUBSET_DEF, IN_LIST_TO_BAG]
+  \\ `?q. BAG_IN q (LIST_TO_BAG l2) /\ ring_divides r h q`
+  by metis_tac[ring_prime_divides_product, FINITE_LIST_TO_BAG]
+  \\ fs[IN_LIST_TO_BAG]
+  \\ `ring_associates r h q` by metis_tac[integral_domain_divides_prime]
+  \\ qmatch_asmsub_rename_tac`ring_divides r p q`
+  \\ drule (#1(EQ_IMP_RULE MEM_SPLIT_APPEND_first))
+  \\ strip_tac
+  \\ `PERM l2 (q::(pfx++sfx))`
+  by (
+    simp[Once PERM_SYM]
+    \\ rewrite_tac[GSYM APPEND_ASSOC, APPEND]
+    \\ irule CONS_PERM
+    \\ simp[] )
+  \\ `LIST_TO_BAG l2 = LIST_TO_BAG (q::(pfx++sfx))`
+  by simp[PERM_LIST_TO_BAG]
+  \\ `GBAG r.prod (LIST_TO_BAG l2) =
+      r.prod.op q (GBAG r.prod (LIST_TO_BAG (pfx++sfx)))`
+  by (
+    simp[]
+    \\ DEP_REWRITE_TAC[GBAG_INSERT]
+    \\ fs[SUBSET_DEF] )
+  \\ `∃s. Unit r s /\ p = s * q` by metis_tac[ring_associates_def]
+  \\ qmatch_asmsub_abbrev_tac`r.prod.op p p1`
+  \\ qmatch_asmsub_abbrev_tac`rassoc (p * p1) p2`
+  \\ `∃s2. Unit r s2 /\ p * p1 = s2 * p2` by metis_tac[ring_associates_def]
+  \\ qmatch_asmsub_abbrev_tac`q * q1`
+  \\ `q1 IN r.prod.carrier`
+  by ( qunabbrev_tac`q1` \\ irule GBAG_in_carrier \\ fs[SUBSET_DEF] )
+  \\ `s IN r.carrier /\ s2 IN r.carrier` by metis_tac[ring_unit_property]
+  \\ `r.prod.carrier = r.carrier` by simp[]
+  \\ `∃s3. s3 IN r.carrier /\ s * s3 = #1` by metis_tac[ring_unit_property]
+  \\ `s3 * (s * q * p1) = s3 * (s2 * q * q1)` by metis_tac[ring_mult_assoc]
+  \\ `q IN r.carrier` by fs[SUBSET_DEF]
+  \\ `s3 * s * q * p1 = s3 * s2 * q * q1` by (
+    fs[] \\ rfs[ring_mult_assoc] )
+  \\ `s3 * s = #1` by simp[ring_mult_comm]
+  \\ `q * p1 = s3 * s2 * q * q1` by metis_tac[ring_mult_lone]
+  \\ `unit (s3 * s2)` by metis_tac[ring_unit_mult_eq_unit, ring_unit_property]
+  \\ `q * p1 = q * (s3 * s2) * q1` by metis_tac[ring_mult_comm, ring_mult_assoc]
+  \\ `q * p1 = q * ((s3 * s2) * q1)` by rfs[ring_mult_assoc]
+  \\ qmatch_asmsub_abbrev_tac`unit u`
+  \\ `ring_sub r (q * p1) (q * (u * q1)) = #0`
+  by metis_tac[ring_sub_eq_zero, ring_mult_element]
+  \\ `q * (ring_sub r p1 (u * q1)) = #0`
+  by (
+    DEP_REWRITE_TAC[GSYM ring_mult_rsub]
+    \\ simp[] \\ fs[] )
+  \\ `MEM q l2` by simp[]
+  \\ `ring_prime r q ∧ q <> #0 /\ ~Unit r q` by metis_tac[]
+  \\ `u IN r.carrier` by metis_tac[ring_unit_property]
+  \\ `u * q1 IN r.carrier` by metis_tac[ring_mult_element]
+  \\ `ring_sub r p1 (u * q1) = #0`
+  by metis_tac[IntegralDomain_def, ring_sub_element]
+  \\ `p1 = u * q1` by metis_tac[ring_sub_eq_zero]
+  \\ qexists_tac`q`
+  \\ first_x_assum(qspec_then`pfx ++ sfx`mp_tac)
+  \\ impl_tac
+  >- (
+    conj_tac >- (fs[] \\ metis_tac[])
+    \\ metis_tac[ring_associates_def] )
+  \\ strip_tac
+  \\ qexists_tac`l3`
+  \\ reverse conj_tac >- simp[]
+  \\ irule PERM_TRANS
+  \\ goal_assum(first_assum o mp_then Any mp_tac)
+  \\ irule PERM_MONO
+  \\ simp[]
+QED
+
+(* ------------------------------------------------------------------------- *)
+(* Principal Ideals in Integral Domain                                       *)
+(* ------------------------------------------------------------------------- *)
+
+(* Theorem: Two principal ideals are equal iff the elements are associates:
+            p IN R /\ q IN R ==> (<p> = <q> <=> ?u. unit u /\ (p = q * u) *)
+(* Proof:
+   If part: <p> = <q> ==> ?u. unit u /\ (p = q * u)
+   This part requires an integral domain, not just a ring.
+   <p> = <q> ==> <p>.carrier = <q>.carrier                        by principal_ideal_ideal, ideal_eq_ideal
+   p IN <p>.carrier = <q>.carrier ==> ?u. u IN R /\ (p = q * u)   by principal_ideal_element
+   q IN <q>.carrier = <p>.carrier ==> ?v. y IN R /\ (q = p * v)   by principal_ideal_element
+   Hence q = p * v = q * u * v.
+   In an integral domain, left-cancellation gives: q = #0 or #1 = u * v, hence u is a unit.
+   The case q = #0 means p = q * u = #0, and u can take #1.
+   Only-if part:
+   True by principal_ideal_eq_principal_ideal.
+*)
+val principal_ideal_equal_principal_ideal = store_thm(
+  "principal_ideal_equal_principal_ideal",
+  ``!r:'a ring. IntegralDomain r ==> !p q. p IN R /\ q IN R ==> ((<p> = <q>) <=> ?u. unit u /\ (p = q * u))``,
+  rewrite_tac[EQ_IMP_THM] >>
+  ntac 2 strip_tac >>
+  `Ring r` by rw[integral_domain_is_ring] >>
+  rpt strip_tac >| [
+    `<p> << r /\ <q> << r` by rw[principal_ideal_ideal] >>
+    `<p>.carrier = <q>.carrier` by rw[ideal_eq_ideal] >>
+    `?u. u IN R /\ (p = q * u)` by metis_tac[principal_ideal_has_element, principal_ideal_element] >>
+    `?v. v IN R /\ (q = p * v)` by metis_tac[principal_ideal_has_element, principal_ideal_element] >>
+    `#1 IN R /\ u * v IN R` by rw[] >>
+    `q * #1 = q` by rw[] >>
+    `_ = q * u * v` by metis_tac[] >>
+    `_ = q * (u * v)` by rw[ring_mult_assoc] >>
+    `(q = #0) \/ (u * v = #1)` by metis_tac[integral_domain_mult_lcancel] >| [
+      `p = #0` by rw[] >>
+      `unit #1` by rw[] >>
+      metis_tac[ring_mult_rone],
+      metis_tac[ring_unit_property]
+    ],
+    metis_tac[principal_ideal_eq_principal_ideal]
+  ]);
+
+(* ------------------------------------------------------------------------- *)
+(* Integral Domain Instances Documentation                                   *)
+(* ------------------------------------------------------------------------- *)
+(* Integral Domain is a special type of Ring, with data type:
+   The generic symbol for ring data is r.
+   r.carrier = Carrier set of Ring, overloaded as R.
+   r.sum     = Addition component of Ring, binary operation overloaded as +.
+   r.prod    = Multiplication component of Ring, binary operation overloaded as *.
+*)
+(* Definitions and Theorems (# are exported):
+
+   The Trivial Integral Domain (GF 2):
+   trivial_integal_domain_def |- !e0 e1. trivial_integal_domain e0 e1 =
+         <|carrier := {e0; e1};
+               sum :=  <|carrier := {e0; e1};
+                              id := e0;
+                              op := (\x y. if x = e0 then y else if y = e0 then x else e0)|>;
+              prod := <|carrier := {e0; e1};
+                             id := e1;
+                             op := (\x y. if x = e0 then e0 else if y = e0 then e0 else e1)|> |>
+   trivial_integral_domain    |- !e0 e1. e0 <> e1 ==> FiniteIntegralDomain (trivial_integal_domain e0 e1)
+
+   Multiplication in Modulo of prime p:
+   ZP_def                     |- !p. ZP p = <|carrier := count p; sum := add_mod p; prod := times_mod p|>
+   ZP_integral_domain         |- !p. prime p ==> IntegralDomain (ZP p)
+   ZP_finite                  |- !p. FINITE (ZP p).carrier
+   ZP_finite_integral_domain  |- !p. prime p ==> FiniteIntegralDomain (ZP p)
+*)
+(* ------------------------------------------------------------------------- *)
+(* The Trivial Integral Domain = GF(2) = {|0|, |1|}.                         *)
+(* ------------------------------------------------------------------------- *)
+
+val trivial_integal_domain_def = zDefine`
+  (trivial_integal_domain e0 e1) : 'a ring =
+   <| carrier := {e0; e1};
+      sum := <| carrier := {e0; e1};
+                id := e0;
+                op := (\x y. if x = e0 then y
+                             else if y = e0 then x
+                             else e0) |>;
+      prod := <| carrier := {e0; e1};
+                id := e1;
+                op := (\x y. if x = e0 then e0
+                                else if y = e0 then e0
+                                else e1) |>
+    |>
+`;
+
+(* Theorem: {|0|, |1|} is indeed a integral domain. *)
+(* Proof: by definition, the integral domain tables are:
+
+   +    |0| |1|          *  |0| |1|
+   ------------         -----------
+   |0|  |0| |1|         |0| |0| |0|
+   |1|  |1| |0|         |1| |0| |1|
+
+*)
+val trivial_integral_domain = store_thm(
+  "trivial_integral_domain",
+  ``!e0 e1. e0 <> e1 ==> FiniteIntegralDomain (trivial_integal_domain e0 e1)``,
+  rw_tac std_ss[FiniteIntegralDomain_def] THENL [
+    `!x a b. x IN {a; b} <=> ((x = a) \/ (x = b))` by rw[] THEN
+    rw_tac std_ss[IntegralDomain_def, Ring_def] THENL [
+      rw_tac std_ss[AbelianGroup_def, group_def_alt, trivial_integal_domain_def] THEN
+      metis_tac[],
+      rw_tac std_ss[AbelianMonoid_def, Monoid_def, trivial_integal_domain_def] THEN
+      rw_tac std_ss[],
+      rw_tac std_ss[trivial_integal_domain_def],
+      rw_tac std_ss[trivial_integal_domain_def],
+      (rw_tac std_ss[trivial_integal_domain_def] THEN metis_tac[]),
+      rw_tac std_ss[trivial_integal_domain_def],
+      rw_tac std_ss[trivial_integal_domain_def]
+    ],
+    rw[trivial_integal_domain_def]
+  ]);
+
+(* ------------------------------------------------------------------------- *)
+(* Z_p - Multiplication in Modulo of prime p.                                *)
+(* ------------------------------------------------------------------------- *)
+
+(* Multiplication in Modulo of prime p *)
+val ZP_def = zDefine`
+  ZP p :num ring =
+   <| carrier := count p;
+          sum := add_mod p;
+         prod := times_mod p
+    |>
+`;
+(*
+- type_of ``ZP p``;
+> val it = ``:num ring`` : hol_type
+*)
+
+(* Theorem: ZP p is an integral domain for prime p. *)
+(* Proof: check definitions.
+   The no-zero divisor property is given by EUCLID_LEMMA for prime p.
+*)
+val ZP_integral_domain = store_thm(
+  "ZP_integral_domain",
+  ``!p. prime p ==> IntegralDomain (ZP p)``,
+  rpt strip_tac >>
+  `0 < p /\ 1 < p` by rw_tac std_ss[PRIME_POS, ONE_LT_PRIME] >>
+  rw_tac std_ss[IntegralDomain_def, Ring_def] >-
+  rw_tac std_ss[ZP_def, add_mod_abelian_group] >-
+  rw_tac std_ss[ZP_def, times_mod_abelian_monoid] >-
+  rw_tac std_ss[ZP_def, add_mod_def, count_def] >-
+  rw_tac std_ss[ZP_def, times_mod_def] >-
+ (pop_assum mp_tac >>
+  pop_assum mp_tac >>
+  pop_assum mp_tac >>
+  rw_tac std_ss[ZP_def, add_mod_def, times_mod_def, count_def, GSPECIFICATION] >>
+  metis_tac[LEFT_ADD_DISTRIB, MOD_PLUS, MOD_TIMES2, LESS_MOD, MOD_MOD]) >-
+ (rw_tac std_ss[ZP_def, add_mod_def, times_mod_def] >>
+  decide_tac) >>
+  pop_assum mp_tac >>
+  pop_assum mp_tac >>
+  rw_tac std_ss[ZP_def, add_mod_def, times_mod_def, count_def, GSPECIFICATION] >>
+  rw_tac std_ss[EUCLID_LEMMA, LESS_MOD]);
+
+(* Theorem: (ZP p).carrier is FINITE. *)
+(* Proof: by FINITE_COUNT. *)
+val ZP_finite = store_thm(
+  "ZP_finite",
+  ``!p. FINITE (ZP p).carrier``,
+  rw[ZP_def]);
+
+(* Theorem: ZP p is a FINITE Integral Domain for prime p. *)
+(* Proof: by ZP_integral_domain and ZP_finite. *)
+val ZP_finite_integral_domain = store_thm(
+  "ZP_finite_integral_domain",
+  ``!p. prime p ==> FiniteIntegralDomain (ZP p)``,
+  rw_tac std_ss[ZP_integral_domain, ZP_finite, FiniteIntegralDomain_def]);
+
+(* ------------------------------------------------------------------------- *)
+(* Integers Z is the prototype Integral Domain.                              *)
+(* ------------------------------------------------------------------------- *)
 
 (* ------------------------------------------------------------------------- *)
 

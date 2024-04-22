@@ -19,7 +19,7 @@ open jcLib;
 open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
      dividesTheory gcdTheory gcdsetTheory;
 
-open monoidTheory groupTheory ringTheory ringUnitTheory fieldTheory;
+open monoidTheory groupTheory ringTheory fieldTheory;
 
 open polynomialTheory polyWeakTheory polyRingTheory polyDivisionTheory;
 
@@ -29,7 +29,7 @@ open fieldOrderTheory;
 
 open polyMonicTheory;
 
-open integralDomainTheory; (* for poly_roots_mult_id *)
+val _ = intLib.deprecate_int ();
 
 (* ------------------------------------------------------------------------- *)
 (* Polynomials Factors and Roots Documentation                               *)

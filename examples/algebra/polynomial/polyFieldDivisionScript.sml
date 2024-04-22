@@ -20,9 +20,9 @@ open jcLib;
 open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
      dividesTheory gcdTheory;
 
-open monoidTheory groupTheory ringTheory integralDomainTheory fieldTheory;
+open monoidTheory groupTheory ringTheory fieldTheory;
 
-open ringIdealTheory fieldIdealTheory;
+open fieldIdealTheory;
 
 open polynomialTheory polyWeakTheory polyRingTheory polyFieldTheory;
 

@@ -19,19 +19,16 @@ open jcLib;
 open pred_setTheory listTheory arithmeticTheory numberTheory combinatoricsTheory
      dividesTheory gcdTheory;
 
+open monoidTheory groupTheory ringTheory;
+
 open polynomialTheory polyWeakTheory polyRingTheory;
 open polyDivisionTheory polyMonicTheory;
 open polyRootTheory polyEvalTheory;
 open polyDividesTheory;
-
 open polyModuloRingTheory;
-
 open polyBinomialTheory;
 
-open monoidTheory groupTheory ringTheory
-
-open ringMapTheory;
-open ringUnitTheory;
+val _ = intLib.deprecate_int ();
 
 (* ------------------------------------------------------------------------- *)
 (* Ring Polynomial Modulo Documentation                                      *)

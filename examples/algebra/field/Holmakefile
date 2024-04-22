@@ -1,1 +1,1 @@
-INCLUDES = $(HOLDIR)/src/algebra ../ring
+INCLUDES = $(HOLDIR)/src/algebra
