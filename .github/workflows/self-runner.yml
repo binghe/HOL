@@ -40,13 +40,14 @@ on:
       Z3:
         description: 'Z3 version'
         required: false
-        default: '4.12.4'
+        default: '4.13.0'
         type: choice
         options:
         - ''
         - 2.19
         - 2.19.1
         - 4.12.4
+        - 4.13.0
       CVC:
         description: 'CVC version'
         required: false
