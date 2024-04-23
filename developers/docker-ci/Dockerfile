@@ -52,6 +52,7 @@ RUN rm -f tools-poly/poly-includes.ML
 # building HOL
 RUN ${SML} < tools/smart-configure.sml 
 RUN bin/build ${BUILDOPTS}
+RUN cd Manual && ../bin/Holmake -j2
 
 # This can be overrided by "docker run <command>"
 CMD ["/ML/HOL/bin/hol"]
