@@ -1921,28 +1921,28 @@ A theorem \(\holtxt{f}\;x_1 \cdots x_n = e\) is a code equation for \holtxt{f}, 
 \paragraph{Example: computing factorial}
 
 The following example is taken from the \ml{cv\_computeLib} examples, available in \ml{exampleTheory} in \ml{examples/cv\_compute}, and has been modified to showcase let-bindings:
-% \begin{session}
-% \begin{alltt}
-% >> load "cv_computeLib";
-% >>__ open cvTheory;
+\begin{session}
+\begin{alltt}
+>> load "cv_computeLib";
+>>__ open cvTheory;
 
-% >>_ Definition fact_def:
-%      fact n =
-%        let one = cv$Num 1 in
-%        cv_if (cv_lt n one)
-%              one
-%              (cv_mul n (fact (cv_sub n one)))
-%    Termination
-%      WF_REL_TAC `measure cv_size_alt` >>
-%      Cases >>
-%      simp [cv_size_alt_def, CaseEq "bool", c2b_def]
-%    End
+>>_ Definition fact_def:
+     fact n =
+       let one = cv$Num 1 in
+       cv_if (cv_lt n one)
+             one
+             (cv_mul n (fact (cv_sub n one)))
+   Termination
+     WF_REL_TAC `measure cv_size` >>
+     Cases >>
+     simp [cv_size_def, CaseEq "bool", c2b_def]
+   End
 
-% ##linelen_limit 75
-% >> time (cv_computeLib.cv_compute [fact_def]) ``fact (cv$Num 1234)``;
-% ##nolinelen_limit
-% \end{alltt}
-% \end{session}
+##linelen_limit 75
+>> time (cv_computeLib.cv_compute [fact_def]) ``fact (cv$Num 1234)``;
+##nolinelen_limit
+\end{alltt}
+\end{session}
 On a modern machine, the call to \holtxt{cv\_compute} finishes in less than two tenths of a second.
 
 \subsection{\texttt{Thm.compute}}
