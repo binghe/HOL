@@ -31,6 +31,12 @@ RUN apt-get install -qy build-essential graphviz git libgmp-dev wget curl procps
 # for Unicode display, learnt from Magnus Myreen
 RUN apt-get install -qy locales-all terminfo man aptitude
 
+# necessary TeXlive packages for buliding HOL manuals (+pandoc for Markdown)
+RUN apt-get install -qy texlive-latex-recommended pandoc
+
+# clean up downloaded packages after installation (this reduces Docker image sizes)
+RUN apt-get clean
+
 # 1. install Moscow ML (https://github.com/kfl/mosml.git)
 RUN wget -q -O - https://github.com/kfl/mosml/archive/refs/tags/ver-2.10.1.tar.gz | tar xzf -
 RUN make -C mosml-ver-2.10.1/src world install

@@ -30,8 +30,23 @@ RUN if [ "linux/amd64" = "$TARGETPLATFORM" ] || [ "linux/386" = "$TARGETPLATFORM
     rm z3-2.19.1.tar.gz; \
 fi
 
+# Z3 4.12.4
+RUN if [ "linux/amd64" = "$TARGETPLATFORM" ]; then \
+    wget -q https://github.com/Z3Prover/z3/releases/download/z3-4.12.4/z3-4.12.4-x64-glibc-2.35.zip; \
+    unzip z3-4.12.4-x64-glibc-2.35.zip; \
+    mv z3-4.12.4-x64-glibc-2.35 z3-4.12.4; \
+    rm z3-4.12.4-x64-glibc-2.35.zip; \
+fi
+
+RUN if [ "linux/arm64" = "$TARGETPLATFORM" ]; then \
+    wget -q https://github.com/Z3Prover/z3/releases/download/z3-4.12.4/z3-4.12.4-arm64-glibc-2.35.zip; \
+    unzip z3-4.12.4-arm64-glibc-2.35.zip; \
+    mv z3-4.12.4-arm64-glibc-2.35 z3-4.12.4; \
+    rm z3-4.12.4-arm64-glibc-2.35.zip; \
+fi
+
 # Z3 4.x
-ARG Z3_VERSION="4.12.4"
+ARG Z3_VERSION="4.13.0"
 
 RUN if [ "linux/amd64" = "$TARGETPLATFORM" ]; then \
     wget -q https://github.com/Z3Prover/z3/releases/download/z3-${Z3_VERSION}/z3-${Z3_VERSION}-x64-glibc-2.35.zip; \
@@ -61,8 +76,18 @@ fi
 
 # cvc5
 RUN if [ "linux/amd64" = "$TARGETPLATFORM" ]; then \
-    wget -q https://github.com/cvc5/cvc5/releases/latest/download/cvc5-Linux; \
-    chmod a+x cvc5-Linux; \
+    wget -q -O cvc5-Linux-static.zip https://github.com/cvc5/cvc5/releases/download/latest/cvc5-Linux-static-2024-04-23-1e267b6.zip; \
+    unzip cvc5-Linux-static.zip; \
+    rm cvc5-Linux-static.zip; \
+    ln -s cvc5-Linux-static/bin/cvc5 cvc5-Linux; \
+fi
+
+RUN if [ "linux/arm64" = "$TARGETPLATFORM" ]; then \
+    wget -q -O cvc5-Linux-arm64-static.zip https://github.com/cvc5/cvc5/releases/download/latest/cvc5-Linux-arm64-static-2024-04-23-1e267b6.zip; \
+    unzip cvc5-Linux-arm64-static.zip; \
+    mv cvc5-Linux-arm64-static cvc5-Linux-static; \
+    rm cvc5-Linux-arm64-static.zip; \
+    ln -s cvc5-Linux-static/bin/cvc5 cvc5-Linux; \
 fi
 
 # NuRV 2.0.0
