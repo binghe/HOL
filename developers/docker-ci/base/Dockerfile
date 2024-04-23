@@ -32,7 +32,7 @@ RUN apt-get install -qy build-essential graphviz git libgmp-dev wget curl procps
 RUN apt-get install -qy locales-all terminfo man aptitude
 
 # necessary TeXlive packages for buliding HOL manuals (+pandoc for Markdown)
-RUN apt-get install -qy texlive-latex-recommended pandoc
+RUN apt-get install -qy texlive-latex-recommended pandoc latexmk
 
 # clean up downloaded packages after installation (this reduces Docker image sizes)
 RUN apt-get clean
