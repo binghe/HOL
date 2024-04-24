@@ -7789,11 +7789,6 @@ val sum_image_by_composition_without_inj = store_thm(
 (* Pre-image Theorems.                                                       *)
 (* ------------------------------------------------------------------------- *)
 
-(*
-- IN_IMAGE;
-> val it = |- !y s f. y IN IMAGE f s <=> ?x. (y = f x) /\ x IN s : thm
-*)
-
 (* Define preimage *)
 val preimage_def = Define `preimage f s y = { x | x IN s /\ (f x = y) }`;
 
@@ -7811,6 +7806,12 @@ val in_preimage = store_thm(
   ``!f s x y. x IN preimage f s y <=> (x IN s /\ (f x = y))``,
   rw[preimage_def]);
 (* same as theorem above. *)
+
+Theorem preimage_alt :
+    !f s y. preimage f s y = PREIMAGE f {y} INTER s
+Proof
+    rw [Once EXTENSION, in_preimage, IN_PREIMAGE, Once CONJ_SYM]
+QED
 
 (* Theorem: (preimage f s y) SUBSET s *)
 (* Proof:
