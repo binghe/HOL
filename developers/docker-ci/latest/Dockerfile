@@ -110,3 +110,8 @@ RUN if [ "linux/arm64" = "$TARGETPLATFORM" ]; then \
 fi
 
 ENV HOL4_SMV_EXECUTABLE=/ML/solvers/NuRV
+
+# necessary TeXlive packages for buliding HOL manuals (+pandoc for Markdown)
+RUN apt-get install -qy texlive-latex-recommended pandoc latexmk texlive-latex-extra \
+                        texlive-fonts-extra texlive-science
+RUN apt-get clean
