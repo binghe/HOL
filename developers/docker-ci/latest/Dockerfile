@@ -75,18 +75,13 @@ RUN if [ "linux/386" = "$TARGETPLATFORM" ]; then \
 fi
 
 # cvc5
+ARG CVC5_VERSION="1.1.2"
+
 RUN if [ "linux/amd64" = "$TARGETPLATFORM" ]; then \
-    wget -q -O cvc5-Linux-static.zip https://github.com/cvc5/cvc5/releases/download/latest/cvc5-Linux-static-2024-04-23-1e267b6.zip; \
+    wget -q -O cvc5-Linux-static.zip \
+         https://github.com/cvc5/cvc5/releases/download/cvc5-${CVC5_VERSION}/cvc5-Linux-static.zip; \
     unzip cvc5-Linux-static.zip; \
     rm cvc5-Linux-static.zip; \
-    ln -s cvc5-Linux-static/bin/cvc5 cvc5-Linux; \
-fi
-
-RUN if [ "linux/arm64" = "$TARGETPLATFORM" ]; then \
-    wget -q -O cvc5-Linux-arm64-static.zip https://github.com/cvc5/cvc5/releases/download/latest/cvc5-Linux-arm64-static-2024-04-23-1e267b6.zip; \
-    unzip cvc5-Linux-arm64-static.zip; \
-    mv cvc5-Linux-arm64-static cvc5-Linux-static; \
-    rm cvc5-Linux-arm64-static.zip; \
     ln -s cvc5-Linux-static/bin/cvc5 cvc5-Linux; \
 fi
 
