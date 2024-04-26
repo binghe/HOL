@@ -24,18 +24,22 @@ with conclusion of the form {R3 s u} to one with conclusion {R1 s t /\ R2 t u}.
 \EXAMPLE
 Consider the simple inequality goal:
 {
-  # g `n < (m + 2) * (n + 1)`;;
+  > g `n < (m + 2) * (n + 1)`;
 }
 We can use the following transitivity theorem
 {
-  # LET_TRANS;;
-  val it : thm = |- !m n p. m <= n /\ n < p ==> m < p
+  > LESS_EQ_LESS_TRANS;
+  val it = |- !m n p. m <= n /\ n < p ==> m < p: thm
 }
 {
-  # e(TRANS_TAC LET_TRANS `1 * (n + 1)`);;
-  val it : goalstack = 1 subgoal (1 total)
-
-  `n <= 1 * (n + 1) /\ 1 * (n + 1) < (m + 2) * (n + 1)`
+  # e (TRANS_TAC LESS_EQ_LESS_TRANS ``1 * (n + 1)``);
+  OK..
+  1 subgoal:
+  val it =
+   
+   n <= 1 * (n + 1) /\ 1 * (n + 1) < (m + 2) * (n + 1)
+   
+   : proof
 }
 
 \FAILURE
