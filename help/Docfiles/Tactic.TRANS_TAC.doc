@@ -13,7 +13,7 @@ When applied to a `transitivity' theorem, i.e. one of the form
 {
    |- !xs. R1 x y /\ R2 y z ==> R3 x z
 }
-\noindent and a term {t}, {TRANS_TAC} produces a tactic that reduces a goal
+and a term {t}, {TRANS_TAC} produces a tactic that reduces a goal
 with conclusion of the form {R3 s u} to one with conclusion {R1 s t /\ R2 t u}.
 {
        A ?- R3 s u

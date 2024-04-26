@@ -606,7 +606,7 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
-(* General Cartesian product / dependent function space (from sets.ml)       *)
+(* General Cartesian product / dependent function space (sets.ml/card.ml)    *)
 (* ------------------------------------------------------------------------- *)
 
 Definition cartesian_product :
@@ -620,6 +620,17 @@ Theorem IN_CARTESIAN_PRODUCT :
         EXTENSIONAL k x /\ (!i. i IN k ==> x i IN s i)
 Proof
     RW_TAC std_ss' [cartesian_product]
+QED
+
+(* NOTE: HOL-Light's set_exp is denoted by "^_c", which cannot be parsed in
+         HOL-Light. HOL-Light's theorem [exp_c] is HOL4's [set_exp_def].
+ *)
+Theorem CARTESIAN_PRODUCT_CONST :
+    !(s :'a -> bool) (t :'b -> bool).
+        cartesian_product t (\i. s) = s ** t
+Proof
+    rw [Once EXTENSION, cartesian_product, set_exp_def, EXTENSIONAL_def]
+ >> SET_TAC []
 QED
 
 Theorem RESTRICTION_IN_CARTESIAN_PRODUCT :
@@ -800,14 +811,15 @@ Proof
  >> MATCH_MP_TAC RING_LNEG_UNIQUE >> rw []
 QED
 
-(*
 Theorem RING_TOTALIZATION_lemma :
-    !r :'a ring.
+    !r :'a Ring.
             ~(trivial_ring r) /\ INFINITE univ(:'b) /\ univ(:'a) <=_c univ(:'b)
-            ==> ring_carrier(product_ring (:'b) (\i. r)) =_c univ(:'b -> bool)
+            ==> ring_carrier(product_ring univ(:'b) (\(i :'b). r)) =_c univ(:'b -> bool)
 Proof
-      REPEAT STRIP_TAC THEN REWRITE_TAC[PRODUCT_RING] THEN
-      REWRITE_TAC[CARTESIAN_PRODUCT_CONST; GSYM CARD_EXP_UNIV] THEN
+    rpt STRIP_TAC
+ >> REWRITE_TAC[PRODUCT_RING, CARTESIAN_PRODUCT_CONST, UNIV_fun_exp]
+ >> cheat
+(*
       MATCH_MP_TAC CARD_EXP_ABSORB THEN ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
        [TRANS_TAC CARD_LE_TRANS `{ring_0 r:A,ring_1 r:A}` THEN
         CONJ_TAC THENL
@@ -822,8 +834,10 @@ Proof
         ASM_SIMP_TAC[CARD_LE_SUBSET; SUBSET_UNIV] THEN
         TRANS_TAC CARD_LE_TRANS `(:B)` THEN ASM_REWRITE_TAC[] THEN
         SIMP_TAC[CARD_EXP_CANTOR; CARD_LT_IMP_LE]])
+ *)
 QED
 
+(*
 Theorem RING_TOTALIZATION :
     !r :'a ring.
           (?r' f. ring_carrier r' = (:1) /\

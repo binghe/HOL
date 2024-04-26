@@ -722,6 +722,9 @@ Proof
   simp[set_exp_def]
 QED
 
+(* |- univ(:'b) ** univ(:'a) = univ(:'a -> 'b) *)
+Theorem CARD_EXP_UNIV = GSYM UNIV_fun_exp
+
 Theorem BIJ_functions_agree:
   !f g s t. BIJ f s t /\ (!x. x IN s ==> (f x = g x)) ==> BIJ g s t
 Proof
@@ -2218,6 +2221,19 @@ val COUNTABLE = store_thm
 (* Relational variant of =_c is sometimes useful.                            *)
 (* ------------------------------------------------------------------------- *)
 
+(* TODO
+let EQ_C_BIJECTIONS = prove
+ (`!s:A->bool t:B->bool.
+        s =_c t <=> ?f g. (!x. x IN s ==> f x IN t /\ g(f x) = x) /\
+                          (!y. y IN t ==> g y IN s /\ f(g y) = y)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[eq_c] THEN
+  AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
+  X_GEN_TAC `f:A->B` THEN REWRITE_TAC[] THEN
+  EQ_TAC THENL [STRIP_TAC; MESON_TAC[]] THEN
+  EXISTS_TAC `(\y. @x. x IN s /\ f x = y):B->A` THEN
+  ASM_MESON_TAC[]);;
+*)
+
 val EQ_C = store_thm ("EQ_C",
  ``!s t. s =_c t <=>
    ?R:'a#'b->bool. (!x y. R(x,y) ==> x IN s /\ y IN t) /\
@@ -3342,5 +3358,45 @@ Proof
   simp[PULL_EXISTS] >>
   simp[destWO_mkWO] >> simp[strict_def, Abbr‘W2’]
 QED
+
+Theorem CARD_EXP_POWERSET :
+    !s :'a -> bool. univ(:bool) ** s =_c {t | t SUBSET s}
+Proof
+    cheat
+ (*
+    GEN_TAC
+ >> REWRITE_TAC [set_exp_def, EQ_C_BIJECTIONS; IN_UNIV] THEN
+  MAP_EVERY EXISTS_TAC
+   [`\P:A->bool. {x | x IN s /\ P x}`;
+    `\t x:A. if x IN s then x IN t else @b. F`] THEN
+  SIMP_TAC[IN_ELIM_THM] THEN SET_TAC[]);;
+  *)
+QED
+
+Theorem CARD_EXP_CANTOR :
+    !s :'a -> bool. s <_c univ(:bool) ** s
+Proof
+    GEN_TAC
+ >> TRANS_TAC CARD_LTE_TRANS “{t :'a->bool | t SUBSET s}”
+ >> REWRITE_TAC[CANTOR_THM]
+ >> MATCH_MP_TAC CARD_EQ_IMP_LE
+ >> ONCE_REWRITE_TAC[CARD_EQ_SYM]
+ >> REWRITE_TAC[CARD_EXP_POWERSET]
+QED
+
+(*
+let CARD_EXP_ABSORB = prove
+ (`!s:A->bool t:B->bool.
+        INFINITE t /\ (:bool) <=_c s /\ s <=_c (:bool) ^_c t
+        ==> s ^_c t =_c (:bool) ^_c t`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM CARD_LE_ANTISYM] THEN
+  ASM_SIMP_TAC[CARD_LE_EXP_LEFT; CARD_LE_REFL] THEN
+  TRANS_TAC CARD_LE_TRANS `((:bool) ^_c t) ^_c (t:B->bool)` THEN
+  ASM_SIMP_TAC[CARD_LE_EXP_LEFT] THEN MATCH_MP_TAC CARD_EQ_IMP_LE THEN
+  TRANS_TAC CARD_EQ_TRANS `(:bool) ^_c ((t:B->bool) *_c t)` THEN
+  SIMP_TAC[ONCE_REWRITE_RULE[CARD_EQ_SYM] CARD_EXP_MUL] THEN
+  MATCH_MP_TAC CARD_EXP_CONG THEN
+  ASM_SIMP_TAC[CARD_SQUARE_INFINITE; CARD_EQ_REFL]);;
+*)
 
 val _ = export_theory()
