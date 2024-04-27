@@ -811,30 +811,30 @@ Proof
  >> MATCH_MP_TAC RING_LNEG_UNIQUE >> rw []
 QED
 
-Theorem RING_TOTALIZATION_lemma :
+Theorem RING_TOTALIZATION_lemma[local] :
     !r :'a Ring.
             ~(trivial_ring r) /\ INFINITE univ(:'b) /\ univ(:'a) <=_c univ(:'b)
             ==> ring_carrier(product_ring univ(:'b) (\(i :'b). r)) =_c univ(:'b -> bool)
 Proof
     rpt STRIP_TAC
  >> REWRITE_TAC[PRODUCT_RING, CARTESIAN_PRODUCT_CONST, UNIV_fun_exp]
- >> cheat
-(*
-      MATCH_MP_TAC CARD_EXP_ABSORB THEN ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
-       [TRANS_TAC CARD_LE_TRANS `{ring_0 r:A,ring_1 r:A}` THEN
-        CONJ_TAC THENL
-         [SIMP_TAC[CARD_LE_CARD; FINITE_INSERT; FINITE_EMPTY; FINITE_BOOL;
-                   CARD_BOOL; CARD_CLAUSES] THEN
-          RULE_ASSUM_TAC(REWRITE_RULE[TRIVIAL_RING_10]) THEN
-          ASM_REWRITE_TAC[IN_INSERT; NOT_IN_EMPTY] THEN
-          CONV_TAC NUM_REDUCE_CONV;
-          MATCH_MP_TAC CARD_LE_SUBSET THEN
-          REWRITE_TAC[INSERT_SUBSET; EMPTY_SUBSET; RING_0; RING_1]];
-        TRANS_TAC CARD_LE_TRANS `(:A)` THEN
-        ASM_SIMP_TAC[CARD_LE_SUBSET; SUBSET_UNIV] THEN
-        TRANS_TAC CARD_LE_TRANS `(:B)` THEN ASM_REWRITE_TAC[] THEN
-        SIMP_TAC[CARD_EXP_CANTOR; CARD_LT_IMP_LE]])
- *)
+ >> MATCH_MP_TAC CARD_EXP_ABSORB >> art []
+ >> CONJ_TAC (* 2 subgoals *)
+ >| [ (* goal 1 (of 2) *)
+      TRANS_TAC CARD_LE_TRANS “{ring_0 r:'a;ring_1 r:'a}” \\
+      CONJ_TAC >| (* 2 subgoals *)
+      [ (* goal 1.1 (of 2) *)
+        RULE_ASSUM_TAC(REWRITE_RULE[TRIVIAL_RING_10]) \\
+        rw [CARD_LE_CARD, FINITE_INSERT, FINITE_EMPTY, FINITE_BOOL,
+            CARD_BOOL, CARD_CLAUSES],
+        (* goal 1.2 (of 2) *)
+        MATCH_MP_TAC CARD_LE_SUBSET \\
+        REWRITE_TAC[INSERT_SUBSET, EMPTY_SUBSET, RING_0, RING_1] ],
+      (* goal 2 (of 2) *)
+      TRANS_TAC CARD_LE_TRANS “univ(:'a)” \\
+      ASM_SIMP_TAC std_ss [CARD_LE_SUBSET, SUBSET_UNIV] \\
+      TRANS_TAC CARD_LE_TRANS “univ(:'b)” >> art [] \\
+      SIMP_TAC std_ss[CARD_EXP_CANTOR, CARD_LT_IMP_LE] ]
 QED
 
 (*
@@ -858,7 +858,7 @@ Proof
      [`product_ring (:num#A) (\i. (r:A ring))`; `(:num#A->bool)`]
      ISOMORPHIC_COPY_OF_RING))) THEN
     ANTS_TAC THENL
-     [MATCH_MP_TAC lemma THEN
+     [MATCH_MP_TAC RING_TOTALIZATION_lemma THEN
       ASM_REWRITE_TAC[GSYM MUL_C_UNIV; INFINITE; CARD_MUL_FINITE_EQ] THEN
       REWRITE_TAC[UNIV_NOT_EMPTY; DE_MORGAN_THM; GSYM INFINITE] THEN
       REWRITE_TAC[num_INFINITE; MUL_C_UNIV] THEN
