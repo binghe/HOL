@@ -22,7 +22,7 @@ val INT_ARITH = intLib.ARITH_PROVE;
 
 val std_ss' = std_ss ++ PRED_SET_ss;
 
-(* NOTE: HOL4's ‘trivial_ring’ is HOL-Light's ‘singleton_ring’ *)
+(* NOTE: HOL4's ‘trivial_ring’ is HOL-Light's ‘singleton_ring’ (also here) *)
 val _ = hide "trivial_ring";
 
 (* ------------------------------------------------------------------------- *)
@@ -38,10 +38,8 @@ Proof
 QED
 
 (* This defines a new type “:'a Ring” *)
-val Ring_tydef = rich_new_type {tyname = "Ring",
-                                exthm = EXISTS_Ring,
-                                ABS = "toRing",
-                                REP = "fromRing"};
+val Ring_tydef = rich_new_type {tyname = "Ring", exthm = EXISTS_Ring,
+                                ABS = "toRing", REP = "fromRing"};
 
 (* |- Ring (fromRing g) *)
 Theorem Ring_fromRing[simp] = #termP_term_REP Ring_tydef
@@ -601,30 +599,61 @@ Definition singleton_ring :
     singleton_ring (a :'a) = toRing (ring$trivial_ring a)
 End
 
+Theorem RING_HOMOMORPHISM :
+    !r r' (f :'a -> 'b).
+        ring_homomorphism (r,r') (f :'a -> 'b) <=>
+        IMAGE f (ring_carrier r) SUBSET ring_carrier r' /\
+        f(ring_1 r) = ring_1 r' /\
+        (!x y. x IN ring_carrier r /\ y IN ring_carrier r
+               ==> f(ring_add r x y) = ring_add r' (f x) (f y)) /\
+        (!x y. x IN ring_carrier r /\ y IN ring_carrier r
+               ==> f(ring_mul r x y) = ring_mul r' (f x) (f y))
+Proof
+  cheat
 (*
-let RING_HOMOMORPHISM_FROM_TRIVIAL_RING = prove
- (`!(f:A->B) r r'.
+  REPEAT GEN_TAC THEN REWRITE_TAC[ring_homomorphism] THEN
+  EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  RULE_ASSUM_TAC(REWRITE_RULE[SUBSET; FORALL_IN_IMAGE]) THEN
+  MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+   [REPEAT(FIRST_X_ASSUM(MP_TAC o SPECL [`ring_0 r:A`; `ring_0 r:A`])) THEN
+    SIMP_TAC[RING_0; RING_ADD_LZERO] THEN
+    ASM_MESON_TAC[RING_LZERO_UNIQUE; RING_0];
+    REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
+    MATCH_MP_TAC RING_LNEG_UNIQUE THEN
+    REPEAT(FIRST_X_ASSUM(MP_TAC o SPECL [`x:A`; `ring_neg r x:A`])) THEN
+    ASM_SIMP_TAC[RING_NEG; RING_ADD_RNEG]]
+ *)
+QED
+
+Theorem RING_HOMOMORPHISM_FROM_TRIVIAL_RING :
+    !(f :'a -> 'b) r r'.
         trivial_ring r
         ==> (ring_homomorphism(r,r') f <=>
-             trivial_ring r' /\ IMAGE f (ring_carrier r) = {ring_0 r'})`,
+             trivial_ring r' /\ IMAGE f (ring_carrier r) = {ring_0 r'})
+Proof
   REPEAT GEN_TAC THEN
-  GEN_REWRITE_TAC LAND_CONV [trivial_ring] THEN DISCH_TAC THEN EQ_TAC THENL
-   [ASM_SIMP_TAC[ring_homomorphism; TRIVIAL_RING_10] THEN
-    MP_TAC(ISPEC `r:A ring` RING_1) THEN ASM SET_TAC[];
-    SIMP_TAC[trivial_ring; RING_HOMOMORPHISM] THEN
+  GEN_REWRITE_TAC LAND_CONV empty_rewrites [trivial_ring] THEN
+  DISCH_TAC THEN EQ_TAC THENL
+  [ (* goal 1 (of 2) *)
+    ASM_SIMP_TAC std_ss[ring_homomorphism, TRIVIAL_RING_10] THEN
+    MP_TAC(ISPEC “r:'a Ring” RING_1) THEN ASM_SET_TAC[],
+    (* goal 2 (of 2) *)
+    SIMP_TAC std_ss[trivial_ring, RING_HOMOMORPHISM] THEN
     STRIP_TAC THEN FIRST_X_ASSUM(ASSUME_TAC o MATCH_MP
-     (SET_RULE `IMAGE f s = {a} ==> !x. x IN s ==> f x = a`)) THEN
-    ASM_SIMP_TAC[RING_0; RING_1; RING_ADD; RING_MUL;
-                 RING_ADD_LZERO; RING_MUL_LZERO] THEN
-    MP_TAC(ISPEC `r':B ring` RING_0) THEN
-    MP_TAC(ISPEC `r':B ring` RING_1) THEN ASM SET_TAC[]]);;
+     (SET_RULE “IMAGE f s = {a} ==> !x. x IN s ==> f x = a”)) THEN
+    ASM_SIMP_TAC std_ss[RING_0, RING_1, RING_ADD, RING_MUL,
+                        RING_ADD_LZERO, RING_MUL_LZERO] THEN
+    MP_TAC(ISPEC “r':'b Ring” RING_0) THEN
+    MP_TAC(ISPEC “r':'b Ring” RING_1) THEN ASM_SET_TAC[] ]
+QED
 
-let RING_MONOMORPHISM_FROM_TRIVIAL_RING = prove
- (`!(f:A->B) r r'.
+Theorem RING_MONOMORPHISM_FROM_TRIVIAL_RING :
+    !(f :'a -> 'b) r r'.
         trivial_ring r
-        ==> (ring_monomorphism (r,r') f <=> ring_homomorphism (r,r') f)`,
-  REWRITE_TAC[ring_monomorphism; trivial_ring] THEN SET_TAC[]);;
-*)
+        ==> (ring_monomorphism (r,r') f <=> ring_homomorphism (r,r') f)
+Proof
+  REWRITE_TAC[ring_monomorphism, trivial_ring] THEN SET_TAC[]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* General Cartesian product / dependent function space (sets.ml/card.ml)    *)
@@ -858,23 +887,25 @@ Proof
       SIMP_TAC std_ss[CARD_EXP_CANTOR, CARD_LT_IMP_LE] ]
 QED
 
-(*
 Theorem RING_TOTALIZATION :
-    !r :'a ring.
-          (?r' f. ring_carrier r' = (:1) /\
+    !r :'a Ring.
+          (?r' f. ring_carrier r' = {()} /\
                   ring_monomorphism(r,r') f) \/
           (?r' f. ring_carrier r' = univ(:(num # 'a) -> bool)/\
                   ring_monomorphism(r,r') f)
 Proof
-    GEN_TAC THEN ASM_CASES_TAC `trivial_ring(r:A ring)` THENL
-     [DISJ1_TAC THEN EXISTS_TAC `singleton_ring one` THEN
-      EXISTS_TAC `(\x. one):A->1` THEN
-      ASM_SIMP_TAC[RING_MONOMORPHISM_FROM_TRIVIAL_RING;
-                   RING_HOMOMORPHISM_FROM_TRIVIAL_RING] THEN
+    GEN_TAC THEN ASM_CASES_TAC “trivial_ring (r:'a Ring)”
+ >- ( DISJ1_TAC THEN EXISTS_TAC “singleton_ring one” THEN
+      EXISTS_TAC “(\x. one) :'a -> unit” THEN
+      ASM_SIMP_TAC std_ss[RING_MONOMORPHISM_FROM_TRIVIAL_RING,
+                          RING_HOMOMORPHISM_FROM_TRIVIAL_RING] THEN
+      cheat (*
       ASM_SIMP_TAC[TRIVIAL_RING_SINGLETON_RING; SINGLETON_RING] THEN
       REWRITE_TAC[IMAGE_CONST; RING_CARRIER_NONEMPTY] THEN
-      REWRITE_TAC[EXTENSION; IN_UNIV; IN_SING; FORALL_ONE_THM];
-      DISJ2_TAC] THEN
+      REWRITE_TAC[EXTENSION; IN_UNIV; IN_SING; FORALL_ONE_THM] *) )
+ >> cheat
+ (*
+      DISJ2_TAC ] THEN
     MP_TAC(snd(EQ_IMP_RULE(ISPECL
      [`product_ring (:num#A) (\i. (r:A ring))`; `(:num#A->bool)`]
      ISOMORPHIC_COPY_OF_RING))) THEN
@@ -893,7 +924,7 @@ Proof
     MATCH_MP_TAC RING_MONOMORPHISM_COMPOSE THEN
     EXISTS_TAC `product_ring (:num#A) (\i. (r:A ring))` THEN
     REWRITE_TAC[RING_MONOMORPHISM_DIAGONAL_UNIV] THEN
-    ASM_SIMP_TAC[RING_ISOMORPHISM_IMP_MONOMORPHISM]) in
-*)
+    ASM_SIMP_TAC[RING_ISOMORPHISM_IMP_MONOMORPHISM]) *)
+QED
 
 val _ = export_theory();

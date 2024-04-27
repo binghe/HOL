@@ -11753,8 +11753,7 @@ val trivial_ring = store_thm(
     rw_tac std_ss[trivial_ring_def, FINITE_SING]
   ]);
 
-
-(* |- !z. Ring (trivial_ring z) *)
+(* |- !z. Ring (trivial_ring z), added for ringLibTheory by Chun Tian *)
 Theorem trivial_ring_thm =
         trivial_ring |> REWRITE_RULE [FiniteRing_def] |> cj 1
 
