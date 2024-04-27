@@ -11,7 +11,7 @@
 open HolKernel boolLib bossLib Parse;
 
 open combinTheory pred_setTheory pred_setLib arithmeticTheory integerTheory
-     intLib mesonLib hurdUtils cardinalTheory oneTheory newtypeTools;
+     intLib mesonLib hurdUtils cardinalTheory oneTheory newtypeTools tautLib;
 
 open monoidTheory groupTheory ringTheory;
 
@@ -286,6 +286,59 @@ Theorem RING_RNEG_UNIQUE :
         ==> ring_neg r y = x
 Proof
   MESON_TAC[RING_ADD_EQ_0, RING_ADD_SYM]
+QED
+
+Theorem RING_ADD_LCANCEL :
+    !r x y (z :'a).
+        x IN ring_carrier r /\ y IN ring_carrier r /\ z IN ring_carrier r
+        ==> (ring_add r x y = ring_add r x z <=> y = z)
+Proof
+    Q.X_GEN_TAC ‘r0’
+ >> rpt GEN_TAC
+ >> STRIP_TAC
+ >> Q.ABBREV_TAC ‘r = fromRing r0’
+ >> irule ring_add_lcancel
+ >> rw [Abbr ‘r’]
+QED
+
+Theorem RING_ADD_RCANCEL :
+    !r x y (z :'a).
+        x IN ring_carrier r /\ y IN ring_carrier r /\ z IN ring_carrier r
+        ==> (ring_add r x z = ring_add r y z <=> x = y)
+Proof
+  MESON_TAC[RING_ADD_SYM, RING_ADD_LCANCEL]
+QED
+
+Theorem RING_ADD_EQ_RIGHT :
+    !r x (y :'a).
+        x IN ring_carrier r /\ y IN ring_carrier r
+        ==> (ring_add r x y = y <=> x = ring_0 r)
+Proof
+  MESON_TAC[RING_ADD_RCANCEL, RING_NEG, RING_0, RING_ADD_LZERO]
+QED
+
+Theorem RING_ADD_EQ_LEFT :
+    !r x (y :'a).
+        x IN ring_carrier r /\ y IN ring_carrier r
+        ==> (ring_add r x y = x <=> y = ring_0 r)
+Proof
+  MESON_TAC[RING_ADD_EQ_RIGHT, RING_ADD_SYM]
+QED
+
+Theorem RING_LZERO_UNIQUE :
+    !r x (y :'a).
+        x IN ring_carrier r /\ y IN ring_carrier r /\ ring_add r x y = y
+        ==> x = ring_0 r
+Proof
+  MESON_TAC[RING_ADD_EQ_RIGHT]
+QED
+
+Theorem RING_RZERO_UNIQUE :
+    !r x (y :'a).
+        x IN ring_carrier r /\ y IN ring_carrier r /\ ring_add r x y = x
+        ==> y = ring_0 r
+Proof
+  MESON_TAC[RING_ADD_EQ_LEFT]
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -609,20 +662,19 @@ Theorem RING_HOMOMORPHISM :
         (!x y. x IN ring_carrier r /\ y IN ring_carrier r
                ==> f(ring_mul r x y) = ring_mul r' (f x) (f y))
 Proof
-  cheat
-(*
   REPEAT GEN_TAC THEN REWRITE_TAC[ring_homomorphism] THEN
   EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
-  RULE_ASSUM_TAC(REWRITE_RULE[SUBSET; FORALL_IN_IMAGE]) THEN
+  RULE_ASSUM_TAC(SIMP_RULE std_ss[SUBSET_DEF, FORALL_IN_IMAGE]) THEN
   MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
-   [REPEAT(FIRST_X_ASSUM(MP_TAC o SPECL [`ring_0 r:A`; `ring_0 r:A`])) THEN
-    SIMP_TAC[RING_0; RING_ADD_LZERO] THEN
-    ASM_MESON_TAC[RING_LZERO_UNIQUE; RING_0];
+  [ (* goal 1 (of 2) *)
+    REPEAT(FIRST_X_ASSUM(MP_TAC o SPECL [“ring_0 r:'a”, “ring_0 r:'a”])) THEN
+    SIMP_TAC std_ss[RING_0, RING_ADD_LZERO] THEN
+    ASM_MESON_TAC[RING_LZERO_UNIQUE, RING_0],
+    (* goal 2 (of 2) *)
     REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
     MATCH_MP_TAC RING_LNEG_UNIQUE THEN
-    REPEAT(FIRST_X_ASSUM(MP_TAC o SPECL [`x:A`; `ring_neg r x:A`])) THEN
-    ASM_SIMP_TAC[RING_NEG; RING_ADD_RNEG]]
- *)
+    REPEAT(FIRST_X_ASSUM(MP_TAC o SPECL [“x :'a”, “ring_neg r (x :'a)”])) THEN
+    ASM_SIMP_TAC std_ss[RING_NEG, RING_ADD_RNEG] ]
 QED
 
 Theorem RING_HOMOMORPHISM_FROM_TRIVIAL_RING :
@@ -654,6 +706,26 @@ Theorem RING_MONOMORPHISM_FROM_TRIVIAL_RING :
 Proof
   REWRITE_TAC[ring_monomorphism, trivial_ring] THEN SET_TAC[]
 QED
+
+(*
+let SINGLETON_RING = prove
+ (`(!a:A. ring_carrier(singleton_ring a) = {a}) /\
+   (!a:A. ring_0(singleton_ring a) = a) /\
+   (!a:A. ring_1(singleton_ring a) = a) /\
+   (!a:A. ring_neg(singleton_ring a) = \x. a) /\
+   (!a:A. ring_add(singleton_ring a) = \x y. a) /\
+   (!a:A. ring_mul(singleton_ring a) = \x y. a)`,
+  REWRITE_TAC[AND_FORALL_THM] THEN GEN_TAC THEN
+  MP_TAC(fst(EQ_IMP_RULE
+   (ISPEC(rand(rand(snd(strip_forall(concl singleton_ring)))))
+   (CONJUNCT2 ring_tybij)))) THEN
+  REWRITE_TAC[GSYM singleton_ring] THEN SIMP_TAC[IN_SING] THEN
+  SIMP_TAC[ring_carrier; ring_0; ring_1; ring_neg; ring_add; ring_mul]);;
+
+let TRIVIAL_RING_SINGLETON_RING = prove
+ (`!a:A. trivial_ring(singleton_ring a)`,
+  REWRITE_TAC[trivial_ring; SINGLETON_RING]);;
+*)
 
 (* ------------------------------------------------------------------------- *)
 (* General Cartesian product / dependent function space (sets.ml/card.ml)    *)
