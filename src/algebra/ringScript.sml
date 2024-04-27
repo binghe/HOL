@@ -11753,6 +11753,11 @@ val trivial_ring = store_thm(
     rw_tac std_ss[trivial_ring_def, FINITE_SING]
   ]);
 
+
+(* |- !z. Ring (trivial_ring z) *)
+Theorem trivial_ring_thm =
+        trivial_ring |> REWRITE_RULE [FiniteRing_def] |> cj 1
+
 (* Theorem: char (trivial_ring z) = 1 *)
 (* Proof:
    By fiddling with properties of OLEAST.

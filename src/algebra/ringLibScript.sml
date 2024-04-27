@@ -22,6 +22,9 @@ val INT_ARITH = intLib.ARITH_PROVE;
 
 val std_ss' = std_ss ++ PRED_SET_ss;
 
+(* NOTE: HOL4's ‘trivial_ring’ is HOL-Light's ‘singleton_ring’ *)
+val _ = hide "trivial_ring";
+
 (* ------------------------------------------------------------------------- *)
 (*  'a Ring as type bijections of a subset of 'a ring                        *)
 (* ------------------------------------------------------------------------- *)
@@ -30,20 +33,8 @@ val std_ss' = std_ss ++ PRED_SET_ss;
 Theorem EXISTS_Ring[local] :
     ?r. Ring r
 Proof
-    Q.EXISTS_TAC ‘<| carrier := {ARB};
-                         sum := <| carrier := {ARB};
-                                        op := (\x y. ARB);
-                                        id := ARB |>;
-                        prod := <| carrier := {ARB};
-                                        op := (\x y. ARB);
-                                        id := ARB |> |>’
- >> RW_TAC std_ss [Ring_def]
- >| [ (* goal 1 (of 2) *)
-      RW_TAC std_ss [AbelianGroup_def, Group_def, Monoid_def, IN_SING,
-                     monoid_invertibles_def] \\
-      simp [],
-      (* goal 2 (of 2) *)
-      RW_TAC std_ss [AbelianMonoid_def, Monoid_def, IN_SING] ]
+    Q.EXISTS_TAC ‘ring$trivial_ring ARB’
+ >> rw [trivial_ring_thm]
 QED
 
 (* This defines a new type “:'a Ring” *)
@@ -594,6 +585,7 @@ QED
 (* Charaterizing trivial (zero) rings.                                       *)
 (* ------------------------------------------------------------------------- *)
 
+(* NOTE: ringTheory.trivial_ring is a theorem *)
 Definition trivial_ring :
     trivial_ring r <=> ring_carrier r = {ring_0 r}
 End
@@ -604,6 +596,35 @@ Proof
   REWRITE_TAC[trivial_ring, EXTENSION, IN_SING] THEN
   MESON_TAC[RING_1, RING_0, RING_MUL_LID, RING_MUL_LZERO]
 QED
+
+Definition singleton_ring :
+    singleton_ring (a :'a) = toRing (ring$trivial_ring a)
+End
+
+(*
+let RING_HOMOMORPHISM_FROM_TRIVIAL_RING = prove
+ (`!(f:A->B) r r'.
+        trivial_ring r
+        ==> (ring_homomorphism(r,r') f <=>
+             trivial_ring r' /\ IMAGE f (ring_carrier r) = {ring_0 r'})`,
+  REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC LAND_CONV [trivial_ring] THEN DISCH_TAC THEN EQ_TAC THENL
+   [ASM_SIMP_TAC[ring_homomorphism; TRIVIAL_RING_10] THEN
+    MP_TAC(ISPEC `r:A ring` RING_1) THEN ASM SET_TAC[];
+    SIMP_TAC[trivial_ring; RING_HOMOMORPHISM] THEN
+    STRIP_TAC THEN FIRST_X_ASSUM(ASSUME_TAC o MATCH_MP
+     (SET_RULE `IMAGE f s = {a} ==> !x. x IN s ==> f x = a`)) THEN
+    ASM_SIMP_TAC[RING_0; RING_1; RING_ADD; RING_MUL;
+                 RING_ADD_LZERO; RING_MUL_LZERO] THEN
+    MP_TAC(ISPEC `r':B ring` RING_0) THEN
+    MP_TAC(ISPEC `r':B ring` RING_1) THEN ASM SET_TAC[]]);;
+
+let RING_MONOMORPHISM_FROM_TRIVIAL_RING = prove
+ (`!(f:A->B) r r'.
+        trivial_ring r
+        ==> (ring_monomorphism (r,r') f <=> ring_homomorphism (r,r') f)`,
+  REWRITE_TAC[ring_monomorphism; trivial_ring] THEN SET_TAC[]);;
+*)
 
 (* ------------------------------------------------------------------------- *)
 (* General Cartesian product / dependent function space (sets.ml/card.ml)    *)
