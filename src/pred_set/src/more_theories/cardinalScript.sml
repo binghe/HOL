@@ -2907,7 +2907,7 @@ Theorem CARD_EXP_MUL :
 Proof
     rw [Once cardeq_SYM, set_exp_product]
 QED
-        
+
 Theorem CARD_EXP_POWERSET :
     !s :'a -> bool. univ(:bool) ** s =_c {t | t SUBSET s}
 Proof
@@ -2933,7 +2933,7 @@ Theorem CARD_EXP_ABSORB :
     !(s :'a -> bool) (t :'b -> bool).
         INFINITE t /\ univ(:bool) <=_c s /\ s <=_c univ(:bool) ** t
         ==> s ** t =_c univ(:bool) ** t
-Proof        
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM CARD_LE_ANTISYM] THEN
   ASM_SIMP_TAC std_ss [CARD_LE_EXP_LEFT, CARD_LE_REFL] THEN
   TRANS_TAC CARD_LE_TRANS “(univ(:bool) ** t) ** (t:'b->bool)” THEN
