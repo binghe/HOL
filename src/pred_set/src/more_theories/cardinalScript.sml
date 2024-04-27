@@ -2221,18 +2221,22 @@ val COUNTABLE = store_thm
 (* Relational variant of =_c is sometimes useful.                            *)
 (* ------------------------------------------------------------------------- *)
 
-(* TODO
-let EQ_C_BIJECTIONS = prove
- (`!s:A->bool t:B->bool.
+Theorem EQ_C_BIJECTIONS :
+    !(s :'a -> bool) (t :'b -> bool).
         s =_c t <=> ?f g. (!x. x IN s ==> f x IN t /\ g(f x) = x) /\
-                          (!y. y IN t ==> g y IN s /\ f(g y) = y)`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[eq_c] THEN
-  AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
-  X_GEN_TAC `f:A->B` THEN REWRITE_TAC[] THEN
-  EQ_TAC THENL [STRIP_TAC; MESON_TAC[]] THEN
-  EXISTS_TAC `(\y. @x. x IN s /\ f x = y):B->A` THEN
-  ASM_MESON_TAC[]);;
-*)
+                          (!y. y IN t ==> g y IN s /\ f(g y) = y)
+Proof
+  REPEAT GEN_TAC THEN SIMP_TAC std_ss [eq_c] THEN
+  AP_TERM_TAC THEN GEN_REWRITE_TAC I empty_rewrites [FUN_EQ_THM] THEN
+  Q.X_GEN_TAC ‘f’ THEN SIMP_TAC std_ss [] THEN
+  EQ_TAC THENL [STRIP_TAC, MESON_TAC[]] THEN
+  Q.EXISTS_TAC `(\y. @x. x IN s /\ f x = y)` THEN
+(* HOL-Light's ASM_MESON_TAC seems more powerful than HOL4's:
+   ASM_MESON_TAC[]
+ *)
+  rw [] >> SELECT_ELIM_TAC \\
+  fs [EXISTS_UNIQUE_DEF]
+QED
 
 val EQ_C = store_thm ("EQ_C",
  ``!s t. s =_c t <=>
@@ -3362,15 +3366,12 @@ QED
 Theorem CARD_EXP_POWERSET :
     !s :'a -> bool. univ(:bool) ** s =_c {t | t SUBSET s}
 Proof
-    cheat
- (*
     GEN_TAC
- >> REWRITE_TAC [set_exp_def, EQ_C_BIJECTIONS; IN_UNIV] THEN
-  MAP_EVERY EXISTS_TAC
-   [`\P:A->bool. {x | x IN s /\ P x}`;
-    `\t x:A. if x IN s then x IN t else @b. F`] THEN
-  SIMP_TAC[IN_ELIM_THM] THEN SET_TAC[]);;
-  *)
+ >> REWRITE_TAC [set_exp_def, EQ_C_BIJECTIONS, IN_UNIV]
+ >> qexistsl_tac [‘\P. {x | x IN s /\ P x}’,
+                  ‘\t x. if x IN s then x IN t else ARB’]
+ >> SIMP_TAC std_ss [GSPECIFICATION]
+ >> SET_TAC []
 QED
 
 Theorem CARD_EXP_CANTOR :

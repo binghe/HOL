@@ -1220,6 +1220,7 @@ val impl_tac = disch_then provehyp
 val impl_keep_tac =
   disch_then (provehyp_then (fn lth => fn rth => assume_tac lth >> mp_tac rth))
 
+
 open mp_then
 fun dGEN sel pos k = sel o mp_then pos k
 val drule                  = dGEN first_assum   (Pos hd) mp_tac

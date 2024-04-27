@@ -20,9 +20,6 @@ Contents
 New features:
 -------------
 
-- `Tactic.TRANS_TAC` (ported from HOL-Light): Applies transitivity theorem to goal
-  with chosen intermediate term. See its DOC for more details.
-
 Bugs fixed:
 -----------
 
@@ -39,6 +36,9 @@ New theories:
 
 New tools:
 ----------
+
+- `Tactic.TRANS_TAC` (ported from HOL-Light): Applies transitivity theorem to goal
+  with chosen intermediate term. See its DOC for more details.
 
 New examples:
 -------------
