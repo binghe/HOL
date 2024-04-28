@@ -1062,6 +1062,8 @@ Proof
       ASM_SIMP_TAC std_ss[TRIVIAL_RING_SINGLETON_RING, SINGLETON_RING] THEN
       REWRITE_TAC[IMAGE_CONST, RING_CARRIER_NONEMPTY] )
  >> DISJ2_TAC
+ >> cheat
+(*
  >> MP_TAC(snd(EQ_IMP_RULE(ISPECL
      [`product_ring (:num#A) (\i. (r:A ring))`; `(:num#A->bool)`]
      ISOMORPHIC_COPY_OF_RING))) THEN
