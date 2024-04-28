@@ -660,12 +660,40 @@ Proof
     rw []
 QED
 
-(* RingIso_def *)
+(* NOTE: This theorem is the definition of ‘ring_isomorphism’ in HOL-Light *)
 Theorem ring_isomorphism :
     !(f :'a -> 'b) r r'.
       ring_isomorphism (r,r') (f:'a->'b) <=> ?g. ring_isomorphisms (r,r') (f,g)
 Proof
-    cheat
+    rw [RingIso_def, ring_isomorphisms]
+ >> EQ_TAC >> rw [] (* 3 subgoals *)
+ >| [ (* goal 1 (of 3) *)
+      Q.PAT_ASSUM ‘BIJ f _ _’
+        (fn th => MP_TAC (REWRITE_RULE [th]
+                           (Q.SPECL [‘f’, ‘ring_carrier r’, ‘ring_carrier r'’]
+                                    BIJ_IFF_INV))) >> STRIP_TAC \\
+      Q.EXISTS_TAC ‘g’ >> art [] \\
+      MP_TAC (Q.SPECL [‘fromRing r’, ‘fromRing r'’, ‘f’] ring_homo_sym) \\
+      qabbrev_tac ‘r1 = fromRing r’ \\
+      qabbrev_tac ‘r2 = fromRing r'’ \\
+     ‘Ring r1 /\ Ring r2’ by rw [Abbr ‘r1’, Abbr ‘r2’] >> art [] \\
+      Suff ‘RingHomo (LINV f r1.carrier) r2 r1 = RingHomo g r2 r1’ >- rw [] \\
+      MATCH_MP_TAC ring_homo_cong >> rw [] \\
+      irule BIJ_IS_INJ \\
+      qexistsl_tac [‘f’, ‘r1.carrier’, ‘r2.carrier’] >> rw []
+      >- (irule BIJ_LINV_INV >> Q.EXISTS_TAC ‘r2.carrier’ >> art []) \\
+      Q.ABBREV_TAC ‘h = LINV f r1.carrier’ \\
+     ‘BIJ h r2.carrier r1.carrier’ by PROVE_TAC [BIJ_LINV_BIJ] \\
+      POP_ASSUM MP_TAC >> rw [BIJ_ALT, IN_FUNSET],
+      (* goal 2 (of 2) *)
+      ASM_REWRITE_TAC [],
+      (* goal 2 (of 1) *)
+      rw [BIJ_IFF_INV]
+      >- (Q.PAT_X_ASSUM ‘RingHomo f _ _’ MP_TAC \\
+          rw [RingHomo_def]) \\
+      Q.EXISTS_TAC ‘g’ >> rw [] \\
+      Q.PAT_X_ASSUM ‘RingHomo g _ _’ MP_TAC \\
+      rw [RingHomo_def] ]
 QED
 
 (*
