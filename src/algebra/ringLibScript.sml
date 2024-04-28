@@ -341,6 +341,12 @@ Proof
   MESON_TAC[RING_ADD_EQ_LEFT]
 QED
 
+Theorem RING_CARRIER_NONEMPTY :
+    !(r:'a Ring). ~(ring_carrier r = {})
+Proof
+  MESON_TAC[MEMBER_NOT_EMPTY, RING_0]
+QED
+
 (* ------------------------------------------------------------------------- *)
 (* Homomorphisms etc.                                                        *)
 (* ------------------------------------------------------------------------- *)
@@ -633,6 +639,86 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
+(* Relation of isomorphism.                                                  *)
+(* ------------------------------------------------------------------------- *)
+
+Definition ring_isomorphisms :
+    ring_isomorphisms (r,r') ((f:'a->'b),g) <=>
+        ring_homomorphism (r,r') f /\
+        ring_homomorphism (r',r) g /\
+        (!x. x IN ring_carrier r ==> g(f x) = x) /\
+        (!y. y IN ring_carrier r' ==> f(g y) = y)
+End
+
+Overload ring_isomorphism =
+        “\(r,s) (f :'a -> 'b). RingIso f (fromRing r) (fromRing s)”
+
+Theorem ring_isomorphism_def :
+    !(f :'a -> 'b) r r'. ring_isomorphism (r,r') f <=>
+                         RingIso f (fromRing r) (fromRing r')
+Proof
+    rw []
+QED
+
+(* RingIso_def *)
+Theorem ring_isomorphism :
+    !(f :'a -> 'b) r r'.
+      ring_isomorphism (r,r') (f:'a->'b) <=> ?g. ring_isomorphisms (r,r') (f,g)
+Proof
+    cheat
+QED
+
+(*
+let isomorphic_ring = new_definition
+ `r isomorphic_ring r' <=> ?f:A->B. ring_isomorphism (r,r') f`;;
+
+let ISOMORPHIC_COPY_OF_RING = prove
+ (`!(r:'a ring) (s:'b->bool).
+        (?r'. ring_carrier r' = s /\ r isomorphic_ring r') <=>
+        ring_carrier r =_c s`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [MESON_TAC[ISOMORPHIC_RING_CARD_EQ; CARD_EQ_TRANS];
+    REWRITE_TAC[EQ_C_BIJECTIONS; LEFT_IMP_EXISTS_THM]] THEN
+  MAP_EVERY X_GEN_TAC [`f:A->B`; `g:B->A`] THEN STRIP_TAC THEN
+  ABBREV_TAC
+   `r' = ring(s:B->bool,
+              f (ring_0 r:A),
+              f (ring_1 r),
+              (\x. f(ring_neg r (g x))),
+              (\x1 x2. f(ring_add r (g x1) (g x2))),
+              (\x1 x2. f(ring_mul r (g x1) (g x2))))` THEN
+  SUBGOAL_THEN
+   `ring_carrier r' = s /\
+    ring_0 r' = (f:A->B) (ring_0 r) /\
+    ring_1 r' = f (ring_1 r) /\
+    ring_neg r' = (\x. f(ring_neg r (g x))) /\
+    ring_add r' = (\x1 x2. f(ring_add r (g x1) (g x2))) /\
+    ring_mul r' = (\x1 x2. f(ring_mul r (g x1) (g x2)))`
+  STRIP_ASSUME_TAC THENL
+   [EXPAND_TAC "r'" THEN PURE_REWRITE_TAC
+     [GSYM PAIR_EQ; ring_carrier; ring_0; ring_1; ring_neg; ring_add; ring_mul;
+      BETA_THM; PAIR] THEN
+    REWRITE_TAC[GSYM(CONJUNCT2 ring_tybij)] THEN
+    REWRITE_TAC(map (GSYM o REWRITE_RULE[FUN_EQ_THM])
+     [ring_carrier; ring_0; ring_1; ring_neg; ring_add; ring_mul]) THEN
+    SUBGOAL_THEN `s = IMAGE (f:A->B) (ring_carrier r)` SUBST1_TAC THENL
+     [ASM SET_TAC[]; ALL_TAC] THEN
+    REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
+    REWRITE_TAC[FORALL_IN_IMAGE] THEN
+    REWRITE_TAC[RIGHT_IMP_FORALL_THM; IMP_IMP; GSYM CONJ_ASSOC] THEN
+    ASM_SIMP_TAC[FUN_IN_IMAGE; RING_0; RING_1;
+                 RING_NEG; RING_ADD; RING_MUL] THEN
+    MESON_TAC[RING_ADD_SYM; RING_ADD_ASSOC; RING_ADD_LZERO;
+              RING_ADD_LNEG; RING_MUL_SYM; RING_MUL_ASSOC;
+              RING_MUL_LID; RING_ADD_LDISTRIB];
+    EXISTS_TAC `r':B ring` THEN ASM_REWRITE_TAC[isomorphic_ring] THEN
+    EXISTS_TAC `f:A->B` THEN REWRITE_TAC[ring_isomorphism] THEN
+    EXISTS_TAC `g:B->A` THEN REWRITE_TAC[ring_isomorphisms] THEN
+    ASM_SIMP_TAC[ring_homomorphism; RING_0; RING_1; SUBSET; FORALL_IN_IMAGE;
+                 RING_NEG; RING_ADD; RING_MUL]]);;
+ *)
+
+(* ------------------------------------------------------------------------- *)
 (* Charaterizing trivial (zero) rings.                                       *)
 (* ------------------------------------------------------------------------- *)
 
@@ -707,25 +793,27 @@ Proof
   REWRITE_TAC[ring_monomorphism, trivial_ring] THEN SET_TAC[]
 QED
 
-(*
-let SINGLETON_RING = prove
- (`(!a:A. ring_carrier(singleton_ring a) = {a}) /\
-   (!a:A. ring_0(singleton_ring a) = a) /\
-   (!a:A. ring_1(singleton_ring a) = a) /\
-   (!a:A. ring_neg(singleton_ring a) = \x. a) /\
-   (!a:A. ring_add(singleton_ring a) = \x y. a) /\
-   (!a:A. ring_mul(singleton_ring a) = \x y. a)`,
-  REWRITE_TAC[AND_FORALL_THM] THEN GEN_TAC THEN
-  MP_TAC(fst(EQ_IMP_RULE
-   (ISPEC(rand(rand(snd(strip_forall(concl singleton_ring)))))
-   (CONJUNCT2 ring_tybij)))) THEN
-  REWRITE_TAC[GSYM singleton_ring] THEN SIMP_TAC[IN_SING] THEN
-  SIMP_TAC[ring_carrier; ring_0; ring_1; ring_neg; ring_add; ring_mul]);;
+(* NOTE: Similar with the case of PRODUCT_RING, the ring_neg part is out *)
+Theorem SINGLETON_RING :
+   (!a :'a. ring_carrier(singleton_ring a) = {a}) /\
+   (!a :'a. ring_0(singleton_ring a) = a) /\
+   (!a :'a. ring_1(singleton_ring a) = a) /\
+   (!a :'a. ring_add(singleton_ring a) = \x y. a) /\
+   (!a :'a. ring_mul(singleton_ring a) = \x y. a)
+Proof
+    rw [singleton_ring] (* 5 subgoals, same initial tactics *)
+ >> ‘fromRing (toRing (ring$trivial_ring a)) = ring$trivial_ring a’
+       by (MATCH_MP_TAC from_toRing >> rw [trivial_ring_thm])
+ >> POP_ORW
+ >> MP_TAC (Q.SPEC ‘a’ trivial_ring_thm)
+ >> rw [trivial_ring_def]
+QED
 
-let TRIVIAL_RING_SINGLETON_RING = prove
- (`!a:A. trivial_ring(singleton_ring a)`,
-  REWRITE_TAC[trivial_ring; SINGLETON_RING]);;
-*)
+Theorem TRIVIAL_RING_SINGLETON_RING :
+    !a :'a. trivial_ring(singleton_ring a)
+Proof
+  REWRITE_TAC[trivial_ring, SINGLETON_RING]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* General Cartesian product / dependent function space (sets.ml/card.ml)    *)
@@ -971,14 +1059,10 @@ Proof
       EXISTS_TAC “(\x. one) :'a -> unit” THEN
       ASM_SIMP_TAC std_ss[RING_MONOMORPHISM_FROM_TRIVIAL_RING,
                           RING_HOMOMORPHISM_FROM_TRIVIAL_RING] THEN
-      cheat (*
-      ASM_SIMP_TAC[TRIVIAL_RING_SINGLETON_RING; SINGLETON_RING] THEN
-      REWRITE_TAC[IMAGE_CONST; RING_CARRIER_NONEMPTY] THEN
-      REWRITE_TAC[EXTENSION; IN_UNIV; IN_SING; FORALL_ONE_THM] *) )
- >> cheat
- (*
-      DISJ2_TAC ] THEN
-    MP_TAC(snd(EQ_IMP_RULE(ISPECL
+      ASM_SIMP_TAC std_ss[TRIVIAL_RING_SINGLETON_RING, SINGLETON_RING] THEN
+      REWRITE_TAC[IMAGE_CONST, RING_CARRIER_NONEMPTY] )
+ >> DISJ2_TAC
+ >> MP_TAC(snd(EQ_IMP_RULE(ISPECL
      [`product_ring (:num#A) (\i. (r:A ring))`; `(:num#A->bool)`]
      ISOMORPHIC_COPY_OF_RING))) THEN
     ANTS_TAC THENL

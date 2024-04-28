@@ -1942,6 +1942,15 @@ Proof
   MESON_TAC[]
 QED
 
+Theorem IMAGE_CONST : (* from HOL-Light *)
+    !(s:'a->bool) (c:'b). IMAGE (\x. c) s = if s = {} then {} else {c}
+Proof
+  REPEAT GEN_TAC THEN COND_CASES_TAC THEN
+  ASM_REWRITE_TAC[IMAGE_CLAUSES] THEN
+  REWRITE_TAC[EXTENSION, IN_IMAGE, IN_SING] THEN
+  ASM_MESON_TAC[MEMBER_NOT_EMPTY]
+QED
+
 (* ===================================================================== *)
 (* Injective functions on a set.                                         *)
 (* ===================================================================== *)
