@@ -1,6 +1,7 @@
 CLINE_OPTIONS = -r
 
 # directories to build under src/
+# FIXME: removed num/theories/cv_compute/automation
 SRCRELNAMES = \
   algebra bag Boolify/src \
   coalgebras \
@@ -11,7 +12,6 @@ SRCRELNAMES = \
   integer \
   monad/more_monads \
   n-bit \
-  num/theories/cv_compute/automation \
   pred_set/src/more_theories probability \
   rational real real/analysis res_quan/src ring/src \
   search sort string \
@@ -25,11 +25,13 @@ INCLUDES += ../../floating-point/native
 endif
 
 ifdef HOLSELFTESTLEVEL
+
 # example directories to build at selftest level 1
+# FIXME: removed cv_compute
 EXDIRS = arm/arm6-verification arm/armv8-memory-model arm/experimental \
          CCS Crypto/RSA Hoare-for-divergence MLsyntax \
          PSL/1.01/executable-semantics PSL/1.1/official-semantics \
-	 STE algorithms computability countchars cv_compute dependability dev \
+	 STE algorithms computability countchars dependability dev \
          developers/ThmSetData \
 	 fermat \
 	 formal-languages formal-languages/context-free \
