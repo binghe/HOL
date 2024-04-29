@@ -56,6 +56,10 @@ combin {
   import: marker
   article: "../combin/combin.ot.art"
 }
+sat {
+  import: bool
+  article: "../HolSat/sat.ot.art"
+}
 relation {
   import: bool
   import: combin
@@ -123,7 +127,9 @@ basic-size {
 while {
   import: bool
   import: combin
+  import: relation
   import: arithmetic
+  import: sum
   article: "../num/theories/while.ot.art"
 }
 numpair {
@@ -217,6 +223,7 @@ set-relation {
 ind-type {
   import: bool
   import: arithmetic
+  import: numpair
   article: "../datatype/ind_type.ot.art"
 }
 list {
@@ -239,6 +246,8 @@ rich-list {
   import: list
   import: arithmetic
   import: pred-set
+  import: relation
+  import: divides
   article: "../list/src/rich_list.ot.art"
 }
 indexed-lists {
@@ -259,8 +268,4 @@ numposrep {
   import: relation
   import: basic-size
   article: "../list/src/numposrep.ot.art"
-}
-sat {
-  import: bool
-  article: "../HolSat/sat.ot.art"
 }

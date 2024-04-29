@@ -31,6 +31,9 @@ const "HOL4.relation.EMPTY_REL" as "Relation.empty"
 const "HOL4.relation.RSUBSET" as "Relation.subrelation"
 const "HOL4.relation.WF" as "Relation.wellFounded"
 
+const "HOL4.set_relation.rel_to_reln" as "Relation.toSet"
+const "HOL4.set_relation.reln_to_rel" as "Relation.fromSet"
+
 type "HOL4.option.option" as "Data.Option.option"
 const "HOL4.option.SOME" as "Data.Option.some"
 const "HOL4.option.NONE" as "Data.Option.none"
