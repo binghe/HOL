@@ -8459,7 +8459,7 @@ Proof
  >> MATCH_MP_TAC variance_sum >> art []
 QED
 
-(* A construction of sub-martingale from real r.v.'s of positive finite expectation *)
+(* A construction of sub-martingale from real r.v.'s of positive finite expectation
 Theorem indep_vars_sub_martingle :
   !p X A Z. prob_space p /\
            (!n. real_random_variable (X n) p) /\
@@ -8475,6 +8475,7 @@ Proof
  >> MATCH_MP_TAC indep_functions_sub_martingle'
  >> Q.EXISTS_TAC ‘X’ >> art []
 QED
+ *)
 
 (* ========================================================================= *)
 (*                      Condition Probability Library                        *)

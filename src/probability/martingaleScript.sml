@@ -8258,7 +8258,7 @@ End
           expectation p (\x. X x * Y x) = expectation p X * expectation p Y
 
    But the present proof doesn't use Fubini's Theorem.
- *)
+
 Theorem indep_functions_integral_mul_indicator :
   !m u. measure_space m /\ measure m (m_space m) = 1 /\
        (!n. integrable m (u n)) /\
@@ -8483,6 +8483,7 @@ Proof
  >- (MATCH_MP_TAC indep_functions_sub_martingle >> art [])
  >> rw []
 QED
+ *)
 
 (* END *)
 val _ = export_theory ();
