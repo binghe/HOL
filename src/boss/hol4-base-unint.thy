@@ -34,6 +34,7 @@ main {
   import: bit
   import: numeral-bit
   import: numposrep
+  import: quotient
 }
 bool {
   article: "bool_defs.ot.art"
@@ -60,6 +61,11 @@ sat {
   import: bool
   article: "../HolSat/sat.ot.art"
 }
+quotient {
+  import: bool
+  import: combin
+  article: "../quotient/src/quotient.ot.art"
+}
 relation {
   import: bool
   import: combin
@@ -74,6 +80,7 @@ pair {
   import: bool
   import: combin
   import: relation
+  import: quotient
   article: "../coretypes/pair.ot.art"
 }
 poset {
@@ -84,6 +91,7 @@ poset {
 sum {
   import: bool
   import: combin
+  import: quotient
   article: "../coretypes/sum.ot.art"
 }
 option {
@@ -237,6 +245,7 @@ list {
   import: marker
   import: pred-set
   import: combin
+  import: quotient
   article: "../list/src/list.ot.art"
 }
 rich-list {
