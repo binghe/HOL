@@ -50,6 +50,10 @@ fun const_name ([],"=") = {Thy="min",Name="="}
   | const_name (["HOL4","bool"],"literal_case") = {Thy="bool",Name="literal_case"}
   | const_name (["HOL4","bool"],"TYPE_DEFINITION") = {Thy="bool",Name="TYPE_DEFINITION"}
   | const_name (["HOL4","bool"],"ARB") = {Thy="bool",Name="ARB"}
+  | const_name (["HOL4","bool"],"RES_ABSTRACT") = {Thy="bool",Name="RES_ABSTRACT"}
+  | const_name (["HOL4","bool"],"RES_EXISTS") = {Thy="bool",Name="RES_EXISTS"}
+  | const_name (["HOL4","bool"],"RES_EXISTS_UNIQUE") = {Thy="bool",Name="RES_EXISTS_UNIQUE"}
+  | const_name (["HOL4","bool"],"RES_FORALL") = {Thy="bool",Name="RES_FORALL"}
   | const_name (["Data","Unit"],"()") = {Thy=Thy,Name="Data_Unit_unit"}
   | const_name (["Data","Pair"],",") = {Thy=Thy,Name="Data_Pair_comma"}
   | const_name (["Data","List"],"[]") = {Thy=Thy,Name="Data_List_nil"}
