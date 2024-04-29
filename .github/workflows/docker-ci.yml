@@ -154,7 +154,9 @@ jobs:
           file: developers/docker-ci/Dockerfile
           push: true
           build-args: |
-            SML=mosml
+            SML=poly
+            Z3_VERSION=4.13.0
+            CVC_VERSION=5
             # NOTE: the arg value cannot be quoted here:
             BUILDOPTS=--otknl --seq=tools/sequences/upto-parallel -t
           tags: ${{ steps.meta.outputs.tags }}
