@@ -742,6 +742,7 @@ fun find_indoption sl =
           set_diff sl [s]
       )
 
+(*
 fun tailrecDefine nm q =
     let
       val (t, _) = Defn.parse_absyn (Parse.Absyn q)
@@ -786,6 +787,47 @@ fun qDefine stem q tacopt =
       val gen_ind =
           if tailrecp then (fn th => raise ERR "Unseen" "")
           else Prim_rec.gen_indthm {lookup_ind = TypeBase.induction_of}
+    in
+      List.app proc_attr attrs;
+      if notuserdef then ()
+      else
+        case indopt of
+            NONE => (case total gen_ind thm of
+                         NONE => ()
+                       | SOME p => DefnBase.register_indn p)
+          | SOME ith =>
+            DefnBase.register_indn (ith, DefnBase.constants_of_defn thm);
+      thm
+    end
+ *)
+
+fun qDefine stem q tacopt =
+    let
+      val (corename, attrs) = ThmAttribute.extract_attributes stem
+      val (nocomp, attrs) = test_remove "nocompute" attrs
+      val (svarsok, attrs) = test_remove "schematic" attrs
+      val (notuserdef, attrs) = test_remove "notuserdef" attrs
+      val (rebindok, attrs) = test_remove "allow_rebind" attrs
+      val (indopt,attrs) = find_indoption attrs
+      fun fmod f =
+          f |> (if nocomp then trace ("computeLib.auto_import_definitions", 0)
+                else (fn f => f))
+            |> (if svarsok then trace ("Define.allow_schema_definition", 1)
+                else (fn f => f))
+            |> with_flag(Defn.def_suffix, "")
+            |> (case indopt of NONE => with_flag(Defn.ind_suffix, "")
+                             | SOME s => with_flag(Defn.ind_suffix, " " ^ s))
+            |> (if rebindok then trace ("Theory.allow_rebinds", 1)
+                else (fn f => f))
+      val (thm,indopt) =
+          case tacopt of
+              NONE => fmod (xDefine corename) q
+            | SOME tac => fmod (tDefine corename q) tac
+      fun proc_attr a =
+          ThmAttribute.store_at_attribute{name = corename, attrname = a,
+                                          thm = thm}
+      val attrs = if notuserdef then attrs else "userdef" :: attrs
+      val gen_ind = Prim_rec.gen_indthm {lookup_ind = TypeBase.induction_of}
     in
       List.app proc_attr attrs;
       if notuserdef then ()
