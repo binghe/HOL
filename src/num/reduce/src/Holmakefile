@@ -1,9 +1,5 @@
 all: $(DEFAULT_TARGETS)
-.PHONY: all
-
-# Disable selftests (designed for cv_compute) in otknl mode
-ifneq ($(KERNELID),otknl)
-all: selftest.exe
+.PHONY: all selftest.exe
 
 selftest.exe: selftest.uo reduceLib.uo
 	$(HOLMOSMLC) -o $@ $<
@@ -16,4 +12,4 @@ all: reduce-selftest.log
 reduce-selftest.log: selftest.exe
 	$(tee ./$<,$@)
 endif
-endif
+
