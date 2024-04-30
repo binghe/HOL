@@ -158,6 +158,6 @@ jobs:
             Z3_VERSION=4.13.0
             CVC_VERSION=5
             # NOTE: the arg value cannot be quoted here:
-            BUILDOPTS=--otknl -j2 -t --seq=tools/sequences/upto-parallel
+            BUILDOPTS=--otknl -j2 --seq=tools/sequences/upto-parallel
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
