@@ -54,8 +54,8 @@ RUN ${SML} < tools/smart-configure.sml
 RUN bin/build ${BUILDOPTS}
 
 # Building HOL manuals when PolyML is used
-RUN if [ "poly" == "${SML}"] ; then \
-    cd Manual && ../bin/Holmake -j2; \
+RUN if [ "poly" = "${SML}" ]; then \
+    cd Manual; ../bin/Holmake -j2; \
 fi
 
 # This can be overrided by "docker run <command>"
