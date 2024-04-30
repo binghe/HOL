@@ -1,7 +1,6 @@
 CLINE_OPTIONS = -r
 
 # directories to build under src/
-# FIXME: removed num/theories/cv_compute/automation
 SRCRELNAMES = \
   algebra bag Boolify/src \
   coalgebras \
@@ -27,7 +26,6 @@ endif
 ifdef HOLSELFTESTLEVEL
 
 # example directories to build at selftest level 1
-# FIXME: removed cv_compute
 EXDIRS = arm/arm6-verification arm/armv8-memory-model arm/experimental \
          CCS Crypto/RSA Hoare-for-divergence MLsyntax \
          PSL/1.01/executable-semantics PSL/1.1/official-semantics \
@@ -94,10 +92,6 @@ EX2DIRS += separationLogic/src/holfoot/poly logic/temporal_deep/src/examples
 endif
 
 INCLUDES += $(patsubst %,../../../examples/%,$(EX2DIRS))
-
-ifeq ($(KERNELID),stdknl)
-INCLUDES += ../../../examples/bootstrap
-endif
 
 endif
 

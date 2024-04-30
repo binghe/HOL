@@ -1075,6 +1075,7 @@ Proof
       SIMP_TAC std_ss[CARD_EXP_CANTOR, CARD_LT_IMP_LE] ]
 QED
 
+(*
 Theorem RING_TOTALIZATION :
     !r :'a Ring.
           (?r' f. ring_carrier r' = {()} /\
@@ -1091,7 +1092,6 @@ Proof
       REWRITE_TAC[IMAGE_CONST, RING_CARRIER_NONEMPTY] )
  >> DISJ2_TAC
  >> cheat
-(*
  >> MP_TAC(snd(EQ_IMP_RULE(ISPECL
      [`product_ring (:num#A) (\i. (r:A ring))`; `(:num#A->bool)`]
      ISOMORPHIC_COPY_OF_RING))) THEN
@@ -1110,7 +1110,8 @@ Proof
     MATCH_MP_TAC RING_MONOMORPHISM_COMPOSE THEN
     EXISTS_TAC `product_ring (:num#A) (\i. (r:A ring))` THEN
     REWRITE_TAC[RING_MONOMORPHISM_DIAGONAL_UNIV] THEN
-    ASM_SIMP_TAC[RING_ISOMORPHISM_IMP_MONOMORPHISM]) *)
+    ASM_SIMP_TAC[RING_ISOMORPHISM_IMP_MONOMORPHISM])
 QED
+ *)
 
 val _ = export_theory();
