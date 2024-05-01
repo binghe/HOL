@@ -1879,7 +1879,8 @@ The most basic numbers in \HOL{} are the natural numbers. The
 \ml{numLib} library encompasses the theories \ml{numTheory},
 \ml{prim\_recTheory}, \ml{arithmeticTheory}, and \ml{numeralTheory}.
 This library also incorporates an evaluator for numeric expression
-from \ml{reduceLib} and a decision procedure for linear arithmetic
+from \ml{reduceLib} (see Section~\ref{sec:reduce} for more details)
+and a decision procedure for linear arithmetic
 \ml{ARITH\_CONV}. The evaluator and the decision procedure are
 integrated into the simpset \ml{arith\_ss} used by the simplifier.
 As well, the linear arithmetic decision procedure can be directly
@@ -1912,9 +1913,12 @@ A decision procedure for linear arithmetic on the real numbers
 is also provided by \ml{realLib}, under the name \ml{REAL\_ARITH\_CONV}
 and \ml{REAL\_ARITH\_TAC}.
 
+\section{The \texttt{reduce} Library}
+\label{sec:reduce}
+\input{reduce.tex}
+
 \section{Pattern Matches Library---\texttt{patternMatchesLib}}\label{sec:PatternMatchesLib}
 \input{PatternMatchesLib.tex}
-
 
 \section{Bit Vector Library---\texttt{wordsLib}}
 
