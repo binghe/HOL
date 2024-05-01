@@ -34,7 +34,7 @@ open Parse;
 
 (*
 let RING_MONOMORPHIC_IMAGE_RULE =
-  val pth = RING_MONOMORPHIC_IMAGE_THM
+  val pth = RING_MONOMORPHIC_IMAGE_RULE_THM
   fun hth ->
     let [pth_eq; pth_asm;
          pth_0; pth_1; pth_num; pth_int;

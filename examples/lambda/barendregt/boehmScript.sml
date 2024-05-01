@@ -3721,9 +3721,12 @@ Proof
  >> qabbrev_tac ‘n = MAX_LIST (MAP LAMl_size M0)’
  (* ‘vs’ excludes all free variables in M *)
  >> qabbrev_tac ‘vs = NEWS n (X UNION (BIGUNION (IMAGE FV (set Ms))))’
+ (* construct p1 *)
  >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE (MAP VAR vs))’
  >> qabbrev_tac ‘d = MAX_LIST (MAP (\e. subterm_width e p) Ms)’
  >> qabbrev_tac ‘P = permutator d’
+ (* now construct p2: [[P d/y1];[P d/y2];...], the key is to construct the function
+    y(n) by reducing M0 to M1. *)
  >> cheat
 QED
 
