@@ -1,7 +1,4 @@
-\chapter{The arith Library}
-
-This document describes the facilities provided by the \ml{arith} library
-for the HOL system~\cite{description}. The main function is a partial decision
+The main function in \ml{Arith} package is a partial decision
 procedure for a subset of linear natural number
 arithmetic\index{linear arithmetic}. There are also some associated functions,
 and some more general tools for normalisation and for increasing the power of
@@ -41,8 +38,7 @@ of universally quantified formulae to be accepted. There is also a function
 for putting a formula into prenex normal form\index{prenex normal form}:
 \ml{PRENEX\_CONV}.
 
-
-\section{The method of proof}
+\subsection{The method of proof}
 
 The main function, \ml{ARITH\_CONV}, is constructed from two separate
 procedures, one for universally quantified formulae (\ml{FORALL\_ARITH\_CONV})
@@ -71,17 +67,16 @@ report~\cite{EfficFullyExpTP} which also discusses techniques for writing
 efficient\index{efficient proof procedures} proof procedures in the \HOL\
 system.
 
-
-\section{Using the library}
+\subsection{Using the library}
 
 The \ml{arith} library can be loaded into a user's \HOL\ session using the
-function \ml{load\_library}\index{load\_library@{\ptt load\_library}} (see the
+function \ml{load\_library}\index{load\_library@{\tt load\_library}} (see the
 \HOL\ manual for a general description of library loading). The first action
 in the load sequence initiated by \ml{load\_library} is to update the \HOL\
 help\index{help!updating search path} search path. The help search path is
 updated with a pathname to online help files for the \ML\ functions in the
 library. After updating the help search path, the \ml{reduce}
-library~\cite{reduce} is loaded. The \ml{arith} library makes use of some of
+library~\ref{sec:reduce} is loaded. The \ml{arith} library makes use of some of
 the functions in the \ml{reduce} library. Finally, the \ML\ functions in the
 \ml{arith} library are loaded into \HOL.
 

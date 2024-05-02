@@ -1917,6 +1917,10 @@ and \ml{REAL\_ARITH\_TAC}.
 \label{sec:reduce}
 \input{reduce.tex}
 
+\section{The \texttt{Arith} Library}
+\label{sec:arith}
+\input{arith.tex}
+
 \section{Pattern Matches Library---\texttt{patternMatchesLib}}\label{sec:PatternMatchesLib}
 \input{PatternMatchesLib.tex}
 
