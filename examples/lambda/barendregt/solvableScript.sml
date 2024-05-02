@@ -866,7 +866,7 @@ Proof
  >> Know ‘principle_hnf (LAM q M @@ VAR r @* args) =
           principle_hnf ([VAR r/q] M @* args)’
  >- (MATCH_MP_TAC principle_hnf_hreduce1 \\
-     MATCH_MP_TAC hreduce1_rules_appstar >> rw [hreduce1_BETA])
+     MATCH_MP_TAC hreduce1_appstar >> rw [hreduce1_BETA])
  >> Rewr'
  >> Know ‘[VAR r/q] M = LAMl (MAP FST pi) ([VAR r/q] t)’
  >- (qunabbrev_tac ‘M’ \\
@@ -983,7 +983,29 @@ Proof
  >> Know ‘principle_hnf (LAM h M @@ VAR h @* args) =
           principle_hnf ([VAR h/h] M @* args)’
  >- (MATCH_MP_TAC principle_hnf_hreduce1 \\
-     MATCH_MP_TAC hreduce1_rules_appstar >> rw [hreduce1_BETA])
+     MATCH_MP_TAC hreduce1_appstar >> rw [hreduce1_BETA])
+ >> Rewr'
+ >> simp [Abbr ‘M’]
+QED
+
+(* NOTE: ‘~is_abs t’ is required to preserve ‘l’ *)
+Theorem principle_hnf_beta_reduce_ext :
+    !l xs t. hnf t /\ ~is_abs t ==>
+             principle_hnf (LAMl xs t @* MAP VAR xs @* l) = t @* l
+Proof
+    Q.X_GEN_TAC ‘l’
+ >> Induct_on ‘xs’
+ >- (rw [] \\
+    ‘hnf (t @* l)’ by rw [hnf_appstar] \\
+     rw [principle_hnf_reduce])
+ >> rw [] 
+ >> qabbrev_tac ‘M = LAMl xs t’
+ >> qabbrev_tac ‘args :term list = MAP VAR xs’
+ >> Know ‘principle_hnf (LAM h M @@ VAR h @* args @* l) =
+          principle_hnf (M @* args @* l)’
+ >- (MATCH_MP_TAC principle_hnf_hreduce1 \\
+     MATCH_MP_TAC hreduce1_appstar >> rw [] \\
+     MATCH_MP_TAC hreduce1_appstar >> rw [])
  >> Rewr'
  >> simp [Abbr ‘M’]
 QED
@@ -1462,7 +1484,7 @@ Proof
  >> rw [Once RTC_CASES2] >> DISJ2_TAC
  >> Q.EXISTS_TAC ‘N @* MAP VAR vs2’
  >> reverse CONJ_TAC
- >- (MATCH_MP_TAC hreduce1_rules_appstar >> art [] \\
+ >- (MATCH_MP_TAC hreduce1_appstar >> art [] \\
      fs [is_comb_APP_EXISTS])
  >> MATCH_MP_TAC hreduce_rules_appstar' >> art []
  >> rw [is_abs_appstar]

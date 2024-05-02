@@ -31,6 +31,13 @@ val _ = overload_on ("-h->", ``hreduce1``)
 val _ = set_fixity "-h->*" (Infix(NONASSOC, 450))
 val _ = overload_on ("-h->*", ``hreduce1^*``)
 
+Theorem hreduce1_beta_reduce[simp] :
+     LAM h M @@ VAR h -h-> M
+Proof
+    MP_TAC (Q.SPECL [‘h’, ‘M’, ‘VAR h’] hreduce1_BETA)
+ >> REWRITE_TAC [lemma14a]
+QED
+
 Theorem hreduce_TRANS :
     !M0 M1 M2. M0 -h->* M1 /\ M1 -h->* M2 ==> M0 -h->* M2
 Proof
@@ -140,7 +147,7 @@ val hreduce1_unique = store_thm(
   HO_MATCH_MP_TAC hreduce1_ind THEN
   SIMP_TAC (srw_ss() ++ DNF_ss) [hreduce1_rwts]);
 
-Theorem hreduce1_rules_appstar :
+Theorem hreduce1_appstar :
     !Ns. M1 -h-> M2 /\ ~is_abs M1 ==> M1 @* Ns -h-> M2 @* Ns
 Proof
     Induct_on ‘Ns’ using SNOC_INDUCT
@@ -159,7 +166,7 @@ Proof
  >> Q.EXISTS_TAC ‘[VAR h/h] M @* MAP VAR vs @* MAP VAR l’
  >> reverse CONJ_TAC >- rw [Abbr ‘M’]
  >> REWRITE_TAC [GSYM appstar_APPEND]
- >> MATCH_MP_TAC hreduce1_rules_appstar
+ >> MATCH_MP_TAC hreduce1_appstar
  >> rw [hreduce1_BETA]
 QED
 
@@ -236,7 +243,7 @@ Proof
  >> rw [Once RTC_CASES2] >> DISJ2_TAC
  >> Q.EXISTS_TAC ‘M2 @* Ns’
  >> reverse CONJ_TAC
- >- (MATCH_MP_TAC hreduce1_rules_appstar >> art [] \\
+ >- (MATCH_MP_TAC hreduce1_appstar >> art [] \\
      FIRST_X_ASSUM MATCH_MP_TAC >> art [])
  >> FIRST_X_ASSUM irule >> rw []
  >> CCONTR_TAC >> fs []
@@ -1843,12 +1850,12 @@ Proof
  >> qabbrev_tac ‘Ns = MAP SND pi’
  >> simp [Once RTC_CASES1]
  >> DISJ2_TAC
- (* preparing for hreduce1_rules_appstar *)
+ (* preparing for hreduce1_appstar *)
  >> qabbrev_tac ‘v = FST h’
  >> qabbrev_tac ‘N = SND h’
  >> Q.EXISTS_TAC ‘[N/v] (LAMl vs t) @* Ns’
  >> CONJ_TAC
- >- (MATCH_MP_TAC hreduce1_rules_appstar >> simp [] \\
+ >- (MATCH_MP_TAC hreduce1_appstar >> simp [] \\
      rw [Once hreduce1_cases] \\
      qexistsl_tac [‘v’, ‘LAMl vs t’] >> rw [])
  >> Know ‘[N/v] (LAMl vs t) @* Ns =

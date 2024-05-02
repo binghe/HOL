@@ -7,7 +7,7 @@ open HolKernel boolLib Parse bossLib BasicProvers;
 (* core theories *)
 open optionTheory arithmeticTheory pred_setTheory listTheory rich_listTheory
      llistTheory relationTheory ltreeTheory pathTheory posetTheory hurdUtils
-     finite_mapTheory;
+     finite_mapTheory topologyTheory;
 
 open binderLib termTheory appFOLDLTheory chap2Theory chap3Theory nomsetTheory
      head_reductionTheory standardisationTheory solvableTheory reductionEval;
@@ -3010,7 +3010,6 @@ Proof
  >- (rw [Abbr ‘vs’, NEWS_def])
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
  (* applying the shared hnf_tac to decompose M0 *)
- >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR (TAKE n vs))’
  >> Know ‘?y args. M0 = LAMl (TAKE n vs) (VAR y @* args)’
  >- (qunabbrev_tac ‘n’ >> irule (iffLR hnf_cases_shared) >> rw [] \\
      MATCH_MP_TAC DISJOINT_SUBSET \\
@@ -3020,6 +3019,7 @@ Proof
  (* eliminate ‘TAKE n vs’ *)
  >> ‘TAKE n vs = vs’ by rw []
  >> POP_ASSUM (REV_FULL_SIMP_TAC std_ss o wrap)
+ >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
  >> Know ‘M1 = VAR y @* args’
  >- (qunabbrev_tac ‘M1’ >> POP_ORW \\
      MATCH_MP_TAC principle_hnf_beta_reduce >> rw [hnf_appstar])
@@ -3705,12 +3705,13 @@ End
    part of this proof.
  *)
 Theorem agrees_upto_lemma_1 :
-    !X Ms p. p <> [] /\ (!M. MEM M Ms ==> p IN ltree_paths (BTe X M)) /\
-             EVERY solvable Ms ==>
+    !X Ms p. FINITE X /\ EVERY solvable Ms /\ p <> [] /\
+             (!M. MEM M Ms ==> p IN ltree_paths (BTe X M)) ==>
              ?pi. Boehm_transform pi /\ !M. MEM M Ms ==> is_ready (apply pi M)
 Proof
     rpt STRIP_TAC
  >> qabbrev_tac ‘k = LENGTH Ms’
+ (* define M0 *)
  >> qabbrev_tac ‘M0 = \i. principle_hnf (EL i Ms)’
  >> Know ‘!i. i < k ==> hnf (M0 i)’
  >- (rw [Abbr ‘M0’] \\
@@ -3718,24 +3719,47 @@ Proof
      rw [GSYM solvable_iff_has_hnf] \\
      fs [EVERY_EL])
  >> DISCH_TAC
- (* ‘n_max’ is the longest LAMl of principle hnfs in M0 *)
- >> qabbrev_tac ‘n_max = MAX_LIST (MAP (LAMl_size o principle_hnf) Ms)’
- >> Know ‘!i. i < k ==> LAMl_size (M0 i) <= n_max’
+ >> qabbrev_tac ‘n = LAMl_size o M0’
+ >> qabbrev_tac ‘n_max = MAX_SET (IMAGE n (count k))’
+ >> Know ‘!i. i < k ==> n i <= n_max’
  >- (rw [Abbr ‘M0’, Abbr ‘n_max’] \\
-     MATCH_MP_TAC MAX_LIST_PROPERTY \\
-     rw [MEM_MAP, o_DEF] \\
-     Q.EXISTS_TAC ‘EL i Ms’ >> rw [EL_MEM])
+     irule MAX_SET_PROPERTY >> rw [])
  >> DISCH_TAC
  (* ‘vs’ excludes all free variables in M *)
- >> qabbrev_tac ‘vs = NEWS n_max (X UNION (BIGUNION (IMAGE FV (set Ms))))’
+ >> qabbrev_tac ‘Z = X UNION (BIGUNION (IMAGE FV (set Ms)))’
+ >> ‘FINITE Z’ by (rw [Abbr ‘Z’] >> REWRITE_TAC [FINITE_FV])
+ >> qabbrev_tac ‘vs = NEWS n_max Z’
+ >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) Z /\ LENGTH vs = n_max’
+      by (rw [Abbr ‘vs’, NEWS_def])
+ (* decompose M0 *)
+ >> Know ‘!i. i < k ==> ?y args. M0 i = LAMl (TAKE (n i) vs) (VAR y @* args)’
+ >- (rw [Abbr ‘n’] >> irule (iffLR hnf_cases_shared) >> rw [] >- fs [o_DEF] \\
+     MATCH_MP_TAC DISJOINT_SUBSET \\
+     Q.EXISTS_TAC ‘FV (EL i Ms)’ \\
+     reverse CONJ_TAC
+     >- (rw [Abbr ‘M0’] >> MATCH_MP_TAC principle_hnf_FV_SUBSET \\
+         Q.PAT_X_ASSUM ‘EVERY solvable Ms’ MP_TAC \\
+         rw [solvable_iff_has_hnf, EVERY_EL]) \\
+     Q.PAT_X_ASSUM ‘DISJOINT (set vs) Z’ MP_TAC \\
+     rw [Abbr ‘Z’] >> rw [Once DISJOINT_SYM] \\
+     POP_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘EL i Ms’ >> rw [EL_MEM])
+ (* now assert two functions y and args for each term in Ms *)
+ >> simp [EXT_SKOLEM_THM'] (* topologyTheory *)
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘y’
+                 (Q.X_CHOOSE_THEN ‘args’ STRIP_ASSUME_TAC))
+ (* define M1 *)
+ >> qabbrev_tac ‘M1 = \i. principle_hnf (M0 i @* MAP VAR vs)’
+(*
+ Know ‘M1 = VAR y @* args’
+ >- (qunabbrev_tac ‘M1’ >> POP_ORW \\
+     MATCH_MP_TAC principle_hnf_beta_reduce >> rw [hnf_appstar])
+ >> DISCH_TAC
+ *)
  (* construct p1 *)
  >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE (MAP VAR vs))’
  >> qabbrev_tac ‘d = MAX_LIST (MAP (\e. subterm_width e p) Ms)’
  >> qabbrev_tac ‘P = permutator d’
- (* construct p2: [[P d/y1];[P d/y2];...], note that each y is different *)
- >> qabbrev_tac ‘n = LAMl_size o M0’
- (* M1 is the intermediate result of applying p1 *)
- >> qabbrev_tac ‘M1 = \i. principle_hnf (M0 i @* MAP VAR vs)’
  >> cheat
 QED
 
