@@ -1,3 +1,5 @@
+%%% -*- Mode: LaTeX; -*-
+
 The \ml{reduce} library is intended to ease the burden of performing tedious
 and intellectually trivial tasks of arithmetic such as proving:
 
@@ -40,8 +42,7 @@ definitions and preproved theorems concerning the various arithmetic and
 boolean operators, to derive, strictly by inference, reduction theorems for
 certain expressions.
 
-
-\section{Sample algorithm}
+\subsection{Sample algorithm}
 
 The following is an example of an algorithm for reducing addition expressions.
 In fact, for reasons of efficiency, the library's \ml{ADD\_CONV} conversion is
@@ -127,3 +128,8 @@ these, refer to the next chapter. The arithmetic conversions and boolean
 conversions may be loaded separately by loading (with \ml{loadt} for instance)
 \ml{arithconv.ml} and \ml{boolconv.ml} respectively, in the main library
 directory.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "description"
+%%% End:

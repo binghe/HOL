@@ -1,3 +1,5 @@
+%%% -*- Mode: LaTeX; -*-
+
 The main function in \ml{Arith} package is a partial decision
 procedure for a subset of linear natural number
 arithmetic\index{linear arithmetic}. There are also some associated functions,
@@ -127,8 +129,7 @@ ARITH_PROVE = - : conv
 |- !m n p. m < n /\ n < p ==> m < p
 \end{verbatim}\end{session}
 
-
-\section{Using the procedure to prove a formula false}
+\subsection{Using the procedure to prove a formula false}
 
 Continuing the session from the previous section, here is an example of how
 to use the proof procedure to prove that a formula is
@@ -165,8 +166,7 @@ TF_ARITH_CONV = - : conv
 |- (!m n. m < n) = F
 \end{verbatim}\end{session}
 
-
-\section{Constructing a tactic}
+\subsection{Constructing a tactic}
 
 Consider the following goal\index{goals}:
 
@@ -201,3 +201,8 @@ OK..
 
 () : void
 \end{verbatim}\end{session}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "description"
+%%% End:
