@@ -998,7 +998,7 @@ Proof
  >- (rw [] \\
     ‘hnf (t @* l)’ by rw [hnf_appstar] \\
      rw [principle_hnf_reduce])
- >> rw [] 
+ >> rw []
  >> qabbrev_tac ‘M = LAMl xs t’
  >> qabbrev_tac ‘args :term list = MAP VAR xs’
  >> Know ‘principle_hnf (LAM h M @@ VAR h @* args @* l) =
