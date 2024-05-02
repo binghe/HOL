@@ -7,5 +7,6 @@ system.tex
 definitions.tex
 PatternMatchesLib.tex
 conv.tex
-/math.tex
+math.tex
 simplifier.tex
+reduce.tex
