@@ -3750,12 +3750,19 @@ Proof
                  (Q.X_CHOOSE_THEN ‘args’ STRIP_ASSUME_TAC))
  (* define M1 *)
  >> qabbrev_tac ‘M1 = \i. principle_hnf (M0 i @* MAP VAR vs)’
-(*
- Know ‘M1 = VAR y @* args’
- >- (qunabbrev_tac ‘M1’ >> POP_ORW \\
-     MATCH_MP_TAC principle_hnf_beta_reduce >> rw [hnf_appstar])
+ >> Know ‘!i. i < k ==> M1 i = VAR (y i) @* args i @* DROP (n i) (MAP VAR vs)’
+ >- (rw [Abbr ‘M1’] \\
+     qabbrev_tac ‘t = VAR (y i) @* args i’ \\
+     rw [GSYM MAP_DROP] \\
+     qabbrev_tac ‘xs = TAKE (n i) vs’ \\
+     Know ‘MAP VAR vs :term list = MAP VAR xs ++ MAP VAR (DROP (n i) vs)’
+     >- (REWRITE_TAC [GSYM MAP_APPEND] >> AP_TERM_TAC \\
+         rw [Abbr ‘xs’, TAKE_DROP]) >> Rewr' \\
+     REWRITE_TAC [appstar_APPEND] \\
+     qabbrev_tac ‘l :term list = MAP VAR (DROP (n i) vs)’ \\
+     MATCH_MP_TAC principle_hnf_beta_reduce_ext \\
+     rw [Abbr ‘t’, hnf_appstar])
  >> DISCH_TAC
- *)
  (* construct p1 *)
  >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE (MAP VAR vs))’
  >> qabbrev_tac ‘d = MAX_LIST (MAP (\e. subterm_width e p) Ms)’
