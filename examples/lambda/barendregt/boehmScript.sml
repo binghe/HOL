@@ -3707,26 +3707,35 @@ End
 Theorem agrees_upto_lemma_1 :
     !X Ms p. p <> [] /\ (!M. MEM M Ms ==> p IN ltree_paths (BTe X M)) /\
              EVERY solvable Ms ==>
-            ?pi. Boehm_transform pi /\ !M. MEM M Ms ==> is_ready (apply pi M)
+             ?pi. Boehm_transform pi /\ !M. MEM M Ms ==> is_ready (apply pi M)
 Proof
     rpt STRIP_TAC
- >> qabbrev_tac ‘M0 = MAP principle_hnf Ms’
- >> Know ‘EVERY hnf M0’
- >- (rw [EVERY_MEM, EVERY_MAP, Abbr ‘M0’] \\
+ >> qabbrev_tac ‘k = LENGTH Ms’
+ >> qabbrev_tac ‘M0 = \i. principle_hnf (EL i Ms)’
+ >> Know ‘!i. i < k ==> hnf (M0 i)’
+ >- (rw [Abbr ‘M0’] \\
      MATCH_MP_TAC hnf_principle_hnf \\
      rw [GSYM solvable_iff_has_hnf] \\
-     fs [EVERY_MEM])
+     fs [EVERY_EL])
  >> DISCH_TAC
- (* ‘n’ is the longest LAMl of principle hnfs in M0 *)
- >> qabbrev_tac ‘n = MAX_LIST (MAP LAMl_size M0)’
+ (* ‘n_max’ is the longest LAMl of principle hnfs in M0 *)
+ >> qabbrev_tac ‘n_max = MAX_LIST (MAP (LAMl_size o principle_hnf) Ms)’
+ >> Know ‘!i. i < k ==> LAMl_size (M0 i) <= n_max’
+ >- (rw [Abbr ‘M0’, Abbr ‘n_max’] \\
+     MATCH_MP_TAC MAX_LIST_PROPERTY \\
+     rw [MEM_MAP, o_DEF] \\
+     Q.EXISTS_TAC ‘EL i Ms’ >> rw [EL_MEM])
+ >> DISCH_TAC
  (* ‘vs’ excludes all free variables in M *)
- >> qabbrev_tac ‘vs = NEWS n (X UNION (BIGUNION (IMAGE FV (set Ms))))’
+ >> qabbrev_tac ‘vs = NEWS n_max (X UNION (BIGUNION (IMAGE FV (set Ms))))’
  (* construct p1 *)
  >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE (MAP VAR vs))’
  >> qabbrev_tac ‘d = MAX_LIST (MAP (\e. subterm_width e p) Ms)’
  >> qabbrev_tac ‘P = permutator d’
- (* now construct p2: [[P d/y1];[P d/y2];...], the key is to construct the function
-    y(n) by reducing M0 to M1. *)
+ (* construct p2: [[P d/y1];[P d/y2];...], note that each y is different *)
+ >> qabbrev_tac ‘n = LAMl_size o M0’
+ (* M1 is the intermediate result of applying p1 *)
+ >> qabbrev_tac ‘M1 = \i. principle_hnf (M0 i @* MAP VAR vs)’
  >> cheat
 QED
 

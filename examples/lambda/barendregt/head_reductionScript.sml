@@ -1637,8 +1637,7 @@ Proof
  >> Q.EXISTS_TAC ‘BIGUNION (IMAGE FV (set Ms))’
  >> simp []
  >> rw [SUBSET_DEF, IN_BIGUNION_IMAGE]
- >> Q.EXISTS_TAC ‘EL i Ms’ >> rw [MEM_EL]
- >> Q.EXISTS_TAC ‘i’ >> rw []
+ >> Q.EXISTS_TAC ‘EL i Ms’ >> rw [EL_MEM]
 QED
 
 Theorem absfree_hnf_head :
@@ -1863,7 +1862,7 @@ Proof
      rw [EVERY_MEM] \\
      POP_ASSUM (MP_TAC o (Q.SPEC ‘EL i Ns’)) \\
      Suff ‘MEM (EL i Ns) Ns’ >- rw [] \\
-     rw [MEM_EL] >> Q.EXISTS_TAC ‘i’ >> art [])
+     rw [EL_MEM])
  >> Rewr'
  >> ‘h = (v,N)’ by rw [Abbr ‘v’, Abbr ‘N’] >> POP_ORW
  >> simp [FUPDATE_LIST_THM]
@@ -2107,8 +2106,7 @@ Proof
  >- (rw [LIST_EQ_REWRITE] >- rw [Abbr ‘vs1’] \\
      rename1 ‘i < LENGTH vs1’ \\
      simp [EL_MAP] \\
-     Know ‘MEM (EL i vs1) vs1’
-     >- (rw [MEM_EL] >> Q.EXISTS_TAC ‘i’ >> art []) >> Rewr \\
+    ‘MEM (EL i vs1) vs1’ by rw [EL_MEM] >> simp [] \\
      MATCH_MP_TAC fromPairs_FAPPLY_EL >> rw []
      >- (Q.PAT_X_ASSUM ‘ALL_DISTINCT vs’ MP_TAC \\
         ‘vs = vs1 ++ vs2’ by rw [Abbr ‘vs1’, Abbr ‘vs2’, TAKE_DROP] \\
