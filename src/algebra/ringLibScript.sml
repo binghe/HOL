@@ -697,6 +697,8 @@ Proof
 QED
 
 (*
+val _ = set_fixity "isomorphic_ring" (Infixr 490);
+
 let isomorphic_ring = new_definition
  `r isomorphic_ring r' <=> ?f:A->B. ring_isomorphism (r,r') f`;;
 
