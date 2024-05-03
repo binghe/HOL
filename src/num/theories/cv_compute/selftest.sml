@@ -15,10 +15,8 @@ val restrict_lemma = Q.prove(
   simp[] >> IF_CASES_TAC >> simp[c2b_def] >>
   simp[relationTheory.RESTRICT_DEF, cv_size_def] >>
   Q.RENAME_TAC [‘n <> 0’] >>
-  reverse $ Q.SUBGOAL_THEN ‘n - 1 < n’ ASSUME_TAC >- simp[] >>
-  irule SUB_LESS >> pop_assum mp_tac >>
-  Q.SPEC_THEN ‘n’ STRUCT_CASES_TAC num_CASES >>
-  simp[ONE, LESS_EQ_MONO, ZERO_LESS_EQ]);
+  reverse $ Q.SUBGOAL_THEN ‘0 < n’ ASSUME_TAC >- simp[] >>
+  rw [GSYM NOT_ZERO]);
 
 val factc_def = MATCH_MP relationTheory.WFREC_THM
                          (Q.ISPEC ‘cv_size’ prim_recTheory.WF_measure)
