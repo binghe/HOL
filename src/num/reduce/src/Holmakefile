@@ -1,5 +1,5 @@
-all: $(DEFAULT_TARGETS)
-.PHONY: all selftest.exe
+all: $(DEFAULT_TARGETS) selftest.exe
+.PHONY: all
 
 selftest.exe: selftest.uo reduceLib.uo
 	$(HOLMOSMLC) -o $@ $<
@@ -12,4 +12,3 @@ all: reduce-selftest.log
 reduce-selftest.log: selftest.exe
 	$(tee ./$<,$@)
 endif
-
