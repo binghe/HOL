@@ -1,0 +1,24 @@
+INCLUDES = $(HOLDIR)/src/integer $(HOLDIR)/src/rational
+
+all: $(DEFAULT_TARGETS) selftest.exe
+
+.PHONY: all link-to-sigobj
+
+ifdef HOLBUILD
+all: link-to-sigobj
+.PHONY: link-to-sigobj
+link-to-sigobj: $(DEFAULT_TARGETS)
+	$(HOL_LNSIGOBJ)
+endif
+
+selftest.exe: selftest.uo
+	$(HOLMOSMLC) -o $@ $<
+
+EXTRA_CLEANS = selftest.exe selftest.log
+
+ifdef HOLSELFTESTLEVEL
+all: selftest.log
+
+selftest.log: selftest.exe
+	$(tee ./$< 2>&1, $@)
+endif
