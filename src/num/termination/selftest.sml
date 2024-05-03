@@ -115,7 +115,6 @@ val _ = require_msg (check_result lhs_has_two_args)
                                (SOME (WF_REL_TAC ‘$<’)))
                     ‘foo2 x = if x = 0 then y else foo2(x - 1)*2’;
 
-(* FIXME: disable tailrecDefine related tests
 val _ = tprint "tailrecDefine (simple recursion: fact2)"
 val expected_pat = “!A n. ff A n = if n < 1 then A else ff (A * n) (n - 1)”
 fun check1 th =
@@ -185,4 +184,3 @@ val _ = require_msgk (check_result (K true)) pp_thm
                      ‘(urk n = urk2 (n + 1)) /\
                       (urk' n = n + 1) /\
                       (urk2 m = if m = 0 then 1 else urk (2 * m))’;
-*)
