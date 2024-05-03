@@ -9,7 +9,7 @@
 
 open HolKernel boolLib Parse bossLib;
 
-open arithmeticTheory pairTheory integerTheory schneiderUtils;
+open arithmeticTheory pairTheory integerTheory intLib schneiderUtils;
 
 val _ = new_theory "intExtension";
 
