@@ -350,15 +350,9 @@ QED
 (* Homomorphisms etc.                                                        *)
 (* ------------------------------------------------------------------------- *)
 
-Overload ring_homomorphism =
-        “\(r,s) (f :'a -> 'b). RingHomo f (fromRing r) (fromRing s)”
-
-Theorem ring_homomorphism_def :
-    !(f :'a -> 'b) r r'. ring_homomorphism (r,r') f <=>
-                         RingHomo f (fromRing r) (fromRing r')
-Proof
-    rw []
-QED
+Definition ring_homomorphism_def :
+    ring_homomorphism (r,r') (f :'a -> 'b) <=> RingHomo f (fromRing r) (fromRing r')
+End
 
 (* NOTE: This theorem is a definition in HOL-Light (ringtheory.ml, L4708) *)
 Theorem ring_homomorphism :
@@ -375,7 +369,7 @@ Theorem ring_homomorphism :
                ==> f(ring_mul r x y) = ring_mul r' (f x) (f y)))
 Proof
     qx_genl_tac [‘f’, ‘r0’, ‘r1’]
- >> RW_TAC std_ss [RingHomo_def]
+ >> RW_TAC std_ss [ring_homomorphism_def, RingHomo_def]
  >> Q.ABBREV_TAC ‘r  = fromRing r0’
  >> Q.ABBREV_TAC ‘r' = fromRing r1’
  >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’]
@@ -650,22 +644,16 @@ Definition ring_isomorphisms :
         (!y. y IN ring_carrier r' ==> f(g y) = y)
 End
 
-Overload ring_isomorphism =
-        “\(r,s) (f :'a -> 'b). RingIso f (fromRing r) (fromRing s)”
-
-Theorem ring_isomorphism_def :
-    !(f :'a -> 'b) r r'. ring_isomorphism (r,r') f <=>
-                         RingIso f (fromRing r) (fromRing r')
-Proof
-    rw []
-QED
+Definition ring_isomorphism_def :
+    ring_isomorphism (r,r') (f :'a -> 'b) <=> RingIso f (fromRing r) (fromRing r')
+End
 
 (* NOTE: This theorem is the definition of ‘ring_isomorphism’ in HOL-Light *)
 Theorem ring_isomorphism :
     !(f :'a -> 'b) r r'.
       ring_isomorphism (r,r') (f:'a->'b) <=> ?g. ring_isomorphisms (r,r') (f,g)
 Proof
-    rw [RingIso_def, ring_isomorphisms]
+    rw [ring_isomorphism_def, RingIso_def, ring_isomorphisms]
  >> EQ_TAC >> rw [] (* 3 subgoals *)
  >| [ (* goal 1 (of 3) *)
       Q.PAT_ASSUM ‘BIJ f _ _’
@@ -677,7 +665,8 @@ Proof
       qabbrev_tac ‘r1 = fromRing r’ \\
       qabbrev_tac ‘r2 = fromRing r'’ \\
      ‘Ring r1 /\ Ring r2’ by rw [Abbr ‘r1’, Abbr ‘r2’] >> art [] \\
-      Suff ‘RingHomo (LINV f r1.carrier) r2 r1 = RingHomo g r2 r1’ >- rw [] \\
+      Suff ‘RingHomo (LINV f r1.carrier) r2 r1 = RingHomo g r2 r1’
+      >- rw [ring_homomorphism_def] \\
       MATCH_MP_TAC ring_homo_cong >> rw [] \\
       irule BIJ_IS_INJ \\
       qexistsl_tac [‘f’, ‘r1.carrier’, ‘r2.carrier’] >> rw []
@@ -686,14 +675,14 @@ Proof
      ‘BIJ h r2.carrier r1.carrier’ by PROVE_TAC [BIJ_LINV_BIJ] \\
       POP_ASSUM MP_TAC >> rw [BIJ_ALT, IN_FUNSET],
       (* goal 2 (of 2) *)
-      ASM_REWRITE_TAC [],
+      ASM_REWRITE_TAC [GSYM ring_homomorphism_def],
       (* goal 2 (of 1) *)
       rw [BIJ_IFF_INV]
-      >- (Q.PAT_X_ASSUM ‘RingHomo f _ _’ MP_TAC \\
-          rw [RingHomo_def]) \\
+      >- (Q.PAT_X_ASSUM ‘ring_homomorphism (r,r') f’ MP_TAC \\
+          rw [ring_homomorphism_def, RingHomo_def]) \\
       Q.EXISTS_TAC ‘g’ >> rw [] \\
-      Q.PAT_X_ASSUM ‘RingHomo g _ _’ MP_TAC \\
-      rw [RingHomo_def] ]
+      Q.PAT_X_ASSUM ‘ring_homomorphism (r',r) g’ MP_TAC \\
+      rw [ring_homomorphism_def, RingHomo_def] ]
 QED
 
 val _ = set_fixity "isomorphic_ring" (Infixr 490);
@@ -702,40 +691,100 @@ Definition isomorphic_ring :
     r isomorphic_ring r' <=> ?(f :'a -> 'b). ring_isomorphism (r,r') f
 End
 
-(*
-let CARD_LE_RING_MONOMORPHIC_IMAGE = prove
- (`!r r' (f:A->B).
-        ring_monomorphism(r,r') f ==> ring_carrier r <=_c ring_carrier r'`,
-  REWRITE_TAC[ring_monomorphism; le_c; ring_homomorphism] THEN
-  REPEAT STRIP_TAC THEN EXISTS_TAC `f:A->B` THEN ASM SET_TAC[]);;
+Theorem CARD_LE_RING_MONOMORPHIC_IMAGE :
+    !r r' (f :'a -> 'b).
+        ring_monomorphism(r,r') f ==> ring_carrier r <=_c ring_carrier r'
+Proof
+  REWRITE_TAC[ring_monomorphism, le_c, ring_homomorphism] THEN
+  REPEAT STRIP_TAC THEN EXISTS_TAC “f :'a -> 'b” THEN ASM_SET_TAC[]
+QED
 
-let CARD_LE_RING_EPIMORPHIC_IMAGE = prove
- (`!r r' (f:A->B).
-        ring_epimorphism(r,r') f ==> ring_carrier r' <=_c ring_carrier r`,
-  REWRITE_TAC[ring_epimorphism; LE_C; ring_homomorphism] THEN
-  REPEAT STRIP_TAC THEN EXISTS_TAC `f:A->B` THEN ASM SET_TAC[]);;
+Definition ring_epimorphism :
+    ring_epimorphism (r,r') (f :'a -> 'b) <=>
+        ring_homomorphism (r,r') f /\
+        IMAGE f (ring_carrier r) = ring_carrier r'
+End
 
-let CARD_EQ_RING_ISOMORPHIC_IMAGE = prove
- (`!r r' (f:A->B).
-        ring_isomorphism(r,r') f ==> ring_carrier r =_c ring_carrier r'`,
-  REWRITE_TAC[GSYM RING_MONOMORPHISM_EPIMORPHISM; GSYM CARD_LE_ANTISYM] THEN
-  MESON_TAC[CARD_LE_RING_MONOMORPHIC_IMAGE; CARD_LE_RING_EPIMORPHIC_IMAGE]);;
-*)
+Theorem CARD_LE_RING_EPIMORPHIC_IMAGE :
+    !r r' (f :'a -> 'b).
+        ring_epimorphism(r,r') f ==> ring_carrier r' <=_c ring_carrier r
+Proof
+  REWRITE_TAC[ring_epimorphism, LE_C, ring_homomorphism] THEN
+  REPEAT STRIP_TAC THEN EXISTS_TAC “f :'a -> 'b” THEN ASM_SET_TAC[]
+QED
+
+Theorem FORALL_IN_IMAGE_2 :
+    !(f :'a -> 'b) P s.
+                 (!x y. x IN IMAGE f s /\ y IN IMAGE f s ==> P x y) <=>
+                 (!x y. x IN s /\ y IN s ==> P (f x) (f y))
+Proof
+  SET_TAC[]
+QED
+
+(* |- !P Q. P /\ (?x. Q x) <=> ?x. P /\ Q x *)
+Theorem RIGHT_AND_EXISTS_THM = GSYM RIGHT_EXISTS_AND_THM
+
+Theorem RING_ISOMORPHISM :
+    !r r' (f :'a -> 'b).
+      ring_isomorphism (r,r') (f :'a -> 'b) <=>
+      ring_homomorphism (r,r') f /\
+      IMAGE f (ring_carrier r) = ring_carrier r' /\
+      (!x y. x IN ring_carrier r /\ y IN ring_carrier r /\ f x = f y
+             ==> x = y)
+Proof
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[ring_isomorphism, ring_isomorphisms, ring_homomorphism] THEN
+  SIMP_TAC std_ss[INJECTIVE_ON_LEFT_INVERSE, RIGHT_AND_EXISTS_THM] THEN
+  AP_TERM_TAC THEN ABS_TAC THEN
+  EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC[] >- ASM_SET_TAC[] THEN
+  SUBST1_TAC(SYM(ASSUME
+    “IMAGE (f :'a -> 'b) (ring_carrier r) = ring_carrier r'”)) THEN
+  SIMP_TAC std_ss[SUBSET_DEF, FORALL_IN_IMAGE, FORALL_IN_IMAGE_2] THEN
+  ASM_SIMP_TAC std_ss[] THEN
+  ASM_MESON_TAC[RING_0, RING_ADD, RING_MUL, RING_1, RING_NEG]
+QED
+
+Theorem RING_MONOMORPHISM_EPIMORPHISM :
+    !r r' (f :'a -> 'b).
+        ring_monomorphism (r,r') f /\ ring_epimorphism (r,r') f <=>
+        ring_isomorphism (r,r') f
+Proof
+  REWRITE_TAC[RING_ISOMORPHISM, ring_monomorphism, ring_epimorphism] THEN
+  MESON_TAC[]
+QED
+
+Theorem CARD_EQ_RING_ISOMORPHIC_IMAGE :
+    !r r' (f :'a -> 'b).
+        ring_isomorphism(r,r') f ==> ring_carrier r =_c ring_carrier r'
+Proof
+  REWRITE_TAC[GSYM RING_MONOMORPHISM_EPIMORPHISM, GSYM CARD_LE_ANTISYM] THEN
+  MESON_TAC[CARD_LE_RING_MONOMORPHIC_IMAGE, CARD_LE_RING_EPIMORPHIC_IMAGE]
+QED
+
+Theorem ISOMORPHIC_RING_CARD_EQ :
+    !(r :'a Ring) (r' :'b Ring).
+        r isomorphic_ring r' ==> ring_carrier r =_c ring_carrier r'
+Proof
+    RW_TAC std_ss[isomorphic_ring, LEFT_IMP_EXISTS_THM]
+ >> MATCH_MP_TAC CARD_EQ_RING_ISOMORPHIC_IMAGE
+ >> Q.EXISTS_TAC ‘f’ >> art []
+QED
 
 Theorem ISOMORPHIC_COPY_OF_RING :
     !(r :'a Ring) (s :'b -> bool).
         (?r'. ring_carrier r' = s /\ r isomorphic_ring r') <=>
         ring_carrier r =_c s
 Proof
-  cheat
+    REPEAT GEN_TAC THEN EQ_TAC
+ >- MESON_TAC[ISOMORPHIC_RING_CARD_EQ, CARD_EQ_TRANS]
+ >> SIMP_TAC std_ss[EQ_C_BIJECTIONS, LEFT_IMP_EXISTS_THM]
+ >> MAP_EVERY X_GEN_TAC [“f :'a -> 'b”, “g :'b -> 'a”]
+ >> STRIP_TAC
+ >> cheat
 (*
-  REPEAT GEN_TAC THEN EQ_TAC THENL
-   [MESON_TAC[ISOMORPHIC_RING_CARD_EQ; CARD_EQ_TRANS];
-    REWRITE_TAC[EQ_C_BIJECTIONS; LEFT_IMP_EXISTS_THM]] THEN
-  MAP_EVERY X_GEN_TAC [`f:A->B`; `g:B->A`] THEN STRIP_TAC THEN
-  ABBREV_TAC
-   `r' = ring(s:B->bool,
-              f (ring_0 r:A),
+  Q.ABBREV_TAC
+   `r' = ring(s :'b->bool,
+              f (ring_0 r:'a),
               f (ring_1 r),
               (\x. f(ring_neg r (g x))),
               (\x1 x2. f(ring_add r (g x1) (g x2))),
