@@ -37,7 +37,7 @@ New theories:
 New tools:
 ----------
 
-- `Tactic.TRANS_TAC` (ported from HOL-Light): Applies transitivity theorem to goal
+- `Tactic.TRANS_TAC` (ported from HOL-Light) applies transitivity theorem to goal
   with chosen intermediate term. See its DOC for more details.
 
 New examples:
