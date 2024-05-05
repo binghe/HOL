@@ -24,6 +24,7 @@ val std_ss' = std_ss ++ PRED_SET_ss;
 
 (* NOTE: HOL4's ‘trivial_ring’ is HOL-Light's ‘singleton_ring’ (also here) *)
 val _ = hide "trivial_ring";
+val _ = hide "ring";
 
 (* ------------------------------------------------------------------------- *)
 (*  'a Ring as type bijections of a subset of 'a ring                        *)
@@ -52,6 +53,21 @@ Theorem fromRing_11 = #term_REP_11 Ring_tydef |> Q.GENL [‘g’, ‘h’]
 
 (* NOTE: this is the old Ring_tybij, returned by define_new_type_bijections. *)
 val Ring_ABSREP = DB.fetch "-" "Ring_ABSREP";
+
+(* NOTE: HOL-Light's ring constructor takes an explicit ring_neg function, while
+         in HOL4's it's derived from other slots.
+ *)
+Definition raw_ring_def :
+    raw_ring ((c :'a set),zero,uno,add,mul) =
+        let g = <| carrier := c; op := add; id := zero |>;
+            m = <| carrier := c; op := mul; id := uno  |>
+        in
+           <| carrier := c; sum := g; prod := m |>
+End
+
+Definition ring_def :
+    ring = toRing o raw_ring
+End
 
 (* ------------------------------------------------------------------------- *)
 (* The ring operations, primitive plus subtraction as a derived operation.   *)
@@ -778,26 +794,50 @@ Proof
     REPEAT GEN_TAC THEN EQ_TAC
  >- MESON_TAC[ISOMORPHIC_RING_CARD_EQ, CARD_EQ_TRANS]
  >> SIMP_TAC std_ss[EQ_C_BIJECTIONS, LEFT_IMP_EXISTS_THM]
- >> MAP_EVERY X_GEN_TAC [“f :'a -> 'b”, “g :'b -> 'a”]
- >> STRIP_TAC
- >> cheat
+ >> rpt STRIP_TAC
+ >> Q.ABBREV_TAC
+   ‘r0 = raw_ring (s,
+                   f (ring_0 r),
+                   f (ring_1 r),
+                  (\x1 x2. f(ring_add r (g x1) (g x2))),
+                  (\x1 x2. f(ring_mul r (g x1) (g x2))))’
+ >> Know ‘Ring r0’
+ >- (rw [Abbr ‘r0’, raw_ring_def] \\
+     simp [Once Ring_def] \\
+  (* AbelianMonoid ... (easier) *)
+     reverse CONJ_TAC
+     >- (simp [AbelianMonoid_def, Once Monoid_def] \\
+         reverse CONJ_TAC
+         >- (rpt STRIP_TAC >> AP_TERM_TAC \\
+             MATCH_MP_TAC RING_MUL_SYM >> rw []) \\
+         rpt STRIP_TAC >> AP_TERM_TAC \\
+         MATCH_MP_TAC (GSYM RING_MUL_ASSOC) >> rw []) \\
+  (* AbelianMonoid ... (harder) *)
+     simp [AbelianGroup_def, Group_def] \\
+     reverse CONJ_TAC
+     >- (rpt STRIP_TAC >> AP_TERM_TAC \\
+         MATCH_MP_TAC RING_ADD_SYM >> rw []) \\
+     rw [Once Monoid_def]
+     >- (AP_TERM_TAC \\
+         MATCH_MP_TAC (GSYM RING_ADD_ASSOC) >> rw []) \\
+  (* monoid_invertibles *)
+     rw [monoid_invertibles_def, Once EXTENSION] (* key *) \\
+     EQ_TAC >> rw [] (* one goal left *) \\
+  (* Q.EXISTS_TAC ‘ring_neg r (g x)’ *)
+     cheat)
 (*
-  Q.ABBREV_TAC
-   `r' = ring(s :'b->bool,
-              f (ring_0 r:'a),
-              f (ring_1 r),
-              (\x. f(ring_neg r (g x))),
-              (\x1 x2. f(ring_add r (g x1) (g x2))),
-              (\x1 x2. f(ring_mul r (g x1) (g x2))))` THEN
-  SUBGOAL_THEN
-   `ring_carrier r' = s /\
-    ring_0 r' = (f:A->B) (ring_0 r) /\
+  Q.SUBGOAL_THEN
+   ‘ring_carrier r' = s /\
+    ring_0 r' = (f :'a -> 'b) (ring_0 r) /\
     ring_1 r' = f (ring_1 r) /\
-    ring_neg r' = (\x. f(ring_neg r (g x))) /\
+   (!x. x IN ring_carrier r' ==> ring_neg r' x = f(ring_neg r (g x))) /\
     ring_add r' = (\x1 x2. f(ring_add r (g x1) (g x2))) /\
-    ring_mul r' = (\x1 x2. f(ring_mul r (g x1) (g x2)))`
+    ring_mul r' = (\x1 x2. f(ring_mul r (g x1) (g x2)))’
   STRIP_ASSUME_TAC THENL
-   [EXPAND_TAC "r'" THEN PURE_REWRITE_TAC
+  [ (* goal 1 (of 2) *)
+    simp [Abbr ‘r'’, ring_def] \\
+
+    EXPAND_TAC "r'" THEN PURE_REWRITE_TAC
      [GSYM PAIR_EQ; ring_carrier; ring_0; ring_1; ring_neg; ring_add; ring_mul;
       BETA_THM; PAIR] THEN
     REWRITE_TAC[GSYM(CONJUNCT2 ring_tybij)] THEN
@@ -813,12 +853,14 @@ Proof
     MESON_TAC[RING_ADD_SYM; RING_ADD_ASSOC; RING_ADD_LZERO;
               RING_ADD_LNEG; RING_MUL_SYM; RING_MUL_ASSOC;
               RING_MUL_LID; RING_ADD_LDISTRIB];
+    (* goal 2 (of 2) *)
     EXISTS_TAC `r':B ring` THEN ASM_REWRITE_TAC[isomorphic_ring] THEN
     EXISTS_TAC `f:A->B` THEN REWRITE_TAC[ring_isomorphism] THEN
     EXISTS_TAC `g:B->A` THEN REWRITE_TAC[ring_isomorphisms] THEN
     ASM_SIMP_TAC[ring_homomorphism; RING_0; RING_1; SUBSET; FORALL_IN_IMAGE;
-                 RING_NEG; RING_ADD; RING_MUL]]);;
+                 RING_NEG; RING_ADD; RING_MUL]]);
  *)
+ cheat
 QED
 
 (* ------------------------------------------------------------------------- *)
