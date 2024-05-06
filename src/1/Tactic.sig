@@ -100,6 +100,7 @@ sig
   val SUFF_TAC              : term -> tactic
   val suff_tac              : term -> tactic
   val TRANS_TAC             : thm -> term -> tactic
+  val ANTS_TAC              : tactic
 
   val eliminable            : term -> bool
   val VSUBST_TAC            : thm -> tactic

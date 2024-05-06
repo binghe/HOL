@@ -1239,7 +1239,6 @@ Proof
       SIMP_TAC std_ss[CARD_EXP_CANTOR, CARD_LT_IMP_LE] ]
 QED
 
-(*
 Theorem RING_TOTALIZATION :
     !r :'a Ring.
           (?r' f. ring_carrier r' = {()} /\
@@ -1255,27 +1254,30 @@ Proof
       ASM_SIMP_TAC std_ss[TRIVIAL_RING_SINGLETON_RING, SINGLETON_RING] THEN
       REWRITE_TAC[IMAGE_CONST, RING_CARRIER_NONEMPTY] )
  >> DISJ2_TAC
- >> cheat
  >> MP_TAC(snd(EQ_IMP_RULE(ISPECL
-     [`product_ring (:num#A) (\i. (r:A ring))`; `(:num#A->bool)`]
-     ISOMORPHIC_COPY_OF_RING))) THEN
-    ANTS_TAC THENL
-     [MATCH_MP_TAC RING_TOTALIZATION_lemma THEN
+     [“product_ring univ(:num # 'a) (\i. (r :'a Ring))”, “univ(:num # 'a -> bool)”]
+     ISOMORPHIC_COPY_OF_RING)))
+ >> ANTS_TAC
+ >| [ (* goal 1 (of 2) *)
+      MATCH_MP_TAC RING_TOTALIZATION_lemma THEN
+      cheat (*
       ASM_REWRITE_TAC[GSYM MUL_C_UNIV; INFINITE; CARD_MUL_FINITE_EQ] THEN
       REWRITE_TAC[UNIV_NOT_EMPTY; DE_MORGAN_THM; GSYM INFINITE] THEN
       REWRITE_TAC[num_INFINITE; MUL_C_UNIV] THEN
       REWRITE_TAC[le_c] THEN EXISTS_TAC `\x:A. 0,x` THEN
-      REWRITE_TAC[IN_UNIV; PAIR_EQ];
+      REWRITE_TAC[IN_UNIV; PAIR_EQ] *),
+      (* goal 2 (of 2) *)
+      cheat (*
       MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `r':(num#A->bool)ring` THEN
-      STRIP_TAC THEN ASM_REWRITE_TAC[]] THEN
+      STRIP_TAC THEN ASM_REWRITE_TAC[] *)] THEN
+  cheat (*
     FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [isomorphic_ring]) THEN
     DISCH_THEN(X_CHOOSE_TAC `f:(num#A->A)->num#A->bool`) THEN
     EXISTS_TAC `(f:(num#A->A)->num#A->bool) o (\x i. x)` THEN
     MATCH_MP_TAC RING_MONOMORPHISM_COMPOSE THEN
     EXISTS_TAC `product_ring (:num#A) (\i. (r:A ring))` THEN
     REWRITE_TAC[RING_MONOMORPHISM_DIAGONAL_UNIV] THEN
-    ASM_SIMP_TAC[RING_ISOMORPHISM_IMP_MONOMORPHISM])
+    ASM_SIMP_TAC[RING_ISOMORPHISM_IMP_MONOMORPHISM]) *)
 QED
- *)
 
 val _ = export_theory();
