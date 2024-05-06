@@ -3439,4 +3439,20 @@ Proof
   simp[destWO_mkWO] >> simp[strict_def, Abbr‘W2’]
 QED
 
+(* ------------------------------------------------------------------------- *)
+(* Misc lemmas from HOL-Light's card.ml                                      *)
+(* ------------------------------------------------------------------------- *)
+
+Theorem MUL_C_UNIV :
+    univ(:'a) *_c univ(:'b) = univ(:'a # 'b)
+Proof
+  REWRITE_TAC[CROSS_UNIV]
+QED
+
+Theorem CARD_MUL_FINITE_EQ :
+    !s t. FINITE (s *_c t) <=> s = {} \/ t = {} \/ FINITE s /\ FINITE t
+Proof
+  REWRITE_TAC [FINITE_CROSS_EQ]
+QED
+
 val _ = export_theory()

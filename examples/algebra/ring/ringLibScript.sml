@@ -1239,6 +1239,67 @@ Proof
       SIMP_TAC std_ss[CARD_EXP_CANTOR, CARD_LT_IMP_LE] ]
 QED
 
+(*
+let RING_MONOMORPHISM_COMPOSE = prove
+ (`!r1 r2 r3 (f:A->B) (g:B->C).
+        ring_monomorphism(r1,r2) f /\ ring_monomorphism(r2,r3) g
+        ==> ring_monomorphism(r1,r3) (g o f)`,
+  REWRITE_TAC[ring_monomorphism; ring_homomorphism; INJECTIVE_ON_ALT] THEN
+  SIMP_TAC[SUBSET; FORALL_IN_IMAGE; IMAGE_o; o_THM]);;
+ *)
+
+Theorem RING_HOMOMORPHISM_COMPONENTWISE :
+    !r k s (f :'a -> 'k -> 'b).
+        ring_homomorphism(r,product_ring k s) f <=>
+        IMAGE f (ring_carrier r) SUBSET EXTENSIONAL k /\
+        !i. i IN k ==> ring_homomorphism (r,s i) (\x. f x i)
+Proof
+  cheat (*
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[ring_homomorphism; SUBSET; FORALL_IN_IMAGE] THEN
+  REWRITE_TAC[PRODUCT_RING; IN_CARTESIAN_PRODUCT] THEN
+  REWRITE_TAC[RESTRICTION_UNIQUE_ALT] THEN
+  REWRITE_TAC[SET_RULE `f IN EXTENSIONAL s <=> EXTENSIONAL s f`] THEN
+  ASM_CASES_TAC
+   `!x. x IN ring_carrier r ==> EXTENSIONAL k ((f:A->K->B) x)`
+  THENL [ALL_TAC; ASM_MESON_TAC[]] THEN
+  ASM_SIMP_TAC[RING_0; RING_1; RING_NEG; RING_ADD; RING_MUL] THEN
+  MESON_TAC[]
+ *)
+QED
+
+Theorem RING_HOMOMORPHISM_COMPONENTWISE_UNIV :
+    !r s (f :'a -> 'k -> 'b).
+        ring_homomorphism(r,product_ring univ(:'k) s) f <=>
+        !i. ring_homomorphism (r,s i) (\x. f x i)
+Proof
+  REWRITE_TAC[RING_HOMOMORPHISM_COMPONENTWISE, IN_UNIV] THEN
+  SIMP_TAC std_ss[SET_RULE “s SUBSET P <=> !x. x IN s ==> P x”] THEN
+  REWRITE_TAC[EXTENSIONAL_UNIV]
+QED
+
+Theorem RING_HOMOMORPHISM_ID :
+    !r :'a Ring. ring_homomorphism (r,r) (\x. x)
+Proof
+  SIMP_TAC std_ss[ring_homomorphism, IMAGE_ID, SUBSET_REFL]
+QED
+
+Theorem RING_HOMOMORPHISM_DIAGONAL_UNIV :
+    !(r :'a Ring).
+        ring_homomorphism (r,product_ring univ(:'k) (\i. r)) (\x i. x)
+Proof
+  REWRITE_TAC[RING_HOMOMORPHISM_COMPONENTWISE_UNIV] THEN
+  SIMP_TAC std_ss[RING_HOMOMORPHISM_ID]
+QED
+
+Theorem RING_MONOMORPHISM_DIAGONAL_UNIV :
+   !(r :'a Ring).
+        ring_monomorphism (r,product_ring univ(:'k) (\i. r)) (\x i. x)
+Proof
+  REWRITE_TAC[ring_monomorphism, RING_HOMOMORPHISM_DIAGONAL_UNIV] THEN
+  SET_TAC[]
+QED
+
 Theorem RING_TOTALIZATION :
     !r :'a Ring.
           (?r' f. ring_carrier r' = {()} /\
@@ -1260,22 +1321,21 @@ Proof
  >> ANTS_TAC
  >| [ (* goal 1 (of 2) *)
       MATCH_MP_TAC RING_TOTALIZATION_lemma THEN
-      cheat (*
-      ASM_REWRITE_TAC[GSYM MUL_C_UNIV; INFINITE; CARD_MUL_FINITE_EQ] THEN
-      REWRITE_TAC[UNIV_NOT_EMPTY; DE_MORGAN_THM; GSYM INFINITE] THEN
-      REWRITE_TAC[num_INFINITE; MUL_C_UNIV] THEN
-      REWRITE_TAC[le_c] THEN EXISTS_TAC `\x:A. 0,x` THEN
-      REWRITE_TAC[IN_UNIV; PAIR_EQ] *),
+      ASM_REWRITE_TAC[GSYM MUL_C_UNIV, CARD_MUL_FINITE_EQ] THEN
+      REWRITE_TAC[UNIV_NOT_EMPTY, DE_MORGAN_THM] THEN
+      REWRITE_TAC[num_INFINITE, MUL_C_UNIV] THEN
+      REWRITE_TAC[le_c] THEN EXISTS_TAC “\x:'a. (0,x)” THEN
+      SIMP_TAC std_ss[IN_UNIV],
       (* goal 2 (of 2) *)
-      cheat (*
-      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `r':(num#A->bool)ring` THEN
-      STRIP_TAC THEN ASM_REWRITE_TAC[] *)] THEN
-  cheat (*
-    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [isomorphic_ring]) THEN
-    DISCH_THEN(X_CHOOSE_TAC `f:(num#A->A)->num#A->bool`) THEN
-    EXISTS_TAC `(f:(num#A->A)->num#A->bool) o (\x i. x)` THEN
+      HO_MATCH_MP_TAC MONO_EXISTS THEN Q.X_GEN_TAC ‘r'’ THEN
+      STRIP_TAC THEN ASM_REWRITE_TAC[] ] THEN
+ (* stage work *)
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I empty_rewrites [isomorphic_ring]) THEN
+    DISCH_THEN(Q.X_CHOOSE_TAC ‘f’) THEN
+    Q.EXISTS_TAC ‘f o (\x i. x)’ THEN
+    cheat (*
     MATCH_MP_TAC RING_MONOMORPHISM_COMPOSE THEN
-    EXISTS_TAC `product_ring (:num#A) (\i. (r:A ring))` THEN
+    EXISTS_TAC `product_ring (:num # 'a) (\i. (r :'a Ring))` THEN
     REWRITE_TAC[RING_MONOMORPHISM_DIAGONAL_UNIV] THEN
     ASM_SIMP_TAC[RING_ISOMORPHISM_IMP_MONOMORPHISM]) *)
 QED
