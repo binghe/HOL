@@ -25,7 +25,7 @@ val std_ss' = std_ss ++ PRED_SET_ss;
 (* NOTE: HOL4's ‘trivial_ring’ is HOL-Light's ‘singleton_ring’ (also here).
    HOL-Light's ‘trivial_ring’ is a predicate indicating any ring having
    singleton carrier. (And singleton rings are trivial.)
-   
+
    The theorem ringTheory.trivial_ring will be overwritten by the definition
    of HOL-Light's ‘trivial_ring’.
  *)
@@ -857,40 +857,57 @@ Proof
  >- (simp [Abbr ‘r'’] \\
      Know ‘fromRing (toRing r0) = r0’
      >- (MATCH_MP_TAC from_toRing >> art []) >> Rewr' \\
-     rw [Abbr ‘r0’, raw_ring_def] (* one goal left *) \\
+     rw [Abbr ‘r0’, raw_ring_def] (* one goal about ‘ring_neg’ is left *) \\
      Q.ABBREV_TAC ‘r1 = <|carrier := s;
                                op := (\x1 x2. f (ring_add r (g x1) (g x2)));
                                id := f (ring_0 r)|>’ \\
      fs [raw_ring_def, Once Ring_def, AbelianGroup_def, Group_def] \\
+     Q.PAT_X_ASSUM ‘AbelianMonoid _’ K_TAC (* useless, so is the next *) \\
+     Q.PAT_X_ASSUM ‘!x y z. x IN s /\ y IN s /\ z IN s ==> _’ K_TAC \\
      MP_TAC (Q.SPEC ‘r1’ (INST_TYPE [“:'a” |-> “:'b”] monoid_inv_def)) \\
      RW_TAC std_ss [] (* ‘s’ is removed here *) \\
      qabbrev_tac ‘s = r1.carrier’ (* recreate ‘s’ *) \\
-    cheat,
-    (*
-    EXPAND_TAC "r'" THEN PURE_REWRITE_TAC
-     [GSYM PAIR_EQ; ring_carrier; ring_0; ring_1; ring_neg; ring_add; ring_mul;
-      BETA_THM; PAIR] THEN
-    REWRITE_TAC[GSYM(CONJUNCT2 ring_tybij)] THEN
-    REWRITE_TAC(map (GSYM o REWRITE_RULE[FUN_EQ_THM])
-     [ring_carrier; ring_0; ring_1; ring_neg; ring_add; ring_mul]) THEN
-    SUBGOAL_THEN `s = IMAGE (f:A->B) (ring_carrier r)` SUBST1_TAC THENL
-     [ASM SET_TAC[]; ALL_TAC] THEN
-    REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM] THEN
-    REWRITE_TAC[FORALL_IN_IMAGE] THEN
-    REWRITE_TAC[RIGHT_IMP_FORALL_THM; IMP_IMP; GSYM CONJ_ASSOC] THEN
-    ASM_SIMP_TAC[FUN_IN_IMAGE; RING_0; RING_1;
-                 RING_NEG; RING_ADD; RING_MUL] THEN
-    MESON_TAC[RING_ADD_SYM; RING_ADD_ASSOC; RING_ADD_LZERO;
-              RING_ADD_LNEG; RING_MUL_SYM; RING_MUL_ASSOC;
-              RING_MUL_LID; RING_ADD_LDISTRIB]; *)
-    (* goal 2 (of 2) *)
-    ASM_REWRITE_TAC[isomorphic_ring] THEN
+    ‘s = IMAGE f (ring_carrier r)’ by ASM_SET_TAC [] (* from HOL-Light's proof *) \\
+     POP_ASSUM (fs o wrap) \\
+     rename1 ‘x = f y’ (* renamed x' to y *) \\
+     Q.PAT_X_ASSUM ‘!z. (?x. z = f x /\ x IN ring_carrier r) ==> P’
+        (MP_TAC o (Q.SPEC ‘f (ring_neg r y)’)) \\
+     Know ‘?x. f (ring_neg r y) = f x /\ x IN ring_carrier r’
+     >- (Q.EXISTS_TAC ‘ring_neg r y’ >> rw [RING_NEG]) \\
+     RW_TAC std_ss [] \\
+     rename1 ‘r1.inv (f (ring_neg r y)) = f z’ (* rename x' to z *) \\
+     Q.PAT_X_ASSUM ‘z IN ring_carrier r’ K_TAC (* z assumptions are useless *) \\
+     Q.PAT_X_ASSUM ‘r1.inv (f (ring_neg r y)) = f z’ K_TAC \\
+  (* now using assumptions given by monoid_inv_def *)
+     POP_ASSUM MP_TAC \\
+     Know ‘r1.op = (\x1 x2. f (ring_add r (g x1) (g x2)))’ >- rw [Abbr ‘r1’] \\
+     Know ‘r1.id = f (ring_0 r)’ >- rw [Abbr ‘r1’] \\
+     NTAC 2 Rewr' >> rw [] \\
+     Q.PAT_X_ASSUM ‘r1.op _ _ = r1.id’ K_TAC (* the other is useless *) \\
+     Know ‘g (f (ring_neg r y)) = g (f x)’ >- (AP_TERM_TAC >> art []) \\
+     rw [] \\
+     Q.PAT_X_ASSUM ‘f (ring_neg r (ring_neg r x)) = f x’ K_TAC \\
+     Know ‘r1.inv (f x) IN monoid_invertibles r1’
+     >- (irule monoid_inv_invertible >> rw []) >> art [IN_IMAGE] \\
+     DISCH_TAC \\
+    ‘g (r1.inv (f x)) IN ring_carrier r’ by PROVE_TAC [] \\
+     Q.ABBREV_TAC ‘z = g (r1.inv (f x))’ \\
+     Know ‘g (f (ring_add r z x)) = g (f (ring_0 r))’ >- (AP_TERM_TAC >> art []) \\
+     simp [] \\
+     Q.PAT_X_ASSUM ‘f (ring_add r z x) = f (ring_0 r)’ K_TAC \\
+     DISCH_TAC (* ring_add r z x = ring_0 r *) \\
+  (* cf. Q.SPECL [‘r’, ‘z’, ‘x’] RING_RNEG_UNIQUE *)
+     Know ‘ring_neg r x = z’ >- (MATCH_MP_TAC RING_RNEG_UNIQUE >> art []) \\
+     Rewr' (* new goal: f z = r1.inv (f x) *) \\
+     rw [Abbr ‘z’])
+ (* stage work *)
+ >> ASM_REWRITE_TAC[isomorphic_ring] THEN
     Q.EXISTS_TAC ‘f’ THEN REWRITE_TAC[ring_isomorphism] THEN
     Q.EXISTS_TAC ‘g’ THEN REWRITE_TAC[ring_isomorphisms] THEN
     NTAC 2 (POP_ASSUM MP_TAC) \\
     NTAC 2 (DISCH_THEN (STRIP_ASSUME_TAC o SIMP_RULE std_ss [FUN_EQ_THM])) \\
     ASM_SIMP_TAC std_ss [ring_homomorphism, RING_0, RING_1, SUBSET_DEF,
-                         FORALL_IN_IMAGE, RING_NEG, RING_ADD, RING_MUL] ]
+                         FORALL_IN_IMAGE, RING_NEG, RING_ADD, RING_MUL]
 QED
 
 (* ------------------------------------------------------------------------- *)
