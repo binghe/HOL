@@ -3455,4 +3455,18 @@ Proof
   REWRITE_TAC [FINITE_CROSS_EQ]
 QED
 
+Theorem INJECTIVE_ON_ALT :
+    !P (f :'a -> 'b).
+        (!x y. P x /\ P y /\ f x = f y ==> x = y) <=>
+        (!x y. P x /\ P y ==> (f x = f y <=> x = y))
+Proof
+  MESON_TAC[]
+QED
+
+Theorem INJECTIVE_ALT :
+    !f :'a -> 'b. (!x y. f x = f y ==> x = y) <=> (!x y. f x = f y <=> x = y)
+Proof
+  MESON_TAC[]
+QED
+
 val _ = export_theory()

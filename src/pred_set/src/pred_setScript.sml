@@ -1809,6 +1809,12 @@ val IMAGE_I = store_thm("IMAGE_I[simp]",
   ``IMAGE I s = s``,
   full_simp_tac(srw_ss())[EXTENSION]);
 
+Theorem IMAGE_o :
+     !(f :'b -> 'c) (g :'a -> 'b) s. IMAGE (f o g) s = IMAGE f (IMAGE g s)
+Proof
+  REWRITE_TAC[EXTENSION, IN_IMAGE, o_THM] THEN MESON_TAC[]
+QED
+
 val IMAGE_II = store_thm (* from util_prob *)
   ("IMAGE_II",
    ``IMAGE I = I``,

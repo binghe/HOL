@@ -780,6 +780,13 @@ Proof
   MESON_TAC[]
 QED
 
+Theorem RING_ISOMORPHISM_IMP_MONOMORPHISM :
+    !r r' (f :'a -> 'b).
+        ring_isomorphism (r,r') f ==> ring_monomorphism (r,r') f
+Proof
+  SIMP_TAC std_ss[GSYM RING_MONOMORPHISM_EPIMORPHISM]
+QED
+
 Theorem CARD_EQ_RING_ISOMORPHIC_IMAGE :
     !r r' (f :'a -> 'b).
         ring_isomorphism(r,r') f ==> ring_carrier r =_c ring_carrier r'
@@ -1144,12 +1151,12 @@ Theorem PRODUCT_RING :
    (!k (r :'k -> 'a Ring).
         ring_1 (product_ring k r) =
           RESTRICTION k (\i. ring_1 (r i))) /\
+   (!k (r :'k -> 'a Ring) x y.
+        ring_add (product_ring k r) x y =
+          RESTRICTION k (\i. ring_add (r i) (x i) (y i))) /\
    (!k (r :'k -> 'a Ring).
-        ring_add (product_ring k r) =
-          (\x y. RESTRICTION k (\i. ring_add (r i) (x i) (y i)))) /\
-   (!k (r :'k -> 'a Ring).
-        ring_mul (product_ring k r) =
-          (\x y. RESTRICTION k (\i. ring_mul (r i) (x i) (y i))))
+        ring_mul (product_ring k r) x y =
+          RESTRICTION k (\i. ring_mul (r i) (x i) (y i)))
 Proof
     rw [product_ring] (* 5 subgoals, same initial tactics *)
  >> ‘fromRing (toRing (raw_product_ring k r)) = raw_product_ring k r’
@@ -1213,6 +1220,13 @@ Proof
  >> MATCH_MP_TAC RING_LNEG_UNIQUE >> rw []
 QED
 
+(* |- !k r x.
+        EXTENSIONAL k x /\ (!i. i IN k ==> x i IN ring_carrier (r i)) ==>
+        ring_neg (product_ring k r) x = RESTRICTION k (\i. ring_neg (r i) (x i))
+ *)
+Theorem PRODUCT_RING_NEG' =
+        PRODUCT_RING_NEG |> SIMP_RULE std_ss [PRODUCT_RING, IN_CARTESIAN_PRODUCT]
+
 Theorem RING_TOTALIZATION_lemma[local] :
     !r :'a Ring.
             ~(trivial_ring r) /\ INFINITE univ(:'b) /\ univ(:'a) <=_c univ(:'b)
@@ -1239,14 +1253,14 @@ Proof
       SIMP_TAC std_ss[CARD_EXP_CANTOR, CARD_LT_IMP_LE] ]
 QED
 
-(*
-let RING_MONOMORPHISM_COMPOSE = prove
- (`!r1 r2 r3 (f:A->B) (g:B->C).
+Theorem RING_MONOMORPHISM_COMPOSE :
+    !r1 r2 r3 (f :'a -> 'b) (g :'b -> 'c).
         ring_monomorphism(r1,r2) f /\ ring_monomorphism(r2,r3) g
-        ==> ring_monomorphism(r1,r3) (g o f)`,
-  REWRITE_TAC[ring_monomorphism; ring_homomorphism; INJECTIVE_ON_ALT] THEN
-  SIMP_TAC[SUBSET; FORALL_IN_IMAGE; IMAGE_o; o_THM]);;
- *)
+        ==> ring_monomorphism(r1,r3) (g o f)
+Proof
+  SIMP_TAC std_ss[ring_monomorphism, ring_homomorphism, INJECTIVE_ON_ALT] THEN
+  SIMP_TAC std_ss[SUBSET_DEF, FORALL_IN_IMAGE, IMAGE_o, o_THM]
+QED
 
 Theorem RING_HOMOMORPHISM_COMPONENTWISE :
     !r k s (f :'a -> 'k -> 'b).
@@ -1254,18 +1268,33 @@ Theorem RING_HOMOMORPHISM_COMPONENTWISE :
         IMAGE f (ring_carrier r) SUBSET EXTENSIONAL k /\
         !i. i IN k ==> ring_homomorphism (r,s i) (\x. f x i)
 Proof
-  cheat (*
   REPEAT GEN_TAC THEN
-  REWRITE_TAC[ring_homomorphism; SUBSET; FORALL_IN_IMAGE] THEN
-  REWRITE_TAC[PRODUCT_RING; IN_CARTESIAN_PRODUCT] THEN
+  SIMP_TAC std_ss[ring_homomorphism, SUBSET_DEF, FORALL_IN_IMAGE] THEN
+  SIMP_TAC std_ss[PRODUCT_RING, IN_CARTESIAN_PRODUCT] THEN
   REWRITE_TAC[RESTRICTION_UNIQUE_ALT] THEN
-  REWRITE_TAC[SET_RULE `f IN EXTENSIONAL s <=> EXTENSIONAL s f`] THEN
+  REWRITE_TAC[SET_RULE “f IN EXTENSIONAL s <=> EXTENSIONAL s f”] THEN
   ASM_CASES_TAC
-   `!x. x IN ring_carrier r ==> EXTENSIONAL k ((f:A->K->B) x)`
-  THENL [ALL_TAC; ASM_MESON_TAC[]] THEN
-  ASM_SIMP_TAC[RING_0; RING_1; RING_NEG; RING_ADD; RING_MUL] THEN
-  MESON_TAC[]
- *)
+    “!x. x IN ring_carrier r ==> EXTENSIONAL k ((f :'a -> 'k -> 'b) x)”
+  THENL [ALL_TAC, ASM_MESON_TAC[]] THEN
+  ASM_SIMP_TAC std_ss[RING_0, RING_1, RING_NEG, RING_ADD, RING_MUL] THEN
+ (* NOTE: below are additional proofs for PRODUCT_RING_NEG *)
+  EQ_TAC >> RW_TAC std_ss [] >| (* 2 subgoals *)
+  [ (* goal 1 (of 2) *)
+    Know ‘ring_neg (product_ring k s) (f x) =
+          RESTRICTION k (\i. ring_neg (s i) (f x i))’
+    >- (rpt STRIP_TAC \\
+        MATCH_MP_TAC PRODUCT_RING_NEG' >> rw []) >> Rewr' \\
+    rw [RESTRICTION],
+    (* goal 2 (of 2) *)
+    Know ‘ring_neg (product_ring k s) (f x) =
+          RESTRICTION k (\i. ring_neg (s i) (f x i))’
+    >- (rpt STRIP_TAC \\
+        MATCH_MP_TAC PRODUCT_RING_NEG' >> rw []) >> Rewr' \\
+    REWRITE_TAC [FUN_EQ_THM] \\
+    Q.X_GEN_TAC ‘i’ \\
+    REWRITE_TAC [RESTRICTION] \\
+    Cases_on ‘i IN k’ >- rw [] \\
+    fs [EXTENSIONAL_def] ]
 QED
 
 Theorem RING_HOMOMORPHISM_COMPONENTWISE_UNIV :
@@ -1333,11 +1362,10 @@ Proof
     FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I empty_rewrites [isomorphic_ring]) THEN
     DISCH_THEN(Q.X_CHOOSE_TAC ‘f’) THEN
     Q.EXISTS_TAC ‘f o (\x i. x)’ THEN
-    cheat (*
     MATCH_MP_TAC RING_MONOMORPHISM_COMPOSE THEN
-    EXISTS_TAC `product_ring (:num # 'a) (\i. (r :'a Ring))` THEN
+    EXISTS_TAC “product_ring univ(:num # 'a) (\i. (r :'a Ring))” THEN
     REWRITE_TAC[RING_MONOMORPHISM_DIAGONAL_UNIV] THEN
-    ASM_SIMP_TAC[RING_ISOMORPHISM_IMP_MONOMORPHISM]) *)
+    ASM_SIMP_TAC std_ss[RING_ISOMORPHISM_IMP_MONOMORPHISM]
 QED
 
 val _ = export_theory();
