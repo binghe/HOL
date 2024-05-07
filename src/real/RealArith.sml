@@ -21,14 +21,8 @@ struct
 open HolKernel Parse boolLib liteLib;
 
 open pairTheory pairLib reduceLib tautLib simpLib BasicProvers Ho_Rewrite
-     jrhUtils
-     Canon_Port AC prim_recTheory numTheory numLib numSyntax arithmeticTheory;
-
-open normalForms;  (* for HOL-Light's GEN_NNF_CONV, etc. *)
-open Normalizer;   (* for HOL-Light's SEMIRING_NORMALIZERS_CONV *)
-
-open realaxTheory; (* NOTE: cannot open realTheory here *)
-open Arbint;       (* TODO: remove this in the future, using the default Int *)
+     jrhUtils Canon Canon_Port AC normalForms Normalizer Arbint numLib
+     prim_recTheory numTheory numSyntax arithmeticTheory realaxTheory;
 
 (*---------------------------------------------------------------------------*)
 (* Establish the required grammar(s) for executing this file                 *)
@@ -47,6 +41,7 @@ open Parse
 val assert      = Lib.assert;
 val is_binop    = liteLib.is_binop;
 val SKOLEM_CONV = Canon_Port.SKOLEM_CONV;
+val PRENEX_CONV = Canon.PRENEX_CONV;
 
 (* recover the primitive theorem names involving real_0 and real_1 *)
 val REAL_10         = REAL_10';
@@ -2417,6 +2412,7 @@ in
   end
 end;
 end (* local *)
+
 (* ------------------------------------------------------------------------- *)
 (* Bootstrapping REAL_ARITH: trivial abs-elim and only integer constants.    *)
 (* ------------------------------------------------------------------------- *)
