@@ -10,7 +10,11 @@
 
 structure ringLib :> ringLib =
 struct
-  open HolKernel boolLib bossLib cardinalTheory ringTheory ringLibTheory;
+
+open HolKernel boolLib bossLib;
+
+open cardinalTheory ringTheory ringLibTheory Normalizer normalForms tautLib
+     Canon Canon_Port;
 
 (*---------------------------------------------------------------------------*)
 (* Establish the required grammar(s) for executing this file                 *)
@@ -18,12 +22,205 @@ struct
 
 structure Parse = struct
   open Parse
-  val (Type,Term) =
-      parse_from_grammars
-        (apsnd ParseExtras.grammar_loose_equality ringLib_grammars)
+  val (Type,Term) = parse_from_grammars ringLib_grammars
 end
 
 open Parse;
+
+val ERR = mk_HOL_ERR "ringLib";
+fun failwith s = raise ERR "?" s
+
+(* |- !P Q. P /\ (?x. Q x) <=> ?x. P /\ Q x *)
+val RIGHT_AND_EXISTS_THM = GSYM RIGHT_EXISTS_AND_THM
+
+(* |- !P Q. (?x. P x) /\ Q <=> ?x. P x /\ Q *)
+val LEFT_AND_EXISTS_THM = GSYM LEFT_EXISTS_AND_THM
+
+(* from Grobner.sml (NOTE: somehow normalForms.PRENEX_CONV doesn't work) *)
+val PRENEX_CONV = Canon_Port.PRENEX_CONV;
+
+(* NOTE: normalForms.CNF_CONV changes the order of conjuncts of input term *)
+val CNF_CONV = Canon.CNF_CONV;
+
+(* A sample input for RING_RULE:
+
+   |- y1 * inv y1 = 1 /\ y2 * inv y2 = 1 /\ x1 * y2 = x2 * y1 ==>
+      x1 * inv y1 = x2 * inv y2
+
+   NOTE: RING_RULE doesn't know ‘ring_inv’ and jusst treats ‘ring_inv y y1’ as
+         an atom (or single variable).
+
+   val tm =
+    ``ring_mul r y1 (ring_inv r y1) = ring_1 r /\
+      ring_mul r y2 (ring_inv r y2) = ring_1 r /\
+      ring_mul r x1 y2 = ring_mul r x2 y1
+      ==> ring_mul r x1 (ring_inv r y1) = ring_mul r x2 (ring_inv r y2)``;
+
+   RING_RULE tm
+ *)
+
+(* ------------------------------------------------------------------------- *)
+(* Instantiate the normalizer and ring procedure for the case of a ring      *)
+(* "r:A ring" with the whole type A as the carrier. Since all the machinery  *)
+(* of the normalizer is designed for such "universal" rings, this is the     *)
+(* best we can do, but below we use this to define a general procedure.      *)
+(* The RING instantiation is called RING_INTEGRAL_DOMAIN_UNIVERSAL since     *)
+(* it in general assumes "integral_domain r" and may also assume that        *)
+(* "ring_char r = 0". Later we use the other cofactors function to give      *)
+(* a better decision procedure for general rings, but the integral           *)
+(* domain one may be independently useful for proofs involving cancellation  *)
+(* in such domains.                                                          *)
+(* ------------------------------------------------------------------------- *)
+
+(*
+let RING_POLY_UNIVERSAL_CONV =
+  let pth = (UNDISCH o SPEC_ALL o prove)
+   (`!r. ring_carrier r = (:A)
+          ==> (!x y z. ring_add r x (ring_add r y z) =
+                       ring_add r (ring_add r x y) z) /\
+              (!x y. ring_add r x y = ring_add r y x) /\
+              (!x. ring_add r (ring_of_int r (&0)) x = x) /\
+              (!x y z. ring_mul r x (ring_mul r y z) =
+                       ring_mul r (ring_mul r x y) z) /\
+              (!x y. ring_mul r x y = ring_mul r y x) /\
+              (!x. ring_mul r (ring_of_int r (&1)) x = x) /\
+              (!x. ring_mul r (ring_of_int r (&0)) x = ring_of_int r (&0)) /\
+              (!x y z. ring_mul r x (ring_add r y z) =
+                       ring_add r (ring_mul r x y) (ring_mul r x z)) /\
+              (!x. ring_pow r x 0 = ring_of_int r (&1)) /\
+              (!x n. ring_pow r x (SUC n) = ring_mul r x (ring_pow r x n))`,
+    REWRITE_TAC[RING_OF_INT_OF_NUM; RING_OF_NUM_1; CONJUNCT1 ring_of_num] THEN
+    SIMP_TAC[RING_ADD_LZERO; RING_MUL_LID; RING_MUL_LZERO; IN_UNIV] THEN
+    SIMP_TAC[ring_pow; RING_ADD_LDISTRIB; IN_UNIV] THEN
+    SIMP_TAC[RING_ADD_AC; RING_MUL_AC; IN_UNIV])
+  and sth = (UNDISCH o SPEC_ALL o prove)
+   (`!r. ring_carrier r = (:A)
+          ==> (!x. ring_neg r x = ring_mul r (ring_of_int r (-- &1)) x) /\
+              (!x y. ring_sub r x y =
+                     ring_add r x (ring_mul r (ring_of_int r (-- &1)) y))`,
+    SIMP_TAC[RING_OF_INT_NEG; RING_MUL_LNEG; IN_UNIV; ring_sub] THEN
+    REWRITE_TAC[RING_OF_INT_OF_NUM; RING_OF_NUM_1; CONJUNCT1 ring_of_num] THEN
+    SIMP_TAC[ring_sub; RING_MUL_LNEG; RING_MUL_LID; IN_UNIV])
+  and RING_INT_ADD_CONV =
+      GEN_REWRITE_CONV I [GSYM RING_OF_INT_ADD] THENC
+      RAND_CONV INT_ADD_CONV
+  and RING_INT_MUL_CONV =
+    GEN_REWRITE_CONV I [GSYM RING_OF_INT_MUL] THENC
+    RAND_CONV INT_MUL_CONV
+  and RING_INT_POW_CONV =
+    GEN_REWRITE_CONV I [GSYM RING_OF_INT_POW] THENC
+    RAND_CONV INT_POW_CONV
+  and is_ringconst tm =
+    match tm with
+      Comb(Comb(Const("ring_of_int",_),_),n) -> is_intconst n
+    | _ -> false
+  and ith = prove
+   (`ring_0 r = ring_of_int r (&0) /\
+     ring_1 r = ring_of_int r (&1)`,
+    REWRITE_TAC[RING_OF_INT_OF_NUM; RING_OF_NUM_1; CONJUNCT1 ring_of_num]) in
+  let _,_,_,_,_,RING_POLY_CONV =
+    SEMIRING_NORMALIZERS_CONV pth sth
+     (is_ringconst,
+      RING_INT_ADD_CONV,RING_INT_MUL_CONV,RING_INT_POW_CONV)
+     (<) in
+  GEN_REWRITE_CONV ONCE_DEPTH_CONV [ith; GSYM RING_OF_INT_OF_NUM] THENC
+  RING_POLY_CONV;;
+ *)
+
+(* NOTE: not needed so far
+let RING_INTEGRAL_DOMAIN_UNIVERSAL,ring_ring_cofactors_universal =
+  let RING_INTEGRAL = (repeat UNDISCH o prove)
+   (`integral_domain r
+     ==> ring_carrier r = (:A)
+         ==> (!x. ring_mul r (ring_of_int r (&0)) x = ring_of_int r (&0)) /\
+             (!x y z. ring_add r x y = ring_add r x z <=> y = z) /\
+             (!w x y z.
+                      ring_add r (ring_mul r w y) (ring_mul r x z) =
+                      ring_add r (ring_mul r w z) (ring_mul r x y) <=>
+                      w = x \/ y = z)`,
+    REPEAT GEN_TAC THEN REPEAT DISCH_TAC THEN
+    REWRITE_TAC[RING_OF_INT_OF_NUM; RING_OF_NUM_0] THEN
+    ASM_SIMP_TAC[RING_MUL_LZERO; RING_ADD_LCANCEL; IN_UNIV] THEN
+    REPEAT GEN_TAC THEN
+    MP_TAC(ISPEC `r:A ring` RING_SUB_EQ_0) THEN
+    ASM_REWRITE_TAC[IN_UNIV] THEN
+    DISCH_THEN(fun th -> ONCE_REWRITE_TAC[GSYM th]) THEN
+    FIRST_X_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+          INTEGRAL_DOMAIN_MUL_EQ_0)) THEN
+    ASM_REWRITE_TAC[IN_UNIV] THEN
+    DISCH_THEN(fun th -> ONCE_REWRITE_TAC[GSYM th]) THEN
+    AP_THM_TAC THEN AP_TERM_TAC THEN
+    ASM_SIMP_TAC[ring_sub; IN_UNIV; RING_ADD_LDISTRIB; RING_ADD_RDISTRIB;
+                 RING_NEG_NEG; RING_NEG_ADD; RING_MUL_LNEG; RING_MUL_RNEG] THEN
+    ASM_SIMP_TAC[RING_MUL_AC; IN_UNIV] THEN
+    ASM_SIMP_TAC[RING_ADD_AC; IN_UNIV])
+  and neth_b = prove
+   (`ring_of_int r n :A = ring_of_int r n <=> T`,
+    REWRITE_TAC[])
+  and neth_l = (UNDISCH o prove)
+   (`integral_domain (r:A ring)
+     ==> (ring_of_int r (&1) = ring_of_int r (&0) <=> F)`,
+    REWRITE_TAC[RING_OF_INT_OF_NUM; RING_OF_NUM_0; RING_OF_NUM_1] THEN
+    SIMP_TAC[integral_domain])
+  and neth_r = (UNDISCH o prove)
+   (`integral_domain (r:A ring)
+     ==> (ring_of_int r (&0) = ring_of_int r (&1) <=> F)`,
+    REWRITE_TAC[RING_OF_INT_OF_NUM; RING_OF_NUM_0; RING_OF_NUM_1] THEN
+    SIMP_TAC[integral_domain])
+  and neth_g = prove
+   (`(ring_of_int r m :A = ring_of_int r n <=> F) <=>
+     ~(&(ring_char r) divides (m - n))`,
+    REWRITE_TAC[RING_OF_INT_EQ] THEN CONV_TAC INTEGER_RULE)
+  and neth_h = prove
+   (`(&(ring_char(r:A ring)) divides --(&n) <=> ring_char r divides n) /\
+     (&(ring_char(r:A ring)) divides &n <=> ring_char r divides n)`,
+    REWRITE_TAC[num_divides] THEN CONV_TAC INTEGER_RULE) in
+  let rule1 = PART_MATCH (lhand o lhand) neth_g
+  and conv1 =
+    RAND_CONV INT_SUB_CONV THENC
+    GEN_REWRITE_CONV TRY_CONV [neth_h] in
+  let RING_EQ_CONV tm =
+    try PART_MATCH lhand neth_b tm
+    with Failure _ -> try
+        PART_MATCH lhand neth_l tm
+    with Failure _ -> try
+        PART_MATCH lhand neth_r tm
+    with Failure _ -> try
+        let th1 = rule1 tm in
+        let th2 = CONV_RULE(RAND_CONV(RAND_CONV conv1)) th1 in
+        UNDISCH(snd(EQ_IMP_RULE th2))
+    with Failure _ -> failwith "RING_EQ_CONV"
+  and dest_ringconst tm =
+    match tm with
+      Comb(Comb(Const("ring_of_int",_),_),n) -> dest_intconst n
+    | _ -> failwith "dest_ringconst"
+  and mk_ringconst =
+    let ptm = `ring_of_int (r:A ring)` in
+    fun n -> mk_comb(ptm,mk_intconst n) in
+  let cth = prove
+   (`ring_0 r:A = ring_of_int r (&0) /\
+     ring_1 r:A = ring_of_int r (&1)`,
+    REWRITE_TAC[RING_OF_INT_OF_NUM; RING_OF_NUM_0; RING_OF_NUM_1]) in
+  let decorule =
+    GEN_REWRITE_CONV ONCE_DEPTH_CONV [cth; GSYM RING_OF_INT_OF_NUM] in
+  let basic_rule,idealconv =
+    RING_AND_IDEAL_CONV
+     (dest_ringconst,
+      mk_ringconst,
+      RING_EQ_CONV,
+      `ring_neg(r:A ring)`,
+      `ring_add(r:A ring)`,
+      `ring_sub(r:A ring)`,
+      `ring_inv(r:A ring)`,
+      `ring_mul(r:A ring)`,
+      `ring_div(r:A ring)`,
+      `ring_pow(r:A ring)`,
+      RING_INTEGRAL,TRUTH,RING_POLY_UNIVERSAL_CONV) in
+  let rule tm =
+    let th = decorule tm in
+    EQ_MP (SYM th) (basic_rule(rand(concl th))) in
+  rule,idealconv;;
+ *)
 
 (* ------------------------------------------------------------------------- *)
 (* Derived rule to take a theorem asserting a monomorphism between r and r'  *)
@@ -89,30 +286,17 @@ let RING_MONOMORPHIC_IMAGE_RULE =
 (* ------------------------------------------------------------------------- *)
 
 (*
-let RING_RULE =
-  let RING_WORD_UNIVERSAL =
-    let cth = prove
-     (`ring_0 r = ring_of_int r (&0) /\
-       ring_1 r = ring_of_int r (&1)`,
-      REWRITE_TAC[RING_OF_INT_OF_NUM; RING_OF_NUM_0; RING_OF_NUM_1])
-    and pth = (UNDISCH o prove)
-     (`ring_carrier r = (:A)
-       ==> (x = y <=> ring_sub r x y = ring_of_int r (&0))`,
-      SIMP_TAC[RING_SUB_EQ_0; IN_UNIV; RING_OF_INT_OF_NUM; RING_OF_NUM_0])
-    and bth = REFL `ring_of_int r (&0):A`
-    and mth = (UNDISCH o prove)
-     (`ring_carrier r = (:A)
-       ==> p = ring_of_int r (&0) ==> !c. ring_mul r c p = ring_of_int r (&0)`,
-      SIMP_TAC[RING_MUL_RZERO; RING_OF_INT_OF_NUM; RING_OF_NUM_0; IN_UNIV])
-    and dth = (UNDISCH o prove)
-     (`ring_carrier r = (:A)
-       ==> p = ring_of_int r (&0) /\ q = ring_of_int r (&0)
-           ==> ring_add r p q = ring_of_int r (&0)`,
-      SIMP_TAC[RING_ADD_RZERO; RING_OF_INT_OF_NUM; RING_OF_NUM_0; IN_UNIV]) in
-    let decorule =
-      GEN_REWRITE_RULE (RAND_CONV o ONCE_DEPTH_CONV)
-       [cth; GSYM RING_OF_INT_OF_NUM] o
-      PART_MATCH lhand pth in
+val RING_WORD_UNIVERSAL = let
+    val cth = RING_WORD_UNIVERSAL_cth
+    and pth = UNDISCH RING_WORD_UNIVERSAL_pth
+    and bth = REFL “ring_of_int r (&0) :'a”
+    and mth = UNDISCH RING_WORD_UNIVERSAL_mth
+    and dth = UNDISCH RING_WORD_UNIVERSAL_dth;
+    val decorule =
+      GEN_REWRITE_RULE (RAND_CONV o ONCE_DEPTH_CONV) empty_rewrites
+       [cth, GSYM RING_OF_INT_OF_NUM] o
+      PART_MATCH lhand pth
+in
     fun tm ->
       let avs,bod = strip_forall tm in
       if is_imp bod then
@@ -134,7 +318,8 @@ let RING_RULE =
         let th1 = decorule tm in
         let th2 = CONV_RULE
           (RAND_CONV (LAND_CONV RING_POLY_UNIVERSAL_CONV)) th1 in
-        EQ_MP (SYM th2) bth in
+        EQ_MP (SYM th2) bth
+
   let RING_RING_WORD =
     let imp_imp_rule = GEN_REWRITE_RULE I [IMP_IMP]
     and left_exists_rule = GEN_REWRITE_RULE I [LEFT_FORALL_IMP_THM]
@@ -187,6 +372,7 @@ let RING_RULE =
       let th11 = CONJ (PART_MATCH lhand th9 (lhand(concl th10)))
                       (PART_MATCH lhand th9 (rand(concl th10))) in
       MP (or_elim_rule th11) th10 in
+
   let RING_RING_HORN =
     let ddj_conv =
       GEN_REWRITE_CONV (RAND_CONV o DEPTH_CONV)
@@ -200,56 +386,76 @@ let RING_RULE =
       let ths = CONJUNCTS(ASSUME abod) in
       let th1 = RING_RING_WORD ths (rand tm') in
       EQ_MP (SYM th0) (DISCH abod (itlist PROVE_HYP ths th1)) in
-  let RING_RING_CORE =
-    let pth = TAUT `p ==> q <=> (p \/ q <=> q)`
-    and ptm = `p:bool` and qtm = `q:bool` in
-    fun tm ->
-      let negdjs,posdjs = partition is_neg (disjuncts tm) in
-      let th = tryfind
-       (fun p -> RING_RING_HORN (list_mk_disj(p::negdjs))) posdjs in
-      let th1 = INST[concl th,ptm; tm,qtm] pth in
-      MP (EQ_MP (SYM th1) (DISJ_ACI_RULE(rand(concl th1)))) th in
-  let init_conv =
+ *)
+
+val RING_RING_CORE = let
+    val pth = TAUT ‘p ==> q <=> (p \/ q <=> q)’
+    and ptm = “p:bool” and qtm = “q:bool”
+in
+    fn tm => let
+      val (negdjs,posdjs) = partition is_neg (strip_disj tm);
+      val th = tryfind
+                 (fn p => RING_RING_HORN (list_mk_disj(p::negdjs))) posdjs;
+      val th1 = INST [ptm |-> concl th, qtm |-> tm] pth
+    in
+      MP (EQ_MP (SYM th1) (DISJ_ACI_RULE(rand(concl th1)))) th
+end
+
+val init_conv =
     TOP_DEPTH_CONV BETA_CONV THENC
     PRESIMP_CONV THENC
     CONDS_ELIM_CONV THENC
     NNFC_CONV THENC CNF_CONV THENC
     SKOLEM_CONV THENC PRENEX_CONV THENC
-    GEN_REWRITE_CONV REDEPTH_CONV
-     [RIGHT_AND_EXISTS_THM; LEFT_AND_EXISTS_THM] THENC
-    GEN_REWRITE_CONV TOP_DEPTH_CONV [GSYM DISJ_ASSOC] THENC
-    GEN_REWRITE_CONV TOP_DEPTH_CONV [GSYM CONJ_ASSOC] in
-  let RING_RULE_BASIC tm =
-    let avs,bod = strip_forall tm in
-    let th1 = init_conv bod in
-    let tm' = rand(concl th1) in
-    let avs',bod' = strip_forall tm' in
-    let th2 = end_itlist CONJ (map RING_RING_CORE (conjuncts bod')) in
+    GEN_REWRITE_CONV REDEPTH_CONV empty_rewrites
+     [RIGHT_AND_EXISTS_THM, LEFT_AND_EXISTS_THM] THENC
+    GEN_REWRITE_CONV TOP_DEPTH_CONV empty_rewrites [GSYM DISJ_ASSOC] THENC
+    GEN_REWRITE_CONV TOP_DEPTH_CONV empty_rewrites [GSYM CONJ_ASSOC];
+
+(* for debugging purposes:
+   val tm = tm';
+ *)
+fun RING_RULE_BASIC tm = let
+    val (avs,bod) = strip_forall tm;
+    val th1 = init_conv bod;
+    val tm' = rand(concl th1);
+    val (avs',bod') = strip_forall tm';
+    val th2 = end_itlist CONJ (map RING_RING_CORE (strip_conj bod'));
     let th3 = EQ_MP (SYM th1) (GENL avs' th2) in
     let imps = hyp th3 in
     let th4 =
       if imps = [] then th3
       else DISCH_ALL
-             (itlist PROVE_HYP (CONJUNCTS(ASSUME(list_mk_conj imps))) th3) in
-    GENL avs th4 in
-  fun tm ->
-    let tvs = type_vars_in_term tm in
-    let ty = mk_vartype("Y"^itlist ((^) o dest_vartype) tvs "") in
-    let tm' = inst[ty,aty] tm in
-    INST_TYPE [aty,ty] (RING_RULE_BASIC tm');;
+             (itlist PROVE_HYP (CONJUNCTS(ASSUME(list_mk_conj imps))) th3)
+in
+    GENL avs th4
+end;
+
+(* The final version of RULE_RULE only temporarily changes the type variable
+   alpha of input term to something fresh and then call RING_RULE_BASIC to
+   do the actual job.
+ *)
+fun RING_RULE tm = let
+    val tvs = type_vars_in_term tm;
+    val ty = mk_vartype("Y" ^ itlist (curry (^) o dest_vartype) tvs "");
+    val tm' = inst [alpha |-> ty] tm;
+in
+    INST_TYPE [ty |-> alpha] (RING_RULE_BASIC tm')
+end;
 
 (* ------------------------------------------------------------------------- *)
 (* A naive tactic form, pulling in equations in the assumptions and          *)
 (* either solving outright or leaving some ring carrier membership           *)
 (* ------------------------------------------------------------------------- *)
 
+(*
 let RING_TAC =
   REPEAT GEN_TAC THEN
   REPEAT(FIRST_X_ASSUM(MP_TAC o check (is_eq o concl))) THEN
   W(fun (asl,w) ->
         let th = RING_RULE w in
         (MATCH_ACCEPT_TAC th ORELSE
-         ((fun g -> MATCH_MP_TAC th g) THEN ASM_REWRITE_TAC[])));;
-*)
+         ((fun g -> MATCH_MP_TAC th g) THEN ASM_REWRITE_TAC[])));
+ *)
 
 end (* structure ringLib *)
