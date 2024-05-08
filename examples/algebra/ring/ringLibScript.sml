@@ -129,6 +129,11 @@ Definition ring_inv_def :
     ring_inv (r :'a Ring) = (Invertibles ((fromRing r).prod)).inv
 End
 
+(* NOTE: not used *)
+Definition ring_div_def :
+    ring_div r (a :'a) b = ring_mul r a (ring_inv r b)
+End
+
 (* NOTE: Now the following theorems have exactly the same statements with their
          corresponding theorems in HOL-Light.
  *)
@@ -1426,28 +1431,28 @@ Proof
     ASM_SIMP_TAC std_ss[RING_ISOMORPHISM_IMP_MONOMORPHISM]
 QED
 
-Theorem RING_WORD_UNIVERSAL_cth :
+Theorem RING_WORD_UNIVERSAL_LEMMA1 :
     ring_0 r = ring_of_int (r :'a Ring) (&0) /\
     ring_1 r = ring_of_int (r :'a Ring) (&1)
 Proof
   REWRITE_TAC[RING_OF_INT_OF_NUM, RING_OF_NUM_0, RING_OF_NUM_1]
 QED
 
-Theorem RING_WORD_UNIVERSAL_pth :
+Theorem RING_WORD_UNIVERSAL_LEMMA2 :
     ring_carrier r = univ(:'a) ==>
     (x = y <=> ring_sub r x y = ring_of_int r (&0))
 Proof
   SIMP_TAC bool_ss[RING_SUB_EQ_0, IN_UNIV, RING_OF_INT_OF_NUM, RING_OF_NUM_0]
 QED
 
-Theorem RING_WORD_UNIVERSAL_mth :
+Theorem RING_WORD_UNIVERSAL_LEMMA3 :
     ring_carrier r = univ(:'a) ==>
     p = ring_of_int r (&0) ==> !c. ring_mul r c p = ring_of_int r (&0)
 Proof
   SIMP_TAC bool_ss[RING_MUL_RZERO, RING_OF_INT_OF_NUM, RING_OF_NUM_0, IN_UNIV]
 QED
 
-Theorem RING_WORD_UNIVERSAL_dth :
+Theorem RING_WORD_UNIVERSAL_LEMMA4 :
     ring_carrier r = univ(:'a) ==>
       p = ring_of_int r (&0) /\ q = ring_of_int r (&0) ==>
         ring_add r p q = ring_of_int r (&0)
@@ -1456,3 +1461,4 @@ Proof
 QED
 
 val _ = export_theory();
+val _ = html_theory "ringLib";

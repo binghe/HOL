@@ -205,18 +205,18 @@ end
 
 (*
 val RING_WORD_UNIVERSAL = let
-    val cth = RING_WORD_UNIVERSAL_cth
-    and pth = UNDISCH RING_WORD_UNIVERSAL_pth
+    val cth = RING_WORD_UNIVERSAL_LEMMA1
+    and pth = UNDISCH RING_WORD_UNIVERSAL_LEMMA2
     and bth = REFL “ring_of_int r (&0) :'a”
-    and mth = UNDISCH RING_WORD_UNIVERSAL_mth
-    and dth = UNDISCH RING_WORD_UNIVERSAL_dth;
+    and mth = UNDISCH RING_WORD_UNIVERSAL_LEMMA3
+    and dth = UNDISCH RING_WORD_UNIVERSAL_LEMMA4;
     val decorule =
       GEN_REWRITE_RULE (RAND_CONV o ONCE_DEPTH_CONV) empty_rewrites
        [cth, GSYM RING_OF_INT_OF_NUM] o
       PART_MATCH lhand pth
 in
-    fun tm ->
-      let avs,bod = strip_forall tm in
+    fn tm => let
+      val (avs,bod) = strip_forall tm in
       if is_imp bod then
         let ant,con = dest_imp bod in
         let aths =
@@ -237,7 +237,8 @@ in
         let th2 = CONV_RULE
           (RAND_CONV (LAND_CONV RING_POLY_UNIVERSAL_CONV)) th1 in
         EQ_MP (SYM th2) bth
-end
+    end
+end;
  *)
 
 val RING_RING_WORD = let
@@ -379,7 +380,7 @@ end;
 let RING_TAC =
   REPEAT GEN_TAC THEN
   REPEAT(FIRST_X_ASSUM(MP_TAC o check (is_eq o concl))) THEN
-  W(fun (asl,w) ->
+  W(fn (asl,w) =>
         let th = RING_RULE w in
         (MATCH_ACCEPT_TAC th ORELSE
          ((fun g -> MATCH_MP_TAC th g) THEN ASM_REWRITE_TAC[])));
