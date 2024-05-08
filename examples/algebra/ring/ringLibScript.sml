@@ -91,14 +91,43 @@ End
 (* The ring operations, primitive plus subtraction as a derived operation.   *)
 (* ------------------------------------------------------------------------- *)
 
-Overload ring_carrier      = “\(r :'a Ring).     (fromRing r).carrier”
-Overload ring_0            = “\(r :'a Ring).     (fromRing r).sum.id”
-Overload ring_1            = “\(r :'a Ring).     (fromRing r).prod.id”
-Overload ring_neg          = “\(r :'a Ring) x.   (fromRing r).sum.inv x”
-Overload ring_add          = “\(r :'a Ring) x y. (fromRing r).sum.op x y”
-Overload ring_mul          = “\(r :'a Ring) x y. (fromRing r).prod.op x y”
-Overload ring_pow          = “\(r :'a Ring) x n. (fromRing r).prod.exp x n”
-Overload ring_sub          = “\(r :'a Ring).     ring$ring_sub (fromRing r)”
+Definition ring_carrier_def :
+    ring_carrier (r :'a Ring) = (fromRing r).carrier
+End
+
+Definition ring_0_def :
+    ring_0 (r :'a Ring) = (fromRing r).sum.id
+End
+
+Definition ring_1_def :
+    ring_1 (r :'a Ring) = (fromRing r).prod.id
+End
+
+Definition ring_neg_def :
+    ring_neg (r :'a Ring) = (fromRing r).sum.inv
+End
+
+Definition ring_add_def :
+    ring_add (r :'a Ring) = (fromRing r).sum.op
+End
+
+val _ = hide "ring_sub";
+Definition ring_sub :
+    ring_sub (r :'a Ring) = ring$ring_sub (fromRing r)
+End
+
+Definition ring_mul_def :
+    ring_mul (r :'a Ring) = (fromRing r).prod.op
+End
+
+Definition ring_pow_def :
+    ring_pow (r :'a Ring) = (fromRing r).prod.exp
+End
+
+(* NOTE: not used, only to make sure ‘ring_inv’ is not treated as variables *)
+Definition ring_inv_def :
+    ring_inv (r :'a Ring) = (Invertibles ((fromRing r).prod)).inv
+End
 
 (* NOTE: Now the following theorems have exactly the same statements with their
          corresponding theorems in HOL-Light.
@@ -108,6 +137,7 @@ Theorem RING_0 :
 Proof
     Q.X_GEN_TAC ‘r0’
  >> Q.ABBREV_TAC ‘r = fromRing r0’
+ >> rw [ring_0_def, ring_carrier_def]
  >> MATCH_MP_TAC ring_zero_element
  >> rw [Abbr ‘r’]
 QED
@@ -117,6 +147,7 @@ Theorem RING_1 :
 Proof
     Q.X_GEN_TAC ‘r0’
  >> Q.ABBREV_TAC ‘r = fromRing r0’
+ >> rw [ring_1_def, ring_carrier_def]
  >> MATCH_MP_TAC ring_one_element
  >> rw [Abbr ‘r’]
 QED
@@ -125,9 +156,9 @@ Theorem RING_NEG :
     !r x. x IN ring_carrier r ==> ring_neg r x IN ring_carrier (r :'a Ring)
 Proof
     Q.X_GEN_TAC ‘r0’
- >> GEN_TAC
  >> Q.ABBREV_TAC ‘r = fromRing r0’
- >> MATCH_MP_TAC ring_neg_element
+ >> rw [ring_neg_def, ring_carrier_def]
+ >> irule ring_neg_element
  >> rw [Abbr ‘r’]
 QED
 
@@ -136,15 +167,16 @@ Theorem RING_NEG_0 :
 Proof
     Q.X_GEN_TAC ‘r0’
  >> Q.ABBREV_TAC ‘r = fromRing r0’
+ >> rw [ring_neg_def, ring_0_def]
  >> MATCH_MP_TAC ring_neg_zero
  >> rw [Abbr ‘r’]
 QED
 
 fun xfer th :tactic =
     Q.X_GEN_TAC ‘r0’
- >> rpt GEN_TAC
- >> STRIP_TAC
  >> Q.ABBREV_TAC ‘r = fromRing r0’
+ >> RW_TAC std_ss [ring_carrier_def, ring_pow_def, ring_add_def, ring_sub,
+                   ring_mul_def, ring_0_def, ring_1_def, ring_neg_def]
  >> irule th
  >> rw [Abbr ‘r’];
 
@@ -253,9 +285,8 @@ Theorem RING_ADD_EQ_0 :
         ==> (ring_add r x y = ring_0 r <=> ring_neg r x = y)
 Proof
     Q.X_GEN_TAC ‘r0’
- >> rpt GEN_TAC
- >> STRIP_TAC
  >> Q.ABBREV_TAC ‘r = fromRing r0’
+ >> RW_TAC std_ss [ring_carrier_def, ring_add_def, ring_neg_def, ring_0_def]
  >> ‘-x = y <=> y = -x’ by PROVE_TAC [] >> POP_ORW
  >> irule ring_add_eq_zero
  >> rw [Abbr ‘r’]
@@ -274,6 +305,12 @@ Theorem RING_RNEG_UNIQUE :
             ring_add r x y = ring_0 r ==> ring_neg r y = x
 Proof
   MESON_TAC[RING_ADD_EQ_0, RING_ADD_SYM]
+QED
+
+Theorem RING_NEG_NEG :
+    !r (x :'a). x IN ring_carrier r ==> ring_neg r (ring_neg r x) = x
+Proof
+    xfer ring_neg_neg
 QED
 
 Theorem RING_ADD_LCANCEL :
@@ -367,13 +404,16 @@ Proof
  >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’]
  >> EQ_TAC >> STRIP_TAC (* 2 subgoals *)
  >| [ (* goal 1 (of 2) *)
+      REWRITE_TAC [ring_carrier_def, ring_0_def, ring_1_def, ring_add_def,
+                   ring_neg_def, ring_mul_def] \\
       CONJ_TAC >- (rw [SUBSET_DEF] >> FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
      ‘Group r.sum /\ Group r'.sum’ by PROVE_TAC [ring_add_group] \\
       MP_TAC (Q.SPECL [‘f’, ‘r.sum’, ‘r'.sum’] group_homo_id) >> simp [] \\
       MP_TAC (Q.SPECL [‘f’, ‘r.sum’, ‘r'.sum’] group_homo_inv) >> simp [] \\
       fs [GroupHomo_def, MonoidHomo_def],
       (* goal 2 (of 2) *)
-      fs [SUBSET_DEF] \\
+      rfs [SUBSET_DEF, ring_carrier_def, ring_0_def, ring_1_def, ring_neg_def,
+          ring_add_def, ring_mul_def] \\
       CONJ_TAC >- (rpt STRIP_TAC \\
                    FIRST_X_ASSUM MATCH_MP_TAC >> Q.EXISTS_TAC ‘x’ >> art []) \\
       CONJ_TAC >| (* 2 subgoals *)
@@ -389,22 +429,14 @@ Theorem RING_HOMOMORPHISM_0 :
     !r r' (f :'a -> 'b). ring_homomorphism(r,r') f ==> f(ring_0 r) = ring_0 r'
 Proof
     qx_genl_tac [‘r0’, ‘r1’, ‘f’]
- >> rw [ring_homomorphism_def]
- >> Q.ABBREV_TAC ‘r  = fromRing r0’
- >> Q.ABBREV_TAC ‘r' = fromRing r1’
- >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’]
- >> MATCH_MP_TAC ring_homo_zero >> rw []
+ >> rw [ring_homomorphism_def, ring_0_def]
 QED
 
 Theorem RING_HOMOMORPHISM_1 :
     !r r' (f :'a -> 'b). ring_homomorphism(r,r') f ==> f(ring_1 r) = ring_1 r'
 Proof
     qx_genl_tac [‘r0’, ‘r1’, ‘f’]
- >> rw [ring_homomorphism_def]
- >> Q.ABBREV_TAC ‘r  = fromRing r0’
- >> Q.ABBREV_TAC ‘r' = fromRing r1’
- >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’]
- >> MATCH_MP_TAC ring_homo_one >> rw []
+ >> rw [ring_homomorphism_def, ring_1_def]
 QED
 
 Theorem RING_HOMOMORPHISM_NEG :
@@ -413,7 +445,7 @@ Theorem RING_HOMOMORPHISM_NEG :
                 ==> f(ring_neg r x) = ring_neg r' (f x)
 Proof
     qx_genl_tac [‘r0’, ‘r1’, ‘f’]
- >> rw [ring_homomorphism_def]
+ >> rw [ring_homomorphism_def, ring_carrier_def, ring_neg_def]
  >> Q.ABBREV_TAC ‘r  = fromRing r0’
  >> Q.ABBREV_TAC ‘r' = fromRing r1’
  >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’]
@@ -426,7 +458,7 @@ Theorem RING_HOMOMORPHISM_ADD :
                   ==> f(ring_add r x y) = ring_add r' (f x) (f y)
 Proof
     qx_genl_tac [‘r0’, ‘r1’, ‘f’]
- >> rw [ring_homomorphism_def]
+ >> rw [ring_homomorphism_def, ring_carrier_def, ring_add_def]
  >> Q.ABBREV_TAC ‘r  = fromRing r0’
  >> Q.ABBREV_TAC ‘r' = fromRing r1’
  >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’]
@@ -439,7 +471,7 @@ Theorem RING_HOMOMORPHISM_MUL :
                   ==> f(ring_mul r x y) = ring_mul r' (f x) (f y)
 Proof
     qx_genl_tac [‘r0’, ‘r1’, ‘f’]
- >> rw [ring_homomorphism_def]
+ >> rw [ring_homomorphism_def, ring_carrier_def, ring_mul_def]
  >> Q.ABBREV_TAC ‘r  = fromRing r0’
  >> Q.ABBREV_TAC ‘r' = fromRing r1’
  >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’]
@@ -452,7 +484,7 @@ Theorem RING_HOMOMORPHISM_SUB :
                   ==> f(ring_sub r x y) = ring_sub r' (f x) (f y)
 Proof
     qx_genl_tac [‘r0’, ‘r1’, ‘f’]
- >> rw [ring_homomorphism_def]
+ >> rw [ring_homomorphism_def, ring_carrier_def, ring_sub]
  >> Q.ABBREV_TAC ‘r  = fromRing r0’
  >> Q.ABBREV_TAC ‘r' = fromRing r1’
  >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’]
@@ -465,7 +497,7 @@ Theorem RING_HOMOMORPHISM_POW :
                   ==> f(ring_pow r x n) = ring_pow r' (f x) n
 Proof
     qx_genl_tac [‘r0’, ‘r1’, ‘f’]
- >> rw [ring_homomorphism_def]
+ >> rw [ring_homomorphism_def, ring_carrier_def, ring_pow_def]
  >> Q.ABBREV_TAC ‘r  = fromRing r0’
  >> Q.ABBREV_TAC ‘r' = fromRing r1’
  >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’]
@@ -483,15 +515,18 @@ End
 (* ------------------------------------------------------------------------- *)
 
 (* ##n *)
-Overload ring_of_num = “\(r :'a Ring) n. (fromRing r).sum.exp (ring_1 r) n”
+Definition ring_of_num_def :
+    ring_of_num (r :'a Ring) = (fromRing r).sum.exp (ring_1 r)
+End
 
 Theorem ring_of_num :
     !r. ring_of_num r (0 :num) = ring_0 (r :'a Ring) /\
         !n. ring_of_num r (SUC n) = ring_add r (ring_of_num r n) (ring_1 r)
 Proof
     Q.X_GEN_TAC ‘r0’
- >> RW_TAC std_ss [ring_num_0]
  >> Q.ABBREV_TAC ‘r = fromRing r0’
+ >> RW_TAC std_ss [ring_num_0, ring_of_num_def, ring_0_def, ring_1_def,
+                   ring_add_def]
  >> ‘Ring r’ by rw [Abbr ‘r’]
  >> Know ‘##n + #1 = #1 + ##n’
  >- (irule ring_add_comm >> rw [])
@@ -499,17 +534,12 @@ Proof
  >> MATCH_MP_TAC ring_num_SUC >> art []
 QED
 
-Definition ring_of_int :
-    ring_of_int (r :'a Ring) (n :int) =
-        if &0 <= n then ring_of_num r (num_of_int n)
-        else ring_neg r (ring_of_num r (num_of_int (-n)))
-End
-
 Theorem RING_OF_NUM :
     !r n. ring_of_num r n IN ring_carrier (r :'a Ring)
 Proof
     qx_genl_tac [‘r0’, ‘n’]
  >> Q.ABBREV_TAC ‘r = fromRing r0’
+ >> RW_TAC std_ss [ring_carrier_def, ring_of_num_def, ring_1_def]
  >> MATCH_MP_TAC ring_num_element
  >> rw [Abbr ‘r’]
 QED
@@ -525,6 +555,12 @@ Theorem RING_OF_NUM_1 :
 Proof
   SIMP_TAC bool_ss[num_CONV “1:num”, ring_of_num, RING_ADD_LZERO, RING_1]
 QED
+
+Definition ring_of_int :
+    ring_of_int (r :'a Ring) (n :int) =
+        if &0 <= n then ring_of_num r (num_of_int n)
+        else ring_neg r (ring_of_num r (num_of_int (-n)))
+End
 
 Theorem RING_OF_INT :
      !r n. ring_of_int r n IN ring_carrier (r :'a Ring)
@@ -547,7 +583,7 @@ Theorem RING_HOMOMORPHISM_RING_OF_NUM :
         ==> !n. f(ring_of_num r n) = ring_of_num r' n
 Proof
     qx_genl_tac [‘r0’, ‘r1’, ‘f’]
- >> rw [ring_homomorphism_def]
+ >> rw [ring_homomorphism_def, ring_of_num_def, ring_1_def]
  >> Q.ABBREV_TAC ‘r  = fromRing r0’
  >> Q.ABBREV_TAC ‘r' = fromRing r1’
  >> ‘Ring r /\ Ring r'’ by rw [Abbr ‘r’, Abbr ‘r'’]
@@ -657,17 +693,18 @@ Theorem ring_isomorphism :
     !(f :'a -> 'b) r r'.
       ring_isomorphism (r,r') (f:'a->'b) <=> ?g. ring_isomorphisms (r,r') (f,g)
 Proof
-    rw [ring_isomorphism_def, RingIso_def, ring_isomorphisms]
+    RW_TAC std_ss [ring_isomorphism_def, RingIso_def, ring_isomorphisms]
  >> EQ_TAC >> rw [] (* 3 subgoals *)
  >| [ (* goal 1 (of 3) *)
       Q.PAT_ASSUM ‘BIJ f _ _’
         (fn th => MP_TAC (REWRITE_RULE [th]
                            (Q.SPECL [‘f’, ‘ring_carrier r’, ‘ring_carrier r'’]
-                                    BIJ_IFF_INV))) >> STRIP_TAC \\
+                                    BIJ_IFF_INV))) \\
+      RW_TAC std_ss [ring_carrier_def] \\
       Q.EXISTS_TAC ‘g’ >> art [] \\
-      MP_TAC (Q.SPECL [‘fromRing r’, ‘fromRing r'’, ‘f’] ring_homo_sym) \\
       qabbrev_tac ‘r1 = fromRing r’ \\
       qabbrev_tac ‘r2 = fromRing r'’ \\
+      MP_TAC (Q.SPECL [‘r1’, ‘r2’, ‘f’] ring_homo_sym) \\
      ‘Ring r1 /\ Ring r2’ by rw [Abbr ‘r1’, Abbr ‘r2’] >> art [] \\
       Suff ‘RingHomo (LINV f r1.carrier) r2 r1 = RingHomo g r2 r1’
       >- rw [ring_homomorphism_def] \\
@@ -684,13 +721,12 @@ Proof
       rw [BIJ_IFF_INV]
       >- (Q.PAT_X_ASSUM ‘ring_homomorphism (r,r') f’ MP_TAC \\
           rw [ring_homomorphism_def, RingHomo_def]) \\
-      Q.EXISTS_TAC ‘g’ >> rw [] \\
+      Q.EXISTS_TAC ‘g’ >> fs [ring_carrier_def] \\
       Q.PAT_X_ASSUM ‘ring_homomorphism (r',r) g’ MP_TAC \\
       rw [ring_homomorphism_def, RingHomo_def] ]
 QED
 
 val _ = set_fixity "isomorphic_ring" (Infixr 490);
-
 Definition isomorphic_ring :
     r isomorphic_ring r' <=> ?(f :'a -> 'b). ring_isomorphism (r,r') f
 End
@@ -793,21 +829,37 @@ Proof
  >> Know ‘Ring r0’
  >- (rw [Abbr ‘r0’, raw_ring_def] \\
      simp [Once Ring_def] \\
+     ONCE_REWRITE_TAC [DECIDE “p /\ q /\ r <=> r /\ q /\ p”] \\
+     CONJ_TAC >- (rpt STRIP_TAC \\
+                  fs [ring_mul_def, ring_add_def, ring_carrier_def]) \\
   (* AbelianMonoid ... (easier) *)
-     reverse CONJ_TAC
+     CONJ_TAC
      >- (simp [AbelianMonoid_def, Once Monoid_def] \\
          reverse CONJ_TAC
          >- (rpt STRIP_TAC >> AP_TERM_TAC \\
              MATCH_MP_TAC RING_MUL_SYM >> rw []) \\
+         CONJ_TAC >- (rw [ring_mul_def] >> fs [ring_carrier_def]) \\
+         reverse CONJ_TAC >- (rw [ring_mul_def, ring_1_def] \\
+                              fs [ring_carrier_def]) \\
          rpt STRIP_TAC >> AP_TERM_TAC \\
+        ‘ring_mul r (g x) (g y) IN ring_carrier r /\
+         ring_mul r (g y) (g z) IN ring_carrier r’
+           by fs [ring_mul_def, ring_carrier_def] >> simp [] \\
          MATCH_MP_TAC (GSYM RING_MUL_ASSOC) >> rw []) \\
   (* AbelianMonoid ... (harder) *)
      simp [AbelianGroup_def, Group_def] \\
      reverse CONJ_TAC
      >- (rpt STRIP_TAC >> AP_TERM_TAC \\
          MATCH_MP_TAC RING_ADD_SYM >> rw []) \\
-     rw [Once Monoid_def]
-     >- (AP_TERM_TAC \\
+     simp [Once Monoid_def] \\
+     CONJ_TAC
+     >- (CONJ_TAC >- fs [ring_add_def, RING_ADD] \\
+         reverse CONJ_TAC
+         >- (rw [ring_0_def, ring_add_def] >> fs [ring_carrier_def]) \\
+         rpt STRIP_TAC >> AP_TERM_TAC \\
+        ‘ring_add r (g x) (g y) IN ring_carrier r /\
+         ring_add r (g y) (g z) IN ring_carrier r’
+           by fs [ring_add_def, ring_carrier_def] >> simp [] \\
          MATCH_MP_TAC (GSYM RING_ADD_ASSOC) >> rw []) \\
   (* monoid_invertibles *)
      rw [monoid_invertibles_def, Once EXTENSION] (* key *) \\
@@ -824,7 +876,9 @@ Proof
     ‘ring_neg r (g x) IN ring_carrier r’ by rw [RING_NEG] \\
      CONJ_TAC >- rw [] (* f (ring_neg r (g x)) IN s *) \\
      Know ‘g (f (ring_neg r (g x))) = ring_neg r (g x)’ >- rw [] >> Rewr' \\
-     simp [])
+     REWRITE_TAC [ring_add_def, ring_neg_def, ring_0_def] \\
+     qabbrev_tac ‘r0 = fromRing r’ \\
+    ‘Ring r0’ by rw [Abbr ‘r0’] >> fs [ring_carrier_def])
  >> DISCH_TAC
  >> Q.EXISTS_TAC ‘toRing r0’
  >> Q.ABBREV_TAC ‘r' = toRing r0’
@@ -834,17 +888,34 @@ Proof
     ring_1 r' = f (ring_1 r) /\
    (!x. x IN ring_carrier r' ==> ring_neg r' x = f(ring_neg r (g x))) /\
     ring_add r' = (\x1 x2. f(ring_add r (g x1) (g x2))) /\
-    ring_mul r' = (\x1 x2. f(ring_mul r (g x1) (g x2)))’  STRIP_ASSUME_TAC
+    ring_mul r' = (\x1 x2. f(ring_mul r (g x1) (g x2)))’ STRIP_ASSUME_TAC
  >- (simp [Abbr ‘r'’] \\
+     REWRITE_TAC [ring_carrier_def, ring_0_def, ring_1_def,
+                  ring_add_def, ring_mul_def, ring_neg_def] \\
      Know ‘fromRing (toRing r0) = r0’
      >- (MATCH_MP_TAC from_toRing >> art []) >> Rewr' \\
-     rw [Abbr ‘r0’, raw_ring_def] (* one goal about ‘ring_neg’ is left *) \\
+     REWRITE_TAC [GSYM ring_add_def, GSYM ring_mul_def, GSYM ring_neg_def,
+                  GSYM ring_0_def, GSYM ring_1_def] \\
+     rw [Abbr ‘r0’, raw_ring_def, ring_0_def, ring_1_def, ring_add_def,
+         ring_mul_def] (* one goal about ‘ring_neg’ is left *) \\
+     REWRITE_TAC [GSYM ring_add_def, GSYM ring_mul_def, GSYM ring_neg_def,
+                  GSYM ring_0_def, GSYM ring_1_def] \\
      Q.ABBREV_TAC ‘r1 = <|carrier := s;
                                op := (\x1 x2. f (ring_add r (g x1) (g x2)));
                                id := f (ring_0 r)|>’ \\
+  (* applying (Q.SPEC ‘r1’ group_inv_eq_swap) *)
+     Know ‘r1.inv x = f (ring_neg r (g x)) <=>
+           x = r1.inv (f (ring_neg r (g x)))’
+     >- (irule (Q.ISPEC ‘r1 :'b monoid’ group_inv_eq_swap) \\
+         CONJ_TAC >- (Q.PAT_X_ASSUM ‘Ring _’ MP_TAC \\
+                      rw [raw_ring_def, Once Ring_def, AbelianGroup_def]) \\
+         CONJ_ASM1_TAC >- rw [Abbr ‘r1’] \\
+         rw [Abbr ‘r1’, RING_NEG]) >> Rewr' \\
+  (* stage work *)
      fs [raw_ring_def, Once Ring_def, AbelianGroup_def, Group_def] \\
      Q.PAT_X_ASSUM ‘AbelianMonoid _’ K_TAC (* useless, so is the next *) \\
-     Q.PAT_X_ASSUM ‘!x y z. x IN s /\ y IN s /\ z IN s ==> _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘!x y z. x IN s /\ y IN s /\ z IN s ==> P’ K_TAC \\
+     Q.PAT_X_ASSUM ‘!x y. x IN r1.carrier /\ y IN r1.carrier ==> P’ K_TAC \\
      MP_TAC (Q.SPEC ‘r1’ (INST_TYPE [“:'a” |-> “:'b”] monoid_inv_def)) \\
      RW_TAC std_ss [] (* ‘s’ is removed here *) \\
      qabbrev_tac ‘s = r1.carrier’ (* recreate ‘s’ *) \\
@@ -865,15 +936,22 @@ Proof
      Know ‘r1.id = f (ring_0 r)’ >- rw [Abbr ‘r1’] \\
      NTAC 2 Rewr' >> rw [] \\
      Q.PAT_X_ASSUM ‘r1.op _ _ = r1.id’ K_TAC (* the other is useless *) \\
+     Know ‘ring_neg r y IN ring_carrier r’
+     >- (MATCH_MP_TAC RING_NEG >> art []) >> DISCH_TAC \\
      Know ‘g (f (ring_neg r y)) = g (f x)’ >- (AP_TERM_TAC >> art []) \\
-     rw [] \\
-     Q.PAT_X_ASSUM ‘f (ring_neg r (ring_neg r x)) = f x’ K_TAC \\
+     Q.PAT_X_ASSUM ‘f (ring_neg r y) = f x’ K_TAC \\
+     simp [] >> DISCH_TAC \\
+     Know ‘ring_neg r x = y’
+     >- (MATCH_MP_TAC RING_RNEG_UNIQUE >> PROVE_TAC [RING_ADD_EQ_0]) \\
+     DISCH_THEN (ONCE_REWRITE_TAC o wrap o SYM) \\
      Know ‘r1.inv (f x) IN monoid_invertibles r1’
      >- (irule monoid_inv_invertible >> rw []) >> art [IN_IMAGE] \\
      DISCH_TAC \\
     ‘g (r1.inv (f x)) IN ring_carrier r’ by PROVE_TAC [] \\
      Q.ABBREV_TAC ‘z = g (r1.inv (f x))’ \\
      Know ‘g (f (ring_add r z x)) = g (f (ring_0 r))’ >- (AP_TERM_TAC >> art []) \\
+    ‘ring_add r z x IN ring_carrier r /\ ring_0 r IN ring_carrier r’
+       by rw [RING_ADD, RING_0] \\
      simp [] \\
      Q.PAT_X_ASSUM ‘f (ring_add r z x) = f (ring_0 r)’ K_TAC \\
      DISCH_TAC (* ring_add r z x = ring_0 r *) \\
@@ -974,7 +1052,8 @@ Theorem SINGLETON_RING :
    (!a :'a. ring_add(singleton_ring a) = \x y. a) /\
    (!a :'a. ring_mul(singleton_ring a) = \x y. a)
 Proof
-    rw [singleton_ring] (* 5 subgoals, same initial tactics *)
+    rw [singleton_ring, ring_carrier_def, ring_0_def, ring_1_def,
+        ring_add_def, ring_mul_def] (* 5 subgoals, same initial tactics *)
  >> ‘fromRing (toRing (ring$trivial_ring a)) = ring$trivial_ring a’
        by (MATCH_MP_TAC from_toRing >> rw [trivial_ring_thm])
  >> POP_ORW
@@ -1048,7 +1127,7 @@ Proof
  >> simp [Once Ring_def]
  >> ONCE_REWRITE_TAC [CONJ_ASSOC]
  >> reverse CONJ_TAC
- >- (rw [IN_CARTESIAN_PRODUCT] \\
+ >- (rw [IN_CARTESIAN_PRODUCT, ring_carrier_def, ring_mul_def, ring_add_def] \\
      rw [RESTRICTION_EXTENSION] \\
      rw [RESTRICTION_DEFINED])
  (* AbelianMonoid ... (easier) *)
@@ -1057,23 +1136,25 @@ Proof
      reverse CONJ_TAC
      >- (rw [IN_CARTESIAN_PRODUCT, RESTRICTION_EXTENSION] \\
          MATCH_MP_TAC RING_MUL_SYM >> rw []) \\
-     rw [Once Monoid_def, IN_CARTESIAN_PRODUCT, EXTENSIONAL_RESTRICTION] >| (* 5 subgoals *)
+     rw [Once Monoid_def, IN_CARTESIAN_PRODUCT,
+         EXTENSIONAL_RESTRICTION] >| (* 5 subgoals *)
      [ (* goal 1 (of 5) *)
-       rw [RESTRICTION_DEFINED],
+       rw [RESTRICTION_DEFINED, ring_mul_def] \\
+       fs [ring_carrier_def],
        (* goal 2 (of 5) *)
        rw [RESTRICTION_EXTENSION] \\
        rw [RESTRICTION_DEFINED] \\
        MATCH_MP_TAC (GSYM RING_MUL_ASSOC) >> rw [],
        (* goal 3 (of 5) *)
-       rw [RESTRICTION_DEFINED],
+       rw [RESTRICTION_DEFINED, ring_1_def, ring_carrier_def],
        (* goal 4 (of 5) *)
-       simp [RESTRICTION, FUN_EQ_THM] \\
+       simp [RESTRICTION, FUN_EQ_THM, ring_mul_def, ring_1_def] \\
        Q.X_GEN_TAC ‘i’ \\
-       Cases_on ‘i IN k’ >> fs [EXTENSIONAL_def],
+       Cases_on ‘i IN k’ >> fs [EXTENSIONAL_def, ring_carrier_def],
        (* goal 5 (of 5) *)
-       simp [RESTRICTION, FUN_EQ_THM] \\
+       simp [RESTRICTION, FUN_EQ_THM, ring_mul_def, ring_1_def] \\
        Q.X_GEN_TAC ‘i’ \\
-       Cases_on ‘i IN k’ >> fs [EXTENSIONAL_def] ])
+       Cases_on ‘i IN k’ >> fs [EXTENSIONAL_def, ring_carrier_def] ])
  (* AbelianMonoid ... (harder) *)
  >> simp [AbelianGroup_def, Group_def]
  >> reverse CONJ_TAC
@@ -1081,30 +1162,32 @@ Proof
      rw [RESTRICTION_EXTENSION] \\
      MATCH_MP_TAC RING_ADD_SYM >> rw [])
  >> CONJ_TAC (* Monoid ... *)
- >- (rw [Once Monoid_def, IN_CARTESIAN_PRODUCT, EXTENSIONAL_RESTRICTION] >| (* 5 subgoals *)
+ >- (rw [Once Monoid_def, IN_CARTESIAN_PRODUCT,
+         EXTENSIONAL_RESTRICTION] >| (* 5 subgoals *)
      [ (* goal 1 (of 5) *)
-       rw [RESTRICTION_DEFINED],
+       rw [RESTRICTION_DEFINED, ring_add_def] \\
+       fs [ring_carrier_def],
        (* goal 2 (of 5) *)
        rw [RESTRICTION_EXTENSION] \\
        rw [RESTRICTION_DEFINED] \\
        MATCH_MP_TAC (GSYM RING_ADD_ASSOC) >> rw [],
        (* goal 3 (of 5) *)
-       rw [RESTRICTION_DEFINED],
+       rw [RESTRICTION_DEFINED, ring_0_def, ring_carrier_def],
        (* goal 4 (of 5) *)
-       simp [RESTRICTION, FUN_EQ_THM] \\
+       simp [RESTRICTION, FUN_EQ_THM, ring_add_def, ring_0_def] \\
        Q.X_GEN_TAC ‘i’ \\
-       Cases_on ‘i IN k’ >> fs [EXTENSIONAL_def],
+       Cases_on ‘i IN k’ >> fs [EXTENSIONAL_def, ring_carrier_def],
        (* goal 5 (of 5) *)
-       simp [RESTRICTION, FUN_EQ_THM] \\
+       simp [RESTRICTION, FUN_EQ_THM, ring_add_def, ring_0_def] \\
        Q.X_GEN_TAC ‘i’ \\
-       Cases_on ‘i IN k’ >> fs [EXTENSIONAL_def] ])
+       Cases_on ‘i IN k’ >> fs [EXTENSIONAL_def, ring_carrier_def] ])
  (* monoid_invertibles *)
  >> rw [monoid_invertibles_def] (* key *)
  >> rw [Once EXTENSION, IN_CARTESIAN_PRODUCT]
  >> EQ_TAC >> rw [] (* one goal left *)
  >> Q.EXISTS_TAC ‘RESTRICTION k (\i. ring_neg (r i) (x i))’
  >> rw [RESTRICTION_EXTENSION, EXTENSIONAL_RESTRICTION] (* 3 subgoals, same tactic *)
- >> rw [RESTRICTION_DEFINED]
+ >> rw [RESTRICTION_DEFINED, RING_NEG, RING_ADD_EQ_0, RING_NEG_NEG]
 QED
 
 Definition product_ring :
@@ -1128,11 +1211,12 @@ Theorem PRODUCT_RING :
    (!k (r :'k -> 'a Ring) x y.
         ring_add (product_ring k r) x y =
           RESTRICTION k (\i. ring_add (r i) (x i) (y i))) /\
-   (!k (r :'k -> 'a Ring).
+   (!k (r :'k -> 'a Ring) x y.
         ring_mul (product_ring k r) x y =
           RESTRICTION k (\i. ring_mul (r i) (x i) (y i)))
 Proof
-    rw [product_ring] (* 5 subgoals, same initial tactics *)
+    rw [product_ring, Once ring_carrier_def, Once ring_0_def, Once ring_1_def,
+        Once ring_add_def, Once ring_mul_def] (* 5 subgoals, same initial tactics *)
  >> ‘fromRing (toRing (raw_product_ring k r)) = raw_product_ring k r’
        by (MATCH_MP_TAC from_toRing \\
            rw [Ring_raw_product_ring])
@@ -1147,12 +1231,12 @@ Theorem PRODUCT_RING_NEG :
            ring_neg (product_ring k r) x =
            RESTRICTION k (\i. ring_neg (r i) (x i))
 Proof
-    rw [product_ring]
+    rpt GEN_TAC
+ >> simp [product_ring, Once ring_neg_def, Once ring_carrier_def]
  >> ‘fromRing (toRing (raw_product_ring k r)) = raw_product_ring k r’
        by (MATCH_MP_TAC from_toRing \\
            rw [Ring_raw_product_ring])
- >> POP_ASSUM (fs o wrap)
- >> POP_ASSUM MP_TAC
+ >> POP_ORW
  >> MP_TAC (Q.SPECL [‘k’, ‘r’] Ring_raw_product_ring)
  >> rw [raw_product_ring_def]
  (* stage work *)
@@ -1268,7 +1352,7 @@ Proof
     Q.X_GEN_TAC ‘i’ \\
     REWRITE_TAC [RESTRICTION] \\
     Cases_on ‘i IN k’ >- rw [] \\
-    fs [EXTENSIONAL_def] ]
+    fs [EXTENSIONAL_def, RING_NEG] ]
 QED
 
 Theorem RING_HOMOMORPHISM_COMPONENTWISE_UNIV :

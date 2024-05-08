@@ -16,9 +16,9 @@ open HolKernel boolLib bossLib;
 open cardinalTheory ringTheory ringLibTheory Normalizer normalForms tautLib
      Canon Canon_Port;
 
-(*---------------------------------------------------------------------------*)
+(* ------------------------------------------------------------------------- *)
 (* Establish the required grammar(s) for executing this file                 *)
-(*---------------------------------------------------------------------------*)
+(* ------------------------------------------------------------------------- *)
 
 structure Parse = struct
   open Parse
@@ -128,6 +128,18 @@ let RING_POLY_UNIVERSAL_CONV =
  *)
 
 (* ------------------------------------------------------------------------- *)
+(* Iterative splitting (list) and stripping (tree) via destructor.           *)
+(* ------------------------------------------------------------------------- *)
+
+fun splitlist dest x = let
+    val (l,r) = dest x;
+    val (ls,res) = splitlist dest r
+in
+    (l::ls,res)
+end
+handle HOL_ERR _ => ([],x)
+
+(* ------------------------------------------------------------------------- *)
 (* Derived rule to take a theorem asserting a monomorphism between r and r'  *)
 (* and a term that is some Boolean combination of equations in the ring r    *)
 (* and prove it equivalent to a "transferred" version in r' where all the    *)
@@ -135,16 +147,15 @@ let RING_POLY_UNIVERSAL_CONV =
 (* ------------------------------------------------------------------------- *)
 
 (*
-let RING_MONOMORPHIC_IMAGE_RULE =
-  val pth = RING_MONOMORPHIC_IMAGE_RULE_THM
-  fun hth ->
-    let [pth_eq; pth_asm;
-         pth_0; pth_1; pth_num; pth_int;
-         pth_neg; pth_pow;
-         pth_add; pth_sub],pth_mul =
-      splitlist CONJ_PAIR (MATCH_MP pth hth)
-    and htm = rand(concl hth) in
-    let rec mterm tm =
+fun RING_MONOMORPHIC_IMAGE_RULE hth = let
+    val pth = RING_MONOMORPHIC_IMAGE_RULE_THM;
+    val ([pth_eq, pth_asm,
+          pth_0, pth_1,
+          pth_num, pth_int,
+          pth_neg, pth_pow,
+          pth_add, pth_sub], pth_mul) = splitlist CONJ_PAIR (MATCH_MP pth hth)
+    and htm = rand(concl hth);
+    fun mterm tm =
       match tm with
         Comb(Const("ring_0",_),_) ->
           pth_0
@@ -169,8 +180,8 @@ let RING_MONOMORPHIC_IMAGE_RULE =
       | Comb(Comb(Comb(Const("ring_mul",_),_),s),t) ->
           let sth = mterm s and tth = mterm t in
           MATCH_MP pth_mul (CONJ sth tth)
-      | _ -> UNDISCH(SPEC tm pth_asm) in
-    let rec mform tm =
+      | _ -> UNDISCH(SPEC tm pth_asm);
+    fun mform tm =
       if is_neg tm then
          RAND_CONV mform tm
       else if is_iff tm || is_imp tm || is_conj tm || is_disj tm then
@@ -179,8 +190,10 @@ let RING_MONOMORPHIC_IMAGE_RULE =
         let s,t = dest_eq tm in
         let sth = mterm s and tth = mterm t in
         MATCH_MP pth_eq (CONJ sth tth)
-      else failwith "RING_MONOMORPHIC_IMAGE_RULE: unhandled formula" in
-    mform;;
+      else failwith "RING_MONOMORPHIC_IMAGE_RULE: unhandled formula"
+in
+    mform
+end
 *)
 
 (* ------------------------------------------------------------------------- *)
@@ -224,6 +237,7 @@ in
         let th2 = CONV_RULE
           (RAND_CONV (LAND_CONV RING_POLY_UNIVERSAL_CONV)) th1 in
         EQ_MP (SYM th2) bth
+end
  *)
 
 val RING_RING_WORD = let
@@ -288,21 +302,21 @@ end;
 
 val RING_RING_HORN = let
     val ddj_conv =
-      GEN_REWRITE_CONV (RAND_CONV o DEPTH_CONV) empty_rewrites
-        [TAUT `~p \/ ~q <=> ~(p /\ q)`] THENC
-      GEN_REWRITE_CONV I empty_rewrites [TAUT `p \/ ~q <=> q ==> p`]
+        GEN_REWRITE_CONV (RAND_CONV o DEPTH_CONV) empty_rewrites
+          [TAUT ‘~p \/ ~q <=> ~(p /\ q)’] THENC
+        GEN_REWRITE_CONV I empty_rewrites [TAUT ‘p \/ ~q <=> q ==> p’]
 in
     fn tm =>
-      if not(is_disj tm) then RING_RING_WORD [] tm else
-      let val th0 = ddj_conv tm;
-          val tm' = rand(concl th0);
-          val abod = lhand tm';
-          val ths = CONJUNCTS(ASSUME abod);
-          val th1 = RING_RING_WORD ths (rand tm')
-      in
-          EQ_MP (SYM th0) (DISCH abod (itlist PROVE_HYP ths th1))
-      end
-end
+       if not(is_disj tm) then RING_RING_WORD [] tm else
+       let val th0 = ddj_conv tm;
+           val tm' = rand(concl th0);
+           val abod = lhand tm';
+           val ths = CONJUNCTS(ASSUME abod);
+           val th1 = RING_RING_WORD ths (rand tm')
+       in
+           EQ_MP (SYM th0) (DISCH abod (itlist PROVE_HYP ths th1))
+       end
+end;
 
 val RING_RING_CORE = let
     val pth = TAUT ‘p ==> q <=> (p \/ q <=> q)’
@@ -315,7 +329,7 @@ in
       val th1 = INST [ptm |-> concl th, qtm |-> tm] pth
     in
       MP (EQ_MP (SYM th1) (DISJ_ACI_RULE(rand(concl th1)))) th
-end
+end;
 
 val init_conv =
     TOP_DEPTH_CONV BETA_CONV THENC
@@ -328,9 +342,6 @@ val init_conv =
     GEN_REWRITE_CONV TOP_DEPTH_CONV empty_rewrites [GSYM DISJ_ASSOC] THENC
     GEN_REWRITE_CONV TOP_DEPTH_CONV empty_rewrites [GSYM CONJ_ASSOC];
 
-(* for debugging purposes:
-   val tm = tm';
- *)
 fun RING_RULE_BASIC tm = let
     val (avs,bod) = strip_forall tm;
     val th1 = init_conv bod;
