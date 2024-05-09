@@ -1,0 +1,24 @@
+signature ringSyntax =
+sig
+
+  include Abbrev
+
+  val is_ring_0        : term -> bool
+  val is_ring_1        : term -> bool
+  val is_ring_of_num   : term -> bool
+  val is_ring_of_int   : term -> bool
+  val is_ring_neg      : term -> bool
+  val is_ring_pow      : term -> bool
+  val is_ring_add      : term -> bool
+  val is_ring_sub      : term -> bool
+  val is_ring_mul      : term -> bool
+
+  val dest_ring_of_num : term -> term
+  val dest_ring_of_int : term -> term
+  val dest_ring_neg    : term -> term
+  val dest_ring_pow    : term -> (term * term)
+  val dest_ring_add    : term -> (term * term)
+  val dest_ring_sub    : term -> (term * term)
+  val dest_ring_mul    : term -> (term * term)
+
+end

@@ -14,7 +14,7 @@ struct
 open HolKernel boolLib bossLib;
 
 open cardinalTheory ringTheory ringLibTheory Normalizer normalForms tautLib
-     Canon Canon_Port;
+     Canon Canon_Port pairSyntax ringSyntax;
 
 (* ------------------------------------------------------------------------- *)
 (* Establish the required grammar(s) for executing this file                 *)
@@ -125,7 +125,100 @@ let RING_POLY_UNIVERSAL_CONV =
      (<) in
   GEN_REWRITE_CONV ONCE_DEPTH_CONV [ith; GSYM RING_OF_INT_OF_NUM] THENC
   RING_POLY_CONV;;
- *)
+
+let RING_INTEGRAL_DOMAIN_UNIVERSAL,ring_ring_cofactors_universal =
+  let RING_INTEGRAL = (repeat UNDISCH o prove)
+   (`integral_domain r
+     ==> ring_carrier r = (:A)
+         ==> (!x. ring_mul r (ring_of_int r (&0)) x = ring_of_int r (&0)) /\
+             (!x y z. ring_add r x y = ring_add r x z <=> y = z) /\
+             (!w x y z.
+                      ring_add r (ring_mul r w y) (ring_mul r x z) =
+                      ring_add r (ring_mul r w z) (ring_mul r x y) <=>
+                      w = x \/ y = z)`,
+    REPEAT GEN_TAC THEN REPEAT DISCH_TAC THEN
+    REWRITE_TAC[RING_OF_INT_OF_NUM; RING_OF_NUM_0] THEN
+    ASM_SIMP_TAC[RING_MUL_LZERO; RING_ADD_LCANCEL; IN_UNIV] THEN
+    REPEAT GEN_TAC THEN
+    MP_TAC(ISPEC `r:A ring` RING_SUB_EQ_0) THEN
+    ASM_REWRITE_TAC[IN_UNIV] THEN
+    DISCH_THEN(fun th -> ONCE_REWRITE_TAC[GSYM th]) THEN
+    FIRST_X_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
+          INTEGRAL_DOMAIN_MUL_EQ_0)) THEN
+    ASM_REWRITE_TAC[IN_UNIV] THEN
+    DISCH_THEN(fun th -> ONCE_REWRITE_TAC[GSYM th]) THEN
+    AP_THM_TAC THEN AP_TERM_TAC THEN
+    ASM_SIMP_TAC[ring_sub; IN_UNIV; RING_ADD_LDISTRIB; RING_ADD_RDISTRIB;
+                 RING_NEG_NEG; RING_NEG_ADD; RING_MUL_LNEG; RING_MUL_RNEG] THEN
+    ASM_SIMP_TAC[RING_MUL_AC; IN_UNIV] THEN
+    ASM_SIMP_TAC[RING_ADD_AC; IN_UNIV])
+  and neth_b = prove
+   (`ring_of_int r n :A = ring_of_int r n <=> T`,
+    REWRITE_TAC[])
+  and neth_l = (UNDISCH o prove)
+   (`integral_domain (r:A ring)
+     ==> (ring_of_int r (&1) = ring_of_int r (&0) <=> F)`,
+    REWRITE_TAC[RING_OF_INT_OF_NUM; RING_OF_NUM_0; RING_OF_NUM_1] THEN
+    SIMP_TAC[integral_domain])
+  and neth_r = (UNDISCH o prove)
+   (`integral_domain (r:A ring)
+     ==> (ring_of_int r (&0) = ring_of_int r (&1) <=> F)`,
+    REWRITE_TAC[RING_OF_INT_OF_NUM; RING_OF_NUM_0; RING_OF_NUM_1] THEN
+    SIMP_TAC[integral_domain])
+  and neth_g = prove
+   (`(ring_of_int r m :A = ring_of_int r n <=> F) <=>
+     ~(&(ring_char r) divides (m - n))`,
+    REWRITE_TAC[RING_OF_INT_EQ] THEN CONV_TAC INTEGER_RULE)
+  and neth_h = prove
+   (`(&(ring_char(r:A ring)) divides --(&n) <=> ring_char r divides n) /\
+     (&(ring_char(r:A ring)) divides &n <=> ring_char r divides n)`,
+    REWRITE_TAC[num_divides] THEN CONV_TAC INTEGER_RULE) in
+  let rule1 = PART_MATCH (lhand o lhand) neth_g
+  and conv1 =
+    RAND_CONV INT_SUB_CONV THENC
+    GEN_REWRITE_CONV TRY_CONV [neth_h] in
+  let RING_EQ_CONV tm =
+    try PART_MATCH lhand neth_b tm
+    with Failure _ -> try
+        PART_MATCH lhand neth_l tm
+    with Failure _ -> try
+        PART_MATCH lhand neth_r tm
+    with Failure _ -> try
+        let th1 = rule1 tm in
+        let th2 = CONV_RULE(RAND_CONV(RAND_CONV conv1)) th1 in
+        UNDISCH(snd(EQ_IMP_RULE th2))
+    with Failure _ -> failwith "RING_EQ_CONV"
+  and dest_ringconst tm =
+    match tm with
+      Comb(Comb(Const("ring_of_int",_),_),n) -> dest_intconst n
+    | _ -> failwith "dest_ringconst"
+  and mk_ringconst =
+    let ptm = `ring_of_int (r:A ring)` in
+    fun n -> mk_comb(ptm,mk_intconst n) in
+  let cth = prove
+   (`ring_0 r:A = ring_of_int r (&0) /\
+     ring_1 r:A = ring_of_int r (&1)`,
+    REWRITE_TAC[RING_OF_INT_OF_NUM; RING_OF_NUM_0; RING_OF_NUM_1]) in
+  let decorule =
+    GEN_REWRITE_CONV ONCE_DEPTH_CONV [cth; GSYM RING_OF_INT_OF_NUM] in
+  let basic_rule,idealconv =
+    RING_AND_IDEAL_CONV
+     (dest_ringconst,
+      mk_ringconst,
+      RING_EQ_CONV,
+      `ring_neg(r:A ring)`,
+      `ring_add(r:A ring)`,
+      `ring_sub(r:A ring)`,
+      `ring_inv(r:A ring)`,
+      `ring_mul(r:A ring)`,
+      `ring_div(r:A ring)`,
+      `ring_pow(r:A ring)`,
+      RING_INTEGRAL,TRUTH,RING_POLY_UNIVERSAL_CONV) in
+  let rule tm =
+    let th = decorule tm in
+    EQ_MP (SYM th) (basic_rule(rand(concl th))) in
+  (rule,idealconv)
+*)
 
 (* ------------------------------------------------------------------------- *)
 (* Iterative splitting (list) and stripping (tree) via destructor.           *)
@@ -136,8 +229,7 @@ fun splitlist dest x = let
     val (ls,res) = splitlist dest r
 in
     (l::ls,res)
-end
-handle HOL_ERR _ => ([],x)
+end handle HOL_ERR _ => ([],x)
 
 (* ------------------------------------------------------------------------- *)
 (* Derived rule to take a theorem asserting a monomorphism between r and r'  *)
@@ -146,7 +238,6 @@ handle HOL_ERR _ => ([],x)
 (* variables x (in r) in the original map to "f x" (in r').                  *)
 (* ------------------------------------------------------------------------- *)
 
-(*
 fun RING_MONOMORPHIC_IMAGE_RULE hth = let
     val pth = RING_MONOMORPHIC_IMAGE_RULE_THM;
     val ([pth_eq, pth_asm,
@@ -156,45 +247,48 @@ fun RING_MONOMORPHIC_IMAGE_RULE hth = let
           pth_add, pth_sub], pth_mul) = splitlist CONJ_PAIR (MATCH_MP pth hth)
     and htm = rand(concl hth);
     fun mterm tm =
-      match tm with
-        Comb(Const("ring_0",_),_) ->
-          pth_0
-      | Comb(Const("ring_1",_),_) ->
-          pth_1
-      | Comb(Comb(Const("ring_of_num",_),_),n) ->
-          SPEC n pth_num
-      | Comb(Comb(Const("ring_of_int",_),_),n) ->
-          SPEC n pth_int
-      | Comb(Comb(Const("ring_neg",_),_),s) ->
-          let sth = mterm s in
-          MATCH_MP pth_neg sth
-      | Comb(Comb(Comb(Const("ring_pow",_),_),s),n) ->
-          let sth = mterm s in
-          MATCH_MP (SPEC n pth_pow) sth
-      | Comb(Comb(Comb(Const("ring_add",_),_),s),t) ->
-          let sth = mterm s and tth = mterm t in
-          MATCH_MP pth_add (CONJ sth tth)
-      | Comb(Comb(Comb(Const("ring_sub",_),_),s),t) ->
-          let sth = mterm s and tth = mterm t in
-          MATCH_MP pth_sub (CONJ sth tth)
-      | Comb(Comb(Comb(Const("ring_mul",_),_),s),t) ->
-          let sth = mterm s and tth = mterm t in
-          MATCH_MP pth_mul (CONJ sth tth)
-      | _ -> UNDISCH(SPEC tm pth_asm);
+        if is_ring_0 tm then
+           pth_0
+        else if is_ring_1 tm then
+           pth_1
+        else if is_ring_of_num tm then
+           SPEC (dest_ring_of_num tm) pth_num
+        else if is_ring_of_int tm then
+           SPEC (dest_ring_of_int tm) pth_int
+        else if is_ring_neg tm then
+           MATCH_MP pth_neg (mterm (dest_ring_neg tm))
+        else if is_ring_pow tm then
+           let val (s,n) = dest_ring_pow tm in
+             MATCH_MP (SPEC n pth_pow) (mterm s)
+           end
+        else if is_ring_add tm then
+           let val (s,t) = dest_ring_add tm in
+             MATCH_MP pth_add (CONJ (mterm s) (mterm t))
+           end
+        else if is_ring_sub tm then
+           let val (s,t) = dest_ring_sub tm in
+             MATCH_MP pth_sub (CONJ (mterm s) (mterm t))
+           end
+        else if is_ring_mul tm then
+           let val (s,t) = dest_ring_mul tm in
+             MATCH_MP pth_mul (CONJ (mterm s) (mterm t))
+           end
+        else
+           UNDISCH(SPEC tm pth_asm);
     fun mform tm =
       if is_neg tm then
          RAND_CONV mform tm
-      else if is_iff tm || is_imp tm || is_conj tm || is_disj tm then
+      else if is_iff tm orelse is_imp tm orelse is_conj tm orelse is_disj tm then
          BINOP_CONV mform tm
       else if is_eq tm then
-        let s,t = dest_eq tm in
-        let sth = mterm s and tth = mterm t in
-        MATCH_MP pth_eq (CONJ sth tth)
-      else failwith "RING_MONOMORPHIC_IMAGE_RULE: unhandled formula"
+         let val (s,t) = dest_eq tm in
+           MATCH_MP pth_eq (CONJ (mterm s) (mterm t))
+         end
+      else
+         failwith "RING_MONOMORPHIC_IMAGE_RULE: unhandled formula";
 in
     mform
 end
-*)
 
 (* ------------------------------------------------------------------------- *)
 (* A decision procedure for the universal theory of rings, mapping           *)
@@ -203,7 +297,6 @@ end
 (* carrier membership hypotheses, will add those as an antecedent.           *)
 (* ------------------------------------------------------------------------- *)
 
-(*
 val RING_WORD_UNIVERSAL = let
     val cth = RING_WORD_UNIVERSAL_LEMMA1
     and pth = UNDISCH RING_WORD_UNIVERSAL_LEMMA2
@@ -217,14 +310,15 @@ val RING_WORD_UNIVERSAL = let
 in
     fn tm => let
       val (avs,bod) = strip_forall tm in
-      if is_imp bod then
-        let ant,con = dest_imp bod in
-        let aths =
+      if is_imp bod then let
+        val (ant,con) = dest_imp bod;
+        val aths =
           mapfilter (CONV_RULE decorule) (CONJUNCTS(ASSUME ant))
-        and cth = decorule con in
-        let atms = map (lhand o concl) aths
-        and ctm = lhand(rand(concl cth)) in
-        let ctms = ring_ring_cofactors_universal atms ctm in
+        and cth = decorule con;
+        val atms = map (lhand o concl) aths
+        and ctm = lhand(rand(concl cth));
+        (* TODO *)
+        val ctms = ring_ring_cofactors_universal atms ctm;
         let zths = map2 (fun c th -> SPEC c (MATCH_MP mth th)) ctms aths in
         let zth =
           end_itlist (fun th1 th2 -> MATCH_MP dth (CONJ th1 th2)) zths in
@@ -267,20 +361,21 @@ in
       and htm = variant avvers (mk_var("h",dty --> dty'));
       val hasm = list_mk_icomb (“ring_monomorphism”, [mk_pair(rtm,rtm'), htm]);
       val hth = ASSUME hasm;
-   (* TODO *)
       val ths' = mapfilter (CONV_RULE(RING_MONOMORPHIC_IMAGE_RULE hth)) ths
-      and th' = RING_MONOMORPHIC_IMAGE_RULE hth tm in
-      let utm =
-        if ths' = [] then rand(concl th')
-        else mk_imp(list_mk_conj (map concl ths'),rand(concl th')) in
-      let hvs = find_terms
-       (fun t -> is_comb t && rator t = htm && is_var(rand t)) utm in
-      let gvs = map (genvar o type_of) hvs in
-      let vtm = subst (zip gvs hvs) utm in
-      let arty = mk_type("ring",[aty]) in
-      let atm =
-        vsubst [mk_var("r",arty),mk_var(fst(dest_var rtm'),arty)]
-               (inst[aty,dty'] vtm) in
+      and th' = RING_MONOMORPHIC_IMAGE_RULE hth tm;
+      val utm =
+        if null ths' then rand(concl th')
+        else mk_imp(list_mk_conj (map concl ths'),rand(concl th'));
+      val hvs = find_terms
+       (fn t => is_comb t andalso rator t ~~ htm andalso is_var(rand t)) utm;
+      val gvs = map (genvar o type_of) hvs;
+      (* hvs |-> gvs *)
+      val vtm = subst (map2 (fn s => fn t => s |-> t) hvs gvs) utm;      
+      val arty = mk_type("Ring",[alpha]);
+      val atm =
+         subst [mk_var(fst(dest_var rtm'),arty) |-> mk_var("r",arty)]
+               (inst[dty' |-> alpha] vtm);
+ (* TODO *)
       let th1 = RING_WORD_UNIVERSAL atm in
       let th2 = INST_TYPE [dty',aty] th1 in
       let th3 = INST [rtm',mk_var("r",rty')] th2 in
@@ -386,4 +481,4 @@ let RING_TAC =
          ((fun g -> MATCH_MP_TAC th g) THEN ASM_REWRITE_TAC[])));
  *)
 
-end (* structure ringLib *)
+end (* struct *)

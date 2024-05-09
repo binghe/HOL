@@ -3677,17 +3677,17 @@ Definition is_faithful_def :
             (!X. solvable (apply pi M) <=> IS_SOME (ltree_lookup (BTe X M) p))
 End
 
-Definition term_agrees_upto_def :
-    term_agrees_upto M N p =
+Definition term_agree_upto_def :
+    term_agree_upto M N p =
       !q. q <<= p ==>
           ltree_el (BTe (FV M UNION FV N) M) q =
           ltree_el (BTe (FV M UNION FV N) N) q
 End
 
 (* Definition 10.3.10 (iv) *)
-val _ = set_fixity "agrees_upto" (Infixr 490);
-Definition agrees_upto_def :
-    $agrees_upto Ns p = !M N. MEM M Ns /\ MEM N Ns ==> term_agrees_upto M N p
+val _ = set_fixity "agree_upto" (Infixr 490);
+Definition agree_upto_def :
+    $agree_upto Ns p = !M N. MEM M Ns /\ MEM N Ns ==> term_agree_upto M N p
 End
 
 (* Lemma 10.3.11 (1) [1. p.251]
@@ -3704,7 +3704,7 @@ End
    Let's first put ‘EVERY solvable Ns’ in assumption to focus on the non-trivial
    part of this proof.
  *)
-Theorem agrees_upto_lemma_1 :
+Theorem agree_upto_lemma_1 :
     !X Ms p. FINITE X /\ EVERY solvable Ms /\ p <> [] /\
              (!M. MEM M Ms ==> p IN ltree_paths (BTe X M)) ==>
              ?pi. Boehm_transform pi /\ !M. MEM M Ms ==> is_ready (apply pi M)
@@ -3763,6 +3763,7 @@ Proof
      MATCH_MP_TAC principle_hnf_beta_reduce_ext \\
      rw [Abbr ‘t’, hnf_appstar])
  >> DISCH_TAC
+ >> qabbrev_tac ‘m = LENGTH o args’
  (* construct p1 *)
  >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE (MAP VAR vs))’
  >> qabbrev_tac ‘d = MAX_LIST (MAP (\e. subterm_width e p) Ms)’
@@ -3771,18 +3772,18 @@ Proof
 QED
 
 (* NOTE: ‘p <> []’ can be removed now *)
-Theorem agrees_upto_lemma_2 :
+Theorem agree_upto_lemma_2 :
     !X Ms p. FINITE X /\ (!M. MEM M Ms ==> p IN ltree_paths (BTe X M)) /\
-             EVERY solvable Ms /\ Ms agrees_upto p ==>
-            ?pi. Boehm_transform pi /\ (MAP (apply pi) Ms) agrees_upto p
+             EVERY solvable Ms /\ Ms agree_upto p ==>
+            ?pi. Boehm_transform pi /\ (MAP (apply pi) Ms) agree_upto p
 Proof
     cheat
 QED
 
 (* Lemma 10.3.11 (3) [1. p.251] *)
-Theorem agrees_upto_lemma_3 :
+Theorem agree_upto_lemma_3 :
     !Ns p. (!X M. MEM M Ns ==> p IN ltree_paths (BTe X M)) /\
-           Ns agrees_upto p ==>
+           Ns agree_upto p ==>
            ?pi. Boehm_transform pi /\
                 !M N. MEM M Ns /\ MEM N Ns ==>
                      (subterm_equivalent p M N <=>
@@ -3792,8 +3793,8 @@ Proof
 QED
 
 (* Proposition 10.3.13 [1, p.253] *)
-Theorem agrees_upto_thm :
-    !Ns p. Ns agrees_upto p ==> ?pi. Boehm_transform pi /\ is_faithful p Ns pi
+Theorem agree_upto_thm :
+    !Ns p. Ns agree_upto p ==> ?pi. Boehm_transform pi /\ is_faithful p Ns pi
 Proof
     cheat
 QED
@@ -4315,12 +4316,12 @@ Theorem separability_thm :
           !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q
 Proof
     rpt STRIP_TAC
- (* TODO: find p with minimal length for ‘agrees_upto {M;N} p’ to hold *)
+ (* TODO: find p with minimal length for ‘agree_upto {M;N} p’ to hold *)
  >> ‘?p. ~subterm_equivalent p M N’
        by METIS_TAC [distinct_benf_no_subterm_equivalent]
- >> Know ‘[M; N] agrees_upto p’
+ >> Know ‘[M; N] agree_upto p’
  >- (cheat)
- >> DISCH_THEN (STRIP_ASSUME_TAC o (MATCH_MP agrees_upto_thm))
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (MATCH_MP agree_upto_thm))
  >> Know ‘~equivalent (apply pi M) (apply pi N)’
  >- (POP_ASSUM (MP_TAC o (Q.SPECL [‘M’, ‘N’]) o (REWRITE_RULE [is_faithful_def])) \\
      simp [])
