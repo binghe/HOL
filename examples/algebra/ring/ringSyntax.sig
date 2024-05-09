@@ -12,6 +12,7 @@ sig
   val is_ring_add      : term -> bool
   val is_ring_sub      : term -> bool
   val is_ring_mul      : term -> bool
+  val is_ringconst     : term -> bool
 
   val dest_ring_of_num : term -> term
   val dest_ring_of_int : term -> term

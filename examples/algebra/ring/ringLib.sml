@@ -40,7 +40,9 @@ val LEFT_AND_EXISTS_THM = GSYM LEFT_EXISTS_AND_THM
 val IMP_IMP = Q.SPECL [‘p’, ‘q’, ‘r’] AND_IMP_INTRO;
 
 val PRENEX_CONV = Canon.PRENEX_CONV;
-val CNF_CONV = Canon.CNF_CONV;
+val CNF_CONV    = Canon.CNF_CONV;
+
+val ring_tyname = "Ring";
 
 (* A sample input for RING_RULE:
 
@@ -110,10 +112,6 @@ let RING_POLY_UNIVERSAL_CONV =
   and RING_INT_POW_CONV =
     GEN_REWRITE_CONV I [GSYM RING_OF_INT_POW] THENC
     RAND_CONV INT_POW_CONV
-  and is_ringconst tm =
-    match tm with
-      Comb(Comb(Const("ring_of_int",_),_),n) -> is_intconst n
-    | _ -> false
   and ith = prove
    (`ring_0 r = ring_of_int r (&0) /\
      ring_1 r = ring_of_int r (&1)`,
@@ -305,7 +303,7 @@ val RING_WORD_UNIVERSAL = let
     and dth = UNDISCH RING_WORD_UNIVERSAL_LEMMA4;
     val decorule =
       GEN_REWRITE_RULE (RAND_CONV o ONCE_DEPTH_CONV) empty_rewrites
-       [cth, GSYM RING_OF_INT_OF_NUM] o
+                       [cth, GSYM RING_OF_INT_OF_NUM] o
       PART_MATCH lhand pth
 in
     fn tm => let
@@ -324,7 +322,7 @@ in
           end_itlist (fun th1 th2 -> MATCH_MP dth (CONJ th1 th2)) zths in
         let eth =
           TRANS (RING_POLY_UNIVERSAL_CONV ctm)
-          (SYM(RING_POLY_UNIVERSAL_CONV (lhand(concl zth)))) in
+                (SYM(RING_POLY_UNIVERSAL_CONV (lhand(concl zth)))) in
         GENL avs (DISCH ant (EQ_MP (SYM cth) (TRANS eth zth)))
       else
         let th1 = decorule tm in
@@ -333,17 +331,16 @@ in
         EQ_MP (SYM th2) bth
     end
 end;
- *)
 
 val RING_RING_WORD = let
     val imp_imp_rule = GEN_REWRITE_RULE I empty_rewrites [IMP_IMP]
     and left_exists_rule = GEN_REWRITE_RULE I empty_rewrites [LEFT_FORALL_IMP_THM]
-    and or_elim_rule =
-      GEN_REWRITE_RULE I empty_rewrites [TAUT `(p ==> q) /\ (p' ==> q) <=> p \/ p' ==> q`]
+    and or_elim_rule = GEN_REWRITE_RULE I empty_rewrites
+                         [TAUT `(p ==> q) /\ (p' ==> q) <=> p \/ p' ==> q`]
 in
     fn ths tm => let
       val dty = type_of(rand tm);
-      val rty = mk_type("Ring",[dty]);
+      val rty = mk_type(ring_tyname,[dty]);
       val rtms = filter (curry (=) rty o type_of) (freesl(tm::map concl ths))
     in
       if length rtms <> 1
@@ -352,7 +349,7 @@ in
       val tvs = itlist (union o type_vars_in_term o concl) ths
                        (type_vars_in_term tm);
       val dty' = mk_vartype("Z"^itlist (curry (^) o dest_vartype) tvs "");
-      val rty' = mk_type("Ring",[dty']);
+      val rty' = mk_type(ring_tyname,[dty']);
       val avvers = HOLset.listItems
                      (itlist (fn th => fn s =>
                                  HOLset.addList (s,all_vars (concl th))) ths
@@ -370,8 +367,8 @@ in
        (fn t => is_comb t andalso rator t ~~ htm andalso is_var(rand t)) utm;
       val gvs = map (genvar o type_of) hvs;
       (* hvs |-> gvs *)
-      val vtm = subst (map2 (fn s => fn t => s |-> t) hvs gvs) utm;      
-      val arty = mk_type("Ring",[alpha]);
+      val vtm = subst (map2 (fn s => fn t => s |-> t) hvs gvs) utm;
+      val arty = mk_type(ring_tyname,[alpha]);
       val atm =
          subst [mk_var(fst(dest_var rtm'),arty) |-> mk_var("r",arty)]
                (inst[dty' |-> alpha] vtm);
@@ -471,14 +468,12 @@ end;
 (* either solving outright or leaving some ring carrier membership           *)
 (* ------------------------------------------------------------------------- *)
 
-(*
-let RING_TAC =
+fun RING_TAC (asl,w) =
   REPEAT GEN_TAC THEN
   REPEAT(FIRST_X_ASSUM(MP_TAC o check (is_eq o concl))) THEN
-  W(fn (asl,w) =>
-        let th = RING_RULE w in
-        (MATCH_ACCEPT_TAC th ORELSE
-         ((fun g -> MATCH_MP_TAC th g) THEN ASM_REWRITE_TAC[])));
- *)
+  let val th = RING_RULE w in
+    (MATCH_ACCEPT_TAC th ORELSE
+      ((fn g => MATCH_MP_TAC th g) THEN ASM_REWRITE_TAC[]))
+  end;
 
 end (* struct *)

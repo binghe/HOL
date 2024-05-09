@@ -1,7 +1,7 @@
 structure ringSyntax :> ringSyntax =
 struct
 
-open HolKernel boolLib bossLib Parse;
+open HolKernel boolLib bossLib Parse intSyntax;
 
 fun is_ring_0 tm =
     is_comb tm andalso let
@@ -179,5 +179,8 @@ fun dest_ring_mul tm = let
 in
     (l,r)
 end;
+
+fun is_ringconst tm =
+    is_ring_of_int tm andalso is_int_literal (dest_ring_of_int tm);
 
 end (* struct *)
