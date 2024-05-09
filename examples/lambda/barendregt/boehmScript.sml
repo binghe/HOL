@@ -3748,7 +3748,7 @@ Proof
       by (rw [Abbr ‘vs’, NEWS_def])
  (* decompose M0 *)
  >> Know ‘!i. i < k ==> ?y args. M0 i = LAMl (TAKE (n i) vs) (VAR y @* args)’
- >- (rw [Abbr ‘n’] >> irule (iffLR hnf_cases_shared \\
+ >- (rw [Abbr ‘n’] >> irule (iffLR hnf_cases_shared) \\
      rw [] >- fs [o_DEF] \\
      MATCH_MP_TAC DISJOINT_SUBSET \\
      Q.EXISTS_TAC ‘FV (EL i Ms)’ \\
@@ -3792,6 +3792,7 @@ Proof
  >> DISCH_TAC
  (* construct p1 *)
  >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE (MAP VAR vs))’
+ >> ‘Boehm_transform p1’ by rw [Abbr ‘p1’, MAP_MAP_o, GSYM MAP_REVERSE]
  >> qabbrev_tac ‘P = permutator d’
  >> cheat
 QED
