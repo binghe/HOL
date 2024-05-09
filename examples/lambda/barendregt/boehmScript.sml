@@ -3705,12 +3705,27 @@ End
    part of this proof.
  *)
 Theorem agree_upto_lemma_1 :
-    !X Ms p. FINITE X /\ EVERY solvable Ms /\ p <> [] /\
-             (!M. MEM M Ms ==> p IN ltree_paths (BTe X M)) ==>
+    !X Ms p. FINITE X /\ p <> [] /\ EVERY (\e. subterm X e p <> NONE) Ms ==>
              ?pi. Boehm_transform pi /\ !M. MEM M Ms ==> is_ready (apply pi M)
 Proof
     rpt STRIP_TAC
  >> qabbrev_tac ‘k = LENGTH Ms’
+ >> Know ‘!i. i < k ==> subterm X (EL i Ms) p <> NONE’
+ >- (NTAC 2 STRIP_TAC >> fs [EVERY_EL])
+ >> Q.PAT_X_ASSUM ‘EVERY P Ms’ K_TAC
+ >> DISCH_TAC
+ >> ‘!i. i < k ==> p IN ltree_paths (BTe X (EL i Ms))’
+       by PROVE_TAC [subterm_imp_ltree_paths]
+ >> ‘!i. i < k ==> (!q. q <<= p ==> subterm X (EL i Ms) q <> NONE) /\
+                    !q. q <<= FRONT p ==> solvable (subterm' X (EL i Ms) q)’
+       by METIS_TAC [subterm_solvable_lemma]
+ >> Know ‘!i. i < k ==> solvable (EL i Ms)’
+ >- (rpt STRIP_TAC \\
+     Q.PAT_X_ASSUM ‘!i. i < k ==>
+                       (!q. q <<= p ==> subterm X (EL i Ms) q <> NONE) /\ P’
+                   (MP_TAC o Q.SPEC ‘i’) >> rw [] \\
+     POP_ASSUM (MP_TAC o (Q.SPEC ‘[]’)) >> rw [])
+ >> DISCH_TAC
  (* define M0 *)
  >> qabbrev_tac ‘M0 = \i. principle_hnf (EL i Ms)’
  >> Know ‘!i. i < k ==> hnf (M0 i)’
@@ -3733,19 +3748,19 @@ Proof
       by (rw [Abbr ‘vs’, NEWS_def])
  (* decompose M0 *)
  >> Know ‘!i. i < k ==> ?y args. M0 i = LAMl (TAKE (n i) vs) (VAR y @* args)’
- >- (rw [Abbr ‘n’] >> irule (iffLR hnf_cases_shared) >> rw [] >- fs [o_DEF] \\
+ >- (rw [Abbr ‘n’] >> irule (iffLR hnf_cases_shared \\
+     rw [] >- fs [o_DEF] \\
      MATCH_MP_TAC DISJOINT_SUBSET \\
      Q.EXISTS_TAC ‘FV (EL i Ms)’ \\
      reverse CONJ_TAC
      >- (rw [Abbr ‘M0’] >> MATCH_MP_TAC principle_hnf_FV_SUBSET \\
-         Q.PAT_X_ASSUM ‘EVERY solvable Ms’ MP_TAC \\
-         rw [solvable_iff_has_hnf, EVERY_EL]) \\
+         rw [GSYM solvable_iff_has_hnf]) \\
      Q.PAT_X_ASSUM ‘DISJOINT (set vs) Z’ MP_TAC \\
      rw [Abbr ‘Z’] >> rw [Once DISJOINT_SYM] \\
      POP_ASSUM MATCH_MP_TAC \\
      Q.EXISTS_TAC ‘EL i Ms’ >> rw [EL_MEM])
  (* now assert two functions y and args for each term in Ms *)
- >> simp [EXT_SKOLEM_THM'] (* topologyTheory *)
+ >> simp [EXT_SKOLEM_THM'] (* from topologyTheory *)
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘y’
                  (Q.X_CHOOSE_THEN ‘args’ STRIP_ASSUME_TAC))
  (* define M1 *)
@@ -3764,9 +3779,19 @@ Proof
      rw [Abbr ‘t’, hnf_appstar])
  >> DISCH_TAC
  >> qabbrev_tac ‘m = LENGTH o args’
+ >> qabbrev_tac ‘d = MAX_LIST (MAP (\e. subterm_width e p) Ms)’
+ >> Know ‘!i. i < k ==> m i <= d’
+ >- (rpt STRIP_TAC \\
+     TRANS_TAC LESS_EQ_TRANS “subterm_width (EL i Ms) p” \\
+     reverse CONJ_TAC
+     >- (rw [Abbr ‘d’] \\
+         MATCH_MP_TAC MAX_LIST_PROPERTY \\
+         rw [MEM_MAP] >> Q.EXISTS_TAC ‘EL i Ms’ >> rw [EL_MEM]) \\
+     MP_TAC (Q.SPECL [‘X’, ‘EL i Ms’, ‘p’, ‘[]’] subterm_width_thm) \\
+     simp [Abbr ‘m’])
+ >> DISCH_TAC
  (* construct p1 *)
  >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE (MAP VAR vs))’
- >> qabbrev_tac ‘d = MAX_LIST (MAP (\e. subterm_width e p) Ms)’
  >> qabbrev_tac ‘P = permutator d’
  >> cheat
 QED
