@@ -16,8 +16,6 @@ local open satTheory in end;
 
 val _ = new_theory "relation";
 
-val metis_tac = METIS_TAC;
-
 (*---------------------------------------------------------------------------*)
 (* Basic properties of relations.                                            *)
 (*---------------------------------------------------------------------------*)
@@ -185,12 +183,10 @@ Proof REWRITE_TAC [transitive_def] THEN MESON_TAC [RTC_RTC]
 QED
 Theorem transitive_RTC = RTC_TRANSITIVE
 
-(* Theorem: R^* x y /\ R^* y z ==> R^* x z *)
-(* Proof: by RTC_TRANSITIVE, transitive_def *)
 val RTC_TRANS = store_thm(
   "RTC_TRANS",
   ``R^* x y /\ R^* y z ==> R^* x z``,
-  metis_tac[RTC_TRANSITIVE, transitive_def]);
+  METIS_TAC[RTC_TRANSITIVE, transitive_def]);
 
 Theorem RTC_REFLEXIVE[simp]: !R:'a->'a->bool. reflexive (RTC R)
 Proof MESON_TAC [reflexive_def, RTC_RULES]
