@@ -14,7 +14,7 @@ struct
 open HolKernel boolLib bossLib;
 
 open cardinalTheory ringTheory ringLibTheory Normalizer normalForms tautLib
-     Canon Canon_Port pairSyntax ringSyntax;
+     Canon Canon_Port pairSyntax ringSyntax intReduce;
 
 (* ------------------------------------------------------------------------- *)
 (* Establish the required grammar(s) for executing this file                 *)
@@ -74,10 +74,9 @@ val ring_tyname = "Ring";
 (* in such domains.                                                          *)
 (* ------------------------------------------------------------------------- *)
 
-(*
-let RING_POLY_UNIVERSAL_CONV =
-  let pth = (UNDISCH o SPEC_ALL o prove)
-   (`!r. ring_carrier r = (:A)
+local
+  val pth = (UNDISCH o SPEC_ALL o prove)
+   (“!r. ring_carrier r = univ(:'a)
           ==> (!x y z. ring_add r x (ring_add r y z) =
                        ring_add r (ring_add r x y) z) /\
               (!x y. ring_add r x y = ring_add r y x) /\
@@ -90,19 +89,19 @@ let RING_POLY_UNIVERSAL_CONV =
               (!x y z. ring_mul r x (ring_add r y z) =
                        ring_add r (ring_mul r x y) (ring_mul r x z)) /\
               (!x. ring_pow r x 0 = ring_of_int r (&1)) /\
-              (!x n. ring_pow r x (SUC n) = ring_mul r x (ring_pow r x n))`,
-    REWRITE_TAC[RING_OF_INT_OF_NUM; RING_OF_NUM_1; CONJUNCT1 ring_of_num] THEN
-    SIMP_TAC[RING_ADD_LZERO; RING_MUL_LID; RING_MUL_LZERO; IN_UNIV] THEN
-    SIMP_TAC[ring_pow; RING_ADD_LDISTRIB; IN_UNIV] THEN
-    SIMP_TAC[RING_ADD_AC; RING_MUL_AC; IN_UNIV])
+              (!x n. ring_pow r x (SUC n) = ring_mul r x (ring_pow r x n))”,
+    REWRITE_TAC[RING_OF_INT_OF_NUM, RING_OF_NUM_1, CONJUNCT1 ring_of_num] THEN
+    SIMP_TAC std_ss[RING_ADD_LZERO, RING_MUL_LID, RING_MUL_LZERO, IN_UNIV] THEN
+    SIMP_TAC std_ss[ring_pow, RING_ADD_LDISTRIB, IN_UNIV] THEN
+    SIMP_TAC std_ss[RING_ADD_AC, RING_MUL_AC, IN_UNIV])
   and sth = (UNDISCH o SPEC_ALL o prove)
-   (`!r. ring_carrier r = (:A)
-          ==> (!x. ring_neg r x = ring_mul r (ring_of_int r (-- &1)) x) /\
+   (“!r. ring_carrier r = univ(:'a)
+          ==> (!x. ring_neg r x = ring_mul r (ring_of_int r (- &1)) x) /\
               (!x y. ring_sub r x y =
-                     ring_add r x (ring_mul r (ring_of_int r (-- &1)) y))`,
-    SIMP_TAC[RING_OF_INT_NEG; RING_MUL_LNEG; IN_UNIV; ring_sub] THEN
-    REWRITE_TAC[RING_OF_INT_OF_NUM; RING_OF_NUM_1; CONJUNCT1 ring_of_num] THEN
-    SIMP_TAC[ring_sub; RING_MUL_LNEG; RING_MUL_LID; IN_UNIV])
+                     ring_add r x (ring_mul r (ring_of_int r (- &1)) y))”,
+    SIMP_TAC std_ss[RING_OF_INT_NEG, RING_MUL_LNEG, IN_UNIV, ring_sub] THEN
+    REWRITE_TAC[RING_OF_INT_OF_NUM, RING_OF_NUM_1, CONJUNCT1 ring_of_num] THEN
+    SIMP_TAC std_ss[ring_sub, RING_MUL_LNEG, RING_MUL_LID, IN_UNIV])
   and RING_INT_ADD_CONV =
       GEN_REWRITE_CONV I [GSYM RING_OF_INT_ADD] THENC
       RAND_CONV INT_ADD_CONV
@@ -120,9 +119,12 @@ let RING_POLY_UNIVERSAL_CONV =
     SEMIRING_NORMALIZERS_CONV pth sth
      (is_ringconst,
       RING_INT_ADD_CONV,RING_INT_MUL_CONV,RING_INT_POW_CONV)
-     (<) in
+     (<)
+in
+val RING_POLY_UNIVERSAL_CONV =
   GEN_REWRITE_CONV ONCE_DEPTH_CONV [ith; GSYM RING_OF_INT_OF_NUM] THENC
-  RING_POLY_CONV;;
+  RING_POLY_CONV
+end;
 
 let RING_INTEGRAL_DOMAIN_UNIVERSAL,ring_ring_cofactors_universal =
   let RING_INTEGRAL = (repeat UNDISCH o prove)
@@ -295,19 +297,33 @@ end
 (* carrier membership hypotheses, will add those as an antecedent.           *)
 (* ------------------------------------------------------------------------- *)
 
-val RING_WORD_UNIVERSAL = let
-    val cth = RING_WORD_UNIVERSAL_LEMMA1
-    and pth = UNDISCH RING_WORD_UNIVERSAL_LEMMA2
-    and bth = REFL “ring_of_int r (&0) :'a”
-    and mth = UNDISCH RING_WORD_UNIVERSAL_LEMMA3
-    and dth = UNDISCH RING_WORD_UNIVERSAL_LEMMA4;
-    val decorule =
+local
+  val cth = prove
+    (“ring_0 r = ring_of_int (r :'a Ring) (&0) /\
+      ring_1 r = ring_of_int (r :'a Ring) (&1)”,
+      REWRITE_TAC[RING_OF_INT_OF_NUM, RING_OF_NUM_0, RING_OF_NUM_1]);
+  val pth = (UNDISCH o prove)
+    (“ring_carrier r = univ(:'a) ==>
+      (x = y <=> ring_sub r x y = ring_of_int r (&0))”,
+      SIMP_TAC bool_ss[RING_SUB_EQ_0, IN_UNIV, RING_OF_INT_OF_NUM, RING_OF_NUM_0]);
+  val bth = REFL “ring_of_int r (&0) :'a”;
+  val mth = (UNDISCH o prove)
+    (“ring_carrier r = univ(:'a) ==>
+      p = ring_of_int r (&0) ==> !c. ring_mul r c p = ring_of_int r (&0)”,
+      SIMP_TAC bool_ss[RING_MUL_RZERO, RING_OF_INT_OF_NUM, RING_OF_NUM_0, IN_UNIV]);
+  val dth = (UNDISCH o prove)
+    (“ring_carrier r = univ(:'a) ==>
+      p = ring_of_int r (&0) /\ q = ring_of_int r (&0) ==>
+        ring_add r p q = ring_of_int r (&0)”,
+      SIMP_TAC bool_ss[RING_ADD_RZERO, RING_OF_INT_OF_NUM, RING_OF_NUM_0, IN_UNIV]);
+  val decorule =
       GEN_REWRITE_RULE (RAND_CONV o ONCE_DEPTH_CONV) empty_rewrites
                        [cth, GSYM RING_OF_INT_OF_NUM] o
       PART_MATCH lhand pth
 in
-    fn tm => let
-      val (avs,bod) = strip_forall tm in
+fun RING_WORD_UNIVERSAL tm = let
+      val (avs,bod) = strip_forall tm
+    in
       if is_imp bod then let
         val (ant,con) = dest_imp bod;
         val aths =
@@ -332,13 +348,13 @@ in
     end
 end;
 
-val RING_RING_WORD = let
-    val imp_imp_rule = GEN_REWRITE_RULE I empty_rewrites [IMP_IMP]
-    and left_exists_rule = GEN_REWRITE_RULE I empty_rewrites [LEFT_FORALL_IMP_THM]
-    and or_elim_rule = GEN_REWRITE_RULE I empty_rewrites
-                         [TAUT `(p ==> q) /\ (p' ==> q) <=> p \/ p' ==> q`]
+local
+  val imp_imp_rule     = GEN_REWRITE_RULE I empty_rewrites [IMP_IMP]
+  and left_exists_rule = GEN_REWRITE_RULE I empty_rewrites [LEFT_FORALL_IMP_THM]
+  and or_elim_rule     = GEN_REWRITE_RULE I empty_rewrites
+                           [TAUT `(p ==> q) /\ (p' ==> q) <=> p \/ p' ==> q`]
 in
-    fn ths tm => let
+fun RING_RING_WORD ths tm = let
       val dty = type_of(rand tm);
       val rty = mk_type(ring_tyname,[dty]);
       val rtms = filter (curry (=) rty o type_of) (freesl(tm::map concl ths))
@@ -393,14 +409,14 @@ in
     end
 end;
 
-val RING_RING_HORN = let
-    val ddj_conv =
-        GEN_REWRITE_CONV (RAND_CONV o DEPTH_CONV) empty_rewrites
-          [TAUT ‘~p \/ ~q <=> ~(p /\ q)’] THENC
-        GEN_REWRITE_CONV I empty_rewrites [TAUT ‘p \/ ~q <=> q ==> p’]
+local
+  val ddj_conv =
+      GEN_REWRITE_CONV (RAND_CONV o DEPTH_CONV) empty_rewrites
+        [TAUT ‘~p \/ ~q <=> ~(p /\ q)’] THENC
+      GEN_REWRITE_CONV I empty_rewrites [TAUT ‘p \/ ~q <=> q ==> p’]
 in
-    fn tm =>
-       if not(is_disj tm) then RING_RING_WORD [] tm else
+  fun RING_RING_HORN tm =
+    if not(is_disj tm) then RING_RING_WORD [] tm else
        let val th0 = ddj_conv tm;
            val tm' = rand(concl th0);
            val abod = lhand tm';
@@ -411,17 +427,18 @@ in
        end
 end;
 
-val RING_RING_CORE = let
-    val pth = TAUT ‘p ==> q <=> (p \/ q <=> q)’
-    and ptm = “p:bool” and qtm = “q:bool”
+local
+  val pth = TAUT ‘p ==> q <=> (p \/ q <=> q)’
+  and ptm = “p:bool” and qtm = “q:bool”
 in
-    fn tm => let
+  fun RING_RING_CORE tm = let
       val (negdjs,posdjs) = partition is_neg (strip_disj tm);
       val th = tryfind
                  (fn p => RING_RING_HORN (list_mk_disj(p::negdjs))) posdjs;
       val th1 = INST [ptm |-> concl th, qtm |-> tm] pth
     in
       MP (EQ_MP (SYM th1) (DISJ_ACI_RULE(rand(concl th1)))) th
+    end
 end;
 
 val init_conv =
@@ -453,8 +470,7 @@ end;
 
 (* The final version of RULE_RULE only temporarily changes the type variable
    alpha of input term to something fresh and then call RING_RULE_BASIC to
-   do the actual job.
- *)
+   do the actual job. *)
 fun RING_RULE tm = let
     val tvs = type_vars_in_term tm;
     val ty = mk_vartype("Y" ^ itlist (curry (^) o dest_vartype) tvs "");
