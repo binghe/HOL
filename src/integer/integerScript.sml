@@ -688,11 +688,17 @@ val INT_NEG_LMUL =
               REWRITE_TAC[GSYM INT_LNEG_UNIQ, GSYM INT_RDISTRIB,
               INT_ADD_LINV, INT_MUL_LZERO,INT_0]);
 
+(* |- !x y. -x * y = -(x * y) *)
+Theorem INT_MUL_LNEG = GSYM INT_NEG_LMUL (* HOL-Light compatible *)
+
 val INT_NEG_RMUL =
     store_thm("INT_NEG_RMUL",
               Term `!x y. ~(x * y) = x * ~y`,
               REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[INT_MUL_SYM] THEN
               SIMP_TAC int_ss [INT_NEG_LMUL]);
+
+(* |- !x y. x * -y = -(x * y) *)
+Theorem INT_MUL_RNEG = GSYM INT_NEG_RMUL (* HOL-Light compatible *)
 
 Theorem INT_NEGNEG[simp]:
   !x:int. ~~x = x
@@ -700,6 +706,8 @@ Proof
   GEN_TAC THEN CONV_TAC SYM_CONV THEN
   REWRITE_TAC[GSYM INT_LNEG_UNIQ, INT_ADD_RINV]
 QED
+
+Theorem INT_NEG_NEG = INT_NEGNEG (* HOL-Light compatible name *)
 
 val INT_NEG_MUL2 =
     store_thm("INT_NEG_MUL2",
@@ -1276,6 +1284,9 @@ val INT_MUL =
                                           GSYM INT_ADD, INT_RDISTRIB] THEN
               FIRST_ASSUM(fn th => REWRITE_TAC[GSYM th]) THEN
               REWRITE_TAC[INT_MUL_LID,GSYM INT_1]);
+
+Theorem INT_OF_NUM_ADD = INT_ADD (* HOL-Light compatible name *)
+Theorem INT_OF_NUM_MUL = INT_MUL (* HOL-Light compatible name *)
 
 (*--------------------------------------------------------------------------*)
 (* Now more theorems                                                        *)
@@ -2972,6 +2983,8 @@ val INT_EXP = store_thm(
     ASM_REWRITE_TAC [int_exp, EXP, INT_MUL]
   ]);
 
+Theorem INT_OF_NUM_POW = INT_EXP (* HOL-Light compatible name *)
+
 val INT_EXP_EQ0 = store_thm(
   "INT_EXP_EQ0",
   Term`!(p:int) n. (p ** n = 0) <=> (p = 0) /\ ~(n = 0)`,
@@ -3037,6 +3050,29 @@ val INT_EXP_NEG = store_thm(
                          EXP, GSYM INT_NEG_LMUL, GSYM INT_NEG_RMUL, INT_MUL,
                          INT_NEGNEG]
   ]);
+
+Theorem INT_POW_NEG :
+    !(x :int) n. -x ** n = (if EVEN n then x ** n else -(x ** n))
+Proof
+    qx_genl_tac [‘p’, ‘m’]
+ >> MP_TAC (Q.SPEC ‘p’ INT_NUM_CASES)
+ >> RW_TAC std_ss []
+ >> FULL_SIMP_TAC std_ss [GSYM ODD_EVEN]
+ >| [ (* goal 1 (of 6) *)
+      RW_TAC std_ss[INT_EXP_NEG, INT_EXP],
+      (* goal 2 (of 6) *)
+      RW_TAC std_ss[INT_NEG_NEG, INT_EXP_NEG, INT_EXP],
+      (* goal 3 (of 6) *)
+      RW_TAC std_ss[INT_NEG_0],
+      (* goal 4 (of 6) *)
+      RW_TAC std_ss [INT_EXP_NEG, INT_EXP],
+      (* goal 5 (of 6) *)
+      RW_TAC std_ss [INT_NEG_NEG, INT_EXP_NEG, INT_EXP],
+      (* goal 6 (of 6) *)
+      RW_TAC std_ss [INT_NEG_0, INT_EXP] \\
+      rw [ZERO_EXP] \\
+      CCONTR_TAC >> fs [] ]
+QED
 
 val INT_EXP_ADD_EXPONENTS = store_thm(
   "INT_EXP_ADD_EXPONENTS",

@@ -1,9 +1,17 @@
 structure intReduce :> intReduce =
 struct
 
-open HolKernel boolLib integerTheory intSyntax simpLib
+open HolKernel boolLib integerTheory intSyntax simpLib Arithconv numeralTheory;
 
-val ERR = mk_HOL_ERR "intSimps";
+structure Parse = struct
+  open Parse arithmeticTheory
+  val (Type,Term) = parse_from_grammars integer_grammars
+end
+
+open Parse;
+
+val ERR = mk_HOL_ERR "intReduce";
+fun failwith function = raise (ERR function "");
 
 (*---------------------------------------------------------------------------*)
 (* Integer-specific compset                                                  *)
@@ -118,4 +126,156 @@ in
     end
 end
 
-end
+(*-----------------------------------------------------------------------*)
+(* INT_ADD_CONV "[x] + [y]" = |- [x] + [y] = [x+y]                       *)
+(*-----------------------------------------------------------------------*)
+
+(* NOTE: The following conversions are ported from HOL-Light's "int.ml". *)
+local
+  open Arbnum;
+  val NUM_ADD_CONV = ADD_CONV;
+  val neg_tm = negate_tm
+  and amp_tm = int_injection
+  and add_tm = plus_tm;
+  val dest = dest_binop plus_tm (ERR "INT_ADD_CONV" "");
+  val dest_numeral = numSyntax.dest_numeral
+  and mk_numeral = numSyntax.mk_numeral;
+  val m_tm = “m:num” and n_tm = “n:num”;
+  val pth0 = prove
+   (“(-(&m) + &m = &0) /\
+     (&m + -(&m) = &0)”,
+    REWRITE_TAC[INT_ADD_LINV, INT_ADD_RINV]);
+  val [pth1, pth2, pth3, pth4, pth5, pth6] = (CONJUNCTS o prove)
+   (“(-(&m) + -(&n) = -(&(m + n))) /\
+     (-(&m) + &(m + n) = &n) /\
+     (-(&(m + n)) + &m = -(&n)) /\
+     (&(m + n) + -(&m) = &n) /\
+     (&m + -(&(m + n)) = -(&n)) /\
+     (&m + &n = &(m + n))”,
+    REWRITE_TAC[GSYM INT_OF_NUM_ADD, INT_NEG_ADD] THEN
+    REWRITE_TAC[INT_ADD_ASSOC, INT_ADD_LINV, INT_ADD_LID] THEN
+    REWRITE_TAC[INT_ADD_RINV, INT_ADD_LID] THEN
+    ONCE_REWRITE_TAC[INT_ADD_SYM] THEN
+    REWRITE_TAC[INT_ADD_ASSOC, INT_ADD_LINV, INT_ADD_LID] THEN
+    REWRITE_TAC[INT_ADD_RINV, INT_ADD_LID]);
+in
+val INT_ADD_CONV =
+  GEN_REWRITE_CONV I empty_rewrites[pth0] ORELSEC
+  (fn tm =>
+    let val (l,r) = dest tm in
+        if rator l ~~ neg_tm then
+          if rator r ~~ neg_tm then
+            let val th1 = INST [m_tm |-> rand(rand l), n_tm |-> rand(rand r)] pth1;
+                val tm1 = rand(rand(rand(concl th1)));
+                val th2 = AP_TERM neg_tm (AP_TERM amp_tm (NUM_ADD_CONV tm1))
+            in
+              TRANS th1 th2
+            end
+          else (* l: neg, r: pos *)
+            let val m = rand(rand l) and n = rand r;
+                val m' = dest_numeral m and n' = dest_numeral n in
+            if m' <= n' then
+              let val p = mk_numeral (n' - m');
+                  val th1 = INST [m_tm |-> m, n_tm |-> p] pth2;
+                  val th2 = NUM_ADD_CONV (rand(rand(lhand(concl th1))));
+                  val th3 = AP_TERM (rator tm) (AP_TERM amp_tm (SYM th2))
+              in
+                TRANS th3 th1
+              end
+            else
+              let val p = mk_numeral (m' - n');
+                  val th1 = INST [m_tm |-> n, n_tm |-> p] pth3;
+                  val th2 = NUM_ADD_CONV (rand(rand(lhand(lhand(concl th1)))));
+                  val th3 = AP_TERM neg_tm (AP_TERM amp_tm (SYM th2));
+                  val th4 = AP_THM (AP_TERM add_tm th3) (rand tm)
+              in
+                TRANS th4 th1
+              end
+            end
+        else (* l: pos *)
+          if rator r ~~ neg_tm then
+            let val m = rand l and n = rand(rand r);
+                val m' = dest_numeral m and n' = dest_numeral n in
+            if n' <= m' then
+              let val p = mk_numeral (m' - n');
+                  val th1 = INST [m_tm |-> n, n_tm |-> p] pth4;
+                  val th2 = NUM_ADD_CONV (rand(lhand(lhand(concl th1))));
+                  val th3 = AP_TERM add_tm (AP_TERM amp_tm (SYM th2));
+                  val th4 = AP_THM th3 (rand tm)
+              in
+                TRANS th4 th1
+              end
+            else
+              let val p = mk_numeral (n' - m');
+                  val th1 = INST [m_tm |-> m, n_tm |-> p] pth5;
+                  val th2 = NUM_ADD_CONV (rand(rand(rand(lhand(concl th1)))));
+                  val th3 = AP_TERM neg_tm (AP_TERM amp_tm (SYM th2));
+                  val th4 = AP_TERM (rator tm) th3
+              in
+                TRANS th4 th1
+              end
+            end
+          else
+            let val th1 = INST [m_tm |-> rand l, n_tm |-> rand r] pth6;
+                val tm1 = rand(rand(concl th1));
+                val th2 = AP_TERM amp_tm (NUM_ADD_CONV tm1)
+            in
+              TRANS th1 th2
+            end
+    end
+    handle HOL_ERR _ => failwith "INT_ADD_CONV")
+end (* local *)
+
+(*-----------------------------------------------------------------------*)
+(* INT_MUL_CONV "[x] * [y]" = |- [x] * [y] = [x * y]                     *)
+(*-----------------------------------------------------------------------*)
+
+local
+  val pth0 = prove
+     (“(&0 * &x = &0) /\
+       (&0 * --(&x) = &0) /\
+       (&x * &0 = &0) /\
+       (-(&x) * &0 = &0)”,
+      REWRITE_TAC[INT_MUL_LZERO, INT_MUL_RZERO]);
+  val (pth1,pth2) = (CONJ_PAIR o prove)
+     (“((&m * &n = &(m * n)) /\
+        (-(&m) * -(&n) = &(m * n))) /\
+       ((-(&m) * &n = -(&(m * n))) /\
+        (&m * -(&n) = -(&(m * n))))”,
+      REWRITE_TAC[INT_MUL_LNEG, INT_MUL_RNEG, INT_NEG_NEG] THEN
+      REWRITE_TAC[INT_OF_NUM_MUL]);
+  val NUM_MULT_CONV = MUL_CONV;
+in
+val INT_MUL_CONV =
+    FIRST_CONV
+     [GEN_REWRITE_CONV I empty_rewrites[pth0],
+      GEN_REWRITE_CONV I empty_rewrites[pth1] THENC RAND_CONV NUM_MULT_CONV,
+      GEN_REWRITE_CONV I empty_rewrites[pth2] THENC RAND_CONV(RAND_CONV NUM_MULT_CONV)];
+end;
+
+(*-----------------------------------------------------------------------*)
+(* INT_POW_CONV "[x] EXP [y]" = |- [x] EXP [y] = [x ** y]                *)
+(*-----------------------------------------------------------------------*)
+
+local
+  val (pth1,pth2) = (CONJ_PAIR o prove)
+     (“(&x ** n = &(x ** n)) /\
+       ((-(&x)) ** n = if EVEN n then &(x ** n) else -(&(x ** n)))”,
+    REWRITE_TAC[INT_OF_NUM_POW, INT_POW_NEG]);
+  val tth = prove
+   (“((if T then x:int else y) = x) /\ ((if F then x:int else y) = y)”,
+    REWRITE_TAC[]);
+  val neg_tm = negate_tm;
+  val NUM_EXP_CONV = EXP_CONV
+  and NUM_EVEN_CONV = EVEN_CONV
+in
+val INT_POW_CONV =
+  (GEN_REWRITE_CONV I empty_rewrites[pth1] THENC RAND_CONV NUM_EXP_CONV) ORELSEC
+  (GEN_REWRITE_CONV I empty_rewrites[pth2] THENC
+   RATOR_CONV(RATOR_CONV(RAND_CONV NUM_EVEN_CONV)) THENC
+   GEN_REWRITE_CONV I empty_rewrites[tth] THENC
+   (fn tm => if rator tm ~~ neg_tm then RAND_CONV(RAND_CONV NUM_EXP_CONV) tm
+              else RAND_CONV NUM_EXP_CONV tm))
+end;
+
+end (* struct *)
