@@ -336,7 +336,7 @@ let INT_RING,int_ideal_cofactors =
   RING_AND_IDEAL_CONV
       (dest_intconst,mk_intconst,INT_EQ_CONV,
        `(--):int->int`,`(+):int->int->int`,`(-):int->int->int`,
-       genvar bool_ty,`(*):int->int->int`,genvar bool_ty,
+       genvar bool_ty,`( * ):int->int->int`,genvar bool_ty,
        `(pow):int->num->int`,
        INT_INTEGRAL,TRUTH,INT_POLY_CONV) in
   pure,
