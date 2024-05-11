@@ -15,22 +15,14 @@
 (*==========================================================================*)
 
 
-open HolKernel Parse boolLib
+open HolKernel Parse boolLib bossLib;
+
+open jrhUtils quotient liteLib pred_setTheory arithmeticTheory prim_recTheory
+     numTheory simpLib numLib liteLib metisLib BasicProvers dividesTheory;
+
+val _ = set_grammar_ancestry ["arithmetic", "pred_set"];
 
 val _ = new_theory "integer";
-
-val _ = set_grammar_ancestry ["arithmetic", "pred_set"]
-
-(* interactive mode
-  app load ["jrhUtils", "quotient", "liteLib", "QLib",
-            "BasicProvers", "boolSimps", "pairSimps",
-            "numSimps", "numLib", "metisLib"];
-*)
-open jrhUtils quotient liteLib pred_setTheory
-     arithmeticTheory prim_recTheory numTheory
-     simpLib numLib boolTheory liteLib metisLib BasicProvers;
-
-open bossLib
 
 val _ = temp_delsimps ["NORMEQ_CONV"]
 
@@ -2028,7 +2020,6 @@ val INT_DIV_MUL_ID = store_thm(
   `p = p / q * q` by PROVE_TAC [INT_ADD_RID] THEN
   PROVE_TAC []);
 
-open dividesTheory
 val lessmult_lemma = prove(
   ``!x y:num. x * y < y ==> (x = 0)``,
   Induct THEN ASM_SIMP_TAC int_ss [MULT_CLAUSES]);
@@ -2962,6 +2953,31 @@ val INT_DIVIDES_RSUB = store_thm(
                (p int_divides (r - q) <=> p int_divides r)`,
   REWRITE_TAC [int_sub] THEN
   PROVE_TAC [INT_DIVIDES_NEG, INT_DIVIDES_RADD]);
+
+(* temporarily make divides an infix *)
+val _ = temp_set_fixity "divides" (Infixl 480);
+
+(* NOTE: This theorem is the definition of ‘divides’ of natural numbers in
+   HOL-Light. This name is HOL-Light compatible.
+ *)
+Theorem num_divides :
+    a divides b <=> &a int_divides &b
+Proof
+    rw [INT_DIVIDES, divides_def]
+ >> EQ_TAC >> rw []
+ >- (Q.EXISTS_TAC ‘&q’ \\
+     rw [INT_OF_NUM_MUL])
+ (* INT_POS *)
+ >> MP_TAC (Q.SPEC ‘m’ INT_NUM_CASES)
+ >> rw [] (* 3 subgoals *)
+ >| [ (* goal 1 (of 3) *)
+      Q.EXISTS_TAC ‘n’ >> fs [INT_OF_NUM_MUL],
+      (* goal 2 (of 3): impossible *)
+      fs [INT_MUL_LNEG, INT_OF_NUM_MUL],
+      (* goal 3 (of 3) *)
+      fs [] >> POP_ASSUM (fn th => rw [GSYM th]) \\
+      Q.EXISTS_TAC ‘0’ >> rw [] ]
+QED
 
 (*----------------------------------------------------------------------*)
 (* Define exponentiation                                                *)

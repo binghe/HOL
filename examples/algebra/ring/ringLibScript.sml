@@ -206,6 +206,14 @@ fun xfer th :tactic =
  >> irule th
  >> rw [Abbr ‘r’];
 
+Theorem RING_NEG_EQ_0 :
+    !r (x :'a).
+        x IN ring_carrier r
+        ==> (ring_neg r x = ring_0 r <=> x = ring_0 r)
+Proof
+    xfer ring_neg_eq_zero
+QED
+
 Theorem RING_POW :
     !r x n. x IN ring_carrier r ==> ring_pow r x n IN ring_carrier (r :'a Ring)
 Proof
@@ -689,6 +697,14 @@ Proof
  >> SIMP_TAC std_ss[Once RING_ADD_SYM, RING_OF_NUM]
 QED
 
+Theorem RING_OF_INT_SUB :
+    !(r :'a Ring) m n.
+      ring_of_int r (m - n) = ring_sub r (ring_of_int r m) (ring_of_int r n)
+Proof
+  SIMP_TAC std_ss[int_sub, ring_sub, RING_OF_INT_ADD, RING_OF_INT_NEG,
+                  RING_NEG, RING_OF_INT]
+QED
+
 Theorem RING_OF_INT_MUL :
     !(r :'a Ring) m n.
       ring_of_int r (m * n) = ring_mul r (ring_of_int r m) (ring_of_int r n)
@@ -738,25 +754,29 @@ Proof
  >> rw [Abbr ‘r’]
 QED
 
-(*
 Theorem RING_OF_INT_EQ_0 :
     !(r :'a Ring) n.
         ring_of_int r n = ring_0 r <=> &(ring_char r) int_divides n
 Proof
   SIMP_TAC std_ss[FORALL_INT_CASES, RING_OF_INT_CASES] THEN
-  SIMP_TAC[RING_NEG_EQ_0; RING_OF_NUM; RING_OF_NUM_EQ_0] THEN
+  SIMP_TAC std_ss[RING_NEG_EQ_0, RING_OF_NUM, RING_OF_NUM_EQ_0] THEN
   REWRITE_TAC[num_divides] THEN REPEAT STRIP_TAC THEN
-  CONV_TAC INTEGER_RULE);;
+(* CONV_TAC INTEGER_RULE *)
+  REWRITE_TAC [INT_DIVIDES_NEG]
+QED
 
-let RING_OF_INT_EQ = prove
- (`!(r:A ring) m n.
-        ring_of_int r m = ring_of_int r n <=> (m == n) (mod &(ring_char r))`,
+Theorem RING_OF_INT_EQ :
+    !(r :'a Ring) m n.
+        ring_of_int r m = ring_of_int r n <=> (m == n) (int_mod &(ring_char r))
+Proof
   REPEAT STRIP_TAC THEN
   W(MP_TAC o PART_MATCH (rand o rand) RING_SUB_EQ_0 o lhand o snd) THEN
-  REWRITE_TAC[RING_OF_INT; GSYM RING_OF_INT_SUB] THEN
+  REWRITE_TAC[RING_OF_INT, GSYM RING_OF_INT_SUB] THEN
   DISCH_THEN(SUBST1_TAC o SYM) THEN REWRITE_TAC[RING_OF_INT_EQ_0] THEN
-  CONV_TAC INTEGER_RULE);;
- *)
+  REWRITE_TAC [numberTheory.fequiv_def]
+  (* CONV_TAC INTEGER_RULE *)
+  cheat
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Homomorphisms etc.                                                        *)

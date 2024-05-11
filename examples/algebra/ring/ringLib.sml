@@ -145,7 +145,7 @@ local
 
 
   and neth_g = prove
-   (“(ring_of_int r m :A = ring_of_int r n <=> F) <=>
+   (“(ring_of_int r m :'a = ring_of_int r n <=> F) <=>
      ~(&(ring_char r) divides (m - n))”,
     REWRITE_TAC[RING_OF_INT_EQ] THEN CONV_TAC INTEGER_RULE)
   and neth_h = prove

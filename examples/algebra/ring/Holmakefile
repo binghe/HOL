@@ -3,7 +3,7 @@ INCLUDES = $(HOLDIR)/src/algebra/construction $(HOLDIR)/src/pred_set/src/more_th
 
 ifdef POLY
 HOLHEAP = heap
-OBJS = ringTheory cardinalTheory
+OBJS = ringTheory cardinalTheory integerTheory
 EXTRA_CLEANS = $(HOLHEAP)
 
 all: $(HOLHEAP)
