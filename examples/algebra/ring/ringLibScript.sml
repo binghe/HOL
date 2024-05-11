@@ -624,7 +624,7 @@ val lemma1 =
     METIS_PROVE[RING_ADD_SYM, RING_NEG]
      “!x y. x IN ring_carrier r /\ y IN ring_carrier r
          ==> ring_add r (ring_neg r x) y = ring_add r y (ring_neg r x)”;
-         
+
 Theorem RING_OF_INT_ADD :
     !(r :'a Ring) m n.
       ring_of_int r (m + n) = ring_add r (ring_of_int r m) (ring_of_int r n)
