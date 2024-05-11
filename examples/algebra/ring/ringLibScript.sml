@@ -916,6 +916,12 @@ Proof
    ASM_SIMP_TAC std_ss [MATCH_MP RING_HOMOMORPHISM_RING_OF_NUM th])
 QED
 
+Definition ring_monomorphism :
+    ring_monomorphism (r,r') (f :'a -> 'b) <=>
+        ring_homomorphism (r,r') f /\
+        !x y. x IN ring_carrier r /\ y IN ring_carrier r /\ f x = f y ==> x = y
+End
+
 (* NOTE: This theorem was part of HOL-Light's RING_MONOMORPHIC_IMAGE_RULE *)
 Theorem RING_MONOMORPHIC_IMAGE_RULE_THM :
     !r r' (f :'a -> 'b).
@@ -967,12 +973,6 @@ Proof
               RING_HOMOMORPHISM_ADD, RING_HOMOMORPHISM_SUB,
               RING_HOMOMORPHISM_MUL]
 QED
-
-Definition ring_monomorphism :
-    ring_monomorphism (r,r') (f :'a -> 'b) <=>
-        ring_homomorphism (r,r') f /\
-        !x y. x IN ring_carrier r /\ y IN ring_carrier r /\ f x = f y ==> x = y
-End
 
 (* ------------------------------------------------------------------------- *)
 (* Relation of isomorphism.                                                  *)

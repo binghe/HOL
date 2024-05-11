@@ -1,4 +1,5 @@
-INCLUDES = $(HOLDIR)/src/algebra/construction $(HOLDIR)/src/pred_set/src/more_theories
+INCLUDES = $(HOLDIR)/src/algebra/construction $(HOLDIR)/src/pred_set/src/more_theories \
+           $(HOLDIR)/src/integer
 
 ifdef POLY
 HOLHEAP = heap
