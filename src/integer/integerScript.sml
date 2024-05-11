@@ -1269,6 +1269,9 @@ Proof
   end
 QED
 
+(* |- !m n. &m = &n <=> m = n *)
+Theorem INT_OF_NUM_EQ = INT_INJ (* HOL-Light compatible name *)
+
 val INT_ADD =
     store_thm("INT_ADD",
               Term `!m n. &m + &n = &(m + n)`,
