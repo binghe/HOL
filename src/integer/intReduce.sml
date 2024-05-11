@@ -126,6 +126,12 @@ in
     end
 end
 
+(* ------------------------------------------------------------------------- *)
+(* Arithmetic operations on integers. Essentially a clone of stuff for reals *)
+(* in the file "calc_int.ml" (RealArith), except for div and rem, which are  *)
+(* more like N.       (Ported from HOL-Light to HOL4 by Chun Tian, May 2024) *)
+(* ------------------------------------------------------------------------- *)
+
 (*-----------------------------------------------------------------------*)
 (* INT_ADD_CONV "[x] + [y]" = |- [x] + [y] = [x+y]                       *)
 (*-----------------------------------------------------------------------*)

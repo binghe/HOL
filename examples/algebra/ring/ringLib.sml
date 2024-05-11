@@ -13,8 +13,8 @@ struct
 
 open HolKernel boolLib bossLib;
 
-open cardinalTheory ringTheory ringLibTheory Normalizer normalForms tautLib
-     Canon Canon_Port pairSyntax ringSyntax intReduce;
+open pred_setTheory cardinalTheory ringTheory ringLibTheory Normalizer tautLib
+     intReduce normalForms Canon Canon_Port pairSyntax ringSyntax;
 
 (* ------------------------------------------------------------------------- *)
 (* Establish the required grammar(s) for executing this file                 *)
@@ -103,7 +103,7 @@ local
     REWRITE_TAC[RING_OF_INT_OF_NUM, RING_OF_NUM_1, CONJUNCT1 ring_of_num] THEN
     SIMP_TAC std_ss[ring_sub, RING_MUL_LNEG, RING_MUL_LID, IN_UNIV])
   and RING_INT_ADD_CONV =
-      GEN_REWRITE_CONV I [GSYM RING_OF_INT_ADD] THENC
+      GEN_REWRITE_CONV I empty_rewrites[GSYM RING_OF_INT_ADD] THENC
       RAND_CONV INT_ADD_CONV
   and RING_INT_MUL_CONV =
     GEN_REWRITE_CONV I [GSYM RING_OF_INT_MUL] THENC
@@ -218,7 +218,6 @@ let RING_INTEGRAL_DOMAIN_UNIVERSAL,ring_ring_cofactors_universal =
     let th = decorule tm in
     EQ_MP (SYM th) (basic_rule(rand(concl th))) in
   (rule,idealconv)
-*)
 
 (* ------------------------------------------------------------------------- *)
 (* Iterative splitting (list) and stripping (tree) via destructor.           *)

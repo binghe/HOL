@@ -12,7 +12,7 @@ open HolKernel boolLib bossLib Parse;
 
 open combinTheory pred_setTheory pred_setLib arithmeticTheory integerTheory
      numLib intLib mesonLib hurdUtils cardinalTheory oneTheory newtypeTools
-     tautLib;
+     tautLib metisLib;
 
 open monoidTheory groupTheory ringTheory;
 
@@ -442,6 +442,33 @@ Proof
     xfer ring_sub_eq_zero
 QED
 
+Theorem RING_SUB_LZERO :
+    !r (x :'a). x IN ring_carrier r ==> ring_sub r (ring_0 r) x = ring_neg r x
+Proof
+    xfer ring_zero_sub
+QED
+
+Theorem RING_SUB_RZERO :
+    !r (x :'a). x IN ring_carrier r ==> ring_sub r x (ring_0 r) = x
+Proof
+    xfer ring_sub_zero
+QED
+
+Theorem RING_EQ_SUB_LADD :
+    !r x y (z :'a).
+         x IN ring_carrier r /\ y IN ring_carrier r /\ z IN ring_carrier r
+         ==> (x = ring_sub r y z <=> ring_add r x z = y)
+Proof
+    Q.X_GEN_TAC ‘r0’
+ >> Q.ABBREV_TAC ‘r = fromRing r0’
+ >> RW_TAC std_ss [ring_carrier_def, ring_sub_def, ring_add_def]
+ >> MP_TAC (Q.SPEC ‘r’ ring_sub_eq_add)
+ >> ANTS_TAC >- rw [Abbr ‘r’]
+ >> DISCH_THEN (MP_TAC o (Q.SPECL [‘y’, ‘z’, ‘x’]))
+ >> ‘Ring r’ by rw [Abbr ‘r’]
+ >> METIS_TAC [ring_add_comm]
+QED
+
 Theorem RING_ADD_AC :
     !(r :'a Ring).
         (!x y. x IN ring_carrier r /\ y IN ring_carrier r
@@ -660,6 +687,28 @@ Proof
   SIMP_TAC bool_ss[num_CONV “1:num”, ring_of_num, RING_ADD_LZERO, RING_1]
 QED
 
+Theorem RING_OF_NUM_ADD :
+    !(r :'a Ring) m n.
+      ring_of_num r (m + n) = ring_add r (ring_of_num r m) (ring_of_num r n)
+Proof
+    Q.X_GEN_TAC ‘r0’
+ >> Q.ABBREV_TAC ‘r = fromRing r0’
+ >> rw [ring_of_num_def, ring_1_def, ring_add_def]
+ >> irule ring_num_add
+ >> rw [Abbr ‘r’]
+QED
+
+Theorem RING_OF_NUM_MUL :
+    !(r :'a Ring) m n.
+      ring_of_num r (m * n) = ring_mul r (ring_of_num r m) (ring_of_num r n)
+Proof
+    Q.X_GEN_TAC ‘r0’
+ >> Q.ABBREV_TAC ‘r = fromRing r0’
+ >> rw [ring_of_num_def, ring_mul_def, ring_1_def]
+ >> irule (GSYM ring_num_mult)
+ >> rw [Abbr ‘r’]
+QED
+
 Definition ring_of_int :
     ring_of_int (r :'a Ring) (n :int) =
         if &0 <= n then ring_of_num r (num_of_int n)
@@ -718,57 +767,113 @@ Proof
                   RING_NEG_NEG, RING_OF_NUM]
 QED
 
-(*
-let RING_OF_INT_ADD = prove
- (`!(r:A ring) m n.
-      ring_of_int r (m + n) = ring_add r (ring_of_int r m) (ring_of_int r n)`,
+val lemma1 =
+    METIS_PROVE[RING_ADD_SYM, RING_NEG]
+     “!x y. x IN ring_carrier r /\ y IN ring_carrier r
+         ==> ring_add r (ring_neg r x) y = ring_add r y (ring_neg r x)”;
+         
+Theorem RING_OF_INT_ADD :
+    !(r :'a Ring) m n.
+      ring_of_int r (m + n) = ring_add r (ring_of_int r m) (ring_of_int r n)
+Proof
   SUBGOAL_THEN
-   `!(r:A ring) m n p.
+   “!(r :'a Ring) m n p.
         m + n = p ==>
-      ring_of_int r p = ring_add r (ring_of_int r m) (ring_of_int r n)`
-   (fun th -> MESON_TAC[th]) THEN
-  GEN_TAC THEN REWRITE_TAC[FORALL_INT_CASES; RING_OF_INT_CASES] THEN
+      ring_of_int r p = ring_add r (ring_of_int r m) (ring_of_int r n)”
+   (fn th => MESON_TAC[th]) THEN
+  GEN_TAC THEN SIMP_TAC std_ss[FORALL_INT_CASES, RING_OF_INT_CASES] THEN
   ONCE_REWRITE_TAC[INT_ARITH “-b + (a:int) = a + -b”] THEN
-  REWRITE_TAC[GSYM INT_NEG_ADD; INT_NEG_EQ; INT_NEG_NEG] THEN
+  REWRITE_TAC[GSYM INT_NEG_ADD, INT_NEG_EQ, INT_NEG_NEG] THEN
   REWRITE_TAC[INT_ARITH
    “(&a + &b:int = - &c <=> &a:int = &0 /\ &b:int = &0 /\ &c:int = &0) /\
     (!m n p. m + -n:int = &p <=> m = n + &p) /\
     (!m n p. m + -n:int = - &p <=> m + &p = n)”] THEN
-  REWRITE_TAC[INT_OF_NUM_ADD; INT_OF_NUM_EQ] THEN
-  REPEAT STRIP_TAC THEN
-  REPEAT(FIRST_X_ASSUM(SUBST1_TAC o check (is_var o lhand o concl))) THEN
-  REPEAT(FIRST_X_ASSUM(SUBST1_TAC o SYM)) THEN
-  REWRITE_TAC[RING_OF_NUM_ADD; RING_OF_NUM_0] THEN
-  SIMP_TAC[RING_NEG_0; RING_ADD_LZERO; RING_ADD_RZERO; RING_0] THEN
-  SIMP_TAC[GSYM RING_NEG_ADD; RING_OF_NUM] THEN SIMP_TAC
-   [RING_ADD; RING_OF_NUM; MESON[RING_ADD_SYM; RING_NEG]
-     `!x y. x IN ring_carrier r /\ y IN ring_carrier r
-         ==> ring_add r (ring_neg r x) y = ring_add r y (ring_neg r x)`] THEN
-  REWRITE_TAC[GSYM ring_sub] THEN
-  SIMP_TAC[RING_EQ_SUB_LADD; RING_OF_NUM; RING_ADD; RING_NEG] THEN
-  TRY(SIMP_TAC[RING_ADD_AC; RING_OF_NUM] THEN NO_TAC) THEN
-  MATCH_MP_TAC(MESON[RING_ADD_SYM]
-   `x IN ring_carrier r /\ y IN ring_carrier r /\ ring_add r x y = z
-    ==> ring_add r y x = z`) THEN
-  SIMP_TAC[RING_NEG; RING_OF_NUM; RING_ADD] THEN
-  SIMP_TAC[GSYM RING_ADD_ASSOC; RING_ADD; RING_NEG; RING_OF_NUM;
-           RING_ADD_RNEG; RING_ADD_RZERO]);;
+  REWRITE_TAC[INT_OF_NUM_ADD, INT_OF_NUM_EQ] THEN
+  REPEAT STRIP_TAC
+ (* 8 subgoals here *)
+ >- (POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM) \\
+     REWRITE_TAC [RING_OF_NUM_ADD])
+ (* 7 subgoals left *)
+ >- (rw [GSYM RING_OF_NUM_ADD, RING_OF_NUM_0, RING_NEG_0])
+ (* 6 subgoals left *)
+ >- (POP_ORW \\
+     REWRITE_TAC[RING_OF_NUM_ADD] \\
+     REWRITE_TAC[GSYM ring_sub] \\
+     SIMP_TAC std_ss[RING_EQ_SUB_LADD, RING_SUB, RING_OF_NUM, RING_ADD] \\
+     SIMP_TAC std_ss[Once RING_ADD_SYM, RING_OF_NUM])
+ (* 5 subgoals left *)
+ >- (POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM) \\
+     REWRITE_TAC [RING_OF_NUM_ADD] \\
+     REWRITE_TAC[GSYM ring_sub] \\
+     SIMP_TAC std_ss[RING_EQ_SUB_LADD, RING_NEG, RING_SUB, RING_OF_NUM, RING_ADD] \\
+     SIMP_TAC std_ss[Once RING_ADD_SYM, RING_OF_NUM, RING_ADD, RING_NEG,
+                     GSYM RING_ADD_ASSOC] \\
+     REWRITE_TAC[GSYM ring_sub] \\
+     Know ‘ring_sub r (ring_of_num r n'') (ring_of_num r n'') = ring_0 r’
+     >- (SIMP_TAC std_ss[RING_SUB_EQ_0, RING_OF_NUM, RING_0]) >> Rewr' \\
+     SIMP_TAC std_ss[RING_ADD_RZERO, RING_OF_NUM])
+ (* 4 subgoals left *)
+ >- (POP_ORW \\
+     REWRITE_TAC [RING_OF_NUM_ADD] \\
+     SIMP_TAC std_ss[RING_ADD_ASSOC, RING_OF_NUM, RING_NEG, RING_ADD] \\
+     Know ‘ring_add r (ring_neg r (ring_of_num r n)) (ring_of_num r n) =
+           ring_add r (ring_of_num r n) (ring_neg r (ring_of_num r n))’
+     >- (SIMP_TAC std_ss[Once RING_ADD_SYM, RING_OF_NUM, RING_NEG]) >> Rewr' \\
+     REWRITE_TAC[GSYM ring_sub] \\
+     Know ‘ring_sub r (ring_of_num r n) (ring_of_num r n) = ring_0 r’
+     >- (SIMP_TAC std_ss[RING_SUB_EQ_0, RING_OF_NUM, RING_0]) >> Rewr' \\
+     SIMP_TAC std_ss[RING_ADD_LZERO, RING_OF_NUM])
+ (* 3 subgoals left *)
+ >- (POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM) \\
+     REWRITE_TAC [RING_OF_NUM_ADD] \\
+     SIMP_TAC std_ss[lemma1, RING_OF_NUM, RING_NEG, RING_ADD] \\
+     SIMP_TAC std_ss[RING_NEG_ADD, RING_OF_NUM] \\
+     SIMP_TAC std_ss[RING_ADD_ASSOC, RING_OF_NUM, RING_NEG, RING_ADD] \\
+     REWRITE_TAC[GSYM ring_sub] \\
+     Know ‘ring_sub r (ring_of_num r n') (ring_of_num r n') = ring_0 r’
+     >- (SIMP_TAC std_ss[RING_SUB_EQ_0, RING_OF_NUM, RING_0]) >> Rewr' \\
+     SIMP_TAC std_ss[RING_SUB_LZERO, RING_OF_NUM])
+ (* 2 subgoals left *)
+ >- (rw [GSYM RING_OF_NUM_ADD, RING_OF_NUM_0, RING_NEG_0] \\
+     SIMP_TAC std_ss[RING_ADD_LZERO, RING_0])
+ (* final subgoal *)
+ >> SIMP_TAC std_ss[GSYM RING_NEG_ADD, RING_OF_NUM, RING_NEG]
+ >> AP_TERM_TAC
+ >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM)
+ >> REWRITE_TAC [RING_OF_NUM_ADD]
+ >> SIMP_TAC std_ss[Once RING_ADD_SYM, RING_OF_NUM]
+QED
 
-let RING_OF_INT_MUL = prove
- (`!(r:A ring) m n.
-      ring_of_int r (m * n) = ring_mul r (ring_of_int r m) (ring_of_int r n)`,
-  REWRITE_TAC[FORALL_INT_CASES; INT_MUL_LNEG; INT_MUL_RNEG; INT_NEG_NEG] THEN
-  REWRITE_TAC[RING_OF_INT_CASES; INT_OF_NUM_MUL; RING_OF_NUM_MUL] THEN
-  SIMP_TAC[RING_MUL_LNEG; RING_MUL_RNEG; RING_OF_NUM; RING_NEG;
-           RING_NEG_NEG; RING_MUL]);;
+Theorem RING_OF_INT_MUL :
+    !(r :'a Ring) m n.
+      ring_of_int r (m * n) = ring_mul r (ring_of_int r m) (ring_of_int r n)
+Proof
+  SIMP_TAC std_ss[FORALL_INT_CASES, INT_MUL_LNEG, INT_MUL_RNEG, INT_NEG_NEG] THEN
+  REWRITE_TAC[RING_OF_INT_CASES, INT_OF_NUM_MUL, RING_OF_NUM_MUL] THEN
+  SIMP_TAC std_ss[RING_MUL_LNEG, RING_MUL_RNEG, RING_OF_NUM, RING_NEG,
+                  RING_NEG_NEG, RING_MUL]
+QED
 
-let RING_OF_INT_POW = prove
- (`!(r:A ring) x n.
-        ring_of_int r (x pow n) = ring_pow r (ring_of_int r x) n`,
+Theorem RING_OF_INT_0 :
+    !(r :'a Ring). ring_of_int r (&0) = ring_0 r
+Proof
+  REWRITE_TAC[RING_OF_INT_OF_NUM, RING_OF_NUM_0]
+QED
+
+Theorem RING_OF_INT_1 :
+    !(r :'a Ring). ring_of_int r (&1) = ring_1 r
+Proof
+  REWRITE_TAC[RING_OF_INT_OF_NUM, RING_OF_NUM_1]
+QED
+
+Theorem RING_OF_INT_POW :
+    !(r :'a Ring) x n.
+        ring_of_int r (x ** n) = ring_pow r (ring_of_int r x) n
+Proof
   GEN_TAC THEN GEN_TAC THEN
-  INDUCT_TAC THEN ASM_REWRITE_TAC[ring_pow; INT_POW; RING_OF_INT_1] THEN
-  ASM_REWRITE_TAC[RING_OF_INT_MUL]);;
-*)
+  INDUCT_TAC THEN ASM_REWRITE_TAC[ring_pow, INT_POW, RING_OF_INT_1] THEN
+  ASM_REWRITE_TAC[RING_OF_INT_MUL]
+QED
 
 (* NOTE: The proof is a direct translation from OCaml to SML *)
 Theorem RING_HOMOMORPHISM_RING_OF_INT :

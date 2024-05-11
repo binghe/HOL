@@ -2975,6 +2975,12 @@ val int_exp = Prim_rec.new_recursive_definition{
 val _ = set_fixity "int_exp"  (Infixr 700);
 val _ = overload_on ("**", Term`$int_exp`);
 
+Theorem INT_POW :
+    (x :int) ** 0 = &1 /\ (!n. x ** SUC n = x * x ** n)
+Proof
+    rw [int_exp]
+QED
+
 val INT_EXP = store_thm(
   "INT_EXP",
   Term`!n m. &n ** m = &(n EXP m)`,
