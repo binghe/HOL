@@ -1106,22 +1106,6 @@ Proof
               REWRITE_TAC[INT_SUB_ADD, INT_ADD_LID]
 QED
 
-Theorem INT_LE_LNEG :
-    !x y. -x <= y <=> &0 <= x + y
-Proof
-    rpt STRIP_TAC
- >> REWRITE_TAC [Q.SPECL [‘y’, ‘-x’] (GSYM INT_SUB_LE)]
- >> REWRITE_TAC [INT_SUB_RNEG, Once INT_ADD_SYM]
-QED
-
-Theorem INT_LE_RNEG :
-    !x y. x <= -y <=> x + y <= &0
-Proof
-    rpt STRIP_TAC
- >> REWRITE_TAC [Q.SPECL [‘-y’, ‘x’] (GSYM INT_SUB_LE)]
- >> REWRITE_TAC [INT_SUB_LNEG, INT_NEG_GE0, Once INT_ADD_SYM]
-QED
-
 val INT_ADD_SUB =
     store_thm("INT_ADD_SUB",
               Term `!x y:int. (x + y) - x = y`,
@@ -1476,6 +1460,22 @@ val INT_SUB_RNEG =
     store_thm("INT_SUB_RNEG",
               Term `!x y. x - ~y = x + y`,
               REPEAT GEN_TAC THEN REWRITE_TAC[int_sub, INT_NEGNEG]);
+
+Theorem INT_LE_LNEG :
+    !x y. -x <= y <=> &0 <= x + y
+Proof
+    rpt STRIP_TAC
+ >> REWRITE_TAC [Q.SPECL [‘y’, ‘-x’] (GSYM INT_SUB_LE)]
+ >> REWRITE_TAC [INT_SUB_RNEG, Once INT_ADD_SYM]
+QED
+
+Theorem INT_LE_RNEG :
+    !x y. x <= -y <=> x + y <= &0
+Proof
+    rpt STRIP_TAC
+ >> REWRITE_TAC [Q.SPECL [‘-y’, ‘x’] (GSYM INT_SUB_LE)]
+ >> REWRITE_TAC [INT_SUB_LNEG, INT_NEG_GE0, Once INT_ADD_SYM]
+QED
 
 val INT_SUB_NEG2 =
     store_thm("INT_SUB_NEG2",
