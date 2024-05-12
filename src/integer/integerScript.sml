@@ -543,6 +543,9 @@ val _ = overload_on (">",  Term`$int_gt`);
 val int_ge = new_definition("int_ge", Term `int_ge x y <=> y <= x:int`)
 val _ = overload_on (">=", Term`$int_ge`);
 
+Theorem INT_GT = int_gt (* HOL-Light compatible name *)
+Theorem INT_GE = int_ge (* HOL-Light compatible name *)
+
 (*--------------------------------------------------------------------------*)
 (* Now use the lifted inclusion homomorphism int_of_num:num->int.           *)
 (*--------------------------------------------------------------------------*)
@@ -727,6 +730,13 @@ Theorem INT_NOT_LT:
     !x:int y. ~(x < y) <=> y <= x
 Proof
               REPEAT GEN_TAC THEN REWRITE_TAC[int_le]
+QED
+
+(* NOTE: This is INT_LT of HOL-Light *)
+Theorem INT_LT2 :
+    !x (y :int). x < y <=> ~(y <= x)
+Proof
+    REWRITE_TAC [GSYM INT_NOT_LT]
 QED
 
 val INT_LT_ANTISYM =
@@ -1096,6 +1106,22 @@ Proof
               REWRITE_TAC[INT_SUB_ADD, INT_ADD_LID]
 QED
 
+Theorem INT_LE_LNEG :
+    !x y. -x <= y <=> &0 <= x + y
+Proof
+    rpt STRIP_TAC
+ >> REWRITE_TAC [Q.SPECL [‘y’, ‘-x’] (GSYM INT_SUB_LE)]
+ >> REWRITE_TAC [INT_SUB_RNEG, Once INT_ADD_SYM]
+QED
+
+Theorem INT_LE_RNEG :
+    !x y. x <= -y <=> x + y <= &0
+Proof
+    rpt STRIP_TAC
+ >> REWRITE_TAC [Q.SPECL [‘-y’, ‘x’] (GSYM INT_SUB_LE)]
+ >> REWRITE_TAC [INT_SUB_LNEG, INT_NEG_GE0, Once INT_ADD_SYM]
+QED
+
 val INT_ADD_SUB =
     store_thm("INT_ADD_SUB",
               Term `!x y:int. (x + y) - x = y`,
@@ -1248,6 +1274,9 @@ Proof
                      REWRITE_RULE[GSYM NOT_LESS, GSYM INT_NOT_LT])
                     (SPEC_ALL INT_LE))
 QED
+
+Theorem INT_OF_NUM_LE = INT_LE (* HOL-Light compatible name *)
+Theorem INT_OF_NUM_LT = INT_LT (* HOL-Light compatible name *)
 
 Theorem INT_INJ[simp]: !m n. (&m:int = &n) = (m = n)
 Proof

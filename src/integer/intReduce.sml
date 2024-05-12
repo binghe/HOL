@@ -1,7 +1,9 @@
 structure intReduce :> intReduce =
 struct
 
-open HolKernel boolLib integerTheory intSyntax simpLib Arithconv numeralTheory;
+open HolKernel boolLib bossLib;
+
+open integerTheory intSyntax simpLib Arithconv numeralTheory tautLib;
 
 structure Parse = struct
   open Parse arithmeticTheory
@@ -131,6 +133,85 @@ end
 (* in the file "calc_int.ml" (RealArith), except for div and rem, which are  *)
 (* more like N.       (Ported from HOL-Light to HOL4 by Chun Tian, May 2024) *)
 (* ------------------------------------------------------------------------- *)
+
+local
+  val tth =
+    TAUT `(F /\ F <=> F) /\ (F /\ T <=> F) /\
+          (T /\ F <=> F) /\ (T /\ T <=> T)`;
+  val nth = TAUT `(~T <=> F) /\ (~F <=> T)`;
+  val NUM_EQ_CONV = Arithconv.NEQ_CONV;
+  val NUM2_EQ_CONV = BINOP_CONV NUM_EQ_CONV THENC
+                     GEN_REWRITE_CONV I empty_rewrites[tth];
+  val NUM2_NE_CONV = RAND_CONV NUM2_EQ_CONV THENC
+                     GEN_REWRITE_CONV I empty_rewrites[nth];
+  val NUM_LE_CONV = Arithconv.LE_CONV;
+  val INT_LE_NEG2 = INT_LE_NEG;
+  val [pth_le1, pth_le2a, pth_le2b, pth_le3] = (CONJUNCTS o prove)
+   (“(-(&m) <= &n <=> T) /\
+     (&m <= &n <=> m <= n) /\
+     (-(&m) <= -(&n) <=> n <= m) /\
+     (&m <= -(&n) <=> (m = 0) /\ (n = 0))”,
+    REWRITE_TAC[INT_LE_NEG2] THEN
+    REWRITE_TAC[INT_LE_LNEG, INT_LE_RNEG] THEN
+    REWRITE_TAC[INT_OF_NUM_ADD, INT_OF_NUM_LE, LE_0] THEN
+    REWRITE_TAC[LE, ADD_EQ_0]);
+  val INT_LE_CONV = FIRST_CONV
+   [GEN_REWRITE_CONV I empty_rewrites[pth_le1],
+    GEN_REWRITE_CONV I empty_rewrites[pth_le2a, pth_le2b] THENC NUM_LE_CONV,
+    GEN_REWRITE_CONV I empty_rewrites[pth_le3] THENC NUM2_EQ_CONV];
+  val [pth_lt1, pth_lt2a, pth_lt2b, pth_lt3] = (CONJUNCTS o prove)
+   (“(&m < -(&n) <=> F) /\
+     (&m < &n <=> m < n) /\
+     (-(&m) < -(&n) <=> n < m) /\
+     (-(&m) < &n <=> ~((m = 0) /\ (n = 0)))”,
+    REWRITE_TAC[pth_le1, pth_le2a, pth_le2b, pth_le3,
+                GSYM NOT_LE, INT_LT2] THEN
+    TAUT_TAC);
+  val NUM_LT_CONV = Arithconv.LT_CONV;
+  val INT_LT_CONV = FIRST_CONV
+   [GEN_REWRITE_CONV I empty_rewrites[pth_lt1],
+    GEN_REWRITE_CONV I empty_rewrites[pth_lt2a, pth_lt2b] THENC NUM_LT_CONV,
+    GEN_REWRITE_CONV I empty_rewrites[pth_lt3] THENC NUM2_NE_CONV];
+  val [pth_ge1, pth_ge2a, pth_ge2b, pth_ge3] = (CONJUNCTS o prove)
+   (“(&m >= -(&n) <=> T) /\
+     (&m >= &n <=> n <= m) /\
+     (-(&m) >= -(&n) <=> m <= n) /\
+     (-(&m) >= &n <=> (m = 0) /\ (n = 0))”,
+    REWRITE_TAC[pth_le1, pth_le2a, pth_le2b, pth_le3, INT_GE] THEN
+    TAUT_TAC);
+  val NUM_LE_CONV = Arithconv.LE_CONV;
+  val INT_GE_CONV = FIRST_CONV
+   [GEN_REWRITE_CONV I empty_rewrites[pth_ge1],
+    GEN_REWRITE_CONV I empty_rewrites[pth_ge2a, pth_ge2b] THENC NUM_LE_CONV,
+    GEN_REWRITE_CONV I empty_rewrites[pth_ge3] THENC NUM2_EQ_CONV];
+  val [pth_gt1, pth_gt2a, pth_gt2b, pth_gt3] = (CONJUNCTS o prove)
+   (“(-(&m) > &n <=> F) /\
+     (&m > &n <=> n < m) /\
+     (-(&m) > -(&n) <=> m < n) /\
+     (&m > -(&n) <=> ~((m = 0) /\ (n = 0)))”,
+    REWRITE_TAC[pth_lt1, pth_lt2a, pth_lt2b, pth_lt3, INT_GT] THEN
+    TAUT_TAC);
+  val NUM_LT_CONV = Arithconv.LT_CONV;
+  val INT_GT_CONV = FIRST_CONV
+   [GEN_REWRITE_CONV I empty_rewrites[pth_gt1],
+    GEN_REWRITE_CONV I empty_rewrites[pth_gt2a, pth_gt2b] THENC NUM_LT_CONV,
+    GEN_REWRITE_CONV I empty_rewrites[pth_gt3] THENC NUM2_NE_CONV];
+  val [pth_eq1a, pth_eq1b, pth_eq2a, pth_eq2b] = (CONJUNCTS o prove)
+   (“((&m = &n) <=> (m = n)) /\
+     ((-(&m) = -(&n)) <=> (m = n)) /\
+     ((-(&m) = &n) <=> (m = 0) /\ (n = 0)) /\
+     ((&m = -(&n)) <=> (m = 0) /\ (n = 0))”,
+    REWRITE_TAC[GSYM INT_LE_ANTISYM, GSYM LE_ANTISYM] THEN
+    REWRITE_TAC[pth_le1, pth_le2a, pth_le2b, pth_le3, LE, LE_0] THEN
+    TAUT_TAC);
+  val INT_EQ_CONV = FIRST_CONV
+   [GEN_REWRITE_CONV I empty_rewrites[pth_eq1a, pth_eq1b] THENC NUM_EQ_CONV,
+    GEN_REWRITE_CONV I empty_rewrites[pth_eq2a, pth_eq2b] THENC NUM2_EQ_CONV]
+in
+val (INT_LE_CONV,INT_LT_CONV,INT_GE_CONV,INT_GT_CONV,INT_EQ_CONV) =
+    (INT_LE_CONV,INT_LT_CONV,
+     INT_GE_CONV,INT_GT_CONV,INT_EQ_CONV);
+end;
 
 (*-----------------------------------------------------------------------*)
 (* INT_ADD_CONV "[x] + [y]" = |- [x] + [y] = [x+y]                       *)
@@ -283,173 +364,5 @@ val INT_POW_CONV =
    (fn tm => if rator tm ~~ neg_tm then RAND_CONV(RAND_CONV NUM_EXP_CONV) tm
               else RAND_CONV NUM_EXP_CONV tm))
 end;
-
-(*
-(* ------------------------------------------------------------------------- *)
-(* Instantiate the normalizer.                                               *)
-(* ------------------------------------------------------------------------- *)
-
-let INT_POLY_CONV =
-  let sth = prove
-   (`(!x y z. x + (y + z) = (x + y) + z) /\
-     (!x y. x + y = y + x) /\
-     (!x. &0 + x = x) /\
-     (!x y z. x * (y * z) = (x * y) * z) /\
-     (!x y. x * y = y * x) /\
-     (!x. &1 * x = x) /\
-     (!x. &0 * x = &0) /\
-     (!x y z. x * (y + z) = x * y + x * z) /\
-     (!x. x pow 0 = &1) /\
-     (!x n. x pow (SUC n) = x * x pow n)`,
-    REWRITE_TAC[INT_POW] THEN INT_ARITH_TAC)
-  and rth = prove
-   (`(!x. --x = --(&1) * x) /\
-     (!x y. x - y = x + --(&1) * y)`,
-    INT_ARITH_TAC)
-  and is_semiring_constant = is_intconst
-  and SEMIRING_ADD_CONV = INT_ADD_CONV
-  and SEMIRING_MUL_CONV = INT_MUL_CONV
-  and SEMIRING_POW_CONV = INT_POW_CONV in
-  let _,_,_,_,_,INT_POLY_CONV =
-    SEMIRING_NORMALIZERS_CONV sth rth
-     (is_semiring_constant,
-      SEMIRING_ADD_CONV,SEMIRING_MUL_CONV,SEMIRING_POW_CONV)
-     (<) in
-  INT_POLY_CONV;;
-
-(* ------------------------------------------------------------------------- *)
-(* Instantiate the ring and ideal procedures.                                *)
-(* ------------------------------------------------------------------------- *)
-
-let INT_RING,int_ideal_cofactors =
-  let INT_INTEGRAL = prove
-   (`(!x. &0 * x = &0) /\
-     (!x y z. (x + y = x + z) <=> (y = z)) /\
-     (!w x y z. (w * y + x * z = w * z + x * y) <=> (w = x) \/ (y = z))`,
-    REWRITE_TAC[MULT_CLAUSES; EQ_ADD_LCANCEL] THEN
-    REWRITE_TAC[GSYM INT_OF_NUM_EQ;
-                GSYM INT_OF_NUM_ADD; GSYM INT_OF_NUM_MUL] THEN
-    ONCE_REWRITE_TAC[GSYM INT_SUB_0] THEN
-    REWRITE_TAC[GSYM INT_ENTIRE] THEN INT_ARITH_TAC)
-  and int_ty = `:int` in
-  let pure,ideal =
-  RING_AND_IDEAL_CONV
-      (dest_intconst,mk_intconst,INT_EQ_CONV,
-       `(--):int->int`,`(+):int->int->int`,`(-):int->int->int`,
-       genvar bool_ty,`( * ):int->int->int`,genvar bool_ty,
-       `(pow):int->num->int`,
-       INT_INTEGRAL,TRUTH,INT_POLY_CONV) in
-  pure,
-  (fun tms tm -> if forall (fun t -> type_of t = int_ty) (tm::tms)
-                 then ideal tms tm
-                 else failwith
-                  "int_ideal_cofactors: not all terms have type :int");;
-
-(* ------------------------------------------------------------------------- *)
-(* A tactic for simple divisibility/congruence/coprimality goals.            *)
-(* ------------------------------------------------------------------------- *)
-
-let INTEGER_TAC =
-  let int_ty = `:int` in
-  let INT_POLYEQ_CONV =
-    GEN_REWRITE_CONV I [GSYM INT_SUB_0] THENC LAND_CONV INT_POLY_CONV in
-  let ISOLATE_VARIABLE =
-    let pth = INT_ARITH `!a x. a = &0 <=> x = x + a` in
-    let is_defined v t =
-      let mons = striplist(dest_binary "int_add") t in
-      mem v mons && forall (fun m -> v = m || not(free_in v m)) mons in
-    fun vars tm ->
-      let th = INT_POLYEQ_CONV tm
-      and th' = (SYM_CONV THENC INT_POLYEQ_CONV) tm in
-      let v,th1 =
-          try find (fun v -> is_defined v (lhand(rand(concl th)))) vars,th'
-          with Failure _ ->
-              find (fun v -> is_defined v (lhand(rand(concl th')))) vars,th in
-      let th2 = TRANS th1 (SPECL [lhs(rand(concl th1)); v] pth) in
-      CONV_RULE(RAND_CONV(RAND_CONV INT_POLY_CONV)) th2 in
-  let UNWIND_POLYS_CONV tm =
-    let vars,bod = strip_exists tm in
-    let cjs = conjuncts bod in
-    let th1 = tryfind (ISOLATE_VARIABLE vars) cjs in
-    let eq = lhand(concl th1) in
-    let bod' = list_mk_conj(eq::(subtract cjs [eq])) in
-    let th2 = CONJ_ACI_RULE(mk_eq(bod,bod')) in
-    let th3 = TRANS th2 (MK_CONJ th1 (REFL(rand(rand(concl th2))))) in
-    let v = lhs(lhand(rand(concl th3))) in
-    let vars' = (subtract vars [v]) @ [v] in
-    let th4 = CONV_RULE(RAND_CONV(REWR_CONV UNWIND_THM2)) (MK_EXISTS v th3) in
-    let IMP_RULE v v' =
-     DISCH_ALL(itlist SIMPLE_CHOOSE v (itlist SIMPLE_EXISTS v' (ASSUME bod))) in
-    let th5 = IMP_ANTISYM_RULE (IMP_RULE vars vars') (IMP_RULE vars' vars) in
-    TRANS th5 (itlist MK_EXISTS (subtract vars [v]) th4) in
-  let zero_tm = `&0` and one_tm = `&1` in
-  let isolate_monomials =
-    let mul_tm = `(int_mul)` and add_tm = `(int_add)`
-    and neg_tm = `(int_neg)` in
-    let dest_mul = dest_binop mul_tm
-    and dest_add = dest_binop add_tm
-    and mk_mul = mk_binop mul_tm
-    and mk_add = mk_binop add_tm in
-    let scrub_var v m =
-      let ps = striplist dest_mul m in
-      let ps' = subtract ps [v] in
-      if ps' = [] then one_tm else end_itlist mk_mul ps' in
-    let find_multipliers v mons =
-      let mons1 = filter (fun m -> free_in v m) mons in
-      let mons2 = map (scrub_var v) mons1 in
-      if mons2 = [] then zero_tm else end_itlist mk_add mons2 in
-    fun vars tm ->
-      let cmons,vmons =
-         partition (fun m -> intersect (frees m) vars = [])
-                   (striplist dest_add tm) in
-      let cofactors = map (fun v -> find_multipliers v vmons) vars
-      and cnc = if cmons = [] then zero_tm
-                else mk_comb(neg_tm,end_itlist mk_add cmons) in
-      cofactors,cnc in
-  let isolate_variables evs ps eq =
-    let vars = filter (fun v -> vfree_in v eq) evs in
-    let qs,p = isolate_monomials vars eq in
-    let rs = filter (fun t -> type_of t = int_ty) (qs @ ps) in
-    let rs = int_ideal_cofactors rs p in
-    eq,zip (fst(chop_list(length qs) rs)) vars in
-  let subst_in_poly i p = rhs(concl(INT_POLY_CONV (vsubst i p))) in
-  let rec solve_idealism evs ps eqs =
-    if evs = [] then [] else
-    let eq,cfs = tryfind (isolate_variables evs ps) eqs in
-    let evs' = subtract evs (map snd cfs)
-    and eqs' = map (subst_in_poly cfs) (subtract eqs [eq]) in
-    cfs @ solve_idealism evs' ps eqs' in
-  let rec GENVAR_EXISTS_CONV tm =
-    if not(is_exists tm) then REFL tm else
-    let ev,bod = dest_exists tm in
-    let gv = genvar(type_of ev) in
-    (GEN_ALPHA_CONV gv THENC BINDER_CONV GENVAR_EXISTS_CONV) tm in
-  let EXISTS_POLY_TAC (asl,w as gl) =
-    let evs,bod = strip_exists w
-    and ps = mapfilter (check (fun t -> type_of t = int_ty) o
-                        lhs o concl o snd) asl in
-    let cfs = solve_idealism evs ps (map lhs (conjuncts bod)) in
-    (MAP_EVERY EXISTS_TAC(map (fun v -> rev_assocd v cfs zero_tm) evs) THEN
-     REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC INT_RING) gl in
-  let SCRUB_NEQ_TAC = MATCH_MP_TAC o MATCH_MP (MESON[]
-    `~(x = y) ==> x = y \/ p ==> p`) in
-  REWRITE_TAC[int_coprime; int_congruent; int_divides] THEN
-  REPEAT(STRIP_TAC ORELSE EQ_TAC) THEN
-  REWRITE_TAC[LEFT_AND_EXISTS_THM; RIGHT_AND_EXISTS_THM;
-              LEFT_OR_EXISTS_THM; RIGHT_OR_EXISTS_THM] THEN
-  CONV_TAC(REPEATC UNWIND_POLYS_CONV) THEN
-  REPEAT(FIRST_X_ASSUM SCRUB_NEQ_TAC) THEN
-  REWRITE_TAC[LEFT_AND_EXISTS_THM; RIGHT_AND_EXISTS_THM;
-              LEFT_OR_EXISTS_THM; RIGHT_OR_EXISTS_THM] THEN
-  REPEAT(FIRST_X_ASSUM(MP_TAC o SYM)) THEN
-  CONV_TAC(ONCE_DEPTH_CONV INT_POLYEQ_CONV) THEN
-  REWRITE_TAC[GSYM INT_ENTIRE;
-              TAUT `a \/ (b /\ c) <=> (a \/ b) /\ (a \/ c)`] THEN
-  POP_ASSUM_LIST(K ALL_TAC) THEN
-  REPEAT DISCH_TAC THEN CONV_TAC GENVAR_EXISTS_CONV THEN
-  CONV_TAC(ONCE_DEPTH_CONV INT_POLYEQ_CONV) THEN EXISTS_POLY_TAC;;
-
-let INTEGER_RULE tm = prove(tm,INTEGER_TAC);;
-*)
 
 end (* struct *)
