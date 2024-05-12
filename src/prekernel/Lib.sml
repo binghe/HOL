@@ -465,4 +465,25 @@ fun op IN (e,s) = HOLset.member(s,e)
 (* more equality function functions *)
 fun subst_eq aeq beq = list_eq (redres_eq aeq beq)
 
+(* ------------------------------------------------------------------------- *)
+(* Iterative splitting (list) and stripping (tree) via destructor.           *)
+(* ------------------------------------------------------------------------- *)
+
+fun splitlist dest x = let
+    val (l,r) = dest x;
+    val (ls,res) = splitlist dest r
+in
+    (l::ls,res)
+end handle HOL_ERR _ => ([],x);
+
+fun striplist dest = let
+  fun strip x acc =
+    let val (l,r) = dest x in
+        strip l (strip r acc)
+    end
+    handle HOL_ERR _ => x::acc
+in
+  fn x => strip x []
+end;
+
 end (* Lib *)

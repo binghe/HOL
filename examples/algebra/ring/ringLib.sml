@@ -202,17 +202,6 @@ val (RING_INTEGRAL_DOMAIN_UNIVERSAL,ring_ring_cofactors_universal) =
 end;
 
 (* ------------------------------------------------------------------------- *)
-(* Iterative splitting (list) and stripping (tree) via destructor.           *)
-(* ------------------------------------------------------------------------- *)
-
-fun splitlist dest x = let
-    val (l,r) = dest x;
-    val (ls,res) = splitlist dest r
-in
-    (l::ls,res)
-end handle HOL_ERR _ => ([],x)
-
-(* ------------------------------------------------------------------------- *)
 (* Derived rule to take a theorem asserting a monomorphism between r and r'  *)
 (* and a term that is some Boolean combination of equations in the ring r    *)
 (* and prove it equivalent to a "transferred" version in r' where all the    *)

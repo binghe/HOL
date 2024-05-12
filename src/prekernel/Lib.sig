@@ -154,12 +154,14 @@ sig
    val sort : ('a -> 'a -> bool) -> 'a list -> 'a list
    val split : ('a * 'b) list -> 'a list * 'b list
    val split_after : int -> 'a list -> 'a list * 'a list
+   val splitlist : ('a -> 'b * 'a) -> 'a -> 'b list * 'a
    val start_real_time : unit -> Timer.real_timer
    val start_time : unit -> Timer.cpu_timer
    val state : ('a, 'b) istream -> 'b
    val str_all : (char -> bool) -> string -> bool
    val strcat : string -> string -> string
    val string_to_int : string -> int
+   val striplist : ('a -> 'a * 'a) -> 'a -> 'a list
    val subst_assoc : ('a -> bool) -> ('a, 'b)subst -> 'b option
    val subst_eq : 'a eqf -> 'b eqf -> ('a,'b) subst eqf
    val subtract : ''a list -> ''a list -> ''a list

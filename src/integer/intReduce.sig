@@ -12,7 +12,12 @@ sig
 
   val collect_additive_consts : conv
 
-  (* HOL-Light compatible conversions for int arith *)
+  (* HOL-Light compatible conversions for int arith (int.ml) *)
+  val INT_LE_CONV  : conv
+  val INT_LT_CONV  : conv
+  val INT_GE_CONV  : conv
+  val INT_GT_CONV  : conv
+  val INT_EQ_CONV  : conv
   val INT_ADD_CONV : conv
   val INT_MUL_CONV : conv
   val INT_POW_CONV : conv

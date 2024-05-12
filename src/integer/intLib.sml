@@ -91,7 +91,7 @@ end;
 (* ------------------------------------------------------------------------- *)
 (* Instantiate the ring and ideal procedures.                                *)
 (* ------------------------------------------------------------------------- *)
-(*
+
 local
   val INT_ARITH_TAC = ARITH_TAC;
   val INT_INTEGRAL = prove
@@ -115,37 +115,39 @@ local
   val (pure,ideal) =
     RING_AND_IDEAL_CONV
       (dest_intconst,mk_intconst,INT_EQ_CONV,
-       `(--):int->int`,`(+):int->int->int`,`(-):int->int->int`,
-       genvar bool_ty,`( * ):int->int->int`,genvar bool_ty,
-       `(pow):int->num->int`,
+       negate_tm, plus_tm, minus_tm,
+       genvar bool, mult_tm, genvar bool, exp_tm,
        INT_INTEGRAL,TRUTH,INT_POLY_CONV)
 in
-val INT_RING = pure
-val int_ideal_cofactors =
-  (fun tms tm -> if forall (fun t -> type_of t = int_ty) (tm::tms)
-                 then ideal tms tm
-                 else failwith
-                  "int_ideal_cofactors: not all terms have type :int")
+  val INT_RING = pure;
+  fun int_ideal_cofactors tms tm =
+      if forall (fn t => type_of t = int_ty) (tm::tms)
+      then ideal tms tm
+      else failwith
+             "int_ideal_cofactors: not all terms have type :int"
 end;
 
 (* ------------------------------------------------------------------------- *)
 (* A tactic for simple divisibility/congruence/coprimality goals.            *)
 (* ------------------------------------------------------------------------- *)
-
-let INTEGER_TAC =
-  let int_ty = `:int` in
-  let INT_POLYEQ_CONV =
-    GEN_REWRITE_CONV I [GSYM INT_SUB_0] THENC LAND_CONV INT_POLY_CONV in
-  let ISOLATE_VARIABLE =
-    let pth = INT_ARITH `!a x. a = &0 <=> x = x + a` in
-    let is_defined v t =
-      let mons = striplist(dest_binary "int_add") t in
-      mem v mons && forall (fun m -> v = m || not(free_in v m)) mons in
-    fun vars tm ->
-      let th = INT_POLYEQ_CONV tm
-      and th' = (SYM_CONV THENC INT_POLYEQ_CONV) tm in
-      let v,th1 =
-          try find (fun v -> is_defined v (lhand(rand(concl th)))) vars,th'
+(*
+local
+  val INT_POLYEQ_CONV =
+    GEN_REWRITE_CONV I empty_rewrites[GSYM INT_SUB_0] THENC LAND_CONV INT_POLY_CONV;
+  val INT_ARITH = ARITH_PROVE;
+  val ISOLATE_VARIABLE = let
+    val pth = INT_ARITH “!a x. a = &0 <=> x = x + a”;
+    fun is_defined v t =
+      let val mons = HOLset.addList (empty_tmset,striplist(dest_binop "int_add") t) in
+        HOLset.member(mons,v) andalso
+        forall (fn m => v ~~ m orelse not(free_in v m)) (HOLset.listItems mons)
+      end
+  in
+    fn vars tm =>
+      let val th = INT_POLYEQ_CONV tm
+          and th' = (SYM_CONV THENC INT_POLYEQ_CONV) tm;
+          val (v,th1) =
+              (find (fn v => is_defined v (lhand(rand(concl th)))) vars,th')
           with Failure _ ->
               find (fun v -> is_defined v (lhand(rand(concl th')))) vars,th in
       let th2 = TRANS th1 (SPECL [lhs(rand(concl th1)); v] pth) in
@@ -215,7 +217,9 @@ let INTEGER_TAC =
     (MAP_EVERY EXISTS_TAC(map (fun v -> rev_assocd v cfs zero_tm) evs) THEN
      REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC INT_RING) gl in
   let SCRUB_NEQ_TAC = MATCH_MP_TAC o MATCH_MP (MESON[]
-    `~(x = y) ==> x = y \/ p ==> p`) in
+    `~(x = y) ==> x = y \/ p ==> p`)
+in
+val INTEGER_TAC =
   REWRITE_TAC[int_coprime; int_congruent; int_divides] THEN
   REPEAT(STRIP_TAC ORELSE EQ_TAC) THEN
   REWRITE_TAC[LEFT_AND_EXISTS_THM; RIGHT_AND_EXISTS_THM;
@@ -231,8 +235,8 @@ let INTEGER_TAC =
   POP_ASSUM_LIST(K ALL_TAC) THEN
   REPEAT DISCH_TAC THEN CONV_TAC GENVAR_EXISTS_CONV THEN
   CONV_TAC(ONCE_DEPTH_CONV INT_POLYEQ_CONV) THEN EXISTS_POLY_TAC;;
-
-let INTEGER_RULE tm = prove(tm,INTEGER_TAC);;
+val INTEGER_RULE tm = prove(tm,INTEGER_TAC);
+end;
 *)
 
 val _ = if !Globals.interactive then
