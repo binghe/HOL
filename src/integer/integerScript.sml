@@ -523,7 +523,6 @@ Overload "~" = bool_not
 Overload numeric_negate = “int_neg”
 Overload "¬" = bool_not                                              (* UOK *)
 
-
 (*--------------------------------------------------------------------------*)
 (* Define subtraction and the other orderings                               *)
 (*--------------------------------------------------------------------------*)
@@ -1146,6 +1145,15 @@ val INT_LT_IMP_NE =
                   REWRITE_TAC[] THEN DISCH_THEN SUBST1_TAC THEN
                   REWRITE_TAC[INT_LT_REFL]);
 
+Theorem INT_NOT_EQ :
+    !x y. ~(x = y) <=> x < y \/ y < x
+Proof
+    rpt GEN_TAC
+ >> EQ_TAC
+ >- PROVE_TAC [INT_LT_TOTAL]
+ >> PROVE_TAC [INT_LT_IMP_NE]
+QED
+
 Theorem INT_LE_ADDR:
     !x y:int. x <= x + y <=> 0 <= y
 Proof
@@ -1738,6 +1746,8 @@ val INT_LT_LE1 = store_thm(
   ``x < y  <=>  x + 1 <= y``,
   SRW_TAC [][INT_LE_LT1, INT_LT_RADD]);
 
+(* |- !x y. x < y <=> x + 1 <= y *)
+Theorem INT_LT_DISCRETE = Q.GENL [‘x’, ‘y’] INT_LT_LE1
 
 (* ------------------------------------------------------------------------ *)
 (* More random theorems about "stuff"                                       *)

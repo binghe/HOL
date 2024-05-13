@@ -143,28 +143,30 @@ end;
 
 local
   val INT_POLYEQ_CONV =
-    GEN_REWRITE_CONV I empty_rewrites[GSYM INT_SUB_0] THENC LAND_CONV INT_POLY_CONV;
+      GEN_REWRITE_CONV I empty_rewrites[GSYM INT_SUB_0] THENC
+      LAND_CONV INT_POLY_CONV;
   val INT_ARITH = ARITH_PROVE;
   val pth = INT_ARITH “!a x. a = &0 <=> x = x + a :int”;
   fun is_defined v t =
-      let val mons = HOLset.addList (empty_tmset,striplist(dest_binop "int_add") t) in
+    let val mons = HOLset.addList (empty_tmset,striplist(dest_binop "int_add") t)
+    in
         HOLset.member(mons,v) andalso
         forall (fn m => v ~~ m orelse not(free_in v m)) (HOLset.listItems mons)
-      end;
+    end;
   fun ISOLATE_VARIABLE vars tm =
-      let val th = INT_POLYEQ_CONV tm
-          and th' = (SYM_CONV THENC INT_POLYEQ_CONV) tm;
-          val (v,th1) =
-              (case (List.find (fn v => is_defined v (lhand(rand(concl th)))) vars) of
-                 SOME v => (v,th')
-               | NONE   =>
-                 case (List.find (fn v => is_defined v (lhand(rand(concl th')))) vars) of
-                   SOME v => (v,th)
-                 | NONE   => failwith "ISOLATE_VARIABLE failed");
-          val th2 = TRANS th1 (SPECL [lhs(rand(concl th1)), v] pth)
-      in
-          CONV_RULE(RAND_CONV(RAND_CONV INT_POLY_CONV)) th2
-      end;
+    let val th = INT_POLYEQ_CONV tm
+        and th' = (SYM_CONV THENC INT_POLYEQ_CONV) tm;
+        val (v,th1) =
+            (case (List.find (fn v => is_defined v (lhand(rand(concl th)))) vars) of
+               SOME v => (v,th')
+             | NONE   =>
+               case (List.find (fn v => is_defined v (lhand(rand(concl th')))) vars) of
+                 SOME v => (v,th)
+               | NONE   => failwith "ISOLATE_VARIABLE failed");
+        val th2 = TRANS th1 (SPECL [lhs(rand(concl th1)), v] pth)
+    in
+        CONV_RULE(RAND_CONV(RAND_CONV INT_POLY_CONV)) th2
+    end;
   fun subtract' tms tm =
       List.filter (fn t => not(t ~~ tm)) tms;
   fun UNWIND_POLYS_CONV tm = let
