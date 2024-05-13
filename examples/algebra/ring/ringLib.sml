@@ -11,7 +11,7 @@
 structure ringLib :> ringLib =
 struct
 
-open HolKernel boolLib bossLib;
+open HolKernel boolLib bossLib liteLib;
 
 open pred_setTheory cardinalTheory ringTheory ringLibTheory Grobner Normalizer
      tautLib intReduce normalForms Canon Canon_Port pairSyntax ringSyntax;
@@ -143,7 +143,7 @@ local
     REWRITE_TAC[RING_OF_INT_OF_NUM, RING_OF_NUM_0, RING_OF_NUM_1] THEN
     SIMP_TAC std_ss[integral_domain]);
 
-
+(* TODO *)
   and neth_g = prove
    (“(ring_of_int r m :'a = ring_of_int r n <=> F) <=>
      ~(&(ring_char r) divides (m - n))”,

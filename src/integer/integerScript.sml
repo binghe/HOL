@@ -2875,6 +2875,16 @@ val INT_DIVIDES = new_definition (
   Term`int_divides p q = ?m:int. m * p = q`);
 val _ = set_fixity "int_divides" (Infix(NONASSOC, 450))
 
+(* HOL-Light compatible definition of ‘int_divides’ (divides) *)
+Theorem int_divides :
+    !b a. a int_divides b <=> (?x. b = a * x)
+Proof
+    RW_TAC std_ss [INT_DIVIDES, Once INT_MUL_SYM]
+ >> EQ_TAC >> STRIP_TAC
+ >| [ Q.EXISTS_TAC ‘m’ >> ASM_REWRITE_TAC [],
+      Q.EXISTS_TAC ‘x’ >> ASM_REWRITE_TAC [] ]
+QED
+
 val INT_DIVIDES_MOD0 = store_thm(
   "INT_DIVIDES_MOD0",
   Term`!p q. p int_divides q <=>

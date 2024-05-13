@@ -765,15 +765,21 @@ Proof
   REWRITE_TAC [INT_DIVIDES_NEG]
 QED
 
+(* The original statement was: (m == n) (mod &(ring_char r))
+
+   NOTE: In HOL-Light, ‘(m == n) f’ (cong) means ‘f m n’ (int.ml). But this
+   syntax is now used by ‘fequiv’, which means ‘f m = f n’, in HOL4.
+  (see numberTheory.fequiv_def)
+ *)
 Theorem RING_OF_INT_EQ :
     !(r :'a Ring) m n.
-        ring_of_int r m = ring_of_int r n <=> (m == n) (int_mod &(ring_char r))
+        ring_of_int r m = ring_of_int r n <=>
+        &(ring_char r) int_divides (m - n)
 Proof
   REPEAT STRIP_TAC THEN
   W(MP_TAC o PART_MATCH (rand o rand) RING_SUB_EQ_0 o lhand o snd) THEN
   REWRITE_TAC[RING_OF_INT, GSYM RING_OF_INT_SUB] THEN
   DISCH_THEN(SUBST1_TAC o SYM) THEN REWRITE_TAC[RING_OF_INT_EQ_0] THEN
-  REWRITE_TAC [numberTheory.fequiv_def]
   (* CONV_TAC INTEGER_RULE *)
   cheat
 QED
