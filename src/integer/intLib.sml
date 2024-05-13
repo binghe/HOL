@@ -268,7 +268,9 @@ local
         val cfs = solve_idealism evs ps (map lhs (conjuncts bod))
     in
        (MAP_EVERY EXISTS_TAC(map (fn v => rev_assocd v cfs zero_tm) evs) THEN
-        REPEAT(POP_ASSUM MP_TAC) THEN CONV_TAC INT_RING) gl
+        REPEAT(POP_ASSUM MP_TAC) THEN
+     (* NOTE: EQT_INTRO must be added in HOL4 to make INT_RING conv-like *)
+        CONV_TAC (EQT_INTRO o INT_RING)) gl
     end;
   val SCRUB_NEQ_TAC = MATCH_MP_TAC o MATCH_MP (MESON[]
      “~(x = y) ==> x = y \/ p ==> p”);
