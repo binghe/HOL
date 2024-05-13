@@ -761,15 +761,13 @@ Proof
   SIMP_TAC std_ss[FORALL_INT_CASES, RING_OF_INT_CASES] THEN
   SIMP_TAC std_ss[RING_NEG_EQ_0, RING_OF_NUM, RING_OF_NUM_EQ_0] THEN
   REWRITE_TAC[num_divides] THEN REPEAT STRIP_TAC THEN
-(* CONV_TAC INTEGER_RULE *) CONV_TAC INTEGER_RULE
-  REWRITE_TAC [INT_DIVIDES_NEG]
+  INTEGER_TAC (* or REWRITE_TAC [INT_DIVIDES_NEG] *)
 QED
 
 (* The original statement was: (m == n) (mod &(ring_char r))
 
    NOTE: In HOL-Light, ‘(m == n) f’ (cong) means ‘f m n’ (int.ml). But this
-   syntax is now used by ‘fequiv’, which means ‘f m = f n’, in HOL4.
-  (see numberTheory.fequiv_def)
+   syntax is now used by ‘fequiv’, which means ‘f m = f n’ (fequiv_def).
  *)
 Theorem RING_OF_INT_EQ :
     !(r :'a Ring) m n.
@@ -779,9 +777,7 @@ Proof
   REPEAT STRIP_TAC THEN
   W(MP_TAC o PART_MATCH (rand o rand) RING_SUB_EQ_0 o lhand o snd) THEN
   REWRITE_TAC[RING_OF_INT, GSYM RING_OF_INT_SUB] THEN
-  DISCH_THEN(SUBST1_TAC o SYM) THEN REWRITE_TAC[RING_OF_INT_EQ_0] THEN
-  (* CONV_TAC INTEGER_RULE *)
-  cheat
+  DISCH_THEN(SUBST1_TAC o SYM) THEN REWRITE_TAC[RING_OF_INT_EQ_0]
 QED
 
 (* ------------------------------------------------------------------------- *)
