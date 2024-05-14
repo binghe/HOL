@@ -5,7 +5,7 @@
 structure liteLib :> liteLib =
 struct
 
-open Feedback Thm Conv Abbrev Tactic;
+open Feedback Thm Term Conv Abbrev Tactic;
 
 val aconv = Term.aconv
 
