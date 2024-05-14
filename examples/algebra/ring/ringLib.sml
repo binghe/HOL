@@ -333,16 +333,17 @@ end;
 
 (* 5. RING_RING_WORD *)
 local
-  val imp_imp_rule     = GEN_REWRITE_RULE I empty_rewrites [IMP_IMP]
-  and left_exists_rule = GEN_REWRITE_RULE I empty_rewrites [LEFT_FORALL_IMP_THM]
-  and or_elim_rule     = GEN_REWRITE_RULE I empty_rewrites
+  val imp_imp_rule     = GEN_REWRITE_RULE TRY_CONV empty_rewrites [IMP_IMP];
+  val left_exists_rule = GEN_REWRITE_RULE TRY_CONV empty_rewrites
+                                          [LEFT_FORALL_IMP_THM];
+  val or_elim_rule     = GEN_REWRITE_RULE TRY_CONV empty_rewrites
                            [TAUT `(p ==> q) /\ (p' ==> q) <=> p \/ p' ==> q`]
 in
-fun RING_RING_WORD ths tm = let
+  fun RING_RING_WORD ths tm = let
       val dty = type_of(rand tm);
       val rty = mk_type(ring_tyname,[dty]);
       val rtms = filter (curry (=) rty o type_of) (freesl(tm::map concl ths))
-    in
+   in
       if length rtms <> 1
       then failwith "RING_RULE: can't deduce which ring" else
       let val rtm = hd rtms;
@@ -356,10 +357,12 @@ fun RING_RING_WORD ths tm = let
                                  (HOLset.addList (empty_tmset, all_vars tm)));
           val rtm' = variant avvers (mk_var("r'",rty'))
           and htm = variant avvers (mk_var("h",dty --> dty'));
-          val hasm = list_mk_icomb “ring_monomorphism” [mk_pair(rtm,rtm'), htm];
+          val hasm = list_mk_icomb
+                       “ring_monomorphism :'a Ring # 'b Ring -> ('a -> 'b) -> bool”
+                       [mk_pair(rtm,rtm'), htm];
           val hth = ASSUME hasm;
-          val ths' = mapfilter (CONV_RULE(RING_MONOMORPHIC_IMAGE_RULE hth)) ths
-          and th' = RING_MONOMORPHIC_IMAGE_RULE hth tm;
+          val ths' = mapfilter (CONV_RULE(RING_MONOMORPHIC_IMAGE_RULE hth)) ths;
+          val th' = RING_MONOMORPHIC_IMAGE_RULE hth tm;
           val utm =
               if null ths' then rand(concl th')
               else mk_imp(list_mk_conj (map concl ths'),rand(concl th'));
@@ -401,7 +404,7 @@ local
   val ddj_conv =
       GEN_REWRITE_CONV (RAND_CONV o DEPTH_CONV) empty_rewrites
         [TAUT ‘~p \/ ~q <=> ~(p /\ q)’] THENC
-      GEN_REWRITE_CONV I empty_rewrites [TAUT ‘p \/ ~q <=> q ==> p’]
+      GEN_REWRITE_CONV TRY_CONV empty_rewrites [TAUT ‘p \/ ~q <=> q ==> p’]
 in
   fun RING_RING_HORN tm =
     if not(is_disj tm) then RING_RING_WORD [] tm else

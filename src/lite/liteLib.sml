@@ -302,7 +302,6 @@ fun alpha v tm =
     else failwith "alpha: Invalid new variable"
   end;
 
-
 val ABS_CONV = Conv.ABS_CONV
 
 val BODY_CONV =
@@ -483,6 +482,214 @@ in
     fn s => uniq (Lib.sort term_le s)
 end;
 
+(* ------------------------------------------------------------------------- *)
+(* HOL-Light compatible tactic names                                         *)
+(* ------------------------------------------------------------------------- *)
+
 val ANTS_TAC = impl_tac;
 
-end;
+(* ------------------------------------------------------------------------- *)
+(* Modify bound variable names at depth. (Not very efficient...)             *)
+(* ------------------------------------------------------------------------- *)
+
+fun remove p l =
+  case l of
+    [] => failwith "remove"
+  | (h::t) => if p(h) then (h,t) else
+              let val (y,n) = remove p t in (y,h::n) end;
+
+local
+  fun tryalpha v tm =
+    (alpha v tm)
+    handle HOL_ERR _ =>
+      let val v' = variant (free_vars tm) v in
+        alpha v' tm
+      end
+      handle HOL_ERR _ => tm;
+in
+fun deep_alpha (env :(string * string) list) tm =
+    if null env then tm else
+    let val (v,bod) = dest_abs tm;
+        val (vn,vty) = dest_var v
+    in
+       (let val ((vn',_),newenv) = remove (fn (_,x) => x = vn) env;
+            val v' = mk_var(vn',vty);
+            val tm' = tryalpha v' tm;
+            val (iv,ib) = dest_abs tm'
+        in
+            mk_abs(iv,deep_alpha newenv ib)
+        end)
+        handle HOL_ERR _ => mk_abs(v,deep_alpha env bod)
+    end
+    handle HOL_ERR _ =>
+       (let val (l,r) = dest_comb tm in
+          mk_comb(deep_alpha env l,deep_alpha env r)
+        end)
+        handle HOL_ERR _ => tm
+end; (* local *)
+
+(* ------------------------------------------------------------------------- *)
+(* Type of instantiations, with terms, types and higher-order data.          *)
+(* ------------------------------------------------------------------------- *)
+
+type instantiation =
+    (int * term) list * (term * term) list * (hol_type * hol_type) list;
+
+(* ------------------------------------------------------------------------- *)
+(* Instantiators.                                                            *)
+(* ------------------------------------------------------------------------- *)
+
+(*
+let (instantiate :instantiation->term->term) =
+  let betas n tm =
+    let args,lam = funpow n (fun (l,t) -> (rand t)::l,rator t) ([],tm) in
+    rev_itlist (fun a l -> let v,b = dest_abs l in vsubst[a,v] b) args lam in
+  let rec ho_betas bcs pat tm =
+    if is_var pat || is_const pat then fail() else
+    try let bv,bod = dest_abs tm in
+        mk_abs(bv,ho_betas bcs (body pat) bod)
+    with Failure _ ->
+        let hop,args = strip_comb pat in
+        try let n = rev_assoc hop bcs in
+            if length args = n then betas n tm else fail()
+        with Failure _ ->
+            let lpat,rpat = dest_comb pat in
+            let ltm,rtm = dest_comb tm in
+            try let lth = ho_betas bcs lpat ltm in
+                try let rth = ho_betas bcs rpat rtm in
+                    mk_comb(lth,rth)
+                with Failure _ ->
+                    mk_comb(lth,rtm)
+            with Failure _ ->
+                let rth = ho_betas bcs rpat rtm in
+                mk_comb(ltm,rth) in
+  fun (bcs,tmin,tyin) tm ->
+    let itm = if tyin = [] then tm else inst tyin tm in
+    if tmin = [] then itm else
+    let ttm = vsubst tmin itm in
+    if bcs = [] then ttm else
+    try ho_betas bcs itm ttm with Failure _ -> ttm;;
+
+let (INSTANTIATE : instantiation->thm->thm) =
+  let rec BETAS_CONV n tm =
+    if n = 1 then TRY_CONV BETA_CONV tm else
+    (RATOR_CONV (BETAS_CONV (n-1)) THENC
+     TRY_CONV BETA_CONV) tm in
+  let rec HO_BETAS bcs pat tm =
+    if is_var pat || is_const pat then fail() else
+    try let bv,bod = dest_abs tm in
+        ABS bv (HO_BETAS bcs (body pat) bod)
+    with Failure _ ->
+        let hop,args = strip_comb pat in
+        try let n = rev_assoc hop bcs in
+            if length args = n then BETAS_CONV n tm else fail()
+        with Failure _ ->
+            let lpat,rpat = dest_comb pat in
+            let ltm,rtm = dest_comb tm in
+            try let lth = HO_BETAS bcs lpat ltm in
+                try let rth = HO_BETAS bcs rpat rtm in
+                    MK_COMB(lth,rth)
+                with Failure _ ->
+                    AP_THM lth rtm
+            with Failure _ ->
+                let rth = HO_BETAS bcs rpat rtm in
+                AP_TERM ltm rth in
+  fun (bcs,tmin,tyin) th ->
+    let ith = if tyin = [] then th else INST_TYPE tyin th in
+    if tmin = [] then ith else
+    let tth = INST tmin ith in
+    if hyp tth = hyp th then
+      if bcs = [] then tth else
+      try let eth = HO_BETAS bcs (concl ith) (concl tth) in
+          EQ_MP eth tth
+      with Failure _ -> tth
+    else failwith "INSTANTIATE: term or type var free in assumptions";;
+
+let (INSTANTIATE_ALL : instantiation->thm->thm) =
+  fun ((_,tmin,tyin) as i) th ->
+    if tmin = [] && tyin = [] then th else
+    let hyps = hyp th in
+    if hyps = [] then INSTANTIATE i th else
+    let tyrel,tyiirel =
+      if tyin = [] then [],hyps else
+      let tvs = itlist (union o tyvars o snd) tyin [] in
+      partition (fun tm -> let tvs' = type_vars_in_term tm in
+                           not(intersect tvs tvs' = [])) hyps in
+    let tmrel,tmirrel =
+      if tmin = [] then [],tyiirel else
+      let vs = itlist (union o frees o snd) tmin [] in
+      partition (fun tm -> let vs' = frees tm in
+                           not (intersect vs vs' = [])) tyiirel in
+    let rhyps = union tyrel tmrel in
+    let th1 = rev_itlist DISCH rhyps th in
+    let th2 = INSTANTIATE i th1 in
+    funpow (length rhyps) UNDISCH th2;;
+*)
+
+(* ------------------------------------------------------------------------- *)
+(* Instantiate theorem by matching part of it to a term.                     *)
+(* The GEN_PART_MATCH version renames free vars to avoid clashes.            *)
+(* ------------------------------------------------------------------------- *)
+
+(*
+local
+  fun match_bvs t1 t2 acc =
+    let val (v1,b1) = dest_abs t1
+        val (v2,b2) = dest_abs t2;
+        val n1 = fst(dest_var v1) and n2 = fst(dest_var v2);
+        val newacc = if n1 = n2 then acc else insert (n1,n2) acc
+    in
+        match_bvs b1 b2 newacc
+    end
+    handle HOL_ERR _ =>
+        let val (l1,r1) = dest_comb t1
+            and (l2,r2) = dest_comb t2
+        in
+            match_bvs l1 l2 (match_bvs r1 r2 acc)
+        end
+        handle HOL_ERR _ => acc
+in
+  fun PART_MATCH partfn th = let
+    val sth = SPEC_ALL th;
+    val bod = concl sth;
+    val pbod = partfn bod;
+    val lconsts =
+        HOLset.intersection(HOLset.addList(empty_tmset, free_vars (concl th)),
+                            HOLset.addList(empty_tmset, freesl(hyp th))) |>
+        HOLset.listItems
+  in
+    fn tm => let
+      val bvms = match_bvs tm pbod [];
+      val abod = deep_alpha bvms bod;
+      val ath = EQ_MP (ALPHA bod abod) sth;
+      let insts = term_match lconsts (partfn abod) tm;
+      let fth = INSTANTIATE insts ath;
+      if hyp fth <> hyp ath then failwith "PART_MATCH: instantiated hyps" else
+      let tm' = partfn (concl fth) in
+      if Pervasives.compare tm' tm = 0 then fth else
+      try SUBS[ALPHA tm' tm] fth
+      with Failure _ -> failwith "PART_MATCH: Sanity check failure";
+  end;
+
+  fun GEN_PART_MATCH partfn th =
+    let sth = SPEC_ALL th in
+    let bod = concl sth in
+    let pbod = partfn bod in
+    let lconsts = intersect (frees (concl th)) (freesl(hyp th)) in
+    let fvs = subtract (subtract (frees bod) (frees pbod)) lconsts in
+    fun tm ->
+      let bvms = match_bvs tm pbod [] in
+      let abod = deep_alpha bvms bod in
+      let ath = EQ_MP (ALPHA bod abod) sth in
+      let insts = term_match lconsts (partfn abod) tm in
+      let eth = INSTANTIATE insts (GENL fvs ath) in
+      let fth = itlist (fun v th -> snd(SPEC_VAR th)) fvs eth in
+      if hyp fth <> hyp ath then failwith "PART_MATCH: instantiated hyps" else
+      let tm' = partfn (concl fth) in
+      if Pervasives.compare tm' tm = 0 then fth else
+      try SUBS[ALPHA tm' tm] fth
+      with Failure _ -> failwith "PART_MATCH: Sanity check failure"
+end; (* local *)
+*)
+
+end; (* struct *)
