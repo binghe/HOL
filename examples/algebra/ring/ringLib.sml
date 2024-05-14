@@ -380,7 +380,7 @@ in
                (fn t => is_comb t andalso
                         rator t ~~ htm andalso is_var(rand t)) utm;
           val gvs = map (genvar o type_of) hvs;
-       (* hvs |-> gvs *)
+       (* "let vtm = subst (zip gvs hvs) utm in" (hvs |-> gvs) *)
           val vtm = subst (map2 (fn s => fn t => s |-> t) hvs gvs) utm;
           val aty = Type.alpha;
           val arty = mk_type(ring_tyname,[aty]);
@@ -390,7 +390,7 @@ in
           val th1 = RING_WORD_UNIVERSAL atm;
           val th2 = INST_TYPE [aty |-> dty'] th1;
           val th3 = INST [mk_var("r",rty') |-> rtm'] th2;
-       (* gvs |-> hvs *)
+       (* "let th4 = INST (zip hvs gvs) th3 in" (gvs |-> hvs) *)
           val th4 = INST (map2 (fn s => fn t => s |-> t) gvs hvs) th3;
           val th5 = if null ths' then th4
                     else MP th4 (end_itlist CONJ ths');
@@ -402,6 +402,9 @@ in
           val th9 = left_exists_rule(GEN rtm' th8);
           val th10 = ISPEC rtm RING_TOTALIZATION;
           val l = lhand(concl th10) and r = rand(concl th10);
+       (* NOTE: HOL-Light's PART_MATCH seems more powerful than HOL4's versions
+               (PART_MATCH, PART_MATCH_A, PART_MATCH', HO_PART_MATCH).
+        *)
           val th11 = CONJ (PART_MATCH lhand th9 l)
                           (PART_MATCH lhand th9 r);
       in

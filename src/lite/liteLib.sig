@@ -154,10 +154,6 @@ sig
     val SIMPLE_DISJ_CASES : thm -> thm -> thm
     val SIMPLE_CHOOSE : term -> thm -> thm
 
-(*--------------------------------------------------------------------*
- *  HOL-Light compatible type operators                               *
- *--------------------------------------------------------------------*)
-
     val bool_ty     : hol_type
     val dest_fun_ty : hol_type -> hol_type * hol_type
     val mk_fun_ty   : hol_type -> hol_type -> hol_type
@@ -165,4 +161,6 @@ sig
     val setify_term : term list -> term list
 
     val ANTS_TAC    : tactic
+    val PART_MATCHL : (term -> term) -> thm -> term -> thm
+
 end
