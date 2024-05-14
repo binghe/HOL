@@ -339,15 +339,6 @@ local
                                           [LEFT_FORALL_IMP_THM];
   val or_elim_rule     = GEN_REWRITE_RULE TRY_CONV 
                            [TAUT `(p ==> q) /\ (p' ==> q) <=> p \/ p' ==> q`];
-  (* NOTE: HOL-Light's "find_terms" removes duplications because its use of
-          (list) "insert" operation ignores duplicate items. We use HOLset.
-   *)
-  fun find_terms' p tm = let
-      val res = find_terms p tm;
-      val set = HOLset.addList(empty_tmset, res);
-  in
-      HOLset.listItems set
-  end
 in
   fun RING_RING_WORD ths tm = let
       val dty = type_of(rand tm);
@@ -376,9 +367,11 @@ in
           val utm =
               if null ths' then rand(concl th')
               else mk_imp(list_mk_conj (map concl ths'),rand(concl th'));
-          val hvs = find_terms'
+       (* NOTE: HOL-Light's "find_terms" also removes duplication, we can use
+                liteLib.setify_term in addition to HOL4's find_terms. *)
+          val hvs = find_terms
                (fn t => is_comb t andalso
-                        rator t ~~ htm andalso is_var(rand t)) utm;
+                        rator t ~~ htm andalso is_var(rand t)) utm |> setify_term;
           val gvs = map (genvar o type_of) hvs;
        (* "let vtm = subst (zip gvs hvs) utm in" (hvs |-> gvs) *)
           val vtm = subst (map2 (fn s => fn t => s |-> t) hvs gvs) utm;
