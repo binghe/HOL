@@ -110,5 +110,7 @@ sig
   val cj    : int -> thm -> thm
   val pp    : thmpos_dtype.match_position -> thm -> thm
 
+  val deep_alpha : (string * string) list -> term -> term;
+  val match_bvs  : term -> term -> (string * string) list -> (string * string) list
 
 end

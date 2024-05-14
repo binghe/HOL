@@ -11,11 +11,11 @@
 structure ringLib :> ringLib =
 struct
 
-open HolKernel boolLib bossLib liteLib;
+open HolKernel boolLib bossLib;
 
 open pred_setTheory cardinalTheory ringTheory ringLibTheory Grobner Normalizer
      integerTheory intReduce intLib tautLib normalForms Canon Canon_Port
-     pairSyntax intSyntax ringSyntax pred_setSyntax;
+     pairSyntax intSyntax ringSyntax pred_setSyntax Ho_Rewrite liteLib;
 
 (* ------------------------------------------------------------------------- *)
 (* Establish the required grammar(s) for executing this file                 *)
@@ -105,13 +105,13 @@ local
     REWRITE_TAC[RING_OF_INT_OF_NUM, RING_OF_NUM_1, CONJUNCT1 ring_of_num] THEN
     SIMP_TAC std_ss[ring_sub, RING_MUL_LNEG, RING_MUL_LID, IN_UNIV]);
   val RING_INT_ADD_CONV =
-      GEN_REWRITE_CONV I empty_rewrites[GSYM RING_OF_INT_ADD] THENC
+      GEN_REWRITE_CONV I [GSYM RING_OF_INT_ADD] THENC
       RAND_CONV INT_ADD_CONV;
   val RING_INT_MUL_CONV =
-      GEN_REWRITE_CONV I empty_rewrites[GSYM RING_OF_INT_MUL] THENC
+      GEN_REWRITE_CONV I [GSYM RING_OF_INT_MUL] THENC
       RAND_CONV INT_MUL_CONV;
   val RING_INT_POW_CONV =
-      GEN_REWRITE_CONV I empty_rewrites[GSYM RING_OF_INT_POW] THENC
+      GEN_REWRITE_CONV I [GSYM RING_OF_INT_POW] THENC
       RAND_CONV INT_POW_CONV;
   val ith = prove
     (“ring_0 r = ring_of_int r (&0) /\
@@ -125,7 +125,7 @@ local
      term_lt
 in
 val RING_POLY_UNIVERSAL_CONV =
-    GEN_REWRITE_CONV ONCE_DEPTH_CONV empty_rewrites[ith, GSYM RING_OF_INT_OF_NUM]
+    GEN_REWRITE_CONV ONCE_DEPTH_CONV [ith, GSYM RING_OF_INT_OF_NUM]
     THENC RING_POLY_CONV
 end;
 
@@ -156,7 +156,7 @@ local
   val rule1 = PART_MATCH (lhand o lhand) neth_g;
   val conv1 =
     RAND_CONV INT_SUB_CONV THENC
-    GEN_REWRITE_CONV TRY_CONV empty_rewrites[neth_h];
+    GEN_REWRITE_CONV TRY_CONV [neth_h];
   fun RING_EQ_CONV tm =
     PART_MATCH lhand neth_b tm
     handle HOL_ERR _ =>
@@ -186,7 +186,7 @@ local
      ring_1 r :'a = ring_of_int r (&1)”,
     REWRITE_TAC[RING_OF_INT_OF_NUM, RING_OF_NUM_0, RING_OF_NUM_1]);
   val decorule =
-    GEN_REWRITE_CONV ONCE_DEPTH_CONV empty_rewrites[cth, GSYM RING_OF_INT_OF_NUM];
+    GEN_REWRITE_CONV ONCE_DEPTH_CONV [cth, GSYM RING_OF_INT_OF_NUM];
   val (basic_rule,idealconv) =
     RING_AND_IDEAL_CONV
      (dest_ringconst,
@@ -297,7 +297,7 @@ local
         ring_add r p q = ring_of_int r (&0)”,
       SIMP_TAC bool_ss[RING_ADD_RZERO, RING_OF_INT_OF_NUM, RING_OF_NUM_0, IN_UNIV]);
   val decorule =
-      GEN_REWRITE_RULE (RAND_CONV o ONCE_DEPTH_CONV) empty_rewrites
+      GEN_REWRITE_RULE (RAND_CONV o ONCE_DEPTH_CONV) 
                        [cth, GSYM RING_OF_INT_OF_NUM] o
       PART_MATCH lhand pth
 in
@@ -333,11 +333,21 @@ end;
 
 (* 5. RING_RING_WORD *)
 local
-  val imp_imp_rule     = GEN_REWRITE_RULE TRY_CONV empty_rewrites [IMP_IMP];
-  val left_exists_rule = GEN_REWRITE_RULE TRY_CONV empty_rewrites
+  (* NOTE: These rules require Ho_Rewrite.GEN_REWRITE_RULE *)
+  val imp_imp_rule     = GEN_REWRITE_RULE TRY_CONV [IMP_IMP];
+  val left_exists_rule = GEN_REWRITE_RULE TRY_CONV 
                                           [LEFT_FORALL_IMP_THM];
-  val or_elim_rule     = GEN_REWRITE_RULE TRY_CONV empty_rewrites
-                           [TAUT `(p ==> q) /\ (p' ==> q) <=> p \/ p' ==> q`]
+  val or_elim_rule     = GEN_REWRITE_RULE TRY_CONV 
+                           [TAUT `(p ==> q) /\ (p' ==> q) <=> p \/ p' ==> q`];
+  (* NOTE: HOL-Light's "find_terms" removes duplications because its use of
+          (list) "insert" operation ignores duplicate items. We use HOLset.
+   *)
+  fun find_terms' p tm = let
+      val res = find_terms p tm;
+      val set = HOLset.addList(empty_tmset, res);
+  in
+      HOLset.listItems set
+  end
 in
   fun RING_RING_WORD ths tm = let
       val dty = type_of(rand tm);
@@ -366,7 +376,7 @@ in
           val utm =
               if null ths' then rand(concl th')
               else mk_imp(list_mk_conj (map concl ths'),rand(concl th'));
-          val hvs = find_terms
+          val hvs = find_terms'
                (fn t => is_comb t andalso
                         rator t ~~ htm andalso is_var(rand t)) utm;
           val gvs = map (genvar o type_of) hvs;
@@ -391,8 +401,9 @@ in
           val th8 = left_exists_rule(GEN htm th7);
           val th9 = left_exists_rule(GEN rtm' th8);
           val th10 = ISPEC rtm RING_TOTALIZATION;
-          val th11 = CONJ (PART_MATCH lhand th9 (lhand(concl th10)))
-                          (PART_MATCH lhand th9 (rand(concl th10)))
+          val l = lhand(concl th10) and r = rand(concl th10);
+          val th11 = CONJ (PART_MATCH lhand th9 l)
+                          (PART_MATCH lhand th9 r);
       in
         MP (or_elim_rule th11) th10
       end
@@ -402,9 +413,9 @@ end;
 (* 6. RING_RING_HORN *)
 local
   val ddj_conv =
-      GEN_REWRITE_CONV (RAND_CONV o DEPTH_CONV) empty_rewrites
+      GEN_REWRITE_CONV (RAND_CONV o DEPTH_CONV) 
         [TAUT ‘~p \/ ~q <=> ~(p /\ q)’] THENC
-      GEN_REWRITE_CONV TRY_CONV empty_rewrites [TAUT ‘p \/ ~q <=> q ==> p’]
+      GEN_REWRITE_CONV TRY_CONV  [TAUT ‘p \/ ~q <=> q ==> p’]
 in
   fun RING_RING_HORN tm =
     if not(is_disj tm) then RING_RING_WORD [] tm else
@@ -440,10 +451,10 @@ val init_conv =
     CONDS_ELIM_CONV THENC
     NNFC_CONV THENC CNF_CONV THENC
     SKOLEM_CONV THENC PRENEX_CONV THENC
-    GEN_REWRITE_CONV REDEPTH_CONV empty_rewrites
-     [RIGHT_AND_EXISTS_THM, LEFT_AND_EXISTS_THM] THENC
-    GEN_REWRITE_CONV TOP_DEPTH_CONV empty_rewrites [GSYM DISJ_ASSOC] THENC
-    GEN_REWRITE_CONV TOP_DEPTH_CONV empty_rewrites [GSYM CONJ_ASSOC];
+    GEN_REWRITE_CONV REDEPTH_CONV 
+       [RIGHT_AND_EXISTS_THM, LEFT_AND_EXISTS_THM] THENC
+    GEN_REWRITE_CONV TOP_DEPTH_CONV [GSYM DISJ_ASSOC] THENC
+    GEN_REWRITE_CONV TOP_DEPTH_CONV [GSYM CONJ_ASSOC];
 
 (* 9. RING_RULE_BASIC *)
 fun RING_RULE_BASIC tm = let

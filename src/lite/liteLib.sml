@@ -5,23 +5,25 @@
 structure liteLib :> liteLib =
 struct
 
-open Feedback Thm Term Conv Abbrev Tactic;
+open Feedback Thm Term Drule Conv Abbrev Tactic;
 
 val aconv = Term.aconv
 
+infix 3 |> thenf orelsef;
+
 (*---------------------------------------------------------------------------
- * Fake for NJSML: it does not use Interrupt anyway so it won't ever
+ * Fake for SML/NJ: it does not use Interrupt anyway so it won't ever
  * get raised.
  *---------------------------------------------------------------------------*)
-(* exception Interrupt;   *)
 
-
+(* exception Interrupt; *)
 
 (*---------------------------------------------------------------------
  *               Exceptions
  *--------------------------------------------------------------------*)
 
 val ERR = mk_HOL_ERR "liteLib"
+fun failwith s = raise ERR "?" s
 
 fun STRUCT_ERR s (func,mesg) = raise Feedback.mk_HOL_ERR s func mesg
 fun STRUCT_WRAP s (func,exn) = raise Feedback.wrap_exn s func exn
@@ -45,8 +47,6 @@ fun option_cases f e (SOME x) = f x
 fun option_app f (SOME x) = SOME (f x)
   | option_app f NONE = NONE
 
-
-infix 3 |> thenf orelsef;
 fun (x |> f) = f x;
 
 fun (f thenf g) x = g(f x);
@@ -89,14 +89,13 @@ fun rotr lst =
    let val (front,last) = Lib.front_last lst
    in last::front
    end
-   handle HOL_ERR _ => failwith "rotr: empty list"
-
+   handle HOL_ERR _ => failwith "rotr: empty list";
 
 fun replicate (x,n) =
    let fun repl 0 = []
          | repl n = x::repl (n-1)
    in repl n
-   end
+   end;
 
 fun upto (n,m) = if n >= m then [] else n::upto (n+1,m);
 
@@ -230,7 +229,6 @@ val is_imp    = is_binop boolSyntax.implication;
 val dest_imp  = dest_binop boolSyntax.implication;
 val strip_imp = splitlist dest_imp;
 
-
 (* ------------------------------------------------------------------------- *)
 (* Grabbing left operand of a binary operator (or something coextensive!)    *)
 (* ------------------------------------------------------------------------- *)
@@ -302,7 +300,7 @@ fun alpha v tm =
     else failwith "alpha: Invalid new variable"
   end;
 
-val ABS_CONV = Conv.ABS_CONV
+val ABS_CONV = Conv.ABS_CONV;
 
 val BODY_CONV =
  let fun dest_quant tm =
@@ -315,7 +313,7 @@ val BODY_CONV =
     let val (quants,bod) = strip_quant tm
     in Lib.itlist(fn (q,v) => fn th => AP_TERM q (ABS v th)) quants (conv bod)
     end
- end;;
+ end;
 
 (* ------------------------------------------------------------------------- *)
 (* Faster depth conversions using failure rather than returning a REFL.      *)
@@ -489,46 +487,6 @@ end;
 val ANTS_TAC = impl_tac;
 
 (* ------------------------------------------------------------------------- *)
-(* Modify bound variable names at depth. (Not very efficient...)             *)
-(* ------------------------------------------------------------------------- *)
-
-fun remove p l =
-  case l of
-    [] => failwith "remove"
-  | (h::t) => if p(h) then (h,t) else
-              let val (y,n) = remove p t in (y,h::n) end;
-
-local
-  fun tryalpha v tm =
-    (alpha v tm)
-    handle HOL_ERR _ =>
-      let val v' = variant (free_vars tm) v in
-        alpha v' tm
-      end
-      handle HOL_ERR _ => tm;
-in
-fun deep_alpha (env :(string * string) list) tm =
-    if null env then tm else
-    let val (v,bod) = dest_abs tm;
-        val (vn,vty) = dest_var v
-    in
-       (let val ((vn',_),newenv) = remove (fn (_,x) => x = vn) env;
-            val v' = mk_var(vn',vty);
-            val tm' = tryalpha v' tm;
-            val (iv,ib) = dest_abs tm'
-        in
-            mk_abs(iv,deep_alpha newenv ib)
-        end)
-        handle HOL_ERR _ => mk_abs(v,deep_alpha env bod)
-    end
-    handle HOL_ERR _ =>
-       (let val (l,r) = dest_comb tm in
-          mk_comb(deep_alpha env l,deep_alpha env r)
-        end)
-        handle HOL_ERR _ => tm
-end; (* local *)
-
-(* ------------------------------------------------------------------------- *)
 (* Type of instantiations, with terms, types and higher-order data.          *)
 (* ------------------------------------------------------------------------- *)
 
@@ -624,6 +582,134 @@ let (INSTANTIATE_ALL : instantiation->thm->thm) =
     let th1 = rev_itlist DISCH rhyps th in
     let th2 = INSTANTIATE i th1 in
     funpow (length rhyps) UNDISCH th2;;
+
+(* ------------------------------------------------------------------------- *)
+(* Higher order matching of terms.                                           *)
+(*                                                                           *)
+(* Note: in the event of spillover patterns, this may return false results;  *)
+(* but there's usually an implicit check outside that the match worked       *)
+(* anyway. A test could be put in (see if any "env" variables are left in    *)
+(* the term after abstracting out the pattern instances) but it'd be slower. *)
+(* ------------------------------------------------------------------------- *)
+
+let (term_match:term list -> term -> term -> instantiation) =
+  let safe_inserta ((y,x) as n) l =
+    try let z = rev_assoc x l in
+        if aconv y z then l else failwith "safe_inserta"
+    with Failure "find" -> n::l in
+
+  let safe_insert ((y,x) as n) l =
+    try let z = rev_assoc x l in
+        if Pervasives.compare y z = 0 then l else failwith "safe_insert"
+    with Failure "find" -> n::l in
+
+  let mk_dummy =
+    let name = fst(dest_var(genvar aty)) in
+    fun ty -> mk_var(name,ty) in
+
+  let rec term_pmatch lconsts env vtm ctm ((insts,homs) as sofar) =
+    match (vtm,ctm) with
+      Var(_,_),_ ->
+       (try let ctm' = rev_assoc vtm env in
+            if Pervasives.compare ctm' ctm = 0 then sofar
+            else failwith "term_pmatch"
+        with Failure "find" ->
+            if mem vtm lconsts then
+              if Pervasives.compare ctm vtm = 0 then sofar
+              else failwith "term_pmatch: can't instantiate local constant"
+            else safe_inserta (ctm,vtm) insts,homs)
+    | Const(vname,vty),Const(cname,cty) ->
+        if Pervasives.compare vname cname = 0 then
+          if Pervasives.compare vty cty = 0 then sofar
+          else safe_insert (mk_dummy cty,mk_dummy vty) insts,homs
+        else failwith "term_pmatch"
+    | Abs(vv,vbod),Abs(cv,cbod) ->
+        let sofar' = safe_insert
+          (mk_dummy(snd(dest_var cv)),mk_dummy(snd(dest_var vv))) insts,homs in
+        term_pmatch lconsts ((cv,vv)::env) vbod cbod sofar'
+    | _ ->
+      let vhop = repeat rator vtm in
+      if is_var vhop && not (mem vhop lconsts) &&
+                       not (can (rev_assoc vhop) env) then
+        let vty = type_of vtm and cty = type_of ctm in
+        let insts' =
+          if Pervasives.compare vty cty = 0 then insts
+          else safe_insert (mk_dummy cty,mk_dummy vty) insts in
+        (insts',(env,ctm,vtm)::homs)
+      else
+        let lv,rv = dest_comb vtm
+        and lc,rc = dest_comb ctm in
+        let sofar' = term_pmatch lconsts env lv lc sofar in
+        term_pmatch lconsts env rv rc sofar' in
+
+  let get_type_insts insts =
+    itlist (fun (t,x) -> type_match (snd(dest_var x)) (type_of t)) insts in
+
+  let separate_insts insts =
+      let realinsts,patterns = partition (is_var o snd) insts in
+      let betacounts =
+        if patterns = [] then [] else
+        itlist
+          (fun (_,p) sof ->
+            let hop,args = strip_comb p in
+            try safe_insert (length args,hop) sof with Failure _ ->
+            (warn true "Inconsistent patterning in higher order match"; sof))
+          patterns [] in
+      let tyins = get_type_insts realinsts [] in
+      betacounts,
+      mapfilter (fun (t,x) ->
+        let x' = let xn,xty = dest_var x in
+                 mk_var(xn,type_subst tyins xty) in
+        if Pervasives.compare t x' = 0 then fail() else (t,x')) realinsts,
+      tyins in
+
+  let rec term_homatch lconsts tyins (insts,homs) =
+    if homs = [] then insts else
+    let (env,ctm,vtm) = hd homs in
+    if is_var vtm then
+      if Pervasives.compare ctm vtm = 0
+       then term_homatch lconsts tyins (insts,tl homs) else
+      let newtyins = safe_insert (type_of ctm,snd(dest_var vtm)) tyins
+      and newinsts = (ctm,vtm)::insts in
+      term_homatch lconsts newtyins (newinsts,tl homs) else
+    let vhop,vargs = strip_comb vtm in
+    let afvs = freesl vargs in
+    let inst_fn = inst tyins in
+    try let tmins = map
+          (fun a -> (try rev_assoc a env with Failure _ -> try
+                         rev_assoc a insts with Failure _ ->
+                         if mem a lconsts then a else fail()),
+                    inst_fn a) afvs in
+        let pats0 = map inst_fn vargs in
+        let pats = map (vsubst tmins) pats0 in
+        let vhop' = inst_fn vhop in
+        let ni =
+          let chop,cargs = strip_comb ctm in
+          if Pervasives.compare cargs pats = 0 then
+            if Pervasives.compare chop vhop = 0
+            then insts else safe_inserta (chop,vhop) insts else
+          let ginsts = map
+            (fun p -> (if is_var p then p else genvar(type_of p)),p) pats in
+          let ctm' = subst ginsts ctm
+          and gvs = map fst ginsts in
+          let abstm = list_mk_abs(gvs,ctm') in
+          let vinsts = safe_inserta (abstm,vhop) insts in
+          let icpair = ctm',list_mk_comb(vhop',gvs) in
+          icpair::vinsts in
+        term_homatch lconsts tyins (ni,tl homs)
+    with Failure _ ->
+        let lc,rc = dest_comb ctm
+        and lv,rv = dest_comb vtm in
+        let pinsts_homs' =
+          term_pmatch lconsts env rv rc (insts,(env,lc,lv)::(tl homs)) in
+        let tyins' = get_type_insts (fst pinsts_homs') [] in
+        term_homatch lconsts tyins' pinsts_homs' in
+
+  fun lconsts vtm ctm ->
+    let pinsts_homs = term_pmatch lconsts [] vtm ctm ([],[]) in
+    let tyins = get_type_insts (fst pinsts_homs) [] in
+    let insts = term_homatch lconsts tyins pinsts_homs in
+    separate_insts insts;;
 *)
 
 (* ------------------------------------------------------------------------- *)
@@ -654,9 +740,8 @@ in
     val bod = concl sth;
     val pbod = partfn bod;
     val lconsts =
-        HOLset.intersection(HOLset.addList(empty_tmset, free_vars (concl th)),
-                            HOLset.addList(empty_tmset, freesl(hyp th))) |>
-        HOLset.listItems
+        HOLset.intersection (FVL [concl th] empty_tmset, FVL (hyp th) empty_tmset)
+     |> HOLset.listItems
   in
     fn tm => let
       val bvms = match_bvs tm pbod [];
