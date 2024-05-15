@@ -394,12 +394,8 @@ in
           val th8 = left_exists_rule(GEN htm th7);
           val th9 = left_exists_rule(GEN rtm' th8);
           val th10 = ISPEC rtm RING_TOTALIZATION;
-          val l = lhand(concl th10) and r = rand(concl th10);
-       (* NOTE: HOL-Light's PART_MATCH seems more powerful than HOL4's versions
-               (PART_MATCH, PART_MATCH_A, PART_MATCH', HO_PART_MATCH).
-        *)
-          val th11 = CONJ (PART_MATCH lhand th9 l)
-                          (PART_MATCH lhand th9 r);
+          val th11 = CONJ (PART_MATCH lhand th9 (lhand(concl th10)))
+                          (PART_MATCH lhand th9 (rand(concl th10)));
       in
         MP (or_elim_rule th11) th10
       end
@@ -434,9 +430,10 @@ in
       val (negdjs,posdjs) = partition is_neg (strip_disj tm);
       val th = tryfind
                  (fn p => RING_RING_HORN (list_mk_disj(p::negdjs))) posdjs;
-      val th1 = INST [ptm |-> concl th, qtm |-> tm] pth
+      val th1 = INST [ptm |-> concl th, qtm |-> tm] pth;
+      val tm2 = rand(concl th1);
     in
-      MP (EQ_MP (SYM th1) (DISJ_ACI_RULE(rand(concl th1)))) th
+      MP (EQ_MP (SYM th1) (DISJ_ACI_RULE tm2)) th
     end
 end;
 

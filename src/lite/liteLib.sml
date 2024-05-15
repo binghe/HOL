@@ -227,11 +227,8 @@ val is_imp    = is_binop boolSyntax.implication;
 val dest_imp  = dest_binop boolSyntax.implication;
 val strip_imp = splitlist dest_imp;
 
-(* ------------------------------------------------------------------------- *)
-(* Grabbing left operand of a binary operator (or something coextensive!)    *)
-(* ------------------------------------------------------------------------- *)
-
-val lhand = Term.rand o Term.rator;;
+(* Moved here from Canon_Port *)
+val freesl = free_varsl;
 
 (* ------------------------------------------------------------------------- *)
 (* Like mk_comb, but instantiates type variables in rator if necessary.      *)
@@ -499,6 +496,7 @@ fun alpha v tm =
 (* Type matching.                                                            *)
 (* ------------------------------------------------------------------------- *)
 
+(*
 fun type_match vty cty sofar =
   if is_vartype vty then
      if rev_assoc vty sofar = cty then sofar else failwith "type_match"
@@ -510,6 +508,7 @@ fun type_match vty cty sofar =
        if vop = cop then itlist2 type_match vargs cargs sofar
        else failwith "type_match"
      end;
+ *)
 
 (* ------------------------------------------------------------------------- *)
 (* Instantiators.                                                            *)
@@ -568,7 +567,7 @@ in
 end; (* local *)
  *)
 
-(* INSTANTIATE :instantiation -> thm -> thm *)
+(* INSTANTIATE :instantiation -> thm -> thm (not used)
 local
   fun BETAS_CONV n tm =
     if n = 1 then TRY_CONV BETA_CONV tm else
@@ -624,6 +623,7 @@ fun INSTANTIATE ((bcs,tmin,tyin) :instantiation) th :thm =
        end
     end
 end; (* local *)
+ *)
 
 (* not used, not ported
 let (INSTANTIATE_ALL : instantiation->thm->thm) =
@@ -656,7 +656,7 @@ let (INSTANTIATE_ALL : instantiation->thm->thm) =
 (* the term after abstracting out the pattern instances) but it'd be slower. *)
 (* ------------------------------------------------------------------------- *)
 
-(* term_match :term list -> term -> term -> instantiation, cf. match_term *)
+(* term_match :term list -> term -> term -> instantiation, cf. match_term
 local
   fun safe_insert (n as (y,x)) l =
     let val z = op_rev_assoc aconv x l in
@@ -876,6 +876,7 @@ local
 in
   val PART_MATCHL = PART_MATCH;
 end; (* local *)
+ *)
 
 (* not used so far
 fun GEN_PART_MATCH partfn th = let

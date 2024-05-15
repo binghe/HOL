@@ -88,7 +88,6 @@ sig
   val eager: 'a -> ('b,'a) lazy;
   val eval : ('a,'b)lazy -> 'b;
 
-
 (*--------------------------------------------------------------------*
  * Term operators                                                     *
  *--------------------------------------------------------------------*)
@@ -98,7 +97,6 @@ sig
     val dest_binop : term -> term -> term * term
     val strip_binop : term -> term -> term list * term
     val binops : term -> term -> term list
-    val lhand : term -> term
 
     val mk_icomb : term * term -> term
     val list_mk_icomb : term -> term list -> term
@@ -159,8 +157,8 @@ sig
     val mk_fun_ty   : hol_type -> hol_type -> hol_type
 
     val setify_term : term list -> term list
+    val freesl : term list -> term list
 
     val ANTS_TAC    : tactic
-    val PART_MATCHL : (term -> term) -> thm -> term -> thm
 
 end

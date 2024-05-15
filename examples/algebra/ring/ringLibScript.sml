@@ -12,7 +12,7 @@ open HolKernel boolLib bossLib Parse;
 
 open combinTheory pred_setTheory pred_setLib arithmeticTheory integerTheory
      numLib intLib mesonLib hurdUtils cardinalTheory oneTheory newtypeTools
-     tautLib metisLib liteLib;
+     tautLib metisLib liteLib Ho_Rewrite;
 
 open monoidTheory groupTheory ringTheory;
 
@@ -984,7 +984,7 @@ Theorem RING_MONOMORPHIC_IMAGE_RULE_THM :
                       f(ring_mul r x y) = ring_mul r' x' y')
 Proof
     rpt GEN_TAC >> REWRITE_TAC[ring_monomorphism]
- >> GEN_REWRITE_TAC LAND_CONV empty_rewrites [CONJ_SYM]
+ >> GEN_REWRITE_TAC LAND_CONV [CONJ_SYM]
  >> MATCH_MP_TAC MONO_AND
  >> CONJ_TAC >- MESON_TAC[]
  >> METIS_TAC[RING_0, RING_1, RING_OF_NUM, RING_OF_INT, RING_NEG,
@@ -1345,7 +1345,7 @@ Theorem RING_HOMOMORPHISM_FROM_TRIVIAL_RING :
              trivial_ring r' /\ IMAGE f (ring_carrier r) = {ring_0 r'})
 Proof
   REPEAT GEN_TAC THEN
-  GEN_REWRITE_TAC LAND_CONV empty_rewrites [trivial_ring] THEN
+  GEN_REWRITE_TAC LAND_CONV [trivial_ring] THEN
   DISCH_TAC THEN EQ_TAC THENL
   [ (* goal 1 (of 2) *)
     ASM_SIMP_TAC std_ss[ring_homomorphism, TRIVIAL_RING_10] THEN
@@ -1609,32 +1609,6 @@ QED
 Theorem PRODUCT_RING_NEG' =
         PRODUCT_RING_NEG |> SIMP_RULE std_ss [PRODUCT_RING, IN_CARTESIAN_PRODUCT]
 
-Theorem RING_TOTALIZATION_lemma[local] :
-    !r :'a Ring.
-            ~(trivial_ring r) /\ INFINITE univ(:'b) /\ univ(:'a) <=_c univ(:'b)
-            ==> ring_carrier(product_ring univ(:'b) (\(i :'b). r)) =_c univ(:'b -> bool)
-Proof
-    rpt STRIP_TAC
- >> REWRITE_TAC[PRODUCT_RING, CARTESIAN_PRODUCT_CONST, UNIV_fun_exp]
- >> MATCH_MP_TAC CARD_EXP_ABSORB >> art []
- >> CONJ_TAC (* 2 subgoals *)
- >| [ (* goal 1 (of 2) *)
-      TRANS_TAC CARD_LE_TRANS “{ring_0 r:'a;ring_1 r:'a}” \\
-      CONJ_TAC >| (* 2 subgoals *)
-      [ (* goal 1.1 (of 2) *)
-        RULE_ASSUM_TAC(REWRITE_RULE[TRIVIAL_RING_10]) \\
-        rw [CARD_LE_CARD, FINITE_INSERT, FINITE_EMPTY, FINITE_BOOL,
-            CARD_BOOL, CARD_CLAUSES],
-        (* goal 1.2 (of 2) *)
-        MATCH_MP_TAC CARD_LE_SUBSET \\
-        REWRITE_TAC[INSERT_SUBSET, EMPTY_SUBSET, RING_0, RING_1] ],
-      (* goal 2 (of 2) *)
-      TRANS_TAC CARD_LE_TRANS “univ(:'a)” \\
-      ASM_SIMP_TAC std_ss [CARD_LE_SUBSET, SUBSET_UNIV] \\
-      TRANS_TAC CARD_LE_TRANS “univ(:'b)” >> art [] \\
-      SIMP_TAC std_ss[CARD_EXP_CANTOR, CARD_LT_IMP_LE] ]
-QED
-
 Theorem RING_MONOMORPHISM_COMPOSE :
     !r1 r2 r3 (f :'a -> 'b) (g :'b -> 'c).
         ring_monomorphism(r1,r2) f /\ ring_monomorphism(r2,r3) g
@@ -1711,9 +1685,35 @@ Proof
   SET_TAC[]
 QED
 
+Theorem RING_TOTALIZATION_lemma[local] :
+    !r :'a Ring.
+            ~(trivial_ring r) /\ INFINITE univ(:'b) /\ univ(:'a) <=_c univ(:'b)
+            ==> ring_carrier(product_ring univ(:'b) (\(i :'b). r)) =_c univ(:'b -> bool)
+Proof
+    rpt STRIP_TAC
+ >> REWRITE_TAC[PRODUCT_RING, CARTESIAN_PRODUCT_CONST, UNIV_fun_exp]
+ >> MATCH_MP_TAC CARD_EXP_ABSORB >> art []
+ >> CONJ_TAC (* 2 subgoals *)
+ >| [ (* goal 1 (of 2) *)
+      TRANS_TAC CARD_LE_TRANS “{ring_0 r:'a;ring_1 r:'a}” \\
+      CONJ_TAC >| (* 2 subgoals *)
+      [ (* goal 1.1 (of 2) *)
+        RULE_ASSUM_TAC(REWRITE_RULE[TRIVIAL_RING_10]) \\
+        rw [CARD_LE_CARD, FINITE_INSERT, FINITE_EMPTY, FINITE_BOOL,
+            CARD_BOOL, CARD_CLAUSES],
+        (* goal 1.2 (of 2) *)
+        MATCH_MP_TAC CARD_LE_SUBSET \\
+        REWRITE_TAC[INSERT_SUBSET, EMPTY_SUBSET, RING_0, RING_1] ],
+      (* goal 2 (of 2) *)
+      TRANS_TAC CARD_LE_TRANS “univ(:'a)” \\
+      ASM_SIMP_TAC std_ss [CARD_LE_SUBSET, SUBSET_UNIV] \\
+      TRANS_TAC CARD_LE_TRANS “univ(:'b)” >> art [] \\
+      SIMP_TAC std_ss[CARD_EXP_CANTOR, CARD_LT_IMP_LE] ]
+QED
+
 Theorem RING_TOTALIZATION :
     !r :'a Ring.
-          (?r' f. ring_carrier r' = {()} /\
+          (?r' f. ring_carrier r' = univ(:unit) /\
                   ring_monomorphism(r,r') f) \/
           (?r' f. ring_carrier r' = univ(:(num # 'a) -> bool)/\
                   ring_monomorphism(r,r') f)
@@ -1724,7 +1724,8 @@ Proof
       ASM_SIMP_TAC std_ss[RING_MONOMORPHISM_FROM_TRIVIAL_RING,
                           RING_HOMOMORPHISM_FROM_TRIVIAL_RING] THEN
       ASM_SIMP_TAC std_ss[TRIVIAL_RING_SINGLETON_RING, SINGLETON_RING] THEN
-      REWRITE_TAC[IMAGE_CONST, RING_CARRIER_NONEMPTY] )
+      REWRITE_TAC[IMAGE_CONST, RING_CARRIER_NONEMPTY] THEN
+      rw [Once EXTENSION] )
  >> DISJ2_TAC
  >> MP_TAC(snd(EQ_IMP_RULE(ISPECL
      [“product_ring univ(:num # 'a) (\i. (r :'a Ring))”, “univ(:num # 'a -> bool)”]
@@ -1735,13 +1736,13 @@ Proof
       ASM_REWRITE_TAC[GSYM MUL_C_UNIV, CARD_MUL_FINITE_EQ] THEN
       REWRITE_TAC[UNIV_NOT_EMPTY, DE_MORGAN_THM] THEN
       REWRITE_TAC[num_INFINITE, MUL_C_UNIV] THEN
-      REWRITE_TAC[le_c] THEN EXISTS_TAC “\x:'a. (0,x)” THEN
+      REWRITE_TAC[le_c] THEN EXISTS_TAC “\x:'a. (0:num,x)” THEN
       SIMP_TAC std_ss[IN_UNIV],
       (* goal 2 (of 2) *)
       HO_MATCH_MP_TAC MONO_EXISTS THEN Q.X_GEN_TAC ‘r'’ THEN
       STRIP_TAC THEN ASM_REWRITE_TAC[] ] THEN
  (* stage work *)
-    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I empty_rewrites [isomorphic_ring]) THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [isomorphic_ring]) THEN
     DISCH_THEN(Q.X_CHOOSE_TAC ‘f’) THEN
     Q.EXISTS_TAC ‘f o (\x i. x)’ THEN
     MATCH_MP_TAC RING_MONOMORPHISM_COMPOSE THEN
