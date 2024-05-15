@@ -280,7 +280,7 @@ local
         ring_add r p q = ring_of_int r (&0)”,
       SIMP_TAC bool_ss[RING_ADD_RZERO, RING_OF_INT_OF_NUM, RING_OF_NUM_0, IN_UNIV]);
   val decorule =
-      GEN_REWRITE_RULE (RAND_CONV o ONCE_DEPTH_CONV) 
+      GEN_REWRITE_RULE (RAND_CONV o ONCE_DEPTH_CONV)
                        [cth, GSYM RING_OF_INT_OF_NUM] o
       PART_MATCH lhand pth
 in
@@ -318,9 +318,9 @@ end;
 local
   (* NOTE: These rules require Ho_Rewrite.GEN_REWRITE_RULE *)
   val imp_imp_rule     = GEN_REWRITE_RULE TRY_CONV [IMP_IMP];
-  val left_exists_rule = GEN_REWRITE_RULE TRY_CONV 
+  val left_exists_rule = GEN_REWRITE_RULE TRY_CONV
                                           [LEFT_FORALL_IMP_THM];
-  val or_elim_rule     = GEN_REWRITE_RULE TRY_CONV 
+  val or_elim_rule     = GEN_REWRITE_RULE TRY_CONV
                            [TAUT `(p ==> q) /\ (p' ==> q) <=> p \/ p' ==> q`];
 in
   fun RING_RING_WORD ths tm = let
@@ -388,7 +388,7 @@ end;
 (* 6. RING_RING_HORN *)
 local
   val ddj_conv =
-      GEN_REWRITE_CONV (RAND_CONV o DEPTH_CONV) 
+      GEN_REWRITE_CONV (RAND_CONV o DEPTH_CONV)
         [TAUT ‘~p \/ ~q <=> ~(p /\ q)’] THENC
       GEN_REWRITE_CONV TRY_CONV  [TAUT ‘p \/ ~q <=> q ==> p’]
 in
@@ -427,7 +427,7 @@ val init_conv =
     CONDS_ELIM_CONV THENC
     NNFC_CONV THENC CNF_CONV THENC
     SKOLEM_CONV THENC PRENEX_CONV THENC
-    GEN_REWRITE_CONV REDEPTH_CONV 
+    GEN_REWRITE_CONV REDEPTH_CONV
        [RIGHT_AND_EXISTS_THM, LEFT_AND_EXISTS_THM] THENC
     GEN_REWRITE_CONV TOP_DEPTH_CONV [GSYM DISJ_ASSOC] THENC
     GEN_REWRITE_CONV TOP_DEPTH_CONV [GSYM CONJ_ASSOC];
