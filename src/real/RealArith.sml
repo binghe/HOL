@@ -359,7 +359,7 @@ val REAL_PROD_NORM_CONV =
                            (list_mk_binop_mul sothers)))
                 val tm1 = rand(concl th1)
                 val th2 = AP_TERM mul_tm (QCONV (DEPTH_CONV REAL_INT_MUL_CONV)
-                                                (liteLib.lhand tm1))
+                                                (lhand tm1))
               in
                 TRANS th1 (AP_THM th2 (rand tm1))
               end
@@ -425,7 +425,7 @@ val REAL_INT_ADD_CONV =
                 let
                   val p = mk_numeral (n' - m')
                   val th1 = INST [m_tm |-> m, n_tm |-> p] pth2
-                  val th2 = NUM_ADD_CONV (rand(rand(liteLib.lhand(concl th1))))
+                  val th2 = NUM_ADD_CONV (rand(rand(lhand(concl th1))))
                   val th3 = AP_TERM (rator tm) (AP_TERM amp_tm (SYM th2))
                 in
                   TRANS th3 th1
@@ -435,8 +435,8 @@ val REAL_INT_ADD_CONV =
                   val p = mk_numeral (m' - n')
                   val th1 = INST [m_tm |-> n, n_tm |-> p] pth3
                   val th2 = NUM_ADD_CONV
-                              (rand(rand(liteLib.lhand
-                                   (liteLib.lhand(concl th1)))))
+                              (rand(rand(lhand
+                                   (lhand(concl th1)))))
                   val th3 = AP_TERM neg_tm (AP_TERM amp_tm (SYM th2))
                   val th4 = AP_THM (AP_TERM add_tm th3) (rand tm)
                 in
@@ -453,7 +453,7 @@ val REAL_INT_ADD_CONV =
                 let
                   val p = mk_numeral (m' - n')
                   val th1 = INST [m_tm |-> n, n_tm |-> p] pth4
-                  val th2 = NUM_ADD_CONV (rand(liteLib.lhand(liteLib.lhand(concl th1))))
+                  val th2 = NUM_ADD_CONV (rand(lhand(lhand(concl th1))))
                   val th3 = AP_TERM add_tm (AP_TERM amp_tm (SYM th2))
                   val th4 = AP_THM th3 (rand tm)
                 in
@@ -463,7 +463,7 @@ val REAL_INT_ADD_CONV =
                 let
                   val p = mk_numeral (n' - m')
                   val th1 = INST [m_tm |-> m, n_tm |-> p] pth5
-                  val th2 = NUM_ADD_CONV (rand(rand(rand(liteLib.lhand(concl th1)))))
+                  val th2 = NUM_ADD_CONV (rand(rand(rand(lhand(concl th1)))))
                   val th3 = AP_TERM neg_tm (AP_TERM amp_tm (SYM th2))
                   val th4 = AP_TERM (rator tm) th3
                 in
@@ -820,7 +820,7 @@ val (clear_atom_cache,REAL_ATOM_NORM_CONV) =
     val right_CONV = RAND_CONV REAL_SUM_NORM_CONV
     val atomcache = ref []
     fun lookup_cache tm =
-      first (fn th => liteLib.lhand(concl th) ~~ tm) (!atomcache)
+      first (fn th => lhand(concl th) ~~ tm) (!atomcache)
     fun clear_atom_cache () = (atomcache := [])
     val pth2 = prove
           (``(a:real < b = c < d:real) = (b <= a = d <= c)``,
@@ -1383,7 +1383,7 @@ val PURE_REAL_ARITH_TAC =
             GEN_REWRITE_CONV TOP_SWEEP_CONV
             [REAL_ADD_LID, REAL_NEG_ADD, REAL_NEG_NEG]
         in
-          fn tm => if liteLib.lhand tm ~~ zero_tm then REFL tm else raw_CONV tm
+          fn tm => if lhand tm ~~ zero_tm then REFL tm else raw_CONV tm
         end
       end
     val init_CONV = GEN_REWRITE_CONV TOP_DEPTH_CONV [
