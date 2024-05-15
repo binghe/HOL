@@ -10,4 +10,6 @@ sig
 
   include Abbrev
 
+  val RING_RULE : term -> thm
+  val RING_TAC  : tactic
 end

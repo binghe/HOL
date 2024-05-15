@@ -5,7 +5,7 @@
 (*            (c) Copyright, University of Cambridge 1998                    *)
 (*                                                                           *)
 (* ------------------------------------------------------------------------- *)
-(* Ported by Chun Tian. The Australian National University (ANU), 2024       *)
+(* Ported by Chun Tian. The Australian National University (ANU), May 2024   *)
 (* ========================================================================= *)
 
 structure ringLib :> ringLib =
@@ -43,24 +43,7 @@ val IMP_IMP = Q.SPECL [‘p’, ‘q’, ‘r’] AND_IMP_INTRO;
 val PRENEX_CONV = Canon.PRENEX_CONV;
 val CNF_CONV    = Canon.CNF_CONV;
 
-val ring_tyname = "Ring";
-
-(* A sample input for RING_RULE:
-
-   |- y1 * inv y1 = 1 /\ y2 * inv y2 = 1 /\ x1 * y2 = x2 * y1 ==>
-      x1 * inv y1 = x2 * inv y2
-
-   NOTE: RING_RULE doesn't know ‘ring_inv’ and jusst treats ‘ring_inv y y1’ as
-         an atom (or single variable).
-
-   val tm =
-    ``ring_mul r y1 (ring_inv r y1) = ring_1 r /\
-      ring_mul r y2 (ring_inv r y2) = ring_1 r /\
-      ring_mul r x1 y2 = ring_mul r x2 y1
-      ==> ring_mul r x1 (ring_inv r y1) = ring_mul r x2 (ring_inv r y2)``;
-
-   RING_RULE tm
- *)
+val ring_tyname = "Ring"; (* There are also other occurrences of it. *)
 
 (* ------------------------------------------------------------------------- *)
 (* Instantiate the normalizer and ring procedure for the case of a ring      *)
