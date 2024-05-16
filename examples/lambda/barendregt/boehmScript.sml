@@ -3794,6 +3794,9 @@ Proof
  >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE (MAP VAR vs))’
  >> ‘Boehm_transform p1’ by rw [Abbr ‘p1’, MAP_MAP_o, GSYM MAP_REVERSE]
  >> qabbrev_tac ‘P = permutator d’
+ (* construct p2 *)
+ >> qabbrev_tac ‘p2 = GENLIST (\i. [P/y i]) k’
+ >> ‘Boehm_transform p2’ by rw [Boehm_transform_def, Abbr ‘p2’, EVERY_GENLIST]
  >> cheat
 QED
 
