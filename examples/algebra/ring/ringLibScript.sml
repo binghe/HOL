@@ -761,7 +761,7 @@ Proof
   SIMP_TAC std_ss[FORALL_INT_CASES, RING_OF_INT_CASES] THEN
   SIMP_TAC std_ss[RING_NEG_EQ_0, RING_OF_NUM, RING_OF_NUM_EQ_0] THEN
   REWRITE_TAC[num_divides] THEN REPEAT STRIP_TAC THEN
-  INTEGER_TAC (* or REWRITE_TAC [INT_DIVIDES_NEG] *)
+  REWRITE_TAC [INT_DIVIDES_NEG] (* was: INTEGER_TAC *)
 QED
 
 (* The original statement was: (m == n) (mod &(ring_char r))

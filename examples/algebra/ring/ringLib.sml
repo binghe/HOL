@@ -135,7 +135,7 @@ local
   val neth_h = prove
    (“(&(ring_char(r :'a Ring)) int_divides -(&n) <=> ring_char r divides n) /\
      (&(ring_char(r :'a Ring)) int_divides &n <=> ring_char r divides n)”,
-    REWRITE_TAC[num_divides] THEN INTEGER_TAC);
+    REWRITE_TAC[num_divides, INT_DIVIDES_NEG]);
   val rule1 = PART_MATCH (lhand o lhand) neth_g;
   val conv1 =
     RAND_CONV INT_SUB_CONV THENC
