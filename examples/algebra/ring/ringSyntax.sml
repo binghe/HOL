@@ -1,7 +1,24 @@
 structure ringSyntax :> ringSyntax =
 struct
 
-open HolKernel boolLib bossLib Parse intSyntax;
+open HolKernel boolLib bossLib intSyntax ringLibTheory;
+
+(* ------------------------------------------------------------------------- *)
+(* Establish the required grammar(s) for executing this file                 *)
+(* ------------------------------------------------------------------------- *)
+
+structure Parse = struct
+  open Parse
+  val (Type,Term) = parse_from_grammars ringLib_grammars
+end
+
+open Parse;
+
+val ring_carrier_tm =
+   “ring_carrier :'a Ring -> 'a -> bool”;
+
+val ring_monomorphism_tm =
+   “ring_monomorphism :'a Ring # 'b Ring -> ('a -> 'b) -> bool”;
 
 fun is_ring_0 tm =
     is_comb tm andalso let

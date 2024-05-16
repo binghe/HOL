@@ -3,6 +3,9 @@ sig
 
   include Abbrev
 
+  val ring_carrier_tm      : term
+  val ring_monomorphism_tm : term
+
   val is_ring_0        : term -> bool
   val is_ring_1        : term -> bool
   val is_ring_of_num   : term -> bool

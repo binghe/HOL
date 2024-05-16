@@ -341,9 +341,7 @@ in
                                  (HOLset.addList (empty_tmset, all_vars tm)));
           val rtm' = variant avvers (mk_var("r'",rty'))
           and htm = variant avvers (mk_var("h",dty --> dty'));
-          val hasm = list_mk_icomb
-                       “ring_monomorphism :'a Ring # 'b Ring -> ('a -> 'b) -> bool”
-                       [mk_pair(rtm,rtm'), htm];
+          val hasm = list_mk_icomb ring_monomorphism_tm [mk_pair(rtm,rtm'), htm];
           val hth = ASSUME hasm;
           val ths' = mapfilter (CONV_RULE(RING_MONOMORPHIC_IMAGE_RULE hth)) ths;
           val th' = RING_MONOMORPHIC_IMAGE_RULE hth tm;
@@ -371,7 +369,7 @@ in
           val th5 = if null ths' then th4
                     else MP th4 (end_itlist CONJ ths');
           val th6 = itlist PROVE_HYP ths (EQ_MP (SYM th') th5);
-          val ueq = mk_eq(list_mk_icomb “ring_carrier :'a Ring -> 'a -> bool” [rtm'],
+          val ueq = mk_eq(list_mk_icomb ring_carrier_tm [rtm'],
                           inst [aty |-> dty'] univ_tm);
           val th7 = imp_imp_rule (DISCH ueq (DISCH hasm th6));
           val th8 = left_exists_rule(GEN htm th7);
