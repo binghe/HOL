@@ -933,7 +933,7 @@ RW_TAC std_ss[]
 >> `Reliability p ESWs t = exp (-C_ESWs * t)` by RW_TAC std_ss[Reliability_def]
 >- (FULL_SIMP_TAC real_ss[exp_distribution_def])
 >> POP_ORW
->> REAL_ARITH_TAC
+>> rw [REAL_NEG_LMUL]
 QED
 
 (*----------------------------------------------*)
