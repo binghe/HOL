@@ -24,12 +24,12 @@ sig
   val is_ring_mul      : term -> bool
   val is_ringconst     : term -> bool
 
-  val dest_ring_of_num : term -> term
-  val dest_ring_of_int : term -> term
-  val dest_ring_neg    : term -> term
-  val dest_ring_pow    : term -> (term * term)
-  val dest_ring_add    : term -> (term * term)
-  val dest_ring_sub    : term -> (term * term)
-  val dest_ring_mul    : term -> (term * term)
+  val dest_ring_of_num : term -> term * term
+  val dest_ring_of_int : term -> term * term
+  val dest_ring_neg    : term -> term * term
+  val dest_ring_pow    : term -> term * term * term
+  val dest_ring_add    : term -> term * term * term
+  val dest_ring_sub    : term -> term * term * term
+  val dest_ring_mul    : term -> term * term * term
 
 end
