@@ -157,7 +157,7 @@ local
   val mk_intconst = term_of_int o Arbrat.toAInt;
   fun dest_ringconst tm =
     if is_ring_of_int tm then
-       dest_intconst (dest_ring_of_int tm)
+       dest_intconst (snd (dest_ring_of_int tm))
     else
        failwith "dest_ringconst";
   val mk_ringconst =
@@ -214,25 +214,25 @@ fun RING_MONOMORPHIC_IMAGE_RULE hth = let
         else if is_ring_1 tm then
            pth_1
         else if is_ring_of_num tm then
-           SPEC (dest_ring_of_num tm) pth_num
+           SPEC (snd (dest_ring_of_num tm)) pth_num
         else if is_ring_of_int tm then
-           SPEC (dest_ring_of_int tm) pth_int
+           SPEC (snd (dest_ring_of_int tm)) pth_int
         else if is_ring_neg tm then
-           MATCH_MP pth_neg (mterm (dest_ring_neg tm))
+           MATCH_MP pth_neg (mterm (snd (dest_ring_neg tm)))
         else if is_ring_pow tm then
-           let val (s,n) = dest_ring_pow tm in
+           let val (_,s,n) = dest_ring_pow tm in
              MATCH_MP (SPEC n pth_pow) (mterm s)
            end
         else if is_ring_add tm then
-           let val (s,t) = dest_ring_add tm in
+           let val (_,s,t) = dest_ring_add tm in
              MATCH_MP pth_add (CONJ (mterm s) (mterm t))
            end
         else if is_ring_sub tm then
-           let val (s,t) = dest_ring_sub tm in
+           let val (_,s,t) = dest_ring_sub tm in
              MATCH_MP pth_sub (CONJ (mterm s) (mterm t))
            end
         else if is_ring_mul tm then
-           let val (s,t) = dest_ring_mul tm in
+           let val (_,s,t) = dest_ring_mul tm in
              MATCH_MP pth_mul (CONJ (mterm s) (mterm t))
            end
         else

@@ -14,11 +14,30 @@ end
 
 open Parse;
 
+val ERR = mk_HOL_ERR "ringSyntax";
+fun failwith s = raise ERR "?" s
+
+val ring_add_tm    = “ring_add :'a Ring -> 'a -> 'a -> 'a”;
+val ring_sub_tm    = “ring_sub :'a Ring -> 'a -> 'a -> 'a”;
+val ring_mul_tm    = “ring_mul :'a Ring -> 'a -> 'a -> 'a”;
+val ring_pow_tm    = “ring_pow :'a Ring -> 'a -> num -> 'a”;
+val ring_neg_tm    = “ring_neg :'a Ring -> 'a -> 'a”;
+val ring_of_num_tm = “ring_of_num :'a Ring -> num -> 'a”;
+val ring_of_int_tm = “ring_of_int :'a Ring -> int -> 'a”;
+
 val ring_carrier_tm =
    “ring_carrier :'a Ring -> 'a -> bool”;
 
 val ring_monomorphism_tm =
    “ring_monomorphism :'a Ring # 'b Ring -> ('a -> 'b) -> bool”;
+
+val dest_ring_add    = dest_triop ring_add_tm    (Fail "not a ring_add");
+val dest_ring_sub    = dest_triop ring_sub_tm    (Fail "not a ring_sub");
+val dest_ring_mul    = dest_triop ring_mul_tm    (Fail "not a ring_mul");
+val dest_ring_pow    = dest_triop ring_pow_tm    (Fail "not a ring_pow");
+val dest_ring_neg    = dest_binop ring_neg_tm    (Fail "not a ring_neg");
+val dest_ring_of_num = dest_binop ring_of_num_tm (Fail "not a ring_of_num");
+val dest_ring_of_int = dest_binop ring_of_int_tm (Fail "not a ring_of_num");
 
 fun is_ring_0 tm =
     is_comb tm andalso let
@@ -57,8 +76,6 @@ fun is_ring_of_num tm =
       end
     end;
 
-fun dest_ring_of_num tm = snd (dest_comb tm);
-
 fun is_ring_of_int tm =
     is_comb tm andalso let
       val (op',_) = dest_comb tm
@@ -74,8 +91,6 @@ fun is_ring_of_int tm =
       end
     end;
 
-fun dest_ring_of_int tm = snd (dest_comb tm);
-
 fun is_ring_neg tm =
     is_comb tm andalso let
       val (op',_) = dest_comb tm
@@ -90,8 +105,6 @@ fun is_ring_neg tm =
         end
       end
     end;
-
-fun dest_ring_neg tm = snd (dest_comb tm);
 
 fun is_ring_pow tm =
     is_comb tm andalso let
@@ -112,13 +125,6 @@ fun is_ring_pow tm =
       end
     end;
 
-fun dest_ring_pow tm = let
-    val (op',n) = dest_comb tm;
-    val (_,x) = dest_comb op'
-in
-    (x,n)
-end;
-
 fun is_ring_add tm =
     is_comb tm andalso let
       val (op',_) = dest_comb tm
@@ -137,13 +143,6 @@ fun is_ring_add tm =
         end
       end
     end;
-
-fun dest_ring_add tm = let
-    val (op',r) = dest_comb tm;
-    val (_,l) = dest_comb op'
-in
-    (l,r)
-end;
 
 fun is_ring_sub tm =
     is_comb tm andalso let
@@ -164,13 +163,6 @@ fun is_ring_sub tm =
       end
     end;
 
-fun dest_ring_sub tm = let
-    val (op',r) = dest_comb tm;
-    val (_,l) = dest_comb op'
-in
-    (l,r)
-end;
-
 fun is_ring_mul tm =
     is_comb tm andalso let
       val (op',_) = dest_comb tm
@@ -190,14 +182,7 @@ fun is_ring_mul tm =
       end
     end;
 
-fun dest_ring_mul tm = let
-    val (op',r) = dest_comb tm;
-    val (_,l) = dest_comb op'
-in
-    (l,r)
-end;
-
 fun is_ringconst tm =
-    is_ring_of_int tm andalso is_int_literal (dest_ring_of_int tm);
+    is_ring_of_int tm andalso is_int_literal (snd (dest_ring_of_int tm));
 
 end (* struct *)

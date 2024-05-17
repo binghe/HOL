@@ -3,7 +3,14 @@ sig
 
   include Abbrev
 
-  val ring_carrier_tm      : term
+  val ring_add_tm      : term
+  val ring_sub_tm      : term
+  val ring_mul_tm      : term
+  val ring_pow_tm      : term
+  val ring_neg_tm      : term
+  val ring_of_num_tm   : term
+  val ring_of_int_tm   : term
+  val ring_carrier_tm  : term
   val ring_monomorphism_tm : term
 
   val is_ring_0        : term -> bool
