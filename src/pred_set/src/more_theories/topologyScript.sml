@@ -29,7 +29,6 @@ open boolSimps simpLib mesonLib metisLib pairTheory pairLib tautLib combinTheory
 
 val _ = new_theory "topology";
 
-fun MESON ths tm = prove(tm,MESON_TAC ths);
 fun METIS ths tm = prove(tm,METIS_TAC ths);
 
 fun K_TAC _ = ALL_TAC;

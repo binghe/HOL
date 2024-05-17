@@ -30,7 +30,6 @@ val _ = new_theory "iterate";
 (* MESON, METIS, SET_TAC, SET_RULE, ASSERT_TAC, ASM_ARITH_TAC                *)
 (* ------------------------------------------------------------------------- *)
 
-fun MESON ths tm = prove(tm,MESON_TAC ths);
 fun METIS ths tm = prove(tm,METIS_TAC ths);
 
 val DISC_RW_KILL = DISCH_TAC >> ONCE_ASM_REWRITE_TAC [] \\
@@ -44,7 +43,6 @@ val ASM_REAL_ARITH_TAC = REAL_ASM_ARITH_TAC;
 (* Minimal hol-light compatibility layer *)
 val IMP_CONJ      = CONJ_EQ_IMP;     (* cardinalTheory *)
 val FINITE_SUBSET = SUBSET_FINITE_I; (* pred_setTheory *)
-val LE_0          = ZERO_LESS_EQ;    (* arithmeticTheory *)
 
 (* ------------------------------------------------------------------------- *)
 (* misc.                                                                     *)

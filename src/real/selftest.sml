@@ -4,8 +4,6 @@ open simpLib realSimps isqrtLib RealArith RealField bitArithLib;
 
 open testutils;
 
-(* The original version and old port by Hurd *)
-val REAL_ARITH0 = RealArith.OLD_REAL_ARITH;
 (* The new port, only suppports integral coefficients *)
 val REAL_ARITH1 = RealArith.REAL_ARITH;
 (* The new port, also suppports rational coefficients *)
