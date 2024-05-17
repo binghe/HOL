@@ -2996,6 +2996,28 @@ QED
 
 val inf_def = Define `inf p = ~(sup (\r. p (~r)))`;
 
+Theorem inf_alt :
+    !p. inf p = ~(sup (IMAGE $~ p))
+Proof
+    RW_TAC real_ss [inf_def]
+ >> Suff `(\r. p (-r)) = (IMAGE numeric_negate p)` >- rw []
+ >> SET_EQ_TAC
+ >> RW_TAC std_ss [IN_IMAGE, IN_APP]
+ >> EQ_TAC >> RW_TAC std_ss []
+ >- (Q.EXISTS_TAC `-x` >> rw [REAL_NEG_NEG])
+ >> rw [REAL_NEG_NEG]
+QED
+
+Theorem INF_DEF_ALT :
+    !p. inf p = ~(sup (\r. ~r IN p)):real
+Proof
+   RW_TAC std_ss []
+   >> PURE_REWRITE_TAC [inf_def, IMAGE_DEF]
+   >> Suff `(\r. p (-r)) = (\r. -r IN p)`
+   >- RW_TAC std_ss []
+   >> RW_TAC std_ss [FUN_EQ_THM,SPECIFICATION]
+QED
+
 (* dual theorem of REAL_SUP *)
 Theorem REAL_INF :
     !P. (?x. P x) /\ (?z. !x. P x ==> z < x) ==>

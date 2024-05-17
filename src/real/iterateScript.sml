@@ -4759,15 +4759,6 @@ val REAL_X_LE_SUP = store_thm
    >> MATCH_MP_TAC REAL_SUP_UBOUND_LE
    >> PROVE_TAC []);
 
-val INF_DEF_ALT = store_thm (* c.f. "inf_alt" in seqTheory *)
-  ("INF_DEF_ALT",
-   ``!p. inf p = ~(sup (\r. ~r IN p)):real``,
-   RW_TAC std_ss []
-   >> PURE_REWRITE_TAC [inf_def, IMAGE_DEF]
-   >> Suff `(\r. p (-r)) = (\r. -r IN p)`
-   >- RW_TAC std_ss []
-   >> RW_TAC std_ss [FUN_EQ_THM,SPECIFICATION]);
-
 val LE_INF = store_thm
   ("LE_INF",
    ``!p r:real. (?x. x IN p) /\ (!x. x IN p ==> r <= x) ==> r <= inf p``,
