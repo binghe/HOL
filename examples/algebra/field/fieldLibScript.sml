@@ -1,11 +1,5 @@
 (* ========================================================================= *)
-(*  A decision procedure for the universal theory of fields                  *)
-(*                                                                           *)
-(*       John Harrison, University of Cambridge Computer Laboratory          *)
-(*            (c) Copyright, University of Cambridge 1998                    *)
-(*                                                                           *)
-(* ------------------------------------------------------------------------- *)
-(* Ported by Chun Tian. The Australian National University (ANU), May 2024   *)
+(*  Field as Type                                                            *)
 (* ========================================================================= *)
 
 open HolKernel boolLib bossLib Parse;
@@ -24,6 +18,10 @@ val std_ss' = std_ss ++ PRED_SET_ss;
 
 val _ = hide "one"; (* use ‘()’ instead *)
 
+(* ------------------------------------------------------------------------- *)
+(*  'a Field as type bijections of a subset of 'a ring                       *)
+(* ------------------------------------------------------------------------- *)
+
 (* NOTE: It must be in form of ‘?r. P r’ *)
 Theorem EXISTS_Field[local] :
     ?r :'a ring. (\r. (?zero one :'a. zero <> one) ==> Field r) r
@@ -36,7 +34,7 @@ QED
 
 (* This defines a new type “:'a Field” *)
 val Field_tydef = rich_new_type {tyname = "Field", exthm = EXISTS_Field,
-                                ABS = "toField", REP = "fromField"};
+                                 ABS = "toField", REP = "fromField"};
 
 (* |- (?zero one. zero <> one) ==> Field (fromField g) *)
 Theorem Field_fromField = #termP_term_REP Field_tydef |> BETA_RULE
@@ -49,6 +47,8 @@ Theorem to_fromField = #absrep_id Field_tydef
 
 (* |- !g h. fromField g = fromField h <=> g = h *)
 Theorem fromField_11 = #term_REP_11 Field_tydef |> Q.GENL [‘g’, ‘h’]
+
+
 
 val _ = export_theory();
 val _ = html_theory "fieldLib";
