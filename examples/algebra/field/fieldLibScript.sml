@@ -48,7 +48,9 @@ Theorem to_fromField = #absrep_id Field_tydef
 (* |- !g h. fromField g = fromField h <=> g = h *)
 Theorem fromField_11 = #term_REP_11 Field_tydef |> Q.GENL [‘g’, ‘h’]
 
-
+Definition field_def :
+    field = toField o raw_ring
+End
 
 val _ = export_theory();
 val _ = html_theory "fieldLib";

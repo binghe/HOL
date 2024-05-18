@@ -29,4 +29,3 @@ ring-selftest.log: selftest.exe
 	$(tee ./selftest.exe 2>&1, $@)
 
 endif
-

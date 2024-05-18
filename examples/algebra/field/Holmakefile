@@ -1,1 +1,17 @@
 INCLUDES = $(HOLDIR)/src/algebra $(HOLDIR)/src/real ../ring
+
+all: $(DEFAULT_TARGETS)
+.PHONY: all
+
+HOLHEAP = heap
+EXTRA_CLEANS = $(HOLHEAP) selftest.exe field-selftest.log
+
+ifdef POLY
+OBJS = ../ring/ringLib
+
+all: $(HOLHEAP)
+
+$(HOLHEAP): $(FULL_OBJPATHS) $(HOLDIR)/bin/hol.state
+	$(protect $(HOLDIR)/bin/buildheap) $(DEBUG_FLAG) -o $@ \
+	-b ../ring/heap $(OBJS)
+endif
