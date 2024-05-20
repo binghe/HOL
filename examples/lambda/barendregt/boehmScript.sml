@@ -3786,7 +3786,14 @@ Proof
      MP_TAC (Q.SPECL [‘X’, ‘EL i Ms’, ‘p’, ‘[]’] subterm_width_thm) \\
      simp [Abbr ‘m’])
  >> DISCH_TAC
- (* NOTE: P(d) is not enough. hnf_children_size (M1 i) <= d + n_max *)
+ >> Know ‘!i. i < k ==> hnf_children_size (M1 i) <= d + n_max’
+ >- (rw [Abbr ‘M1’, GSYM appstar_APPEND] \\
+     MATCH_MP_TAC LESS_EQ_LESS_EQ_MONO >> rw [] \\
+     fs [Abbr ‘m’, o_DEF])
+ >> DISCH_TAC
+ (* NOTE: Thus P(d) is not enough to cover M1, whose hnf_children_size is bounded
+    by d + n_max. Consider the following d_max instead:
+  *)
  >> qabbrev_tac ‘d_max = d + n_max’
  >> qabbrev_tac ‘P = permutator d_max’
  (* construct p2 *)
@@ -3795,6 +3802,20 @@ Proof
  (* NOTE: Z contains ‘vs’ in addition to Y *)
  >> qabbrev_tac ‘Z = Y UNION set vs’
  >> ‘FINITE Z’ by rw [Abbr ‘Z’]
+ (* In the single term case (Boehm_transform_exists_lemma), the folowing l was
+    defined as NEWS (d - m + 1) Z, whose length is just enough for that term.
+
+    Now we have a list of M1's whose children size is bounded by d_max.
+    In the worst case, P(d_max) @* (M1 i) will leave d_max+1 variable bindings
+    at most (in this case, ‘args i = 0 /\ n i = n_max’), and to finally get a
+   "is_ready" term, we should apply a fresh list of d_max+1 variables (l).
+  *)
+ >> qabbrev_tac ‘l = NEWS (d_max + 1) Z’
+ >> Know ‘ALL_DISTINCT l /\ DISJOINT (set l) Z /\ LENGTH l = d_max + 1’
+ >- (rw [Abbr ‘l’, NEWS_def])
+ >> STRIP_TAC
+ >> qabbrev_tac ‘p3 = MAP rightctxt (REVERSE (MAP VAR l))’
+ >> ‘Boehm_transform p3’ by rw [Abbr ‘p3’, MAP_MAP_o, GSYM MAP_REVERSE]
  >> cheat
 QED
 
