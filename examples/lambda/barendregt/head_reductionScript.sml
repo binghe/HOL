@@ -1745,7 +1745,7 @@ Proof
  >> rw [appstar_SNOC]
 QED
 
-Theorem LAMl_size_hnf_absfree[simp] :
+Theorem LAMl_size_appstar[simp] :
     LAMl_size (VAR y @* args) = 0
 Proof
     Cases_on ‘args = []’ >- rw []

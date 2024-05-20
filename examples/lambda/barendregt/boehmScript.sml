@@ -2244,14 +2244,7 @@ Proof
  >> reverse EQ_TAC
  >- (rw [is_ready_def] >- art [] \\
      DISJ2_TAC >> Q.EXISTS_TAC ‘VAR y @* Ns’ >> art [] \\
-     CONJ_ASM1_TAC >- (rw [hnf_appstar]) >> simp [] \\
-     RW_TAC std_ss [head_original_def, LAMl_size_hnf_absfree] \\
-     qunabbrev_tac ‘n’ \\
-    ‘vs = []’ by METIS_TAC [LENGTH_NIL, NEWS_def, FINITE_FV] \\
-     POP_ASSUM (fs o wrap) >> qunabbrev_tac ‘vs’ \\
-    ‘M1 = VAR y @* Ns’ by rw [principle_hnf_reduce, Abbr ‘M1’] \\
-     POP_ORW >> qunabbrev_tac ‘M1’ \\
-     simp [hnf_head_hnf, hnf_children_hnf])
+     rw [head_original_def, hnf_appstar])
  (* stage work *)
  >> rw [is_ready_def] >- art []
  >> DISJ2_TAC
@@ -3741,12 +3734,15 @@ Proof
      irule MAX_SET_PROPERTY >> rw [])
  >> DISCH_TAC
  (* ‘vs’ excludes all free variables in M *)
- >> qabbrev_tac ‘Z = X UNION (BIGUNION (IMAGE FV (set Ms)))’
- >> ‘FINITE Z’ by (rw [Abbr ‘Z’] >> REWRITE_TAC [FINITE_FV])
- >> qabbrev_tac ‘vs = NEWS n_max Z’
- >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) Z /\ LENGTH vs = n_max’
+ >> qabbrev_tac ‘Y = X UNION (BIGUNION (IMAGE FV (set Ms)))’
+ >> ‘FINITE Y’ by (rw [Abbr ‘Y’] >> REWRITE_TAC [FINITE_FV])
+ >> qabbrev_tac ‘vs = NEWS n_max Y’
+ >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) Y /\ LENGTH vs = n_max’
       by (rw [Abbr ‘vs’, NEWS_def])
- (* decompose M0 *)
+ (* construct p1 *)
+ >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE (MAP VAR vs))’
+ >> ‘Boehm_transform p1’ by rw [Abbr ‘p1’, MAP_MAP_o, GSYM MAP_REVERSE]
+ (* decompose M0 by hnf_cases_shared *)
  >> Know ‘!i. i < k ==> ?y args. M0 i = LAMl (TAKE (n i) vs) (VAR y @* args)’
  >- (rw [Abbr ‘n’] >> irule (iffLR hnf_cases_shared) \\
      rw [] >- fs [o_DEF] \\
@@ -3755,8 +3751,8 @@ Proof
      reverse CONJ_TAC
      >- (rw [Abbr ‘M0’] >> MATCH_MP_TAC principle_hnf_FV_SUBSET \\
          rw [GSYM solvable_iff_has_hnf]) \\
-     Q.PAT_X_ASSUM ‘DISJOINT (set vs) Z’ MP_TAC \\
-     rw [Abbr ‘Z’] >> rw [Once DISJOINT_SYM] \\
+     Q.PAT_X_ASSUM ‘DISJOINT (set vs) Y’ MP_TAC \\
+     rw [Abbr ‘Y’] >> rw [Once DISJOINT_SYM] \\
      POP_ASSUM MATCH_MP_TAC \\
      Q.EXISTS_TAC ‘EL i Ms’ >> rw [EL_MEM])
  (* now assert two functions y and args for each term in Ms *)
@@ -3790,13 +3786,15 @@ Proof
      MP_TAC (Q.SPECL [‘X’, ‘EL i Ms’, ‘p’, ‘[]’] subterm_width_thm) \\
      simp [Abbr ‘m’])
  >> DISCH_TAC
- (* construct p1 *)
- >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE (MAP VAR vs))’
- >> ‘Boehm_transform p1’ by rw [Abbr ‘p1’, MAP_MAP_o, GSYM MAP_REVERSE]
- >> qabbrev_tac ‘P = permutator d’
+ (* NOTE: P(d) is not enough. hnf_children_size (M1 i) <= d + n_max *)
+ >> qabbrev_tac ‘d_max = d + n_max’
+ >> qabbrev_tac ‘P = permutator d_max’
  (* construct p2 *)
  >> qabbrev_tac ‘p2 = GENLIST (\i. [P/y i]) k’
  >> ‘Boehm_transform p2’ by rw [Boehm_transform_def, Abbr ‘p2’, EVERY_GENLIST]
+ (* NOTE: Z contains ‘vs’ in addition to Y *)
+ >> qabbrev_tac ‘Z = Y UNION set vs’
+ >> ‘FINITE Z’ by rw [Abbr ‘Z’]
  >> cheat
 QED
 
