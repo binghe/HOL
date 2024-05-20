@@ -3802,10 +3802,7 @@ Proof
  (* NOTE: Z contains ‘vs’ in addition to Y *)
  >> qabbrev_tac ‘Z = Y UNION set vs’
  >> ‘FINITE Z’ by rw [Abbr ‘Z’]
- (* In the single term case (Boehm_transform_exists_lemma), the folowing l was
-    defined as NEWS (d - m + 1) Z, whose length is just enough for that term.
-
-    Now we have a list of M1's whose children size is bounded by d_max.
+ (* NOTE: Now we have a list of M1's whose children size is bounded by d_max.
     In the worst case, P(d_max) @* (M1 i) will leave d_max+1 variable bindings
     at most (in this case, ‘args i = 0 /\ n i = n_max’), and to finally get a
    "is_ready" term, we should apply a fresh list of d_max+1 variables (l).
@@ -3814,15 +3811,24 @@ Proof
  >> Know ‘ALL_DISTINCT l /\ DISJOINT (set l) Z /\ LENGTH l = d_max + 1’
  >- (rw [Abbr ‘l’, NEWS_def])
  >> STRIP_TAC
+ (* p3 is the maximal possible fresh list to be applied after the permutator *)
  >> qabbrev_tac ‘p3 = MAP rightctxt (REVERSE (MAP VAR l))’
  >> ‘Boehm_transform p3’ by rw [Abbr ‘p3’, MAP_MAP_o, GSYM MAP_REVERSE]
+ (* pre-final stage *)
+ >> Q.EXISTS_TAC ‘p3 ++ p2 ++ p1’
+ >> CONJ_ASM1_TAC
+ >- (MATCH_MP_TAC Boehm_transform_APPEND >> art [] \\
+     MATCH_MP_TAC Boehm_transform_APPEND >> art [])
+ >> Q.X_GEN_TAC ‘M’
+ >> simp [MEM_EL]
+ (* now we focus on M = EL i Ms (i < k) *)
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘i’ STRIP_ASSUME_TAC)
  >> cheat
 QED
 
 (* NOTE: ‘p <> []’ can be removed now *)
 Theorem agree_upto_lemma_2 :
-    !X Ms p. FINITE X /\ (!M. MEM M Ms ==> p IN ltree_paths (BTe X M)) /\
-             EVERY solvable Ms /\ Ms agree_upto p ==>
+    !X Ms p. FINITE X /\ EVERY (\e. subterm X e p <> NONE) Ms /\ Ms agree_upto p ==>
             ?pi. Boehm_transform pi /\ (MAP (apply pi) Ms) agree_upto p
 Proof
     cheat
@@ -3830,12 +3836,11 @@ QED
 
 (* Lemma 10.3.11 (3) [1. p.251] *)
 Theorem agree_upto_lemma_3 :
-    !Ns p. (!X M. MEM M Ns ==> p IN ltree_paths (BTe X M)) /\
-           Ns agree_upto p ==>
-           ?pi. Boehm_transform pi /\
-                !M N. MEM M Ns /\ MEM N Ns ==>
-                     (subterm_equivalent p M N <=>
-                      subterm_equivalent p (apply pi M) (apply pi N))
+    !X Ms p. FINITE X /\ EVERY (\e. subterm X e p <> NONE) Ms /\ Ms agree_upto p ==>
+             ?pi. Boehm_transform pi /\
+                  !M N. MEM M Ns /\ MEM N Ns ==>
+                       (subterm_equivalent p M N <=>
+                        subterm_equivalent p (apply pi M) (apply pi N))
 Proof
     cheat
 QED
