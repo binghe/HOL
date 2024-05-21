@@ -10,18 +10,18 @@ open HolKernel boolLib Parse;
 infix 3 |> thenf orelsef;
 
 (*---------------------------------------------------------------------------
- * Fake for SML/NJ: it does not use Interrupt anyway so it won't ever
+ * Fake for NJSML: it does not use Interrupt anyway so it won't ever
  * get raised.
  *---------------------------------------------------------------------------*)
+(* exception Interrupt;   *)
 
-(* exception Interrupt; *)
+
 
 (*---------------------------------------------------------------------
  *               Exceptions
  *--------------------------------------------------------------------*)
 
 val ERR = mk_HOL_ERR "liteLib"
-fun failwith s = raise ERR "?" s
 
 fun STRUCT_ERR s (func,mesg) = raise Feedback.mk_HOL_ERR s func mesg
 fun STRUCT_WRAP s (func,exn) = raise Feedback.wrap_exn s func exn
@@ -87,13 +87,14 @@ fun rotr lst =
    let val (front,last) = Lib.front_last lst
    in last::front
    end
-   handle HOL_ERR _ => failwith "rotr: empty list";
+   handle HOL_ERR _ => failwith "rotr: empty list"
+
 
 fun replicate (x,n) =
    let fun repl 0 = []
          | repl n = x::repl (n-1)
    in repl n
-   end;
+   end
 
 fun upto (n,m) = if n >= m then [] else n::upto (n+1,m);
 
@@ -231,6 +232,12 @@ val strip_imp = splitlist dest_imp;
 val freesl = free_varsl;
 
 (* ------------------------------------------------------------------------- *)
+(* Grabbing left operand of a binary operator (or something coextensive!)    *)
+(* ------------------------------------------------------------------------- *)
+
+val lhand = Term.rand o Term.rator;;
+
+(* ------------------------------------------------------------------------- *)
 (* Like mk_comb, but instantiates type variables in rator if necessary.      *)
 (* ------------------------------------------------------------------------- *)
 
@@ -283,7 +290,20 @@ fun COMB2_CONV lconv rconv tm =
 
 val COMB_CONV = Lib.W COMB2_CONV;;
 
-val ABS_CONV = Conv.ABS_CONV;
+(* NOTE: this function is conflict with Type.alpha *)
+fun alpha v tm =
+  let
+    val (v0,bod) = Term.dest_abs tm
+                   handle HOL_ERR _ => failwith "alpha: Not an abstraction"
+  in
+    if aconv v v0 then tm
+    else if not (Term.free_in v bod) then
+      Term.mk_abs(v, Term.subst [Lib.|->(v0,v)] bod)
+    else failwith "alpha: Invalid new variable"
+  end;
+
+
+val ABS_CONV = Conv.ABS_CONV
 
 val BODY_CONV =
  let fun dest_quant tm =
@@ -296,7 +316,7 @@ val BODY_CONV =
     let val (quants,bod) = strip_quant tm
     in Lib.itlist(fn (q,v) => fn th => AP_TERM q (ABS v th)) quants (conv bod)
     end
- end;
+ end;;
 
 (* ------------------------------------------------------------------------- *)
 (* Faster depth conversions using failure rather than returning a REFL.      *)
@@ -463,26 +483,6 @@ in
     fn s => uniq (Lib.sort term_le s)
 end;
 
-(* ------------------------------------------------------------------------- *)
-(* HOL-Light compatible tactic names                                         *)
-(* ------------------------------------------------------------------------- *)
-
 val ANTS_TAC = impl_tac;
 
-(* ------------------------------------------------------------------------- *)
-(* Alpha conversion term operation.                                          *)
-(* ------------------------------------------------------------------------- *)
-
-(* NOTE: this function is name-conflict with Type.alpha *)
-fun alpha v tm =
-  let
-    val (v0,bod) = Term.dest_abs tm
-                   handle HOL_ERR _ => failwith "alpha: Not an abstraction"
-  in
-    if aconv v v0 then tm
-    else if not (Term.free_in v bod) then
-      Term.mk_abs(v, Term.subst [Lib.|->(v0,v)] bod)
-    else failwith "alpha: Invalid new variable"
-  end;
-
-end; (* struct *)
+end;

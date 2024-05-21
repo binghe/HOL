@@ -97,6 +97,7 @@ sig
     val dest_binop : term -> term -> term * term
     val strip_binop : term -> term -> term list * term
     val binops : term -> term -> term list
+    val lhand : term -> term
 
     val mk_icomb : term * term -> term
     val list_mk_icomb : term -> term list -> term
@@ -160,5 +161,4 @@ sig
     val freesl : term list -> term list
 
     val ANTS_TAC    : tactic
-
 end
