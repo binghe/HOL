@@ -137,7 +137,10 @@ Proof
  >> REWRITE_TAC [ring_exp_0, ring_exp_SUC]
 QED
 
-(* NOTE: not used, only to make sure ‘ring_inv’ is not treated as variables *)
+(* NOTE: not used, only to make sure ‘ring_inv’ is not treated as variables
+
+   |- !r. ring_inv r = Inv (fromRing r)
+ *)
 Definition ring_inv_def :
     ring_inv (r :'a Ring) = (Invertibles ((fromRing r).prod)).inv
 End

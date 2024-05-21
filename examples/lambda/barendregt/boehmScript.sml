@@ -3823,6 +3823,12 @@ Proof
  >> simp [MEM_EL]
  (* now we focus on M = EL i Ms (i < k) *)
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘i’ STRIP_ASSUME_TAC)
+ >> ‘solvable M’ by rw []
+ (* calculating ‘apply p1 (M0 i)’ *)
+ >> Know ‘apply p1 (M0 i) == M1 i’
+ >- cheat
+ (* calculating ‘apply p2 ..’ *)
+ (* calculating ‘apply p3 ..’ *)
  >> cheat
 QED
 
