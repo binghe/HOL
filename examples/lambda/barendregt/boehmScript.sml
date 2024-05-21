@@ -2172,6 +2172,12 @@ Proof
  >> rw [APPEND_SNOC]
 QED
 
+Theorem Boehm_apply_SNOC_SUB :
+    !(N :term) v p M. apply (SNOC [N/v] p) M = apply p ([N/v] M)
+Proof
+    rw [apply_def, FOLDR_SNOC]
+QED
+
 Theorem Boehm_apply_MAP_rightctxt :
     !Ns t. apply (MAP rightctxt Ns) t = t @* (REVERSE Ns)
 Proof
@@ -3826,8 +3832,28 @@ Proof
  >> ‘solvable M’ by rw []
  (* calculating ‘apply p1 (M0 i)’ *)
  >> Know ‘apply p1 (M0 i) == M1 i’
- >- cheat
- (* calculating ‘apply p2 ..’ *)
+ >- (rw [Abbr ‘p1’, Boehm_apply_MAP_rightctxt'] \\
+     GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites
+       [ISPECL [“(n :num -> num) i”, “MAP (VAR :string -> term) vs”] (GSYM TAKE_DROP)] \\
+     REWRITE_TAC [appstar_APPEND] \\
+     MATCH_MP_TAC lameq_appstar_cong \\
+     rw [GSYM MAP_TAKE])
+ >> DISCH_TAC
+ >> Know ‘!t args. apply p2 (t @* args) = apply p2 t @* MAP (apply p2) args’
+ >- (simp [Abbr ‘p2’] \\
+     Q.SPEC_TAC (‘k’, ‘j’) \\
+     Induct_on ‘j’ >- rw [] \\
+     rw [GENLIST, appstar_SUB] \\
+     qabbrev_tac ‘t' = [P/y j] t’ \\
+     AP_TERM_TAC \\
+     rw [LIST_EQ_REWRITE, EL_MAP])
+ >> DISCH_TAC
+ (* calculating ‘apply p2 (M1 i)’ *)
+ >> Know ‘apply p2 (M1 i) =
+          P @* MAP (apply p2) (args i) @* MAP (apply p2) (DROP (n i) (MAP VAR vs))’
+ >- (
+     cheat)
+ >> DISCH_TAC
  (* calculating ‘apply p3 ..’ *)
  >> cheat
 QED
