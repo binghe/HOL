@@ -60,35 +60,35 @@ End
 (* ------------------------------------------------------------------------- *)
 
 Definition field_carrier_def :
-    field_carrier (r :'a Field) = IMAGE THE (fromField r).carrier
+    field_carrier (r :'a Field) = (fromField r).carrier
 End
 
 Definition field_0_def :
-    field_0 (r :'a Field) = THE (fromField r).sum.id
+    field_0 (r :'a Field) = (fromField r).sum.id
 End
 
 Definition field_1_def :
-    field_1 (r :'a Field) = THE (fromField r).prod.id
+    field_1 (r :'a Field) = (fromField r).prod.id
 End
 
 Definition field_neg_def :
-    field_neg (r :'a Field) x = THE ((fromField r).sum.inv (SOME x))
+    field_neg (r :'a Field) = (fromField r).sum.inv
 End
 
 Definition field_add_def :
-    field_add (r :'a Field) x y = THE ((fromField r).sum.op (SOME x) (SOME y))
+    field_add (r :'a Field) = (fromField r).sum.op
 End
 
 Definition field_sub_def :
-    field_sub (r :'a Field) x y = THE (ring$ring_sub (fromField r) (SOME x) (SOME y))
+    field_sub (r :'a Field) = ring$ring_sub (fromField r)
 End
 
 Definition field_mul_def :
-    field_mul (r :'a Field) x y = THE ((fromField r).prod.op (SOME x) (SOME y))
+    field_mul (r :'a Field) = (fromField r).prod.op
 End
 
 Definition field_pow_def :
-    field_pow (r :'a Field) x n = THE ((fromField r).prod.exp (SOME x) n)
+    field_pow (r :'a Field) = (fromField r).prod.exp
 End
 
 Theorem FIELD_0 :
@@ -97,7 +97,6 @@ Proof
     Q.X_GEN_TAC ‘r0’
  >> Q.ABBREV_TAC ‘r = fromField r0’
  >> rw [field_0_def, field_carrier_def]
- >> Q.EXISTS_TAC ‘r.sum.id’ >> art []
  >> MATCH_MP_TAC field_zero_element
  >> rw [Abbr ‘r’]
 QED
@@ -108,31 +107,19 @@ Proof
     Q.X_GEN_TAC ‘r0’
  >> Q.ABBREV_TAC ‘r = fromField r0’
  >> rw [field_1_def, field_carrier_def]
- >> Q.EXISTS_TAC ‘r.prod.id’ >> art []
  >> MATCH_MP_TAC field_one_element
  >> rw [Abbr ‘r’]
 QED
 
-(* NOTE: There's no way to guarantee that the underlying ‘Ring (r :'a option ring)’
-   does not use ‘NONE’ as part of its carrier.
-
-Theorem FIELD_01 :
+Theorem FIELD_NE_01 :
     !r. field_0 r <> field_1 r
 Proof
     Q.X_GEN_TAC ‘r0’
  >> Q.ABBREV_TAC ‘r = fromField r0’
  >> ‘Field r’ by rw [Abbr ‘r’]
- >> ‘IntegralDomain r’ by PROVE_TAC [field_is_integral_domain]
- >> rw [field_0_def, field_1_def]
- 
- , IntegralDomain_def]
- >> POP_ASSUM (MP_TAC o Q.SPECL [‘r.prod.id’, ‘r.sum.id’])
- >> impl_tac
- >- (CONJ_TAC >|
-     [ MATCH_MP_TAC field_one_element >> art [],
-       MATCH_MP_TAC field_zero_element >> art [] ])
- >> rw []
- *)
+ >> Know ‘IntegralDomain r’ >- rw [field_is_integral_domain]
+ >> rw [field_0_def, field_1_def, IntegralDomain_def]
+QED
 
 val _ = export_theory();
 val _ = html_theory "fieldLib";
