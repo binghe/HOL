@@ -1898,6 +1898,12 @@ Proof
  >> PROVE_TAC [FCP_CONCAT_THM]
 QED
 
+Theorem pair_operation_CONS :
+    pair_operation (\x y. [x; y]) (EL 0) (EL 1)
+Proof
+    rw [pair_operation_def]
+QED
+
 val general_cross_def = Define
    ‘general_cross (cons :'a -> 'b -> 'c) A B = {cons a b | a IN A /\ b IN B}’;
 
