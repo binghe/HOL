@@ -8,7 +8,7 @@ structure hurdUtils :> hurdUtils =
 struct
 
 open Susp HolKernel Parse Hol_pp boolLib metisLib bossLib BasicProvers;
-open pairTheory res_quanTools pred_setTheory; (* for RESQ_STRIP_TAC *)
+open mesonLib pairTheory res_quanTools pred_setTheory; (* for RESQ_STRIP_TAC *)
 
 infixr 0 oo THENR ORELSER ## thenf orelsef;
 
@@ -89,12 +89,7 @@ fun firstf [] _ = raise ERR "firstf" "out of combinators"
 (* Combinators *)
 
 fun A f x = f x;
-fun C f x y = f y x;
-fun I x = x;
-fun K x y = x;
 fun N 0 _ x = x | N 1 f x = f x | N n f x = N (n - 1) f (f x);
-fun S f g x = f x (g x);
-fun W f x = f x x;
 fun f oo g = fn x => f o (g x);
 
 (* Pairs *)
@@ -103,12 +98,8 @@ infix 3 ##
 fun (f ## g) (x, y) = (f x, g y);
 fun D x = (x, x);
 fun Df f = f ## f;
-fun fst (x,_) = x;
-fun snd (_,y) = y;
 fun add_fst x y = (x, y);
 fun add_snd x y = (y, x);
-fun curry f x y = f (x, y);
-fun uncurry f (x, y) = f x y;
 fun equal x y = (x = y);
 
 fun pair_to_string fst_to_string snd_to_string (a, b) =
@@ -718,8 +709,12 @@ fun var_match vars tm tm' =
 (* Thms.                                                                 *)
 (* --------------------------------------------------------------------- *)
 
-val FUN_EQ = prove (``!f g. (f = g) = (!x. f x = g x)``, PROVE_TAC [EQ_EXT]);
-val SET_EQ = prove (``!s t. (s = t) = (!x. x IN s = x IN t)``,
+(* Disable mesonLib vebose (temporarily) *)
+val _ = mesonLib.chatting := 0;
+
+val FUN_EQ = prove (“!(f :'a -> 'b) g. (f = g) <=> (!x. f x = g x)”,
+                    PROVE_TAC [EQ_EXT]);
+val SET_EQ = prove (“!s t :'a -> bool. (s = t) <=> (!x. x IN s = x IN t)”,
                     PROVE_TAC [SPECIFICATION, FUN_EQ]);
 
 val hyps = foldl (fn (h,t) => tunion (hyp h) t) [];
@@ -1239,5 +1234,8 @@ fun ASM_MATCH_MP_TAC_N depth ths =
 val ASM_MATCH_MP_TAC = ASM_MATCH_MP_TAC_N 10;
 
 val art = ASM_REWRITE_TAC;
+
+(* Re-enable mesonLib vebose *)
+val _ = mesonLib.chatting := 1;
 
 end; (* hurdUtils *)
