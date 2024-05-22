@@ -244,9 +244,6 @@ sig
   val specl : term list -> term -> term
   val var_match : vars -> term -> term -> substitution
 
-  (* Theorems *)
-  val FUN_EQ : thm
-  val SET_EQ : thm
   val hyps : thm list -> term list
   val LHS : thm -> term
   val RHS : thm -> term
