@@ -3705,7 +3705,7 @@ End
  *)
 Theorem agree_upto_lemma_1 :
     !X Ms p. FINITE X /\ p <> [] /\ EVERY (\e. subterm X e p <> NONE) Ms ==>
-             ?pi. Boehm_transform pi /\ !M. MEM M Ms ==> is_ready (apply pi M)
+             ?pi. Boehm_transform pi /\ EVERY (is_ready o (apply pi)) Ms
 Proof
     rpt STRIP_TAC
  >> qabbrev_tac ‘k = LENGTH Ms’
@@ -3825,11 +3825,12 @@ Proof
  >> CONJ_ASM1_TAC
  >- (MATCH_MP_TAC Boehm_transform_APPEND >> art [] \\
      MATCH_MP_TAC Boehm_transform_APPEND >> art [])
- >> Q.X_GEN_TAC ‘M’
- >> simp [MEM_EL]
+ >> simp [EVERY_EL]
+ >> Q.X_GEN_TAC ‘i’
+ >> DISCH_TAC
  (* now we focus on M = EL i Ms (i < k) *)
- >> DISCH_THEN (Q.X_CHOOSE_THEN ‘i’ STRIP_ASSUME_TAC)
- >> ‘solvable M’ by rw []
+ >> qabbrev_tac ‘M = EL i Ms’
+ >> ‘solvable M’ by rw [Abbr ‘M’]
  (* calculating ‘apply p1 (M0 i)’ *)
  >> Know ‘apply p1 (M0 i) == M1 i’
  >- (rw [Abbr ‘p1’, Boehm_apply_MAP_rightctxt'] \\
@@ -3839,6 +3840,7 @@ Proof
      MATCH_MP_TAC lameq_appstar_cong \\
      rw [GSYM MAP_TAKE])
  >> DISCH_TAC
+ (* NOTE: This holds only if the Boehm transform is made of substitutions. *)
  >> Know ‘!t args. apply p2 (t @* args) = apply p2 t @* MAP (apply p2) args’
  >- (simp [Abbr ‘p2’] \\
      Q.SPEC_TAC (‘k’, ‘j’) \\
@@ -3851,7 +3853,8 @@ Proof
  (* calculating ‘apply p2 (M1 i)’ *)
  >> Know ‘apply p2 (M1 i) =
           P @* MAP (apply p2) (args i) @* MAP (apply p2) (DROP (n i) (MAP VAR vs))’
- >- (
+ >- (ASM_SIMP_TAC std_ss [GSYM appstar_APPEND, MAP_APPEND] \\
+     Suff ‘apply p2 (VAR (y i)) = P’ >- rw [] \\
      cheat)
  >> DISCH_TAC
  (* calculating ‘apply p3 ..’ *)
