@@ -777,8 +777,8 @@ fun N_BETA_CONV 0 = QCONV ALL_CONV
   | N_BETA_CONV n = RATOR_CONV (N_BETA_CONV (n - 1)) THENC TRYC BETA_CONV;
 
 local
-  val EQ_NEG_T = PROVE [] ``!a. (~a = T) = (a = F)``
-  val EQ_NEG_F = PROVE [] ``!a. (~a = F) = (a = T)``
+  val EQ_NEG_T = DECIDE ``!a. (~a = T) <=> (a = F)``
+  val EQ_NEG_F = DECIDE ``!a. (~a = F) <=> (a = T)``
   val EQ_NEG_T_CONV = REWR_CONV EQ_NEG_T
   val EQ_NEG_F_CONV = REWR_CONV EQ_NEG_F
 in
