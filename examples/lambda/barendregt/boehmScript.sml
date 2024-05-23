@@ -7,7 +7,7 @@ open HolKernel boolLib Parse bossLib BasicProvers;
 (* core theories *)
 open optionTheory arithmeticTheory pred_setTheory listTheory rich_listTheory
      llistTheory relationTheory ltreeTheory pathTheory posetTheory hurdUtils
-     finite_mapTheory topologyTheory;
+     finite_mapTheory topologyTheory listRangeTheory;
 
 open binderLib termTheory appFOLDLTheory chap2Theory chap3Theory nomsetTheory
      head_reductionTheory standardisationTheory solvableTheory reductionEval;
@@ -3805,6 +3805,33 @@ Proof
  (* construct p2 *)
  >> qabbrev_tac ‘p2 = GENLIST (\i. [P/y i]) k’
  >> ‘Boehm_transform p2’ by rw [Boehm_transform_def, Abbr ‘p2’, EVERY_GENLIST]
+ (* p2 can be represented by an ISUB *)
+ >> qabbrev_tac ‘sub = REVERSE (GENLIST (\i. (P,y i)) k)’
+ >> Know ‘!t. apply p2 t = t ISUB sub’
+ >- (simp [Abbr ‘p2’, Abbr ‘sub’] \\
+     Q.SPEC_TAC (‘k’, ‘j’) \\
+     Induct_on ‘j’ >- rw [] \\
+     rw [GENLIST, REVERSE_SNOC])
+ >> DISCH_TAC
+ (* properties of sub *)
+ >> Know ‘DOM sub = IMAGE y (count k)’
+ >- (simp [Abbr ‘sub’] \\
+     Q.SPEC_TAC (‘k’, ‘j’) \\
+     Induct_on ‘j’ >- rw [DOM_DEF] \\
+     rw [GENLIST, REVERSE_SNOC, DOM_DEF, COUNT_SUC] \\
+     SET_TAC [])
+ >> DISCH_TAC
+ >> Know ‘FVS sub = {}’
+ >- (simp [Abbr ‘sub’] \\
+     Q.SPEC_TAC (‘k’, ‘j’) \\
+     Induct_on ‘j’ >- rw [FVS_DEF] \\
+     rw [GENLIST, REVERSE_SNOC, FVS_DEF, COUNT_SUC] \\
+     rw [Abbr ‘P’, FV_permutator])
+ >> DISCH_TAC
+ >> Know ‘!i. VAR (y i) ISUB sub = P’
+ >- (
+     cheat)
+ >> DISCH_TAC
  (* NOTE: Z contains ‘vs’ in addition to Y *)
  >> qabbrev_tac ‘Z = Y UNION set vs’
  >> ‘FINITE Z’ by rw [Abbr ‘Z’]
@@ -3840,23 +3867,12 @@ Proof
      MATCH_MP_TAC lameq_appstar_cong \\
      rw [GSYM MAP_TAKE])
  >> DISCH_TAC
- (* NOTE: This holds only if the Boehm transform is made of substitutions. *)
- >> Know ‘!t args. apply p2 (t @* args) = apply p2 t @* MAP (apply p2) args’
- >- (simp [Abbr ‘p2’] \\
-     Q.SPEC_TAC (‘k’, ‘j’) \\
-     Induct_on ‘j’ >- rw [] \\
-     rw [GENLIST, appstar_SUB] \\
-     qabbrev_tac ‘t' = [P/y j] t’ \\
-     AP_TERM_TAC \\
-     rw [LIST_EQ_REWRITE, EL_MAP])
- >> DISCH_TAC
  (* calculating ‘apply p2 (M1 i)’ *)
- >> Know ‘apply p2 (M1 i) =
-          P @* MAP (apply p2) (args i) @* MAP (apply p2) (DROP (n i) (MAP VAR vs))’
- >- (ASM_SIMP_TAC std_ss [GSYM appstar_APPEND, MAP_APPEND] \\
-     Suff ‘apply p2 (VAR (y i)) = P’ >- rw [] \\
-     cheat)
- >> DISCH_TAC
+ >> ‘apply p2 (M1 i) =
+     P @* MAP (\t. t ISUB sub) (args i) @* MAP (\t. t ISUB sub) (DROP (n i) (MAP VAR vs))’
+       by (rw [GSYM appstar_APPEND, MAP_APPEND, appstar_ISUB])
+ >> qabbrev_tac ‘tl = MAP (\t. t ISUB sub) (DROP (n i) (MAP VAR vs))’ (* garbage *)
+ >> qabbrev_tac ‘args' = MAP (\t. t ISUB sub) (args i)’
  (* calculating ‘apply p3 ..’ *)
  >> cheat
 QED
