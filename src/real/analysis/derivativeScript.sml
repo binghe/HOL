@@ -23,7 +23,7 @@ open numTheory numLib unwindLib tautLib Arith prim_recTheory pairTheory
 
 open realTheory realLib topologyTheory cardinalTheory;
 
-open hurdUtils iterateTheory real_topologyTheory;
+open hurdUtils iterateTheory real_sigmaTheory real_topologyTheory;
 
 val _ = new_theory "derivative";
 
