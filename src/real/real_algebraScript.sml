@@ -8,7 +8,7 @@
 
 open HolKernel boolLib bossLib Parse;
 
-open pred_setTheory realTheory iterateTheory dep_rewrite bagTheory
+open pred_setTheory realTheory iterateTheory real_sigmaTheory dep_rewrite bagTheory
      monoidTheory groupTheory ringTheory;
 
 val _ = new_theory "real_algebra";

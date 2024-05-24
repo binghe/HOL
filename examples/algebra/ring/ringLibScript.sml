@@ -12,7 +12,7 @@ open HolKernel boolLib bossLib Parse;
 
 open combinTheory pred_setTheory pred_setLib arithmeticTheory integerTheory
      numLib intLib mesonLib hurdUtils cardinalTheory oneTheory newtypeTools
-     tautLib metisLib liteLib Ho_Rewrite;
+     tautLib metisLib liteLib Ho_Rewrite iterateTheory;
 
 open monoidTheory groupTheory ringTheory;
 
@@ -1820,6 +1820,265 @@ Proof
                         RING_NEG_NEG, RING_NEG_ADD, RING_MUL_LNEG, RING_MUL_RNEG] THEN
     ASM_SIMP_TAC std_ss[RING_ADD_AC, IN_UNIV]
 QED
+
+(* ------------------------------------------------------------------------- *)
+(* Monoid of monomials over an arbitrary set of "variables".                 *)
+(* ------------------------------------------------------------------------- *)
+
+Definition monomial_1 :
+    monomial_1 = \i :'v. (0 :num)
+End
+
+Definition monomial_mul :
+    monomial_mul (m1 :'v -> num) (m2 :'v -> num) = \i. m1 i + m2 i
+End
+
+Definition monomial_div :
+    monomial_div (m1 :'v -> num) (m2 :'v -> num) = \i. m1 i - m2 i
+End
+
+Definition monomial_restrict :
+    monomial_restrict s (m :'v -> num) = \i. if i IN s then m i else 0
+End
+
+Definition monomial_divides :
+    monomial_divides (m1 :'v -> num) (m2 :'v -> num) <=> !i. m1 i <= m2 i
+End
+
+Definition monomial_var :
+    monomial_var (v :'v) = \i. if i = v then (1 :num) else (0 :num)
+End
+
+Definition monomial_vars :
+    monomial_vars m = {i:'v | m i <> (0 :num)}
+End
+
+(*
+Definition monomial_deg :
+    monomial_deg m = nsum (monomial_vars m) (m :'v -> num)
+End
+
+Definition monomial :
+    monomial (s :'v -> bool) m <=>
+     FINITE(monomial_vars m) /\ (monomial_vars m) SUBSET s
+End
+ *)
+
+(* ------------------------------------------------------------------------- *)
+(* Sum in a ring. The instantiation required is a little ugly since all      *)
+(* the ITSET/iterate stuff is really designed for total operators.           *)
+(* ------------------------------------------------------------------------- *)
+
+(*
+let ring_sum = new_definition
+ `ring_sum r s (f:K->A) =
+        iterate (\x y. if x IN ring_carrier r /\ y IN ring_carrier r
+                       then ring_add r x y
+                       else if x IN ring_carrier r then y
+                       else if y IN ring_carrier r then x
+                       else @z:A. ~(z IN ring_carrier r))
+                {x | x IN s /\ f(x) IN ring_carrier r} f`;;
+ *)
+
+(* ------------------------------------------------------------------------- *)
+(* General power series / polynomial sets and operations.                    *)
+(*                                                                           *)
+(* For the operations we use the name "poly", but they don't care about the  *)
+(* underlying variable support sets, which are always going to be preserved. *)
+(* The idea is they can be used for any kind of polynomials or power series. *)
+(* There is also no inherent cardinality restriction on the "variables".     *)
+(* ------------------------------------------------------------------------- *)
+
+Overload UNIONS[local] = “BIGUNION”
+Overload INTERS[local] = “BIGINTER”
+
+Definition ring_powerseries :
+    ring_powerseries (r :'a Ring) (p :('b -> num) -> 'a) <=>
+        (!m. p m IN ring_carrier r) /\
+        !m. INFINITE(monomial_vars m) ==> p m = ring_0 r
+End
+
+Definition ring_polynomial :
+    ring_polynomial (r :'a Ring) (p :('b -> num) -> 'a) <=>
+        ring_powerseries r p /\ FINITE {m | ~(p m = ring_0 r)}
+End
+
+Definition poly_vars :
+    poly_vars r (p :('a -> num) -> 'b) = UNIONS { monomial_vars m | ~(p m = ring_0 r)}
+End
+
+Definition poly_const :
+    poly_const (r :'a Ring) (c :'a) =
+        \(m:'v -> num). if m = monomial_1 then c else ring_0 r
+End
+
+Definition poly_0 :
+    poly_0 (r :'a Ring) = poly_const r (ring_0 r)
+End
+
+Definition poly_1 :
+    poly_1 (r :'a Ring) = poly_const r (ring_1 r)
+End
+
+Definition poly_add :
+    poly_add (r :'a Ring) p1 p2 = \m :'v -> num. ring_add r (p1 m) (p2 m)
+End
+
+(*
+Definition poly_mul :
+    poly_mul (r :'a Ring) p1 p2 =
+        \m :'v -> num. ring_sum r {(m1,m2) | monomial_mul m1 m2 = m}
+                              (\(m1,m2). ring_mul r (p1 m1) (p2 m2))
+End
+ *)
+
+(* ------------------------------------------------------------------------- *)
+(* Actual polynomial and power series rings.                                 *)
+(* ------------------------------------------------------------------------- *)
+
+(*
+Definition powser_ring :
+    powser_ring (r :'a Ring) (s :'v -> bool) =
+        ring({p | ring_powerseries r p /\ poly_vars r p SUBSET s},
+             poly_0 r,poly_1 r,poly_add r,poly_mul r)
+End
+
+Definition poly_ring :
+    poly_ring (r :'a Ring) (s :'v -> bool) =
+        ring({p | ring_polynomial r p /\ poly_vars r p SUBSET s},
+             poly_0 r,poly_1 r,poly_add r,poly_mul r)
+End
+
+let CARD_EQ_POLY_RING_INFINITE = prove
+ (`!(r:A ring) (s:V->bool).
+        ~trivial_ring r /\ INFINITE s
+        ==> ring_carrier(poly_ring r s) =_c (ring_carrier r) *_c s`,
+  REPEAT STRIP_TAC THEN
+  MP_TAC(ISPECL
+   [`{m | monomial (s:V->bool) m}`; `ring_carrier r:A->bool`;
+    `(\m. ring_0 r):(V->num)->A`] CARD_EQ_RESTRICTED_FUNSPACE_INFINITE) THEN
+  ASM_REWRITE_TAC[] THEN ANTS_TAC THENL
+   [ASM_REWRITE_TAC[GSYM TRIVIAL_RING_ALT] THEN
+    REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; RING_0] THEN
+    FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP
+      (REWRITE_RULE[IMP_CONJ] CARD_EQ_INFINITE)) THEN
+    MATCH_MP_TAC CARD_EQ_MONOMIALS_INFINITE THEN ASM_REWRITE_TAC[];
+    MATCH_MP_TAC EQ_IMP THEN MATCH_MP_TAC CARD_EQ_CONG] THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC CARD_EQ_REFL_IMP THEN
+    REWRITE_TAC[RING_CARRIER_POLY_RING] THEN
+    MP_TAC(ISPEC `r:A ring` RING_0) THEN SET_TAC[];
+    W(MP_TAC o PART_MATCH lhand CARD_MUL_SYM o lhand o snd) THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] CARD_EQ_TRANS) THEN
+    ASM_SIMP_TAC[CARD_MUL_CONG; CARD_EQ_REFL; CARD_EQ_MONOMIALS_INFINITE]]);;
+
+(* ------------------------------------------------------------------------- *)
+(* Zerodivisors and units in polynomial and power series rings.              *)
+(* ------------------------------------------------------------------------- *)
+
+let INTEGRAL_DOMAIN_POWSER_RING = prove
+ (`!(r:A ring) (s:V->bool).
+        integral_domain(powser_ring r s) <=> integral_domain r`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ]
+     INTEGRAL_DOMAIN_MONOMORPHIC_PREIMAGE) THEN
+    MESON_TAC[RING_MONOMORPHISM_POWSER_CONST];
+    REWRITE_TAC[integral_domain; GSYM TRIVIAL_RING_10]] THEN
+  MATCH_MP_TAC MONO_AND THEN REWRITE_TAC[TRIVIAL_POWSER_RING] THEN
+  REWRITE_TAC[RING_CARRIER_POWSER_RING] THEN REWRITE_TAC[POWSER_RING] THEN
+  DISCH_TAC THEN MAP_EVERY X_GEN_TAC [`p:(V->num)->A`; `q:(V->num)->A`] THEN
+  REWRITE_TAC[IN_ELIM_THM] THEN
+  REPEAT(DISCH_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC)) THEN
+  GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM] THEN
+  REWRITE_TAC[DE_MORGAN_THM; FUN_EQ_THM; NOT_FORALL_THM; poly_0] THEN
+  REWRITE_TAC[POLY_CONST_0; poly_mul] THEN DISCH_TAC THEN
+  MP_TAC(ISPEC `(:V)` WO) THEN DISCH_THEN(X_CHOOSE_TAC `l:V->V->bool`) THEN
+  FIRST_ASSUM(ASSUME_TAC o MATCH_MP WOSET_MONOMIAL_LE) THEN
+  FIRST_ASSUM(MP_TAC o CONJUNCT2 o GEN_REWRITE_RULE I [WOSET]) THEN
+  REWRITE_TAC[FLD_MONOMIAL_LE] THEN DISCH_THEN(fun th ->
+    MP_TAC(SPEC `{m | ~((q:(V->num)->A) m = ring_0 r)}` th) THEN
+    MP_TAC(SPEC `{m | ~((p:(V->num)->A) m = ring_0 r)}` th)) THEN
+  ASM_REWRITE_TAC[GSYM MEMBER_NOT_EMPTY; MONOMIAL; IN_ELIM_THM; SUBSET] THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[monomial]; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `mp:V->num` STRIP_ASSUME_TAC) THEN
+  ANTS_TAC THENL [ASM_MESON_TAC[monomial]; ALL_TAC] THEN
+  DISCH_THEN(X_CHOOSE_THEN `mq:V->num` STRIP_ASSUME_TAC) THEN
+  EXISTS_TAC `monomial_mul mp mq:V->num` THEN MATCH_MP_TAC(MESON[]
+   `!m. ~(ring_sum r {m} f = z) /\ ring_sum r s f = ring_sum r {m} f
+        ==> ~(ring_sum r s f = z)`) THEN
+  EXISTS_TAC `(mp:V->num),(mq:V->num)` THEN CONJ_TAC THENL
+   [ASM_SIMP_TAC[RING_SUM_SING; RING_MUL] THEN ASM_MESON_TAC[]; ALL_TAC] THEN
+  MATCH_MP_TAC RING_SUM_SUPERSET THEN
+  REWRITE_TAC[SING_SUBSET; FORALL_IN_GSPEC; IMP_CONJ] THEN
+  REWRITE_TAC[IN_ELIM_PAIR_THM; IN_SING] THEN
+  MAP_EVERY X_GEN_TAC [`np:V->num`; `nq:V->num`] THEN
+  DISCH_TAC THEN REWRITE_TAC[PAIR_EQ; DE_MORGAN_THM] THEN
+  ASM_CASES_TAC `(p:(V->num)->A) np = ring_0 r` THENL
+   [ASM_SIMP_TAC[RING_MUL_LZERO]; ALL_TAC] THEN
+  ASM_CASES_TAC `(q:(V->num)->A) nq = ring_0 r` THENL
+   [ASM_SIMP_TAC[RING_MUL_RZERO]; ALL_TAC] THEN
+  MATCH_MP_TAC(TAUT `~p ==> p ==> q`) THEN STRIP_TAC THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP (MESON[MONOMIAL_LT_REFL]
+   `m' = m ==> !l. ~monomial_lt l m m'`)) THEN
+  DISCH_THEN(MP_TAC o SPEC `l:V->V->bool`) THEN REWRITE_TAC[] THENL
+   [MATCH_MP_TAC MONOMIAL_LTE_MUL2;
+    MATCH_MP_TAC MONOMIAL_LET_MUL2] THEN
+  ASM_SIMP_TAC[monomial_lt; WOSET_IMP_POSET]);;
+
+let INTEGRAL_DOMAIN_POLY_RING = prove
+ (`!(r:A ring) (s:V->bool).
+        integral_domain(poly_ring r s) <=> integral_domain r`,
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+   [ALL_TAC; GEN_REWRITE_TAC LAND_CONV [GSYM INTEGRAL_DOMAIN_POWSER_RING]] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ]
+    INTEGRAL_DOMAIN_MONOMORPHIC_PREIMAGE) THEN
+  MESON_TAC[RING_MONOMORPHISM_POLY_CONST; RING_MONOMORPHISM_POLY_POWSER]);;
+ *)
+
+(*
+Theorem INTEGRAL_DOMAIN_TOTALIZATION :
+    !r :'a Ring.
+        integral_domain r
+        ==> ?r' f. integral_domain r' /\
+                   ring_carrier r' = univ(:num # 'a) /\
+                   ring_monomorphism(r,r') f
+Proof
+    REPEAT STRIP_TAC THEN MP_TAC(snd(EQ_IMP_RULE(ISPECL
+     [`poly_ring (r:A ring) (:num#A)`; `(:num#A)`]
+     ISOMORPHIC_COPY_OF_RING))) THEN
+    ANTS_TAC THENL
+     [MP_TAC(ISPECL [`r:A ring`; `(:num#A)`]
+          CARD_EQ_POLY_RING_INFINITE) THEN
+      ASM_REWRITE_TAC[INFINITE_CROSS_UNIV; num_INFINITE] THEN
+      ASM_SIMP_TAC[INTEGRAL_DOMAIN_IMP_NONTRIVIAL_RING] THEN
+      MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] CARD_EQ_TRANS) THEN
+      MATCH_MP_TAC CARD_MUL_ABSORB THEN
+      REWRITE_TAC[INFINITE_CROSS_UNIV; num_INFINITE;
+                  RING_CARRIER_NONEMPTY] THEN
+      TRANS_TAC CARD_LE_TRANS `(:A)` THEN
+      SIMP_TAC[CARD_LE_SUBSET; SUBSET_UNIV] THEN
+      REWRITE_TAC[GSYM CROSS_UNIV; CROSS; GSYM mul_c] THEN
+      TRANS_TAC CARD_LE_TRANS `{0} *_c (:A)` THEN CONJ_TAC THENL
+       [MATCH_MP_TAC CARD_EQ_IMP_LE THEN ONCE_REWRITE_TAC[CARD_EQ_SYM] THEN
+        REWRITE_TAC[CARD_MUL_LID];
+        MATCH_MP_TAC CARD_LE_MUL THEN REWRITE_TAC[CARD_LE_REFL] THEN
+        REWRITE_TAC[CARD_SING_LE; UNIV_NOT_EMPTY]];
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `r':(num#A)ring` THEN
+      STRIP_TAC THEN ASM_REWRITE_TAC[]] THEN
+    FIRST_ASSUM(MP_TAC o GEN_REWRITE_RULE I [isomorphic_ring]) THEN
+    DISCH_THEN(X_CHOOSE_TAC `f:((num#A->num)->A)->num#A`) THEN
+    EXISTS_TAC `(f:((num#A->num)->A)->num#A) o poly_const (r:A ring)` THEN
+    CONJ_TAC THENL
+     [SUBGOAL_THEN `integral_domain(poly_ring (r:A ring) (:num#A))`
+      MP_TAC THENL
+       [ASM_REWRITE_TAC[INTEGRAL_DOMAIN_POLY_RING]; MATCH_MP_TAC EQ_IMP] THEN
+      MATCH_MP_TAC ISOMORPHIC_RING_INTEGRAL_DOMAINNESS THEN ASM_REWRITE_TAC[];
+      MATCH_MP_TAC RING_MONOMORPHISM_COMPOSE THEN
+      EXISTS_TAC `poly_ring (r:A ring) (:num#A)` THEN
+      REWRITE_TAC[RING_MONOMORPHISM_POLY_CONST] THEN
+      ASM_SIMP_TAC[RING_ISOMORPHISM_IMP_MONOMORPHISM]])
+QED
+*)
 
 val _ = export_theory();
 val _ = html_theory "ringLib";
