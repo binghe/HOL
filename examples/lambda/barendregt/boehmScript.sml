@@ -3806,31 +3806,25 @@ Proof
  >> qabbrev_tac ‘p2 = GENLIST (\i. [P/y i]) k’
  >> ‘Boehm_transform p2’ by rw [Boehm_transform_def, Abbr ‘p2’, EVERY_GENLIST]
  (* p2 can be represented by an ISUB *)
- >> qabbrev_tac ‘sub = REVERSE (GENLIST (\i. (P,y i)) k)’
- >> Know ‘!t. apply p2 t = t ISUB sub’
+ >> qabbrev_tac ‘sub = \j. REVERSE (GENLIST (\i. (P,y i)) j)’
+ >> Know ‘!t. apply p2 t = t ISUB sub k’
  >- (simp [Abbr ‘p2’, Abbr ‘sub’] \\
      Q.SPEC_TAC (‘k’, ‘j’) \\
      Induct_on ‘j’ >- rw [] \\
      rw [GENLIST, REVERSE_SNOC])
  >> DISCH_TAC
  (* properties of sub *)
- >> Know ‘DOM sub = IMAGE y (count k)’
+ >> Know ‘!j. DOM (sub j) = IMAGE y (count j)’
  >- (simp [Abbr ‘sub’] \\
-     Q.SPEC_TAC (‘k’, ‘j’) \\
      Induct_on ‘j’ >- rw [DOM_DEF] \\
      rw [GENLIST, REVERSE_SNOC, DOM_DEF, COUNT_SUC] \\
      SET_TAC [])
  >> DISCH_TAC
- >> Know ‘FVS sub = {}’
+ >> Know ‘!j. FVS (sub j) = {}’
  >- (simp [Abbr ‘sub’] \\
-     Q.SPEC_TAC (‘k’, ‘j’) \\
      Induct_on ‘j’ >- rw [FVS_DEF] \\
      rw [GENLIST, REVERSE_SNOC, FVS_DEF, COUNT_SUC] \\
      rw [Abbr ‘P’, FV_permutator])
- >> DISCH_TAC
- >> Know ‘!i. VAR (y i) ISUB sub = P’
- >- (
-     cheat)
  >> DISCH_TAC
  (* NOTE: Z contains ‘vs’ in addition to Y *)
  >> qabbrev_tac ‘Z = Y UNION set vs’
@@ -3867,13 +3861,35 @@ Proof
      MATCH_MP_TAC lameq_appstar_cong \\
      rw [GSYM MAP_TAKE])
  >> DISCH_TAC
+ >> Know ‘!j t. t IN DOM (sub j) ==> VAR t ISUB (sub j) = P’
+ >- (Induct_on ‘j’ >- rw [Abbr ‘sub’] >> rw [] \\
+     Know ‘P ISUB sub j = P’
+     >- (Q.SPEC_TAC (‘j’, ‘j'’) \\
+         Induct_on ‘j'’ >> fs [GENLIST, REVERSE_SNOC, Abbr ‘sub’] \\
+         Suff ‘[P/y j'] P = P’ >- rw [] \\
+         MATCH_MP_TAC lemma14b >> rw [Abbr ‘P’, FV_permutator]) >> DISCH_TAC \\
+     reverse (Cases_on ‘y x IN DOM (sub j)’)
+     >- (POP_ASSUM MP_TAC >> simp [] \\
+         DISCH_THEN (MP_TAC o (Q.SPEC ‘x’)) >> rw [] \\
+        ‘x = j’ by rw [] >> POP_ORW \\
+         rfs [Abbr ‘sub’, GENLIST, REVERSE_SNOC]) \\
+     rfs [Abbr ‘sub’, GENLIST, REVERSE_SNOC] \\
+     rename1 ‘y x = y z’ \\
+     Cases_on ‘y z = y j’ >> rw [] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘z’ >> art [])
+ >> DISCH_TAC
  (* calculating ‘apply p2 (M1 i)’ *)
  >> ‘apply p2 (M1 i) =
-     P @* MAP (\t. t ISUB sub) (args i) @* MAP (\t. t ISUB sub) (DROP (n i) (MAP VAR vs))’
-       by (rw [GSYM appstar_APPEND, MAP_APPEND, appstar_ISUB])
- >> qabbrev_tac ‘tl = MAP (\t. t ISUB sub) (DROP (n i) (MAP VAR vs))’ (* garbage *)
- >> qabbrev_tac ‘args' = MAP (\t. t ISUB sub) (args i)’
- (* calculating ‘apply p3 ..’ *)
+          P @* MAP (\t. t ISUB sub k) (args i)
+            @* MAP (\t. t ISUB sub k) (DROP (n i) (MAP VAR vs))’
+      by (rw [GSYM appstar_APPEND, MAP_APPEND, appstar_ISUB])
+ >> qabbrev_tac ‘tl = MAP (\t. t ISUB sub k) (DROP (n i) (MAP VAR vs))’
+ >> qabbrev_tac ‘args' = MAP (\t. t ISUB sub k) (args i)’
+ (* calculating ‘apply p2 ...’ *)
+ >> ‘apply p3 (P @* args' @* tl) = P @* args' @* tl @* MAP VAR l’
+       by rw [Abbr ‘p3’, Boehm_apply_MAP_rightctxt']
+ (* now expanding ‘is_ready’ using [is_ready_alt] *)
  >> cheat
 QED
 
