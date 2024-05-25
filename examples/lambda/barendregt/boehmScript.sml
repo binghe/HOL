@@ -3886,10 +3886,36 @@ Proof
       by (rw [GSYM appstar_APPEND, MAP_APPEND, appstar_ISUB])
  >> qabbrev_tac ‘tl = MAP (\t. t ISUB sub k) (DROP (n i) (MAP VAR vs))’
  >> qabbrev_tac ‘args' = MAP (\t. t ISUB sub k) (args i)’
- (* calculating ‘apply p2 ...’ *)
+ (* calculating ‘apply p2 ...’ until reaching hnf *)
  >> ‘apply p3 (P @* args' @* tl) = P @* args' @* tl @* MAP VAR l’
        by rw [Abbr ‘p3’, Boehm_apply_MAP_rightctxt']
+ (* applying permutator_hreduce_thm
+ >> MP_TAC (Q.SPECL [‘Z’, ‘d_max’, ‘args' ++ tl ++ MAP VAR l’]
+                    permutator_hreduce_thm)
+ >> impl_tac
+ >- (simp [Abbr ‘d_max’]
+  *)
+ (* showing ‘apply (p3 ++ p2 ++ p1)’ is solvable *)
+ >> Know ‘solvable (apply (p3 ++ p2 ++ p1) M)’
+ >- (qabbrev_tac ‘p' = p3 ++ p2 ++ p1’ \\
+     Suff ‘apply p' (M0 i) == apply p' M /\ solvable (apply p' (M0 i))’
+     >- METIS_TAC [lameq_solvable_cong] \\
+     CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> art [] \\
+                  SIMP_TAC std_ss [Abbr ‘M’, Abbr ‘M0’] \\
+                  MATCH_MP_TAC lameq_principle_hnf' >> art []) \\
+     SIMP_TAC std_ss [Abbr ‘p'’, Once Boehm_apply_APPEND] \\
+  (* solvable (apply (p3 ++ p2) (apply p1 (M0 i))) *)
+     Suff ‘apply (p3 ++ p2) (apply p1 (M0 i)) == apply (p3 ++ p2) (M1 i) /\
+           solvable (apply (p3 ++ p2) (M1 i))’
+     >- METIS_TAC [lameq_solvable_cong] \\
+     CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> art [] \\
+                  MATCH_MP_TAC Boehm_transform_APPEND >> art []) \\
+     rw [Boehm_apply_APPEND, solvable_iff_has_hnf] \\
+     MATCH_MP_TAC hnf_has_hnf \\
+     cheat)
+ >> DISCH_TAC
  (* now expanding ‘is_ready’ using [is_ready_alt] *)
+ >> rw [is_ready_alt]
  >> cheat
 QED
 
