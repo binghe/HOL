@@ -15,6 +15,7 @@ open termTheory appFOLDLTheory chap2Theory chap3Theory nomsetTheory binderLib
 val _ = new_theory "head_reduction"
 
 val _ = ParseExtras.temp_loose_equality()
+val _ = hide "Y";
 
 Inductive hreduce1 :
 [~BETA:]
@@ -692,11 +693,9 @@ val whstar_FV = store_thm(
   HO_MATCH_MP_TAC relationTheory.RTC_INDUCT THEN
   METIS_TAC [relationTheory.RTC_RULES, whead_FV]);
 
-
-val _ = reveal "Y"
 val whY1 = store_thm(
   "whY1",
-  ``Y @@ f -w-> Yf f``,
+  ``chap2$Y @@ f -w-> Yf f``,
   SRW_TAC [][chap2Theory.Y_def, chap2Theory.Yf_def, LET_THM,
              Once weak_head_cases] THEN
   NEW_ELIM_TAC THEN REPEAT STRIP_TAC THEN
@@ -1832,15 +1831,28 @@ QED
  *---------------------------------------------------------------------------*)
 
 Theorem hreduce_LAMl_appstar_lemma[local] :
-    !pi. ALL_DISTINCT (MAP FST pi) /\
-         EVERY (\e. DISJOINT (FV e) (set (MAP FST pi))) (MAP SND pi) ==>
-         LAMl (MAP FST pi) t @* MAP SND pi -h->* (FEMPTY |++ pi) ' t
+    ALL_DISTINCT (MAP FST pi) /\
+    EVERY (\e. DISJOINT (FV e) (set (MAP FST pi))) (MAP SND pi) ==>
+    LAMl (MAP FST pi) t @* MAP SND pi @* args -h->* (FEMPTY |++ pi) ' t @* args
 Proof
-    Induct_on ‘pi’
+    rpt STRIP_TAC
+ >> Cases_on ‘pi = []’ >- rw [FUPDATE_LIST_THM]
+ (* applying hreduce_rules_appstar (for eliminating args) *)
+ >> MATCH_MP_TAC hreduce_rules_appstar
+ >> CONJ_TAC >- rw [is_abs_appstar]
+ (* extra goal *)
+ >> CONJ_TAC
+ >- (
+     cheat)
+ >> POP_ASSUM K_TAC (* pi <> [] is useless hereafter *)
+ >> NTAC 2 (POP_ASSUM MP_TAC)
+ >> Q.ID_SPEC_TAC ‘pi’
+ >> Induct_on ‘pi’
  >> rw [FUPDATE_LIST_THM] (* only one goal left *)
  (* cleanup antecedents of IH *)
  >> Q.PAT_X_ASSUM
-     ‘_ ==> LAMl (MAP FST pi) t @* MAP SND pi -h->* (FEMPTY |++ pi) ' t’ MP_TAC
+     ‘_ ==> _ ==> LAMl (MAP FST pi) t @* MAP SND pi -h->* (FEMPTY |++ pi) ' t’
+      MP_TAC
  >> Know ‘EVERY (\e. DISJOINT (FV e) (set (MAP FST pi))) (MAP SND pi)’
  >- (POP_ASSUM MP_TAC \\
      rw [EVERY_MEM, MEM_MAP])
@@ -1914,10 +1926,25 @@ Proof
  >> ‘xs = MAP FST pi’ by rw [Abbr ‘pi’, MAP_ZIP]
  >> ‘Ns = MAP SND pi’ by rw [Abbr ‘pi’, MAP_ZIP]
  >> simp []
- >> MATCH_MP_TAC hreduce_LAMl_appstar_lemma >> rw []
+ >> MATCH_MP_TAC
+     (SIMP_RULE (srw_ss()) [] (Q.INST [‘args’ |-> ‘[]’] hreduce_LAMl_appstar_lemma))
+ >> rw []
 QED
 
-val _ = hide "Y";
+Theorem hreduce_LAMl_appstar_ext :
+    !t xs Ns args. ALL_DISTINCT xs /\ (LENGTH xs = LENGTH Ns) /\
+                   EVERY (\e. DISJOINT (FV e) (set xs)) Ns
+               ==> LAMl xs t @* Ns @* args -h->* (FEMPTY |++ ZIP (xs,Ns)) ' t @* args
+Proof
+    RW_TAC std_ss []
+ >> qabbrev_tac ‘n = LENGTH xs’
+ >> qabbrev_tac ‘pi = ZIP (xs,Ns)’
+ >> ‘xs = MAP FST pi’ by rw [Abbr ‘pi’, MAP_ZIP]
+ >> ‘Ns = MAP SND pi’ by rw [Abbr ‘pi’, MAP_ZIP]
+ >> simp []
+ >> MATCH_MP_TAC hreduce_LAMl_appstar_lemma
+ >> rw []
+QED
 
 (* NOTE: ‘permutator n’ contains n + 1 binding variables. Appending at most n
    arbitrary terms, each head reduction step consumes just one of them,
@@ -2188,9 +2215,10 @@ Proof
 QED
 
 Theorem permutator_hreduce_lemma[local] :
-    !vs Ns. ALL_DISTINCT vs /\ ~MEM y vs /\ (LENGTH vs = LENGTH Ns) /\
-            EVERY (\e. DISJOINT (FV e) (set (SNOC y vs))) (SNOC N Ns) ==>
-            LAMl vs (LAM y (VAR y @* MAP VAR vs)) @* Ns @@ N -h->* N @* Ns
+    ALL_DISTINCT vs /\ ~MEM y vs /\ (LENGTH vs = LENGTH Ns) /\
+    EVERY (\e. DISJOINT (FV e) (set (SNOC y vs))) (SNOC N Ns) ==>
+    LAMl vs (LAM y (VAR y @* MAP VAR vs)) @* Ns @@ N @* args -h->*
+    N @* Ns @* args
 Proof
     rpt STRIP_TAC
  >> REWRITE_TAC [GSYM LAMl_SNOC, GSYM appstar_SNOC]
@@ -2199,7 +2227,7 @@ Proof
  >> qabbrev_tac ‘t = VAR y @* MAP VAR vs’
  >> Suff ‘N @* Ns = fromPairs vs' Ns' ' t’
  >- (Rewr' >> REWRITE_TAC [fromPairs_def] \\
-     MATCH_MP_TAC hreduce_LAMl_appstar \\
+     MATCH_MP_TAC hreduce_LAMl_appstar_ext \\
      rw [Abbr ‘vs'’, Abbr ‘Ns'’, ALL_DISTINCT_SNOC] \\
      Q.PAT_X_ASSUM ‘EVERY _ (SNOC N Ns)’ MP_TAC \\
      rw [EVERY_MEM, LIST_TO_SET_SNOC] \\ (* 2 subgoals, same tactics *)
@@ -2234,8 +2262,9 @@ Proof
  >> rw [Abbr ‘vs'’, Abbr ‘Ns'’, ALL_DISTINCT_SNOC]
 QED
 
-Theorem permutator_hreduce_same_length :
-    !n Ns N. (LENGTH Ns = n) ==> permutator n @* Ns @@ N -h->* N @* Ns
+(* NOTE: more arguments remain the same after head reductions *)
+Theorem permutator_hreduce_more :
+    !n Ns N args. (LENGTH Ns = n) ==> permutator n @* Ns @@ N @* args -h->* N @* Ns @* args
 Proof
     rpt STRIP_TAC
  >> qabbrev_tac ‘X = BIGUNION (IMAGE FV (set Ns)) UNION FV N’
@@ -2254,6 +2283,14 @@ Proof
       (* goal 2 (of 2) *)
       Q.PAT_X_ASSUM ‘!s. P’ (MP_TAC o (Q.SPEC ‘FV (e :term)’)) \\
       impl_tac >- (Q.EXISTS_TAC ‘e’ >> art []) >> rw [] ]
+QED
+
+Theorem permutator_hreduce_same_length :
+    !n Ns N. (LENGTH Ns = n) ==> permutator n @* Ns @@ N -h->* N @* Ns
+Proof
+    rpt STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘n’, ‘Ns’, ‘N’, ‘[]’] permutator_hreduce_more)
+ >> rw []
 QED
 
 val _ = export_theory()
