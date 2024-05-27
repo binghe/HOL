@@ -2318,9 +2318,9 @@ QED
    An extra list of free variables ‘l’ may need to append after MAP VAR vs.
  *)
 Theorem hreduce_hnf_appstar_cong :
-    !M vs l y Ns. ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
-                  M -h->* LAMl vs (VAR y @* Ns) ==>
-                  M @* MAP VAR vs @* MAP VAR l -h->* VAR y @* Ns @* MAP VAR l
+    !M vs y Ns args. ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
+                     M -h->* LAMl vs (VAR y @* Ns) ==>
+                     M @* MAP VAR vs @* args -h->* VAR y @* Ns @* args
 Proof
     rpt STRIP_TAC
  >> Know ‘has_hnf M’

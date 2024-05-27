@@ -1394,11 +1394,11 @@ Proof
  >> MATCH_MP_TAC principle_hnf_reduce >> art []
 QED
 
-Theorem principle_hnf_denude_solvable :
-    !M vs l y args. solvable M /\
-       ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
-       principle_hnf M = LAMl vs (VAR y @* args) ==>
-       solvable (M @* MAP VAR vs @* MAP VAR l)
+Theorem principle_hnf_denude_solvable[local] :
+    !M. solvable M /\
+        ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
+        principle_hnf M = LAMl vs (VAR y @* args) ==>
+        solvable (M @* MAP VAR vs @* ls)
 Proof
     rpt GEN_TAC >> STRIP_TAC
  >> qabbrev_tac ‘M0 = principle_hnf M’
@@ -1409,21 +1409,21 @@ Proof
  >> ‘M0 == M’ by rw [lameq_principle_hnf', Abbr ‘M0’]
  >> ‘M0 @* MAP VAR vs == VAR y @* args’ by rw []
  >> ‘M0 @* MAP VAR vs == M @* MAP VAR vs’ by rw [lameq_appstar_cong]
- >> Know ‘M @* MAP VAR vs @* MAP VAR l == VAR y @* args @* MAP VAR l’
+ >> Know ‘M @* MAP VAR vs @* ls == VAR y @* args @* ls’
  >- (MATCH_MP_TAC lameq_appstar_cong \\
      PROVE_TAC [lameq_SYM, lameq_TRANS])
  >> DISCH_TAC
- >> Suff ‘solvable (VAR y @* args @* MAP VAR l)’
+ >> Suff ‘solvable (VAR y @* args @* ls)’
  >- PROVE_TAC [lameq_solvable_cong]
  >> REWRITE_TAC [solvable_iff_has_hnf]
  >> MATCH_MP_TAC hnf_has_hnf >> rw [hnf_appstar]
 QED
 
 Theorem principle_hnf_denude_thm :
-    !l M vs y args. solvable M /\
+    !ls M vs y args. solvable M /\
        ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M) /\
        principle_hnf M = LAMl vs (VAR y @* args) ==>
-       principle_hnf (M @* MAP VAR vs @* MAP VAR l) = VAR y @* args @* MAP VAR l
+       principle_hnf (M @* MAP VAR vs @* ls) = VAR y @* args @* ls
 Proof
     rpt GEN_TAC >> STRIP_TAC
  >> qabbrev_tac ‘M0 = principle_hnf M’
@@ -1431,9 +1431,8 @@ Proof
  >> Know ‘principle_hnf M = M0’ >- rw [Abbr ‘M0’]
  >> simp [principle_hnf_thm', hnf_appstar]
  >> DISCH_TAC
- >> Know ‘solvable (M @* MAP VAR vs @* MAP VAR l)’
+ >> Know ‘solvable (M @* MAP VAR vs @* ls)’
  >- (MATCH_MP_TAC principle_hnf_denude_solvable \\
-     qexistsl_tac [‘y’, ‘args’] \\
      Q.PAT_X_ASSUM ‘M0 = _’ (ONCE_REWRITE_TAC o wrap o SYM) \\
      rw [Abbr ‘M0’])
  >> DISCH_TAC
