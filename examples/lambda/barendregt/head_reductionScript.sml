@@ -2187,6 +2187,75 @@ Proof
  >> PROVE_TAC [MEM_DROP_IMP]
 QED
 
+Theorem permutator_hreduce_lemma[local] :
+    !vs Ns. ALL_DISTINCT vs /\ ~MEM y vs /\ (LENGTH vs = LENGTH Ns) /\
+            EVERY (\e. DISJOINT (FV e) (set (SNOC y vs))) (SNOC N Ns) ==>
+            LAMl vs (LAM y (VAR y @* MAP VAR vs)) @* Ns @@ N -h->* N @* Ns
+Proof
+    rpt STRIP_TAC
+ >> REWRITE_TAC [GSYM LAMl_SNOC, GSYM appstar_SNOC]
+ >> qabbrev_tac ‘vs' = SNOC y vs’
+ >> qabbrev_tac ‘Ns' = SNOC N Ns’
+ >> qabbrev_tac ‘t = VAR y @* MAP VAR vs’
+ >> Suff ‘N @* Ns = fromPairs vs' Ns' ' t’
+ >- (Rewr' >> REWRITE_TAC [fromPairs_def] \\
+     MATCH_MP_TAC hreduce_LAMl_appstar \\
+     rw [Abbr ‘vs'’, Abbr ‘Ns'’, ALL_DISTINCT_SNOC] \\
+     Q.PAT_X_ASSUM ‘EVERY _ (SNOC N Ns)’ MP_TAC \\
+     rw [EVERY_MEM, LIST_TO_SET_SNOC] \\ (* 2 subgoals, same tactics *)
+     METIS_TAC [])
+ >> ‘LENGTH vs' = LENGTH Ns'’ by rw [Abbr ‘vs'’, Abbr ‘Ns'’]
+ >> ‘y IN FDOM (fromPairs vs' Ns')’ by rw [FDOM_fromPairs, Abbr ‘vs'’]
+ >> simp [Abbr ‘t’, ssub_appstar]
+ >> Know ‘fromPairs vs' Ns' ' y = N’
+ >- (‘y = LAST vs'’ by rw [Abbr ‘vs'’, LAST_SNOC] >> POP_ORW \\
+     ‘vs' <> []’ by rw [Abbr ‘vs'’] \\
+     rw [LAST_EL] \\
+     qabbrev_tac ‘n = PRE (LENGTH Ns')’ \\
+     Know ‘fromPairs vs' Ns' ' (EL n vs') = EL n Ns'’
+     >- (MATCH_MP_TAC fromPairs_FAPPLY_EL \\
+         rw [Abbr ‘vs'’, Abbr ‘Ns'’, ALL_DISTINCT_SNOC, Abbr ‘n’]) >> Rewr' \\
+    ‘Ns' <> []’ by rw [Abbr ‘Ns'’] \\
+    ‘EL n Ns' = LAST Ns'’ by rw [LAST_EL, Abbr ‘n’] >> POP_ORW \\
+     rw [Abbr ‘Ns'’, LAST_SNOC])
+ >> Rewr'
+ >> Suff ‘MAP ($' (fromPairs vs' Ns')) (MAP VAR vs) = Ns’ >- rw []
+ >> rw [LIST_EQ_REWRITE]
+ >> rename1 ‘i < LENGTH Ns’
+ >> Know ‘EL i vs IN FDOM (fromPairs vs' Ns')’
+ >- (rw [FDOM_fromPairs] \\
+     rw [Abbr ‘vs'’, MEM_EL] \\
+     DISJ2_TAC >> Q.EXISTS_TAC ‘i’ >> art [])
+ >> rw [EL_MAP]
+ >> Know ‘(EL i vs = EL i vs') /\ (EL i Ns = EL i Ns')’
+ >- ASM_SIMP_TAC std_ss [EL_SNOC, Abbr ‘vs'’, Abbr ‘Ns'’]
+ >> rw []
+ >> MATCH_MP_TAC fromPairs_FAPPLY_EL
+ >> rw [Abbr ‘vs'’, Abbr ‘Ns'’, ALL_DISTINCT_SNOC]
+QED
+
+Theorem permutator_hreduce_same_length :
+    !n Ns N. (LENGTH Ns = n) ==> permutator n @* Ns @@ N -h->* N @* Ns
+Proof
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘X = BIGUNION (IMAGE FV (set Ns)) UNION FV N’
+ >> Know ‘FINITE X’
+ >- (rw [Abbr ‘X’] >> REWRITE_TAC [FINITE_FV])
+ >> DISCH_THEN (MP_TAC o (MATCH_MP permutator_cases))
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (Q.SPEC ‘n’))
+ >> POP_ORW
+ >> MATCH_MP_TAC permutator_hreduce_lemma
+ >> fs [ALL_DISTINCT_SNOC]
+ >> POP_ASSUM MP_TAC (* DISJOINT X ... *)
+ >> rw [Abbr ‘X’, EVERY_MEM, LIST_TO_SET_SNOC] >> art []
+ >| [ (* goal 1 (of 2) *)
+      Q.PAT_X_ASSUM ‘!s. P’ (MP_TAC o (Q.SPEC ‘FV (e :term)’)) \\
+      impl_tac >- (Q.EXISTS_TAC ‘e’ >> art []) >> rw [],
+      (* goal 2 (of 2) *)
+      Q.PAT_X_ASSUM ‘!s. P’ (MP_TAC o (Q.SPEC ‘FV (e :term)’)) \\
+      impl_tac >- (Q.EXISTS_TAC ‘e’ >> art []) >> rw [] ]
+QED
+
 val _ = export_theory()
 val _ = html_theory "head_reduction";
 
