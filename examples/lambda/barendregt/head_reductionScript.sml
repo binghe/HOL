@@ -226,12 +226,19 @@ QED
 
 (* NOTE: Initially M1 is an APP, eventually it may become a VAR, never be LAM
 
-   The antecedent ‘!M. M1 -h->* M /\ M -h-> M2 ==> ~is_abs M’ says that
-   only head reductions between M1 and M2 (excluded) must not be abstractions,
-   i.e. starting from M2 it can be abstractions.
+   The condition ‘!M. M1 -h->* M /\ M -h-> M2 ==> ~is_abs M’ cannot be further
+   reduced. It says that all head reductions between M1 and M2 (excluded) must
+   not be abstractions. Only starting from M2 it can be abstractions.
 
-   NOTE: for ‘!M. M1 -h->* M /\ M -h-> M2 ==> ~is_abs M’ to hold, ‘M1’ must be
-         solvable (having finite head reduction path).
+   NOTE2: for ‘!M. M1 -h->* M /\ M -h-> M2 ==> ~is_abs M’ to hold, ‘M1’ usually
+   must be solvable (i.e. having finite head reduction path). If this is NOT the
+   case, then there may be an infinite head reduction path such that
+
+      M1 -h-> M -h-> ... -h-> M2 -h-> ... -h-> M2
+
+   which indicates ‘~is_abs M2’ (see also [hreduce_rules_appstar']).
+
+   NOTE3: note that there's no requirements on ‘Ns’, which can be anything.
  *)
 Theorem hreduce_rules_appstar :
     !M1 M2 Ns. ~is_abs M1 /\ (!M. M1 -h->* M /\ M -h-> M2 ==> ~is_abs M) /\
@@ -1799,7 +1806,7 @@ QED
 Theorem hnf_cases_shared :
     !vs M. ALL_DISTINCT vs /\ LAMl_size M <= LENGTH vs /\
            DISJOINT (set vs) (FV M) ==>
-          (hnf M <=> ?y args. (M = LAMl (TAKE (LAMl_size M) vs) (VAR y @* args)))
+          (hnf M <=> ?y args. M = LAMl (TAKE (LAMl_size M) vs) (VAR y @* args))
 Proof
     rpt STRIP_TAC
  >> reverse EQ_TAC
@@ -1888,7 +1895,7 @@ Proof
 QED
 
 Theorem hreduce_LAMl_appstar :
-    !vs Ns t. ALL_DISTINCT vs /\ (LENGTH vs = LENGTH Ns) /\
+    !vs Ns t. ALL_DISTINCT vs /\ LENGTH vs = LENGTH Ns /\
               EVERY (\e. DISJOINT (FV e) (set vs)) Ns
           ==> LAMl vs t @* Ns -h->* fromPairs vs Ns ' t
 Proof
@@ -1902,9 +1909,10 @@ Proof
  >> rw []
 QED
 
+(* NOTE: there's no requirements on ‘args’, which can be empty *)
 Theorem hreduce_LAMl_appstar_ext :
     !vs Ns t args.
-             ALL_DISTINCT vs /\ (LENGTH vs = LENGTH Ns) /\
+             ALL_DISTINCT vs /\ LENGTH vs = LENGTH Ns /\
              EVERY (\e. DISJOINT (FV e) (set vs)) Ns
          ==> LAMl vs t @* Ns @* args -h->* fromPairs vs Ns ' t @* args
 Proof
@@ -1923,14 +1931,14 @@ QED
    eventually there should be one more fresh variable left, forming a hnf.
 
    NOTE2: added one global excluded list X and more disjointness conclusions.
+   NOTE3: added ‘LENGTH xs = n - LENGTH Ns’ for the potential needs.
  *)
 Theorem permutator_hreduce_thm :
     !X n Ns. FINITE X /\ LENGTH Ns <= n ==>
-             ?xs y. permutator n @* Ns -h->*
-                    LAMl xs (LAM y (VAR y @* Ns @* MAP VAR xs)) /\
-                    ALL_DISTINCT (SNOC y xs) /\
-                    DISJOINT X (set (SNOC y xs)) /\
-                    !N. MEM N Ns ==> DISJOINT (FV N) (set (SNOC y xs))
+      ?xs y. permutator n @* Ns -h->* LAMl xs (LAM y (VAR y @* Ns @* MAP VAR xs)) /\
+             LENGTH xs = n - LENGTH Ns /\
+             ALL_DISTINCT (SNOC y xs) /\ DISJOINT X (set (SNOC y xs)) /\
+            !N. MEM N Ns ==> DISJOINT (FV N) (set (SNOC y xs))
 Proof
     rw [permutator_def]
  >> qabbrev_tac ‘Z = GENLIST n2s (n + 1)’
@@ -2135,6 +2143,8 @@ Proof
  >> REWRITE_TAC [appstar_APPEND]
  >> DISCH_TAC
  >> qexistsl_tac [‘vs2’, ‘y’] >> art []
+ (* extra goal: LENGTH vs2 = n - k *)
+ >> CONJ_TAC >- rw [Abbr ‘vs2’, LENGTH_DROP]
  (* extra goal: ALL_DISTINCT *)
  >> CONJ_TAC
  >- (reverse (rw [ALL_DISTINCT_SNOC])
@@ -2187,7 +2197,7 @@ Proof
 QED
 
 Theorem permutator_hreduce_lemma[local] :
-    ALL_DISTINCT vs /\ ~MEM y vs /\ (LENGTH vs = LENGTH Ns) /\
+    ALL_DISTINCT vs /\ ~MEM y vs /\ LENGTH vs = LENGTH Ns /\
     EVERY (\e. DISJOINT (FV e) (set (SNOC y vs))) (SNOC N Ns) ==>
     LAMl vs (LAM y (VAR y @* MAP VAR vs)) @* Ns @@ N @* args -h->*
     N @* Ns @* args
@@ -2236,7 +2246,7 @@ QED
 
 (* NOTE: more arguments remain the same after head reductions *)
 Theorem permutator_hreduce_more :
-    !n Ns N args. (LENGTH Ns = n) ==> permutator n @* Ns @@ N @* args -h->* N @* Ns @* args
+    !n N Ns args. LENGTH Ns = n ==> permutator n @* Ns @@ N @* args -h->* N @* Ns @* args
 Proof
     rpt STRIP_TAC
  >> qabbrev_tac ‘X = BIGUNION (IMAGE FV (set Ns)) UNION FV N’
@@ -2257,11 +2267,41 @@ Proof
       impl_tac >- (Q.EXISTS_TAC ‘e’ >> art []) >> rw [] ]
 QED
 
-Theorem permutator_hreduce_same_length :
-    !n Ns N. (LENGTH Ns = n) ==> permutator n @* Ns @@ N -h->* N @* Ns
+(* Another form of permutator_hreduce_more with simpler conclusion *)
+Theorem permutator_hreduce_more' :
+    !n l. n < LENGTH l ==> permutator n @* l -h->* EL n l @* TAKE n l @* DROP (SUC n) l
 Proof
     rpt STRIP_TAC
- >> MP_TAC (Q.SPECL [‘n’, ‘Ns’, ‘N’, ‘[]’] permutator_hreduce_more)
+ >> Suff ‘permutator n @* l =
+          permutator n @* TAKE n l @@ EL n l @* DROP (SUC n) l’
+ >- (Rewr' \\
+     MATCH_MP_TAC permutator_hreduce_more >> rw [LENGTH_TAKE])
+ >> Suff ‘l = TAKE n l ++ [EL n l] ++ DROP (SUC n) l’
+ >- (DISCH_THEN
+      (GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites o wrap) \\
+     REWRITE_TAC [GSYM SNOC_APPEND] \\
+     REWRITE_TAC [appstar_APPEND] \\
+     REWRITE_TAC [appstar_SNOC])
+ >> REWRITE_TAC [GSYM APPEND_ASSOC]
+ >> ‘l = TAKE n l ++ DROP n l’ by rw [TAKE_DROP]
+ >> POP_ASSUM
+      (GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites o wrap)
+ >> AP_TERM_TAC
+ >> REWRITE_TAC [DROP_SUC]
+ >> Know ‘DROP 1 (DROP n l) = TL (DROP n l)’
+ >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+     MATCH_MP_TAC TAIL_BY_DROP >> rw [])
+ >> Rewr'
+ >> REWRITE_TAC [GSYM CONS_APPEND]
+ >> Suff ‘EL n l = HD (DROP n l)’ >- rw [GSYM LIST_NOT_NIL]
+ >> rw [HD_DROP]
+QED
+
+Theorem permutator_hreduce_same_length :
+    !n N Ns. LENGTH Ns = n ==> permutator n @* Ns @@ N -h->* N @* Ns
+Proof
+    rpt STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘n’, ‘N’, ‘Ns’, ‘[]’] permutator_hreduce_more)
  >> rw []
 QED
 

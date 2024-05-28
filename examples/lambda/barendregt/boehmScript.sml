@@ -3831,12 +3831,12 @@ Proof
     at most (in this case, ‘args i = 0 /\ n i = n_max’), and to finally get a
    "is_ready" term, we should apply a fresh list of d_max+1 variables (l).
   *)
- >> qabbrev_tac ‘l = NEWS (d_max + 1) Z’
- >> Know ‘ALL_DISTINCT l /\ DISJOINT (set l) Z /\ LENGTH l = d_max + 1’
- >- (rw [Abbr ‘l’, NEWS_def])
+ >> qabbrev_tac ‘lv = NEWS (d_max + 1) Z’
+ >> Know ‘ALL_DISTINCT lv /\ DISJOINT (set lv) Z /\ LENGTH lv = d_max + 1’
+ >- rw [Abbr ‘lv’, NEWS_def]
  >> STRIP_TAC
  (* p3 is the maximal possible fresh list to be applied after the permutator *)
- >> qabbrev_tac ‘p3 = MAP rightctxt (REVERSE (MAP VAR l))’
+ >> qabbrev_tac ‘p3 = MAP rightctxt (REVERSE (MAP VAR lv))’
  >> ‘Boehm_transform p3’ by rw [Abbr ‘p3’, MAP_MAP_o, GSYM MAP_REVERSE]
  (* pre-final stage *)
  >> Q.EXISTS_TAC ‘p3 ++ p2 ++ p1’
@@ -3884,14 +3884,16 @@ Proof
  >> qabbrev_tac ‘tl = MAP (\t. t ISUB sub k) (DROP (n i) (MAP VAR vs))’
  >> qabbrev_tac ‘args' = MAP (\t. t ISUB sub k) (args i)’
  (* calculating ‘apply p2 ...’ until reaching hnf *)
- >> ‘apply p3 (P @* args' @* tl) = P @* args' @* tl @* MAP VAR l’
-       by rw [Abbr ‘p3’, Boehm_apply_MAP_rightctxt']
- (* applying permutator_hreduce_thm
- >> MP_TAC (Q.SPECL [‘Z’, ‘d_max’, ‘args' ++ tl ++ MAP VAR l’]
-                    permutator_hreduce_thm)
- >> impl_tac
- >- (simp [Abbr ‘d_max’]
-  *)
+ >> Know ‘apply p3 (P @* args' @* tl) = P @* args' @* tl @* MAP VAR lv’
+ >- rw [Abbr ‘p3’, Boehm_apply_MAP_rightctxt']
+ >> REWRITE_TAC [GSYM appstar_APPEND, APPEND_ASSOC]
+ (* applying permutator_hreduce_more *)
+ >> qabbrev_tac ‘l = args' ++ tl ++ MAP VAR lv’
+ >> REWRITE_TAC [appstar_APPEND]
+ >> DISCH_TAC
+ >> ‘LENGTH l = m i + (n_max - n i) + d_max + 1’
+      by rw [Abbr ‘l’, Abbr ‘m’, Abbr ‘tl’, Abbr ‘args'’, Abbr ‘d_max’, o_DEF]
+ (* TODO *)
  (* showing ‘apply (p3 ++ p2 ++ p1)’ is solvable *)
  >> Know ‘solvable (apply (p3 ++ p2 ++ p1) M)’
  >- (qabbrev_tac ‘p' = p3 ++ p2 ++ p1’ \\
