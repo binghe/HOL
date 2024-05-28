@@ -1888,32 +1888,32 @@ Proof
 QED
 
 Theorem hreduce_LAMl_appstar :
-    !t xs Ns. ALL_DISTINCT xs /\ (LENGTH xs = LENGTH Ns) /\
-              EVERY (\e. DISJOINT (FV e) (set xs)) Ns
-          ==> LAMl xs t @* Ns -h->* (FEMPTY |++ ZIP (xs,Ns)) ' t
+    !vs Ns t. ALL_DISTINCT vs /\ (LENGTH vs = LENGTH Ns) /\
+              EVERY (\e. DISJOINT (FV e) (set vs)) Ns
+          ==> LAMl vs t @* Ns -h->* fromPairs vs Ns ' t
 Proof
     RW_TAC std_ss []
- >> qabbrev_tac ‘n = LENGTH xs’
- >> qabbrev_tac ‘pi = ZIP (xs,Ns)’
- >> ‘xs = MAP FST pi’ by rw [Abbr ‘pi’, MAP_ZIP]
+ >> qabbrev_tac ‘n = LENGTH vs’
+ >> qabbrev_tac ‘pi = ZIP (vs,Ns)’
+ >> ‘vs = MAP FST pi’ by rw [Abbr ‘pi’, MAP_ZIP]
  >> ‘Ns = MAP SND pi’ by rw [Abbr ‘pi’, MAP_ZIP]
- >> simp []
+ >> simp [fromPairs_def]
  >> MP_TAC (Q.SPECL [‘pi’, ‘t’, ‘[]’] hreduce_LAMl_appstar_lemma)
  >> rw []
 QED
 
 Theorem hreduce_LAMl_appstar_ext :
-    !t xs Ns args.
-          ALL_DISTINCT xs /\ (LENGTH xs = LENGTH Ns) /\
-          EVERY (\e. DISJOINT (FV e) (set xs)) Ns
-      ==> LAMl xs t @* Ns @* args -h->* (FEMPTY |++ ZIP (xs,Ns)) ' t @* args
+    !vs Ns t args.
+             ALL_DISTINCT vs /\ (LENGTH vs = LENGTH Ns) /\
+             EVERY (\e. DISJOINT (FV e) (set vs)) Ns
+         ==> LAMl vs t @* Ns @* args -h->* fromPairs vs Ns ' t @* args
 Proof
     RW_TAC std_ss []
- >> qabbrev_tac ‘n = LENGTH xs’
- >> qabbrev_tac ‘pi = ZIP (xs,Ns)’
- >> ‘xs = MAP FST pi’ by rw [Abbr ‘pi’, MAP_ZIP]
+ >> qabbrev_tac ‘n = LENGTH vs’
+ >> qabbrev_tac ‘pi = ZIP (vs,Ns)’
+ >> ‘vs = MAP FST pi’ by rw [Abbr ‘pi’, MAP_ZIP]
  >> ‘Ns = MAP SND pi’ by rw [Abbr ‘pi’, MAP_ZIP]
- >> simp []
+ >> simp [fromPairs_def]
  >> MATCH_MP_TAC hreduce_LAMl_appstar_lemma
  >> rw []
 QED
@@ -2017,7 +2017,7 @@ Proof
  >> qabbrev_tac ‘t1 = LAMl vs2 t’
  (* applying hreduce_LAMl_appstar *)
  >> Know ‘LAMl vs1 t1 @* Ns -h->* (FEMPTY |++ ZIP (vs1,Ns)) ' t1’
- >- (MATCH_MP_TAC hreduce_LAMl_appstar \\
+ >- (MATCH_MP_TAC (REWRITE_RULE [fromPairs_def] hreduce_LAMl_appstar) \\
      CONJ_TAC >- (qunabbrev_tac ‘vs1’ \\
                   MATCH_MP_TAC ALL_DISTINCT_TAKE >> art []) \\
      CONJ_TAC >- (rw [Abbr ‘vs1’]) \\
@@ -2198,7 +2198,7 @@ Proof
  >> qabbrev_tac ‘Ns' = SNOC N Ns’
  >> qabbrev_tac ‘t = VAR y @* MAP VAR vs’
  >> Suff ‘N @* Ns = fromPairs vs' Ns' ' t’
- >- (Rewr' >> REWRITE_TAC [fromPairs_def] \\
+ >- (Rewr' \\
      MATCH_MP_TAC hreduce_LAMl_appstar_ext \\
      rw [Abbr ‘vs'’, Abbr ‘Ns'’, ALL_DISTINCT_SNOC] \\
      Q.PAT_X_ASSUM ‘EVERY _ (SNOC N Ns)’ MP_TAC \\
@@ -2364,7 +2364,7 @@ Proof
  >> MATCH_MP_TAC hreduce_rules_appstar' >> art []
  >> rw [is_abs_appstar]
  >> CCONTR_TAC >> fs []
- >> ‘is_abs N’ by PROVE_TAC [hreduce_abs]
+ >> PROVE_TAC [hreduce_abs] (* is_abs N *)
 QED
 
 val _ = export_theory()

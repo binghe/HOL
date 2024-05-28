@@ -786,13 +786,12 @@ Proof
  >- (qunabbrev_tac ‘M1'’ \\
      MATCH_MP_TAC principle_hnf_tpm >> art [] \\
      REWRITE_TAC [has_hnf_thm] \\
-     Q.EXISTS_TAC ‘(FEMPTY |++ ZIP (vs2,MAP VAR vs1p)) ' (VAR y @* args)’ \\
+     Q.EXISTS_TAC ‘fromPairs vs2 (MAP VAR vs1p) ' (VAR y @* args)’ \\
      CONJ_TAC
      >- (MATCH_MP_TAC hreduce_LAMl_appstar \\
          rw [EVERY_MEM, MEM_MAP] >> rw [] \\
          Q.PAT_X_ASSUM ‘DISJOINT (set vs2) (set vs1p)’ MP_TAC \\
          rw [DISJOINT_ALT']) \\
-     REWRITE_TAC [GSYM fromPairs_def] \\
     ‘FDOM (fromPairs vs2 (MAP VAR vs1p)) = set vs2’ by rw [FDOM_fromPairs] \\
      Cases_on ‘MEM y vs2’
      >- (simp [ssub_thm, ssub_appstar, hnf_appstar] \\
@@ -1347,13 +1346,12 @@ Proof
  >- (qunabbrev_tac ‘M1'’ \\
      MATCH_MP_TAC principle_hnf_tpm >> art [] \\
      REWRITE_TAC [has_hnf_thm] \\
-     Q.EXISTS_TAC ‘(FEMPTY |++ ZIP (vs2,MAP VAR vs1p)) ' (VAR y @* args)’ \\
+     Q.EXISTS_TAC ‘fromPairs vs2 (MAP VAR vs1p) ' (VAR y @* args)’ \\
      CONJ_TAC
      >- (MATCH_MP_TAC hreduce_LAMl_appstar \\
          rw [EVERY_MEM, MEM_MAP] >> rw [] \\
          Q.PAT_X_ASSUM ‘DISJOINT (set vs2) (set vs1p)’ MP_TAC \\
          rw [DISJOINT_ALT']) \\
-     REWRITE_TAC [GSYM fromPairs_def] \\
     ‘FDOM (fromPairs vs2 (MAP VAR vs1p)) = set vs2’ by rw [FDOM_fromPairs] \\
      Cases_on ‘MEM y vs2’
      >- (simp [ssub_thm, ssub_appstar, hnf_appstar] \\
@@ -2777,13 +2775,12 @@ Proof
  (* applying hreduce_LAMl_appstar *)
  >> qabbrev_tac ‘xs' = SNOC z xs’
  >> qabbrev_tac ‘t' = VAR z @* args' @* MAP VAR xs’
- >> Know ‘LAMl xs' t' @* MAP VAR ys -h->* (FEMPTY |++ ZIP (xs',MAP VAR ys)) ' t'’
+ >> Know ‘LAMl xs' t' @* MAP VAR ys -h->* fromPairs xs' (MAP VAR ys) ' t'’
  >- (MATCH_MP_TAC hreduce_LAMl_appstar >> simp [Abbr ‘xs'’] \\
      rw [EVERY_MEM, MEM_MAP] >> REWRITE_TAC [FV_thm] \\
      MATCH_MP_TAC DISJOINT_SUBSET' \\
      Q.EXISTS_TAC ‘set ys’ >> art [] \\
      rw [SUBSET_DEF])
- >> REWRITE_TAC [GSYM fromPairs_def]
  >> ‘FDOM (fromPairs xs' (MAP VAR ys)) = set xs'’
        by rw [FDOM_fromPairs, Abbr ‘xs'’]
  >> ASM_SIMP_TAC std_ss [Abbr ‘t'’, ssub_appstar, Abbr ‘xs'’]
