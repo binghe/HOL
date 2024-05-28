@@ -7,8 +7,9 @@
 structure hurdUtils :> hurdUtils =
 struct
 
-open Susp HolKernel Parse Hol_pp boolLib metisLib bossLib BasicProvers;
-open pairTheory res_quanTools pred_setTheory; (* for RESQ_STRIP_TAC *)
+open HolKernel boolLib BasicProvers;
+
+open Susp Hol_pp metisLib simpLib pairTheory res_quanTools numLib;
 
 infixr 0 oo THENR ORELSER ## thenf orelsef;
 
@@ -713,7 +714,7 @@ fun var_match vars tm tm' =
 val FUN_EQ = FUN_EQ_THM;
 
 val SET_EQ = prove (“!s t :'a -> bool. (s = t) <=> (!x. x IN s <=> x IN t)”,
-                    SIMP_TAC std_ss [IN_DEF, FUN_EQ_THM]);
+                    SIMP_TAC bool_ss [IN_DEF, FUN_EQ_THM]);
 
 val hyps = foldl (fn (h,t) => tunion (hyp h) t) [];
 
@@ -1057,12 +1058,8 @@ val Suff = Q_TAC SUFF_TAC
 (* A simple-minded CNF conversion.                                       *)
 (* --------------------------------------------------------------------- *)
 
-local
-  open simpLib
-in
-  val EXPAND_COND_CONV =
-    QCONV (SIMP_CONV (pureSimps.pure_ss ++ boolSimps.COND_elim_ss) [])
-end
+val EXPAND_COND_CONV =
+    QCONV (SIMP_CONV (pureSimps.pure_ss ++ boolSimps.COND_elim_ss) []);
 
 val EQ_IFF_CONV = QCONV (PURE_REWRITE_CONV [EQ_IMP_THM]);
 

@@ -42,6 +42,11 @@ val list_INDUCT = Q.prove(
 val LIST_INDUCT_TAC = INDUCT_THEN list_INDUCT ASSUME_TAC;
 val SNOC_INDUCT_TAC = Prim_rec.INDUCT_THEN SNOC_INDUCT ASSUME_TAC;
 
+fun wrap a = [a];
+val Rewr' = DISCH_THEN (ONCE_REWRITE_TAC o wrap);
+val Know = Q_TAC KNOW_TAC;
+val Suff = Q_TAC SUFF_TAC;
+
 (* ------------------------------------------------------------------------ *)
 
 val ELL = DEF0`
@@ -2697,9 +2702,6 @@ val prefixes_is_prefix_total = Q.store_thm("prefixes_is_prefix_total",
   GEN_TAC THEN Cases THEN SIMP_TAC(srw_ss())[] THEN
   Cases THEN SRW_TAC[][])
 
-val Know = Q_TAC KNOW_TAC;
-val Suff = Q_TAC SUFF_TAC;
-
 Theorem IS_PREFIX_EQ_TAKE :
     !l l1. l1 <<= l <=> ?n. n <= LENGTH l /\ l1 = TAKE n l
 Proof
@@ -4643,9 +4645,6 @@ val TAKE_DROP_SWAP = store_thm(
     `TAKE (n + m) ls = ls` by rw[TAKE_LENGTH_TOO_LONG] >>
     rw[]
   ]);
-
-fun wrap a = [a];
-val Rewr' = DISCH_THEN (ONCE_REWRITE_TAC o wrap);
 
 (* cf. TAKE_DROP |- !n l. TAKE n l ++ DROP n l = l
 

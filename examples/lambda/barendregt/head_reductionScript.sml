@@ -2267,8 +2267,10 @@ Proof
       impl_tac >- (Q.EXISTS_TAC ‘e’ >> art []) >> rw [] ]
 QED
 
+(* NOTE: ‘EL n l’ is undefined without ‘n < LENGTH l’ *)
 Theorem permutator_hreduce_more' :
-    !n l. n < LENGTH l ==> permutator n @* l -h->* EL n l @* TAKE n l @* DROP (SUC n) l
+    !n l. n < LENGTH l ==>
+          permutator n @* l -h->* EL n l @* TAKE n l @* DROP (SUC n) l
 Proof
     rpt STRIP_TAC
  >> Suff ‘permutator n @* l =
@@ -2367,8 +2369,8 @@ Proof
     The possible fact ‘hnf t’ is not used in the above reduction process.
  *)
  (* applying hreduce1_LAMl_cases *)
- >> Know ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M0) /\ M0 -h-> LAMl vs t /\ ~is_abs t’
- >- art []
+ >> Know ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (FV M0) /\ M0 -h-> LAMl vs t /\
+          ~is_abs t’ >- art []
  >> DISCH_THEN (STRIP_ASSUME_TAC o (MATCH_MP hreduce1_LAMl_cases))
  (* stage work *)
  >> Q.PAT_X_ASSUM ‘!vs t. P’ (MP_TAC o (Q.SPECL [‘vs1’, ‘N’]))
