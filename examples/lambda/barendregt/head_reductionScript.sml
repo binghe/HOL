@@ -14,7 +14,7 @@ open termTheory appFOLDLTheory chap2Theory chap3Theory nomsetTheory binderLib
 
 val _ = new_theory "head_reduction"
 
-val _ = ParseExtras.temp_loose_equality()
+(* val _ = ParseExtras.temp_loose_equality() *)
 val _ = hide "Y";
 
 Inductive hreduce1 :
@@ -229,6 +229,9 @@ QED
    The antecedent ‘!M. M1 -h->* M /\ M -h-> M2 ==> ~is_abs M’ says that
    only head reductions between M1 and M2 (excluded) must not be abstractions,
    i.e. starting from M2 it can be abstractions.
+
+   NOTE: for ‘!M. M1 -h->* M /\ M -h-> M2 ==> ~is_abs M’ to hold, ‘M1’ must be
+         solvable (having finite head reduction path).
  *)
 Theorem hreduce_rules_appstar :
     !M1 M2 Ns. ~is_abs M1 /\ (!M. M1 -h->* M /\ M -h-> M2 ==> ~is_abs M) /\
@@ -749,7 +752,7 @@ QED
 
 val wh_weaken_cong = store_thm(
   "wh_weaken_cong",
-  ``whnf N ⇒ M₁ -w->* M₂ ⇒ (M₁ -w->* N = M₂ -w->* N)``,
+  ``whnf N ⇒ M₁ -w->* M₂ ⇒ (M₁ -w->* N <=> M₂ -w->* N)``,
   SIMP_TAC (srw_ss()) [EQ_IMP_THM, IMP_CONJ_THM] THEN CONJ_TAC THENL [
     Q_TAC SUFF_TAC `∀M N. M -w->* N ⇒ ∀N'. M -w->* N' ∧ whnf N' ⇒ N -w->* N'`
           THEN1 METIS_TAC [] THEN
@@ -939,11 +942,11 @@ val is_head_redex_unique = store_thm(
 
 val is_head_redex_thm = store_thm(
   "is_head_redex_thm",
-  ``(p is_head_redex (LAM v t) = ?p0. (p = In::p0) /\ p0 is_head_redex t) /\
-    (p is_head_redex (t @@ u) = (p = []) /\ is_abs t \/
+  ``(p is_head_redex (LAM v t) <=> ?p0. (p = In::p0) /\ p0 is_head_redex t) /\
+    (p is_head_redex (t @@ u) <=> (p = []) /\ is_abs t \/
                                 ?p0. (p = Lt::p0) /\ is_comb t /\
                                           p0 is_head_redex t) /\
-    (p is_head_redex (VAR v) = F)``,
+    (p is_head_redex (VAR v) <=> F)``,
   REPEAT CONJ_TAC THEN
   SRW_TAC [][Once is_head_redex_cases, SimpLHS, LAM_eq_thm] THEN
   SRW_TAC [][EQ_IMP_THM] THENL [
@@ -961,7 +964,7 @@ val head_redex_leftmost = store_thm(
 
 val hnf_no_head_redex = store_thm(
   "hnf_no_head_redex",
-  ``!t. hnf t = !p. ~(p is_head_redex t)``,
+  ``!t. hnf t <=> !p. ~(p is_head_redex t)``,
   HO_MATCH_MP_TAC simple_induction THEN
   SRW_TAC [][hnf_thm, is_head_redex_thm] THEN
   Q.SPEC_THEN `t` STRUCT_CASES_TAC term_CASES THEN
@@ -975,7 +978,7 @@ val head_redex_is_redex = store_thm(
 
 val is_head_redex_vsubst_invariant = store_thm(
   "is_head_redex_vsubst_invariant",
-  ``!t v x p. p is_head_redex ([VAR v/x] t) = p is_head_redex t``,
+  ``!t v x p. p is_head_redex ([VAR v/x] t) <=> p is_head_redex t``,
   REPEAT GEN_TAC THEN MAP_EVERY Q.ID_SPEC_TAC [`p`, `t`] THEN
   HO_MATCH_MP_TAC nc_INDUCTION2 THEN Q.EXISTS_TAC `{x;v}` THEN
   SRW_TAC [][is_head_redex_thm, SUB_THM, SUB_VAR]);
@@ -1000,14 +1003,14 @@ val head_redex_preserved = store_thm(
 
 (* moved here from standardisationScript.sml *)
 Definition is_head_reduction_def :
-  is_head_reduction s = okpath (labelled_redn beta) s /\
+  is_head_reduction s <=> okpath (labelled_redn beta) s /\
                         !i. i + 1 IN PL s ==>
                             nth_label i s is_head_redex el i s
 End
 
 Theorem is_head_reduction_thm[simp] :
-    (is_head_reduction (stopped_at x) = T) /\
-    (is_head_reduction (pcons x r p) =
+    (is_head_reduction (stopped_at x) <=> T) /\
+    (is_head_reduction (pcons x r p) <=>
        labelled_redn beta x r (first p) /\ r is_head_redex x /\
        is_head_reduction p)
 Proof
@@ -1028,7 +1031,7 @@ End
 
 val head_reduce1_def = store_thm(
   "head_reduce1_def",
-  ``M -h-> N = (?r. r is_head_redex M /\ labelled_redn beta M r N)``,
+  ``M -h-> N <=> (?r. r is_head_redex M /\ labelled_redn beta M r N)``,
   EQ_TAC THENL [
     Q_TAC SUFF_TAC `!M N. M -h-> N ==>
                           ?r. r is_head_redex M /\ labelled_redn beta M r N`
@@ -1132,7 +1135,7 @@ val head_reduct_NONE = store_thm(
 
 val head_reduct_SOME = store_thm(
   "head_reduct_SOME",
-  ``(head_reduct M = SOME N) = M -h-> N``,
+  ``(head_reduct M = SOME N) <=> M -h-> N``,
   SIMP_TAC (srw_ss()) [EQ_IMP_THM, head_reduct_unique] THEN
   SRW_TAC [][head_reduct_def] THEN SELECT_ELIM_TAC THEN
   SRW_TAC [][head_reduce1_def] THEN
@@ -1830,96 +1833,58 @@ QED
  *  hreduce, LAMl and appstar
  *---------------------------------------------------------------------------*)
 
-Theorem hreduce_LAMl_appstar_non_abs_lemma[local] :
-    !pi. ALL_DISTINCT (MAP FST pi) /\
-         EVERY (\e. DISJOINT (FV e) (set (MAP FST pi))) (MAP SND pi) /\
-         pi <> []
-     ==> !M. LAMl (MAP FST pi) t @* MAP SND pi -h->* M /\ M -h-> (FEMPTY |++ pi) ' t ==>
-             ~is_abs M
-Proof
-    cheat
-QED
-
 Theorem hreduce_LAMl_appstar_lemma[local] :
-    ALL_DISTINCT (MAP FST pi) /\
-    EVERY (\e. DISJOINT (FV e) (set (MAP FST pi))) (MAP SND pi) ==>
-    LAMl (MAP FST pi) t @* MAP SND pi @* args -h->* (FEMPTY |++ pi) ' t @* args
+    !pi t args.
+          ALL_DISTINCT (MAP FST pi) /\
+          EVERY (\e. DISJOINT (FV e) (set (MAP FST pi))) (MAP SND pi) ==>
+          LAMl (MAP FST pi) t @* MAP SND pi @* args -h->*
+          (FEMPTY |++ pi) ' t @* args
 Proof
-    rpt STRIP_TAC
- >> Cases_on ‘pi = []’ >- rw [FUPDATE_LIST_THM]
- (* applying hreduce_rules_appstar (for eliminating args) *)
- >> MATCH_MP_TAC hreduce_rules_appstar
- >> CONJ_TAC >- rw [is_abs_appstar]
- (* extra goal due to ‘args’ *)
- >> CONJ_TAC
- >- (MATCH_MP_TAC hreduce_LAMl_appstar_non_abs_lemma >> art [])
- >> POP_ASSUM K_TAC (* pi <> [] is useless hereafter *)
- >> NTAC 2 (POP_ASSUM MP_TAC)
- >> Q.ID_SPEC_TAC ‘pi’
- >> Induct_on ‘pi’
+    Induct_on ‘pi’
  >> rw [FUPDATE_LIST_THM] (* only one goal left *)
- (* cleanup antecedents of IH *)
- >> Q.PAT_X_ASSUM ‘_ ==> _ ’ MP_TAC
  >> Know ‘EVERY (\e. DISJOINT (FV e) (set (MAP FST pi))) (MAP SND pi)’
  >- (POP_ASSUM MP_TAC \\
      rw [EVERY_MEM, MEM_MAP])
- >> RW_TAC std_ss []
- (* stage work *)
+ >> DISCH_THEN (fs o wrap)
  >> qabbrev_tac ‘vs = MAP FST pi’
  >> qabbrev_tac ‘Ns = MAP SND pi’
+ >> qabbrev_tac ‘v = FST h’
+ >> qabbrev_tac ‘N = SND h’
+ >> ‘h = (v,N)’ by rw [Abbr ‘v’, Abbr ‘N’] >> POP_ORW
+ (* stage work *)
  >> simp [Once RTC_CASES1]
  >> DISJ2_TAC
  (* preparing for hreduce1_appstar *)
- >> qabbrev_tac ‘v = FST h’
- >> qabbrev_tac ‘N = SND h’
- >> Q.EXISTS_TAC ‘[N/v] (LAMl vs t) @* Ns’
+ >> Q.EXISTS_TAC ‘[N/v] (LAMl vs t) @* Ns @* args’
  >> CONJ_TAC
- >- (MATCH_MP_TAC hreduce1_appstar >> simp [] \\
+ >- (REWRITE_TAC [GSYM appstar_APPEND] \\
+     MATCH_MP_TAC hreduce1_appstar >> simp [] \\
      rw [Once hreduce1_cases] \\
      qexistsl_tac [‘v’, ‘LAMl vs t’] >> rw [])
- >> Know ‘[N/v] (LAMl vs t) @* Ns =
-          [N/v] (LAMl vs t @* Ns)’
- >- (simp [appstar_SUB] \\
-     Suff ‘MAP [N/v] Ns = Ns’ >- rw [] \\
-     rw [LIST_EQ_REWRITE, EL_MAP] \\
-     MATCH_MP_TAC lemma14b \\
-     rename1 ‘i < LENGTH Ns’ \\
-     Q.PAT_X_ASSUM ‘EVERY (\e. DISJOINT (FV e) (set vs) /\ v # e) Ns’ MP_TAC \\
-     rw [EVERY_MEM] \\
-     POP_ASSUM (MP_TAC o (Q.SPEC ‘EL i Ns’)) \\
-     Suff ‘MEM (EL i Ns) Ns’ >- rw [] \\
-     rw [EL_MEM])
- >> Rewr'
- >> ‘h = (v,N)’ by rw [Abbr ‘v’, Abbr ‘N’] >> POP_ORW
- >> simp [FUPDATE_LIST_THM]
- (* applying FUPDATE_FUPDATE_LIST_COMMUTES *)
  >> Know ‘FEMPTY |+ (v,N) |++ pi = (FEMPTY |++ pi) |+ (v,N)’
  >- (MATCH_MP_TAC FUPDATE_FUPDATE_LIST_COMMUTES >> rw [])
  >> Rewr'
+ (* applying FUPDATE_FUPDATE_LIST_COMMUTES *)
  >> qabbrev_tac ‘fm = FEMPTY |++ pi’
  >> ‘FDOM fm = set vs’ by rw [Abbr ‘fm’, FDOM_FUPDATE_LIST]
- (* applying ssub_update_apply_SUBST' *)
- >> Know ‘(fm |+ (v,N)) ' t = [fm ' N/v] (fm ' t)’
- >- (MATCH_MP_TAC ssub_update_apply_SUBST' \\
-     rw [Once DISJOINT_SYM, MEM_EL, Abbr ‘fm’] \\
-     Know ‘(FEMPTY |++ pi) ' (EL n vs) = EL n Ns’
-     >- (MATCH_MP_TAC FUPDATE_LIST_APPLY_MEM \\
-        ‘LENGTH pi = LENGTH vs’ by rw [Abbr ‘vs’] \\
-         Q.EXISTS_TAC ‘n’ >> rw [] \\
-         Q.PAT_X_ASSUM ‘ALL_DISTINCT vs’ MP_TAC \\
-         rw [EL_ALL_DISTINCT_EL_EQ]) >> Rewr' \\
-     Q.PAT_X_ASSUM ‘EVERY (\e. DISJOINT (FV e) (set vs) /\ v # e) Ns’ MP_TAC \\
-     rw [EVERY_MEM] \\
-     POP_ASSUM (MP_TAC o (Q.SPEC ‘EL n Ns’)) \\
-     Suff ‘MEM (EL n Ns) Ns’ >- rw [] \\
-     rw [MEM_EL] >> Q.EXISTS_TAC ‘n’ >> art [] \\
-     Suff ‘LENGTH Ns = LENGTH vs’ >- rw [] \\
-     rw [Abbr ‘Ns’, Abbr ‘vs’])
+ >> Know ‘[N/v] (LAMl vs t) = LAMl vs ([N/v] t)’
+ >- (MATCH_MP_TAC LAMl_SUB >> rw [Once DISJOINT_SYM])
  >> Rewr'
- >> Know ‘fm ' N = N’
- >- (MATCH_MP_TAC ssub_14b >> rw [GSYM DISJOINT_DEF])
+ >> Suff ‘(fm |+ (v,N)) ' t = fm ' ([N/v] t)’ >- rw []
+ >> MATCH_MP_TAC ssub_update_apply_SUBST
+ >> rw [Once DISJOINT_SYM]
+ (* applying FUPDATE_LIST_APPLY_MEM *)
+ >> fs [MEM_EL, Abbr ‘fm’]
+ >> ‘LENGTH vs = LENGTH pi /\ LENGTH Ns = LENGTH pi’ by rw [Abbr ‘vs’, Abbr ‘Ns’]
+ >> Know ‘(FEMPTY |++ pi) ' (EL n vs) = EL n Ns’
+ >- (MATCH_MP_TAC FUPDATE_LIST_APPLY_MEM \\
+     Q.EXISTS_TAC ‘n’ >> rw [] \\
+     CCONTR_TAC >> fs [] \\
+    ‘n < LENGTH vs /\ m <> n’ by RW_TAC arith_ss [] \\
+     METIS_TAC [ALL_DISTINCT_EL_IMP])
  >> Rewr'
- >> MATCH_MP_TAC hreduce_substitutive >> art []
+ >> Q.PAT_X_ASSUM ‘EVERY P Ns’ MP_TAC
+ >> rw [EVERY_EL]
 QED
 
 Theorem hreduce_LAMl_appstar :
@@ -1933,15 +1898,15 @@ Proof
  >> ‘xs = MAP FST pi’ by rw [Abbr ‘pi’, MAP_ZIP]
  >> ‘Ns = MAP SND pi’ by rw [Abbr ‘pi’, MAP_ZIP]
  >> simp []
- >> MATCH_MP_TAC
-     (SIMP_RULE (srw_ss()) [] (Q.INST [‘args’ |-> ‘[]’] hreduce_LAMl_appstar_lemma))
+ >> MP_TAC (Q.SPECL [‘pi’, ‘t’, ‘[]’] hreduce_LAMl_appstar_lemma)
  >> rw []
 QED
 
 Theorem hreduce_LAMl_appstar_ext :
-    !t xs Ns args. ALL_DISTINCT xs /\ (LENGTH xs = LENGTH Ns) /\
-                   EVERY (\e. DISJOINT (FV e) (set xs)) Ns
-               ==> LAMl xs t @* Ns @* args -h->* (FEMPTY |++ ZIP (xs,Ns)) ' t @* args
+    !t xs Ns args.
+          ALL_DISTINCT xs /\ (LENGTH xs = LENGTH Ns) /\
+          EVERY (\e. DISJOINT (FV e) (set xs)) Ns
+      ==> LAMl xs t @* Ns @* args -h->* (FEMPTY |++ ZIP (xs,Ns)) ' t @* args
 Proof
     RW_TAC std_ss []
  >> qabbrev_tac ‘n = LENGTH xs’
