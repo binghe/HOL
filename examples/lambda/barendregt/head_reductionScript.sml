@@ -2267,7 +2267,6 @@ Proof
       impl_tac >- (Q.EXISTS_TAC ‘e’ >> art []) >> rw [] ]
 QED
 
-(* Another form of permutator_hreduce_more with simpler conclusion *)
 Theorem permutator_hreduce_more' :
     !n l. n < LENGTH l ==> permutator n @* l -h->* EL n l @* TAKE n l @* DROP (SUC n) l
 Proof
@@ -2282,19 +2281,7 @@ Proof
      REWRITE_TAC [GSYM SNOC_APPEND] \\
      REWRITE_TAC [appstar_APPEND] \\
      REWRITE_TAC [appstar_SNOC])
- >> REWRITE_TAC [GSYM APPEND_ASSOC]
- >> ‘l = TAKE n l ++ DROP n l’ by rw [TAKE_DROP]
- >> POP_ASSUM
-      (GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites o wrap)
- >> AP_TERM_TAC
- >> REWRITE_TAC [DROP_SUC]
- >> Know ‘DROP 1 (DROP n l) = TL (DROP n l)’
- >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
-     MATCH_MP_TAC TAIL_BY_DROP >> rw [])
- >> Rewr'
- >> REWRITE_TAC [GSYM CONS_APPEND]
- >> Suff ‘EL n l = HD (DROP n l)’ >- rw [GSYM LIST_NOT_NIL]
- >> rw [HD_DROP]
+ >> MATCH_MP_TAC (GSYM TAKE_DROP_SUC) >> art []
 QED
 
 Theorem permutator_hreduce_same_length :

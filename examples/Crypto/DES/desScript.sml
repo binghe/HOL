@@ -732,18 +732,32 @@ QED
 (* Structural Properties of DES                                              *)
 (*---------------------------------------------------------------------------*)
 
-Overload DESEncrypt = “\k. FST (FullDES k)”
+Overload DESEncrypt = “\r k. FST (DES r k)”
+Overload FullDESEncrypt = “\k. FST (FullDES k)”
 
-Theorem complementation_property :
-    !k m. word_1comp (DESEncrypt k m) = DESEncrypt (word_1comp k) (word_1comp m)
+Theorem DES_compl_prop :
+    !r m k. word_1comp (DESEncrypt r k m) =
+            DESEncrypt r (word_1comp k) (word_1comp m)
 Proof
     cheat
 QED
+
+Theorem FullDES_compl_prop = Q.SPEC ‘16’ DES_compl_prop
 
 Theorem inv_lemma :
     !(w :word64) j. j < 64 ==> (word_1comp w) ' j = ~(w ' j)
 Proof
     rw [word_1comp_def, FCP_BETA]
+QED
+
+Theorem Join_compl_prop :
+    !u v. Join (~u, ~v) = ~Join(u,v)
+Proof
+    rw [Join_def, word_concat_def, word_join_def]
+ >> rw [CART_EQ]
+ >> rw [w2w, word_1comp_def, word_or_def, FCP_BETA, word_lsl_def]
+ >> Cases_on ‘i < 32’
+ >> rw [FCP_BETA]
 QED
 
 val _ = export_theory();
