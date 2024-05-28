@@ -8,10 +8,11 @@ EXTRA_CLEANS = $(HOLHEAP) selftest.exe field-selftest.log
 
 ifdef POLY
 OBJS = ../ring/ringLib
+OBJPATHS = $(patsubst %,%.uo,$(OBJS))
 
 all: $(HOLHEAP)
 
-$(HOLHEAP): $(FULL_OBJPATHS) $(HOLDIR)/bin/hol.state
+$(HOLHEAP): $(HOLDIR)/bin/hol.state ../ring/heap $(OBJPATHS)
 	$(protect $(HOLDIR)/bin/buildheap) $(DEBUG_FLAG) -o $@ \
 	-b ../ring/heap $(OBJS)
 endif
