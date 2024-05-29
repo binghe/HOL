@@ -161,6 +161,12 @@ Proof
  >> rw [appstar_APPEND]
 QED
 
+Theorem appstar_SING[simp] :
+    M @* [N] = M @@ N
+Proof
+    rw [GSYM appstar_CONS]
+QED
+
 Theorem ssub_appstar :
     fm ' (M @* Ns) = (fm ' M) @* MAP (ssub fm) Ns
 Proof

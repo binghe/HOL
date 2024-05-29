@@ -20,6 +20,7 @@ val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
 
 val o_DEF = combinTheory.o_DEF;
 val _ = hide "Y";
+val _ = hide "B";
 
 (*---------------------------------------------------------------------------*
  *  ‘tpm’ as an equivalence relation between terms
@@ -3777,7 +3778,7 @@ Proof
      MATCH_MP_TAC principle_hnf_beta_reduce_ext \\
      rw [Abbr ‘t’, hnf_appstar])
  >> DISCH_TAC
- >> qabbrev_tac ‘m = LENGTH o args’
+ >> qabbrev_tac ‘m = \i. LENGTH (args i)’
  >> qabbrev_tac ‘d = MAX_LIST (MAP (\e. subterm_width e p) Ms)’
  >> Know ‘!i. i < k ==> m i <= d’
  >- (rpt STRIP_TAC \\
@@ -3810,7 +3811,7 @@ Proof
      Induct_on ‘j’ >- rw [] \\
      rw [GENLIST, REVERSE_SNOC])
  >> DISCH_TAC
- (* properties of sub *)
+ (* properties of ‘sub’ (iterated substitution) *)
  >> Know ‘!j. DOM (sub j) = IMAGE y (count j)’
  >- (simp [Abbr ‘sub’] \\
      Induct_on ‘j’ >- rw [DOM_DEF] \\
@@ -3881,28 +3882,56 @@ Proof
           P @* MAP (\t. t ISUB sub k) (args i)
             @* MAP (\t. t ISUB sub k) (DROP (n i) (MAP VAR vs))’
       by (rw [GSYM appstar_APPEND, MAP_APPEND, appstar_ISUB])
- >> qabbrev_tac ‘tl = MAP (\t. t ISUB sub k) (DROP (n i) (MAP VAR vs))’
+ >> qabbrev_tac ‘tvs = MAP (\t. t ISUB sub k) (DROP (n i) (MAP VAR vs))’
  >> qabbrev_tac ‘args' = MAP (\t. t ISUB sub k) (args i)’
  (* calculating ‘apply p2 ...’ until reaching hnf *)
- >> Know ‘apply p3 (P @* args' @* tl) = P @* args' @* tl @* MAP VAR lv’
+ >> Know ‘apply p3 (P @* args' @* tvs) = P @* args' @* tvs @* MAP VAR lv’
  >- rw [Abbr ‘p3’, Boehm_apply_MAP_rightctxt']
  >> REWRITE_TAC [GSYM appstar_APPEND, APPEND_ASSOC]
- (* applying permutator_hreduce_more *)
- >> qabbrev_tac ‘l = args' ++ tl ++ MAP VAR lv’
+ (* preparing for permutator_hreduce_more *)
+ >> qabbrev_tac ‘l = args' ++ tvs ++ MAP VAR lv’
  >> REWRITE_TAC [appstar_APPEND]
  >> DISCH_TAC
  >> ‘LENGTH l = m i + (n_max - n i) + d_max + 1’
-      by rw [Abbr ‘l’, Abbr ‘m’, Abbr ‘tl’, Abbr ‘args'’, Abbr ‘d_max’, o_DEF]
- (* TODO *)
+      by rw [Abbr ‘l’, Abbr ‘m’, Abbr ‘tvs’, Abbr ‘args'’, Abbr ‘d_max’, o_DEF]
+ >> Q.PAT_X_ASSUM ‘apply p3 (P @* args' @* tvs) = P @* l’ MP_TAC
+ (* applying TAKE_DROP_SUC *)
+ >> MP_TAC (ISPECL [“d_max :num”, “l :term list”] (GSYM TAKE_DROP_SUC))
+ >> impl_tac >- rw [] (* d_max < LENGTH l *)
+ >> Rewr'
+ >> REWRITE_TAC [appstar_APPEND, appstar_SING]
+ >> qabbrev_tac ‘Ns = TAKE d_max l’
+ >> qabbrev_tac ‘B = EL d_max l’ (* later we will refined it to ‘VAR b’ *)
+ >> Know ‘?b. MEM b lv /\ B = VAR b’
+ >- (rw [Abbr ‘B’, Abbr ‘l’] \\
+     Know ‘EL d_max (args' ++ tvs ++ MAP VAR lv) =
+           EL (d_max - LENGTH (args' ++ tvs)) (MAP VAR lv)’
+     >- (MATCH_MP_TAC EL_APPEND2 \\
+         rw [Abbr ‘args'’, Abbr ‘tvs’, Abbr ‘d_max’] \\
+         MATCH_MP_TAC LESS_EQ_LESS_EQ_MONO >> rw []) >> Rewr' \\
+     qabbrev_tac ‘j = d_max - LENGTH (args' ++ tvs)’ \\
+    ‘j < LENGTH lv’ by rw [Abbr ‘j’, Abbr ‘args'’, Abbr ‘tvs’, Abbr ‘d_max’] \\
+     Q.EXISTS_TAC ‘EL j lv’ >> rw [EL_MAP, EL_MEM])
+ >> STRIP_TAC (* this asserts ‘B = VAR b’ *)
+ >> qunabbrev_tac ‘B’ >> POP_ORW (* eliminated B *)
+ >> qabbrev_tac ‘tl = DROP (SUC d_max) l’
+ >> DISCH_TAC (* store the latest version of ‘apply p3’ *)
+ (* applying permutator_hreduce_more *)
+ >> Know ‘apply p3 (P @* args' @* tvs) -h->* VAR b @* Ns @* tl’
+ >- (POP_ORW >> simp [Abbr ‘P’] \\
+     MATCH_MP_TAC permutator_hreduce_more \\
+     rw [Abbr ‘Ns’])
+ >> POP_ASSUM K_TAC >> DISCH_TAC (* replaced the last assumption *)
+ >> ‘hnf (VAR b @* Ns @* tl)’ by rw [hnf_appstar, GSYM appstar_APPEND]
  (* showing ‘apply (p3 ++ p2 ++ p1)’ is solvable *)
  >> Know ‘solvable (apply (p3 ++ p2 ++ p1) M)’
- >- (qabbrev_tac ‘p' = p3 ++ p2 ++ p1’ \\
-     Suff ‘apply p' (M0 i) == apply p' M /\ solvable (apply p' (M0 i))’
+ >- (qabbrev_tac ‘p_all = p3 ++ p2 ++ p1’ \\
+     Suff ‘apply p_all (M0 i) == apply p_all M /\ solvable (apply p_all (M0 i))’
      >- METIS_TAC [lameq_solvable_cong] \\
      CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> art [] \\
                   SIMP_TAC std_ss [Abbr ‘M’, Abbr ‘M0’] \\
                   MATCH_MP_TAC lameq_principle_hnf' >> art []) \\
-     SIMP_TAC std_ss [Abbr ‘p'’, Once Boehm_apply_APPEND] \\
+     SIMP_TAC std_ss [Abbr ‘p_all’, Once Boehm_apply_APPEND] \\
   (* solvable (apply (p3 ++ p2) (apply p1 (M0 i))) *)
      Suff ‘apply (p3 ++ p2) (apply p1 (M0 i)) == apply (p3 ++ p2) (M1 i) /\
            solvable (apply (p3 ++ p2) (M1 i))’
@@ -3910,8 +3939,8 @@ Proof
      CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> art [] \\
                   MATCH_MP_TAC Boehm_transform_APPEND >> art []) \\
      rw [Boehm_apply_APPEND, solvable_iff_has_hnf] \\
-     MATCH_MP_TAC hnf_has_hnf \\
-     cheat)
+     rw [has_hnf_thm] \\
+     Q.EXISTS_TAC ‘VAR b @* Ns @* tl’ >> art [])
  >> DISCH_TAC
  (* now expanding ‘is_ready’ using [is_ready_alt] *)
  >> rw [is_ready_alt]

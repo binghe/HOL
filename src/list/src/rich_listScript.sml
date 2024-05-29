@@ -4646,10 +4646,7 @@ val TAKE_DROP_SWAP = store_thm(
     rw[]
   ]);
 
-(* cf. TAKE_DROP |- !n l. TAKE n l ++ DROP n l = l
-
-   NOTE: ‘n < LENGTH l’ is for ‘EL n l’ to be specified.
- *)
+(* cf. TAKE_DROP |- !n l. TAKE n l ++ DROP n l = l *)
 Theorem TAKE_DROP_SUC :
     !n l. n < LENGTH l ==> TAKE n l ++ [EL n l] ++ DROP (SUC n) l = l
 Proof
@@ -4658,15 +4655,7 @@ Proof
  >> ‘l = TAKE n l ++ DROP n l’ by rw [TAKE_DROP]
  >> POP_ASSUM
       (GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites o wrap)
- >> AP_TERM_TAC (* eliminated ‘TAKE n l’ *)
- >> REWRITE_TAC [DROP_SUC]
- >> Know ‘DROP 1 (DROP n l) = TL (DROP n l)’
- >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
-     MATCH_MP_TAC TAIL_BY_DROP >> rw [])
- >> Rewr'
- >> REWRITE_TAC [GSYM CONS_APPEND]
- >> Suff ‘EL n l = HD (DROP n l)’ >- rw [GSYM LIST_NOT_NIL]
- >> rw [HD_DROP]
+ >> RW_TAC bool_ss [DROP_BY_DROP_SUC, GSYM CONS_APPEND]
 QED
 
 (* Theorem: TAKE (LENGTH l1) (LUPDATE x (LENGTH l1 + k) (l1 ++ l2)) = l1 *)
