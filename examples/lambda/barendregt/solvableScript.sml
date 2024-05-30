@@ -1361,7 +1361,7 @@ Theorem lameq_principle_hnf_thm' =
         lameq_principle_hnf_thm |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
 
 (* NOTE: The difficulty of applying this theorem is to prove the antecedents *)
-Theorem principle_hnf_substitutive :
+Theorem principle_hnf_SUB_cong :
     !M N v P. has_hnf M /\ has_hnf ([P/v] M) /\ has_hnf ([P/v] N) /\
               principle_hnf M = N ==>
               principle_hnf ([P/v] M) = principle_hnf ([P/v] N)
@@ -1380,22 +1380,8 @@ Proof
  >> rw [principle_hnf_thm]
 QED
 
-(* NOTE: This theorem looks nicer than above but is not used anywhere *)
-Theorem principle_hnf_substitutive' :
-    !M N v P. has_hnf M /\ has_hnf ([P/v] M) /\ hnf ([P/v] N) /\
-              principle_hnf M = N ==>
-              principle_hnf ([P/v] M) = [P/v] N
-Proof
-    rpt STRIP_TAC
- >> Know ‘principle_hnf ([P/v] M) = principle_hnf ([P/v] N)’
- >- (MATCH_MP_TAC principle_hnf_substitutive >> art [] \\
-     MATCH_MP_TAC hnf_has_hnf >> art [])
- >> Rewr'
- >> MATCH_MP_TAC principle_hnf_reduce >> art []
-QED
-
 (* NOTE: Again, the difficulty of applying this theorem is to prove the antecedents *)
-Theorem principle_hnf_ISUB :
+Theorem principle_hnf_ISUB_cong :
     !M N sub. has_hnf M /\ has_hnf (M ISUB sub) /\ has_hnf (N ISUB sub) /\
               principle_hnf M = N ==>
               principle_hnf (M ISUB sub) = principle_hnf (N ISUB sub)
