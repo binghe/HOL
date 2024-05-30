@@ -3123,18 +3123,17 @@ Proof
  >> DISCH_TAC
  (* stage work *)
  >> Know ‘principle_hnf (apply (p3 ++ p2 ++ p1) M) = VAR b @* args' @* MAP VAR as’
- >- (Q.PAT_X_ASSUM ‘apply (p3 ++ p2 ++ p1) M == _’ MP_TAC \\
-     simp [Boehm_apply_APPEND] \\
-     Q.PAT_X_ASSUM ‘Boehm_transform (p3 ++ p2 ++ p1)’ K_TAC \\
-     Q.PAT_X_ASSUM ‘Boehm_transform p1’ K_TAC \\
-     Q.PAT_X_ASSUM ‘apply p1 M0 == M1’ K_TAC \\
-     simp [Abbr ‘p1’, Boehm_apply_MAP_rightctxt'] \\
-     Q.PAT_X_ASSUM ‘Boehm_transform p2’ K_TAC \\
-     Q.PAT_X_ASSUM ‘apply p2 M1 = P @* args'’ K_TAC \\
-     simp [Abbr ‘p2’] \\
-     Q.PAT_X_ASSUM ‘Boehm_transform p3’ K_TAC \\
-     Q.PAT_X_ASSUM ‘apply p3 (P @* args') == _’ K_TAC \\
-     simp [Abbr ‘p3’, Boehm_apply_MAP_rightctxt'] \\
+ >- (Q.PAT_X_ASSUM ‘Boehm_transform (p3 ++ p2 ++ p1)’ K_TAC \\
+     Q.PAT_X_ASSUM ‘Boehm_transform p1’               K_TAC \\
+     Q.PAT_X_ASSUM ‘Boehm_transform p2’               K_TAC \\
+     Q.PAT_X_ASSUM ‘Boehm_transform p3’               K_TAC \\
+     Q.PAT_X_ASSUM ‘apply p1 M0 == M1’                K_TAC \\
+     Q.PAT_X_ASSUM ‘apply p2 M1 = P @* args'’         K_TAC \\
+     Q.PAT_X_ASSUM ‘apply p3 (P @* args') == _’       K_TAC \\
+  (* preparing for principle_hnf_denude_thm *)
+     Q.PAT_X_ASSUM ‘apply (p3 ++ p2 ++ p1) M == _’ MP_TAC \\
+     simp [Boehm_apply_APPEND, Abbr ‘p1’, Abbr ‘p2’, Abbr ‘p3’,
+           Boehm_apply_MAP_rightctxt'] \\
      Know ‘[P/y] (M @* MAP VAR vs) @* MAP VAR (SNOC b as) =
            [P/y] (M @* MAP VAR vs @* MAP VAR (SNOC b as))’
      >- (simp [appstar_SUB] \\
@@ -3945,10 +3944,11 @@ Proof
  >> DISCH_TAC
  (* calculating ‘principle_hnf (apply (p3 ++ p2 ++ p1) M)’ (hard) *)
  >> Know ‘principle_hnf (apply (p3 ++ p2 ++ p1) M) = VAR b @* Ns @* tl’
- >- (Q.PAT_X_ASSUM ‘apply (p3 ++ p2 ++ p1) M == _’ MP_TAC \\
-     Q.PAT_X_ASSUM ‘Boehm_transform p1’ K_TAC \\
+ >- (Q.PAT_X_ASSUM ‘Boehm_transform p1’ K_TAC \\
      Q.PAT_X_ASSUM ‘Boehm_transform p2’ K_TAC \\
      Q.PAT_X_ASSUM ‘Boehm_transform p3’ K_TAC \\
+  (* preparing for principle_hnf_denude_thm *)
+     Q.PAT_X_ASSUM ‘apply (p3 ++ p2 ++ p1) M == _’ MP_TAC \\
      simp [Boehm_apply_APPEND, Abbr ‘p1’, Abbr ‘p2’, Abbr ‘p3’] \\
      REV_FULL_SIMP_TAC bool_ss [Boehm_apply_MAP_rightctxt'] \\
      cheat)
@@ -4045,7 +4045,9 @@ Proof
  >> qexistsl_tac [‘b’, ‘Ns ++ tl’]
  (* goal: apply (p3 ++ p2 ++ p1) M -h->* VAR b @* (Ns ++ tl) *)
  >> CONJ_TAC
- >- (cheat)
+ >- (REWRITE_TAC [appstar_APPEND] \\
+     Q.PAT_X_ASSUM ‘principle_hnf (apply (p3 ++ p2 ++ p1) M) = _’ MP_TAC \\
+     rw [principle_hnf_thm'])
  (* final goal (is_ready): EVERY (\e. b # e) ... *)
  >> Q.PAT_X_ASSUM ‘solvable (apply (p3 ++ p2 ++ p1) M)’ K_TAC
  >> ASM_SIMP_TAC list_ss [EVERY_EL]
@@ -4053,7 +4055,7 @@ Proof
  >> reverse CONJ_TAC (* !n. n < LENGTH tl ==> b # EL n tl *)
  >- (
      cheat)
- (* stage work *)
+ (* only slightly harder *)
  >> cheat
 QED
 
