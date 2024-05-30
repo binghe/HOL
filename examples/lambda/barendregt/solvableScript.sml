@@ -1360,7 +1360,7 @@ QED
 Theorem lameq_principle_hnf_thm' =
         lameq_principle_hnf_thm |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
 
-(* NOTE: the difficulty of applying this theorem is to prove the antecedents *)
+(* NOTE: The difficulty of applying this theorem is to prove the antecedents *)
 Theorem principle_hnf_substitutive :
     !M N v P. has_hnf M /\ has_hnf ([P/v] M) /\ has_hnf ([P/v] N) /\
               principle_hnf M = N ==>
@@ -1372,8 +1372,7 @@ Proof
  >- (MATCH_MP_TAC hnf_principle_hnf >> art [])
  >> MATCH_MP_TAC hreduce_TRANS
  >> Q.EXISTS_TAC ‘[P/v] N’
- >> CONJ_TAC
- >- (MATCH_MP_TAC hreduce_substitutive >> art [])
+ >> CONJ_TAC >- (MATCH_MP_TAC hreduce_substitutive >> art [])
  >> qabbrev_tac ‘M' = [P/v] M’
  >> qabbrev_tac ‘N' = [P/v] N’
  >> qabbrev_tac ‘Q = principle_hnf N'’
@@ -1381,6 +1380,7 @@ Proof
  >> rw [principle_hnf_thm]
 QED
 
+(* NOTE: This theorem looks nicer than above but is not used anywhere *)
 Theorem principle_hnf_substitutive' :
     !M N v P. has_hnf M /\ has_hnf ([P/v] M) /\ hnf ([P/v] N) /\
               principle_hnf M = N ==>
@@ -1392,6 +1392,26 @@ Proof
      MATCH_MP_TAC hnf_has_hnf >> art [])
  >> Rewr'
  >> MATCH_MP_TAC principle_hnf_reduce >> art []
+QED
+
+(* NOTE: Again, the difficulty of applying this theorem is to prove the antecedents *)
+Theorem principle_hnf_ISUB :
+    !M N sub. has_hnf M /\ has_hnf (M ISUB sub) /\ has_hnf (N ISUB sub) /\
+              principle_hnf M = N ==>
+              principle_hnf (M ISUB sub) = principle_hnf (N ISUB sub)
+Proof
+    rpt STRIP_TAC
+ >> POP_ASSUM MP_TAC
+ >> reverse (rw [principle_hnf_thm])
+ >- (MATCH_MP_TAC hnf_principle_hnf >> art [])
+ >> MATCH_MP_TAC hreduce_TRANS
+ >> Q.EXISTS_TAC ‘N ISUB sub’
+ >> CONJ_TAC >- (MATCH_MP_TAC hreduce_ISUB >> art [])
+ >> qabbrev_tac ‘M' = M ISUB sub’
+ >> qabbrev_tac ‘N' = N ISUB sub’
+ >> qabbrev_tac ‘Q = principle_hnf N'’
+ >> Know ‘principle_hnf N' = Q’ >- rw [Abbr ‘Q’]
+ >> rw [principle_hnf_thm]
 QED
 
 Theorem principle_hnf_denude_solvable[local] :

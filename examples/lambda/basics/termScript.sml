@@ -746,6 +746,7 @@ Proof
  >> ASM_SIMP_TAC (srw_ss()) [pairTheory.FORALL_PROD, ISUB_def, SUB_THM]
 QED
 
+(* NOTE: This is actually appFOLDLTheory.appstar_ISUB *)
 Theorem FOLDL_APP_ISUB :
     !args (t:term) sub.
          FOLDL APP t args ISUB sub =
@@ -754,6 +755,7 @@ Proof
     Induct >> SRW_TAC [][ISUB_APP]
 QED
 
+(* NOTE: This is the basis of a "lemma14b" for ISUB, cf. ssub_14b *)
 Theorem ISUB_VAR_FRESH :
     !y sub. ~MEM y (MAP SND sub) ==> (VAR y ISUB sub = VAR y)
 Proof

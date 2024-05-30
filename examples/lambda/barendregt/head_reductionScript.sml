@@ -6,7 +6,7 @@ open HolKernel Parse boolLib bossLib BasicProvers;
 
 open boolSimps relationTheory pred_setTheory listTheory finite_mapTheory
      arithmeticTheory llistTheory pathTheory optionTheory rich_listTheory
-     hurdUtils;
+     hurdUtils pairTheory;
 
 open termTheory appFOLDLTheory chap2Theory chap3Theory nomsetTheory binderLib
      horeductionTheory term_posnsTheory finite_developmentsTheory
@@ -347,6 +347,17 @@ Theorem substitutive_hreduce :
     substitutive (-h->*)
 Proof
     rw [substitutive_def, hreduce_substitutive]
+QED
+
+(* hreduce and ISUB *)
+Theorem hreduce_ISUB :
+    !sub M N. M -h->* N ==> M ISUB sub -h->* N ISUB sub
+Proof
+    Induct_on ‘sub’ >- rw []
+ >> SIMP_TAC std_ss [FORALL_PROD, ISUB_def]
+ >> rpt STRIP_TAC
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> MATCH_MP_TAC hreduce_substitutive >> art []
 QED
 
 (* This nice and hard-to-prove theorem gives a precise explicit form for any
