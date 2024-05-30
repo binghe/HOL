@@ -3608,7 +3608,7 @@ End
  *)
 Theorem agree_upto_lemma_1 :
     !X Ms p. FINITE X /\ p <> [] /\ EVERY (\e. subterm X e p <> NONE) Ms ==>
-             ?pi. Boehm_transform pi /\ EVERY (is_ready o (apply pi)) Ms
+            ?pi. Boehm_transform pi /\ EVERY (is_ready o (apply pi)) Ms
 Proof
     rpt STRIP_TAC
  >> qabbrev_tac ‘k = LENGTH Ms’
@@ -3683,7 +3683,7 @@ Proof
      MATCH_MP_TAC principle_hnf_beta_reduce_ext \\
      rw [Abbr ‘t’, hnf_appstar])
  >> DISCH_TAC
- >> qabbrev_tac ‘m = \i. LENGTH (args i)’
+ >> qabbrev_tac ‘m = LENGTH o args’
  >> qabbrev_tac ‘d = MAX_LIST (MAP (\e. subterm_width e p) Ms)’
  >> Know ‘!i. i < k ==> m i <= d’
  >- (rpt STRIP_TAC \\
@@ -3716,16 +3716,10 @@ Proof
      rw [GENLIST, REVERSE_SNOC])
  >> DISCH_TAC
  (* properties of ‘sub’ (iterated substitution) *)
- >> Know ‘!j. DOM (sub j) = IMAGE y (count j)’
+ >> Know ‘!j. DOM (sub j) = IMAGE y (count j) /\ FVS (sub j) = {}’
  >- (simp [Abbr ‘sub’] \\
-     Induct_on ‘j’ >- rw [DOM_DEF] \\
-     rw [GENLIST, REVERSE_SNOC, DOM_DEF, COUNT_SUC] \\
-     SET_TAC [])
- >> DISCH_TAC
- >> Know ‘!j. FVS (sub j) = {}’
- >- (simp [Abbr ‘sub’] \\
-     Induct_on ‘j’ >- rw [FVS_DEF] \\
-     rw [GENLIST, REVERSE_SNOC, FVS_DEF, COUNT_SUC] \\
+     Induct_on ‘j’ >- rw [DOM_DEF, FVS_DEF] \\
+     rw [GENLIST, REVERSE_SNOC, DOM_DEF, FVS_DEF, COUNT_SUC] >- SET_TAC [] \\
      rw [Abbr ‘P’, FV_permutator])
  >> DISCH_TAC
  (* NOTE: Z contains ‘vs’ in addition to Y *)
@@ -3736,12 +3730,12 @@ Proof
     at most (in this case, ‘args i = 0 /\ n i = n_max’), and to finally get a
    "is_ready" term, we should apply a fresh list of d_max+1 variables (l).
   *)
- >> qabbrev_tac ‘lv = NEWS (d_max + 1) Z’
- >> Know ‘ALL_DISTINCT lv /\ DISJOINT (set lv) Z /\ LENGTH lv = d_max + 1’
- >- rw [Abbr ‘lv’, NEWS_def]
+ >> qabbrev_tac ‘xs = NEWS (d_max + 1) Z’
+ >> Know ‘ALL_DISTINCT xs /\ DISJOINT (set xs) Z /\ LENGTH xs = d_max + 1’
+ >- rw [Abbr ‘xs’, NEWS_def]
  >> STRIP_TAC
  (* p3 is the maximal possible fresh list to be applied after the permutator *)
- >> qabbrev_tac ‘p3 = MAP rightctxt (REVERSE (MAP VAR lv))’
+ >> qabbrev_tac ‘p3 = MAP rightctxt (REVERSE (MAP VAR xs))’
  >> ‘Boehm_transform p3’ by rw [Abbr ‘p3’, MAP_MAP_o, GSYM MAP_REVERSE]
  (* pre-final stage *)
  >> Q.EXISTS_TAC ‘p3 ++ p2 ++ p1’
@@ -3749,8 +3743,7 @@ Proof
  >- (MATCH_MP_TAC Boehm_transform_APPEND >> art [] \\
      MATCH_MP_TAC Boehm_transform_APPEND >> art [])
  >> simp [EVERY_EL]
- >> Q.X_GEN_TAC ‘i’
- >> DISCH_TAC
+ >> Q.X_GEN_TAC ‘i’ >> DISCH_TAC
  (* now we focus on M = EL i Ms (i < k) *)
  >> qabbrev_tac ‘M = EL i Ms’
  (* calculating ‘apply p1 (M0 i)’ *)
@@ -3784,22 +3777,20 @@ Proof
  (* calculating ‘apply p2 (M1 i)’ *)
  >> ‘apply p2 (M1 i) = P @* MAP (\t. t ISUB sub k) (args i)
                          @* MAP (\t. t ISUB sub k) (DROP (n i) (MAP VAR vs))’
-      by (rw [GSYM appstar_APPEND, MAP_APPEND, appstar_ISUB])
- (* ‘tvs’ is the (tail of possibly substituted) term version of ‘vs’ *)
- >> qabbrev_tac ‘tvs = MAP (\t. t ISUB sub k) (DROP (n i) (MAP VAR vs))’
+      by rw [GSYM appstar_APPEND, MAP_APPEND, appstar_ISUB]
+ (* abbreviate the tail term list after applying p2 *)
+ >> qabbrev_tac ‘args2 = MAP (\t. t ISUB sub k) (DROP (n i) (MAP VAR vs))’
  (* ‘args'’ is the possibly substituted version of ‘args’ *)
  >> qabbrev_tac ‘args' = MAP (\t. t ISUB sub k) (args i)’
  (* calculating ‘apply p2 ...’ until reaching hnf *)
- >> Know ‘apply p3 (P @* args' @* tvs) = P @* args' @* tvs @* MAP VAR lv’
+ >> Know ‘apply p3 (P @* args' @* args2) = P @* args' @* args2 @* MAP VAR xs’
  >- rw [Abbr ‘p3’, Boehm_apply_MAP_rightctxt']
  >> REWRITE_TAC [GSYM appstar_APPEND, APPEND_ASSOC]
  (* preparing for permutator_hreduce_more *)
- >> qabbrev_tac ‘l = args' ++ tvs ++ MAP VAR lv’
+ >> qabbrev_tac ‘l = args' ++ args2 ++ MAP VAR xs’
  >> REWRITE_TAC [appstar_APPEND]
- >> DISCH_TAC
  >> ‘LENGTH l = m i + (n_max - n i) + d_max + 1’
-      by rw [Abbr ‘l’, Abbr ‘m’, Abbr ‘tvs’, Abbr ‘args'’, Abbr ‘d_max’, o_DEF]
- >> Q.PAT_X_ASSUM ‘apply p3 (P @* args' @* tvs) = P @* l’ MP_TAC
+      by rw [Abbr ‘l’, Abbr ‘m’, Abbr ‘args2’, Abbr ‘args'’, Abbr ‘d_max’, o_DEF]
  (* applying TAKE_DROP_SUC *)
  >> MP_TAC (ISPECL [“d_max :num”, “l :term list”] (GSYM TAKE_DROP_SUC))
  >> impl_tac >- rw [] (* d_max < LENGTH l *)
@@ -3808,21 +3799,22 @@ Proof
  >> qabbrev_tac ‘Ns = TAKE d_max l’
  (* NOTE: B (the future head variable) will be soon refined it to ‘VAR b’ *)
  >> qabbrev_tac ‘B = EL d_max l’
- >> qabbrev_tac ‘j = d_max - LENGTH (args' ++ tvs)’
- >> ‘j < LENGTH lv’ by rw [Abbr ‘j’, Abbr ‘args'’, Abbr ‘tvs’, Abbr ‘d_max’]
- >> Know ‘?b. EL j lv = b /\ B = VAR b’
+ >> qabbrev_tac ‘j = d_max - LENGTH (args' ++ args2)’
+ >> ‘j < LENGTH xs’ by rw [Abbr ‘j’, Abbr ‘args'’, Abbr ‘args2’, Abbr ‘d_max’]
+ >> Know ‘?b. EL j xs = b /\ B = VAR b’
  >- (rw [Abbr ‘B’, Abbr ‘l’] \\
-     Know ‘EL d_max (args' ++ tvs ++ MAP VAR lv) = EL j (MAP VAR lv)’
-     >- (qunabbrev_tac ‘j’ >> MATCH_MP_TAC EL_APPEND2 \\
-         rw [Abbr ‘args'’, Abbr ‘tvs’, Abbr ‘d_max’] \\
-         MATCH_MP_TAC LESS_EQ_LESS_EQ_MONO >> rw []) >> Rewr' \\
-     rw [EL_MAP])
+     Suff ‘EL d_max (args' ++ args2 ++ MAP VAR xs) = EL j (MAP VAR xs)’
+     >- rw [EL_MAP] \\
+     qunabbrev_tac ‘j’ >> MATCH_MP_TAC EL_APPEND2 \\
+     rw [Abbr ‘args'’, Abbr ‘args2’, Abbr ‘d_max’] \\
+     MATCH_MP_TAC LESS_EQ_LESS_EQ_MONO >> rw [] \\
+     Q.PAT_X_ASSUM ‘!i. i < k ==> m i <= d’ MP_TAC \\
+     simp [Abbr ‘m’])
  >> STRIP_TAC (* this asserts ‘B = VAR b’, etc. *)
  >> POP_ORW (* rewrite goal with ‘B = VAR b’ *)
- >> qunabbrev_tac ‘B’ (* B is now useless, thus eliminated *)
- (* NOTE: ‘tl’ is the tail of ‘l’ *)
+ >> qunabbrev_tac ‘B’
  >> qabbrev_tac ‘tl = DROP (SUC d_max) l’
- >> DISCH_TAC
+ >> DISCH_TAC (* store ‘apply p3 ...’ *)
  (* applying permutator_hreduce_more *)
  >> Know ‘P @* Ns @@ VAR b @* tl -h->* VAR b @* Ns @* tl’
  >- (simp [Abbr ‘P’] \\
@@ -3956,11 +3948,11 @@ Proof
  (* final goal (is_ready): EVERY (\e. b # e) ... *)
  >> Q.PAT_X_ASSUM ‘solvable (apply (p3 ++ p2 ++ p1) M)’ K_TAC
  >> ASM_SIMP_TAC list_ss [EVERY_EL]
- (* easier subgoal first *)
+ (* easier goal first *)
  >> reverse CONJ_TAC (* !n. n < LENGTH tl ==> b # EL n tl *)
  >- (
      cheat)
- (* only slightly harder *)
+ (* slightly harder *)
  >> cheat
 QED
 
