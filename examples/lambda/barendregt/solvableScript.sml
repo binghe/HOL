@@ -1381,7 +1381,7 @@ Proof
  >> rw [principle_hnf_thm]
 QED
 
-Theorem principle_hnf_substitutive_hnf :
+Theorem principle_hnf_substitutive' :
     !M N v P. has_hnf M /\ has_hnf ([P/v] M) /\ hnf ([P/v] N) /\
               principle_hnf M = N ==>
               principle_hnf ([P/v] M) = [P/v] N
