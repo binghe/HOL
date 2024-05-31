@@ -1850,7 +1850,7 @@ Definition monomial_var :
 End
 
 Definition monomial_vars :
-    monomial_vars m = {i:'v | m i <> (0 :num)}
+    monomial_vars m = {(i :'v) | m i <> (0 :num)}
 End
 
 Definition monomial_deg :
@@ -1859,7 +1859,7 @@ End
 
 Definition monomial :
     monomial (s :'v -> bool) m <=>
-     FINITE(monomial_vars m) /\ (monomial_vars m) SUBSET s
+      FINITE (monomial_vars m) /\ (monomial_vars m) SUBSET s
 End
 
 (* ------------------------------------------------------------------------- *)
@@ -1891,13 +1891,13 @@ Overload INTERS[local] = “BIGINTER”
 
 Definition ring_powerseries :
     ring_powerseries (r :'a Ring) (p :('b -> num) -> 'a) <=>
-        (!m. p m IN ring_carrier r) /\
-        !m. INFINITE(monomial_vars m) ==> p m = ring_0 r
+       (!m. p m IN ring_carrier r) /\
+        !m. INFINITE (monomial_vars m) ==> p m = ring_0 r
 End
 
 Definition ring_polynomial :
     ring_polynomial (r :'a Ring) (p :('b -> num) -> 'a) <=>
-        ring_powerseries r p /\ FINITE {m | ~(p m = ring_0 r)}
+        ring_powerseries r p /\ FINITE {m | p m <> ring_0 r}
 End
 
 Definition poly_vars :
