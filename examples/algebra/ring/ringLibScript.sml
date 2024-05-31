@@ -44,7 +44,7 @@ val RIGHT_AND_EXISTS_THM = GSYM RIGHT_EXISTS_AND_THM;
 (* |- !P Q. (?x. P x) /\ Q <=> ?x. P x /\ Q *)
 val LEFT_AND_EXISTS_THM = GSYM LEFT_EXISTS_AND_THM;
 
-val IMP_CONJ = DECIDE “p /\ q ==> r <=> p ==> q ==> r”;
+val IMP_CONJ = TAUT ‘p /\ q ==> r <=> p ==> q ==> r’;
 
 (* ------------------------------------------------------------------------- *)
 (*  'a Ring as type bijections of a subset of 'a ring                        *)
@@ -1853,7 +1853,6 @@ Definition monomial_vars :
     monomial_vars m = {i:'v | m i <> (0 :num)}
 End
 
-(*
 Definition monomial_deg :
     monomial_deg m = nsum (monomial_vars m) (m :'v -> num)
 End
@@ -1862,23 +1861,21 @@ Definition monomial :
     monomial (s :'v -> bool) m <=>
      FINITE(monomial_vars m) /\ (monomial_vars m) SUBSET s
 End
- *)
 
 (* ------------------------------------------------------------------------- *)
 (* Sum in a ring. The instantiation required is a little ugly since all      *)
 (* the ITSET/iterate stuff is really designed for total operators.           *)
 (* ------------------------------------------------------------------------- *)
 
-(*
-let ring_sum = new_definition
- `ring_sum r s (f:K->A) =
+Definition ring_sum :
+    ring_sum r s (f :'k -> 'a) =
         iterate (\x y. if x IN ring_carrier r /\ y IN ring_carrier r
                        then ring_add r x y
                        else if x IN ring_carrier r then y
                        else if y IN ring_carrier r then x
-                       else @z:A. ~(z IN ring_carrier r))
-                {x | x IN s /\ f(x) IN ring_carrier r} f`;;
- *)
+                       else @(z :'a). ~(z IN ring_carrier r))
+                {x | x IN s /\ f(x) IN ring_carrier r} f
+End
 
 (* ------------------------------------------------------------------------- *)
 (* General power series / polynomial sets and operations.                    *)
