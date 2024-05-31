@@ -3963,9 +3963,22 @@ Proof
       qabbrev_tac ‘C = DROP (n i) (MAP VAR vs) ++ MAP VAR xs :term list’ \\
       qunabbrevl_tac [‘A’, ‘B’] \\
       REWRITE_TAC [GSYM MAP_TAKE] \\
-   (* applying principle_hnf_denude_thm *)
+   (* applying principle_hnf_denude_thm, finally *)
       MATCH_MP_TAC principle_hnf_denude_thm >> art [] \\
-      cheat)
+      CONJ_TAC (* ALL_DISTINCT *)
+      >- (MATCH_MP_TAC ALL_DISTINCT_TAKE >> art []) \\
+      CONJ_TAC (* DISJOINT *)
+      >- (MATCH_MP_TAC DISJOINT_SUBSET' \\
+          Q.EXISTS_TAC ‘set vs’ \\
+          reverse CONJ_TAC >- (rw [SUBSET_DEF] >> MATCH_MP_TAC MEM_TAKE \\
+                               Q.EXISTS_TAC ‘n i’ >> art []) \\
+          MATCH_MP_TAC DISJOINT_SUBSET \\
+          Q.EXISTS_TAC ‘Y’ >> art [] \\
+          rw [SUBSET_DEF, Abbr ‘Y’] \\
+          DISJ2_TAC >> Q.EXISTS_TAC ‘FV M’ >> art [] \\
+          Q.EXISTS_TAC ‘M’ >> art [] \\
+          rw [Abbr ‘M’, EL_MEM]) \\
+      simp [Abbr ‘M’])
  >> DISCH_TAC
  >> Know ‘solvable (apply (p3 ++ p2 ++ p1) M)’
  >- (Suff ‘solvable (VAR b @* Ns @* tl)’ >- METIS_TAC [lameq_solvable_cong] \\
@@ -3985,9 +3998,14 @@ Proof
  >> Q.PAT_X_ASSUM ‘solvable (apply (p3 ++ p2 ++ p1) M)’          K_TAC
  >> Q.PAT_X_ASSUM ‘principle_hnf (apply (p3 ++ p2 ++ p1) M) = _’ K_TAC
  >> ASM_SIMP_TAC list_ss [EVERY_EL]
+ (* clean up useless assumptions *)
+ >> Q.PAT_X_ASSUM ‘Boehm_transform p1’ K_TAC
+ >> Q.PAT_X_ASSUM ‘Boehm_transform p2’ K_TAC
+ >> Q.PAT_X_ASSUM ‘Boehm_transform p3’ K_TAC
  (* easier goal first *)
  >> reverse CONJ_TAC (* !n. n < LENGTH tl ==> b # EL n tl *)
- >- (cheat)
+ >- (
+     cheat)
  (* slightly harder *)
  >> cheat
 QED
