@@ -1,1 +1,20 @@
-INCLUDES = $(HOLDIR)/src/n-bit $(HOLDIR)/src/res_quan/src
+INCLUDES = $(HOLDIR)/src/pred_set/src $(HOLDIR)/src/n-bit \
+           $(HOLDIR)/src/res_quan/src
+
+HOLHEAP = heap
+EXTRA_CLEANS = $(HOLHEAP)
+
+all: $(DEFAULT_TARGETS)
+.PHONY: all
+
+ifdef POLY
+OBJS = pred_set/src/pred_setTheory pred_set/src/pred_setLib n-bit/fcpTheory \
+       n-bit/fcpLib res_quan/src/hurdUtils
+
+FULL_OBJPATHS = $(patsubst %,$(HOLDIR)/src/%.uo,$(OBJS))
+
+all: $(HOLHEAP)
+
+$(HOLHEAP): $(FULL_OBJPATHS) $(HOLDIR)/bin/hol.state
+	$(protect $(HOLDIR)/bin/buildheap) $(DEBUG_FLAG) -o $@ $(FULL_OBJPATHS)
+endif

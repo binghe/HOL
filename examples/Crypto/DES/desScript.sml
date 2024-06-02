@@ -735,19 +735,10 @@ QED
 Overload DESEncrypt = “\r k. FST (DES r k)”
 Overload FullDESEncrypt = “\k. FST (FullDES k)”
 
-Theorem DES_compl_prop :
-    !r m k. word_1comp (DESEncrypt r k m) =
-            DESEncrypt r (word_1comp k) (word_1comp m)
+Theorem lemma :
+    !(m :word64). (63 >< 32) m = ~(63 >< 32) ~m
 Proof
     cheat
-QED
-
-Theorem FullDES_compl_prop = Q.SPEC ‘16’ DES_compl_prop
-
-Theorem inv_lemma :
-    !(w :word64) j. j < 64 ==> (word_1comp w) ' j = ~(w ' j)
-Proof
-    rw [word_1comp_def, FCP_BETA]
 QED
 
 Theorem Join_compl_prop :
@@ -759,6 +750,15 @@ Proof
  >> Cases_on ‘i < 32’
  >> rw [FCP_BETA]
 QED
+
+Theorem DES_compl_prop :
+    !r m k. word_1comp (DESEncrypt r k m) =
+            DESEncrypt r (word_1comp k) (word_1comp m)
+Proof
+    cheat
+QED
+
+Theorem FullDES_compl_prop = Q.SPEC ‘16’ DES_compl_prop
 
 val _ = export_theory();
 val _ = html_theory "des";

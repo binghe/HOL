@@ -3970,10 +3970,10 @@ Proof
       CONJ_TAC (* DISJOINT *)
       >- (MATCH_MP_TAC DISJOINT_SUBSET' \\
           Q.EXISTS_TAC ‘set vs’ \\
-          reverse CONJ_TAC >- (rw [SUBSET_DEF] >> MATCH_MP_TAC MEM_TAKE \\
-                               Q.EXISTS_TAC ‘n i’ >> art []) \\
-          MATCH_MP_TAC DISJOINT_SUBSET \\
-          Q.EXISTS_TAC ‘Y’ >> art [] \\
+          reverse CONJ_TAC
+          >- (rw [SUBSET_DEF] \\
+              MATCH_MP_TAC MEM_TAKE >> Q.EXISTS_TAC ‘n i’ >> art []) \\
+          MATCH_MP_TAC DISJOINT_SUBSET >> Q.EXISTS_TAC ‘Y’ >> art [] \\
           rw [SUBSET_DEF, Abbr ‘Y’] \\
           DISJ2_TAC >> Q.EXISTS_TAC ‘FV M’ >> art [] \\
           Q.EXISTS_TAC ‘M’ >> art [] \\
@@ -4003,10 +4003,10 @@ Proof
  >> Q.PAT_X_ASSUM ‘Boehm_transform p2’ K_TAC
  >> Q.PAT_X_ASSUM ‘Boehm_transform p3’ K_TAC
  (* easier goal first *)
- >> reverse CONJ_TAC (* !n. n < LENGTH tl ==> b # EL n tl *)
- >- (
+ >> reverse CONJ_TAC (* b # EL n tl *)
+ >- (Q.X_GEN_TAC ‘a’ >> STRIP_TAC \\
      cheat)
- (* slightly harder *)
+ (* only slightly harder *)
  >> cheat
 QED
 
