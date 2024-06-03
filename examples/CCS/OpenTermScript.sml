@@ -94,7 +94,7 @@ Proof
 QED
 
 (* NOTE: the opposite direction doesn't hold, unless X is the only FV *)
-Theorem StrongEQ_imp_STRONG_EQUIV_SUB :
+Theorem StrongEQ_IMP_STRONG_EQUIV_SUB :
     !X P Q. StrongEQ P Q ==> !E. STRONG_EQUIV ([E/X] P) ([E/X] Q)
 Proof
     rw [StrongEQ_def]
@@ -112,7 +112,7 @@ Theorem STRONG_EQUIV_PRESD_BY_REC :
 Proof
     rw [weakly_guarded_def, CCS_Subst]
  >> ‘!E. STRONG_EQUIV ([E/X] P) ([E/X] Q)’
-       by PROVE_TAC [StrongEQ_imp_STRONG_EQUIV_SUB]
+       by PROVE_TAC [StrongEQ_IMP_STRONG_EQUIV_SUB]
  >> MATCH_MP_TAC STRONG_UNIQUE_SOLUTION_EXT
  >> qexistsl_tac [‘\t. [t/X] P’, ‘\t. [t/X] Q’] >> simp []
  >> rw [STRONG_UNFOLDING']

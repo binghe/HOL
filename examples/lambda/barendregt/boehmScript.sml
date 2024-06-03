@@ -4005,8 +4005,33 @@ Proof
  (* easier goal first *)
  >> reverse CONJ_TAC (* b # EL n tl *)
  >- (Q.X_GEN_TAC ‘a’ >> STRIP_TAC \\
-     cheat)
- (* only slightly harder *)
+     qabbrev_tac ‘l1 = args' ++ args2’ \\
+     Know ‘LENGTH l1 <= d_max’
+     >- (rw [Abbr ‘l1’, Abbr ‘args'’, Abbr ‘args2’, Abbr ‘d_max’] \\
+         MATCH_MP_TAC LESS_EQ_LESS_EQ_MONO >> rw [] \\
+         Q.PAT_X_ASSUM ‘!i. i < k ==> m i <= d’ MP_TAC \\
+         simp [Abbr ‘m’]) >> DISCH_TAC \\
+     Q.PAT_X_ASSUM ‘apply (p3 ++ p2 ++ p1) M == _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘apply p3 _ = _’                K_TAC \\
+     Q.PAT_X_ASSUM ‘apply p2 _ = _’                K_TAC \\
+     Q.PAT_X_ASSUM ‘a < LENGTH tl’ MP_TAC \\
+  (* applying DROP_APPEND2 *)
+     Know ‘tl = DROP (SUC j) (MAP VAR xs)’
+     >- (rw [Abbr ‘tl’, Abbr ‘l’] \\
+        ‘LENGTH l1 <= SUC d_max’ by rw [] \\
+         ASM_SIMP_TAC std_ss [DROP_APPEND2] \\
+         Suff ‘SUC d_max - LENGTH l1 = SUC j’ >- rw [] \\
+         rw [Abbr ‘j’]) >> Rewr' \\
+     simp [] >> DISCH_TAC \\
+     Know ‘EL a (DROP (SUC j) (MAP VAR xs :term list)) =
+           EL (a + SUC j) (MAP VAR xs)’
+     >- (MATCH_MP_TAC EL_DROP >> rw []) >> Rewr' \\
+     simp [EL_MAP] \\
+     Q.PAT_X_ASSUM ‘EL j xs = b’ (ONCE_REWRITE_TAC o wrap o SYM) \\
+     SPOSE_NOT_THEN (STRIP_ASSUME_TAC o REWRITE_RULE []) \\
+     Suff ‘EL j xs = EL (a + SUC j) xs <=> j = a + SUC j’ >- rw [] \\
+     MATCH_MP_TAC ALL_DISTINCT_EL_IMP >> rw [])
+ (* final goal, only slightly harder *)
  >> cheat
 QED
 
