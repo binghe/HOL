@@ -4031,7 +4031,16 @@ Proof
      SPOSE_NOT_THEN (STRIP_ASSUME_TAC o REWRITE_RULE []) \\
      Suff ‘EL j xs = EL (a + SUC j) xs <=> j = a + SUC j’ >- rw [] \\
      MATCH_MP_TAC ALL_DISTINCT_EL_IMP >> rw [])
- (* final goal, only slightly harder *)
+ (* final goal, only slightly harder
+
+ |<------ m(i) ---->|<-- n_max-n(i) -->|<----------- d_max+1 --------------->|
+ |------ args' -----+----- args2 ------+----------- MAP VAR xs --------------|
+ |------------------------------------ l ------------------------------------|
+ |<---------d_max = d + n_max------------->| b
+ |------------------- Ns ------------------+-+------------- tl --------------|
+ |<---------------d_max+1------------------->|
+                                       |<-j->|
+  *)
  >> cheat
 QED
 
