@@ -3749,12 +3749,14 @@ Proof
  (* p3 is the maximal possible fresh list to be applied after the permutator *)
  >> qabbrev_tac ‘p3 = MAP rightctxt (REVERSE (MAP VAR xs))’
  >> ‘Boehm_transform p3’ by rw [Abbr ‘p3’, MAP_MAP_o, GSYM MAP_REVERSE]
- (* properties of the head variable y *)
- >> Know ‘!i. i < k ==> y i IN Z’
- >- (rpt STRIP_TAC \\
-     Suff ‘y i IN FV (EL i Ms) UNION set vs’
-     >- (Suff ‘FV (EL i Ms) UNION set vs SUBSET Z’ >- PROVE_TAC [SUBSET_DEF] \\
-         simp [Abbr ‘Z’, Abbr ‘Y’] \\
+ (* FV properties of the head variable y (and children args) *)
+ >> Know ‘!i. i < k ==> y i IN Z /\
+                        BIGUNION (IMAGE FV (set (args i))) SUBSET Z’
+ >- (NTAC 2 STRIP_TAC \\
+     qabbrev_tac ‘Z' = FV (EL i Ms) UNION set vs’ \\
+     Suff ‘y i IN Z' /\ BIGUNION (IMAGE FV (set (args i))) SUBSET Z'’
+     >- (Suff ‘Z' SUBSET Z’ >- PROVE_TAC [SUBSET_DEF] \\
+         simp [Abbr ‘Z'’, Abbr ‘Z’, Abbr ‘Y’] \\
          rw [SUBSET_DEF, IN_BIGUNION_IMAGE] \\
          DISJ1_TAC >> DISJ2_TAC \\
          Q.EXISTS_TAC ‘EL i Ms’ >> rw [EL_MEM]) \\
@@ -3762,7 +3764,10 @@ Proof
      Know ‘FV (M0 i) SUBSET FV (EL i Ms)’
      >- (qunabbrev_tac ‘M0’ >> BETA_TAC \\
          MATCH_MP_TAC principle_hnf_FV_SUBSET' >> rw []) \\
-     Suff ‘y i IN FV (M0 i) UNION set vs’ >- SET_TAC [] \\
+     qunabbrev_tac ‘Z'’ \\
+     Suff ‘y i IN FV (M0 i) UNION set vs /\
+            BIGUNION (IMAGE FV (set (args i))) SUBSET FV (M0 i) UNION set vs’
+     >- SET_TAC [] \\
      Know ‘FV (M1 i) SUBSET FV (M0 i @* MAP VAR vs)’
      >- (‘M1 i = principle_hnf (M0 i @* MAP VAR vs)’ by rw [] >> POP_ORW \\
          MATCH_MP_TAC principle_hnf_FV_SUBSET' \\
@@ -3773,8 +3778,9 @@ Proof
          MATCH_MP_TAC hnf_has_hnf \\
          rw [GSYM appstar_APPEND, hnf_appstar]) \\
      REWRITE_TAC [FV_appstar_MAP_VAR] \\
-     Suff ‘y i IN FV (M1 i)’ >- SET_TAC [] \\
-     rw [FV_appstar])
+     Suff ‘y i IN FV (M1 i) /\
+           BIGUNION (IMAGE FV (set (args i))) SUBSET FV (M1 i)’ >- SET_TAC [] \\
+     rw [FV_appstar] >> SET_TAC [])
  >> DISCH_TAC
  (* pre-final stage *)
  >> Q.EXISTS_TAC ‘p3 ++ p2 ++ p1’
@@ -4031,16 +4037,41 @@ Proof
      SPOSE_NOT_THEN (STRIP_ASSUME_TAC o REWRITE_RULE []) \\
      Suff ‘EL j xs = EL (a + SUC j) xs <=> j = a + SUC j’ >- rw [] \\
      MATCH_MP_TAC ALL_DISTINCT_EL_IMP >> rw [])
- (* final goal, only slightly harder
+(* final goal, slightly harder (n1/n2/n3 are cases of n < LENGTH Ns)
 
- |<------ m(i) ---->|<-- n_max-n(i) -->|<----------- d_max+1 --------------->|
- |------ args' -----+----- args2 ------+----------- MAP VAR xs --------------|
- |------------------------------------ l ------------------------------------|
- |<---------d_max = d + n_max------------->| b
- |------------------- Ns ------------------+-+------------- tl --------------|
- |<---------------d_max+1------------------->|
-                                       |<-j->|
-  *)
+ |<---- m(i) ---->|<-- n_max-n(i) -->|<-------------- d_max+1 ---------------->|
+ |----- args' ----+----- args2 ------+-------------- MAP VAR xs ---------------|
+ |------------------------------------ l --------------------------------------|
+ |                                   |<-j->|
+ |<---------d_max = d + n_max----------->| b
+ |------------------- Ns ----------------+-+--------------- tl ----------------|
+ |<-------------- d_max+1 ---------------->|
+         n1               n2           n3
+ *)
+ >> Q.X_GEN_TAC ‘a’
+ >> DISCH_TAC
+ (* cleanup useless assumptions and abbreviations *)
+ >> Q.PAT_X_ASSUM ‘apply (p3 ++ p2 ++ p1) M == _’                   K_TAC
+ >> Q.PAT_X_ASSUM ‘apply p3 _ = _’                                  K_TAC
+ >> Q.PAT_X_ASSUM ‘apply p2 _ = _’                                  K_TAC
+ >> Q.PAT_X_ASSUM ‘!t. apply p2 t = t ISUB sub k’                   K_TAC
+ >> Q.PAT_X_ASSUM ‘!i. i < k ==> apply p1 _ == _’                   K_TAC
+ >> Q.PAT_X_ASSUM ‘P @* Ns @@ VAR b @* tl -h->* VAR b @* Ns @* tl’  K_TAC
+ >> qunabbrevl_tac [‘p1’, ‘p2’, ‘p3’]
+ >> Cases_on ‘a < LENGTH args'’
+ >- (Q.PAT_X_ASSUM ‘a < LENGTH Ns’ MP_TAC \\
+     simp [Abbr ‘Ns’, LENGTH_TAKE] \\
+     DISCH_TAC (* a < d_max *) \\
+     simp [EL_TAKE] \\
+     Know ‘EL a l = EL a args'’
+     >- (SIMP_TAC std_ss [Abbr ‘l’, GSYM APPEND_ASSOC] \\
+         MATCH_MP_TAC EL_APPEND1 >> art []) >> Rewr' \\
+     Suff ‘b # EL a (args i)’
+     >- (Suff ‘FV (EL a args') SUBSET FV (EL a (args i))’ >- SET_TAC [] \\
+         Q.PAT_X_ASSUM ‘a < LENGTH args'’ MP_TAC \\
+         simp [Abbr ‘args'’, EL_MAP] >> DISCH_TAC \\
+         cheat) \\
+     cheat)
  >> cheat
 QED
 

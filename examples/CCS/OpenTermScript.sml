@@ -84,7 +84,7 @@ Theorem StrongEQ_def =
     SIMP_RULE std_ss [FUN_EQ_THM] (Q.SPEC ‘STRONG_EQUIV’ extension_def)
 
 (* |- !x y. StrongEQ x y ==> STRONG_EQUIV x y *)
-Theorem StrongEQ_imp_STRONG_EQUIV =
+Theorem StrongEQ_IMP_STRONG_EQUIV =
     extension_RSUBSET |> Q.SPEC ‘STRONG_EQUIV’ |> REWRITE_RULE [RSUBSET]
 
 Theorem StrongEQ_alt_closed :
@@ -124,7 +124,7 @@ Theorem StrongEQ_alt_SUB :
            (StrongEQ P Q <=> !E. STRONG_EQUIV ([E/X] P) ([E/X] Q))
 Proof
     rpt STRIP_TAC
- >> EQ_TAC >- REWRITE_TAC [StrongEQ_imp_STRONG_EQUIV_SUB]
+ >> EQ_TAC >- REWRITE_TAC [StrongEQ_IMP_STRONG_EQUIV_SUB]
  >> rw [StrongEQ_def]
  (* preparing for ssub_reduce_thm *)
  >> ‘FV P = {} \/ FV P = {X}’ by ASM_SET_TAC []
