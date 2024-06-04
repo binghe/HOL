@@ -4058,6 +4058,7 @@ Proof
  >> Q.PAT_X_ASSUM ‘!i. i < k ==> apply p1 _ == _’                   K_TAC
  >> Q.PAT_X_ASSUM ‘P @* Ns @@ VAR b @* tl -h->* VAR b @* Ns @* tl’  K_TAC
  >> qunabbrevl_tac [‘p1’, ‘p2’, ‘p3’]
+ (* first case *)
  >> Cases_on ‘a < LENGTH args'’
  >- (Q.PAT_X_ASSUM ‘a < LENGTH Ns’ MP_TAC \\
      simp [Abbr ‘Ns’, LENGTH_TAKE] \\
@@ -4070,8 +4071,20 @@ Proof
      >- (Suff ‘FV (EL a args') SUBSET FV (EL a (args i))’ >- SET_TAC [] \\
          Q.PAT_X_ASSUM ‘a < LENGTH args'’ MP_TAC \\
          simp [Abbr ‘args'’, EL_MAP] >> DISCH_TAC \\
-         cheat) \\
-     cheat)
+         MATCH_MP_TAC FV_ISUB_SUBSET >> art []) \\
+     Know ‘b NOTIN Z’
+     >- (Q.PAT_X_ASSUM ‘DISJOINT (set xs) Z’ MP_TAC \\
+         rw [DISJOINT_ALT] \\
+         POP_ASSUM MATCH_MP_TAC >> rw [EL_MEM]) \\
+     Suff ‘FV (EL a (args i)) SUBSET Z’ >- SET_TAC [] \\
+     Know ‘BIGUNION (IMAGE FV (set (args i))) SUBSET Z’ >- rw [] \\
+     REWRITE_TAC [BIGUNION_SUBSET, IN_IMAGE] \\
+     DISCH_THEN MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘EL a (args i)’ >> rw [MEM_EL] \\
+     Q.EXISTS_TAC ‘a’ \\
+     Q.PAT_X_ASSUM ‘a < LENGTH args'’ MP_TAC \\
+     rw [Abbr ‘args'’])
+ (* next case *)
  >> cheat
 QED
 
