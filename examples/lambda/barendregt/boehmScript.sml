@@ -4084,8 +4084,63 @@ Proof
      Q.EXISTS_TAC ‘a’ \\
      Q.PAT_X_ASSUM ‘a < LENGTH args'’ MP_TAC \\
      rw [Abbr ‘args'’])
- (* next case *)
- >> cheat
+ (* 2nd case *)
+ >> Cases_on ‘a < LENGTH args' + LENGTH args2’
+ >- (Q.PAT_X_ASSUM ‘a < LENGTH Ns’ MP_TAC \\
+     simp [Abbr ‘Ns’, LENGTH_TAKE] \\
+     DISCH_TAC (* a < d_max *) \\
+     simp [EL_TAKE] \\
+     Know ‘EL a l = EL (a - LENGTH args') args2’
+     >- (SIMP_TAC std_ss [Abbr ‘l’, GSYM APPEND_ASSOC] \\
+         qabbrev_tac ‘l2 = args2 ++ MAP VAR xs’ \\
+         Know ‘EL a (args' ++ l2) = EL (a - LENGTH args') l2’
+         >- (MATCH_MP_TAC EL_APPEND2 >> rw []) >> Rewr' \\
+         qunabbrev_tac ‘l2’ \\
+         MATCH_MP_TAC EL_APPEND1 >> rw []) >> Rewr' \\
+     Know ‘b NOTIN Z’
+     >- (Q.PAT_X_ASSUM ‘DISJOINT (set xs) Z’ MP_TAC \\
+         rw [DISJOINT_ALT] \\
+         POP_ASSUM MATCH_MP_TAC >> rw [EL_MEM]) \\
+     qabbrev_tac ‘a' = a - LENGTH args'’ \\
+     Suff ‘FV (EL a' args2) SUBSET Z’ >- SET_TAC [] \\
+     Suff ‘FV (EL a' args2) SUBSET set vs’
+     >- (qunabbrev_tac ‘Z’ >> SET_TAC []) \\
+    ‘a' < LENGTH args2’ by rw [Abbr ‘a'’] \\
+     Q.PAT_X_ASSUM ‘a < LENGTH args' + LENGTH args2’ MP_TAC \\
+     Q.PAT_X_ASSUM ‘a' < LENGTH args2’ MP_TAC \\
+     qunabbrev_tac ‘args2’ \\
+     simp [EL_MAP, LENGTH_DROP] >> NTAC 2 DISCH_TAC \\
+     qabbrev_tac ‘a'' = EL a' (DROP (n i) (MAP VAR vs :term list))’ \\
+     MATCH_MP_TAC SUBSET_TRANS \\
+     Q.EXISTS_TAC ‘FV a''’ \\
+     CONJ_TAC >- (MATCH_MP_TAC FV_ISUB_SUBSET >> art []) \\
+     qunabbrev_tac ‘a''’ \\
+     qabbrev_tac ‘ls :term list = MAP VAR vs’ \\
+     Know ‘a' + n i < LENGTH ls’
+     >- (‘a' + n i < n_max’ by rw [] \\
+         MATCH_MP_TAC LESS_LESS_EQ_TRANS \\
+         Q.EXISTS_TAC ‘n_max’ >> art [] \\
+         simp [Abbr ‘ls’, Abbr ‘d_max’]) >> DISCH_TAC \\
+     Know ‘EL a' (DROP (n i) ls) = EL (a' + n i) ls’
+     >- (MATCH_MP_TAC EL_DROP >> art []) >> Rewr' \\
+     simp [Abbr ‘ls’, SUBSET_DEF, EL_MAP, EL_MEM])
+ (* 3rd case *)
+ >> (Q.PAT_X_ASSUM ‘a < LENGTH Ns’ MP_TAC \\
+     simp [Abbr ‘Ns’, LENGTH_TAKE] \\
+     DISCH_TAC (* a < d_max *) \\
+     simp [EL_TAKE] \\
+     qabbrev_tac ‘ls :term list = MAP VAR xs’ \\
+     Know ‘EL a l = EL (a - LENGTH (args' ++ args2)) ls’
+     >- (SIMP_TAC std_ss [Abbr ‘l’] \\
+         qabbrev_tac ‘l1 = args' ++ args2’ \\
+         MATCH_MP_TAC EL_APPEND2 >> rw [Abbr ‘l1’]) >> Rewr' \\
+     simp [] \\
+     qabbrev_tac ‘a' = a - (LENGTH args' + LENGTH args2)’ \\
+    ‘a' < j’ by simp [Abbr ‘a'’, Abbr ‘j’] \\
+     rw [Abbr ‘ls’, EL_MAP] \\
+     SPOSE_NOT_THEN (STRIP_ASSUME_TAC o REWRITE_RULE []) \\
+     Suff ‘EL j xs = EL a' xs <=> j = a'’ >- rw [] \\
+     MATCH_MP_TAC ALL_DISTINCT_EL_IMP >> rw [])
 QED
 
 (* NOTE: ‘p <> []’ can be removed now *)
