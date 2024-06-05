@@ -65,15 +65,9 @@ fun err_BUG s (h as HOL_ERR _) =
 
 (* Success and failure *)
 
-fun assert b e = if b then () else raise e;
-fun try f a = f a
-  handle (h as HOL_ERR _) => (print (exn_to_string h); raise h)
-       | (b as BUG_EXN _) => (print (BUG_to_string b); raise b)
-       | e => (print "\ntry: strange exception raised\n"; raise e);
-fun total f x = SOME (f x) handle HOL_ERR _ => NONE;
-fun can f = Option.isSome o total f;
-fun partial (e as HOL_ERR _) f x = (case f x of SOME y => y | NONE => raise e)
-  | partial _ _ _ = raise BUG "partial" "must take a HOL_ERR";
+(* renamed due to conflict with Lib.assert *)
+fun simple_assert b e = if b then () else raise e;
+val assert = simple_assert; (* only for the rest of this file *)
 
 (* Exception combinators *)
 
