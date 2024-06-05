@@ -3582,18 +3582,24 @@ Definition is_faithful_def :
 End
 
 Definition term_agree_upto_def :
-    term_agree_upto M N p =
+    term_agree_upto p M N =
       !q. q <<= p ==>
           ltree_el (BTe (FV M UNION FV N) M) q =
           ltree_el (BTe (FV M UNION FV N) N) q
 End
 
-(* Definition 10.3.10 (iv) *)
-val _ = set_fixity "agree_upto" (Infixr 490);
+Theorem term_agree_upto_refl :
+    !p M. term_agree_upto p M M
+Proof
+    rw [term_agree_upto_def]
+QED
 
+(* Definition 10.3.10 (iv) *)
 Definition agree_upto_def :
-    $agree_upto Ns p = !M N. MEM M Ns /\ MEM N Ns ==> term_agree_upto M N p
+    agree_upto p Ns = !M N. MEM M Ns /\ MEM N Ns ==> term_agree_upto p M N
 End
+
+Overload agree_upto = “term_agree_upto”
 
 (* Lemma 10.3.11 (1) [1. p.251]
 
@@ -3611,9 +3617,9 @@ End
  *)
 Theorem agree_upto_lemma :
     !X Ms p. FINITE X /\ p <> [] /\ EVERY (\e. subterm X e p <> NONE) Ms /\
-             Ms agree_upto p ==>
+             agree_upto p Ms ==>
             ?pi. Boehm_transform pi /\ EVERY (is_ready o (apply pi)) Ms /\
-                (MAP (apply pi) Ms) agree_upto p
+                 agree_upto p (MAP (apply pi) Ms)
 Proof
     rpt STRIP_TAC
  >> qabbrev_tac ‘k = LENGTH Ms’
@@ -4139,9 +4145,9 @@ Proof
  >> cheat
 QED
 
-(* Lemma 10.3.11 (3) [1. p.251] *)
+(* Lemma 10.3.11 (3) [1. p.251]
 Theorem agree_upto_lemma_3 :
-    !X Ms p. FINITE X /\ EVERY (\e. subterm X e p <> NONE) Ms /\ Ms agree_upto p ==>
+    !X Ms p. FINITE X /\ EVERY (\e. subterm X e p <> NONE) Ms /\ agree_upto p Ms ==>
              ?pi. Boehm_transform pi /\
                   !M N. MEM M Ns /\ MEM N Ns ==>
                        (subterm_equivalent p M N <=>
@@ -4149,10 +4155,11 @@ Theorem agree_upto_lemma_3 :
 Proof
     cheat
 QED
+ *)
 
 (* Proposition 10.3.13 [1, p.253] *)
 Theorem agree_upto_thm :
-    !Ns p. Ns agree_upto p ==> ?pi. Boehm_transform pi /\ is_faithful p Ns pi
+    !Ns p. agree_upto p Ns ==> ?pi. Boehm_transform pi /\ is_faithful p Ns pi
 Proof
     cheat
 QED
@@ -4674,10 +4681,9 @@ Theorem separability_thm :
           !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q
 Proof
     rpt STRIP_TAC
- (* TODO: find p with minimal length for ‘agree_upto {M;N} p’ to hold *)
  >> ‘?p. ~subterm_equivalent p M N’
        by METIS_TAC [distinct_benf_no_subterm_equivalent]
- >> Know ‘[M; N] agree_upto p’
+ >> Know ‘agree_upto p [M; N]’
  >- (cheat)
  >> DISCH_THEN (STRIP_ASSUME_TAC o (MATCH_MP agree_upto_thm))
  >> Know ‘~equivalent (apply pi M) (apply pi N)’
