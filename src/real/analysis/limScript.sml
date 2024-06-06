@@ -700,6 +700,10 @@ Proof
     REWRITE_TAC [lemma]
 QED
 
+(* !n x. ((\x. x pow n) has_vector_derivative &n * x pow (n - 1)) (at x) *)
+Theorem HAS_VECTOR_DERIVATIVE_POW =
+        REWRITE_RULE [diffl_has_vector_derivative] DIFF_POW
+
 (*---------------------------------------------------------------------------*)
 (* Now power of -1 (then differentiation of inverses follows from chain rule)*)
 (*---------------------------------------------------------------------------*)
