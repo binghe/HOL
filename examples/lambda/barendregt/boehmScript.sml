@@ -2,7 +2,7 @@
  * boehmScript.sml: (Effective) Boehm Trees (Chapter 10 of [1])              *
  *---------------------------------------------------------------------------*)
 
-open HolKernel boolLib Parse bossLib BasicProvers;
+open HolKernel Parse boolLib bossLib;
 
 (* core theories *)
 open optionTheory arithmeticTheory pred_setTheory listTheory rich_listTheory
@@ -20,9 +20,9 @@ val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
 
 val o_DEF = combinTheory.o_DEF;
 
-val _ = hide "Y";
 val _ = hide "B";
 val _ = hide "C";
+val _ = hide "Y";
 
 (*---------------------------------------------------------------------------*
  *  ltreeTheory extras
@@ -149,7 +149,7 @@ QED
    to lambda terms in form of ‘SOME (LAMl vs (VAR y))’ or ‘NONE’.
  *)
 Definition fromNode_def :
-    fromNode = OPTION_MAP (\ (vs,y). LAMl vs (VAR y))
+    fromNode = OPTION_MAP (\(vs,y). LAMl vs (VAR y))
 End
 
 (* Boehm tree of a single (free) variable ‘VAR s’ *)
@@ -1584,7 +1584,8 @@ Proof
 QED
 
 (* |- !x. equivalent x x *)
-Theorem equivalent_refl = REWRITE_RULE [reflexive_def] equivalent_reflexive
+Theorem equivalent_refl[simp] =
+        REWRITE_RULE [reflexive_def] equivalent_reflexive
 
 Theorem equivalent_symmetric :
     symmetric equivalent
@@ -2548,7 +2549,7 @@ Proof
  >> CONV_TAC (UNBETA_CONV “subterm X ([P/v] M) (h::l)”)
  >> qmatch_abbrev_tac ‘f _’
  >> ASM_SIMP_TAC std_ss [subterm_of_solvables]
- >> LET_ELIM_TAC
+ >> BasicProvers.LET_ELIM_TAC
  >> Q.PAT_X_ASSUM ‘subterm _ (EL h (hnf_children M1)) l <> NONE’ MP_TAC
  >> simp [Abbr ‘f’, hnf_children_hnf]
  >> DISCH_TAC (* subterm (X UNION set vs) (EL h args) l <> NONE *)
@@ -3554,6 +3555,33 @@ Definition head_equivalent_def :
          IS_NONE (FST A) /\ IS_NONE (FST B)
 End
 
+Theorem head_equivalent_refl[simp] :
+    head_equivalent A A
+Proof
+    rw [head_equivalent_def]
+ >> Cases_on ‘A’ >> fs []
+ >> rename1 ‘IS_SOME a’
+ >> Cases_on ‘a’ >> fs []
+ >> Cases_on ‘x’ >> rw []
+QED
+
+Theorem head_equivalent_sym :
+    !A B. head_equivalent A B ==> head_equivalent B A
+Proof
+    simp [head_equivalent_def]
+ >> qx_genl_tac [‘A’, ‘B’]
+ >> Cases_on ‘A’ >> Cases_on ‘B’ >> simp []
+ >> Cases_on ‘q’ >> Cases_on ‘q'’ >> simp []
+ >> Cases_on ‘x’ >> Cases_on ‘x'’ >> simp []
+QED
+
+Theorem head_equivalent_comm :
+    !A B. head_equivalent A B <=> head_equivalent B A
+Proof
+    rpt GEN_TAC
+ >> EQ_TAC >> rw [head_equivalent_sym]
+QED
+
 (* Definition 10.2.21 (ii) [1, p.238] *)
 Definition subtree_equivalent_def :
     subtree_equivalent p (A :boehm_tree) (B :boehm_tree) =
@@ -3566,6 +3594,28 @@ Definition subtree_equivalent_def :
                IS_NONE A' /\ IS_NONE B'
 End
 
+Theorem subtree_equivalent_refl[simp] :
+    subtree_equivalent p A A
+Proof
+    rw [subtree_equivalent_def]
+QED
+
+Theorem subtree_equivalent_sym :
+    !p A B. subtree_equivalent p A B ==> subtree_equivalent p B A
+Proof
+    rpt GEN_TAC
+ >> simp [subtree_equivalent_def]
+ >> rw [Once head_equivalent_comm] >> rfs []
+ >> CCONTR_TAC >> rfs []
+QED
+
+Theorem subtree_equivalent_comm :
+    !p A B. subtree_equivalent p A B <=> subtree_equivalent p B A
+Proof
+    rpt STRIP_TAC
+ >> EQ_TAC >> rw [subtree_equivalent_sym]
+QED
+
 (* Definition 10.2.32 (v) [1, p.245] *)
 Definition subterm_equivalent_def :
     subterm_equivalent p M N =
@@ -3573,13 +3623,51 @@ Definition subterm_equivalent_def :
                          (BTe (FV M UNION FV N) N)
 End
 
+Theorem subterm_equivalent_refl[simp] :
+    subterm_equivalent p M M
+Proof
+    rw [subterm_equivalent_def]
+QED
+
+Theorem subterm_equivalent_sym :
+    !p M N. subterm_equivalent p M N ==> subterm_equivalent p N M
+Proof
+    rpt GEN_TAC
+ >> simp [subterm_equivalent_def]
+ >> ‘FV M UNION FV N = FV N UNION FV M’ by SET_TAC []
+ >> POP_ORW
+ >> rw [Once subtree_equivalent_comm]
+QED
+
+Theorem subterm_equivalent_comm :
+    !p M N. subterm_equivalent p M N <=> subterm_equivalent p N M
+Proof
+    rpt GEN_TAC
+ >> EQ_TAC >> rw [subterm_equivalent_sym]
+QED
+
 (* Definition 10.3.10 (ii) [1, p.251] *)
 Definition is_faithful_def :
-    is_faithful p Ns pi =
-      !M N. MEM M Ns /\ MEM N Ns ==>
-            (subterm_equivalent p M N <=> equivalent (apply pi M) (apply pi N)) /\
-            (!X. solvable (apply pi M) <=> IS_SOME (ltree_lookup (BTe X M) p))
+    is_faithful p Ns pi <=>
+      (!X M. MEM M Ns ==>
+            (solvable (apply pi M) <=> IS_SOME (ltree_lookup (BTe X M) p))) /\
+       !M N. MEM M Ns /\ MEM N Ns ==>
+            (subterm_equivalent p M N <=> equivalent (apply pi M) (apply pi N))
 End
+
+Theorem is_faithful_two :
+    !p M N pi. is_faithful p [M; N] pi <=>
+              (!X. solvable (apply pi M) <=> IS_SOME (ltree_lookup (BTe X M) p)) /\
+              (!X. solvable (apply pi N) <=> IS_SOME (ltree_lookup (BTe X N) p)) /\
+              (subterm_equivalent p M N <=> equivalent (apply pi M) (apply pi N))
+Proof
+    rw [is_faithful_def]
+ >> EQ_TAC >> rw [] >> rw [] (* only one goal left *)
+ >> MATCH_MP_TAC EQ_TRANS
+ >> Q.EXISTS_TAC ‘subterm_equivalent p M M'’
+ >> CONJ_TAC >- rw [Once subterm_equivalent_comm]
+ >> rw [Once equivalent_comm]
+QED
 
 Definition term_agree_upto_def :
     term_agree_upto p M N =
@@ -3588,8 +3676,8 @@ Definition term_agree_upto_def :
           ltree_el (BTe (FV M UNION FV N) N) q
 End
 
-Theorem term_agree_upto_refl :
-    !p M. term_agree_upto p M M
+Theorem term_agree_upto_refl[simp] :
+    term_agree_upto p M M
 Proof
     rw [term_agree_upto_def]
 QED
@@ -3618,7 +3706,8 @@ Overload agree_upto = “term_agree_upto”
 Theorem agree_upto_lemma :
     !X Ms p. FINITE X /\ p <> [] /\ EVERY (\e. subterm X e p <> NONE) Ms /\
              agree_upto p Ms ==>
-            ?pi. Boehm_transform pi /\ EVERY (is_ready o (apply pi)) Ms /\
+            ?pi. Boehm_transform pi /\
+                 EVERY is_ready (MAP (apply pi) Ms) /\
                  agree_upto p (MAP (apply pi) Ms)
 Proof
     rpt STRIP_TAC
@@ -3796,9 +3885,9 @@ Proof
  >> CONJ_TAC
  >- (MATCH_MP_TAC Boehm_transform_APPEND >> art [] \\
      MATCH_MP_TAC Boehm_transform_APPEND >> art [])
- (* EVERY (is_ready o apply (p3 ++ p2 ++ p1)) Ms *)
+ (* EVERY is_ready ... *)
  >> STRONG_CONJ_TAC
- >- (simp [EVERY_EL] (* Now we focus on ‘EL i Ms’ *) \\
+ >- (simp [EVERY_EL, EL_MAP] (* Now we focus on ‘EL i Ms’ *) \\
      Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
   (* now we focus on M = EL i Ms (i < k) *)
      qabbrev_tac ‘M = EL i Ms’ \\
@@ -4141,7 +4230,14 @@ Proof
      Suff ‘EL j xs = EL a' xs <=> j = a'’ >- rw [] \\
      MATCH_MP_TAC ALL_DISTINCT_EL_IMP >> rw [])
  >> DISCH_TAC
- (* MAP (apply (p3 ++ p2 ++ p1)) Ms agree_upto p *)
+ (* now proving agree_upto *)
+ >> qabbrev_tac ‘pi = p3 ++ p2 ++ p1’
+ >> simp [agree_upto_def]
+ >> qx_genl_tac [‘M2’, ‘N2’] >> simp [MEM_MAP]
+ >> ONCE_REWRITE_TAC [DECIDE “p /\ q ==> r <=> p ==> q ==> r”]
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘M’ STRIP_ASSUME_TAC)
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘N’ STRIP_ASSUME_TAC)
+ >> Cases_on ‘M2 = N2’ >- rw []
  >> cheat
 QED
 
@@ -4678,7 +4774,7 @@ QED
 (* Theorem 10.4.2 (i) [1, p.256] *)
 Theorem separability_thm :
     !M N. benf M /\ benf N /\ M <> N ==>
-          !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q
+         !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q
 Proof
     rpt STRIP_TAC
  >> ‘?p. ~subterm_equivalent p M N’
@@ -4686,10 +4782,7 @@ Proof
  >> Know ‘agree_upto p [M; N]’
  >- (cheat)
  >> DISCH_THEN (STRIP_ASSUME_TAC o (MATCH_MP agree_upto_thm))
- >> Know ‘~equivalent (apply pi M) (apply pi N)’
- >- (POP_ASSUM (MP_TAC o (Q.SPECL [‘M’, ‘N’]) o (REWRITE_RULE [is_faithful_def])) \\
-     simp [])
- >> DISCH_TAC
+ >> fs [is_faithful_two]
  >> qabbrev_tac ‘M0 = apply pi M’
  >> qabbrev_tac ‘N0 = apply pi N’
  (* solvable mostly because M and N are bnf *)
