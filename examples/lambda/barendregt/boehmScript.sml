@@ -4237,7 +4237,9 @@ Proof
  >> ONCE_REWRITE_TAC [DECIDE “p /\ q ==> r <=> p ==> q ==> r”]
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘M’ STRIP_ASSUME_TAC)
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘N’ STRIP_ASSUME_TAC)
- >> Cases_on ‘M2 = N2’ >- rw []
+ (* applying term_agree_upto_def *)
+ >> rw [term_agree_upto_def]
+ >> qabbrev_tac ‘Z' = FV (apply pi M) UNION FV (apply pi N)’
  >> cheat
 QED
 
