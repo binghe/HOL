@@ -7702,6 +7702,7 @@ Proof
  >> rw [extreal_abs_def]
  >> ‘0 < abs (a + b) /\ 0 < abs a /\ 0 < abs b’ by rw []
  >> rw [normal_powr, extreal_of_num_def, extreal_add_def, extreal_mul_def, extreal_le_eq]
+ >> ONCE_REWRITE_TAC [REAL_MUL_COMM]
  (* below is real-only *)
  >> MATCH_MP_TAC REAL_LE_TRANS
  >> Q.EXISTS_TAC ‘(max (abs a powr r) (abs b powr r)) * 2 powr r’
