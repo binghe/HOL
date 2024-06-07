@@ -25,7 +25,7 @@ open reduceLib
      numTheory
      prim_recTheory
      arithmeticTheory
-     realTheory realSimps realLib
+     realTheory realLib
      metricTheory
      netsTheory
      real_sigmaTheory
@@ -2984,14 +2984,29 @@ Proof
   RW_TAC std_ss [DIFF_COMPOSITE]
 QED
 
-(* NOTE: The function ‘x rpow y’ has been expanded to ‘exp (y * ln x)’,
-   the previous definition of ‘rpow’. For otherwise this theorem is no more
-   provable under the new definition of ‘rpow’. -- Chun Tian, 6/6/2024
- *)
 Theorem DIFF_RPOW :
-    !x y. 0 < x ==> ((\x. exp (y * ln x)) diffl (y * (x rpow (y - 1)))) x
+    !x y. 0 < x ==> ((\x. x rpow y) diffl (y * (x rpow (y - 1)))) x
 Proof
     RW_TAC real_ss [rpow, GSYM RPOW_DIV_BASE]
+ (* eliminate ‘rpow’ by LIM_TRANSFORM_WITHIN_OPEN_EQ *)
+ >> qabbrev_tac ‘l = y * (exp (y * ln x) / x)’
+ >> Know ‘((\x. x powr y) diffl l) x <=> ((\x. exp (y * ln x)) diffl l) x’
+ >- (REWRITE_TAC [diffl, GSYM LIM_AT_LIM] \\
+     Q.ABBREV_TAC ‘f = \z. (z powr y - x powr y) / (z - x)’ \\
+    ‘(\h. ((x + h) powr y - x powr y) / h) = (\h. f (x + h))’
+        by simp [FUN_EQ_THM, Abbr ‘f’, REAL_ADD_SUB] >> POP_ORW \\
+     Q.ABBREV_TAC ‘g = \z. (exp (y * ln z) - exp (y * ln x)) / (z - x)’ \\
+    ‘(\h. (exp (y * ln (x + h)) - exp (y * ln x)) / h) = (\h. g (x + h))’
+        by simp [FUN_EQ_THM, Abbr ‘g’, REAL_ADD_SUB] >> POP_ORW \\
+     MATCH_MP_TAC LIM_TRANSFORM_WITHIN_OPEN_EQ >> simp [] \\
+     Q.EXISTS_TAC ‘{y | -x < y}’ >> simp [OPEN_INTERVAL_RIGHT] \\
+     Q.X_GEN_TAC ‘z’ >> rw [] \\
+    ‘0 < x + z’ by (Q.PAT_X_ASSUM ‘-x < z’ MP_TAC >> REAL_ARITH_TAC) \\
+     rw [Abbr ‘f’, Abbr ‘g’, REAL_ADD_SUB] \\
+     rw [rpow_def])
+ >> Rewr'
+ >> qunabbrev_tac ‘l’
+ (* below is the old proof *)
  >> RW_TAC real_ss [REAL_MUL_ASSOC,real_div,REAL_MUL_COMM]
  >> RW_TAC real_ss [GSYM real_div]
  >> Know ‘!x'. exp ((y * ln x')) = exp ((\x'. y * ln x') x')’
