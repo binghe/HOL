@@ -1822,17 +1822,22 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
-(* Monoid of monomials over an arbitrary set of "variables".                 *)
+(* Monoid of monomials over an arbitrary set of "variables" X = {x,y,z,...}  *)
+(*                                                                           *)
+(* NOTE: “x^i * y^j * z^k” is represented by [x |-> i, y |-> j, k |-> k]     *)
 (* ------------------------------------------------------------------------- *)
 
+(* 1 = x^0 y^0 z^0 ... [X |-> 0] *)
 Definition monomial_1 :
     monomial_1 = \i :'v. (0 :num)
 End
 
+(* x^m * x^n = x^(m + n) *)
 Definition monomial_mul :
     monomial_mul (m1 :'v -> num) (m2 :'v -> num) = \i. m1 i + m2 i
 End
 
+(* x^m / x^n = x^(m - n) *)
 Definition monomial_div :
     monomial_div (m1 :'v -> num) (m2 :'v -> num) = \i. m1 i - m2 i
 End
@@ -1841,22 +1846,26 @@ Definition monomial_restrict :
     monomial_restrict s (m :'v -> num) = \i. if i IN s then m i else 0
 End
 
+(* x^m divides x^n <=> m <= n *)
 Definition monomial_divides :
     monomial_divides (m1 :'v -> num) (m2 :'v -> num) <=> !i. m1 i <= m2 i
 End
 
+(* v^1, can be used (together with monimial_1) to build other monimials *)
 Definition monomial_var :
     monomial_var (v :'v) = \i. if i = v then (1 :num) else (0 :num)
 End
 
+(* The set of "variables" occurred in the monomial m *)
 Definition monomial_vars :
-    monomial_vars m = {(i :'v) | m i <> (0 :num)}
+    monomial_vars (m :'v -> num) = {(i :'v) | m i <> (0 :num)}
 End
 
 Definition monomial_deg :
     monomial_deg m = nsum (monomial_vars m) (m :'v -> num)
 End
 
+(* ‘m’ is a monimial of variable set s iff the involved variables are finite *)
 Definition monomial :
     monomial (s :'v -> bool) m <=>
       FINITE (monomial_vars m) /\ (monomial_vars m) SUBSET s
@@ -1889,12 +1898,21 @@ End
 Overload UNIONS[local] = “BIGUNION”
 Overload INTERS[local] = “BIGINTER”
 
+(* p is ring power series as a "list" of “c * x^i y^j z^k”, aka a function p
+   mapping monomials (x^i y^j z^k ...) to their cofficients. Those "monomials"
+   with infinite variables are mapped to (ring) zero.
+
+   NOTE: There may be infinite (no cardinality restriction) items in the series.
+ *)
 Definition ring_powerseries :
     ring_powerseries (r :'a Ring) (p :('b -> num) -> 'a) <=>
        (!m. p m IN ring_carrier r) /\
         !m. INFINITE (monomial_vars m) ==> p m = ring_0 r
 End
 
+(* A polynomial is a finite power series, i.e. the number of non-zero monomials
+   must be finite.
+ *)
 Definition ring_polynomial :
     ring_polynomial (r :'a Ring) (p :('b -> num) -> 'a) <=>
         ring_powerseries r p /\ FINITE {m | p m <> ring_0 r}
@@ -1904,9 +1922,10 @@ Definition poly_vars :
     poly_vars r (p :('a -> num) -> 'b) = UNIONS { monomial_vars m | ~(p m = ring_0 r)}
 End
 
+(* c * monomial_1 or c * x^0 y^0 z^0 ..., where c is a ring element *)
 Definition poly_const :
     poly_const (r :'a Ring) (c :'a) =
-        \(m:'v -> num). if m = monomial_1 then c else ring_0 r
+      \(m:'v -> num). if m = monomial_1 then c else ring_0 r
 End
 
 Definition poly_0 :
@@ -1921,19 +1940,16 @@ Definition poly_add :
     poly_add (r :'a Ring) p1 p2 = \m :'v -> num. ring_add r (p1 m) (p2 m)
 End
 
-(*
 Definition poly_mul :
     poly_mul (r :'a Ring) p1 p2 =
         \m :'v -> num. ring_sum r {(m1,m2) | monomial_mul m1 m2 = m}
-                              (\(m1,m2). ring_mul r (p1 m1) (p2 m2))
+                                (\(m1,m2). ring_mul r (p1 m1) (p2 m2))
 End
- *)
 
 (* ------------------------------------------------------------------------- *)
 (* Actual polynomial and power series rings.                                 *)
 (* ------------------------------------------------------------------------- *)
 
-(*
 Definition powser_ring :
     powser_ring (r :'a Ring) (s :'v -> bool) =
         ring({p | ring_powerseries r p /\ poly_vars r p SUBSET s},
@@ -1946,6 +1962,7 @@ Definition poly_ring :
              poly_0 r,poly_1 r,poly_add r,poly_mul r)
 End
 
+(*
 let CARD_EQ_POLY_RING_INFINITE = prove
  (`!(r:A ring) (s:V->bool).
         ~trivial_ring r /\ INFINITE s
@@ -1967,7 +1984,7 @@ let CARD_EQ_POLY_RING_INFINITE = prove
     MP_TAC(ISPEC `r:A ring` RING_0) THEN SET_TAC[];
     W(MP_TAC o PART_MATCH lhand CARD_MUL_SYM o lhand o snd) THEN
     MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] CARD_EQ_TRANS) THEN
-    ASM_SIMP_TAC[CARD_MUL_CONG; CARD_EQ_REFL; CARD_EQ_MONOMIALS_INFINITE]]);;
+    ASM_SIMP_TAC[CARD_MUL_CONG; CARD_EQ_REFL; CARD_EQ_MONOMIALS_INFINITE]]);
 
 (* ------------------------------------------------------------------------- *)
 (* Zerodivisors and units in polynomial and power series rings.              *)
@@ -2030,9 +2047,7 @@ let INTEGRAL_DOMAIN_POLY_RING = prove
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ]
     INTEGRAL_DOMAIN_MONOMORPHIC_PREIMAGE) THEN
   MESON_TAC[RING_MONOMORPHISM_POLY_CONST; RING_MONOMORPHISM_POLY_POWSER]);;
- *)
 
-(*
 Theorem INTEGRAL_DOMAIN_TOTALIZATION :
     !r :'a Ring.
         integral_domain r
