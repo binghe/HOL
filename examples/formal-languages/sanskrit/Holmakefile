@@ -1,0 +1,11 @@
+DOC_SOURCES = README.md
+CSS = $(HOLDIR)/Manual/Cheatsheet/cheatsheet.css
+
+EXTRA_CLEANS = README.html \
+	$(patsubst %Theory.uo,%Theory.html,$(DEFAULT_TARGETS))
+
+all: $(DEFAULT_TARGETS) README.html
+.PHONY: all
+
+README.html: $(DOC_SOURCES)
+	pandoc -s --toc -c $(CSS) -o README.html README.md

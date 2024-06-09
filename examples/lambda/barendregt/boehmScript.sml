@@ -3656,10 +3656,11 @@ Definition is_faithful_def :
 End
 
 Theorem is_faithful_two :
-    !p M N pi. is_faithful p [M; N] pi <=>
-              (!X. solvable (apply pi M) <=> IS_SOME (ltree_lookup (BTe X M) p)) /\
-              (!X. solvable (apply pi N) <=> IS_SOME (ltree_lookup (BTe X N) p)) /\
-              (subterm_equivalent p M N <=> equivalent (apply pi M) (apply pi N))
+    !p M N pi.
+       is_faithful p [M; N] pi <=>
+      (!X. solvable (apply pi M) <=> IS_SOME (ltree_lookup (BTe X M) p)) /\
+      (!X. solvable (apply pi N) <=> IS_SOME (ltree_lookup (BTe X N) p)) /\
+      (subterm_equivalent p M N <=> equivalent (apply pi M) (apply pi N))
 Proof
     rw [is_faithful_def]
  >> EQ_TAC >> rw [] >> rw [] (* only one goal left *)
