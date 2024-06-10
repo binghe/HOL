@@ -17,7 +17,7 @@ val _ = new_theory theory_name;
 (* Loading the fxp library *)
 val cwd = OS.FileSys.getDir();
 val _ = OS.FileSys.chDir "fxp";
-structure Word8 = PolyWord8; (* Why? *)
+structure Word8 = PolyWord8;
 val _ = use "poly-fxpLib.ML";
 val _ = OS.FileSys.chDir cwd;
 
