@@ -1,5 +1,5 @@
 (*---------------------------------------------------------------------------*
- *   The Siddhānta Kaumudī (settled moonlight) of Bhaṭṭoji Dīkṣta in HOL4    *
+ *    Aṣṭādhyāyī (a work consisting of eight chapters) of Pāṇini in HOL4     *
  *                                                                           *
  *                  Chun Tian, School of Computing,                          *
  *                Australian National University (2024)                      *
@@ -7,19 +7,16 @@
 
 open HolKernel Parse boolLib bossLib;
 
+open SKTheory;
+
 (*---------------------------------------------------------------------------*
  * Create the theory.                                                        *
  *---------------------------------------------------------------------------*)
 
-val theory_name = "SK";
+val theory_name = "AS";
 val _ = new_theory theory_name;
 
-(* Loading the fxp library *)
-val cwd = OS.FileSys.getDir();
-val _ = OS.FileSys.chDir "fxp";
-structure Word8 = PolyWord8; (* Why? *)
-val _ = use "poly-fxpLib.ML";
-val _ = OS.FileSys.chDir cwd;
+
 
 (*---------------------------------------------------------------------------*
  * Write the theory to disk.                                                 *
