@@ -1,9 +1,6 @@
-
-
-
 structure Base =
    struct
-      open 
-	 BaseData
-	 BaseString
+      open
+         BaseData
+         BaseString
    end

@@ -1,13 +1,3 @@
-
-
-
-
-
-
-
-
-
-
 (*--------------------------------------------------------------------------*)
 (* Structure: Dfa                                                           *)
 (*                                                                          *)
@@ -28,10 +18,10 @@
 (*   makeDfa             : Ambiguous                                        *)
 (*   Dfa2String          : none                                             *)
 (*--------------------------------------------------------------------------*)
-signature Dfa = 
+signature Dfa =
    sig
       eqtype DfaState
-	 
+
       val dfaError   : DfaState
       val dfaInitial : DfaState
 
@@ -49,11 +39,11 @@ signature Dfa =
    end
 
 functor Dfa (structure DfaOptions : DfaOptions) : Dfa =
-   struct	
-      structure DfaPassThree = DfaPassThree (structure DfaOptions = DfaOptions) 
+   struct
+      structure DfaPassThree = DfaPassThree (structure DfaOptions = DfaOptions)
 
-      open 
-	 DfaBase DfaError DfaPassOne DfaPassTwo DfaString DfaUtil
+      open
+         DfaBase DfaError DfaPassOne DfaPassTwo DfaString DfaUtil
 
       type DfaState = State
 
@@ -62,51 +52,51 @@ functor Dfa (structure DfaOptions : DfaOptions) : Dfa =
       (* are the symbols occurring in the input dfa.                        *)
       (*--------------------------------------------------------------------*)
       fun makeChoiceDfa cm =
-	 let 
-	    val syms = cmSymbols cm
-	    val flw = map (fn a => (dfaInitial,a)) syms
-	 in 
-	    Vector.fromList [makeRow(flw,true)]
-	 end
+         let
+            val syms = cmSymbols cm
+            val flw = map (fn a => (dfaInitial,a)) syms
+         in
+            Vector.fromList [makeRow(flw,true)]
+         end
 
       (*--------------------------------------------------------------------*)
       (* create a dfa for an ambiguous content model. Raise DfaTooLarge if  *)
       (* the subset construction yields too many states.                    *)
       (*--------------------------------------------------------------------*)
-      fun makeAmbiguous cm = 
-	 let 
-	    val cmi = DfaPassOne.passOne true cm
-	    val tab = DfaPassTwo.passTwo true cmi
-	    val dfa = DfaPassThree.passThree true tab
-	 in dfa
-	 end
-	    
+      fun makeAmbiguous cm =
+         let
+            val cmi = DfaPassOne.passOne true cm
+            val tab = DfaPassTwo.passTwo true cmi
+            val dfa = DfaPassThree.passThree true tab
+         in dfa
+         end
+
       (*--------------------------------------------------------------------*)
       (* generate a dfa for a content model. Raise Ambiguous if the content *)
       (* model is ambiguous.                                                *)
       (*--------------------------------------------------------------------*)
-      fun makeDfa cm = 
-	 let 
-	    val cmi = DfaPassOne.passOne false cm
-	    val tab = DfaPassTwo.passTwo false cmi
-	    val dfa = DfaPassThree.passThree false tab
-	 in dfa
-	 end
+      fun makeDfa cm =
+         let
+            val cmi = DfaPassOne.passOne false cm
+            val tab = DfaPassTwo.passTwo false cmi
+            val dfa = DfaPassThree.passThree false tab
+         in dfa
+         end
       handle ConflictFirst aqq => raise Ambiguous (countOccs aqq cm)
-	   | ConflictFollow aqq => raise Ambiguous (countOccs aqq cm)
-      
+           | ConflictFollow aqq => raise Ambiguous (countOccs aqq cm)
+
       (*--------------------------------------------------------------------*)
       (* make one transitions in the dfa.                                   *)
       (*--------------------------------------------------------------------*)
-      fun dfaTrans(tab,q,a) = 
-	 if q<0 then dfaDontCare 
-	 else let val (lo,hi,tab,_) = Vector.sub(tab,q)
-	      in if a>=lo andalso a<=hi then Vector.sub(tab,a-lo) else dfaError
-	      end
+      fun dfaTrans(tab,q,a) =
+         if q<0 then dfaDontCare
+         else let val (lo,hi,tab,_) = Vector.sub(tab,q)
+              in if a>=lo andalso a<=hi then Vector.sub(tab,a-lo) else dfaError
+              end
 
       (*--------------------------------------------------------------------*)
       (* check whether a dfa's state is an accepting state.                 *)
       (*--------------------------------------------------------------------*)
-      fun dfaFinal (tab,q) = 
-	 q<0 orelse #4(Vector.sub(tab,q):Row)
+      fun dfaFinal (tab,q) =
+         q<0 orelse #4(Vector.sub(tab,q):Row)
    end

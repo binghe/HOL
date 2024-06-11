@@ -5,46 +5,46 @@
 (*   AttNot2Index        : none                                             *)
 (*   Element2Index       : none                                             *)
 (*   GenEnt2Index        : none                                             *)
-(*   Id2Index            : none 		                            *)
-(*   Index2AttNot        : NoSuchIndex	                                    *)
-(*   Index2Element       : NoSuchIndex	                                    *)
+(*   Id2Index            : none                                             *)
+(*   Index2AttNot        : NoSuchIndex                                      *)
+(*   Index2Element       : NoSuchIndex                                      *)
 (*   Index2GenEnt        : NoSuchIndex                                      *)
-(*   Index2Id            : NoSuchIndex			                    *)
+(*   Index2Id            : NoSuchIndex                                      *)
 (*   Index2ParEnt        : NoSuchIndex                                      *)
 (*   ParEnt2Index        : none                                             *)
 (*   entitiesWellformed  : none                                             *)
-(*   getElement          : NoSuchIndex	                                    *)
+(*   getElement          : NoSuchIndex                                      *)
 (*   getGenEnt           : NoSuchIndex                                      *)
-(*   getId               : NoSuchIndex	                                    *)
-(*   getNotation         : NoSuchIndex	                                    *)
+(*   getId               : NoSuchIndex                                      *)
+(*   getNotation         : NoSuchIndex                                      *)
 (*   getParEnt           : NoSuchIndex                                      *)
-(*   hasNotation         : NoSuchIndex	                                    *)
+(*   hasNotation         : NoSuchIndex                                      *)
 (*   initDtdTables       : none                                             *)
 (*   maxUsedElem         : none                                             *)
 (*   maxUsedId           : none                                             *)
-(*   printAttNotTable    : none				                    *)
-(*   printIdTable        : none				                    *)
+(*   printAttNotTable    : none                                             *)
+(*   printIdTable        : none                                             *)
 (*   printParEntTable    : none                                             *)
-(*   printxElementTable  : none		                                    *)
+(*   printxElementTable  : none                                             *)
 (*   printxGenEntTable   : none                                             *)
-(*   setElement          : NoSuchIndex	                                    *)
+(*   setElement          : NoSuchIndex                                      *)
 (*   setGenEnt           : NoSuchIndex                                      *)
-(*   setId               : NoSuchIndex	                                    *)
-(*   setNotation         : NoSuchIndex	                                    *)
+(*   setId               : NoSuchIndex                                      *)
+(*   setNotation         : NoSuchIndex                                      *)
 (*   setParEnt           : NoSuchIndex                                      *)
 (*--------------------------------------------------------------------------*)
-signature Dtd = 
+signature Dtd =
    sig
-      type Dtd 
-      
+      type Dtd
+
       val hasDtd       : Dtd -> bool
       val hasExternal  : Dtd -> bool
       val standsAlone  : Dtd -> bool
-	 
+
       val setHasDtd     : Dtd -> unit
       val setExternal   : Dtd -> unit
       val setStandAlone : Dtd -> bool -> unit
-	 
+
       val entitiesWellformed : Dtd -> bool
 
       val validPredef  : int -> UniChar.Vector
@@ -70,7 +70,7 @@ signature Dtd =
       val Index2GenEnt    : Dtd -> int -> UniChar.Data
       val Index2AttNot    : Dtd -> int -> UniChar.Data
       val Index2ParEnt    : Dtd -> int -> UniChar.Data
-	 
+
       val getId       : Dtd -> int -> Base.IdInfo
       val getElement  : Dtd -> int -> Base.ElemInfo
       val getGenEnt   : Dtd -> int -> Base.GenEntInfo
@@ -91,7 +91,7 @@ signature Dtd =
 
       val initDtdTables  : unit -> Dtd
       val printDtdTables : Dtd -> unit
-	 
+
       val printAttNotTable  : Dtd -> unit
       val printIdTable      : Dtd -> unit
       val printElementTable : Dtd -> unit
@@ -104,13 +104,13 @@ signature Dtd =
       val xmlSpaceIdx  : int
    end
 
-structure Dtd : Dtd = 
-   struct 
-      open 
-	 UtilInt
-	 Base UniChar
-	 DataDict DataSymTab
-	 
+structure Dtd : Dtd =
+   struct
+      open
+         UtilInt
+         Base UniChar
+         DataDict DataSymTab
+
       val O_TS_ELEM    = ref 6 (* Initial size of element table             *)
       val O_TS_GEN_ENT = ref 6 (* Initial size of general entity table      *)
       val O_TS_ID      = ref 6 (* Initial size of id attribute table        *)
@@ -120,40 +120,40 @@ structure Dtd : Dtd =
       (*--------------------------------------------------------------------*)
       (* this is how the predefined entities must be declared.              *)
       (*--------------------------------------------------------------------*)
-      val predefined = Vector.fromList 
-	 (map (fn (x,y,z) => (String2Data x,String2Vector y,String2Vector z))
-	  [("","",""),
-	   ("amp" ,"'&#38;'","&#38;"),
-	   ("lt"  ,"'&#60;'","&#60;"),
-	   ("gt"  ,"'&#62;'","&#62;"),
-	   ("apos","\"'\""  ,"'"    ),
-	   ("quot","'\"'"   ,"\""   )])
+      val predefined = Vector.fromList
+         (map (fn (x,y,z) => (String2Data x,String2Vector y,String2Vector z))
+          [("","",""),
+           ("amp" ,"'&#38;'","&#38;"),
+           ("lt"  ,"'&#60;'","&#60;"),
+           ("gt"  ,"'&#62;'","&#62;"),
+           ("apos","\"'\""  ,"'"    ),
+           ("quot","'\"'"   ,"\""   )])
       fun validPredef i = #3(Vector.sub(predefined,i))
-	 
+
       (*--------------------------------------------------------------------*)
       (* this type holds all information relevent to the DTD.               *)
       (*--------------------------------------------------------------------*)
       type Dtd = {hasDtdFlag     : bool ref,
-		  standAloneFlag : bool ref,
-		  externalFlag   : bool ref,
-		  elDict         : ElemInfo DataDict.Dict,
-		  genDict        : GenEntInfo DataDict.Dict,
-		  idDict         : IdInfo DataDict.Dict,
-		  notDict        : NotationInfo DataDict.Dict,
-		  parDict        : ParEntInfo DataDict.Dict,
-		  preRedef       : bool array
-		  }
+                  standAloneFlag : bool ref,
+                  externalFlag   : bool ref,
+                  elDict         : ElemInfo DataDict.Dict,
+                  genDict        : GenEntInfo DataDict.Dict,
+                  idDict         : IdInfo DataDict.Dict,
+                  notDict        : NotationInfo DataDict.Dict,
+                  parDict        : ParEntInfo DataDict.Dict,
+                  preRedef       : bool array
+                  }
 
       fun newDtd() = {hasDtdFlag     = ref false,
-		      standAloneFlag = ref false,
-		      externalFlag   = ref false,
-		      elDict         = nullDict ("element",nullElemInfo),
-		      idDict         = nullDict ("ID name",nullIdInfo),
-		      genDict        = nullDict ("general entity",(GE_NULL,false)),
-		      notDict        = nullDict ("attribute and notation",NONE:NotationInfo),
-		      parDict        = nullDict ("parameter entity",(PE_NULL,false)),
-		      preRedef       = Array.array(6,false)
-		      } : Dtd 
+                      standAloneFlag = ref false,
+                      externalFlag   = ref false,
+                      elDict         = nullDict ("element",nullElemInfo),
+                      idDict         = nullDict ("ID name",nullIdInfo),
+                      genDict        = nullDict ("general entity",(GE_NULL,false)),
+                      notDict        = nullDict ("attribute and notation",NONE:NotationInfo),
+                      parDict        = nullDict ("parameter entity",(PE_NULL,false)),
+                      preRedef       = Array.array(6,false)
+                      } : Dtd
 
       val default  = String2Data "default"
       val preserve = String2Data "preserve"
@@ -193,11 +193,11 @@ structure Dtd : Dtd =
       (*--------------------------------------------------------------------*)
       (* bug fixed 080600: changed !hasDtdFlag to not(!hasDtdFlag)          *)
       (*--------------------------------------------------------------------*)
-      fun entitiesWellformed ({hasDtdFlag,standAloneFlag,externalFlag,...}:Dtd) = 
-	 not (!hasDtdFlag andalso !externalFlag) orelse !standAloneFlag 
+      fun entitiesWellformed ({hasDtdFlag,standAloneFlag,externalFlag,...}:Dtd) =
+         not (!hasDtdFlag andalso !externalFlag) orelse !standAloneFlag
 
-      fun initStandalone ({hasDtdFlag,standAloneFlag,externalFlag,...}:Dtd) = 
-	 (hasDtdFlag := false; standAloneFlag := false; externalFlag := false)
+      fun initStandalone ({hasDtdFlag,standAloneFlag,externalFlag,...}:Dtd) =
+         (hasDtdFlag := false; standAloneFlag := false; externalFlag := false)
 
       (*--------------------------------------------------------------------*)
       (* this array tells whether the predefined entities (index 1-5) have  *)
@@ -205,9 +205,9 @@ structure Dtd : Dtd =
       (*--------------------------------------------------------------------*)
       fun isRedefined (dtd:Dtd) i = Array.sub(#preRedef dtd,i)
       fun setRedefined (dtd:Dtd) i = Array.update(#preRedef dtd,i,true)
-      fun notRedefined dtd = List.mapPartial 
-	 (fn i => if isRedefined dtd i then NONE else SOME(#1(Vector.sub(predefined,i)))) 
-	 [1,2,3,4,5]
+      fun notRedefined dtd = List.mapPartial
+         (fn i => if isRedefined dtd i then NONE else SOME(#1(Vector.sub(predefined,i))))
+         [1,2,3,4,5]
 
       fun AttNot2Index  (dtd:Dtd) name = getIndex(#notDict dtd,name)
       fun Element2Index (dtd:Dtd) name = getIndex(#elDict dtd,name)
@@ -249,25 +249,25 @@ structure Dtd : Dtd =
       (* initialize the attribute tables. Make sure that indices 0...3 are  *)
       (* assigned to "default", "preserve", "xml:lang" and "xml:space".     *)
       (*--------------------------------------------------------------------*)
-      fun initAttNotTable (dtd as {idDict,notDict,...}:Dtd) = 
-	 let 
-	    val _ = clearDict(notDict,SOME(!O_TS_ATT_NOT))
-	    val _ = clearDict(idDict,SOME(!O_TS_ID))
-	    val _ = AttNot2Index dtd default
-	    val _ = AttNot2Index dtd preserve
-	    val _ = AttNot2Index dtd xmlLang
-	    val _ = AttNot2Index dtd xmlSpace
-	 in ()
-	 end
+      fun initAttNotTable (dtd as {idDict,notDict,...}:Dtd) =
+         let
+            val _ = clearDict(notDict,SOME(!O_TS_ATT_NOT))
+            val _ = clearDict(idDict,SOME(!O_TS_ID))
+            val _ = AttNot2Index dtd default
+            val _ = AttNot2Index dtd preserve
+            val _ = AttNot2Index dtd xmlLang
+            val _ = AttNot2Index dtd xmlSpace
+         in ()
+         end
       fun initElementTable (dtd:Dtd) = clearDict(#elDict dtd,SOME(!O_TS_ELEM))
       (*--------------------------------------------------------------------*)
-      (* reserve 0 for gen entity -,    i.e., the document entity.          *) 
+      (* reserve 0 for gen entity -,    i.e., the document entity.          *)
       (* reserve 1 for gen entity amp,  i.e., "&#38;#38;"                   *)
-      (* reserve 2 for gen entity lt,   i.e., "&#38;#60;"                   *) 
-      (* reserve 3 for gen entity gt,   i.e., "&#62;"                       *) 
-      (* reserve 4 for gen entity apos, i.e., "&#39;"                       *) 
-      (* reserve 5 for gen entity quot, i.e., "&#34;"                       *) 
-      (* reserve 0 for par entity -,    i.e., the external dtd subset.      *) 
+      (* reserve 2 for gen entity lt,   i.e., "&#38;#60;"                   *)
+      (* reserve 3 for gen entity gt,   i.e., "&#62;"                       *)
+      (* reserve 4 for gen entity apos, i.e., "&#39;"                       *)
+      (* reserve 5 for gen entity quot, i.e., "&#34;"                       *)
+      (* reserve 0 for par entity -,    i.e., the external dtd subset.      *)
       (*                                                                    *)
       (* Cf. 4.1:                                                           *)
       (*                                                                    *)
@@ -282,58 +282,58 @@ structure Dtd : Dtd =
       (*   <!ENTITY apos   "&#39;">                                         *)
       (*   <!ENTITY quot   "&#34;">                                         *)
       (*--------------------------------------------------------------------*)
-      fun initEntityTables (dtd as {genDict,parDict,preRedef,...}:Dtd) = 
-	 let 
-	    val _ = clearDict(genDict,SOME(!O_TS_GEN_ENT))
-	    val _ = clearDict(parDict,SOME(!O_TS_PAR_ENT))
-	    val _ = map (fn i => Array.update(preRedef,i,false)) [1,2,3,4,5]
-	    val _ = GenEnt2Index dtd [0wx2D] (* "-" *)
-	    val _ = ParEnt2Index dtd [0wx2D] (* "-" *)
-            val _ = VectorSlice.appi 
-               (fn (_,(name,lit,cs)) 
+      fun initEntityTables (dtd as {genDict,parDict,preRedef,...}:Dtd) =
+         let
+            val _ = clearDict(genDict,SOME(!O_TS_GEN_ENT))
+            val _ = clearDict(parDict,SOME(!O_TS_PAR_ENT))
+            val _ = map (fn i => Array.update(preRedef,i,false)) [1,2,3,4,5]
+            val _ = GenEnt2Index dtd [0wx2D] (* "-" *)
+            val _ = ParEnt2Index dtd [0wx2D] (* "-" *)
+            val _ = VectorSlice.appi
+               (fn (_,(name,lit,cs))
                 => (setGenEnt dtd (GenEnt2Index dtd name,(GE_INTERN(lit,cs),false))))
                (VectorSlice.slice (predefined,1,NONE))
-	 in ()
-	 end
+         in ()
+         end
 
-      fun initDtdTables() = 
-	 let
-	    val dtd = newDtd()
-	    val _ = initAttNotTable dtd
-	    val _ = initElementTable dtd
-	    val _ = initEntityTables dtd
-	    val _ = initStandalone dtd
-	 in dtd
-	 end
-			  	    
-      local 
-	 val dtd = initDtdTables() 
-      in 
-	 val defaultIdx = AttNot2Index dtd default
-	 val preserveIdx = AttNot2Index dtd preserve
-	 val xmlLangIdx = AttNot2Index dtd xmlLang
-	 val xmlSpaceIdx = AttNot2Index dtd xmlSpace
+      fun initDtdTables() =
+         let
+            val dtd = newDtd()
+            val _ = initAttNotTable dtd
+            val _ = initElementTable dtd
+            val _ = initEntityTables dtd
+            val _ = initStandalone dtd
+         in dtd
+         end
+
+      local
+         val dtd = initDtdTables()
+      in
+         val defaultIdx = AttNot2Index dtd default
+         val preserveIdx = AttNot2Index dtd preserve
+         val xmlLangIdx = AttNot2Index dtd xmlLang
+         val xmlSpaceIdx = AttNot2Index dtd xmlSpace
       end
 
-      fun printAttNotTable (dtd:Dtd) = 
-	 printDict NotationInfo2String (#notDict dtd)
-      fun printElementTable dtd = 
-	 printDict (ElemInfo2xString (UniChar.Data2String o (Index2AttNot dtd),
-				      UniChar.Data2String o (Index2Element dtd),
-				      UniChar.Data2String o (Index2GenEnt dtd),
-				      UniChar.Data2String o (Index2Id dtd),
-				      UniChar.Data2String o (Index2AttNot dtd))) (#elDict dtd)
-      fun printGenEntTable dtd = 
-	 printDict (fn (ent,ext) => GenEntity2xString (Data2String o (Index2AttNot dtd)) ent
-		    ^(if ext then "[external]" else "")) (#genDict dtd)
+      fun printAttNotTable (dtd:Dtd) =
+         printDict NotationInfo2String (#notDict dtd)
+      fun printElementTable dtd =
+         printDict (ElemInfo2xString (UniChar.Data2String o (Index2AttNot dtd),
+                                      UniChar.Data2String o (Index2Element dtd),
+                                      UniChar.Data2String o (Index2GenEnt dtd),
+                                      UniChar.Data2String o (Index2Id dtd),
+                                      UniChar.Data2String o (Index2AttNot dtd))) (#elDict dtd)
+      fun printGenEntTable dtd =
+         printDict (fn (ent,ext) => GenEntity2xString (Data2String o (Index2AttNot dtd)) ent
+                    ^(if ext then "[external]" else "")) (#genDict dtd)
       fun printIdTable (dtd:Dtd) = printDict (IdInfo2String) (#idDict dtd)
-      fun printParEntTable (dtd:Dtd) = 
-	 printDict (fn (ent,ext) => ParEntity2String ent
-		    ^(if ext then "[external]" else "")) (#parDict dtd)
+      fun printParEntTable (dtd:Dtd) =
+         printDict (fn (ent,ext) => ParEntity2String ent
+                    ^(if ext then "[external]" else "")) (#parDict dtd)
 
       fun printDtdTables dtd = (printAttNotTable dtd;
-				printElementTable dtd;
-				printGenEntTable dtd;
-				printIdTable dtd;
-				printParEntTable dtd)
+                                printElementTable dtd;
+                                printGenEntTable dtd;
+                                printIdTable dtd;
+                                printParEntTable dtd)
    end

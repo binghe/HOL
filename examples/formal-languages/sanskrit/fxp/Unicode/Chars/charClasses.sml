@@ -36,12 +36,12 @@ signature CharClasses =
    end
 
 structure CharClasses : CharClasses =
-   struct 
+   struct
       open UniChar
 
       type CharInterval = Char * Char
       type CharRange = CharInterval list
-	 
+
       val Char2Word = Word.fromLargeWord o Chars.toLargeWord
 
       (*--------------------------------------------------------------------*)
@@ -62,7 +62,7 @@ structure CharClasses : CharClasses =
       val op & = Word.andb
 
       val max32 = Word32.notb 0wx0
-   
+
       (*--------------------------------------------------------------------*)
       (* a char class is an array of words, interpreted as bitvectors.      *)
       (*--------------------------------------------------------------------*)
@@ -75,84 +75,83 @@ structure CharClasses : CharClasses =
       (* significant bit for c, i.e. the (c && 31==0x1F)th bit set to one.  *)
       (*--------------------------------------------------------------------*)
       fun indexMask c = let val idx = Chars.toInt(c>>0w5)
-			    val mask = 0wx1 <<< Char2Word c & 0w31
-			in (idx,mask)
-			end
+                            val mask = 0wx1 <<< Char2Word c & 0w31
+                        in (idx,mask)
+                        end
 
       (*--------------------------------------------------------------------*)
       (* generate index and mask, then lookup.                              *)
       (*--------------------------------------------------------------------*)
       fun inCharClass(c,vec) = let val (idx,mask) = indexMask c
-			       in mask &&& Vector.sub(vec,idx) <> 0wx0
-			       end 
+                               in mask &&& Vector.sub(vec,idx) <> 0wx0
+                               end
 
       (*--------------------------------------------------------------------*)
       (* generate a CharClass large enough to hold (max-min+1) characters.  *)
       (*--------------------------------------------------------------------*)
-      fun initialize(min,max) = 
-	 Array.array((Chars.toInt max-Chars.toInt min+1) div 32+1,0wx0):MutableClass
+      fun initialize(min,max) =
+         Array.array((Chars.toInt max-Chars.toInt min+1) div 32+1,0wx0):MutableClass
       fun finalize arr = Array.vector arr
-	 
+
       (*--------------------------------------------------------------------*)
       (* add a single character to a CharClass.                             *)
       (*--------------------------------------------------------------------*)
       fun addChar(cls,min,max,c) =
-	 let 
-	    val (idx,new) = indexMask c
-	    val old = Array.sub(cls,idx)
-	 in
-	    Array.update(cls,idx,old|||new)
-	 end 
-			    
+         let
+            val (idx,new) = indexMask c
+            val old = Array.sub(cls,idx)
+         in
+            Array.update(cls,idx,old|||new)
+         end
+
       (*--------------------------------------------------------------------*)
       (* add a full range of characters to a CharClass.                     *)
       (* this is the only function that computes the offset before access   *)
       (* to the array.                                                      *)
       (*--------------------------------------------------------------------*)
       fun addCharRange(cls,min,max,range) = (* returns intervals from range which are not between min and max *)
-	 let 
-	    fun doOne (lo,hi) = 
-	       let 
-		  val (l,h) = (lo-min,hi-min)
-		  val (idxL,idxH) = ((Chars.toInt l) div 32,(Chars.toInt h) div 32)
-		  val (bitL,bitH) = (Char2Word l & 0w31,Char2Word h & 0w31)
-	       in 
-		  if idxL=idxH then 
-		     let 
-			val new = (max32>>>(0w31-bitH+bitL))<<<bitL
-			val old = Array.sub(cls,idxL)
-			val _ = Array.update(cls,idxL,old|||new)
-		     in ()
-		     end
-		  else if idxL<idxH then
-		     let
-			val newL = max32<<<bitL
-			val newH = max32>>>(0w31-bitH)
-			val oldL = Array.sub(cls,idxL)
-			val oldH = Array.sub(cls,idxH)
-			val _ = Array.update(cls,idxL,oldL|||newL)
-			val _ = Array.update(cls,idxH,oldH|||newH)
-			val _ = UtilInt.appInterval (fn i => Array.update(cls,i,max32)) 
-			   (idxL+1,idxH-1)
-		     in ()
-		     end
-		       else ()
-	       end
-	    fun doAll nil = nil
-	      | doAll ((lh as (lo,hi))::lhs) = 
-	       if hi<lo then doAll lhs
-	       else if hi<min then doAll lhs
-	       else if lo>max then lh::doAll lhs
-	       else if lo<min andalso hi<=max
-		       then (doOne(min,hi); doAll lhs)
-	       else if lo>=min andalso hi<=max
-		       then (doOne lh; doAll lhs)
-	       else if lo>=min andalso hi>max
-		       then (doOne(lo,max); (max+0w1,hi)::lhs)
-		    else (doOne(min,max); (max+0w1,hi)::lhs)
-	    val _ = doAll range
-	 in 
-	    doAll range
-	 end
+         let
+            fun doOne (lo,hi) =
+               let
+                  val (l,h) = (lo-min,hi-min)
+                  val (idxL,idxH) = ((Chars.toInt l) div 32,(Chars.toInt h) div 32)
+                  val (bitL,bitH) = (Char2Word l & 0w31,Char2Word h & 0w31)
+               in
+                  if idxL=idxH then
+                     let
+                        val new = (max32>>>(0w31-bitH+bitL))<<<bitL
+                        val old = Array.sub(cls,idxL)
+                        val _ = Array.update(cls,idxL,old|||new)
+                     in ()
+                     end
+                  else if idxL<idxH then
+                     let
+                        val newL = max32<<<bitL
+                        val newH = max32>>>(0w31-bitH)
+                        val oldL = Array.sub(cls,idxL)
+                        val oldH = Array.sub(cls,idxH)
+                        val _ = Array.update(cls,idxL,oldL|||newL)
+                        val _ = Array.update(cls,idxH,oldH|||newH)
+                        val _ = UtilInt.appInterval (fn i => Array.update(cls,i,max32))
+                           (idxL+1,idxH-1)
+                     in ()
+                     end
+                       else ()
+               end
+            fun doAll nil = nil
+              | doAll ((lh as (lo,hi))::lhs) =
+               if hi<lo then doAll lhs
+               else if hi<min then doAll lhs
+               else if lo>max then lh::doAll lhs
+               else if lo<min andalso hi<=max
+                       then (doOne(min,hi); doAll lhs)
+               else if lo>=min andalso hi<=max
+                       then (doOne lh; doAll lhs)
+               else if lo>=min andalso hi>max
+                       then (doOne(lo,max); (max+0w1,hi)::lhs)
+                    else (doOne(min,max); (max+0w1,hi)::lhs)
+            val _ = doAll range
+         in
+            doAll range
+         end
    end
-

@@ -1,8 +1,3 @@
-
-
-
-
-
 signature CatParams =
    sig
       val O_CATALOG_FILES  : Uri.Uri list ref
@@ -14,4 +9,3 @@ signature CatParams =
 
       val catError : CatError.Position * CatError.CatError -> unit
    end
-

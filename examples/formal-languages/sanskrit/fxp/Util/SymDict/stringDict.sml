@@ -1,12 +1,4 @@
-
-
-
-
-
-
-
-
-structure KeyString : Key = 
+structure KeyString : Key =
    struct
       type Key = string
 
@@ -17,4 +9,4 @@ structure KeyString : Key =
       fun toString str = str
    end
 
-structure StringDict = Dict (structure Key = KeyString) 
+structure StringDict = Dict (structure Key = KeyString)

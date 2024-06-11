@@ -3388,7 +3388,7 @@ Proof
  >> MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []
 QED
 
-(* Another version with ‘tpm_rel’ but with ‘ISUB’
+(* Another version with ‘ISUB’ instead of ‘tpm_rel’
 
    NOTE: there's also ‘p IN ltree_paths (BTe Z (apply pi M))’ added into
    the conclusion, which has to be proved.

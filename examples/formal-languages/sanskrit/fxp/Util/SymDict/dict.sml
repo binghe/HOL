@@ -15,7 +15,7 @@
 (*   makeDict    : none                                                     *)
 (*   nullDict    : none                                                     *)
 (*   printDict   : none                                                     *)
-(*   usedIndices : none                                                     *) 
+(*   usedIndices : none                                                     *)
 (*--------------------------------------------------------------------------*)
 (* A dictionary maps keys to consecutive integers and additionally holds    *)
 (* a value of arbitrary type for each entry.                                *)
@@ -24,23 +24,23 @@ signature Dict =
    sig
       type Key
       type 'a Dict
-         
+
       exception NoSuchIndex
 
       val nullDict   : string * 'a -> 'a Dict
       val makeDict   : string * int * 'a -> 'a Dict
       val clearDict  : 'a Dict * int option -> unit
-         
+
       val hasIndex   : 'a Dict * Key -> int option
       val getIndex   : 'a Dict * Key -> int
       val getKey     : 'a Dict * int -> Key
 
       val getByIndex : 'a Dict * int -> 'a
       val getByKey   : 'a Dict * Key -> 'a
-         
-      val setByIndex : 'a Dict * int * 'a -> unit 
+
+      val setByIndex : 'a Dict * int * 'a -> unit
       val setByKey   : 'a Dict * Key * 'a -> unit
-         
+
       val usedIndices : 'a Dict -> int
 
       val extractDict : 'a Dict -> (Key * 'a) array
@@ -52,7 +52,7 @@ functor Dict (structure Key : Key) : Dict =
       open UtilError UtilInt
 
       type Key = Key.Key
-         
+
       exception NoSuchIndex
 
       (*--------------------------------------------------------------------*)
@@ -73,29 +73,29 @@ functor Dict (structure Key : Key) : Dict =
       (* buckets are unsorted - they are probably small, so comparing the   *)
       (* keys might be overkill.                                            *)
       (*--------------------------------------------------------------------*)
-      fun addToBucket (ni as (key,_),bucket) = 
-         let 
+      fun addToBucket (ni as (key,_),bucket) =
+         let
             fun doit nil = [ni]
-              | doit (nis as (ni' as (key',_))::rest) = 
+              | doit (nis as (ni' as (key',_))::rest) =
                case Key.compare (key',key)
                  of LESS    => ni'::doit rest
-                  | EQUAL   => ni::rest 
+                  | EQUAL   => ni::rest
                   | GREATER => ni::nis
-         in 
+         in
             doit bucket
          end
-      fun searchBucket (key,bucket) = 
-         let 
+      fun searchBucket (key,bucket) =
+         let
             fun doit nil = NONE
-              | doit ((key',i)::rest) = 
+              | doit ((key',i)::rest) =
                case Key.compare (key',key)
                  of LESS    => doit rest
-                  | EQUAL   => SOME i 
+                  | EQUAL   => SOME i
                   | GREATER => NONE
-         in 
+         in
             doit bucket
          end
-                
+
       (*--------------------------------------------------------------------*)
       (* a dictionary consists of                                           *)
       (* - a string desc saying what is stored in this dictionary           *)
@@ -112,7 +112,7 @@ functor Dict (structure Key : Key) : Dict =
                       hashTab : Bucket array ref,
                       hashFun : (Key -> int) ref,
                       width   : int ref,  (* bit width *)
-                      size    : int ref,  (* tab size=2^width, hash size is double *) 
+                      size    : int ref,  (* tab size=2^width, hash size is double *)
                       count   : int ref,  (* number of entries *)
                       def     : 'a        (* default for values *)
                       }
@@ -129,7 +129,7 @@ functor Dict (structure Key : Key) : Dict =
       (* how many entries are in the dictionary?                            *)
       (*--------------------------------------------------------------------*)
       fun usedIndices ({count,...}:'a Dict) = !count
-         
+
       (*--------------------------------------------------------------------*)
       (* what is the table load, i.e. percentage of number of entries to    *)
       (* hash table size = 100*count/(2*size) = 50*count/size.              *)
@@ -149,22 +149,22 @@ functor Dict (structure Key : Key) : Dict =
       (* this is a simple strategy but experiences good results.            *)
       (*--------------------------------------------------------------------*)
       fun square (x:word) = Word.*(x,x)
-      fun hashKey(half,mask) x = 
+      fun hashKey(half,mask) x =
          Word.toInt(Word.andb(mask,Word.>>(square(Key.hash x),half)))
       fun makeHashFun(size,width) =
-	 let 
-            val mask = 0w2*Word.fromInt size-0w1 
+         let
+            val mask = 0w2*Word.fromInt size-0w1
             val half = Word.fromInt((width+1) div 2)
-	 in 
-	    hashKey(half,mask)
-	 end
-	    
+         in
+            hashKey(half,mask)
+         end
+
       (*--------------------------------------------------------------------*)
       (* create a new dictionary for 2^w, but at least 2 and at most 2^m    *)
       (* entries, where m is the value of MAX_WIDTH.                        *)
       (*--------------------------------------------------------------------*)
-      fun makeDict (desc,w,def) = 
-         let 
+      fun makeDict (desc,w,def) =
+         let
             val width= Int.min(Int.max(1,w),MAX_WIDTH)
             val size = Word.toInt(Word.<<(0w1,Word.fromInt(width-1)))
          in {desc    = desc,
@@ -176,61 +176,61 @@ functor Dict (structure Key : Key) : Dict =
              count   = ref 0,
              def     = def}
          end
-      
+
       (*--------------------------------------------------------------------*)
       (* clear a dictionary. If the 2nd arg is SOME w, use w for resizing.  *)
       (*--------------------------------------------------------------------*)
-      fun clearDict (dict:'a Dict,widthOpt) = 
-	 case widthOpt 
-	   of NONE => 
-	      let 
-		 val {tab=ref tab,hashTab=ref hashTab,size,count,def,...} = dict
-		 val _ = appInterval (fn i => Array.update(tab,i,(Key.null,def))) (0,!count-1)
-		 val _ = appInterval (fn i => Array.update(hashTab,i,nullBucket)) (0,!size*2-1)
-	      in 
-		 count := 0
-	      end
-	    | SOME w => 
-	      let 
-		 val {tab,hashTab,hashFun,width,size,count,def,...} = dict
-		 val newWidth = Int.min(Int.max(1,w),MAX_WIDTH)   
-		 val newSize  = Word.toInt(Word.<<(0w1,Word.fromInt(newWidth-1)))
-		 val _ = tab     := (Array.array(newSize,(Key.null,def)))
-		 val _ = hashTab := (Array.array(2*newSize,nullBucket))
-		 val _ = hashFun := (makeHashFun(newSize,newWidth))
-		 val _ = width   := newWidth
-		 val _ = size    := newSize
-	      in
-		 count := 0
-	      end
-      
+      fun clearDict (dict:'a Dict,widthOpt) =
+         case widthOpt
+           of NONE =>
+              let
+                 val {tab=ref tab,hashTab=ref hashTab,size,count,def,...} = dict
+                 val _ = appInterval (fn i => Array.update(tab,i,(Key.null,def))) (0,!count-1)
+                 val _ = appInterval (fn i => Array.update(hashTab,i,nullBucket)) (0,!size*2-1)
+              in
+                 count := 0
+              end
+            | SOME w =>
+              let
+                 val {tab,hashTab,hashFun,width,size,count,def,...} = dict
+                 val newWidth = Int.min(Int.max(1,w),MAX_WIDTH)
+                 val newSize  = Word.toInt(Word.<<(0w1,Word.fromInt(newWidth-1)))
+                 val _ = tab     := (Array.array(newSize,(Key.null,def)))
+                 val _ = hashTab := (Array.array(2*newSize,nullBucket))
+                 val _ = hashFun := (makeHashFun(newSize,newWidth))
+                 val _ = width   := newWidth
+                 val _ = size    := newSize
+              in
+                 count := 0
+              end
+
       (*--------------------------------------------------------------------*)
       (* grow a dictionary to the double size. raise InternalError if the   *)
       (* dictionary already has maximal size.                               *)
       (*--------------------------------------------------------------------*)
-      fun growDictionary ({desc,tab,hashTab,hashFun,width,size,count,def}:'a Dict) = 
-         let 
+      fun growDictionary ({desc,tab,hashTab,hashFun,width,size,count,def}:'a Dict) =
+         let
             val oldTab = !tab
-            val _ = if !width < MAX_WIDTH then width := !width+1 
-		    else raise InternalError 
-		       ("Dict","growDictionary",
-			String.concat ["growing the ",desc," dictionary ",
-				       "exceeded the system maximum size of ",
-				       Int.toString Array.maxLen," for arrays"]) 
+            val _ = if !width < MAX_WIDTH then width := !width+1
+                    else raise InternalError
+                       ("Dict","growDictionary",
+                        String.concat ["growing the ",desc," dictionary ",
+                                       "exceeded the system maximum size of ",
+                                       Int.toString Array.maxLen," for arrays"])
             val _ = size := !size*2
             val _ = tab  := Array.array(!size,(Key.null,def))
             val _ = hashTab := Array.array(!size*2,nullBucket)
             val _ = hashFun := makeHashFun(!size,!width)
 
-            fun addTo (i,kv as (key,_)) = 
-               let 
+            fun addTo (i,kv as (key,_)) =
+               let
                   val idx = !hashFun key
                   val _ = Array.update(!hashTab,idx,addToBucket((key,i),Array.sub(!hashTab,idx)))
                   val _ = Array.update(!tab,i,kv)
                in ()
                end
-         in 
-	    Array.appi addTo oldTab
+         in
+            Array.appi addTo oldTab
          end
 
       (*--------------------------------------------------------------------*)
@@ -245,11 +245,11 @@ functor Dict (structure Key : Key) : Dict =
       (* dictionary yet, add a new entry with a new index. grow the table   *)
       (* if there is no more free index in the dictionary.                  *)
       (*--------------------------------------------------------------------*)
-      fun getIndex(dict as {tab,hashTab,hashFun,size,count,def,...}:'a Dict,key) = 
-         let 
+      fun getIndex(dict as {tab,hashTab,hashFun,size,count,def,...}:'a Dict,key) =
+         let
             val k = !hashFun key
             val bucket = Array.sub(!hashTab,k)
-         in 
+         in
             case searchBucket(key,bucket)
               of SOME idx => idx
                | NONE => let val idx = !count
@@ -265,15 +265,15 @@ functor Dict (structure Key : Key) : Dict =
                          in idx
                          end
          end
-      
+
       (*--------------------------------------------------------------------*)
       (* does a Key have an entry in a dictionary?                          *)
       (*--------------------------------------------------------------------*)
-      fun hasIndex({hashTab,hashFun,...}:'a Dict,key) = 
-         let 
+      fun hasIndex({hashTab,hashFun,...}:'a Dict,key) =
+         let
             val idx = !hashFun key
             val bucket = Array.sub(!hashTab,idx)
-         in 
+         in
             searchBucket(key,bucket)
          end
 
@@ -289,7 +289,7 @@ functor Dict (structure Key : Key) : Dict =
       (*--------------------------------------------------------------------*)
       fun getByKey(dict,key) =
          getByIndex(dict,getIndex(dict,key))
-      
+
       (*--------------------------------------------------------------------*)
       (* enter a value for index idx.                                       *)
       (*--------------------------------------------------------------------*)
@@ -304,20 +304,20 @@ functor Dict (structure Key : Key) : Dict =
       (*--------------------------------------------------------------------*)
       fun setByKey(dict,key,v) =
          setByIndex(dict,getIndex(dict,key),v)
-      
+
       (*--------------------------------------------------------------------*)
       (* extract the contents of the dictionary to an array.                *)
       (*--------------------------------------------------------------------*)
-      fun extractDict({count,tab,...}:'a Dict) = 
-	 Array.tabulate(!count,fn i => Array.sub(!tab,i))
+      fun extractDict({count,tab,...}:'a Dict) =
+         Array.tabulate(!count,fn i => Array.sub(!tab,i))
 
       (*--------------------------------------------------------------------*)
       (* print the contents of the dictionary.                              *)
       (*--------------------------------------------------------------------*)
-      fun printDict X2String ({desc,tab,count,...}:'a Dict) = 
+      fun printDict X2String ({desc,tab,count,...}:'a Dict) =
          (print (desc^" dictionary:\n");
-          ArraySlice.appi 
+          ArraySlice.appi
           (fn (n,(key,value)) =>
-           print ("  "^Int.toString n^": "^Key.toString key^" = "^X2String value^"\n")) 
+           print ("  "^Int.toString n^": "^Key.toString key^" = "^X2String value^"\n"))
           (ArraySlice.slice(!tab,0,SOME (!count))))
    end

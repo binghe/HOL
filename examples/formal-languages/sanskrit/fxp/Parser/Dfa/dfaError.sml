@@ -1,5 +1,3 @@
-
-
 (*--------------------------------------------------------------------------*)
 (* Structure: DfaError                                                      *)
 (*                                                                          *)
@@ -17,8 +15,8 @@
 (*--------------------------------------------------------------------------*)
 signature DfaError =
    sig
-      val countOccs : DfaBase.Sigma * DfaBase.State * DfaBase.State 
-	 -> DfaBase.ContentModel -> DfaBase.Sigma * int * int
+      val countOccs : DfaBase.Sigma * DfaBase.State * DfaBase.State
+         -> DfaBase.ContentModel -> DfaBase.Sigma * int * int
    end
 
 structure DfaError : DfaError =
@@ -26,33 +24,33 @@ structure DfaError : DfaError =
       open DfaBase
 
       fun countOccs (a,q1,q2) cm =
-	 let 
-	    val (q1,q2) = if q1>q2 then (q2,q1) else (q1,q2)
+         let
+            val (q1,q2) = if q1>q2 then (q2,q1) else (q1,q2)
 
-	    fun next a nil = (1,[(a,2)])
-	      | next a ((b,n)::rest) =
-	       if a=b then (n,(b,n+1)::rest)
-	       else if a<b then (1,(a,2)::(b,n)::rest)
-		    else let val (m,new) = next a rest
-			 in (m,(b,n)::new)
-			 end
+            fun next a nil = (1,[(a,2)])
+              | next a ((b,n)::rest) =
+               if a=b then (n,(b,n+1)::rest)
+               else if a<b then (1,(a,2)::(b,n)::rest)
+                    else let val (m,new) = next a rest
+                         in (m,(b,n)::new)
+                         end
 
-	    fun insert a (q,yet,n1,n2) =
-	       let val (n,new) = next a yet
-	       in (q+1,new,if q=q1 then n else n1,if q=q2 then n else n2)
-	       end
+            fun insert a (q,yet,n1,n2) =
+               let val (n,new) = next a yet
+               in (q+1,new,if q=q1 then n else n1,if q=q2 then n else n2)
+               end
 
-	    fun doit (cm,yet) =
-	       case cm
-		 of CM_ELEM a => insert a yet
-		  | CM_OPT cmi => doit (cmi,yet)
-		  | CM_REP cmi => doit (cmi,yet)
-		  | CM_PLUS cmi => doit (cmi,yet)
-		  | CM_ALT cmis => foldl doit yet cmis
-		  | CM_SEQ cmis => foldl doit yet cmis
+            fun doit (cm,yet) =
+               case cm
+                 of CM_ELEM a => insert a yet
+                  | CM_OPT cmi => doit (cmi,yet)
+                  | CM_REP cmi => doit (cmi,yet)
+                  | CM_PLUS cmi => doit (cmi,yet)
+                  | CM_ALT cmis => foldl doit yet cmis
+                  | CM_SEQ cmis => foldl doit yet cmis
 
-	    val (_,_,n1,n2) = doit (cm,(1,nil,0,0))
-	 in 
-	    (a,n1,n2)
-	 end
+            val (_,_,n1,n2) = doit (cm,(1,nil,0,0))
+         in
+            (a,n1,n2)
+         end
    end
