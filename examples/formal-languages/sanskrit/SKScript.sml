@@ -14,7 +14,7 @@ open HolKernel Parse boolLib bossLib;
 val theory_name = "SK";
 val _ = new_theory theory_name;
 
-(* Loading the fxp library *)
+(* Load the fxp library for XML processing *)
 val cwd = OS.FileSys.getDir();
 val _ = OS.FileSys.chDir "fxp";
 structure Word8 = PolyWord8;
