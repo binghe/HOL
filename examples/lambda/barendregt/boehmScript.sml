@@ -463,7 +463,7 @@ QED
    definition of subterm can be greatly simplified.
  *)
 Theorem subterm_of_absfree_hnf :
-    !X M x xs. FINITE X /\ hnf M /\ ~is_abs M ==>
+    !X M x xs. hnf M /\ ~is_abs M ==>
       subterm X M (x::xs) =
         let  m = hnf_children_size M;
             Ms = hnf_children M
@@ -478,6 +478,18 @@ Proof
         hnf_children_hnf, hnf_appstar]
  >> gs [Abbr ‘vs’]
  >> gs [Abbr ‘Ms'’, Abbr ‘M1’, hnf_children_hnf]
+QED
+
+Theorem subterm_of_absfree_hnf' :
+    subterm X (VAR y @* Ms) (x::xs) =
+       if x < LENGTH Ms then
+          subterm X (EL x Ms) xs
+       else
+          NONE
+Proof
+    MP_TAC (Q.SPECL [‘X’, ‘VAR y @* Ms’, ‘x’, ‘xs’]
+                    subterm_of_absfree_hnf)
+ >> rw [hnf_appstar, is_abs_appstar]
 QED
 
 (* NOTE: The uses of ‘subterm' X M p’ assumes ‘subterm X M p <> NONE’ *)
@@ -559,8 +571,8 @@ Proof
  >> fs [ltree_paths_def]
 QED
 
-(* Lemma 10.1.15 [1, p.222] *)
-Theorem BT_subterm_thm :
+(* Lemma 10.1.15 [1, p.222] (subterm and ltree_lookup) *)
+Theorem BT_subterm_lemma :
     !p X M. FINITE X /\ subterm X M p <> NONE ==>
             BT (THE (subterm X M p)) = THE (ltree_lookup (BTe X M) p)
 Proof
@@ -585,6 +597,35 @@ Proof
  >> Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BTe X M)’ MP_TAC
  >> POP_ORW
  >> rw [ltree_paths_def, ltree_lookup_def, LNTH_fromList, GSYM BT_def, EL_MAP]
+QED
+
+(* Lemma 10.1.15 (related) [1, p.222] (subterm and ltree_el)
+
+   Assuming all involved terms are solvable (subterm X M p <> NONE):
+
+   - “ltree_el (BTe X M) p” returns ltree node in form of (SOME (vs,y), SOME k)
+   - “subterm X M p” returns a pair (Y,N) where N is the actual subterm.
+
+   Then M0 := principle_hnf N should have the explicit form LAMl vs (VAR y @* Ms),
+   where LENGTH Ms = k.
+ *)
+Theorem BT_subterm_thm :
+    !p X M. FINITE X /\ p <> [] /\ subterm X M p <> NONE ==>
+            let (node,m) = THE (ltree_el (BTe X M) p);
+                   (Y,N) = THE (subterm X M p);
+                  (xs,y) = THE node;
+                      M0 = principle_hnf N;
+                       n = LAMl_size M0;
+                      vs = NEWS n (Y UNION FV M0);
+                      M1 = principle_hnf (M0 @* MAP VAR vs);
+             in
+                 vs = xs /\ hnf_head M1 = VAR y /\
+                 SOME (hnf_children_size M1) = m
+Proof
+(*  Induct_on ‘p’
+ >- rw [subterm_def, ltree_el_def]
+ *)
+    cheat
 QED
 
 (* NOTE: This proof shares a lot of tactics with [subterm_tpm_lemma] *)
@@ -846,7 +887,7 @@ QED
         ‘p NOTIN ltree_paths (BTe X M)’, the conclusion (rhs) always holds.
  *)
 Theorem subterm_is_none_iff_children :
-    !X M p. subterm X M p = NONE <=> !p'. p <<= p' ==> subterm X M p' = NONE
+    !X M p. subterm X M p = NONE <=> !q. p <<= q ==> subterm X M q = NONE
 Proof
     rpt GEN_TAC
  >> reverse EQ_TAC
@@ -856,16 +897,16 @@ Proof
  >> Q.ID_SPEC_TAC ‘p’
  >> Induct_on ‘p’ >- rw [subterm_NIL]
  >> rw [subterm_def]
- >> Cases_on ‘p'’ >> fs [subterm_def]
+ >> Cases_on ‘q’ >> fs [subterm_def]
 QED
 
 Theorem subterm_solvable_lemma :
-    !X M p. FINITE X /\ p <> [] /\
-            p IN ltree_paths (BTe X M) /\ subterm X M p <> NONE ==>
+    !X M p. FINITE X /\ p <> [] /\ subterm X M p <> NONE ==>
            (!q. q <<= p ==> subterm X M q <> NONE) /\
            (!q. q <<= FRONT p ==> solvable (subterm' X M q))
 Proof
     rpt GEN_TAC >> STRIP_TAC
+ >> ‘p IN ltree_paths (BTe X M)’ by PROVE_TAC [subterm_imp_ltree_paths]
  >> CONJ_ASM1_TAC
  >- (Q.X_GEN_TAC ‘q’ >> DISCH_TAC \\
      CCONTR_TAC \\
