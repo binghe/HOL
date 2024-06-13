@@ -7,7 +7,7 @@ open HolKernel Parse boolLib bossLib;
 (* core theories *)
 open optionTheory arithmeticTheory pred_setTheory listTheory rich_listTheory
      llistTheory relationTheory ltreeTheory pathTheory posetTheory hurdUtils
-     finite_mapTheory topologyTheory listRangeTheory;
+     finite_mapTheory topologyTheory listRangeTheory tautLib;
 
 open binderLib termTheory appFOLDLTheory chap2Theory chap3Theory nomsetTheory
      head_reductionTheory standardisationTheory solvableTheory reductionEval;
@@ -3395,22 +3395,27 @@ QED
  *)
 Theorem Boehm_transform_exists_lemma' :
     !X M p. FINITE X /\ p <> [] /\ subterm X M p <> NONE ==>
-           ?pi. Boehm_transform pi /\
-                solvable (apply pi M) /\ is_ready (apply pi M) /\
-               ?Z ss. Z = X UNION FV M /\
-                      subterm Z (apply pi M) p <> NONE /\
-                      p IN ltree_paths (BTe Z (apply pi M)) /\
-                      subterm' Z (apply pi M) p = (subterm' Z M p) ISUB ss
+           ?pi Z. Boehm_transform pi /\
+                  solvable (apply pi M) /\ is_ready (apply pi M) /\
+                  Z = X UNION FV M /\
+              !q. q <<= p /\ q <> [] ==>
+                  subterm Z (apply pi M) q <> NONE /\
+                  q IN ltree_paths (BTe Z (apply pi M)) /\
+                 ?ss. subterm' Z (apply pi M) q = (subterm' Z M q) ISUB ss
 Proof
     rpt STRIP_TAC
  >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘p’] Boehm_transform_exists_lemma)
  >> RW_TAC std_ss []
- >> POP_ASSUM (MP_TAC o (Q.SPEC ‘p’))
- >> rw []
- >> Q.EXISTS_TAC ‘pi’ >> rw []
+ >> Q.EXISTS_TAC ‘pi’
+ >> RW_TAC std_ss []
+ >- (qabbrev_tac ‘N = apply pi M’ \\
+     qabbrev_tac ‘Z = X UNION FV M’ \\
+     MATCH_MP_TAC subterm_imp_ltree_paths >> rw [Abbr ‘Z’])
+ >> Q.PAT_X_ASSUM ‘!q. q <> [] /\ q <<= p ==> _’ (MP_TAC o (Q.SPEC ‘q’))
+ >> RW_TAC std_ss []
  >> POP_ASSUM MP_TAC (* tpm_rel ... *)
- >> qabbrev_tac ‘t = [P/v] (subterm' (X UNION FV M) M p)’
- >> rw [tpm_rel_alt]
+ >> qabbrev_tac ‘t = [P/v] (subterm' (X UNION FV M) M q)’
+ >> RW_TAC std_ss [tpm_rel_alt]
  >> POP_ORW
  (* applying tpm_ISUB_exists *)
  >> STRIP_ASSUME_TAC (Q.SPECL [‘pi'’, ‘t’] tpm_ISUB_exists)
@@ -3418,22 +3423,19 @@ Proof
  >> qunabbrev_tac ‘t’
  >> Q.EXISTS_TAC ‘[(P,v)] ++ ss’
  >> rw [GSYM ISUB_APPEND]
- (* final goal: p IN ltree_paths (BTe (X UNION FV M) (apply pi M)) *)
- >> qabbrev_tac ‘N = apply pi M’
- >> qabbrev_tac ‘Z = X UNION FV M’
- >> MATCH_MP_TAC subterm_imp_ltree_paths >> art []
- >> rw [Abbr ‘Z’]
 QED
 
 (* Proposition 10.3.7 (i) [1, p.248] (Boehm out lemma)
 
    NOTE: this time the case ‘p = []’ is included, but it's a trvial case.
- *)
 
-(* NOTE: The original lemma in textbook requires ‘p IN ltree_paths (BTe X M)’,
+   NOTE2: The original lemma in textbook requires ‘p IN ltree_paths (BTe X M)’,
    but this seems wrong, as ‘subterm X M p’ may not be defined if only ‘p’ is
    valid path (i.e. the subterm could be a bottom (\bot) as the result of un-
    solvable terms).
+
+   NOTE3: This theorem doesn't use the feature of Boehm_transform_exists_lemma
+   with generalizations: ‘!q. q <<= p /\ q <> [] ==> _’.
  *)
 Theorem Boehm_out_lemma :
     !p X M. FINITE X /\ subterm X M p <> NONE ==>
@@ -3458,6 +3460,8 @@ Proof
          by METIS_TAC [subterm_solvable_lemma]
  >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’] Boehm_transform_exists_lemma')
  >> rw [] (* this asserts pi and [P/v] *)
+ >> POP_ASSUM (MP_TAC o (Q.SPEC ‘p’))
+ >> rw []
  >> rename1 ‘Boehm_transform p0’
  >> qabbrev_tac ‘Z = X UNION FV M’ (* Z is now unique *)
  >> ‘FINITE Z’ by rw [Abbr ‘Z’]
@@ -3656,30 +3660,7 @@ Proof
  >> EQ_TAC >> rw [subterm_equivalent_sym]
 QED
 
-(* Definition 10.3.10 (ii) [1, p.251] *)
-Definition is_faithful_def :
-    is_faithful p Ns pi <=>
-      (!X M. MEM M Ns ==>
-            (solvable (apply pi M) <=> IS_SOME (ltree_lookup (BTe X M) p))) /\
-       !M N. MEM M Ns /\ MEM N Ns ==>
-            (subterm_equivalent p M N <=> equivalent (apply pi M) (apply pi N))
-End
-
-Theorem is_faithful_two :
-    !p M N pi.
-       is_faithful p [M; N] pi <=>
-      (!X. solvable (apply pi M) <=> IS_SOME (ltree_lookup (BTe X M) p)) /\
-      (!X. solvable (apply pi N) <=> IS_SOME (ltree_lookup (BTe X N) p)) /\
-      (subterm_equivalent p M N <=> equivalent (apply pi M) (apply pi N))
-Proof
-    rw [is_faithful_def]
- >> EQ_TAC >> rw [] >> rw [] (* only one goal left *)
- >> MATCH_MP_TAC EQ_TRANS
- >> Q.EXISTS_TAC ‘subterm_equivalent p M M'’
- >> CONJ_TAC >- rw [Once subterm_equivalent_comm]
- >> rw [Once equivalent_comm]
-QED
-
+(* Definition 10.3.10 (iii) *)
 Definition term_agree_upto_def :
     term_agree_upto p M N =
       !q. q <<= p ==>
@@ -4242,7 +4223,7 @@ Proof
  >> qabbrev_tac ‘pi = p3 ++ p2 ++ p1’
  >> simp [agree_upto_def]
  >> qx_genl_tac [‘M2’, ‘N2’] >> simp [MEM_MAP]
- >> ONCE_REWRITE_TAC [DECIDE “p /\ q ==> r <=> p ==> q ==> r”]
+ >> ONCE_REWRITE_TAC [TAUT ‘p /\ q ==> r <=> p ==> q ==> r’]
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘M'’ STRIP_ASSUME_TAC)
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘N'’ STRIP_ASSUME_TAC)
  (* applying term_agree_upto_def *)
@@ -4262,6 +4243,30 @@ Proof
     cheat
 QED
  *)
+
+(* Definition 10.3.10 (ii) [1, p.251] *)
+Definition is_faithful_def :
+    is_faithful p Ns pi <=>
+      (!X M. MEM M Ns ==>
+            (solvable (apply pi M) <=> IS_SOME (ltree_lookup (BTe X M) p))) /\
+       !M N. MEM M Ns /\ MEM N Ns ==>
+            (subterm_equivalent p M N <=> equivalent (apply pi M) (apply pi N))
+End
+
+Theorem is_faithful_two :
+    !p M N pi.
+       is_faithful p [M; N] pi <=>
+      (!X. solvable (apply pi M) <=> IS_SOME (ltree_lookup (BTe X M) p)) /\
+      (!X. solvable (apply pi N) <=> IS_SOME (ltree_lookup (BTe X N) p)) /\
+      (subterm_equivalent p M N <=> equivalent (apply pi M) (apply pi N))
+Proof
+    rw [is_faithful_def]
+ >> EQ_TAC >> rw [] >> rw [] (* only one goal left *)
+ >> MATCH_MP_TAC EQ_TRANS
+ >> Q.EXISTS_TAC ‘subterm_equivalent p M M'’
+ >> CONJ_TAC >- rw [Once subterm_equivalent_comm]
+ >> rw [Once equivalent_comm]
+QED
 
 (* Proposition 10.3.13 [1, p.253] *)
 Theorem agree_upto_thm :
