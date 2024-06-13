@@ -393,6 +393,27 @@ Proof
       qunabbrev_tac ‘Q0’ >> MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [] ]
 QED
 
+Theorem BT_ltree_el_top :
+    !X M. ltree_el (BTe X M) [] =
+          if solvable M then
+             let
+               M0 = principle_hnf M;
+                n = LAMl_size M0;
+               vs = NEWS n (X UNION FV M0);
+               M1 = principle_hnf (M0 @* MAP VAR vs);
+                y = hnf_headvar M1;
+               Ms = hnf_children M1;
+                m = LENGTH Ms;
+             in
+               SOME (SOME (vs,y),SOME m)
+          else
+               SOME (NONE,SOME 0)
+Proof
+    rw [BT_def, Once ltree_unfold, BT_generator_def, ltree_el_def]
+ (* one goal is left *)
+ >> simp [LMAP_fromList]
+QED
+
 (*---------------------------------------------------------------------------*
  *  subterm
  *---------------------------------------------------------------------------*)
@@ -411,7 +432,8 @@ QED
  *)
 Definition subterm_def :
     subterm X M []      = SOME (X,M :term) /\
-    subterm X M (x::xs) = if solvable M then
+    subterm X M (x::xs) =
+      if solvable M then
         let M0 = principle_hnf M;
              n = LAMl_size M0;
              m = hnf_children_size M0;
@@ -420,7 +442,7 @@ Definition subterm_def :
             Ms = hnf_children M1
         in
             if x < m then subterm (X UNION set vs) (EL x Ms) xs else NONE
-    else
+      else
         NONE
 End
 
@@ -622,10 +644,9 @@ Theorem BT_subterm_thm :
                  vs = xs /\ hnf_head M1 = VAR y /\
                  SOME (hnf_children_size M1) = m
 Proof
-(*  Induct_on ‘p’
- >- rw [subterm_def, ltree_el_def]
- *)
-    cheat
+    Induct_on ‘p’
+ >- rw [subterm_def]
+ >> cheat
 QED
 
 (* NOTE: This proof shares a lot of tactics with [subterm_tpm_lemma] *)
