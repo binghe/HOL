@@ -628,11 +628,11 @@ QED
    - “ltree_el (BTe X M) p” returns ltree node in form of (SOME (vs,y), SOME k)
    - “subterm X M p” returns a pair (Y,N) where N is the actual subterm.
 
-   Then M0 := principle_hnf N should have the explicit form LAMl vs (VAR y @* Ms),
+   Then M0 := principle_hnf N has the explicit form LAMl vs (VAR y @* Ms),
    where LENGTH Ms = k.
  *)
 Theorem BT_subterm_thm :
-    !p X M. FINITE X /\ p <> [] /\ subterm X M p <> NONE ==>
+    !p X M. FINITE X /\ subterm X M p <> NONE /\ solvable M ==>
             let (node,m) = THE (ltree_el (BTe X M) p);
                    (Y,N) = THE (subterm X M p);
                   (xs,y) = THE node;
@@ -641,11 +641,28 @@ Theorem BT_subterm_thm :
                       vs = NEWS n (Y UNION FV M0);
                       M1 = principle_hnf (M0 @* MAP VAR vs);
              in
-                 vs = xs /\ hnf_head M1 = VAR y /\
-                 SOME (hnf_children_size M1) = m
+                vs = xs /\
+                hnf_headvar M1 = y (* or: hnf_head M1 = VAR y *) /\
+                SOME (hnf_children_size M1) = m
 Proof
     Induct_on ‘p’
- >- rw [subterm_def]
+ >- (rw [subterm_def, BT_ltree_el_top] \\
+     MATCH_MP_TAC hnf_children_size_alt \\
+     qabbrev_tac ‘M0 = principle_hnf M’ \\
+     qabbrev_tac ‘n = LAMl_size M0’ \\
+     qabbrev_tac ‘vs = NEWS n (X UNION FV M0)’ \\
+     qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’ \\
+     Know ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (X UNION FV M0) /\ LENGTH vs = n’
+     >- rw [Abbr ‘vs’, NEWS_def] \\
+     DISCH_THEN (STRIP_ASSUME_TAC o REWRITE_RULE [DISJOINT_UNION']) \\
+     qunabbrev_tac ‘M1’ \\
+    ‘hnf M0’ by rw [Abbr ‘M0’, hnf_principle_hnf'] \\
+     hnf_tac (“M0 :term”, “vs :string list”,
+              “M1 :term”, “y :string”, “args :term list”) \\
+    ‘TAKE n vs = vs’ by rw [TAKE_LENGTH_ID_rwt] \\
+     POP_ASSUM (rfs o wrap) \\
+     rw [hnf_appstar])
+ (* stage work *)
  >> cheat
 QED
 

@@ -1809,6 +1809,12 @@ Proof
     HO_MATCH_MP_TAC simple_induction >> rw []
 QED
 
+Theorem hnf_children_size_alt :
+    !M. hnf M /\ ~is_abs M ==> hnf_children_size M = LENGTH (hnf_children M)
+Proof
+    rw [absfree_hnf_cases] >> rw []
+QED
+
 (*---------------------------------------------------------------------------*
  *  hnf_cases_shared - ‘hnf_cases’ with a given list of fresh variables
  *---------------------------------------------------------------------------*)
