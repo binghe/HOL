@@ -14,6 +14,8 @@ open binderLib termTheory appFOLDLTheory chap2Theory chap3Theory nomsetTheory
 
 open basic_swapTheory horeductionTheory takahashiS3Theory;
 
+open monadsyntax;
+
 val _ = new_theory "boehm";
 
 val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
@@ -23,6 +25,9 @@ val o_DEF = combinTheory.o_DEF;
 val _ = hide "B";
 val _ = hide "C";
 val _ = hide "Y";
+
+val _ = enable_monadsyntax ();
+val _ = List.app enable_monad ["option"];
 
 (*---------------------------------------------------------------------------*
  *  ltreeTheory extras
@@ -623,27 +628,27 @@ QED
 
 (* Lemma 10.1.15 (related) [1, p.222] (subterm and ltree_el)
 
-   Assuming all involved terms are solvable (subterm X M p <> NONE):
+   Assuming all involved terms are solvable:
 
-   - “ltree_el (BTe X M) p” returns ltree node in form of (SOME (vs,y), SOME k)
-   - “subterm X M p” returns a pair (Y,N) where N is the actual subterm.
+   - “ltree_el (BTe X M) p” returns ‘SOME (SOME (vs,y),SOME k)’ (ltree node),
+   - “subterm X M p” returns ‘(Z,N)’ where N is the actual subterm.
 
-   Then M0 := principle_hnf N has the explicit form LAMl vs (VAR y @* Ms),
-   where LENGTH Ms = k.
+   Then M0 := principle_hnf N has the explicit form: ‘LAMl vs (VAR y @* Ms)’,
+   and ‘LENGTH Ms = k’ (NOTE: vs, y and k come from ‘ltree_el (BTe X M) p’.
  *)
 Theorem BT_subterm_thm :
     !p X M. FINITE X /\ subterm X M p <> NONE /\ solvable M ==>
-            let (node,m) = THE (ltree_el (BTe X M) p);
-                   (Y,N) = THE (subterm X M p);
-                  (xs,y) = THE node;
-                      M0 = principle_hnf N;
-                       n = LAMl_size M0;
-                      vs = NEWS n (Y UNION FV M0);
-                      M1 = principle_hnf (M0 @* MAP VAR vs);
-             in
-                vs = xs /\
-                hnf_headvar M1 = y (* or: hnf_head M1 = VAR y *) /\
-                SOME (hnf_children_size M1) = m
+            do    (t,m) <- ltree_el (BTe X M) p;
+                  (Z,N) <- subterm X M p;
+                 (xs,y) <- t;
+                    M0 <<- principle_hnf N;
+                     n <<- LAMl_size M0;
+                    vs <<- NEWS n (Z UNION FV M0);
+                    M1 <<- principle_hnf (M0 @* MAP VAR vs);
+               return (vs = xs /\
+                       hnf_headvar M1 = y /\
+                       hnf_children_size M1 = THE m)
+            od = SOME T
 Proof
     Induct_on ‘p’
  >- (rw [subterm_def, BT_ltree_el_top] \\
