@@ -626,6 +626,58 @@ Proof
  >> rw [ltree_paths_def, ltree_lookup_def, LNTH_fromList, GSYM BT_def, EL_MAP]
 QED
 
+(* ltree_lookup returns more information (the entire subtree), thus can be
+   used to construct the return value of ltree_el.
+ *)
+Theorem BT_ltree_el_alt :
+    !p X M. FINITE X /\ p IN ltree_paths (BTe X M) ==>
+            ltree_el (BTe X M) p =
+              do  t <- ltree_lookup (BTe X M) p;
+                 a <<- ltree_node t;
+                ts <<- ltree_children t;
+                return (a,LLENGTH ts)
+              od
+Proof
+    Induct_on ‘p’
+ >- (rpt STRIP_TAC \\
+     reverse (Cases_on ‘solvable M’)
+     >- rw [ltree_lookup_def, ltree_el_def, BT_of_unsolvables] \\
+     ONCE_REWRITE_TAC [
+       REWRITE_CONV [BT_def, Once ltree_unfold, Once BT_generator_def] “BTe X M”] \\
+     simp [ltree_lookup_def, ltree_el_def])
+ (* stage work *)
+ >> rpt STRIP_TAC
+ >> ‘ltree_el (BTe X M) (h::p) <> NONE’ by fs [ltree_el_valid]
+ >> ‘ltree_lookup (BTe X M) (h::p) <> NONE’ by fs [ltree_lookup_valid]
+ >> reverse (Cases_on ‘solvable M’)
+ >- rw [ltree_lookup_def, ltree_el_def, BT_of_unsolvables]
+ >> ONCE_REWRITE_TAC [
+      REWRITE_CONV [BT_def, Once ltree_unfold, Once BT_generator_def] “BTe X M”]
+ >> simp [ltree_el_def, ltree_lookup_def, LNTH_fromList]
+ >> qabbrev_tac ‘M0 = principle_hnf M’
+ >> qabbrev_tac ‘n = LAMl_size M0’
+ >> qabbrev_tac ‘vs = NEWS n (X UNION FV M0)’
+ >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
+ >> qabbrev_tac ‘m = LENGTH (hnf_children M1)’
+ >> reverse (Cases_on ‘h < m’) >- simp []
+ >> simp [EL_MAP]
+ >> qabbrev_tac ‘Y = X UNION set vs’
+ >> ‘FINITE Y’ by rw [Abbr ‘Y’]
+ >> qabbrev_tac ‘N = EL h (hnf_children M1)’
+ >> simp [GSYM BT_def]
+ >> Q.PAT_X_ASSUM ‘!X M. FINITE X /\ p IN ltree_paths (BTe X M) ==> P’
+      (MP_TAC o (Q.SPECL [‘Y’, ‘N’]))
+ >> Suff ‘p IN ltree_paths (BTe Y N)’ >- rw []
+ >> Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BTe X M)’ MP_TAC
+ >> Q.PAT_X_ASSUM ‘ltree_el (BTe X M) (h::p) <> NONE’ K_TAC
+ >> Q.PAT_X_ASSUM ‘ltree_lookup (BTe X M) (h::p) <> NONE’ K_TAC
+ >> simp [ltree_paths_def]
+ >> ASSUME_TAC (REWRITE_CONV [BT_def, Once ltree_unfold, Once BT_generator_def] “BTe X M”)
+ >> POP_ORW
+ >> simp [LMAP_fromList, ltree_lookup_def, LNTH_fromList]
+ >> simp [EL_MAP, GSYM BT_def]
+QED
+
 (* Lemma 10.1.15 (related) [1, p.222] (subterm and ltree_el)
 
    Assuming all involved terms are solvable:
@@ -638,16 +690,16 @@ QED
  *)
 Theorem BT_subterm_thm :
     !p X M. FINITE X /\ subterm X M p <> NONE /\ solvable M ==>
-            do    (t,m) <- ltree_el (BTe X M) p;
-                  (Z,N) <- subterm X M p;
-                 (xs,y) <- t;
-                    M0 <<- principle_hnf N;
-                     n <<- LAMl_size M0;
-                    vs <<- NEWS n (Z UNION FV M0);
-                    M1 <<- principle_hnf (M0 @* MAP VAR vs);
-               return (vs = xs /\
-                       hnf_headvar M1 = y /\
-                       hnf_children_size M1 = THE m)
+            do  (t,m) <- ltree_el (BTe X M) p;
+                (Z,N) <- subterm X M p;
+               (xs,y) <- t;
+                  M0 <<- principle_hnf N;
+                   n <<- LAMl_size M0;
+                  vs <<- NEWS n (Z UNION FV M0);
+                  M1 <<- principle_hnf (M0 @* MAP VAR vs);
+              return (vs = xs /\
+                      hnf_headvar M1 = y /\
+                      hnf_children_size M1 = THE m)
             od = SOME T
 Proof
     Induct_on ‘p’
@@ -668,6 +720,7 @@ Proof
      POP_ASSUM (rfs o wrap) \\
      rw [hnf_appstar])
  (* stage work *)
+ >> rw []
  >> cheat
 QED
 
