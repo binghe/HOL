@@ -642,6 +642,22 @@ Proof
  >> rw [ltree_paths_def, ltree_lookup_def, LNTH_fromList, GSYM BT_def, EL_MAP]
 QED
 
+Theorem subterm_finite_lemma :
+    !p X M Y N. FINITE X /\ subterm X M p = SOME (Y,N) ==> FINITE Y
+Proof
+    Induct_on ‘p’ >- simp []
+ >> rpt GEN_TAC
+ >> simp [subterm_def]
+ >> qabbrev_tac ‘M0 = principle_hnf M’
+ >> qabbrev_tac ‘n = LAMl_size M0’
+ >> qabbrev_tac ‘vs = NEWS n (X UNION FV M0)’
+ >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
+ >> rpt STRIP_TAC
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> qexistsl_tac [‘X UNION set vs’, ‘EL h (hnf_children M1)’, ‘N’]
+ >> rw []
+QED
+
 (* Lemma 10.1.15 (related) [1, p.222] (subterm and ltree_el)
 
    Assuming all involved terms are solvable:
@@ -651,9 +667,12 @@ QED
 
    Then M0 := principle_hnf N has the explicit form: ‘LAMl vs (VAR y @* Ms)’,
    and ‘LENGTH Ms = k’ (NOTE: vs, y and k come from ‘ltree_el (BTe X M) p’.
+
+   Needs: subterm_solvable_lemma, BT_subterm_lemma, BT_ltree_el_thm,
+          subterm_imp_ltree_paths, subterm_finite_lemma, etc.
  *)
 Theorem BT_subterm_thm :
-    !p X M. FINITE X /\ subterm X M p <> NONE /\ solvable M ==>
+    !p X M. FINITE X /\ subterm X M p <> NONE /\ solvable (subterm' X M p) ==>
             do  (t,m) <- ltree_el (BTe X M) p;
                 (Z,N) <- subterm X M p;
                (xs,y) <- t;
@@ -661,34 +680,38 @@ Theorem BT_subterm_thm :
                    n <<- LAMl_size M0;
                   vs <<- NEWS n (Z UNION FV M0);
                   M1 <<- principle_hnf (M0 @* MAP VAR vs);
-              return (vs = xs /\
-                      hnf_headvar M1 = y /\
+              return (vs = xs /\ hnf_headvar M1 = y /\
                       hnf_children_size M1 = THE m)
             od = SOME T
 Proof
-    cheat
-(*
-    Induct_on ‘p’
- >- (rw [subterm_def, BT_ltree_el_top] \\
-     MATCH_MP_TAC hnf_children_size_alt \\
-     qabbrev_tac ‘M0 = principle_hnf M’ \\
-     qabbrev_tac ‘n = LAMl_size M0’ \\
-     qabbrev_tac ‘vs = NEWS n (X UNION FV M0)’ \\
-     qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’ \\
-     Know ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (X UNION FV M0) /\ LENGTH vs = n’
-     >- rw [Abbr ‘vs’, NEWS_def] \\
-     DISCH_THEN (STRIP_ASSUME_TAC o REWRITE_RULE [DISJOINT_UNION']) \\
-     qunabbrev_tac ‘M1’ \\
-    ‘hnf M0’ by rw [Abbr ‘M0’, hnf_principle_hnf'] \\
-     hnf_tac (“M0 :term”, “vs :string list”,
-              “M1 :term”, “y :string”, “args :term list”) \\
-    ‘TAKE n vs = vs’ by rw [TAKE_LENGTH_ID_rwt] \\
-     POP_ASSUM (rfs o wrap) \\
-     rw [hnf_appstar])
- (* stage work *)
- >> rw []
- >> cheat
- *)
+    rpt STRIP_TAC
+ >> ‘p IN ltree_paths (BTe X M)’ by PROVE_TAC [subterm_imp_ltree_paths]
+ >> ‘ltree_lookup (BTe X M) p <> NONE’ by rw [GSYM ltree_lookup_valid]
+ >> Know ‘BT (THE (subterm X M p)) = THE (ltree_lookup (BTe X M) p)’
+ >- (MATCH_MP_TAC BT_subterm_lemma >> art [])
+ >> gs [GSYM IS_SOME_EQ_NOT_NONE, IS_SOME_EXISTS]
+ >> Cases_on ‘x’ >> fs []
+ >> rename1 ‘subterm X M p = SOME (Y,N)’
+ >> rw [BT_ltree_el_thm]
+ >> Know ‘BTe Y N = ltree_unfold BT_generator (Y,N)’ >- rw [BT_def]
+ >> Rewr'
+ >> NTAC 2 (simp [Once ltree_unfold, BT_generator_def])
+ >> simp [LMAP_fromList]
+(* stage work *)
+ >> qabbrev_tac ‘N0 = principle_hnf N’
+ >> qabbrev_tac ‘n = LAMl_size N0’
+ >> qabbrev_tac ‘vs = NEWS n (Y UNION FV N0)’
+ >> qabbrev_tac ‘N1 = principle_hnf (N0 @* MAP VAR vs)’
+ >> ‘FINITE Y’ by PROVE_TAC [subterm_finite_lemma]
+ >> Know ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (Y UNION FV N0) /\ LENGTH vs = n’
+ >- rw [Abbr ‘vs’, NEWS_def]
+ >> DISCH_THEN (STRIP_ASSUME_TAC o REWRITE_RULE [DISJOINT_UNION'])
+ >> qunabbrev_tac ‘N1’
+ >> ‘hnf N0’ by rw [Abbr ‘N0’, hnf_principle_hnf']
+ >> hnf_tac (“N0 :term”, “vs :string list”,
+             “N1 :term”, “y :string”, “args :term list”)
+ >> ‘TAKE n vs = vs’ by rw [TAKE_LENGTH_ID_rwt]
+ >> POP_ASSUM (rfs o wrap)
 QED
 
 (* NOTE: This proof shares a lot of tactics with [subterm_tpm_lemma] *)
