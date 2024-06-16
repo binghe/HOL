@@ -1269,12 +1269,12 @@ Proof
  >- (‘unsolvable (tpm pi M)’ by PROVE_TAC [solvable_tpm] \\
      simp [subterm_def])
  >> ‘solvable (tpm pi M)’ by PROVE_TAC [solvable_tpm]
- (* BEGIN Michael Norrish's tactics *)
+ (* BEGIN Norrish's advanced tactics *)
  >> CONV_TAC (UNBETA_CONV “subterm X M (h::p)”)
  >> qmatch_abbrev_tac ‘P _’
  >> RW_TAC bool_ss [subterm_of_solvables]
  >> simp [Abbr ‘P’]
- (* END Michael Norrish's tactics.
+ (* END Norrish's advanced tactics.
     preparing for expanding ‘subterm' Y (tpm pi M) (h::p)’ *)
  >> qabbrev_tac ‘M0' = principle_hnf (tpm pi M)’
  >> Know ‘M0' = tpm pi M0’
@@ -1292,12 +1292,12 @@ Proof
  >- (rw [] >> rw [subterm_of_solvables])
  (* stage work, now h < m *)
  >> simp [] (* eliminate ‘h < m’ in the goal *)
- (* BEGIN Michael Norrish's tactics, again *)
+ (* BEGIN Norrish's advanced tactics, again *)
  >> CONV_TAC (UNBETA_CONV “subterm Y (tpm pi M) (h::p)”)
  >> qmatch_abbrev_tac ‘P _’
  >> RW_TAC bool_ss [subterm_of_solvables]
  >> simp [Abbr ‘P’]
- (* END Michael Norrish's tactics. *)
+ (* END Norrish's advanced tactics. *)
  >> Q.PAT_X_ASSUM ‘tpm pi M0 = principle_hnf (tpm pi M)’ (rfs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘n  = n'’  (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘n  = n''’ (fs o wrap o SYM)
@@ -2457,12 +2457,12 @@ Proof
  >> DISCH_TAC
  >> Know ‘subterm X M (h::l) <> NONE’
  >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [])
- (* BEGIN Michael Norrish's tactics *)
+ (* BEGIN Norrish's advanced tactics *)
  >> CONV_TAC (UNBETA_CONV “subterm X M (h::l)”)
  >> qmatch_abbrev_tac ‘f _’
  >> RW_TAC bool_ss [subterm_of_solvables]
  >> simp [Abbr ‘f’]
- (* END Michael Norrish's tactics. *)
+ (* END Norrish's advanced tactics. *)
  >> STRIP_TAC
  (* getting explicit representation of M0 *)
  >> Know ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (X UNION FV M0) /\ LENGTH vs = n’
@@ -2546,7 +2546,7 @@ Proof
     ‘FRONT (h::t) <> []’ by rw [] \\
      Know ‘h::p' <<= FRONT (h::t)’
      >- (simp [] >> Cases_on ‘t’ >> fs []) >> Rewr \\
-  (* Michael Norrish's tactics *)
+  (* Norrish's advanced tactics *)
      CONV_TAC (UNBETA_CONV “subterm X M (h::p')”) \\
      qmatch_abbrev_tac ‘f _’ \\
      RW_TAC bool_ss [subterm_of_solvables] \\
@@ -2945,7 +2945,7 @@ Proof
      Q.EXISTS_TAC ‘FRONT l’ >> rw [] \\
      MATCH_MP_TAC IS_PREFIX_FRONT_MONO >> rw [])
  >> Rewr
- (* Michael Norrish's tactics *)
+ (* Norrish's advanced tactics *)
  >> CONV_TAC (UNBETA_CONV “subterm X M (h::p')”)
  >> qmatch_abbrev_tac ‘f _’
  >> RW_TAC bool_ss [subterm_of_solvables]

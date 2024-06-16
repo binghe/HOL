@@ -16,12 +16,11 @@ open pred_setTheory relationTheory pairTheory combinTheory hurdUtils;
 (* for ltree_el_alt_ltree_lookup *)
 open monadsyntax;
 val _ = enable_monadsyntax ();
-val _ = List.app enable_monad ["option"];
+val _ = enable_monad "option";
 
 val _ = new_theory "ltree";
 
 (* make type definition *)
-
 Type ltree_rep[local] = ``:num list -> 'a # num option``;
 
 Overload NOTHING[local] = ``(ARB:'a, SOME (0:num))``;
