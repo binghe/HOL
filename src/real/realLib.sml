@@ -23,6 +23,8 @@ struct
                    ("<=", realSyntax.leq_tm),
                    (">", realSyntax.greater_tm),
                    (">=", realSyntax.geq_tm),
+                   ("flr", realSyntax.NUM_FLOOR_tm),
+                   ("clg", realSyntax.NUM_CEILING_tm),
                    (GrammarSpecials.fromNum_str, realSyntax.real_injection),
                    (GrammarSpecials.num_injection, realSyntax.real_injection)];
 
