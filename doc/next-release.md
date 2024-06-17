@@ -26,15 +26,15 @@ Bugs fixed:
 New theories:
 -------------
 
-- `number`, `combinatorics` and `prime`: These are combined theories of materials
-   from `examples/algebra/lib`, etc. They contain some more advanced results from
-   number theory (in particular properties of prime numbers) and combinatorics.
- 
-- `monoid`, `group`, `ring` and `real_algebra`: These are combined theories
-   of materials ever in `examples/algebra`. A monoid is an algebraic structure:
-   with a carrier set, a binary operation and an identity element. A group is an
-   algebraic structure: a monoid with all its elements invertible. A ring takes
-   into account the interplay between its additive group and multiplicative monoid.
+- `number`, `combinatorics` and `prime`: These theories combine material
+   from `examples/algebra/lib`, etc.
+   They contain some more advanced results from number theory (in particular properties of prime numbers) and combinatorics.
+
+- `monoid`, `group`, `ring` and `real_algebra`: These theories combine
+   material previously held in `examples/algebra`.
+   A monoid is an algebraic structure: with a carrier set, a binary operation and an identity element.
+   A group is an algebraic structure: a monoid with all its elements invertible.
+   A ring takes into account the interplay between its additive group and multiplicative monoid.
 
 New tools:
 ----------
@@ -52,11 +52,8 @@ New examples:
 Incompatibilities:
 ------------------
 
-- The old decision procedures for real arithmetics in `RealArith` package has been
-  removed: `OLD_REAL_ARITH`, `OLD_REAL_ARITH_TAC`, `OLD_REAL_ASM_ARITH_TAC` and
- `PURE_REAL_ARITH_TAC` (user code can switch to `REAL_ASM_ARITH_TAC`).
-  Now `realLib.REAL_ARITH_TAC` (= `RealField.REAL_ARITH_TAC`), etc. solve exactly
-  the same set of problems as in HOL-Light (in rare cases existing proofs break.)
+-   `numLib.prefer_num` has been renamed to `numLib.temp_prefer_num`, which name better describes its semantics.
+    The `prefer_num` entry-point is now used to make a change “permanent” (again following the naming convention used by many parsing-related entry-points), which is to say that the overloads made by this function will be exported to child theories.
 
 * * * * *
 
