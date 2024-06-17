@@ -15,6 +15,8 @@ open binderLib termTheory appFOLDLTheory chap2Theory chap3Theory nomsetTheory
 open basic_swapTheory horeductionTheory takahashiS3Theory;
 
 open monadsyntax;
+val _ = enable_monadsyntax ();
+val _ = enable_monad "option";
 
 val _ = new_theory "boehm";
 
@@ -25,9 +27,6 @@ val o_DEF = combinTheory.o_DEF;
 val _ = hide "B";
 val _ = hide "C";
 val _ = hide "Y";
-
-val _ = enable_monadsyntax ();
-val _ = enable_monad "option";
 
 (*---------------------------------------------------------------------------*
  *  ltreeTheory extras
@@ -3973,28 +3972,27 @@ Proof
      Q.EXISTS_TAC ‘z’ >> art [])
  >> DISCH_TAC
  (* NOTE: Z contains ‘vs’ in addition to Y *)
- >> qabbrev_tac ‘Z = Y UNION set vs’
- >> ‘FINITE Z’ by rw [Abbr ‘Z’]
+ >> qabbrev_tac ‘Y' = Y UNION set vs’
+ >> ‘FINITE Y'’ by rw [Abbr ‘Y'’]
  (* NOTE: Now we have a list of M1's whose children size is bounded by d_max.
     In the worst case, P(d_max) @* (M1 i) will leave d_max+1 variable bindings
     at most (in this case, ‘args i = 0 /\ n i = n_max’), and to finally get a
    "is_ready" term, we should apply a fresh list of d_max+1 variables (l).
   *)
- >> qabbrev_tac ‘xs = NEWS (d_max + 1) Z’
- >> Know ‘ALL_DISTINCT xs /\ DISJOINT (set xs) Z /\ LENGTH xs = d_max + 1’
- >- rw [Abbr ‘xs’, NEWS_def]
- >> STRIP_TAC
+ >> qabbrev_tac ‘xs = NEWS (d_max + 1) Y'’
+ >> ‘ALL_DISTINCT xs /\ DISJOINT (set xs) Y' /\ LENGTH xs = d_max + 1’
+       by rw [Abbr ‘xs’, NEWS_def]
  (* p3 is the maximal possible fresh list to be applied after the permutator *)
  >> qabbrev_tac ‘p3 = MAP rightctxt (REVERSE (MAP VAR xs))’
  >> ‘Boehm_transform p3’ by rw [Abbr ‘p3’, MAP_MAP_o, GSYM MAP_REVERSE]
  (* FV properties of the head variable y (and children args) *)
- >> Know ‘!i. i < k ==> y i IN Z /\
-                        BIGUNION (IMAGE FV (set (args i))) SUBSET Z’
+ >> Know ‘!i. i < k ==> y i IN Y' /\
+                        BIGUNION (IMAGE FV (set (args i))) SUBSET Y'’
  >- (NTAC 2 STRIP_TAC \\
      qabbrev_tac ‘Z' = FV (M i) UNION set vs’ \\
      Suff ‘y i IN Z' /\ BIGUNION (IMAGE FV (set (args i))) SUBSET Z'’
-     >- (Suff ‘Z' SUBSET Z’ >- PROVE_TAC [SUBSET_DEF] \\
-         simp [Abbr ‘Z'’, Abbr ‘Z’, Abbr ‘Y’] \\
+     >- (Suff ‘Z' SUBSET Y'’ >- PROVE_TAC [SUBSET_DEF] \\
+         simp [Abbr ‘Z'’, Abbr ‘Y’, Abbr ‘Y'’] \\
          rw [SUBSET_DEF, IN_BIGUNION_IMAGE] \\
          DISJ1_TAC >> DISJ2_TAC \\
          Q.EXISTS_TAC ‘EL i Ms’ >> rw [EL_MEM]) \\
@@ -4100,9 +4098,9 @@ Proof
              MATCH_MP_TAC ISUB_VAR_FRESH >> art [GSYM DOM_ALT_MAP_SND] \\
              simp [IN_IMAGE, IN_COUNT, Once DISJ_SYM] \\
              Q.X_GEN_TAC ‘a’ >> STRONG_DISJ_TAC (* push ‘a < k’ *) \\
-            ‘y a IN Z’ by rw [] \\
              CCONTR_TAC \\
-             Q.PAT_X_ASSUM ‘DISJOINT (set xs) Z’ MP_TAC \\
+            ‘y a IN Y'’ by rw [] \\
+             Q.PAT_X_ASSUM ‘DISJOINT (set xs) Y'’ MP_TAC \\
              rw [DISJOINT_ALT] \\
              Q.EXISTS_TAC ‘EL x xs’ >> rw [EL_MEM]) >> DISCH_TAC \\
       (* NOTE: This MP_TAC is for applying principle_hnf_denude_thm later. From
@@ -4277,12 +4275,12 @@ Proof
              Q.PAT_X_ASSUM ‘a < LENGTH args'’ MP_TAC \\
              simp [Abbr ‘args'’, EL_MAP] >> DISCH_TAC \\
              MATCH_MP_TAC FV_ISUB_SUBSET >> art []) \\
-         Know ‘b NOTIN Z’
-         >- (Q.PAT_X_ASSUM ‘DISJOINT (set xs) Z’ MP_TAC \\
+         Know ‘b NOTIN Y'’
+         >- (Q.PAT_X_ASSUM ‘DISJOINT (set xs) Y'’ MP_TAC \\
              rw [DISJOINT_ALT] \\
              POP_ASSUM MATCH_MP_TAC >> rw [EL_MEM]) \\
-         Suff ‘FV (EL a (args i)) SUBSET Z’ >- SET_TAC [] \\
-         Know ‘BIGUNION (IMAGE FV (set (args i))) SUBSET Z’ >- rw [] \\
+         Suff ‘FV (EL a (args i)) SUBSET Y'’ >- SET_TAC [] \\
+         Know ‘BIGUNION (IMAGE FV (set (args i))) SUBSET Y'’ >- rw [] \\
          REWRITE_TAC [BIGUNION_SUBSET, IN_IMAGE] \\
          DISCH_THEN MATCH_MP_TAC \\
          Q.EXISTS_TAC ‘EL a (args i)’ >> rw [MEM_EL] \\
@@ -4302,14 +4300,14 @@ Proof
              >- (MATCH_MP_TAC EL_APPEND2 >> rw []) >> Rewr' \\
              qunabbrev_tac ‘l2’ \\
              MATCH_MP_TAC EL_APPEND1 >> rw []) >> Rewr' \\
-         Know ‘b NOTIN Z’
-         >- (Q.PAT_X_ASSUM ‘DISJOINT (set xs) Z’ MP_TAC \\
+         Know ‘b NOTIN Y'’
+         >- (Q.PAT_X_ASSUM ‘DISJOINT (set xs) Y'’ MP_TAC \\
              rw [DISJOINT_ALT] \\
              POP_ASSUM MATCH_MP_TAC >> rw [EL_MEM]) \\
          qabbrev_tac ‘a' = a - LENGTH args'’ \\
-         Suff ‘FV (EL a' args2) SUBSET Z’ >- SET_TAC [] \\
+         Suff ‘FV (EL a' args2) SUBSET Y'’ >- SET_TAC [] \\
          Suff ‘FV (EL a' args2) SUBSET set vs’
-         >- (qunabbrev_tac ‘Z’ >> SET_TAC []) \\
+         >- (qunabbrev_tac ‘Y'’ >> SET_TAC []) \\
         ‘a' < LENGTH args2’ by rw [Abbr ‘a'’] \\
          Q.PAT_X_ASSUM ‘a < LENGTH args' + LENGTH args2’ MP_TAC \\
          Q.PAT_X_ASSUM ‘a' < LENGTH args2’ MP_TAC \\
@@ -4348,14 +4346,22 @@ Proof
  >> DISCH_TAC
  (* now proving agree_upto *)
  >> qabbrev_tac ‘pi = p3 ++ p2 ++ p1’
+ >> Q.PAT_X_ASSUM ‘agree_upto p Ms’ MP_TAC
  >> simp [agree_upto_def]
+ >> DISCH_TAC
  >> qx_genl_tac [‘M2’, ‘N2’] >> simp [MEM_MAP]
  >> ONCE_REWRITE_TAC [TAUT ‘p /\ q ==> r <=> p ==> q ==> r’]
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘M'’ STRIP_ASSUME_TAC)
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘N'’ STRIP_ASSUME_TAC)
+ >> Q.PAT_X_ASSUM ‘!M N. MEM M Ms /\ MEM N Ms ==> agree_upto p M N’
+      (MP_TAC o (Q.SPECL [‘M'’, ‘N'’]))
  (* applying term_agree_upto_def *)
  >> rw [term_agree_upto_def]
+ >> qabbrev_tac ‘Z = FV M' UNION FV N'’
  >> qabbrev_tac ‘Z' = FV (apply pi M') UNION FV (apply pi N')’
+ >> Q.PAT_X_ASSUM ‘!q. q <<= p ==> ltree_el (BTe Z1 M') q = _’
+      (MP_TAC o Q.SPEC ‘q’) >> simp []
+ (* preparing for BT_subterm_thm *)
  >> cheat
 QED
 
