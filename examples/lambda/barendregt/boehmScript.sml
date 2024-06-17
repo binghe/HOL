@@ -27,7 +27,7 @@ val _ = hide "C";
 val _ = hide "Y";
 
 val _ = enable_monadsyntax ();
-val _ = List.app enable_monad ["option"];
+val _ = enable_monad "option";
 
 (*---------------------------------------------------------------------------*
  *  ltreeTheory extras
