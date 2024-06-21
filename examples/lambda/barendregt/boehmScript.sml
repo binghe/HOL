@@ -3973,7 +3973,6 @@ Proof
  >> DISCH_TAC
  (* NOTE: Z contains ‘vs’ in addition to Y *)
  >> qabbrev_tac ‘Y' = Y UNION set vs’
- >> ‘FINITE Y'’ by rw [Abbr ‘Y'’]
  (* NOTE: Now we have a list of M1's whose children size is bounded by d_max.
     In the worst case, P(d_max) @* (M1 i) will leave d_max+1 variable bindings
     at most (in this case, ‘args i = 0 /\ n i = n_max’), and to finally get a
@@ -3981,7 +3980,8 @@ Proof
   *)
  >> qabbrev_tac ‘xs = NEWS (d_max + 1) Y'’
  >> ‘ALL_DISTINCT xs /\ DISJOINT (set xs) Y' /\ LENGTH xs = d_max + 1’
-       by rw [Abbr ‘xs’, NEWS_def]
+       by (‘FINITE Y'’ by rw [Abbr ‘Y'’] \\
+           rw [Abbr ‘xs’, NEWS_def])
  (* p3 is the maximal possible fresh list to be applied after the permutator *)
  >> qabbrev_tac ‘p3 = MAP rightctxt (REVERSE (MAP VAR xs))’
  >> ‘Boehm_transform p3’ by rw [Abbr ‘p3’, MAP_MAP_o, GSYM MAP_REVERSE]
@@ -3990,42 +3990,41 @@ Proof
  >> CONJ_TAC
  >- (MATCH_MP_TAC Boehm_transform_APPEND >> art [] \\
      MATCH_MP_TAC Boehm_transform_APPEND >> art [])
- (* FV properties of the head variable y (and children args) *)
- >> Know ‘!i. i < k ==> y i IN Y' /\
-                        BIGUNION (IMAGE FV (set (args i))) SUBSET Y'’
- >- (NTAC 2 STRIP_TAC \\
-     qabbrev_tac ‘Z' = FV (M i) UNION set vs’ \\
-     Suff ‘y i IN Z' /\ BIGUNION (IMAGE FV (set (args i))) SUBSET Z'’
-     >- (Suff ‘Z' SUBSET Y'’ >- PROVE_TAC [SUBSET_DEF] \\
-         simp [Abbr ‘Z'’, Abbr ‘Y’, Abbr ‘Y'’] \\
-         rw [SUBSET_DEF, IN_BIGUNION_IMAGE] \\
-         DISJ1_TAC >> DISJ2_TAC \\
-         Q.EXISTS_TAC ‘EL i Ms’ >> rw [EL_MEM]) \\
-  (* applying principle_hnf_FV_SUBSET' *)
-     Know ‘FV (M0 i) SUBSET FV (M i)’
-     >- (SIMP_TAC std_ss [Abbr ‘M0’, o_DEF] \\
-         MATCH_MP_TAC principle_hnf_FV_SUBSET' >> rw []) \\
-     qunabbrev_tac ‘Z'’ \\
-     Suff ‘y i IN FV (M0 i) UNION set vs /\
-            BIGUNION (IMAGE FV (set (args i))) SUBSET FV (M0 i) UNION set vs’
-     >- SET_TAC [] \\
-     Know ‘FV (M1 i) SUBSET FV (M0 i @* MAP VAR vs)’
-     >- (‘M1 i = principle_hnf (M0 i @* MAP VAR vs)’ by rw [] >> POP_ORW \\
-         MATCH_MP_TAC principle_hnf_FV_SUBSET' \\
-        ‘M0 i @* MAP VAR vs = apply p1 (M0 i)’
-           by rw [Abbr ‘p1’, Boehm_apply_MAP_rightctxt'] >> POP_ORW \\
-         Suff ‘solvable (M1 i)’ >- METIS_TAC [lameq_solvable_cong] \\
-         REWRITE_TAC [solvable_iff_has_hnf] \\
-         MATCH_MP_TAC hnf_has_hnf \\
-         rw [GSYM appstar_APPEND, hnf_appstar]) \\
-     REWRITE_TAC [FV_appstar_MAP_VAR] \\
-     Suff ‘y i IN FV (M1 i) /\
-           BIGUNION (IMAGE FV (set (args i))) SUBSET FV (M1 i)’ >- SET_TAC [] \\
-     rw [FV_appstar] >> SET_TAC [])
- >> DISCH_TAC
  (* EVERY is_ready ... *)
  >> STRONG_CONJ_TAC
  >- (simp [EVERY_EL, EL_MAP] (* Now we focus on ‘EL i Ms’ *) \\
+  (* FV properties of the head variable y (and children args) *)
+     Know ‘!i. i < k ==> y i IN Y' /\
+                        BIGUNION (IMAGE FV (set (args i))) SUBSET Y'’
+     >- (NTAC 2 STRIP_TAC \\
+         qabbrev_tac ‘Z' = FV (M i) UNION set vs’ \\
+         Suff ‘y i IN Z' /\ BIGUNION (IMAGE FV (set (args i))) SUBSET Z'’
+         >- (Suff ‘Z' SUBSET Y'’ >- PROVE_TAC [SUBSET_DEF] \\
+             simp [Abbr ‘Z'’, Abbr ‘Y’, Abbr ‘Y'’] \\
+             rw [SUBSET_DEF, IN_BIGUNION_IMAGE] \\
+             DISJ1_TAC >> DISJ2_TAC \\
+             Q.EXISTS_TAC ‘EL i Ms’ >> rw [EL_MEM]) \\
+      (* applying principle_hnf_FV_SUBSET' *)
+         Know ‘FV (M0 i) SUBSET FV (M i)’
+         >- (SIMP_TAC std_ss [Abbr ‘M0’, o_DEF] \\
+             MATCH_MP_TAC principle_hnf_FV_SUBSET' >> rw []) \\
+         qunabbrev_tac ‘Z'’ \\
+         Suff ‘y i IN FV (M0 i) UNION set vs /\
+               BIGUNION (IMAGE FV (set (args i))) SUBSET FV (M0 i) UNION set vs’
+         >- SET_TAC [] \\
+         Know ‘FV (M1 i) SUBSET FV (M0 i @* MAP VAR vs)’
+         >- (‘M1 i = principle_hnf (M0 i @* MAP VAR vs)’ by rw [] >> POP_ORW \\
+             MATCH_MP_TAC principle_hnf_FV_SUBSET' \\
+            ‘M0 i @* MAP VAR vs = apply p1 (M0 i)’
+               by rw [Abbr ‘p1’, Boehm_apply_MAP_rightctxt'] >> POP_ORW \\
+             Suff ‘solvable (M1 i)’ >- METIS_TAC [lameq_solvable_cong] \\
+             REWRITE_TAC [solvable_iff_has_hnf] \\
+             MATCH_MP_TAC hnf_has_hnf \\
+             rw [GSYM appstar_APPEND, hnf_appstar]) \\
+         REWRITE_TAC [FV_appstar_MAP_VAR] \\
+         Suff ‘y i IN FV (M1 i) /\
+               BIGUNION (IMAGE FV (set (args i))) SUBSET FV (M1 i)’ >- SET_TAC [] \\
+         rw [FV_appstar] >> SET_TAC []) >> DISCH_TAC \\
      Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
   (* calculating ‘apply p2 (M1 i)’ *)
     ‘apply p2 (M1 i) = P @* MAP (\t. t ISUB sub k) (args i)
@@ -4345,35 +4344,41 @@ Proof
      MATCH_MP_TAC ALL_DISTINCT_EL_IMP >> rw [])
  >> DISCH_TAC
  (* now proving agree_upto *)
- >> qabbrev_tac ‘pi = p3 ++ p2 ++ p1’
- >> Q.PAT_X_ASSUM ‘agree_upto p Ms’ MP_TAC
- >> simp [agree_upto_def]
- >> DISCH_TAC
- >> qx_genl_tac [‘M2’, ‘N2’] >> simp [MEM_MAP]
- >> ONCE_REWRITE_TAC [TAUT ‘p /\ q ==> r <=> p ==> q ==> r’]
- >> DISCH_THEN (Q.X_CHOOSE_THEN ‘M'’ STRIP_ASSUME_TAC)
- >> DISCH_THEN (Q.X_CHOOSE_THEN ‘N'’ STRIP_ASSUME_TAC)
- >> Q.PAT_X_ASSUM ‘!M N. MEM M Ms /\ MEM N Ms ==> agree_upto p M N’
-      (MP_TAC o (Q.SPECL [‘M'’, ‘N'’]))
- (* applying term_agree_upto_def *)
- >> rw [term_agree_upto_def]
- >> qabbrev_tac ‘Z = FV M' UNION FV N'’
- >> qabbrev_tac ‘Z' = FV (apply pi M') UNION FV (apply pi N')’
- >> Q.PAT_X_ASSUM ‘!q. q <<= p ==> ltree_el (BTe Z1 M') q = _’
-      (MP_TAC o Q.SPEC ‘q’) >> simp []
- >> qabbrev_tac ‘M'' = apply pi M'’
- >> qabbrev_tac ‘N'' = apply pi N'’
- >> Know ‘is_ready M'' /\ is_ready N''’
- >- (Q.PAT_X_ASSUM ‘EVERY is_ready (MAP (apply pi) Ms)’ MP_TAC \\
-     rw [EVERY_MEM, Abbr ‘M''’, Abbr ‘N''’, MEM_MAP] >|
-     [ (* goal 1 (of 2) *)
-       FIRST_X_ASSUM MATCH_MP_TAC \\
-       Q.EXISTS_TAC ‘M'’ >> art [],
-       (* goal 2 (of 2) *)
-       FIRST_X_ASSUM MATCH_MP_TAC \\
-       Q.EXISTS_TAC ‘N'’ >> art [] ])
- >> simp [is_ready_alt]
- (* preparing for BT_subterm_thm *)
+ >- (qabbrev_tac ‘pi = p3 ++ p2 ++ p1’ \\
+     Q.PAT_X_ASSUM ‘agree_upto p Ms’ MP_TAC \\
+     simp [agree_upto_def] >> DISCH_TAC \\
+     qx_genl_tac [‘M2’, ‘N2’] >> simp [MEM_MAP] \\
+     ONCE_REWRITE_TAC [TAUT ‘p /\ q ==> r <=> p ==> q ==> r’] \\
+     DISCH_THEN (Q.X_CHOOSE_THEN ‘M'’ STRIP_ASSUME_TAC) \\
+     DISCH_THEN (Q.X_CHOOSE_THEN ‘N'’ STRIP_ASSUME_TAC) \\
+     Q.PAT_X_ASSUM ‘!M N. MEM M Ms /\ MEM N Ms ==> agree_upto p M N’
+        (MP_TAC o (Q.SPECL [‘M'’, ‘N'’])) \\
+  (* applying term_agree_upto_def *)
+     rw [term_agree_upto_def] \\
+     qabbrev_tac ‘Z = FV M' UNION FV N'’ \\
+     qabbrev_tac ‘Z' = FV (apply pi M') UNION FV (apply pi N')’ \\
+     Q.PAT_X_ASSUM ‘!q. q <<= p ==> ltree_el (BTe Z1 M') q = _’
+        (MP_TAC o Q.SPEC ‘q’) >> simp [] \\
+     qabbrev_tac ‘M'' = apply pi M'’ \\
+     qabbrev_tac ‘N'' = apply pi N'’ \\
+     Know ‘is_ready M'' /\ is_ready N''’
+     >- (Q.PAT_X_ASSUM ‘EVERY is_ready (MAP (apply pi) Ms)’ MP_TAC \\
+         rw [EVERY_MEM, Abbr ‘M''’, Abbr ‘N''’, MEM_MAP] >| (* 2 subgoals *)
+         [ (* goal 1 (of 2) *)
+           FIRST_X_ASSUM MATCH_MP_TAC \\
+           Q.EXISTS_TAC ‘M'’ >> art [],
+           (* goal 2 (of 2) *)
+           FIRST_X_ASSUM MATCH_MP_TAC \\
+           Q.EXISTS_TAC ‘N'’ >> art [] ]) \\
+     Q.PAT_X_ASSUM ‘EVERY is_ready (MAP (apply pi) Ms)’ K_TAC \\
+     simp [is_ready_alt] \\
+  (* clean up useless assumptions *)
+     Q.PAT_X_ASSUM ‘Boehm_transform p1’ K_TAC \\
+     Q.PAT_X_ASSUM ‘Boehm_transform p2’ K_TAC \\
+     Q.PAT_X_ASSUM ‘Boehm_transform p3’ K_TAC \\
+  (* preparing for BT_subterm_thm *)
+     cheat)
+ (* stage work *)
  >> cheat
 QED
 
@@ -4409,7 +4414,8 @@ Proof
  >> EQ_TAC >> rw [] >> rw [] (* only one goal left *)
  >> MATCH_MP_TAC EQ_TRANS
  >> Q.EXISTS_TAC ‘subterm_equivalent p M M'’
- >> CONJ_TAC >- rw [Once subterm_equivalent_comm]
+ >> CONJ_TAC
+ >- rw [Once subterm_equivalent_comm]
  >> rw [Once equivalent_comm]
 QED
 
