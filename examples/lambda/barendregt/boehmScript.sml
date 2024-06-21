@@ -3985,6 +3985,11 @@ Proof
  (* p3 is the maximal possible fresh list to be applied after the permutator *)
  >> qabbrev_tac ‘p3 = MAP rightctxt (REVERSE (MAP VAR xs))’
  >> ‘Boehm_transform p3’ by rw [Abbr ‘p3’, MAP_MAP_o, GSYM MAP_REVERSE]
+ (* pre-final stage *)
+ >> Q.EXISTS_TAC ‘p3 ++ p2 ++ p1’
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC Boehm_transform_APPEND >> art [] \\
+     MATCH_MP_TAC Boehm_transform_APPEND >> art [])
  (* FV properties of the head variable y (and children args) *)
  >> Know ‘!i. i < k ==> y i IN Y' /\
                         BIGUNION (IMAGE FV (set (args i))) SUBSET Y'’
@@ -4018,11 +4023,6 @@ Proof
            BIGUNION (IMAGE FV (set (args i))) SUBSET FV (M1 i)’ >- SET_TAC [] \\
      rw [FV_appstar] >> SET_TAC [])
  >> DISCH_TAC
- (* pre-final stage *)
- >> Q.EXISTS_TAC ‘p3 ++ p2 ++ p1’
- >> CONJ_TAC
- >- (MATCH_MP_TAC Boehm_transform_APPEND >> art [] \\
-     MATCH_MP_TAC Boehm_transform_APPEND >> art [])
  (* EVERY is_ready ... *)
  >> STRONG_CONJ_TAC
  >- (simp [EVERY_EL, EL_MAP] (* Now we focus on ‘EL i Ms’ *) \\
@@ -4361,6 +4361,18 @@ Proof
  >> qabbrev_tac ‘Z' = FV (apply pi M') UNION FV (apply pi N')’
  >> Q.PAT_X_ASSUM ‘!q. q <<= p ==> ltree_el (BTe Z1 M') q = _’
       (MP_TAC o Q.SPEC ‘q’) >> simp []
+ >> qabbrev_tac ‘M'' = apply pi M'’
+ >> qabbrev_tac ‘N'' = apply pi N'’
+ >> Know ‘is_ready M'' /\ is_ready N''’
+ >- (Q.PAT_X_ASSUM ‘EVERY is_ready (MAP (apply pi) Ms)’ MP_TAC \\
+     rw [EVERY_MEM, Abbr ‘M''’, Abbr ‘N''’, MEM_MAP] >|
+     [ (* goal 1 (of 2) *)
+       FIRST_X_ASSUM MATCH_MP_TAC \\
+       Q.EXISTS_TAC ‘M'’ >> art [],
+       (* goal 2 (of 2) *)
+       FIRST_X_ASSUM MATCH_MP_TAC \\
+       Q.EXISTS_TAC ‘N'’ >> art [] ])
+ >> simp [is_ready_alt]
  (* preparing for BT_subterm_thm *)
  >> cheat
 QED
