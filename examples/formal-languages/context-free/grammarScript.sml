@@ -458,3 +458,4 @@ val derives_split_horizontally = store_thm(
   metis_tac[derive_def]);
 
 val _ = export_theory()
+val _ = html_theory "grammar";

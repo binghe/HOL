@@ -1155,3 +1155,4 @@ val _ =
 *)
 
 val _ = export_theory()
+val _ = html_theory "NTproperties";
