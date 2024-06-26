@@ -2263,7 +2263,7 @@ Definition is_ready_def :
 End
 
 Definition is_ready' :
-    is_ready' M <=> solvable M /\ is_ready M
+    is_ready' M <=> is_ready M /\ solvable M
 End
 
 (* cf. NEW_TAC (This is the multivariate version)
@@ -2314,7 +2314,9 @@ Theorem is_ready_alt' :
     !M. is_ready' M <=> solvable M /\
                         ?y Ns. M -h->* VAR y @* Ns /\ EVERY (\e. y # e) Ns
 Proof
-    rw [is_ready', is_ready_alt, LEFT_AND_OVER_OR]
+ (* NOTE: this proof relies on the new [NOT_AND'] in boolSimps.BOOL_ss *)
+    rw [is_ready', is_ready_alt, RIGHT_AND_OVER_OR]
+ >> REWRITE_TAC [Once CONJ_COMM]
 QED
 
 (* ‘subterm_width M p’ is the maximal number of children of all subterms in form
@@ -3261,8 +3263,9 @@ Proof
     *)
       MATCH_MP_TAC principle_hnf_denude_thm >> rw [])
  >> DISCH_TAC
- (* extra subgoal: solvable (apply (p3 ++ p2 ++ p1) M) *)
  >> simp [is_ready', GSYM CONJ_ASSOC]
+ (* extra subgoal: solvable (apply (p3 ++ p2 ++ p1) M) *)
+ >> ONCE_REWRITE_TAC [TAUT ‘P /\ Q /\ R <=> Q /\ P /\ R’]
  >> CONJ_ASM1_TAC
  >- (Suff ‘solvable (VAR b @* args' @* MAP VAR as)’
      >- PROVE_TAC [lameq_solvable_cong] \\
@@ -3602,8 +3605,8 @@ Proof
  >> qabbrev_tac ‘Z = X UNION FV M’ (* Z is now unique *)
  >> ‘FINITE Z’ by rw [Abbr ‘Z’]
  >> qabbrev_tac ‘M' = apply p0 M’
- >> ‘?y Ms. M' -h->* VAR y @* Ms /\ EVERY (\e. y # e) Ms’
-       by METIS_TAC [is_ready_alt]
+ >> ‘solvable M' /\ ?y Ms. M' -h->* VAR y @* Ms /\ EVERY (\e. y # e) Ms’
+       by METIS_TAC [is_ready_alt']
  >> ‘principle_hnf M' = VAR y @* Ms’ by rw [principle_hnf_thm', hnf_appstar]
  (* stage work *)
  >> qunabbrev_tac ‘p’
@@ -4385,7 +4388,7 @@ Proof
      Q.PAT_X_ASSUM ‘Boehm_transform p1’ K_TAC \\
      Q.PAT_X_ASSUM ‘Boehm_transform p2’ K_TAC \\
      Q.PAT_X_ASSUM ‘Boehm_transform p3’ K_TAC \\
-     STRIP_TAC (* this asserts y, y', Ns, Ns' for M3 and N3 *)
+     STRIP_TAC (* this asserts y, y', Ns, Ns' for M3 and N3 *) \\
      cheat)
  (* stage work *)
  >> cheat
