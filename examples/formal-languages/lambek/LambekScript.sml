@@ -27,20 +27,10 @@ open HolKernel Parse boolLib bossLib;
 open pred_setTheory pairTheory listTheory arithmeticTheory integerTheory;
 open relationTheory;
 
-local
-    val PAT_X_ASSUM = PAT_ASSUM;
-    val qpat_x_assum = Q.PAT_ASSUM;
-    open Tactical
-in
-    (* Backward compatibility with Kananaskis 11 *)
-    val PAT_X_ASSUM = PAT_X_ASSUM;
-    val qpat_x_assum = qpat_x_assum;
-
-    (* Tacticals for better expressivity *)
-    fun fix  ts = MAP_EVERY Q.X_GEN_TAC ts;     (* from HOL Light *)
-    fun set  ts = MAP_EVERY Q.ABBREV_TAC ts;    (* from HOL mizar mode *)
-    fun take ts = MAP_EVERY Q.EXISTS_TAC ts;    (* from HOL mizar mode *)
-end;
+(* Tacticals for better expressivity *)
+fun fix  ts = MAP_EVERY Q.X_GEN_TAC ts;     (* from HOL Light *)
+fun set  ts = MAP_EVERY Q.ABBREV_TAC ts;    (* from HOL mizar mode *)
+fun take ts = MAP_EVERY Q.EXISTS_TAC ts;    (* from HOL mizar mode *)
 
 val _ = new_theory "Lambek";
 
@@ -50,7 +40,9 @@ val _ = new_theory "Lambek";
 (*                                                                            *)
 (******************************************************************************)
 
-val _ = Datatype `Form = At 'a | Slash Form Form | Backslash Form Form | Dot Form Form`;
+Datatype :
+    Form = At 'a | Slash Form Form | Backslash Form Form | Dot Form Form
+End
 
 val _ = overload_on ("*", ``Dot``); (* \HOLTokenProd *)
 val _ = overload_on ("/", ``Slash``);
@@ -381,7 +373,9 @@ end;
 (*                                                                            *)
 (******************************************************************************)
 
-val _ = Datatype `Term = OneForm ('a Form) | Comma Term Term`;
+Datatype :
+    Term = OneForm ('a Form) | Comma Term Term
+End
 
 val Term_induction = TypeBase.induction_of ``:'a Term``;
 val Term_nchotomy  = TypeBase.nchotomy_of ``:'a Term``;
