@@ -68,9 +68,14 @@ Termination
    WF_REL_TAC `measure ptree_size`
 End
 
+(* |- (!v0 t. ptree_fringe (Lf (t,v0)) = [t]) /\
+       !v1 children.
+              ptree_fringe (Nd v1 children) = FLAT (MAP ptree_fringe children)
+ *)
 Theorem ptree_fringe_def[simp,compute,allow_rebind] =
   CONV_RULE (DEPTH_CONV ETA_CONV) ptree_fringe_def
 
+(* A (valid) parsing tree is complete if all its leaves are terminals (TOK) *)
 Definition complete_ptree_def:
   complete_ptree G pt ⇔
     valid_ptree G pt ∧ ptree_head pt = NT G.start ∧
