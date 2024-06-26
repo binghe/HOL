@@ -2262,6 +2262,10 @@ Definition is_ready_def :
                    ?N. M -h->* N /\ hnf N /\ ~is_abs N /\ head_original N
 End
 
+Definition is_ready' :
+    is_ready' M <=> solvable M /\ is_ready M
+End
+
 (* cf. NEW_TAC (This is the multivariate version)
 
    NOTE: “FINITE X” must be present in the assumptions or provable by rw [].
@@ -2304,6 +2308,13 @@ Proof
  >> DISCH_THEN (fn th => fs [th, hnf_head_hnf, hnf_children_hnf])
  (* stage work *)
  >> qexistsl_tac [‘y’, ‘args’] >> art []
+QED
+
+Theorem is_ready_alt' :
+    !M. is_ready' M <=> solvable M /\
+                        ?y Ns. M -h->* VAR y @* Ns /\ EVERY (\e. y # e) Ns
+Proof
+    rw [is_ready', is_ready_alt, LEFT_AND_OVER_OR]
 QED
 
 (* ‘subterm_width M p’ is the maximal number of children of all subterms in form
@@ -3015,8 +3026,7 @@ QED
  *)
 Theorem Boehm_transform_exists_lemma :
     !X M p. FINITE X /\ p <> [] /\ subterm X M p <> NONE ==>
-       ?pi. Boehm_transform pi /\
-            solvable (apply pi M) /\ is_ready (apply pi M) /\
+       ?pi. Boehm_transform pi /\ is_ready' (apply pi M) /\
            ?Z v P. Z = X UNION FV M /\ closed P /\
                !q. q <> [] /\ q <<= p ==>
                    subterm Z (apply pi M) q <> NONE /\
@@ -3252,6 +3262,7 @@ Proof
       MATCH_MP_TAC principle_hnf_denude_thm >> rw [])
  >> DISCH_TAC
  (* extra subgoal: solvable (apply (p3 ++ p2 ++ p1) M) *)
+ >> simp [is_ready', GSYM CONJ_ASSOC]
  >> CONJ_ASM1_TAC
  >- (Suff ‘solvable (VAR b @* args' @* MAP VAR as)’
      >- PROVE_TAC [lameq_solvable_cong] \\
@@ -3521,8 +3532,7 @@ QED
  *)
 Theorem Boehm_transform_exists_lemma' :
     !X M p. FINITE X /\ p <> [] /\ subterm X M p <> NONE ==>
-           ?pi Z. Boehm_transform pi /\
-                  solvable (apply pi M) /\ is_ready (apply pi M) /\
+           ?pi Z. Boehm_transform pi /\ is_ready' (apply pi M) /\
                   Z = X UNION FV M /\
               !q. q <<= p /\ q <> [] ==>
                   subterm Z (apply pi M) q <> NONE /\
@@ -3824,8 +3834,7 @@ Overload agree_upto = “term_agree_upto”
 Theorem agree_upto_lemma :
     !X Ms p. FINITE X /\ p <> [] /\ EVERY (\e. subterm X e p <> NONE) Ms /\
              agree_upto p Ms ==>
-            ?pi. Boehm_transform pi /\
-                 EVERY is_ready (MAP (apply pi) Ms) /\
+            ?pi. Boehm_transform pi /\ EVERY is_ready' (MAP (apply pi) Ms) /\
                  agree_upto p (MAP (apply pi) Ms)
 Proof
     rpt STRIP_TAC
@@ -4200,7 +4209,7 @@ Proof
          MATCH_MP_TAC hnf_has_hnf \\
          rw [hnf_appstar, GSYM appstar_APPEND]) >> DISCH_TAC \\
   (* now expanding ‘is_ready’ using [is_ready_alt] *)
-     ASM_REWRITE_TAC [is_ready_alt] \\
+     ASM_REWRITE_TAC [is_ready_alt'] \\
      qexistsl_tac [‘b’, ‘Ns ++ tl’] \\
   (* goal: apply (p3 ++ p2 ++ p1) M -h->* VAR b @* (Ns ++ tl) *)
      CONJ_TAC
@@ -4344,7 +4353,7 @@ Proof
      MATCH_MP_TAC ALL_DISTINCT_EL_IMP >> rw [])
  >> DISCH_TAC
  (* now proving agree_upto *)
- >- (qabbrev_tac ‘pi = p3 ++ p2 ++ p1’ \\
+ >> (qabbrev_tac ‘pi = p3 ++ p2 ++ p1’ \\
      Q.PAT_X_ASSUM ‘agree_upto p Ms’ MP_TAC \\
      simp [agree_upto_def] >> DISCH_TAC \\
      qx_genl_tac [‘M2’, ‘N2’] >> simp [MEM_MAP] \\
@@ -4359,24 +4368,24 @@ Proof
      qabbrev_tac ‘Z' = FV (apply pi M') UNION FV (apply pi N')’ \\
      Q.PAT_X_ASSUM ‘!q. q <<= p ==> ltree_el (BTe Z1 M') q = _’
         (MP_TAC o Q.SPEC ‘q’) >> simp [] \\
-     qabbrev_tac ‘M'' = apply pi M'’ \\
-     qabbrev_tac ‘N'' = apply pi N'’ \\
-     Know ‘is_ready M'' /\ is_ready N''’
-     >- (Q.PAT_X_ASSUM ‘EVERY is_ready (MAP (apply pi) Ms)’ MP_TAC \\
-         rw [EVERY_MEM, Abbr ‘M''’, Abbr ‘N''’, MEM_MAP] >| (* 2 subgoals *)
+     qabbrev_tac ‘M3 = apply pi M'’ \\
+     qabbrev_tac ‘N3 = apply pi N'’ \\
+     Know ‘is_ready' M3 /\ is_ready' N3’
+     >- (Q.PAT_X_ASSUM ‘EVERY is_ready' (MAP (apply pi) Ms)’ MP_TAC \\
+         rw [EVERY_MEM, Abbr ‘M3’, Abbr ‘N3’, MEM_MAP] >| (* 2 subgoals *)
          [ (* goal 1 (of 2) *)
            FIRST_X_ASSUM MATCH_MP_TAC \\
            Q.EXISTS_TAC ‘M'’ >> art [],
            (* goal 2 (of 2) *)
            FIRST_X_ASSUM MATCH_MP_TAC \\
            Q.EXISTS_TAC ‘N'’ >> art [] ]) \\
-     Q.PAT_X_ASSUM ‘EVERY is_ready (MAP (apply pi) Ms)’ K_TAC \\
-     simp [is_ready_alt] \\
+     Q.PAT_X_ASSUM ‘EVERY is_ready' (MAP (apply pi) Ms)’ K_TAC \\
+     simp [is_ready_alt'] \\
   (* clean up useless assumptions *)
      Q.PAT_X_ASSUM ‘Boehm_transform p1’ K_TAC \\
      Q.PAT_X_ASSUM ‘Boehm_transform p2’ K_TAC \\
      Q.PAT_X_ASSUM ‘Boehm_transform p3’ K_TAC \\
-  (* preparing for BT_subterm_thm *)
+     STRIP_TAC (* this asserts y, y', Ns, Ns' for M3 and N3 *)
      cheat)
  (* stage work *)
  >> cheat
