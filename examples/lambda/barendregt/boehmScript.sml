@@ -3925,10 +3925,10 @@ Proof
      MATCH_MP_TAC lameq_appstar_cong \\
      rw [GSYM MAP_TAKE])
  >> DISCH_TAC
- >> qabbrev_tac ‘m = LENGTH o args’
+ >> qabbrev_tac ‘m = \i. LENGTH (args i)’
  >> qabbrev_tac ‘d = MAX_LIST (MAP (\e. subterm_width e p) Ms)’
- >> Know ‘!i. i < k ==> m i <= d’
- >- (rpt STRIP_TAC \\
+ >> Know ‘!i. i < k ==> n i <= n_max /\ m i <= d’
+ >- (RW_TAC std_ss [] \\
      Q_TAC (TRANS_TAC LESS_EQ_TRANS) ‘subterm_width (M i) p’ \\
      reverse CONJ_TAC
      >- (rw [Abbr ‘d’] \\
@@ -3940,6 +3940,7 @@ Proof
      Q.PAT_X_ASSUM ‘!i. i < k ==> M0 i = _’ K_TAC \\
      rw [Abbr ‘M0’])
  >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘!i. i < k ==> n i <= n_max’ K_TAC
  (* NOTE: Thus P(d) is not enough to cover M1, whose ‘hnf_children_size’ is
     bounded by ‘d + n_max’. *)
  >> qabbrev_tac ‘d_max = d + n_max’
@@ -4045,25 +4046,24 @@ Proof
     need to calculute the principle_hnf of ‘apply pi (EL i Ms)’ for any i < k.
 
    ‘args'’ is the possibly substituted version of ‘args’ *)
- >> qabbrev_tac ‘args' = MAP (\t. t ISUB sub k) o args’
+ >> qabbrev_tac ‘args' = \i. MAP (\t. t ISUB sub k) (args i)’
  (* abbreviate the tail term list after applying p2 *)
  >> qabbrev_tac ‘args2 = \i. MAP (\t. t ISUB sub k) (DROP (n i) (MAP VAR vs))’
  (* calculating ‘apply p2 (M1 i)’ *)
  >> Know ‘!i. i < k ==> apply p2 (M1 i) = P @* args' i @* args2 i’
- >- (rw [Abbr ‘args'’, Abbr ‘args2’, o_DEF,
-         GSYM appstar_APPEND, MAP_APPEND, appstar_ISUB])
+ >- rw [Abbr ‘args'’, Abbr ‘args2’, GSYM appstar_APPEND, MAP_APPEND, appstar_ISUB]
  >> DISCH_TAC
  (* calculating ‘apply p2 ...’ until reaching a hnf *)
  >> Know ‘!i. i < k ==> apply p3 (P @* args' i @* args2 i) =
                         P @* args' i @* args2 i @* MAP VAR xs’
- >- (rw [Abbr ‘p3’, Boehm_apply_MAP_rightctxt'])
+ >- rw [Abbr ‘p3’, Boehm_apply_MAP_rightctxt']
  (* preparing for permutator_hreduce_more (no DISCH_TAC for above Know) *)
  >> qabbrev_tac ‘l = \i. args' i ++ args2 i ++ MAP VAR xs’
  >> ASM_SIMP_TAC bool_ss [GSYM appstar_APPEND, APPEND_ASSOC]
  (* now l appears in the goal *)
  >> REWRITE_TAC [appstar_APPEND]
  >> ‘!i. LENGTH (l i) = m i + (n_max - n i) + d_max + 1’
-       by rw [Abbr ‘l’, Abbr ‘m’, Abbr ‘args2’, Abbr ‘args'’, Abbr ‘d_max’]
+       by (rw [Abbr ‘l’, Abbr ‘m’, Abbr ‘args2’, Abbr ‘args'’, Abbr ‘d_max’])
  (* applying TAKE_DROP_SUC to break l into 3 pieces *)
  >> MP_TAC (GEN “i :num”
                 (ISPECL [“d_max :num”, “l (i :num) :term list”]
@@ -4080,11 +4080,9 @@ Proof
  |------------------- Ns ----------------+-+--------------- tl ----------------|
  |<-------------- d_max+1 ---------------->|
   *)
- >> qabbrev_tac ‘Ns = TAKE d_max o l’
- >> ‘!i. TAKE d_max (l i) = Ns i’ by rw [Abbr ‘Ns’] >> POP_ORW
- (* NOTE: B (the future head variable) will be soon refined it to ‘VAR b’ *)
- >> qabbrev_tac ‘B = EL d_max o l’
- >> ‘!i. EL d_max (l i) = B i’ by rw [Abbr ‘B’] >> POP_ORW
+ >> qabbrev_tac ‘Ns = \i. TAKE d_max (l i)’
+ >> qabbrev_tac ‘B = \i. EL d_max (l i)’
+ >> simp []
  >> qabbrev_tac ‘j = \i. d_max - LENGTH (args' i ++ args2 i)’
  >> ‘!i. j i < LENGTH xs’ by rw [Abbr ‘j’, Abbr ‘args'’, Abbr ‘args2’, Abbr ‘d_max’]
  >> Know ‘!i. i < k ==> ?b. EL (j i) xs = b /\ B i = VAR b’
@@ -4099,8 +4097,12 @@ Proof
      simp [Abbr ‘m’])
  >> simp [EXT_SKOLEM_THM']
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘b’ STRIP_ASSUME_TAC) (* this asserts ‘b’ *)
- >> qabbrev_tac ‘tl = DROP (SUC d_max) o l’
- >> ‘!i. DROP (SUC d_max) (l i) = tl i’ by rw [Abbr ‘tl’] >> POP_ORW
+ (* merge the above two results *)
+ >> Know ‘!i. i < k ==> EL (j i) xs = b i /\ B i = VAR (b i) /\ j i < LENGTH xs’
+ >- RW_TAC std_ss []
+ >> NTAC 2 (POP_ASSUM K_TAC) >> DISCH_TAC
+ >> qabbrev_tac ‘tl = \i. DROP (SUC d_max) (l i)’
+ >> simp []
  >> DISCH_TAC (* store ‘!i. i < k ==> apply p3 ...’ *)
  (* applying permutator_hreduce_more, it clearly reduces to a hnf *)
  >> Know ‘!i. i < k ==> P @* Ns i @@ VAR (b i) @* tl i -h->* VAR (b i) @* Ns i @* tl i’
@@ -4280,7 +4282,7 @@ Proof
              ASM_SIMP_TAC std_ss [DROP_APPEND2] \\
              Suff ‘SUC d_max - LENGTH l1 = SUC (j i)’ >- rw [] \\
              ASM_SIMP_TAC arith_ss [Abbr ‘j’]) >> Rewr' \\
-         simp [] >> DISCH_TAC \\
+         simp [] >> DISCH_TAC (* a < d_max + ... *) \\
          Know ‘EL a (DROP (SUC (j i)) (MAP VAR xs :term list)) =
                EL (a + SUC (j i)) (MAP VAR xs)’
          >- (MATCH_MP_TAC EL_DROP >> rw []) >> Rewr' \\
@@ -4390,6 +4392,15 @@ Proof
      SPOSE_NOT_THEN (STRIP_ASSUME_TAC o REWRITE_RULE []) \\
      Suff ‘EL (j i) xs = EL a' xs <=> j i = a'’ >- rw [] \\
      MATCH_MP_TAC ALL_DISTINCT_EL_IMP >> rw [])
+ (* cleanup *)
+ >> Q.PAT_X_ASSUM ‘Boehm_transform p1’            K_TAC
+ >> Q.PAT_X_ASSUM ‘Boehm_transform p2’            K_TAC
+ >> Q.PAT_X_ASSUM ‘Boehm_transform p3’            K_TAC
+ >> Q.PAT_X_ASSUM ‘!i. i < k ==> apply p1 _ == _’ K_TAC
+ >> Q.PAT_X_ASSUM ‘!t. apply p2 t = t ISUB sub k’ K_TAC
+ >> Q.PAT_X_ASSUM ‘!t. i < k ==> apply p2 _ = _’  K_TAC
+ >> Q.PAT_X_ASSUM ‘!i. i < k ==> apply p3 _ = _’  K_TAC
+ >> Q.PAT_X_ASSUM ‘!i. i < k ==> _ -h->* _’       K_TAC
  (* now proving agree_upto *)
  >> (Q.PAT_X_ASSUM ‘agree_upto p Ms’ MP_TAC \\
      simp [agree_upto_def] >> DISCH_TAC \\
@@ -4398,19 +4409,23 @@ Proof
      DISCH_THEN (Q.X_CHOOSE_THEN ‘M2’ STRIP_ASSUME_TAC) \\
      DISCH_THEN (Q.X_CHOOSE_THEN ‘N2’ STRIP_ASSUME_TAC) \\
      Q.PAT_X_ASSUM ‘!M N. MEM M Ms /\ MEM N Ms ==> agree_upto p M N’
-        (MP_TAC o (Q.SPECL [‘M2’, ‘N2’])) \\
-  (* applying term_agree_upto_def *)
+        (MP_TAC o (Q.SPECL [‘M2’, ‘N2’])) >> simp [] \\
+     Q.PAT_X_ASSUM ‘MEM N2 Ms’ MP_TAC \\
+     Q.PAT_X_ASSUM ‘MEM M2 Ms’ MP_TAC \\
+     simp [MEM_EL] \\
+     DISCH_THEN (Q.X_CHOOSE_THEN ‘i1’ STRIP_ASSUME_TAC) \\
+     DISCH_THEN (Q.X_CHOOSE_THEN ‘i2’ STRIP_ASSUME_TAC) \\
+  (* NOTE: this assumption is derivable, fs [] also deletes it *)
+     Q.PAT_X_ASSUM ‘!i. i < k ==> subterm X (M i) p <> NONE’ K_TAC \\
+     Q.PAT_X_ASSUM ‘M2 = M i1’ (fs o wrap) \\
+     Q.PAT_X_ASSUM ‘N2 = M i2’ (fs o wrap) \\
      rw [term_agree_upto_def] \\
-     qabbrev_tac ‘M2' = apply pi M2’ \\
-     qabbrev_tac ‘N2' = apply pi N2’ \\
-     qabbrev_tac ‘Z = FV M2 UNION FV N2’ \\
-     qabbrev_tac ‘Z' = FV M2' UNION FV N2'’ \\
-     Q.PAT_X_ASSUM ‘!q. q <<= p ==> ltree_el (BTe Z M2) q = _’
-        (MP_TAC o Q.SPEC ‘q’) >> simp [] \\
-  (* clean up useless assumptions *)
-     Q.PAT_X_ASSUM ‘Boehm_transform p1’ K_TAC \\
-     Q.PAT_X_ASSUM ‘Boehm_transform p2’ K_TAC \\
-     Q.PAT_X_ASSUM ‘Boehm_transform p3’ K_TAC \\
+     qabbrev_tac ‘Z1 = FV (M i1) UNION FV (M i2)’ \\
+     qabbrev_tac ‘Z2 = FV (apply pi (M i1)) UNION FV (apply pi (M i2))’ \\
+     Q.PAT_X_ASSUM ‘!q. q <<= p ==> ltree_el (BTe Z1 (M i1)) q = _’
+       (MP_TAC o Q.SPEC ‘q’) >> simp [] \\
+  (* NOTE: now we are still missing some important connections:
+   *)
      cheat)
 QED
 
