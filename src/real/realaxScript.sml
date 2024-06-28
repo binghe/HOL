@@ -67,9 +67,6 @@ val _ = save_thm ("REAL_LT_IADD",   REAL_LT_IADD);
 val _ = save_thm ("REAL_LT_MUL",    REAL_LT_MUL);
 val _ = save_thm ("REAL_BIJ",       REAL_BIJ);
 val _ = save_thm ("REAL_ISO",       REAL_ISO);
-(* Project "INV_0" changes
-val _ = save_thm ("REAL_INV_0",     REAL_INV_0);
- *)
 
 (*---------------------------------------------------------------------------
        Overload arithmetic operations.
@@ -222,9 +219,7 @@ in
   val REAL_10         = save_thm("REAL_10'",        reeducate(REAL_10));
   val REAL_ADD_LID    = save_thm("REAL_ADD_LID'",   reeducate(REAL_ADD_LID));
   val REAL_ADD_LINV   = save_thm("REAL_ADD_LINV'",  reeducate(REAL_ADD_LINV));
-(* Project "INV_0":
   val REAL_INV_0      = save_thm("REAL_INV_0'",     reeducate(REAL_INV_0));
- *)
   val REAL_LT_MUL     = save_thm("REAL_LT_MUL'",    reeducate(REAL_LT_MUL));
   val REAL_MUL_LID    = save_thm("REAL_MUL_LID'",   reeducate(REAL_MUL_LID));
   val REAL_MUL_LINV   = save_thm("REAL_MUL_LINV'",  reeducate(REAL_MUL_LINV));

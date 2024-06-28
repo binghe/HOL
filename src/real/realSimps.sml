@@ -1,6 +1,7 @@
 (* ------------------------------------------------------------------------- *)
 (* A real simpset (includes Peano arithmetic and pairs).                     *)
 (* ------------------------------------------------------------------------- *)
+
 structure realSimps :> realSimps =
 struct
 
@@ -9,7 +10,7 @@ open HolKernel Parse boolLib realTheory simpLib realSyntax
 (* Fix the grammar used by this file *)
 structure Parse = struct
   open Parse
-  val (Type,Term) = parse_from_grammars realTheory.real_grammars
+  val (Type,Term) = parse_from_grammars real_grammars
 end
 
 open Parse
@@ -235,7 +236,8 @@ val ltnb12 = TAC_PROOF(([], “0 < NUMERAL (BIT1 n) /\ 0 < NUMERAL (BIT2 n)”),
                                    arithmeticTheory.BIT2,
                                    arithmeticTheory.ADD_CLAUSES,
                                    prim_recTheory.LESS_0])
-val let_id = TAC_PROOF(([], “LET (\n. n) x = x”),
+
+val let_id = TAC_PROOF(([], “LET (\n :'a. n) x = x”),
                        SIMP_TAC boolSimps.bool_ss [LET_THM])
 
 val op_rwts =
@@ -644,8 +646,17 @@ val REAL_POW_POW_NUMERAL =
     REAL_POW_POW |> SPECL [x_real, NUMERALa, NUMERALb]
                  |> GENL [x_real, a_num, b_num]
 val POW_1' = GSYM POW_1
-val (NEG_FRAC, NEG_DENOM) = CONJ_PAIR neg_rat
-val NEG_INV = REAL_NEG_INV'
+
+local
+    val (th1,th2) = CONJ_PAIR (UNDISCH neg_rat);
+in
+  val NEG_FRAC  = DISCH_ALL th1;
+  val NEG_DENOM = DISCH_ALL th2;
+end;
+
+val NEG_INV      = REAL_NEG_INV;
+val REAL_INV_MUL = REAL_INV_MUL;
+
 val INV_1OVER = REAL_INV_1OVER
 val NEG_MINUS1' = GSYM REAL_NEG_MINUS1
 val neg1_t = mk_negated one_tm
@@ -852,7 +863,7 @@ in
            leaveneg1 orelse
            length ts > 1 andalso List.exists is_negated (tl ts)
         then
-          elimdivs THENC REWRITE_CONV [REAL_INV_MUL'] THENC
+          elimdivs THENC REWRITE_CONV [REAL_INV_MUL] THENC
           AC_Sort.sort mulsort THENC
           TRY_CONV (REWR_CONV REAL_MUL_LID) THENC
           AC_Sort.sort mulsort THENC
@@ -1266,4 +1277,4 @@ val RMULRELNORM_ss = SSFRAG {
 
 val _ = addfrags [RMULRELNORM_ss]
 
-end
+end (* struct *)

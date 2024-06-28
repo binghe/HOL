@@ -21,14 +21,8 @@ struct
 open HolKernel Parse boolLib liteLib;
 
 open pairTheory pairLib reduceLib tautLib simpLib BasicProvers Ho_Rewrite
-     jrhUtils
-     Canon_Port AC prim_recTheory numTheory numLib numSyntax arithmeticTheory;
-
-open normalForms;  (* for HOL-Light's GEN_NNF_CONV, etc. *)
-open Normalizer;   (* for HOL-Light's SEMIRING_NORMALIZERS_CONV *)
-
-open realaxTheory; (* NOTE: cannot open realTheory here *)
-open Arbint;       (* TODO: remove this in the future, using the default Int *)
+     jrhUtils Canon Canon_Port AC normalForms Normalizer Arbint numLib
+     prim_recTheory numTheory numSyntax arithmeticTheory realaxTheory;
 
 (*---------------------------------------------------------------------------*)
 (* Establish the required grammar(s) for executing this file                 *)
@@ -52,7 +46,6 @@ val SKOLEM_CONV = Canon_Port.SKOLEM_CONV;
 val REAL_10         = REAL_10';
 val REAL_ADD_LID    = REAL_ADD_LID';
 val REAL_ADD_LINV   = REAL_ADD_LINV';
-val REAL_INV_0      = REAL_INV_0';
 val REAL_LT_MUL     = REAL_LT_MUL';
 val REAL_MUL_LID    = REAL_MUL_LID';
 val REAL_MUL_LINV   = REAL_MUL_LINV';
@@ -188,10 +181,6 @@ val dest_intconst = realSyntax.int_of_term;
 (* ------------------------------------------------------------------------- *)
 (* Preparing the real linear decision procedure.                             *)
 (* ------------------------------------------------------------------------- *)
-
-val LE_0 = arithmeticTheory.ZERO_LESS_EQ;
-val NOT_LE = arithmeticTheory.NOT_LESS_EQUAL;
-val LE_ANTISYM = GSYM arithmeticTheory.EQ_LESS_EQ;
 
 val REAL_ADD_AC_98 = (REAL_ADD_ASSOC, REAL_ADD_SYM);
 val REAL_MUL_AC_98 = (REAL_MUL_ASSOC, REAL_MUL_SYM);
@@ -430,7 +419,7 @@ val REAL_INT_ADD_CONV =
                 let
                   val p = mk_numeral (n' - m')
                   val th1 = INST [m_tm |-> m, n_tm |-> p] pth2
-                  val th2 = NUM_ADD_CONV (rand(rand(liteLib.lhand(concl th1))))
+                  val th2 = NUM_ADD_CONV (rand(rand(lhand(concl th1))))
                   val th3 = AP_TERM (rator tm) (AP_TERM amp_tm (SYM th2))
                 in
                   TRANS th3 th1
@@ -440,8 +429,8 @@ val REAL_INT_ADD_CONV =
                   val p = mk_numeral (m' - n')
                   val th1 = INST [m_tm |-> n, n_tm |-> p] pth3
                   val th2 = NUM_ADD_CONV
-                              (rand(rand(liteLib.lhand
-                                   (liteLib.lhand(concl th1)))))
+                              (rand(rand(lhand
+                                   (lhand(concl th1)))))
                   val th3 = AP_TERM neg_tm (AP_TERM amp_tm (SYM th2))
                   val th4 = AP_THM (AP_TERM add_tm th3) (rand tm)
                 in
@@ -458,7 +447,7 @@ val REAL_INT_ADD_CONV =
                 let
                   val p = mk_numeral (m' - n')
                   val th1 = INST [m_tm |-> n, n_tm |-> p] pth4
-                  val th2 = NUM_ADD_CONV (rand(liteLib.lhand(liteLib.lhand(concl th1))))
+                  val th2 = NUM_ADD_CONV (rand(lhand(lhand(concl th1))))
                   val th3 = AP_TERM add_tm (AP_TERM amp_tm (SYM th2))
                   val th4 = AP_THM th3 (rand tm)
                 in
@@ -468,7 +457,7 @@ val REAL_INT_ADD_CONV =
                 let
                   val p = mk_numeral (n' - m')
                   val th1 = INST [m_tm |-> m, n_tm |-> p] pth5
-                  val th2 = NUM_ADD_CONV (rand(rand(rand(liteLib.lhand(concl th1)))))
+                  val th2 = NUM_ADD_CONV (rand(rand(rand(lhand(concl th1)))))
                   val th3 = AP_TERM neg_tm (AP_TERM amp_tm (SYM th2))
                   val th4 = AP_TERM (rator tm) th3
                 in
@@ -2120,27 +2109,6 @@ fun MATCH_MP_RULE rules =
       fn th => MP (apply_net th) th
   end;
 
-(* This commented code is for debugging GEN_REAL_ARITH only:
-
-val (mk_numeric,
-     NUMERIC_EQ_CONV,NUMERIC_GE_CONV,NUMERIC_GT_CONV,
-     POLY_CONV,POLY_NEG_CONV,POLY_ADD_CONV,POLY_MUL_CONV,
-     absconv1,absconv2,prover) =
-    (term_of_rat,
-     REAL_INT_EQ_CONV,REAL_INT_GE_CONV,REAL_INT_GT_CONV,
-     REAL_POLY_CONV,REAL_POLY_NEG_CONV,REAL_POLY_ADD_CONV,REAL_POLY_MUL_CONV,
-     NO_CONV,NO_CONV,REAL_LINEAR_PROVER);
-
-val (mk_numeric,
-     NUMERIC_EQ_CONV,NUMERIC_GE_CONV,NUMERIC_GT_CONV,
-     POLY_CONV,POLY_NEG_CONV,POLY_ADD_CONV,POLY_MUL_CONV,
-     absconv1,absconv2,prover) =
-    (term_of_rat,
-     REAL_RAT_EQ_CONV,REAL_RAT_GE_CONV,REAL_RAT_GT_CONV,
-     REAL_POLY_CONV,REAL_POLY_NEG_CONV,REAL_POLY_ADD_CONV,REAL_POLY_MUL_CONV,
-     ABSMAXMIN_ELIM_CONV1,ABSMAXMIN_ELIM_CONV2,REAL_LINEAR_PROVER);
- *)
-
 local
   val pth_init = prove
    (“(x < y <=> y - x > &0) /\
@@ -2225,16 +2193,11 @@ fun GEN_REAL_ARITH0 (mk_numeric,
                      POLY_CONV,POLY_NEG_CONV,POLY_ADD_CONV,POLY_MUL_CONV,
                      absconv1,absconv2,prover) =
 let
-
-  (* NOTE: sometimes the real arith expression is hidding in deeper level, e.g.
-     in {x | x + 0 < 1}. Some proofs require their reducitions. -- Chun Tian *)
-  val POLY_CONV' = QCONV (TOP_DEPTH_CONV POLY_CONV);
-
   fun REAL_INEQ_CONV pth tm = let
     val (lop,r) = dest_comb tm;
     val th = INST [x_tm |-> rand lop, y_tm |-> r] pth
   in
-    TRANS th (LAND_CONV POLY_CONV' (rand(concl th)))
+    TRANS th (LAND_CONV POLY_CONV (rand(concl th)))
   end;
 
   val convs = map REAL_INEQ_CONV (CONJUNCTS pth_init)
@@ -2258,7 +2221,7 @@ let
   in
       fn tm => let val (l,r) = dest_eq tm;
                    val th = INST [x_tm |-> l, y_tm |-> r] pth10;
-                   val th_p = POLY_CONV' (lhand(lhand(rand(concl th))));
+                   val th_p = POLY_CONV (lhand(lhand(rand(concl th))));
                    val th_x = AP_TERM neg_tm th_p;
                    val th_n = CONV_RULE (RAND_CONV POLY_NEG_CONV) th_x;
                    val th' = MK_DISJ (AP_THM (AP_TERM gt_tm th_p) z_tm)
@@ -2326,9 +2289,6 @@ let
 
   fun SQUARE_RULE t = CONV_RULE (LAND_CONV POLY_MUL_CONV) (SPEC t pth_square);
 
-  (* val (eqs,les,lts) = (eq,le',lt');
-     NOTE: for debugging purposes, one may use dest_positivstellensatz()
-   *)
   fun hol_of_positivstellensatz(eqs,les,lts) = let
     fun translate (Axiom_eq n) = List.nth (eqs,n)
       | translate (Axiom_le n) = List.nth (les,n)
@@ -2353,13 +2313,6 @@ let
   val init_conv =
     TOP_DEPTH_CONV BETA_CONV THENC
     PRESIMP_CONV THENC
-
-    (* NOTE: this step of POLY_CONV helps by cutting off real arith terms
-       hidding in propositional terms, e.g. ‘closed {x | 1 * x = a}’ will
-       be simplified to ‘closed {x | x = a}’ before going to NNF_CONV.
-       Some HOL4 proofs rely on this. *)
-    TOP_DEPTH_CONV POLY_CONV THENC
-
     NNF_CONV THENC DEPTH_BINOP_CONV or_tm CONDS_ELIM_CONV THENC
     NNF_NORM_CONV THENC
     SKOLEM_CONV THENC
@@ -2393,7 +2346,7 @@ let
       GEN_NNF_CONV false
         (CACHE_CONV REAL_INEQ_NORM_CONV,fn t => failwith "");
   fun absremover (t :term) :thm =
-     (TOP_DEPTH_CONV(absconv1 THENC BINOP_CONV (LAND_CONV POLY_CONV')) THENC
+     (TOP_DEPTH_CONV(absconv1 THENC BINOP_CONV (LAND_CONV POLY_CONV)) THENC
       TRY_CONV(absconv2 THENC NNF_NORM_CONV' THENC BINOP_CONV absremover)) t;
 in
   fn tm => let
@@ -2417,6 +2370,7 @@ in
   end
 end;
 end (* local *)
+
 (* ------------------------------------------------------------------------- *)
 (* Bootstrapping REAL_ARITH: trivial abs-elim and only integer constants.    *)
 (* ------------------------------------------------------------------------- *)

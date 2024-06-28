@@ -147,23 +147,28 @@ val FINITE_REAL_INTERVAL = store_thm ("FINITE_REAL_INTERVAL",
     DISCH_THEN(MP_TAC o SPEC ``IMAGE (\n. a + (b - a) / (&n + &2:real)) univ(:num)``) THEN
     SIMP_TAC std_ss [SUBSET_DEF, FORALL_IN_IMAGE, IN_UNIV, GSPECIFICATION] THEN
     SIMP_TAC std_ss [REAL_LT_ADDR, REAL_ARITH ``a + x / y < b <=> x / y < b - a:real``] THEN
-    KNOW_TAC ``!n. &0:real < &n + &2`` THENL [GEN_TAC THEN MATCH_MP_TAC REAL_LET_TRANS THEN
-    EXISTS_TAC ``&n:real`` THEN RW_TAC std_ss [REAL_POS, REAL_LT_ADDR] THEN
-    REAL_ARITH_TAC, ALL_TAC] THEN DISCH_TAC THEN
+    KNOW_TAC ``!n. &0:real < &n + &2`` >|
+    [GEN_TAC THEN MATCH_MP_TAC REAL_LET_TRANS THEN
+     EXISTS_TAC ``&n:real`` THEN RW_TAC std_ss [REAL_POS, REAL_LT_ADDR] THEN
+     REAL_ARITH_TAC,
+     ALL_TAC] THEN DISCH_TAC THEN
     ASM_SIMP_TAC std_ss [REAL_LT_DIV, REAL_SUB_LT, REAL_LT_LDIV_EQ, NOT_IMP] THEN
     REWRITE_TAC[REAL_ARITH ``x:real < x * (n + &2) <=> &0 < x * (n + &1)``] THEN
-    KNOW_TAC ``!n. &0:real < &n + &1`` THENL [GEN_TAC THEN MATCH_MP_TAC REAL_LET_TRANS THEN
-    EXISTS_TAC ``&n:real`` THEN RW_TAC std_ss [REAL_POS, REAL_LT_ADDR] THEN
-    REAL_ARITH_TAC, ALL_TAC] THEN DISCH_TAC THEN
+    KNOW_TAC ``!n. &0:real < &n + &1`` >|
+    [GEN_TAC THEN MATCH_MP_TAC REAL_LET_TRANS THEN
+     EXISTS_TAC ``&n:real`` THEN RW_TAC std_ss [REAL_POS, REAL_LT_ADDR] THEN
+     REAL_ARITH_TAC, ALL_TAC] THEN DISCH_TAC THEN
     ASM_SIMP_TAC std_ss [REAL_SUB_LT, REAL_LT_DIV, REAL_LT_RMUL_0] THEN
     MP_TAC num_INFINITE THEN MATCH_MP_TAC EQ_IMPLIES THEN
     AP_TERM_TAC THEN CONV_TAC SYM_CONV THEN
     MATCH_MP_TAC FINITE_IMAGE_INJ_EQ THEN
     KNOW_TAC ``!n m a b. a < b:real ==> ((a + (b - a) / (&n + &2:real) =
                  a + (b - a) / (&m + &2)) <=> (&n:real = &m:real))`` THENL
-    [REPEAT STRIP_TAC THEN SIMP_TAC std_ss [REAL_EQ_LADD, real_div, REAL_EQ_LMUL] THEN
-    SIMP_TAC std_ss [REAL_INV_INJ, REAL_EQ_RADD] THEN
-    METIS_TAC [REAL_SUB_0, REAL_LT_IMP_NE], ALL_TAC] THEN DISCH_TAC THEN
+    [qx_genl_tac [‘n’, ‘m’, ‘c’, ‘d’] THEN STRIP_TAC THEN
+     SIMP_TAC std_ss [REAL_EQ_LADD, real_div, REAL_EQ_LMUL] THEN
+    ‘&n + 2 <> 0 /\ &m + 2 <> 0’ by rw [] \\
+     ASM_SIMP_TAC std_ss [REAL_INV_INJ, REAL_EQ_RADD] THEN
+     METIS_TAC [REAL_SUB_0, REAL_LT_IMP_NE], ALL_TAC] THEN DISCH_TAC THEN
     ASM_SIMP_TAC std_ss [REAL_OF_NUM_EQ],
     (* goal 2 (of 2) *)
     ASM_REWRITE_TAC[] THEN REPEAT CONJ_TAC THEN REPEAT GEN_TAC THENL

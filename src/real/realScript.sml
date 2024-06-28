@@ -46,13 +46,10 @@ val REAL_MUL_ASSOC  = save_thm("REAL_MUL_ASSOC", REAL_MUL_ASSOC);
 val REAL_MUL_LID    = save_thm("REAL_MUL_LID",   REAL_MUL_LID');
 val REAL_MUL_LINV   = save_thm("REAL_MUL_LINV",  REAL_MUL_LINV');
 val REAL_LT_MUL     = save_thm("REAL_LT_MUL",    REAL_LT_MUL');
-(* Project "INV_0":
 val REAL_INV_0      = save_thm("REAL_INV_0",     REAL_INV_0');
- *)
 
 val _ = export_rewrites
-        ["REAL_ADD_LID", "REAL_ADD_LINV", "REAL_LT_REFL", "REAL_MUL_LID"
-         (* ,"REAL_INV_0" *)];
+        ["REAL_ADD_LID", "REAL_ADD_LINV", "REAL_LT_REFL", "REAL_MUL_LID"];
 
 (*---------------------------------------------------------------------------*)
 (* Define subtraction, division and the other orderings (moved to realax)    *)
@@ -538,11 +535,12 @@ val REAL_NEG_INV = store_thm("REAL_NEG_INV",
   POP_ASSUM(fn th => REWRITE_TAC[MATCH_MP REAL_MUL_LINV th]) THEN
   REWRITE_TAC[REAL_NEGNEG]);
 
-(* NOTE: The following theorem(s) are retired (together with REAL_INV_0)
-Theorem REAL_NEG_INV':
+(* NOTE: this theorem (was REAL_NEG_INV') is now only used by realSimps
+val REAL_INV_0 = realaxTheory.REAL_INV_0';
+Theorem real_neg_inv :
   -inv x = inv (-x)
 Proof
-  Cases_on ‘x = 0’ >> simp[REAL_NEG_INV]
+  Cases_on ‘x = 0’ >> simp[REAL_NEG_INV, REAL_INV_0]
 QED
  *)
 
@@ -915,8 +913,8 @@ val REAL_INV_MUL = store_thm("REAL_INV_MUL",
   GEN_REWR_TAC RAND_CONV  [GSYM REAL_MUL_LID] THEN
   BINOP_TAC THEN MATCH_MP_TAC REAL_MUL_LINV THEN ASM_REWRITE_TAC[]);
 
-(* NOTE: The following theorem(s) are retired (together with REAL_INV_0)
-Theorem REAL_INV_MUL':
+(* NOTE: The following theorem (was: REAL_INV_MUL') is now only used by realSimps
+Theorem real_inv_mul :
   !x y. inv(x * y) = inv(x) * inv(y)
 Proof
   REPEAT GEN_TAC THEN
