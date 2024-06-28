@@ -3900,6 +3900,7 @@ Proof
  >> simp [EXT_SKOLEM_THM'] (* from topologyTheory *)
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘y’
                  (Q.X_CHOOSE_THEN ‘args’ STRIP_ASSUME_TAC))
+ >> Q.PAT_X_ASSUM ‘!i. i < k ==> hnf (M0 i)’ K_TAC
  (* define M1 *)
  >> qabbrev_tac ‘M1 = \i. principle_hnf (M0 i @* MAP VAR vs)’
  >> Know ‘!i. i < k ==> M1 i = VAR (y i) @* args i @* DROP (n i) (MAP VAR vs)’
@@ -4409,7 +4410,7 @@ Proof
      DISCH_THEN (Q.X_CHOOSE_THEN ‘M2’ STRIP_ASSUME_TAC) \\
      DISCH_THEN (Q.X_CHOOSE_THEN ‘N2’ STRIP_ASSUME_TAC) \\
      Q.PAT_X_ASSUM ‘!M N. MEM M Ms /\ MEM N Ms ==> agree_upto p M N’
-        (MP_TAC o (Q.SPECL [‘M2’, ‘N2’])) >> simp [] \\
+       (MP_TAC o (Q.SPECL [‘M2’, ‘N2’])) >> simp [] \\
      Q.PAT_X_ASSUM ‘MEM N2 Ms’ MP_TAC \\
      Q.PAT_X_ASSUM ‘MEM M2 Ms’ MP_TAC \\
      simp [MEM_EL] \\
@@ -4425,6 +4426,16 @@ Proof
      Q.PAT_X_ASSUM ‘!q. q <<= p ==> ltree_el (BTe Z1 (M i1)) q = _’
        (MP_TAC o Q.SPEC ‘q’) >> simp [] \\
   (* NOTE: now we are still missing some important connections:
+
+   - “ltree_el (BTe Z1 (M i1)) q”           ~1~ subterm' Z1 (M i1) q
+   - “ltree_el (BTe Z1 (M i2)) q”           ~1~ subterm' Z1 (M i2) q
+   - “ltree_el (BTe Z2 (apply pi (M i1)) q” ~1~ subterm' Z2 (apply pi (M i1)) q
+   - “ltree_el (BTe Z2 (apply pi (M i2)) q” ~1~ subterm' Z2 (apply pi (M i2)) q
+   - “subterm' Z2 (apply pi (M i1)) q”      ~2~ subterm' Z1 (M i1) q
+   - “subterm' Z2 (apply pi (M i2)) q”      ~2~ subterm' Z1 (M i2) q
+
+     where ~1~ is to be established by BT_subterm_thm, and ~2~ follows a
+     similar idea of [Boehm_transform_exists_lemma] (cannot reuse its proof).
    *)
      cheat)
 QED
