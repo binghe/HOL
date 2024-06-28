@@ -4107,139 +4107,140 @@ Proof
  >- (RW_TAC std_ss [Abbr ‘P’] \\
      MATCH_MP_TAC permutator_hreduce_more >> rw [Abbr ‘Ns’])
  >> DISCH_TAC
+ >> Know ‘!i. i < k ==> apply pi (M i) == VAR (b i) @* Ns i @* tl i’
+ >- (rpt STRIP_TAC \\
+     MATCH_MP_TAC lameq_TRANS >> Q.EXISTS_TAC ‘apply pi (M0 i)’ \\
+     CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> art [] \\
+                  SIMP_TAC std_ss [Abbr ‘M0’] \\
+                  MATCH_MP_TAC lameq_SYM \\
+                  MATCH_MP_TAC lameq_principle_hnf' >> rw []) \\
+     Q.PAT_X_ASSUM ‘Boehm_transform pi’ K_TAC \\
+     qunabbrev_tac ‘pi’ \\
+     ONCE_REWRITE_TAC [Boehm_apply_APPEND] \\
+     MATCH_MP_TAC lameq_TRANS \\
+     Q.EXISTS_TAC ‘apply (p3 ++ p2) (M1 i)’ \\
+     CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> rw [] \\
+                  MATCH_MP_TAC Boehm_transform_APPEND >> art []) \\
+     ASM_SIMP_TAC std_ss [Boehm_apply_APPEND] \\
+     MATCH_MP_TAC hreduces_lameq >> rw [])
+ >> DISCH_TAC
+ (* calculating ‘principle_hnf (apply pi (M i))’ (hard) *)
+ >> Know ‘!i. i < k ==> principle_hnf (apply pi (M i)) = VAR (b i) @* Ns i @* tl i’
+ >- (rpt STRIP_TAC \\
+     Know ‘MAP (\t. t ISUB sub k) (MAP VAR xs) = MAP VAR xs’
+     >- (rw [LIST_EQ_REWRITE, EL_MAP] \\
+         MATCH_MP_TAC ISUB_VAR_FRESH >> art [GSYM DOM_ALT_MAP_SND] \\
+         simp [IN_IMAGE, IN_COUNT, Once DISJ_SYM] \\
+         Q.X_GEN_TAC ‘a’ >> STRONG_DISJ_TAC (* push ‘a < k’ *) \\
+         CCONTR_TAC \\
+        ‘y a IN Y'’ by rw [] \\
+         Q.PAT_X_ASSUM ‘DISJOINT (set xs) Y'’ MP_TAC \\
+         rw [DISJOINT_ALT] \\
+         Q.EXISTS_TAC ‘EL x xs’ >> rw [EL_MEM]) >> DISCH_TAC \\
+  (* NOTE: This MP_TAC is for applying principle_hnf_denude_thm later. From
+     now on, both ‘apply pi M == ...’ and ‘principle_hnf (apply pi M) = ...’
+     are simplified in parallel.
+   *)
+     Q.PAT_X_ASSUM ‘!i. i < k ==> apply pi (M i) == _’
+        (fn th => MP_TAC (MATCH_MP th (ASSUME “i < k:num”))) \\
+  (* NOTE: No need to unabbrev ‘p2’ here since ‘apply p2 t = t ISUB sub k’ *)
+     ASM_SIMP_TAC std_ss [Abbr ‘pi’, Boehm_apply_APPEND, Abbr ‘p1’, Abbr ‘p3’] \\
+     FULL_SIMP_TAC bool_ss [Boehm_apply_MAP_rightctxt'] \\
+  (* stage work *)
+    ‘(M i @* MAP VAR vs ISUB sub k) @* MAP VAR xs =
+     (M i @* MAP VAR vs @* MAP VAR xs) ISUB sub k’
+        by rw [appstar_ISUB] >> POP_ORW \\
+     DISCH_TAC (* store ‘M i @* MAP VAR vs @* MAP VAR xs ISUB sub k == ...’ *) \\
+  (* rewriting RHS to principle_hnf of ISUB *)
+     Know ‘VAR (b i) @* Ns i @* tl i =
+               principle_hnf (P @* args' i @* args2 i @* MAP VAR xs)’
+     >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+        ‘hnf (VAR (b i) @* Ns i @* tl i)’ by rw [GSYM appstar_APPEND, hnf_appstar] \\
+         Suff ‘solvable (P @* args' i @* args2 i @* MAP VAR xs)’
+         >- (METIS_TAC [principle_hnf_thm']) \\
+         Suff ‘solvable (VAR (b i) @* Ns i @* tl i) /\
+               P @* Ns i @@ VAR (b i) @* tl i == VAR (b i) @* Ns i @* tl i’
+         >- (METIS_TAC [lameq_solvable_cong]) \\
+         reverse CONJ_TAC >- (MATCH_MP_TAC hreduces_lameq >> rw []) \\
+         REWRITE_TAC [solvable_iff_has_hnf] \\
+         MATCH_MP_TAC hnf_has_hnf >> art []) >> Rewr' \\
+     Know ‘P @* args' i @* args2 i @* MAP VAR xs = (M1 i @* MAP VAR xs) ISUB sub k’
+     >- (REWRITE_TAC [appstar_ISUB, Once EQ_SYM_EQ] \\
+         Q.PAT_X_ASSUM ‘!i. i < k ==> apply p2 (M1 i) = P @* args' i @* args2 i’
+            (fn th => MP_TAC (MATCH_MP (GSYM (Q.SPEC ‘i’ th))
+                                       (ASSUME “i < k :num”))) >> Rewr' \\
+         Q.PAT_X_ASSUM ‘!t. apply p2 t = t ISUB sub k’ (ONCE_REWRITE_TAC o wrap) \\
+         AP_TERM_TAC >> art []) >> Rewr' \\
+  (* applying principle_hnf_ISUB_cong *)
+     MATCH_MP_TAC principle_hnf_ISUB_cong \\
+     CONJ_TAC (* has_hnf #1 *)
+     >- (simp [GSYM solvable_iff_has_hnf, GSYM appstar_APPEND] \\
+         Know ‘M0 i == M i’
+         >- (SIMP_TAC std_ss [Abbr ‘M0’] \\
+             MATCH_MP_TAC lameq_principle_hnf' >> rw []) >> DISCH_TAC \\
+        ‘M0 i @* (MAP VAR vs ++ MAP VAR xs) ==
+          M i @* (MAP VAR vs ++ MAP VAR xs)’ by rw [lameq_appstar_cong] \\
+         Suff ‘solvable (M0 i @* (MAP VAR vs ++ MAP VAR xs))’
+         >- PROVE_TAC [lameq_solvable_cong] \\
+         NTAC 2 (POP_ASSUM K_TAC) \\
+         REWRITE_TAC [appstar_APPEND] \\
+         qabbrev_tac ‘M0' = M0 i @* MAP VAR vs’ \\
+        ‘M0' == M1 i’ by rw [Abbr ‘M0'’] \\
+        ‘M0' @* MAP VAR xs == M1 i @* MAP VAR xs’ by rw [lameq_appstar_cong] \\
+         Suff ‘solvable (M1 i @* MAP VAR xs)’ >- PROVE_TAC [lameq_solvable_cong] \\
+         REWRITE_TAC [solvable_iff_has_hnf] \\
+         MATCH_MP_TAC hnf_has_hnf >> rw [hnf_appstar]) \\
+     CONJ_TAC (* has_hnf #2 *)
+     >- (REWRITE_TAC [GSYM solvable_iff_has_hnf] \\
+         Suff ‘solvable (VAR (b i) @* Ns i @* tl i)’
+         >- PROVE_TAC [lameq_solvable_cong] \\
+         REWRITE_TAC [solvable_iff_has_hnf] \\
+         MATCH_MP_TAC hnf_has_hnf >> rw [hnf_appstar]) \\
+     CONJ_TAC (* has_hnf # 3 *)
+     >- (simp [appstar_ISUB] \\
+        ‘MAP (\t. t ISUB sub k) (args i) = args' i’ by rw [Abbr ‘args'’] \\
+         POP_ORW \\
+         ASM_SIMP_TAC bool_ss [has_hnf_thm] \\
+         Q.EXISTS_TAC ‘VAR (b i) @* Ns i @* tl i’ >> rw [] \\
+         rw [hnf_appstar, GSYM appstar_APPEND]) \\
+     ASM_SIMP_TAC std_ss [] (* rewrite M1 i *) \\
+    ‘MAP VAR vs :term list = TAKE (n i) (MAP VAR vs) ++ DROP (n i) (MAP VAR vs)’
+       by rw [TAKE_DROP] \\
+     POP_ASSUM
+       (GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites o wrap) \\
+     REWRITE_TAC [appstar_APPEND] \\
+     qabbrev_tac ‘A = M i @* TAKE (n i) (MAP VAR vs)’ \\
+     qabbrev_tac ‘Z = VAR (y i) @* args i’ \\
+     REWRITE_TAC [GSYM appstar_APPEND] \\
+     qabbrev_tac ‘C = DROP (n i) (MAP VAR vs) ++ MAP VAR xs :term list’ \\
+     qunabbrevl_tac [‘A’, ‘Z’] \\
+     REWRITE_TAC [GSYM MAP_TAKE] \\
+  (* applying principle_hnf_denude_thm, finally *)
+     MATCH_MP_TAC principle_hnf_denude_thm >> simp [] \\
+     CONJ_TAC (* ALL_DISTINCT *)
+     >- (MATCH_MP_TAC ALL_DISTINCT_TAKE >> art []) \\
+     CONJ_TAC (* DISJOINT *)
+     >- (MATCH_MP_TAC DISJOINT_SUBSET' \\
+         Q.EXISTS_TAC ‘set vs’ \\
+         reverse CONJ_TAC
+         >- (rw [SUBSET_DEF] \\
+             MATCH_MP_TAC MEM_TAKE >> Q.EXISTS_TAC ‘n i’ >> art []) \\
+         MATCH_MP_TAC DISJOINT_SUBSET >> Q.EXISTS_TAC ‘Y’ >> art [] \\
+         rw [SUBSET_DEF, Abbr ‘Y’] \\
+         DISJ2_TAC >> Q.EXISTS_TAC ‘FV (M i)’ >> art [] \\
+         Q.EXISTS_TAC ‘M i’ >> art [] \\
+         rw [Abbr ‘M’, EL_MEM]) \\
+     fs [Abbr ‘M’, Abbr ‘M0’])
+ >> DISCH_TAC
  (* stage work *)
- >> CONJ_TAC
+ >> CONJ_TAC (* EVERY is_ready' ... *)
  >- (simp [EVERY_EL, EL_MAP] \\
      Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
-  (* preparing for ‘solvable (apply (p3 ++ p2 ++ p1))’, etc. *)
-     Know ‘apply pi (M i) == VAR (b i) @* Ns i @* tl i’
-     >- (MATCH_MP_TAC lameq_TRANS >> Q.EXISTS_TAC ‘apply pi (M0 i)’ \\
-         CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> art [] \\
-                      SIMP_TAC std_ss [Abbr ‘M0’] \\
-                      MATCH_MP_TAC lameq_SYM \\
-                      MATCH_MP_TAC lameq_principle_hnf' >> rw []) \\
-         Q.PAT_X_ASSUM ‘Boehm_transform pi’ K_TAC \\
-         qunabbrev_tac ‘pi’ \\
-         ONCE_REWRITE_TAC [Boehm_apply_APPEND] \\
-         MATCH_MP_TAC lameq_TRANS \\
-         Q.EXISTS_TAC ‘apply (p3 ++ p2) (M1 i)’ \\
-         CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> rw [] \\
-                      MATCH_MP_TAC Boehm_transform_APPEND >> art []) \\
-         ASM_SIMP_TAC std_ss [Boehm_apply_APPEND] \\
-         MATCH_MP_TAC hreduces_lameq >> rw []) >> DISCH_TAC \\
   (* clean up useless assumptions *)
      Q.PAT_X_ASSUM ‘Boehm_transform pi’ K_TAC \\
      Q.PAT_X_ASSUM ‘Boehm_transform p1’ K_TAC \\
      Q.PAT_X_ASSUM ‘Boehm_transform p2’ K_TAC \\
      Q.PAT_X_ASSUM ‘Boehm_transform p3’ K_TAC \\
-  (* calculating ‘principle_hnf (apply pi (M i))’ (hard) *)
-     Know ‘principle_hnf (apply pi (M i)) = VAR (b i) @* Ns i @* tl i’
-     >- (Know ‘MAP (\t. t ISUB sub k) (MAP VAR xs) = MAP VAR xs’
-         >- (rw [LIST_EQ_REWRITE, EL_MAP] \\
-             MATCH_MP_TAC ISUB_VAR_FRESH >> art [GSYM DOM_ALT_MAP_SND] \\
-             simp [IN_IMAGE, IN_COUNT, Once DISJ_SYM] \\
-             Q.X_GEN_TAC ‘a’ >> STRONG_DISJ_TAC (* push ‘a < k’ *) \\
-             CCONTR_TAC \\
-            ‘y a IN Y'’ by rw [] \\
-             Q.PAT_X_ASSUM ‘DISJOINT (set xs) Y'’ MP_TAC \\
-             rw [DISJOINT_ALT] \\
-             Q.EXISTS_TAC ‘EL x xs’ >> rw [EL_MEM]) >> DISCH_TAC \\
-      (* NOTE: This MP_TAC is for applying principle_hnf_denude_thm later. From
-         now on, both ‘apply pi M == ...’ and ‘principle_hnf (apply pi M) = ...’
-         are simplified in parallel.
-       *)
-         Q.PAT_X_ASSUM ‘apply pi (M i) == _’ MP_TAC \\
-      (* NOTE: No need to unabbrev ‘p2’ here since ‘apply p2 t = t ISUB sub k’ *)
-         ASM_SIMP_TAC std_ss [Abbr ‘pi’, Boehm_apply_APPEND, Abbr ‘p1’, Abbr ‘p3’] \\
-         FULL_SIMP_TAC bool_ss [Boehm_apply_MAP_rightctxt'] \\
-      (* stage work *)
-        ‘(M i @* MAP VAR vs ISUB sub k) @* MAP VAR xs =
-         (M i @* MAP VAR vs @* MAP VAR xs) ISUB sub k’
-           by rw [appstar_ISUB] >> POP_ORW \\
-         DISCH_TAC (* store ‘M i @* MAP VAR vs @* MAP VAR xs ISUB sub k == ...’ *) \\
-      (* rewriting RHS to principle_hnf of ISUB *)
-         Know ‘VAR (b i) @* Ns i @* tl i =
-               principle_hnf (P @* args' i @* args2 i @* MAP VAR xs)’
-         >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
-            ‘hnf (VAR (b i) @* Ns i @* tl i)’ by rw [GSYM appstar_APPEND, hnf_appstar] \\
-             Suff ‘solvable (P @* args' i @* args2 i @* MAP VAR xs)’
-             >- METIS_TAC [principle_hnf_thm'] \\
-             Suff ‘solvable (VAR (b i) @* Ns i @* tl i) /\
-                   P @* Ns i @@ VAR (b i) @* tl i == VAR (b i) @* Ns i @* tl i’
-             >- METIS_TAC [lameq_solvable_cong] \\
-             reverse CONJ_TAC >- (MATCH_MP_TAC hreduces_lameq >> rw []) \\
-             REWRITE_TAC [solvable_iff_has_hnf] \\
-             MATCH_MP_TAC hnf_has_hnf >> art []) >> Rewr' \\
-         Know ‘P @* args' i @* args2 i @* MAP VAR xs = (M1 i @* MAP VAR xs) ISUB sub k’
-         >- (REWRITE_TAC [appstar_ISUB, Once EQ_SYM_EQ] \\
-             Q.PAT_X_ASSUM ‘!i. i < k ==> apply p2 (M1 i) = P @* args' i @* args2 i’
-               (fn th => MP_TAC (MATCH_MP (GSYM (Q.SPEC ‘i’ th))
-                                          (ASSUME “i < k :num”))) >> Rewr' \\
-             Q.PAT_X_ASSUM ‘!t. apply p2 t = t ISUB sub k’
-               (ONCE_REWRITE_TAC o wrap) \\
-             AP_TERM_TAC >> art []) >> Rewr' \\
-      (* applying principle_hnf_ISUB_cong *)
-         MATCH_MP_TAC principle_hnf_ISUB_cong \\
-         CONJ_TAC (* has_hnf #1 *)
-         >- (simp [GSYM solvable_iff_has_hnf, GSYM appstar_APPEND] \\
-             Know ‘M0 i == M i’
-             >- (SIMP_TAC std_ss [Abbr ‘M0’] \\
-                 MATCH_MP_TAC lameq_principle_hnf' >> rw []) >> DISCH_TAC \\
-            ‘M0 i @* (MAP VAR vs ++ MAP VAR xs) ==
-              M i @* (MAP VAR vs ++ MAP VAR xs)’ by rw [lameq_appstar_cong] \\
-             Suff ‘solvable (M0 i @* (MAP VAR vs ++ MAP VAR xs))’
-             >- PROVE_TAC [lameq_solvable_cong] \\
-             NTAC 2 (POP_ASSUM K_TAC) \\
-             REWRITE_TAC [appstar_APPEND] \\
-             qabbrev_tac ‘M0' = M0 i @* MAP VAR vs’ \\
-            ‘M0' == M1 i’ by rw [Abbr ‘M0'’] \\
-            ‘M0' @* MAP VAR xs == M1 i @* MAP VAR xs’ by rw [lameq_appstar_cong] \\
-             Suff ‘solvable (M1 i @* MAP VAR xs)’
-             >- PROVE_TAC [lameq_solvable_cong] \\
-             REWRITE_TAC [solvable_iff_has_hnf] \\
-             MATCH_MP_TAC hnf_has_hnf >> rw [hnf_appstar]) \\
-         CONJ_TAC (* has_hnf #2 *)
-         >- (REWRITE_TAC [GSYM solvable_iff_has_hnf] \\
-             Suff ‘solvable (VAR (b i) @* Ns i @* tl i)’
-             >- PROVE_TAC [lameq_solvable_cong] \\
-             REWRITE_TAC [solvable_iff_has_hnf] \\
-             MATCH_MP_TAC hnf_has_hnf >> rw [hnf_appstar]) \\
-         CONJ_TAC (* has_hnf # 3 *)
-         >- (simp [appstar_ISUB] \\
-            ‘MAP (\t. t ISUB sub k) (args i) = args' i’ by rw [Abbr ‘args'’] \\
-             POP_ORW \\
-             ASM_SIMP_TAC bool_ss [has_hnf_thm] \\
-             Q.EXISTS_TAC ‘VAR (b i) @* Ns i @* tl i’ >> rw [] \\
-             rw [hnf_appstar, GSYM appstar_APPEND]) \\
-         ASM_SIMP_TAC std_ss [] (* rewrite M1 i *) \\
-        ‘MAP VAR vs :term list = TAKE (n i) (MAP VAR vs) ++ DROP (n i) (MAP VAR vs)’
-           by rw [TAKE_DROP] \\
-         POP_ASSUM
-           (GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites o wrap) \\
-         REWRITE_TAC [appstar_APPEND] \\
-         qabbrev_tac ‘A = M i @* TAKE (n i) (MAP VAR vs)’ \\
-         qabbrev_tac ‘Z = VAR (y i) @* args i’ \\
-         REWRITE_TAC [GSYM appstar_APPEND] \\
-         qabbrev_tac ‘C = DROP (n i) (MAP VAR vs) ++ MAP VAR xs :term list’ \\
-         qunabbrevl_tac [‘A’, ‘Z’] \\
-         REWRITE_TAC [GSYM MAP_TAKE] \\
-      (* applying principle_hnf_denude_thm, finally *)
-         MATCH_MP_TAC principle_hnf_denude_thm >> simp [] \\
-         CONJ_TAC (* ALL_DISTINCT *)
-         >- (MATCH_MP_TAC ALL_DISTINCT_TAKE >> art []) \\
-         CONJ_TAC (* DISJOINT *)
-         >- (MATCH_MP_TAC DISJOINT_SUBSET' \\
-             Q.EXISTS_TAC ‘set vs’ \\
-             reverse CONJ_TAC
-             >- (rw [SUBSET_DEF] \\
-                 MATCH_MP_TAC MEM_TAKE >> Q.EXISTS_TAC ‘n i’ >> art []) \\
-             MATCH_MP_TAC DISJOINT_SUBSET >> Q.EXISTS_TAC ‘Y’ >> art [] \\
-             rw [SUBSET_DEF, Abbr ‘Y’] \\
-             DISJ2_TAC >> Q.EXISTS_TAC ‘FV (M i)’ >> art [] \\
-             Q.EXISTS_TAC ‘M i’ >> art [] \\
-             rw [Abbr ‘M’, EL_MEM]) \\
-         fs [Abbr ‘M’, Abbr ‘M0’]) \\
-     DISCH_TAC \\ (* store ‘principle_hnf (apply pi (M i)) = ...’ *)
      Know ‘solvable (apply pi (M i))’
      >- (Suff ‘solvable (VAR (b i) @* Ns i @* tl i)’
          >- METIS_TAC [lameq_solvable_cong] \\
@@ -4252,14 +4253,15 @@ Proof
   (* subgoal: apply pi (M i) -h->* VAR (b i) @* (Ns i ++ tl i) *)
      CONJ_TAC
      >- (REWRITE_TAC [appstar_APPEND] \\
-         Q.PAT_X_ASSUM ‘principle_hnf (apply pi (M i)) = _’ MP_TAC \\
+         Q.PAT_X_ASSUM ‘!i. i < k ==> principle_hnf (apply pi (M i)) = _’
+           (fn th => MP_TAC (MATCH_MP th (ASSUME “i < k:num”))) \\
          rw [principle_hnf_thm']) \\
   (* final goal (is_ready): EVERY (\e. b # e) ... *)
-     Q.PAT_X_ASSUM ‘solvable (apply pi (M i))’          K_TAC \\
-     Q.PAT_X_ASSUM ‘principle_hnf (apply pi (M i)) = _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘solvable (apply pi (M i))’ K_TAC \\
+     Q.PAT_X_ASSUM ‘!i. i < k ==> principle_hnf (apply pi (M i)) = _’ K_TAC \\
      ASM_SIMP_TAC list_ss [EVERY_EL] \\
   (* easier goal first *)
-     reverse CONJ_TAC (* b # EL n tl *)
+     reverse CONJ_TAC (* b i # EL n (tl i) *)
      >- (Q.X_GEN_TAC ‘a’ >> STRIP_TAC \\
          qabbrev_tac ‘l1 = args' i ++ args2 i’ \\
          Know ‘LENGTH l1 <= d_max’
@@ -4267,9 +4269,9 @@ Proof
              MATCH_MP_TAC LESS_EQ_LESS_EQ_MONO >> rw [] \\
              Q.PAT_X_ASSUM ‘!i. i < k ==> m i <= d’ MP_TAC \\
              simp [Abbr ‘m’]) >> DISCH_TAC \\
-         Q.PAT_X_ASSUM ‘apply pi (M i) == _’          K_TAC \\
-         Q.PAT_X_ASSUM ‘!i. i < k ==> apply p3 _ = _’ K_TAC \\
-         Q.PAT_X_ASSUM ‘!i. i < k ==> apply p2 _ = _’ K_TAC \\
+         Q.PAT_X_ASSUM ‘!i. i < k ==> apply pi (M i) == _’ K_TAC \\
+         Q.PAT_X_ASSUM ‘!i. i < k ==> apply p3 _ = _’      K_TAC \\
+         Q.PAT_X_ASSUM ‘!i. i < k ==> apply p2 _ = _’      K_TAC \\
          Q.PAT_X_ASSUM ‘a < LENGTH (tl i)’ MP_TAC \\
       (* applying DROP_APPEND2 *)
          Know ‘tl i = DROP (SUC (j i)) (MAP VAR xs)’
@@ -4291,11 +4293,11 @@ Proof
   (* final goal, only slightly harder *)
      Q.X_GEN_TAC ‘a’ >> DISCH_TAC \\
   (* cleanup useless assumptions and abbreviations *)
-     Q.PAT_X_ASSUM ‘apply pi (M i) == _’           K_TAC \\
-     Q.PAT_X_ASSUM ‘!i. i < k ==> apply p3 _ = _’  K_TAC \\
-     Q.PAT_X_ASSUM ‘!i. i < k ==> apply p2 _ = _’  K_TAC \\
-     Q.PAT_X_ASSUM ‘!t. apply p2 t = t ISUB sub k’ K_TAC \\
-     Q.PAT_X_ASSUM ‘!i. i < k ==> apply p1 _ == _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘!i. i < k ==> apply pi (M i) == _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘!i. i < k ==> apply p3 _ = _’      K_TAC \\
+     Q.PAT_X_ASSUM ‘!i. i < k ==> apply p2 _ = _’      K_TAC \\
+     Q.PAT_X_ASSUM ‘!t. apply p2 t = t ISUB sub k’     K_TAC \\
+     Q.PAT_X_ASSUM ‘!i. i < k ==> apply p1 _ == _’     K_TAC \\
      Q.PAT_X_ASSUM ‘!i. i < k ==> P @* Ns i @@ VAR (b i) @* tl i -h->* _’ K_TAC \\
      qunabbrevl_tac [‘pi’, ‘p1’, ‘p2’, ‘p3’] \\
   (* first case *)
