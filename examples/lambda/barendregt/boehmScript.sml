@@ -3531,8 +3531,7 @@ QED
  *)
 Theorem Boehm_out_lemma :
     !p X M. FINITE X /\ subterm X M p <> NONE ==>
-           ?pi. Boehm_transform pi /\
-                ?ss. apply pi M == subterm' X M p ISUB ss
+           ?pi. Boehm_transform pi /\ ?ss. apply pi M == subterm' X M p ISUB ss
 Proof
     Induct_on ‘p’
  >- (rw [] \\
@@ -3546,10 +3545,11 @@ Proof
       !q. q <<= FRONT p ==> solvable (subterm' X M q)’
          by METIS_TAC [subterm_solvable_lemma]
  >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’] Boehm_transform_exists_lemma')
- >> rw [] (* this asserts pi and [P/v] *)
- >> POP_ASSUM (MP_TAC o (Q.SPEC ‘p’))
+ >> simp []
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘p0’ MP_TAC)
+ >> RW_TAC std_ss [] (* push p0 properties to assumptions *)
+ >> POP_ASSUM (MP_TAC o (Q.SPEC ‘p’)) (* put q = p *)
  >> rw []
- >> rename1 ‘Boehm_transform p0’
  >> qabbrev_tac ‘Z = X UNION FV M’ (* Z is now unique *)
  >> ‘FINITE Z’ by rw [Abbr ‘Z’]
  >> qabbrev_tac ‘M' = apply p0 M’
@@ -3603,7 +3603,7 @@ Proof
  (* stage work, now using IH *)
  >> Q.PAT_X_ASSUM ‘!X M. _’ (MP_TAC o (Q.SPECL [‘Z’, ‘N’])) >> simp []
  >> RW_TAC std_ss []
- >> rename1 ‘apply p2 N == _’
+ >> rename1 ‘apply p2 N == _ ISUB ss'’
  >> POP_ASSUM MP_TAC
  (* applying subterm_tpm_cong *)
  >> Know ‘tpm_rel (subterm' Z M (h::t)) (subterm' X M (h::t))’
@@ -4367,15 +4367,15 @@ Proof
        (MP_TAC o Q.SPEC ‘q’) >> simp [] \\
   (* NOTE: now we are still missing some important connections:
 
-   - “ltree_el (BTe Z1 (M i1)) q”           ~1~ subterm' Z1 (M i1) q
-   - “ltree_el (BTe Z1 (M i2)) q”           ~1~ subterm' Z1 (M i2) q
-   - “ltree_el (BTe Z2 (apply pi (M i1)) q” ~1~ subterm' Z2 (apply pi (M i1)) q
-   - “ltree_el (BTe Z2 (apply pi (M i2)) q” ~1~ subterm' Z2 (apply pi (M i2)) q
-   - “subterm' Z2 (apply pi (M i1)) q”      ~2~ subterm' Z1 (M i1) q
-   - “subterm' Z2 (apply pi (M i2)) q”      ~2~ subterm' Z1 (M i2) q
+   - ltree_el (BTe Z1 (M i1)) q            ~1~ subterm' Z1 (M i1) q
+   - ltree_el (BTe Z1 (M i2)) q            ~1~ subterm' Z1 (M i2) q
+   - ltree_el (BTe Z2 (apply pi (M i1)) q  ~1~ subterm' Z2 (apply pi (M i1)) q
+   - ltree_el (BTe Z2 (apply pi (M i2)) q  ~1~ subterm' Z2 (apply pi (M i2)) q
+   - subterm' Z2 (apply pi (M i1)) q       ~2~ subterm' Z1 (M i1) q
+   - subterm' Z2 (apply pi (M i2)) q       ~2~ subterm' Z1 (M i2) q
 
      where ~1~ is to be established by BT_subterm_thm, and ~2~ follows a
-     similar idea of [Boehm_transform_exists_lemma] (cannot reuse its proof).
+     similar idea of [Boehm_transform_exists_lemma].
    *)
      cheat)
 QED
