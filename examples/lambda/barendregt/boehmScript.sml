@@ -183,6 +183,9 @@ End
 (* Remarks 10.1.3 (iii) [1, p.216]: unsolvable terms all have the same Boehm
    tree (‘bot’). The following overloaded ‘bot’ may be returned by
   ‘THE (ltree_lookup A p)’ when looking up a terminal node of the Boehm tree.
+
+   See also ltree_lookup_of_unsolvables and ltree_el_of_unsolvables below, for
+   the raison d'etre of overloading "bot" on two different terms.
  *)
 Overload bot = “Branch NONE (LNIL :boehm_tree llist)”
 
@@ -987,7 +990,7 @@ QED
  *)
 Theorem ltree_el_of_unsolvables :
     !p X M. FINITE X /\ subterm X M p <> NONE /\ unsolvable (subterm' X M p) ==>
-            ltree_el (BTe X M) p = SOME (NONE, SOME 0)
+            ltree_el (BTe X M) p = SOME bot
 Proof
     Induct_on ‘p’
  >- rw [BT_of_unsolvables, ltree_el_def]
@@ -1007,6 +1010,43 @@ Proof
  >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
  >> qabbrev_tac ‘m = hnf_children_size M0’
  >> simp [LMAP_fromList, GSYM BT_def, ltree_el, LNTH_fromList, EL_MAP]
+ >> Know ‘LENGTH (hnf_children M1) = m’
+ >- (HNF_TAC (“M0 :term”, “vs :string list”,
+              “M1 :term”, “y :string”, “args :term list”) \\
+    ‘TAKE n vs = vs’ by rw [TAKE_LENGTH_ID_rwt] \\
+     POP_ASSUM (rfs o wrap) \\
+     simp [Abbr ‘m’])
+ >> rw []
+ (* applying IH *)
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> rw [Abbr ‘Y’]
+QED
+
+(* NOTE: This proof is almost identical with the above lemma. Also note that
+         the actual term behind ‘bot’ is different with the one above.
+ *)
+Theorem ltree_lookup_of_unsolvables :
+    !p X M. FINITE X /\ subterm X M p <> NONE /\ unsolvable (subterm' X M p) ==>
+            ltree_lookup (BTe X M) p = SOME bot
+Proof
+    Induct_on ‘p’
+ >- rw [BT_of_unsolvables, ltree_lookup_def]
+ >> rpt STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::p’] subterm_solvable_lemma)
+ >> rw []
+ >> POP_ASSUM (MP_TAC o (Q.SPEC ‘[]’))
+ >> rw [] (* solvable M *)
+ >> Q.PAT_X_ASSUM ‘unsolvable (subterm' X M (h::p))’ MP_TAC
+ >> Q.PAT_X_ASSUM ‘subterm X M (h::p) <> NONE’ MP_TAC
+ >> Q.PAT_X_ASSUM ‘!q. q <<= h::p ==> subterm X M q <> NONE’ K_TAC
+ >> simp [subterm_def, BT_def, BT_generator_def, Once ltree_unfold]
+ >> qabbrev_tac ‘M0 = principle_hnf M’
+ >> qabbrev_tac ‘n = LAMl_size M0’
+ >> Q_TAC (NEWS_TAC (“vs :string list”, “n :num”)) ‘X UNION FV M0’
+ >> qabbrev_tac ‘Y = X UNION set vs’
+ >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
+ >> qabbrev_tac ‘m = hnf_children_size M0’
+ >> simp [LMAP_fromList, GSYM BT_def, ltree_lookup, LNTH_fromList, EL_MAP]
  >> Know ‘LENGTH (hnf_children M1) = m’
  >- (HNF_TAC (“M0 :term”, “vs :string list”,
               “M1 :term”, “y :string”, “args :term list”) \\
