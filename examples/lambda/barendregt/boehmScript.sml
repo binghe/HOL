@@ -203,7 +203,7 @@ Proof
     rw [BT_def, BT_generator_def, ltree_unfold, ltree_map]
 QED
 
-Theorem BT_of_unsolvables_EQ :
+Theorem BT_of_unsolvables_cong :
     !X M N. unsolvable M /\ unsolvable N ==> BTe X M = BTe X N
 Proof
     rw [BT_of_unsolvables]
@@ -650,13 +650,13 @@ QED
  *)
 Theorem BT_subterm_thm :
     !p X M. FINITE X /\ subterm X M p <> NONE /\ solvable (subterm' X M p) ==>
-            do  (t,m) <- ltree_el (BTe X M) p;
-                (Z,N) <- subterm X M p;
-               (xs,y) <- t;
+            do  (Z,N) <- subterm X M p;
                   M0 <<- principle_hnf N;
                    n <<- LAMl_size M0;
                   vs <<- NEWS n (Z UNION FV M0);
                   M1 <<- principle_hnf (M0 @* MAP VAR vs);
+                (t,m) <- ltree_el (BTe X M) p;
+               (xs,y) <- t;
               return (vs = xs /\ hnf_headvar M1 = y /\
                       hnf_children_size M1 = THE m)
             od = SOME T
