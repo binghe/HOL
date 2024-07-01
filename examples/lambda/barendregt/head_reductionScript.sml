@@ -336,6 +336,17 @@ Proof
     rw [substitutive_def, hreduce1_substitutive]
 QED
 
+(* hreduce1 and ISUB *)
+Theorem hreduce1_ISUB :
+    !sub M N. M -h-> N ==> M ISUB sub -h-> N ISUB sub
+Proof
+    Induct_on ‘sub’ >- rw []
+ >> SIMP_TAC std_ss [FORALL_PROD, ISUB_def]
+ >> rpt STRIP_TAC
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> MATCH_MP_TAC hreduce1_substitutive >> art []
+QED
+
 Theorem hreduce_substitutive :
     !M N. M -h->* N ==> [P/v] M -h->* [P/v] N
 Proof

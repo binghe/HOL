@@ -4392,7 +4392,7 @@ Proof
      similar idea of [Boehm_transform_exists_lemma].
 
      reverse (Cases_on ‘solvable (subterm' Z1 (M i1) q)’)
-     >- (ltree_el_of_unsolvables
+     >- (BT_ltree_el_of_unsolvables
      MP_TAC (Q.SPECL [‘q’, ‘Z1’, ‘M (i1 :num)’] BT_subterm_thm) \\
    *)
      cheat

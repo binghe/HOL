@@ -1856,6 +1856,36 @@ Proof
  >> MATCH_MP_TAC hreduce1_substitutive >> art []
 QED
 
+(* NOTE: This theorem is more useful in saying (w.r.t. solvableTheory):
+
+   |- unsolvable M ==> unsolvable (M ISUB ss)
+ *)
+Theorem has_hnf_ISUB_E :
+    !M ss. has_hnf (M ISUB ss) ==> has_hnf M
+Proof
+    rpt STRIP_TAC
+ >> simp [corollary11_4_8, Once MONO_NOT_EQ]
+ >> CCONTR_TAC
+ >> Suff ‘infinite (head_reduction_path (M ISUB ss))’
+ >- (DISCH_TAC >> fs [corollary11_4_8])
+ >> Q.PAT_X_ASSUM ‘has_hnf _’ K_TAC
+ (* stage work *)
+ >> ‘?l. ~LFINITE l /\ (LNTH 0 l = SOME M) /\
+         !i. THE (LNTH i l) -h-> THE (LNTH (SUC i) l)’
+      by METIS_TAC [infinite_head_reduction_path_to_llist]
+ >> qabbrev_tac ‘ll = LMAP (\e. e ISUB ss) l’
+ >> rw [infinite_head_reduction_path_to_llist]
+ >> Q.EXISTS_TAC ‘ll’
+ >> rw [Abbr ‘ll’]
+ >> Know ‘!i. THE (OPTION_MAP (\e. e ISUB ss) (LNTH i l)) = (THE (LNTH i l)) ISUB ss’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     Q.PAT_X_ASSUM ‘~LFINITE l’
+       (STRIP_ASSUME_TAC o (Q.SPEC ‘n’) o (REWRITE_RULE [infinite_lnth_some])) \\
+     rw [])
+ >> Rewr
+ >> MATCH_MP_TAC hreduce1_ISUB >> art []
+QED
+
 (* additionally, each list element has hnf: ‘EVERY has_hnf l’ *)
 Theorem finite_head_reduction_path_to_list_every_has_hnf :
     !M. finite (head_reduction_path M) <=>
