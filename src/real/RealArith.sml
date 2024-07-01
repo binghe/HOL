@@ -38,7 +38,6 @@ end
 open Parse
 
 (* clarify some conflicting functions *)
-val assert      = Lib.assert;
 val is_binop    = liteLib.is_binop;
 val SKOLEM_CONV = Canon_Port.SKOLEM_CONV;
 
@@ -46,7 +45,6 @@ val SKOLEM_CONV = Canon_Port.SKOLEM_CONV;
 val REAL_10         = REAL_10';
 val REAL_ADD_LID    = REAL_ADD_LID';
 val REAL_ADD_LINV   = REAL_ADD_LINV';
-val REAL_INV_0      = REAL_INV_0';
 val REAL_LT_MUL     = REAL_LT_MUL';
 val REAL_MUL_LID    = REAL_MUL_LID';
 val REAL_MUL_LINV   = REAL_MUL_LINV';
