@@ -1,5 +1,5 @@
 (*---------------------------------------------------------------------------*
- * boehmScript.sml: (Effective) Boehm Trees (Chapter 10 of [1])              *
+ * boehmScript.sml: (Effective) Boehm Trees (Chap 10 of Barendregt 1984 [1]) *
  *---------------------------------------------------------------------------*)
 
 open HolKernel Parse boolLib bossLib;
@@ -435,7 +435,7 @@ QED
    just ‘X’, because ‘vs’ may be free variables in some Ms.
  *)
 Definition subterm_def :
-    subterm X M []      = SOME (X,M :term) /\
+    subterm X M []      = SOME ((X,M) :string set # term) /\
     subterm X M (x::xs) =
       if solvable M then
         let M0 = principle_hnf M;
@@ -1024,6 +1024,52 @@ Proof
  >> MATCH_MP_TAC IS_PREFIX_TRANS
  >> Q.EXISTS_TAC ‘l’ >> rw []
  >> MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []
+QED
+
+(* NOTE: ‘subterm X M p <> NONE’ implies ‘!q. q <<= FRONT p ==> solvable (subterm' X M q)’,
+   and the following theorem deals the case ‘unsolvable (subterm' X M p)’.
+ *)
+Theorem ltree_el_of_unsolvables :
+    !p X M. FINITE X /\ subterm X M p <> NONE /\ unsolvable (subterm' X M p) ==>
+            ltree_el (BTe X M) p = SOME (NONE, SOME 0)
+Proof
+    Induct_on ‘p’
+ >- rw [BT_of_unsolvables, ltree_el_def]
+ >> rpt STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::p’] subterm_solvable_lemma)
+ >> rw []
+ >> POP_ASSUM (MP_TAC o (Q.SPEC ‘[]’))
+ >> rw [] (* solvable M *)
+ >> Q.PAT_X_ASSUM ‘unsolvable (subterm' X M (h::p))’ MP_TAC
+ >> Q.PAT_X_ASSUM ‘subterm X M (h::p) <> NONE’ MP_TAC
+ >> Q.PAT_X_ASSUM ‘!q. q <<= h::p ==> subterm X M q <> NONE’ K_TAC
+ >> simp [subterm_def, BT_def, BT_generator_def, Once ltree_unfold]
+ >> qabbrev_tac ‘M0 = principle_hnf M’
+ >> qabbrev_tac ‘n = LAMl_size M0’
+ >> qabbrev_tac ‘vs = NEWS n (X UNION FV M0)’
+ >> qabbrev_tac ‘Y = X UNION set vs’
+ >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
+ >> qabbrev_tac ‘m = hnf_children_size M0’
+ >> simp [LMAP_fromList, GSYM BT_def, ltree_el, LNTH_fromList, EL_MAP]
+ (* still need to decompose M0 *)
+ >> Know ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (X UNION FV M0) /\ LENGTH vs = n’
+ >- rw [Abbr ‘vs’, NEWS_def]
+ >> DISCH_THEN (STRIP_ASSUME_TAC o REWRITE_RULE [DISJOINT_UNION'])
+ >> ‘hnf M0’ by rw [Abbr ‘M0’, hnf_principle_hnf']
+ >> qunabbrev_tac ‘M1’
+ >> hnf_tac (“M0 :term”, “vs :string list”,
+             “M1 :term”, “y :string”, “args :term list”)
+ >> ‘TAKE n vs = vs’ by rw [TAKE_LENGTH_ID_rwt]
+ >> POP_ASSUM (rfs o wrap)
+ (* applying hnf_children_size_alt *)
+ >> Know ‘LENGTH (hnf_children M1) = m’
+ >- (qunabbrev_tac ‘m’ \\
+    ‘hnf_children_size M0 = hnf_children_size M1’ by rw [] >> POP_ORW \\
+     MATCH_MP_TAC (GSYM hnf_children_size_alt) >> rw [hnf_appstar])
+ >> rw []
+ (* applying IH *)
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> rw [Abbr ‘Y’]
 QED
 
 (* cf. [subterm_some_none_cong] when X changes but M remains *)
@@ -3778,17 +3824,19 @@ Overload agree_upto = “term_agree_upto”
    part of this proof.
  *)
 Theorem agree_upto_lemma :
-    !X Ms p. FINITE X /\ p <> [] /\ EVERY (\e. subterm X e p <> NONE) Ms /\
+    !X Ms p. FINITE X /\ p <> [] /\ (!M. MEM M Ms ==> subterm X M p <> NONE) /\
              agree_upto p Ms ==>
-            ?pi. Boehm_transform pi /\ EVERY is_ready' (MAP (apply pi) Ms) /\
-                 agree_upto p (MAP (apply pi) Ms)
+             ?pi. Boehm_transform pi /\ EVERY is_ready' (MAP (apply pi) Ms) /\
+                  agree_upto p (MAP (apply pi) Ms)
 Proof
     rpt STRIP_TAC
  >> qabbrev_tac ‘k = LENGTH Ms’
  >> qabbrev_tac ‘M = \i. EL i Ms’
- >> ‘!i. i < k ==> subterm X (M i) p <> NONE’
-       by (NTAC 2 STRIP_TAC >> fs [Abbr ‘M’, EVERY_EL])
- >> Q.PAT_X_ASSUM ‘EVERY P Ms’ K_TAC
+ >> Know ‘!i. i < k ==> subterm X (M i) p <> NONE’
+ >- (NTAC 2 STRIP_TAC \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> rw [Abbr ‘M’, EL_MEM])
+ >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘!M. MEM M Ms ==> subterm X M p <> NONE’ K_TAC
  >> ‘!i. i < k ==> (!q. q <<= p ==> subterm X (M i) q <> NONE) /\
                     !q. q <<= FRONT p ==> solvable (subterm' X (M i) q)’
        by METIS_TAC [subterm_solvable_lemma]
@@ -4376,6 +4424,10 @@ Proof
 
      where ~1~ is to be established by BT_subterm_thm, and ~2~ follows a
      similar idea of [Boehm_transform_exists_lemma].
+
+  1. applying BT_subterm_thm on ‘ltree_el (BTe Z1 (M i1)) q’
+     reverse (Cases_on ‘solvable (subterm' Z1 (M i1) q)’)
+     MP_TAC (Q.SPECL [‘q’, ‘Z1’, ‘M (i1 :num)’] BT_subterm_thm) \\
    *)
      cheat)
 QED
