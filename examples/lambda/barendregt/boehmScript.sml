@@ -184,7 +184,7 @@ End
    tree (‘bot’). The following overloaded ‘bot’ may be returned by
   ‘THE (ltree_lookup A p)’ when looking up a terminal node of the Boehm tree.
 
-   See also ltree_lookup_of_unsolvables and ltree_el_of_unsolvables below, for
+   See also BT_ltree_lookup_of_unsolvables and BT_ltree_el_of_unsolvables, for
    the raison d'etre of overloading "bot" on two different terms.
  *)
 Overload bot = “Branch NONE (LNIL :boehm_tree llist)”
@@ -388,7 +388,7 @@ Proof
       qunabbrev_tac ‘Q0’ >> MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [] ]
 QED
 
-Theorem BT_ltree_el_top :
+Theorem BT_ltree_el_top[local] :
     !X M. ltree_el (BTe X M) [] =
           if solvable M then
              let
@@ -687,7 +687,7 @@ Proof
 QED
 
 (* NOTE: This proof shares a lot of tactics with [subterm_tpm_lemma] *)
-Theorem BT_ltree_lookup_lemma :
+Theorem BT_ltree_lookup_tpm :
     !p X Y M pi. FINITE X /\ FINITE Y /\
                  ltree_lookup (BTe X M) p <> NONE ==>
                  ltree_lookup (BTe Y (tpm pi M)) p <> NONE
@@ -854,9 +854,9 @@ Proof
  >> MATCH_MP_TAC SUBSET_ANTISYM
  >> rw [SUBSET_DEF]
  >| [ (* goal 1 (of 2) *)
-      MP_TAC (Q.SPECL [‘x’, ‘X’, ‘Y’, ‘M’, ‘[]’] BT_ltree_lookup_lemma),
+      MP_TAC (Q.SPECL [‘x’, ‘X’, ‘Y’, ‘M’, ‘[]’] BT_ltree_lookup_tpm),
       (* goal 2 (of 2) *)
-      MP_TAC (Q.SPECL [‘x’, ‘Y’, ‘X’, ‘M’, ‘[]’] BT_ltree_lookup_lemma) ]
+      MP_TAC (Q.SPECL [‘x’, ‘Y’, ‘X’, ‘M’, ‘[]’] BT_ltree_lookup_tpm) ]
  >> rw [] (* shared ending tactics *)
 QED
 
@@ -988,7 +988,7 @@ QED
 (* NOTE: ‘subterm X M p <> NONE’ implies ‘!q. q <<= FRONT p ==> solvable (subterm' X M q)’,
    and the following theorem deals the case ‘unsolvable (subterm' X M p)’.
  *)
-Theorem ltree_el_of_unsolvables :
+Theorem BT_ltree_el_of_unsolvables :
     !p X M. FINITE X /\ subterm X M p <> NONE /\ unsolvable (subterm' X M p) ==>
             ltree_el (BTe X M) p = SOME bot
 Proof
@@ -1025,7 +1025,7 @@ QED
 (* NOTE: This proof is almost identical with the above lemma. Also note that
          the actual term behind ‘bot’ is different with the one above.
  *)
-Theorem ltree_lookup_of_unsolvables :
+Theorem BT_ltree_lookup_of_unsolvables :
     !p X M. FINITE X /\ subterm X M p <> NONE /\ unsolvable (subterm' X M p) ==>
             ltree_lookup (BTe X M) p = SOME bot
 Proof
@@ -4357,7 +4357,7 @@ Proof
  >> Q.PAT_X_ASSUM ‘!i. i < k ==> apply p3 _ = _’  K_TAC
  >> Q.PAT_X_ASSUM ‘!i. i < k ==> _ -h->* _’       K_TAC
  (* now proving agree_upto *)
- >> (Q.PAT_X_ASSUM ‘agree_upto p Ms’ MP_TAC \\
+ >>  Q.PAT_X_ASSUM ‘agree_upto p Ms’ MP_TAC \\
      simp [agree_upto_def] >> DISCH_TAC \\
      qx_genl_tac [‘M2'’, ‘N2'’] >> simp [MEM_MAP] \\
      ONCE_REWRITE_TAC [TAUT ‘p /\ q ==> r <=> p ==> q ==> r’] \\
@@ -4391,11 +4391,11 @@ Proof
      where ~1~ is to be established by BT_subterm_thm, and ~2~ follows a
      similar idea of [Boehm_transform_exists_lemma].
 
-  1. applying BT_subterm_thm on ‘ltree_el (BTe Z1 (M i1)) q’
      reverse (Cases_on ‘solvable (subterm' Z1 (M i1) q)’)
+     >- (ltree_el_of_unsolvables
      MP_TAC (Q.SPECL [‘q’, ‘Z1’, ‘M (i1 :num)’] BT_subterm_thm) \\
    *)
-     cheat)
+     cheat
 QED
 
 (* Lemma 10.3.11 (3) [1. p.251]
