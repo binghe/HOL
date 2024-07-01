@@ -2185,20 +2185,36 @@ val PRODUCT_NEG_NUMSEG_1 = store_thm ("PRODUCT_NEG_NUMSEG_1",
  ``!f n. product{1n..n} (\i. -(f i)) = -(&1) pow n * product{1n..n} f``,
   REWRITE_TAC[PRODUCT_NEG_NUMSEG, ADD_SUB]);
 
-val PRODUCT_INV = store_thm ("PRODUCT_INV",
- ``!f s. FINITE s ==> (product s (\x. inv(f x)) = inv(product s f))``,
+Theorem PRODUCT_NZ :
+    !f s. FINITE s ==> (!x. x IN s ==> f x <> 0) ==> product s f <> 0
+Proof
+    Q.X_GEN_TAC ‘f’
+ >> Induct_on ‘s’ >> rw [PRODUCT_CLAUSES]
+QED
+
+(* Added ‘!x. x IN s ==> f x <> 0’ as part of the antecedents *)
+Theorem PRODUCT_INV :
+    !f s. FINITE s ==> (!x. x IN s ==> f x <> 0) ==>
+         (product s (\x. inv(f x)) = inv(product s f))
+Proof
   GEN_TAC THEN ONCE_REWRITE_TAC [METIS [] ``!s.
    (product s (\x. inv(f x)) = inv(product s f)) =
    (\s. product s (\x. inv(f x)) = inv(product s f)) s``] THEN
-  MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN
+  HO_MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN
   SIMP_TAC real_ss [PRODUCT_CLAUSES, REAL_INV1] THEN REPEAT STRIP_TAC THEN
-  ASM_CASES_TAC ``((f:'a->real) e <> 0) /\ (product s f <> 0:real)`` THENL
-  [ASM_SIMP_TAC real_ss [GSYM REAL_INV_MUL], ALL_TAC] THEN
-  FULL_SIMP_TAC real_ss [REAL_INV_0]);
+  Know ‘product s (\x. inv (f x)) = inv (product s f)’
+  >- (FIRST_X_ASSUM MATCH_MP_TAC >> fs [IN_INSERT]) >> Rewr' \\
+  MATCH_MP_TAC (GSYM REAL_INV_MUL) \\
+  fs [IN_INSERT] \\
+  irule PRODUCT_NZ >> rw []
+QED
 
-val PRODUCT_DIV = store_thm ("PRODUCT_DIV",
- ``!f g s. FINITE s ==> (product s (\x. f x / g x) = product s f / product s g)``,
-  SIMP_TAC std_ss [real_div, PRODUCT_MUL, PRODUCT_INV]);
+(* TODO *)
+Theorem PRODUCT_DIV :
+    !f g s. FINITE s ==> (product s (\x. f x / g x) = product s f / product s g)
+Proof
+  SIMP_TAC std_ss [real_div, PRODUCT_MUL, PRODUCT_INV];
+QED
 
 val PRODUCT_DIV_NUMSEG = store_thm ("PRODUCT_DIV_NUMSEG",
  ``!f g m n.
