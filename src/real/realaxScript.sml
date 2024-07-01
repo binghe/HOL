@@ -18,11 +18,12 @@ val GEN_ALL   = hol88Lib.GEN_ALL;   (* it has old reverted variable order *)
 (* Now define the functions over the equivalence classes                     *)
 (*---------------------------------------------------------------------------*)
 
+(* NOTE: REAL_INV_0 (leading to division-by-zero) is now disabled *)
 val [REAL_10, REAL_ADD_SYM, REAL_MUL_SYM, REAL_ADD_ASSOC,
      REAL_MUL_ASSOC, REAL_LDISTRIB, REAL_ADD_LID, REAL_MUL_LID,
      REAL_ADD_LINV, REAL_MUL_LINV, REAL_LT_TOTAL, REAL_LT_REFL,
-     REAL_LT_TRANS, REAL_LT_IADD, REAL_LT_MUL, REAL_BIJ, REAL_ISO,
-     REAL_INV_0] =
+     REAL_LT_TRANS, REAL_LT_IADD, REAL_LT_MUL, REAL_BIJ, REAL_ISO
+     (*, REAL_INV_0 *)] =
  let fun mk_def (d,t,n,f) = {def_name=d, fixity=f, fname=n, func=t}
  in
   quotient.define_equivalence_type
@@ -46,7 +47,7 @@ val [REAL_10, REAL_ADD_SYM, REAL_MUL_SYM, REAL_ADD_ASSOC,
                 @ [TREAL_ADD_LID, TREAL_MUL_LID, TREAL_ADD_LINV,
                    TREAL_MUL_LINV, TREAL_LT_TOTAL, TREAL_LT_REFL,
                    TREAL_LT_TRANS, TREAL_LT_ADD, TREAL_LT_MUL, TREAL_BIJ,
-                   TREAL_ISO, TREAL_INV_0])}
+                   TREAL_ISO (*, TREAL_INV_0 *)])}
  end;
 
 (* Export all 18 primitive theorems in total, without any changes (yet) *)
@@ -67,6 +68,7 @@ val _ = save_thm ("REAL_LT_IADD",   REAL_LT_IADD);
 val _ = save_thm ("REAL_LT_MUL",    REAL_LT_MUL);
 val _ = save_thm ("REAL_BIJ",       REAL_BIJ);
 val _ = save_thm ("REAL_ISO",       REAL_ISO);
+(* val _ = save_thm ("REAL_INV_0",  REAL_INV_0); *)
 
 (*---------------------------------------------------------------------------
        Overload arithmetic operations.
@@ -219,7 +221,7 @@ in
   val REAL_10         = save_thm("REAL_10'",        reeducate(REAL_10));
   val REAL_ADD_LID    = save_thm("REAL_ADD_LID'",   reeducate(REAL_ADD_LID));
   val REAL_ADD_LINV   = save_thm("REAL_ADD_LINV'",  reeducate(REAL_ADD_LINV));
-  val REAL_INV_0      = save_thm("REAL_INV_0'",     reeducate(REAL_INV_0));
+(* val REAL_INV_0     = save_thm("REAL_INV_0'",     reeducate(REAL_INV_0)); *)
   val REAL_LT_MUL     = save_thm("REAL_LT_MUL'",    reeducate(REAL_LT_MUL));
   val REAL_MUL_LID    = save_thm("REAL_MUL_LID'",   reeducate(REAL_MUL_LID));
   val REAL_MUL_LINV   = save_thm("REAL_MUL_LINV'",  reeducate(REAL_MUL_LINV));

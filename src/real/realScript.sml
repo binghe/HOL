@@ -46,7 +46,7 @@ val REAL_MUL_ASSOC  = save_thm("REAL_MUL_ASSOC", REAL_MUL_ASSOC);
 val REAL_MUL_LID    = save_thm("REAL_MUL_LID",   REAL_MUL_LID');
 val REAL_MUL_LINV   = save_thm("REAL_MUL_LINV",  REAL_MUL_LINV');
 val REAL_LT_MUL     = save_thm("REAL_LT_MUL",    REAL_LT_MUL');
-val REAL_INV_0      = save_thm("REAL_INV_0",     REAL_INV_0');
+(* val REAL_INV_0   = save_thm("REAL_INV_0",     REAL_INV_0'); *)
 
 val _ = export_rewrites
         ["REAL_ADD_LID", "REAL_ADD_LINV", "REAL_LT_REFL", "REAL_MUL_LID"];

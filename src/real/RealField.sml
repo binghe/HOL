@@ -21,19 +21,6 @@ open realSimps
 open Sub_and_cond Normalizer Grobner;
 
 (* Fix the grammar used by this file *)
-local
-val x = mk_var("x", numSyntax.num)
-val y = mk_var("y", numSyntax.num)
-in
-(* In HOL-Light this was a definition but in HOL4 we use markerTheory
-     DECIMAL maps to \x y. unint(&x / &y)
-*)
-val decimal_tm =
-list_mk_abs([x, y],
-            mk_comb (mk_thy_const{Thy = "marker", Name = "unint",
-                                  Ty = real_ty --> real_ty},
-                     mk_div (mk_injected x, mk_injected y)))
-end
 structure Parse = struct
   open Parse
   local val (rtyg, rtmg0) = realTheory.real_grammars
@@ -48,13 +35,10 @@ end
 open Parse;
 
 (* clarify some conflicting library functions *)
-val assert      = Lib.assert;
 val is_binop    = liteLib.is_binop;
 val SKOLEM_CONV = Canon_Port.SKOLEM_CONV;
 
 (* for HOL-Light compatibilities  *)
-val REAL_INV_MUL = REAL_INV_MUL';
-val REAL_INV_DIV = REAL_INV_DIV';
 val NNF_CONV = normalForms.NNFD_CONV;
 val NUM_REDUCE_CONV = reduceLib.REDUCE_CONV;
 
@@ -62,7 +46,6 @@ val NUM_REDUCE_CONV = reduceLib.REDUCE_CONV;
 val REAL_10         = realTheory.REAL_10;
 val REAL_ADD_LID    = realTheory.REAL_ADD_LID;
 val REAL_ADD_LINV   = realTheory.REAL_ADD_LINV;
-val REAL_INV_0      = realTheory.REAL_INV_0;
 val REAL_LT_IADD    = realTheory.REAL_LT_IADD;
 val REAL_LT_MUL     = realTheory.REAL_LT_MUL;
 val REAL_MUL_LID    = realTheory.REAL_MUL_LID;
@@ -73,6 +56,20 @@ fun failwith s = raise mk_HOL_ERR "RealField" "?" s
 
 (* set verbose level (of REAL_LINEAR_PROVER) to nothing for internal loading *)
 val _ = RealArith.verbose_level := 0;
+
+local
+val x = mk_var("x", numSyntax.num)
+val y = mk_var("y", numSyntax.num)
+in
+(* In HOL-Light this was a definition but in HOL4 we use markerTheory
+     DECIMAL maps to \x y. unint(&x / &y)
+*)
+val decimal_tm =
+list_mk_abs([x, y],
+            mk_comb (mk_thy_const{Thy = "marker", Name = "unint",
+                                  Ty = real_ty --> real_ty},
+                     mk_div (mk_injected x, mk_injected y)))
+end
 
 (* ------------------------------------------------------------------------- *)
 (* Syntax operations on integer constants of type “:real”.                   *)
