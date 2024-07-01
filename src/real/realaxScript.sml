@@ -67,7 +67,6 @@ val _ = save_thm ("REAL_LT_IADD",   REAL_LT_IADD);
 val _ = save_thm ("REAL_LT_MUL",    REAL_LT_MUL);
 val _ = save_thm ("REAL_BIJ",       REAL_BIJ);
 val _ = save_thm ("REAL_ISO",       REAL_ISO);
-val _ = save_thm ("REAL_INV_0",     REAL_INV_0);
 
 (*---------------------------------------------------------------------------
        Overload arithmetic operations.

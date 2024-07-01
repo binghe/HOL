@@ -646,8 +646,17 @@ val REAL_POW_POW_NUMERAL =
     REAL_POW_POW |> SPECL [x_real, NUMERALa, NUMERALb]
                  |> GENL [x_real, a_num, b_num]
 val POW_1' = GSYM POW_1
-val (NEG_FRAC, NEG_DENOM) = CONJ_PAIR neg_rat
-val NEG_INV = REAL_NEG_INV'
+
+local
+    val (th1,th2) = CONJ_PAIR (UNDISCH neg_rat);
+in
+  val NEG_FRAC  = DISCH_ALL th1;
+  val NEG_DENOM = DISCH_ALL th2;
+end;
+
+val NEG_INV      = REAL_NEG_INV;
+val REAL_INV_MUL = REAL_INV_MUL;
+
 val INV_1OVER = REAL_INV_1OVER
 val NEG_MINUS1' = GSYM REAL_NEG_MINUS1
 val neg1_t = mk_negated one_tm
@@ -854,7 +863,7 @@ in
            leaveneg1 orelse
            length ts > 1 andalso List.exists is_negated (tl ts)
         then
-          elimdivs THENC REWRITE_CONV [REAL_INV_MUL'] THENC
+          elimdivs THENC REWRITE_CONV [REAL_INV_MUL] THENC
           AC_Sort.sort mulsort THENC
           TRY_CONV (REWR_CONV REAL_MUL_LID) THENC
           AC_Sort.sort mulsort THENC

@@ -534,13 +534,15 @@ Proof
   gs[]
 QED
 
+(* NOTE: added ‘b <> 0 /\ d <> 0’ as antecedents *)
 Theorem mul_frac_thm[unlisted]:
-  ! a b c (d:real). (a / b) * (c / d) = (a * c) / (b * d)
+  !a b c (d:real). b <> 0 /\ d <> 0 ==> (a / b) * (c / d) = (a * c) / (b * d)
 Proof
-  rpt gen_tac >> rewrite_tac [real_div, GSYM REAL_MUL_ASSOC]
+  rpt strip_tac
+  >> rewrite_tac [real_div, GSYM REAL_MUL_ASSOC]
   >> ‘inv b * (c * inv d) = c * (inv b * inv d)’ by (gs[REAL_MUL_ASSOC] >> gs[REAL_MUL_COMM])
   >> pop_assum $ once_rewrite_tac o single
-  >> gs[REAL_INV_MUL']
+  >> gs[REAL_INV_MUL]
 QED
 
 val _ = export_theory();
