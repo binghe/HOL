@@ -284,7 +284,7 @@ End
  *)
 Definition bitwise_perm_def :
     bitwise_perm (w :bool['a]) table :bool['b] =
-       FCP i. w ' (dimindex(:'a) - EL (dimindex(:'b) - SUC i) table)
+       FCP i. w ' (dimindex(:'a) - EL (dimindex(:'b) - 1 - i) table)
 End
 
 (* The bitwise expansion function E
@@ -312,7 +312,7 @@ Theorem IIP_IP_Inverse :
     !w. IIP (IP w) = w
 Proof
     RW_TAC fcp_ss [IIP_def, IP_def, bitwise_perm_def, dimindex_64]
- >> Q.ABBREV_TAC ‘j = 64 - EL (64 - SUC i) IIP_data’
+ >> Q.ABBREV_TAC ‘j = 64 - EL (63 - i) IIP_data’
  >> Know ‘j < dimindex(:64)’
  >- (fs [Abbr ‘j’, dimindex_64] \\
      POP_ASSUM MP_TAC \\
@@ -322,9 +322,9 @@ Proof
      REWRITE_TAC [])
  >> DISCH_TAC
  >> RW_TAC fcp_ss []
- >> Suff ‘64 - EL (64 - SUC j) IP_data = i’ >- rw []
+ >> Suff ‘64 - EL (63 - j) IP_data = i’ >- rw []
  >> FULL_SIMP_TAC std_ss [Abbr ‘j’, dimindex_64]
- >> Q.PAT_X_ASSUM ‘0 < EL (64 - SUC i) IIP_data’ K_TAC
+ >> Q.PAT_X_ASSUM ‘0 < EL (63 - i) IIP_data’ K_TAC
  >> Q.PAT_X_ASSUM ‘i < 64’ MP_TAC
  >> Q.SPEC_TAC (‘i’, ‘n’)
  >> rpt (CONV_TAC (BOUNDED_FORALL_CONV
@@ -336,7 +336,7 @@ Theorem IP_IIP_Inverse :
     !w. IP (IIP w) = w
 Proof
     RW_TAC fcp_ss [IIP_def, IP_def, bitwise_perm_def, dimindex_64]
- >> Q.ABBREV_TAC ‘j = 64 - EL (64 - SUC i) IP_data’
+ >> Q.ABBREV_TAC ‘j = 64 - EL (63 - i) IP_data’
  >> Know ‘j < dimindex(:64)’
  >- (fs [Abbr ‘j’, dimindex_64] \\
      POP_ASSUM MP_TAC \\
@@ -345,9 +345,9 @@ Proof
      REWRITE_TAC [])
  >> DISCH_TAC
  >> RW_TAC fcp_ss []
- >> Suff ‘64 - EL (64 - SUC j) IIP_data = i’ >- rw []
+ >> Suff ‘64 - EL (63 - j) IIP_data = i’ >- rw []
  >> FULL_SIMP_TAC std_ss [Abbr ‘j’, dimindex_64]
- >> Q.PAT_X_ASSUM ‘0 < EL (64 - SUC i) IP_data’ K_TAC
+ >> Q.PAT_X_ASSUM ‘0 < EL (63 - i) IP_data’ K_TAC
  >> Q.PAT_X_ASSUM ‘i < 64’ MP_TAC
  >> Q.SPEC_TAC (‘i’, ‘n’)
  >> rpt (CONV_TAC (BOUNDED_FORALL_CONV
@@ -727,38 +727,6 @@ Theorem FullDES_CORRECT :
 Proof
     rw [DES_def, desCore_CORRECT, LENGTH_KS]
 QED
-
-(*---------------------------------------------------------------------------*)
-(* Structural Properties of DES                                              *)
-(*---------------------------------------------------------------------------*)
-
-Overload DESEncrypt = “\r k. FST (DES r k)”
-Overload FullDESEncrypt = “\k. FST (FullDES k)”
-
-Theorem lemma :
-    !(m :word64). (63 >< 32) m = ~(63 >< 32) ~m
-Proof
-    cheat
-QED
-
-Theorem Join_compl_prop :
-    !u v. Join (~u, ~v) = ~Join(u,v)
-Proof
-    rw [Join_def, word_concat_def, word_join_def]
- >> rw [CART_EQ]
- >> rw [w2w, word_1comp_def, word_or_def, FCP_BETA, word_lsl_def]
- >> Cases_on ‘i < 32’
- >> rw [FCP_BETA]
-QED
-
-Theorem DES_compl_prop :
-    !r m k. word_1comp (DESEncrypt r k m) =
-            DESEncrypt r (word_1comp k) (word_1comp m)
-Proof
-    cheat
-QED
-
-Theorem FullDES_compl_prop = Q.SPEC ‘16’ DES_compl_prop
 
 val _ = export_theory();
 val _ = html_theory "des";
