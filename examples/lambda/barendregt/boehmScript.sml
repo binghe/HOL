@@ -7,7 +7,7 @@ open HolKernel Parse boolLib bossLib;
 (* core theories *)
 open optionTheory arithmeticTheory pred_setTheory listTheory rich_listTheory
      llistTheory relationTheory ltreeTheory pathTheory posetTheory hurdUtils
-     finite_mapTheory topologyTheory listRangeTheory tautLib;
+     finite_mapTheory topologyTheory listRangeTheory combinTheory tautLib;
 
 open binderLib termTheory appFOLDLTheory chap2Theory chap3Theory nomsetTheory
      head_reductionTheory standardisationTheory solvableTheory reductionEval;
@@ -22,8 +22,6 @@ val _ = new_theory "boehm";
 
 val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
 
-val o_DEF = combinTheory.o_DEF;
-
 val _ = hide "B";
 val _ = hide "C";
 val _ = hide "Y";
@@ -32,7 +30,7 @@ val _ = hide "Y";
  *  Local utilities
  *---------------------------------------------------------------------------*)
 
-(* Given a hnf ‘M0’ and a shared binding variable list ‘vs’
+(* Given a hnf ‘M0’ and a shared (by multiple terms) binding variable list ‘vs’
 
    hnf_tac adds the following abbreviation and new assumptions:
 
@@ -42,7 +40,9 @@ val _ = hide "Y";
 
    where the names "M1", "y" and "args" can be chosen from inputs.
 
-   NOTE: Usually this tactic is followed with tactics rewriting TAKE, e.g.
+   NOTE: HNF_TAC expects that there's already an abbreviation for M1, which is
+   re-defined as above with ‘TAKE’ involved. In case of single term fully
+   owning ‘vs’, the following tactics can be followed to eliminate ‘TAKE’:
 
   ‘TAKE n vs = vs’ by rw [] >> POP_ASSUM (rfs o wrap)
  *)
@@ -3790,8 +3790,8 @@ Overload agree_upto = “term_agree_upto”
    part of this proof.
  *)
 Theorem agree_upto_lemma :
-    !X Ms p. FINITE X /\ p <> [] /\ (!M. MEM M Ms ==> subterm X M p <> NONE) /\
-             agree_upto p Ms ==>
+    !X Ms p. FINITE X /\ p <> [] /\
+            (!M. MEM M Ms ==> subterm X M p <> NONE) /\ agree_upto p Ms ==>
              ?pi. Boehm_transform pi /\ EVERY is_ready' (MAP (apply pi) Ms) /\
                   agree_upto p (MAP (apply pi) Ms)
 Proof
