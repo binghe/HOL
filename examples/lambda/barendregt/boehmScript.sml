@@ -30,9 +30,8 @@ val _ = hide "Y";
  *  Local utilities
  *---------------------------------------------------------------------------*)
 
-(* Given a hnf ‘M0’ and a shared (by multiple terms) binding variable list ‘vs’
-
-   hnf_tac adds the following abbreviation and new assumptions:
+(* Given a hnf ‘M0’ and a shared (by multiple terms) binding variable list ‘vs’,
+   HNF_TAC adds the following abbreviation and new assumptions:
 
    Abbrev (M1 = principle_hnf (M0 @* MAP VAR (TAKE (LAMl_size M0) vs)))
    M0 = LAMl (TAKE (LAMl_size M0) vs) (VAR y @* args)
@@ -41,12 +40,21 @@ val _ = hide "Y";
    where the names "M1", "y" and "args" can be chosen from inputs.
 
    NOTE: HNF_TAC expects that there's already an abbreviation for M1, which is
-   re-defined as above with ‘TAKE’ involved. In case of single term fully
-   owning ‘vs’, the following tactics can be followed to eliminate ‘TAKE’:
+   re-defined as above with ‘TAKE’ involved. In case of single term who fully
+   owns ‘vs’, the following tactics can be followed to eliminate ‘TAKE’:
 
   ‘TAKE n vs = vs’ by rw [] >> POP_ASSUM (rfs o wrap)
+
+   NOTE2: Since the symbol behind M1 is always presented in assumptions, it's
+   recommended to use Q_TAC together, in the following form:
+
+   Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
+                   “y :string”, “args :term list”)) ‘M1’
+
+   This doesn't save much in number of letters, just putting ‘M1’ special in a
+   sense that its abbreviation will be updated (deleted and re-defined).
  *)
-fun HNF_TAC (M0, vs, M1, y, args) = let
+fun HNF_TAC (M0, vs, y, args) M1 = let
     val n = “LAMl_size ^M0” in
     qunabbrev_tac ‘^M1’
  >> qabbrev_tac ‘^M1 = principle_hnf (^M0 @* MAP VAR (TAKE ^n ^vs))’
@@ -354,10 +362,10 @@ Proof
      MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
  >> DISCH_TAC
  (* NOTE: the next two calls will refine P1 and Q1 *)
- >> HNF_TAC (“P0 :term”, “vs :string list”,
-             “P1 :term”, “y  :string”, “args :term list”)
- >> HNF_TAC (“Q0 :term”, “vs :string list”,
-             “Q1 :term”, “y' :string”, “args' :term list”)
+ >> Q_TAC (HNF_TAC (“P0 :term”, “vs :string list”,
+                    “y  :string”, “args  :term list”)) ‘P1’
+ >> Q_TAC (HNF_TAC (“Q0 :term”, “vs :string list”,
+                    “y' :string”, “args' :term list”)) ‘Q1’
  >> ‘TAKE n vs = vs’ by rw [TAKE_LENGTH_ID_rwt]
  >> POP_ASSUM (rfs o wrap)
  (* applying hnf_children_FV_SUBSET *)
@@ -564,8 +572,8 @@ Proof
  >> simp [Once ltree_unfold, BT_generator_def, LNTH_fromList, EL_MAP]
  >> DISCH_THEN K_TAC (* BTe X M = ... *)
  >> Know ‘LENGTH Ms = m’
- >- (HNF_TAC (“M0 :term”, “vs :string list”,
-              “M1 :term”, “y  :string”, “args :term list”) \\
+ >- (Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
+                     “y  :string”, “args :term list”)) ‘M1’ \\
     ‘TAKE n vs = vs’ by rw [] \\
      POP_ASSUM (REV_FULL_SIMP_TAC std_ss o wrap) \\
      simp [Abbr ‘Ms’, Abbr ‘m’])
@@ -680,8 +688,8 @@ Proof
  >> ‘FINITE Y’ by PROVE_TAC [subterm_finite_lemma]
  >> Q_TAC (NEWS_TAC (“vs :string list”, “n :num”)) ‘Y UNION FV N0’
  >> qabbrev_tac ‘N1 = principle_hnf (N0 @* MAP VAR vs)’
- >> HNF_TAC (“N0 :term”, “vs :string list”,
-             “N1 :term”, “y :string”, “args :term list”)
+ >> Q_TAC (HNF_TAC (“N0 :term”, “vs :string list”,
+                    “y :string”, “args :term list”)) ‘N1’
  >> ‘TAKE n vs = vs’ by rw [TAKE_LENGTH_ID_rwt]
  >> POP_ASSUM (rfs o wrap)
 QED
@@ -757,8 +765,8 @@ Proof
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
  (* stage work *)
  >> qabbrev_tac ‘M2 = principle_hnf (M0 @* MAP VAR vs2)’
- >> HNF_TAC (“M0 :term”, “vs2 :string list”,
-             “M2 :term”, “y :string”, “args :term list”)
+ >> Q_TAC (HNF_TAC (“M0 :term”, “vs2 :string list”,
+                    “y :string”, “args :term list”)) ‘M2’
  >> ‘TAKE n vs2 = vs2’ by rw [TAKE_LENGTH_ID_rwt]
  >> POP_ASSUM (rfs o wrap)
  >> Know ‘DISJOINT (set vs) (FV M2) /\
@@ -887,8 +895,8 @@ Proof
      simp [BT_of_unsolvables, ltree_paths_def, ltree_lookup_def])
  >> simp []
  >> Know ‘m = LENGTH Ms’
- >- (HNF_TAC (“M0 :term”, “vs :string list”,
-              “M1 :term”, “y  :string”, “args :term list”) \\
+ >- (Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
+                     “y :string”, “args :term list”)) ‘M1’ \\
     ‘TAKE n vs = vs’ by rw [] \\
      POP_ASSUM (REV_FULL_SIMP_TAC std_ss o wrap) \\
      simp [Abbr ‘Ms’, Abbr ‘m’])
@@ -1011,8 +1019,8 @@ Proof
  >> qabbrev_tac ‘m = hnf_children_size M0’
  >> simp [LMAP_fromList, GSYM BT_def, ltree_el, LNTH_fromList, EL_MAP]
  >> Know ‘LENGTH (hnf_children M1) = m’
- >- (HNF_TAC (“M0 :term”, “vs :string list”,
-              “M1 :term”, “y :string”, “args :term list”) \\
+ >- (Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
+                     “y :string”, “args :term list”)) ‘M1’ \\
     ‘TAKE n vs = vs’ by rw [TAKE_LENGTH_ID_rwt] \\
      POP_ASSUM (rfs o wrap) \\
      simp [Abbr ‘m’])
@@ -1048,8 +1056,8 @@ Proof
  >> qabbrev_tac ‘m = hnf_children_size M0’
  >> simp [LMAP_fromList, GSYM BT_def, ltree_lookup, LNTH_fromList, EL_MAP]
  >> Know ‘LENGTH (hnf_children M1) = m’
- >- (HNF_TAC (“M0 :term”, “vs :string list”,
-              “M1 :term”, “y :string”, “args :term list”) \\
+ >- (Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
+                     “y :string”, “args :term list”)) ‘M1’ \\
     ‘TAKE n vs = vs’ by rw [TAKE_LENGTH_ID_rwt] \\
      POP_ASSUM (rfs o wrap) \\
      simp [Abbr ‘m’])
@@ -1118,10 +1126,10 @@ Proof
      MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
  >> DISCH_TAC
  (* NOTE: the next two HNF_TAC will refine M1 and M1' *)
- >> HNF_TAC (“M0 :term”, “vs :string list”,
-             “M1 :term”, “y  :string”, “args :term list”)
- >> HNF_TAC (“M0':term”, “vs :string list”,
-             “M1':term”, “y' :string”, “args':term list”)
+ >> Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
+                    “y  :string”, “args :term list”)) ‘M1’
+ >> Q_TAC (HNF_TAC (“M0':term”, “vs :string list”,
+                    “y' :string”, “args':term list”)) ‘M1'’
  >> Q.PAT_X_ASSUM ‘n = LAMl_size M0'’ (rfs o wrap o SYM)
  >> ‘TAKE n vs = vs’ by rw [TAKE_LENGTH_ID_rwt]
  >> POP_ASSUM (rfs o wrap)
@@ -1229,10 +1237,10 @@ Proof
      MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
  >> DISCH_TAC
  (* NOTE: the next two HNF_TAC will refine M1 and M1' *)
- >> HNF_TAC (“M0 :term”, “vs :string list”,
-             “M1 :term”, “y  :string”, “args :term list”)
- >> HNF_TAC (“M0':term”, “vs :string list”,
-             “M1':term”, “y' :string”, “args':term list”)
+ >> Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
+                    “y  :string”, “args :term list”)) ‘M1’
+ >> Q_TAC (HNF_TAC (“M0':term”, “vs :string list”,
+                    “y' :string”, “args':term list”)) ‘M1'’
  >> Q.PAT_X_ASSUM ‘n = LAMl_size M0'’ (rfs o wrap o SYM)
  >> ‘TAKE n vs = vs’ by rw [TAKE_LENGTH_ID_rwt]
  >> POP_ASSUM (rfs o wrap)
@@ -1373,8 +1381,8 @@ Proof
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
  (* stage work *)
  >> qabbrev_tac ‘M2 = principle_hnf (M0 @* MAP VAR vs2)’
- >> HNF_TAC (“M0 :term”, “vs2 :string list”,
-             “M2 :term”, “y :string”, “args :term list”)
+ >> Q_TAC (HNF_TAC (“M0 :term”, “vs2 :string list”,
+                    “y :string”, “args :term list”)) ‘M2’
  >> ‘TAKE n vs2 = vs2’ by rw [TAKE_LENGTH_ID_rwt]
  >> POP_ASSUM (rfs o wrap)
  >> Know ‘DISJOINT (set vs) (FV M2) /\
@@ -1847,10 +1855,10 @@ Proof
      LENGTH vs = MAX n n'’ by rw [Abbr ‘vs’, NEWS_def]
  >> ‘DISJOINT (set vs) (FV M0) /\ DISJOINT (set vs) (FV N0)’
       by METIS_TAC [DISJOINT_SYM, DISJOINT_UNION]
- >> HNF_TAC (“M0 :term”, “vs :string list”,
-             “M1 :term”, “y1 :string”, “args1 :term list”)
- >> HNF_TAC (“N0 :term”, “vs :string list”,
-             “N1 :term”, “y2 :string”, “args2 :term list”)
+ >> Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
+                    “y1 :string”, “args1 :term list”)) ‘M1’
+ >> Q_TAC (HNF_TAC (“N0 :term”, “vs :string list”,
+                    “y2 :string”, “args2 :term list”)) ‘N1’
  >> ‘TAKE (LAMl_size M0) vs = vsM’ by rw [Abbr ‘vsM’, Abbr ‘n’]
  >> ‘TAKE (LAMl_size N0) vs = vsN’ by rw [Abbr ‘vsN’, Abbr ‘n'’]
  >> NTAC 2 (POP_ASSUM (rfs o wrap))
@@ -2501,8 +2509,8 @@ Proof
  >> Know ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (X UNION FV M0) /\ LENGTH vs = n’
  >- rw [Abbr ‘vs’, NEWS_def]
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
- >> HNF_TAC (“M0 :term”, “vs :string list”,
-             “M1 :term”, “y :string”, “args :term list”)
+ >> Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
+                    “y :string”, “args :term list”)) ‘M1’
  >> ‘TAKE n vs = vs’ by rw [TAKE_LENGTH_ID_rwt]
  >> POP_ASSUM (rfs o wrap)
  >> Know ‘m <= w’
@@ -4624,10 +4632,10 @@ Proof
  >- (MATCH_MP_TAC DISJOINT_SUBSET >> Q.EXISTS_TAC ‘FV N’ >> art [] \\
      qunabbrev_tac ‘N0’ >> MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
  >> DISCH_TAC
- >> HNF_TAC (“M0 :term”, “vs :string list”,
-             “M1 :term”, “y1 :string”, “args1 :term list”)
- >> HNF_TAC (“N0 :term”, “vs :string list”,
-             “N1 :term”, “y2 :string”, “args2 :term list”)
+ >> Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
+                    “y1 :string”, “args1 :term list”)) ‘M1’
+ >> Q_TAC (HNF_TAC (“N0 :term”, “vs :string list”,
+                    “y2 :string”, “args2 :term list”)) ‘N1’
  >> ‘TAKE (LAMl_size M0) vs = vsM’ by rw [Abbr ‘vsM’, Abbr ‘n’]
  >> ‘TAKE (LAMl_size N0) vs = vsN’ by rw [Abbr ‘vsN’, Abbr ‘n'’]
  >> NTAC 2 (POP_ASSUM (rfs o wrap))
