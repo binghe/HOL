@@ -25,6 +25,7 @@ val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
 val _ = hide "B";
 val _ = hide "C";
 val _ = hide "Y";
+val _ = hide "W";
 
 (*---------------------------------------------------------------------------*
  *  Local utilities
@@ -1303,7 +1304,8 @@ Theorem subterm_tpm_lemma :
                  tpm_rel (subterm' X M p) (subterm' Y (tpm pi M) p))
 Proof
     Induct_on ‘p’ >- rw []
- >> rpt GEN_TAC >> STRIP_TAC
+ >> rpt GEN_TAC
+ >> STRIP_TAC
  >> reverse (Cases_on ‘solvable M’)
  >- (‘unsolvable (tpm pi M)’ by PROVE_TAC [solvable_tpm] \\
      simp [subterm_def])
@@ -1341,6 +1343,7 @@ Proof
  >> Q.PAT_X_ASSUM ‘n  = n''’ (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘m' = m''’ (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘m  = m'’  (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘T’ K_TAC
  (* stage work *)
  >> Know ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (X UNION FV M0) /\ LENGTH vs = n’
  >- rw [Abbr ‘vs’, NEWS_def]
@@ -1349,7 +1352,10 @@ Proof
           LENGTH vs' = n’
  >- rw [Abbr ‘vs'’, NEWS_def]
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
- (* vs1p is a permutated version of vs', to be used as first principles *)
+ (* vs1p is a permutated version of vs', to be used as first principles
+
+    The purpose of vs1p is to move tpm outside of the principle_hnf of M1'.
+  *)
  >> qabbrev_tac ‘vs1p = listpm string_pmact (REVERSE pi) vs'’
  >> ‘ALL_DISTINCT vs1p’ by rw [Abbr ‘vs1p’]
  (* rewriting inside the abbreviation of M1' *)
@@ -1375,13 +1381,10 @@ Proof
   *)
  >> qabbrev_tac ‘Z = X UNION Y UNION FV M0 UNION set vs UNION set vs1p’
  >> ‘FINITE Z’ by rw [Abbr ‘Z’]
- >> qabbrev_tac ‘vs2 = NEWS n Z’
- >> Know ‘ALL_DISTINCT vs2 /\ DISJOINT (set vs2) Z /\ LENGTH vs2 = n’
- >- rw [Abbr ‘vs2’, NEWS_def]
+ >> Q_TAC (NEWS_TAC (“vs2 :string list”, “n :num”)) ‘Z’
  >> Q.PAT_X_ASSUM ‘FINITE Z’ K_TAC
- >> qunabbrev_tac ‘Z’
- >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
- (* stage work *)
+ >> fs [Abbr ‘Z’, DISJOINT_UNION']
+ (* stage work, M2 is another decomposition of M0 *)
  >> qabbrev_tac ‘M2 = principle_hnf (M0 @* MAP VAR vs2)’
  >> Q_TAC (HNF_TAC (“M0 :term”, “vs2 :string list”,
                     “y :string”, “args :term list”)) ‘M2’
@@ -1408,7 +1411,7 @@ Proof
       rw [lameq_LAMl_appstar_VAR]))
  >> STRIP_TAC
  >> ‘hnf M2’ by rw [hnf_appstar]
- (* rewriting M1 and M1' (much harder) by tpm of M2 *)
+ (* rewriting M1 (easy) and M1' (hard) by tpm of M2 *)
  >> Know ‘M1 = tpm (ZIP (vs2,vs)) M2’
  >- (simp [Abbr ‘M1’] \\
      MATCH_MP_TAC principle_hnf_LAMl_appstar \\
@@ -1439,11 +1442,8 @@ Proof
      MATCH_MP_TAC principle_hnf_LAMl_appstar \\
      Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) >> art [])
  >> POP_ASSUM K_TAC (* M1' = ... (already used) *)
- >> REWRITE_TAC [GSYM pmact_decompose]
+ >> DISCH_THEN (ASSUME_TAC o (REWRITE_RULE [GSYM pmact_decompose]))
  >> qabbrev_tac ‘p2 = pi ++ ZIP (vs2,vs1p)’
- >> DISCH_TAC
- (* cleanups, the definition details of vs2 are useless *)
- >> Q.PAT_X_ASSUM ‘Abbrev (vs2 = _)’ K_TAC
  (* applying hnf_children_tpm *)
  >> Know ‘Ms = MAP (tpm p1) args’
  >- (simp [Abbr ‘Ms’] \\
@@ -1461,14 +1461,15 @@ Proof
  >> simp [EL_MAP]
  >> qabbrev_tac ‘N = EL h args’
  (* final stage *)
- >> Know ‘?pi'. tpm p2 N = tpm pi' (tpm p1 N)’
- >- (Q.EXISTS_TAC ‘p2 ++ REVERSE p1’ \\
-     rw [pmact_decompose])
- >> STRIP_TAC
+ >> qabbrev_tac ‘pi' = p2 ++ REVERSE p1’
+ >> ‘tpm p2 N = tpm pi' (tpm p1 N)’ by rw [Abbr ‘pi'’, pmact_decompose]
  >> POP_ORW
- >> qabbrev_tac ‘N' = tpm p1 N’
+ >> qabbrev_tac ‘M' = tpm p1 N’
+ >> qabbrev_tac ‘X' = X UNION set vs’
+ >> qabbrev_tac ‘Y' = Y UNION set vs'’
  (* finally, using IH in a bulk way *)
- >> FIRST_X_ASSUM MATCH_MP_TAC >> rw []
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> rw [Abbr ‘X'’, Abbr ‘Y'’]
 QED
 
 (* NOTE: since ‘subterm X M p’ is correct for whatever X supplied, changing ‘X’ to
@@ -3765,26 +3766,19 @@ Proof
  >> EQ_TAC >> rw [subterm_equivalent_sym]
 QED
 
-(* Definition 10.3.10 (iii) *)
-Definition term_agree_upto_def :
-    term_agree_upto p M N =
-      !q. q <<= p ==>
-          ltree_el (BTe (FV M UNION FV N) M) q =
-          ltree_el (BTe (FV M UNION FV N) N) q
-End
+(* Definition 10.3.10 (iii) and (iv)
 
-Theorem term_agree_upto_refl[simp] :
-    term_agree_upto p M M
-Proof
-    rw [term_agree_upto_def]
-QED
-
-(* Definition 10.3.10 (iv) *)
+   NOTE: The purpose of X is to make sure all terms in Ms share the same excluded
+         set (and thus perhaps also the same initial binding list).
+ *)
 Definition agree_upto_def :
-    agree_upto p Ns = !M N. MEM M Ns /\ MEM N Ns ==> term_agree_upto p M N
+    agree_upto p Ms <=>
+    (let
+       X = BIGUNION (IMAGE FV (set Ms))
+     in
+       !M N. MEM M Ms /\ MEM N Ms ==>
+            !q. q <<= p ==> ltree_el (BTe X M) q = ltree_el (BTe X N) q)
 End
-
-Overload agree_upto = “term_agree_upto”
 
 (* Lemma 10.3.11 (1) [1. p.251]
 
@@ -4383,32 +4377,32 @@ Proof
      ONCE_REWRITE_TAC [TAUT ‘p /\ q ==> r <=> p ==> q ==> r’] \\
      DISCH_THEN (Q.X_CHOOSE_THEN ‘M2’ STRIP_ASSUME_TAC) \\
      DISCH_THEN (Q.X_CHOOSE_THEN ‘N2’ STRIP_ASSUME_TAC) \\
-     Q.PAT_X_ASSUM ‘!M N. MEM M Ms /\ MEM N Ms ==> agree_upto p M N’
+     Q.PAT_X_ASSUM ‘!M N. MEM M Ms /\ MEM N Ms ==> _’
        (MP_TAC o (Q.SPECL [‘M2’, ‘N2’])) >> simp [] \\
      Q.PAT_X_ASSUM ‘MEM N2 Ms’ MP_TAC \\
      Q.PAT_X_ASSUM ‘MEM M2 Ms’ MP_TAC \\
      simp [MEM_EL] \\
      DISCH_THEN (Q.X_CHOOSE_THEN ‘j1’ STRIP_ASSUME_TAC) \\
      DISCH_THEN (Q.X_CHOOSE_THEN ‘j2’ STRIP_ASSUME_TAC) \\
+     rpt STRIP_TAC (* this asserts q *) \\
+     Q.PAT_X_ASSUM ‘!q. q <<= p ==> _’ (MP_TAC o Q.SPEC ‘q’) \\
+     simp [] \\
   (* NOTE: this assumption is derivable, fs [] also deletes it *)
      Q.PAT_X_ASSUM ‘!i. i < k ==> subterm X (M i) p <> NONE’ K_TAC \\
      Q.PAT_X_ASSUM ‘M2 = M j1’ (fs o wrap) \\
      Q.PAT_X_ASSUM ‘N2 = M j2’ (fs o wrap) \\
      qabbrev_tac ‘M2 = M j1’ \\
      qabbrev_tac ‘N2 = M j2’ \\
-     rw [term_agree_upto_def] \\
-     qabbrev_tac ‘Z1 = FV M2 UNION FV N2’ \\
-     qabbrev_tac ‘Z2 = FV (apply pi M2) UNION FV (apply pi N2)’ \\
-     Q.PAT_X_ASSUM ‘!q. q <<= p ==> ltree_el (BTe Z1 M2) q = ltree_el (BTe Z1 N2) q’
-       (MP_TAC o Q.SPEC ‘q’) >> simp [] \\
+     qabbrev_tac ‘W = BIGUNION (IMAGE FV (set Ms))’ \\
+     qabbrev_tac ‘W' = BIGUNION (IMAGE FV (set (MAP (apply pi) Ms)))’ \\
   (* NOTE: now we are still missing some important connections:
 
-   - ltree_el (BTe Z M2) q             ~1~ subterm' Z M2 q
-   - ltree_el (BTe Z N2) q             ~1~ subterm' Z N2 q
-   - ltree_el (BTe Z' (apply pi M2) q  ~1~ subterm' Z' (apply pi M2) q
-   - ltree_el (BTe Z' (apply pi N2) q  ~1~ subterm' Z' (apply pi N2) q
-   - subterm' Z' (apply pi M2) q       ~2~ subterm' Z M2 q
-   - subterm' Z' (apply pi N2) q       ~2~ subterm' Z N2 q
+   - ltree_el (BTe W M2) q             ~1~ subterm' W M2 q
+   - ltree_el (BTe W N2) q             ~1~ subterm' W N2 q
+   - ltree_el (BTe W' (apply pi M2) q  ~1~ subterm' W' (apply pi M2) q
+   - ltree_el (BTe W' (apply pi N2) q  ~1~ subterm' W' (apply pi N2) q
+   - subterm' Z' (apply pi M2) q       ~2~ subterm' W M2 q
+   - subterm' Z' (apply pi N2) q       ~2~ subterm' W N2 q
 
      where the relation ~1~ is to be established by BT_subterm_thm, and ~2~
      follows a similar idea of [Boehm_transform_exists_lemma].
