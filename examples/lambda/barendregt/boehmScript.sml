@@ -1067,7 +1067,7 @@ Proof
  >> rw [Abbr ‘Y’]
 QED
 
-(* cf. [subterm_some_none_cong] when X changes but M remains *)
+(* cf. [subterm_tpm_cong] when X changes but M remains *)
 Theorem lameq_subterm_cong_none :
     !p X M N. FINITE X /\ FV M UNION FV N SUBSET X /\ M == N ==>
              (subterm X M p = NONE <=> subterm X N p = NONE)
@@ -1292,6 +1292,9 @@ QED
 (* NOTE: This lemma is more general than subterm_tpm_cong, which cannot be
    directly proved. The current form of this lemma, suitable for doing
    induction, was due to repeated experiments.  -- Chun Tian, 19 feb 2024.
+
+   NOTE2 (TODO): If one must know the exact definition of tpm behind ‘tpm_rel’,
+   ...
  *)
 Theorem subterm_tpm_lemma :
     !p X Y M pi. FINITE X /\ FINITE Y ==>
@@ -1310,8 +1313,7 @@ Proof
  >> qmatch_abbrev_tac ‘P _’
  >> RW_TAC bool_ss [subterm_of_solvables]
  >> simp [Abbr ‘P’]
- (* END Norrish's advanced tactics.
-    preparing for expanding ‘subterm' Y (tpm pi M) (h::p)’ *)
+ (* END Norrish's advanced tactics. *)
  >> qabbrev_tac ‘M0' = principle_hnf (tpm pi M)’
  >> Know ‘M0' = tpm pi M0’
  >- (qunabbrevl_tac [‘M0’, ‘M0'’] \\
