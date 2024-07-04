@@ -9,6 +9,7 @@ open optionTheory arithmeticTheory pred_setTheory listTheory rich_listTheory
      llistTheory relationTheory ltreeTheory pathTheory posetTheory hurdUtils
      finite_mapTheory topologyTheory listRangeTheory combinTheory tautLib;
 
+(* local theories *)
 open binderLib termTheory appFOLDLTheory chap2Theory chap3Theory nomsetTheory
      head_reductionTheory standardisationTheory solvableTheory reductionEval;
 
@@ -24,8 +25,8 @@ val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"];
 
 val _ = hide "B";
 val _ = hide "C";
-val _ = hide "Y";
 val _ = hide "W";
+val _ = hide "Y";
 
 (*---------------------------------------------------------------------------*
  *  Local utilities
@@ -1296,8 +1297,8 @@ QED
    -- Chun Tian, 4 luglio 2024 (il mio compleanno di 42 anni).
  *)
 Definition subterm_tpm_def :
-    subterm_tpm     [] X Y M pi = pi /\
-    subterm_tpm (h::t) X Y M pi = let
+    subterm_tpm X Y M     [] pi = pi /\
+    subterm_tpm X Y M (h::p) pi = let
         M0 = principle_hnf M;
          n = LAMl_size M0;
         vs = NEWS n (X UNION FV M0);
@@ -1313,11 +1314,11 @@ Definition subterm_tpm_def :
         Y' = Y UNION set vs';
         M' = tpm p1 (EL h args);
     in
-        subterm_tpm t X' Y' M' pi'
+        subterm_tpm X' Y' M' p pi'
 End
 
 (* NOTE: This is the final form appeared in subterm_tpm_cong_explicit *)
-Overload subterm_tpm' = “\p X Y M. subterm_tpm p X Y M []”
+Overload subterm_tpm' = “\X Y M p. subterm_tpm X Y M p []”
 
 (* decompose equivalence_tpm_equiv for easier use *)
 val lemma = REWRITE_RULE [equivalence_def, symmetric_def, transitive_def]
@@ -1331,7 +1332,7 @@ Theorem tpm_equiv_symm[local] = cj 2 lemma;
 
 Theorem subterm_tpm_equiv_cong :
     !p pi pi' X Y M. tpm_equiv pi pi' ==>
-                     tpm_equiv (subterm_tpm p X Y M pi) (subterm_tpm p X Y M pi')
+                     tpm_equiv (subterm_tpm X Y M p pi) (subterm_tpm X Y M p pi')
 Proof
     Induct_on ‘p’
  >- rw [tpm_equiv_def, subterm_tpm_def]
@@ -1381,13 +1382,13 @@ QED
 
 (* Trivial case: same excluded variables, same term (no tpm) *)
 Theorem subterm_tpm_trivial :
-    !p X M. tpm_equiv (subterm_tpm p X X M []) []
+    !p X M. tpm_equiv (subterm_tpm X X M p []) []
 Proof
     Induct_on ‘p’
  >- rw [subterm_tpm_def, tpm_equiv_def]
  >> rpt GEN_TAC
  (* BEGIN Norrish's advanced tactics *)
- >> CONV_TAC (UNBETA_CONV “subterm_tpm (h::p) X X M []”)
+ >> CONV_TAC (UNBETA_CONV “subterm_tpm X X M (h::p) []”)
  >> qmatch_abbrev_tac ‘P _’
  >> RW_TAC bool_ss [subterm_tpm_def]
  >> simp [Abbr ‘P’]
@@ -1399,7 +1400,7 @@ Proof
  >> Q.PAT_X_ASSUM ‘vs' = vs’ K_TAC
  >> qunabbrev_tac ‘pi'’
  >> MATCH_MP_TAC tpm_equiv_trans
- >> Q.EXISTS_TAC ‘subterm_tpm p X' X' M' []’ >> art []
+ >> Q.EXISTS_TAC ‘subterm_tpm X' X' M' p []’ >> art []
  >> MATCH_MP_TAC subterm_tpm_equiv_cong
  >> REWRITE_TAC [tpm_equiv_append_reverse]
 QED
@@ -1408,7 +1409,7 @@ Theorem subterm_tpm_lemma_explicit :
     !p X Y M pi. FINITE X /\ FINITE Y ==>
       (subterm X M p = NONE ==> subterm Y (tpm pi M) p = NONE) /\
       (subterm X M p <> NONE ==>
-       tpm (subterm_tpm p X Y M pi) (subterm' X M p) = subterm' Y (tpm pi M) p)
+       tpm (subterm_tpm X Y M p pi) (subterm' X M p) = subterm' Y (tpm pi M) p)
 Proof
     Induct_on ‘p’ >- rw [subterm_tpm_def]
  >> rpt GEN_TAC
@@ -1575,7 +1576,7 @@ Proof
  >> POP_ORW
  >> qabbrev_tac ‘M' = tpm p1 N’
  (* BEGIN Norrish's advanced tactics, once again *)
- >> CONV_TAC (UNBETA_CONV “subterm_tpm (h::p) X Y M pi”)
+ >> CONV_TAC (UNBETA_CONV “subterm_tpm X Y M (h::p) pi”)
  >> qmatch_abbrev_tac ‘P _’
  >> RW_TAC bool_ss [subterm_tpm_def]
  >> simp [Abbr ‘P’]
@@ -1596,7 +1597,7 @@ Theorem subterm_tpm_lemma :
 Proof
     rw [tpm_rel_def]
  >- PROVE_TAC [subterm_tpm_lemma_explicit]
- >> Q.EXISTS_TAC ‘subterm_tpm p X Y M pi’
+ >> Q.EXISTS_TAC ‘subterm_tpm X Y M p pi’
  >> PROVE_TAC [subterm_tpm_lemma_explicit]
 QED
 
@@ -1625,7 +1626,7 @@ Theorem subterm_tpm_cong_explicit :
     !p X Y M. FINITE X /\ FINITE Y ==>
              (subterm X M p = NONE <=> subterm Y M p = NONE) /\
              (subterm X M p <> NONE ==>
-              tpm (subterm_tpm p X Y M []) (subterm' X M p) = subterm' Y M p)
+              tpm (subterm_tpm X Y M p []) (subterm' X M p) = subterm' Y M p)
 Proof
     rpt STRIP_TAC
  >- METIS_TAC [subterm_tpm_cong_lemma]
