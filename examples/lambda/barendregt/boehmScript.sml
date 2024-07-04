@@ -1472,6 +1472,15 @@ Proof
  >> rw [Abbr ‘X'’, Abbr ‘Y'’]
 QED
 
+(* |- !p Y X M.
+        FINITE X /\ FINITE Y ==>
+        (subterm X M p = NONE ==> subterm Y M p = NONE) /\
+        (subterm X M p <> NONE ==> tpm_rel (subterm' X M p) (subterm' Y M p))
+ *)
+Theorem subterm_tpm_cong_lemma[local] =
+        subterm_tpm_lemma |> Q.SPECL [‘p’, ‘X’, ‘Y’, ‘M’, ‘[]’]
+                          |> SRULE [] |> GEN_ALL
+
 (* NOTE: since ‘subterm X M p’ is correct for whatever X supplied, changing ‘X’ to
    something else shouldn't change the properties of ‘subterm X M p’, as long as
    these properties are not directly related to specific choices of ‘vs’.
@@ -1481,16 +1490,7 @@ Theorem subterm_tpm_cong :
              (subterm X M p = NONE <=> subterm Y M p = NONE) /\
              (subterm X M p <> NONE ==> tpm_rel (subterm' X M p) (subterm' Y M p))
 Proof
-    rpt GEN_TAC >> STRIP_TAC
- >> CONJ_ASM1_TAC
- >- (EQ_TAC >> DISCH_TAC >| (* 2 subgoals *)
-     [ (* goal 1 (of 2) *)
-       MP_TAC (Q.SPECL [‘p’, ‘X’, ‘Y’, ‘M’, ‘[]’] subterm_tpm_lemma) >> rw [],
-       (* goal 2 (of 2) *)
-       MP_TAC (Q.SPECL [‘p’, ‘Y’, ‘X’, ‘M’, ‘[]’] subterm_tpm_lemma) >> rw [] ])
- >> DISCH_TAC
- >> MP_TAC (Q.SPECL [‘p’, ‘X’, ‘Y’, ‘M’, ‘[]’] (cj 2 subterm_tpm_lemma))
- >> rw []
+    METIS_TAC [subterm_tpm_cong_lemma]
 QED
 
 (* In this way, two such terms have the same ‘hnf_children_size o principle_hnf’,
