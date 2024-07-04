@@ -1290,20 +1290,39 @@ Proof
       qunabbrev_tac ‘M0'’ >> MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [] ]
 QED
 
-(* NOTE: This lemma is more general than subterm_tpm_cong, which cannot be
-   directly proved. The current form of this lemma, suitable for doing
-   induction, was due to repeated experiments.  -- Chun Tian, 19 feb 2024.
+(* NOTE: This extremely dirty recursive definition gives the explicit form of
+   the tpm required in the next [subterm_tpm_lemma] and [subterm_tpm_cong].
 
-   NOTE2 (TODO): If one must know the exact definition of tpm behind ‘tpm_rel’,
-   ...
+   -- Chun Tian, 4 lug 2024 (my 42 years old birthday).
  *)
-Theorem subterm_tpm_lemma :
+Definition subterm_tpm_def :
+    subterm_tpm     [] X Y M pi = pi /\
+    subterm_tpm (h::t) X Y M pi = let
+        M0 = principle_hnf M;
+         n = LAMl_size M0;
+        vs = NEWS n (X UNION FV M0);
+       vs' = NEWS n (Y UNION FV (tpm pi M0));
+       vs1 = listpm string_pmact (REVERSE pi) vs';
+       vs2 = NEWS n (X UNION Y UNION FV M0 UNION set vs UNION set vs1);
+        M2 = principle_hnf (M0 @* MAP VAR vs2);
+      args = hnf_children M2;
+        p1 = ZIP (vs2,vs);
+        p2 = pi ++ ZIP (vs2,vs1);
+       pi' = p2 ++ REVERSE p1;
+        X' = X UNION set vs;
+        Y' = Y UNION set vs';
+        M' = tpm p1 (EL h args);
+    in
+        subterm_tpm t X' Y' M' pi'
+End
+
+Theorem subterm_tpm_lemma_primitive :
     !p X Y M pi. FINITE X /\ FINITE Y ==>
-                (subterm X M p = NONE ==> subterm Y (tpm pi M) p = NONE) /\
-                (subterm X M p <> NONE ==>
-                 tpm_rel (subterm' X M p) (subterm' Y (tpm pi M) p))
+      (subterm X M p = NONE ==> subterm Y (tpm pi M) p = NONE) /\
+      (subterm X M p <> NONE ==>
+       tpm (subterm_tpm p X Y M pi) (subterm' X M p) = subterm' Y (tpm pi M) p)
 Proof
-    Induct_on ‘p’ >- rw []
+    Induct_on ‘p’ >- rw [subterm_tpm_def]
  >> rpt GEN_TAC
  >> STRIP_TAC
  >> reverse (Cases_on ‘solvable M’)
@@ -1459,17 +1478,39 @@ Proof
  >> Rewr'
  >> ‘LENGTH args = m’ by rw [Abbr ‘m’]
  >> simp [EL_MAP]
+ >> qabbrev_tac ‘X' = X UNION set vs’
+ >> qabbrev_tac ‘Y' = Y UNION set vs'’
  >> qabbrev_tac ‘N = EL h args’
  (* final stage *)
  >> qabbrev_tac ‘pi' = p2 ++ REVERSE p1’
  >> ‘tpm p2 N = tpm pi' (tpm p1 N)’ by rw [Abbr ‘pi'’, pmact_decompose]
  >> POP_ORW
  >> qabbrev_tac ‘M' = tpm p1 N’
- >> qabbrev_tac ‘X' = X UNION set vs’
- >> qabbrev_tac ‘Y' = Y UNION set vs'’
+ (* BEGIN Norrish's advanced tactics, once again *)
+ >> CONV_TAC (UNBETA_CONV “subterm_tpm (h::p) X Y M pi”)
+ >> qmatch_abbrev_tac ‘P _’
+ >> RW_TAC bool_ss [subterm_tpm_def]
+ >> simp [Abbr ‘P’]
+ (* END Norrish's advanced tactics. *)
  (* finally, using IH in a bulk way *)
  >> FIRST_X_ASSUM MATCH_MP_TAC
  >> rw [Abbr ‘X'’, Abbr ‘Y'’]
+QED
+
+(* NOTE: This lemma is more general than subterm_tpm_cong, which cannot be
+   directly proved. The current form of this lemma, suitable for doing
+   induction, was due to repeated experiments.  -- Chun Tian, 19 feb 2024.
+ *)
+Theorem subterm_tpm_lemma :
+    !p X Y M pi. FINITE X /\ FINITE Y ==>
+                (subterm X M p = NONE ==> subterm Y (tpm pi M) p = NONE) /\
+                (subterm X M p <> NONE ==>
+                 tpm_rel (subterm' X M p) (subterm' Y (tpm pi M) p))
+Proof
+    rw [tpm_rel_def]
+ >- PROVE_TAC [subterm_tpm_lemma_primitive]
+ >> Q.EXISTS_TAC ‘subterm_tpm p X Y M pi’
+ >> PROVE_TAC [subterm_tpm_lemma_primitive]
 QED
 
 (* |- !p Y X M.
