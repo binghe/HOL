@@ -1316,6 +1316,19 @@ Definition subterm_tpm_def :
         subterm_tpm t X' Y' M' pi'
 End
 
+(* NOTE: This is the final form appeared in subterm_tpm_cong_explicit *)
+Overload subterm_tpm' = “\p X Y M. subterm_tpm p X Y M []”
+
+(* decompose equivalence_tpm_equiv for easier use *)
+val lemma = REWRITE_RULE [equivalence_def, symmetric_def, transitive_def]
+                         equivalence_tpm_equiv;
+
+(* |- !x y z. tpm_equiv x y /\ tpm_equiv y z ==> tpm_equiv x z *)
+Theorem tpm_equiv_trans[local] = cj 3 lemma;
+
+(* |- !x y. tpm_equiv x y <=> tpm_equiv y x *)
+Theorem tpm_equiv_symm[local] = cj 2 lemma;
+
 Theorem subterm_tpm_equiv_cong :
     !p pi pi' X Y M. tpm_equiv pi pi' ==>
                      tpm_equiv (subterm_tpm p X Y M pi) (subterm_tpm p X Y M pi')
@@ -1336,7 +1349,34 @@ Proof
  >> Q.PAT_X_ASSUM ‘Y' = Y''’ (rfs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘vs' = vs'''’ (rfs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘T’ K_TAC
- >> cheat
+ >> Suff ‘vs1 = vs1'’
+ >- (DISCH_THEN (rfs o wrap o SYM) \\
+     qunabbrev_tac ‘vs1'’ \\
+     Q.PAT_X_ASSUM ‘vs2 = vs2'’   (rfs o wrap o SYM) \\
+     Q.PAT_X_ASSUM ‘p1 = p1'’     (rfs o wrap o SYM) \\
+     Q.PAT_X_ASSUM ‘M2 = M2'’     (rfs o wrap o SYM) \\
+     Q.PAT_X_ASSUM ‘args = args'’ (rfs o wrap o SYM) \\
+     Q.PAT_X_ASSUM ‘M' = M''’     (rfs o wrap o SYM) \\
+  (* applying IH *)
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+  (* applying tpm_equiv_append_cong *)
+     qunabbrevl_tac [‘pi'''’, ‘pi''’] \\
+     MATCH_MP_TAC tpm_equiv_append_cong \\
+     qunabbrevl_tac [‘p2'’, ‘p2’] \\
+     MATCH_MP_TAC tpm_equiv_append_cong >> art [])
+ (* stage work *)
+ >> qunabbrevl_tac [‘vs1’, ‘vs1'’]
+ >> ‘tpm_equiv pi' pi’ by PROVE_TAC [tpm_equiv_symm]
+ >> ‘tpm_equiv (REVERSE pi') (REVERSE pi)’
+       by PROVE_TAC [tpm_equiv_reverse_cong]
+ >> qabbrev_tac ‘pm1 = REVERSE pi'’
+ >> qabbrev_tac ‘pm2 = REVERSE pi’
+ >> Q.PAT_X_ASSUM ‘tpm_equiv pm1 pm2’ MP_TAC
+ (* all remaining assumptions are useless now *)
+ >> KILL_TAC
+ >> rw [tpm_equiv_def, FUN_EQ_THM]
+ >> POP_ASSUM (MP_TAC o Q.SPEC ‘VAR y @* MAP VAR vs'’)
+ >> simp [tpm_appstar, LIST_EQ_REWRITE, EL_MAP]
 QED
 
 (* Trivial case: same excluded variables, same term (no tpm) *)
@@ -1358,9 +1398,7 @@ Proof
  >> Q.PAT_X_ASSUM ‘p1 = p2’  (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘vs' = vs’ K_TAC
  >> qunabbrev_tac ‘pi'’
- (* applying transitivity of tpm_equiv *)
- >> MATCH_MP_TAC
-      ((REWRITE_RULE [equivalence_def, transitive_def] equivalence_tpm_equiv) |> cj 3)
+ >> MATCH_MP_TAC tpm_equiv_trans
  >> Q.EXISTS_TAC ‘subterm_tpm p X' X' M' []’ >> art []
  >> MATCH_MP_TAC subterm_tpm_equiv_cong
  >> REWRITE_TAC [tpm_equiv_append_reverse]

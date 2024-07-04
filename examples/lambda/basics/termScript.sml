@@ -1648,6 +1648,12 @@ Proof
     cheat
 QED
 
+Theorem tpm_equiv_append_cong :
+    !p1 p2 pi. tpm_equiv p1 p2 ==> tpm_equiv (p1 ++ pi) (p2 ++ pi)
+Proof
+    cheat
+QED
+
 Theorem tpm_equiv_reverse_cong :
     !pi pi'. tpm_equiv pi pi' ==> tpm_equiv (REVERSE pi) (REVERSE pi')
 Proof
