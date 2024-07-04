@@ -1293,7 +1293,7 @@ QED
 (* NOTE: This extremely dirty recursive definition gives the explicit form of
    the tpm required in the next [subterm_tpm_lemma] and [subterm_tpm_cong].
 
-   -- Chun Tian, 4 lug 2024 (my 42 years old birthday).
+   -- Chun Tian, 4 luglio 2024 (il mio compleanno di 42 anni).
  *)
 Definition subterm_tpm_def :
     subterm_tpm     [] X Y M pi = pi /\
@@ -1303,7 +1303,7 @@ Definition subterm_tpm_def :
         vs = NEWS n (X UNION FV M0);
        vs' = NEWS n (Y UNION FV (tpm pi M0));
        vs1 = listpm string_pmact (REVERSE pi) vs';
-       vs2 = NEWS n (X UNION Y UNION FV M0 UNION set vs UNION set vs1);
+       vs2 = NEWS n (FV M0 UNION set vs UNION set vs1);
         M2 = principle_hnf (M0 @* MAP VAR vs2);
       args = hnf_children M2;
         p1 = ZIP (vs2,vs);
@@ -1315,6 +1315,28 @@ Definition subterm_tpm_def :
     in
         subterm_tpm t X' Y' M' pi'
 End
+
+(* Trivial case: same excluded variables, same term (no tpm):
+Theorem subterm_tpm_trivial :
+    !p X M. subterm_tpm p X X M [] = []
+Proof
+    Induct_on ‘p’ >- rw [subterm_tpm_def]
+ >> rpt GEN_TAC
+ (* BEGIN Norrish's advanced tactics *)
+ >> CONV_TAC (UNBETA_CONV “subterm_tpm (h::p) X X M []”)
+ >> qmatch_abbrev_tac ‘P _’
+ >> RW_TAC bool_ss [subterm_tpm_def]
+ >> simp [Abbr ‘P’]
+ (* END Norrish's advanced tactics. *)
+ >> fs []
+ >> Q.PAT_X_ASSUM ‘vs = vs1’ (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘X' = Y'’  (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘p1 = p2’  (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘vs' = vs’ K_TAC
+ >> qunabbrev_tac ‘pi'’
+ >> cheat
+QED
+ *)
 
 Theorem subterm_tpm_lemma_primitive :
     !p X Y M pi. FINITE X /\ FINITE Y ==>
@@ -1398,7 +1420,7 @@ Proof
 
     Z is the union of all known variables so far, no harm to include even more.
   *)
- >> qabbrev_tac ‘Z = X UNION Y UNION FV M0 UNION set vs UNION set vs1’
+ >> qabbrev_tac ‘Z = FV M0 UNION set vs UNION set vs1’
  >> ‘FINITE Z’ by rw [Abbr ‘Z’]
  >> Q_TAC (NEWS_TAC (“vs2 :string list”, “n :num”)) ‘Z’
  >> Q.PAT_X_ASSUM ‘FINITE Z’ K_TAC
@@ -1492,7 +1514,6 @@ Proof
  >> RW_TAC bool_ss [subterm_tpm_def]
  >> simp [Abbr ‘P’]
  (* END Norrish's advanced tactics. *)
- (* finally, using IH in a bulk way *)
  >> FIRST_X_ASSUM MATCH_MP_TAC
  >> rw [Abbr ‘X'’, Abbr ‘Y'’]
 QED
