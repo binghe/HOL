@@ -1352,34 +1352,34 @@ Proof
           LENGTH vs' = n’
  >- rw [Abbr ‘vs'’, NEWS_def]
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
- (* vs1p is a permutated version of vs', to be used as first principles
+ (* vs1 is a permutated version of vs', to be used as first principles
 
-    The purpose of vs1p is to move tpm outside of the principle_hnf of M1'.
+    The purpose of vs1 is to move tpm outside of the principle_hnf of M1'.
   *)
- >> qabbrev_tac ‘vs1p = listpm string_pmact (REVERSE pi) vs'’
- >> ‘ALL_DISTINCT vs1p’ by rw [Abbr ‘vs1p’]
+ >> qabbrev_tac ‘vs1 = listpm string_pmact (REVERSE pi) vs'’
+ >> ‘ALL_DISTINCT vs1’ by rw [Abbr ‘vs1’]
  (* rewriting inside the abbreviation of M1' *)
- >> Know ‘tpm pi M0 @* MAP VAR vs' = tpm pi (M0 @* MAP VAR vs1p)’
- >- (rw [Abbr ‘vs1p’, tpm_appstar] \\
+ >> Know ‘tpm pi M0 @* MAP VAR vs' = tpm pi (M0 @* MAP VAR vs1)’
+ >- (rw [Abbr ‘vs1’, tpm_appstar] \\
      Suff ‘listpm term_pmact pi (MAP VAR (listpm string_pmact (REVERSE pi) vs')) =
            MAP VAR vs'’ >- rw [] \\
      rw [LIST_EQ_REWRITE, EL_MAP])
  >> DISCH_THEN (fs o wrap)
- (* prove that ‘M0 @* MAP VAR vs1p’ correctly denude M0
+ (* prove that ‘M0 @* MAP VAR vs1’ correctly denude M0
 
-    NOTE: ‘DISJOINT (set vs1p) X’ seems NOT true (but seems not needed)
+    NOTE: ‘DISJOINT (set vs1) X’ seems NOT true (but seems not needed)
   *)
- >> Know ‘DISJOINT (set vs1p) (FV M0)’
- >- (rw [Abbr ‘vs1p’, DISJOINT_ALT', MEM_listpm] \\
+ >> Know ‘DISJOINT (set vs1) (FV M0)’
+ >- (rw [Abbr ‘vs1’, DISJOINT_ALT', MEM_listpm] \\
      Q.PAT_X_ASSUM ‘DISJOINT (set vs') (FV (tpm pi M0))’ MP_TAC \\
      rw [DISJOINT_ALT', FV_tpm])
  >> DISCH_TAC
- >> ‘LENGTH vs1p = n’ by rw [Abbr ‘vs1p’, LENGTH_listpm]
+ >> ‘LENGTH vs1 = n’ by rw [Abbr ‘vs1’, LENGTH_listpm]
  (* now create Z and vs2
 
     Z is the union of all known variables so far, no harm to include even more.
   *)
- >> qabbrev_tac ‘Z = X UNION Y UNION FV M0 UNION set vs UNION set vs1p’
+ >> qabbrev_tac ‘Z = X UNION Y UNION FV M0 UNION set vs UNION set vs1’
  >> ‘FINITE Z’ by rw [Abbr ‘Z’]
  >> Q_TAC (NEWS_TAC (“vs2 :string list”, “n :num”)) ‘Z’
  >> Q.PAT_X_ASSUM ‘FINITE Z’ K_TAC
@@ -1391,7 +1391,7 @@ Proof
  >> ‘TAKE n vs2 = vs2’ by rw [TAKE_LENGTH_ID_rwt]
  >> POP_ASSUM (rfs o wrap)
  >> Know ‘DISJOINT (set vs) (FV M2) /\
-          DISJOINT (set vs1p) (FV M2)’
+          DISJOINT (set vs1) (FV M2)’
  >- (rpt CONJ_TAC (* 2 subgoals, same tactics *) \\
      (MATCH_MP_TAC DISJOINT_SUBSET \\
       Q.EXISTS_TAC ‘FV M0 UNION set vs2’ \\
@@ -1418,32 +1418,32 @@ Proof
      Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) >> art [])
  >> DISCH_TAC
  >> qabbrev_tac ‘p1 = ZIP (vs2,vs)’
- >> Know ‘M1' = tpm pi (principle_hnf (M0 @* MAP VAR vs1p))’
+ >> Know ‘M1' = tpm pi (principle_hnf (M0 @* MAP VAR vs1))’
  >- (qunabbrev_tac ‘M1'’ \\
      MATCH_MP_TAC principle_hnf_tpm >> art [] \\
      REWRITE_TAC [has_hnf_thm] \\
-     Q.EXISTS_TAC ‘fromPairs vs2 (MAP VAR vs1p) ' (VAR y @* args)’ \\
+     Q.EXISTS_TAC ‘fromPairs vs2 (MAP VAR vs1) ' (VAR y @* args)’ \\
      CONJ_TAC
      >- (MATCH_MP_TAC hreduce_LAMl_appstar \\
          rw [EVERY_MEM, MEM_MAP] >> rw [] \\
-         Q.PAT_X_ASSUM ‘DISJOINT (set vs2) (set vs1p)’ MP_TAC \\
+         Q.PAT_X_ASSUM ‘DISJOINT (set vs2) (set vs1)’ MP_TAC \\
          rw [DISJOINT_ALT']) \\
-    ‘FDOM (fromPairs vs2 (MAP VAR vs1p)) = set vs2’ by rw [FDOM_fromPairs] \\
+    ‘FDOM (fromPairs vs2 (MAP VAR vs1)) = set vs2’ by rw [FDOM_fromPairs] \\
      Cases_on ‘MEM y vs2’
      >- (simp [ssub_thm, ssub_appstar, hnf_appstar] \\
          fs [MEM_EL] >> rename1 ‘i < LENGTH vs2’ \\
-         Know ‘fromPairs vs2 (MAP VAR vs1p) ' (EL i vs2) = EL i (MAP VAR vs1p)’
+         Know ‘fromPairs vs2 (MAP VAR vs1) ' (EL i vs2) = EL i (MAP VAR vs1)’
          >- (MATCH_MP_TAC fromPairs_FAPPLY_EL >> rw []) >> Rewr' \\
          rw [EL_MAP]) \\
      simp [ssub_thm, ssub_appstar, hnf_appstar])
  >> DISCH_TAC
- >> Know ‘M1' = tpm pi (tpm (ZIP (vs2,vs1p)) M2)’
+ >> Know ‘M1' = tpm pi (tpm (ZIP (vs2,vs1)) M2)’
  >- (POP_ORW >> simp [] \\
      MATCH_MP_TAC principle_hnf_LAMl_appstar \\
      Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) >> art [])
  >> POP_ASSUM K_TAC (* M1' = ... (already used) *)
  >> DISCH_THEN (ASSUME_TAC o (REWRITE_RULE [GSYM pmact_decompose]))
- >> qabbrev_tac ‘p2 = pi ++ ZIP (vs2,vs1p)’
+ >> qabbrev_tac ‘p2 = pi ++ ZIP (vs2,vs1)’
  (* applying hnf_children_tpm *)
  >> Know ‘Ms = MAP (tpm p1) args’
  >- (simp [Abbr ‘Ms’] \\

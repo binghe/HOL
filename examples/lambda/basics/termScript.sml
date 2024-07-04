@@ -537,6 +537,21 @@ Proof
  >> rw [SUB_EQ_IMP_NOTIN_FV]
 QED
 
+(* ‘tpm pi M’ doesn't change M if all its variables are irrelevant *)
+Theorem lemma14b_tpm :
+    !pi M. DISJOINT (set (MAP FST pi)) (FV M) /\
+           DISJOINT (set (MAP SND pi)) (FV M) ==> tpm pi M = M
+Proof
+    Induct_on ‘pi’
+ >- rw []
+ >> simp [pairTheory.FORALL_PROD]
+ >> rw [Once tpm_CONS]
+ >> Know ‘tpm [(p_1,p_2)] M = [VAR p_1/p_2] M’
+ >- (MATCH_MP_TAC fresh_tpm_subst >> art [])
+ >> Rewr'
+ >> MATCH_MP_TAC lemma14b >> art []
+QED
+
 Theorem lemma14c:
   !t x u. x IN FV u ==> (FV ([t/x]u) = FV t UNION (FV u DELETE x))
 Proof
