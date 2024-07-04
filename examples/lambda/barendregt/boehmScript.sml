@@ -1316,11 +1316,35 @@ Definition subterm_tpm_def :
         subterm_tpm t X' Y' M' pi'
 End
 
-(* Trivial case: same excluded variables, same term (no tpm):
-Theorem subterm_tpm_trivial :
-    !p X M. subterm_tpm p X X M [] = []
+Theorem subterm_tpm_equiv_cong :
+    !p pi pi' X Y M. tpm_equiv pi pi' ==>
+                     tpm_equiv (subterm_tpm p X Y M pi) (subterm_tpm p X Y M pi')
 Proof
-    Induct_on ‘p’ >- rw [subterm_tpm_def]
+    Induct_on ‘p’
+ >- rw [tpm_equiv_def, subterm_tpm_def]
+ >> rpt STRIP_TAC
+ (* applying subterm_tpm_def *)
+ >> RW_TAC std_ss [subterm_tpm_def]
+ (* cleanup assumptions *)
+ >> ‘n = n'’ by rw [Abbr ‘n’, Abbr ‘n'’]
+ >> POP_ASSUM (rfs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘vs = vs''’ (rfs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘X' = X''’ (rfs o wrap o SYM)
+ (* key step *)
+ >> ‘tpm pi' M0 = tpm pi M0’ by PROVE_TAC [tpm_equiv_def]
+ >> POP_ASSUM (rfs o wrap)
+ >> Q.PAT_X_ASSUM ‘Y' = Y''’ (rfs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘vs' = vs'''’ (rfs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘T’ K_TAC
+ >> cheat
+QED
+
+(* Trivial case: same excluded variables, same term (no tpm) *)
+Theorem subterm_tpm_trivial :
+    !p X M. tpm_equiv (subterm_tpm p X X M []) []
+Proof
+    Induct_on ‘p’
+ >- rw [subterm_tpm_def, tpm_equiv_def]
  >> rpt GEN_TAC
  (* BEGIN Norrish's advanced tactics *)
  >> CONV_TAC (UNBETA_CONV “subterm_tpm (h::p) X X M []”)
@@ -1334,11 +1358,15 @@ Proof
  >> Q.PAT_X_ASSUM ‘p1 = p2’  (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘vs' = vs’ K_TAC
  >> qunabbrev_tac ‘pi'’
- >> cheat
+ (* applying transitivity of tpm_equiv *)
+ >> MATCH_MP_TAC
+      ((REWRITE_RULE [equivalence_def, transitive_def] equivalence_tpm_equiv) |> cj 3)
+ >> Q.EXISTS_TAC ‘subterm_tpm p X' X' M' []’ >> art []
+ >> MATCH_MP_TAC subterm_tpm_equiv_cong
+ >> REWRITE_TAC [tpm_equiv_append_reverse]
 QED
- *)
 
-Theorem subterm_tpm_lemma_primitive :
+Theorem subterm_tpm_lemma_explicit :
     !p X Y M pi. FINITE X /\ FINITE Y ==>
       (subterm X M p = NONE ==> subterm Y (tpm pi M) p = NONE) /\
       (subterm X M p <> NONE ==>
@@ -1529,9 +1557,9 @@ Theorem subterm_tpm_lemma :
                  tpm_rel (subterm' X M p) (subterm' Y (tpm pi M) p))
 Proof
     rw [tpm_rel_def]
- >- PROVE_TAC [subterm_tpm_lemma_primitive]
+ >- PROVE_TAC [subterm_tpm_lemma_explicit]
  >> Q.EXISTS_TAC ‘subterm_tpm p X Y M pi’
- >> PROVE_TAC [subterm_tpm_lemma_primitive]
+ >> PROVE_TAC [subterm_tpm_lemma_explicit]
 QED
 
 (* |- !p Y X M.
@@ -1553,6 +1581,18 @@ Theorem subterm_tpm_cong :
              (subterm X M p <> NONE ==> tpm_rel (subterm' X M p) (subterm' Y M p))
 Proof
     METIS_TAC [subterm_tpm_cong_lemma]
+QED
+
+Theorem subterm_tpm_cong_explicit :
+    !p X Y M. FINITE X /\ FINITE Y ==>
+             (subterm X M p = NONE <=> subterm Y M p = NONE) /\
+             (subterm X M p <> NONE ==>
+              tpm (subterm_tpm p X Y M []) (subterm' X M p) = subterm' Y M p)
+Proof
+    rpt STRIP_TAC
+ >- METIS_TAC [subterm_tpm_cong_lemma]
+ >> MP_TAC (Q.SPECL [‘p’, ‘X’, ‘Y’, ‘M’, ‘[]’] subterm_tpm_lemma_explicit)
+ >> rw []
 QED
 
 (* In this way, two such terms have the same ‘hnf_children_size o principle_hnf’,

@@ -1630,6 +1630,30 @@ Proof
       MATCH_MP_TAC tpm_rel_SYM >> art [] ]
 QED
 
+(* Two tpms are equivalent if they produce the same results for all terms *)
+Definition tpm_equiv_def :
+    tpm_equiv pi pi' <=> tpm pi = tpm pi'
+End
+
+Theorem equivalence_tpm_equiv :
+    equivalence tpm_equiv
+Proof
+    rw [tpm_equiv_def, equivalence_def, reflexive_def, symmetric_def, transitive_def]
+ >> PROVE_TAC []
+QED
+
+Theorem tpm_equiv_append_reverse :
+    !pi. tpm_equiv (pi ++ REVERSE pi) []
+Proof
+    cheat
+QED
+
+Theorem tpm_equiv_reverse_cong :
+    !pi pi'. tpm_equiv pi pi' ==> tpm_equiv (REVERSE pi) (REVERSE pi')
+Proof
+    cheat
+QED
+
 (* ----------------------------------------------------------------------
     Set up the recursion functionality in binderLib
    ---------------------------------------------------------------------- *)
