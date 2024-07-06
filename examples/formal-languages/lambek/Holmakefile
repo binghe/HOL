@@ -1,4 +1,4 @@
-INCLUDES = $(dprot $(HOLDIR)/src/integer) $(HOLDIR)/src/TeX
+INCLUDES = $(dprot $(HOLDIR)/src/integer) $(HOLDIR)/src/TeX ../context-free
 
 EXTRA_CLEANS = heap munge.exe selftest.exe
 

@@ -24,8 +24,9 @@
 
 open HolKernel Parse boolLib bossLib;
 
-open pred_setTheory pairTheory listTheory arithmeticTheory integerTheory;
-open relationTheory;
+open pred_setTheory pairTheory listTheory arithmeticTheory relationTheory;
+
+open grammarTheory; (* context-free grammar *)
 
 (* Tacticals for better expressivity *)
 fun fix  ts = MAP_EVERY Q.X_GEN_TAC ts;     (* from HOL Light *)
@@ -96,10 +97,8 @@ val arrow_reflexive = store_thm (
    REWRITE_TAC [reflexive_def, one]);
 
 (** The arrow relationship and its extensions (like associativity, commutativity  etc.) **)
-
-val _ = overload_on("add_extension", ``relation$RUNION``);
-(* X extends (to) X', or X is extended to X' *)
-val _ = overload_on("extends", ``relation$RSUBSET``);
+Overload add_extension[inferior] = “relation$RUNION”
+Overload extends[inferior]       = “relation$RSUBSET”;
 
 val no_extend = store_thm ("no_extend", ``!X. extends X X``,
     RW_TAC bool_ss [RSUBSET]);
