@@ -4410,11 +4410,11 @@ Proof
 QED
 
 Theorem FLAT_EQ_APPEND:
-  FLAT l = x ++ y ⇔
-    (∃p s. l = p ++ s ∧ x = FLAT p ∧ y = FLAT s) ∨
-    (∃p s ip is.
-       l = p ++ [ip ++ is] ++ s ∧ ip ≠ [] ∧ is ≠ [] ∧
-       x = FLAT p ++ ip ∧
+  FLAT l = x ++ y <=>
+    (?p s. l = p ++ s /\ x = FLAT p /\ y = FLAT s) \/
+    (?p s ip is.
+       l = p ++ [ip ++ is] ++ s /\ ip <> [] /\ is <> [] /\
+       x = FLAT p ++ ip /\
        y = is ++ FLAT s)
 Proof
   reverse eq_tac >- (rw[] >> rw[APPEND_ASSOC, FLAT_APPEND]) >>
@@ -4429,9 +4429,9 @@ Proof
           simp[]) >>
       disj2_tac >>
       map_every qexists_tac [`[]`, `l`, `x`, `m`] >> simp[]) >>
-  `(∃p s. l = p ++ s ∧ FLAT p = m ∧ FLAT s = y) ∨
-   (∃p s ip is.
-       l = p ++ [ip ++ is] ++ s ∧ m = FLAT p ++ ip ∧ ip ≠ [] ∧ is ≠ [] ∧
+  `(?p s. l = p ++ s /\ FLAT p = m /\ FLAT s = y) \/
+   (?p s ip is.
+       l = p ++ [ip ++ is] ++ s /\ m = FLAT p ++ ip /\ ip <> [] /\ is <> [] /\
        y = is ++ FLAT s)` by metis_tac[]
   >- (disj1_tac >> map_every qexists_tac [`h::p`, `s`] >> simp[]) >>
   disj2_tac >> map_every qexists_tac [`h::p`, `s`] >> simp[APPEND_ASSOC] >>

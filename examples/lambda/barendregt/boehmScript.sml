@@ -1405,6 +1405,7 @@ Proof
  >> REWRITE_TAC [tpm_equiv_append_reverse]
 QED
 
+(* NOTE: The definition of ‘subterm_tpm’ is extracted from this proof *)
 Theorem subterm_tpm_lemma_explicit :
     !p X Y M pi. FINITE X /\ FINITE Y ==>
       (subterm X M p = NONE ==> subterm Y (tpm pi M) p = NONE) /\
