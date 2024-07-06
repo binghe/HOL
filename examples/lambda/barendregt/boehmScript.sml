@@ -7,7 +7,8 @@ open HolKernel Parse boolLib bossLib;
 (* core theories *)
 open optionTheory arithmeticTheory pred_setTheory listTheory rich_listTheory
      llistTheory relationTheory ltreeTheory pathTheory posetTheory hurdUtils
-     finite_mapTheory topologyTheory listRangeTheory combinTheory tautLib;
+     finite_mapTheory topologyTheory listRangeTheory combinTheory tautLib
+     listLib;
 
 (* local theories *)
 open binderLib termTheory appFOLDLTheory chap2Theory chap3Theory nomsetTheory
@@ -2254,9 +2255,9 @@ Theorem apply_alt :
     !pi. apply pi = FOLDL $o I pi
 Proof
     REWRITE_TAC [apply_def]
- >> Induct_on ‘pi’ >> rw [FOLDL, FOLDR]
+ >> LIST_INDUCT_TAC >> rw [FOLDL, FOLDR]
  >> KILL_TAC (* only FOLDL is left *)
- >> Induct_on ‘pi’ using SNOC_INDUCT
+ >> qid_spec_tac ‘pi’ >> SNOC_INDUCT_TAC
  >> rw [FOLDL_SNOC, FOLDL]
  >> POP_ASSUM (rw o wrap o SYM)
 QED
@@ -2357,7 +2358,7 @@ Theorem Boehm_apply_asmlam_cong :
     !pi M N. Boehm_transform pi /\ asmlam eqns M N ==>
              asmlam eqns (apply pi M) (apply pi N)
 Proof
-    Induct_on ‘pi’ using SNOC_INDUCT >> rw []
+    SNOC_INDUCT_TAC >> rw []
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
  >> fs [solving_transform_def]
  >- rw [asmlam_rules]
@@ -2367,7 +2368,7 @@ QED
 Theorem Boehm_apply_lameq_cong :
     !pi M N. Boehm_transform pi /\ M == N ==> apply pi M == apply pi N
 Proof
-    Induct_on ‘pi’ using SNOC_INDUCT >> rw []
+    SNOC_INDUCT_TAC >> rw []
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
  >> MATCH_MP_TAC solving_transform_lameq >> art []
 QED
@@ -2382,7 +2383,7 @@ Theorem Boehm_apply_APPEND :
     !p1 p2 M. apply (p1 ++ p2) M = apply p1 (apply p2 M)
 Proof
     Q.X_GEN_TAC ‘p1’
- >> Induct_on ‘p2’ using SNOC_INDUCT
+ >> SNOC_INDUCT_TAC
  >> rw [APPEND_SNOC]
 QED
 
@@ -2412,7 +2413,7 @@ QED
 Theorem Boehm_apply_unsolvable :
     !pi M. Boehm_transform pi /\ unsolvable M ==> unsolvable (apply pi M)
 Proof
-    Induct_on ‘pi’ using SNOC_INDUCT >> rw []
+    SNOC_INDUCT_TAC >> rw []
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
  >> fs [solving_transform_def, solvable_iff_has_hnf] (* 2 subgaols *)
  >| [ (* goal 1 (of 2) *)

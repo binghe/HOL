@@ -6,7 +6,7 @@ open HolKernel Parse boolLib bossLib;
 
 (* core theories *)
 open arithmeticTheory pred_setTheory listTheory rich_listTheory sortingTheory
-     finite_mapTheory pathTheory relationTheory hurdUtils;
+     finite_mapTheory pathTheory relationTheory hurdUtils listLib;
 
 (* lambda theories *)
 open binderLib nomsetTheory termTheory appFOLDLTheory chap2Theory chap3Theory
@@ -557,7 +557,7 @@ Proof
      >- (rw [has_hnf_def] \\
          Q.EXISTS_TAC ‘I’ >> rw [hnf_I]) \\
      Q.ID_SPEC_TAC ‘Ns’ >> KILL_TAC \\
-     HO_MATCH_MP_TAC SNOC_INDUCT >> rw [SNOC_APPEND, appstar_SNOC] \\
+     SNOC_INDUCT_TAC >> rw [SNOC_APPEND, appstar_SNOC] \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
      rename1 ‘has_hnf (M @* Ns @@ N)’ \\
      MATCH_MP_TAC has_hnf_APP_E >> art [])
@@ -1111,7 +1111,7 @@ Theorem hnf_ccbeta_appstar_rwt[local] :
                   !i. i < LENGTH Ms ==> EL i Ms -b->* EL i Ns
 Proof
     Q.X_GEN_TAC ‘y’
- >> Induct_on ‘Ms’ using SNOC_INDUCT >> rw []
+ >> SNOC_INDUCT_TAC >> rw []
  >> fs [ccbeta_rwt] (* 2 subgoals *)
  >- (Cases_on ‘Ms = []’ >> fs [ccbeta_rwt] \\
      Q.PAT_X_ASSUM ‘!N. P’ (MP_TAC o (Q.SPEC ‘M'’)) \\
