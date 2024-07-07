@@ -774,7 +774,8 @@ QED
 Theorem principle_hnf_has_hnf =
     REWRITE_RULE [solvable_iff_has_hnf] solvable_principle_hnf
 
-Theorem principle_hnf_reduce[simp] :
+(* NOTE: This theorem cannot be put into [simp], too many missed hits *)
+Theorem principle_hnf_reduce :
     !M. hnf M ==> principle_hnf M = M
 Proof
     rw [principle_hnf_def]
