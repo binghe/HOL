@@ -33,106 +33,6 @@ val _ = hide "C";
 val _ = hide "W";
 val _ = hide "Y";
 
-(* ----------------------------------------------------------------------
-    DNEWS for allocating a ranked list of fresh names
-
-    Each rank (row) contains a mutually-disjoint infinite list of fresh names
-
-  r\i| 0 1 2 3 4 ...
-  ---+-----------------
-   0 | a b c d e ...
-   1 | A B C D E ...
-   2 | ...
-   ---------------------------------------------------------------------- *)
-
-(* r: rank, n: number, s: the excluded set *)
-Definition DNEWS :
-    DNEWS r n s = GENLIST (\i. FRESH s (npair r i)) n
-End
-
-Theorem DNEWS_0[simp] :
-    DNEWS r 0 s = []
-Proof
-    rw [DNEWS]
-QED
-
-(* DNEWS and NEW *)
-Theorem DNEWS_01[simp] :
-    DNEWS 0 1 s = [NEW s]
-Proof
-    rw [DNEWS]
-QED
-
-Theorem DNEWS_SUC :
-    !s. DNEWS r (SUC n) s = SNOC (FRESH s (npair r n)) (DNEWS r n s)
-Proof
-    rw [DNEWS, GENLIST]
-QED
-
-(* This basic theorem is compatible with NEWS_def (FRESH_list_def) *)
-Theorem DNEWS_def :
-    !r n s. FINITE s ==>
-            ALL_DISTINCT (DNEWS r n s) /\ DISJOINT (set (DNEWS r n s)) s /\
-            LENGTH (DNEWS r n s) = n
-Proof
-    rpt GEN_TAC >> DISCH_TAC
- >> Induct_on ‘n’ >- rw [DNEWS]
- >> simp [DNEWS_SUC]
- >> rw [ALL_DISTINCT_SNOC, DISJOINT_ALT]
- >- rw [DNEWS, MEM_GENLIST]
- >- METIS_TAC [FRESH_thm]
- >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
-QED
-
-Theorem DNEWS_prefix :
-    !r m n s. m <= n ==> DNEWS r m s <<= DNEWS r n s
-Proof
-    rw [DNEWS]
- >> MATCH_MP_TAC IS_PREFIX_GENLIST >> art []
-QED
-
-Theorem DNEWS_disjoint :
-    !r r2 m n s. FINITE s /\ r1 <> r2 ==>
-                 DISJOINT (set (DNEWS r1 m s)) (set (DNEWS r2 n s))
-Proof
-    rw [DNEWS, DISJOINT_ALT, MEM_GENLIST]
- >> rfs [FRESH_11]
-QED
-
-(* The (infinite) set of all fresh names lower than the given rank *)
-Definition NEWS_ALL_def :
-    NEWS_ALL r s = {v | ?i j. v = FRESH s (npair i j) /\ i < r }
-End
-
-Theorem NEWS_ALL_MONO :
-    !s r1 r2. r1 <= r2 ==> NEWS_ALL r1 s SUBSET NEWS_ALL r2 s
-Proof
-    rw [NEWS_ALL_def, SUBSET_DEF]
- >> qexistsl_tac [‘i’, ‘j’] >> rw []
-QED
-
-Theorem NEWS_ALL_SUBSET :
-    !r1 r2 m s. r1 < r2 ==> set (DNEWS r1 m s) SUBSET NEWS_ALL r2 s
-Proof
-    rw [DNEWS, MEM_GENLIST, NEWS_ALL_def, SUBSET_DEF]
- >> qexistsl_tac [‘r1’, ‘i’] >> art []
-QED
-
-Theorem NEWS_ALL_DISJOINT :
-    !r1 r2 m s. FINITE s /\ r1 <= r2 ==>
-                DISJOINT (NEWS_ALL r1 s) (set (DNEWS r2 m s))
-Proof
-    rw [DISJOINT_ALT, DNEWS, MEM_GENLIST, NEWS_ALL_def]
- >> rfs [FRESH_11]
-QED
-
-Theorem NEWS_ALL_DISJOINT' :
-    !r m s. FINITE s ==> DISJOINT (NEWS_ALL r s) (set (DNEWS r m s))
-Proof
-    rpt STRIP_TAC
- >> MATCH_MP_TAC NEWS_ALL_DISJOINT >> rw []
-QED
-
 (*---------------------------------------------------------------------------*
  *  Helper theorems using DNEWS
  *---------------------------------------------------------------------------*)
@@ -140,8 +40,8 @@ QED
 (* NOTE: This version uses ‘DNEWS’ instead of ‘NEWS’; r is free variable.
          M, N are allowed to have free names below rank r, beside X.
  *)
-Theorem lameq_principle_hnf_lemma_DNEWS :
-    !X M N r. FINITE X /\ FV M UNION FV N SUBSET (X UNION (NEWS_ALL r X)) /\
+Theorem lameq_principle_hnf_lemma_general :
+    !X M N r. FINITE X /\ FV M UNION FV N SUBSET (X UNION (FRESH_SET r X)) /\
               hnf M /\ hnf N /\ M == N
         ==> LAMl_size M = LAMl_size N /\
             let n = LAMl_size M;
@@ -163,8 +63,8 @@ Proof
  >> qabbrev_tac ‘vs = DNEWS r (MAX n n') X’
  >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) X /\ LENGTH vs = MAX n n'’
       by rw [DNEWS_def, Abbr ‘vs’]
- >> qabbrev_tac ‘Y = NEWS_ALL r X’
- (* extra goal due to NEWS_ALL *)
+ >> qabbrev_tac ‘Y = FRESH_SET r X’
+ (* extra goal due to FRESH_SET *)
  >> Know ‘DISJOINT (set vs) (FV M) /\ DISJOINT (set vs) (FV N)’
  >- (CONJ_TAC \\ (* 2 subgoals, same tactics *)
      (rw [DISJOINT_ALT'] \\
@@ -175,7 +75,7 @@ Proof
           rw [DISJOINT_ALT']) \\
       Suff ‘DISJOINT Y (set vs)’ >- rw [DISJOINT_ALT] \\
       qunabbrevl_tac [‘Y’, ‘vs’] \\
-      MATCH_MP_TAC NEWS_ALL_DISJOINT' >> art []))
+      MATCH_MP_TAC FRESH_SET_DISJOINT' >> art []))
  >> STRIP_TAC
  >> Know ‘?y args. M = LAMl (TAKE n vs) (VAR y @* args)’
  >- (qunabbrev_tac ‘n’ >> irule (iffLR hnf_cases_shared) >> rw [] \\
@@ -345,7 +245,7 @@ Definition BT_generator_def[nocompute] :
       if solvable M then
          let M0 = principle_hnf M;
               n = LAMl_size M0;
-             vs = DNEWS r n X;
+             vs = DNEWS (SUC r) n X;
              M1 = principle_hnf (M0 @* MAP VAR vs);
              Ms = hnf_children M1;
               y = hnf_headvar M1;
@@ -363,7 +263,7 @@ Definition subterm_def :
       if solvable M then
          let M0 = principle_hnf M;
               n = LAMl_size M0;
-             vs = DNEWS r n X;
+             vs = DNEWS (SUC r) n X;
              M1 = principle_hnf (M0 @* (MAP VAR vs));
              Ms = hnf_children M1;
               m = hnf_children_size M0;
@@ -376,11 +276,11 @@ End
 
 (* The "general" Boehm trees generate ltree from (M,n) (initial rank is n) *)
 Definition BT_def[nocompute] :
-    BT n X M = ltree_unfold (BT_generator X) (M,n)
+    BT X M r = ltree_unfold (BT_generator X) (M,r)
 End
 
 (* The "usual" Boehm trees generate ltree from ‘(M,0)’ (initial rank is 0) *)
-Overload BTe = “BT 0”
+Overload BTe = “\X M. BT X M 0”
 
 (* This is the meaning of Boehm tree nodes, ‘fromNote’ translated from BT nodes
    to lambda terms in form of ‘SOME (LAMl vs (VAR y))’ or ‘NONE’.
@@ -411,19 +311,19 @@ val _ = Unicode.unicode_version {u = UTF8.chr 0x22A5, tmnm = "bot"};
 val _ = TeX_notation {hol = "bot", TeX = ("\\ensuremath{\\bot}", 1)};
 
 Theorem BT_of_unsolvables :
-    !r X M. unsolvable M ==> BT r X M = bot
+    !X M r. unsolvable M ==> BT X M r = bot
 Proof
     rw [BT_def, BT_generator_def, ltree_unfold, ltree_map]
 QED
 
 Theorem BT_of_unsolvables_cong :
-    !r X M N. unsolvable M /\ unsolvable N ==> BT r X M = BT r X N
+    !X M N r. unsolvable M /\ unsolvable N ==> BT X M r = BT X N r
 Proof
     rw [BT_of_unsolvables]
 QED
 
 Theorem BT_of_principle_hnf :
-    !r X M. solvable M ==> BT r X (principle_hnf M) = BT r X M
+    !X M r. solvable M ==> BT X (principle_hnf M) r = BT X M r
 Proof
     reverse (RW_TAC std_ss [BT_def, BT_generator_def, ltree_unfold])
  >- (Q.PAT_X_ASSUM ‘unsolvable M0’ MP_TAC >> simp [] \\
@@ -438,14 +338,14 @@ Proof
 QED
 
 Theorem BT_finite_branching :
-    !r X M. finite_branching (BT r X M)
+    !X M r. finite_branching (BT X M r)
 Proof
     rpt GEN_TAC
  >> irule finite_branching_coind'
- >> Q.EXISTS_TAC ‘\b. ?r X M. b = BT r X M’
- >> rw [] >- (qexistsl_tac [‘r’, ‘X’, ‘M’] >> rw [])
+ >> Q.EXISTS_TAC ‘\b. ?X M r. b = BT X M r’
+ >> rw [] >- (qexistsl_tac [‘X’, ‘M’, ‘r’] >> rw [])
  (* stage work *)
- >> qabbrev_tac ‘A = BT r X M’
+ >> qabbrev_tac ‘A = BT X M r’
  >> qabbrev_tac ‘a = ltree_node A’
  >> qabbrev_tac ‘ts = ltree_children A’
  >> qexistsl_tac [‘a’, ‘ts’]
@@ -455,20 +355,21 @@ Proof
  >> CONJ_TAC
  >- rw [Abbr ‘A’, Abbr ‘ts’, BT_def, BT_generator_def, Once ltree_unfold,
         LFINITE_fromList]
- >> qabbrev_tac ‘P = \b. ?r X M. b = BT r X M’
+ >> qabbrev_tac ‘P = \b. ?X M r. b = BT X M r’
  (* stage work *) 
  >> reverse (RW_TAC std_ss [Abbr ‘A’, Abbr ‘ts’, BT_def, BT_generator_def,
                             Once ltree_unfold])
  >- rw []
  >> rw [every_fromList_EVERY, LMAP_fromList, EVERY_MAP, Abbr ‘P’, EVERY_MEM,
         Abbr ‘l’]
- >> qexistsl_tac [‘SUC r’, ‘X’, ‘e’] >> rw [BT_def]
+ >> rename1 ‘MEM N Ms’
+ >> qexistsl_tac [‘X’, ‘N’, ‘SUC r’] >> rw [BT_def]
 QED
 
 (* Proposition 10.1.6 [1, p.219] (beta-equivalent terms have same Boehm tree) *)
 Theorem lameq_BT_cong :
-    !r X M N. FINITE X /\ FV M UNION FV N SUBSET X /\ M == N ==>
-              BT r X M = BT r X N
+    !X M N r. FINITE X /\ FV M UNION FV N SUBSET X /\ M == N ==>
+              BT X M r = BT X N r
 Proof
     RW_TAC std_ss []
  >> reverse (Cases_on ‘solvable M’)
@@ -478,8 +379,8 @@ Proof
  (* applying ltree_bisimulation *)
  >> rw [ltree_bisimulation]
  (* NOTE: ‘solvable P /\ solvable Q’ cannot be added here *)
- >> Q.EXISTS_TAC ‘\x y. ?P Q r. FV P UNION FV Q SUBSET (X UNION (DNEWS_ALL r X)) /\
-                                P == Q /\ x = BT r X P /\ y = BT r X Q’
+ >> Q.EXISTS_TAC ‘\x y. ?P Q r. FV P UNION FV Q SUBSET (X UNION (FRESH_SET r X)) /\
+                                P == Q /\ x = BT X P r /\ y = BT X Q r’
  >> BETA_TAC
  >> CONJ_TAC >- (qexistsl_tac [‘M’, ‘N’, ‘r’] >> simp [] \\
                  Q.PAT_X_ASSUM ‘FV M UNION FV N SUBSET X’ MP_TAC \\

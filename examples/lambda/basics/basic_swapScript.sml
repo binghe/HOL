@@ -250,5 +250,121 @@ Proof
  >> MATCH_MP_TAC IS_PREFIX_GENLIST >> art []
 QED
 
+(* ----------------------------------------------------------------------
+    DNEWS for allocating a ranked list of fresh names
+
+    Each positive rank (row) contains a mutually-disjoint infinite list of fresh names
+    Rank 0 contains all possible fresh names (to be compaible with NEWS).
+
+  r\i| 0 1 2 3 4 ...
+  ---+-----------------
+   0 | a A b B c C d D e E ...
+   1 | a b c d e ...
+   2 | A B C D E ...
+   ---------------------------------------------------------------------- *)
+
+(* r: rank, n: number, s: the excluded set.
+
+   Rank  *)
+Definition DNEWS :
+    DNEWS       0 n s = NEWS n s /\ 
+    DNEWS (SUC r) n s = GENLIST (\i. FRESH s (npair r i)) n
+End
+
+(* DNEWS and NEWS *)
+Theorem DNEWS_0[simp] :
+    DNEWS 0 n s = NEWS n s
+Proof
+    rw [DNEWS]
+QED
+
+Theorem DNEWS_NIL[simp] :
+    DNEWS r 0 s = []
+Proof
+    Cases_on ‘r’ >> rw [DNEWS]
+QED
+
+Theorem DNEWS_SUC :
+    !r n s. DNEWS (SUC r) (SUC n) s = SNOC (FRESH s (npair r n)) (DNEWS (SUC r) n s)
+Proof
+    rw [DNEWS, GENLIST]
+QED
+
+(* This basic theorem is compatible with NEWS_def (FRESH_list_def) *)
+Theorem DNEWS_def :
+    !r n s. FINITE s ==>
+            ALL_DISTINCT (DNEWS r n s) /\ DISJOINT (set (DNEWS r n s)) s /\
+            LENGTH (DNEWS r n s) = n
+Proof
+    rpt GEN_TAC >> DISCH_TAC
+ >> Cases_on ‘r’
+ >- rw [DNEWS, NEWS_def]
+ >> Induct_on ‘n’ >- rw [DNEWS]
+ >> simp [DNEWS_SUC]
+ >> rw [ALL_DISTINCT_SNOC, DISJOINT_ALT]
+ >- rw [DNEWS, MEM_GENLIST]
+ >- METIS_TAC [FRESH_thm]
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+QED
+
+Theorem DNEWS_prefix :
+    !r m n s. m <= n ==> DNEWS r m s <<= DNEWS r n s
+Proof
+    rpt STRIP_TAC
+ >> Cases_on ‘r’
+ >- rw [NEWS_prefix]
+ >> rw [DNEWS]
+ >> MATCH_MP_TAC IS_PREFIX_GENLIST >> art []
+QED
+
+Theorem DNEWS_disjoint :
+    !r1 r2 m n s. FINITE s /\ r1 <> r2 ==>
+                  DISJOINT (set (DNEWS (SUC r1) m s)) (set (DNEWS (SUC r2) n s))
+Proof
+    rw [DNEWS, DISJOINT_ALT, MEM_GENLIST]
+ >> rfs [FRESH_11]
+QED
+
+(* The (infinite) set of all fresh names lower than the given rank *)
+Definition FRESH_SET :
+    FRESH_SET r s = {v | ?i j. v = FRESH s (npair i j) /\ i < r}
+End
+
+Theorem FRESH_SET_0[simp] :
+    !s. FRESH_SET 0 s = {}
+Proof
+    rw [FRESH_SET]
+QED
+
+Theorem FRESH_SET_MONO :
+    !s r1 r2. r1 <= r2 ==> FRESH_SET r1 s SUBSET FRESH_SET r2 s
+Proof
+    rw [FRESH_SET, SUBSET_DEF]
+ >> qexistsl_tac [‘i’, ‘j’] >> rw []
+QED
+
+Theorem FRESH_SET_SUBSET :
+    !r1 r2 n s. r1 < r2 ==>
+                set (DNEWS (SUC r1) n s) SUBSET FRESH_SET r2 s
+Proof
+    rw [DNEWS, MEM_GENLIST, FRESH_SET, SUBSET_DEF]
+ >> qexistsl_tac [‘r1’, ‘i’] >> art []
+QED
+
+Theorem FRESH_SET_DISJOINT :
+    !r1 r2 n s. FINITE s /\ r1 <= r2 ==>
+                DISJOINT (FRESH_SET r1 s) (set (DNEWS (SUC r2) n s))
+Proof
+    rw [DISJOINT_ALT, DNEWS, MEM_GENLIST, FRESH_SET]
+ >> rfs [FRESH_11]
+QED
+
+Theorem FRESH_SET_DISJOINT' :
+    !r n s. FINITE s ==> DISJOINT (FRESH_SET r s) (set (DNEWS (SUC r) n s))
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC FRESH_SET_DISJOINT >> rw []
+QED
+
 val _ = export_theory ();
 val _ = html_theory "basic_swap";
