@@ -1176,13 +1176,16 @@ Proof
  >> Q.EXISTS_TAC ‘EL i Ns’ >> rw []
 QED
 
-(* Corollary 8.3.17 (ii) [1, p.176] (inner part) *)
-Theorem lameq_principle_hnf_lemma :
-    !X M N. FINITE X /\ FV M UNION FV N SUBSET X /\
-            hnf M /\ hnf N /\ M == N
+(* NOTE: This theorem uses ‘DNEWS’ instead of ‘NEWS’. When r = 0,
+        ‘FRESH_SET 0 X = {}’ while ‘DNEWS 0 n X = NEWS n X’, reducing to
+         the old theorem (lameq_principle_hnf_lemma).
+ *)
+Theorem lameq_principle_hnf_lemma_general :
+    !r X M N. FINITE X /\ FV M UNION FV N SUBSET (X UNION (FRESH_SET r X)) /\
+              hnf M /\ hnf N /\ M == N
         ==> LAMl_size M = LAMl_size N /\
             let n = LAMl_size M;
-                vs = NEWS n X;
+                vs = DNEWS r n X;
                 M1 = principle_hnf (M @* MAP VAR vs);
                 N1 = principle_hnf (N @* MAP VAR vs)
             in
@@ -1192,13 +1195,32 @@ Theorem lameq_principle_hnf_lemma :
                     EL i (hnf_children M1) == EL i (hnf_children N1)
 Proof
     rpt GEN_TAC >> STRIP_TAC
- (* at the beginning, we don't know if n = n' *)
+ (* at the beginning, we don't know whether n = n' *)
  >> qabbrev_tac ‘n  = LAMl_size M’
  >> qabbrev_tac ‘n' = LAMl_size N’
  (* applying hnf_cases_shared *)
- >> qabbrev_tac ‘vs = NEWS (MAX n n') X’
+ >> qabbrev_tac ‘vs = DNEWS r (MAX n n') X’
  >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) X /\ LENGTH vs = MAX n n'’
-      by rw [NEWS_def, Abbr ‘vs’]
+      by rw [DNEWS_def, Abbr ‘vs’]
+ >> qabbrev_tac ‘Y = FRESH_SET r X’
+ (* extra goal due to FRESH_SET *)
+ >> Know ‘DISJOINT (set vs) (FV M) /\ DISJOINT (set vs) (FV N)’
+ >- (Cases_on ‘r’
+     >- (fs [Abbr ‘Y’] \\
+         CONJ_TAC \\ (* 2 subgoals, same tactics *)
+         MATCH_MP_TAC DISJOINT_SUBSET \\
+         Q.EXISTS_TAC ‘X’ >> art []) \\
+     CONJ_TAC \\ (* 2 subgoals, same tactics *)
+     ( rw [DISJOINT_ALT'] \\
+      ‘x IN FV M UNION FV N’ by ASM_SET_TAC [] \\
+       Know ‘x IN X UNION Y’ >- ASM_SET_TAC [] \\
+       rw [IN_UNION]
+       >- (Q.PAT_X_ASSUM ‘DISJOINT (set vs) X’ MP_TAC \\
+           rw [DISJOINT_ALT']) \\
+       Suff ‘DISJOINT Y (set vs)’ >- rw [DISJOINT_ALT] \\
+       qunabbrevl_tac [‘Y’, ‘vs’] \\
+       MATCH_MP_TAC FRESH_SET_DISJOINT' >> art [] ))
+ >> STRIP_TAC
  >> Know ‘?y args. M = LAMl (TAKE n vs) (VAR y @* args)’
  >- (qunabbrev_tac ‘n’ >> irule (iffLR hnf_cases_shared) >> rw [] \\
      MATCH_MP_TAC DISJOINT_SUBSET \\
@@ -1227,6 +1249,7 @@ Proof
  >> qunabbrevl_tac [‘vs1’, ‘vs2’]
  >> ‘TAKE n vs = vs’ by METIS_TAC [TAKE_LENGTH_ID]
  >> POP_ASSUM (REV_FULL_SIMP_TAC std_ss o wrap)
+ >> Q.PAT_X_ASSUM ‘T’ K_TAC
  (* eliminiate LETs in the goal *)
  >> simp []
  (* applying principle_hnf_beta_reduce *)
@@ -1237,6 +1260,7 @@ Proof
  >- (MATCH_MP_TAC principle_hnf_beta_reduce >> rw [hnf_appstar])
  >> Rewr'
  >> simp [hnf_head_hnf, hnf_children_hnf]
+ >> Q.PAT_X_ASSUM ‘T’ K_TAC 
  >> Q.PAT_X_ASSUM ‘M = LAMl vs _’ K_TAC
  >> Q.PAT_X_ASSUM ‘N = LAMl vs _’ K_TAC
  >> gs [LAMl_eq_rewrite]
@@ -1252,6 +1276,25 @@ Proof
  >> MATCH_MP_TAC lameq_SYM
  >> MATCH_MP_TAC betastar_lameq >> rw []
 QED
+
+(* Corollary 8.3.17 (ii) [1, p.176] (inner part)
+
+   |- !X M N.
+        FINITE X /\ FV M SUBSET X /\ FV N SUBSET X /\ hnf M /\ hnf N /\ M == N ==>
+        LAMl_size M = LAMl_size N /\
+        (let
+           n = LAMl_size M;
+           vs = NEWS n X;
+           M1 = principle_hnf (M @* MAP VAR vs);
+           N1 = principle_hnf (N @* MAP VAR vs)
+         in
+           hnf_head M1 = hnf_head N1 /\
+           LENGTH (hnf_children M1) = LENGTH (hnf_children N1) /\
+           !i. i < LENGTH (hnf_children M1) ==>
+               EL i (hnf_children M1) == EL i (hnf_children N1))
+ *)
+Theorem lameq_principle_hnf_lemma =
+        lameq_principle_hnf_lemma_general |> Q.SPEC ‘0’ |> SRULE [GSYM CONJ_ASSOC]
 
 Theorem lameq_principle_hnf_size_eq :
     !M N. has_hnf M /\ has_hnf N /\ M == N ==>

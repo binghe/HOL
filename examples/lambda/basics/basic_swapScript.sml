@@ -1,7 +1,7 @@
 open HolKernel Parse boolLib bossLib;
 
-open BasicProvers boolSimps stringTheory pred_setTheory hurdUtils listTheory
-     rich_listTheory;
+open BasicProvers boolSimps arithmeticTheory stringTheory pred_setTheory
+     hurdUtils listTheory rich_listTheory;
 
 val _ = new_theory "basic_swap";
 
@@ -325,45 +325,59 @@ Proof
  >> rfs [FRESH_11]
 QED
 
-(* The (infinite) set of all fresh names lower than the given rank *)
+(* The (infinite) set of all fresh names lower than the given rank
+
+   NOTE: ‘FRESH_SET (SUC r) s’ is the set of names lower than rank r (instead of SUC r).
+   This is to align with ‘DNEWS’ where ‘DNEWS 0 = NEWS’ which is not ranked at all,
+   while keeping |- DISJOINT (FRESH_SET r s) (set (DNEWS r n s)) holds perfectly.
+ *)
 Definition FRESH_SET :
-    FRESH_SET r s = {v | ?i j. v = FRESH s (npair i j) /\ i < r}
+    FRESH_SET       0 s = {} /\
+    FRESH_SET (SUC r) s = {v | ?i j. v = FRESH s (npair i j) /\ i < r}
 End
 
 Theorem FRESH_SET_0[simp] :
-    !s. FRESH_SET 0 s = {}
+    !s. FRESH_SET 0 s = {} /\ FRESH_SET 1 s = {}
 Proof
     rw [FRESH_SET]
+ >> REWRITE_TAC [ONE, FRESH_SET]
+ >> rw []
 QED
 
 Theorem FRESH_SET_MONO :
     !s r1 r2. r1 <= r2 ==> FRESH_SET r1 s SUBSET FRESH_SET r2 s
 Proof
-    rw [FRESH_SET, SUBSET_DEF]
+    rpt GEN_TAC
+ >> Cases_on ‘r1’ >> simp []
+ >> Cases_on ‘r2’ >> simp []
+ >> rw [FRESH_SET, SUBSET_DEF]
  >> qexistsl_tac [‘i’, ‘j’] >> rw []
-QED
-
-Theorem FRESH_SET_SUBSET :
-    !r1 r2 n s. r1 < r2 ==>
-                set (DNEWS (SUC r1) n s) SUBSET FRESH_SET r2 s
-Proof
-    rw [DNEWS, MEM_GENLIST, FRESH_SET, SUBSET_DEF]
- >> qexistsl_tac [‘r1’, ‘i’] >> art []
 QED
 
 Theorem FRESH_SET_DISJOINT :
     !r1 r2 n s. FINITE s /\ r1 <= r2 ==>
-                DISJOINT (FRESH_SET r1 s) (set (DNEWS (SUC r2) n s))
+                DISJOINT (FRESH_SET r1 s) (set (DNEWS r2 n s))
 Proof
-    rw [DISJOINT_ALT, DNEWS, MEM_GENLIST, FRESH_SET]
+    rpt GEN_TAC
+ >> Cases_on ‘r1’ >> simp []
+ >> Cases_on ‘r2’ >> simp []
+ >> rw [DISJOINT_ALT, DNEWS, MEM_GENLIST, FRESH_SET]
  >> rfs [FRESH_11]
 QED
 
 Theorem FRESH_SET_DISJOINT' :
-    !r n s. FINITE s ==> DISJOINT (FRESH_SET r s) (set (DNEWS (SUC r) n s))
+    !r n s. FINITE s ==> DISJOINT (FRESH_SET r s) (set (DNEWS r n s))
 Proof
     rpt STRIP_TAC
  >> MATCH_MP_TAC FRESH_SET_DISJOINT >> rw []
+QED
+
+Theorem FRESH_SET_SUBSET :
+    !r1 r2 n s. r1 < r2 ==>
+                set (DNEWS (SUC r1) n s) SUBSET FRESH_SET (SUC r2) s
+Proof
+    rw [DNEWS, MEM_GENLIST, FRESH_SET, SUBSET_DEF]
+ >> qexistsl_tac [‘r1’, ‘i’] >> art []
 QED
 
 val _ = export_theory ();
