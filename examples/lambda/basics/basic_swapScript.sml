@@ -1,11 +1,9 @@
-open HolKernel Parse boolLib bossLib BasicProvers boolSimps
+open HolKernel Parse boolLib bossLib;
 
-local open stringTheory pred_setTheory in end;
+open BasicProvers boolSimps numpairTheory stringTheory pred_setTheory hurdUtils
+     listTheory rich_listTheory;
 
 val _ = new_theory "basic_swap";
-
-fun Store_Thm(s, t, tac) = (store_thm(s,t,tac) before
-                            export_rewrites [s])
 
 (* ----------------------------------------------------------------------
     swapping over strings
@@ -15,25 +13,29 @@ val swapstr_def = Define`
   swapstr x y (s:string) = if x = s then y else if y = s then x else s
 `;
 
-val swapstr_id = Store_Thm(
-  "swapstr_id",
-  ``swapstr x x s = s``,
-  SRW_TAC [][swapstr_def]);
+Theorem swapstr_id[simp] :
+    swapstr x x s = s
+Proof
+  SRW_TAC [][swapstr_def]
+QED
 
-val swapstr_inverse = Store_Thm(
-  "swapstr_inverse",
-  ``swapstr x y (swapstr x y s) = s``,
-  SRW_TAC [][swapstr_def] THEN METIS_TAC []);
+Theorem swapstr_inverse[simp] :
+    swapstr x y (swapstr x y s) = s
+Proof
+  SRW_TAC [][swapstr_def] THEN METIS_TAC []
+QED
 
-val swapstr_eq_left = store_thm(
-  "swapstr_eq_left",
-  ``(swapstr x y s = t) = (s = swapstr x y t)``,
-  SRW_TAC [][swapstr_def] THEN METIS_TAC []);
+Theorem swapstr_eq_left :
+    (swapstr x y s = t) <=> (s = swapstr x y t)
+Proof
+  SRW_TAC [][swapstr_def] THEN METIS_TAC []
+QED
 
-val swapstr_11 = Store_Thm(
-  "swapstr_11",
-  ``(swapstr x y s1 = swapstr x y s2) = (s1 = s2)``,
-  SRW_TAC [][swapstr_eq_left]);
+Theorem swapstr_11[simp] :
+    (swapstr x y s1 = swapstr x y s2) <=> (s1 = s2)
+Proof
+  SRW_TAC [][swapstr_eq_left]
+QED
 
 fun simp_cond_tac (asl, g) = let
   val eqn = find_term (fn t => is_eq t andalso is_var (lhs t) andalso
@@ -43,22 +45,25 @@ in
   ASM_SIMP_TAC bool_ss []
 end (asl, g)
 
-val swapstr_swapstr = Store_Thm(
-  "swapstr_swapstr",
-  ``swapstr (swapstr x y u) (swapstr x y v) (swapstr x y s) =
-    swapstr x y (swapstr u v s)``,
-  REWRITE_TAC [swapstr_def] THEN REPEAT simp_cond_tac);
+Theorem swapstr_swapstr[simp] :
+    swapstr (swapstr x y u) (swapstr x y v) (swapstr x y s) =
+    swapstr x y (swapstr u v s)
+Proof
+  REWRITE_TAC [swapstr_def] THEN REPEAT simp_cond_tac
+QED
 
-val swapstr_comm = Store_Thm(
-  "swapstr_comm",
-  ``swapstr y x s = swapstr x y s``,
-  SRW_TAC [][swapstr_def] THEN METIS_TAC []);
+Theorem swapstr_comm[simp] :
+    swapstr y x s = swapstr x y s
+Proof
+  SRW_TAC [][swapstr_def] THEN METIS_TAC []
+QED
 
-val swapstr_thm = Store_Thm(
-  "swapstr_thm",
-  ``(swapstr x y x = y) /\ (swapstr x y y = x) /\
-    (~(x = a) /\ ~(y = a) ==> (swapstr x y a = a))``,
-  SRW_TAC [][swapstr_def]);
+Theorem swapstr_thm[simp] :
+    (swapstr x y x = y) /\ (swapstr x y y = x) /\
+    (~(x = a) /\ ~(y = a) ==> (swapstr x y a = a))
+Proof
+  SRW_TAC [][swapstr_def]
+QED
 
 (* ----------------------------------------------------------------------
     swapping lists of pairs over strings (a foldr)
@@ -135,10 +140,71 @@ val NEW_ELIM_RULE = store_thm(
           P (NEW X)``,
   PROVE_TAC [NEW_def]);
 
-(* ‘NEWS n s’ generates n fresh names from the excluded set ‘s’ *)
+(* ----------------------------------------------------------------------
+    The NEWS constant for allocating a list of fresh variables
+   ---------------------------------------------------------------------- *)
+
+(* A number-like system of fresh symbols (excluding a given set of names) *)
+Definition Num_def :
+    Num s n = NEW (s UNION IMAGE (Num s) (count n))
+Termination
+    WF_REL_TAC ‘measure SND’ >> simp []
+End
+
+(* Num and NEW, but the explicit uses of ‘Num’ should be restricted here. *)
+Theorem Num_0[simp] :
+    Num s 0 = NEW s
+Proof
+    rw [Once Num_def]
+QED
+
+Theorem Num_thm :
+    !s. FINITE s ==>
+         (!n. Num s n NOTIN s) /\ (!m n. m <> n ==> Num s m <> Num s n)
+Proof
+    NTAC 2 STRIP_TAC
+ >> CONJ_TAC
+ >- (completeInduct_on ‘n’ \\
+     rw [Once Num_def] \\
+     qabbrev_tac ‘X = s UNION IMAGE (\a. Num s a) (count n)’ \\
+    ‘s SUBSET X’ by rw [Abbr ‘X’] \\
+     Suff ‘NEW X NOTIN X’ >- METIS_TAC [SUBSET_DEF] \\
+     MATCH_MP_TAC NEW_def >> rw [Abbr ‘X’])
+ (* stage work *)
+ >> Suff ‘!m n. m < n ==> Num s m <> Num s n’
+ >- (rpt STRIP_TAC \\
+    ‘m < n \/ n < m’ by rw [] >> METIS_TAC [])
+ >> NTAC 3 STRIP_TAC
+ >> ASSUME_TAC (ONCE_REWRITE_CONV [Num_def] “Num s n”)
+ >> POP_ORW
+ >> qabbrev_tac ‘X = s UNION IMAGE (\a. Num s a) (count n)’
+ >> CCONTR_TAC
+ >> Know ‘NEW X NOTIN X’
+ >- (MATCH_MP_TAC NEW_def >> rw [Abbr ‘X’])
+ >> fs []
+ >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM)
+ >> rw [Abbr ‘X’]
+QED
+
+Theorem Num_11 :
+    !s m n. FINITE s ==> (Num s m = Num s n <=> m = n)
+Proof
+    METIS_TAC [Num_thm]
+QED
+
+(* ‘NEWS n s’ generates n fresh names from the excluded set ‘s’
+
+   Old definition (Michael Norrish):
+
 Definition NEWS :
     NEWS      0  s = [] /\
     NEWS (SUC n) s = NEW s :: NEWS n (NEW s INSERT s)
+End
+
+   New definition (Chun Tian):
+ *)
+Definition NEWS :
+    NEWS n s = GENLIST (Num s) n
 End
 
 Theorem NEWS_0[simp] :
@@ -147,27 +213,110 @@ Proof
     rw [NEWS]
 QED
 
-(* NOTE: this is the old FRESH_list_def *)
+(* NEWS and NEW *)
+Theorem NEWS_1[simp] :
+    NEWS 1 s = [NEW s]
+Proof
+    rw [NEWS]
+QED
+
+(* This is actually an alternative recursive definition of ‘NEWS’ *)
+Theorem NEWS_SUC :
+    !s. NEWS (SUC n) s = SNOC (Num s n) (NEWS n s)
+Proof
+    rw [NEWS, GENLIST]
+QED
+
+(* This is the old equivalent definition of FRESH_list_def *)
 Theorem NEWS_def :
     !n s. FINITE s ==>
           ALL_DISTINCT (NEWS n s) /\ DISJOINT (set (NEWS n s)) s /\
           LENGTH (NEWS n s) = n
 Proof
-    Induct_on ‘n’ >- rw [NEWS]
- >> Q.X_GEN_TAC ‘s’ >> DISCH_TAC
- >> simp [NEWS]
- >> Q.PAT_X_ASSUM ‘!s. FINITE s ==> P’ (MP_TAC o (Q.SPEC ‘NEW s INSERT s’))
- >> rw []
- >> MATCH_MP_TAC NEW_def
- >> ASM_REWRITE_TAC []
+    rpt GEN_TAC >> DISCH_TAC
+ >> Induct_on ‘n’ >- rw [NEWS]
+ >> simp [NEWS_SUC]
+ >> rw [ALL_DISTINCT_SNOC, DISJOINT_ALT]
+ >- (rw [NEWS, MEM_GENLIST] \\
+     CCONTR_TAC >> ‘n <> m’ by rw [] \\
+     METIS_TAC [Num_thm])
+ >- METIS_TAC [Num_thm]
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
 QED
 
 Theorem NEWS_prefix :
-    !m n s. FINITE s /\ m <= n ==> NEWS m s <<= NEWS n s
+    !m n s. m <= n ==> NEWS m s <<= NEWS n s
 Proof
-    Induct_on ‘m’
- >> rw [NEWS]
- >> Cases_on ‘n’ >> rw [NEWS]
+    rw [NEWS]
+ >> MATCH_MP_TAC IS_PREFIX_GENLIST >> art []
+QED
+
+(* ----------------------------------------------------------------------
+    DNEWS for allocating a ranked list of fresh names
+
+    Each rank (row) contains a mutually-disjoint infinite list of fresh names
+
+  r\i| 0 1 2 3 4 ...
+  ---+-----------------
+   0 | a b c d e ...
+   1 | A B C D E ...
+   2 | ...
+   ---------------------------------------------------------------------- *)
+
+(* r: rank, n: number, s: the excluded set *)
+Definition DNEWS :
+    DNEWS r n s = GENLIST (\i. Num s (npair r i)) n
+End
+
+Theorem DNEWS_0[simp] :
+    DNEWS r 0 s = []
+Proof
+    rw [DNEWS]
+QED
+
+(* DNEWS and NEW *)
+Theorem DNEWS_01[simp] :
+    DNEWS 0 1 s = [NEW s]
+Proof
+    rw [DNEWS]
+QED
+
+Theorem DNEWS_SUC :
+    !s. DNEWS r (SUC n) s = SNOC (Num s (npair r n)) (DNEWS r n s)
+Proof
+    rw [DNEWS, GENLIST]
+QED
+
+(* This basic theorem is compatible with NEWS_def (FRESH_list_def) *)
+Theorem DNEWS_def :
+    !r n s. FINITE s ==>
+            ALL_DISTINCT (DNEWS r n s) /\ DISJOINT (set (DNEWS r n s)) s /\
+            LENGTH (DNEWS r n s) = n
+Proof
+    rpt GEN_TAC >> DISCH_TAC
+ >> Induct_on ‘n’ >- rw [DNEWS]
+ >> simp [DNEWS_SUC]
+ >> rw [ALL_DISTINCT_SNOC, DISJOINT_ALT]
+ >- (rw [DNEWS, MEM_GENLIST] \\
+     CCONTR_TAC >> ‘i <> n’ by rw [] \\
+     rfs [Num_11])
+ >- METIS_TAC [Num_thm]
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+QED
+
+Theorem DNEWS_prefix :
+    !r m n s. m <= n ==> DNEWS r m s <<= DNEWS r n s
+Proof
+    rw [DNEWS]
+ >> MATCH_MP_TAC IS_PREFIX_GENLIST >> art []
+QED
+
+Theorem DNEWS_disjoint_ranks :
+    !r r' m n s. FINITE s /\ r <> r' ==>
+                 DISJOINT (set (DNEWS r m s)) (set (DNEWS r' n s))
+Proof
+    rw [DNEWS, DISJOINT_ALT, MEM_GENLIST]
+ >> rfs [Num_11]
 QED
 
 val _ = export_theory();

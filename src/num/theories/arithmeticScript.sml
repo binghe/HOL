@@ -3455,6 +3455,19 @@ val MIN_DEF = new_definition("MIN_DEF", “MIN m n = if m < n then m else n”);
 val MAX = MAX_DEF;
 val MIN = MIN_DEF;
 
+(* Alternative definitions of MAX and MIN using ‘<=’ instead of ‘<’ *)
+Theorem MIN_ALT :
+    !m n. MIN m n = if m <= n then m else n
+Proof
+    rw [LESS_OR_EQ, MIN_DEF] >> fs []
+QED
+
+Theorem MAX_ALT :
+    !m n. MAX m n = if m <= n then n else m
+Proof
+    rw [LESS_OR_EQ, MAX_DEF] >> fs []
+QED
+
 val ARW = RW_TAC bool_ss
 
 val MAX_COMM = store_thm ("MAX_COMM",

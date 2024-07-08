@@ -1,3 +1,11 @@
+(* ========================================================================== *)
+(* FILE    : appFOLDLScript.sml                                               *)
+(* TITLE   : List-based Constructors (LAMl and appstar) of Lambda Terms       *)
+(*                                                                            *)
+(* AUTHORS : 2005-2011 Michael Norrish                                        *)
+(*         : 2023-2024 Michael Norrish and Chun Tian                          *)
+(* ========================================================================== *)
+
 open HolKernel Parse boolLib bossLib;
 
 open arithmeticTheory listTheory rich_listTheory pred_setTheory finite_mapTheory
