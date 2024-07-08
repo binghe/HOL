@@ -1,7 +1,7 @@
 open HolKernel Parse boolLib bossLib;
 
-open BasicProvers boolSimps numpairTheory stringTheory pred_setTheory hurdUtils
-     listTheory rich_listTheory;
+open BasicProvers boolSimps stringTheory pred_setTheory hurdUtils listTheory
+     rich_listTheory;
 
 val _ = new_theory "basic_swap";
 
@@ -159,8 +159,7 @@ Proof
 QED
 
 Theorem FRESH_thm :
-    !s. FINITE s ==>
-        (!n. FRESH s n NOTIN s) /\ (!m n. m <> n ==> FRESH s m <> FRESH s n)
+    !s. FINITE s ==> (!n. FRESH s n NOTIN s) /\ !m n. m <> n ==> FRESH s m <> FRESH s n
 Proof
     NTAC 2 STRIP_TAC
  >> CONJ_TAC
@@ -186,7 +185,7 @@ Proof
  >> rw [Abbr ‘X’]
 QED
 
-Theorem FRESH_11 :
+Theorem FRESH_11[simp] :
     !s m n. FINITE s ==> (FRESH s m = FRESH s n <=> m = n)
 Proof
     METIS_TAC [FRESH_thm]
@@ -249,101 +248,6 @@ Theorem NEWS_prefix :
 Proof
     rw [NEWS]
  >> MATCH_MP_TAC IS_PREFIX_GENLIST >> art []
-QED
-
-(* ----------------------------------------------------------------------
-    DNEWS for allocating a ranked list of fresh names
-
-    Each rank (row) contains a mutually-disjoint infinite list of fresh names
-
-  r\i| 0 1 2 3 4 ...
-  ---+-----------------
-   0 | a b c d e ...
-   1 | A B C D E ...
-   2 | ...
-   ---------------------------------------------------------------------- *)
-
-(* r: rank, n: number, s: the excluded set *)
-Definition DNEWS :
-    DNEWS r n s = GENLIST (\i. FRESH s (npair r i)) n
-End
-
-Theorem DNEWS_0[simp] :
-    DNEWS r 0 s = []
-Proof
-    rw [DNEWS]
-QED
-
-(* DNEWS and NEW *)
-Theorem DNEWS_01[simp] :
-    DNEWS 0 1 s = [NEW s]
-Proof
-    rw [DNEWS]
-QED
-
-Theorem DNEWS_SUC :
-    !s. DNEWS r (SUC n) s = SNOC (FRESH s (npair r n)) (DNEWS r n s)
-Proof
-    rw [DNEWS, GENLIST]
-QED
-
-(* This basic theorem is compatible with NEWS_def (FRESH_list_def) *)
-Theorem DNEWS_def :
-    !r n s. FINITE s ==>
-            ALL_DISTINCT (DNEWS r n s) /\ DISJOINT (set (DNEWS r n s)) s /\
-            LENGTH (DNEWS r n s) = n
-Proof
-    rpt GEN_TAC >> DISCH_TAC
- >> Induct_on ‘n’ >- rw [DNEWS]
- >> simp [DNEWS_SUC]
- >> rw [ALL_DISTINCT_SNOC, DISJOINT_ALT]
- >- (rw [DNEWS, MEM_GENLIST] \\
-     CCONTR_TAC >> ‘i <> n’ by rw [] \\
-     rfs [FRESH_11])
- >- METIS_TAC [FRESH_thm]
- >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
-QED
-
-Theorem DNEWS_prefix :
-    !r m n s. m <= n ==> DNEWS r m s <<= DNEWS r n s
-Proof
-    rw [DNEWS]
- >> MATCH_MP_TAC IS_PREFIX_GENLIST >> art []
-QED
-
-Theorem DNEWS_disjoint :
-    !r r2 m n s. FINITE s /\ r1 <> r2 ==>
-                 DISJOINT (set (DNEWS r1 m s)) (set (DNEWS r2 n s))
-Proof
-    rw [DNEWS, DISJOINT_ALT, MEM_GENLIST]
- >> rfs [FRESH_11]
-QED
-
-(* The (infinite) set of all fresh names lower than the given rank *)
-Definition FRESH_SET_def :
-    FRESH_SET r s = {v | ?i j. v = FRESH s (npair i j) /\ i < r }
-End
-
-Theorem FRESH_SET_MONO :
-    !s r1 r2. r1 <= r2 ==> FRESH_SET r1 s SUBSET FRESH_SET r2 s
-Proof
-    rw [FRESH_SET_def, SUBSET_DEF]
- >> qexistsl_tac [‘i’, ‘j’] >> rw []
-QED
-
-Theorem FRESH_SET_SUBSET :
-    !r1 r2 m s. r1 < r2 ==> set (DNEWS r1 m s) SUBSET FRESH_SET r2 s
-Proof
-    rw [DNEWS, MEM_GENLIST, FRESH_SET_def, SUBSET_DEF]
- >> qexistsl_tac [‘r1’, ‘i’] >> art []
-QED
-
-Theorem FRESH_SET_DISJOINT :
-    !r1 r2 m s. FINITE s /\ r1 < r2 ==>
-                DISJOINT (FRESH_SET r1 s) (set (DNEWS r2 m s))
-Proof
-    rw [DISJOINT_ALT, DNEWS, MEM_GENLIST, FRESH_SET_def]
- >> rfs [FRESH_11]
 QED
 
 val _ = export_theory ();

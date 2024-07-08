@@ -1,17 +1,20 @@
-(*---------------------------------------------------------------------------*
- * solvableScript.sml (or chap8_3): solvable terms (and principle hnfs)      *
- *---------------------------------------------------------------------------*)
+(* ========================================================================== *)
+(* FILE    : solvableScript.sml                                               *)
+(* TITLE   : Solvable Lambda Terms and Principle Head Normal Forms            *)
+(*                                                                            *)
+(* AUTHORS : 2023-2024 Michael Norrish and Chun Tian                          *)
+(* ========================================================================== *)
 
 open HolKernel Parse boolLib bossLib;
 
 (* core theories *)
 open arithmeticTheory pred_setTheory listTheory rich_listTheory sortingTheory
-     finite_mapTheory pathTheory relationTheory hurdUtils listLib;
+     finite_mapTheory pathTheory relationTheory hurdUtils listLib numpairTheory;
 
 (* lambda theories *)
-open binderLib nomsetTheory termTheory appFOLDLTheory chap2Theory chap3Theory
-     reductionEval standardisationTheory head_reductionTheory horeductionTheory
-     basic_swapTheory;
+open binderLib basic_swapTheory nomsetTheory termTheory appFOLDLTheory
+     chap2Theory chap3Theory reductionEval standardisationTheory
+     head_reductionTheory horeductionTheory;
 
 val _ = new_theory "solvable";
 
@@ -41,15 +44,13 @@ Proof
  >> rw [SUB_THM, lemma14b]
 QED
 
-val _ = reveal "Y"; (* from chap2Theory *)
 Theorem solvable_Y :
-    solvable Y
+    solvable chap2$Y
 Proof
     rw [solvable_alt_closed']
  >> Q.EXISTS_TAC ‘[K @@ I]’ >> simp []
  >> ASM_SIMP_TAC (betafy (srw_ss())) [YYf, Once YffYf, lameq_K]
 QED
-val _ = hide "Y";
 
 Theorem closure_VAR[simp] :
     closure (VAR x) = I
@@ -1177,7 +1178,7 @@ QED
 
 (* Corollary 8.3.17 (ii) [1, p.176] (inner part) *)
 Theorem lameq_principle_hnf_lemma :
-    !X M N. FINITE X /\ FV M SUBSET X /\ FV N SUBSET X /\
+    !X M N. FINITE X /\ FV M UNION FV N SUBSET X /\
             hnf M /\ hnf N /\ M == N
         ==> LAMl_size M = LAMl_size N /\
             let n = LAMl_size M;
@@ -1496,6 +1497,4 @@ val _ = html_theory "solvable";
 
    [1] Barendregt, H.P.: The Lambda Calculus, Its Syntax and Semantics.
        College Publications, London (1984).
-   [2] Hankin, C.: Lambda Calculi: A Guide for Computer Scientists.
-       Clarendon Press, Oxford (1994).
  *)

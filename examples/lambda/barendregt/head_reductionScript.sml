@@ -1,6 +1,10 @@
-(*---------------------------------------------------------------------------*
- * Head Reductions of Lambda Terms                                           *
- *---------------------------------------------------------------------------*)
+(* ========================================================================== *)
+(* FILE    : head_reductionScript.sml                                         *)
+(* TITLE   : Head Reduction of Lambda Terms and (Weak) Head Normal Forms      *)
+(*                                                                            *)
+(* AUTHORS : 2005-2011 Michael Norrish                                        *)
+(*         : 2023-2024 Michael Norrish and Chun Tian                          *)
+(* ========================================================================== *)
 
 open HolKernel Parse boolLib bossLib BasicProvers;
 
@@ -14,7 +18,6 @@ open termTheory appFOLDLTheory chap2Theory chap3Theory nomsetTheory binderLib
 
 val _ = new_theory "head_reduction"
 
-(* val _ = ParseExtras.temp_loose_equality() *)
 val _ = hide "Y";
 
 Inductive hreduce1 :
