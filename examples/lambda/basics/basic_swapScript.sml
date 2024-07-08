@@ -141,43 +141,43 @@ val NEW_ELIM_RULE = store_thm(
   PROVE_TAC [NEW_def]);
 
 (* ----------------------------------------------------------------------
-    The NEWS constant for allocating a list of fresh variables
+    The NEWS constant for allocating a list of fresh names
    ---------------------------------------------------------------------- *)
 
 (* A number-like system of fresh symbols (excluding a given set of names) *)
-Definition Num_def :
-    Num s n = NEW (s UNION IMAGE (Num s) (count n))
+Definition FRESH_def :
+    FRESH s n = NEW (s UNION IMAGE (FRESH s) (count n))
 Termination
     WF_REL_TAC ‘measure SND’ >> simp []
 End
 
-(* Num and NEW, but the explicit uses of ‘Num’ should be restricted here. *)
-Theorem Num_0[simp] :
-    Num s 0 = NEW s
+(* FRESH and NEW, but the explicit uses of ‘FRESH’ should be restricted here. *)
+Theorem FRESH_0[simp] :
+    FRESH s 0 = NEW s
 Proof
-    rw [Once Num_def]
+    rw [Once FRESH_def]
 QED
 
-Theorem Num_thm :
+Theorem FRESH_thm :
     !s. FINITE s ==>
-         (!n. Num s n NOTIN s) /\ (!m n. m <> n ==> Num s m <> Num s n)
+        (!n. FRESH s n NOTIN s) /\ (!m n. m <> n ==> FRESH s m <> FRESH s n)
 Proof
     NTAC 2 STRIP_TAC
  >> CONJ_TAC
  >- (completeInduct_on ‘n’ \\
-     rw [Once Num_def] \\
-     qabbrev_tac ‘X = s UNION IMAGE (\a. Num s a) (count n)’ \\
+     rw [Once FRESH_def] \\
+     qabbrev_tac ‘X = s UNION IMAGE (\a. FRESH s a) (count n)’ \\
     ‘s SUBSET X’ by rw [Abbr ‘X’] \\
      Suff ‘NEW X NOTIN X’ >- METIS_TAC [SUBSET_DEF] \\
      MATCH_MP_TAC NEW_def >> rw [Abbr ‘X’])
  (* stage work *)
- >> Suff ‘!m n. m < n ==> Num s m <> Num s n’
+ >> Suff ‘!m n. m < n ==> FRESH s m <> FRESH s n’
  >- (rpt STRIP_TAC \\
     ‘m < n \/ n < m’ by rw [] >> METIS_TAC [])
  >> NTAC 3 STRIP_TAC
- >> ASSUME_TAC (ONCE_REWRITE_CONV [Num_def] “Num s n”)
+ >> ASSUME_TAC (ONCE_REWRITE_CONV [FRESH_def] “FRESH s n”)
  >> POP_ORW
- >> qabbrev_tac ‘X = s UNION IMAGE (\a. Num s a) (count n)’
+ >> qabbrev_tac ‘X = s UNION IMAGE (\a. FRESH s a) (count n)’
  >> CCONTR_TAC
  >> Know ‘NEW X NOTIN X’
  >- (MATCH_MP_TAC NEW_def >> rw [Abbr ‘X’])
@@ -186,10 +186,10 @@ Proof
  >> rw [Abbr ‘X’]
 QED
 
-Theorem Num_11 :
-    !s m n. FINITE s ==> (Num s m = Num s n <=> m = n)
+Theorem FRESH_11 :
+    !s m n. FINITE s ==> (FRESH s m = FRESH s n <=> m = n)
 Proof
-    METIS_TAC [Num_thm]
+    METIS_TAC [FRESH_thm]
 QED
 
 (* ‘NEWS n s’ generates n fresh names from the excluded set ‘s’
@@ -201,10 +201,10 @@ Definition NEWS :
     NEWS (SUC n) s = NEW s :: NEWS n (NEW s INSERT s)
 End
 
-   New definition (Chun Tian):
+   New definition (Chun Tian) based on ‘FRESH’:
  *)
 Definition NEWS :
-    NEWS n s = GENLIST (Num s) n
+    NEWS n s = GENLIST (FRESH s) n
 End
 
 Theorem NEWS_0[simp] :
@@ -222,7 +222,7 @@ QED
 
 (* This is actually an alternative recursive definition of ‘NEWS’ *)
 Theorem NEWS_SUC :
-    !s. NEWS (SUC n) s = SNOC (Num s n) (NEWS n s)
+    !s. NEWS (SUC n) s = SNOC (FRESH s n) (NEWS n s)
 Proof
     rw [NEWS, GENLIST]
 QED
@@ -239,8 +239,8 @@ Proof
  >> rw [ALL_DISTINCT_SNOC, DISJOINT_ALT]
  >- (rw [NEWS, MEM_GENLIST] \\
      CCONTR_TAC >> ‘n <> m’ by rw [] \\
-     METIS_TAC [Num_thm])
- >- METIS_TAC [Num_thm]
+     METIS_TAC [FRESH_thm])
+ >- METIS_TAC [FRESH_thm]
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
 QED
 
@@ -265,7 +265,7 @@ QED
 
 (* r: rank, n: number, s: the excluded set *)
 Definition DNEWS :
-    DNEWS r n s = GENLIST (\i. Num s (npair r i)) n
+    DNEWS r n s = GENLIST (\i. FRESH s (npair r i)) n
 End
 
 Theorem DNEWS_0[simp] :
@@ -282,7 +282,7 @@ Proof
 QED
 
 Theorem DNEWS_SUC :
-    !s. DNEWS r (SUC n) s = SNOC (Num s (npair r n)) (DNEWS r n s)
+    !s. DNEWS r (SUC n) s = SNOC (FRESH s (npair r n)) (DNEWS r n s)
 Proof
     rw [DNEWS, GENLIST]
 QED
@@ -299,8 +299,8 @@ Proof
  >> rw [ALL_DISTINCT_SNOC, DISJOINT_ALT]
  >- (rw [DNEWS, MEM_GENLIST] \\
      CCONTR_TAC >> ‘i <> n’ by rw [] \\
-     rfs [Num_11])
- >- METIS_TAC [Num_thm]
+     rfs [FRESH_11])
+ >- METIS_TAC [FRESH_thm]
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
 QED
 
@@ -311,13 +311,40 @@ Proof
  >> MATCH_MP_TAC IS_PREFIX_GENLIST >> art []
 QED
 
-Theorem DNEWS_disjoint_ranks :
-    !r r' m n s. FINITE s /\ r <> r' ==>
-                 DISJOINT (set (DNEWS r m s)) (set (DNEWS r' n s))
+Theorem DNEWS_disjoint :
+    !r r2 m n s. FINITE s /\ r1 <> r2 ==>
+                 DISJOINT (set (DNEWS r1 m s)) (set (DNEWS r2 n s))
 Proof
     rw [DNEWS, DISJOINT_ALT, MEM_GENLIST]
- >> rfs [Num_11]
+ >> rfs [FRESH_11]
 QED
 
-val _ = export_theory();
+(* The (infinite) set of all fresh names lower than the given rank *)
+Definition FRESH_SET_def :
+    FRESH_SET r s = {v | ?i j. v = FRESH s (npair i j) /\ i < r }
+End
+
+Theorem FRESH_SET_MONO :
+    !s r1 r2. r1 <= r2 ==> FRESH_SET r1 s SUBSET FRESH_SET r2 s
+Proof
+    rw [FRESH_SET_def, SUBSET_DEF]
+ >> qexistsl_tac [‘i’, ‘j’] >> rw []
+QED
+
+Theorem FRESH_SET_SUBSET :
+    !r1 r2 m s. r1 < r2 ==> set (DNEWS r1 m s) SUBSET FRESH_SET r2 s
+Proof
+    rw [DNEWS, MEM_GENLIST, FRESH_SET_def, SUBSET_DEF]
+ >> qexistsl_tac [‘r1’, ‘i’] >> art []
+QED
+
+Theorem FRESH_SET_DISJOINT :
+    !r1 r2 m s. FINITE s /\ r1 < r2 ==>
+                DISJOINT (FRESH_SET r1 s) (set (DNEWS r2 m s))
+Proof
+    rw [DISJOINT_ALT, DNEWS, MEM_GENLIST, FRESH_SET_def]
+ >> rfs [FRESH_11]
+QED
+
+val _ = export_theory ();
 val _ = html_theory "basic_swap";
