@@ -612,8 +612,8 @@ Proof
  >> Q.PAT_X_ASSUM ‘vs = vs'’ (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘M1 = M1'’ (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘Ms = Ms'’ (fs o wrap o SYM)
- >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) X /\ LENGTH vs = n’
-       by rw [Abbr ‘vs’, DNEWS_def]
+ >> qunabbrev_tac ‘vs’
+ >> Q_TAC (DNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
  (* extra work *)
  >> qabbrev_tac ‘Y = FRESH_SET' r X’
  >> Know ‘DISJOINT (set vs) (FV M0)’
@@ -762,12 +762,12 @@ Proof
  >> POP_ASSUM (rfs o wrap o SYM)
  (* extra work *)
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
- (* FV (EL h Ms) SUBSET X UNION FRESH_SET' (SUC r) X *)
+ >> qabbrev_tac ‘Y' = FRESH_SET' (SUC r) X’
+ (* FV (EL h Ms) SUBSET X UNION Y' *)
  >> Know ‘!i. i < LENGTH Ms ==> FV (EL i Ms) SUBSET FV M1’
  >- (MATCH_MP_TAC hnf_children_FV_SUBSET \\
      simp [hnf_appstar])
  >> DISCH_TAC
- >> qabbrev_tac ‘Y' = FRESH_SET' (SUC r) X’
  (* #1 *)
  >> MATCH_MP_TAC SUBSET_TRANS
  >> Q.EXISTS_TAC ‘FV M1’
@@ -849,8 +849,8 @@ Proof
  >> simp []
  >> Suff ‘FV M' SUBSET X UNION FRESH_SET' (SUC r) X’
  >- rw []
- >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) X /\ LENGTH vs = n’
-       by rw [Abbr ‘vs’, DNEWS_def]
+ >> qunabbrev_tac ‘vs’
+ >> Q_TAC (DNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
  >> qabbrev_tac ‘Y  = FRESH_SET' r X’
  >> qabbrev_tac ‘Y' = FRESH_SET' (SUC r) X’
  >> Know ‘DISJOINT (set vs) (FV M0)’
@@ -1169,62 +1169,129 @@ QED
    Then ‘subterm' X M (FRONT p)’ must be an unsolvable term. This result can be
    even improved to an iff, as the present theorem shows.
  *)
-Theorem subterm_is_none_iff_parent_unsolvable :
-    !p X M. FINITE X /\ p IN ltree_paths (BT X M) ==>
-           (subterm X M p = NONE <=>
-            p <> [] /\ subterm X M (FRONT p) <> NONE /\
-            unsolvable (subterm' X M (FRONT p)))
+Theorem subterm_is_none_iff_parent_unsolvable_lemma[local] :
+    !p X M r. FINITE X /\ FV M SUBSET X UNION FRESH_SET' r X /\
+              p IN ltree_paths (BTe X M r) ==>
+           (subterm X M p r = NONE <=>
+            p <> [] /\ subterm X M (FRONT p) r <> NONE /\
+            unsolvable (subterm' X M (FRONT p) r))
 Proof
     Induct_on ‘p’
- >> rw [subterm_def] (* 2 subgoals, only one left *)
- >> qabbrev_tac ‘M0 = principle_hnf M’
- >> qabbrev_tac ‘n = LAMl_size M0’
- >> qabbrev_tac ‘m = hnf_children_size M0’
- >> Q_TAC (NEWS_TAC (“vs :string list”, “n :num”)) ‘X UNION FV M0’
- >> qabbrev_tac ‘M1 = principle_hnf (M0 @* (MAP VAR vs))’
- >> qabbrev_tac ‘Ms = hnf_children M1’
+ >- rw [subterm_def]
+ >> rpt GEN_TAC
+ >> STRIP_TAC
  >> reverse (Cases_on ‘solvable M’)
- >- (rw [] >> Suff ‘p = []’ >- rw [subterm_NIL] \\
-     Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BT X M)’ MP_TAC \\
-     simp [BT_of_unsolvables, ltree_paths_def, ltree_lookup_def])
- >> simp []
- >> Know ‘m = LENGTH Ms’
- >- (Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
-                     “y :string”, “args :term list”)) ‘M1’ \\
-    ‘TAKE n vs = vs’ by rw [] \\
-     POP_ASSUM (REV_FULL_SIMP_TAC std_ss o wrap) \\
-     simp [Abbr ‘Ms’, Abbr ‘m’])
+ >- (Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BTe X M r)’ MP_TAC \\
+     simp [subterm_def, BT_of_unsolvables, ltree_paths_def, ltree_lookup_def])
+ (* BEGIN Norrish's advanced tactics *)
+ >> CONV_TAC (UNBETA_CONV “subterm X M (h::p) r”)
+ >> qmatch_abbrev_tac ‘P _’
+ >> RW_TAC bool_ss [subterm_of_solvables]
+ >> simp [Abbr ‘P’]
+ (* END Norrish's advanced tactics *)
+ >> qunabbrev_tac ‘vs’
+ >> Q_TAC (DNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
+ >> qabbrev_tac ‘Y = FRESH_SET' r X’
+ >> Know ‘DISJOINT (set vs) (FV M0)’
+ >- (MATCH_MP_TAC DISJOINT_SUBSET >> Q.EXISTS_TAC ‘FV M’ \\
+     reverse CONJ_TAC
+     >- (qunabbrev_tac ‘M0’ \\
+         MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art []) \\
+     rw [DISJOINT_ALT'] \\
+     Know ‘x IN X UNION Y’ >- ASM_SET_TAC [] \\
+     rw [IN_UNION]
+     >- (Q.PAT_X_ASSUM ‘DISJOINT (set vs) X’ MP_TAC \\
+         rw [DISJOINT_ALT']) \\
+     Suff ‘DISJOINT Y (set vs)’ >- rw [DISJOINT_ALT] \\
+     qunabbrevl_tac [‘Y’, ‘vs’] \\
+     MATCH_MP_TAC FRESH_SET_DISJOINT' >> art [])
  >> DISCH_TAC
+ >> Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
+                    “y  :string”, “args :term list”)) ‘M1’
+ >> ‘TAKE n vs = vs’ by rw []
+ >> POP_ASSUM (rfs o wrap)
+ >> ‘LENGTH Ms = m /\ args = Ms’ by rw [Abbr ‘Ms’, Abbr ‘m’]
  (* stage work, now M is solvable *)
  >> Cases_on ‘p = []’
  >- (rw [subterm_NIL] \\
-     Q.PAT_X_ASSUM ‘[h] IN ltree_paths (BT X M)’ MP_TAC \\
+     Q.PAT_X_ASSUM ‘[h] IN ltree_paths (BTe X M r)’ MP_TAC \\
      simp [BT_def, Once ltree_unfold, BT_generator_def, ltree_paths_def,
            ltree_lookup_def, LNTH_fromList] \\
      Cases_on ‘h < LENGTH Ms’ >> simp [])
  (* now: p <> [] *)
  >> Know ‘h < LENGTH Ms’
- >- (Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BT X M)’ MP_TAC \\
+ >- (Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BTe X M r)’ MP_TAC \\
      simp [BT_def, Once ltree_unfold, BT_generator_def, ltree_paths_def,
            ltree_lookup_def, LNTH_fromList] \\
-     Cases_on ‘h < LENGTH Ms’ >> simp [])
- >> RW_TAC std_ss [FRONT_DEF]
+     fs [EL_MAP] \\
+     Cases_on ‘h < m’ >> simp [])
+ >> DISCH_TAC
+ >> simp [FRONT_DEF]
  (* stage work *)
  >> qabbrev_tac ‘N = EL h Ms’
- >> Know ‘subterm X M (h::FRONT p) = subterm (X UNION set vs) N (FRONT p)’
+ >> Know ‘subterm X M (h::FRONT p) r = subterm X N (FRONT p) (SUC r)’
  >- rw [subterm_def]
  >> Rewr'
- >> FULL_SIMP_TAC std_ss []
+ >> Q.PAT_X_ASSUM ‘p <> []’ (rfs o wrap)
  >> FIRST_X_ASSUM MATCH_MP_TAC
  (* p IN ltree_paths (BT X N) *)
- >> Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BT X M)’ MP_TAC
- >> rw [BT_def, Once ltree_unfold, BT_generator_def, ltree_paths_def,
-        ltree_lookup_def, LNTH_fromList, EL_MAP]
+ >> Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BTe X M r)’ MP_TAC
+ >> simp [BT_def, Once ltree_unfold, BT_generator_def, ltree_paths_def,
+          ltree_lookup_def, LNTH_fromList, EL_MAP]
+ >> fs []
+ >> DISCH_THEN K_TAC
+ >> qunabbrev_tac ‘N’
+ (* extra goal *)
+ >> qabbrev_tac ‘Y' = FRESH_SET' (SUC r) X’
+ (* FV (EL h Ms) SUBSET X UNION Y' *)
+ >> Know ‘!i. i < LENGTH Ms ==> FV (EL i Ms) SUBSET FV M1’
+ >- (MATCH_MP_TAC hnf_children_FV_SUBSET \\
+     simp [hnf_appstar])
+ >> DISCH_TAC
+ (* #1 *)
+ >> MATCH_MP_TAC SUBSET_TRANS
+ >> Q.EXISTS_TAC ‘FV M1’
+ >> CONJ_TAC >- (FIRST_X_ASSUM MATCH_MP_TAC >> art [])
+ (* #2 *)
+ >> MATCH_MP_TAC SUBSET_TRANS
+ >> Q.EXISTS_TAC ‘FV M0 UNION set vs’
+ >> CONJ_TAC >- simp [FV_LAMl]
+ (* #3 *)
+ >> MATCH_MP_TAC SUBSET_TRANS
+ >> Q.EXISTS_TAC ‘FV M UNION set vs’
+ >> CONJ_TAC
+ >- (Suff ‘FV M0 SUBSET FV M’ >- SET_TAC [] \\
+     qunabbrev_tac ‘M0’ \\
+     MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
+ >> rw [SUBSET_DEF]
+ >- (Know ‘x IN X UNION Y’ >- METIS_TAC [SUBSET_DEF] \\
+     rw [] >- (DISJ1_TAC >> art []) \\
+     DISJ2_TAC \\
+     Suff ‘Y SUBSET Y'’ >- METIS_TAC [SUBSET_DEF] \\
+     qunabbrevl_tac [‘Y’, ‘Y'’] \\
+     MATCH_MP_TAC FRESH_SET_MONO >> rw [])
+ >> DISJ2_TAC
+ >> Suff ‘set vs SUBSET Y'’ >- METIS_TAC [SUBSET_DEF]
+ >> qunabbrevl_tac [‘vs’, ‘Y'’]
+ >> MATCH_MP_TAC FRESH_SET_SUBSET >> rw []
+QED
+
+Theorem subterm_is_none_iff_parent_unsolvable :
+    !p X M r. FINITE X /\ FV M SUBSET X /\
+              p IN ltree_paths (BTe X M r) ==>
+           (subterm X M p r = NONE <=>
+            p <> [] /\ subterm X M (FRONT p) r <> NONE /\
+            unsolvable (subterm' X M (FRONT p) r))
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC subterm_is_none_iff_parent_unsolvable_lemma >> art []
+ >> Q.PAT_X_ASSUM ‘FV M SUBSET X’ MP_TAC
+ >> SET_TAC []
 QED
 
 Theorem subterm_is_none_imp_parent_not :
-    !p X M. FINITE X /\ p IN ltree_paths (BT X M) /\
-            subterm X M p = NONE ==> subterm X M (FRONT p) <> NONE
+    !p X M r. FINITE X /\ FV M SUBSET X /\ p IN ltree_paths (BTe X M r) /\
+              subterm X M p r = NONE ==> subterm X M (FRONT p) r <> NONE
 Proof
     METIS_TAC [subterm_is_none_iff_parent_unsolvable]
 QED
@@ -1233,11 +1300,12 @@ QED
         ‘p NOTIN ltree_paths (BT X M)’, the conclusion (rhs) always holds.
  *)
 Theorem subterm_is_none_iff_children :
-    !X M p. subterm X M p = NONE <=> !q. p <<= q ==> subterm X M q = NONE
+    !X M p r. subterm X M p r = NONE <=> !q. p <<= q ==> subterm X M q r = NONE
 Proof
     rpt GEN_TAC
  >> reverse EQ_TAC
  >- (DISCH_THEN (MP_TAC o (Q.SPEC ‘p’)) >> rw [])
+ >> Q.ID_SPEC_TAC ‘r’
  >> Q.ID_SPEC_TAC ‘M’
  >> Q.ID_SPEC_TAC ‘X’
  >> Q.ID_SPEC_TAC ‘p’
@@ -1246,8 +1314,11 @@ Proof
  >> Cases_on ‘q’ >> fs [subterm_def]
 QED
 
+(* TODO *)
+
 Theorem subterm_solvable_lemma :
-    !X M p. FINITE X /\ p <> [] /\ subterm X M p <> NONE ==>
+    !X M p. FINITE X /\ FV M SUBSET X /\
+            p <> [] /\ subterm X M p <> NONE ==>
            (!q. q <<= p ==> subterm X M q <> NONE) /\
            (!q. q <<= FRONT p ==> solvable (subterm' X M q))
 Proof
