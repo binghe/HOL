@@ -271,6 +271,8 @@ Definition DNEWS :
     DNEWS (SUC r) n s = GENLIST (\i. FRESH s (npair r i)) n
 End
 
+Overload DNEWS' = “\r s. DNEWS (SUC r) s”
+
 (* DNEWS and NEWS *)
 Theorem DNEWS_0[simp] :
     DNEWS 0 n s = NEWS n s
@@ -335,6 +337,8 @@ Definition FRESH_SET :
     FRESH_SET       0 s = {} /\
     FRESH_SET (SUC r) s = {v | ?i j. v = FRESH s (npair i j) /\ i < r}
 End
+
+Overload FRESH_SET' = “\r s. FRESH_SET (SUC r) s”
 
 Theorem FRESH_SET_0[simp] :
     !s. FRESH_SET 0 s = {} /\ FRESH_SET 1 s = {}
