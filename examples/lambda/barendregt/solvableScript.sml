@@ -1371,7 +1371,8 @@ QED
 Theorem lameq_principle_hnf_head_eq =
         lameq_principle_hnf_head_eq_general
      |> Q.SPEC ‘0’
-     |> REWRITE_RULE [DNEWS_0, FRESH_SET_0, UNION_EMPTY, UNION_SUBSET, GSYM CONJ_ASSOC]
+     |> REWRITE_RULE [DNEWS_NEWS, FRESH_SET_0, UNION_EMPTY, UNION_SUBSET,
+                      GSYM CONJ_ASSOC]
 
 (* |- !X M N M0 N0 n vs M1 N1.
         FINITE X /\ FV M SUBSET X /\ FV N SUBSET X /\ solvable M /\ solvable N /\ M == N /\
@@ -1440,7 +1441,8 @@ QED
 Theorem lameq_principle_hnf_thm =
         lameq_principle_hnf_thm_general
      |> Q.SPEC ‘0’
-     |> REWRITE_RULE [DNEWS_0, FRESH_SET_0, UNION_EMPTY, UNION_SUBSET, GSYM CONJ_ASSOC]
+     |> REWRITE_RULE [DNEWS_NEWS, FRESH_SET_0, UNION_EMPTY, UNION_SUBSET,
+                      GSYM CONJ_ASSOC]
 
 (* |- !X M N M0 N0 n vs M1 N1.
         FINITE X /\ FV M SUBSET X /\ FV N SUBSET X /\

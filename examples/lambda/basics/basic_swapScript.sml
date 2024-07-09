@@ -9,7 +9,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open BasicProvers boolSimps arithmeticTheory stringTheory pred_setTheory
-     hurdUtils listTheory rich_listTheory;
+     listTheory rich_listTheory pairTheory numpairTheory hurdUtils;
 
 val _ = new_theory "basic_swap";
 
@@ -115,7 +115,7 @@ val raw_lswapstr_sing_to_back = store_thm(
   "raw_lswapstr_sing_to_back",
   ``!p u v s. swapstr (raw_lswapstr p u) (raw_lswapstr p v) (raw_lswapstr p s) =
               raw_lswapstr p (swapstr u v s)``,
-  Induct THEN ASM_SIMP_TAC (srw_ss()) [pairTheory.FORALL_PROD]);
+  Induct THEN ASM_SIMP_TAC (srw_ss()) [FORALL_PROD]);
 
 (* ----------------------------------------------------------------------
     NEW constant
@@ -277,7 +277,7 @@ QED
 
    Rank  *)
 Definition DNEWS :
-    DNEWS       0 n s = NEWS n s /\ 
+    DNEWS       0 n s = NEWS n s /\
     DNEWS (SUC r) n s = GENLIST (\i. FRESH s (npair r i)) n
 End
 
