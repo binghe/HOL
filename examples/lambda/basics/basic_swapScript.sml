@@ -1,3 +1,11 @@
+(* ========================================================================== *)
+(* FILE    : basic_swapScript.sml                                             *)
+(* TITLE   : Some "basic" logic about swapping strings and the "new" operator *)
+(*                                                                            *)
+(* AUTHORS : 2005-2011 Michael Norrish                                        *)
+(*         : 2023-2024 Michael Norrish and Chun Tian                          *)
+(* ========================================================================== *)
+
 open HolKernel Parse boolLib bossLib;
 
 open BasicProvers boolSimps arithmeticTheory stringTheory pred_setTheory
@@ -213,7 +221,7 @@ Proof
 QED
 
 (* NEWS and NEW *)
-Theorem NEWS_1[simp] :
+Theorem NEWS_NEW[simp] :
     NEWS 1 s = [NEW s]
 Proof
     rw [NEWS]
@@ -251,16 +259,18 @@ Proof
 QED
 
 (* ----------------------------------------------------------------------
-    DNEWS for allocating a ranked list of fresh names
+    DNEWS for allocating a ranked list of fresh names (Author: Chun Tian)
 
-    Each positive rank (row) contains a mutually-disjoint infinite list of fresh names
-    Rank 0 contains all possible fresh names (to be compaible with NEWS).
+    Each positive rank (row) contains a disjoint infinite list of fresh names
 
-  r\i| 0 1 2 3 4 ...
-  ---+-----------------
-   0 | a A b B c C d D e E ...
-   1 | a b c d e ...
-   2 | A B C D E ...
+    NOTE: Rank 0 contains all fresh names (to be compaible with NEWS).
+
+   r\i| 0 1 2 3 4 ...
+   ---+-----------------
+    0 | a A b B c C d D e E ...
+    1 | a b c d e ...
+    2 | A B C D E ...
+    3 | 1 2 3 4 5 ...
    ---------------------------------------------------------------------- *)
 
 (* r: rank, n: number, s: the excluded set.
@@ -274,7 +284,7 @@ End
 Overload DNEWS' = “\r s. DNEWS (SUC r) s”
 
 (* DNEWS and NEWS *)
-Theorem DNEWS_0[simp] :
+Theorem DNEWS_NEWS[simp] :
     DNEWS 0 n s = NEWS n s
 Proof
     rw [DNEWS]
@@ -341,7 +351,7 @@ End
 Overload FRESH_SET' = “\r s. FRESH_SET (SUC r) s”
 
 Theorem FRESH_SET_0[simp] :
-    !s. FRESH_SET 0 s = {} /\ FRESH_SET 1 s = {}
+    FRESH_SET 0 s = {} /\ FRESH_SET 1 s = {}
 Proof
     rw [FRESH_SET]
  >> REWRITE_TAC [ONE, FRESH_SET]
@@ -376,6 +386,7 @@ Proof
  >> MATCH_MP_TAC FRESH_SET_DISJOINT >> rw []
 QED
 
+(* NOTE: ‘set (DNEWS 0 n s) SUBSET FRESH_SET 0 s’ doesn't hold *)
 Theorem FRESH_SET_SUBSET :
     !r1 r2 n s. r1 < r2 ==>
                 set (DNEWS (SUC r1) n s) SUBSET FRESH_SET (SUC r2) s
