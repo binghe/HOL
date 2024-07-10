@@ -21,7 +21,7 @@ open HolKernel Parse boolLib bossLib mesonLib
 open boolSimps pred_setTheory set_relationTheory tautLib
 
 open prim_recTheory arithmeticTheory numTheory numLib pairTheory
-open optionTheory sumTheory ind_typeTheory wellorderTheory;
+open optionTheory sumTheory ind_typeTheory wellorderTheory hurdUtils;
 
 val _ = new_theory "cardinal";
 
@@ -3005,13 +3005,19 @@ Proof
   metis_tac[FINITE_EXPONENT_SETEXP_COUNTABLE]
 QED
 
-val CARD_EQ_COUNTABLE = store_thm ("CARD_EQ_COUNTABLE",
- ``!s:'a->bool t:'a->bool. COUNTABLE t /\ s =_c t ==> COUNTABLE s``,
-  REWRITE_TAC[GSYM CARD_LE_ANTISYM] THEN MESON_TAC[CARD_LE_COUNTABLE]);
+(* NOTE: Changed the type of ‘t’ to ‘:'b->bool’ (was: 'a->bool) *)
+Theorem CARD_EQ_COUNTABLE :
+    !s:'a->bool t:'b->bool. COUNTABLE t /\ s =_c t ==> COUNTABLE s
+Proof
+  REWRITE_TAC[GSYM CARD_LE_ANTISYM] THEN MESON_TAC[CARD_LE_COUNTABLE]
+QED
 
-val CARD_COUNTABLE_CONG = store_thm ("CARD_COUNTABLE_CONG",
- ``!s:'a->bool t:'a->bool. s =_c t ==> (COUNTABLE s <=> COUNTABLE t)``,
-  REWRITE_TAC[GSYM CARD_LE_ANTISYM] THEN MESON_TAC[CARD_LE_COUNTABLE]);
+(* NOTE: Changed the type of ‘t’ to ‘:'b->bool’ (was: 'a->bool) *)
+Theorem CARD_COUNTABLE_CONG :
+    !s:'a->bool t:'b->bool. s =_c t ==> (COUNTABLE s <=> COUNTABLE t)
+Proof
+  REWRITE_TAC[GSYM CARD_LE_ANTISYM] THEN MESON_TAC[CARD_LE_COUNTABLE]
+QED
 
 val COUNTABLE_RESTRICT = store_thm ("COUNTABLE_RESTRICT",
  ``!s P. COUNTABLE s ==> COUNTABLE {x | x IN s /\ P x}``,
@@ -3467,6 +3473,39 @@ Theorem INJECTIVE_ALT :
     !f :'a -> 'b. (!x y. f x = f y ==> x = y) <=> (!x y. f x = f y <=> x = y)
 Proof
   MESON_TAC[]
+QED
+
+(* ------------------------------------------------------------------------- *)
+(* More theorems about cardinalities of lists                                *)
+(* ------------------------------------------------------------------------- *)
+
+(* NOTE: cf. INFINITE_A_list_BIJ_A (|- INFINITE A ==> list A =~ A), taking ‘A’
+   as ‘UNIV’. Here we don't know if ‘INFINITE univ(:'a)’ holds, thus can't use
+   that theorem. -- Chun Tian, 10 lug 2024
+ *)
+Theorem countable_list_univ :
+    countable univ(:'a) ==> countable univ(:'a list)
+Proof
+    rw [UNIV_list]
+ >> MP_TAC (INST [“A :'a set” |-> “univ(:'a)”] list_BIGUNION_EXP)
+ >> qmatch_abbrev_tac ‘list univ(:'a) =~ s ==> _’
+ >> DISCH_TAC
+ >> Suff ‘countable s’
+ >- (MP_TAC (Q.SPEC ‘s’ (INST_TYPE [“:'b” |-> “:num # (num -> 'a)”]
+                          (ISPEC “list univ(:'a)” CARD_EQ_COUNTABLE))) \\
+     rw [])
+ >> qunabbrev_tac ‘s’
+ >> MATCH_MP_TAC COUNTABLE_BIGUNION >> rw []
+ >> MATCH_MP_TAC COUNTABLE_CROSS >> rw []
+ >> rw [countable_setexp]
+QED
+
+Theorem countable_list_univ' :
+    FINITE univ(:'a) ==> countable univ(:'a list)
+Proof
+    DISCH_TAC
+ >> MATCH_MP_TAC countable_list_univ
+ >> MATCH_MP_TAC FINITE_IMP_COUNTABLE >> art []
 QED
 
 val _ = export_theory()
