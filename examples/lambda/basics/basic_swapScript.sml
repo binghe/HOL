@@ -10,7 +10,7 @@ open HolKernel Parse boolLib bossLib;
 
 open BasicProvers boolSimps arithmeticTheory stringTheory pred_setTheory
      listTheory rich_listTheory pairTheory numpairTheory hurdUtils
-     cardinalTheory;
+     cardinalTheory topologyTheory;
 
 val _ = new_theory "basic_swap";
 
@@ -243,9 +243,11 @@ Proof
     METIS_TAC [FRESH_thm]
 QED
 
-(* NOTE: This theorem is not used so far, and is only possible under the new
-         definition of FRESH.
- *)
+(* ----------------------------------------------------------------------
+   A number-like system of fresh names excluding a given set (not used)
+   ---------------------------------------------------------------------- *)
+
+(* NOTE: By FRESH_thm, the existence of ‘i’ is also unique. *)
 Theorem FRESH_complete :
     !s. FINITE s ==> !x. x NOTIN s ==> ?i. FRESH s i = x
 Proof
@@ -253,13 +255,29 @@ Proof
  >> DISCH_THEN (ASSUME_TAC o MATCH_MP FRESH_BIJ)
  >> qabbrev_tac ‘t = univ(:string) DIFF s’
  >> rpt STRIP_TAC
- >> fs [COUNTABLE_ALT_BIJ, BIJ_ALT, EXISTS_UNIQUE_THM, IN_FUNSET]
+ >> fs [COUNTABLE_ALT_BIJ, BIJ_THM, EXISTS_UNIQUE_THM]
  >> ‘x IN t’ by rw [Abbr ‘t’]
  >> Q.PAT_X_ASSUM ‘!y. y IN t ==> P’ (MP_TAC o Q.SPEC ‘x’)
  >> rw []
  >> rename1 ‘FRESH s y IN t’
  >> Q.EXISTS_TAC ‘y’ >> rw []
 QED
+
+(* |- !s. FINITE s ==> !x. x NOTIN s ==> FRESH s (index_of s x) = x *)
+val index_of = new_specification
+  ("index_of",["index_of"], SRULE [EXT_SKOLEM_THM'] FRESH_complete);
+
+Definition nZERO_def :
+    nZERO s = FRESH s 0
+End
+
+Definition nSUC_def :
+    nSUC s = FRESH s o SUC o index_of s
+End
+
+Definition nPRE_def :
+    nPRE s = FRESH s o PRE o index_of s
+End
 
 (* ----------------------------------------------------------------------
     The NEWS constant for allocating a list of fresh names
@@ -404,6 +422,13 @@ Proof
  >> rfs [FRESH_11]
 QED
 
+Theorem DNEWS_set :
+    !r n s. set (DNEWS (SUC r) n s) = {v | ?j. v = FRESH s (npair r j) /\ j < n}
+Proof
+    rw [DNEWS, Once EXTENSION, MEM_GENLIST]
+ >> METIS_TAC []
+QED
+
 (* The (infinite) set of all fresh names lower than the given rank
 
    NOTE: ‘FRESH_SET (SUC r) s’ is the set of names lower than rank r (instead of SUC r).
@@ -458,8 +483,8 @@ Theorem FRESH_SET_SUBSET :
     !r1 r2 n s. r1 < r2 ==>
                 set (DNEWS (SUC r1) n s) SUBSET FRESH_SET (SUC r2) s
 Proof
-    rw [DNEWS, MEM_GENLIST, FRESH_SET, SUBSET_DEF]
- >> qexistsl_tac [‘r1’, ‘i’] >> art []
+    rw [DNEWS_set, FRESH_SET, SUBSET_DEF]
+ >> qexistsl_tac [‘r1’, ‘j’] >> art []
 QED
 
 val _ = export_theory ();
