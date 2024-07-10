@@ -13,8 +13,8 @@ open arithmeticTheory pred_setTheory listTheory rich_listTheory sortingTheory
 
 (* lambda theories *)
 open binderLib basic_swapTheory nomsetTheory termTheory appFOLDLTheory
-     chap2Theory chap3Theory reductionEval standardisationTheory
-     head_reductionTheory horeductionTheory;
+     chap2Theory chap3Theory head_reductionTheory standardisationTheory
+     reductionEval horeductionTheory normal_orderTheory;
 
 val _ = new_theory "solvable";
 

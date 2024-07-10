@@ -3193,6 +3193,32 @@ Proof
   ASM_SET_TAC[]
 QED
 
+(* cf. listTheory.INFINITE_LIST_UNIV |- INFINITE univ(:'a list) *)
+Theorem COUNTABLE_LIST_UNIV :
+    countable univ(:'a) ==> countable univ(:'a list)
+Proof
+    rw [UNIV_list]
+ >> MP_TAC (INST [“A :'a set” |-> “univ(:'a)”] list_BIGUNION_EXP)
+ >> qmatch_abbrev_tac ‘list univ(:'a) =~ s ==> _’
+ >> DISCH_TAC
+ >> Suff ‘countable s’
+ >- (MP_TAC (Q.SPEC ‘s’ (INST_TYPE [“:'b” |-> “:num # (num -> 'a)”]
+                          (ISPEC “list univ(:'a)” CARD_EQ_COUNTABLE))) \\
+     rw [])
+ >> qunabbrev_tac ‘s’
+ >> MATCH_MP_TAC COUNTABLE_BIGUNION >> rw []
+ >> MATCH_MP_TAC COUNTABLE_CROSS >> rw []
+ >> rw [countable_setexp]
+QED
+
+Theorem COUNTABLE_LIST_UNIV' :
+    FINITE univ(:'a) ==> countable univ(:'a list)
+Proof
+    DISCH_TAC
+ >> MATCH_MP_TAC COUNTABLE_LIST_UNIV
+ >> MATCH_MP_TAC FINITE_IMP_COUNTABLE >> art []
+QED
+
 Definition BIGPRODi_def:
   BIGPRODi (A : 'i -> ('a -> bool) option) =
   {tup : 'i -> 'a option |
@@ -3473,39 +3499,6 @@ Theorem INJECTIVE_ALT :
     !f :'a -> 'b. (!x y. f x = f y ==> x = y) <=> (!x y. f x = f y <=> x = y)
 Proof
   MESON_TAC[]
-QED
-
-(* ------------------------------------------------------------------------- *)
-(* More theorems about cardinalities of lists                                *)
-(* ------------------------------------------------------------------------- *)
-
-(* NOTE: cf. INFINITE_A_list_BIJ_A (|- INFINITE A ==> list A =~ A), taking ‘A’
-   as ‘UNIV’. Here we don't know if ‘INFINITE univ(:'a)’ holds, thus can't use
-   that theorem. -- Chun Tian, 10 lug 2024
- *)
-Theorem countable_univ_list :
-    countable univ(:'a) ==> countable univ(:'a list)
-Proof
-    rw [UNIV_list]
- >> MP_TAC (INST [“A :'a set” |-> “univ(:'a)”] list_BIGUNION_EXP)
- >> qmatch_abbrev_tac ‘list univ(:'a) =~ s ==> _’
- >> DISCH_TAC
- >> Suff ‘countable s’
- >- (MP_TAC (Q.SPEC ‘s’ (INST_TYPE [“:'b” |-> “:num # (num -> 'a)”]
-                          (ISPEC “list univ(:'a)” CARD_EQ_COUNTABLE))) \\
-     rw [])
- >> qunabbrev_tac ‘s’
- >> MATCH_MP_TAC COUNTABLE_BIGUNION >> rw []
- >> MATCH_MP_TAC COUNTABLE_CROSS >> rw []
- >> rw [countable_setexp]
-QED
-
-Theorem countable_univ_list' :
-    FINITE univ(:'a) ==> countable univ(:'a list)
-Proof
-    DISCH_TAC
- >> MATCH_MP_TAC countable_univ_list
- >> MATCH_MP_TAC FINITE_IMP_COUNTABLE >> art []
 QED
 
 val _ = export_theory()

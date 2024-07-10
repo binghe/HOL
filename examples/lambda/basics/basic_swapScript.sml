@@ -157,7 +157,7 @@ val NEW_ELIM_RULE = store_thm(
 Theorem COUNTABLE_STR_UNIV :
     countable univ(:string)
 Proof
-    MATCH_MP_TAC countable_univ_list'
+    MATCH_MP_TAC COUNTABLE_LIST_UNIV'
  >> rw [FINITE_UNIV_char]
 QED
 
@@ -212,18 +212,25 @@ Proof
 QED
  *)
 
-Theorem FRESH_thm :
-    !s. FINITE s ==> (!n. FRESH s n NOTIN s) /\ !m n. m <> n ==> FRESH s m <> FRESH s n
+Theorem FRESH_BIJ :
+    !s. FINITE s ==> BIJ (FRESH s) univ(:num) (univ(:string) DIFF s)
 Proof
-    NTAC 2 STRIP_TAC
- >> REWRITE_TAC [FRESH_def]
+    rw [FRESH_def]
  >> qabbrev_tac ‘t = univ(:string) DIFF s’
  >> ‘countable t’ by METIS_TAC [COUNTABLE_DIFF_FINITE, COUNTABLE_STR_UNIV]
  >> ‘INFINITE t’  by METIS_TAC [INFINITE_DIFF_FINITE, INFINITE_STR_UNIV]
  >> fs [COUNTABLE_ALT_BIJ]
+QED
+
+Theorem FRESH_thm :
+    !s. FINITE s ==> (!n. FRESH s n NOTIN s) /\ !m n. m <> n ==> FRESH s m <> FRESH s n
+Proof
+    Q.X_GEN_TAC ‘s’
+ >> DISCH_THEN (ASSUME_TAC o MATCH_MP FRESH_BIJ)
+ >> qabbrev_tac ‘t = univ(:string) DIFF s’
  >> CONJ_TAC
  >- (Q.X_GEN_TAC ‘n’ \\
-     Suff ‘enumerate t n IN t’ >- rw [Abbr ‘t’] \\
+     Suff ‘FRESH s n IN t’ >- rw [Abbr ‘t’] \\
      fs [BIJ_ALT, IN_FUNSET])
  >> rpt STRIP_TAC
  >> fs [BIJ_ALT, EXISTS_UNIQUE_THM, IN_FUNSET]
@@ -236,20 +243,21 @@ Proof
     METIS_TAC [FRESH_thm]
 QED
 
-(* NOTE: This theorem is only possible under the new definition of FRESH *)
+(* NOTE: This theorem is not used so far, and is only possible under the new
+         definition of FRESH.
+ *)
 Theorem FRESH_complete :
     !s. FINITE s ==> !x. x NOTIN s ==> ?i. FRESH s i = x
 Proof
-    rpt STRIP_TAC
- >> REWRITE_TAC [FRESH_def]
+    Q.X_GEN_TAC ‘s’
+ >> DISCH_THEN (ASSUME_TAC o MATCH_MP FRESH_BIJ)
  >> qabbrev_tac ‘t = univ(:string) DIFF s’
- >> ‘countable t’ by METIS_TAC [COUNTABLE_DIFF_FINITE, COUNTABLE_STR_UNIV]
- >> ‘INFINITE t’  by METIS_TAC [INFINITE_DIFF_FINITE, INFINITE_STR_UNIV]
+ >> rpt STRIP_TAC
  >> fs [COUNTABLE_ALT_BIJ, BIJ_ALT, EXISTS_UNIQUE_THM, IN_FUNSET]
  >> ‘x IN t’ by rw [Abbr ‘t’]
  >> Q.PAT_X_ASSUM ‘!y. y IN t ==> P’ (MP_TAC o Q.SPEC ‘x’)
  >> rw []
- >> rename1 ‘enumerate t y IN t’
+ >> rename1 ‘FRESH s y IN t’
  >> Q.EXISTS_TAC ‘y’ >> rw []
 QED
 
@@ -279,7 +287,7 @@ Proof
 QED
 
 (* NOTE: This theorem is no more provable under the new definition of FRESH
-Theorem NEWS_NEW[simp] :
+Theorem NEWS_1[simp] :
     NEWS 1 s = [NEW s]
 Proof
     rw [NEWS]
