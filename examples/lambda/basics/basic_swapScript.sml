@@ -119,41 +119,17 @@ val raw_lswapstr_sing_to_back = store_thm(
   Induct THEN ASM_SIMP_TAC (srw_ss()) [FORALL_PROD]);
 
 (* ----------------------------------------------------------------------
-    NEW constant
-   ---------------------------------------------------------------------- *)
-
-val INFINITE_STR_UNIV = store_thm(
-  "INFINITE_STR_UNIV",
-  ``INFINITE (UNIV : string set)``,
-  SRW_TAC [][pred_setTheory.INFINITE_UNIV] THEN
-  Q.EXISTS_TAC `\st. STRING (CHR 0) st` THEN SRW_TAC [][] THEN
-  Q.EXISTS_TAC `""` THEN SRW_TAC [][]);
-
-val new_exists = store_thm(
-  "new_exists",
-  ``!s : string set. FINITE s ==> ?x. ~(x IN s)``,
-  Q_TAC SUFF_TAC `INFINITE (UNIV : string set)`
-        THEN1 METIS_TAC [pred_setTheory.IN_UNIV,
-                         pred_setTheory.IN_INFINITE_NOT_FINITE] THEN
-  SRW_TAC [][INFINITE_STR_UNIV]);
-
-(* |- !s. FINITE s ==> NEW s NOTIN s *)
-val NEW_def =
-    new_specification
-      ("NEW_def", ["NEW"],
-       SIMP_RULE (srw_ss()) [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM] new_exists)
-
-val NEW_ELIM_RULE = store_thm(
-  "NEW_ELIM_RULE",
-  ``!P X. FINITE X /\ (!v:string. ~(v IN X) ==> P v) ==>
-          P (NEW X)``,
-  PROVE_TAC [NEW_def]);
-
-(* ----------------------------------------------------------------------
     The FRESH constant for allocating indexed distinct fresh names
    ---------------------------------------------------------------------- *)
 
-(* This theorem improved INFINITE_STR_UNIV *)
+Theorem INFINITE_STR_UNIV :
+    INFINITE (UNIV : string set)
+Proof
+  SRW_TAC [][INFINITE_UNIV] THEN
+  Q.EXISTS_TAC `\st. STRING (CHR 0) st` THEN SRW_TAC [][] THEN
+  Q.EXISTS_TAC `""` THEN SRW_TAC [][]
+QED
+
 Theorem COUNTABLE_STR_UNIV :
     countable univ(:string)
 Proof
@@ -161,56 +137,9 @@ Proof
  >> rw [FINITE_UNIV_char]
 QED
 
-(* A number-like system of fresh symbols (excluding a given set of names)
-
-   Old definition:
-
-Definition FRESH_def :
-    FRESH s n = NEW (s UNION IMAGE (FRESH s) (count n))
-Termination
-    WF_REL_TAC ‘measure SND’ >> simp []
-End
-
-   New definition:
- *)
 Definition FRESH_def :
     FRESH s = enumerate (univ(:string) DIFF s)
 End
-
-(* NOTE: FRESH_0 is no more provable under new definition of FRESH
-Theorem FRESH_0[simp] :
-    FRESH s 0 = NEW s
-Proof
-    rw [Once FRESH_def]
-QED
-
-Theorem FRESH_thm :
-    !s. FINITE s ==> (!n. FRESH s n NOTIN s) /\ !m n. m <> n ==> FRESH s m <> FRESH s n
-Proof
-    NTAC 2 STRIP_TAC
- >> CONJ_TAC
- >- (completeInduct_on ‘n’ \\
-     rw [Once FRESH_def] \\
-     qabbrev_tac ‘X = s UNION IMAGE (\a. FRESH s a) (count n)’ \\
-    ‘s SUBSET X’ by rw [Abbr ‘X’] \\
-     Suff ‘NEW X NOTIN X’ >- METIS_TAC [SUBSET_DEF] \\
-     MATCH_MP_TAC NEW_def >> rw [Abbr ‘X’])
- (* stage work *)
- >> Suff ‘!m n. m < n ==> FRESH s m <> FRESH s n’
- >- (rpt STRIP_TAC \\
-    ‘m < n \/ n < m’ by rw [] >> METIS_TAC [])
- >> NTAC 3 STRIP_TAC
- >> ASSUME_TAC (ONCE_REWRITE_CONV [FRESH_def] “FRESH s n”)
- >> POP_ORW
- >> qabbrev_tac ‘X = s UNION IMAGE (\a. FRESH s a) (count n)’
- >> CCONTR_TAC
- >> Know ‘NEW X NOTIN X’
- >- (MATCH_MP_TAC NEW_def >> rw [Abbr ‘X’])
- >> fs []
- >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM)
- >> rw [Abbr ‘X’]
-QED
- *)
 
 Theorem FRESH_BIJ :
     !s. FINITE s ==> BIJ (FRESH s) univ(:num) (univ(:string) DIFF s)
@@ -244,7 +173,41 @@ Proof
 QED
 
 (* ----------------------------------------------------------------------
+    NEW constant (now based on FRESH)
+   ---------------------------------------------------------------------- *)
+
+(* NOTE: This theorem is still used by NEWLib *)
+val new_exists = store_thm(
+  "new_exists",
+  ``!s : string set. FINITE s ==> ?x. ~(x IN s)``,
+  Q_TAC SUFF_TAC `INFINITE (UNIV : string set)`
+        THEN1 METIS_TAC [pred_setTheory.IN_UNIV,
+                         pred_setTheory.IN_INFINITE_NOT_FINITE] THEN
+  SRW_TAC [][INFINITE_STR_UNIV]);
+
+Definition NEW :
+    NEW s = FRESH s 0
+End
+
+(* |- FRESH s 0 = NEW s *)
+Theorem FRESH_0[simp] = SPEC_ALL (GSYM NEW)
+
+Theorem NEW_def :
+    !s. FINITE s ==> NEW s NOTIN s
+Proof
+    RW_TAC std_ss [NEW, FRESH_thm]
+QED
+
+Theorem NEW_ELIM_RULE :
+    !P X. FINITE X /\ (!v:string. ~(v IN X) ==> P v) ==> P (NEW X)
+Proof
+    METIS_TAC [NEW_def]
+QED
+
+(* ----------------------------------------------------------------------
    A number-like system of fresh names excluding a given set (not used)
+
+   NOTE: ‘NEW s’ is the "zero" in this number-like system.
    ---------------------------------------------------------------------- *)
 
 (* NOTE: By FRESH_thm, the existence of ‘i’ is also unique. *)
@@ -267,14 +230,12 @@ QED
 val index_of = new_specification
   ("index_of",["index_of"], SRULE [EXT_SKOLEM_THM'] FRESH_complete);
 
-Definition nZERO_def :
-    nZERO s = FRESH s 0
-End
-
+(* ‘nSUC s v’ returns the next fresh symbol after ‘v’ *)
 Definition nSUC_def :
     nSUC s = FRESH s o SUC o index_of s
 End
 
+(* ‘nPRE s v’ returns the fresh symbol before ‘v’ *)
 Definition nPRE_def :
     nPRE s = FRESH s o PRE o index_of s
 End
@@ -304,13 +265,11 @@ Proof
     rw [NEWS]
 QED
 
-(* NOTE: This theorem is no more provable under the new definition of FRESH
 Theorem NEWS_1[simp] :
     NEWS 1 s = [NEW s]
 Proof
-    rw [NEWS]
+    RW_TAC list_ss [NEWS, NEW]
 QED
- *)
 
 (* This is actually an alternative recursive definition of ‘NEWS’ *)
 Theorem NEWS_SUC :
