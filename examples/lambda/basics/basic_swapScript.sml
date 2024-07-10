@@ -9,7 +9,8 @@
 open HolKernel Parse boolLib bossLib;
 
 open BasicProvers boolSimps arithmeticTheory stringTheory pred_setTheory
-     listTheory rich_listTheory pairTheory numpairTheory hurdUtils;
+     listTheory rich_listTheory pairTheory numpairTheory hurdUtils
+     cardinalTheory;
 
 val _ = new_theory "basic_swap";
 
@@ -149,17 +150,34 @@ val NEW_ELIM_RULE = store_thm(
   PROVE_TAC [NEW_def]);
 
 (* ----------------------------------------------------------------------
-    The NEWS constant for allocating a list of fresh names
+    The FRESH constant for allocating indexed distinct fresh names
    ---------------------------------------------------------------------- *)
 
-(* A number-like system of fresh symbols (excluding a given set of names) *)
+(* This theorem improved INFINITE_STR_UNIV *)
+Theorem COUNTABLE_STR_UNIV :
+    countable univ(:string)
+Proof
+    MATCH_MP_TAC countable_univ_list'
+ >> rw [FINITE_UNIV_char]
+QED
+
+(* A number-like system of fresh symbols (excluding a given set of names)
+
+   Old definition:
+
 Definition FRESH_def :
     FRESH s n = NEW (s UNION IMAGE (FRESH s) (count n))
 Termination
     WF_REL_TAC ‘measure SND’ >> simp []
 End
 
-(* FRESH and NEW, but the explicit uses of ‘FRESH’ should be restricted here. *)
+   New definition:
+ *)
+Definition FRESH_def :
+    FRESH s = enumerate (univ(:string) DIFF s)
+End
+
+(* NOTE: FRESH_0 is no more provable under new definition of FRESH
 Theorem FRESH_0[simp] :
     FRESH s 0 = NEW s
 Proof
@@ -192,12 +210,52 @@ Proof
  >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM)
  >> rw [Abbr ‘X’]
 QED
+ *)
+
+Theorem FRESH_thm :
+    !s. FINITE s ==> (!n. FRESH s n NOTIN s) /\ !m n. m <> n ==> FRESH s m <> FRESH s n
+Proof
+    NTAC 2 STRIP_TAC
+ >> REWRITE_TAC [FRESH_def]
+ >> qabbrev_tac ‘t = univ(:string) DIFF s’
+ >> ‘countable t’ by METIS_TAC [COUNTABLE_DIFF_FINITE, COUNTABLE_STR_UNIV]
+ >> ‘INFINITE t’  by METIS_TAC [INFINITE_DIFF_FINITE, INFINITE_STR_UNIV]
+ >> fs [COUNTABLE_ALT_BIJ]
+ >> CONJ_TAC
+ >- (Q.X_GEN_TAC ‘n’ \\
+     Suff ‘enumerate t n IN t’ >- rw [Abbr ‘t’] \\
+     fs [BIJ_ALT, IN_FUNSET])
+ >> rpt STRIP_TAC
+ >> fs [BIJ_ALT, EXISTS_UNIQUE_THM, IN_FUNSET]
+ >> METIS_TAC []
+QED
 
 Theorem FRESH_11[simp] :
     !s m n. FINITE s ==> (FRESH s m = FRESH s n <=> m = n)
 Proof
     METIS_TAC [FRESH_thm]
 QED
+
+(* NOTE: This theorem is only possible under the new definition of FRESH *)
+Theorem FRESH_complete :
+    !s. FINITE s ==> !x. x NOTIN s ==> ?i. FRESH s i = x
+Proof
+    rpt STRIP_TAC
+ >> REWRITE_TAC [FRESH_def]
+ >> qabbrev_tac ‘t = univ(:string) DIFF s’
+ >> ‘countable t’ by METIS_TAC [COUNTABLE_DIFF_FINITE, COUNTABLE_STR_UNIV]
+ >> ‘INFINITE t’  by METIS_TAC [INFINITE_DIFF_FINITE, INFINITE_STR_UNIV]
+ >> fs [COUNTABLE_ALT_BIJ, BIJ_ALT, EXISTS_UNIQUE_THM, IN_FUNSET]
+ >> ‘x IN t’ by rw [Abbr ‘t’]
+ >> Q.PAT_X_ASSUM ‘!y. y IN t ==> P’ (MP_TAC o Q.SPEC ‘x’)
+ >> rw []
+ >> rename1 ‘enumerate t y IN t’
+ >> Q.EXISTS_TAC ‘y’ >> rw []
+QED
+
+(* ----------------------------------------------------------------------
+    The NEWS constant for allocating a list of fresh names
+   ---------------------------------------------------------------------- *)
 
 (* ‘NEWS n s’ generates n fresh names from the excluded set ‘s’
 
@@ -220,12 +278,13 @@ Proof
     rw [NEWS]
 QED
 
-(* NEWS and NEW *)
+(* NOTE: This theorem is no more provable under the new definition of FRESH
 Theorem NEWS_NEW[simp] :
     NEWS 1 s = [NEW s]
 Proof
     rw [NEWS]
 QED
+ *)
 
 (* This is actually an alternative recursive definition of ‘NEWS’ *)
 Theorem NEWS_SUC :

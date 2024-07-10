@@ -3483,7 +3483,7 @@ QED
    as ‘UNIV’. Here we don't know if ‘INFINITE univ(:'a)’ holds, thus can't use
    that theorem. -- Chun Tian, 10 lug 2024
  *)
-Theorem countable_list_univ :
+Theorem countable_univ_list :
     countable univ(:'a) ==> countable univ(:'a list)
 Proof
     rw [UNIV_list]
@@ -3500,11 +3500,11 @@ Proof
  >> rw [countable_setexp]
 QED
 
-Theorem countable_list_univ' :
+Theorem countable_univ_list' :
     FINITE univ(:'a) ==> countable univ(:'a list)
 Proof
     DISCH_TAC
- >> MATCH_MP_TAC countable_list_univ
+ >> MATCH_MP_TAC countable_univ_list
  >> MATCH_MP_TAC FINITE_IMP_COUNTABLE >> art []
 QED
 
