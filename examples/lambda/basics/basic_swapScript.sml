@@ -9,8 +9,8 @@
 open HolKernel Parse boolLib bossLib;
 
 open BasicProvers boolSimps arithmeticTheory stringTheory pred_setTheory
-     listTheory rich_listTheory pairTheory numpairTheory hurdUtils
-     cardinalTheory topologyTheory;
+     listTheory rich_listTheory pairTheory numpairTheory hurdUtils numLib
+     cardinalTheory whileTheory;
 
 val _ = new_theory "basic_swap";
 
@@ -226,19 +226,23 @@ Proof
  >> Q.EXISTS_TAC ‘y’ >> rw []
 QED
 
-(* |- !s. FINITE s ==> !x. x NOTIN s ==> FRESH s (index_of s x) = x *)
-val index_of = new_specification
-  ("index_of",["index_of"], SRULE [EXT_SKOLEM_THM'] FRESH_complete);
-
 (* ‘nSUC s v’ returns the next fresh symbol after ‘v’ *)
 Definition nSUC_def :
-    nSUC s = FRESH s o SUC o index_of s
+    nSUC s x = let n = LEAST i. FRESH s i = x
+               in FRESH s (SUC n)
 End
 
-(* ‘nPRE s v’ returns the fresh symbol before ‘v’ *)
-Definition nPRE_def :
-    nPRE s = FRESH s o PRE o index_of s
-End
+Theorem nSUC_thm :
+    !s x. FINITE s /\ x NOTIN s ==> nSUC s x NOTIN s /\ nSUC s x <> x
+Proof
+    NTAC 3 STRIP_TAC
+ >> simp [nSUC_def]
+ >> LEAST_ELIM_TAC
+ >> CONJ_TAC
+ >- METIS_TAC [FRESH_complete]
+ >> rw [FRESH_thm]
+ >> CCONTR_TAC >> rfs [FRESH_11]
+QED
 
 (* ----------------------------------------------------------------------
     The NEWS constant for allocating a list of fresh names
