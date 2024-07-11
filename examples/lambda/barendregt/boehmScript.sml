@@ -924,8 +924,6 @@ Proof
  >> SET_TAC []
 QED
 
-(* TODO (to the end)
-
 (* Lemma 10.1.15 (related) [1, p.222] (subterm and ltree_el)
 
    Assuming all involved terms are solvable:
@@ -940,7 +938,8 @@ QED
           subterm_imp_ltree_paths, subterm_finite_lemma, etc.
  *)
 Theorem BT_subterm_thm :
-    !p X M r. FINITE X /\ FV M SUBSET X /\ subterm X M p r <> NONE /\
+    !p X M r. FINITE X /\ FV M SUBSET X /\
+              subterm X M p r <> NONE /\
               solvable (subterm' X M p r)
         ==> do (N,r') <- subterm X M p r;
                 (t,m) <- ltree_el (BT' X M r) p;
@@ -983,15 +982,15 @@ Proof
  >> reverse CONJ_TAC
  >- (qunabbrev_tac ‘N0’ \\
      MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
- (* applying subterm_rank_thm *)
- >> ‘FV N SUBSET X UNION RANKS' r' X’ by PROVE_TAC [subterm_rank_thm]
+ (* applying subterm_rank_lemma *)
+ >> ‘FV N SUBSET X UNION RANKS' r' X’ by PROVE_TAC [subterm_rank_lemma]
  >> MATCH_MP_TAC DISJOINT_SUBSET
  >> Q.EXISTS_TAC ‘X UNION RANKS' r' X’ >> art []
  >> rw [DISJOINT_UNION', Abbr ‘vs’, Once DISJOINT_SYM]
  >> MATCH_MP_TAC RANKS_DISJOINT' >> art []
 QED
 
-(* NOTE: This proof shares a lot of tactics with [subterm_tpm_lemma]
+(* NOTE: This proof is no more needed/useful
 Theorem BT_ltree_lookup_tpm :
     !p X Y M pi. FINITE X /\ FINITE Y /\
                  ltree_lookup (BT X M) p <> NONE ==>
@@ -1151,7 +1150,7 @@ Proof
 QED
  *)
 
-(* The set of ltree paths of BT is unique w.r.t. excluded list
+(* NOTE: This theorem is no more needed/useful.
 Theorem BT_ltree_paths_cong :
     !X Y M. FINITE X /\ FINITE Y ==>
             ltree_paths (BT X M) = ltree_paths (BT Y M)
@@ -1174,7 +1173,7 @@ QED
    Then ‘subterm' X M (FRONT p)’ must be an unsolvable term. This result can be
    even improved to an iff, as the present theorem shows.
  *)
-Theorem subterm_is_none_iff_parent_unsolvable_lemma[local] :
+Theorem subterm_is_none_iff_parent_unsolvable_general :
     !p X M r. FINITE X /\ FV M SUBSET X UNION RANKS' r X /\
               p IN ltree_paths (BT' X M r) ==>
              (subterm X M p r = NONE <=>
@@ -1289,7 +1288,7 @@ Theorem subterm_is_none_iff_parent_unsolvable :
               unsolvable (subterm' X M (FRONT p) r))
 Proof
     rpt STRIP_TAC
- >> MATCH_MP_TAC subterm_is_none_iff_parent_unsolvable_lemma >> art []
+ >> MATCH_MP_TAC subterm_is_none_iff_parent_unsolvable_general >> art []
  >> Q.PAT_X_ASSUM ‘FV M SUBSET X’ MP_TAC
  >> SET_TAC []
 QED
@@ -1320,16 +1319,15 @@ Proof
  >> Cases_on ‘q’ >> fs [subterm_def]
 QED
 
-(* TODO *)
-
-Theorem subterm_solvable_lemma_lemma[local] :
+Theorem subterm_solvable_lemma_general :
     !X M p r. FINITE X /\ FV M SUBSET X UNION RANKS' r X /\
               p <> [] /\ subterm X M p r <> NONE ==>
             (!q. q <<= p ==> subterm X M q r <> NONE) /\
             (!q. q <<= FRONT p ==> solvable (subterm' X M q r))
 Proof
     rpt GEN_TAC >> STRIP_TAC
- >> ‘p IN ltree_paths (BT' X M r)’ by PROVE_TAC [subterm_imp_ltree_paths]
+ >> ‘p IN ltree_paths (BT' X M r)’
+       by PROVE_TAC [subterm_imp_ltree_paths_general]
  >> CONJ_ASM1_TAC
  >- (Q.X_GEN_TAC ‘q’ >> DISCH_TAC \\
      CCONTR_TAC \\
@@ -1354,7 +1352,8 @@ Proof
      Q.EXISTS_TAC ‘SUC n’ >> rw [Abbr ‘l’] \\
      rfs [LENGTH_FRONT])
  >> rpt STRIP_TAC
- >> MP_TAC (Q.SPECL [‘l’, ‘X’, ‘M’, ‘r’] subterm_is_none_iff_parent_unsolvable)
+ >> MP_TAC (Q.SPECL [‘l’, ‘X’, ‘M’, ‘r’]
+                    subterm_is_none_iff_parent_unsolvable_general)
  >> ‘l IN ltree_paths (BT' X M r)’ by PROVE_TAC [ltree_paths_inclusive]
  >> simp []
  >> Suff ‘subterm X M (FRONT l) r <> NONE’ >- PROVE_TAC []
@@ -1364,8 +1363,23 @@ Proof
  >> MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []
 QED
 
-(* NOTE: ‘subterm X M p <> NONE’ implies ‘!q. q <<= FRONT p ==> solvable (subterm' X M q)’,
-   and the following theorem deals the case ‘unsolvable (subterm' X M p)’.
+Theorem subterm_solvable_lemma :
+    !X M p r. FINITE X /\ FV M SUBSET X /\
+              p <> [] /\ subterm X M p r <> NONE ==>
+            (!q. q <<= p ==> subterm X M q r <> NONE) /\
+            (!q. q <<= FRONT p ==> solvable (subterm' X M q r))
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> MATCH_MP_TAC subterm_solvable_lemma_general >> art []
+ >> Q.PAT_X_ASSUM ‘FV M SUBSET X’ MP_TAC
+ >> SET_TAC []
+QED
+
+(* TODO
+
+(* NOTE: ‘subterm X M p <> NONE’ implies ‘!q. q <<= FRONT p ==> solvable
+  (subterm' X M q)’, and the following theorem deals with the case of
+  ‘unsolvable (subterm' X M p)’.
  *)
 Theorem BT_ltree_el_of_unsolvables_lemma :
     !p X M r. FINITE X /\ FV M SUBSET X UNION RANKS' r X /\
@@ -1376,7 +1390,7 @@ Proof
  >- rw [BT_of_unsolvables, ltree_el_def]
  >> rpt STRIP_TAC
 
- 
+
  >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::p’, ‘r’] subterm_solvable_lemma)
  >> rw []
  >> POP_ASSUM (MP_TAC o (Q.SPEC ‘[]’))
