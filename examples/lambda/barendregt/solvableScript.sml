@@ -1176,8 +1176,8 @@ Proof
  >> Q.EXISTS_TAC ‘EL i Ns’ >> rw []
 QED
 
-(* NOTE: This theorem uses ‘DNEWS’ instead of ‘NEWS’. When r = 0,
-        ‘FRESH_SET 0 X = {}’ while ‘DNEWS 0 n X = NEWS n X’, reducing to
+(* NOTE: This theorem uses ‘RNEWS’ instead of ‘NEWS’. When r = 0,
+        ‘FRESH_SET 0 X = {}’ while ‘RNEWS 0 n X = NEWS n X’, reducing to
          the old theorem (lameq_principle_hnf_lemma).
  *)
 Theorem lameq_principle_hnf_lemma_general :
@@ -1185,7 +1185,7 @@ Theorem lameq_principle_hnf_lemma_general :
               hnf M /\ hnf N /\ M == N
           ==> LAMl_size M = LAMl_size N /\
               let n = LAMl_size M;
-                 vs = DNEWS r n X;
+                 vs = RNEWS r n X;
                  M1 = principle_hnf (M @* MAP VAR vs);
                  N1 = principle_hnf (N @* MAP VAR vs)
               in
@@ -1199,9 +1199,9 @@ Proof
  >> qabbrev_tac ‘n  = LAMl_size M’
  >> qabbrev_tac ‘n' = LAMl_size N’
  (* applying hnf_cases_shared *)
- >> qabbrev_tac ‘vs = DNEWS r (MAX n n') X’
+ >> qabbrev_tac ‘vs = RNEWS r (MAX n n') X’
  >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) X /\ LENGTH vs = MAX n n'’
-      by rw [DNEWS_def, Abbr ‘vs’]
+      by rw [RNEWS_def, Abbr ‘vs’]
  >> qabbrev_tac ‘Y = FRESH_SET r X’
  (* extra goal due to FRESH_SET *)
  >> Know ‘DISJOINT (set vs) (FV M) /\ DISJOINT (set vs) (FV N)’
@@ -1332,7 +1332,7 @@ Theorem lameq_principle_hnf_head_eq_general :
          M0 = principle_hnf M /\
          N0 = principle_hnf N /\
          n = LAMl_size M0 /\
-         vs = DNEWS r n X /\
+         vs = RNEWS r n X /\
          M1 = principle_hnf (M0 @* MAP VAR vs) /\
          N1 = principle_hnf (N0 @* MAP VAR vs)
      ==> hnf_head M1 = hnf_head N1
@@ -1341,7 +1341,7 @@ Proof
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> qabbrev_tac ‘N0 = principle_hnf N’
  >> qabbrev_tac ‘n = LAMl_size M0’
- >> qabbrev_tac ‘vs = DNEWS r n X’
+ >> qabbrev_tac ‘vs = RNEWS r n X’
  >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
  >> qabbrev_tac ‘N1 = principle_hnf (N0 @* MAP VAR vs)’
  >> Know ‘M0 == N0’
@@ -1371,7 +1371,7 @@ QED
 Theorem lameq_principle_hnf_head_eq =
         lameq_principle_hnf_head_eq_general
      |> Q.SPEC ‘0’
-     |> REWRITE_RULE [DNEWS_NEWS, FRESH_SET_0, UNION_EMPTY, UNION_SUBSET,
+     |> REWRITE_RULE [RNEWS_NEWS, FRESH_SET_0, UNION_EMPTY, UNION_SUBSET,
                       GSYM CONJ_ASSOC]
 
 (* |- !X M N M0 N0 n vs M1 N1.
@@ -1391,7 +1391,7 @@ Theorem lameq_principle_hnf_thm_general :
          M0 = principle_hnf M /\
          N0 = principle_hnf N /\
          n = LAMl_size M0 /\
-         vs = DNEWS r n X /\
+         vs = RNEWS r n X /\
          M1 = principle_hnf (M0 @* MAP VAR vs) /\
          N1 = principle_hnf (N0 @* MAP VAR vs)
      ==> LAMl_size M0 = LAMl_size N0 /\
@@ -1405,7 +1405,7 @@ Proof
  >> qabbrev_tac ‘M0 = principle_hnf M’
  >> qabbrev_tac ‘N0 = principle_hnf N’
  >> qabbrev_tac ‘n = LAMl_size M0’
- >> qabbrev_tac ‘vs = DNEWS r n X’
+ >> qabbrev_tac ‘vs = RNEWS r n X’
  >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
  >> qabbrev_tac ‘N1 = principle_hnf (N0 @* MAP VAR vs)’
  >> Know ‘M0 == N0’
@@ -1441,7 +1441,7 @@ QED
 Theorem lameq_principle_hnf_thm =
         lameq_principle_hnf_thm_general
      |> Q.SPEC ‘0’
-     |> REWRITE_RULE [DNEWS_NEWS, FRESH_SET_0, UNION_EMPTY, UNION_SUBSET,
+     |> REWRITE_RULE [RNEWS_NEWS, FRESH_SET_0, UNION_EMPTY, UNION_SUBSET,
                       GSYM CONJ_ASSOC]
 
 (* |- !X M N M0 N0 n vs M1 N1.

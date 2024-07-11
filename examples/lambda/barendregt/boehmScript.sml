@@ -93,11 +93,11 @@ fun NEWS_TAC (vs, n) X :tactic =
  >- rw [NEWS_def, Abbr ‘^vs’]
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']));
 
-(* NOTE: this version uses ‘DNEWS' r’ (= DNEWS (SUC r)) instead of ‘NEWS’ *)
-fun DNEWS_TAC (vs, r, n) X :tactic =
-    qabbrev_tac ‘^vs = DNEWS' ^r ^n ^X’
+(* NOTE: this version uses ‘RNEWS' r’ (= RNEWS (SUC r)) instead of ‘NEWS’ *)
+fun RNEWS_TAC (vs, r, n) X :tactic =
+    qabbrev_tac ‘^vs = RNEWS' ^r ^n ^X’
  >> Know ‘ALL_DISTINCT ^vs /\ DISJOINT (set ^vs) ^X /\ LENGTH ^vs = ^n’
- >- rw [DNEWS_def, Abbr ‘^vs’]
+ >- rw [RNEWS_def, Abbr ‘^vs’]
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']));
 
 (*---------------------------------------------------------------------------*
@@ -152,7 +152,7 @@ Definition BT_generator_def :
       if solvable M then
          let M0 = principle_hnf M;
               n = LAMl_size M0;
-             vs = DNEWS (SUC r) n X;
+             vs = RNEWS (SUC r) n X;
              M1 = principle_hnf (M0 @* MAP VAR vs);
              Ms = hnf_children M1;
               y = hnf_headvar M1;
@@ -180,7 +180,7 @@ Definition subterm_def :
       if solvable M then
          let M0 = principle_hnf M;
               n = LAMl_size M0;
-             vs = DNEWS (SUC r) n X;
+             vs = RNEWS (SUC r) n X;
              M1 = principle_hnf (M0 @* (MAP VAR vs));
              Ms = hnf_children M1;
               m = hnf_children_size M0;
@@ -305,8 +305,8 @@ Proof
  >> qabbrev_tac ‘Q0 = principle_hnf Q’
  >> qabbrev_tac ‘n  = LAMl_size P0’
  >> qabbrev_tac ‘n' = LAMl_size Q0’
- >> qabbrev_tac ‘vs = DNEWS' r n  X’
- >> qabbrev_tac ‘vs'= DNEWS' r n' X’
+ >> qabbrev_tac ‘vs = RNEWS' r n  X’
+ >> qabbrev_tac ‘vs'= RNEWS' r n' X’
  >> qabbrev_tac ‘P1 = principle_hnf (P0 @* MAP VAR vs)’
  >> qabbrev_tac ‘Q1 = principle_hnf (Q0 @* MAP VAR vs')’
  >> qabbrev_tac ‘Ps = hnf_children P1’
@@ -357,7 +357,7 @@ Proof
   *)
  >> qabbrev_tac ‘n = LAMl_size Q0’
  >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) X /\ LENGTH vs = n’
-       by (rw [Abbr ‘vs’, DNEWS_def])
+       by (rw [Abbr ‘vs’, RNEWS_def])
  (* stage work *)
  >> qabbrev_tac ‘Y = FRESH_SET' r X’
  (* applying FRESH_SET_DISJOINT' *)
@@ -460,7 +460,7 @@ Theorem BT_ltree_el_top[local] :
              let
                M0 = principle_hnf M;
                 n = LAMl_size M0;
-               vs = DNEWS' r n X;
+               vs = RNEWS' r n X;
                M1 = principle_hnf (M0 @* MAP VAR vs);
                Ms = hnf_children M1;
                 y = hnf_headvar M1;
@@ -484,7 +484,7 @@ Theorem subterm_of_solvables :
       subterm X M (h::p) r =
         let M0 = principle_hnf M;
              n = LAMl_size M0;
-            vs = DNEWS' r n X;
+            vs = RNEWS' r n X;
             M1 = principle_hnf (M0 @* MAP VAR vs);
             Ms = hnf_children M1;
              m = hnf_children_size M0
@@ -500,7 +500,7 @@ Theorem subterm_of_hnf :
     !X M h p r. FINITE X /\ hnf M ==>
       subterm X M (h::p) r =
         let  n = LAMl_size M;
-            vs = DNEWS' r n X;
+            vs = RNEWS' r n X;
             M1 = principle_hnf (M @* MAP VAR vs);
             Ms = hnf_children M1;
              m = hnf_children_size M
@@ -616,7 +616,7 @@ Proof
  >> Q.PAT_X_ASSUM ‘M1 = M1'’ (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘Ms = Ms'’ (fs o wrap o SYM)
  >> qunabbrev_tac ‘vs’
- >> Q_TAC (DNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
+ >> Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
  (* extra work *)
  >> qabbrev_tac ‘Y = FRESH_SET' r X’
  >> Know ‘DISJOINT (set vs) (FV M0)’
@@ -736,7 +736,7 @@ Proof
  >> Q.PAT_X_ASSUM ‘Ms = Ms'’ (fs o wrap o SYM)
  >> STRIP_TAC
  >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) X /\ LENGTH vs = n’
-       by rw [Abbr ‘vs’, DNEWS_def]
+       by rw [Abbr ‘vs’, RNEWS_def]
  (* extra work *)
  >> qabbrev_tac ‘Y = FRESH_SET' r X’
  >> Know ‘DISJOINT (set vs) (FV M0)’
@@ -853,7 +853,7 @@ Proof
  >> Suff ‘FV M' SUBSET X UNION FRESH_SET' (SUC r) X’
  >- rw []
  >> qunabbrev_tac ‘vs’
- >> Q_TAC (DNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
+ >> Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
  >> qabbrev_tac ‘Y  = FRESH_SET' r X’
  >> qabbrev_tac ‘Y' = FRESH_SET' (SUC r) X’
  >> Know ‘DISJOINT (set vs) (FV M0)’
@@ -945,7 +945,7 @@ Theorem BT_subterm_thm :
                (xs,y) <- t;
                   M0 <<- principle_hnf N;
                    n <<- LAMl_size M0;
-                  vs <<- DNEWS' r' n X;
+                  vs <<- RNEWS' r' n X;
                   M1 <<- principle_hnf (M0 @* MAP VAR vs);
               return (vs = xs /\ hnf_headvar M1 = y /\
                       hnf_children_size M1 = THE m)
@@ -968,7 +968,7 @@ Proof
 (* stage work *)
  >> qabbrev_tac ‘N0 = principle_hnf N’
  >> qabbrev_tac ‘n = LAMl_size N0’
- >> Q_TAC (DNEWS_TAC (“vs :string list”, “r' :num”, “n :num”)) ‘X’
+ >> Q_TAC (RNEWS_TAC (“vs :string list”, “r' :num”, “n :num”)) ‘X’
  >> Suff ‘DISJOINT (set vs) (FV N0)’
  >- (DISCH_TAC \\
      qabbrev_tac ‘N1 = principle_hnf (N0 @* MAP VAR vs)’ \\
@@ -1193,7 +1193,7 @@ Proof
  >> simp [Abbr ‘P’]
  (* END Norrish's advanced tactics *)
  >> qunabbrev_tac ‘vs’
- >> Q_TAC (DNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
+ >> Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
  >> qabbrev_tac ‘Y = FRESH_SET' r X’
  >> Know ‘DISJOINT (set vs) (FV M0)’
  >- (MATCH_MP_TAC DISJOINT_SUBSET >> Q.EXISTS_TAC ‘FV M’ \\
