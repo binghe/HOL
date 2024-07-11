@@ -144,7 +144,7 @@ Type boehm_tree[pp] = “:BT_node ltree”
 (* Definition 10.1.9 [1, p.221] (Effective Boehm Tree)
 
    NOTE: For the correctness of the definition, ‘FINITE X’ and ‘FV M SUBSET X’,
-   or something stronger ‘FV M SUBSET X UNION (FRESH_SET' r X)’ for induction,
+   or something stronger ‘FV M SUBSET X UNION (RANKS' r X)’ for induction,
    must be assumed in antecedents.
  *)
 Definition BT_generator_def :
@@ -292,7 +292,7 @@ Proof
  >> rw [ltree_bisimulation]
  (* NOTE: ‘solvable P /\ solvable Q’ cannot be added here *)
  >> Q.EXISTS_TAC
-     ‘\x y. ?P Q r. FV P UNION FV Q SUBSET (X UNION (FRESH_SET (SUC r) X)) /\
+     ‘\x y. ?P Q r. FV P UNION FV Q SUBSET (X UNION (RANKS (SUC r) X)) /\
                     P == Q /\ x = BT' X P r /\ y = BT' X Q r’
  >> BETA_TAC
  >> CONJ_TAC >- (qexistsl_tac [‘M’, ‘N’, ‘r’] >> simp [] \\
@@ -359,8 +359,8 @@ Proof
  >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) X /\ LENGTH vs = n’
        by (rw [Abbr ‘vs’, RNEWS_def])
  (* stage work *)
- >> qabbrev_tac ‘Y = FRESH_SET' r X’
- (* applying FRESH_SET_DISJOINT' *)
+ >> qabbrev_tac ‘Y = RANKS' r X’
+ (* applying RANKS_DISJOINT' *)
  >> Know ‘DISJOINT (set vs) (FV P0)’
  >- (MATCH_MP_TAC DISJOINT_SUBSET >> Q.EXISTS_TAC ‘FV P’ \\
      reverse CONJ_TAC
@@ -373,7 +373,7 @@ Proof
          rw [DISJOINT_ALT']) \\
      Suff ‘DISJOINT Y (set vs)’ >- rw [DISJOINT_ALT] \\
      qunabbrevl_tac [‘Y’, ‘vs’] \\
-     MATCH_MP_TAC FRESH_SET_DISJOINT' >> art [])
+     MATCH_MP_TAC RANKS_DISJOINT' >> art [])
  >> DISCH_TAC
  >> Know ‘DISJOINT (set vs) (FV Q0)’
  >- (MATCH_MP_TAC DISJOINT_SUBSET >> Q.EXISTS_TAC ‘FV Q’ \\
@@ -387,7 +387,7 @@ Proof
          rw [DISJOINT_ALT']) \\
      Suff ‘DISJOINT Y (set vs)’ >- rw [DISJOINT_ALT] \\
      qunabbrevl_tac [‘Y’, ‘vs’] \\
-     MATCH_MP_TAC FRESH_SET_DISJOINT' >> art [])
+     MATCH_MP_TAC RANKS_DISJOINT' >> art [])
  >> DISCH_TAC
  (* NOTE: the next two calls will refine P1 and Q1 *)
  >> Q_TAC (HNF_TAC (“P0 :term”,   “vs :string list”,
@@ -416,15 +416,15 @@ Proof
       >- (Know ‘x IN X UNION Y’ >- METIS_TAC [SUBSET_DEF] \\
           rw [] >- (DISJ1_TAC >> art []) \\
           DISJ2_TAC \\
-          Suff ‘Y SUBSET FRESH_SET' (SUC r) X’ >- METIS_TAC [SUBSET_DEF] \\
+          Suff ‘Y SUBSET RANKS' (SUC r) X’ >- METIS_TAC [SUBSET_DEF] \\
           qunabbrev_tac ‘Y’ \\
-          MATCH_MP_TAC FRESH_SET_MONO >> rw []) \\
+          MATCH_MP_TAC RANKS_MONO >> rw []) \\
       DISJ2_TAC \\
-      Suff ‘set vs SUBSET FRESH_SET' (SUC r) X’ >- METIS_TAC [SUBSET_DEF] \\
+      Suff ‘set vs SUBSET RANKS' (SUC r) X’ >- METIS_TAC [SUBSET_DEF] \\
       rpt (Q.PAT_X_ASSUM ‘principle_hnf _ = _’ K_TAC) \\
       rpt (Q.PAT_X_ASSUM ‘DISJOINT (set vs) _’ K_TAC) \\
       qunabbrev_tac ‘vs’ \\
-      MATCH_MP_TAC FRESH_SET_SUBSET >> rw [],
+      MATCH_MP_TAC RANKS_SUBSET >> rw [],
       (* goal 2 (of 2) *)
       Know ‘!i. i < LENGTH Qs ==> FV (EL i Qs) SUBSET FV Q1’
       >- (MATCH_MP_TAC hnf_children_FV_SUBSET \\
@@ -443,15 +443,15 @@ Proof
       >- (Know ‘x IN X UNION Y’ >- METIS_TAC [SUBSET_DEF] \\
           rw [] >- (DISJ1_TAC >> art []) \\
           DISJ2_TAC \\
-          Suff ‘Y SUBSET FRESH_SET' (SUC r) X’ >- METIS_TAC [SUBSET_DEF] \\
+          Suff ‘Y SUBSET RANKS' (SUC r) X’ >- METIS_TAC [SUBSET_DEF] \\
           qunabbrev_tac ‘Y’ \\
-          MATCH_MP_TAC FRESH_SET_MONO >> rw []) \\
+          MATCH_MP_TAC RANKS_MONO >> rw []) \\
       DISJ2_TAC \\
-      Suff ‘set vs SUBSET FRESH_SET' (SUC r) X’ >- METIS_TAC [SUBSET_DEF] \\
+      Suff ‘set vs SUBSET RANKS' (SUC r) X’ >- METIS_TAC [SUBSET_DEF] \\
       rpt (Q.PAT_X_ASSUM ‘principle_hnf _ = _’ K_TAC) \\
       rpt (Q.PAT_X_ASSUM ‘DISJOINT (set vs) _’ K_TAC) \\
       qunabbrev_tac ‘vs’ \\
-      MATCH_MP_TAC FRESH_SET_SUBSET >> rw [] ]
+      MATCH_MP_TAC RANKS_SUBSET >> rw [] ]
 QED
 
 Theorem BT_ltree_el_top[local] :
@@ -589,7 +589,7 @@ QED
    NOTE: added ‘X SUBSET FV M’ for the new definition of ‘subterm_def’.
  *)
 Theorem subterm_imp_ltree_paths_general :
-    !p X M r. FINITE X /\ FV M SUBSET X UNION FRESH_SET' r X /\
+    !p X M r. FINITE X /\ FV M SUBSET X UNION RANKS' r X /\
               subterm X M p r <> NONE ==>
               p IN ltree_paths (BT' X M r)
 Proof
@@ -618,7 +618,7 @@ Proof
  >> qunabbrev_tac ‘vs’
  >> Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
  (* extra work *)
- >> qabbrev_tac ‘Y = FRESH_SET' r X’
+ >> qabbrev_tac ‘Y = RANKS' r X’
  >> Know ‘DISJOINT (set vs) (FV M0)’
  >- (MATCH_MP_TAC DISJOINT_SUBSET >> Q.EXISTS_TAC ‘FV M’ \\
      reverse CONJ_TAC
@@ -631,7 +631,7 @@ Proof
          rw [DISJOINT_ALT']) \\
      Suff ‘DISJOINT Y (set vs)’ >- rw [DISJOINT_ALT] \\
      qunabbrevl_tac [‘Y’, ‘vs’] \\
-     MATCH_MP_TAC FRESH_SET_DISJOINT' >> art [])
+     MATCH_MP_TAC RANKS_DISJOINT' >> art [])
  >> DISCH_TAC
  >> qunabbrev_tac ‘y’
  >> Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
@@ -647,12 +647,12 @@ Proof
  >> rpt (Q.PAT_X_ASSUM ‘T’ K_TAC)
  (* extra work *)
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
- (* FV (EL h Ms) SUBSET X UNION FRESH_SET' (SUC r) X *)
+ (* FV (EL h Ms) SUBSET X UNION RANKS' (SUC r) X *)
  >> Know ‘!i. i < LENGTH Ms ==> FV (EL i Ms) SUBSET FV M1’
  >- (MATCH_MP_TAC hnf_children_FV_SUBSET \\
      simp [hnf_appstar])
  >> DISCH_TAC
- >> qabbrev_tac ‘Y' = FRESH_SET' (SUC r) X’
+ >> qabbrev_tac ‘Y' = RANKS' (SUC r) X’
  (* #1 *)
  >> MATCH_MP_TAC SUBSET_TRANS
  >> Q.EXISTS_TAC ‘FV M1’
@@ -674,11 +674,11 @@ Proof
      DISJ2_TAC \\
      Suff ‘Y SUBSET Y'’ >- METIS_TAC [SUBSET_DEF] \\
      qunabbrevl_tac [‘Y’, ‘Y'’] \\
-     MATCH_MP_TAC FRESH_SET_MONO >> rw [])
+     MATCH_MP_TAC RANKS_MONO >> rw [])
  >> DISJ2_TAC
  >> Suff ‘set vs SUBSET Y'’ >- METIS_TAC [SUBSET_DEF]
  >> qunabbrevl_tac [‘vs’, ‘Y'’]
- >> MATCH_MP_TAC FRESH_SET_SUBSET >> rw []
+ >> MATCH_MP_TAC RANKS_SUBSET >> rw []
 QED
 
 (* FV M SUBSET X *)
@@ -711,7 +711,7 @@ Theorem BT_ltree_el_thm =
 
 (* Lemma 10.1.15 [1, p.222] (subterm and ltree_lookup) *)
 Theorem BT_subterm_lemma_general :
-    !p X M r. FINITE X /\ FV M SUBSET X UNION FRESH_SET' r X /\
+    !p X M r. FINITE X /\ FV M SUBSET X UNION RANKS' r X /\
               subterm X M p r <> NONE ==>
               BT X (THE (subterm X M p r)) = THE (ltree_lookup (BT' X M r) p)
 Proof
@@ -738,7 +738,7 @@ Proof
  >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) X /\ LENGTH vs = n’
        by rw [Abbr ‘vs’, RNEWS_def]
  (* extra work *)
- >> qabbrev_tac ‘Y = FRESH_SET' r X’
+ >> qabbrev_tac ‘Y = RANKS' r X’
  >> Know ‘DISJOINT (set vs) (FV M0)’
  >- (MATCH_MP_TAC DISJOINT_SUBSET >> Q.EXISTS_TAC ‘FV M’ \\
      reverse CONJ_TAC
@@ -751,7 +751,7 @@ Proof
          rw [DISJOINT_ALT']) \\
      Suff ‘DISJOINT Y (set vs)’ >- rw [DISJOINT_ALT] \\
      qunabbrevl_tac [‘Y’, ‘vs’] \\
-     MATCH_MP_TAC FRESH_SET_DISJOINT' >> art [])
+     MATCH_MP_TAC RANKS_DISJOINT' >> art [])
  >> DISCH_TAC
  >> qunabbrev_tac ‘y’
  >> Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
@@ -765,7 +765,7 @@ Proof
  >> POP_ASSUM (rfs o wrap o SYM)
  (* extra work *)
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
- >> qabbrev_tac ‘Y' = FRESH_SET' (SUC r) X’
+ >> qabbrev_tac ‘Y' = RANKS' (SUC r) X’
  (* FV (EL h Ms) SUBSET X UNION Y' *)
  >> Know ‘!i. i < LENGTH Ms ==> FV (EL i Ms) SUBSET FV M1’
  >- (MATCH_MP_TAC hnf_children_FV_SUBSET \\
@@ -792,11 +792,11 @@ Proof
      DISJ2_TAC \\
      Suff ‘Y SUBSET Y'’ >- METIS_TAC [SUBSET_DEF] \\
      qunabbrevl_tac [‘Y’, ‘Y'’] \\
-     MATCH_MP_TAC FRESH_SET_MONO >> rw [])
+     MATCH_MP_TAC RANKS_MONO >> rw [])
  >> DISJ2_TAC
  >> Suff ‘set vs SUBSET Y'’ >- METIS_TAC [SUBSET_DEF]
  >> qunabbrevl_tac [‘vs’, ‘Y'’]
- >> MATCH_MP_TAC FRESH_SET_SUBSET >> rw []
+ >> MATCH_MP_TAC RANKS_SUBSET >> rw []
 QED
 
 Theorem BT_subterm_lemma :
@@ -809,7 +809,7 @@ Proof
  >> SET_TAC []
 QED
 
-(* NOTE: This theorem is no more valid (and needed)
+(* NOTE: This theorem is no more valid (and no more needed)
 Theorem subterm_finite_lemma :
     !p X M Y N. FINITE X /\ subterm X M p = SOME (Y,N) ==> FINITE Y
 Proof
@@ -827,12 +827,12 @@ Proof
 QED
  *)
 
-(* Something else about ‘subterm’ is now required *)
+(* something else about ‘subterm’ is now required *)
 Theorem subterm_rank_lemma_general :
-    !p X M N r r'. FINITE X /\ FV M SUBSET X UNION FRESH_SET' r X /\
+    !p X M N r r'. FINITE X /\ FV M SUBSET X UNION RANKS' r X /\
                    subterm X M p r = SOME (N,r')
                ==> r' = r + LENGTH p /\
-                   FV N SUBSET X UNION FRESH_SET' r' X
+                   FV N SUBSET X UNION RANKS' r' X
 Proof
     Induct_on ‘p’
  >- (rw [] >> art [])
@@ -850,12 +850,12 @@ Proof
  >> Q.PAT_X_ASSUM ‘!X M N r r'. P’
       (MP_TAC o (Q.SPECL [‘X’, ‘M'’, ‘N’, ‘SUC r’, ‘r'’]))
  >> simp []
- >> Suff ‘FV M' SUBSET X UNION FRESH_SET' (SUC r) X’
+ >> Suff ‘FV M' SUBSET X UNION RANKS' (SUC r) X’
  >- rw []
  >> qunabbrev_tac ‘vs’
  >> Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
- >> qabbrev_tac ‘Y  = FRESH_SET' r X’
- >> qabbrev_tac ‘Y' = FRESH_SET' (SUC r) X’
+ >> qabbrev_tac ‘Y  = RANKS' r X’
+ >> qabbrev_tac ‘Y' = RANKS' (SUC r) X’
  >> Know ‘DISJOINT (set vs) (FV M0)’
  >- (MATCH_MP_TAC DISJOINT_SUBSET >> Q.EXISTS_TAC ‘FV M’ \\
      reverse CONJ_TAC
@@ -868,7 +868,7 @@ Proof
          rw [DISJOINT_ALT']) \\
      Suff ‘DISJOINT Y (set vs)’ >- rw [DISJOINT_ALT] \\
      qunabbrevl_tac [‘Y’, ‘vs’] \\
-     MATCH_MP_TAC FRESH_SET_DISJOINT' >> art [])
+     MATCH_MP_TAC RANKS_DISJOINT' >> art [])
  >> DISCH_TAC
  >> Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
                     “y  :string”, “args :term list”)) ‘M1’
@@ -903,18 +903,18 @@ Proof
      DISJ2_TAC \\
      Suff ‘Y SUBSET Y'’ >- METIS_TAC [SUBSET_DEF] \\
      qunabbrevl_tac [‘Y’, ‘Y'’] \\
-     MATCH_MP_TAC FRESH_SET_MONO >> rw [])
+     MATCH_MP_TAC RANKS_MONO >> rw [])
  >> DISJ2_TAC
  >> Suff ‘set vs SUBSET Y'’ >- METIS_TAC [SUBSET_DEF]
  >> qunabbrevl_tac [‘vs’, ‘Y'’]
- >> MATCH_MP_TAC FRESH_SET_SUBSET >> rw []
+ >> MATCH_MP_TAC RANKS_SUBSET >> rw []
 QED
 
 Theorem subterm_rank_lemma :
     !p X M N r r'. FINITE X /\ FV M SUBSET X /\
                    subterm X M p r = SOME (N,r')
                ==> r' = r + LENGTH p /\
-                   FV N SUBSET X UNION FRESH_SET' r' X
+                   FV N SUBSET X UNION RANKS' r' X
 Proof
     rpt GEN_TAC
  >> STRIP_TAC
@@ -984,11 +984,11 @@ Proof
  >- (qunabbrev_tac ‘N0’ \\
      MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
  (* applying subterm_rank_thm *)
- >> ‘FV N SUBSET X UNION FRESH_SET' r' X’ by PROVE_TAC [subterm_rank_thm]
+ >> ‘FV N SUBSET X UNION RANKS' r' X’ by PROVE_TAC [subterm_rank_thm]
  >> MATCH_MP_TAC DISJOINT_SUBSET
- >> Q.EXISTS_TAC ‘X UNION FRESH_SET' r' X’ >> art []
+ >> Q.EXISTS_TAC ‘X UNION RANKS' r' X’ >> art []
  >> rw [DISJOINT_UNION', Abbr ‘vs’, Once DISJOINT_SYM]
- >> MATCH_MP_TAC FRESH_SET_DISJOINT' >> art []
+ >> MATCH_MP_TAC RANKS_DISJOINT' >> art []
 QED
 
 (* NOTE: This proof shares a lot of tactics with [subterm_tpm_lemma]
@@ -1175,7 +1175,7 @@ QED
    even improved to an iff, as the present theorem shows.
  *)
 Theorem subterm_is_none_iff_parent_unsolvable_lemma[local] :
-    !p X M r. FINITE X /\ FV M SUBSET X UNION FRESH_SET' r X /\
+    !p X M r. FINITE X /\ FV M SUBSET X UNION RANKS' r X /\
               p IN ltree_paths (BT' X M r) ==>
              (subterm X M p r = NONE <=>
               p <> [] /\ subterm X M (FRONT p) r <> NONE /\
@@ -1196,7 +1196,7 @@ Proof
  (* END Norrish's advanced tactics *)
  >> qunabbrev_tac ‘vs’
  >> Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
- >> qabbrev_tac ‘Y = FRESH_SET' r X’
+ >> qabbrev_tac ‘Y = RANKS' r X’
  >> Know ‘DISJOINT (set vs) (FV M0)’
  >- (MATCH_MP_TAC DISJOINT_SUBSET >> Q.EXISTS_TAC ‘FV M’ \\
      reverse CONJ_TAC
@@ -1209,7 +1209,7 @@ Proof
          rw [DISJOINT_ALT']) \\
      Suff ‘DISJOINT Y (set vs)’ >- rw [DISJOINT_ALT] \\
      qunabbrevl_tac [‘Y’, ‘vs’] \\
-     MATCH_MP_TAC FRESH_SET_DISJOINT' >> art [])
+     MATCH_MP_TAC RANKS_DISJOINT' >> art [])
  >> DISCH_TAC
  >> Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
                     “y  :string”, “args :term list”)) ‘M1’
@@ -1247,7 +1247,7 @@ Proof
  >> DISCH_THEN K_TAC
  >> qunabbrev_tac ‘N’
  (* extra goal *)
- >> qabbrev_tac ‘Y' = FRESH_SET' (SUC r) X’
+ >> qabbrev_tac ‘Y' = RANKS' (SUC r) X’
  (* FV (EL h Ms) SUBSET X UNION Y' *)
  >> Know ‘!i. i < LENGTH Ms ==> FV (EL i Ms) SUBSET FV M1’
  >- (MATCH_MP_TAC hnf_children_FV_SUBSET \\
@@ -1274,11 +1274,11 @@ Proof
      DISJ2_TAC \\
      Suff ‘Y SUBSET Y'’ >- METIS_TAC [SUBSET_DEF] \\
      qunabbrevl_tac [‘Y’, ‘Y'’] \\
-     MATCH_MP_TAC FRESH_SET_MONO >> rw [])
+     MATCH_MP_TAC RANKS_MONO >> rw [])
  >> DISJ2_TAC
  >> Suff ‘set vs SUBSET Y'’ >- METIS_TAC [SUBSET_DEF]
  >> qunabbrevl_tac [‘vs’, ‘Y'’]
- >> MATCH_MP_TAC FRESH_SET_SUBSET >> rw []
+ >> MATCH_MP_TAC RANKS_SUBSET >> rw []
 QED
 
 Theorem subterm_is_none_iff_parent_unsolvable :
@@ -1323,7 +1323,7 @@ QED
 (* TODO *)
 
 Theorem subterm_solvable_lemma_lemma[local] :
-    !X M p r. FINITE X /\ FV M SUBSET X UNION FRESH_SET' r X /\
+    !X M p r. FINITE X /\ FV M SUBSET X UNION RANKS' r X /\
               p <> [] /\ subterm X M p r <> NONE ==>
             (!q. q <<= p ==> subterm X M q r <> NONE) /\
             (!q. q <<= FRONT p ==> solvable (subterm' X M q r))
@@ -1368,7 +1368,7 @@ QED
    and the following theorem deals the case ‘unsolvable (subterm' X M p)’.
  *)
 Theorem BT_ltree_el_of_unsolvables_lemma :
-    !p X M r. FINITE X /\ FV M SUBSET X UNION FRESH_SET' r X /\
+    !p X M r. FINITE X /\ FV M SUBSET X UNION RANKS' r X /\
               subterm X M p r <> NONE /\ unsolvable (subterm' X M p r) ==>
               ltree_el (BT' X M r) p = SOME bot
 Proof

@@ -401,59 +401,59 @@ QED
 
 (* The (infinite) set of all fresh names lower than the given rank
 
-   NOTE: ‘FRESH_SET (SUC r) s’ is the set of names lower than rank r (instead of SUC r).
+   NOTE: ‘RANKS (SUC r) s’ is the set of names lower than rank r (instead of SUC r).
    This is to align with ‘RNEWS’ where ‘RNEWS 0 = NEWS’ which is not ranked at all,
-   while keeping |- DISJOINT (FRESH_SET r s) (set (RNEWS r n s)) holds perfectly.
+   while keeping |- DISJOINT (RANKS r s) (set (RNEWS r n s)) holds perfectly.
  *)
-Definition FRESH_SET :
-    FRESH_SET       0 s = {} /\
-    FRESH_SET (SUC r) s = {v | ?i j. v = FRESH s (npair i j) /\ i < r}
+Definition RANKS :
+    RANKS       0 s = {} /\
+    RANKS (SUC r) s = {v | ?i j. v = FRESH s (npair i j) /\ i < r}
 End
 
-Overload FRESH_SET' = “\r s. FRESH_SET (SUC r) s”
+Overload RANKS' = “\r s. RANKS (SUC r) s”
 
-Theorem FRESH_SET_0[simp] :
-    FRESH_SET 0 s = {} /\ FRESH_SET 1 s = {}
+Theorem RANKS_0[simp] :
+    RANKS 0 s = {} /\ RANKS 1 s = {}
 Proof
-    rw [FRESH_SET]
- >> REWRITE_TAC [ONE, FRESH_SET]
+    rw [RANKS]
+ >> REWRITE_TAC [ONE, RANKS]
  >> rw []
 QED
 
-Theorem FRESH_SET_MONO :
-    !s r1 r2. r1 <= r2 ==> FRESH_SET r1 s SUBSET FRESH_SET r2 s
+Theorem RANKS_MONO :
+    !s r1 r2. r1 <= r2 ==> RANKS r1 s SUBSET RANKS r2 s
 Proof
     rpt GEN_TAC
  >> Cases_on ‘r1’ >> simp []
  >> Cases_on ‘r2’ >> simp []
- >> rw [FRESH_SET, SUBSET_DEF]
+ >> rw [RANKS, SUBSET_DEF]
  >> qexistsl_tac [‘i’, ‘j’] >> rw []
 QED
 
-Theorem FRESH_SET_DISJOINT :
+Theorem RANKS_DISJOINT :
     !r1 r2 n s. FINITE s /\ r1 <= r2 ==>
-                DISJOINT (FRESH_SET r1 s) (set (RNEWS r2 n s))
+                DISJOINT (RANKS r1 s) (set (RNEWS r2 n s))
 Proof
     rpt GEN_TAC
  >> Cases_on ‘r1’ >> simp []
  >> Cases_on ‘r2’ >> simp []
- >> rw [DISJOINT_ALT, RNEWS, MEM_GENLIST, FRESH_SET]
+ >> rw [DISJOINT_ALT, RNEWS, MEM_GENLIST, RANKS]
  >> rfs [FRESH_11]
 QED
 
-Theorem FRESH_SET_DISJOINT' :
-    !r n s. FINITE s ==> DISJOINT (FRESH_SET r s) (set (RNEWS r n s))
+Theorem RANKS_DISJOINT' :
+    !r n s. FINITE s ==> DISJOINT (RANKS r s) (set (RNEWS r n s))
 Proof
     rpt STRIP_TAC
- >> MATCH_MP_TAC FRESH_SET_DISJOINT >> rw []
+ >> MATCH_MP_TAC RANKS_DISJOINT >> rw []
 QED
 
-(* NOTE: ‘set (RNEWS 0 n s) SUBSET FRESH_SET 0 s’ doesn't hold *)
-Theorem FRESH_SET_SUBSET :
+(* NOTE: ‘set (RNEWS 0 n s) SUBSET RANKS 0 s’ doesn't hold *)
+Theorem RANKS_SUBSET :
     !r1 r2 n s. r1 < r2 ==>
-                set (RNEWS (SUC r1) n s) SUBSET FRESH_SET (SUC r2) s
+                set (RNEWS (SUC r1) n s) SUBSET RANKS (SUC r2) s
 Proof
-    rw [RNEWS_set, FRESH_SET, SUBSET_DEF]
+    rw [RNEWS_set, RANKS, SUBSET_DEF]
  >> qexistsl_tac [‘r1’, ‘j’] >> art []
 QED
 
