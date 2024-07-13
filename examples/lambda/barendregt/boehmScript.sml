@@ -95,6 +95,9 @@ fun HNF_TAC (M0, vs, y, args) M1 = let
  >> DISCH_TAC
 end;
 
+(* Remove all ‘T’s in current assumptions *)
+val TK_TAC = rpt (Q.PAT_X_ASSUM ‘T’ K_TAC);
+
 (*---------------------------------------------------------------------------*
  *  ltreeTheory extras
  *---------------------------------------------------------------------------*)
@@ -556,9 +559,8 @@ Proof
     rw [BT_ltree_el_NIL]
 QED
 
-(*
 (*---------------------------------------------------------------------------*
- *  subterm properties
+ *  More subterm properties
  *---------------------------------------------------------------------------*)
 
 (* M0 is not needed if M is already an hnf *)
@@ -579,9 +581,9 @@ Proof
  >> ‘M0 = M’ by rw [Abbr ‘M0’, principle_hnf_reduce]
  >> POP_ASSUM (fs o wrap)
  >> Q.PAT_X_ASSUM ‘n' = n’   (fs o wrap o SYM)
- >> Q.PAT_X_ASSUM ‘m' = m’   (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘vs' = vs’ (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘M1' = M1’ (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘Ms' = Ms’ (fs o wrap o SYM)
 QED
 
 (* In the extreme case, M is a absfree hnf (i.e. VAR y @* args), and the
@@ -618,9 +620,6 @@ Proof
  >> rw [hnf_appstar, is_abs_appstar]
 QED
 
-(* NOTE: This theorem is only possible when ‘vs = NEWS n (X UNION FV M0)’
-        (instead of ‘FV M’) in the definition of [subterm_def].
- *)
 Theorem subterm_of_principle_hnf :
     !X M p r. solvable M /\ p <> [] ==>
               subterm X (principle_hnf M) p r = subterm X M p r
@@ -633,19 +632,17 @@ Proof
  >> RW_TAC std_ss [subterm_of_solvables]
  >> ‘M0' = M0’ by rw [Abbr ‘M0'’, Abbr ‘M0’, principle_hnf_stable']
  >> POP_ASSUM (fs o wrap o SYM)
- >> Q.PAT_X_ASSUM ‘m = m'’   (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘n = n'’   (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘vs = vs'’ (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘M1 = M1'’ (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘Ms = Ms'’ (fs o wrap o SYM)
 QED
 
 (* NOTE: when subterm X M p = NONE, either 1) M or its subterm is unsolvable,
    or 2) p runs out of ltree_paths (BT X M). If we knew subterm X M p <> NONE
    a priori, then p IN ltree_paths (BT X M) must hold.
-
-   NOTE: added ‘X SUBSET FV M’ for the new definition of ‘subterm_def’.
  *)
-Theorem subterm_imp_ltree_paths_general :
+Theorem subterm_imp_ltree_paths :
     !p X M r. FINITE X /\ FV M SUBSET X UNION RANKS r X /\
               subterm X M p r <> NONE ==>
               p IN ltree_paths (BT' X M r)
@@ -677,74 +674,33 @@ Proof
  (* extra work *)
  >> qabbrev_tac ‘Y = RANKS r X’
  >> Know ‘DISJOINT (set vs) (FV M0)’
- >- (MATCH_MP_TAC DISJOINT_SUBSET >> Q.EXISTS_TAC ‘FV M’ \\
-     reverse CONJ_TAC
-     >- (qunabbrev_tac ‘M0’ \\
-         MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art []) \\
-     rw [DISJOINT_ALT'] \\
-     Know ‘x IN X UNION Y’ >- ASM_SET_TAC [] \\
-     rw [IN_UNION]
-     >- (Q.PAT_X_ASSUM ‘DISJOINT (set vs) X’ MP_TAC \\
-         rw [DISJOINT_ALT']) \\
-     Suff ‘DISJOINT Y (set vs)’ >- rw [DISJOINT_ALT] \\
-     qunabbrevl_tac [‘Y’, ‘vs’] \\
-     MATCH_MP_TAC RANKS_DISJOINT' >> art [])
+ >- (MATCH_MP_TAC subterm_disjoint_lemma \\
+     qexistsl_tac [‘X’, ‘M’, ‘r’, ‘n’] >> simp [])
  >> DISCH_TAC
  >> qunabbrev_tac ‘y’
  >> Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
                     “y  :string”, “args :term list”)) ‘M1’
  >> ‘TAKE n vs = vs’ by rw []
  >> POP_ASSUM (rfs o wrap)
- >> ‘LENGTH Ms = m’ by rw [Abbr ‘Ms’, Abbr ‘m’]
  >> Cases_on ‘h < m’ >> simp []
+ >> ‘Ms = args’ by rw [Abbr ‘Ms’]
+ >> POP_ASSUM (fs o wrap)
  >> DISCH_TAC
  >> simp [GSYM BT_def]
  >> fs [ltree_paths_def, ltree_lookup_def, LNTH_fromList, EL_MAP]
- (* cleanup before extra work *)
- >> rpt (Q.PAT_X_ASSUM ‘T’ K_TAC)
+ >> TK_TAC
  (* extra work *)
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
- (* FV (EL h Ms) SUBSET X UNION RANKS (SUC r) X *)
- >> Know ‘!i. i < LENGTH Ms ==> FV (EL i Ms) SUBSET FV M1’
- >- (MATCH_MP_TAC hnf_children_FV_SUBSET \\
-     simp [hnf_appstar])
- >> DISCH_TAC
- >> qabbrev_tac ‘Y' = RANKS (SUC r) X’
- (* #1 *)
- >> MATCH_MP_TAC SUBSET_TRANS
- >> Q.EXISTS_TAC ‘FV M1’
- >> CONJ_TAC >- (FIRST_X_ASSUM MATCH_MP_TAC >> art [])
- (* #2 *)
- >> MATCH_MP_TAC SUBSET_TRANS
- >> Q.EXISTS_TAC ‘FV M0 UNION set vs’
- >> CONJ_TAC >- simp [FV_LAMl]
- (* #3 *)
- >> MATCH_MP_TAC SUBSET_TRANS
- >> Q.EXISTS_TAC ‘FV M UNION set vs’
- >> CONJ_TAC
- >- (Suff ‘FV M0 SUBSET FV M’ >- SET_TAC [] \\
-     qunabbrev_tac ‘M0’ \\
-     MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
- >> rw [SUBSET_DEF]
- >- (Know ‘x IN X UNION Y’ >- METIS_TAC [SUBSET_DEF] \\
-     rw [] >- (DISJ1_TAC >> art []) \\
-     DISJ2_TAC \\
-     Suff ‘Y SUBSET Y'’ >- METIS_TAC [SUBSET_DEF] \\
-     qunabbrevl_tac [‘Y’, ‘Y'’] \\
-     MATCH_MP_TAC RANKS_MONO >> rw [])
- >> DISJ2_TAC
- >> Suff ‘set vs SUBSET Y'’ >- METIS_TAC [SUBSET_DEF]
- >> qunabbrevl_tac [‘vs’, ‘Y'’]
- >> MATCH_MP_TAC RANKS_SUBSET >> rw []
+ >> MATCH_MP_TAC subterm_induction_lemma
+ >> qexistsl_tac [‘M’, ‘M0’, ‘n’, ‘vs’, ‘M1’] >> simp []
 QED
 
-(* FV M SUBSET X *)
-Theorem subterm_imp_ltree_paths :
+Theorem subterm_imp_ltree_paths' :
     !p X M r. FINITE X /\ FV M SUBSET X /\ subterm X M p r <> NONE ==>
               p IN ltree_paths (BT' X M r)
 Proof
     rpt STRIP_TAC
- >> MATCH_MP_TAC subterm_imp_ltree_paths_general >> art []
+ >> MATCH_MP_TAC subterm_imp_ltree_paths >> art []
  >> Q.PAT_X_ASSUM ‘FV M SUBSET X’ MP_TAC
  >> SET_TAC []
 QED
@@ -754,20 +710,20 @@ QED
 
    NOTE: This theorem connects ‘ltree_el’ and ‘ltree_lookup’ for Boehm trees
 
-   |- !r p X M.
-        p IN ltree_paths (BT' X M r) ==>
-        ltree_el (BT' X M r) p =
-        do t' <- ltree_lookup (BT' X M r) p;
-           SOME (ltree_node t',LLENGTH (ltree_children t'))
-        od
+   |- !X M p r.
+         p IN ltree_paths (BT' X M r) ==>
+         ltree_el (BT' X M r) p =
+         do t' <- ltree_lookup (BT' X M r) p;
+            SOME (ltree_node t',LLENGTH (ltree_children t'))
+         od
  *)
 Theorem BT_ltree_el_thm =
         ltree_el_alt_ltree_lookup |> INST_TYPE [“:'a” |-> “:BT_node”]
                                   |> Q.SPECL [‘p’, ‘BT' X M r’]
-                                  |> GEN_ALL
+                                  |> Q.GENL [‘X’, ‘M’, ‘p’, ‘r’]
 
 (* Lemma 10.1.15 [1, p.222] (subterm and ltree_lookup) *)
-Theorem BT_subterm_lemma_general :
+Theorem BT_subterm_lemma :
     !p X M r. FINITE X /\ FV M SUBSET X UNION RANKS r X /\
               subterm X M p r <> NONE ==>
               BT X (THE (subterm X M p r)) = THE (ltree_lookup (BT' X M r) p)
@@ -792,97 +748,38 @@ Proof
  >> Q.PAT_X_ASSUM ‘M1 = M1'’ (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘Ms = Ms'’ (fs o wrap o SYM)
  >> STRIP_TAC
- >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) X /\ LENGTH vs = n’
-       by rw [Abbr ‘vs’, RNEWS_def]
+ >> qunabbrev_tac ‘vs’
+ >> Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
  (* extra work *)
  >> qabbrev_tac ‘Y = RANKS r X’
  >> Know ‘DISJOINT (set vs) (FV M0)’
- >- (MATCH_MP_TAC DISJOINT_SUBSET >> Q.EXISTS_TAC ‘FV M’ \\
-     reverse CONJ_TAC
-     >- (qunabbrev_tac ‘M0’ \\
-         MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art []) \\
-     rw [DISJOINT_ALT'] \\
-     Know ‘x IN X UNION Y’ >- ASM_SET_TAC [] \\
-     rw [IN_UNION]
-     >- (Q.PAT_X_ASSUM ‘DISJOINT (set vs) X’ MP_TAC \\
-         rw [DISJOINT_ALT']) \\
-     Suff ‘DISJOINT Y (set vs)’ >- rw [DISJOINT_ALT] \\
-     qunabbrevl_tac [‘Y’, ‘vs’] \\
-     MATCH_MP_TAC RANKS_DISJOINT' >> art [])
+ >- (MATCH_MP_TAC subterm_disjoint_lemma \\
+     qexistsl_tac [‘X’, ‘M’, ‘r’, ‘n’] >> simp [])
  >> DISCH_TAC
  >> qunabbrev_tac ‘y’
  >> Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
                     “y  :string”, “args :term list”)) ‘M1’
  >> ‘TAKE n vs = vs’ by rw []
  >> POP_ASSUM (rfs o wrap)
- >> ‘LENGTH Ms = m’ by rw [Abbr ‘Ms’, Abbr ‘m’]
  >> simp [ltree_lookup, LNTH_fromList, EL_MAP, GSYM BT_def]
- >> Q.PAT_X_ASSUM ‘T’ K_TAC
+ >> TK_TAC
  >> ‘Ms = args’ by rw [Abbr ‘Ms’]
- >> POP_ASSUM (rfs o wrap o SYM)
+ >> POP_ASSUM (rfs o wrap)
  (* extra work *)
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
- >> qabbrev_tac ‘Y' = RANKS (SUC r) X’
- (* FV (EL h Ms) SUBSET X UNION Y' *)
- >> Know ‘!i. i < LENGTH Ms ==> FV (EL i Ms) SUBSET FV M1’
- >- (MATCH_MP_TAC hnf_children_FV_SUBSET \\
-     simp [hnf_appstar])
- >> DISCH_TAC
- (* #1 *)
- >> MATCH_MP_TAC SUBSET_TRANS
- >> Q.EXISTS_TAC ‘FV M1’
- >> CONJ_TAC >- (FIRST_X_ASSUM MATCH_MP_TAC >> art [])
- (* #2 *)
- >> MATCH_MP_TAC SUBSET_TRANS
- >> Q.EXISTS_TAC ‘FV M0 UNION set vs’
- >> CONJ_TAC >- simp [FV_LAMl]
- (* #3 *)
- >> MATCH_MP_TAC SUBSET_TRANS
- >> Q.EXISTS_TAC ‘FV M UNION set vs’
- >> CONJ_TAC
- >- (Suff ‘FV M0 SUBSET FV M’ >- SET_TAC [] \\
-     qunabbrev_tac ‘M0’ \\
-     MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
- >> rw [SUBSET_DEF]
- >- (Know ‘x IN X UNION Y’ >- METIS_TAC [SUBSET_DEF] \\
-     rw [] >- (DISJ1_TAC >> art []) \\
-     DISJ2_TAC \\
-     Suff ‘Y SUBSET Y'’ >- METIS_TAC [SUBSET_DEF] \\
-     qunabbrevl_tac [‘Y’, ‘Y'’] \\
-     MATCH_MP_TAC RANKS_MONO >> rw [])
- >> DISJ2_TAC
- >> Suff ‘set vs SUBSET Y'’ >- METIS_TAC [SUBSET_DEF]
- >> qunabbrevl_tac [‘vs’, ‘Y'’]
- >> MATCH_MP_TAC RANKS_SUBSET >> rw []
+ >> MATCH_MP_TAC subterm_induction_lemma
+ >> qexistsl_tac [‘M’, ‘M0’, ‘n’, ‘vs’, ‘M1’] >> simp []
 QED
 
-Theorem BT_subterm_lemma :
+Theorem BT_subterm_lemma' :
     !p X M r. FINITE X /\ FV M SUBSET X /\ subterm X M p r <> NONE ==>
               BT X (THE (subterm X M p r)) = THE (ltree_lookup (BT' X M r) p)
 Proof
     rpt STRIP_TAC
- >> MATCH_MP_TAC BT_subterm_lemma_general >> art []
+ >> MATCH_MP_TAC BT_subterm_lemma >> art []
  >> Q.PAT_X_ASSUM ‘FV M SUBSET X’ MP_TAC
  >> SET_TAC []
 QED
-
-(* NOTE: This theorem is no more valid (and no more needed)
-Theorem subterm_finite_lemma :
-    !p X M Y N. FINITE X /\ subterm X M p = SOME (Y,N) ==> FINITE Y
-Proof
-    Induct_on ‘p’ >- simp []
- >> rpt GEN_TAC
- >> simp [subterm_def]
- >> qabbrev_tac ‘M0 = principle_hnf M’
- >> qabbrev_tac ‘n = LAMl_size M0’
- >> qabbrev_tac ‘vs = NEWS n (X UNION FV M0)’
- >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
- >> rpt STRIP_TAC
- >> FIRST_X_ASSUM MATCH_MP_TAC
- >> qexistsl_tac [‘X UNION set vs’, ‘EL h (hnf_children M1)’, ‘N’]
- >> rw []
-QED
- *)
 
 (* Lemma 10.1.15 (related) [1, p.222] (subterm and ltree_el)
 
@@ -898,7 +795,7 @@ QED
           subterm_imp_ltree_paths, subterm_finite_lemma, etc.
  *)
 Theorem BT_subterm_thm :
-    !p X M r. FINITE X /\ FV M SUBSET X /\
+    !p X M r. FINITE X /\ FV M SUBSET X UNION RANKS r X /\
               subterm X M p r <> NONE /\
               solvable (subterm' X M p r)
         ==> do (N,r') <- subterm X M p r;
@@ -922,210 +819,51 @@ Proof
  >> Cases_on ‘t’ >> fs []
  >> rename1 ‘subterm X M p r = SOME (N,r')’
  >> rw [BT_ltree_el_thm]
- >> Know ‘BT' X N r' = ltree_unfold (BT_generator X) (N,r')’ >- rw [BT_def]
- >> Rewr'
- >> NTAC 2 (simp [Once ltree_unfold, BT_generator_def])
- >> simp [LMAP_fromList]
+ (* BEGIN Norrish's advanced tactics *)
+ >> CONV_TAC (UNBETA_CONV “BT' X N r'”)
+ >> qmatch_abbrev_tac ‘P _’
+ >> RW_TAC bool_ss [BT_def, Once ltree_unfold, BT_generator_def]
+ >> simp [Abbr ‘P’]
+ (* END Norrish's advanced tactics. *)
+ >> simp [LMAP_fromList, Abbr ‘l’]
 (* stage work *)
- >> qabbrev_tac ‘N0 = principle_hnf N’
- >> qabbrev_tac ‘n = LAMl_size N0’
+ >> qunabbrev_tac ‘vs’
  >> Q_TAC (RNEWS_TAC (“vs :string list”, “r' :num”, “n :num”)) ‘X’
- >> Suff ‘DISJOINT (set vs) (FV N0)’
+ >> Suff ‘DISJOINT (set vs) (FV M0)’
  >- (DISCH_TAC \\
-     qabbrev_tac ‘N1 = principle_hnf (N0 @* MAP VAR vs)’ \\
-     Q_TAC (HNF_TAC (“N0 :term”, “vs :string list”,
-                     “y :string”, “args :term list”)) ‘N1’ \\
+     qunabbrev_tac ‘y’ \\
+     Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
+                     “y :string”, “args :term list”)) ‘M1’ \\
     ‘TAKE n vs = vs’ by rw [TAKE_LENGTH_ID_rwt] \\
-     POP_ASSUM (rfs o wrap))
- >> MATCH_MP_TAC DISJOINT_SUBSET
- >> Q.EXISTS_TAC ‘FV N’
- >> reverse CONJ_TAC
- >- (qunabbrev_tac ‘N0’ \\
-     MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
- (* applying subterm_rank_lemma *)
- >> ‘FV N SUBSET X UNION RANKS r' X’ by PROVE_TAC [subterm_rank_lemma]
- >> MATCH_MP_TAC DISJOINT_SUBSET
- >> Q.EXISTS_TAC ‘X UNION RANKS r' X’ >> art []
- >> rw [DISJOINT_UNION', Abbr ‘vs’, Once DISJOINT_SYM]
- >> MATCH_MP_TAC RANKS_DISJOINT' >> art []
+     POP_ASSUM (rfs o wrap) \\
+     rw [Abbr ‘Ms’])
+ >> MATCH_MP_TAC subterm_disjoint_lemma
+ >> qexistsl_tac [‘X’, ‘N’, ‘r'’, ‘n’] >> simp []
+ >> PROVE_TAC [subterm_rank_lemma]
 QED
 
-(* NOTE: This proof is no more needed/useful
-Theorem BT_ltree_lookup_tpm :
-    !p X Y M pi. FINITE X /\ FINITE Y /\
-                 ltree_lookup (BT X M) p <> NONE ==>
-                 ltree_lookup (BT Y (tpm pi M)) p <> NONE
+Theorem BT_subterm_thm' :
+    !p X M r. FINITE X /\ FV M SUBSET X /\
+              subterm X M p r <> NONE /\
+              solvable (subterm' X M p r)
+        ==> do (N,r') <- subterm X M p r;
+                (t,m) <- ltree_el (BT' X M r) p;
+               (xs,y) <- t;
+                  M0 <<- principle_hnf N;
+                   n <<- LAMl_size M0;
+                  vs <<- RNEWS r' n X;
+                  M1 <<- principle_hnf (M0 @* MAP VAR vs);
+              return (vs = xs /\ hnf_headvar M1 = y /\
+                      hnf_children_size M1 = THE m)
+            od = SOME T
 Proof
-    Induct_on ‘p’ >- rw [ltree_lookup_def]
- >> rpt GEN_TAC
- >> reverse (Cases_on ‘solvable M’)
- >- rw [BT_of_unsolvables]
- >> simp [ltree_lookup]
- >> qabbrev_tac ‘M0 = principle_hnf M’
- >> qabbrev_tac ‘n = LAMl_size M0’
- >> STRIP_TAC
- >> POP_ASSUM MP_TAC
- >> Q_TAC (NEWS_TAC (“vs :string list”, “n :num”)) ‘X UNION FV M0’
- >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
- >> qabbrev_tac ‘Ms = hnf_children M1’
- >> Know ‘BT X M = ltree_unfold BT_generator (X,M)’ >- rw [BT_def]
- >> simp [Once ltree_unfold, BT_generator_def, LNTH_fromList, LMAP_fromList]
- >> DISCH_THEN K_TAC (* BT X M = ... *)
- >> REWRITE_TAC [GSYM BT_def]
- >> Cases_on ‘h < LENGTH Ms’ >> simp [EL_MAP]
- (* stage work *)
- >> Know ‘BT Y (tpm pi M) = ltree_unfold BT_generator (Y,tpm pi M)’ >- rw [BT_def]
- >> simp [Once ltree_unfold, BT_generator_def, LNTH_fromList, LMAP_fromList]
- >> DISCH_THEN K_TAC (* BT Y (tpm pi M) = ... *)
- >> qabbrev_tac ‘M0' = principle_hnf (tpm pi M)’
- >> qabbrev_tac ‘n' = LAMl_size M0'’
- >> qabbrev_tac ‘vs' = NEWS n' (Y UNION FV M0')’
- >> qabbrev_tac ‘M1' = principle_hnf (M0' @* MAP VAR vs')’
- >> qabbrev_tac ‘Ms' = hnf_children M1'’
- >> Know ‘M0' = tpm pi M0’
- >- (qunabbrevl_tac [‘M0’, ‘M0'’] \\
-     MATCH_MP_TAC principle_hnf_tpm' >> art [])
- >> DISCH_TAC
- >> ‘n' = n’ by rw [Abbr ‘n’, Abbr ‘n'’, LAMl_size_tpm]
- >> STRIP_TAC
- >> Know ‘ALL_DISTINCT vs' /\ DISJOINT (set vs') (Y UNION FV (tpm pi M0)) /\
-          LENGTH vs' = n’
- >- rw [Abbr ‘vs'’, NEWS_def]
- >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
- >> qabbrev_tac ‘vs1p = listpm string_pmact (REVERSE pi) vs'’
- >> ‘ALL_DISTINCT vs1p’ by rw [Abbr ‘vs1p’]
- (* rewriting inside the abbreviation of M1' *)
- >> Know ‘tpm pi M0 @* MAP VAR vs' = tpm pi (M0 @* MAP VAR vs1p)’
- >- (rw [Abbr ‘vs1p’, tpm_appstar] \\
-     Suff ‘listpm term_pmact pi (MAP VAR (listpm string_pmact (REVERSE pi) vs')) =
-           MAP VAR vs'’ >- rw [] \\
-     rw [LIST_EQ_REWRITE, EL_MAP])
- >> DISCH_THEN (fs o wrap)
- >> qunabbrev_tac ‘n'’
- >> Q.PAT_X_ASSUM ‘LAMl_size M0 = n’ (fs o wrap o SYM)
- >> qabbrev_tac ‘n = LAMl_size M0’
- >> Q.PAT_X_ASSUM ‘T’ K_TAC
- >> Know ‘DISJOINT (set vs1p) (FV M0)’
- >- (rw [Abbr ‘vs1p’, DISJOINT_ALT', MEM_listpm] \\
-     Q.PAT_X_ASSUM ‘DISJOINT (set vs') (FV (tpm pi M0))’ MP_TAC \\
-     rw [DISJOINT_ALT', FV_tpm])
- >> DISCH_TAC
- >> ‘LENGTH vs1p = n’ by rw [Abbr ‘vs1p’, LENGTH_listpm]
- >> qabbrev_tac ‘Z = X UNION Y UNION FV M0 UNION set vs UNION set vs1p’
- >> ‘FINITE Z’ by rw [Abbr ‘Z’]
- >> qabbrev_tac ‘vs2 = NEWS n Z’
- >> Know ‘ALL_DISTINCT vs2 /\ DISJOINT (set vs2) Z /\ LENGTH vs2 = n’
- >- rw [Abbr ‘vs2’, NEWS_def]
- >> Q.PAT_X_ASSUM ‘FINITE Z’ K_TAC
- >> qunabbrev_tac ‘Z’
- >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
- (* stage work *)
- >> qabbrev_tac ‘M2 = principle_hnf (M0 @* MAP VAR vs2)’
- >> Q_TAC (HNF_TAC (“M0 :term”, “vs2 :string list”,
-                    “y :string”, “args :term list”)) ‘M2’
- >> ‘TAKE n vs2 = vs2’ by rw [TAKE_LENGTH_ID_rwt]
- >> POP_ASSUM (rfs o wrap)
- >> Know ‘DISJOINT (set vs) (FV M2) /\
-          DISJOINT (set vs1p) (FV M2)’
- >- (rpt CONJ_TAC (* 2 subgoals, same tactics *) \\
-     (MATCH_MP_TAC DISJOINT_SUBSET \\
-      Q.EXISTS_TAC ‘FV M0 UNION set vs2’ \\
-      CONJ_TAC >- (Q.PAT_X_ASSUM ‘M0 = LAMl vs2 (VAR y @* args)’ K_TAC \\
-                   reverse (rw [DISJOINT_UNION']) >- rw [Once DISJOINT_SYM] \\
-                   MATCH_MP_TAC DISJOINT_SUBSET \\
-                   Q.EXISTS_TAC ‘FV M’ >> art []) \\
-     ‘FV M0 UNION set vs2 = FV (M0 @* MAP VAR vs2)’ by rw [] >> POP_ORW \\
-      qunabbrev_tac ‘M2’ \\
-      MATCH_MP_TAC principle_hnf_FV_SUBSET' \\
-      Know ‘solvable (VAR y @* args)’
-      >- (rw [solvable_iff_has_hnf] \\
-          MATCH_MP_TAC hnf_has_hnf \\
-          rw [hnf_appstar]) >> DISCH_TAC \\
-      Suff ‘M0 @* MAP VAR vs2 == VAR y @* args’
-      >- PROVE_TAC [lameq_solvable_cong] \\
-      rw [lameq_LAMl_appstar_VAR]))
- >> STRIP_TAC
- >> ‘hnf M2’ by rw [hnf_appstar]
- >> Know ‘M1 = tpm (ZIP (vs2,vs)) M2’
- >- (simp [Abbr ‘M1’] \\
-     MATCH_MP_TAC principle_hnf_LAMl_appstar \\
-     Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) >> art [])
- >> DISCH_TAC
- >> qabbrev_tac ‘p1 = ZIP (vs2,vs)’
- >> Know ‘M1' = tpm pi (principle_hnf (M0 @* MAP VAR vs1p))’
- >- (qunabbrev_tac ‘M1'’ \\
-     MATCH_MP_TAC principle_hnf_tpm >> art [] \\
-     REWRITE_TAC [has_hnf_thm] \\
-     Q.EXISTS_TAC ‘fromPairs vs2 (MAP VAR vs1p) ' (VAR y @* args)’ \\
-     CONJ_TAC
-     >- (MATCH_MP_TAC hreduce_LAMl_appstar \\
-         rw [EVERY_MEM, MEM_MAP] >> rw [] \\
-         Q.PAT_X_ASSUM ‘DISJOINT (set vs2) (set vs1p)’ MP_TAC \\
-         rw [DISJOINT_ALT']) \\
-    ‘FDOM (fromPairs vs2 (MAP VAR vs1p)) = set vs2’ by rw [FDOM_fromPairs] \\
-     Cases_on ‘MEM y vs2’
-     >- (simp [ssub_thm, ssub_appstar, hnf_appstar] \\
-         fs [MEM_EL] >> rename1 ‘i < LENGTH vs2’ \\
-         Know ‘fromPairs vs2 (MAP VAR vs1p) ' (EL i vs2) = EL i (MAP VAR vs1p)’
-         >- (MATCH_MP_TAC fromPairs_FAPPLY_EL >> rw []) >> Rewr' \\
-         rw [EL_MAP]) \\
-     simp [ssub_thm, ssub_appstar, hnf_appstar])
- >> DISCH_TAC
- >> Know ‘M1' = tpm pi (tpm (ZIP (vs2,vs1p)) M2)’
- >- (POP_ORW >> simp [] \\
-     MATCH_MP_TAC principle_hnf_LAMl_appstar \\
-     Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) >> art [])
- >> POP_ASSUM K_TAC (* M1' = ... (already used) *)
- >> REWRITE_TAC [GSYM pmact_decompose]
- >> qabbrev_tac ‘p2 = pi ++ ZIP (vs2,vs1p)’
- >> DISCH_TAC
- (* pop all assumptions about ‘Ms’ *)
- >> Q.PAT_X_ASSUM ‘ltree_lookup (BT (X UNION set vs) (EL h Ms)) p <> NONE’ MP_TAC
- >> Q.PAT_X_ASSUM ‘h < LENGTH Ms’ MP_TAC
- (* applying hnf_children_tpm to rewrite Ms and Ms' *)
- >> Know ‘Ms = MAP (tpm p1) args’
- >- (simp [Abbr ‘Ms’] \\
-    ‘hnf_children M2 = args’ by rw [hnf_children_hnf] \\
-     Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) \\
-     rw [hnf_children_tpm])
- >> Rewr'
- >> Know ‘Ms' = MAP (tpm p2) args’
- >- (simp [Abbr ‘Ms'’] \\
-    ‘hnf_children M2 = args’ by rw [hnf_children_hnf] \\
-     Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) \\
-     rw [hnf_children_tpm])
- >> Rewr'
- >> simp [EL_MAP, GSYM BT_def]
- >> qabbrev_tac ‘N = EL h args’
- >> Know ‘?pi'. tpm p2 N = tpm pi' (tpm p1 N)’
- >- (Q.EXISTS_TAC ‘p2 ++ REVERSE p1’ \\
-     rw [pmact_decompose])
- >> STRIP_TAC
- >> POP_ORW
- >> qabbrev_tac ‘N' = tpm p1 N’
- (* finally, using IH in a bulk way *)
- >> NTAC 2 DISCH_TAC
- >> FIRST_X_ASSUM MATCH_MP_TAC
- >> Q.EXISTS_TAC ‘X UNION set vs’ >> rw []
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC BT_subterm_thm >> art []
+ >> Q.PAT_X_ASSUM ‘FV M SUBSET X’ MP_TAC
+ >> SET_TAC []
 QED
- *)
 
-(* NOTE: This theorem is no more needed/useful.
-Theorem BT_ltree_paths_cong :
-    !X Y M. FINITE X /\ FINITE Y ==>
-            ltree_paths (BT X M) = ltree_paths (BT Y M)
-Proof
-    rw [ltree_paths_def]
- >> MATCH_MP_TAC SUBSET_ANTISYM
- >> rw [SUBSET_DEF]
- >| [ (* goal 1 (of 2) *)
-      MP_TAC (Q.SPECL [‘x’, ‘X’, ‘Y’, ‘M’, ‘[]’] BT_ltree_lookup_tpm),
-      (* goal 2 (of 2) *)
-      MP_TAC (Q.SPECL [‘x’, ‘Y’, ‘X’, ‘M’, ‘[]’] BT_ltree_lookup_tpm) ]
- >> rw [] (* shared ending tactics *)
-QED
- *)
-
+(*
 (* NOTE: In the above theorem, when the antecedents hold, i.e.
 
          p IN ltree_paths (BT X M) /\ subterm X M p = NONE
@@ -1133,7 +871,7 @@ QED
    Then ‘subterm' X M (FRONT p)’ must be an unsolvable term. This result can be
    even improved to an iff, as the present theorem shows.
  *)
-Theorem subterm_is_none_iff_parent_unsolvable_general :
+Theorem subterm_is_none_iff_parent_unsolvable :
     !p X M r. FINITE X /\ FV M SUBSET X UNION RANKS r X /\
               p IN ltree_paths (BT' X M r) ==>
              (subterm X M p r = NONE <=>
