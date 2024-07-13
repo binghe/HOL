@@ -1411,6 +1411,29 @@ QED
 Theorem lameq_principle_hnf_thm' =
         lameq_principle_hnf_thm |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
 
+Theorem lameq_principle_hnf_thm_simple :
+    !X M N M0 N0 n vs M1 N1.
+         FINITE X /\ FV M UNION FV N SUBSET X /\
+         has_hnf M /\ has_hnf N /\ M == N /\
+         M0 = principle_hnf M /\
+         N0 = principle_hnf N /\
+         n = LAMl_size M0 /\
+         vs = NEWS n X /\
+         M1 = principle_hnf (M0 @* MAP VAR vs) /\
+         N1 = principle_hnf (N0 @* MAP VAR vs)
+     ==> LAMl_size M0 = LAMl_size N0 /\
+         hnf_head M1 = hnf_head N1 /\
+         LENGTH (hnf_children M1) = LENGTH (hnf_children N1) /\
+         !i. i < LENGTH (hnf_children M1) ==>
+             EL i (hnf_children M1) == EL i (hnf_children N1)
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> MATCH_MP_TAC lameq_principle_hnf_thm
+ >> qexistsl_tac [‘0’, ‘X’, ‘M’, ‘N’, ‘n’, ‘vs’] >> art []
+ >> Q.PAT_X_ASSUM ‘FV M UNION FV N SUBSET X’ MP_TAC
+ >> SET_TAC []
+QED
+
 (* NOTE: The difficulty of applying this theorem is to prove the antecedents *)
 Theorem principle_hnf_SUB_cong :
     !M N v P. has_hnf M /\ has_hnf ([P/v] M) /\ has_hnf ([P/v] N) /\
