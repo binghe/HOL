@@ -2150,61 +2150,60 @@ QED
   ‘subterm X M p <> NONE’, because otherwise there will be no hnf children to
    consider.
 
-   NOTE2: we forcely define ‘subterm_width M [] = 0’ since in this case the width
+   NOTE2: We forcely define ‘subterm_width M [] = 0’ since in this case the width
    is irrelevant. This setting is also perfect for induction.
+
+   NOTE3: This is where we start facing different X and r of ‘subterm X M p r’.
  *)
 Definition subterm_width_def :
     subterm_width M     [] = 0 /\
     subterm_width M (h::t) =
-      let Ms = {subterm' (FV M) M p' 0 | p' <<= FRONT (h::t)} in
+      let Ms = {subterm' (FV M) M q 0 | q <<= FRONT (h::t)} in
           MAX_SET (IMAGE (hnf_children_size o principle_hnf) Ms)
 End
 
 (* |- !M. subterm_width M [] = 0 *)
 Theorem subterm_width_NIL[simp] = cj 1 subterm_width_def
 
-(*
 Theorem subterm_width_alt :
-    !X M p. FINITE X /\ p <> [] /\ subterm X M p <> NONE ==>
-            subterm_width M p =
-              let Ms = {subterm' X M p' | p' <<= FRONT p} in
+    !X M p r. FINITE X /\ FV M SUBSET X UNION RANKS r X /\
+              p <> [] /\ subterm X M p r <> NONE ==>
+              subterm_width M p =
+              let Ms = {subterm' X M q r | q <<= FRONT p} in
                   MAX_SET (IMAGE (hnf_children_size o principle_hnf) Ms)
 Proof
     rpt STRIP_TAC
- >> ‘p IN ltree_paths (BT X M)’ by PROVE_TAC [subterm_imp_ltree_paths]
+ >> ‘p IN ltree_paths (BT' X M r)’ by PROVE_TAC [subterm_imp_ltree_paths]
  >> Cases_on ‘p’ >> rw [subterm_width_def]
  >> qabbrev_tac ‘p = h::t’
  (* preparing for subterm_hnf_children_size_cong *)
- >> Know ‘!Y. IMAGE (hnf_children_size o principle_hnf)
-                    {subterm' Y M p' | p' <<= FRONT p} =
-             {hnf_children_size (principle_hnf (subterm' Y M p')) | p' <<= FRONT p}’
+ >> Know ‘!Y r. IMAGE (hnf_children_size o principle_hnf)
+                      {subterm' Y M q r | q <<= FRONT p} =
+                {hnf_children_size (principle_hnf (subterm' Y M q r)) | q <<= FRONT p}’
  >- (rw [Once EXTENSION] \\
      EQ_TAC >> rw [] >| (* 2 subgoals *)
      [ (* goal 1 (of 2) *)
-       rename1 ‘q <<= FRONT p’ \\
        Q.EXISTS_TAC ‘q’ >> rw [],
        (* goal 2 (of 2) *)
-       rename1 ‘q <<= FRONT p’ \\
-       Q.EXISTS_TAC ‘subterm' Y M q’ >> art [] \\
+       Q.EXISTS_TAC ‘subterm' Y M q r'’ >> art [] \\
        Q.EXISTS_TAC ‘q’ >> art [] ])
  >> Rewr
- (* applying subterm_hnf_children_size_cong *)
- >> Suff ‘{hnf_children_size (principle_hnf (subterm' {} M p')) | p' <<= FRONT p} =
-          {hnf_children_size (principle_hnf (subterm' X M p')) | p' <<= FRONT p}’
- >- Rewr
+ (* preparing for subterm_hnf_children_size_cong *)
+ >> AP_TERM_TAC
  >> Suff ‘!q. q <<= FRONT p ==>
-              hnf_children_size (principle_hnf (subterm' X M q)) =
-              hnf_children_size (principle_hnf (subterm' {} M q))’
+              hnf_children_size (principle_hnf (subterm' (FV M) M q 0)) =
+              hnf_children_size (principle_hnf (subterm' X M q r))’
  >- (DISCH_TAC \\
      rw [Once EXTENSION] \\
      EQ_TAC >> rw [] >| (* 2 subgoals *)
      [ (* goal 1 (of 2) *)
-       rename1 ‘q <<= FRONT p’ \\
        Q.EXISTS_TAC ‘q’ >> rw [],
        (* goal 2 (of 2) *)
-       rename1 ‘q <<= FRONT p’ \\
        Q.EXISTS_TAC ‘q’ >> rw [] ])
  >> rpt STRIP_TAC
+ >> cheat
+ (*
+ (* applying subterm_hnf_children_size_cong *)
  >> MATCH_MP_TAC subterm_hnf_children_size_cong
  >> simp []
  >> ‘p <> []’ by rw [Abbr ‘p’]
@@ -2215,7 +2214,10 @@ Proof
  >> MATCH_MP_TAC IS_PREFIX_TRANS
  >> Q.EXISTS_TAC ‘FRONT p’ >> art []
  >> MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []
+ *)
 QED
+
+(* TODO
 
 (* NOTE: The actual difficulty of this theorem is to prove that
 
