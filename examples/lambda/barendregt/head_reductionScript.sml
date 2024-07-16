@@ -1823,7 +1823,7 @@ Proof
     HO_MATCH_MP_TAC simple_induction >> rw []
 QED
 
-Theorem hnf_children_size_alt :
+Theorem hnf_children_size_hnf :
     !M. hnf M /\ ~is_abs M ==> hnf_children_size M = LENGTH (hnf_children M)
 Proof
     rw [absfree_hnf_cases] >> rw []
