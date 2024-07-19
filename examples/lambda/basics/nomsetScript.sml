@@ -1,8 +1,6 @@
 open HolKernel Parse boolLib bossLib BasicProvers boolSimps
 
-local open stringTheory in end;
-
-open pred_setTheory listTheory finite_mapTheory;
+open pred_setTheory listTheory finite_mapTheory stringTheory;
 
 open basic_swapTheory NEWLib
 

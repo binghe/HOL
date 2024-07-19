@@ -8,9 +8,9 @@
 
 open HolKernel Parse boolLib bossLib;
 
-open BasicProvers boolSimps arithmeticTheory stringTheory pred_setTheory
-     listTheory rich_listTheory pairTheory numpairTheory hurdUtils numLib
-     cardinalTheory whileTheory;
+open boolSimps arithmeticTheory stringTheory pred_setTheory numLib hurdUtils
+     listTheory rich_listTheory pairTheory numpairTheory cardinalTheory
+     topologyTheory;
 
 val _ = new_theory "basic_swap";
 
@@ -122,14 +122,6 @@ val raw_lswapstr_sing_to_back = store_thm(
     The FRESH constant for allocating indexed distinct fresh names
    ---------------------------------------------------------------------- *)
 
-Theorem INFINITE_STR_UNIV :
-    INFINITE univ(:string)
-Proof
-  SRW_TAC [][INFINITE_UNIV] THEN
-  Q.EXISTS_TAC `\st. STRING (CHR 0) st` THEN SRW_TAC [][] THEN
-  Q.EXISTS_TAC `""` THEN SRW_TAC [][]
-QED
-
 (* NOTE: Another way is to use the existing BIJ (s2n/n2s) in string_numTheory *)
 Theorem COUNTABLE_STR_UNIV :
     countable univ(:string)
@@ -174,34 +166,19 @@ Proof
     METIS_TAC [FRESH_thm]
 QED
 
-(* NOTE: The existence of ‘i’ is also unique, according to FRESH_thm. *)
-Theorem FRESH_complete :
-    !s. FINITE s ==> !x. x NOTIN s ==> ?i. FRESH s i = x
-Proof
-    Q.X_GEN_TAC ‘s’
- >> DISCH_THEN (ASSUME_TAC o MATCH_MP FRESH_BIJ)
- >> qabbrev_tac ‘t = univ(:string) DIFF s’
- >> rpt STRIP_TAC
- >> fs [COUNTABLE_ALT_BIJ, BIJ_THM, EXISTS_UNIQUE_THM]
- >> ‘x IN t’ by rw [Abbr ‘t’]
- >> Q.PAT_X_ASSUM ‘!y. y IN t ==> P’ (MP_TAC o Q.SPEC ‘x’)
- >> rw []
- >> rename1 ‘FRESH s y IN t’
- >> Q.EXISTS_TAC ‘y’ >> rw []
-QED
-
 (* ----------------------------------------------------------------------
     NEW constant (now based on FRESH)
    ---------------------------------------------------------------------- *)
 
-(* NOTE: This theorem is still used by NEWLib *)
-val new_exists = store_thm(
-  "new_exists",
-  ``!s : string set. FINITE s ==> ?x. ~(x IN s)``,
+(* NOTE: This theorem is still used (somehow) by NEWLib *)
+Theorem new_exists :
+    !s : string set. FINITE s ==> ?x. ~(x IN s)
+Proof
   Q_TAC SUFF_TAC `INFINITE (UNIV : string set)`
         THEN1 METIS_TAC [pred_setTheory.IN_UNIV,
                          pred_setTheory.IN_INFINITE_NOT_FINITE] THEN
-  SRW_TAC [][INFINITE_STR_UNIV]);
+  SRW_TAC [][INFINITE_STR_UNIV]
+QED
 
 Definition NEW :
     NEW s = FRESH s 0
@@ -223,102 +200,262 @@ Proof
 QED
 
 (* ----------------------------------------------------------------------
-    RNEWS for allocating a ranked list of fresh names (Author: Chun Tian)
-
-    Each positive rank (row) contains a disjoint infinite list of fresh names
-
-    NOTE: Rank 0 contains all fresh names (to be compaible with NEWS).
-
-   r\i| 0 1 2 3 4 ...
-   ---+-----------------
-    0 | a A b B c C d D e E ...
-    1 | a b c d e ...
-    2 | A B C D E ...
-    3 | 1 2 3 4 5 ...
+    index_of - the inverse function of ‘FRESH’ mapping names back to num
    ---------------------------------------------------------------------- *)
 
-Definition RNEWS :
-    RNEWS r n s = GENLIST (\i. FRESH s (npair r i)) n
+(* NOTE: The existence of ‘i’ is also unique, according to FRESH_thm. *)
+Theorem FRESH_complete :
+    !s. FINITE s ==> !x. x NOTIN s ==> ?i. FRESH s i = x
+Proof
+    Q.X_GEN_TAC ‘s’
+ >> DISCH_THEN (ASSUME_TAC o MATCH_MP FRESH_BIJ)
+ >> qabbrev_tac ‘t = univ(:string) DIFF s’
+ >> rpt STRIP_TAC
+ >> fs [COUNTABLE_ALT_BIJ, BIJ_THM, EXISTS_UNIQUE_THM]
+ >> ‘x IN t’ by rw [Abbr ‘t’]
+ >> Q.PAT_X_ASSUM ‘!y. y IN t ==> P’ (MP_TAC o Q.SPEC ‘x’)
+ >> rw []
+ >> rename1 ‘FRESH s y IN t’
+ >> Q.EXISTS_TAC ‘y’ >> rw []
+QED
+
+(* NOTE: ‘index_of’ is the inverse function of ‘FRESH’ *)
+local
+   val lemma = SRULE [EXT_SKOLEM_THM'] FRESH_complete;
+in
+   val index_of = new_specification ("index_of", ["index_of"], lemma);
+end
+
+Theorem index_of_thm :
+    !x s. FINITE s /\ x NOTIN s ==> FRESH s (index_of s x) = x
+Proof
+    METIS_TAC [index_of]
+QED
+
+(* ----------------------------------------------------------------------
+    rank and ranks - infinite set of all fresh names of certain ranks
+   ---------------------------------------------------------------------- *)
+
+Definition rank_def :
+    rank s r = IMAGE (\j. FRESH s (npair r j)) UNIV
 End
 
-Theorem RNEWS_NIL[simp] :
-    RNEWS r 0 s = []
+Overload RANK = “\r s. rank s r”
+
+Theorem RANK :
+    !s r. rank s r = {v | ?i j. v = FRESH s (npair i j) /\ i = r}
 Proof
-    rw [RNEWS]
+    rw [Once EXTENSION, rank_def]
 QED
 
-Theorem RNEWS_SUC :
-    !r n s. RNEWS r (SUC n) s = SNOC (FRESH s (npair r n)) (RNEWS r n s)
-Proof
-    rw [RNEWS, GENLIST]
-QED
-
-(* This basic theorem is compatible with NEWS_def (FRESH_list_def) *)
-Theorem RNEWS_def :
-    !r n s. FINITE s ==>
-            ALL_DISTINCT (RNEWS r n s) /\ DISJOINT (set (RNEWS r n s)) s /\
-            LENGTH (RNEWS r n s) = n
-Proof
-    rpt GEN_TAC >> DISCH_TAC
- >> Induct_on ‘n’ >- rw [RNEWS]
- >> simp [RNEWS_SUC]
- >> rw [ALL_DISTINCT_SNOC, DISJOINT_ALT]
- >- rw [RNEWS, MEM_GENLIST]
- >- METIS_TAC [FRESH_thm]
- >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
-QED
-
-Theorem RNEWS_prefix :
-    !r m n s. m <= n ==> RNEWS r m s <<= RNEWS r n s
-Proof
-    rw [RNEWS]
- >> MATCH_MP_TAC IS_PREFIX_GENLIST >> art []
-QED
-
-Theorem RNEWS_disjoint :
-    !r1 r2 m n s. FINITE s /\ r1 <> r2 ==>
-                  DISJOINT (set (RNEWS (SUC r1) m s)) (set (RNEWS (SUC r2) n s))
-Proof
-    rw [RNEWS, DISJOINT_ALT, MEM_GENLIST]
- >> rfs [FRESH_11]
-QED
-
-Theorem RNEWS_set :
-    !r n s. set (RNEWS r n s) = {v | ?j. v = FRESH s (npair r j) /\ j < n}
-Proof
-    rw [RNEWS, Once EXTENSION, MEM_GENLIST]
- >> METIS_TAC []
-QED
-
-(* The (infinite) set of all fresh names lower than the given rank
-
-   NOTE: ‘RANKS (SUC r) s’ is the set of names lower than rank r (instead of SUC r).
-   This is to align with ‘RNEWS’ where ‘RNEWS 0 = NEWS’ which is not ranked at all,
-   while keeping |- DISJOINT (RANKS r s) (set (RNEWS r n s)) holds perfectly.
- *)
-Definition RANKS :
-    RANKS r s = {v | ?i j. v = FRESH s (npair i j) /\ i < r}
+Definition ranks_def :
+    ranks s r = BIGUNION (IMAGE (rank s) (count r))
 End
+
+Overload RANKS = “\r s. ranks s r”
+
+Theorem RANKS :
+    !s r. ranks s r = {v | ?i j. v = FRESH s (npair i j) /\ i < r}
+Proof
+    rw [Once EXTENSION, rank_def, ranks_def]
+ >> EQ_TAC >> rw []
+ >- (fs [] >> rename1 ‘i < r’ \\
+     qexistsl_tac [‘i’, ‘j’] >> art [])
+ >> Q.EXISTS_TAC ‘IMAGE (\j. FRESH s (i *, j)) UNIV’
+ >> rw []
+ >- (Q.EXISTS_TAC ‘j’ >> rw [])
+ >> Q.EXISTS_TAC ‘i’ >> rw []
+QED
 
 Theorem RANKS_0[simp] :
-    RANKS 0 s = {}
+    ranks s 0 = {}
 Proof
     rw [RANKS]
 QED
 
 Theorem RANKS_MONO :
-    !s r1 r2. r1 <= r2 ==> RANKS r1 s SUBSET RANKS r2 s
+    !s r1 r2. r1 <= r2 ==> ranks s r1 SUBSET ranks s r2
 Proof
     rw [RANKS, SUBSET_DEF]
  >> qexistsl_tac [‘i’, ‘j’] >> rw []
 QED
 
+Theorem RANKS_RANK_DISJOINT :
+    !r1 r2 n s. FINITE s /\ r1 <= r2 ==>
+                DISJOINT (ranks s r1) (rank s r2)
+Proof
+    rw [DISJOINT_ALT, RANK, RANKS]
+ >> rw [FRESH_11]
+QED
+
+Theorem RANKS_RANK_DISJOINT' :
+    !r n s. FINITE s ==> DISJOINT (ranks s r) (rank s r)
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC RANKS_RANK_DISJOINT >> rw []
+QED
+
+Theorem RANKS_RANK_SUBSET :
+    !r1 r2 n s. r1 < r2 ==> rank s r1 SUBSET ranks s r2
+Proof
+    rw [SUBSET_DEF, RANKS, RANK]
+ >> qexistsl_tac [‘r1’, ‘j’] >> art []
+QED
+
+(* ----------------------------------------------------------------------
+    subrank - fresh symbol from a rank excluding additional finite set
+   ---------------------------------------------------------------------- *)
+
+Definition subrank_def :
+    subrank r s t i =
+    let z = if t DIFF s = {} then 0 else
+               SUC (MAX_SET (IMAGE (nsnd o index_of s) (t DIFF s)))
+    in
+       FRESH s (r *, (z + i))
+End
+
+Theorem subrank_thm :
+    !r s t. FINITE s /\ FINITE t ==>
+           (!m n. m <> n ==> subrank r s t m <> subrank r s t n) /\
+           (!n. subrank r s t n IN rank s r) /\
+           (!n. subrank r s t n NOTIN s) /\
+           (!n. subrank r s t n NOTIN t)
+Proof
+    rw [subrank_def, rank_def, FRESH_thm]
+ >- (Know ‘FRESH s (r *, n) NOTIN s’ >- rw [FRESH_thm] \\
+     ASM_SET_TAC [])
+ >> qabbrev_tac ‘t' = t DIFF s’
+ >> ‘FINITE t'’ by rw [Abbr ‘t'’]
+ >> qabbrev_tac ‘Z = IMAGE (nsnd o index_of s) t'’
+ (* applying MAX_SET_PROPERTY *)
+ >> Know ‘!x. x IN Z ==> x <= MAX_SET Z’
+ >- (MATCH_MP_TAC MAX_SET_PROPERTY \\
+     qunabbrev_tac ‘Z’ \\
+     MATCH_MP_TAC IMAGE_FINITE >> art [])
+ >> rw [Abbr ‘Z’]
+ >> qabbrev_tac ‘Z = IMAGE (nsnd o index_of s) t'’
+ >> qabbrev_tac ‘k = n + SUC (MAX_SET Z)’
+ >> Suff ‘FRESH s (r *, k) NOTIN t'’
+ >- simp [Abbr ‘t'’, FRESH_thm]
+ (* applying index_of_thm *)
+ >> Know ‘t' = {x | ?y. FRESH s (index_of s y) = x /\ y IN t'}’
+ >- (rw [Once EXTENSION] \\
+     EQ_TAC >> rw []
+     >- (Q.EXISTS_TAC ‘x’ >> art [] \\
+         MATCH_MP_TAC index_of_thm >> fs [Abbr ‘t'’]) \\
+     Suff ‘FRESH s (index_of s y) = y’ >- rw [] \\
+     MATCH_MP_TAC index_of_thm >> fs [Abbr ‘t'’])
+ >> Rewr'
+ >> simp []
+ >> rpt STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘!x. P ==> x <= MAX_SET Z’
+      (MP_TAC o (Q.SPEC ‘nsnd (index_of s y)’))
+ >> simp [Abbr ‘k’]
+ >> Q.EXISTS_TAC ‘y’ >> simp []
+QED
+
+Theorem subrank_11[simp] :
+    !r1 r2 s t m n. FINITE s /\ FINITE t ==>
+                   (subrank r1 s t m = subrank r2 s t n <=> r1 = r2 /\ m = n)
+Proof
+    rw [subrank_def]
+QED
+
+(* ----------------------------------------------------------------------
+   RP_NEWS for allocating a list of fresh names at a rank but excluding an
+   extra finite set of possibly conflicting symbols
+   ---------------------------------------------------------------------- *)
+
+Definition RP_NEWS :
+    RP_NEWS r n s t = GENLIST (subrank r s t) n
+End
+
+Theorem RP_NEWS_NIL[simp] :
+    RP_NEWS r 0 s t = []
+Proof
+    rw [RP_NEWS]
+QED
+
+Theorem RP_NEWS_def :
+    !r n s t. FINITE s /\ FINITE t ==>
+              ALL_DISTINCT (RP_NEWS r n s t) /\
+              DISJOINT (set (RP_NEWS r n s t)) s /\
+              DISJOINT (set (RP_NEWS r n s t)) t /\
+              LENGTH (RP_NEWS r n s t) = n
+Proof
+    rw [RP_NEWS]
+ >- rw [ALL_DISTINCT_GENLIST]
+ (* 2 subgoals, same tactics *)
+ >> rw [DISJOINT_ALT, MEM_GENLIST]
+ >> rw [subrank_thm]
+QED
+
+Theorem RP_NEWS_prefix :
+    !r m n s t. m <= n ==> RP_NEWS r m s t <<= RP_NEWS r n s t
+Proof
+    rw [RP_NEWS]
+ >> MATCH_MP_TAC IS_PREFIX_GENLIST >> art []
+QED
+
+Theorem RP_NEWS_disjoint :
+    !r1 r2 m n s t. FINITE s /\ FINITE t /\ r1 <> r2 ==>
+                    DISJOINT (set (RP_NEWS r1 m s t)) (set (RP_NEWS r2 n s t))
+Proof
+    rw [RP_NEWS, DISJOINT_ALT, MEM_GENLIST]
+ >> CCONTR_TAC
+ >> gs [subrank_11]
+QED
+
+Theorem RP_NEWS_set :
+    !r n s t. set (RP_NEWS r n s t) = {v | ?j. v = subrank r s t j /\ j < n}
+Proof
+    rw [RP_NEWS, Once EXTENSION, MEM_GENLIST]
+ >> METIS_TAC []
+QED
+
+Theorem RP_NEWS_SUBSET :
+    !r n s t. FINITE s /\ FINITE t ==> set (RP_NEWS r n s t) SUBSET rank s r
+Proof
+    rw [RP_NEWS_set, SUBSET_DEF]
+ >> rw [subrank_thm]
+QED
+
+(* ----------------------------------------------------------------------
+    RNEWS = RP_NEWS ignoring t
+   ---------------------------------------------------------------------- *)
+
+Overload RNEWS = “\r n s. RP_NEWS r n s {}”
+
+Theorem RNEWS :
+    !r n s. RNEWS r n s = GENLIST (\i. FRESH s (npair r i)) n
+Proof
+    rw [RP_NEWS]
+ >> Suff ‘subrank r s {} = \i. FRESH s (r *, i)’ >- rw []
+ >> rw [FUN_EQ_THM, subrank_def]
+QED
+
+(* |- !r n s.
+        FINITE s ==>
+        ALL_DISTINCT (RNEWS r n s) /\ DISJOINT (set (RNEWS r n s)) s /\
+        LENGTH (RNEWS r n s) = n
+ *)
+Theorem RNEWS_def =
+        RP_NEWS_def |> Q.SPECL [‘r’, ‘n’, ‘s’, ‘{}’] |> SRULE []
+                    |> Q.GENL [‘r’, ‘n’, ‘s’]
+
+(* |- !r m n s. m <= n ==> RNEWS r m s <<= RNEWS r n s *)
+Theorem RNEWS_prefix = 
+        RP_NEWS_prefix |> Q.SPECL [‘r’, ‘m’, ‘n’, ‘s’, ‘{}’]
+                       |> Q.GENL [‘r’, ‘m’, ‘n’, ‘s’]
+
 Theorem RANKS_DISJOINT :
     !r1 r2 n s. FINITE s /\ r1 <= r2 ==>
                 DISJOINT (RANKS r1 s) (set (RNEWS r2 n s))
 Proof
-    rw [DISJOINT_ALT, RNEWS, MEM_GENLIST, RANKS]
- >> rfs [FRESH_11]
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC DISJOINT_SUBSET
+ >> Q.EXISTS_TAC ‘RANK r2 s’
+ >> rw [RANKS_RANK_DISJOINT, RP_NEWS_SUBSET]
 QED
 
 Theorem RANKS_DISJOINT' :
@@ -329,10 +466,13 @@ Proof
 QED
 
 Theorem RANKS_SUBSET :
-    !r1 r2 n s. r1 < r2 ==> set (RNEWS r1 n s) SUBSET RANKS r2 s
+    !r1 r2 n s. FINITE s /\ r1 < r2 ==> set (RNEWS r1 n s) SUBSET RANKS r2 s
 Proof
-    rw [RNEWS_set, RANKS, SUBSET_DEF]
- >> qexistsl_tac [‘r1’, ‘j’] >> art []
+    rw [SUBSET_DEF, RP_NEWS_set, ranks_def]
+ >> Q.EXISTS_TAC ‘RANK r1 s’
+ >> reverse CONJ_TAC
+ >- (Q.EXISTS_TAC ‘r1’ >> art [])
+ >> rw [subrank_thm]
 QED
 
 (* ----------------------------------------------------------------------
@@ -348,20 +488,17 @@ Proof
     rw [RNEWS] (* npair00 is used implicitly *)
 QED
 
-(* This is the old equivalent definition of FRESH_list_def *)
-Theorem NEWS_def :
-    !n s. FINITE s ==>
-          ALL_DISTINCT (NEWS n s) /\ DISJOINT (set (NEWS n s)) s /\
-          LENGTH (NEWS n s) = n
-Proof
-    rw [RNEWS_def]
-QED
+(* This is the old equivalent definition of FRESH_list_def:
 
-Theorem NEWS_prefix :
-    !m n s. m <= n ==> NEWS m s <<= NEWS n s
-Proof
-    rw [RNEWS_prefix]
-QED
+   |- !n s.
+        FINITE s ==>
+        ALL_DISTINCT (NEWS n s) /\ DISJOINT (set (NEWS n s)) s /\
+        LENGTH (NEWS n s) = n
+ *)
+Theorem NEWS_def = Q.SPEC ‘0’ RNEWS_def
+
+(* |- !m n s. m <= n ==> NEWS m s <<= NEWS n s *)
+Theorem NEWS_prefix = Q.SPEC ‘0’ RNEWS_prefix
 
 val _ = export_theory ();
 val _ = html_theory "basic_swap";
