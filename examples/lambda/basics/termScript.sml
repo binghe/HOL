@@ -956,6 +956,10 @@ Proof
   metis_tac []
 QED
 
+(*****************************************************************************)
+(*   Simultaneous substitution based on finite maps (ssub)                   *)
+(*****************************************************************************)
+
 val ssub_exists =
     parameter_tm_recursion
         |> INST_TYPE [alpha |-> ``:term``, ``:ρ`` |-> ``:string |-> term``]
@@ -1540,6 +1544,14 @@ Proof
  >> Q.PAT_X_ASSUM ‘FV A SUBSET FV E DIFF set Xs UNION B’ MP_TAC
  >> SET_TAC []
 QED
+
+(*****************************************************************************)
+(*   Simultaneous substitution of infinite keys (fsub)                       *)
+(*****************************************************************************)
+
+Definition fsub_def :
+    fsub f t = FUN_FMAP f (FV t) ' t
+End
 
 (*---------------------------------------------------------------------------*
  *  ‘tpm’ as an equivalence relation between terms

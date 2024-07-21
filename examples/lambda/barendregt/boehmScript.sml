@@ -1,6 +1,6 @@
 (* ========================================================================== *)
 (* FILE    : boehmScript.sml                                                  *)
-(* TITLE   : (Effective) Boehm Trees (Chap 10 of Barendregt 1984 [1])         *)
+(* TITLE   : (Effective) Boehm Trees (Chapter 10 of Barendregt 1984 [1])      *)
 (*                                                                            *)
 (* AUTHORS : 2023-2024 Michael Norrish and Chun Tian                          *)
 (* ========================================================================== *)
@@ -1400,6 +1400,11 @@ Proof
       MATCH_MP_TAC subterm_induction_lemma \\
       qexistsl_tac [‘N’, ‘M0'’, ‘n’, ‘m’, ‘vs’, ‘M1'’] >> simp [] ]
 QED
+
+(*****************************************************************************)
+(*   ‘subterm X M p r’ w.r.t. different X and r                              *)
+(*****************************************************************************)
+
 
 (*
 (* NOTE: This extremely dirty recursive definition gives the explicit form of
