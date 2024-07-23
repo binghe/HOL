@@ -1011,6 +1011,15 @@ Proof
   METIS_TAC [in_fmap_supp]
 QED
 
+Theorem ssub_14a :
+    !t. (!x. x IN FDOM fm ==> fm ' x = VAR x) ==>
+        (fm : string |-> term) ' t = t
+Proof
+    HO_MATCH_MP_TAC nc_INDUCTION2
+ >> Q.EXISTS_TAC ‘fmFV fm’
+ >> rw []
+QED
+
 Theorem ssub_14b:
   ∀t. (FV t ∩ FDOM phi = EMPTY) ==> ((phi : string |-> term) ' t = t)
 Proof
@@ -1546,11 +1555,11 @@ Proof
 QED
 
 (*****************************************************************************)
-(*   Simultaneous substitution of infinite keys (fsub)                       *)
+(*  Simultaneous substitution given by a function containing infinite keys   *)
 (*****************************************************************************)
 
-Definition fsub_def :
-    fsub f t = FUN_FMAP f (FV t) ' t
+Definition fssub_def :
+    fssub f t = FUN_FMAP f (FV t) ' t
 End
 
 (*---------------------------------------------------------------------------*

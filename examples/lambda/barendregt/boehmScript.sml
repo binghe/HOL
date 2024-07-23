@@ -10,8 +10,8 @@ open HolKernel Parse boolLib bossLib;
 (* core theories *)
 open optionTheory arithmeticTheory pred_setTheory listTheory rich_listTheory
      llistTheory relationTheory ltreeTheory pathTheory posetTheory hurdUtils
-     finite_mapTheory topologyTheory listRangeTheory combinTheory tautLib
-     listLib;
+     pairTheory finite_mapTheory topologyTheory listRangeTheory combinTheory
+     tautLib listLib;
 
 (* local theories *)
 open binderLib basic_swapTheory nomsetTheory termTheory appFOLDLTheory
@@ -405,8 +405,7 @@ Theorem subterm_rank_lemma :
 Proof
     Induct_on ‘p’ >- (rw [] >> art [])
  >> rpt GEN_TAC
- >> reverse (Cases_on ‘solvable M’)
- >- (rw [subterm_def])
+ >> reverse (Cases_on ‘solvable M’) >- rw [subterm_def]
  (* BEGIN Norrish's advanced tactics *)
  >> CONV_TAC (UNBETA_CONV “subterm X M (h::p) r”)
  >> qmatch_abbrev_tac ‘P _’
@@ -1337,10 +1336,12 @@ Proof
 QED
 
 Theorem lameq_subterm_cong :
-    !p X M N r. FINITE X /\ FV M UNION FV N SUBSET X UNION RANKS r X /\
-                M == N /\
-                subterm X M p r <> NONE /\ subterm X N p r <> NONE ==>
-                subterm' X M p r == subterm' X N p r
+    !p X M N r.
+         FINITE X /\
+         FV M SUBSET X UNION RANKS r X /\
+         FV N SUBSET X UNION RANKS r X /\
+         M == N /\ subterm X M p r <> NONE /\ subterm X N p r <> NONE ==>
+         subterm' X M p r == subterm' X N p r
 Proof
     Q.X_GEN_TAC ‘p’
  >> Cases_on ‘p = []’ >- rw []
@@ -1405,13 +1406,75 @@ QED
 (*   ‘subterm X M p r’ w.r.t. different X and r                              *)
 (*****************************************************************************)
 
+(* NOTE: ‘VAR o renaming s1 s2 r1 r2’ can be used for ‘fsub’. *)
+Definition renaming_def :
+    renaming X Y r1 r2 x =
+    if x IN X UNION RANKS r1 X then
+       x
+    else
+      (let i = index_of X x;
+           r = nfst i;
+           c = nsnd i;
+           r' = r - r1 + r2
+       in
+         FRESH Y (npair r' c))
+End
 
-(*
-(* NOTE: This extremely dirty recursive definition gives the explicit form of
-   the tpm required in the next [subterm_tpm_lemma] and [subterm_tpm_cong].
+(* NOTE: Since ‘FV M’ is subset of both X and Y, the new free variables in
+  ‘subterm X M p r1’ can (and must) be simultaneously substituted without
+   hurting ‘FV M’.
 
-   -- Chun Tian, 4 luglio 2024 (il mio compleanno di 42 anni).
+   TODO: cannot find a suitable statement for induction
+
+Theorem subterm_renaming_lemma :
+    !X Y p M r1 r2.
+         FINITE X /\ FV M SUBSET X UNION RANKS r1 X /\
+         FINITE Y /\ FV M SUBSET Y UNION RANKS r2 Y ==>
+        (subterm X M p r1 = NONE ==> subterm Y M p r2 = NONE) /\
+        (subterm X M p r1 <> NONE ==>
+         fssub (VAR o renaming X Y r1 r2) (subterm' X M p r1) =
+         subterm' Y M p r2)
+Proof
+    qx_genl_tac [‘X’, ‘Y’]
+ >> Induct_on ‘p’
+ >- (rw [fssub_def] \\
+     MATCH_MP_TAC ssub_14a >> rw [FUN_FMAP_DEF] \\
+    ‘x IN X UNION RANKS r1 X’ by ASM_SET_TAC [] \\
+     rw [renaming_def])
+ >> rpt GEN_TAC
+ >> STRIP_TAC
+ >> reverse (Cases_on ‘solvable M’)
+ >- simp [subterm_def]
+ (* BEGIN Norrish's advanced tactics *)
+ >> CONV_TAC (UNBETA_CONV “subterm X M (h::p) r1”)
+ >> qmatch_abbrev_tac ‘P _’
+ >> RW_TAC bool_ss [subterm_alt]
+ >> simp [Abbr ‘P’]
+ >> CONV_TAC (UNBETA_CONV “subterm Y M (h::p) r2”)
+ >> qmatch_abbrev_tac ‘P _’
+ >> RW_TAC bool_ss [subterm_alt]
+ >> simp [Abbr ‘P’]
+ (* END Norrish's advanced tactics. *)
+ >> ‘n = n'’ by rw [Abbr ‘n’, Abbr ‘n'’]
+ >> POP_ASSUM (fs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘m = m'’ (fs o wrap o SYM)
+ >> T_TAC
+ >> Cases_on ‘h < m’ >> simp []
+ >> qabbrev_tac ‘N  = EL h Ms’
+ >> qabbrev_tac ‘N' = EL h Ms'’
+ >> ‘FV N  SUBSET X UNION RANKS (SUC r1) X /\
+     FV N' SUBSET Y UNION RANKS (SUC r2) Y’
+        by METIS_TAC [subterm_induction_lemma']
+ >> Suff ‘fssub (VAR o renaming X Y r1 r2) (subterm' X N p (SUC r1)) =
+          fssub (VAR o renaming X Y (SUC r1) (SUC r2))
+                (subterm' X N' p (SUC r1))’
+ >- (Rewr' \\
+     cheat)
+ >> cheat
+QED
  *)
+
+(* TODO
 Definition subterm_tpm_def :
     subterm_tpm X Y M     [] pi = pi /\
     subterm_tpm X Y M (h::p) pi = let
