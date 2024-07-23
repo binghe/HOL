@@ -420,6 +420,24 @@ Proof
  >> rw [subrank_thm]
 QED
 
+Theorem RANKS_DISJOINT_RP_NEWS :
+    !r1 r2 n s t. FINITE s /\ FINITE t /\ r1 <= r2 ==>
+                  DISJOINT (RANKS r1 s) (set (RP_NEWS r2 n s t))
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC DISJOINT_SUBSET
+ >> Q.EXISTS_TAC ‘RANK r2 s’
+ >> rw [RANKS_RANK_DISJOINT, RP_NEWS_SUBSET]
+QED
+
+Theorem RANKS_DISJOINT_RP_NEWS' :
+    !r n s t. FINITE s /\ FINITE t ==>
+              DISJOINT (RANKS r s) (set (RP_NEWS r n s t))
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC RANKS_DISJOINT_RP_NEWS >> rw []
+QED
+
 (* ----------------------------------------------------------------------
     RNEWS = RP_NEWS ignoring t
    ---------------------------------------------------------------------- *)
@@ -448,15 +466,13 @@ Theorem RNEWS_prefix =
         RP_NEWS_prefix |> Q.SPECL [‘r’, ‘m’, ‘n’, ‘s’, ‘{}’]
                        |> Q.GENL [‘r’, ‘m’, ‘n’, ‘s’]
 
-Theorem RANKS_DISJOINT :
-    !r1 r2 n s. FINITE s /\ r1 <= r2 ==>
-                DISJOINT (RANKS r1 s) (set (RNEWS r2 n s))
-Proof
-    rpt STRIP_TAC
- >> MATCH_MP_TAC DISJOINT_SUBSET
- >> Q.EXISTS_TAC ‘RANK r2 s’
- >> rw [RANKS_RANK_DISJOINT, RP_NEWS_SUBSET]
-QED
+(* |- !r1 r2 n s.
+        FINITE s /\ r1 <= r2 ==> DISJOINT (RANKS r1 s) (set (RNEWS r2 n s))
+ *)
+Theorem RANKS_DISJOINT =
+        RANKS_DISJOINT_RP_NEWS |> Q.SPECL [‘r1’, ‘r2’, ‘n’, ‘s’, ‘{}’]
+                               |> SRULE [] (* eliminate ‘FINITE {}’ *)
+                               |> Q.GENL [‘r1’, ‘r2’, ‘n’, ‘s’]
 
 Theorem RANKS_DISJOINT' :
     !r n s. FINITE s ==> DISJOINT (RANKS r s) (set (RNEWS r n s))
