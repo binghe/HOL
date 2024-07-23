@@ -24,7 +24,7 @@ open realTheory realLib seqTheory transcTheory real_sigmaTheory iterateTheory
 open util_probTheory sigma_algebraTheory extrealTheory real_borelTheory
      measureTheory borelTheory lebesgueTheory probabilityTheory;
 
-val _ = new_theory "normal_rv";
+val _ = new_theory "distribution";
 
 (* moved here from probabilityTheory *)
 Definition PDF_def :
@@ -108,6 +108,7 @@ Overload std_normal_density = “normal_density 0 1”
 
 (* END *)
 val _ = export_theory();
+val _ = html_theory "distribution";
 
 (* References:
 
