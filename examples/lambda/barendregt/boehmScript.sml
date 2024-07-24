@@ -11,7 +11,7 @@ open HolKernel Parse boolLib bossLib;
 open optionTheory arithmeticTheory pred_setTheory listTheory rich_listTheory
      llistTheory relationTheory ltreeTheory pathTheory posetTheory hurdUtils
      pairTheory finite_mapTheory topologyTheory listRangeTheory combinTheory
-     tautLib listLib;
+     tautLib listLib string_numTheory;
 
 (* local theories *)
 open binderLib basic_swapTheory nomsetTheory termTheory appFOLDLTheory
@@ -1413,7 +1413,7 @@ QED
 (*   ‘subterm X M p r’ w.r.t. different X and r                              *)
 (*****************************************************************************)
 
-(* NOTE: ‘VAR o renaming s1 s2 r1 r2’ can be used for ‘fsub’. *)
+(* NOTE: ‘VAR o renaming s1 s2 r1 r2’ can be used for ‘fsub’.
 Definition renaming_def :
     renaming X Y r1 r2 x =
     if x IN X UNION RANKS r1 X then
@@ -1488,6 +1488,7 @@ Proof
      cheat)
  >> cheat
 QED
+ *)
 
 (* NOTE: Now ‘subterm_tpm’ doesn't really depends on ‘M’ - instead, it
    only depends on the "tree-width" of M along the path. It's possible
@@ -1604,7 +1605,7 @@ Proof
 QED
 *)
 
-(* NOTE: The definition of ‘subterm_tpm’ is extracted from this proof
+(* NOTE: The definition of ‘subterm_tpm’ is extracted from this proof *)
 Theorem subterm_tpm_lemma :
     !X Y p M pi r.
          FINITE X /\ FV M SUBSET X UNION RANKS r X /\
@@ -1681,9 +1682,20 @@ Proof
      rw [Abbr ‘M0’, principle_hnf_tpm'])
  >> DISCH_TAC
  >> ‘LENGTH vs1 = n’ by rw [Abbr ‘vs1’, LENGTH_listpm]
- (* stage work *)
- >> Q_TAC (RP_NEWS_TAC (“vs2 :string list”, “r :num”, “n :num”,
-                        “X :string set”)) ‘set vs UNION set vs1’
+ (* stage work, now defining vs2 manually by primitives *)
+ >> qabbrev_tac ‘Z = X UNION Y UNION set vs UNION set vs1’
+ >> qabbrev_tac ‘z = SUC (string_width Z)’
+ >> qabbrev_tac ‘vs2 = alloc r z (z + n)’
+ (* properties of vs2 *)
+ >> Know ‘DISJOINT (set vs2) Z’
+ >- (rw [Abbr ‘vs2’, Abbr ‘z’, DISJOINT_ALT', alloc_def, MEM_MAP] \\
+     ONCE_REWRITE_TAC [TAUT ‘~P \/ Q \/ ~R <=> P /\ R ==> Q’] \\
+     STRIP_TAC \\
+    ‘FINITE Z’ by rw [Abbr ‘Z’] \\
+     MP_TAC (Q.SPECL [‘x’, ‘Z’] string_width_thm) >> rw [])
+ >> qunabbrev_tac ‘Z’
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
+ >> qabbrev_tac ‘Z = X UNION Y UNION set vs UNION set vs1’
  >> Know ‘DISJOINT (set vs2) (FV M0)’
  >- (MATCH_MP_TAC DISJOINT_SUBSET \\
      Q.EXISTS_TAC ‘FV M’ \\
@@ -1699,8 +1711,10 @@ Proof
      Q.PAT_X_ASSUM ‘x IN RANKS r X’ MP_TAC \\
      Suff ‘DISJOINT (RANKS r X) (set vs2)’ >- rw [DISJOINT_ALT] \\
      qunabbrev_tac ‘vs2’ \\
-     MATCH_MP_TAC RANKS_DISJOINT_RP_NEWS' >> rw [])
+     rw [DISJOINT_ALT, RANKS, alloc_def, MEM_MAP] \\
+     rw [n2s_11])
  >> DISCH_TAC
+ >> ‘ALL_DISTINCT vs2 /\ LENGTH vs2 = n’ by rw [Abbr ‘vs2’, alloc_thm]
  (* stage work *)
  >> qabbrev_tac ‘M2 = principle_hnf (M0 @* MAP VAR vs2)’
  >> Q_TAC (HNF_TAC (“M0 :term”, “vs2 :string list”,
@@ -1788,11 +1802,17 @@ Proof
  >> FIRST_X_ASSUM MATCH_MP_TAC
  (* extra goal #1 (easy) *)
  >> CONJ_TAC
- >- cheat
+ >- (simp [Abbr ‘N'’, SUBSET_DEF, FV_tpm] \\
+     rpt STRIP_TAC \\
+     Know ‘FV N SUBSET FV M2’
+     >- (qunabbrev_tac ‘N’ \\
+         irule hnf_children_FV_SUBSET >> rw []) >> DISCH_TAC \\
+     qabbrev_tac ‘x' = lswapstr (REVERSE p1) x’ \\
+    ‘x' IN FV M2’ by METIS_TAC [SUBSET_DEF] \\
+     cheat)
  (* extra goal #2 (hard or impossible) *)
  >> cheat
 QED
- *)
 
 (*
 (* NOTE: This lemma is more general than subterm_tpm_cong, which cannot be
