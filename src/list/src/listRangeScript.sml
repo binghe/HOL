@@ -1094,7 +1094,7 @@ val listRangeLHI_has_divisors = store_thm(
   metis_tac[listRangeINC_has_divisors, listRangeLHI_to_INC]);
 
 Theorem isPREFIX_listRangeLHI :
-    !i j k. j <= k ==> [i ..< j] <<= [i ..< k]
+    !m n m' n'. m = m' /\ n <= n' ==> [m ..< n] <<= [m' ..< n']
 Proof
     rw [listRangeLHI_def]
  >> MATCH_MP_TAC isPREFIX_GENLIST
@@ -1102,7 +1102,7 @@ Proof
 QED
 
 Theorem isPREFIX_listRangeINC :
-    !i j k. j <= k ==> [i .. j] <<= [i .. k]
+    !m n m' n'. m = m' /\ n <= n' ==> [m .. n] <<= [m' .. n']
 Proof
     rw [listRangeINC_def]
  >> MATCH_MP_TAC isPREFIX_GENLIST

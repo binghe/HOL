@@ -2754,13 +2754,6 @@ Proof
  >> rw []
 QED
 
-Theorem IS_PREFIX_GENLIST :
-    !f m n. m <= n ==> GENLIST f m <<= GENLIST f n
-Proof
-    rw [IS_PREFIX_EQ_TAKE', TAKE_GENLIST]
- >> Q.EXISTS_TAC ‘m’ >> rw [MIN_ALT]
-QED
-
 (* ----------------------------------------------------------------------
     longest_prefix
 

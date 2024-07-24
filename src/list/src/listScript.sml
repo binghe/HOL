@@ -3272,6 +3272,16 @@ Proof
  >> rw [GENLIST, isPREFIX_SNOC]
 QED
 
+Theorem isPREFIX_MAP :
+    !f l1 l2. l1 <<= l2 ==> MAP f l1 <<= MAP f l2
+Proof
+    qx_gen_tac ‘f’
+ >> Induct_on ‘l1’ >- rw []
+ >> rpt STRIP_TAC
+ >> Cases_on ‘l2’ >- fs []
+ >> fs []
+QED
+
 (* ---------------------------------------------------------------------- *)
 
 val FOLDL_SNOC = store_thm("FOLDL_SNOC",
