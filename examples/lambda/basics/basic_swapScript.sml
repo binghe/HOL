@@ -10,7 +10,7 @@ open HolKernel Parse boolLib bossLib;
 
 open boolSimps arithmeticTheory stringTheory pred_setTheory numLib hurdUtils
      listTheory rich_listTheory pairTheory numpairTheory cardinalTheory
-     topologyTheory;
+     string_numTheory;
 
 val _ = new_theory "basic_swap";
 
