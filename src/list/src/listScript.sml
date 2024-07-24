@@ -3259,6 +3259,17 @@ Proof
  >> Q.EXISTS_TAC ‘l’ >> rw []
 QED
 
+Theorem isPREFIX_ANTISYM :
+    !x y. x <<= y /\ y <<= x ==> x = y
+Proof
+    Induct_on ‘x’ >- rw []
+ >> rpt GEN_TAC
+ >> Cases_on ‘y’ >- rw []
+ >> STRIP_TAC
+ >> rw []
+ >> fs []
+QED
+
 Theorem isPREFIX_GENLIST :
     !f m n. m <= n ==> GENLIST f m <<= GENLIST f n
 Proof

@@ -2565,16 +2565,8 @@ Theorem IS_PREFIX_NIL = isPREFIX_NIL
 (* |- !x. x <<= x *)
 Theorem IS_PREFIX_REFL[simp] = isPREFIX_REFL
 
-val IS_PREFIX_ANTISYM = Q.store_thm ("IS_PREFIX_ANTISYM",
-   `!x y. IS_PREFIX y x /\ IS_PREFIX x y ==> (x = y)`,
-   INDUCT_THEN list_INDUCT ASSUME_TAC
-   THEN SIMP_TAC boolSimps.bool_ss [IS_PREFIX_NIL]
-   THEN REPEAT GEN_TAC
-   THEN MP_TAC (Q.SPEC `y` list_CASES)
-   THEN STRIP_TAC
-   THEN ASM_SIMP_TAC boolSimps.bool_ss [IS_PREFIX_NIL]
-   THEN ONCE_REWRITE_TAC [IS_PREFIX]
-   THEN PROVE_TAC []);
+(* |- !x y. x <<= y /\ y <<= x ==> x = y *)
+Theorem IS_PREFIX_ANTISYM = isPREFIX_ANTISYM
 
 (* |- !x y z. y <<= x /\ z <<= y ==> z <<= x *)
 Theorem IS_PREFIX_TRANS :
