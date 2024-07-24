@@ -57,15 +57,6 @@ fun RNEWS_TAC (vs, r, n) X :tactic =
 
 fun NEWS_TAC (vs, n) = RNEWS_TAC (vs, “0: num”, n);
 
-(* NOTE: Usually the type of “Y” is tricky, thus Q_TAC is again recommended. *)
-fun RP_NEWS_TAC (vs, r, n, X) Y :tactic =
-    qabbrev_tac ‘^vs = RP_NEWS ^r ^n ^X ^Y’
- >> Know ‘ALL_DISTINCT ^vs /\ LENGTH ^vs = ^n /\
-          DISJOINT (set ^vs) ^X /\
-          DISJOINT (set ^vs) ^Y’
- >- rw [RP_NEWS_def, Abbr ‘^vs’]
- >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']));
-
 (* Given a hnf ‘M0’ and a shared (by multiple terms) binding variable list ‘vs’,
    HNF_TAC adds the following abbreviation and new assumptions:
 
@@ -740,11 +731,14 @@ Proof
     rpt STRIP_TAC
  >> ‘solvable M’ by PROVE_TAC [solvable_iff_has_hnf, hnf_has_hnf]
  >> RW_TAC std_ss [subterm_of_solvables]
- >> ‘?y args. M = VAR y @* args’ by PROVE_TAC [absfree_hnf_cases]
- >> gs [Abbr ‘m’, Abbr ‘M0’, Abbr ‘Ms’, Abbr ‘n’,
-        hnf_children_hnf, hnf_appstar]
- >> gs [Abbr ‘vs’]
- >> gs [Abbr ‘Ms'’, Abbr ‘M1’, hnf_children_hnf]
+ >> ‘M0 = M’ by rw [Abbr ‘M0’, principle_hnf_reduce]
+ >> fs [Abbr ‘M0’]
+ >> Know ‘n = 0’
+ >- (qunabbrev_tac ‘n’ \\
+     MATCH_MP_TAC LAMl_size_eq_0 >> art [])
+ >> DISCH_THEN (fs o wrap)
+ >> fs [Abbr ‘vs’]
+ >> Q.PAT_X_ASSUM ‘Ms' = Ms’ (fs o wrap o SYM)
 QED
 
 Theorem subterm_of_absfree_hnf_explicit :
@@ -1494,7 +1488,6 @@ Proof
      cheat)
  >> cheat
 QED
- *)
 
 (* NOTE: Now ‘subterm_tpm’ doesn't really depends on ‘M’ - instead, it
    only depends on the "tree-width" of M along the path. It's possible

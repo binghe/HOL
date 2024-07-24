@@ -175,6 +175,12 @@ Definition alloc_def :
     alloc r m n = MAP (n2s o npair r) [m ..< n]
 End
 
+Theorem alloc_NIL[simp] :
+    alloc r n n = []
+Proof
+    rw [alloc_def]
+QED
+
 Theorem alloc_thm :
     !r m n. ALL_DISTINCT (alloc r m n) /\ LENGTH (alloc r m n) = n - m
 Proof
@@ -197,6 +203,12 @@ QED
 Definition RNEWS :
     RNEWS r n s = let d = SUC (string_width s) in alloc r d (d + n)
 End
+
+Theorem RNEWS_0[simp] :
+    RNEWS r 0 s = []
+Proof
+    rw [RNEWS]
+QED
 
 Theorem RNEWS_def :
     !r n s.

@@ -1753,7 +1753,7 @@ Proof
  >> rw []
 QED
 
-Theorem LAMl_size_0_cases' :
+Theorem LAMl_size_eq_0 :
     !t. ~is_abs t ==> (LAMl_size t = 0)
 Proof
     rpt STRIP_TAC
@@ -1766,7 +1766,7 @@ Theorem LAMl_size_LAMl :
 Proof
     rpt STRIP_TAC
  >> Induct_on ‘vs’
- >- rw [LAMl_size_0_cases']
+ >- rw [LAMl_size_eq_0]
  >> rw []
 QED
 
@@ -1855,7 +1855,7 @@ Proof
  >> Cases_on ‘LAMl_size M = 0’
  >- (fs [] \\
      Q.PAT_X_ASSUM ‘!M. P’ (MP_TAC o (Q.SPEC ‘M’)) >> rw [])
- >> ‘is_abs M’ by METIS_TAC [LAMl_size_0_cases']
+ >> ‘is_abs M’ by METIS_TAC [LAMl_size_eq_0]
  (* applying is_abs_cases_genX *)
  >> ‘?t0. M = LAM h t0’ by METIS_TAC [is_abs_cases_genX]
  >> FIRST_X_ASSUM (MP_TAC o (Q.SPEC ‘t0’))
