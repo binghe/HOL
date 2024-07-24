@@ -1093,4 +1093,20 @@ val listRangeLHI_has_divisors = store_thm(
   ``!m n x. 0 < n /\ m <= x /\ x divides n ==> MEM x [m ..< n + 1]``,
   metis_tac[listRangeINC_has_divisors, listRangeLHI_to_INC]);
 
+Theorem isPREFIX_listRangeLHI :
+    !i j k. j <= k ==> [i ..< j] <<= [i ..< k]
+Proof
+    rw [listRangeLHI_def]
+ >> MATCH_MP_TAC isPREFIX_GENLIST
+ >> rw []
+QED
+
+Theorem isPREFIX_listRangeINC :
+    !i j k. j <= k ==> [i .. j] <<= [i .. k]
+Proof
+    rw [listRangeINC_def]
+ >> MATCH_MP_TAC isPREFIX_GENLIST
+ >> rw []
+QED
+
 val _ = export_theory();

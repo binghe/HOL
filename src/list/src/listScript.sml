@@ -3233,6 +3233,45 @@ val GENLIST_CONSTANT = store_thm(
   rw_tac std_ss[] >>
   metis_tac[prim_recTheory.LESS_THM]);
 
+Theorem isPREFIX_NIL :
+    !x. [] <<= x /\ (x <<= [] <=> (x = []))
+Proof
+    qx_gen_tac ‘x’
+ >> Cases_on ‘x’ >- rw []
+ >> rw [isPREFIX]
+QED
+
+Theorem isPREFIX_REFL :
+    !x. x <<= x
+Proof
+    Induct_on ‘x’ >> rw [isPREFIX]
+QED
+
+Theorem isPREFIX_TRANS :
+    !x y z. x <<= y /\ y <<= z ==> x <<= z
+Proof
+    Induct_on ‘x’ >- rw []
+ >> rpt GEN_TAC
+ >> Cases_on ‘y’ >- rw []
+ >> Cases_on ‘z’ >- rw []
+ >> rw []
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘l’ >> rw []
+QED
+
+Theorem isPREFIX_GENLIST :
+    !f m n. m <= n ==> GENLIST f m <<= GENLIST f n
+Proof
+    qx_gen_tac ‘f’
+ >> Induct_on ‘n’ >- rw []
+ >> rpt STRIP_TAC
+ >> ‘m = SUC n \/ m <= n’ by METIS_TAC [LE]
+ >- rw [isPREFIX_REFL]
+ >> MATCH_MP_TAC isPREFIX_TRANS
+ >> Q.EXISTS_TAC ‘GENLIST f n’ >> rw []
+ >> rw [GENLIST, isPREFIX_SNOC]
+QED
+
 (* ---------------------------------------------------------------------- *)
 
 val FOLDL_SNOC = store_thm("FOLDL_SNOC",
