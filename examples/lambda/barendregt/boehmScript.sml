@@ -1513,6 +1513,7 @@ Definition subterm_tpm_def :
     in
        subterm_tpm X Y N' p pi' r
 End
+*)
 
 (* NOTE: This is the final form appeared in subterm_tpm_cong_explicit *)
 Overload subterm_tpm' = “\X Y M p r. subterm_tpm X Y M p [] r”
@@ -1520,7 +1521,6 @@ Overload subterm_tpm' = “\X Y M p r. subterm_tpm X Y M p [] r”
 (* decompose equivalence_tpm_equiv for easier use *)
 val lemma = REWRITE_RULE [equivalence_def, symmetric_def, transitive_def]
                          equivalence_tpm_equiv;
-*)
 
 (* |- !x y z. tpm_equiv x y /\ tpm_equiv y z ==> tpm_equiv x z *)
 Theorem tpm_equiv_trans[local] = cj 3 lemma;
@@ -1609,10 +1609,12 @@ QED
 Theorem subterm_tpm_lemma :
     !X Y p M pi r.
          FINITE X /\ FV M SUBSET X UNION RANKS r X /\
-         FINITE Y /\ FV (tpm pi M) SUBSET Y UNION RANKS r Y ==>
-        (subterm X M p r = NONE ==> subterm Y (tpm pi M) p r = NONE) /\
-        (subterm X M p r <> NONE ==>
-         ?pi'. tpm pi' (subterm' X M p r) = subterm' Y (tpm pi M) p r)
+         FINITE Y /\ FV (tpm pi M) SUBSET Y UNION RANKS r Y /\
+         set (MAP FST pi) SUBSET RANKS r (X UNION Y) /\
+         set (MAP SND pi) SUBSET RANKS r (X UNION Y)
+     ==> (subterm X M p r = NONE ==> subterm Y (tpm pi M) p r = NONE) /\
+         (subterm X M p r <> NONE ==>
+          ?pi'. tpm pi' (subterm' X M p r) = subterm' Y (tpm pi M) p r)
 Proof
     qx_genl_tac [‘X’, ‘Y’]
  >> Induct_on ‘p’

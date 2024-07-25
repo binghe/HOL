@@ -2725,6 +2725,9 @@ Proof
  >> rw []
 QED
 
+(* |- !f m n. GENLIST f m <<= GENLIST f n <=> m <= n *)
+Theorem IS_PREFIX_GENLIST = isPREFIX_GENLIST
+
 (* ----------------------------------------------------------------------
     longest_prefix
 

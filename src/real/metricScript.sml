@@ -13,19 +13,11 @@ open HolKernel Parse bossLib boolLib;
 open arithmeticTheory numTheory boolSimps simpLib mesonLib metisLib jrhUtils
      pairTheory pairLib quotientTheory pred_setTheory pred_setLib RealArith;
 
-open realTheory cardinalTheory topologyTheory;
+open realTheory cardinalTheory topologyTheory hurdUtils;
 
 val _ = new_theory "metric";
 
 fun METIS ths tm = prove(tm,METIS_TAC ths);
-fun wrap a = [a];
-val Rewr  = DISCH_THEN (REWRITE_TAC o wrap);
-val Rewr' = DISCH_THEN (ONCE_REWRITE_TAC o wrap);
-val Know = Q_TAC KNOW_TAC;
-val Suff = Q_TAC SUFF_TAC;
-val POP_ORW = POP_ASSUM (fn thm => ONCE_REWRITE_TAC [thm]);
-fun K_TAC _ = ALL_TAC;
-val KILL_TAC = POP_ASSUM_LIST K_TAC;
 
 (* ------------------------------------------------------------------------- *)
 (* Handy lemmas switching between versions of limit arguments.               *)

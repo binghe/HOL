@@ -1,32 +1,31 @@
 (* ========================================================================= *)
-(*                                                                           *)
-(*    Probability Density Function and Normal Random Variables [1]           *)
+(*   Probability Density Function Theory (various distributions of r.v.'s)   *)
 (*                                                                           *)
 (*        (c) Copyright 2015,                                                *)
 (*                       Muhammad Qasim,                                     *)
 (*                       Osman Hasan,                                        *)
 (*                       Hardware Verification Group,                        *)
 (*                       Concordia University                                *)
-(*                                                                           *)
 (*            Contact:  <m_qasi@ece.concordia.ca>                            *)
 (*                                                                           *)
-(*    Ported to latest HOL4 by Chun Tian <binghe.lisp@gmail.com> (2021)      *)
+(*    Copyright (c) 2024  The Australian National University (Chun Tian)     *)
 (* ========================================================================= *)
 
 open HolKernel Parse boolLib bossLib;
 
-open combinTheory arithmeticTheory numLib logrootTheory hurdUtils pred_setTheory
-     pred_setLib;
-
-open realTheory realLib seqTheory transcTheory real_sigmaTheory iterateTheory
-     real_topologyTheory;
+open combinTheory arithmeticTheory numLib logrootTheory hurdUtils pred_setLib
+     pred_setTheory realTheory realLib seqTheory transcTheory real_sigmaTheory
+     iterateTheory topologyTheory real_topologyTheory;
 
 open util_probTheory sigma_algebraTheory extrealTheory real_borelTheory
      measureTheory borelTheory lebesgueTheory probabilityTheory;
 
 val _ = new_theory "distribution";
 
-(* moved here from probabilityTheory *)
+(* This definition comes from HVG's original work (real-based)
+
+   cf. probabilityTheory.prob_density_function_def (extreal-based)
+ *)
 Definition PDF_def :
     PDF p X = RN_deriv (distribution p X) lborel
 End
@@ -96,14 +95,17 @@ Theorem INTEGRAL_PDF_1[local] = EXPECTATION_PDF_1
 (* normal_density                                                            *)
 (* ------------------------------------------------------------------------- *)
 
-(* m = mean, s = standard deviation (s^2 = variance) *)
-Definition normal_density_def :
-    normal_density m s x =
-      (1 / sqrt (2 * pi * s pow 2)) * exp (-((x - m) pow 2) / (2 * s pow 2))
-End
+val normal_density = new_definition("normal_density",
+  ``normal_density mu sig x = (1 / sqrt (2 * pi * sig pow 2)) *
+                              exp (-((x - mu) pow 2) / (2 * sig pow 2))``);
 
-Overload std_normal_density = “normal_density 0 1”
+val std_normal_density = new_definition("std_normal_density",
+  ``std_normal_density = normal_density 0 1``);
 
+val std_normal_density_def = store_thm ("stand_normal_density_def",
+  ``!x. std_normal_density x = (1 / sqrt (2 * pi)) * exp (-(x pow 2) / 2)``,
+  RW_TAC std_ss [std_normal_density, normal_density] THEN
+  SIMP_TAC real_ss [REAL_SUB_RZERO, POW_ONE]);
 
 
 (* END *)
