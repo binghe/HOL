@@ -153,7 +153,6 @@ sig
 
   (* Automate some routine set theory by reduction to FOL *)
   val SET_TAC        : thm list -> tactic
-  val SET_TAC_old    : thm list -> tactic
   val ASM_SET_TAC    : thm list -> tactic
   val SET_RULE       : term -> thm
 
