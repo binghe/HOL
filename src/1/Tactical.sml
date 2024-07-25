@@ -569,6 +569,16 @@ fun GEN_VALIDATE flag tac =
 
 fun ASSUM_LIST aslfun (g as (asl, _)) = aslfun (map ASSUME asl) g
 
+(* ------------------------------------------------------------------------- *)
+(* General tools to augment a required set of theorems with assumptions.     *)
+(* Here ASM uses all current hypotheses of the goal (ported from HOL-Light)  *)
+(* ------------------------------------------------------------------------- *)
+
+val (ASM :(thm list -> tactic) -> (thm list -> tactic)) =
+  fn asltac => fn ths =>
+      fn (g as (asl, w)) =>
+        asltac (map ASSUME asl @ ths) ([], w);
+
 (*---------------------------------------------------------------------------
  * Pop the first assumption and give it to a function (tactic)
  *---------------------------------------------------------------------------*)

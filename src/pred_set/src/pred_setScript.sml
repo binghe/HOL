@@ -201,7 +201,6 @@ val SET_SPEC_ss = SSFRAG
 
 val _ = augment_srw_ss [SET_SPEC_ss]
 
-
 (* --------------------------------------------------------------------- *)
 (* activate generalized specification parser/pretty-printer.             *)
 (* --------------------------------------------------------------------- *)
@@ -4402,6 +4401,14 @@ Proof
   MESON_TAC []
 QED
 
+val BIGUNION_GSPEC = store_thm ("BIGUNION_GSPEC",
+ ``(!P f. BIGUNION {f x | P x} = {a | ?x. P x /\ a IN (f x)}) /\
+   (!P f. BIGUNION {f x y | P x y} = {a | ?x y. P x y /\ a IN (f x y)}) /\
+   (!P f. BIGUNION {f x y z | P x y z} =
+            {a | ?x y z. P x y z /\ a IN (f x y z)})``,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC [EXTENSION] THEN
+  SIMP_TAC std_ss [IN_BIGUNION, GSPECIFICATION, EXISTS_PROD] THEN MESON_TAC[]);
+
 val IN_BIGUNION_IMAGE = store_thm (* from util_prob *)
   ("IN_BIGUNION_IMAGE",
    ``!f s y. (y IN BIGUNION (IMAGE f s)) = (?x. x IN s /\ y IN f x)``,
@@ -4627,6 +4634,14 @@ Theorem IN_BIGINTER[simp]:
 Proof
   SIMP_TAC bool_ss [BIGINTER, GSPECIFICATION, pairTheory.PAIR_EQ]
 QED
+
+val BIGINTER_GSPEC = store_thm ("BIGINTER_GSPEC",
+ ``(!P f. BIGINTER {f x | P x} = {a | !x. P x ==> a IN (f x)}) /\
+   (!P f. BIGINTER {f x y | P x y} = {a | !x y. P x y ==> a IN (f x y)}) /\
+   (!P f. BIGINTER {f x y z | P x y z} =
+                {a | !x y z. P x y z ==> a IN (f x y z)})``,
+  REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC [EXTENSION] THEN
+  SIMP_TAC std_ss [IN_BIGINTER, GSPECIFICATION, EXISTS_PROD] THEN MESON_TAC[]);
 
 Theorem IN_BIGINTER_IMAGE:
   !x f s. (x IN BIGINTER (IMAGE f s)) = (!y. y IN s ==> x IN f y)

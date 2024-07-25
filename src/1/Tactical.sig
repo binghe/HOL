@@ -86,6 +86,7 @@ sig
   val hdtm_assum     : term -> thm_tactic -> tactic
   val hdtm_x_assum   : term -> thm_tactic -> tactic
 
+  val ASM            : (thm list -> tactic) -> (thm list -> tactic)
   val ASSUM_LIST     : (thm list -> tactic) -> tactic
   val POP_ASSUM      : thm_tactic -> tactic
   val pop_assum      : thm_tactic -> tactic

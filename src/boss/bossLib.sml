@@ -341,7 +341,9 @@ val wlog_then = wlog_then
 (* (Ported from HOL Light)                                                   *)
 (*---------------------------------------------------------------------------*)
 
-local open pairTheory pred_setTheory in
+local open pairTheory pred_setTheory Ho_Rewrite in
+
+(*
 fun SET_TAC L =
     POP_ASSUM_LIST (K ALL_TAC) \\
     rpt COND_CASES_TAC \\
@@ -351,10 +353,26 @@ fun SET_TAC L =
       IN_INSERT, IN_DELETE, IN_REST, IN_BIGINTER, IN_BIGUNION, IN_IMAGE,
       GSPECIFICATION, IN_DEF, EXISTS_PROD] \\
     METIS_TAC [];
+ *)
 
-fun ASM_SET_TAC L = rpt (POP_ASSUM MP_TAC) >> SET_TAC L;
+val SET_TAC =
+  let val PRESET_CONV =
+    REWRITE_CONV[BIGINTER_IMAGE, BIGINTER_GSPEC, BIGUNION_IMAGE, BIGUNION_GSPEC] THENC
+    REWRITE_CONV[EXTENSION, SUBSET_DEF, PSUBSET_DEF, DISJOINT_DEF, SING_DEF] THENC
+    SIMP_CONV std_ss[NOT_IN_EMPTY, IN_UNIV, IN_UNION, IN_INTER, IN_DIFF, IN_INSERT,
+                 IN_DELETE, IN_REST, IN_BIGINTER, IN_BIGUNION, IN_IMAGE,
+                 GSPECIFICATION, IN_DEF, EXISTS_PROD] in
+  fn ths =>
+    MAP_EVERY MP_TAC ths THEN POP_ASSUM_LIST(K ALL_TAC) THEN
+    REPEAT(COND_CASES_TAC THEN POP_ASSUM MP_TAC) THEN
+    CONV_TAC PRESET_CONV THEN MAP_EVERY MP_TAC
+     (filter (fn th => concl (CONV_RULE PRESET_CONV th) ~~ T) ths) THEN
+    REWRITE_TAC[IN_APP] THEN METIS_TAC[]
+  end;
 
+val ASM_SET_TAC = ASM SET_TAC;
 fun SET_RULE tm = prove (tm, SET_TAC []);
+
 end (* local *)
 
 end
