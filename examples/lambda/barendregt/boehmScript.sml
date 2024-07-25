@@ -1811,6 +1811,20 @@ Proof
          irule hnf_children_FV_SUBSET >> rw []) >> DISCH_TAC \\
      qabbrev_tac ‘x' = lswapstr (REVERSE p1) x’ \\
     ‘x' IN FV M2’ by METIS_TAC [SUBSET_DEF] \\
+     Know ‘FV M2 SUBSET FV (M0 @* MAP VAR vs2)’
+     >- (‘solvable M2’ by rw [solvable_iff_has_hnf, hnf_has_hnf] \\
+         ‘M0 @* MAP VAR vs2 == M2’ by rw [] \\
+         qunabbrev_tac ‘M2’ \\
+         MATCH_MP_TAC principle_hnf_FV_SUBSET' \\
+         PROVE_TAC [lameq_solvable_cong]) \\
+    ‘FV (M0 @* MAP VAR vs2) = FV M0 UNION set vs2’ by rw [] >> POP_ORW \\
+     DISCH_TAC \\
+     Know ‘FV M0 UNION set vs2 SUBSET FV M UNION set vs2’
+     >- (Suff ‘FV M0 SUBSET FV M’ >- SET_TAC [] \\
+         qunabbrev_tac ‘M0’ \\
+         MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art []) \\
+     DISCH_TAC \\
+    ‘x' IN FV M UNION set vs2’ by METIS_TAC [SUBSET_TRANS, SUBSET_DEF] \\
      cheat)
  (* extra goal #2 (hard or impossible) *)
  >> cheat
