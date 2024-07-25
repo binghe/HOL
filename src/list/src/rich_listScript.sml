@@ -2746,6 +2746,25 @@ Proof
  >> rw []
 QED
 
+(* NOTE: This theorem is more general than listTheory.isPREFIX_GENLIST *)
+Theorem IS_PREFIX_GENLIST :
+    !(f :num -> 'a) m n. GENLIST f m <<= GENLIST f n <=> m <= n
+Proof
+    rpt GEN_TAC
+ >> reverse EQ_TAC
+ >- rw [isPREFIX_GENLIST]
+ >> qid_spec_tac ‘m’
+ >> qid_spec_tac ‘n’
+ >> Induct_on ‘n’
+ >- (rw [] >> fs [GENLIST_EQ_NIL])
+ >> GEN_TAC
+ >> simp [GENLIST, IS_PREFIX_SNOC]
+ >> STRIP_TAC
+ >- (MATCH_MP_TAC LESS_EQ_TRANS \\
+     Q.EXISTS_TAC ‘n’ >> rw [])
+ >> fs [LIST_EQ_REWRITE]
+QED
+
 (* ----------------------------------------------------------------------
     longest_prefix
 
