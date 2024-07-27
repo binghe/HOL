@@ -1825,6 +1825,11 @@ Proof
          MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art []) \\
      DISCH_TAC \\
     ‘x' IN FV M UNION set vs2’ by METIS_TAC [SUBSET_TRANS, SUBSET_DEF] \\
+    ‘x = lswapstr p1 x'’ by (rw [Abbr ‘x'’]) >> POP_ORW \\
+     Suff ‘lswapstr p1 x' IN FV M UNION set vs’
+     >- (Suff ‘FV M UNION set vs SUBSET X UNION RANKS (SUC r) X’
+         >- SET_TAC [] \\
+         cheat) \\
      cheat)
  (* extra goal #2 (hard or impossible) *)
  >> cheat

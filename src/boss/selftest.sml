@@ -437,3 +437,5 @@ val _ = tprint "Tactic simp[] on set comprehension"
 val _ = require_msg (check_result (aconv “y < 10” o #2 o hd o #1))
                     (term_to_string o #2 o hd o #1)
                     (simp[]) ([], “y IN {x | x < 10}”)
+
+val _ = Process.exit Process.success;
