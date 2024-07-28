@@ -378,8 +378,8 @@ Theorem fnpm_def =
  *  Permutation of a set of names (setpm)
  *---------------------------------------------------------------------------*)
 
-val _ = overload_on ("set_pmact", ``λpm. mk_pmact (fnpm pm discrete_pmact) : α set pmact``);
-val _ = overload_on ("setpm", ``λpm. pmact (set_pmact pm)``);
+Overload set_pmact = ``λpm. mk_pmact (fnpm pm discrete_pmact) : α set pmact``
+Overload setpm = ``λpm. pmact (set_pmact pm)``
 
 Theorem pmact_IN[simp]:
   (x IN (setpm pm π s) ⇔ pmact pm π⁻¹ x IN s)
@@ -1362,3 +1362,4 @@ val gen_avoidance_lemma = store_thm(
   ]);
 
 val _ = export_theory();
+val _ = html_theory "nomset";
