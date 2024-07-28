@@ -976,7 +976,7 @@ val patoms_cpmpm = store_thm(
 val perm_supp_SUBSET_plistvars = prove(
   ``!p. {s | ~(lswapstr p s = s)} SUBSET
         FOLDR (\p a. {FST p; SND p} UNION a) {} p``,
-  ASM_SIMP_TAC (srw_ss()) [pred_setTheory.SUBSET_DEF] THEN Induct THEN
+  ASM_SIMP_TAC (srw_ss()) [SUBSET_DEF] THEN Induct THEN
   SRW_TAC [][] THEN
   Cases_on `x = FST h` THEN SRW_TAC [][] THEN
   Cases_on `x = SND h` THEN SRW_TAC [][] THEN
@@ -985,7 +985,7 @@ val perm_supp_SUBSET_plistvars = prove(
 val FINITE_plistvars = prove(
   ``FINITE (FOLDR (\p a. {FST p; SND p} UNION a) {} p)``,
   Induct_on `p` THEN SRW_TAC [][]);
-val lemma = MATCH_MP pred_setTheory.SUBSET_FINITE FINITE_plistvars
+val lemma = MATCH_MP SUBSET_FINITE FINITE_plistvars
 
 val perm_supp_finite = store_thm(
   "perm_supp_finite",
@@ -1001,7 +1001,7 @@ val supp_perm_of = store_thm(
     SRW_TAC [][support_def, FUN_EQ_THM, fnpm_def, lswapstr_swapstr],
 
     Q.X_GEN_TAC `s` THEN
-    SRW_TAC [][pred_setTheory.SUBSET_DEF] THEN
+    SRW_TAC [][SUBSET_DEF] THEN
     SPOSE_NOT_THEN ASSUME_TAC THEN
     Q_TAC (NEW_TAC "y") `{x; lswapstr p⁻¹ x} UNION s` THEN
     `!a. fnpm string_pmact string_pmact [(x,y)] (lswapstr p) a = lswapstr p a`
@@ -1062,11 +1062,10 @@ val _ = overload_on("fmpm",``λdpm rpm. pmact (fm_pmact dpm rpm)``);
 val lemma0 = prove(
   ``(pmact pm pi x ∈ X ⇔ x ∈ setpm pm (REVERSE pi) X)``,
   SRW_TAC [][pmact_IN])
-val lemma1 = prove(``{x | x ∈ X} = X``, SRW_TAC [][pred_setTheory.EXTENSION])
+val lemma1 = prove(``{x | x ∈ X} = X``, SRW_TAC [][EXTENSION])
 val lemma = prove(
   ``FINITE { x | pmact pm pi x ∈ FDOM f}``,
-  SIMP_TAC bool_ss [lemma0, lemma1, pmact_FINITE,
-                    finite_mapTheory.FDOM_FINITE]);
+  SIMP_TAC bool_ss [lemma0, lemma1, pmact_FINITE, FDOM_FINITE]);
 
 val fmpm_def = store_thm(
   "fmpm_def",
@@ -1074,7 +1073,7 @@ val fmpm_def = store_thm(
   srw_tac [][GSYM pmact_bijections] >>
   SRW_TAC [][is_pmact_def] THENL [
     `(!d. pmact dpm [] d = d) ∧ (!r. pmact rpm [] r = r)` by METIS_TAC [pmact_nil] THEN
-    SRW_TAC [][fmap_EXT, pred_setTheory.EXTENSION, FDOM_f_o, lemma,
+    SRW_TAC [][fmap_EXT, EXTENSION, FDOM_f_o, lemma,
                FAPPLY_f_o, o_f_FAPPLY],
 
     `(!d pi1 pi2. pmact dpm (pi1 ++ pi2) d = pmact dpm pi1 (pmact dpm pi2 d)) ∧
@@ -1107,7 +1106,7 @@ val supp_setpm = store_thm(
     (supp (set_pmact pm) s = BIGUNION (IMAGE (supp pm) s))``,
   STRIP_TAC THEN MATCH_MP_TAC supp_unique_apart THEN SRW_TAC [][] THENL [
     SRW_TAC [][support_def] THEN
-    SRW_TAC [][pred_setTheory.EXTENSION] THEN
+    SRW_TAC [][EXTENSION] THEN
     Cases_on `x ∈ supp pm x'` THENL [
       `x' ∉ s` by METIS_TAC [] THEN
       `y ∈ supp pm (pmact pm [(x,y)] x')` by SRW_TAC [][perm_supp] THEN
@@ -1122,7 +1121,7 @@ val supp_setpm = store_thm(
 
     METIS_TAC [],
 
-    SRW_TAC [][pred_setTheory.EXTENSION] THEN
+    SRW_TAC [][EXTENSION] THEN
     `∀x. b ∈ supp pm x ==> ¬(x ∈ s)` by METIS_TAC [] THEN
     `¬(b ∈ supp pm x)` by METIS_TAC [] THEN
     `b ∈ supp pm (pmact pm [(a,b)] x)` by SRW_TAC [][perm_supp] THEN
@@ -1132,7 +1131,7 @@ val supp_setpm = store_thm(
 val supp_FINITE_strings = store_thm(
   "supp_FINITE_strings",
   ``FINITE s ⇒ (supp (set_pmact string_pmact) s = s)``,
-  SRW_TAC [][supp_setpm, pred_setTheory.EXTENSION] THEN EQ_TAC THEN
+  SRW_TAC [][supp_setpm, EXTENSION] THEN EQ_TAC THEN
   STRIP_TAC THENL [
     METIS_TAC [],
     Q.EXISTS_TAC `{x}` THEN SRW_TAC [][] THEN METIS_TAC []
@@ -1156,7 +1155,7 @@ Proof
     SRW_TAC [][support_def, fmap_EXT, rwt, GSYM RIGHT_FORALL_IMP_THM,
                fmpm_FDOM]
     THENL [
-      SRW_TAC [][pred_setTheory.EXTENSION, fmpm_FDOM] THEN
+      SRW_TAC [][EXTENSION, fmpm_FDOM] THEN
       Cases_on `x ∈ supp dpm x'` THEN1
         (`y ∈ supp dpm (pmact dpm [(x,y)] x')` by SRW_TAC [][perm_supp] THEN
          METIS_TAC []) THEN
@@ -1182,7 +1181,7 @@ Proof
     rename [‘fmpm _ _ [(a,b)] fmap = fmap’, ‘a ∈ supp dpm x’] >>
     `b ∉ supp dpm x` by METIS_TAC [] THEN
     SRW_TAC [][fmap_EXT, fmpm_FDOM] THEN
-    fs[pred_setTheory.EXTENSION, fmpm_FDOM] THEN
+    fs[EXTENSION, fmpm_FDOM] THEN
     `b ∈ supp dpm (pmact dpm [(a,b)] x)` by SRW_TAC [][perm_supp] THEN
     METIS_TAC [],
 
@@ -1193,7 +1192,7 @@ Proof
     `b ∉ supp dpm y` by METIS_TAC [] THEN
     Cases_on `a ∈ supp dpm y` THENL [
       `b ∈ supp dpm (pmact dpm [(a,b)] y)` by SRW_TAC [][perm_supp] THEN
-      SRW_TAC [][fmap_EXT, fmpm_FDOM, pred_setTheory.EXTENSION] THEN
+      SRW_TAC [][fmap_EXT, fmpm_FDOM, EXTENSION] THEN
       METIS_TAC [],
       ALL_TAC
     ] THEN
@@ -1216,14 +1215,14 @@ val FAPPLY_eqv_lswapstr = store_thm(
 val fmpm_FEMPTY = store_thm(
   "fmpm_FEMPTY",
   ``fmpm dpm rpm pi FEMPTY = FEMPTY``,
-  SRW_TAC [][fmap_EXT, fmpm_applied, fmpm_FDOM, pred_setTheory.EXTENSION]);
+  SRW_TAC [][fmap_EXT, fmpm_applied, fmpm_FDOM, EXTENSION]);
 val _ = export_rewrites ["fmpm_FEMPTY"]
 
 val fmpm_FUPDATE = store_thm(
   "fmpm_FUPDATE",
   ``fmpm dpm rpm pi (fm |+ (k,v)) =
     fmpm dpm rpm pi fm |+ (pmact dpm pi k, pmact rpm pi v)``,
-  SRW_TAC [][fmap_EXT, fmpm_applied, fmpm_FDOM, pred_setTheory.EXTENSION]
+  SRW_TAC [][fmap_EXT, fmpm_applied, fmpm_FDOM, EXTENSION]
   THENL [
     SRW_TAC [][pmact_eql],
     SRW_TAC [][pmact_inverse],

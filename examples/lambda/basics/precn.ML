@@ -1,6 +1,9 @@
-open HolKernel boolLib bossLib Parse
-open termTheory nomsetTheory
-open binderLib
+(*  this is an -*- sml -*- file *)
+open HolKernel boolLib bossLib Parse;
+
+open pred_setTheory;
+
+open binderLib termTheory nomsetTheory;
 
 val _ = new_theory "precn" (* "parameter recursion" *)
 
@@ -21,16 +24,15 @@ val lmf_support = prove(
                       (fn th => SRW_TAC [][Once (SYM th), SimpLHS]) >>
                   srw_tac [][fnpm_def]) >>
          srw_tac [][supp_fresh]) >>
-  srw_tac [][Once (GSYM tpm_sing_to_back)] >>
-  srw_tac [][Once (GSYM tpm_sing_to_back)] >>
+  srw_tac [][Once (GSYM pmact_sing_to_back)] >>
+  srw_tac [][Once (GSYM pmact_sing_to_back)] >>
   srw_tac [][tpm_fresh] >>
-  srw_tac [][Once (GSYM tpm_sing_to_back)] >>
+  srw_tac [][Once (GSYM pmact_sing_to_back)] >>
   srw_tac [][tpm_fresh]);
 
 val lmf_fcond = prove(
   ``y ∉ FV x2 ∪ FINITE (supp (fnpm tpm tpm) r) ==> fcond tpm ^lmf0``,
-  srw_tac [][fcond_def] >>
-
+  srw_tac [][fcond_def]);
 
 val precn0 =
     tm_recursion
@@ -55,13 +57,10 @@ end
 fun gphyps th = set_goal([], #1 (dest_imp (concl th)))
 (* gphyps precn0 *)
 
-
-open pred_setTheory
 val notinsupp_I = prove(
   ``∀A apm e x.
        is_perm apm ∧ FINITE A ∧ support apm x A ∧ e ∉ A ==> e ∉ supp apm x``,
   metis_tac [supp_smallest, SUBSET_DEF]);
-
 
 val precn = provehyps(
   precn0,
@@ -79,10 +78,10 @@ val precn = provehyps(
     `support (fnpm lswapstr tpm) f ({u;v;x;y} ∪ FV t ∪ FV x2 ∪ FV x')`
        by (srw_tac [][support_def, FUN_EQ_THM, fnpm_def] >>
            qunabbrev_tac `f` >> srw_tac [][] >>
-           srw_tac [][Once (GSYM tpm_sing_to_back), is_perm_injective] >>
-           srw_tac [][Once (GSYM tpm_sing_to_back), SimpLHS] >>
+           srw_tac [][Once (GSYM pmact_sing_to_back), is_perm_injective] >>
+           srw_tac [][Once (GSYM pmact_sing_to_back), SimpLHS] >>
            srw_tac [][tpm_fresh] >>
-           srw_tac [][Once (GSYM tpm_sing_to_back), SimpLHS] >>
+           srw_tac [][Once (GSYM pmact_sing_to_back), SimpLHS] >>
            srw_tac [][tpm_fresh]) >>
     `fcond tpm f`
       by (srw_tac [][fcond_def]
@@ -96,10 +95,4 @@ val precn = provehyps(
               srw_tac [][]) >>x
           srw_tac [][Abbr`f`]
 
-
-
-
-
-val _ = export_theory()
-
-
+val _ = export_theory();

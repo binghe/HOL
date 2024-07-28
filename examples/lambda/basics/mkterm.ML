@@ -503,8 +503,3 @@ val term_recursion = save_thm(
   stage2 |> DISCH_ALL
          |> REWRITE_RULE [AND_IMP_INTRO, GSYM CONJ_ASSOC]
          |> SIMP_RULE (bool_ss ++ boolSimps.CONJ_ss) [])
-
-
-
-
-
