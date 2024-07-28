@@ -1,3 +1,11 @@
+(* ========================================================================== *)
+(* FILE    : termScript.sml                                                   *)
+(* TITLE   : The type of Lambda terms and its substitution operations         *)
+(*                                                                            *)
+(* AUTHORS : 2005-2011 Michael Norrish                                        *)
+(*         : 2023-2024 Michael Norrish and Chun Tian                          *)
+(* ========================================================================== *)
+
 open HolKernel Parse boolLib bossLib;
 
 open boolSimps arithmeticTheory pred_setTheory listTheory finite_mapTheory
@@ -1655,74 +1663,6 @@ Proof
       MATCH_MP_TAC tpm_rel_TRANS >> Q.EXISTS_TAC ‘M'’ >> art [] \\
       MATCH_MP_TAC tpm_rel_TRANS >> Q.EXISTS_TAC ‘N'’ >> art [] \\
       MATCH_MP_TAC tpm_rel_SYM >> art [] ]
-QED
-
-(* Two tpms are equivalent if they produce the same results for all terms *)
-Definition tpm_equiv_def :
-    tpm_equiv pi pi' <=> tpm pi = tpm pi'
-End
-
-Theorem equivalence_tpm_equiv :
-    equivalence tpm_equiv
-Proof
-    rw [tpm_equiv_def, equivalence_def, reflexive_def, symmetric_def, transitive_def]
- >> PROVE_TAC []
-QED
-
-val lemma = equivalence_tpm_equiv
-         |> REWRITE_RULE [equivalence_def, reflexive_def, symmetric_def, transitive_def];
-
-(* |- !x. tpm_equiv x x *)
-Theorem tpm_equiv_refl[simp] = SPEC_ALL (cj 1 lemma);
-
-Theorem tpm_equiv_append_reverse :
-    !pi. tpm_equiv (pi ++ REVERSE pi) []
-Proof
-    Induct_on ‘pi’ >- rw []
- >> simp [FORALL_PROD]
- >> fs [tpm_equiv_def, FUN_EQ_THM]
- >> qx_genl_tac [‘u’, ‘v’, ‘t’]
- >> ONCE_REWRITE_TAC [tpm_CONS]
- >> qabbrev_tac ‘p0 = pi ++ REVERSE pi’
- >> REWRITE_TAC [GSYM SNOC_APPEND, tpm_SNOC]
- >> simp []
-QED
-
-Theorem tpm_equiv_append_cong :
-    !pi p1 p2. tpm_equiv p1 p2 ==> tpm_equiv (p1 ++ pi) (p2 ++ pi)
-Proof
-    Induct_on ‘pi’ >- rw []
- >> simp [FORALL_PROD]
- >> fs [tpm_equiv_def, FUN_EQ_THM]
- >> qx_genl_tac [‘u’, ‘v’]
- >> rw []
- >> ‘!l. l ++ (u,v)::pi = SNOC (u,v) l ++ pi’ by rw []
- >> POP_ORW
- >> FIRST_X_ASSUM MATCH_MP_TAC
- >> rw [tpm_SNOC]
-QED
-
-Theorem tpm_equiv_reverse_cong :
-    !pi pi'. tpm_equiv pi pi' ==> tpm_equiv (REVERSE pi) (REVERSE pi')
-Proof
-    Induct_on ‘pi’
- >- (Induct_on ‘pi'’ >- rw [] \\
-     simp [FORALL_PROD] \\
-     qx_genl_tac [‘u’, ‘v’] \\
-     fs [tpm_equiv_def, FUN_EQ_THM] \\
-     REWRITE_TAC [Once tpm_CONS, GSYM SNOC_APPEND, tpm_SNOC] \\
-     rpt STRIP_TAC \\
-     rw [GSYM tpm_eql] \\
-     rw [tpm_eqr])
- (* stage work *)
- >> simp [FORALL_PROD]
- >> qx_genl_tac [‘u’, ‘v’]
- >> fs [tpm_equiv_def, FUN_EQ_THM]
- >> REWRITE_TAC [Once tpm_CONS, GSYM SNOC_APPEND, tpm_SNOC]
- >> rpt STRIP_TAC
- >> rw [GSYM tpm_eql]
- >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o GSYM)
- >> rw [tpm_eql]
 QED
 
 (* ----------------------------------------------------------------------

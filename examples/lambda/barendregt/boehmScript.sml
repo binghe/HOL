@@ -1518,16 +1518,6 @@ End
 (* NOTE: This is the final form appeared in subterm_tpm_cong_explicit *)
 Overload subterm_tpm' = “\X Y M p r. subterm_tpm X Y M p [] r”
 
-(* decompose equivalence_tpm_equiv for easier use *)
-val lemma = REWRITE_RULE [equivalence_def, symmetric_def, transitive_def]
-                         equivalence_tpm_equiv;
-
-(* |- !x y z. tpm_equiv x y /\ tpm_equiv y z ==> tpm_equiv x z *)
-Theorem tpm_equiv_trans[local] = cj 3 lemma;
-
-(* |- !x y. tpm_equiv x y <=> tpm_equiv y x *)
-Theorem tpm_equiv_symm[local] = cj 2 lemma;
-
 (*
 Theorem subterm_tpm_equiv_cong :
     !p pi pi' X Y M. tpm_equiv pi pi' ==>
@@ -1829,7 +1819,15 @@ Proof
      Suff ‘lswapstr p1 x' IN FV M UNION set vs’
      >- (Suff ‘FV M UNION set vs SUBSET X UNION RANKS (SUC r) X’
          >- SET_TAC [] \\
-         cheat) \\
+         simp [UNION_SUBSET] \\
+         CONJ_TAC >- (MATCH_MP_TAC SUBSET_TRANS \\
+                      Q.EXISTS_TAC ‘X UNION RANKS r X’ >> art [] \\
+                      Suff ‘RANKS r X SUBSET RANKS (SUC r) X’ >- SET_TAC [] \\
+                      MATCH_MP_TAC RANKS_MONO >> rw []) \\
+         MATCH_MP_TAC SUBSET_TRANS \\
+         Q.EXISTS_TAC ‘RANKS (SUC r) X’ >> simp [] \\
+         qunabbrev_tac ‘vs’ \\
+         MATCH_MP_TAC RANKS_SUBSET >> rw []) \\
      cheat)
  (* extra goal #2 (hard or impossible) *)
  >> cheat
