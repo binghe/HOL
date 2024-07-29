@@ -7,8 +7,8 @@
 
 open HolKernel Parse boolLib bossLib;
 
-open BasicProvers boolSimps pred_setTheory listTheory finite_mapTheory
-     stringTheory;
+open BasicProvers boolSimps pred_setTheory listTheory finite_mapTheory hurdUtils
+     stringTheory pairTheory;
 
 open basic_swapTheory NEWLib;
 
@@ -1360,6 +1360,74 @@ val gen_avoidance_lemma = store_thm(
       SRW_TAC [][] THEN METIS_TAC []
     ]
   ]);
+
+Theorem lswapstr_14b :
+    !pi e. ~MEM e (MAP FST pi) /\ ~MEM e (MAP SND pi) ==> lswapstr pi e = e
+Proof
+    Induct_on ‘pi’ >> rw []
+QED
+
+Theorem lswapstr_thm :
+    !vs vs' x. LENGTH vs = LENGTH vs' /\
+               DISJOINT (set vs) (set vs') /\
+               ALL_DISTINCT vs /\
+               ALL_DISTINCT vs' /\
+               MEM x vs ==>
+               MEM (lswapstr (ZIP (vs,vs')) x) vs'
+Proof
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘pi = ZIP (vs,vs')’
+ >> ‘vs  = MAP FST pi’ by rw [Abbr ‘pi’, MAP_ZIP]
+ >> ‘vs' = MAP SND pi’ by rw [Abbr ‘pi’, MAP_ZIP]
+ >> Q.PAT_X_ASSUM ‘MEM x vs’                    MP_TAC
+ >> Q.PAT_X_ASSUM ‘DISJOINT (set vs) (set vs')’ MP_TAC
+ >> Q.PAT_X_ASSUM ‘ALL_DISTINCT vs'’            MP_TAC
+ >> Q.PAT_X_ASSUM ‘ALL_DISTINCT vs’             MP_TAC
+ (* rewrite vs and vs' by pi *)
+ >> NTAC 2 POP_ORW
+ >> KILL_TAC
+ >> Q.ID_SPEC_TAC ‘x’
+ >> Induct_on ‘pi’ >> rw [FORALL_PROD]
+ >- (Cases_on ‘h’ >> fs [] \\
+     Know ‘lswapstr pi q = q’
+     >- (MATCH_MP_TAC lswapstr_14b >> art []) >> Rewr \\
+     rw [])
+ >> Cases_on ‘h’ >> fs []
+ >> Q.PAT_X_ASSUM ‘!x. P’ (MP_TAC o (Q.SPEC ‘x’))
+ >> rw []
+ >> DISJ2_TAC
+ >> Suff ‘swapstr q r (lswapstr pi x) = (lswapstr pi x)’ >- rw []
+ >> Suff ‘q <> lswapstr pi x /\ r <> lswapstr pi x’
+ >- PROVE_TAC [swapstr_thm]
+ >> CONJ_TAC
+ >> CCONTR_TAC >> fs []
+QED
+
+(* |- !pi x s. x IN ssetpm pi s <=> lswapstr (REVERSE pi) x IN s *)
+Theorem ssetpm_IN =
+         pmact_IN |> GEN_ALL |> INST_TYPE [“:'a” |-> “:string”]
+                  |> Q.SPECL [‘pi’, ‘x’, ‘s’, ‘string_pmact’]
+                  |> Q.GENL [‘pi’, ‘x’, ‘s’]
+
+Theorem ssetpm_14b_lemma[local] :
+    !s. FINITE s ==> !pi. DISJOINT (set (MAP FST pi)) s /\
+                          DISJOINT (set (MAP SND pi)) s ==>
+                          ssetpm pi s = s
+Proof
+    HO_MATCH_MP_TAC FINITE_INDUCT
+ >> rw [pmact_INSERT]
+ >> Suff ‘lswapstr pi e = e’ >- rw []
+ >> MATCH_MP_TAC lswapstr_14b >> art []
+QED
+
+Theorem ssetpm_14b :
+    !pi s. FINITE s /\ DISJOINT (set (MAP FST pi)) s /\
+                       DISJOINT (set (MAP SND pi)) s ==>
+                       ssetpm pi s = s
+Proof
+    rpt STRIP_TAC
+ >> irule ssetpm_14b_lemma >> art []
+QED
 
 val _ = export_theory();
 val _ = html_theory "nomset";
