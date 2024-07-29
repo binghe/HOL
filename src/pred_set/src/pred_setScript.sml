@@ -6464,6 +6464,26 @@ val MAX_SET_UNION = Q.store_thm
         by SRW_TAC[][EXTENSION,AC DISJ_COMM DISJ_ASSOC]
    THEN FULL_SIMP_TAC (srw_ss()) [MAX_SET_THM, AC MAX_COMM MAX_ASSOC]);
 
+Theorem FINITE_INTER :
+    !s1 s2. ((FINITE s1) \/ (FINITE s2)) ==> FINITE (s1 INTER s2)
+Proof
+  METIS_TAC[INTER_COMM, INTER_FINITE]
+QED
+
+Theorem MAX_SET_INTER :
+    !A B. FINITE A /\ FINITE B ==>
+          MAX_SET (A INTER B) <= MIN (MAX_SET A) (MAX_SET B)
+Proof
+    Q_TAC SUFF_TAC
+   ‘!A. FINITE A ==> !B. FINITE B ==>
+       MAX_SET (A INTER B) <= MIN (MAX_SET A) (MAX_SET B)’
+ >- METIS_TAC []
+ >> SET_INDUCT_TAC >> simp []
+ >> rpt STRIP_TAC (* 2 subgoals, same tactics *)
+ >> MATCH_MP_TAC SUBSET_MAX_SET
+ >> rw [FINITE_INTER, INTER_SUBSET]
+QED
+
 val set_ss = arith_ss ++ SET_SPEC_ss ++
              rewrites [CARD_INSERT,CARD_EMPTY,FINITE_EMPTY,FINITE_INSERT,
                        NOT_IN_EMPTY];
@@ -8225,9 +8245,6 @@ val IN_INSERT_EXPAND = store_thm ("IN_INSERT_EXPAND",
   SIMP_TAC bool_ss [IN_INSERT] THEN
   METIS_TAC[]);
 
-val FINITE_INTER = store_thm ("FINITE_INTER",
-  ``!s1 s2. ((FINITE s1) \/ (FINITE s2)) ==> FINITE (s1 INTER s2)``,
-  METIS_TAC[INTER_COMM, INTER_FINITE]);
 (* END misc thms *)
 
 (*---------------------------------------------------------------------------*)
