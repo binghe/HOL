@@ -278,6 +278,14 @@ val pmact_flip_args = store_thm(
   ``pmact pm ((x,y)::t) a = pmact pm ((y,x)::t) a``,
   METIS_TAC [is_pmact_pmact, is_pmact_def, permeq_flip_args]);
 
+Theorem pmact_append :
+    !f p1 p2 x. pmact f (p1 ++ p2) x = pmact f p1 (pmact f p2 x)
+Proof
+    rpt GEN_TAC
+ >> MP_TAC (Q.SPEC ‘f’ is_pmact_pmact)
+ >> METIS_TAC [is_pmact_def]
+QED
+
 (* ----------------------------------------------------------------------
    define (possibly parameterised) permutation actions on standard
    builtin types: functions, sets, lists, pairs, etc
@@ -348,6 +356,51 @@ val pmact_sing_to_back = store_thm(
         THEN1 METIS_TAC [is_pmact_def,is_pmact_pmact] THEN
   METIS_TAC [permeq_swap_ends, permeq_sym, stringpm_raw]);
 
+Theorem lswapstr_14b :
+    !pi e. ~MEM e (MAP FST pi) /\ ~MEM e (MAP SND pi) ==> lswapstr pi e = e
+Proof
+    Induct_on ‘pi’ >> rw []
+QED
+
+Theorem lswapstr_thm :
+    !vs vs' x. LENGTH vs = LENGTH vs' /\
+               DISJOINT (set vs) (set vs') /\
+               ALL_DISTINCT vs /\
+               ALL_DISTINCT vs' /\
+               MEM x vs ==>
+               MEM (lswapstr (ZIP (vs,vs')) x) vs'
+Proof
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘pi = ZIP (vs,vs')’
+ >> ‘vs  = MAP FST pi’ by rw [Abbr ‘pi’, MAP_ZIP]
+ >> ‘vs' = MAP SND pi’ by rw [Abbr ‘pi’, MAP_ZIP]
+ >> Q.PAT_X_ASSUM ‘MEM x vs’                    MP_TAC
+ >> Q.PAT_X_ASSUM ‘DISJOINT (set vs) (set vs')’ MP_TAC
+ >> Q.PAT_X_ASSUM ‘ALL_DISTINCT vs'’            MP_TAC
+ >> Q.PAT_X_ASSUM ‘ALL_DISTINCT vs’             MP_TAC
+ (* rewrite vs and vs' by pi *)
+ >> NTAC 2 POP_ORW
+ >> KILL_TAC
+ >> Q.ID_SPEC_TAC ‘x’
+ >> Induct_on ‘pi’ >> rw [FORALL_PROD]
+ >- (Cases_on ‘h’ >> fs [] \\
+     Know ‘lswapstr pi q = q’
+     >- (MATCH_MP_TAC lswapstr_14b >> art []) >> Rewr \\
+     rw [])
+ >> Cases_on ‘h’ >> fs []
+ >> Q.PAT_X_ASSUM ‘!x. P’ (MP_TAC o (Q.SPEC ‘x’))
+ >> rw []
+ >> DISJ2_TAC
+ >> Suff ‘swapstr q r (lswapstr pi x) = (lswapstr pi x)’ >- rw []
+ >> Suff ‘q <> lswapstr pi x /\ r <> lswapstr pi x’
+ >- PROVE_TAC [swapstr_thm]
+ >> CONJ_TAC
+ >> CCONTR_TAC >> fs []
+QED
+
+(* |- !p1 p2 x. lswapstr (p1 ++ p2) x = lswapstr p1 (lswapstr p2 x) *)
+Theorem lswapstr_append = ISPEC “string_pmact” pmact_append
+
 (*---------------------------------------------------------------------------*
  *  Permutation of a function call (fnpm)
  *---------------------------------------------------------------------------*)
@@ -380,6 +433,8 @@ Theorem fnpm_def =
 
 Overload set_pmact = ``λpm. mk_pmact (fnpm pm discrete_pmact) : α set pmact``
 Overload setpm = ``λpm. pmact (set_pmact pm)``
+Overload sset_pmact = ``set_pmact string_pmact``
+Overload ssetpm = ``pmact sset_pmact``
 
 Theorem pmact_IN[simp]:
   (x IN (setpm pm π s) ⇔ pmact pm π⁻¹ x IN s)
@@ -435,6 +490,32 @@ Proof
     HO_MATCH_MP_TAC FINITE_INDUCT THEN
     SRW_TAC [][pmact_eql, pmact_INSERT]
   ]
+QED
+
+(* |- !pi x s. x IN ssetpm pi s <=> lswapstr (REVERSE pi) x IN s *)
+Theorem ssetpm_IN =
+         pmact_IN |> GEN_ALL |> INST_TYPE [“:'a” |-> “:string”]
+                  |> Q.SPECL [‘pi’, ‘x’, ‘s’, ‘string_pmact’]
+                  |> Q.GENL [‘pi’, ‘x’, ‘s’]
+
+Theorem ssetpm_14b_lemma[local] :
+    !s. FINITE s ==> !pi. DISJOINT (set (MAP FST pi)) s /\
+                          DISJOINT (set (MAP SND pi)) s ==>
+                          ssetpm pi s = s
+Proof
+    HO_MATCH_MP_TAC FINITE_INDUCT
+ >> rw [pmact_INSERT]
+ >> Suff ‘lswapstr pi e = e’ >- rw []
+ >> MATCH_MP_TAC lswapstr_14b >> art []
+QED
+
+Theorem ssetpm_14b :
+    !pi s. FINITE s /\ DISJOINT (set (MAP FST pi)) s /\
+                       DISJOINT (set (MAP SND pi)) s ==>
+                       ssetpm pi s = s
+Proof
+    rpt STRIP_TAC
+ >> irule ssetpm_14b_lemma >> art []
 QED
 
 (*---------------------------------------------------------------------------*
@@ -1303,9 +1384,6 @@ val fresh_equivariant = store_thm(
      by METIS_TAC [fresh_thm] THEN
   SRW_TAC [][fnpm_def, pmact_injective, GSYM fresh_thm]);
 
-val _ = overload_on ("sset_pmact",``set_pmact string_pmact``);
-val _ = overload_on ("ssetpm", ``pmact sset_pmact``)
-
 (*
    given a finite set of atoms and some other set to avoid, we can
    exhibit a pi that maps the original set away from the avoid set, and
@@ -1360,74 +1438,6 @@ val gen_avoidance_lemma = store_thm(
       SRW_TAC [][] THEN METIS_TAC []
     ]
   ]);
-
-Theorem lswapstr_14b :
-    !pi e. ~MEM e (MAP FST pi) /\ ~MEM e (MAP SND pi) ==> lswapstr pi e = e
-Proof
-    Induct_on ‘pi’ >> rw []
-QED
-
-Theorem lswapstr_thm :
-    !vs vs' x. LENGTH vs = LENGTH vs' /\
-               DISJOINT (set vs) (set vs') /\
-               ALL_DISTINCT vs /\
-               ALL_DISTINCT vs' /\
-               MEM x vs ==>
-               MEM (lswapstr (ZIP (vs,vs')) x) vs'
-Proof
-    rpt STRIP_TAC
- >> qabbrev_tac ‘pi = ZIP (vs,vs')’
- >> ‘vs  = MAP FST pi’ by rw [Abbr ‘pi’, MAP_ZIP]
- >> ‘vs' = MAP SND pi’ by rw [Abbr ‘pi’, MAP_ZIP]
- >> Q.PAT_X_ASSUM ‘MEM x vs’                    MP_TAC
- >> Q.PAT_X_ASSUM ‘DISJOINT (set vs) (set vs')’ MP_TAC
- >> Q.PAT_X_ASSUM ‘ALL_DISTINCT vs'’            MP_TAC
- >> Q.PAT_X_ASSUM ‘ALL_DISTINCT vs’             MP_TAC
- (* rewrite vs and vs' by pi *)
- >> NTAC 2 POP_ORW
- >> KILL_TAC
- >> Q.ID_SPEC_TAC ‘x’
- >> Induct_on ‘pi’ >> rw [FORALL_PROD]
- >- (Cases_on ‘h’ >> fs [] \\
-     Know ‘lswapstr pi q = q’
-     >- (MATCH_MP_TAC lswapstr_14b >> art []) >> Rewr \\
-     rw [])
- >> Cases_on ‘h’ >> fs []
- >> Q.PAT_X_ASSUM ‘!x. P’ (MP_TAC o (Q.SPEC ‘x’))
- >> rw []
- >> DISJ2_TAC
- >> Suff ‘swapstr q r (lswapstr pi x) = (lswapstr pi x)’ >- rw []
- >> Suff ‘q <> lswapstr pi x /\ r <> lswapstr pi x’
- >- PROVE_TAC [swapstr_thm]
- >> CONJ_TAC
- >> CCONTR_TAC >> fs []
-QED
-
-(* |- !pi x s. x IN ssetpm pi s <=> lswapstr (REVERSE pi) x IN s *)
-Theorem ssetpm_IN =
-         pmact_IN |> GEN_ALL |> INST_TYPE [“:'a” |-> “:string”]
-                  |> Q.SPECL [‘pi’, ‘x’, ‘s’, ‘string_pmact’]
-                  |> Q.GENL [‘pi’, ‘x’, ‘s’]
-
-Theorem ssetpm_14b_lemma[local] :
-    !s. FINITE s ==> !pi. DISJOINT (set (MAP FST pi)) s /\
-                          DISJOINT (set (MAP SND pi)) s ==>
-                          ssetpm pi s = s
-Proof
-    HO_MATCH_MP_TAC FINITE_INDUCT
- >> rw [pmact_INSERT]
- >> Suff ‘lswapstr pi e = e’ >- rw []
- >> MATCH_MP_TAC lswapstr_14b >> art []
-QED
-
-Theorem ssetpm_14b :
-    !pi s. FINITE s /\ DISJOINT (set (MAP FST pi)) s /\
-                       DISJOINT (set (MAP SND pi)) s ==>
-                       ssetpm pi s = s
-Proof
-    rpt STRIP_TAC
- >> irule ssetpm_14b_lemma >> art []
-QED
 
 val _ = export_theory();
 val _ = html_theory "nomset";

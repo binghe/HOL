@@ -2,7 +2,7 @@
 (* FILE    : solvableScript.sml                                               *)
 (* TITLE   : Solvable Lambda Terms and Principle Head Normal Forms            *)
 (*                                                                            *)
-(* AUTHORS : 2023-2024 Michael Norrish and Chun Tian                          *)
+(* AUTHORS : 2023-2024 The Australian National University (Chun Tian)         *)
 (* ========================================================================== *)
 
 open HolKernel Parse boolLib bossLib;
