@@ -359,6 +359,38 @@ fun SET_TAC ths =
 fun ASM_SET_TAC L = rpt (POP_ASSUM MP_TAC) >> SET_TAC L;
 fun SET_RULE tm = prove (tm, SET_TAC []);
 
+(* new version
+val SET_TAC = let
+  val PRESET_CONV =
+    (* NOTE: some of the listed theorem only work with higher-order rewriting *)
+    REWRITE_CONV [EXTENSION, SUBSET_DEF, PSUBSET_DEF, DISJOINT_DEF, SING_DEF] THENC
+    SIMP_CONV pure_ss
+      [BIGINTER_IMAGE, BIGINTER_GSPEC, BIGUNION_IMAGE, BIGUNION_GSPEC] THENC
+    SIMP_CONV std_ss [NOT_IN_EMPTY, IN_UNIV, IN_UNION, IN_INTER, IN_DIFF, IN_INSERT,
+                      IN_DELETE, IN_REST, IN_BIGINTER, IN_BIGUNION, IN_IMAGE,
+                      GSPECIFICATION, EXISTS_PROD]
+in
+  fn ths =>
+    (* 1. push the input theorems into the goal by MP_TAC *)
+    MAP_EVERY MP_TAC ths THEN
+    (* 2. eliminate all if-then-else, breaking into subgoals *)
+    REPEAT(COND_CASES_TAC THEN POP_ASSUM MP_TAC) THEN
+    (* 3. rewrite the goal (and the input theorems) by the above list of set theorems *)
+    CONV_TAC PRESET_CONV THEN
+    (* 4. push again some input theorems into each subgoal. These theorems were
+          removed from the goal by PRESET_CONV (because they are tautology), but may
+          still be useful for METIS_TAC later.
+     *)
+    MAP_EVERY MP_TAC (filter (fn th => concl (CONV_RULE PRESET_CONV th) ~~ T) ths) THEN
+    (* 5. if there're still remaining ‘$IN’s, simply eliminate them. *)
+    REWRITE_TAC[IN_DEF] THEN
+    (* 6. Finally, the goal is first-order, only with uninterpreted constants.
+          If it's solvable, Metis can solve it. *)
+    POP_ASSUM_LIST(K ALL_TAC) THEN
+    METIS_TAC[]
+end;
+ *)
+
 end (* local *)
 
 end

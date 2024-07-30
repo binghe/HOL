@@ -1173,6 +1173,7 @@ fun ASM_MATCH_MP_TAC_N depth ths =
 
 val ASM_MATCH_MP_TAC = ASM_MATCH_MP_TAC_N 10;
 
-val art = ASM_REWRITE_TAC;
+(* NOTE: Let's try the "ASM" function ported from HOL-Light *)
+val art = ASM REWRITE_TAC;
 
 end; (* hurdUtils *)

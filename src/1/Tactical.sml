@@ -576,8 +576,8 @@ fun ASSUM_LIST aslfun (g as (asl, _)) = aslfun (map ASSUME asl) g
 
 val (ASM :(thm list -> tactic) -> (thm list -> tactic)) =
   fn asltac => fn ths =>
-      fn (g as (asl, w)) =>
-        asltac (map ASSUME asl @ ths) ([], w);
+      fn (g as (asl,w)) =>
+        asltac (map ASSUME asl @ ths) g;
 
 (*---------------------------------------------------------------------------
  * Pop the first assumption and give it to a function (tactic)
