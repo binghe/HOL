@@ -1608,13 +1608,12 @@ Proof
 QED
 *)
 
-(* NOTE: The definition of ‘subterm_tpm’ is extracted from this proof *)
+(* NOTE: The definition of ‘subterm_tpm’ is extracted from this proof
 Theorem subterm_tpm_lemma :
     !X Y p M pi r.
-         FINITE X /\ FV M SUBSET X UNION RANKS r X /\
-         FINITE Y /\ FV (tpm pi M) SUBSET Y UNION RANKS r Y /\
-         set (MAP FST pi) SUBSET RANKS r (X UNION Y) /\
-         set (MAP SND pi) SUBSET RANKS r (X UNION Y)
+         FINITE X /\ FINITE Y /\ FV M SUBSET X UNION RANKS r X /\
+         set (MAP FST pi) SUBSET RANKS r X /\
+         set (MAP SND pi) SUBSET RANKS r Y
      ==> (subterm X M p r = NONE ==>
           subterm Y (tpm pi M) p r = NONE) /\
          (subterm X M p r <> NONE ==>
@@ -1889,11 +1888,11 @@ Proof
      DISCH_TAC \\
     ‘x' IN FV M UNION set vs2’ by METIS_TAC [SUBSET_TRANS, SUBSET_DEF] \\
      Q.PAT_X_ASSUM ‘FV (tpm pi M) SUBSET Y UNION RANKS r Y’ MP_TAC \\
+     simp [FV_tpm, SUBSET_DEF] \\
      cheat)
  >> cheat
 QED
 
-(*
 (* NOTE: This lemma is more general than subterm_tpm_cong, which cannot be
    directly proved. The current form of this lemma, suitable for doing
    induction, was due to repeated experiments.  -- Chun Tian, 19 feb 2024.
