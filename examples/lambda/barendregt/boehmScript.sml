@@ -1608,7 +1608,9 @@ Proof
 QED
 *)
 
-(* NOTE: The definition of ‘subterm_tpm’ is extracted from this proof *)
+(* NOTE: The definition of ‘subterm_tpm’ is extracted from this proof.
+         The statement of this lemma is due to repeatedly experiments.
+ *)
 Theorem subterm_tpm_lemma :
     !X Y p M pi r.
          FINITE X /\ FV         M  SUBSET X UNION RANKS r X /\
@@ -1888,6 +1890,9 @@ Proof
          qunabbrev_tac ‘M0’ \\
          MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art []) \\
      DISCH_TAC \\
+     Q.PAT_X_ASSUM ‘FV (tpm pi M) SUBSET Y UNION RANKS r Y’ MP_TAC \\
+     simp [FV_tpm, SUBSET_DEF] \\
+     DISCH_TAC \\
   (* NOTE: current relations of permutations:
 
      p1 = ZIP (vs2,vs)
@@ -1911,9 +1916,6 @@ Proof
          CONJ_TAC
          >- (MATCH_MP_TAC app_permeq_monotone >> rw [permof_inverse]) \\
          rw []) >> DISCH_TAC \\
-     Q.PAT_X_ASSUM ‘FV (tpm pi M) SUBSET Y UNION RANKS r Y’ MP_TAC \\
-     simp [FV_tpm, SUBSET_DEF] \\
-     DISCH_TAC \\
     ‘x' IN FV M UNION set vs2’ by METIS_TAC [SUBSET_TRANS, SUBSET_DEF] \\
      Q.PAT_X_ASSUM ‘FV N SUBSET FV M2’ K_TAC \\
      Q.PAT_X_ASSUM ‘x' IN FV N’ K_TAC \\
@@ -1945,13 +1947,19 @@ Proof
      Know ‘lswapstr p3 x' = lswapstr p2 x'’
      >- (Q.PAT_X_ASSUM ‘p3 == p2’ MP_TAC \\
          rw [permeq_thm]) >> Rewr' \\
+     Q.PAT_X_ASSUM ‘!x. lswapstr (REVERSE pi) x IN FV M ==> P’ K_TAC \\
      simp [Abbr ‘p2’, pmact_append] \\
      POP_ASSUM MP_TAC (* MEM x' vs2 *) \\
      simp [MEM_EL] \\
      DISCH_THEN (Q.X_CHOOSE_THEN ‘i’ STRIP_ASSUME_TAC) \\
      POP_ORW (* EL i vs2 in the goal *) \\
-     
-     cheat)
+     Know ‘lswapstr (ZIP (vs2,vs1)) (EL i vs2) = EL i vs1’
+     >- (MATCH_MP_TAC lswapstr_EL >> rw []) >> Rewr' \\
+     simp [Abbr ‘vs1’] \\
+     qabbrev_tac ‘vs1 = listpm string_pmact (REVERSE pi) vs'’ \\
+     MP_TAC (Q.SPECL [‘r’, ‘SUC r’, ‘n’, ‘Y’] RANKS_SUBSET) \\
+     rw [SUBSET_DEF] \\
+     POP_ASSUM MATCH_MP_TAC >> rw [EL_MEM])
  >> cheat
 QED
 
