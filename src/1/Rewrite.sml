@@ -189,27 +189,21 @@ fun REWRITE_TAC thl = GEN_REWRITE_TAC Conv.TOP_DEPTH_CONV (implicit_rewrites())
 and ONCE_REWRITE_TAC thl =
     GEN_REWRITE_TAC Conv.ONCE_DEPTH_CONV (implicit_rewrites()) thl;
 
-val rewrite_tac = REWRITE_TAC and once_rewrite_tac = ONCE_REWRITE_TAC
-val pure_rewrite_tac = PURE_REWRITE_TAC and pure_once_rewrite_tac = PURE_ONCE_REWRITE_TAC
-
-
 (* Rewrite a goal with the help of its assumptions *)
+val PURE_ASM_REWRITE_TAC      = Tactical.ASM PURE_REWRITE_TAC
+and ASM_REWRITE_TAC           = Tactical.ASM REWRITE_TAC
+and PURE_ONCE_ASM_REWRITE_TAC = Tactical.ASM PURE_ONCE_REWRITE_TAC
+and ONCE_ASM_REWRITE_TAC      = Tactical.ASM ONCE_REWRITE_TAC;
 
-fun PURE_ASM_REWRITE_TAC thl :tactic =
-   Tactical.ASSUM_LIST (fn asl => PURE_REWRITE_TAC (asl @ thl))
-and ASM_REWRITE_TAC thl :tactic      =
-   Tactical.ASSUM_LIST (fn asl => REWRITE_TAC (asl @ thl))
-and PURE_ONCE_ASM_REWRITE_TAC thl :tactic =
-   Tactical.ASSUM_LIST (fn asl => PURE_ONCE_REWRITE_TAC (asl @ thl))
-and ONCE_ASM_REWRITE_TAC thl :tactic      =
-   Tactical.ASSUM_LIST (fn asl => ONCE_REWRITE_TAC (asl @ thl));
-
-val pure_asm_rewrite_tac = PURE_ASM_REWRITE_TAC
-val pure_once_asm_rewrite_tac = PURE_ONCE_ASM_REWRITE_TAC
-
-
-val asm_rewrite_tac = ASM_REWRITE_TAC
-val once_asm_rewrite_tac = ONCE_ASM_REWRITE_TAC
+(* Lower-case synonyms *)
+val rewrite_tac               = REWRITE_TAC
+and once_rewrite_tac          = ONCE_REWRITE_TAC
+and pure_rewrite_tac          = PURE_REWRITE_TAC
+and pure_once_rewrite_tac     = PURE_ONCE_REWRITE_TAC
+and pure_asm_rewrite_tac      = PURE_ASM_REWRITE_TAC
+and pure_once_asm_rewrite_tac = PURE_ONCE_ASM_REWRITE_TAC
+and asm_rewrite_tac           = ASM_REWRITE_TAC
+and once_asm_rewrite_tac      = ONCE_ASM_REWRITE_TAC;
 
 (* Rewriting using equations that satisfy a predicate  *)
 fun FILTER_PURE_ASM_REWRITE_RULE f thl th =
