@@ -1177,11 +1177,11 @@ Proof
 QED
 
 (* NOTE: This theorem uses ‘RNEWS’ instead of ‘NEWS’. When r = 0,
-        ‘RANKS 0 X = {}’ while ‘RNEWS 0 n X = NEWS n X’, reducing to
+        ‘RANKS 0 = {}’ while ‘RNEWS 0 n X = NEWS n X’, reducing to
          the old theorem (lameq_principle_hnf_lemma).
  *)
 Theorem lameq_principle_hnf_lemma_general :
-    !r X M N. FINITE X /\ FV M UNION FV N SUBSET (X UNION (RANKS r X)) /\
+    !r X M N. FINITE X /\ FV M UNION FV N SUBSET X UNION RANKS r /\
               hnf M /\ hnf N /\ M == N
           ==> LAMl_size M = LAMl_size N /\
               let n = LAMl_size M;
@@ -1202,7 +1202,7 @@ Proof
  >> qabbrev_tac ‘vs = RNEWS r (MAX n n') X’
  >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) X /\ LENGTH vs = MAX n n'’
       by rw [RNEWS_def, Abbr ‘vs’]
- >> qabbrev_tac ‘Y = RANKS r X’
+ >> qabbrev_tac ‘Y = RANKS r’
  (* extra goal due to RANKS *)
  >> Know ‘DISJOINT (set vs) (FV M) /\ DISJOINT (set vs) (FV N)’
  >- (Cases_on ‘r’
@@ -1253,10 +1253,12 @@ Proof
  (* eliminiate LETs in the goal *)
  >> simp []
  (* applying principle_hnf_beta_reduce *)
- >> Know ‘principle_hnf (LAMl vs (VAR y @* args) @* MAP VAR vs) = VAR y @* args’
+ >> Know ‘principle_hnf (LAMl vs (VAR y @* args) @* MAP VAR vs) =
+          VAR y @* args’
  >- (MATCH_MP_TAC principle_hnf_beta_reduce >> rw [hnf_appstar])
  >> Rewr'
- >> Know ‘principle_hnf (LAMl vs (VAR y' @* args') @* MAP VAR vs) = VAR y' @* args'’
+ >> Know ‘principle_hnf (LAMl vs (VAR y' @* args') @* MAP VAR vs) =
+          VAR y' @* args'’
  >- (MATCH_MP_TAC principle_hnf_beta_reduce >> rw [hnf_appstar])
  >> Rewr'
  >> simp [hnf_head_hnf, hnf_children_hnf]
@@ -1280,7 +1282,8 @@ QED
 (* Corollary 8.3.17 (ii) [1, p.176] (inner part)
 
    |- !X M N.
-        FINITE X /\ FV M SUBSET X /\ FV N SUBSET X /\ hnf M /\ hnf N /\ M == N ==>
+        FINITE X /\ FV M SUBSET X /\ FV N SUBSET X /\ hnf M /\ hnf N /\
+        M == N ==>
         LAMl_size M = LAMl_size N /\
         (let
            n = LAMl_size M;
@@ -1291,10 +1294,11 @@ QED
            hnf_head M1 = hnf_head N1 /\
            LENGTH (hnf_children M1) = LENGTH (hnf_children N1) /\
            !i. i < LENGTH (hnf_children M1) ==>
-               EL i (hnf_children M1) == EL i (hnf_children N1))
+               EL i (hnf_children M1) == EL i (hnf_children N1)): thm
  *)
 Theorem lameq_principle_hnf_lemma =
-        lameq_principle_hnf_lemma_general |> Q.SPEC ‘0’ |> SRULE [GSYM CONJ_ASSOC]
+        lameq_principle_hnf_lemma_general
+     |> Q.SPEC ‘0’ |> SRULE [GSYM CONJ_ASSOC]
 
 Theorem lameq_principle_hnf_size_eq :
     !M N. has_hnf M /\ has_hnf N /\ M == N ==>
@@ -1327,7 +1331,7 @@ Theorem lameq_principle_hnf_size_eq' =
 
 Theorem lameq_principle_hnf_head_eq :
     !r X M N M0 N0 n vs M1 N1.
-         FINITE X /\ FV M UNION FV N SUBSET X UNION RANKS r X /\
+         FINITE X /\ FV M UNION FV N SUBSET X UNION RANKS r /\
          has_hnf M /\ has_hnf N /\ M == N /\
          M0 = principle_hnf M /\
          N0 = principle_hnf N /\
@@ -1356,19 +1360,28 @@ Proof
  >> ‘hnf M0 /\ hnf N0’ by METIS_TAC [hnf_principle_hnf]
  (* applying lameq_principle_hnf_lemma *)
  >> MP_TAC (Q.SPECL [‘r’, ‘X’, ‘M0’, ‘N0’] lameq_principle_hnf_lemma_general)
- >> Suff ‘FV M0 SUBSET X UNION RANKS r X /\
-          FV N0 SUBSET X UNION RANKS r X’ >- rw []
+ >> Suff ‘FV M0 SUBSET X UNION RANKS r /\
+          FV N0 SUBSET X UNION RANKS r’ >- rw []
  (* applying principle_hnf_FV_SUBSET *)
  >> METIS_TAC [principle_hnf_FV_SUBSET, SUBSET_TRANS]
 QED
 
+(* |- !r X M N M0 N0 n vs M1 N1.
+        FINITE X /\ FV M UNION FV N SUBSET X UNION RANKS r /\
+        solvable M /\
+        solvable N /\ M == N /\ M0 = principle_hnf M /\
+        N0 = principle_hnf N /\ n = LAMl_size M0 /\ vs = RNEWS r n X /\
+        M1 = principle_hnf (M0 @* MAP VAR vs) /\
+        N1 = principle_hnf (N0 @* MAP VAR vs) ==>
+        hnf_head M1 = hnf_head N1
+ *)
 Theorem lameq_principle_hnf_head_eq' =
         lameq_principle_hnf_head_eq |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
 
 (* Corollary 8.3.17 (ii) [1, p.176] (outer part) *)
 Theorem lameq_principle_hnf_thm :
     !r X M N M0 N0 n vs M1 N1.
-         FINITE X /\ FV M UNION FV N SUBSET X UNION RANKS r X /\
+         FINITE X /\ FV M UNION FV N SUBSET X UNION RANKS r /\
          has_hnf M /\ has_hnf N /\ M == N /\
          M0 = principle_hnf M /\
          N0 = principle_hnf N /\
@@ -1402,12 +1415,24 @@ Proof
  >> ‘hnf M0 /\ hnf N0’ by METIS_TAC [hnf_principle_hnf]
  (* applying lameq_principle_hnf_lemma *)
  >> MP_TAC (Q.SPECL [‘r’, ‘X’, ‘M0’, ‘N0’] lameq_principle_hnf_lemma_general)
- >> Suff ‘FV M0 SUBSET X UNION RANKS r X /\
-          FV N0 SUBSET X UNION RANKS r X’ >- rw []
+ >> Suff ‘FV M0 SUBSET X UNION RANKS r /\
+          FV N0 SUBSET X UNION RANKS r’ >- rw []
  (* applying principle_hnf_FV_SUBSET *)
  >> METIS_TAC [principle_hnf_FV_SUBSET, SUBSET_TRANS, UNION_SUBSET]
 QED
 
+(* |- !r X M N M0 N0 n vs M1 N1.
+        FINITE X /\ FV M UNION FV N SUBSET X UNION RANKS r /\
+        solvable M /\
+        solvable N /\ M == N /\ M0 = principle_hnf M /\
+        N0 = principle_hnf N /\ n = LAMl_size M0 /\ vs = RNEWS r n X /\
+        M1 = principle_hnf (M0 @* MAP VAR vs) /\
+        N1 = principle_hnf (N0 @* MAP VAR vs) ==>
+        LAMl_size M0 = LAMl_size N0 /\ hnf_head M1 = hnf_head N1 /\
+        LENGTH (hnf_children M1) = LENGTH (hnf_children N1) /\
+        !i. i < LENGTH (hnf_children M1) ==>
+            EL i (hnf_children M1) == EL i (hnf_children N1)
+ *)
 Theorem lameq_principle_hnf_thm' =
         lameq_principle_hnf_thm |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
 
@@ -1454,7 +1479,7 @@ Proof
  >> rw [principle_hnf_thm]
 QED
 
-(* NOTE: Again, the difficulty of applying this theorem is to prove the antecedents *)
+(* NOTE: Again, the difficulty of applying this theorem is the antecedents *)
 Theorem principle_hnf_ISUB_cong :
     !M N sub. has_hnf M /\ has_hnf (M ISUB sub) /\ has_hnf (N ISUB sub) /\
               principle_hnf M = N ==>

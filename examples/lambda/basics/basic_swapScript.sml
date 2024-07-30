@@ -263,65 +263,82 @@ Theorem NEWS_prefix = Q.SPEC ‘0’ RNEWS_prefix
     rank and ranks - infinite set of all fresh names of certain ranks
    ---------------------------------------------------------------------- *)
 
-Definition RANK :
-    rank s r = {v | ?j. v = n2s (r *, j) /\ string_width s < j}
+Definition rank_def :
+    RANK r = IMAGE (\i. n2s (r *, i)) UNIV
 End
 
-Overload RANK = “\r s. rank s r”
+Theorem RANK :
+    !r. RANK r = {v | ?j. v = n2s (r *, j)}
+Proof
+    rw [Once EXTENSION, rank_def]
+QED
+
+Theorem alloc_in_rank :
+    !r m n. set (alloc r m n) SUBSET RANK r
+Proof
+    rw [alloc_def, RANK, SUBSET_DEF, MEM_MAP]
+ >> Q.EXISTS_TAC ‘y’ >> rw []
+QED
 
 Definition ranks_def :
-    ranks s r = BIGUNION (IMAGE (rank s) (count r))
+    RANKS r = BIGUNION (IMAGE RANK (count r))
 End
 
-Overload RANKS = “\r s. ranks s r”
-
 Theorem RANKS :
-    !s r. ranks s r =
-          {v | ?i j. v = n2s (i *, j) /\ i < r /\ string_width s < j}
+    !r. RANKS r = {v | ?i j. v = n2s (i *, j) /\ i < r}
 Proof
     rw [Once EXTENSION, RANK, ranks_def]
  >> EQ_TAC >> rw [] >- fs []
- >> Q.EXISTS_TAC ‘{v | ?j. v = n2s (i *, j) /\ string_width s < j}’
+ >> Q.EXISTS_TAC ‘{v | ?j. v = n2s (i *, j)}’
  >> rw []
  >> Q.EXISTS_TAC ‘i’ >> rw []
 QED
 
 Theorem RANKS_0[simp] :
-    ranks s 0 = {}
+    RANKS 0 = {}
 Proof
     rw [RANKS]
 QED
 
 Theorem RANKS_MONO :
-    !s r1 r2. r1 <= r2 ==> ranks s r1 SUBSET ranks s r2
+    !s r1 r2. r1 <= r2 ==> RANKS r1 SUBSET RANKS r2
 Proof
     rw [RANKS, SUBSET_DEF]
  >> qexistsl_tac [‘i’, ‘j’] >> rw []
 QED
 
 Theorem RANKS_RANK_DISJOINT :
-    !r1 r2 n s. r1 <= r2 ==> DISJOINT (ranks s r1) (rank s r2)
+    !r1 r2 n. r1 <= r2 ==> DISJOINT (RANKS r1) (RANK r2)
 Proof
     rw [DISJOINT_ALT, RANK, RANKS]
  >> fs []
 QED
 
 Theorem RANKS_RANK_DISJOINT' :
-    !r n s. FINITE s ==> DISJOINT (ranks s r) (rank s r)
+    !r n. DISJOINT (RANKS r) (RANK r)
 Proof
     rpt STRIP_TAC
  >> MATCH_MP_TAC RANKS_RANK_DISJOINT >> rw []
 QED
 
-Theorem RANKS_RANK_SUBSET :
-    !r1 r2 n s. r1 < r2 ==> rank s r1 SUBSET ranks s r2
+Theorem RANK_SUBSET_RANKS :
+    !r1 r2. r1 < r2 ==> RANK r1 SUBSET RANKS r2
 Proof
     rw [SUBSET_DEF, RANKS, RANK]
  >> qexistsl_tac [‘r1’, ‘j’] >> art []
 QED
 
+Theorem alloc_in_ranks :
+    !r1 r2 m n. r1 < r2 ==> set (alloc r1 m n) SUBSET RANKS r2
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC SUBSET_TRANS
+ >> Q.EXISTS_TAC ‘RANK r1’ >> rw [alloc_in_rank]
+ >> MATCH_MP_TAC RANK_SUBSET_RANKS >> art []
+QED
+
 Theorem RNEWS_SUBSET :
-    !r n s. FINITE s ==> set (RNEWS r n s) SUBSET rank s r
+    !r n s. FINITE s ==> set (RNEWS r n s) SUBSET RANK r
 Proof
     rw [RNEWS_set, SUBSET_DEF, RANK]
  >> Q.EXISTS_TAC ‘j’ >> rw []
@@ -329,24 +346,24 @@ QED
 
 Theorem RANKS_DISJOINT :
     !r1 r2 n s.
-        FINITE s /\ r1 <= r2 ==> DISJOINT (RANKS r1 s) (set (RNEWS r2 n s))
+        FINITE s /\ r1 <= r2 ==> DISJOINT (RANKS r1) (set (RNEWS r2 n s))
 Proof
     rpt STRIP_TAC
  >> MATCH_MP_TAC DISJOINT_SUBSET
- >> Q.EXISTS_TAC ‘RANK r2 s’
+ >> Q.EXISTS_TAC ‘RANK r2’
  >> rw [RANKS_RANK_DISJOINT, RNEWS_SUBSET]
 QED
 
 Theorem RANKS_DISJOINT' :
-    !r n s. FINITE s ==> DISJOINT (RANKS r s) (set (RNEWS r n s))
+    !r n s. FINITE s ==> DISJOINT (RANKS r) (set (RNEWS r n s))
 Proof
     rpt STRIP_TAC
  >> MATCH_MP_TAC RANKS_DISJOINT >> rw []
 QED
 
-Theorem RANKS_SUBSET :
+Theorem RNEWS_SUBSET_RANKS :
     !r1 r2 n s. FINITE s /\ r1 < r2 ==>
-                set (RNEWS r1 n s) SUBSET RANKS r2 s
+                set (RNEWS r1 n s) SUBSET RANKS r2
 Proof
     rw [SUBSET_DEF, RNEWS_set, RANKS]
  >> qexistsl_tac [‘r1’, ‘j’] >> rw []
