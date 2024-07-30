@@ -1608,10 +1608,11 @@ Proof
 QED
 *)
 
-(* NOTE: The definition of ‘subterm_tpm’ is extracted from this proof
+(* NOTE: The definition of ‘subterm_tpm’ is extracted from this proof *)
 Theorem subterm_tpm_lemma :
     !X Y p M pi r.
-         FINITE X /\ FINITE Y /\ FV M SUBSET X UNION RANKS r X /\
+         FINITE X /\ FV         M  SUBSET X UNION RANKS r X /\
+         FINITE Y /\ FV (tpm pi M) SUBSET Y UNION RANKS r Y /\
          set (MAP FST pi) SUBSET RANKS r X /\
          set (MAP SND pi) SUBSET RANKS r Y
      ==> (subterm X M p r = NONE ==>
@@ -1646,7 +1647,8 @@ Proof
  >> Know ‘n' = n’ >- rw [Abbr ‘n’, Abbr ‘n'’, LAMl_size_tpm]
  >> DISCH_TAC
  (* special case *)
- >> reverse (Cases_on ‘h < m’) >- rw [subterm_alt]
+ >> reverse (Cases_on ‘h < m’)
+ >- simp [subterm_alt]
  (* stage work, now h < m *)
  >> simp [] (* eliminate ‘h < m’ in the goal *)
  (* applying Norrish's advanced tactics, again *)
@@ -1859,8 +1861,8 @@ Proof
      rw [] >- (DISJ1_TAC >> art []) \\
      DISJ2_TAC \\
      qunabbrev_tac ‘p1’ \\
-     MATCH_MP_TAC lswapstr_thm >> rw [])
- (* extra goal #2 (hard) *)
+     MATCH_MP_TAC lswapstr_MEM >> rw [])
+  (* extra goal #2 (hard) *)
  >> CONJ_TAC
  >- (simp [Abbr ‘N'’, FV_tpm, SUBSET_DEF] \\
      simp [GSYM lswapstr_append, GSYM REVERSE_APPEND] \\
@@ -1886,13 +1888,74 @@ Proof
          qunabbrev_tac ‘M0’ \\
          MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art []) \\
      DISCH_TAC \\
-    ‘x' IN FV M UNION set vs2’ by METIS_TAC [SUBSET_TRANS, SUBSET_DEF] \\
+  (* NOTE: current relations of permutations:
+
+     p1 = ZIP (vs2,vs)
+     p2 = pi ++ ZIP (vs2,vs1)
+     pi' = p2 ++ REVERSE p1
+     p3 = pi' ++ p1 = p2 ++ REVERSE p1 ++ p1 == p2
+     p4 = REVERSE pi ++ p3
+     p4 = REVERSE pi ++ pi ++ ZIP (vs2,vs1) == ZIP (vs2,vs1)
+   *)
+    ‘p3 == p2’ by rw [Abbr ‘p3’, Abbr ‘pi'’, permof_inverse_append] \\
+     qabbrev_tac ‘p4 = REVERSE pi ++ p3’ \\
+     Know ‘p4 == ZIP (vs2,vs1)’
+     >- (qunabbrev_tac ‘p4’ \\
+         MATCH_MP_TAC (GEN_ALL permeq_trans) \\
+         Q.EXISTS_TAC ‘REVERSE pi ++ p2’ \\
+         CONJ_TAC
+         >- (MATCH_MP_TAC app_permeq_monotone >> rw []) \\
+         rw [Abbr ‘p2’] \\
+         MATCH_MP_TAC (GEN_ALL permeq_trans) \\
+         Q.EXISTS_TAC ‘[] ++ ZIP (vs2,vs1)’ \\
+         CONJ_TAC
+         >- (MATCH_MP_TAC app_permeq_monotone >> rw [permof_inverse]) \\
+         rw []) >> DISCH_TAC \\
      Q.PAT_X_ASSUM ‘FV (tpm pi M) SUBSET Y UNION RANKS r Y’ MP_TAC \\
      simp [FV_tpm, SUBSET_DEF] \\
+     DISCH_TAC \\
+    ‘x' IN FV M UNION set vs2’ by METIS_TAC [SUBSET_TRANS, SUBSET_DEF] \\
+     Q.PAT_X_ASSUM ‘FV N SUBSET FV M2’ K_TAC \\
+     Q.PAT_X_ASSUM ‘x' IN FV N’ K_TAC \\
+     Q.PAT_X_ASSUM ‘x' IN FV M2’ K_TAC \\
+     qunabbrev_tac ‘N’ \\
+  (* stage work *)
+     POP_ASSUM MP_TAC >> REWRITE_TAC [IN_UNION] \\
+     STRIP_TAC (* x' IN FV M *)
+     >- (Q.PAT_X_ASSUM ‘!x. lswapstr (REVERSE pi) x IN FV M ==> P’
+           (MP_TAC o Q.SPEC ‘lswapstr p3 x'’) \\
+         simp [GSYM pmact_append] \\
+         Suff ‘lswapstr p4 x' IN FV M’
+         >- (rw [] >- art [] \\
+             DISJ2_TAC \\
+             Know ‘RANKS r Y SUBSET RANKS (SUC r) Y’ >- rw [RANKS_MONO] \\
+             rw [SUBSET_DEF]) \\
+         Know ‘lswapstr p4 x' = lswapstr (ZIP (vs2,vs1)) x'’
+         >- (Q.PAT_X_ASSUM ‘p4 == ZIP (vs2,vs1)’ MP_TAC \\
+             rw [permeq_thm]) >> Rewr' \\
+         MP_TAC (Q.SPECL [‘REVERSE (ZIP (vs2,vs1))’, ‘x'’, ‘FV M’]
+                         (GSYM ssetpm_IN)) \\
+         SIMP_TAC list_ss [] >> DISCH_THEN K_TAC \\
+         qabbrev_tac ‘p5 = REVERSE (ZIP (vs2,vs1))’ \\
+         Suff ‘ssetpm p5 (FV M) = FV M’ >- (Rewr' >> art []) \\
+         MATCH_MP_TAC ssetpm_14b \\
+         simp [Abbr ‘p5’, MAP_REVERSE, MAP_ZIP]) \\
+  (* remaining goal: MEM x' vs2 *)
+     DISJ2_TAC \\
+     Know ‘lswapstr p3 x' = lswapstr p2 x'’
+     >- (Q.PAT_X_ASSUM ‘p3 == p2’ MP_TAC \\
+         rw [permeq_thm]) >> Rewr' \\
+     simp [Abbr ‘p2’, pmact_append] \\
+     POP_ASSUM MP_TAC (* MEM x' vs2 *) \\
+     simp [MEM_EL] \\
+     DISCH_THEN (Q.X_CHOOSE_THEN ‘i’ STRIP_ASSUME_TAC) \\
+     POP_ORW (* EL i vs2 in the goal *) \\
+     
      cheat)
  >> cheat
 QED
 
+(*
 (* NOTE: This lemma is more general than subterm_tpm_cong, which cannot be
    directly proved. The current form of this lemma, suitable for doing
    induction, was due to repeated experiments.  -- Chun Tian, 19 feb 2024.

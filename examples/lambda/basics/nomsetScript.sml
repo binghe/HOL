@@ -362,7 +362,50 @@ Proof
     Induct_on ‘pi’ >> rw []
 QED
 
-Theorem lswapstr_thm :
+Theorem lswapstr_EL :
+    !vs vs' i. LENGTH vs = LENGTH vs' /\
+               DISJOINT (set vs) (set vs') /\
+               ALL_DISTINCT vs /\
+               ALL_DISTINCT vs' /\
+               i < LENGTH vs ==>
+               lswapstr (ZIP (vs,vs')) (EL i vs) = EL i vs'
+Proof
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘pi = ZIP (vs,vs')’
+ >> ‘vs  = MAP FST pi’ by rw [Abbr ‘pi’, MAP_ZIP]
+ >> ‘vs' = MAP SND pi’ by rw [Abbr ‘pi’, MAP_ZIP]
+ >> Q.PAT_X_ASSUM ‘i < LENGTH vs’               MP_TAC
+ >> Q.PAT_X_ASSUM ‘DISJOINT (set vs) (set vs')’ MP_TAC
+ >> Q.PAT_X_ASSUM ‘ALL_DISTINCT vs'’            MP_TAC
+ >> Q.PAT_X_ASSUM ‘ALL_DISTINCT vs’             MP_TAC
+ (* rewrite vs and vs' by pi *)
+ >> NTAC 2 POP_ORW
+ >> KILL_TAC
+ >> simp [LENGTH_MAP]
+ >> Q.ID_SPEC_TAC ‘i’
+ >> Induct_on ‘pi’ >> rw [FORALL_PROD]
+ >> Cases_on ‘i’
+ >- (Cases_on ‘h’ >> fs [] \\
+     Know ‘lswapstr pi q = q’
+     >- (MATCH_MP_TAC lswapstr_14b >> art []) >> Rewr' \\
+     rw [])
+ >> Cases_on ‘h’ >> fs []
+ >> Q.PAT_X_ASSUM ‘!i. i < LENGTH pi ==> P’ (MP_TAC o (Q.SPEC ‘n’))
+ >> rw []
+ >> qabbrev_tac ‘vs  = MAP FST pi’
+ >> qabbrev_tac ‘vs' = MAP SND pi’
+ >> ‘LENGTH vs = LENGTH pi /\ LENGTH vs' = LENGTH pi’
+      by rw [Abbr ‘vs’, Abbr ‘vs'’]
+ >> Suff ‘swapstr q r (EL n vs') = EL n vs'’ >- rw []
+ >> Suff ‘q <> EL n vs' /\ r <> EL n vs'’
+ >- PROVE_TAC [swapstr_thm]
+ >> CONJ_TAC (* 2 subgoals, same tactics *)
+ >> CCONTR_TAC
+ >> FULL_SIMP_TAC std_ss [MEM_EL]
+ >> METIS_TAC []
+QED
+
+Theorem lswapstr_MEM :
     !vs vs' x. LENGTH vs = LENGTH vs' /\
                DISJOINT (set vs) (set vs') /\
                ALL_DISTINCT vs /\
@@ -370,32 +413,9 @@ Theorem lswapstr_thm :
                MEM x vs ==>
                MEM (lswapstr (ZIP (vs,vs')) x) vs'
 Proof
-    rpt STRIP_TAC
- >> qabbrev_tac ‘pi = ZIP (vs,vs')’
- >> ‘vs  = MAP FST pi’ by rw [Abbr ‘pi’, MAP_ZIP]
- >> ‘vs' = MAP SND pi’ by rw [Abbr ‘pi’, MAP_ZIP]
- >> Q.PAT_X_ASSUM ‘MEM x vs’                    MP_TAC
- >> Q.PAT_X_ASSUM ‘DISJOINT (set vs) (set vs')’ MP_TAC
- >> Q.PAT_X_ASSUM ‘ALL_DISTINCT vs'’            MP_TAC
- >> Q.PAT_X_ASSUM ‘ALL_DISTINCT vs’             MP_TAC
- (* rewrite vs and vs' by pi *)
- >> NTAC 2 POP_ORW
- >> KILL_TAC
- >> Q.ID_SPEC_TAC ‘x’
- >> Induct_on ‘pi’ >> rw [FORALL_PROD]
- >- (Cases_on ‘h’ >> fs [] \\
-     Know ‘lswapstr pi q = q’
-     >- (MATCH_MP_TAC lswapstr_14b >> art []) >> Rewr \\
-     rw [])
- >> Cases_on ‘h’ >> fs []
- >> Q.PAT_X_ASSUM ‘!x. P’ (MP_TAC o (Q.SPEC ‘x’))
- >> rw []
- >> DISJ2_TAC
- >> Suff ‘swapstr q r (lswapstr pi x) = (lswapstr pi x)’ >- rw []
- >> Suff ‘q <> lswapstr pi x /\ r <> lswapstr pi x’
- >- PROVE_TAC [swapstr_thm]
- >> CONJ_TAC
- >> CCONTR_TAC >> fs []
+    rw [MEM_EL]
+ >> Q.EXISTS_TAC ‘n’ >> rw []
+ >> MATCH_MP_TAC lswapstr_EL >> rw []
 QED
 
 (* |- !p1 p2 x. lswapstr (p1 ++ p2) x = lswapstr p1 (lswapstr p2 x) *)
