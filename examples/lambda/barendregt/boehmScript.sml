@@ -1848,7 +1848,7 @@ Proof
  >> simp [tpm_rel_def]
 QED
 
-(* NOTE: ‘r <= r'’ is removed now. *)
+(* NOTE: ‘r <= r'’ is removed now. This is the final strong version. *)
 Theorem subterm_tpm_cong :
     !X Y M p r r'. FINITE X /\ FINITE Y /\
          FV M SUBSET X UNION RANKS r /\
@@ -1866,6 +1866,7 @@ Proof
  >> METIS_TAC []
 QED
 
+(* This is the final weak version. This means ‘FV M SUBSET X INTER Y’. *)
 Theorem subterm_tpm_cong' :
     !X Y M p r r'. FINITE X /\ FINITE Y /\
                    FV M SUBSET X /\ FV M SUBSET Y
@@ -1898,6 +1899,19 @@ Proof
  >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM)
  >> qabbrev_tac ‘N = subterm' X M p r’
  >> rw [principle_hnf_tpm']
+QED
+
+Theorem subterm_hnf_children_size_cong' :
+    !X Y M p r r'. FINITE X /\ FINITE Y /\
+         FV M SUBSET X /\ FV M SUBSET Y /\
+         subterm X M p r <> NONE /\
+         solvable (subterm' X M p r) ==>
+         hnf_children_size (principle_hnf (subterm' X M p r)) =
+         hnf_children_size (principle_hnf (subterm' Y M p r'))
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> MATCH_MP_TAC subterm_hnf_children_size_cong >> art []
+ >> ASM_SET_TAC []
 QED
 
 (* NOTE: ‘VAR o renaming s1 s2 r1 r2’ can be used for ‘fsub’.
@@ -2843,8 +2857,8 @@ Theorem subterm_width_alt :
     !X M p r. FINITE X /\ FV M SUBSET X UNION RANKS r /\
               p <> [] /\ subterm X M p r <> NONE ==>
               subterm_width M p =
-              let Ms = {subterm' X M q r | q <<= FRONT p} in
-                  MAX_SET (IMAGE (hnf_children_size o principle_hnf) Ms)
+              let s = {subterm' X M q r | q <<= FRONT p} in
+                  MAX_SET (IMAGE (hnf_children_size o principle_hnf) s)
 Proof
     rpt STRIP_TAC
  >> ‘p IN ltree_paths (BT' X M r)’ by PROVE_TAC [subterm_imp_ltree_paths]
@@ -2853,7 +2867,8 @@ Proof
  (* preparing for subterm_hnf_children_size_cong *)
  >> Know ‘!Y r. IMAGE (hnf_children_size o principle_hnf)
                       {subterm' Y M q r | q <<= FRONT p} =
-                {hnf_children_size (principle_hnf (subterm' Y M q r)) | q <<= FRONT p}’
+                {hnf_children_size (principle_hnf (subterm' Y M q r)) |
+                 q <<= FRONT p}’
  >- (rw [Once EXTENSION] \\
      EQ_TAC >> rw [] >| (* 2 subgoals *)
      [ (* goal 1 (of 2) *)
@@ -2875,20 +2890,21 @@ Proof
        (* goal 2 (of 2) *)
        Q.EXISTS_TAC ‘q’ >> rw [] ])
  >> rpt STRIP_TAC
- >> cheat
- (*
  (* applying subterm_hnf_children_size_cong *)
  >> MATCH_MP_TAC subterm_hnf_children_size_cong
  >> simp []
  >> ‘p <> []’ by rw [Abbr ‘p’]
+ >> Know ‘subterm (FV M) M p 0 <> NONE’
+ >- (MP_TAC (Q.SPECL [‘X’, ‘FV M’, ‘M’, ‘p’, ‘r’, ‘0’] subterm_tpm_cong) \\
+     simp [])
+ >> DISCH_TAC
  (* applying subterm_solvable_lemma *)
- >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘p’] subterm_solvable_lemma)
+ >> MP_TAC (Q.SPECL [‘FV M’, ‘M’, ‘p’, ‘0’] subterm_solvable_lemma)
  >> rw []
  >> FIRST_X_ASSUM MATCH_MP_TAC
  >> MATCH_MP_TAC IS_PREFIX_TRANS
  >> Q.EXISTS_TAC ‘FRONT p’ >> art []
  >> MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []
- *)
 QED
 
 (* NOTE: The actual difficulty of this theorem is to prove that
