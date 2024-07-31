@@ -1789,31 +1789,32 @@ Proof
  >> Know ‘set vs SUBSET RANKS (SUC r)’
  >- simp [Abbr ‘vs’, RNEWS_SUBSET_RANKS]
  >> Rewr
- >> Know ‘set vs1 SUBSET RANKS (SUC r)’
- >- (simp [SUBSET_DEF, Abbr ‘vs1’, MEM_listpm, MEM_EL] \\
-     rpt STRIP_TAC \\
-     rename1 ‘i < n’ \\
-     qabbrev_tac ‘x' = EL i vs'’ \\
-    ‘x = lswapstr (REVERSE pi) x'’ by rw [] \\
-     POP_ORW \\
-     Q.PAT_X_ASSUM ‘lswapstr pi x = x'’ K_TAC \\
-     Know ‘lswapstr (REVERSE pi) x' = x'’
-     >- (MATCH_MP_TAC lswapstr_14b \\
-         simp [MAP_REVERSE] \\
-         Know ‘x' IN RANK r’
-         >- (MP_TAC (Q.SPECL [‘r’, ‘n’, ‘Y’] RNEWS_SUBSET) \\
-             simp [SUBSET_DEF] >> DISCH_THEN MATCH_MP_TAC \\
-             rw [Abbr ‘x'’, EL_MEM]) >> DISCH_TAC \\
-         MP_TAC (Q.SPECL [‘r’, ‘n’] RANKS_RANK_DISJOINT') \\
-         simp [DISJOINT_ALT] >> DISCH_TAC \\
-         CONJ_TAC (* 2 subgoals, same tactics *) \\
-         CCONTR_TAC >> METIS_TAC [SUBSET_DEF]) >> Rewr' \\
-     MP_TAC (Q.SPECL [‘r’, ‘SUC r’, ‘n’, ‘Y’] RNEWS_SUBSET_RANKS) \\
-     simp [SUBSET_DEF] >> DISCH_THEN MATCH_MP_TAC \\
-     rw [Abbr ‘x'’, EL_MEM])
- >> Rewr
- >> qunabbrev_tac ‘vs2’
- >> MATCH_MP_TAC alloc_in_ranks >> rw []
+ >> CONJ_TAC (* set vs2 SUBSET RANKS (SUC r) *)
+ >- (qunabbrev_tac ‘vs2’ \\
+     MATCH_MP_TAC alloc_in_ranks >> rw [])
+ (* final goal: set vs1 SUBSET RANKS (SUC r) *)
+ >> simp [SUBSET_DEF, Abbr ‘vs1’, MEM_listpm, MEM_EL]
+ >> rpt STRIP_TAC
+ >> rename1 ‘i < n’
+ >> qabbrev_tac ‘x' = EL i vs'’
+ >> ‘x = lswapstr (REVERSE pi) x'’ by rw []
+ >> POP_ORW
+ >> Q.PAT_X_ASSUM ‘lswapstr pi x = x'’ K_TAC
+ >> Know ‘lswapstr (REVERSE pi) x' = x'’
+ >- (MATCH_MP_TAC lswapstr_14b \\
+     simp [MAP_REVERSE] \\
+     Know ‘x' IN RANK r’
+     >- (MP_TAC (Q.SPECL [‘r’, ‘n’, ‘Y’] RNEWS_SUBSET) \\
+         simp [SUBSET_DEF] >> DISCH_THEN MATCH_MP_TAC \\
+         rw [Abbr ‘x'’, EL_MEM]) >> DISCH_TAC \\
+     MP_TAC (Q.SPECL [‘r’, ‘n’] RANKS_RANK_DISJOINT') \\
+     simp [DISJOINT_ALT] >> DISCH_TAC \\
+     CONJ_TAC (* 2 subgoals, same tactics *) \\
+     CCONTR_TAC >> METIS_TAC [SUBSET_DEF])
+ >> Rewr'
+ >> MP_TAC (Q.SPECL [‘r’, ‘SUC r’, ‘n’, ‘Y’] RNEWS_SUBSET_RANKS)
+ >> simp [SUBSET_DEF] >> DISCH_THEN MATCH_MP_TAC
+ >> rw [Abbr ‘x'’, EL_MEM]
 QED
 
 Theorem subterm_tpm_cong_lemma[local] :
@@ -1862,14 +1863,13 @@ Proof
  >> rw [principle_hnf_tpm']
 QED
 
-(* Part II: from ‘subterm X M p r1’ to ‘subterm X (tpm pi M) p r2’ *)
+(* Part II: from ‘subterm X M p r’ to ‘subterm X (tpm pi M) p r'’ *)
 Theorem subterm_tpm_rank_lemma :
     !X p M pi r r'.
-         FINITE X /\
-         FV M          SUBSET X UNION RANKS r /\
+         FINITE X /\ FV M SUBSET X UNION RANKS r /\
          FV (tpm pi M) SUBSET X UNION RANKS r' /\
          set (MAP FST pi) SUBSET RANKS r /\
-         set (MAP SND pi) SUBSET RANKS r'
+         set (MAP SND pi) SUBSET RANKS r' /\ r <= r'
      ==> (subterm X M p r = NONE ==>
           subterm X (tpm pi M) p r' = NONE) /\
          (subterm X M p r <> NONE ==>
@@ -1907,7 +1907,7 @@ Proof
  (* stage work, now h < m *)
  >> simp [] (* eliminate ‘h < m’ in the goal *)
  (* applying Norrish's advanced tactics, again *)
- >> CONV_TAC (UNBETA_CONV “subterm Y (tpm pi M) (h::p) r”)
+ >> CONV_TAC (UNBETA_CONV “subterm X (tpm pi M) (h::p) r'”)
  >> qmatch_abbrev_tac ‘P _’
  >> RW_TAC bool_ss [subterm_alt]
  >> simp [Abbr ‘P’]
@@ -1921,7 +1921,7 @@ Proof
  >> Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
  >> ‘DISJOINT (set vs) (FV M)’ by METIS_TAC [subterm_disjoint_lemma]
  >> qunabbrev_tac ‘vs'’
- >> Q_TAC (RNEWS_TAC (“vs' :string list”, “r :num”, “n :num”)) ‘Y’
+ >> Q_TAC (RNEWS_TAC (“vs' :string list”, “r' :num”, “n :num”)) ‘X’
  (* vs1 is a permutated version of vs', to be used as first principles *)
  >> qabbrev_tac ‘vs1 = listpm string_pmact (REVERSE pi) vs'’
  >> ‘ALL_DISTINCT vs1’ by rw [Abbr ‘vs1’]
@@ -1940,13 +1940,14 @@ Proof
      >- rw [DISJOINT_ALT', FV_tpm] \\
      MATCH_MP_TAC subterm_disjoint_lemma \\
      qabbrev_tac ‘n = LENGTH vs'’ \\
-     qexistsl_tac [‘Y’, ‘r’, ‘tpm pi M0’, ‘n’] >> simp [] \\
+     qexistsl_tac [‘X’, ‘r'’, ‘tpm pi M0’, ‘n’] >> simp [] \\
      rw [Abbr ‘M0’, principle_hnf_tpm'])
  >> DISCH_TAC
  >> ‘LENGTH vs1 = n’ by rw [Abbr ‘vs1’, LENGTH_listpm]
  (* stage work, now defining vs2 manually by primitives *)
- >> qabbrev_tac ‘Z = X UNION Y UNION set vs UNION set vs1’
+ >> qabbrev_tac ‘Z = X UNION set vs UNION set vs1’
  >> qabbrev_tac ‘z = SUC (string_width Z)’
+ (* NOTE: vs is in rank r; vs1 seems also in the same rank *)
  >> qabbrev_tac ‘vs2 = alloc r z (z + n)’
  (* properties of vs2 *)
  >> Know ‘DISJOINT (set vs2) Z’
@@ -1957,7 +1958,7 @@ Proof
      MP_TAC (Q.SPECL [‘x’, ‘Z’] string_width_thm) >> rw [])
  >> qunabbrev_tac ‘Z’
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
- >> qabbrev_tac ‘Z = X UNION Y UNION set vs UNION set vs1’
+ >> qabbrev_tac ‘Z = X UNION set vs UNION set vs1’
  >> Know ‘DISJOINT (set vs2) (FV M)’
  >- (Q.PAT_X_ASSUM ‘FV M SUBSET X UNION RANKS r’ MP_TAC \\
      rw [DISJOINT_ALT'] \\
@@ -2043,7 +2044,7 @@ Proof
  >> POP_ASSUM K_TAC (* M1' = ... (already used) *)
  >> REWRITE_TAC [GSYM pmact_decompose]
  >> qabbrev_tac ‘p2 = pi ++ ZIP (vs2,vs1)’
- >> DISCH_TAC
+ >> DISCH_TAC (* M1' = tpm p2 M2 *)
  (* applying hnf_children_tpm *)
  >> Know ‘Ms = MAP (tpm p1) args’
  >- (simp [Abbr ‘Ms’] \\
@@ -2143,7 +2144,7 @@ Proof
          qunabbrev_tac ‘M0’ \\
          MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art []) \\
      DISCH_TAC \\
-     Q.PAT_X_ASSUM ‘FV (tpm pi M) SUBSET Y UNION RANKS r’ MP_TAC \\
+     Q.PAT_X_ASSUM ‘FV (tpm pi M) SUBSET X UNION RANKS r'’ MP_TAC \\
      simp [FV_tpm, SUBSET_DEF] \\
      DISCH_TAC \\
   (* NOTE: current relations of permutations:
@@ -2183,7 +2184,7 @@ Proof
          Suff ‘lswapstr p4 x' IN FV M’
          >- (rw [] >- art [] \\
              DISJ2_TAC \\
-             Know ‘RANKS r SUBSET RANKS (SUC r)’ >- rw [RANKS_MONO] \\
+             Know ‘RANKS r' SUBSET RANKS (SUC r')’ >- rw [RANKS_MONO] \\
              rw [SUBSET_DEF]) \\
          Know ‘lswapstr p4 x' = lswapstr (ZIP (vs2,vs1)) x'’
          >- (Q.PAT_X_ASSUM ‘p4 == ZIP (vs2,vs1)’ MP_TAC \\
@@ -2205,12 +2206,12 @@ Proof
      POP_ASSUM MP_TAC (* MEM x' vs2 *) \\
      simp [MEM_EL] \\
      DISCH_THEN (Q.X_CHOOSE_THEN ‘i’ STRIP_ASSUME_TAC) \\
-     POP_ORW (* EL i vs2 in the goal *) \\
+     POP_ORW (* ‘EL i vs2’ in the goal *) \\
      Know ‘lswapstr (ZIP (vs2,vs1)) (EL i vs2) = EL i vs1’
      >- (MATCH_MP_TAC lswapstr_apply_EL >> rw []) >> Rewr' \\
      simp [Abbr ‘vs1’] \\
      qabbrev_tac ‘vs1 = listpm string_pmact (REVERSE pi) vs'’ \\
-     MP_TAC (Q.SPECL [‘r’, ‘SUC r’, ‘n’, ‘Y’] RNEWS_SUBSET_RANKS) \\
+     MP_TAC (Q.SPECL [‘r'’, ‘SUC r'’, ‘n’, ‘X’] RNEWS_SUBSET_RANKS) \\
      rw [SUBSET_DEF] \\
      POP_ASSUM MATCH_MP_TAC >> rw [EL_MEM])
  (* final goals *)
@@ -2219,40 +2220,57 @@ Proof
  >- (MATCH_MP_TAC SUBSET_TRANS \\
      Q.EXISTS_TAC ‘RANKS r’ >> rw [RANKS_MONO])
  >> Rewr
- >> Know ‘set (MAP SND pi) SUBSET RANKS (SUC r)’
+ >> Know ‘set (MAP SND pi) SUBSET RANKS (SUC r')’
  >- (MATCH_MP_TAC SUBSET_TRANS \\
-     Q.EXISTS_TAC ‘RANKS r’ >> rw [RANKS_MONO])
+     Q.EXISTS_TAC ‘RANKS r'’ >> rw [RANKS_MONO])
  >> Rewr
- >> Know ‘set vs SUBSET RANKS (SUC r)’
- >- simp [Abbr ‘vs’, RNEWS_SUBSET_RANKS]
+ >> Know ‘set vs2 SUBSET RANKS (SUC r)’
+ >- (qunabbrev_tac ‘vs2’ \\
+     MATCH_MP_TAC alloc_in_ranks >> rw [])
  >> Rewr
- >> Know ‘set vs1 SUBSET RANKS (SUC r)’
- >- (simp [SUBSET_DEF, Abbr ‘vs1’, MEM_listpm, MEM_EL] \\
-     rpt STRIP_TAC \\
-     rename1 ‘i < n’ \\
-     qabbrev_tac ‘x' = EL i vs'’ \\
-    ‘x = lswapstr (REVERSE pi) x'’ by rw [] \\
-     POP_ORW \\
-     Q.PAT_X_ASSUM ‘lswapstr pi x = x'’ K_TAC \\
-     Know ‘lswapstr (REVERSE pi) x' = x'’
-     >- (MATCH_MP_TAC lswapstr_14b \\
-         simp [MAP_REVERSE] \\
-         Know ‘x' IN RANK r’
-         >- (MP_TAC (Q.SPECL [‘r’, ‘n’, ‘Y’] RNEWS_SUBSET) \\
-             simp [SUBSET_DEF] >> DISCH_THEN MATCH_MP_TAC \\
-             rw [Abbr ‘x'’, EL_MEM]) >> DISCH_TAC \\
-         MP_TAC (Q.SPECL [‘r’, ‘n’] RANKS_RANK_DISJOINT') \\
-         simp [DISJOINT_ALT] >> DISCH_TAC \\
-         CONJ_TAC (* 2 subgoals, same tactics *) \\
-         CCONTR_TAC >> METIS_TAC [SUBSET_DEF]) >> Rewr' \\
-     MP_TAC (Q.SPECL [‘r’, ‘SUC r’, ‘n’, ‘Y’] RNEWS_SUBSET_RANKS) \\
+ (* NOTE: This proof requires that ‘r <= r'’ !!! *)
+ >> Know ‘set vs SUBSET RANKS (SUC r')’
+ >- (MATCH_MP_TAC SUBSET_TRANS \\
+     Q.EXISTS_TAC ‘RANKS (SUC r)’ \\
+     reverse CONJ_TAC >- (MATCH_MP_TAC RANKS_MONO >> rw []) \\
+     qunabbrev_tac ‘vs’ \\
+     MATCH_MP_TAC RNEWS_SUBSET_RANKS >> rw [])
+ >> Rewr
+ (* final goal: set vs1 SUBSET RANKS r' *)
+ >> simp [SUBSET_DEF, Abbr ‘vs1’, MEM_listpm, MEM_EL]
+ >> rpt STRIP_TAC
+ >> rename1 ‘i < n’
+ >> qabbrev_tac ‘x' = EL i vs'’
+ >> ‘x = lswapstr (REVERSE pi) x'’ by rw []
+ >> POP_ORW
+ >> Q.PAT_X_ASSUM ‘lswapstr pi x = x'’ K_TAC
+ >> Know ‘x' IN RANK r'’
+ >- (MP_TAC (Q.SPECL [‘r'’, ‘n’, ‘X’] RNEWS_SUBSET) \\
      simp [SUBSET_DEF] >> DISCH_THEN MATCH_MP_TAC \\
      rw [Abbr ‘x'’, EL_MEM])
- >> Rewr
- >> qunabbrev_tac ‘vs2’
- >> MATCH_MP_TAC alloc_in_ranks >> rw []
+ >> DISCH_TAC
+ (* NOTE: x' is in rank r', while pi is either < r <= r' or < r', thus
+    either key or value of pi is in ranks < r'. Thus it works.
+  *)
+ >> Suff ‘lswapstr (REVERSE pi) x' = x'’
+ >- (Rewr' \\
+     MP_TAC (Q.SPECL [‘r'’, ‘SUC r'’, ‘n’, ‘X’] RNEWS_SUBSET_RANKS) \\
+     simp [SUBSET_DEF] \\
+     DISCH_THEN MATCH_MP_TAC \\
+     rw [Abbr ‘x'’, EL_MEM])
+ (* applying lswapstr_14b *)
+ >> MATCH_MP_TAC lswapstr_14b
+ >> simp [MAP_REVERSE]
+ >> CONJ_TAC (* 2 subgoals *)
+ >| [ (* goal 1 (of 2): ~MEM x' (MAP FST pi) *)
+      MP_TAC (Q.SPECL [‘r’, ‘r'’, ‘n’] RANKS_RANK_DISJOINT) \\
+      simp [DISJOINT_ALT] >> DISCH_TAC \\
+      CCONTR_TAC >> METIS_TAC [SUBSET_DEF],
+      (* goal 2 (of 2): ~MEM x' (MAP SND pi) *)
+      MP_TAC (Q.SPECL [‘r'’, ‘r'’, ‘n’] RANKS_RANK_DISJOINT) \\
+      simp [DISJOINT_ALT] >> DISCH_TAC \\
+      CCONTR_TAC >> METIS_TAC [SUBSET_DEF] ]
 QED
- *)
 
 (* NOTE: ‘VAR o renaming s1 s2 r1 r2’ can be used for ‘fsub’.
 Definition renaming_def :

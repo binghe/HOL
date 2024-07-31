@@ -301,7 +301,7 @@ Proof
 QED
 
 Theorem RANKS_MONO :
-    !s r1 r2. r1 <= r2 ==> RANKS r1 SUBSET RANKS r2
+    !r1 r2. r1 <= r2 ==> RANKS r1 SUBSET RANKS r2
 Proof
     rw [RANKS, SUBSET_DEF]
  >> qexistsl_tac [‘i’, ‘j’] >> rw []
