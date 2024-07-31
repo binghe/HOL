@@ -362,7 +362,7 @@ Proof
     Induct_on ‘pi’ >> rw []
 QED
 
-Theorem lswapstr_EL :
+Theorem lswapstr_apply_EL :
     !vs vs' i. LENGTH vs = LENGTH vs' /\
                DISJOINT (set vs) (set vs') /\
                ALL_DISTINCT vs /\
@@ -386,9 +386,8 @@ Proof
  >> Induct_on ‘pi’ >> rw [FORALL_PROD]
  >> Cases_on ‘i’
  >- (Cases_on ‘h’ >> fs [] \\
-     Know ‘lswapstr pi q = q’
-     >- (MATCH_MP_TAC lswapstr_14b >> art []) >> Rewr' \\
-     rw [])
+     Suff ‘lswapstr pi q = q’ >- rw [] \\
+     MATCH_MP_TAC lswapstr_14b >> art [])
  >> Cases_on ‘h’ >> fs []
  >> Q.PAT_X_ASSUM ‘!i. i < LENGTH pi ==> P’ (MP_TAC o (Q.SPEC ‘n’))
  >> rw []
@@ -405,7 +404,7 @@ Proof
  >> METIS_TAC []
 QED
 
-Theorem lswapstr_MEM :
+Theorem MEM_lswapstr :
     !vs vs' x. LENGTH vs = LENGTH vs' /\
                DISJOINT (set vs) (set vs') /\
                ALL_DISTINCT vs /\
@@ -415,7 +414,7 @@ Theorem lswapstr_MEM :
 Proof
     rw [MEM_EL]
  >> Q.EXISTS_TAC ‘n’ >> rw []
- >> MATCH_MP_TAC lswapstr_EL >> rw []
+ >> MATCH_MP_TAC lswapstr_apply_EL >> rw []
 QED
 
 (* |- !p1 p2 x. lswapstr (p1 ++ p2) x = lswapstr p1 (lswapstr p2 x) *)

@@ -1680,7 +1680,7 @@ Proof
      rw [] >- (DISJ1_TAC >> art []) \\
      DISJ2_TAC \\
      qunabbrev_tac ‘p1’ \\
-     MATCH_MP_TAC lswapstr_MEM >> rw [])
+     MATCH_MP_TAC MEM_lswapstr >> rw [])
   (* extra goal #2 (hard) *)
  >> CONJ_TAC
  >- (simp [Abbr ‘N'’, FV_tpm, SUBSET_DEF] \\
@@ -1770,7 +1770,7 @@ Proof
      DISCH_THEN (Q.X_CHOOSE_THEN ‘i’ STRIP_ASSUME_TAC) \\
      POP_ORW (* EL i vs2 in the goal *) \\
      Know ‘lswapstr (ZIP (vs2,vs1)) (EL i vs2) = EL i vs1’
-     >- (MATCH_MP_TAC lswapstr_EL >> rw []) >> Rewr' \\
+     >- (MATCH_MP_TAC lswapstr_apply_EL >> rw []) >> Rewr' \\
      simp [Abbr ‘vs1’] \\
      qabbrev_tac ‘vs1 = listpm string_pmact (REVERSE pi) vs'’ \\
      MP_TAC (Q.SPECL [‘r’, ‘SUC r’, ‘n’, ‘Y’] RNEWS_SUBSET_RANKS) \\
@@ -1862,8 +1862,8 @@ Proof
  >> rw [principle_hnf_tpm']
 QED
 
-(* Part II: from ‘subterm X M p r1’ to ‘subterm X (tpm pi M) p r2’
-Theorem subterm_rank_tpm_lemma :
+(* Part II: from ‘subterm X M p r1’ to ‘subterm X (tpm pi M) p r2’ *)
+Theorem subterm_tpm_rank_lemma :
     !X p M pi r r'.
          FINITE X /\
          FV M          SUBSET X UNION RANKS r /\
@@ -1871,7 +1871,7 @@ Theorem subterm_rank_tpm_lemma :
          set (MAP FST pi) SUBSET RANKS r /\
          set (MAP SND pi) SUBSET RANKS r'
      ==> (subterm X M p r = NONE ==>
-          subterm X (tpm pi M) p r = NONE) /\
+          subterm X (tpm pi M) p r' = NONE) /\
          (subterm X M p r <> NONE ==>
           ?pi'. tpm pi' (subterm' X M p r) = subterm' X (tpm pi M) p r')
 Proof
@@ -2116,7 +2116,7 @@ Proof
      rw [] >- (DISJ1_TAC >> art []) \\
      DISJ2_TAC \\
      qunabbrev_tac ‘p1’ \\
-     MATCH_MP_TAC lswapstr_MEM >> rw [])
+     MATCH_MP_TAC MEM_lswapstr >> rw [])
   (* extra goal #2 (hard) *)
  >> CONJ_TAC
  >- (simp [Abbr ‘N'’, FV_tpm, SUBSET_DEF] \\
@@ -2207,7 +2207,7 @@ Proof
      DISCH_THEN (Q.X_CHOOSE_THEN ‘i’ STRIP_ASSUME_TAC) \\
      POP_ORW (* EL i vs2 in the goal *) \\
      Know ‘lswapstr (ZIP (vs2,vs1)) (EL i vs2) = EL i vs1’
-     >- (MATCH_MP_TAC lswapstr_EL >> rw []) >> Rewr' \\
+     >- (MATCH_MP_TAC lswapstr_apply_EL >> rw []) >> Rewr' \\
      simp [Abbr ‘vs1’] \\
      qabbrev_tac ‘vs1 = listpm string_pmact (REVERSE pi) vs'’ \\
      MP_TAC (Q.SPECL [‘r’, ‘SUC r’, ‘n’, ‘Y’] RNEWS_SUBSET_RANKS) \\
