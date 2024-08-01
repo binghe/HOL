@@ -2857,8 +2857,8 @@ Theorem subterm_width_alt :
     !X M p r. FINITE X /\ FV M SUBSET X UNION RANKS r /\
               p <> [] /\ subterm X M p r <> NONE ==>
               subterm_width M p =
-              let s = {subterm' X M q r | q <<= FRONT p} in
-                  MAX_SET (IMAGE (hnf_children_size o principle_hnf) s)
+              let Ms = {subterm' X M q r | q <<= FRONT p} in
+                  MAX_SET (IMAGE (hnf_children_size o principle_hnf) Ms)
 Proof
     rpt STRIP_TAC
  >> ‘p IN ltree_paths (BT' X M r)’ by PROVE_TAC [subterm_imp_ltree_paths]
@@ -2911,16 +2911,19 @@ QED
 
    |- !X Y. hnf_children_size (principle_hnf (subterm' X M p) =
             hnf_children_size (principle_hnf (subterm' Y M p)
-
+ *)
 Theorem subterm_width_thm :
-    !X M p p'. FINITE X /\ p <> [] /\ subterm X M p <> NONE /\
-               p' <<= FRONT p ==>
-       hnf_children_size (principle_hnf (subterm' X M p')) <= subterm_width M p
+    !X M p q r. FINITE X /\ FV M SUBSET X UNION RANKS r /\
+         p <> [] /\ subterm X M p r <> NONE /\
+         q <<= FRONT p ==>
+         hnf_children_size (principle_hnf (subterm' X M q r)) <=
+         subterm_width M p
 Proof
     rpt STRIP_TAC
- >> ‘p IN ltree_paths (BT X M)’ by PROVE_TAC [subterm_imp_ltree_paths]
+ >> ‘p IN ltree_paths (BT' X M r)’ by PROVE_TAC [subterm_imp_ltree_paths]
  >> Cases_on ‘p’
  >> RW_TAC std_ss [subterm_width_def]
+ (* only one goal is left *)
  >> qabbrev_tac ‘p = h::t’
  >> ‘p <> []’ by rw [Abbr ‘p’]
  >> ‘0 < LENGTH p’ by rw [GSYM NOT_NIL_EQ_LENGTH_NOT_0]
@@ -2931,20 +2934,21 @@ Proof
  >> DISCH_TAC
  >> Know ‘FINITE J’
  >- (qunabbrev_tac ‘J’ >> MATCH_MP_TAC IMAGE_FINITE \\
-    ‘Ms = IMAGE (subterm' {} M) {p' | p' <<= FRONT p}’
+    ‘Ms = IMAGE (\q. subterm' (FV M) M q 0) {q | q <<= FRONT p}’
        by (rw [Abbr ‘Ms’, Once EXTENSION]) >> POP_ORW \\
      MATCH_MP_TAC IMAGE_FINITE >> rw [FINITE_prefix])
  >> DISCH_TAC
- >> qabbrev_tac ‘m = hnf_children_size (principle_hnf (subterm' X M p'))’
+ >> qabbrev_tac ‘m = hnf_children_size (principle_hnf (subterm' X M q r))’
  >> Suff ‘m IN J’ >- PROVE_TAC [MAX_SET_DEF]
  >> rw [Abbr ‘m’, Abbr ‘J’]
- >> Q.EXISTS_TAC ‘subterm' {} M p'’
+ >> Q.EXISTS_TAC ‘subterm' (FV M) M q 0’
  >> reverse CONJ_TAC
- >- (rw [Abbr ‘Ms’] >> Q.EXISTS_TAC ‘p'’ >> art [])
- >> ‘!p'. p' <<= p ==> subterm X M p' <> NONE’
+ >- (rw [Abbr ‘Ms’] >> Q.EXISTS_TAC ‘q’ >> art [])
+ >> ‘!q. q <<= p ==> subterm X M q r <> NONE’
        by PROVE_TAC [cj 1 subterm_solvable_lemma]
  (* applying subterm_hnf_children_size_cong *)
- >> MATCH_MP_TAC subterm_hnf_children_size_cong >> rw []
+ >> MATCH_MP_TAC subterm_hnf_children_size_cong
+ >> rw []
  >- (POP_ASSUM MATCH_MP_TAC \\
      MATCH_MP_TAC IS_PREFIX_TRANS \\
      Q.EXISTS_TAC ‘FRONT p’ >> art [] \\
@@ -2955,7 +2959,7 @@ QED
 (* NOTE: This lemma does not hold without ‘v IN X’ (for ‘v NOTIN vs’)
 
          v, P and d are fixed free variables here.
- *)
+
 Theorem subterm_subst_cong_lemma[local] :
     !q X M p. q <<= p /\ FINITE X /\ v IN X /\
               subterm X M p <> NONE /\
