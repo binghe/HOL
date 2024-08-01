@@ -226,13 +226,13 @@ As mentioned previously, the theorems supplied to \ml{metis\_tac} in the followi
 
 \item[\small{({\it DIVIDES\_ZERO\/})}]
 \begin{tabular}[t]{l}
-\verb+!x. 0 divides x = (x = 0)+ \\ \hline
+\verb+!x. 0 divides x <=> (x = 0)+ \\ \hline
  \verb+metis_tac [divides_def, MULT_CLAUSES]+
 \end{tabular}
 
 \item[\small{({\it DIVIDES\_ONE\/})}]
 \begin{tabular}[t]{l}
-\verb+!x. x divides 1 = (x = 1)+ \\ \hline
+\verb+!x. x divides 1 <=> (x = 1)+ \\ \hline
  \verb+metis_tac [divides_def, MULT_CLAUSES, MULT_EQ_1]+
 \end{tabular}
 
