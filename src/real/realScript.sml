@@ -5256,4 +5256,27 @@ Proof
  >> PROVE_TAC [HALF_POS, POW_POS_LT]
 QED
 
+(* NOTE: This theorem shows that the ring of real numbers is an intergal domain. *)
+Theorem REAL_INTEGRAL :
+    (!(x :real). &0 * x = &0) /\
+    (!(x :real) y z. (x + y = x + z) <=> (y = z)) /\
+    (!(w :real) x y z. (w * y + x * z = w * z + x * y) <=> (w = x) \/ (y = z))
+Proof
+    ONCE_REWRITE_TAC[GSYM REAL_SUB_0] THEN
+    REWRITE_TAC[GSYM REAL_ENTIRE] THEN REAL_ARITH_TAC
+QED
+
+(* NOTE: Perhaps this theorem is related to "Rabinowitsch trick". See also
+   https://en.wikipedia.org/wiki/Rabinowitsch_trick
+ *)
+Theorem REAL_RABINOWITSCH :
+    !x y:real. ~(x = y) <=> ?z. (x - y) * z = &1
+Proof
+    REWRITE_TAC[EQ_IMP_THM]
+ >> rpt strip_tac
+ >> FULL_SIMP_TAC std_ss [EQ_IMP_THM, REAL_SUB_REFL, REAL_MUL_LZERO, REAL_10]
+ >> irule_at Any REAL_MUL_RINV
+ >> ASM_REWRITE_TAC [REAL_SUB_0]
+QED
+
 val _ = export_theory();
