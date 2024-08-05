@@ -548,6 +548,54 @@ Proof
  >> qexistsl_tac [‘X’, ‘M’, ‘r’, ‘n’, ‘vs’, ‘M1’] >> simp []
 QED
 
+Theorem subterm_headvar_lemma :
+    !X M r M0 n vs M1.
+           FINITE X /\ FV M SUBSET X UNION RANKS r /\
+           solvable M /\
+           M0 = principle_hnf M /\
+            n = LAMl_size M0 /\
+           vs = RNEWS r n X /\
+           M1 = principle_hnf (M0 @* MAP VAR vs)
+       ==> hnf_headvar M1 IN X UNION RANKS (SUC r)
+Proof
+    RW_TAC std_ss []
+ >> qabbrev_tac ‘M0 = principle_hnf M’
+ >> qabbrev_tac ‘n  = LAMl_size M0’
+ >> Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
+ >> ‘DISJOINT (set vs) (FV M0)’ by METIS_TAC [subterm_disjoint_lemma']
+ >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
+ >> Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
+                    “y  :string”, “args :term list”)) ‘M1’
+ >> ‘TAKE n vs = vs’ by rw []
+ >> POP_ASSUM (rfs o wrap)
+ >> Know ‘solvable (M0 @* MAP VAR vs)’
+ >- (‘hnf M1’ by rw [hnf_appstar] \\
+     ‘solvable M1’ by rw [solvable_iff_has_hnf, hnf_has_hnf] \\
+     Suff ‘M0 @* MAP VAR vs == M1’ >- PROVE_TAC [lameq_solvable_cong] \\
+     rw [])
+ >> DISCH_TAC
+ >> Suff ‘FV M1 SUBSET X UNION RANKS (SUC r)’
+ >- rw [SUBSET_DEF, FV_appstar]
+ >> MATCH_MP_TAC SUBSET_TRANS
+ >> Q.EXISTS_TAC ‘FV (M0 @* MAP VAR vs)’
+ >> CONJ_TAC >- (qunabbrev_tac ‘M1’ \\
+                 MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
+ >> REWRITE_TAC [FV_appstar_MAP_VAR]
+ >> Q.PAT_X_ASSUM ‘M0 = _’ K_TAC
+ >> MATCH_MP_TAC SUBSET_TRANS
+ >> Q.EXISTS_TAC ‘FV M UNION set vs’
+ >> CONJ_TAC >- (Suff ‘FV M0 SUBSET FV M’ >- SET_TAC [] \\
+                 qunabbrev_tac ‘M0’ \\
+                 MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
+ >> rw [Abbr ‘vs’, SUBSET_DEF]
+ >- (Know ‘x IN X UNION RANKS r’ >- METIS_TAC [SUBSET_DEF] \\
+     Suff ‘RANKS r SUBSET RANKS (SUC r)’ >- SET_TAC [] \\
+     rw [RANKS_MONO])
+ >> DISJ2_TAC
+ >> Suff ‘set (RNEWS r n X) SUBSET RANKS (SUC r)’ >- rw [SUBSET_DEF]
+ >> rw [RNEWS_SUBSET_RANKS]
+QED
+
 (* Proposition 10.1.6 [1, p.219] *)
 Theorem lameq_BT_cong :
     !X M N r. FINITE X /\ FV M UNION FV N SUBSET X /\ M == N ==>
@@ -2952,75 +3000,83 @@ Proof
  >> PROVE_TAC [cj 2 subterm_solvable_lemma]
 QED
 
-(* NOTE: This lemma does not hold without ‘v IN X’ (for ‘v NOTIN vs’)
-
-         v, P and d are fixed free variables here.
-
+(* NOTE: v, P and d are fixed free variables here *)
 Theorem subterm_subst_cong_lemma[local] :
-    !q X M p. FINITE X /\ FV M SUBSET X UNION RANKS r /\
-              subterm X M p r <> NONE /\ q <<= p /\
-              P = permutator d /\ subterm_width M p <= d
-          ==> subterm X ([P/v] M) q r <> NONE /\
-              tpm_rel (subterm' X ([P/v] M) q r)
-                      ([P/v] (subterm' X M q r))
+    !X. FINITE X ==>
+        !q M p r. q <<= p /\
+                  FV M SUBSET X UNION RANKS r /\
+                  subterm X M p r <> NONE /\
+                  subterm_width M p <= d /\
+                  P = permutator d /\
+                  v IN X UNION RANKS r
+              ==> subterm X ([P/v] M) q r <> NONE /\
+                  subterm' X ([P/v] M) q r = [P/v] (subterm' X M q r)
 Proof
-    Induct_on ‘q’ >- rw []
+    Q.X_GEN_TAC ‘X’ >> DISCH_TAC
+ >> Induct_on ‘q’ >- rw []
  >> rpt GEN_TAC
  >> STRIP_TAC
  (* re-define P as abbreviations *)
- >> Q.PAT_X_ASSUM ‘P = permutator d’ (fs o wrap)
+ >> Q.PAT_X_ASSUM ‘P = permutator d’ (FULL_SIMP_TAC std_ss o wrap)
  >> qabbrev_tac ‘P = permutator d’
+ >> Q.PAT_X_ASSUM ‘v IN X UNION RANKS r’ MP_TAC
  >> Cases_on ‘p = []’ >- fs []
  (* common properties of ‘p’ (this requires ‘p <> []’) *)
- >> ‘(!q. q <<= p ==> subterm X M q <> NONE) /\
-     (!q. q <<= FRONT p ==> solvable (subterm' X M q))’
+ >> ‘(!q. q <<= p ==> subterm X M q r <> NONE) /\
+     (!q. q <<= FRONT p ==> solvable (subterm' X M q r))’
        by PROVE_TAC [subterm_solvable_lemma]
  >> qabbrev_tac ‘w = subterm_width M p’
  (* decompose ‘p’ and eliminate ‘p <> []’ *)
  >> Cases_on ‘p’ >> fs []
  (* cleanup assumptions *)
  >> Q.PAT_X_ASSUM ‘h = h'’ (fs o wrap o SYM)
- >> rpt (Q.PAT_X_ASSUM ‘T’ K_TAC)
+ >> T_TAC
  (* preparing for eliminating ‘subterm' X M (h::q)’ *)
  >> Know ‘solvable M’
- >- (Q.PAT_X_ASSUM ‘!q. q <<= FRONT (h::t) ==> solvable (subterm' X M q)’
+ >- (Q.PAT_X_ASSUM ‘!q. q <<= FRONT (h::t) ==> solvable _’
        (MP_TAC o (Q.SPEC ‘[]’)) >> rw [])
  >> DISCH_TAC
- >> Know ‘subterm X M (h::q) <> NONE’
+ >> Know ‘subterm X M (h::q) r <> NONE’
  >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [])
  (* BEGIN Norrish's advanced tactics *)
- >> CONV_TAC (UNBETA_CONV “subterm X M (h::q)”)
+ >> CONV_TAC (UNBETA_CONV “subterm X M (h::q) r”)
  >> qmatch_abbrev_tac ‘f _’
  >> RW_TAC bool_ss [subterm_of_solvables]
  >> simp [Abbr ‘f’]
  (* END Norrish's advanced tactics. *)
  >> STRIP_TAC
  (* get explicit representation of M0 *)
- >> Know ‘ALL_DISTINCT vs /\ DISJOINT (set vs) (X UNION FV M0) /\ LENGTH vs = n’
- >- rw [Abbr ‘vs’, NEWS_def]
- >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
+ >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) X /\ LENGTH vs = n’
+      by (rw [Abbr ‘vs’, RNEWS_def])
+ >> ‘DISJOINT (set vs) (FV M)’ by METIS_TAC [subterm_disjoint_lemma]
+ >> ‘DISJOINT (set vs) (FV M0)’ by METIS_TAC [subterm_disjoint_lemma']
  >> Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
                     “y :string”, “args :term list”)) ‘M1’
  >> ‘TAKE n vs = vs’ by rw []
  >> POP_ASSUM (rfs o wrap)
+ >> Q.PAT_X_ASSUM ‘DISJOINT (set vs) (FV M0)’ K_TAC
+ >> ‘Ms = args’ by rw [Abbr ‘Ms’, hnf_children_hnf]
+ >> POP_ASSUM (rfs o wrap)
+ >> qunabbrev_tac ‘Ms’
+ >> ‘LENGTH args = m’ by rw [Abbr ‘m’]
  >> Know ‘m <= w’
- >- (MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’, ‘[]’] subterm_width_thm) \\
+ >- (MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’, ‘[]’, ‘r’] subterm_width_thm) \\
      rw [Abbr ‘w’])
  >> DISCH_TAC
- >> ‘Ms = args’ by rw [Abbr ‘Ms’, hnf_children_hnf]
- >> ‘LENGTH args = m’ by rw [Abbr ‘m’]
+ >> cheat
+ (*
  (* KEY: some shared subgoals needed at the end, before rewriting ‘[P/v] M’:
 
-    2. subterm (X UNION set vs) (EL h args) t <> NONE
+    2. subterm X (EL h args) t (SUC r) <> NONE
     3. subterm_width (EL h args) t <= d
 
     NOTE: the last subgoal requires deep properties of ‘subterm_width’. The
     involved tactics are not to be repeated in other parts of this lemma.
   *)
- >> Know ‘subterm (X UNION set vs) (EL h args) t <> NONE /\
+ >> Know ‘subterm X (EL h args) t (SUC r) <> NONE /\
           subterm_width (EL h args) t <= d’
- >- (CONJ_ASM1_TAC (* subterm (X UNION set vs) (EL h args) t <> NONE *)
-     >- (Q.PAT_X_ASSUM ‘!q. q <<= h::t ==> subterm X M q <> NONE’
+ >- (CONJ_ASM1_TAC (* subterm X (EL h args) t (SUC r) <> NONE *)
+     >- (Q.PAT_X_ASSUM ‘!q. q <<= h::t ==> subterm X M q r <> NONE’
            (MP_TAC o (Q.SPEC ‘h::t’)) \\
          simp [subterm_of_solvables] >> fs []) \\
   (* goal: subterm_width (EL h args) t <= d *)
@@ -3028,45 +3084,51 @@ Proof
      Q.EXISTS_TAC ‘w’ >> art [] \\
      qunabbrev_tac ‘w’ \\
   (* applying subterm_width_alt *)
-     MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’] subterm_width_alt) \\
+     MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’, ‘r’] subterm_width_alt) \\
      simp [] >> DISCH_THEN K_TAC \\
      qabbrev_tac ‘p = h::t’ \\
-     Know ‘!Y. IMAGE (hnf_children_size o principle_hnf)
-                     {subterm' Y M p' | p' <<= FRONT p} =
-               {hnf_children_size (principle_hnf (subterm' Y M p')) | p' <<= FRONT p}’
+     Know ‘IMAGE (hnf_children_size o principle_hnf)
+                 {subterm' X M q r | q <<= FRONT p} =
+           {hnf_children_size (principle_hnf (subterm' X M q r)) | q <<= FRONT p}’
      >- (rw [Once EXTENSION] \\
          EQ_TAC >> rw [] >| (* 2 subgoals *)
          [ (* goal 1 (of 2) *)
-           Q.EXISTS_TAC ‘p'’ >> rw [],
+           rename1 ‘q1 <<= FRONT p’ \\
+           Q.EXISTS_TAC ‘q1’ >> rw [],
            (* goal 2 (of 2) *)
-           Q.EXISTS_TAC ‘subterm' Y M p'’ >> art [] \\
-           Q.EXISTS_TAC ‘p'’ >> art [] ]) >> Rewr' \\
+           rename1 ‘q1 <<= FRONT p’ \\
+           Q.EXISTS_TAC ‘subterm' X M q1 r’ >> art [] \\
+           Q.EXISTS_TAC ‘q1’ >> art [] ]) >> Rewr' \\
      qunabbrev_tac ‘p’ \\
      Cases_on ‘t = []’ >- rw [] \\
   (* applying subterm_width_alt again *)
-     MP_TAC (Q.SPECL [‘X UNION set vs’, ‘EL h args’, ‘t’] subterm_width_alt) \\
+     MP_TAC (Q.SPECL [‘X’, ‘EL h args’, ‘t’, ‘SUC r’] subterm_width_alt) \\
+     Know ‘FV (EL h args) SUBSET X UNION RANKS (SUC r)’
+     >- (MATCH_MP_TAC subterm_induction_lemma \\
+         qexistsl_tac [‘M’, ‘M0’, ‘n’, ‘m’, ‘vs’, ‘M1’] >> simp []) \\
+     DISCH_TAC \\
      simp [] >> DISCH_THEN K_TAC \\
   (* applying SUBSET_MAX_SET *)
      MATCH_MP_TAC SUBSET_MAX_SET \\
      CONJ_TAC >- (MATCH_MP_TAC IMAGE_FINITE \\
-                 ‘{subterm' (X UNION set vs) (EL h args) p' | p' <<= FRONT t} =
-                  IMAGE (subterm' (X UNION set vs) (EL h args))
-                     {p' | p' <<= FRONT t}’
+                 ‘{subterm' X (EL h args) q (SUC r) | q <<= FRONT t} =
+                  IMAGE (\p. subterm' X (EL h args) p (SUC r)) {q | q <<= FRONT t}’
+                    by rw [Once EXTENSION] >> POP_ORW \\
+                  MATCH_MP_TAC IMAGE_FINITE >> rw [FINITE_prefix]) \\
+     CONJ_TAC >- (‘{hnf_children_size (principle_hnf (subterm' X M q r)) |
+                    q <<= FRONT (h::t)} =
+                   IMAGE (\p. hnf_children_size (principle_hnf (subterm' X M p r)))
+                         {q | q <<= FRONT (h::t)}’
                      by rw [Once EXTENSION] >> POP_ORW \\
                   MATCH_MP_TAC IMAGE_FINITE >> rw [FINITE_prefix]) \\
-     CONJ_TAC >- (‘{hnf_children_size (principle_hnf (subterm' X M p')) |
-                    p' <<= FRONT (h::t)} =
-                   IMAGE (\p'. hnf_children_size (principle_hnf (subterm' X M p')))
-                         {p' | p' <<= FRONT (h::t)}’
-                     by rw [Once EXTENSION] >> POP_ORW \\
-                  MATCH_MP_TAC IMAGE_FINITE >> rw [FINITE_prefix]) \\
-     rw [SUBSET_DEF] (* this asserts ‘p' <<= FRONT t’ *) \\
-     Q.EXISTS_TAC ‘h::p'’ \\
+     rw [SUBSET_DEF] (* this asserts ‘p <<= FRONT t *) \\
+     rename1 ‘p <<= FRONT t’ \\
+     Q.EXISTS_TAC ‘h::p’ \\
     ‘FRONT (h::t) <> []’ by rw [] \\
-     Know ‘h::p' <<= FRONT (h::t)’
+     Know ‘h::p <<= FRONT (h::t)’
      >- (simp [] >> Cases_on ‘t’ >> fs []) >> Rewr \\
   (* Norrish's advanced tactics *)
-     CONV_TAC (UNBETA_CONV “subterm X M (h::p')”) \\
+     CONV_TAC (UNBETA_CONV “subterm X M (h::p)”) \\
      qmatch_abbrev_tac ‘f _’ \\
      RW_TAC bool_ss [subterm_of_solvables] \\
      simp [Abbr ‘f’, hnf_children_hnf])
@@ -3466,6 +3528,7 @@ Proof
  >> qmatch_abbrev_tac ‘f _’
  >> RW_TAC bool_ss [subterm_of_solvables]
  >> simp [Abbr ‘f’, hnf_children_hnf]
+*)
 QED
 
 (* NOTE: ‘y IN X’ must hold to make sure that ‘~MEM y vs’, where ‘set vs’ is
@@ -3481,17 +3544,17 @@ QED
    The head variable ‘y’ of M0 (= LAMl vs (VAR y @* args)) comes from 2) or 3).
  *)
 Theorem subterm_subst_cong :
-    !p X M y P d. FINITE X /\ y IN X /\
-                  subterm X M p <> NONE /\
-                  P = permutator d /\ subterm_width M p <= d ==>
-                  subterm X ([P/y] M) p <> NONE /\
-                  tpm_rel (subterm' X ([P/y] M) p) ([P/y] (subterm' X M p))
+    !p X M r y P d. FINITE X /\ FV M SUBSET X UNION RANKS r /\
+                    subterm X M p r <> NONE /\
+                    P = permutator d /\ y IN X UNION RANKS r /\
+                    subterm_width M p <= d
+                ==> subterm X ([P/y] M) p r <> NONE /\
+                    subterm' X ([P/y] M) p r = [P/y] (subterm' X M p r)
 Proof
     rpt GEN_TAC >> STRIP_TAC
- >> MATCH_MP_TAC subterm_subst_cong_lemma
- >> Q.EXISTS_TAC ‘p’ >> rw []
+ >> irule subterm_subst_cong_lemma >> art []
+ >> qexistsl_tac [‘d’, ‘p’] >> rw []
 QED
- *)
 
 (* Lemma 10.3.6 (ii) [1, p.247]:
 
@@ -3832,7 +3895,7 @@ Proof
      >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw []) \\
      CONV_TAC (UNBETA_CONV “subterm X M (h::t) r”) \\
      qmatch_abbrev_tac ‘f _’ \\
-     RW_TAC bool_ss [subterm_of_solvables]
+     RW_TAC bool_ss [subterm_of_solvables] \\
      simp [Abbr ‘f’])
  >> DISCH_TAC
  (* applying subterm_of_absfree_hnf *)
@@ -3893,26 +3956,13 @@ Proof
  >> Q.PAT_X_ASSUM ‘~MEM y l’                   K_TAC
  >> Q.PAT_X_ASSUM ‘LENGTH as = q - m’          K_TAC
  >> qunabbrevl_tac [‘l’, ‘as’, ‘b’]
-
-
- (* NOTE: this is a key requirements for applying subterm_subst_cong
- >> Know ‘y IN Z’
- >- (qunabbrevl_tac [‘Y’, ‘Z’] \\
-     Suff ‘y IN FV M UNION set vs’ >- SET_TAC [] \\
-    ‘y IN FV M1’ by rw [FV_appstar] \\
-     Suff ‘FV M1 SUBSET FV M UNION set vs’ >- rw [SUBSET_DEF] \\
-     qunabbrev_tac ‘M1’ \\
-     MATCH_MP_TAC SUBSET_TRANS \\
-     Q.EXISTS_TAC ‘FV (M0 @* MAP VAR vs)’ \\
-     CONJ_TAC >- (MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art []) \\
-     Q.PAT_X_ASSUM ‘M0 = LAMl vs (VAR y @* args)’ K_TAC \\
-     simp [FV_appstar] \\
-     Suff ‘FV M0 SUBSET FV M’ >- SET_TAC [] \\
-     qunabbrev_tac ‘M0’ \\
-     MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
- >> DISCH_TAC
-  *)
-
+ (* applying subterm_headvar_lemma *)
+ >> Know ‘hnf_headvar M1 IN X UNION RANKS (SUC r)’
+ >- (MATCH_MP_TAC subterm_headvar_lemma \\
+     qexistsl_tac [‘M’, ‘M0’, ‘n’, ‘vs’] >> simp [])
+ >> ASM_SIMP_TAC std_ss [hnf_head_hnf, THE_VAR_thm]
+ >> DISCH_TAC (* y IN X UNION RANKS (SUC r) *)
+ >> cheat
 
  (* preparing for subterm_subst_cong
  >> Suff ‘subterm Z ([P/y] N) t <> NONE /\
@@ -3925,8 +3975,6 @@ Proof
      MATCH_MP_TAC tpm_rel_cong >> simp [] \\
      PROVE_TAC [subterm_tpm_cong])
   *)
-
- cheat
  (*
  (* applying subterm_subst_cong *)
  >> MATCH_MP_TAC subterm_subst_cong
