@@ -3391,74 +3391,70 @@ Proof
  >> MATCH_MP_TAC LESS_EQ_TRANS
  >> Q.EXISTS_TAC ‘w’ >> art []
  >> qunabbrevl_tac [‘N’, ‘w’]
- >> cheat
- (*
  (* applying subterm_width_alt *)
- >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’] subterm_width_alt)
+ >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’, ‘r’] subterm_width_alt)
  >> simp [] >> DISCH_THEN K_TAC
  >> qabbrev_tac ‘p = h::t’
  >> Know ‘IMAGE (hnf_children_size o principle_hnf)
-                {subterm' X M p' | p' <<= FRONT p} =
-          {hnf_children_size (principle_hnf (subterm' X M p')) | p' <<= FRONT p}’
+                {subterm' X M q r | q <<= FRONT p} =
+          {hnf_children_size (principle_hnf (subterm' X M q r)) |
+           q <<= FRONT p}’
  >- (rw [Once EXTENSION] \\
      EQ_TAC >> rw [] >| (* 2 subgoals *)
      [ (* goal 1 (of 2) *)
-       Q.EXISTS_TAC ‘p'’ >> rw [],
+       rename1 ‘p1 <<= FRONT p’ \\
+       Q.EXISTS_TAC ‘p1’ >> rw [],
        (* goal 2 (of 2) *)
-       Q.EXISTS_TAC ‘subterm' X M p'’ >> art [] \\
-       Q.EXISTS_TAC ‘p'’ >> art [] ])
+       rename1 ‘p1 <<= FRONT p’ \\
+       Q.EXISTS_TAC ‘subterm' X M p1 r’ >> art [] \\
+       Q.EXISTS_TAC ‘p1’ >> art [] ])
  >> Rewr'
  >> qunabbrev_tac ‘p’
  (* if t = [], then l = [] *)
  >> Cases_on ‘t = []’ >- fs []
  >> Cases_on ‘q = []’ >- rw []
  (* applying subterm_width_alt again *)
- >> MP_TAC (Q.SPECL [‘X UNION set vs’, ‘EL h args’, ‘q’] subterm_width_alt)
+ >> MP_TAC (Q.SPECL [‘X’, ‘EL h args’, ‘q’, ‘SUC r’] subterm_width_alt)
+ >> Know ‘FV (EL h args) SUBSET X UNION RANKS (SUC r)’
+ >- (MATCH_MP_TAC subterm_induction_lemma \\
+     qexistsl_tac [‘M’, ‘M0’, ‘n’, ‘m’, ‘vs’, ‘M1’] >> simp [] \\
+     Q.PAT_X_ASSUM ‘VAR y @* args = M1’ (ONCE_REWRITE_TAC o wrap o SYM) \\
+     simp [])
+ >> DISCH_TAC
  >> simp [] >> DISCH_THEN K_TAC
  (* applying SUBSET_MAX_SET *)
  >> MATCH_MP_TAC SUBSET_MAX_SET
  >> CONJ_TAC (* FINITE #1 *)
  >- (MATCH_MP_TAC IMAGE_FINITE \\
-    ‘{subterm' Y (EL h args) p' | p' <<= FRONT q} =
-       IMAGE (subterm' Y (EL h args)) {p' | p' <<= FRONT q}’
+    ‘{subterm' X (EL h args) p (SUC r) | p <<= FRONT q} =
+       IMAGE (\p. subterm' X (EL h args) p (SUC r))
+             {p | p <<= FRONT q}’
        by rw [Once EXTENSION] >> POP_ORW \\
      MATCH_MP_TAC IMAGE_FINITE >> rw [FINITE_prefix])
  >> CONJ_TAC (* FINITE #2 *)
- >- (‘{hnf_children_size (principle_hnf (subterm' X M p')) |
-       p' <<= FRONT (h::t)} =
-         IMAGE (\p'. hnf_children_size (principle_hnf (subterm' X M p')))
-               {p' | p' <<= FRONT (h::t)}’
-       by rw [Once EXTENSION] >> POP_ORW \\
+ >- (‘{hnf_children_size (principle_hnf (subterm' X M q r)) |
+       q <<= FRONT (h::t)} =
+      IMAGE (\p. hnf_children_size (principle_hnf (subterm' X M p r)))
+            {q | q <<= FRONT (h::t)}’
+        by rw [Once EXTENSION] >> POP_ORW \\
      MATCH_MP_TAC IMAGE_FINITE >> rw [FINITE_prefix])
- >> rw [SUBSET_DEF] (* this asserts ‘p' <<= FRONT q’ *)
- >> Q.EXISTS_TAC ‘h::p'’
+ >> rw [SUBSET_DEF] (* this asserts ‘q' <<= FRONT q’ *)
+ >> rename1 ‘q1 <<= FRONT q’
+ >> Q.EXISTS_TAC ‘h::q1’
  >> ‘FRONT (h::t) <> []’ by rw []
- >> Know ‘h::p' <<= FRONT (h::t)’
+ >> Know ‘h::q1 <<= FRONT (h::t)’
  >- (simp [] >> Cases_on ‘t’ >> fs [] \\
      MATCH_MP_TAC IS_PREFIX_TRANS \\
      Q.EXISTS_TAC ‘FRONT q’ >> rw [] \\
      MATCH_MP_TAC IS_PREFIX_FRONT_MONO >> rw [])
  >> Rewr
  (* Norrish's advanced tactics *)
- >> CONV_TAC (UNBETA_CONV “subterm X M (h::p')”)
+ >> CONV_TAC (UNBETA_CONV “subterm X M (h::q1) r”)
  >> qmatch_abbrev_tac ‘f _’
  >> RW_TAC bool_ss [subterm_of_solvables]
  >> simp [Abbr ‘f’, hnf_children_hnf]
-*)
 QED
 
-(* NOTE: ‘y IN X’ must hold to make sure that ‘~MEM y vs’, where ‘set vs’ is
-         disjoint with X, otherwise disaster happens.
-
-   How to make sure ‘y IN X’? When calling this theorem, X should be a
-   combination of the following sets:
-
-   1. The original X from the caller theorem, which is arbitrary.
-   2. FV M, the free variables of M, which contains ‘FV M0’ (principle_hnf of M)
-   3. ‘set vs’, which is defined by ‘NEWS n (X UNION FV M)’
-
-   The head variable ‘y’ of M0 (= LAMl vs (VAR y @* args)) comes from 2) or 3).
- *)
 Theorem subterm_subst_cong :
     !p X M r y P d. FINITE X /\ FV M SUBSET X UNION RANKS r /\
                     subterm X M p r <> NONE /\
