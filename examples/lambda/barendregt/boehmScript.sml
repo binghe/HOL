@@ -3495,6 +3495,7 @@ Theorem Boehm_transform_exists_lemma :
     !X M p r. FINITE X /\ FV M SUBSET X UNION RANKS r /\
               p <> [] /\ subterm X M p r <> NONE ==>
        ?pi. Boehm_transform pi /\ is_ready' (apply pi M) /\
+            (* FV (apply pi M) SUBSET X UNION RANKS (SUC r) /\ *)
             ?v P. closed P /\
               !q. q <<= p /\ q <> [] ==>
                   subterm X (apply pi M) q r <> NONE /\
@@ -3948,39 +3949,6 @@ Proof
  >> simp [Abbr ‘f’, hnf_children_hnf]
 QED
 
-(*
-(* Another version with ‘ISUB’ instead of ‘tpm_rel’
-
-   NOTE: there's also ‘p IN ltree_paths (BT Z (apply pi M))’ added into
-   the conclusion, which has to be proved.
- *)
-Theorem Boehm_transform_exists_lemma' :
-    !X M p. FINITE X /\ p <> [] /\ subterm X M p <> NONE ==>
-            ?pi Z. Boehm_transform pi /\ is_ready' (apply pi M) /\
-                   Z = X UNION FV M /\
-                   !q. q <<= p /\ q <> [] ==>
-                       subterm Z (apply pi M) q <> NONE /\
-                       ?ss. subterm' Z (apply pi M) q = (subterm' Z M q) ISUB ss
-Proof
-    rpt STRIP_TAC
- >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘p’] Boehm_transform_exists_lemma)
- >> RW_TAC std_ss []
- >> Q.EXISTS_TAC ‘pi’
- >> RW_TAC std_ss []
- >> Q.PAT_X_ASSUM ‘!q. q <<= p /\ q <> [] ==> _’ (MP_TAC o (Q.SPEC ‘q’))
- >> RW_TAC std_ss []
- >> POP_ASSUM MP_TAC (* tpm_rel ... *)
- >> qabbrev_tac ‘t = [P/v] (subterm' (X UNION FV M) M q)’
- >> RW_TAC std_ss [tpm_rel_alt]
- >> POP_ORW
- (* applying tpm_ISUB_exists *)
- >> STRIP_ASSUME_TAC (Q.SPECL [‘pi'’, ‘t’] tpm_ISUB_exists)
- >> POP_ORW
- >> qunabbrev_tac ‘t’
- >> Q.EXISTS_TAC ‘[(P,v)] ++ ss’
- >> rw [GSYM ISUB_APPEND]
-QED
-
 (* Proposition 10.3.7 (i) [1, p.248] (Boehm out lemma)
 
    NOTE: This time the case ‘p = []’ can be included, but it's a trvial case.
@@ -3995,28 +3963,29 @@ QED
    NOTE5: Use subterm_imp_ltree_paths to prove ‘p IN ltree_paths (BT X M)’.
  *)
 Theorem Boehm_out_lemma :
-    !p X M. FINITE X /\ subterm X M p <> NONE ==>
-            ?pi. Boehm_transform pi /\ ?ss. apply pi M == subterm' X M p ISUB ss
+    !X p M r. FINITE X /\ FV M SUBSET X UNION RANKS r /\
+              subterm X M p r <> NONE ==>
+              ?pi. Boehm_transform pi /\
+                   ?ss. apply pi M == subterm' X M p r ISUB ss
 Proof
-    Induct_on ‘p’
+    Q.X_GEN_TAC ‘X’
+ >> Induct_on ‘p’
  >- (rw [] \\
      Q.EXISTS_TAC ‘[]’ >> rw [] \\
      Q.EXISTS_TAC ‘[]’ >> rw [])
  >> rpt STRIP_TAC
- >> rename1 ‘subterm X M (h::t) <> NONE’
+ >> rename1 ‘subterm X M (h::t) r <> NONE’
  >> qabbrev_tac ‘p = h::t’ (* head and tail *)
  >> ‘p <> []’ by rw [Abbr ‘p’]
- >> ‘(!q. q <<= p ==> subterm X M q <> NONE) /\
-      !q. q <<= FRONT p ==> solvable (subterm' X M q)’
+ >> ‘(!q. q <<= p ==> subterm X M q r <> NONE) /\
+      !q. q <<= FRONT p ==> solvable (subterm' X M q r)’
          by METIS_TAC [subterm_solvable_lemma]
- >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’] Boehm_transform_exists_lemma')
+ >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::t’, ‘r’] Boehm_transform_exists_lemma)
  >> simp []
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘p0’ MP_TAC)
  >> RW_TAC std_ss [] (* push p0 properties to assumptions *)
  >> POP_ASSUM (MP_TAC o (Q.SPEC ‘p’)) (* put q = p *)
  >> rw []
- >> qabbrev_tac ‘Z = X UNION FV M’ (* Z is now unique *)
- >> ‘FINITE Z’ by rw [Abbr ‘Z’]
  >> qabbrev_tac ‘M' = apply p0 M’
  >> ‘solvable M' /\ ?y Ms. M' -h->* VAR y @* Ms /\ EVERY (\e. y # e) Ms’
        by METIS_TAC [is_ready_alt']
@@ -4024,21 +3993,21 @@ Proof
  (* stage work *)
  >> qunabbrev_tac ‘p’
  >> Know ‘h < LENGTH Ms’
- >- (Q.PAT_X_ASSUM ‘subterm Z M' (h::t) <> NONE’ MP_TAC \\
+ >- (Q.PAT_X_ASSUM ‘subterm X M' (h::t) r <> NONE’ MP_TAC \\
      RW_TAC std_ss [subterm_of_solvables] >> fs [])
  >> DISCH_TAC
  >> qabbrev_tac ‘m = LENGTH Ms’
- (* NOTE: This is the second ‘=’ of (2) [1, p.249], while the first ‘=’ is
-    now a tpm_rel in assumptions. *)
  >> qabbrev_tac ‘N = EL h Ms’
- (* NOTE: Z is still there when going to subterm, not changed *)
- >> Know ‘subterm' Z M' (h::t) = subterm' Z N t /\ subterm Z N t <> NONE’
- >- (Q.PAT_X_ASSUM ‘subterm' Z M' (h::t) = subterm' Z M (h::t) ISUB ss’ K_TAC \\
-     Q.PAT_X_ASSUM ‘subterm Z M' (h::t) <> NONE’ MP_TAC \\
+ (* stage work *)
+ >> Know ‘subterm X N t (SUC r) <> NONE /\
+          subterm' X M' (h::t) r = subterm' X N t (SUC r)’
+ >- (Q.PAT_X_ASSUM ‘subterm' X M' (h::t) r =
+                    [P/v] (subterm' X M (h::t) r)’ K_TAC \\
+     Q.PAT_X_ASSUM ‘subterm X M' (h::t) r <> NONE’ MP_TAC \\
      rw [subterm_of_solvables, Abbr ‘N’])
  >> STRIP_TAC
- >> Q.PAT_X_ASSUM ‘subterm' Z M' (h::t) = subterm' Z N t’ (fs o wrap)
- >> rpt (Q.PAT_X_ASSUM ‘T’ K_TAC)
+ >> Q.PAT_X_ASSUM ‘subterm' X M' (h::t) r = subterm' X N t (SUC r)’ (fs o wrap)
+ >> T_TAC
  (* stage work, now define a selector *)
  >> qabbrev_tac ‘U = selector h m’
  >> qabbrev_tac ‘p1 = [[U/y]]’
@@ -4066,15 +4035,25 @@ Proof
      MATCH_MP_TAC selector_thm >> rw [Abbr ‘m’])
  >> DISCH_TAC
  (* stage work, now using IH *)
- >> Q.PAT_X_ASSUM ‘!X M. _’ (MP_TAC o (Q.SPECL [‘Z’, ‘N’])) >> simp []
+ >> Q.PAT_X_ASSUM ‘!M r. _’ (MP_TAC o (Q.SPECL [‘N’, ‘SUC r’])) >> simp []
+ >> Know ‘FV N SUBSET X UNION RANKS (SUC r)’
+ >- (qunabbrev_tac ‘N’ \\
+     qunabbrev_tac ‘M'’ \\
+     MATCH_MP_TAC SUBSET_TRANS \\
+     Q.EXISTS_TAC ‘FV (apply p0 M)’ \\
+     reverse CONJ_TAC >- cheat \\
+     MATCH_MP_TAC SUBSET_TRANS \\
+     Q.EXISTS_TAC ‘FV (VAR y @* Ms)’ \\
+     reverse CONJ_TAC >- (MATCH_MP_TAC hreduce_FV_SUBSET >> art []) \\
+     rw [SUBSET_DEF, FV_appstar] \\
+     DISJ2_TAC \\
+     Q.EXISTS_TAC ‘FV (EL h Ms)’ >> art [] \\
+     Q.EXISTS_TAC ‘EL h Ms’ >> rw [EL_MEM])
  >> RW_TAC std_ss []
  >> rename1 ‘apply p2 N == _ ISUB ss'’
- >> POP_ASSUM MP_TAC
- (* applying subterm_tpm_cong *)
- >> Know ‘tpm_rel (subterm' Z M (h::t)) (subterm' X M (h::t))’
- >- (MP_TAC (Q.SPECL [‘h::t’, ‘Z’, ‘X’, ‘M’] subterm_tpm_cong) >> rw [])
- >> rw [tpm_rel_alt]
- >> qabbrev_tac ‘N' = subterm' X M (h::t)’
+ >> qabbrev_tac ‘N' = subterm' X M (h::t) r’
+ >> cheat
+ (*
  (* applying tpm_ISUB_exists *)
  >> STRIP_ASSUME_TAC (Q.SPECL [‘pi’, ‘N'’] tpm_ISUB_exists)
  >> Q.PAT_X_ASSUM ‘apply p2 N == _’ MP_TAC
@@ -4090,11 +4069,14 @@ Proof
  >> Q.EXISTS_TAC ‘apply p2 N’ >> art []
  >> rw [Boehm_apply_APPEND]
  >> MATCH_MP_TAC Boehm_apply_lameq_cong >> art []
+  *)
 QED
 
 (*---------------------------------------------------------------------------*
  *  Faithfulness and agreements of terms
  *---------------------------------------------------------------------------*)
+
+(*
 
 (* Definition 10.2.21 (i) [1, p.238]
 
@@ -4180,8 +4162,8 @@ QED
 (* Definition 10.2.32 (v) [1, p.245] *)
 Definition subterm_equivalent_def :
     subterm_equivalent p M N =
-    subtree_equivalent p (BT (FV M UNION FV N) M)
-                         (BT (FV M UNION FV N) N)
+    subtree_equivalent p (BT' (FV M UNION FV N) M 0)
+                         (BT' (FV M UNION FV N) N 0)
 End
 
 Theorem subterm_equivalent_refl[simp] :
