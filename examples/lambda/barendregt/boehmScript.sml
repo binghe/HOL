@@ -3490,12 +3490,15 @@ QED
    needs in the user theorem.
 
    NOTE5: Extended the conclusion with ‘!q. q <<= p /\ q <> []’
+
+   NOTE6: ‘FV (apply pi M) SUBSET X UNION RANKS (SUC r)’ is added into the
+   conclusions for the needs of Boehm_out_lemma.
  *)
 Theorem Boehm_transform_exists_lemma :
     !X M p r. FINITE X /\ FV M SUBSET X UNION RANKS r /\
               p <> [] /\ subterm X M p r <> NONE ==>
        ?pi. Boehm_transform pi /\ is_ready' (apply pi M) /\
-            (* FV (apply pi M) SUBSET X UNION RANKS (SUC r) /\ *)
+            FV (apply pi M) SUBSET X UNION RANKS (SUC r) /\
             ?v P. closed P /\
               !q. q <<= p /\ q <> [] ==>
                   subterm X (apply pi M) q r <> NONE /\

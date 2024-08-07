@@ -2189,6 +2189,21 @@ local
   and is_gt = realSyntax.is_greater
   and is_req = is_binop eq_tm;
 in
+(* val (mk_numeric,NUMERIC_EQ_CONV,NUMERIC_GE_CONV,NUMERIC_GT_CONV,
+        POLY_CONV,POLY_NEG_CONV,POLY_ADD_CONV,POLY_MUL_CONV,
+        absconv1,absconv2,prover) =
+
+   (term_of_rat,
+    REAL_RAT_EQ_CONV,REAL_RAT_GE_CONV,REAL_RAT_GT_CONV,
+    REAL_POLY_CONV,REAL_POLY_NEG_CONV,REAL_POLY_ADD_CONV,REAL_POLY_MUL_CONV,
+    ABSMAXMIN_ELIM_CONV1,ABSMAXMIN_ELIM_CONV2, REAL_LINEAR_PROVER)
+
+   (term_of_rat,
+    REAL_INT_EQ_CONV,REAL_INT_GE_CONV,REAL_INT_GT_CONV,
+    REAL_POLY_CONV,REAL_POLY_NEG_CONV,REAL_POLY_ADD_CONV,
+    REAL_POLY_MUL_CONV,
+    NO_CONV,NO_CONV,REAL_LINEAR_PROVER);
+ *)
 fun GEN_REAL_ARITH0 (mk_numeric,
                      NUMERIC_EQ_CONV,NUMERIC_GE_CONV,NUMERIC_GT_CONV,
                      POLY_CONV,POLY_NEG_CONV,POLY_ADD_CONV,POLY_MUL_CONV,
@@ -2507,7 +2522,8 @@ in
     FIRST_CONV [elim_abs, elim_max, elim_min]
 end;
 
-(* exported function *)
+(* exported function
+ *)
 fun GEN_REAL_ARITH (mkconst,EQ,GE,GT,NORM,NEG,ADD,MUL,PROVER) =
     GEN_REAL_ARITH0 (mkconst,EQ,GE,GT,NORM,NEG,ADD,MUL,
                      ABSMAXMIN_ELIM_CONV1,ABSMAXMIN_ELIM_CONV2,PROVER);

@@ -14,9 +14,10 @@ struct
 
 open HolKernel Parse boolLib bossLib;
 
+open RealArith;
+
 open prim_recTheory arithmeticTheory numLib reduceLib tautLib liteLib;
-open realaxTheory realTheory realSyntax RealArith jrhUtils normalForms;
-open realSimps
+open realaxTheory realTheory realSyntax jrhUtils normalForms realSimps;
 
 open Sub_and_cond Normalizer Grobner;
 
@@ -72,7 +73,7 @@ val REAL_SUP_ALLPOS = realTheory.REAL_SUP_ALLPOS;
 fun failwith s = raise mk_HOL_ERR "RealField" "?" s
 
 (* set verbose level (of REAL_LINEAR_PROVER) to nothing for internal loading *)
-val _ = RealArith.verbose_level := 0;
+val _ = verbose_level := 0;
 
 (* ------------------------------------------------------------------------- *)
 (* Syntax operations on integer constants of type “:real”.                   *)
@@ -217,7 +218,7 @@ val REAL_RAT_NEG_CONV = let
      (~(~(&m) / &n) = &m / &n) /\
      (~(DECIMAL m n) = ~(&m) / &n)”,
     REWRITE_TAC[real_div, REAL_INV_NEG, REAL_MUL_LNEG, REAL_NEG_NEG,
-     REAL_NEG_0, DECIMAL])
+                REAL_NEG_0, DECIMAL])
   and ptm = realSyntax.negate_tm;
   val conv1 = GEN_REWRITE_CONV I empty_rewrites [pth]
 in
@@ -490,9 +491,8 @@ end
 
 fun term_lt x y = (Term.compare (x,y) = LESS);
 
-(* NOTE: the returned REAL_POLY_CONV' does not support many real operators.  *)
 val (REAL_POLY_NEG_CONV,REAL_POLY_ADD_CONV,REAL_POLY_SUB_CONV,
-     REAL_POLY_MUL_CONV,REAL_POLY_POW_CONV,REAL_POLY_CONV') =
+     REAL_POLY_MUL_CONV,REAL_POLY_POW_CONV,_) =
   SEMIRING_NORMALIZERS_CONV REAL_POLY_CLAUSES REAL_POLY_NEG_CLAUSES
    (is_ratconst,
     REAL_RAT_ADD_CONV,REAL_RAT_MUL_CONV,REAL_RAT_POW_CONV) term_lt;
@@ -502,7 +502,6 @@ val (REAL_POLY_NEG_CONV,REAL_POLY_ADD_CONV,REAL_POLY_SUB_CONV,
 (* normalize inside nested "max", "min" and "abs" terms.                     *)
 (* ------------------------------------------------------------------------- *)
 
-(* NOTE: the above REAL_POLY_CONV' is not used here. *)
 val div_conv = QCONV (REWR_CONV real_div);
 
 val REAL_POLY_CONV = let
@@ -556,18 +555,7 @@ end;
 (* ------------------------------------------------------------------------- *)
 
 val (REAL_RING,real_ideal_cofactors) = let
-  val REAL_INTEGRAL = prove
-   (“(!(x :real). &0 * x = &0) /\
-     (!(x :real) y z. (x + y = x + z) <=> (y = z)) /\
-     (!(w :real) x y z. (w * y + x * z = w * z + x * y) <=> (w = x) \/ (y = z))”,
-    ONCE_REWRITE_TAC[GSYM REAL_SUB_0] THEN
-    REWRITE_TAC[GSYM REAL_ENTIRE] THEN REAL_ARITH_TAC)
-  and REAL_RABINOWITSCH = prove
-   (“!x y:real. ~(x = y) <=> ?z. (x - y) * z = &1”,
-    REWRITE_TAC[EQ_IMP_THM] >> rpt strip_tac >>
-    FULL_SIMP_TAC std_ss [EQ_IMP_THM, REAL_SUB_REFL, REAL_MUL_LZERO, REAL_10] >>
-    irule_at Any REAL_MUL_RINV >> ASM_REWRITE_TAC [REAL_SUB_0])
-  and init = GEN_REWRITE_CONV ONCE_DEPTH_CONV empty_rewrites [DECIMAL];
+  val init = GEN_REWRITE_CONV ONCE_DEPTH_CONV empty_rewrites [DECIMAL];
   val (pure,ideal) =
     RING_AND_IDEAL_CONV
         (rat_of_term, term_of_rat, REAL_RAT_EQ_CONV,
@@ -602,8 +590,9 @@ end;
 (* ------------------------------------------------------------------------- *)
 
 (* NOTE: since it's not going to be exported, no need to have the same name. *)
-fun GEN_REAL_ARITH prover =
-    RealArith.GEN_REAL_ARITH
+val GEN_REAL_ARITH =
+ fn prover =>
+    GEN_REAL_ARITH
    (term_of_rat,
     REAL_RAT_EQ_CONV,REAL_RAT_GE_CONV,REAL_RAT_GT_CONV,
     REAL_POLY_CONV,REAL_POLY_NEG_CONV,REAL_POLY_ADD_CONV,REAL_POLY_MUL_CONV,
@@ -697,6 +686,6 @@ end (* REAL_FIELD *)
 val (REAL_FIELD_TAC,REAL_ASM_FIELD_TAC) = mk_real_arith_tac REAL_FIELD;
 
 (* set verbose level to 1 by default *)
-val _ = RealArith.verbose_level := 1;
+val _ = verbose_level := 1;
 
 end (* struct *)
