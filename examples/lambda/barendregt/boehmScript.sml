@@ -4083,24 +4083,16 @@ Proof
  >> RW_TAC std_ss []
  >> rename1 ‘apply p2 N == _ ISUB ss'’
  >> qabbrev_tac ‘N' = subterm' X M (h::t) r’
-
-
- >> cheat
-(*
- >> Q.PAT_X_ASSUM ‘apply p2 N == _’ MP_TAC
- >> qunabbrev_tac ‘N'’
- >> Q.PAT_X_ASSUM ‘tpm pi N' = N' ISUB ss''’ (ONCE_REWRITE_TAC o wrap)
- >> simp [Abbr ‘N'’, ISUB_APPEND] >> DISCH_TAC
  (* final stage *)
  >> Q.EXISTS_TAC ‘p2 ++ p10’
  >> CONJ_TAC
  >- (MATCH_MP_TAC Boehm_transform_APPEND >> art [])
- >> Q.EXISTS_TAC ‘ss'' ++ ss ++ ss'’
+ >> Q.EXISTS_TAC ‘[(P,v)] ++ ss'’
  >> MATCH_MP_TAC lameq_TRANS
- >> Q.EXISTS_TAC ‘apply p2 N’ >> art []
+ >> Q.EXISTS_TAC ‘apply p2 N’
+ >> simp [ISUB_def]
  >> rw [Boehm_apply_APPEND]
  >> MATCH_MP_TAC Boehm_apply_lameq_cong >> art []
- *)
 QED
 
 (*---------------------------------------------------------------------------*
@@ -4219,6 +4211,7 @@ Proof
     rpt GEN_TAC
  >> EQ_TAC >> rw [subterm_equivalent_sym]
 QED
+*)
 
 (* Definition 10.3.10 (iii) and (iv)
 
@@ -4230,8 +4223,8 @@ Definition agree_upto_def :
     (let
        X = BIGUNION (IMAGE FV (set Ms))
      in
-       !M N. MEM M Ms /\ MEM N Ms ==>
-            !q. q <<= p ==> ltree_el (BT X M) q = ltree_el (BT X N) q)
+       !M N r. MEM M Ms /\ MEM N Ms ==>
+              !q. q <<= p ==> ltree_el (BT' X M r) q = ltree_el (BT' X N r) q)
 End
 
 (* Lemma 10.3.11 (1) [1. p.251]
@@ -4248,6 +4241,7 @@ End
    Let's first put ‘EVERY solvable Ns’ in assumption to focus on the non-trivial
    part of this proof.
  *)
+(*
 Theorem agree_upto_lemma :
     !X Ms p. FINITE X /\ p <> [] /\ agree_upto p Ms /\
             (!M. MEM M Ms ==> subterm X M p <> NONE) ==>
