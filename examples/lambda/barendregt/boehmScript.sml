@@ -3778,8 +3778,37 @@ Proof
          FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
      rw [SUBSET_DEF, IN_BIGUNION_IMAGE] \\
      Q.EXISTS_TAC ‘e’ >> art [])
- >> qabbrev_tac ‘pi = p3 ++ p2 ++ p1’
+ (* extra goal *)
+ >> CONJ_TAC
+ >- (Q.PAT_X_ASSUM ‘apply (p3 ++ p2 ++ p1) M == _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘principle_hnf (apply (p3 ++ p2 ++ p1) M) = _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘apply p3 (P @* args') == _’ K_TAC \\
+     rpt (Q.PAT_X_ASSUM ‘Boehm_transform _’ K_TAC) \\
+     Q.PAT_X_ASSUM ‘solvable (apply (p3 ++ p2 ++ p1) M)’ K_TAC \\
+     simp [Boehm_apply_APPEND, Abbr ‘p1’, Abbr ‘p2’, Abbr ‘p3’,
+           Boehm_apply_MAP_rightctxt'] \\
+     POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM) \\
+     reverse CONJ_TAC
+     >- (MATCH_MP_TAC SUBSET_TRANS \\
+         Q.EXISTS_TAC ‘RANK r’ >> rw [Abbr ‘l’, alloc_in_rank] \\
+         Suff ‘RANK r SUBSET RANKS (SUC r)’ >- rw [SUBSET_DEF] \\
+         rw [RANK_SUBSET_RANKS]) \\
+     MATCH_MP_TAC SUBSET_TRANS \\
+     Q.EXISTS_TAC ‘FV (M @* MAP VAR vs)’ \\
+     CONJ_TAC >- (MATCH_MP_TAC FV_SUB_SUBSET >> art []) \\
+     simp [FV_appstar] \\
+     reverse CONJ_TAC
+     >- (MATCH_MP_TAC SUBSET_TRANS \\
+         Q.EXISTS_TAC ‘RANK r’ \\
+         rw [Abbr ‘vs’, RNEWS_SUBSET] \\
+         Suff ‘RANK r SUBSET RANKS (SUC r)’ >- rw [SUBSET_DEF] \\
+         rw [RANK_SUBSET_RANKS]) \\
+     MATCH_MP_TAC SUBSET_TRANS \\
+     Q.EXISTS_TAC ‘X UNION RANKS r’ >> art [] \\
+     Suff ‘RANKS r SUBSET RANKS (SUC r)’ >- SET_TAC [] \\
+     rw [RANKS_MONO])
  (* stage work, there's the textbook choice of y and P *)
+ >> qabbrev_tac ‘pi = p3 ++ p2 ++ p1’
  >> qexistsl_tac [‘y’, ‘P’] >> art []
  >> NTAC 2 STRIP_TAC (* push ‘q <<= p’ to assumptions *)
  (* RHS rewriting from M to M0 *)
@@ -4043,8 +4072,7 @@ Proof
  >- (qunabbrev_tac ‘N’ \\
      qunabbrev_tac ‘M'’ \\
      MATCH_MP_TAC SUBSET_TRANS \\
-     Q.EXISTS_TAC ‘FV (apply p0 M)’ \\
-     reverse CONJ_TAC >- cheat \\
+     Q.EXISTS_TAC ‘FV (apply p0 M)’ >> art [] \\
      MATCH_MP_TAC SUBSET_TRANS \\
      Q.EXISTS_TAC ‘FV (VAR y @* Ms)’ \\
      reverse CONJ_TAC >- (MATCH_MP_TAC hreduce_FV_SUBSET >> art []) \\
@@ -4055,12 +4083,12 @@ Proof
  >> RW_TAC std_ss []
  >> rename1 ‘apply p2 N == _ ISUB ss'’
  >> qabbrev_tac ‘N' = subterm' X M (h::t) r’
+
+
  >> cheat
- (*
- (* applying tpm_ISUB_exists *)
- >> STRIP_ASSUME_TAC (Q.SPECL [‘pi’, ‘N'’] tpm_ISUB_exists)
+(*
  >> Q.PAT_X_ASSUM ‘apply p2 N == _’ MP_TAC
- >> Q.PAT_X_ASSUM ‘subterm' Z M (h::t) = tpm pi N'’ (ONCE_REWRITE_TAC o wrap)
+ >> qunabbrev_tac ‘N'’
  >> Q.PAT_X_ASSUM ‘tpm pi N' = N' ISUB ss''’ (ONCE_REWRITE_TAC o wrap)
  >> simp [Abbr ‘N'’, ISUB_APPEND] >> DISCH_TAC
  (* final stage *)
@@ -4072,7 +4100,7 @@ Proof
  >> Q.EXISTS_TAC ‘apply p2 N’ >> art []
  >> rw [Boehm_apply_APPEND]
  >> MATCH_MP_TAC Boehm_apply_lameq_cong >> art []
-  *)
+ *)
 QED
 
 (*---------------------------------------------------------------------------*
