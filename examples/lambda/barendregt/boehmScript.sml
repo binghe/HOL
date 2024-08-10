@@ -220,25 +220,18 @@ Proof
 QED
 
 Theorem subterm_disjoint_lemma :
-    !X M r M0 n vs.
-           FINITE X /\ FV M SUBSET X UNION RANKS r /\
-           solvable M /\
-           M0 = principle_hnf M /\
-            n = LAMl_size M0 /\
-           vs = RNEWS r n X
+    !X M r n vs.
+           FINITE X /\ FV M SUBSET X UNION RANKS r /\ vs = RNEWS r n X
        ==> DISJOINT (set vs) (FV M)
 Proof
     rw [DISJOINT_ALT']
- >> qabbrev_tac ‘M0 = principle_hnf M’
- >> qabbrev_tac ‘n = LAMl_size M0’
- >> qabbrev_tac ‘Y = RANKS r’
  >> Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
- >> Know ‘x IN X UNION Y’ >- METIS_TAC [SUBSET_DEF]
+ >> Know ‘x IN X UNION RANKS r’ >- METIS_TAC [SUBSET_DEF]
  >> rw [IN_UNION]
  >- (Q.PAT_X_ASSUM ‘DISJOINT (set vs) X’ MP_TAC \\
      rw [DISJOINT_ALT'])
- >> Suff ‘DISJOINT Y (set vs)’ >- rw [DISJOINT_ALT]
- >> qunabbrevl_tac [‘Y’, ‘vs’]
+ >> Suff ‘DISJOINT (RANKS r) (set vs)’ >- rw [DISJOINT_ALT]
+ >> qunabbrev_tac ‘vs’
  >> MATCH_MP_TAC RANKS_DISJOINT' >> art []
 QED
 
@@ -247,7 +240,6 @@ Theorem subterm_disjoint_lemma' :
            FINITE X /\ FV M SUBSET X UNION RANKS r /\
            solvable M /\
            M0 = principle_hnf M /\
-            n = LAMl_size M0 /\
            vs = RNEWS r n X
        ==> DISJOINT (set vs) (FV M0)
 Proof
@@ -258,7 +250,7 @@ Proof
  >- (Q.PAT_X_ASSUM ‘M0 = _’ (REWRITE_TAC o wrap) \\
      MATCH_MP_TAC principle_hnf_FV_SUBSET' >> art [])
  >> MATCH_MP_TAC subterm_disjoint_lemma
- >> qexistsl_tac [‘X’, ‘r’, ‘M0’, ‘n’] >> art []
+ >> qexistsl_tac [‘X’, ‘r’, ‘n’] >> art []
 QED
 
 (* NOTE: Essentially, ‘hnf_children_size (principle_hnf M)’ is irrelevant with
@@ -1551,7 +1543,7 @@ Proof
      >- rw [DISJOINT_ALT', FV_tpm] \\
      MATCH_MP_TAC subterm_disjoint_lemma \\
      qabbrev_tac ‘n = LENGTH vs'’ \\
-     qexistsl_tac [‘Y’, ‘r'’, ‘tpm pi M0’, ‘n’] >> simp [] \\
+     qexistsl_tac [‘Y’, ‘r'’, ‘n’] >> simp [] \\
      rw [Abbr ‘M0’, principle_hnf_tpm'])
  >> DISCH_TAC
  >> ‘LENGTH vs1 = n’ by rw [Abbr ‘vs1’, LENGTH_listpm]
@@ -4099,8 +4091,6 @@ QED
  *  Faithfulness and agreements of terms
  *---------------------------------------------------------------------------*)
 
-(*
-
 (* Definition 10.2.21 (i) [1, p.238]
 
    NOTE: ‘A’ and ‘B’ are ltree nodes returned by ‘THE (ltree_el (BT M) p)’
@@ -4109,14 +4099,14 @@ Definition head_equivalent_def :
     head_equivalent (A :BT_node # num option)
                     (B :BT_node # num option) =
       if IS_SOME (FST A) /\ IS_SOME (FST B) then
-         let (vs ,y ) = THE (FST A);
-             (vs',y') = THE (FST B);
-                   n  = LENGTH vs;
-                   n' = LENGTH vs';
-                   m  = THE (SND A);
-                   m' = THE (SND B)
+         let (vs1,y1) = THE (FST A);
+             (vs2,y2) = THE (FST B);
+                   n1 = LENGTH vs1;
+                   n2 = LENGTH vs2;
+                   m1 = THE (SND A);
+                   m2 = THE (SND B)
          in
-             LAMl vs (VAR y) = LAMl vs' (VAR y') /\ n + m' = n' + m
+             LAMl vs1 (VAR y1) = LAMl vs2 (VAR y2) /\ n1 + m2 = n2 + m1
       else
          IS_NONE (FST A) /\ IS_NONE (FST B)
 End
@@ -4211,7 +4201,6 @@ Proof
     rpt GEN_TAC
  >> EQ_TAC >> rw [subterm_equivalent_sym]
 QED
-*)
 
 (* Definition 10.3.10 (iii) and (iv)
 
@@ -4219,53 +4208,71 @@ QED
          set (and thus perhaps also the same initial binding list).
  *)
 Definition agree_upto_def :
-    agree_upto p Ms <=>
+    agree_upto Ms p <=>
     (let
        X = BIGUNION (IMAGE FV (set Ms))
      in
-       !M N r. MEM M Ms /\ MEM N Ms ==>
-              !q. q <<= p ==> ltree_el (BT' X M r) q = ltree_el (BT' X N r) q)
+       !M N. MEM M Ms /\ MEM N Ms ==>
+             !q. q <<= p ==> ltree_el (BT' X M 0) q =
+                             ltree_el (BT' X N 0) q)
 End
 
 (* Lemma 10.3.11 (1) [1. p.251]
 
-   NOTE: ‘p <> []’ must be added, as otherwise each N in Ns cannot be "is_ready".
+   NOTE: ‘p <> []’ must be added, otherwise each N in Ns cannot be "is_ready".
 
    NOTE2: ‘!X M. MEM M Ns ==> subterm X M p <> NONE’ will be later assumed for
    non-trivial cases. If any M in Ns doesn't satisfy this requirements, then
-  ‘subterm X M p = NONE’ (the unsolvable case) and doesn't have contribtions in
-  ‘pi’.
+  ‘subterm X M p = NONE’ (the unsolvable case) and doesn't have contributions
+   in ‘pi’.
 
    On the other hand, if any M in Ns is unsolvable (and p <> []), then p cannot
    be in ‘ltree_paths (BT X M)’. Thus all terms in Ns are solvable.
    Let's first put ‘EVERY solvable Ns’ in assumption to focus on the non-trivial
    part of this proof.
+
+   NOTE3: This proof uses ‘agree_upto’ very late.
  *)
-(*
 Theorem agree_upto_lemma :
-    !X Ms p. FINITE X /\ p <> [] /\ agree_upto p Ms /\
-            (!M. MEM M Ms ==> subterm X M p <> NONE) ==>
-             ?pi. Boehm_transform pi /\ EVERY is_ready' (MAP (apply pi) Ms) /\
-                  agree_upto p (MAP (apply pi) Ms)
+    !X Ms p r. FINITE X /\
+               BIGUNION (IMAGE FV (set Ms)) SUBSET X UNION RANKS r /\
+               p <> [] /\ agree_upto Ms p /\
+              (!M. MEM M Ms ==> subterm X M p r <> NONE) ==>
+               ?pi. Boehm_transform pi /\
+                    EVERY is_ready' (MAP (apply pi) Ms) /\
+                    agree_upto (MAP (apply pi) Ms) p
 Proof
     rpt STRIP_TAC
  >> qabbrev_tac ‘k = LENGTH Ms’
  >> qabbrev_tac ‘M = \i. EL i Ms’
- >> Know ‘!i. i < k ==> subterm X (M i) p <> NONE’
- >- (NTAC 2 STRIP_TAC \\
-     FIRST_X_ASSUM MATCH_MP_TAC >> rw [Abbr ‘M’, EL_MEM])
+ >> ‘!i. i < k ==> subterm X (M i) p r <> NONE’
+       by (rw [Abbr ‘M’, EL_MEM])
+ >> Know ‘!i. i < k ==> FV (M i) SUBSET X UNION RANKS r’
+ >- (rpt STRIP_TAC \\
+     Q.PAT_X_ASSUM ‘_ SUBSET X UNION RANKS r’ MP_TAC \\
+     rw [SUBSET_DEF, IN_BIGUNION_IMAGE] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘M i’ >> art [] \\
+     rw [Abbr ‘M’, EL_MEM])
  >> DISCH_TAC
- >> Q.PAT_X_ASSUM ‘!M. MEM M Ms ==> subterm X M p <> NONE’ K_TAC
- >> ‘!i. i < k ==> (!q. q <<= p ==> subterm X (M i) q <> NONE) /\
-                    !q. q <<= FRONT p ==> solvable (subterm' X (M i) q)’
+ >> Q.PAT_X_ASSUM ‘!M. MEM M Ms ==> subterm X M p r <> NONE’ K_TAC
+ >> ‘!i. i < k ==> (!q. q <<= p ==> subterm X (M i) q r <> NONE) /\
+                    !q. q <<= FRONT p ==> solvable (subterm' X (M i) q r)’
        by METIS_TAC [subterm_solvable_lemma]
- >> Know ‘!i. i < k ==> solvable (M i) /\ p IN ltree_paths (BT X (M i))’
- >- (rpt STRIP_TAC
-     >- (Q.PAT_X_ASSUM ‘!i. i < k ==>
-                           (!q. q <<= p ==> subterm X (M i) q <> NONE) /\ P’
-                       (MP_TAC o Q.SPEC ‘i’) >> rw [] \\
-         POP_ASSUM (MP_TAC o (Q.SPEC ‘[]’)) >> rw []) \\
-     METIS_TAC [subterm_imp_ltree_paths])
+ (* convert previous assumption into easier forms for MATCH_MP_TAC *)
+ >> ‘(!i q. i < k /\ q <<= p ==> subterm X (M i) q r <> NONE) /\
+     (!i q. i < k /\ q <<= FRONT p ==> solvable (subterm' X (M i) q r))’
+       by PROVE_TAC []
+ >> Q.PAT_X_ASSUM ‘!i. i < k ==> P /\ Q’ K_TAC
+ >> Know ‘!i. i < k ==> solvable (M i)’
+ >- (rpt STRIP_TAC \\
+     Q.PAT_X_ASSUM ‘!i q. i < k /\ q <<= FRONT p ==> solvable _’
+       (MP_TAC o Q.SPECL [‘i’, ‘[]’]) \\
+     simp [])
+ >> DISCH_TAC
+ >> Know ‘!i. i < k ==> p IN ltree_paths (BT' X (M i) r)’
+ >- (rpt STRIP_TAC \\
+     MATCH_MP_TAC subterm_imp_ltree_paths >> rw [])
  >> DISCH_TAC
  (* define M0 *)
  >> qabbrev_tac ‘M0 = principle_hnf o M’
@@ -4281,12 +4288,22 @@ Proof
  >- (rw [Abbr ‘M0’, Abbr ‘n_max’] \\
      irule MAX_SET_PROPERTY >> rw [])
  >> DISCH_TAC
- (* ‘vs’ excludes all free variables in M *)
- >> qabbrev_tac ‘Y = X UNION (BIGUNION (IMAGE FV (set Ms)))’
+ >> qabbrev_tac ‘Y = BIGUNION (IMAGE FV (set Ms))’
  >> ‘FINITE Y’ by (rw [Abbr ‘Y’] >> REWRITE_TAC [FINITE_FV])
- >> qabbrev_tac ‘vs = NEWS n_max Y’
- >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) Y /\ LENGTH vs = n_max’
-       by (rw [Abbr ‘vs’, NEWS_def])
+ (* ‘vs’ excludes all free variables in M *)
+ >> qabbrev_tac ‘vs = RNEWS r n_max X’
+ >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) X /\ LENGTH vs = n_max’
+       by (rw [Abbr ‘vs’, RNEWS_def])
+ >> Know ‘DISJOINT (set vs) Y’
+ >- (rw [DISJOINT_ALT'] \\
+     Know ‘x IN X UNION RANKS r’ >- METIS_TAC [SUBSET_DEF] \\
+     rw [IN_UNION]
+     >- (Q.PAT_X_ASSUM ‘DISJOINT (set vs) X’ MP_TAC \\
+         rw [DISJOINT_ALT']) \\
+     Suff ‘DISJOINT (RANKS r) (set vs)’ >- rw [DISJOINT_ALT] \\
+     qunabbrev_tac ‘vs’ \\
+     MATCH_MP_TAC RANKS_DISJOINT' >> art [])
+ >> DISCH_TAC
  (* construct p1 *)
  >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE (MAP VAR vs))’
  >> ‘Boehm_transform p1’ by rw [Abbr ‘p1’, MAP_MAP_o, GSYM MAP_REVERSE]
@@ -4300,9 +4317,9 @@ Proof
      >- (rw [Abbr ‘M0’] >> MATCH_MP_TAC principle_hnf_FV_SUBSET \\
          rw [GSYM solvable_iff_has_hnf]) \\
      Q.PAT_X_ASSUM ‘DISJOINT (set vs) Y’ MP_TAC \\
-     rw [Abbr ‘Y’] >> rw [Once DISJOINT_SYM] \\
+     rw [Abbr ‘Y’] \\
      POP_ASSUM MATCH_MP_TAC \\
-     Q.EXISTS_TAC ‘EL i Ms’ >> rw [EL_MEM])
+     Q.EXISTS_TAC ‘M i’ >> rw [Abbr ‘M’, EL_MEM])
  (* now assert two functions y and args for each term in Ms *)
  >> simp [EXT_SKOLEM_THM'] (* from topologyTheory *)
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘y’
@@ -4315,11 +4332,11 @@ Proof
      qabbrev_tac ‘t = VAR (y i) @* args i’ \\
      rw [GSYM MAP_DROP] \\
      qabbrev_tac ‘xs = TAKE (n i) vs’ \\
-     Know ‘MAP VAR vs :term list = MAP VAR xs ++ MAP VAR (DROP (n i) vs)’
+     Know ‘MAP VAR vs = MAP VAR xs ++ MAP VAR (DROP (n i) vs)’
      >- (REWRITE_TAC [GSYM MAP_APPEND] >> AP_TERM_TAC \\
          rw [Abbr ‘xs’, TAKE_DROP]) >> Rewr' \\
      REWRITE_TAC [appstar_APPEND] \\
-     qabbrev_tac ‘l :term list = MAP VAR (DROP (n i) vs)’ \\
+     qabbrev_tac ‘l = MAP VAR (DROP (n i) vs)’ \\
      MATCH_MP_TAC principle_hnf_beta_reduce_ext \\
      rw [Abbr ‘t’, hnf_appstar])
  >> DISCH_TAC
@@ -4327,28 +4344,27 @@ Proof
  >> Know ‘!i. i < k ==> apply p1 (M0 i) == M1 i’
  >- (rw [Abbr ‘p1’, Boehm_apply_MAP_rightctxt'] \\
      GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites
-       [ISPECL [“(n :num -> num) i”, “MAP VAR vs”]
-               (GSYM TAKE_DROP)] \\
+       [ISPECL [“(n :num -> num) i”, “MAP VAR vs”] (GSYM TAKE_DROP)] \\
      REWRITE_TAC [appstar_APPEND] \\
      MATCH_MP_TAC lameq_appstar_cong \\
      rw [GSYM MAP_TAKE])
  >> DISCH_TAC
- >> qabbrev_tac ‘m = \i. LENGTH (args i)’
+ >> qabbrev_tac ‘m = LENGTH o args’
  >> qabbrev_tac ‘d = MAX_LIST (MAP (\e. subterm_width e p) Ms)’
- >> Know ‘!i. i < k ==> n i <= n_max /\ m i <= d’
+ >> Know ‘!i. i < k ==> m i <= d’
  >- (RW_TAC std_ss [] \\
      Q_TAC (TRANS_TAC LESS_EQ_TRANS) ‘subterm_width (M i) p’ \\
      reverse CONJ_TAC
      >- (rw [Abbr ‘d’] \\
          MATCH_MP_TAC MAX_LIST_PROPERTY >> rw [MEM_MAP] \\
          Q.EXISTS_TAC ‘M i’ >> rw [EL_MEM, Abbr ‘M’]) \\
-     MP_TAC (Q.SPECL [‘X’, ‘(M :num -> term) i’, ‘p’, ‘[]’] subterm_width_thm) \\
+     MP_TAC (Q.SPECL [‘X’, ‘(M :num -> term) i’, ‘p’, ‘[]’, ‘r’]
+                     subterm_width_thm) \\
      simp [Abbr ‘m’] \\
      Suff ‘principle_hnf (M i) = M0 i’ >- rw [] \\
      Q.PAT_X_ASSUM ‘!i. i < k ==> M0 i = _’ K_TAC \\
      rw [Abbr ‘M0’])
  >> DISCH_TAC
- >> Q.PAT_X_ASSUM ‘!i. i < k ==> n i <= n_max’ K_TAC
  (* NOTE: Thus P(d) is not enough to cover M1, whose ‘hnf_children_size’ is
     bounded by ‘d + n_max’. *)
  >> qabbrev_tac ‘d_max = d + n_max’
@@ -4376,7 +4392,6 @@ Proof
      rw [GENLIST, REVERSE_SNOC, DOM_DEF, FVS_DEF, COUNT_SUC] >- SET_TAC [] \\
      rw [Abbr ‘P’, FV_permutator])
  >> DISCH_TAC
-(* >> DISCH_THEN (STRIP_ASSUME_TAC o Q.SPEC ‘k’) *)
  >> Know ‘!j t. t IN DOM (sub j) ==> VAR t ISUB (sub j) = P’
  >- (Induct_on ‘j’ >- rw [Abbr ‘sub’] >> rw [] \\
      Know ‘P ISUB sub j = P’
@@ -4397,17 +4412,43 @@ Proof
  >> DISCH_THEN (STRIP_ASSUME_TAC o Q.SPEC ‘k’)
  >> Q.PAT_X_ASSUM ‘!j. DOM (sub j) = IMAGE y (count j) /\ FVS (sub j) = {}’
       (STRIP_ASSUME_TAC o Q.SPEC ‘k’)
- (* NOTE: Z contains ‘vs’ in addition to Y *)
- >> qabbrev_tac ‘Z = Y UNION set vs’
  (* NOTE: Now we have a list of M1's whose children size is bounded by d_max.
     In the worst case, P(d_max) @* (M1 i) will leave d_max+1 variable bindings
     at most (in this case, ‘args i = 0 /\ n i = n_max’), and to finally get a
    "is_ready" term, we should apply a fresh list of d_max+1 variables (l).
   *)
- >> qabbrev_tac ‘xs = NEWS (d_max + 1) Z’
- >> ‘ALL_DISTINCT xs /\ DISJOINT (set xs) Z /\ LENGTH xs = d_max + 1’
-       by (‘FINITE Z’ by rw [Abbr ‘Z’] \\
-           rw [Abbr ‘xs’, NEWS_def])
+ >> qabbrev_tac ‘z = SUC (string_width X)’
+ (* NOTE: ‘vs’ was allocated by ‘alloc r z (z + n_max)’, let ‘xs’ follow it *)
+ >> qabbrev_tac ‘xs = alloc r (z + n_max) (z + n_max + d_max + 1)’
+ >> ‘ALL_DISTINCT xs /\ LENGTH xs = d_max + 1’ by (rw [Abbr ‘xs’, alloc_thm])
+ >> Know ‘DISJOINT (set xs) (set vs)’
+ >- (simp [Abbr ‘xs’, Abbr ‘vs’, RNEWS] \\
+     rw [DISJOINT_ALT, alloc_def, MEM_MAP] \\
+     simp [n2s_11])
+ >> DISCH_TAC
+ >> Know ‘DISJOINT (set xs) X’
+ >- (rw [DISJOINT_ALT', Abbr ‘xs’, alloc_def, MEM_MAP] \\
+     ONCE_REWRITE_TAC [TAUT ‘P \/ ~Q \/ ~R <=> Q /\ R ==> P’] \\
+     STRIP_TAC \\
+     CCONTR_TAC >> fs [] \\
+     MP_TAC (Q.SPECL [‘n2s (r *, y')’, ‘X’] string_width_thm) \\
+     simp [] \\
+     CCONTR_TAC \\
+     Know ‘y' < z’ >- rw [Abbr ‘z’] \\
+     simp [])
+ >> DISCH_TAC
+ >> Know ‘DISJOINT (set xs) Y’
+ >- (rw [DISJOINT_ALT'] \\
+     Know ‘x IN X UNION RANKS r’ >- METIS_TAC [SUBSET_DEF] \\
+     rw [IN_UNION]
+     >- (Q.PAT_X_ASSUM ‘DISJOINT (set xs) X’ MP_TAC \\
+         rw [DISJOINT_ALT']) \\
+     Suff ‘DISJOINT (RANKS r) (set xs)’ >- rw [DISJOINT_ALT] \\
+     MATCH_MP_TAC DISJOINT_SUBSET \\
+     Q.EXISTS_TAC ‘RANK r’ \\
+     rw [RANKS_RANK_DISJOINT'] \\
+     rw [Abbr ‘xs’, alloc_in_rank])
+ >> DISCH_TAC
  (* p3 is the maximal possible fresh list to be applied after the permutator *)
  >> qabbrev_tac ‘p3 = MAP rightctxt (REVERSE (MAP VAR xs))’
  >> ‘Boehm_transform p3’ by rw [Abbr ‘p3’, MAP_MAP_o, GSYM MAP_REVERSE]
@@ -4420,6 +4461,8 @@ Proof
  >> ‘Boehm_transform pi’
        by (qunabbrev_tac ‘pi’ \\
            rpt (MATCH_MP_TAC Boehm_transform_APPEND >> art []))
+
+
  (* FV properties of the head variable y (and children args) *)
  >> Know ‘!i. i < k ==> y i IN Z /\
                         BIGUNION (IMAGE FV (set (args i))) SUBSET Z’
