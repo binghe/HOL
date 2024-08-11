@@ -273,7 +273,7 @@ Proof
     rw [Once EXTENSION, rank_def]
 QED
 
-Theorem alloc_in_rank :
+Theorem alloc_SUBSET_RANK :
     !r m n. set (alloc r m n) SUBSET RANK r
 Proof
     rw [alloc_def, RANK, SUBSET_DEF, MEM_MAP]
@@ -328,37 +328,37 @@ Proof
  >> qexistsl_tac [‘r1’, ‘j’] >> art []
 QED
 
-Theorem alloc_in_ranks :
+Theorem alloc_SUBSET_RANKS :
     !r1 r2 m n. r1 < r2 ==> set (alloc r1 m n) SUBSET RANKS r2
 Proof
     rpt STRIP_TAC
  >> MATCH_MP_TAC SUBSET_TRANS
- >> Q.EXISTS_TAC ‘RANK r1’ >> rw [alloc_in_rank]
+ >> Q.EXISTS_TAC ‘RANK r1’ >> rw [alloc_SUBSET_RANK]
  >> MATCH_MP_TAC RANK_SUBSET_RANKS >> art []
 QED
 
-Theorem RNEWS_SUBSET :
+Theorem RNEWS_SUBSET_RANK :
     !r n s. FINITE s ==> set (RNEWS r n s) SUBSET RANK r
 Proof
     rw [RNEWS_set, SUBSET_DEF, RANK]
  >> Q.EXISTS_TAC ‘j’ >> rw []
 QED
 
-Theorem RANKS_DISJOINT :
+Theorem DISJOINT_RANKS_RNEWS :
     !r1 r2 n s.
         FINITE s /\ r1 <= r2 ==> DISJOINT (RANKS r1) (set (RNEWS r2 n s))
 Proof
     rpt STRIP_TAC
  >> MATCH_MP_TAC DISJOINT_SUBSET
  >> Q.EXISTS_TAC ‘RANK r2’
- >> rw [RANKS_RANK_DISJOINT, RNEWS_SUBSET]
+ >> rw [RANKS_RANK_DISJOINT, RNEWS_SUBSET_RANK]
 QED
 
-Theorem RANKS_DISJOINT' :
+Theorem DISJOINT_RANKS_RNEWS' :
     !r n s. FINITE s ==> DISJOINT (RANKS r) (set (RNEWS r n s))
 Proof
     rpt STRIP_TAC
- >> MATCH_MP_TAC RANKS_DISJOINT >> rw []
+ >> MATCH_MP_TAC DISJOINT_RANKS_RNEWS >> rw []
 QED
 
 Theorem RNEWS_SUBSET_RANKS :

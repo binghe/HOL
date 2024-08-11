@@ -1219,7 +1219,7 @@ Proof
            rw [DISJOINT_ALT']) \\
        Suff ‘DISJOINT Y (set vs)’ >- rw [DISJOINT_ALT] \\
        qunabbrevl_tac [‘Y’, ‘vs’] \\
-       MATCH_MP_TAC RANKS_DISJOINT' >> art [] ))
+       MATCH_MP_TAC DISJOINT_RANKS_RNEWS' >> art [] ))
  >> STRIP_TAC
  >> Know ‘?y args. M = LAMl (TAKE n vs) (VAR y @* args)’
  >- (qunabbrev_tac ‘n’ >> irule (iffLR hnf_cases_shared) >> rw [] \\

@@ -232,7 +232,7 @@ Proof
      rw [DISJOINT_ALT'])
  >> Suff ‘DISJOINT (RANKS r) (set vs)’ >- rw [DISJOINT_ALT]
  >> qunabbrev_tac ‘vs’
- >> MATCH_MP_TAC RANKS_DISJOINT' >> art []
+ >> MATCH_MP_TAC DISJOINT_RANKS_RNEWS' >> art []
 QED
 
 Theorem subterm_disjoint_lemma' :
@@ -1829,7 +1829,7 @@ Proof
  >> Rewr
  >> Know ‘set vs2 SUBSET RANKS (SUC r)’
  >- (qunabbrev_tac ‘vs2’ \\
-     MATCH_MP_TAC alloc_in_ranks >> rw [])
+     MATCH_MP_TAC alloc_SUBSET_RANKS >> rw [])
  >> Rewr
  (* NOTE: This proof requires that ‘r <= r'’ !!! *)
  >> Know ‘set vs SUBSET RANKS (SUC r')’
@@ -1848,7 +1848,7 @@ Proof
  >> POP_ORW
  >> Q.PAT_X_ASSUM ‘lswapstr pi x = x'’ K_TAC
  >> Know ‘x' IN RANK r'’
- >- (MP_TAC (Q.SPECL [‘r'’, ‘n’, ‘Y’] RNEWS_SUBSET) \\
+ >- (MP_TAC (Q.SPECL [‘r'’, ‘n’, ‘Y’] RNEWS_SUBSET_RANK) \\
      simp [SUBSET_DEF] >> DISCH_THEN MATCH_MP_TAC \\
      rw [Abbr ‘x'’, EL_MEM])
  >> DISCH_TAC
@@ -3129,7 +3129,7 @@ Proof
          rw [DISJOINT_ALT']) \\
      Suff ‘DISJOINT (RANKS r) (set vs)’ >- rw [DISJOINT_ALT] \\
      qunabbrev_tac ‘vs’ \\
-     MATCH_MP_TAC RANKS_DISJOINT' >> art [])
+     MATCH_MP_TAC DISJOINT_RANKS_RNEWS' >> art [])
  >> DISCH_TAC
  (* NOTE: ‘[P/v] M’ is solvable iff ‘[P/v] M0’ is solvable, the latter is either
     already a hnf (v <> y), or can be head-reduced to a hnf (v = y).
@@ -3782,7 +3782,7 @@ Proof
      POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM) \\
      reverse CONJ_TAC
      >- (MATCH_MP_TAC SUBSET_TRANS \\
-         Q.EXISTS_TAC ‘RANK r’ >> rw [Abbr ‘l’, alloc_in_rank] \\
+         Q.EXISTS_TAC ‘RANK r’ >> rw [Abbr ‘l’, alloc_SUBSET_RANK] \\
          Suff ‘RANK r SUBSET RANKS (SUC r)’ >- rw [SUBSET_DEF] \\
          rw [RANK_SUBSET_RANKS]) \\
      MATCH_MP_TAC SUBSET_TRANS \\
@@ -3792,7 +3792,7 @@ Proof
      reverse CONJ_TAC
      >- (MATCH_MP_TAC SUBSET_TRANS \\
          Q.EXISTS_TAC ‘RANK r’ \\
-         rw [Abbr ‘vs’, RNEWS_SUBSET] \\
+         rw [Abbr ‘vs’, RNEWS_SUBSET_RANK] \\
          Suff ‘RANK r SUBSET RANKS (SUC r)’ >- rw [SUBSET_DEF] \\
          rw [RANK_SUBSET_RANKS]) \\
      MATCH_MP_TAC SUBSET_TRANS \\
@@ -4208,13 +4208,10 @@ QED
          set (and thus perhaps also the same initial binding list).
  *)
 Definition agree_upto_def :
-    agree_upto Ms p <=>
-    (let
-       X = BIGUNION (IMAGE FV (set Ms))
-     in
-       !M N. MEM M Ms /\ MEM N Ms ==>
-             !q. q <<= p ==> ltree_el (BT' X M 0) q =
-                             ltree_el (BT' X N 0) q)
+    agree_upto X Ms p r <=>
+      !M N. MEM M Ms /\ MEM N Ms ==>
+            !q. q <<= p ==> ltree_el (BT' X M r) q =
+                            ltree_el (BT' X N r) q
 End
 
 (* Lemma 10.3.11 (1) [1. p.251]
@@ -4236,11 +4233,11 @@ End
 Theorem agree_upto_lemma :
     !X Ms p r. FINITE X /\
                BIGUNION (IMAGE FV (set Ms)) SUBSET X UNION RANKS r /\
-               p <> [] /\ agree_upto Ms p /\
+               p <> [] /\ agree_upto X Ms p r /\
               (!M. MEM M Ms ==> subterm X M p r <> NONE) ==>
                ?pi. Boehm_transform pi /\
                     EVERY is_ready' (MAP (apply pi) Ms) /\
-                    agree_upto (MAP (apply pi) Ms) p
+                    agree_upto X (MAP (apply pi) Ms) p r
 Proof
     rpt STRIP_TAC
  >> qabbrev_tac ‘k = LENGTH Ms’
@@ -4302,7 +4299,7 @@ Proof
          rw [DISJOINT_ALT']) \\
      Suff ‘DISJOINT (RANKS r) (set vs)’ >- rw [DISJOINT_ALT] \\
      qunabbrev_tac ‘vs’ \\
-     MATCH_MP_TAC RANKS_DISJOINT' >> art [])
+     MATCH_MP_TAC DISJOINT_RANKS_RNEWS' >> art [])
  >> DISCH_TAC
  (* construct p1 *)
  >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE (MAP VAR vs))’
@@ -4417,26 +4414,11 @@ Proof
     at most (in this case, ‘args i = 0 /\ n i = n_max’), and to finally get a
    "is_ready" term, we should apply a fresh list of d_max+1 variables (l).
   *)
- >> qabbrev_tac ‘z = SUC (string_width X)’
- (* NOTE: ‘vs’ was allocated by ‘alloc r z (z + n_max)’, let ‘xs’ follow it *)
- >> qabbrev_tac ‘xs = alloc r (z + n_max) (z + n_max + d_max + 1)’
- >> ‘ALL_DISTINCT xs /\ LENGTH xs = d_max + 1’ by (rw [Abbr ‘xs’, alloc_thm])
- >> Know ‘DISJOINT (set xs) (set vs)’
- >- (simp [Abbr ‘xs’, Abbr ‘vs’, RNEWS] \\
-     rw [DISJOINT_ALT, alloc_def, MEM_MAP] \\
-     simp [n2s_11])
- >> DISCH_TAC
- >> Know ‘DISJOINT (set xs) X’
- >- (rw [DISJOINT_ALT', Abbr ‘xs’, alloc_def, MEM_MAP] \\
-     ONCE_REWRITE_TAC [TAUT ‘P \/ ~Q \/ ~R <=> Q /\ R ==> P’] \\
-     STRIP_TAC \\
-     CCONTR_TAC >> fs [] \\
-     MP_TAC (Q.SPECL [‘n2s (r *, y')’, ‘X’] string_width_thm) \\
-     simp [] \\
-     CCONTR_TAC \\
-     Know ‘y' < z’ >- rw [Abbr ‘z’] \\
-     simp [])
- >> DISCH_TAC
+ >> qabbrev_tac ‘xs = RNEWS r (SUC d_max) (X UNION set vs)’
+ >> Know ‘ALL_DISTINCT xs /\ DISJOINT (set xs) (X UNION set vs) /\
+          LENGTH xs = SUC d_max’
+ >- rw [Abbr ‘xs’, RNEWS_def]
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
  >> Know ‘DISJOINT (set xs) Y’
  >- (rw [DISJOINT_ALT'] \\
      Know ‘x IN X UNION RANKS r’ >- METIS_TAC [SUBSET_DEF] \\
@@ -4447,7 +4429,7 @@ Proof
      MATCH_MP_TAC DISJOINT_SUBSET \\
      Q.EXISTS_TAC ‘RANK r’ \\
      rw [RANKS_RANK_DISJOINT'] \\
-     rw [Abbr ‘xs’, alloc_in_rank])
+     rw [Abbr ‘xs’, RNEWS_SUBSET_RANK])
  >> DISCH_TAC
  (* p3 is the maximal possible fresh list to be applied after the permutator *)
  >> qabbrev_tac ‘p3 = MAP rightctxt (REVERSE (MAP VAR xs))’
@@ -4461,7 +4443,7 @@ Proof
  >> ‘Boehm_transform pi’
        by (qunabbrev_tac ‘pi’ \\
            rpt (MATCH_MP_TAC Boehm_transform_APPEND >> art []))
-
+(* TODO *)
 
  (* FV properties of the head variable y (and children args) *)
  >> Know ‘!i. i < k ==> y i IN Z /\
@@ -5592,7 +5574,6 @@ Proof
       (* goal 7 (of 7) *)
       PROVE_TAC [conversion_compatible, compatible_def, absctxt] ]
 QED
-*)
 
 val _ = export_theory ();
 val _ = html_theory "boehm";
