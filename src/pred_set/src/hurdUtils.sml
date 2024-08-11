@@ -9,16 +9,9 @@ struct
 
 open HolKernel boolLib BasicProvers;
 
-open Susp Hol_pp metisLib simpLib pairTheory res_quanTools numLib;
+open Susp Hol_pp metisLib simpLib pairTheory (* res_quanTools *) numLib;
 
 infixr 0 oo THENR ORELSER ## thenf orelsef;
-
-(* obsoleted:
-infix 1 >> |->;
-val op++ = op THEN;
-val op<< = op THENL;
-val op|| = op ORELSE;
- *)
 
 structure Parse = struct
   open Parse
@@ -962,8 +955,10 @@ fun POP_ASSUM_TAC tac =
 
 val TRUTH_TAC = ACCEPT_TAC TRUTH;
 
+(*
 val S_TAC = rpt (POP_ASSUM MP_TAC) >> rpt RESQ_STRIP_TAC;
 val Strip = S_TAC;
+ *)
 
 fun K_TAC _ = ALL_TAC;
 

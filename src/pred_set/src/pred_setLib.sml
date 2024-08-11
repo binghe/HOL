@@ -1,9 +1,10 @@
 structure pred_setLib :> pred_setLib =
 struct
 
-local open pred_setTheory in end
+open HolKernel Parse boolLib;
 
-open Abbrev HolKernel PFset_conv pred_setSyntax;
+open pairTheory pred_setTheory pred_setSyntax PFset_conv simpLib pureSimps
+     metisLib numLib;
 
 val SET_SPEC_CONV  = PGspec.SET_SPEC_CONV pred_setTheory.GSPECIFICATION
 val SET_INDUCT_TAC = PSet_ind.SET_INDUCT_TAC pred_setTheory.FINITE_INDUCT
@@ -37,6 +38,56 @@ in
   MATCH_MP_TAC pred_setTheory.MAX_SET_ELIM THEN BETA_TAC
 end g
 end
+
+(*---------------------------------------------------------------------------*)
+(* Tactic to automate some routine set theory by reduction to FOL            *)
+(* (Ported from HOL Light)                                                   *)
+(*---------------------------------------------------------------------------*)
+
+fun SET_TAC L =
+    POP_ASSUM_LIST (K ALL_TAC) \\
+    rpt COND_CASES_TAC \\
+    REWRITE_TAC (append [EXTENSION, SUBSET_DEF, PSUBSET_DEF, DISJOINT_DEF,
+                         SING_DEF] L) \\
+    SIMP_TAC std_ss [NOT_IN_EMPTY, IN_UNIV, IN_UNION, IN_INTER, IN_DIFF,
+      IN_INSERT, IN_DELETE, IN_REST, IN_BIGINTER, IN_BIGUNION, IN_IMAGE,
+      GSPECIFICATION, IN_DEF, EXISTS_PROD] \\
+    METIS_TAC [];
+
+fun ASM_SET_TAC L = rpt (POP_ASSUM MP_TAC) >> SET_TAC L;
+fun SET_RULE tm = prove (tm, SET_TAC []);
+
+(* new version
+val SET_TAC = let
+  val PRESET_CONV =
+    (* NOTE: some of the listed theorem only work with higher-order rewriting *)
+    REWRITE_CONV [EXTENSION, SUBSET_DEF, PSUBSET_DEF, DISJOINT_DEF, SING_DEF] THENC
+    SIMP_CONV pure_ss
+      [BIGINTER_IMAGE, BIGINTER_GSPEC, BIGUNION_IMAGE, BIGUNION_GSPEC] THENC
+    SIMP_CONV std_ss [NOT_IN_EMPTY, IN_UNIV, IN_UNION, IN_INTER, IN_DIFF, IN_INSERT,
+                      IN_DELETE, IN_REST, IN_BIGINTER, IN_BIGUNION, IN_IMAGE,
+                      GSPECIFICATION, EXISTS_PROD]
+in
+  fn ths =>
+    (* 1. push the input theorems into the goal by MP_TAC *)
+    MAP_EVERY MP_TAC ths THEN
+    (* 2. eliminate all if-then-else, breaking into subgoals *)
+    REPEAT(COND_CASES_TAC THEN POP_ASSUM MP_TAC) THEN
+    (* 3. rewrite the goal (and the input theorems) by the above list of set theorems *)
+    CONV_TAC PRESET_CONV THEN
+    (* 4. push again some input theorems into each subgoal. These theorems were
+          removed from the goal by PRESET_CONV (because they are tautology), but may
+          still be useful for METIS_TAC later.
+     *)
+    MAP_EVERY MP_TAC (filter (fn th => concl (CONV_RULE PRESET_CONV th) ~~ T) ths) THEN
+    (* 5. if there're still remaining ‘$IN’s, simply eliminate them. *)
+    REWRITE_TAC[IN_DEF] THEN
+    (* 6. Finally, the goal is first-order, only with uninterpreted constants.
+          If it's solvable, Metis can solve it. *)
+    POP_ASSUM_LIST(K ALL_TAC) THEN
+    METIS_TAC[]
+end;
+ *)
 
 (*---------------------------------------------------------------------------*)
 (* Set up computeLib for sets                                                *)
