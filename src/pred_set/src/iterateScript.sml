@@ -729,36 +729,6 @@ Proof
   rw[EXTENSION]
 QED
 
-Theorem num_FINITE :
-    !s:num->bool. FINITE s <=> ?a. !x. x IN s ==> x <= a
-Proof
-  GEN_TAC THEN EQ_TAC THENL
-   [SPEC_TAC(``s:num->bool``,``s:num->bool``) THEN GEN_TAC THEN
-   KNOW_TAC ``(?a. !x. x IN s ==> x <= a) =
-          (\s. ?a. !x. x IN s ==> x <= a) (s:num->bool)`` THENL
-    [FULL_SIMP_TAC std_ss [], ALL_TAC] THEN DISC_RW_KILL THEN
-    MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN
-    REWRITE_TAC[IN_INSERT, NOT_IN_EMPTY] THEN MESON_TAC[LESS_EQ_CASES, LESS_EQ_TRANS],
-    DISCH_THEN(X_CHOOSE_TAC ``n:num``) THEN
-    KNOW_TAC ``s SUBSET {m:num | m <= n}`` THENL [REWRITE_TAC [SUBSET_DEF] THEN
-    RW_TAC std_ss [GSPECIFICATION], ALL_TAC] THEN MATCH_MP_TAC SUBSET_FINITE THEN
-    KNOW_TAC ``{m:num | m <= n} = {m | m < n} UNION {n}``
-    THENL [SIMP_TAC std_ss [UNION_DEF, EXTENSION, GSPECIFICATION, IN_SING, LESS_OR_EQ],
-    SIMP_TAC std_ss [FINITE_UNION, FINITE_SING, GSYM count_def, FINITE_COUNT]]]
-QED
-
-Theorem num_FINITE_AVOID :
-    !s:num->bool. FINITE(s) ==> ?a. ~(a IN s)
-Proof
-  MESON_TAC[num_FINITE, LESS_THM, NOT_LESS]
-QED
-
-Theorem num_INFINITE :
-   INFINITE univ(:num)
-Proof
-  MESON_TAC[num_FINITE_AVOID, IN_UNIV]
-QED
-
 (* ------------------------------------------------------------------------- *)
 (* Segment of natural numbers starting at a specific number.                 *)
 (* ------------------------------------------------------------------------- *)
@@ -819,17 +789,6 @@ val FROM_INTER_NUMSEG = store_thm ("FROM_INTER_NUMSEG",
  ``!k n. (from k) INTER {0..n} = {k..n}``,
   SIMP_TAC std_ss [from_def, GSPECIFICATION, IN_INTER, IN_NUMSEG, EXTENSION] THEN
   ARITH_TAC);
-
-Theorem INFINITE_DIFF_FINITE' :
-    !s:'a->bool t. INFINITE(s) /\ FINITE(t) ==> INFINITE(s DIFF t)
-Proof
-  REPEAT GEN_TAC THEN
-  MATCH_MP_TAC(TAUT `(b /\ ~c ==> ~a) ==> a /\ b ==> c`) THEN
-  REWRITE_TAC [] THEN STRIP_TAC THEN
-  MATCH_MP_TAC SUBSET_FINITE_I THEN
-  EXISTS_TAC ``(t:'a->bool) UNION (s DIFF t)`` THEN
-  ASM_REWRITE_TAC[FINITE_UNION] THEN SET_TAC[]
-QED
 
 val INFINITE_FROM = store_thm ("INFINITE_FROM",
   ``!n. INFINITE(from n)``,

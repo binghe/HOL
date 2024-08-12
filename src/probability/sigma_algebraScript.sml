@@ -17,7 +17,7 @@ open HolKernel Parse boolLib bossLib;
 
 open arithmeticTheory optionTheory pairTheory combinTheory pred_setTheory
      pred_setLib numLib realLib seqTheory topologyTheory hurdUtils
-     util_probTheory;
+     util_probTheory res_quanTools;
 
 val _ = new_theory "sigma_algebra";
 
@@ -25,6 +25,8 @@ val DISC_RW_KILL = DISCH_TAC >> ONCE_ASM_REWRITE_TAC [] >> POP_ASSUM K_TAC;
 fun METIS ths tm = prove(tm, METIS_TAC ths);
 val set_ss = std_ss ++ PRED_SET_ss;
 val std_ss' = std_ss ++ boolSimps.ETA_ss;
+val S_TAC = rpt (POP_ASSUM MP_TAC) >> rpt RESQ_STRIP_TAC;
+val Strip = S_TAC;
 
 val _ = hide "S";
 
