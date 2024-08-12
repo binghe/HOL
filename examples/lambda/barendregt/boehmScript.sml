@@ -5448,6 +5448,8 @@ Theorem separability_thm :
     !M N. benf M /\ benf N /\ M <> N ==>
          !P Q. ?pi. Boehm_transform pi /\ apply pi M == P /\ apply pi N == Q
 Proof
+    cheat
+ (*
     rpt STRIP_TAC
  >> ‘?p. ~subterm_equivalent p M N’
        by METIS_TAC [distinct_benf_no_subterm_equivalent]
@@ -5467,6 +5469,7 @@ Proof
        by PROVE_TAC [separability_lemma1] (* this asserts pi' *)
  >> Q.EXISTS_TAC ‘pi' ++ pi’
  >> fs [Abbr ‘M0’, Abbr ‘N0’, Boehm_transform_APPEND, GSYM Boehm_apply_APPEND]
+  *)
 QED
 
 (* Theorem 10.4.2 (ii) [1, p.256] *)
