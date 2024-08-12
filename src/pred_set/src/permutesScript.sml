@@ -117,14 +117,6 @@ Proof
       PROVE_TAC [] ]
 QED
 
-(* connection to ‘cardinal$bijns’
-Theorem permutes_alt_bijns:
-    !f s. f permutes s <=> f IN bijns s
-Proof
-  simp[permutes_alt, bijns_def]
-QED
- *)
-
 Theorem permutes_alt_univ :
     !f. f permutes UNIV <=> f PERMUTES UNIV
 Proof
