@@ -7,7 +7,8 @@
 
 open HolKernel Parse boolLib bossLib;
 
-open arithmeticTheory pred_setTheory listTheory iterateTheory;
+open arithmeticTheory numLib pred_setTheory listTheory iterateTheory hurdUtils
+     mesonLib;
 
 val _ = new_theory "fcp";
 
@@ -713,12 +714,13 @@ val FCP_EXISTS_def = zDefine`
 val FCP_EVERY_def = zDefine`
    FCP_EVERY P (v:'b ** 'a) = !i. dimindex (:'a) <= i \/ P (v ' i)`
 
-val FCP_CONCAT_def = Define`
+Definition FCP_CONCAT_def :
    FCP_CONCAT (a:'a ** 'b) (b:'a ** 'c) =
    (FCP i. if i < dimindex(:'c) then
               b ' i
            else
-              a ' (i - dimindex(:'c))): 'a ** ('b + 'c)`
+              a ' (i - dimindex(:'c))): 'a ** ('b + 'c)
+End
 
 (* FCP_FST returns the "higher" dimensional part (:'a['b]) of ‘v :'a['b + 'c]’ *)
 Definition FCP_FST_def :
@@ -839,7 +841,18 @@ Theorem FCP_CONCAT_11 :
         FINITE univ(:'b) /\ FINITE univ(:'c) /\
        (FCP_CONCAT a b = FCP_CONCAT c d) ==> (a = c) /\ (b = d)
 Proof
-    METIS_TAC [FCP_CONCAT_THM]
+    rw [FCP_CONCAT_def, CART_EQ, index_sum, FCP_BETA] >> fs []
+ >> qabbrev_tac ‘B = dimindex (:'b)’
+ >> qabbrev_tac ‘C = dimindex (:'c)’
+ >> ‘0 < B /\ 0 < C’ by rw [Abbr ‘B’, Abbr ‘C’]
+ >| [ (* goal 1 (of 2) *)
+      Q.PAT_X_ASSUM ‘!i. i < B + C ==> P’ (MP_TAC o Q.SPEC ‘i + C’) \\
+     ‘C + i < dimindex(:'b + 'c)’ by rw [index_sum] \\
+      simp [FCP_BETA],
+      (* goal 2 (of 2) *)
+      Q.PAT_X_ASSUM ‘!i. i < B + C ==> P’ (MP_TAC o Q.SPEC ‘i’) \\
+     ‘i < dimindex(:'b + 'c)’ by rw [index_sum] \\
+      simp [FCP_BETA] ]
 QED
 
 Theorem FCP_CONCAT_REDUCE :
@@ -862,80 +875,123 @@ Proof
     PROVE_TAC []
 QED
 
-(* ------------------------------------------------------------------------- *)
-(*
 (* from HOL-Light's "Library/products.ml" *)
 Theorem HAS_SIZE_CART :
-    !P m. FINITE univ(:'N) /\ (!i. i < dimindex(:'N) ==> {x | P i x} HAS_SIZE m i)
-      ==> {v:'a['N] | !i. i < dimindex(:'N) ==> P i (v ' i)} HAS_SIZE
+    !P m. FINITE univ(:'N) /\
+          (!i. i < dimindex(:'N) ==> {x | P i x} HAS_SIZE m i)
+      ==> {v :'a['N] | !i. i < dimindex(:'N) ==> P i (v ' i)} HAS_SIZE
           nproduct {0 .. dimindex(:'N) - 1} m
 Proof
-  REPEAT GEN_TAC THEN STRIP_TAC THEN
-  Q.SUBGOAL_THEN
-   `!n. n <= dimindex(:'N)
-        ==> {v:'a['N] | (!i. i < dimindex(:'N) /\ i < n ==> P i (v ' i)) /\
-                        (!i. i < dimindex(:'N) /\ n <= i ==> T)}
-            HAS_SIZE nproduct {0 .. n - 1} m`
-    (MP_TAC o Q.SPEC `dimindex(:'N)`) THEN REWRITE_TAC[LE_REFL, LET_ANTISYM] THEN
-  INDUCT_TAC THEN REWRITE_TAC[NPRODUCT_CLAUSES_NUMSEG; ARITH_EQ] THENL
-   [REWRITE_TAC[ARITH_RULE `1 <= i /\ i <= n /\ i <= 0 <=> F`] THEN
-    SIMP_TAC[ARITH_RULE `1 <= i /\ i <= n /\ 0 < i <=> 1 <= i /\ i <= n`] THEN
-    SUBGOAL_THEN
-     `{v | !i. 1 <= i /\ i <= dimindex (:N) ==> v$i = (@x. F)} =
-      {(lambda i. @x. F):A^N}`
-     (fun th -> SIMP_TAC[th; HAS_SIZE; FINITE_SING; CARD_SING]) THEN
-    SIMP_TAC[EXTENSION; IN_SING; IN_ELIM_THM; CART_EQ; LAMBDA_BETA];
-    DISCH_TAC] THEN
-  MATCH_MP_TAC(MESON[] `!t. t = s /\ t HAS_SIZE n ==> s HAS_SIZE n`) THEN
-  EXISTS_TAC
-   `IMAGE (\(x:A,v:A^N). (lambda i. if i = SUC n then x else v$i):A^N)
-          {x,v | x IN {x:A | P (SUC n) x} /\
-                 v IN {v:A^N | (!i. 1 <= i /\ i <= dimindex(:N) /\ i <= n
-                                ==> P i (v$i)) /\
-                           (!i. 1 <= i /\ i <= dimindex (:N) /\ n < i
-                                ==> v$i = (@x. F))}}` THEN
-  CONJ_TAC THENL
-   [REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ] THEN CONJ_TAC THENL
-     [REWRITE_TAC[SUBSET; FORALL_IN_IMAGE; FORALL_IN_GSPEC] THEN
-      SIMP_TAC[IN_ELIM_THM; LAMBDA_BETA] THEN
-      REPEAT GEN_TAC THEN STRIP_TAC THEN CONJ_TAC THEN
-      REPEAT STRIP_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[LT_REFL] THEN
-      TRY ASM_ARITH_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC;
-      REWRITE_TAC[SUBSET; IN_IMAGE; IN_ELIM_PAIR_THM; EXISTS_PAIR_THM] THEN
-      X_GEN_TAC `v:A^N` THEN REWRITE_TAC[IN_ELIM_THM] THEN
-      STRIP_TAC THEN EXISTS_TAC `(v:A^N)$(SUC n)` THEN
-      EXISTS_TAC `(lambda i. if i = SUC n then @x. F else (v:A^N)$i):A^N` THEN
-      SIMP_TAC[CART_EQ; LAMBDA_BETA; ARITH_RULE `i <= n ==> ~(i = SUC n)`] THEN
-      ASM_MESON_TAC[LE; ARITH_RULE `1 <= SUC n`;
-                    ARITH_RULE `n < i /\ ~(i = SUC n) ==> SUC n < i`]];
-    MATCH_MP_TAC HAS_SIZE_IMAGE_INJ THEN CONJ_TAC THENL
-     [REWRITE_TAC[IMP_CONJ; RIGHT_FORALL_IMP_THM; FORALL_IN_GSPEC] THEN
-      REWRITE_TAC[IMP_IMP; PAIR_EQ; CART_EQ] THEN
-      SIMP_TAC[LAMBDA_BETA] THEN
-      X_GEN_TAC `a:A` THEN DISCH_TAC THEN X_GEN_TAC `v:A^N` THEN STRIP_TAC THEN
-      X_GEN_TAC `b:A` THEN DISCH_TAC THEN X_GEN_TAC `w:A^N` THEN STRIP_TAC THEN
-      CONJ_TAC THENL
-       [REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `SUC n`)) THEN
-        ASM_REWRITE_TAC[ARITH_RULE `1 <= SUC n`];
-        X_GEN_TAC `i:num` THEN STRIP_TAC THEN
-        REPEAT(FIRST_X_ASSUM(MP_TAC o SPEC `i:num`)) THEN
-        ASM_REWRITE_TAC[] THEN
-        ASM_CASES_TAC `(n:num) < i` THEN
-        ASM_REWRITE_TAC[GSYM NOT_LT] THEN
-        TRY ASM_ARITH_TAC THEN ASM_MESON_TAC[]];
-      REWRITE_TAC[ARITH_RULE `1 <= SUC n`] THEN
-      GEN_REWRITE_TAC RAND_CONV [MULT_SYM] THEN
-      MATCH_MP_TAC HAS_SIZE_PRODUCT THEN
-      CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC]]);;
+    rpt GEN_TAC >> STRIP_TAC
+ >> qabbrev_tac ‘N = dimindex(:'N)’
+ >> ‘0 < N’ by rw [Abbr ‘N’]
+ >> Suff ‘!n. n < N  ==> {v:'a['N] | (!i. i < N /\ i <= n ==> P i (v ' i)) /\
+                                     (!i. i < N /\ n < i ==> v ' i = ARB)}
+                         HAS_SIZE nproduct {0 .. n} m’
+ >- (DISCH_THEN (MP_TAC o Q.SPEC ‘N - 1’) \\
+     simp [SUB_LESS_OR_EQ])
+ >> INDUCT_TAC >> rw [NPRODUCT_CLAUSES_NUMSEG]
+ >- (qabbrev_tac
+      ‘s = {v:'a['N] | P 0 (v ' 0) /\ !i. i < N /\ 0 < i ==> v ' i = ARB}’ \\
+     Know ‘s = IMAGE (\y. (FCP i. if i = 0 then y else ARB): 'a['N]) {x | P 0 x}’
+     >- (rw [Once EXTENSION] \\
+         EQ_TAC >> rw [FCP_BETA, Abbr ‘s’, CART_EQ] >| (* 3 subgoals *)
+         [ (* goal 1 (of 3) *)
+           Q.EXISTS_TAC ‘x ' 0’ >> rw [],
+           (* goal 2 (of 3) *)
+           Q.PAT_X_ASSUM ‘!i. i < N ==> x ' i = _’ (MP_TAC o Q.SPEC ‘0’) >> rw [],
+           (* goal 3 (of 3) *)
+           Q.PAT_X_ASSUM ‘!i. i < N ==> x ' i = _’ (MP_TAC o Q.SPEC ‘i’) >> rw [] ]) \\
+     Rewr' \\
+     MATCH_MP_TAC HAS_SIZE_IMAGE_INJ \\
+     rw [CART_EQ, FCP_BETA] \\
+     POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> rw [])
+ (* stage work *)
+ >> ‘n < N’ by rw [] >> FULL_SIMP_TAC std_ss []
+ >> qabbrev_tac
+     ‘s = {v:'a['N] |
+           (!i. i < N /\ i <= SUC n ==> P i (v ' i)) /\
+            !i. i < N /\ SUC n < i ==> v ' i = ARB}’
+ >> qabbrev_tac ‘t = {(x,v) | x IN {x:'a | P (SUC n) x} /\
+                              v IN {v:'a['N] | (!i. i < N /\ i <= n ==> P i (v ' i)) /\
+                                               (!i. i < N /\ n < i ==> v ' i = ARB)}}’
+ >> Know ‘s = IMAGE (\(x:'a,v:'a['N]). (FCP i. if i = SUC n then x else v ' i):'a['N]) t’
+ >- (rw [Abbr ‘s’, Abbr ‘t’, Once EXTENSION] \\
+     EQ_TAC >> rw [] >| (* 3 subgoals *)
+     [ (* goal 1 (of 3) *)
+       Know ‘P (SUC n) ((x :'a['N]) ' (SUC n))’
+       >- (FIRST_X_ASSUM MATCH_MP_TAC >> simp []) >> DISCH_TAC \\
+       qabbrev_tac ‘y = x ' (SUC n)’ \\
+       qabbrev_tac ‘v :'a['N] = FCP i. if i = SUC n then ARB else x ' i’ \\
+       Q.EXISTS_TAC ‘(y,v)’ \\
+       simp [CART_EQ, FCP_BETA, Abbr ‘y’, Abbr ‘v’] \\
+       CONJ_TAC >- rw [] \\
+       qabbrev_tac ‘v :'a['N] = FCP i. if i = SUC n then ARB else x ' i’ \\
+       Q.EXISTS_TAC ‘v’ \\
+       simp [CART_EQ, FCP_BETA, Abbr ‘v’],
+       (* goal 2 (of 3) *)
+       rename1 ‘P (SUC n) y’ \\
+       simp [FCP_BETA] \\
+       Cases_on ‘i = SUC n’ >> rw [],
+       (* goal 3 (of 3) *)
+       simp [FCP_BETA] ])
+ >> Rewr'
+ >> MATCH_MP_TAC HAS_SIZE_IMAGE_INJ
+ >> rw []
+ >- (gs [CART_EQ, FCP_BETA, Abbr ‘t’] \\
+     CONJ_TAC >- (POP_ASSUM (MP_TAC o Q.SPEC ‘SUC n’) >> simp []) \\
+     rw [] \\
+     Cases_on ‘i = SUC n’ >- rw [] \\
+     Q.PAT_X_ASSUM ‘!i. i < N ==> _’ (MP_TAC o Q.SPEC ‘i’) \\
+     simp [])
+ >> qunabbrev_tac ‘t’
+ >> MATCH_MP_TAC HAS_SIZE_PRODUCT
+ >> simp []
+QED
 
-let CARD_CART = prove
- (`!P. (!i. 1 <= i /\ i <= dimindex(:N) ==> FINITE {x | P i x})
-       ==> CARD {v:A^N | !i. 1 <= i /\ i <= dimindex(:N) ==> P i (v$i)} =
-           nproduct (1..dimindex(:N)) (\i. CARD {x | P i x})`,
+Theorem CARD_CART :
+    !P. FINITE univ(:'N) /\ (!i. i < dimindex(:'N) ==> FINITE {x | P i x}) ==>
+        CARD {v :'a['N] | !i. i < dimindex(:'N) ==> P i (v ' i)} =
+        nproduct {0 .. dimindex(:'N) - 1} (\i. CARD {x | P i x})
+Proof
   REPEAT STRIP_TAC THEN
-  MATCH_MP_TAC(MESON[HAS_SIZE] `s HAS_SIZE n ==> CARD s = n`) THEN
+  MATCH_MP_TAC(MESON[HAS_SIZE] “s HAS_SIZE n ==> CARD s = n”) THEN
   MATCH_MP_TAC HAS_SIZE_CART THEN
-  ASM_REWRITE_TAC[GSYM FINITE_HAS_SIZE]);;
-  *)
+  simp[GSYM FINITE_HAS_SIZE]
+QED
+
+(* ----------------------------------------------------------------------
+    More cardinality results for whole universe.
+   ---------------------------------------------------------------------- *)
+
+Theorem HAS_SIZE_CART_UNIV :
+    !m. univ(:'a) HAS_SIZE m /\ FINITE univ(:'N) ==>
+        univ(:'a['N]) HAS_SIZE m ** dimindex(:'N)
+Proof
+    Q.X_GEN_TAC ‘m’
+ >> MP_TAC (Q.SPECL [‘\i x. T’, ‘\i. m’] HAS_SIZE_CART)
+ >> rw []
+ >> gs []
+ >> qabbrev_tac ‘N = dimindex (:'N)’
+ >> ‘0 < N’ by rw [Abbr ‘N’]
+ >> qabbrev_tac ‘s = {0 .. N - 1}’
+ >> Know ‘nproduct s (\i. m) = m ** CARD s’
+ >- (MATCH_MP_TAC NPRODUCT_CONST >> rw [Abbr ‘s’, FINITE_NUMSEG])
+ >> simp [Abbr ‘s’, CARD_NUMSEG]
+ >> DISCH_THEN (art o wrap o SYM)
+QED
+
+Theorem CARD_CART_UNIV :
+    FINITE univ(:'a) /\ FINITE univ(:'N) ==>
+    CARD univ(:'a['N]) = CARD univ(:'a) ** dimindex(:'N)
+Proof
+  MESON_TAC[HAS_SIZE_CART_UNIV, HAS_SIZE]
+QED
+
+Theorem FINITE_CART_UNIV :
+    FINITE univ(:'a) /\ FINITE univ(:'N) ==> FINITE univ(:'a['N])
+Proof
+  MESON_TAC[HAS_SIZE_CART_UNIV, HAS_SIZE]
+QED
 
 val _ = export_theory ();

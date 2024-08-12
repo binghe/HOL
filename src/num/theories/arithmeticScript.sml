@@ -1121,6 +1121,17 @@ val SUB_LESS_OR = store_thm ("SUB_LESS_OR",
    REWRITE_TAC [SYM (SPEC_ALL PRE_SUB1)] THEN
    REWRITE_TAC [PRE,ONE,ADD_CLAUSES,LESS_EQ_ADD]);
 
+Theorem SUB_LESS_OR_EQ :
+    !m n. 0 < m ==> (n <= m - 1 <=> n < m)
+Proof
+    rpt STRIP_TAC
+ >> reverse EQ_TAC
+ >- REWRITE_TAC [SUB_LESS_OR]
+ >> Cases_on ‘m’
+ >- FULL_SIMP_TAC std_ss [LESS_REFL]
+ >> REWRITE_TAC [SUC_SUB1, LT_SUC_LE]
+QED
+
 val LESS_SUB_ADD_LESS = store_thm ("LESS_SUB_ADD_LESS",
  “!n m i. (i < (n - m)) ==> ((i + m) < n)”,
    INDUCT_TAC THENL

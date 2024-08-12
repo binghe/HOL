@@ -1878,26 +1878,6 @@ Theorem num_INFINITE = num_INFINITE
 (* moved to pred_setTheory *)
 Theorem INFINITE_DIFF_FINITE = INFINITE_DIFF_FINITE'
 
-(* ----------------------------------------------------------------------
-    More cardinality results for whole universe.
-
-    currently a nonsense: see HOL Light's cart.ml for what these should
-    be, using a[b] instead of HOL Light's a^b
-
-    would need to bring in at least fcpTheory as an ancestor
-   ---------------------------------------------------------------------- *)
-val HAS_SIZE_CART_UNIV = store_thm ("HAS_SIZE_CART_UNIV",
- ``!m. univ(:'a) HAS_SIZE m ==> univ(:'a) HAS_SIZE m EXP (1:num)``,
-  REWRITE_TAC [EXP_1]);
-
-val CARD_CART_UNIV = store_thm ("CARD_CART_UNIV",
- ``FINITE univ(:'a) ==> (CARD univ(:'a) = CARD univ(:'a) EXP (1:num))``,
-  MESON_TAC[HAS_SIZE_CART_UNIV, HAS_SIZE]);
-
-val FINITE_CART_UNIV = store_thm ("FINITE_CART_UNIV",
- ``FINITE univ(:'a) ==> FINITE univ(:'a)``,
-  MESON_TAC[HAS_SIZE_CART_UNIV, HAS_SIZE]);
-
 (* ------------------------------------------------------------------------- *)
 (* misc.                                                                     *)
 (* ------------------------------------------------------------------------- *)

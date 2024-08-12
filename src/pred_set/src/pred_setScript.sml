@@ -12,7 +12,7 @@
 
 open HolKernel Parse boolLib BasicProvers;
 
-open Prim_rec pairLib numLib numpairTheory hurdUtils tautLib
+open Prim_rec pairLib numLib numpairTheory hurdUtils tautLib pureSimps
      pairTheory numTheory prim_recTheory arithmeticTheory whileTheory
      metisLib mesonLib simpLib boolSimps dividesTheory
      combinTheory relationTheory optionTheory TotalDefn;
@@ -27,6 +27,7 @@ val metis_tac = METIS_TAC;
 val qabbrev_tac = Q.ABBREV_TAC;
 val qid_spec_tac = Q.ID_SPEC_TAC;
 val qexists_tac = Q.EXISTS_TAC;
+val rename1 = Q.RENAME1_TAC;
 
 (* don't eta-contract these; that will force tactics to use one fixed version
    of srw_ss() *)
@@ -2831,6 +2832,15 @@ Proof
    ASM_REWRITE_TAC []]
 QED
 
+(* HOL-Light compatible name. It's not stronger than the above FINITE_INDUCT. *)
+Theorem FINITE_INDUCT_STRONG :
+    !P. P {} /\ (!x s. P s /\ ~(x IN s) /\ FINITE s ==> P (x INSERT s))
+         ==> (!s. FINITE s ==> P s)
+Proof
+    GEN_TAC >> STRIP_TAC
+ >> MATCH_MP_TAC FINITE_INDUCT >> rw []
+QED
+
 (* --------------------------------------------------------------------- *)
 (* Load the set induction tactic in...                                   *)
 (* --------------------------------------------------------------------- *)
@@ -3926,6 +3936,111 @@ Proof
    THEN PROVE_TAC [LT_REFL, IN_DELETE]
 QED
 
+Theorem HAS_SIZE_UNION :
+    !(s:'a->bool) t m n.
+        s HAS_SIZE m /\ t HAS_SIZE n /\ DISJOINT s t
+        ==> (s UNION t) HAS_SIZE (m + n)
+Proof
+    RW_TAC std_ss[HAS_SIZE, FINITE_UNION, DISJOINT_DEF]
+ >> MP_TAC (Q.SPEC ‘t’ (MATCH_MP (Q.SPEC ‘s’ CARD_UNION)
+                                 (ASSUME “FINITE (s :'a set)”)))
+ >> simp []
+QED
+
+(* ------------------------------------------------------------------------- *)
+(* Cardinality of product.                                                   *)
+(* ------------------------------------------------------------------------- *)
+
+Theorem IMP_CONJ[local] :
+    !p q r. p /\ q ==> r <=> p ==> q ==> r
+Proof
+    REWRITE_TAC [AND_IMP_INTRO]
+QED
+
+Theorem HAS_SIZE_PRODUCT_DEPENDENT :
+    !s m t n.
+         s HAS_SIZE m /\ (!x. x IN s ==> t(x) HAS_SIZE n)
+         ==> {(x:'a,y:'b) | x IN s /\ y IN t(x)} HAS_SIZE (m * n)
+Proof
+  GEN_REWRITE_TAC (funpow 4 BINDER_CONV o funpow 2 LAND_CONV)
+                  empty_rewrites [HAS_SIZE] THEN
+  SIMP_TAC pure_ss[IMP_CONJ, RIGHT_FORALL_IMP_THM] THEN
+  HO_MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC std_ss[CARD_CLAUSES, NOT_IN_EMPTY, IN_INSERT] THEN CONJ_TAC
+  >- (REWRITE_TAC[HAS_SIZE_0] THEN rw [Once EXTENSION]) THEN
+  rpt GEN_TAC THEN STRIP_TAC THEN
+  rpt GEN_TAC THEN
+  REWRITE_TAC[TAUT `a \/ b ==> c <=> (a ==> c) /\ (b ==> c)`] THEN
+  SIMP_TAC std_ss[FORALL_AND_THM, LEFT_FORALL_IMP_THM, EXISTS_REFL] THEN
+  STRIP_TAC THEN
+  rename1 ‘t a HAS_SIZE n’ THEN
+  REWRITE_TAC[MULT_CLAUSES] THEN
+  Suff ‘{(x,y) | (x = a \/ x IN s) /\ y IN t(x)} =
+        {(x,y) | x IN s /\ y IN t(x)} UNION
+        IMAGE (\y. (a,y)) (t a)’
+  >- (Rewr' \\
+      MATCH_MP_TAC HAS_SIZE_UNION >> simp [] \\
+      CONJ_TAC
+      >- (MATCH_MP_TAC HAS_SIZE_IMAGE_INJ >> simp []) \\
+      rw [DISJOINT_ALT] >> PROVE_TAC []) THEN
+  rw [Once EXTENSION] >> EQ_TAC >> rw []
+QED
+
+Theorem FINITE_PRODUCT_DEPENDENT :
+    !f:'a->'b->'c s t.
+        FINITE s /\ (!x. x IN s ==> FINITE(t x))
+        ==> FINITE {f x y | x IN s /\ y IN (t x)}
+Proof
+  REPEAT STRIP_TAC THEN KNOW_TAC ``{f x y | x IN s /\ y IN (t x)} SUBSET
+   IMAGE (\(x,y). (f:'a->'b->'c) x y) {x,y | x IN s /\ y IN t x}`` THENL
+  [SRW_TAC [][SUBSET_DEF, IN_IMAGE, EXISTS_PROD], ALL_TAC] THEN
+  KNOW_TAC ``FINITE (IMAGE (\(x,y). (f:'a->'b->'c) x y)
+                    {x,y | x IN s /\ y IN t x})`` THENL
+  [MATCH_MP_TAC IMAGE_FINITE THEN MAP_EVERY UNDISCH_TAC
+   [``!x:'a. x IN s ==> FINITE(t x :'b->bool)``, ``FINITE(s:'a->bool)``]
+  THEN MAP_EVERY (fn t => SPEC_TAC(t,t)) [``t:'a->'b->bool``, ``s:'a->bool``]
+  THEN SIMP_TAC std_ss [RIGHT_FORALL_IMP_THM] THEN GEN_TAC THEN
+  KNOW_TAC ``(!(t:'a->'b->bool). (!x. x IN s ==> FINITE (t x)) ==>
+             FINITE {(x,y) | x IN s /\ y IN t x}) =
+         (\s. !(t:'a->'b->bool). (!x. x IN s ==> FINITE (t x)) ==>
+             FINITE {(x,y) | x IN s /\ y IN t x}) (s:'a->bool)`` THENL
+  [FULL_SIMP_TAC std_ss [], ALL_TAC] THEN DISCH_TAC THEN
+  ONCE_ASM_REWRITE_TAC [] THEN MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC
+  THEN CONJ_TAC THENL [GEN_TAC THEN
+  SUBGOAL_THEN ``{(x:'a,y:'b) | x IN {} /\ y IN (t x)} = {}``
+     (fn th => REWRITE_TAC[th, FINITE_EMPTY]) THEN SRW_TAC [][],
+  SIMP_TAC std_ss [GSYM RIGHT_FORALL_IMP_THM] THEN REPEAT GEN_TAC THEN
+  SUBGOAL_THEN ``{(x:'a, y:'b) | x IN (e INSERT s') /\ y IN (t x)} =
+    IMAGE (\y. e,y) (t e) UNION {(x,y) | x IN s' /\ y IN (t x)}``
+   (fn th => ASM_SIMP_TAC std_ss [IN_INSERT, IMAGE_FINITE, FINITE_UNION, th])
+  THEN SRW_TAC [][EXTENSION, IN_IMAGE, IN_INSERT, IN_UNION] THEN MESON_TAC[]],
+  PROVE_TAC [SUBSET_FINITE]] THEN
+  rw [Once EXTENSION, NOT_IN_EMPTY]
+QED
+
+Theorem FINITE_PRODUCT :
+    !s t. FINITE s /\ FINITE t ==> FINITE {(x:'a,y:'b) | x IN s /\ y IN t}
+Proof
+  SIMP_TAC std_ss [FINITE_PRODUCT_DEPENDENT]
+QED
+
+Theorem CARD_PRODUCT :
+    !s t. FINITE s /\ FINITE t
+         ==> (CARD {(x:'a,y:'b) | x IN s /\ y IN t} = CARD s * CARD t)
+Proof
+  REPEAT STRIP_TAC THEN
+  MP_TAC(Q.SPECL [`s`, `CARD s`, `\x. (t :'b set)`, `CARD (t :'b set)`]
+                  HAS_SIZE_PRODUCT_DEPENDENT) THEN
+  ASM_SIMP_TAC std_ss[HAS_SIZE]
+QED
+
+Theorem HAS_SIZE_PRODUCT :
+    !s m t n. s HAS_SIZE m /\ t HAS_SIZE n
+             ==> {(x:'a,y:'b) | x IN s /\ y IN t} HAS_SIZE (m * n)
+Proof
+  SIMP_TAC std_ss[HAS_SIZE, CARD_PRODUCT, FINITE_PRODUCT]
+QED
+
 (* ====================================================================== *)
 (* Sets of size n.                                                        *)
 (* ====================================================================== *)
@@ -4081,6 +4196,36 @@ val INFINITE_INJ = store_thm (* from util_prob *)
   ("INFINITE_INJ",
    ``!f s t. INJ f s t /\ INFINITE s ==> INFINITE t``,
    PROVE_TAC [FINITE_INJ]);
+
+Theorem num_FINITE :
+    !s:num->bool. FINITE s <=> ?a. !x. x IN s ==> x <= a
+Proof
+  GEN_TAC THEN EQ_TAC THENL
+   [SPEC_TAC(``s:num->bool``,``s:num->bool``) THEN GEN_TAC THEN
+   KNOW_TAC ``(?a. !x. x IN s ==> x <= a) =
+          (\s. ?a. !x. x IN s ==> x <= a) (s:num->bool)`` THENL
+    [FULL_SIMP_TAC std_ss [], ALL_TAC] THEN DISC_RW_KILL THEN
+    MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN
+    REWRITE_TAC[IN_INSERT, NOT_IN_EMPTY] THEN MESON_TAC[LESS_EQ_CASES, LESS_EQ_TRANS],
+    DISCH_THEN(X_CHOOSE_TAC ``n:num``) THEN
+    KNOW_TAC ``s SUBSET {m:num | m <= n}`` THENL [REWRITE_TAC [SUBSET_DEF] THEN
+    RW_TAC std_ss [GSPECIFICATION], ALL_TAC] THEN MATCH_MP_TAC SUBSET_FINITE THEN
+    KNOW_TAC ``{m:num | m <= n} = {m | m < n} UNION {n}``
+    THENL [SIMP_TAC std_ss [UNION_DEF, EXTENSION, GSPECIFICATION, IN_SING, LESS_OR_EQ],
+    SIMP_TAC std_ss [FINITE_UNION, FINITE_SING, GSYM count_def, FINITE_COUNT]]]
+QED
+
+Theorem num_FINITE_AVOID :
+    !s:num->bool. FINITE(s) ==> ?a. ~(a IN s)
+Proof
+  MESON_TAC[num_FINITE, LESS_THM, NOT_LESS]
+QED
+
+Theorem num_INFINITE :
+   INFINITE univ(:num)
+Proof
+  MESON_TAC[num_FINITE_AVOID, IN_UNIV]
+QED
 
 (* ---------------------------------------------------------------------- *)
 (* The next series of lemmas are used for proving that if UNIV: set       *)
@@ -4248,14 +4393,7 @@ val INFINITE_UNIV = store_thm (
 
   simp[INFINITE_INJ_NOT_SURJ, INJ_DEF, SURJ_DEF]);
 
-(* a natural consequence *)
-val INFINITE_NUM_UNIV = store_thm(
-  "INFINITE_NUM_UNIV",
-  ``INFINITE univ(:num)``,
-  REWRITE_TAC [] THEN
-  SRW_TAC [][INFINITE_UNIV] THEN Q.EXISTS_TAC `SUC` THEN SRW_TAC [][] THEN
-  Q.EXISTS_TAC `0` THEN SRW_TAC [][]);
-val _ = export_rewrites ["INFINITE_NUM_UNIV"]
+Theorem INFINITE_NUM_UNIV[simp] = num_INFINITE
 
 val FINITE_PSUBSET_INFINITE = store_thm("FINITE_PSUBSET_INFINITE",
 (“!s. INFINITE (s:'a set) =
@@ -8867,6 +9005,10 @@ Proof
  >> RW_TAC std_ss []
 QED
 
+(* ------------------------------------------------------------------------- *)
+(* Classic result on function of finite set into itself.                     *)
+(* ------------------------------------------------------------------------- *)
+
 Theorem SURJECTIVE_IFF_INJECTIVE_GEN :
    !s t f:'a->'b.
         FINITE s /\ FINITE t /\ (CARD s = CARD t) /\ (IMAGE f s) SUBSET t
@@ -8902,74 +9044,6 @@ Theorem SURJECTIVE_IFF_INJECTIVE :
      (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y)))
 Proof
   SIMP_TAC std_ss [SURJECTIVE_IFF_INJECTIVE_GEN]
-QED
-
-Theorem FINITE_PRODUCT_DEPENDENT :
-    !f:'a->'b->'c s t.
-        FINITE s /\ (!x. x IN s ==> FINITE(t x))
-        ==> FINITE {f x y | x IN s /\ y IN (t x)}
-Proof
-  REPEAT STRIP_TAC THEN KNOW_TAC ``{f x y | x IN s /\ y IN (t x)} SUBSET
-   IMAGE (\(x,y). (f:'a->'b->'c) x y) {x,y | x IN s /\ y IN t x}`` THENL
-  [SRW_TAC [][SUBSET_DEF, IN_IMAGE, EXISTS_PROD], ALL_TAC] THEN
-  KNOW_TAC ``FINITE (IMAGE (\(x,y). (f:'a->'b->'c) x y)
-                    {x,y | x IN s /\ y IN t x})`` THENL
-  [MATCH_MP_TAC IMAGE_FINITE THEN MAP_EVERY UNDISCH_TAC
-   [``!x:'a. x IN s ==> FINITE(t x :'b->bool)``, ``FINITE(s:'a->bool)``]
-  THEN MAP_EVERY (fn t => SPEC_TAC(t,t)) [``t:'a->'b->bool``, ``s:'a->bool``]
-  THEN SIMP_TAC std_ss [RIGHT_FORALL_IMP_THM] THEN GEN_TAC THEN
-  KNOW_TAC ``(!(t:'a->'b->bool). (!x. x IN s ==> FINITE (t x)) ==>
-             FINITE {(x,y) | x IN s /\ y IN t x}) =
-         (\s. !(t:'a->'b->bool). (!x. x IN s ==> FINITE (t x)) ==>
-             FINITE {(x,y) | x IN s /\ y IN t x}) (s:'a->bool)`` THENL
-  [FULL_SIMP_TAC std_ss [], ALL_TAC] THEN DISCH_TAC THEN
-  ONCE_ASM_REWRITE_TAC [] THEN MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC
-  THEN CONJ_TAC THENL [GEN_TAC THEN
-  SUBGOAL_THEN ``{(x:'a,y:'b) | x IN {} /\ y IN (t x)} = {}``
-     (fn th => REWRITE_TAC[th, FINITE_EMPTY]) THEN SRW_TAC [][],
-  SIMP_TAC std_ss [GSYM RIGHT_FORALL_IMP_THM] THEN REPEAT GEN_TAC THEN
-  SUBGOAL_THEN ``{(x:'a, y:'b) | x IN (e INSERT s') /\ y IN (t x)} =
-    IMAGE (\y. e,y) (t e) UNION {(x,y) | x IN s' /\ y IN (t x)}``
-   (fn th => ASM_SIMP_TAC std_ss [IN_INSERT, IMAGE_FINITE, FINITE_UNION, th])
-  THEN SRW_TAC [][EXTENSION, IN_IMAGE, IN_INSERT, IN_UNION] THEN MESON_TAC[]],
-  PROVE_TAC [SUBSET_FINITE]] THEN
-  rw [Once EXTENSION, NOT_IN_EMPTY]
-QED
-
-Theorem FINITE_PRODUCT :
-    !s t. FINITE s /\ FINITE t ==> FINITE {(x:'a,y:'b) | x IN s /\ y IN t}
-Proof
-  SIMP_TAC std_ss [FINITE_PRODUCT_DEPENDENT]
-QED
-
-Theorem num_FINITE :
-    !s:num->bool. FINITE s <=> ?a. !x. x IN s ==> x <= a
-Proof
-  GEN_TAC THEN EQ_TAC THENL
-   [SPEC_TAC(``s:num->bool``,``s:num->bool``) THEN GEN_TAC THEN
-   KNOW_TAC ``(?a. !x. x IN s ==> x <= a) =
-          (\s. ?a. !x. x IN s ==> x <= a) (s:num->bool)`` THENL
-    [FULL_SIMP_TAC std_ss [], ALL_TAC] THEN DISC_RW_KILL THEN
-    MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN
-    REWRITE_TAC[IN_INSERT, NOT_IN_EMPTY] THEN MESON_TAC[LESS_EQ_CASES, LESS_EQ_TRANS],
-    DISCH_THEN(X_CHOOSE_TAC ``n:num``) THEN
-    KNOW_TAC ``s SUBSET {m:num | m <= n}`` THENL [REWRITE_TAC [SUBSET_DEF] THEN
-    RW_TAC std_ss [GSPECIFICATION], ALL_TAC] THEN MATCH_MP_TAC SUBSET_FINITE THEN
-    KNOW_TAC ``{m:num | m <= n} = {m | m < n} UNION {n}``
-    THENL [SIMP_TAC std_ss [UNION_DEF, EXTENSION, GSPECIFICATION, IN_SING, LESS_OR_EQ],
-    SIMP_TAC std_ss [FINITE_UNION, FINITE_SING, GSYM count_def, FINITE_COUNT]]]
-QED
-
-Theorem num_FINITE_AVOID :
-    !s:num->bool. FINITE(s) ==> ?a. ~(a IN s)
-Proof
-  MESON_TAC[num_FINITE, LESS_THM, NOT_LESS]
-QED
-
-Theorem num_INFINITE :
-   INFINITE univ(:num)
-Proof
-  MESON_TAC[num_FINITE_AVOID, IN_UNIV]
 QED
 
 (*---------------------------------------------------------------------------*)
