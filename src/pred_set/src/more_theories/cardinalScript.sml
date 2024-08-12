@@ -1873,9 +1873,7 @@ Theorem FINITE_BOOL[simp]: FINITE univ(:bool)
 Proof simp[]
 QED
 
-(* moved to iterateTheory *)
-Theorem num_INFINITE = num_INFINITE
-(* moved to pred_setTheory *)
+(* NOTE: This theorem has been moved to pred_setTheory with a different name *)
 Theorem INFINITE_DIFF_FINITE = INFINITE_DIFF_FINITE'
 
 (* ------------------------------------------------------------------------- *)
