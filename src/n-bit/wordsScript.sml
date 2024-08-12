@@ -4983,7 +4983,7 @@ Proof
   simp[]
 QED
 
-(* |- FINITE univ(:'N) ==> CARD univ(:'N word) = (2 :num) ** dimindex (:'N) *)
+(* |- FINITE univ(:'N) ==> CARD univ(:'N word) = 2 ** dimindex (:'N) *)
 Theorem CARD_WORD = CARD_CART_UNIV |> INST_TYPE [alpha |-> bool]
                                    |> SIMP_RULE bool_ss [CARD_BOOL,FINITE_BOOL]
 
@@ -5010,8 +5010,9 @@ fun mk_word_size n =
                       Thm.INST_TYPE [``:'a`` |-> typ]) INT_MIN_def)
       val dimword = save ("dimword_" ^ SN,
                      (SIMP_RULE std_ss [INT_MIN] o
-                      Thm.INST_TYPE [``:'a`` |-> typ]) dimword_IS_TWICE_INT_MIN);
-      val card = REWRITE_RULE [dimindex,finite] (INST_TYPE [“:'N” |-> typ] CARD_WORD);
+                      Thm.INST_TYPE [``:'a`` |-> typ]) dimword_IS_TWICE_INT_MIN)
+      val card = REWRITE_RULE [dimindex,finite]
+                              (INST_TYPE [“:'N” |-> typ] CARD_WORD)
       val _ = save ("card_word" ^ SN, card)
   in
     type_abbrev_pp("word" ^ SN, TYPE)
