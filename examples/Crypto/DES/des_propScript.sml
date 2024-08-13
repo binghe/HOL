@@ -1075,7 +1075,7 @@ Definition non_weak_keys_def :
       (0x4F4CAE37FD37C21Fw,0xB8C65D0FB48154D7w);
       (0xA2B9F8FECD70D69Dw,0x601EF2D173B69EBCw)
     ]
-End 
+End
 
 (* Added by Chun Tian *)
 Theorem DES_fp_non_weak_keys :
@@ -1088,7 +1088,7 @@ Proof
     rw [non_weak_keys_def, DES_def]
  >> ‘i = 0 \/ i = 1 \/ i = 2 \/ i = 3’ by rw []
  >> rw []
- >> EVAL_TAC 
+ >> EVAL_TAC
 QED
 
 val _ = export_theory();
