@@ -719,7 +719,7 @@ QED
 
 (* ----------------------------------------------------------------------
     Menger's Theorem [2, p.67], added by Chun Tian
-   ---------------------------------------------------------------------- *)
+   ----------------------------------------------------------------------
 
 (* To form an A-B path, the only intersection between A and vs is ‘HD vs’,
    while the only intersection between B and vs is ‘LAST vs’.
@@ -839,6 +839,7 @@ Proof
  >>
     cheat
 QED
+ *)
 
 val _ = export_theory();
 val _ = html_theory "fsgraph";
