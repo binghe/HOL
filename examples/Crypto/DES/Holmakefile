@@ -1,5 +1,4 @@
-INCLUDES = $(HOLDIR)/src/pred_set/src $(HOLDIR)/src/n-bit \
-           $(HOLDIR)/src/res_quan/src
+INCLUDES = $(HOLDIR)/src/pred_set/src $(HOLDIR)/src/n-bit
 
 HOLHEAP = heap
 EXTRA_CLEANS = $(HOLHEAP)
@@ -9,7 +8,7 @@ all: $(DEFAULT_TARGETS)
 
 ifdef POLY
 OBJS = pred_set/src/pred_setTheory pred_set/src/pred_setLib n-bit/fcpTheory \
-       n-bit/fcpLib res_quan/src/hurdUtils
+       n-bit/fcpLib
 
 FULL_OBJPATHS = $(patsubst %,$(HOLDIR)/src/%.uo,$(OBJS))
 
