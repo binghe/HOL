@@ -70,8 +70,8 @@ Theorem o_BETA[local] = o_DEF |> INST_TYPE [alpha |-> beta]
                               |> INST_TYPE [gamma |-> alpha]
 
 (* |- !(f :'a -> 'a) (g :'a -> 'a) (h :'a -> 'a). f o g o h = (f o g) o h *)
-Theorem o_ASSOC = combinTheory.o_ASSOC
-               |> INST_TYPE [gamma |-> alpha, beta |-> alpha, delta |-> alpha]
+Theorem o_ASSOC[local] = combinTheory.o_ASSOC
+     |> INST_TYPE [gamma |-> alpha, beta |-> alpha, delta |-> alpha]
 
 (* ========================================================================= *)
 (* Permutations, both general and specifically on finite sets.               *)
