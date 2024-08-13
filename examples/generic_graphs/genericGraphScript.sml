@@ -303,6 +303,7 @@ Definition edge_cst_def:
      | UNC_EDGES => T)
 End
 
+(* The following 2 types are possible values for self-loopness ('slp) *)
 val SL_OK_tydefrec = newtypeTools.rich_new_type
    {tyname = "SL_OK",
     exthm  = prove(“∃x:unit. (λx. T) x”, simp[]),
@@ -315,6 +316,7 @@ val noSL_tydefrec = newtypeTools.rich_new_type
     ABS    = "noSL_ABS",
     REP    = "noSL_REP"};
 
+(* The following 2 types are possible values for finiteness of nodes ('nfp) *)
 val INF_OK_tydefrec = newtypeTools.rich_new_type
    {tyname = "INF_OK",
     exthm  = prove(“∃x:num. (λx. T) x”, simp[]),
@@ -327,17 +329,12 @@ val finiteG_tydefrec = newtypeTools.rich_new_type
     ABS    = "finiteG_ABS",
     REP    = "finiteG_REP"};
 
+(* The following 2 types are possible values for directness ('dp) *)
 val undirectedG_tydefrec = newtypeTools.rich_new_type
    {tyname = "undirectedG",
     exthm  = prove(“∃x:num. (λx. T) x”, simp[]),
     ABS    = "undirectedG_ABS",
     REP    = "undirectedG_REP"};
-
-val unhyperG_tydefrec = newtypeTools.rich_new_type
-   {tyname = "unhyperG",
-    exthm  = prove(“∃x:num. (λx. T) x”, simp[]),
-    ABS    = "unhyperG_ABS",
-    REP    = "unhyperG_REP"};
 
 val directedG_tydefrec = newtypeTools.rich_new_type
    {tyname = "directedG",
@@ -345,12 +342,20 @@ val directedG_tydefrec = newtypeTools.rich_new_type
     ABS    = "directedG_ABS",
     REP    = "directedG_REP"};
 
+(* The following 2 types are possible values for hyperness ('hp) *)
 val hyperG_tydefrec = newtypeTools.rich_new_type
    {tyname = "hyperG",
     exthm  = prove(“∃x:unit. (λx. T) x”, simp[]),
     ABS    = "hyperG_ABS",
     REP    = "hyperG_REP"};
 
+val unhyperG_tydefrec = newtypeTools.rich_new_type
+   {tyname = "unhyperG",
+    exthm  = prove(“∃x:num. (λx. T) x”, simp[]),
+    ABS    = "unhyperG_ABS",
+    REP    = "unhyperG_REP"};
+
+(* The following 4 types are possible values for Edge Constraint Choice ('ec) *)
 val allEdgesOK_tydefrec = newtypeTools.rich_new_type
    {tyname = "allEdgesOK",
     exthm  = prove(“∃x:num. (λx. T) x”, simp[]),

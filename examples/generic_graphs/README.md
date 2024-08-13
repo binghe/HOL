@@ -53,10 +53,10 @@ self-looping, undirected graph has positions that are two-element sets
 of nodes. A directed, possibly self-looping, hyper-graph has positions
 that are pairs of non-empty sets of nodes.
 
-   - `ONE_EDGE`: there is only one edge for any possible position
-   - `ONE_EDGE_PERLABEL`: there is only one edge per position-label combination
-   - `FINITE_EDGE`: there are only finitely many edges for any possible position.
-   - `UNC_EDGES`: there are no constraints on the number of edges (except there can only be finitely many copies of the same edge).
+   - `ONE_EDGE` (`:oneedgeG`): there is only one edge for any possible position
+   - `ONE_EDGE_PERLABEL` (`:oneedgeplG`): there is only one edge per position-label combination
+   - `FINITE_EDGES` (`:finiteEdges`): there are only finitely many edges for any possible position.
+   - `UNC_EDGES` (`:allEdgesOK`): there are no constraints on the number of edges (except there can only be finitely many copies of the same edge).
 
 Note that `ONE_EDGE_PERLABEL` allows for infinitely many edges for a given position if there are infinitely many values in the `:'el` (edge-label) type.
 
@@ -74,7 +74,7 @@ The following type abbreviations instantiate type variables to generate a set of
     'ec  : edge “constraint”
     'el  : edge label
     'nfp : node finiteness constraint
-    'el  : node label
+    'nl  : node label
     'slp : self-loops permitted?
 
 -   `:(α,'nfp,'slp)udulgraph`
@@ -97,12 +97,23 @@ The following type abbreviations instantiate type variables to generate a set of
 -   `:fsgraph`
 
     "finite simple graph":
-     - ‘inherits from’ udulgraph
+     - ‘inherits from’ `udulgraph`
      - finite unlabelled nodes,
      - no self-loops
      - max one, undirected, unlabelled edge between nodes
 
     Nodes are `:unit + num` (the α used elsewhere is instantiated with `:unit`)
+
+-   `:fmgraph`
+
+    "finite multigraph":
+     - ‘inherits from’ `udgraph`
+     - finite unlabelled nodes,
+     - finite, undirected, unlabelled edges between nodes (or node)
+     - self-loops allowed
+
+    Nodes are `:unit + num` (the α used elsewhere is instantiated with `:unit`)
+    This type is the basis of graph minors (see `graph_minorScript.sml`).
 
 ## Functions Over Graphs
 
