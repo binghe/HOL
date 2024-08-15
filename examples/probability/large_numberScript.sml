@@ -10,7 +10,7 @@ open combinTheory arithmeticTheory pred_setTheory pred_setLib logrootTheory
      numLib hurdUtils topologyTheory;
 
 open realTheory realLib seqTheory transcTheory real_sigmaTheory iterateTheory
-     real_topologyTheory;
+     real_topologyTheory metricTheory;
 
 open util_probTheory sigma_algebraTheory extrealTheory measureTheory
      borelTheory lebesgueTheory martingaleTheory probabilityTheory;
