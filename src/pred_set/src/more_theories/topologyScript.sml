@@ -386,8 +386,8 @@ Definition limpt:
 End
 
 (* alternative characterisation without needing neigh, but using IN, rather
-   than application *)
-
+   than application
+ *)
 Theorem limpt_thm:
   limpt t x A <=>
   x IN topspace t /\
@@ -399,15 +399,13 @@ Proof
   >> metis_tac[SUBSET_DEF, IN_DEF]
 QED
 
-
-
 (*---------------------------------------------------------------------------*)
 (* Prove that a set is closed iff it contains all its limit points           *)
 (*---------------------------------------------------------------------------*)
 
 Theorem CLOSED_LIMPT:
   !top. closed top ==>
-        !S'. closed_in(top) S' = (!x:'a. limpt(top) x S' ==> S' x)
+        !S'. closed_in(top) S' <=> !x:'a. limpt(top) x S' ==> S' x
 Proof
     GEN_TAC >> DISCH_TAC
  >> IMP_RES_TAC closed_topspace

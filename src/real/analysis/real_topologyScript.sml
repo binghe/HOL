@@ -5206,14 +5206,22 @@ val FORALL_EVENTUALLY = store_thm ("FORALL_EVENTUALLY",
 (* Limits, defined as vacuously true when the limit is trivial.              *)
 (* ------------------------------------------------------------------------- *)
 
-val _ = hide "-->";
-
 (* NOTE: This is for (f :'a -> real) (l :real) (net :'a net).
          Now the name "tendsto_real" follows HOL-Light's "realanalysis.ml".
+
+   cf.
+val tends_real_real = new_definition(
+  "tends_real_real",
+  “(tends_real_real f l)(x0) =
+        (f tends l)(mtop(mr1),tendsto(mr1,x0))”);
+
  *)
-val tendsto_real = new_infixr_definition
-  ("tendsto_real",
-  ``$--> f l net = !e. &0 < e ==> eventually (\x. dist(f(x),l) < e) net``,750);
+Definition tendsto_real :
+    tendsto_real f l net <=> !e. &0 < e ==> eventually (\x. dist(f(x),l) < e) net
+End
+
+Overload "-->" = “tendsto_real”
+val _ = set_fixity "-->" (Infixr 750);
 
 val tendsto = tendsto_real;
 
@@ -8588,9 +8596,12 @@ val CONTINUOUS_AT_IMP_CONTINUOUS_ON = store_thm ("CONTINUOUS_AT_IMP_CONTINUOUS_O
  ``!f s. (!x. x IN s ==> f continuous (at x)) ==> f continuous_on s``,
   REWRITE_TAC[continuous_at, continuous_on] THEN MESON_TAC[]);
 
-val CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN = store_thm ("CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN",
- ``!f s. f continuous_on s <=> !x. x IN s ==> f continuous (at x within s)``,
- REWRITE_TAC[continuous_on, continuous_within]);
+(* NOTE: This could be the alternative definition of ‘continuous_on’ *)
+Theorem CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN :
+    !f s. f continuous_on s <=> !x. x IN s ==> f continuous (at x within s)
+Proof
+    REWRITE_TAC[continuous_on, continuous_within]
+QED
 
 val CONTINUOUS_ON = store_thm ("CONTINUOUS_ON",
  ``!f (s:real->bool).
