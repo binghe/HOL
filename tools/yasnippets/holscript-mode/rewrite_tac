@@ -1,5 +1,5 @@
 # -*- mode: snippet -*-
-# name: rewrite theorems only once
+# name: rewrite theorems
 # key: rewrite_tac
 # expand-env: ((yas-indent-line 'fixed))
 # --
