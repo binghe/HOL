@@ -605,10 +605,11 @@ Proof
      ‘\x y. ?P Q r. FV P UNION FV Q SUBSET X UNION RANKS r /\
                     P == Q /\ x = BT' X P r /\ y = BT' X Q r’
  >> BETA_TAC
- >> CONJ_TAC >- (qexistsl_tac [‘M’, ‘N’, ‘r’] >> simp [] \\
-                 Q.PAT_X_ASSUM ‘FV M UNION FV N SUBSET X’ MP_TAC \\
-                 Q.PAT_X_ASSUM ‘FINITE X’ MP_TAC \\
-                 SET_TAC [])
+ >> CONJ_TAC
+ >- (qexistsl_tac [‘M’, ‘N’, ‘r’] >> simp [] \\
+     Q.PAT_X_ASSUM ‘FV M UNION FV N SUBSET X’ MP_TAC \\
+     Q.PAT_X_ASSUM ‘FINITE X’ MP_TAC \\
+     SET_TAC [])
  (* stage work *)
  >> qx_genl_tac [‘a1’, ‘ts1’, ‘a2’, ‘ts2’] >> STRIP_TAC
  >> qabbrev_tac ‘P0 = principle_hnf P’

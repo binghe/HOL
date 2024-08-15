@@ -6413,6 +6413,11 @@ Definition extreal_lim_def :
 End
 Overload lim = “extreal_lim”
 
+Definition ext_continuous_def :
+    ext_continuous f net <=> ext_tendsto f (f (netlimit net)) net
+End
+Overload continuous = “ext_continuous”
+
 Theorem EXTREAL_LIM :
     !(f :'a -> extreal) l net.
        (f --> l) net <=>
