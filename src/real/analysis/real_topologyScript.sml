@@ -8306,11 +8306,19 @@ val CONTINUOUS_WITHIN_COMPARISON = store_thm ("CONTINUOUS_WITHIN_COMPARISON",
 val _ = set_fixity "continuous_on" (Infix(NONASSOC, 450));
 val _ = set_fixity "uniformly_continuous_on" (Infix(NONASSOC, 450));
 
-val continuous_on = new_definition ("continuous_on",
- ``f continuous_on s <=>
-   !x. x IN s ==> !e. &0 < e
-   ==> ?d. &0 < d /\ !x'. x' IN s /\ dist(x',x) < d
-     ==> dist(f(x'),f(x)) < e``);
+Definition continuous_on_def :
+    f continuous_on s <=> !x. x IN s ==> f continuous (at x within s)
+End
+Theorem CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN = continuous_on_def
+
+Theorem continuous_on :
+    !f s. f continuous_on s <=>
+          !x. x IN s ==> !e. &0 < e
+                     ==> ?d. &0 < d /\ !x'. x' IN s /\ dist(x',x) < d
+                                             ==> dist(f(x'),f(x)) < e
+Proof
+    rw [continuous_on_def, continuous_within]
+QED
 
 val uniformly_continuous_on = new_definition ("uniformly_continuous_on",
  ``f uniformly_continuous_on s <=>
@@ -8329,13 +8337,6 @@ val UNIFORMLY_CONTINUOUS_IMP_CONTINUOUS = store_thm ("UNIFORMLY_CONTINUOUS_IMP_C
 val CONTINUOUS_AT_IMP_CONTINUOUS_ON = store_thm ("CONTINUOUS_AT_IMP_CONTINUOUS_ON",
  ``!f s. (!x. x IN s ==> f continuous (at x)) ==> f continuous_on s``,
   REWRITE_TAC[continuous_at, continuous_on] THEN MESON_TAC[]);
-
-(* NOTE: This could be the alternative definition of ‘continuous_on’ *)
-Theorem CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN :
-    !f s. f continuous_on s <=> !x. x IN s ==> f continuous (at x within s)
-Proof
-    REWRITE_TAC[continuous_on, continuous_within]
-QED
 
 val CONTINUOUS_ON = store_thm ("CONTINUOUS_ON",
  ``!f (s:real->bool).

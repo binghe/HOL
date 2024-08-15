@@ -6399,7 +6399,7 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
-(* Limits of extreal functions ('a -> extreal)                               *)
+(* Limits of extreal functions ('a -> extreal) and continuous functions      *)
 (* ------------------------------------------------------------------------- *)
 
 Definition ext_tendsto_def :
@@ -6413,10 +6413,26 @@ Definition extreal_lim_def :
 End
 Overload lim = “extreal_lim”
 
+(* NOTE: The type of ‘f’ is “:'a -> extreal”, suitable for any use. *)
 Definition ext_continuous_def :
     ext_continuous f net <=> ext_tendsto f (f (netlimit net)) net
 End
 Overload continuous = “ext_continuous”
+
+(* NOTE: because of the type of ‘at x within s’, here the type of ‘f’ is
+  “:real -> extreal”. For a function ‘g :extreal -> extreal’, to say it's
+   continuous on a set ‘s’ of (normal) real numbers, one can write:
+
+     (g o real) continuous_on s
+
+   I think it's not very meaningful to say a function "continuous at PosInf",
+   thus no need to invent another net "at ... within" for extreals.
+   -- Chun Tian (binghe), 15 ago 2024
+*)
+Definition ext_continuous_on_def :
+    ext_continuous_on f s <=> !x. x IN s ==> ext_continuous f (at x within s)
+End
+Overload continuous_on = “ext_continuous_on”
 
 Theorem EXTREAL_LIM :
     !(f :'a -> extreal) l net.
