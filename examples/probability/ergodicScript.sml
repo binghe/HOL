@@ -38,18 +38,18 @@ QED
 (*  Infinite-dimensional Borel space [1, p.178]                              *)
 (* ------------------------------------------------------------------------- *)
 
-Definition cylinder_sets_def :
-    cylinder_sets (h :num -> extreal set) (N :num) =
-      {f :num -> extreal | !i. i < N ==> f i IN h i}
+Definition cylinder_def :
+    cylinder (h :num -> 'a set) (N :num) =
+      {f :num -> 'a | !i. i < N ==> f i IN h i}
 End
 
 Definition Borel_inf0_def :
-    Borel_inf0 = sigma UNIV {cylinder_sets h N |
+    Borel_inf0 = sigma UNIV {cylinder h N |
                              !i. i < N ==> ?a. h i = {x | x < Normal a}}
 End
 
 Definition Borel_inf1_def :
-    Borel_inf1 = sigma UNIV {cylinder_sets h N |
+    Borel_inf1 = sigma UNIV {cylinder h N |
                              !i. i < N ==> h i IN subsets Borel}
 End
 
@@ -67,7 +67,8 @@ Definition cylinder2rect_def :
 End
 
 Definition sigma_lists_def :
-   sigma_lists B N = sigma_functions (list_rectangle (\n. space B) N) (\n. B) EL (count N)
+   sigma_lists B N = sigma_functions (rectangle (\n. space B) N)
+                                     (\n. B) EL (count N)
 End
 
 (* cf. Borel_space (:'N) in stochastic_processTheory. This is the list version. *)
