@@ -1041,6 +1041,13 @@ Proof
  >> RW_TAC std_ss [distribution_def, distr_def, prob_def, p_space_def]
 QED
 
+Theorem distribution_GSPEC :
+    !s. distribution p X s = prob p {x | x IN p_space p /\ X x IN s}
+Proof
+    rw [distribution_def, PREIMAGE_def]
+ >> simp [PROB_GSPEC]
+QED
+
 (* alternative definition of ‘distribution_function’ *)
 Theorem distribution_function :
     !p X t. distribution_function p X t = distribution p X {x | x <= t}
