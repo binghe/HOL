@@ -60,7 +60,7 @@ End
 Overload rectangle = “list_rectangle”
 
 Definition cylinder2list_def :
-    cylinder2list c N = IMAGE (\f. GENLIST f N) c
+    cylinder2list cs N = IMAGE (\f. GENLIST f N) cs
 End
 
 Definition sigma_lists_def :
@@ -72,7 +72,7 @@ Definition Borel_lists_def :
 End
 
 Definition Borel_inf2_def :
-    Borel_inf2 = sigma UNIV {c | ?N. cylinder2list c N IN subsets (Borel_lists N)}
+    Borel_inf2 = sigma UNIV {cs | ?N. cylinder2list cs N IN subsets (Borel_lists N)}
 End
 
 Overload Borel_inf = “Borel_inf1”
