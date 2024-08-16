@@ -134,7 +134,6 @@ End
     Contraction
    ---------------------------------------------------------------------- *)
 
-(* NOTE: In ‘g1 has_contraction g2’, g1 is contracted from g2 *)
 Definition IX_def :
     IX (g :fmgraph) =
        {g' | ?R f. BIJ f (nodes g) (partition R (nodes g')) /\
@@ -142,16 +141,6 @@ Definition IX_def :
                            ?n1' n2'. n1' IN f n1 /\ n2' IN f n2 /\
                                      adjacent g' n1' n2'}
 End
-
-Theorem IN_IX :
-    !g g'. g' IN IX g <=>
-           ?R f. BIJ f (nodes g) (partition R (nodes g')) /\
-                   !n1 n2. adjacent g n1 n2 <=>
-                           ?n1' n2'. n1' IN f n1 /\ n2' IN f n2 /\
-                                     adjacent g' n1' n2'
-Proof
-    rw [IX_def]
-QED
 
 (* ----------------------------------------------------------------------
     Minor [1, p.19]
