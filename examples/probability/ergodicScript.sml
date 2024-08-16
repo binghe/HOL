@@ -59,20 +59,24 @@ Definition list_rectangle_def :
 End
 Overload rectangle = “list_rectangle”
 
-Definition cylinder2list_def :
-    cylinder2list cs N = IMAGE (\f. GENLIST f N) cs
+(* converting cylinders back to rectangles by converting infinite sequences to
+   finite lists (i.e., cutting off the tails).
+ *)
+Definition cylinder2rect_def :
+    cylinder2rect c N = IMAGE (\f. GENLIST f N) c
 End
 
 Definition sigma_lists_def :
    sigma_lists B N = sigma_functions (list_rectangle (\n. space B) N) (\n. B) EL (count N)
 End
 
+(* cf. Borel_space (:'N) in stochastic_processTheory. This is the list version. *)
 Definition Borel_lists_def :
    Borel_lists N = sigma_lists Borel N
 End
 
 Definition Borel_inf2_def :
-    Borel_inf2 = sigma UNIV {cs | ?N. cylinder2list cs N IN subsets (Borel_lists N)}
+    Borel_inf2 = sigma UNIV {c | ?N. cylinder2rect c N IN subsets (Borel_lists N)}
 End
 
 Overload Borel_inf = “Borel_inf1”
