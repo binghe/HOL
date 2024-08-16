@@ -40,8 +40,8 @@ val NEW_def =
            |              |
            +------ e'-----+
  *)
-Definition has_one_division_def :
-    has_one_division (g1 :fmgraph) (g2 :fmgraph) <=>
+Definition has_division_def :
+    has_division (g1 :fmgraph) (g2 :fmgraph) <=>
     ?e. e IN udedges g1 /\
         let g' = removeEdge (cUDE e) g1;
             ns = incident e;
@@ -53,60 +53,56 @@ Definition has_one_division_def :
                    (addUDEdge {n;n2} () g')
 End
 
-val _ = set_fixity "has_division" (Infix(NONASSOC, 450));
-Definition has_division_def :
-    $has_division = RTC has_one_division
+Definition TX_def :
+    TX g1 = {g2 | RTC has_division g1 g2}
 End
 
 (* ----------------------------------------------------------------------
     Graph isomorphism and 'subgraph' relation
    ---------------------------------------------------------------------- *)
 
+(* TODO: |- equivalance graphiso *)
 Definition graphiso_def :
     graphiso (g1 :fmgraph) (g2 :fmgraph) <=>
     ?f. BIJ f (nodes g1) (nodes g2) /\
-        !n1 n2. undirected {n1;n2} () IN udedges g1 <=>
-                undirected {f n1;f n2} () IN udedges g2
+        !n1 n2. adjacent g1 n1 n2 <=>
+                adjacent g2 (f n1) (f n2) IN udedges g2
 End
 
 Definition subgraph_def :
     subgraph (g1 :fmgraph) (g2 :fmgraph) <=>
-    nodes g1 SUBSET nodes g2 /\ udedges g1 SUBSET udedges g2
+    ?f. INJ f (nodes g1) (nodes g2) /\
+        !n1 n2. adjacent g1 n1 n2 ==>
+                adjacent g2 (f n1) (f n2) IN udedges g2
 End
 
 (* ----------------------------------------------------------------------
     Topological minor [1, p.19]
    ---------------------------------------------------------------------- *)
 
-(* g1 --has_division--> g --graphiso--> g' --subgraph--> g2 *)
 Definition topological_minor_def :
-    topological_minor (g1 :fmgraph) (g2 :fmgraph) <=>
-    ?g g'. g1 has_division g /\ graphiso g g' /\ subgraph g' g2
+    topological_minor g1 g2 <=> ?g. g IN TX g1 /\ subgraph g g2
 End
 
 (* ----------------------------------------------------------------------
-    (Edge) contraction
+    Contraction
    ---------------------------------------------------------------------- *)
 
-val _ = set_fixity "has_contraction" (Infix(NONASSOC, 450));
-Definition has_contraction_def :
-    $has_contraction (g1 :fmgraph) (g2 :fmgraph) <=>
-    ?R f. let P = partition R (nodes g1) in
-            BIJ f P (nodes g2) /\
-            !N1 N2. N1 IN P /\ N2 IN P /\
-                    (?n1 n2. n1 IN N1 /\ n2 IN N2 /\
-                             undirected {n1;n2} () IN udedges g1) ==>
-                    undirected {f N1;f N2} () IN udedges g2
+(* NOTE: In ‘g1 has_contraction g2’, g1 is contracted from g2 *)
+Definition IX_def :
+    IX (g1 :fmgraph) =
+       {g2 | ?R f. BIJ f (nodes g1) (partition R (nodes g2)) /\
+                   !n1 n2. adjacent g1 n1 n2 <=>
+                           ?n1' n2'. n1' IN f n1 /\ n2' IN f n2 /\
+                                     adjacent g2 n1' n2'}
 End
 
 (* ----------------------------------------------------------------------
     Minor [1, p.19]
    ---------------------------------------------------------------------- *)
 
-(* g1 <--has_contraction-- g --subgraph--> g2 *)
 Definition minor_def :
-    minor (g1 :fmgraph) (g2 :fmgraph) <=>
-      ?g. g has_contraction g1 /\ subgraph g g2
+    minor g1 g2 <=> ?g. g IN IX g1 /\ subgraph g g2
 End
 
 val _ = export_theory ();
