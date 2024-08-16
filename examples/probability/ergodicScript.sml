@@ -75,7 +75,7 @@ Definition Borel_inf2_def :
     Borel_inf2 = sigma UNIV {c | ?N. cylinder2list c N IN subsets (Borel_lists N)}
 End
 
-Overload Borel_inf = “Borel_inf0”
+Overload Borel_inf = “Borel_inf1”
 
 (* ------------------------------------------------------------------------- *)
 (*  Stationary process                                                       *)
