@@ -1,11 +1,13 @@
+(*---------------------------------------------------------------------------*
+ * genericGraphTheory: Theory of Generic Graphs                              *
+ *---------------------------------------------------------------------------*)
+
 open HolKernel Parse boolLib bossLib;
 
 open pred_setTheory pairTheory bagTheory liftingTheory transferTheory
      transferLib
 
-(* Material on finite simple graphs mechanised from
-     "Combinatorics and Graph Theory" by Harris, Hirst, and Mossinghoff
- *)
+(* Material on finite simple graphs mechanised from [1] *)
 
 val _ = new_theory "genericGraph";
 
@@ -2816,5 +2818,15 @@ Proof
   simp[Once FUN_EQ_THM, BAG_DIFF]
 QED
 
+Overload removeUDEdge = “\e. removeEdge (cUDE e)”
+
 val _ = export_theory();
 val _ = html_theory "genericGraph";
+
+(* References:
+
+   [1] Harris, J., Hirst, J.L., Mossinghoff, M.: Combinatorics and Graph Theory,
+       2nd Edition. Springer Science & Business Media (2008).
+   [2] Diestel, R.: Graph Theory, 5th Electronic Edition. Springer-Verlag, Berlin (2017).
+ *)
+ 

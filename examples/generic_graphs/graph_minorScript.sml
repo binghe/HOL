@@ -10,6 +10,7 @@ open genericGraphTheory ;
 
 val _ = new_theory "graph_minor";
 
+(* NOTE: "fmgraph" stands for "Finite Multi-Graphs" *)
 Type fmgraph[pp] = “:(unit,finiteEdges,unit,finiteG,unit,SL_OK) udgraph”
 
 (* ----------------------------------------------------------------------
@@ -30,20 +31,28 @@ val NEW_def =
       ("NEW_def", ["NEW"],
        SIMP_RULE (srw_ss()) [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM] NEW_exists);
 
+(* ----------------------------------------------------------------------
+    ends (endvertices) of edges
+   ---------------------------------------------------------------------- *)
+
 Theorem ends_exists[local] :
-    !s. FINITE s /\ 0 < CARD s /\ CARD s <= 2 ==> ?x. s = {FST x; SND x}
+    !s. FINITE s ==> ?x. if s <> {} /\ CARD s <= 2
+                         then s = {FST x; SND x} else x = (ARB,ARB)
 Proof
     rpt STRIP_TAC
- >> ‘CARD s = 1 \/ CARD s = 2’ by rw []
- >- (‘SING s’ by rw [SING_IFF_CARD1] \\
-     fs [SING_DEF] \\
+ >> reverse (Cases_on ‘s <> {} /\ CARD s <= 2’) >> fs []
+ >> rfs [CARD_LE2]
+ >- (fs [SING_DEF] \\
      Q.EXISTS_TAC ‘(x,x)’ >> rw [])
- >> rfs [CARDEQ2]
- >> Q.EXISTS_TAC ‘(a,b)’ >> rw []
+ >> Q.EXISTS_TAC ‘(m,n)’ >> rw []
 QED
 
-(* |- !s. FINITE s /\ 0 < CARD s /\ CARD s <= 2 ==>
-          s = {FST (ends s); SND (ends s)}
+(* "The two vertices incident with an edge are its endvertices or ends, and
+    an edge joins its ends." [1, p.2]
+
+   |- !s. FINITE s ==>
+          if s <> {} /\ CARD s <= 2 then s = {FST (ends s); SND (ends s)}
+          else ends s = (ARB,ARB)
  *)
 val ends_def =
     new_specification
@@ -51,14 +60,14 @@ val ends_def =
        SIMP_RULE (srw_ss()) [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM] ends_exists);
 
 Theorem ends_thm :
-    !s a b. FINITE s /\ 0 < CARD s /\ CARD s <= 2 /\ (a,b) = ends s ==>
+    !s a b. FINITE s /\ s <> {} /\ CARD s <= 2 /\ (a,b) = ends s ==>
             s = {a;b}
 Proof
     rpt STRIP_TAC
  >> Know ‘a = FST (ends s) /\ b = SND (ends s)’
  >- (POP_ASSUM (rw o wrap o SYM))
  >> rw []
- >> MATCH_MP_TAC ends_def >> art []
+ >> MP_TAC (Q.SPEC ‘s’ ends_def) >> rw []
 QED
 
 (* ----------------------------------------------------------------------
@@ -75,7 +84,7 @@ QED
  *)
 Definition division_def :
     division (g1 :fmgraph) e =
-      let g' = removeEdge (cUDE e) g1;
+      let g' = removeUDEdge e g1;
           ns = incident e;
           n1 = FST (ends ns);
           n2 = SND (ends ns);
@@ -134,12 +143,18 @@ End
     Contraction
    ---------------------------------------------------------------------- *)
 
+Definition connected_in_def:
+    connected_in G ns <=>
+    !n1 n2. n1 IN ns /\ n2 IN ns /\ n1 <> n1 ==> TC (adjacent G) n1 n2
+End
+
 Definition IX_def :
     IX (g :fmgraph) =
-       {g' | ?R f. BIJ f (nodes g) (partition R (nodes g')) /\
-                   !n1 n2. adjacent g n1 n2 <=>
-                           ?n1' n2'. n1' IN f n1 /\ n2' IN f n2 /\
-                                     adjacent g' n1' n2'}
+    {g' | ?R f. BIJ f (nodes g) (partition R (nodes g')) /\
+               (!ns. ns IN partition R (nodes g') ==> connected_in g' ns) /\
+                !n1 n2. adjacent g n1 n2 <=>
+                        ?n1' n2'. n1' IN f n1 /\ n2' IN f n2 /\
+                                  adjacent g' n1' n2'}
 End
 
 (* ----------------------------------------------------------------------

@@ -1,3 +1,7 @@
+(*---------------------------------------------------------------------------*
+ * fsgraphTheory: Theory of Finite Simple Graphs                             *
+ *---------------------------------------------------------------------------*)
+
 open HolKernel Parse boolLib bossLib;
 
 open arithmeticTheory pairTheory listTheory pred_setTheory sortingTheory
@@ -847,7 +851,7 @@ val _ = html_theory "fsgraph";
 (* References:
 
    [1] Harris, J., Hirst, J.L., Mossinghoff, M.: Combinatorics and Graph Theory.
-       Springer Science & Business Media (2008).
+       2nd Edition. Springer Science & Business Media (2008).
    [2] Diestel, R.: Graph Theory, 5th Electronic Edition. Springer-Verlag, Berlin (2017).
    [3] Christoph Dittmann.: Menger's Theorem. https://www.isa-afp.org/entries/Menger.html
  *)

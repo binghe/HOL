@@ -36,7 +36,6 @@ val _ = ratLib.deprecate_rat ();
 
 (* ------------------------------------------------------------------------- *)
 (*  General filtration/martingale with poset indexes (Chapter 25 of [9])     *)
-(*  (moved here from martingaleTheory)                                       *)
 (* ------------------------------------------------------------------------- *)
 
 (* Any non-empty set with (=) is a poset *)
@@ -198,14 +197,14 @@ val _ = set_fixity "of_dimension" (Infix(NONASSOC, 470));
    This is the smallest sigma-algebra on n-dimensional `space B` that makes
    all N-1 projections simultaneously measurable.
 
-   NOTE: ‘flip $fcp_index = (\n v. v ' n)’
+   NOTE: ‘(\n v. v ' n) = flip $fcp_index’ (C $fcp_index)
 
    This general definition can be used to convert any (1-dimensional) Borel
    sigma-algebra (e.g. ‘borel’ and ‘Borel’) into n-dimensional Borel spaces.
  *)
 Definition sigma_of_dimension_def :
     sigma_of_dimension (B :'a algebra) (:'N) =
-    sigma_functions (rectangle (\n. space B) (:'N)) (\n. B) (flip $fcp_index)
+    sigma_functions (rectangle (\n. space B) (:'N)) (\n. B) (\n v. v ' n)
                     (count (dimindex(:'N)))
 End
 Overload of_dimension = “sigma_of_dimension”
@@ -245,7 +244,7 @@ Theorem sigma_of_dimension_alt :
       sigma (rectangle (\n. space B) (:'N))
             {rectangle h (:'N) | !i. i < dimindex(:'N) ==> h i IN subsets B}
 Proof
-    rw [sigma_of_dimension_def, C_DEF, sigma_functions_def]
+    rw [sigma_of_dimension_def, sigma_functions_def]
  >> Q.ABBREV_TAC (* this is part of the goal, to be replaced by ‘sts’ *)
    ‘src = BIGUNION
             (IMAGE (\n. IMAGE (\s. PREIMAGE (\ (v :'a['N]). v ' n) s INTER
@@ -442,7 +441,7 @@ Theorem SIGMA_ALGEBRA_BOREL_SPACE =
 (* alternative definition of ‘borel’ following "of_dimension_def" *)
 Theorem borel_space_alt_sigma_functions :
     borel_space (:'N) =
-    sigma_functions univ(:real['N]) (\n. borel) (flip $fcp_index)
+    sigma_functions univ(:real['N]) (\n. borel) (\n v. v ' n)
                    (count (dimindex(:'N)))
 Proof
     rw [space_borel, borel_space_def, sigma_of_dimension_def, RECTANGLE_UNIV]
@@ -450,7 +449,7 @@ QED
 
 Theorem Borel_space_alt_sigma_functions :
     Borel_space (:'N) =
-    sigma_functions univ(:extreal['N]) (\n. Borel) (flip $fcp_index)
+    sigma_functions univ(:extreal['N]) (\n. Borel) (\n v. v ' n)
                    (count (dimindex(:'N)))
 Proof
     rw [SPACE_BOREL, Borel_space_def, sigma_of_dimension_def, RECTANGLE_UNIV]

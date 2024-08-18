@@ -62,8 +62,8 @@ Overload rectangle = “list_rectangle”
 (* converting cylinders back to rectangles by converting infinite sequences to
    finite lists (i.e., cutting off the tails).
  *)
-Definition cylinder2rect_def :
-    cylinder2rect c N = IMAGE (\f. GENLIST f N) c
+Definition cylinder2lists_def :
+    cylinder2lists c N = IMAGE (\f. GENLIST f N) c
 End
 
 Definition sigma_lists_def :
@@ -77,7 +77,7 @@ Definition Borel_lists_def :
 End
 
 Definition Borel_inf2_def :
-    Borel_inf2 = sigma UNIV {c | ?N. cylinder2rect c N IN subsets (Borel_lists N)}
+    Borel_inf2 = sigma UNIV {c | ?N. cylinder2lists c N IN subsets (Borel_lists N)}
 End
 
 Overload Borel_inf = “Borel_inf1”

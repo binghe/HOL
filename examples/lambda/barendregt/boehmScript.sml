@@ -4230,7 +4230,7 @@ End
    part of this proof.
 
    NOTE3: This proof uses ‘agree_upto’ very late.
-
+ *)
 Theorem agree_upto_lemma :
     !X Ms p r. FINITE X /\
                BIGUNION (IMAGE FV (set Ms)) SUBSET X UNION RANKS r /\
