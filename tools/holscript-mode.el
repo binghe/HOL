@@ -1,7 +1,8 @@
-(provide 'holscript-mode)
+;;;; holscript-mode - HOLScript Mode
+
+(require 'smie)
 
 ;; font-locking and syntax
-
 (defvar holscript-definitionlabel-re
   "\\(\\[~?[A-Za-z0-9_']+\\(\\[[A-Za-z0-9_',]+\\]\\)?[[:space:]]*:[[:space:]]*\\]\\)\\|\\[\\(/\\\\\\|∧\\)\\]\\|^\\[\\]"
   "Regular expression for case-labels occurring within HOL definitions,
@@ -65,7 +66,7 @@ ignoring fact that it should really only occur at the beginning of the line.")
 (defvar holscript-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "`") 'holscript-dbl-backquote)
-    (define-key map (kbd "<RET>") 'holscript-newline-and-relative-indent)
+    (define-key map (kbd "<RET>") 'holscript-newline)
     ;;(define-key map "\M-f" 'forward-hol-tactic)
     ;;(define-key map "\M-b" 'backward-hol-tactic)
     ; (define-key map (kbd "C-M-<up>") 'hol-movement-backward-up-list)
@@ -147,11 +148,11 @@ On existing quotes, toggles between ‘-’ and “-” pairs.  Otherwise, inser
            (setq n (- n 1))))
         ((< n 0)
          (setq n (- n))
-         (setq n (- n (if (equal (skip-syntax-backward ".") 0) 0 1))))
+         (setq n (- n (if (equal (skip-syntax-backward ".") 0) 0 1)))
          (while (> n 0)
            (skip-syntax-backward "^.")
            (skip-syntax-backward ".")
-           (setq n (- n 1)))))
+           (setq n (- n 1))))))
 
 (defun is-a-then (s)
   (and s (or (string-equal s "THEN")
@@ -524,6 +525,12 @@ a store_thm equivalent.")
     (newline nil t)
     (if doindent (indent-relative))))
 
+(defun holscript-newline ()
+  "Insert a newline."
+  (interactive "*")
+  (delete-horizontal-space t)
+  (newline nil t))
+
 ;;indentation and other cleanups
 (defun hol-replace-tabs-with-spaces ()
    (save-excursion
@@ -729,12 +736,8 @@ a store_thm equivalent.")
   (holscript-mode-variables)
 )
 
-(require 'hol-input)
-(add-hook 'holscript-mode-hook (lambda () (set-input-method "Hol")))
-
 ;; smie grammar
 
-(require 'smie)
 (defvar holscript-smie-grammar
   (smie-prec2->grammar
    (smie-bnf->prec2
@@ -1367,5 +1370,4 @@ class characters.")
   "The face for highlighting definition labels in HOL material."
   :group 'holscript-faces)
 
-(setq auto-mode-alist (cons '("Script\\.sml" . holscript-mode)
-                            auto-mode-alist))
+(provide 'holscript-mode)
