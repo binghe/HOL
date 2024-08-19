@@ -4444,24 +4444,25 @@ Proof
  >> ‘Boehm_transform pi’
        by (qunabbrev_tac ‘pi’ \\
            rpt (MATCH_MP_TAC Boehm_transform_APPEND >> art []))
- >> qabbrev_tac ‘Z = X UNION RANK (SUC r)’
+ (* NOTE: requirements for ‘Z’
+
+    1. y i IN Z /\ BIGUNION (IMAGE FV (set (args i))) SUBSET Z
+    2. DISJOINT (set xs) Z
+    3. Z SUBSET X UNION RANK (SUC r)
+  *)
+ >> qabbrev_tac ‘Z = Y UNION set vs’ (* or ‘X UNION RANK r UNION (set vs)’ *)
+ >> ‘DISJOINT (set xs) Z’ by rw [Abbr ‘Z’, DISJOINT_UNION']
  (* FV properties of the head variable y (and children args) *)
  >> Know ‘!i. i < k ==> y i IN Z /\
                         BIGUNION (IMAGE FV (set (args i))) SUBSET Z’
  >- (NTAC 2 STRIP_TAC \\
-     qabbrev_tac ‘Z' = FV (M i) UNION RANK (SUC r)’ \\
+     qabbrev_tac ‘Z' = FV (M i) UNION set vs’ \\
      Suff ‘y i IN Z' /\ BIGUNION (IMAGE FV (set (args i))) SUBSET Z'’
      >- (Suff ‘Z' SUBSET Z’ >- PROVE_TAC [SUBSET_DEF] \\
          Q.PAT_X_ASSUM ‘Y SUBSET X UNION RANK r’ MP_TAC \\
-         simp [Abbr ‘Z'’, Abbr ‘Y’, Abbr ‘Z’] \\
+         simp [Abbr ‘Z'’, Abbr ‘Z’, Abbr ‘Y’] \\
          rw [SUBSET_DEF, IN_BIGUNION_IMAGE] \\
-         Suff ‘x IN X \/ x IN RANK r’
-         >- (STRIP_TAC >- art [] \\
-             DISJ2_TAC \\
-             POP_ASSUM MP_TAC \\
-             Suff ‘RANK r SUBSET RANK (SUC r)’ >- rw [SUBSET_DEF] \\
-             rw [RANK_MONO']) \\
-         FIRST_X_ASSUM MATCH_MP_TAC \\
+         DISJ1_TAC \\
          Q.EXISTS_TAC ‘M i’ >> art [] \\
          rw [Abbr ‘M’, EL_MEM]) \\
   (* applying principle_hnf_FV_SUBSET' *)
@@ -4469,9 +4470,9 @@ Proof
      >- (SIMP_TAC std_ss [Abbr ‘M0’, o_DEF] \\
          MATCH_MP_TAC principle_hnf_FV_SUBSET' >> rw []) \\
      qunabbrev_tac ‘Z'’ \\
-     Suff ‘y i IN FV (M0 i) UNION RANK (SUC r) /\
+     Suff ‘y i IN FV (M0 i) UNION set vs /\
            BIGUNION (IMAGE FV (set (args i))) SUBSET
-           FV (M0 i) UNION RANK (SUC r)’
+           FV (M0 i) UNION set vs’
      >- SET_TAC [] \\
      Know ‘FV (M1 i) SUBSET FV (M0 i @* MAP VAR vs)’
      >- (‘M1 i = principle_hnf (M0 i @* MAP VAR vs)’ by rw [] >> POP_ORW \\
@@ -4487,25 +4488,10 @@ Proof
            BIGUNION (IMAGE FV (set (args i))) SUBSET FV (M1 i)’
      >- (rw [FV_appstar] >> SET_TAC []) \\
      rpt STRIP_TAC
-     >- (Know ‘y i IN FV (M0 i) UNION set vs’ >- METIS_TAC [SUBSET_DEF] \\
-         Q.PAT_X_ASSUM ‘!i. i < k ==> M0 i = _’ K_TAC \\
-         rw [] >- art [] \\
-         DISJ2_TAC \\
-         Know ‘set vs SUBSET RANK (SUC r)’
-         >- (qunabbrev_tac ‘vs’ \\
-             MATCH_MP_TAC RNEWS_SUBSET_RANK >> rw []) \\
-         rw [SUBSET_DEF]) \\
+     >- METIS_TAC [SUBSET_DEF] \\
      MATCH_MP_TAC SUBSET_TRANS \\
-     Q.EXISTS_TAC ‘FV (M1 i)’ >> art [] \\
-     MATCH_MP_TAC SUBSET_TRANS \\
-     Q.EXISTS_TAC ‘FV (M0 i) UNION set vs’ >> art [] \\
-     Suff ‘set vs SUBSET RANK (SUC r)’ >- SET_TAC [] \\
-     qunabbrev_tac ‘vs’ \\
-     MATCH_MP_TAC RNEWS_SUBSET_RANK >> rw [])
+     Q.EXISTS_TAC ‘FV (M1 i)’ >> art [])
  >> DISCH_TAC
- >> cheat
-QED
- (*
  (* NOTE: now, before proving ‘EVERY is_ready' ...’, (for future subgoals) we
     need to calculute the principle_hnf of ‘apply pi (EL i Ms)’ for any i < k.
 
@@ -4529,7 +4515,7 @@ QED
  >> ‘!i. LENGTH (l i) = m i + (n_max - n i) + d_max + 1’
        by (rw [Abbr ‘l’, Abbr ‘m’, Abbr ‘args2’, Abbr ‘args'’, Abbr ‘d_max’])
  (* applying TAKE_DROP_SUC to break l into 3 pieces *)
- >> MP_TAC (GEN “i :num”
+ >> MP_TAC (Q.GEN ‘i’
                 (ISPECL [“d_max :num”, “l (i :num) :term list”]
                         (GSYM TAKE_DROP_SUC)))
  >> simp [] >> Rewr'
@@ -4546,7 +4532,7 @@ QED
   *)
  >> qabbrev_tac ‘Ns = \i. TAKE d_max (l i)’
  >> qabbrev_tac ‘B = \i. EL d_max (l i)’
- >> simp []
+ >> simp [] (* this put Ns and B in use *)
  >> qabbrev_tac ‘j = \i. d_max - LENGTH (args' i ++ args2 i)’
  >> ‘!i. j i < LENGTH xs’ by rw [Abbr ‘j’, Abbr ‘args'’, Abbr ‘args2’, Abbr ‘d_max’]
  >> Know ‘!i. i < k ==> ?b. EL (j i) xs = b /\ B i = VAR b’
@@ -4561,15 +4547,12 @@ QED
      simp [Abbr ‘m’])
  >> simp [EXT_SKOLEM_THM']
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘b’ STRIP_ASSUME_TAC) (* this asserts ‘b’ *)
- (* merge the above two results *)
- >> Know ‘!i. i < k ==> EL (j i) xs = b i /\ B i = VAR (b i) /\ j i < LENGTH xs’
- >- RW_TAC std_ss []
- >> NTAC 2 (POP_ASSUM K_TAC) >> DISCH_TAC
  >> qabbrev_tac ‘tl = \i. DROP (SUC d_max) (l i)’
  >> simp []
  >> DISCH_TAC (* store ‘!i. i < k ==> apply p3 ...’ *)
  (* applying permutator_hreduce_more, it clearly reduces to a hnf *)
- >> Know ‘!i. i < k ==> P @* Ns i @@ VAR (b i) @* tl i -h->* VAR (b i) @* Ns i @* tl i’
+ >> Know ‘!i. i < k ==>
+              P @* Ns i @@ VAR (b i) @* tl i -h->* VAR (b i) @* Ns i @* tl i’
  >- (RW_TAC std_ss [Abbr ‘P’] \\
      MATCH_MP_TAC permutator_hreduce_more >> rw [Abbr ‘Ns’])
  >> DISCH_TAC
@@ -4591,14 +4574,15 @@ QED
      MATCH_MP_TAC hreduces_lameq >> rw [])
  >> DISCH_TAC
  (* calculating ‘principle_hnf (apply pi (M i))’ (hard) *)
- >> Know ‘!i. i < k ==> principle_hnf (apply pi (M i)) = VAR (b i) @* Ns i @* tl i’
- >- (rpt (Q.PAT_X_ASSUM ‘Boehm_transform _’ K_TAC) \\
-     rpt STRIP_TAC \\
+ >> Know ‘!i. i < k ==>
+              principle_hnf (apply pi (M i)) = VAR (b i) @* Ns i @* tl i’
+ >- (rpt STRIP_TAC \\
      Know ‘MAP (\t. t ISUB sub k) (MAP VAR xs) = MAP VAR xs’
      >- (rw [LIST_EQ_REWRITE, EL_MAP] \\
-         MATCH_MP_TAC ISUB_VAR_FRESH >> art [GSYM DOM_ALT_MAP_SND] \\
+         MATCH_MP_TAC ISUB_VAR_FRESH >> rw [GSYM DOM_ALT_MAP_SND] \\
          simp [IN_IMAGE, IN_COUNT, Once DISJ_SYM] \\
-         Q.X_GEN_TAC ‘a’ >> STRONG_DISJ_TAC (* push ‘a < k’ *) \\
+         STRONG_DISJ_TAC (* push ‘a < k’ *) \\
+         rename1 ‘EL x xs <> y a’ \\
          CCONTR_TAC \\
         ‘y a IN Z’ by rw [] \\
          Q.PAT_X_ASSUM ‘DISJOINT (set xs) Z’ MP_TAC \\
@@ -4620,7 +4604,7 @@ QED
      DISCH_TAC (* store ‘M i @* MAP VAR vs @* MAP VAR xs ISUB sub k == ...’ *) \\
   (* rewriting RHS to principle_hnf of ISUB *)
      Know ‘VAR (b i) @* Ns i @* tl i =
-               principle_hnf (P @* args' i @* args2 i @* MAP VAR xs)’
+           principle_hnf (P @* args' i @* args2 i @* MAP VAR xs)’
      >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
         ‘hnf (VAR (b i) @* Ns i @* tl i)’ by rw [GSYM appstar_APPEND, hnf_appstar] \\
          Suff ‘solvable (P @* args' i @* args2 i @* MAP VAR xs)’
@@ -4631,7 +4615,7 @@ QED
          reverse CONJ_TAC >- (MATCH_MP_TAC hreduces_lameq >> rw []) \\
          REWRITE_TAC [solvable_iff_has_hnf] \\
          MATCH_MP_TAC hnf_has_hnf >> art []) >> Rewr' \\
-     Know ‘P @* args' i @* args2 i @* MAP VAR xs = (M1 i @* MAP VAR xs) ISUB sub k’
+     Know ‘P @* args' i @* args2 i @* MAP VAR xs = M1 i @* MAP VAR xs ISUB sub k’
      >- (REWRITE_TAC [appstar_ISUB, Once EQ_SYM_EQ] \\
          Q.PAT_X_ASSUM ‘!i. i < k ==> apply p2 (M1 i) = P @* args' i @* args2 i’
             (fn th => MP_TAC (MATCH_MP (GSYM (Q.SPEC ‘i’ th))
@@ -4671,7 +4655,7 @@ QED
          Q.EXISTS_TAC ‘VAR (b i) @* Ns i @* tl i’ >> rw [] \\
          rw [hnf_appstar, GSYM appstar_APPEND]) \\
      ASM_SIMP_TAC std_ss [] (* rewrite M1 i *) \\
-    ‘MAP VAR vs :term list = TAKE (n i) (MAP VAR vs) ++ DROP (n i) (MAP VAR vs)’
+    ‘MAP VAR vs = TAKE (n i) (MAP VAR vs) ++ DROP (n i) (MAP VAR vs)’
        by rw [TAKE_DROP] \\
      POP_ASSUM
        (GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites o wrap) \\
@@ -4694,7 +4678,7 @@ QED
              MATCH_MP_TAC MEM_TAKE >> Q.EXISTS_TAC ‘n i’ >> art []) \\
          MATCH_MP_TAC DISJOINT_SUBSET >> Q.EXISTS_TAC ‘Y’ >> art [] \\
          rw [SUBSET_DEF, Abbr ‘Y’] \\
-         DISJ2_TAC >> Q.EXISTS_TAC ‘FV (M i)’ >> art [] \\
+         Q.EXISTS_TAC ‘FV (M i)’ >> art [] \\
          Q.EXISTS_TAC ‘M i’ >> art [] \\
          rw [Abbr ‘M’, EL_MEM]) \\
      fs [Abbr ‘M’, Abbr ‘M0’])
@@ -4823,7 +4807,7 @@ QED
          MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘FV a''’ \\
          CONJ_TAC >- (MATCH_MP_TAC FV_ISUB_SUBSET >> art []) \\
          qunabbrev_tac ‘a''’ \\
-         qabbrev_tac ‘ls :term list = MAP VAR vs’ \\
+         qabbrev_tac ‘ls = MAP VAR vs’ \\
          Know ‘a' + n i < LENGTH ls’
          >- (‘a' + n i < n_max’ by rw [] \\
              MATCH_MP_TAC LESS_LESS_EQ_TRANS \\
@@ -4837,7 +4821,7 @@ QED
      simp [Abbr ‘Ns’, LENGTH_TAKE] \\
      DISCH_TAC (* a < d_max *) \\
      simp [EL_TAKE] \\
-     qabbrev_tac ‘ls :term list = MAP VAR xs’ \\
+     qabbrev_tac ‘ls = MAP VAR xs’ \\
      Know ‘EL a (l i) = EL (a - LENGTH (args' i ++ args2 i)) ls’
      >- (SIMP_TAC std_ss [Abbr ‘l’] \\
          qabbrev_tac ‘l1 = args' i ++ args2 i’ \\
@@ -4862,6 +4846,9 @@ QED
  >> Q.PAT_X_ASSUM ‘!t. i < k ==> apply p2 _ = _’  K_TAC
  >> Q.PAT_X_ASSUM ‘!i. i < k ==> apply p3 _ = _’  K_TAC
  >> Q.PAT_X_ASSUM ‘!i. i < k ==> _ -h->* _’       K_TAC
+ >> cheat
+QED
+ (*
  (* NOTE: This is a generalization of Boehm_transform_exists_lemma *)
  >> Know ‘!q. q <<= p ==>
               ?pm. !i. i < k ==>
