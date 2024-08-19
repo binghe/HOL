@@ -5263,10 +5263,12 @@ Proof
        (* goal 2 (of 2) *)
        MATCH_MP_TAC lameq_TRANS \\
        Q.EXISTS_TAC ‘apply (p1 ++ p0) M0’ \\
-       CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
-                    qunabbrev_tac ‘M0’ \\
-                    MATCH_MP_TAC lameq_SYM \\
-                    MATCH_MP_TAC lameq_principle_hnf >> art [GSYM solvable_iff_has_hnf]) \\
+       CONJ_TAC
+       >- (MATCH_MP_TAC Boehm_apply_lameq_cong \\
+           POP_ASSUM (REWRITE_TAC o wrap) \\
+           qunabbrev_tac ‘M0’ \\
+           MATCH_MP_TAC lameq_SYM \\
+           MATCH_MP_TAC lameq_principle_hnf >> art [GSYM solvable_iff_has_hnf]) \\
     (* eliminating p0 *)
        REWRITE_TAC [Boehm_apply_APPEND] \\
        MATCH_MP_TAC lameq_TRANS \\
@@ -5338,11 +5340,13 @@ Proof
  (* stage work *)
  >> ‘m' < l \/ l < m'’ by rw [] (* 2 subgoals, same ending tactics *)
  >| [ (* goal 1 (of 2) *)
-      MP_TAC (Q.SPECL [‘y2’, ‘args1'’, ‘args2’, ‘l - m'’] separability_lemma0_case2) \\
+      MP_TAC (Q.SPECL [‘y2’, ‘args1'’, ‘args2’, ‘l - m'’]
+                      separability_lemma0_case2) \\
       simp [] \\
       DISCH_THEN (STRIP_ASSUME_TAC o (Q.SPECL [‘P’, ‘Q’])),
       (* goal 2 (of 2) *)
-      MP_TAC (Q.SPECL [‘y2’, ‘args2’, ‘args1'’, ‘m' - l’] separability_lemma0_case2) \\
+      MP_TAC (Q.SPECL [‘y2’, ‘args2’, ‘args1'’, ‘m' - l’]
+                      separability_lemma0_case2) \\
       simp [] \\
       DISCH_THEN (STRIP_ASSUME_TAC o (Q.SPECL [‘Q’, ‘P’])) ]
  (* shared tactics *)
@@ -5352,7 +5356,8 @@ Proof
      [ (* goal 1.1 (of 2) *)
        MATCH_MP_TAC lameq_TRANS \\
        Q.EXISTS_TAC ‘apply (pi ++ p0) M0’ \\
-       CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
+       CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong \\
+                    POP_ASSUM (REWRITE_TAC o wrap) \\
                     qunabbrev_tac ‘M0’ >> MATCH_MP_TAC lameq_SYM \\
                     MATCH_MP_TAC lameq_principle_hnf \\
                     ASM_REWRITE_TAC [GSYM solvable_iff_has_hnf]) \\
@@ -5365,7 +5370,8 @@ Proof
        (* goal 1.2 (of 2) *)
        MATCH_MP_TAC lameq_TRANS \\
        Q.EXISTS_TAC ‘apply (pi ++ p0) N0’ \\
-       CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong >> POP_ASSUM (REWRITE_TAC o wrap) \\
+       CONJ_TAC >- (MATCH_MP_TAC Boehm_apply_lameq_cong \\
+                    POP_ASSUM (REWRITE_TAC o wrap) \\
                     qunabbrev_tac ‘N0’ >> MATCH_MP_TAC lameq_SYM \\
                     MATCH_MP_TAC lameq_principle_hnf \\
                     ASM_REWRITE_TAC [GSYM solvable_iff_has_hnf]) \\
