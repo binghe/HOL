@@ -307,6 +307,13 @@ Proof
  >> qexistsl_tac [‘i’, ‘j’] >> rw []
 QED
 
+Theorem RANK_MONO' :
+    !r. RANK r SUBSET RANK (SUC r)
+Proof
+    Q.X_GEN_TAC ‘r’
+ >> MATCH_MP_TAC RANK_MONO >> rw []
+QED
+
 Theorem RANK_ROW_DISJOINT :
     !r1 r2 n. r1 <= r2 ==> DISJOINT (RANK r1) (ROW r2)
 Proof

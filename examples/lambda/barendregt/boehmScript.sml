@@ -4230,7 +4230,7 @@ End
    part of this proof.
 
    NOTE3: This proof uses ‘agree_upto’ very late.
-
+ *)
 Theorem agree_upto_lemma :
     !X Ms p r. FINITE X /\
                BIGUNION (IMAGE FV (set Ms)) SUBSET X UNION RANK r /\
@@ -4444,26 +4444,34 @@ Proof
  >> ‘Boehm_transform pi’
        by (qunabbrev_tac ‘pi’ \\
            rpt (MATCH_MP_TAC Boehm_transform_APPEND >> art []))
-(* TODO *)
-
+ >> qabbrev_tac ‘Z = X UNION RANK (SUC r)’
  (* FV properties of the head variable y (and children args) *)
  >> Know ‘!i. i < k ==> y i IN Z /\
                         BIGUNION (IMAGE FV (set (args i))) SUBSET Z’
  >- (NTAC 2 STRIP_TAC \\
-     qabbrev_tac ‘Z' = FV (M i) UNION set vs’ \\
+     qabbrev_tac ‘Z' = FV (M i) UNION RANK (SUC r)’ \\
      Suff ‘y i IN Z' /\ BIGUNION (IMAGE FV (set (args i))) SUBSET Z'’
      >- (Suff ‘Z' SUBSET Z’ >- PROVE_TAC [SUBSET_DEF] \\
+         Q.PAT_X_ASSUM ‘Y SUBSET X UNION RANK r’ MP_TAC \\
          simp [Abbr ‘Z'’, Abbr ‘Y’, Abbr ‘Z’] \\
          rw [SUBSET_DEF, IN_BIGUNION_IMAGE] \\
-         DISJ1_TAC >> DISJ2_TAC \\
-         Q.EXISTS_TAC ‘EL i Ms’ >> rw [EL_MEM]) \\
+         Suff ‘x IN X \/ x IN RANK r’
+         >- (STRIP_TAC >- art [] \\
+             DISJ2_TAC \\
+             POP_ASSUM MP_TAC \\
+             Suff ‘RANK r SUBSET RANK (SUC r)’ >- rw [SUBSET_DEF] \\
+             rw [RANK_MONO']) \\
+         FIRST_X_ASSUM MATCH_MP_TAC \\
+         Q.EXISTS_TAC ‘M i’ >> art [] \\
+         rw [Abbr ‘M’, EL_MEM]) \\
   (* applying principle_hnf_FV_SUBSET' *)
      Know ‘FV (M0 i) SUBSET FV (M i)’
      >- (SIMP_TAC std_ss [Abbr ‘M0’, o_DEF] \\
          MATCH_MP_TAC principle_hnf_FV_SUBSET' >> rw []) \\
      qunabbrev_tac ‘Z'’ \\
-     Suff ‘y i IN FV (M0 i) UNION set vs /\
-           BIGUNION (IMAGE FV (set (args i))) SUBSET FV (M0 i) UNION set vs’
+     Suff ‘y i IN FV (M0 i) UNION RANK (SUC r) /\
+           BIGUNION (IMAGE FV (set (args i))) SUBSET
+           FV (M0 i) UNION RANK (SUC r)’
      >- SET_TAC [] \\
      Know ‘FV (M1 i) SUBSET FV (M0 i @* MAP VAR vs)’
      >- (‘M1 i = principle_hnf (M0 i @* MAP VAR vs)’ by rw [] >> POP_ORW \\
@@ -4475,10 +4483,29 @@ Proof
          MATCH_MP_TAC hnf_has_hnf \\
          rw [GSYM appstar_APPEND, hnf_appstar]) \\
      REWRITE_TAC [FV_appstar_MAP_VAR] \\
-     Suff ‘y i IN FV (M1 i) /\
-           BIGUNION (IMAGE FV (set (args i))) SUBSET FV (M1 i)’ >- SET_TAC [] \\
-     rw [FV_appstar] >> SET_TAC [])
+     Know ‘y i IN FV (M1 i) /\
+           BIGUNION (IMAGE FV (set (args i))) SUBSET FV (M1 i)’
+     >- (rw [FV_appstar] >> SET_TAC []) \\
+     rpt STRIP_TAC
+     >- (Know ‘y i IN FV (M0 i) UNION set vs’ >- METIS_TAC [SUBSET_DEF] \\
+         Q.PAT_X_ASSUM ‘!i. i < k ==> M0 i = _’ K_TAC \\
+         rw [] >- art [] \\
+         DISJ2_TAC \\
+         Know ‘set vs SUBSET RANK (SUC r)’
+         >- (qunabbrev_tac ‘vs’ \\
+             MATCH_MP_TAC RNEWS_SUBSET_RANK >> rw []) \\
+         rw [SUBSET_DEF]) \\
+     MATCH_MP_TAC SUBSET_TRANS \\
+     Q.EXISTS_TAC ‘FV (M1 i)’ >> art [] \\
+     MATCH_MP_TAC SUBSET_TRANS \\
+     Q.EXISTS_TAC ‘FV (M0 i) UNION set vs’ >> art [] \\
+     Suff ‘set vs SUBSET RANK (SUC r)’ >- SET_TAC [] \\
+     qunabbrev_tac ‘vs’ \\
+     MATCH_MP_TAC RNEWS_SUBSET_RANK >> rw [])
  >> DISCH_TAC
+ >> cheat
+QED
+ (*
  (* NOTE: now, before proving ‘EVERY is_ready' ...’, (for future subgoals) we
     need to calculute the principle_hnf of ‘apply pi (EL i Ms)’ for any i < k.
 

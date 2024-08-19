@@ -1,4 +1,4 @@
-;;;; holscript-mode - HOLScript Mode
+;;;; holscript-mode -- Major mode for editing *Script.sml (HOL proofs)
 
 (require 'smie)
 
