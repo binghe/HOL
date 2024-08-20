@@ -35,54 +35,6 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
-(*  Infinite-dimensional Borel space [1, p.178]                              *)
-(* ------------------------------------------------------------------------- *)
-
-Definition cylinder_def :
-    cylinder (h :num -> 'a set) (N :num) =
-      {f :num -> 'a | !i. i < N ==> f i IN h i}
-End
-
-Definition Borel_inf0_def :
-    Borel_inf0 = sigma UNIV {cylinder h N |
-                             !i. i < N ==> ?a. h i = {x | x < Normal a}}
-End
-
-Definition Borel_inf1_def :
-    Borel_inf1 = sigma UNIV {cylinder h N |
-                             !i. i < N ==> h i IN subsets Borel}
-End
-
-Definition list_rectangle_def :
-    list_rectangle (h :num -> 'a set) N =
-      {v | LENGTH v = N /\ !i. i < N ==> EL i v IN h i}
-End
-Overload rectangle = “list_rectangle”
-
-(* converting cylinders back to rectangles by converting infinite sequences to
-   finite lists (i.e., cutting off the tails).
- *)
-Definition cylinder2lists_def :
-    cylinder2lists c N = IMAGE (\f. GENLIST f N) c
-End
-
-Definition sigma_lists_def :
-   sigma_lists B N = sigma_functions (rectangle (\n. space B) N)
-                                     (\n. B) EL (count N)
-End
-
-(* cf. Borel_space (:'N) in stochastic_processTheory. This is the list version. *)
-Definition Borel_lists_def :
-   Borel_lists N = sigma_lists Borel N
-End
-
-Definition Borel_inf2_def :
-    Borel_inf2 = sigma UNIV {c | ?N. cylinder2lists c N IN subsets (Borel_lists N)}
-End
-
-Overload Borel_inf = “Borel_inf1”
-
-(* ------------------------------------------------------------------------- *)
 (*  Stationary process                                                       *)
 (* ------------------------------------------------------------------------- *)
 
@@ -101,6 +53,6 @@ val _ = html_theory "ergodic";
 
   [1] Shiryaev, A.N.: Probability-1. Springer-Verlag New York (2016).
   [2] Shiryaev, A.N.: Probability-2. Springer-Verlag New York (2019).
-  [3] Billingsley, P.: Probability and Measure (Third Edition). Wiley-Interscience (1995).
+  [3] Billingsley, P.: Probability and Measure (3rd Edition). Wiley-Interscience (1995).
 
  *)
