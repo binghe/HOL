@@ -4846,10 +4846,7 @@ Proof
  >> Q.PAT_X_ASSUM ‘!t. i < k ==> apply p2 _ = _’  K_TAC
  >> Q.PAT_X_ASSUM ‘!i. i < k ==> apply p3 _ = _’  K_TAC
  >> Q.PAT_X_ASSUM ‘!i. i < k ==> _ -h->* _’       K_TAC
- >> cheat
-QED
- (*
- (* NOTE: This is a generalization of Boehm_transform_exists_lemma *)
+ (* NOTE: This is a generalization of Boehm_transform_exists_lemma
  >> Know ‘!q. q <<= p ==>
               ?pm. !i. i < k ==>
                        subterm Z (M i ISUB sub k) q <> NONE /\
@@ -4858,9 +4855,11 @@ QED
  >- (
      cheat)
  >> DISCH_TAC
+  *)
  (* now proving agree_upto *)
- >>  Q.PAT_X_ASSUM ‘agree_upto p Ms’ MP_TAC \\
-     simp [agree_upto_def] >> DISCH_TAC \\
+ >> (Q.PAT_X_ASSUM ‘agree_upto X Ms p r’ MP_TAC \\
+     simp [agree_upto_def] \\
+     DISCH_TAC \\
      qx_genl_tac [‘M2'’, ‘N2'’] >> simp [MEM_MAP] \\
      ONCE_REWRITE_TAC [TAUT ‘p /\ q ==> r <=> p ==> q ==> r’] \\
      DISCH_THEN (Q.X_CHOOSE_THEN ‘M2’ STRIP_ASSUME_TAC) \\
@@ -4875,14 +4874,11 @@ QED
      rpt STRIP_TAC (* this asserts q *) \\
      Q.PAT_X_ASSUM ‘!q. q <<= p ==> _’ (MP_TAC o Q.SPEC ‘q’) \\
      simp [] \\
-  (* NOTE: this assumption is derivable, fs [] also deletes it *)
-     Q.PAT_X_ASSUM ‘!i. i < k ==> subterm X (M i) p <> NONE’ K_TAC \\
      Q.PAT_X_ASSUM ‘M2 = M j1’ (fs o wrap) \\
      Q.PAT_X_ASSUM ‘N2 = M j2’ (fs o wrap) \\
      qabbrev_tac ‘M2 = M j1’ \\
      qabbrev_tac ‘N2 = M j2’ \\
-     qabbrev_tac ‘W = BIGUNION (IMAGE FV (set Ms))’ \\
-     qabbrev_tac ‘W' = BIGUNION (IMAGE FV (set (MAP (apply pi) Ms)))’ \\
+
   (* NOTE: now we are still missing some important connections:
 
    - ltree_el (BT W M2) q             ~1~ subterm' W M2 q
@@ -4901,7 +4897,7 @@ QED
      >- (BT_ltree_el_of_unsolvables
      MP_TAC (Q.SPECL [‘q’, ‘Z’, ‘M (j1 :num)’] BT_subterm_thm) \\
    *)
-     cheat
+     cheat)
 QED
 
 (* Lemma 10.3.11 (3) [1. p.251]

@@ -78,51 +78,51 @@ Proof
  >> Q.EXISTS_TAC ‘y’ >> art []
 QED
 
-Definition general_filtration_def :
-   general_filtration A a J =
-     (poset J /\ (!n. n IN (carrier J) ==> sub_sigma_algebra (a n) A) /\
+Definition gen_filtration_def :
+   gen_filtration A a J <=>
+      poset J /\ (!n. n IN (carrier J) ==> sub_sigma_algebra (a n) A) /\
       (!i j. i IN (carrier J) /\ j IN (carrier J) /\ (relation J) i j ==>
-             subsets (a i) SUBSET subsets (a j)))
+             subsets (a i) SUBSET subsets (a j))
 End
 
-Theorem filtration_alt_general : (* was: filtration_alt *)
-    !A a. filtration A a = general_filtration A a (univ(:num),$<=)
+Theorem filtration_alt_gen : (* was: filtration_alt *)
+    !A a. filtration A a = gen_filtration A a (univ(:num),$<=)
 Proof
-    rw [filtration_def, general_filtration_def, poset_num]
+    rw [filtration_def, gen_filtration_def, poset_num]
 QED
 
-Definition general_filtered_measure_space_def :
-    general_filtered_measure_space m a J =
-      (measure_space m /\ general_filtration (m_space m,measurable_sets m) a J)
+Definition gen_filtered_measure_space_def :
+    gen_filtered_measure_space m a J =
+      (measure_space m /\ gen_filtration (m_space m,measurable_sets m) a J)
 End
 
-Theorem filtered_measure_space_alt_general :
+Theorem filtered_measure_space_alt_gen :
     !m a. filtered_measure_space m a <=>
-          general_filtered_measure_space m a (univ(:num),$<=)
+          gen_filtered_measure_space m a (univ(:num),$<=)
 Proof
-    rw [filtered_measure_space_def, general_filtered_measure_space_def,
-        filtration_alt_general, poset_num]
+    rw [filtered_measure_space_def, gen_filtered_measure_space_def,
+        filtration_alt_gen, poset_num]
 QED
 
-Definition general_sigma_finite_filtered_measure_space_def :
-    general_sigma_finite_filtered_measure_space m a J =
-      (general_filtered_measure_space m a J /\
+Definition gen_sigma_finite_filtered_measure_space_def :
+    gen_sigma_finite_filtered_measure_space m a J =
+      (gen_filtered_measure_space m a J /\
        !n. n IN (carrier J) ==> sigma_finite (m_space m,subsets (a n),measure m))
 End
 
-Theorem sigma_finite_filtered_measure_space_alt_general :
+Theorem sigma_finite_filtered_measure_space_alt_gen :
     !m a. sigma_finite_filtered_measure_space m a <=>
-          general_sigma_finite_filtered_measure_space m a (univ(:num),$<=)
+          gen_sigma_finite_filtered_measure_space m a (univ(:num),$<=)
 Proof
     rw [sigma_finite_filtered_measure_space_alt_all, GSYM CONJ_ASSOC,
-        general_sigma_finite_filtered_measure_space_def,
-        GSYM filtered_measure_space_alt_general, filtered_measure_space_def]
+        gen_sigma_finite_filtered_measure_space_def,
+        GSYM filtered_measure_space_alt_gen, filtered_measure_space_def]
 QED
 
-(* ‘general_martingale m a u (univ(:num),$<=) = martingale m a u’ [1, p.301] *)
-Definition general_martingale_def :
-   general_martingale m a u J =
-     (general_sigma_finite_filtered_measure_space m a J /\
+(* ‘gen_martingale m a u (univ(:num),$<=) = martingale m a u’ [1, p.301] *)
+Definition gen_martingale_def :
+   gen_martingale m a u J =
+     (gen_sigma_finite_filtered_measure_space m a J /\
       (!n. n IN (carrier J) ==> integrable m (u n)) /\
       !i j s. i IN (carrier J) /\ j IN (carrier J) /\ (relation J) i j /\
               s IN (subsets (a i)) ==>
@@ -152,10 +152,10 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
-(*  n-dimensional (general and extreal-based) Borel spaces                   *)
+(*  n-dimensional (gen and extreal-based) Borel spaces                   *)
 (* ------------------------------------------------------------------------- *)
 
-(* ‘fcp_rectangle’ is a generalization of ‘fcp_prod’ *)
+(* ‘fcp_rectangle’ is a genization of ‘fcp_prod’ *)
 Definition fcp_rectangle_def :
     fcp_rectangle (h :num -> 'a set) (:'N) =
       {(v :'a['N]) | !i. i < dimindex(:'N) ==> v ' i IN h i}
@@ -199,7 +199,7 @@ val _ = set_fixity "of_dimension" (Infix(NONASSOC, 470));
 
    NOTE: ‘(\n v. v ' n) = flip $fcp_index’ (C $fcp_index)
 
-   This general definition can be used to convert any (1-dimensional) Borel
+   This gen definition can be used to convert any (1-dimensional) Borel
    sigma-algebra (e.g. ‘borel’ and ‘Borel’) into n-dimensional Borel spaces.
  *)
 Definition sigma_of_dimension_def :
@@ -232,9 +232,9 @@ QED
    This definition is sometimes easier to use, because it requires only the plain
    sigma-generator ‘sigma’ which has many supporting theorems available.
 
-   The proof is a generalization of (the proof of) prod_sigma_alt_sigma_functions.
+   The proof is a genization of (the proof of) prod_sigma_alt_sigma_functions.
 
-   NOTE: in theory, this theorem (and sigma_of_dimension_def) can be further generalized
+   NOTE: in theory, this theorem (and sigma_of_dimension_def) can be further genized
    to support differrent (space B) at each dimensions. So far this is not needed.
  *)
 Theorem sigma_of_dimension_alt :
@@ -729,12 +729,12 @@ End
 Overload Borel_inf = “Borel_inf1”
 
 (* ------------------------------------------------------------------------- *)
-(*  General stochastic processes and typical specializations                 *)
+(*  Gen stochastic processes and typical specializations                 *)
 (* ------------------------------------------------------------------------- *)
 
 (* X(x,t) is a stochastic process, where x IN p_space p, t represents "time"
 
-   NOTE: this is the general stochastic process from any probability space to
+   NOTE: this is the gen stochastic process from any probability space to
    another arbitrary sigma-algebra, not necessarily extreal-valued Borel sets.
    For example, this definition may support complex-valued stochastic process.
  *)
@@ -744,17 +744,30 @@ Definition stochastic_process_def :
        !n. n IN carrier J ==> random_variable (X n) p B)
 End
 
-(* In a more general setting, we have the weaker ‘random_variable (X n) p (b n)’
+(* In a more gen setting, we have the weaker ‘random_variable (X n) p (b n)’
    instead of ‘random_variable (X n) p B’.
  *)
-Definition general_stochastic_process_def :
-    general_stochastic_process (p :'a m_space)
-                               (X :'index -> 'a -> 'b)
-                               (a :'index -> 'b algebra) (A :'b algebra)
-                               (J :'index poset) =
-      (prob_space p /\ general_filtration A a J /\
+Definition gen_stochastic_process_def :
+    gen_stochastic_process (p :'a m_space)
+                           (X :'index -> 'a -> 'b)
+                           (a :'index -> 'b algebra) (A :'b algebra)
+                           (J :'index poset) =
+      (prob_space p /\ gen_filtration A a J /\
        !n. n IN carrier J ==> random_variable (X n) p (a n))
 End
+
+Theorem stochastic_process_alt_gen :
+    !p X B J. stochastic_process p (X :'index -> 'a -> 'b) B J =
+              gen_stochastic_process p X (\n. B) B J
+Proof
+    rw [stochastic_process_def, gen_stochastic_process_def, gen_filtration_def]
+ >> EQ_TAC >> rw []
+ >- (MATCH_MP_TAC SUB_SIGMA_ALGEBRA_REFL >> art [])
+ >> Cases_on ‘J’ >> fs []
+ >> ‘?x. x IN q’ by METIS_TAC [poset_nonempty, IN_APP]
+ >> ‘sub_sigma_algebra B B’ by PROVE_TAC []
+ >> fs [sub_sigma_algebra_def]
+QED
 
 (* For the sake of Kolmogorov's Existence Theorem, we should limit ourselves to
    real-valued (i.e. extreal-valued but always finite) stochastic processes:
@@ -766,16 +779,24 @@ Definition real_stochastic_process_def :
 End
 
 (* an alternative definition *)
-Theorem real_stochastic_process_alt_general :
+Theorem real_stochastic_process_alt :
     !(p :'a m_space) (X :'index -> 'a -> extreal) (J :'index poset).
        real_stochastic_process p X J <=>
-           (stochastic_process p X Borel J /\
-            !n x. n IN carrier J ==> real_random_variable (X n) p)
+       stochastic_process p X Borel J /\
+       !n x. n IN carrier J ==> real_random_variable (X n) p
 Proof
     rw [stochastic_process_def, real_stochastic_process_def,
         real_random_variable_def, SIGMA_ALGEBRA_BOREL]
  >> EQ_TAC >> rw []
 QED
+
+(* |- !p X J.
+        real_stochastic_process p X J <=>
+        gen_stochastic_process p X (\n. Borel) Borel J /\
+        !n. n IN carrier J ==> real_random_variable (X n) p
+ *)
+Theorem real_stochastic_process_alt_gen =
+        real_stochastic_process_alt |> REWRITE_RULE [stochastic_process_alt_gen]
 
 (* not used so far *)
 Definition discrete_process_def :
@@ -796,7 +817,7 @@ End
 
 (* Finite-Dimensional Distributions [6, p.482 (36.1)]
 
-   This definition is general (like stochastic_process_def), but meaningful only
+   This definition is gen (like stochastic_process_def), but meaningful only
    when ‘ALL_DISTINCT (V2L l)’ and H is a Borel set in a sigma-algebra of 'b.
 
    NOTE: listTheory.ALL_DISTINCT_EL_IMP is the principle theorem for ‘ALL_DISTINCT’,
@@ -833,7 +854,7 @@ QED
 
 (* HARD: ‘(\x. FCP i. X (l ' i) x)’ (random element) is indeed a random variable.
 
-   This proof is a generalization of borelTheory.IN_MEASURABLE_BOREL_2D_VECTOR,
+   This proof is a genization of borelTheory.IN_MEASURABLE_BOREL_2D_VECTOR,
    it seriously depends on PREIMAGE_SIGMA and sigma_of_dimension_alt_sigma_algebra.
 
    NOTE: this theorem does not use the ordering information from posets.
@@ -1082,7 +1103,7 @@ Proof
       RW_TAC fcp_ss [] ]
 QED
 
-(* Problem 2.5.7 of [4, p.217], a simple version of the next "indep_vars_cong_general"
+(* Problem 2.5.7 of [4, p.217], a simple version of the next "indep_vars_cong_gen"
 Theorem indep_vars_cong_disjoint :
     !p X B J s t f g.
          prob_space p /\ sigma_algebra B /\ FINITE (J :'index set) /\
@@ -1107,7 +1128,7 @@ QED
 
    For instance, if four r.v.'s A,B,C,D are total independent, so are A+B and C+D.
 
-Theorem indep_vars_cong_general :
+Theorem indep_vars_cong_gen :
     !p X B J f P.
          prob_space p /\ sigma_algebra B /\ FINITE (J :'index set) /\
          indep_vars p (X :'index -> 'a -> 'b) (\n. B) J /\
