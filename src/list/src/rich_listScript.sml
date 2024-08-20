@@ -2660,6 +2660,7 @@ val prefixes_is_prefix_total = Q.store_thm("prefixes_is_prefix_total",
   GEN_TAC THEN Cases THEN SIMP_TAC(srw_ss())[] THEN
   Cases THEN SRW_TAC[][])
 
+(* NOTE: By using LENGTH_TAKE, this ‘n’ is actually ’LENGTH l1’ *)
 Theorem IS_PREFIX_EQ_TAKE :
     !l l1. l1 <<= l <=> ?n. n <= LENGTH l /\ l1 = TAKE n l
 Proof

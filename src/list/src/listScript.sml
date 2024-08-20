@@ -2103,6 +2103,14 @@ Proof
   Cases THEN ASM_SIMP_TAC (srw_ss()) []
 QED
 
+Theorem TAKE_EQ_REWRITE :
+    !l m n. m <= LENGTH l /\ n <= LENGTH l ==> (TAKE m l = TAKE n l <=> m = n)
+Proof
+    rpt STRIP_TAC
+ >> rw [LIST_EQ_REWRITE]
+ >> EQ_TAC >> rw []
+QED
+
 Theorem TAKE_TAKE_MIN:
   !m n. TAKE n (TAKE m l) = TAKE (MIN n m) l
 Proof

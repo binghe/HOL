@@ -4215,7 +4215,7 @@ Definition agree_upto_def :
                             ltree_el (BT' X N r) q
 End
 
-(* Lemma 10.3.11 (1) [1. p.251]
+(* Lemma 10.3.11 [1. p.251]
 
    NOTE: ‘p <> []’ must be added, otherwise each N in Ns cannot be "is_ready".
 
@@ -4237,8 +4237,8 @@ Theorem agree_upto_lemma :
                p <> [] /\ agree_upto X Ms p r /\
               (!M. MEM M Ms ==> subterm X M p r <> NONE) ==>
                ?pi. Boehm_transform pi /\
-                    EVERY is_ready' (MAP (apply pi) Ms) /\
-                    agree_upto X (MAP (apply pi) Ms) p r
+                    EVERY is_ready' (MAP (apply pi) Ms) /\ (* 1 *)
+                    agree_upto X (MAP (apply pi) Ms) p r   (* 2 *)
 Proof
     rpt STRIP_TAC
  >> qabbrev_tac ‘k = LENGTH Ms’
@@ -4846,16 +4846,6 @@ Proof
  >> Q.PAT_X_ASSUM ‘!t. i < k ==> apply p2 _ = _’  K_TAC
  >> Q.PAT_X_ASSUM ‘!i. i < k ==> apply p3 _ = _’  K_TAC
  >> Q.PAT_X_ASSUM ‘!i. i < k ==> _ -h->* _’       K_TAC
- (* NOTE: This is a generalization of Boehm_transform_exists_lemma
- >> Know ‘!q. q <<= p ==>
-              ?pm. !i. i < k ==>
-                       subterm Z (M i ISUB sub k) q <> NONE /\
-                       subterm' Z (M i ISUB sub k) q =
-                       tpm pm (subterm' Z (M i) q ISUB sub k)’
- >- (
-     cheat)
- >> DISCH_TAC
-  *)
  (* now proving agree_upto *)
  >> (Q.PAT_X_ASSUM ‘agree_upto X Ms p r’ MP_TAC \\
      simp [agree_upto_def] \\
@@ -4876,9 +4866,27 @@ Proof
      simp [] \\
      Q.PAT_X_ASSUM ‘M2 = M j1’ (fs o wrap) \\
      Q.PAT_X_ASSUM ‘N2 = M j2’ (fs o wrap) \\
-     qabbrev_tac ‘M2 = M j1’ \\
-     qabbrev_tac ‘N2 = M j2’ \\
-
+     Q.PAT_X_ASSUM ‘M2' = apply pi (M j1)’ K_TAC \\
+     Q.PAT_X_ASSUM ‘N2' = apply pi (M j2)’ K_TAC \\
+     qabbrev_tac ‘M2' = apply pi (M j1)’ \\
+     qabbrev_tac ‘N2' = apply pi (M j2)’ \\
+     qabbrev_tac ‘t1 = VAR (b j1) @* Ns j1 @* tl j1’ \\
+     qabbrev_tac ‘t2 = VAR (b j2) @* Ns j2 @* tl j2’ \\
+     Know ‘solvable t1 /\ solvable t2’
+     >- (rw [Abbr ‘t1’, Abbr ‘t2’, solvable_iff_has_hnf] \\
+         MATCH_MP_TAC hnf_has_hnf >> rw [hnf_appstar]) >> STRIP_TAC \\
+  (* applying BT_of_principle_hnf *)
+     Know ‘BT' X M2' r = BT' X (principle_hnf M2') r’
+     >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+         MATCH_MP_TAC BT_of_principle_hnf \\
+         qunabbrev_tac ‘M2'’ \\
+         METIS_TAC [lameq_solvable_cong]) >> Rewr' \\
+     Know ‘BT' X N2' r = BT' X (principle_hnf N2') r’
+     >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+         MATCH_MP_TAC BT_of_principle_hnf \\
+         qunabbrev_tac ‘N2'’ \\
+         METIS_TAC [lameq_solvable_cong]) >> Rewr' \\
+     simp [Abbr ‘M2'’, Abbr ‘N2'’] \\
   (* NOTE: now we are still missing some important connections:
 
    - ltree_el (BT W M2) q             ~1~ subterm' W M2 q
@@ -4892,14 +4900,50 @@ Proof
      follows a similar idea of [Boehm_transform_exists_lemma].
 
      And the case q = [] is special.
-
-     reverse (Cases_on ‘solvable (subterm' Z M2 q)’)
-     >- (BT_ltree_el_of_unsolvables
-     MP_TAC (Q.SPECL [‘q’, ‘Z’, ‘M (j1 :num)’] BT_subterm_thm) \\
    *)
+     Cases_on ‘q = []’
+     >- (POP_ORW \\
+         Know ‘principle_hnf t1 = t1 /\ principle_hnf t2 = t2’
+         >- (rw [Abbr ‘t1’, Abbr ‘t2’] \\
+             MATCH_MP_TAC principle_hnf_reduce \\
+             rw [hnf_appstar]) >> STRIP_TAC \\
+         simp [BT_ltree_el_NIL] \\
+        ‘!i. principle_hnf (M i) = M0 i’ by rw [Abbr ‘M0’, o_DEF] \\
+         POP_ORW \\
+        ‘!i. LAMl_size (M0 i) = n i’ by rw [Abbr ‘n’, o_DEF] \\
+         POP_ORW \\
+         Know ‘!i. i < k ==> RNEWS r (n i) X = TAKE (n i) vs’
+         >- (rw [Abbr ‘vs’] \\
+             Know ‘RNEWS r (n i) X <<= RNEWS r n_max X’
+             >- (MATCH_MP_TAC RNEWS_prefix >> rw []) \\
+             rw [IS_PREFIX_EQ_TAKE] \\
+             Suff ‘n i = n'’ >- rw [] \\
+             Know ‘LENGTH (RNEWS r (n i) X) =
+                   LENGTH (TAKE n' (RNEWS r n_max X))’ >- rw [] \\
+             simp [RNEWS_def, LENGTH_TAKE]) >> DISCH_TAC \\
+         simp [hnf_appstar, principle_hnf_beta_reduce] \\
+        ‘!i. LENGTH (args i) = m i’ by rw [Abbr ‘m’, o_DEF] \\
+         POP_ORW \\
+         Know ‘TAKE (n j1) vs = TAKE (n j2) vs <=> n j1 = n j2’
+         >- (MATCH_MP_TAC TAKE_EQ_REWRITE >> rw []) >> Rewr' \\
+         STRIP_TAC \\
+        ‘LAMl_size t1 = 0 /\ LAMl_size t2 = 0’
+           by (rw [Abbr ‘t1’, Abbr ‘t2’, GSYM appstar_APPEND, LAMl_size_appstar]) \\
+         NTAC 2 POP_ORW \\
+         simp [Abbr ‘t1’, Abbr ‘t2’, GSYM appstar_APPEND, hnf_head_appstar] \\
+         reverse CONJ_TAC
+         >- (‘LENGTH (l j1) = LENGTH (l j2)’ by rw [] \\
+             simp [Abbr ‘Ns’, Abbr ‘tl’]) \\
+        ‘b j1 = EL (j j1) xs /\ b j2 = EL (j j2) xs’ by rw [] \\
+         NTAC 2 POP_ORW \\
+         AP_THM_TAC >> AP_TERM_TAC (* j j1 = j j2 *) \\
+         simp [Abbr ‘j’, Abbr ‘args'’, Abbr ‘args2’] \\
+        ‘!i. LENGTH (args i) = m i’ by rw [Abbr ‘m’, o_DEF] \\
+         rw []) \\
      cheat)
 QED
 
+(*
 (* Lemma 10.3.11 (3) [1. p.251]
 Theorem agree_upto_lemma_3 :
     !X Ms p. FINITE X /\ EVERY (\e. subterm X e p <> NONE) Ms /\ agree_upto p Ms ==>
