@@ -689,7 +689,8 @@ Proof
 QED
 
 Theorem IN_list_rectangle :
-    !v h N. v IN list_rectangle h N <=> LENGTH v = N /\ !i. i < N ==> EL i v IN h i
+    !v h N. v IN list_rectangle h N <=>
+            LENGTH v = N /\ !i. i < N ==> EL i v IN h i
 Proof
     rw [list_rectangle_def, Once EXTENSION]
 QED
