@@ -703,23 +703,27 @@ End
 (*  Infinite-dimensional Borel space [4, p.178]                              *)
 (* ------------------------------------------------------------------------- *)
 
+(* A cylinder is a set of infinite-dimensional extreals where only finite number
+   of dimensions are bounded.
+ *)
 Definition cylinder_def :
     cylinder (h :num -> 'a set) (N :num) =
       {f :num -> 'a | !i. i < N ==> f i IN h i}
 End
 
 Definition Borel_inf0_def :
-    Borel_inf0 = sigma UNIV {cylinder h N |
-                             !i. i < N ==> ?a. h i = {x | x < Normal a}}
+    Borel_inf0 =
+      sigma UNIV {cylinder h N | !i. i < N ==> ?a. h i = {x | x < Normal a}}
 End
 
 Definition Borel_inf1_def :
-    Borel_inf1 = sigma UNIV {cylinder h N |
-                             !i. i < N ==> h i IN subsets Borel}
+    Borel_inf1 =
+      sigma UNIV {cylinder h N | !i. i < N ==> h i IN subsets Borel}
 End
 
 Definition Borel_inf2_def :
-    Borel_inf2 = sigma UNIV {c | ?N. cylinder2lists c N IN subsets (Borel_lists N)}
+    Borel_inf2 =
+      sigma UNIV {c | ?N. cylinder2lists c N IN subsets (Borel_lists N)}
 End
 
 Overload Borel_inf = “Borel_inf1”

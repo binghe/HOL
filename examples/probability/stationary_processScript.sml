@@ -1,5 +1,5 @@
 (* ========================================================================= *)
-(* The Ergodic Theory                                                        *)
+(* Stationary Process - The Ergodic Theory                                   *)
 (* ========================================================================= *)
 
 open HolKernel Parse boolLib bossLib;
@@ -10,7 +10,24 @@ open sigma_algebraTheory borelTheory measureTheory probabilityTheory
 
 open stochastic_processTheory;
 
-val _ = new_theory "ergodic";
+val _ = new_theory "stationary_process";
+
+(* ------------------------------------------------------------------------- *)
+(*  Stationary process                                                       *)
+(* ------------------------------------------------------------------------- *)
+
+(* Definition 5.1.1 [2, p.33] *)
+Definition stationary_process_def :
+    stationary_process p (X :num -> 'a -> extreal) <=>
+        stochastic_process p X Borel (UNIV,$<=) /\
+        !B k. B IN subsets Borel_inf ==>
+              prob p {x | x IN p_space p /\ (\i. X i x) IN B} =
+              prob p {x | x IN p_space p /\ (\i. X (k + i) x) IN B}
+End
+
+(* ------------------------------------------------------------------------- *)
+(*  Measure-Preserving Transformation                                        *)
+(* ------------------------------------------------------------------------- *)
 
 (* Definition 5.1.3 [2, p.34] (measure-preserving transformation) *)
 Definition mpt_def :
@@ -34,20 +51,8 @@ Proof
     rw [mpt_thm, IN_MEASURABLE]
 QED
 
-(* ------------------------------------------------------------------------- *)
-(*  Stationary process                                                       *)
-(* ------------------------------------------------------------------------- *)
-
-(* Definition 5.1.1 [2, p.33] *)
-Definition stationary_process_def :
-    stationary_process p (X :num -> 'a -> extreal) <=>
-    !B k. B IN subsets Borel_inf ==>
-          prob p {x | x IN p_space p /\ (\i. X i x) IN B} =
-          prob p {x | x IN p_space p /\ (\i. X (k + i) x) IN B}
-End
-
 val _ = export_theory ();
-val _ = html_theory "ergodic";
+val _ = html_theory "stationary_process";
 
 (* References:
 
