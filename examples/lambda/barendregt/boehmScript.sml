@@ -4940,6 +4940,21 @@ Proof
          simp [Abbr ‘j’, Abbr ‘args'’, Abbr ‘args2’] \\
         ‘!i. LENGTH (args i) = m i’ by rw [Abbr ‘m’, o_DEF] \\
          rw []) \\
+     T_TAC \\
+  (* NOTE: ‘solvable (subterm' X (M i) q r)’ only holds when ‘FRONT q <<= p’.
+     The case that ‘unsolvable (subterm' X (M i) q r)’ (which implies q = p)
+     must be treated specially.
+
+     The plan is to first derive ‘BT' X (M j1) r = bot = BT' X (M j2) r’ and
+     then ‘unsolvable (subterm' X (M j2) q r)’. Finally, ‘BT' X t1 r = bot’.
+   *)
+     Cases_on ‘q = p’
+     >- (POP_ORW \\
+         cheat) \\
+  (* applying BT_subterm_thm on ‘M j1/j2’ *)
+     MP_TAC (Q.SPECL [‘q’, ‘X’, ‘M (j1 :num)’, ‘r’] BT_subterm_thm) \\
+     MP_TAC (Q.SPECL [‘q’, ‘X’, ‘M (j2 :num)’, ‘r’] BT_subterm_thm) \\
+     simp [] \\
      cheat)
 QED
 
