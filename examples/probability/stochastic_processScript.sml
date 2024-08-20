@@ -676,6 +676,7 @@ Theorem IN_MEASURABLE_BOREL_FCP =
 (*  List-based n-dimensional Borel spaces                                    *)
 (* ------------------------------------------------------------------------- *)
 
+(* NOTE: ‘0 < N’ is a reasonable assumption sometimes *)
 Definition list_rectangle_def :
     list_rectangle (h :num -> 'a set) N =
       {v | LENGTH v = N /\ !i. i < N ==> EL i v IN h i}
@@ -737,17 +738,227 @@ Proof
     rw [sigma_lists_def, sigma_functions_def, SPACE_SIGMA]
 QED
 
+(* cf. sigma_of_dimension_alt *)
+Theorem sigma_lists_alt :
+    !(B :'a algebra) N.
+      subset_class (space B) (subsets B) /\ space B IN subsets B /\ 0 < N ==>
+      sigma_lists B N =
+      sigma (list_rectangle (\n. space B) N)
+            {list_rectangle h N | h | !i. i < N ==> h i IN subsets B}
+Proof
+    rw [sigma_lists_def, sigma_functions_def]
+ >> Q.ABBREV_TAC (* this is part of the goal, to be replaced by ‘sts’ *)
+   ‘src = BIGUNION
+            (IMAGE (\n. IMAGE (\s. PREIMAGE (EL n) s INTER rectangle (\n. space B) N)
+                              (subsets B))
+                   (count N))’
+ >> Q.ABBREV_TAC
+   ‘sts = BIGUNION (IMAGE (\n. {rectangle h N | h |
+                                                h n IN subsets B /\
+                                                !i. i < N /\ i <> n ==> h i = space B})
+                          (count N))’
+ >> Know ‘src = sts’
+ >- (rw [Abbr ‘src’, Abbr ‘sts’, Once EXTENSION, PREIMAGE_def] \\
+     EQ_TAC >> rw [] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       fs [IN_IMAGE] >> rename1 ‘b IN subsets B’ \\
+       Q.EXISTS_TAC ‘{rectangle h N | h |
+                      h n IN subsets B /\ !i. i < N /\ i <> n ==> h i = space B}’ \\
+       reverse (rw []) >- (Q.EXISTS_TAC ‘n’ >> art []) \\
+       Q.EXISTS_TAC ‘\i. if i = n then b else space B’ >> rw [] \\
+       rw [list_rectangle_def, Once EXTENSION] \\
+       EQ_TAC >> rw [] >| (* 3 trivial subgoals *)
+       [ (* goal 1.1 (of 3) *)
+         Cases_on ‘i = n’ >> rw [],
+         (* goal 1.2 (of 3) *)
+         POP_ASSUM (MP_TAC o (Q.SPEC ‘n’)) >> rw [],
+         (* goal 1.3 (of 3) *)
+         rename1 ‘EL i x IN space B’ \\
+         Q.PAT_X_ASSUM ‘!i. i < LENGTH x ==> P’ (MP_TAC o (Q.SPEC ‘i’)) \\
+         Cases_on ‘i = n’ >> rw [] \\
+         FULL_SIMP_TAC std_ss [subset_class_def] \\
+         METIS_TAC [SUBSET_DEF] ],
+       (* goal 2 (of 2) *)
+       fs [] \\
+       Q.EXISTS_TAC ‘IMAGE (\s. {v | EL n v IN s} INTER rectangle (\n. space B) N)
+                           (subsets B)’ \\
+       reverse (rw []) >- (Q.EXISTS_TAC ‘n’ >> art []) \\
+       Q.EXISTS_TAC ‘h n’ \\
+       rw [list_rectangle_def, Once EXTENSION] \\
+       EQ_TAC >> rw [] >| (* 2 trivial subgoals *)
+       [ (* goal 2.1 (of 2) *)
+         rename1 ‘EL i x IN space B’ \\
+         Cases_on ‘i = n’
+         >- (Q.PAT_X_ASSUM ‘!i. i < LENGTH x ==> EL i x IN h i’ (MP_TAC o (Q.SPEC ‘n’)) \\
+             rw [] \\
+             FULL_SIMP_TAC std_ss [subset_class_def] \\
+             METIS_TAC [SUBSET_DEF]) \\
+         Q.PAT_X_ASSUM ‘!i. i < LENGTH x /\ i <> n ==> P’ (MP_TAC o (Q.SPEC ‘i’)) \\
+         Q.PAT_X_ASSUM ‘!i. i < LENGTH x ==> EL i x IN h i’ (MP_TAC o (Q.SPEC ‘i’)) \\
+         rw [] >> fs [],
+         (* goal 2.2 (of 2) *)
+         Cases_on ‘i = n’ >> rw [] ] ])
+ >> Rewr'
+ >> Q.UNABBREV_TAC ‘src’ (* not needed any more *)
+ (* stage work *)
+ >> Know ‘sigma_algebra (sigma (rectangle (\n. space B) N) sts)’
+ >- (MATCH_MP_TAC SIGMA_ALGEBRA_SIGMA \\
+     rw [Abbr ‘sts’, subset_class_def, SUBSET_DEF] \\
+     gs [IN_list_rectangle] \\
+     Q.PAT_X_ASSUM ‘x = rectangle h N’ K_TAC \\
+     rename1 ‘!i. i < N ==> EL i x IN h i’ \\
+     Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+     Q.PAT_X_ASSUM ‘!i. i < N ==> P’ (MP_TAC o (Q.SPEC ‘i’)) \\
+     RW_TAC std_ss [] \\
+     FULL_SIMP_TAC std_ss [subset_class_def] \\
+     Cases_on ‘i = n’ >- (rw [] >> METIS_TAC [SUBSET_DEF]) \\
+     Q.PAT_X_ASSUM ‘!i. i < N /\ i <> n ==> P’ (MP_TAC o (Q.SPEC ‘i’)) \\
+     RW_TAC std_ss [] >> fs [])
+ >> DISCH_TAC
+ >> ‘sts SUBSET subsets (sigma (rectangle (\n. space B) N) sts)’
+       by PROVE_TAC [SIGMA_SUBSET_SUBSETS]
+ >> Q.ABBREV_TAC ‘prod = {rectangle h N | h | !i. i < N ==> h i IN subsets B}’
+ >> Know ‘prod SUBSET subsets (sigma (rectangle (\n. space B) N) sts)’
+ >- (rw [Abbr ‘prod’, SUBSET_DEF] \\
+     Know ‘rectangle h N =
+           BIGINTER (IMAGE (\n. {v | LENGTH v = N /\ EL n v IN h n /\
+                                     !i. i < N /\ i <> n ==> EL i v IN space B})
+                           (count N))’
+     >- (rw [list_rectangle_def, Once EXTENSION, IN_BIGINTER_IMAGE] \\
+         reverse EQ_TAC >> rw []
+         >- (POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> rw []) \\ (* 0 < N is used here *)
+         FULL_SIMP_TAC std_ss [subset_class_def] \\
+         METIS_TAC [SUBSET_DEF]) >> Rewr' \\
+  (* applying SIGMA_ALGEBRA_FINITE_INTER *)
+     MATCH_MP_TAC SIGMA_ALGEBRA_FINITE_INTER >> rw [] \\
+     qmatch_abbrev_tac ‘A IN _’ \\
+     Suff ‘A IN sts’ >- PROVE_TAC [SUBSET_DEF] \\
+     Q.PAT_X_ASSUM ‘sigma_algebra _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘sts SUBSET _’    K_TAC \\
+     rw [Abbr ‘A’, Abbr ‘sts’, IN_BIGUNION_IMAGE] \\
+     Q.EXISTS_TAC ‘i’ >> rw [] \\
+     rename1 ‘n < N’ \\
+     Q.EXISTS_TAC ‘\i. if i = n then h n else space B’ >> rw [] \\
+     rw [list_rectangle_def, Once EXTENSION] \\
+     EQ_TAC >> rw [] >| (* 3 trivial subgoals *)
+     [ (* goal 1.1 (of 3) *)
+       Cases_on ‘i = n’ >> rw [],
+       (* goal 1.2 (of 3) *)
+       POP_ASSUM (MP_TAC o (Q.SPEC ‘n’)) >> rw [],
+       (* goal 1.3 (of 3) *)
+       rename1 ‘EL i x IN space B’ \\
+       Q.PAT_X_ASSUM ‘!i. i < N ==> P’ (MP_TAC o (Q.SPEC ‘i’)) \\
+       Cases_on ‘i = n’ >> rw [] ])
+ >> DISCH_TAC
+ >> Suff ‘subsets (sigma (rectangle (\n. space B) N) sts) =
+          subsets (sigma (rectangle (\n. space B) N) prod)’
+ >- METIS_TAC [SPACE, SPACE_SIGMA]
+ >> MATCH_MP_TAC SIGMA_SMALLEST >> art []
+ >> reverse CONJ_TAC >- METIS_TAC [SPACE, SPACE_SIGMA]
+ (* stage work *)
+ >> MP_TAC (ISPECL [“sts :('a list set) set”,
+                    “sigma (rectangle (\n. space B) N) (prod :('a list set) set)”]
+                    SIGMA_SUBSET)
+ >> REWRITE_TAC [SPACE_SIGMA]
+ >> DISCH_THEN MATCH_MP_TAC
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC SIGMA_ALGEBRA_SIGMA \\
+     rw [Abbr ‘prod’, subset_class_def, IN_list_rectangle, SUBSET_DEF]
+     >- (fs [IN_list_rectangle]) \\
+     rename1 ‘EL n x IN space B’ \\
+     fs [IN_list_rectangle] \\
+     FULL_SIMP_TAC std_ss [subset_class_def] \\
+     METIS_TAC [SUBSET_DEF])
+ >> MATCH_MP_TAC SUBSET_TRANS
+ >> Q.EXISTS_TAC ‘prod’
+ >> REWRITE_TAC [SIGMA_SUBSET_SUBSETS]
+ >> Q.PAT_X_ASSUM ‘sigma_algebra _’ K_TAC
+ >> Q.PAT_X_ASSUM ‘sts SUBSET _’    K_TAC
+ >> Q.PAT_X_ASSUM ‘prod SUBSET _’   K_TAC
+ >> rw [Abbr ‘sts’, Abbr ‘prod’, SUBSET_DEF]
+ >> fs [IN_list_rectangle]
+ >> Q.EXISTS_TAC ‘h’ >> rw []
+ >> Cases_on ‘i = n’ >> rw []
+QED
+
+(* cf. sigma_of_dimension_alt_sigma_algebra *)
+Theorem sigma_lists_alt_sigma_algebra :
+    !(B :'a algebra) N. sigma_algebra B /\ 0 < N ==>
+      sigma_lists B N =
+      sigma (rectangle (\n. space B) N)
+            {rectangle h N | h | !i. i < N ==> h i IN subsets B}
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC sigma_lists_alt >> art []
+ >> reverse CONJ_TAC
+ >- (MATCH_MP_TAC SIGMA_ALGEBRA_SPACE >> art [])
+ >> fs [sigma_algebra_def, algebra_def]
+QED
+
+(* cf. rectangle_in_sigma_of_dimension *)
+Theorem list_rectangle_in_sigma_lists :
+    !B h N. sigma_algebra B /\ (!i. i < N ==> h i IN subsets B) /\ 0 < N ==>
+            rectangle h N IN subsets (sigma_lists B N)
+Proof
+    RW_TAC std_ss [sigma_lists_alt_sigma_algebra]
+ >> MATCH_MP_TAC IN_SIGMA >> rw [] (* ‘sigma’ is eliminated here *)
+ >> Q.EXISTS_TAC ‘h’ >> art []
+QED
+
+(* cf. RECTANGLE_INTER_STABLE *)
+Theorem list_rectangle_INTER_STABLE :
+  !(B :'a algebra) N C.
+     C = {rectangle h N | h | !i. i < N ==> h i IN subsets B} /\
+     (!s t. s IN subsets B /\ t IN subsets B ==> s INTER t IN subsets B) ==>
+      !s t. s IN C /\ t IN C ==> s INTER t IN C
+Proof
+    RW_TAC set_ss []
+ >> rename1 ‘!i. i < N ==> g i IN subsets B’
+ >> Q.EXISTS_TAC ‘\i. (g i) INTER (h i)’
+ >> rw [list_rectangle_def, Once EXTENSION]
+ >> EQ_TAC >> rw []
+QED
+
 (* cf. Borel_space (:'N) in stochastic_processTheory. This is the list version. *)
 Definition Borel_lists_def :
    Borel_lists N = sigma_lists Borel N
 End
 
+(* |- !N. sigma_algebra (Borel_lists N) *)
+Theorem sigma_algebra_Borel_lists =
+    REWRITE_RULE [GSYM Borel_lists_def]
+                 (ISPEC “Borel” sigma_algebra_sigma_lists)
+
+(* |- !N. Borel_lists N = sigma {v | LENGTH v = N} (\n. Borel) EL (count N): *)
+Theorem Borel_lists_alt_sigma_functions =
+        Borel_lists_def
+     |> REWRITE_RULE [sigma_lists_def, SPACE_BOREL, list_rectangle_UNIV]
+
+(* cf. Borel_space_alt_sigma *)
+Theorem Borel_lists_alt_sigma :
+    !N. 0 < N ==>
+        Borel_lists N =
+        sigma {v | LENGTH v = N}
+              {rectangle h N | h | !i. i < N ==> h i IN subsets Borel}
+Proof
+    rw [SPACE_BOREL, SIGMA_ALGEBRA_BOREL, Borel_lists_def,
+        sigma_lists_alt_sigma_algebra, list_rectangle_UNIV]
+QED
+
+(* |- !h N.
+        (!i. i < N ==> h i IN subsets Borel) /\ 0 < N ==>
+        rectangle h N IN subsets (Borel_lists N)
+ *)
+Theorem list_rectangle_IN_Borel_lists =
+    REWRITE_RULE [SIGMA_ALGEBRA_BOREL, GSYM Borel_lists_def]
+                 (ISPEC “Borel” list_rectangle_in_sigma_lists)
+
 (* ------------------------------------------------------------------------- *)
 (*  Infinite-dimensional Borel space [4, p.178]                              *)
 (* ------------------------------------------------------------------------- *)
 
-(* A cylinder is a set of infinite-dimensional extreals where only finite number
-   of dimensions are bounded.
+(* A cylinder is a set of infinite-dimensional values (represented by :num ->
+   'a functions) where only the first N dimensions are specified (by h).
  *)
 Definition cylinder_def :
     cylinder (h :num -> 'a set) (N :num) =
