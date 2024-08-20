@@ -152,10 +152,10 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
-(*  n-dimensional (gen and extreal-based) Borel spaces                   *)
+(*  N-dimensional (gen and extreal-based) Borel spaces                       *)
 (* ------------------------------------------------------------------------- *)
 
-(* ‘fcp_rectangle’ is a genization of ‘fcp_prod’ *)
+(* ‘fcp_rectangle’ is a generalisation of ‘fcp_prod’ *)
 Definition fcp_rectangle_def :
     fcp_rectangle (h :num -> 'a set) (:'N) =
       {(v :'a['N]) | !i. i < dimindex(:'N) ==> v ' i IN h i}
@@ -234,7 +234,7 @@ QED
 
    The proof is a genization of (the proof of) prod_sigma_alt_sigma_functions.
 
-   NOTE: in theory, this theorem (and sigma_of_dimension_def) can be further genized
+   NOTE: In theory, this theorem (and sigma_of_dimension_def) can be generalised
    to support differrent (space B) at each dimensions. So far this is not needed.
  *)
 Theorem sigma_of_dimension_alt :
@@ -682,6 +682,33 @@ Definition list_rectangle_def :
 End
 Overload rectangle = “list_rectangle”
 
+Theorem list_rectangle_UNIV :
+    list_rectangle (\n. UNIV) N = {v | LENGTH v = N}
+Proof
+    rw [list_rectangle_def, Once EXTENSION]
+QED
+
+Theorem IN_list_rectangle :
+    !v h N. v IN list_rectangle h N <=> LENGTH v = N /\ !i. i < N ==> EL i v IN h i
+Proof
+    rw [list_rectangle_def, Once EXTENSION]
+QED
+
+Theorem PREIMAGE_list_rectangle :
+    !(f :'a -> 'b list) (h :num -> 'b set) N.
+        (!x. LENGTH (f x) = N) ==>
+        PREIMAGE f (list_rectangle h N) =
+        BIGINTER (IMAGE (\n. PREIMAGE (\x. EL n (f x)) (h n)) (count N))
+Proof
+    rw [Once EXTENSION, IN_PREIMAGE, IN_list_rectangle]
+ >> EQ_TAC >> rw [PREIMAGE_def] >- rw []
+ >> Q.PAT_X_ASSUM ‘!P. _ ==> x IN P’
+       (MP_TAC o (Q.SPEC ‘{x | EL i ((f :'a -> 'b list) x) IN h i}’))
+ >> simp []
+ >> DISCH_THEN MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘i’ >> art []
+QED
+
 (* converting cylinders back to rectangles by converting infinite sequences to
    finite lists (i.e., cutting off the tails).
  *)
@@ -693,6 +720,21 @@ Definition sigma_lists_def :
    sigma_lists B N = sigma_functions (rectangle (\n. space B) N)
                                      (\n. B) EL (count N)
 End
+
+Theorem sigma_algebra_sigma_lists :
+    !(B :'a algebra) N. sigma_algebra (sigma_lists B N)
+Proof
+    rw [sigma_lists_def, sigma_functions_def, list_rectangle_def]
+ >> MATCH_MP_TAC SIGMA_ALGEBRA_SIGMA
+ >> rw [subset_class_def, SUBSET_DEF, IN_BIGUNION_IMAGE]
+ >> fs [IN_INTER, IN_PREIMAGE]
+QED
+
+Theorem space_sigma_lists :
+    !(B :'a algebra) N. space (sigma_lists B N) = list_rectangle (\n. space B) N
+Proof
+    rw [sigma_lists_def, sigma_functions_def, SPACE_SIGMA]
+QED
 
 (* cf. Borel_space (:'N) in stochastic_processTheory. This is the list version. *)
 Definition Borel_lists_def :
@@ -727,6 +769,9 @@ Definition Borel_inf2_def :
 End
 
 Overload Borel_inf = “Borel_inf1”
+
+
+(* TODO *)
 
 (* ------------------------------------------------------------------------- *)
 (*  Gen stochastic processes and typical specializations                 *)
