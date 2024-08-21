@@ -1,8 +1,7 @@
 (* ========================================================================= *)
 (* The Theory of General Stochastic Processes                                *)
 (*                                                                           *)
-(* Author: Chun Tian (binghe) <binghe.lisp@gmail.com> (2021 - 2022)          *)
-(* Fondazione Bruno Kessler and University of Trento, Italy                  *)
+(* Author: Chun Tian (binghe) <binghe.lisp@gmail.com> (2021 - 2024)          *)
 (* ========================================================================= *)
 
 open HolKernel Parse boolLib bossLib;
