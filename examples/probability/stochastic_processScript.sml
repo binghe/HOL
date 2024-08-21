@@ -79,11 +79,24 @@ Proof
 QED
 
 Definition gen_filtration_def :
-   gen_filtration A a J <=>
+    gen_filtration A a J <=>
       poset J /\ (!n. n IN (carrier J) ==> sub_sigma_algebra (a n) A) /\
       (!i j. i IN (carrier J) /\ j IN (carrier J) /\ (relation J) i j ==>
              subsets (a i) SUBSET subsets (a j))
 End
+
+Theorem gen_filtration_imp_sigma_algebra :
+    !A a J. gen_filtration A a J ==> sigma_algebra A
+Proof
+    rw [gen_filtration_def]
+ >> Know ‘?x. x IN carrier J’
+ >- (Cases_on ‘J’ >> fs [IN_APP] \\
+     MATCH_MP_TAC poset_nonempty \\
+     Q.EXISTS_TAC ‘r’ >> art [])
+ >> STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘!n. n IN carrier J ==> P’ (MP_TAC o Q.SPEC ‘x’)
+ >> rw [sub_sigma_algebra_def]
+QED
 
 Theorem filtration_alt_gen : (* was: filtration_alt *)
     !A a. filtration A a = gen_filtration A a (univ(:num),$<=)
@@ -711,13 +724,6 @@ Proof
  >> Q.EXISTS_TAC ‘i’ >> art []
 QED
 
-(* converting cylinders back to rectangles by converting infinite sequences to
-   finite lists (i.e., cutting off the tails).
- *)
-Definition cylinder2lists_def :
-    cylinder2lists c N = IMAGE (\f. GENLIST f N) c
-End
-
 Definition sigma_lists_def :
    sigma_lists B N = sigma_functions (rectangle (\n. space B) N)
                                      (\n. B) EL (count N)
@@ -961,43 +967,90 @@ Theorem list_rectangle_IN_Borel_lists =
    'a functions) where only the first N dimensions are specified (by h).
  *)
 Definition cylinder_def :
-    cylinder (h :num -> 'a set) (N :num) =
-      {f :num -> 'a | !i. i < N ==> f i IN h i}
+    cylinder (h :num -> 'a set) (N :num) = {f :num -> 'a | !i. i < N ==> f i IN h i}
 End
+
+(* converting cylinders back to rectangles by converting infinite sequences to
+   finite lists (i.e., cutting off the tails).
+ *)
+Definition cylinder2lists_def :
+    cylinder2lists c N = IMAGE (\f. GENLIST f N) c
+End
+
+Theorem cylinder2lists_cylinder :
+    !h N. cylinder2lists (cylinder h N) N =
+          {GENLIST f N | f | !i. i < N ==> f i IN h i}
+Proof
+    rw [cylinder2lists_def, cylinder_def]
+ >> rw [Once EXTENSION]
+QED
 
 Definition Borel_inf0_def :
     Borel_inf0 =
-      sigma UNIV {cylinder h N | !i. i < N ==> ?a. h i = {x | x < Normal a}}
+      sigma UNIV {cylinder h N | 0 < N /\ !i. i < N ==> ?a. h i = {x | x < Normal a}}
 End
 
 Definition Borel_inf1_def :
     Borel_inf1 =
-      sigma UNIV {cylinder h N | !i. i < N ==> h i IN subsets Borel}
+      sigma UNIV {cylinder h N | 0 < N /\ !i. i < N ==> h i IN subsets Borel}
 End
 
 Definition Borel_inf2_def :
     Borel_inf2 =
-      sigma UNIV {c | ?N. cylinder2lists c N IN subsets (Borel_lists N)}
+      sigma UNIV {c | ?N. 0 < N /\ cylinder2lists c N IN subsets (Borel_lists N)}
 End
 
 Overload Borel_inf = “Borel_inf1”
 
+Theorem Borel_inf0_SUBSET_inf1 :
+    subsets Borel_inf0 SUBSET subsets Borel_inf1
+Proof
+    REWRITE_TAC [Borel_inf0_def]
+ >> ‘univ(:num -> extreal) = space Borel_inf1’ by rw [SPACE_SIGMA, Borel_inf1_def]
+ >> POP_ORW
+ >> MATCH_MP_TAC SIGMA_SUBSET
+ >> rw [Borel_inf1_def, SIGMA_ALGEBRA_SIGMA_UNIV]
+ >> MATCH_MP_TAC SUBSET_TRANS
+ >> Q.EXISTS_TAC ‘{cylinder h N | 0 < N /\ !i. i < N ==> h i IN subsets Borel}’
+ >> rw [SIGMA_SUBSET_SUBSETS]
+ >> rw [SUBSET_DEF]
+ >> qexistsl_tac [‘h’, ‘N’] >> rw []
+ >> RES_TAC
+ >> rw [BOREL_MEASURABLE_SETS_RO]
+QED
 
-(* TODO *)
+Theorem Borel_inf1_SUBSET_inf2 :
+    subsets Borel_inf1 SUBSET subsets Borel_inf2
+Proof
+    REWRITE_TAC [Borel_inf1_def]
+ >> ‘univ(:num -> extreal) = space Borel_inf2’ by rw [SPACE_SIGMA, Borel_inf2_def]
+ >> POP_ORW
+ >> MATCH_MP_TAC SIGMA_SUBSET
+ >> rw [Borel_inf2_def, SIGMA_ALGEBRA_SIGMA_UNIV]
+ >> MATCH_MP_TAC SUBSET_TRANS
+ >> Q.EXISTS_TAC ‘{c | ?N. 0 < N /\ cylinder2lists c N IN subsets (Borel_lists N)}’
+ >> rw [SIGMA_SUBSET_SUBSETS]
+ >> rw [SUBSET_DEF]
+ >> Q.EXISTS_TAC ‘N’ >> art []
+ >> cheat
+QED
 
 (* ------------------------------------------------------------------------- *)
-(*  Gen stochastic processes and typical specializations                 *)
+(*  General stochastic processes and typical specialisations                 *)
 (* ------------------------------------------------------------------------- *)
 
-(* X(x,t) is a stochastic process, where x IN p_space p, t represents "time"
+(* ‘X t x’ is a stochastic process, where ‘x IN p_space p’, t represents "time".
 
    NOTE: this is the gen stochastic process from any probability space to
    another arbitrary sigma-algebra, not necessarily extreal-valued Borel sets.
    For example, this definition may support complex-valued stochastic process.
  *)
 Definition stochastic_process_def :
-    stochastic_process p (X :'index -> 'a -> 'b) (B :'b algebra) (J :'index poset) =
-      (prob_space p /\ poset J /\ sigma_algebra B /\
+    stochastic_process (p :'a m_space)
+                       (X :'index -> 'a -> 'b)
+                       (B :'b algebra)
+                       (J :'index poset) =
+      (prob_space p /\ sigma_algebra B /\ poset J /\
        !n. n IN carrier J ==> random_variable (X n) p B)
 End
 
