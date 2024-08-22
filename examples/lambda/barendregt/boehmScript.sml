@@ -4371,7 +4371,7 @@ Proof
  >> qabbrev_tac ‘p2 = GENLIST (\i. [P/y i]) k’
  >> ‘Boehm_transform p2’ by rw [Boehm_transform_def, Abbr ‘p2’, EVERY_GENLIST]
  (* p2 can be rewritten to an ISUB *)
- >> qabbrev_tac ‘sub = REVERSE o (GENLIST (\i. (P,y i)))’
+ >> qabbrev_tac ‘sub = \k. REVERSE (GENLIST (\i. (P,y i)) k)’
  >> Know ‘!t. apply p2 t = t ISUB sub k’
  >- (simp [Abbr ‘p2’, Abbr ‘sub’] \\
      Q.SPEC_TAC (‘k’, ‘j’) \\
@@ -4863,25 +4863,23 @@ Proof
      Q.PAT_X_ASSUM ‘N2 = M j2’ (rfs o wrap) \\
      Q.PAT_X_ASSUM ‘M2' = apply pi (M j1)’ K_TAC \\
      Q.PAT_X_ASSUM ‘N2' = apply pi (M j2)’ K_TAC \\
-     qabbrev_tac ‘M2' = apply pi (M j1)’ \\
-     qabbrev_tac ‘N2' = apply pi (M j2)’ \\
-     qabbrev_tac ‘t1 = VAR (b j1) @* Ns j1 @* tl j1’ \\
-     qabbrev_tac ‘t2 = VAR (b j2) @* Ns j2 @* tl j2’ \\
-     Know ‘solvable t1 /\ solvable t2’
-     >- (rw [Abbr ‘t1’, Abbr ‘t2’, solvable_iff_has_hnf] \\
-         MATCH_MP_TAC hnf_has_hnf >> rw [hnf_appstar]) >> STRIP_TAC \\
+     qabbrev_tac ‘M' = \i. apply pi (M i)’ >> simp [] \\
+     qabbrev_tac ‘h = \i. VAR (b i) @* Ns i @* tl i’ \\
+     Know ‘!i. solvable (h i)’
+     >- (rw [Abbr ‘h’, solvable_iff_has_hnf] \\
+         MATCH_MP_TAC hnf_has_hnf >> rw [hnf_appstar]) >> DISCH_TAC \\
   (* applying BT_of_principle_hnf *)
-     Know ‘BT' X M2' r = BT' X (principle_hnf M2') r’
+     Know ‘BT' X (M' j1) r = BT' X (principle_hnf (M' j1)) r’
      >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
          MATCH_MP_TAC BT_of_principle_hnf \\
-         qunabbrev_tac ‘M2'’ \\
+         simp [Abbr ‘M'’] \\
          METIS_TAC [lameq_solvable_cong]) >> Rewr' \\
-     Know ‘BT' X N2' r = BT' X (principle_hnf N2') r’
+     Know ‘BT' X (M' j2) r = BT' X (principle_hnf (M' j2)) r’
      >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
          MATCH_MP_TAC BT_of_principle_hnf \\
-         qunabbrev_tac ‘N2'’ \\
+         simp [Abbr ‘M'’] \\
          METIS_TAC [lameq_solvable_cong]) >> Rewr' \\
-     simp [Abbr ‘M2'’, Abbr ‘N2'’] \\
+     simp [Abbr ‘M'’] \\
   (* NOTE: now we are still missing some important connections:
 
    - ltree_el (BT W M2) q             ~1~ subterm' W M2 q
@@ -4898,11 +4896,11 @@ Proof
    *)
      Cases_on ‘q = []’
      >- (POP_ORW \\
-         Know ‘principle_hnf t1 = t1 /\ principle_hnf t2 = t2’
-         >- (rw [Abbr ‘t1’, Abbr ‘t2’] \\
-             MATCH_MP_TAC principle_hnf_reduce \\
-             rw [hnf_appstar]) >> STRIP_TAC \\
          simp [BT_ltree_el_NIL] \\
+         Know ‘!i. principle_hnf (h i) = h i’
+         >- (rw [Abbr ‘h’] \\
+             MATCH_MP_TAC principle_hnf_reduce \\
+             rw [hnf_appstar]) >> Rewr' \\
          Know ‘!i. i < k ==> RNEWS r (n i) X = TAKE (n i) vs’
          >- (rw [Abbr ‘vs’] \\
              Know ‘RNEWS r (n i) X <<= RNEWS r n_max X’
@@ -4916,16 +4914,15 @@ Proof
          Know ‘TAKE (n j1) vs = TAKE (n j2) vs <=> n j1 = n j2’
          >- (MATCH_MP_TAC TAKE_EQ_REWRITE >> rw []) >> Rewr' \\
          STRIP_TAC \\
-        ‘LAMl_size t1 = 0 /\ LAMl_size t2 = 0’
-           by (rw [Abbr ‘t1’, Abbr ‘t2’, GSYM appstar_APPEND, LAMl_size_appstar]) \\
-         NTAC 2 POP_ORW \\
-         simp [Abbr ‘t1’, Abbr ‘t2’, GSYM appstar_APPEND, hnf_head_appstar] \\
+        ‘!i. LAMl_size (h i) = 0’
+           by rw [Abbr ‘h’, GSYM appstar_APPEND, LAMl_size_appstar] \\
+         simp [Abbr ‘h’, GSYM appstar_APPEND, hnf_head_appstar] \\
          reverse CONJ_TAC
          >- (‘LENGTH (l j1) = LENGTH (l j2)’ by rw [] \\
              simp [Abbr ‘Ns’, Abbr ‘tl’]) \\
         ‘b j1 = EL (j j1) xs /\ b j2 = EL (j j2) xs’ by rw [] \\
          NTAC 2 POP_ORW \\
-         AP_THM_TAC >> AP_TERM_TAC (* j j1 = j j2 *) \\
+         Suff ‘j j1 = j j2’ >- Rewr \\
          simp [Abbr ‘j’, Abbr ‘args'’, Abbr ‘args2’]) \\
   (* NOTE: ‘solvable (subterm' X (M i) q r)’ only holds when ‘q <<= FRONT p’.
      The case that ‘unsolvable (subterm' X (M i) q r)’ (which implies q = p)
@@ -4933,7 +4930,20 @@ Proof
 
      The plan is to first derive ‘BT' X (M j1) r = bot = BT' X (M j2) r’ and
      then ‘unsolvable (subterm' X (M j2) q r)’. Finally, ‘BT' X t1 r = bot’.
+
+     Anyway, now we have p <> [] /\ q <> [] /\ q <<= p.
    *)
+     reverse (Cases_on ‘solvable (subterm' X (M j1) q r)’)
+     >- (‘q <<= FRONT p \/ q = p’ by METIS_TAC [IS_PREFIX_FRONT_CASES]
+         >- (‘solvable (subterm' X (M j1) q r)’ by METIS_TAC []) \\
+         POP_ASSUM (fs o wrap) >> T_TAC \\
+         cheat) \\
+     Know ‘solvable (subterm' X (M j2) q r)’
+     >- cheat \\
+     DISCH_TAC \\
+  (* applying BT_subterm_thm *)
+     MP_TAC (Q.SPECL [‘q’, ‘X’, ‘M (j1 :num)’, ‘r’] BT_subterm_thm) \\
+     simp [] \\
      cheat)
 QED
 

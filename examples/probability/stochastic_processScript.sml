@@ -1,5 +1,5 @@
 (* ========================================================================= *)
-(* The Theory of General Stochastic Processes                                *)
+(* stochastic_processScript.sml: Theory of General Stochastic Processes      *)
 (*                                                                           *)
 (* Author: Chun Tian (binghe) <binghe.lisp@gmail.com> (2021 - 2024)          *)
 (* ========================================================================= *)
