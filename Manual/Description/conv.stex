@@ -565,7 +565,7 @@ always succeeds, by replacing failures with the identity conversion.
 \begin{holboxed}
 \index{TRY_CONV@\ml{TRY\_CONV}|pin}
 \begin{verbatim}
-   TRY_CONV : conv
+   TRY_CONV : conv -> conv
 \end{verbatim}\end{holboxed}
 
 \noindent If $c\ t$ evaluates to $\ml{|-}\ t\ml{=}t'$, then
@@ -609,7 +609,7 @@ of a term.
 \begin{holboxed}
 \index{SUB_CONV@\ml{SUB\_CONV}|pin}
 \begin{verbatim}
-   SUB_CONV : conv
+   SUB_CONV : conv -> conv
 \end{verbatim}\end{holboxed}
 
 \noindent In particular:
