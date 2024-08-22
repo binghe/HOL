@@ -2726,6 +2726,25 @@ Proof
  >> rw []
 QED
 
+Theorem IS_PREFIX_FRONT_CASES :
+    !l l1. l <> [] ==> (l1 <<= l <=> l = l1 \/ l1 <<= FRONT l)
+Proof
+    rpt GEN_TAC
+ >> STRIP_TAC
+ >> reverse EQ_TAC
+ >- (STRIP_TAC >- rw [IS_PREFIX_REFL] \\
+     MATCH_MP_TAC IS_PREFIX_TRANS \\
+     Q.EXISTS_TAC ‘FRONT l’ >> rw [] \\
+     MATCH_MP_TAC IS_PREFIX_BUTLAST' >> rw [])
+ >> rw [IS_PREFIX_EQ_TAKE, LENGTH_FRONT]
+ >> ‘n = LENGTH l \/ n < LENGTH l’ by rw []
+ >- (DISJ1_TAC >> ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+     rw [TAKE_LENGTH_ID_rwt2])
+ >> DISJ2_TAC
+ >> Q.EXISTS_TAC ‘n’
+ >> rw [TAKE_FRONT]
+QED
+
 (* |- !f m n. GENLIST f m <<= GENLIST f n <=> m <= n *)
 Theorem IS_PREFIX_GENLIST = isPREFIX_GENLIST
 
