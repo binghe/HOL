@@ -1215,24 +1215,28 @@ QED
  *)
 Theorem BT_ltree_el_of_unsolvables :
     !p X M r. FINITE X /\ FV M SUBSET X UNION RANK r /\
-              subterm X M p r <> NONE /\ unsolvable (subterm' X M p r) ==>
-              ltree_el (BT' X M r) p = SOME bot
+              subterm X M p r <> NONE ==>
+             (unsolvable (subterm' X M p r) <=>
+              ltree_el (BT' X M r) p = SOME bot)
 Proof
     Induct_on ‘p’
- >- rw [BT_of_unsolvables, ltree_el_def]
+ >- (rpt STRIP_TAC \\
+     EQ_TAC >- rw [BT_of_unsolvables, ltree_el_def] \\
+     rpt STRIP_TAC \\
+     fs [BT_ltree_el_NIL])
  >> rpt STRIP_TAC
  >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::p’, ‘r’] subterm_solvable_lemma)
  >> rw []
  >> POP_ASSUM (MP_TAC o (Q.SPEC ‘[]’))
  >> rw [] (* solvable M *)
- >> Q.PAT_X_ASSUM ‘unsolvable (subterm' X M (h::p) r)’ MP_TAC
  >> Q.PAT_X_ASSUM ‘subterm X M (h::p) r <> NONE’ MP_TAC
  >> Q.PAT_X_ASSUM ‘!q. q <<= h::p ==> subterm X M q r <> NONE’ K_TAC
- (* BEGIN Norrish's advanced tactics *)
+ (* applying Norrish's 4 advanced tactics *)
  >> CONV_TAC (UNBETA_CONV “subterm X M (h::p) r”)
  >> qmatch_abbrev_tac ‘P _’
  >> RW_TAC bool_ss [subterm_def]
  >> simp [Abbr ‘P’]
+ (* applying Norrish's 4 advanced tactics *)
  >> CONV_TAC (UNBETA_CONV “BT' X M r”)
  >> qmatch_abbrev_tac ‘P _’
  >> RW_TAC bool_ss [BT_def, Once ltree_unfold, BT_generator_def]
@@ -1262,7 +1266,7 @@ Proof
  >> ‘Ms = args’ by rw [Abbr ‘Ms’]
  >> POP_ASSUM (fs o wrap)
  >> T_TAC
- >> rpt DISCH_TAC
+ >> DISCH_TAC
  (* applying IH *)
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
  (* extra goals *)
@@ -1275,24 +1279,28 @@ QED
  *)
 Theorem BT_ltree_lookup_of_unsolvables :
     !p X M r. FINITE X /\ FV M SUBSET X UNION RANK r /\
-              subterm X M p r <> NONE /\ unsolvable (subterm' X M p r) ==>
-              ltree_lookup (BT' X M r) p = SOME bot
+              subterm X M p r <> NONE ==>
+             (unsolvable (subterm' X M p r) <=>
+              ltree_lookup (BT' X M r) p = SOME bot)
 Proof
     Induct_on ‘p’
- >- rw [BT_of_unsolvables, ltree_lookup_def]
+ >- (rpt STRIP_TAC \\
+     EQ_TAC >- rw [BT_of_unsolvables, ltree_lookup_def] \\
+     rpt STRIP_TAC \\
+     fs [ltree_lookup, BT_def, BT_generator_def, Once ltree_unfold])
  >> rpt STRIP_TAC
  >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::p’, ‘r’] subterm_solvable_lemma)
  >> rw []
  >> POP_ASSUM (MP_TAC o (Q.SPEC ‘[]’))
  >> rw [] (* solvable M *)
- >> Q.PAT_X_ASSUM ‘unsolvable (subterm' X M (h::p) r)’ MP_TAC
  >> Q.PAT_X_ASSUM ‘subterm X M (h::p) r <> NONE’ MP_TAC
  >> Q.PAT_X_ASSUM ‘!q. q <<= h::p ==> subterm X M q r <> NONE’ K_TAC
- (* BEGIN Norrish's advanced tactics *)
+ (* applying Norrish's 4 advanced tactics *)
  >> CONV_TAC (UNBETA_CONV “subterm X M (h::p) r”)
  >> qmatch_abbrev_tac ‘P _’
  >> RW_TAC bool_ss [subterm_def]
  >> simp [Abbr ‘P’]
+ (* applying Norrish's 4 advanced tactics *)
  >> CONV_TAC (UNBETA_CONV “BT' X M r”)
  >> qmatch_abbrev_tac ‘P _’
  >> RW_TAC bool_ss [BT_def, Once ltree_unfold, BT_generator_def]
@@ -1322,7 +1330,7 @@ Proof
  >> ‘Ms = args’ by rw [Abbr ‘Ms’]
  >> POP_ASSUM (fs o wrap)
  >> T_TAC
- >> rpt DISCH_TAC
+ >> DISCH_TAC
  (* applying IH *)
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
  (* extra goals *)
@@ -4864,9 +4872,9 @@ Proof
      Q.PAT_X_ASSUM ‘M2' = apply pi (M j1)’ K_TAC \\
      Q.PAT_X_ASSUM ‘N2' = apply pi (M j2)’ K_TAC \\
      qabbrev_tac ‘M' = \i. apply pi (M i)’ >> simp [] \\
-     qabbrev_tac ‘h = \i. VAR (b i) @* Ns i @* tl i’ \\
-     Know ‘!i. solvable (h i)’
-     >- (rw [Abbr ‘h’, solvable_iff_has_hnf] \\
+     qabbrev_tac ‘H = \i. VAR (b i) @* Ns i @* tl i’ \\
+     Know ‘!i. solvable (H i)’
+     >- (rw [Abbr ‘H’, solvable_iff_has_hnf] \\
          MATCH_MP_TAC hnf_has_hnf >> rw [hnf_appstar]) >> DISCH_TAC \\
   (* applying BT_of_principle_hnf *)
      Know ‘BT' X (M' j1) r = BT' X (principle_hnf (M' j1)) r’
@@ -4897,8 +4905,8 @@ Proof
      Cases_on ‘q = []’
      >- (POP_ORW \\
          simp [BT_ltree_el_NIL] \\
-         Know ‘!i. principle_hnf (h i) = h i’
-         >- (rw [Abbr ‘h’] \\
+         Know ‘!i. principle_hnf (H i) = H i’
+         >- (rw [Abbr ‘H’] \\
              MATCH_MP_TAC principle_hnf_reduce \\
              rw [hnf_appstar]) >> Rewr' \\
          Know ‘!i. i < k ==> RNEWS r (n i) X = TAKE (n i) vs’
@@ -4914,9 +4922,9 @@ Proof
          Know ‘TAKE (n j1) vs = TAKE (n j2) vs <=> n j1 = n j2’
          >- (MATCH_MP_TAC TAKE_EQ_REWRITE >> rw []) >> Rewr' \\
          STRIP_TAC \\
-        ‘!i. LAMl_size (h i) = 0’
-           by rw [Abbr ‘h’, GSYM appstar_APPEND, LAMl_size_appstar] \\
-         simp [Abbr ‘h’, GSYM appstar_APPEND, hnf_head_appstar] \\
+        ‘!i. LAMl_size (H i) = 0’
+           by rw [Abbr ‘H’, GSYM appstar_APPEND, LAMl_size_appstar] \\
+         simp [Abbr ‘H’, GSYM appstar_APPEND, hnf_head_appstar] \\
          reverse CONJ_TAC
          >- (‘LENGTH (l j1) = LENGTH (l j2)’ by rw [] \\
              simp [Abbr ‘Ns’, Abbr ‘tl’]) \\
@@ -4937,13 +4945,38 @@ Proof
      >- (‘q <<= FRONT p \/ q = p’ by METIS_TAC [IS_PREFIX_FRONT_CASES]
          >- (‘solvable (subterm' X (M j1) q r)’ by METIS_TAC []) \\
          POP_ASSUM (fs o wrap) >> T_TAC \\
+         Know ‘unsolvable (subterm' X (M j1) p r) <=>
+               ltree_el (BT' X (M j1) r) p = SOME bot’
+         >- (MATCH_MP_TAC BT_ltree_el_of_unsolvables >> rw []) >> rw [] \\
+         Know ‘unsolvable (subterm' X (M j2) p r) <=>
+               ltree_el (BT' X (M j2) r) p = SOME bot’
+         >- (MATCH_MP_TAC BT_ltree_el_of_unsolvables >> rw []) >> rw [] \\
+         NTAC 2 (Q.PAT_X_ASSUM ‘ltree_el _ p = SOME bot’ K_TAC) \\
+      (* TODO *)
          cheat) \\
-     Know ‘solvable (subterm' X (M j2) q r)’
-     >- cheat \\
-     DISCH_TAC \\
-  (* applying BT_subterm_thm *)
+     reverse (Cases_on ‘solvable (subterm' X (M j2) q r)’)
+     >- (‘q <<= FRONT p \/ q = p’ by METIS_TAC [IS_PREFIX_FRONT_CASES]
+         >- (‘solvable (subterm' X (M j2) q r)’ by METIS_TAC []) \\
+         POP_ASSUM (fs o wrap) >> T_TAC \\
+         Know ‘unsolvable (subterm' X (M j2) p r) <=>
+               ltree_el (BT' X (M j2) r) p = SOME bot’
+         >- (MATCH_MP_TAC BT_ltree_el_of_unsolvables >> rw []) >> simp [] \\
+      (* applying BT_subterm_thm *)
+         MP_TAC (Q.SPECL [‘p’, ‘X’, ‘M (j1 :num)’, ‘r’] BT_subterm_thm) \\
+         rw [] >> fs [] \\
+         rename1 ‘(\(N,r). NONE) z = SOME T’ \\
+         Cases_on ‘z’ >> fs []) \\
+  (* So they are both solvable. Now comes the dirty assumptions. *)
      MP_TAC (Q.SPECL [‘q’, ‘X’, ‘M (j1 :num)’, ‘r’] BT_subterm_thm) \\
-     simp [] \\
+     rw [] \\ (* This asserts ‘x’ *)
+     NTAC 2 (Cases_on ‘x’ >> fs []) \\
+     rename1 ‘subterm X (M j1) q r = SOME (N1,r1)’ \\
+     rename1 ‘ltree_el (BT' X (M j2) r) q = SOME (SOME (vs1,y1),m1)’ \\
+     Q.PAT_X_ASSUM ‘_ = SOME (vs1,y1)’ K_TAC \\
+     MP_TAC (Q.SPECL [‘q’, ‘X’, ‘M (j2 :num)’, ‘r’] BT_subterm_thm) \\
+     rw [] \\ (* This asserts ‘x’ *)
+     Cases_on ‘x’ >> fs [] \\
+     rename1 ‘subterm X (M j2) q r = SOME (N2,r2)’ \\
      cheat)
 QED
 
