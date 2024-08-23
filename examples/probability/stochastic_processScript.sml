@@ -964,6 +964,9 @@ Theorem list_rectangle_IN_Borel_lists =
 
 (* A cylinder is a set of infinite-dimensional values (represented by :num ->
    'a functions) where only the first N dimensions are specified (by h).
+
+   NOTE: The "bottom" of this cylinder is always a rectangle, thus is not the
+   general cylinder sets.
  *)
 Definition cylinder_def :
     cylinder (h :num -> 'a set) (N :num) = {f :num -> 'a | !i. i < N ==> f i IN h i}
@@ -972,14 +975,14 @@ End
 (* converting cylinders back to rectangles by converting infinite sequences to
    finite lists (i.e., cutting off the tails).
  *)
-Definition cylinder2lists_def :
-    cylinder2lists c N = IMAGE (\f. GENLIST f N) c
+Definition cylinder2rect_def :
+    cylinder2rect c N = IMAGE (\f. GENLIST f N) c
 End
 
-Theorem cylinder2lists_cylinder[simp] :
-    cylinder2lists (cylinder h N) N = rectangle h N
+Theorem cylinder2rect_cylinder[simp] :
+    cylinder2rect (cylinder h N) N = rectangle h N
 Proof
-    rw [cylinder2lists_def, cylinder_def, list_rectangle_def]
+    rw [cylinder2rect_def, cylinder_def, list_rectangle_def]
  >> rw [Once EXTENSION]
  >> EQ_TAC >> rw []
  >- rw [LENGTH_GENLIST]
@@ -1000,7 +1003,7 @@ End
 
 Definition Borel_inf2_def :
     Borel_inf2 =
-      sigma UNIV {c | ?N. 0 < N /\ cylinder2lists c N IN subsets (Borel_lists N)}
+      sigma UNIV {c | ?N. 0 < N /\ cylinder2rect c N IN subsets (Borel_lists N)}
 End
 
 Overload Borel_inf = “Borel_inf1”
@@ -1031,13 +1034,11 @@ Proof
  >> MATCH_MP_TAC SIGMA_SUBSET
  >> rw [Borel_inf2_def, SIGMA_ALGEBRA_SIGMA_UNIV]
  >> MATCH_MP_TAC SUBSET_TRANS
- >> Q.EXISTS_TAC ‘{c | ?N. 0 < N /\ cylinder2lists c N IN subsets (Borel_lists N)}’
+ >> Q.EXISTS_TAC ‘{c | ?N. 0 < N /\ cylinder2rect c N IN subsets (Borel_lists N)}’
  >> rw [SIGMA_SUBSET_SUBSETS]
  >> rw [SUBSET_DEF]
  >> Q.EXISTS_TAC ‘N’ >> rw []
  >> rw [Borel_lists_alt_sigma]
- >> qmatch_abbrev_tac ‘s IN _’
- >> qmatch_abbrev_tac ‘s IN subsets (sigma X _)’
  >> qmatch_abbrev_tac ‘s IN subsets (sigma X sts)’
  >> Know ‘sts SUBSET subsets (sigma X sts)’ >- rw [SIGMA_SUBSET_SUBSETS]
  >> Suff ‘s IN sts’ >- METIS_TAC [SUBSET_DEF]
