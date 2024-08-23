@@ -241,6 +241,19 @@ Proof
  >> Q.EXISTS_TAC ‘j’ >> rw []
 QED
 
+Theorem RNEWS_11 :
+    !r1 r2 n1 n2 X. 0 < n1 \/ 0 < n2 ==>
+                   (RNEWS r1 n1 X = RNEWS r2 n2 X <=> r1 = r2 /\ n1 = n2)
+Proof
+    rpt GEN_TAC
+ >> DISCH_TAC
+ >> reverse EQ_TAC >- rw []
+ >> rw [RNEWS, alloc_def, Once LIST_EQ_REWRITE]
+ >> fs [EL_MAP]
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘0’ >> art []
+QED
+
 (* ----------------------------------------------------------------------
     The old NEWS constant for allocating a list of fresh names
    ---------------------------------------------------------------------- *)
