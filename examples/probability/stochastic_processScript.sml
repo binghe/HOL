@@ -1146,7 +1146,7 @@ QED
 (* |- !N i. i < N ==> EL i IN Borel_measurable (sigma_lists Borel N) *)
 Theorem IN_MEASURABLE_BOREL_EL =
         SRULE [SPACE_BOREL, SIGMA_ALGEBRA_BOREL, IN_FUNSET]
-              (ISPEC “Borel” lists_simultaneously_measurable)
+              (ISPEC “Borel” sigma_lists_simultaneously_measurable)
 
 (* ------------------------------------------------------------------------- *)
 (*  Infinite-dimensional Borel space [4, p.178]                              *)
