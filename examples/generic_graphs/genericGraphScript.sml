@@ -5,7 +5,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open pred_setTheory pairTheory bagTheory liftingTheory transferTheory
-     transferLib
+     transferLib liftLib
 
 (* Material on finite simple graphs mechanised from [1] *)
 
@@ -631,16 +631,35 @@ Proof
   rw[dirhypcst_def, BAG_DELETE]
 QED
 
+Theorem SUB_BAG_E[local]:
+  BAG_IN e b0 ∧ b0 ≤ b ⇒ BAG_IN e b
+Proof
+  simp[BAG_IN, SUB_BAG]
+QED
+
+Theorem edge_cst_SUB_BAG:
+  edge_cst ec eb ∧ SUB_BAG eb0 eb ⇒ edge_cst ec eb0
+Proof
+  simp[edge_cst_def] >> rw[] >> rename [‘itself2_ecv ecst’] >>
+  Cases_on ‘itself2_ecv ecst’ >> gvs[] >>
+  gvs[only_one_edge_def, only_one_edge_per_label_def,
+      finite_edges_per_nodeset_def] >> rw[] >~
+  [‘FINITE _’, ‘core_incident _ = A’]
+  >- (irule SUBSET_FINITE >> first_assum $ irule_at Any >>
+      simp[SUBSET_DEF] >> qexists ‘A’ >> gvs[BAG_IN, SUB_BAG]) >~
+  [‘enodes e1 = enodes e2’]
+  >- metis_tac[SUB_BAG_E] >>
+  gvs[BAG_IN, SUB_BAG_LEQ, BAG_INN] >>
+  rename [‘eb0 e ≥ 1’, ‘eb0 _ ≤ eb _’] >>
+  first_x_assum $ qspec_then ‘e’ strip_assume_tac >>
+  ‘eb e = 1’ by simp[] >> simp[]
+QED
+
 Theorem edge_cst_DELETE:
   edge_cst w es0 ∧ BAG_DELETE es0 e es ⇒ edge_cst w es
 Proof
-  simp[edge_cst_def] >> rw[] >>
-  rename [‘itself2_ecv ecst’] >> Cases_on ‘itself2_ecv ecst’ >>
-  gvs[DISJ_IMP_THM, FORALL_AND_THM, BAG_DELETE] >>~-
-  ([‘only_one_edge_per_label (BAG_INSERT e es)’, ‘only_one_edge_per_label es’],
-   drule only_one_edge_per_label_BAG_INSERT >> simp[]) >>~-
-  ([‘only_one_edge (BAG_INSERT e es)’, ‘only_one_edge es’],
-   drule only_one_edge_BAG_INSERT >> simp[])
+  strip_tac >> irule edge_cst_SUB_BAG >> gvs[BAG_DELETE] >>
+  first_assum $ irule_at Any >> simp[SUB_BAG_LEQ, BAG_INSERT] >> rw[]
 QED
 
 Theorem graphs_exist[local]:
@@ -704,7 +723,7 @@ Proof
 QED
 
 
-Theorem Qt_graphs:
+Theorem Qt_graphs[liftQt]:
   Qt ceq graph_ABS graph_REP AR
 Proof
   simp[Qt_alt, AR_def, #absrep_id tydefrec, ceq_def, #termP_term_REP tydefrec]>>
@@ -759,45 +778,12 @@ Type udulgraphrep[local] = “:(α,undirectedG,unhyperG, ν,σ)ulabgraphrep”
  *)
 Type relgraph[pp] = “:(α, directedG, unhyperG, INF_OK, SL_OK) ulabgraph”
 
-
-Theorem funQ'[local] = SRULE[GSYM AND_IMP_INTRO] funQ |> GEN_ALL
-
-Theorem HK_thm2'[local] = HK_thm2 |> GEN_ALL |> SRULE[]
-
-fun grt th1 th2 = resolve_then.gen_resolve_then Any th1 th2 I
-
-fun tidy_tyvars th =
-  let val tyvs = type_vars_in_term (concl th)
-      val newvs =
-        List.tabulate(length tyvs,
-                      fn i => mk_vartype("'" ^ str (Char.chr(i + 97))))
-  in
-      INST_TYPE (ListPair.map(fn (ty1,ty2) => ty1 |-> ty2) (tyvs, newvs)) th
-  end
-
-fun opxfer res_th =
-  grt res_th HK_thm2 |> repeat (grt funQ') |> repeat (grt Qt_graphs)
-                     |> repeat (grt idQ) |> tidy_tyvars
-                     |> CONV_RULE Unwind.UNWIND_FORALL_CONV
-
 Definition emptyG0_def:
     emptyG0 : (α,δ,'ec,'el,'h, ν,'nl,σ) graphrep =
      <| nodes := {} ; edges := {||}; nlab := K ARB;
         nfincst := (:ν); dircst := (:δ); slcst := (:σ);
         edgecst := (:'ec) |>
 End
-
-fun liftdef respth nm =
-  let
-    val xfer = opxfer respth
-    val defrhs = rand (concl xfer)
-    val cvar = mk_var(nm, type_of defrhs)
-    val def = new_definition (nm ^ "_def", mk_eq(cvar, defrhs))
-    val relates = save_thm(nm ^ "_relates[transfer_rule]",
-                           REWRITE_RULE [SYM def] xfer)
-  in
-    (def, relates)
-  end
 
 Theorem emptyG0_respects:
   ceq emptyG0 emptyG0
@@ -2447,9 +2433,77 @@ Proof
   simp[BAG_FILTER_DEF] >> rw[]
 QED
 
-Definition removeNodes_def:
-  removeNodes G N = ITSET removeNode N G
+
+Definition removeNodes0_def:
+  removeNodes0 Ns grep =
+  grep with <| nodes := grep.nodes DIFF Ns ;
+               edges := BAG_FILTER
+                          (λe. DISJOINT (core_incident e) Ns)
+                          grep.edges;
+               nlab := λn. if n ∈ Ns then ARB else grep.nlab n |>
 End
+
+Theorem removeNodes_respect:
+  (((=) ===> (=)) ===> ceq ===> ceq) removeNodes0 removeNodes0
+Proof
+  simp[FUN_REL_def, ceq_def] >> simp[GSYM FUN_EQ_THM] >>
+  simp[wfgraph_def, removeNodes0_def, ITSELF_UNIQUE] >> rw[] >> simp[] >~
+  [‘core_incident e ⊆ g.nodes DIFF Ns’]
+  >- ASM_SET_TAC[] >~
+  [‘finite_cst _ (g.nodes DIFF Ns)’]
+  >- gvs[finite_cst_def] >~
+  [‘edge_cst _ (BAG_FILTER _ g.edges)’]
+  >- (irule edge_cst_SUB_BAG >> first_assum $ irule_at Any >>
+      simp[]) >>
+  gvs[dirhypcst_def] >> rw[] >> gvs[]
+QED
+val _ = liftdef removeNodes_respect "removeNodes"
+
+Theorem nodes_removeNodes[simp]:
+  nodes (removeNodes Ns G) = nodes G DIFF Ns
+Proof
+  xfer_back_tac [] >> simp[removeNodes0_def]
+QED
+
+Theorem edges_removeNodes[simp]:
+  edgebag (removeNodes Ns G) =
+  BAG_FILTER (λe. DISJOINT (core_incident e) Ns) (edgebag G)
+Proof
+  xfer_back_tac [] >> simp[removeNodes0_def]
+QED
+
+Theorem nlabelfun_removeNodes[simp]:
+  nlabelfun (removeNodes Ns G) =
+  λn. if n ∈ nodes G ∧ n ∉ Ns then nlabelfun G n else ARB
+Proof
+  xfer_back_tac[] >> simp[removeNodes0_def] >> rw[FUN_EQ_THM] >> rw[] >>
+  gvs[wfgraph_def]
+QED
+
+Definition projectG_def:
+  projectG Ns G = removeNodes (COMPL Ns) G
+End
+
+Theorem nodes_projectG[simp]:
+  nodes (projectG Ns G) = nodes G ∩ Ns
+Proof
+  simp[projectG_def] >> simp[EXTENSION]
+QED
+
+Theorem edgebag_projectG[simp]:
+  edgebag (projectG Ns G) =
+  BAG_FILTER (λe. core_incident e ⊆ Ns) (edgebag G)
+Proof
+  simp[projectG_def, DISJOINT_DEF, FUN_EQ_THM, BAG_FILTER_DEF] >> rw[] >>
+  gvs[SUBSET_DEF] >> metis_tac[]
+QED
+
+Theorem nlabelfun_projectG[simp]:
+  nlabelfun (projectG Ns G) = λn. if n ∈ nodes G ∧ n ∈ Ns then nlabelfun G n
+                                  else ARB
+Proof
+  simp[projectG_def]
+QED
 
 Definition removeEdge0_def:
   removeEdge0 e grep = grep with edges := BAG_DIFF grep.edges {|e|}
