@@ -143,10 +143,19 @@ End
     Contraction
    ---------------------------------------------------------------------- *)
 
-Definition connected_in_def:
-    connected_in G ns <=>
-    !n1 n2. n1 IN ns /\ n2 IN ns /\ n1 <> n1 ==> TC (adjacent G) n1 n2
-End
+Overload connected_in = “\g ns. connected (projectG ns g)”
+
+(* NOTE: ‘TC (adjacent g n1 n2)’ doesn't work: the two nodes in ns may find
+   another path outside of the subgraph ‘projectG ns g’.
+ *)
+Theorem connected_in :
+    !g ns. ns SUBSET nodes g ==>
+          (connected (projectG ns g) <=>
+           !n1 n2. n1 IN ns /\ n2 IN ns /\ n1 <> n2 ==> TC (adjacent (projectG ns g)) n1 n2)
+Proof
+    rw [connected_def, nodes_projectG, SUBSET_DEF]
+ >> EQ_TAC >> rw []
+QED
 
 Definition IX_def :
     IX (g :fmgraph) =
