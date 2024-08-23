@@ -963,10 +963,22 @@ Definition cons_cross_def :
     cons_cross A B = {CONS a b | a IN A /\ b IN B}
 End
 
+Theorem cons_cross_alt_gen :
+    !A B. cons_cross A B = general_cross CONS A B
+Proof
+    rw [cons_cross_def, general_cross_def]
+QED
+
 (* list (cons) version of ‘prod_sets’ *)
 Definition cons_prod_def :
     cons_prod a b = {cons_cross s t | s IN a /\ t IN b}
 End
+
+Theorem cons_prod_alt_gen :
+    !a b. cons_prod a b = general_prod CONS a b
+Proof
+    rw [cons_prod_def, general_prod_def, cons_cross_alt_gen]
+QED
 
 (* list (cons) version of ‘prod_sigma’ *)
 Definition cons_sigma_def :
@@ -974,8 +986,38 @@ Definition cons_sigma_def :
       sigma (cons_cross (space a) (space b)) (cons_prod (subsets a) (subsets b))
 End
 
+Theorem cons_sigma_alt_gen :
+    !a b. cons_sigma a b = general_sigma CONS a b
+Proof
+    rw [cons_sigma_def, cons_cross_alt_gen, cons_prod_alt_gen, general_sigma_def]
+QED
+
+val lemma = general_sigma_of_generator
+         |> INST_TYPE [beta  |-> “:'a list”, gamma |-> “:'a list”]
+         |> Q.SPECL [‘CONS’, ‘HD’, ‘TL’, ‘X’, ‘space B’, ‘E’, ‘subsets B’]
+         |> REWRITE_RULE [pair_operation_CONS, SPACE,
+                          GSYM cons_cross_alt_gen,
+                          GSYM cons_prod_alt_gen,
+                          GSYM cons_sigma_alt_gen];
+
+(* NOTE: It's possible to further reduce B to a generator (Y,G) *)
+Theorem cons_sigma_of_generator :
+    !B X E. sigma_algebra B /\ subset_class X E /\ has_exhausting_sequence (X,E) ==>
+            cons_sigma (X,E) B = cons_sigma (sigma X E) B
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> MP_TAC lemma >> art []
+ >> impl_tac
+ >- (CONJ_TAC >- fs [sigma_algebra_def, algebra_def] \\
+     rw [has_exhausting_sequence_def] \\
+     Q.EXISTS_TAC ‘\i. space B’ >> rw [IN_FUNSET]
+     >- (MATCH_MP_TAC SIGMA_ALGEBRA_SPACE >> art []) \\
+     rw [Once EXTENSION, IN_BIGUNION_IMAGE])
+ >> simp [SIGMA_STABLE]
+QED
+
 (* ‘SUC N’-dimensional prod space is the product sigma-algebra of 1- and N-dimensional
-    prod sigmas. (The key of this proof is prod_sigma_of_generator.)
+    prod sigmas. (The key of this proof is cons_sigma_of_generator.)
 
 Theorem sigma_lists_decomposition :
     !(B :'a algebra) N.
