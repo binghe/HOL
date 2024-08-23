@@ -976,12 +976,16 @@ Definition cylinder2lists_def :
     cylinder2lists c N = IMAGE (\f. GENLIST f N) c
 End
 
-Theorem cylinder2lists_cylinder :
-    !h N. cylinder2lists (cylinder h N) N =
-          {GENLIST f N | f | !i. i < N ==> f i IN h i}
+Theorem cylinder2lists_cylinder[simp] :
+    cylinder2lists (cylinder h N) N = rectangle h N
 Proof
-    rw [cylinder2lists_def, cylinder_def]
+    rw [cylinder2lists_def, cylinder_def, list_rectangle_def]
  >> rw [Once EXTENSION]
+ >> EQ_TAC >> rw []
+ >- rw [LENGTH_GENLIST]
+ >- rw [EL_GENLIST]
+ >> Q.EXISTS_TAC ‘\i. EL i x’ >> rw []
+ >> rw [LIST_EQ_REWRITE]
 QED
 
 Definition Borel_inf0_def :
@@ -1030,8 +1034,15 @@ Proof
  >> Q.EXISTS_TAC ‘{c | ?N. 0 < N /\ cylinder2lists c N IN subsets (Borel_lists N)}’
  >> rw [SIGMA_SUBSET_SUBSETS]
  >> rw [SUBSET_DEF]
- >> Q.EXISTS_TAC ‘N’ >> art []
- >> cheat
+ >> Q.EXISTS_TAC ‘N’ >> rw []
+ >> rw [Borel_lists_alt_sigma]
+ >> qmatch_abbrev_tac ‘s IN _’
+ >> qmatch_abbrev_tac ‘s IN subsets (sigma X _)’
+ >> qmatch_abbrev_tac ‘s IN subsets (sigma X sts)’
+ >> Know ‘sts SUBSET subsets (sigma X sts)’ >- rw [SIGMA_SUBSET_SUBSETS]
+ >> Suff ‘s IN sts’ >- METIS_TAC [SUBSET_DEF]
+ >> rw [Abbr ‘s’, Abbr ‘sts’]
+ >> Q.EXISTS_TAC ‘h’ >> art []
 QED
 
 (* ------------------------------------------------------------------------- *)

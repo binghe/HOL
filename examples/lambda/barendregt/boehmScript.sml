@@ -4884,7 +4884,6 @@ Proof
                ltree_el (BT' X (M j2) r) p = SOME bot’
          >- (MATCH_MP_TAC BT_ltree_el_of_unsolvables >> rw []) >> rw [] \\
          NTAC 2 (Q.PAT_X_ASSUM ‘ltree_el _ p = SOME bot’ K_TAC) \\
-      (* TODO *)
          cheat) \\
      reverse (Cases_on ‘solvable (subterm' X (M j2) q r)’)
      >- (‘q <<= FRONT p \/ q = p’ by METIS_TAC [IS_PREFIX_FRONT_CASES]
@@ -4917,6 +4916,7 @@ Proof
          rfs [Abbr ‘n1’, principle_hnf_stable'] >> T_TAC \\
          qabbrev_tac ‘N1' = principle_hnf N1’ \\
          qabbrev_tac ‘N2' = principle_hnf N2’ \\
+         qabbrev_tac ‘y' = hnf_headvar N1'’ \\
          cheat) \\
      cheat)
 QED
