@@ -1899,7 +1899,7 @@ Proof
 QED
 
 Theorem pair_operation_CONS :
-    pair_operation (\x y. [x; y]) (EL 0) (EL 1)
+    pair_operation CONS HD TL
 Proof
     rw [pair_operation_def]
 QED
