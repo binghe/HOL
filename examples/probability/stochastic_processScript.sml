@@ -994,148 +994,159 @@ QED
 
 val lemma = general_sigma_of_generator
          |> INST_TYPE [beta  |-> “:'a list”, gamma |-> “:'a list”]
-         |> Q.SPECL [‘CONS’, ‘HD’, ‘TL’, ‘X’, ‘space B’, ‘E’, ‘subsets B’]
-         |> REWRITE_RULE [pair_operation_CONS, SPACE,
+         |> Q.SPECL [‘CONS’, ‘HD’, ‘TL’, ‘X’, ‘Y’, ‘E’, ‘G’]
+         |> REWRITE_RULE [pair_operation_CONS,
                           GSYM cons_cross_alt_gen,
                           GSYM cons_prod_alt_gen,
                           GSYM cons_sigma_alt_gen];
 
-(* NOTE: It's possible to further reduce B to a generator (Y,G) *)
-Theorem cons_sigma_of_generator :
-    !B X E. sigma_algebra B /\ subset_class X E /\ has_exhausting_sequence (X,E) ==>
-            cons_sigma (X,E) B = cons_sigma (sigma X E) B
-Proof
-    rpt GEN_TAC >> STRIP_TAC
- >> MP_TAC lemma >> art []
- >> impl_tac
- >- (CONJ_TAC >- fs [sigma_algebra_def, algebra_def] \\
-     rw [has_exhausting_sequence_def] \\
-     Q.EXISTS_TAC ‘\i. space B’ >> rw [IN_FUNSET]
-     >- (MATCH_MP_TAC SIGMA_ALGEBRA_SPACE >> art []) \\
-     rw [Once EXTENSION, IN_BIGUNION_IMAGE])
- >> simp [SIGMA_STABLE]
-QED
+(* |- !X E Y G.
+        subset_class X E /\ subset_class Y G /\
+        has_exhausting_sequence (X,E) /\ has_exhausting_sequence (Y,G) ==>
+        cons_sigma (X,E) (Y,G) = cons_sigma (sigma X E) (sigma Y G)
+ *)
+Theorem cons_sigma_of_generator = general_sigma_of_generator
+     |> INST_TYPE [beta  |-> “:'a list”, gamma |-> “:'a list”]
+     |> Q.SPECL [‘CONS’, ‘HD’, ‘TL’, ‘X’, ‘Y’, ‘E’, ‘G’]
+     |> REWRITE_RULE [pair_operation_CONS,
+                      GSYM cons_cross_alt_gen,
+                      GSYM cons_prod_alt_gen,
+                      GSYM cons_sigma_alt_gen]
+     |> Q.GENL [‘X’, ‘E’, ‘Y’, ‘G’]
 
 (* ‘SUC N’-dimensional prod space is the product sigma-algebra of 1- and N-dimensional
     prod sigmas. (The key of this proof is cons_sigma_of_generator.)
-
+ *)
 Theorem sigma_lists_decomposition :
-    !(B :'a algebra) N.
-        subset_class (space B) (subsets B) /\ space B IN subsets B /\ 0 < N ==>
+    !(B :'a algebra) N. sigma_algebra B /\ 0 < N ==>
         sigma_lists B (SUC N) = cons_sigma B (sigma_lists B N)
 Proof
-    RW_TAC std_ss [sigma_lists_alt]
+    rpt GEN_TAC >> STRIP_TAC
+ >> ‘subset_class (space B) (subsets B)’ by (fs [sigma_algebra_def, algebra_def])
+ >> ‘space B IN subsets B ’ by PROVE_TAC [SIGMA_ALGEBRA_SPACE]
+ >> RW_TAC std_ss [sigma_lists_alt]
  (* preparing for prod_sigma_of_generator *)
  >> Q.ABBREV_TAC ‘X = rectangle (\n. space B) N’
  >> Q.ABBREV_TAC ‘E = {rectangle h N | h | !i. i < N ==> h i IN subsets B}’
- (* applying prod_sigma_of_generator *)
- >> Know ‘cons_sigma B (sigma X E) = cons_sigma B (X,E)’
+ (* applying cons_sigma_of_generator *)
+ >> Know ‘cons_sigma (sigma (space B) (subsets B)) (sigma X E) =
+          cons_sigma (space B,subsets B) (X,E)’
  >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
-     MATCH_MP_TAC prod_sigma_of_generator >> rw [] >| (* 4 subgoals *)
-     [ (* goal 1 (of 4) *)
-       rw [Abbr ‘X’, Abbr ‘E’, subset_class_def, SUBSET_DEF, IN_RECTANGLE] \\
-       fs [subset_class_def, IN_RECTANGLE] \\
-       METIS_TAC [SUBSET_DEF],
-       (* goal 2 (of 4) *)
-       rw [Abbr ‘Y’, Abbr ‘G’, subset_class_def, SUBSET_DEF, IN_RECTANGLE] \\
-       fs [subset_class_def, IN_RECTANGLE] \\
-       METIS_TAC [SUBSET_DEF],
+     MATCH_MP_TAC cons_sigma_of_generator >> rw [] >| (* 3 subgoals *)
+     [ (* goal 1 (of 3) *)
+       rw [Abbr ‘X’, Abbr ‘E’, subset_class_def, SUBSET_DEF] \\
+       fs [IN_list_rectangle, subset_class_def] \\
+       rpt STRIP_TAC >> rename1 ‘LENGTH v = N’ \\
+       Q.PAT_X_ASSUM ‘!i. i < N ==> EL i v IN h i’ (MP_TAC o Q.SPEC ‘n’) \\
+       simp [] \\
+       Suff ‘h n SUBSET space B’ >- (REWRITE_TAC [SUBSET_DEF] >> rw []) \\
+       FIRST_X_ASSUM MATCH_MP_TAC >> rw [],
        (* goal 3 (of 4) *)
+       rw [has_exhausting_sequence_def, IN_FUNSET] \\
+       Q.EXISTS_TAC ‘\i. space B’ >> rw [] \\
+       rw [Once EXTENSION, IN_BIGUNION_IMAGE],
+       (* goal 3 (of 3) *)
        rw [has_exhausting_sequence_def, IN_FUNSET, Abbr ‘X’, Abbr ‘E’] \\
-       qunabbrevl_tac [‘Y’, ‘G’] \\
-       Q.EXISTS_TAC ‘\n. rectangle (\i. space B) (:'M)’ >> rw []
+       Q.EXISTS_TAC ‘\n. list_rectangle (\i. space B) N’ >> rw []
        >- (Q.EXISTS_TAC ‘\i. space B’ >> rw []) \\
-       rw [Once EXTENSION, IN_BIGUNION_IMAGE, IN_RECTANGLE],
-       (* goal 4 (of 4) *)
-       rw [has_exhausting_sequence_def, IN_FUNSET, Abbr ‘Y’, Abbr ‘G’] \\
-       qunabbrevl_tac [‘X’, ‘E’] \\
-       Q.EXISTS_TAC ‘\n. rectangle (\i. space B) (:'N)’ >> rw []
-       >- (Q.EXISTS_TAC ‘\i. space B’ >> rw []) \\
-       rw [Once EXTENSION, IN_BIGUNION_IMAGE, IN_RECTANGLE] ])
- >> Rewr'
+       rw [Once EXTENSION, IN_BIGUNION_IMAGE, IN_list_rectangle] ])
+ >> simp [SIGMA_STABLE]
+ >> DISCH_THEN K_TAC
  (* stage work *)
- >> rw [Abbr ‘X’, Abbr ‘E’, Abbr ‘Y’, Abbr ‘G’, fcp_sigma_def]
- >> Know ‘fcp_cross (rectangle (\n. space B) (:'M)) (rectangle (\n. space B) (:'N)) =
-          rectangle (\n. space B) (:'M + 'N)’
- >- (rw [Once EXTENSION, IN_FCP_CROSS] \\
-     EQ_TAC >> rw [IN_RECTANGLE]
-     >- (RW_TAC fcp_ss [FCP_CONCAT_def] \\
-         fs [NOT_LESS] \\
-         FIRST_X_ASSUM MATCH_MP_TAC >> rfs [index_sum]) \\
-     qexistsl_tac [‘FCP_FST x’, ‘FCP_SND x’] \\
-     rw [FCP_CONCAT_REDUCE] >| (* 2 subgoals *)
-     [ (* goal 1 (of 2) *)
-       rw [FCP_FST_def] \\
-      ‘n < dimindex(:'M + 'N)’ by rw [index_sum] \\
-       RW_TAC fcp_ss [] \\
-       FIRST_X_ASSUM MATCH_MP_TAC \\
-       rw [index_sum],
-       (* goal 2 (of 2) *)
-       rw [FCP_SND_def] \\
-      ‘n < dimindex(:'M + 'N)’ by rw [index_sum] \\
-       RW_TAC fcp_ss [] ])
+ >> rw [Abbr ‘X’, Abbr ‘E’, cons_sigma_def]
+ >> Know ‘cons_cross (space B) (rectangle (\n. space B) N) =
+          rectangle (\n. space B) (SUC N)’
+ >- (rw [Once EXTENSION, cons_cross_def] \\
+     EQ_TAC >> rw [IN_list_rectangle] >| (* 3 subgoals *)
+     [ (* goal 1 (of 3) *)
+       rw [],
+       (* goal 2 (of 3) *)
+       Cases_on ‘n’ >> rw [],
+       (* goal 3 (of 3) *)
+       Cases_on ‘x’ >> fs [] \\
+       CONJ_TAC >- (POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> rw []) \\
+       rpt STRIP_TAC \\
+       Q.PAT_X_ASSUM ‘!n. n < SUC N ==> P’ (MP_TAC o Q.SPEC ‘SUC n’) \\
+       rw [] ])
  >> Rewr'
- >> Suff ‘fcp_prod {rectangle h (:'M) | !i. i < dimindex (:'M) ==> h i IN subsets B}
-                   {rectangle h (:'N) | !i. i < dimindex (:'N) ==> h i IN subsets B} =
-         {rectangle h (:'M + 'N) | !i. i < dimindex (:'M + 'N) ==> h i IN subsets B}’
+ >> Suff ‘cons_prod (subsets B)
+            {rectangle h N | h | (!i. i < N ==> h i IN subsets B)} =
+          {rectangle h (SUC N) | h | !i. i < SUC N ==> h i IN subsets B}’
  >- Rewr
- >> rw [Once EXTENSION, IN_FCP_PROD]
+ >> rw [Once EXTENSION, cons_prod_def]
  >> EQ_TAC >> rw []
  >| [ (* goal 1 (of 2) *)
-      rename1 ‘!i. i < dimindex (:'N) ==> g i IN subsets B’ \\
-      Q.EXISTS_TAC ‘\i. if i < dimindex(:'N) then g i else h (i - dimindex(:'N))’ \\
-      reverse CONJ_TAC
-      >- (rw [index_sum] >> fs [NOT_LESS] \\
-          FIRST_X_ASSUM MATCH_MP_TAC >> rw []) \\
-      rw [Once EXTENSION, IN_FCP_CROSS, IN_RECTANGLE] \\
-      EQ_TAC >> rw [] >| (* 2 subgoals *)
-      [ (* goal 1.1 (of 2) *)
-        Cases_on ‘i < dimindex(:'N)’ >> RW_TAC fcp_ss [FCP_CONCAT_def] \\
-        fs [NOT_LESS] \\
-        FIRST_X_ASSUM MATCH_MP_TAC >> rfs [index_sum, DIMINDEX_GT_0],
-        (* goal 1.2 (of 2) *)
-        qexistsl_tac [‘FCP_FST x’, ‘FCP_SND x’] \\
-        simp [FCP_CONCAT_REDUCE] \\
-        RW_TAC fcp_ss [FCP_FST_def, FCP_SND_def] >| (* 2 subgoals *)
-        [ (* goal 1.2.1 (of 2) *)
-         ‘i + dimindex(:'N) < dimindex(:'M + 'N)’ by rw [index_sum] \\
-          Q.PAT_X_ASSUM ‘!i. i < dimindex (:'M + 'N) ==> P’
-            (MP_TAC o (Q.SPEC ‘i + dimindex(:'N)’)) >> rw [],
-          (* goal 1.2.2 (of 2) *)
-         ‘i < dimindex(:'M + 'N)’ by rw [index_sum] \\
-          Q.PAT_X_ASSUM ‘!i. i < dimindex (:'M + 'N) ==> P’ (MP_TAC o (Q.SPEC ‘i’)) \\
-          rw [] ] ],
+      rename1 ‘!i. i < N ==> g i IN subsets B’ \\
+      Q.EXISTS_TAC ‘\i. if i = 0 then s else g (i - 1)’ \\
+      reverse CONJ_TAC >- rw [] \\
+      rw [Once EXTENSION, cons_cross_def, IN_list_rectangle] \\
+      EQ_TAC >> rw [] >| (* 3 subgoals *)
+      [ (* goal 1.1 (of 3) *)
+        rw [],
+        (* goal 1.2 (of 3) *)
+        Cases_on ‘i’ >> fs [],
+        (* goal 1.3 (of 3) *)
+        Cases_on ‘x’ >> fs [] \\
+        CONJ_TAC >- (POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> rw []) \\
+        rpt STRIP_TAC \\
+        Q.PAT_X_ASSUM ‘!i. i < SUC N ==> P’ (MP_TAC o Q.SPEC ‘SUC i’) \\
+        rw [] ],
       (* goal 2 (of 2) *)
-      Q.EXISTS_TAC ‘rectangle (\i. h (i + dimindex(:'N))) (:'M)’ \\
-      Q.EXISTS_TAC ‘rectangle h (:'N)’ \\
+      qexistsl_tac [‘h 0’, ‘rectangle (\n. h (SUC n)) N’] \\
       rpt STRIP_TAC >| (* 3 subgoals *)
       [ (* goal 2.1 (of 3) *)
-        rw [Once EXTENSION, IN_FCP_CROSS, IN_RECTANGLE] \\
-        EQ_TAC >> rw [] >| (* 2 subgoals *)
-        [ (* goal 2.1.1 (of 2) *)
-           qexistsl_tac [‘FCP_FST x’, ‘FCP_SND x’] >> rw [FCP_CONCAT_REDUCE] >|
-           [ (* goal 2.1.1.1 (of 2) *)
-             rw [FCP_FST_def] \\
-            ‘i < dimindex(:'M + 'N)’ by rw [index_sum] \\
-             RW_TAC fcp_ss [] \\
-             FIRST_X_ASSUM MATCH_MP_TAC >> rw [index_sum],
-             (* goal 2.1.1.2 (of 2) *)
-             rw [FCP_SND_def] \\
-            ‘i < dimindex(:'M + 'N)’ by rw [index_sum] \\
-             RW_TAC fcp_ss [] ],
-          (* goal 2.1.2 (of 2) *)
-          RW_TAC fcp_ss [FCP_CONCAT_def] \\
-          rfs [NOT_LESS, index_sum] \\
-         ‘h i = h (i - dimindex(:'N) + dimindex(:'N))’ by rw [] >> POP_ORW \\
-          FIRST_X_ASSUM MATCH_MP_TAC >> rw [] ],
+        rw [Once EXTENSION, cons_cross_def, IN_list_rectangle] \\
+        EQ_TAC >> rw [] >| (* 3 subgoals *)
+        [ (* goal 2.1.1 (of 3) *)
+          Cases_on ‘x’ >> fs [] \\
+          CONJ_TAC >- (POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> rw []) \\
+          rpt STRIP_TAC \\
+          Q.PAT_X_ASSUM ‘!i. i < SUC N ==> P’ (MP_TAC o Q.SPEC ‘SUC n’) \\
+          rw [],
+          (* goal 2.1.2 (of 3) *)
+          rw [],
+          (* goal 2.1.2 (of 3) *)
+          Cases_on ‘i’ >> fs [] ],
         (* goal 2.2 (of 3) *)
-        Q.EXISTS_TAC ‘\i. h (i + dimindex(:'N))’ >> rw [] \\
-        FIRST_X_ASSUM MATCH_MP_TAC >> rw [index_sum],
+        FIRST_X_ASSUM MATCH_MP_TAC >> rw [],
         (* goal 2.3 (of 3) *)
-        Q.EXISTS_TAC ‘h’ >> rw [] \\
-        FIRST_X_ASSUM MATCH_MP_TAC >> rw [index_sum] ] ]
+        Q.EXISTS_TAC ‘\n. h (SUC n)’ >> rw [] ] ]
 QED
+
+Theorem Borel_space_decomposition :
+    !N. 0 < N ==> Borel_lists (SUC N) = cons_sigma Borel (Borel_lists N)
+Proof
+    RW_TAC std_ss [Borel_lists_def]
+ >> MATCH_MP_TAC sigma_lists_decomposition
+ >> rw [SIGMA_ALGEBRA_BOREL]
+QED
+
+(* |- !sp A f J.
+        (!i. i IN J ==> sigma_algebra (A i)) /\
+        (!i. f i IN (sp -> space (A i))) ==>
+        !i. i IN J ==> f i IN measurable (sigma sp A f J) (A i)
  *)
+val lemma =
+    SIGMA_SIMULTANEOUSLY_MEASURABLE |> INST_TYPE [“:'b” |-> “:'temp”]
+                                    |> INST_TYPE [“:'a” |-> “:'a list”]
+                                    |> INST_TYPE [“:'index” |-> “:num”]
+                                    |> INST_TYPE [“:'temp” |-> “:'a”];
+
+Theorem sigma_lists_simultaneously_measurable :
+    !B N. sigma_algebra B /\
+         (!i. (EL i) IN (rectangle (\n. space B) N -> space B)) ==>
+          !i. i < N ==> (EL i) IN measurable (sigma_lists B N) B
+Proof
+    rw [sigma_lists_def]
+ >> irule (SRULE []
+           (Q.SPECL [‘rectangle (\n. space B) N’, ‘\n. B’, ‘EL’, ‘count N’] lemma))
+ >> rw []
+QED
+
+(* |- !N i. i < N ==> EL i IN Borel_measurable (sigma_lists Borel N) *)
+Theorem IN_MEASURABLE_BOREL_EL =
+        SRULE [SPACE_BOREL, SIGMA_ALGEBRA_BOREL, IN_FUNSET]
+              (ISPEC “Borel” lists_simultaneously_measurable)
 
 (* ------------------------------------------------------------------------- *)
 (*  Infinite-dimensional Borel space [4, p.178]                              *)
