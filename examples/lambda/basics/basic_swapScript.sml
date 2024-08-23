@@ -254,6 +254,13 @@ Proof
  >> Q.EXISTS_TAC ‘0’ >> art []
 QED
 
+(* NOTE: if n1 and n2 may take 0, at least we know that ‘n1 = n2’ *)
+Theorem RNEWS_11' :
+    !r1 r2 n1 n2 X. RNEWS r1 n1 X = RNEWS r2 n2 X ==> n1 = n2
+Proof
+    rw [RNEWS, alloc_def, Once LIST_EQ_REWRITE]
+QED
+
 (* ----------------------------------------------------------------------
     The old NEWS constant for allocating a list of fresh names
    ---------------------------------------------------------------------- *)

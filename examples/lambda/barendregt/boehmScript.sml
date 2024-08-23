@@ -4969,7 +4969,7 @@ Proof
   (* So they are both solvable. Now comes the dirty assumptions. *)
      MP_TAC (Q.SPECL [‘q’, ‘X’, ‘M (j1 :num)’, ‘r’] BT_subterm_thm) \\
      rw [] \\ (* This asserts ‘x’ *)
-     NTAC 2 (Cases_on ‘x’ >> fs []) \\
+     NTAC 3 (Cases_on ‘x’ >> fs []) \\
      rename1 ‘subterm X (M j1) q r = SOME (N1,r1)’ \\
      rename1 ‘ltree_el (BT' X (M j2) r) q = SOME (SOME (vs1,y1),m1)’ \\
      Q.PAT_X_ASSUM ‘_ = SOME (vs1,y1)’ K_TAC \\
@@ -4977,6 +4977,12 @@ Proof
      rw [] \\ (* This asserts ‘x’ *)
      Cases_on ‘x’ >> fs [] \\
      rename1 ‘subterm X (M j2) q r = SOME (N2,r2)’ \\
+     qabbrev_tac ‘n1 = LAMl_size (principle_hnf N1)’ \\
+    ‘LAMl_size (principle_hnf N2) = n1’ by PROVE_TAC [RNEWS_11'] \\
+     POP_ASSUM (FULL_SIMP_TAC bool_ss o wrap) \\
+    ‘n1 = 0 \/ 0 < n1’ by rw []
+     >- (POP_ASSUM (fs o wrap) \\
+         cheat)
      cheat)
 QED
 
