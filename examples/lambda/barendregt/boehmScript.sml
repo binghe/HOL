@@ -114,6 +114,19 @@ fun UNRANK_TAC thm =
  >> Q.PAT_X_ASSUM ‘FV M SUBSET X’ MP_TAC
  >> SET_TAC [];
 
+(* Invented by Michael Norrish, which is roughly equivalent to RW_TAC std_ss ths
+   (which eliminates LET and creates abbreviations) but does not do STRIP_TAC
+   on the goal.
+ *)
+fun UNBETA_TAC ths tm =
+  let val P = genvar (type_of tm --> bool)
+  in
+    CONV_TAC (UNBETA_CONV tm)
+ >> qmatch_abbrev_tac ‘^P _’
+ >> RW_TAC bool_ss ths
+ >> simp [Abbr ‘^P’]
+  end;
+
 (*---------------------------------------------------------------------------*
  *  ltreeTheory extras
  *---------------------------------------------------------------------------*)
@@ -417,12 +430,7 @@ Proof
     Induct_on ‘p’ >- (rw [] >> art [])
  >> rpt GEN_TAC
  >> reverse (Cases_on ‘solvable M’) >- rw [subterm_def]
- (* BEGIN Norrish's advanced tactics *)
- >> CONV_TAC (UNBETA_CONV “subterm X M (h::p) r”)
- >> qmatch_abbrev_tac ‘P _’
- >> RW_TAC bool_ss [subterm_of_solvables]
- >> simp [Abbr ‘P’]
- (* END Norrish's advanced tactics. *)
+ >> UNBETA_TAC [subterm_of_solvables] “subterm X M (h::p) r”
  >> STRIP_TAC
  >> qabbrev_tac ‘M' = EL h Ms’
  >> Q.PAT_X_ASSUM ‘!X M N r r'. P’
@@ -505,12 +513,7 @@ Proof
     rpt STRIP_TAC
  >> MP_TAC (Q.SPECL [‘[h]’, ‘X’, ‘M’, ‘EL h Ms’, ‘r’, ‘SUC r’] subterm_rank_lemma)
  >> simp []
- (* BEGIN Norrish's advanced tactics *)
- >> CONV_TAC (UNBETA_CONV “subterm X M [h] r”)
- >> qmatch_abbrev_tac ‘P _’
- >> RW_TAC bool_ss [subterm_of_solvables]
- >> simp [Abbr ‘P’]
- (* END Norrish's advanced tactics *)
+ >> UNBETA_TAC [subterm_of_solvables] “subterm X M [h] r”
 QED
 
 (* This variant uses ‘m = hnf_children_size M0’ instead *)
@@ -843,16 +846,8 @@ Proof
  >> POP_ASSUM MP_TAC (* subterm X M (h::p) r <> NONE *)
  >> reverse (Cases_on ‘solvable M’)
  >- simp [subterm_def, ltree_paths_def, ltree_lookup]
- (* BEGIN Norrish's advanced tactics *)
- >> CONV_TAC (UNBETA_CONV “subterm X M (h::p) r”)
- >> qmatch_abbrev_tac ‘P _’
- >> RW_TAC bool_ss [subterm_alt]
- >> simp [Abbr ‘P’]
- >> CONV_TAC (UNBETA_CONV “BT' X M r”)
- >> qmatch_abbrev_tac ‘P _’
- >> RW_TAC bool_ss [BT_def, Once ltree_unfold, BT_generator_def]
- >> simp [Abbr ‘P’]
- (* END Norrish's advanced tactics. *)
+ >> UNBETA_TAC [subterm_alt] “subterm X M (h::p) r”
+ >> UNBETA_TAC [BT_def, Once ltree_unfold, BT_generator_def] “BT' X M r”
  >> simp [LMAP_fromList, EL_MAP, Abbr ‘l’]
  >> ‘n = n'’ by rw [Abbr ‘n’, Abbr ‘n'’]
  >> POP_ASSUM (fs o wrap o SYM)
@@ -914,16 +909,8 @@ Proof
     Induct_on ‘p’
  >- rw [subterm_def, ltree_lookup_def]
  >> rpt GEN_TAC
- (* BEGIN Norrish's advanced tactics *)
- >> CONV_TAC (UNBETA_CONV “subterm X M (h::p) r”)
- >> qmatch_abbrev_tac ‘P _’
- >> RW_TAC bool_ss [subterm_def]
- >> simp [Abbr ‘P’]
- >> CONV_TAC (UNBETA_CONV “BT' X M r”)
- >> qmatch_abbrev_tac ‘P _’
- >> RW_TAC bool_ss [BT_def, Once ltree_unfold, BT_generator_def]
- >> simp [Abbr ‘P’]
- (* END Norrish's advanced tactics. *)
+ >> UNBETA_TAC [subterm_def] “subterm X M (h::p) r”
+ >> UNBETA_TAC [BT_def, Once ltree_unfold, BT_generator_def] “BT' X M r”
  >> simp [LMAP_fromList, EL_MAP, Abbr ‘l’]
  >> ‘n = n'’ by rw [Abbr ‘n’, Abbr ‘n'’]
  >> POP_ASSUM (fs o wrap o SYM)
@@ -996,12 +983,7 @@ Proof
  >> Cases_on ‘t’ >> fs []
  >> rename1 ‘subterm X M p r = SOME (N,r')’
  >> rw [BT_ltree_el_thm]
- (* BEGIN Norrish's advanced tactics *)
- >> CONV_TAC (UNBETA_CONV “BT' X N r'”)
- >> qmatch_abbrev_tac ‘P _’
- >> RW_TAC bool_ss [BT_def, Once ltree_unfold, BT_generator_def]
- >> simp [Abbr ‘P’]
- (* END Norrish's advanced tactics. *)
+ >> UNBETA_TAC [BT_def, Once ltree_unfold, BT_generator_def] “BT' X N r'”
  >> simp [LMAP_fromList, Abbr ‘l’]
 (* stage work *)
  >> qunabbrev_tac ‘vs’
@@ -1057,12 +1039,7 @@ Proof
  >> reverse (Cases_on ‘solvable M’)
  >- (Q.PAT_X_ASSUM ‘h::p IN ltree_paths (BT' X M r)’ MP_TAC \\
      simp [subterm_def, BT_of_unsolvables, ltree_paths_def, ltree_lookup_def])
- (* BEGIN Norrish's advanced tactics *)
- >> CONV_TAC (UNBETA_CONV “subterm X M (h::p) r”)
- >> qmatch_abbrev_tac ‘P _’
- >> RW_TAC bool_ss [subterm_of_solvables]
- >> simp [Abbr ‘P’]
- (* END Norrish's advanced tactics *)
+ >> UNBETA_TAC [subterm_of_solvables] “subterm X M (h::p) r”
  >> qunabbrev_tac ‘vs’
  >> Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
  >> qabbrev_tac ‘Y = RANK r’
@@ -1231,17 +1208,8 @@ Proof
  >> rw [] (* solvable M *)
  >> Q.PAT_X_ASSUM ‘subterm X M (h::p) r <> NONE’ MP_TAC
  >> Q.PAT_X_ASSUM ‘!q. q <<= h::p ==> subterm X M q r <> NONE’ K_TAC
- (* applying Norrish's 4 advanced tactics *)
- >> CONV_TAC (UNBETA_CONV “subterm X M (h::p) r”)
- >> qmatch_abbrev_tac ‘P _’
- >> RW_TAC bool_ss [subterm_def]
- >> simp [Abbr ‘P’]
- (* applying Norrish's 4 advanced tactics *)
- >> CONV_TAC (UNBETA_CONV “BT' X M r”)
- >> qmatch_abbrev_tac ‘P _’
- >> RW_TAC bool_ss [BT_def, Once ltree_unfold, BT_generator_def]
- >> simp [Abbr ‘P’]
- (* END Norrish's advanced tactics. *)
+ >> UNBETA_TAC [subterm_def] “subterm X M (h::p) r”
+ >> UNBETA_TAC [BT_def, Once ltree_unfold, BT_generator_def] “BT' X M r”
  >> simp [LMAP_fromList, EL_MAP, Abbr ‘l’]
  >> ‘n = n'’ by rw [Abbr ‘n’, Abbr ‘n'’]
  >> POP_ASSUM (fs o wrap o SYM)
@@ -1295,17 +1263,8 @@ Proof
  >> rw [] (* solvable M *)
  >> Q.PAT_X_ASSUM ‘subterm X M (h::p) r <> NONE’ MP_TAC
  >> Q.PAT_X_ASSUM ‘!q. q <<= h::p ==> subterm X M q r <> NONE’ K_TAC
- (* applying Norrish's 4 advanced tactics *)
- >> CONV_TAC (UNBETA_CONV “subterm X M (h::p) r”)
- >> qmatch_abbrev_tac ‘P _’
- >> RW_TAC bool_ss [subterm_def]
- >> simp [Abbr ‘P’]
- (* applying Norrish's 4 advanced tactics *)
- >> CONV_TAC (UNBETA_CONV “BT' X M r”)
- >> qmatch_abbrev_tac ‘P _’
- >> RW_TAC bool_ss [BT_def, Once ltree_unfold, BT_generator_def]
- >> simp [Abbr ‘P’]
- (* END Norrish's advanced tactics. *)
+ >> UNBETA_TAC [subterm_def] “subterm X M (h::p) r”
+ >> UNBETA_TAC [BT_def, Once ltree_unfold, BT_generator_def] “BT' X M r”
  >> simp [LMAP_fromList, EL_MAP, Abbr ‘l’]
  >> ‘n = n'’ by rw [Abbr ‘n’, Abbr ‘n'’]
  >> POP_ASSUM (fs o wrap o SYM)
@@ -1496,11 +1455,7 @@ Proof
  >- (‘unsolvable (tpm pi M)’ by PROVE_TAC [solvable_tpm] \\
      simp [subterm_def])
  >> ‘solvable (tpm pi M)’ by PROVE_TAC [solvable_tpm]
- (* applying Norrish's advanced tactics *)
- >> CONV_TAC (UNBETA_CONV “subterm X M (h::p) r”)
- >> qmatch_abbrev_tac ‘P _’
- >> RW_TAC bool_ss [subterm_alt]
- >> simp [Abbr ‘P’]
+ >> UNBETA_TAC [subterm_alt] “subterm X M (h::p) r”
  (* preparing for expanding ‘subterm' Y (tpm pi M) (h::p)’ *)
  >> qabbrev_tac ‘M0' = principle_hnf (tpm pi M)’
  >> Know ‘M0' = tpm pi M0’
@@ -1518,11 +1473,7 @@ Proof
  >- simp [subterm_alt]
  (* stage work, now h < m *)
  >> simp [] (* eliminate ‘h < m’ in the goal *)
- (* applying Norrish's advanced tactics, again *)
- >> CONV_TAC (UNBETA_CONV “subterm Y (tpm pi M) (h::p) r'”)
- >> qmatch_abbrev_tac ‘P _’
- >> RW_TAC bool_ss [subterm_alt]
- >> simp [Abbr ‘P’]
+ >> UNBETA_TAC [subterm_alt] “subterm Y (tpm pi M) (h::p) r'”
  >> Q.PAT_X_ASSUM ‘tpm pi M0 = principle_hnf (tpm pi M)’ (rfs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘n  = n'’  (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘n  = n''’ (fs o wrap o SYM)
@@ -2011,16 +1962,8 @@ Proof
  >> reverse (Cases_on ‘solvable M’)
  >- (
      simp [subterm_def])
- (* BEGIN Norrish's advanced tactics *)
- >> CONV_TAC (UNBETA_CONV “subterm X M (h::p) r1”)
- >> qmatch_abbrev_tac ‘P _’
- >> RW_TAC bool_ss [subterm_alt]
- >> simp [Abbr ‘P’]
- >> CONV_TAC (UNBETA_CONV “subterm Y M (h::p) r2”)
- >> qmatch_abbrev_tac ‘P _’
- >> RW_TAC bool_ss [subterm_alt]
- >> simp [Abbr ‘P’]
- (* END Norrish's advanced tactics. *)
+ >> UNBETA_TAC [subterm_alt] “subterm X M (h::p) r1”
+ >> UNBETA_TAC [subterm_alt] “subterm Y M (h::p) r2”
  >> ‘n = n'’ by rw [Abbr ‘n’, Abbr ‘n'’]
  >> POP_ASSUM (fs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘m = m'’ (fs o wrap o SYM)
@@ -3039,12 +2982,7 @@ Proof
  >> DISCH_TAC
  >> Know ‘subterm X M (h::q) r <> NONE’
  >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [])
- (* BEGIN Norrish's advanced tactics *)
- >> CONV_TAC (UNBETA_CONV “subterm X M (h::q) r”)
- >> qmatch_abbrev_tac ‘f _’
- >> RW_TAC bool_ss [subterm_of_solvables]
- >> simp [Abbr ‘f’]
- (* END Norrish's advanced tactics. *)
+ >> UNBETA_TAC [subterm_of_solvables] “subterm X M (h::q) r”
  >> STRIP_TAC
  >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) X /\ LENGTH vs = n’
       by (rw [Abbr ‘vs’, RNEWS_def])
@@ -3125,11 +3063,8 @@ Proof
     ‘FRONT (h::t) <> []’ by rw [] \\
      Know ‘h::p <<= FRONT (h::t)’
      >- (simp [] >> Cases_on ‘t’ >> fs []) >> Rewr \\
-  (* Norrish's advanced tactics *)
-     CONV_TAC (UNBETA_CONV “subterm X M (h::p) r”) \\
-     qmatch_abbrev_tac ‘f _’ \\
-     RW_TAC bool_ss [subterm_of_solvables] \\
-     simp [Abbr ‘f’, hnf_children_hnf])
+     UNBETA_TAC [subterm_of_solvables] “subterm X M (h::p) r” \\
+     simp [hnf_children_hnf])
  >> STRIP_TAC
  >> Know ‘~MEM v vs’
  >- (Q.PAT_X_ASSUM ‘v IN Y’ MP_TAC \\
@@ -3449,11 +3384,8 @@ Proof
      Q.EXISTS_TAC ‘FRONT q’ >> rw [] \\
      MATCH_MP_TAC IS_PREFIX_FRONT_MONO >> rw [])
  >> Rewr
- (* Norrish's advanced tactics *)
- >> CONV_TAC (UNBETA_CONV “subterm X M (h::q1) r”)
- >> qmatch_abbrev_tac ‘f _’
- >> RW_TAC bool_ss [subterm_of_solvables]
- >> simp [Abbr ‘f’, hnf_children_hnf]
+ >> UNBETA_TAC [subterm_of_solvables] “subterm X M (h::q1) r”
+ >> simp [hnf_children_hnf]
 QED
 
 Theorem subterm_subst_cong :
@@ -4982,7 +4914,10 @@ Proof
      POP_ASSUM (FULL_SIMP_TAC bool_ss o wrap) \\
     ‘n1 = 0 \/ 0 < n1’ by rw []
      >- (POP_ASSUM (fs o wrap) \\
-         cheat)
+         rfs [Abbr ‘n1’, principle_hnf_stable'] >> T_TAC \\
+         qabbrev_tac ‘N1' = principle_hnf N1’ \\
+         qabbrev_tac ‘N2' = principle_hnf N2’ \\
+         cheat) \\
      cheat)
 QED
 
