@@ -157,7 +157,7 @@ Proof
 QED
 
 Theorem upwards_filtering_nnreal[simp] :
-    upwards_filtering ({x | 0r <= x},$<=)
+    upwards_filtering ({x | 0r <= x},real_lte)
 Proof
     rw [upwards_filtering_def]
  >> Q.EXISTS_TAC ‘max i j’ >> rw [REAL_LE_MAX]
@@ -1113,7 +1113,7 @@ Proof
         Q.EXISTS_TAC ‘\n. h (SUC n)’ >> rw [] ] ]
 QED
 
-Theorem Borel_space_decomposition :
+Theorem Borel_lists_decomposition :
     !N. 0 < N ==> Borel_lists (SUC N) = cons_sigma Borel (Borel_lists N)
 Proof
     RW_TAC std_ss [Borel_lists_def]
