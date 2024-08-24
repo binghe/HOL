@@ -738,10 +738,177 @@ Proof
 QED
 
 Theorem space_sigma_lists :
-    !(B :'a algebra) N. space (sigma_lists B N) = list_rectangle (\n. space B) N
+    !(B :'a algebra) N. space (sigma_lists B N) = rectangle (\n. space B) N
 Proof
     rw [sigma_lists_def, sigma_functions_def, SPACE_SIGMA]
 QED
+
+(*
+Theorem sigma_lists_alt_generator :
+    !sp sts N.
+      subset_class sp sts /\ sp IN sts /\ 0 < N ==>
+      sigma_lists (sigma sp sts) N =
+      sigma (rectangle (\n. sp) N) {rectangle h N | h | !i. i < N ==> h i IN sts}
+Proof
+    rw [sigma_lists_def, sigma_functions_def, SPACE_SIGMA]
+ >> Q.ABBREV_TAC (* this is part of the goal, to be replaced by ‘sts’ *)
+   ‘src = BIGUNION
+            (IMAGE (\n. IMAGE (\s. PREIMAGE (EL n) s INTER rectangle (\n. sp) N)
+                              (subsets (sigma sp sts)))
+                   (count N))’
+ >> Q.ABBREV_TAC
+   ‘src' = BIGUNION (IMAGE (\n. {rectangle h N | h |
+                                                 h n IN subsets (sigma sp sts) /\
+                                                 !i. i < N /\ i <> n ==> h i = sp})
+                           (count N))’
+ >> Know ‘src = src'’
+ >- (rw [Abbr ‘src’, Abbr ‘src'’, Once EXTENSION, PREIMAGE_def] \\
+     EQ_TAC >> rw [] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       fs [IN_IMAGE] >> rename1 ‘b IN subsets (sigma sp sts)’ \\
+       Q.EXISTS_TAC ‘{rectangle h N | h | h n IN subsets (sigma sp sts) /\
+                                          !i. i < N /\ i <> n ==> h i = sp}’ \\
+       reverse (rw []) >- (Q.EXISTS_TAC ‘n’ >> art []) \\
+       Q.EXISTS_TAC ‘\i. if i = n then b else sp’ >> rw [] \\
+       rw [list_rectangle_def, Once EXTENSION] \\
+       EQ_TAC >> rw [] >| (* 3 trivial subgoals *)
+       [ (* goal 1.1 (of 3) *)
+         Cases_on ‘i = n’ >> rw [],
+         (* goal 1.2 (of 3) *)
+         POP_ASSUM (MP_TAC o (Q.SPEC ‘n’)) >> rw [],
+         (* goal 1.3 (of 3) *)
+         rename1 ‘EL i x IN sp’ \\
+         Q.PAT_X_ASSUM ‘!i. i < LENGTH x ==> P’ (MP_TAC o (Q.SPEC ‘i’)) \\
+         Cases_on ‘i = n’ >> rw [] \\
+         qabbrev_tac ‘a = sigma sp sts’ \\
+        ‘sigma_algebra a’ by rw [Abbr ‘a’, SIGMA_ALGEBRA_SIGMA] \\
+        ‘space a = sp’ by rw [Abbr ‘a’, SPACE_SIGMA] \\
+         Q.PAT_X_ASSUM ‘EL i x IN b’ MP_TAC \\
+         Suff ‘b SUBSET sp’ >- rw [SUBSET_DEF] \\
+         fs [sigma_algebra_def, algebra_def, subset_class_def] ],
+       (* goal 2 (of 2) *)
+       fs [] \\
+       Q.EXISTS_TAC ‘IMAGE (\s. {v | EL n v IN s} INTER rectangle (\n. sp) N)
+                           (subsets (sigma sp sts))’ \\
+       reverse (rw []) >- (Q.EXISTS_TAC ‘n’ >> art []) \\
+       Q.EXISTS_TAC ‘h n’ \\
+       rw [list_rectangle_def, Once EXTENSION] \\
+       EQ_TAC >> rw [] >| (* 2 subgoals *)
+       [ (* goal 2.1 (of 2) *)
+         rename1 ‘EL i x IN sp’ \\
+         Cases_on ‘i = n’
+         >- (Q.PAT_X_ASSUM ‘!i. i < LENGTH x ==> EL i x IN h i’ (MP_TAC o (Q.SPEC ‘n’)) \\
+             rw [] \\
+             qabbrev_tac ‘a = sigma sp sts’ \\
+            ‘sigma_algebra a’ by rw [Abbr ‘a’, SIGMA_ALGEBRA_SIGMA] \\
+            ‘space a = sp’ by rw [Abbr ‘a’, SPACE_SIGMA] \\
+             Q.PAT_X_ASSUM ‘EL i x IN h i’ MP_TAC \\
+             Suff ‘h i SUBSET sp’ >- rw [SUBSET_DEF] \\
+             fs [sigma_algebra_def, algebra_def, subset_class_def]) \\
+         Q.PAT_X_ASSUM ‘!i. i < LENGTH x /\ i <> n ==> P’ (MP_TAC o (Q.SPEC ‘i’)) \\
+         Q.PAT_X_ASSUM ‘!i. i < LENGTH x ==> EL i x IN h i’ (MP_TAC o (Q.SPEC ‘i’)) \\
+         rw [] >> fs [],
+         (* goal 2.2 (of 2) *)
+         Cases_on ‘i = n’ >> rw [] ] ])
+ >> Rewr'
+ >> qunabbrev_tac ‘src’ (* no more needed *)
+ (* stage work *)
+ >> Know ‘sigma_algebra (sigma (rectangle (\n. sp) N) src')’
+ >- (MATCH_MP_TAC SIGMA_ALGEBRA_SIGMA \\
+     rw [Abbr ‘src'’, subset_class_def, SUBSET_DEF] \\
+     gs [IN_list_rectangle] \\
+     Q.PAT_X_ASSUM ‘x = rectangle h N’ K_TAC \\
+     rename1 ‘!i. i < N ==> EL i x IN h i’ \\
+     Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+     Q.PAT_X_ASSUM ‘!i. i < N ==> P’ (MP_TAC o (Q.SPEC ‘i’)) \\
+     RW_TAC std_ss [] \\
+     reverse (Cases_on ‘i = n’)
+     >- (Q.PAT_X_ASSUM ‘!i. i < N /\ i <> n ==> P’ (MP_TAC o (Q.SPEC ‘i’)) \\
+        RW_TAC std_ss [] >> fs []) \\
+     POP_ASSUM (fs o wrap) \\
+     qabbrev_tac ‘a = sigma sp sts’ \\
+    ‘sigma_algebra a’ by rw [Abbr ‘a’, SIGMA_ALGEBRA_SIGMA] \\
+    ‘space a = sp’ by rw [Abbr ‘a’, SPACE_SIGMA] \\
+     Q.PAT_X_ASSUM ‘EL n x IN h n’ MP_TAC \\
+     Suff ‘h n SUBSET sp’ >- rw [SUBSET_DEF] \\
+     fs [sigma_algebra_def, algebra_def, subset_class_def])
+ >> DISCH_TAC
+ >> ‘src' SUBSET subsets (sigma (rectangle (\n. sp) N) src')’
+       by PROVE_TAC [SIGMA_SUBSET_SUBSETS]
+
+ >> Q.ABBREV_TAC ‘prod = {rectangle h N | h | !i. i < N ==> h i IN subsets (sigma sp sts)}’
+ >> Know ‘prod SUBSET subsets (sigma (rectangle (\n. sp) N) src')’
+ >- (rw [Abbr ‘prod’, SUBSET_DEF] \\
+     Know ‘rectangle h N =
+           BIGINTER (IMAGE (\n. {v | LENGTH v = N /\ EL n v IN h n /\
+                                     !i. i < N /\ i <> n ==> EL i v IN sp})
+                           (count N))’
+     >- (rw [list_rectangle_def, Once EXTENSION, IN_BIGINTER_IMAGE] \\
+         reverse EQ_TAC >> rw []
+         >- (POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> rw []) \\ (* 0 < N is used here *)
+         Q.PAT_X_ASSUM ‘!i. i < LENGTH x ==> EL i x IN h i’ (MP_TAC o Q.SPEC ‘i’) \\
+         simp [] \\
+         Suff ‘h i SUBSET sp’ >- rw [SUBSET_DEF] \\
+         qabbrev_tac ‘a = sigma sp sts’ \\
+        ‘sigma_algebra a’ by rw [Abbr ‘a’, SIGMA_ALGEBRA_SIGMA] \\
+        ‘space a = sp’ by rw [Abbr ‘a’, SPACE_SIGMA] \\
+         fs [sigma_algebra_def, algebra_def, subset_class_def]) >> Rewr' \\
+  (* applying SIGMA_ALGEBRA_FINITE_INTER *)
+     MATCH_MP_TAC SIGMA_ALGEBRA_FINITE_INTER >> rw [] \\
+     qmatch_abbrev_tac ‘A IN _’ \\
+     Suff ‘A IN src'’ >- PROVE_TAC [SUBSET_DEF] \\
+     Q.PAT_X_ASSUM ‘sigma_algebra _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘src' SUBSET _’   K_TAC \\
+     rw [Abbr ‘A’, Abbr ‘src'’, IN_BIGUNION_IMAGE] \\
+     Q.EXISTS_TAC ‘i’ >> rw [] \\
+     rename1 ‘n < N’ \\
+     Q.EXISTS_TAC ‘\i. if i = n then h n else sp’ >> rw [] \\
+     rw [list_rectangle_def, Once EXTENSION] \\
+     EQ_TAC >> rw [] >| (* 3 subgoals *)
+     [ (* goal 1.1 (of 3) *)
+       Cases_on ‘i = n’ >> rw [],
+       (* goal 1.2 (of 3) *)
+       POP_ASSUM (MP_TAC o (Q.SPEC ‘n’)) >> rw [],
+       (* goal 1.3 (of 3) *)
+       PROVE_TAC [] ])
+ >> DISCH_TAC
+
+
+ 
+ >> Suff ‘subsets (sigma (rectangle (\n. sp) N) src') =
+          subsets (sigma (rectangle (\n. sp) N) prod)’
+ >- METIS_TAC [SPACE, SPACE_SIGMA]
+ >> MATCH_MP_TAC SIGMA_SMALLEST >> art []
+ >> reverse CONJ_TAC >- METIS_TAC [SPACE, SPACE_SIGMA]
+
+
+  (* stage work *)
+ >> MP_TAC (ISPECL [“src' :('a list set) set”,
+                    “sigma (rectangle (\n. sp) N) (prod :('a list set) set)”]
+                    SIGMA_SUBSET)
+ >> REWRITE_TAC [SPACE_SIGMA]
+ >> DISCH_THEN MATCH_MP_TAC
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC SIGMA_ALGEBRA_SIGMA \\
+     rw [Abbr ‘prod’, subset_class_def, IN_list_rectangle, SUBSET_DEF]
+     >- fs [IN_list_rectangle] \\
+     rename1 ‘EL n x IN sp’ \\
+     fs [IN_list_rectangle] \\
+     FULL_SIMP_TAC std_ss [subset_class_def] \\
+     METIS_TAC [SUBSET_DEF])
+ >> MATCH_MP_TAC SUBSET_TRANS
+ >> Q.EXISTS_TAC ‘prod’
+ >> REWRITE_TAC [SIGMA_SUBSET_SUBSETS]
+ >> Q.PAT_X_ASSUM ‘sigma_algebra _’ K_TAC
+ >> Q.PAT_X_ASSUM ‘src' SUBSET _’   K_TAC
+ >> Q.PAT_X_ASSUM ‘prod SUBSET _’   K_TAC
+ >> rw [Abbr ‘src'’, Abbr ‘prod’, SUBSET_DEF]
+ >> fs [IN_list_rectangle]
+ >> Q.EXISTS_TAC ‘h’ >> rw []
+ >> Cases_on ‘i = n’ >> rw []
+ >> 
+QED
+*)
 
 (* cf. sigma_of_dimension_alt *)
 Theorem sigma_lists_alt :
@@ -954,6 +1121,16 @@ Theorem Borel_lists_alt_sigma :
 Proof
     rw [SPACE_BOREL, SIGMA_ALGEBRA_BOREL, Borel_lists_def,
         sigma_lists_alt_sigma_algebra, list_rectangle_UNIV]
+QED
+
+(* The shape of generator is aligned with both Borel_def and Borel_inf_def (below) *)
+Theorem Borel_lists_alt_sigma_generator :
+    !N. 0 < N ==>
+        Borel_lists N =
+        sigma {v | LENGTH v = N}
+              {rectangle h N | h | !i. i < N ==> ?a. h i = {x | x < Normal a}}
+Proof
+    cheat
 QED
 
 (* |- !h N.
@@ -1203,6 +1380,18 @@ Definition Borel_inf2_def :
       sigma UNIV {c | ?N. 0 < N /\ cylinder2rect c N IN subsets (Borel_lists N)}
 End
 
+Theorem space_Borel_inf :
+    space Borel_inf = UNIV
+Proof
+    rw [Borel_inf_def, SPACE_SIGMA]
+QED
+
+Theorem sigma_algebra_Borel_inf :
+    sigma_algebra Borel_inf
+Proof
+    rw [Borel_inf_def, SIGMA_ALGEBRA_SIGMA_UNIV]
+QED
+
 Theorem Borel_inf_SUBSET_inf1 :
     subsets Borel_inf SUBSET subsets Borel_inf1
 Proof
@@ -1257,39 +1446,80 @@ Definition Borel_lists' :
 End
 
 Theorem Borel_lists_SUBSET_Borel_lists' :
-    !N. subsets (Borel_lists N) SUBSET subsets (Borel_lists' N)
+    !N. 0 < N ==> subsets (Borel_lists N) SUBSET subsets (Borel_lists' N)
 Proof
     Q.X_GEN_TAC ‘N’
+ >> DISCH_TAC (* 0 < N *)
+ >> qabbrev_tac ‘sp = {v :extreal list | LENGTH v = N}’
  >> simp [SUBSET_DEF]
  >> Q.X_GEN_TAC ‘B’
- >> rw [Borel_lists']
+ >> simp [Borel_lists']
+ >> DISCH_TAC
+ >> STRONG_CONJ_TAC
  >- (ASSUME_TAC (Q.SPEC ‘N’ space_Borel_lists) \\
      MP_TAC (Q.SPEC ‘N’ sigma_algebra_Borel_lists) \\
      rw [sigma_algebra_def, algebra_def, subset_class_def])
- (* NOTE: to construct a cylinder from B, we need to map every "point" in B,
-    which is a N-list of extreals, to an extreal function returning the same
-    values for the first N indexes. What about the rest indexes?
-  *)
+ >> rw [SUBSET_DEF]
+ (* stage work *)
  >> Q.EXISTS_TAC ‘{f | GENLIST f N IN B}’
  >> reverse CONJ_TAC
  >- (rw [cylinder2rect_def, Once EXTENSION] \\
      EQ_TAC >> rw [] >- art [] \\
      Q.EXISTS_TAC ‘\i. EL i x’ \\
-     STRONG_CONJ_TAC
-     >- (simp [LIST_EQ_REWRITE] \\
-         STRONG_CONJ_TAC
-         >- (ASSUME_TAC (Q.SPEC ‘N’ space_Borel_lists) \\
-             MP_TAC (Q.SPEC ‘N’ sigma_algebra_Borel_lists) \\
-             rw [sigma_algebra_def, algebra_def, subset_class_def, SUBSET_DEF] \\
-             FIRST_X_ASSUM irule \\
-             Q.EXISTS_TAC ‘B’ >> art []) >> DISCH_TAC \\
-         rw [EL_GENLIST]) \\
+     STRONG_CONJ_TAC >- fs [Abbr ‘sp’, LIST_EQ_REWRITE] \\
      DISCH_THEN (art o wrap o SYM))
  (* stage work *)
+ >> rfs [Borel_lists_alt_sigma]
+ >> qabbrev_tac ‘sts = {B | B SUBSET sp /\ {f | GENLIST f N IN B} IN subsets Borel_inf}’
+ >> Suff ‘B IN sts’ >- rw [Abbr ‘sts’, SUBSET_DEF]
+ >> ASSUME_TAC sigma_algebra_Borel_inf
+ >> Know ‘algebra (sp,sts)’
+ >- (rw [algebra_def] >| (* 4 subgoals *)
+     [ (* goal 1 (of 4) *)
+       rw [subset_class_def, Abbr ‘sts’],
+       (* goal 2 (of 4) *)
+       rw [Abbr ‘sts’] \\
+       MATCH_MP_TAC SIGMA_ALGEBRA_EMPTY \\
+       rw [SIGMA_ALGEBRA_SIGMA_UNIV, Borel_inf_def],
+       (* goal 3 (of 4) *)
+       fs [Abbr ‘sts’] \\
+      ‘!f. GENLIST f N IN sp’ by rw [Abbr ‘sp’] >> POP_ASSUM (REWRITE_TAC o wrap) \\
+       Know ‘{f | GENLIST f N NOTIN s} =
+             space Borel_inf DIFF {f | GENLIST f N IN s}’
+       >- (rw [Once EXTENSION, space_Borel_inf]) >> Rewr' \\
+       MATCH_MP_TAC ALGEBRA_COMPL >> art [] \\       
+       fs [sigma_algebra_def],
+       (* goal 4 (of 4) *)
+       fs [Abbr ‘sts’] \\
+      ‘{f | GENLIST f N IN s \/ GENLIST f N IN t} =
+       {f | GENLIST f N IN s} UNION {f | GENLIST f N IN t}’ by SET_TAC [] \\
+       POP_ORW \\
+       MATCH_MP_TAC ALGEBRA_UNION >> art [] \\
+       fs [sigma_algebra_def] ])
+ >> DISCH_TAC
+ >> Know ‘sigma_algebra (sp,sts)’
+ >- (rw [SIGMA_ALGEBRA_ALT] \\
+     Q.PAT_X_ASSUM ‘algebra (sp,sts)’ K_TAC \\
+     fs [IN_FUNSET, Abbr ‘sts’] \\
+     CONJ_TAC
+     >- (rw [IN_BIGUNION_IMAGE, SUBSET_DEF] \\
+         rename1 ‘x IN f n’ >> POP_ASSUM MP_TAC \\
+         Know ‘f n SUBSET sp’ >- rw [] \\
+         SET_TAC []) \\
+     Know ‘{f' | ?s. GENLIST f' N IN s /\ ?x. s = f x} =
+           BIGUNION (IMAGE (\i. {g | GENLIST g N IN f i}) UNIV)’
+     >- (rw [Once EXTENSION, IN_BIGUNION_IMAGE] \\
+         EQ_TAC >> rw []
+         >- (rename1 ‘GENLIST x N IN f i’ \\
+             Q.EXISTS_TAC ‘i’ >> art []) \\
+         Q.EXISTS_TAC ‘f i’ >> art [] \\
+         Q.EXISTS_TAC ‘i’ >> rw []) >> Rewr' \\
+     fs [SIGMA_ALGEBRA_FN] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     rw [IN_FUNSET])
+ >> DISCH_TAC
  >> cheat
 QED
-
-Overload Borel_inf = “Borel_inf1”
 
 (* ------------------------------------------------------------------------- *)
 (*  General stochastic processes and typical specialisations                 *)
