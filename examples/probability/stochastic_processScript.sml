@@ -939,6 +939,12 @@ Theorem Borel_lists_alt_sigma_functions =
         Borel_lists_def
      |> REWRITE_RULE [sigma_lists_def, SPACE_BOREL, list_rectangle_UNIV]
 
+Theorem space_Borel_lists :
+    !N. space (Borel_lists N) = {v | LENGTH v = N}
+Proof
+    rw [SPACE_SIGMA, Borel_lists_alt_sigma_functions, sigma_functions_def]
+QED
+
 (* cf. Borel_space_alt_sigma *)
 Theorem Borel_lists_alt_sigma :
     !N. 0 < N ==>
@@ -1181,8 +1187,9 @@ Proof
  >> rw [LIST_EQ_REWRITE]
 QED
 
-Definition Borel_inf0_def :
-    Borel_inf0 =
+(* see [4, p.178] *)
+Definition Borel_inf_def :
+    Borel_inf =
       sigma UNIV {cylinder h N | 0 < N /\ !i. i < N ==> ?a. h i = {x | x < Normal a}}
 End
 
@@ -1196,12 +1203,10 @@ Definition Borel_inf2_def :
       sigma UNIV {c | ?N. 0 < N /\ cylinder2rect c N IN subsets (Borel_lists N)}
 End
 
-Overload Borel_inf = “Borel_inf1”
-
-Theorem Borel_inf0_SUBSET_inf1 :
-    subsets Borel_inf0 SUBSET subsets Borel_inf1
+Theorem Borel_inf_SUBSET_inf1 :
+    subsets Borel_inf SUBSET subsets Borel_inf1
 Proof
-    REWRITE_TAC [Borel_inf0_def]
+    REWRITE_TAC [Borel_inf_def]
  >> ‘univ(:num -> extreal) = space Borel_inf1’ by rw [SPACE_SIGMA, Borel_inf1_def]
  >> POP_ORW
  >> MATCH_MP_TAC SIGMA_SUBSET
@@ -1235,6 +1240,56 @@ Proof
  >> rw [Abbr ‘s’, Abbr ‘sts’]
  >> Q.EXISTS_TAC ‘h’ >> art []
 QED
+
+Theorem Borel_inf_SUBSET_inf2 :
+    subsets Borel_inf SUBSET subsets Borel_inf2
+Proof
+    MATCH_MP_TAC SUBSET_TRANS
+ >> Q.EXISTS_TAC ‘subsets Borel_inf1’
+ >> REWRITE_TAC [Borel_inf_SUBSET_inf1, Borel_inf1_SUBSET_inf2]
+QED
+
+(* NOTE: This is like defining ‘Borel_lists N’ by Borel_inf *)
+Definition Borel_lists' :
+    Borel_lists' N = ({v :extreal list | LENGTH v = N},
+                      {A | A SUBSET {v | LENGTH v = N} /\
+                           ?c. c IN subsets Borel_inf /\ cylinder2rect c N = A})
+End
+
+Theorem Borel_lists_SUBSET_Borel_lists' :
+    !N. subsets (Borel_lists N) SUBSET subsets (Borel_lists' N)
+Proof
+    Q.X_GEN_TAC ‘N’
+ >> simp [SUBSET_DEF]
+ >> Q.X_GEN_TAC ‘B’
+ >> rw [Borel_lists']
+ >- (ASSUME_TAC (Q.SPEC ‘N’ space_Borel_lists) \\
+     MP_TAC (Q.SPEC ‘N’ sigma_algebra_Borel_lists) \\
+     rw [sigma_algebra_def, algebra_def, subset_class_def])
+ (* NOTE: to construct a cylinder from B, we need to map every "point" in B,
+    which is a N-list of extreals, to an extreal function returning the same
+    values for the first N indexes. What about the rest indexes?
+  *)
+ >> Q.EXISTS_TAC ‘{f | GENLIST f N IN B}’
+ >> reverse CONJ_TAC
+ >- (rw [cylinder2rect_def, Once EXTENSION] \\
+     EQ_TAC >> rw [] >- art [] \\
+     Q.EXISTS_TAC ‘\i. EL i x’ \\
+     STRONG_CONJ_TAC
+     >- (simp [LIST_EQ_REWRITE] \\
+         STRONG_CONJ_TAC
+         >- (ASSUME_TAC (Q.SPEC ‘N’ space_Borel_lists) \\
+             MP_TAC (Q.SPEC ‘N’ sigma_algebra_Borel_lists) \\
+             rw [sigma_algebra_def, algebra_def, subset_class_def, SUBSET_DEF] \\
+             FIRST_X_ASSUM irule \\
+             Q.EXISTS_TAC ‘B’ >> art []) >> DISCH_TAC \\
+         rw [EL_GENLIST]) \\
+     DISCH_THEN (art o wrap o SYM))
+ (* stage work *)
+ >> cheat
+QED
+
+Overload Borel_inf = “Borel_inf1”
 
 (* ------------------------------------------------------------------------- *)
 (*  General stochastic processes and typical specialisations                 *)
