@@ -743,7 +743,6 @@ Proof
     rw [sigma_lists_def, sigma_functions_def, SPACE_SIGMA]
 QED
 
-(*
 Theorem sigma_lists_alt_generator :
     !sp sts N.
       subset_class sp sts /\ sp IN sts /\ 0 < N ==>
@@ -751,15 +750,16 @@ Theorem sigma_lists_alt_generator :
       sigma (rectangle (\n. sp) N) {rectangle h N | h | !i. i < N ==> h i IN sts}
 Proof
     rw [sigma_lists_def, sigma_functions_def, SPACE_SIGMA]
- >> Q.ABBREV_TAC (* this is part of the goal, to be replaced by ‘sts’ *)
+ >> Q.ABBREV_TAC (* this is part of the goal, to be replaced by ‘src'’ *)
    ‘src = BIGUNION
             (IMAGE (\n. IMAGE (\s. PREIMAGE (EL n) s INTER rectangle (\n. sp) N)
                               (subsets (sigma sp sts)))
                    (count N))’
+ (* src' eliminates PREIMAGE from src *)
  >> Q.ABBREV_TAC
    ‘src' = BIGUNION (IMAGE (\n. {rectangle h N | h |
-                                                 h n IN subsets (sigma sp sts) /\
-                                                 !i. i < N /\ i <> n ==> h i = sp})
+                                 h n IN subsets (sigma sp sts) /\
+                                 !i. i < N /\ i <> n ==> h i = sp})
                            (count N))’
  >> Know ‘src = src'’
  >- (rw [Abbr ‘src’, Abbr ‘src'’, Once EXTENSION, PREIMAGE_def] \\
@@ -835,7 +835,7 @@ Proof
  >> DISCH_TAC
  >> ‘src' SUBSET subsets (sigma (rectangle (\n. sp) N) src')’
        by PROVE_TAC [SIGMA_SUBSET_SUBSETS]
-
+ (* prod further eliminates BIGUNION IMAGE *)
  >> Q.ABBREV_TAC ‘prod = {rectangle h N | h | !i. i < N ==> h i IN subsets (sigma sp sts)}’
  >> Know ‘prod SUBSET subsets (sigma (rectangle (\n. sp) N) src')’
  >- (rw [Abbr ‘prod’, SUBSET_DEF] \\
@@ -872,43 +872,83 @@ Proof
        (* goal 1.3 (of 3) *)
        PROVE_TAC [] ])
  >> DISCH_TAC
-
-
- 
- >> Suff ‘subsets (sigma (rectangle (\n. sp) N) src') =
+ >> Know ‘subsets (sigma (rectangle (\n. sp) N) src') =
           subsets (sigma (rectangle (\n. sp) N) prod)’
- >- METIS_TAC [SPACE, SPACE_SIGMA]
- >> MATCH_MP_TAC SIGMA_SMALLEST >> art []
- >> reverse CONJ_TAC >- METIS_TAC [SPACE, SPACE_SIGMA]
-
-
-  (* stage work *)
- >> MP_TAC (ISPECL [“src' :('a list set) set”,
-                    “sigma (rectangle (\n. sp) N) (prod :('a list set) set)”]
-                    SIGMA_SUBSET)
- >> REWRITE_TAC [SPACE_SIGMA]
- >> DISCH_THEN MATCH_MP_TAC
- >> CONJ_TAC
- >- (MATCH_MP_TAC SIGMA_ALGEBRA_SIGMA \\
-     rw [Abbr ‘prod’, subset_class_def, IN_list_rectangle, SUBSET_DEF]
-     >- fs [IN_list_rectangle] \\
-     rename1 ‘EL n x IN sp’ \\
+ >- (MATCH_MP_TAC SIGMA_SMALLEST >> art [] \\
+     reverse CONJ_TAC >- METIS_TAC [SPACE, SPACE_SIGMA] \\
+     MP_TAC (ISPECL [“src' :('a list set) set”,
+                     “sigma (rectangle (\n. sp) N) (prod :('a list set) set)”]
+                    SIGMA_SUBSET) \\
+     REWRITE_TAC [SPACE_SIGMA] \\
+     DISCH_THEN MATCH_MP_TAC \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC SIGMA_ALGEBRA_SIGMA \\
+         rw [Abbr ‘prod’, subset_class_def, IN_list_rectangle, SUBSET_DEF]
+         >- fs [IN_list_rectangle] \\
+         rename1 ‘EL n x IN sp’ \\
+         fs [IN_list_rectangle] \\
+         qabbrev_tac ‘a = sigma sp sts’ \\
+        ‘sigma_algebra a’ by rw [Abbr ‘a’, SIGMA_ALGEBRA_SIGMA] \\
+        ‘space a = sp’ by rw [Abbr ‘a’, SPACE_SIGMA] \\
+         fs [sigma_algebra_def, algebra_def, subset_class_def] \\
+         METIS_TAC [SUBSET_DEF]) \\
+     MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘prod’ \\
+     REWRITE_TAC [SIGMA_SUBSET_SUBSETS] \\
+     Q.PAT_X_ASSUM ‘sigma_algebra _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘src' SUBSET _’   K_TAC \\
+     Q.PAT_X_ASSUM ‘prod SUBSET _’   K_TAC \\
+     rw [Abbr ‘src'’, Abbr ‘prod’, SUBSET_DEF] \\
      fs [IN_list_rectangle] \\
-     FULL_SIMP_TAC std_ss [subset_class_def] \\
-     METIS_TAC [SUBSET_DEF])
- >> MATCH_MP_TAC SUBSET_TRANS
- >> Q.EXISTS_TAC ‘prod’
- >> REWRITE_TAC [SIGMA_SUBSET_SUBSETS]
- >> Q.PAT_X_ASSUM ‘sigma_algebra _’ K_TAC
- >> Q.PAT_X_ASSUM ‘src' SUBSET _’   K_TAC
- >> Q.PAT_X_ASSUM ‘prod SUBSET _’   K_TAC
- >> rw [Abbr ‘src'’, Abbr ‘prod’, SUBSET_DEF]
- >> fs [IN_list_rectangle]
- >> Q.EXISTS_TAC ‘h’ >> rw []
- >> Cases_on ‘i = n’ >> rw []
- >> 
+     Q.EXISTS_TAC ‘h’ >> rw [] \\
+     Cases_on ‘i = n’ >> rw [] \\
+     Suff ‘sts SUBSET subsets (sigma sp sts)’ >- rw [SUBSET_DEF] \\
+     REWRITE_TAC [SIGMA_SUBSET_SUBSETS])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘A1 = sigma (rectangle (\n. sp) N) src'’
+ >> qabbrev_tac ‘A2 = sigma (rectangle (\n. sp) N) prod’
+ >> ‘space A1 = space A2’ by rw [Abbr ‘A1’, Abbr ‘A2’, SPACE_SIGMA]
+ >> ‘A1 = A2’ by METIS_TAC [SPACE]
+ >> POP_ORW
+ (* cleanup A1 *)
+ >> Q.PAT_X_ASSUM ‘sigma_algebra A1’        K_TAC
+ >> Q.PAT_X_ASSUM ‘prod SUBSET subsets A1’  K_TAC
+ >> Q.PAT_X_ASSUM ‘subsets A1 = subsets A2’ K_TAC
+ >> Q.PAT_X_ASSUM ‘space A1 = space A2’     K_TAC
+ >> Q.PAT_X_ASSUM ‘src' SUBSET subsets _’   K_TAC
+ >> qunabbrevl_tac [‘A1’, ‘prod’, ‘src'’, ‘A2’]
+ (* final stage *)
+ >> qabbrev_tac ‘Z = rectangle (\n. sp) N’
+ >> qabbrev_tac ‘sts1 = {rectangle h N | h | !i. i < N ==> h i IN sts}’
+ >> qabbrev_tac ‘sts2 = {rectangle h N | h |
+                         !i. i < N ==> h i IN subsets (sigma sp sts)}’
+ >> Suff ‘subsets (sigma Z sts2) = subsets (sigma Z sts1)’
+ >- METIS_TAC [SPACE, SPACE_SIGMA]
+ >> MATCH_MP_TAC SUBSET_ANTISYM
+ >> reverse CONJ_TAC
+ >- (MATCH_MP_TAC SIGMA_MONOTONE \\
+     rw [Abbr ‘sts1’, Abbr ‘sts2’, SUBSET_DEF] \\
+     Q.EXISTS_TAC ‘h’ >> rw [] \\
+     Q.PAT_X_ASSUM ‘!i. i < N ==> h i IN sts’ (MP_TAC o Q.SPEC ‘i’) \\
+     simp [] \\
+     Suff ‘sts SUBSET subsets (sigma sp sts)’ >- rw [SUBSET_DEF] \\
+     REWRITE_TAC [SIGMA_SUBSET_SUBSETS])
+ >> qabbrev_tac ‘b = sigma Z sts1’
+ >> ‘Z = space b’ by rw [Abbr ‘b’, SPACE_SIGMA]
+ >> POP_ORW
+ >> MATCH_MP_TAC SIGMA_SUBSET
+ >> CONJ_TAC
+ >- (qunabbrev_tac ‘b’ \\
+     MATCH_MP_TAC SIGMA_ALGEBRA_SIGMA \\
+     rw [Abbr ‘sts1’, Abbr ‘Z’, subset_class_def, SUBSET_DEF, IN_list_rectangle] \\
+     fs [IN_list_rectangle] (* two subgoals, one is left *) \\
+     rename1 ‘EL n v IN sp’ \\
+     Q.PAT_X_ASSUM ‘!i. i < N ==> EL i v IN h i’ (MP_TAC o Q.SPEC ‘n’) \\
+     simp [] \\
+     Suff ‘h n SUBSET sp’ >- rw [SUBSET_DEF] \\
+     fs [subset_class_def])
+ (* applying PREIMAGE_SIGMA *)
+ >> cheat
 QED
-*)
 
 (* cf. sigma_of_dimension_alt *)
 Theorem sigma_lists_alt :
