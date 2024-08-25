@@ -755,7 +755,7 @@ Proof
             (IMAGE (\n. IMAGE (\s. PREIMAGE (EL n) s INTER rectangle (\n. sp) N)
                               (subsets (sigma sp sts)))
                    (count N))’
- (* src' eliminates PREIMAGE from src *)
+ (* src' eliminates PREIMAGE from ‘src’ *)
  >> Q.ABBREV_TAC
    ‘src' = BIGUNION (IMAGE (\n. {rectangle h N | h |
                                  h n IN subsets (sigma sp sts) /\
@@ -835,7 +835,7 @@ Proof
  >> DISCH_TAC
  >> ‘src' SUBSET subsets (sigma (rectangle (\n. sp) N) src')’
        by PROVE_TAC [SIGMA_SUBSET_SUBSETS]
- (* prod further eliminates BIGUNION IMAGE *)
+ (* ‘prod’ further eliminates ‘BIGUNION IMAGE ...’ *)
  >> Q.ABBREV_TAC ‘prod = {rectangle h N | h | !i. i < N ==> h i IN subsets (sigma sp sts)}’
  >> Know ‘prod SUBSET subsets (sigma (rectangle (\n. sp) N) src')’
  >- (rw [Abbr ‘prod’, SUBSET_DEF] \\
@@ -946,7 +946,11 @@ Proof
      simp [] \\
      Suff ‘h n SUBSET sp’ >- rw [SUBSET_DEF] \\
      fs [subset_class_def])
- (* applying PREIMAGE_SIGMA *)
+ (* this is true, but ... *)
+ >> Know ‘sigma_algebra (Z,sts2)’
+ >- (rw [sigma_algebra_alt_pow, Abbr ‘sts2’] \\
+     cheat)
+ >> DISCH_TAC
  >> cheat
 QED
 
