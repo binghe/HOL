@@ -4783,8 +4783,7 @@ Proof
  >> Q.PAT_X_ASSUM ‘!i. i < k ==> _ -h->* _’       K_TAC
  (* now proving agree_upto *)
  >> (Q.PAT_X_ASSUM ‘agree_upto X Ms p r’ MP_TAC \\
-     simp [agree_upto_def] \\
-     DISCH_TAC \\
+     simp [agree_upto_def] >> DISCH_TAC \\
      qx_genl_tac [‘M2'’, ‘N2'’] >> simp [MEM_MAP] \\
      ONCE_REWRITE_TAC [TAUT ‘p /\ q ==> r <=> p ==> q ==> r’] \\
      DISCH_THEN (Q.X_CHOOSE_THEN ‘M2’ STRIP_ASSUME_TAC) \\
@@ -4797,8 +4796,7 @@ Proof
      DISCH_THEN (Q.X_CHOOSE_THEN ‘j1’ STRIP_ASSUME_TAC) \\
      DISCH_THEN (Q.X_CHOOSE_THEN ‘j2’ STRIP_ASSUME_TAC) \\
      rpt STRIP_TAC (* this asserts q *) \\
-     Q.PAT_X_ASSUM ‘!q. q <<= p ==> _’ (MP_TAC o Q.SPEC ‘q’) \\
-     simp [] \\
+     Q.PAT_X_ASSUM ‘!q. q <<= p ==> _’ (MP_TAC o Q.SPEC ‘q’) >> simp [] \\
      Q.PAT_X_ASSUM ‘M2 = M j1’ (rfs o wrap) \\
      Q.PAT_X_ASSUM ‘N2 = M j2’ (rfs o wrap) \\
      Q.PAT_X_ASSUM ‘M2' = apply pi (M j1)’ K_TAC \\
@@ -4835,8 +4833,7 @@ Proof
      And the case q = [] is special.
    *)
      Cases_on ‘q = []’
-     >- (POP_ORW \\
-         simp [BT_ltree_el_NIL] \\
+     >- (POP_ORW >> simp [BT_ltree_el_NIL] \\
          Know ‘!i. principle_hnf (H i) = H i’
          >- (rw [Abbr ‘H’] \\
              MATCH_MP_TAC principle_hnf_reduce \\

@@ -952,11 +952,8 @@ Proof
      simp [] \\
      Suff ‘h n SUBSET sp’ >- rw [SUBSET_DEF] \\
      fs [subset_class_def])
- (* this is true, but ... *)
- >> Know ‘sigma_algebra (Z,sts2)’
- >- (rw [sigma_algebra_alt_pow, Abbr ‘sts2’] \\
-     cheat)
- >> DISCH_TAC
+ (* stage work *)
+ >> qunabbrev_tac ‘b’
  >> cheat
 QED
 
@@ -1402,14 +1399,44 @@ Theorem IN_MEASURABLE_BOREL_EL =
    general cylinder sets.
  *)
 Definition cylinder_def :
-    cylinder (h :num -> 'a set) (N :num) = {f :num -> 'a | !i. i < N ==> f i IN h i}
+    cylinder (h :num -> 'a set) (N :num) = {f :num -> 'a | !n. n < N ==> f n IN h n}
 End
 
-(* converting cylinders back to rectangles by converting infinite sequences to
+(* NOTE: The type of ‘cylinder h N’ is ‘:(num -> 'a) set’, which just indicates
+   a set of infinite space points, which may not be (general) cylinder at all.
+
+   Thus we need a predicate to identify all cylinders in this type. And perhaps
+   another predicate to identify its "dimension of bottom".
+
+   Here ‘IMAGE (\f. f n) c’ is a projection of c into the n dimension.
+ *)
+Definition is_cylinder_def :
+    is_cylinder (c :(num -> 'a) set) <=> ?N. !n. N <= n ==> IMAGE (\f. f n) c = UNIV
+End
+
+Theorem cylinder_is_cylinder :
+    !h N. (!n. n < N ==> h n <> {}) ==> is_cylinder (cylinder h N)
+Proof
+    rw [is_cylinder_def, cylinder_def]
+ >> Q.EXISTS_TAC ‘N’
+ >> rw [Once EXTENSION]
+ >> Q.EXISTS_TAC ‘\i. if i < N then CHOICE (h i) else x’
+ >> rw []
+ >> rename1 ‘i < N’
+ >> MATCH_MP_TAC CHOICE_DEF >> rw []
+QED
+
+Definition cylinder_dim_def :
+    cylinder_dim (c :(num -> 'a) set) =
+      LEAST N. !n. N <= n ==> IMAGE (\f. f n) c = UNIV
+End
+Overload dim = “cylinder_dim”
+
+(* Converting cylinders back to rectangles by converting infinite sequences to
    finite lists (i.e., cutting off the tails).
  *)
 Definition cylinder2rect_def :
-    cylinder2rect c N = IMAGE (\f. GENLIST f N) c
+    cylinder2rect (c :(num -> 'a) set) N = IMAGE (\f. GENLIST f N) c
 End
 
 Theorem cylinder2rect_cylinder[simp] :
@@ -1450,6 +1477,49 @@ Theorem sigma_algebra_Borel_inf :
     sigma_algebra Borel_inf
 Proof
     rw [Borel_inf_def, SIGMA_ALGEBRA_SIGMA_UNIV]
+QED
+
+Theorem Borel_inf_imp_is_cylinder :
+    !c. c IN subsets Borel_inf ==> is_cylinder c
+Proof
+    rw [Borel_inf_def]
+ >> Suff ‘c IN {c | is_cylinder c}’ >- rw []
+ >> qabbrev_tac ‘sts = {cylinder h N |
+                        0 < N /\ !i. i < N ==> ?a. h i = {x | x < Normal a}}’
+ >> Q.PAT_X_ASSUM ‘c IN subsets (sigma UNIV sts)’ MP_TAC
+ >> Suff ‘subsets (sigma UNIV sts) SUBSET {c | is_cylinder c}’
+ >- rw [SUBSET_DEF]
+ >> qabbrev_tac ‘b = (univ(:num -> extreal),{c :(num -> extreal) set | is_cylinder c})’
+ >> ‘{c | is_cylinder c} = subsets b /\
+     univ(:num -> extreal) = space b’ by rw [Abbr ‘b’]
+ >> NTAC 2 POP_ORW
+ >> MATCH_MP_TAC SIGMA_SUBSET
+ >> reverse CONJ_TAC
+ >- (rw [Abbr ‘sts’, SUBSET_DEF, Abbr ‘b’] \\
+     MATCH_MP_TAC cylinder_is_cylinder >> rw [] \\
+     Q.PAT_X_ASSUM ‘!i. i < N ==> P’ (MP_TAC o Q.SPEC ‘n’) >> rw [] \\
+     POP_ORW >> rw [Once EXTENSION, NOT_IN_EMPTY] \\
+     Q.EXISTS_TAC ‘Normal (a - 1)’ >> rw [] \\
+     REAL_ARITH_TAC)
+ >> rw [Abbr ‘b’, SIGMA_ALGEBRA_ALT_SPACE]
+ (* subgoal 1 *)
+ >- rw [subset_class_def]
+ (* subgoal 2 *)
+ >- (rw [is_cylinder_def] \\
+     Q.EXISTS_TAC ‘0’ >> rw [Once EXTENSION] \\
+     Q.EXISTS_TAC ‘\n. x’ >> rw [])
+ (* subgoal 3 *)
+ >- (POP_ASSUM MP_TAC \\
+     rw [is_cylinder_def] \\
+     Q.EXISTS_TAC ‘N’ >> rw [] \\
+     Q.PAT_X_ASSUM ‘!n. N <= n ==> P’ (MP_TAC o Q.SPEC ‘n’) >> simp [] \\
+     NTAC 2 (rw [Once EXTENSION]) \\
+     qunabbrev_tac ‘sts’ \\
+     cheat
+  (* POP_ASSUM (Q.X_CHOOSE_THEN ‘f’ STRIP_ASSUME_TAC o (Q.SPEC ‘x’)) *)
+     )
+ (* subgoal 4 *)
+ >> cheat
 QED
 
 Theorem Borel_inf_SUBSET_inf1 :
@@ -1501,11 +1571,10 @@ QED
 (* NOTE: This is like defining ‘Borel_lists N’ backwards by Borel_inf *)
 Definition Borel_lists' :
     Borel_lists' N = ({v :extreal list | LENGTH v = N},
-                      {A | A SUBSET {v | LENGTH v = N} /\
-                           ?c. c IN subsets Borel_inf /\ cylinder2rect c N = A})
+                      {A | ?c. c IN subsets Borel_inf /\ cylinder2rect c N = A})
 End
 
-(* NOTE: This proof relies on Borel_lists_alt_sigma_generator *)
+(* NOTE: This proof depends on the hard work of Borel_lists_alt_sigma_generator *)
 Theorem Borel_lists_SUBSET_Borel_lists' :
     !N. 0 < N ==> subsets (Borel_lists N) SUBSET subsets (Borel_lists' N)
 Proof
@@ -1516,18 +1585,22 @@ Proof
  >> Q.X_GEN_TAC ‘B’
  >> simp [Borel_lists']
  >> DISCH_TAC
- >> STRONG_CONJ_TAC
- >- (ASSUME_TAC (Q.SPEC ‘N’ space_Borel_lists) \\
-     MP_TAC (Q.SPEC ‘N’ sigma_algebra_Borel_lists) \\
-     rw [sigma_algebra_def, algebra_def, subset_class_def])
- >> rw [SUBSET_DEF]
  (* stage work *)
  >> Q.EXISTS_TAC ‘{f | GENLIST f N IN B}’
  >> reverse CONJ_TAC
  >- (rw [cylinder2rect_def, Once EXTENSION] \\
      EQ_TAC >> rw [] >- art [] \\
      Q.EXISTS_TAC ‘\i. EL i x’ \\
-     STRONG_CONJ_TAC >- fs [Abbr ‘sp’, LIST_EQ_REWRITE] \\
+     STRONG_CONJ_TAC
+     >- (Know ‘LENGTH x = N’
+         >- (ASSUME_TAC (Q.SPEC ‘N’ sigma_algebra_Borel_lists) \\
+            ‘space (Borel_lists N) = sp’ by rw [space_Borel_lists] \\
+             gs [sigma_algebra_def, algebra_def, subset_class_def] \\
+             Q.PAT_X_ASSUM ‘!x. P ==> x SUBSET sp’ (MP_TAC o Q.SPEC ‘B’) >> simp [] \\
+             DISCH_TAC \\
+             Know ‘x IN sp’ >- METIS_TAC [SUBSET_DEF] \\
+             rw [Abbr ‘sp’]) >> DISCH_TAC \\
+         fs [Abbr ‘sp’, LIST_EQ_REWRITE]) \\
      DISCH_THEN (art o wrap o SYM))
  (* stage work *)
  >> rfs [Borel_lists_alt_sigma_generator]
@@ -1548,7 +1621,7 @@ Proof
        Know ‘{f | GENLIST f N NOTIN s} =
              space Borel_inf DIFF {f | GENLIST f N IN s}’
        >- (rw [Once EXTENSION, space_Borel_inf]) >> Rewr' \\
-       MATCH_MP_TAC ALGEBRA_COMPL >> art [] \\       
+       MATCH_MP_TAC ALGEBRA_COMPL >> art [] \\
        fs [sigma_algebra_def],
        (* goal 4 (of 4) *)
        fs [Abbr ‘sts’] \\
@@ -1601,6 +1674,21 @@ Proof
      rw [SIGMA_SUBSET_SUBSETS])
  >> rw [Abbr ‘sts’, IN_list_rectangle, cylinder_def]
  >> qexistsl_tac [‘h’, ‘N’] >> rw []
+QED
+
+(* NOTE: needs Borel_inf2_def, Borel_lists' and Borel_lists_SUBSET_Borel_lists' *)
+Theorem Borel_inf2_SUBSET_inf :
+    subsets Borel_inf2 SUBSET subsets Borel_inf
+Proof
+    rw [Borel_inf2_def, SYM space_Borel_inf]
+ >> MATCH_MP_TAC SIGMA_SUBSET
+ >> rw [sigma_algebra_Borel_inf, SUBSET_DEF]
+ >> Know ‘cylinder2rect x N IN subsets (Borel_lists' N)’
+ >- METIS_TAC [Borel_lists_SUBSET_Borel_lists', SUBSET_DEF]
+ >> POP_ASSUM K_TAC
+ >> rw [Borel_lists']
+ (* stage work *)
+ >> cheat
 QED
 
 (* ------------------------------------------------------------------------- *)
