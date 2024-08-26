@@ -695,6 +695,17 @@ Definition list_rectangle_def :
 End
 Overload rectangle = “list_rectangle”
 
+(* NOTE: (\e. [e]) is a bijection *)
+Theorem list_rectangle_1 :
+    rectangle h 1 = IMAGE (\e. [e]) (h 0)
+Proof
+    rw [Once EXTENSION, list_rectangle_def]
+ >> EQ_TAC >> rw []
+ >- (Q.EXISTS_TAC ‘HD x’ >> rw [])
+ >- rw []
+ >> rw []
+QED
+
 Theorem list_rectangle_UNIV :
     list_rectangle (\n. UNIV) N = {v | LENGTH v = N}
 Proof
@@ -952,8 +963,16 @@ Proof
      simp [] \\
      Suff ‘h n SUBSET sp’ >- rw [SUBSET_DEF] \\
      fs [subset_class_def])
- (* stage work *)
- >> qunabbrev_tac ‘b’
+ (* stage work, now induction on the dimension ‘n’ *)
+ >> qunabbrevl_tac [‘b’, ‘sts1’, ‘sts2’, ‘Z’]
+ >> Q.PAT_X_ASSUM ‘0 < N’ MP_TAC
+ >> Cases_on ‘N’ >> rw []
+ >> Q.ID_SPEC_TAC ‘n’
+ >> Induct_on ‘n’
+ >- (rw [list_rectangle_1] \\
+     qabbrev_tac ‘f = \e. [e]’ \\
+
+     cheat)
  >> cheat
 QED
 
@@ -1689,6 +1708,29 @@ Proof
  >> rw [Borel_lists']
  (* stage work *)
  >> cheat
+QED
+
+Theorem Borel_inf_eq_Borel_inf2 :
+    Borel_inf = Borel_inf2
+Proof
+    ‘space Borel_inf  = UNIV’ by rw [SPACE_SIGMA, Borel_inf_def]
+ >> ‘space Borel_inf2 = UNIV’ by rw [SPACE_SIGMA, Borel_inf2_def]
+ >> Suff ‘subsets Borel_inf = subsets Borel_inf2’
+ >- METIS_TAC [SPACE]
+ >> MATCH_MP_TAC SUBSET_ANTISYM
+ >> REWRITE_TAC [Borel_inf2_SUBSET_inf, Borel_inf_SUBSET_inf2]
+QED
+
+Theorem Borel_inf_eq_Borel_inf1 :
+    Borel_inf = Borel_inf1
+Proof
+    ‘space Borel_inf  = UNIV’ by rw [SPACE_SIGMA, Borel_inf_def]
+ >> ‘space Borel_inf1 = UNIV’ by rw [SPACE_SIGMA, Borel_inf1_def]
+ >> Suff ‘subsets Borel_inf = subsets Borel_inf1’
+ >- METIS_TAC [SPACE]
+ >> MATCH_MP_TAC SUBSET_ANTISYM
+ >> REWRITE_TAC [Borel_inf_SUBSET_inf1, Borel_inf1_SUBSET_inf2,
+                 Borel_inf_eq_Borel_inf2]
 QED
 
 (* ------------------------------------------------------------------------- *)
