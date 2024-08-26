@@ -688,6 +688,40 @@ Theorem IN_MEASURABLE_BOREL_FCP =
 (*  List-based n-dimensional Borel spaces                                    *)
 (* ------------------------------------------------------------------------- *)
 
+(* list (cons) version of ‘CROSS’ *)
+Definition cons_cross_def :
+    cons_cross A B = {CONS a b | a IN A /\ b IN B}
+End
+
+Theorem cons_cross_alt_gen :
+    !A B. cons_cross A B = general_cross CONS A B
+Proof
+    rw [cons_cross_def, general_cross_def]
+QED
+
+(* list (cons) version of ‘prod_sets’ *)
+Definition cons_prod_def :
+    cons_prod a b = {cons_cross s t | s IN a /\ t IN b}
+End
+
+Theorem cons_prod_alt_gen :
+    !a b. cons_prod a b = general_prod CONS a b
+Proof
+    rw [cons_prod_def, general_prod_def, cons_cross_alt_gen]
+QED
+
+(* list (cons) version of ‘prod_sigma’ *)
+Definition cons_sigma_def :
+    cons_sigma (a :'a algebra) (b :'a list algebra) =
+      sigma (cons_cross (space a) (space b)) (cons_prod (subsets a) (subsets b))
+End
+
+Theorem cons_sigma_alt_gen :
+    !a b. cons_sigma a b = general_sigma CONS a b
+Proof
+    rw [cons_sigma_def, cons_cross_alt_gen, cons_prod_alt_gen, general_sigma_def]
+QED
+
 (* NOTE: ‘0 < N’ is a reasonable assumption sometimes *)
 Definition list_rectangle_def :
     list_rectangle (h :num -> 'a set) N =
@@ -697,12 +731,11 @@ Overload rectangle = “list_rectangle”
 
 (* NOTE: (\e. [e]) is a bijection *)
 Theorem list_rectangle_1 :
-    rectangle h 1 = IMAGE (\e. [e]) (h 0)
+    !h. rectangle h 1 = IMAGE (\e. [e]) (h 0)
 Proof
     rw [Once EXTENSION, list_rectangle_def]
  >> EQ_TAC >> rw []
  >- (Q.EXISTS_TAC ‘HD x’ >> rw [])
- >- rw []
  >> rw []
 QED
 
@@ -717,6 +750,19 @@ Theorem IN_list_rectangle :
             LENGTH v = N /\ !i. i < N ==> EL i v IN h i
 Proof
     rw [list_rectangle_def, Once EXTENSION]
+QED
+
+Theorem list_rectangle_SUC :
+    !h n. rectangle h (SUC n) = cons_cross (h 0) (rectangle (h o SUC) n)
+Proof
+    rw [cons_cross_def, Once EXTENSION, IN_list_rectangle, o_DEF]
+ >> EQ_TAC >> rw []
+ >- (Cases_on ‘x’ >> fs [] \\
+     CONJ_TAC >- (POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> rw []) \\
+     rpt STRIP_TAC \\
+     Q.PAT_X_ASSUM ‘!i. i < SUC n ==> P’ (MP_TAC o Q.SPEC ‘SUC i’) >> rw [])
+ >- rw []
+ >> Cases_on ‘i’ >> fs []
 QED
 
 Theorem PREIMAGE_list_rectangle :
@@ -1120,7 +1166,6 @@ Proof
      Suff ‘h n SUBSET sp’ >- rw [SUBSET_DEF] \\
      fs [subset_class_def])
  (* stage work, now induction on the dimension ‘n’ *)
- >> Suff ‘sts2 = subsets b’ >- rw []
  >> qunabbrevl_tac [‘b’, ‘sts1’, ‘sts2’, ‘Z’]
  >> Q.PAT_X_ASSUM ‘0 < N’ MP_TAC
  >> Cases_on ‘N’ >> rw []
@@ -1141,6 +1186,8 @@ Proof
          >- (Q.EXISTS_TAC ‘h 0’ >> art []) \\
          rename1 ‘y IN subsets (sigma sp sts)’ \\
          Q.EXISTS_TAC ‘\i. y’ >> rw []) >> Rewr' \\
+     Suff ‘IMAGE (IMAGE f) (subsets (sigma sp sts)) =
+           subsets (sigma (IMAGE f sp) (IMAGE (IMAGE f) sts))’ >- rw [] \\
      MATCH_MP_TAC IMAGE_SIGMA >> rw [BIJ_ALT, IN_FUNSET] \\
      rw [EXISTS_UNIQUE_THM, Abbr ‘f’])
  (* stage work *)
@@ -1232,40 +1279,6 @@ QED
 Theorem list_rectangle_IN_Borel_lists =
     REWRITE_RULE [SIGMA_ALGEBRA_BOREL, GSYM Borel_lists_def]
                  (ISPEC “Borel” list_rectangle_in_sigma_lists)
-
-(* list (cons) version of ‘CROSS’ *)
-Definition cons_cross_def :
-    cons_cross A B = {CONS a b | a IN A /\ b IN B}
-End
-
-Theorem cons_cross_alt_gen :
-    !A B. cons_cross A B = general_cross CONS A B
-Proof
-    rw [cons_cross_def, general_cross_def]
-QED
-
-(* list (cons) version of ‘prod_sets’ *)
-Definition cons_prod_def :
-    cons_prod a b = {cons_cross s t | s IN a /\ t IN b}
-End
-
-Theorem cons_prod_alt_gen :
-    !a b. cons_prod a b = general_prod CONS a b
-Proof
-    rw [cons_prod_def, general_prod_def, cons_cross_alt_gen]
-QED
-
-(* list (cons) version of ‘prod_sigma’ *)
-Definition cons_sigma_def :
-    cons_sigma (a :'a algebra) (b :'a list algebra) =
-      sigma (cons_cross (space a) (space b)) (cons_prod (subsets a) (subsets b))
-End
-
-Theorem cons_sigma_alt_gen :
-    !a b. cons_sigma a b = general_sigma CONS a b
-Proof
-    rw [cons_sigma_def, cons_cross_alt_gen, cons_prod_alt_gen, general_sigma_def]
-QED
 
 val lemma = general_sigma_of_generator
          |> INST_TYPE [beta  |-> “:'a list”, gamma |-> “:'a list”]
