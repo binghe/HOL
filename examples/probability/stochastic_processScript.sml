@@ -33,6 +33,8 @@ val fcp_ss = std_ss ++ FCP_ss ++ PRED_SET_ss;
 val _ = intLib.deprecate_int ();
 val _ = ratLib.deprecate_rat ();
 
+val _ = hide "S";
+
 (* ------------------------------------------------------------------------- *)
 (*  General filtration/martingale with poset indexes (Chapter 25 of [9])     *)
 (* ------------------------------------------------------------------------- *)
@@ -781,8 +783,8 @@ Proof
 QED
 
 Definition sigma_lists_def :
-   sigma_lists B N = sigma_functions (rectangle (\n. space B) N)
-                                     (\n. B) EL (count N)
+    sigma_lists B N =
+      sigma_functions (rectangle (\n. space B) N) (\n. B) EL (count N)
 End
 
 Theorem sigma_algebra_sigma_lists :
@@ -1192,6 +1194,75 @@ Proof
      rw [EXISTS_UNIQUE_THM, Abbr ‘f’])
  (* stage work *)
  >> qabbrev_tac ‘N = SUC n’
+ >> qabbrev_tac ‘Z = rectangle (\n. sp) N’
+ >> qabbrev_tac ‘S = {rectangle h N | h | !i. i < N ==> h i IN sts}’
+ >> qabbrev_tac ‘B = {rectangle h N | h | !i. i < N ==> h i IN subsets (sigma sp sts)}’
+ >> qabbrev_tac ‘a = sigma sp sts’
+ >> Know ‘{rectangle h (SUC N) | h | !i. i < SUC N ==> h i IN subsets a} =
+            cons_prod (subsets (sigma sp sts)) B’
+ >- (rw [cons_prod_def, cons_cross_def, Once EXTENSION] \\
+     EQ_TAC >> rw [list_rectangle_def, Once EXTENSION] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       qexistsl_tac [‘h 0’, ‘rectangle (h o SUC) N’] \\
+       CONJ_TAC
+       >- (rw [Once EXTENSION] \\
+           EQ_TAC >> rw [o_DEF, IN_list_rectangle] >| (* 3 subgoals *)
+           [ (* goal 1.1 (of 3) *)
+             rename1 ‘LENGTH v = SUC N’ \\
+             Cases_on ‘v’ >> fs [] \\
+             CONJ_TAC >- (POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> simp []) \\
+             rpt STRIP_TAC \\
+             Q.PAT_X_ASSUM ‘!i. i < SUC N ==> EL i _ IN h i’ (MP_TAC o Q.SPEC ‘SUC i’) \\
+             simp [],
+             (* goal 1.2 (of 3) *)
+             rw [],
+             (* goal 1.3 (of 3) *)
+             Cases_on ‘i’ >> rw [] ]) \\
+       CONJ_TAC >- (POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> simp []) \\
+       rw [Abbr ‘B’] \\
+       Q.EXISTS_TAC ‘h o SUC’ >> rw [o_DEF],
+       (* goal 2 (of 2) *)
+       Q.EXISTS_TAC ‘\i. if i = 0 then s else IMAGE (EL (i - 1)) t’ \\
+       CONJ_TAC
+       >- (rw [Once EXTENSION] \\
+           EQ_TAC >> rw [] >| (* 3 subgoals *)
+           [ (* goal 2.1 (of 3) *)
+             rw [] \\
+             Q.PAT_X_ASSUM ‘t IN B’ MP_TAC \\
+             rw [Abbr ‘B’] >> fs [IN_list_rectangle],
+             (* goal 2.2 (of 3) *)
+             Cases_on ‘i’ >> rw [],
+             (* goal 2.3 (of 3) *)
+             rename1 ‘LENGTH v = SUC N’ \\
+             Cases_on ‘v’ >> fs [] \\
+             CONJ_TAC >- (POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> rw []) \\
+             Q.PAT_X_ASSUM ‘t IN B’ MP_TAC \\
+             rw [Abbr ‘B’] >> rw [IN_list_rectangle] \\
+             rename1 ‘EL i v IN g i’ \\
+             Q.PAT_X_ASSUM ‘!i. i < SUC (LENGTH v) ==> P’ (MP_TAC o Q.SPEC ‘SUC i’) \\
+             rw [] >> fs [IN_list_rectangle] ]) \\
+       rw [] \\
+       Q.PAT_X_ASSUM ‘t IN B’ MP_TAC \\
+       rw [Abbr ‘B’, list_rectangle_def] \\
+       qabbrev_tac ‘j = i - 1’ >> ‘j < N’ by rw [Abbr ‘j’] \\
+       reverse (Cases_on ‘!i. i < N ==> h i <> {}’)
+       >- (fs [] \\
+           Know ‘{v | LENGTH v = N /\ !i. i < N ==> EL i v IN h i} = {}’
+           >- (rw [Once EXTENSION, NOT_IN_EMPTY] \\
+               rename1 ‘h k = {}’ \\
+               Q.EXISTS_TAC ‘k’ >> rw [NOT_IN_EMPTY]) >> Rewr' \\
+           simp [] \\
+           MATCH_MP_TAC SIGMA_ALGEBRA_EMPTY \\
+           rw [Abbr ‘a’, SIGMA_ALGEBRA_SIGMA]) \\
+       Know ‘IMAGE (EL j) {v | LENGTH v = N /\ !i. i < N ==> EL i v IN h i} = h j’
+       >- (rw [Once EXTENSION] \\
+           EQ_TAC >> rw [] >- (rename1 ‘j < LENGTH v’ >> rw []) \\
+           rename1 ‘y IN h j’ \\
+           Q.EXISTS_TAC ‘GENLIST (\i. if i = j then y else CHOICE (h i)) N’ \\
+           rw [] >> rename1 ‘k <> j’ \\
+           rw [CHOICE_DEF]) >> Rewr' \\
+       FIRST_X_ASSUM MATCH_MP_TAC >> art [] ])
+ >> Rewr'
  >> cheat
 QED
 
@@ -1563,9 +1634,7 @@ Proof
      Q.PAT_X_ASSUM ‘!n. N <= n ==> P’ (MP_TAC o Q.SPEC ‘n’) >> simp [] \\
      NTAC 2 (rw [Once EXTENSION]) \\
      qunabbrev_tac ‘sts’ \\
-     cheat
-  (* POP_ASSUM (Q.X_CHOOSE_THEN ‘f’ STRIP_ASSUME_TAC o (Q.SPEC ‘x’)) *)
-     )
+     cheat)
  (* subgoal 4 *)
  >> cheat
 QED
