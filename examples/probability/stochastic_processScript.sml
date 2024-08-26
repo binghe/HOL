@@ -743,9 +743,12 @@ Proof
     rw [sigma_lists_def, sigma_functions_def, SPACE_SIGMA]
 QED
 
+(* NOTE: This is a very hard result. It gives another alternative definition of
+   sigma_lists using the very 1-dimensional generator. --Chun Tian, 25 ago 2024
+ *)
 Theorem sigma_lists_alt_generator :
     !sp sts N.
-      subset_class sp sts /\ sp IN sts /\ 0 < N ==>
+      subset_class sp sts /\ 0 < N ==>
       sigma_lists (sigma sp sts) N =
       sigma (rectangle (\n. sp) N) {rectangle h N | h | !i. i < N ==> h i IN sts}
 Proof
@@ -901,8 +904,11 @@ Proof
      fs [IN_list_rectangle] \\
      Q.EXISTS_TAC ‘h’ >> rw [] \\
      Cases_on ‘i = n’ >> rw [] \\
-     Suff ‘sts SUBSET subsets (sigma sp sts)’ >- rw [SUBSET_DEF] \\
-     REWRITE_TAC [SIGMA_SUBSET_SUBSETS])
+     qabbrev_tac ‘a = sigma sp sts’ \\
+    ‘sigma_algebra a’ by rw [Abbr ‘a’, SIGMA_ALGEBRA_SIGMA] \\
+    ‘space a = sp’ by rw [Abbr ‘a’, SPACE_SIGMA] \\
+     POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM) \\
+     MATCH_MP_TAC SIGMA_ALGEBRA_SPACE >> art [])
  >> DISCH_TAC
  >> qabbrev_tac ‘A1 = sigma (rectangle (\n. sp) N) src'’
  >> qabbrev_tac ‘A2 = sigma (rectangle (\n. sp) N) prod’
@@ -954,7 +960,6 @@ Proof
  >> cheat
 QED
 
-(* cf. sigma_of_dimension_alt *)
 Theorem sigma_lists_alt :
     !(B :'a algebra) N.
       subset_class (space B) (subsets B) /\ space B IN subsets B /\ 0 < N ==>
@@ -1174,7 +1179,18 @@ Theorem Borel_lists_alt_sigma_generator :
         sigma {v | LENGTH v = N}
               {rectangle h N | h | !i. i < N ==> ?a. h i = {x | x < Normal a}}
 Proof
-    cheat
+    rw [Borel_lists_def, Borel_def]
+ >> qabbrev_tac ‘sp = univ(:extreal)’
+ >> qabbrev_tac ‘sts = IMAGE (\a. {x | x < Normal a}) univ(:real)’
+ >> Know ‘{rectangle h N | h | !i. i < N ==> ?a. h i = {x | x < Normal a}} =
+          {rectangle h N | h | !i. i < N ==> h i IN sts}’
+ >- (rw [Once EXTENSION, Abbr ‘sts’])
+ >> Rewr'
+ >> Know ‘{v | LENGTH v = N} = rectangle (\n. sp) N’
+ >- rw [list_rectangle_UNIV, Abbr ‘sp’]
+ >> Rewr'
+ >> MATCH_MP_TAC sigma_lists_alt_generator
+ >> rw [subset_class_def, Abbr ‘sp’]
 QED
 
 (* |- !h N.
@@ -1482,13 +1498,14 @@ Proof
  >> REWRITE_TAC [Borel_inf_SUBSET_inf1, Borel_inf1_SUBSET_inf2]
 QED
 
-(* NOTE: This is like defining ‘Borel_lists N’ by Borel_inf *)
+(* NOTE: This is like defining ‘Borel_lists N’ backwards by Borel_inf *)
 Definition Borel_lists' :
     Borel_lists' N = ({v :extreal list | LENGTH v = N},
                       {A | A SUBSET {v | LENGTH v = N} /\
                            ?c. c IN subsets Borel_inf /\ cylinder2rect c N = A})
 End
 
+(* NOTE: This proof relies on Borel_lists_alt_sigma_generator *)
 Theorem Borel_lists_SUBSET_Borel_lists' :
     !N. 0 < N ==> subsets (Borel_lists N) SUBSET subsets (Borel_lists' N)
 Proof
@@ -1513,7 +1530,7 @@ Proof
      STRONG_CONJ_TAC >- fs [Abbr ‘sp’, LIST_EQ_REWRITE] \\
      DISCH_THEN (art o wrap o SYM))
  (* stage work *)
- >> rfs [Borel_lists_alt_sigma]
+ >> rfs [Borel_lists_alt_sigma_generator]
  >> qabbrev_tac ‘sts = {B | B SUBSET sp /\ {f | GENLIST f N IN B} IN subsets Borel_inf}’
  >> Suff ‘B IN sts’ >- rw [Abbr ‘sts’, SUBSET_DEF]
  >> ASSUME_TAC sigma_algebra_Borel_inf
@@ -1562,7 +1579,28 @@ Proof
      FIRST_X_ASSUM MATCH_MP_TAC \\
      rw [IN_FUNSET])
  >> DISCH_TAC
- >> cheat
+ >> Q.PAT_X_ASSUM ‘algebra (sp,sts)’ K_TAC
+ >> qabbrev_tac ‘src = {rectangle h N | h |
+                         !i. i < N ==> ?a. h i = {x | x < Normal a}}’
+ >> Q.PAT_X_ASSUM ‘B IN subsets (sigma sp src)’ MP_TAC
+ >> Suff ‘subsets (sigma sp src) SUBSET sts’ >- rw [SUBSET_DEF]
+ >> qabbrev_tac ‘b = (sp,sts)’
+ >> ‘sp = space b /\ sts = subsets b’ by rw [Abbr ‘b’]
+ >> NTAC 2 POP_ORW
+ >> MATCH_MP_TAC SIGMA_SUBSET >> rw [Abbr ‘b’]
+ (* stage work *)
+ >> Q.PAT_X_ASSUM ‘sigma_algebra (sp,sts)’ K_TAC
+ >> rw [SUBSET_DEF, Abbr ‘src’, Abbr ‘sts’]
+ >- fs [IN_list_rectangle, Abbr ‘sp’]
+ >> fs [Borel_inf_def]
+ >> qabbrev_tac ‘sts = {cylinder h N | 0 < N /\
+                                      !i. i < N ==> ?a. h i = {x | x < Normal a}}’
+ >> Suff ‘{f | GENLIST f N IN rectangle h N} IN sts’
+ >- (Suff ‘sts SUBSET subsets (sigma univ(:num -> extreal) sts)’
+     >- rw [SUBSET_DEF] \\
+     rw [SIGMA_SUBSET_SUBSETS])
+ >> rw [Abbr ‘sts’, IN_list_rectangle, cylinder_def]
+ >> qexistsl_tac [‘h’, ‘N’] >> rw []
 QED
 
 (* ------------------------------------------------------------------------- *)
