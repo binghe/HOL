@@ -3619,12 +3619,13 @@ QED
 
 (* A good corollary of PREIMAGE_SIGMA *)
 Theorem IMAGE_SIGMA :
-    !sp sts f. subset_class sp sts /\ BIJ f UNIV UNIV ==>
+    !sp sts f. subset_class sp sts /\ BIJ f sp (IMAGE f sp) ==>
                IMAGE (IMAGE f) (subsets (sigma sp sts)) =
                subsets (sigma (IMAGE f sp) (IMAGE (IMAGE f) sts))
 Proof
     rpt STRIP_TAC
- >> MP_TAC (MATCH_MP BIJ_INV (ASSUME “BIJ (f :'a -> 'b) univ(:'a) univ(:'b)”))
+ >> MP_TAC (MATCH_MP BIJ_INV
+                     (ASSUME “BIJ (f :'a -> 'b) (sp :'a -> bool) (IMAGE f sp)”))
  >> rw []
  >> qabbrev_tac ‘Z = IMAGE f sp’
  >> qabbrev_tac ‘H = \s. PREIMAGE g s INTER Z’
@@ -3634,21 +3635,41 @@ Proof
      >- (rename1 ‘s IN sts’ >> Q.EXISTS_TAC ‘s’ >> rw [] \\
          EQ_TAC >> rw [] >| (* 3 subgoals *)
          [ (* goal 1 (of 3) *)
-           rw [],
+           rename1 ‘g (f y) IN s’ \\
+           Suff ‘g (f y) = y’ >- rw [] \\
+           FIRST_X_ASSUM MATCH_MP_TAC \\
+           POP_ASSUM MP_TAC \\
+           Suff ‘s SUBSET sp’ >- rw [SUBSET_DEF] \\
+           fs [subset_class_def],
            (* goal 2 (of 3) *)
            rename1 ‘y IN s’ >> Q.EXISTS_TAC ‘y’ >> rw [] \\
            POP_ASSUM MP_TAC \\
            Suff ‘s SUBSET sp’ >- rw [SUBSET_DEF] \\
            fs [subset_class_def],
            (* goal 3 (of 3) *)
-           rename1 ‘y IN sp’ >> Q.EXISTS_TAC ‘y’ >> rfs [] ]) \\
+           rename1 ‘y IN sp’ >> Q.EXISTS_TAC ‘y’ >> rw [] \\
+           Suff ‘g (f y) = y’ >- PROVE_TAC [] \\
+           FIRST_X_ASSUM MATCH_MP_TAC \\
+           POP_ASSUM MP_TAC \\
+           Suff ‘s SUBSET sp’ >- rw [SUBSET_DEF] \\
+           fs [subset_class_def] ]) \\
     rename1 ‘s IN sts’ \\
     Q.EXISTS_TAC ‘s’ >> rw [] \\
     EQ_TAC >> rw [] >| (* 3 subgoals *)
     [ (* goal 1 (of 3) *)
-      rename1 ‘y IN sp’ >> Q.EXISTS_TAC ‘y’ >> rfs [],
+      rename1 ‘y IN sp’ >> Q.EXISTS_TAC ‘y’ >> rw [] \\
+      Suff ‘g (f y) = y’ >- PROVE_TAC [] \\
+      FIRST_X_ASSUM MATCH_MP_TAC \\
+      POP_ASSUM MP_TAC \\
+      Suff ‘s SUBSET sp’ >- rw [SUBSET_DEF] \\
+      fs [subset_class_def],
       (* goal 2 (of 3) *)
-      rw [],
+      rename1 ‘g (f y) IN s’ \\
+      Suff ‘g (f y) = y’ >- PROVE_TAC [] \\
+      FIRST_X_ASSUM MATCH_MP_TAC \\
+      POP_ASSUM MP_TAC \\
+      Suff ‘s SUBSET sp’ >- rw [SUBSET_DEF] \\
+      fs [subset_class_def],
       (* goal 3 (of 3) *)
       rename1 ‘y IN s’ >> Q.EXISTS_TAC ‘y’ >> rw [] \\
       POP_ASSUM MP_TAC \\
@@ -3665,7 +3686,13 @@ Proof
          rw [Once EXTENSION] \\
          EQ_TAC >> rw [] >| (* 3 subgoals *)
          [ (* goal 1 (of 3) *)
-           rw [],
+           rename1 ‘g (f y) IN s’ \\
+           Suff ‘g (f y) = y’ >- rw [] \\
+           FIRST_X_ASSUM MATCH_MP_TAC \\
+           POP_ASSUM MP_TAC \\
+           Suff ‘s SUBSET sp’ >- rw [SUBSET_DEF] \\
+          ‘space a = sp’ by rw [Abbr ‘a’, SPACE_SIGMA] \\
+           fs [sigma_algebra_def, algebra_def, subset_class_def],
            (* goal 2 (of 3) *)
            rename1 ‘y IN s’ >> Q.EXISTS_TAC ‘y’ >> rw [] \\
            POP_ASSUM MP_TAC \\
@@ -3673,14 +3700,24 @@ Proof
           ‘space a = sp’ by rw [Abbr ‘a’, SPACE_SIGMA] \\
            fs [sigma_algebra_def, algebra_def, subset_class_def],
            (* goal 3 (of 3) *)
-           rename1 ‘y IN sp’ >> Q.EXISTS_TAC ‘y’ >> rfs [] ]) \\
+           rename1 ‘y IN sp’ >> Q.EXISTS_TAC ‘y’ >> rw [] \\
+           Suff ‘g (f y) = y’ >- PROVE_TAC [] \\
+           FIRST_X_ASSUM MATCH_MP_TAC >> art [] ]) \\
      rename1 ‘s IN subsets a’ \\
      Q.EXISTS_TAC ‘s’ >> art [] \\
      rw [Once EXTENSION] \\
      EQ_TAC >> rw []
-     >- (rename1 ‘y IN sp’ >> Q.EXISTS_TAC ‘y’ >> rfs [])
-     >- rw [] \\
-     rename1 ‘x IN s’ >> Q.EXISTS_TAC ‘x’ >> art [] \\
+     >- (rename1 ‘y IN sp’ >> Q.EXISTS_TAC ‘y’ >> art [] \\
+         Suff ‘g (f y) = y’ >- PROVE_TAC [] \\
+         FIRST_X_ASSUM MATCH_MP_TAC >> art [])
+     >- (rename1 ‘g (f y) IN s’ \\
+         Suff ‘g (f y) = y’ >- rw [] \\
+         FIRST_X_ASSUM MATCH_MP_TAC \\
+         POP_ASSUM MP_TAC \\
+         Suff ‘s SUBSET sp’ >- rw [SUBSET_DEF] \\
+        ‘space a = sp’ by rw [Abbr ‘a’, SPACE_SIGMA] \\
+         fs [sigma_algebra_def, algebra_def, subset_class_def]) \\
+     rename1 ‘y IN s’ >> Q.EXISTS_TAC ‘y’ >> art [] \\
      POP_ASSUM MP_TAC \\
      Suff ‘s SUBSET sp’ >- rw [SUBSET_DEF] \\
     ‘space a = sp’ by rw [Abbr ‘a’, SPACE_SIGMA] \\
@@ -3689,7 +3726,9 @@ Proof
  >> qunabbrevl_tac [‘H’, ‘a’]
  >> MATCH_MP_TAC PREIMAGE_SIGMA
  >> rw [Abbr ‘Z’, IN_FUNSET]
- >> rw []
+ >> rename1 ‘g (f y) IN sp’
+ >> Suff ‘g (f y) = y’ >- rw []
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
 QED
 
 (* Lemma 2.2.5 of [9, p.177] (moving INTER outside of the sigma generator) *)

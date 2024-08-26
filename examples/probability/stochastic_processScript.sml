@@ -754,7 +754,7 @@ Proof
     rw [sigma_lists_def, sigma_functions_def, SPACE_SIGMA]
 QED
 
-(* NOTE: This is a very hard result. It gives another alternative definition of
+(* NOTE: This is a difficult result. It gives another alternative definition of
    sigma_lists using the very 1-dimensional generator. --Chun Tian, 25 ago 2024
  *)
 Theorem sigma_lists_alt_generator :
@@ -964,6 +964,7 @@ Proof
      Suff ‘h n SUBSET sp’ >- rw [SUBSET_DEF] \\
      fs [subset_class_def])
  (* stage work, now induction on the dimension ‘n’ *)
+ >> Suff ‘sts2 = subsets b’ >- rw []
  >> qunabbrevl_tac [‘b’, ‘sts1’, ‘sts2’, ‘Z’]
  >> Q.PAT_X_ASSUM ‘0 < N’ MP_TAC
  >> Cases_on ‘N’ >> rw []
@@ -971,8 +972,22 @@ Proof
  >> Induct_on ‘n’
  >- (rw [list_rectangle_1] \\
      qabbrev_tac ‘f = \e. [e]’ \\
-
-     cheat)
+     Know ‘{IMAGE f (h (0 :num)) | h 0 IN sts} = IMAGE (IMAGE f) sts’
+     >- (rw [Once EXTENSION] \\
+         EQ_TAC >> rw []
+         >- (Q.EXISTS_TAC ‘h 0’ >> art []) \\
+         rename1 ‘y IN sts’ \\
+         Q.EXISTS_TAC ‘\i. y’ >> rw []) >> Rewr' \\
+     Know ‘{IMAGE f (h (0 :num)) | h 0 IN subsets (sigma sp sts)} =
+           IMAGE (IMAGE f) (subsets (sigma sp sts))’
+     >- (rw [Once EXTENSION] \\
+         EQ_TAC >> rw []
+         >- (Q.EXISTS_TAC ‘h 0’ >> art []) \\
+         rename1 ‘y IN subsets (sigma sp sts)’ \\
+         Q.EXISTS_TAC ‘\i. y’ >> rw []) >> Rewr' \\
+     MATCH_MP_TAC IMAGE_SIGMA >> rw [BIJ_ALT, IN_FUNSET] \\
+     rw [EXISTS_UNIQUE_THM, Abbr ‘f’])
+ (* stage work *)
  >> cheat
 QED
 
