@@ -724,6 +724,12 @@ Definition cons_sigma_def :
       sigma (cons_cross (space a) (space b)) (cons_prod (subsets a) (subsets b))
 End
 
+Theorem space_cons_sigma :
+    !a b. space (cons_sigma a b) = cons_cross (space a) (space b)
+Proof
+    rw [cons_sigma_def, SPACE_SIGMA]
+QED
+
 Theorem cons_sigma_alt_gen :
     !a b. cons_sigma a b = general_sigma CONS a b
 Proof
@@ -991,7 +997,7 @@ QED
  *)
 Theorem sigma_lists_alt_generator :
     !sp sts N.
-      subset_class sp sts /\ 0 < N ==>
+      subset_class sp sts /\ has_exhausting_sequence (sp,sts) /\ 0 < N ==>
       sigma_lists (sigma sp sts) N =
       sigma (rectangle (\n. sp) N) {rectangle h N | h | !i. i < N ==> h i IN sts}
 Proof
@@ -1309,11 +1315,46 @@ Proof
   *)
  >> Know ‘cons_prod (subsets a) (subsets (sigma Z S)) SUBSET
           subsets (sigma Z' (cons_prod sts S))’
- >- (qabbrev_tac ‘A = cons_prod (subsets a) (subsets (sigma Z S))’ \\
-     Suff ‘subsets (sigma Z' (cons_prod sts S)) = subsets (sigma Z' A)’
+ >- (qabbrev_tac ‘t = cons_prod (subsets a) (subsets (sigma Z S))’ \\
+     Suff ‘subsets (sigma Z' (cons_prod sts S)) = subsets (sigma Z' t)’
      >- (Rewr' >> rw [SIGMA_SUBSET_SUBSETS]) \\
-     qunabbrevl_tac [‘A’, ‘a’] \\
-  (* applying cons_sigma_of_generator *)
+     qunabbrevl_tac [‘t’, ‘a’] \\
+  (* preparing for cons_sigma_of_generator *)
+     Know ‘Z' = cons_cross sp Z’
+     >- (rw [Abbr ‘Z'’, Abbr ‘Z’, cons_cross_def, Once EXTENSION, IN_list_rectangle] \\
+         EQ_TAC >> rw [] >| (* 3 subgoals *)
+         [ (* goal 1 (of 3) *)
+           Cases_on ‘x’ >> fs [] \\
+           CONJ_TAC >- (POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> rw []) \\
+           rpt STRIP_TAC >> rename1 ‘EL i t IN sp’ \\
+           Q.PAT_X_ASSUM ‘!n. n < SUC N ==> P’ (MP_TAC o Q.SPEC ‘SUC i’) >> rw [],
+           (* goal 2 (of 3) *)
+           rw [],
+           (* goal 3 (of 3) *)
+           rename1 ‘EL i (a::b) IN sp’ \\
+           Cases_on ‘i’ >> fs [] ]) >> Rewr' \\
+     qunabbrev_tac ‘Z'’ \\
+    ‘sigma (cons_cross sp Z) (cons_prod sts S) = cons_sigma (sp,sts) (Z,S)’
+       by (rw [cons_sigma_def]) >> POP_ORW \\
+     qabbrev_tac ‘a = sigma sp sts’ \\
+     qabbrev_tac ‘b = sigma Z S’ \\
+     Know ‘sigma (cons_cross sp Z) (cons_prod (subsets a) (subsets b)) =
+           cons_sigma a b’
+     >- (rw [cons_sigma_def, Abbr ‘a’, Abbr ‘b’, SPACE_SIGMA]) >> Rewr' \\
+  (* applying for cons_sigma_of_generator *)
+     qunabbrevl_tac [‘a’, ‘b’] \\
+     Suff ‘cons_sigma (sp,sts) (Z,S) =
+           cons_sigma (sigma sp sts) (sigma Z S)’ >- METIS_TAC [SPACE] \\
+     MATCH_MP_TAC cons_sigma_of_generator >> art [] \\
+     STRONG_CONJ_TAC
+     >- (rw [Abbr ‘Z’, Abbr ‘S’, subset_class_def] \\
+         rw [SUBSET_DEF, IN_list_rectangle] \\
+         rename1 ‘EL i x IN sp’ \\
+         Q.PAT_X_ASSUM ‘!i. i < LENGTH x ==> EL i x IN h i’ (MP_TAC o Q.SPEC ‘i’) \\
+         simp [] \\
+         Suff ‘h i SUBSET sp’ >- rw [SUBSET_DEF] \\
+         fs [subset_class_def]) >> DISCH_TAC \\
+  (* applying has_exhausting_sequence_def *)
      cheat)
  >> DISCH_TAC
  >> MATCH_MP_TAC SUBSET_TRANS
@@ -1427,7 +1468,7 @@ Proof
  >- rw [list_rectangle_UNIV, Abbr ‘sp’]
  >> Rewr'
  >> MATCH_MP_TAC sigma_lists_alt_generator
- >> rw [subset_class_def, Abbr ‘sp’]
+ >> cheat (* rw [subset_class_def, Abbr ‘sp’] *)
 QED
 
 (* |- !h N.
