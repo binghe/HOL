@@ -1199,7 +1199,7 @@ Proof
  >> qabbrev_tac ‘B = {rectangle h N | h | !i. i < N ==> h i IN subsets (sigma sp sts)}’
  >> qabbrev_tac ‘a = sigma sp sts’
  >> Know ‘{rectangle h (SUC N) | h | !i. i < SUC N ==> h i IN subsets a} =
-            cons_prod (subsets (sigma sp sts)) B’
+          cons_prod (subsets a) B’
  >- (rw [cons_prod_def, cons_cross_def, Once EXTENSION] \\
      EQ_TAC >> rw [list_rectangle_def, Once EXTENSION] >| (* 2 subgoals *)
      [ (* goal 1 (of 2) *)
@@ -1262,6 +1262,22 @@ Proof
            rw [] >> rename1 ‘k <> j’ \\
            rw [CHOICE_DEF]) >> Rewr' \\
        FIRST_X_ASSUM MATCH_MP_TAC >> art [] ])
+ >> Rewr'
+ (* Rewrite cons_prod to sigma generator of something. For all elements in the prod,
+    it's a "cons_cross" of an element from ‘sigma sp sts’ and a ‘rectangle h N’. Then
+    if we start from ‘cons_prod sts {rectangle h N | ...}’ and generate sigma-algebra
+    from it, we may get the same original sigma-algebra.
+  *)
+ >> qunabbrev_tac ‘B’
+ >> qabbrev_tac ‘Z' = rectangle (\n. sp) (SUC N)’
+ >> Know ‘cons_prod (subsets a) {rectangle h N | h | !i. i < N ==> h i IN subsets a} =
+          subsets (sigma Z'
+                    (cons_prod sts {rectangle h N | h | !i. i < N ==> h i IN subsets a}))’
+ >- (rw [Once EXTENSION, cons_prod_def] \\
+     EQ_TAC >> rw []
+     >- (qmatch_abbrev_tac ‘cons_cross s (rectangle h N) IN subsets (sigma Z' src)’ \\
+         cheat) \\
+     cheat)
  >> Rewr'
  >> cheat
 QED
