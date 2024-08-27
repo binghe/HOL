@@ -695,6 +695,12 @@ Definition cons_cross_def :
     cons_cross A B = {CONS a b | a IN A /\ b IN B}
 End
 
+Theorem cons_cross_empty[simp] :
+    cons_cross {} A = {} /\ cons_cross A {} = {}
+Proof
+    rw [cons_cross_def]
+QED
+
 Theorem cons_cross_alt_gen :
     !A B. cons_cross A B = general_cross CONS A B
 Proof
@@ -723,6 +729,28 @@ Theorem cons_sigma_alt_gen :
 Proof
     rw [cons_sigma_def, cons_cross_alt_gen, cons_prod_alt_gen, general_sigma_def]
 QED
+
+val lemma = general_sigma_of_generator
+         |> INST_TYPE [beta  |-> “:'a list”, gamma |-> “:'a list”]
+         |> Q.SPECL [‘CONS’, ‘HD’, ‘TL’, ‘X’, ‘Y’, ‘E’, ‘G’]
+         |> REWRITE_RULE [pair_operation_CONS,
+                          GSYM cons_cross_alt_gen,
+                          GSYM cons_prod_alt_gen,
+                          GSYM cons_sigma_alt_gen];
+
+(* |- !X E Y G.
+        subset_class X E /\ subset_class Y G /\
+        has_exhausting_sequence (X,E) /\ has_exhausting_sequence (Y,G) ==>
+        cons_sigma (X,E) (Y,G) = cons_sigma (sigma X E) (sigma Y G)
+ *)
+Theorem cons_sigma_of_generator = general_sigma_of_generator
+     |> INST_TYPE [beta  |-> “:'a list”, gamma |-> “:'a list”]
+     |> Q.SPECL [‘CONS’, ‘HD’, ‘TL’, ‘X’, ‘Y’, ‘E’, ‘G’]
+     |> REWRITE_RULE [pair_operation_CONS,
+                      GSYM cons_cross_alt_gen,
+                      GSYM cons_prod_alt_gen,
+                      GSYM cons_sigma_alt_gen]
+     |> Q.GENL [‘X’, ‘E’, ‘Y’, ‘G’]
 
 (* NOTE: ‘0 < N’ is a reasonable assumption sometimes *)
 Definition list_rectangle_def :
@@ -1263,89 +1291,66 @@ Proof
            rw [CHOICE_DEF]) >> Rewr' \\
        FIRST_X_ASSUM MATCH_MP_TAC >> art [] ])
  >> Rewr'
- (* Rewrite cons_prod to sigma generator of something. For all elements in the prod,
-    it's a "cons_cross" of an element from ‘sigma sp sts’ and a ‘rectangle h N’. Then
-    if we start from ‘cons_prod sts {rectangle h N | ...}’ and generate sigma-algebra
-    from it, we may get the same original sigma-algebra.
+ (* Applying IH. Note that there's no way to rewrite ‘cons_prod (subsets a) B’ to
+    sigma generator of something, thus IH must be leveraged here.
   *)
+ >> MATCH_MP_TAC SUBSET_TRANS
+ >> Q.EXISTS_TAC ‘cons_prod (subsets a) (subsets (sigma Z S))’
+ >> CONJ_TAC
+ >- (rw [SUBSET_DEF, cons_prod_def] \\
+     qexistsl_tac [‘s’, ‘t’] >> art [] \\
+     POP_ASSUM MP_TAC \\
+     fs [SUBSET_DEF])
+ >> Q.PAT_X_ASSUM ‘B SUBSET subsets (sigma Z S)’ K_TAC
  >> qunabbrev_tac ‘B’
  >> qabbrev_tac ‘Z' = rectangle (\n. sp) (SUC N)’
- >> qabbrev_tac ‘B = {rectangle h N | h | !i. i < N ==> h i IN subsets a}’
- >> Know ‘cons_prod (subsets a) B = subsets (sigma Z' (cons_prod sts B))’
- >- (rw [Once EXTENSION, cons_prod_def, Abbr ‘B’] \\
-     EQ_TAC >> rw []
-     >- (qmatch_abbrev_tac ‘cons_cross s (rectangle h N) IN subsets (sigma Z' src)’ \\
-         Know ‘subset_class Z' src’
-         >- (rw [Abbr ‘Z'’, Abbr ‘src’, subset_class_def] \\
-             rw [SUBSET_DEF, cons_cross_def, IN_list_rectangle] >- rw [] \\
-             rename1 ‘i < SUC (LENGTH b)’ \\
-             rename1 ‘EL i (y::ys) IN sp’ \\
-             rename1 ‘!i. i < LENGTH ys ==> EL i ys IN g i’ \\
-             rename1 ‘y IN s'’ \\
-             Cases_on ‘i’ >> fs []
-             >- (Q.PAT_X_ASSUM ‘y IN s'’ MP_TAC \\
-                 Suff ‘s' SUBSET sp’ >- rw [SUBSET_DEF] \\
-                 fs [subset_class_def]) \\
-             rename1 ‘EL i ys IN sp’ \\
-             Q.PAT_X_ASSUM ‘!i. i < LENGTH ys ==> EL i ys IN g i’ (MP_TAC o Q.SPEC ‘i’) \\
-             simp [] \\
-             Suff ‘g i SUBSET sp’ >- rw [SUBSET_DEF] \\
-             qabbrev_tac ‘b = sigma sp sts’ \\
-            ‘sigma_algebra b’ by rw [Abbr ‘b’, SIGMA_ALGEBRA_SIGMA] \\
-            ‘space b = sp’ by rw [SPACE_SIGMA, Abbr ‘b’] \\
-             fs [sigma_algebra_def, algebra_def, subset_class_def]) >> DISCH_TAC \\
-      (* Now ‘h’ is concrete. If any ‘h i = {}’ then ‘cons_cross s (rectangle h N) = {}’,
-         which is a special easy case here.
-       *)
-         reverse (Cases_on ‘!i. i < N ==> h i <> {}’)
-         >- (fs [] \\
-             Know ‘cons_cross s (rectangle h N) = {}’
-             >- (rw [Once EXTENSION, NOT_IN_EMPTY, cons_cross_def, IN_list_rectangle] \\
-                 DISJ2_TAC >> Q.EXISTS_TAC ‘i’ >> rw [NOT_IN_EMPTY]) >> Rewr' \\
-             MATCH_MP_TAC SIGMA_ALGEBRA_EMPTY \\
-             MATCH_MP_TAC SIGMA_ALGEBRA_SIGMA >> art []) \\
-         Suff ‘s IN {s | cons_cross s (rectangle h N) IN subsets (sigma Z' src)}’
-         >- rw [] \\
-         Q.PAT_X_ASSUM ‘s IN subsets a’ MP_TAC \\
-         Suff ‘subsets a SUBSET {s | cons_cross s (rectangle h N) IN subsets (sigma Z' src)}’
-         >- rw [SUBSET_DEF] \\
-         qunabbrev_tac ‘a’ \\
-         qabbrev_tac ‘b = (sp,{s | cons_cross s (rectangle h N) IN subsets (sigma Z' src)})’ \\
-        ‘sp = space b /\
-         {s | cons_cross s (rectangle h N) IN subsets (sigma Z' src)} = subsets b’
-            by rw [Abbr ‘b’] \\
-         NTAC 2 POP_ORW \\
-         MATCH_MP_TAC SIGMA_SUBSET \\
-         reverse CONJ_TAC
-         >- (rw [Abbr ‘b’, SUBSET_DEF] \\
-             Know ‘src SUBSET subsets (sigma Z' src)’ >- rw [SIGMA_SUBSET_SUBSETS] \\
-             Suff ‘cons_cross x (rectangle h N) IN src’ >- rw [SUBSET_DEF] \\
-             rw [Abbr ‘src’] \\
-             qexistsl_tac [‘x’, ‘rectangle h N’] >> rw [] \\
-             Q.EXISTS_TAC ‘h’ >> rw []) \\
-         rw [SIGMA_ALGEBRA_ALT_SPACE, Abbr ‘b’] >| (* 4 subgoals *)
-         [ (* goal 1 (of 4) *)
-           rw [subset_class_def] \\
-           qabbrev_tac ‘a = sigma Z' src’ \\
-          ‘sigma_algebra a’ by rw [Abbr ‘a’, SIGMA_ALGEBRA_SIGMA] \\
-           Know ‘cons_cross x (rectangle h N) SUBSET space a’
-           >- (fs [sigma_algebra_def, algebra_def, subset_class_def]) \\
-          ‘space a = Z'’ by rw [Abbr ‘a’, SPACE_SIGMA] >> POP_ORW \\
-           rw [cons_cross_def, Abbr ‘Z'’, SUBSET_DEF, IN_list_rectangle] \\
-           rename1 ‘y IN sp’ \\
-           Q.PAT_X_ASSUM ‘!x'. P ==> LENGTH x' = SUC N /\ !n. n < SUC N ==> EL n x' IN sp’
-              (MP_TAC o Q.SPEC ‘y::GENLIST (\i. CHOICE (h i)) N’) >> simp [] \\
-           simp [CHOICE_DEF] \\
-           DISCH_THEN (MP_TAC o Q.SPEC ‘0’) >> rw [],
-           (* goal 2 (of 4) *)
-           cheat,
-           (* goal 3 (of 4) *)
-           cheat,
-           (* goal 4 (of 4) *)
-           cheat ]) \\
+ (* Now all explicit set specs are in the language of generator (sts). This is easy
+    now, because both parts of ‘cons_prod’ are sigma-algebras.
+  *)
+ >> Know ‘cons_prod (subsets a) (subsets (sigma Z S)) SUBSET
+          subsets (sigma Z' (cons_prod sts S))’
+ >- (qabbrev_tac ‘A = cons_prod (subsets a) (subsets (sigma Z S))’ \\
+     Suff ‘subsets (sigma Z' (cons_prod sts S)) = subsets (sigma Z' A)’
+     >- (Rewr' >> rw [SIGMA_SUBSET_SUBSETS]) \\
+     qunabbrevl_tac [‘A’, ‘a’] \\
+  (* applying cons_sigma_of_generator *)
      cheat)
- >> Rewr'
- >> cheat
+ >> DISCH_TAC
+ >> MATCH_MP_TAC SUBSET_TRANS
+ >> Q.EXISTS_TAC ‘subsets (sigma Z' (cons_prod sts S))’
+ >> POP_ASSUM (REWRITE_TAC o wrap)
+ >> qmatch_abbrev_tac ‘subsets (sigma Z' (cons_prod sts S)) SUBSET subsets b’
+ >> ‘Z' = space b’ by rw [Abbr ‘b’, SPACE_SIGMA]
+ >> POP_ORW
+ >> MATCH_MP_TAC SIGMA_SUBSET
+ >> CONJ_TAC
+ >- (qunabbrev_tac ‘b’ \\
+     MATCH_MP_TAC SIGMA_ALGEBRA_SIGMA \\
+     rw [subset_class_def, Abbr ‘Z'’, IN_list_rectangle, SUBSET_DEF]
+     >- fs [IN_list_rectangle] \\
+     fs [IN_list_rectangle, subset_class_def] \\
+     rename1 ‘EL i y IN sp’ \\
+     Q.PAT_X_ASSUM ‘!i. i < SUC N ==> EL i y IN h i’ (MP_TAC o Q.SPEC ‘i’) \\
+     simp [] \\
+     METIS_TAC [SUBSET_DEF])
+ (* final goal *)
+ >> rw [Abbr ‘b’, SUBSET_DEF, cons_prod_def]
+ >> qabbrev_tac ‘S' = {rectangle h (SUC N) | h | (!i. i < SUC N ==> h i IN sts)}’
+ >> Know ‘subset_class Z' S'’
+ >- (rw [subset_class_def, Abbr ‘Z'’, Abbr ‘S'’] \\
+     rw [IN_list_rectangle, SUBSET_DEF] \\
+     rename1 ‘i < SUC N’ \\
+     Q.PAT_X_ASSUM ‘!i. i < SUC N ==> EL i x IN h i’ (MP_TAC o Q.SPEC ‘i’) \\
+     simp [] \\
+     Suff ‘h i SUBSET sp’ >- rw [SUBSET_DEF] \\
+     fs [subset_class_def])
+ >> DISCH_TAC
+ >> Know ‘S' SUBSET subsets (sigma Z' S')’ >- rw [SIGMA_SUBSET_SUBSETS]
+ >> Suff ‘cons_cross s t IN S'’ >- rw [SUBSET_DEF]
+ >> Q.PAT_X_ASSUM ‘t IN S’ MP_TAC
+ >> rw [Abbr ‘S’, Abbr ‘S'’, list_rectangle_SUC]
+ >> Q.EXISTS_TAC ‘\i. if i = 0 then s else h (i - 1)’
+ >> rw [o_DEF, ETA_THM]
 QED
 
 (* cf. rectangle_in_sigma_of_dimension *)
@@ -1432,28 +1437,6 @@ QED
 Theorem list_rectangle_IN_Borel_lists =
     REWRITE_RULE [SIGMA_ALGEBRA_BOREL, GSYM Borel_lists_def]
                  (ISPEC “Borel” list_rectangle_in_sigma_lists)
-
-val lemma = general_sigma_of_generator
-         |> INST_TYPE [beta  |-> “:'a list”, gamma |-> “:'a list”]
-         |> Q.SPECL [‘CONS’, ‘HD’, ‘TL’, ‘X’, ‘Y’, ‘E’, ‘G’]
-         |> REWRITE_RULE [pair_operation_CONS,
-                          GSYM cons_cross_alt_gen,
-                          GSYM cons_prod_alt_gen,
-                          GSYM cons_sigma_alt_gen];
-
-(* |- !X E Y G.
-        subset_class X E /\ subset_class Y G /\
-        has_exhausting_sequence (X,E) /\ has_exhausting_sequence (Y,G) ==>
-        cons_sigma (X,E) (Y,G) = cons_sigma (sigma X E) (sigma Y G)
- *)
-Theorem cons_sigma_of_generator = general_sigma_of_generator
-     |> INST_TYPE [beta  |-> “:'a list”, gamma |-> “:'a list”]
-     |> Q.SPECL [‘CONS’, ‘HD’, ‘TL’, ‘X’, ‘Y’, ‘E’, ‘G’]
-     |> REWRITE_RULE [pair_operation_CONS,
-                      GSYM cons_cross_alt_gen,
-                      GSYM cons_prod_alt_gen,
-                      GSYM cons_sigma_alt_gen]
-     |> Q.GENL [‘X’, ‘E’, ‘Y’, ‘G’]
 
 (* ‘SUC N’-dimensional prod space is the product sigma-algebra of 1- and N-dimensional
     prod sigmas. (The key of this proof is cons_sigma_of_generator.)
