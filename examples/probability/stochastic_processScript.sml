@@ -1270,13 +1270,79 @@ Proof
   *)
  >> qunabbrev_tac ‘B’
  >> qabbrev_tac ‘Z' = rectangle (\n. sp) (SUC N)’
- >> Know ‘cons_prod (subsets a) {rectangle h N | h | !i. i < N ==> h i IN subsets a} =
-          subsets (sigma Z'
-                    (cons_prod sts {rectangle h N | h | !i. i < N ==> h i IN subsets a}))’
- >- (rw [Once EXTENSION, cons_prod_def] \\
+ >> qabbrev_tac ‘B = {rectangle h N | h | !i. i < N ==> h i IN subsets a}’
+ >> Know ‘cons_prod (subsets a) B = subsets (sigma Z' (cons_prod sts B))’
+ >- (rw [Once EXTENSION, cons_prod_def, Abbr ‘B’] \\
      EQ_TAC >> rw []
      >- (qmatch_abbrev_tac ‘cons_cross s (rectangle h N) IN subsets (sigma Z' src)’ \\
-         cheat) \\
+         Know ‘subset_class Z' src’
+         >- (rw [Abbr ‘Z'’, Abbr ‘src’, subset_class_def] \\
+             rw [SUBSET_DEF, cons_cross_def, IN_list_rectangle] >- rw [] \\
+             rename1 ‘i < SUC (LENGTH b)’ \\
+             rename1 ‘EL i (y::ys) IN sp’ \\
+             rename1 ‘!i. i < LENGTH ys ==> EL i ys IN g i’ \\
+             rename1 ‘y IN s'’ \\
+             Cases_on ‘i’ >> fs []
+             >- (Q.PAT_X_ASSUM ‘y IN s'’ MP_TAC \\
+                 Suff ‘s' SUBSET sp’ >- rw [SUBSET_DEF] \\
+                 fs [subset_class_def]) \\
+             rename1 ‘EL i ys IN sp’ \\
+             Q.PAT_X_ASSUM ‘!i. i < LENGTH ys ==> EL i ys IN g i’ (MP_TAC o Q.SPEC ‘i’) \\
+             simp [] \\
+             Suff ‘g i SUBSET sp’ >- rw [SUBSET_DEF] \\
+             qabbrev_tac ‘b = sigma sp sts’ \\
+            ‘sigma_algebra b’ by rw [Abbr ‘b’, SIGMA_ALGEBRA_SIGMA] \\
+            ‘space b = sp’ by rw [SPACE_SIGMA, Abbr ‘b’] \\
+             fs [sigma_algebra_def, algebra_def, subset_class_def]) >> DISCH_TAC \\
+      (* Now ‘h’ is concrete. If any ‘h i = {}’ then ‘cons_cross s (rectangle h N) = {}’,
+         which is a special easy case here.
+       *)
+         reverse (Cases_on ‘!i. i < N ==> h i <> {}’)
+         >- (fs [] \\
+             Know ‘cons_cross s (rectangle h N) = {}’
+             >- (rw [Once EXTENSION, NOT_IN_EMPTY, cons_cross_def, IN_list_rectangle] \\
+                 DISJ2_TAC >> Q.EXISTS_TAC ‘i’ >> rw [NOT_IN_EMPTY]) >> Rewr' \\
+             MATCH_MP_TAC SIGMA_ALGEBRA_EMPTY \\
+             MATCH_MP_TAC SIGMA_ALGEBRA_SIGMA >> art []) \\
+         Suff ‘s IN {s | cons_cross s (rectangle h N) IN subsets (sigma Z' src)}’
+         >- rw [] \\
+         Q.PAT_X_ASSUM ‘s IN subsets a’ MP_TAC \\
+         Suff ‘subsets a SUBSET {s | cons_cross s (rectangle h N) IN subsets (sigma Z' src)}’
+         >- rw [SUBSET_DEF] \\
+         qunabbrev_tac ‘a’ \\
+         qabbrev_tac ‘b = (sp,{s | cons_cross s (rectangle h N) IN subsets (sigma Z' src)})’ \\
+        ‘sp = space b /\
+         {s | cons_cross s (rectangle h N) IN subsets (sigma Z' src)} = subsets b’
+            by rw [Abbr ‘b’] \\
+         NTAC 2 POP_ORW \\
+         MATCH_MP_TAC SIGMA_SUBSET \\
+         reverse CONJ_TAC
+         >- (rw [Abbr ‘b’, SUBSET_DEF] \\
+             Know ‘src SUBSET subsets (sigma Z' src)’ >- rw [SIGMA_SUBSET_SUBSETS] \\
+             Suff ‘cons_cross x (rectangle h N) IN src’ >- rw [SUBSET_DEF] \\
+             rw [Abbr ‘src’] \\
+             qexistsl_tac [‘x’, ‘rectangle h N’] >> rw [] \\
+             Q.EXISTS_TAC ‘h’ >> rw []) \\
+         rw [SIGMA_ALGEBRA_ALT_SPACE, Abbr ‘b’] >| (* 4 subgoals *)
+         [ (* goal 1 (of 4) *)
+           rw [subset_class_def] \\
+           qabbrev_tac ‘a = sigma Z' src’ \\
+          ‘sigma_algebra a’ by rw [Abbr ‘a’, SIGMA_ALGEBRA_SIGMA] \\
+           Know ‘cons_cross x (rectangle h N) SUBSET space a’
+           >- (fs [sigma_algebra_def, algebra_def, subset_class_def]) \\
+          ‘space a = Z'’ by rw [Abbr ‘a’, SPACE_SIGMA] >> POP_ORW \\
+           rw [cons_cross_def, Abbr ‘Z'’, SUBSET_DEF, IN_list_rectangle] \\
+           rename1 ‘y IN sp’ \\
+           Q.PAT_X_ASSUM ‘!x'. P ==> LENGTH x' = SUC N /\ !n. n < SUC N ==> EL n x' IN sp’
+              (MP_TAC o Q.SPEC ‘y::GENLIST (\i. CHOICE (h i)) N’) >> simp [] \\
+           simp [CHOICE_DEF] \\
+           DISCH_THEN (MP_TAC o Q.SPEC ‘0’) >> rw [],
+           (* goal 2 (of 4) *)
+           cheat,
+           (* goal 3 (of 4) *)
+           cheat,
+           (* goal 4 (of 4) *)
+           cheat ]) \\
      cheat)
  >> Rewr'
  >> cheat
