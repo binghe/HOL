@@ -1778,7 +1778,7 @@ Proof
       impl_tac >- (Q.EXISTS_TAC ‘g’ >> art []) >> rw [] ]
 QED
 
-(* NOTE: The choose of this particular generator {x | x <= c} is necessary, as
+(* NOTE: The choice of this particular generator {x | x <= c} is necessary, as
    it has an exhausting sequence in univ(:extreal set).
  *)
 Definition Borel_inf_def :
