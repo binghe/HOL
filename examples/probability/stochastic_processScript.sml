@@ -1671,44 +1671,6 @@ Definition cylinder_def :
        {f :num -> 'a | !n. n < N ==> f n IN h n}
 End
 
-(* NOTE: The type of ‘cylinder h N’ is ‘:(num -> 'a) set’, which just indicates
-   a set of infinite space points, which may not be (general) cylinder at all.
-
-   Thus we need a predicate to identify all cylinders in this type. And perhaps
-   another predicate to identify its "dimension of bottom".
-
-   Here ‘IMAGE (\f. f n) c’ is a projection of c into the n-th dimension.
-
-   Old version: ‘c = {} \/ !n. N <= n ==> IMAGE (\f. f n) c = UNIV’
-   ARB version: ‘c = {} \/ !n. N <= n ==> !f. f IN c ==> f n = ARB’
- *)
-Definition is_cylinder_def :
-    is_cylinder (c :(num -> 'a) set) N <=>
-       c = {} \/ !n. N <= n ==> IMAGE (\f. f n) c = UNIV
-End
-
-Theorem is_cylinder_empty[simp] :
-    is_cylinder {} N
-Proof
-    rw [is_cylinder_def]
-QED
-
-Theorem cylinder_is_cylinder[simp] :
-    is_cylinder (cylinder h N) N
-Proof
-    rw [is_cylinder_def, cylinder_def]
- >> reverse (Cases_on ‘!n. n < N ==> h n <> {}’)
- >- (fs [] >> DISJ1_TAC \\
-     rw [Once EXTENSION, NOT_IN_EMPTY] \\
-     Q.EXISTS_TAC ‘n’ >> rw [])
- >> DISJ2_TAC
- >> rw [Once EXTENSION]
- >> Q.EXISTS_TAC ‘\i. if i < N then CHOICE (h i) else x’
- >> rw []
- >> rename1 ‘i < N’
- >> MATCH_MP_TAC CHOICE_DEF >> rw []
-QED
-
 (* Converting cylinders back to rectangles by converting infinite sequences to
    finite lists (i.e., cutting off the tails).
  *)
@@ -1741,41 +1703,79 @@ Proof
  >> rw [LIST_EQ_REWRITE]
 QED
 
+(* NOTE: The type of ‘cylinder h N’ is ‘:(num -> 'a) set’, which just indicates
+   a set of infinite space points, which may not be (general) cylinder at all.
+
+   Thus we need a predicate to identify all cylinders in this type. And perhaps
+   another predicate to identify its "dimension of bottom".
+
+   NOTE2: The part ‘c = {}’ makes |- is_cylinder (cylinder h N) N holds when some
+   h i = {} (which means ‘cylinder h N = {}’ for sure)
+
+   NOTE3: The idea is that, for each vector in the N-rectangle converted from c,
+   the original point in the cylinder with the vector as the prefix, must range
+   over all possible values in the suffix. For example, if :'a is just :bool, a
+   cylinder c (N = 1) of "true, ...", after cutting off the initial "true", must
+   ranger over all possible infinite Boolean sequences.
+ *)
+Definition is_cylinder_def :
+    is_cylinder (c :(num -> 'a) set) N <=>
+    c = {} \/ !f. GENLIST f N IN cylinder2rect c N ==> f IN c
+End
+
+Theorem is_cylinder_empty[simp] :
+    is_cylinder {} N
+Proof
+    rw [is_cylinder_def]
+QED
+
+Theorem cylinder_is_cylinder[simp] :
+    is_cylinder (cylinder h N) N
+Proof
+    rw [is_cylinder_def, cylinder_def]
+ >> reverse (Cases_on ‘!n. n < N ==> h n <> {}’)
+ >- (fs [] >> DISJ1_TAC \\
+     rw [Once EXTENSION, NOT_IN_EMPTY] \\
+     Q.EXISTS_TAC ‘n’ >> rw [])
+ >> DISJ2_TAC
+ >> rw [Once EXTENSION]
+ >> fs [IN_list_rectangle]
+QED
+
 Theorem cylinder2rect_11 :
     !s t N. is_cylinder s N /\ is_cylinder t N ==>
            (cylinder2rect s N = cylinder2rect t N <=> s = t)
 Proof
-    cheat
- (* old proof for ARB-based ‘is_cylinder’
     rw [is_cylinder_def] >> rw []
- (* one non-trivial goal is left *)
  >> reverse EQ_TAC >- rw []
  >> rw [cylinder2rect_def, Once EXTENSION]
- >> rw [Once EXTENSION]
- >> EQ_TAC >> DISCH_TAC
+ >> CCONTR_TAC
+ >> ‘s <> t <=> s DIFF t <> {} \/ t DIFF s <> {}’ by SET_TAC []
+ >> POP_ASSUM (FULL_SIMP_TAC pure_ss o wrap)
  >| [ (* goal 1 (of 2) *)
+      fs [GSYM MEMBER_NOT_EMPTY] \\
+      fs [cylinder2rect_def] \\
       Q.PAT_X_ASSUM ‘!x. P <=> Q’ (MP_TAC o Q.SPEC ‘GENLIST x N’) \\
       Know ‘?f'. GENLIST x N = GENLIST f' N /\ f' IN s’
       >- (Q.EXISTS_TAC ‘x’ >> art []) >> simp [] \\
       DISCH_THEN K_TAC \\
-      DISCH_THEN (Q.X_CHOOSE_THEN ‘g’ STRIP_ASSUME_TAC) \\
-      Suff ‘x = g’ >- rw [] \\
-      Q.PAT_X_ASSUM ‘GENLIST x N = GENLIST g N’ MP_TAC \\
-      rw [FUN_EQ_THM, LIST_EQ_REWRITE] \\
-      rename1 ‘x i = g i’ \\
-     ‘i < N \/ N <= i’ by rw [] >> rw [],
+      Q.X_GEN_TAC ‘g’ >> rpt STRIP_TAC \\
+      Q.PAT_X_ASSUM ‘!f. (?f'. GENLIST f N = GENLIST f' N /\ f' IN t) ==> f IN t’
+         (MP_TAC o Q.SPEC ‘x’) \\
+      impl_tac >- (Q.EXISTS_TAC ‘g’ >> art []) >> rw [],
       (* goal 2 (of 2) *)
-      Q.PAT_X_ASSUM ‘!x. P <=> Q’ (MP_TAC o Q.SPEC ‘GENLIST x N’) \\
+      fs [GSYM MEMBER_NOT_EMPTY, cylinder2rect_def] \\
+      Q.PAT_X_ASSUM ‘!x. P <=> Q’ (MP_TAC o SYM o Q.SPEC ‘GENLIST x N’) \\
       Know ‘?f'. GENLIST x N = GENLIST f' N /\ f' IN t’
       >- (Q.EXISTS_TAC ‘x’ >> art []) >> simp [] \\
       DISCH_THEN K_TAC \\
-      DISCH_THEN (Q.X_CHOOSE_THEN ‘g’ STRIP_ASSUME_TAC) \\
-      Suff ‘x = g’ >- rw [] \\
-      Q.PAT_X_ASSUM ‘GENLIST x N = GENLIST g N’ MP_TAC \\
-      rw [FUN_EQ_THM, LIST_EQ_REWRITE] \\
-      rename1 ‘x i = g i’ \\
-     ‘i < N \/ N <= i’ by rw [] >> rw [] ]
-  *)
+      Q.X_GEN_TAC ‘g’ >> rpt STRIP_TAC \\
+      Q.PAT_X_ASSUM ‘!f. (?f'. GENLIST f N = GENLIST f' N /\ f' IN t) ==> f IN t’
+         (MP_TAC o Q.SPEC ‘g’) \\
+      impl_tac >- (Q.EXISTS_TAC ‘x’ >> art []) >> DISCH_TAC \\
+      Q.PAT_X_ASSUM ‘!f. (?f'. GENLIST f N = GENLIST f' N /\ f' IN t) ==> f IN s’
+         (MP_TAC o Q.SPEC ‘x’) \\
+      impl_tac >- (Q.EXISTS_TAC ‘g’ >> art []) >> rw [] ]
 QED
 
 (* NOTE: The choose of this particular generator {x | x <= c} is necessary, as
@@ -1898,18 +1898,7 @@ Proof
      DISCH_THEN (art o wrap o SYM))
  >> reverse CONJ_TAC
  >- (rw [is_cylinder_def] >> DISJ2_TAC \\
-     rw [Once EXTENSION] \\
-     qabbrev_tac ‘b = CHOICE B’ \\
-    ‘b IN B’ by rw [CHOICE_DEF, Abbr ‘b’] \\
-     ASSUME_TAC (Q.SPEC ‘N’ space_Borel_lists) \\
-     ASSUME_TAC (Q.SPEC ‘N’ sigma_algebra_Borel_lists) \\
-     fs [sigma_algebra_def, algebra_def, subset_class_def] \\
-     Q.PAT_X_ASSUM ‘!x. x IN subsets (Borel_lists N) ==> x SUBSET P’ (MP_TAC o Q.SPEC ‘B’) \\
-     simp [] \\
-     rw [Abbr ‘sp’, SUBSET_DEF] \\
-     Q.EXISTS_TAC ‘\i. if i < N then EL i b else x’ >> rw [] \\
-     Suff ‘GENLIST (\i. if i < N then EL i b else x) N = b’ >- rw [] \\
-     rw [LIST_EQ_REWRITE])
+     rw [Once EXTENSION, cylinder2rect_def] >> fs [])
  (* stage work *)
  >> rfs [Borel_lists_alt_sigma_generator]
  >> qabbrev_tac ‘sts = {B | B SUBSET sp /\ {f | GENLIST f N IN B} IN subsets Borel_inf}’
