@@ -386,7 +386,7 @@ used tactics in the \HOL{} system. (See \REFERENCE\
 for the complete list, with fuller explanations.)
 
 It should be recalled that the \ML{} type \ml{thm\_tactic} abbreviates
-\ml{thm->tactic}, and the type \ml{conv} abbreviates \ml{term->thm}.
+\ml{thm -> tactic}, and the type \ml{conv} abbreviates \ml{term -> thm}.
 
 \subsection{Specialization}\index{universal quantifier, in HOL logic@universal quantifier, in \HOL{} logic!tactics for}
 
