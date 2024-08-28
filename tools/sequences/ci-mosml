@@ -1,2 +1,4 @@
 #include sequences/upto-parallel
+src/sort
+src/ring/src
 src/real
