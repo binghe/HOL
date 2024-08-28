@@ -5477,14 +5477,13 @@ Definition converge_def[nocompute] :
      (!n. expectation p (\x. (abs (X n x)) powr r) <> PosInf) /\
      (expectation p (\x. (abs (Y x)) powr r) <> PosInf) /\
      ((\n. real (expectation p (\x. (abs (X n x - Y x)) powr r))) --> 0)
-       sequentially)
+       sequentially) /\
 
-   (* X(n) converges to Y in distribution (see [4, p.306] or [2, p.96])
-   (converge (X :num->'a->extreal) (Y :'a->extreal) (in_distribution p) =
-     !f. (* TODO: f is bounded and continuous ==> *)
+   (* X(n) converges to Y in distribution (see [4, p.306] or [2, p.96]) *)
+   (converge (X :num->'a->extreal) (Y :'a->extreal) (in_distribution p) <=>
+     !f. f bounded_on UNIV /\ (f o Normal) continuous_on UNIV ==>
          ((\n. real (expectation p (f o (X n)))) -->
                real (expectation p (f o Y))) sequentially)
-    *)
 End
 
 (* "-->" is defined in util_probTheory; *)
@@ -5620,6 +5619,16 @@ Proof
  >> simp [Abbr ‘f’]
  >> MATCH_MP_TAC integral_pos >> rw [powr_pos]
 QED
+
+(* |- !p X Y.
+        converge X Y (in_distribution p) <=>
+        !f. f bounded_on univ(:extreal) /\
+            f o Normal continuous_on univ(:real) ==>
+            ((\n. real (expectation p (f o X n))) -->
+             real (expectation p (f o Y))) sequentially: thm
+ *)
+Theorem converge_in_distribution_def =
+   (List.nth (CONJUNCTS converge_def, 3)) |> SPEC_ALL |> (Q.GENL [`p`, `X`, `Y`])
 
 (* tidy up theory exports, learnt from Magnus Myreen *)
 val _ = List.app Theory.delete_binding

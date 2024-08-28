@@ -836,6 +836,7 @@ Proof
     rw [sigma_lists_def, sigma_functions_def, SPACE_SIGMA]
 QED
 
+(* cf. sigma_of_dimension_alt *)
 Theorem sigma_lists_alt :
     !(B :'a algebra) N.
       subset_class (space B) (subsets B) /\ space B IN subsets B /\ 0 < N ==>

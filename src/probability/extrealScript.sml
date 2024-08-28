@@ -6423,7 +6423,7 @@ Overload continuous = “ext_continuous”
   “:real -> extreal”. For a function ‘g :extreal -> extreal’, to say it's
    continuous on a set ‘s’ of (normal) real numbers, one can write:
 
-     (g o real) continuous_on s
+     (g o Normal) continuous_on s
 
    I think it's not very meaningful to say a function "continuous at PosInf",
    thus no need to invent another net "at ... within" for extreals.
@@ -6433,6 +6433,12 @@ Definition ext_continuous_on_def :
     ext_continuous_on f s <=> !x. x IN s ==> ext_continuous f (at x within s)
 End
 Overload continuous_on = “ext_continuous_on”
+
+val _ = set_fixity "bounded_on" (Infix(NONASSOC, 450));
+Definition bounded_on_def :
+    ext_bounded_on f s <=> ?c. !x. x IN s ==> abs x <= Normal c
+End
+Overload bounded_on = “ext_bounded_on”
 
 Theorem EXTREAL_LIM :
     !(f :'a -> extreal) l net.
