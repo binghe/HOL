@@ -120,7 +120,7 @@ jobs:
           build-args: |
             SML=mosml
             # NOTE: the arg value cannot be quoted here:
-            BUILDOPTS=--expk --seq=tools/sequences/upto-parallel -t
+            BUILDOPTS=--expk --seq=tools/sequences/ci-mosml
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
