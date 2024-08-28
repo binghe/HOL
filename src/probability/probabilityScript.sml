@@ -5479,7 +5479,7 @@ Definition converge_def[nocompute] :
      ((\n. real (expectation p (\x. (abs (X n x - Y x)) powr r))) --> 0)
        sequentially) /\
 
-   (* X(n) converges to Y in distribution (see [4, p.306] or [2, p.96]) *)
+   (* X(n) converges to Y in distribution (see [4, p.425] or [2, p.96]) *)
    (converge (X :num->'a->extreal) (Y :'a->extreal) (in_distribution p) <=>
      !f. f bounded_on UNIV /\ (f o Normal) continuous_on UNIV ==>
          ((\n. real (expectation p (f o (X n)))) -->
@@ -5625,9 +5625,9 @@ QED
         !f. f bounded_on univ(:extreal) /\
             f o Normal continuous_on univ(:real) ==>
             ((\n. real (expectation p (f o X n))) -->
-             real (expectation p (f o Y))) sequentially: thm
+             real (expectation p (f o Y))) sequentially
  *)
-Theorem converge_in_distribution_def =
+Theorem converge_in_dist_def =
    (List.nth (CONJUNCTS converge_def, 3)) |> SPEC_ALL |> (Q.GENL [`p`, `X`, `Y`])
 
 (* tidy up theory exports, learnt from Magnus Myreen *)

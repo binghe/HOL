@@ -9,11 +9,11 @@ open HolKernel Parse boolLib bossLib;
 open combinTheory arithmeticTheory pred_setTheory pred_setLib numLib hurdUtils
      posetTheory listTheory fcpTheory fcpLib topologyTheory;
 
-open realTheory realLib iterateTheory real_sigmaTheory real_topologyTheory;
+open realTheory realLib iterateTheory real_sigmaTheory real_topologyTheory
+     extreal_baseTheory extrealTheory;
 
-open util_probTheory sigma_algebraTheory extrealTheory real_borelTheory
-     measureTheory borelTheory lebesgueTheory martingaleTheory
-     probabilityTheory;
+open util_probTheory sigma_algebraTheory real_borelTheory borelTheory
+     measureTheory lebesgueTheory martingaleTheory probabilityTheory;
 
 val _ = new_theory "stochastic_process";
 
@@ -1751,32 +1751,27 @@ Proof
  >> reverse EQ_TAC >- rw []
  >> rw [cylinder2rect_def, Once EXTENSION]
  >> CCONTR_TAC
- >> ‘s <> t <=> s DIFF t <> {} \/ t DIFF s <> {}’ by SET_TAC []
- >> POP_ASSUM (FULL_SIMP_TAC pure_ss o wrap)
- >| [ (* goal 1 (of 2) *)
-      fs [GSYM MEMBER_NOT_EMPTY] \\
-      fs [cylinder2rect_def] \\
-      Q.PAT_X_ASSUM ‘!x. P <=> Q’ (MP_TAC o Q.SPEC ‘GENLIST x N’) \\
-      Know ‘?f'. GENLIST x N = GENLIST f' N /\ f' IN s’
-      >- (Q.EXISTS_TAC ‘x’ >> art []) >> simp [] \\
-      DISCH_THEN K_TAC \\
-      Q.X_GEN_TAC ‘g’ >> rpt STRIP_TAC \\
-      Q.PAT_X_ASSUM ‘!f. (?f'. GENLIST f N = GENLIST f' N /\ f' IN t) ==> f IN t’
-         (MP_TAC o Q.SPEC ‘x’) \\
-      impl_tac >- (Q.EXISTS_TAC ‘g’ >> art []) >> rw [],
-      (* goal 2 (of 2) *)
-      fs [GSYM MEMBER_NOT_EMPTY, cylinder2rect_def] \\
-      Q.PAT_X_ASSUM ‘!x. P <=> Q’ (MP_TAC o SYM o Q.SPEC ‘GENLIST x N’) \\
-      Know ‘?f'. GENLIST x N = GENLIST f' N /\ f' IN t’
-      >- (Q.EXISTS_TAC ‘x’ >> art []) >> simp [] \\
-      DISCH_THEN K_TAC \\
-      Q.X_GEN_TAC ‘g’ >> rpt STRIP_TAC \\
-      Q.PAT_X_ASSUM ‘!f. (?f'. GENLIST f N = GENLIST f' N /\ f' IN t) ==> f IN t’
-         (MP_TAC o Q.SPEC ‘g’) \\
-      impl_tac >- (Q.EXISTS_TAC ‘x’ >> art []) >> DISCH_TAC \\
-      Q.PAT_X_ASSUM ‘!f. (?f'. GENLIST f N = GENLIST f' N /\ f' IN t) ==> f IN s’
-         (MP_TAC o Q.SPEC ‘x’) \\
-      impl_tac >- (Q.EXISTS_TAC ‘g’ >> art []) >> rw [] ]
+ >> rpt (Q.PAT_X_ASSUM ‘!f. P’ MP_TAC)
+ (* applying wlog_tac *)
+ >> wlog_tac ‘s DIFF t <> {}’ [‘s’, ‘t’]
+ >- (‘t DIFF s <> {}’ by ASM_SET_TAC [] \\
+     Q.PAT_X_ASSUM ‘!s t N. P’ (MP_TAC o Q.SPECL [‘t’, ‘s’, ‘N’]) \\
+     rw [] >> gs [] \\
+     Q.EXISTS_TAC ‘x’ >> rw [])
+ >> rpt STRIP_TAC
+ (* stage work *)
+ >> fs [GSYM MEMBER_NOT_EMPTY]
+ >> fs [cylinder2rect_def]
+ >> Q.PAT_X_ASSUM ‘!x. P <=> Q’ (MP_TAC o Q.SPEC ‘GENLIST x N’)
+ >> Know ‘?f'. GENLIST x N = GENLIST f' N /\ f' IN s’
+ >- (Q.EXISTS_TAC ‘x’ >> art [])
+ >> simp []
+ >> DISCH_THEN K_TAC
+ >> Q.X_GEN_TAC ‘g’ >> rpt STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘!f. (?f'. GENLIST f N = GENLIST f' N /\ f' IN t) ==> f IN t’
+       (MP_TAC o Q.SPEC ‘x’)
+ >> impl_tac >- (Q.EXISTS_TAC ‘g’ >> art [])
+ >> rw []
 QED
 
 (* NOTE: The choice of this particular generator {x | x <= c} is necessary, as
