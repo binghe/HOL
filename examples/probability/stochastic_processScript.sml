@@ -1664,8 +1664,6 @@ Theorem IN_MEASURABLE_BOREL_EL =
 
    NOTE: The "bottom" of this cylinder is always a rectangle, thus is not the
    general cylinder sets.
-
-   ARB-version: (!n. n < N ==> f n IN h n) /\ !n. N <= n ==> f n = ARB
  *)
 Definition cylinder_def :
     cylinder (h :num -> 'a set) N =
@@ -2007,6 +2005,47 @@ Proof
  >> REWRITE_TAC [Borel_inf_SUBSET_inf1, Borel_inf1_SUBSET_inf2,
                  Borel_inf_eq_Borel_inf2]
 QED
+
+(* ------------------------------------------------------------------------- *)
+(*  Arbitrary infinite-dimensional Borel space (R^T) [4, p.180]              *)
+(* ------------------------------------------------------------------------- *)
+
+(* NOTE: Each "point" in this space is a function of the type “:'index -> 'a”.
+   Taking a finite number of indices, given by a list of “:'index list”.
+ *)
+Definition gen_cylinder_def :
+    gen_cylinder (t :num -> 'index) (h :num -> 'a set) N =
+       {f :'index -> 'a | !n. n < N ==> f (t n) IN h n}
+End
+
+Theorem cylinder_alt_gen :
+    !h N. cylinder h N = gen_cylinder I h N
+Proof
+    rw [gen_cylinder_def, cylinder_def]
+QED
+
+(*
+Definition cylinder2rect_def :
+    cylinder2rect (c :(num -> 'a) set) N = IMAGE (\f. GENLIST f N) c
+End
+
+Definition Borel_inf_def :
+    Borel_inf =
+      sigma UNIV {cylinder h N | 0 < N /\ !i. i < N ==> ?c. h i = {x | x <= c}}
+End
+
+Definition Borel_inf1_def :
+    Borel_inf1 =
+      sigma UNIV {cylinder h N | 0 < N /\ !i. i < N ==> h i IN subsets Borel}
+End
+
+(* NOTE: The extra condition ‘is_cylinder c N’ is beyond textbook [4, p.178] *)
+Definition Borel_inf2_def :
+    Borel_inf2 =
+      sigma UNIV {c | ?N. 0 < N /\ is_cylinder c N /\
+                          cylinder2rect c N IN subsets (Borel_lists N)}
+End
+ *)
 
 (* ------------------------------------------------------------------------- *)
 (*  General stochastic processes and typical specialisations                 *)

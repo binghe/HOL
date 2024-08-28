@@ -1291,6 +1291,7 @@ The abbreviation \ml{e} may also be used to expand a tactic.
    b          : unit -> goalstack
    drop       : unit -> proofs
    dropn      : int  -> proofs
+   drop_all   : unit -> proofs
    backup     : unit -> goalstack
    restart    : unit -> goalstack
    set_backup : int  -> unit
