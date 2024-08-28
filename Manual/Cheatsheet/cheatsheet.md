@@ -80,11 +80,11 @@ Note that a stateful set of rewrites is maintained by HOL4 - the *stateful simps
 : Like `gs`, but also uses substitution to eliminate assumptions concerning equalities on variables.
 
 <code>rw[<i>theorems</i>]</code>
-: Like `simp`, but also deconstructs the goal (stripping `∀` and `==>`, and splitting conjuncts into subgoals)
+: Like `simp`, but also deconstructs the goal (stripping `!` and `==>`, and splitting conjuncts into subgoals)
 
 <code>DEP_REWRITE_TAC[<i>theorems</i>]</code>
 : Rewrites the goal using the supplied dependent rewrites, introducing dependencies as conjuncts in the goal.
-  For example, given a goal `P` and a rewrite `thm = ⊢ R ==> P = Q`, `DEP_REWRITE_TAC[thm]` will transform the goal into `R /\ Q`.
+  For example, given a goal `P` and a rewrite `thm = |- R ==> P = Q`, `DEP_REWRITE_TAC[thm]` will transform the goal into `R /\ Q`.
   `DEP_ASM_REWRITE_TAC` is a variant which additionally uses the assumptions as rewrites.
   Note that this can loop more often than other rewriting tactics.
 
@@ -112,7 +112,7 @@ Instead, there are more precise tactics we can use.
 #### Conversions
 
 If these are still too blunt, we can use *conversions* to carry out surgical rewrites.
-Conversions are functions of type `term -> thm`, such that applying a conversion to a term `t` produces a theorem `⊢ t = t'`.
+Conversions are functions of type `term -> thm`, such that applying a conversion to a term `t` produces a theorem `|- t = t'`.
 These can be converted into tactics using <code>CONV_TAC <i>conversion</i></code>.
 There are many conversions and conversion combinators - an exhaustive list can be found in the HOL4 documentation, mostly listed under the `Conv` structure.
 Good starting points are `SCONV`, `REWRITE_CONV`, `THENC`, `RAND_CONV`, `RATOR_CONV`, `LHS_CONV`, `RHS_CONV`, `QCHANGED_CONV`, `DEPTH_CONV`, `PAT_CONV`, and `PATH_CONV`.
@@ -144,14 +144,14 @@ Also commonly used when rewriting are:
 
 <code>GSYM <i>theorem</i></code>
 : Flips equalities in the conclusion of the theorem.
-  This works even when the equality is nested below implications and/or `∀`-quantification.
+  This works even when the equality is nested below implications and/or `!`-quantification.
 
 <code>iff{LR,RL} <i>theorem</i></code>
 : Turns a bi-implication into an implication, going left-to-right or right-to-left respectively.
 
 <code>cj <i>n</i> <i>theorem</i></code>
 : Returns the <code><i>n</i></code>th conjunct of the theorem, handling universal quantifiers and implications.
-  For example, for `thm = ⊢ ∀ P Q R . P ==> Q /\ R`, `cj 2 thm` gives `⊢ ∀ P R . P ==> R)`.
+  For example, for `thm = |- ! P Q R . P ==> Q /\ R`, `cj 2 thm` gives `|- ! P R . P ==> R)`.
   **NB** indexing begins at `1`.
 
 <code>SRULE [<i>rewrites</i>] <i>theorem</i></code>
@@ -162,14 +162,14 @@ Also commonly used when rewriting are:
   Congruence rules tell the simplifier how to traverse terms, so they can be useful for rewriting within subterms.
   For example,
     using `Cong AND_CONG` allows use of each conjunct in a conjunction to rewrite the others; and
-    the goal `(∀ e. MEM e l ==> f e = g e) ==> h (MAP f l) = h (MAP g l)` is solved by `simp[Cong MAP_CONG]`.
+    the goal `(!! e. MEM e l ==> f e = g e) ==> h (MAP f l) = h (MAP g l)` is solved by `simp[Cong MAP_CONG]`.
 
 <code>oneline <i>theorem</i></code>
 : Converts a definition with multiple clauses into a single clause, turning pattern-matches into `case`-expressions.
-  For example, `oneline listTheory.MAP` gives `⊢ MAP f v = case v of [] => [] | h::t => f h::MAP f t`.
+  For example, `oneline listTheory.MAP` gives `|- MAP f v = case v of [] => [] | h::t => f h::MAP f t`.
 
 <code>lambdify <i>theorem</i></code>
-: Converts a definition of the form `⊢ ∀ x y z. f x y z = ...` into one of the form `⊢ f = (λx y z. ...)`.
+: Converts a definition of the form `|- ! x y z. f x y z = ...` into one of the form `|- f = (\x y z. ...)`.
 
 <br>
 Note that the above are termed *rules* - these transform theorems to other theorems, allowing the above to be combined (e.g. `simp[Once $ GSYM thm]`).
@@ -190,7 +190,7 @@ This is most useful for certain simpset fragments:
   For example, the goal `x = SUC n /\ if x = 0 then P else Q` transforms to `x = SUC n /\ Q` using `simp[SF CONJ_ss]`.
 
 `SFY_ss`
-: Rewrites to prove simple `∃`-quantified goals using instantiations from assumptions/rewrites.
+: Rewrites to prove simple `?`-quantified goals using instantiations from assumptions/rewrites.
 
 `ETA_ss`
 : Rewrites to remove eta-expansion.
@@ -227,8 +227,8 @@ In some cases, a decision procedure can save you some work.
 Many proofs rely on induction, and there are several ways to induct in HOL4.
 
 `Induct`
-: Inducts over the first variable in a `∀`-quantified goal, based on the type of the variable.
-  For example, applying `Induct` to `∀ n : num. P n` begins induction over the natural number `n`, giving a base case `0` and a step/successor case.
+: Inducts over the first variable in a `!`-quantified goal, based on the type of the variable.
+  For example, applying `Induct` to `! n : num. P n` begins induction over the natural number `n`, giving a base case `0` and a step/successor case.
 
 <code>Induct_on &grave;<i>term</i>&grave;</code>
 : Inducts over the given term, based on its type.
@@ -256,7 +256,7 @@ Many proofs rely on induction, and there are several ways to induct in HOL4.
 It is often useful to perform case splits over the course of a proof.
 
 `Cases`
-: Case splits on the first variable in a `∀`-quantified goal.
+: Case splits on the first variable in a `!`-quantified goal.
 
 <code>Cases_on &grave;<i>term</i>&grave;</code>
 : Case splits on the supplied term.
@@ -266,7 +266,7 @@ It is often useful to perform case splits over the course of a proof.
   This provides better naming than `Cases_on`, and requires fewer case splits for `n`-tuples where `n` is greater than 2.
 
 `pairarg_tac`
-: Searches the goal and assumptions for `(λ(x,y,...). body) arg`, and introduces the assumption `arg = (x,y,...)`.
+: Searches the goal and assumptions for `(\(x,y,...). body) arg`, and introduces the assumption `arg = (x,y,...)`.
   This can often provide better naming than `PairCases_on`.
 
 `CASE_TAC`
@@ -338,7 +338,7 @@ Maintainable and readable files require organised proofs - in particular, carefu
 In many cases, we may want to state exactly how the goal should be taken apart (rather than simply applying `rw[]` or similar).
 
 `strip_tac`
-: Splits a top-level conjunct into two subgoals, *or* move a top-level implication antecedent into the assumptions, *or* remove a top-level `∀`-quantified variable.
+: Splits a top-level conjunct into two subgoals, *or* move a top-level implication antecedent into the assumptions, *or* remove a top-level `!`-quantified variable.
   Often `rpt strip_tac` (which repeats `strip_tac` as many times as possible) is used.
 
 `conj_tac`
@@ -351,7 +351,7 @@ In many cases, we may want to state exactly how the goal should be taken apart (
 : Reduces a goal of the form `p \/ q` into `p` or `q` respectively.
 
 `gen_tac`
-: Removes a top-level `∀`-quantified variable.
+: Removes a top-level `!`-quantified variable.
 
 `AP_TERM_TAC`
 : Reduces a goal of the form `f x = f y` to `x = y`.
@@ -370,22 +370,22 @@ In many cases, we may want to state exactly how the goal should be taken apart (
   `impl_keep_tac` is a variant which keeps `A` as an assumption in the `B ==> C` subgoal.
 
 <code>qexists &grave;<i>term</i>&grave;</code>
-: Instantiates a top-level `∃` quantifier with the supplied term.
+: Instantiates a top-level `?` quantifier with the supplied term.
 
 <code>qexistsl [&grave;<i>term</i>&grave;s]</code>
-: Like `qexists`, but accepts a list of terms to instantiate multiple `∃` quantifiers.
+: Like `qexists`, but accepts a list of terms to instantiate multiple `?` quantifiers.
 
 <code>qrefine &grave;<i>term</i>&grave;</code>
-: Refines a top-level `∃` quantifier using the supplied term - any free variables in the term become`∃`-quantified.
-  For example, for a goal `∃ n : num. if n = 0 then P n else Q n`, applying ``qrefine `SUC k` >> simp[]`` produces the goal `∃ k : num. Q (SUC k)` (where `SUC` is the successor function).
+: Refines a top-level `?` quantifier using the supplied term - any free variables in the term become`?`-quantified.
+  For example, for a goal `? n : num. if n = 0 then P n else Q n`, applying ``qrefine `SUC k` >> simp[]`` produces the goal `? k : num. Q (SUC k)` (where `SUC` is the successor function).
 
 <code>qrefinel [&grave;<i>term</i>&grave;s]</code>
-: Like `qrefine`, but accepts a list of terms to instantiate multiple `∃` quantifiers.
-  Also can be passed underscores, to avoid refining selected `∃` quantifiers.
-  For example, for a goal `n = 2 /\ c = 5 ==> ∃ a b c d. a + b = c + d`, the tactic <code>strip_tac >> qrefinel [&grave;_&grave;,&grave;SUC c&grave;,&grave;_&grave;,&grave;n + m&grave;]</code> produces the new goal `∃ a c' m. a + SUC c = c' + (n + m)` .
+: Like `qrefine`, but accepts a list of terms to instantiate multiple `?` quantifiers.
+  Also can be passed underscores, to avoid refining selected `?` quantifiers.
+  For example, for a goal `n = 2 /\ c = 5 ==> ? a b c d. a + b = c + d`, the tactic <code>strip_tac >> qrefinel [&grave;_&grave;,&grave;SUC c&grave;,&grave;_&grave;,&grave;n + m&grave;]</code> produces the new goal `? a c' m. a + SUC c = c' + (n + m)` .
 
 <code>goal_assum $ drule_at Any</code>
-: For a goal of the form `∃ vars . P1 /\ ... /\ Pn` (where the `vars` may be free in the `Pi`), attempts to match the `Pi` against the assumptions.
+: For a goal of the form `? vars . P1 /\ ... /\ Pn` (where the `vars` may be free in the `Pi`), attempts to match the `Pi` against the assumptions.
   If a match is found for some `Pk`, the relevant `vars` are instantiated and `Pk` is removed from the goal.
 
 <code>wlog_tac &grave;<i>term</i>&grave; [&grave;<i>variable</i>&grave;s]</code>
@@ -459,8 +459,8 @@ It is common to require instantiation of general inductive hypotheses or lemmas 
 In some cases, it is useful to generalise a goal in order to use a suitable induction theorem.
 
 <code>drule <i>theorem</i></code>
-: Given a theorem of the form `∀vars. P1 /\ ... /\ Pn ==> Q`, look through the assumptions (newest to oldest) to find a matching for `P1`.
-  If a match is found the relevant `vars` are instantiated, and the remaining `∀vars'. P2 /\ ... /\ Pn => Q` is added as an implication to the goal.
+: Given a theorem of the form `!vars. P1 /\ ... /\ Pn ==> Q`, look through the assumptions (newest to oldest) to find a matching for `P1`.
+  If a match is found the relevant `vars` are instantiated, and the remaining `!vars'. P2 /\ ... /\ Pn => Q` is added as an implication to the goal.
   `rev_drule` looks through assumptions in the opposite order.
 
 <code>drule_all <i>theorem</i></code>
@@ -470,18 +470,18 @@ In some cases, it is useful to generalise a goal in order to use a suitable indu
 : A variant of `drule` which processes the resulting instantiated theorem using a theorem-tactic, rather than adding it as an implication to the goal.
 
 <code>irule <i>theorem</i></code>
-: Attempts to convert the supplied theorem into the form `∀vars. P1 /\ ... /\ Pn ==> Q`, matches `Q` against the goal, and if successful instantiates the necessary variables to turn the goal into `∃vars'. P1 /\ ... /\ Pn`.
+: Attempts to convert the supplied theorem into the form `!vars. P1 /\ ... /\ Pn ==> Q`, matches `Q` against the goal, and if successful instantiates the necessary variables to turn the goal into `?vars'. P1 /\ ... /\ Pn`.
   This is effectively the reverse of *modus ponens*.
 
 <code>ho_match_mp_tac <i>theorem</i></code>
 : Like `irule`, but carries out higher-order matching and does not attempt to convert the input theorem.
-  Wherever possible, `irule` should be used - however when the goal itself is `∀`-quantified, it may be necessary to use `ho_match_mp_tac`.
+  Wherever possible, `irule` should be used - however when the goal itself is `!`-quantified, it may be necessary to use `ho_match_mp_tac`.
 
 <code>qspec_then &grave;<i>tm&grave; thm_tactic thm</i></code>
-: Instantiates the supplied (`∀`-quantified) theorem with the given term, and applies the theorem-tactic to the result.
+: Instantiates the supplied (`!`-quantified) theorem with the given term, and applies the theorem-tactic to the result.
 
 <code>qspecl_then [&grave;<i>tm&grave;s] thm_tactic thm</i></code>
-: Like `qspec_then`, but instantiates multiple `∀`-quantified variables.
+: Like `qspec_then`, but instantiates multiple `!`-quantified variables.
 
 <code>imp_res_tac <i>theorem</i></code>
 : Adds add all immediate consequences of the supplied theorem to the assumptions (i.e. performs resolution).
@@ -493,7 +493,7 @@ In some cases, it is useful to generalise a goal in order to use a suitable indu
   This can easily cause an explosion in the number of assumptions.
 
 <code>qid_spec_tac &grave;<i>variable</i>&grave;</code>
-: Generalises the supplied variable in the goal (i.e. introduces a `∀` quantifier).
+: Generalises the supplied variable in the goal (i.e. introduces a `!` quantifier).
 
 
 ### Positional modifiers
@@ -522,7 +522,7 @@ The <code><i>position</i></code> is expressed as a value of type `match_position
 : Match against the negated conclusion, i.e. use the implication in a contrapositive way.
 
 <br>
-By way of example, given a goal `∃x y. P x /\ Q y` and a theorem `thm = ⊢ R a b ==> P b`, `irule_at Any thm` produces the goal `∃a y. R a b /\ Q y`.
+By way of example, given a goal `?x y. P x /\ Q y` and a theorem `thm = |- R a b ==> P b`, `irule_at Any thm` produces the goal `?a y. R a b /\ Q y`.
 `irule_at (Pos hd) thm` is equivalent in this case.
 
 
@@ -564,10 +564,10 @@ Instead, we can rename variables appropriately, and abbreviate large terms.
   For example, if `x` is an abbreviation in the goal-state, using ``simp[Abbr `x`]`` will unabbreviate `x` in the goal.
 
 <code>qx_gen_tac &grave;<i>var</i>&grave;</code>
-: Like `gen_tac`, but specialises the `∀`-quantified variable using the given name.
+: Like `gen_tac`, but specialises the `!`-quantified variable using the given name.
 
 <code>qx_choose_then &grave;<i>var</i>&grave; <i>thm_tactic thm</i></code>
-: Takes the theorem supplied, which should be `∃`-quantified, and "chooses" the witness for the `∃` quantification to be the supplied variable.
+: Takes the theorem supplied, which should be `?`-quantified, and "chooses" the witness for the `?` quantification to be the supplied variable.
   Processes the result using the supplied theorem tactic (often `mp_tac` or `assume_tac`).
 
 <code>namedCases_on &grave;<i>tm</i>&grave; ["<i>string</i>"s]</code>

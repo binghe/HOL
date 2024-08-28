@@ -1,6 +1,11 @@
 CHEATSHEET_SOURCES = cheatsheet.md cheatsheet.css
 
+EXTRA_CLEANS = cheatsheet.html cheatsheet.pdf
+
+all: $(EXTRA_CLEANS)
+
 cheatsheet.html: $(CHEATSHEET_SOURCES)
 	pandoc -s --toc -c cheatsheet.css -o cheatsheet.html cheatsheet.md
 
-EXTRA_CLEANS = cheatsheet.html
+cheatsheet.pdf: $(CHEATSHEET_SOURCES)
+	pandoc -s --toc -c cheatsheet.css -o cheatsheet.pdf cheatsheet.md
