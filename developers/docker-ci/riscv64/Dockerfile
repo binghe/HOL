@@ -43,6 +43,6 @@ RUN make -C polyml-${POLY_VERSION} -j4
 RUN make -C polyml-${POLY_VERSION} install
 RUN rm -rf polyml-${POLY_VERSION} polyml-${POLY_VERSION}.tar.gz
 
-ENV LANG en_US.UTF-8
-ENV LANGUAGE en_US:en
-ENV LC_ALL en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8

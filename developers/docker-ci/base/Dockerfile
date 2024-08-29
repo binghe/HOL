@@ -74,6 +74,6 @@ RUN if [ "linux/amd64" = "$TARGETPLATFORM" ]; then \
 RUN rm -rf opentheory-develop opentheory-develop.zip
 RUN opentheory init && opentheory install base
 
-ENV LANG en_US.UTF-8
-ENV LANGUAGE en_US:en
-ENV LC_ALL en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
