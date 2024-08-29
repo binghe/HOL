@@ -12,7 +12,7 @@ MAINTAINER Chun Tian <binghe.lisp@gmail.com>
 # The following two arguments are supported by "docker buildx"
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
-ARG POLY_VERSION="5.9.1"
+ARG POLY_VERSION="develop"
 
 RUN echo "I was running on $BUILDPLATFORM, building for $TARGETPLATFORM" > /tmp/log
 
@@ -34,10 +34,10 @@ RUN apt-get install -qy locales-all terminfo man aptitude
 # clean up downloaded packages after installation (this reduces Docker image sizes)
 RUN apt-get clean
 
-# 2. install polyml (https://github.com/polyml/polyml.git)
-RUN wget -q -O polyml-${POLY_VERSION}.tar.gz \
-    https://github.com/polyml/polyml/archive/refs/tags/v${POLY_VERSION}.tar.gz
-RUN tar xzf polyml-${POLY_VERSION}.tar.gz
+# 2. install polyml from https://github.com/binghe/polyml.git
+RUN wget -q -O polyml-${POLY_VERSION}.zip \
+    	 https://github.com/binghe/polyml/archive/refs/heads/develop.zip
+RUN unzip polyml-${POLY_VERSION}.zip
 RUN cd polyml-${POLY_VERSION} && ./configure --enable-intinf-as-int
 RUN make -C polyml-${POLY_VERSION} -j4
 RUN make -C polyml-${POLY_VERSION} install
