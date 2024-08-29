@@ -4,10 +4,9 @@
 #
 # e.g. docker buildx build --platform linux/386,linux/amd64,linux/arm64 .
 
-# GitHub Actions recommends Debian-based systems as base images
-FROM --platform=$TARGETPLATFORM riscv64/ubuntu:devel
+FROM riscv64/ubuntu:devel
 
-MAINTAINER Chun Tian <binghe.lisp@gmail.com>
+LABEL org.opencontainers.image.authors="Chun Tian (binghe) <binghe.lisp@gmail.com>"
 
 # The following two arguments are supported by "docker buildx"
 ARG TARGETPLATFORM
