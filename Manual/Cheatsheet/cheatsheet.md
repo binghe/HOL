@@ -23,9 +23,11 @@ header-includes:
     val m = Hol_pp.print_apropos;
     val f = Hol_pp.print_find;
 ```
-    This allows you to use the following in your HOL4 REPL:
-    - <code>m &grave;&grave;<i>pattern</i>&grave;&grave;</code> to search for theorems with subterms matching the supplied pattern.
-    - <code>f "<i>string</i>"</code> to search for theorems with names matching the supplied string.
+
+This allows you to use the following in your HOL4 REPL:
+
+  1. <code>m &grave;&grave;<i>pattern</i>&grave;&grave;</code> to search for theorems with subterms matching the supplied pattern.
+  2. <code>f "<i>string</i>"</code> to search for theorems with names matching the supplied string.
 
   - You can also add the following if you wish:
 ```
@@ -38,7 +40,8 @@ header-includes:
       fun mf x y = DB.find y    |> DB.apropos_in x |> pp;
     end;
 ```
-    These functions combine the functionality of `m` and `f` above, allowing you to nest two searches.
+
+These functions combine the functionality of `m` and `f` above, allowing you to nest two searches.
 
   - Use <code>help "<i>string</i>"</code> in the HOL4 REPL to examine documentation for ML-level identifiers.
 
