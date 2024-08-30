@@ -4881,6 +4881,18 @@ Proof
                ltree_el (BT' X (M j2) r) p = SOME bot’
          >- (MATCH_MP_TAC BT_ltree_el_of_unsolvables >> rw []) >> rw [] \\
          NTAC 2 (Q.PAT_X_ASSUM ‘ltree_el _ p = SOME bot’ K_TAC) \\
+      (* NOTE: The goal is to prove ‘subterm' X (H j1) p r’ (and H j2) is
+         also unsolvable and thus ‘ltree_el (BT' X (H j1) r) p = SOME bot’.
+       *)
+         Suff ‘unsolvable (subterm' X (H j1) p r) /\
+               unsolvable (subterm' X (H j2) p r)’
+         >- (STRIP_TAC \\
+          (* NOTE: The following subgoal doesn't hold ... *)
+             Know ‘unsolvable (subterm' X (H j1) p r) <=>
+                   ltree_el (BT' X (H j1) r) p = SOME bot’
+             >- (MATCH_MP_TAC BT_ltree_el_of_unsolvables >> art [] \\
+                 cheat) >>
+             cheat)
          cheat) \\
      reverse (Cases_on ‘solvable (subterm' X (M j2) q r)’)
      >- (‘q <<= FRONT p \/ q = p’ by METIS_TAC [IS_PREFIX_FRONT_CASES]
