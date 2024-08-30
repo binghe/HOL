@@ -4170,9 +4170,12 @@ End
    part of this proof.
 
    NOTE3: This proof uses ‘agree_upto’ very late.
+
+   NOTE4: ‘0 < r’ is to ensure a non-empty ‘RANK r’ to allocate fresh
+   variables in it (for the construction of ‘pi’).
  *)
 Theorem agree_upto_lemma :
-    !X Ms p r. FINITE X /\
+    !X Ms p r. FINITE X /\ 0 < r /\
                BIGUNION (IMAGE FV (set Ms)) SUBSET X UNION RANK r /\
                p <> [] /\ agree_upto X Ms p r /\
               (!M. MEM M Ms ==> subterm X M p r <> NONE) ==>

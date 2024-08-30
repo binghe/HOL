@@ -6617,6 +6617,10 @@ Overload L1_space = “lp_space 1”
 Overload L2_space = “lp_space 2”
 Overload L_PosInf = “lp_space PosInf”
 
+(* NOTE: not sure if this is a good idea.
+Overload square_integrable = “\m f. f IN L2_space”
+ *)
+
 (* alternative definition of ‘lp_space’ when p is finite (was: 1 <= p) *)
 Theorem lp_space_alt_finite :
     !p m f. 0 < p /\ p <> PosInf ==>

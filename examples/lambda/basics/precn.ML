@@ -1,4 +1,4 @@
-(*  this is an -*- sml -*- file *)
+(*  this is an -*- Mode: SML -*- file *)
 open HolKernel boolLib bossLib Parse;
 
 open pred_setTheory;

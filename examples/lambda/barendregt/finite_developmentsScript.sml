@@ -1,4 +1,9 @@
-(* finiteness of developments : section 11.2 of Barendregt *)
+(* ========================================================================== *)
+(* FILE    : finite_developmentsScript.sml                                    *)
+(* TITLE   : Finiteness of developments (Section 11.2 of [Barendregt 1984])   *)
+(*                                                                            *)
+(* AUTHORS : 2005-2011 Michael Norrish                                        *)
+(* ========================================================================== *)
 
 open HolKernel Parse bossLib boolLib;
 

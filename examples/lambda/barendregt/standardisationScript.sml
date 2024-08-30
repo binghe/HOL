@@ -1,3 +1,11 @@
+(* ========================================================================== *)
+(* FILE    : standardisationScript.sml                                        *)
+(* TITLE   : The standardisation theorem (Section 11.4 of [Barendregt 1984])  *)
+(*                                                                            *)
+(* AUTHORS : 2005-2011 Michael Norrish                                        *)
+(*         : 2023-2024 Michael Norrish and Chun Tian                          *)
+(* ========================================================================== *)
+
 open HolKernel Parse boolLib bossLib BasicProvers;
 
 open metisLib boolSimps relationTheory listTheory llistTheory pathTheory
@@ -16,17 +24,13 @@ local open containerTheory in end
 val _ = new_theory "standardisation"
 val _ = temp_delsimps ["lift_disj_eq", "lift_imp_disj"]
 
-
 structure NewQ = Q
 structure Q = struct open Q open OldAbbrevTactics end
 
 val _ = ParseExtras.temp_loose_equality()
 
-
 val RUNION_def = relationTheory.RUNION
 val ADD1 = arithmeticTheory.ADD1
-
-(* Section 11.4 of Barendregt *)
 
 val standard_reduction_def = Define`
   standard_reduction s =
