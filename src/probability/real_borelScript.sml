@@ -3,7 +3,7 @@
 (* Author: Aaron Coble (2010)                                                *)
 (* Cambridge University                                                      *)
 (* ------------------------------------------------------------------------- *)
-(* Extended by Chun Tian (2020-2022), using some materials from:             *)
+(* Extended by Chun Tian (2020-2021) using some materials from:              *)
 (*                                                                           *)
 (*        Lebesgue Measure Theory (lebesgue_measure_hvgScript.sml)           *)
 (*                                                                           *)
@@ -1521,133 +1521,6 @@ Proof
  >> SIMP_TAC std_ss [PREIMAGE_def, space_borel, INTER_UNIV]
  >> MATCH_MP_TAC borel_open >> fs []
 QED
-
-(* cf. borelTheory.IN_MEASURABLE_BOREL_BOREL_MONO_INCREASING
-Theorem in_borel_measurable_mono_increasing :
-    !f. (!x y. x <= y ==> f x <= f y) ==> f IN measurable borel borel
-Proof
-    rpt STRIP_TAC
- >> ASSUME_TAC sigma_algebra_borel
- >> rw [in_borel_measurable_less, IN_FUNSET, space_borel]
- >> Q.ABBREV_TAC ‘A = {x | f x < a}’
- (* step 1 *)
- >> Cases_on ‘!y. f y < a’
- >- rw [Abbr ‘A’, GSYM space_borel, SIGMA_ALGEBRA_SPACE]
- >> POP_ASSUM (STRIP_ASSUME_TAC o (SIMP_RULE bool_ss [real_lt]))
- (* step 2 *)
- >> Cases_on ‘!x. a <= f x’
- >- (Know ‘A = EMPTY’
-     >- (rw [Abbr ‘A’, NOT_IN_EMPTY, Once EXTENSION, real_lt]) >> Rewr' \\
-     MATCH_MP_TAC SIGMA_ALGEBRA_EMPTY >> art [])
- >> fs [GSYM real_lt]
- >> Q.PAT_X_ASSUM ‘sigma_algebra borel’ K_TAC (* not needed *)
- (* step 3 *)
- >> Cases_on ‘?z. f z = a’
- >- (FULL_SIMP_TAC bool_ss [] (* but z may not be unique! *) \\
-     Q.ABBREV_TAC ‘z0 = inf {x | f x = a}’ \\
-     Cases_on ‘f z0 = a’ >| (* 2 subgoals *)
-     [ (* goal 1 (of 2) *)
-       Suff ‘A = {x | x < z0}’ >- rw [borel_measurable_sets] \\
-       simp [Abbr ‘A’, Once EXTENSION] \\
-       Q.X_GEN_TAC ‘t’ \\
-       EQ_TAC >> rw [Abbr ‘z0’] >| (* 2 subgoals *)
-       [ (* goal 1.1 (of 2) *)
-         SPOSE_NOT_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [real_lt])) \\
-         Q.ABBREV_TAC ‘p = {x | f x = f z}’ \\
-         Know ‘(?y. y IN p) /\ (?y. !z. z IN p ==> y <= z)’
-         >- (rw [Abbr ‘p’] >- (Q.EXISTS_TAC ‘z’ >> REWRITE_TAC []) \\
-             Q.EXISTS_TAC ‘x’ \\
-             Q.X_GEN_TAC ‘z1’ >> rw [] \\
-             SPOSE_NOT_THEN (STRIP_ASSUME_TAC o REWRITE_RULE [GSYM real_lt]) \\
-            ‘f z1 <= f x’ by METIS_TAC [REAL_LT_IMP_LE] \\
-             METIS_TAC [REAL_LET_ANTISYM]) >> DISCH_TAC \\
-        ‘!y. (!z. z IN p ==> y <= z) ==> y <= t’ by METIS_TAC [REAL_INF_LE'] \\
-         Q.PAT_X_ASSUM ‘!y. P ==> y <= t’ MP_TAC \\
-         SIMP_TAC std_ss [GSYM real_lt] \\
-         Q.PAT_X_ASSUM ‘f z <= f y’ K_TAC (* useless *) \\
-         Q.PAT_X_ASSUM ‘f x < f z’  K_TAC (* useless *) \\
-         Q.EXISTS_TAC ‘inf p’ \\
-         reverse CONJ_TAC >- METIS_TAC [real_lt] \\
-         Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
-         MATCH_MP_TAC INF_LE >> rw [] \\
-         Q.EXISTS_TAC ‘y’ >> rw [],
-         (* goal 1.2 (of 2) *)
-         Q.PAT_ASSUM ‘f _ = a’ (ONCE_REWRITE_TAC o wrap o SYM) \\
-         REWRITE_TAC [REAL_LT_LE] \\
-         CONJ_TAC >- (FIRST_X_ASSUM MATCH_MP_TAC \\
-                      MATCH_MP_TAC REAL_LT_IMP_LE >> art []) \\
-         SPOSE_NOT_THEN (STRIP_ASSUME_TAC o REWRITE_RULE []) \\
-         Q.PAT_X_ASSUM ‘f _ = f z’ (fs o wrap) \\
-         Q.PAT_X_ASSUM ‘f z <= f y’ K_TAC (* useless *) \\
-         Suff ‘inf {x | f x = f z} <= t’ >- METIS_TAC [real_lt] \\
-         Q.PAT_X_ASSUM ‘t < inf _’  K_TAC (* just used *) \\
-         MATCH_MP_TAC INF_LE \\
-         reverse CONJ_TAC >- (Q.EXISTS_TAC ‘t’ >> rw []) \\
-         rw [] >> Q.EXISTS_TAC ‘x’ \\
-         Q.X_GEN_TAC ‘z1’ >> rw [] \\
-         SPOSE_NOT_THEN (STRIP_ASSUME_TAC o REWRITE_RULE [GSYM real_lt]) \\
-        ‘f z1 <= f x’ by METIS_TAC [REAL_LT_IMP_LE] \\
-         METIS_TAC [REAL_LET_ANTISYM] ],
-       (* goal 2 (of 2) *)
-       Suff ‘A = {x | x <= z0}’ >- rw [borel_measurable_sets] \\
-       simp [Abbr ‘A’, Once EXTENSION] \\
-       Q.X_GEN_TAC ‘t’ \\
-       EQ_TAC >> rw [Abbr ‘z0’] >| (* 2 subgoals *)
-       [ (* goal 2.1 (of 2) *)
-         MATCH_MP_TAC LE_INF >> rw [] >- (Q.EXISTS_TAC ‘z’ >> REWRITE_TAC []) \\
-         Q.PAT_X_ASSUM ‘f _ <> f z’ K_TAC \\
-         rename1 ‘t <= z0’ \\
-         SPOSE_NOT_THEN (STRIP_ASSUME_TAC o REWRITE_RULE [GSYM real_lt]) \\
-        ‘f z0 <= f t’ by METIS_TAC [REAL_LT_IMP_LE] \\
-         METIS_TAC [REAL_LET_ANTISYM],
-         (* goal 2.2 (of 2) *)
-         REWRITE_TAC [REAL_LT_LE] \\
-
-
-         CONJ_TAC
-         >- (FIRST_X_ASSUM MATCH_MP_TAC \\
-
-
-             FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
-         SPOSE_NOT_THEN (STRIP_ASSUME_TAC o REWRITE_RULE []) \\
-        ‘inf {x | f x = a} <= t’ by rw [inf_le'] \\
-        ‘f (inf {x | f x = a}) <= f t’ by PROVE_TAC [] \\
-        ‘f (inf {x | f x = a}) < f t’ by METIS_TAC [le_lt] \\
-        ‘inf {x | f x = a} < t’ by METIS_TAC [real_lt] \\
-        ‘t <= inf {x | f x = a}’ by rw [le_inf'] \\
-         METIS_TAC [let_antisym] ] ])
- (* step 4, now take ‘z’ as the last position where ‘f’ jumps over ‘a’.
-    Note that ‘f z’ as the function of ‘sup’ may be above or below ‘a’. *)
- >> FULL_SIMP_TAC std_ss []
- >> Q.ABBREV_TAC ‘z = sup {x | f x < a}’
- >> Cases_on ‘f z < a’
- >- (Suff ‘A = {x | x <= z}’ >- rw [borel_measurable_sets] \\
-     rw [Abbr ‘A’, Once EXTENSION] \\
-     rename1 ‘f t < a <=> t <= z’ \\
-     EQ_TAC >> rw [Abbr ‘z’, le_sup'] \\
-     MATCH_MP_TAC let_trans \\
-     Q.EXISTS_TAC ‘f (sup {x | f x < a})’ >> art [] \\
-     FIRST_X_ASSUM MATCH_MP_TAC \\
-     FIRST_X_ASSUM MATCH_MP_TAC \\
-     rw [le_sup'])
- >> POP_ASSUM (STRIP_ASSUME_TAC o (SIMP_RULE bool_ss [real_lt]))
- (* step 5 *)
- >> Suff ‘A = {x | x < z}’ >- rw [borel_measurable_sets]
- >> rw [Abbr ‘A’, Once EXTENSION]
- >> rename1 ‘f t < a <=> t < z’
- >> EQ_TAC >> rw [Abbr ‘z’]
- >| [ (* goal 1 (of 2) *)
-     ‘f t < f (sup {x | f x < a})’ by PROVE_TAC [lte_trans] \\
-      METIS_TAC [real_lt],
-      (* goal 2 (of 2) *)
-      Q.PAT_X_ASSUM ‘a <= f y’     K_TAC (* useless *) \\
-      Q.PAT_X_ASSUM ‘f x < a’      K_TAC (* useless *) \\
-      Q.PAT_X_ASSUM ‘a <= f _’     K_TAC (* useless *) \\
-      fs [lt_sup] >> rename1 ‘t < y’ \\
-      MATCH_MP_TAC let_trans >> Q.EXISTS_TAC ‘f y’ >> art [] \\
-      FIRST_X_ASSUM MATCH_MP_TAC >> rw [lt_imp_le] ]
-QED
- *)
 
 (************************************************************)
 (*  right-open (left-closed) intervals [a, b) in R          *)
