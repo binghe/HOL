@@ -6632,6 +6632,14 @@ Theorem converge_PR_shift =
                               |> (REWRITE_RULE [GSYM ADD1])
                               |> Q.GENL [‘p’, ‘X’, ‘Y’]
 
+Theorem converge_AE_const :
+    !p c. prob_space p ==> ((\x n. c) --> (\x. c)) (almost_everywhere p)
+Proof
+    rw [converge_AE, EXTREAL_LIM_SEQUENTIALLY, AE_DEF, IN_NULL_SET, METRIC_SAME]
+ >> Q.EXISTS_TAC ‘{}’
+ >> fs [prob_space_def, NULL_SET_EMPTY]
+QED
+
 Theorem converge_PR_add_to_zero :
     !p X Y. prob_space p /\
            (!n. real_random_variable (X n) p) /\

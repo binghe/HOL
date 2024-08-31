@@ -319,7 +319,7 @@ Proof
  >> DISCH_TAC
  >> Know ‘((\n x. (S n x - M n) / &SUC n)       --> (\x. 0)) (in_lebesgue 2 p) <=>
           ((\n x. inv (&SUC n) * (S n x - M n)) --> (\x. 0)) (in_lebesgue 2 p)’
- >- (MATCH_MP_TAC converge_LP_cong >> RW_TAC std_ss [])
+ >- (MATCH_MP_TAC converge_LP_cong >> rw [])
  >> Rewr'
  >> Know ‘!n. real_random_variable (\x. (S n x - M n) / &SUC n) p <=>
               real_random_variable (\x. inv (&SUC n) * (S n x - M n)) p’
@@ -1598,16 +1598,25 @@ Proof
      MATCH_MP_TAC logrootTheory.ROOT (* amazing *) \\
      RW_TAC arith_ss []) >> DISCH_TAC
  (* final stage *)
- >> Q.PAT_X_ASSUM ‘(Z --> (\x. 0)) (almost_everywhere p)’
-      (MP_TAC o (SIMP_RULE std_ss [converge_AE_def, AE_DEF,
-                                   GSYM IN_NULL_SET, LIM_SEQUENTIALLY, dist]))
+ >> ‘real_random_variable (\x. 0) p’ by PROVE_TAC [real_random_variable_zero]
+ >> Q.PAT_X_ASSUM ‘(Z --> (\x. 0)) (almost_everywhere p)’ MP_TAC
+ >> ASM_SIMP_TAC std_ss [converge_AE_def, AE_DEF, GSYM IN_NULL_SET, LIM_SEQUENTIALLY, dist]
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘N1’ STRIP_ASSUME_TAC)
- >> Q.PAT_X_ASSUM ‘(W --> (\x. 0)) (almost_everywhere p)’
-      (MP_TAC o (SIMP_RULE std_ss [converge_AE_def, AE_DEF,
-                                   GSYM IN_NULL_SET, LIM_SEQUENTIALLY, dist]))
+ >> Q.PAT_X_ASSUM ‘(W --> (\x. 0)) (almost_everywhere p)’ MP_TAC
+ >> ASM_SIMP_TAC std_ss [converge_AE_def, AE_DEF, GSYM IN_NULL_SET, LIM_SEQUENTIALLY, dist]
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘N2’ STRIP_ASSUME_TAC)
- >> SIMP_TAC std_ss [converge_AE_def, AE_DEF,
-                     GSYM IN_NULL_SET, LIM_SEQUENTIALLY, dist]
+ >> qabbrev_tac ‘Y = \n x. S n x / &SUC n’
+ >> Know ‘!n. real_random_variable (Y n) p’
+ >- (rw [Abbr ‘Y’] \\
+     Know ‘real_random_variable (\x. S n x / &SUC n) p <=>
+           real_random_variable (\x. SIGMA (\i. X i x) (count1 n) / &SUC n) p’
+     >- (MATCH_MP_TAC real_random_variable_cong >> rw []) >> Rewr' \\
+     MATCH_MP_TAC real_random_variable_LLN' >> art [])
+ >> DISCH_TAC
+ >> ASM_SIMP_TAC std_ss [converge_AE_def, AE_DEF,
+                         GSYM IN_NULL_SET, LIM_SEQUENTIALLY, dist]
+ >> POP_ASSUM K_TAC
+ >> ASM_SIMP_TAC std_ss [Abbr ‘Y’]
  >> Q.EXISTS_TAC ‘N1 UNION N2’
  >> STRONG_CONJ_TAC
  >- (MATCH_MP_TAC NULL_SET_UNION \\
@@ -1631,8 +1640,7 @@ Proof
  >> Q.PAT_X_ASSUM ‘!x. x IN m_space p DIFF N2 ==> P’ (MP_TAC o Q.SPEC ‘x’)
  >> Know ‘x IN m_space p DIFF N2’ >- ASM_SET_TAC []
  >> RW_TAC std_ss []
- >> ‘real 0 = 0’ by METIS_TAC [extreal_of_num_def, real_normal]
- >> POP_ASSUM (fn th => FULL_SIMP_TAC bool_ss [REAL_SUB_RZERO, th])
+ >> FULL_SIMP_TAC bool_ss [REAL_SUB_RZERO, real_0]
  >> NTAC 3 (Q.PAT_X_ASSUM ‘_ IN null_set p’           K_TAC)
  >> ‘m_space p DIFF (N1 UNION N2) SUBSET m_space p’ by SET_TAC []
  >> ‘x IN m_space p’ by METIS_TAC [SUBSET_DEF]
@@ -1946,9 +1954,10 @@ Proof
        >- (MATCH_MP_TAC MEASURE_SPACE_COMPL >> fs [IN_NULL_SET, null_set_def]) \\
        MATCH_MP_TAC IN_MEASURABLE_BOREL_SUB \\
        qexistsl_tac [`X n`, `Y n`] >> ASM_SIMP_TAC std_ss [space_def] ])
- >> RW_TAC std_ss [Abbr ‘Z’, converge_AE_def, AE_THM, GSYM IN_NULL_SET, almost_everywhere_def]
+ (* stage work *)
+ >> RW_TAC std_ss [Abbr ‘Z’, converge_AE, AE_THM, GSYM IN_NULL_SET, almost_everywhere_def]
  >> Q.EXISTS_TAC `N`
- >> RW_TAC std_ss [LIM_SEQUENTIALLY, dist, indicator_fn_def, mul_rone, GSYM p_space_def]
+ >> RW_TAC std_ss [EXTREAL_LIM_SEQUENTIALLY, indicator_fn_def, mul_rone, GSYM p_space_def]
  >> Q.EXISTS_TAC `f x`
  >> RW_TAC std_ss []
  >> Know `SIGMA (\i. X i x - Y i x) (count1 n) =
@@ -1957,7 +1966,7 @@ Proof
      fs [real_random_variable_def, IN_FROM] \\
      DISJ2_TAC >> RW_TAC std_ss [sub_not_infty]) >> Rewr'
  >> Suff `count1 n DIFF (from (f x)) = count (f x)`
- >- (Rewr' >> rw [])
+ >- (Rewr' >> rw [METRIC_SAME])
  >> RW_TAC set_ss [Once EXTENSION, IN_FROM, IN_COUNT]
  >> rw []
 QED
@@ -1978,36 +1987,48 @@ Proof
                !x. x IN p_space p DIFF N ==> !n. f x <= n ==> (X n x - Y n x = 0)`
  >- (MATCH_MP_TAC equivalent_lemma >> art [])
  >> STRIP_TAC
- >> RW_TAC std_ss [converge_AE_def, AE_THM, GSYM IN_NULL_SET, almost_everywhere_def]
- >> Q.EXISTS_TAC `N`
- >> RW_TAC std_ss [LIM_SEQUENTIALLY, dist, GSYM p_space_def]
- >> `e <> 0` by PROVE_TAC [REAL_LT_IMP_NE]
+ >> ‘real_random_variable (\x. 0) p’ by PROVE_TAC [real_random_variable_zero]
+ >> Know `!n x. x IN p_space p ==>
+                SIGMA (\i. X i x - Y i x) (count n) <> PosInf /\
+                SIGMA (\i. X i x - Y i x) (count n) <> NegInf`
+ >- (rpt GEN_TAC >> DISCH_TAC \\
+     CONJ_TAC >| [ MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_POSINF,
+                   MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_NEGINF ] \\
+     fs [real_random_variable_def] \\
+     rw [sub_not_infty])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘Z = \n x. SIGMA (\i. X i x - Y i x) (count (b n)) / a n’
+ (* 1. if (a n) ever reached PosInf, use that n directly *)
+ >> reverse (Cases_on `!n. a n <> PosInf`)
+ >- (FULL_SIMP_TAC std_ss [] \\
+     Know ‘(Z         --> (\x. 0)) (almost_everywhere p) <=>
+           ((\x n. 0) --> (\x. 0)) (almost_everywhere p)’
+     >- (MATCH_MP_TAC converge_AE_cong \\
+         Q.EXISTS_TAC `n` \\
+         qx_genl_tac [‘m’, ‘x’] >> STRIP_TAC \\
+         rw [Abbr ‘Z’] \\
+         Know `a n <= a m` >- fs [ext_mono_increasing_def] \\
+         ASM_REWRITE_TAC [le_infty] >> Rewr' \\
+        `?r. SIGMA (\i. X i x - Y i x) (count (b m)) = Normal r`
+           by METIS_TAC [extreal_cases] \\
+         rw [extreal_div_def, real_normal, extreal_of_num_def]) >> Rewr' \\
+     MATCH_MP_TAC converge_AE_const >> art [])
+ >> RW_TAC std_ss [converge_AE, AE_THM, GSYM IN_NULL_SET, almost_everywhere_def,
+                   GSYM p_space_def]
+ >> Q.EXISTS_TAC `N` >> art []
+ >> rpt STRIP_TAC
  >> FULL_SIMP_TAC std_ss [real_random_variable_def, ext_mono_increasing_def]
  >> Know ‘x IN p_space p’
  >- (‘p_space p DIFF N SUBSET p_space p’ by SET_TAC [] \\
      METIS_TAC [SUBSET_DEF])
  >> DISCH_TAC
- >> Know `!n. SIGMA (\i. X i x - Y i x) (count n) <> PosInf`
- >- (GEN_TAC >> MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_POSINF \\
-     rw [sub_not_infty]) >> DISCH_TAC
- >> Know `!n. SIGMA (\i. X i x - Y i x) (count n) <> NegInf`
- >- (GEN_TAC >> MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_NEGINF \\
-     rw [sub_not_infty]) >> DISCH_TAC
- (* 1. if (a n) ever reached PosInf, use that n directly *)
- >> reverse (Cases_on `!n. a n <> PosInf`)
- >- (FULL_SIMP_TAC std_ss [] >> Q.EXISTS_TAC `n` \\
-     Q.X_GEN_TAC `m` >> DISCH_TAC \\
-     Know `a n <= a m` >- (FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
-     ASM_REWRITE_TAC [le_infty] >> Rewr' \\
-    `?r. SIGMA (\i. X i x - Y i x) (count (b m)) = Normal r`
-        by METIS_TAC [extreal_cases] \\
-     rw [extreal_div_def, real_normal, extreal_of_num_def])
- (* eliminate `real 0` first *)
- >> `real 0 = 0` by METIS_TAC [extreal_of_num_def, real_normal]
- >> POP_ASSUM (fn th => FULL_SIMP_TAC bool_ss [REAL_SUB_RZERO, th])
  >> Q.PAT_X_ASSUM `!x. x IN p_space p DIFF N ==> P` (MP_TAC o (Q.SPEC `x`))
  >> RW_TAC std_ss []
  >> Q.PAT_X_ASSUM ‘!n. ?i. n <= b i’ (STRIP_ASSUME_TAC o (Q.SPEC ‘f x’))
+ >> cheat
+ (*
+ >> RW_TAC std_ss [EXTREAL_LIM_SEQUENTIALLY, Abbr ‘Z’]
+ >> `e <> 0` by PROVE_TAC [REAL_LT_IMP_NE]
  (* now estimating N *)
  >> Know `?k. abs (SIGMA (\i. X i x - Y i x) (count (b i))) / Normal e < a k`
  >- (CCONTR_TAC >> FULL_SIMP_TAC std_ss [] \\
@@ -2083,6 +2104,7 @@ Proof
  >> MATCH_MP_TAC lte_trans
  >> Q.EXISTS_TAC `a k` >> art []
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+ *)
 QED
 
 (* Theorem 5.2.1 (2) [2, p.113], the original version *)
@@ -2421,7 +2443,7 @@ Proof
  >> rw [extreal_sub_def]
 QED
 
-(* This lemma will eliminate ‘LLN’ in WLLN_IID *)
+(* This lemma will eliminate ‘LLN’ in WLLN_IID - TODO *)
 Theorem LLN_alt_converge_PR_IID :
     !p X. prob_space p /\ (!n. real_random_variable (X n) p) /\
           identical_distribution p X Borel UNIV /\ integrable p (X 0) ==>
