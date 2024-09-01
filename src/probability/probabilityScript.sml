@@ -6640,6 +6640,19 @@ Proof
  >> fs [prob_space_def, NULL_SET_EMPTY]
 QED
 
+Theorem converge_AE_const' :
+    !p X m c. prob_space p /\ (!n x. m <= n /\ x IN p_space p ==> X n x = c) ==>
+             (X --> (\x. c)) (almost_everywhere p)
+Proof
+    rpt STRIP_TAC
+ >> Know ‘(X         --> (\x. c)) (almost_everywhere p) <=>
+          ((\n x. c) --> (\x. c)) (almost_everywhere p)’
+ >- (MATCH_MP_TAC converge_AE_cong \\
+     Q.EXISTS_TAC ‘m’ >> rw [])
+ >> Rewr'
+ >> MATCH_MP_TAC converge_AE_const >> art []
+QED
+
 Theorem converge_PR_add_to_zero :
     !p X Y. prob_space p /\
            (!n. real_random_variable (X n) p) /\

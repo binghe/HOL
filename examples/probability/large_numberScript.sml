@@ -1971,6 +1971,18 @@ Proof
  >> rw []
 QED
 
+Theorem mono_increasing_imp_passing_zero :
+   !a. mono_increasing a /\ sup (IMAGE a UNIV) = PosInf /\ (!n. a n <> PosInf) ==>
+       ?n. 0 < a n
+Proof
+    rw [ext_mono_increasing_def]
+ >> CCONTR_TAC
+ >> fs [extreal_lt_def]
+ >> Know ‘sup (IMAGE a UNIV) <= 0’
+ >- (rw [sup_le'] >> art [])
+ >> rw []
+QED
+
 (* Theorem 5.2.1 (2) [2, p.113], more generalized for SLLN_IID *)
 Theorem equivalent_thm2' :
     !b a p X Y. prob_space p /\ equivalent p X Y /\
@@ -2013,6 +2025,7 @@ Proof
            by METIS_TAC [extreal_cases] \\
          rw [extreal_div_def, real_normal, extreal_of_num_def]) >> Rewr' \\
      MATCH_MP_TAC converge_AE_const >> art [])
+ >> ‘?n0. 0 < a n0’ by METIS_TAC [mono_increasing_imp_passing_zero]
  >> RW_TAC std_ss [converge_AE, AE_THM, GSYM IN_NULL_SET, almost_everywhere_def,
                    GSYM p_space_def]
  >> Q.EXISTS_TAC `N` >> art []
@@ -2025,9 +2038,36 @@ Proof
  >> Q.PAT_X_ASSUM `!x. x IN p_space p DIFF N ==> P` (MP_TAC o (Q.SPEC `x`))
  >> RW_TAC std_ss []
  >> Q.PAT_X_ASSUM ‘!n. ?i. n <= b i’ (STRIP_ASSUME_TAC o (Q.SPEC ‘f x’))
- >> cheat
- (*
- >> RW_TAC std_ss [EXTREAL_LIM_SEQUENTIALLY, Abbr ‘Z’]
+ (* NOTE: Now starting from ‘b i’, ‘X n x - Y n x = 0’. Even the SIGMA contains some
+    non-zero items, eventually it can be arbitrarily small. And ‘a i <> PosInf’, thus
+    with indexes larger than ‘z’, ‘a i’ is positive infinite, making ‘/ a n’ specified.
+  *)
+ >> Know ‘((\n. Z n x)        -->      0) sequentially <=>
+          (real o (\n. Z n x) --> real 0) sequentially’
+ >- (MATCH_MP_TAC extreal_lim_sequentially_eq >> simp [] \\
+     Q.EXISTS_TAC ‘n0’ >> Q.X_GEN_TAC ‘n’ >> DISCH_TAC \\
+     simp [Abbr ‘Z’] \\
+     Know ‘0 < a n’
+     >- (MATCH_MP_TAC lte_trans >> Q.EXISTS_TAC ‘a n0’ >> art [] \\
+         FIRST_X_ASSUM MATCH_MP_TAC >> art []) >> DISCH_TAC \\
+    ‘a n <> 0’ by PROVE_TAC [lt_imp_ne] \\
+     Know ‘a n <> NegInf’
+     >- (MATCH_MP_TAC pos_not_neginf \\
+         MATCH_MP_TAC lt_imp_le >> art []) >> DISCH_TAC \\
+    ‘?r. r <> 0 /\ a n = Normal r’ by METIS_TAC [extreal_cases, extreal_of_num_def] \\
+     POP_ORW \\
+     Know ‘SIGMA (\i. X i x - Y i x) (count (b n)) <> PosInf’
+     >- (MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_POSINF >> rw [] \\
+         rename1 ‘X k x - Y k x <> PosInf’ \\
+         METIS_TAC [sub_not_infty]) >> DISCH_TAC \\
+     Know ‘SIGMA (\i. X i x - Y i x) (count (b n)) <> NegInf’
+     >- (MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_NEGINF >> rw [] \\
+         rename1 ‘X k x - Y k x <> NegInf’ \\
+         METIS_TAC [sub_not_infty]) >> DISCH_TAC \\
+    ‘?z. SIGMA (\i. X i x - Y i x) (count (b n)) = Normal z’ by METIS_TAC [extreal_cases] \\
+     simp [extreal_div_eq])
+ >> Rewr'
+ >> RW_TAC std_ss [LIM_SEQUENTIALLY, dist, Abbr ‘Z’, real_0, REAL_SUB_RZERO]
  >> `e <> 0` by PROVE_TAC [REAL_LT_IMP_NE]
  (* now estimating N *)
  >> Know `?k. abs (SIGMA (\i. X i x - Y i x) (count (b i))) / Normal e < a k`
@@ -2071,7 +2111,7 @@ Proof
  >> Rewr'
  >> Know `abs (SIGMA (\i. X i x - Y i x) (count (f x)) / a n) =
           abs (SIGMA (\i. X i x - Y i x) (count (f x))) / abs (a n)`
- >- (MATCH_MP_TAC abs_div >> art [] \\
+ >- (MATCH_MP_TAC abs_div >> simp [] \\
      PROVE_TAC [lt_imp_ne]) >> Rewr'
  >> Know `abs (a n) = a n`
  >- (REWRITE_TAC [abs_refl] \\
@@ -2104,7 +2144,6 @@ Proof
  >> MATCH_MP_TAC lte_trans
  >> Q.EXISTS_TAC `a k` >> art []
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
- *)
 QED
 
 (* Theorem 5.2.1 (2) [2, p.113], the original version *)
