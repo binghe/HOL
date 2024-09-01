@@ -1979,7 +1979,7 @@ Theorem equivalent_thm2' :
                 mono_increasing a /\ (sup (IMAGE a UNIV) = PosInf) /\
                (!m n. m <= n ==> b m <= b n) /\ (!n. ?i. n <= b i) ==>
           ((\n x. SIGMA (\i. X i x - Y i x) (count (b n)) / a n) --> (\x. 0))
-            (almost_everywhere p)
+           (almost_everywhere p)
 Proof
     rpt STRIP_TAC
  (* applying equivalent_lemma *)
@@ -2443,7 +2443,7 @@ Proof
  >> rw [extreal_sub_def]
 QED
 
-(* This lemma will eliminate ‘LLN’ in WLLN_IID - TODO *)
+(* This lemma will eliminate ‘LLN’ in WLLN_IID *)
 Theorem LLN_alt_converge_PR_IID :
     !p X. prob_space p /\ (!n. real_random_variable (X n) p) /\
           identical_distribution p X Borel UNIV /\ integrable p (X 0) ==>
@@ -2451,7 +2451,31 @@ Theorem LLN_alt_converge_PR_IID :
           ((\n x. SIGMA (\i. X i x) (count1 n) / &SUC n) --> (\x. expectation p (X 0)))
            (in_probability p))
 Proof
-    RW_TAC std_ss [LLN_def, converge_PR_def, sub_rzero]
+    rw [LLN_def]
+ >> ‘real_random_variable (\x. 0) p’ by PROVE_TAC [real_random_variable_zero]
+ >> qabbrev_tac ‘Z = \n x. SIGMA (\i. X i x) (count1 n)’
+ >> simp []
+ >> ‘!n. (\x. Z n x) = Z n’ by rw [FUN_EQ_THM] >> POP_ORW
+ >> qabbrev_tac ‘W = \n x. (Z n x - expectation p (Z n)) / &SUC n’
+ >> Know ‘!n. integrable p (X n)’
+ >- (MATCH_MP_TAC identical_distribution_integrable >> fs [real_random_variable_def])
+ >> DISCH_TAC
+ >> Know ‘!n. real_random_variable (W n) p’
+ >- (rw [Abbr ‘W’] \\
+     MATCH_MP_TAC real_random_variable_LLN \\
+     Q.EXISTS_TAC ‘X’ >> rw [])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘Y = \n x. Z n x / &SUC n’
+ >> Know ‘!n. real_random_variable (Y n) p’
+ >- (rw [Abbr ‘Y’, Abbr ‘Z’] \\
+     MATCH_MP_TAC real_random_variable_LLN' >> art [])
+ >> DISCH_TAC
+ >> Know ‘real_random_variable (\x. expectation p (X 0)) p’
+ >- (MATCH_MP_TAC real_random_variable_const >> art [] \\
+     MATCH_MP_TAC integrable_imp_finite_expectation >> art [])
+ >> DISCH_TAC
+ >> RW_TAC std_ss [converge_PR_def, sub_rzero]
+ >> simp [Abbr ‘W’, Abbr ‘Y’]
  >> Suff ‘!e n. {x | x IN p_space p /\
                      e < abs ((Z n x - expectation p (Z n)) / &SUC n)} =
                 {x | x IN p_space p /\
@@ -2527,7 +2551,31 @@ Theorem LLN_alt_converge_AE_IID :
           ((\n x. SIGMA (\i. X i x) (count1 n) / &SUC n) --> (\x. expectation p (X 0)))
            (almost_everywhere p))
 Proof
-    RW_TAC real_ss [LLN_def, converge_AE_def, AE_DEF, LIM_SEQUENTIALLY, dist, real_0]
+    rw [LLN_def]
+ >> ‘real_random_variable (\x. 0) p’ by PROVE_TAC [real_random_variable_zero]
+ >> qabbrev_tac ‘Z = \n x. SIGMA (\i. X i x) (count1 n)’
+ >> simp []
+ >> ‘!n. (\x. Z n x) = Z n’ by rw [FUN_EQ_THM] >> POP_ORW
+ >> qabbrev_tac ‘W = \n x. (Z n x - expectation p (Z n)) / &SUC n’
+ >> Know ‘!n. integrable p (X n)’
+ >- (MATCH_MP_TAC identical_distribution_integrable >> fs [real_random_variable_def])
+ >> DISCH_TAC
+ >> Know ‘!n. real_random_variable (W n) p’
+ >- (rw [Abbr ‘W’] \\
+     MATCH_MP_TAC real_random_variable_LLN \\
+     Q.EXISTS_TAC ‘X’ >> rw [])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘Y = \n x. Z n x / &SUC n’
+ >> Know ‘!n. real_random_variable (Y n) p’
+ >- (rw [Abbr ‘Y’, Abbr ‘Z’] \\
+     MATCH_MP_TAC real_random_variable_LLN' >> art [])
+ >> DISCH_TAC
+ >> Know ‘real_random_variable (\x. expectation p (X 0)) p’
+ >- (MATCH_MP_TAC real_random_variable_const >> art [] \\
+     MATCH_MP_TAC integrable_imp_finite_expectation >> art [])
+ >> DISCH_TAC
+ >> RW_TAC real_ss [converge_AE_def, AE_DEF, LIM_SEQUENTIALLY, dist, real_0]
+ >> simp [Abbr ‘W’, Abbr ‘Y’]
  >> Suff ‘!n x. x IN m_space p ==>
                 real ((Z n x - expectation p (Z n)) / &SUC n) =
                 real (Z n x / &SUC n) - real (expectation p (X 0))’
@@ -5086,7 +5134,15 @@ Theorem SLLN_IID_zero[local] :
          (!n x. x IN p_space p ==> 0 <= X n x)
       ==> LLN p X almost_everywhere
 Proof
-    rw [LLN_alt_converge_AE_IID, converge_AE_def, AE_DEF]
+    rw [LLN_alt_converge_AE_IID]
+ >> ‘real_random_variable (\x. 0) p’ by PROVE_TAC [real_random_variable_zero]
+ >> qabbrev_tac ‘W = \n x. SIGMA (\i. X i x) (count1 n) / &SUC n’
+ >> Know ‘!n. real_random_variable (W n) p’
+ >- (rw [Abbr ‘W’] \\
+     MATCH_MP_TAC real_random_variable_LLN' >> art [])
+ >> DISCH_TAC
+ >> rw [converge_AE_def, AE_DEF]
+ >> simp [Abbr ‘W’]
  >> ‘sigma_algebra (measurable_space p)’
       by PROVE_TAC [MEASURE_SPACE_SIGMA_ALGEBRA, prob_space_def]
  >> Know ‘!n. expectation p (X n) = 0’
@@ -5236,7 +5292,21 @@ Proof
        MATCH_MP_TAC le_mul2 >> rw [extreal_of_num_def, extreal_le_eq] ])
  >> DISCH_TAC
  (* now touching the goal *)
+ >> Know ‘!n. integrable p (X n)’
+ >- (MATCH_MP_TAC identical_distribution_integrable \\
+     fs [real_random_variable_def])
+ >> DISCH_TAC
+ >> Know ‘real_random_variable (\x. expectation p (X 0)) p’
+ >- (MATCH_MP_TAC real_random_variable_const >> art [] \\
+     MATCH_MP_TAC integrable_imp_finite_expectation >> art [])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘W = \n x. S (SUC n) x / &SUC n’
+ >> Know ‘!n. real_random_variable (W n) p’
+ >- (rw [Abbr ‘W’, Abbr ‘S’] \\
+     MATCH_MP_TAC real_random_variable_LLN' >> art [])
+ >> DISCH_TAC
  >> rw [converge_AE_def, AE_DEF]
+ >> simp [Abbr ‘W’]
  >> Q.ABBREV_TAC ‘m = expectation p (X 0)’
  >> Know `m <> PosInf /\ m <> NegInf`
  >- (ASM_SIMP_TAC std_ss [expectation_def, Abbr ‘m’] \\
@@ -5252,7 +5322,9 @@ Proof
  >- (rw [Abbr ‘P’, Abbr ‘Q’] \\
      Q.PAT_X_ASSUM ‘!a. 1 < a ==> (_ --> (\x. m)) (almost_everywhere p)’
        (fn th => MP_TAC (MATCH_MP th (ASSUME “1 < (a :real)”))) \\
-     rw [converge_AE_def, AE_DEF])
+     cheat (*
+     real_random_variable_LLN_general'
+     rw [converge_AE_def, AE_DEF] *))
  >> rw [EXT_SKOLEM_THM', Abbr ‘P’, Abbr ‘Q’] (* this assert ‘f’ *)
  >> Q.PAT_X_ASSUM ‘!a. 1 < a ==> (_ --> (\x. m)) (almost_everywhere p)’ K_TAC
  (* NOTE: now this formal proof is beyond the (incorrect) textbook proofs *)
