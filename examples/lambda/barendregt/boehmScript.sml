@@ -4230,20 +4230,13 @@ Proof
  >> DISCH_TAC
  >> qabbrev_tac ‘Y = BIGUNION (IMAGE FV (set Ms))’
  >> ‘FINITE Y’ by (rw [Abbr ‘Y’] >> REWRITE_TAC [FINITE_FV])
- (* ‘vs’ excludes all free variables in M *)
- >> qabbrev_tac ‘vs = RNEWS r n_max X’
- >> ‘ALL_DISTINCT vs /\ DISJOINT (set vs) X /\ LENGTH vs = n_max’
-       by (rw [Abbr ‘vs’, RNEWS_def])
- >> Know ‘DISJOINT (set vs) Y’
- >- (rw [DISJOINT_ALT'] \\
-     Know ‘x IN X UNION RANK r’ >- METIS_TAC [SUBSET_DEF] \\
-     rw [IN_UNION]
-     >- (Q.PAT_X_ASSUM ‘DISJOINT (set vs) X’ MP_TAC \\
-         rw [DISJOINT_ALT']) \\
-     Suff ‘DISJOINT (RANK r) (set vs)’ >- rw [DISJOINT_ALT] \\
-     qunabbrev_tac ‘vs’ \\
-     MATCH_MP_TAC DISJOINT_RANK_RNEWS' >> art [])
- >> DISCH_TAC
+ (* ‘vs’ excludes all free variables in M
+
+    NOTE: The basic requirement for ‘vs’ is that it must be disjoint with ‘Y’
+    and is at row 0. But if we exclude ‘X UNION Y’, then it also holds that
+    ‘set vs SUBSET X UNION RANK r’ just like another part of ‘M’.
+  *)
+ >> Q_TAC (NEWS_TAC (“vs :string list”, “n_max :num”)) ‘X UNION Y’
  (* construct p1 *)
  >> qabbrev_tac ‘p1 = MAP rightctxt (REVERSE (MAP VAR vs))’
  >> ‘Boehm_transform p1’ by rw [Abbr ‘p1’, MAP_MAP_o, GSYM MAP_REVERSE]
@@ -4353,23 +4346,7 @@ Proof
     at most (in this case, ‘args i = 0 /\ n i = n_max’), and to finally get a
    "is_ready" term, we should apply a fresh list of d_max+1 variables (l).
   *)
- >> qabbrev_tac ‘xs = RNEWS r (SUC d_max) (X UNION set vs)’
- >> Know ‘ALL_DISTINCT xs /\ DISJOINT (set xs) (X UNION set vs) /\
-          LENGTH xs = SUC d_max’
- >- rw [Abbr ‘xs’, RNEWS_def]
- >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [DISJOINT_UNION']))
- >> Know ‘DISJOINT (set xs) Y’
- >- (rw [DISJOINT_ALT'] \\
-     Know ‘x IN X UNION RANK r’ >- METIS_TAC [SUBSET_DEF] \\
-     rw [IN_UNION]
-     >- (Q.PAT_X_ASSUM ‘DISJOINT (set xs) X’ MP_TAC \\
-         rw [DISJOINT_ALT']) \\
-     Suff ‘DISJOINT (RANK r) (set xs)’ >- rw [DISJOINT_ALT] \\
-     MATCH_MP_TAC DISJOINT_SUBSET \\
-     Q.EXISTS_TAC ‘ROW r’ \\
-     rw [RANK_ROW_DISJOINT'] \\
-     rw [Abbr ‘xs’, RNEWS_SUBSET_ROW])
- >> DISCH_TAC
+ >> Q_TAC (NEWS_TAC (“xs :string list”, “SUC d_max”)) ‘X UNION Y UNION set vs’
  (* p3 is the maximal possible fresh list to be applied after the permutator *)
  >> qabbrev_tac ‘p3 = MAP rightctxt (REVERSE (MAP VAR xs))’
  >> ‘Boehm_transform p3’ by rw [Abbr ‘p3’, MAP_MAP_o, GSYM MAP_REVERSE]
@@ -4841,22 +4818,13 @@ Proof
          >- (rw [Abbr ‘H’] \\
              MATCH_MP_TAC principle_hnf_reduce \\
              rw [hnf_appstar]) >> Rewr' \\
-         Know ‘!i. i < k ==> RNEWS r (n i) X = TAKE (n i) vs’
-         >- (rw [Abbr ‘vs’] \\
-             Know ‘RNEWS r (n i) X <<= RNEWS r n_max X’
-             >- (MATCH_MP_TAC RNEWS_prefix >> rw []) \\
-             rw [IS_PREFIX_EQ_TAKE] \\
-             Suff ‘n i = n'’ >- rw [] \\
-             Know ‘LENGTH (RNEWS r (n i) X) =
-                   LENGTH (TAKE n' (RNEWS r n_max X))’ >- rw [] \\
-             simp [RNEWS_def, LENGTH_TAKE]) >> DISCH_TAC \\
-         simp [hnf_appstar, principle_hnf_beta_reduce] \\
-         Know ‘TAKE (n j1) vs = TAKE (n j2) vs <=> n j1 = n j2’
-         >- (MATCH_MP_TAC TAKE_EQ_REWRITE >> rw []) >> Rewr' \\
-         STRIP_TAC \\
         ‘!i. LAMl_size (H i) = 0’
            by rw [Abbr ‘H’, GSYM appstar_APPEND, LAMl_size_appstar] \\
          simp [Abbr ‘H’, GSYM appstar_APPEND, hnf_head_appstar] \\
+      (* TODO *)
+         STRIP_TAC \\
+        ‘n j1 = n j2’ by PROVE_TAC [RNEWS_11'] \\
+         POP_ASSUM (fs o wrap) \\
          reverse CONJ_TAC
          >- (‘LENGTH (l j1) = LENGTH (l j2)’ by rw [] \\
              simp [Abbr ‘Ns’, Abbr ‘tl’]) \\
