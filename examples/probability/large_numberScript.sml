@@ -1971,9 +1971,8 @@ Proof
  >> rw []
 QED
 
-Theorem mono_increasing_imp_passing_zero :
-   !a. mono_increasing a /\ sup (IMAGE a UNIV) = PosInf /\ (!n. a n <> PosInf) ==>
-       ?n. 0 < a n
+Theorem mono_increasing_passing_zero :
+   !a. mono_increasing a /\ sup (IMAGE a UNIV) = PosInf ==> ?n. 0 < a n
 Proof
     rw [ext_mono_increasing_def]
  >> CCONTR_TAC
@@ -2025,7 +2024,7 @@ Proof
            by METIS_TAC [extreal_cases] \\
          rw [extreal_div_def, real_normal, extreal_of_num_def]) >> Rewr' \\
      MATCH_MP_TAC converge_AE_const >> art [])
- >> ‘?n0. 0 < a n0’ by METIS_TAC [mono_increasing_imp_passing_zero]
+ >> ‘?n0. 0 < a n0’ by METIS_TAC [mono_increasing_passing_zero]
  >> RW_TAC std_ss [converge_AE, AE_THM, GSYM IN_NULL_SET, almost_everywhere_def,
                    GSYM p_space_def]
  >> Q.EXISTS_TAC `N` >> art []
@@ -5360,10 +5359,16 @@ Proof
  >> Know ‘!a. P a ==> ?N. Q a N’
  >- (rw [Abbr ‘P’, Abbr ‘Q’] \\
      Q.PAT_X_ASSUM ‘!a. 1 < a ==> (_ --> (\x. m)) (almost_everywhere p)’
-       (fn th => MP_TAC (MATCH_MP th (ASSUME “1 < (a :real)”))) \\
-     cheat (*
-     real_random_variable_LLN_general'
-     rw [converge_AE_def, AE_DEF] *))
+        (fn th => MP_TAC (MATCH_MP th (ASSUME “1 < (a :real)”))) \\
+     qabbrev_tac ‘Z = \n x. S (u a (SUC n)) x / &u a (SUC n)’ \\
+     Know ‘!n. real_random_variable (Z n) p’
+     >- (rw [Abbr ‘Z’, Abbr ‘S’] \\
+         MATCH_MP_TAC real_random_variable_LLN_general' \\
+         rw [Abbr ‘u’] (* goal: 0 < flr (a pow n) *) \\
+         rw [NUM_FLOOR_POS] \\
+        ‘(1 :real) = 1 pow n’ by rw [] >> POP_ORW \\
+         MATCH_MP_TAC POW_LE >> rw [REAL_LT_IMP_LE]) >> DISCH_TAC \\
+     rw [converge_AE_def, AE_DEF])
  >> rw [EXT_SKOLEM_THM', Abbr ‘P’, Abbr ‘Q’] (* this assert ‘f’ *)
  >> Q.PAT_X_ASSUM ‘!a. 1 < a ==> (_ --> (\x. m)) (almost_everywhere p)’ K_TAC
  (* NOTE: now this formal proof is beyond the (incorrect) textbook proofs *)
@@ -5555,7 +5560,6 @@ Proof
  >> Q.PAT_X_ASSUM ‘!n x. x IN p_space p ==> 0 <= X n x’                 K_TAC
  >> Q.PAT_X_ASSUM ‘pairwise_indep_vars p X (\n. Borel) UNIV’            K_TAC
  >> Q.PAT_X_ASSUM ‘identical_distribution p X Borel UNIV’               K_TAC
- >> Q.PAT_X_ASSUM ‘integrable p (X 0)’                                  K_TAC
  >> Q.PAT_X_ASSUM ‘null_set p (f a)’                                    K_TAC
  >> Q.PAT_X_ASSUM ‘x IN m_space p’                                      K_TAC
  >> Q.PAT_X_ASSUM ‘x NOTIN N’                                           K_TAC

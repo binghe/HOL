@@ -3985,6 +3985,28 @@ val NUM_FLOOR_upper_bound = store_thm(
   MP_TAC (AP_TERM negation NUM_FLOOR_LOWER_BOUND) THEN
   PURE_REWRITE_TAC [REAL_NOT_LT, NOT_LESS_EQUAL,IMP_CLAUSES]);
 
+Theorem NUM_FLOOR_upper_bound' :
+    !x n. 1 < x ==> (n < NUM_FLOOR x <=> &n <= x - 1)
+Proof
+    rpt STRIP_TAC
+ >> rw [NUM_FLOOR_upper_bound, REAL_SUB_ADD]
+QED
+
+Theorem NUM_FLOOR_POS :
+    !x. 0 < NUM_FLOOR x <=> 1 <= x
+Proof
+    Q.X_GEN_TAC ‘x’
+ >> EQ_TAC
+ >- (DISCH_TAC >> CCONTR_TAC \\
+    ‘x < 1’ by rw [real_lt] \\
+    ‘flr x = 0’ by rw [NUM_FLOOR_BASE] \\
+     fs [])
+ >> DISCH_TAC
+ >> ‘x = 1 \/ 1 < x’ by PROVE_TAC [REAL_LE_LT]
+ >- rw [NUM_FLOOR_EQNS]
+ >> rw [NUM_FLOOR_upper_bound', REAL_SUB_LE]
+QED
+
 Theorem NUM_FLOOR_lower_bound :
     !x. 1 <= x ==> x / 2 < &NUM_FLOOR(x)
 Proof
