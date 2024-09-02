@@ -1,5 +1,7 @@
 (*===========================================================================*)
-(*  The Data Encryption Standard (DES) in HOL                                *)
+(*  The Data Encryption Standard (DES) Property in HOL                       *)
+(*                                                                           *)
+(*  Author: Ruofan Yang                                                      *)
 (*===========================================================================*)
 
 open HolKernel Parse boolLib bossLib;
@@ -1089,6 +1091,75 @@ Proof
  >> ‘i = 0 \/ i = 1 \/ i = 2 \/ i = 3’ by rw []
  >> rw []
  >> EVAL_TAC
+QED
+
+Definition AllpairXor_def:
+    AllpairXor (X:word6)= {(x1,x2)| x1 ⊕ x2=X}
+End
+
+Definition trans1_def:
+  trans1 (x1:word6,x2:word6) = x1
+End
+
+Definition trans2_def:
+  trans2 (x:word6)= (x,x)
+End
+
+Theorem BIJ_XORL:
+   BIJ trans1 (AllpairXor 0x0w) univ(:word6)
+Proof
+     rw[BIJ_IFF_INV]
+  >> EXISTS_TAC “trans2”
+  >> rw[]
+
+  >- (rw[AllpairXor_def,trans2_def])
+  >- (POP_ASSUM MP_TAC\\
+      rw[AllpairXor_def,trans2_def,trans1_def]\\
+      Know ‘x1 ⊕ x1 ⊕ x2=x1 ⊕ 0w’
+      >- RW_TAC fcp_ss[]\\
+      rw[WORD_XOR_CLAUSES]
+      )
+
+  >>  rw[trans2_def,trans1_def]
+QED
+
+Theorem xor_P:
+   !x1 x2. P(x1) ⊕ P(x2)=P(x1⊕x2)
+Proof
+     RW_TAC fcp_ss[P_def,bitwise_perm_def,dimindex_32]
+  >> Q.ABBREV_TAC ‘p=(32 − EL (31 − i) P_data)’
+  >>Know ‘p<32’
+  >-(fs [Abbr ‘p’, dimindex_32] \\
+      POP_ASSUM MP_TAC \\
+      Q.SPEC_TAC (‘i’, ‘n’) \\
+      rpt (CONV_TAC (BOUNDED_FORALL_CONV (SIMP_CONV list_ss [P_data]))) \\
+      REWRITE_TAC [])
+  >> rw[word_xor_def]
+  >> rw[FCP_BETA]
+QED
+
+Theorem xor_E:
+   !x1 x2. E(x1) ⊕ E(x2)=E(x1⊕x2)
+Proof
+     RW_TAC fcp_ss[E_def,bitwise_perm_def,dimindex_32,dimindex_48]
+  >> Q.ABBREV_TAC ‘p=(32 − EL (47 − i) E_data)’
+  >> Know ‘p<32’
+  >- (fs [Abbr ‘p’, dimindex_48] \\
+      POP_ASSUM MP_TAC \\
+      Q.SPEC_TAC (‘i’, ‘n’) \\
+      rpt (CONV_TAC (BOUNDED_FORALL_CONV (SIMP_CONV list_ss [E_data]))) \\
+      REWRITE_TAC [])
+  >> rw[word_xor_def]
+  >> rw[FCP_BETA]
+QED
+
+Theorem xor_S1:
+   ?x1 x2. S1(x1) ⊕ S1(x2)<>S1(x1⊕x2)
+Proof
+     rw[SBox_def,S1_data]
+  >> Q.EXISTS_TAC ‘0b0w’
+  >> Q.EXISTS_TAC ‘0b0w’
+  >> EVAL_TAC
 QED
 
 val _ = export_theory();
