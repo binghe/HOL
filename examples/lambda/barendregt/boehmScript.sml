@@ -4823,8 +4823,32 @@ Proof
          STRIP_TAC \\
         ‘n j1 = n j2’ by PROVE_TAC [RNEWS_11'] \\
          POP_ASSUM (fs o wrap) \\
-         qabbrev_tac ‘N = n j2’ \\
-      (* preparing for principle_hnf_LAMl_appstar *)
+      (* NOTE: It's possible that ‘n j2 = 0’ and thus ys = ys = [] *)
+         qabbrev_tac ‘ys = TAKE (n j2) vs’ \\
+         Q_TAC (RNEWS_TAC (“zs :string list”, “r :num”,
+                           “(n :num -> num) j2”)) ‘X’ \\
+         qabbrev_tac ‘t = VAR (y j1) @* args j1’ \\
+      (* applying for principle_hnf_LAMl_appstar *)
+         Know ‘principle_hnf (LAMl ys t @* MAP VAR zs) = tpm (ZIP (ys,zs)) t’
+         >- (MATCH_MP_TAC principle_hnf_LAMl_appstar >> art [] \\
+             CONJ_TAC >- rw [Abbr ‘t’, hnf_appstar] \\
+             CONJ_TAC >- (qunabbrev_tac ‘ys’ \\
+                          MATCH_MP_TAC ALL_DISTINCT_TAKE >> art []) \\
+             CONJ_TAC >- (qunabbrev_tac ‘ys’ \\
+                          MATCH_MP_TAC LENGTH_TAKE >> art [] \\
+                          FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+             CONJ_TAC >- (MATCH_MP_TAC DISJOINT_SUBSET' \\
+                          Q.EXISTS_TAC ‘set vs’ \\
+                          reverse CONJ_TAC >- rw [Abbr ‘ys’, LIST_TO_SET_TAKE] \\
+                          qunabbrev_tac ‘zs’ \\
+                          MATCH_MP_TAC DISJOINT_SUBSET' \\
+                          Q.EXISTS_TAC ‘RANK r’ >> rw [DISJOINT_RANK_RNEWS'] \\
+                          MATCH_MP_TAC SUBSET_TRANS \\
+                          Q.EXISTS_TAC ‘ROW 0’ \\
+                          CONJ_TAC >- rw [Abbr ‘vs’, RNEWS_SUBSET_ROW] \\
+                          MATCH_MP_TAC ROW_SUBSET_RANK >> art []) \\
+             cheat) \\
+         POP_ASSUM (fs o wrap) \\
          Know ‘LENGTH (l j1) = LENGTH (l j2)’
          >- (simp [Abbr ‘l’] \\
              cheat) >> DISCH_TAC \\
