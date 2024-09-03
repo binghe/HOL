@@ -4816,7 +4816,7 @@ Proof
      where the relation ~1~ is to be established by BT_subterm_thm, and ~2~
      follows a similar idea of [Boehm_transform_exists_lemma].
 
-     And the case q = [] is special.
+     And the case q = [] is special (and not very easy)
    *)
      Cases_on ‘q = []’
      >- (POP_ORW >> simp [BT_ltree_el_NIL] \\
