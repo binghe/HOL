@@ -4406,6 +4406,12 @@ Proof
      MATCH_MP_TAC SUBSET_TRANS \\
      Q.EXISTS_TAC ‘FV (M1 i)’ >> art [])
  >> DISCH_TAC
+ >> Know ‘Z SUBSET X UNION RANK r’
+ >- (rw [Abbr ‘Z’, UNION_SUBSET] \\
+     Suff ‘set vs SUBSET RANK r’ >- SET_TAC [] \\
+     qunabbrev_tac ‘vs’ \\
+     MATCH_MP_TAC RNEWS_SUBSET_RANK >> rw [])
+ >> DISCH_TAC
  (* NOTE: now, before proving ‘EVERY is_ready' ...’, (for future subgoals) we
     need to calculute the principle_hnf of ‘apply pi (EL i Ms)’ for any i < k.
 
@@ -4822,39 +4828,52 @@ Proof
          simp [Abbr ‘H’, GSYM appstar_APPEND, hnf_head_appstar] \\
          STRIP_TAC \\
         ‘n j1 = n j2’ by PROVE_TAC [RNEWS_11'] \\
-         POP_ASSUM (fs o wrap) \\
       (* NOTE: It's possible that ‘n j2 = 0’ and thus ys = ys = [] *)
          qabbrev_tac ‘ys = TAKE (n j2) vs’ \\
+        ‘ALL_DISTINCT ys’
+           by (qunabbrev_tac ‘ys’ \\
+               MATCH_MP_TAC ALL_DISTINCT_TAKE >> art []) \\
+        ‘LENGTH ys = n j2’
+           by (qunabbrev_tac ‘ys’ \\
+               MATCH_MP_TAC LENGTH_TAKE >> art [] \\
+               FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
          Q_TAC (RNEWS_TAC (“zs :string list”, “r :num”,
                            “(n :num -> num) j2”)) ‘X’ \\
-         qabbrev_tac ‘t = VAR (y j1) @* args j1’ \\
+         Know ‘DISJOINT (set ys) (set zs)’
+         >- (MATCH_MP_TAC DISJOINT_SUBSET' \\
+             Q.EXISTS_TAC ‘set vs’ \\
+             reverse CONJ_TAC >- rw [Abbr ‘ys’, LIST_TO_SET_TAKE] \\
+             qunabbrev_tac ‘zs’ \\
+             MATCH_MP_TAC DISJOINT_SUBSET' \\
+             Q.EXISTS_TAC ‘RANK r’ >> rw [DISJOINT_RANK_RNEWS'] \\
+             MATCH_MP_TAC SUBSET_TRANS \\
+             Q.EXISTS_TAC ‘ROW 0’ \\
+             CONJ_TAC >- rw [Abbr ‘vs’, RNEWS_SUBSET_ROW] \\
+             MATCH_MP_TAC ROW_SUBSET_RANK >> art []) >> DISCH_TAC \\
+         qabbrev_tac ‘t1 = VAR (y j1) @* args j1’ \\
+         qabbrev_tac ‘t2 = VAR (y j2) @* args j2’ \\
       (* applying for principle_hnf_LAMl_appstar *)
-         Know ‘principle_hnf (LAMl ys t @* MAP VAR zs) = tpm (ZIP (ys,zs)) t’
-         >- (MATCH_MP_TAC principle_hnf_LAMl_appstar >> art [] \\
-             CONJ_TAC >- rw [Abbr ‘t’, hnf_appstar] \\
-             CONJ_TAC >- (qunabbrev_tac ‘ys’ \\
-                          MATCH_MP_TAC ALL_DISTINCT_TAKE >> art []) \\
-             CONJ_TAC >- (qunabbrev_tac ‘ys’ \\
-                          MATCH_MP_TAC LENGTH_TAKE >> art [] \\
-                          FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
-             CONJ_TAC >- (MATCH_MP_TAC DISJOINT_SUBSET' \\
-                          Q.EXISTS_TAC ‘set vs’ \\
-                          reverse CONJ_TAC >- rw [Abbr ‘ys’, LIST_TO_SET_TAKE] \\
-                          qunabbrev_tac ‘zs’ \\
-                          MATCH_MP_TAC DISJOINT_SUBSET' \\
-                          Q.EXISTS_TAC ‘RANK r’ >> rw [DISJOINT_RANK_RNEWS'] \\
-                          MATCH_MP_TAC SUBSET_TRANS \\
-                          Q.EXISTS_TAC ‘ROW 0’ \\
-                          CONJ_TAC >- rw [Abbr ‘vs’, RNEWS_SUBSET_ROW] \\
-                          MATCH_MP_TAC ROW_SUBSET_RANK >> art []) \\
-             cheat) \\
-         POP_ASSUM (fs o wrap) \\
-         Know ‘LENGTH (l j1) = LENGTH (l j2)’
-         >- (simp [Abbr ‘l’] \\
-             cheat) >> DISCH_TAC \\
-         reverse CONJ_TAC
-         >- (
-             simp [Abbr ‘Ns’, Abbr ‘tl’]) \\
+         Know ‘principle_hnf (LAMl ys t1 @* MAP VAR zs) = tpm (ZIP (ys,zs)) t1’
+         >- (‘hnf t1’ by rw [Abbr ‘t1’, hnf_appstar] \\
+             MATCH_MP_TAC principle_hnf_LAMl_appstar >> art [] \\
+             MATCH_MP_TAC subterm_disjoint_lemma \\
+             qexistsl_tac [‘X’, ‘r’, ‘n j2’] >> simp [] \\
+             MATCH_MP_TAC SUBSET_TRANS \\
+             Q.EXISTS_TAC ‘Z’ >> art [] \\
+             rw [Abbr ‘t1’, FV_appstar]) \\
+         DISCH_THEN (fs o wrap) \\
+         Know ‘principle_hnf (LAMl ys t2 @* MAP VAR zs) = tpm (ZIP (ys,zs)) t2’
+         >- (‘hnf t2’ by rw [Abbr ‘t2’, hnf_appstar] \\
+             MATCH_MP_TAC principle_hnf_LAMl_appstar >> art [] \\
+             MATCH_MP_TAC subterm_disjoint_lemma \\
+             qexistsl_tac [‘X’, ‘r’, ‘n j2’] >> simp [] \\
+             MATCH_MP_TAC SUBSET_TRANS \\
+             Q.EXISTS_TAC ‘Z’ >> art [] \\
+             rw [Abbr ‘t2’, FV_appstar]) \\
+         DISCH_THEN (fs o wrap) \\
+         gs [Abbr ‘t1’, Abbr ‘t2’, tpm_appstar] \\
+        ‘LENGTH (l j1) = LENGTH (l j2)’ by rw [Abbr ‘l’] \\
+         reverse CONJ_TAC >- simp [Abbr ‘Ns’, Abbr ‘tl’] \\
         ‘b j1 = EL (j j1) xs /\ b j2 = EL (j j2) xs’ by rw [] \\
          NTAC 2 POP_ORW \\
          Suff ‘j j1 = j j2’ >- Rewr \\
@@ -4889,8 +4908,8 @@ Proof
              Know ‘unsolvable (subterm' X (H j1) p r) <=>
                    ltree_el (BT' X (H j1) r) p = SOME bot’
              >- (MATCH_MP_TAC BT_ltree_el_of_unsolvables >> art [] \\
-                 cheat) >>
-             cheat)
+                 cheat) \\
+             cheat) \\
          cheat) \\
      reverse (Cases_on ‘solvable (subterm' X (M j2) q r)’)
      >- (‘q <<= FRONT p \/ q = p’ by METIS_TAC [IS_PREFIX_FRONT_CASES]
