@@ -1037,10 +1037,9 @@ QED
  *)
 Theorem prob_space_on_finite_set :
     !p. FINITE (p_space p) /\ p_space p <> {} /\ events p = POW (p_space p) /\
-        (!s. s IN events p ==> prob p s = &CARD s / &CARD (p_space p)) ==>
-        prob_space p
+        prob p = uniform_distribution (p_space p,events p) ==> prob_space p
 Proof
-    rw [p_space_def, events_def, prob_def]
+    rw [p_space_def, events_def, prob_def, uniform_distribution_def]
  >> ‘CARD (m_space p) <> 0’ by rw [CARD_EQ_0]
  >> rw [prob_on_finite_set]
  >| [ (* goal 1 (of 3) *)
@@ -9094,12 +9093,6 @@ Definition prob_density_function_def :
     prob_density_function p X = RN_deriv (distribution p X) ext_lborel
 End
 Overload pdf[local] = “prob_density_function”
-
-(* cf. examples/dependability/RBD/VDCScript.sml:
-Definition CDF_def :
-    CDF p X (t:real) = distribution p X {y | y <= Normal t}
-End
- *)
 
 (* local backward compatibility *)
 Theorem pdf_def[local] = prob_density_function_def
