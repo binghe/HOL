@@ -4815,18 +4815,21 @@ Proof
      Cases_on ‘q = []’
      >- (POP_ORW >> simp [BT_ltree_el_NIL] \\
          Know ‘!i. principle_hnf (H i) = H i’
-         >- (rw [Abbr ‘H’] \\
-             MATCH_MP_TAC principle_hnf_reduce \\
+         >- (rw [Abbr ‘H’] >> MATCH_MP_TAC principle_hnf_reduce \\
              rw [hnf_appstar]) >> Rewr' \\
         ‘!i. LAMl_size (H i) = 0’
            by rw [Abbr ‘H’, GSYM appstar_APPEND, LAMl_size_appstar] \\
          simp [Abbr ‘H’, GSYM appstar_APPEND, hnf_head_appstar] \\
-      (* TODO *)
          STRIP_TAC \\
         ‘n j1 = n j2’ by PROVE_TAC [RNEWS_11'] \\
          POP_ASSUM (fs o wrap) \\
+         qabbrev_tac ‘N = n j2’ \\
+      (* preparing for principle_hnf_LAMl_appstar *)
+         Know ‘LENGTH (l j1) = LENGTH (l j2)’
+         >- (simp [Abbr ‘l’] \\
+             cheat) >> DISCH_TAC \\
          reverse CONJ_TAC
-         >- (‘LENGTH (l j1) = LENGTH (l j2)’ by rw [] \\
+         >- (
              simp [Abbr ‘Ns’, Abbr ‘tl’]) \\
         ‘b j1 = EL (j j1) xs /\ b j2 = EL (j j2) xs’ by rw [] \\
          NTAC 2 POP_ORW \\
