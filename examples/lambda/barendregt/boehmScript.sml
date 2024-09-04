@@ -2944,6 +2944,86 @@ Proof
  >> PROVE_TAC [cj 2 subterm_solvable_lemma]
 QED
 
+Theorem subterm_width_recursion[local] :
+    !X M h p r M0 n m vs M1 Ms d.
+             FINITE X /\ FV M SUBSET X UNION RANK r /\
+             subterm X M (h::p) r <> NONE /\
+             M0 = principle_hnf M /\
+              n = LAMl_size M0 /\
+             vs = RNEWS r n X /\
+             M1 = principle_hnf (M0 @* MAP VAR vs) /\
+             Ms = hnf_children M1 /\
+              m = LENGTH Ms /\ h < m ==>
+            (subterm_width M (h::p) <= d <=>
+             m <= d /\ subterm_width (EL h Ms) p <= d)
+Proof
+    rpt STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::p’, ‘r’] subterm_solvable_lemma) >> rw []
+ >> qabbrev_tac ‘M0 = principle_hnf M’
+ >> qabbrev_tac ‘n = LAMl_size M0’
+ >> qabbrev_tac ‘vs = RNEWS r n X’
+ >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
+ >> qabbrev_tac ‘Ms = hnf_children M1’
+ >> qabbrev_tac ‘m = LENGTH Ms’
+ >> Know ‘solvable M’
+ >- (Q.PAT_X_ASSUM ‘!q. q <<= FRONT (h::p) ==> _’ (MP_TAC o Q.SPEC ‘[]’) \\
+     rw [])
+ >> DISCH_TAC
+ >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::p’, ‘r’] subterm_width_alt) >> rw []
+ >> Cases_on ‘p = []’
+ >- (fs [] \\
+     Know ‘{subterm' X M q r | q = []} = {M}’
+     >- rw [Once EXTENSION] >> Rewr' \\
+     Know ‘IMAGE (hnf_children_size o principle_hnf) {M} =
+           {hnf_children_size (principle_hnf M)}’
+     >- rw [Once EXTENSION] >> Rewr' \\
+     simp [MAX_SET_SING, Abbr ‘m’] \\
+     Suff ‘hnf_children_size M0 = LENGTH Ms’ >- rw [] \\
+     MATCH_MP_TAC hnf_children_size_alt \\
+     qexistsl_tac [‘X’, ‘M’, ‘r’, ‘n’, ‘vs’, ‘M1’] >> rw [])
+ (* applying subterm_width_alt again *)
+ >> MP_TAC (Q.SPECL [‘X’, ‘EL h Ms’, ‘p’, ‘SUC r’] subterm_width_alt)
+ >> simp []
+ >> Know ‘FV (EL h Ms) SUBSET X UNION RANK (SUC r)’
+ >- (MATCH_MP_TAC subterm_induction_lemma \\
+     qexistsl_tac [‘M’, ‘M0’, ‘n’, ‘m’, ‘vs’, ‘M1’] >> rw [])
+ >> Rewr
+ >> Know ‘subterm X (EL h Ms) p (SUC r) <> NONE’
+ >- (Q.PAT_X_ASSUM ‘subterm X M (h::p) r <> NONE’ MP_TAC \\
+     Q_TAC (UNBETA_TAC [subterm_of_solvables]) ‘subterm X M (h::p) r’ \\
+    ‘n = n'’ by rw [Abbr ‘n’, Abbr ‘n'’] \\
+     POP_ASSUM (fs o wrap o SYM) \\
+     Q.PAT_X_ASSUM ‘vs = vs'’ (fs o wrap o SYM) \\
+     Q.PAT_X_ASSUM ‘M1 = M1'’ (fs o wrap o SYM))
+ >> Rewr
+ >> Rewr' (* subterm_width (EL h Ms) p = MAX_SET ... *)
+ (* stage work *)
+ >> Know ‘{subterm' X M q r | q <<= FRONT (h::p)} =
+           M INSERT {subterm' X M q r | ?x xs. q = x::xs /\ q <<= FRONT (h::p)}’
+ >- (rw [Once EXTENSION] \\
+     EQ_TAC >> rw [] >| (* 3 subgoals *)
+     [ (* goal 1 (of 3) *)
+       Cases_on ‘q = []’ >- (DISJ1_TAC >> rw []) \\
+       DISJ2_TAC >> Q.EXISTS_TAC ‘q’ >> rw [] \\
+       Cases_on ‘q’ >> fs [],
+       (* goal 2 (of 3) *)
+       Q.EXISTS_TAC ‘[]’ >> rw [],
+       (* goal 3 (of 3) *)
+       rename1 ‘x::xs <<= FRONT (h::p)’ \\
+       Q.EXISTS_TAC ‘x::xs’ >> art [] ])
+ >> Rewr'
+ >> Know ‘{subterm' X M q r | ?x xs. q = x::xs /\ q <<= FRONT (h::p)} =
+          {subterm' X (EL h Ms) q (SUC r) | q <<= FRONT p}’
+ >- (rw [Once EXTENSION] \\
+     EQ_TAC >> rw [] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       cheat,
+       (* goal 2 (of 2) *)
+       cheat ])
+ (* stage work *)
+ >> cheat
+QED
+
 (* NOTE: v, P and d are fixed free variables here *)
 Theorem subterm_subst_cong_lemma[local] :
     !X. FINITE X ==>
@@ -2951,9 +3031,9 @@ Theorem subterm_subst_cong_lemma[local] :
                   FV M SUBSET X UNION RANK r /\
                   subterm X M p r <> NONE /\
                   subterm_width M p <= d /\
-                  P = permutator d /\
-                  v IN X UNION RANK r
+                  P = permutator d /\ v IN X UNION RANK r
               ==> subterm X ([P/v] M) q r <> NONE /\
+                  subterm_width ([P/v] M) q <= d /\
                   subterm' X ([P/v] M) q r = [P/v] (subterm' X M q r)
 Proof
     Q.X_GEN_TAC ‘X’ >> DISCH_TAC
@@ -3388,12 +3468,14 @@ Proof
  >> simp [hnf_children_hnf]
 QED
 
+(* This theorem can be repeatedly applied for ‘M ISUB ss’ *)
 Theorem subterm_subst_cong :
     !p X M r y P d. FINITE X /\ FV M SUBSET X UNION RANK r /\
                     subterm X M p r <> NONE /\
                     P = permutator d /\ y IN X UNION RANK r /\
                     subterm_width M p <= d
                 ==> subterm X ([P/y] M) p r <> NONE /\
+                    subterm_width ([P/y] M) p <= d /\
                     subterm' X ([P/y] M) p r = [P/y] (subterm' X M p r)
 Proof
     rpt GEN_TAC >> STRIP_TAC
@@ -4901,6 +4983,9 @@ Proof
       (* NOTE: The goal is to prove ‘subterm' X (H j1) p r’ (and H j2) is
          also unsolvable and thus ‘ltree_el (BT' X (H j1) r) p = SOME bot’.
        *)
+         Know ‘subterm X (H j1) p r <> NONE /\
+               subterm X (H j2) p r <> NONE’
+         >- cheat >> DISCH_TAC \\
          Suff ‘unsolvable (subterm' X (H j1) p r) /\
                unsolvable (subterm' X (H j2) p r)’
          >- (STRIP_TAC \\

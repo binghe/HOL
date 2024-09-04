@@ -1,5 +1,5 @@
 (* ========================================================================= *)
-(*   Probability Density Function Theory (and Normal Random Variables)       *)
+(*   Probability Density Function Theory (Normal Random Variables)           *)
 (*                                                                           *)
 (*        (c) Copyright 2015,                                                *)
 (*                       Muhammad Qasim,                                     *)
