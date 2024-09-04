@@ -3017,11 +3017,47 @@ Proof
  >- (rw [Once EXTENSION] \\
      EQ_TAC >> rw [] >| (* 2 subgoals *)
      [ (* goal 1 (of 2) *)
-       cheat,
+       Cases_on ‘p’ >> fs [] \\
+       Q.EXISTS_TAC ‘xs’ >> art [] \\
+       Q_TAC (UNBETA_TAC [subterm_of_solvables]) ‘subterm' X M (h::xs) r’ \\
+      ‘n = n'’ by rw [Abbr ‘n’, Abbr ‘n'’] \\
+       POP_ASSUM (fs o wrap o SYM) \\
+       Q.PAT_X_ASSUM ‘vs = vs'’ (fs o wrap o SYM) \\
+       Q.PAT_X_ASSUM ‘M1 = M1'’ (fs o wrap o SYM) \\
+       Q.PAT_X_ASSUM ‘Ms = Ms'’ (fs o wrap o SYM),
        (* goal 2 (of 2) *)
-       cheat ])
+       Cases_on ‘p’ >> fs [] \\
+       Q.EXISTS_TAC ‘h::q’ \\
+       reverse CONJ_TAC
+       >- (qexistsl_tac [‘h’, ‘q’] >> rw []) \\
+       Q_TAC (UNBETA_TAC [subterm_of_solvables]) ‘subterm' X M (h::q) r’ \\
+      ‘n = n'’ by rw [Abbr ‘n’, Abbr ‘n'’] \\
+       POP_ASSUM (fs o wrap o SYM) \\
+       Q.PAT_X_ASSUM ‘vs = vs'’ (fs o wrap o SYM) \\
+       Q.PAT_X_ASSUM ‘M1 = M1'’ (fs o wrap o SYM) \\
+       Q.PAT_X_ASSUM ‘Ms = Ms'’ (fs o wrap o SYM) ])
+ >> Rewr'
+ >> qabbrev_tac ‘s = {subterm' X (EL h Ms) q (SUC r) | q <<= FRONT p}’
  (* stage work *)
- >> cheat
+ >> REWRITE_TAC [IMAGE_INSERT]
+ >> qabbrev_tac ‘t = IMAGE (hnf_children_size o principle_hnf) s’
+ >> Know ‘(hnf_children_size o principle_hnf) M = m’
+ >- (rw [o_DEF, Abbr ‘m’] \\
+     MATCH_MP_TAC hnf_children_size_alt \\
+     qexistsl_tac [‘X’, ‘M’, ‘r’, ‘n’, ‘vs’, ‘M1’] >> rw [])
+ >> Rewr'
+ >> Suff ‘MAX_SET (m INSERT t) = MAX m (MAX_SET t)’
+ >- (Rewr' >> rw [MAX_LE])
+ >> Suff ‘FINITE t’ >- PROVE_TAC [MAX_SET_THM]
+ >> qunabbrev_tac ‘t’
+ >> MATCH_MP_TAC IMAGE_FINITE
+ >> qunabbrev_tac ‘s’
+ >> Know ‘{subterm' X (EL h Ms) q (SUC r) | q <<= FRONT p} =
+          IMAGE (\e. subterm' X (EL h Ms) e (SUC r)) {q | q <<= FRONT p}’
+ >- rw [Once EXTENSION]
+ >> Rewr'
+ >> MATCH_MP_TAC IMAGE_FINITE
+ >> rw [FINITE_prefix]
 QED
 
 (* NOTE: v, P and d are fixed free variables here *)
