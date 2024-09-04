@@ -1,5 +1,5 @@
 (* ========================================================================= *)
-(*   Probability Density Function Theory (Normal Random Variables)           *)
+(*   Probability Density Function Theory (normal_rvTheory)                   *)
 (*                                                                           *)
 (*        (c) Copyright 2015,                                                *)
 (*                       Muhammad Qasim,                                     *)
@@ -7,6 +7,8 @@
 (*                       Hardware Verification Group,                        *)
 (*                       Concordia University                                *)
 (*            Contact:  <m_qasi@ece.concordia.ca>                            *)
+(*                                                                           *)
+(*   Enriched by Chun TIAN (The Australian National University, 2024)        *)
 (* ========================================================================= *)
 
 open HolKernel Parse boolLib bossLib;
