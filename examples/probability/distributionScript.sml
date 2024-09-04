@@ -16,9 +16,47 @@ open combinTheory arithmeticTheory numLib logrootTheory hurdUtils pred_setLib
      iterateTheory topologyTheory real_topologyTheory derivativeTheory;
 
 open util_probTheory sigma_algebraTheory extrealTheory real_borelTheory
-     measureTheory borelTheory lebesgueTheory probabilityTheory;
+     measureTheory borelTheory lebesgueTheory martingaleTheory
+     probabilityTheory;
 
 val _ = new_theory "distribution"; (* was: "normal_rv" *)
+
+(* ------------------------------------------------------------------------- *)
+(*  Weak convergence (of distributions)                                      *)
+(* ------------------------------------------------------------------------- *)
+
+(* See, e.g., [2, p.117] *)
+Definition weak_converge_def :
+    weak_converge fi f =
+    !g. g bounded_on UNIV /\ g o Normal continuous_on UNIV ==>
+        ((\n. integral (space Borel,subsets Borel,fi n) g) -->
+          integral (space Borel,subsets Borel,f) g) sequentially
+End
+Overload "-->" = “weak_converge”
+
+Theorem converge_in_dist_alt_weak :
+    !p X Y. prob_space p /\
+           (!n. random_variable (X n) p Borel) /\ random_variable Y p Borel ==>
+           ((X --> Y) (in_distribution p) <=>
+            (\n. distribution p (X n)) --> distribution p Y)
+Proof
+    rw [converge_in_dist, weak_converge_def, expectation_def, distribution_distr,
+        random_variable_def, p_space_def, events_def, prob_space_def]
+ (* applying integral_distr *)
+ >> Know ‘!Z. Z IN Borel_measurable (measurable_space p) /\
+              g IN Borel_measurable Borel ==>
+              integral (space Borel,subsets Borel,distr p Z) g = integral p (g o Z)’
+ >- (rpt STRIP_TAC \\
+     MP_TAC (Q.SPECL [‘p’, ‘Borel’, ‘Z’, ‘g’]
+                     (INST_TYPE [beta |-> “:extreal”] integral_distr)) \\
+     rw [SIGMA_ALGEBRA_BOREL])
+ >> DISCH_TAC
+ >> cheat
+QED
+
+(* ------------------------------------------------------------------------- *)
+(*  PDF                                                                      *)
+(* ------------------------------------------------------------------------- *)
 
 (* This definition comes from HVG's original work (real-based)
 
@@ -187,5 +225,7 @@ val _ = html_theory "distribution";
 (* References:
 
   [1] Qasim, M.: Formalization of Normal Random Variables, Concordia University (2016).
+  [2] Rosenthal, J.S.: A First Look at Rigorous Probability Theory (Second Edition).
+      World Scientific Publishing Company (2006).
 
  *)

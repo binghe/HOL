@@ -9160,7 +9160,7 @@ val _ = export_theory ();
   [1] Kolmogorov, A.N.: Foundations of the Theory of Probability (Grundbegriffe der
       Wahrscheinlichkeitsrechnung). Chelsea Publishing Company, New York. (1950).
   [2] Chung, K.L.: A Course in Probability Theory, Third Edition. Academic Press (2001).
-  [3] Rosenthal, J.S.: A First Look at Rigorous Probability Theory (Second Editoin).
+  [3] Rosenthal, J.S.: A First Look at Rigorous Probability Theory (Second Edition).
       World Scientific Publishing Company (2006).
   [4] Shiryaev, A.N.: Probability-1. Springer-Verlag New York (2016).
   [5] Shiryaev, A.N.: Probability-2. Springer-Verlag New York (2019).
