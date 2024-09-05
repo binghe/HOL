@@ -17,7 +17,7 @@ open HolKernel Parse boolLib bossLib;
 
 open arithmeticTheory optionTheory pairTheory combinTheory pred_setTheory
      pred_setLib numLib realLib seqTheory topologyTheory hurdUtils
-     util_probTheory;
+     util_probTheory res_quanTools;
 
 val _ = new_theory "sigma_algebra";
 
@@ -25,6 +25,8 @@ val DISC_RW_KILL = DISCH_TAC >> ONCE_ASM_REWRITE_TAC [] >> POP_ASSUM K_TAC;
 fun METIS ths tm = prove(tm, METIS_TAC ths);
 val set_ss = std_ss ++ PRED_SET_ss;
 val std_ss' = std_ss ++ boolSimps.ETA_ss;
+val S_TAC = rpt (POP_ASSUM MP_TAC) >> rpt RESQ_STRIP_TAC;
+val Strip = S_TAC;
 
 val _ = hide "S";
 
@@ -508,6 +510,14 @@ val SIGMA_ALGEBRA_SIGMA = store_thm
    >> DISCH_THEN MATCH_MP_TAC
    >> RW_TAC std_ss []
    >> PROVE_TAC [SUBSET_DEF]);
+
+Theorem SIGMA_ALGEBRA_SIGMA_UNIV :
+    !sts. sigma_algebra (sigma UNIV sts)
+Proof
+    Q.X_GEN_TAC ‘sts’
+ >> MATCH_MP_TAC SIGMA_ALGEBRA_SIGMA
+ >> rw [subset_class_def]
+QED
 
 (* power set of any space gives the largest possible algebra and sigma-algebra *)
 val POW_ALGEBRA = store_thm
@@ -3607,6 +3617,120 @@ Proof
       rw [Once EXTENSION, IN_PREIMAGE, IN_BIGUNION_IMAGE] >> METIS_TAC [] ]
 QED
 
+(* A good corollary of PREIMAGE_SIGMA *)
+Theorem IMAGE_SIGMA :
+    !sp sts f. subset_class sp sts /\ BIJ f sp (IMAGE f sp) ==>
+               IMAGE (IMAGE f) (subsets (sigma sp sts)) =
+               subsets (sigma (IMAGE f sp) (IMAGE (IMAGE f) sts))
+Proof
+    rpt STRIP_TAC
+ >> MP_TAC (MATCH_MP BIJ_INV
+                     (ASSUME “BIJ (f :'a -> 'b) (sp :'a -> bool) (IMAGE f sp)”))
+ >> rw []
+ >> qabbrev_tac ‘Z = IMAGE f sp’
+ >> qabbrev_tac ‘H = \s. PREIMAGE g s INTER Z’
+ >> Know ‘IMAGE (IMAGE f) sts = IMAGE H sts’
+ >- (rw [Abbr ‘H’, FUN_EQ_THM, Once EXTENSION, PREIMAGE_def] \\
+     EQ_TAC >> rw [Abbr ‘Z’]
+     >- (rename1 ‘s IN sts’ >> Q.EXISTS_TAC ‘s’ >> rw [] \\
+         EQ_TAC >> rw [] >| (* 3 subgoals *)
+         [ (* goal 1 (of 3) *)
+           rename1 ‘g (f y) IN s’ \\
+           Suff ‘g (f y) = y’ >- rw [] \\
+           FIRST_X_ASSUM MATCH_MP_TAC \\
+           POP_ASSUM MP_TAC \\
+           Suff ‘s SUBSET sp’ >- rw [SUBSET_DEF] \\
+           fs [subset_class_def],
+           (* goal 2 (of 3) *)
+           rename1 ‘y IN s’ >> Q.EXISTS_TAC ‘y’ >> rw [] \\
+           POP_ASSUM MP_TAC \\
+           Suff ‘s SUBSET sp’ >- rw [SUBSET_DEF] \\
+           fs [subset_class_def],
+           (* goal 3 (of 3) *)
+           rename1 ‘y IN sp’ >> Q.EXISTS_TAC ‘y’ >> rw [] \\
+           Suff ‘g (f y) = y’ >- PROVE_TAC [] \\
+           FIRST_X_ASSUM MATCH_MP_TAC \\
+           POP_ASSUM MP_TAC \\
+           Suff ‘s SUBSET sp’ >- rw [SUBSET_DEF] \\
+           fs [subset_class_def] ]) \\
+    rename1 ‘s IN sts’ \\
+    Q.EXISTS_TAC ‘s’ >> rw [] \\
+    EQ_TAC >> rw [] >| (* 3 subgoals *)
+    [ (* goal 1 (of 3) *)
+      rename1 ‘y IN sp’ >> Q.EXISTS_TAC ‘y’ >> rw [] \\
+      Suff ‘g (f y) = y’ >- PROVE_TAC [] \\
+      FIRST_X_ASSUM MATCH_MP_TAC \\
+      POP_ASSUM MP_TAC \\
+      Suff ‘s SUBSET sp’ >- rw [SUBSET_DEF] \\
+      fs [subset_class_def],
+      (* goal 2 (of 3) *)
+      rename1 ‘g (f y) IN s’ \\
+      Suff ‘g (f y) = y’ >- PROVE_TAC [] \\
+      FIRST_X_ASSUM MATCH_MP_TAC \\
+      POP_ASSUM MP_TAC \\
+      Suff ‘s SUBSET sp’ >- rw [SUBSET_DEF] \\
+      fs [subset_class_def],
+      (* goal 3 (of 3) *)
+      rename1 ‘y IN s’ >> Q.EXISTS_TAC ‘y’ >> rw [] \\
+      POP_ASSUM MP_TAC \\
+      Suff ‘s SUBSET sp’ >- rw [SUBSET_DEF] \\
+      fs [subset_class_def] ])
+ >> Rewr'
+ >> qabbrev_tac ‘a = sigma sp sts’
+ >> ‘sigma_algebra a’ by rw [Abbr ‘a’, SIGMA_ALGEBRA_SIGMA]
+ >> Know ‘IMAGE (IMAGE f) (subsets a) = IMAGE H (subsets a)’
+ >- (rw [Abbr ‘H’, Once EXTENSION, PREIMAGE_def] \\
+     EQ_TAC >> rw [Abbr ‘Z’]
+     >- (rename1 ‘s IN subsets a’ \\
+         Q.EXISTS_TAC ‘s’ >> art [] \\
+         rw [Once EXTENSION] \\
+         EQ_TAC >> rw [] >| (* 3 subgoals *)
+         [ (* goal 1 (of 3) *)
+           rename1 ‘g (f y) IN s’ \\
+           Suff ‘g (f y) = y’ >- rw [] \\
+           FIRST_X_ASSUM MATCH_MP_TAC \\
+           POP_ASSUM MP_TAC \\
+           Suff ‘s SUBSET sp’ >- rw [SUBSET_DEF] \\
+          ‘space a = sp’ by rw [Abbr ‘a’, SPACE_SIGMA] \\
+           fs [sigma_algebra_def, algebra_def, subset_class_def],
+           (* goal 2 (of 3) *)
+           rename1 ‘y IN s’ >> Q.EXISTS_TAC ‘y’ >> rw [] \\
+           POP_ASSUM MP_TAC \\
+           Suff ‘s SUBSET sp’ >- rw [SUBSET_DEF] \\
+          ‘space a = sp’ by rw [Abbr ‘a’, SPACE_SIGMA] \\
+           fs [sigma_algebra_def, algebra_def, subset_class_def],
+           (* goal 3 (of 3) *)
+           rename1 ‘y IN sp’ >> Q.EXISTS_TAC ‘y’ >> rw [] \\
+           Suff ‘g (f y) = y’ >- PROVE_TAC [] \\
+           FIRST_X_ASSUM MATCH_MP_TAC >> art [] ]) \\
+     rename1 ‘s IN subsets a’ \\
+     Q.EXISTS_TAC ‘s’ >> art [] \\
+     rw [Once EXTENSION] \\
+     EQ_TAC >> rw []
+     >- (rename1 ‘y IN sp’ >> Q.EXISTS_TAC ‘y’ >> art [] \\
+         Suff ‘g (f y) = y’ >- PROVE_TAC [] \\
+         FIRST_X_ASSUM MATCH_MP_TAC >> art [])
+     >- (rename1 ‘g (f y) IN s’ \\
+         Suff ‘g (f y) = y’ >- rw [] \\
+         FIRST_X_ASSUM MATCH_MP_TAC \\
+         POP_ASSUM MP_TAC \\
+         Suff ‘s SUBSET sp’ >- rw [SUBSET_DEF] \\
+        ‘space a = sp’ by rw [Abbr ‘a’, SPACE_SIGMA] \\
+         fs [sigma_algebra_def, algebra_def, subset_class_def]) \\
+     rename1 ‘y IN s’ >> Q.EXISTS_TAC ‘y’ >> art [] \\
+     POP_ASSUM MP_TAC \\
+     Suff ‘s SUBSET sp’ >- rw [SUBSET_DEF] \\
+    ‘space a = sp’ by rw [Abbr ‘a’, SPACE_SIGMA] \\
+     fs [sigma_algebra_def, algebra_def, subset_class_def])
+ >> Rewr'
+ >> qunabbrevl_tac [‘H’, ‘a’]
+ >> MATCH_MP_TAC PREIMAGE_SIGMA
+ >> rw [Abbr ‘Z’, IN_FUNSET]
+ >> rename1 ‘g (f y) IN sp’
+ >> Suff ‘g (f y) = y’ >- rw []
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+QED
+
 (* Lemma 2.2.5 of [9, p.177] (moving INTER outside of the sigma generator) *)
 Theorem SIGMA_RESTRICT :
     !sp sts B. subset_class sp sts /\ B SUBSET sp ==>
@@ -3906,14 +4030,40 @@ Proof
  >> MATCH_MP_TAC ALGEBRA_FINITE_UNION >> art []
 QED
 
+(* NOTE: The trivial algebras below are also sigma-algebra by above lemmas *)
+Theorem trivial_algebra_of_space :
+    !sp. algebra (sp, {{}; sp})
+Proof
+    rw [algebra_def, subset_class_def]
+ >> SET_TAC []
+QED
+
+Theorem trivial_algebra_of_two_sets :
+    !sp s. s SUBSET sp ==> algebra (sp, {{}; s; sp DIFF s; sp})
+Proof
+    rw [algebra_def, subset_class_def]
+ >> ASM_SET_TAC []
+QED
+
+(* NOTE: This is head (h) and tail (t) of one-time coin tossing *)
+Theorem trivial_algebra_of_two_points :
+    !h t. algebra ({h; t}, {{}; {h}; {t}; {h; t}})
+Proof
+    rw [algebra_def, subset_class_def]
+ >> ASM_SET_TAC []
+QED
+
 val _ = export_theory ();
 
 (* References:
 
-  [1] Hurd, J.: Formal verification of probabilistic algorithms. University of Cambridge (2001).
-  [2] Coble, A.R.: Anonymity, information, and machine-assisted proof. University of Cambridge (2010).
-  [3] Mhamdi, T., Hasan, O., Tahar, S.: Formalization of Measure Theory and Lebesgue Integration
-      for Probabilistic Analysis in HOL. ACM Trans. Embedded Comput. Syst. 12, 1--23 (2013).
+  [1] Hurd, J.: Formal verification of probabilistic algorithms. University of
+      Cambridge (2001).
+  [2] Coble, A.R.: Anonymity, information, and machine-assisted proof.
+      University of Cambridge (2010).
+  [3] Mhamdi, T., Hasan, O., Tahar, S.: Formalization of Measure Theory and
+      Lebesgue Integration for Probabilistic Analysis in HOL. ACM Trans.
+      Embedded Comput. Syst. 12, 1--23 (2013).
   [4] Wikipedia: https://en.wikipedia.org/wiki/Ring_of_sets
   [5] Wikipedia: https://en.wikipedia.org/wiki/Eugene_Dynkin
   [6] Wikipedia: https://en.wikipedia.org/wiki/Dynkin_system
