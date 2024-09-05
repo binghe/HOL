@@ -33,6 +33,8 @@ val _ = hide "C";
 val _ = hide "W";
 val _ = hide "Y";
 
+val _ = set_trace "Goalstack.print_goal_at_top" 0;
+
 (* Disable some conflicting overloads from labelledTermsTheory, by
    repeating the desired overloads again (this prioritizes them).
  *)
@@ -3582,7 +3584,20 @@ Proof
  >> Q.EXISTS_TAC ‘p’ >> rw []
 QED
 
-Theorem subterm_ssub_cong :
+Theorem subterm_subst_cong'[local] :
+    !p X M r y P d. FINITE X /\ FV M SUBSET X UNION RANK r /\
+                    subterm X M p r <> NONE /\
+                    P = permutator d /\ y IN X UNION RANK r /\
+                    subterm_width M p <= d
+                ==> subterm X ([P/y] M) p r <> NONE /\
+                    subterm' X ([P/y] M) p r = [P/y] (subterm' X M p r)
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘p’, ‘X’, ‘M’, ‘r’, ‘y’, ‘P’, ‘d’] subterm_subst_cong)
+ >> rw []
+QED
+
+Theorem subterm_isub_cong :
     !ys p X M r P d ss.
         FINITE X /\ FV M SUBSET X UNION RANK r /\
         subterm X M p r <> NONE /\
@@ -3615,16 +3630,21 @@ Proof
  >> rw [Abbr ‘P’, FV_permutator]
 QED
 
-Theorem subterm_subst_cong_old[local] :
-    !p X M r y P d. FINITE X /\ FV M SUBSET X UNION RANK r /\
-                    subterm X M p r <> NONE /\
-                    P = permutator d /\ y IN X UNION RANK r /\
-                    subterm_width M p <= d
-                ==> subterm X ([P/y] M) p r <> NONE /\
-                    subterm' X ([P/y] M) p r = [P/y] (subterm' X M p r)
+Theorem subterm_isub_cong'[local] :
+    !ys p X M r P d ss.
+        FINITE X /\ FV M SUBSET X UNION RANK r /\
+        subterm X M p r <> NONE /\
+        P = permutator d /\
+        subterm_width M p <= d /\
+        (!y. MEM y ys ==> y IN X UNION RANK r) /\
+        ss = MAP (\y. (P,y)) ys
+    ==> subterm X (M ISUB ss) p r <> NONE /\
+        subterm' X (M ISUB ss) p r = (subterm' X M p r) ISUB ss
 Proof
-    rpt GEN_TAC >> STRIP_TAC
- >> MP_TAC (Q.SPECL [‘p’, ‘X’, ‘M’, ‘r’, ‘y’, ‘P’, ‘d’] subterm_subst_cong)
+    rpt GEN_TAC
+ >> STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘ys’, ‘p’, ‘X’, ‘M’, ‘r’, ‘P’, ‘d’, ‘ss’]
+                    subterm_isub_cong)
  >> rw []
 QED
 
@@ -4067,7 +4087,7 @@ Proof
  >> ASM_SIMP_TAC std_ss [hnf_head_hnf, THE_VAR_thm]
  >> DISCH_TAC (* y IN X UNION RANK (SUC r) *)
  (* applying subterm_subst_cong *)
- >> MATCH_MP_TAC subterm_subst_cong_old
+ >> MATCH_MP_TAC subterm_subst_cong'
  >> Q.EXISTS_TAC ‘d’
  >> simp [Abbr ‘P’]
  >> CONJ_TAC
@@ -5125,12 +5145,12 @@ Proof
                ltree_el (BT' X (M j2) r) p = SOME bot’
          >- (MATCH_MP_TAC BT_ltree_el_of_unsolvables >> rw []) >> rw [] \\
          NTAC 2 (Q.PAT_X_ASSUM ‘ltree_el _ p = SOME bot’ K_TAC) \\
-      (* NOTE: The goal is to prove ‘subterm' X (H j1) p r’ (and H j2) is
-         also unsolvable and thus ‘ltree_el (BT' X (H j1) r) p = SOME bot’.
-       *)
-         Know ‘subterm X (H j1) p r <> NONE /\
-               subterm X (H j2) p r <> NONE’
-         >- cheat >> DISCH_TAC \\
+      (* applying subterm_isub_cong' *)
+         Know ‘!j. j < k ==>
+                   subterm X (H j1) p r <> NONE /\
+                   subterm' X (H j1) p r = subterm' X' (M j) p r ISUB sub k’
+         >- (
+             cheat) >> DISCH_TAC \\
          Suff ‘unsolvable (subterm' X (H j1) p r) /\
                unsolvable (subterm' X (H j2) p r)’
          >- (STRIP_TAC \\
@@ -5138,8 +5158,11 @@ Proof
              Know ‘unsolvable (subterm' X (H j1) p r) <=>
                    ltree_el (BT' X (H j1) r) p = SOME bot’
              >- (MATCH_MP_TAC BT_ltree_el_of_unsolvables >> art [] \\
-                 cheat) \\
-             cheat) \\
+                 cheat) >> simp [] >> DISCH_THEN K_TAC \\
+             Know ‘unsolvable (subterm' X (H j2) p r) <=>
+                   ltree_el (BT' X (H j2) r) p = SOME bot’
+             >- (MATCH_MP_TAC BT_ltree_el_of_unsolvables >> art [] \\
+                 cheat) >> simp []) \\
          cheat) \\
      reverse (Cases_on ‘solvable (subterm' X (M j2) q r)’)
      >- (‘q <<= FRONT p \/ q = p’ by METIS_TAC [IS_PREFIX_FRONT_CASES]

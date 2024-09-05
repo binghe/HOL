@@ -9,7 +9,7 @@ open HolKernel Parse boolLib bossLib;
 
 (* core theories *)
 open arithmeticTheory pred_setTheory listTheory rich_listTheory sortingTheory
-     finite_mapTheory pathTheory relationTheory hurdUtils listLib numpairTheory;
+     finite_mapTheory pathTheory relationTheory hurdUtils listLib pairTheory;
 
 (* lambda theories *)
 open binderLib basic_swapTheory nomsetTheory termTheory appFOLDLTheory
@@ -641,9 +641,23 @@ Proof
     METIS_TAC [pmact_inverse, solvable_tpm_I]
 QED
 
-(* |- !M N z. solvable ([N/z] M) ==> solvable M *)
-Theorem solvable_from_subst =
-        has_hnf_SUB_E |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
+Theorem unsolvable_SUB :
+    !M v N. unsolvable M ==> unsolvable ([N/v] M)
+Proof
+    rw [solvable_iff_has_hnf]
+ >> PROVE_TAC [has_hnf_SUB_E]
+QED
+
+Theorem unsolvable_ISUB :
+    !ss M. unsolvable M ==> unsolvable (M ISUB ss)
+Proof
+    Induct_on ‘ss’ >- rw []
+ >> simp [FORALL_PROD]
+ >> qx_genl_tac [‘N’, ‘v’, ‘M’]
+ >> DISCH_TAC
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> MATCH_MP_TAC unsolvable_SUB >> art []
+QED
 
 (*---------------------------------------------------------------------------*
  *  Principle Head Normal Forms (principle_hnf)
