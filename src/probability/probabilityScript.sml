@@ -8580,7 +8580,6 @@ Proof
  >> METIS_TAC [PROB_FINITE]
 QED
 
-
 Theorem prob_div_mul_refl :
   !p A x. prob_space p /\ A IN events p /\ prob p A <> 0 ==>
           x / prob p A * prob p A = x
@@ -8616,7 +8615,7 @@ Proof
  >> STRIP_TAC
  >> ASM_SIMP_TAC std_ss [sub_rdistrib, num_not_infty, mul_lone]
  >> Know `prob p (A INTER B) / prob p B * prob p B = prob p (A INTER B)`
- >-  (MATCH_MP_TAC prob_div_mul_refl >> art []) >> Rewr'
+ >- (MATCH_MP_TAC prob_div_mul_refl >> art []) >> Rewr'
  >> ASM_SIMP_TAC std_ss [eq_sub_ladd]
  >> `prob p ((COMPL A) INTER B) + prob p (A INTER B) =
      prob p (((COMPL A) INTER B) UNION (A INTER B))`
@@ -8627,7 +8626,6 @@ Proof
         by (SET_TAC [EXTENSION, IN_INTER, IN_UNION, IN_COMPL] >> METIS_TAC [])
  >> RW_TAC std_ss []
 QED
-
 
 Theorem COND_PROB_DIFF :
     !p A1 A2 B. prob_space p /\ A1 IN events p /\ A2 IN events p /\
@@ -8658,10 +8656,10 @@ Proof
      METIS_TAC [div_not_infty]) >> STRIP_TAC
  >> ASM_SIMP_TAC std_ss [sub_rdistrib]
  >> Know `prob p (A1 INTER B) / prob p B * prob p B = prob p (A1 INTER B)`
- >-  (MATCH_MP_TAC prob_div_mul_refl >> art []) >> Rewr'
+ >- (MATCH_MP_TAC prob_div_mul_refl >> art []) >> Rewr'
  >> Know `prob p (A1 INTER A2 INTER B) / prob p B * prob p B =
           prob p (A1 INTER A2 INTER B)`
- >-  (MATCH_MP_TAC prob_div_mul_refl >> art []) >> Rewr'
+ >- (MATCH_MP_TAC prob_div_mul_refl >> art []) >> Rewr'
  >> ASM_SIMP_TAC std_ss [eq_sub_ladd]
  >> `prob p ((A1 DIFF A2) INTER B) + prob p (A1 INTER A2 INTER B) =
         prob p (((A1 DIFF A2) INTER B) UNION (A1 INTER A2 INTER B))`
@@ -8700,9 +8698,9 @@ Proof
  >> `prob p B < PosInf` by METIS_TAC [lt_infty]
  >> `0 < prob p B` by METIS_TAC [le_lt, PROB_POSITIVE]
  >> Know `prob p (B INTER A) / prob p A * prob p A = prob p (B INTER A)`
- >-  (MATCH_MP_TAC prob_div_mul_refl >> art []) >> Rewr'
+ >- (MATCH_MP_TAC prob_div_mul_refl >> art []) >> Rewr'
  >> Know `prob p (B INTER A) / prob p B * prob p B = prob p (B INTER A)`
- >-  (MATCH_MP_TAC prob_div_mul_refl >> art []) >> Rewr
+ >- (MATCH_MP_TAC prob_div_mul_refl >> art []) >> Rewr
 QED
 
 Theorem COND_PROB_UNION :
@@ -8746,7 +8744,7 @@ Proof
  >> Know `prob p (A2 INTER B) / prob p B * prob p B = prob p (A2 INTER B)`
  >- (MATCH_MP_TAC prob_div_mul_refl >> art []) >> Rewr'
  >> Know `prob p ((A1 DIFF A2) INTER B) / prob p B * prob p B =
-       prob p ((A1 DIFF A2) INTER B)`
+          prob p ((A1 DIFF A2) INTER B)`
  >- (MATCH_MP_TAC prob_div_mul_refl >> art []) >> Rewr'
  >> `(A1 UNION A2) INTER B IN events p` by METIS_TAC [EVENTS_UNION, EVENTS_INTER]
  >> `A2 INTER B IN events p` by METIS_TAC [EVENTS_INTER]
