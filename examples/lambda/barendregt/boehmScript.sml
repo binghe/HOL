@@ -3481,6 +3481,7 @@ Proof
      Q.PAT_X_ASSUM ‘_ = M0'’ (ONCE_REWRITE_TAC o wrap o SYM) \\
      simp [hnf_children_size_appstar, GSYM appstar_APPEND])
  >> Rewr
+ >> Q.PAT_X_ASSUM ‘LENGTH args' = m’ K_TAC
  >> simp [Abbr ‘args'’, EL_MAP]
  >> qabbrev_tac ‘N = EL h args’
  (* applying IH, finally *)
@@ -3563,9 +3564,7 @@ Proof
      Q.EXISTS_TAC ‘FRONT q’ >> rw [] \\
      MATCH_MP_TAC IS_PREFIX_FRONT_MONO >> rw [])
  >> Rewr
- >> Q.PAT_X_ASSUM ‘LENGTH args = LENGTH (MAP [P/y] args)’ K_TAC
  >> UNBETA_TAC [subterm_of_solvables] “subterm X M (h::q1) r”
- >> fs [LENGTH_MAP]
 QED
 
 (* This theorem can be repeatedly applied for ‘M ISUB ss’ *)
@@ -3583,7 +3582,40 @@ Proof
  >> Q.EXISTS_TAC ‘p’ >> rw []
 QED
 
-Theorem subterm_subst_cong'[local] :
+Theorem subterm_ssub_cong :
+    !ys p X M r P d ss.
+        FINITE X /\ FV M SUBSET X UNION RANK r /\
+        subterm X M p r <> NONE /\
+        P = permutator d /\
+        subterm_width M p <= d /\
+        (!y. MEM y ys ==> y IN X UNION RANK r) /\
+        ss = MAP (\y. (P,y)) ys
+    ==> subterm X (M ISUB ss) p r <> NONE /\
+        subterm_width (M ISUB ss) p <= d /\
+        subterm' X (M ISUB ss) p r = (subterm' X M p r) ISUB ss
+Proof
+    Induct_on ‘ys’ >- rw []
+ >> rpt GEN_TAC
+ >> STRIP_TAC
+ >> POP_ORW
+ >> simp []
+ >> Q.PAT_X_ASSUM ‘P = permutator d’ K_TAC
+ >> qabbrev_tac ‘P = permutator d’
+ >> qabbrev_tac ‘N = [P/h] M’
+ >> qabbrev_tac ‘ss = MAP (\y. (P,y)) ys’
+ >> MP_TAC (Q.SPECL [‘p’, ‘X’, ‘M’, ‘r’, ‘h’, ‘P’, ‘d’] subterm_subst_cong)
+ >> simp []
+ >> STRIP_TAC
+ >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM)
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘P’ >> simp []
+ >> MATCH_MP_TAC SUBSET_TRANS
+ >> Q.EXISTS_TAC ‘FV M’ >> art []
+ >> rw [FV_SUB, Abbr ‘N’]
+ >> rw [Abbr ‘P’, FV_permutator]
+QED
+
+Theorem subterm_subst_cong_old[local] :
     !p X M r y P d. FINITE X /\ FV M SUBSET X UNION RANK r /\
                     subterm X M p r <> NONE /\
                     P = permutator d /\ y IN X UNION RANK r /\
@@ -4035,7 +4067,7 @@ Proof
  >> ASM_SIMP_TAC std_ss [hnf_head_hnf, THE_VAR_thm]
  >> DISCH_TAC (* y IN X UNION RANK (SUC r) *)
  (* applying subterm_subst_cong *)
- >> MATCH_MP_TAC subterm_subst_cong'
+ >> MATCH_MP_TAC subterm_subst_cong_old
  >> Q.EXISTS_TAC ‘d’
  >> simp [Abbr ‘P’]
  >> CONJ_TAC
