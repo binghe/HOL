@@ -3073,7 +3073,7 @@ Theorem subterm_subst_cong_lemma[local] :
                   subterm' X ([P/v] M) q r = [P/v] (subterm' X M q r)
 Proof
     Q.X_GEN_TAC ‘X’ >> DISCH_TAC
- >> Induct_on ‘q’ >- rw []
+ >> Induct_on ‘q’ >- rw [Excl "IN_UNION"]
  >> rpt GEN_TAC
  >> STRIP_TAC
  (* re-define P as abbreviations *)
@@ -3297,7 +3297,8 @@ Proof
          Suff ‘FV N SUBSET X UNION RANK (SUC r)’ >- rw [] \\
          qunabbrev_tac ‘N’ \\
          MATCH_MP_TAC subterm_induction_lemma \\
-         qexistsl_tac [‘M’, ‘principle_hnf M’, ‘LENGTH vs’, ‘LENGTH args’, ‘vs’, ‘M1’] \\
+         qexistsl_tac [‘M’, ‘principle_hnf M’, ‘LENGTH vs’, ‘LENGTH args’,
+                       ‘vs’, ‘M1’] \\
          simp [LAMl_size_hnf, Abbr ‘M1’, principle_hnf_beta_reduce]) >> Rewr' \\
   (* now applying IH *)
      fs [Abbr ‘m’, Abbr ‘args'’, EL_MAP] \\
@@ -3338,23 +3339,25 @@ Proof
        by METIS_TAC [principle_hnf_thm']
  >> Q.PAT_X_ASSUM ‘permutator d @* args' -h->* _’      K_TAC
  >> Q.PAT_X_ASSUM ‘[permutator d/y] M -h->* LAMl vs (permutator d @* args')’ K_TAC
+ >> Know ‘LENGTH Ms = hnf_children_size M0'’
+ >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+     MATCH_MP_TAC hnf_children_size_alt \\
+     qabbrev_tac ‘P = permutator d’ \\
+     qabbrev_tac ‘M' = [P/y] M’ \\
+     qexistsl_tac [‘X’, ‘M'’, ‘r’, ‘n'’, ‘vs'’, ‘M1'’] >> simp [] \\
+     qunabbrevl_tac [‘M'’, ‘Y’] \\
+     MATCH_MP_TAC SUBSET_TRANS \\
+     Q.EXISTS_TAC ‘FV M’ >> art [] \\
+     MATCH_MP_TAC FV_SUB_SUBSET \\
+     rw [Abbr ‘P’, closed_permutator])
+ >> DISCH_THEN (ASSUME_TAC o SYM)
  (* NOTE: this proof includes ‘m <= m'’ *)
  >> Know ‘h < m'’
  >- (MATCH_MP_TAC LESS_LESS_EQ_TRANS \\
      Q.EXISTS_TAC ‘m’ >> art [] \\
   (* below is the proof of ‘m <= m'’ *)
      qunabbrevl_tac [‘m’, ‘m'’] \\
-     Know ‘LENGTH Ms = hnf_children_size M0'’
-     >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
-         MATCH_MP_TAC hnf_children_size_alt \\
-         qabbrev_tac ‘P = permutator d’ \\
-         qabbrev_tac ‘M' = [P/y] M’ \\
-         qexistsl_tac [‘X’, ‘M'’, ‘r’, ‘n'’, ‘vs'’, ‘M1'’] >> simp [] \\
-         qunabbrevl_tac [‘M'’, ‘Y’] \\
-         MATCH_MP_TAC SUBSET_TRANS \\
-         Q.EXISTS_TAC ‘FV M’ >> art [] \\
-         MATCH_MP_TAC FV_SUB_SUBSET \\
-         rw [Abbr ‘P’, closed_permutator]) >> Rewr' \\
+     POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM) \\
      simp [GSYM appstar_APPEND])
  >> Rewr
  >> Q.PAT_X_ASSUM ‘M0 = _’          (ASSUME_TAC o SYM)
@@ -3379,9 +3382,7 @@ Proof
  >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [IS_PREFIX_APPEND]))
  >> rename1 ‘vs' = vs ++ ys’ (* l -> ys *)
  (* stage work *)
- >> POP_ASSUM (fn th =>
-                  rfs [th, MAP_APPEND, appstar_APPEND, LIST_TO_SET_APPEND,
-                       ALL_DISTINCT_APPEND])
+ >> gs [MAP_APPEND, appstar_APPEND, LIST_TO_SET_APPEND, ALL_DISTINCT_APPEND]
  (* applying hreduce_BETA_extended *)
  >> Know ‘M0' @* MAP VAR vs @* MAP VAR ys -h->*
           LAMl xs (LAM z (VAR z @* args' @* MAP VAR xs)) @* MAP VAR ys’
@@ -3435,49 +3436,51 @@ Proof
  (* finall we got the explicit form of M1' *)
  >> ‘M1' = VAR z' @* (args' ++ ls)’ by METIS_TAC [principle_hnf_thm]
  >> Q.PAT_X_ASSUM ‘M0' @* MAP VAR vs @* MAP VAR ys -h->* _’ K_TAC
- >> Know ‘EL h Ms = EL h args'’
- >- (simp [Abbr ‘Ms’, hnf_children_hnf] \\
-     MATCH_MP_TAC EL_APPEND1 >> art [])
- >> Rewr'
- (* cleanup args', ls and fm *)
- >> Q.PAT_X_ASSUM ‘!N. MEM N args' ==> _’         K_TAC
- >> Q.PAT_X_ASSUM ‘hnf (VAR z' @* (args' ++ ls))’ K_TAC
- >> Q.PAT_X_ASSUM ‘M1' = VAR z' @* (args' ++ ls)’ K_TAC
- >> Q.PAT_X_ASSUM ‘LENGTH args' = m’              K_TAC
- >> Q.PAT_X_ASSUM ‘FDOM fm = set (SNOC z xs)’     K_TAC
- >> qunabbrev_tac ‘ls’
- >> qunabbrev_tac ‘fm’
  >> qabbrev_tac ‘P = permutator d’
-(* applying subterm_width_recursion again *)
+ (* applying subterm_width_recursion again *)
  >> Know ‘subterm_width ([P/y] M) (h::q) <= d <=>
-          m <= d /\ subterm_width (EL h args') q <= d’
+          m' <= d /\ subterm_width (EL h Ms) q <= d’
  >- (MATCH_MP_TAC subterm_width_recursion \\
-     cheat
-     (* qexistsl_tac [‘X’, ‘r’, ‘M0'’, ‘n’, ‘vs’, ‘VAR y @* args'’] \\
-     simp [principle_hnf_beta_reduce] \\
+     qexistsl_tac [‘X’, ‘r’, ‘M0'’, ‘n'’, ‘vs'’, ‘M1'’] \\
+     simp [appstar_APPEND] \\
      CONJ_TAC
-     >- (rw [FV_SUB] \\
+     >- (rw [FV_SUB] >- rw [Abbr ‘P’, FV_permutator] \\
          MATCH_MP_TAC SUBSET_TRANS >> Q.EXISTS_TAC ‘FV M’ >> art [] \\
          SET_TAC []) \\
-     fs [Abbr ‘m’, Abbr ‘args'’] \\
-     Q_TAC (UNBETA_TAC [subterm_of_solvables]) ‘subterm X ([P/v] M) (h::q) r’ \\
-     simp [principle_hnf_beta_reduce, EL_MAP] \\
-     qabbrev_tac ‘N = EL h args’ \\
-     Q.PAT_X_ASSUM ‘!M p r. _’ (MP_TAC o Q.SPECL [‘N’, ‘t’, ‘SUC r’]) \\
+     reverse CONJ_TAC (* h < m' *)
+     >- (MATCH_MP_TAC LESS_LESS_EQ_TRANS \\
+         Q.EXISTS_TAC ‘m’ >> art [] \\
+         simp [Abbr ‘m'’, Abbr ‘Ms’, hnf_children_hnf]) \\
+     simp [subterm_of_solvables, appstar_APPEND] \\
+     simp [GSYM appstar_APPEND, hnf_children_hnf] \\
+     Know ‘EL h (args' ++ ls) = EL h args'’
+     >- (MATCH_MP_TAC EL_APPEND1 >> rw [Abbr ‘args'’]) >> Rewr' \\
+     ASM_SIMP_TAC list_ss [Abbr ‘args'’, EL_MAP] \\
+     Q.PAT_X_ASSUM ‘!M p r. _’ (MP_TAC o Q.SPECL [‘EL h args’, ‘t’, ‘SUC r’]) \\
      simp [] \\
-     Know ‘v IN X \/ v IN RANK (SUC r)’
-     >- (Suff ‘v IN X UNION RANK (SUC r)’ >- rw [] \\
-         Q.PAT_X_ASSUM ‘v IN Y’ MP_TAC \\
+     Know ‘y IN X \/ y IN RANK (SUC r)’
+     >- (Suff ‘y IN X UNION RANK (SUC r)’ >- rw [] \\
+         Q.PAT_X_ASSUM ‘y IN Y’ MP_TAC \\
          Suff ‘Y SUBSET X UNION RANK (SUC r)’ >- rw [SUBSET_DEF] \\
          qunabbrev_tac ‘Y’ \\
          Suff ‘RANK r SUBSET RANK (SUC r)’ >- SET_TAC [] \\
          rw [RANK_MONO]) >> Rewr \\
-     Suff ‘FV N SUBSET X UNION RANK (SUC r)’ >- rw [] \\
-     qunabbrev_tac ‘N’ \\
+     Suff ‘FV (EL h args) SUBSET X UNION RANK (SUC r)’ >- rw [] \\
      MATCH_MP_TAC subterm_induction_lemma \\
-     qexistsl_tac [‘M’, ‘principle_hnf M’, ‘LENGTH vs’, ‘LENGTH args’, ‘vs’, ‘M1’] \\
-     simp [LAMl_size_hnf, Abbr ‘M1’, principle_hnf_beta_reduce] *))
+     qexistsl_tac [‘M’, ‘M0’, ‘n’, ‘m’, ‘vs’, ‘M1’] \\
+     simp [LAMl_size_hnf, principle_hnf_beta_reduce] \\
+     Q.PAT_X_ASSUM ‘VAR y @* args = M1’ (ONCE_REWRITE_TAC o wrap o SYM) \\
+     simp [hnf_children_appstar])
  >> Rewr'
+ >> Know ‘EL h Ms = EL h args'’
+ >- (simp [Abbr ‘Ms’, hnf_children_hnf] \\
+     MATCH_MP_TAC EL_APPEND1 >> art [])
+ >> Rewr'
+ >> Know ‘m' <= d’
+ >- (Q.PAT_X_ASSUM ‘hnf_children_size M0' = m'’ (ONCE_REWRITE_TAC o wrap o SYM) \\
+     Q.PAT_X_ASSUM ‘_ = M0'’ (ONCE_REWRITE_TAC o wrap o SYM) \\
+     simp [hnf_children_size_appstar, GSYM appstar_APPEND])
+ >> Rewr
  >> simp [Abbr ‘args'’, EL_MAP]
  >> qabbrev_tac ‘N = EL h args’
  (* applying IH, finally *)
@@ -3560,8 +3563,9 @@ Proof
      Q.EXISTS_TAC ‘FRONT q’ >> rw [] \\
      MATCH_MP_TAC IS_PREFIX_FRONT_MONO >> rw [])
  >> Rewr
+ >> Q.PAT_X_ASSUM ‘LENGTH args = LENGTH (MAP [P/y] args)’ K_TAC
  >> UNBETA_TAC [subterm_of_solvables] “subterm X M (h::q1) r”
- >> simp [hnf_children_hnf]
+ >> fs [LENGTH_MAP]
 QED
 
 (* This theorem can be repeatedly applied for ‘M ISUB ss’ *)
