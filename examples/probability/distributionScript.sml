@@ -29,7 +29,7 @@ val _ = new_theory "distribution"; (* was: "normal_rv" *)
 
 (* See, e.g., [2, p.117] *)
 Definition weak_converge_def :
-    weak_converge fi f =
+    weak_converge fi (f :extreal measure) =
     !g. g bounded_on UNIV /\ g o Normal continuous_on UNIV ==>
         ((\n. integral (space Borel,subsets Borel,fi n) g) -->
           integral (space Borel,subsets Borel,f) g) sequentially
@@ -53,6 +53,7 @@ Proof
                      (INST_TYPE [beta |-> “:extreal”] integral_distr)) \\
      rw [SIGMA_ALGEBRA_BOREL])
  >> DISCH_TAC
+ (* TODO: extreal-valued continuous function is Borel-measurable *)
  >> cheat
 QED
 

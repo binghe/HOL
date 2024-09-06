@@ -6398,6 +6398,11 @@ Proof
  >> rw [bounded_metric_lt_1]
 QED
 
+(* cf. real_topologyTheory.euclidean_def *)
+Definition ext_euclidean_def :
+    ext_euclidean = mtop extreal_mr1
+End
+
 (* ------------------------------------------------------------------------- *)
 (* Limits of extreal functions ('a -> extreal) and continuous functions      *)
 (* ------------------------------------------------------------------------- *)
