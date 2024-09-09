@@ -5021,18 +5021,15 @@ Proof
  >> Q.PAT_X_ASSUM ‘!t. i < k ==> apply p2 _ = _’  K_TAC
  >> Q.PAT_X_ASSUM ‘!i. i < k ==> apply p3 _ = _’  K_TAC
  >> Q.PAT_X_ASSUM ‘!i. i < k ==> _ -h->* _’       K_TAC
+ (* This is part of ‘agree_upto’ subgoal for single term only *)
+ >> Know ‘!i. i < k ==> p IN ltree_paths (BT' X (apply pi (M i)) r)’
+ >- (
+     cheat)
+ >> DISCH_TAC
  (* now proving agree_upto *)
  >> (Q.PAT_X_ASSUM ‘agree_upto X Ms p r’ MP_TAC \\
      simp [agree_upto_def, EVERY_MEM] >> STRIP_TAC \\
-     CONJ_TAC
-     >- (Q.X_GEN_TAC ‘N’ >> rw [MEM_MAP, MEM_EL] \\
-         rename1 ‘i < k’ \\
-         Q.PAT_X_ASSUM ‘!M. MEM M Ms ==> p IN ltree_paths (BT' X M r)’
-           (MP_TAC o Q.SPEC ‘EL i Ms’) >> simp [EL_MEM] \\
-      (* NOTE: ‘p IN ltree_paths (BT' X (EL i Ms) r))’ is already part of
-         the antecedents of the entire theorem, thus is removed from goal.
-       *)
-         cheat) \\
+     CONJ_TAC >- (rw [MEM_MAP, MEM_EL] >> rw []) \\
      qx_genl_tac [‘M2'’, ‘N2'’] >> simp [MEM_MAP] \\
      ONCE_REWRITE_TAC [TAUT ‘p /\ q ==> r <=> p ==> q ==> r’] \\
      DISCH_THEN (Q.X_CHOOSE_THEN ‘M2’ STRIP_ASSUME_TAC) \\
