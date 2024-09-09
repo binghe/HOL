@@ -8320,11 +8320,12 @@ Proof
     rw [continuous_on_def, continuous_within]
 QED
 
-val uniformly_continuous_on = new_definition ("uniformly_continuous_on",
- ``f uniformly_continuous_on s <=>
+Definition uniformly_continuous_on :
+   f uniformly_continuous_on s <=>
    !e. &0 < e
    ==> ?d. &0 < d /\ !x x'. x IN s /\ x' IN s /\ dist(x',x) < d
-     ==> dist(f(x'),f(x)) < e``);
+     ==> dist(f(x'),f(x)) < e
+End
 
 (* ------------------------------------------------------------------------- *)
 (* Some simple consequential lemmas.                                         *)

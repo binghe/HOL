@@ -4396,9 +4396,9 @@ QED
          set (and thus perhaps also the same initial binding list).
 
    NOTE: If ‘p NOTIN ltree_paths (BT' X M r)’, then ‘ltree_el (BT' X M r) = NONE’,
-         which in theory should be also allowed. But for simplification purposes
-         we disable it for now (this makes the proof of agree_upto_lemma slightly
-         easier with less cases to be considered.)
+         which in theory should be also allowed. But in this way agree_upto_lemma
+         cannot be proved, but two terms agree upto a non-valid path (ltree_el =
+         NONE) may have their ltree_el IS_SOME with Boehm transforms applied.
  *)
 Definition agree_upto_def :
     agree_upto X Ms p r <=>
@@ -4422,16 +4422,18 @@ End
    Let's first put ‘EVERY solvable Ns’ in assumption to focus on the non-trivial
    part of this proof.
 
-   NOTE: This proof uses ‘agree_upto’ very late.
-
    NOTE: ‘0 < r’ is to ensure a non-empty ‘RANK r’ to allocate fresh
    variables in it (for the construction of ‘pi’).
+
+   NOTE: ‘EVERY (\M. subterm X M p r <> NONE) Ms’ implies
+  ‘EVERY (\M. p IN ltree_paths (BT' X M r)) Ms’, part of ‘agree_upto_def’.
+   Perhaps the theorem can still be proved without this antecedents.
  *)
 Theorem agree_upto_lemma :
     !X Ms p r. FINITE X /\ p <> [] /\ 0 < r /\
                BIGUNION (IMAGE FV (set Ms)) SUBSET X UNION RANK r /\
                agree_upto X Ms p r /\
-              (!M. MEM M Ms ==> subterm X M p r <> NONE) ==>
+               EVERY (\M. subterm X M p r <> NONE) Ms ==>
                ?pi. Boehm_transform pi /\
                     EVERY is_ready' (MAP (apply pi) Ms) /\
                     agree_upto X (MAP (apply pi) Ms) p r
@@ -4461,8 +4463,7 @@ Proof
  >> Know ‘!i. i < k ==> solvable (M i)’
  >- (rpt STRIP_TAC \\
      Q.PAT_X_ASSUM ‘!i q. i < k /\ q <<= FRONT p ==> solvable _’
-       (MP_TAC o Q.SPECL [‘i’, ‘[]’]) \\
-     simp [])
+       (MP_TAC o Q.SPECL [‘i’, ‘[]’]) >> simp [])
  >> DISCH_TAC
  >> Know ‘!i. i < k ==> p IN ltree_paths (BT' X (M i) r)’
  >- (rpt STRIP_TAC \\
@@ -4655,8 +4656,7 @@ Proof
      Know ‘y i IN FV (M1 i) /\
            BIGUNION (IMAGE FV (set (args i))) SUBSET FV (M1 i)’
      >- (rw [FV_appstar] >> SET_TAC []) \\
-     rpt STRIP_TAC
-     >- METIS_TAC [SUBSET_DEF] \\
+     rpt STRIP_TAC >- METIS_TAC [SUBSET_DEF] \\
      MATCH_MP_TAC SUBSET_TRANS \\
      Q.EXISTS_TAC ‘FV (M1 i)’ >> art [])
  >> DISCH_TAC
@@ -4669,7 +4669,8 @@ Proof
  (* NOTE: now, before proving ‘EVERY is_ready' ...’, (for future subgoals) we
     need to calculute the principle_hnf of ‘apply pi (EL i Ms)’ for any i < k.
 
-   ‘args'’ is the possibly substituted version of ‘args’ *)
+   ‘args'’ is the possibly substituted version of ‘args’.
+  *)
  >> qabbrev_tac ‘args' = \i. MAP (\t. t ISUB ss) (args i)’
  (* abbreviate the tail term list after applying p2 *)
  >> qabbrev_tac ‘args2 = \i. MAP (\t. t ISUB ss) (DROP (n i) (MAP VAR vs))’
@@ -4691,7 +4692,7 @@ Proof
  (* applying TAKE_DROP_SUC to break l into 3 pieces *)
  >> MP_TAC
       (Q.GEN ‘i’
-         (ISPECL [“d_max :num”, “l (i :num) :term list”] (GSYM TAKE_DROP_SUC)))
+        (ISPECL [“d_max :num”, “l (i :num) :term list”] (GSYM TAKE_DROP_SUC)))
  >> simp [] >> Rewr'
  >> REWRITE_TAC [appstar_APPEND, appstar_SING]
  (* The segmentation of list l(i) - apply (p3 ++ p2 ++ p1) (M i)
@@ -4705,9 +4706,9 @@ Proof
  |<-------------- d_max+1 ---------------->|
   *)
  >> qabbrev_tac ‘Ns = \i. TAKE d_max (l i)’
- >> qabbrev_tac ‘B = \i. EL d_max (l i)’
+ >> qabbrev_tac ‘B  = \i. EL d_max (l i)’
  >> simp [] (* this put Ns and B in use *)
- >> qabbrev_tac ‘j = \i. d_max - LENGTH (args' i ++ args2 i)’
+ >> qabbrev_tac ‘j  = \i. d_max - LENGTH (args' i ++ args2 i)’
  >> ‘!i. j i < LENGTH xs’ by rw [Abbr ‘j’, Abbr ‘args'’, Abbr ‘args2’, Abbr ‘d_max’]
  >> Know ‘!i. i < k ==> ?b. EL (j i) xs = b /\ B i = VAR b’
  >- (rw [Abbr ‘B’, Abbr ‘l’] \\
@@ -5022,7 +5023,16 @@ Proof
  >> Q.PAT_X_ASSUM ‘!i. i < k ==> _ -h->* _’       K_TAC
  (* now proving agree_upto *)
  >> (Q.PAT_X_ASSUM ‘agree_upto X Ms p r’ MP_TAC \\
-     simp [agree_upto_def] >> DISCH_TAC \\
+     simp [agree_upto_def, EVERY_MEM] >> STRIP_TAC \\
+     CONJ_TAC
+     >- (Q.X_GEN_TAC ‘N’ >> rw [MEM_MAP, MEM_EL] \\
+         rename1 ‘i < k’ \\
+         Q.PAT_X_ASSUM ‘!M. MEM M Ms ==> p IN ltree_paths (BT' X M r)’
+           (MP_TAC o Q.SPEC ‘EL i Ms’) >> simp [EL_MEM] \\
+      (* NOTE: ‘p IN ltree_paths (BT' X (EL i Ms) r))’ is already part of
+         the antecedents of the entire theorem, thus is removed from goal.
+       *)
+         cheat) \\
      qx_genl_tac [‘M2'’, ‘N2'’] >> simp [MEM_MAP] \\
      ONCE_REWRITE_TAC [TAUT ‘p /\ q ==> r <=> p ==> q ==> r’] \\
      DISCH_THEN (Q.X_CHOOSE_THEN ‘M2’ STRIP_ASSUME_TAC) \\
