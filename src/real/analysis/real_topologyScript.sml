@@ -8976,6 +8976,23 @@ val CONTINUOUS_ON_IMP_OPEN_IN = store_thm ("CONTINUOUS_ON_IMP_OPEN_IN",
    ==> open_in (subtopology euclidean s) {x | x IN s /\ f x IN t}``,
  METIS_TAC[CONTINUOUS_ON_OPEN]);
 
+(*
+Theorem CONTINUOUS_MAP_EUCLIDEAN :
+   !f:real->real s.
+     continuous_map (subtopology euclidean s,euclidean) f <=>
+     f continuous_on s
+Proof
+  REWRITE_TAC[GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC;
+              GSYM  MTOPOLOGY_EUCLIDEAN_METRIC;
+              GSYM MTOPOLOGY_SUBMETRIC] THEN
+  REWRITE_TAC[METRIC_CONTINUOUS_MAP; continuous_on] THEN
+  REWRITE_TAC[SUBMETRIC; EUCLIDEAN_METRIC; IN_UNIV; IN_INTER] THEN
+  REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [DIST_SYM] THEN
+  MESON_TAC[]
+QED
+ *)
+
 (* ------------------------------------------------------------------------- *)
 (* Similarly in terms of closed sets. *)
 (* ------------------------------------------------------------------------- *)

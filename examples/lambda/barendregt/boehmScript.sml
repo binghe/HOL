@@ -5023,7 +5023,9 @@ Proof
  >> Q.PAT_X_ASSUM ‘!i. i < k ==> _ -h->* _’       K_TAC
  (* This is part of ‘agree_upto’ subgoal for single term only *)
  >> Know ‘!i. i < k ==> p IN ltree_paths (BT' X (apply pi (M i)) r)’
- >- (
+ >- (rpt STRIP_TAC \\
+     Q.PAT_X_ASSUM ‘!i. i < k ==> p IN ltree_paths (BT' X (M i) r)’
+       (fn th => MP_TAC (MATCH_MP th (ASSUME “i < (k :num)”))) \\
      cheat)
  >> DISCH_TAC
  (* now proving agree_upto *)
