@@ -5,7 +5,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open arithmeticTheory pairTheory listTheory pred_setTheory sortingTheory
-     hurdUtils
+     hurdUtils topologyTheory pathTheory;
 
 open genericGraphTheory;
 
@@ -719,6 +719,145 @@ Proof
   >- PROVE_TAC [] (* v IN nodes g *) >>
   first_x_assum irule >> REWRITE_TAC[GSYM APPEND_ASSOC] >>
   irule adjacent_append2 >> simp[]
+QED
+
+(* ----------------------------------------------------------------------
+    Matching, Covering and Packing [2, Chapter 2p.67]
+   ---------------------------------------------------------------------- *)
+
+Overload V[local] = “nodes (g :fsgraph)”
+Overload E[local] = “fsgedges (g :fsgraph)”
+
+Theorem ends_exist[local] :
+    !g e. e IN fsgedges g ==>
+          ?pair. let a = FST pair; b = SND pair in
+                   e = {a; b} /\ a IN V /\ b IN V /\ a <> b
+Proof
+    rpt STRIP_TAC
+ >> POP_ASSUM (fn th => STRIP_ASSUME_TAC (MATCH_MP alledges_valid th))
+ >> Q.EXISTS_TAC ‘(a,b)’ >> rw []
+QED
+
+(* |- !g e.
+        e IN E ==>
+        e = {FST (ends g e); SND (ends g e)} /\ FST (ends g e) IN V /\
+        SND (ends g e) IN V /\ FST (ends g e) <> SND (ends g e)
+ *)
+val ends_thm =
+    new_specification ("ends_thm", ["ends"],
+        SIMP_RULE std_ss [EXT_SKOLEM_THM, SKOLEM_THM, LET_THM] ends_exist);
+
+(* M is a matching of U if every vertex in U is incident with an edge in
+   M [2, p.37].
+ *)
+Definition matching_of :
+    matching_of g M U <=>
+    U SUBSET nodes g /\ M SUBSET fsgedges g /\ !v. v IN U ==> ?e. e IN M /\ v IN e
+End
+
+Theorem matching_of_fsgraph :
+    !g M. M SUBSET fsgedges g ==> matching_of g M (BIGUNION M)
+Proof
+    reverse (rw [matching_of])
+ >- (Q.EXISTS_TAC ‘s’ >> art [])
+ >> rw [SUBSET_DEF, IN_BIGUNION]
+ >> fs [SUBSET_DEF]
+ >> MP_TAC (Q.SPECL [‘s’, ‘g’] (GEN_ALL alledges_valid))
+ >> rw [] >> fs []
+QED
+
+(* ‘BIGUNION (fsgedges g)’ is the set of all vertices from all edges, which is
+   the maximal possible matching of a graph.
+ *)
+Theorem maximal_matching_of_fsgraph :
+    !g. matching_of g (fsgedges g) (BIGUNION (fsgedges g))
+Proof
+    reverse (rw [matching_of])
+ >- (Q.EXISTS_TAC ‘s’ >> art [])
+ >> rw [SUBSET_DEF, IN_BIGUNION]
+ >> MP_TAC (Q.SPECL [‘s’, ‘g’] (GEN_ALL alledges_valid))
+ >> rw [] >> fs []
+QED
+
+(* M is a matching of g if there exists U such that M is a matching of U. Therefore
+   the set of all matchings of g is just ‘matching g’.
+ *)
+Definition matching_def :
+    matching g M <=> ?U. matching_of g M U
+End
+
+(* A vertex is unmatched if it does not incident any edge in the matching M *)
+Definition unmatched_def :
+    unmatched v (M :(unit + num -> bool) -> bool) <=> !e. e IN M ==> v NOTIN e
+End
+
+Theorem unmatched_alt :
+    !M v. unmatched v M <=> v NOTIN BIGUNION M
+Proof
+    rw [unmatched_def, IN_BIGUNION]
+ >> PROVE_TAC []
+QED
+
+(* Bipartite graphs [2, p.17], (A,B) is called a bipartition *)
+Definition bipartite_def :
+    bipartite (g :fsgraph) A B <=>
+      DISJOINT A B /\ A UNION B = nodes g /\
+      !n1 n2. {n1;n2} IN fsgedges g ==> (n1 IN A /\ n2 IN B) \/ (n1 IN B /\ n2 IN A)
+End
+
+(* Alternative definition: there's no edge in each part of the bipartition (A,B) *)
+Theorem bipartite_alt_no_edges :
+    !g A B. bipartite g A B <=>
+            DISJOINT A B /\ A UNION B = nodes g /\
+            (!v1 v2. v1 IN A /\ v2 IN A ==> {v1;v2} NOTIN fsgedges g) /\
+            (!v1 v2. v1 IN B /\ v2 IN B ==> {v1;v2} NOTIN fsgedges g)
+Proof
+    cheat
+QED
+
+Type fsg_path[pp] = “:(unit + num) list”
+
+Definition fsgraph_path_def :
+    fsgraph_path (g :fsgraph) p <=>
+      ALL_DISTINCT p /\
+      !i. SUC i < LENGTH p ==> {EL i p;EL (SUC i) p} IN fsgedges g
+End
+
+(* ‘0 < LENGTH p’ guarantees that ‘EL 0 p’ is meaningful *)
+Definition alternating_path_def :
+    alternating_path g M p <=>
+      fsgraph_path g p /\ 0 < LENGTH p /\ unmatched (EL 0 p) M /\
+      !i. i + 2 < LENGTH p ==>
+          ({EL i p;EL (i + 1) p} IN M /\ {EL (i + 1) p;EL (i + 2) p} NOTIN M) \/
+          ({EL i p;EL (i + 1) p} NOTIN M /\ {EL (i + 1) p;EL (i + 2) p} IN M)
+End
+
+Definition augmenting_path_def :
+    augmenting_path g M p <=> alternating_path g M p /\
+                              unmatched (EL (LENGTH p - 1) p) M
+End
+
+(* A set U is a (vertex) cover of E if every edge of G (aka in E) is incident
+   with a vertex in U. [2, p.38]
+ *)
+Definition covering_def :
+    covering g U <=>
+    U SUBSET nodes g /\ !e. e IN fsgedges g ==> ?v. v IN U /\ v IN e
+End
+
+Definition maximal_matching_def :
+    maximal_matching g = MAX_SET (IMAGE CARD (matching g))
+End
+
+Definition minimal_covering_def :
+    minimal_covering g = MIN_SET (IMAGE CARD (covering g))
+End
+
+(* Theorem 2.1.1 (Koenig) [2, p.39] *)
+Theorem Koenig_bipartite_thm :
+    !g A B. bipartite g A B ==> maximal_matching g = minimal_covering g
+Proof
+    cheat
 QED
 
 (* ----------------------------------------------------------------------
