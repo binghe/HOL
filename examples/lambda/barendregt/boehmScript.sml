@@ -4440,8 +4440,9 @@ Theorem agree_upto_lemma :
 Proof
     rpt STRIP_TAC
  >> qabbrev_tac ‘k = LENGTH Ms’
- >> qabbrev_tac ‘M = \i. EL i Ms’
- >> ‘!i. i < k ==> subterm X (M i) p r <> NONE’ by rw [Abbr ‘M’, EL_MEM]
+ >> Q.PAT_X_ASSUM ‘EVERY P Ms’ MP_TAC
+ >> rw [EVERY_EL]
+ >> qabbrev_tac ‘M = \i. EL i Ms’ >> fs []
  >> Know ‘!i. i < k ==> FV (M i) SUBSET X UNION RANK r’
  >- (rpt STRIP_TAC \\
      Q.PAT_X_ASSUM ‘_ SUBSET X UNION RANK r’ MP_TAC \\
@@ -4450,7 +4451,6 @@ Proof
      Q.EXISTS_TAC ‘M i’ >> art [] \\
      rw [Abbr ‘M’, EL_MEM])
  >> DISCH_TAC
- >> Q.PAT_X_ASSUM ‘!M. MEM M Ms ==> subterm X M p r <> NONE’ K_TAC
  (* now derive some non-trivial assumptions *)
  >> ‘!i. i < k ==> (!q. q <<= p ==> subterm X (M i) q r <> NONE) /\
                     !q. q <<= FRONT p ==> solvable (subterm' X (M i) q r)’
@@ -5149,12 +5149,6 @@ Proof
 
      Anyway, now we have p <> [] /\ q <> [] /\ q <<= p.
    *)
-     Cases_on ‘q’ >- fs [] (* This breaks q to ‘h::t’ *) \\
-  (* Special case: h is out range
-
-     If h > m j1 or m j2, ‘ltree_el (BT' X (M j1) r) (h::t) = SOME bot’ but
-    ‘ltree_el (BT' X (H j1) r) (h::t)’ may still take other values.
-   *)
      reverse (Cases_on ‘solvable (subterm' X (M j1) q r)’)
      >- (‘q <<= FRONT p \/ q = p’ by METIS_TAC [IS_PREFIX_FRONT_CASES]
          >- (‘solvable (subterm' X (M j1) q r)’ by METIS_TAC []) \\
@@ -5187,7 +5181,6 @@ Proof
          >- (ASM_SIMP_TAC std_ss [] \\
              CONJ_TAC \\ (* 2 subgoals, same tactics *)
              MATCH_MP_TAC unsolvable_ISUB >> art []) >> STRIP_TAC \\
-         STRIP_TAC \\
          Know ‘unsolvable (subterm' X (H j1) p r) <=>
                ltree_el (BT' X (H j1) r) p = SOME bot’
          >- (MATCH_MP_TAC BT_ltree_el_of_unsolvables >> art [] \\
