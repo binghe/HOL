@@ -1,12 +1,12 @@
 (*===========================================================================*)
-(* Theory of Moore-Smith covergence nets, and special cases like sequences   *)
+(* Theory of Moore-Smith convergence nets, and special cases like sequences  *)
 (*===========================================================================*)
 
 open HolKernel Parse boolLib bossLib;
 
 open numLib reduceLib pairLib pred_setTheory mesonLib RealArith hurdUtils
-     pairTheory arithmeticTheory numTheory prim_recTheory tautLib
-     jrhUtils realTheory topologyTheory metricTheory;
+     pairTheory arithmeticTheory numTheory prim_recTheory relationTheory
+     jrhUtils realTheory topologyTheory metricTheory tautLib;
 
 val _ = new_theory "nets";
 
@@ -142,13 +142,14 @@ QED
 (* Prove that a net in a metric topology cannot converge to different limits *)
 (*---------------------------------------------------------------------------*)
 
-val MTOP_TENDS_UNIQ = store_thm("MTOP_TENDS_UNIQ",
-  “!g d. dorder (g:'b->'b->bool) ==>
-      (x tends x0)(mtop(d),g) /\ (x tends x1)(mtop(d),g) ==> (x0:'a = x1)”,
+Theorem MTOP_TENDS_UNIQ :
+    !g d. dorder (g:'b->'b->bool) ==>
+          (x tends x0)(mtop(d),g) /\ (x tends x1)(mtop(d),g) ==> (x0:'a = x1)
+Proof
   REPEAT GEN_TAC THEN DISCH_TAC THEN
   REWRITE_TAC[MTOP_TENDS] THEN
   CONV_TAC(ONCE_DEPTH_CONV AND_FORALL_CONV) THEN
-  REWRITE_TAC[TAUT_CONV “(a ==> b) /\ (a ==> c) <=> a ==> b /\ c”] THEN
+  REWRITE_TAC[TAUT ‘(a ==> b) /\ (a ==> c) <=> a ==> b /\ c’] THEN
   CONV_TAC CONTRAPOS_CONV THEN DISCH_TAC THEN
   CONV_TAC NOT_FORALL_CONV THEN
   EXISTS_TAC “dist(d:('a)metric)(x0,x1) / &2” THEN
@@ -161,7 +162,8 @@ val MTOP_TENDS_UNIQ = store_thm("MTOP_TENDS_UNIQ",
   BETA_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP REAL_LT_ADD2) THEN
   REWRITE_TAC[REAL_HALF_DOUBLE, REAL_NOT_LT] THEN
   GEN_REWR_TAC(RAND_CONV o LAND_CONV) [METRIC_SYM] THEN
-  MATCH_ACCEPT_TAC METRIC_TRIANGLE);
+  MATCH_ACCEPT_TAC METRIC_TRIANGLE
+QED
 
 (*---------------------------------------------------------------------------*)
 (* Simpler characterization of limit of a sequence in a metric topology      *)
@@ -430,7 +432,7 @@ val NET_ADD = store_thm("NET_ADD",
   REPEAT GEN_TAC THEN DISCH_TAC THEN REPEAT GEN_TAC THEN
   ONCE_REWRITE_TAC[NET_NULL] THEN
   DISCH_THEN(fn th => FIRST_ASSUM(MP_TAC o C MATCH_MP th o MATCH_MP NET_NULL_ADD))
-  THEN MATCH_MP_TAC(TAUT_CONV “(a = b) ==> a ==> b”) THEN EQUAL_TAC THEN
+  THEN MATCH_MP_TAC(TAUT ‘(a = b) ==> a ==> b’) THEN EQUAL_TAC THEN
   BETA_TAC THEN REWRITE_TAC[real_sub, REAL_NEG_ADD] THEN
   CONV_TAC(AC_CONV(REAL_ADD_ASSOC,REAL_ADD_SYM)));
 
@@ -584,7 +586,7 @@ val NET_LE = store_thm("NET_LE",
                   (?N. g N N /\ !n. g n N ==> x(n) <= y(n))
                         ==> x0 <= y0”,
   GEN_TAC THEN DISCH_TAC THEN REPEAT GEN_TAC THEN DISCH_TAC THEN
-  GEN_REWR_TAC I [TAUT_CONV “a = ~~a:bool”] THEN
+  GEN_REWR_TAC I [TAUT ‘a = ~~a:bool’] THEN
   PURE_ONCE_REWRITE_TAC[REAL_NOT_LE] THEN
   ONCE_REWRITE_TAC[GSYM REAL_SUB_LT] THEN DISCH_TAC THEN
   FIRST_ASSUM(UNDISCH_TAC o assert is_conj o concl) THEN
@@ -608,7 +610,7 @@ val NET_LE = store_thm("NET_LE",
   FIRST_ASSUM ACCEPT_TAC);
 
 (* ------------------------------------------------------------------------- *)
-(*  net as type                                                              *)
+(*  Net As Type                                                              *)
 (* ------------------------------------------------------------------------- *)
 
 Definition isnet :
@@ -770,6 +772,52 @@ Definition trivial_limit :
       ?(a:'a) b. ~(a = b) /\ !x. ~(netord(net) x a) /\ ~(netord(net) x b)
 End
 
+Theorem NONTRIVIAL_LIMIT_WITHIN :
+    !net s. trivial_limit net ==> trivial_limit(net within s)
+Proof
+    REWRITE_TAC[trivial_limit, WITHIN] THEN MESON_TAC[]
+QED
+
+Theorem REAL_CHOOSE_SIZE :
+   !c. &0 <= c ==> (?x. abs x = c:real)
+Proof
+  METIS_TAC [ABS_REFL]
+QED
+
+Theorem TRIVIAL_LIMIT_AT_INFINITY :
+    ~(trivial_limit at_infinity)
+Proof
+  REWRITE_TAC[trivial_limit, AT_INFINITY, real_ge] THEN
+  MESON_TAC[REAL_LE_REFL, REAL_CHOOSE_SIZE, REAL_LT_01, REAL_LT_LE]
+QED
+
+Theorem TRIVIAL_LIMIT_AT_POSINFINITY :
+    ~(trivial_limit at_posinfinity)
+Proof
+  REWRITE_TAC[trivial_limit, AT_POSINFINITY, DE_MORGAN_THM] THEN
+  CONJ_TAC THENL
+   [DISCH_THEN(MP_TAC o SPECL [``&0:real``, ``&1:real``]) THEN REAL_ARITH_TAC, ALL_TAC] THEN
+  REWRITE_TAC[DE_MORGAN_THM, NOT_EXISTS_THM, real_ge, REAL_NOT_LE] THEN
+  MESON_TAC[REAL_LT_TOTAL, REAL_LT_ANTISYM]
+QED
+
+Theorem TRIVIAL_LIMIT_AT_NEGINFINITY :
+    ~(trivial_limit at_neginfinity)
+Proof
+  REWRITE_TAC[trivial_limit, AT_NEGINFINITY, DE_MORGAN_THM] THEN
+  CONJ_TAC THENL
+   [DISCH_THEN(MP_TAC o SPECL [``&0:real``, ``&1:real``]) THEN REAL_ARITH_TAC, ALL_TAC] THEN
+  REWRITE_TAC[DE_MORGAN_THM, NOT_EXISTS_THM, real_ge, REAL_NOT_LE] THEN
+  MESON_TAC[REAL_LT_TOTAL, REAL_LT_ANTISYM]
+QED
+
+Theorem TRIVIAL_LIMIT_SEQUENTIALLY :
+    ~(trivial_limit sequentially)
+Proof
+  REWRITE_TAC[trivial_limit, SEQUENTIALLY] THEN
+  MESON_TAC[GREATER_EQ, LESS_EQ_REFL, SUC_NOT]
+QED
+
 (* ------------------------------------------------------------------------- *)
 (* Some property holds "sufficiently close" to the limit point.              *)
 (* ------------------------------------------------------------------------- *)
@@ -814,6 +862,44 @@ Theorem ALWAYS_EVENTUALLY :
 Proof
   REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[eventually, trivial_limit] THEN
   MESON_TAC[]
+QED
+
+Theorem EVENTUALLY_SEQUENTIALLY :
+    !p. eventually p sequentially <=> ?N. !n. N <= n ==> p n
+Proof
+  REWRITE_TAC[eventually, SEQUENTIALLY, GREATER_EQ, LESS_EQ_REFL,
+    TRIVIAL_LIMIT_SEQUENTIALLY] THEN  MESON_TAC[LESS_EQ_REFL]
+QED
+
+Theorem EVENTUALLY_AT_INFINITY :
+    !p. eventually p at_infinity <=> ?b. !x. abs(x) >= b ==> p x
+Proof
+  SIMP_TAC std_ss [eventually, AT_INFINITY, TRIVIAL_LIMIT_AT_INFINITY] THEN
+  REPEAT GEN_TAC THEN EQ_TAC THENL [MESON_TAC[REAL_LE_REFL], ALL_TAC] THEN
+  MESON_TAC[real_ge, REAL_LE_REFL, REAL_CHOOSE_SIZE,
+    REAL_ARITH ``&0 <= b:real \/ (!x. x >= &0 ==> x >= b)``]
+QED
+
+Theorem EVENTUALLY_AT_POSINFINITY :
+    !p. eventually p at_posinfinity <=> ?b. !x. x >= b ==> p x
+Proof
+  REWRITE_TAC[eventually, TRIVIAL_LIMIT_AT_POSINFINITY, AT_POSINFINITY] THEN
+  MESON_TAC[REAL_ARITH ``x >= x``]
+QED
+
+Theorem EVENTUALLY_AT_NEGINFINITY :
+    !p. eventually p at_neginfinity <=> ?b. !x. x <= b ==> p x
+Proof
+  REWRITE_TAC[eventually, TRIVIAL_LIMIT_AT_NEGINFINITY, AT_NEGINFINITY] THEN
+  MESON_TAC[REAL_LE_REFL]
+QED
+
+Theorem EVENTUALLY_AT_INFINITY_POS :
+    !p:real->bool.
+        eventually p at_infinity <=> ?b. &0 < b /\ !x. abs x >= b ==> p x
+Proof
+  GEN_TAC THEN REWRITE_TAC[EVENTUALLY_AT_INFINITY, real_ge] THEN
+  MESON_TAC[REAL_ARITH ``&0 < abs b + &1 /\ (abs b + &1 <= x ==> b <= x:real)``]
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -879,6 +965,16 @@ Proof
   SIMP_TAC std_ss [EVENTUALLY_FORALL]
 QED
 
+(* TODO:
+Theorem EVENTUALLY_WITHIN_IMP :
+    !net (P:'a->bool) s.
+        (eventually P (net within s) <=>
+         eventually (\x. x IN s ==> P x) net)
+Proof
+    cheat
+QED
+ *)
+
 (* ------------------------------------------------------------------------- *)
 (* It's also sometimes useful to extract the limit point from the net.       *)
 (* ------------------------------------------------------------------------- *)
@@ -909,7 +1005,7 @@ Definition limit :
      (!u. open_in top u /\ l IN u ==> eventually (\x. f x IN u) net)
 End
 
-val _ = export_theory();
+val _ = export_theory ();
 
 (* References:
 

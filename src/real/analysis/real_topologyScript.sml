@@ -3651,10 +3651,6 @@ val LIMPT_APPROACHABLE_LE = store_thm ("LIMPT_APPROACHABLE_LE",
   REWRITE_TAC [NOT_EXISTS_THM] THEN BETA_TAC THEN
   SIMP_TAC std_ss [TAUT `~(a /\ b /\ c) <=> c ==> ~(a /\ b)`, APPROACHABLE_LT_LE]);
 
-val REAL_CHOOSE_SIZE = store_thm ("REAL_CHOOSE_SIZE",
- ``!c. &0 <= c ==> (?x. abs x = c:real)``,
-  METIS_TAC [ABS_REFL]);
-
 val LIMPT_UNIV = store_thm ("LIMPT_UNIV",
  ``!x:real. x limit_point_of UNIV``,
   GEN_TAC THEN REWRITE_TAC[LIMPT_APPROACHABLE, IN_UNIV] THEN
@@ -4766,39 +4762,9 @@ val TRIVIAL_LIMIT_AT = store_thm ("TRIVIAL_LIMIT_AT",
   ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
   REWRITE_TAC[TRIVIAL_LIMIT_WITHIN, LIMPT_UNIV]);
 
-val TRIVIAL_LIMIT_AT_INFINITY = store_thm ("TRIVIAL_LIMIT_AT_INFINITY",
- ``~(trivial_limit at_infinity)``,
-  REWRITE_TAC[trivial_limit, AT_INFINITY, real_ge] THEN
-  MESON_TAC[REAL_LE_REFL, REAL_CHOOSE_SIZE, REAL_LT_01, REAL_LT_LE]);
-
-val TRIVIAL_LIMIT_AT_POSINFINITY = store_thm ("TRIVIAL_LIMIT_AT_POSINFINITY",
- ``~(trivial_limit at_posinfinity)``,
-  REWRITE_TAC[trivial_limit, AT_POSINFINITY, DE_MORGAN_THM] THEN
-  CONJ_TAC THENL
-   [DISCH_THEN(MP_TAC o SPECL [``&0:real``, ``&1:real``]) THEN REAL_ARITH_TAC, ALL_TAC] THEN
-  REWRITE_TAC[DE_MORGAN_THM, NOT_EXISTS_THM, real_ge, REAL_NOT_LE] THEN
-  MESON_TAC[REAL_LT_TOTAL, REAL_LT_ANTISYM]);
-
-val TRIVIAL_LIMIT_AT_NEGINFINITY = store_thm ("TRIVIAL_LIMIT_AT_NEGINFINITY",
- ``~(trivial_limit at_neginfinity)``,
-  REWRITE_TAC[trivial_limit, AT_NEGINFINITY, DE_MORGAN_THM] THEN
-  CONJ_TAC THENL
-   [DISCH_THEN(MP_TAC o SPECL [``&0:real``, ``&1:real``]) THEN REAL_ARITH_TAC, ALL_TAC] THEN
-  REWRITE_TAC[DE_MORGAN_THM, NOT_EXISTS_THM, real_ge, REAL_NOT_LE] THEN
-  MESON_TAC[REAL_LT_TOTAL, REAL_LT_ANTISYM]);
-
-val TRIVIAL_LIMIT_SEQUENTIALLY = store_thm ("TRIVIAL_LIMIT_SEQUENTIALLY",
- ``~(trivial_limit sequentially)``,
-  REWRITE_TAC[trivial_limit, SEQUENTIALLY] THEN
-  MESON_TAC[GREATER_EQ, LESS_EQ_REFL, SUC_NOT]);
-
 val LIM_WITHIN_CLOSED_TRIVIAL = store_thm ("LIM_WITHIN_CLOSED_TRIVIAL",
  ``!a s. closed s /\ ~(a IN s) ==> trivial_limit (at a within s)``,
   REWRITE_TAC[TRIVIAL_LIMIT_WITHIN] THEN MESON_TAC[CLOSED_LIMPT]);
-
-val NONTRIVIAL_LIMIT_WITHIN = store_thm ("NONTRIVIAL_LIMIT_WITHIN",
- ``!net s. trivial_limit net ==> trivial_limit(net within s)``,
-  REWRITE_TAC[trivial_limit, WITHIN] THEN MESON_TAC[]);
 
 (* ------------------------------------------------------------------------- *)
 (* Some property holds "sufficiently close" to the limit point.              *)
