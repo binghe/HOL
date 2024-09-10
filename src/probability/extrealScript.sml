@@ -14,9 +14,7 @@ open metisLib combinTheory pred_setTheory res_quanTools pairTheory jrhUtils
 
 open realTheory realLib real_sigmaTheory iterateTheory real_topologyTheory
      seqTheory limTheory transcTheory metricTheory listTheory rich_listTheory
-     cardinalTheory;
-
-open extreal_baseTheory real_of_ratTheory;
+     cardinalTheory netsTheory extreal_baseTheory real_of_ratTheory;
 
 val _ = new_theory "extreal";
 
