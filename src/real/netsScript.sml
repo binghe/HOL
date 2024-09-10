@@ -5,7 +5,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open numLib reduceLib pairLib pred_setTheory mesonLib RealArith hurdUtils
-     pairTheory arithmeticTheory numTheory prim_recTheory
+     pairTheory arithmeticTheory numTheory prim_recTheory tautLib
      jrhUtils realTheory topologyTheory metricTheory;
 
 val _ = new_theory "nets";
@@ -877,6 +877,26 @@ Theorem FORALL_EVENTUALLY :
    eventually (\x. !a. a IN s ==> p a x) net)
 Proof
   SIMP_TAC std_ss [EVENTUALLY_FORALL]
+QED
+
+(* ------------------------------------------------------------------------- *)
+(* It's also sometimes useful to extract the limit point from the net.       *)
+(* ------------------------------------------------------------------------- *)
+
+Definition netlimit :
+    netlimit net = @a. !x. ~(netord net x a)
+End
+
+Theorem NETLIMIT_WITHIN :
+   !a:real s. ~(trivial_limit (at a within s))
+    ==> (netlimit (at a within s) = a)
+Proof
+  REWRITE_TAC[trivial_limit, netlimit, AT, WITHIN, DE_MORGAN_THM] THEN
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SELECT_UNIQUE THEN REWRITE_TAC[] THEN
+  SUBGOAL_THEN
+   ``!x:real. ~(&0 < dist(x,a) /\ dist(x,a) <= dist(a,a) /\ x IN s)``
+    ASSUME_TAC THENL
+    [ ASM_MESON_TAC[DIST_REFL, REAL_NOT_LT], ASM_MESON_TAC[] ]
 QED
 
 (* ------------------------------------------------------------------------- *)
