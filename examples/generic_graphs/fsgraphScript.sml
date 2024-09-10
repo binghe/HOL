@@ -5,7 +5,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open arithmeticTheory pairTheory listTheory pred_setTheory sortingTheory
-     hurdUtils topologyTheory pathTheory;
+     hurdUtils topologyTheory;
 
 open genericGraphTheory;
 
@@ -747,9 +747,7 @@ val ends_thm =
     new_specification ("ends_thm", ["ends"],
         SIMP_RULE std_ss [EXT_SKOLEM_THM, SKOLEM_THM, LET_THM] ends_exist);
 
-(* M is a matching of U if every vertex in U is incident with an edge in
-   M [2, p.37].
- *)
+(* M is a matching of U if every vertex in U is incident with a M-edge [2, p.37] *)
 Definition matching_of :
     matching_of g M U <=>
     U SUBSET nodes g /\ M SUBSET fsgedges g /\ !v. v IN U ==> ?e. e IN M /\ v IN e
@@ -772,11 +770,8 @@ QED
 Theorem maximal_matching_of_fsgraph :
     !g. matching_of g (fsgedges g) (BIGUNION (fsgedges g))
 Proof
-    reverse (rw [matching_of])
- >- (Q.EXISTS_TAC ‘s’ >> art [])
- >> rw [SUBSET_DEF, IN_BIGUNION]
- >> MP_TAC (Q.SPECL [‘s’, ‘g’] (GEN_ALL alledges_valid))
- >> rw [] >> fs []
+    Q.X_GEN_TAC ‘g’
+ >> MATCH_MP_TAC matching_of_fsgraph >> rw []
 QED
 
 (* M is a matching of g if there exists U such that M is a matching of U. Therefore
@@ -817,19 +812,12 @@ QED
 
 Type fsg_path[pp] = “:(unit + num) list”
 
-Definition fsgraph_path_def :
-    fsgraph_path (g :fsgraph) p <=>
-      ALL_DISTINCT p /\
-      !i. SUC i < LENGTH p ==> {EL i p;EL (SUC i) p} IN fsgedges g
-End
-
-(* ‘0 < LENGTH p’ guarantees that ‘EL 0 p’ is meaningful *)
 Definition alternating_path_def :
-    alternating_path g M p <=>
-      fsgraph_path g p /\ 0 < LENGTH p /\ unmatched (EL 0 p) M /\
-      !i. i + 2 < LENGTH p ==>
-          ({EL i p;EL (i + 1) p} IN M /\ {EL (i + 1) p;EL (i + 2) p} NOTIN M) \/
-          ({EL i p;EL (i + 1) p} NOTIN M /\ {EL (i + 1) p;EL (i + 2) p} IN M)
+    alternating_path (g :fsgraph) M vs <=>
+      path g vs /\ unmatched (EL 0 vs) M /\
+      !i. i + 2 < LENGTH vs ==>
+          ({EL i vs;EL (i + 1) vs} IN M /\ {EL (i + 1) vs;EL (i + 2) vs} NOTIN M) \/
+          ({EL i vs;EL (i + 1) vs} NOTIN M /\ {EL (i + 1) vs;EL (i + 2) vs} IN M)
 End
 
 Definition augmenting_path_def :
@@ -845,17 +833,17 @@ Definition covering_def :
     U SUBSET nodes g /\ !e. e IN fsgedges g ==> ?v. v IN U /\ v IN e
 End
 
-Definition maximal_matching_def :
-    maximal_matching g = MAX_SET (IMAGE CARD (matching g))
+Definition max_matching_def :
+    max_matching g = MAX_SET (IMAGE CARD (matching g))
 End
 
-Definition minimal_covering_def :
-    minimal_covering g = MIN_SET (IMAGE CARD (covering g))
+Definition min_covering_def :
+    min_covering g = MIN_SET (IMAGE CARD (covering g))
 End
 
 (* Theorem 2.1.1 (Koenig) [2, p.39] *)
-Theorem Koenig_bipartite_thm :
-    !g A B. bipartite g A B ==> maximal_matching g = minimal_covering g
+Theorem bipartite_max_matching_thm :
+    !g A B. bipartite g A B ==> max_matching g = min_covering g
 Proof
     cheat
 QED
