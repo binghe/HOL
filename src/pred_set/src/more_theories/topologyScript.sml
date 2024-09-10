@@ -385,13 +385,15 @@ Definition limpt:
   !N:'a->bool. neigh(top)(N,x) ==> ?y. ~(x = y) /\ S' y /\ N y
 End
 
-(* alternative characterisation without needing neigh, but using IN, rather
-   than application
+(* Alternative characterisation without needing neigh, but using IN, rather
+   than application. x is a limit point in A if any neighbour set U containing
+   x, also contains a different point y of A, i.e. x has neighbour points at
+   any "close" distance.
  *)
 Theorem limpt_thm:
-  limpt t x A <=>
-  x IN topspace t /\
-  !U. open_in t U /\ x IN U ==> ?y. y IN U /\ y IN A /\ y <> x
+    !top x A. limpt top (x :'a) A <=>
+              x IN topspace top /\
+              !U. open_in(top) U /\ x IN U ==> ?y. y IN U /\ y IN A /\ y <> x
 Proof
   rw[limpt, neigh, PULL_EXISTS] >> EQ_TAC >>
   rw[] >> fs[IN_DEF]
@@ -2471,17 +2473,17 @@ QED
 (* Pointwise continuity in topological spaces.                               *)
 (* ------------------------------------------------------------------------- *)
 
-(*
-let topcontinuous_at = new_definition
-  `!top top' f:A->B x.
-     topcontinuous_at top top' f x <=>
+Definition topcontinuous_at :
+    topcontinuous_at top top' (f :'a -> 'b) x <=>
      x IN topspace top /\
      (!x. x IN topspace top ==> f x IN topspace top') /\
      (!v. open_in top' v /\ f x IN v
-          ==> (?u. open_in top u /\ x IN u /\ (!y. y IN u ==> f y IN v)))`;;
+          ==> (?u. open_in top u /\ x IN u /\ (!y. y IN u ==> f y IN v)))
+End
 
-let TOPCONTINUOUS_AT_ATPOINTOF = prove
- (`!top top' f:A->B x.
+(*
+Theorem TOPCONTINUOUS_AT_ATPOINTOF :
+   !top top' (f:'a->'b) x.
         topcontinuous_at top top' f x <=>
         x IN topspace top /\
         (!x. x IN topspace top ==> f x IN topspace top') /\

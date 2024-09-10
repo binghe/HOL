@@ -758,6 +758,34 @@ val WITHIN_WITHIN = store_thm ("WITHIN_WITHIN",
   ONCE_REWRITE_TAC[within] THEN
   REWRITE_TAC[WITHIN, IN_INTER, GSYM CONJ_ASSOC]);
 
+(* ------------------------------------------------------------------------- *)
+(* Limits in a topological space (from HOL-Light's Multivariate/metric.ml)   *)
+(* ------------------------------------------------------------------------- *)
+
+Definition trivial_limit_def :
+    trivial_limit net <=>
+       (!a:'a b. a = b) \/
+       ?a:'a b. ~(a = b) /\ !x. ~(netord(net) x a) /\ ~(netord(net) x b)
+End
+
+Definition eventually_def :
+    eventually p net <=>
+        trivial_limit net \/
+        ?y. (?x. netord net x y) /\ (!x. netord net x y ==> p x)
+End
+
+Theorem EVENTUALLY_HAPPENS :
+    !net p. eventually p net ==> trivial_limit net \/ ?x. p x
+Proof
+  REWRITE_TAC[eventually_def] THEN MESON_TAC[]
+QED
+
+Definition limit :
+   limit top (f:'a->'b) l net <=>
+   l IN topspace top /\
+   (!u. open_in top u /\ l IN u ==> eventually (\x. f x IN u) net)
+End
+
 val _ = export_theory();
 
 (* References:

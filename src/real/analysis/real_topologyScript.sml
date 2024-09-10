@@ -4734,13 +4734,11 @@ val FRONTIER_INTER_SUBSET_INTER = store_thm ("FRONTIER_INTER_SUBSET_INTER",
 (* Identify trivial limits, where we can't approach arbitrarily closely.     *)
 (* ------------------------------------------------------------------------- *)
 
-val trivial_limit = new_definition ("trivial_limit",
-  ``trivial_limit net <=>
-     (!a:'a b. a = b) \/
-     ?a:'a b. ~(a = b) /\ !x. ~(netord(net) x a) /\ ~(netord(net) x b)``);
+Theorem trivial_limit = netsTheory.trivial_limit_def
 
-val TRIVIAL_LIMIT_WITHIN = store_thm ("TRIVIAL_LIMIT_WITHIN",
- ``!a:real. trivial_limit (at a within s) <=> ~(a limit_point_of s)``,
+Theorem TRIVIAL_LIMIT_WITHIN :
+    !a:real. trivial_limit (at a within s) <=> ~(a limit_point_of s)
+Proof
   REWRITE_TAC[trivial_limit, LIMPT_APPROACHABLE_LE, WITHIN, AT, DIST_NZ] THEN
   REPEAT GEN_TAC THEN EQ_TAC THENL
    [DISCH_THEN(DISJ_CASES_THEN MP_TAC) THENL
@@ -4762,7 +4760,8 @@ val TRIVIAL_LIMIT_WITHIN = store_thm ("TRIVIAL_LIMIT_WITHIN",
      [ASM_SIMP_TAC std_ss [REAL_CHOOSE_DIST, REAL_LT_IMP_LE], ALL_TAC] THEN
     STRIP_TAC THEN EXISTS_TAC ``b:real`` THEN POP_ASSUM MP_TAC THEN
     DISCH_THEN(SUBST_ALL_TAC o SYM) THEN
-    ASM_MESON_TAC[REAL_NOT_LE, DIST_REFL, DIST_NZ, DIST_SYM]]);
+    ASM_MESON_TAC[REAL_NOT_LE, DIST_REFL, DIST_NZ, DIST_SYM]]
+QED
 
 val TRIVIAL_LIMIT_AT = store_thm ("TRIVIAL_LIMIT_AT",
  ``!a. ~(trivial_limit (at a))``,
@@ -4807,14 +4806,7 @@ val NONTRIVIAL_LIMIT_WITHIN = store_thm ("NONTRIVIAL_LIMIT_WITHIN",
 (* Some property holds "sufficiently close" to the limit point.              *)
 (* ------------------------------------------------------------------------- *)
 
-val eventually = new_definition ("eventually",
- ``eventually p net <=>
-        trivial_limit net \/
-        ?y. (?x. netord net x y) /\ (!x. netord net x y ==> p x)``);
-
-val EVENTUALLY_HAPPENS = store_thm ("EVENTUALLY_HAPPENS",
- ``!net p. eventually p net ==> trivial_limit net \/ ?x. p x``,
-  REWRITE_TAC[eventually] THEN MESON_TAC[]);
+Theorem eventually = netsTheory.eventually_def
 
 val EVENTUALLY_WITHIN_LE = store_thm ("EVENTUALLY_WITHIN_LE",
  ``!s a:real p.
@@ -4954,8 +4946,8 @@ Definition tendsto_real :
     tendsto_real f l net <=> !e. &0 < e ==> eventually (\x. dist(f(x),l) < e) net
 End
 
-Overload "-->" = “tendsto_real”
 val _ = set_fixity "-->" (Infixr 750);
+Overload "-->" = “tendsto_real”
 
 val tendsto = tendsto_real;
 

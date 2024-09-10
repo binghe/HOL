@@ -917,12 +917,12 @@ val tactics =
       POP_ASSUM SUBST_ALL_TAC \\ (* all `s` disappeared *)
       FULL_SIMP_TAC bool_ss [FINITE_INSERT, CARD_INSERT, DELETE_INSERT,IN_INSERT] \\
       (* now we start using properties of extreal *)
-     `f x + b <> limit /\ f y + b <> limit` by METIS_TAC [add_not_infty] \\
+     `f x + b <> li /\ f y + b <> li` by METIS_TAC [add_not_infty] \\
       Q.PAT_X_ASSUM `!s' x' b'. (CARD s' < SUC (SUC (CARD u)) /\ FINITE s') /\ X ==> Y`
         (ASSUME_TAC o (Q.SPEC `u`)) \\
       FULL_SIMP_TAC arith_ss [] \\
-     `!z. (z = x) \/ z IN u ==> f z <> limit` by METIS_TAC [] \\
-     `!z. (z = y) \/ z IN u ==> f z <> limit` by METIS_TAC [] \\
+     `!z. (z = x) \/ z IN u ==> f z <> li` by METIS_TAC [] \\
+     `!z. (z = y) \/ z IN u ==> f z <> li` by METIS_TAC [] \\
       rpt STRIP_TAC \\
       Q.PAT_ASSUM `!x' b'. FINITE u /\ X ==> Y` (MP_TAC o (Q.SPECL [`x`, `f y + b`])) \\
       Q.PAT_ASSUM `!x' b'. FINITE u /\ X ==> Y` (MP_TAC o (Q.SPECL [`y`, `f x + b`])) \\
@@ -950,12 +950,12 @@ val tactics =
           (FULL_SIMP_TAC bool_ss [EXTENSION, IN_INSERT] THEN PROVE_TAC []) \\
       ASM_REWRITE_TAC [] \\
       (* now we start using properties of extreal *)
-     `f x + b <> limit /\ f y + b <> limit` by METIS_TAC [add_not_infty] \\
+     `f x + b <> li /\ f y + b <> li` by METIS_TAC [add_not_infty] \\
       Q.PAT_X_ASSUM `!s x' b'. (CARD s < SUC (CARD u) /\ FINITE s') /\ X ==> Y`
         (ASSUME_TAC o (Q.SPEC `u`)) \\
       FULL_SIMP_TAC arith_ss [] \\
-     `!z. (z = x) \/ z IN u ==> f z <> limit` by METIS_TAC [] \\
-     `!z. (z = y) \/ z IN u ==> f z <> limit` by METIS_TAC [] \\
+     `!z. (z = x) \/ z IN u ==> f z <> li` by METIS_TAC [] \\
+     `!z. (z = y) \/ z IN u ==> f z <> li` by METIS_TAC [] \\
       Q.PAT_ASSUM `!x' b'. FINITE u /\ X ==> Y` (MP_TAC o (Q.SPECL [`x`, `f y + b`])) \\
       Q.PAT_ASSUM `!x' b'. FINITE u /\ X ==> Y` (MP_TAC o (Q.SPECL [`y`, `f x + b`])) \\
       Q.PAT_X_ASSUM `!x' b'. FINITE u /\ X ==> Y` K_TAC \\
@@ -964,10 +964,10 @@ val tactics =
       METIS_TAC [add_assoc, add_comm, add_not_infty] ] ];
 
 Triviality lem:
-  !limit.
-     limit = PosInf ==>
+  !li.
+     li = PosInf ==>
      !f s. FINITE s ==>
-           !x b. (!z. z IN (x INSERT s) ==> f z <> limit) /\ b <> limit ==>
+           !x b. (!z. z IN (x INSERT s) ==> f z <> li) /\ b <> li ==>
                  ITSET (\e acc. f e + acc) (x INSERT s) b =
                  ITSET (\e acc. f e + acc) (s DELETE x)
                        ((\e acc. f e + acc) x b)
@@ -975,9 +975,9 @@ Proof tactics
 QED
 
 val lem' = Q.prove (
-   `!limit. (limit = NegInf) ==>
+   `!li. (li = NegInf) ==>
         !f s. FINITE s ==>
-              !x b. (!z. z IN (x INSERT s) ==> f z <> limit) /\ b <> limit ==>
+              !x b. (!z. z IN (x INSERT s) ==> f z <> li) /\ b <> li ==>
                     (ITSET (\e acc. f e + acc) (x INSERT s) b =
                      ITSET (\e acc. f e + acc) (s DELETE x) ((\e acc. f e + acc) x b))`,
     tactics);
