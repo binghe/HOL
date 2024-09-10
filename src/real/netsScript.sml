@@ -4,7 +4,7 @@
 
 open HolKernel Parse boolLib bossLib;
 
-open numLib reduceLib pairLib pred_setTheory mesonLib RealArith
+open numLib reduceLib pairLib pred_setTheory mesonLib RealArith hurdUtils
      pairTheory arithmeticTheory numTheory prim_recTheory
      jrhUtils realTheory topologyTheory metricTheory;
 
@@ -13,6 +13,8 @@ val _ = new_theory "nets";
 val _ = Parse.reveal "B";
 
 val num_EQ_CONV = Arithconv.NEQ_CONV;
+val DISC_RW_KILL = DISCH_TAC THEN ONCE_ASM_REWRITE_TAC [] THEN
+                   POP_ASSUM K_TAC;
 
 (*---------------------------------------------------------------------------*)
 (* Basic definitions: directed set, net, bounded net, pointwise limit [1]    *)
@@ -606,7 +608,7 @@ val NET_LE = store_thm("NET_LE",
   FIRST_ASSUM ACCEPT_TAC);
 
 (* ------------------------------------------------------------------------- *)
-(* A variant of nets (slightly non-standard but good for our purposes).      *)
+(*  net as type                                                              *)
 (* ------------------------------------------------------------------------- *)
 
 Definition isnet :
@@ -759,31 +761,132 @@ val WITHIN_WITHIN = store_thm ("WITHIN_WITHIN",
   REWRITE_TAC[WITHIN, IN_INTER, GSYM CONJ_ASSOC]);
 
 (* ------------------------------------------------------------------------- *)
-(* Limits in a topological space (from HOL-Light's Multivariate/metric.ml)   *)
+(* Identify trivial limits, where we can't approach arbitrarily closely.     *)
 (* ------------------------------------------------------------------------- *)
 
-Definition trivial_limit_def :
+Definition trivial_limit :
     trivial_limit net <=>
-       (!a:'a b. a = b) \/
-       ?a:'a b. ~(a = b) /\ !x. ~(netord(net) x a) /\ ~(netord(net) x b)
+      (!(a:'a) b. a = b) \/
+      ?(a:'a) b. ~(a = b) /\ !x. ~(netord(net) x a) /\ ~(netord(net) x b)
 End
 
-Definition eventually_def :
+(* ------------------------------------------------------------------------- *)
+(* Some property holds "sufficiently close" to the limit point.              *)
+(* ------------------------------------------------------------------------- *)
+
+Definition eventually :
     eventually p net <=>
-        trivial_limit net \/
-        ?y. (?x. netord net x y) /\ (!x. netord net x y ==> p x)
+      trivial_limit net \/
+      ?y. (?x. netord net x y) /\ (!x. netord net x y ==> p x)
 End
+
+Theorem EVENTUALLY_FALSE :
+    !net. eventually (\x. F) net <=> trivial_limit net
+Proof
+  REWRITE_TAC[eventually] THEN MESON_TAC[]
+QED
+
+Theorem EVENTUALLY_TRUE :
+    !net. eventually (\x. T) net <=> T
+Proof
+  REWRITE_TAC[eventually, trivial_limit] THEN MESON_TAC[]
+QED
+
+(* This is HOL-Light's definition of ‘trivial_limit’
+   |- !net. trivial_limit net <=> eventually (\x. F) net
+ *)
+Theorem trivial_limit_def = GSYM EVENTUALLY_FALSE
 
 Theorem EVENTUALLY_HAPPENS :
     !net p. eventually p net ==> trivial_limit net \/ ?x. p x
 Proof
-  REWRITE_TAC[eventually_def] THEN MESON_TAC[]
+  REWRITE_TAC[eventually] THEN MESON_TAC[]
 QED
+
+Theorem NOT_EVENTUALLY :
+    !net p. (!x. ~(p x)) /\ ~(trivial_limit net) ==> ~(eventually p net)
+Proof
+  REWRITE_TAC[eventually] THEN MESON_TAC[]
+QED
+
+Theorem ALWAYS_EVENTUALLY :
+    !net p. (!x. p x) ==> eventually p net
+Proof
+  REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[eventually, trivial_limit] THEN
+  MESON_TAC[]
+QED
+
+(* ------------------------------------------------------------------------- *)
+(* Combining theorems for "eventually". *)
+(* ------------------------------------------------------------------------- *)
+
+Theorem EVENTUALLY_AND :
+  !net:('a net) p q.
+   eventually (\x. p x /\ q x) net <=>
+   eventually p net /\ eventually q net
+Proof
+  REPEAT GEN_TAC THEN REWRITE_TAC[eventually] THEN
+  ASM_CASES_TAC ``trivial_limit(net:('a net))`` THEN ASM_REWRITE_TAC[] THEN
+  EQ_TAC THEN SIMP_TAC std_ss [NET_DILEMMA] THENL [MESON_TAC [], ALL_TAC] THEN
+  DISCH_TAC THEN MATCH_MP_TAC NET_DILEMMA THEN METIS_TAC []
+QED
+
+Theorem EVENTUALLY_MONO :
+  !net:('a net) p q.
+  (!x. p x ==> q x) /\ eventually p net
+    ==> eventually q net
+Proof
+  REWRITE_TAC[eventually] THEN MESON_TAC[]
+QED
+
+Theorem EVENTUALLY_MP :
+  !net:('a net) p q.
+  eventually (\x. p x ==> q x) net /\ eventually p net
+  ==> eventually q net
+Proof
+  REWRITE_TAC[GSYM EVENTUALLY_AND] THEN
+  REWRITE_TAC[eventually] THEN MESON_TAC[]
+QED
+
+Theorem EVENTUALLY_FORALL :
+  !net:('a net) p s:'b->bool.
+  FINITE s /\ ~(s = {})
+  ==> (eventually (\x. !a. a IN s ==> p a x) net <=>
+   !a. a IN s ==> eventually (p a) net)
+Proof
+  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[GSYM AND_IMP_INTRO] THEN
+  KNOW_TAC ``!s:'b->bool. (s <> ({} :'b -> bool) ==>
+   (eventually (\(x :'a). !(a :'b). a IN s ==> (p :'b -> 'a -> bool) a x)
+   (net :'a net) <=> !(a :'b). a IN s ==> eventually (p a) net)) =
+             (\s. s <> ({} :'b -> bool) ==>
+   (eventually (\(x :'a). !(a :'b). a IN s ==> (p :'b -> 'a -> bool) a x)
+   (net :'a net) <=> !(a :'b). a IN s ==> eventually (p a) net)) s`` THENL
+  [FULL_SIMP_TAC std_ss [], ALL_TAC] THEN DISC_RW_KILL THEN
+  MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN
+  SIMP_TAC std_ss [FORALL_IN_INSERT, EVENTUALLY_AND, ETA_AX] THEN
+  SIMP_TAC std_ss [GSYM RIGHT_FORALL_IMP_THM] THEN
+  MAP_EVERY X_GEN_TAC [``t:'b->bool``, ``b:'b``] THEN
+  ASM_CASES_TAC ``t:'b->bool = {}`` THEN
+  ASM_SIMP_TAC std_ss [NOT_IN_EMPTY, EVENTUALLY_TRUE] THEN METIS_TAC []
+QED
+
+Theorem FORALL_EVENTUALLY :
+  !net:('a net) p s:'b->bool.
+   FINITE s /\ ~(s = {})
+   ==> ((!a. a IN s ==> eventually (p a) net) <=>
+   eventually (\x. !a. a IN s ==> p a x) net)
+Proof
+  SIMP_TAC std_ss [EVENTUALLY_FORALL]
+QED
+
+(* ------------------------------------------------------------------------- *)
+(* Limits in a topological space (from HOL-Light's Multivariate/metric.ml)   *)
+(* ------------------------------------------------------------------------- *)
 
 Definition limit :
    limit top (f:'a->'b) l net <=>
-   l IN topspace top /\
-   (!u. open_in top u /\ l IN u ==> eventually (\x. f x IN u) net)
+     l IN topspace top /\
+     (!u. open_in top u /\ l IN u ==> eventually (\x. f x IN u) net)
 End
 
 val _ = export_theory();
