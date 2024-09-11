@@ -728,24 +728,61 @@ QED
 Overload V[local] = “nodes (g :fsgraph)”
 Overload E[local] = “fsgedges (g :fsgraph)”
 
-Theorem ends_exist[local] :
-    !g e. e IN fsgedges g ==>
-          ?pair. let a = FST pair; b = SND pair in
-                   e = {a; b} /\ a IN V /\ b IN V /\ a <> b
+(* r-partite graphs [2, p.17]
+
+   NOTE: There seems no need to require that each partition must be non-empty.
+ *)
+Definition partite_def :
+    partite r (g :fsgraph) v <=>
+      v partitions (nodes g) /\ CARD v = r /\
+      !n1 n2. {n1;n2} IN fsgedges g ==> part v n1 = part v n2
+End
+
+(* "Instead of '2-partite' one usually says bipartite. *)
+Overload bipartite = “partite 2”
+
+Theorem bipartite_alt_disjoint :
+    !g A B. bipartite (g :fsgraph) {A;B} <=>
+            DISJOINT A B /\ A UNION B = nodes g /\
+            !n1 n2. {n1;n2} IN fsgedges g ==>
+                    (n1 IN A /\ n2 IN B) \/ (n1 IN B /\ n2 IN A)
 Proof
-    rpt STRIP_TAC
- >> POP_ASSUM (fn th => STRIP_ASSUME_TAC (MATCH_MP alledges_valid th))
- >> Q.EXISTS_TAC ‘(a,b)’ >> rw []
+    cheat
 QED
 
-(* |- !g e.
-        e IN E ==>
-        e = {FST (ends g e); SND (ends g e)} /\ FST (ends g e) IN V /\
-        SND (ends g e) IN V /\ FST (ends g e) <> SND (ends g e)
+(* Alternative definition: there's no edge in each part of the bipartition (A,B) *)
+Theorem bipartite_alt_no_edges :
+    !g A B. bipartite g {A;B} <=>
+            DISJOINT A B /\ A UNION B = nodes g /\
+            (!v1 v2. v1 IN A /\ v2 IN A ==> {v1;v2} NOTIN fsgedges g) /\
+            (!v1 v2. v1 IN B /\ v2 IN B ==> {v1;v2} NOTIN fsgedges g)
+Proof
+    cheat
+QED
+
+(* The "other" vertex/node in the edge *)
+Theorem other_exists[local] :
+    !g e. e IN fsgedges g ==>
+          !n. n IN e ==> ?n'. e = {n; n'} /\ n' IN e /\ n' <> n
+Proof
+    rpt STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘e IN E’ (fn th => STRIP_ASSUME_TAC (MATCH_MP alledges_valid th))
+ >> fs []
+ >| [ (* goal 1 (of 2) *)
+      Q.EXISTS_TAC ‘b’ >> rw [],
+      (* goal 2 (of 2) *)
+      Q.EXISTS_TAC ‘a’ >> rw [] \\
+      rw [Once EXTENSION] >> PROVE_TAC [] ]
+QED
+
+(* |- !g e n.
+        e IN E /\ n IN e ==>
+        e = {n; other g e n} /\ other g e n IN e /\ other g e n <> n
  *)
-val ends_thm =
-    new_specification ("ends_thm", ["ends"],
-        SIMP_RULE std_ss [EXT_SKOLEM_THM, SKOLEM_THM, LET_THM] ends_exist);
+val other_def =
+    new_specification ("other_def", ["other"],
+      SIMP_RULE std_ss [PULL_FORALL, IMP_IMP]
+        (SIMP_RULE std_ss [EXT_SKOLEM_THM, SKOLEM_THM] other_exists));
 
 (* M is a matching of U if every vertex in U is incident with a M-edge [2, p.37] *)
 Definition matching_of :
@@ -793,24 +830,8 @@ Proof
  >> PROVE_TAC []
 QED
 
-(* Bipartite graphs [2, p.17], (A,B) is called a bipartition *)
-Definition bipartite_def :
-    bipartite (g :fsgraph) A B <=>
-      DISJOINT A B /\ A UNION B = nodes g /\
-      !n1 n2. {n1;n2} IN fsgedges g ==> (n1 IN A /\ n2 IN B) \/ (n1 IN B /\ n2 IN A)
-End
-
-(* Alternative definition: there's no edge in each part of the bipartition (A,B) *)
-Theorem bipartite_alt_no_edges :
-    !g A B. bipartite g A B <=>
-            DISJOINT A B /\ A UNION B = nodes g /\
-            (!v1 v2. v1 IN A /\ v2 IN A ==> {v1;v2} NOTIN fsgedges g) /\
-            (!v1 v2. v1 IN B /\ v2 IN B ==> {v1;v2} NOTIN fsgedges g)
-Proof
-    cheat
-QED
-
-Type fsg_path[pp] = “:(unit + num) list”
+(* "finite simple path" *)
+Type fspath[pp] = “:(unit + num) list”
 
 Definition alternating_path_def :
     alternating_path (g :fsgraph) M vs <=>
@@ -821,8 +842,7 @@ Definition alternating_path_def :
 End
 
 Definition augmenting_path_def :
-    augmenting_path g M p <=> alternating_path g M p /\
-                              unmatched (EL (LENGTH p - 1) p) M
+    augmenting_path g M vs <=> alternating_path g M vs /\ unmatched (LAST vs) M
 End
 
 (* A set U is a (vertex) cover of E if every edge of G (aka in E) is incident
@@ -843,7 +863,7 @@ End
 
 (* Theorem 2.1.1 (Koenig) [2, p.39] *)
 Theorem bipartite_max_matching_thm :
-    !g A B. bipartite g A B ==> max_matching g = min_covering g
+    !g A B. bipartite g {A;B} ==> max_matching g = min_covering g
 Proof
     cheat
 QED

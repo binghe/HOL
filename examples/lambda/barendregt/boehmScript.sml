@@ -5173,8 +5173,7 @@ Proof
              DISCH_TAC >> art [] \\
              Know ‘LAMl_size (H z) = 0’
              >- (rw [Abbr ‘H’, LAMl_size_appstar, GSYM appstar_APPEND]) >> Rewr' \\
-             simp [] \\
-             POP_ASSUM K_TAC (* principle_hnf (H z) *) \\
+             simp [] >> POP_ASSUM K_TAC (* principle_hnf (H z) *) \\
              cheat) >> DISCH_TAC \\
          Know ‘unsolvable (subterm' X (H j1) p r) /\
                unsolvable (subterm' X (H j2) p r)’
