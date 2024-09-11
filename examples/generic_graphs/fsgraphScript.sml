@@ -728,36 +728,98 @@ QED
 Overload V[local] = “nodes (g :fsgraph)”
 Overload E[local] = “fsgedges (g :fsgraph)”
 
+Theorem fsgraph_valid :
+    !g n1 n2. {n1;n2} IN E ==> n1 IN V /\ n2 IN V /\ n1 <> n2
+Proof
+    rpt GEN_TAC
+ >> DISCH_THEN (STRIP_ASSUME_TAC o MATCH_MP alledges_valid)
+ >> ASM_SET_TAC []
+QED
+
 (* r-partite graphs [2, p.17]
 
-   NOTE: There seems no need to require that each partition must be non-empty.
+   NOTE: ‘partitions’ requires that each partiton is non-empty.
  *)
 Definition partite_def :
     partite r (g :fsgraph) v <=>
       v partitions (nodes g) /\ CARD v = r /\
-      !n1 n2. {n1;n2} IN fsgedges g ==> part v n1 = part v n2
+      !n1 n2. {n1;n2} IN fsgedges g ==> part v n1 <> part v n2
 End
 
 (* "Instead of '2-partite' one usually says bipartite. *)
 Overload bipartite = “partite 2”
 
-Theorem bipartite_alt_disjoint :
+Theorem bipartite_def :
     !g A B. bipartite (g :fsgraph) {A;B} <=>
-            DISJOINT A B /\ A UNION B = nodes g /\
+           (DISJOINT A B /\ A <> {} /\ B <> {} /\ A UNION B = nodes g /\ 
             !n1 n2. {n1;n2} IN fsgedges g ==>
-                    (n1 IN A /\ n2 IN B) \/ (n1 IN B /\ n2 IN A)
+                    (n1 IN A /\ n2 IN B) \/ (n1 IN B /\ n2 IN A))
 Proof
-    cheat
-QED
-
-(* Alternative definition: there's no edge in each part of the bipartition (A,B) *)
-Theorem bipartite_alt_no_edges :
-    !g A B. bipartite g {A;B} <=>
-            DISJOINT A B /\ A UNION B = nodes g /\
-            (!v1 v2. v1 IN A /\ v2 IN A ==> {v1;v2} NOTIN fsgedges g) /\
-            (!v1 v2. v1 IN B /\ v2 IN B ==> {v1;v2} NOTIN fsgedges g)
-Proof
-    cheat
+    rw [partite_def]
+ >> EQ_TAC >> simp []
+ >- (STRIP_TAC \\
+     CONJ_ASM1_TAC (* DISJOINT A B *)
+     >- (MATCH_MP_TAC partitions_DISJOINT \\
+         qexistsl_tac [‘{A;B}’, ‘V’] >> rw []) \\
+     CONJ_TAC (* A <> {} *) >- fs [partitions_PAIR_DISJOINT] \\
+     CONJ_TAC (* B <> {} *) >- fs [partitions_PAIR_DISJOINT] \\
+     CONJ_ASM1_TAC (* A UNION B = V *)
+     >- (Q.PAT_X_ASSUM ‘{A;B} partitions V’ (MP_TAC o MATCH_MP partitions_covers) \\
+         SET_TAC []) \\
+     rpt STRIP_TAC \\
+    ‘n1 IN V /\ n2 IN V /\ n1 <> n2’ by PROVE_TAC [fsgraph_valid] \\
+     Q.PAT_X_ASSUM ‘!n1 n2. P’ (MP_TAC o Q.SPECL [‘n1’, ‘n2’]) >> rw [] \\
+     Cases_on ‘n1 IN A’
+     >- (DISJ1_TAC >> rw [] (* goal: n2 IN B *) \\
+         Know ‘A = part {A; B} n1’
+         >- (MATCH_MP_TAC part_unique \\
+             Q.EXISTS_TAC ‘V’ >> rw []) \\
+         DISCH_THEN (fs o wrap o SYM) \\
+         Cases_on ‘n2 IN A’
+         >- (Know ‘A = part {A; B} n2’
+             >- (MATCH_MP_TAC part_unique \\
+                 Q.EXISTS_TAC ‘V’ >> rw []) \\
+             DISCH_THEN (fs o wrap o SYM)) \\
+         ASM_SET_TAC []) \\
+     simp [] \\
+     CONJ_ASM1_TAC >- ASM_SET_TAC [] \\
+     Know ‘B = part {A; B} n1’
+     >- (MATCH_MP_TAC part_unique \\
+         Q.EXISTS_TAC ‘V’ >> rw []) \\
+     DISCH_THEN (fs o wrap o SYM) \\
+     Cases_on ‘n2 IN B’
+     >- (Know ‘B = part {A; B} n2’
+         >- (MATCH_MP_TAC part_unique \\
+             Q.EXISTS_TAC ‘V’ >> rw []) \\
+         DISCH_THEN (fs o wrap o SYM)) \\ 
+     ASM_SET_TAC [])
+ >> STRIP_TAC
+ >> CONJ_ASM1_TAC (* {A; B} partitions V *)
+ >- (rw [partitions_PAIR_DISJOINT] >- art [] \\
+     rw [Once DISJOINT_SYM])
+ >> rpt STRIP_TAC
+ >> ‘n1 IN V /\ n2 IN V /\ n1 <> n2’ by PROVE_TAC [fsgraph_valid]
+ >> Q.PAT_X_ASSUM ‘!n1 n2. P’ (MP_TAC o Q.SPECL [‘n1’, ‘n2’]) >> rw []
+ >| [ (* goal 1 (of 2) *)
+      CCONTR_TAC >> fs [] \\
+      Know ‘A = part {A; B} n1’
+      >- (MATCH_MP_TAC part_unique \\
+          Q.EXISTS_TAC ‘V’ >> rw []) \\
+      DISCH_THEN (fs o wrap o SYM) \\
+      Know ‘B = part {A; B} n2’
+      >- (MATCH_MP_TAC part_unique \\
+          Q.EXISTS_TAC ‘V’ >> rw []) \\
+      DISCH_THEN (fs o wrap o SYM),
+      (* goal 2 (of 2) *)
+      CCONTR_TAC >> fs [] \\
+      Know ‘B = part {A; B} n1’
+      >- (MATCH_MP_TAC part_unique \\
+          Q.EXISTS_TAC ‘V’ >> rw []) \\
+      DISCH_THEN (fs o wrap o SYM) \\
+      Know ‘A = part {A; B} n2’
+      >- (MATCH_MP_TAC part_unique \\
+          Q.EXISTS_TAC ‘V’ >> rw []) \\
+      DISCH_THEN (fs o wrap o SYM) ]
 QED
 
 (* The "other" vertex/node in the edge *)
@@ -766,7 +828,7 @@ Theorem other_exists[local] :
           !n. n IN e ==> ?n'. e = {n; n'} /\ n' IN e /\ n' <> n
 Proof
     rpt STRIP_TAC
- >> Q.PAT_X_ASSUM ‘e IN E’ (fn th => STRIP_ASSUME_TAC (MATCH_MP alledges_valid th))
+ >> Q.PAT_X_ASSUM ‘e IN E’ (STRIP_ASSUME_TAC o MATCH_MP alledges_valid)
  >> fs []
  >| [ (* goal 1 (of 2) *)
       Q.EXISTS_TAC ‘b’ >> rw [],
@@ -787,7 +849,7 @@ val other_def =
 (* M is a matching of U if every vertex in U is incident with a M-edge [2, p.37] *)
 Definition matching_of :
     matching_of g M U <=>
-    U SUBSET nodes g /\ M SUBSET fsgedges g /\ !v. v IN U ==> ?e. e IN M /\ v IN e
+      U SUBSET nodes g /\ M SUBSET fsgedges g /\ !v. v IN U ==> ?e. e IN M /\ v IN e
 End
 
 Theorem matching_of_fsgraph :
@@ -803,6 +865,9 @@ QED
 
 (* ‘BIGUNION (fsgedges g)’ is the set of all vertices from all edges, which is
    the maximal possible matching of a graph.
+
+   NOTE: ‘matching_of g (fsgedges g) (nodes g)’ doesn't work, because some nodes
+   may not have any edge at all.
  *)
 Theorem maximal_matching_of_fsgraph :
     !g. matching_of g (fsgedges g) (BIGUNION (fsgedges g))
@@ -849,9 +914,23 @@ End
    with a vertex in U. [2, p.38]
  *)
 Definition covering_def :
-    covering g U <=>
-    U SUBSET nodes g /\ !e. e IN fsgedges g ==> ?v. v IN U /\ v IN e
+    covering g U <=> U SUBSET nodes g /\ !e. e IN fsgedges g ==> ?v. v IN U /\ v IN e
 End
+
+Theorem covering_alt :
+    !g U. covering g U <=> U SUBSET nodes g /\ !e. e IN fsgedges g ==> e INTER U <> {}
+Proof
+    rw [covering_def]
+ >> EQ_TAC >> rw []
+ >| [ (* goal 1 (of 2) *)
+      Q.PAT_X_ASSUM ‘!e. e IN E ==> P’ (MP_TAC o Q.SPEC ‘e’) \\
+      rw [Once EXTENSION, NOT_IN_EMPTY] \\
+      Q.EXISTS_TAC ‘v’ >> art [],
+      (* goal 2 (of 2) *)
+      Q.PAT_X_ASSUM ‘!e. e IN E ==> P’ (MP_TAC o Q.SPEC ‘e’) \\
+      rw [Once EXTENSION, NOT_IN_EMPTY] \\
+      Q.EXISTS_TAC ‘x’ >> art [] ]
+QED
 
 Definition max_matching_def :
     max_matching g = MAX_SET (IMAGE CARD (matching g))
