@@ -722,7 +722,7 @@ Proof
 QED
 
 (* ----------------------------------------------------------------------
-    Matching, Covering and Packing [2, Chapter 2p.67]
+    r-partite graphs and (in particular) bipartite graphs [2, p.17]
    ---------------------------------------------------------------------- *)
 
 Overload V[local] = “nodes (g :fsgraph)”
@@ -738,7 +738,8 @@ QED
 
 (* r-partite graphs [2, p.17]
 
-   NOTE: ‘partitions’ requires that each partiton is non-empty.
+   NOTE: ‘partitions’ requires that each partiton must be non-empty. This is not
+   explicitly mentioned in the textbook but seems reasonable.
  *)
 Definition partite_def :
     partite r (g :fsgraph) v <=>
@@ -746,12 +747,12 @@ Definition partite_def :
       !n1 n2. {n1;n2} IN fsgedges g ==> part v n1 <> part v n2
 End
 
-(* "Instead of '2-partite' one usually says bipartite. *)
+(* "Instead of '2-partite' one usually says bipartite." *)
 Overload bipartite = “partite 2”
 
 Theorem bipartite_def :
     !g A B. bipartite (g :fsgraph) {A;B} <=>
-           (DISJOINT A B /\ A <> {} /\ B <> {} /\ A UNION B = nodes g /\ 
+           (DISJOINT A B /\ A <> {} /\ B <> {} /\ A UNION B = nodes g /\
             !n1 n2. {n1;n2} IN fsgedges g ==>
                     (n1 IN A /\ n2 IN B) \/ (n1 IN B /\ n2 IN A))
 Proof
@@ -791,7 +792,7 @@ Proof
      >- (Know ‘B = part {A; B} n2’
          >- (MATCH_MP_TAC part_unique \\
              Q.EXISTS_TAC ‘V’ >> rw []) \\
-         DISCH_THEN (fs o wrap o SYM)) \\ 
+         DISCH_THEN (fs o wrap o SYM)) \\
      ASM_SET_TAC [])
  >> STRIP_TAC
  >> CONJ_ASM1_TAC (* {A; B} partitions V *)
@@ -821,6 +822,10 @@ Proof
           Q.EXISTS_TAC ‘V’ >> rw []) \\
       DISCH_THEN (fs o wrap o SYM) ]
 QED
+
+(* ----------------------------------------------------------------------
+    Matching, Covering and Packing [2, Chapter 2p.67]
+   ---------------------------------------------------------------------- *)
 
 (* The "other" vertex/node in the edge *)
 Theorem other_exists[local] :
