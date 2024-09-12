@@ -4799,34 +4799,6 @@ val EVENTUALLY_AT = store_thm ("EVENTUALLY_AT",
   ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
   REWRITE_TAC[EVENTUALLY_WITHIN, IN_UNIV]);
 
-val EVENTUALLY_SEQUENTIALLY = store_thm ("EVENTUALLY_SEQUENTIALLY",
- ``!p. eventually p sequentially <=> ?N. !n. N <= n ==> p n``,
-  REWRITE_TAC[eventually, SEQUENTIALLY, GREATER_EQ, LESS_EQ_REFL,
-    TRIVIAL_LIMIT_SEQUENTIALLY] THEN  MESON_TAC[LESS_EQ_REFL]);
-
-val EVENTUALLY_AT_INFINITY = store_thm ("EVENTUALLY_AT_INFINITY",
- ``!p. eventually p at_infinity <=> ?b. !x. abs(x) >= b ==> p x``,
-  SIMP_TAC std_ss [eventually, AT_INFINITY, TRIVIAL_LIMIT_AT_INFINITY] THEN
-  REPEAT GEN_TAC THEN EQ_TAC THENL [MESON_TAC[REAL_LE_REFL], ALL_TAC] THEN
-  MESON_TAC[real_ge, REAL_LE_REFL, REAL_CHOOSE_SIZE,
-    REAL_ARITH ``&0 <= b:real \/ (!x. x >= &0 ==> x >= b)``]);
-
-val EVENTUALLY_AT_POSINFINITY = store_thm ("EVENTUALLY_AT_POSINFINITY",
- ``!p. eventually p at_posinfinity <=> ?b. !x. x >= b ==> p x``,
-  REWRITE_TAC[eventually, TRIVIAL_LIMIT_AT_POSINFINITY, AT_POSINFINITY] THEN
-  MESON_TAC[REAL_ARITH ``x >= x``]);
-
-val EVENTUALLY_AT_NEGINFINITY = store_thm ("EVENTUALLY_AT_NEGINFINITY",
- ``!p. eventually p at_neginfinity <=> ?b. !x. x <= b ==> p x``,
-  REWRITE_TAC[eventually, TRIVIAL_LIMIT_AT_NEGINFINITY, AT_NEGINFINITY] THEN
-  MESON_TAC[REAL_LE_REFL]);
-
-val EVENTUALLY_AT_INFINITY_POS = store_thm ("EVENTUALLY_AT_INFINITY_POS",
- ``!p:real->bool.
-        eventually p at_infinity <=> ?b. &0 < b /\ !x. abs x >= b ==> p x``,
-  GEN_TAC THEN REWRITE_TAC[EVENTUALLY_AT_INFINITY, real_ge] THEN
-  MESON_TAC[REAL_ARITH ``&0 < abs b + &1 /\ (abs b + &1 <= x ==> b <= x:real)``]);
-
 (* ------------------------------------------------------------------------- *)
 (* Limits, defined as vacuously true when the limit is trivial.              *)
 (* ------------------------------------------------------------------------- *)

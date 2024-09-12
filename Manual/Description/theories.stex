@@ -318,8 +318,8 @@ expressions. The concrete syntax
 \index{terms, in HOL logic@terms, in \HOL{} logic!conditional}%
 \index{conditionals, in HOL logic@conditionals, in \HOL{} logic}%
 %
-$\holtxt{if}\;t_1\;\holtxt{then}\;t_2\;\holtxt{else}\;t_3$ abbreviates
-the application \holtxt{COND $t_1$ $t_2$ $t_3$}.
+$\holtxt{if}\;t\;\holtxt{then}\;t_1\;\holtxt{else}\;t_2$ abbreviates
+the application \holtxt{COND $t$ $t_1$ $t_2$}.
 
 The constant \holtxt{IN} (written as an infix) is the basis of
 the modelling of sets by their characteristic functions.  The term
@@ -1199,7 +1199,7 @@ The sum type operator can be seen as functorial over its arguments and so has a 
 \index{one, the HOL theory and type@\ml{one}, the \HOL{} theory and type}%
 \index{unit, the HOL type (alias for one)@\ml{unit}, the \HOL{} type (alias for \holtxt{one})}%
 
-The theory \ml{one} defines  the type  \ml{one} which  contains one element.
+The theory \ml{one} defines the type \ml{one} which contains only one element.
 The type is also abbreviated as \ml{unit}, which is the name of the analogous type in \ML{}, and this is the type's preferred printing form.
 The constant \ml{one} denotes this one element, but, again by analogy with \ML{}, the preferred parsing and printing form for this constant is \holtxt{()}.\footnote{When using the parenthesis-version, the \holtxt{one} value's syntax consists of two parenthesis tokens, so that one can write the value with white-space between the parentheses if desired.}
 The pre-proved theorems in the theory \ml{one} are:
