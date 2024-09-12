@@ -742,23 +742,27 @@ QED
    explicitly mentioned in the textbook but seems reasonable.
  *)
 Definition partite_def :
-    partite r (g :fsgraph) v <=>
-      v partitions (nodes g) /\ CARD v = r /\
-      !n1 n2. {n1;n2} IN fsgedges g ==> part v n1 <> part v n2
+    partite r (g :fsgraph) <=>
+      ?v. v partitions (nodes g) /\ CARD v = r /\
+          !n1 n2. {n1;n2} IN fsgedges g ==> part v n1 <> part v n2
 End
 
 (* "Instead of '2-partite' one usually says bipartite." *)
 Overload bipartite = “partite 2”
 
 Theorem bipartite_def :
-    !g A B. bipartite (g :fsgraph) {A;B} <=>
-           (DISJOINT A B /\ A <> {} /\ B <> {} /\ A UNION B = nodes g /\
-            !n1 n2. {n1;n2} IN fsgedges g ==>
-                    (n1 IN A /\ n2 IN B) \/ (n1 IN B /\ n2 IN A))
+    !g. bipartite (g :fsgraph) <=>
+        ?A B. DISJOINT A B /\ A <> {} /\ B <> {} /\ A UNION B = nodes g /\
+              !n1 n2. {n1;n2} IN fsgedges g ==>
+                      (n1 IN A /\ n2 IN B) \/ (n1 IN B /\ n2 IN A)
 Proof
     rw [partite_def]
  >> EQ_TAC >> simp []
  >- (STRIP_TAC \\
+    ‘FINITE V’ by rw [] \\
+    ‘FINITE v’ by PROVE_TAC [partitions_FINITE] \\
+     fs [CARDEQ2] >> rename1 ‘v = {A; B}’ >> gvs [] \\
+     qexistsl_tac [‘A’, ‘B’] \\
      CONJ_ASM1_TAC (* DISJOINT A B *)
      >- (MATCH_MP_TAC partitions_DISJOINT \\
          qexistsl_tac [‘{A;B}’, ‘V’] >> rw []) \\
@@ -795,9 +799,14 @@ Proof
          DISCH_THEN (fs o wrap o SYM)) \\
      ASM_SET_TAC [])
  >> STRIP_TAC
+ >> Q.EXISTS_TAC ‘{A; B}’
  >> CONJ_ASM1_TAC (* {A; B} partitions V *)
  >- (rw [partitions_PAIR_DISJOINT] >- art [] \\
      rw [Once DISJOINT_SYM])
+ >> CONJ_TAC
+ >- (rw [CARDEQ2] \\
+     qexistsl_tac [‘A’, ‘B’] >> art [] \\
+     CCONTR_TAC >> fs [DISJOINT_EMPTY_REFL_RWT])
  >> rpt STRIP_TAC
  >> ‘n1 IN V /\ n2 IN V /\ n1 <> n2’ by PROVE_TAC [fsgraph_valid]
  >> Q.PAT_X_ASSUM ‘!n1 n2. P’ (MP_TAC o Q.SPECL [‘n1’, ‘n2’]) >> rw []
@@ -821,6 +830,26 @@ Proof
       >- (MATCH_MP_TAC part_unique \\
           Q.EXISTS_TAC ‘V’ >> rw []) \\
       DISCH_THEN (fs o wrap o SYM) ]
+QED
+
+Theorem bipartite_alt :
+    !g. bipartite (g :fsgraph) <=>
+        ?A B. DISJOINT A B /\ A <> {} /\ B <> {} /\ A UNION B = nodes g /\
+              !e. e IN fsgedges g ==> ?n1 n2. e = {n1; n2} /\ n1 IN A /\ n2 IN B
+Proof
+    rw [bipartite_def]
+ >> EQ_TAC >> STRIP_TAC
+ >| [ (* goal 1 (of 2) *)
+      qexistsl_tac [‘A’, ‘B’] >> rw [] \\
+      MP_TAC (Q.SPEC ‘g’ alledges_valid) >> rw [] \\
+      Q.PAT_X_ASSUM ‘!n1 n2. P’ (MP_TAC o Q.SPECL [‘a’, ‘b’]) >> rw []
+      >- (qexistsl_tac [‘a’, ‘b’] >> art []) \\
+      qexistsl_tac [‘b’, ‘a’] >> art [] \\
+      rw [INSERT2_lemma],
+      (* goal 2 (of 2) *)
+      qexistsl_tac [‘A’, ‘B’] >> rw [] \\
+      Q.PAT_X_ASSUM ‘!e. P’ (MP_TAC o Q.SPEC ‘{n1; n2}’) >> rw [] \\
+      gvs [INSERT2_lemma] ]
 QED
 
 (* ----------------------------------------------------------------------
@@ -888,6 +917,13 @@ Definition matching_def :
     matching g M <=> ?U. matching_of g M U
 End
 
+Theorem empty_matching :
+    !g. matching g {}
+Proof
+    rw [matching_def, matching_of]
+ >> Q.EXISTS_TAC ‘{}’ >> rw []
+QED
+
 (* A vertex is unmatched if it does not incident any edge in the matching M *)
 Definition unmatched_def :
     unmatched v (M :(unit + num -> bool) -> bool) <=> !e. e IN M ==> v NOTIN e
@@ -906,9 +942,8 @@ Type fspath[pp] = “:(unit + num) list”
 Definition alternating_path_def :
     alternating_path (g :fsgraph) M vs <=>
       path g vs /\ unmatched (EL 0 vs) M /\
-      !i. i + 2 < LENGTH vs ==>
-          ({EL i vs;EL (i + 1) vs} IN M /\ {EL (i + 1) vs;EL (i + 2) vs} NOTIN M) \/
-          ({EL i vs;EL (i + 1) vs} NOTIN M /\ {EL (i + 1) vs;EL (i + 2) vs} IN M)
+      (!i. SUC i < LENGTH vs /\ ODD i ==> {EL i vs;EL (SUC i) vs} IN M) /\
+      (!i. SUC i < LENGTH vs /\ EVEN i ==> {EL i vs;EL (SUC i) vs} NOTIN M)
 End
 
 Definition augmenting_path_def :
@@ -947,7 +982,7 @@ End
 
 (* Theorem 2.1.1 (Koenig) [2, p.39] *)
 Theorem bipartite_max_matching_thm :
-    !g A B. bipartite g {A;B} ==> max_matching g = min_covering g
+    !g. bipartite g ==> max_matching g = min_covering g
 Proof
     cheat
 QED
