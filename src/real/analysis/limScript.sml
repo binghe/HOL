@@ -16,7 +16,6 @@ val _ = ParseExtras.temp_loose_equality()
 val _ = Parse.reveal "B";
 
 val tendsto = netsTheory.tendsto;   (* conflict with real_topologyTheory.tendsto *)
-val GEN_ALL = hol88Lib.GEN_ALL;     (* this gives old (reverted) variable orders *)
 val EXACT_CONV = jrhUtils.EXACT_CONV; (* there's one also in hurdUtils *)
 
 (*---------------------------------------------------------------------------*)
@@ -49,57 +48,61 @@ Proof
     REWRITE_TAC [LIM_AT, LIM, dist]
 QED
 
-val LIM_CONST = store_thm("LIM_CONST",
-  “!k x. ((\x. k) -> k)(x)”,
-  REPEAT GEN_TAC THEN REWRITE_TAC[tends_real_real, MTOP_TENDS] THEN
-  GEN_TAC THEN DISCH_TAC THEN ASM_REWRITE_TAC[METRIC_SAME] THEN
-  REWRITE_TAC[tendsto, REAL_LE_REFL] THEN
-  MP_TAC(REWRITE_RULE[MTOP_LIMPT] (SPEC “x:real” MR1_LIMPT)) THEN
-  DISCH_THEN(MP_TAC o SPEC “e:real”) THEN ASM_REWRITE_TAC[] THEN
-  DISCH_THEN(X_CHOOSE_THEN “z:real” (ASSUME_TAC o CONJUNCT1)) THEN
-  EXISTS_TAC “z:real” THEN REWRITE_TAC[MR1_DEF, GSYM ABS_NZ] THEN
-  REWRITE_TAC[REAL_SUB_0] THEN CONV_TAC(RAND_CONV SYM_CONV) THEN
-  ASM_REWRITE_TAC[]);
+Theorem LIM_CONST :
+    !k x. ((\x. k) -> k)(x)
+Proof
+    rw [GSYM LIM_AT_LIM, real_topologyTheory.LIM_CONST]
+QED
 
-val LIM_ADD = store_thm("LIM_ADD",
-  “!f g l m x. (f -> l)(x) /\ (g -> m)(x) ==>
-      ((\x. f(x) + g(x)) -> (l + m))(x)”,
-  REPEAT GEN_TAC THEN REWRITE_TAC[tends_real_real] THEN
-  MATCH_MP_TAC NET_ADD THEN MATCH_ACCEPT_TAC DORDER_TENDSTO);
+Theorem LIM_ADD :
+   !f g l m x. (f -> l)(x) /\ (g -> m)(x) ==>
+      ((\x. f(x) + g(x)) -> (l + m))(x)
+Proof
+    rw [GSYM LIM_AT_LIM, real_topologyTheory.LIM_ADD]
+QED
 
-val LIM_MUL = store_thm("LIM_MUL",
-  “!f g l m x. (f -> l)(x) /\ (g -> m)(x) ==>
-      ((\x. f(x) * g(x)) -> (l * m))(x)”,
-  REPEAT GEN_TAC THEN REWRITE_TAC[tends_real_real] THEN
-  MATCH_MP_TAC NET_MUL THEN MATCH_ACCEPT_TAC DORDER_TENDSTO);
+Theorem LIM_MUL :
+   !f g l m x. (f -> l)(x) /\ (g -> m)(x) ==>
+      ((\x. f(x) * g(x)) -> (l * m))(x)
+Proof
+    rw [GSYM LIM_AT_LIM, real_topologyTheory.LIM_MUL]
+QED
 
-val LIM_NEG = store_thm("LIM_NEG",
-  “!f l x. (f -> l)(x) = ((\x. ~(f(x))) -> ~l)(x)”,
+Theorem LIM_NEG :
+   !f l x. (f -> l)(x) = ((\x. ~(f(x))) -> ~l)(x)
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[tends_real_real] THEN
-  MATCH_MP_TAC NET_NEG THEN MATCH_ACCEPT_TAC DORDER_TENDSTO);
+  MATCH_MP_TAC NET_NEG THEN MATCH_ACCEPT_TAC DORDER_TENDSTO
+QED
 
-val LIM_INV = store_thm("LIM_INV",
-  “!f l x. (f -> l)(x) /\ ~(l = &0) ==>
-        ((\x. inv(f(x))) -> inv l)(x)”,
-  REPEAT GEN_TAC THEN REWRITE_TAC[tends_real_real] THEN
-  MATCH_MP_TAC NET_INV THEN MATCH_ACCEPT_TAC DORDER_TENDSTO);
+Theorem LIM_INV :
+   !f l x. (f -> l)(x) /\ ~(l = &0) ==>
+        ((\x. inv(f(x))) -> inv l)(x)
+Proof
+    rw [GSYM LIM_AT_LIM,
+        REWRITE_RULE [o_DEF] real_topologyTheory.LIM_INV]
+QED
 
-val LIM_SUB = store_thm("LIM_SUB",
-  “!f g l m x. (f -> l)(x) /\ (g -> m)(x) ==>
-      ((\x. f(x) - g(x)) -> (l - m))(x)”,
-  REPEAT GEN_TAC THEN REWRITE_TAC[tends_real_real] THEN
-  MATCH_MP_TAC NET_SUB THEN MATCH_ACCEPT_TAC DORDER_TENDSTO);
+Theorem LIM_SUB :
+   !f g l m x. (f -> l)(x) /\ (g -> m)(x) ==>
+      ((\x. f(x) - g(x)) -> (l - m))(x)
+Proof
+    rw [GSYM LIM_AT_LIM, real_topologyTheory.LIM_SUB]
+QED
 
-val LIM_DIV = store_thm("LIM_DIV",
-  “!f g l m x. (f -> l)(x) /\ (g -> m)(x) /\ ~(m = &0) ==>
-      ((\x. f(x) / g(x)) -> (l / m))(x)”,
+Theorem LIM_DIV :
+   !f g l m x. (f -> l)(x) /\ (g -> m)(x) /\ ~(m = &0) ==>
+      ((\x. f(x) / g(x)) -> (l / m))(x)
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[tends_real_real] THEN
-  MATCH_MP_TAC NET_DIV THEN MATCH_ACCEPT_TAC DORDER_TENDSTO);
+  MATCH_MP_TAC NET_DIV THEN MATCH_ACCEPT_TAC DORDER_TENDSTO
+QED
 
-val LIM_NULL = store_thm("LIM_NULL",
-  “!f l x. (f -> l)(x) = ((\x. f(x) - l) -> &0)(x)”,
-  REPEAT GEN_TAC THEN REWRITE_TAC[tends_real_real] THEN
-  MATCH_ACCEPT_TAC NET_NULL);
+Theorem LIM_NULL :
+   !f l x. (f -> l)(x) = ((\x. f(x) - l) -> &0)(x)
+Proof
+    rw [GSYM LIM_AT_LIM, Once real_topologyTheory.LIM_NULL]
+QED
 
 (*---------------------------------------------------------------------------*)
 (* One extra theorem is handy                                                *)
@@ -580,7 +583,7 @@ val DIFF_MUL = store_thm("DIFF_MUL",
   REPEAT GEN_TAC THEN REWRITE_TAC[diffl] THEN
   DISCH_TAC THEN BETA_TAC THEN SUBGOAL_THEN
     “!a b c d. (a * b) - (c * d) = ((a * b) - (a * d)) + ((a * d) - (c * d))”
-  (fn th => ONCE_REWRITE_TAC[GEN_ALL th]) THENL
+  (fn th => ONCE_REWRITE_TAC[hol88Lib.GEN_ALL th]) THENL
    [REWRITE_TAC[real_sub] THEN
     ONCE_REWRITE_TAC[AC(REAL_ADD_ASSOC,REAL_ADD_SYM)
       “(a + b) + (c + d) = (b + c) + (a + d)”] THEN
@@ -1208,7 +1211,7 @@ Proof
   REWRITE_TAC[GSYM real_sub, REAL_LT_SUB_LADD, REAL_LT_SUB_RADD] THEN
   FREEZE_THEN(fn th => ONCE_REWRITE_TAC[th]) (Q.SPEC `x` REAL_ADD_SYM) THEN
   REWRITE_TAC[REAL_LT_RADD] THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
-  (MATCH_MP_TAC o GEN_ALL o fst o EQ_IMP_RULE o SPEC_ALL) REAL_LT_RADD THENL
+  (MATCH_MP_TAC o hol88Lib.GEN_ALL o fst o EQ_IMP_RULE o SPEC_ALL) REAL_LT_RADD THENL
   [ (* goal 1 (of 2) *)
     Q.EXISTS_TAC `a:real` THEN MATCH_MP_TAC REAL_LTE_TRANS THEN
     Q.EXISTS_TAC `x + x` THEN ASM_REWRITE_TAC[] THEN
