@@ -1105,7 +1105,6 @@ Theorem ROLLE :
            (!x. a < x /\ x < b ==> f differentiable x)
         ==> ?z. a < z /\ z < b /\ (f diffl &0)(z)
 Proof
- (* new proof based on derivativeTheory *)
     rw [differentiable, diffl_has_derivative', contl_eq_continuous_at]
  >> fs [GSYM IN_INTERVAL, EXT_SKOLEM_THM]
  >> MP_TAC (Q.SPECL [‘f’, ‘$* o f'’, ‘a’, ‘b’] derivativeTheory.ROLLE)
@@ -1115,81 +1114,7 @@ Proof
  >> Q.PAT_X_ASSUM ‘!x. x IN interval (a,b) ==> P’ (MP_TAC o (Q.SPEC ‘x’))
  >> RW_TAC std_ss []
  >> Q.EXISTS_TAC ‘x’
- >> fs [IN_INTERVAL]
- >> METIS_TAC []
- (* old proof:
-  REPEAT GEN_TAC THEN DISCH_THEN STRIP_ASSUME_TAC THEN
-  FIRST_ASSUM(ASSUME_TAC o MATCH_MP REAL_LT_IMP_LE) THEN
-  MP_TAC(SPECL [“f:real->real”, “a:real”, “b:real”] CONT_ATTAINS) THEN
-  ASM_REWRITE_TAC[] THEN DISCH_THEN(X_CHOOSE_THEN “M:real” MP_TAC) THEN
-  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (X_CHOOSE_TAC “x1:real”)) THEN
-  MP_TAC(SPECL [“f:real->real”, “a:real”, “b:real”] CONT_ATTAINS2) THEN
-  ASM_REWRITE_TAC[] THEN DISCH_THEN(X_CHOOSE_THEN “m:real” MP_TAC) THEN
-  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (X_CHOOSE_TAC “x2:real”)) THEN
-  ASM_CASES_TAC “a < x1 /\ x1 < b” THENL
-   [FIRST_ASSUM(X_CHOOSE_THEN “d:real” MP_TAC o MATCH_MP INTERVAL_LEMMA) THEN
-    DISCH_THEN STRIP_ASSUME_TAC THEN EXISTS_TAC “x1:real” THEN
-    ASM_REWRITE_TAC[] THEN SUBGOAL_THEN
-     “?l. (f diffl l)(x1) /\
-          ?d. &0 < d /\ (!y. abs(x1 - y) < d ==> f(y) <= f(x1))” MP_TAC THENL
-     [CONV_TAC EXISTS_AND_CONV THEN CONJ_TAC THENL
-       [REWRITE_TAC[GSYM differentiable] THEN FIRST_ASSUM MATCH_MP_TAC THEN
-        ASM_REWRITE_TAC[],
-        EXISTS_TAC “d:real” THEN ASM_REWRITE_TAC[] THEN X_GEN_TAC “y:real” THEN
-        DISCH_TAC THEN REPEAT(FIRST_ASSUM MATCH_MP_TAC) THEN
-        ASM_REWRITE_TAC[]], ALL_TAC] THEN
-    DISCH_THEN(X_CHOOSE_THEN “l:real” MP_TAC) THEN
-    DISCH_THEN(fn th => ASSUME_TAC th THEN SUBST_ALL_TAC(MATCH_MP DIFF_LMAX th))
-    THEN ASM_REWRITE_TAC[], ALL_TAC] THEN
-  ASM_CASES_TAC “a < x2 /\ x2 < b” THENL
-   [FIRST_ASSUM(X_CHOOSE_THEN “d:real” MP_TAC o MATCH_MP INTERVAL_LEMMA) THEN
-    DISCH_THEN STRIP_ASSUME_TAC THEN EXISTS_TAC “x2:real” THEN
-    ASM_REWRITE_TAC[] THEN SUBGOAL_THEN
-     “?l. (f diffl l)(x2) /\
-          ?d. &0 < d /\ (!y. abs(x2 - y) < d ==> f(x2) <= f(y))” MP_TAC THENL
-     [CONV_TAC EXISTS_AND_CONV THEN CONJ_TAC THENL
-       [REWRITE_TAC[GSYM differentiable] THEN FIRST_ASSUM MATCH_MP_TAC THEN
-        ASM_REWRITE_TAC[],
-        EXISTS_TAC “d:real” THEN ASM_REWRITE_TAC[] THEN X_GEN_TAC “y:real” THEN
-        DISCH_TAC THEN REPEAT(FIRST_ASSUM MATCH_MP_TAC) THEN
-        ASM_REWRITE_TAC[]], ALL_TAC] THEN
-    DISCH_THEN(X_CHOOSE_THEN “l:real” MP_TAC) THEN
-    DISCH_THEN(fn th => ASSUME_TAC th THEN SUBST_ALL_TAC(MATCH_MP DIFF_LMIN th))
-    THEN ASM_REWRITE_TAC[], ALL_TAC] THEN
-  SUBGOAL_THEN “!x. a <= x /\ x <= b ==> (f(x):real = f(b))” MP_TAC THENL
-   [REPEAT(FIRST_ASSUM(UNDISCH_TAC o assert is_neg o concl)) THEN
-    ASM_REWRITE_TAC[REAL_LT_LE] THEN REWRITE_TAC[DE_MORGAN_THM] THEN
-    REPEAT (DISCH_THEN(DISJ_CASES_THEN2 (MP_TAC o SYM) MP_TAC) THEN
-            DISCH_THEN(SUBST_ALL_TAC o AP_TERM “f:real->real”)) THEN
-    UNDISCH_TAC “(f:real->real) a = f b” THEN
-    DISCH_THEN(fn th => SUBST_ALL_TAC th THEN ASSUME_TAC th) THEN
-    GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[GSYM REAL_LE_ANTISYM] THEN
-    (CONJ_TAC THENL
-      [SUBGOAL_THEN “(f:real->real) b = M” SUBST1_TAC THENL
-        [FIRST_ASSUM(ACCEPT_TAC o el 3 o CONJUNCTS),
-         FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]],
-       SUBGOAL_THEN “(f:real->real) b = m” SUBST1_TAC THENL
-        [FIRST_ASSUM(ACCEPT_TAC o el 3 o CONJUNCTS),
-         FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]]]),
-    X_CHOOSE_TAC “x:real” (MATCH_MP REAL_MEAN (ASSUME “a < b”)) THEN
-    DISCH_TAC THEN EXISTS_TAC “x:real” THEN
-    REWRITE_TAC[ASSUME “a < x /\ x < b”] THEN
-    FIRST_ASSUM(MP_TAC o MATCH_MP INTERVAL_LEMMA) THEN
-    DISCH_THEN(X_CHOOSE_THEN “d:real” STRIP_ASSUME_TAC) THEN
-    SUBGOAL_THEN “?l. ($diffl f l)(x) /\
-        (?d. &0 < d /\ (!y. abs(x - y) < d ==> (f(y) = f(x))))” MP_TAC THENL
-     [CONV_TAC(ONCE_DEPTH_CONV EXISTS_AND_CONV) THEN CONJ_TAC THENL
-       [REWRITE_TAC[GSYM differentiable] THEN FIRST_ASSUM MATCH_MP_TAC THEN
-        ASM_REWRITE_TAC[],
-        EXISTS_TAC “d:real” THEN ASM_REWRITE_TAC[] THEN GEN_TAC THEN
-        DISCH_THEN(fn th => FIRST_ASSUM(MP_TAC o C MATCH_MP th)) THEN
-        DISCH_THEN(fn th => FIRST_ASSUM(MP_TAC o C MATCH_MP th)) THEN
-        DISCH_THEN SUBST1_TAC THEN CONV_TAC SYM_CONV THEN
-        FIRST_ASSUM MATCH_MP_TAC THEN CONJ_TAC THEN
-        MATCH_MP_TAC REAL_LT_IMP_LE THEN ASM_REWRITE_TAC[]],
-      DISCH_THEN(X_CHOOSE_THEN “l:real” (fn th =>
-       ASSUME_TAC th THEN SUBST_ALL_TAC(MATCH_MP DIFF_LCONST th))) THEN
-      ASM_REWRITE_TAC[]]] *)
+ >> fs [IN_INTERVAL] >> METIS_TAC []
 QED
 
 (*---------------------------------------------------------------------------*)
@@ -1229,7 +1154,6 @@ Theorem MVT :
         ==> ?l z. a < z /\ z < b /\ (f diffl l)(z) /\
             (f(b) - f(a) = (b - a) * l)
 Proof
- (* new proof based on derivativeTheory *)
     rw [differentiable, diffl_has_derivative', contl_eq_continuous_at]
  >> fs [GSYM IN_INTERVAL, EXT_SKOLEM_THM]
  >> MP_TAC (Q.SPECL [‘f’, ‘$* o f'’, ‘a’, ‘b’] derivativeTheory.MVT)
@@ -1238,47 +1162,6 @@ Proof
  >> rw [o_DEF, FUN_EQ_THM]
  >> fs [IN_INTERVAL]
  >> qexistsl_tac [‘f' x’, ‘x’] >> rw []
- (* old proof:
-  REPEAT GEN_TAC THEN STRIP_TAC THEN
-  MP_TAC(SPECL [gfn, “a:real”, “b:real”] ROLLE) THEN
-  W(C SUBGOAL_THEN (fn t =>REWRITE_TAC[t]) o funpow 2 (fst o dest_imp) o snd) THENL
-   [ASM_REWRITE_TAC[MVT_LEMMA] THEN BETA_TAC THEN
-    CONJ_TAC THEN X_GEN_TAC “x:real” THENL
-     [DISCH_TAC THEN CONV_TAC(ONCE_DEPTH_CONV HABS_CONV) THEN
-      MATCH_MP_TAC CONT_SUB THEN CONJ_TAC THENL
-       [CONV_TAC(ONCE_DEPTH_CONV ETA_CONV) THEN
-        FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[],
-        CONV_TAC(ONCE_DEPTH_CONV HABS_CONV) THEN MATCH_MP_TAC CONT_MUL THEN
-        REWRITE_TAC[CONT_CONST] THEN MATCH_MP_TAC DIFF_CONT THEN
-        EXISTS_TAC “&1” THEN MATCH_ACCEPT_TAC DIFF_X],
-      DISCH_THEN(fn th => FIRST_ASSUM(MP_TAC o C MATCH_MP th)) THEN
-      REWRITE_TAC[differentiable] THEN DISCH_THEN(X_CHOOSE_TAC “l:real”) THEN
-      EXISTS_TAC “l - ((f(b) - f(a)) / (b - a))” THEN
-      CONV_TAC(ONCE_DEPTH_CONV HABS_CONV) THEN MATCH_MP_TAC DIFF_SUB THEN
-      CONJ_TAC THENL
-       [CONV_TAC(ONCE_DEPTH_CONV ETA_CONV) THEN FIRST_ASSUM ACCEPT_TAC,
-        CONV_TAC(ONCE_DEPTH_CONV HABS_CONV) THEN REWRITE_TAC[] THEN
-        GEN_REWR_TAC LAND_CONV [GSYM REAL_MUL_RID] THEN
-        MATCH_MP_TAC DIFF_CMUL THEN MATCH_ACCEPT_TAC DIFF_X]],
-    ALL_TAC] THEN
-  REWRITE_TAC[CONJ_ASSOC] THEN DISCH_THEN(X_CHOOSE_THEN “z:real” MP_TAC) THEN
-  DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-  DISCH_THEN(curry op THEN (MAP_EVERY EXISTS_TAC
-   [“((f(b) - f(a)) / (b - a))”, “z:real”]) o MP_TAC) THEN
-  ASM_REWRITE_TAC[] THEN DISCH_THEN(curry op THEN CONJ_TAC o MP_TAC) THENL
-   [ALL_TAC, DISCH_THEN(K ALL_TAC) THEN CONV_TAC SYM_CONV THEN
-    MATCH_MP_TAC REAL_DIV_LMUL THEN REWRITE_TAC[REAL_SUB_0] THEN
-    DISCH_THEN SUBST_ALL_TAC THEN UNDISCH_TAC “a < a” THEN
-    REWRITE_TAC[REAL_LT_REFL]] THEN
-  SUBGOAL_THEN “((\x. ((f(b) - f(a)) / (b - a)) * x ) diffl
-                      ((f(b) - f(a)) / (b - a)))(z)”
-  (fn th => DISCH_THEN(MP_TAC o C CONJ th)) THENL
-   [CONV_TAC(ONCE_DEPTH_CONV HABS_CONV) THEN REWRITE_TAC[] THEN
-    GEN_REWR_TAC LAND_CONV [GSYM REAL_MUL_RID] THEN
-    MATCH_MP_TAC DIFF_CMUL THEN REWRITE_TAC[DIFF_X], ALL_TAC] THEN
-  DISCH_THEN(MP_TAC o MATCH_MP DIFF_ADD) THEN BETA_TAC THEN
-  REWRITE_TAC[REAL_SUB_ADD] THEN CONV_TAC(ONCE_DEPTH_CONV ETA_CONV) THEN
-  REWRITE_TAC[REAL_ADD_LID] *)
 QED
 
 (*---------------------------------------------------------------------------*)
