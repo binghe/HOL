@@ -17,23 +17,37 @@ val DISC_RW_KILL = DISCH_TAC THEN ONCE_ASM_REWRITE_TAC [] THEN
                    POP_ASSUM K_TAC;
 
 (*---------------------------------------------------------------------------*)
-(* Basic definitions: directed set, net, bounded net, pointwise limit [1]    *)
+(* Basic definitions: directed order, net, bounded net, pointwise limit [1]  *)
 (*---------------------------------------------------------------------------*)
 
-val dorder = new_definition("dorder",
-  “dorder (g:'a->'a->bool) =
-     !x y. g x x /\ g y y ==> ?z. g z z /\ (!w. g w z ==> g w x /\ g w y)”);
+(* NOTE: According to [1], the property ‘!w. g w z ==> g w x /\ g w y’ is called
+  "composition property".
+ *)
+Definition dorder :
+   dorder (g:'a->'a->bool) =
+     !x y. g x x /\ g y y ==> ?z. g z z /\ (!w. g w z ==> g w x /\ g w y)
+End
 
-val tends = new_infixr_definition("tends",
-  “($tends s l)(top,g) =
+val _ = set_fixity "tends" (Infixr 750);
+
+(* A general function (s :'b -> 'a) tends to l (w.r.t. top and g) if for all
+   neigh N of l, "eventually" g(m) IN N.
+ *)
+Definition tends :
+   (s tends l) (top,g) =
       !N:'a->bool. neigh(top)(N,l) ==>
-            ?n:'b. g n n /\ !m:'b. g m n ==> N(s m)”, 750);
+            ?n:'b. g n n /\ !m:'b. g m n ==> N(s m)
+End
 
-val bounded = new_definition("bounded",
-  “bounded(m:('a)metric,(g:'b->'b->bool)) f =
-      ?k x N. g N N /\ (!n. g n N ==> (dist m)(f(n),x) < k)”);
+Definition bounded :
+   bounded(m:('a)metric,(g:'b->'b->bool)) f =
+      ?k x N. g N N /\ (!n. g n N ==> (dist m)(f(n),x) < k)
+End
 
-(* in the view of real_topologyTheory, this is a general ‘at’ (net) *)
+(* ‘tendsto (m,x)’ is a dorder defined on a metric. See also DORDER_TENDSTO.
+
+   NOTE: The net ‘at’ is defined by ‘tendsto’.
+ *)
 Definition tendsto :
    tendsto(m:('a)metric,x) y z =
       (&0 < (dist m)(x,y) /\ (dist m)(x,y) <= (dist m)(x,z))
@@ -1004,6 +1018,13 @@ Definition limit :
      l IN topspace top /\
      (!u. open_in top u /\ l IN u ==> eventually (\x. f x IN u) net)
 End
+
+(* connection between HOL-Light's ‘limit’ and HOL4's ‘tends’ *)
+Theorem limit_alt_tends :
+    !top f l net. limit top (f:'a->'b) l net <=> (f tends l) (top,netord net)
+Proof
+    cheat
+QED
 
 val _ = export_theory ();
 

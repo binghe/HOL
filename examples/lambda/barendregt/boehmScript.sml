@@ -4859,18 +4859,20 @@ Proof
      rw [Abbr ‘M’, EL_MEM])
  >> DISCH_TAC
  (* stage work *)
- >> CONJ_TAC (* EVERY is_ready' ... *)
+>> Know ‘!i. i < k ==> solvable (apply pi (M i))’
+>- (rpt STRIP_TAC \\
+    Suff ‘solvable (VAR (b i) @* Ns i @* tl i)’
+    >- METIS_TAC [lameq_solvable_cong] \\
+    REWRITE_TAC [solvable_iff_has_hnf] \\
+    MATCH_MP_TAC hnf_has_hnf \\
+    rw [hnf_appstar, GSYM appstar_APPEND])
+>> DISCH_TAC
+>> CONJ_TAC (* EVERY is_ready' ... *)
  >- (rpt (Q.PAT_X_ASSUM ‘Boehm_transform _’ K_TAC) \\
      simp [EVERY_EL, EL_MAP] \\
      Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
-     Know ‘solvable (apply pi (M i))’
-     >- (Suff ‘solvable (VAR (b i) @* Ns i @* tl i)’
-         >- METIS_TAC [lameq_solvable_cong] \\
-         REWRITE_TAC [solvable_iff_has_hnf] \\
-         MATCH_MP_TAC hnf_has_hnf \\
-         rw [hnf_appstar, GSYM appstar_APPEND]) >> DISCH_TAC \\
   (* now expanding ‘is_ready’ using [is_ready_alt] *)
-     ASM_REWRITE_TAC [is_ready_alt'] \\
+     ASM_SIMP_TAC std_ss [is_ready_alt'] \\
      qexistsl_tac [‘b i’, ‘Ns i ++ tl i’] \\
   (* subgoal: apply pi (M i) -h->* VAR (b i) @* (Ns i ++ tl i) *)
      CONJ_TAC
@@ -4879,7 +4881,6 @@ Proof
            (fn th => MP_TAC (MATCH_MP th (ASSUME “i < k:num”))) \\
          rw [principle_hnf_thm']) \\
   (* final goal (is_ready): EVERY (\e. b # e) ... *)
-     Q.PAT_X_ASSUM ‘solvable (apply pi (M i))’ K_TAC \\
      Q.PAT_X_ASSUM ‘!i. i < k ==> principle_hnf (apply pi (M i)) = _’ K_TAC \\
      ASM_SIMP_TAC list_ss [EVERY_EL] \\
   (* easier goal first *)
@@ -5026,6 +5027,12 @@ Proof
  >- (rpt STRIP_TAC \\
      Q.PAT_X_ASSUM ‘!i. i < k ==> p IN ltree_paths (BT' X (M i) r)’
        (fn th => MP_TAC (MATCH_MP th (ASSUME “i < (k :num)”))) \\
+     Q_TAC (UNBETA_TAC [BT_def, BT_generator_def, Once ltree_unfold])
+           ‘BT' X (apply pi (M i)) r’ \\
+     simp [GSYM appstar_APPEND, LAMl_size_appstar, ltree_paths_def,
+           LMAP_fromList, MAP_MAP_o] \\
+     Q_TAC (UNBETA_TAC [BT_def, BT_generator_def, Once ltree_unfold])
+           ‘BT' X (M i) r’ \\
      cheat)
  >> DISCH_TAC
  (* now proving agree_upto *)
