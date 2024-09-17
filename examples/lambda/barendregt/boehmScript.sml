@@ -4689,6 +4689,7 @@ Proof
  >> REWRITE_TAC [appstar_APPEND]
  >> ‘!i. LENGTH (l i) = m i + (n_max - n i) + SUC d_max’
        by rw [Abbr ‘l’, Abbr ‘m’, Abbr ‘args2’, Abbr ‘args'’, Abbr ‘d_max’]
+ >> ‘!i. d_max < LENGTH (l i)’ by rw []
  (* applying TAKE_DROP_SUC to break l into 3 pieces *)
  >> MP_TAC
       (Q.GEN ‘i’
@@ -4697,7 +4698,7 @@ Proof
  >> REWRITE_TAC [appstar_APPEND, appstar_SING]
  (* The segmentation of list l(i) - apply (p3 ++ p2 ++ p1) (M i)
 
- |<---- m(i) ---->|<-- n_max-n(i) -->|<-------------- SUC d_max -------------->|
+ |<-- m(i)<= d -->|<-- n_max-n(i) -->|<-------------- SUC d_max -------------->|
  |----- args' ----+----- args2 ------+-------------- MAP VAR xs ---------------|
  |------------------------------------ l --------------------------------------|
  |                                   |<-j->|
@@ -4859,15 +4860,15 @@ Proof
      rw [Abbr ‘M’, EL_MEM])
  >> DISCH_TAC
  (* stage work *)
->> Know ‘!i. i < k ==> solvable (apply pi (M i))’
->- (rpt STRIP_TAC \\
-    Suff ‘solvable (VAR (b i) @* Ns i @* tl i)’
-    >- METIS_TAC [lameq_solvable_cong] \\
-    REWRITE_TAC [solvable_iff_has_hnf] \\
-    MATCH_MP_TAC hnf_has_hnf \\
-    rw [hnf_appstar, GSYM appstar_APPEND])
->> DISCH_TAC
->> CONJ_TAC (* EVERY is_ready' ... *)
+ >> Know ‘!i. i < k ==> solvable (apply pi (M i))’
+ >- (rpt STRIP_TAC \\
+     Suff ‘solvable (VAR (b i) @* Ns i @* tl i)’
+     >- METIS_TAC [lameq_solvable_cong] \\
+     REWRITE_TAC [solvable_iff_has_hnf] \\
+     MATCH_MP_TAC hnf_has_hnf \\
+     rw [hnf_appstar, GSYM appstar_APPEND])
+ >> DISCH_TAC
+ >> CONJ_TAC (* EVERY is_ready' ... *)
  >- (rpt (Q.PAT_X_ASSUM ‘Boehm_transform _’ K_TAC) \\
      simp [EVERY_EL, EL_MAP] \\
      Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
@@ -5062,8 +5063,27 @@ Proof
          MATCH_MP_TAC SUBSET_TRANS \\
          Q.EXISTS_TAC ‘Z’ >> art [] \\
          rw [Abbr ‘t’, FV_appstar]) >> Rewr' \\
-     Cases_on ‘p’ >> fs [] \\
-     simp [ltree_lookup, LNTH_fromList] \\
+     simp [Abbr ‘t’, tpm_appstar] \\
+     Cases_on ‘p’ >> FULL_SIMP_TAC list_ss [] \\
+     simp [ltree_lookup, LMAP_fromList, MAP_MAP_o, LNTH_fromList, EL_MAP] \\
+     Cases_on ‘h < m i’ >> simp [] \\
+     qabbrev_tac ‘pm = ZIP (ys,zs)’ \\
+     Know ‘h < LENGTH (Ns i)’
+     >- (simp [Abbr ‘Ns’] \\
+         Suff ‘m i <= d_max’ >- rw [] \\
+         simp [Abbr ‘d_max’] \\
+         MATCH_MP_TAC LESS_EQ_TRANS \\
+         Q.EXISTS_TAC ‘d’ >> simp []) >> DISCH_TAC \\
+     simp [GSYM BT_def] \\
+     Know ‘EL h (MAP (BT X o (\e. (e,SUC r))) (Ns i) ++
+                 MAP (BT X o (\e. (e,SUC r))) (tl i)) =
+           EL h (MAP (BT X o (\e. (e,SUC r))) (Ns i))’
+     >- (MATCH_MP_TAC EL_APPEND1 >> simp [LENGTH_MAP]) >> Rewr' \\
+     simp [EL_MAP] \\
+     Know ‘EL h (Ns i) = EL h (args' i)’
+     >- (gs [Abbr ‘Ns’, LENGTH_TAKE] \\
+         ASM_SIMP_TAC std_ss [EL_TAKE, Abbr ‘l’, GSYM APPEND_ASSOC] \\
+         MATCH_MP_TAC EL_APPEND1 >> rw [Abbr ‘args'’]) >> Rewr' \\
      cheat)
  >> DISCH_TAC
  (* now proving agree_upto *)
