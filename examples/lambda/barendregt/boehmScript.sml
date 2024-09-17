@@ -5064,7 +5064,7 @@ Proof
          Q.EXISTS_TAC ‘Z’ >> art [] \\
          rw [Abbr ‘t’, FV_appstar]) >> Rewr' \\
      simp [Abbr ‘t’, tpm_appstar] \\
-     Cases_on ‘p’ >> FULL_SIMP_TAC list_ss [] \\
+     Cases_on ‘p’ >> FULL_SIMP_TAC list_ss [] (* p = h::t *) \\
      simp [ltree_lookup, LMAP_fromList, MAP_MAP_o, LNTH_fromList, EL_MAP] \\
      Cases_on ‘h < m i’ >> simp [] \\
      qabbrev_tac ‘pm = ZIP (ys,zs)’ \\
@@ -5084,6 +5084,12 @@ Proof
      >- (gs [Abbr ‘Ns’, LENGTH_TAKE] \\
          ASM_SIMP_TAC std_ss [EL_TAKE, Abbr ‘l’, GSYM APPEND_ASSOC] \\
          MATCH_MP_TAC EL_APPEND1 >> rw [Abbr ‘args'’]) >> Rewr' \\
+     qabbrev_tac ‘N = tpm pm (EL h (args i))’ \\
+     qabbrev_tac ‘pm' = REVERSE pm’ \\
+    ‘EL h (args' i) = (EL h (args i)) ISUB ss’
+       by simp [Abbr ‘args'’, EL_MAP] >> POP_ORW \\
+    ‘EL h (args i) = tpm pm' N’
+       by simp [Abbr ‘pm'’, Abbr ‘N’] >> POP_ORW \\
      cheat)
  >> DISCH_TAC
  (* now proving agree_upto *)
