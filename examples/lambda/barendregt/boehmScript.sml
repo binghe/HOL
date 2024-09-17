@@ -5022,7 +5022,7 @@ Proof
  >> Q.PAT_X_ASSUM ‘!t. i < k ==> apply p2 _ = _’  K_TAC
  >> Q.PAT_X_ASSUM ‘!i. i < k ==> apply p3 _ = _’  K_TAC
  >> Q.PAT_X_ASSUM ‘!i. i < k ==> _ -h->* _’       K_TAC
- (* This is part of ‘agree_upto’ subgoal for single term only *)
+ (* This is part of the ‘agree_upto’ subgoal, but for single term only *)
  >> Know ‘!i. i < k ==> p IN ltree_paths (BT' X (apply pi (M i)) r)’
  >- (rpt STRIP_TAC \\
      Q.PAT_X_ASSUM ‘!i. i < k ==> p IN ltree_paths (BT' X (M i) r)’
@@ -5033,6 +5033,37 @@ Proof
            LMAP_fromList, MAP_MAP_o] \\
      Q_TAC (UNBETA_TAC [BT_def, BT_generator_def, Once ltree_unfold])
            ‘BT' X (M i) r’ \\
+     qabbrev_tac ‘ys = TAKE (n i) vs’ \\
+    ‘ALL_DISTINCT ys’
+       by (qunabbrev_tac ‘ys’ >> MATCH_MP_TAC ALL_DISTINCT_TAKE >> art []) \\
+    ‘LENGTH ys = n i’
+       by (qunabbrev_tac ‘ys’ \\
+           MATCH_MP_TAC LENGTH_TAKE >> art [] \\
+           FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+     Q_TAC (RNEWS_TAC (“zs :string list”, “r :num”, “(n :num -> num) i”)) ‘X’ \\
+     Know ‘DISJOINT (set ys) (set zs)’
+     >- (MATCH_MP_TAC DISJOINT_SUBSET' \\
+         Q.EXISTS_TAC ‘set vs’ \\
+         reverse CONJ_TAC >- rw [Abbr ‘ys’, LIST_TO_SET_TAKE] \\
+         qunabbrev_tac ‘zs’ \\
+         MATCH_MP_TAC DISJOINT_SUBSET' \\
+         Q.EXISTS_TAC ‘RANK r’ >> rw [DISJOINT_RANK_RNEWS'] \\
+         MATCH_MP_TAC SUBSET_TRANS \\
+         Q.EXISTS_TAC ‘ROW 0’ \\
+         CONJ_TAC >- rw [Abbr ‘vs’, RNEWS_SUBSET_ROW] \\
+         MATCH_MP_TAC ROW_SUBSET_RANK >> art []) >> DISCH_TAC \\
+     qabbrev_tac ‘t = VAR (y i) @* args i’ \\
+  (* applying for principle_hnf_LAMl_appstar *)
+     Know ‘principle_hnf (LAMl ys t @* MAP VAR zs) = tpm (ZIP (ys,zs)) t’
+     >- (‘hnf t’ by rw [Abbr ‘t’, hnf_appstar] \\
+         MATCH_MP_TAC principle_hnf_LAMl_appstar >> art [] \\
+         MATCH_MP_TAC subterm_disjoint_lemma \\
+         qexistsl_tac [‘X’, ‘r’, ‘n i’] >> simp [] \\
+         MATCH_MP_TAC SUBSET_TRANS \\
+         Q.EXISTS_TAC ‘Z’ >> art [] \\
+         rw [Abbr ‘t’, FV_appstar]) >> Rewr' \\
+     Cases_on ‘p’ >> fs [] \\
+     simp [ltree_lookup, LNTH_fromList] \\
      cheat)
  >> DISCH_TAC
  (* now proving agree_upto *)
@@ -5074,7 +5105,6 @@ Proof
          METIS_TAC [lameq_solvable_cong]) >> Rewr' \\
      simp [Abbr ‘M'’] \\
   (* NOTE: now we are still missing some important connections:
-
    - ltree_el (BT W M2) q             ~1~ subterm' W M2 q
    - ltree_el (BT W N2) q             ~1~ subterm' W N2 q
    - ltree_el (BT W' (apply pi M2) q  ~1~ subterm' W' (apply pi M2) q
