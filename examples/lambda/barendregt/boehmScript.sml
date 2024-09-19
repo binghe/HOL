@@ -4408,6 +4408,22 @@ Definition agree_upto_def :
                              ltree_el (BT' X N r) q
 End
 
+(* tpm doesn't change ltree_paths *)
+Theorem ltree_paths_tpm :
+    !X M pi. FV M SUBSET X UNION RANK r ==>
+           ltree_paths (BT' X M r) = ltree_paths (BT' X (tpm pi M) r)
+Proof
+    cheat
+QED
+
+(* A proper ISUB (based on permutator of subterm_width) enlarges ltree_paths *)
+Theorem ltree_paths_ISUB :
+    !X M ss. FV M SUBSET X UNION RANK r ==>
+             ltree_paths (BT' X M r) SUBSET ltree_paths (BT' X (M ISUB ss) r)
+Proof
+    cheat
+QED
+
 (* Lemma 10.3.11 [1. p.251]
 
    NOTE: ‘p <> []’ must be added, otherwise each N in Ns cannot be "is_ready".
@@ -5097,7 +5113,18 @@ Proof
          POP_ASSUM (MP_TAC o Q.SPEC ‘lswapstr (REVERSE pm) x’) \\
          impl_tac >- (Q.EXISTS_TAC ‘EL h (args i)’ >> rw [EL_MEM]) \\
          Q.PAT_X_ASSUM ‘lswapstr (REVERSE pm) x IN FV (EL h (args i))’ K_TAC \\
+         Know ‘set vs SUBSET RANK (SUC r)’
+         >- (qunabbrev_tac ‘vs’ \\
+             MATCH_MP_TAC RNEWS_SUBSET_RANK >> rw []) >> DISCH_TAC \\
+         Know ‘set ys SUBSET RANK (SUC r)’
+         >- (qunabbrev_tac ‘ys’ \\
+             Q_TAC (TRANS_TAC SUBSET_TRANS) ‘set vs’ \\
+             rw [LIST_TO_SET_TAKE]) >> DISCH_TAC \\
+         Know ‘set zs SUBSET RANK (SUC r)’
+         >- (qunabbrev_tac ‘zs’ \\
+             MATCH_MP_TAC RNEWS_SUBSET_RANK >> rw []) >> DISCH_TAC \\
          reverse (rw [Abbr ‘Z’])
+      (* lswapstr (REVERSE pm) x IN set vs *)
          >- (DISJ2_TAC \\
              POP_ASSUM MP_TAC >> rw [MEM_EL] \\
              rename1 ‘a < LENGTH vs’ \\
@@ -5105,17 +5132,7 @@ Proof
              >- (POP_ASSUM (REWRITE_TAC o wrap o SYM) >> simp []) >> Rewr' \\
              qunabbrev_tac ‘pm’ \\
              MATCH_MP_TAC lswapstr_IN_RANK >> art [] \\
-             CONJ_TAC >- (qunabbrev_tac ‘ys’ \\
-                          MATCH_MP_TAC SUBSET_TRANS \\
-                          Q.EXISTS_TAC ‘set vs’ \\
-                          rw [LIST_TO_SET_TAKE] \\
-                          qunabbrev_tac ‘vs’ \\
-                          MATCH_MP_TAC RNEWS_SUBSET_RANK >> rw []) \\
-             CONJ_TAC >- (qunabbrev_tac ‘zs’ \\
-                          MATCH_MP_TAC RNEWS_SUBSET_RANK >> rw []) \\
-             CONJ_TAC >- (Know ‘set vs SUBSET RANK (SUC r)’
-                          >- (qunabbrev_tac ‘vs’ \\
-                              MATCH_MP_TAC RNEWS_SUBSET_RANK >> rw []) \\
+             CONJ_TAC >- (Q.PAT_X_ASSUM ‘set vs SUBSET RANK (SUC r)’ MP_TAC \\
                           rw [SUBSET_DEF, MEM_EL] \\
                           POP_ASSUM MATCH_MP_TAC \\
                           Q.EXISTS_TAC ‘a’ >> art []) \\
@@ -5131,12 +5148,42 @@ Proof
              FIRST_X_ASSUM MATCH_MP_TAC \\
              Suff ‘EL a vs IN set vs’ >- METIS_TAC [SUBSET_DEF] \\
              MATCH_MP_TAC EL_MEM >> art []) \\
+      (* lswapstr (REVERSE pm) x IN Y (SUBSET X UNION RANK r) *)
          Know ‘lswapstr (REVERSE pm) x IN X UNION RANK r’
-         >- (METIS_TAC [SUBSET_DEF]) \\
-         rw []
-         >- (DISJ1_TAC \\
-             )
-         cheat) >> DISCH_TAC \\
+         >- METIS_TAC [SUBSET_DEF] \\
+         Q.PAT_X_ASSUM ‘lswapstr (REVERSE pm) x IN Y’ K_TAC \\
+         RW_TAC std_ss [IN_UNION]
+         >- (FULL_SIMP_TAC std_ss [GSYM ssetpm_IN] \\
+             DISJ1_TAC \\
+             Suff ‘ssetpm pm X = X’ >- DISCH_THEN (FULL_SIMP_TAC std_ss o wrap) \\
+             MATCH_MP_TAC ssetpm_14b >> rw [Abbr ‘pm’, MAP_ZIP] \\
+             MATCH_MP_TAC DISJOINT_SUBSET' \\
+             Q.EXISTS_TAC ‘set vs’ >> art [] \\
+             rw [Abbr ‘ys’, LIST_TO_SET_TAKE]) \\
+         DISJ2_TAC \\
+         FULL_SIMP_TAC std_ss [GSYM ssetpm_IN] \\
+         qabbrev_tac ‘x' = lswapstr (REVERSE pm) x’ \\
+        ‘x = lswapstr pm x'’ by simp [Abbr ‘x'’] >> POP_ORW \\
+      (* NOTE: if x' IN set ys (vs, ROW 0), then ‘lswapstr pm x' IN zs’, otherwise
+         lswapstr pm x' = x'.
+       *)
+         Cases_on ‘x' IN set ys’
+         >- (qunabbrev_tac ‘pm’ >> MATCH_MP_TAC lswapstr_IN_RANK >> art [] \\
+             CONJ_TAC >- METIS_TAC [SUBSET_DEF] \\
+             METIS_TAC [DISJOINT_ALT]) \\
+         Suff ‘lswapstr pm x' = x'’
+         >- (Rewr \\
+             Q.PAT_X_ASSUM ‘x IN ssetpm pm (RANK r)’ MP_TAC \\
+             simp [Abbr ‘x'’] \\
+             Suff ‘RANK r SUBSET RANK (SUC r)’ >- rw [SUBSET_DEF] \\
+             rw [RANK_MONO]) \\
+         MATCH_MP_TAC lswapstr_14b \\
+         POP_ASSUM MP_TAC \\
+         Q.PAT_X_ASSUM ‘x IN ssetpm pm (RANK r)’ MP_TAC \\
+         simp [Abbr ‘x'’, Abbr ‘pm’, MEM_ZIP, MAP_ZIP] \\
+         qabbrev_tac ‘z = lswapstr (REVERSE (ZIP (ys,zs))) x’ \\
+         Know ‘DISJOINT (RANK r) (set zs)’ >- rw [Abbr ‘zs’, DISJOINT_RANK_RNEWS] \\
+         rw [DISJOINT_ALT]) >> DISCH_TAC \\
      cheat)
  >> DISCH_TAC
  (* now proving agree_upto *)

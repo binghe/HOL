@@ -4,7 +4,8 @@
 
 open HolKernel Parse boolLib bossLib;
 
-open sigma_algebraTheory measureTheory probabilityTheory distributionTheory;
+open sigma_algebraTheory measureTheory borelTheory probabilityTheory
+     distributionTheory;
 
 val _ = new_theory "central_limit";
 
