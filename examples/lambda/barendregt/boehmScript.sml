@@ -680,7 +680,7 @@ Proof
 QED
 
 (* NOTE: This theorem indicates that ‘m = LENGTH Ms’ is more natural. *)
-Theorem BT_ltree_el_NIL :
+Theorem BT_ltree_el_NIL[local] :
     !X M r. ltree_el (BT' X M r) [] =
           if solvable M then
              let
@@ -702,7 +702,7 @@ Proof
 QED
 
 (* This version uses ‘m = hnf_children_size M0’ *)
-Theorem BT_ltree_el_NIL_alt :
+Theorem BT_ltree_el_NIL_alt[local] :
     !X M r. FINITE X /\ FV M SUBSET X UNION RANK r ==>
           ltree_el (BT' X M r) [] =
           if solvable M then
@@ -1471,8 +1471,7 @@ Proof
  >> Know ‘n' = n’ >- rw [Abbr ‘n’, Abbr ‘n'’, LAMl_size_tpm]
  >> DISCH_TAC
  (* special case *)
- >> reverse (Cases_on ‘h < m’)
- >- simp [subterm_alt]
+ >> reverse (Cases_on ‘h < m’) >- simp [subterm_alt]
  (* stage work, now h < m *)
  >> simp [] (* eliminate ‘h < m’ in the goal *)
  >> UNBETA_TAC [subterm_alt] “subterm Y (tpm pi M) (h::p) r'”
@@ -2099,8 +2098,9 @@ Definition eta_expansion1_def :
     case (THE (ltree_lookup A p)) of
     Branch a ts =>
       case a of
-        SOME (vs,t) => {A' | ?z. ~MEM z vs /\ z NOTIN FV A /\
-                             A' = Branch (SOME (SNOC z vs,t)) (LAPPEND ts [| BT_VAR z |])}
+        SOME (vs,t) =>
+         {A' | ?z. ~MEM z vs /\ z NOTIN FV A /\
+                   A' = Branch (SOME (SNOC z vs,t)) (LAPPEND ts [| BT_VAR z |])}
       | NONE => {}
 End
 
@@ -5042,17 +5042,18 @@ Proof
            MATCH_MP_TAC LENGTH_TAKE >> art [] \\
            FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
      Q_TAC (RNEWS_TAC (“zs :string list”, “r :num”, “(n :num -> num) i”)) ‘X’ \\
-     Know ‘DISJOINT (set ys) (set zs)’
-     >- (MATCH_MP_TAC DISJOINT_SUBSET' \\
-         Q.EXISTS_TAC ‘set vs’ \\
-         reverse CONJ_TAC >- rw [Abbr ‘ys’, LIST_TO_SET_TAKE] \\
-         qunabbrev_tac ‘zs’ \\
+     Know ‘DISJOINT (set vs) (set zs)’
+     >- (qunabbrev_tac ‘zs’ \\
          MATCH_MP_TAC DISJOINT_SUBSET' \\
          Q.EXISTS_TAC ‘RANK r’ >> rw [DISJOINT_RANK_RNEWS'] \\
          MATCH_MP_TAC SUBSET_TRANS \\
          Q.EXISTS_TAC ‘ROW 0’ \\
          CONJ_TAC >- rw [Abbr ‘vs’, RNEWS_SUBSET_ROW] \\
          MATCH_MP_TAC ROW_SUBSET_RANK >> art []) >> DISCH_TAC \\
+     Know ‘DISJOINT (set ys) (set zs)’
+     >- (MATCH_MP_TAC DISJOINT_SUBSET' \\
+         Q.EXISTS_TAC ‘set vs’ >> art [] \\
+         rw [Abbr ‘ys’, LIST_TO_SET_TAKE]) >> DISCH_TAC \\
      qabbrev_tac ‘t = VAR (y i) @* args i’ \\
   (* applying for principle_hnf_LAMl_appstar *)
      Know ‘principle_hnf (LAMl ys t @* MAP VAR zs) = tpm (ZIP (ys,zs)) t’
@@ -5088,8 +5089,54 @@ Proof
      qabbrev_tac ‘pm' = REVERSE pm’ \\
     ‘EL h (args' i) = (EL h (args i)) ISUB ss’
        by simp [Abbr ‘args'’, EL_MAP] >> POP_ORW \\
-    ‘EL h (args i) = tpm pm' N’
-       by simp [Abbr ‘pm'’, Abbr ‘N’] >> POP_ORW \\
+    ‘EL h (args i) = tpm pm' N’ by simp [Abbr ‘pm'’, Abbr ‘N’] >> POP_ORW \\
+     Know ‘FV N SUBSET X UNION RANK (SUC r)’
+     >- (rw [Abbr ‘N’, Abbr ‘pm'’, FV_tpm, SUBSET_DEF] \\
+         Q.PAT_X_ASSUM ‘!i. i < k ==> y i IN Z /\ _’ (MP_TAC o Q.SPEC ‘i’) \\
+         rw [SUBSET_DEF, IN_BIGUNION_IMAGE] \\
+         POP_ASSUM (MP_TAC o Q.SPEC ‘lswapstr (REVERSE pm) x’) \\
+         impl_tac >- (Q.EXISTS_TAC ‘EL h (args i)’ >> rw [EL_MEM]) \\
+         Q.PAT_X_ASSUM ‘lswapstr (REVERSE pm) x IN FV (EL h (args i))’ K_TAC \\
+         reverse (rw [Abbr ‘Z’])
+         >- (DISJ2_TAC \\
+             POP_ASSUM MP_TAC >> rw [MEM_EL] \\
+             rename1 ‘a < LENGTH vs’ \\
+             Know ‘x = lswapstr pm (EL a vs)’
+             >- (POP_ASSUM (REWRITE_TAC o wrap o SYM) >> simp []) >> Rewr' \\
+             qunabbrev_tac ‘pm’ \\
+             MATCH_MP_TAC lswapstr_IN_RANK >> art [] \\
+             CONJ_TAC >- (qunabbrev_tac ‘ys’ \\
+                          MATCH_MP_TAC SUBSET_TRANS \\
+                          Q.EXISTS_TAC ‘set vs’ \\
+                          rw [LIST_TO_SET_TAKE] \\
+                          qunabbrev_tac ‘vs’ \\
+                          MATCH_MP_TAC RNEWS_SUBSET_RANK >> rw []) \\
+             CONJ_TAC >- (qunabbrev_tac ‘zs’ \\
+                          MATCH_MP_TAC RNEWS_SUBSET_RANK >> rw []) \\
+             CONJ_TAC >- (Know ‘set vs SUBSET RANK (SUC r)’
+                          >- (qunabbrev_tac ‘vs’ \\
+                              MATCH_MP_TAC RNEWS_SUBSET_RANK >> rw []) \\
+                          rw [SUBSET_DEF, MEM_EL] \\
+                          POP_ASSUM MATCH_MP_TAC \\
+                          Q.EXISTS_TAC ‘a’ >> art []) \\
+             Know ‘set vs SUBSET ROW 0’
+             >- (qunabbrev_tac ‘vs’ \\
+                 MATCH_MP_TAC RNEWS_SUBSET_ROW >> rw []) >> DISCH_TAC \\
+             Know ‘set zs SUBSET ROW r’
+             >- (qunabbrev_tac ‘zs’ \\
+                 MATCH_MP_TAC RNEWS_SUBSET_ROW >> art []) >> DISCH_TAC \\
+             Know ‘DISJOINT (ROW 0) (ROW r)’ >- rw [ROW_DISJOINT] \\
+             rw [DISJOINT_ALT] \\
+             Suff ‘EL a vs NOTIN ROW r’ >- METIS_TAC [SUBSET_DEF] \\
+             FIRST_X_ASSUM MATCH_MP_TAC \\
+             Suff ‘EL a vs IN set vs’ >- METIS_TAC [SUBSET_DEF] \\
+             MATCH_MP_TAC EL_MEM >> art []) \\
+         Know ‘lswapstr (REVERSE pm) x IN X UNION RANK r’
+         >- (METIS_TAC [SUBSET_DEF]) \\
+         rw []
+         >- (DISJ1_TAC \\
+             )
+         cheat) >> DISCH_TAC \\
      cheat)
  >> DISCH_TAC
  (* now proving agree_upto *)

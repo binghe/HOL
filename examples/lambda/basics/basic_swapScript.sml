@@ -292,6 +292,13 @@ Proof
  >> Q.EXISTS_TAC ‘y’ >> rw []
 QED
 
+Theorem ROW_DISJOINT :
+    !r1 r2. r1 <> r2 ==> DISJOINT (ROW r1) (ROW r2)
+Proof
+    rw [DISJOINT_ALT, ROW]
+ >> rw [n2s_11]
+QED
+
 Definition RANK_DEF :
     RANK r = BIGUNION (IMAGE ROW (count r))
 End

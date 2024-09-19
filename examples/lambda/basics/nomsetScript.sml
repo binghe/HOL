@@ -7,8 +7,8 @@
 
 open HolKernel Parse boolLib bossLib;
 
-open BasicProvers boolSimps pred_setTheory listTheory finite_mapTheory hurdUtils
-     stringTheory pairTheory;
+open BasicProvers boolSimps pairTheory pred_setTheory listTheory rich_listTheory
+     finite_mapTheory hurdUtils stringTheory;
 
 open basic_swapTheory NEWLib;
 
@@ -356,6 +356,7 @@ val pmact_sing_to_back = store_thm(
         THEN1 METIS_TAC [is_pmact_def,is_pmact_pmact] THEN
   METIS_TAC [permeq_swap_ends, permeq_sym, stringpm_raw]);
 
+(* cf. lswapstr_unchanged *)
 Theorem lswapstr_14b :
     !pi e. ~MEM e (MAP FST pi) /\ ~MEM e (MAP SND pi) ==> lswapstr pi e = e
 Proof
@@ -1457,6 +1458,26 @@ val gen_avoidance_lemma = store_thm(
       SRW_TAC [][] THEN METIS_TAC []
     ]
   ]);
+
+Theorem lswapstr_IN_RANK :
+    !x ys zs r. LENGTH ys = LENGTH zs /\
+                DISJOINT (set ys) (set zs) /\
+                ALL_DISTINCT ys /\ ALL_DISTINCT zs /\
+                set ys SUBSET RANK r /\
+                set zs SUBSET RANK r /\
+                x IN RANK r /\ ~MEM x zs ==>
+                lswapstr (ZIP (ys,zs)) x IN RANK r
+Proof
+    rpt STRIP_TAC
+ >> Cases_on ‘MEM x ys’
+ >- (Know ‘MEM (lswapstr (ZIP (ys,zs)) x) zs’
+     >- (MATCH_MP_TAC MEM_lswapstr >> art []) \\
+     METIS_TAC [SUBSET_DEF])
+ >> Suff ‘lswapstr (ZIP (ys,zs)) x = x’ >- rw []
+ >> MATCH_MP_TAC lswapstr_unchanged
+ >> rw [IN_patoms_MEM, MEM_ZIP]
+ >> CCONTR_TAC >> gs [EL_MEM]
+QED
 
 val _ = export_theory();
 val _ = html_theory "nomset";
