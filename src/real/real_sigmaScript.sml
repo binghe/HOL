@@ -3899,4 +3899,36 @@ val jensen_pos_concave_SIGMA = store_thm
    >> Q.UNABBREV_TAC `f'`
    >> FULL_SIMP_TAC std_ss [pos_concave_fn, GSPECIFICATION]);
 
+(* ------------------------------------------------------------------------- *)
+(*  The Fibonacci sequence (with closed-form expression)                     *)
+(*     (see also https://en.wikipedia.org/wiki/Fibonacci_sequence)           *)
+(* ------------------------------------------------------------------------- *)
+
+Definition fib_def :
+    fib (n :num) = if n = 0 then (0 :num) else
+                   if n = 1 then 1 else fib (n - 1) + fib (n - 2)
+End
+
+(* NOTE: The following theorems are compatible with HOL-Light
+        (Examples/gcdrecurrence.ml)
+ *)
+Theorem fib :
+    fib 0 = 0 /\ fib 1 = 1 /\ !n. fib(n + 2) = fib(n + 1) + fib(n)
+Proof
+    rpt STRIP_TAC
+ >> rw [Once fib_def]
+QED
+
+val num_INDUCTION          = numTheory.INDUCTION;
+val ARITH_RULE             = numLib.DECIDE;
+
+Theorem FIB_EQ_0 :
+    !n. fib n = 0 <=> n = 0
+Proof
+  HO_MATCH_MP_TAC num_INDUCTION THEN REWRITE_TAC[fib] THEN
+  HO_MATCH_MP_TAC num_INDUCTION THEN
+  REWRITE_TAC[fib, ARITH_RULE “SUC(SUC n) = n + 2”, ADD_EQ_0] THEN
+  SIMP_TAC arith_ss[ADD1, ADD_EQ_0, fib]
+QED
+
 val _ = export_theory ();
