@@ -1,10 +1,11 @@
 open HolKernel boolLib bossLib BasicProvers;
-open optionTheory pairTheory stringTheory;
+
+open optionTheory pairTheory stringTheory hurdUtils;
 open arithmeticTheory pred_setTheory listTheory finite_mapTheory alistTheory sortingTheory;
 open comparisonTheory;
 open integerTheory;
 
-val _ = new_theory "avl_tree";
+val _ = new_theory "AVL_trees";
 
 Datatype:
   avl_tree = Tip | Bin int num 'a avl_tree avl_tree 
@@ -124,26 +125,37 @@ Proof
   >> rw[minimal_avl_def]                         
 QED
 
-(*
-Theorem xxx :
-  ∀k t. minimal_avl t ∧ height t = k ⇒ node_count t = N k
+(* NOTE: This theorem is provided by Chun TIAN *)
+Theorem minimal_avl_node_count :
+  ∀k (t :num avl_tree). minimal_avl t ∧ height t = k ⇒ node_count t = N k
 Proof
   rpt STRIP_TAC
-  >> MP_TAC (Q.ISPEC ‘IMAGE node_count {x | height x = k ∧ avl x}’
-              MIN_SET_PROPERTY)
-  >> impl_tac
-  >- (rw [EXTENSION] \\
-      Q.EXISTS_TAC ‘t’ >> rw [] \\
-      fs [minimal_avl_def])
-      
-  >> simp [N_def]
-  >> fs [minimal_avl_def]
-  >> sg ‘(∃x. height (x :'a avl_tree) = height t ∧ avl x)’
-  >- ()
-  cheat
+  >> MATCH_MP_TAC LESS_EQUAL_ANTISYM
+  >> reverse CONJ_TAC
+  >- (rw [N_def] \\
+      MP_TAC (Q.ISPEC ‘IMAGE (node_count :num avl_tree -> num)
+                             {x | height x = height (t :num avl_tree) ∧ avl x}’
+                      MIN_SET_PROPERTY) \\
+      impl_tac
+      >- (rw [EXTENSION] \\
+          Q.EXISTS_TAC ‘t’ >> rw [] \\
+          fs [minimal_avl_def]) \\
+      rw [] \\
+      POP_ASSUM MATCH_MP_TAC \\
+      Q.EXISTS_TAC ‘t’ >> fs [minimal_avl_def])
+ (* stage work *)
+  >> fs [minimal_avl_def, N_def]
+  >> qmatch_abbrev_tac ‘node_count t <= MIN_SET s’
+  >> Know ‘MIN_SET s IN s’
+  >- (MATCH_MP_TAC MIN_SET_IN_SET \\
+     rw [EXTENSION, Abbr ‘s’] \\
+     Q.EXISTS_TAC ‘complete_avl (height t)’ >> rw [])
+  >> qabbrev_tac ‘x = MIN_SET s’
+  >> rw [Abbr ‘s’]
+  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
 QED
-*)
-        
+
+(*     
 Theorem N_k:
   ∀k. 2 <= k ⇒ N(k) = N(k-1) + N(k-2) + 1
 Proof
@@ -153,3 +165,6 @@ Proof
   >> fs[]
   >>      
 QED  
+ *)
+
+val _ = export_theory ();

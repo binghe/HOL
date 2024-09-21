@@ -6585,7 +6585,7 @@ val MIN_SET_LEM = Q.store_thm
 
 val SUBSET_MIN_SET = Q.store_thm
 ("SUBSET_MIN_SET",
- `!I J n. ~(I={}) /\ ~(J={}) /\ I SUBSET J ==> MIN_SET J <= MIN_SET I`,
+ `!I J. ~(I={}) /\ ~(J={}) /\ I SUBSET J ==> MIN_SET J <= MIN_SET I`,
   METIS_TAC [SUBSET_DEF,MIN_SET_LEM]);
 
 val SUBSET_MAX_SET = Q.store_thm
