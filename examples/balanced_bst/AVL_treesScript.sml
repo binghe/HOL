@@ -129,30 +129,13 @@ QED
 Theorem minimal_avl_node_count :
   ∀k (t :num avl_tree). minimal_avl t ∧ height t = k ⇒ node_count t = N k
 Proof
-  rpt STRIP_TAC
-  >> MATCH_MP_TAC LESS_EQUAL_ANTISYM
-  >> reverse CONJ_TAC
-  >- (rw [N_def] \\
-      MP_TAC (Q.ISPEC ‘IMAGE (node_count :num avl_tree -> num)
-                             {x | height x = height (t :num avl_tree) ∧ avl x}’
-                      MIN_SET_PROPERTY) \\
-      impl_tac
-      >- (rw [EXTENSION] \\
-          Q.EXISTS_TAC ‘t’ >> rw [] \\
-          fs [minimal_avl_def]) \\
-      rw [] \\
-      POP_ASSUM MATCH_MP_TAC \\
-      Q.EXISTS_TAC ‘t’ >> fs [minimal_avl_def])
- (* stage work *)
-  >> fs [minimal_avl_def, N_def]
-  >> qmatch_abbrev_tac ‘node_count t <= MIN_SET s’
-  >> Know ‘MIN_SET s IN s’
-  >- (MATCH_MP_TAC MIN_SET_IN_SET \\
-     rw [EXTENSION, Abbr ‘s’] \\
+    rw [N_def]
+ >> irule MIN_SET_TEST >> rw []
+ >- (fs [minimal_avl_def])
+ >- (rw [Once EXTENSION] \\
      Q.EXISTS_TAC ‘complete_avl (height t)’ >> rw [])
-  >> qabbrev_tac ‘x = MIN_SET s’
-  >> rw [Abbr ‘s’]
-  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+ >> Q.EXISTS_TAC ‘t’
+ >> fs [minimal_avl_def]
 QED
 
 (*
