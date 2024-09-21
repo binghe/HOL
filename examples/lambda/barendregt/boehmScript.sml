@@ -4408,18 +4408,33 @@ Definition agree_upto_def :
                              ltree_el (BT' X N r) q
 End
 
-(* tpm doesn't change ltree_paths *)
-Theorem ltree_paths_tpm :
-    !X M pi. FV M SUBSET X UNION RANK r ==>
-           ltree_paths (BT' X M r) = ltree_paths (BT' X (tpm pi M) r)
+Theorem BT_ltree_map_tpm :
+    !X M pi r. FV M SUBSET X UNION RANK r /\
+               set (MAP FST pi) SUBSET RANK r /\
+               set (MAP SND pi) SUBSET RANK r
+           ==> BT' X (tpm pi M) r =
+               ltree_map (OPTION_MAP (λ(vs,y). (vs,lswapstr pi y))) (BT' X M r)
+Proof
+    cheat
+QED
+
+(* tpm doesn't change ltree_paths
+
+   NOTE: ‘FV (tpm pi M) SUBSET X UNION RANK r’ is derivable from other antecedents.
+ *)
+Theorem BT_ltree_paths_tpm :
+    !X M pi r. FV M SUBSET X UNION RANK r /\
+               set (MAP FST pi) SUBSET RANK r /\
+               set (MAP SND pi) SUBSET RANK r
+           ==> ltree_paths (BT' X M r) = ltree_paths (BT' X (tpm pi M) r)
 Proof
     cheat
 QED
 
 (* A proper ISUB (based on permutator of subterm_width) enlarges ltree_paths *)
-Theorem ltree_paths_ISUB :
-    !X M ss. FV M SUBSET X UNION RANK r ==>
-             ltree_paths (BT' X M r) SUBSET ltree_paths (BT' X (M ISUB ss) r)
+Theorem BT_ltree_paths_ISUB :
+    !X M ss r. FV M SUBSET X UNION RANK r ==>
+               ltree_paths (BT' X M r) SUBSET ltree_paths (BT' X (M ISUB ss) r)
 Proof
     cheat
 QED
