@@ -8,15 +8,15 @@ open integerTheory;
 val _ = new_theory "AVL_trees";
 
 Datatype:
-  avl_tree = Tip | Bin int num 'a avl_tree avl_tree 
+  avl_tree = Tip | Bin int num 'a avl_tree avl_tree
 End
-           
+
 Definition height_def[simp]:
   height Tip = 0∧
   height (Bin h k v l r) = MAX (height l) (height r) + 1
 End
 
-Theorem height_eq_0[simp]:  
+Theorem height_eq_0[simp]:
   (height t = 0 ⇔ t = Tip) ∧
   (0 = height t ⇔ t = Tip)
 Proof
@@ -32,12 +32,12 @@ Definition avl_def[simp]:
   avl (Bin bf k v l r) =
     ((height l = height r ∨ height l = height r + 1 ∨ height r = height l + 1) ∧
      bf = &height r - &height l ∧
-     avl l ∧ avl r)                          
+     avl l ∧ avl r)
 End
 
 Definition node_count_def[simp] :
   node_count Tip = 0n ∧
-  node_count (Bin bf k v l r) = node_count l + node_count r + 1 
+  node_count (Bin bf k v l r) = node_count l + node_count r + 1
 End
 
 Definition N_def:
@@ -56,33 +56,33 @@ Theorem N_0:
 Proof
   csimp[N_def, MIN_SET_THM]
 QED
-        
+
 Theorem N_1:
    N 1 = 1
 Proof
      REWRITE_TAC [N_def, height_def, avl_def, node_count_def]
   >> sg ‘IMAGE node_count {x :num avl_tree| height x = 1 ∧ avl x} = {1}’
-  >- (REWRITE_TAC [EXTENSION, IN_IMAGE]       
-      >> GEN_TAC  
-      >> EQ_TAC 
+  >- (REWRITE_TAC [EXTENSION, IN_IMAGE]
+      >> GEN_TAC
+      >> EQ_TAC
       >> STRIP_TAC
-      >> ASM_REWRITE_TAC [] 
+      >> ASM_REWRITE_TAC []
       >-(Cases_on ‘x'’
          >> ASM_REWRITE_TAC [height_def,avl_def,node_count_def]
          >> fs[])
-      >> fs[] 
+      >> fs[]
       >> Q.EXISTS_TAC ‘Bin 0 k v Tip Tip’
       >> fs[])
-  >> ASM_REWRITE_TAC[MIN_SET_SING]               
+  >> ASM_REWRITE_TAC[MIN_SET_SING]
 QED
 
 Definition complete_avl_def[simp]:
   complete_avl 0 = Tip ∧
   complete_avl (SUC n) = Bin 0 0 ARB (complete_avl n) (complete_avl n)
-End             
+End
 
 Theorem height_complete_avl[simp]:
-  height (complete_avl n) = n   
+  height (complete_avl n) = n
 Proof
   Induct_on ‘n’ >> simp[]
 QED
@@ -91,14 +91,14 @@ Theorem avl_complete_avl[simp]:
   avl (complete_avl k) = T
 Proof
   Induct_on ‘k’ >> simp[]
-QED  
-        
+QED
+
 Theorem trees_of_height_exist:
-  ∀k. ∃t. avl t ∧ height t = k 
+  ∀k. ∃t. avl t ∧ height t = k
 Proof
   GEN_TAC
   >> Q.EXISTS_TAC‘complete_avl k’
-  >> simp[]    
+  >> simp[]
 QED
 
 Definition minimal_avl_def:
@@ -118,44 +118,27 @@ Proof
               (INST_TYPE [“:'a” |-> “:'a avl_tree”] WOP_measure))
   >> impl_tac
   >- (rw [Abbr ‘P’] \\
-     Q.EXISTS_TAC ‘complete_avl k’     
+     Q.EXISTS_TAC ‘complete_avl k’
       >> simp[])
   >> rw [Abbr ‘P’]
   >> Q.EXISTS_TAC ‘b’ >> rw[]
-  >> rw[minimal_avl_def]                         
+  >> rw[minimal_avl_def]
 QED
 
 (* NOTE: This theorem is provided by Chun TIAN *)
 Theorem minimal_avl_node_count :
   ∀k (t :num avl_tree). minimal_avl t ∧ height t = k ⇒ node_count t = N k
 Proof
-  rpt STRIP_TAC
-  >> MATCH_MP_TAC LESS_EQUAL_ANTISYM
-  >> reverse CONJ_TAC
-  >- (rw [N_def] \\
-      MP_TAC (Q.ISPEC ‘IMAGE (node_count :num avl_tree -> num)
-                             {x | height x = height (t :num avl_tree) ∧ avl x}’
-                      MIN_SET_PROPERTY) \\
-      impl_tac
-      >- (rw [EXTENSION] \\
-          Q.EXISTS_TAC ‘t’ >> rw [] \\
-          fs [minimal_avl_def]) \\
-      rw [] \\
-      POP_ASSUM MATCH_MP_TAC \\
-      Q.EXISTS_TAC ‘t’ >> fs [minimal_avl_def])
- (* stage work *)
-  >> fs [minimal_avl_def, N_def]
-  >> qmatch_abbrev_tac ‘node_count t <= MIN_SET s’
-  >> Know ‘MIN_SET s IN s’
-  >- (MATCH_MP_TAC MIN_SET_IN_SET \\
-     rw [EXTENSION, Abbr ‘s’] \\
+    rw [N_def]
+ >> irule MIN_SET_TEST >> rw []
+ >- (fs [minimal_avl_def])
+ >- (rw [Once EXTENSION] \\
      Q.EXISTS_TAC ‘complete_avl (height t)’ >> rw [])
-  >> qabbrev_tac ‘x = MIN_SET s’
-  >> rw [Abbr ‘s’]
-  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+ >> Q.EXISTS_TAC ‘t’
+ >> fs [minimal_avl_def]
 QED
 
-(*     
+(*
 Theorem N_k:
   ∀k. 2 <= k ⇒ N(k) = N(k-1) + N(k-2) + 1
 Proof
@@ -163,8 +146,8 @@ Proof
   >> Induct_on ‘k’
   >> fs[]
   >> fs[]
-  >>      
-QED  
+  >>
+QED
  *)
 
 val _ = export_theory ();
