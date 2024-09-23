@@ -18,7 +18,7 @@ WORKDIR /ML
 
 # more packages for buliding HOL manuals (+pandoc for Markdown), etc.
 RUN apt-get install -qy texlive-latex-recommended pandoc latexmk texlive-latex-extra \
-                        texlive-fonts-extra texlive-science emacs
+                        texlive-fonts-extra texlive-science
 RUN apt-get clean
 
 # Z3 2.19 and 2.19.1

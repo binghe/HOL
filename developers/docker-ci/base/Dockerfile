@@ -5,7 +5,7 @@
 # e.g. docker buildx build --platform linux/386,linux/amd64,linux/arm64 .
 
 # GitHub Actions recommends Debian-based systems as base images
-FROM debian:stable
+FROM debian:bookworm-slim
 
 LABEL org.opencontainers.image.authors="Chun Tian (binghe) <binghe.lisp@gmail.com>"
 
@@ -24,9 +24,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV LD_LIBRARY_PATH=/usr/local/lib
 ENV PATH=/ML/HOL/bin:$PATH
 
-# some necessary Debian packages
+# some necessary Debian packages (graphviz removed, emacs-nox added)
 RUN apt-get update -qy
-RUN apt-get install -qy build-essential graphviz git libgmp-dev wget curl procps file unzip
+RUN apt-get install -qy build-essential git libgmp-dev wget curl procps file unzip emacs-nox
 
 # for Unicode display, learnt from Magnus Myreen
 RUN apt-get install -qy locales-all terminfo man aptitude
