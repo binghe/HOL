@@ -2079,14 +2079,6 @@ Proof
     rw [BT_tpm_thm]
 QED
 
-(* A proper ISUB (based on permutator of subterm_width) enlarges ltree_paths *)
-Theorem BT_ltree_paths_ISUB :
-    !X M ss r. FINITE X /\ FV M SUBSET X UNION RANK r ==>
-               ltree_paths (BT' X M r) SUBSET ltree_paths (BT' X (M ISUB ss) r)
-Proof
-    cheat
-QED
-
 (* NOTE: ‘VAR o renaming s1 s2 r1 r2’ can be used for ‘fsub’.
 Definition renaming_def :
     renaming X Y r1 r2 x =
@@ -5195,7 +5187,7 @@ Proof
  >> Q.PAT_X_ASSUM ‘!t. i < k ==> apply p2 _ = _’  K_TAC
  >> Q.PAT_X_ASSUM ‘!i. i < k ==> apply p3 _ = _’  K_TAC
  >> Q.PAT_X_ASSUM ‘!i. i < k ==> _ -h->* _’       K_TAC
- (* This is part of the ‘agree_upto’ subgoal, but for single term only *)
+ (* This is the easy part of ‘agree_upto’ subgoal involving single term *)
  >> Know ‘!i. i < k ==> p IN ltree_paths (BT' X (apply pi (M i)) r)’
  >- (rpt STRIP_TAC \\
      Q.PAT_X_ASSUM ‘!i. i < k ==> p IN ltree_paths (BT' X (M i) r)’
@@ -5340,6 +5332,22 @@ Proof
          qabbrev_tac ‘z = lswapstr (REVERSE (ZIP (ys,zs))) x’ \\
          Know ‘DISJOINT (RANK r) (set zs)’ >- rw [Abbr ‘zs’, DISJOINT_RANK_RNEWS] \\
          rw [DISJOINT_ALT]) >> DISCH_TAC \\
+  (* applying BT_ltree_paths_tpm *)
+     DISCH_TAC \\
+     Know ‘ltree_lookup (BT' X (tpm pm' N) (SUC r)) t <> NONE’
+     >- (POP_ASSUM MP_TAC \\
+         Suff ‘ltree_paths (BT' X N (SUC r)) = ltree_paths (BT' X (tpm pm' N) (SUC r))’
+         >- simp [ltree_paths_def, Once EXTENSION] \\
+         MATCH_MP_TAC BT_ltree_paths_tpm >> art [] \\
+         simp [Abbr ‘pm'’, Abbr ‘pm’, MAP_REVERSE, MAP_ZIP] \\
+         reverse CONJ_TAC
+         >- (qunabbrev_tac ‘zs’ \\
+             MATCH_MP_TAC RNEWS_SUBSET_RANK >> rw []) \\
+         Q_TAC (TRANS_TAC SUBSET_TRANS) ‘set vs’ \\
+         CONJ_TAC >- rw [Abbr ‘ys’, LIST_TO_SET_TAKE] \\
+         qunabbrev_tac ‘vs’ \\
+         MATCH_MP_TAC RNEWS_SUBSET_RANK >> rw []) \\
+     qabbrev_tac ‘N' = tpm pm' N’ \\
      cheat)
  >> DISCH_TAC
  (* now proving agree_upto *)
