@@ -2076,7 +2076,7 @@ Theorem BT_ltree_paths_tpm :
                set (MAP SND pi) SUBSET RANK r
            ==> ltree_paths (BT' X M r) = ltree_paths (BT' X (tpm pi M) r)
 Proof
-    cheat
+    rw [BT_tpm_thm]
 QED
 
 (* A proper ISUB (based on permutator of subterm_width) enlarges ltree_paths *)
