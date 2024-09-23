@@ -4415,7 +4415,26 @@ Theorem BT_ltree_map_tpm :
            ==> BT' X (tpm pi M) r =
                ltree_map (OPTION_MAP (λ(vs,y). (vs,lswapstr pi y))) (BT' X M r)
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> qmatch_abbrev_tac ‘BT' X (tpm pi M) r = ltree_map f (BT' X M r)’
+ >> rw [ltree_bisimulation]
+ >> Q.EXISTS_TAC ‘\t1 t2. ltree_node t1 = ltree_node t2’
+ >> rw []
+ >- (reverse (Cases_on ‘solvable M’)
+     >- (‘unsolvable (tpm pi M)’ by rw [solvable_tpm] \\
+         rw [BT_def, Once ltree_unfold, BT_generator_def] \\
+         rw [BT_def, Once ltree_unfold, BT_generator_def, ltree_map, Abbr ‘f’]) \\
+    ‘solvable (tpm pi M)’ by rw [solvable_tpm] \\
+     rw [BT_def, Once ltree_unfold, BT_generator_def] \\
+     rw [BT_def, Once ltree_unfold, BT_generator_def, LMAP_fromList, ltree_map] \\
+     qabbrev_tac ‘M0 = principle_hnf M’ \\
+     simp [principle_hnf_tpm'] \\
+     qabbrev_tac ‘n = LAMl_size M0’ \\
+     qabbrev_tac ‘vs = RNEWS r n X’ \\
+     qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’ \\
+     cheat)
+ (* stage work *)
+ >> cheat
 QED
 
 (* tpm doesn't change ltree_paths
