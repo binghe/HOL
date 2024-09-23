@@ -4409,7 +4409,7 @@ Definition agree_upto_def :
 End
 
 Theorem BT_ltree_map_tpm :
-    !X M pi r. FV M SUBSET X UNION RANK r /\
+    !X M pi r. FINITE X /\ FV M SUBSET X UNION RANK r /\
                set (MAP FST pi) SUBSET RANK r /\
                set (MAP SND pi) SUBSET RANK r
            ==> BT' X (tpm pi M) r =
@@ -4418,9 +4418,13 @@ Proof
     rpt STRIP_TAC
  >> qmatch_abbrev_tac ‘BT' X (tpm pi M) r = ltree_map f (BT' X M r)’
  >> rw [ltree_bisimulation]
- >> Q.EXISTS_TAC ‘\t1 t2. ltree_node t1 = ltree_node t2’
+ >> Q.EXISTS_TAC ‘\t1 t2. ?N q. FV N SUBSET X UNION RANK q /\
+                                t1 = BT' X (tpm pi N) q /\
+                                t2 = ltree_map f (BT' X N q) /\
+                                ltree_node t1 = ltree_node t2’
  >> rw []
- >- (reverse (Cases_on ‘solvable M’)
+ >- (qexistsl_tac [‘M’, ‘r’] >> art [] \\
+     reverse (Cases_on ‘solvable M’)
      >- (‘unsolvable (tpm pi M)’ by rw [solvable_tpm] \\
          rw [BT_def, Once ltree_unfold, BT_generator_def] \\
          rw [BT_def, Once ltree_unfold, BT_generator_def, ltree_map, Abbr ‘f’]) \\
@@ -4430,10 +4434,51 @@ Proof
      qabbrev_tac ‘M0 = principle_hnf M’ \\
      simp [principle_hnf_tpm'] \\
      qabbrev_tac ‘n = LAMl_size M0’ \\
-     qabbrev_tac ‘vs = RNEWS r n X’ \\
+     Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’ \\
      qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’ \\
-     cheat)
+     Know ‘tpm pi M0 @* MAP VAR vs = tpm pi (M0 @* MAP VAR vs)’
+     >- (simp [tpm_appstar] >> AP_TERM_TAC \\
+         simp [Once LIST_EQ_REWRITE, EL_MAP] \\
+         rpt STRIP_TAC \\
+         MATCH_MP_TAC (GSYM lswapstr_14b) \\
+         CONJ_TAC >| (* 2 subgoals *)
+         [ (* goal 1 (of 2) *)
+           Know ‘DISJOINT (set (MAP FST pi)) (set (RNEWS r n X))’
+           >- (MATCH_MP_TAC DISJOINT_SUBSET' \\
+               Q.EXISTS_TAC ‘RANK r’ >> art [] \\
+               MATCH_MP_TAC DISJOINT_RANK_RNEWS' >> art []) \\
+           rw [DISJOINT_ALT'] \\
+           POP_ASSUM MATCH_MP_TAC >> rw [EL_MEM],
+           (* goal 2 (of 2) *)
+           Know ‘DISJOINT (set (MAP SND pi)) (set (RNEWS r n X))’
+           >- (MATCH_MP_TAC DISJOINT_SUBSET' \\
+               Q.EXISTS_TAC ‘RANK r’ >> art [] \\
+               MATCH_MP_TAC DISJOINT_RANK_RNEWS' >> art []) \\
+           rw [DISJOINT_ALT'] \\
+           POP_ASSUM MATCH_MP_TAC >> rw [EL_MEM] ]) >> Rewr' \\
+    ‘DISJOINT (set vs) (FV M0)’ by METIS_TAC [subterm_disjoint_lemma'] \\
+     Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
+                     “y  :string”, “args :term list”)) ‘M1’ \\
+    ‘TAKE n vs = vs’ by rw [] \\
+     POP_ASSUM (rfs o wrap) \\
+     Know ‘principle_hnf (tpm pi (LAMl vs (VAR y @* args) @* MAP VAR vs)) =
+           tpm pi (principle_hnf (LAMl vs (VAR y @* args) @* MAP VAR vs))’
+     >- (MATCH_MP_TAC principle_hnf_tpm' \\
+        ‘LAMl vs (VAR y @* args) @* MAP VAR vs == VAR y @* args’
+           by PROVE_TAC [lameq_LAMl_appstar_VAR] \\
+         Suff ‘solvable (VAR y @* args)’ >- PROVE_TAC [lameq_solvable_cong] \\
+         REWRITE_TAC [solvable_iff_has_hnf] \\
+         MATCH_MP_TAC hnf_has_hnf \\
+         simp [hnf_appstar]) >> Rewr' \\
+     simp [principle_hnf_beta_reduce, hnf_appstar, tpm_appstar] \\
+     rw [Abbr ‘f’])
  (* stage work *)
+ >> NTAC 2 (POP_ASSUM MP_TAC)
+ >> reverse (Cases_on ‘solvable N’)
+ >- (‘unsolvable (tpm pi N)’ by rw [solvable_tpm] \\
+     rw [BT_def, Once ltree_unfold, BT_generator_def] \\
+     cheat)
+ >> rw [llist_rel_def]
  >> cheat
 QED
 
