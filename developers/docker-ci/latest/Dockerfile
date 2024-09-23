@@ -16,6 +16,11 @@ RUN echo "I was running on $BUILDPLATFORM, building for $TARGETPLATFORM" > /tmp/
 
 WORKDIR /ML
 
+# more packages for buliding HOL manuals (+pandoc for Markdown), etc.
+RUN apt-get install -qy texlive-latex-recommended pandoc latexmk texlive-latex-extra \
+                        texlive-fonts-extra texlive-science emacs
+RUN apt-get clean
+
 # Z3 2.19 and 2.19.1
 RUN if [ "linux/amd64" = "$TARGETPLATFORM" ] || [ "linux/386" = "$TARGETPLATFORM" ]; then \
     wget -q -O z3-2.19.tar.gz https://github.com/Z3Prover/bin/raw/master/legacy/z3-2.19.tar.gz; \
@@ -106,8 +111,3 @@ RUN if [ "linux/arm64" = "$TARGETPLATFORM" ]; then \
 fi
 
 ENV HOL4_SMV_EXECUTABLE=/ML/solvers/NuRV
-
-# necessary TeXlive packages for buliding HOL manuals (+pandoc for Markdown)
-RUN apt-get install -qy texlive-latex-recommended pandoc latexmk texlive-latex-extra \
-                        texlive-fonts-extra texlive-science
-RUN apt-get clean
