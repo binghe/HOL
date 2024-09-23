@@ -948,14 +948,8 @@ Proof
  >- rw [ltree_lookup_def]
  >> rpt GEN_TAC
  >> Cases_on ‘t’
- >> rw [ltree_lookup_def, ltree_map_def, Once ltree_unfold]
+ >> rw [ltree_lookup_def, ltree_map]
  >> Cases_on ‘LNTH h ts’ >> rw []
- >> Q.PAT_X_ASSUM ‘!t. P’ (rw o wrap o SYM o Q.SPEC ‘x’)
- >> qmatch_abbrev_tac ‘ltree_lookup y p = NONE <=>
-                       ltree_lookup (ltree_map f x) p = NONE’
- >> Suff ‘ltree_map f x = y’ >- rw []
- >> Cases_on ‘x’
- >> simp [Abbr ‘y’, ltree_map_def, ltree_unfold]
 QED
 
 (*---------------------------------------------------------------------------*
