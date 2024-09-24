@@ -3233,8 +3233,8 @@ Proof
  >> rw [FINITE_prefix]
 QED
 
-(* cf. unsolvable_SUB *)
-Theorem solvable_SUB :
+(* cf. unsolvable_subst *)
+Theorem solvable_subst :
     !X M M0 r v P d. FINITE X /\ FV M SUBSET X UNION RANK r /\ v IN X UNION RANK r /\
                      M0 = principle_hnf M /\
                      P = permutator d /\ hnf_children_size M0 <= d /\
@@ -3279,6 +3279,19 @@ Proof
  >> rw [Abbr ‘P’]
  >> Q.EXISTS_TAC ‘LAMl xs (LAM y (VAR y @* args' @* MAP VAR xs))’
  >> rw [hnf_appstar, hnf_thm]
+QED
+
+Theorem solvable_subst_cong :
+    !X M M0 r v P d. FINITE X /\ FV M SUBSET X UNION RANK r /\ v IN X UNION RANK r /\
+                     M0 = principle_hnf M /\
+                     P = permutator d /\ hnf_children_size M0 <= d ==>
+                    (solvable ([P/v] M) <=> solvable M)
+Proof
+    rpt STRIP_TAC
+ >> EQ_TAC >- PROVE_TAC [unsolvable_subst]
+ >> DISCH_TAC
+ >> MATCH_MP_TAC solvable_subst
+ >> qexistsl_tac [‘X’, ‘M0’, ‘r’, ‘d’] >> rw []
 QED
 
 (* NOTE: v, P and d are fixed free variables here *)
@@ -3416,7 +3429,7 @@ Proof
     already a hnf (v <> y), or can be head-reduced to a hnf (v = y).
   *)
  >> Know ‘solvable ([P/v] M)’
- >- (MATCH_MP_TAC solvable_SUB \\
+ >- (MATCH_MP_TAC solvable_subst \\
      qexistsl_tac [‘X’, ‘M0’, ‘r’, ‘d’] >> simp [])
  >> DISCH_TAC
  (* Now we need to know the exact form of ‘principle_hnf ([P/v] M)’.
@@ -4627,7 +4640,7 @@ Proof
      cheat)
 
  >> Know ‘solvable ([P/y] M)’
- >- (MATCH_MP_TAC solvable_SUB \\
+ >- (MATCH_MP_TAC solvable_subst \\
      qexistsl_tac [‘X’,‘M0’, ‘r’, ‘d’] >> simp [] \\
   (* TODO *)
      MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::p’, ‘[]’, ‘r’] subterm_width_thm) \\

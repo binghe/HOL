@@ -641,7 +641,7 @@ Proof
     METIS_TAC [pmact_inverse, solvable_tpm_I]
 QED
 
-Theorem unsolvable_SUB :
+Theorem unsolvable_subst :
     !M v N. unsolvable M ==> unsolvable ([N/v] M)
 Proof
     rw [solvable_iff_has_hnf]
@@ -656,7 +656,7 @@ Proof
  >> qx_genl_tac [‘N’, ‘v’, ‘M’]
  >> DISCH_TAC
  >> FIRST_X_ASSUM MATCH_MP_TAC
- >> MATCH_MP_TAC unsolvable_SUB >> art []
+ >> MATCH_MP_TAC unsolvable_subst >> art []
 QED
 
 (*---------------------------------------------------------------------------*
