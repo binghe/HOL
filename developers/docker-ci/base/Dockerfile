@@ -24,12 +24,15 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV LD_LIBRARY_PATH=/usr/local/lib
 ENV PATH=/ML/HOL/bin:$PATH
 
-# some necessary Debian packages (graphviz removed, emacs-nox added)
+# some necessary Debian packages
 RUN apt-get update -qy
-RUN apt-get install -qy build-essential git libgmp-dev wget curl procps file unzip emacs-nox
+RUN apt-get install -qy build-essential git libgmp-dev wget curl procps file unzip
 
 # for Unicode display, learnt from Magnus Myreen
 RUN apt-get install -qy locales-all terminfo man aptitude
+
+# Extra graphics-related tools
+RUN apt-get install -qy graphviz emacs-gtk
 
 # clean up downloaded packages after installation (this reduces Docker image sizes)
 RUN apt-get clean
