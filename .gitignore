@@ -7,6 +7,7 @@
 *.ui
 *.o
 .hollogs
+.holobjs
 .HOLMK
 *.lex.sml
 *.grm.sig
