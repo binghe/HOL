@@ -429,8 +429,7 @@ QED
 Theorem subterm_rank_lemma :
     !p X M N r r'. FINITE X /\ FV M SUBSET X UNION RANK r /\
                    subterm X M p r = SOME (N,r')
-               ==> r' = r + LENGTH p /\
-                   FV N SUBSET X UNION RANK r'
+               ==> r' = r + LENGTH p /\ FV N SUBSET X UNION RANK r'
 Proof
     Induct_on ‘p’ >- NTAC 2 (rw [])
  >> rpt GEN_TAC
@@ -460,16 +459,13 @@ Proof
  >> qabbrev_tac ‘Y  = RANK r’
  >> qabbrev_tac ‘Y' = RANK (SUC r)’
  (* #1 *)
- >> MATCH_MP_TAC SUBSET_TRANS
- >> Q.EXISTS_TAC ‘FV M1’
+ >> Q_TAC (TRANS_TAC SUBSET_TRANS) ‘FV M1’
  >> CONJ_TAC >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [])
  (* #2 *)
- >> MATCH_MP_TAC SUBSET_TRANS
- >> Q.EXISTS_TAC ‘FV M0 UNION set vs’
+ >> Q_TAC (TRANS_TAC SUBSET_TRANS) ‘FV M0 UNION set vs’
  >> CONJ_TAC >- simp [FV_LAMl]
  (* #3 *)
- >> MATCH_MP_TAC SUBSET_TRANS
- >> Q.EXISTS_TAC ‘FV M UNION set vs’
+ >> Q_TAC (TRANS_TAC SUBSET_TRANS) ‘FV M UNION set vs’
  >> CONJ_TAC
  >- (Suff ‘FV M0 SUBSET FV M’ >- SET_TAC [] \\
      qunabbrev_tac ‘M0’ \\
