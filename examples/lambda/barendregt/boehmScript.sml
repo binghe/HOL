@@ -1138,10 +1138,20 @@ Proof
  >> Cases_on ‘q’ >> fs [subterm_def]
 QED
 
+(* This strong lemma does not require ‘subterm X M p r <> NONE’ *)
+Theorem subterm_valid_path_lemma :
+    !X M p r. FINITE X /\ FV M SUBSET X UNION RANK r /\
+              p IN ltree_paths (BT' X M r) ==>
+              !q. q <<= FRONT p ==> subterm X M q r <> NONE
+Proof
+    cheat
+QED
+
+(* TODO *)
 Theorem subterm_solvable_lemma :
     !X M p r. FINITE X /\ FV M SUBSET X UNION RANK r /\
               p <> [] /\ subterm X M p r <> NONE ==>
-            (!q. q <<= p ==> subterm X M q r <> NONE) /\
+            (!q. q <<= FRONT p ==> subterm X M q r <> NONE) /\
             (!q. q <<= FRONT p ==> solvable (subterm' X M q r))
 Proof
     rpt GEN_TAC >> STRIP_TAC
@@ -3014,9 +3024,10 @@ End
 (* |- !M. subterm_width M [] = 0 *)
 Theorem subterm_width_nil[simp] = cj 1 subterm_width_def
 
+(* TODO *)
 Theorem subterm_width_alt :
     !X M p r. FINITE X /\ FV M SUBSET X UNION RANK r /\
-              p <> [] /\ subterm X M p r <> NONE ==>
+              p <> [] /\ p IN ltree_paths (BT' X M r) ==>
               subterm_width M p =
               let Ms = {subterm' X M q r | q <<= FRONT p} in
                   MAX_SET (IMAGE (hnf_children_size o principle_hnf) Ms)
@@ -4595,6 +4606,39 @@ Proof
  >> EQ_TAC >> rw [subterm_equivalent_sym]
 QED
 
+(* NOTE: ‘ltree_paths (BT' X M r) SUBSET ltree_paths (BT' X (M ISUB ss) r)’ doesn't
+         hold. Instead, we need to consider certain p and ‘d <= subterm_width M p’.
+ *)
+Theorem BT_subst_cong :
+    !X p M r P d y. FINITE X /\ FV M SUBSET X UNION RANK r /\ y IN X UNION RANK r /\
+                    P = permutator d /\ subterm_width M p <= d /\
+                    ltree_lookup (BT' X M r) p <> NONE ==>
+                    ltree_lookup (BT' X ([P/y] M) r) p <> NONE
+Proof
+    Q.X_GEN_TAC ‘X’
+ >> Induct_on ‘p’ >- rw [ltree_lookup]
+ >> rw []
+ >> POP_ASSUM MP_TAC
+ >> qabbrev_tac ‘P = permutator d’
+ >> reverse (Cases_on ‘solvable M’)
+ >- simp [BT_def, BT_generator_def, Once ltree_unfold, ltree_lookup_def]
+ >> qabbrev_tac ‘M0 = principle_hnf M’
+(*
+ >> Cases_on ‘subterm X M (h::p) r = NONE’
+ >- (
+     cheat)
+ *)
+ >> Know ‘solvable ([P/y] M)’
+ >- (MATCH_MP_TAC solvable_subst \\
+     qexistsl_tac [‘X’,‘M0’, ‘r’, ‘d’] >> simp [] \\
+  (* TODO *)
+     MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::p’, ‘[]’, ‘r’] subterm_width_thm) \\
+     simp [] \\
+     cheat)
+ >> DISCH_TAC
+ >> cheat
+QED
+
 (* Definition 10.3.10 (iii) and (iv)
 
    NOTE: The purpose of X is to make sure all terms in Ms share the same excluded
@@ -4612,40 +4656,6 @@ Definition agree_upto_def :
              !q. q <<= p ==> ltree_el (BT' X M r) q =
                              ltree_el (BT' X N r) q
 End
-
-(* NOTE: ‘ltree_paths (BT' X M r) SUBSET ltree_paths (BT' X (M ISUB ss) r)’ doesn't
-         hold. Instead, we need to consider certain p and ‘d <= subterm_width M p’.
-
-Theorem BT_subst_cong :
-    !X p M r P d y. FINITE X /\ FV M SUBSET X UNION RANK r /\ y IN X UNION RANK r /\
-                    P = permutator d /\ subterm_width M p <= d /\
-                    ltree_lookup (BT' X M r) p <> NONE ==>
-                    ltree_lookup (BT' X ([P/y] M) r) p <> NONE
-Proof
-    Q.X_GEN_TAC ‘X’
- >> Induct_on ‘p’ >- rw [ltree_lookup]
- >> rw []
- >> POP_ASSUM MP_TAC
- >> qabbrev_tac ‘P = permutator d’
- >> reverse (Cases_on ‘solvable M’)
- >- simp [BT_def, BT_generator_def, Once ltree_unfold, ltree_lookup_def]
- >> qabbrev_tac ‘M0 = principle_hnf M’
-
- >> Cases_on ‘subterm X M (h::p) r = NONE’
- >- (
-     cheat)
-
- >> Know ‘solvable ([P/y] M)’
- >- (MATCH_MP_TAC solvable_subst \\
-     qexistsl_tac [‘X’,‘M0’, ‘r’, ‘d’] >> simp [] \\
-  (* TODO *)
-     MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::p’, ‘[]’, ‘r’] subterm_width_thm) \\
-     simp []
-     cheat)
- >> DISCH_TAC
- >> cheat
-QED
- *)
 
 (* Lemma 10.3.11 [1. p.251]
 
