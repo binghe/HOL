@@ -957,8 +957,6 @@ QED
    Then M0 := principle_hnf N has the explicit form: ‘LAMl vs (VAR y @* Ms)’,
    and ‘LENGTH Ms = k’ (NOTE: vs, y and k come from ‘ltree_el (BT X M) p’.
 
-   Needs: subterm_solvable_lemma, BT_subterm_lemma, BT_ltree_el_thm,
-          subterm_imp_ltree_paths, subterm_finite_lemma, etc.
  *)
 Theorem BT_subterm_thm :
     !p X M r. FINITE X /\ FV M SUBSET X UNION RANK r /\
@@ -1218,7 +1216,6 @@ Proof
     UNRANK_TAC subterm_valid_path_lemma
 QED
 
-(* TODO *)
 (* NOTE: ‘subterm X M p <> NONE’ implies ‘!q. q <<= FRONT p ==> solvable
   (subterm' X M q)’, and the following theorem deals with the case of
   ‘unsolvable (subterm' X M p)’.
@@ -1912,6 +1909,30 @@ Proof
  >> ASM_SET_TAC []
 QED
 
+Theorem subterm_solvable_cong :
+    !X Y M p r r'. FINITE X /\ FINITE Y /\
+         FV M SUBSET X UNION RANK r /\
+         FV M SUBSET Y UNION RANK r' /\
+         subterm X M p r <> NONE ==>
+        (solvable (subterm' X M p r) <=> solvable (subterm' Y M p r'))
+Proof
+    rpt STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘X’, ‘Y’, ‘M’, ‘p’, ‘r’, ‘r'’] subterm_tpm_cong)
+ >> rw []
+ >> fs [tpm_rel_alt, solvable_tpm]
+QED
+
+Theorem subterm_solvable_cong' :
+    !X Y M p r r'. FINITE X /\ FINITE Y /\
+                   FV M SUBSET X /\ FV M SUBSET Y /\
+                   subterm X M p r <> NONE ==>
+                  (solvable (subterm' X M p r) <=> solvable (subterm' Y M p r'))
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC subterm_solvable_cong >> art []
+ >> ASM_SET_TAC []
+QED
+
 (* In this way, two such terms have the same ‘hnf_children_size o principle_hnf’,
    because head reductions are congruence w.r.t. tpm.
  *)
@@ -1919,8 +1940,7 @@ Theorem subterm_hnf_children_size_cong :
     !X Y M p r r'. FINITE X /\ FINITE Y /\
          FV M SUBSET X UNION RANK r /\
          FV M SUBSET Y UNION RANK r' /\
-         subterm X M p r <> NONE /\
-         solvable (subterm' X M p r) ==>
+         subterm X M p r <> NONE /\ solvable (subterm' X M p r) ==>
          hnf_children_size (principle_hnf (subterm' X M p r)) =
          hnf_children_size (principle_hnf (subterm' Y M p r'))
 Proof
@@ -2140,7 +2160,7 @@ QED
   ‘subterm X M p r1’ can (and must) be simultaneously substituted without
    hurting ‘FV M’.
 
-   TODO: cannot find a suitable statement for induction
+   NOTE: cannot find a suitable statement for induction
  *)
 Theorem subterm_renaming_lemma :
     !X Y p M r1 r2.
@@ -3018,92 +3038,80 @@ Proof
 QED
 
 (* ‘subterm_width M p’ is the maximal number of children of all subterms in form
-   ‘subterm X M t’ such that ‘t <<= p’ (prefix). The choice of X is irrelevant.
-
-   In other words, it's the maximal ‘hnf_children_size o pH’ of all terms of the
-   form ‘subterm X M t’ such that ‘t <<= FRONT p’ (The pH of ‘subterm X M p’ can
-   can be ignored, because its hnf children are never considered.
-
-   NOTE: This definition assumes ‘p <> []’ and ‘p IN ltree_paths (BT X M)’ and
-  ‘subterm X M p <> NONE’, because otherwise there will be no hnf children to
-   consider.
-
-   NOTE2: We forcely define ‘subterm_width M [] = 0’ since in this case the width
-   is irrelevant. This setting is also perfect for induction.
-
-   NOTE: This is where we start facing different X and r of ‘subterm X M p r’.
+   ‘subterm X M t’ such that ‘t <<= p’. The choice of X is irrelevant.
  *)
 Definition subterm_width_def :
-    subterm_width M     [] = 0 /\
-    subterm_width M (h::t) =
-      let Ms = {subterm' (FV M) M q 0 | q <<= FRONT (h::t)} in
-          MAX_SET (IMAGE (hnf_children_size o principle_hnf) Ms)
+    subterm_width M p =
+    MAX_SET (IMAGE (hnf_children_size o principle_hnf)
+                   {t | ?q. q <<= p /\ t = subterm' (FV M) M q 0 /\ solvable t})
 End
 
-(* |- !M. subterm_width M [] = 0 *)
-Theorem subterm_width_nil[simp] = cj 1 subterm_width_def
+(* NOTE: ‘p <> []’ is necessary for ‘FRONT p’ to be meaningful, and then
+   subterm_valid_path_lemma makes sure that all involved ‘subterm X M q r’
+   are meaningful (IS_SOME).
 
-(* TODO *)
+   NOTE: ‘solvable t’ is necessary, but if ‘p IN ltree_paths (BT' X M r)’, then
+   at most we have ‘unsolvable (subterm' X M (FRONT p) r)’, all earlier subterms
+   are solvable.
+ *)
 Theorem subterm_width_alt :
     !X M p r. FINITE X /\ FV M SUBSET X UNION RANK r /\
               p <> [] /\ p IN ltree_paths (BT' X M r) ==>
-              subterm_width M p =
-              let Ms = {subterm' X M q r | q <<= FRONT p} in
-                  MAX_SET (IMAGE (hnf_children_size o principle_hnf) Ms)
+         subterm_width M (FRONT p) =
+         MAX_SET (IMAGE (hnf_children_size o principle_hnf)
+                        {t | ?q. q <<= FRONT p /\ t = subterm' X M q r /\ solvable t})
 Proof
     rpt STRIP_TAC
- >> ‘p IN ltree_paths (BT' X M r)’ by PROVE_TAC [subterm_imp_ltree_paths]
- >> Cases_on ‘p’ >> rw [subterm_width_def]
- >> qabbrev_tac ‘p = h::t’
+ >> ‘!q. q <<= FRONT p ==> subterm X M q r <> NONE’
+       by PROVE_TAC [subterm_valid_path_lemma]
+ >> rw [subterm_width_def]
  (* preparing for subterm_hnf_children_size_cong *)
- >> Know ‘!Y r. IMAGE (hnf_children_size o principle_hnf)
-                      {subterm' Y M q r | q <<= FRONT p} =
-                {hnf_children_size (principle_hnf (subterm' Y M q r)) |
-                 q <<= FRONT p}’
+ >> Know ‘!Z R. IMAGE (hnf_children_size o principle_hnf)
+                 {t | ?q. q <<= FRONT p /\ t = subterm' Z M q R /\ solvable t} =
+                {hnf_children_size (principle_hnf (subterm' Z M q R)) | q |
+                 q <<= FRONT p /\ solvable (subterm' Z M q R)}’
  >- (rw [Once EXTENSION] \\
      EQ_TAC >> rw [] >| (* 2 subgoals *)
      [ (* goal 1 (of 2) *)
        Q.EXISTS_TAC ‘q’ >> rw [],
        (* goal 2 (of 2) *)
-       Q.EXISTS_TAC ‘subterm' Y M q r'’ >> art [] \\
+       Q.EXISTS_TAC ‘subterm' Z M q R’ >> art [] \\
        Q.EXISTS_TAC ‘q’ >> art [] ])
  >> Rewr
  (* preparing for subterm_hnf_children_size_cong *)
  >> AP_TERM_TAC
- >> Suff ‘!q. q <<= FRONT p ==>
+ (* applying subterm_tpm_cong *)
+ >> Suff ‘!q. q <<= FRONT p /\ solvable (subterm' X M q r) ==>
               hnf_children_size (principle_hnf (subterm' (FV M) M q 0)) =
               hnf_children_size (principle_hnf (subterm' X M q r))’
  >- (DISCH_TAC \\
      rw [Once EXTENSION] \\
      EQ_TAC >> rw [] >| (* 2 subgoals *)
      [ (* goal 1 (of 2) *)
-       Q.EXISTS_TAC ‘q’ >> rw [],
+       Q.EXISTS_TAC ‘q’ >> art [] \\
+       CONJ_ASM2_TAC >- (FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+       MP_TAC (Q.SPECL [‘X’, ‘FV M’, ‘M’, ‘q’, ‘r’, ‘0’] subterm_solvable_cong) \\
+       simp [],
        (* goal 2 (of 2) *)
-       Q.EXISTS_TAC ‘q’ >> rw [] ])
+       Q.EXISTS_TAC ‘q’ >> art [] \\
+       CONJ_TAC >- (ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+                    FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+       MP_TAC (Q.SPECL [‘X’, ‘FV M’, ‘M’, ‘q’, ‘r’, ‘0’] subterm_solvable_cong) \\
+       simp [] ])
  >> rpt STRIP_TAC
  (* applying subterm_hnf_children_size_cong *)
+ >> ONCE_REWRITE_TAC [EQ_SYM_EQ]
  >> MATCH_MP_TAC subterm_hnf_children_size_cong
  >> simp []
- >> ‘p <> []’ by rw [Abbr ‘p’]
- >> Know ‘subterm (FV M) M p 0 <> NONE’
- >- (MP_TAC (Q.SPECL [‘X’, ‘FV M’, ‘M’, ‘p’, ‘r’, ‘0’] subterm_tpm_cong) \\
-     simp [])
- >> DISCH_TAC
- (* applying subterm_solvable_lemma *)
- >> MP_TAC (Q.SPECL [‘FV M’, ‘M’, ‘p’, ‘0’] subterm_solvable_lemma)
- >> rw []
- >> FIRST_X_ASSUM MATCH_MP_TAC
- >> MATCH_MP_TAC IS_PREFIX_TRANS
- >> Q.EXISTS_TAC ‘FRONT p’ >> art []
- >> MATCH_MP_TAC IS_PREFIX_BUTLAST' >> art []
 QED
 
+(* TODO *)
 Theorem subterm_width_thm :
     !X M p q r. FINITE X /\ FV M SUBSET X UNION RANK r /\
-         p <> [] /\ subterm X M p r <> NONE /\
+         p <> [] /\ p IN ltree_paths (BT' X M r) /\
          q <<= FRONT p ==>
          hnf_children_size (principle_hnf (subterm' X M q r)) <=
-         subterm_width M p
+         subterm_width M (FRONT p)
 Proof
     rpt STRIP_TAC
  >> ‘p IN ltree_paths (BT' X M r)’
