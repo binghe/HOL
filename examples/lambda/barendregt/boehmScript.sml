@@ -1138,20 +1138,10 @@ Proof
  >> Cases_on ‘q’ >> fs [subterm_def]
 QED
 
-(* This strong lemma does not require ‘subterm X M p r <> NONE’ *)
-Theorem subterm_valid_path_lemma :
-    !X M p r. FINITE X /\ FV M SUBSET X UNION RANK r /\
-              p IN ltree_paths (BT' X M r) ==>
-              !q. q <<= FRONT p ==> subterm X M q r <> NONE
-Proof
-    cheat
-QED
-
-(* TODO *)
 Theorem subterm_solvable_lemma :
     !X M p r. FINITE X /\ FV M SUBSET X UNION RANK r /\
               p <> [] /\ subterm X M p r <> NONE ==>
-            (!q. q <<= FRONT p ==> subterm X M q r <> NONE) /\
+            (!q. q <<= p ==> subterm X M q r <> NONE) /\
             (!q. q <<= FRONT p ==> solvable (subterm' X M q r))
 Proof
     rpt GEN_TAC >> STRIP_TAC
@@ -1200,6 +1190,35 @@ Proof
     UNRANK_TAC subterm_solvable_lemma
 QED
 
+(* This stronger lemma does not require ‘subterm X M p r <> NONE’ *)
+Theorem subterm_valid_path_lemma :
+    !X p M r. FINITE X /\ FV M SUBSET X UNION RANK r /\
+              p IN ltree_paths (BT' X M r) /\ p <> [] ==>
+              !q. q <<= FRONT p ==> subterm X M q r <> NONE
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> Cases_on ‘subterm X M p r = NONE’
+ >- (POP_ASSUM MP_TAC \\
+     rw [subterm_is_none_iff_parent_unsolvable] \\
+     Cases_on ‘FRONT p = []’ >- fs [] \\
+     MP_TAC (Q.SPECL [‘X’, ‘M’, ‘FRONT p’, ‘r’] subterm_solvable_lemma) \\
+     rw [])
+ >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘p’, ‘r’] subterm_solvable_lemma)
+ >> rw []
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> MATCH_MP_TAC isPREFIX_TRANS
+ >> Q.EXISTS_TAC ‘FRONT p’ >> rw [IS_PREFIX_BUTLAST']
+QED
+
+Theorem subterm_valid_path_lemma' :
+    !X p M r. FINITE X /\ FV M SUBSET X /\
+              p IN ltree_paths (BT' X M r) /\ p <> [] ==>
+              !q. q <<= FRONT p ==> subterm X M q r <> NONE
+Proof
+    UNRANK_TAC subterm_valid_path_lemma
+QED
+
+(* TODO *)
 (* NOTE: ‘subterm X M p <> NONE’ implies ‘!q. q <<= FRONT p ==> solvable
   (subterm' X M q)’, and the following theorem deals with the case of
   ‘unsolvable (subterm' X M p)’.

@@ -3374,8 +3374,7 @@ Proof
  >> EQ_TAC >> rw [] (* only one goal remains *)
  >> Q.ABBREV_TAC ‘V = \n. if n IN N then E n else space (A n)’
  (* find the maximal element m of N *)
- >> MP_TAC (FINITE_is_measure_maximal |> Q.GEN ‘m’
-                                      |> INST_TYPE [“:'a” |-> “:num”]
+ >> MP_TAC (FINITE_is_measure_maximal |> INST_TYPE [“:'a” |-> “:num”]
                                       |> Q.SPECL [‘I’, ‘N’])
  >> rw [is_measure_maximal_def] >> rename1 ‘m IN N’
  >> Q.PAT_X_ASSUM ‘!E n. E IN count1 n --> subsets o A ==> P’
