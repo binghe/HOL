@@ -1,5 +1,4 @@
 open HolKernel boolLib bossLib BasicProvers;
-
 open optionTheory pairTheory stringTheory hurdUtils;
 open arithmeticTheory pred_setTheory listTheory finite_mapTheory alistTheory sortingTheory;
 open comparisonTheory;
@@ -12,7 +11,7 @@ Datatype:
 End
 
 Definition height_def[simp]:
-  height Tip = 0∧
+  height Tip = 0 ∧
   height (Bin h k v l r) = MAX (height l) (height r) + 1
 End
 
@@ -127,7 +126,8 @@ QED
 
 (* NOTE: This theorem is provided by Chun TIAN *)
 Theorem minimal_avl_node_count :
-  ∀k (t :num avl_tree). minimal_avl t ∧ height t = k ⇒ node_count t = N k
+  ∀k (t :num avl_tree). minimal_avl t ∧ height t = k
+                                    ⇒ node_count t = N k
 Proof
     rw [N_def]
  >> irule MIN_SET_TEST >> rw []
@@ -137,17 +137,99 @@ Proof
  >> Q.EXISTS_TAC ‘t’
  >> fs [minimal_avl_def]
 QED
+ 
 
-(*
-Theorem N_k:
-  ∀k. 2 <= k ⇒ N(k) = N(k-1) + N(k-2) + 1
+Theorem minimal_avl_l_is_avl:
+  ∀t. minimal_avl t ⇒ avl t
 Proof
-  rpt STRIP_TAC
-  >> Induct_on ‘k’
-  >> fs[]
-  >> fs[]
-  >>
+  GEN_TAC >>
+          rw[avl_def , minimal_avl_def]
+  >> fs[minimal_avl_def]             
 QED
- *)
 
+Theorem height_of_minimal_avl_diff_1:
+  ∀ bf k v l r. minimal_avl (Bin bf k v l r) ⇒
+                (l = Tip ∧ r = Tip) ∨
+                height l = height r + 1 ∨
+                height r = height l + 1
+Proof
+  rw[minimal_avl_def,avl_def]
+  >> fs[]
+  >> CCONTR_TAC
+  >> Cases_on ‘l’ >> gvs[]
+  >-(first_x_assum(Q.SPEC_THEN ‘Bin 1 k v a r’ mp_tac)
+     >> simp[]
+     >>intLib.ARITH_TAC
+    )
+  >-(first_x_assum(Q.SPEC_THEN ‘Bin 1 k v a r’ mp_tac)
+     >> simp[]
+     >>intLib.ARITH_TAC
+    )
+  >-(first_x_assum(Q.SPEC_THEN ‘Bin 1 k v a0 r’ mp_tac)
+     >> simp[]
+     >>intLib.ARITH_TAC
+    )      
+QED
+ 
+  
+Theorem children_of_minimal_avl:
+  ∀bf k v l r. minimal_avl (Bin bf k v l r) ⇒
+                           minimal_avl l ∧ minimal_avl r
+Proof
+  rw[minimal_avl_def,avl_def]
+     >> CCONTR_TAC   
+  >> gvs[NOT_LE]
+  >-(first_x_assum(Q.SPEC_THEN ‘Bin 0 k v t' r’ mp_tac)
+    >> simp[]
+    )
+  >-(first_x_assum(Q.SPEC_THEN ‘Bin 0 k v l t'’ mp_tac)
+    >> simp[]
+    )  
+  >-(first_x_assum(Q.SPEC_THEN ‘Bin (-1) k v t' r’ mp_tac)
+     >> simp[]
+     >>intLib.ARITH_TAC
+    )
+    >-(first_x_assum(Q.SPEC_THEN ‘Bin (-1) k v l t'’ mp_tac)
+     >> simp[]
+     >>intLib.ARITH_TAC
+      )
+    >-(first_x_assum(Q.SPEC_THEN ‘Bin (1) k v t' r’ mp_tac)
+     >> simp[]
+     >>intLib.ARITH_TAC
+      )
+    >-(first_x_assum(Q.SPEC_THEN ‘Bin (1) k v l t'’ mp_tac)
+     >> simp[]
+     >>intLib.ARITH_TAC
+    )        
+QED
+
+        
+Theorem N_k:
+  ∀k. N (k+2) = N (k+1) + N(k) + 1
+Proof
+  GEN_TAC
+  >> Q.SPEC_THEN ‘k+2’ mp_tac (INST_TYPE [“:'a” |-> “:num”]minimal_avl_exists)
+  >> STRIP_TAC
+  >> ‘N (k+2) = node_count t’
+    by metis_tac[minimal_avl_node_count]
+  >> simp[]
+  >> Cases_on ‘t’
+  >> gvs[]
+  >> gvs[]
+  >> CCONTR_TAC      
+  >> fs[minimal_avl_def]     
+  >> gvs[]
+  >> sg ‘∀ i n a1 a a0. minimal_avl (Bin i n a1 a a0) ⇒
+                        minimal_avl a ∧ minimal_avl a0’
+  >- fs[children_of_minimal_avl]      
+  >> gvs[height_def,node_count_def,avl_def]
+  >> ‘minimal_avl a0 ∧ height a0 = k+1 ⇒
+      node_count a0 = N k+1’
+    by metis_tac[minimal_avl_node_count]
+  >> sg ‘height a = k+1’ >> gvs[height_def]
+  >>                              
+QED
+
+
+ 
 val _ = export_theory ();
