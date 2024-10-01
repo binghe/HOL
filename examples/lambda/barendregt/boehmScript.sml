@@ -3266,7 +3266,7 @@ Proof
  >> qexistsl_tac [‘X’, ‘M0’, ‘r’, ‘d’] >> rw []
 QED
 
-Theorem subterm_width_recursion :
+Theorem subterm_width_induction_lemma :
     !X M h p r M0 n m vs M1 Ms d.
          FINITE X /\ FV M SUBSET X UNION RANK r /\
          h::p IN ltree_paths (BT' X M r) /\
@@ -3598,10 +3598,10 @@ Proof
      Q.PAT_X_ASSUM ‘args' = Ms’ (fs o wrap o SYM) \\
      Q.PAT_X_ASSUM ‘m' = m’ (fs o wrap o SYM) \\
      fs [Abbr ‘m'’] >> T_TAC \\
-  (* applying subterm_width_recursion *)
+  (* applying subterm_width_induction_lemma *)
      Know ‘subterm_width ([P/v] M) (h::q) <= d <=>
            m <= d /\ subterm_width (EL h args') q <= d’
-     >- (MATCH_MP_TAC subterm_width_recursion \\
+     >- (MATCH_MP_TAC subterm_width_induction_lemma \\
          qexistsl_tac [‘X’, ‘r’, ‘M0'’, ‘n’, ‘vs’, ‘VAR y @* args'’] \\
          simp [principle_hnf_beta_reduce] \\
          CONJ_TAC
@@ -3763,10 +3763,10 @@ Proof
  >> ‘M1' = VAR z' @* (args' ++ ls)’ by METIS_TAC [principle_hnf_thm]
  >> Q.PAT_X_ASSUM ‘M0' @* MAP VAR vs @* MAP VAR ys -h->* _’ K_TAC
  >> qabbrev_tac ‘P = permutator d’
- (* applying subterm_width_recursion again *)
+ (* applying subterm_width_induction_lemma again *)
  >> Know ‘subterm_width ([P/y] M) (h::q) <= d <=>
           m' <= d /\ subterm_width (EL h Ms) q <= d’
- >- (MATCH_MP_TAC subterm_width_recursion \\
+ >- (MATCH_MP_TAC subterm_width_induction_lemma \\
      qexistsl_tac [‘X’, ‘r’, ‘M0'’, ‘n'’, ‘vs'’, ‘M1'’] \\
      simp [appstar_APPEND] \\
      CONJ_TAC
