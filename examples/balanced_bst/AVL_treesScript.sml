@@ -3,6 +3,8 @@ open optionTheory pairTheory stringTheory hurdUtils;
 open arithmeticTheory pred_setTheory listTheory finite_mapTheory alistTheory sortingTheory;
 open comparisonTheory;
 open integerTheory;
+open pred_setTheory;
+
 
 val _ = new_theory "AVL_trees";
 
@@ -45,8 +47,8 @@ End
 
 Definition Fibonacci_def :
     Fibonacci (n :num) =
-       if n = 0 then 0 else
-         if n = 1 then 1 else
+       if n = 0 then (0:num) else
+         if n = 1 then (1:num) else
           Fibonacci (n - 1) + Fibonacci (n - 2)
 End
 
@@ -145,7 +147,7 @@ Proof
   GEN_TAC >>
           rw[avl_def , minimal_avl_def]
   >> fs[minimal_avl_def]             
-QED
+QED       
 
 Theorem height_of_minimal_avl_diff_1:
   ∀ bf k v l r. minimal_avl (Bin bf k v l r) ⇒
@@ -156,7 +158,7 @@ Proof
   rw[minimal_avl_def,avl_def]
   >> fs[]
   >> CCONTR_TAC
-  >> Cases_on ‘l’ >> gvs[]
+  >> Cases_on ‘l’ >> gvs[] >> gvs[] >> gvs[]
   >-(first_x_assum(Q.SPEC_THEN ‘Bin 1 k v a r’ mp_tac)
      >> simp[]
      >>intLib.ARITH_TAC
@@ -208,28 +210,43 @@ Theorem N_k:
   ∀k. N (k+2) = N (k+1) + N(k) + 1
 Proof
   GEN_TAC
-  >> Q.SPEC_THEN ‘k+2’ mp_tac (INST_TYPE [“:'a” |-> “:num”]minimal_avl_exists)
+  >> Q.SPEC_THEN ‘k+2’ mp_tac
+                 (INST_TYPE [“:'a” |-> “:num”]minimal_avl_exists)
   >> STRIP_TAC
   >> ‘N (k+2) = node_count t’
-    by metis_tac[minimal_avl_node_count]
+    by metis_tac[minimal_avl_node_count]               
   >> simp[]
   >> Cases_on ‘t’
+  >- gvs[]
+  >> rename1 ‘minimal_avl (Bin bf s v l r)’              
+  >> ‘minimal_avl l ∧ minimal_avl r’
+     by metis_tac[children_of_minimal_avl]
   >> gvs[]
-  >> gvs[]
-  >> CCONTR_TAC      
-  >> fs[minimal_avl_def]     
-  >> gvs[]
-  >> sg ‘∀ i n a1 a a0. minimal_avl (Bin i n a1 a a0) ⇒
-                        minimal_avl a ∧ minimal_avl a0’
-  >- fs[children_of_minimal_avl]      
-  >> gvs[height_def,node_count_def,avl_def]
-  >> ‘minimal_avl a0 ∧ height a0 = k+1 ⇒
-      node_count a0 = N k+1’
-    by metis_tac[minimal_avl_node_count]
-  >> sg ‘height a = k+1’ >> gvs[height_def]
-  >>                              
+  >> Q.PAT_X_ASSUM ‘minimal_avl (Bin bf s v l r)’
+     (MP_TAC o (MATCH_MP height_of_minimal_avl_diff_1))
+  >> STRIP_TAC
+  >- gvs[]
+  >- ( fs[MAX_DEF] >>
+      Q_TAC SUFF_TAC ‘node_count r = N k ∧ node_count l = N (k+1)’
+       >- rw[]
+       >> STRIP_TAC
+       >- metis_tac[minimal_avl_node_count]
+       >> metis_tac[minimal_avl_node_count]            
+     )
+  >> fs[MAX_DEF] >>
+      Q_TAC SUFF_TAC ‘node_count r = N (k+1) ∧ node_count l = N k’
+       >- rw[]
+       >> STRIP_TAC
+       >- metis_tac[minimal_avl_node_count]
+       >> metis_tac[minimal_avl_node_count]  
 QED
-
-
- 
+        
+Theorem N_fibonacci_relation:
+  ∀k. N k = Fibonacci (k+2)-1
+Proof
+  rpt STRIP_TAC
+  >> Induct_on ‘k’
+  >> simp[N_0]               
+  >> fs[Fibonacci_def]       
+QED        
 val _ = export_theory ();
