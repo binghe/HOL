@@ -162,7 +162,7 @@ Proof
 QED
 
 (*------------------------------------------------------------------*)
-
+(*
 Theorem mgf_sum_independent:
   ∀p X s (J : 'index set). prob_space p /\ FINITE J /\
                            (∀i. i IN J ⇒ real_random_variable (X i) p)
@@ -257,8 +257,7 @@ Theorem mgf_derivative:
 Proof
 QED
 
-
-
+*)
 
 val _ = export_theory ();
 val _ = html_theory "central_limit";
