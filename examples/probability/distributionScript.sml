@@ -212,14 +212,15 @@ QED
 
 Overload ext_normal_density = “\mu sig. Normal o normal_density mu sig o real”
 
-Definition normal_measure :
+Definition normal_measure_def :
     normal_measure mu sig s =
       pos_fn_integral ext_lborel (\x. ext_normal_density mu sig x * indicator_fn s x)
 End
 
-Definition normal_rv :
+Definition normal_rv_def :
     normal_rv X p mu sig <=> real_random_variable X p /\
-                             distribution p X = normal_measure mu sig
+                             !s. s IN subsets Borel ==>
+                                 distribution p X s = normal_measure mu sig s
 End
 
 val _ = export_theory ();
