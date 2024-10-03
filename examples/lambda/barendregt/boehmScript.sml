@@ -4008,6 +4008,7 @@ Theorem Boehm_transform_exists_lemma :
                   subterm' X (apply pi M) q r = [P/v] (subterm' X M q r)
 Proof
     rpt STRIP_TAC
+ >> ‘p IN ltree_paths (BT' X M r)’ by PROVE_TAC [subterm_imp_ltree_paths]
  >> ‘(!q. q <<= p ==> subterm X M q r <> NONE) /\
       !q. q <<= FRONT p ==> solvable (subterm' X M q r)’
        by (MATCH_MP_TAC subterm_solvable_lemma >> art [])
@@ -4044,7 +4045,7 @@ Proof
  (* using ‘subterm_width’ and applying subterm_width_thm *)
  >> qabbrev_tac ‘d = subterm_width M p’
  >> Know ‘m <= d’
- >- (MP_TAC (Q.SPECL [‘X’, ‘M’, ‘p’, ‘[]’, ‘r’] subterm_width_thm) \\
+ >- (MP_TAC (Q.SPECL [‘X’, ‘M’, ‘p’, ‘r’] subterm_width_first) \\
      rw [Abbr ‘d’])
  >> DISCH_TAC
  (* p1 is the first Boehm transformation for removing abstractions of M0 *)
@@ -4422,18 +4423,6 @@ Proof
  (* applying subterm_width_thm *)
  >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘p’, ‘r’] subterm_width_thm)
  >> simp [] >> DISCH_THEN K_TAC
- >> Know ‘IMAGE (hnf_children_size o principle_hnf)
-                {subterm' X M q r | q <<= FRONT p} =
-          {hnf_children_size (principle_hnf (subterm' X M q r)) |
-           q <<= FRONT p}’
- >- (rw [Once EXTENSION] \\
-     EQ_TAC >> rw [] >| (* 2 subgoals *)
-     [ (* goal 1 (of 2) *)
-       Q.EXISTS_TAC ‘q’ >> rw [],
-       (* goal 2 (of 2) *)
-       Q.EXISTS_TAC ‘subterm' X M q r’ >> art [] \\
-       Q.EXISTS_TAC ‘q’ >> art [] ])
- >> Rewr'
  >> Cases_on ‘t = []’ >- rw []
  (* applying subterm_width_thm again *)
  >> MP_TAC (Q.SPECL [‘X’, ‘N’, ‘t’, ‘SUC r’] subterm_width_thm)
@@ -4442,29 +4431,41 @@ Proof
      MATCH_MP_TAC subterm_induction_lemma \\
      qexistsl_tac [‘M’, ‘M0’, ‘n’, ‘m’, ‘vs’, ‘M1’] >> simp [])
  >> DISCH_TAC
+ >> ‘t IN ltree_paths (BT' X N (SUC r))’ by PROVE_TAC [subterm_imp_ltree_paths]
  >> simp [] >> DISCH_THEN K_TAC
  (* applying SUBSET_MAX_SET *)
  >> MATCH_MP_TAC SUBSET_MAX_SET
  >> CONJ_TAC
  >- (MATCH_MP_TAC IMAGE_FINITE \\
+     MATCH_MP_TAC SUBSET_FINITE_I \\
+     Q.EXISTS_TAC ‘{subterm' X N q (SUC r) | q <<= FRONT t}’ \\
+     reverse CONJ_TAC
+     >- (rw [SUBSET_DEF] >> Q.EXISTS_TAC ‘q’ >> art []) \\
     ‘{subterm' X N q (SUC r) | q <<= FRONT t} =
       IMAGE (\p. subterm' X N p (SUC r)) {q | q <<= FRONT t}’
         by rw [Once EXTENSION] >> POP_ORW \\
      MATCH_MP_TAC IMAGE_FINITE >> rw [FINITE_prefix])
  >> CONJ_TAC
- >- (‘{hnf_children_size (principle_hnf (subterm' X M q r)) |
-       q <<= FRONT p} =
-      IMAGE (\p. hnf_children_size (principle_hnf (subterm' X M p r)))
-            {q | q <<= FRONT p}’
+ >- (MATCH_MP_TAC IMAGE_FINITE \\
+     MATCH_MP_TAC SUBSET_FINITE_I \\
+     Q.EXISTS_TAC ‘{subterm' X M q r | q <<= FRONT p}’ \\
+     reverse CONJ_TAC
+     >- (rw [SUBSET_DEF] >> Q.EXISTS_TAC ‘q’ >> art []) \\
+    ‘{subterm' X M q r | q <<= FRONT p} =
+      IMAGE (\p. subterm' X M p r) {q | q <<= FRONT p}’
         by rw [Once EXTENSION] >> POP_ORW \\
      MATCH_MP_TAC IMAGE_FINITE >> rw [FINITE_prefix])
  (* final goal *)
  >> ‘hnf_children_size M0 = m’ by rw [Abbr ‘m’]
  >> Q.PAT_X_ASSUM ‘M0 = _’ K_TAC
  >> rw [SUBSET_DEF] (* this asserts ‘q <<= FRONT t’ *)
+ >> Q.EXISTS_TAC ‘subterm' X N q (SUC r)’ >> art []
  >> Q.EXISTS_TAC ‘h::q’
- >> ONCE_REWRITE_TAC [CONJ_COMM]
- >> STRONG_CONJ_TAC
+ >> Know ‘FRONT p <> []’
+ >- (Cases_on ‘p’ >> gs [] \\
+     CCONTR_TAC >> gs [])
+ >> DISCH_TAC
+ >> Know ‘h::q <<= FRONT p’
  >- (qabbrev_tac ‘Y = X UNION RANK r’ \\
      qabbrev_tac ‘Y' = X UNION RANK (SUC r)’ \\
      Cases_on ‘p’ >> fs [] \\
@@ -4473,10 +4474,8 @@ Proof
      Q.EXISTS_TAC ‘FRONT t’ >> art [] \\
      MATCH_MP_TAC IS_PREFIX_FRONT_MONO >> rw [])
  >> DISCH_TAC
- >> CONV_TAC (UNBETA_CONV “subterm X M (h::q) r”)
- >> qmatch_abbrev_tac ‘f _’
- >> RW_TAC bool_ss [subterm_of_solvables]
- >> simp [Abbr ‘f’, hnf_children_hnf]
+ >> simp []
+ >> Q_TAC (UNBETA_TAC [subterm_of_solvables]) ‘subterm X M (h::q) r’
 QED
 
 (* Proposition 10.3.7 (i) [1, p.248] (Boehm out lemma)
@@ -4724,18 +4723,12 @@ Proof
  >> reverse (Cases_on ‘solvable M’)
  >- simp [BT_def, BT_generator_def, Once ltree_unfold, ltree_lookup_def]
  >> qabbrev_tac ‘M0 = principle_hnf M’
-(*
- >> Cases_on ‘subterm X M (h::p) r = NONE’
- >- (
-     cheat)
- *)
+ >> DISCH_TAC
  >> Know ‘solvable ([P/y] M)’
  >- (MATCH_MP_TAC solvable_subst \\
      qexistsl_tac [‘X’,‘M0’, ‘r’, ‘d’] >> simp [] \\
-  (* TODO *)
-     MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::p’, ‘[]’, ‘r’] subterm_width_thm) \\
-     simp [] \\
-     cheat)
+     MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::p’, ‘r’] subterm_width_first) \\
+     simp [ltree_paths_def])
  >> DISCH_TAC
  >> cheat
 QED
@@ -4895,8 +4888,7 @@ Proof
      >- (rw [Abbr ‘d’] \\
          MATCH_MP_TAC MAX_LIST_PROPERTY >> rw [MEM_MAP] \\
          Q.EXISTS_TAC ‘M i’ >> rw [EL_MEM, Abbr ‘M’]) \\
-     MP_TAC (Q.SPECL [‘X’, ‘(M :num -> term) i’, ‘p’, ‘[]’, ‘r’]
-                     subterm_width_thm) \\
+     MP_TAC (Q.SPECL [‘X’, ‘(M :num -> term) i’, ‘p’, ‘r’] subterm_width_first) \\
      simp [Abbr ‘m’])
  >> DISCH_TAC
  (* NOTE: Thus P(d) is not enough to cover M1, whose ‘hnf_children_size’ is
