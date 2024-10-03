@@ -223,6 +223,13 @@ Definition normal_rv_def :
                                  distribution p X s = normal_measure mu sig s
 End
 
+(* TODO *)
+Theorem extreal_exp_alt :
+    ∀x :extreal. exp x = ext_suminf (λn. inv (&FACT n) * x pow n)
+Proof
+    cheat
+QED
+
 val _ = export_theory ();
 val _ = html_theory "distribution";
 
