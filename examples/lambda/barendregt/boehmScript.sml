@@ -4708,17 +4708,18 @@ QED
 
 (* NOTE: ‘ltree_paths (BT' X M r) SUBSET ltree_paths (BT' X (M ISUB ss) r)’ doesn't
          hold. Instead, we need to consider certain p and ‘d <= subterm_width M p’.
+         This theorem holds even when M is not solvable.
  *)
 Theorem BT_subst_cong :
-    !X p M r P d y. FINITE X /\ FV M SUBSET X UNION RANK r /\ y IN X UNION RANK r /\
+    !X P d y p M r. FINITE X /\ FV M SUBSET X UNION RANK r /\ y IN X UNION RANK r /\
                     P = permutator d /\ subterm_width M p <= d /\
                     ltree_lookup (BT' X M r) p <> NONE ==>
                     ltree_lookup (BT' X ([P/y] M) r) p <> NONE
 Proof
-    Q.X_GEN_TAC ‘X’
+    NTAC 4 GEN_TAC
  >> Induct_on ‘p’ >- rw [ltree_lookup]
  >> rw []
- >> POP_ASSUM MP_TAC
+ >> Q.PAT_X_ASSUM ‘ltree_lookup (BT' X M r) (h::p) <> NONE’ MP_TAC
  >> qabbrev_tac ‘P = permutator d’
  >> reverse (Cases_on ‘solvable M’)
  >- simp [BT_def, BT_generator_def, Once ltree_unfold, ltree_lookup_def]
@@ -4730,6 +4731,9 @@ Proof
      MP_TAC (Q.SPECL [‘X’, ‘M’, ‘h::p’, ‘r’] subterm_width_first) \\
      simp [ltree_paths_def])
  >> DISCH_TAC
+ >> simp [BT_def, BT_generator_def, Once ltree_unfold, ltree_lookup_def,
+          LNTH_fromList]
+ (* NOTE: The rest of this proof is mostly taken from subterm_subst_cong_lemma *)
  >> cheat
 QED
 
