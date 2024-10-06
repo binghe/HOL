@@ -4759,51 +4759,72 @@ Proof
  >> simp [LAMl_SUB, appstar_SUB]
  >> POP_ASSUM K_TAC (* DISJOINT (set vs) (FV P) *)
  >> qabbrev_tac ‘args' = MAP [P/v] args’
- >> ‘LENGTH args' = LENGTH args’ by rw [Abbr ‘args'’]
+ >> qabbrev_tac ‘m = LENGTH args’
+ >> ‘LENGTH args' = m’ by rw [Abbr ‘args'’, Abbr ‘m’]
+ >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘ltree_lookup (BT' X M r) (h::p) <> NONE’
+      (MP_TAC o REWRITE_RULE [BT_def, BT_generator_def, ltree_unfold])
+ >> simp [principle_hnf_beta_reduce, hnf_appstar, LMAP_fromList,
+          ltree_lookup_def, LNTH_fromList]
+ >> Cases_on ‘h < m’ >> simp [EL_MAP, GSYM BT_def]
+ >> DISCH_TAC
+ >> Know ‘subterm_width M (h::p) <= d <=>
+          m <= d /\ subterm_width (EL h args) p <= d’
+ >- (MATCH_MP_TAC subterm_width_induction_lemma \\
+     qexistsl_tac [‘X’, ‘r’, ‘M0’, ‘n’, ‘vs’, ‘M1’] >> simp [])
+ >> DISCH_THEN (rfs o wrap)
+ >> qabbrev_tac ‘N = EL h args’
+ (* stage work *)
  >> reverse (Cases_on ‘y = v’)
- >- (simp [] >> DISCH_TAC \\
+ >- (Q.PAT_X_ASSUM ‘[P/v] M -h->* _’ MP_TAC \\
+     simp [] >> DISCH_TAC \\
      qabbrev_tac ‘M0' = LAMl vs (VAR y @* args')’ \\
     ‘hnf M0'’ by rw [hnf_appstar, Abbr ‘M0'’] \\
     ‘principle_hnf ([P/v] M) = M0'’ by METIS_TAC [principle_hnf_thm'] \\
      Q.PAT_X_ASSUM ‘hnf M0'’ K_TAC \\
-     Q.PAT_X_ASSUM ‘ltree_lookup (BT' X M r) (h::p) <> NONE’ MP_TAC \\
      Q.PAT_X_ASSUM ‘M0 = LAMl vs (VAR y @* args)’ (ASSUME_TAC o SYM) \\
      Q.PAT_X_ASSUM ‘M1 = VAR y @* args’ (ASSUME_TAC o SYM) \\
-     qabbrev_tac ‘m = LENGTH args’ \\
     ‘hnf_children M1 = args’ by rw [hnf_children_hnf] \\
     ‘LAMl_size M0' = n’ by rw [Abbr ‘M0'’, LAMl_size_hnf] \\
     ‘principle_hnf (M0' @* MAP VAR vs) = VAR y @* args'’
        by rw [Abbr ‘M0'’, principle_hnf_beta_reduce, hnf_appstar] \\
-     simp [BT_def, BT_generator_def, ltree_unfold, ltree_lookup_def, LNTH_fromList,
-           EL_MAP] \\
-     Cases_on ‘h < m’ >> simp [] \\
+     simp [BT_def, BT_generator_def, Once ltree_unfold, ltree_lookup_def,
+           LNTH_fromList, EL_MAP] \\
      simp [Abbr ‘args'’, GSYM BT_def, EL_MAP] \\
-     qabbrev_tac ‘N = EL h args’ \\
-     DISCH_TAC \\
      FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
      CONJ_TAC
      >- (qunabbrev_tac ‘N’ \\
          MATCH_MP_TAC subterm_induction_lemma \\
          qexistsl_tac [‘M’, ‘M0’, ‘n’, ‘m’, ‘vs’, ‘M1’] >> simp []) \\
-     CONJ_TAC
-     >- (Q.PAT_X_ASSUM ‘v IN Y’ MP_TAC \\
-         qunabbrev_tac ‘Y’ \\
-         Suff ‘X UNION RANK r SUBSET X UNION (RANK (SUC r))’
-         >- METIS_TAC [SUBSET_DEF] \\
-         Suff ‘RANK r SUBSET RANK (SUC r)’ >- SET_TAC [] \\
-         rw [RANK_MONO]) \\
-     Q.PAT_X_ASSUM ‘subterm_width M (h::p) <= d’ MP_TAC \\
-     qunabbrev_tac ‘N’ \\
-     Suff ‘subterm_width M (h::p) <= d <=>
-           m <= d /\ subterm_width (EL h args) p <= d’ >- simp [] \\
-     MATCH_MP_TAC subterm_width_induction_lemma \\
-     qexistsl_tac [‘X’, ‘r’, ‘M0’, ‘n’, ‘vs’, ‘M1’] >> simp [] \\
-     ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
-     qunabbrev_tac ‘m’ \\
-     MATCH_MP_TAC hnf_children_size_alt \\
-     qexistsl_tac [‘X’, ‘M’, ‘r’, ‘n’, ‘vs’, ‘M1’] >> simp [])
+     Q.PAT_X_ASSUM ‘v IN Y’ MP_TAC \\
+     qunabbrev_tac ‘Y’ \\
+     Suff ‘X UNION RANK r SUBSET X UNION (RANK (SUC r))’
+     >- METIS_TAC [SUBSET_DEF] \\
+     Suff ‘RANK r SUBSET RANK (SUC r)’ >- SET_TAC [] \\
+     rw [RANK_MONO])
  (* stage work *)
+ >> POP_ASSUM (rfs o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘[P/y] M -h->* _’ MP_TAC
+ >> simp [Abbr ‘P’]
+ >> DISCH_TAC (* [permutator d/v] M -h->* ... *)
+ >> MP_TAC (Q.SPECL [‘set vs’, ‘d’, ‘args'’] permutator_hreduce_thm)
  >> simp []
+ >> STRIP_TAC
+ >> Know ‘LAMl vs (permutator d @* args') -h->*
+          LAMl vs (LAMl xs (LAM y' (VAR y' @* args' @* MAP VAR xs)))’
+ >- (rw [hreduce_LAMl])
+ >> qabbrev_tac ‘P = permutator d’
+ >> qmatch_abbrev_tac ‘LAMl vs (P @* args') -h->* t ==> _’
+ >> DISCH_TAC
+ >> ‘hnf t’ by rw [Abbr ‘t’, hnf_appstar, hnf_LAMl]
+ >> ‘[P/y] M -h->* t’ by PROVE_TAC [hreduce_TRANS]
+ >> ‘principle_hnf ([P/y] M) = t’ by METIS_TAC [principle_hnf_thm']
+ (* cleanup *)
+ >> Q.PAT_X_ASSUM ‘P @* args' -h->* _’      K_TAC
+ >> Q.PAT_X_ASSUM ‘LAMl vs _ -h->* t’       K_TAC
+ >> Q.PAT_X_ASSUM ‘[P/y] M -h->* LAMl vs _’ K_TAC
+ >> Q.PAT_X_ASSUM ‘[P/y] M -h->* t’         K_TAC
+ >> Q.PAT_X_ASSUM ‘hnf t’                   K_TAC
  >> cheat
 QED
 
