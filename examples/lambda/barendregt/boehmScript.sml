@@ -4825,6 +4825,29 @@ Proof
  >> Q.PAT_X_ASSUM ‘[P/y] M -h->* LAMl vs _’ K_TAC
  >> Q.PAT_X_ASSUM ‘[P/y] M -h->* t’         K_TAC
  >> Q.PAT_X_ASSUM ‘hnf t’                   K_TAC
+ >> qunabbrev_tac ‘t’
+ >> rename1 ‘ALL_DISTINCT (SNOC z xs)’
+ (* stage work *)
+ >> POP_ASSUM MP_TAC
+ >> ‘!t. LAMl vs (LAMl xs (LAM z t)) = LAMl (vs ++ xs ++ [z]) t’
+       by rw [LAMl_APPEND]
+ >> POP_ORW
+ >> REWRITE_TAC [GSYM appstar_APPEND]
+ >> qabbrev_tac ‘args'' = args' ++ MAP VAR xs’
+ >> qabbrev_tac ‘ys = vs ++ xs ++ [z]’
+ >> DISCH_TAC
+ >> simp [BT_def, BT_generator_def, Once ltree_unfold, ltree_lookup_def,
+          LNTH_fromList, EL_MAP]
+ >> REWRITE_TAC [GSYM BT_def]
+ >> qabbrev_tac ‘n' = LENGTH ys’
+ >> Q_TAC (RNEWS_TAC (“zs :string list”, “r :num”, “n' :num”)) ‘X’
+ (* applying principle_hnf_LAMl_appstar *)
+ >> qabbrev_tac ‘t = VAR z @* args''’
+ >> ‘hnf t’ by rw [Abbr ‘t’, hnf_appstar]
+ >> Know ‘principle_hnf (LAMl ys t @* MAP VAR zs) = tpm (ZIP (ys,zs)) t’
+ >- (MATCH_MP_TAC principle_hnf_LAMl_appstar >> simp [Abbr ‘n'’] \\
+     cheat)
+ >> Rewr'
  >> cheat
 QED
 
