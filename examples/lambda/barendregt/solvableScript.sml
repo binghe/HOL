@@ -864,7 +864,7 @@ Proof
  >> MATCH_MP_TAC principle_hnf_hreduce1 >> art []
 QED
 
-Theorem principle_hnf_LAMl_appstar_lemma[local] :
+Theorem principle_hnf_tpm_reduce_lemma[local] :
     !t. hnf t /\
         ALL_DISTINCT (MAP FST pi) /\
         ALL_DISTINCT (MAP SND pi) /\
@@ -953,7 +953,7 @@ QED
         ‘NEWS’, and then call [hnf_cases_genX] using ‘ys’ as the new
          excluded list.
  *)
-Theorem principle_hnf_LAMl_appstar :
+Theorem principle_hnf_tpm_reduce :
     !t xs ys. hnf t /\
               ALL_DISTINCT xs /\ ALL_DISTINCT ys /\
               LENGTH xs = LENGTH ys /\
@@ -974,7 +974,7 @@ Proof
      Q.EXISTS_TAC ‘n’ >> art [])
  >> DISCH_TAC
  >> simp []
- >> MATCH_MP_TAC principle_hnf_LAMl_appstar_lemma >> rw []
+ >> MATCH_MP_TAC principle_hnf_tpm_reduce_lemma >> rw []
 QED
 
 Theorem principle_hnf_beta_reduce1 :

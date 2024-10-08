@@ -1606,7 +1606,7 @@ Proof
  (* rewriting M1 and M1' (much harder) by tpm of M2 *)
  >> Know ‘M1 = tpm (ZIP (vs2,vs)) M2’
  >- (simp [Abbr ‘M1’] \\
-     MATCH_MP_TAC principle_hnf_LAMl_appstar \\
+     MATCH_MP_TAC principle_hnf_tpm_reduce \\
      Q.PAT_X_ASSUM ‘M2 = VAR y @* args’ (ONCE_REWRITE_TAC o wrap o SYM) >> art [])
  >> DISCH_TAC
  >> qabbrev_tac ‘p1 = ZIP (vs2,vs)’
@@ -1631,7 +1631,7 @@ Proof
  >> DISCH_TAC
  >> Know ‘M1' = tpm pi (tpm (ZIP (vs2,vs1)) M2)’
  >- (POP_ORW >> simp [] \\
-     MATCH_MP_TAC principle_hnf_LAMl_appstar \\
+     MATCH_MP_TAC principle_hnf_tpm_reduce \\
      Q.PAT_X_ASSUM ‘M2 = VAR y @* args’
        (ONCE_REWRITE_TAC o wrap o SYM) >> art [])
  >> POP_ASSUM K_TAC (* M1' = ... (already used) *)
@@ -4802,18 +4802,28 @@ Proof
      >- METIS_TAC [SUBSET_DEF] \\
      Suff ‘RANK r SUBSET RANK (SUC r)’ >- SET_TAC [] \\
      rw [RANK_MONO])
+ >> POP_ASSUM (rfs o wrap o SYM) (* [P/y] from now on *)
  (* stage work *)
- >> POP_ASSUM (rfs o wrap o SYM)
  >> Q.PAT_X_ASSUM ‘[P/y] M -h->* _’ MP_TAC
  >> simp [Abbr ‘P’]
  >> DISCH_TAC (* [permutator d/v] M -h->* ... *)
- >> MP_TAC (Q.SPECL [‘set vs’, ‘d’, ‘args'’] permutator_hreduce_thm)
- >> simp []
- >> STRIP_TAC
- >> Know ‘LAMl vs (permutator d @* args') -h->*
-          LAMl vs (LAMl xs (LAM y' (VAR y' @* args' @* MAP VAR xs)))’
- >- (rw [hreduce_LAMl])
+ (* NOTE: New frash variables xs and y will be asserted here:
+
+    P @* args' -h->* LAMl xs (LAM z (VAR z @* args' @* MAP VAR xs)),
+
+    thus ‘principle_hnf ([P/y] M) = LAMl (vs ++ xs ++ [z]) (VAR z @* ...)’
+
+    Here LENGTH xs = d - m. Let n' be the LAMl_size of the above hnf.
+  *)
+ >> qabbrev_tac ‘n' = n + (d - m) + 1’
+ >> Q_TAC (RNEWS_TAC (“zs :string list”, “r :num”, “n' :num”)) ‘X’
+ >> MP_TAC (Q.SPECL [‘X UNION set zs’, ‘d’, ‘args'’] permutator_hreduce_thm)
+ >> simp [] >> STRIP_TAC
+ >> rename1 ‘ALL_DISTINCT (SNOC z xs)’
  >> qabbrev_tac ‘P = permutator d’
+ >> Know ‘LAMl vs (P @* args') -h->*
+          LAMl vs (LAMl xs (LAM z (VAR z @* args' @* MAP VAR xs)))’
+ >- (rw [hreduce_LAMl])
  >> qmatch_abbrev_tac ‘LAMl vs (P @* args') -h->* t ==> _’
  >> DISCH_TAC
  >> ‘hnf t’ by rw [Abbr ‘t’, hnf_appstar, hnf_LAMl]
@@ -4826,7 +4836,6 @@ Proof
  >> Q.PAT_X_ASSUM ‘[P/y] M -h->* t’         K_TAC
  >> Q.PAT_X_ASSUM ‘hnf t’                   K_TAC
  >> qunabbrev_tac ‘t’
- >> rename1 ‘ALL_DISTINCT (SNOC z xs)’
  (* stage work *)
  >> POP_ASSUM MP_TAC
  >> ‘!t. LAMl vs (LAMl xs (LAM z t)) = LAMl (vs ++ xs ++ [z]) t’
@@ -4834,20 +4843,34 @@ Proof
  >> POP_ORW
  >> REWRITE_TAC [GSYM appstar_APPEND]
  >> qabbrev_tac ‘args'' = args' ++ MAP VAR xs’
- >> qabbrev_tac ‘ys = vs ++ xs ++ [z]’
+ >> qabbrev_tac ‘vs' = vs ++ xs ++ [z]’
  >> DISCH_TAC
  >> simp [BT_def, BT_generator_def, Once ltree_unfold, ltree_lookup_def,
           LNTH_fromList, EL_MAP]
  >> REWRITE_TAC [GSYM BT_def]
- >> qabbrev_tac ‘n' = LENGTH ys’
- >> Q_TAC (RNEWS_TAC (“zs :string list”, “r :num”, “n' :num”)) ‘X’
- (* applying principle_hnf_LAMl_appstar *)
+ >> Know ‘LENGTH vs' = n'’
+ >- (qunabbrevl_tac [‘n’, ‘n'’, ‘vs'’] \\
+     Q.PAT_X_ASSUM ‘M0 = _’  (REWRITE_TAC o wrap) \\
+     simp [LAMl_size_LAMl])
+ >> DISCH_THEN (simp o wrap)
+  (* applying NEWS_prefix *)
+ >> Know ‘vs <<= zs’
+ >- (qunabbrevl_tac [‘vs’, ‘zs’] \\
+     MATCH_MP_TAC RNEWS_prefix >> rw [Abbr ‘n'’])
+ >> DISCH_THEN (STRIP_ASSUME_TAC o (REWRITE_RULE [IS_PREFIX_APPEND]))
+ >> rename1 ‘zs = vs ++ ys’
+ >> simp [Abbr ‘vs'’, GSYM APPEND_ASSOC, appstar_APPEND]
+ >> qabbrev_tac ‘xs' = xs ++ [z]’
+ >> simp [LAMl_APPEND]
+ >> qabbrev_tac ‘t = LAMl xs' (VAR z @* args'')’
+ >> ‘LAMl vs t @* MAP VAR vs @* MAP VAR ys -h->* t @* MAP VAR ys’
+       by simp [hreduce_BETA_extended]
+ >> qunabbrev_tac ‘t’
  >> qabbrev_tac ‘t = VAR z @* args''’
- >> ‘hnf t’ by rw [Abbr ‘t’, hnf_appstar]
- >> Know ‘principle_hnf (LAMl ys t @* MAP VAR zs) = tpm (ZIP (ys,zs)) t’
- >- (MATCH_MP_TAC principle_hnf_LAMl_appstar >> simp [Abbr ‘n'’] \\
+ (* applying principle_hnf_tpm_reduce *)
+ >> Know ‘principle_hnf (LAMl xs' t @* MAP VAR ys) = tpm (ZIP (xs',ys)) t’
+ >- (MATCH_MP_TAC principle_hnf_tpm_reduce \\
      cheat)
- >> Rewr'
  >> cheat
 QED
 
@@ -5515,10 +5538,10 @@ Proof
          Q.EXISTS_TAC ‘set vs’ >> art [] \\
          rw [Abbr ‘ys’, LIST_TO_SET_TAKE]) >> DISCH_TAC \\
      qabbrev_tac ‘t = VAR (y i) @* args i’ \\
-  (* applying for principle_hnf_LAMl_appstar *)
+  (* applying for principle_hnf_tpm_reduce *)
      Know ‘principle_hnf (LAMl ys t @* MAP VAR zs) = tpm (ZIP (ys,zs)) t’
      >- (‘hnf t’ by rw [Abbr ‘t’, hnf_appstar] \\
-         MATCH_MP_TAC principle_hnf_LAMl_appstar >> art [] \\
+         MATCH_MP_TAC principle_hnf_tpm_reduce >> art [] \\
          MATCH_MP_TAC subterm_disjoint_lemma \\
          qexistsl_tac [‘X’, ‘r’, ‘n i’] >> simp [] \\
          MATCH_MP_TAC SUBSET_TRANS \\
@@ -5717,8 +5740,7 @@ Proof
            by (qunabbrev_tac ‘ys’ \\
                MATCH_MP_TAC LENGTH_TAKE >> art [] \\
                FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
-         Q_TAC (RNEWS_TAC (“zs :string list”, “r :num”,
-                           “(n :num -> num) j2”)) ‘X’ \\
+         Q_TAC (RNEWS_TAC (“zs :string list”, “r :num”, “(n :num -> num) j2”)) ‘X’ \\
          Know ‘DISJOINT (set ys) (set zs)’
          >- (MATCH_MP_TAC DISJOINT_SUBSET' \\
              Q.EXISTS_TAC ‘set vs’ \\
@@ -5732,10 +5754,10 @@ Proof
              MATCH_MP_TAC ROW_SUBSET_RANK >> art []) >> DISCH_TAC \\
          qabbrev_tac ‘t1 = VAR (y j1) @* args j1’ \\
          qabbrev_tac ‘t2 = VAR (y j2) @* args j2’ \\
-      (* applying for principle_hnf_LAMl_appstar *)
+      (* applying for principle_hnf_tpm_reduce *)
          Know ‘principle_hnf (LAMl ys t1 @* MAP VAR zs) = tpm (ZIP (ys,zs)) t1’
          >- (‘hnf t1’ by rw [Abbr ‘t1’, hnf_appstar] \\
-             MATCH_MP_TAC principle_hnf_LAMl_appstar >> art [] \\
+             MATCH_MP_TAC principle_hnf_tpm_reduce >> art [] \\
              MATCH_MP_TAC subterm_disjoint_lemma \\
              qexistsl_tac [‘X’, ‘r’, ‘n j2’] >> simp [] \\
              MATCH_MP_TAC SUBSET_TRANS \\
@@ -5744,7 +5766,7 @@ Proof
          DISCH_THEN (fs o wrap) \\
          Know ‘principle_hnf (LAMl ys t2 @* MAP VAR zs) = tpm (ZIP (ys,zs)) t2’
          >- (‘hnf t2’ by rw [Abbr ‘t2’, hnf_appstar] \\
-             MATCH_MP_TAC principle_hnf_LAMl_appstar >> art [] \\
+             MATCH_MP_TAC principle_hnf_tpm_reduce >> art [] \\
              MATCH_MP_TAC subterm_disjoint_lemma \\
              qexistsl_tac [‘X’, ‘r’, ‘n j2’] >> simp [] \\
              MATCH_MP_TAC SUBSET_TRANS \\
