@@ -271,6 +271,34 @@ Proof
  >> qexistsl_tac [‘X’, ‘r’, ‘n’] >> art []
 QED
 
+(* NOTE: In general ‘solvable M’ doesn't imply ‘solvable (M @* args)’. The
+   present lemma is a special case.
+ *)
+Theorem solvable_appstar_vars :
+    !X M r M0 n vs.
+           FINITE X /\ FV M SUBSET X UNION RANK r /\
+           solvable M /\
+           M0 = principle_hnf M /\
+            n = LAMl_size M0 /\
+           vs = RNEWS r n X
+       ==> solvable (M0 @* MAP VAR vs)
+Proof
+    RW_TAC std_ss []
+ >> qabbrev_tac ‘M0 = principle_hnf M’
+ >> qabbrev_tac ‘n  = LAMl_size M0’
+ >> Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
+ >> ‘DISJOINT (set vs) (FV M0)’ by METIS_TAC [subterm_disjoint_lemma']
+ >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR vs)’
+ >> Q_TAC (HNF_TAC (“M0 :term”, “vs :string list”,
+                    “y  :string”, “args :term list”)) ‘M1’
+ >> ‘TAKE n vs = vs’ by rw []
+ >> POP_ASSUM (rfs o wrap)
+ >> ‘hnf M1’ by rw [hnf_appstar]
+ >> ‘solvable M1’ by rw [solvable_iff_has_hnf, hnf_has_hnf]
+ >> ‘LAMl vs M1 @* MAP VAR vs == M1’ by rw []
+ >> PROVE_TAC [lameq_solvable_cong]
+QED
+
 (* NOTE: Essentially, ‘hnf_children_size (principle_hnf M)’ is irrelevant with
          the excluding list. This lemma shows the equivalence in defining ‘m’.
  *)
@@ -625,10 +653,8 @@ Proof
  >> ‘TAKE n vs = vs’ by rw []
  >> POP_ASSUM (rfs o wrap)
  >> Know ‘solvable (M0 @* MAP VAR vs)’
- >- (‘hnf M1’ by rw [hnf_appstar] \\
-     ‘solvable M1’ by rw [solvable_iff_has_hnf, hnf_has_hnf] \\
-     Suff ‘M0 @* MAP VAR vs == M1’ >- PROVE_TAC [lameq_solvable_cong] \\
-     rw [])
+ >- (MATCH_MP_TAC solvable_appstar_vars \\
+     qexistsl_tac [‘X’, ‘M’, ‘r’, ‘n’] >> simp [])
  >> DISCH_TAC
  >> Suff ‘FV M1 SUBSET X UNION RANK (SUC r)’
  >- rw [SUBSET_DEF, FV_appstar, IN_UNION]
@@ -4131,10 +4157,8 @@ Proof
  >> qabbrev_tac ‘Z = X UNION FV M UNION set vs’
  >> ‘FINITE Z’ by (rw [Abbr ‘Z’] >> rw [])
  >> Know ‘solvable (M0 @* MAP VAR vs)’
- >- (‘hnf M1’ by rw [hnf_appstar] \\
-     ‘solvable M1’ by rw [solvable_iff_has_hnf, hnf_has_hnf] \\
-     Suff ‘M0 @* MAP VAR vs == M1’ >- PROVE_TAC [lameq_solvable_cong] \\
-     rw [])
+ >- (MATCH_MP_TAC solvable_appstar_vars \\
+     qexistsl_tac [‘X’, ‘M’, ‘r’, ‘n’] >> simp [])
  >> DISCH_TAC
  >> Know ‘FV M1 SUBSET Z’
  >- (MATCH_MP_TAC SUBSET_TRANS \\
