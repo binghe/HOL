@@ -4798,20 +4798,20 @@ Theorem BT_subst_cong :
          FINITE X /\ FV M SUBSET X UNION RANK r /\ v IN X UNION RANK r /\
          P = permutator d /\ subterm_width M p <= d /\
          ltree_lookup (BT' X M r) p <> NONE ==>
-      (* subterm_width ([P/v] M) p <= d /\ *)
          ltree_lookup (BT' X ([P/v] M) r) p <> NONE
 Proof
     NTAC 4 GEN_TAC
  >> Induct_on ‘p’ >- rw [ltree_lookup]
- >> rw []
+ >> rpt GEN_TAC >> STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘P = permutator d’ (fs o wrap)
+ >> qabbrev_tac ‘P = permutator d’
  >> ‘h::p IN ltree_paths (BT' X M r)’ by rw [ltree_paths_def]
  >> Q.PAT_X_ASSUM ‘ltree_lookup (BT' X M r) (h::p) <> NONE’ MP_TAC
- >> qabbrev_tac ‘P = permutator d’
  >> qabbrev_tac ‘Y = X UNION RANK r’
  >> reverse (Cases_on ‘solvable M’)
  >- simp [BT_def, BT_generator_def, Once ltree_unfold, ltree_lookup_def]
- >> qabbrev_tac ‘M0 = principle_hnf M’
  >> DISCH_TAC
+ >> qabbrev_tac ‘M0 = principle_hnf M’
  >> qabbrev_tac ‘n = LAMl_size M0’
  >> Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
  >> ‘DISJOINT (set vs) (FV M)’ by METIS_TAC [subterm_disjoint_lemma]
@@ -4882,7 +4882,7 @@ Proof
        by rw [Abbr ‘M0'’, principle_hnf_beta_reduce, hnf_appstar] \\
      simp [BT_def, BT_generator_def, Once ltree_unfold, ltree_lookup_def,
            LNTH_fromList, EL_MAP] \\
-     simp [Abbr ‘args'’, GSYM BT_def, EL_MAP] \\
+     simp [GSYM BT_def, EL_MAP, Abbr ‘args'’] \\
      FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
      CONJ_TAC
      >- (qunabbrev_tac ‘N’ \\
@@ -5046,7 +5046,29 @@ Proof
  >> Rewr'
  >> simp [Abbr ‘args'’, EL_MAP]
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
- >> cheat
+ >> qunabbrev_tac ‘Y’
+ >> reverse CONJ_TAC
+ >- (Q.PAT_X_ASSUM ‘y IN X UNION RANK r’ MP_TAC \\
+     Suff ‘X UNION RANK r SUBSET X UNION RANK (SUC r)’
+     >- (REWRITE_TAC [SUBSET_DEF] \\
+         DISCH_THEN (REWRITE_TAC o wrap)) \\
+     Suff ‘RANK r SUBSET RANK (SUC r)’ >- SET_TAC [] \\
+     rw [RANK_MONO])
+ (* final goal *)
+ >> qunabbrev_tac ‘N’
+ >> MATCH_MP_TAC subterm_induction_lemma
+ >> qexistsl_tac [‘M’, ‘M0’, ‘n’, ‘m’, ‘vs’, ‘M1’] >> simp []
+QED
+
+Theorem BT_subst_cong_full :
+    !X P d v p M r.
+         FINITE X /\ FV M SUBSET X UNION RANK r /\ v IN X UNION RANK r /\
+         P = permutator d /\ subterm_width M p <= d /\
+         ltree_lookup (BT' X M r) p <> NONE ==>
+         subterm_width ([P/v] M) p <= d /\
+         ltree_lookup (BT' X ([P/v] M) r) p <> NONE
+Proof
+    cheat
 QED
 
 (* Definition 10.3.10 (iii) and (iv)
