@@ -864,25 +864,43 @@ Proof
  >> MATCH_MP_TAC principle_hnf_hreduce1 >> art []
 QED
 
+Theorem hreduces_hnf_imp_principle_hnf :
+    !M N. M -h->* N /\ hnf N ==> principle_hnf M = N
+Proof
+    rpt STRIP_TAC
+ >> Know ‘principle_hnf M = principle_hnf N’
+ >- (MATCH_MP_TAC principle_hnf_hreduce >> art [])
+ >> Rewr'
+ >> MATCH_MP_TAC principle_hnf_reduce >> art []
+QED
+
 Theorem principle_hnf_tpm_reduce_lemma[local] :
     !t. hnf t /\
         ALL_DISTINCT (MAP FST pi) /\
         ALL_DISTINCT (MAP SND pi) /\
         DISJOINT (set (MAP FST pi)) (set (MAP SND pi)) /\
        (!y. MEM y (MAP SND pi) ==> y # t) ==>
+        has_hnf (LAMl (MAP FST pi) t @* MAP VAR (MAP SND pi)) /\
         principle_hnf (LAMl (MAP FST pi) t @* MAP VAR (MAP SND pi)) = tpm pi t
 Proof
     Induct_on ‘pi’
- >- rw [principle_hnf_reduce]
- >> rw []
+ >- (rw [principle_hnf_reduce] \\
+     MATCH_MP_TAC hnf_has_hnf >> art [])
+ >> rpt GEN_TAC >> STRIP_TAC
  >> Cases_on ‘h’ (* ‘x’ *) >> fs []
  >> qabbrev_tac ‘M = LAMl (MAP FST pi) t’
  >> ‘hnf M’ by rw [Abbr ‘M’, hnf_LAMl]
  >> qabbrev_tac ‘args :term list = MAP VAR (MAP SND pi)’
+ >> Know ‘LAM q M @@ VAR r @* args -h-> [VAR r/q] M @* args’
+ >- (MATCH_MP_TAC hreduce1_appstar >> rw [hreduce1_BETA])
+ >> DISCH_TAC
  >> Know ‘principle_hnf (LAM q M @@ VAR r @* args) =
           principle_hnf ([VAR r/q] M @* args)’
- >- (MATCH_MP_TAC principle_hnf_hreduce1 \\
-     MATCH_MP_TAC hreduce1_appstar >> rw [hreduce1_BETA])
+ >- (MATCH_MP_TAC principle_hnf_hreduce1 >> art [])
+ >> Rewr'
+ >> Know ‘has_hnf (LAM q M @@ VAR r @* args) <=>
+          has_hnf ([VAR r/q] M @* args)’
+ >- (MATCH_MP_TAC hreduce1_has_hnf_cong >> art [])
  >> Rewr'
  >> Know ‘[VAR r/q] M = LAMl (MAP FST pi) ([VAR r/q] t)’
  >- (qunabbrev_tac ‘M’ \\
@@ -896,7 +914,8 @@ Proof
  >> Rewr'
  >> qabbrev_tac ‘N' = tpm [(q,r)] t’
  >> ‘hnf N'’ by rw [Abbr ‘N'’, hnf_tpm]
- >> Know ‘principle_hnf (LAMl (MAP FST pi) N' @* args) = tpm pi N'’
+ >> Know ‘has_hnf (LAMl (MAP FST pi) N' @* args) /\
+          principle_hnf (LAMl (MAP FST pi) N' @* args) = tpm pi N'’
  >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [Abbr ‘N'’] \\
     ‘r <> y’ by PROVE_TAC [] \\
      Cases_on ‘q = y’ >> rw [])
@@ -959,9 +978,10 @@ Theorem principle_hnf_tpm_reduce :
               LENGTH xs = LENGTH ys /\
               DISJOINT (set xs) (set ys) /\
               DISJOINT (set ys) (FV t)
-          ==> principle_hnf (LAMl xs t @* MAP VAR ys) = tpm (ZIP (xs,ys)) t
+          ==> has_hnf (LAMl xs t @* MAP VAR ys) /\
+              principle_hnf (LAMl xs t @* MAP VAR ys) = tpm (ZIP (xs,ys)) t
 Proof
-    RW_TAC std_ss []
+    rpt GEN_TAC >> STRIP_TAC
  >> qabbrev_tac ‘n = LENGTH xs’
  >> qabbrev_tac ‘pi = ZIP (xs,ys)’
  >> ‘xs = MAP FST pi’ by rw [Abbr ‘pi’, MAP_ZIP]
@@ -976,6 +996,14 @@ Proof
  >> simp []
  >> MATCH_MP_TAC principle_hnf_tpm_reduce_lemma >> rw []
 QED
+
+(* |- !t xs ys.
+        hnf t /\ ALL_DISTINCT xs /\ ALL_DISTINCT ys /\
+        LENGTH xs = LENGTH ys /\ DISJOINT (set xs) (set ys) /\
+        DISJOINT (set ys) (FV t) ==>
+        principle_hnf (LAMl xs t @* MAP VAR ys) = tpm (ZIP (xs,ys)) t
+ *)
+Theorem principle_hnf_tpm_reduce' = cj 2 principle_hnf_tpm_reduce
 
 Theorem principle_hnf_beta_reduce1 :
     !v t. hnf t ==> principle_hnf (LAM v t @@ VAR v) = t

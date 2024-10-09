@@ -1140,6 +1140,36 @@ Proof
  >> Q.EXISTS_TAC ‘M’ >> rw []
 QED
 
+Theorem lameq_has_hnf_cong :
+    !M N. M == N ==> (has_hnf M <=> has_hnf N)
+Proof
+    rpt STRIP_TAC
+ >> EQ_TAC >> rw [has_hnf_def]
+ >| [ (* goal 1 (of 2) *)
+      Q.EXISTS_TAC ‘N'’ >> art [] \\
+      Q_TAC (TRANS_TAC lameq_TRANS) ‘M’ >> art [] \\
+      simp [Once lameq_SYM],
+      (* goal 1 (of 2) *)
+      Q.EXISTS_TAC ‘N'’ >> art [] \\
+      Q_TAC (TRANS_TAC lameq_TRANS) ‘N’ >> art [] ]
+QED
+
+Theorem hreduces_has_hnf_cong :
+    !M N. M -h->* N ==> (has_hnf M <=> has_hnf N)
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC lameq_has_hnf_cong
+ >> MATCH_MP_TAC hreduces_lameq >> art []
+QED
+
+Theorem hreduce1_has_hnf_cong :
+    !M N. M -h-> N ==> (has_hnf M <=> has_hnf N)
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC hreduces_has_hnf_cong
+ >> MATCH_MP_TAC RTC_SINGLE >> art []
+QED
+
 val has_bnf_hnf = store_thm(
   "has_bnf_hnf",
   ``has_bnf M ⇒ has_hnf M``,
