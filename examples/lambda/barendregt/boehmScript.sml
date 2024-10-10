@@ -5780,14 +5780,13 @@ Proof
  (* This is the easy part of ‘agree_upto’ subgoal involving single term *)
  >> Know ‘!i. i < k ==> p IN ltree_paths (BT' X (apply pi (M i)) r)’
  >- (rpt STRIP_TAC \\
-     Q.PAT_X_ASSUM ‘!i. i < k ==> p IN ltree_paths (BT' X (M i) r)’
-       (fn th => MP_TAC (MATCH_MP th (ASSUME “i < (k :num)”))) \\
-     Q_TAC (UNBETA_TAC [BT_def, BT_generator_def, Once ltree_unfold])
-           ‘BT' X (apply pi (M i)) r’ \\
-     simp [GSYM appstar_APPEND, LAMl_size_appstar, ltree_paths_def,
+     simp [BT_def, BT_generator_def, Once ltree_unfold,
+           GSYM appstar_APPEND, LAMl_size_appstar, ltree_paths_def,
            LMAP_fromList, MAP_MAP_o] \\
-     Q_TAC (UNBETA_TAC [BT_def, BT_generator_def, Once ltree_unfold])
-           ‘BT' X (M i) r’ \\
+     Q.PAT_X_ASSUM ‘!i. i < k ==> p IN ltree_paths (BT' X (M i) r)’ drule \\
+     simp [BT_def, BT_generator_def, Once ltree_unfold, ltree_paths_def,
+           LMAP_fromList, MAP_MAP_o] \\
+     simp [GSYM BT_def] \\
      qabbrev_tac ‘ys = TAKE (n i) vs’ \\
     ‘ALL_DISTINCT ys’
        by (qunabbrev_tac ‘ys’ >> MATCH_MP_TAC ALL_DISTINCT_TAKE >> art []) \\
@@ -5829,7 +5828,6 @@ Proof
          simp [Abbr ‘d_max’] \\
          MATCH_MP_TAC LESS_EQ_TRANS \\
          Q.EXISTS_TAC ‘d’ >> simp []) >> DISCH_TAC \\
-     simp [GSYM BT_def] \\
      Know ‘EL h (MAP (BT X o (\e. (e,SUC r))) (Ns i) ++
                  MAP (BT X o (\e. (e,SUC r))) (tl i)) =
            EL h (MAP (BT X o (\e. (e,SUC r))) (Ns i))’
@@ -5946,9 +5944,29 @@ Proof
      MATCH_MP_TAC (cj 1 BT_ltree_paths_isub_cong) \\
      qexistsl_tac [‘REVERSE (GENLIST y k)’, ‘P’, ‘d_max’] >> simp [] \\
      CONJ_TAC
-     >- (qunabbrev_tac ‘N’ \\
-         MATCH_MP_TAC subterm_induction_lemma \\
-         cheat) \\
+     >- (Q_TAC (TRANS_TAC SUBSET_TRANS) ‘Z’ \\
+         CONJ_TAC
+         >- (qunabbrev_tac ‘N’ \\
+             Q.PAT_X_ASSUM ‘!i. i < k ==> y i IN Z /\ _’ drule >> STRIP_TAC \\
+             Q_TAC (TRANS_TAC SUBSET_TRANS)
+                   ‘BIGUNION (IMAGE FV (set (args i)))’ >> art [] \\
+             rw [SUBSET_DEF, IN_BIGUNION_IMAGE] \\
+             Q.EXISTS_TAC ‘EL h (args i)’ >> art [] \\
+             simp [EL_MEM]) \\
+         Q_TAC (TRANS_TAC SUBSET_TRANS) ‘X UNION RANK r’ >> art [] \\
+         Suff ‘RANK r SUBSET RANK (SUC r)’ >- SET_TAC [] \\
+         rw [RANK_MONO]) \\
+     CONJ_TAC
+     >- (Q.X_GEN_TAC ‘v’ >> simp [MEM_GENLIST] \\
+         DISCH_THEN (Q.X_CHOOSE_THEN ‘J’ STRIP_ASSUME_TAC) >> POP_ORW \\
+         Know ‘y J IN Z’ >- rw [] \\
+         Suff ‘Z SUBSET X UNION RANK (SUC r)’ >- rw [SUBSET_DEF] \\
+         Q_TAC (TRANS_TAC SUBSET_TRANS) ‘X UNION RANK r’ >> art [] \\
+         Suff ‘RANK r SUBSET RANK (SUC r)’ >- SET_TAC [] \\
+         rw [RANK_MONO]) \\
+     CONJ_TAC (* ss = MAP ... *)
+     >- (simp [Abbr ‘ss’, Abbr ‘sub’] \\
+         simp [MAP_REVERSE, MAP_GENLIST, o_DEF]) \\
      cheat)
  >> DISCH_TAC
  (* now proving agree_upto *)
