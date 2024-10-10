@@ -4793,7 +4793,7 @@ QED
          hold. Instead, we need to consider certain p and ‘d <= subterm_width M p’.
          This theorem holds even when M is not solvable.
  *)
-Theorem BT_subst_cong :
+Theorem BT_ltree_paths_subst_cong :
     !X P d v p M r.
          FINITE X /\ FV M SUBSET X UNION RANK r /\ v IN X UNION RANK r /\
          P = permutator d /\ subterm_width M p <= d /\
@@ -5116,7 +5116,7 @@ Proof
  >> rw [RANK_MONO]
 QED
 
-Theorem BT_isub_cong :
+Theorem BT_ltree_paths_isub_cong :
     !ys p X M r P d ss.
         FINITE X /\ FV M SUBSET X UNION RANK r /\
         P = permutator d /\
@@ -5135,7 +5135,7 @@ Proof
  >> qabbrev_tac ‘P = permutator d’
  >> qabbrev_tac ‘N = [P/h] M’
  >> qabbrev_tac ‘ss = MAP (\y. (P,y)) ys’
- >> MP_TAC (Q.SPECL [‘X’, ‘P’, ‘d’, ‘h’, ‘p’, ‘M’, ‘r’] BT_subst_cong)
+ >> MP_TAC (Q.SPECL [‘X’, ‘P’, ‘d’, ‘h’, ‘p’, ‘M’, ‘r’] BT_ltree_paths_subst_cong)
  >> simp []
  >> STRIP_TAC
  >> FIRST_X_ASSUM MATCH_MP_TAC
@@ -5939,6 +5939,16 @@ Proof
      NTAC 2 (POP_ASSUM K_TAC) \\
      fs [Abbr ‘pm'’, Abbr ‘N’] >> T_TAC \\
      qabbrev_tac ‘N = EL h (args i)’ \\
+  (* applying BT_ltree_paths_isub_cong *)
+    ‘!M. ltree_lookup (BT' X M (SUC r)) t <> NONE <=>
+         t IN ltree_paths (BT' X M (SUC r))’ by rw [ltree_paths_def] \\
+     POP_ORW >> DISCH_TAC \\
+     MATCH_MP_TAC (cj 1 BT_ltree_paths_isub_cong) \\
+     qexistsl_tac [‘REVERSE (GENLIST y k)’, ‘P’, ‘d_max’] >> simp [] \\
+     CONJ_TAC
+     >- (qunabbrev_tac ‘N’ \\
+         MATCH_MP_TAC subterm_induction_lemma \\
+         cheat) \\
      cheat)
  >> DISCH_TAC
  (* now proving agree_upto *)
