@@ -1068,17 +1068,19 @@ class characters.")
       (let ((sclass-number (syntax-class (syntax-after (1- (point))))))
       (cond
        (; am I just after a keyword?
-        (and (or
-              (looking-back holscript-column0-keywords-regexp (- (point) 15) t)
-              (looking-back "^\\(Datatype\\)[[:space:]]*:" (- (point) 20) t))
+        (and (save-excursion
+               (backward-word)
+               (or
+                (looking-at holscript-column0-keywords-regexp)
+                (looking-at "^\\(Datatype\\)[[:space:]]*:")))
              (let ((syn (syntax-after (point))))
                ; next char is whitespace or colon or left square bracket
                (or (null syn) (= 0 (car syn)) (char-equal (char-after) ?:)
                    (char-equal (char-after) ?\[)))
-               (save-excursion
-                 (goto-char (match-beginning 0))
-                 (skip-chars-backward " \t")
-                 (bolp)))
+             (save-excursion
+               (goto-char (match-beginning 0))
+               (skip-chars-backward " \t")
+               (bolp)))
         (goto-char (match-beginning 0))
         (let ((ms (match-string-no-properties 0)))
           (if (or (string=  ms "Theorem") (string= ms "Triviality"))
@@ -1392,5 +1394,21 @@ class characters.")
      :slant normal :weight light))
   "The face for highlighting definition labels in HOL material."
   :group 'holscript-faces)
+
+(setq auto-mode-alist (cons '("Script\\.sml" . holscript-mode)
+                            auto-mode-alist))
+
+(if (fboundp 'yas-minor-mode)
+    (progn
+      (setq yas-snippet-dirs
+            (append
+             yas-snippet-dirs
+             (list (concat
+                    hol-dir
+                    "tools/editor-modes/emacs/yasnippets"))))
+      (yas-reload-all)
+      (add-hook 'holscript-mode-hook #'yas-minor-mode)
+      (add-hook 'holscript-mode-hook
+                (lambda () (setq yas-also-auto-indent-first-line t)))))
 
 (provide 'holscript-mode)
