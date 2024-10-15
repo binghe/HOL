@@ -35,7 +35,7 @@ Definition Join64'_def :
 End
 
 Theorem Split64_Join64:
-    !u v. Split64 (Join64(u,v))=(u,v) 
+    !u v. Split64 (Join64(u,v))=(u,v)
 Proof
     rw [Join64_def, Split64_def]
  >- WORD_DECIDE_TAC
@@ -43,7 +43,7 @@ Proof
 QED
 
 Theorem Split64_Join64':
-    !b. Split64 (Join64'(b))=b 
+    !b. Split64 (Join64'(b))=b
 Proof
     rw [Join64'_def, Split64_def]
  >> pairarg_tac
@@ -68,7 +68,7 @@ QED
 (* Key function *)
 Definition SkeysT32_def:
    SkeysT32 (l:num) 0=[P32_data:word32]
-   /\ SkeysT32 l (SUC t)= let ks=SkeysT32 l t; key=HD ks in 
+   /\ SkeysT32 l (SUC t)= let ks=SkeysT32 l t; key=HD ks in
      (key+Q32_data) :: ks
 End
 
@@ -85,7 +85,7 @@ Proof
        POP_ASSUM MP_TAC \\
        rw[]\\
        rw[SkeysT32_def])
-       
+
   >> POP_ASSUM MP_TAC
   >> rw[Skeys_def]
   >> Know ‘(2 *(SUC n + 1) − 1)=SUC (SUC (2 * (n + 1) − 1))’
@@ -110,7 +110,7 @@ Definition lenKeyw_def:
 End
 
 Definition LkeysIni_def:
-   LkeysIni= [(0x0w:word32);0x0w] 
+   LkeysIni= [(0x0w:word32);0x0w]
 End
 
 Definition keysIni_def:
@@ -131,7 +131,7 @@ Definition Lkeys_def:
 End
 
 Theorem LENGTH_LkeysSup:
-   !k r. LENGTH(LkeysSup k r)= 2 
+   !k r. LENGTH(LkeysSup k r)= 2
 Proof
      Q.X_GEN_TAC ‘k’
   >> Induct_on ‘r’
@@ -140,7 +140,7 @@ Proof
 QED
 
 Theorem LENGTH_Lkeys:
-   !k. LENGTH(Lkeys k)= 2 
+   !k. LENGTH(Lkeys k)= 2
 Proof
      rw[lenKeyw_def,Lkeys_def]
   >> rw[LENGTH_LkeysSup]
@@ -155,7 +155,7 @@ Definition keys_def:
          (Sknew= GENLIST (λm. if m=i then (((EL i Sk)+A+B) #<< 3) else EL m Sk) (2*(r+1)));
          (Lknew= GENLIST (λm. if m=j then (((EL j Lk)+Anew+B)#<< (w2n (Anew+B))) else (EL m Lk)) 2);
          (inew= (i+1) MOD (2*(r+1)));
-         (jnew= (j+1) MOD 2) in 
+         (jnew= (j+1) MOD 2) in
        (Anew,Bnew,Lknew,Sknew,inew,jnew)
 End
 
@@ -320,7 +320,7 @@ Definition half_messageDe_def :
       else if n MOD 2=1 then
          (((half_messageDe w1 w2 ks (n - 2)) -ki)
          #>> w2n (half_messageDe w1 w2 ks (n - 1))) ⊕ (half_messageDe w1 w2 ks (n - 1))
-         
+
       else
          (((half_messageDe w1 w2 ks (n - 2))-ki2)
          #>>w2n (half_messageDe w1 w2 ks (n - 1))) ⊕ (half_messageDe w1 w2 ks (n - 1))
@@ -406,19 +406,19 @@ Proof
           Q.EXISTS_TAC ‘6’\\
           Q.EXISTS_TAC ‘k’\\
           rw[])\\
-          
+
       rw[EL_REVERSE]\\
       Know ‘Sk <>[]’
       >- (ASM_REWRITE_TAC [GSYM LENGTH_NIL]\\
           rw[])\\
-          
+
       rw[HD_REVERSE]\\
       rw[LAST_EL]\\
       Know ‘(w1',w2')=Split64 w ’
       >- rw[]\\
       Rewr'\\
       rw[Join64'_Split64])
-      
+
    >> POP_ASSUM MP_TAC
    >> rw[Split64_Join64']
    >> POP_ASSUM MP_TAC
@@ -435,7 +435,7 @@ Proof
    >> rw[]
    >- (rw[Once half_messageEn_def]\\
        rw[Once half_messageDe_def])
-   
+
    >> Suff ‘(half_messageDe (half_messageEn w1' w2' Sk
             (2 * SUC r)) (half_messageEn w1' w2' Sk
             (2 * SUC r + 1)) Sk (2 * SUC r + 1),
@@ -449,7 +449,7 @@ Proof
        Rewr'\\
        rw[Join64'_Split64])
 
-   
+
 QED
 *)
 

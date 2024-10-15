@@ -1110,16 +1110,16 @@ Definition trans2_def:
 End
 
 Theorem BIJ_XORL:
-   BIJ trans2 univ(:word6) (AllpairXor 0x0w) 
+   BIJ trans2 univ(:word6) (AllpairXor 0x0w)
 Proof
      rw[BIJ_IFF_INV]
   >- (rw[AllpairXor_def,trans2_def])
-  
+
   >> EXISTS_TAC “trans1”
   >> rw[]
 
   >- rw[trans2_def,trans1_def]
-  
+
   >> POP_ASSUM MP_TAC
   >> rw[AllpairXor_def,trans2_def,trans1_def]
   >> Know ‘x1 ⊕ x1 ⊕ x2=x1 ⊕ 0w’
@@ -1218,16 +1218,16 @@ Definition word6x6_def:
    word6x6=(univ(:word6 # word6),
              POW (univ(:word6 # word6)),
              (\s:(word6 # word6) set.
-               (&(CARD s))/(&(2 ** 12)) :extreal))  
+               (&(CARD s))/(&(2 ** 12)) :extreal))
 End
 
 Theorem prob_space_word6x6:
    prob_space word6x6
 Proof
-     
+
      MATCH_MP_TAC prob_uniform_on_finite_set
   >> rw[]
-  
+
   >- (rw[p_space_def]\\
       rw[word6x6_def])
 
@@ -1246,22 +1246,22 @@ Proof
   >- (rw[CROSS_UNIV]\\
       rw[CARD_CROSS])
   >> rw[card_word6]
-QED   
+QED
 
 Definition word6p_def:
    word6p=(univ(:word6),
              POW (univ(:word6)),
              (\s:(word6) set.
-               (&(CARD s))/(&(2 ** 6)) :extreal))  
+               (&(CARD s))/(&(2 ** 6)) :extreal))
 End
 
 Theorem prob_space_word6p:
    prob_space word6p
 Proof
-     
+
      MATCH_MP_TAC prob_uniform_on_finite_set
   >> rw[]
-  
+
   >- (rw[p_space_def]\\
       rw[word6p_def])
 
@@ -1272,7 +1272,7 @@ Proof
   >> rw[word6p_def]
   >> rw[p_space_def]
   >> rw[card_word6]
-QED  
+QED
 
 Definition XcauseYp_def :
    XcauseYp X Y Sb p <=>
@@ -1287,7 +1287,7 @@ End
 Theorem word6p_convert:
    {x | S1 x ⊕ S1 (x ⊕ 52w) = 4w} = {0x13w;0x27w}
 Proof
-     rw[EXTENSION]  
+     rw[EXTENSION]
   >> CONV_TAC(UNBETA_CONV “x:word6”)
   >> Q.MATCH_ABBREV_TAC ‘f (x:word6)’
   >> Q.ID_SPEC_TAC ‘x’
@@ -1319,16 +1319,16 @@ Definition word32p_def:
    word32p=(univ(:word32),
              POW (univ(:word32)),
              (\s:(word32) set.
-               (&(CARD s))/(&(2 ** 32)) :extreal))  
+               (&(CARD s))/(&(2 ** 32)) :extreal))
 End
 
 Theorem prob_space_word32p:
    prob_space word32p
 Proof
-     
+
      MATCH_MP_TAC prob_uniform_on_finite_set
   >> rw[]
-  
+
   >- (rw[p_space_def]\\
       rw[word32p_def])
 
@@ -1345,16 +1345,16 @@ Definition word48p_def:
    word48p=(univ(:word48),
              POW (univ(:word48)),
              (\s:(word48) set.
-               (&(CARD s))/(&(2 ** 48)) :extreal))  
+               (&(CARD s))/(&(2 ** 48)) :extreal))
 End
 
 Theorem prob_space_word48p:
    prob_space word48p
 Proof
-     
+
      MATCH_MP_TAC prob_uniform_on_finite_set
   >> rw[]
-  
+
   >- (rw[p_space_def]\\
       rw[word48p_def])
 
@@ -1460,7 +1460,7 @@ Proof
 
   >> Q.EXISTS_TAC ‘transF1’
   >> rw[]
-          
+
   >- (rw[transF1_def]\\
      rw[S_def]\\
      Know ‘(5 >< 0) (x8 @@ x7 @@ x6 @@ x5 @@ x4 @@ x3 @@ x2 @@ x1)= x1’
@@ -1543,7 +1543,7 @@ Proof
 QED
 
 Theorem CARD_eqF:
-   !X Y. CARD ({x | S x ⊕ S (x ⊕ E X) = Y} )= 
+   !X Y. CARD ({x | S x ⊕ S (x ⊕ E X) = Y} )=
    CARD (XpairF X Y)
 Proof
      rw[]
@@ -1554,7 +1554,7 @@ Proof
   >> rw[BIJ_F]
 QED
 
-Theorem XcauseYFp_eq:  
+Theorem XcauseYFp_eq:
    !X Y. Xe=E(X) /\ Xl= splitXF Xe/\ Yl= splitYF Y  ==>
    XcauseYF' X Y = EXTREAL_PROD_IMAGE (λi. XcauseY (EL i Xl) (EL i Yl) (SBox(EL i S_data))) (count 8)
 Proof
@@ -1608,7 +1608,7 @@ Proof
   >> rw[extreal_mul_eq]
 QED
 
-Theorem XcauseYFp_eq':   
+Theorem XcauseYFp_eq':
    !X Y. Xe=E(X) /\ x1=(5><0) Xe /\ x2=(11><6) Xe /\x3=(17><12) Xe /\x4=(23><18) Xe /\x5=(29><24) Xe /\x6=(35><30) Xe /\x7=(41><36) Xe /\x8=(47><42) Xe /\y1=(3><0) Y /\y2=(7><4) Y /\y3=(11><8) Y /\y4=(15><12) Y /\y5=(19><16) Y /\y6=(23><20) Y /\y7=(27><24) Y /\y8=(31><28) Y ==>
    XcauseYF' X Y = (XcauseY x8 y8 S1)*(XcauseY x7 y7 S2)*(XcauseY x6 y6 S3)*(XcauseY x5 y5 S4)*(XcauseY x4 y4 S5)*(XcauseY x3 y3 S6)*(XcauseY x2 y2 S7)*(XcauseY x1 y1 S8)
 Proof
@@ -1637,14 +1637,14 @@ Definition transktoxF_def:
 End
 
 Definition transxtokF_def:
-  transxtokF (x:word48) x'=x ?? x'   
+  transxtokF (x:word48) x'=x ?? x'
 End
 
 Theorem BIJ_ktox:
-   !X Y x. BIJ (transktoxF x) {k | S (k ⊕ x) ⊕ S (k ⊕ x ⊕ E X) = Y} {x | S x ⊕ S (x ⊕ E X) = Y} 
+   !X Y x. BIJ (transktoxF x) {k | S (k ⊕ x) ⊕ S (k ⊕ x ⊕ E X) = Y} {x | S x ⊕ S (x ⊕ E X) = Y}
 Proof
      rw[BIJ_IFF_INV]
-     
+
   >- (rw[transktoxF_def])
 
   >> Q.EXISTS_TAC‘transxtokF x’
@@ -1688,18 +1688,10 @@ Definition charapairDES_def:
 End
 
 Definition characterDES_def:
-   characterDES (X:word64) (Y:word64) Yl= let 
+   characterDES (X:word64) (Y:word64) Yl= let
       XorR= GENLIST (λi. charapairDES X Yl i) (LENGTH Yl) in (X,XorR,Y)
 End
 
 
 val _ = export_theory();
 val _ = html_theory "des_prop";
-
-
-
-
-
-
-
- 
