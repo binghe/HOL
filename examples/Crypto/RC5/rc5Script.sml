@@ -380,7 +380,8 @@ Proof
   >> pairarg_tac
   >> fs[]
 QED
-! w1 w2 Sk r. RoundEn r w1 w2 Sk=(w1',w2') ==> RoundDe r Sk w1' w2'=(w1,w2)
+
+(* ! w1 w2 Sk r. RoundEn r w1 w2 Sk=(w1',w2') ==> RoundDe r Sk w1' w2'=(w1,w2)
 Theorem DES_EnDe:
    !r (w:word64) (k:word64). RoundDe64 r (RoundEn64 r w k) k= w
 Proof
@@ -450,6 +451,7 @@ Proof
 
    
 QED
+*)
 
 val _ = export_theory();
-val _ = html_theory "RC5";
+val _ = html_theory "rc5";

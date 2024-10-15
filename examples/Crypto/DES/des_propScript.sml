@@ -1608,7 +1608,7 @@ Proof
   >> rw[extreal_mul_eq]
 QED
 
-Theorem XcauseYFp_eq:   
+Theorem XcauseYFp_eq':   
    !X Y. Xe=E(X) /\ x1=(5><0) Xe /\ x2=(11><6) Xe /\x3=(17><12) Xe /\x4=(23><18) Xe /\x5=(29><24) Xe /\x6=(35><30) Xe /\x7=(41><36) Xe /\x8=(47><42) Xe /\y1=(3><0) Y /\y2=(7><4) Y /\y3=(11><8) Y /\y4=(15><12) Y /\y5=(19><16) Y /\y6=(23><20) Y /\y7=(27><24) Y /\y8=(31><28) Y ==>
    XcauseYF' X Y = (XcauseY x8 y8 S1)*(XcauseY x7 y7 S2)*(XcauseY x6 y6 S3)*(XcauseY x5 y5 S4)*(XcauseY x4 y4 S5)*(XcauseY x3 y3 S6)*(XcauseY x2 y2 S7)*(XcauseY x1 y1 S8)
 Proof
