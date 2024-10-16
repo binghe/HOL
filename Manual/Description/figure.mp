@@ -1,14 +1,12 @@
 % !TEX encoding = UTF-8 Unicode
 % !TEX TS-program = nv-metafun
 % !MPOST tex = latex
+% !MPOST mem = metafun
 
 % This is an example of a MetaFun macro (externalfigure) used in a figure whose
 % labels are typeset with LaTeX. This file can be also typeset by
 % nv-metapost.engine, although the preview won't display the external figure
-% (but metafun-latex-label-0.pdf will be correct): just remove the leading %
-% from the following directive:
-
-%% !MPOST mem = metafun
+% (but metafun-latex-label-0.pdf will be correct)
 
 % To compile this from the command line, use:
 %
@@ -210,6 +208,27 @@ beginfig(1);
     label.lft(btex \begin{small}$f(x')$\end{small} etex, (0, ypart P'));
     label.rt(btex \begin{small}$f(x')-f(x)$\end{small} etex,
         (xpart P',(ypart P' + ypart P)/2));
+  endgroup;
+endfig;
+
+%% Comparison of the Lebesgue and Riemann (incl. General Riemann) integrals
+def drawCurve(expr d, h) =
+  begingroup; save a;
+    % NOTE: this value is twice of the current font size (12pt)
+    numeric a;
+    a := 24pt;
+    % (9*d,1.5*h)....(8*d,3*h){dir -45}
+    draw (0.5*d,-h/3){dir 80}..tension 2..(2*d,2*h){right}..(3*d,1.5*h)..(4*d,h){right}..(5*d,2*h)..
+      (7*d,4*h){right}..tension 2..{dir -70}(9.5*d,-h/3);
+  endgroup;
+enddef;
+
+beginfig(2);
+  begingroup; save x, y, d, h;
+    numeric x, y, d, h;
+    x := 8cm; y := 4.6cm; d := x/10; h := y/4;
+    drawDescartes(x, y);
+    drawCurve(d, h);
   endgroup;
 endfig;
 
