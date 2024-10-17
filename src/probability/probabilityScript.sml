@@ -5476,19 +5476,18 @@ Definition converge_def[nocompute] :
 
    (* X(n) converges to Y in distribution (see [4, p.425] or [2, p.96]) *)
    (converge (X :num -> 'a -> extreal) (Y :'a -> extreal) (in_distribution p) =
-    !f. f bounded_on UNIV /\ (f o Normal) continuous_on UNIV ==>
+    !f. bounded (IMAGE f UNIV) /\ (f o Normal) continuous_on UNIV ==>
         ((\n. expectation p (f o (X n))) --> expectation p (f o Y)) sequentially)
 End
 
 (* "-->" was defined in util_probTheory for IN_DFUNSET *)
 Overload "-->" = “converge”
 
-(* |- !p X Y.
+(* |- !X Y p.
         (X --> Y) (almost_everywhere p) <=>
         AE x::p. ((\n. X n x) --> Y x) sequentially
  *)
-Theorem converge_AE =
-   (List.nth (CONJUNCTS converge_def, 0)) |> SPEC_ALL |> (Q.GENL [`p`, `X`, `Y`])
+Theorem converge_AE = cj 1 converge_def
 
 (* The old definition based on LIM_SEQUENTIALLY *)
 Theorem converge_AE_def :
@@ -5503,14 +5502,13 @@ Proof
  >> rw []
 QED
 
-(* |- !p X Y.
+(* |- !X Y p.
         (X --> Y) (in_probability p) <=>
         !e. 0 < e /\ e <> PosInf ==>
             ((\n. prob p {x | x IN p_space p /\ e < abs (X n x - Y x)}) --> 0)
               sequentially
  *)
-Theorem converge_PR =
-   (List.nth (CONJUNCTS converge_def, 1)) |> SPEC_ALL |> (Q.GENL [`p`, `X`, `Y`])
+Theorem converge_PR = cj 2 converge_def
 
 (* The old definition based on LIM_SEQUENTIALLY *)
 Theorem converge_PR_def :
@@ -5566,14 +5564,13 @@ Proof
  >> PROVE_TAC [PROB_FINITE]
 QED
 
-(* |- !p X Y r.
+(* |- !X Y r p.
         (X --> Y) (in_lebesgue r p) <=>
         (!n. X n IN lp_space r p) /\ Y IN lp_space r p /\
         ((\n. expectation p (\x. abs (X n x - Y x) powr r)) --> 0)
           sequentially
  *)
-Theorem converge_LP =
-   (List.nth (CONJUNCTS converge_def, 2)) |> SPEC_ALL |> (Q.GENL [`p`, `X`, `Y`, `r`])
+Theorem converge_LP = cj 3 converge_def
 
 Theorem converge_LP_def :
     !p X Y r. prob_space p /\
@@ -5606,31 +5603,6 @@ Proof
  >> simp [Abbr ‘f’]
  >> MATCH_MP_TAC integral_pos >> rw [powr_pos]
 QED
-
-(* |- !p X Y.
-        (X --> Y) (in_distribution p) <=>
-        !f. f bounded_on univ(:extreal) /\
-            f o Normal continuous_on univ(:real) ==>
-            ((\n. expectation p (f o X n)) --> expectation p (f o Y))
-              sequentially
- *)
-Theorem converge_in_dist =
-   (List.nth (CONJUNCTS converge_def, 3)) |> SPEC_ALL |> (Q.GENL [`p`, `X`, `Y`])
-
-(* tidy up theory exports, learnt from Magnus Myreen *)
-val _ = List.app Theory.delete_binding
-  ["convergence_mode_TY_DEF",
-   "convergence_mode_case_def",
-   "convergence_mode_size_def",
-   "convergence_mode_11",
-   "convergence_mode_Axiom",
-   "convergence_mode_case_cong",
-   "convergence_mode_case_eq",
-   "convergence_mode_distinct",
-   "convergence_mode_induction",
-   "convergence_mode_nchotomy",
-   "datatype_convergence_mode",
-   "converge_def"];
 
 (* alternative definition of converge_LP based on absolute moment *)
 Theorem converge_LP_alt_absolute_moment :
@@ -7204,6 +7176,47 @@ Proof
  >> MATCH_MP_TAC converge_AE_cong
  >> Q.EXISTS_TAC ‘0’ >> rw [normal_real]
 QED
+
+(* |- !X Y p.
+        (X --> Y) (in_distribution p) <=>
+        !f. bounded (IMAGE f univ(:extreal)) /\
+            f o Normal continuous_on univ(:real) ==>
+            ((\n. expectation p (f o X n)) --> expectation p (f o Y))
+              sequentially
+ *)
+Theorem converge_in_dist = cj 4 converge_def
+
+(* See, e.g., [2, p.117] *)
+Definition weak_converge_def :
+    weak_converge fi (f :extreal measure) =
+    !g. bounded (IMAGE g UNIV) /\ (g o Normal) continuous_on UNIV ==>
+        ((\n. integral (space Borel,subsets Borel,fi n) g) -->
+          integral (space Borel,subsets Borel,f) g) sequentially
+End
+
+Overload "-->" = “weak_converge”
+
+(*
+Theorem converge_in_dist_alt :
+    !p X Y. prob_space p /\
+           (!n. real_random_variable (X n) p) /\ real_random_variable Y p ==>
+           ((X --> Y) (in_distribution p) <=>
+            (\n. distribution p (X n)) --> distribution p Y)
+Proof
+    rw [converge_in_dist, weak_converge_def, expectation_def, distribution_distr,
+        random_variable_def, p_space_def, events_def, prob_space_def]
+ (* applying integral_distr *)
+ >> Know ‘!Z. Z IN Borel_measurable (measurable_space p) /\
+              g IN Borel_measurable Borel ==>
+              integral (space Borel,subsets Borel,distr p Z) g = integral p (g o Z)’
+ >- (rpt STRIP_TAC \\
+     MP_TAC (Q.SPECL [‘p’, ‘Borel’, ‘Z’, ‘g’]
+                     (INST_TYPE [beta |-> “:extreal”] integral_distr)) \\
+     rw [SIGMA_ALGEBRA_BOREL])
+ >> DISCH_TAC
+ >> cheat
+QED
+ *)
 
 (* ========================================================================= *)
 (*                  Advanced estimations of expectations                     *)
@@ -9132,6 +9145,21 @@ Proof
      rw [indicator_fn_def, mul_rone, mul_rzero, le_refl, SPACE_BOREL])
  >> DISCH_THEN (art o wrap)
 QED
+
+(* tidy up theory exports, learnt from Magnus Myreen *)
+val _ = List.app Theory.delete_binding
+  ["convergence_mode_TY_DEF",
+   "convergence_mode_case_def",
+   "convergence_mode_size_def",
+   "convergence_mode_11",
+   "convergence_mode_Axiom",
+   "convergence_mode_case_cong",
+   "convergence_mode_case_eq",
+   "convergence_mode_distinct",
+   "convergence_mode_induction",
+   "convergence_mode_nchotomy",
+   "datatype_convergence_mode",
+   "converge_def"];
 
 val _ = export_theory ();
 

@@ -6435,13 +6435,17 @@ Overload continuous = “ext_continuous”
 Definition ext_continuous_on_def :
     ext_continuous_on f s <=> !x. x IN s ==> ext_continuous f (at x within s)
 End
+
+(* ‘continuous_on’ is defined in real_topologyTheory *)
 Overload continuous_on = “ext_continuous_on”
 
-val _ = set_fixity "bounded_on" (Infix(NONASSOC, 450));
-Definition bounded_on_def :
-    ext_bounded_on f s <=> ?c. !x. x IN s ==> abs x <= Normal c
+(* Use ‘ext_bounded (IMAGE f UNIV)’ to say a function f is bounded (on UNIV) *)
+Definition ext_bounded_def :
+    ext_bounded s <=> ?a. a <> PosInf /\ !x. x IN s ==> abs x <= a
 End
-Overload bounded_on = “ext_bounded_on”
+
+(* ‘bounded’ is defined in real_topologyTheory *)
+Overload bounded = “ext_bounded”
 
 Theorem EXTREAL_LIM :
     !(f :'a -> extreal) l net.

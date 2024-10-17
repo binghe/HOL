@@ -735,6 +735,7 @@ Proof
       fs [Abbr ‘n’] ]
 QED
 
+(* |- !M N. solvable M ==> (principle_hnf M = N <=> M -h->* N /\ hnf N) *)
 Theorem principle_hnf_thm' =
         principle_hnf_thm |> REWRITE_RULE [GSYM solvable_iff_has_hnf]
 
@@ -864,6 +865,7 @@ Proof
  >> MATCH_MP_TAC principle_hnf_hreduce1 >> art []
 QED
 
+(* NOTE: This theorem doesn't need ‘solvable M’ in antecedents *)
 Theorem hreduces_hnf_imp_principle_hnf :
     !M N. M -h->* N /\ hnf N ==> principle_hnf M = N
 Proof
@@ -1110,7 +1112,7 @@ Proof
  >> rw [lameq_SYM]
 QED
 
-(* NOTE: this proof has used first principles of solvable terms *)
+(* NOTE: This important theorem has used first principles of solvable terms *)
 Theorem lameq_solvable_cong :
     !M N. M == N ==> (solvable M <=> solvable N)
 Proof

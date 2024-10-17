@@ -24,40 +24,6 @@ open util_probTheory sigma_algebraTheory extrealTheory real_borelTheory
 val _ = new_theory "distribution"; (* was: "normal_rv" *)
 
 (* ------------------------------------------------------------------------- *)
-(*  Weak convergence (of distributions)                                      *)
-(* ------------------------------------------------------------------------- *)
-
-(* See, e.g., [2, p.117] *)
-Definition weak_converge_def :
-    weak_converge fi (f :extreal measure) =
-    !g. g bounded_on UNIV /\ g o Normal continuous_on UNIV ==>
-        ((\n. integral (space Borel,subsets Borel,fi n) g) -->
-          integral (space Borel,subsets Borel,f) g) sequentially
-End
-Overload "-->" = “weak_converge”
-
-Theorem converge_in_dist_alt_weak :
-    !p X Y. prob_space p /\
-           (!n. random_variable (X n) p Borel) /\ random_variable Y p Borel ==>
-           ((X --> Y) (in_distribution p) <=>
-            (\n. distribution p (X n)) --> distribution p Y)
-Proof
-    rw [converge_in_dist, weak_converge_def, expectation_def, distribution_distr,
-        random_variable_def, p_space_def, events_def, prob_space_def]
- (* applying integral_distr *)
- >> Know ‘!Z. Z IN Borel_measurable (measurable_space p) /\
-              g IN Borel_measurable Borel ==>
-              integral (space Borel,subsets Borel,distr p Z) g = integral p (g o Z)’
- >- (rpt STRIP_TAC \\
-     MP_TAC (Q.SPECL [‘p’, ‘Borel’, ‘Z’, ‘g’]
-                     (INST_TYPE [beta |-> “:extreal”] integral_distr)) \\
-     rw [SIGMA_ALGEBRA_BOREL])
- >> DISCH_TAC
- (* TODO: extreal-valued continuous function is Borel-measurable *)
- >> cheat
-QED
-
-(* ------------------------------------------------------------------------- *)
 (*  PDF                                                                      *)
 (* ------------------------------------------------------------------------- *)
 
