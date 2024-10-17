@@ -2,9 +2,7 @@ open HolKernel boolLib bossLib BasicProvers;
 open optionTheory pairTheory stringTheory hurdUtils;
 open arithmeticTheory pred_setTheory listTheory finite_mapTheory alistTheory sortingTheory;
 open comparisonTheory;
-open integerTheory;
 open pred_setTheory;
-
 
 val _ = new_theory "AVL_trees";
 
@@ -25,7 +23,7 @@ Proof
 QED
 
 Definition singleton_avl_def:
-  singleton_avl k v = Bin 1 k v Tip Tip
+  singleton_avl k v = Bin 0 k v Tip Tip
 End
 
 Definition avl_def[simp]:
@@ -43,13 +41,6 @@ End
 
 Definition N_def:
  N k = MIN_SET(IMAGE node_count {x:num avl_tree | height x = k ∧ avl x})
-End
-
-Definition Fibonacci_def :
-    Fibonacci (n :num) =
-       if n = 0 then (0:num) else
-         if n = 1 then (1:num) else
-          Fibonacci (n - 1) + Fibonacci (n - 2)
 End
 
 Theorem N_0:
@@ -240,13 +231,167 @@ Proof
        >- metis_tac[minimal_avl_node_count]
        >> metis_tac[minimal_avl_node_count]  
 QED
-        
+
+Definition Fibonacci_def :
+    Fibonacci (n :num) =
+       if n = 0 then (0:num) else
+         if n = 1 then (1:num) else
+          Fibonacci (n - 1) + Fibonacci (n - 2)
+End
+
+Theorem Fibonacci_thm:
+  ∀k. Fibonacci (k + 2) = Fibonacci (k + 1) + Fibonacci k  
+Proof
+  rw[Once Fibonacci_def]         
+QED
+Theorem Fibonacci_mono:
+  ∀n. Fibonacci n ≤ Fibonacci (n+1)
+Proof
+  STRIP_TAC
+  >> Cases_on ‘n’
+  >- ( ONCE_REWRITE_TAC[Fibonacci_def]         
+  >> gvs[]
+     )
+  >> gvs[SUC_ONE_ADD]
+  >> rw[Fibonacci_thm]      
+QED
+
+Theorem Fibonacci_mono_transitive:
+  ∀ m n. m≤n ⇒ Fibonacci m ≤ Fibonacci n
+Proof
+  rpt STRIP_TAC
+  >> ‘m = n ∨ m<n’ by rw[]
+  >- rw[]
+  >> MP_TAC (Q.SPECL [‘$<=’,‘Fibonacci’]
+             (INST_TYPE [“:α” |-> “:num”] transitive_monotone))     
+  >> rw[transitive_LE]
+  >> POP_ASSUM irule             
+  >> rw[ADD1,Fibonacci_mono]             
+QED  
+
 Theorem N_fibonacci_relation:
   ∀k. N k = Fibonacci (k+2)-1
 Proof
-  rpt STRIP_TAC
-  >> Induct_on ‘k’
-  >> simp[N_0]               
-  >> fs[Fibonacci_def]       
-QED        
+  completeInduct_on ‘k’                     
+  >> Cases_on ‘k’ 
+  >- (simp[N_0]      
+  >> ONCE_REWRITE_TAC[Fibonacci_def]         
+  >> gvs[]
+  >> ONCE_REWRITE_TAC[Fibonacci_def]
+  >> gvs[])      
+  >> gvs[SUC_ONE_ADD]
+  >> ONCE_REWRITE_TAC[Fibonacci_def]
+  >> gvs[]
+  >> Cases_on ‘n’
+  >-( simp[N_1]
+      >>ONCE_REWRITE_TAC[Fibonacci_def]         
+      >> gvs[]
+      >> ONCE_REWRITE_TAC[Fibonacci_def]         
+      >> gvs[]      
+    )
+  >>gvs[SUC_ONE_ADD]
+  >> qabbrev_tac ‘k = n'+2’     
+  >> sg ‘N k = N(k-1) + N(k-2)+1’
+  >- gvs[N_k,Abbr‘k’]
+  >> rw[]
+  >> ‘k-1<k ∧ k-2<k’ by rw[Abbr‘k’]     
+  >> rw[Abbr‘k’]
+  >> gvs[]
+  >> sg ‘Fibonacci 1 ≤ Fibonacci (n'+2) ’
+  >- rw[Fibonacci_mono_transitive]
+  >> sg ‘Fibonacci 1 ≤ Fibonacci (n'+3)’      
+  >- rw[Fibonacci_mono_transitive]
+  >> sg ‘Fibonacci 1 = 1’
+  >-(ONCE_REWRITE_TAC[Fibonacci_def]         
+      >> gvs[]
+    )
+  >> rw[]                     
+QED
+
+Definition tree_def:
+  tree k v l r = 
+    Bin (&height r - &height l) k v l r
+End
+
+Definition balanceL_def:
+  balanceL k v l r =
+    if height l = height r + 2 then
+      (case l of
+         Bin _ lk lv ll lr =>
+           if height ll < height lr then
+             (case lr of
+                Bin _ lrn lrv lrl lrr => tree lrn lrv (tree lk lv ll lrl) (tree k v lrr r)
+              | _ => tree lk lv ll (tree k v lr r))
+           else
+             tree lk lv ll (tree k v lr r)
+       | Tip => tree k v l r) 
+    else
+      tree k v l r
+End
+
+Definition balanceR_def:
+  balanceR k v l r =
+    if height r = height l + 2 then
+      (case r of
+        Bin _ rk rv rl rr =>
+          if height rl > height rr then
+            (case rl of
+               Bin _ rln rlv rll rlr => tree rln rlv (tree k v l rll) (tree rk rv rlr rr)
+             | _ => tree rk rv (tree k v l rl) rr)
+          else
+            tree rk rv (tree k v l rl) rr
+       | Tip => tree k v l r)  
+    else
+      tree k v l r
+End
+
+Definition insert_avl_def:
+  insert_avl x v Tip = singleton_avl x v ∧  
+  insert_avl x v (Bin bf k kv l r) =
+    if x = k then
+      Bin bf k kv l r  
+    else if x < k then
+      balanceL k kv (insert_avl x v l) r  
+    else
+      balanceR k kv l (insert_avl x v r)  
+End
+
+val t1_t = ``insert_avl 3 3 Tip`` 
+Theorem t1 = EVAL ``^t1_t``
+
+val t2_t = ``insert_avl 5 5 ^t1_t``
+Theorem t2 = EVAL ``^t2_t``
+
+val t3_t = ``insert_avl 2 2 ^t2_t``
+Theorem t3 = EVAL ``^t3_t``                  
+                  
+val t4_t = ``insert_avl 4 4 ^t3_t``
+Theorem t4 = EVAL ``^t4_t``                  
+                  
+val t5_t = ``insert_avl 13 13 ^t4_t``
+Theorem t5 = EVAL ``^t5_t``
+                  
+val t6_t = ``insert_avl 14 14 ^t5_t``
+Theorem t6 = EVAL ``^t6_t``
+
+Definition keys_def:
+  keys Tip = {} ∧  
+  keys (Bin _ k v l r) = {k} ∪ keys l ∪ keys r
+End
+
+Theorem keys_insert:
+  ∀ x v t. keys(insert_avl x v t) = (keys t ∪ {x})
+Proof
+  fs[]
+  >> rpt GEN_TAC
+  >> Induct_on ‘t’
+  >> fs[]
+  >> rw[insert_avl_def,keys_def,singleton_avl_def]
+  >> gvs[insert_avl_def]    
+
+
+        
+QED
 val _ = export_theory ();
+
+
