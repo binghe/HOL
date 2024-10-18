@@ -729,7 +729,7 @@ Overload V[local] = “nodes (g :fsgraph)”
 Overload E[local] = “fsgedges (g :fsgraph)”
 
 Theorem fsgraph_valid :
-    !g n1 n2. {n1;n2} IN E ==> n1 IN V /\ n2 IN V /\ n1 <> n2
+    !(g :fsgraph) n1 n2. {n1;n2} IN E ==> n1 IN V /\ n2 IN V /\ n1 <> n2
 Proof
     rpt GEN_TAC
  >> DISCH_THEN (STRIP_ASSUME_TAC o MATCH_MP alledges_valid)
