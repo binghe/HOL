@@ -1969,6 +1969,53 @@ Proof
       CCONTR_TAC >> METIS_TAC [SUBSET_DEF] ]
 QED
 
+(* This lemma reduces one more antecedent in subterm_tpm_lemma *)
+Theorem FV_tpm_lemma :
+    !Y M pi r r'. FINITE Y /\ FV M SUBSET Y UNION RANK r' /\
+                  set (MAP FST pi) SUBSET RANK r /\
+                  set (MAP SND pi) SUBSET RANK r' /\ r <= r'
+              ==> FV (tpm pi M) SUBSET Y UNION RANK r'
+Proof
+    rpt STRIP_TAC
+ >> rw [FV_tpm, SUBSET_DEF]
+ >> qabbrev_tac ‘v = lswapstr (REVERSE pi) x’
+ >> ‘x = lswapstr pi v’ by rw [Abbr ‘v’]
+ >> POP_ORW
+ >> Q.PAT_X_ASSUM ‘set (MAP SND pi) SUBSET RANK r'’ MP_TAC
+ >> Q.PAT_X_ASSUM ‘set (MAP FST pi) SUBSET RANK r’  MP_TAC
+ >> Know ‘v IN Y UNION RANK r'’ >- METIS_TAC [SUBSET_DEF]
+ >> Q.PAT_X_ASSUM ‘r <= r'’ MP_TAC
+ >> KILL_TAC
+ >> Q.ID_SPEC_TAC ‘v’
+ >> Induct_on ‘pi’ >- rw []
+ >> rw [MAP]
+ >> Q.PAT_X_ASSUM ‘!v. P’ (MP_TAC o Q.SPEC ‘v’) >> rw []
+ >> qabbrev_tac ‘x = FST h’
+ >> qabbrev_tac ‘y = SND h’
+ >> qabbrev_tac ‘z = lswapstr pi v’
+ >> rw [swapstr_def] >- ASM_SET_TAC []
+ >> Suff ‘RANK r SUBSET RANK r'’ >- ASM_SET_TAC []
+ >> rw [RANK_MONO]
+QED
+
+(* In this special version, X = Y *)
+Theorem subterm_tpm_lemma' :
+    !X p M pi r r'.
+         FINITE X /\ FV M SUBSET X UNION RANK r /\
+         set (MAP FST pi) SUBSET RANK r /\
+         set (MAP SND pi) SUBSET RANK r' /\ r <= r' ==>
+        (subterm X M p r = NONE <=> subterm X (tpm pi M) p r' = NONE) /\
+        (subterm X M p r <> NONE ==>
+         ?pi'. tpm pi' (subterm' X M p r) = subterm' X (tpm pi M) p r')
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> MATCH_MP_TAC subterm_tpm_lemma >> art []
+ >> MATCH_MP_TAC FV_tpm_lemma
+ >> Q.EXISTS_TAC ‘r’ >> art []
+ >> ‘RANK r SUBSET RANK r'’ by rw [RANK_MONO]
+ >> ASM_SET_TAC []
+QED
+
 Theorem subterm_tpm_cong_lemma[local] :
     !X Y p M r r'. FINITE X /\ FINITE Y /\
          FV M SUBSET X UNION RANK r /\
@@ -3159,17 +3206,17 @@ QED
    The proof becomes even harder, because ‘tpm’ is involved additionally.
 
    NOTE: ‘X’ is the usual excluded set for induction. ‘Y’ is a fixed variable set
-   acting as ‘IMAGE FV (set Ms)’ if M is one of Ms. And ‘0 < r’ is required.
+   acting as ‘IMAGE FV (set Ms)’ if M is one of Ms.
  *)
 Theorem subterm_width_induction_lemma_alt[local] :
     !X Y M h p r M0 n n' m vs' M1 Ms d.
-         FINITE X /\ FV M SUBSET X UNION RANK r /\
+         FINITE X /\ FV M SUBSET X UNION RANK r /\ 0 < r /\
          FINITE Y /\ FV M SUBSET Y /\
          h::p IN ltree_paths (BT' X M r) /\
          M0 = principle_hnf M /\ solvable M /\
           n = LAMl_size M0 /\ n <= n' /\
           m = hnf_children_size M0 /\ h < m /\
-        vs' = NEWS n' (X UNION Y) /\ 0 < r /\
+        vs' = NEWS n' (X UNION Y) /\
          M1 = principle_hnf (M0 @* MAP VAR vs') /\
          Ms = hnf_children M1 ==>
         (subterm_width M (h::p) <= d <=>
@@ -3231,7 +3278,7 @@ Proof
  >> qabbrev_tac ‘M1 = principle_hnf (M0 @* MAP VAR zs)’
  >> ‘DISJOINT (set zs) (FV M0)’ by PROVE_TAC [subterm_disjoint_lemma']
  >> Q_TAC (HNF_TAC (“M0 :term”, “zs :string list”,
-                     “y :string”, “args :term list”)) ‘M1’
+                    “y :string”, “args :term list”)) ‘M1’
  >> ‘TAKE n zs = zs’ by rw []
  >> POP_ASSUM (rfs o wrap)
  >> Know ‘?y' args'. M0 = LAMl vs (VAR y' @* args')’
@@ -3297,7 +3344,6 @@ Proof
      Q.PAT_X_ASSUM ‘LAMl vs (VAR y' @* args') = M0’ (REWRITE_TAC o wrap o SYM) \\
      simp [])
  >> DISCH_TAC
- >> ‘LENGTH args'' = m’ by simp [Abbr ‘args''’]
  (* applying subterm_width_thm again *)
  >> MP_TAC (Q.SPECL [‘X’, ‘EL h Ms’, ‘p’, ‘SUC r’] subterm_width_thm)
  >> simp []
@@ -3381,23 +3427,39 @@ Proof
      ‘MAX_SET (IMAGE (hnf_children_size o principle_hnf) (M INSERT s)) <= d <=>
       m <= d /\ MAX_SET (IMAGE (hnf_children_size o principle_hnf) t) <= d’
  >> REWRITE_TAC [IMAGE_INSERT]
- (* applying hnf_children_size_tpm, subterm_hnf_children_size_cong, etc. *)
+ (* NOTE: According to LAMl_ALPHA, it should be clear that args and args' differs
+    by a tpm. We cannot prove ‘s = t’, but their (hnf_children_size o principle_hnf)
+    are the same, w.r.t. subterm_hnf_children_size_cong .
+  *)
  >> Know ‘IMAGE (hnf_children_size o principle_hnf) s =
           IMAGE (hnf_children_size o principle_hnf) t’
- >- (cheat
-  (* rw [Once EXTENSION] \\
-     EQ_TAC >> rw [Abbr ‘s’, Abbr ‘t’] >| (* 2 subgoals *)
+ >- (ONCE_REWRITE_TAC [EXTENSION] \\
+     Q.X_GEN_TAC ‘z’ >> EQ_TAC \\
+     rw [Abbr ‘s’, Abbr ‘t’] >| (* 2 subgoals *)
      [ (* goal 1 (of 2) *)
-       Cases_on ‘p’ >> gvs [] \\
-       Q.EXISTS_TAC ‘xs’ >> art [] \\
-       POP_ASSUM MP_TAC \\
-       Q_TAC (UNBETA_TAC [subterm_of_solvables]) ‘subterm' X M (h::xs) r’ \\
+       rename1 ‘x::xs <<= FRONT (h::p)’ \\
+       Cases_on ‘p’ >> gs [Abbr ‘args''’] \\
        Know ‘EL h (args' ++ MAP VAR l) = EL h args'’
-       >- (MATCH_MP_TAC EL_APPEND1 >> art []) >> Rewr' \\
-       Suff ‘EL h Ms = EL h args’ >- rw [] \\
-       simp [Abbr ‘Ms’, GSYM appstar_APPEND, Abbr ‘m’] \\
-       MATCH_MP_TAC EL_APPEND1 >> art [],
+       >- (MATCH_MP_TAC EL_APPEND1 >> art []) \\
+       DISCH_THEN (fs o wrap) \\
+       POP_ASSUM MP_TAC (* solvable (subterm' X M (h::xs) r) *) \\
+       Know ‘subterm X M (h::xs) r <> NONE’ >- rw [] \\
+       Q_TAC (UNBETA_TAC [subterm_of_solvables]) ‘subterm X M (h::xs) r’ \\
+       qabbrev_tac ‘N = EL h args'’ \\
+       NTAC 2 STRIP_TAC \\
+       Know ‘subterm X N xs (SUC r) <> NONE /\
+             solvable (subterm' X N xs (SUC r))’
+       >- (qabbrev_tac ‘N' = tpm pi N’ \\
+          ‘N = tpm (REVERSE pi) N'’ by rw [Abbr ‘N'’] >> POP_ORW \\
+           cheat) \\
+       STRIP_TAC \\
+       Q.EXISTS_TAC ‘subterm' X N xs (SUC r)’ \\
+       reverse CONJ_TAC >- (Q.EXISTS_TAC ‘xs’ >> art []) \\
+    (* applying subterm_tpm_lemma' *)
+       cheat,
        (* goal 2 (of 2) *)
+       cheat
+       (*
        fs [hnf_children_size_appstar, Abbr ‘m’] \\
        Q.EXISTS_TAC ‘h::q’ \\
        Q_TAC (UNBETA_TAC [subterm_of_solvables]) ‘subterm' X M (h::q) r’ \\
@@ -3405,7 +3467,8 @@ Proof
        >- (simp [Abbr ‘Ms’, GSYM appstar_APPEND] \\
            MATCH_MP_TAC EL_APPEND1 >> art []) \\
        DISCH_THEN (fs o wrap) \\
-       Cases_on ‘p’ >> rw [] ] *))
+       Cases_on ‘p’ >> rw [] *)
+       ])
  >> Rewr'
  >> qunabbrev_tac ‘s’
  (* stage work *)
