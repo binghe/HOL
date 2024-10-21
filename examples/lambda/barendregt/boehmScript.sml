@@ -3429,6 +3429,24 @@ Proof
      ‘MAX_SET (IMAGE (hnf_children_size o principle_hnf) (M INSERT s)) <= d <=>
       m <= d /\ MAX_SET (IMAGE (hnf_children_size o principle_hnf) t) <= d’
  >> REWRITE_TAC [IMAGE_INSERT]
+ (* shared properties for the next ‘s = t’ subgoal *)
+ >> Know ‘set (MAP FST pi) SUBSET RANK (SUC r) /\
+          set (MAP SND pi) SUBSET RANK (SUC r)’
+ >- (simp [Abbr ‘pi’, MAP_ZIP] \\
+     reverse CONJ_TAC
+     >- (qunabbrev_tac ‘zs’ \\
+         Q_TAC (TRANS_TAC SUBSET_TRANS) ‘ROW r’ \\
+         simp [RNEWS_SUBSET_ROW, ROW_SUBSET_RANK]) \\
+     Q_TAC (TRANS_TAC SUBSET_TRANS) ‘set vs'’ \\
+     CONJ_TAC >- simp [Abbr ‘vs'’] \\
+     qunabbrev_tac ‘vs'’ \\
+     Q_TAC (TRANS_TAC SUBSET_TRANS) ‘ROW 0’ \\
+     simp [RNEWS_SUBSET_ROW, ROW_SUBSET_RANK])
+ >> STRIP_TAC
+ >> Know ‘set (MAP FST (REVERSE pi)) SUBSET RANK (SUC r) /\
+          set (MAP SND (REVERSE pi)) SUBSET RANK (SUC r)’
+ >- (gs [Abbr ‘pi’, MAP_ZIP, REVERSE_ZIP])
+ >> STRIP_TAC
  (* NOTE: According to LAMl_ALPHA, it should be clear that args and args' differs
     by a tpm. We cannot prove ‘s = t’, but their (hnf_children_size o principle_hnf)
     are the same, w.r.t. subterm_hnf_children_size_cong .
@@ -3453,24 +3471,54 @@ Proof
              solvable (subterm' X N xs (SUC r))’
        >- (qabbrev_tac ‘N' = tpm pi N’ \\
           ‘N = tpm (REVERSE pi) N'’ by rw [Abbr ‘N'’] >> POP_ORW \\
-           cheat) \\
-       STRIP_TAC \\
+           Know ‘FV (tpm pi N) SUBSET X UNION RANK (SUC r)’
+           >- (MATCH_MP_TAC FV_tpm_lemma \\
+               Q.EXISTS_TAC ‘SUC r’ >> simp []) >> DISCH_TAC \\
+           Know ‘subterm X N' xs (SUC r) = NONE <=>
+                 subterm X (tpm (REVERSE pi) N') xs (SUC r) = NONE’
+           >- (MATCH_MP_TAC (cj 1 subterm_tpm_lemma') \\
+               simp [Abbr ‘N'’]) >> simp [] \\
+           DISCH_TAC \\
+           Know ‘?pi'. tpm pi' (subterm' X N' xs (SUC r)) =
+                       subterm' X (tpm (REVERSE pi) N') xs (SUC r)’
+           >- (irule (cj 2 subterm_tpm_lemma') >> simp [Abbr ‘N'’]) \\
+           STRIP_TAC \\
+           POP_ASSUM (REWRITE_TAC o wrap o SYM) \\
+           simp [solvable_tpm]) >> STRIP_TAC \\
        Q.EXISTS_TAC ‘subterm' X N xs (SUC r)’ \\
        reverse CONJ_TAC >- (Q.EXISTS_TAC ‘xs’ >> art []) \\
-    (* applying subterm_tpm_lemma' *)
-       cheat,
+    (* applying subterm_tpm_lemma' again *)
+       Know ‘?pi'. tpm pi' (subterm' X N xs (SUC r)) =
+                   subterm' X (tpm pi N) xs (SUC r)’
+       >- (irule (cj 2 subterm_tpm_lemma') >> simp []) \\
+       STRIP_TAC >> POP_ASSUM (REWRITE_TAC o wrap o SYM) \\
+       simp [principle_hnf_tpm'],
        (* goal 2 (of 2) *)
-       cheat
-       (*
-       fs [hnf_children_size_appstar, Abbr ‘m’] \\
+       Know ‘EL h (args' ++ MAP VAR l) = EL h args'’
+       >- (MATCH_MP_TAC EL_APPEND1 >> art []) \\
+       DISCH_THEN (fs o wrap) \\
+       qabbrev_tac ‘N = EL h args'’ \\
+       Q.EXISTS_TAC ‘subterm' X (EL h args) q (SUC r)’ \\
+       gs [Abbr ‘args''’] \\
+       Know ‘subterm X M (h::q) r <> NONE’
+       >- (FIRST_X_ASSUM MATCH_MP_TAC \\
+           Cases_on ‘p’ >> rw []) \\
+       Q_TAC (UNBETA_TAC [subterm_of_solvables]) ‘subterm X M (h::q) r’ \\
+       DISCH_TAC \\
+       Know ‘subterm X N q (SUC r) <> NONE’
+       >- (Know ‘subterm X N q (SUC r) = NONE <=>
+                 subterm X (tpm pi N) q (SUC r) = NONE’
+           >- (MATCH_MP_TAC (cj 1 subterm_tpm_lemma') >> simp []) >> simp []) \\
+       DISCH_TAC \\
+       Know ‘?pi'. tpm pi' (subterm' X N q (SUC r)) =
+                   subterm' X (tpm pi N) q (SUC r)’
+       >- (irule (cj 2 subterm_tpm_lemma') >> simp []) \\
+       STRIP_TAC \\
+       POP_ASSUM (ASSUME_TAC o SYM) \\
+       simp [principle_hnf_tpm'] \\
        Q.EXISTS_TAC ‘h::q’ \\
        Q_TAC (UNBETA_TAC [subterm_of_solvables]) ‘subterm' X M (h::q) r’ \\
-       Know ‘EL h Ms = EL h args’
-       >- (simp [Abbr ‘Ms’, GSYM appstar_APPEND] \\
-           MATCH_MP_TAC EL_APPEND1 >> art []) \\
-       DISCH_THEN (fs o wrap) \\
-       Cases_on ‘p’ >> rw [] *)
-       ])
+       Cases_on ‘p’ >> rw [] ])
  >> Rewr'
  >> qunabbrev_tac ‘s’
  (* stage work *)
