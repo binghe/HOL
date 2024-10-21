@@ -579,6 +579,17 @@ Proof
 QED
 
 
+Theorem avl_tree_preserves_avl:
+  ∀ l r k v. avl l ∧ avl r ∧ (height l = height r ∨ height l = height r+1 ∨ height  r = height l+1) ⇒ avl (tree k v l r) 
+Proof
+  rpt STRIP_TAC       
+  >- (rw[tree_def])
+  >- (rw[tree_def])
+  >> rw[tree_def]  
+QED
+
+
+        
 Theorem avl_insert_aux:
   ∀ k v t. avl t ⇒
          avl (insert_avl k v t) ∧
