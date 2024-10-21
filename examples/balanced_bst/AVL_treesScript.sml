@@ -7,6 +7,9 @@ open pred_setTheory;
 
 val _ = new_theory "AVL_trees";
 
+(* by default, literal integers are interpreted as natural numbers (:num) *)
+val _ = intLib.deprecate_int ();
+
 Datatype:
   avl_tree = Tip | Bin int num 'a avl_tree avl_tree
 End
@@ -384,6 +387,22 @@ Theorem t8 = EVAL ``^t8_t``
 val t9_t = ``insert_avl 7 7 ^t8_t``
 Theorem t9 = EVAL ``^t9_t``
 
+(* This function takes one of the above t* theorems and return another one
+   saying the corresponding tree is indeed an AVL tree. -- Chun TIAN
+ *)
+fun is_avl (th) =
+    EVAL (mk_comb (“avl :num avl_tree -> bool”, rhs (concl th)));
+
+(* |- avl (Bin 0 3 3 Tip Tip) *)
+Theorem avl_t1 = is_avl t1 |> EQT_ELIM
+
+Theorem avl_t2 = is_avl t2 |> EQT_ELIM
+Theorem avl_t3 = is_avl t3 |> EQT_ELIM
+Theorem avl_t4 = is_avl t4 |> EQT_ELIM
+Theorem avl_t5 = is_avl t5 |> EQT_ELIM
+Theorem avl_t6 = is_avl t6 |> EQT_ELIM
+Theorem avl_t7 = is_avl t7 |> EQT_ELIM
+
 Definition remove_max_def:
   remove_max (Bin _ k v l Tip) = (k, v, l) ∧
   remove_max (Bin _ k v l r) = 
@@ -410,17 +429,16 @@ Definition delete_avl_def:
 End
 
 
-
-val t10_t = ``delete_avl 14 ^t9_t``  
+(* (rhs o concl) (|- a = b) returns b *)
+val t10_t = ``delete_avl 14 ^((rhs o concl) t9)``;
 Theorem t10 = EVAL ``^t10_t``
 
-val t11_t = ``delete_avl 5 ^t10_t``  
+val t11_t = ``delete_avl 5 ^((rhs o concl) t10)``;
 Theorem t11 = EVAL ``^t11_t``
 
-val t12_t = ``delete_avl 4 ^t11_t``  
+val t12_t = ``delete_avl 4 ^((rhs o concl) t11)``;
 Theorem t12 = EVAL ``^t12_t``
 
-                  
 Definition lookup_avl_def:
   lookup_avl x Tip = NONE ∧
   lookup_avl x (Bin _ k kv l r) =
@@ -433,19 +451,19 @@ Definition lookup_avl_def:
 End
 
 (* Test lookup on the tree after insertion *)
-val lookup1_t = ``lookup_avl 3 ^t9_t``  (* Should return SOME 3 *)
+val lookup1_t = ``lookup_avl 3 ^((rhs o concl) t9)``  (* Should return SOME 3 *)
 Theorem lookup1 = EVAL ``^lookup1_t``
 
-val lookup2_t = ``lookup_avl 14 ^t9_t`` 
+val lookup2_t = ``lookup_avl 14 ^((rhs o concl) t9)`` 
 Theorem lookup2 = EVAL ``^lookup2_t``
 
-val lookup3_t = ``lookup_avl 4 ^t11_t``  (* Should return NONE if 4 is deleted *)
+val lookup3_t = ``lookup_avl 4 ^((rhs o concl) t12)``  (* Should return NONE if 4 is deleted *)
 Theorem lookup3 = EVAL ``^lookup3_t``
 
-val lookup4_t = ``lookup_avl 6 ^t9_t``  (* Should return SOME 6 *)
+val lookup4_t = ``lookup_avl 6 ^((rhs o concl) t9)``  (* Should return SOME 6 *)
 Theorem lookup4 = EVAL ``^lookup4_t``
 
-val lookup5_t = ``lookup_avl 10 ^t9_t``  (* Should return NONE if 10 is not present *)
+val lookup5_t = ``lookup_avl 10 ^((rhs o concl) t9)``  (* Should return NONE if 10 is not present *)
 Theorem lookup5 = EVAL ``^lookup5_t``
 
 
@@ -590,7 +608,7 @@ Proof
 QED
 
 
-        
+(* TOOD *)        
 Theorem avl_insert_aux:
   ∀ k v t. avl t ⇒
          avl (insert_avl k v t) ∧
