@@ -374,24 +374,272 @@ Theorem t5 = EVAL ``^t5_t``
 val t6_t = ``insert_avl 14 14 ^t5_t``
 Theorem t6 = EVAL ``^t6_t``
 
-Definition keys_def:
+val t7_t = ``insert_avl 1 1 ^t6_t``
+Theorem t7 = EVAL ``^t7_t``
+
+val t8_t = ``insert_avl 6 6 ^t7_t``
+Theorem t8 = EVAL ``^t8_t``
+                  
+val t9_t = ``insert_avl 7 7 ^t8_t``
+Theorem t9 = EVAL ``^t9_t``
+
+Definition remove_max_def:
+  remove_max (Bin _ k v l Tip) = (k, v, l) ∧
+  remove_max (Bin _ k v l r) = 
+    let (max_k, max_v, r') = remove_max r in
+    (max_k, max_v, balanceL k v l r')
+End
+
+Definition delete_avl_def:
+  delete_avl x Tip = Tip ∧  
+  delete_avl x (Bin bf k kv l r) =
+    if x = k then
+      (case (l, r) of
+         (Tip, Tip) => Tip  
+       | (Tip, _)   => r    
+       | (_, Tip)   => l    
+       | (_, _)     =>      
+           let (pred_k, pred_v, l') = remove_max l in
+           balanceR pred_k pred_v l' r
+      )
+    else if x < k then
+      balanceR k kv (delete_avl x l) r  
+    else
+      balanceL k kv l (delete_avl x r)  
+End
+
+
+
+val t10_t = ``delete_avl 14 ^t9_t``  
+Theorem t10 = EVAL ``^t10_t``
+
+val t11_t = ``delete_avl 5 ^t10_t``  
+Theorem t11 = EVAL ``^t11_t``
+
+val t12_t = ``delete_avl 4 ^t11_t``  
+Theorem t12 = EVAL ``^t12_t``
+
+                  
+Definition lookup_avl_def:
+  lookup_avl x Tip = NONE ∧
+  lookup_avl x (Bin _ k kv l r) =
+    if x = k then
+      SOME kv
+    else if x < k then
+      lookup_avl x l
+    else
+      lookup_avl x r
+End
+
+(* Test lookup on the tree after insertion *)
+val lookup1_t = ``lookup_avl 3 ^t9_t``  (* Should return SOME 3 *)
+Theorem lookup1 = EVAL ``^lookup1_t``
+
+val lookup2_t = ``lookup_avl 14 ^t9_t`` 
+Theorem lookup2 = EVAL ``^lookup2_t``
+
+val lookup3_t = ``lookup_avl 4 ^t11_t``  (* Should return NONE if 4 is deleted *)
+Theorem lookup3 = EVAL ``^lookup3_t``
+
+val lookup4_t = ``lookup_avl 6 ^t9_t``  (* Should return SOME 6 *)
+Theorem lookup4 = EVAL ``^lookup4_t``
+
+val lookup5_t = ``lookup_avl 10 ^t9_t``  (* Should return NONE if 10 is not present *)
+Theorem lookup5 = EVAL ``^lookup5_t``
+
+
+Definition keys_def[simp]:
   keys Tip = {} ∧  
   keys (Bin _ k v l r) = {k} ∪ keys l ∪ keys r
 End
 
+Theorem keys_balanceL[simp]:
+  ∀ k v t1 t2. keys(balanceL k v t1 t2) = {k} ∪ keys t1 ∪ keys t2
+Proof
+  rw[balanceL_def,tree_def]
+  >> reverse(Cases_on ‘t1’ >> rw[])
+  >-(SET_TAC[])
+  >> rename [‘height t1 < height t2’]
+  >> Cases_on ‘t2’ >> rw[] >> SET_TAC[]   
+QED
+
+Theorem keys_balanceR[simp]:
+  ∀ k v t1 t2. keys(balanceR k v t1 t2) = {k} ∪ keys t1 ∪ keys t2
+Proof
+  rw[balanceR_def,tree_def]
+  >> reverse(Cases_on ‘t2’ >> rw[])
+  >-(SET_TAC[])
+  >> rename [‘height t1 > height t2’]
+  >> Cases_on ‘t1’ >> rw[] >> SET_TAC[]   
+QED
+
 Theorem keys_insert:
   ∀ x v t. keys(insert_avl x v t) = (keys t ∪ {x})
 Proof
-  fs[]
-  >> rpt GEN_TAC
+   Induct_on ‘t’
+  >> rw[insert_avl_def,singleton_avl_def]
+   >>SET_TAC[]
+QED
+
+
+Theorem height_balL:
+  ∀ k v l r. height l = height r+2 ∧ avl l ∧ avl r ⇒
+             height (balanceL k v l r) = height r+2 ∨
+             height (balanceL k v l r) = height r+3
+Proof
+  rpt STRIP_TAC
+  >> Cases_on ‘l’
+  >- gvs[]
+  >> gvs[tree_def]
+  >> gvs[balanceL_def]
+  >> gvs[MAX_DEF]
+  >> gvs[balanceL_def]
+  >> gvs[tree_def]
+  >> gvs[MAX_DEF]
+  >> gvs[height_def,MAX_DEF]
+  >> Cases_on ‘a0’
+  >- gvs[]
+  >> gvs[height_def]
+  >> gvs[tree_def,height_def,MAX_DEF]
+  >> gvs[tree_def,height_def,MAX_DEF]      
+  >> gvs[tree_def]      
+QED
+
+Theorem height_balR:
+  ∀ k v l r. height r = height l+2 ∧ avl l ∧ avl r ⇒
+             height (balanceR k v l r) = height l+2 ∨
+             height (balanceR k v l r) = height l+3
+Proof
+  rpt STRIP_TAC
+  >> Cases_on ‘r’
+  >- gvs[]
+  >> gvs[tree_def]
+  >> gvs[balanceR_def]
+  >> gvs[MAX_DEF]
+  >> Cases_on ‘a’
+  >- gvs[]
+  >> gvs[height_def]
+  >> gvs[tree_def,height_def,MAX_DEF]
+  >> gvs[tree_def,height_def,MAX_DEF]      
+  >> gvs[tree_def]       
+  >> gvs[balanceR_def]
+  >> gvs[tree_def]
+  >> gvs[MAX_DEF]
+QED
+
+Theorem height_balL2:
+  ∀ k v l r. avl l ∧ avl r ∧ height l ≠ height r + 2 ⇒
+  height (balanceL k v l r) = (1 + MAX (height l) (height r))
+Proof
+  rpt STRIP_TAC
+  >> Cases_on ‘l’
+  >> gvs[balanceL_def,tree_def,height_def,MAX_DEF]
+  >> gvs[balanceL_def,tree_def,height_def,MAX_DEF]      
+QED  
+
+Theorem height_balR2:
+  ∀ k v l r. avl l ∧ avl r ∧ height r ≠ height l + 2 ⇒
+  height (balanceR k v l r) = (1 + MAX (height l) (height r))
+Proof
+  rpt STRIP_TAC
+  >> Cases_on ‘r’
+  >> gvs[balanceR_def,tree_def,height_def,MAX_DEF]
+  >> gvs[balanceR_def,tree_def,height_def,MAX_DEF]      
+QED  
+
+
+Theorem avl_balL:
+  ∀ k v l r. avl l ∧ avl r ∧ (height l = height r ∨ height l = height r+1 ∨ height r = height l+1 ∨ height l = height r+2)                     ⇒ avl(balanceL k v l r)       
+Proof
+  rpt STRIP_TAC
+  >> gvs[balanceL_def,tree_def,height_def]
+  >> gvs[balanceL_def,tree_def,height_def]
+  >> gvs[balanceL_def,tree_def,height_def]
+  >> Cases_on ‘l’
+  >- gvs[]
+  >> gvs[balanceL_def,tree_def,height_def,MAX_DEF]
+  >> Cases_on ‘a0’
+  >- gvs[]
+  >> gvs[height_def,MAX_DEF]      
+QED
+
+Theorem avl_balR:
+  ∀ k v l r. avl l ∧ avl r ∧ (height r = height l ∨ height r = height l+1 ∨ height l = height r+1 ∨ height r = height l+2)                     ⇒ avl(balanceR k v l r)       
+Proof
+  rpt STRIP_TAC
+  >> gvs[balanceR_def,tree_def,height_def]
+  >> gvs[balanceR_def,tree_def,height_def]
+  >> gvs[balanceR_def,tree_def,height_def]
+  >> Cases_on ‘r’
+  >- gvs[]
+  >> gvs[balanceR_def,tree_def,height_def,MAX_DEF]
+  >> Cases_on ‘a’
+  >- gvs[]
+  >> gvs[height_def,MAX_DEF]      
+QED
+
+
+Theorem avl_insert_aux:
+  ∀ k v t. avl t ⇒
+         avl (insert_avl k v t) ∧
+         (height (insert_avl k v t) = height t ∨ height (insert_avl k v t) = height t + 1)
+Proof
+  rpt STRIP_TAC
+  >> gvs[]
   >> Induct_on ‘t’
-  >> fs[]
-  >> rw[insert_avl_def,keys_def,singleton_avl_def]
-  >> gvs[insert_avl_def]    
+  >- (rpt STRIP_TAC             
+  >> gvs[insert_avl_def,singleton_avl_def])
+  >> rpt STRIP_TAC
+  >> gvs[insert_avl_def]
+  >> Cases_on ‘k = n’
+  >> gvs[insert_avl_def]
+  >> gvs[] 
+  >> Cases_on ‘k<n’
+  >> gvs[]              
+  >> Cases_on ‘height (insert_avl k v t) = height t’
+  >- gvs[height_balL,height_balL2,avl_balL]
+  >> Cases_on ‘height (insert_avl k v t) = height t+1’
+  >- gvs[height_balL,height_balL2,avl_balL]             
+  >> Cases_on ‘height (insert_avl k v t) = height t+2’             
+  >- gvs[height_balL,height_balL2,avl_balL] 
+  >> gvs[]
+  >> gvs[balanceL_def]
+  >> gvs[tree_def,height_def,MAX_DEF] >> gvs[]
+  >> gvs[height_def]        
+QED
 
 
         
+Theorem height_insert_avl:
+  ∀ k v t. height(insert_avl k v t) = height t ∨
+           height (insert_avl k v t) = height t+1
+Proof
+  rpt GEN_TAC
+  >>Induct_on ‘t’ >> rw[insert_avl_def,singleton_avl_def]
+  
+                        
+QED        
+Theorem avl_balanceL_0:
+  ∀ k v t1 t2. height t1 = height t2 ∧ avl t1 ∧avl t2 ⇒
+                      avl(balanceL k v t1 t2)
+Proof
+  rw[balanceL_def,tree_def]
 QED
+
+Theorem avl_balanceL_1:
+  ∀ k v t1 t2. height t1 = height t2 + 1 ∧ avl t1 ∧avl t2 ⇒
+                      avl(balanceL k v t1 t2)
+Proof
+  rw[balanceL_def,tree_def]
+QED
+
+
+        
+Theorem insertion_preserves_avl:
+  ∀ k v t. avl t ⇒ avl(insert_avl k v t )
+Proof
+  Induct_on ‘t’ >> rw[avl_def,insert_avl_def,singleton_avl_def]
+  >-(rw[])                    
+QED  
+
 val _ = export_theory ();
-
-
