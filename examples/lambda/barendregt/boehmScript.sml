@@ -2539,8 +2539,10 @@ QED
    NOTE2: This function seems general: “:('a -> 'a) list -> 'a -> 'a”.
  *)
 Definition apply_def :
-    apply pi = FOLDR $o I pi
+    apply_functions pi = FOLDR $o I pi
 End
+
+Overload apply = “apply_functions”
 
 (* NOTE: either FOLDL or FOLDR is correct (due to combinTheory.o_ASSOC),
          but FOLDR seems more natural requiring natural list induction in
