@@ -2000,19 +2000,6 @@ Proof
  >> METIS_TAC []
 QED
 
-(* This is the final weak version. This means ‘FV M SUBSET X INTER Y’. *)
-Theorem subterm_tpm_cong' :
-    !X Y M p r r'. FINITE X /\ FINITE Y /\
-                   FV M SUBSET X /\ FV M SUBSET Y
-     ==> (subterm X M p r = NONE <=> subterm Y M p r' = NONE) /\
-         (subterm X M p r <> NONE ==>
-          tpm_rel (subterm' X M p r) (subterm' Y M p r'))
-Proof
-    rpt GEN_TAC >> STRIP_TAC
- >> MATCH_MP_TAC subterm_tpm_cong
- >> ASM_SET_TAC []
-QED
-
 Theorem subterm_solvable_cong :
     !X Y M p r r'. FINITE X /\ FINITE Y /\
          FV M SUBSET X UNION RANK r /\
@@ -2024,17 +2011,6 @@ Proof
  >> MP_TAC (Q.SPECL [‘X’, ‘Y’, ‘M’, ‘p’, ‘r’, ‘r'’] subterm_tpm_cong)
  >> rw []
  >> fs [tpm_rel_alt, solvable_tpm]
-QED
-
-Theorem subterm_solvable_cong' :
-    !X Y M p r r'. FINITE X /\ FINITE Y /\
-                   FV M SUBSET X /\ FV M SUBSET Y /\
-                   subterm X M p r <> NONE ==>
-                  (solvable (subterm' X M p r) <=> solvable (subterm' Y M p r'))
-Proof
-    rpt STRIP_TAC
- >> MATCH_MP_TAC subterm_solvable_cong >> art []
- >> ASM_SET_TAC []
 QED
 
 (* In this way, two such terms have the same ‘hnf_children_size o principle_hnf’,
@@ -2056,19 +2032,6 @@ Proof
  >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM)
  >> qabbrev_tac ‘N = subterm' X M p r’
  >> rw [principle_hnf_tpm']
-QED
-
-Theorem subterm_hnf_children_size_cong' :
-    !X Y M p r r'. FINITE X /\ FINITE Y /\
-         FV M SUBSET X /\ FV M SUBSET Y /\
-         subterm X M p r <> NONE /\
-         solvable (subterm' X M p r) ==>
-         hnf_children_size (principle_hnf (subterm' X M p r)) =
-         hnf_children_size (principle_hnf (subterm' Y M p r'))
-Proof
-    rpt GEN_TAC >> STRIP_TAC
- >> MATCH_MP_TAC subterm_hnf_children_size_cong >> art []
- >> ASM_SET_TAC []
 QED
 
 Theorem BT_tpm_lemma[local] :
@@ -3195,16 +3158,15 @@ QED
    In this case, vs is NOT a prefix of vs' but actually disjoint with it.
    The proof becomes even harder, because ‘tpm’ is involved additionally.
 
-   NOTE: It's possible to relax ‘vs' = NEWS n' (X UNION Y)’ to something more
-   general.
+   NOTE: ‘X’ is the usual excluded set for induction. ‘Y’ is a fixed variable set
+   acting as ‘IMAGE FV (set Ms)’ if M is one of Ms. And ‘0 < r’ is required.
  *)
 Theorem subterm_width_induction_lemma_alt[local] :
     !X Y M h p r M0 n n' m vs' M1 Ms d.
          FINITE X /\ FV M SUBSET X UNION RANK r /\
          FINITE Y /\ FV M SUBSET Y /\
          h::p IN ltree_paths (BT' X M r) /\
-         solvable M /\
-         M0 = principle_hnf M /\
+         M0 = principle_hnf M /\ solvable M /\
           n = LAMl_size M0 /\ n <= n' /\
           m = hnf_children_size M0 /\ h < m /\
         vs' = NEWS n' (X UNION Y) /\ 0 < r /\
@@ -3418,9 +3380,12 @@ Proof
  >> qmatch_abbrev_tac
      ‘MAX_SET (IMAGE (hnf_children_size o principle_hnf) (M INSERT s)) <= d <=>
       m <= d /\ MAX_SET (IMAGE (hnf_children_size o principle_hnf) t) <= d’
- (* TODO *)
- >> Know ‘s = t’
- >- (rw [Once EXTENSION] \\
+ >> REWRITE_TAC [IMAGE_INSERT]
+ (* applying hnf_children_size_tpm, subterm_hnf_children_size_cong, etc. *)
+ >> Know ‘IMAGE (hnf_children_size o principle_hnf) s =
+          IMAGE (hnf_children_size o principle_hnf) t’
+ >- (cheat
+  (* rw [Once EXTENSION] \\
      EQ_TAC >> rw [Abbr ‘s’, Abbr ‘t’] >| (* 2 subgoals *)
      [ (* goal 1 (of 2) *)
        Cases_on ‘p’ >> gvs [] \\
@@ -3440,10 +3405,9 @@ Proof
        >- (simp [Abbr ‘Ms’, GSYM appstar_APPEND] \\
            MATCH_MP_TAC EL_APPEND1 >> art []) \\
        DISCH_THEN (fs o wrap) \\
-       Cases_on ‘p’ >> rw [] ])
+       Cases_on ‘p’ >> rw [] ] *))
  >> Rewr'
  >> qunabbrev_tac ‘s’
- >> REWRITE_TAC [IMAGE_INSERT]
  (* stage work *)
  >> qabbrev_tac ‘s = IMAGE (hnf_children_size o principle_hnf) t’
  >> simp [o_DEF]
@@ -3464,7 +3428,6 @@ Proof
  >> Rewr'
  >> MATCH_MP_TAC IMAGE_FINITE
  >> rw [FINITE_prefix]
- *)
 QED
 
 (* NOTE: v, P and d are fixed free variables here *)
