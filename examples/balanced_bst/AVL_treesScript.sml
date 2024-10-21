@@ -134,15 +134,15 @@ Proof
  >> Q.EXISTS_TAC ‘t’
  >> fs [minimal_avl_def]
 QED
- 
+
 
 Theorem minimal_avl_l_is_avl:
   ∀t. minimal_avl t ⇒ avl t
 Proof
   GEN_TAC >>
           rw[avl_def , minimal_avl_def]
-  >> fs[minimal_avl_def]             
-QED       
+  >> fs[minimal_avl_def]
+QED
 
 Theorem height_of_minimal_avl_diff_1:
   ∀ bf k v l r. minimal_avl (Bin bf k v l r) ⇒
@@ -165,23 +165,23 @@ Proof
   >-(first_x_assum(Q.SPEC_THEN ‘Bin 1 k v a0 r’ mp_tac)
      >> simp[]
      >>intLib.ARITH_TAC
-    )      
+    )
 QED
- 
-  
+
+
 Theorem children_of_minimal_avl:
   ∀bf k v l r. minimal_avl (Bin bf k v l r) ⇒
                            minimal_avl l ∧ minimal_avl r
 Proof
   rw[minimal_avl_def,avl_def]
-     >> CCONTR_TAC   
+     >> CCONTR_TAC
   >> gvs[NOT_LE]
   >-(first_x_assum(Q.SPEC_THEN ‘Bin 0 k v t' r’ mp_tac)
     >> simp[]
     )
   >-(first_x_assum(Q.SPEC_THEN ‘Bin 0 k v l t'’ mp_tac)
     >> simp[]
-    )  
+    )
   >-(first_x_assum(Q.SPEC_THEN ‘Bin (-1) k v t' r’ mp_tac)
      >> simp[]
      >>intLib.ARITH_TAC
@@ -197,10 +197,10 @@ Proof
     >-(first_x_assum(Q.SPEC_THEN ‘Bin (1) k v l t'’ mp_tac)
      >> simp[]
      >>intLib.ARITH_TAC
-    )        
+    )
 QED
 
-        
+
 Theorem N_k:
   ∀k. N (k+2) = N (k+1) + N(k) + 1
 Proof
@@ -209,11 +209,11 @@ Proof
                  (INST_TYPE [“:'a” |-> “:num”]minimal_avl_exists)
   >> STRIP_TAC
   >> ‘N (k+2) = node_count t’
-    by metis_tac[minimal_avl_node_count]               
+    by metis_tac[minimal_avl_node_count]
   >> simp[]
   >> Cases_on ‘t’
   >- gvs[]
-  >> rename1 ‘minimal_avl (Bin bf s v l r)’              
+  >> rename1 ‘minimal_avl (Bin bf s v l r)’
   >> ‘minimal_avl l ∧ minimal_avl r’
      by metis_tac[children_of_minimal_avl]
   >> gvs[]
@@ -226,14 +226,14 @@ Proof
        >- rw[]
        >> STRIP_TAC
        >- metis_tac[minimal_avl_node_count]
-       >> metis_tac[minimal_avl_node_count]            
+       >> metis_tac[minimal_avl_node_count]
      )
   >> fs[MAX_DEF] >>
       Q_TAC SUFF_TAC ‘node_count r = N (k+1) ∧ node_count l = N k’
        >- rw[]
        >> STRIP_TAC
        >- metis_tac[minimal_avl_node_count]
-       >> metis_tac[minimal_avl_node_count]  
+       >> metis_tac[minimal_avl_node_count]
 QED
 
 Definition Fibonacci_def :
@@ -244,20 +244,20 @@ Definition Fibonacci_def :
 End
 
 Theorem Fibonacci_thm:
-  ∀k. Fibonacci (k + 2) = Fibonacci (k + 1) + Fibonacci k  
+  ∀k. Fibonacci (k + 2) = Fibonacci (k + 1) + Fibonacci k
 Proof
-  rw[Once Fibonacci_def]         
+  rw[Once Fibonacci_def]
 QED
 Theorem Fibonacci_mono:
   ∀n. Fibonacci n ≤ Fibonacci (n+1)
 Proof
   STRIP_TAC
   >> Cases_on ‘n’
-  >- ( ONCE_REWRITE_TAC[Fibonacci_def]         
+  >- ( ONCE_REWRITE_TAC[Fibonacci_def]
   >> gvs[]
      )
   >> gvs[SUC_ONE_ADD]
-  >> rw[Fibonacci_thm]      
+  >> rw[Fibonacci_thm]
 QED
 
 Theorem Fibonacci_mono_transitive:
@@ -267,53 +267,53 @@ Proof
   >> ‘m = n ∨ m<n’ by rw[]
   >- rw[]
   >> MP_TAC (Q.SPECL [‘$<=’,‘Fibonacci’]
-             (INST_TYPE [“:α” |-> “:num”] transitive_monotone))     
+             (INST_TYPE [“:α” |-> “:num”] transitive_monotone))
   >> rw[transitive_LE]
-  >> POP_ASSUM irule             
-  >> rw[ADD1,Fibonacci_mono]             
-QED  
+  >> POP_ASSUM irule
+  >> rw[ADD1,Fibonacci_mono]
+QED
 
 Theorem N_fibonacci_relation:
   ∀k. N k = Fibonacci (k+2)-1
 Proof
-  completeInduct_on ‘k’                     
-  >> Cases_on ‘k’ 
-  >- (simp[N_0]      
-  >> ONCE_REWRITE_TAC[Fibonacci_def]         
+  completeInduct_on ‘k’
+  >> Cases_on ‘k’
+  >- (simp[N_0]
+  >> ONCE_REWRITE_TAC[Fibonacci_def]
   >> gvs[]
   >> ONCE_REWRITE_TAC[Fibonacci_def]
-  >> gvs[])      
+  >> gvs[])
   >> gvs[SUC_ONE_ADD]
   >> ONCE_REWRITE_TAC[Fibonacci_def]
   >> gvs[]
   >> Cases_on ‘n’
   >-( simp[N_1]
-      >>ONCE_REWRITE_TAC[Fibonacci_def]         
+      >>ONCE_REWRITE_TAC[Fibonacci_def]
       >> gvs[]
-      >> ONCE_REWRITE_TAC[Fibonacci_def]         
-      >> gvs[]      
+      >> ONCE_REWRITE_TAC[Fibonacci_def]
+      >> gvs[]
     )
   >>gvs[SUC_ONE_ADD]
-  >> qabbrev_tac ‘k = n'+2’     
+  >> qabbrev_tac ‘k = n'+2’
   >> sg ‘N k = N(k-1) + N(k-2)+1’
   >- gvs[N_k,Abbr‘k’]
   >> rw[]
-  >> ‘k-1<k ∧ k-2<k’ by rw[Abbr‘k’]     
+  >> ‘k-1<k ∧ k-2<k’ by rw[Abbr‘k’]
   >> rw[Abbr‘k’]
   >> gvs[]
   >> sg ‘Fibonacci 1 ≤ Fibonacci (n'+2) ’
   >- rw[Fibonacci_mono_transitive]
-  >> sg ‘Fibonacci 1 ≤ Fibonacci (n'+3)’      
+  >> sg ‘Fibonacci 1 ≤ Fibonacci (n'+3)’
   >- rw[Fibonacci_mono_transitive]
   >> sg ‘Fibonacci 1 = 1’
-  >-(ONCE_REWRITE_TAC[Fibonacci_def]         
+  >-(ONCE_REWRITE_TAC[Fibonacci_def]
       >> gvs[]
     )
-  >> rw[]                     
+  >> rw[]
 QED
 
 Definition tree_def:
-  tree k v l r = 
+  tree k v l r =
     Bin (&height r - &height l) k v l r
 End
 
@@ -328,7 +328,7 @@ Definition balanceL_def:
               | _ => tree lk lv ll (tree k v lr r))
            else
              tree lk lv ll (tree k v lr r)
-       | Tip => tree k v l r) 
+       | Tip => tree k v l r)
     else
       tree k v l r
 End
@@ -344,37 +344,37 @@ Definition balanceR_def:
              | _ => tree rk rv (tree k v l rl) rr)
           else
             tree rk rv (tree k v l rl) rr
-       | Tip => tree k v l r)  
+       | Tip => tree k v l r)
     else
       tree k v l r
 End
 
 Definition insert_avl_def:
-  insert_avl x v Tip = singleton_avl x v ∧  
+  insert_avl x v Tip = singleton_avl x v ∧
   insert_avl x v (Bin bf k kv l r) =
     if x = k then
-      Bin bf k kv l r  
+      Bin bf k kv l r
     else if x < k then
-      balanceL k kv (insert_avl x v l) r  
+      balanceL k kv (insert_avl x v l) r
     else
-      balanceR k kv l (insert_avl x v r)  
+      balanceR k kv l (insert_avl x v r)
 End
 
-val t1_t = ``insert_avl 3 3 Tip`` 
+val t1_t = ``insert_avl 3 3 Tip``
 Theorem t1 = EVAL ``^t1_t``
 
 val t2_t = ``insert_avl 5 5 ^t1_t``
 Theorem t2 = EVAL ``^t2_t``
 
 val t3_t = ``insert_avl 2 2 ^t2_t``
-Theorem t3 = EVAL ``^t3_t``                  
-                  
+Theorem t3 = EVAL ``^t3_t``
+
 val t4_t = ``insert_avl 4 4 ^t3_t``
-Theorem t4 = EVAL ``^t4_t``                  
-                  
+Theorem t4 = EVAL ``^t4_t``
+
 val t5_t = ``insert_avl 13 13 ^t4_t``
 Theorem t5 = EVAL ``^t5_t``
-                  
+
 val t6_t = ``insert_avl 14 14 ^t5_t``
 Theorem t6 = EVAL ``^t6_t``
 
@@ -383,7 +383,7 @@ Theorem t7 = EVAL ``^t7_t``
 
 val t8_t = ``insert_avl 6 6 ^t7_t``
 Theorem t8 = EVAL ``^t8_t``
-                  
+
 val t9_t = ``insert_avl 7 7 ^t8_t``
 Theorem t9 = EVAL ``^t9_t``
 
@@ -405,27 +405,27 @@ Theorem avl_t7 = is_avl t7 |> EQT_ELIM
 
 Definition remove_max_def:
   remove_max (Bin _ k v l Tip) = (k, v, l) ∧
-  remove_max (Bin _ k v l r) = 
+  remove_max (Bin _ k v l r) =
     let (max_k, max_v, r') = remove_max r in
     (max_k, max_v, balanceL k v l r')
 End
 
 Definition delete_avl_def:
-  delete_avl x Tip = Tip ∧  
+  delete_avl x Tip = Tip ∧
   delete_avl x (Bin bf k kv l r) =
     if x = k then
       (case (l, r) of
-         (Tip, Tip) => Tip  
-       | (Tip, _)   => r    
-       | (_, Tip)   => l    
-       | (_, _)     =>      
+         (Tip, Tip) => Tip
+       | (Tip, _)   => r
+       | (_, Tip)   => l
+       | (_, _)     =>
            let (pred_k, pred_v, l') = remove_max l in
            balanceR pred_k pred_v l' r
       )
     else if x < k then
-      balanceR k kv (delete_avl x l) r  
+      balanceR k kv (delete_avl x l) r
     else
-      balanceL k kv l (delete_avl x r)  
+      balanceL k kv l (delete_avl x r)
 End
 
 
@@ -454,7 +454,7 @@ End
 val lookup1_t = ``lookup_avl 3 ^((rhs o concl) t9)``  (* Should return SOME 3 *)
 Theorem lookup1 = EVAL ``^lookup1_t``
 
-val lookup2_t = ``lookup_avl 14 ^((rhs o concl) t9)`` 
+val lookup2_t = ``lookup_avl 14 ^((rhs o concl) t9)``
 Theorem lookup2 = EVAL ``^lookup2_t``
 
 val lookup3_t = ``lookup_avl 4 ^((rhs o concl) t12)``  (* Should return NONE if 4 is deleted *)
@@ -468,7 +468,7 @@ Theorem lookup5 = EVAL ``^lookup5_t``
 
 
 Definition keys_def[simp]:
-  keys Tip = {} ∧  
+  keys Tip = {} ∧
   keys (Bin _ k v l r) = {k} ∪ keys l ∪ keys r
 End
 
@@ -479,7 +479,7 @@ Proof
   >> reverse(Cases_on ‘t1’ >> rw[])
   >-(SET_TAC[])
   >> rename [‘height t1 < height t2’]
-  >> Cases_on ‘t2’ >> rw[] >> SET_TAC[]   
+  >> Cases_on ‘t2’ >> rw[] >> SET_TAC[]
 QED
 
 Theorem keys_balanceR[simp]:
@@ -489,7 +489,7 @@ Proof
   >> reverse(Cases_on ‘t2’ >> rw[])
   >-(SET_TAC[])
   >> rename [‘height t1 > height t2’]
-  >> Cases_on ‘t1’ >> rw[] >> SET_TAC[]   
+  >> Cases_on ‘t1’ >> rw[] >> SET_TAC[]
 QED
 
 Theorem keys_insert:
@@ -520,8 +520,8 @@ Proof
   >- gvs[]
   >> gvs[height_def]
   >> gvs[tree_def,height_def,MAX_DEF]
-  >> gvs[tree_def,height_def,MAX_DEF]      
-  >> gvs[tree_def]      
+  >> gvs[tree_def,height_def,MAX_DEF]
+  >> gvs[tree_def]
 QED
 
 Theorem height_balR:
@@ -539,8 +539,8 @@ Proof
   >- gvs[]
   >> gvs[height_def]
   >> gvs[tree_def,height_def,MAX_DEF]
-  >> gvs[tree_def,height_def,MAX_DEF]      
-  >> gvs[tree_def]       
+  >> gvs[tree_def,height_def,MAX_DEF]
+  >> gvs[tree_def]
   >> gvs[balanceR_def]
   >> gvs[tree_def]
   >> gvs[MAX_DEF]
@@ -553,8 +553,8 @@ Proof
   rpt STRIP_TAC
   >> Cases_on ‘l’
   >> gvs[balanceL_def,tree_def,height_def,MAX_DEF]
-  >> gvs[balanceL_def,tree_def,height_def,MAX_DEF]      
-QED  
+  >> gvs[balanceL_def,tree_def,height_def,MAX_DEF]
+QED
 
 Theorem height_balR2:
   ∀ k v l r. avl l ∧ avl r ∧ height r ≠ height l + 2 ⇒
@@ -563,12 +563,12 @@ Proof
   rpt STRIP_TAC
   >> Cases_on ‘r’
   >> gvs[balanceR_def,tree_def,height_def,MAX_DEF]
-  >> gvs[balanceR_def,tree_def,height_def,MAX_DEF]      
-QED  
+  >> gvs[balanceR_def,tree_def,height_def,MAX_DEF]
+QED
 
 
 Theorem avl_balL:
-  ∀ k v l r. avl l ∧ avl r ∧ (height l = height r ∨ height l = height r+1 ∨ height r = height l+1 ∨ height l = height r+2)                     ⇒ avl(balanceL k v l r)       
+  ∀ k v l r. avl l ∧ avl r ∧ (height l = height r ∨ height l = height r+1 ∨ height r = height l+1 ∨ height l = height r+2)                     ⇒ avl(balanceL k v l r)
 Proof
   rpt STRIP_TAC
   >> gvs[balanceL_def,tree_def,height_def]
@@ -579,11 +579,11 @@ Proof
   >> gvs[balanceL_def,tree_def,height_def,MAX_DEF]
   >> Cases_on ‘a0’
   >- gvs[]
-  >> gvs[height_def,MAX_DEF]      
+  >> gvs[height_def,MAX_DEF]
 QED
 
 Theorem avl_balR:
-  ∀ k v l r. avl l ∧ avl r ∧ (height r = height l ∨ height r = height l+1 ∨ height l = height r+1 ∨ height r = height l+2)                     ⇒ avl(balanceR k v l r)       
+  ∀ k v l r. avl l ∧ avl r ∧ (height r = height l ∨ height r = height l+1 ∨ height l = height r+1 ∨ height r = height l+2)                     ⇒ avl(balanceR k v l r)
 Proof
   rpt STRIP_TAC
   >> gvs[balanceR_def,tree_def,height_def]
@@ -594,61 +594,89 @@ Proof
   >> gvs[balanceR_def,tree_def,height_def,MAX_DEF]
   >> Cases_on ‘a’
   >- gvs[]
-  >> gvs[height_def,MAX_DEF]      
+  >> gvs[height_def,MAX_DEF]
 QED
 
 
 Theorem avl_tree_preserves_avl:
-  ∀ l r k v. avl l ∧ avl r ∧ (height l = height r ∨ height l = height r+1 ∨ height  r = height l+1) ⇒ avl (tree k v l r) 
+  ∀ l r k v. avl l ∧ avl r ∧ (height l = height r ∨ height l = height r+1 ∨ height  r = height l+1) ⇒ avl (tree k v l r)
 Proof
-  rpt STRIP_TAC       
+  rpt STRIP_TAC
   >- (rw[tree_def])
   >- (rw[tree_def])
-  >> rw[tree_def]  
+  >> rw[tree_def]
 QED
 
 
-(* TOOD *)        
 Theorem avl_insert_aux:
   ∀ k v t. avl t ⇒
          avl (insert_avl k v t) ∧
          (height (insert_avl k v t) = height t ∨ height (insert_avl k v t) = height t + 1)
 Proof
-  rpt STRIP_TAC
-  >> gvs[]
-  >> Induct_on ‘t’
-  >- (rpt STRIP_TAC             
-  >> gvs[insert_avl_def,singleton_avl_def])
-  >> rpt STRIP_TAC
-  >> gvs[insert_avl_def]
-  >> Cases_on ‘k = n’
-  >> gvs[insert_avl_def]
-  >> gvs[] 
-  >> Cases_on ‘k<n’
-  >> gvs[]              
-  >> Cases_on ‘height (insert_avl k v t) = height t’
-  >- gvs[height_balL,height_balL2,avl_balL]
-  >> Cases_on ‘height (insert_avl k v t) = height t+1’
-  >- gvs[height_balL,height_balL2,avl_balL]             
-  >> Cases_on ‘height (insert_avl k v t) = height t+2’             
-  >- gvs[height_balL,height_balL2,avl_balL] 
-  >> gvs[]
-  >> gvs[balanceL_def]
-  >> gvs[tree_def,height_def,MAX_DEF] >> gvs[]
-  >> gvs[height_def]        
+    rpt GEN_TAC
+ >> Induct_on ‘t’
+ >- rw[insert_avl_def,singleton_avl_def]
+ >> rw[insert_avl_def] (* 12 subgoals *)
+ (* goal 1 (of 12) *)
+ >- (MATCH_MP_TAC avl_balL >> rw [] \\
+     Q.PAT_X_ASSUM ‘avl t ==> _’ MP_TAC >> rw [])
+ (* goal 2 (of 12) *)
+ >- (simp [] (* eliminate MAX *) \\
+     Q.PAT_X_ASSUM ‘avl t ==> _’ MP_TAC \\
+     rw [height_balL,height_balL2] >> rw [] \\
+     DISJ2_TAC \\
+     simp [MAX_DEF] (* eliminate MAX *))
+ (* goal 3 (of 12) *)
+ >- (MATCH_MP_TAC avl_balL >> rw [] \\
+     Q.PAT_X_ASSUM ‘avl t ==> _’ MP_TAC >> rw [])
+ (* goal 4 (of 12) *)
+ >- (simp [MAX_DEF] (* eliminate MAX *) \\
+     Q.PAT_X_ASSUM ‘avl t ==> _’ MP_TAC >> rw [] (* 2 subgoals *)
+     >- (Know ‘height (balanceL n a1 (insert_avl k v t) t') =
+               1 + MAX (height (insert_avl k v t)) (height t')’
+         >- (MATCH_MP_TAC height_balL2 >> simp []) \\
+         rw [] \\
+         DISJ1_TAC >> simp [MAX_DEF]) \\
+      rw [height_balL])
+ (* goal 5 (of 12) *)
+ >- (MATCH_MP_TAC avl_balL >> rw [] \\
+     Q.PAT_X_ASSUM ‘avl t ==> _’ MP_TAC >> rw [])
+ (* goal 6 (of 12) *)
+ >- (simp [MAX_DEF] \\
+     Q.PAT_X_ASSUM ‘avl t ==> _’ MP_TAC >> rw [] (* 2 subgoals *)
+     >- (Know ‘height (balanceL n a1 (insert_avl k v t) t') =
+               1 + MAX (height (insert_avl k v t)) (height t')’
+         >- (MATCH_MP_TAC height_balL2 >> simp []) \\
+         rw [] \\
+         DISJ1_TAC >> simp [MAX_DEF]) \\
+     Know ‘height (balanceL n a1 (insert_avl k v t) t') =
+           1 + MAX (height (insert_avl k v t)) (height t')’
+     >- (MATCH_MP_TAC height_balL2 >> simp []) \\
+     rw [])
+ (* goal 7 (of 12) *)
+ >- (cheat)
+ (* goal 8 (of 12) *)
+ >- (cheat)
+ (* goal 9 (of 12) *)
+ >- (cheat)
+ (* goal 10 (of 12) *)
+ >- (cheat)
+ (* goal 11 (of 12) *)
+ >- (cheat)
+ (* goal 12 (of 12) *)
+ >> (cheat)
 QED
 
-
-        
+(*
 Theorem height_insert_avl:
   ∀ k v t. height(insert_avl k v t) = height t ∨
            height (insert_avl k v t) = height t+1
 Proof
   rpt GEN_TAC
   >>Induct_on ‘t’ >> rw[insert_avl_def,singleton_avl_def]
-  
-                        
-QED        
+
+
+QED
 Theorem avl_balanceL_0:
   ∀ k v t1 t2. height t1 = height t2 ∧ avl t1 ∧avl t2 ⇒
                       avl(balanceL k v t1 t2)
@@ -663,13 +691,12 @@ Proof
   rw[balanceL_def,tree_def]
 QED
 
-
-        
 Theorem insertion_preserves_avl:
   ∀ k v t. avl t ⇒ avl(insert_avl k v t )
 Proof
   Induct_on ‘t’ >> rw[avl_def,insert_avl_def,singleton_avl_def]
-  >-(rw[])                    
-QED  
+  >-(rw[])
+QED
+*)
 
 val _ = export_theory ();
