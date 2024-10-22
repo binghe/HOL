@@ -60,7 +60,7 @@ Theorem Fibonacci_lower_bound :
 Proof
     completeInduct_on ‘n’
  >> rpt STRIP_TAC
- (* special cases *) 
+ (* special cases *)
  >> ‘n = 2 \/ n = 3 \/ 3 < n’ by rw []
  >- (POP_ASSUM (fs o wrap) \\
      cheat)
@@ -71,7 +71,7 @@ Proof
  >> ‘1 <= k’ by rw []
  >> Q.PAT_X_ASSUM ‘2 <= k + 1’ K_TAC
 
- 
+
  >> Know ‘fib (k + 1) = fib k + fib (k - 1)’
  >- (simp [Once fib_def])
  >> Rewr
