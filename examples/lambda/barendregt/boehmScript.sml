@@ -5207,10 +5207,15 @@ QED
 
    NOTE: The purpose of X is to make sure all terms in Ms share the same excluded
          set (and thus perhaps also the same initial binding list).
+
+   NOTE: ‘EVERY (\M. p IN ltree_paths (BT' X M r)) Ms’ could be added, but without
+         it the definition is NOT wrong (ltree_el = NONE in this case). For the next
+         big theorem, this condition is actually already included. Putting it into
+         the definition only creates a new proof goal (which may be useful in the
+         future).
  *)
 Definition agree_upto_def :
     agree_upto X Ms p r <=>
-       EVERY (\M. p IN ltree_paths (BT' X M r)) Ms /\
        !M N. MEM M Ms /\ MEM N Ms ==>
              !q. q <<= p ==> ltree_el (BT' X M r) q =
                              ltree_el (BT' X N r) q
@@ -5231,11 +5236,14 @@ End
    part of this proof.
 
    NOTE: ‘0 < r’ is to ensure a non-empty ‘RANK r’ to allocate fresh
-   variables in it (for the construction of ‘pi’).
+   variables in it (for the construction of Boehm transform ‘pi’).
 
    NOTE: ‘EVERY (\M. subterm X M p r <> NONE) Ms’ implies
   ‘EVERY (\M. p IN ltree_paths (BT' X M r)) Ms’, part of ‘agree_upto_def’.
    Perhaps the theorem can still be proved without this antecedents.
+
+   NOTE: If ‘EVERY (\M. p IN ltree_paths (BT' X M r)) Ms’ is used instead,
+   those who doesn't satisfy ‘subterm X M p r <> NONE’ has much easier proofs.
  *)
 Theorem agree_upto_lemma :
     !X Ms p r. FINITE X /\ p <> [] /\ 0 < r /\
@@ -5268,6 +5276,9 @@ Proof
      (!i q. i < k /\ q <<= FRONT p ==> solvable (subterm' X (M i) q r))’
        by PROVE_TAC []
  >> Q.PAT_X_ASSUM ‘!i. i < k ==> P /\ Q’ K_TAC
+ (* In the original antecedents of this theorem, some M may be unsolvable,
+    and that's the easy case.
+  *)
  >> Know ‘!i. i < k ==> solvable (M i)’
  >- (rpt STRIP_TAC \\
      Q.PAT_X_ASSUM ‘!i q. i < k /\ q <<= FRONT p ==> solvable _’
@@ -5404,7 +5415,7 @@ Proof
       (STRIP_ASSUME_TAC o Q.SPEC ‘k’)
  >> qabbrev_tac ‘ss = sub k’
  (* NOTE: Now we have a list of M1's whose children size is bounded by d_max.
-    In the worst case, P(d_max) @* (M1 i) will leave d_max+1 variable bindings
+    In the worst case, ‘P d_max @* M1 i’ will leave d_max+1 variable bindings
     at most (in this case, ‘args i = 0 /\ n i = n_max’), and to finally get a
    "is_ready" term, we should apply a fresh list of d_max+1 variables (l).
   *)
@@ -5504,7 +5515,6 @@ Proof
  >> simp [] >> Rewr'
  >> REWRITE_TAC [appstar_APPEND, appstar_SING]
  (* The segmentation of list l(i) - apply (p3 ++ p2 ++ p1) (M i)
-
  |<-- m(i)<= d -->|<-- n_max-n(i) -->|<-------------- SUC d_max -------------->|
  |----- args' ----+----- args2 ------+-------------- MAP VAR xs ---------------|
  |------------------------------------ l --------------------------------------|
@@ -5830,7 +5840,17 @@ Proof
  >> Q.PAT_X_ASSUM ‘!t. i < k ==> apply p2 _ = _’  K_TAC
  >> Q.PAT_X_ASSUM ‘!i. i < k ==> apply p3 _ = _’  K_TAC
  >> Q.PAT_X_ASSUM ‘!i. i < k ==> _ -h->* _’       K_TAC
- (* This is the "easy" part of ‘agree_upto’ subgoal involving single term *)
+ (* This subgoal was due to modifications of agree_upto_def. It's still kept
+    in case this extra subgoal may be later needed.
+
+    NOTE: This subgoal is still true even if the antecedent
+
+      EVERY (\M. subterm X M p r <> NONE) Ms
+
+    is weaken to
+
+      EVERY (\M. p IN ltree_paths (BT' X M r)) Ms
+  *)
  >> Know ‘!i. i < k ==> p IN ltree_paths (BT' X (apply pi (M i)) r)’
  >- (rpt STRIP_TAC \\
      simp [BT_def, BT_generator_def, Once ltree_unfold,
@@ -6054,7 +6074,7 @@ Proof
  (* now proving agree_upto *)
  >> (Q.PAT_X_ASSUM ‘agree_upto X Ms p r’ MP_TAC \\
      simp [agree_upto_def, EVERY_MEM] >> STRIP_TAC \\
-     CONJ_TAC >- (rw [MEM_MAP, MEM_EL] >> rw []) \\
+  (* CONJ_TAC >- (rw [MEM_MAP, MEM_EL] >> rw []) \\ *)
      qx_genl_tac [‘M2'’, ‘N2'’] >> simp [MEM_MAP] \\
      ONCE_REWRITE_TAC [TAUT ‘p /\ q ==> r <=> p ==> q ==> r’] \\
      DISCH_THEN (Q.X_CHOOSE_THEN ‘M2’ STRIP_ASSUME_TAC) \\
@@ -6176,25 +6196,31 @@ Proof
          POP_ASSUM (fs o wrap) >> T_TAC \\
          Know ‘unsolvable (subterm' X (M j1) p r) <=>
                ltree_el (BT' X (M j1) r) p = SOME bot’
-         >- (MATCH_MP_TAC BT_ltree_el_of_unsolvables >> rw []) >> rw [] \\
+         >- (MATCH_MP_TAC BT_ltree_el_of_unsolvables >> rw []) \\
+         simp [] >> DISCH_THEN K_TAC \\
          Know ‘unsolvable (subterm' X (M j2) p r) <=>
                ltree_el (BT' X (M j2) r) p = SOME bot’
-         >- (MATCH_MP_TAC BT_ltree_el_of_unsolvables >> rw []) >> rw [] \\
-         NTAC 2 (Q.PAT_X_ASSUM ‘ltree_el _ p = SOME bot’ K_TAC) \\
-      (* applying subterm_isub_cong' *)
-         Know ‘!j. j < k ==>
-                   subterm X (H j) p r <> NONE /\
-                   subterm' X (H j) p r = subterm' X (M j) p r ISUB sub k’
-         >- (Q.X_GEN_TAC ‘z’ >> DISCH_TAC \\
+         >- (MATCH_MP_TAC BT_ltree_el_of_unsolvables >> rw []) \\
+         DISCH_THEN (REWRITE_TAC o wrap o SYM) \\
+         DISCH_TAC \\
+      (* p <> [] from now on, now applying subterm_isub_cong' *)
+         Know ‘!i. i < k ==>
+                   subterm X (H i) p r <> NONE /\
+                   subterm' X (H i) p r = subterm' X (M i) p r ISUB sub k’
+         >- (Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
              Cases_on ‘p’ >> FULL_SIMP_TAC list_ss [] \\
-             Q_TAC (UNBETA_TAC [subterm_of_solvables]) ‘subterm X (H z) (h::t) r’ \\
-             Know ‘principle_hnf (H z) = H z’
+             Q_TAC (UNBETA_TAC [subterm_of_solvables]) ‘subterm X (H i) (h::t) r’ \\
+             Know ‘principle_hnf (H i) = H i’
              >- (MATCH_MP_TAC principle_hnf_reduce \\
                  simp [Abbr ‘H’, GSYM appstar_APPEND, hnf_appstar]) \\
-             DISCH_TAC >> art [] \\
-             Know ‘LAMl_size (H z) = 0’
-             >- (rw [Abbr ‘H’, LAMl_size_appstar, GSYM appstar_APPEND]) >> Rewr' \\
-             simp [] >> POP_ASSUM K_TAC (* principle_hnf (H z) *) \\
+             DISCH_TAC \\
+             Know ‘LAMl_size (H i) = 0’
+             >- (rw [Abbr ‘H’, LAMl_size_appstar, GSYM appstar_APPEND]) \\
+             DISCH_TAC \\
+             simp [] \\
+             Q.PAT_X_ASSUM ‘!i. i < k ==> h::t IN ltree_paths (BT' X (M i) r)’
+                (MP_TAC o Q.SPEC ‘i’) \\
+             simp [BT_def, BT_generator_def, Once ltree_unfold] \\
              cheat) >> DISCH_TAC \\
          Know ‘unsolvable (subterm' X (H j1) p r) /\
                unsolvable (subterm' X (H j2) p r)’
