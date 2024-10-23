@@ -292,7 +292,7 @@ Definition half_messageDe_def :
           ki2=EL (n-2) (REVERSE(ks)) in
       if n = 0 then w2
       else if n = 1 then w1
-      else 
+      else
          (((half_messageDe w1 w2 ks (n - 2)) -ki)
          #>> w2n (half_messageDe w1 w2 ks (n - 1))) ⊕ (half_messageDe w1 w2 ks (n - 1))
 End
@@ -424,7 +424,7 @@ Proof
        Know ‘half_messageDe a b Sk (2 * r + 2)=
              a’)
    >> rw[]
-  
+
    >> rw[]
    >- (Q.ABBREV_TAC ‘a=(half_messageDe w1' w2' Sk (2 * r + 1))’\\
        Q.ABBREV_TAC ‘b=(half_messageDe w1' w2' Sk (2 * r))’\\
@@ -463,7 +463,7 @@ Q.ABBREV_TAC ‘d=(EL (2 * r + 2) Sk +
             (half_messageEn a b Sk (2 * r + 1) ⇆
              w2n (half_messageEn a b Sk (2 * r + 2)) ⊕
              half_messageEn a b Sk (2 * r + 2) ⇆
-             w2n (half_messageEn a b Sk (2 * r + 2))))’     
+             w2n (half_messageEn a b Sk (2 * r + 2))))’
 cheat
              )
 
@@ -513,7 +513,7 @@ Proof
   >> fs[]
   >> pairarg_tac
   >> fs[]
-  >> rw[]      
+  >> rw[]
 QED
 
 Definition RoundEn'_def:
