@@ -7,7 +7,6 @@ open pred_setTheory;
 
 val _ = new_theory "AVL_trees";
 
-(* by default, literal integers are interpreted as natural numbers (:num) *)
 val _ = intLib.deprecate_int ();
 
 Datatype:
@@ -568,7 +567,8 @@ QED
 
 
 Theorem avl_balL:
-  ∀ k v l r. avl l ∧ avl r ∧ (height l = height r ∨ height l = height r+1 ∨ height r = height l+1 ∨ height l = height r+2)                     ⇒ avl(balanceL k v l r)
+  ∀ k v l r. avl l ∧ avl r ∧ (height l = height r ∨ height l = height r+1 ∨ height r = height l+1 ∨ height l = height r+2)
+                 ⇒ avl(balanceL k v l r)
 Proof
   rpt STRIP_TAC
   >> gvs[balanceL_def,tree_def,height_def]
@@ -606,7 +606,6 @@ Proof
   >- (rw[tree_def])
   >> rw[tree_def]
 QED
-
 
 Theorem avl_insert_aux:
   ∀ k v t. avl t ⇒
@@ -653,50 +652,37 @@ Proof
            1 + MAX (height (insert_avl k v t)) (height t')’
      >- (MATCH_MP_TAC height_balL2 >> simp []) \\
      rw [])
- (* goal 7 (of 12) *)
- >- (cheat)
- (* goal 8 (of 12) *)
- >- (cheat)
- (* goal 9 (of 12) *)
- >- (cheat)
- (* goal 10 (of 12) *)
- >- (cheat)
- (* goal 11 (of 12) *)
- >- (cheat)
- (* goal 12 (of 12) *)
- >> (cheat)
+ >- (MATCH_MP_TAC avl_balR >> rw [] \\
+     Q.PAT_X_ASSUM ‘avl t' ==> _’ MP_TAC >> rw [])
+ >- (simp [] (* eliminate MAX *) \\
+     Q.PAT_X_ASSUM ‘avl t' ==> _’ MP_TAC \\
+     rw [height_balR,height_balR2] >> rw [] \\
+     DISJ2_TAC \\
+     simp [MAX_DEF] (* eliminate MAX *))
+ >- (MATCH_MP_TAC avl_balR >> rw [] \\
+     Q.PAT_X_ASSUM ‘avl t' ==> _’ MP_TAC >> rw [])
+ >- (simp [MAX_DEF] \\
+     Q.PAT_X_ASSUM ‘avl t' ==> _’ MP_TAC >> rw [] (* 2 subgoals *)
+     >- (Know ‘height (balanceR n a1 t (insert_avl k v t')) =
+               1 + MAX (height t)(height(insert_avl k v t'))’
+         >- (MATCH_MP_TAC height_balR2 >> simp []) \\
+         rw [] \\
+         DISJ1_TAC >> simp [MAX_DEF]) \\
+     Know ‘height (balanceR n a1 t (insert_avl k v t')) =
+           1 + MAX (height t)(height(insert_avl k v t'))’
+     >- (MATCH_MP_TAC height_balR2 >> simp []) \\
+     rw [])
+  >- (MATCH_MP_TAC avl_balR >> rw [] \\
+     Q.PAT_X_ASSUM ‘avl t' ==> _’ MP_TAC >> rw [])
+  >- (simp [MAX_DEF] (* eliminate MAX *) \\
+     Q.PAT_X_ASSUM ‘avl t' ==> _’ MP_TAC >> rw [] (* 2 subgoals *)
+     >- (Know ‘height (balanceR n a1 t (insert_avl k v t')) =
+               1 + MAX (height t)(height(insert_avl k v t')) ’
+         >- (MATCH_MP_TAC height_balR2 >> simp []) \\
+         rw [] \\
+         DISJ1_TAC >> simp [MAX_DEF]) \\
+      rw[height_balR])
 QED
-
-(*
-Theorem height_insert_avl:
-  ∀ k v t. height(insert_avl k v t) = height t ∨
-           height (insert_avl k v t) = height t+1
-Proof
-  rpt GEN_TAC
-  >>Induct_on ‘t’ >> rw[insert_avl_def,singleton_avl_def]
-
-
-QED
-Theorem avl_balanceL_0:
-  ∀ k v t1 t2. height t1 = height t2 ∧ avl t1 ∧avl t2 ⇒
-                      avl(balanceL k v t1 t2)
-Proof
-  rw[balanceL_def,tree_def]
-QED
-
-Theorem avl_balanceL_1:
-  ∀ k v t1 t2. height t1 = height t2 + 1 ∧ avl t1 ∧avl t2 ⇒
-                      avl(balanceL k v t1 t2)
-Proof
-  rw[balanceL_def,tree_def]
-QED
-
-Theorem insertion_preserves_avl:
-  ∀ k v t. avl t ⇒ avl(insert_avl k v t )
-Proof
-  Induct_on ‘t’ >> rw[avl_def,insert_avl_def,singleton_avl_def]
-  >-(rw[])
-QED
-*)
 
 val _ = export_theory ();
+val _ = html_theory "AVL_trees";
