@@ -363,7 +363,10 @@ QED
 
 (* weak key *)
 Definition Wkey_def:
-  Wkey= [0x0101010101010101w:word64;0xfefefefefefefefew:word64;0xe0e0e0e0f1f1f1f1w:word64;0x1f1f1f1f0e0e0e0ew:word64]
+  Wkey= [0x0101010101010101w:word64;
+         0xfefefefefefefefew:word64;
+         0xe0e0e0e0f1f1f1f1w:word64;
+         0x1f1f1f1f0e0e0e0ew:word64]
 End
 
 Theorem weakK_proper:
