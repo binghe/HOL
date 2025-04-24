@@ -1,11 +1,11 @@
-% Release notes for HOL4, ??????
+% Release notes for HOL4, Kananaskis-15
 
 <!-- search and replace ?????? strings corresponding to release name -->
 <!-- indent code within bulleted lists to column 11 -->
 
 (Released: xxxxxx)
 
-We are pleased to announce the ????? release of HOL4.
+We are pleased to announce the Kananaskis-15 release of HOL4.
 
 Contents
 --------

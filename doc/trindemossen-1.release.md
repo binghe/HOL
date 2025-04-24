@@ -1,11 +1,11 @@
-% Release notes for HOL4, ??????
+% Release notes for HOL4, Trindemossen-1
 
 <!-- search and replace ?????? strings corresponding to release name -->
 <!-- indent code within bulleted lists to column 11 -->
 
-(Released: xxxxxx)
+(Released: 25 April 2024)
 
-We are pleased to announce the Trindemossen 1 release of HOL4.
+We are pleased to announce the Trindemossen-1 release of HOL4.
 We have changed the name (from Kananaskis) because of the kernel change reflected by the new efficient compute tool (see [below](#verified-comp)).
 
 Contents
