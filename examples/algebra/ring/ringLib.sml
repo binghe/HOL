@@ -405,7 +405,8 @@ end;
 (* 7. RING_RING_CORE *)
 local
   val pth = TAUT ‘p ==> q <=> (p \/ q <=> q)’
-  and ptm = “p:bool” and qtm = “q:bool”
+  and ptm = mk_var("p",bool)
+  and qtm = mk_var("q",bool)
 in
   fun RING_RING_CORE tm = let
       val (negdjs,posdjs) = partition is_neg (strip_disj tm);

@@ -25,7 +25,7 @@ datatype phase = Initial | Bare | Full
 val cline_record = process_cline ()
 val {cmdline,build_theory_graph,selftest_level,...} = cline_record
 val {debug,jobcount,relocbuild,extra={SRCDIRS,...},...} = cline_record
-val {multithread,keepgoing,timelimit,...} = cline_record
+val {multithread,keepgoing,...} = cline_record
 
 open Systeml;
 
@@ -74,9 +74,6 @@ in
               (case multithread of
                    NONE => []
                  | SOME i => ["--mt="^Int.toString i]) @
-              (case timelimit of
-                   NONE => []
-                 | SOME d => ["--time_limit="^Int.toString d]) @
               phase_extras())
     analysis selftest_level
 end
@@ -143,7 +140,7 @@ in
   finish_logging true;
   make_buildstamp();
   build_help build_theory_graph;
-  print "\nHol built successfully.\n"
+  print "\nHOL built successfully.\n"
 end
 
 

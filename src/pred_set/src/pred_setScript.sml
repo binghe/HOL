@@ -7782,7 +7782,7 @@ Proof
 QED
 
 (* ----------------------------------------------------------------------
-    A proof of Kőnig's Lemma
+    A proof of Kőnig's Lemma (UOK)
    ---------------------------------------------------------------------- *)
 
 (* a counting exercise for R-trees.  If x0 has finitely many successors, and
@@ -8852,6 +8852,22 @@ val is_measure_maximal_INSERT = Q.store_thm(
   >- METIS_TAC[DECIDE “(x <= y /\ y < z ==> x < z) /\ ~(a < a)”]
   >- METIS_TAC[DECIDE “x < y /\ y <= z ==> x <= z”]
   >- METIS_TAC[]);
+
+(* cf. FINITE_LEAST_MEASURE_INDUCTION, the proof is almost identical *)
+Theorem FINITE_MAXIMAL_MEASURE_INDUCTION :
+  !f P.
+    P {} /\
+    (!a s. a NOTIN s /\ (!b. b IN s ==> f b <= f a) /\ P s ==>
+           P (a INSERT s)) ==>
+    !s. FINITE s ==> P s
+Proof
+  rpt gen_tac >> strip_tac >> Induct_on ‘CARD s’ >> rpt strip_tac >>
+  fs[CARD_EQ_0] >> ‘s <> {}’ by (strip_tac >> fs[]) >>
+  Q.SPECL_THEN [‘f’, ‘s’] mp_tac FINITE_is_measure_maximal >>
+  rw [is_measure_maximal_def] \\
+  drule_then (Q.X_CHOOSE_THEN ‘s0’ strip_assume_tac) (iffLR DECOMPOSITION) >>
+  fs[]
+QED
 
 val _ = export_rewrites
     [

@@ -167,6 +167,13 @@ val GCD_1 = store_thm(
   HO_MATCH_MP_TAC gcd_ind THEN SRW_TAC [][GCD]);
 val _ = export_rewrites ["GCD_1"]
 
+(* from HOL-Light's "Library/prime.ml" *)
+Theorem COPRIME_1 :
+    (!a. coprime a 1) /\ (!a. coprime 1 a)
+Proof
+    REWRITE_TAC [GCD_1]
+QED
+
 val PRIME_GCD = store_thm("PRIME_GCD",
                         Term `!p b. prime p ==> divides p b \/ (gcd p b = 1)`,
                         PROVE_TAC[PRIME_IS_GCD,GCD_IS_GCD,IS_GCD_UNIQUE]);

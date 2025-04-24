@@ -10,7 +10,6 @@
 (* Modified      : September 23, 1997, Ken Larsen                        *)
 (*               : 1999, Bruno Barras                                    *)
 (*               : July 2000, Konrad Slind                               *)
-(*               : May 2023, Oskar Abrahamsson                           *)
 (* ===================================================================== *)
 
 structure Thm =
@@ -110,7 +109,6 @@ end;
 datatype thm = THM of Tag.tag * term HOLset.set * term * proof ref
 and proof =
   Axiom_prf
-| deleted_prf
 | ASSUME_prf of term
 | REFL_prf of term
 | BETA_CONV_prf of term
@@ -153,10 +151,9 @@ and proof =
 | Def_const_list_prf of string * (string * hol_type) list * thm
 | Def_spec_prf of term list * thm
 | deductAntisym_prf of thm * thm
-| compute_prf
 
 fun proof (THM(_,_,_,p)) = !p
-fun delete_proof (THM(_,_,_,p)) = p := deleted_prf
+fun delete_proof (THM(_,_,_,p)) = p := Axiom_prf
 
 fun single_hyp tm = HOLset.singleton Term.compare tm
 val empty_hyp = Term.empty_tmset
@@ -1388,55 +1385,5 @@ fun deductAntisym (th1 as THM(o1,a1,c1,p1)) (th2 as THM(o2,a2,c2,p2)) = let
   val a1' = disch (c2,a1)
   val a2' = disch (c1,a2)
 in make_thm Count.Axiom (Tag.merge o1 o2, union_hyp a1' a2', mk_eq_nocheck bool c1 c2, deductAntisym_prf(th1,th2)) end
-
-(* ----------------------------------------------------------------------
-    Computing with first-order lisp-style values
-   ---------------------------------------------------------------------- *)
-
-local
-  infix ##;
-  fun dest_code_eqn th =
-    case total ((List.null ## I) o dest_thm) th of
-      SOME (true,tm) => tm
-    | _ => raise ERR "compute" "code equation with hypotheses";
-  fun safe_mk_eq l r =
-    let
-      val tyl = type_of l
-    in
-      if tyl = type_of r then
-        Term.prim_mk_eq tyl l r
-      else
-        raise ERR "compute" "types of lhs and rhs disagree"
-    end;
-  val merge_tags = foldr (uncurry Tag.merge)
-in
-  fun compute {cval_terms, cval_type, num_type, char_eqns} =
-    let
-      val tag0 = merge_tags empty_tag (List.map (tag o snd) char_eqns)
-      val char_eqns = List.map (I ## dest_thm) char_eqns
-      val _ = List.all (List.null o fst o snd) char_eqns orelse
-              raise ERR "compute" "Characteristic equation with hypotheses"
-      val tc0 = Compute.term_compute
-                 { cval_terms = cval_terms,
-                   cval_type = cval_type,
-                   num_type = num_type,
-                   char_eqns = List.map (I ## snd) char_eqns }
-    in
-      fn code_eqs =>
-        let
-          val tag1 = merge_tags tag0 (List.map tag code_eqs)
-          val eqs = List.map dest_code_eqn code_eqs
-          val tc1 = tc0 eqs
-        in
-          fn tm =>
-            let
-              val tm' = tc1 tm
-              val eqn = safe_mk_eq tm tm'
-            in
-              make_thm Count.Compute (tag1, empty_hyp, eqn, compute_prf)
-            end
-        end
-    end;
-end (*local *)
 
 end (* Thm *)

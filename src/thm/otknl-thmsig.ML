@@ -4,7 +4,6 @@ sig
   include FinalThm
   datatype proof =
     Axiom_prf
-  | deleted_prf
   | ABS_prf of term * thm
   | ALPHA_prf of term * term
   | AP_TERM_prf of term * thm
@@ -47,7 +46,6 @@ sig
   | Mk_comb_prf of thm * thm * thm
   | Specialize_prf of term * thm
   | deductAntisym_prf of thm * thm
-  | compute_prf
 
   val proof : thm -> proof
   val delete_proof : thm -> unit

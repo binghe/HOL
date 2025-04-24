@@ -24,7 +24,7 @@ val _ = add_rule {fixity = Closefix, term_name = "ordModel",
 val _ = add_rule {fixity = Closefix, term_name = "ordModel",
                   block_style = (AroundEachPhrase, (PP.CONSISTENT,2)),
                   paren_style = OnlyIfNecessary,
-                  pp_elements = [TOK "⟦", TM, TOK "⟧"]}
+                  pp_elements = [TOK "⟦", TM, TOK "⟧"]} (* UOK *)
 
 val osyntax_EQ_0 = store_thm(
   "osyntax_EQ_0",

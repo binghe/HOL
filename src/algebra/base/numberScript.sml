@@ -13,24 +13,28 @@ open prim_recTheory arithmeticTheory dividesTheory gcdTheory gcdsetTheory
 val _ = new_theory "number";
 
 (* Overload non-decreasing functions with different arity. *)
-val _ = overload_on("MONO", ``\f:num -> num. !x y. x <= y ==> f x <= f y``);
-val _ = overload_on("MONO2",
-      ``\f:num -> num -> num.
-           !x1 y1 x2 y2. x1 <= x2 /\ y1 <= y2 ==> f x1 y1 <= f x2 y2``);
-val _ = overload_on("MONO3",
-      ``\f:num -> num -> num -> num.
+Overload MONO[local] = “\f:num -> num. !x y. x <= y ==> f x <= f y”
+
+Overload MONO2[local] =
+        “\f:num -> num -> num.
+           !x1 y1 x2 y2. x1 <= x2 /\ y1 <= y2 ==> f x1 y1 <= f x2 y2”
+
+Overload MONO3[local] =
+        “\f:num -> num -> num -> num.
            !x1 y1 z1 x2 y2 z2. x1 <= x2 /\ y1 <= y2 /\ z1 <= z2 ==>
-                               f x1 y1 z1 <= f x2 y2 z2``);
+                               f x1 y1 z1 <= f x2 y2 z2”
 
 (* Overload non-increasing functions with different arity. *)
-val _ = overload_on("RMONO", ``\f:num -> num. !x y. x <= y ==> f y <= f x``);
-val _ = overload_on("RMONO2",
-      ``\f:num -> num -> num.
-           !x1 y1 x2 y2. x1 <= x2 /\ y1 <= y2 ==> f x2 y2 <= f x1 y1``);
-val _ = overload_on("RMONO3",
-      ``\f:num -> num -> num -> num.
+Overload RMONO[local] = “\f:num -> num. !x y. x <= y ==> f y <= f x”
+
+Overload RMONO2[local] =
+        “\f:num -> num -> num.
+           !x1 y1 x2 y2. x1 <= x2 /\ y1 <= y2 ==> f x2 y2 <= f x1 y1”
+
+Overload RMONO3[local] =
+        “\f:num -> num -> num -> num.
            !x1 y1 z1 x2 y2 z2. x1 <= x2 /\ y1 <= y2 /\ z1 <= z2 ==>
-                               f x2 y2 z2 <= f x1 y1 z1``);
+                               f x2 y2 z2 <= f x1 y1 z1”
 
 (* ------------------------------------------------------------------------- *)
 (* More Set Theorems                                                         *)
@@ -734,20 +738,6 @@ QED
 (* ------------------------------------------------------------------------- *)
 (* Maximum and minimum                                                       *)
 (* ------------------------------------------------------------------------- *)
-
-(* Theorem: MAX m n = if m <= n then n else m *)
-(* Proof: by MAX_DEF *)
-val MAX_ALT = store_thm(
-  "MAX_ALT",
-  ``!m n. MAX m n = if m <= n then n else m``,
-  rw[MAX_DEF]);
-
-(* Theorem: MIN m n = if m <= n then m else n *)
-(* Proof: by MIN_DEF *)
-val MIN_ALT = store_thm(
-  "MIN_ALT",
-  ``!m n. MIN m n = if m <= n then m else n``,
-  rw[MIN_DEF]);
 
 (* Theorem: (!x y. x <= y ==> f x <= f y) ==> !x y. f (MAX x y) = MAX (f x) (f y) *)
 (* Proof: by MAX_DEF *)

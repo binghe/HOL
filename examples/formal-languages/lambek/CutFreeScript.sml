@@ -27,33 +27,16 @@ open HolKernel Parse boolLib bossLib;
 open relationTheory prim_recTheory arithmeticTheory listTheory;
 open LambekTheory;
 
-local
-    val PAT_X_ASSUM = PAT_ASSUM;
-    val qpat_x_assum = Q.PAT_ASSUM;
-    open Tactical
-in
-    (* Backward compatibility with Kananaskis 11 *)
-    val PAT_X_ASSUM = PAT_X_ASSUM;
-    val qpat_x_assum = qpat_x_assum;
-
-    (* Tacticals for better expressivity *)
-    fun fix  ts = MAP_EVERY Q.X_GEN_TAC ts;     (* from HOL Light *)
-    fun set  ts = MAP_EVERY Q.ABBREV_TAC ts;    (* from HOL mizar mode *)
-    fun take ts = MAP_EVERY Q.EXISTS_TAC ts;    (* from HOL mizar mode *)
-end;
+(* Tacticals for better expressivity *)
+fun fix  ts = MAP_EVERY Q.X_GEN_TAC ts;     (* from HOL Light *)
+fun set  ts = MAP_EVERY Q.ABBREV_TAC ts;    (* from HOL mizar mode *)
+fun take ts = MAP_EVERY Q.EXISTS_TAC ts;    (* from HOL mizar mode *)
 
 val _ = new_theory "CutFree";
 
 val _ = hide "S";
 
 (*** Module: CutSequent ***)
-
-(* this theorem was not in HOL kananaskis-11 final release, it's new in K-12 *)
-val MAX_EQ_0 = store_thm (
-   "MAX_EQ_0",
-  ``(MAX m n = 0) <=> (m = 0) /\ (n = 0)``,
-    SRW_TAC [] [MAX_DEF, EQ_IMP_THM]
- >> FULL_SIMP_TAC (srw_ss()) [NOT_LESS_0, NOT_LESS]);
 
 val maxNatL = store_thm ("maxNatL",
   ``(MAX n m = 0) ==> (n = 0)``, RW_TAC std_ss [MAX_EQ_0]);

@@ -23,23 +23,15 @@
 
 open HolKernel Parse boolLib bossLib;
 
-open pred_setTheory relationTheory pairTheory listTheory prim_recTheory arithmeticTheory
-open stringTheory integerTheory LambekTheory CutFreeTheory;
+open pred_setTheory relationTheory pairTheory listTheory prim_recTheory
+     arithmeticTheory stringTheory integerTheory;
 
-local
-    val PAT_X_ASSUM = PAT_ASSUM;
-    val qpat_x_assum = Q.PAT_ASSUM;
-    open Tactical
-in
-    (* Backward compatibility with Kananaskis 11 *)
-    val PAT_X_ASSUM = PAT_X_ASSUM;
-    val qpat_x_assum = qpat_x_assum;
+open LambekTheory CutFreeTheory;
 
-    (* Tacticals for better expressivity *)
-    fun fix  ts = MAP_EVERY Q.X_GEN_TAC ts;     (* from HOL Light *)
-    fun set  ts = MAP_EVERY Q.ABBREV_TAC ts;    (* from HOL mizar mode *)
-    fun take ts = MAP_EVERY Q.EXISTS_TAC ts;    (* from HOL mizar mode *)
-end;
+(* Tacticals for better expressivity *)
+fun fix  ts = MAP_EVERY Q.X_GEN_TAC ts;     (* from HOL Light *)
+fun set  ts = MAP_EVERY Q.ABBREV_TAC ts;    (* from HOL mizar mode *)
+fun take ts = MAP_EVERY Q.EXISTS_TAC ts;    (* from HOL mizar mode *)
 
 val _ = new_theory "Example";
 

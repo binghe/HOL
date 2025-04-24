@@ -60,7 +60,8 @@ in
   loop 0
 end;
 
-fun determining s = print (s^" ");
+fun determining s =
+    (print (s^" "); delay 1 (fn _ => ()));
 
 (* action starts here *)
 print "\nHOL smart configuration.\n\n";
@@ -72,7 +73,6 @@ val DOT_PATH = SOME "";
 val MLTON = SOME "";
 val GNUMAKE = "";
 val POLY_LDFLAGS = [] : string list;
-val EXTRA_POLY_LDFLAGS = [] : string list;
 val POLY_LDFLAGS_STATIC = [] : string list;
 
 val _ = let
@@ -303,7 +303,7 @@ fun optverdict (prompt, optvalue) =
 
 fun dfltverdict (prompt, (value, dflt)) =
     if dflt then value
-    else (print (StringCvt.padRight #" " 20 (prompt ^ ":") ^ value ^ "\n"); value);
+    else (print (StringCvt.padRight #" " 20 (prompt ^ ":") ^ value); value);
 
 verdict ("OS", OS);
 verdict ("poly", poly);

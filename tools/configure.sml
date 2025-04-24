@@ -48,8 +48,8 @@ val DEPDIR:string   = ".HOLMK";   (* where Holmake dependencies kept  *)
           END user-settable parameters
  ---------------------------------------------------------------------------*)
 
-val version_number = 1
-val release_string = "Trindemossen"
+val version_number = 15
+val release_string = "Kananaskis"
 
 
 val _ = Meta.quietdec := true;
@@ -436,30 +436,6 @@ in
   mk_xable bin;
   FileSys.chDir cwd
 end;
-
-
-(*---------------------------------------------------------------------------
-    Instantiate tools/editor-modes/emacs/hol-mode.src, and put it into
-    hol-mode.el in the same directory.
- ---------------------------------------------------------------------------*)
-
-val _ =
- let open TextIO
-     val _ = echo "Making hol-mode.el (for Emacs)"
-     val src = fullPath [holdir, "tools/editor-modes/emacs/hol-mode.src"]
-     val target = fullPath [holdir, "tools/editor-modes/emacs/hol-mode.el"]
- in
-    fill_holes (src, target)
-      ["(defcustom hol-executable HOL-EXECUTABLE\n"
-        -->
-       ("(defcustom hol-executable \n  "^
-        quote (fullPath [holdir, "bin/hol"])^"\n"),
-       "(defcustom holmake-executable HOLMAKE-EXECUTABLE\n"
-        -->
-       ("(defcustom holmake-executable \n  "^
-        quote (fullPath [holdir, "bin/Holmake"])^"\n")]
- end;
-
 
 (*---------------------------------------------------------------------------
       Generate shell scripts for running HOL.

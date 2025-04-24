@@ -751,16 +751,8 @@ fun find_indoption kvl =
       | ([(k,[v])], rest) => (SOME v, rest)
       | _ => raise ERR "Definition" "multiple induction attribute-values"
 
-fun tailrecDefine loc nm q =
-    let
-      val (t, _) = Defn.parse_absyn (Parse.Absyn q)
-      val th = tailrecLib.gen_tailrec_define {name = nm, def = t, loc = loc}
-    in
-      Defn.add_defs_to_EVAL [(nm,th)];
-      th
-    end
 val _ = List.app ThmAttribute.reserve_word
-                 ["nocompute", "schematic", "tailrecursive"]
+                 ["nocompute", "schematic"]
 fun located_qDefine loc stem q tacopt =
     let
       val {thmname=corename, attrs=attrs,reserved=R,unknown} =
@@ -769,7 +761,6 @@ fun located_qDefine loc stem q tacopt =
       val (svarsok, R) = test_remove "schematic" R
       val (notuserdef, R) = test_remove "notuserdef" R
       val (rebindok, R) = test_remove "allow_rebind" R
-      val (tailrecp, R) = test_remove "tailrecursive" R
       val (indopt, R) = find_indoption R
       val _ = null unknown orelse
               raise ERR "Definition"
@@ -786,21 +777,14 @@ fun located_qDefine loc stem q tacopt =
             |> (if rebindok then trace ("Theory.allow_rebinds", 1)
                 else (fn f => f))
       val (thm,indopt) =
-          case (tailrecp, tacopt) of
-              (true, NONE) => (fmod (tailrecDefine loc corename) q, NONE)
-            | (true, SOME _) =>
-              raise ERR "qDefine"
-                    "Termination tactic for tail-recursive definition makes \
-                    \no sense"
-            | (false, NONE) => fmod (located_xDefine loc corename) q
-            | (false, SOME tac) => fmod (located_tDefine loc corename q) tac
-      fun proc_attr (k,vs) =
+          case tacopt of
+              NONE => fmod (located_xDefine loc corename) q
+            | SOME tac => fmod (located_tDefine loc corename q) tac
+     fun proc_attr (k,vs) =
           ThmAttribute.store_at_attribute{name = corename, attrname = k,
                                           args = vs, thm = thm}
       val attrs = if notuserdef then attrs else ("userdef",[]) :: attrs
-      val gen_ind =
-          if tailrecp then (fn th => raise ERR "Unseen" "")
-          else Prim_rec.gen_indthm {lookup_ind = TypeBase.induction_of}
+      val gen_ind = Prim_rec.gen_indthm {lookup_ind = TypeBase.induction_of}
     in
       List.app proc_attr attrs;
       if notuserdef then ()

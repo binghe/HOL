@@ -1,45 +1,54 @@
 (******************************************************************************)
 (* Formalized Runtime Verification (RV) in HOL4                               *)
 (*                                                                            *)
-(* Copyright 2020  Chun Tian <binghe.lisp@gmail.com>                          *)
+(* Copyright 2020-2022 Chun Tian (binghe) <binghe.lisp@gmail.com>             *)
 (******************************************************************************)
 
 open HolKernel Parse boolLib bossLib;
 
 (* standard libraries & utilities *)
-open optionTheory listTheory rich_listTheory arithmeticTheory hurdUtils;
+open pairTheory optionTheory listTheory pred_setTheory rich_listTheory
+     arithmeticTheory hurdUtils combinTheory;
 
 (* local theories *)
-open prop_logicTheory full_ltlTheory translationsLib ltl_to_automaton_formulaTheory;
+open prop_logicTheory xprop_logicTheory full_ltlTheory translationsLib
+     symbolic_kripke_structureTheory symbolic_semi_automatonTheory
+     automaton_formulaTheory ltl_to_automaton_formulaTheory
+     omega_automaton_translationsTheory temporal_deep_mixedTheory;
 
 (* Tuerk's translations between different LTL syntax (unused)
 open ltl_translationsTheory;
  *)
 
+open Sanity;
+
+val _ = hide "S";
+val _ = hide "I";
+val _ = hide "K";
+
 val _ = new_theory "runtime_verification";
 
 (* NuSMV-compatible names for LTL past operators *)
-val _ = overload_on ("LTL_PREV",  ``LTL_PSNEXT``);
-val _ = overload_on ("LTL_SINCE", ``LTL_PSUNTIL``);
+Overload LTL_PREV  = “LTL_PSNEXT”
+Overload LTL_SINCE = “LTL_PSUNTIL”
 
 (******************************************************************************)
 (* LTL semantics over finite trace (LTL3)                                     *)
 (******************************************************************************)
 
-val _ = type_abbrev ("LTL3", ``:bool option``);
+Type LTL3 = “:bool option”
 
-val _ = overload_on ("LTL3_T", ``SOME T``);     (* conclusive true *)
-val _ = overload_on ("LTL3_F", ``SOME F``);     (* conclusive false *)
-val _ = overload_on ("LTL3_U", ``NONE :LTL3``); (* inconclusive/unknown *)
+Overload LTL3_T = “SOME T”     (* conclusive true *)
+Overload LTL3_F = “SOME F”     (* conclusive false *)
+Overload LTL3_U = “NONE :LTL3” (* inconclusive/unknown *)
 
-(* ABRV-LTL (unused)
-val _ = type_abbrev_pp ("ABRV_LTL", ``:LTL3 option``);
+(* ABRV-LTL *)
+Type ABRV_LTL[pp] = “:LTL3 option”
 
-val _ = overload_on ("true",    ``SOME LTL3_T``);
-val _ = overload_on ("false",   ``SOME LTL3_F``);
-val _ = overload_on ("unknown", ``SOME LTL3_U``);
-val _ = overload_on ("out_of_model", ``NONE :ABRV_LTL``);
- *)
+Overload true    = “SOME LTL3_T”
+Overload false   = “SOME LTL3_F”
+Overload unknown = “SOME LTL3_U”
+Overload error   = “NONE :ABRV_LTL”
 
 Theorem THE_LTL3 :
    (THE LTL3_T = T) /\ (THE LTL3_F = F)
@@ -142,16 +151,14 @@ Proof
 QED
 
 (* |- !u f. (LTL3_SEM u f = LTL3_T) <=> !v. LTL_SEM (u ++ v) f *)
-val LTL3_SEM_T = save_thm
-  ("LTL3_SEM_T",
+Theorem LTL3_SEM_T =
     REWRITE_RULE [GSYM LTL3_SEM_def, GSYM LTL_SEM_def]
-                 (Q.SPEC `0` LTL3_SEM_TIME_T));
+                 (Q.SPEC `0` LTL3_SEM_TIME_T)
 
 (* |- !u f. (LTL3_SEM u f = LTL3_F) <=> !v. ~LTL_SEM (u ++ v) f *)
-val LTL3_SEM_F = save_thm
-  ("LTL3_SEM_F",
+Theorem LTL3_SEM_F =
     REWRITE_RULE [GSYM LTL3_SEM_def, GSYM LTL_SEM_def]
-                 (Q.SPEC `0` LTL3_SEM_TIME_F));
+                 (Q.SPEC `0` LTL3_SEM_TIME_F)
 
 Theorem LTL3_SEM_TIME_MONO_T :
     !t u f. (LTL3_SEM_TIME t u f = LTL3_T) ==>
@@ -178,9 +185,8 @@ Proof
 QED
 
 (* |- !u f. LTL3_SEM u f ++ LTL3_U ==> !v. LTL3_SEM (u ++ v) f = LTL3_SEM u f *)
-val LTL3_SEM_MONO = save_thm
-  ("LTL3_SEM_MONO",
-    REWRITE_RULE [GSYM LTL3_SEM_def] (Q.SPEC `0` LTL3_SEM_TIME_MONO));
+Theorem LTL3_SEM_MONO =
+    REWRITE_RULE [GSYM LTL3_SEM_def] (Q.SPEC `0` LTL3_SEM_TIME_MONO)
 
 (* Standard semantics of ptLTL [2] *)
 Definition PTLTL_SEM_def :
@@ -231,15 +237,15 @@ Proof
       METIS_TAC [] )
 QED
 
-Definition IS_CONCL_def :
-    IS_CONCL x = ((x = LTL3_T) \/ (x = LTL3_F))
+Definition LTL3_IS_CONCL_def :
+    LTL3_IS_CONCL x = ((x = LTL3_T) \/ (x = LTL3_F))
 End
 
 (* LTL3 semantic of ptLTL is always conclusive *)
 Theorem PTLTL_SEM_LTL3_CONCL :
-    !f u i. i < LENGTH u /\ IS_PAST_LTL f ==> IS_CONCL (LTL3_SEM_TIME i u f)
+    !f u i. i < LENGTH u /\ IS_PAST_LTL f ==> LTL3_IS_CONCL (LTL3_SEM_TIME i u f)
 Proof
-    RW_TAC std_ss [IS_CONCL_def, LTL3_SEM_TIME_def]
+    RW_TAC std_ss [LTL3_IS_CONCL_def, LTL3_SEM_TIME_def]
  >> METIS_TAC [PTLTL_SEM_THM]
 QED
 
@@ -249,9 +255,9 @@ Theorem PTLTL_SEM_LTL3_AND :
                 THE (LTL3_SEM_TIME i u f1) /\ THE (LTL3_SEM_TIME i u f2))
 Proof
     rpt STRIP_TAC
- >> `IS_CONCL (LTL3_SEM_TIME i u f1) /\
-     IS_CONCL (LTL3_SEM_TIME i u f2)` by PROVE_TAC [PTLTL_SEM_LTL3_CONCL]
- >> fs [IS_CONCL_def, LTL3_SEM_TIME_def, LTL_SEM_TIME_def]
+ >> `LTL3_IS_CONCL (LTL3_SEM_TIME i u f1) /\
+     LTL3_IS_CONCL (LTL3_SEM_TIME i u f2)` by PROVE_TAC [PTLTL_SEM_LTL3_CONCL]
+ >> fs [LTL3_IS_CONCL_def, LTL3_SEM_TIME_def, LTL_SEM_TIME_def]
  >| [ (* goal 1 (of 4) *)
       `!w. LTL_SEM_TIME i (u ++ w) f1` by METIS_TAC [LTL3_distinct] \\
       `!w. LTL_SEM_TIME i (u ++ w) f2` by METIS_TAC [LTL3_distinct],
@@ -309,13 +315,13 @@ Proof
        (MP_TAC o (Q.SPEC `BUTLASTN 1 u`)) \\
      RW_TAC arith_ss [LENGTH_BUTLASTN] \\
      POP_ASSUM K_TAC \\ (* IH1 leftover removed *)
-     Know `IS_CONCL (LTL3_SEM_TIME (LENGTH u − 1) u (LTL_PREV f))`
+     Know `LTL3_IS_CONCL (LTL3_SEM_TIME (LENGTH u − 1) u (LTL_PREV f))`
      >- (MATCH_MP_TAC PTLTL_SEM_LTL3_CONCL >> rw [IS_PAST_LTL_def]) \\
-     Know `IS_CONCL (LTL3_SEM_TIME (LENGTH u − 2) (BUTLASTN 1 u) f)`
+     Know `LTL3_IS_CONCL (LTL3_SEM_TIME (LENGTH u − 2) (BUTLASTN 1 u) f)`
      >- (MATCH_MP_TAC PTLTL_SEM_LTL3_CONCL >> rw [LENGTH_BUTLASTN]) \\
      (* 4 combinations of LTL3_T and LTL3_F *)
      RW_TAC (bool_ss ++ ARITH_ss)
-            [IS_CONCL_def, LTL3_SEM_TIME_def, LTL_SEM_TIME_def, PRE_SUB1] >|
+            [LTL3_IS_CONCL_def, LTL3_SEM_TIME_def, LTL_SEM_TIME_def, PRE_SUB1] >|
      (* 2 impossible cases left *)
      [ (* goal 4.1 (of 2) *)
        Q.PAT_X_ASSUM `!w. LTL_SEM_TIME (LENGTH u - 2) _ f`
@@ -329,12 +335,12 @@ Proof
        rw [APPEND_BUTLASTN_LASTN] ])
  (* goal 5 (of 5): LTL_SINCE *)
  >> RW_TAC std_ss [PTLTL_SEM_ALT_def]
- >> Know `IS_CONCL (LTL3_SEM_TIME (LENGTH u - 1) u (LTL_SINCE (f,f')))`
+ >> Know `LTL3_IS_CONCL (LTL3_SEM_TIME (LENGTH u - 1) u (LTL_SINCE (f,f')))`
  >- (MATCH_MP_TAC PTLTL_SEM_LTL3_CONCL \\
      CONJ_TAC >- RW_TAC arith_ss [] \\
      PROVE_TAC [IS_PAST_LTL_def])
  >> RW_TAC std_ss (* or: (bool_ss ++ ARITH_ss) to see things more clearly *)
-          [LTL3_SEM_TIME_def, LTL_SEM_TIME_def, IS_CONCL_def]
+          [LTL3_SEM_TIME_def, LTL_SEM_TIME_def, LTL3_IS_CONCL_def]
  >| [ (* goal 5.1 (of 2) *)
       POP_ASSUM (STRIP_ASSUME_TAC o (Q.SPEC `\i. {}`)) \\
       Q.EXISTS_TAC `LENGTH u - 1 - k` (* `j + 1` in paper notation *) \\
@@ -342,18 +348,18 @@ Proof
       CONJ_TAC (* PTLTL_SEM_ALT (BUTLASTN (LENGTH u - 1 - k) u) f' *)
       >- (`(k = LENGTH u - 1) \/ k < LENGTH u - 1` by RW_TAC arith_ss []
           >- (fs [BUTLASTN] \\
-              Know `IS_CONCL (LTL3_SEM_TIME (LENGTH u - 1) u f')`
+              Know `LTL3_IS_CONCL (LTL3_SEM_TIME (LENGTH u - 1) u f')`
               >- (MATCH_MP_TAC PTLTL_SEM_LTL3_CONCL >> rw []) \\
-              rw [LTL3_SEM_TIME_def, IS_CONCL_def] >> fs []) \\
+              rw [LTL3_SEM_TIME_def, LTL3_IS_CONCL_def] >> fs []) \\
           (* now `k < LENGTH u - 1` *)
           Q.PAT_X_ASSUM `!y. LENGTH y < LENGTH u ==> _`
              (MP_TAC o (Q.SPEC `BUTLASTN (LENGTH u - 1 - k) u`)) \\
           RW_TAC arith_ss [LENGTH_BUTLASTN] \\
           POP_ASSUM (MP_TAC o (Q.SPEC `f'`)) >> RW_TAC std_ss [] \\
           POP_ASSUM K_TAC (* cleanup *) \\
-          Know `IS_CONCL (LTL3_SEM_TIME k (BUTLASTN (LENGTH u - (k + 1)) u) f')`
+          Know `LTL3_IS_CONCL (LTL3_SEM_TIME k (BUTLASTN (LENGTH u - (k + 1)) u) f')`
           >- (MATCH_MP_TAC PTLTL_SEM_LTL3_CONCL >> rw [LENGTH_BUTLASTN]) \\
-          rw [LTL3_SEM_TIME_def, IS_CONCL_def] \\
+          rw [LTL3_SEM_TIME_def, LTL3_IS_CONCL_def] \\
           POP_ASSUM (MP_TAC o (ONCE_REWRITE_RULE [GSYM concat_assoc]) o
                      (Q.SPEC `(LASTN (LENGTH u - (k + 1)) u) ++ (\i. {})`)) \\
           rw [APPEND_BUTLASTN_LASTN]) \\
@@ -361,9 +367,9 @@ Proof
       rpt STRIP_TAC \\
      `(j = 0) \/ 0 < j` by RW_TAC arith_ss [] (* `i = n \/ i < n` in paper *)
       >- (rw [BUTLASTN] \\
-          Know `IS_CONCL (LTL3_SEM_TIME (LENGTH u - 1) u f)`
+          Know `LTL3_IS_CONCL (LTL3_SEM_TIME (LENGTH u - 1) u f)`
           >- (MATCH_MP_TAC PTLTL_SEM_LTL3_CONCL >> rw []) \\
-          rw [LTL3_SEM_TIME_def, IS_CONCL_def] \\
+          rw [LTL3_SEM_TIME_def, LTL3_IS_CONCL_def] \\
           Q.PAT_X_ASSUM `!j. k < j /\ j <= LENGTH u - 1 ==> _`
              (MP_TAC o (Q.SPEC `LENGTH (u :'a set list) - 1`)) \\
           RW_TAC arith_ss []) \\
@@ -371,9 +377,9 @@ Proof
       Q.PAT_X_ASSUM `!y. LENGTH y < LENGTH u ==> _`
          (MP_TAC o (Q.SPEC `BUTLASTN j u`)) >> rw [LENGTH_BUTLASTN] \\
       POP_ASSUM K_TAC (* cleanup *) \\
-      Know `IS_CONCL (LTL3_SEM_TIME (LENGTH u − (j + 1)) (BUTLASTN j u) f)`
+      Know `LTL3_IS_CONCL (LTL3_SEM_TIME (LENGTH u − (j + 1)) (BUTLASTN j u) f)`
       >- (MATCH_MP_TAC PTLTL_SEM_LTL3_CONCL >> rw [LENGTH_BUTLASTN]) \\
-      rw [LTL3_SEM_TIME_def, IS_CONCL_def] \\
+      rw [LTL3_SEM_TIME_def, LTL3_IS_CONCL_def] \\
       Q.PAT_X_ASSUM `!j. k < j /\ j <= LENGTH u - 1 ==> _`
          (MP_TAC o (Q.SPEC `LENGTH (u :'a set list) - (j + 1)`)) \\
       RW_TAC arith_ss [] \\
@@ -386,10 +392,10 @@ Proof
          (ASSUME_TAC o (Q.SPEC `\i. {}`)) \\
      `(k = 0) \/ 0 < k` by RW_TAC arith_ss []
       >- (fs [BUTLASTN] \\
-          Know `IS_CONCL (LTL3_SEM_TIME (LENGTH u − 1) u f')`
+          Know `LTL3_IS_CONCL (LTL3_SEM_TIME (LENGTH u − 1) u f')`
           >- (MATCH_MP_TAC PTLTL_SEM_LTL3_CONCL >> rw []) \\
           Q.PAT_X_ASSUM `THE (LTL3_SEM_TIME (LENGTH u − 1) u f')` MP_TAC \\
-          rw [LTL3_SEM_TIME_def, IS_CONCL_def] \\
+          rw [LTL3_SEM_TIME_def, LTL3_IS_CONCL_def] \\
           Q.PAT_X_ASSUM `!k. ~(k <= LENGTH u - 1) \/ _`
              (MP_TAC o (Q.SPEC `LENGTH (u :'a set list) - 1`)) \\
           RW_TAC arith_ss []) \\
@@ -398,9 +404,9 @@ Proof
       >- (FIRST_X_ASSUM irule (* IH *) >> rw [LENGTH_BUTLASTN]) \\
       rw [LENGTH_BUTLASTN] \\
       POP_ASSUM MP_TAC \\
-      Know `IS_CONCL (LTL3_SEM_TIME (LENGTH u − (k + 1)) (BUTLASTN k u) f')`
+      Know `LTL3_IS_CONCL (LTL3_SEM_TIME (LENGTH u − (k + 1)) (BUTLASTN k u) f')`
       >- (MATCH_MP_TAC PTLTL_SEM_LTL3_CONCL >> rw [LENGTH_BUTLASTN]) \\
-      rw [LTL3_SEM_TIME_def, IS_CONCL_def] \\
+      rw [LTL3_SEM_TIME_def, LTL3_IS_CONCL_def] \\
       POP_ASSUM (MP_TAC o (ONCE_REWRITE_RULE [GSYM concat_assoc]) o
                  (Q.SPEC `(LASTN k u) ++ (\i. {})`)) \\
       rw [APPEND_BUTLASTN_LASTN] \\
@@ -409,22 +415,291 @@ Proof
       RW_TAC arith_ss [] \\
      `(j = LENGTH u - 1) \/ (j < LENGTH u - 1)` by RW_TAC arith_ss []
       >- (Q.EXISTS_TAC `0` >> rw [BUTLASTN] \\
-          Know `IS_CONCL (LTL3_SEM_TIME (LENGTH u − 1) u f)`
+          Know `LTL3_IS_CONCL (LTL3_SEM_TIME (LENGTH u − 1) u f)`
           >- (MATCH_MP_TAC PTLTL_SEM_LTL3_CONCL >> rw []) \\
-          rw [LTL3_SEM_TIME_def, IS_CONCL_def] >> fs []) \\
+          rw [LTL3_SEM_TIME_def, LTL3_IS_CONCL_def] >> fs []) \\
       (* final part *)
       Q.EXISTS_TAC `LENGTH u - (j + 1)` >> rw [] \\
       Q.PAT_X_ASSUM `!y. LENGTH y < LENGTH u ==> _`
          (MP_TAC o (Q.SPEC `BUTLASTN (LENGTH u - (j + 1)) u`)) \\
       rw [LENGTH_BUTLASTN] \\
       POP_ASSUM K_TAC (* cleanup *) \\
-      Know `IS_CONCL (LTL3_SEM_TIME j (BUTLASTN (LENGTH u − (j + 1)) u) f)`
+      Know `LTL3_IS_CONCL (LTL3_SEM_TIME j (BUTLASTN (LENGTH u − (j + 1)) u) f)`
       >- (MATCH_MP_TAC PTLTL_SEM_LTL3_CONCL >> rw [LENGTH_BUTLASTN]) \\
-      rw [LTL3_SEM_TIME_def, IS_CONCL_def] \\
+      rw [LTL3_SEM_TIME_def, LTL3_IS_CONCL_def] \\
       POP_ASSUM (MP_TAC o (ONCE_REWRITE_RULE [GSYM concat_assoc]) o
                   (Q.SPEC `(LASTN (LENGTH u - (j + 1)) u) ++ (\i. {})`)) \\
       rw [APPEND_BUTLASTN_LASTN] ]
 QED
+
+(* -------------------------------------------------------------------------- *)
+(*   LTL3 and PTLTL monitors (abstract version)                               *)
+(* -------------------------------------------------------------------------- *)
+
+val _ = set_fixity "extends" (Infix(NONASSOC, 450));
+
+Definition extends_def : (* no partial observability *)
+    (i extends u) = ?c. i = concat u c
+End
+
+Definition LTL3_output_def :
+   (LTL3_output T T = LTL3_U) /\
+   (LTL3_output T F = LTL3_T) /\
+   (LTL3_output F T = LTL3_F)
+End
+
+Definition ABRV_output_def : (* not used, for comparison only *)
+   (ABRV_output T T = unknown) /\
+   (ABRV_output T F = true) /\
+   (ABRV_output F T = false) /\
+   (ABRV_output F F = error)
+End
+
+(* "belief run" after taking a finite trace u *)
+Definition LTL3_belief_run_def :
+    LTL3_belief_run l u = {i | i extends u /\ LTL_SEM i l}
+End
+
+(* LTL3 monitor (abstract version) *)
+Definition LTL3_monitor_def :
+    LTL3_monitor l u = LTL3_output (LTL3_belief_run l           u <> EMPTY)
+                                   (LTL3_belief_run (LTL_NOT l) u <> EMPTY)
+End
+
+(* correctness of LTL3 monitor, an abstract version *)
+Theorem LTL3_monitor_thm :
+    !l u. LTL3_monitor l u = LTL3_SEM u l
+Proof
+    RW_TAC std_ss [LTL3_monitor_def, LTL3_SEM_def]
+ >> Cases_on `LTL3_belief_run          l  u = {}`
+ >> Cases_on `LTL3_belief_run (LTL_NOT l) u = {}`
+ >> fs [LTL3_output_def] (* 4 subgoals *)
+ >| [ (* goal 1 (of 4) *)
+      fs [LTL3_belief_run_def, EXTENSION, NOT_IN_EMPTY, GSPECIFICATION,
+          LTL_SEM_def, LTL_SEM_TIME_def] \\
+      Q.ABBREV_TAC `i = u ++ (\n. {})` \\
+     `i extends u` by PROVE_TAC [extends_def] \\
+      METIS_TAC [],
+      (* goal 2 (of 4) *)
+      RW_TAC std_ss [Once EQ_SYM_EQ, LTL3_SEM_def, LTL3_SEM_TIME_F] \\
+      Q.PAT_X_ASSUM `LTL3_belief_run (LTL_NOT l) u <> {}` K_TAC \\
+      fs [LTL3_belief_run_def, EXTENSION, NOT_IN_EMPTY, GSPECIFICATION,
+          LTL_SEM_def, LTL_SEM_TIME_def] \\
+      POP_ASSUM (MP_TAC o (Q.SPEC `u ++ v`)) \\
+     `u ++ v extends u` by PROVE_TAC [extends_def] \\
+      METIS_TAC [],
+      (* goal 3 (of 4) *)
+      RW_TAC std_ss [Once EQ_SYM_EQ, LTL3_SEM_def, LTL3_SEM_TIME_T] \\
+      Q.PAT_X_ASSUM `LTL3_belief_run l u <> {}` K_TAC \\
+      fs [LTL3_belief_run_def, EXTENSION, NOT_IN_EMPTY, GSPECIFICATION,
+          LTL_SEM_def, LTL_SEM_TIME_def] \\
+      POP_ASSUM (MP_TAC o (Q.SPEC `u ++ v`)) \\
+     `u ++ v extends u` by PROVE_TAC [extends_def] \\
+      METIS_TAC [],
+      (* goal 4 (of 4) *)
+      RW_TAC std_ss [Once EQ_SYM_EQ, LTL3_SEM_def, LTL3_SEM_TIME_def] >|
+      [ (* goal 4.1 (of 2) *)
+        Q.PAT_X_ASSUM `LTL3_belief_run l u <> {}` K_TAC \\
+        fs [LTL3_belief_run_def, EXTENSION, NOT_IN_EMPTY, GSPECIFICATION,
+            LTL_SEM_def, LTL_SEM_TIME_def, extends_def] \\
+        POP_ASSUM (STRIP_ASSUME_TAC o (Q.SPEC `c`)) \\
+        METIS_TAC [],
+        (* goal 4.2 (of 2) *)
+        Q.PAT_X_ASSUM `~!w. P` K_TAC \\
+        Q.PAT_X_ASSUM `LTL3_belief_run (LTL_NOT l) u <> {}` K_TAC \\
+        fs [LTL3_belief_run_def, EXTENSION, NOT_IN_EMPTY, GSPECIFICATION,
+            LTL_SEM_def, LTL_SEM_TIME_def, extends_def] \\
+        POP_ASSUM (STRIP_ASSUME_TAC o (Q.SPEC `c`)) \\
+        METIS_TAC [] ] ]
+QED
+
+Definition GEN_LTL3_belief_run_def :
+    GEN_LTL3_belief_run l u t = {i | i extends u /\ LTL_SEM_TIME t i l}
+End
+
+(* alternative definition *)
+Theorem LTL3_belief_run_alt :
+    !l u. LTL3_belief_run l u = GEN_LTL3_belief_run l u 0
+Proof
+    RW_TAC std_ss [GEN_LTL3_belief_run_def, LTL3_belief_run_def, LTL_SEM_def]
+QED
+
+(* LTL3 monitor (abstract version) *)
+Definition GEN_LTL3_monitor_def :
+    GEN_LTL3_monitor l u t =
+        LTL3_output (GEN_LTL3_belief_run l           u t <> EMPTY)
+                    (GEN_LTL3_belief_run (LTL_NOT l) u t <> EMPTY)
+End
+
+(* alternative definition *)
+Theorem LTL3_monitor_alt :
+    !l u. LTL3_monitor l u = GEN_LTL3_monitor l u 0
+Proof
+    RW_TAC std_ss [GEN_LTL3_monitor_def, GSYM LTL3_belief_run_alt,
+                   LTL3_monitor_def]
+QED
+
+(* correctness of LTL3 monitor, an abstract version *)
+Theorem GEN_LTL3_monitor_thm :
+    !l u t. GEN_LTL3_monitor l u t = LTL3_SEM_TIME t u l
+Proof
+    RW_TAC std_ss [GEN_LTL3_monitor_def]
+ >> Cases_on `GEN_LTL3_belief_run          l  u t = {}`
+ >> Cases_on `GEN_LTL3_belief_run (LTL_NOT l) u t = {}`
+ >> fs [LTL3_output_def] (* 4 subgoals *)
+ >| [ (* goal 1 (of 4) *)
+      fs [GEN_LTL3_belief_run_def, EXTENSION, NOT_IN_EMPTY, GSPECIFICATION,
+          LTL_SEM_TIME_def] \\
+      Q.ABBREV_TAC `i = u ++ (\n. {})` \\
+     `i extends u` by PROVE_TAC [extends_def] \\
+      METIS_TAC [],
+      (* goal 2 (of 4) *)
+      RW_TAC std_ss [Once EQ_SYM_EQ, LTL3_SEM_TIME_F] \\
+      Q.PAT_X_ASSUM `GEN_LTL3_belief_run (LTL_NOT l) u t <> {}` K_TAC \\
+      fs [GEN_LTL3_belief_run_def, EXTENSION, NOT_IN_EMPTY, GSPECIFICATION,
+          LTL_SEM_TIME_def] \\
+      POP_ASSUM (MP_TAC o (Q.SPEC `u ++ v`)) \\
+     `u ++ v extends u` by PROVE_TAC [extends_def] \\
+      METIS_TAC [],
+      (* goal 3 (of 4) *)
+      RW_TAC std_ss [Once EQ_SYM_EQ, LTL3_SEM_TIME_T] \\
+      Q.PAT_X_ASSUM `GEN_LTL3_belief_run l u t <> {}` K_TAC \\
+      fs [GEN_LTL3_belief_run_def, EXTENSION, NOT_IN_EMPTY, GSPECIFICATION,
+          LTL_SEM_TIME_def] \\
+      POP_ASSUM (MP_TAC o (Q.SPEC `u ++ v`)) \\
+     `u ++ v extends u` by PROVE_TAC [extends_def] \\
+      METIS_TAC [],
+      (* goal 4 (of 4) *)
+      RW_TAC std_ss [Once EQ_SYM_EQ, LTL3_SEM_TIME_def] >|
+      [ (* goal 4.1 (of 2) *)
+        Q.PAT_X_ASSUM `GEN_LTL3_belief_run l u t <> {}` K_TAC \\
+        fs [GEN_LTL3_belief_run_def, EXTENSION, NOT_IN_EMPTY, GSPECIFICATION,
+            LTL_SEM_TIME_def, extends_def] \\
+        POP_ASSUM (STRIP_ASSUME_TAC o (Q.SPEC `c`)) \\
+        METIS_TAC [],
+        (* goal 4.2 (of 2) *)
+        Q.PAT_X_ASSUM `~!w. P` K_TAC \\
+        Q.PAT_X_ASSUM `GEN_LTL3_belief_run (LTL_NOT l) u t <> {}` K_TAC \\
+        fs [GEN_LTL3_belief_run_def, EXTENSION, NOT_IN_EMPTY, GSPECIFICATION,
+            LTL_SEM_TIME_def, extends_def] \\
+        POP_ASSUM (STRIP_ASSUME_TAC o (Q.SPEC `c`)) \\
+        METIS_TAC [] ] ]
+QED
+
+(* PTLTL monitor *)
+Theorem PTLTL_monitor_thm :
+    !f u. IS_PAST_LTL f /\ 0 < LENGTH u ==>
+         (PTLTL_SEM_ALT u f = THE (GEN_LTL3_monitor f u (LENGTH u - 1)))
+Proof
+    RW_TAC std_ss [PTLTL_SEM_ALT_LTL3, GEN_LTL3_monitor_thm]
+QED
+
+(* -------------------------------------------------------------------------- *)
+(*   ABRV monitor (abstract version)                                          *)
+(* -------------------------------------------------------------------------- *)
+
+Definition compatible_def :
+    compatible u K = ?c. concat u c IN K
+End
+
+Definition LTL4_output_def :
+   (LTL4_output T T = unknown) /\
+   (LTL4_output T F = true) /\
+   (LTL4_output F T = false) /\
+   (LTL4_output F F = error)
+End
+
+Definition LTL4_SEM_TIME_def :
+    LTL4_SEM_TIME K phi (u :'a set list) t =
+    if ~compatible u K then error
+    else if compatible u K /\
+           (!w. (concat u w) IN K ==> LTL_SEM_TIME t (concat u w) phi) then true
+    else if compatible u K /\
+           (!w. (concat u w) IN K ==> ~LTL_SEM_TIME t (concat u w) phi) then false
+    else unknown
+End
+
+Definition GEN_LTL4_belief_run_def :
+    GEN_LTL4_belief_run K phi u t =
+      {i | i extends u /\ LTL_SEM_TIME t i phi /\ i IN K}
+End
+
+Definition ABRV_monitor_def :
+    ABRV_monitor K phi u t =
+    LTL4_output (GEN_LTL4_belief_run K phi           u t <> EMPTY)
+                (GEN_LTL4_belief_run K (LTL_NOT phi) u t <> EMPTY)
+End
+
+Theorem ABRV_monitor_thm :
+    !K phi u t. ABRV_monitor K phi u t = LTL4_SEM_TIME K phi u t
+Proof
+    RW_TAC std_ss [ABRV_monitor_def]
+ >> Cases_on `GEN_LTL4_belief_run K phi           u t = {}`
+ >> Cases_on `GEN_LTL4_belief_run K (LTL_NOT phi) u t = {}`
+ >> RW_TAC std_ss [LTL4_output_def] (* 4 subgoals *)
+ >| [ (* goal 1 (of 4) *)
+      fs [GEN_LTL4_belief_run_def, EXTENSION, NOT_IN_EMPTY, GSPECIFICATION,
+          LTL_SEM_TIME_def] \\
+      rw [LTL4_SEM_TIME_def, compatible_def] >| (* 3 subgoals *)
+      [ (* goal 1.1 (of 3) *)
+        CCONTR_TAC \\
+        Q.PAT_X_ASSUM `!w. u ++ w IN K ==> _` (MP_TAC o Q.SPEC `c`) >> rw [] \\
+       `u ++ c extends u` by METIS_TAC [extends_def] \\
+        METIS_TAC [],
+        (* goal 1.2 (of 3) *)
+        CCONTR_TAC >> fs [] \\
+       `u ++ w extends u` by METIS_TAC [extends_def] \\
+        METIS_TAC [],
+        (* goal 1.3 (of 3) *)
+        CCONTR_TAC >> fs [] \\
+       `u ++ w extends u` by METIS_TAC [extends_def] \\
+        METIS_TAC [] ],
+      (* goal 2 (of 4) *)
+      fs [GEN_LTL4_belief_run_def, EXTENSION, NOT_IN_EMPTY, GSPECIFICATION,
+          LTL_SEM_TIME_def] \\
+      rw [LTL4_SEM_TIME_def, compatible_def] >| (* 3 subgoals *)
+      [ (* goal 2.1 (of 3) *)
+       `?c. x = u ++ c` by METIS_TAC [extends_def] \\
+        Q.PAT_X_ASSUM `!w. u ++ w IN K ==> _` (MP_TAC o (Q.SPEC `c`)) >> rw [],
+        (* goal 2.2 (of 3) *)
+        fs [] >> Q.EXISTS_TAC `w` >> rw [],
+        (* goal 2.3 (of 3) *)
+        fs [] >> `u ++ w' extends u` by METIS_TAC [extends_def] \\
+        METIS_TAC [] ],
+      (* goal 3 (of 4) *)
+      fs [GEN_LTL4_belief_run_def, EXTENSION, NOT_IN_EMPTY, GSPECIFICATION,
+          LTL_SEM_TIME_def] \\
+      rw [LTL4_SEM_TIME_def, compatible_def] >| (* 3 subgoals *)
+      [ (* goal 3.1 (of 3) *)
+       `?c. x = u ++ c` by METIS_TAC [extends_def] \\
+        Q.EXISTS_TAC `c` >> rw [],
+        (* goal 3.2 (of 3) *)
+        fs [] \\
+        Q.PAT_X_ASSUM `!w. u ++ w IN K ==> _` (MP_TAC o (Q.SPEC `w`)) >> rw [] \\
+       `u ++ w extends u` by METIS_TAC [extends_def] \\
+        METIS_TAC [],
+        (* goal 2.3 (of 3) *)
+        fs [] >> `u ++ w extends u` by METIS_TAC [extends_def] \\
+        METIS_TAC [] ],
+      (* goal 4 (of 4) *)
+      fs [GEN_LTL4_belief_run_def, EXTENSION, NOT_IN_EMPTY, GSPECIFICATION,
+          LTL_SEM_TIME_def] \\
+      rw [LTL4_SEM_TIME_def, compatible_def] >| (* 3 subgoals *)
+      [ (* goal 4.1 (of 3) *)
+       `?c. x' = u ++ c` by METIS_TAC [extends_def] \\
+        Q.PAT_X_ASSUM `!w. u ++ w IN K ==> _` (MP_TAC o (Q.SPEC `c`)) >> rw [],
+        (* goal 4.2 (of 3) *)
+        fs [] >> `?c. x = u ++ c` by METIS_TAC [extends_def] \\
+        Q.PAT_X_ASSUM `!w. u ++ w IN K ==> _` (MP_TAC o (Q.SPEC `c`)) >> rw [],
+        (* goal 4.3 (of 3) *)
+        fs [] >> Q.EXISTS_TAC `w` >> rw [] ] ]
+QED
+
+(* -------------------------------------------------------------------------- *)
+(*   ABRV monitors (concrete versions)                                        *)
+(* -------------------------------------------------------------------------- *)
+
+
 
 val _ = export_theory ();
 

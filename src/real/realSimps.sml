@@ -1,6 +1,7 @@
 (* ------------------------------------------------------------------------- *)
 (* A real simpset (includes Peano arithmetic and pairs).                     *)
 (* ------------------------------------------------------------------------- *)
+
 structure realSimps :> realSimps =
 struct
 
@@ -235,7 +236,8 @@ val ltnb12 = TAC_PROOF(([], “0 < NUMERAL (BIT1 n) /\ 0 < NUMERAL (BIT2 n)”),
                                    arithmeticTheory.BIT2,
                                    arithmeticTheory.ADD_CLAUSES,
                                    prim_recTheory.LESS_0])
-val let_id = TAC_PROOF(([], “LET (\n. n) x = x”),
+
+val let_id = TAC_PROOF(([], “LET (\n :'a. n) x = x”),
                        SIMP_TAC boolSimps.bool_ss [LET_THM])
 
 val clg0 = SIMP_RULE boolSimps.bool_ss [flr, LET_THM]
@@ -1269,4 +1271,4 @@ val RMULRELNORM_ss = SSFRAG {
 
 val _ = addfrags [RMULRELNORM_ss]
 
-end
+end (* struct *)

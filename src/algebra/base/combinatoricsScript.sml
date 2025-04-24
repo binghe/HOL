@@ -6,6 +6,8 @@
 (* Author: (Joseph) Hing-Lun Chan (Australian National University, 2019)     *)
 (* ------------------------------------------------------------------------- *)
 
+open HolKernel boolLib Parse bossLib;
+
 (* ------------------------------------------------------------------------- *)
 (* Necklace Theory - monocoloured and multicoloured.                         *)
 (* ------------------------------------------------------------------------- *)
@@ -36,8 +38,6 @@ Since S and M are disjoint, CARD M = CARD N - CARD S = a^n - a.
 
 *)
 
-open HolKernel boolLib Parse bossLib;
-
 open prim_recTheory arithmeticTheory dividesTheory gcdTheory gcdsetTheory
      logrootTheory pred_setTheory listTheory rich_listTheory numberTheory
      listRangeTheory  indexedListsTheory relationTheory;
@@ -47,6 +47,20 @@ val _ = new_theory "combinatorics";
 val _ = temp_overload_on("SQ", ``\n. n * n``);
 val _ = temp_overload_on("HALF", ``\n. n DIV 2``);
 val _ = temp_overload_on("TWICE", ``\n. 2 * n``);
+
+(* from numberTheory *)
+Overload MONO[local] = “\f:num -> num. !x y. x <= y ==> f x <= f y”
+
+Overload MONO2[local] =
+        “\f:num -> num -> num.
+           !x1 y1 x2 y2. x1 <= x2 /\ y1 <= y2 ==> f x1 y1 <= f x2 y2”
+
+Overload MONO3[local] =
+        “\f:num -> num -> num -> num.
+           !x1 y1 z1 x2 y2 z2. x1 <= x2 /\ y1 <= y2 /\ z1 <= z2 ==>
+                               f x1 y1 z1 <= f x2 y2 z2”
+
+Overload RMONO[local] = “\f:num -> num. !x y. x <= y ==> f y <= f x”
 
 (* ------------------------------------------------------------------------- *)
 (* List Reversal.                                                            *)

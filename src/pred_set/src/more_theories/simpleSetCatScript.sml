@@ -24,7 +24,7 @@ QED
 Definition Delta_def[simp]:
   Delta V a b <=>  a = b /\ a IN V
 End
-Overload "Δ" = “Delta”
+Overload "Δ" = “Delta” (* UOK *)
 
 Theorem Delta_INTER:
   Delta (s INTER t) = Delta s RINTER Delta t

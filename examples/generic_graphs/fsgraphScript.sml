@@ -5,7 +5,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open arithmeticTheory pairTheory listTheory pred_setTheory sortingTheory
-     hurdUtils
+     hurdUtils topologyTheory relationTheory set_relationTheory;
 
 open genericGraphTheory;
 
@@ -909,6 +909,281 @@ Proof
       gvs [INSERT2_lemma] ]
 QED
 
+(* ----------------------------------------------------------------------
+    Matching, Covering and Packing [2, Chapter 2p.67]
+   ---------------------------------------------------------------------- *)
+
+(* The "other" vertex/node in the edge *)
+Theorem other_exists[local] :
+    !g e. e IN fsgedges g ==>
+          !n. n IN e ==> ?n'. e = {n; n'} /\ n' IN e /\ n' <> n
+Proof
+    rpt STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘e IN E’ (STRIP_ASSUME_TAC o MATCH_MP alledges_valid)
+ >> fs []
+ >| [ (* goal 1 (of 2) *)
+      Q.EXISTS_TAC ‘b’ >> rw [],
+      (* goal 2 (of 2) *)
+      Q.EXISTS_TAC ‘a’ >> rw [] \\
+      rw [Once EXTENSION] >> PROVE_TAC [] ]
+QED
+
+(* |- !g e n.
+        e IN E /\ n IN e ==>
+        e = {n; other g e n} /\ other g e n IN e /\ other g e n <> n
+ *)
+val other_def =
+    new_specification ("other_def", ["other"],
+      SIMP_RULE std_ss [PULL_FORALL, IMP_IMP]
+        (SIMP_RULE std_ss [EXT_SKOLEM_THM, SKOLEM_THM] other_exists));
+
+(* M is a matching of U if every vertex in U is incident with a M-edge [2, p.37] *)
+Definition matching_of :
+    matching_of g M U <=>
+      U SUBSET nodes g /\ M SUBSET fsgedges g /\ !v. v IN U ==> ?e. e IN M /\ v IN e
+End
+
+Theorem matching_of_fsgraph :
+    !g M. M SUBSET fsgedges g ==> matching_of g M (BIGUNION M)
+Proof
+    reverse (rw [matching_of])
+ >- (Q.EXISTS_TAC ‘s’ >> art [])
+ >> rw [SUBSET_DEF, IN_BIGUNION]
+ >> fs [SUBSET_DEF]
+ >> MP_TAC (Q.SPECL [‘s’, ‘g’] (GEN_ALL alledges_valid))
+ >> rw [] >> fs []
+QED
+
+(* ‘BIGUNION (fsgedges g)’ is the set of all vertices from all edges, which is
+   the maximal possible matching of a graph.
+
+   NOTE: ‘matching_of g (fsgedges g) (nodes g)’ doesn't work, because some nodes
+   may not have any edge at all.
+ *)
+Theorem maximal_matching_of_fsgraph :
+    !g. matching_of g (fsgedges g) (BIGUNION (fsgedges g))
+Proof
+    Q.X_GEN_TAC ‘g’
+ >> MATCH_MP_TAC matching_of_fsgraph >> rw []
+QED
+
+(* M is a matching of g if there exists U such that M is a matching of U. Therefore
+   the set of all matchings of g is just ‘matching g’.
+ *)
+Definition matching_def :
+    matching g M <=> ?U. matching_of g M U
+End
+
+Theorem empty_matching :
+    !g. matching g {}
+Proof
+    rw [matching_def, matching_of]
+ >> Q.EXISTS_TAC ‘{}’ >> rw []
+QED
+
+(* A vertex is unmatched if it does not incident any edge in the matching M *)
+Definition unmatched_def :
+    unmatched v (M :(unit + num -> bool) -> bool) <=> !e. e IN M ==> v NOTIN e
+End
+
+Theorem unmatched_alt :
+    !M v. unmatched v M <=> v NOTIN BIGUNION M
+Proof
+    rw [unmatched_def, IN_BIGUNION]
+ >> PROVE_TAC []
+QED
+
+(* "finite simple path" *)
+Type fspath[pp] = “:(unit + num) list”
+
+Definition alternating_path_def :
+    alternating_path (g :fsgraph) M vs <=>
+      path g vs /\ unmatched (EL 0 vs) M /\
+      (!i. SUC i < LENGTH vs /\ ODD i ==> {EL i vs;EL (SUC i) vs} IN M) /\
+      (!i. SUC i < LENGTH vs /\ EVEN i ==> {EL i vs;EL (SUC i) vs} NOTIN M)
+End
+
+Definition augmenting_path_def :
+    augmenting_path g M vs <=> alternating_path g M vs /\ unmatched (LAST vs) M
+End
+
+(* A set U is a (vertex) cover of E if every edge of G (aka in E) is incident
+   with a vertex in U. [2, p.38]
+ *)
+Definition covering_def :
+    covering g U <=> U SUBSET nodes g /\ !e. e IN fsgedges g ==> ?v. v IN U /\ v IN e
+End
+
+Theorem covering_alt :
+    !g U. covering g U <=> U SUBSET nodes g /\ !e. e IN fsgedges g ==> e INTER U <> {}
+Proof
+    rw [covering_def]
+ >> EQ_TAC >> rw []
+ >| [ (* goal 1 (of 2) *)
+      Q.PAT_X_ASSUM ‘!e. e IN E ==> P’ (MP_TAC o Q.SPEC ‘e’) \\
+      rw [Once EXTENSION, NOT_IN_EMPTY] \\
+      Q.EXISTS_TAC ‘v’ >> art [],
+      (* goal 2 (of 2) *)
+      Q.PAT_X_ASSUM ‘!e. e IN E ==> P’ (MP_TAC o Q.SPEC ‘e’) \\
+      rw [Once EXTENSION, NOT_IN_EMPTY] \\
+      Q.EXISTS_TAC ‘x’ >> art [] ]
+QED
+
+Definition max_matching_def :
+    max_matching g = MAX_SET (IMAGE CARD (matching g))
+End
+
+Definition min_covering_def :
+    min_covering g = MIN_SET (IMAGE CARD (covering g))
+End
+
+(* Theorem 2.1.1 (Koenig) [2, p.39] *)
+Theorem bipartite_max_matching_thm :
+    !g. bipartite g ==> max_matching g = min_covering g
+Proof
+    cheat
+QED
+
+Type vertex = “:unit + num”
+Type edge   = “:vertex set”
+
+(* based on relationTheory
+Definition preference_def :
+    preference (G :fsgraph) (R :vertex -> edge -> edge -> bool) <=>
+    !v. v IN nodes G ==> LinearOrder (R v)
+End
+ *)
+
+(* based on set_relationTheory *)
+Definition preference_def :
+    preference (G :fsgraph) (R :vertex -> edge # edge -> bool) <=>
+    !v. v IN nodes G ==> linear_order (R v) (fsgedges G)
+End
+
+(* ----------------------------------------------------------------------
+    Menger's Theorem [2, p.67], added by Chun Tian
+   ----------------------------------------------------------------------
+
+(* To form an A-B path, the only intersection between A and vs is ‘HD vs’,
+   while the only intersection between B and vs is ‘LAST vs’.
+
+   NOTE: ‘DISJOINT A B’ is not required. ‘A, B SUBSET nodes g’ is assumed.
+ *)
+Definition AB_path_def :
+    AB_path g A B vs <=> path g vs /\
+                         A INTER set vs = {HD vs} /\ B INTER set vs = {LAST vs}
+End
+
+(* In the trivial case, there may be no edges in the graph, and any trivial path
+   formed by single shared vertex from both A and B is also an A-B path.
+ *)
+Theorem trivial_AB_path :
+    !A B g v. v IN nodes g /\ v IN A /\ v IN B ==> AB_path g A B [v]
+Proof
+    rw [AB_path_def, trivial_path]
+ >> ASM_SET_TAC []
+QED
+
+(* NOTE: X separates A,B if each A-B path contains at least one node in X *)
+Definition separation_def :
+    separation g A B X = !vs. AB_path g A B vs ==> X INTER set vs <> {}
+End
+
+(* By definition, ‘separation g A B’ is also the set of all A-B separations. *)
+Theorem separation_alt_GSPEC :
+    !g A B. separation g A B =
+              {X | !vs. AB_path g A B vs ==> X INTER set vs <> {}}
+Proof
+    rw [Once EXTENSION, IN_APP, separation_def]
+QED
+
+Theorem separation_SUBSET_IMP :
+    !A B g X Y. separation g A B X /\ X SUBSET Y ==> separation g A B Y
+Proof
+    rw [separation_def]
+ >> Q.PAT_X_ASSUM ‘!vs. P’ (MP_TAC o (Q.SPEC ‘vs’))
+ >> simp []
+ >> ASM_SET_TAC []
+QED
+
+Theorem separation_all_nodes :
+    !g A B. separation g A B (nodes g)
+Proof
+    rw [separation_def, AB_path_def, path_def, walk_def]
+ >> rw [GSYM DISJOINT_DEF, Once DISJOINT_SYM]
+ >> rw [DISJOINT_ALT]
+ >> rw [GSYM listTheory.NOT_NULL_MEM, listTheory.NULL_EQ]
+QED
+
+Theorem separation_UNIV :
+    !g A B. separation g A B UNIV
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC separation_SUBSET_IMP
+ >> Q.EXISTS_TAC ‘nodes g’
+ >> rw [separation_all_nodes]
+QED
+
+(* NOTE: ‘A INTER B SUBSET nodes g’ seems to be the minimal requirement for the
+          conclusion to hold.
+ *)
+Theorem separation_INTER_SUBSET :
+    !A B g X. separation g A B X /\ A INTER B SUBSET nodes g ==>
+              A INTER B SUBSET X
+Proof
+    rw [separation_def, UNION_SUBSET, AB_path_def]
+ >> Cases_on ‘A INTER B = {}’ >- rw []
+ >> Q.PAT_X_ASSUM ‘A INTER B SUBSET nodes g’ MP_TAC
+ >> rw [SUBSET_DEF]
+ (* now pick a trivial path containing only ‘x’ *)
+ >> Q.PAT_X_ASSUM ‘!vs. P’ (MP_TAC o Q.SPEC ‘[x]’)
+ >> ‘{x} SUBSET A /\ {x} SUBSET B’ by rw [SUBSET_DEF]
+ >> ‘A INTER {x} = {x} /\ B INTER {x} = {x}’ by PROVE_TAC [INTER_SUBSET_EQN]
+ >> rw [path_def, walk_def]
+ >> POP_ASSUM MP_TAC >> SET_TAC []
+QED
+
+(* NOTE: weaker but more common requirements: ‘A,B SUBSET nodes g’ *)
+Theorem separation_INTER_SUBSET' :
+    !A B g X. separation g A B X /\ A SUBSET nodes g /\ B SUBSET nodes g ==>
+              A INTER B SUBSET X
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC separation_INTER_SUBSET
+ >> Q.EXISTS_TAC ‘g’ >> fs [SUBSET_DEF]
+QED
+
+(* The previous theorem shows that a separation X can be arbitrary enlarged to
+   maintain its definition, thus it makes sense to focus on the smallest set of
+   vertices having intersections with all A-B paths.
+ *)
+Definition smallest_separation_def :
+    smallest_separation g A B = BIGINTER (separation g A B)
+End
+
+Theorem Menger :
+    !A B (g :'a fsgraph). A INTER B SUBSET nodes g ==>
+        ?pths. disjoint (IMAGE set pths) /\
+              (!p. p IN pths ==> AB_path g A B p) /\
+               CARD pths = CARD (smallest_separation g A B)
+Proof
+    rpt STRIP_TAC
+ (* applying fsg_edge_induction *)
+ >> Q.ABBREV_TAC
+     ‘P = \g :'a fsgraph. ?pths.
+            disjoint (IMAGE set pths) /\ (!p. p IN pths ==> AB_path g A B p) /\
+            CARD pths = CARD (smallest_separation g A B)’
+ >> simp []
+ >> MATCH_MP_TAC (Q.SPEC ‘g’ fsg_edge_induction)
+ >> rw [Abbr ‘P’]
+ >- (Q.EXISTS_TAC ‘{[v] | v IN A /\ v IN B}’ \\
+
+     cheat)
+ >>
+    cheat
+QED
+ *)
+
 val _ = export_theory();
 val _ = html_theory "fsgraph";
 
@@ -917,4 +1192,5 @@ val _ = html_theory "fsgraph";
    [1] Harris, J., Hirst, J.L., Mossinghoff, M.: Combinatorics and Graph Theory.
        2nd Edition. Springer Science & Business Media (2008).
    [2] Diestel, R.: Graph Theory, 5th Electronic Edition. Springer-Verlag, Berlin (2017).
+   [3] Christoph Dittmann.: Menger's Theorem. https://www.isa-afp.org/entries/Menger.html
  *)

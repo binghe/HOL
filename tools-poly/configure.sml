@@ -67,8 +67,8 @@ fun liftstatus f x =
           END user-settable parameters
  ---------------------------------------------------------------------------*)
 
-val version_number = 1
-val release_string = "Trindemossen"
+val version_number = 15
+val release_string = "Kananaskis"
 
 (*
 val _ = Meta.quietdec := true;
@@ -237,17 +237,17 @@ in
       ("val POLY_LDFLAGS = [" ^
        String.concatWith ", "
                          (map quote
-                              ((if null POLY_LDFLAGS then machine_flags
-                                else POLY_LDFLAGS) @ EXTRA_POLY_LDFLAGS)) ^
+                              (if null POLY_LDFLAGS then machine_flags
+                               else POLY_LDFLAGS)) ^
        "]\n"),
    "val POLY_LDFLAGS_STATIC =" -->
       ("val POLY_LDFLAGS_STATIC = [" ^
        String.concatWith ", "
                          (map quote
-                              ((if null POLY_LDFLAGS_STATIC then
-                                  ("-static" :: machine_flags)
-                                else
-                                  POLY_LDFLAGS_STATIC) @ EXTRA_POLY_LDFLAGS)) ^
+                              (if null POLY_LDFLAGS_STATIC then
+                                 ("-static" :: machine_flags)
+                               else
+                                 POLY_LDFLAGS_STATIC)) ^
        "]\n"),
    "val CC =" --> ("val CC = "^quote CC^"\n"),
    "val OS ="       --> ("val OS = "^quote OS^"\n"),
@@ -467,29 +467,7 @@ val _ = work_in_dir "genscriptdep"
 end (* local *)
 
 (*---------------------------------------------------------------------------
-    Instantiate tools/editor-modes/emacs/hol-mode.src, and put it into
-    hol-mode.el in the same directory.
- ---------------------------------------------------------------------------*)
-
-val _ =
- let open TextIO
-     val _ = echo "Making hol-mode.el (for Emacs)"
-     val src = fullPath [holdir, "tools", "editor-modes", "emacs", "hol-mode.src"]
-    val target = fullPath [holdir, "tools", "editor-modes", "emacs", "hol-mode.el"]
- in
-    fill_holes (src, target)
-      ["(defcustom hol-executable HOL-EXECUTABLE\n"
-        -->
-       ("(defcustom hol-executable \n  "^
-        quote (fullPath [holdir, "bin", "hol"])^"\n"),
-       "(defcustom holmake-executable HOLMAKE-EXECUTABLE\n"
-        -->
-       ("(defcustom holmake-executable \n  "^
-        quote (fullPath [holdir, "bin/Holmake"])^"\n")]
- end;
-
-(*---------------------------------------------------------------------------
-    Instantiate tools/editor-modes/vim/*.src
+    Instantiate tools/vim/*.src
  ---------------------------------------------------------------------------*)
 
 val _ =

@@ -6,7 +6,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open pairTheory relationTheory prim_recTheory arithmeticTheory pred_setTheory
-     combinTheory fcpTheory hurdUtils jrhUtils;
+     combinTheory fcpTheory hurdUtils jrhUtils tautLib;
 
 open realTheory realLib seqTheory transcTheory iterateTheory real_sigmaTheory
      topologyTheory real_topologyTheory metricTheory netsTheory;
@@ -2435,28 +2435,26 @@ Theorem exhausting_sequence_general_cross :
 Proof
     RW_TAC std_ss [exhausting_sequence_alt, space_def, subsets_def,
                    IN_FUNSET, IN_UNIV, IN_general_prod] (* 3 subgoals *)
- >| [ (* goal 1 (of 3) *)
-      qexistsl_tac [‘f n’, ‘g n’] >> art [],
-      (* goal 2 (of 3) *)
-      rw [SUBSET_DEF, IN_general_cross] \\
-      qexistsl_tac [‘a’, ‘b’] >> art [] \\
-      METIS_TAC [SUBSET_DEF],
-      (* goal 3 (of 3) *)
-      simp [Once EXTENSION, IN_BIGUNION_IMAGE, IN_general_cross, IN_UNIV] \\
-      GEN_TAC >> EQ_TAC >> rpt STRIP_TAC >| (* 2 subgoals *)
-      [ (* goal 3.1 (of 2) *)
-        qexistsl_tac [‘a’,‘b’] >> art [] \\
-        CONJ_TAC >> Q.EXISTS_TAC ‘n’ >> art [],
-        (* goal 3.2 (of 2) *)
-        rename1 ‘a IN f n1’ \\
-        rename1 ‘b IN g n2’ \\
-        Q.EXISTS_TAC ‘MAX n1 n2’ \\
-        qexistsl_tac [‘a’, ‘b’] >> art [] \\
-        CONJ_TAC >| (* 2 subgoals *)
-        [ Suff ‘f n1 SUBSET f (MAX n1 n2)’ >- METIS_TAC [SUBSET_DEF] \\
-          FIRST_X_ASSUM MATCH_MP_TAC >> RW_TAC arith_ss [],
-          Suff ‘g n2 SUBSET g (MAX n1 n2)’ >- METIS_TAC [SUBSET_DEF] \\
-          FIRST_X_ASSUM MATCH_MP_TAC >> RW_TAC arith_ss [] ] ] ]
+ (* goal 1 (of 3) *)
+ >- (qexistsl_tac [‘f n’, ‘g n’] >> art [])
+ (* goal 2 (of 3) *)
+ >- (rw [SUBSET_DEF, IN_general_cross] \\
+     qexistsl_tac [‘a’, ‘b’] >> art [] \\
+     METIS_TAC [SUBSET_DEF])
+ (* goal 3 (of 3) *)
+ >> simp [Once EXTENSION, IN_BIGUNION_IMAGE, IN_general_cross, IN_UNIV]
+ >> GEN_TAC >> EQ_TAC >> rpt STRIP_TAC
+ >- (qexistsl_tac [‘a’, ‘b’] >> art [] \\
+     CONJ_TAC >> Q.EXISTS_TAC ‘n’ >> art [])
+ >> rename1 ‘a IN f n1’
+ >> rename1 ‘b IN g n2’
+ >> Q.EXISTS_TAC ‘MAX n1 n2’
+ >> qexistsl_tac [‘a’, ‘b’] >> art []
+ >> CONJ_TAC (* 2 subgoals *)
+ >| [ Suff ‘f n1 SUBSET f (MAX n1 n2)’ >- METIS_TAC [SUBSET_DEF] \\
+      FIRST_X_ASSUM MATCH_MP_TAC >> RW_TAC arith_ss [],
+      Suff ‘g n2 SUBSET g (MAX n1 n2)’ >- METIS_TAC [SUBSET_DEF] \\
+      FIRST_X_ASSUM MATCH_MP_TAC >> RW_TAC arith_ss [] ]
 QED
 
 Theorem exhausting_sequence_CROSS :
@@ -2466,7 +2464,8 @@ Theorem exhausting_sequence_CROSS :
 Proof
     rpt GEN_TAC >> STRIP_TAC
  >> MP_TAC (Q.SPECL [‘pair$,’, ‘X’, ‘Y’, ‘A’, ‘B’, ‘f’, ‘g’]
-                    (INST_TYPE [gamma |-> “:'a # 'b”] exhausting_sequence_general_cross))
+                    (INST_TYPE [gamma |-> “:'a # 'b”]
+                               exhausting_sequence_general_cross))
  >> RW_TAC std_ss [GSYM CROSS_ALT, GSYM prod_sets_alt]
 QED
 
@@ -2488,7 +2487,8 @@ Proof
 QED
 
 Theorem general_sigma_of_generator :
-    !(cons :'a -> 'b -> 'c) (car :'c -> 'a) (cdr :'c -> 'b) (X :'a set) (Y :'b set) E G.
+    !(cons :'a -> 'b -> 'c) (car :'c -> 'a) (cdr :'c -> 'b)
+     (X :'a set) (Y :'b set) E G.
         pair_operation cons car cdr /\
         subset_class X E /\ subset_class Y G /\
         has_exhausting_sequence (X,E) /\ has_exhausting_sequence (Y,G) ==>
@@ -2861,12 +2861,14 @@ Theorem uniqueness_of_prod_measure :
       !x. x IN subsets (fcp_sigma A B) ==> (m x = m' x)
 Proof
     rpt GEN_TAC >> STRIP_TAC
- >> MP_TAC (Q.SPECL [‘FCP_CONCAT’,‘FCP_FST’,‘FCP_SND’,‘X’,‘Y’,‘E’,‘G’,‘A’,‘B’,‘u’,‘v’,‘m’,‘m'’]
+ >> MP_TAC (Q.SPECL [‘FCP_CONCAT’, ‘FCP_FST’, ‘FCP_SND’,
+                     ‘X’, ‘Y’, ‘E’, ‘G’, ‘A’, ‘B’, ‘u’, ‘v’, ‘m’, ‘m'’]
                     (((INST_TYPE [“:'temp1” |-> “:'a['b]”]) o
                       (INST_TYPE [“:'temp2” |-> “:'a['c]”]) o
                       (INST_TYPE [gamma |-> “:'a['b + 'c]”]) o
                       (INST_TYPE [alpha |-> “:'temp1”]) o
-                      (INST_TYPE [beta |-> “:'temp2”])) uniqueness_of_prod_measure_general))
+                      (INST_TYPE [beta |-> “:'temp2”]))
+                     uniqueness_of_prod_measure_general))
  >> RW_TAC std_ss [GSYM fcp_cross_alt, GSYM fcp_prod_alt, GSYM fcp_sigma_alt,
                    pair_operation_FCP_CONCAT]
 QED
@@ -2877,14 +2879,17 @@ Theorem uniqueness_of_prod_measure_general' :
       pair_operation cons car cdr /\
       sigma_finite_measure_space (X,A,u) /\
       sigma_finite_measure_space (Y,B,v) /\
-      measure_space (general_cross cons X Y,subsets (general_sigma cons (X,A) (Y,B)),m) /\
-      measure_space (general_cross cons X Y,subsets (general_sigma cons (X,A) (Y,B)),m') /\
+      measure_space (general_cross cons X Y,
+                     subsets (general_sigma cons (X,A) (Y,B)),m) /\
+      measure_space (general_cross cons X Y,
+                     subsets (general_sigma cons (X,A) (Y,B)),m') /\
      (!s t. s IN A /\ t IN B ==> (m  (general_cross cons s t) = u s * v t)) /\
      (!s t. s IN A /\ t IN B ==> (m' (general_cross cons s t) = u s * v t)) ==>
       !x. x IN subsets (general_sigma cons (X,A) (Y,B)) ==> (m x = m' x)
 Proof
     rpt GEN_TAC >> STRIP_TAC
- >> MP_TAC (Q.SPECL [‘cons’,‘car’,‘cdr’,‘X’,‘Y’,‘A’,‘B’,‘(X,A)’,‘(Y,B)’,‘u’,‘v’,‘m’,‘m'’]
+ >> MP_TAC (Q.SPECL [‘cons’, ‘car’, ‘cdr’,
+                     ‘X’, ‘Y’, ‘A’, ‘B’, ‘(X,A)’, ‘(Y,B)’, ‘u’, ‘v’, ‘m’, ‘m'’]
                     uniqueness_of_prod_measure_general)
  >> fs [sigma_finite_measure_space_def]
  >> ‘sigma_algebra (X,A) /\ sigma_algebra (Y,B)’
@@ -2919,7 +2924,8 @@ Theorem UNIQUENESS_OF_PROD_MEASURE' :
 Proof
     rpt GEN_TAC >> STRIP_TAC
  >> MP_TAC (Q.SPECL [‘pair$,’,‘FST’,‘SND’,‘X’,‘Y’,‘A’,‘B’,‘u’,‘v’,‘m’,‘m'’]
-                    (INST_TYPE [gamma |-> “:'a # 'b”] uniqueness_of_prod_measure_general'))
+                    (INST_TYPE [gamma |-> “:'a # 'b”]
+                               uniqueness_of_prod_measure_general'))
  >> RW_TAC std_ss [GSYM CROSS_ALT, GSYM prod_sets_alt, GSYM prod_sigma_alt,
                    pair_operation_pair]
 QED
@@ -2937,12 +2943,14 @@ Theorem uniqueness_of_prod_measure' :
       !x. x IN subsets (fcp_sigma (X,A) (Y,B)) ==> (m x = m' x)
 Proof
     rpt GEN_TAC >> STRIP_TAC
- >> MP_TAC (Q.SPECL [‘FCP_CONCAT’,‘FCP_FST’,‘FCP_SND’,‘X’,‘Y’,‘A’,‘B’,‘u’,‘v’,‘m’,‘m'’]
+ >> MP_TAC (Q.SPECL [‘FCP_CONCAT’, ‘FCP_FST’, ‘FCP_SND’,
+                     ‘X’, ‘Y’, ‘A’, ‘B’, ‘u’, ‘v’, ‘m’, ‘m'’]
                     (((INST_TYPE [“:'temp1” |-> “:'a['b]”]) o
                       (INST_TYPE [“:'temp2” |-> “:'a['c]”]) o
                       (INST_TYPE [gamma |-> “:'a['b + 'c]”]) o
                       (INST_TYPE [alpha |-> “:'temp1”]) o
-                      (INST_TYPE [beta |-> “:'temp2”])) uniqueness_of_prod_measure_general'))
+                      (INST_TYPE [beta |-> “:'temp2”]))
+                     uniqueness_of_prod_measure_general'))
  >> RW_TAC std_ss [GSYM fcp_cross_alt, GSYM fcp_prod_alt, GSYM fcp_sigma_alt,
                    pair_operation_FCP_CONCAT]
 QED
@@ -4279,6 +4287,64 @@ Definition prod_measure_def :
     prod_measure m1 m2 =
       \s. pos_fn_integral m2 (\y. pos_fn_integral m1 (\x. indicator_fn s (x,y)))
 End
+
+Theorem PROD_MEASURE_CROSS :
+    !M1 M2 s t. measure_space M1 /\ measure_space M2 /\
+                s IN measurable_sets M1 /\ t IN measurable_sets M2 ==>
+                prod_measure M1 M2 (s CROSS t) = measure M1 s * measure M2 t
+Proof
+    rw [prod_measure_def, sigma_finite_measure_space_def]
+ >> ‘!x y s. indicator_fn s (x,y) = indicator_fn (\y. (x,y) IN s) y’
+       by rw [indicator_fn_def]
+ >> POP_ORW
+ >> ‘!x y. (x,y) IN s CROSS t <=> x IN s /\ y IN t’ by rw [IN_CROSS]
+ >> POP_ORW
+ >> ‘!x. (\y. x IN s /\ y IN t) = (\y. x IN s) INTER t’ by rw [FUN_EQ_THM]
+ >> POP_ORW
+ >> simp [INDICATOR_FN_INTER]
+ >> ONCE_REWRITE_TAC [mul_comm]
+ >> ‘!x y. indicator_fn (\y. x IN s) y = indicator_fn s x’
+       by rw [indicator_fn_def, FUN_EQ_THM]
+ >> POP_ORW
+ >> Know ‘pos_fn_integral M2
+            (\y. pos_fn_integral M1 (\x. indicator_fn t y * indicator_fn s x)) =
+          pos_fn_integral M2
+            (\y. indicator_fn t y * pos_fn_integral M1 (indicator_fn s))’
+ >- (MATCH_MP_TAC pos_fn_integral_cong >> simp [] \\
+     CONJ_TAC
+     >- (rpt STRIP_TAC \\
+         MATCH_MP_TAC pos_fn_integral_pos >> art [] \\
+         Q.X_GEN_TAC ‘y’ >> rw [] \\
+         MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+     CONJ_TAC
+     >- (rpt STRIP_TAC \\
+         MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS] \\
+         MATCH_MP_TAC pos_fn_integral_pos >> rw [INDICATOR_FN_POS]) \\
+     rpt STRIP_TAC \\
+     qabbrev_tac ‘c = indicator_fn t x’ \\
+    ‘0 <= c /\ c <> PosInf /\ c <> NegInf’
+       by METIS_TAC [INDICATOR_FN_NOT_INFTY, INDICATOR_FN_POS] \\
+    ‘?r. 0 <= r /\ c = Normal r’
+       by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_le_eq] \\
+     POP_ORW \\
+     HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [INDICATOR_FN_POS])
+ >> Rewr'
+ >> simp [pos_fn_integral_indicator]
+ >> ONCE_REWRITE_TAC [mul_comm]
+ >> Cases_on ‘measure M1 s = PosInf’
+ >- (POP_ORW \\
+     MATCH_MP_TAC pos_fn_integral_cmul_infty >> art [])
+ >> ‘0 <= measure M1 s’ by PROVE_TAC [MEASURE_POSITIVE]
+ >> ‘measure M1 s <> NegInf’ by rw [pos_not_neginf]
+ >> ‘?r. 0 <= r /\ measure M1 s = Normal r’
+      by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_le_eq]
+ >> POP_ORW
+ >> Know ‘pos_fn_integral M2 (\y. Normal r * indicator_fn t y) =
+          Normal r * pos_fn_integral M2 (indicator_fn t)’
+ >- (HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [INDICATOR_FN_POS])
+ >> Rewr'
+ >> simp [pos_fn_integral_indicator]
+QED
 
 Definition prod_measure_space_def : (* was: prod_measure_def or pair_measure_def *)
     prod_measure_space m1 m2 =
@@ -8726,14 +8792,21 @@ Proof
  >> simp [measure_of_measure_space, measure_space_eq_measure_of]
 QED
 
-Theorem pos_fn_integral_max_0 :
-    !m f. measure_space m /\
-         (!x. x IN m_space m ==> 0 <= f x) ==>
-          pos_fn_integral m (\x. max 0 (f x)) = pos_fn_integral m f
+(* NOTE: This alternative definition eliminated the inner ‘max 0’ *)
+Theorem density_of_pos_fn :
+    !M f. measure_space M /\ (!x. x IN m_space M ==> 0 <= f x) ==>
+          density_of M f =
+            (m_space M,measurable_sets M,
+              (\s. if s IN measurable_sets M then
+                      pos_fn_integral M (\x. f x * indicator_fn s x)
+                   else 0))
 Proof
-    rpt STRIP_TAC
- >> MATCH_MP_TAC pos_fn_integral_cong >> rw [le_max]
- >> MATCH_MP_TAC max_0_reduce >> rw []
+    rw [density_of, FUN_EQ_THM]
+ >> Cases_on ‘s IN measurable_sets M’ >> rw []
+ >> MATCH_MP_TAC pos_fn_integral_cong
+ >> rw [le_max, le_mul, INDICATOR_FN_POS]
+ >> MATCH_MP_TAC max_0_reduce
+ >> MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]
 QED
 
 Theorem pos_fn_integral_density_of :
@@ -8831,6 +8904,390 @@ Proof
  >> rpt STRIP_TAC
  >> MATCH_MP_TAC le_mul >> rw []
 QED
+
+Theorem pos_fn_integral_density_of_reduce :
+    !m f g. measure_space m /\
+            f IN measurable (m_space m, measurable_sets m) Borel /\
+            g IN measurable (m_space m, measurable_sets m) Borel /\
+           (!x. x IN m_space m ==> 0 <= f x) /\
+           (!x. x IN m_space m ==> 0 <= g x)
+       ==> pos_fn_integral (density_of m f) g = pos_fn_integral m (\x. f x * g x)
+Proof
+    rpt STRIP_TAC
+ >> Know ‘pos_fn_integral (density_of m f) g = pos_fn_integral (density m f) g’
+ >- (MATCH_MP_TAC pos_fn_integral_density_of >> art [])
+ >> Rewr'
+ >> MATCH_MP_TAC pos_fn_integral_density_reduce >> art []
+QED
+
+(* NOTE: This is an easy corollary of TONELLI *)
+Theorem pos_fn_integral_exchange :
+    !m1 m2 f. sigma_finite_measure_space m1 /\
+              sigma_finite_measure_space m2 /\
+              f IN Borel_measurable (measurable_space m1 CROSS measurable_space m2) /\
+             (!z. z IN m_space m1 CROSS m_space m2 ==> 0 <= f z) ==>
+              pos_fn_integral m1 (\x. pos_fn_integral m2 (\y. f (x,y))) =
+              pos_fn_integral m2 (\y. pos_fn_integral m1 (\x. f (x,y)))
+Proof
+    rpt STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘m_space m1’, ‘m_space m2’,
+                     ‘measurable_sets m1’, ‘measurable_sets m2’,
+                     ‘measure m1’, ‘measure m2’, ‘f’] TONELLI)
+ >> simp [MEASURE_SPACE_REDUCE]
+ >> STRIP_TAC
+ >> NTAC 2 (POP_ASSUM (REWRITE_TAC o wrap o SYM))
+QED
+
+Theorem measure_of_reduce :
+    !M. measure_of M = measure_of (m_space M, measurable_sets M, measure M)
+Proof
+    SIMP_TAC std_ss [MEASURE_SPACE_REDUCE]
+QED
+
+(* NOTE: The antecedent ‘ring (sp,M)’ (can be weaken to ‘semiring (sp,M)’) is
+   to make sure ‘{} IN M’.
+ *)
+Theorem positive_cong_eq :
+    !sp M u u'. ring (sp,M) /\ (!a. a IN M ==> u' a = u a) ==>
+                positive (sp,M,u) = positive (sp,M,u')
+Proof
+  SIMP_TAC std_ss [positive_def, measure_def, measurable_sets_def] THEN
+  RW_TAC std_ss [ring_alt, subset_class_def]
+QED
+
+Theorem countably_additive_eq :
+    !sp M u u'. (!a. a IN M ==> u' a = u a) ==>
+                countably_additive (sp,M,u') = countably_additive (sp,M,u)
+Proof
+  SIMP_TAC std_ss [countably_additive_def, IN_FUNSET, IN_UNIV] THEN
+  REPEAT STRIP_TAC THEN EQ_TAC THEN REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM (MP_TAC o SPEC ``f:num->'a->bool``) THEN
+  FULL_SIMP_TAC std_ss [measurable_sets_def, measure_def, o_DEF]
+QED
+
+Theorem measure_space_sigma_sets_eq : (* was: measure_space_eq *)
+    !sp A u u'. A SUBSET POW sp /\
+               (!a. a IN sigma_sets sp A ==> u a = u' a) ==>
+                measure_space (sp, (sigma_sets sp A), u) =
+                measure_space (sp, (sigma_sets sp A), u')
+Proof
+  REPEAT STRIP_TAC THEN POP_ASSUM MP_TAC THEN FIRST_X_ASSUM MP_TAC THEN
+  DISCH_THEN (MP_TAC o MATCH_MP sigma_algebra_sigma_sets) THEN
+  SIMP_TAC std_ss [measure_space_def] THEN REPEAT STRIP_TAC THEN
+  SIMP_TAC std_ss [measurable_sets_def, m_space_def] THEN AP_TERM_TAC THEN
+  MATCH_MP_TAC (TAUT `(a = b) /\ (c = d) ==>
+    ((a /\ c) <=> (b /\ d))`) THEN CONJ_TAC THENL
+  [MATCH_MP_TAC positive_cong_eq THEN ONCE_REWRITE_TAC [EQ_SYM_EQ] THEN
+   FULL_SIMP_TAC std_ss [sigma_algebra_alt_eq, ALGEBRA_IMP_RING],
+   MATCH_MP_TAC countably_additive_eq THEN ASM_REWRITE_TAC []]
+QED
+
+Theorem measure_of_eq :
+    !sp A u u'. A SUBSET POW sp /\ (!a. a IN sigma_sets sp A ==> (u a = u' a)) ==>
+                (measure_of (sp,A,u) = measure_of (sp,A,u'))
+Proof
+  REPEAT GEN_TAC THEN DISCH_TAC THEN FIRST_ASSUM MP_TAC THEN
+  DISCH_THEN (MP_TAC o MATCH_MP measure_space_sigma_sets_eq) THEN
+  SIMP_TAC std_ss [measure_of] THEN DISCH_TAC THEN
+  ABS_TAC THEN COND_CASES_TAC THEN FULL_SIMP_TAC std_ss []
+QED
+
+Theorem measure_of_eq' : (* was: measure_eqI *)
+    !M N. measure_space M /\ measure_space N /\
+          measurable_sets M = measurable_sets N /\
+         (!A. A IN measurable_sets M ==> measure M A = measure N A) ==>
+          measure_of M = measure_of N
+Proof
+  RW_TAC std_ss [] THEN ONCE_REWRITE_TAC [measure_of_reduce] THEN
+  KNOW_TAC ``m_space M = m_space N`` THENL
+  [METIS_TAC [sets_eq_imp_space_eq], DISCH_TAC] THEN
+  ASM_SIMP_TAC std_ss [] THEN MATCH_MP_TAC measure_of_eq THEN
+  FULL_SIMP_TAC std_ss [measure_space_def] THEN
+  FULL_SIMP_TAC std_ss [sigma_sets_eq, sigma_algebra_iff2]
+QED
+
+(* HVG's original definition, ‘sigma_finite’ is unnecessary *)
+Definition finite_measure_space :
+    finite_measure_space m <=> sigma_finite_measure_space m /\
+                               measure m (m_space m) <> PosInf
+End
+
+(* Use this one instead *)
+Theorem finite_measure_space_def :
+    !m. finite_measure_space m <=> measure_space m /\
+                                   measure m (m_space m) <> PosInf
+Proof
+    rw [finite_measure_space, sigma_finite_measure_space_def]
+ >> EQ_TAC >> rw []
+ >> MATCH_MP_TAC FINITE_IMP_SIGMA_FINITE >> art []
+QED
+
+Theorem MEASURABLE_SPACE_PROD :
+    !M1 M2. measure_space M1 /\ measure_space M2 ==>
+            measurable_space (M1 CROSS M2) =
+            measurable_space M1 CROSS measurable_space M2
+Proof
+    rw [prod_measure_space_def, prod_sigma_def, SPACE_PROD_SIGMA]
+ >> qmatch_abbrev_tac ‘(sp, subsets a) = _’
+ >> ‘sp = space a’ by rw [Abbr ‘a’, SPACE_SIGMA] >> rw [SPACE]
+QED
+
+Theorem SPACE_PROD :
+    !M1 M2. measure_space M1 /\ measure_space M2 ==>
+            m_space (M1 CROSS M2) = m_space M1 CROSS m_space M2
+Proof
+    rw [prod_measure_space_def]
+QED
+
+(* ========================================================================= *)
+(* Independent functions and submartingale [1, p.279-281]                    *)
+(* ========================================================================= *)
+
+Definition indep_functions_def :
+    indep_functions m u A (J :'index set) =
+      !s N. N SUBSET J /\ N <> {} /\ FINITE N /\
+            s IN (N --> subsets o A) ==>
+            measure m (BIGINTER (IMAGE (\n. PREIMAGE (u n) (s n) INTER m_space m) N)) =
+            PI (measure m o (\n. PREIMAGE (u n) (s n) INTER m_space m)) N
+End
+
+(* This is 1st part of Scholium 23.4 (on independent functions) [1, p.280]
+
+   The prob_space version of this theorem generalizes [indep_vars_expectation]
+
+   |- !p X Y.
+          prob_space p /\ real_random_variable X p /\
+          real_random_variable Y p /\ indep_vars p X Y Borel Borel /\
+          integrable p X /\ integrable p Y ==>
+          expectation p (\x. X x * Y x) = expectation p X * expectation p Y
+
+   But the present proof doesn't use Fubini's Theorem.
+
+Theorem indep_functions_integral_mul_indicator :
+  !m u. measure_space m /\ measure m (m_space m) = 1 /\
+       (!n. integrable m (u n)) /\
+        indep_functions m u (\n. Borel) univ(:num)
+    ==> !n s. s IN subsets (sigma (m_space m) (\n. Borel) u (count1 n)) ==>
+             (integral m (\x. u (SUC n) x * indicator_fn s x) =
+              measure m s * integral m (u (SUC n)))
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> Q.X_GEN_TAC ‘N’
+ >> Q.ABBREV_TAC ‘sp = m_space m’
+ (* This is a new generator of ‘sigma (m_space m) (\n. Borel) u (count1 N)’ *)
+ >> Q.ABBREV_TAC
+     ‘A = {s | ?b. (!i. i <= N ==> b i IN subsets Borel) /\
+                   s = BIGINTER (IMAGE (\i. PREIMAGE (u i) (b i) INTER sp) (count1 N))}’
+ (* prove it's indeed a generator *)
+ >> Know ‘sigma sp (\n. Borel) u (count1 N) = sigma sp A’
+ >- (Suff ‘subsets (sigma sp (\n. Borel) u (count1 N)) = subsets (sigma sp A)’
+     >- METIS_TAC [SPACE_SIGMA, space_sigma_functions, SPACE] \\
+     MATCH_MP_TAC SUBSET_ANTISYM \\
+     CONJ_TAC >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       Q.ABBREV_TAC ‘B = sigma sp A’ \\
+      ‘sp = space B’ by METIS_TAC [SPACE_SIGMA] >> POP_ORW \\
+       MATCH_MP_TAC sigma_functions_subset \\
+       rw [SIGMA_ALGEBRA_BOREL, Abbr ‘B’, LT_SUC_LE]
+       >- (MATCH_MP_TAC SIGMA_ALGEBRA_SIGMA \\
+           rw [Abbr ‘A’, subset_class_def, SUBSET_DEF] \\
+           POP_ASSUM MP_TAC \\
+           Suff ‘BIGINTER (IMAGE (\i. PREIMAGE (u i) (b i) INTER sp) (count1 N))
+                 SUBSET sp’ >- METIS_TAC [SUBSET_DEF] \\
+           rw [SUBSET_DEF, IN_BIGINTER_IMAGE] \\
+           POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> rw []) \\
+       rw [IN_MEASURABLE, IN_FUNSET, SPACE_SIGMA, SPACE_BOREL] \\
+       Suff ‘PREIMAGE (u i) s INTER sp IN A’
+       >- METIS_TAC [SUBSET_DEF, SIGMA_SUBSET_SUBSETS] \\
+       rw [Abbr ‘A’] \\
+    (* correct direction: now construct ‘b’ *)
+       Q.EXISTS_TAC ‘\j. if j = i then s else UNIV’ \\
+       rw [] >- METIS_TAC [SIGMA_ALGEBRA_SPACE, SIGMA_ALGEBRA_BOREL, SPACE_BOREL] \\
+       rw [Once EXTENSION, IN_BIGINTER_IMAGE, LT_SUC_LE] \\
+       EQ_TAC >> rw [] >| (* 3 subgoals *)
+       [ (* goal 1.1 (of 3) *)
+         rename1 ‘j <= N’ >> Cases_on ‘j = i’ >> rw [],
+         (* goal 1.2 (of 3) *)
+         POP_ASSUM (MP_TAC o Q.SPEC ‘i’) >> rw [],
+         (* goal 1.3 (of 3) *)
+         POP_ASSUM (MP_TAC o Q.SPEC ‘i’) >> rw [] ],
+       (* goal 2 (of 2) *)
+       Q.ABBREV_TAC ‘B = sigma sp (\n. Borel) u (count1 N)’ \\
+      ‘sp = space B’ by METIS_TAC [space_sigma_functions] >> POP_ORW \\
+       MATCH_MP_TAC SIGMA_SUBSET >> rw [Abbr ‘B’]
+       >- (MATCH_MP_TAC sigma_algebra_sigma_functions >> rw [IN_FUNSET, SPACE_BOREL]) \\
+       rw [SUBSET_DEF, Abbr ‘A’] \\
+       MATCH_MP_TAC SIGMA_ALGEBRA_FINITE_INTER >> rw [LT_SUC_LE]
+       >- (MATCH_MP_TAC sigma_algebra_sigma_functions >> rw [IN_FUNSET, SPACE_BOREL]) \\
+       Q.PAT_X_ASSUM ‘!i. i <= N ==> b i IN subsets Borel’ (MP_TAC o (Q.SPEC ‘i’)) \\
+       rw [sigma_functions_def] \\
+       Suff ‘PREIMAGE (u i) (b i) INTER sp IN
+             (BIGUNION
+               (IMAGE (\n. IMAGE (\s. PREIMAGE (u n) s INTER sp) (subsets Borel)) (count1 N)))’
+       >- METIS_TAC [SUBSET_DEF, SIGMA_SUBSET_SUBSETS] \\
+       rw [IN_BIGUNION_IMAGE, LT_SUC_LE] \\
+       Q.EXISTS_TAC ‘i’ >> art [] \\
+       Q.EXISTS_TAC ‘b i’ >> art [] ])
+ >> Rewr'
+ (* prove the goal for sets in the generator *)
+ >> Know ‘!s. s IN A ==> integral m (\x. u (SUC N) x * indicator_fn s x) =
+                         measure m s * integral m (u (SUC N))’
+ >- (rw [Abbr ‘A’, IN_BIGINTER_IMAGE] \\
+     cheat)
+ >> cheat
+QED
+
+(* This is Example 23.3(x) of [1, p.279-280]. It's actually about real r.v.'s
+
+   NOTE: ‘!n x. x IN m_space m ==> X n x <> NegInf /\ X n x <> PosInf’ is needed for
+         ‘Z n x’ being specified (cf. probabilityTheory.real_random_variable_def)
+
+   Also note that ‘sub_martingale m A Z’ does NOT implies ‘0 <= integral m (X 0)’.
+ *)
+Theorem indep_functions_sub_martingle :
+  !m X A Z. measure_space m /\ measure m (m_space m) = 1 /\
+           (!n. integrable m (X n)) /\
+           (!n x. x IN m_space m ==> X n x <> NegInf /\ X n x <> PosInf) /\
+            indep_functions m X (\n. Borel) univ(:num) /\
+           (!n. A n = sigma (m_space m) (\n. Borel) X (count1 n)) /\
+           (!n x. x IN m_space m ==> Z n x = SIGMA (\i. X i x) (count1 n))
+       ==> (sub_martingale m A Z <=> !n. 0 <= integral m (X (SUC n)))
+Proof
+    rpt STRIP_TAC
+ >> EQ_TAC (* easier branch first *)
+ >- (rw [sub_martingale_def] \\
+     Q.PAT_X_ASSUM ‘!n s. s IN subsets _ ==> P’ (MP_TAC o (Q.SPECL [‘n’,‘m_space m’])) \\
+     Know ‘m_space m IN subsets (sigma (m_space m) (\n. Borel) X (count1 n))’
+     >- (Q.ABBREV_TAC ‘a = sigma (m_space m) (\n. Borel) X (count1 n)’ \\
+        ‘m_space m = space a’ by PROVE_TAC [space_sigma_functions] >> POP_ORW \\
+         MATCH_MP_TAC SIGMA_ALGEBRA_SPACE \\
+         Q.UNABBREV_TAC ‘a’ \\
+         MATCH_MP_TAC sigma_algebra_sigma_functions \\
+         rw [SPACE_BOREL, IN_FUNSET]) \\
+     RW_TAC std_ss [] >> POP_ASSUM MP_TAC \\
+     Know ‘integral m (\x. Z (SUC n) x * indicator_fn (m_space m) x) =
+           integral m (\x. X (SUC n) x + Z n x)’
+     >- (MATCH_MP_TAC integral_cong >> rw [indicator_fn_def] \\
+        ‘count1 (SUC n) = SUC n INSERT (count1 n)’ by rw [COUNT_SUC] >> POP_ORW \\
+         Suff ‘SIGMA (\i. X i x) (SUC n INSERT count1 n) =
+               X (SUC n) x + SIGMA (\i. X i x) (count1 n)’ >- rw [] \\
+         Q.ABBREV_TAC ‘f = \i. X i x’ \\
+        ‘X (SUC n) x = f (SUC n)’ by rw [] >> POP_ORW \\
+        ‘SIGMA f (count1 n) = SIGMA f (count1 n DELETE SUC n)’ by rw [count_def] \\
+         POP_ORW \\
+         irule EXTREAL_SUM_IMAGE_PROPERTY_POS >> rw [Abbr ‘f’]) >> Rewr' \\
+     Know ‘integral m (\x. Z n x * indicator_fn (m_space m) x) = integral m (Z n)’
+     >- (MATCH_MP_TAC integral_cong >> rw [indicator_fn_def]) >> Rewr' \\
+     Know ‘integral m (\x. X (SUC n) x + Z n x) = integral m (X (SUC n)) + integral m (Z n)’
+     >- (MATCH_MP_TAC integral_add' >> art []) >> Rewr' \\
+    ‘integral m (Z n) <> PosInf /\ integral m (Z n) <> NegInf’
+      by METIS_TAC [integrable_finite_integral] \\
+    ‘integral m (X (SUC n)) <> PosInf /\ integral m (X (SUC n)) <> NegInf’
+      by METIS_TAC [integrable_finite_integral] \\
+     Q.ABBREV_TAC ‘a = integral m (Z n)’ \\
+     Q.ABBREV_TAC ‘b = integral m (X (SUC n))’ \\
+    ‘b + a = a + b’ by METIS_TAC [add_comm] >> POP_ORW \\
+     Suff ‘a <= a + b <=> 0 <= b’ >- rw [] \\
+     MATCH_MP_TAC le_addr >> art [])
+ >> Know ‘!n. integrable m (Z n)’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     Know ‘integrable m (Z n) <=> integrable m (\x. SIGMA (\i. X i x) (count1 n))’
+     >- (MATCH_MP_TAC integrable_cong >> rw []) >> Rewr' \\
+     MATCH_MP_TAC integrable_sum' >> rw [])
+ >> rw [sub_martingale_def]
+ >| [ (* goal 1 (of 2): sigma_finite_filtered_measure_space m A *)
+      reverse (rw [sigma_finite_filtered_measure_space_def])
+      >- (MATCH_MP_TAC FINITE_IMP_SIGMA_FINITE >> rw [] \\
+          Know ‘sigma (m_space m) (\n. Borel) X (count 1) = sigma (m_space m) Borel (X 0)’
+          >- (MATCH_MP_TAC sigma_functions_1 \\
+              rw [SIGMA_ALGEBRA_BOREL, IN_FUNSET, SPACE_BOREL]) >> Rewr' \\
+          MATCH_MP_TAC MEASURE_SPACE_RESTRICTION' >> art [] \\
+          CONJ_TAC
+          >- (MATCH_MP_TAC (REWRITE_RULE [space_def, subsets_def]
+                             (Q.ISPECL [‘measurable_space m’, ‘Borel’]
+                                       sigma_function_subset)) \\
+             rw [MEASURE_SPACE_SIGMA_ALGEBRA, SIGMA_ALGEBRA_BOREL] \\
+             FULL_SIMP_TAC std_ss [integrable_def]) \\
+          Q.ABBREV_TAC ‘B = sigma (m_space m) Borel (X 0)’ \\
+         ‘m_space m = space B’ by METIS_TAC [space_sigma_function] >> POP_ORW \\
+          rw [SPACE, Abbr ‘B’] \\
+          MATCH_MP_TAC sigma_algebra_sigma_function \\
+          rw [SIGMA_ALGEBRA_BOREL, IN_FUNSET, SPACE_BOREL]) \\
+      rw [filtered_measure_space_def] \\
+      MATCH_MP_TAC filtration_from_measurable_functions \\
+      Q.EXISTS_TAC ‘X’ >> rw [] \\
+      FULL_SIMP_TAC std_ss [integrable_def],
+      (* goal 2 (of 2) *)
+      Know ‘integral m (\x. Z (SUC n) x * indicator_fn s x) =
+            integral m (\x. (X (SUC n) x + Z n x) * indicator_fn s x)’
+      >- (MATCH_MP_TAC integral_cong >> rw [] \\
+          Suff ‘SIGMA (\i. X i x) (count1 (SUC n)) =
+                X (SUC n) x + SIGMA (\i. X i x) (count1 n)’ >- rw [] \\
+         ‘count1 (SUC n) = SUC n INSERT (count1 n)’ by rw [COUNT_SUC] >> POP_ORW \\
+          Q.ABBREV_TAC ‘f = \i. X i x’ \\
+         ‘X (SUC n) x = f (SUC n)’ by rw [] >> POP_ORW \\
+         ‘SIGMA f (count1 n) = SIGMA f (count1 n DELETE SUC n)’ by rw [count_def] \\
+          POP_ORW \\
+          irule EXTREAL_SUM_IMAGE_PROPERTY_POS >> rw [Abbr ‘f’]) >> Rewr' \\
+      Know ‘integral m (\x. (X (SUC n) x + Z n x) * indicator_fn s x) =
+            integral m (\x. X (SUC n) x * indicator_fn s x + Z n x * indicator_fn s x)’
+      >- (MATCH_MP_TAC integral_cong >> rw [] \\
+         ‘?r. 0 <= r /\ r <= 1 /\ indicator_fn s x = Normal r’
+            by METIS_TAC [indicator_fn_normal] >> POP_ORW \\
+          MATCH_MP_TAC add_rdistrib_normal >> rw []) >> Rewr' \\
+      Know ‘s IN measurable_sets m’
+      >- (Suff ‘subsets (sigma (m_space m) (\n. Borel) X (count1 n)) SUBSET measurable_sets m’
+          >- rw [SUBSET_DEF] \\
+       (* applying sigma_functions_subset *)
+          MATCH_MP_TAC (REWRITE_RULE [space_def, subsets_def]
+                          (Q.ISPECL [‘measurable_space m’, ‘\n:num. Borel’]
+                                    sigma_functions_subset)) \\
+          rw [MEASURE_SPACE_SIGMA_ALGEBRA, SIGMA_ALGEBRA_BOREL] \\
+          FULL_SIMP_TAC std_ss [integrable_def]) >> DISCH_TAC \\
+      Know ‘integral m (\x. X (SUC n) x * indicator_fn s x + Z n x * indicator_fn s x) =
+            integral m (\x. X (SUC n) x * indicator_fn s x) +
+            integral m (\x. Z n x * indicator_fn s x)’
+      >- (HO_MATCH_MP_TAC integral_add' >> art [] \\
+          CONJ_TAC >- (MATCH_MP_TAC integrable_mul_indicator >> art []) \\
+          MATCH_MP_TAC integrable_mul_indicator >> art []) >> Rewr' \\
+   (* applying indep_functions_integral_mul_indicator! *)
+      Know ‘integral m (\x. X (SUC n) x * indicator_fn s x) =
+            measure m s * integral m (X (SUC n))’
+      >- (irule indep_functions_integral_mul_indicator >> art []) >> Rewr' \\
+     ‘integrable m (\x. Z n x * indicator_fn s x)’
+        by METIS_TAC [integrable_mul_indicator] \\
+     ‘integral m (\x. Z n x * indicator_fn s x) <> PosInf /\
+      integral m (\x. Z n x * indicator_fn s x) <> NegInf’
+        by METIS_TAC [integrable_finite_integral] \\
+      Q.ABBREV_TAC ‘a = integral m (\x. Z n x * indicator_fn s x)’ \\
+     ‘?r. a = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+      ONCE_REWRITE_TAC [GSYM add_comm_normal] \\
+      MATCH_MP_TAC le_addr_imp \\
+      MATCH_MP_TAC le_mul >> art [] \\
+      Know ‘positive m’ >- rw [MEASURE_SPACE_POSITIVE] \\
+      rw [positive_def] ]
+QED
+
+(* NOTE: The weaker (but more common) ‘!n. 0 <= integral m (X n)’ is used here.
+
+   cf. probabilityTheory.indep_vars_sub_martingle for the probability version.
+ *)
+Theorem indep_functions_sub_martingle' :
+  !m X A Z. measure_space m /\ measure m (m_space m) = 1 /\
+           (!n. integrable m (X n)) /\
+           (!n x. x IN m_space m ==> X n x <> NegInf /\ X n x <> PosInf) /\
+            indep_functions m X (\n. Borel) univ(:num) /\
+           (!n. A n = sigma (m_space m) (\n. Borel) X (count1 n)) /\
+           (!n x. x IN m_space m ==> Z n x = SIGMA (\i. X i x) (count1 n)) /\
+           (!n. 0 <= integral m (X n))
+       ==> sub_martingale m A Z
+Proof
+    rpt STRIP_TAC
+ >> Know ‘sub_martingale m A Z <=> !n. 0 <= integral m (X (SUC n))’
+ >- (MATCH_MP_TAC indep_functions_sub_martingle >> art [])
+ >> rw []
+QED
+ *)
 
 (* END *)
 val _ = export_theory ();

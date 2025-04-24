@@ -57,6 +57,7 @@ fun strip_imp tm =
 
 fun gen_all tm = itlist (curry mk_forall) (free_vars_lr tm) tm;
 
+
 local fun break [] = raise ERR "mk_vstruct" "unable"
         | break (h::t) = (h,t)
 in

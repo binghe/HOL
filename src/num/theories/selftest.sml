@@ -101,7 +101,7 @@ fun test msg th =
      require_msg (check_result good_oneline)
                  (trace("assumptions", 1) thm_to_string)
                  (DefnBase.one_line_ify NONE) th)
-val _ = test "cv_sub_def" cvTheory.cv_sub_def
+(* val _ = test "cv_sub_def" cvTheory.cv_sub_def *)
 
 open groundEval numeralTheory
 

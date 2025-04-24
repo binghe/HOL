@@ -432,3 +432,4 @@ Theorem coreloop_total =
   peg_exec_total |> SIMP_RULE (srw_ss()) [peg_exec_def, AllCaseEqs()]
 
 val _ = export_theory()
+val _ = html_theory "pegexec";

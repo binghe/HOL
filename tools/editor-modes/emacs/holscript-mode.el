@@ -1,4 +1,4 @@
-(provide 'holscript-mode)
+(require 'smie)
 
 ;; font-locking and syntax
 
@@ -70,7 +70,7 @@ ignoring fact that it should really only occur at the beginning of the line.")
 (defvar holscript-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "`") 'holscript-dbl-backquote)
-    (define-key map (kbd "<RET>") 'holscript-newline-and-relative-indent)
+    (define-key map (kbd "<RET>") 'holscript-newline)
     ;;(define-key map "\M-f" 'forward-hol-tactic)
     ;;(define-key map "\M-b" 'backward-hol-tactic)
     ; (define-key map (kbd "C-M-<up>") 'hol-movement-backward-up-list)
@@ -248,7 +248,6 @@ On existing quotes, toggles between ‘-’ and “-” pairs.  Otherwise, inser
                       (length w))
                    nil))))))))
 
-
 (defun forward-tactic-terminator (n)
   (interactive "^p")
   (cond ((> n 0)
@@ -309,6 +308,7 @@ On existing quotes, toggles between ‘-’ and “-” pairs.  Otherwise, inser
   (save-excursion
     (backward-char)
     (thing-at-point 'tactic-starter)))
+
 (defun forward-hol-tactic (n)
   (interactive "^p")
   (cond ((> n 0)
@@ -521,6 +521,12 @@ a store_thm equivalent.")
                (if no-error-found t (hol-correct-eqstring s1 p1 s2 p2)))))
     (message "checking for problematic names done"))))
 
+(defun holscript-newline ()
+  "Insert a newline."
+  (interactive "*")
+  (delete-horizontal-space t)
+  (newline nil t))
+
 ;; make newline do a newline and relative indent
 (defun holscript-newline-and-relative-indent ()
   "Insert a newline, then perform a `relative indent'."
@@ -626,7 +632,6 @@ a store_thm equivalent.")
   (t "−" "-")
 ))
 
-
 (defun replace-string-in-buffer (s_old s_new)
    (save-excursion
       (goto-char (point-min))
@@ -708,9 +713,12 @@ a store_thm equivalent.")
 (defun holscript-mode-variables ()
   (set-syntax-table holscript-mode-syntax-table)
   (setq local-abbrev-table holscript-mode-abbrev-table)
-  (smie-setup holscript-smie-grammar #'holscript-smie-rules
-              :backward-token #'holscript-smie-backward-token
-              :forward-token #'holscript-smie-forward-token)
+
+  ;; Disable SMIE
+  ;;(smie-setup holscript-smie-grammar #'holscript-smie-rules
+  ;;            :backward-token #'holscript-smie-backward-token
+  ;;            :forward-token #'holscript-smie-forward-token)
+
   (set (make-local-variable 'parse-sexp-ignore-comments) t)
   (set (make-local-variable 'comment-start) "(* ")
   (set (make-local-variable 'comment-end) " *)")
@@ -733,15 +741,15 @@ a store_thm equivalent.")
   (set (make-local-variable 'font-lock-defaults) holscript-font-lock-defaults)
   (set (make-local-variable 'indent-tabs-mode) nil)
   (set (make-local-variable 'indent-line-function) 'holscript-indent-line)
-  (holscript-mode-variables)
-)
+  (holscript-mode-variables))
 
-(require 'hol-input)
-(add-hook 'holscript-mode-hook (lambda () (set-input-method "Hol")))
+;; Disable "Hol" input method
+;; (require 'hol-input)
+;; (add-hook 'holscript-mode-hook (lambda () (set-input-method "Hol")))
 
-;; smie grammar
+;; SMIE grammar
+;; NOTE: SMIE is a package that provides a generic navigation and indentation engine.
 
-(require 'smie)
 (defvar holscript-smie-grammar
   (smie-prec2->grammar
    (smie-bnf->prec2
@@ -843,10 +851,6 @@ a store_thm equivalent.")
 (defvar holscript-lambda-regexp "[λ\\!?@]\\|?!"
   "Regular expression for quantifiers that are (treated as) single punctuation
 class characters.")
-
-
-
-
 
 (defun holscript-can-find-earlier-quantifier (pp)
   (let* ((pstk (nth 9 pp))
@@ -1395,15 +1399,4 @@ class characters.")
 (setq auto-mode-alist (cons '("Script\\.sml" . holscript-mode)
                             auto-mode-alist))
 
-(if (boundp 'yas-snippet-dirs)
-    (progn
-      (setq yas-snippet-dirs
-            (append
-             yas-snippet-dirs
-             (list (concat
-                    hol-dir
-                    "tools/editor-modes/emacs/yasnippets"))))
-      (yas-reload-all)
-      (add-hook 'holscript-mode-hook #'yas-minor-mode)
-      (add-hook 'holscript-mode-hook
-                (lambda () (setq yas-also-auto-indent-first-line t)))))
+(provide 'holscript-mode)

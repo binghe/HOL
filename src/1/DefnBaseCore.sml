@@ -266,4 +266,5 @@ fun register_indn delta (* (thm, knms) *) = (
   istore_fupd (register_indn_p delta)
 )
 
+
 end (* struct *)

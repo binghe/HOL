@@ -40,7 +40,6 @@ sig
 
    val defnDefine  : tactic -> defn -> thm * thm option * thm option
    val primDefine  : defn -> thm * thm option * thm option
-   val tailrecDefine: DB.thm_src_location -> string -> term quotation -> thm
    val located_tDefine : DB.thm_src_location -> string -> term quotation ->
                          tactic -> thm * thm option
    val tDefine     : string -> term quotation -> tactic -> thm * thm option

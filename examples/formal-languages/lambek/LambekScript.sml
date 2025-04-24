@@ -24,23 +24,14 @@
 
 open HolKernel Parse boolLib bossLib;
 
-open pred_setTheory pairTheory listTheory arithmeticTheory integerTheory;
-open relationTheory;
+open pred_setTheory pairTheory listTheory arithmeticTheory relationTheory;
 
-local
-    val PAT_X_ASSUM = PAT_ASSUM;
-    val qpat_x_assum = Q.PAT_ASSUM;
-    open Tactical
-in
-    (* Backward compatibility with Kananaskis 11 *)
-    val PAT_X_ASSUM = PAT_X_ASSUM;
-    val qpat_x_assum = qpat_x_assum;
+open grammarTheory; (* context-free grammar *)
 
-    (* Tacticals for better expressivity *)
-    fun fix  ts = MAP_EVERY Q.X_GEN_TAC ts;     (* from HOL Light *)
-    fun set  ts = MAP_EVERY Q.ABBREV_TAC ts;    (* from HOL mizar mode *)
-    fun take ts = MAP_EVERY Q.EXISTS_TAC ts;    (* from HOL mizar mode *)
-end;
+(* Tacticals for better expressivity *)
+fun fix  ts = MAP_EVERY Q.X_GEN_TAC ts;     (* from HOL Light *)
+fun set  ts = MAP_EVERY Q.ABBREV_TAC ts;    (* from HOL mizar mode *)
+fun take ts = MAP_EVERY Q.EXISTS_TAC ts;    (* from HOL mizar mode *)
 
 val _ = new_theory "Lambek";
 
@@ -50,7 +41,9 @@ val _ = new_theory "Lambek";
 (*                                                                            *)
 (******************************************************************************)
 
-val _ = Datatype `Form = At 'a | Slash Form Form | Backslash Form Form | Dot Form Form`;
+Datatype :
+    Form = At 'a | Slash Form Form | Backslash Form Form | Dot Form Form
+End
 
 val _ = overload_on ("*", ``Dot``); (* \HOLTokenProd *)
 val _ = overload_on ("/", ``Slash``);
@@ -104,10 +97,8 @@ val arrow_reflexive = store_thm (
    REWRITE_TAC [reflexive_def, one]);
 
 (** The arrow relationship and its extensions (like associativity, commutativity  etc.) **)
-
-val _ = overload_on("add_extension", ``relation$RUNION``);
-(* X extends (to) X', or X is extended to X' *)
-val _ = overload_on("extends", ``relation$RSUBSET``);
+Overload add_extension[inferior] = “relation$RUNION”
+Overload extends[inferior]       = “relation$RSUBSET”;
 
 val no_extend = store_thm ("no_extend", ``!X. extends X X``,
     RW_TAC bool_ss [RSUBSET]);
@@ -381,7 +372,9 @@ end;
 (*                                                                            *)
 (******************************************************************************)
 
-val _ = Datatype `Term = OneForm ('a Form) | Comma Term Term`;
+Datatype :
+    Term = OneForm ('a Form) | Comma Term Term
+End
 
 val Term_induction = TypeBase.induction_of ``:'a Term``;
 val Term_nchotomy  = TypeBase.nchotomy_of ``:'a Term``;

@@ -1091,6 +1091,8 @@ val th61 = store_thm
   ("th61",  el 61 goals |> concl,
   PURE_REWRITE_TAC[iff_F,not_not,iff_T,not_F,and_T]);
 
+val BOOL_EQ_DISTINCT = th61;
+
 (* |- Data_List_concat Data_List_nil = Data_List_nil /\
       !h t.
           Data_List_concat (Data_List_cons h t) =
@@ -1633,9 +1635,6 @@ val LET_RAND = store_thm("LET_RAND", concl boolTheory.LET_RAND,
   PURE_REWRITE_TAC[LET_DEF]
   \\ CONV_TAC(DEPTH_CONV BETA_CONV)
   \\ REFL_TAC)
-
-(* |- (T <=/=> F) /\ (F <=/=> T) *)
-val BOOL_EQ_DISTINCT = th61;
 
 (* |- (!t1 t2. (if T then t1 else t2) = t1) /\
       !t1 t2. (if F then t1 else t2) = t2

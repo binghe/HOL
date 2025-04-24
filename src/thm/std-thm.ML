@@ -10,13 +10,12 @@
 (* Modified      : September 23, 1997, Ken Larsen                        *)
 (*               : 1999, Bruno Barras                                    *)
 (*               : July 2000, Konrad Slind                               *)
-(*               : May 2023, Oskar Abrahamsson                           *)
 (* ===================================================================== *)
 
 structure Thm =
 struct
 
-open Feedback Lib Term Tag Dep Compute
+open Feedback Lib Term Tag Dep
 
 type 'a set = 'a HOLset.set;
 type depdisk = (string * int) * ((string * int list) list);
@@ -1318,54 +1317,5 @@ fun save_dep thy (th as (THM(t,h,c))) =
     THM(Tag.set_dep dep t,h,c)
   end
 
-(* ----------------------------------------------------------------------
-    Computing with first-order lisp-style values
-   ---------------------------------------------------------------------- *)
-
-local
-  infix ##;
-  fun dest_code_eqn th =
-    case total ((List.null ## I) o dest_thm) th of
-      SOME (true,tm) => tm
-    | _ => raise ERR "compute" "code equation with hypotheses";
-  fun safe_mk_eq l r =
-    let
-      val tyl = type_of l
-    in
-      if tyl = type_of r then
-        Term.prim_mk_eq tyl l r
-      else
-        raise ERR "compute" "types of lhs and rhs disagree"
-    end;
-  val merge_tags = foldr (uncurry Tag.merge)
-in
-  fun compute {cval_terms, cval_type, num_type, char_eqns} =
-    let
-      val tag0 = merge_tags empty_tag (List.map (tag o snd) char_eqns)
-      val char_eqns = List.map (I ## dest_thm) char_eqns
-      val _ = List.all (List.null o fst o snd) char_eqns orelse
-              raise ERR "compute" "Characteristic equation with hypotheses"
-      val tc0 = Compute.term_compute
-                 { cval_terms = cval_terms,
-                   cval_type = cval_type,
-                   num_type = num_type,
-                   char_eqns = List.map (I ## snd) char_eqns }
-    in
-      fn code_eqs =>
-        let
-          val tag1 = merge_tags tag0 (List.map tag code_eqs)
-          val eqs = List.map dest_code_eqn code_eqs
-          val tc1 = tc0 eqs
-        in
-          fn tm =>
-            let
-              val tm' = tc1 tm
-              val eqn = safe_mk_eq tm tm'
-            in
-              make_thm Count.Compute (tag1, empty_hyp, eqn)
-            end
-        end
-    end;
-end (*local *)
 
 end (* Thm *)

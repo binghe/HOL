@@ -167,3 +167,4 @@ val merge_locs_idem = Q.store_thm(
   Cases_on ‘l’ >> simp[merge_locs_def]);
 
 val _ = export_theory();
+val _ = html_theory "location";

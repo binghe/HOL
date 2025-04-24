@@ -355,6 +355,8 @@ val lp =
               tns = [0] /\ uns = []                               (* 6. rec *)
     )”;
 
+Overload LP = “lp”
+
 val {term_ABS_pseudo11, term_REP_11, genind_term_REP, genind_exists,
      termP, absrep_id, repabs_pseudo_id, term_REP_t, term_ABS_t, newty, ...} =
     new_type_step1 tyname 0 [] {vp = vp, lp = lp};
@@ -727,7 +729,7 @@ val termP_removal =
       tpm_def = AP_TERM term_ABS_t term_REP_tpm |> REWRITE_RULE [absrep_id],
       termP = termP, repty = repty};
 
-val termP0 = prove(
+val termP' = prove(
    “genind ^vp ^lp n t <=> ^termP t ∧ (n = 0)”,
     EQ_TAC >> simp_tac (srw_ss()) [] >> strip_tac
  >> qsuff_tac ‘n = 0’ >- (strip_tac >> srw_tac [][])
@@ -736,7 +738,7 @@ val termP0 = prove(
  >> srw_tac [][genind_GVAR, genind_GLAM_eqn]);
 
 (* “tvf :string -> 'q -> 'r” *)
-val tvf = “λ(s:string) (u:unit) (p:ρ). tvf s p : 'r”; (* var *)
+val tvf = “λ(s:string) (u:unit) (p :'q). tvf s p : 'r”; (* var *)
 
 (* Type of constants occurring in tlf:
 
@@ -746,33 +748,41 @@ val tvf = “λ(s:string) (u:unit) (p:ρ). tvf s p : 'r”; (* var *)
    restr:  “trf :('q -> 'r) -> ('a Label -> bool) -> 'a CCS -> 'q -> 'r”
    relab:  “tlf :('q -> 'r) -> 'a CCS -> 'a Relabeling -> 'q -> 'r”
    rec:    “tcf :('q -> 'r) -> string -> 'a CCS -> 'q -> 'r”
+
+   NOTE: ds2 is the list of recursive parameters as functions ('q -> 'r).
+         ts2 is the list of actual arguments in the same position.
+         non-recursive parameters are taken from the corresponding position of u (rep_t).
+         The "if condition" identifies the constructor.
+         v is the only binding variable.
  *)
 val u_tm = mk_var("u", rep_t);
 val tlf =
-   “λ(v:string) ^u_tm (ds1:('q -> 'r) list) (ds2:('q -> 'r) list)
-                      (ts1:^repty' list) (ts2:^repty' list) (p :'q).
+   “λ(v:string) ^u_tm (ds1 :('q -> 'r) list) (ds2 :('q -> 'r) list)
+                      (ts1 :^repty' list) (ts2 :^repty' list) (p :'q).
        if ISL u then
-         tff (HD ds2) (OUTL u) (^term_ABS_t (HD ts2)) p :'r
+         tff (HD ds2) (OUTL u) (^term_ABS_t (HD ts2)) p :'r           (* prefix *)
        else if ISL (OUTR u) then
          tsf (HD ds2) (HD (TL ds2))
-             (^term_ABS_t (HD ts2)) (^term_ABS_t (HD (TL ts2))) p :'r
+             (^term_ABS_t (HD ts2)) (^term_ABS_t (HD (TL ts2))) p :'r (* sum *)
        else if ISL (OUTR (OUTR u)) then
          tpf (HD ds2) (HD (TL ds2))
-             (^term_ABS_t (HD ts2)) (^term_ABS_t (HD (TL ts2))) p :'r
+             (^term_ABS_t (HD ts2)) (^term_ABS_t (HD (TL ts2))) p :'r (* par *)
        else if ISL (OUTR (OUTR (OUTR u))) then
          trf (HD ds2) (OUTL (OUTR (OUTR (OUTR u))))
-             (^term_ABS_t (HD ts2)) p :'r
+             (^term_ABS_t (HD ts2)) p :'r                             (* restr *)
        else if ISL (OUTR (OUTR (OUTR (OUTR u)))) then
          tlf (HD ds2) (^term_ABS_t (HD ts2))
-             (OUTL (OUTR (OUTR (OUTR (OUTR u))))) p :'r
+             (OUTL (OUTR (OUTR (OUTR (OUTR u))))) p :'r               (* relab *)
        else
-         tcf (HD ds1) v (^term_ABS_t (HD ts1)) p :'r”;
+         tcf (HD ds1) v (^term_ABS_t (HD ts1)) p :'r”;                (* rec *)
+
+Overload TLF = tlf
 
 Theorem parameter_tm_recursion =
   parameter_gtm_recursion
       |> INST_TYPE [alpha |-> rep_t, beta |-> “:unit”, gamma |-> “:'r”]
       |> Q.INST [‘lf’ |-> ‘^tlf’, ‘vf’ |-> ‘^tvf’, ‘vp’ |-> ‘^vp’,
-                 ‘lp’ |-> ‘^lp’, ‘n’ |-> ‘0’]
+                 ‘lp’ |-> ‘^lp’]
       |> SIMP_RULE (srw_ss()) [sumTheory.FORALL_SUM, FORALL_AND_THM,
                                GSYM RIGHT_FORALL_IMP_THM, IMP_CONJ_THM,
                                GSYM RIGHT_EXISTS_AND_THM,
@@ -782,7 +792,7 @@ Theorem parameter_tm_recursion =
                                genind_GLAM_eqn, sidecond_def,
                                NEWFCB_def, relsupp_def,
                                LENGTH_NIL_SYM, LENGTH1, LENGTH2]
-      |> ONCE_REWRITE_RULE [termP0]
+      |> ONCE_REWRITE_RULE [termP']
       |> SIMP_RULE (srw_ss() ++ DNF_ss) [LENGTH1, LENGTH2, LENGTH_NIL]
       |> CONV_RULE (DEPTH_CONV termP_removal)
       |> SIMP_RULE (srw_ss()) [GSYM supp_tpm, SYM term_REP_tpm]

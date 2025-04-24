@@ -1190,21 +1190,41 @@ Proof
       METIS_TAC [PROB_POSITIVE, INTER_SUBSET, IN_POW, le_antisym] ]
 QED
 
-val distribution_pos = store_thm
-  ("distribution_pos",
-  ``!p X a. prob_space p /\ (events p = POW (p_space p)) ==>
-            0 <= distribution p X a``,
+Theorem distribution_pos :
+    !p X a. prob_space p /\ (events p = POW (p_space p)) ==>
+            0 <= distribution p X a
+Proof
     RW_TAC std_ss [distribution_def]
  >> MATCH_MP_TAC PROB_POSITIVE
- >> RW_TAC std_ss [IN_POW, INTER_SUBSET]);
+ >> RW_TAC std_ss [IN_POW, INTER_SUBSET]
+QED
 
-val distribution_le_1 = store_thm
-  ("distribution_le_1",
-  ``!p X a. prob_space p /\ (events p = POW (p_space p)) ==>
-            distribution p X a <= 1``,
+(* NOTE: for general prob_space *)
+Theorem distribution_positive :
+    !p X B s. prob_space p /\ random_variable X p B /\ sigma_algebra B /\
+              s IN subsets B ==> 0 <= distribution p X s
+Proof
+    rw [distribution_def, random_variable_def, IN_MEASURABLE]
+ >> MATCH_MP_TAC PROB_POSITIVE >> rw []
+QED
+
+Theorem distribution_le_1 :
+    !p X a. prob_space p /\ (events p = POW (p_space p)) ==>
+            distribution p X a <= 1
+Proof
     RW_TAC std_ss [distribution_def]
  >> MATCH_MP_TAC PROB_LE_1
- >> RW_TAC std_ss [IN_POW, INTER_SUBSET]);
+ >> RW_TAC std_ss [IN_POW, INTER_SUBSET]
+QED
+
+(* NOTE: for general prob_space *)
+Theorem distribution_le_one :
+    !p X B s. prob_space p /\ random_variable X p B /\ sigma_algebra B /\
+              s IN subsets B ==> distribution p X s <= 1
+Proof
+    rw [distribution_def, random_variable_def, IN_MEASURABLE]
+ >> MATCH_MP_TAC PROB_LE_1 >> rw []
+QED
 
 (* Theorem 3.1.3 [2, p.36], cf. measure_space_distr
 
@@ -1824,6 +1844,21 @@ Proof
  >> REWRITE_TAC [lt_infty]
  >> MATCH_MP_TAC let_trans >> Q.EXISTS_TAC `1` >> art []
  >> REWRITE_TAC [extreal_of_num_def, lt_infty]
+QED
+
+(* NOTE: more general version of the above theorem *)
+Theorem distribution_finite :
+    !p X B s. prob_space p /\ random_variable X p B /\
+              sigma_algebra B /\ s IN subsets B ==>
+              distribution p X s <> NegInf /\
+              distribution p X s <> PosInf
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> ‘0 <= distribution p X s /\ distribution p X s <= 1’
+      by PROVE_TAC [distribution_positive, distribution_le_one]
+ >> CONJ_TAC >- (MATCH_MP_TAC pos_not_neginf >> art [])
+ >> REWRITE_TAC [lt_infty]
+ >> Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw []
 QED
 
 Theorem joint_conditional :
@@ -3309,13 +3344,20 @@ End
 
   new definition is moved to martingaleTheory.indep_functions_def
  *)
-Definition indep_vars_def :
-    indep_vars p X A (J :'index set) =
+Definition indep_vars :
+    indep_vars = indep_functions
+End
+
+Theorem indep_vars_def :
+  !p X A (J :'index set).
+    indep_vars p X A J <=>
       !E N. N SUBSET J /\ N <> {} /\ FINITE N /\
             E IN (N --> subsets o A) ==>
             prob p (BIGINTER (IMAGE (\n. PREIMAGE (X n) (E n) INTER p_space p) N)) =
             PI (prob p o (\n. PREIMAGE (X n) (E n) INTER p_space p)) N
-End
+Proof
+  rw [indep_vars, indep_functions_def, prob_def, p_space_def]
+QED
 
 (* NOTE: If a set of r.v.'s is (totally) independent, so is any subset of them.
          With the new definition of ‘indep_vars’, this proof is very easy now.
@@ -8975,6 +9017,24 @@ Proof
  >> MATCH_MP_TAC variance_sum >> art []
 QED
 
+(* A construction of sub-martingale from real r.v.'s of positive finite expectation
+Theorem indep_vars_sub_martingle :
+  !p X A Z. prob_space p /\
+           (!n. real_random_variable (X n) p) /\
+           (!n. integrable p (X n)) /\
+            indep_vars p X (\n. Borel) univ(:num) /\
+           (!n. A n = sigma (p_space p) (\n. Borel) X (count1 n)) /\
+           (!n x. x IN p_space p ==> Z n x = SIGMA (\i. X i x) (count1 n)) /\
+           (!n. 0 <= expectation p (X n))
+        ==> sub_martingale p A Z
+Proof
+    RW_TAC std_ss [real_random_variable, prob_space_def, p_space_def, events_def, indep_vars,
+                   expectation_def]
+ >> MATCH_MP_TAC indep_functions_sub_martingle'
+ >> Q.EXISTS_TAC ‘X’ >> art []
+QED
+ *)
+
 (* ========================================================================= *)
 (*                      Condition Probability Library                        *)
 (* ========================================================================= *)
@@ -9625,6 +9685,34 @@ Proof
       Q.EXISTS_TAC ‘Normal x’ >> rw [] ]
 QED
 
+Theorem prob_space_ext_lborel_01' :
+    prob_space (restrict_space ext_lborel {x | 0 < x /\ x < 1})
+Proof
+    rw [prob_space_def]
+ >- (MATCH_MP_TAC measure_space_restrict_space \\
+     rw [measure_space_ext_lborel] \\
+     rw [ext_lborel_def, measurable_sets_def] \\
+     rw [BOREL_MEASURABLE_SETS])
+ >> simp [space_restrict_space]
+ >> rw [restrict_space, measure_def, ext_lborel_def, m_space_def, SPACE_BOREL]
+ >> Suff ‘real_set {x | 0 < x /\ x < 1} = interval (0,1)’
+ >- rw [lambda_open_interval]
+ >> rw [Once EXTENSION, real_set_def, OPEN_interval]
+ >> EQ_TAC >> rw []
+ >| [ (* goal 1 (of 3) *)
+      rename1 ‘z < 1’ \\
+     ‘?r. 0 < r /\ r < 1 /\ z = Normal r’
+        by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_lt_eq] \\
+      rw [real_def],
+      (* goal 2 (of 3) *)
+      rename1 ‘0 < z’ \\
+     ‘?r. 0 < r /\ r < 1 /\ z = Normal r’
+        by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_lt_eq] \\
+      rw [real_def],
+      (* goal 3 (of 3) *)
+      Q.EXISTS_TAC ‘Normal x’ >> rw [] ]
+QED
+
 Theorem existence_of_prod_prob_space :
     !p1 p2. prob_space p1 /\ prob_space p2 ==>
             ?p. prob_space p /\
@@ -9688,6 +9776,22 @@ Proof
      qexistsl_tac [‘e1’, ‘e2’] >> art [])
  >> Rewr'
  >> simp [Abbr ‘s’, IMAGE_FST_CROSS, IMAGE_SND_CROSS]
+QED
+
+Theorem prob_space_eq :
+    !p1 p2. prob_space p1 /\ p_space p2 = p_space p1 /\ events p2 = events p1 /\
+           (!s. s IN events p2 ==> prob p2 s = prob p1 s) ==> prob_space p2
+Proof
+    rpt GEN_TAC
+ >> simp [prob_space_def, p_space_def, events_def, prob_def]
+ >> STRIP_TAC
+ >> CONJ_ASM1_TAC
+ >- (MATCH_MP_TAC measure_space_eq \\
+     Q.EXISTS_TAC ‘p1’ >> rw [])
+ >> Suff ‘measure p2 (m_space p1) = measure p1 (m_space p1)’ >- rw []
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> Q.PAT_X_ASSUM ‘_ = m_space p1’ (REWRITE_TAC o wrap o SYM)
+ >> MATCH_MP_TAC MEASURE_SPACE_SPACE >> art []
 QED
 
 (* tidy up theory exports, learnt from Magnus Myreen *)

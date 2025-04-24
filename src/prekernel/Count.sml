@@ -21,7 +21,6 @@ datatype rule =
  | Beta
  | Ccontr
  | Choose
- | Compute
  | Conj
  | Conjunct1
  | Conjunct2
@@ -59,7 +58,6 @@ val count =
     BETA_CONV = ref 0,
     CCONTR = ref 0,
     CHOOSE = ref 0,
-    COMPUTE = ref 0,
     CONJ = ref 0,
     CONJUNCT1 = ref 0,
     CONJUNCT2 = ref 0,
@@ -100,7 +98,6 @@ fun inc_count R =
              | Beta       => #BETA_CONV
              | Ccontr     => #CCONTR
              | Choose     => #CHOOSE
-             | Compute    => #COMPUTE
              | Conj       => #CONJ
              | Conjunct1  => #CONJUNCT1
              | Conjunct2  => #CONJUNCT2
@@ -131,10 +128,10 @@ fun inc_count R =
 
 local
    val l = [#ABS, #ALPHA, #AP_TERM, #AP_THM, #ASSUME, #BETA_CONV, #CCONTR,
-            #CHOOSE, #COMPUTE, #CONJ, #CONJUNCT1, #CONJUNCT2, #DISCH, #DISJ1,
-            #DISJ2, #DISJ_CASES, #EQ_IMP_RULE, #EQ_MP, #EXISTS, #GEN, #GEN_ABS,
-            #INST, #INST_TYPE, #MK_COMB, #MP, #NOT_ELIM, #NOT_INTRO, #REFL,
-            #SPEC, #SUBST, #SYM, #TRANS]
+            #CHOOSE, #CONJ, #CONJUNCT1, #CONJUNCT2, #DISCH, #DISJ1, #DISJ2,
+            #DISJ_CASES, #EQ_IMP_RULE, #EQ_MP, #EXISTS, #GEN, #GEN_ABS, #INST,
+            #INST_TYPE, #MK_COMB, #MP, #NOT_ELIM, #NOT_INTRO, #REFL, #SPEC,
+            #SUBST, #SYM, #TRANS]
 in
    fun reset_thm_count () =
       List.app (fn f => f count := 0)
@@ -158,7 +155,6 @@ fun thm_count () =
     BETA_CONV   = !(#BETA_CONV count),
     CCONTR      = !(#CCONTR count),
     CHOOSE      = !(#CHOOSE count),
-    COMPUTE     = !(#COMPUTE count),
     CONJ        = !(#CONJ count),
     CONJUNCT1   = !(#CONJUNCT1 count),
     CONJUNCT2   = !(#CONJUNCT2 count),

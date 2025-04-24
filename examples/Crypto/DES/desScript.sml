@@ -72,7 +72,7 @@ open arithmeticTheory numLib pairTheory fcpTheory fcpLib wordsTheory wordsLib
         |       |     |    +----+ S4 | <--- (+) <---+     |           |
        \|/      |     | __/     +----+              |     |           |
        (+) <----+  P  | __                  sk5     |  E  + <---------+
-        |       |     |   \     +----+      \|/     |     |           |
+        |       |     |   \     +----+      \|/     |     |    32-bit |
         |       |     |    +----+ S5 | <--- (+) <---+     |           |
         |       |     | \       +----+              |     |           |
         .       |     |  \                  sk6     |     |           .
@@ -81,12 +81,12 @@ open arithmeticTheory numLib pairTheory fcpTheory fcpLib wordsTheory wordsLib
                 |     | \       +----+              |     |
                 |     |  \                  sk7     |     |
                 +-----+   \     +----+      \|/     |     |
-                       \   +----+ S7 | <--- (+) <---+     +
+              32-bit   \   +----+ S7 | <--- (+) <---+     +
                         \  |    +----+              |    /
                          \ |                sk8     |   /
                           \|    +----+      \|/     |  /
                            +----+ S8 | <--- (+) <---+ /
-                                +----+              |/
+                         4-bit  +----+      6-bit   |/
 
  *)
 val _ = new_theory "des"; (* the lower-case name is following aesTheory *)

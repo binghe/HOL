@@ -216,6 +216,7 @@ fun clausify tm lfn eq cls =
         val xth = ADD_ASSUM tm (EQ_MP tth (REFL(rbapply lfn (land eq))))
     in zip (strip_conj(rand(concl eth))) (CONJUNCTS xth) @ cls end
 
+(* entry function *)
 fun to_cnf is_cnf tm =
     if is_cnf then
         (NONE,HOLset.numItems(FVL[tm](HOLset.empty Term.var_compare)),
@@ -275,7 +276,5 @@ List.app (fn eq =>
                     end
                  end
              else print "Not top-level eq!\n") eqs
-
-
 
 end

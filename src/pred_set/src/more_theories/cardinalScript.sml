@@ -42,8 +42,8 @@ val ASM_ARITH_TAC = REPEAT (POP_ASSUM MP_TAC) THEN ARITH_TAC;
 (* ------------------------------------------------------------------------- *)
 
 (* first of these clashes with indicator_fn in extreal etc *)
-Overload "𝟙"[local] = “{()}”
-Overload "𝟚" = “{T;F}”
+Overload "𝟙"[local] = “{()}” (* UOK *)
+Overload "𝟚" = “{T;F}”       (* UOK *)
 
 val cardeq_def = Define`
   cardeq s1 s2 <=> ?f. BIJ f s1 s2
@@ -55,8 +55,8 @@ val _ = TeX_notation {hol = UTF8.chr 0x2248, TeX = ("\\ensuremath{\\approx}", 1)
 
 val _ = overload_on("=~", ``cardeq``)
 
-Overload "≉" = “λa b. ¬(a ≈ b)”
-val _ = set_fixity "≉" (Infix(NONASSOC, 450))
+Overload "≉" = “λa b. ¬(a ≈ b)”               (* UOK *)
+val _ = set_fixity "≉" (Infix(NONASSOC, 450)) (* UOK *)
 
 val cardeq_REFL = store_thm(
   "cardeq_REFL",
@@ -1299,7 +1299,7 @@ Theorem disjoint_countable_decomposition2:
 Proof
   rpt strip_tac >>
 
-  (* Step 1: Establish cardinal equivalence |A| = |A × ℕ| *)
+  (* Step 1: Establish cardinal equivalence |A| = |A x N| *)
   ‘s =~ s CROSS univ(:num)’ by (
     irule cardleq_ANTISYM >> conj_tac >~
     [‘s <<= s CROSS univ(:num)’]
