@@ -144,6 +144,18 @@ Proof
  >> MATCH_MP_TAC irreflexive_union >> art []
 QED
 
+Theorem distinction_dpm_lemma[local] :
+    !d pi. distinction d ==> distinction (dpm pi d)
+Proof
+    cheat
+QED
+
+Theorem distinction_dpm :
+    !d pi. distinction (dpm pi d) <=> distinction d
+Proof
+    cheat
+QED
+
 (* NOTE: This is permutation operation on distinction *)
 Definition dpm_def :
     dpm pi (D :dist) = IMAGE (pairpm string_pmact string_pmact pi) D
@@ -371,7 +383,9 @@ End
  *)
 Definition dist_simulation_def :
     dist_simulation (R :(pi # pi # dist) set) <=>
-    !P Q D. (P,Q,D) IN R /\ distinction D ==>
+    !P Q D. (P,Q,D) IN R ==>
+    (* 0 *)
+       distinction D /\
     (* 1 *)
       (!pi. (tpm pi P, tpm pi Q, dpm pi D) IN R) /\
     (* 2 *)
@@ -393,7 +407,7 @@ Definition dist_simulation_def :
                        (P',Q',D') IN R)
 End
 
-Theorem dist_simulation_univ :
+Theorem dist_simulation_id :
     dist_simulation {x | ?P D. x = (P,P,D) /\ distinction D}
 Proof
     rw [dist_simulation_def]
@@ -420,88 +434,98 @@ Proof
        rename1 ‘(y,x) = pairpm string_pmact string_pmact pi z’ \\
        Cases_on ‘z’ >> fs [pairpm_thm] ])
  (* stage work *)
- >> fs [distinction_def]
- >> reverse CONJ_TAC (* irreflexive *)
- >- (MATCH_MP_TAC irreflexive_union >> art [] \\
-     MATCH_MP_TAC sc_irreflexive \\
-     rw [irreflexive_def])
- (* symmetric *)
- >> MATCH_MP_TAC symmetric_union >> simp []
+ >> MATCH_MP_TAC distinction_union >> art []
+ >> rw [distinction_def]
+ >> MATCH_MP_TAC sc_irreflexive
+ >> rw [irreflexive_def]
 QED
 
 Theorem dist_simulation_union :
     !R1 R2. dist_simulation R1 /\ dist_simulation R2 ==>
             dist_simulation (R1 UNION R2)
 Proof
-    rw [dist_simulation_def] (* 6+6 subgoals *)
- >| [ (* goal 1 (of 12) *)
-      DISJ1_TAC \\
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 /\ distinction D ==> _’
+    rw [dist_simulation_def] (* 7+7 subgoals *)
+ >| [ (* goal 1 (of 14) *)
+      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
         (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [],
-      (* goal 2 (of 12) *)
+      (* goal 2 (of 14) *)
       DISJ1_TAC \\
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 /\ distinction D ==> _’
+      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
         (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [],
-      (* goal 3 (of 12) *)
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 /\ distinction D ==> _’
+      (* goal 3 (of 14) *)
+      DISJ1_TAC \\
+      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
+        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [],
+      (* goal 4 (of 14) *)
+      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
         (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
       Q.PAT_X_ASSUM ‘!P'. DTRANS D P (TauR P') ==> _’
         (MP_TAC o Q.SPEC ‘P'’) >> rw [] \\
       Q.EXISTS_TAC ‘Q'’ >> rw [],
-      (* goal 4 (of 12) *)
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 /\ distinction D ==> _’
+      (* goal 5 (of 14) *)
+      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
         (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
       Q.PAT_X_ASSUM ‘!a x P'.
                        DTRANS D P (InputS (Name a) x P') /\ x # Q ==> _’
         (MP_TAC o Q.SPECL [‘a’, ‘x’, ‘P'’]) >> rw [] \\
       Q.EXISTS_TAC ‘Q'’ >> rw [],
-      (* goal 5 (of 12) *)
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 /\ distinction D ==> _’
+      (* goal 6 (of 14) *)
+      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
         (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
       Q.PAT_X_ASSUM ‘!a b P'.
                        DTRANS D P (FreeOutput (Name a) (Name b) P') ==> _’
         (MP_TAC o Q.SPECL [‘a’, ‘b’, ‘P'’]) >> rw [] \\
       Q.EXISTS_TAC ‘Q'’ >> rw [],
-      (* goal 6 (of 12) *)
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 /\ distinction D ==> _’
+      (* goal 7 (of 14) *)
+      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
         (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
       Q.PAT_X_ASSUM ‘!b x P'. DTRANS D P (BoundOutput (Name b) x P') ==> _’
         (MP_TAC o Q.SPECL [‘b’, ‘x’, ‘P'’]) >> rw [] \\
       Q.EXISTS_TAC ‘Q'’ >> rw [],
-      (* goal 7 (of 12) *)
-      DISJ2_TAC \\
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 /\ distinction D ==> _’
+      (* goal 8 (of 14) *)
+      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
         (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [],
-      (* goal 8 (of 12) *)
+      (* goal 9 (of 14) *)
       DISJ2_TAC \\
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 /\ distinction D ==> _’
+      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
         (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [],
-      (* goal 9 (of 12) *)
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 /\ distinction D ==> _’
+      (* goal 10 (of 14) *)
+      DISJ2_TAC \\
+      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
+        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [],
+      (* goal 11 (of 14) *)
+      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
         (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
       Q.PAT_X_ASSUM ‘!P'. DTRANS D P (TauR P') ==> _’
         (MP_TAC o Q.SPEC ‘P'’) >> rw [] \\
       Q.EXISTS_TAC ‘Q'’ >> rw [],
-      (* goal 10 (of 12) *)
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 /\ distinction D ==> _’
+      (* goal 12 (of 14) *)
+      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
         (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
       Q.PAT_X_ASSUM ‘!a x P'.
                        DTRANS D P (InputS (Name a) x P') /\ x # Q ==> _’
         (MP_TAC o Q.SPECL [‘a’, ‘x’, ‘P'’]) >> rw [] \\
       Q.EXISTS_TAC ‘Q'’ >> rw [],
-      (* goal 11 (of 12) *)
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 /\ distinction D ==> _’
+      (* goal 13 (of 14) *)
+      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
         (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
       Q.PAT_X_ASSUM ‘!a b P'.
                        DTRANS D P (FreeOutput (Name a) (Name b) P') ==> _’
         (MP_TAC o Q.SPECL [‘a’, ‘b’, ‘P'’]) >> rw [] \\
       Q.EXISTS_TAC ‘Q'’ >> rw [],
-      (* goal 12 (of 12) *)
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 /\ distinction D ==> _’
+      (* goal 14 (of 14) *)
+      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
         (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
       Q.PAT_X_ASSUM ‘!b x P'. DTRANS D P (BoundOutput (Name b) x P') ==> _’
         (MP_TAC o Q.SPECL [‘b’, ‘x’, ‘P'’]) >> rw [] \\
       Q.EXISTS_TAC ‘Q'’ >> rw [] ]
+QED
+
+Theorem dist_simulation_imp_distinction :
+    !R P Q D. dist_simulation R /\ (P,Q,D) IN R ==> distinction D
+Proof
+    rw [dist_simulation_def]
+ >> FIRST_X_ASSUM drule >> rw []
 QED
 
 Definition dist_bisimulation_def :
@@ -509,26 +533,41 @@ Definition dist_bisimulation_def :
     dist_simulation R /\ dist_simulation {(Q,P,D) | (P,Q,D) IN R}
 End
 
-Definition dist_bisimilar_def :
+Definition dist_bisimilar :
     dist_bisimilar P Q D <=> ?R. dist_bisimulation R /\ (P,Q,D) IN R
 End
+
+(* |- !P Q D.
+        dist_bisimilar P Q D <=>
+        ?R. (dist_simulation R /\ dist_simulation {(Q,P,D) | (P,Q,D) IN R}) /\
+            (P,Q,D) IN R
+ *)
+Theorem dist_bisimilar_def =
+        dist_bisimilar |> REWRITE_RULE [dist_bisimulation_def]
+
+Theorem dist_bisimilar_imp_distinction :
+    !P Q D. dist_bisimilar P Q D ==> distinction D
+Proof
+    rw [dist_bisimilar_def, dist_simulation_def]
+ >> FIRST_X_ASSUM drule >> rw []
+QED
 
 Theorem dist_bisimilar_reflexive :
     !P D. distinction D ==> dist_bisimilar P P D
 Proof
-    rw [dist_bisimilar_def, dist_bisimulation_def]
+    rw [dist_bisimilar_def]
  >> Q.EXISTS_TAC ‘{x | ?P D. x = (P,P,D) /\ distinction D}’
- >> simp [dist_simulation_univ]
+ >> simp [dist_simulation_id]
  >> qmatch_abbrev_tac ‘dist_simulation R’
  >> Suff ‘R = {x | (?P D. x = (P,P,D) /\ distinction D)}’
- >- rw [dist_simulation_univ]
+ >- rw [dist_simulation_id]
  >> rw [Abbr ‘R’, Once EXTENSION]
 QED
 
 Theorem dist_bisimilar_symmetric :
     !P Q D. dist_bisimilar P Q D ==> dist_bisimilar Q P D
 Proof
-    rw [dist_bisimilar_def, dist_bisimulation_def]
+    rw [dist_bisimilar_def]
  >> qabbrev_tac ‘R' = {(Q,P,D) | (P,Q,D) IN R}’
  >> Q.EXISTS_TAC ‘R UNION R'’
  >> reverse CONJ_TAC
@@ -548,14 +587,58 @@ Proof
  >> qexistsl_tac [‘P'’, ‘Q'’, ‘D'’] >> simp []
 QED
 
-(* TODO
 Theorem dist_bisimilar_transitive :
     !P1 P2 P3 D. dist_bisimilar P1 P2 D /\ dist_bisimilar P2 P3 D ==>
                  dist_bisimilar P1 P3 D
 Proof
-    cheat
+    rw [dist_bisimilar_def]
+ >> qabbrev_tac ‘r1 = \x y. ?d. (x,y,d) IN R’
+ >> qabbrev_tac ‘r2 = \y z. ?d. (y,z,d) IN R'’
+ >> qabbrev_tac ‘r = r2 O r1’
+ >> Q.EXISTS_TAC ‘{e | ?x z d. r x z /\ distinction d /\ e = (x,z,d)}’
+ >> simp [Abbr ‘r’, relationTheory.O_DEF, Abbr ‘r1’, Abbr ‘r2’]
+ >> ‘distinction D’ by PROVE_TAC [dist_simulation_imp_distinction]
+ >> simp []
+ >> reverse CONJ_TAC
+ >- (Q.EXISTS_TAC ‘P2’ >> CONJ_TAC >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       Q.EXISTS_TAC ‘D’ >> art [],
+       (* goal 2 (of 2) *)
+       Q.EXISTS_TAC ‘D’ >> art [] ])
+ >> rw [dist_simulation_def, distinction_dpm] (* 5+5 subgoals *)
+ >| [ (* goal 1 (of 10) *)
+      Q.EXISTS_TAC ‘tpm pi y’ >> CONJ_TAC >| (* 2 subgoals *)
+      [ (* goal 1.1 (of 2) *)
+        Q.EXISTS_TAC ‘dpm pi d’ \\
+        Q.PAT_X_ASSUM ‘dist_simulation R’
+          (MP_TAC o REWRITE_RULE [dist_simulation_def]) \\
+        DISCH_THEN (STRIP_ASSUME_TAC o Q.SPECL [‘P’, ‘y’, ‘d’]) \\
+        simp [distinction_dpm],
+        (* goal 1.2 (of 2) *)
+        Q.EXISTS_TAC ‘dpm pi d'’ \\
+        Q.PAT_X_ASSUM ‘dist_simulation R'’
+          (MP_TAC o REWRITE_RULE [dist_simulation_def]) \\
+        DISCH_THEN (STRIP_ASSUME_TAC o Q.SPECL [‘y’, ‘Q’, ‘d'’]) \\
+        simp [distinction_dpm] ],
+      (* goal 2 (of 10) *)
+      cheat,
+      (* goal 3 (of 10) *)
+      cheat,
+      (* goal 4 (of 10) *)
+      cheat,
+      (* goal 5 (of 10) *)
+      cheat,
+      (* goal 6 (of 10) *)
+      cheat,
+      (* goal 7 (of 10) *)
+      cheat,
+      (* goal 8 (of 10) *)
+      cheat,
+      (* goal 9 (of 10) *)
+      cheat,
+      (* goal 10 (of 10) *)
+      cheat ]
 QED
- *)
 
 val _ = export_theory ();
 val _ = html_theory "open_bisimulation";
