@@ -30,7 +30,7 @@ AXIOMATIC_EXAMPLES = $(patsubst %,axiomatic-developments/%,$(AXIOMATIC_THYDIRS))
 
 # example directories to build at selftest level 1
 EXDIRS = algebra/aat \
-         ARM/arm6-verification ARM/armv8-memory-model ARM/experimental \
+         arm/arm6-verification arm/armv8-memory-model arm/experimental \
          $(AXIOMATIC_EXAMPLES) \
          CCS Crypto/RSA Crypto/MD5 \
          Crypto/pedersenCommitment Crypto/sigmaProtocol \
@@ -79,8 +79,8 @@ ifneq($(HOLSELFTESTLEVEL),1)
 EX2DIRS = AKS algebra algorithms/boyer_moore \
             algorithms/unification/triangular/nominal \
             algorithms/unification/triangular/first-order/compilation \
-            ARM/arm6-verification/correctness \
-            ARM/v4 ARM/v7 \
+            arm/arm6-verification/correctness \
+            arm/v4 arm/v7 \
           balanced_bst \
           category computability/kolmog computability/lambda \
             computability/recdegrees \
@@ -109,7 +109,7 @@ INCLUDES += $(patsubst %,../../../examples/%,$(EX2DIRS))
 endif
 
 ifeq($(HOLSELFTESTLEVEL),3)
-EX3DIRS = ARM/ARM_security_properties \
+EX3DIRS = arm/ARM_security_properties \
           diningcryptos \
           l3-machine-code/cheri/step
 
