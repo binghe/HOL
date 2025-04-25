@@ -10,17 +10,18 @@ structure FileSys = OS.FileSys
 
 fun dquote s = concat ["\"", s, "\""]
 
-fun concat_wspaces munge acc strl =
-    case strl of
-      [] => concat (List.rev acc)
-    | [x] => concat (List.rev (munge x :: acc))
-    | (x::xs) => concat_wspaces munge (" " :: munge x :: acc) xs
+fun concat_wspaces munge strl = String.concatWith " " (map munge strl)
 
 fun systeml l = let
-  val command = "call "^concat_wspaces dquote [] l
+  val command = "call "^concat_wspaces dquote l
 in
   Process.system command
 end
+
+fun systeml_out {outfile} c =
+  Process.system
+    ("call " ^ concat_wspaces dquote c ^ " > " ^ dquote outfile ^ " 2>&1")
+
 
 (* would like to be using Posix.Process.exec, but this seems flakey on
    various machines (and is entirely unavailable on Moscow ML) *)
@@ -38,12 +39,12 @@ val protect = dquote
 fun system_ps s = Process.system ("call " ^ s)
 
 fun xable_string s = s^".exe"
-fun mk_xable file =   (* returns the name of the executable *)
+fun mk_xable file =
     let val exe = file^".exe"
         val _ = FileSys.remove exe handle _ => ()
     in
       FileSys.rename{old=file, new=exe};
-      exe
+      OS.Process.success
     end
 
 fun normPath s = Path.toString(Path.fromString s)
@@ -81,9 +82,10 @@ fun fullPath slist =
 
 val HOLDIR = ""
 val MOSMLDIR = ""
-val HAVE_BASIS2002 = ""
 val OS = ""
 val POLY = ""
+val POLYC = ""
+val POLY_VERSION = 0
 val POLYMLLIBDIR = ""
 val POLY_LDFLAGS = []
 val POLY_LDFLAGS_STATIC = []
@@ -94,19 +96,26 @@ val DYNLIB = ""
 val version = ""
 val ML_SYSNAME = ""
 val release = ""
+val DOT_PATH = ""
+val DEFAULT_STATE = fullPath [HOLDIR, "bin", "hol.state"]
 
 val isUnix = false
+local val cast : 'a -> int = Obj.magic
+in
+  fun pointer_eq (x:'a, y:'a) = (cast x = cast y)
+end
 
 val build_log_dir = fullPath [HOLDIR, "tools", "build-logs"]
 val build_log_file = fullPath [build_log_dir, "current-build-log"]
 val make_log_file = "current-make-log"
+val build_after_reloc_envvar = "HOL_REBUILD_HEAPS_ONLY"
 
 local
   fun fopen file = (FileSys.remove file handle _ => (); TextIO.openOut file)
   fun munge s = String.translate (fn #"/" => "\\" | c => str c) s
   fun q s = "\""^munge s^"\""
 in
-fun emit_hol_script target qend =
+fun emit_hol_script target qend _ =
  let val ostrm = fopen(target^".bat")
      fun output s = TextIO.output(ostrm, s)
      val sigobj = q (fullPath [HOLDIR, "sigobj"])
@@ -123,7 +132,7 @@ fun emit_hol_script target qend =
  end
 
 
-fun emit_hol_unquote_script target qend =
+fun emit_hol_unquote_script target qend _ =
  let val ostrm = fopen(target^".bat")
      fun output s = TextIO.output(ostrm, s)
      val qfilter = q (fullPath [HOLDIR, "bin", "unquote"])
@@ -144,7 +153,7 @@ fun emit_hol_unquote_script target qend =
  end
 end (* local *)
 
+fun quietbind s = ()
+fun bindstr s = s
 
 end; (* struct *)
-
-

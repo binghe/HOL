@@ -1,0 +1,111 @@
+#(LINE)"foo \
+	  \bar"
+``"foo"``
+`foo = #"^`"`
+`"\""`
+``	``
+``(* foo``
+`^^`
+"\"" ``foo``
+"\\" `foo`
+`putting unescaped backticks into ^(antiquotes #"`") is fine`
+``foo
+bar``
+``"an embedded string with \
+\protected newlines"``
+`"more embedding \
+ \ho hum"`
+“"embedded string without
+   protected newlines"”
+`s1 ^ s2`
+`s1 ^^
+s2`
+(* ` *)
+`^(fromMLnum nm) (* *) `;
+(* (*  *) `;*)
+
+Inductive even:
+[~0[simp]:] even 0
+[/\] (!n. even n ==> odd (n + 1))
+[even_suc:]
+  (!m. odd m ==> even (m + 1))
+End
+
+Definition foo:
+  foo x = if x < 2 then 1 else x * foo (x - 1)
+End
+
+Inductive compile_rel:
+  (* (*  *) *)
+[~Var:]
+  compile_rel foo bar
+[~Ret:]
+  compile_rel foo bar
+End
+
+(* next_sym reads the next symbol from a string, returning NONE if at eof *)
+Definition next_sym_def:
+     foo = isPREFIX "(*" (c::str)
+Termination
+  WF_REL_TAC `measure (LENGTH o FST) ` THEN REPEAT STRIP_TAC
+End
+
+“f ‹foo"›”
+
+Definition sexpPEG_def:
+  #"\\";
+End
+
+Theorem sexpPEG_start[simp] = SIMP_CONV(srw_ss())[sexpPEG_def]“sexpPEG.start”
+
+Datatype : foo = bar
+End
+
+Inductive reln:
+   !x y. x < y ==> reln (x + 1) y
+[/\]
+   !x y. reln x y ==> reln y x
+[~zero:]
+   !x. reln x 0
+End
+
+Inductive reln:
+[~name1:] !x y. x < y ==> reln (x + 1) y
+[~sym:]
+   (!x y. reln x y ==> reln y x) /\
+   (!x. reln x 0) /\
+   (!y. reln 100 y)
+End
+
+Quote foo = ba'r:
+  this is a quotation with
+ nested "string\n"
+End
+
+Theorem thmname = expression
+
+Quote bar_x:
+  another quotation (* with unfinished comment
+  and bare " with ^foo and ^
+End
+
+val x = #(LINE) + 10;
+val #(LINE=11) y = #(LINE)
+val s = #(FILE) #(FILE=foo.sml)
+val s' = #(FILE) (* #(FILE) *)
+
+Theorem thm[foo, simp , key = val1 val2]:
+  p /\ q
+Proof
+  cheat
+QED
+
+Theorem thm2[foo, simp , key = val1 val2] = exp
+
+Theorem th3[*,bar]:
+  stmt
+Proof
+tac
+QED
+
+Overload "" = term;

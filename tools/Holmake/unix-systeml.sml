@@ -10,11 +10,7 @@ structure FileSys = OS.FileSys
 
 local
   open Process
-  fun concat_wspaces munge acc strl =
-    case strl of
-      [] => concat (List.rev acc)
-    | [x] => concat (List.rev (munge x :: acc))
-    | (x::xs) => concat_wspaces munge (" " :: munge x :: acc) xs
+  fun concat_wspaces munge strl = String.concatWith " " (map munge strl)
 in
 
   val unix_meta_chars = [#"'", #"\"", #"|", #" ", #">", #"\t", #"\n", #"<",
@@ -28,7 +24,10 @@ in
   fun protect s = if is_meta_string(s,0) then String.translate unix_trans s
                   else s
 
-  val systeml = system o concat_wspaces protect []
+  val systeml = system o concat_wspaces protect
+
+  fun systeml_out {outfile} c =
+    system (concat_wspaces protect c ^ " > " ^ protect outfile ^ " 2>&1")
 
   val system_ps = Process.system
   (* see winNT-systeml.sml for an explanation of why what is a synonym under
@@ -67,15 +66,19 @@ in
   fun xable_string s = s
 
   fun mk_xable file =
-      if Process.isSuccess (systeml ["chmod", "a+x", file]) then file
+    let
+      val r = systeml ["chmod", "a+x", file]
+    in
+      if Process.isSuccess r then r
       else if FileSys.access (file,[FileSys.A_EXEC]) then
           (* if we can execute it, then continue with a warning *)
           (* NB: MoSML docs say FileSys.access uses real uid/gid, not effective uid/gid,
              so this test may be bogus if we are setuid.  This is unlikely(!). *)
           (print ("Non-fatal warning: couldn't set world execute permission on "^file^",\n  but continuing anyway since at least the current user has execute permission.\n");
-           file)
+           OS.Process.success)
       else (print ("unable to set execute permission on "^file^".\n");
-            raise Fail "mk_xable")
+            OS.Process.failure)
+    end
 
 
 fun normPath s = Path.toString(Path.fromString s)
@@ -88,9 +91,10 @@ fun fullPath slist =
 (* these values are filled in by configure.sml *)
 val HOLDIR = ""
 val MOSMLDIR = ""
-val HAVE_BASIS2002 = false
 val OS = ""
 val POLY = ""
+val POLYC = ""
+val POLY_VERSION = 0
 val POLYMLLIBDIR = ""
 val POLY_LDFLAGS = []
 val POLY_LDFLAGS_STATIC = []
@@ -102,12 +106,21 @@ val DYNLIB = ""
 val version = ""
 val ML_SYSNAME = ""
 val release = ""
+val DOT_PATH = ""
+val MV = ""
+val CP = ""
+val DEFAULT_STATE = fullPath [HOLDIR, "bin", "hol.state"]
 
 val isUnix = true
+local val cast : 'a -> int = Obj.magic
+in
+  fun pointer_eq (x:'a, y:'a) = (cast x = cast y)
+end
 
 val build_log_dir = fullPath [HOLDIR, "tools", "build-logs"]
 val build_log_file = fullPath [build_log_dir, "current-build-log"]
 val make_log_file = "current-make-log"
+val build_after_reloc_envvar = "HOL_REBUILD_HEAPS_ONLY"
 
 
 fun emit_hol_script target qend _ = let
@@ -147,5 +160,7 @@ in
   mk_xable target
 end
 end (* local *)
+
+fun bindstr s = s
 
 end; (* struct *)

@@ -10,13 +10,8 @@ fun die s = (TextIO.output(TextIO.stdErr, s ^ "\n");
 val version_string =
     List.nth([], 1) handle Option => "2.01" | Subscript => "2.10";
 
-val _ = if version_string = "2.01" then let
-            val _ = print "\n\nUsing Basis 2002 update for Moscow ML 2.01\n"
-            val _ = app load ["CharVector", "Math", "ListPair"]
-            infix ++ val op++ = OS.Path.concat
-          in
-            use ("tools" ++ "Holmake" ++ "basis2002.sml")
-          end
+val _ = if version_string = "2.01" then
+          die "HOL requires at least Moscow ML 2.10"
         else ();
 
 structure FileSys = OS.FileSys
@@ -96,8 +91,36 @@ in
   else "winNT"
 end;
 
+fun findpartial f [] = NONE
+  | findpartial f (h::t) =
+    case f h of NONE => findpartial f t | x => x
+
+fun which arg =
+  let
+    open OS.FileSys
+    val sepc = if OS = "winNT" then #";" else #":"
+    fun check p =
+      let
+        val fname = OS.Path.concat(p, arg)
+      in
+        if access (fname, [A_READ, A_EXEC]) then
+          SOME
+            (OS.Path.mkAbsolute{path = fname, relativeTo = OS.FileSys.getDir()})
+        else NONE
+      end
+  in
+    case OS.Process.getEnv "PATH" of
+        SOME path =>
+        let
+          val paths = (if OS = "winNT" then ["."] else []) @
+                      String.fields (fn c => c = sepc) path
+        in
+          findpartial check paths
+        end
+      | NONE => if OS = "winNT" then check "." else NONE
+  end
+
 val exe_ext = if OS = "winNT" then ".exe" else "";
-determining "mosmldir";
 
 fun check_mosml candidate = let
   open FileSys
@@ -107,18 +130,25 @@ end
 
 fun mosml_from_loadpath () = let
   val libdir = hd (!Meta.loadPath)
+  val () = print ("\nMosml library directory (from loadPath) is "^libdir)
   val {arcs, isAbs, vol} = Path.fromString libdir
   val _ = isAbs orelse
           (print "\n\n*** ML library directory not specified with absolute";
            print "filename --- aborting\n";
            Process.exit Process.failure)
-  val (arcs', lib) = frontlast arcs
-  val _ =
-      if lib <> "lib" then
-        print "\nMosml library directory (from loadPath) not .../lib -- weird!\n"
-      else ()
+  val arcs = case frontlast arcs of
+                 (arcs,  "lib") => arcs
+               | ([],  ult)     => [ult]
+               | (arcs,"mosml") => (* default since 2.10 *)
+                 let val (arcs', pen) = frontlast arcs in
+                     (if pen = "lib" then arcs' else arcs)
+                 end
+               | (arcs, _)      =>
+                 (print "\nMosml library directory (from loadPath) not .../lib -- weird!\n";
+                  arcs)
   val candidate =
-      Path.toString {arcs = arcs' @ ["bin"], isAbs = true, vol = vol}
+      Path.toString {arcs = arcs @ ["bin"], isAbs = true, vol = vol}
+  val _ = print ("\nUsing "^candidate^" for mosml directory (from loadPath)\n")
 in
   if check_mosml candidate then candidate
   else (print "\nCan't find mosml -- hope you have it in a \
@@ -130,7 +160,52 @@ fun dirify {arcs,isAbs,vol} =
     OS.Path.toString {arcs = #1 (frontlast arcs), isAbs = isAbs, vol = vol}
 
 
+
+val holdir = let
+  val _ = determining "holdir"
+  val cdir_files = readdir currentdir
+in
+  if mem "sigobj" cdir_files andalso mem "std.prelude" cdir_files then
+    currentdir
+  else if mem "smart-configure.sml" cdir_files andalso
+          mem "configure.sml" cdir_files
+  then let
+      val {arcs, isAbs, vol} = Path.fromString currentdir
+      val (arcs', _) = frontlast arcs
+    in
+      Path.toString {arcs = arcs', isAbs = isAbs, vol = vol}
+    end
+  else (print "\n\n*** Couldn't determine holdir; ";
+        print "please run me from the root HOL directory\n";
+        Process.exit Process.failure)
+end;
+
+determining "dynlib_available";
+val dynlib_available = (load "Dynlib"; true) handle _ => false;
+
+
+val DOT_PATH = SOME "";
+val GNUMAKE = "";
+
+val _ = let
+  val override = Path.concat(holdir, "config-override")
+in
+  if FileSys.access (override, [FileSys.A_READ]) then
+    (print "\n[Using override file!]\n\n";
+     use override)
+  else ()
+end;
+
+val DOT_PATH = if DOT_PATH = SOME "" then which "dot" else DOT_PATH;
+val GNUMAKE = if GNUMAKE = "" then
+                (determining "GNUMAKE";
+                 case OS.Process.getEnv "MAKE" of
+                     NONE => "make"
+                   | SOME s => s)
+              else GNUMAKE;
+
 val mosmldir = let
+  val _ = determining "mosmldir"
   val nm = CommandLine.name()
   val p as {arcs, isAbs, vol} = OS.Path.fromString nm
   val cand =
@@ -153,52 +228,48 @@ in
   | SOME c => if check_mosml c then c else mosml_from_loadpath ()
 end;
 
-determining "holdir";
-
-val holdir = let
-  val cdir_files = readdir currentdir
-in
-  if mem "sigobj" cdir_files andalso mem "std.prelude" cdir_files then
-    currentdir
-  else if mem "smart-configure.sml" cdir_files andalso
-          mem "configure.sml" cdir_files
-  then let
-      val {arcs, isAbs, vol} = Path.fromString currentdir
-      val (arcs', _) = frontlast arcs
+fun find_in_bin_or_path s =
+    let
+      val binpath = OS.Path.concat("/bin", s)
     in
-      Path.toString {arcs = arcs', isAbs = isAbs, vol = vol}
-    end
-  else (print "\n\n*** Couldn't determine holdir; ";
-        print "please run me from the root HOL directory\n";
-        Process.exit Process.failure)
-end;
+      if OS.FileSys.access (binpath, [OS.FileSys.A_EXEC]) then
+        (binpath, true)
+      else
+        case which s of
+            NONE => die ("Couldn't find `" ^ s ^
+                         "' executable. Please edit\n\
+                         \config-overrides to include\n\
+                         \  val " ^ String.translate (str o Char.toUpper) s ^
+                         " = \"...\"")
+          | SOME s => (s, false)
+    end;
 
-determining "dynlib_available";
-
-val dynlib_available = (load "Dynlib"; true) handle _ => false;
 
 print "\n";
-
-val _ = let
-  val override = Path.concat(holdir, "config-override")
-in
-  if FileSys.access (override, [FileSys.A_READ]) then
-    (print "\n[Using override file!]\n\n";
-     use override)
-  else ()
-end;
-
-
 
 fun verdict (prompt, value) =
     (print (StringCvt.padRight #" " 20 (prompt^":"));
      print value;
      print "\n");
 
+fun optverdict (prompt, optvalue) =
+  (print (StringCvt.padRight #" " 20 (prompt ^ ":"));
+   print (case optvalue of NONE => "NONE" | SOME p => "SOME "^p);
+   print "\n");
+
+fun dfltverdict (prompt, (value, dflt)) =
+    if dflt then value
+    else (print (StringCvt.padRight #" " 20 (prompt ^ ":") ^ value); value);
+
+
 verdict ("OS", OS);
 verdict ("mosmldir", mosmldir);
 verdict ("holdir", holdir);
 verdict ("dynlib_available", Bool.toString dynlib_available);
+verdict ("GNUMAKE", GNUMAKE);
+optverdict ("DOT_PATH", DOT_PATH);
+val MV = dfltverdict ("MV", find_in_bin_or_path "mv");
+val CP = dfltverdict ("CP", find_in_bin_or_path "cp");
 
 val _ = let
   val mosml' = if OS = "winNT" then "mosmlc.exe" else "mosmlc"

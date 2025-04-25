@@ -1,0 +1,2 @@
+CLINE_OPTIONS = --qof
+INCLUDES = subdir

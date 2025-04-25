@@ -1,7 +1,7 @@
 structure ReadHMF :> ReadHMF =
 struct
 
-open Holmake_types
+open Holmake_types Holmake_tools
 
 datatype cond_position = GrabbingText | NoTrueCondYet | SkippingElses
 val empty_condstate = [] : cond_position list
@@ -20,7 +20,8 @@ fun readline lnum strm = let
                      String.extract(s, 0, SOME (size s - 2))
                    else String.extract(s, 0, SOME (size s - 1))
         in
-          if String.sub(s0, size s0 - 1) = #"\\" then
+          if s0 = "" then SOME(lnum + 1, String.concat (List.rev acc))
+          else if String.sub(s0, size s0 - 1) = #"\\" then
             recurse (lnum + 1,
                      " " :: String.extract(s0, 0, SOME (size s0 - 1)) :: acc)
                     (TextIO.inputLine strm)
@@ -37,6 +38,7 @@ datatype buf = B of { lnum : int,
                       curr : (int * string) option }
 
 fun init_buf fname = let
+  val fname = OS.Path.mkAbsolute {path=fname, relativeTo=OS.FileSys.getDir()}
   val istrm = TextIO.openIn fname
 in
   B { lnum = 1, strm = istrm, curr = readline 1 istrm, name = fname }
@@ -71,10 +73,16 @@ end
 
 
 fun first_special s = let
-  fun recurse i = if i = size s then NONE
-                  else if String.sub(s,i) = #"=" then SOME #"="
-                  else if String.sub(s,i) = #":" then SOME #":"
-                  else recurse (i + 1)
+  fun recurse i =
+      if i = size s then NONE
+      else
+        case String.sub(s,i) of
+            #"=" => SOME "="
+          | #":" => SOME ":"
+          | #"+" => if i + 1 < size s andalso String.sub(s,i+1) = #"=" then
+                      SOME "+="
+                    else recurse (i + 1)
+          | _ => recurse (i + 1)
 in
   recurse 0
 end
@@ -186,21 +194,23 @@ fun getline env (condstate, b) =
         else if String.isPrefix "ifdef" s orelse String.isPrefix "ifndef" s orelse
                 String.isPrefix "ifeq" s orelse String.isPrefix "ifneq" s
         then
-          getline env (SkippingElses::SkippingElses::rest, advance b)
+          getline env (SkippingElses::condstate, advance b)
         else
-          getline env (SkippingElses::rest, advance b)
+          getline env (condstate, advance b)
       end
     | (SOME s, NoTrueCondYet::rest) => let
         val s = strip_leading_wspace s
       in
         if String.isPrefix "endif" s then getline env (rest, advance b)
+        else if String.isPrefix "if" s then
+          getline env (SkippingElses :: condstate, advance b)
         else if String.isPrefix "else" s then let
             val s = strip_leading_wspace (String.extract(s, 4, NONE))
           in
             if String.isPrefix "if" s then
               case evaluate_cond b env s of
                 NONE => error b "ReadHMF: bogus string following else"
-              | SOME false => getline env (NoTrueCondYet::rest, advance b)
+              | SOME false => getline env (condstate, advance b)
               | SOME true => getline env (GrabbingText::rest, advance b)
             else if s = "" then getline env (GrabbingText::rest, advance b)
             else error b "ReadHMF: bogus string following else"
@@ -257,8 +267,11 @@ in
             case first_special s' of
                 NONE => error b ("Unrecognised character: \""^
                                  String.toString (str c1) ^ "\"")
-              | SOME #"=" => ((condstate, advance b), DEFN (strip_trailing_comment s))
-              | SOME #":" => read_commands
+              | SOME "=" => ((condstate, advance b),
+                              DEFN (strip_trailing_comment s))
+              | SOME "+=" => ((condstate, advance b),
+                              DEFN_EXTEND (strip_trailing_comment s))
+              | SOME ":" => read_commands
                                  env
                                  (condstate, advance b)
                                  (strip_trailing_comment s' ^ "\n")
@@ -267,39 +280,182 @@ in
     end
 end
 
-fun readall (acc as (tgt1,env,ruledb,depdb)) csb =
-    case process_line env csb of
-      (csb as (cs, b), EOF) => let
-        val _ = close_buf b
-        fun foldthis (tgt,deps,acc) =
-            case Binarymap.peek(acc,tgt) of
-              NONE => Binarymap.insert(acc,tgt,
-                                       {dependencies = deps, commands = []})
-            | SOME {dependencies, commands} =>
-              Binarymap.insert(acc,tgt, {dependencies = dependencies @ deps,
-                                         commands = commands})
-      in
-        (env,Binarymap.foldl foldthis ruledb depdb,tgt1)
-      end
-    | (csb, x) => let
-        fun warn s = TextIO.output(TextIO.stdErr, s ^ "\n")
-      in
-        case to_token x of
-          HM_defn def => readall (tgt1,env_extend def env, ruledb, depdb) csb
-        | HM_rule rinfo => let
-            val (rdb',depdb',tgts) = extend_ruledb warn env rinfo (ruledb,depdb)
-            val tgt1' =
-                case tgt1 of
-                  NONE => List.find (fn s => s <> ".PHONY") tgts
-                | _ => tgt1
-          in
-            readall (tgt1',env,rdb',depdb') csb
-          end
-      end
+fun readall diags fname (acc as (tgt1,env,ruledb,depdb,defs_seen)) csb =
+    let
+      val {warn=warn0,die=die0,info=info0} = diags
+      fun aug f s = f ("*** " ^ fname ^ ": " ^ s)
+      val warn = aug warn0 and die = aug die0 and info = aug info0
+      fun recurse (acc as (tgt1,env,ruledb,depdb,defs_seen)) csb =
+          case process_line env csb of
+              (csb as (cs, b), EOF) =>
+              let
+                val _ = close_buf b
+                fun foldthis (tgt,deps,acc) =
+                    case Binarymap.peek(acc,tgt) of
+                        NONE =>
+                        Binarymap.insert(acc,tgt,
+                                         {dependencies = deps, commands = []})
+                   | SOME {dependencies, commands} =>
+                     Binarymap.insert(acc,tgt,
+                                      {dependencies = dependencies @ deps,
+                                       commands = commands})
+              in
+                (env,Binarymap.foldl foldthis ruledb depdb,tgt1)
+              end
+            | (csb, x) =>
+              (case to_token env x of
+                   HM_defn {vname, extendp, rhs} =>
+                   (if Binaryset.member(defs_seen, vname) andalso
+                       not (extendp)
+                    then
+                      if vname = "INCLUDES" then
+                        die "Can't redefine INCLUDES variable"
+                      else
+                        warn ("Repeated definition of variable " ^ vname ^
+                              " (use += instead?)")
+                    else ();
+                    recurse (tgt1,env_extend (vname,rhs) env, ruledb, depdb,
+                             Binaryset.add(defs_seen, vname)) csb)
+                 | HM_rule rinfo =>
+                   let
+                     val (rdb',depdb',tgts) =
+                         extend_ruledb warn env rinfo (ruledb,depdb)
+                     val tgt1' =
+                         case tgt1 of
+                             NONE => List.find (fn s => s <> ".PHONY") tgts
+                           | _ => tgt1
+                   in
+                     recurse (tgt1',env,rdb',depdb',defs_seen) csb
+                   end)
+    in
+      recurse acc csb
+    end
 
-fun read fname env =
-    readall (NONE, env, empty_ruledb,
-             Binarymap.mkDict String.compare)
+fun diagread diags fname env =
+    readall diags fname (NONE, env, empty_ruledb,
+                         Binarymap.mkDict String.compare,
+                         Binaryset.empty String.compare)
             (empty_condstate, init_buf fname)
+
+fun dflt_warn s = TextIO.output(TextIO.stdErr, s ^ "\n")
+val read =
+    diagread {warn = dflt_warn,
+              die = fn s => (dflt_warn s ; OS.Process.exit OS.Process.failure),
+              info = fn s => (TextIO.print (s ^ "\n"))}
+
+fun readlist e vref =
+  map dequote (tokenize (perform_substitution e [VREF vref]))
+
+
+fun find_includes0 dirname =
+  let
+    fun warn s = TextIO.output(TextIO.stdErr, s ^ "\n")
+    val hm_fname = OS.Path.concat(dirname, "Holmakefile")
+  in
+    if OS.FileSys.access(hm_fname, [OS.FileSys.A_READ]) then
+      let
+        val (e, _, _) = read hm_fname (base_environment())
+        val raw_incs = readlist e "INCLUDES" @ readlist e "PRE_INCLUDES"
+      in
+        map (fn p => OS.Path.mkAbsolute {path = p, relativeTo = dirname})
+            raw_incs
+      end handle e => (warn ("Bogus Holmakefile in " ^ dirname ^
+                             " - ignoring it"); [])
+    else []
+  end
+
+fun normPath p =
+    OS.Path.mkCanonical
+      (OS.Path.mkAbsolute{path = p, relativeTo = OS.FileSys.getDir()})
+val find_includes = memoise String.compare find_includes0 o normPath
+
+infix ++
+val op ++ = OS.Path.concat
+fun canonicalise d1 d2 = OS.Path.mkAbsolute{path = d2, relativeTo = d1}
+fun fromList l = Binaryset.addList (Binaryset.empty String.compare, l)
+
+(* returns updated accumulator and list of new places to visit *)
+fun extend_path_with_includes0 (A as (visited,prem,postm)) dir verbosity =
+    if Binaryset.member(visited, dir) then (A,[])
+    else
+      if OS.FileSys.access (dir ++ "Holmakefile", [OS.FileSys.A_READ]) then
+        let
+          open Holmake_types
+          val _ = if verbosity > 1 then
+                    print ("Visiting " ^ dir ^ " for first time\n")
+                  else ()
+          val extensions =
+              holpathdb.search_for_extensions find_includes
+                {starter_dirs = [dir], skip = Binaryset.empty String.compare}
+          val _ = List.app holpathdb.extend_db extensions
+          val _ = if verbosity > 1 then
+                    print ("Completed holpathdb analysis in " ^ dir ^ "\n")
+                  else ()
+          val base_env = let
+            fun foldthis ({vname,path}, env) =
+                env_extend (vname, [LIT path]) env
+          in
+            List.foldl foldthis (base_environment()) extensions
+          end
+          val (env, _, _) = read (dir ++ "Holmakefile") base_env
+          fun envlist id =
+              map dequote (tokenize (perform_substitution env [VREF id]))
+          fun diag nm incs =
+              if null incs orelse verbosity < 2 then ()
+              else
+                print (nm ^ " = " ^ String.concatWith ", " incs ^ "\n")
+          val pre_incs = map (canonicalise dir) (envlist "PRE_INCLUDES")
+          val _ = diag "PRE_INCLUDES" pre_incs
+          val post_incs = map (canonicalise dir) (envlist "INCLUDES")
+          val _ = diag "INCLUDES" post_incs
+          fun maybeinsert(m,k,v) =
+              if null v then m else Binarymap.insert(m,k,v)
+        in
+          ((Binaryset.add(visited,dir),
+            maybeinsert(prem,dir,pre_incs),
+            maybeinsert(postm,dir,post_incs)),
+           Binaryset.listItems (fromList (pre_incs @ post_incs)))
+        end handle e => (if verbosity > 0 then
+                           (TextIO.output(TextIO.stdErr,
+                                          "[bogus Holmakefile in " ^ dir ^
+                                          " - ignoring it]\n");
+                            TextIO.flushOut TextIO.stdErr;
+                            (A, [])
+                           )
+                         else (A, []))
+      else (A, [])
+
+fun extend_paths A cfg worklist =
+    case worklist of
+        [] => A
+      | d::ds =>
+        let
+          val (A',new) = extend_path_with_includes0 A d cfg
+        in
+          extend_paths A' cfg (ds @ new)
+        end
+
+
+val empty_strset = Binaryset.empty String.compare
+val empty_strmap = Binarymap.mkDict String.compare
+fun extend_path_with_includes (cfg as {lpref,verbosity=v}) =
+    let
+      val wlist = [OS.FileSys.getDir()]
+      val (_, prem, postm) =
+          extend_paths (empty_strset, empty_strmap, empty_strmap) v wlist
+      fun m s = holpathdb.reverse_lookup {path = s}
+      fun foldthis nm (dirname,incs,acc) = (
+        if v > 1 then
+          print (m dirname ^ "/Holmakefile:" ^ nm ^ " +=\n  " ^
+                 String.concatWith "\n  " (map m incs) ^ "\n")
+        else ();
+        Binaryset.addList(acc,incs)
+      )
+      fun acc_range nm = Binarymap.foldl (foldthis nm) empty_strset
+      val all_preincs = Binaryset.listItems (acc_range "PRE_INCLUDES" prem)
+      val all_incs = Binaryset.listItems (acc_range "INCLUDES" postm)
+    in
+      lpref := all_preincs @ !lpref @ all_incs
+    end
 
 end (* struct *)

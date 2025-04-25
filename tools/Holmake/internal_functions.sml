@@ -1,8 +1,11 @@
 structure internal_functions :> internal_functions =
 struct
 
+structure FileSys = HOLFileSys
 fun member e [] = false
   | member e (h::t) = e = h orelse member e t
+
+fun equal x y = x = y
 
 fun spacify0 acc [] = List.rev acc
   | spacify0 acc [x] = List.rev (x::acc)
@@ -10,17 +13,21 @@ fun spacify0 acc [] = List.rev acc
 
 val spacify = String.concat o spacify0 []
 
-fun find_unescaped cset = let
+fun dropWhile P [] = []
+  | dropWhile P (l as (h::t)) = if P h then dropWhile P t else l
+
+fun find_unescaped cset ss = let
   open Substring
-  fun recurse i ss =
-      case getc ss of
-        NONE => NONE
-      | SOME(c', ss') => if member c' cset then SOME i
-                         else if c' = #"\\" then
-                           case getc ss' of
-                             NONE => NONE
-                           | SOME (_, ss'') => recurse (i + 2) ss''
-                         else recurse (i + 1) ss'
+  val sz = size ss
+  fun recurse i =
+    if i >= sz then NONE
+    else
+      let val c = Substring.sub(ss,i)
+      in
+        if member c cset then SOME i
+        else if c = #"\\" then recurse (i + 2)
+        else recurse (i + 1)
+      end
 in
   recurse 0
 end
@@ -153,6 +160,158 @@ in
   spacify (map mapthis (tokenize arglist))
 end
 
+fun split_to_directories (comps : parse_glob.t list) = let
+  open parse_glob
+  fun recurse h acc [] = List.rev (List.rev h::acc)
+    | recurse h acc (RE r :: rest) = recurse (RE r::h) acc rest
+    | recurse h acc (CHAR #"/" :: rest) = recurse [] (List.rev h::acc) rest
+    | recurse h acc (CHAR c :: rest) = recurse (CHAR c :: h) acc rest
+in
+  recurse [] [] comps
+end
+
+fun dirfiles dirname = let
+  val dirstrm = FileSys.openDir dirname
+  fun recurse acc =
+      case FileSys.readDir dirstrm of
+          NONE => "." :: ".." :: acc
+        | SOME fname => recurse (fname :: acc)
+in
+  recurse [] before FileSys.closeDir dirstrm
+end
+
+fun safeIsDir s =
+    FileSys.isDir s handle OS.SysErr _ => false
+
+fun diag s = TextIO.output(TextIO.stdErr, s)
+
+fun wildcard0 (dirname,s) =
+    if s = "" then [""]
+    else let
+      open parse_glob
+      val comps = parse_glob_components s
+      val split_comps = split_to_directories comps
+      fun initial_split d l k =
+          case l of
+              h::t => if null h then
+                        initial_split "/" t (fn (d,s,r) => k (d,s ^ "/", r))
+                      else k (d,"", l)
+            | [] => k (d,"", l)
+      val (starting_dir,pfx, rest) =
+          initial_split dirname split_comps (fn x => x)
+      fun recurse curpfx curdir complist : string list =
+          case complist of
+              c::cs => (* c must be non-null *)
+              let
+                val dotfiles_ok = case c of CHAR #"." :: _ => true
+                                          | _ => false
+                val re = toRegexp c
+                val files = Listsort.sort String.compare (dirfiles curdir)
+                val m = regexpMatch.match re
+                val require_dir = not (null cs)
+                val (_, _, cs') = initial_split "" cs (fn x => x)
+                val slashes = if require_dir then "/" else ""
+                fun check s =
+                    m s andalso
+                    (dotfiles_ok orelse String.sub(s,0) <> #".") andalso
+                    (not require_dir orelse
+                     safeIsDir (OS.Path.concat(curdir, s)))
+                      handle e => raise Fail (s ^ " - " ^ exnMessage e)
+              in
+                case List.filter check files of
+                    [] => []
+                  | fs =>
+                    let
+                      val newpfxs = map (fn s => curpfx ^ s ^ slashes) fs
+                    in
+                      if null cs' then newpfxs
+                      else let
+                        val newdirs = map (fn d => OS.Path.concat(curdir, d)) fs
+                        val more_results : string list list =
+                            ListPair.map (fn (pfx,dir) => recurse pfx dir cs')
+                                         (newpfxs,newdirs)
+                      in
+                        List.concat more_results
+                      end
+                    end
+              end
+            | [] => raise Fail "wildcard.recurse: should never happen"
+    in
+      case rest of
+          [] => (* happens if input was a series of forward slashes *) [s]
+        | _ => case recurse pfx starting_dir rest of [] => [] | x => x
+    end
+
+local open Holmake_tools
+val wildcard_withdir =
+    memoise (pair_compare(String.compare, String.compare)) wildcard0
+in
+fun wildcard s = wildcard_withdir (OS.FileSys.getDir(), s)
+end
+
+fun get_first f [] = NONE
+  | get_first f (h::t) = (case f h of NONE => get_first f t | x => x)
+
+fun which arg =
+  let
+    open FileSys Systeml
+    val sepc = if isUnix then #":" else #";"
+    fun check p =
+      let
+        val fname = OS.Path.concat(p, arg)
+      in
+        if access (fname, [A_READ, A_EXEC]) then SOME fname else NONE
+      end
+    fun smash NONE = "" | smash (SOME s) = s
+  in
+    case OS.Process.getEnv "PATH" of
+        SOME path =>
+        let
+          val paths = (if isUnix then [] else ["."]) @
+                      String.fields (fn c => c = sepc) path
+        in
+          smash (get_first check paths)
+        end
+    | NONE => if isUnix then "" else smash (check ".")
+  end
+
+fun shell arg =
+  let
+    open Unix
+
+    (* TODO This gets rid of all carriage returns; should only replace
+       those paired with a newline *)
+    fun fix_nls s =
+      let
+        val s = String.translate (fn c => if c = #"\r" then "" else String.str c) s
+        val s = if String.isSuffix "\n" s then
+                  String.substring (s, 0, String.size s - 1)
+                else s
+      in
+        String.map (fn c => if c = #"\n" then #" " else c) s
+      end
+
+    val proc = execute ("/bin/sh", ["-c", arg])
+    val ins = textInstreamOf proc
+    val str = fix_nls (TextIO.inputAll ins)
+  in
+    if OS.Process.isSuccess (reap proc) then str else ""
+  end
+  handle OS.SysErr _ => ""
+
+(* taken from
+     https://unix.stackexchange.com/a/70675/287940
+   by user lesmana
+*)
+fun tee (cmd, fname) =
+    "{ { { { " ^ cmd ^ " ; echo $? >&3; } | tee " ^ fname ^ " >&4; } 3>&1; } | \
+    \ { read xs; if [ $xs != \"0\" ] ; then /bin/rm -f " ^ fname ^ " ; fi ; exit $xs; } } 4>&1"
+
+fun hol2fs s =
+    case HFS_NameMunge.HOLtoFS s of
+        NONE => s
+      | SOME {fullfile,...} => fullfile
+
 fun function_call (fnname, args, eval) = let
   open Substring
 in
@@ -209,6 +368,41 @@ in
                       in
                         if size sfx = 0 then "" else findstr
                       end
+  | "which" => if length args <> 1 then
+                 raise Fail "Bad number of arguments to 'which' function"
+               else let
+                 val arg_evalled = eval (hd args)
+               in
+                 which arg_evalled
+               end
+  | "wildcard" => if length args <> 1 then
+                    raise Fail "Bad number of arguments to 'wildcard' function"
+                  else let
+                    val args' = tokenize (Substring.string (hd args))
+                    val args_evalled = map (eval o Substring.full) args'
+                  in
+                    spacify (List.concat (map wildcard args_evalled))
+                  end
+  | "shell" => if length args <> 1 then
+                 raise Fail "Bad number of arguments to 'shell' function"
+               else let
+                 val arg_evalled = eval (hd args)
+               in
+                  shell arg_evalled
+               end
+  | "tee" => if length args <> 2 then
+               raise Fail "Bad number of arguments to 'tee' function"
+             else
+               let val args_evalled = map eval args
+               in tee (hd args_evalled, hd (tl args_evalled))
+               end
+  | "hol2fs" => if length args <> 1 then
+                  raise Fail "Bad number of arguments to 'hol2fs' function"
+                else
+                  let val args_evalled = map eval args
+                  in
+                    hol2fs (hd args_evalled)
+                  end
   | _ => raise Fail ("Unknown function name: "^fnname)
 end
 

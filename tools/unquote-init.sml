@@ -3,7 +3,9 @@
  * of "use" is found in the "Meta" structure.                                *
  *---------------------------------------------------------------------------*)
 
-local
+structure QUse =
+struct
+  local
   (* used to stand for "has double quote", but the same analysis is necessary
      even for files that contain single quotes because of the special
      treatment that the filter gives to things like `s1 ^ s2`
@@ -15,7 +17,7 @@ local
             case TextIO.input1 istrm of
               NONE => false
             | SOME #"`" => true
-            | SOME _ => loop()
+            | SOME c => Char.ord c > 127 orelse loop()
       in
         loop() before TextIO.closeIn istrm
       end handle Io _ => false
@@ -23,6 +25,17 @@ local
   fun p1 ++ p2 = Path.concat (p1, p2)
   fun unquote_to file1 file2 =
       Systeml.systeml [HOLDIR ++ "bin" ++ "unquote", file1, file2]
+  fun with_flag (r,v) f x =
+      let val old = !r
+      in
+        let
+          val _ = r := v
+          val res = f x
+        in
+          r := old;
+          res
+        end handle e => (r := old; raise e)
+      end
 in
 fun use s =
   if has_dq s then
@@ -37,13 +50,10 @@ fun use s =
             raise Fail "use")
     end
   else Meta.use s
-end;
 
-(*----------------------------------------------------------------------------*
- *  Make the pretty-printer print terms, types, kinds with `` .... `` syntax. *
- *----------------------------------------------------------------------------*)
+fun prim_use {quietOpen} s =
+    with_flag (Meta.quietdec, quietOpen) use s
+end; (* local *)
 
-val _ =
-  (term_pp_prefix := "``";   term_pp_suffix := "``";
-   type_pp_prefix := "``";   type_pp_suffix := "``";
-   kind_pp_prefix := "``";   kind_pp_suffix := "``");
+end; (* struct *)
+val use = QUse.use;

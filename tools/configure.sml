@@ -41,16 +41,15 @@ val OS :string      =
 *)
 
 
-val CC:string       = "gcc";      (* C compiler                       *)
-val GNUMAKE:string  = "make";     (* for bdd library and SMV          *)
+val CC:string       = "cc";       (* C compiler                       *)
 val DEPDIR:string   = ".HOLMK";   (* where Holmake dependencies kept  *)
 
 (*---------------------------------------------------------------------------
           END user-settable parameters
  ---------------------------------------------------------------------------*)
 
-val version_number = 8
-val release_string = "Kananaskis"
+val version_number = 2
+val release_string = "Omega"
 
 
 val _ = Meta.quietdec := true;
@@ -81,6 +80,8 @@ fun fullPath slist = normPath
    (itstrings (fn chunk => fn path => Path.concat (chunk,path)) slist);
 
 fun quote s = String.concat ["\"",String.toString s,"\""]
+fun optquote NONE = "NONE"
+  | optquote (SOME p) = "SOME " ^ quote p
 
 val holmakedir = fullPath [holdir, "tools", "Holmake"];
 val compiler = fullPath [mosmldir, "mosmlc"];
@@ -160,8 +161,6 @@ fun systeml x = (print "Systeml not correctly loaded.\n";
 val mk_xable = systeml;
 val xable_string = systeml;
 
-val have_basis2002 = version_string <> "2.01";
-
 val OSkind = if OS="linux" orelse OS="solaris" orelse OS="macosx" then "unix"
              else OS
 val _ = let
@@ -175,54 +174,22 @@ in
   fill_holes (srcfile, destfile)
   ["val HOLDIR ="   --> ("val HOLDIR = "^quote holdir^"\n"),
    "val MOSMLDIR =" --> ("val MOSMLDIR = "^quote mosmldir^"\n"),
-   "val HAVE_BASIS2002 =" -->
-                        ("val HAVE_BASIS2002 = "^Bool.toString have_basis2002^
-                         "\n"),
    "val OS ="       --> ("val OS = "^quote OS^"\n"),
+   "val CC ="       --> ("val CC = "^quote CC^"\n"),
    "val DEPDIR ="   --> ("val DEPDIR = "^quote DEPDIR^"\n"),
    "val GNUMAKE ="  --> ("val GNUMAKE = "^quote GNUMAKE^"\n"),
    "val DYNLIB ="   --> ("val DYNLIB = "^Bool.toString dynlib_available^"\n"),
    "val version ="  --> ("val version = "^Int.toString version_number^"\n"),
    "val ML_SYSNAME =" --> "val ML_SYSNAME = \"mosml\"\n",
-   "val release ="  --> ("val release = "^quote release_string^"\n")];
+   "val release ="  --> ("val release = "^quote release_string^"\n"),
+   "val DOT_PATH =" --> ("val DOT_PATH = "^optquote DOT_PATH^"\n"),
+   "val MV ="       --> ("val MV = " ^ quote MV^"\n"),
+   "val CP ="       --> ("val CP = " ^ quote CP^"\n")
+  ];
   use destfile
 end;
 
 open Systeml;
-
-(* can now compile basis2002, if necessary *)
-
-
-let
-  val _ = not have_basis2002 orelse raise GetOut
-  val modTime = FileSys.modTime
-  val dir_0 = FileSys.getDir()
-  val _ = FileSys.chDir holmakedir
-  val uifile = fullPath [holmakedir, "basis2002.ui"]
-  val uofile = fullPath [holmakedir, "basis2002.uo"]
-  val smlfile = fullPath [holmakedir, "basis2002.sml"]
-  val rebuild_basis = not (canread uifile) orelse
-                      Time.>(modTime smlfile, modTime uifile)
-  val sigui = fullPath [sigobj, "basis2002.ui"]
-  val siguo = fullPath [sigobj, "basis2002.uo"]
-  val copy_basis = not (canread sigui) orelse not (canread siguo) orelse
-                   rebuild_basis orelse
-                   Time.>(modTime uifile, modTime sigui) orelse
-                   Time.>(modTime uofile, modTime siguo)
-in
-  print "Building basis2002 object code for Moscow ML 2.01 ";
-  if rebuild_basis then
-     (print "(compiling";
-      if Process.isSuccess
-             (systeml [compiler, "-c", "-toplevel", "basis2002.sml"])
-      then ()
-      else die "Couldn't compile basis2002.sml")
-  else print "(up-to-date";
-  if copy_basis then (print "; copying to sigobj)\n";
-                      app to_sigobj ["basis2002.ui", "basis2002.uo"])
-  else print ")\n";
-  FileSys.chDir dir_0
-end handle GetOut => ();
 
 (*---------------------------------------------------------------------------
      Now compile Systeml.sml in tools/Holmake/
@@ -235,12 +202,6 @@ let
   val dir_0 = FileSys.getDir()
   val sigfile = fullPath [holmakedir, "Systeml.sig"]
   val uifile = fullPath [holmakedir, "Systeml.ui"]
-  val basis_rebuild = let
-    val basisuifile = fullPath [holmakedir, "basis2002.ui"]
-  in
-    not have_basis2002 andalso
-    Time.>(modTime basisuifile, modTime sigfile)
-  end
   val rebuild_sigfile =
       not (canread uifile) orelse
       Time.>(modTime sigfile, modTime uifile) orelse
@@ -248,8 +209,7 @@ let
          is probably a Poly/ML thing from a previous installation. If it's
          not there at all, we need to recompile and copy across too. *)
       (FileSys.fileSize (fullPath [sigobj, "Systeml.ui"]) < 100
-       handle SysErr _ => true) orelse
-      basis_rebuild
+       handle SysErr _ => true)
   fun die () = (print ")\nFailed to compile system-specific code\n";
                 Process.exit Process.failure)
   val systeml = fn l =>
@@ -258,12 +218,10 @@ in
   FileSys.chDir holmakedir;
   if rebuild_sigfile then
     (systeml ([compiler, "-c"] @
-              (if have_basis2002 then [] else ["basis2002.ui"]) @
               ["Systeml.sig"]);
      app to_sigobj ["Systeml.sig", "Systeml.ui"];
      print "sig ") else ();
   systeml ([compiler, "-c"] @
-           (if have_basis2002 then [] else ["basis2002.ui"]) @
            ["Systeml.sml"]);
   to_sigobj "Systeml.uo";
   print "sml)\n";
@@ -312,7 +270,6 @@ val _ = let
 in
   FileSys.chDir destdir;
   systeml ([compiler, "-I", "../../sigobj", "-c", "-toplevel"] @
-           (if have_basis2002 then [] else ["basis2002.ui"]) @
            ["mllex.sml"]);
   systeml [compiler, "-c", "mllex.ui", "mosmlmain.sml"];
   systeml [compiler, "-I", "../../sigobj", "-o", "mllex.exe", "mllex.uo",
@@ -327,11 +284,8 @@ end handle _ => die "Failed to build mllex.";
  ---------------------------------------------------------------------------*)
 
 fun compile opts s =
-    if have_basis2002 then
-      Process.isSuccess (systeml ([compiler, "-c"] @ opts @ [s]))
-    else Process.isSuccess
-             (systeml ([compiler, "-c"] @ opts @ ["basis2002.ui", s]))
-
+    (echo ("Compiling " ^ s);
+     Process.isSuccess (systeml ([compiler, "-c"] @ opts @ [s])))
 
 val _ =
  let val _ = echo "Making bin/Holmake."
@@ -339,34 +293,80 @@ val _ =
      val hmakedir  = normPath(Path.concat(holdir, "tools/Holmake"))
      val _         = FileSys.chDir hmakedir
      val bin       = fullPath [holdir,   "bin/Holmake"]
-     val lexer     = fullPath [mosmldir, "mosmllex"]
-     val yaccer    = fullPath [mosmldir, "mosmlyac"]
+     val mllex     = fullPath [holdir, "tools", "mllex", "mllex.exe"]
      val systeml   = fn clist => if not (Process.isSuccess (systeml clist)) then
                                    die "Holmake compilation failed."
                                  else ()
-     fun link () = let
-       val pfx = if OS <> "winNT" then [compiler, "-standalone", "-o", bin]
-                 else [compiler, "-o", bin]
-       val b2002comp = if have_basis2002 then [] else ["basis2002.ui"]
+     fun link {extras,srcobj,tgt} = let
+       val pfx = if OS <> "winNT" then [compiler, "-standalone", "-o", tgt]
+                 else [compiler, "-o", tgt]
      in
-       systeml (pfx @ b2002comp @ ["Holmake.sml"])
+       systeml (pfx @ extras @ [srcobj])
      end
   in
-    systeml [yaccer, "Parser.grm"];
-    systeml [lexer, "Lexer.lex"];
-    compile [] "Parser.sig";
-    compile [] "Parser.sml";
-    compile [] "Lexer.sml";
-    compile [] "Holdep.sml";
+    print "Calling mllex on HolLex\n";
+    systeml [mllex, "HolLex"];
+    compile [] "holpathdb.sig";
+    compile [] "holpathdb.sml";
+    compile [] "regexpMatch.sig";
+    compile [] "regexpMatch.sml";
+    compile [] "parse_glob.sig";
+    compile [] "parse_glob.sml";
+    compile [] "HOLFS_dtype.sml";
+    compile [] "HFS_NameMunge.sig";
+    FileSys.chDir "mosml";
+    compile ["-I", ".."] "HFS_NameMunge.sml";
+    FileSys.chDir "..";
+    compile [] "HOLFileSys.sig";
+    compile [] "HOLFileSys.sml";
+    compile [] "Holdep_tokens.sig";
+    compile [] "Holdep_tokens.sml";
+    compile [] "AttributeSyntax.sig";
+    compile [] "AttributeSyntax.sml";
+    compile [] "HolLex.sml";
+    compile [] "terminal_primitives.sig";
+    compile [] "terminal_primitives.sml";
+    compile [] "Holmake_tools_dtype.sml";
+    compile [] "HolParser.sig";
+    compile [] "HolParser.sml";
+    compile ["-I", "mosml"] "Holdep.sig";
+    compile ["-I", "mosml"] "Holdep.sml";
+    compile [] "Holmake_tools.sig";
+    compile [] "Holmake_tools.sml";
     compile [] "internal_functions.sig";
     compile [] "internal_functions.sml";
     compile [] "Holmake_types.sig";
     compile [] "Holmake_types.sml";
-    compile [] "Holmake_tools.sig";
-    compile [] "Holmake_tools.sml";
     compile [] "ReadHMF.sig";
     compile [] "ReadHMF.sml";
-    link();
+    compile [] "GetOpt.sig";
+    compile [] "GetOpt.sml";
+    compile [] "FunctionalRecordUpdate.sml";
+    compile [] "HM_Core_Cline.sig";
+    compile [] "HM_Core_Cline.sml";
+    compile [] "holdeptool.sml";
+    compile [] "mosml_holdeptool.sml";
+    link{extras = ["-I", "mosml"], srcobj = "mosml_holdeptool.uo",
+         tgt = fullPath[holdir, "bin", "holdeptool.exe"]};
+    compile [] "HM_DepGraph.sig";
+    compile [] "HM_DepGraph.sml";
+    compile [] "HM_GraphBuildJ1.sig";
+    compile [] "HM_GraphBuildJ1.sml";
+    FileSys.chDir "mosml";
+    compile ["-I", ".."] "HM_Cline.sig";
+    compile ["-I", ".."] "HM_Cline.sml";
+    compile ["-I", ".."] "GraphExtra.sig";
+    compile ["-I", ".."] "GraphExtra.sml";
+    compile ["-I", ".."] "HM_BaseEnv.sig";
+    compile ["-I", ".."] "HM_BaseEnv.sml";
+    FileSys.chDir "..";
+    compile ["-I", "mosml"] "BuildCommand.sig";
+    FileSys.chDir "mosml";
+    compile ["-I", ".."] "BuildCommand.sml";
+    FileSys.chDir "..";
+    compile ["-I", "mosml"] "Holmake.sml";
+    compile [] "mosml_Holmake.sml";
+    link{extras = ["-I", "mosml"], tgt = bin, srcobj = "mosml_Holmake.uo"};
     mk_xable bin;
     FileSys.chDir cdir
   end
@@ -378,7 +378,7 @@ handle _ => (print "*** Couldn't build Holmake\n";
    ---------------------------------------------------------------------- *)
 
 val _ = let
-  val _ = echo "Making tooks/mlyacc/src/mlyacc.exe"
+  val _ = echo "Making tools/mlyacc/src/mlyacc.exe"
   val cdir = FileSys.getDir()
   val destdir = fullPath [holdir, "tools/mlyacc"]
   val systeml = fn clist => if Process.isSuccess (systeml clist) then ()
@@ -404,6 +404,12 @@ val _ = let
   val _ = echo "Making bin/build."
   val cwd = FileSys.getDir()
   val _ = FileSys.chDir (fullPath[holdir, "tools"])
+  (* cline stuff *)
+  val _ = if compile ["-I", holmakedir] "buildcline_dtype.sml" andalso
+             compile ["-I", holmakedir] "buildcline.sig" andalso
+             compile ["-I", holmakedir] "buildcline.sml"
+          then ()
+          else die "Failed to build buildcline module"
   (* utils first *)
   val _ = let
     val utilsig = "buildutils.sig"
@@ -417,11 +423,12 @@ val _ = let
 
   val target = "build.sml"
   val bin    = fullPath [holdir, "bin/build"]
-  val b2002p = if have_basis2002 then [] else ["basis2002.ui"]
+  val command =
+      [compiler, "-o", bin, "-I", holmakedir,
+       "-I", Path.concat(holmakedir, "mosml"),
+       target]
 in
-  if Process.isSuccess
-         (systeml ([compiler, "-o", bin, "-I", holmakedir] @ b2002p @ [target]))
-  then ()
+  if Process.isSuccess (systeml command) then ()
   else (print "*** Failed to build build executable.\n";
         Process.exit Process.failure) ;
   FileSys.remove (fullPath [holdir,"tools/build.ui"]);
@@ -429,33 +436,6 @@ in
   mk_xable bin;
   FileSys.chDir cwd
 end;
-
-
-(*---------------------------------------------------------------------------
-    Instantiate tools/hol-mode.src, and put it in tools/hol-mode.el
- ---------------------------------------------------------------------------*)
-
-val _ =
- let open TextIO
-     val _ = echo "Making hol-mode.el (for Emacs/XEmacs)"
-     val src = fullPath [holdir, "tools/hol-mode.src"]
-    val target = fullPath [holdir, "tools/hol-mode.el"]
- in
-    fill_holes (src, target)
-      ["(defcustom hol-executable HOL-EXECUTABLE\n"
-        -->
-       ("(defcustom hol-executable \n  "^
-        quote (fullPath [holdir, "bin/hol"])^"\n"),
-       "(defcustom sml-executable SML-EXECUTABLE\n"
-        -->
-       ("(defcustom sml-executable \n  "^
-        quote (fullPath [mosmldir, "mosml"])^"\n"),
-       "(defcustom holmake-executable HOLMAKE-EXECUTABLE\n"
-        -->
-       ("(defcustom holmake-executable \n  "^
-        quote (fullPath [holdir, "bin/Holmake"])^"\n")]
- end;
-
 
 (*---------------------------------------------------------------------------
       Generate shell scripts for running HOL.
@@ -497,27 +477,25 @@ val _ = FileSys.remove (fullPath [holdir, "bin", "buildheap"]) handle _ => ()
 
 val _ = let
   val _ = print "Attempting to compile quote filter ... "
-  val tgt0 = fullPath [holdir, "tools/quote-filter/quote-filter"]
   val tgt = fullPath [holdir, "bin/unquote"]
   val cwd = FileSys.getDir()
-  val _ = FileSys.chDir (fullPath [holdir, "tools/quote-filter"])
-  val _ = systeml [fullPath [holdir, "bin/Holmake"], "cleanAll"]
 in
-  if Process.isSuccess (systeml [fullPath [holdir, "bin/Holmake"]]) then let
-      val instrm = BinIO.openIn tgt0
-      val ostrm = BinIO.openOut tgt
-      val v = BinIO.inputAll instrm
-    in
-      BinIO.output(ostrm, v);
-      BinIO.closeIn instrm;
-      BinIO.closeOut ostrm;
-      mk_xable tgt;
-      print "Quote-filter built\n"
-    end handle e => print "0.Quote-filter build failed (continuing anyway)\n"
-  else              print "1.Quote-filter build failed (continuing anyway)\n"
-  ;
-  FileSys.chDir cwd
-end
+  FileSys.chDir (fullPath [holdir, "tools/quote-filter"]);
+  compile [] "quotefix.sig";
+  compile ["-I", holmakedir] "quotefix.sml";
+  compile [] "qfilter_util.sig";
+  compile [] "qfilter_util.sml";
+  compile ["-I", holmakedir] "quote-filter.sml";
+  echo "Linking quote-filter.uo";
+  systeml [compiler, "-o", tgt, "-I", holmakedir,
+    "-I", Path.concat(holmakedir, "mosml"),
+    "quote-filter.uo"];
+  mk_xable tgt;
+  print "Quote-filter built\n"
+end handle e => (
+  print ("Quote-filter build failed: " ^ General.exnMessage e);
+  OS.Process.exit OS.Process.failure
+)
 
 (*---------------------------------------------------------------------------
     Configure the muddy library.

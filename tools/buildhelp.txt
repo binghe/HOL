@@ -1,0 +1,27 @@
+Usage:
+
+  build [options]
+    builds the system
+
+OR
+
+  build [clean|cleanAll]
+    "cleans" the system, removing built object files.
+    The "cleanAll" variant also removes pre-calculated dependency
+    information.
+
+OR
+
+  build cleanForReloc
+    "cleans" the system of files that are installation specific, leaving
+    files that can be safely moved/distributed.
+
+OR
+
+  build [--nograph|--graph] help
+    builds the help system only
+
+The clean* variations can be given in whatever mix of letter-cases
+desired (i.e., "cleanall" and "Cleanall" work as well as "cleanAll").
+
+Options:
