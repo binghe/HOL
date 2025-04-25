@@ -12,6 +12,10 @@ fun warn s = TextIO.output(TextIO.stdErr, s ^ "\n")
 fun die s = (TextIO.output(TextIO.stdErr, s ^ "\n");
              OS.Process.exit OS.Process.failure)
 
+val _ = if PolyML.Compiler.compilerVersionNumber < 551 then
+          die "Must be running PolyML with version >= 5.5.1\n"
+        else ()
+
 fun readdir s = let
   val ds = OS.FileSys.openDir s
   fun recurse acc =
@@ -37,6 +41,9 @@ in
 end
 val check_poly = check_dir "poly" [OS.FileSys.A_EXEC]
 val check_libpoly = check_dir "libpolymain.a" [OS.FileSys.A_READ]
+fun check_polyc c =
+  Option.map (fn p => OS.Path.concat(p,"polyc"))
+             (check_dir "polyc" [OS.FileSys.A_EXEC] c)
 
 fun findpartial f [] = NONE
   | findpartial f (h::t) =
@@ -60,7 +67,13 @@ fun determining s =
 print "\nHOL smart configuration.\n\n";
 
 val poly = ""
+val polyc = NONE : string option
 val polymllibdir = "";
+val DOT_PATH = SOME "";
+val MLTON = SOME "";
+val GNUMAKE = "";
+val POLY_LDFLAGS = [] : string list;
+val POLY_LDFLAGS_STATIC = [] : string list;
 
 val _ = let
   val override = "tools-poly/poly-includes.ML"
@@ -95,10 +108,9 @@ end;
 val _ = let
 in
   OS.FileSys.chDir (OS.Path.concat (holdir, "tools-poly"));
-  use "poly/poly-init.ML";
+  use "poly/Mosml.sml";
   OS.FileSys.chDir currentdir
 end;
-
 
 val OS = let
   val _ = determining "OS"
@@ -106,7 +118,7 @@ val OS = let
 in
   if vol = "" then (* i.e. Unix *)
     case Mosml.run "uname" ["-a"] "" of
-      Success s => if String.isPrefix "Linux" s then
+      Mosml.Success s => if String.isPrefix "Linux" s then
                      "linux"
                    else if String.isPrefix "SunOS" s then
                      "solaris"
@@ -114,18 +126,43 @@ in
                      "macosx"
                    else
                      "unix"
-    | Failure s => (print "\nRunning uname failed with message: ";
+    | Mosml.Failure s => (print "\nRunning uname failed with message: ";
                     print s;
                     OS.Process.exit OS.Process.failure)
   else "winNT"
 end
 
+fun which arg =
+  let
+    open OS.FileSys
+    val sepc = if OS = "winNT" then #";" else #":"
+    fun check p =
+      let
+        val fname = OS.Path.concat(p, arg)
+      in
+        if access (fname, [A_READ, A_EXEC]) then
+          SOME
+            (OS.Path.mkAbsolute{path = fname, relativeTo = OS.FileSys.getDir()})
+        else NONE
+      end
+  in
+    case OS.Process.getEnv "PATH" of
+        SOME path =>
+        let
+          val paths = (if OS = "winNT" then ["."] else []) @
+                      String.fields (fn c => c = sepc) path
+        in
+          findpartial check paths
+        end
+      | NONE => if OS = "winNT" then check "." else NONE
+  end
+
 val polyinstruction =
-    "Please write file tools-poly/poly-includes.ML to specify it\
+    "Please write file tools-poly/poly-includes.ML to specify it \
     \properly.\n\
     \This file should include a line of the form\n\n\
     \  val poly = \"path-to-poly\";"
-val poly =
+val (poly,polycopt) =
     if poly = "" then let
         val _ = determining "poly"
         val nm = CommandLine.name()
@@ -154,7 +191,7 @@ val poly =
         | SOME c => let
           in
             case check_poly c of
-              SOME p => OS.Path.concat(p,"poly")
+              SOME p => (OS.Path.concat(p,"poly"), check_polyc p)
             | NONE =>
               die ("\n\nI tried to figure out where your poly executable is\
                    \n\by examining your command-line.\n\
@@ -170,7 +207,12 @@ val poly =
                      ^poly^
                      "'\nas the location of the poly executable.\n"^
                      polyinstruction)
-      | SOME p => OS.Path.concat(p, "poly")
+      | SOME p => (OS.Path.concat(p, "poly"), check_polyc p)
+
+val polyc =
+    case polycopt of
+        NONE => die ("Couldn't find polyc executable\n" ^ polyinstruction)
+      | SOME p => p
 
 val polylibsister = let
   val p as {arcs,isAbs,vol} = OS.Path.fromString poly
@@ -182,6 +224,17 @@ val polylibsister = let
 in
   OS.Path.toString { arcs = parent @ ["lib"], vol = vol, isAbs = isAbs }
 end
+
+val GNUMAKE:string  =
+    if GNUMAKE = "" then
+      let
+        val _ = determining "GNUMAKE"
+      in
+        case OS.Process.getEnv "MAKE" of
+            NONE => "make"
+          | SOME s => s
+      end
+    else GNUMAKE
 
 val polylibinstruction =
     "Please write file tools-poly/poly-includes.ML to specify it.\n\
@@ -206,9 +259,30 @@ val polymllibdir =
       | NONE => die ("\n\nYour overrides file specifies bogus location '"
                      ^polymllibdir ^
                      "'\nas the location of libpolymain.a\n" ^
-                     polylibinstruction)
+                     polylibinstruction);
+
+val DOT_PATH = if DOT_PATH = SOME "" then which "dot" else DOT_PATH;
+
+fun find_in_bin_or_path s =
+    let
+      val binpath = OS.Path.concat("/bin", s)
+    in
+      if OS.FileSys.access (binpath, [OS.FileSys.A_EXEC]) then
+        (binpath, true)
+      else
+        case which s of
+            NONE => die ("Couldn't find `" ^ s ^
+                         "' executable. Please edit\n\
+                         \tools-poly/poly-includes to include\n\
+                         \  val " ^ String.translate (str o Char.toUpper) s ^
+                         " = \"...\"")
+          | SOME s => (s, false)
+    end
+
 
 val dynlib_available = false;
+
+val MLTON = if MLTON = SOME "" then which "mlton" else MLTON;
 
 print "\n";
 
@@ -222,10 +296,26 @@ fun verdict (prompt, value) =
        print value;
        print "\n");
 
+fun optverdict (prompt, optvalue) =
+  (print (StringCvt.padRight #" " 20 (prompt ^ ":"));
+   print (case optvalue of NONE => "NONE" | SOME p => "SOME "^p);
+   print "\n");
+
+fun dfltverdict (prompt, (value, dflt)) =
+    if dflt then value
+    else (print (StringCvt.padRight #" " 20 (prompt ^ ":") ^ value); value);
+
 verdict ("OS", OS);
 verdict ("poly", poly);
+verdict ("polyc", polyc);
 verdict ("polymllibdir", polymllibdir);
 verdict ("holdir", holdir);
+optverdict ("DOT_PATH", DOT_PATH);
+optverdict ("MLTON", MLTON);
+verdict ("GNUMAKE", GNUMAKE);
+
+val MV = dfltverdict ("MV", find_in_bin_or_path "mv");
+val CP = dfltverdict ("CP", find_in_bin_or_path "cp");
 
 print "\nConfiguration will begin with above values.  If they are wrong\n";
 print "press Control-C.\n\n";
@@ -239,4 +329,4 @@ print "\n";
 val configfile = OS.Path.concat (OS.Path.concat (holdir, "tools-poly"), "configure.sml");
 
 
-use configfile;
+use configfile handle Fail s => die s;

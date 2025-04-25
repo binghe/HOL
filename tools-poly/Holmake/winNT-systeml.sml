@@ -56,12 +56,19 @@ val GNUMAKE =
 val DYNLIB =
 val version =
 val release =
+val DOT_PATH =
+val POLY = ""
+val POLYC = ""
+val DEFAULT_STATE = fullPath [HOLDIR, "bin", "hol.state"]
+val POLY_VERSION = PolyML.Compiler.compilerVersionNumber
 
 val isUnix = false
+val pointer_eq = PolyML.pointerEq
 
 val build_log_dir = fullPath [HOLDIR, "tools", "build-logs"]
 val build_log_file = fullPath [build_log_dir, "current-build-log"]
 val make_log_file = "current-make-log"
+val build_after_reloc_envvar = "HOL_REBUILD_HEAPS_ONLY"
 
 local
   fun fopen file = (FileSys.remove file handle _ => (); TextIO.openOut file)
@@ -108,5 +115,3 @@ end (* local *)
 
 
 end; (* struct *)
-
-
