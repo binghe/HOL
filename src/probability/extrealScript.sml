@@ -10,7 +10,8 @@
 open HolKernel Parse boolLib bossLib;
 
 open metisLib combinTheory pred_setTheory res_quanTools pairTheory jrhUtils
-     prim_recTheory arithmeticTheory numLib tautLib pred_setLib hurdUtils;
+     prim_recTheory arithmeticTheory numLib tautLib pred_setLib hurdUtils
+     topologyTheory;
 
 open realTheory realLib real_sigmaTheory iterateTheory real_topologyTheory
      seqTheory limTheory transcTheory metricTheory listTheory rich_listTheory
@@ -6576,15 +6577,48 @@ Definition ext_euclidean_def :
     ext_euclidean = mtop extreal_mr1
 End
 
+Theorem topspace_ext_euclidean[simp] :
+    topspace ext_euclidean = UNIV
+Proof
+    rw [TOPSPACE_MTOP, ext_euclidean_def]
+QED
+
+Theorem mspace_extreal_mr1[simp] :
+    mspace extreal_mr1 = UNIV
+Proof
+    rw [mspace, GSYM ext_euclidean_def, topspace_ext_euclidean]
+QED
+
 (* ------------------------------------------------------------------------- *)
 (* Limits of extreal functions ('a -> extreal) and continuous functions      *)
 (* ------------------------------------------------------------------------- *)
 
-Definition ext_tendsto_def :
-    ext_tendsto f l net =
-      !e. &0 < e ==> eventually (\x. dist extreal_mr1 (f(x),l) < e) net
+Definition ext_tendsto :
+    ext_tendsto = limit ext_euclidean
 End
 Overload "-->" = “ext_tendsto”
+
+Theorem ext_tendsto_def :
+    !f l net. ext_tendsto f l net <=>
+             !e. &0 < e ==> eventually (\x. dist extreal_mr1 (f(x),l) < e) net
+Proof
+    rw [ext_tendsto, ext_euclidean_def, limit]
+ >> EQ_TAC >> rpt STRIP_TAC
+ >| [ (* goal 1 (of 2) *)
+      Q.PAT_X_ASSUM ‘!u. open_in (mtop extreal_mr1) u /\ l IN u ==> P’
+        (MP_TAC o Q.SPEC ‘mball extreal_mr1 (l,e)’) \\
+      simp [OPEN_IN_MBALL, IN_MBALL] \\
+      rw [MDIST_REFL, Once METRIC_SYM],
+      (* goal 2 (of 2) *)
+      fs [OPEN_IN_MTOPOLOGY] \\
+      Q.PAT_X_ASSUM ‘!x. x IN u ==> P’ (MP_TAC o Q.SPEC ‘l’) >> rw [] \\
+      Q.PAT_X_ASSUM ‘!e. 0 < e ==> P’  (MP_TAC o Q.SPEC ‘r’) >> rw [] \\
+      MATCH_MP_TAC EVENTUALLY_MONO \\
+      Q.EXISTS_TAC ‘\x. dist extreal_mr1 (f x,l) < r’ >> rw [] \\
+      fs [SUBSET_DEF, IN_MBALL] \\
+      FIRST_X_ASSUM MATCH_MP_TAC \\
+      rw [Once METRIC_SYM] ]
+QED
 
 Definition extreal_lim_def :
     extreal_lim net f = @l. ext_tendsto f l net

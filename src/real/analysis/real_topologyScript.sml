@@ -1963,10 +1963,11 @@ Proof
     rw [euclidean_open_def]
 QED
 
-val TOPSPACE_EUCLIDEAN = store_thm ("TOPSPACE_EUCLIDEAN",
- ``topspace euclidean = univ(:real)``,
-  SIMP_TAC std_ss [topspace, EXTENSION, IN_UNIV, IN_BIGUNION, GSPECIFICATION] THEN
-  MESON_TAC[OPEN_UNIV, IN_UNIV, OPEN_IN]);
+Theorem TOPSPACE_EUCLIDEAN :
+    topspace euclidean = univ(:real)
+Proof
+    rw [TOPSPACE_MTOP, euclidean_def]
+QED
 
 val TOPSPACE_EUCLIDEAN_SUBTOPOLOGY = store_thm ("TOPSPACE_EUCLIDEAN_SUBTOPOLOGY",
  ``!s. topspace (subtopology euclidean s) = s``,
