@@ -4842,6 +4842,14 @@ Theorem tendsto_real = REWRITE_RULE [dist] tendsto_real_def
 (* This theorem is only used locally for compatibility purposes *)
 Theorem tendsto[local] = tendsto_real_def
 
+(* |- !f l net.
+        ~trivial_limit net /\ (!x. netord net x x) ==>
+        (limit (mtop mr1) f l net <=> (f tends l) (mtop mr1,netord net))
+ *)
+Theorem tendsto_real_tends = limit_alt_tends
+     |> ISPEC “euclidean”
+     |> SRULE [TOPSPACE_EUCLIDEAN, euclidean_def]
+
 (* Now the name "reallim" follows HOL-Light's "realanalysis.ml" *)
 Definition reallim :
     reallim net f = @l. (f --> l) net
