@@ -979,16 +979,6 @@ Proof
   SIMP_TAC std_ss [EVENTUALLY_FORALL]
 QED
 
-(* TODO:
-Theorem EVENTUALLY_WITHIN_IMP :
-    !net (P:'a->bool) s.
-        (eventually P (net within s) <=>
-         eventually (\x. x IN s ==> P x) net)
-Proof
-    cheat
-QED
- *)
-
 (* ------------------------------------------------------------------------- *)
 (* It's also sometimes useful to extract the limit point from the net.       *)
 (* ------------------------------------------------------------------------- *)
@@ -1019,13 +1009,37 @@ Definition limit :
      (!u. open_in top u /\ l IN u ==> eventually (\x. f x IN u) net)
 End
 
-(* connection between HOL-Light's ‘limit’ and HOL4's ‘tends’
-Theorem limit_alt_tends :
-    !top f l net. limit top (f:'a->'b) l net <=> (f tends l) (top,netord net)
-Proof
-    cheat
-QED
+(* Connection between HOL-Light's ‘limit’ and HOL4's ‘tends’
+
+   NOTE: The net with ‘limit’ must be reflexive, which is not assumed in general.
+   Further more, the net cannot be trivial, and ‘l IN topspace top’ must be
+   assumed because it's not included with ‘f tends l’.
  *)
+Theorem limit_alt_tends :
+    !top f l net. ~trivial_limit net /\ (!x. netord net x x) /\
+                   l IN topspace top ==>
+                  (limit top (f:'a->'b) l net <=> (f tends l) (top,netord net))
+Proof
+    rw [limit, tends]
+ >> EQ_TAC >> rw [] (* 2 subgoals *)
+ >- (FULL_SIMP_TAC std_ss [neigh] \\
+     Q.PAT_X_ASSUM ‘!u. open_in top u /\ l IN u ==> _’ (MP_TAC o Q.SPEC ‘P’) \\
+     rw [IN_APP, eventually] \\
+     Q.EXISTS_TAC ‘y’ >> rpt STRIP_TAC \\
+    ‘f m IN P’ by rw [IN_APP] \\
+    ‘f m IN N’ by PROVE_TAC [SUBSET_DEF] >> fs [IN_APP])
+ >> rw [eventually]
+ >> fs [OPEN_NEIGH]
+ >> Q.PAT_X_ASSUM ‘!x. u x ==> _’ (MP_TAC o Q.SPEC ‘l’)
+ >> POP_ASSUM MP_TAC
+ >> rw [IN_APP]
+ >> Q.PAT_X_ASSUM ‘!N. neigh top (N,l) ==> _’ (MP_TAC o Q.SPEC ‘N’) >> rw []
+ >> Q.EXISTS_TAC ‘n’
+ >> CONJ_TAC >- (Q.EXISTS_TAC ‘n’ >> art [])
+ >> rpt STRIP_TAC
+ >> ‘f x IN N’ by rw [IN_APP]
+ >> ‘f x IN u’ by PROVE_TAC [SUBSET_DEF] >> fs [IN_APP]
+QED
 
 val _ = export_theory ();
 

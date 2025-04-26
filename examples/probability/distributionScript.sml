@@ -17,7 +17,7 @@ open combinTheory arithmeticTheory numLib logrootTheory hurdUtils pred_setLib
      pred_setTheory topologyTheory pairTheory tautLib jrhUtils cardinalTheory;
 
 open realTheory realLib seqTheory transcTheory real_sigmaTheory iterateTheory
-     real_topologyTheory derivativeTheory;
+     real_topologyTheory derivativeTheory metricTheory netsTheory;
 
 open sigma_algebraTheory extreal_baseTheory extrealTheory real_borelTheory
      measureTheory borelTheory lebesgueTheory martingaleTheory probabilityTheory;
