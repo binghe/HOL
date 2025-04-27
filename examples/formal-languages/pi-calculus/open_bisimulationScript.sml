@@ -648,15 +648,6 @@ Proof
       Q.PAT_X_ASSUM ‘dist_simulation R’ MP_TAC >> rw [dist_simulation_def] \\
       Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R ==> _’
         (MP_TAC o Q.SPECL [‘P’, ‘y’, ‘D'’]) >> rw [] \\
-      Q.PAT_X_ASSUM ‘!a x P'. DTRANS D' P (InputS (Name a) x P') /\ x # y ==> _’
-        (MP_TAC o Q.SPEC ‘P'’) >> rw [] >> rename1 ‘DTRANS D' y (TauR y')’ \\
-      Q.PAT_X_ASSUM ‘dist_simulation R'’ MP_TAC >> rw [dist_simulation_def] \\
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R' ==> _’
-        (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘D'’]) >> rw [] \\
-      Q.PAT_X_ASSUM ‘!P'. DTRANS D' y (TauR P') ==> _’
-        (MP_TAC o Q.SPEC ‘y'’) >> rw [] >> rename1 ‘DTRANS D' Q (TauR Q')’ \\
-      Q.EXISTS_TAC ‘Q'’ >> art [] \\
-      Q.EXISTS_TAC ‘y'’ >> art [],
       cheat,
       (* goal 6 (of 14) *)
       cheat,
