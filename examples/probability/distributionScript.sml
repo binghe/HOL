@@ -56,7 +56,7 @@ Theorem right_continuous_def =
  *)
 Theorem distribution_function_monotone :
     !p X f. prob_space p /\ random_variable X p Borel /\
-            f = distribution_function p X ==> (!x y. x <= y ==> f x <= f y)
+            f = distribution_function p X ==> !x y. x <= y ==> f x <= f y
 Proof
     rw [distribution_function_def]
  >> MATCH_MP_TAC PROB_INCREASING >> art []
@@ -69,7 +69,19 @@ Proof
  >> Q_TAC (TRANS_TAC le_trans) ‘x’ >> art []
 QED
 
-(* NOTE: This tactic is shared by existence_of_random_variable and the next
+Theorem distribution_function_monotone' :
+    !p X f. prob_space p /\ random_variable X p borel /\
+            f = distribution_function p (Normal o X) ==> !x y. x <= y ==> f x <= f y
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> MATCH_MP_TAC distribution_function_monotone
+ >> qexistsl_tac [‘p’, ‘Normal o X’] >> art []
+ >> fs [random_variable_def]
+ >> MATCH_MP_TAC IN_MEASURABLE_BOREL_IMP_BOREL' >> art []
+ >> MATCH_MP_TAC EVENTS_SIGMA_ALGEBRA >> art []
+QED
+
+(* NOTE: This tactic is shared by distribution_function_right_continuous and
    existence_of_random_variable.
  *)
 val distribution_function_right_continuous_tac =
@@ -449,11 +461,15 @@ Proof
  >> rw [Abbr ‘A’, borel_measurable_real_set]
 QED
 
+(* ------------------------------------------------------------------------- *)
+(*  Existence of real random variables having the given distribution         *)
+(* ------------------------------------------------------------------------- *)
+
 Theorem existence_of_real_random_variable :
     !m p. prob_space (space borel,subsets borel,m) /\
           p = restrict_space lborel (interval (0,1)) ==>
-          ?X. random_variable X p borel /\
-              !s. s IN subsets borel ==> distribution p X s = m s
+         ?X. random_variable X p borel /\
+             !s. s IN subsets borel ==> distribution p X s = m s
 Proof
     RW_TAC std_ss []
  >> qabbrev_tac ‘M = (space borel,subsets borel,m)’
@@ -468,22 +484,32 @@ Proof
  >> ‘sp IN subsets borel’ by rw [borel_measurable_sets, Abbr ‘sp’, OPEN_interval]
  >> qabbrev_tac ‘p = restrict_space lborel sp’
  >> ‘prob_space p’ by PROVE_TAC [prob_space_lborel_01']
- >> qabbrev_tac ‘f = \w. m {x | x <= w}’
- >> Know ‘!x. 0 <= f x /\ f x <= 1 /\ f x <> NegInf /\ f x <> PosInf’
+ >> qabbrev_tac ‘f = \w. real (m {x | x <= w})’
+ >> Know ‘!x. 0 <= f x /\ f x <= 1’
  >- (Q.X_GEN_TAC ‘x’ >> simp [Abbr ‘f’] \\
-     METIS_TAC [borel_measurable_sets])
+     qmatch_abbrev_tac ‘0 <= real (m s) /\ _’ \\
+    ‘s IN subsets borel’ by METIS_TAC [borel_measurable_sets] \\
+     ASM_SIMP_TAC std_ss [GSYM extreal_le_eq, normal_real] \\
+     simp [normal_0, normal_1])
  >> DISCH_TAC
  >> Know ‘!x y. x <= y ==> f x <= f y’
  >- (rw [Abbr ‘f’] \\
      Know ‘increasing M’ >- PROVE_TAC [MEASURE_SPACE_INCREASING, prob_space_def] \\
      rw [increasing_def, Abbr ‘M’] \\
-     POP_ASSUM MATCH_MP_TAC \\
-     simp [borel_measurable_sets] \\
-     rw [SUBSET_DEF] >> Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘x’ >> art [])
+    ‘!c. {x | x <= c} IN subsets borel’ by METIS_TAC [borel_measurable_sets] \\
+     ONCE_REWRITE_TAC [GSYM extreal_le_eq] \\
+     ASM_SIMP_TAC std_ss [normal_real] \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> rw [SUBSET_DEF] \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘x’ >> art [])
  >> DISCH_TAC
- (* applying shared tactics
- >> ‘right_continuous f’ by distribution_function_right_continuous_tac
-  *)
+ (* showing f is right-continuous *)
+ >> cheat
+QED
+ (*
+ >> Know ‘!x. f continuous (x in_direction 1)’
+ >- (rw [continuous, in_direction] \\
+     cheat)
+ >> DISCH_TAC
  (* now define the canonical random variable *)
  >> qabbrev_tac ‘X = \w. sup {x | f x <= Normal w}’
  >> Know ‘!x y. x IN sp /\ y IN sp /\ x <= y ==> X x <= X y’
@@ -542,8 +568,6 @@ Proof
  >> simp []
  >> qmatch_abbrev_tac ‘lambda (s INTER sp) = _’
  >> qabbrev_tac ‘s' = s INTER sp’
- >> cheat
- (*
  (* This is needed at the end of this proof *)
  >> Know ‘s' IN subsets Borel’
  >- (Q.PAT_X_ASSUM ‘X IN Borel_measurable (measurable_space p)’ MP_TAC \\
