@@ -1023,21 +1023,11 @@ End
    Further more, the net cannot be trivial, and ‘l IN topspace top’ must be
    assumed because it's not included with ‘f tends l’.
  *)
-Theorem limit_alt_tends :
-    !top f l net. ~trivial_limit net /\ reflexive (netord net) /\
-                   l IN topspace top ==>
-                  (limit top (f:'a->'b) l net <=> (f tends l) (top,netord net))
+Theorem tends_imp_limit :
+    !top f l net. ~trivial_limit net /\ l IN topspace top ==>
+                 (f tends l) (top,netord net) ==> limit top (f:'a->'b) l net
 Proof
-    rw [limit, tends, reflexive_def]
- >> EQ_TAC >> rw [] (* 2 subgoals *)
- >- (FULL_SIMP_TAC std_ss [neigh] \\
-     Q.PAT_X_ASSUM ‘!u. open_in top u /\ l IN u ==> _’ (MP_TAC o Q.SPEC ‘P’) \\
-     rw [IN_APP, eventually] \\
-     Q.EXISTS_TAC ‘y’ >> rpt STRIP_TAC \\
-    ‘f m IN P’ by rw [IN_APP] \\
-    ‘f m IN N’ by PROVE_TAC [SUBSET_DEF] >> fs [IN_APP])
- >> rw [eventually]
- >> fs [OPEN_NEIGH]
+    rw [limit, tends, eventually, OPEN_NEIGH]
  >> Q.PAT_X_ASSUM ‘!x. u x ==> _’ (MP_TAC o Q.SPEC ‘l’)
  >> POP_ASSUM MP_TAC
  >> rw [IN_APP]
@@ -1049,10 +1039,23 @@ Proof
  >> ‘f x IN u’ by PROVE_TAC [SUBSET_DEF] >> fs [IN_APP]
 QED
 
-Theorem reflexive_within :
-    !net s. reflexive (netord net) ==> !x. x IN s ==> netord (net within s) x x
+Theorem limit_alt_tends :
+    !top f l net. ~trivial_limit net /\ l IN topspace top /\
+                 (!x y. netord net x y ==> netord net y y) ==>
+                 (limit top (f:'a->'b) l net <=> (f tends l) (top,netord net))
 Proof
-    rw [reflexive_def, WITHIN]
+    rpt STRIP_TAC
+ >> reverse EQ_TAC >- rw [tends_imp_limit]
+ >> rw [limit, tends, reflexive_def, neigh]
+ >> Q.PAT_X_ASSUM ‘!u. open_in top u /\ l IN u ==> _’ (MP_TAC o Q.SPEC ‘P’)
+ >> rw [IN_APP, eventually]
+ >> Q.EXISTS_TAC ‘y’
+ >> CONJ_TAC
+ >- (FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘x’ >> art [])
+ >> rpt STRIP_TAC
+ >> ‘f m IN P’ by rw [IN_APP]
+ >> ‘f m IN N’ by PROVE_TAC [SUBSET_DEF] >> fs [IN_APP]
 QED
 
 val _ = export_theory ();
