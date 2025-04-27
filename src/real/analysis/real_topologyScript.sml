@@ -4857,7 +4857,7 @@ Proof
 QED
 
 (* |- !f l a. (f --> l) (at a) <=> (f tends l) (euclidean,tendsto (mr1,a)) *)
-Theorem tendsto_real_alt_tends =
+Theorem limit_at_alt_tends' =
         limit_at_alt_tends |> ISPEC “euclidean”
                            |> SRULE [TOPSPACE_EUCLIDEAN]
 
