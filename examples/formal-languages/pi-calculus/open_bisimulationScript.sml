@@ -9,9 +9,12 @@ open HolKernel Parse boolLib bossLib;
 
 open pairTheory pred_setTheory set_relationTheory hurdUtils;
 
-open nomsetTheory pi_agentTheory;
+open nomsetTheory NEWLib pi_agentTheory;
 
 val _ = new_theory "open_bisimulation";
+
+(* some proofs here are large with too many assumptions *)
+val _ = set_trace "Goalstack.print_goal_at_top" 0;
 
 (* ----------------------------------------------------------------------
    Pi-calculus as a nominal datatype in HOL4
@@ -648,6 +651,32 @@ Proof
       Q.PAT_X_ASSUM ‘dist_simulation R’ MP_TAC >> rw [dist_simulation_def] \\
       Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R ==> _’
         (MP_TAC o Q.SPECL [‘P’, ‘y’, ‘D'’]) >> rw [] \\
+   (* applying NEW_TAC *)
+      Q_TAC (NEW_TAC "z") ‘{x} UNION FV y UNION FV P UNION FV Q UNION FV P'’ \\
+   (* applying InputS_tpm_ALPHA *)
+      Know ‘InputS (Name a) x P' = InputS (Name a) z (tpm [(z,x)] P')’
+      >- (MATCH_MP_TAC InputS_tpm_ALPHA >> art []) \\
+      DISCH_THEN (fs o wrap) \\
+      qabbrev_tac ‘P'' = tpm [(z,x)] P'’ \\
+      Q.PAT_X_ASSUM ‘!a x P'. DTRANS D' P (InputS (Name a) x P') /\
+                              x # P /\ x # y ==> _’
+        (MP_TAC o Q.SPECL [‘a’, ‘z’, ‘P''’]) >> rw [] \\
+      rename1 ‘DTRANS D' y (InputS (Name a) z y')’ \\
+   (* stage work *)
+      Q.PAT_X_ASSUM ‘dist_simulation R'’ MP_TAC >> rw [dist_simulation_def] \\
+      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R' ==> _’
+        (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘D'’]) >> rw [] \\
+      Q.PAT_X_ASSUM ‘!a x P'. DTRANS D' y (InputS (Name a) x P') /\
+                              x # y /\ x # Q ==> _’
+        (MP_TAC o Q.SPECL [‘a’, ‘z’, ‘y'’]) >> rw [] \\
+      rename1 ‘DTRANS D' Q (InputS (Name a) z Q')’ \\
+      Know ‘InputS (Name a) z Q' = InputS (Name a) x (tpm [(x,z)] Q')’
+      >- (MATCH_MP_TAC InputS_tpm_ALPHA \\
+          cheat) \\
+      DISCH_THEN (fs o wrap) \\
+      qabbrev_tac ‘Q'' = tpm [(x,z)] Q'’ \\
+      Q.EXISTS_TAC ‘Q''’ >> art [] \\
+      fs [Abbr ‘P''’, Abbr ‘Q''’] \\
       cheat,
       (* goal 6 (of 14) *)
       cheat,
