@@ -4856,10 +4856,13 @@ Proof
  >> Q.EXISTS_TAC ‘dist (x,a)’ >> art []
 QED
 
-(* |- !f l a. (f --> l) (at a) <=> (f tends l) (euclidean,tendsto (mr1,a)) *)
-Theorem limit_at_alt_tends' =
-        limit_at_alt_tends |> ISPEC “euclidean”
-                           |> SRULE [TOPSPACE_EUCLIDEAN]
+Theorem tendsto_real_alt_tends :
+    !f l a. (f --> l) (at a) <=> (f tends l) (mtop mr1,tendsto (mr1,a))
+Proof
+    rw [GSYM euclidean_def]
+ >> MP_TAC (ISPEC “euclidean” limit_at_alt_tends)
+ >> simp [TOPSPACE_EUCLIDEAN]
+QED
 
 (* Now the name "reallim" follows HOL-Light's "realanalysis.ml" *)
 Definition reallim :
