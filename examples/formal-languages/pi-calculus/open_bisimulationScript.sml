@@ -394,7 +394,7 @@ Definition dist_simulation_def :
       (!P'. DTRANS D P (TauR P') ==>
             ?Q'. DTRANS D Q (TauR Q') /\ (P',Q',D) IN R) /\
     (* 3b *)
-      (!a x P'. DTRANS D P (InputS (Name a) x P') /\ x # Q ==>
+      (!a x P'. DTRANS D P (InputS (Name a) x P') /\ x # P /\ x # Q ==>
                 ?Q'. DTRANS D Q (InputS (Name a) x Q') /\ (P',Q',D) IN R) /\
     (* 3c *)
       (!a b P'. DTRANS D P (FreeOutput (Name a) (Name b) P') ==>
@@ -466,7 +466,7 @@ Proof
       Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
         (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
       Q.PAT_X_ASSUM ‘!a x P'.
-                       DTRANS D P (InputS (Name a) x P') /\ x # Q ==> _’
+                       DTRANS D P (InputS (Name a) x P') /\ x # P /\ x # Q ==> _’
         (MP_TAC o Q.SPECL [‘a’, ‘x’, ‘P'’]) >> rw [] \\
       Q.EXISTS_TAC ‘Q'’ >> rw [],
       (* goal 6 (of 14) *)
@@ -503,7 +503,7 @@ Proof
       Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
         (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
       Q.PAT_X_ASSUM ‘!a x P'.
-                       DTRANS D P (InputS (Name a) x P') /\ x # Q ==> _’
+                       DTRANS D P (InputS (Name a) x P') /\ x # P /\ x # Q ==> _’
         (MP_TAC o Q.SPECL [‘a’, ‘x’, ‘P'’]) >> rw [] \\
       Q.EXISTS_TAC ‘Q'’ >> rw [],
       (* goal 13 (of 14) *)
@@ -606,7 +606,8 @@ Proof
  >> reverse CONJ_TAC >- (Q.EXISTS_TAC ‘P2’ >> art [])
  >> rw [dist_simulation_def, distinction_dpm] (* 7+7 subgoals *)
  >| [ (* goal 1 (of 14) *)
-      PROVE_TAC [dist_simulation_imp_distinction],
+      MATCH_MP_TAC dist_simulation_imp_distinction \\
+      qexistsl_tac [‘R’, ‘P’, ‘y’] >> art [],
       (* goal 2 (of 14) *)
       Q.EXISTS_TAC ‘tpm pi y’ >> CONJ_TAC >| (* 2 subgoals *)
       [ (* goal 2.1 (of 2) *)
@@ -644,6 +645,18 @@ Proof
       Q.EXISTS_TAC ‘Q'’ >> art [] \\
       Q.EXISTS_TAC ‘y'’ >> art [],
       (* goal 5 (of 14) *)
+      Q.PAT_X_ASSUM ‘dist_simulation R’ MP_TAC >> rw [dist_simulation_def] \\
+      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R ==> _’
+        (MP_TAC o Q.SPECL [‘P’, ‘y’, ‘D'’]) >> rw [] \\
+      Q.PAT_X_ASSUM ‘!a x P'. DTRANS D' P (InputS (Name a) x P') /\ x # y ==> _’
+        (MP_TAC o Q.SPEC ‘P'’) >> rw [] >> rename1 ‘DTRANS D' y (TauR y')’ \\
+      Q.PAT_X_ASSUM ‘dist_simulation R'’ MP_TAC >> rw [dist_simulation_def] \\
+      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R' ==> _’
+        (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘D'’]) >> rw [] \\
+      Q.PAT_X_ASSUM ‘!P'. DTRANS D' y (TauR P') ==> _’
+        (MP_TAC o Q.SPEC ‘y'’) >> rw [] >> rename1 ‘DTRANS D' Q (TauR Q')’ \\
+      Q.EXISTS_TAC ‘Q'’ >> art [] \\
+      Q.EXISTS_TAC ‘y'’ >> art [],
       cheat,
       (* goal 6 (of 14) *)
       cheat,

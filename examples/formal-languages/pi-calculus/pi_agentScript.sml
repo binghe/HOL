@@ -884,6 +884,26 @@ Proof
     SRW_TAC [boolSimps.CONJ_ss][Input_eq_thm, pmact_flip_args]
 QED
 
+(* |- !a b x y t1 t2.
+        InputS a x t1 = InputS b y t2 <=>
+        x = y /\ t1 = t2 /\ a = b \/
+        x <> y /\ x # t2 /\ t1 = tpm [(x,y)] t2 /\ a = b
+ *)
+Theorem InputS_eq_thm =
+  “InputS a x t1 = InputS b y (t2 :pi)”
+     |> SIMP_CONV (srw_ss()) [InputS_def, InputS_termP, term_ABS_pseudo11_2,
+                              GLAM_eq_thm,
+                              term_REP_11_0, term_REP_11_1, term_REP_11_2,
+                              GSYM term_REP_tpm, GSYM term_REP_rpm,
+                              GSYM supp_tpm, GSYM supp_rpm]
+     |> Q.GENL [‘a’, ‘b’, ‘x’, ‘y’, ‘t1’, ‘t2’]
+
+Theorem InputS_tpm_ALPHA :
+    v # (u :pi) ==> InputS a x u = InputS a v (tpm [(v,x)] u)
+Proof
+    SRW_TAC [boolSimps.CONJ_ss][InputS_eq_thm, pmact_flip_args]
+QED
+
 (* ----------------------------------------------------------------------
     term recursion
    ---------------------------------------------------------------------- *)
