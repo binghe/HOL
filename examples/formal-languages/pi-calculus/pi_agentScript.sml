@@ -670,7 +670,6 @@ val supp_tpm = prove(
  >> srw_tac [][supp_tpm_support, supp_tpm_apart, FINITE_GFV]);
 
 val _ = overload_on ("FV", “supp ^t_pmact_t”);
-
 val _ = overload_on ("#", “\v (P :pi). v NOTIN FV P”);
 
 Theorem FINITE_FV[simp] :
