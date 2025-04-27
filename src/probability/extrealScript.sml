@@ -6604,20 +6604,18 @@ Theorem ext_tendsto_def :
 Proof
     rw [ext_tendsto, ext_euclidean_def, limit]
  >> EQ_TAC >> rpt STRIP_TAC
- >| [ (* goal 1 (of 2) *)
-      Q.PAT_X_ASSUM ‘!u. open_in (mtop extreal_mr1) u /\ l IN u ==> P’
-        (MP_TAC o Q.SPEC ‘mball extreal_mr1 (l,e)’) \\
-      simp [OPEN_IN_MBALL, IN_MBALL] \\
-      rw [MDIST_REFL, Once METRIC_SYM],
-      (* goal 2 (of 2) *)
-      fs [OPEN_IN_MTOPOLOGY] \\
-      Q.PAT_X_ASSUM ‘!x. x IN u ==> P’ (MP_TAC o Q.SPEC ‘l’) >> rw [] \\
-      Q.PAT_X_ASSUM ‘!e. 0 < e ==> P’  (MP_TAC o Q.SPEC ‘r’) >> rw [] \\
-      MATCH_MP_TAC EVENTUALLY_MONO \\
-      Q.EXISTS_TAC ‘\x. dist extreal_mr1 (f x,l) < r’ >> rw [] \\
-      fs [SUBSET_DEF, IN_MBALL] \\
-      FIRST_X_ASSUM MATCH_MP_TAC \\
-      rw [Once METRIC_SYM] ]
+ >- (Q.PAT_X_ASSUM ‘!u. open_in (mtop extreal_mr1) u /\ l IN u ==> P’
+       (MP_TAC o Q.SPEC ‘mball extreal_mr1 (l,e)’) \\
+     simp [OPEN_IN_MBALL, IN_MBALL] \\
+     rw [MDIST_REFL, Once METRIC_SYM])
+ >> fs [OPEN_IN_MTOPOLOGY]
+ >> Q.PAT_X_ASSUM ‘!x. x IN u ==> P’ (MP_TAC o Q.SPEC ‘l’) >> rw []
+ >> Q.PAT_X_ASSUM ‘!e. 0 < e ==> P’  (MP_TAC o Q.SPEC ‘r’) >> rw []
+ >> MATCH_MP_TAC EVENTUALLY_MONO
+ >> Q.EXISTS_TAC ‘\x. dist extreal_mr1 (f x,l) < r’ >> rw []
+ >> fs [SUBSET_DEF, IN_MBALL]
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> rw [Once METRIC_SYM]
 QED
 
 Definition extreal_lim_def :
@@ -7184,7 +7182,8 @@ QED
 Theorem EXTREAL_PROD_IMAGE_ONE:
     !s. FINITE s ==> EXTREAL_PROD_IMAGE (λx. 1) s = 1x
 Proof
-    Induct_on ‘s’ >> simp[EXTREAL_PROD_IMAGE_EMPTY,EXTREAL_PROD_IMAGE_PROPERTY,DELETE_NON_ELEMENT_RWT]
+    Induct_on ‘s’
+ >> simp[EXTREAL_PROD_IMAGE_EMPTY,EXTREAL_PROD_IMAGE_PROPERTY,DELETE_NON_ELEMENT_RWT]
 QED
 
 Theorem EXTREAL_PROD_IMAGE_POS:

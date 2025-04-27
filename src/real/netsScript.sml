@@ -732,6 +732,14 @@ val AT = store_thm ("AT",
   GEN_TAC THEN NET_PROVE_TAC[at] THEN
   METIS_TAC[REAL_LE_TOTAL, REAL_LE_REFL, REAL_LE_TRANS, REAL_LET_TRANS]);
 
+(* Connection between HOL4's “tendsto” and HOL-Light's “at”, cf. [at_def] *)
+Theorem tendsto_mr1 :
+    !m a. tendsto (mr1,a) = netord (at a)
+Proof
+    rw [FUN_EQ_THM, tendsto, AT, GSYM dist_def]
+ >> METIS_TAC [DIST_SYM]
+QED
+
 val AT_INFINITY = store_thm ("AT_INFINITY",
  ``!x y. netord at_infinity x y <=> abs(x) >= abs(y)``,
   NET_PROVE_TAC[at_infinity] THEN
@@ -1016,11 +1024,11 @@ End
    assumed because it's not included with ‘f tends l’.
  *)
 Theorem limit_alt_tends :
-    !top f l net. ~trivial_limit net /\ (!x. netord net x x) /\
+    !top f l net. ~trivial_limit net /\ reflexive (netord net) /\
                    l IN topspace top ==>
                   (limit top (f:'a->'b) l net <=> (f tends l) (top,netord net))
 Proof
-    rw [limit, tends]
+    rw [limit, tends, reflexive_def]
  >> EQ_TAC >> rw [] (* 2 subgoals *)
  >- (FULL_SIMP_TAC std_ss [neigh] \\
      Q.PAT_X_ASSUM ‘!u. open_in top u /\ l IN u ==> _’ (MP_TAC o Q.SPEC ‘P’) \\
@@ -1039,6 +1047,12 @@ Proof
  >> rpt STRIP_TAC
  >> ‘f x IN N’ by rw [IN_APP]
  >> ‘f x IN u’ by PROVE_TAC [SUBSET_DEF] >> fs [IN_APP]
+QED
+
+Theorem reflexive_within :
+    !net s. reflexive (netord net) ==> !x. x IN s ==> netord (net within s) x x
+Proof
+    rw [reflexive_def, WITHIN]
 QED
 
 val _ = export_theory ();
