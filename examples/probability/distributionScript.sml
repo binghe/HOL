@@ -737,7 +737,6 @@ QED
      MATCH_MP_TAC SIGMA_ALGEBRA_UNION >> art [])
  >> rw [Abbr ‘A’, borel_measurable_real_set]
  *)
-QED
 
 (* ------------------------------------------------------------------------- *)
 (*  Various alternative definitions of distributions                         *)
