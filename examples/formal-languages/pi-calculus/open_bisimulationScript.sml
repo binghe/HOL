@@ -1,6 +1,6 @@
 (* ========================================================================== *)
 (* FILE          : open_bisimulationScript.sml                                *)
-(* DESCRIPTION   : Open Bisimulation for pi-calculus                          *)
+(* DESCRIPTION   : Open bisimulation for the pi-calculus with mismatch        *)
 (*                                                                            *)
 (* Copyright 2025  The Australian National University (Author: Chun Tian)     *)
 (* ========================================================================== *)
@@ -528,6 +528,14 @@ Proof
  >> FIRST_X_ASSUM drule >> rw []
 QED
 
+Theorem dist_simulation_open_distinction :
+    !R P Q D D'. dist_simulation R /\ (P,Q,D) IN R /\ D SUBSET D' /\
+                 distinction D' ==> (P,Q,D') IN R
+Proof
+    rw [dist_simulation_def]
+ >> Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R ==> _’ drule >> rw []
+QED
+
 Definition dist_bisimulation_def :
     dist_bisimulation (R :(pi # pi # dist) set) <=>
     dist_simulation R /\ dist_simulation {(Q,P,D) | (P,Q,D) IN R}
@@ -592,51 +600,68 @@ Theorem dist_bisimilar_transitive :
                  dist_bisimilar P1 P3 D
 Proof
     rw [dist_bisimilar_def]
- >> qabbrev_tac ‘r1 = \x y. ?d. (x,y,d) IN R’
- >> qabbrev_tac ‘r2 = \y z. ?d. (y,z,d) IN R'’
- >> qabbrev_tac ‘r = r2 O r1’
- >> Q.EXISTS_TAC ‘{e | ?x z d. r x z /\ distinction d /\ e = (x,z,d)}’
- >> simp [Abbr ‘r’, relationTheory.O_DEF, Abbr ‘r1’, Abbr ‘r2’]
  >> ‘distinction D’ by PROVE_TAC [dist_simulation_imp_distinction]
+ >> Q.EXISTS_TAC ‘{e | ?x y z d. e = (x,z,d) /\ (x,y,d) IN R /\ (y,z,d) IN R'}’
  >> simp []
- >> reverse CONJ_TAC
- >- (Q.EXISTS_TAC ‘P2’ >> CONJ_TAC >| (* 2 subgoals *)
-     [ (* goal 1 (of 2) *)
-       Q.EXISTS_TAC ‘D’ >> art [],
-       (* goal 2 (of 2) *)
-       Q.EXISTS_TAC ‘D’ >> art [] ])
- >> rw [dist_simulation_def, distinction_dpm] (* 5+5 subgoals *)
- >| [ (* goal 1 (of 10) *)
+ >> reverse CONJ_TAC >- (Q.EXISTS_TAC ‘P2’ >> art [])
+ >> rw [dist_simulation_def, distinction_dpm] (* 7+7 subgoals *)
+ >| [ (* goal 1 (of 14) *)
+      PROVE_TAC [dist_simulation_imp_distinction],
+      (* goal 2 (of 14) *)
       Q.EXISTS_TAC ‘tpm pi y’ >> CONJ_TAC >| (* 2 subgoals *)
-      [ (* goal 1.1 (of 2) *)
-        Q.EXISTS_TAC ‘dpm pi d’ \\
+      [ (* goal 2.1 (of 2) *)
         Q.PAT_X_ASSUM ‘dist_simulation R’
           (MP_TAC o REWRITE_RULE [dist_simulation_def]) \\
-        DISCH_THEN (STRIP_ASSUME_TAC o Q.SPECL [‘P’, ‘y’, ‘d’]) \\
+        DISCH_THEN (STRIP_ASSUME_TAC o Q.SPECL [‘P’, ‘y’, ‘D'’]) \\
         simp [distinction_dpm],
-        (* goal 1.2 (of 2) *)
-        Q.EXISTS_TAC ‘dpm pi d'’ \\
+        (* goal 2.2 (of 2) *)
         Q.PAT_X_ASSUM ‘dist_simulation R'’
           (MP_TAC o REWRITE_RULE [dist_simulation_def]) \\
-        DISCH_THEN (STRIP_ASSUME_TAC o Q.SPECL [‘y’, ‘Q’, ‘d'’]) \\
+        DISCH_THEN (STRIP_ASSUME_TAC o Q.SPECL [‘y’, ‘Q’, ‘D'’]) \\
         simp [distinction_dpm] ],
-      (* goal 2 (of 10) *)
+      (* goal 3 (of 14) *)
+      Q.EXISTS_TAC ‘y’ \\
+      CONJ_TAC \\ (* 2 subgoals, same tactics *)
+      MATCH_MP_TAC dist_simulation_open_distinction \\
+      Q.EXISTS_TAC ‘D'’ >> art [],
+      (* goal 4 (of 14) :
+         P  --> (TauR P')
+         |   R        |
+         y  --> (TauR y')
+         |   R'       |
+         Q  --> (TauR Q')
+        *)
+      Q.PAT_X_ASSUM ‘dist_simulation R’ MP_TAC >> rw [dist_simulation_def] \\
+      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R ==> _’
+        (MP_TAC o Q.SPECL [‘P’, ‘y’, ‘D'’]) >> rw [] \\
+      Q.PAT_X_ASSUM ‘!P'. DTRANS D' P (TauR P') ==> _’
+        (MP_TAC o Q.SPEC ‘P'’) >> rw [] >> rename1 ‘DTRANS D' y (TauR y')’ \\
+      Q.PAT_X_ASSUM ‘dist_simulation R'’ MP_TAC >> rw [dist_simulation_def] \\
+      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R' ==> _’
+        (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘D'’]) >> rw [] \\
+      Q.PAT_X_ASSUM ‘!P'. DTRANS D' y (TauR P') ==> _’
+        (MP_TAC o Q.SPEC ‘y'’) >> rw [] >> rename1 ‘DTRANS D' Q (TauR Q')’ \\
+      Q.EXISTS_TAC ‘Q'’ >> art [] \\
+      Q.EXISTS_TAC ‘y'’ >> art [],
+      (* goal 5 (of 14) *)
       cheat,
-      (* goal 3 (of 10) *)
+      (* goal 6 (of 14) *)
       cheat,
-      (* goal 4 (of 10) *)
+      (* goal 7 (of 14) *)
       cheat,
-      (* goal 5 (of 10) *)
+      (* goal 8 (of 14) *)
       cheat,
-      (* goal 6 (of 10) *)
+      (* goal 9 (of 14) *)
       cheat,
-      (* goal 7 (of 10) *)
+      (* goal 10 (of 14) *)
       cheat,
-      (* goal 8 (of 10) *)
+      (* goal 11 (of 14) *)
       cheat,
-      (* goal 9 (of 10) *)
+      (* goal 12 (of 14) *)
       cheat,
-      (* goal 10 (of 10) *)
+      (* goal 13 (of 14) *)
+      cheat,
+      (* goal 14 (of 14) *)
       cheat ]
 QED
 
