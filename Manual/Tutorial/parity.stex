@@ -1,3 +1,9 @@
+%%% -*- Mode: LaTeX; -*-
+\begin{session}
+\begin{alltt}
+>>__ open HolKernel Parse boolLib bossLib;
+\end{alltt}
+\end{session}
 
 \chapter{Example: a Simple Parity Checker}\label{parity}
 
