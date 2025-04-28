@@ -1,3 +1,10 @@
+%%% -*- Mode: LaTeX; -*-
+\begin{session}
+\begin{alltt}
+>>__ open HolKernel Parse boolLib bossLib;
+\end{alltt}
+\end{session}
+
 \index{case expressions|(}
 \HOL{} supports two different types of case expressions:
 decision tree based and \pmatch{} case expressions.
@@ -20,7 +27,7 @@ The conversion \texttt{PMATCH\_CLEANUP\_PVARS\_CONV} removes unused pattern vari
 
 \begin{session}
 \begin{alltt}
->>__ open patternMatchesLib bossLib;
+>>__ open patternMatchesLib;
 >>__ val _ = ENABLE_PMATCH_CASES();
 >>__ SIMP_CONV (srw_ss()) [] ``SUC 0``;
 >> PMATCH_CLEANUP_PVARS_CONV ``PMATCH (x:('a # 'b) option) [

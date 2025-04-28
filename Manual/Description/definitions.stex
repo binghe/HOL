@@ -1,3 +1,10 @@
+%%% -*- Mode: LaTeX; -*-
+\begin{session}
+\begin{alltt}
+>>__ open HolKernel Parse boolLib bossLib;
+\end{alltt}
+\end{session}
+
 \chapter{Advanced Definition Principles}\label{HOLdefinitions}
 
 \section{General-Purpose Definition}
