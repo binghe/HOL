@@ -903,6 +903,26 @@ Proof
     SRW_TAC [boolSimps.CONJ_ss][InputS_eq_thm, pmact_flip_args]
 QED
 
+(* |- !a b x y t1 t2.
+        BoundOutput a x t1 = BoundOutput b y t2 <=>
+        x = y /\ t1 = t2 /\ a = b \/
+        x <> y /\ x # t2 /\ t1 = tpm [(x,y)] t2 /\ a = b
+ *)
+Theorem BoundOutput_eq_thm =
+  “BoundOutput a x t1 = BoundOutput b y (t2 :pi)”
+     |> SIMP_CONV (srw_ss()) [BoundOutput_def, BoundOutput_termP, term_ABS_pseudo11_2,
+                              GLAM_eq_thm,
+                              term_REP_11_0, term_REP_11_1, term_REP_11_2,
+                              GSYM term_REP_tpm, GSYM term_REP_rpm,
+                              GSYM supp_tpm, GSYM supp_rpm]
+     |> Q.GENL [‘a’, ‘b’, ‘x’, ‘y’, ‘t1’, ‘t2’]
+
+Theorem BoundOutput_tpm_ALPHA :
+    v # (u :pi) ==> BoundOutput a x u = BoundOutput a v (tpm [(v,x)] u)
+Proof
+    SRW_TAC [boolSimps.CONJ_ss][BoundOutput_eq_thm, pmact_flip_args]
+QED
+
 (* ----------------------------------------------------------------------
     term recursion
    ---------------------------------------------------------------------- *)

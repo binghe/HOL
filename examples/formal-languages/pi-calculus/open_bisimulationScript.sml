@@ -381,16 +381,18 @@ Definition dist_simulation_def :
       (!D'. D SUBSET D' /\ distinction D' ==> (P,Q,D') IN R) /\
     (* 3a *)
       (!P'. DTRANS D P (TauR P') ==>
-            ?Q'. DTRANS D Q (TauR Q') /\ (P',Q',D) IN R) /\
+           ?Q'. DTRANS D Q (TauR Q') /\ (P',Q',D) IN R) /\
     (* 3b: enriched with ‘x # D /\ x # P’ *)
-      (!a x P'. DTRANS D P (InputS (Name a) x P') /\ x # D /\ x # P /\ x # Q ==>
-                ?Q'. DTRANS D Q (InputS (Name a) x Q') /\ (P',Q',D) IN R) /\
+      (!a x P'. DTRANS D P (InputS (Name a) x P') /\
+                x # D /\ x # P /\ x # Q ==>
+               ?Q'. DTRANS D Q (InputS (Name a) x Q') /\ (P',Q',D) IN R) /\
     (* 3c *)
       (!a b P'. DTRANS D P (FreeOutput (Name a) (Name b) P') ==>
-                ?Q'. DTRANS D Q (FreeOutput (Name a) (Name b) Q') /\
-                    (P',Q',D) IN R) /\
+               ?Q'. DTRANS D Q (FreeOutput (Name a) (Name b) Q') /\
+                   (P',Q',D) IN R) /\
     (* 4 *)
-      (!b x P'. DTRANS D P (BoundOutput (Name b) x P') ==>
+      (!b x P'. DTRANS D P (BoundOutput (Name b) x P') /\
+                x # D /\ x # P /\ x # Q ==>
                 ?Q' D'. DTRANS D Q (BoundOutput (Name b) x Q') /\
                         D' = D UNION sc {(b, x) | x | x IN FV (Res b Q)} /\
                        (P',Q',D') IN R)
@@ -455,7 +457,7 @@ Proof
  (* goal 7 (of 14) *)
  >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
-     Q.PAT_X_ASSUM ‘!b x P'. DTRANS D P (BoundOutput (Name b) x P') ==> _’
+     Q.PAT_X_ASSUM ‘!b x P'. DTRANS D P (BoundOutput (Name b) x P') /\ _ ==> _’
        (MP_TAC o Q.SPECL [‘b’, ‘x’, ‘P'’]) >> rw [] \\
      Q.EXISTS_TAC ‘Q'’ >> rw [])
  (* goal 8 (of 14) *)
@@ -492,7 +494,7 @@ Proof
  (* goal 14 (of 14) *)
  >> (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
-     Q.PAT_X_ASSUM ‘!b x P'. DTRANS D P (BoundOutput (Name b) x P') ==> _’
+     Q.PAT_X_ASSUM ‘!b x P'. DTRANS D P (BoundOutput (Name b) x P') /\ _ ==> _’
        (MP_TAC o Q.SPECL [‘b’, ‘x’, ‘P'’]) >> rw [] \\
      Q.EXISTS_TAC ‘Q'’ >> rw [])
 QED
@@ -568,6 +570,42 @@ Proof
  >> PairCases_on ‘x’ (* this asserts (x0,x1,x2) *)
  >> rename1 ‘(P',Q',D') IN R’
  >> qexistsl_tac [‘P'’, ‘Q'’, ‘D'’] >> simp []
+QED
+
+(* val DTRANS_strongind = DB.fetch "-" "DTRANS_strongind"; *)
+
+Theorem FV_InputS_lemma[local] :
+    !D P Q. DTRANS D P Q ==>
+            !P' a z x. Q = InputS (Name a) z P' /\ z <> x /\ x # P ==> x # P'
+Proof
+    HO_MATCH_MP_TAC DTRANS_ind >> rw []
+ >> cheat
+QED
+
+Theorem FV_InputS :
+    !D P P' a z x. DTRANS D P (InputS (Name a) z P') /\ z <> x /\
+                   x # P ==> x # P'
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> irule FV_InputS_lemma
+ >> qexistsl_tac [‘D’, ‘P’, ‘InputS (Name a) z P'’, ‘a’, ‘z’] >> art []
+QED
+
+Theorem FV_BoundOutput_lemma[local] :
+    !D P Q. DTRANS D P Q ==>
+            !P' a z x. Q = BoundOutput (Name a) z P' /\ z <> x /\ x # P ==> x # P'
+Proof
+    HO_MATCH_MP_TAC DTRANS_ind >> rw []
+ >> cheat
+QED
+
+Theorem FV_BoundOutput :
+    !D P P' a z x. DTRANS D P (BoundOutput (Name a) z P') /\ z <> x /\
+                   x # P ==> x # P'
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> irule FV_BoundOutput_lemma
+ >> qexistsl_tac [‘D’, ‘P’, ‘BoundOutput (Name a) z P'’, ‘a’, ‘z’] >> art []
 QED
 
 Theorem dist_bisimilar_transitive :
@@ -653,7 +691,8 @@ Proof
        (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘D'’, ‘a’, ‘z’, ‘y'’]) >> rw [] \\
      Know ‘InputS (Name a) z Q' = InputS (Name a) x (tpm [(x,z)] Q')’
      >- (MATCH_MP_TAC InputS_tpm_ALPHA \\
-         cheat) (* possible *) \\
+         irule FV_InputS \\
+         qexistsl_tac [‘D'’, ‘Q’, ‘a’, ‘z’] >> art []) \\
      DISCH_THEN (fs o wrap) \\
      qabbrev_tac ‘Q'' = tpm [(x,z)] Q'’ \\
      Q.EXISTS_TAC ‘Q''’ >> art [] \\
@@ -685,12 +724,53 @@ Proof
      Q.EXISTS_TAC ‘Q'’ >> art [] \\
      Q.EXISTS_TAC ‘y'’ >> art [])
  (* goal 7 (of 14): DTRANS D' P (BoundOutput (Name b) x P')
-                              | R                       |
-                              y                         y'
-                              | R'                      |
-                    DTRANS D' Q (BoundOutput (Name b) x Q')
+                              |      alpha            | |
+                              P (BoundOutput (Name b) z P''
+                              |        R              | |
+                              y (BoundOutput (Name b) z y')
+                              |        R'             | |
+                              Q (BoundOutput (Name b) z Q')
+                              |      alpha            | |
+                    DTRANS D' Q (BoundOutput (Name b) x Q'')
   *)
- >- cheat
+ >- (Q.PAT_X_ASSUM ‘dist_simulation R’
+       (STRIP_ASSUME_TAC o SIMP_RULE (bool_ss ++ DNF_ss) [dist_simulation_def]) \\
+    ‘distinction D'’ by PROVE_TAC [] \\
+  (* applying NEW_TAC *)
+     qabbrev_tac ‘X = {x} UNION FV D' UNION FV y UNION FV P UNION FV Q UNION FV P'’ \\
+    ‘FINITE X’ by rw [Abbr ‘X’] \\
+     Q_TAC (NEW_TAC "z") ‘X’ \\
+     Q.PAT_X_ASSUM ‘FINITE X’ K_TAC >> fs [Abbr ‘X’] \\
+  (* applying BoundOutput_tpm_ALPHA *)
+     Know ‘BoundOutput (Name b) x P' = BoundOutput (Name b) z (tpm [(z,x)] P')’
+     >- (MATCH_MP_TAC BoundOutput_tpm_ALPHA >> art []) \\
+     DISCH_THEN (fs o wrap) \\
+     qabbrev_tac ‘P'' = tpm [(z,x)] P'’ \\
+     Q.PAT_X_ASSUM ‘!P Q D b x P'. (P,Q,D) IN R ==>
+                                   DTRANS D P (BoundOutput (Name b) x P') /\ _ ==> _’
+       (MP_TAC o Q.SPECL [‘P’, ‘y’, ‘D'’, ‘b’, ‘z’, ‘P''’]) >> rw [] \\
+     rename1 ‘DTRANS D' y (BoundOutput (Name b) z y')’ \\
+  (* stage work *)
+     Q.PAT_X_ASSUM ‘dist_simulation R'’
+       (STRIP_ASSUME_TAC o SIMP_RULE (bool_ss ++ DNF_ss) [dist_simulation_def]) \\
+     Q.PAT_X_ASSUM ‘!P Q D b x P'. (P,Q,D) IN R' ==>
+                                   DTRANS D P (BoundOutput (Name b) x P') /\ _ ==> _’
+       (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘D'’, ‘b’, ‘z’, ‘y'’]) >> rw [] \\
+     Know ‘BoundOutput (Name b) z Q' = BoundOutput (Name b) x (tpm [(x,z)] Q')’
+     >- (MATCH_MP_TAC BoundOutput_tpm_ALPHA \\
+         irule FV_BoundOutput \\
+         qexistsl_tac [‘D'’, ‘Q’, ‘b’, ‘z’] >> art []) \\
+     DISCH_THEN (fs o wrap) \\
+     qabbrev_tac ‘Q'' = tpm [(x,z)] Q'’ \\
+     Q.EXISTS_TAC ‘Q''’ >> art [] \\
+    ‘P' = tpm [(z,x)] P''’ by rw [Abbr ‘P''’] >> POP_ORW \\
+    ‘tpm [(z,x)] P'' = tpm [(x,z)] P''’
+       by rw [Once pmact_flip_args] >> POP_ORW \\
+     Q.EXISTS_TAC ‘tpm [(x,z)] y'’ >> simp [Abbr ‘Q''’] \\
+     cheat
+  (* Suff ‘D' = dpm [(x,z)] D'’ >- (Rewr' >> simp []) \\
+     ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+     MATCH_MP_TAC dpm_unchanged >> simp [] *))
  (* goal 8 (of 14): symmetric with goal 1 *)
  >- (MATCH_MP_TAC dist_simulation_imp_distinction \\
      qexistsl_tac [‘R'’, ‘y’, ‘P’] >> art [])
