@@ -1,8 +1,6 @@
 (* this is an -*- sml -*- file *)
 val () = PolyML.print_depth 0;
 
-open bossLib  (* Any others? *)
-
 (*
 This uses quietdec, so it doesn't work in PolyML
 val _ = use (HOLDIR ^ "/src/proofman/expandq");

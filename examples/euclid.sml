@@ -2,8 +2,9 @@
 (* Euclid's theorem: for every prime, there is another one that is larger.   *)
 (* This proof has been excerpted and adapted from John Harrison's proof of   *)
 (* a special case (n=4) of Fermat's Last Theorem.                            *)
-(*                                                                           *)
 (*===========================================================================*)
+
+open HolKernel Parse boolLib bossLib;
 
 (*---------------------------------------------------------------------------*)
 (* First, open required context: the theory of arithmetic. This theory is    *)
