@@ -1,4 +1,10 @@
 %%% -*- Mode: LaTeX; -*-
+\begin{session}
+\begin{alltt}
+>>__ open HolKernel Parse boolLib bossLib;
+\end{alltt}
+\end{session}
+
 \newcommand{\subr}{\sb{\mathsf{r}}}
 \chapter{Core Theories}\label{HOLtheories}
 

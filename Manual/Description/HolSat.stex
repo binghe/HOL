@@ -1,4 +1,5 @@
-%\documentclass[12pt]{article}
+%%% -*- Mode: LaTeX; -*-
+% \documentclass[12pt]{article}
 
 %\usepackage{alltt}
 %\usepackage{epsfig}
@@ -8,7 +9,6 @@
 %\usepackage{makeidx}
 %\usepackage{index}
 %\usepackage{multind}
-
 
 \renewcommand{\t}[1]{\mbox{\small\tt #1}}
 %\newcommand{\prev}[1]{#1}
@@ -39,9 +39,16 @@
 
 %\input{../LaTeX/commands}
 
+%\begin{document}
+
+\begin{session}
+\begin{alltt}
+>>__ open HolKernel Parse boolLib bossLib;
+\end{alltt}
+\end{session}
+
 \setcounter{sessioncount}{0}
 
-%\begin{document}
 \index{HolSatLib|(}
 \index{SAT solvers|see {HolSatLib}}
 \index{decision procedures!propositional satisfiability}

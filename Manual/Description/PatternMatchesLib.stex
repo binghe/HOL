@@ -1,3 +1,10 @@
+%%% -*- Mode: LaTeX; -*-
+\begin{session}
+\begin{alltt}
+>>__ open HolKernel Parse boolLib bossLib;
+\end{alltt}
+\end{session}
+
 \index{case expressions|(}
 \HOL{} supports two different types of case expressions:
 decision tree based and \pmatch{} case expressions.

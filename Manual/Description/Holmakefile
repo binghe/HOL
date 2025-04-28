@@ -10,7 +10,7 @@ PS_STUFF = ../Tools/polyscripter ../Tools/umap
 PS_COMMAND = $(PS_STUFF) < $< > $@
 
 description.pdf: $(TEX_SOURCES)
-	latexmk -pdf description
+	make description.pdf
 
 definitions.tex: definitions.stex $(PS_STUFF)
 	$(PS_COMMAND)

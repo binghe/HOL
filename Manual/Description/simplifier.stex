@@ -1,3 +1,10 @@
+%%% -*- Mode: LaTeX; -*-
+\begin{session}
+\begin{alltt}
+>>__ open HolKernel Parse boolLib bossLib;
+\end{alltt}
+\end{session}
+
 \section{Simplification---\texttt{simpLib}}
 \label{sec:simpLib}
 \index{simplification|(}

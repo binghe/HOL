@@ -1,3 +1,10 @@
+%%% -*- Mode: LaTeX; -*-
+\begin{session}
+\begin{alltt}
+>>__ open HolKernel Parse boolLib bossLib;
+\end{alltt}
+\end{session}
+
 \chapter{Goal Directed Proof: Tactics and Tacticals}
 
 \label{tactics-and-tacticals}

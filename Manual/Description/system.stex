@@ -1,3 +1,10 @@
+%%% -*- Mode: LaTeX; -*-
+\begin{session}
+\begin{alltt}
+>>__ open HolKernel Parse boolLib bossLib;
+\end{alltt}
+\end{session}
+
 \chapter{\texorpdfstring{The \HOL{} Logic in ML}{The HOL Logic in ML}}\label{HOLsyschapter}
 
 In this chapter, the concrete representation of the \HOL{} logic is
