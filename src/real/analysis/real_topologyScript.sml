@@ -4868,7 +4868,6 @@ QED
 Definition reallim :
     reallim net f = @l. (f --> l) net
 End
-
 Overload lim = “reallim”
 
 (* cf. limTheory.LIM *)
@@ -4880,8 +4879,7 @@ Theorem LIM_DEF : (* was: LIM *)
 Proof
   REWRITE_TAC[tendsto, eventually] THEN MESON_TAC[]
 QED
-
-Theorem LIM[local] = LIM_DEF
+val LIM = LIM_DEF;
 
 (* ------------------------------------------------------------------------- *)
 (* Show that they yield usual definitions in the various cases.              *)
