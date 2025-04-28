@@ -20,7 +20,7 @@ The conversion \texttt{PMATCH\_CLEANUP\_PVARS\_CONV} removes unused pattern vari
 
 \begin{session}
 \begin{alltt}
->>__ open patternMatchesLib;
+>>__ open patternMatchesLib bossLib;
 >>__ val _ = ENABLE_PMATCH_CASES();
 >>__ SIMP_CONV (srw_ss()) [] ``SUC 0``;
 >> PMATCH_CLEANUP_PVARS_CONV ``PMATCH (x:('a # 'b) option) [
