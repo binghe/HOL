@@ -1963,10 +1963,11 @@ Proof
     rw [euclidean_open_def]
 QED
 
-val TOPSPACE_EUCLIDEAN = store_thm ("TOPSPACE_EUCLIDEAN",
- ``topspace euclidean = univ(:real)``,
-  SIMP_TAC std_ss [topspace, EXTENSION, IN_UNIV, IN_BIGUNION, GSPECIFICATION] THEN
-  MESON_TAC[OPEN_UNIV, IN_UNIV, OPEN_IN]);
+Theorem TOPSPACE_EUCLIDEAN :
+    topspace euclidean = univ(:real)
+Proof
+    rw [TOPSPACE_MTOP, euclidean_def]
+QED
 
 val TOPSPACE_EUCLIDEAN_SUBTOPOLOGY = store_thm ("TOPSPACE_EUCLIDEAN_SUBTOPOLOGY",
  ``!s. topspace (subtopology euclidean s) = s``,
@@ -4743,9 +4744,10 @@ Proof
       SUBGOAL_THEN ``&0 < dist(a,b:real) \/ &0 < dist(a,c:real)`` MP_TAC THEN
       ASM_MESON_TAC[DIST_TRIANGLE, DIST_SYM, GSYM DIST_NZ, GSYM DIST_EQ_0,
                     REAL_ARITH ``x:real <= &0 + &0 ==> ~(&0 < x)``]],
-    KNOW_TAC ``!e. (0 < e ==> ?x'. x' IN s /\ 0 < dist (x',a) /\ dist (x',a) <= e) =
-           (\e. 0 < e ==> ?x'. x' IN s /\ 0 < dist (x',a) /\ dist (x',a) <= e) e`` THENL
-    [FULL_SIMP_TAC std_ss [], ALL_TAC] THEN DISC_RW_KILL THEN
+    Know ‘!e. (0 < e ==> ?x'. x' IN s /\ 0 < dist (x',a) /\ dist (x',a) <= e) =
+           (\e. 0 < e ==> ?x'. x' IN s /\ 0 < dist (x',a) /\ dist (x',a) <= e) e’
+    >- FULL_SIMP_TAC std_ss [] \\
+    DISC_RW_KILL THEN
     REWRITE_TAC[NOT_FORALL_THM] THEN BETA_TAC THEN REWRITE_TAC [NOT_IMP] THEN
     SIMP_TAC std_ss [GSYM LEFT_EXISTS_IMP_THM] THEN
     STRIP_TAC THEN DISJ2_TAC THEN
@@ -4815,6 +4817,7 @@ val _ = TeX_notation {hol = "-->",           TeX = ("\\HOLTokenLongmap{}", 1)};
  *)
 Overload "-->" = “limit euclidean”
 
+(* NOTE: This is the original definition of “tendsto_real” *)
 Theorem tendsto_real_def :
     !f l net. (f --> l) net <=> !e. &0 < e ==> eventually (\x. dist(f(x),l) < e) net
 Proof
@@ -4842,11 +4845,29 @@ Theorem tendsto_real = REWRITE_RULE [dist] tendsto_real_def
 (* This theorem is only used locally for compatibility purposes *)
 Theorem tendsto[local] = tendsto_real_def
 
+Theorem limit_at_alt_tends :
+    !top f l a. l IN topspace top ==>
+               (limit top f l (at a) <=> (f tends l) (top,tendsto (mr1,a)))
+Proof
+    rw [tendsto_mr1]
+ >> MATCH_MP_TAC limit_alt_tends
+ >> rw [TRIVIAL_LIMIT_AT, AT]
+ >> MATCH_MP_TAC REAL_LTE_TRANS
+ >> Q.EXISTS_TAC ‘dist (x,a)’ >> art []
+QED
+
+Theorem tendsto_real_alt_tends :
+    !f l a. (f --> l) (at a) <=> (f tends l) (mtop mr1,tendsto (mr1,a))
+Proof
+    rw [GSYM euclidean_def]
+ >> MP_TAC (ISPEC “euclidean” limit_at_alt_tends)
+ >> simp [TOPSPACE_EUCLIDEAN]
+QED
+
 (* Now the name "reallim" follows HOL-Light's "realanalysis.ml" *)
 Definition reallim :
     reallim net f = @l. (f --> l) net
 End
-
 Overload lim = “reallim”
 
 (* cf. limTheory.LIM *)
@@ -4858,8 +4879,7 @@ Theorem LIM_DEF : (* was: LIM *)
 Proof
   REWRITE_TAC[tendsto, eventually] THEN MESON_TAC[]
 QED
-
-Theorem LIM[local] = LIM_DEF
+val LIM = LIM_DEF;
 
 (* ------------------------------------------------------------------------- *)
 (* Show that they yield usual definitions in the various cases.              *)

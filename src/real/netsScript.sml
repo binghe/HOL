@@ -732,6 +732,14 @@ val AT = store_thm ("AT",
   GEN_TAC THEN NET_PROVE_TAC[at] THEN
   METIS_TAC[REAL_LE_TOTAL, REAL_LE_REFL, REAL_LE_TRANS, REAL_LET_TRANS]);
 
+(* Connection between HOL4's “tendsto” and HOL-Light's “at”, cf. [at_def] *)
+Theorem tendsto_mr1 :
+    !m a. tendsto (mr1,a) = netord (at a)
+Proof
+    rw [FUN_EQ_THM, tendsto, AT, GSYM dist_def]
+ >> METIS_TAC [DIST_SYM]
+QED
+
 val AT_INFINITY = store_thm ("AT_INFINITY",
  ``!x y. netord at_infinity x y <=> abs(x) >= abs(y)``,
   NET_PROVE_TAC[at_infinity] THEN
@@ -979,16 +987,6 @@ Proof
   SIMP_TAC std_ss [EVENTUALLY_FORALL]
 QED
 
-(* TODO:
-Theorem EVENTUALLY_WITHIN_IMP :
-    !net (P:'a->bool) s.
-        (eventually P (net within s) <=>
-         eventually (\x. x IN s ==> P x) net)
-Proof
-    cheat
-QED
- *)
-
 (* ------------------------------------------------------------------------- *)
 (* It's also sometimes useful to extract the limit point from the net.       *)
 (* ------------------------------------------------------------------------- *)
@@ -1019,13 +1017,46 @@ Definition limit :
      (!u. open_in top u /\ l IN u ==> eventually (\x. f x IN u) net)
 End
 
-(* connection between HOL-Light's ‘limit’ and HOL4's ‘tends’
-Theorem limit_alt_tends :
-    !top f l net. limit top (f:'a->'b) l net <=> (f tends l) (top,netord net)
-Proof
-    cheat
-QED
+(* Connection between HOL-Light's ‘limit’ and HOL4's ‘tends’
+
+   NOTE: The net with ‘limit’ must be reflexive, which is not assumed in general.
+   Further more, the net cannot be trivial, and ‘l IN topspace top’ must be
+   assumed because it's not included with ‘f tends l’.
  *)
+Theorem tends_imp_limit :
+    !top f l net. ~trivial_limit net /\ l IN topspace top ==>
+                 (f tends l) (top,netord net) ==> limit top (f:'a->'b) l net
+Proof
+    rw [limit, tends, eventually, OPEN_NEIGH]
+ >> Q.PAT_X_ASSUM ‘!x. u x ==> _’ (MP_TAC o Q.SPEC ‘l’)
+ >> POP_ASSUM MP_TAC
+ >> rw [IN_APP]
+ >> Q.PAT_X_ASSUM ‘!N. neigh top (N,l) ==> _’ (MP_TAC o Q.SPEC ‘N’) >> rw []
+ >> Q.EXISTS_TAC ‘n’
+ >> CONJ_TAC >- (Q.EXISTS_TAC ‘n’ >> art [])
+ >> rpt STRIP_TAC
+ >> ‘f x IN N’ by rw [IN_APP]
+ >> ‘f x IN u’ by PROVE_TAC [SUBSET_DEF] >> fs [IN_APP]
+QED
+
+Theorem limit_alt_tends :
+    !top f l net. ~trivial_limit net /\ l IN topspace top /\
+                 (!x y. netord net x y ==> netord net y y) ==>
+                 (limit top (f:'a->'b) l net <=> (f tends l) (top,netord net))
+Proof
+    rpt STRIP_TAC
+ >> reverse EQ_TAC >- rw [tends_imp_limit]
+ >> rw [limit, tends, reflexive_def, neigh]
+ >> Q.PAT_X_ASSUM ‘!u. open_in top u /\ l IN u ==> _’ (MP_TAC o Q.SPEC ‘P’)
+ >> rw [IN_APP, eventually]
+ >> Q.EXISTS_TAC ‘y’
+ >> CONJ_TAC
+ >- (FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘x’ >> art [])
+ >> rpt STRIP_TAC
+ >> ‘f m IN P’ by rw [IN_APP]
+ >> ‘f m IN N’ by PROVE_TAC [SUBSET_DEF] >> fs [IN_APP]
+QED
 
 val _ = export_theory ();
 

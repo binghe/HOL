@@ -1,6 +1,6 @@
 (* ========================================================================== *)
 (* FILE          : open_bisimulationScript.sml                                *)
-(* DESCRIPTION   : Open Bisimulation for pi-calculus                          *)
+(* DESCRIPTION   : Open bisimulation for the pi-calculus with mismatch        *)
 (*                                                                            *)
 (* Copyright 2025  The Australian National University (Author: Chun Tian)     *)
 (* ========================================================================== *)
@@ -9,9 +9,12 @@ open HolKernel Parse boolLib bossLib;
 
 open pairTheory pred_setTheory set_relationTheory hurdUtils;
 
-open nomsetTheory pi_agentTheory;
+open nomsetTheory NEWLib pi_agentTheory;
 
 val _ = new_theory "open_bisimulation";
+
+(* some proofs here are large with too many assumptions *)
+val _ = set_trace "Goalstack.print_goal_at_top" 0;
 
 (* ----------------------------------------------------------------------
    Pi-calculus as a nominal datatype in HOL4
@@ -46,89 +49,42 @@ val _ = new_theory "open_bisimulation";
  *)
 Type dist[pp] = “:(string # string) -> bool”
 
-(* TODO: move to set_relationTheory *)
-Definition symmetric_def :
-    symmetric r s <=> !x y. x IN s /\ y IN s ==> ((x,y) IN r <=> (y,x) IN r)
-End
-
-Theorem symmetric_union :
-    !r1 r2 s. symmetric r1 s /\ symmetric r2 s ==> symmetric (r1 UNION r2) s
-Proof
-    rw [symmetric_def]
-QED
-
-Theorem irreflexive_union :
-    !r1 r2 s. irreflexive r1 s /\ irreflexive r2 s ==> irreflexive (r1 UNION r2) s
-Proof
-    rw [irreflexive_def]
-QED
-
-(* TODO: move to set_relationTheory. The idea is following "tc" *)
-Inductive sc :
-    (!x y. r (x,y) ==> sc r (x,y)) /\
-    (!x y. sc r (x,y) ==> sc r (y,x))
-End
-
-Theorem sc_rules' :
-    !r. (!x y. (x,y) IN r ==> (x,y) IN sc r) /\
-         !x y. (x,y) IN sc r ==> (y,x) IN sc r
-Proof
-    simp [IN_APP]
- >> METIS_TAC [sc_rules]
-QED
-
-Theorem sc_cases' :
-    !r a0. a0 IN sc r <=> (?x y. a0 = (x,y) /\ (x,y) IN r) \/
-                        ?x y. a0 = (y,x) /\ (x,y) IN sc r
-Proof
-    simp [IN_APP]
- >> METIS_TAC [sc_cases]
-QED
-
-Theorem sc_ind' :
-    !P r.
-        (!x y. (x,y) IN r ==> P (x,y)) /\ (!x y. P (x,y) ==> P (y,x)) ==>
-        !x. x IN sc r ==> P x
-Proof
-    simp [IN_APP]
- >> METIS_TAC [sc_ind]
-QED
-
-Theorem sc_thm :
-    !x y r. (x,y) IN sc r <=> (y,x) IN sc r
-Proof
-    rpt GEN_TAC
- >> EQ_TAC >> STRIP_TAC
- >> MATCH_MP_TAC (cj 2 sc_rules') >> art []
-QED
-
-Theorem sc_symmetric[simp] :
-    symmetric (sc r) s
-Proof
-    rw [symmetric_def, Once sc_thm]
-QED
-
-Theorem sc_irreflexive_lemma[local] :
-    !x r. (x,x) NOTIN r ==> (x,x) NOTIN sc r
-Proof
-    rpt GEN_TAC
- >> simp [Once MONO_NOT_EQ]
- >> Suff ‘!z. z IN sc r ==> FST z = SND z ==> z IN r’ >- rw []
- >> HO_MATCH_MP_TAC sc_ind' >> rw []
-QED
-
-Theorem sc_irreflexive :
-    !r s. irreflexive r s ==> irreflexive (sc r) s
-Proof
-    rw [irreflexive_def]
- >> MATCH_MP_TAC sc_irreflexive_lemma
- >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
-QED
-
 (* NOTE: We use uncurried relation (HOL preferred) given in relationTheory *)
 Definition distinction_def :
-    distinction (D :dist) <=> symmetric D UNIV /\ irreflexive D UNIV
+    distinction (D :dist) <=> FINITE D /\ symmetric D UNIV /\ irreflexive D UNIV
 End
+
+Overload FV = “domain :dist -> string set”
+Overload "#" = “\v (D :dist). v NOTIN FV D”
+
+Theorem domain_alt :
+    !r. domain r = IMAGE FST r
+Proof
+    rw [Once EXTENSION, in_domain]
+ >> EQ_TAC >> rw []
+ >- (Q.EXISTS_TAC ‘(x,y)’ >> rw [])
+ >> rename1 ‘z IN r’
+ >> PairCases_on ‘z’
+ >> Q.EXISTS_TAC ‘z1’ >> rw []
+QED
+
+(* |- !D. FV D = IMAGE FST D *)
+Theorem FV_distinction =
+        domain_alt |> INST_TYPE [alpha |-> “:string”, beta |-> “:string”]
+                   |> Q.SPEC ‘D’ |> GEN_ALL
+
+Theorem FV_distinction_alt :
+    !D. distinction D ==> FV D = IMAGE SND D
+Proof
+    rw [distinction_def, domain_alt, symmetric_def]
+ >> simp [Once EXTENSION, EXISTS_PROD]
+QED
+
+Theorem finite_domain[simp] :
+    distinction D ==> FINITE (FV D)
+Proof
+    rw [distinction_def, domain_alt]
+QED
 
 Theorem distinction_empty[simp] :
     distinction {}
@@ -144,22 +100,55 @@ Proof
  >> MATCH_MP_TAC irreflexive_union >> art []
 QED
 
-Theorem distinction_dpm_lemma[local] :
-    !d pi. distinction d ==> distinction (dpm pi d)
-Proof
-    cheat
-QED
-
-Theorem distinction_dpm :
-    !d pi. distinction (dpm pi d) <=> distinction d
-Proof
-    cheat
-QED
-
 (* NOTE: This is permutation operation on distinction *)
-Definition dpm_def :
-    dpm pi (D :dist) = IMAGE (pairpm string_pmact string_pmact pi) D
-End
+Overload dpm[local] = “setpm (pair_pmact string_pmact string_pmact)”
+
+Theorem distinction_dpm_lemma[local] :
+    !pi d. distinction d ==> distinction (dpm pi d)
+Proof
+    rw [distinction_def]
+ >- fs [symmetric_def]
+ >> fs [irreflexive_def]
+QED
+
+Theorem distinction_dpm[simp] :
+    distinction (dpm pi d) <=> distinction d
+Proof
+    reverse EQ_TAC
+ >- rw [distinction_dpm_lemma]
+ >> STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘REVERSE pi’, ‘dpm pi d’] distinction_dpm_lemma)
+ >> simp []
+QED
+
+Theorem dpm_unchanged_lemma[local] :
+    !D. FINITE D ==> !pi. DISJOINT (set (MAP FST pi)) (IMAGE FST D) /\
+                          DISJOINT (set (MAP FST pi)) (IMAGE SND D) /\
+                          DISJOINT (set (MAP SND pi)) (IMAGE FST D) /\
+                          DISJOINT (set (MAP SND pi)) (IMAGE SND D) ==>
+                          dpm pi D = D
+Proof
+    HO_MATCH_MP_TAC FINITE_INDUCT
+ >> rw [pmact_INSERT]
+ >> PairCases_on ‘e’ >> fs []
+ >> Know ‘lswapstr pi e0 = e0’
+ >- (MATCH_MP_TAC lswapstr_unchanged' >> art [])
+ >> Rewr'
+ >> Know ‘lswapstr pi e1 = e1’
+ >- (MATCH_MP_TAC lswapstr_unchanged' >> art [])
+ >> Rewr
+QED
+
+Theorem dpm_unchanged :
+    !D pi. distinction D /\
+           DISJOINT (set (MAP FST pi)) (FV D) /\
+           DISJOINT (set (MAP SND pi)) (FV D) ==> dpm pi D = D
+Proof
+    rpt STRIP_TAC
+ >> irule dpm_unchanged_lemma
+ >> simp [GSYM FV_distinction, GSYM FV_distinction_alt]
+ >> fs [distinction_def]
+QED
 
 (* The original open transition relation *)
 Inductive TRANS :
@@ -275,7 +264,7 @@ Inductive DTRANS :
 [DOPEN]
     !D D' P P' a b.
     (* begin extra antecedents *)
-       distinction D /\ b NOTIN (domain D) /\
+       distinction D /\ b # D /\
        D' = D UNION sc {(a,s) | s IN FV (Res b P)} /\
     (* end extra antecedents *)
        DTRANS D' P (FreeOutput (Name a) (Name b) P') /\ a <> b ==>
@@ -392,16 +381,18 @@ Definition dist_simulation_def :
       (!D'. D SUBSET D' /\ distinction D' ==> (P,Q,D') IN R) /\
     (* 3a *)
       (!P'. DTRANS D P (TauR P') ==>
-            ?Q'. DTRANS D Q (TauR Q') /\ (P',Q',D) IN R) /\
-    (* 3b *)
-      (!a x P'. DTRANS D P (InputS (Name a) x P') /\ x # Q ==>
-                ?Q'. DTRANS D Q (InputS (Name a) x Q') /\ (P',Q',D) IN R) /\
+           ?Q'. DTRANS D Q (TauR Q') /\ (P',Q',D) IN R) /\
+    (* 3b: enriched with ‘x # D /\ x # P’ *)
+      (!a x P'. DTRANS D P (InputS (Name a) x P') /\
+                x # D /\ x # P /\ x # Q ==>
+               ?Q'. DTRANS D Q (InputS (Name a) x Q') /\ (P',Q',D) IN R) /\
     (* 3c *)
       (!a b P'. DTRANS D P (FreeOutput (Name a) (Name b) P') ==>
-                ?Q'. DTRANS D Q (FreeOutput (Name a) (Name b) Q') /\
-                    (P',Q',D) IN R) /\
+               ?Q'. DTRANS D Q (FreeOutput (Name a) (Name b) Q') /\
+                   (P',Q',D) IN R) /\
     (* 4 *)
-      (!b x P'. DTRANS D P (BoundOutput (Name b) x P') ==>
+      (!b x P'. DTRANS D P (BoundOutput (Name b) x P') /\
+                x # D /\ x # P /\ x # Q ==>
                 ?Q' D'. DTRANS D Q (BoundOutput (Name b) x Q') /\
                         D' = D UNION sc {(b, x) | x | x IN FV (Res b Q)} /\
                        (P',Q',D') IN R)
@@ -411,31 +402,18 @@ Theorem dist_simulation_id :
     dist_simulation {x | ?P D. x = (P,P,D) /\ distinction D}
 Proof
     rw [dist_simulation_def]
- (* distinction (dpm pi D) *)
- >- (fs [distinction_def] \\
-     reverse CONJ_TAC (* irreflexive *)
-     >- (fs [irreflexive_def] \\
-         rw [dpm_def] \\
-         rename1 ‘(x,x) = pairpm string_pmact string_pmact pi z’ \\
-         Cases_on ‘z’ >> fs [pairpm_thm] \\
-         POP_ASSUM (fs o wrap)) \\
-  (* symmetric *)
-     fs [symmetric_def] \\
-     rw [dpm_def] \\
-     EQ_TAC >> rw [] >| (* 2 subgoals *)
-     [ (* goal 1 (of 2) *)
-       Q.EXISTS_TAC ‘(lswapstr (REVERSE pi) y,lswapstr (REVERSE pi) x)’ \\
-       simp [pairpm_thm] \\
-       rename1 ‘(x,y) = pairpm string_pmact string_pmact pi z’ \\
-       Cases_on ‘z’ >> fs [pairpm_thm],
-       (* goal 2 (of 2) *)
-       Q.EXISTS_TAC ‘(lswapstr (REVERSE pi) x,lswapstr (REVERSE pi) y)’ \\
-       simp [pairpm_thm] \\
-       rename1 ‘(y,x) = pairpm string_pmact string_pmact pi z’ \\
-       Cases_on ‘z’ >> fs [pairpm_thm] ])
- (* stage work *)
  >> MATCH_MP_TAC distinction_union >> art []
  >> rw [distinction_def]
+ >- (MATCH_MP_TAC finite_sc \\
+     qmatch_abbrev_tac ‘FINITE s’ \\
+     irule SUBSET_FINITE \\
+     Q.EXISTS_TAC ‘{(b,y) | y | y IN FV P}’ \\
+     qunabbrev_tac ‘s’ \\
+     reverse CONJ_TAC >- rw [SUBSET_DEF] \\
+     qmatch_abbrev_tac ‘FINITE s’ \\
+     Know ‘s = IMAGE (\y. (b,y)) (FV P)’
+     >- rw [Abbr ‘s’, Once EXTENSION] >> Rewr' \\
+     MATCH_MP_TAC IMAGE_FINITE >> rw [])
  >> MATCH_MP_TAC sc_irreflexive
  >> rw [irreflexive_def]
 QED
@@ -445,80 +423,80 @@ Theorem dist_simulation_union :
             dist_simulation (R1 UNION R2)
 Proof
     rw [dist_simulation_def] (* 7+7 subgoals *)
- >| [ (* goal 1 (of 14) *)
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
-        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [],
-      (* goal 2 (of 14) *)
-      DISJ1_TAC \\
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
-        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [],
-      (* goal 3 (of 14) *)
-      DISJ1_TAC \\
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
-        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [],
-      (* goal 4 (of 14) *)
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
-        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
-      Q.PAT_X_ASSUM ‘!P'. DTRANS D P (TauR P') ==> _’
-        (MP_TAC o Q.SPEC ‘P'’) >> rw [] \\
-      Q.EXISTS_TAC ‘Q'’ >> rw [],
-      (* goal 5 (of 14) *)
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
-        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
-      Q.PAT_X_ASSUM ‘!a x P'.
-                       DTRANS D P (InputS (Name a) x P') /\ x # Q ==> _’
-        (MP_TAC o Q.SPECL [‘a’, ‘x’, ‘P'’]) >> rw [] \\
-      Q.EXISTS_TAC ‘Q'’ >> rw [],
-      (* goal 6 (of 14) *)
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
-        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
-      Q.PAT_X_ASSUM ‘!a b P'.
+ (* goal 1 (of 14) *)
+ >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
+      (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [])
+ (* goal 2 (of 14) *)
+ >- (DISJ1_TAC \\
+     Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
+       (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [])
+ (* goal 3 (of 14) *)
+ >- (DISJ1_TAC \\
+     Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
+       (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [])
+ (* goal 4 (of 14) *)
+ >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
+       (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
+     Q.PAT_X_ASSUM ‘!P'. DTRANS D P (TauR P') ==> _’
+       (MP_TAC o Q.SPEC ‘P'’) >> rw [] \\
+     Q.EXISTS_TAC ‘Q'’ >> rw [])
+ (* goal 5 (of 14) *)
+ >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
+       (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
+     Q.PAT_X_ASSUM ‘!a x P'.
+                       DTRANS D P (InputS (Name a) x P') /\ _ ==> _’
+       (MP_TAC o Q.SPECL [‘a’, ‘x’, ‘P'’]) >> rw [] \\
+     Q.EXISTS_TAC ‘Q'’ >> rw [])
+ (* goal 6 (of 14) *)
+ >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
+       (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
+     Q.PAT_X_ASSUM ‘!a b P'.
                        DTRANS D P (FreeOutput (Name a) (Name b) P') ==> _’
-        (MP_TAC o Q.SPECL [‘a’, ‘b’, ‘P'’]) >> rw [] \\
-      Q.EXISTS_TAC ‘Q'’ >> rw [],
-      (* goal 7 (of 14) *)
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
-        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
-      Q.PAT_X_ASSUM ‘!b x P'. DTRANS D P (BoundOutput (Name b) x P') ==> _’
-        (MP_TAC o Q.SPECL [‘b’, ‘x’, ‘P'’]) >> rw [] \\
-      Q.EXISTS_TAC ‘Q'’ >> rw [],
-      (* goal 8 (of 14) *)
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
-        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [],
-      (* goal 9 (of 14) *)
-      DISJ2_TAC \\
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
-        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [],
-      (* goal 10 (of 14) *)
-      DISJ2_TAC \\
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
-        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [],
-      (* goal 11 (of 14) *)
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
-        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
-      Q.PAT_X_ASSUM ‘!P'. DTRANS D P (TauR P') ==> _’
-        (MP_TAC o Q.SPEC ‘P'’) >> rw [] \\
-      Q.EXISTS_TAC ‘Q'’ >> rw [],
-      (* goal 12 (of 14) *)
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
-        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
-      Q.PAT_X_ASSUM ‘!a x P'.
-                       DTRANS D P (InputS (Name a) x P') /\ x # Q ==> _’
-        (MP_TAC o Q.SPECL [‘a’, ‘x’, ‘P'’]) >> rw [] \\
-      Q.EXISTS_TAC ‘Q'’ >> rw [],
-      (* goal 13 (of 14) *)
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
-        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
-      Q.PAT_X_ASSUM ‘!a b P'.
+       (MP_TAC o Q.SPECL [‘a’, ‘b’, ‘P'’]) >> rw [] \\
+     Q.EXISTS_TAC ‘Q'’ >> rw [])
+ (* goal 7 (of 14) *)
+ >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
+       (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
+     Q.PAT_X_ASSUM ‘!b x P'. DTRANS D P (BoundOutput (Name b) x P') /\ _ ==> _’
+       (MP_TAC o Q.SPECL [‘b’, ‘x’, ‘P'’]) >> rw [] \\
+     Q.EXISTS_TAC ‘Q'’ >> rw [])
+ (* goal 8 (of 14) *)
+ >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
+       (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [])
+ (* goal 9 (of 14) *)
+ >- (DISJ2_TAC \\
+     Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
+       (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [])
+ (* goal 10 (of 14) *)
+ >- (DISJ2_TAC \\
+     Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
+       (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [])
+ (* goal 11 (of 14) *)
+ >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
+       (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
+     Q.PAT_X_ASSUM ‘!P'. DTRANS D P (TauR P') ==> _’
+       (MP_TAC o Q.SPEC ‘P'’) >> rw [] \\
+     Q.EXISTS_TAC ‘Q'’ >> rw [])
+ (* goal 12 (of 14) *)
+ >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
+       (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
+     Q.PAT_X_ASSUM ‘!a x P'.
+                       DTRANS D P (InputS (Name a) x P') /\ _ ==> _’
+       (MP_TAC o Q.SPECL [‘a’, ‘x’, ‘P'’]) >> rw [] \\
+     Q.EXISTS_TAC ‘Q'’ >> rw [])
+ (* goal 13 (of 14) *)
+ >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
+       (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
+     Q.PAT_X_ASSUM ‘!a b P'.
                        DTRANS D P (FreeOutput (Name a) (Name b) P') ==> _’
-        (MP_TAC o Q.SPECL [‘a’, ‘b’, ‘P'’]) >> rw [] \\
-      Q.EXISTS_TAC ‘Q'’ >> rw [],
-      (* goal 14 (of 14) *)
-      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
-        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
-      Q.PAT_X_ASSUM ‘!b x P'. DTRANS D P (BoundOutput (Name b) x P') ==> _’
-        (MP_TAC o Q.SPECL [‘b’, ‘x’, ‘P'’]) >> rw [] \\
-      Q.EXISTS_TAC ‘Q'’ >> rw [] ]
+       (MP_TAC o Q.SPECL [‘a’, ‘b’, ‘P'’]) >> rw [] \\
+     Q.EXISTS_TAC ‘Q'’ >> rw [])
+ (* goal 14 (of 14) *)
+ >> (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
+       (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
+     Q.PAT_X_ASSUM ‘!b x P'. DTRANS D P (BoundOutput (Name b) x P') /\ _ ==> _’
+       (MP_TAC o Q.SPECL [‘b’, ‘x’, ‘P'’]) >> rw [] \\
+     Q.EXISTS_TAC ‘Q'’ >> rw [])
 QED
 
 Theorem dist_simulation_imp_distinction :
@@ -526,6 +504,14 @@ Theorem dist_simulation_imp_distinction :
 Proof
     rw [dist_simulation_def]
  >> FIRST_X_ASSUM drule >> rw []
+QED
+
+Theorem dist_simulation_open_distinction :
+    !R P Q D D'. dist_simulation R /\ (P,Q,D) IN R /\ D SUBSET D' /\
+                 distinction D' ==> (P,Q,D') IN R
+Proof
+    rw [dist_simulation_def]
+ >> Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R ==> _’ drule >> rw []
 QED
 
 Definition dist_bisimulation_def :
@@ -581,63 +567,9 @@ Proof
      MATCH_MP_TAC dist_simulation_union >> art [])
  >> rw [Once EXTENSION, Abbr ‘R2’, Abbr ‘R'’]
  >> EQ_TAC >> rw []
- >> Cases_on ‘x’
- >> Cases_on ‘r’
+ >> PairCases_on ‘x’ (* this asserts (x0,x1,x2) *)
  >> rename1 ‘(P',Q',D') IN R’
  >> qexistsl_tac [‘P'’, ‘Q'’, ‘D'’] >> simp []
-QED
-
-Theorem dist_bisimilar_transitive :
-    !P1 P2 P3 D. dist_bisimilar P1 P2 D /\ dist_bisimilar P2 P3 D ==>
-                 dist_bisimilar P1 P3 D
-Proof
-    rw [dist_bisimilar_def]
- >> qabbrev_tac ‘r1 = \x y. ?d. (x,y,d) IN R’
- >> qabbrev_tac ‘r2 = \y z. ?d. (y,z,d) IN R'’
- >> qabbrev_tac ‘r = r2 O r1’
- >> Q.EXISTS_TAC ‘{e | ?x z d. r x z /\ distinction d /\ e = (x,z,d)}’
- >> simp [Abbr ‘r’, relationTheory.O_DEF, Abbr ‘r1’, Abbr ‘r2’]
- >> ‘distinction D’ by PROVE_TAC [dist_simulation_imp_distinction]
- >> simp []
- >> reverse CONJ_TAC
- >- (Q.EXISTS_TAC ‘P2’ >> CONJ_TAC >| (* 2 subgoals *)
-     [ (* goal 1 (of 2) *)
-       Q.EXISTS_TAC ‘D’ >> art [],
-       (* goal 2 (of 2) *)
-       Q.EXISTS_TAC ‘D’ >> art [] ])
- >> rw [dist_simulation_def, distinction_dpm] (* 5+5 subgoals *)
- >| [ (* goal 1 (of 10) *)
-      Q.EXISTS_TAC ‘tpm pi y’ >> CONJ_TAC >| (* 2 subgoals *)
-      [ (* goal 1.1 (of 2) *)
-        Q.EXISTS_TAC ‘dpm pi d’ \\
-        Q.PAT_X_ASSUM ‘dist_simulation R’
-          (MP_TAC o REWRITE_RULE [dist_simulation_def]) \\
-        DISCH_THEN (STRIP_ASSUME_TAC o Q.SPECL [‘P’, ‘y’, ‘d’]) \\
-        simp [distinction_dpm],
-        (* goal 1.2 (of 2) *)
-        Q.EXISTS_TAC ‘dpm pi d'’ \\
-        Q.PAT_X_ASSUM ‘dist_simulation R'’
-          (MP_TAC o REWRITE_RULE [dist_simulation_def]) \\
-        DISCH_THEN (STRIP_ASSUME_TAC o Q.SPECL [‘y’, ‘Q’, ‘d'’]) \\
-        simp [distinction_dpm] ],
-      (* goal 2 (of 10) *)
-      cheat,
-      (* goal 3 (of 10) *)
-      cheat,
-      (* goal 4 (of 10) *)
-      cheat,
-      (* goal 5 (of 10) *)
-      cheat,
-      (* goal 6 (of 10) *)
-      cheat,
-      (* goal 7 (of 10) *)
-      cheat,
-      (* goal 8 (of 10) *)
-      cheat,
-      (* goal 9 (of 10) *)
-      cheat,
-      (* goal 10 (of 10) *)
-      cheat ]
 QED
 
 val _ = export_theory ();

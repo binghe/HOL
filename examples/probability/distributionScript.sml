@@ -17,7 +17,7 @@ open combinTheory arithmeticTheory numLib logrootTheory hurdUtils pred_setLib
      pred_setTheory topologyTheory pairTheory tautLib jrhUtils cardinalTheory;
 
 open realTheory realLib seqTheory transcTheory real_sigmaTheory iterateTheory
-     real_topologyTheory derivativeTheory;
+     real_topologyTheory derivativeTheory metricTheory netsTheory;
 
 open sigma_algebraTheory extreal_baseTheory extrealTheory real_borelTheory
      measureTheory borelTheory lebesgueTheory martingaleTheory probabilityTheory;
@@ -56,7 +56,7 @@ Theorem right_continuous_def =
  *)
 Theorem distribution_function_monotone :
     !p X f. prob_space p /\ random_variable X p Borel /\
-            f = distribution_function p X ==> (!x y. x <= y ==> f x <= f y)
+            f = distribution_function p X ==> !x y. x <= y ==> f x <= f y
 Proof
     rw [distribution_function_def]
  >> MATCH_MP_TAC PROB_INCREASING >> art []
@@ -69,7 +69,19 @@ Proof
  >> Q_TAC (TRANS_TAC le_trans) ‘x’ >> art []
 QED
 
-(* NOTE: This tactic is shared by existence_of_random_variable and the next
+Theorem distribution_function_monotone' :
+    !p X f. prob_space p /\ random_variable X p borel /\
+            f = distribution_function p (Normal o X) ==> !x y. x <= y ==> f x <= f y
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> MATCH_MP_TAC distribution_function_monotone
+ >> qexistsl_tac [‘p’, ‘Normal o X’] >> art []
+ >> fs [random_variable_def]
+ >> MATCH_MP_TAC IN_MEASURABLE_BOREL_IMP_BOREL' >> art []
+ >> MATCH_MP_TAC EVENTS_SIGMA_ALGEBRA >> art []
+QED
+
+(* NOTE: This tactic is shared by distribution_function_right_continuous and
    existence_of_random_variable.
  *)
 val distribution_function_right_continuous_tac =
@@ -3087,58 +3099,6 @@ Theorem normal_rv_and_ext_normal_rv :
 Proof
     rw [ext_normal_rv_def, o_DEF, real_normal, ETA_AX]
 QED
-
-Theorem integral_of_normal_rv :
-    !p X mu sig. prob_space p /\ normal_rv X p mu sig ==>
-                 integrable p (Normal o X) /\
-                 integral p (Normal o X) = Normal mu
-Proof
-    rpt GEN_TAC
- >> simp [normal_rv_def, distribution_distr, random_variable_def,
-          p_space_def, events_def, prob_def, prob_space_def]
- >> STRIP_TAC
- >> qabbrev_tac ‘Y = Normal o X’
- >> ‘Y IN Borel_measurable (measurable_space p)’
-       by METIS_TAC [IN_MEASURABLE_BOREL_IMP_BOREL]
- >> MP_TAC (Q.SPECL [‘p’, ‘Borel’, ‘Y’, ‘I’]
-                    (INST_TYPE [beta |-> “:extreal”] integral_distr))
- >> simp [SIGMA_ALGEBRA_BOREL, MEASURABLE_I]
- >> STRIP_TAC
- >> NTAC 2 (POP_ASSUM (REWRITE_TAC o wrap o SYM))
- >> qabbrev_tac ‘M = (space Borel,subsets Borel,distr p Y)’
- >> Know ‘!s. s IN subsets Borel ==>
-              distr p Y s = normal_pmeasure mu sig (real_set s)’
- >- (
-     cheat)
- >> DISCH_TAC
- (*
- >> integral_cong_measure
- integrable_cong_measure
-  pos_fn_integral_density_reduce
-  *)
- >> cheat
-QED
-
-Theorem integral_of_ext_normal_rv :
-    !p X mu sig. prob_space p /\ ext_normal_rv X p mu sig ==>
-                 integrable p X /\ integral p X = Normal mu
-Proof
-    cheat
-QED
-
-(* |- !p X mu sig.
-        prob_space p /\ normal_rv X p mu sig ==>
-        integrable p (Normal o X) /\ integral p (Normal o X) = Normal mu
- *)
-Theorem expectation_of_normal_rv =
-        REWRITE_RULE [expectation_def] integral_of_normal_rv
-
-(* |- !p X mu sig.
-        prob_space p /\ ext_normal_rv X p mu sig ==>
-        integrable p X /\ integral p X = Normal mu
- *)
-Theorem expectation_of_ext_normal_rv =
-        REWRITE_RULE [expectation_def] integral_of_ext_normal_rv
 
 val _ = export_theory ();
 val _ = html_theory "distribution";

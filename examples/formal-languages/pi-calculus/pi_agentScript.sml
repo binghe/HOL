@@ -670,7 +670,6 @@ val supp_tpm = prove(
  >> srw_tac [][supp_tpm_support, supp_tpm_apart, FINITE_GFV]);
 
 val _ = overload_on ("FV", “supp ^t_pmact_t”);
-
 val _ = overload_on ("#", “\v (P :pi). v NOTIN FV P”);
 
 Theorem FINITE_FV[simp] :
@@ -882,6 +881,46 @@ Theorem Input_tpm_ALPHA :
     v # (u :pi) ==> Input a x u = Input a v (tpm [(v,x)] u)
 Proof
     SRW_TAC [boolSimps.CONJ_ss][Input_eq_thm, pmact_flip_args]
+QED
+
+(* |- !a b x y t1 t2.
+        InputS a x t1 = InputS b y t2 <=>
+        x = y /\ t1 = t2 /\ a = b \/
+        x <> y /\ x # t2 /\ t1 = tpm [(x,y)] t2 /\ a = b
+ *)
+Theorem InputS_eq_thm =
+  “InputS a x t1 = InputS b y (t2 :pi)”
+     |> SIMP_CONV (srw_ss()) [InputS_def, InputS_termP, term_ABS_pseudo11_2,
+                              GLAM_eq_thm,
+                              term_REP_11_0, term_REP_11_1, term_REP_11_2,
+                              GSYM term_REP_tpm, GSYM term_REP_rpm,
+                              GSYM supp_tpm, GSYM supp_rpm]
+     |> Q.GENL [‘a’, ‘b’, ‘x’, ‘y’, ‘t1’, ‘t2’]
+
+Theorem InputS_tpm_ALPHA :
+    v # (u :pi) ==> InputS a x u = InputS a v (tpm [(v,x)] u)
+Proof
+    SRW_TAC [boolSimps.CONJ_ss][InputS_eq_thm, pmact_flip_args]
+QED
+
+(* |- !a b x y t1 t2.
+        BoundOutput a x t1 = BoundOutput b y t2 <=>
+        x = y /\ t1 = t2 /\ a = b \/
+        x <> y /\ x # t2 /\ t1 = tpm [(x,y)] t2 /\ a = b
+ *)
+Theorem BoundOutput_eq_thm =
+  “BoundOutput a x t1 = BoundOutput b y (t2 :pi)”
+     |> SIMP_CONV (srw_ss()) [BoundOutput_def, BoundOutput_termP, term_ABS_pseudo11_2,
+                              GLAM_eq_thm,
+                              term_REP_11_0, term_REP_11_1, term_REP_11_2,
+                              GSYM term_REP_tpm, GSYM term_REP_rpm,
+                              GSYM supp_tpm, GSYM supp_rpm]
+     |> Q.GENL [‘a’, ‘b’, ‘x’, ‘y’, ‘t1’, ‘t2’]
+
+Theorem BoundOutput_tpm_ALPHA :
+    v # (u :pi) ==> BoundOutput a x u = BoundOutput a v (tpm [(v,x)] u)
+Proof
+    SRW_TAC [boolSimps.CONJ_ss][BoundOutput_eq_thm, pmact_flip_args]
 QED
 
 (* ----------------------------------------------------------------------
