@@ -782,7 +782,7 @@ end
 val LIST_REL_CONS1 = listTheory.LIST_REL_CONS1;
 val LIST_REL_NIL = listTheory.LIST_REL_NIL;
 
-val term_ind =
+val term_ind1 =
     bvc_genind
         |> INST_TYPE [alpha |-> rep_t, beta |-> unit_t]
         |> Q.INST [‘vp’ |-> ‘^vp’, ‘lp’ |-> ‘^lp’]
@@ -814,7 +814,7 @@ fun mkX_ind th = th |> Q.SPECL [‘\t x. Q t’, ‘\x. X’]
                     |> Q.INST [‘Q’ |-> ‘P’] |> Q.GEN ‘P’;
 
 (* NOTE: not recommended unless in generated theorems *)
-Theorem nc_INDUCTION[local] = mkX_ind term_ind
+Theorem nc_INDUCTION[local] = mkX_ind term_ind1
 
 (* The recommended induction theorem containing correctly namedbinding variables. *)
 Theorem nc_INDUCTION2 :
@@ -847,6 +847,97 @@ Theorem simple_induction =
     nc_INDUCTION2 |> Q.SPECL [‘P’, ‘{}’]
                   |> REWRITE_RULE [FINITE_EMPTY, NOT_IN_EMPTY]
                   |> Q.GEN ‘P’
+
+val term_ind0 =
+    bvc_genind
+        |> INST_TYPE [alpha |-> rep_t, beta |-> unit_t]
+        |> Q.INST [‘vp’ |-> ‘^vp’, ‘lp’ |-> ‘^lp’]
+        |> SIMP_RULE std_ss [LIST_REL_CONS1, RIGHT_AND_OVER_OR,
+                             LEFT_AND_OVER_OR, DISJ_IMP_THM, LIST_REL_NIL]
+        |> Q.SPECL [‘\n t0 x. n = 0 ==> Q t0 x’, ‘fv’]
+        |> UNDISCH |> Q.SPEC ‘0’ |> DISCH_ALL
+        |> SIMP_RULE (std_ss ++ DNF_ss)
+                     [sumTheory.FORALL_SUM, supp_listpm,
+                      IN_UNION, NOT_IN_EMPTY, oneTheory.FORALL_ONE,
+                      genind_exists0,
+                      genind_exists1,
+                      genind_exists2,
+                      LIST_REL_CONS1, LIST_REL_NIL]
+        |> Q.INST [‘Q’ |-> ‘\t. P (^term_ABS_t0 t)’]
+        |> SIMP_RULE std_ss [absrep_id0, GSYM Name_def]
+        |> SIMP_RULE (srw_ss()) [GSYM supp_npm]
+        |> elim_unnecessary_atoms {finite_fv = FINITE_FV_name}
+                                  [ASSUME “!x:'c. FINITE (fv x:string set)”]
+        |> SPEC_ALL |> UNDISCH
+        |> genit |> DISCH_ALL |> Q.GENL [‘P’, ‘fv’];
+
+Theorem name_INDUCTION[local] = mkX_ind term_ind0
+
+Theorem name_INDUCTION2 :
+    !P X. (!s. P (Name s)) ==> !E. P E
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC name_INDUCTION
+ >> Q.EXISTS_TAC ‘{}’ >> rw []
+QED
+
+val term_ind2 =
+    bvc_genind
+        |> INST_TYPE [alpha |-> rep_t, beta |-> unit_t]
+        |> Q.INST [‘vp’ |-> ‘^vp’, ‘lp’ |-> ‘^lp’]
+        |> SIMP_RULE std_ss [LIST_REL_CONS1, RIGHT_AND_OVER_OR,
+                             LEFT_AND_OVER_OR, DISJ_IMP_THM, LIST_REL_NIL]
+        |> Q.SPECL [‘\n t0 x. n = 2 ==> Q t0 x’, ‘fv’]
+        |> UNDISCH |> Q.SPEC ‘2’ |> DISCH_ALL
+        |> SIMP_RULE (std_ss ++ DNF_ss)
+                     [sumTheory.FORALL_SUM, supp_listpm,
+                      IN_UNION, NOT_IN_EMPTY, oneTheory.FORALL_ONE,
+                      genind_exists0,
+                      genind_exists1,
+                      genind_exists2,
+                      LIST_REL_CONS1, LIST_REL_NIL]
+        |> Q.INST [‘Q’ |-> ‘\t. P (^term_ABS_t2 t)’]
+        |> SIMP_RULE std_ss [absrep_id1, absrep_id2,
+                             GSYM Name_def,
+                             Nil_def', Tau_def', GSYM Input_def,
+                             Output_def', Match_def', Mismatch_def',
+                             Sum_def', Par_def', GSYM Res_def,
+                             GSYM BoundOutput_def,
+                             GSYM InputS_def,
+                             TauR_def', FreeOutput_def']
+        |> SIMP_RULE (srw_ss()) [GSYM supp_tpm, GSYM supp_npm, GSYM supp_rpm]
+        |> elim_unnecessary_atoms {finite_fv = FINITE_FV_residual}
+                                  [ASSUME “!x:'c. FINITE (fv x:string set)”]
+        |> SPEC_ALL |> UNDISCH
+        |> genit |> DISCH_ALL |> Q.GENL [‘P’, ‘fv’];
+
+Theorem residual_INDUCTION[local] = mkX_ind term_ind2
+
+Theorem residual_INDUCTION2 :
+    !P X.
+        (!E. P (TauR E)) /\
+        (!a x E. x NOTIN X /\ x # a ==> P (BoundOutput a x E)) /\
+        (!a x E. x NOTIN X /\ x # a ==> P (InputS a x E)) /\
+        (!a b E. P (FreeOutput a b E)) /\ FINITE X ==> !E. P E
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC residual_INDUCTION
+ >> Q.EXISTS_TAC ‘X’ >> rw []
+QED
+
+(* |- !P. (!E. P (TauR E)) /\ (!a x E. x # a ==> P (BoundOutput a x E)) /\
+          (!a x E. x # a ==> P (InputS a x E)) /\
+          (!a b E. P (FreeOutput a b E)) ==>
+          !E. P E
+ *)
+Theorem simple_induction_residual =
+    residual_INDUCTION2 |> Q.SPECL [‘P’, ‘{}’]
+                        |> REWRITE_RULE [FINITE_EMPTY, NOT_IN_EMPTY]
+                        |> Q.GEN ‘P’
+
+(* ----------------------------------------------------------------------
+    Alpha conversions of constructors involving bound names
+   ---------------------------------------------------------------------- *)
 
 (* |- !u v t1 t2.
         Res u t1 = Res v t2 <=>
@@ -921,6 +1012,199 @@ Theorem BoundOutput_tpm_ALPHA :
     v # (u :pi) ==> BoundOutput a x u = BoundOutput a v (tpm [(v,x)] u)
 Proof
     SRW_TAC [boolSimps.CONJ_ss][BoundOutput_eq_thm, pmact_flip_args]
+QED
+
+(* ----------------------------------------------------------------------
+    cases, distinct and one-one theorems
+   ---------------------------------------------------------------------- *)
+
+Theorem name_cases :
+    !t. (?x. t = Name x)
+Proof
+    HO_MATCH_MP_TAC name_INDUCTION2
+ >> SRW_TAC [][]
+ >> METIS_TAC []
+QED
+
+Theorem pi_cases :
+    !t. (t = Nil) \/ (?P. t = Tau P) \/
+        (?a x P. t = Input a x P) \/ (?a b P. t = Output a b P) \/
+        (?a b P. t = Match a b P) \/ (?a b P. t = Mismatch a b P) \/
+        (?P Q. t = Sum P Q) \/ (?P Q. t = Par P Q) \/
+         ?v P. t = Res v P
+Proof
+    HO_MATCH_MP_TAC simple_induction
+ >> SRW_TAC [][] (* 216 subgoals here *)
+ >> METIS_TAC []
+QED
+
+Theorem residual_cases :
+    !t. (?P. t = TauR P) \/
+        (?a x P. t = BoundOutput a x P) \/
+        (?a b P. t = FreeOutput a b P) \/
+        (?a x P. t = InputS a x P)
+Proof
+    HO_MATCH_MP_TAC simple_induction_residual
+ >> SRW_TAC [][] (* 4 subgoals here *)
+ >> METIS_TAC []
+QED
+
+Theorem pi_distinct :
+    (Nil <> Tau P) /\
+    (Nil <> Input a x P) /\
+    (Nil <> Output a b P) /\
+    (Nil <> Match a b P) /\
+    (Nil <> Mismatch a b P) /\
+    (Nil <> Sum P Q) /\
+    (Nil <> Par P Q) /\
+    (Nil <> Res v P) /\
+    (Tau P <> Input a x Q) /\
+    (Tau P <> Output a b Q) /\
+    (Tau P <> Match a b Q) /\
+    (Tau P <> Mismatch a b Q) /\
+    (Tau P <> Sum P1 P2) /\
+    (Tau P <> Par P1 P2) /\
+    (Tau P <> Res v Q) /\
+    (Input a x P <> Output b y Q) /\
+    (Input a x P <> Match b c Q) /\
+    (Input a x P <> Mismatch b c Q) /\
+    (Input a x P <> Sum P1 P2) /\
+    (Input a x P <> Par P1 P2) /\
+    (Input a x P <> Res v Q) /\
+    (Output a b P <> Match c d Q) /\
+    (Output a b P <> Mismatch c d Q) /\
+    (Output a b P <> Sum P1 P2) /\
+    (Output a b P <> Par P1 P2) /\
+    (Output a b P <> Res v Q) /\
+    (Match a b P <> Mismatch c d Q) /\
+    (Match a b P <> Sum P1 P2) /\
+    (Match a b P <> Par P1 P2) /\
+    (Match a b P <> Res v Q) /\
+    (Mismatch a b P <> Sum P1 P2) /\
+    (Mismatch a b P <> Par P1 P2) /\
+    (Mismatch a b P <> Res v Q) /\
+    (Sum P1 P2 <> Par P3 P4) /\
+    (Sum P1 P2 <> Res v Q) /\
+    (Par P1 P2 <> Res v Q)
+Proof
+    rw [Nil_def, Nil_termP, Tau_def, Tau_termP,
+        Input_def, Input_termP, Output_def, Output_termP,
+        Match_def, Match_termP, Mismatch_def, Mismatch_termP,
+        Sum_def, Sum_termP, Par_def, Par_termP,
+        Res_def, Res_termP,
+        term_ABS_pseudo11_1, gterm_distinct, GLAM_eq_thm]
+QED
+
+local
+    val thm = CONJUNCTS pi_distinct;
+    val pi_distinct_LIST = thm @ (map GSYM thm);
+in
+    val pi_distinct' = save_thm
+      ("pi_distinct'[simp]", LIST_CONJ pi_distinct_LIST);
+end
+
+Theorem residual_distinct :
+    (TauR P <> BoundOutput a x Q) /\
+    (TauR P <> InputS a x Q) /\
+    (TauR P <> FreeOutput a b Q) /\
+    (BoundOutput a x P <> InputS b y Q) /\
+    (BoundOutput a x P <> FreeOutput b c Q) /\
+    (InputS a x P <> FreeOutput b c Q)
+Proof
+    rw [TauR_def, TauR_termP, BoundOutput_def, BoundOutput_termP,
+        InputS_def, InputS_termP, FreeOutput_def, FreeOutput_termP,
+        term_ABS_pseudo11_2, gterm_distinct, GLAM_eq_thm]
+QED
+
+local
+    val thm = CONJUNCTS residual_distinct;
+    val residual_distinct_LIST = thm @ (map GSYM thm);
+in
+    val residual_distinct' = save_thm
+      ("residual_distinct'[simp]", LIST_CONJ residual_distinct_LIST);
+end
+
+Theorem name_one_one[simp] :
+    Name x = Name y <=> x = y
+Proof
+    srw_tac [] [Name_def, Name_termP,
+                term_ABS_pseudo11_0, gterm_11, term_REP_11_0]
+QED
+
+Theorem pi_one_one[simp] :
+    (!P Q. Tau P = Tau Q <=> P = Q) /\
+    (!a b P c d Q. Output a b P = Output c d Q <=> a = c /\ b = d /\ P = Q) /\
+    (!a b P c d Q. Match a b P = Match c d Q <=> a = c /\ b = d /\ P = Q) /\
+    (!a b P c d Q. Mismatch a b P = Mismatch c d Q <=> a = c /\ b = d /\ P = Q) /\
+    (!P1 P2 Q1 Q2. Sum P1 P2 = Sum Q1 Q2 <=> P1 = Q1 /\ P2 = Q2) /\
+    (!P1 P2 Q1 Q2. Par P1 P2 = Par Q1 Q2 <=> P1 = Q1 /\ P2 = Q2)
+Proof
+    srw_tac [] [Tau_def, Tau_termP, Output_def, Output_termP,
+                Match_def, Match_termP, Mismatch_def, Mismatch_termP,
+                Sum_def, Sum_termP, Par_def, Par_termP,
+                term_ABS_pseudo11_1, gterm_11, term_REP_11_0, term_REP_11_1]
+ >> rw [Once CONJ_COMM]
+QED
+
+Theorem residual_one_one[simp] :
+    (!P Q. TauR P = TauR Q <=> P = Q) /\
+    (!a b P c d Q. FreeOutput a b P = FreeOutput c d Q <=> a = c /\ b = d /\ P = Q)
+Proof
+    srw_tac [] [TauR_def, TauR_termP, FreeOutput_def, FreeOutput_termP,
+                term_ABS_pseudo11_2, gterm_11,
+                term_REP_11_0, term_REP_11_1, term_REP_11_2]
+QED
+
+Theorem pi_distinct_exists :
+    !(p :pi). ?q. q <> p
+Proof
+    Q.X_GEN_TAC ‘p’
+ >> MP_TAC (Q.SPEC ‘p’ pi_cases) >> rw []
+ >- (Q.EXISTS_TAC ‘Tau P’ >> rw [])
+ >> Q.EXISTS_TAC ‘Nil’
+ >> rw [pi_distinct]
+QED
+
+Theorem pi_distinct_exists_FV :
+    !X (p :pi). FINITE X ==> ?q. q <> p /\ DISJOINT (FV q) X
+Proof
+    rpt STRIP_TAC
+ >> Q_TAC (NEW_TAC "z") ‘X’
+ >> MP_TAC (Q.SPEC ‘p’ pi_cases) >> rw []
+ >- (Q.EXISTS_TAC ‘Tau Nil’ >> rw [])
+ >> Q.EXISTS_TAC ‘Nil’
+ >> rw [pi_distinct]
+QED
+
+val _ = overload_on ("+", ``Sum``); (* priority: 500 *)
+val _ = TeX_notation { hol = "+", TeX = ("\\ensuremath{+}", 1) };
+val _ = set_mapped_fixity {fixity = Infixl 600,
+                           tok = "||", term_name = "Par"};
+val _ = TeX_notation { hol = "||", TeX = ("\\ensuremath{\\mid}", 1) };
+
+Theorem Sum_acyclic :
+    !t1 t2 :pi. t1 <> t1 + t2 /\ t1 <> t2 + t1
+Proof
+    HO_MATCH_MP_TAC simple_induction >> SRW_TAC [][]
+QED
+
+Theorem Par_acyclic :
+    !t1 t2 :pi. t1 <> t1 || t2 /\ t1 <> t2 || t1
+Proof
+    HO_MATCH_MP_TAC simple_induction >> SRW_TAC [][]
+QED
+
+Theorem FORALL_TERM :
+    (!(t :pi). P t) <=> P Nil /\
+    (!E. P (Tau E)) /\ (!a x E. P (Input a x E)) /\
+    (!a b E. P (Output a b E)) /\
+    (!a b E. P (Match a b E)) /\
+    (!a b E. P (Mismatch a b E)) /\
+    (!t1 t2. P (t1 + t2)) /\ (!t1 t2. P (t1 || t2)) /\
+    (!v E. P (Res v E))
+Proof
+    EQ_TAC >> SRW_TAC [][]
+ >> Q.SPEC_THEN ‘t’ STRUCT_CASES_TAC pi_cases >> SRW_TAC [][]
 QED
 
 (* ----------------------------------------------------------------------
@@ -1152,5 +1436,6 @@ Theorem tm_recursion =
                  ‘rlu’ |-> ‘rl’,
                  ‘reu’ |-> ‘re’]
 *)
+
 val _ = export_theory ();
 val _ = html_theory "pi_agent";
