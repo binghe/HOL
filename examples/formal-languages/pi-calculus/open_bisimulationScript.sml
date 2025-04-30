@@ -538,6 +538,16 @@ Proof
  >> FIRST_X_ASSUM drule >> rw []
 QED
 
+Theorem dist_bisimilar_open_distinction :
+    !P Q D D'. dist_bisimilar P Q D /\ D SUBSET D' /\ distinction D' ==>
+               dist_bisimilar P Q D'
+Proof
+    rw [dist_bisimilar_def]
+ >> Q.EXISTS_TAC ‘R’ >> art []
+ >> MATCH_MP_TAC dist_simulation_open_distinction
+ >> Q.EXISTS_TAC ‘D’ >> art []
+QED
+
 Theorem dist_bisimilar_reflexive :
     !P D. distinction D ==> dist_bisimilar P P D
 Proof
@@ -614,7 +624,8 @@ Theorem dist_bisimilar_transitive :
 Proof
     rw [dist_bisimilar_def]
  >> ‘distinction D’ by PROVE_TAC [dist_simulation_imp_distinction]
- >> Q.EXISTS_TAC ‘{e | ?x y z d. e = (x,z,d) /\ (x,y,d) IN R /\ (y,z,d) IN R'}’
+ >> Q.EXISTS_TAC
+     ‘{e | ?x y z d. e = (x,z,d) /\ (x,y,d) IN R /\ (y,z,d) IN R'}’
  >> simp []
  >> reverse CONJ_TAC >- (Q.EXISTS_TAC ‘P2’ >> art [])
  >> rw [dist_simulation_def, distinction_dpm] (* 7+7 subgoals *)
@@ -842,6 +853,23 @@ Proof
      Q.EXISTS_TAC ‘y'’ >> art [])
  (* goal 14 (of 14): symmetric with goal 7 *)
  >> cheat
+QED
+
+Theorem dist_bisimilar_transitive' :
+    !P1 P2 P3 D1 D2 D3.
+        dist_bisimilar P1 P2 D1 /\ dist_bisimilar P2 P3 D2 /\
+        D1 UNION D2 SUBSET D3 /\ distinction D3 ==> dist_bisimilar P1 P3 D3
+Proof
+    rw [UNION_SUBSET]
+ >> MATCH_MP_TAC dist_bisimilar_transitive
+ >> Q.EXISTS_TAC ‘P2’
+ >> CONJ_TAC (* 2 subgoals *)
+ >| [ (* goal 1 (of 2) *)
+      MATCH_MP_TAC dist_bisimilar_open_distinction \\
+      Q.EXISTS_TAC ‘D1’ >> art [],
+      (* goal 2 (of 2) *)
+      MATCH_MP_TAC dist_bisimilar_open_distinction \\
+      Q.EXISTS_TAC ‘D2’ >> art [] ]
 QED
 
 val _ = export_theory ();
