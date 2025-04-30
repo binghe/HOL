@@ -1,6 +1,6 @@
 (* ========================================================================== *)
 (* FILE          : open_bisimulationScript.sml                                *)
-(* DESCRIPTION   : Open bisimulation for the pi-calculus with mismatch        *)
+(* DESCRIPTION   : Open Bisimulation for the pi-Calculus with Mismatch [1]    *)
 (*                                                                            *)
 (* Copyright 2025  The Australian National University (Author: Chun Tian)     *)
 (* ========================================================================== *)
@@ -9,12 +9,14 @@ open HolKernel Parse boolLib bossLib;
 
 open pairTheory pred_setTheory set_relationTheory hurdUtils;
 
-open nomsetTheory NEWLib pi_agentTheory;
+open basic_swapTheory nomsetTheory NEWLib pi_agentTheory;
 
 val _ = new_theory "open_bisimulation";
 
 (* some proofs here are large with too many assumptions *)
 val _ = set_trace "Goalstack.print_goal_at_top" 0;
+
+val T_TAC = rpt (Q.PAT_X_ASSUM ‘T’ K_TAC);
 
 (* ----------------------------------------------------------------------
    Pi-calculus as a nominal datatype in HOL4
@@ -276,11 +278,13 @@ Inductive DTRANS :
 
 [DPAR1_I]
     !D P P' Q a x.
-       DTRANS D P (InputS (Name a) x P') /\ x # P /\ x # Q /\ x <> a ==>
+       DTRANS D P (InputS (Name a) x P') /\
+       x # P /\ x # Q /\ x <> a ==>
        DTRANS D (Par P Q) (InputS (Name a) x (Par P' Q))
 [DPAR1_BO]
     !D P P' Q a x.
-       DTRANS D P (BoundOutput (Name a) x P') /\ x # P /\ x # Q /\ x <> a ==>
+       DTRANS D P (BoundOutput (Name a) x P') /\
+       x # P /\ x # Q /\ x <> a ==>
        DTRANS D (Par P Q) (BoundOutput (Name a) x (Par P' Q))
 [DPAR1_FO]
     !D P P' Q a b.
@@ -291,11 +295,13 @@ Inductive DTRANS :
 
 [DPAR2_I]
     !D P Q Q' a x.
-       DTRANS D Q (InputS (Name a) x Q') /\ x # Q /\ x # P /\ x <> a ==>
+       DTRANS D Q (InputS (Name a) x Q') /\
+       x # P /\ x # Q /\ x <> a ==>
        DTRANS D (Par P Q) (InputS (Name a) x (Par P Q'))
 [DPAR2_BO]
     !D P Q Q' a x.
-       DTRANS D Q (BoundOutput (Name a) x Q') /\ x # Q /\ x # P /\ x <> a ==>
+       DTRANS D Q (BoundOutput (Name a) x Q') /\
+       x # P /\ x # Q /\ x <> a ==>
        DTRANS D (Par P Q) (BoundOutput (Name a) x (Par P Q'))
 [DPAR2_FO]
     !D P Q Q' a b.
@@ -310,23 +316,26 @@ Inductive DTRANS :
        DTRANS D Q (FreeOutput (Name a) (Name b) Q') /\
        x # P /\ x # Q /\ x <> a /\ x <> b /\ x # Q' ==>
        DTRANS D (Par P Q) (TauR (Par (tpm [(x,b)] P') Q'))
+
 [DCOMM2] (* TODO: tpm should change to SUB *)
     !D P P' Q Q' a b x.
        DTRANS D P (FreeOutput (Name a) (Name b) P') /\
        DTRANS D Q (InputS (Name a) x Q') /\
-       x # Q /\ x # P /\ x <> a /\ x <> b /\ x # P' ==>
+       x # P /\ x # Q /\ x <> a /\ x <> b /\ x # P' ==>
        DTRANS D (Par P Q) (TauR (Par P' (tpm [(x,b)] Q')))
+
 [DCLOSE1] (* TODO: tpm should change to SUB *)
     !D P P' Q Q' a x y.
-       DTRANS D P (InputS (Name a) x P') /\
+       DTRANS D P (InputS      (Name a) x P') /\
        DTRANS D Q (BoundOutput (Name a) y Q') /\
        x # P /\ x # Q /\ y # P /\ y # Q /\
        x <> a /\ x # Q' /\ y <> a /\ y # P' /\ x <> y ==>
        DTRANS D (Par P Q) (TauR (Res y (Par (tpm [(x,y)] P') Q')))
+
 [DCLOSE2] (* TODO: tpm should change to SUB *)
     !D P P' Q Q' a x y.
        DTRANS D P (BoundOutput (Name a) y P') /\
-       DTRANS D Q (InputS (Name a) x Q') /\
+       DTRANS D Q (InputS      (Name a) x Q') /\
        x # P /\ x # Q /\ y # P /\ y # Q /\
        x <> a /\ x # P' /\ y <> a /\ y # Q' /\ x <> y ==>
        DTRANS D (Par P Q) (TauR (Res y (Par P' (tpm [(x,y)] Q'))))
@@ -340,6 +349,7 @@ Inductive DTRANS :
        DTRANS D' P (InputS (Name a) x P') /\
        y <> a /\ y <> x /\ x # P /\ x <> a ==>
        DTRANS D (Res y P) (InputS (Name a) x (Res y P'))
+
 [DRES_BO]
     !D D' P P' a x y.
     (* begin extra antecedents *)
@@ -349,6 +359,7 @@ Inductive DTRANS :
        DTRANS D' P (BoundOutput (Name a) x P') /\
        y <> a /\ y <> x /\ x # P /\ x <> a ==>
        DTRANS D (Res y P) (BoundOutput (Name a) x (Res y P'))
+
 [DRES_FO]
     !D D' P P' a b y.
     (* begin extra antecedents *)
@@ -358,6 +369,7 @@ Inductive DTRANS :
        DTRANS D' P (FreeOutput (Name a) (Name b) P') /\
        y <> a /\ y <> b ==>
        DTRANS D (Res y P) (FreeOutput (Name a) (Name b) (Res y P'))
+
 [DRES_T]
     !D D' P P' y.
     (* begin extra antecedents *)
@@ -366,6 +378,10 @@ Inductive DTRANS :
     (* end extra antecedents *)
        DTRANS D' P (TauR P') ==> DTRANS D (Res y P) (TauR (Res y P'))
 End
+
+(* uncomment this if needed:
+val DTRANS_strongind = DB.fetch "-" "DTRANS_strongind";
+ *)
 
 (* NOTE: "simulation" is a property of 3-way relation R as tuples (P, Q, D), where
    P and Q are pi-agents, D is a distinction.
@@ -582,13 +598,32 @@ Proof
  >> qexistsl_tac [‘P'’, ‘Q'’, ‘D'’] >> simp []
 QED
 
-(* val DTRANS_strongind = DB.fetch "-" "DTRANS_strongind"; *)
-
 Theorem FV_InputS_lemma[local] :
     !D P Q. DTRANS D P Q ==>
             !P' a z x. Q = InputS (Name a) z P' /\ z <> x /\ x # P ==> x # P'
 Proof
-    HO_MATCH_MP_TAC DTRANS_ind >> rw []
+    HO_MATCH_MP_TAC DTRANS_ind >> rw [] (* 10 subgoals left *)
+ >- (gs [InputS_eq_thm] \\
+     rename1 ‘swapstr x z y # Q’ \\
+     Cases_on ‘x = y’ >> gs [])
+ >- gs [InputS_eq_thm]
+ >- gs [InputS_eq_thm]
+ >- gs [InputS_eq_thm]
+ >- gs [InputS_eq_thm]
+ >- gs [InputS_eq_thm]
+ (* 4 subgoals left *)
+ >- (gs [InputS_eq_thm] >- rw [] \\
+     rename1 ‘P' || Q = tpm [(x,z)] R’ \\
+     Know ‘R = tpm [(x,z)] (P' || Q)’
+     >- (qabbrev_tac ‘E = P' || Q’ >> rw []) >> Rewr' \\
+     Q.PAT_X_ASSUM ‘_ = tpm [(x,z)] R’ K_TAC \\
+     simp [] \\
+     rename1 ‘swapstr x z y # P' /\ _’ \\
+     Cases_on ‘x = y’ >> simp [] \\
+     Q.PAT_X_ASSUM ‘a = a'’ (fs o wrap o SYM) >> T_TAC \\
+     Q.PAT_X_ASSUM ‘x = y’  (fs o wrap o SYM) \\
+     cheat)
+ (* 3 subgoals left *)
  >> cheat
 QED
 
@@ -874,3 +909,9 @@ QED
 
 val _ = export_theory ();
 val _ = html_theory "open_bisimulation";
+
+(* References:
+
+   [1] Tiange Liu et al. Open Bisimulation for the pi-Calculus with Mismatch.
+       Unpublished manuscript (2025)
+ *)
