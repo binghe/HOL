@@ -10,8 +10,8 @@ open pairTheory combinTheory optionTheory prim_recTheory arithmeticTheory
 open realTheory realLib iterateTheory seqTheory transcTheory real_sigmaTheory
      real_topologyTheory realaxTheory extreal_baseTheory derivativeTheory;
 
-open extrealTheory sigma_algebraTheory measureTheory real_borelTheory borelTheory
-     lebesgueTheory martingaleTheory probabilityTheory;
+open extrealTheory sigma_algebraTheory measureTheory real_borelTheory
+     borelTheory lebesgueTheory martingaleTheory probabilityTheory;
 
 open distributionTheory stochastic_processTheory;
 
@@ -378,18 +378,6 @@ Proof
  >> simp []
 QED
 
-(********************************* DELETE ******************************)
-
-Theorem MEASURABLE_SPACE_PROD :
-  !M1 M2. measure_space M1 /\ measure_space M2 ==>
-          measurable_space (M1 CROSS M2) =
-          measurable_space M1 CROSS measurable_space M2
-Proof
-  cheat
-QED
-
-(***********************************************************************)
-
 (* ------------------------------------------------------------------------- *)
 (*  Add to probabilityTheory                                                 *)
 (* ------------------------------------------------------------------------- *)
@@ -495,12 +483,6 @@ Theorem m_space_ext_lborel[simp] :
 Proof
     rw [m_space_def, ext_lborel_def]
 QED
-
-(*independent_identical_distribution*)
-Definition iid_def :
-  iid p X E A J ⇔ identical_distribution p X E J ∧
-                  pairwise_indep_vars p X A J
-End
 
 Theorem real_random_variable_sum_cdiv :
     ∀p X s n. prob_space p ∧
@@ -663,8 +645,7 @@ Proof
 QED
 
 Theorem expectation_sub:
-  ∀p X Y.
-          prob_space p ∧
+  ∀p X Y. prob_space p ∧
           real_random_variable X p ∧
           integrable p X ∧
           real_random_variable Y p ∧
@@ -677,8 +658,7 @@ Proof
 QED
 
 Theorem expectation_sub':
-  ∀p X Y.
-          prob_space p ∧
+  ∀p X Y. prob_space p ∧
           random_variable X p borel ∧
           integrable p (Normal o X) ∧
           random_variable Y p borel ∧
@@ -5078,8 +5058,8 @@ Theorem central_limit_theorem :
       (∀i. real_random_variable (X i) p) ∧
       (∀n. indep_vars p X (λi. Borel) (count n)) ∧
       (∀i. expectation p (X i) = 0) ∧
-      (∀i. expectation p (λx. (abs (X i x))³) < +∞) ∧
-      (∀i. variance p (X i) < PosInf) ∧
+      (∀i. expectation p (λx. (abs (X i x))³) < +∞) ∧ (* TODO: finite_third_moments *)
+      (∀i. variance p (X i) < PosInf) ∧ (* TODO: use finite_second_moments *)
       (∀i. variance p (X i) ≠ 0) ∧
       (∀n. (sqrt (second_moments p X n)) ≠ 0) ∧
       ((\n. (third_moments p X n) / ((sqrt (second_moments p X n)) pow 3)) --> 0) sequentially ⇒

@@ -600,9 +600,10 @@ QED
 
 Theorem FV_InputS_lemma[local] :
     !D P Q. DTRANS D P Q ==>
-            !P' a z x. Q = InputS (Name a) z P' /\ z <> x /\ x # P ==> x # P'
+            !P' a z x. Q = InputS (Name a) z P' /\ z <> x /\ z # P /\
+                       x # P ==> x # P'
 Proof
-    HO_MATCH_MP_TAC DTRANS_ind >> rw [] (* 10 subgoals left *)
+    HO_MATCH_MP_TAC DTRANS_ind >> rw [] (* 12 subgoals left *)
  >- (gs [InputS_eq_thm] \\
      rename1 ‘swapstr x z y # Q’ \\
      Cases_on ‘x = y’ >> gs [])
@@ -611,24 +612,36 @@ Proof
  >- gs [InputS_eq_thm]
  >- gs [InputS_eq_thm]
  >- gs [InputS_eq_thm]
+ >- gs [InputS_eq_thm]
+ (* 5 subgoals left *)
+ >- (gs [InputS_eq_thm] >- rw [] \\
+     MP_TAC (Q.SPEC ‘P''’ pi_cases) >> rw [] >> fs [tpm_thm] \\
+     rename1 ‘y # A /\ y # B’ \\
+     CONJ_ASM1_TAC
+     >- (FIRST_X_ASSUM MATCH_MP_TAC \\
+         qexistsl_tac [‘a’, ‘z’] >> simp []) \\
+    ‘B = tpm [(x,z)] Q’ by rw [] >> POP_ORW \\
+     Q.PAT_X_ASSUM ‘_ = tpm [(x,z)] B’ K_TAC \\
+     simp [] \\
+     Cases_on ‘x = y’ >> rw [])
  (* 4 subgoals left *)
  >- (gs [InputS_eq_thm] >- rw [] \\
-     rename1 ‘P' || Q = tpm [(x,z)] R’ \\
-     Know ‘R = tpm [(x,z)] (P' || Q)’
-     >- (qabbrev_tac ‘E = P' || Q’ >> rw []) >> Rewr' \\
-     Q.PAT_X_ASSUM ‘_ = tpm [(x,z)] R’ K_TAC \\
+     MP_TAC (Q.SPEC ‘P''’ pi_cases) >> rw [] >> fs [tpm_thm] \\
+     rename1 ‘y # A /\ y # B’ \\
+     ONCE_REWRITE_TAC [CONJ_COMM] \\
+     CONJ_ASM1_TAC
+     >- (FIRST_X_ASSUM MATCH_MP_TAC \\
+         qexistsl_tac [‘a’, ‘z’] >> simp []) \\
+    ‘A = tpm [(x,z)] P’ by rw [] >> POP_ORW \\
+     Q.PAT_X_ASSUM ‘_ = tpm [(x,z)] A’ K_TAC \\
      simp [] \\
-     rename1 ‘swapstr x z y # P' /\ _’ \\
-     Cases_on ‘x = y’ >> simp [] \\
-     Q.PAT_X_ASSUM ‘a = a'’ (fs o wrap o SYM) >> T_TAC \\
-     Q.PAT_X_ASSUM ‘x = y’  (fs o wrap o SYM) \\
-     cheat)
+     Cases_on ‘x = y’ >> rw [])
  (* 3 subgoals left *)
  >> cheat
 QED
 
 Theorem FV_InputS :
-    !D P P' a z x. DTRANS D P (InputS (Name a) z P') /\ z <> x /\
+    !D P P' a z x. DTRANS D P (InputS (Name a) z P') /\ z <> x /\ z # P /\
                    x # P ==> x # P'
 Proof
     rpt GEN_TAC >> STRIP_TAC
