@@ -38,7 +38,7 @@ values {Type} and {Term} use the grammar present in the simpler theory
 of booleans.  Using this function fails to parse numerals or even the
 {+} infix:
 {
-   - val (Type,Term) = parse_from_grammars boolTheory.bool_grammars;
+   - val (Type,Term) = parse_from_grammars $ valOf $ grammarDB {thyname="bool"};
    > val Type = fn : hol_type frag list -> hol_type
      val Term = fn : term frag list -> term
    - Term`2 + 3`;
