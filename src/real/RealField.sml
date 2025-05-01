@@ -14,10 +14,9 @@ struct
 
 open HolKernel Parse boolLib bossLib;
 
-open RealArith;
-
 open prim_recTheory arithmeticTheory numLib reduceLib tautLib liteLib;
-open realaxTheory realTheory realSyntax jrhUtils normalForms realSimps;
+open realaxTheory realTheory realSyntax RealArith jrhUtils normalForms;
+open realSimps
 
 open Sub_and_cond Normalizer Grobner;
 
@@ -73,17 +72,11 @@ val REAL_SUP_ALLPOS = realTheory.REAL_SUP_ALLPOS;
 fun failwith s = raise mk_HOL_ERR "RealField" "?" s
 
 (* set verbose level (of REAL_LINEAR_PROVER) to nothing for internal loading *)
-val _ = verbose_level := 0;
+val _ = RealArith.verbose_level := 0;
 
 (* ------------------------------------------------------------------------- *)
 (* Syntax operations on integer constants of type “:real”.                   *)
 (* ------------------------------------------------------------------------- *)
-
-(* NOTE: HOL-Light's gcd_num function accepts negative numbers, but their gcd
-   is always positive. It looks like having abs first, then gcd. *)
-local open Arbint in
-fun gcd a b = fromNat (Arbnum.gcd (toNat (abs a), toNat (abs b)))
-end (* local *)
 
 type aint = Arbint.int
 
@@ -307,7 +300,7 @@ val REAL_RAT_ADD_CONV = let
     and x2n = dest_realintconst x2' and y2n = dest_realintconst y2';
     val x3n = x1n * y2n + x2n * y1n
     and y3n = y1n * y2n;
-    val d = gcd x3n y3n;
+    val d = gcd (x3n, y3n);
     val x3n' = quot (x3n,d) and y3n' = quot (y3n,d);
     val (x3n'',y3n'') = if y3n' > zero then (x3n',y3n') else (~x3n',~y3n');
     val x3' = mk_realintconst x3n'' and y3' = mk_realintconst y3n'';
@@ -368,8 +361,8 @@ val REAL_RAT_MUL_CONV = let
     and (x2',y2') = dest_div r2;
     val x1n = dest_realintconst x1' and y1n = dest_realintconst y1'
     and x2n = dest_realintconst x2' and y2n = dest_realintconst y2';
-    val d1n = gcd x1n y2n
-    and d2n = gcd x2n y1n;
+    val d1n = gcd (x1n, y2n)
+    and d2n = gcd (x2n, y1n);
   in
     if d1n = one andalso d2n = one then
       let val th0 = INST [x1 |-> x1', y1 |-> y1', x2 |-> x2', y2 |-> y2'] pth_nocancel;
@@ -686,6 +679,6 @@ end (* REAL_FIELD *)
 val (REAL_FIELD_TAC,REAL_ASM_FIELD_TAC) = mk_real_arith_tac REAL_FIELD;
 
 (* set verbose level to 1 by default *)
-val _ = verbose_level := 1;
+val _ = RealArith.verbose_level := 1;
 
 end (* struct *)

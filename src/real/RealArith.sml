@@ -980,29 +980,6 @@ fun union l1 l2 = itlist insert l1 l2;
 fun Union l = itlist union l [];
 
 (* ------------------------------------------------------------------------- *)
-(* GCD and LCM.                                                              *)
-(* ------------------------------------------------------------------------- *)
-
-fun abs x = if x < zero then ~x else x;
-
-fun sgn x = x >= zero;
-
-(* NOTE: gcd is always positive *)
-fun gcd a b = fromNat (Arbnum.gcd (toNat (abs a), toNat (abs b)))
-
-(* previous version which returns negative values if x or y is negative:
-val gcd =
-  let
-    fun gxd x y =
-      if y = zero then x else gxd y (x mod y)
-  in
-    fn x => fn y => if x < y then gxd y x else gxd x y
-  end;
- *)
-
-fun lcm x y = (x * y) div gcd x y;
-
-(* ------------------------------------------------------------------------- *)
 (* Calculate new (in)equality type after addition.                           *)
 (* ------------------------------------------------------------------------- *)
 
@@ -1044,7 +1021,7 @@ fun elim_var v (i1 as Lineq(k1,ty1,l1,just1)) (i2 as Lineq(k2,ty2,l2,just2)) =
   let
     val c1 = el0 v l1
     val c2 = el0 v l2
-    val m = lcm (abs c1) (abs c2)
+    val m = Arbint.lcm (abs c1, abs c2)
     val m1 = m div (abs c1)
     val m2 = m div (abs c2)
     val (n1,n2) =
@@ -1684,7 +1661,7 @@ fun is_ratconst tm =
         let val (p,q) = dest_div tm in
             is_realintconst p andalso is_realintconst q andalso
             (let val m = dest_realintconst p and n = dest_realintconst q in
-                 Arbint.> (n,one) andalso gcd m n = one
+                 Arbint.> (n,one) andalso Arbint.gcd (m,n) = one
              end)
         end
     else
@@ -1695,7 +1672,7 @@ fun rat_of_term tm =
         let val (p,q) = dest_div tm in
             if is_realintconst p andalso is_realintconst q then
                 let val m = dest_realintconst p and n = dest_realintconst q in
-                    if Arbint.>(n,one) andalso gcd m n = one then
+                    if Arbint.>(n,one) andalso Arbint.gcd (m,n) = one then
                         Arbrat./ (Arbrat.fromAInt m,Arbrat.fromAInt n)
                     else failwith "rat_of_term"
                 end
