@@ -140,10 +140,6 @@ in
 end;
 
 val INT_RING_TAC = CONV_TAC (EQT_INTRO o INT_RING);
-val ASM_INT_RING_TAC =
-    REPEAT(FIRST_X_ASSUM
-            (fn th => if not(is_forall (concl th)) then MP_TAC th
-                      else ALL_TAC)) THEN INT_RING_TAC;
 
 (* ------------------------------------------------------------------------- *)
 (* A tactic for simple divisibility/congruence/coprimality goals.            *)
