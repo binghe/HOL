@@ -733,9 +733,9 @@ Proof
     ‘FINITE X’ by rw [Abbr ‘X’] \\
      Q_TAC (NEW_TAC "z") ‘X’ \\
      Q.PAT_X_ASSUM ‘FINITE X’ K_TAC >> fs [Abbr ‘X’] \\
-  (* applying InputS_tpm_ALPHA *)
+  (* applying tpm_ALPHA_InputS *)
      Know ‘InputS (Name a) x P' = InputS (Name a) z (tpm [(z,x)] P')’
-     >- (MATCH_MP_TAC InputS_tpm_ALPHA >> art []) \\
+     >- (MATCH_MP_TAC tpm_ALPHA_InputS >> art []) \\
      DISCH_THEN (fs o wrap) \\
      qabbrev_tac ‘P'' = tpm [(z,x)] P'’ \\
      Q.PAT_X_ASSUM ‘!P Q D a x P'. (P,Q,D) IN R ==>
@@ -749,7 +749,7 @@ Proof
                                       DTRANS D P (InputS (Name a) x P') /\ _ ==> _’
        (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘D'’, ‘a’, ‘z’, ‘y'’]) >> rw [] \\
      Know ‘InputS (Name a) z Q' = InputS (Name a) x (tpm [(x,z)] Q')’
-     >- (MATCH_MP_TAC InputS_tpm_ALPHA \\
+     >- (MATCH_MP_TAC tpm_ALPHA_InputS \\
          irule FV_InputS \\
          qexistsl_tac [‘D'’, ‘Q’, ‘a’, ‘z’] >> art []) \\
      DISCH_THEN (fs o wrap) \\
@@ -800,9 +800,9 @@ Proof
     ‘FINITE X’ by rw [Abbr ‘X’] \\
      Q_TAC (NEW_TAC "z") ‘X’ \\
      Q.PAT_X_ASSUM ‘FINITE X’ K_TAC >> fs [Abbr ‘X’] \\
-  (* applying BoundOutput_tpm_ALPHA *)
+  (* applying tpm_ALPHA_BoundOutput *)
      Know ‘BoundOutput (Name b) x P' = BoundOutput (Name b) z (tpm [(z,x)] P')’
-     >- (MATCH_MP_TAC BoundOutput_tpm_ALPHA >> art []) \\
+     >- (MATCH_MP_TAC tpm_ALPHA_BoundOutput >> art []) \\
      DISCH_THEN (fs o wrap) \\
      qabbrev_tac ‘P'' = tpm [(z,x)] P'’ \\
      Q.PAT_X_ASSUM ‘!P Q D b x P'. (P,Q,D) IN R ==>
@@ -816,7 +816,7 @@ Proof
                                    DTRANS D P (BoundOutput (Name b) x P') /\ _ ==> _’
        (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘D'’, ‘b’, ‘z’, ‘y'’]) >> rw [] \\
      Know ‘BoundOutput (Name b) z Q' = BoundOutput (Name b) x (tpm [(x,z)] Q')’
-     >- (MATCH_MP_TAC BoundOutput_tpm_ALPHA \\
+     >- (MATCH_MP_TAC tpm_ALPHA_BoundOutput \\
          irule FV_BoundOutput \\
          qexistsl_tac [‘D'’, ‘Q’, ‘b’, ‘z’] >> art []) \\
      DISCH_THEN (fs o wrap) \\

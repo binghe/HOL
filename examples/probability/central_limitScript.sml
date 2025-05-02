@@ -5228,10 +5228,10 @@ val _ = html_theory "central_limit";
 
   [1] Shiryaev, A.N.: Probability-1. Springer-Verlag New York (2016).
   [2] Shiryaev, A.N.: Probability-2. Springer-Verlag New York (2019).
-  [3] Chung, K.L.: A Course in Probability Theory, Third Edition. Academic Press (2001).
-  [4] Qasim, M.: Formalization of Normal Random Variables, Concordia University (2016).
+  [3] Chung, K.L.: A Course in Probability Theory, Third Edition.
+      Academic Press (2001).
+  [4] Qasim, M.: Formalization of Normal Random Variables, Concordia
+      University (2016).
   [5] Rosenthal, J.S.: A First Look at Rigorous Probability Theory (Second Edition).
       World Scientific Publishing Company (2006).
-
-
  *)
