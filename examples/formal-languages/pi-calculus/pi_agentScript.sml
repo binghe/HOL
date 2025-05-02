@@ -1280,7 +1280,7 @@ fun case1 (tm_def, repabs, defs) =
 
 val fn_rewrites = map case1 testcase
 
-Theorem parameter_tm_recursion0 =
+val parameter_tm_recursion0 =
   parameter_gtm_recursion
       |> INST_TYPE [alpha |-> rep_t, beta |-> unit_t, gamma |-> “:'r”]
       |> Q.INST [‘lf’ |-> ‘^tlf’, ‘vf’ |-> ‘^tvf’, ‘vp’ |-> ‘^vp’,
@@ -1324,41 +1324,11 @@ val eqns = List.filter is_eq (hyp th0)
 val th1 = itlist Prim_rec.EXISTS_EQUATION eqns th0
 val th = CHOOSE (FN, parameter_tm_recursion0) th1
 
-th |> DISCH_ALL |> elim_unnecessary_atoms {finite_fv = FINITE_FV}
-                                          [ASSUME “FINITE (A:string set)”,
-                                            ASSUME “∀p:'q. FINITE (supp ppm p)”]
-   |> UNDISCH_ALL |> DISCH_ALL
-      |> REWRITE_RULE [AND_IMP_INTRO]
-      |> CONV_RULE (LAND_CONV (REWRITE_CONV [GSYM CONJ_ASSOC]))
-      |> Q.INST [‘tvf’ |-> ‘vr’, (* Name? *)
-                 ‘tnf’ |-> ‘f0’, (* Nil *)
-                 ‘ttf’ |-> ‘f1’, (* Tau *)
-                 ‘tif’ |-> ‘f2’, (* Input *)
-                 ‘tof’ |-> ‘f3’, (* Output *)
-                 ‘tmf’ |-> ‘f4’, (* Match *)
-                 ‘tuf’ |-> ‘f5’, (* Mismatch *)
-                 ‘tsf’ |-> ‘f6’, (* Sum *)
-                 ‘tpf’ |-> ‘f7’, (* Par *)
-                 ‘trf’ |-> ‘f8’, (* Res *)
-                 ‘dpm’ |-> ‘apm’]
-      |> CONV_RULE (REDEPTH_CONV sort_uvars)
-
-(* use Prim_rec.EXISTS_EQUATION to eliminate "definitions" of fn0, fn1, fn2 *)
-
-(*
-      |> lift_exfunction {repabs_pseudo_id = repabs_pseudo_id2,
-                          term_REP_t = term_REP_t2,
-                          cons_info = rcons_info}
-      |> lift_exfunction {repabs_pseudo_id = repabs_pseudo_id1,
-                          term_REP_t = term_REP_t1,
-                          cons_info = cons_info}
-      |> lift_exfunction {repabs_pseudo_id = repabs_pseudo_id0,
-                          term_REP_t = term_REP_t0,
-                          cons_info = ncons_info}
+Theorem parameter_tm_recursion = th
       |> DISCH_ALL
       |> elim_unnecessary_atoms {finite_fv = FINITE_FV}
-                                [ASSUME ``FINITE (A:string set)``,
-                                 ASSUME ``!p :'q. FINITE (supp ppm p)``]
+                                [ASSUME “FINITE (A:string set)”,
+                                 ASSUME “∀p:'q. FINITE (supp ppm p)”]
       |> UNDISCH_ALL |> DISCH_ALL
       |> REWRITE_RULE [AND_IMP_INTRO]
       |> CONV_RULE (LAND_CONV (REWRITE_CONV [GSYM CONJ_ASSOC]))
@@ -1371,10 +1341,14 @@ th |> DISCH_ALL |> elim_unnecessary_atoms {finite_fv = FINITE_FV}
                  ‘tuf’ |-> ‘f5’, (* Mismatch *)
                  ‘tsf’ |-> ‘f6’, (* Sum *)
                  ‘tpf’ |-> ‘f7’, (* Par *)
-                 ‘trf’ |-> ‘f8’, (* Res *)
+                 ‘tcf’ |-> ‘f8’, (* Res *)
+                 ‘taf’ |-> ‘f9’, (* TauR *)
+                 ‘tbf’ |-> ‘f10’, (* BoundOutput *)
+                 ‘tof’ |-> ‘f11’, (* FreeOutput *)
                  ‘dpm’ |-> ‘apm’]
       |> CONV_RULE (REDEPTH_CONV sort_uvars)
 
+(*
 Theorem tm_recursion =
   parameter_tm_recursion
       |> Q.INST_TYPE [‘:'q’ |-> ‘:unit’]
