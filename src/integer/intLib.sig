@@ -21,6 +21,9 @@ sig
   val INT_RING            : term -> thm
   val int_ideal_cofactors : term list -> term -> term list
 
+  val INT_RING_TAC        : tactic
+  val ASM_INT_RING_TAC    : tactic
+
   val INTEGER_TAC    : tactic
   val INTEGER_RULE   : term -> thm
 
