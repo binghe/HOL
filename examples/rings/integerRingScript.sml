@@ -16,31 +16,6 @@ MAP_FIRST MATCH_ACCEPT_TAC [ INT_ADD_SYM, INT_MUL_SYM ]);
 val int_ring_thms =
   EVAL_ringLib.store_ring { Name = "int", Theory = int_is_ring }
 
-
-(* equations to put any expression build on + * ~ & int_0 int_1
-   under the (unique) following forms:  &n  or ~&n *)
-val int_calculate = store_thm
-    ("int_calculate",
-     “    ( &n +  &m = &(n+m))
-         /\ (~&n +  &m = if n<=m then &(m-n) else ~&(n-m))
-         /\ ( &n + ~&m = if m<=n then &(n-m) else ~&(m-n))
-         /\ (~&n + ~&m = ~&(n+m))
-
-         /\ ( &n *  &m =  &(n*m))
-         /\ (~&n *  &m = ~&(n*m))
-         /\ ( &n * ~&m = ~&(n*m))
-         /\ (~&n * ~&m =  &(n*m))
-
-         /\ (( &n =  &m) = (n=m))
-         /\ (( &n = ~&m) = (n=0)/\(m=0))
-         /\ ((~&n =  &m) = (n=0)/\(m=0))
-         /\ ((~&n = ~&m) = (n=m))
-
-         /\ (~~x = x : int)
-         /\ (~0 = 0 : int)   ”,
-REWRITE_TAC [INT_ADD_CALCULATE,INT_MUL_CALCULATE,INT_EQ_CALCULATE]);
-
-
 (* Note: AND_CLAUSES is not lazy *)
 local open numeralTheory
 in
