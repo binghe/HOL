@@ -2,7 +2,9 @@ open HolKernel Parse boolLib bossLib
 
 open testutils
 
-open arithmeticTheory EVAL_ringLib EVAL_numRingLib integerRingLib
+open arithmeticTheory EVAL_ringLib EVAL_numRingLib integerRingLib ratRingLib;
+
+val _ = ratLib.deprecate_rat();
 
 fun ntest (i,out) =
   convtest ("NUM_NORM_CONV " ^ Parse.term_to_string i, NUM_NORM_CONV, i, out)
@@ -125,3 +127,21 @@ Count.apply ring_conv
     runtime: 84.580s,    gctime: 5.700s,     systime: 0.580s.
     runtime: 2710.160s,    gctime: 330.350s,     systime: 52.590s.
  ---------------------------------------------------------------------------*)
+
+val _ = ratLib.prefer_rat();
+
+(* check ring norm code *)
+val _ = convtest ("RAT_RING_NORM_CONV (01)",
+                  RAT_RING_NORM_CONV,
+                  “2q * q + 3 * r - 6 * q”, “-4q * q + 3 * r”);
+val _ = convtest ("RAT_RING_NORM_CONV (02)",
+                  RAT_RING_NORM_CONV,
+                  “2q * q + 3 * r - 2 * q”, “3 * r”);
+val _ = convtest ("RAT_RING_NORM_CONV (03)",
+                  RAT_RING_NORM_CONV,
+                  “-2 * r + 2q * q + 3 * r - 2 * q - r ”, “0q”);
+val _ = convtest ("RAT_RING_NORM_CONV (04)",
+                  RAT_RING_NORM_CONV,
+                  “(r:rat) * 1 + 3 * r”, “4q * r”);
+
+val _ = Process.exit Process.success
