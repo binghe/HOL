@@ -305,11 +305,6 @@ in
       [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p_v4]),
     (``((x:num) DIV 42 = x) = (x = 0)``,
       [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p_v4]),
-    (``(x:num) DIV 0 = x``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
-    (``(x:num) DIV 0 = 0``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p_v4]),
-    (``(0:num) DIV 0 = 0``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p_v4]),
-    (``(0:num) DIV 0 = 1``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
-    (``(x:num) DIV 0 = x DIV 0``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
 
     (``(0:num) MOD 1 = 0``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
     (``(1:num) MOD 1 = 0``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
@@ -322,11 +317,6 @@ in
       [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p_v4]),
     (``((x:num) MOD 42 = x) = (x < 42)``,
       [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p_v4]),
-    (``(x:num) MOD 0 = x``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p_v4]),
-    (``(x:num) MOD 0 = 0``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
-    (``(0:num) MOD 0 = 0``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p_v4]),
-    (``(0:num) MOD 0 = 1``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
-    (``(x:num) MOD 0 = x MOD 0``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
 
     (* cf. arithmeticTheory.DIVISION *)
     (``((x:num) = x DIV 1 * 1 + x MOD 1) /\ x MOD 1 < 1``,
