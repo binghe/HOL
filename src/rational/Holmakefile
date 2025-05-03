@@ -10,6 +10,12 @@ intExtensionTheory.sml: ../integer/int_arithTheory.uo
 
 EXTRA_CLEANS = selftest.exe rational-selftest.log
 
+ifeq ($(KERNELID),otknl)
+ARTFILES = $(patsubst %Script.sml,%.ot.art,$(wildcard *Script.sml))
+
+all: $(ARTFILES)
+endif
+
 ifdef HOLSELFTESTLEVEL
 all: rational-selftest.log
 

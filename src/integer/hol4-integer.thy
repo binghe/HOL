@@ -1,5 +1,5 @@
 name: hol-integer
-version: 1.2
+version: 1.3
 description: HOL integer theories
 author: HOL OpenTheory Packager <opentheory-packager@hol-theorem-prover.org>
 license: MIT
@@ -7,7 +7,6 @@ requires: base
 requires: hol-base
 requires: hol-words
 requires: hol-string
-requires: hol-ring
 requires: hol-quotient
 show: "HOL4"
 show: "Data.Bool"
