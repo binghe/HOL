@@ -1,5 +1,5 @@
 name: hol-base
-version: 1.4
+version: 1.5
 description: HOL basic theories
 author: HOL OpenTheory Packager <opentheory-packager@hol-theorem-prover.org>
 license: MIT

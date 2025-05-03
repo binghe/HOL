@@ -2016,16 +2016,6 @@ val DIVISION = new_specification ("DIVISION", ["MOD", "DIV"], MOD_DIV_exist);
 val _ = set_fixity "MOD" (Infixl 650);
 val _ = set_fixity "DIV" (Infixl 600);
 
-Theorem DIVISION:
-  !n. 0 < n ==> !k. k = k DIV n * n + k MOD n /\ k MOD n < n
-Proof
-  NTAC 2 STRIP_TAC
-  THEN IMP_RES_TAC prim_recTheory.LESS_NOT_EQ
-  THEN POP_ASSUM (ASSUME_TAC o GSYM)
-  THEN MATCH_MP_TAC DIVISION
-  THEN ASM_REWRITE_TAC []
-QED
-
 val DIV2_def = new_definition("DIV2_def", “DIV2 n = n DIV 2”);
 
 local
