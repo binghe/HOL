@@ -6,10 +6,9 @@
 (* ========================================================================= *)
 
 open HolKernel Parse boolLib bossLib;
-open arithmeticTheory pred_setTheory
-open bitTheory sum_numTheory fcpTheory fcpLib
-open numposrepTheory ASCIInumbersTheory
-open dividesTheory dep_rewrite
+
+open arithmeticTheory pred_setTheory bitTheory sum_numTheory fcpTheory fcpLib
+     numposrepTheory ASCIInumbersTheory dividesTheory dep_rewrite hurdUtils;
 
 val () = new_theory "words"
 val _ = set_grammar_ancestry ["ASCIInumbers", "numeral_bit", "fcp", "sum_num"]
@@ -4927,6 +4926,7 @@ val WORD_SUB_LE = Q.store_thm("WORD_SUB_LE",
   `!x:'a word y. 0w <= y /\ y <= x ==> 0w <= x - y /\ x - y <= x`,
   SIMP_TAC bool_ss [WORD_LE_SUB_UPPER,WORD_ZERO_LE_SUB])
 
+(* NOTE: Proof invalid under the original DIV/MOD
 Definition word_exp_tailrec_def:
   word_exp_tailrec (b:'a word) (e:'a word) a =
   if e = 0w then a else
@@ -4994,6 +4994,7 @@ Proof
   \\ DEP_REWRITE_TAC[DIVIDES_DIV]
   \\ gs[DIVIDES_MOD_0]
 QED
+ *)
 
 (* -------------------------------------------------------------------------
     More theorems
@@ -5206,7 +5207,9 @@ Proof
     \\ simp[ADD1, ZERO_LT_dimword]
     \\ strip_tac
     \\ qmatch_goalsub_abbrev_tac`A MOD N = 0`
-    \\ `A = 0` suffices_by rw[]
+    \\ Suff ‘A = 0’ (* NOTE: proof reworked under original DIV/MOD *)
+    >- (Rewr' >> MATCH_MP_TAC ZERO_MOD \\
+        rw [ONE_LT_dimword, Abbr ‘N’])
     \\ rw[Abbr`A`, l2n_eq_0]
     \\ gs[listTheory.EVERY_MAP, listTheory.EVERY_MEM]
     \\ rw[]

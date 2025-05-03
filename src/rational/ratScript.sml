@@ -3141,6 +3141,7 @@ Proof
     rw [GSYM RAT_DIV_AINV, RATND_of_coprimes]
 QED
 
+(* NOTE: Disabled under original DIV/MOD
 Definition div_gcd_def:
   div_gcd a b =
     let d = gcd (Num a) b in
@@ -3216,6 +3217,7 @@ Proof
   imp_res_tac div_gcd_reduces >> gvs[] >>
   gvs[AC INT_MUL_ASSOC INT_MUL_COMM]
 QED
+ *)
 
 (* ----------------------------------------------------------------------
     rational min and max
