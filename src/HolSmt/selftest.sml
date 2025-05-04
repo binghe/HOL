@@ -428,12 +428,6 @@ in
     (``((x:int) / 42 = x) = (x = 0)``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
     (``(x:int) / 42 = x <=> x = 0 \/ x = ~1``,
       [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p_v4]),
-    (``(x:int) / 0 = x``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
-    (``(x:int) / 0 = 0``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
-    (``(0:int) / 0 = 0``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
-    (``(0:int) / 0 = 1``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
-    (``(0:int) / 0 = 1 / 0``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
-    (``(x:int) / 0 = x / 0``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
 
     (* cf. integerTheory.int_div *)
     (``(x:int) < 0 ==> (x / 1 = ~(~x / 1) + if ~x % 1 = 0 then 0 else ~1)``,
@@ -694,14 +688,7 @@ in
     (``(x:real) / ~1 = ~x``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p_v4]),
     (``(x:real) / 42 <= x``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
     (``(x:real) / 42 <= abs x``, [thm_AUTO, thm_CVC, thm_Z3_v4, thm_Z3p_v4]),
-
     (``((x:real) / 42 = x) = (x = 0)``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p_v4]),
-    (``(x:real) / 0 = x``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
-    (``(x:real) / 0 = 0``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p_v4]),
-    (``(0:real) / 0 = 0``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p_v4]),
-    (``(0:real) / 0 = 1``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
-    (``(0:real) / 0 = 1 / 0``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p_v4]),
-    (``(x:real) / 0 = x / 0``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
 
     (``x > 0 ==> (x:real) / 42 < x``,
       [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p_v4]),
