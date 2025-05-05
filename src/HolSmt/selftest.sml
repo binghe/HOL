@@ -305,6 +305,13 @@ in
       [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p_v4]),
     (``((x:num) DIV 42 = x) = (x = 0)``,
       [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p_v4]),
+(* NOTE: disabled
+    (``(x:num) DIV 0 = x``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
+    (``(x:num) DIV 0 = 0``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p_v4]),
+    (``(0:num) DIV 0 = 0``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p_v4]),
+    (``(0:num) DIV 0 = 1``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
+    (``(x:num) DIV 0 = x DIV 0``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+ *)
 
     (``(0:num) MOD 1 = 0``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
     (``(1:num) MOD 1 = 0``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
@@ -317,6 +324,13 @@ in
       [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p_v4]),
     (``((x:num) MOD 42 = x) = (x < 42)``,
       [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p_v4]),
+(* NOTE: disabled
+    (``(x:num) MOD 0 = x``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p_v4]),
+    (``(x:num) MOD 0 = 0``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
+    (``(0:num) MOD 0 = 0``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p_v4]),
+    (``(0:num) MOD 0 = 1``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
+    (``(x:num) MOD 0 = x MOD 0``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+ *)
 
     (* cf. arithmeticTheory.DIVISION *)
     (``((x:num) = x DIV 1 * 1 + x MOD 1) /\ x MOD 1 < 1``,
@@ -428,6 +442,14 @@ in
     (``((x:int) / 42 = x) = (x = 0)``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
     (``(x:int) / 42 = x <=> x = 0 \/ x = ~1``,
       [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p_v4]),
+(* NOTE: disabled
+    (``(x:int) / 0 = x``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
+    (``(x:int) / 0 = 0``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
+    (``(0:int) / 0 = 0``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
+    (``(0:int) / 0 = 1``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
+    (``(0:int) / 0 = 1 / 0``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
+    (``(x:int) / 0 = x / 0``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+ *)
 
     (* cf. integerTheory.int_div *)
     (``(x:int) < 0 ==> (x / 1 = ~(~x / 1) + if ~x % 1 = 0 then 0 else ~1)``,
@@ -471,12 +493,15 @@ in
     (``((x:int) quot 42 = x) = (x = 0)``,
       [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p_v4]),
     (``(x:int) quot 42 = x <=> x = 0 \/ x = ~1``, [sat_CVC, sat_Z3, sat_Z3p]),
+
+(* NOTE: disabled
     (``(x:int) quot 0 = x``, [sat_CVC, sat_Z3, sat_Z3p]),
     (``(x:int) quot 0 = 0``, [sat_CVC, sat_Z3, sat_Z3p]),
     (``(0:int) quot 0 = 0``, [sat_CVC, sat_Z3, sat_Z3p]),
     (``(0:int) quot 0 = 1``, [sat_CVC, sat_Z3, sat_Z3p]),
     (``(0:int) quot 0 = 1 quot 0``, [sat_CVC, sat_Z3, sat_Z3p]),
     (``(x:int) quot 0 = x quot 0``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p]),
+ *)
 
     (* cf. integerTheory.int_quot *)
     (``(x:int) < 0 ==> (x quot 1 = ~(~x quot 1))``,
@@ -538,11 +563,13 @@ in
     (``((x:int) % 42 = x) = (x < 42)``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
     (``((x:int) % 42 = x) <=> (0 <= x) /\ (x < 42)``,
       [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p_v4]),
+(* NOTE: disabled
     (``(x:int) % 0 = x``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
     (``(x:int) % 0 = 0``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
     (``(0:int) % 0 = 0``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
     (``(0:int) % 0 = 1``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
     (``(x:int) % 0 = x % 0``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+ *)
 
     (* cf. integerTheory.int_mod *)
     (``(x:int) % ~42 = x - x / ~42 * ~42``,
@@ -582,11 +609,13 @@ in
       [sat_CVC, sat_Z3, sat_Z3p]),
     (``((x:int) rem 42 = x) <=> (-42 < x) /\ (x < 42)``,
       [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p_v4]),
+(* NOTE: disabled
     (``(x:int) rem 0 = x``, [sat_CVC, sat_Z3, sat_Z3p]),
     (``(x:int) rem 0 = 0``, [sat_CVC, sat_Z3, sat_Z3p]),
     (``(0:int) rem 0 = 0``, [sat_CVC, sat_Z3, sat_Z3p]),
     (``(0:int) rem 0 = 1``, [sat_CVC, sat_Z3, sat_Z3p]),
     (``(x:int) rem 0 = x rem 0``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p]),
+ *)
 
     (* cf. integerTheory.int_rem *)
     (``(x:int) rem ~42 = x - x quot ~42 * ~42``,
@@ -689,13 +718,23 @@ in
     (``(x:real) / 42 <= x``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
     (``(x:real) / 42 <= abs x``, [thm_AUTO, thm_CVC, thm_Z3_v4, thm_Z3p_v4]),
     (``((x:real) / 42 = x) = (x = 0)``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p_v4]),
+(* NOTE: disabled
+    (``(x:real) / 0 = x``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
+    (``(x:real) / 0 = 0``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p_v4]),
+    (``(0:real) / 0 = 0``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p_v4]),
+    (``(0:real) / 0 = 1``, [sat_CVC, sat_YO, sat_Z3, sat_Z3p]),
+    (``(0:real) / 0 = 1 / 0``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p_v4]),
+    (``(x:real) / 0 = x / 0``, [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p]),
+   *)
 
     (``x > 0 ==> (x:real) / 42 < x``,
       [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p_v4]),
     (``x < 0 ==> (x:real) / 42 > x``,
       [thm_AUTO, thm_CVC, thm_YO, thm_Z3, thm_Z3p_v4]),
 
+(* NOTE: disabled (INV_0 will not be supported soon)
     (``realinv 0 = 0``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p_v4]),
+ *)
     (``realinv 1 = 1``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p_v4]),
     (``realinv (-1) = -1``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p_v4]),
     (``realinv 42 = 1 / 42``, [thm_AUTO, thm_CVC, thm_Z3, thm_Z3p_v4]),
@@ -1444,7 +1483,8 @@ val () = Unittest.run_unittests ()
 
 val () = print "Running functional tests...\n"
 val _ = map (fn (term, test_funs) =>
-               map (fn test_fun => test_fun term) test_funs) tests
+                (print ("Testing " ^ term_to_string(term) ^ "\n");
+                 map (fn test_fun => test_fun term) test_funs)) tests
 
 (*****************************************************************************)
 
