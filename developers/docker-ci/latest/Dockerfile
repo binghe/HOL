@@ -22,20 +22,51 @@ RUN apt-get install -qy pandoc latexmk texlive-latex-extra
 RUN apt-get install -qy texlive-fonts-extra texlive-science
 RUN apt-get clean
 
-ARG Z3_VERSION="4.13.0"
+# NOTE: For backward compatibility purposes, old Z3 versions for x86_64 are kept always.
+# Z3 2.19
+RUN if [ "linux/amd64" = "$TARGETPLATFORM" ] || [ "linux/386" = "$TARGETPLATFORM" ]; then \
+    wget -q -O z3-2.19.tar.gz https://github.com/Z3Prover/bin/raw/master/legacy/z3-2.19.tar.gz; \
+    tar xzf z3-2.19.tar.gz; \
+    mv z3 z3-2.19; \
+    rm z3-2.19.tar.gz; \
+fi
 
+# Z3 2.19.1
+RUN if [ "linux/amd64" = "$TARGETPLATFORM" ] || [ "linux/386" = "$TARGETPLATFORM" ]; then \
+    wget -q -O z3-2.19.1.tar.gz https://github.com/Z3Prover/bin/raw/master/legacy/z3-2.19.1.tar.gz; \
+    tar xzf z3-2.19.1.tar.gz; \
+    mv z3 z3-2.19.1; \
+    rm z3-2.19.1.tar.gz; \
+fi
+
+# Z3 4.12.4
+RUN if [ "linux/amd64" = "$TARGETPLATFORM" ]; then \
+    wget -q https://github.com/Z3Prover/z3/releases/download/z3-4.12.4/z3-4.12.4-x64-glibc-2.35.zip; \
+    unzip z3-4.12.4-x64-glibc-2.35.zip; \
+    mv z3-4.12.4-x64-glibc-2.35 z3-4.12.4; \
+    rm z3-4.12.4-x64-glibc-2.35.zip; \
+fi
+
+# Z3 4.13.0
+RUN if [ "linux/amd64" = "$TARGETPLATFORM" ]; then \
+    wget -q https://github.com/Z3Prover/z3/releases/download/z3-4.13.0/z3-4.13.0-x64-glibc-2.35.zip; \
+    unzip z3-4.13.0-x64-glibc-2.35.zip; \
+    mv z3-4.13.0-x64-glibc-2.35 z3-4.13.0; \
+    rm z3-4.13.0-x64-glibc-2.35.zip; \
+fi
+
+ARG Z3_VERSION="4.14.1"
 RUN if [ "linux/amd64" = "$TARGETPLATFORM" ]; then \
     wget -q https://github.com/Z3Prover/z3/releases/download/z3-${Z3_VERSION}/z3-${Z3_VERSION}-x64-glibc-2.35.zip; \
     unzip z3-${Z3_VERSION}-x64-glibc-2.35.zip; \
     mv z3-${Z3_VERSION}-x64-glibc-2.35 z3-${Z3_VERSION}; \
     rm z3-${Z3_VERSION}-x64-glibc-2.35.zip; \
 fi
-
 RUN if [ "linux/arm64" = "$TARGETPLATFORM" ]; then \
-    wget -q https://github.com/Z3Prover/z3/releases/download/z3-${Z3_VERSION}/z3-${Z3_VERSION}-arm64-glibc-2.35.zip; \
-    unzip z3-${Z3_VERSION}-arm64-glibc-2.35.zip; \
-    mv z3-${Z3_VERSION}-arm64-glibc-2.35 z3-${Z3_VERSION}; \
-    rm z3-${Z3_VERSION}-arm64-glibc-2.35.zip; \
+    wget -q https://github.com/Z3Prover/z3/releases/download/z3-${Z3_VERSION}/z3-${Z3_VERSION}-arm64-glibc-2.34.zip; \
+    unzip z3-${Z3_VERSION}-arm64-glibc-2.34.zip; \
+    mv z3-${Z3_VERSION}-arm64-glibc-2.34 z3-${Z3_VERSION}; \
+    rm z3-${Z3_VERSION}-arm64-glibc-2.34.zip; \
 fi
 
 # Yices 1.0.40
@@ -50,25 +81,31 @@ RUN if [ "linux/386" = "$TARGETPLATFORM" ]; then \
     rm yices-1.0.40-i686-pc-linux-gnu-static-gmp.tar.gz; \
 fi
 
+# cvc5 1.1.2 (initial tested version)
 # NOTE: The link "/ML/cvc5-Linux" is for backward compatibility
-ARG CVC5_VERSION="1.2.1"
+RUN if [ "linux/amd64" = "$TARGETPLATFORM" ]; then \
+    wget -q \
+         https://github.com/cvc5/cvc5/releases/download/cvc5-1.1.2/cvc5-Linux-static.zip; \
+    unzip cvc5-Linux-static.zip; \
+    rm cvc5-Linux-static.zip; \
+    mv cvc5-Linux-static cvc5-1.1.2; \
+    ln -s cvc5-1.1.2/bin/cvc5 cvc5-Linux; \
+fi
 
+ARG CVC5_VERSION="1.2.1"
 RUN if [ "linux/amd64" = "$TARGETPLATFORM" ]; then \
     wget -q \
          https://github.com/cvc5/cvc5/releases/download/cvc5-${CVC5_VERSION}/cvc5-Linux-x86_64-static.zip; \
     unzip cvc5-Linux-x86_64-static.zip; \
     rm cvc5-Linux-x86_64-static.zip; \
     mv cvc5-Linux-x86_64-static cvc5-${CVC5_VERSION}; \
-    ln -s cvc5-${CVC5_VERSION}/bin/cvc5 cvc5-Linux; \
 fi
-
 RUN if [ "linux/arm64" = "$TARGETPLATFORM" ]; then \
     wget -q \
          https://github.com/cvc5/cvc5/releases/download/cvc5-${CVC5_VERSION}/cvc5-Linux-arm64-static.zip; \
     unzip cvc5-Linux-arm64-static.zip; \
     rm cvc5-Linux-arm64-static.zip; \
     mv cvc5-Linux-arm64-static cvc5-${CVC5_VERSION}; \
-    ln -s cvc5-${CVC5_VERSION}/bin/cvc5 cvc5-Linux; \
 fi
 
 # NuRV 2.0.0
