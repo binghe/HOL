@@ -75,21 +75,21 @@ RUN if [ "linux/386" = "$TARGETPLATFORM" ]; then \
     rm yices-1.0.40-i686-pc-linux-gnu-static-gmp.tar.gz; \
 fi
 
-# cvc5
-RUN if [ "linux/amd64" = "$TARGETPLATFORM" ]; then \
-    wget -q -O cvc5-Linux-static.zip \
-         https://github.com/cvc5/cvc5/releases/download/cvc5-1.1.2/cvc5-Linux-static.zip; \
-    unzip cvc5-Linux-static.zip; \
-    rm cvc5-Linux-static.zip; \
-    mv cvc5-Linux-static cvc5-1.1.2; \
-fi
-
 # NOTE: The link "/ML/cvc5-Linux" is for backward compatibility
 ARG CVC5_VERSION="1.2.1"
 
 RUN if [ "linux/amd64" = "$TARGETPLATFORM" ]; then \
     wget -q -O cvc5-Linux-static.zip \
-         https://github.com/cvc5/cvc5/releases/download/cvc5-${CVC5_VERSION}/cvc5-Linux-static.zip; \
+         https://github.com/cvc5/cvc5/releases/download/cvc5-${CVC5_VERSION}/cvc5-Linux-x86_64-static.zip; \
+    unzip cvc5-Linux-static.zip; \
+    rm cvc5-Linux-static.zip; \
+    mv cvc5-Linux-static cvc5-${CVC5_VERSION}; \
+    ln -s cvc5-${CVC5_VERSION}/bin/cvc5 cvc5-Linux; \
+fi
+
+RUN if [ "linux/arm64" = "$TARGETPLATFORM" ]; then \
+    wget -q -O cvc5-Linux-static.zip \
+         https://github.com/cvc5/cvc5/releases/download/cvc5-${CVC5_VERSION}/cvc5-Linux-arm64-static.zip; \
     unzip cvc5-Linux-static.zip; \
     rm cvc5-Linux-static.zip; \
     mv cvc5-Linux-static cvc5-${CVC5_VERSION}; \
