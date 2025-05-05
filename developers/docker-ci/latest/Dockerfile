@@ -124,7 +124,7 @@ RUN if [ "linux/arm64" = "$TARGETPLATFORM" ]; then \
     wget -q https://es-static.fbk.eu/tools/nurv/releases/NuRV-${SMV_VERSION}-linuxarm64.tar.bz2; \
     tar xjf NuRV-${SMV_VERSION}-linuxarm64.tar.bz2; \
     mv NuRV-${SMV_VERSION}-linuxarm64/NuRV solvers; \
-    rm -rf NuRV-${SMV_VERSION}-linuxx64*; \
+    rm -rf NuRV-${SMV_VERSION}-linuxarm64*; \
 fi
 
 ENV HOL4_SMV_EXECUTABLE=/ML/solvers/NuRV
