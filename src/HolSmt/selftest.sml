@@ -1481,6 +1481,9 @@ end
 
 val () = Unittest.run_unittests ()
 
+(* This will show type information when calling term_to_string() in the next tests *)
+val _ = show_types := true;
+
 val () = print "Running functional tests...\n"
 val _ = map (fn (term, test_funs) =>
                 (print ("Testing " ^ term_to_string(term) ^ "\n");
