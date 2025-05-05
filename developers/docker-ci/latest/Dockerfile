@@ -16,37 +16,12 @@ RUN echo "I was running on $BUILDPLATFORM, building for $TARGETPLATFORM" > /tmp/
 
 WORKDIR /ML
 
-# Z3 2.19 and 2.19.1
-RUN if [ "linux/amd64" = "$TARGETPLATFORM" ] || [ "linux/386" = "$TARGETPLATFORM" ]; then \
-    wget -q -O z3-2.19.tar.gz https://github.com/Z3Prover/bin/raw/master/legacy/z3-2.19.tar.gz; \
-    tar xzf z3-2.19.tar.gz; \
-    mv z3 z3-2.19; \
-    rm z3-2.19.tar.gz; \
-fi
+# more packages for buliding HOL manuals (+pandoc for Markdown), etc.
+RUN apt-get install -qy texlive-latex-recommended
+RUN apt-get install -qy pandoc latexmk texlive-latex-extra
+RUN apt-get install -qy texlive-fonts-extra texlive-science
+RUN apt-get clean
 
-RUN if [ "linux/amd64" = "$TARGETPLATFORM" ] || [ "linux/386" = "$TARGETPLATFORM" ]; then \
-    wget -q -O z3-2.19.1.tar.gz https://github.com/Z3Prover/bin/raw/master/legacy/z3-2.19.1.tar.gz; \
-    tar xzf z3-2.19.1.tar.gz; \
-    mv z3 z3-2.19.1; \
-    rm z3-2.19.1.tar.gz; \
-fi
-
-# Z3 4.12.4
-RUN if [ "linux/amd64" = "$TARGETPLATFORM" ]; then \
-    wget -q https://github.com/Z3Prover/z3/releases/download/z3-4.12.4/z3-4.12.4-x64-glibc-2.35.zip; \
-    unzip z3-4.12.4-x64-glibc-2.35.zip; \
-    mv z3-4.12.4-x64-glibc-2.35 z3-4.12.4; \
-    rm z3-4.12.4-x64-glibc-2.35.zip; \
-fi
-
-RUN if [ "linux/arm64" = "$TARGETPLATFORM" ]; then \
-    wget -q https://github.com/Z3Prover/z3/releases/download/z3-4.12.4/z3-4.12.4-arm64-glibc-2.35.zip; \
-    unzip z3-4.12.4-arm64-glibc-2.35.zip; \
-    mv z3-4.12.4-arm64-glibc-2.35 z3-4.12.4; \
-    rm z3-4.12.4-arm64-glibc-2.35.zip; \
-fi
-
-# Z3 4.x
 ARG Z3_VERSION="4.13.0"
 
 RUN if [ "linux/amd64" = "$TARGETPLATFORM" ]; then \
@@ -116,11 +91,3 @@ RUN if [ "linux/arm64" = "$TARGETPLATFORM" ]; then \
 fi
 
 ENV HOL4_SMV_EXECUTABLE=/ML/solvers/NuRV
-
-# more packages for buliding HOL manuals (+pandoc for Markdown), etc.
-RUN apt-get install -qy texlive-latex-recommended
-RUN apt-get install -qy pandoc latexmk texlive-latex-extra
-RUN apt-get install -qy texlive-fonts-extra texlive-science
-RUN apt-get clean
-
-RUN apt-get clean
