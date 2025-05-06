@@ -352,7 +352,7 @@ Inductive DTRANS :
     !D D' P P' a x y.
     (* begin extra antecedents *)
        distinction D /\
-       D' = D UNION sc {(y,s) | s IN FV (Res y P)} /\
+       D' = D UNION sc {(y,s) | s | s IN FV (Res y P)} /\
     (* end extra antecedents *)
        DTRANS D' P (InputS (Name a) x P') /\
        y <> a /\ y <> x /\ x # P /\ x <> a ==>
@@ -362,7 +362,7 @@ Inductive DTRANS :
     !D D' P P' a x y.
     (* begin extra antecedents *)
        distinction D /\
-       D' = D UNION sc {(y,s) | s IN FV (Res y P)} /\
+       D' = D UNION sc {(y,s) | s | s IN FV (Res y P)} /\
     (* end extra antecedents *)
        DTRANS D' P (BoundOutput (Name a) x P') /\
        y <> a /\ y <> x /\ x # P /\ x <> a ==>
@@ -372,7 +372,7 @@ Inductive DTRANS :
     !D D' P P' a b y.
     (* begin extra antecedents *)
        distinction D /\
-       D' = D UNION sc {(y,s) | s IN FV (Res y P)} /\
+       D' = D UNION sc {(y,s) | s | s IN FV (Res y P)} /\
     (* end extra antecedents *)
        DTRANS D' P (FreeOutput (Name a) (Name b) P') /\
        y <> a /\ y <> b ==>
@@ -418,7 +418,7 @@ Definition dist_simulation_def :
       (!b x P'. DTRANS D P (BoundOutput (Name b) x P') /\
                 x # D /\ x # P /\ x # Q /\ x <> b ==>
                 ?Q' D'. DTRANS D Q (BoundOutput (Name b) x Q') /\
-                        D' = D UNION sc {(b, x) | x | x IN FV (Res b Q)} /\
+                        D' = D UNION sc {(b,x) | x | x IN FV (Res b Q)} /\
                        (P',Q',D') IN R)
 End
 
@@ -725,11 +725,11 @@ Proof
      Q.EXISTS_TAC ‘y'’ >> art [])
  (* goal 5 (of 14): DTRANS D' P (InputS (Name a) x P')
                               |      alpha       | |
-                              P                  z P''
+                          x # P                  z P''
                               |   R              | |
                               y (InputS (Name a) z y')
                               |   R'             | |
-                              Q (InputS (Name a) z Q')
+                          x # Q (InputS (Name a) z Q')
                               |      alpha       | |
                     DTRANS D' Q (InputS (Name a) x Q'')
   *)
@@ -793,11 +793,11 @@ Proof
      Q.EXISTS_TAC ‘y'’ >> art [])
  (* goal 7 (of 14): DTRANS D' P (BoundOutput (Name b) x P')
                               |      alpha            | |
-                              P (BoundOutput (Name b) z P''
-                              |        R              | |
-                              y (BoundOutput (Name b) z y')
-                              |        R'             | |
-                              Q (BoundOutput (Name b) z Q')
+                          x # P (BoundOutput (Name b) z P''
+                              |        R              | | R
+                          x ? y (BoundOutput (Name b) z y')
+                              |        R'             | | R'
+                          x # Q (BoundOutput (Name b) z Q')
                               |      alpha            | |
                     DTRANS D' Q (BoundOutput (Name b) x Q'')
   *)
