@@ -154,6 +154,12 @@ Proof
  >> fs [distinction_def]
 QED
 
+Theorem dpm_union :
+    !pi D1 D2. dpm pi (D1 UNION D2) = dpm pi D1 UNION dpm pi D2
+Proof
+    rw [Once EXTENSION]
+QED
+
 (* The original open transition relation *)
 Inductive TRANS :
 [TAU]
@@ -402,7 +408,7 @@ Definition dist_simulation_def :
            ?Q'. DTRANS D Q (TauR Q') /\ (P',Q',D) IN R) /\
     (* 3b: enriched with ‘x # D /\ x # P’ *)
       (!a x P'. DTRANS D P (InputS (Name a) x P') /\
-                x # D /\ x # P /\ x # Q ==>
+                x # D /\ x # P /\ x # Q /\ x <> a ==>
                ?Q'. DTRANS D Q (InputS (Name a) x Q') /\ (P',Q',D) IN R) /\
     (* 3c *)
       (!a b P'. DTRANS D P (FreeOutput (Name a) (Name b) P') ==>
@@ -410,7 +416,7 @@ Definition dist_simulation_def :
                    (P',Q',D) IN R) /\
     (* 4 *)
       (!b x P'. DTRANS D P (BoundOutput (Name b) x P') /\
-                x # D /\ x # P /\ x # Q ==>
+                x # D /\ x # P /\ x # Q /\ x <> b ==>
                 ?Q' D'. DTRANS D Q (BoundOutput (Name b) x Q') /\
                         D' = D UNION sc {(b, x) | x | x IN FV (Res b Q)} /\
                        (P',Q',D') IN R)
@@ -731,7 +737,8 @@ Proof
        (STRIP_ASSUME_TAC o SIMP_RULE (bool_ss ++ DNF_ss) [dist_simulation_def]) \\
     ‘distinction D'’ by PROVE_TAC [] \\
   (* applying NEW_TAC *)
-     qabbrev_tac ‘X = {x} UNION FV D' UNION FV y UNION FV P UNION FV Q UNION FV P'’ \\
+     qabbrev_tac ‘X = {a} UNION {x} UNION
+                      FV D' UNION FV y UNION FV P UNION FV Q UNION FV P'’ \\
     ‘FINITE X’ by rw [Abbr ‘X’] \\
      Q_TAC (NEW_TAC "z") ‘X’ \\
      Q.PAT_X_ASSUM ‘FINITE X’ K_TAC >> fs [Abbr ‘X’] \\
@@ -797,8 +804,15 @@ Proof
  >- (Q.PAT_X_ASSUM ‘dist_simulation R’
        (STRIP_ASSUME_TAC o SIMP_RULE (bool_ss ++ DNF_ss) [dist_simulation_def]) \\
     ‘distinction D'’ by PROVE_TAC [] \\
+  (* clean up irrelevant assumptions *)
+     Q.PAT_X_ASSUM ‘!P Q D P'. (P,Q,D) IN R ==> DTRANS D P (TauR P') ==> _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘!P Q D a x P'.
+                      (P,Q,D) IN R ==> DTRANS D P (InputS _ x P') /\ _ ==> _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘!P Q D a b P'.
+                      (P,Q,D) IN R ==> DTRANS D P (FreeOutput _ _ P') ==> _’ K_TAC \\
   (* applying NEW_TAC *)
-     qabbrev_tac ‘X = {x} UNION FV D' UNION FV y UNION FV P UNION FV Q UNION FV P'’ \\
+     qabbrev_tac ‘X = {b} UNION {x} UNION
+                      FV D' UNION FV y UNION FV P UNION FV Q UNION FV P'’ \\
     ‘FINITE X’ by rw [Abbr ‘X’] \\
      Q_TAC (NEW_TAC "z") ‘X’ \\
      Q.PAT_X_ASSUM ‘FINITE X’ K_TAC >> fs [Abbr ‘X’] \\
@@ -828,10 +842,35 @@ Proof
     ‘tpm [(z,x)] P'' = tpm [(x,z)] P''’
        by rw [Once pmact_flip_args] >> POP_ORW \\
      Q.EXISTS_TAC ‘tpm [(x,z)] y'’ >> simp [Abbr ‘Q''’] \\
-     cheat
-  (* Suff ‘D' = dpm [(x,z)] D'’ >- (Rewr' >> simp []) \\
-     ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
-     MATCH_MP_TAC dpm_unchanged >> simp [] *))
+     Know ‘dpm [(x,z)] D' = D'’
+     >- (MATCH_MP_TAC dpm_unchanged >> simp []) >> DISCH_TAC \\
+     qabbrev_tac ‘pi = [(x,z)]’ \\
+     qmatch_abbrev_tac ‘(tpm pi P'',tpm pi y',D' UNION A) IN R /\ _’ \\
+     Know ‘dpm pi A = A’
+     >- (simp [Once EXTENSION, Abbr ‘pi’, Abbr ‘A’, FORALL_PROD] \\
+         rw [sc_def] >> EQ_TAC >> rw [] >| (* 4 subgoals *)
+         [ (* goal 1 (of 4) *)
+           Cases_on ‘x = p_2’ >> fs [swapstr_def] \\
+           Cases_on ‘z = p_2’ >> fs [] \\
+           Cases_on ‘x = p_1’ >> fs [] \\
+           Cases_on ‘z = p_1’ >> fs [],
+           (* goal 2 (of 4) *)
+           Cases_on ‘x = p_2’ >> fs [swapstr_def] \\
+           Cases_on ‘x = p_1’ >> fs [] \\
+           Cases_on ‘z = p_1’ >> fs [] \\
+           Cases_on ‘z = p_2’ >> fs [],
+           (* goal 3 (of 4) *)
+           Cases_on ‘x = b’ >> fs [swapstr_def] \\
+           Cases_on ‘x = p_2’ >> fs [] \\
+           Cases_on ‘z = p_2’ >> fs [],
+           (* goal 4 (of 4) *)
+           Cases_on ‘x = p_1’ >> fs [swapstr_def] \\
+           Cases_on ‘z = p_1’ >> fs [] ]) >> DISCH_TAC \\
+    ‘dpm pi (D' UNION A) = D' UNION A’ by rw [dpm_union] \\
+     POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM) \\
+     reverse CONJ_TAC >- simp [] \\
+  (* NOTE: we don't know if x IN FV y or not !!! *)
+     cheat)
  (* goal 8 (of 14): symmetric with goal 1 *)
  >- (MATCH_MP_TAC dist_simulation_imp_distinction \\
      qexistsl_tac [‘R'’, ‘y’, ‘P’] >> art [])
