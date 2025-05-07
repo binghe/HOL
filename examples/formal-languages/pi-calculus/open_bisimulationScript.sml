@@ -416,9 +416,9 @@ Definition dist_simulation_def :
                    (P',Q',D) IN R) /\
     (* 4 *)
       (!a x P'. DTRANS D P (BoundOutput (Name a) x P') /\
-                x # D /\ x # P /\ x # Q /\ x <> a ==>
+                x # D /\ x # P /\ x # Q /\ a # P /\ a # Q /\ x <> a ==>
                 ?Q' D'. DTRANS D Q (BoundOutput (Name a) x Q') /\
-                        D' = D UNION sc {(a,b) | b | b IN FV (Res a Q)} /\
+                        D' = D UNION sc {(a,b) | b | b IN FV P UNION FV Q} /\
                        (P',Q',D') IN R)
 End
 
@@ -427,19 +427,15 @@ Theorem dist_simulation_id :
 Proof
     rw [dist_simulation_def]
  >> MATCH_MP_TAC distinction_union >> art []
- >> rw [distinction_def]
- >- (MATCH_MP_TAC finite_sc \\
-     qmatch_abbrev_tac ‘FINITE s’ \\
-     irule SUBSET_FINITE \\
-     Q.EXISTS_TAC ‘{(a,b) | b | b IN FV P}’ \\
-     qunabbrev_tac ‘s’ \\
-     reverse CONJ_TAC >- rw [SUBSET_DEF] \\
-     qmatch_abbrev_tac ‘FINITE s’ \\
-     Know ‘s = IMAGE (\b. (a,b)) (FV P)’
-     >- rw [Abbr ‘s’, Once EXTENSION] >> Rewr' \\
-     MATCH_MP_TAC IMAGE_FINITE >> rw [])
- >> MATCH_MP_TAC sc_irreflexive
- >> rw [irreflexive_def]
+ >> reverse (rw [distinction_def])
+ >- (MATCH_MP_TAC sc_irreflexive \\
+     rw [irreflexive_def])
+ >> MATCH_MP_TAC finite_sc
+ >> qmatch_abbrev_tac ‘FINITE s’
+ >> Know ‘s = IMAGE (\b. (a,b)) (FV P)’
+ >- rw [Abbr ‘s’, Once EXTENSION]
+ >> Rewr'
+ >> MATCH_MP_TAC IMAGE_FINITE >> rw []
 QED
 
 Theorem dist_simulation_union :
@@ -811,7 +807,6 @@ Proof
                       (P,Q,D) IN R ==> DTRANS D P (InputS _ x P') /\ _ ==> _’ K_TAC \\
      Q.PAT_X_ASSUM ‘!P Q D a b P'.
                       (P,Q,D) IN R ==> DTRANS D P (FreeOutput _ _ P') ==> _’ K_TAC \\
-     Q.PAT_X_ASSUM ‘!P Q D D'. (P,Q,D) IN R ==> D SUBSET D' /\ _ ==> _’ K_TAC \\
   (* applying NEW_TAC, because we don't have ‘x # y’
 
      NOTE: If we can prove “|- (P,y,D) IN R ==> FV P = FV y”, then “x # y” for sure.
@@ -828,6 +823,8 @@ Proof
      >- (MATCH_MP_TAC tpm_ALPHA_BoundOutput >> art []) \\
      DISCH_THEN (fs o wrap) \\
      qabbrev_tac ‘P'' = tpm [(z,x)] P'’ \\
+     cheat
+  (* FIXME:
      Q.PAT_X_ASSUM ‘!P Q D a x P'. (P,Q,D) IN R ==>
                                    DTRANS D P (BoundOutput (Name b) x P') /\ _ ==> _’
        (MP_TAC o Q.SPECL [‘P’, ‘y’, ‘D’, ‘a’, ‘z’, ‘P''’]) >> rw [] \\
@@ -841,7 +838,6 @@ Proof
                       (P,Q,D) IN R' ==> DTRANS D P (InputS _ x P') /\ _ ==> _’ K_TAC \\
      Q.PAT_X_ASSUM ‘!P Q D a b P'.
                       (P,Q,D) IN R' ==> DTRANS D P (FreeOutput _ _ P') ==> _’ K_TAC \\
-     Q.PAT_X_ASSUM ‘!P Q D D'. (P,Q,D) IN R' ==> D SUBSET D' /\ _ ==> _’ K_TAC \\
      Q.PAT_X_ASSUM ‘!P Q D a x P'. (P,Q,D) IN R' ==>
                                    DTRANS D P (BoundOutput (Name b) x P') /\ _ ==> _’
        (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘D’, ‘a’, ‘z’, ‘y'’]) >> rw [] \\
@@ -884,7 +880,7 @@ Proof
      POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM) \\
      reverse CONJ_TAC >- simp [] \\
   (* FIXME: We still don't know if x IN FV y or not !!! *)
-     cheat)
+     *))
  (* goal 8 (of 14): symmetric with goal 1 *)
  >- (MATCH_MP_TAC dist_simulation_imp_distinction \\
      qexistsl_tac [‘R'’, ‘y’, ‘P’] >> art [])
