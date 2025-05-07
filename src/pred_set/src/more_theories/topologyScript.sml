@@ -2481,6 +2481,35 @@ Definition topcontinuous_at :
           ==> (?u. open_in top u /\ x IN u /\ (!y. y IN u ==> f y IN v)))
 End
 
+Theorem OPEN_IN_SUBSET_TOPSPACE :
+    !top s. open_in top s ==> s SUBSET topspace top
+Proof
+    rw [SUBSET_DEF, topspace]
+ >> Q.EXISTS_TAC ‘s’ >> art []
+QED
+
+Theorem continuous_map_alt_topcontinuous_at :
+    !top top' f.
+        continuous_map (top,top') f <=>
+        !x. x IN topspace top ==> topcontinuous_at top top' f x
+Proof
+    rw [continuous_map, topcontinuous_at]
+ >> reverse EQ_TAC >> rw [] (* 3 subgoals *)
+ >- (Q.PAT_X_ASSUM ‘!x. x IN topspace top ==> _’ (MP_TAC o Q.SPEC ‘x’) >> rw [])
+ >- (rw [OPEN_NEIGH] \\
+     Q.PAT_X_ASSUM ‘!x. x IN topspace top ==> _’ (MP_TAC o Q.SPEC ‘x’) >> rw [] \\
+     POP_ASSUM (MP_TAC o Q.SPEC ‘u’) >> rw [] \\
+     rename1 ‘x IN N’ \\
+     Q.EXISTS_TAC ‘N’ \\
+    ‘N SUBSET topspace top’ by PROVE_TAC [OPEN_IN_SUBSET_TOPSPACE] \\
+     reverse CONJ_TAC
+     >- (POP_ASSUM MP_TAC >> rw [SUBSET_DEF]) \\
+     rw [neigh] \\
+     Q.EXISTS_TAC ‘N’ >> fs [IN_APP])
+ >> Q.PAT_X_ASSUM ‘!u. open_in top' u ==> _’ (MP_TAC o Q.SPEC ‘v’) >> rw []
+ >> Q.EXISTS_TAC ‘{x | x IN topspace top /\ f x IN v}’ >> rw []
+QED
+
 (*
 Theorem TOPCONTINUOUS_AT_ATPOINTOF :
    !top top' (f:'a->'b) x.

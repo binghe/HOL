@@ -3105,6 +3105,7 @@ QED
 (* ------------------------------------------------------------------------- *)
 
 Overload B[local] = “general_borel”
+Overload B[local] = “\E. general_borel (mtop E)”
 
 (* Definition 13.4 (ii) [8, p.247] *)
 Definition finite_measure_def :
@@ -3189,12 +3190,14 @@ QED
 Definition continuous_functions_def : (* C *)
      continuous_functions top = {f | continuous_map (top,euclidean) f}
 End
+Overload C[local] = “continuous_functions”
 
 (* f :'a -> real *)
-Definition bounded_functions_def : (* C_b *)
-    bounded_functions top =
+Definition continuous_bounded_functions_def : (* C_b *)
+    continuous_bounded_functions top =
       {f | f IN continuous_functions top /\ bounded (IMAGE f UNIV)}
 End
+Overload C_b[local] = “continuous_bounded_functions”
 
 (* Lipschitz condition *)
 Definition Lipschitz_condition_def :
@@ -3210,20 +3213,21 @@ End
 
 (* f :'a -> real *)
 Definition BL_def :
-    BL E = {f | f IN bounded_functions (mtop E) /\
+    BL E = {f | f IN continuous_bounded_functions (mtop E) /\
                 Lipschitz_continuous (E,mr1) f}
 End
 
 Definition weak_convergence_condition_def :
     weak_convergence_condition top X Y f <=>
     ((\n. integral (topspace top,subsets (B top),X n) (Normal o f)) -->
-            integral (topspace top,subsets (B top),Y) (Normal o f)) sequentially
+          integral (topspace top,subsets (B top),Y  ) (Normal o f)) sequentially
 End
 
 (* Definition 13.12 [8, p.252] *)
 Definition weak_converge_in_topology_def :
     weak_converge_in_topology (top :'a topology) X Y <=>
-    !f. bounded_functions top f ==> weak_convergence_condition top X Y f
+      !f. f IN continuous_bounded_functions top ==>
+          weak_convergence_condition top X Y f
 End
 
 (* Theorem 13.16 (Portemanteau) [8, p.254]
@@ -3252,7 +3256,42 @@ Theorem Portemanteau_i_imp_ii :
 Proof
     rw [Portemanteau_i_def, weak_converge_in_topology_def,
         Portemanteau_ii_def, BL_def]
- >> FIRST_X_ASSUM MATCH_MP_TAC >> fs [IN_APP]
+QED
+
+(* f :'a -> real *)
+Definition points_of_discontinuity_def :
+    points_of_discontinuity top f =
+      {x | x IN topspace top /\ ~topcontinuous_at top euclidean f x}
+End
+Overload U[local] = “points_of_discontinuity”
+
+Definition Portemanteau_iii_def :
+    Portemanteau_iii E X Y <=>
+    !f. f IN borel_measurable (B (mtop E)) /\ Y (U (mtop E) f) = 0 ==>
+        weak_convergence_condition (mtop E) X Y f
+End
+
+(* "trivial" *)
+Theorem Portemanteau_iii_imp_i :
+    !E X Y. Portemanteau_antecedents E X Y ==>
+            Portemanteau_iii E X Y ==> Portemanteau_i E X Y
+Proof
+    rw [Portemanteau_iii_def, Portemanteau_i_def, continuous_functions_def,
+        weak_converge_in_topology_def, continuous_bounded_functions_def,
+        Portemanteau_antecedents_def]
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> reverse CONJ_TAC
+ >- (Q.PAT_X_ASSUM ‘subprobability_measure (mtop E) Y’ MP_TAC \\
+     rw [subprobability_measure_thm] \\
+     Suff ‘U (mtop E) f = {}’
+     >- (Rewr' \\
+         qabbrev_tac ‘M = (univ(:'a),subsets (B E),Y)’ \\
+        ‘Y = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
+         MATCH_MP_TAC MEASURE_EMPTY >> art []) \\
+     rw [points_of_discontinuity_def, Once EXTENSION] \\
+     fs [continuous_map_alt_topcontinuous_at])
+ (* show that continuous function is borel measurable *)
+ >> cheat
 QED
 
 (* ------------------------------------------------------------------------- *)
