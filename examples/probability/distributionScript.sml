@@ -3289,7 +3289,7 @@ Proof
         ‘Y = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
          MATCH_MP_TAC MEASURE_EMPTY >> art []) \\
      rw [points_of_discontinuity_def, Once EXTENSION] \\
-     fs [continuous_map_alt_topcontinuous_at])
+     fs [CONTINUOUS_MAP_EQ_TOPCONTINUOUS_AT])
  (* show that continuous function is borel measurable *)
  >> cheat
 QED
