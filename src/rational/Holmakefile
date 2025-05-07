@@ -13,7 +13,16 @@ EXTRA_CLEANS = selftest.exe rational-selftest.log
 ifeq ($(KERNELID),otknl)
 ARTFILES = $(patsubst %Script.sml,%.ot.art,$(wildcard *Script.sml))
 
-all: $(ARTFILES)
+all: $(ARTFILES) hol4-rational.art
+
+hol4-rational-unint.art: hol4-rational-unint.thy $(ARTFILES)
+	opentheory info --article -o $@ $<
+
+hol4-rational.art: hol4-rational.thy hol4-rational-unint.art ../opentheory/hol4.int
+	opentheory info --article -o $@ $<
+
+install: hol4-rational.thy hol4-rational.art
+	opentheory install --reinstall $<
 endif
 
 ifdef HOLSELFTESTLEVEL
