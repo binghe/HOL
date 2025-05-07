@@ -82,6 +82,14 @@ Definition borel :
     borel = sigma univ(:real) {s | open s}
 End
 
+Theorem borel_alt_general :
+    borel = general_borel euclidean
+Proof
+    rw [borel, euclidean_open_def, general_borel_def, TOPSPACE_EUCLIDEAN]
+ >> AP_TERM_TAC
+ >> rw [Once EXTENSION, IN_APP]
+QED
+
 (* was: borel_measurable [definition] *)
 Overload borel_measurable = “\a. measurable a borel”
 
