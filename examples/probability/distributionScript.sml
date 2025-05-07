@@ -1082,8 +1082,8 @@ val converge_in_dist_tactic2 =
         MATCH_MP_TAC MEASURABLE_COMP \\
         Q.EXISTS_TAC ‘borel’ >> rw [real_in_borel_measurable]) >> Rewr;
 
-(* IMPORTANT: convergence of r.v. in distribution is equivalent to weak convergence of
-   their distribution functions.
+(* NOTE: "convergence of r.v. in distribution" is equivalent to "weak convergence
+   of their distribution functions".
  *)
 Theorem converge_in_dist_alt :
     !p X Y. prob_space p /\

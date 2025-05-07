@@ -5702,6 +5702,25 @@ Proof
  >> ASM_SET_TAC []
 QED
 
+(* ------------------------------------------------------------------------- *)
+(*  Borel sigma-algebra generated from any topology                          *)
+(* ------------------------------------------------------------------------- *)
+
+Definition general_borel_def :
+    general_borel top = sigma (topspace top) (open_in top)
+End
+
+Theorem sigma_algebra_general_borel[simp] :
+    sigma_algebra (general_borel top)
+Proof
+    rw [general_borel_def]
+ >> MATCH_MP_TAC SIGMA_ALGEBRA_SIGMA
+ >> rw [subset_class_def, topspace, IN_APP]
+ >> rw [SUBSET_DEF]
+ >> rename1 ‘y IN s’
+ >> Q.EXISTS_TAC ‘s’ >> art []
+QED
+
 val _ = export_theory ();
 
 (* References:
