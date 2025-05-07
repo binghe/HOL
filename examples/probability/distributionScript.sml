@@ -3120,7 +3120,7 @@ Theorem finite_measure_thm :
                 m s <> NegInf /\ m s <> PosInf
 Proof
     RW_TAC std_ss [finite_measure_def]
- >> qabbrev_tac ‘M = (topspace top',subsets (B top'),m)’
+ >> qmatch_abbrev_tac ‘measure_space M /\ _ <=> _’
  >> reverse EQ_TAC >> rw []
  >- (rw [GSYM lt_infty] \\
      POP_ASSUM (MATCH_MP_TAC o cj 2) \\
@@ -3147,7 +3147,7 @@ QED
 
 (* Definition 13.4 (iv) [8, p.247]
 
-   NOTE: The name "subprobability measure" (aka s.p.m.) is taken from [2, p.85].
+   NOTE: The name "subprobability measure" (aka s.p.m.) is also from [2, p.85].
  *)
 Definition subprobability_measure_def :
     subprobability_measure top m <=> finite_measure top m /\ m (topspace top) <= 1
@@ -3158,8 +3158,8 @@ Theorem subprobability_measure_thm :
             measure_space (topspace top,subsets (B top),m) /\
             !s. s IN subsets (B top) ==> m s <= 1
 Proof
-    RW_TAC std_ss [subprobability_measure_def, finite_measure_def]
- >> qabbrev_tac ‘M = (topspace top',subsets (B top'),m)’
+    RW_TAC std_ss [subprobability_measure_def, finite_measure_def, GSYM CONJ_ASSOC]
+ >> qmatch_abbrev_tac ‘measure_space M /\ _ <=> _’
  >> reverse EQ_TAC >> rw []
  >- (Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw [] \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
@@ -3183,6 +3183,76 @@ Proof
      ‘subsets (B t) = measurable_sets M’ by rw [Abbr ‘M’] >> POP_ORW \\
      MATCH_MP_TAC MEASURE_SPACE_SPACE >> art [])
  >> rw [increasing_def, Abbr ‘M’]
+QED
+
+(* f :'a -> real *)
+Definition continuous_functions_def : (* C *)
+     continuous_functions top = {f | continuous_map (top,euclidean) f}
+End
+
+(* f :'a -> real *)
+Definition bounded_functions_def : (* C_b *)
+    bounded_functions top =
+      {f | f IN continuous_functions top /\ bounded (IMAGE f UNIV)}
+End
+
+(* Lipschitz condition *)
+Definition Lipschitz_condition_def :
+    Lipschitz_condition (E1,E2) k f <=>
+    !x y. x IN mspace E1 /\ y IN mspace E1 ==> dist E2 (f x,f y) <= k * dist E1 (x,y)
+End
+
+(* Definition 13.8 [8, p.249] *)
+Definition Lipschitz_continuous_def :
+    Lipschitz_continuous (E1,E2) f <=>
+    f IN (mspace E1 -> mspace E2) /\ ?k. Lipschitz_condition (E1,E2) k f
+End
+
+(* f :'a -> real *)
+Definition BL_def :
+    BL E = {f | f IN bounded_functions (mtop E) /\
+                Lipschitz_continuous (E,mr1) f}
+End
+
+Definition weak_convergence_condition_def :
+    weak_convergence_condition top X Y f <=>
+    ((\n. integral (topspace top,subsets (B top),X n) (Normal o f)) -->
+            integral (topspace top,subsets (B top),Y) (Normal o f)) sequentially
+End
+
+(* Definition 13.12 [8, p.252] *)
+Definition weak_converge_in_topology_def :
+    weak_converge_in_topology (top :'a topology) X Y <=>
+    !f. bounded_functions top f ==> weak_convergence_condition top X Y f
+End
+
+(* Theorem 13.16 (Portemanteau) [8, p.254]
+
+  "In the following theorem, a whole bunch of such statements will be hung on
+   a coat hanger (French: portemanteau)."
+ *)
+Definition Portemanteau_antecedents_def :
+    Portemanteau_antecedents E X Y <=>
+      (!n. subprobability_measure (mtop E) (X n)) /\
+       subprobability_measure (mtop E) Y
+End
+
+Definition Portemanteau_i_def :
+    Portemanteau_i E X Y <=> weak_converge_in_topology (mtop E) X Y
+End
+
+Definition Portemanteau_ii_def :
+    Portemanteau_ii E X Y <=>
+    !f. f IN BL E ==> weak_convergence_condition (mtop E) X Y f
+End
+
+(* trivial *)
+Theorem Portemanteau_i_imp_ii :
+    !E X Y. Portemanteau_i E X Y ==> Portemanteau_ii E X Y
+Proof
+    rw [Portemanteau_i_def, weak_converge_in_topology_def,
+        Portemanteau_ii_def, BL_def]
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> fs [IN_APP]
 QED
 
 (* ------------------------------------------------------------------------- *)

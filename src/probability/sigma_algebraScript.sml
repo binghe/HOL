@@ -17,7 +17,7 @@ open HolKernel Parse boolLib bossLib;
 
 open arithmeticTheory optionTheory pairTheory combinTheory pred_setTheory
      pred_setLib numLib topologyTheory hurdUtils jrhUtils res_quanTools
-     iterateTheory prim_recTheory;
+     iterateTheory prim_recTheory metricTheory;
 
 val _ = new_theory "sigma_algebra";
 
@@ -5719,6 +5719,18 @@ Proof
  >> rw [SUBSET_DEF]
  >> rename1 ‘y IN s’
  >> Q.EXISTS_TAC ‘s’ >> art []
+QED
+
+Theorem space_general_borel :
+    !top. space (general_borel top) = topspace top
+Proof
+    REWRITE_TAC [general_borel_def, SPACE_SIGMA]
+QED
+
+Theorem space_general_borel_mtop :
+    !E. space (general_borel (mtop E)) = mspace E
+Proof
+    REWRITE_TAC [space_general_borel, TOPSPACE_MTOPOLOGY]
 QED
 
 val _ = export_theory ();
