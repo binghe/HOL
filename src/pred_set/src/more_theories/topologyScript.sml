@@ -13,8 +13,7 @@
 (*              (c) Copyright, Marco Maggesi 2012-2017                       *)
 (*             (c) Copyright, Andrea Gabrielli 2012-2017                     *)
 (* ========================================================================= *)
-(*  Formalization of general topological and metric spaces in HOL Light      *)
-(*                     (from hol-light's metric.ml)                          *)
+(*  General topological and metric spaces (from hol-light's metric.ml)       *)
 (*                                                                           *)
 (*              (c) Copyright, John Harrison 1998-2017                       *)
 (*                (c) Copyright, Marco Maggesi 2014-2017                     *)
@@ -54,6 +53,31 @@ Proof
 QED
 
 val REPLICATE_TAC = NTAC;
+
+Theorem LEFT_AND_EXISTS_THM :
+   !P Q. (?(x :'a). P x) /\ Q <=> (?(x :'a). P x /\ Q)
+Proof
+   METIS_TAC []
+QED
+
+Theorem RIGHT_AND_EXISTS_THM :
+   !P Q. P /\ (?(x :'a). Q x) <=> (?(x :'a). P /\ Q x)
+Proof
+   METIS_TAC []
+QED
+
+Theorem FORALL_UNWIND_THM2 :
+   !P (a :'a). (!x. x = a ==> P x) <=> P a
+Proof
+   METIS_TAC []
+QED
+
+Theorem FORALL_UNWIND_THM1 :
+   !P (a :'a). (!x. a = x ==> P x) <=> P a
+Proof
+  REPEAT GEN_TAC THEN CONV_TAC(LAND_CONV(ONCE_DEPTH_CONV SYM_CONV)) THEN
+  MATCH_ACCEPT_TAC FORALL_UNWIND_THM2
+QED
 (* End of minimal hol-light compatibility layer *)
 
 (*---------------------------------------------------------------------------*)
@@ -140,6 +164,8 @@ val OPEN_IN_BIGUNION = store_thm ("OPEN_IN_BIGUNION",
  ``!top k. (!s. s IN k ==> open_in top s) ==> open_in top (BIGUNION k)``,
   REWRITE_TAC[OPEN_IN_CLAUSES]);
 
+Theorem OPEN_IN_UNIONS[local] = OPEN_IN_BIGUNION
+
 val BIGUNION_2 = store_thm ("BIGUNION_2",
  ``!s t. BIGUNION {s;t} = s UNION t``,
   SET_TAC[]);
@@ -171,6 +197,8 @@ val OPEN_IN_BIGINTER = store_thm ("OPEN_IN_BIGINTER",
   ASM_CASES_TAC ``f:('a->bool)->bool = {}`` THEN
   ASM_SIMP_TAC std_ss [BIGINTER_EMPTY, INTER_UNIV] THEN REPEAT STRIP_TAC THEN
   MATCH_MP_TAC OPEN_IN_INTER THEN ASM_SIMP_TAC std_ss []);
+
+Theorem OPEN_IN_INTERS[local] = OPEN_IN_BIGINTER
 
 val OPEN_IN_SUBOPEN = store_thm ("OPEN_IN_SUBOPEN",
  ``!top s:'a->bool.
@@ -431,6 +459,7 @@ QED
 (* A generic notion of "hull" (convex, affine, conic hull and closure).      *)
 (* ------------------------------------------------------------------------- *)
 
+(* HOL-Light: parse_as_infix("hull",(21,"left"));; *)
 val _ = set_fixity "hull" (Infix(NONASSOC, 499));
 
 val hull = new_definition ("hull",
@@ -1030,9 +1059,13 @@ QED
 
 (* ------------------------------------------------------------------------- *)
 (* Useful idioms for being a suitable union/intersection of somethings.      *)
-(* (ported from HOL Light)                                                   *)
+(* (ported from HOL Light's sets.ml)                                         *)
 (* ------------------------------------------------------------------------- *)
 
+(* original priority in HOL-Light:
+   parse_as_infix("UNION_OF",(20,"right"));;
+   parse_as_infix("INTERSECTION_OF",(20,"right"));;
+ *)
 val _ = set_fixity "UNION_OF"        (Infixr 601);
 val _ = set_fixity "INTERSECTION_OF" (Infixr 601);
 
@@ -2471,6 +2504,7 @@ QED
 
 (* ------------------------------------------------------------------------- *)
 (* Pointwise continuity in topological spaces.                               *)
+(*  (ported from HOL-Light's Multivariate/metric.ml)                         *)
 (* ------------------------------------------------------------------------- *)
 
 Definition topcontinuous_at :
@@ -2524,29 +2558,525 @@ Proof
  >> Q.EXISTS_TAC ‘{x | x IN topspace top /\ f x IN v}’ >> rw []
 QED
 
-(*
-let CONTINUOUS_MAP_ATPOINTOF = prove
- (`!top top' f:A->B.
-        continuous_map (top,top') f <=>
-        !x. x IN topspace top ==> limit top' f (f x) (atpointof top x)`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[CONTINUOUS_MAP_EQ_TOPCONTINUOUS_AT] THEN
-  ASM_SIMP_TAC[TOPCONTINUOUS_AT_ATPOINTOF] THEN
-  REWRITE_TAC[limit] THEN SET_TAC[]);;
+(* ------------------------------------------------------------------------- *)
+(* Derived set (set of limit points).                                        *)
+(*  (ported from HOL-Light's Multivariate/metric.ml)                         *)
+(* ------------------------------------------------------------------------- *)
 
-let LIMIT_CONTINUOUS_MAP = prove
- (`!top top' (f:A->B) a b.
-        continuous_map(top,top') f /\ a IN topspace top /\ f a = b
-        ==> limit top' f b (atpointof top a)`,
-  REWRITE_TAC[CONTINUOUS_MAP_ATPOINTOF] THEN MESON_TAC[]);;
+(* parse_as_infix("derived_set_of",(21,"right"));; *)
+val _ = set_fixity "derived_set_of" (Infixr 602);
 
-let LIMIT_CONTINUOUS_MAP_WITHIN = prove
- (`!top top' (f:A->B) a b.
-        continuous_map(subtopology top s,top') f /\
-        a IN s /\ a IN topspace top /\ f a = b
-        ==> limit top' f b (atpointof top a within s)`,
-  SIMP_TAC[GSYM ATPOINTOF_SUBTOPOLOGY] THEN
-  SIMP_TAC[LIMIT_CONTINUOUS_MAP; TOPSPACE_SUBTOPOLOGY; IN_INTER]);;
-*)
+Definition derived_set_of :
+   top derived_set_of s =
+   {(x :'a) | x IN topspace top /\
+              !t. x IN t /\ open_in top t ==>
+                  ?y. ~(y = x) /\ y IN s /\ y IN t}
+End
+
+Theorem DERIVED_SET_OF_RESTRICT :
+   !top (s :'a set).
+     top derived_set_of s = top derived_set_of (topspace top INTER s)
+Proof
+  rw [derived_set_of, Once EXTENSION] THEN
+  MESON_TAC[REWRITE_RULE[SUBSET_DEF] OPEN_IN_SUBSET]
+QED
+
+Theorem IN_DERIVED_SET_OF :
+   !top s (x :'a).
+     x IN top derived_set_of s <=>
+     x IN topspace top /\
+     (!t. x IN t /\ open_in top t ==> ?y. ~(y = x) /\ y IN s /\ y IN t)
+Proof
+  rw [derived_set_of]
+QED
+
+Theorem DERIVED_SET_OF_SUBSET_TOPSPACE :
+   !top (s :'a set). top derived_set_of s SUBSET topspace top
+Proof
+  REWRITE_TAC[derived_set_of] THEN SET_TAC[]
+QED
+
+Theorem DERIVED_SET_OF_SUBTOPOLOGY :
+   !top u (s :'a set).
+        (subtopology top u) derived_set_of s =
+        u INTER top derived_set_of (u INTER s)
+Proof
+  REPEAT GEN_TAC THEN GEN_REWRITE_TAC I empty_rewrites[EXTENSION] THEN
+  REWRITE_TAC[derived_set_of, OPEN_IN_SUBTOPOLOGY, TOPSPACE_SUBTOPOLOGY] THEN
+  simp[RIGHT_AND_EXISTS_THM, LEFT_IMP_EXISTS_THM] THEN
+  ASM_SET_TAC[]
+QED
+
+Theorem DERIVED_SET_OF_SUBSET_SUBTOPOLOGY :
+   !top s (t :'a set). (subtopology top s) derived_set_of t SUBSET s
+Proof
+  SIMP_TAC std_ss[DERIVED_SET_OF_SUBTOPOLOGY, INTER_SUBSET]
+QED
+
+Theorem DERIVED_SET_OF_EMPTY :
+   !(top:'a topology). top derived_set_of {} = {}
+Proof
+  REWRITE_TAC[EXTENSION, IN_DERIVED_SET_OF, NOT_IN_EMPTY] THEN
+  MESON_TAC[OPEN_IN_TOPSPACE]
+QED
+
+Theorem DERIVED_SET_OF_MONO :
+   !top s (t :'a set).
+        s SUBSET t ==> top derived_set_of s SUBSET top derived_set_of t
+Proof
+  REWRITE_TAC[derived_set_of] THEN SET_TAC[]
+QED
+
+(* ------------------------------------------------------------------------- *)
+(* Closure with respect to a topological space.                              *)
+(*  (ported from HOL-Light's Multivariate/metric.ml)                         *)
+(* ------------------------------------------------------------------------- *)
+
+(* parse_as_infix("closure_of",(21,"right"));; *)
+val _ = set_fixity "closure_of" (Infixr 602);
+
+Definition closure_of :
+   top closure_of s =
+   {(x :'a) | x IN topspace top /\
+              !t. x IN t /\ open_in top t ==> ?y. y IN s /\ y IN t}
+End
+
+Theorem CLOSURE_OF_RESTRICT :
+    !top (s:'a->bool). top closure_of s = top closure_of (topspace top INTER s)
+Proof
+    rw [closure_of, Once EXTENSION, IN_INTER]
+ >> MESON_TAC[REWRITE_RULE[SUBSET_DEF] OPEN_IN_SUBSET]
+QED
+
+Theorem IN_CLOSURE_OF :
+   !top s (x :'a).
+     x IN top closure_of s <=>
+     x IN topspace top /\
+     (!t. x IN t /\ open_in top t ==> ?y. y IN s /\ y IN t)
+Proof
+    rw [closure_of]
+QED
+
+Theorem CLOSURE_OF :
+   !top (s :'a set).
+     top closure_of s =
+     topspace top INTER (s UNION top derived_set_of s)
+Proof
+  REPEAT GEN_TAC THEN REWRITE_TAC[EXTENSION] THEN
+  Q.X_GEN_TAC ‘x’ THEN
+  REWRITE_TAC[IN_CLOSURE_OF, IN_DERIVED_SET_OF, IN_UNION, IN_INTER] THEN
+  Cases_on ‘x IN topspace top’ THEN ASM_REWRITE_TAC[] THEN
+  MESON_TAC[]
+QED
+
+Theorem CLOSURE_OF_ALT :
+   !top (s :'a set).
+        top closure_of s = topspace top INTER s UNION top derived_set_of s
+Proof
+  REPEAT GEN_TAC THEN REWRITE_TAC[CLOSURE_OF] THEN
+  MP_TAC(Q.SPECL [`top`, `s`] DERIVED_SET_OF_SUBSET_TOPSPACE) THEN
+  SET_TAC[]
+QED
+
+Theorem DERIVED_SET_OF_SUBSET_CLOSURE_OF :
+   !top (s :'a set). top derived_set_of s SUBSET top closure_of s
+Proof
+  REWRITE_TAC[CLOSURE_OF, SUBSET_INTER, DERIVED_SET_OF_SUBSET_TOPSPACE] THEN
+  SIMP_TAC std_ss[SUBSET_UNION]
+QED
+
+Theorem CLOSURE_OF_SUBTOPOLOGY :
+   !top u (s :'a set).
+      (subtopology top u) closure_of s = u INTER (top closure_of (u INTER s))
+Proof
+  SIMP_TAC std_ss[CLOSURE_OF, TOPSPACE_SUBTOPOLOGY, DERIVED_SET_OF_SUBTOPOLOGY] THEN
+  SET_TAC[]
+QED
+
+Theorem CLOSURE_OF_EMPTY :
+   !top. top closure_of ({} :'a set) = {}
+Proof
+  REWRITE_TAC[EXTENSION, IN_CLOSURE_OF, NOT_IN_EMPTY] THEN
+  MESON_TAC[OPEN_IN_TOPSPACE]
+QED
+
+Theorem CLOSURE_OF_TOPSPACE :
+   !(top :'a topology). top closure_of topspace top = topspace top
+Proof
+  REWRITE_TAC[EXTENSION, IN_CLOSURE_OF] THEN MESON_TAC[]
+QED
+
+Theorem CLOSURE_OF_UNIV :
+   !top. top closure_of UNIV = topspace top
+Proof
+  REWRITE_TAC[closure_of] THEN SET_TAC[]
+QED
+
+Theorem CLOSURE_OF_SUBSET_TOPSPACE :
+   !top (s :'a set). top closure_of s SUBSET topspace top
+Proof
+  REWRITE_TAC[closure_of] THEN SET_TAC[]
+QED
+
+Theorem CLOSURE_OF_SUBSET_SUBTOPOLOGY :
+   !top s (t :'a set). (subtopology top s) closure_of t SUBSET s
+Proof
+  REWRITE_TAC[TOPSPACE_SUBTOPOLOGY, closure_of] THEN SET_TAC[]
+QED
+
+Theorem CLOSURE_OF_MONO :
+   !top s (t :'a set).
+        s SUBSET t ==> top closure_of s SUBSET top closure_of t
+Proof
+  REWRITE_TAC[closure_of] THEN SET_TAC[]
+QED
+
+Theorem CLOSURE_OF_SUBTOPOLOGY_SUBSET :
+   !top s (u :'a set).
+        (subtopology top u) closure_of s SUBSET (top closure_of s)
+Proof
+  REPEAT GEN_TAC THEN REWRITE_TAC[CLOSURE_OF_SUBTOPOLOGY] THEN
+  MATCH_MP_TAC(SET_RULE “t SUBSET u ==> s INTER t SUBSET u”) THEN
+  MATCH_MP_TAC CLOSURE_OF_MONO THEN REWRITE_TAC[INTER_SUBSET]
+QED
+
+Theorem CLOSURE_OF_SUBTOPOLOGY_MONO :
+   !top s t (u :'a set).
+        t SUBSET u
+        ==> (subtopology top t) closure_of s SUBSET
+            (subtopology top u) closure_of s
+Proof
+  REPEAT STRIP_TAC THEN REWRITE_TAC[CLOSURE_OF_SUBTOPOLOGY] THEN
+  MATCH_MP_TAC(SET_RULE
+    “s SUBSET s' /\ t SUBSET t' ==> s INTER t SUBSET s' INTER t'”) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC CLOSURE_OF_MONO THEN
+  ASM_SET_TAC[]
+QED
+
+Theorem CLOSURE_OF_SUBSET :
+   !top (s :'a set). s SUBSET topspace top ==> s SUBSET top closure_of s
+Proof
+  REWRITE_TAC[CLOSURE_OF] THEN SET_TAC[]
+QED
+
+Theorem CLOSED_IN_CLOSURE_OF :
+   !top (s :'a set). closed_in top (top closure_of s)
+Proof
+   REPEAT GEN_TAC THEN
+  Q.SUBGOAL_THEN
+   `top closure_of s =
+    topspace top DIFF
+    UNIONS {t | open_in top t /\ DISJOINT s t}`
+  SUBST1_TAC THENL
+  [ REWRITE_TAC[closure_of, UNIONS_GSPEC] THEN SET_TAC[],
+    MATCH_MP_TAC CLOSED_IN_DIFF THEN REWRITE_TAC[CLOSED_IN_TOPSPACE] THEN
+    SIMP_TAC std_ss[OPEN_IN_UNIONS, FORALL_IN_GSPEC] ]
+QED
+
+(* ------------------------------------------------------------------------- *)
+(* Interior with respect to a topological space.                             *)
+(*  (ported from HOL-Light's Multivariate/metric.ml)                         *)
+(* ------------------------------------------------------------------------- *)
+
+(* parse_as_infix("interior_of",(21,"right"));; *)
+val _ = set_fixity "interior_of" (Infixr 602);
+
+Definition interior_of :
+   top interior_of s = {x | ?t. open_in top t /\ x IN t /\ t SUBSET s}
+End
+
+Theorem INTERIOR_OF_RESTRICT :
+   !top (s :'a set).
+        top interior_of s = top interior_of (topspace top INTER s)
+Proof
+    rw [interior_of, Once EXTENSION, SUBSET_INTER]
+ >> MESON_TAC[OPEN_IN_SUBSET]
+QED
+
+Theorem INTERIOR_OF_EQ :
+   !top (s :'a set). (top interior_of s = s) <=> open_in top s
+Proof
+    rw [Once EXTENSION, interior_of]
+ >> GEN_REWRITE_TAC RAND_CONV empty_rewrites[OPEN_IN_SUBOPEN]
+ >> MESON_TAC[SUBSET_DEF]
+QED
+
+Theorem INTERIOR_OF_OPEN_IN :
+   !top (s :'a set). open_in top s ==> top interior_of s = s
+Proof
+  MESON_TAC[INTERIOR_OF_EQ]
+QED
+
+Theorem INTERIOR_OF_EMPTY :
+   !(top :'a topology). top interior_of {} = {}
+Proof
+  REWRITE_TAC[INTERIOR_OF_EQ, OPEN_IN_EMPTY]
+QED
+
+Theorem INTERIOR_OF_TOPSPACE :
+   !(top :'a topology). top interior_of (topspace top) = topspace top
+Proof
+  REWRITE_TAC[INTERIOR_OF_EQ, OPEN_IN_TOPSPACE]
+QED
+
+Theorem OPEN_IN_INTERIOR_OF :
+   !top (s :'a set). open_in top (top interior_of s)
+Proof
+  REPEAT GEN_TAC THEN REWRITE_TAC[interior_of] THEN
+  GEN_REWRITE_TAC I empty_rewrites[OPEN_IN_SUBOPEN]
+ >> rw [SUBSET_DEF]
+ >> Q.EXISTS_TAC ‘t’ >> art []
+ >> Q.X_GEN_TAC ‘y’
+ >> STRIP_TAC
+ >> Q.EXISTS_TAC ‘t’ >> rw []
+QED
+
+Theorem INTERIOR_OF_INTERIOR_OF :
+   !top (s :'a set). top interior_of top interior_of s = top interior_of s
+Proof
+  REWRITE_TAC[INTERIOR_OF_EQ, OPEN_IN_INTERIOR_OF]
+QED
+
+Theorem INTERIOR_OF_SUBSET :
+   !top (s :'a set). top interior_of s SUBSET s
+Proof
+  REWRITE_TAC[interior_of] THEN SET_TAC[]
+QED
+
+Theorem INTERIOR_OF_SUBSET_CLOSURE_OF :
+   !top (s :'a set). top interior_of s SUBSET top closure_of s
+Proof
+  REPEAT GEN_TAC THEN
+  ONCE_REWRITE_TAC[INTERIOR_OF_RESTRICT, CLOSURE_OF_RESTRICT] THEN
+  Q_TAC (TRANS_TAC SUBSET_TRANS) `topspace top INTER s` THEN
+  SIMP_TAC std_ss[INTERIOR_OF_SUBSET, CLOSURE_OF_SUBSET, INTER_SUBSET]
+QED
+
+Theorem SUBSET_INTERIOR_OF_EQ :
+   !top (s :'a set). s SUBSET top interior_of s <=> open_in top s
+Proof
+  SIMP_TAC std_ss[GSYM INTERIOR_OF_EQ, GSYM SUBSET_ANTISYM_EQ, INTERIOR_OF_SUBSET]
+QED
+
+Theorem INTERIOR_OF_MONO :
+   !top s (t :'a set).
+        s SUBSET t ==> top interior_of s SUBSET top interior_of t
+Proof
+   REWRITE_TAC[interior_of] THEN SET_TAC[]
+QED
+
+Theorem INTERIOR_OF_MAXIMAL :
+   !top s (t :'a set).
+        t SUBSET s /\ open_in top t ==> t SUBSET top interior_of s
+Proof
+  REWRITE_TAC[interior_of] THEN SET_TAC[]
+QED
+
+Theorem INTERIOR_OF_MAXIMAL_EQ :
+   !top s (t :'a set).
+        open_in top t ==> (t SUBSET top interior_of s <=> t SUBSET s)
+Proof
+  MESON_TAC[INTERIOR_OF_MAXIMAL, SUBSET_TRANS, INTERIOR_OF_SUBSET]
+QED
+
+Theorem INTERIOR_OF_UNIQUE :
+   !top s (t :'a set).
+        t SUBSET s /\ open_in top t /\
+        (!t'. t' SUBSET s /\ open_in top t' ==> t' SUBSET t)
+        ==> top interior_of s = t
+Proof
+  MESON_TAC[SUBSET_ANTISYM, INTERIOR_OF_MAXIMAL, INTERIOR_OF_SUBSET,
+            OPEN_IN_INTERIOR_OF]
+QED
+
+Theorem INTERIOR_OF_SUBSET_TOPSPACE :
+   !top (s :'a set). top interior_of s SUBSET topspace top
+Proof
+    rw [SUBSET_DEF, interior_of]
+ >> METIS_TAC[REWRITE_RULE[SUBSET_DEF] OPEN_IN_SUBSET]
+QED
+
+Theorem INTERIOR_OF_SUBSET_SUBTOPOLOGY :
+   !top s (t :'a set). (subtopology top s) interior_of t SUBSET s
+Proof
+  REPEAT STRIP_TAC THEN MP_TAC
+   (Q.ISPEC `subtopology top s` INTERIOR_OF_SUBSET_TOPSPACE) THEN
+  SIMP_TAC std_ss[TOPSPACE_SUBTOPOLOGY, SUBSET_INTER]
+QED
+
+Theorem INTERIOR_OF_INTER :
+   !top s (t :'a set).
+      top interior_of (s INTER t) = top interior_of s INTER top interior_of t
+Proof
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ, SUBSET_INTER] THEN
+  SIMP_TAC std_ss[INTERIOR_OF_MONO, INTER_SUBSET] THEN
+  SIMP_TAC std_ss[INTERIOR_OF_MAXIMAL_EQ, OPEN_IN_INTERIOR_OF, OPEN_IN_INTER] THEN
+  MATCH_MP_TAC(SET_RULE
+      “s SUBSET s' /\ t SUBSET t' ==> s INTER t SUBSET s' INTER t'”) THEN
+  REWRITE_TAC[INTERIOR_OF_SUBSET]
+QED
+
+Theorem INTERIOR_OF_INTERS_SUBSET :
+   !top f:('a->bool)->bool.
+        top interior_of (INTERS f) SUBSET
+        INTERS {top interior_of s | s IN f}
+Proof
+    REWRITE_TAC[SUBSET_DEF, interior_of, INTERS_GSPEC]
+ >> rw [IN_INTERS]
+ >> simp []
+ >> Q.EXISTS_TAC ‘t’ >> rw []
+QED
+
+Theorem UNION_INTERIOR_OF_SUBSET :
+   !top s (t :'a set).
+        top interior_of s UNION top interior_of t
+        SUBSET top interior_of (s UNION t)
+Proof
+  SIMP_TAC std_ss[UNION_SUBSET, INTERIOR_OF_MONO, SUBSET_UNION]
+QED
+
+Theorem INTERIOR_OF_EQ_EMPTY :
+   !top (s :'a set).
+                top interior_of s = {} <=>
+                !t. open_in top t /\ t SUBSET s ==> t = {}
+Proof
+  MESON_TAC[INTERIOR_OF_MAXIMAL_EQ, SUBSET_EMPTY,
+            OPEN_IN_INTERIOR_OF, INTERIOR_OF_SUBSET]
+QED
+
+Theorem INTERIOR_OF_EQ_EMPTY_ALT :
+   !top (s :'a set).
+        top interior_of s = {} <=>
+        !t. open_in top t /\ ~(t = {}) ==> ~(t DIFF s = {})
+Proof
+  GEN_TAC THEN REWRITE_TAC[INTERIOR_OF_EQ_EMPTY] THEN SET_TAC[]
+QED
+
+Theorem INTERIOR_OF_UNIONS_OPEN_IN_SUBSETS :
+   !top (s :'a set).
+        UNIONS {t | open_in top t /\ t SUBSET s} = top interior_of s
+Proof
+  REPEAT GEN_TAC THEN CONV_TAC SYM_CONV THEN
+  MATCH_MP_TAC INTERIOR_OF_UNIQUE THEN
+  simp [OPEN_IN_UNIONS] >> SET_TAC []
+QED
+
+Theorem INTERIOR_OF_COMPLEMENT :
+   !top (s :'a set).
+        top interior_of (topspace top DIFF s) =
+        topspace top DIFF top closure_of s
+Proof
+  REWRITE_TAC[interior_of, closure_of] THEN
+  rw [Once EXTENSION, SUBSET_DEF] THEN
+  MESON_TAC[REWRITE_RULE[SUBSET_DEF] OPEN_IN_SUBSET]
+QED
+
+Theorem INTERIOR_OF_CLOSURE_OF :
+   !top (s :'a set).
+        top interior_of s =
+        topspace top DIFF top closure_of (topspace top DIFF s)
+Proof
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[GSYM INTERIOR_OF_COMPLEMENT] THEN
+  GEN_REWRITE_TAC LAND_CONV empty_rewrites[INTERIOR_OF_RESTRICT] THEN
+  AP_TERM_TAC THEN SET_TAC[]
+QED
+
+Theorem CLOSURE_OF_INTERIOR_OF :
+   !top (s :'a set).
+        top closure_of s =
+        topspace top DIFF top interior_of (topspace top DIFF s)
+Proof
+  REWRITE_TAC[INTERIOR_OF_COMPLEMENT] THEN
+  REWRITE_TAC[SET_RULE “s = t DIFF (t DIFF s) <=> s SUBSET t”] THEN
+  REWRITE_TAC[CLOSURE_OF_SUBSET_TOPSPACE]
+QED
+
+Theorem CLOSURE_OF_COMPLEMENT :
+   !top (s :'a set).
+        top closure_of (topspace top DIFF s) =
+        topspace top DIFF top interior_of s
+Proof
+  REWRITE_TAC[interior_of, closure_of] THEN
+  rw [Once EXTENSION, SUBSET_DEF] THEN
+  MESON_TAC[REWRITE_RULE[SUBSET_DEF] OPEN_IN_SUBSET]
+QED
+
+(* ------------------------------------------------------------------------- *)
+(* Frontier (aka boundary) with respect to topological space.                *)
+(*  (ported from HOL-Light's Multivariate/metric.ml)                         *)
+(* ------------------------------------------------------------------------- *)
+
+(* parse_as_infix("frontier_of",(21,"right"));; *)
+val _ = set_fixity "frontier_of" (Infixr 602);
+
+Definition frontier_of :
+   top frontier_of s = top closure_of s DIFF top interior_of s
+End
+
+Theorem FRONTIER_OF_CLOSURES :
+   !top s. top frontier_of s =
+           top closure_of s INTER top closure_of (topspace top DIFF s)
+Proof
+  REPEAT GEN_TAC THEN CONV_TAC SYM_CONV THEN
+  REWRITE_TAC[frontier_of, CLOSURE_OF_COMPLEMENT] THEN
+  MATCH_MP_TAC(SET_RULE “s SUBSET u ==> s INTER (u DIFF t) = s DIFF t”) THEN
+  REWRITE_TAC[CLOSURE_OF_SUBSET_TOPSPACE]
+QED
+
+Theorem INTERIOR_OF_UNION_FRONTIER_OF :
+   !top (s :'a set).
+        top interior_of s UNION top frontier_of s = top closure_of s
+Proof
+  REPEAT GEN_TAC THEN REWRITE_TAC[frontier_of] THEN
+  MP_TAC(Q.SPECL [`top`, `s`] INTERIOR_OF_SUBSET_CLOSURE_OF) THEN
+  SET_TAC[]
+QED
+
+Theorem FRONTIER_OF_RESTRICT :
+   !top (s :'a set). top frontier_of s = top frontier_of (topspace top INTER s)
+Proof
+  REPEAT GEN_TAC THEN REWRITE_TAC[FRONTIER_OF_CLOSURES] THEN
+  BINOP_TAC THEN GEN_REWRITE_TAC LAND_CONV empty_rewrites[CLOSURE_OF_RESTRICT] THEN
+  AP_TERM_TAC THEN SET_TAC[]
+QED
+
+Theorem CLOSED_IN_FRONTIER_OF :
+   !top (s :'a set). closed_in top (top frontier_of s)
+Proof
+  SIMP_TAC std_ss[FRONTIER_OF_CLOSURES, CLOSED_IN_INTER, CLOSED_IN_CLOSURE_OF]
+QED
+
+Theorem FRONTIER_OF_SUBSET_TOPSPACE :
+   !top (s :'a set). top frontier_of s SUBSET topspace top
+Proof
+  SIMP_TAC std_ss[CLOSED_IN_SUBSET, CLOSED_IN_FRONTIER_OF]
+QED
+
+(* ------------------------------------------------------------------------- *)
+(*  HOL-Light's “derived_set_of” and HOL4's “limpt”                          *)
+(* ------------------------------------------------------------------------- *)
+
+Theorem derived_set_of_alt_limpt :
+    !top s. top derived_set_of s = {x | limpt top x s}
+Proof
+    rw [derived_set_of, limpt, Once EXTENSION]
+ >> reverse EQ_TAC >> rw []
+ >- (‘neigh top (t,x)’ by METIS_TAC [OPEN_OWN_NEIGH, IN_APP] \\
+     Q.PAT_X_ASSUM ‘!N. neigh top (N,x) ==> _’ (MP_TAC o Q.SPEC ‘t’) >> rw [] \\
+     Q.EXISTS_TAC ‘y’ >> rw [IN_APP])
+ >> qabbrev_tac ‘u = top interior_of N’
+ >> ‘open_in top u’ by PROVE_TAC [OPEN_IN_INTERIOR_OF]
+ >> ‘u SUBSET N’ by PROVE_TAC [INTERIOR_OF_SUBSET]
+ >> fs [neigh]
+ >> ‘P SUBSET u’ by PROVE_TAC [INTERIOR_OF_MAXIMAL]
+ >> ‘x IN u’ by METIS_TAC [SUBSET_DEF, IN_APP]
+ >> Q.PAT_X_ASSUM ‘!t. x IN t /\ open_in top t ==> _’ (MP_TAC o Q.SPEC ‘u’)
+ >> rw []
+ >> ‘y IN N’ by METIS_TAC [SUBSET_DEF]
+ >> Q.EXISTS_TAC ‘y’ >> fs [IN_APP]
+QED
 
 val _ = export_theory();
 

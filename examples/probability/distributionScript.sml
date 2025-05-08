@@ -3306,6 +3306,24 @@ Proof
  >> Q.EXISTS_TAC ‘euclidean’ >> art []
 QED
 
+Definition Portemanteau_iv_def :
+    Portemanteau_iv E X Y <=>
+      Y (mspace E) <= liminf (\n. X n (mspace E)) /\
+      !s. closed_in (mtop E) s ==> limsup (\n. X n s) <= Y s
+End
+
+Definition Portemanteau_v_def :
+    Portemanteau_v E X Y <=>
+      limsup (\n. X n (mspace E)) <= Y (mspace E) /\
+      !s. open_in (mtop E) s ==> Y s <= liminf (\n. X n s)
+End
+
+Definition Portemanteau_vi_def :
+    Portemanteau_vi E X Y <=>
+      !A. A IN subsets (B (mtop E)) /\ Y ((mtop E) frontier_of A) = 0 ==>
+         ((\n. X n A) --> Y A) sequentially
+End
+
 (* ------------------------------------------------------------------------- *)
 (*  Below are unfinished (cheated) theorems (TODO)                           *)
 (* ------------------------------------------------------------------------- *)

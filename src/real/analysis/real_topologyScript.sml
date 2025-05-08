@@ -3836,8 +3836,15 @@ val OPEN_IN_SING = store_thm ("OPEN_IN_SING",
 (* Interior of a set.                                                        *)
 (* ------------------------------------------------------------------------- *)
 
-val interior = new_definition ("interior",
-  ``interior s = {x | ?t. open t /\ x IN t /\ t SUBSET s}``);
+Definition interior_def :
+    interior s = euclidean interior_of s
+End
+
+Theorem interior :
+    !s. interior s = {x | ?t. open t /\ x IN t /\ t SUBSET s}
+Proof
+    rw [interior_def, interior_of, euclidean_open_def]
+QED
 
 val INTERIOR_EQ = store_thm ("INTERIOR_EQ",
  ``!s. (interior s = s) <=> open s``,
@@ -4085,8 +4092,16 @@ val REAL_ARCH_RDIV_EQ_0 = store_thm ("REAL_ARCH_RDIV_EQ_0",
 (* Closure of a set.                                                         *)
 (* ------------------------------------------------------------------------- *)
 
-val closure = new_definition ("closure",
-  ``closure s = s UNION {x | x limit_point_of s}``);
+Definition closure_def :
+    closure s = euclidean closure_of s
+End
+
+Theorem closure :
+    !s. closure s = s UNION {x | x limit_point_of s}
+Proof
+    rw [closure_def, CLOSURE_OF, TOPSPACE_EUCLIDEAN, limit_point_of_def,
+        derived_set_of_alt_limpt]
+QED
 
 val CLOSURE_APPROACHABLE = store_thm ("CLOSURE_APPROACHABLE",
  ``!x s. x IN closure(s) <=> !e. &0 < e ==> ?y. y IN s /\ dist(y,x) < e``,
@@ -4498,8 +4513,15 @@ val DENSE_OPEN_INTER = store_thm ("DENSE_OPEN_INTER",
 (* Frontier (aka boundary).                                                  *)
 (* ------------------------------------------------------------------------- *)
 
-val frontier = new_definition ("frontier",
-  ``frontier s = (closure s) DIFF (interior s)``);
+Definition frontier_def :
+    frontier s = euclidean frontier_of s
+End
+
+Theorem frontier :
+    !s. frontier s = (closure s) DIFF (interior s)
+Proof
+    rw [frontier_def, frontier_of, closure_def, interior_def]
+QED
 
 val FRONTIER_CLOSED = store_thm ("FRONTIER_CLOSED",
  ``!s. closed(frontier s)``,
