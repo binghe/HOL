@@ -3291,7 +3291,19 @@ Proof
      rw [points_of_discontinuity_def, Once EXTENSION] \\
      fs [CONTINUOUS_MAP_EQ_TOPCONTINUOUS_AT])
  (* show that continuous function is borel measurable *)
- >> cheat
+ >> MATCH_MP_TAC in_borel_measurable_open_imp
+ >> RW_TAC std_ss [sigma_algebra_general_borel, PREIMAGE_def, euclidean_open_def,
+                   space_general_borel]
+ >> qabbrev_tac ‘t = mtop E’ (* the underlying metric is irrelevant *)
+ >> ASSUME_TAC (Q.SPEC ‘t’ OPEN_IN_TOPSPACE)
+ >> qabbrev_tac ‘u = topspace t’
+ >> ‘{x | f x IN s} INTER u = {x | x IN u /\ f x IN s}’ by SET_TAC []
+ >> POP_ORW
+ >> REWRITE_TAC [general_borel_def]
+ >> MATCH_MP_TAC IN_SIGMA
+ >> REWRITE_TAC [Once IN_APP]
+ >> MATCH_MP_TAC OPEN_IN_CONTINUOUS_MAP_PREIMAGE_GEN
+ >> Q.EXISTS_TAC ‘euclidean’ >> art []
 QED
 
 (* ------------------------------------------------------------------------- *)
