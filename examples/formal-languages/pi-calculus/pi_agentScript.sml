@@ -11,6 +11,9 @@ open pred_setTheory listTheory;
 
 open generic_termsTheory binderLib nomsetTheory nomdatatype;
 
+(* only for its syntax of SUB *)
+local open termTheory in end;
+
 val _ = new_theory "pi_agent";
 
 (* ----------------------------------------------------------------------
@@ -1276,7 +1279,7 @@ val parameter_tm_recursion0 =
                                GSYM LEFT_FORALL_IMP_THM,
                                LIST_REL_CONS1, genind_GVAR,
                                genind_GLAM_eqn, sidecond_def,
-                               NEWFCB_def, relsupp_def,
+                               NEWFCB_def,
                                LENGTH_NIL_SYM, LENGTH1, LENGTH2]
       |> ONCE_REWRITE_RULE [termP']
       |> SIMP_RULE (srw_ss() ++ DNF_ss) [LENGTH1, LENGTH2, LENGTH_NIL]
@@ -1285,7 +1288,8 @@ val parameter_tm_recursion0 =
       |> CONV_RULE (DEPTH_CONV termP_removal2)
       |> SIMP_RULE (srw_ss()) [GSYM supp_npm, SYM term_REP_npm,
                                GSYM supp_tpm, SYM term_REP_tpm,
-                               GSYM supp_rpm, SYM term_REP_rpm]
+                               GSYM supp_rpm, SYM term_REP_rpm,
+                               relsupp_def]
       |> UNDISCH
       |> rpt_hyp_dest_conj
 
@@ -1298,7 +1302,6 @@ val rwt2 =
 
 val (exv, body) = dest_exists (concl parameter_tm_recursion0)
 val cs = CONJUNCTS (ASSUME (body |> subst[exv |-> FN]))
-
 
 val cs' = map (SIMP_RULE bool_ss (rwt0:: rwt1:: rwt2:: GLAM_NIL_ELIM ::
                                   List.concat fn_rewrites)) cs
@@ -1333,6 +1336,58 @@ Theorem parameter_tm_recursion = th
                  ‘dpm’ |-> ‘apm’]
       |> CONV_RULE (REDEPTH_CONV sort_uvars)
 
+Overload O0[local] = “OUTL”
+Overload O1[local] = “\z. OUTL (OUTR z)”
+Overload O2[local] = “\z. OUTR (OUTR z)”
+Overload I0[local] = “INL”
+Overload I1[local] = “\p. INR (INL p)”
+Overload I2[local] = “\r. INR (INR r)”
+
+(* fn0 :name -> 'q -> 'r0 *)
+Theorem parameter_tm_recursion_general =
+        parameter_tm_recursion
+     |> INST_TYPE [“:'r” |-> “:'r0 + 'r1 + 'r2”]
+     |> Q.INST [‘vr’  |-> ‘\s u. I0 (vru s u)’,
+             (* f0 ~ f8 is for the type :pi *)
+                ‘f0’  |-> ‘\u. I1 (g0 u)’,
+                ‘f1’  |-> ‘\r t u. I1 (g1 (O1 o r) t u)’,
+                ‘f2’  |-> ‘\r1 t1 r2 t2 t3 u.
+                               I1 (g2 (O0 o r1) t1 (O1 o r2) t2 t3 u)’,
+                ‘f3’  |-> ‘\r1 r2 r3 t1 t2 t3 u.
+                               I1 (g3 (O0 o r1) (O0 o r2) (O1 o r3) t1 t2 t3 u)’,
+                ‘f4’  |-> ‘\r1 r2 r3 t1 t2 t3 u.
+                               I1 (g4 (O0 o r1) (O0 o r2) (O1 o r3) t1 t2 t3 u)’,
+                ‘f5’  |-> ‘\r1 r2 r3 t1 t2 t3 u.
+                               I1 (g5 (O0 o r1) (O0 o r2) (O1 o r3) t1 t2 t3 u)’,
+                ‘f6’  |-> ‘\r1 r2 t1 t2 u. I1 (g6 (O1 o r1) (O1 o r2) t1 t2 u)’,
+                ‘f7’  |-> ‘\r1 r2 t1 t2 u. I1 (g7 (O1 o r1) (O1 o r2) t1 t2 u)’,
+                ‘f8’  |-> ‘\s r t u. I1 (g8 s (O1 o r) t u)’,
+             (* f9 ~ f12 is for the type :residual *)
+                ‘f9’  |-> ‘\r t u. I2 (g9 (O1 o r) t u)’,
+                ‘f10’ |-> ‘\r1 s r2 t1 t2 u.
+                               I2 (g10 (O0 o r1) s (O1 o r2) t1 t2 u)’,
+                ‘f11’ |-> ‘\r1 s r2 t1 t2 u.
+                               I2 (g11 (O0 o r1) s (O1 o r2) t1 t2 u)’,
+                ‘f12’ |-> ‘\r1 r2 r3 t1 t2 t3 u.
+                               I2 (g12 (O0 o r1) (O0 o r2) (O1 o r3) t1 t2 t3 u)’]
+     |> SIMP_RULE (srw_ss()) [oneTheory.FORALL_ONE, oneTheory.FORALL_ONE_FN,
+                              oneTheory.EXISTS_ONE_FN, fnpm_def]
+     |> SIMP_RULE (srw_ss() ++ CONJ_ss) [supp_unitfn]
+     |> Q.INST [‘vru’ |-> ‘vr’,
+                 ‘g0’ |-> ‘f0’,
+                 ‘g1’ |-> ‘f1’,
+                 ‘g2’ |-> ‘f2’,
+                 ‘g3’ |-> ‘f3’,
+                 ‘g4’ |-> ‘f4’,
+                 ‘g5’ |-> ‘f5’,
+                 ‘g6’ |-> ‘f6’,
+                 ‘g7’ |-> ‘f7’,
+                 ‘g8’ |-> ‘f8’,
+                 ‘g9’ |-> ‘f9’,
+                ‘g10’ |-> ‘f10’,
+                ‘g11’ |-> ‘f11’,
+                ‘g12’ |-> ‘f12’]
+
 Theorem tm_recursion =
   parameter_tm_recursion
       |> Q.INST_TYPE [‘:'q’ |-> ‘:unit’]
@@ -1349,7 +1404,8 @@ Theorem tm_recursion =
                   ‘f8’ |-> ‘\s r t u. g8 s (r()) t’,
                   ‘f9’ |-> ‘\r t u. g9 (r()) t’,
                  ‘f10’ |-> ‘\r1 s r2 t1 t2 u. g10 (r1()) s (r2()) t1 t2’,
-                 ‘f11’ |-> ‘\r1 s r2 t1 t2 u. g11 (r1()) s (r2()) t1 t2’]
+                 ‘f11’ |-> ‘\r1 s r2 t1 t2 u. g11 (r1()) s (r2()) t1 t2’,
+                 ‘f12’ |-> ‘\r1 r2 r3 t1 t2 t3. g12 (r1()) (r2()) (r3()) t1 t2 t3’]
       |> SIMP_RULE (srw_ss()) [oneTheory.FORALL_ONE, oneTheory.FORALL_ONE_FN,
                                oneTheory.EXISTS_ONE_FN, fnpm_def]
       |> SIMP_RULE (srw_ss() ++ CONJ_ss) [supp_unitfn]
@@ -1365,7 +1421,8 @@ Theorem tm_recursion =
                   ‘g8’ |-> ‘f8’,
                   ‘g9’ |-> ‘f9’,
                  ‘g10’ |-> ‘f10’,
-                 ‘g11’ |-> ‘f11’]
+                 ‘g11’ |-> ‘f11’,
+                 ‘g12’ |-> ‘f12’]
 
 (* ----------------------------------------------------------------------
     Establish substitution function
@@ -1448,58 +1505,62 @@ Proof
       qexists_tac ‘\M (x,y). f y x M’ >> srw_tac [][] ]
 QED
 
-Overload n_of = “\(z :name # pi # residual). FST z”
-Overload p_of = “\(z :name # pi # residual). FST (SND z)”
-Overload r_of = “\(z :name # pi # residual). SND (SND z)”
-Overload in_n = “\n. (n :name,Nil,TauR Nil)”
-Overload in_p = “\p. (Name "",p :pi,TauR Nil)”
-Overload in_r = “\r. (Name "",Nil,r :residual)”
-
 val subst_exists0 =
-    parameter_tm_recursion
- |> INST_TYPE [“:'r” |-> “:name # pi # residual”,
-               “:'q” |-> “:string # string”]
- |> SPEC_ALL
- |> Q.INST [‘A’ |-> ‘{""}’,
-          ‘apm’ |-> ‘pair_pmact name_pmact (pair_pmact pi_pmact residual_pmact)’,
-          ‘ppm’ |-> ‘pair_pmact string_pmact string_pmact’,
-           ‘vr’ |-> ‘\s (x,y). if s = x then in_n (Name y)
-                                        else in_n (Name s)’,
-           ‘f0’ |-> ‘\r. in_p Nil’,
-           ‘f1’ |-> ‘\r t p. in_p (Tau (p_of (r p)))’,
-           ‘f2’ |-> ‘\r1 s r2 t1 t2 p. in_p (Input (n_of (r1 p)) s (p_of (r2 p)))’,
-           ‘f3’ |-> ‘\r1 r2 r3 t1 t2 t3 p.
-                         in_p (Output (n_of (r1 p)) (n_of (r2 p)) (p_of (r3 p)))’,
-           ‘f4’ |-> ‘\r1 r2 r3 t1 t2 t3 p.
-                         in_p (Match (n_of (r1 p)) (n_of (r2 p)) (p_of (r3 p)))’,
-           ‘f5’ |-> ‘\r1 r2 r3 t1 t2 t3 p.
-                         in_p (Mismatch (n_of (r1 p)) (n_of (r2 p)) (p_of (r3 p)))’,
-           ‘f6’ |-> ‘\r1 r2 t1 t2 p. in_p (Sum (p_of (r1 p)) (p_of (r2 p)))’,
-           ‘f7’ |-> ‘\r1 r2 t1 t2 p. in_p (Par (p_of (r1 p)) (p_of (r2 p)))’,
-           ‘f8’ |-> ‘\s r t p. in_p (Res s (p_of (r p)))’,
-           ‘f9’ |-> ‘\r t p. in_r (TauR (p_of (r p)))’,
-          ‘f10’ |-> ‘\r1 s r2 t1 t2 p. in_r (InputS (n_of (r1 p)) s (p_of (r2 p)))’,
-          ‘f11’ |-> ‘\r1 s r2 t1 t2 p.
-                         in_r (BoundOutput (n_of (r1 p)) s (p_of (r2 p)))’,
-          ‘f12’ |-> ‘\r1 r2 r3 t1 t2 t3 p.
-                         in_r (FreeOutput (n_of (r1 p)) (n_of (r2 p)) (p_of (r3 p)))’]
+    parameter_tm_recursion_general
+ |> INST_TYPE [“:'q”  |-> “:string # string”,
+               “:'r0” |-> “:name”,
+               “:'r1” |-> “:pi”,
+               “:'r2” |-> “:residual”]
+ |> SPEC_ALL;
+
+val subst_exists1 =
+    subst_exists0
+ |> Q.INST
+      [‘A’   |-> ‘{}’,
+       ‘ppm’ |-> ‘pair_pmact string_pmact string_pmact’,
+       ‘apm’ |-> ‘sum_pmact name_pmact (sum_pmact pi_pmact residual_pmact)’,
+       ‘vr’  |-> ‘\s (x,y). if s = x then Name y else Name s’,
+       ‘f0’  |-> ‘\p. Nil’,
+       ‘f1’  |-> ‘\r t p. Tau (r p)’,
+       ‘f2’  |-> ‘\r1 s r2 t1 t2 p. Input (r1 p) s (r2 p)’,
+       ‘f3’  |-> ‘\r1 r2 r3 t1 t2 t3 p. Output (r1 p) (r2 p) (r3 p)’,
+       ‘f4’  |-> ‘\r1 r2 r3 t1 t2 t3 p. Match (r1 p) (r2 p) (r3 p)’,
+       ‘f5’  |-> ‘\r1 r2 r3 t1 t2 t3 p. Mismatch (r1 p) (r2 p) (r3 p)’,
+       ‘f6’  |-> ‘\r1 r2 t1 t2 p. Sum (r1 p) (r2 p)’,
+       ‘f7’  |-> ‘\r1 r2 t1 t2 p. Par (r1 p) (r2 p)’,
+       ‘f8’  |-> ‘\s r t p. Res s (r p)’,
+       ‘f9’  |-> ‘\r t p. TauR (r p)’,
+       ‘f10’ |-> ‘\r1 s r2 t1 t2 p. InputS (r1 p) s (r2 p)’,
+       ‘f11’ |-> ‘\r1 s r2 t1 t2 p. BoundOutput (r1 p) s (r2 p)’,
+       ‘f12’ |-> ‘\r1 r2 r3 t1 t2 t3 p. FreeOutput (r1 p) (r2 p) (r3 p)’];
+
+val subst_exists2 =
+    subst_exists1
  |> CONV_RULE (LAND_CONV (SIMP_CONV (srw_ss()) [pairTheory.FORALL_PROD]))
  |> SIMP_RULE (srw_ss()) [support_def, FUN_EQ_THM, fnpm_def,
                           npm_COND, tpm_COND, rpm_COND,
                           npm_fresh, tpm_fresh, rpm_fresh,
-                          pmact_sing_inv,
+                          pmact_sing_inv, combinTheory.o_DEF,
                           basic_swapTheory.swapstr_eq_left]
  |> SIMP_RULE (srw_ss()) [rewrite_pairing,
                           pairTheory.FORALL_PROD]
  |> CONV_RULE (DEPTH_CONV (rename_vars [("p_1", "u"), ("p_2", "v")]));
 
-(*
+(* FIXME:
+fun prove_alpha_fcbhyp {ppm, alphas, rwts} th = let
+val ppm = “pair_pmact string_pmact string_pmact”;
+val alphas = [tpm_ALPHA_Res, tpm_ALPHA_Input, tpm_ALPHA_InputS,
+              tpm_ALPHA_BoundOutput];
+val rwts :thm list = [];
+val th = subst_exists1;
+
 val subst_exists =
-    subst_exists0
+    subst_exists1
  |> prove_alpha_fcbhyp {ppm = “pair_pmact string_pmact string_pmact”,
                         rwts = [],
                         alphas = [tpm_ALPHA_Res, tpm_ALPHA_Input,
-                                  tpm_ALPHA_InputS, tpm_ALPHA_BoundOutput]};
+                                  tpm_ALPHA_InputS,
+                                  tpm_ALPHA_BoundOutput]};
 
 val SUB_DEF = new_specification("SUB_DEF", ["SUB"], subst_exists);
 

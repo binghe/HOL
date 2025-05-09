@@ -1346,3 +1346,4 @@ asm_simp_tac (srw_ss()) [pmact_sing_inv] >>
 metis_tac [genind_GLAM_subterm]);
 
 val _ = export_theory()
+val _ = html_theory "generic_terms";
