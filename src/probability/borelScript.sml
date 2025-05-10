@@ -8288,6 +8288,13 @@ Proof
  >> irule_at Any in_borel_measurable_from_Borel >> art []
 QED
 
+Theorem IN_MEASURABLE_BOREL_NORMAL[simp] :
+    Normal IN measurable borel Borel
+Proof
+    rw [sigma_algebra_borel, IN_MEASURABLE_BOREL, space_borel, IN_FUNSET]
+ >> rw [borel_measurable_sets]
+QED
+
 (*** AE Theorems ***)
 
 Theorem AE_subset:

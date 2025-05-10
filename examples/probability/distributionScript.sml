@@ -28,6 +28,8 @@ fun ASSERT_TAC tm = SUBGOAL_THEN tm STRIP_ASSUME_TAC;
 fun METIS ths tm = prove(tm,METIS_TAC ths);
 val T_TAC = rpt (Q.PAT_X_ASSUM ‘T’ K_TAC);
 
+val _ = hide "equiv_class";
+
 (* ------------------------------------------------------------------------- *)
 (*  Properties of distribution_functions                                     *)
 (* ------------------------------------------------------------------------- *)
@@ -3292,8 +3294,8 @@ Proof
      fs [CONTINUOUS_MAP_EQ_TOPCONTINUOUS_AT])
  (* show that continuous function is borel measurable *)
  >> MATCH_MP_TAC in_borel_measurable_open_imp
- >> RW_TAC std_ss [sigma_algebra_general_borel, PREIMAGE_def, euclidean_open_def,
-                   space_general_borel]
+ >> RW_TAC std_ss [sigma_algebra_general_borel, PREIMAGE_def,
+                   euclidean_open_def, space_general_borel]
  >> qabbrev_tac ‘t = mtop E’ (* the underlying metric is irrelevant *)
  >> ASSUME_TAC (Q.SPEC ‘t’ OPEN_IN_TOPSPACE)
  >> qabbrev_tac ‘u = topspace t’
@@ -3317,6 +3319,89 @@ Definition Portemanteau_v_def :
       limsup (\n. X n (mspace E)) <= Y (mspace E) /\
       !s. open_in (mtop E) s ==> Y s <= liminf (\n. X n s)
 End
+
+(* "trivial" *)
+Theorem Portemanteau_v_imp_vi[local] :
+    !E X Y. Portemanteau_antecedents E X Y /\
+            Portemanteau_v E X Y ==> Portemanteau_iv E X Y
+Proof
+    rpt GEN_TAC
+ >> simp [Portemanteau_antecedents_def, Portemanteau_iv_def, Portemanteau_v_def]
+ >> STRIP_TAC
+ (* Y (mspace E) <= liminf (\n. X n (mspace E)) *)
+ >> CONJ_TAC
+ >- (POP_ASSUM MATCH_MP_TAC \\
+     REWRITE_TAC [mspace, OPEN_IN_TOPSPACE])
+ >> Q.X_GEN_TAC ‘s’ >> STRIP_TAC
+ >> qabbrev_tac ‘sp = mspace E’
+ >> qabbrev_tac ‘t = mtop E’
+ >> qabbrev_tac ‘s0 = sp DIFF s’
+ >> Know ‘open_in t s0’
+ >- FULL_SIMP_TAC std_ss [closed_in, Abbr ‘s0’, Abbr ‘sp’, mspace]
+ >> DISCH_TAC
+ >> ‘s SUBSET sp’ by FULL_SIMP_TAC std_ss [closed_in, mspace, Abbr ‘sp’]
+ >> ‘s = sp DIFF s0’ by ASM_SET_TAC [] >> POP_ORW
+ >> qabbrev_tac ‘b = B t’
+ >> ‘sigma_algebra b’ by METIS_TAC [sigma_algebra_general_borel]
+ >> Know ‘space b = sp’
+ >- (rw [Abbr ‘sp’, Abbr ‘b’, space_general_borel] \\
+     rw [Abbr ‘t’, mspace])
+ >> DISCH_TAC
+ >> Know ‘s0 IN subsets b’
+ >- (simp [Abbr ‘b’, general_borel_def] \\
+     MATCH_MP_TAC IN_SIGMA >> rw [IN_APP])
+ >> DISCH_TAC
+ >> Know ‘s IN subsets b’
+ >- (‘s = sp DIFF s0’ by ASM_SET_TAC [] >> POP_ORW \\
+     Q.PAT_X_ASSUM ‘space b = sp’ (REWRITE_TAC o wrap o SYM) \\
+     MATCH_MP_TAC SIGMA_ALGEBRA_COMPL >> art [])
+ >> DISCH_TAC
+ (* applying MEASURE_SPACE_FINITE_DIFF *)
+ >> Know ‘Y (sp DIFF s0) = Y sp - Y s0’
+ >- (Q.PAT_X_ASSUM ‘subprobability_measure t Y’ MP_TAC \\
+     rw [subprobability_measure_thm] \\
+     qabbrev_tac ‘p = (topspace t,subsets (B t),Y)’ \\
+    ‘Y = measure p’ by rw [Abbr ‘p’] >> POP_ORW \\
+    ‘space b = m_space p’ by rw [Abbr ‘b’, Abbr ‘p’, space_general_borel] \\
+     POP_ORW \\
+     MATCH_MP_TAC MEASURE_SPACE_FINITE_DIFF >> rw [Abbr ‘p’] \\
+     simp [lt_infty] \\
+     Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw [])
+ >> Rewr'
+ >> Know ‘!n. X n (sp DIFF s0) = X n sp - X n s0’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     Q.PAT_X_ASSUM ‘!n. subprobability_measure t (X n)’ (MP_TAC o Q.SPEC ‘n’) \\
+     rw [subprobability_measure_thm] \\
+     qabbrev_tac ‘p = (topspace t,subsets (B t),X n)’ \\
+    ‘X n = measure p’ by rw [Abbr ‘p’] >> POP_ORW \\
+    ‘space b = m_space p’ by rw [Abbr ‘b’, Abbr ‘p’, space_general_borel] \\
+     POP_ORW \\
+     MATCH_MP_TAC MEASURE_SPACE_FINITE_DIFF >> rw [Abbr ‘p’] \\
+     simp [lt_infty] \\
+     Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw [])
+ >> Rewr'
+ (* stage work *)
+ >> cheat
+QED
+
+(* "trivial" *)
+Theorem Portemanteau_iv_imp_v[local] :
+    !E X Y. Portemanteau_antecedents E X Y /\
+            Portemanteau_iv E X Y ==> Portemanteau_v E X Y
+Proof
+    rpt GEN_TAC
+ >> simp [Portemanteau_antecedents_def, Portemanteau_iv_def, Portemanteau_v_def]
+ >> STRIP_TAC
+ (* limsup (\n. X n (mspace E)) <= Y (mspace E) *)
+ >> cheat
+QED
+
+Theorem Portemanteau_iv_eq_v[local] :
+    !E X Y. Portemanteau_antecedents E X Y ==>
+           (Portemanteau_iv E X Y <=> Portemanteau_v E X Y)
+Proof
+    METIS_TAC [Portemanteau_iv_imp_v, Portemanteau_v_imp_vi]
+QED
 
 Definition Portemanteau_vi_def :
     Portemanteau_vi E X Y <=>
@@ -3601,57 +3686,71 @@ QED
  >> rw [Abbr ‘A’, borel_measurable_real_set]
  *)
 
-Theorem integral_of_normal_rv :
-    !p X mu sig. prob_space p /\ normal_rv X p mu sig ==>
+(* Needed theorems:
+   [normal_pdf_integral_eq_1]
+   |- !X p mu sig.
+        prob_space p /\ normal_rv X p mu sig ==>
+        integral lborel (PDF p X) = 1
+
+   [integral_normal_pdf_eq_density']
+   |- !X p mu sig f.
+        prob_space p /\ normal_rv X p mu sig /\ (!x. 0 <= f x) /\
+        f IN Borel_measurable (measurable_space lborel) ==>
+        pos_fn_integral lborel (\x. f x * PDF p X x) =
+        pos_fn_integral lborel (\x. f x * Normal_density mu sig x)
+
+   [integral_distr]
+   |- !M B f u.
+        measure_space M /\ sigma_algebra B /\
+        f IN measurable (measurable_space M) B /\ u IN Borel_measurable B ==>
+        integral (space B,subsets B,distr M f) u = integral M (u o f) /\
+        (integrable (space B,subsets B,distr M f) u <=> integrable M (u o f))
+
+   [pos_fn_integral_density_reduce]
+   |- !m f g.
+        measure_space m /\ f IN Borel_measurable (measurable_space m) /\
+        g IN Borel_measurable (measurable_space m) /\
+        (!x. x IN m_space m ==> 0 <= f x) /\
+        (!x. x IN m_space m ==> 0 <= g x) ==>
+        pos_fn_integral (density m f) g = pos_fn_integral m (\x. f x * g x)
+
+   [normal_pmeasure_alt_density_measure]
+   |- !mu sig s.
+        normal_pmeasure mu sig s =
+        if s IN measurable_sets lborel then
+          (Normal o normal_density mu sig * lborel) s
+        else 0
+ *)
+Theorem expectation_of_std_normal_rv :
+    !p X mu sig. prob_space p /\ normal_rv X p 0 1 ==>
                  integrable p (Normal o X) /\
-                 integral p (Normal o X) = Normal mu
+                 expectation p (Normal o X) = 0
 Proof
     rpt GEN_TAC
  >> simp [normal_rv_def, distribution_distr, random_variable_def,
-          p_space_def, events_def, prob_def, prob_space_def]
+          p_space_def, events_def, prob_def, prob_space_def, expectation_def]
  >> STRIP_TAC
- >> qabbrev_tac ‘Y = Normal o X’
- >> ‘Y IN Borel_measurable (measurable_space p)’
-       by METIS_TAC [IN_MEASURABLE_BOREL_IMP_BOREL]
- >> MP_TAC (Q.SPECL [‘p’, ‘Borel’, ‘Y’, ‘I’]
-                    (INST_TYPE [beta |-> “:extreal”] integral_distr))
- >> simp [SIGMA_ALGEBRA_BOREL, MEASURABLE_I]
+ >> ASSUME_TAC sigma_algebra_borel
+ >> MP_TAC (Q.SPECL [‘p’, ‘borel’, ‘X’, ‘Normal’]
+                    (INST_TYPE [beta |-> “:real”] integral_distr)) >> simp []
  >> STRIP_TAC
  >> NTAC 2 (POP_ASSUM (REWRITE_TAC o wrap o SYM))
- >> qabbrev_tac ‘M = (space Borel,subsets Borel,distr p Y)’
- >> Know ‘!s. s IN subsets Borel ==>
-              distr p Y s = normal_pmeasure mu sig (real_set s)’
- >- (
-     cheat)
+ >> qmatch_abbrev_tac ‘integrable M Normal /\ _’
+ >> Know ‘measure_space M’
+ >- (qunabbrev_tac ‘M’ \\
+     MATCH_MP_TAC measure_space_distr >> rw [])
  >> DISCH_TAC
- (*
- >> integral_cong_measure
- integrable_cong_measure
-  pos_fn_integral_density_reduce
-  *)
+ >> qabbrev_tac ‘N = (space borel,subsets borel,normal_pmeasure 0 1)’
+ >> ‘measure_space N’ by PROVE_TAC [normal_measure_space]
+ >> ‘measure_space_eq M N’ by rw [measure_space_eq_def, Abbr ‘M’, Abbr ‘N’]
+ >> ‘integrable M Normal <=> integrable N Normal’ by rw [integrable_cong_measure']
+ >> POP_ORW
+ >> ‘integral M Normal = integral N Normal’ by rw [integral_cong_measure']
+ >> POP_ORW
+ >> simp [integral_def, integrable_def, GSYM CONJ_ASSOC]
+ >> CONJ_TAC >- rw [Abbr ‘N’]
  >> cheat
 QED
-
-Theorem integral_of_ext_normal_rv :
-    !p X mu sig. prob_space p /\ ext_normal_rv X p mu sig ==>
-                 integrable p X /\ integral p X = Normal mu
-Proof
-    cheat
-QED
-
-(* |- !p X mu sig.
-        prob_space p /\ normal_rv X p mu sig ==>
-        integrable p (Normal o X) /\ integral p (Normal o X) = Normal mu
- *)
-Theorem expectation_of_normal_rv =
-        REWRITE_RULE [expectation_def] integral_of_normal_rv
-
-(* |- !p X mu sig.
-        prob_space p /\ ext_normal_rv X p mu sig ==>
-        integrable p X /\ integral p X = Normal mu
- *)
-Theorem expectation_of_ext_normal_rv =
-        REWRITE_RULE [expectation_def] integral_of_ext_normal_rv
 
 val _ = export_theory ();
 val _ = html_theory "distribution";
