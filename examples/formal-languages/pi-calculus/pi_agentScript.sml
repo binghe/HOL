@@ -1540,22 +1540,45 @@ val subst_exists2 =
  |> SIMP_RULE (srw_ss()) [support_def, FUN_EQ_THM, fnpm_def,
                           npm_COND, tpm_COND, rpm_COND,
                           npm_fresh, tpm_fresh, rpm_fresh,
+                          npm_thm, tpm_thm, rpm_thm, (* newly added *)
                           pmact_sing_inv, combinTheory.o_DEF,
                           basic_swapTheory.swapstr_eq_left]
- |> SIMP_RULE (srw_ss()) [rewrite_pairing,
-                          pairTheory.FORALL_PROD]
+ |> SIMP_RULE (srw_ss()) [rewrite_pairing, pairTheory.FORALL_PROD]
  |> CONV_RULE (DEPTH_CONV (rename_vars [("p_1", "u"), ("p_2", "v")]));
 
 (* FIXME:
-fun prove_alpha_fcbhyp {ppm, alphas, rwts} th = let
 val ppm = “pair_pmact string_pmact string_pmact”;
 val alphas = [tpm_ALPHA_Res, tpm_ALPHA_Input, tpm_ALPHA_InputS,
               tpm_ALPHA_BoundOutput];
 val rwts :thm list = [];
-val th = subst_exists1;
+val th = subst_exists2;
+val th = rpt_hyp_dest_conj (UNDISCH th);
+val ths = hypset th;
+
+fun prove_alpha_fcbhyp {ppm, alphas, rwts} th = let
+  open nomsetTheory
+  val th = rpt_hyp_dest_conj (UNDISCH th)
+  fun foldthis (h,th) = let
+    val h_th =
+      TAC_PROOF(([], h),
+                rpt gen_tac >> strip_tac >>
+                FIRST (map (match_mp_tac o GSYM) alphas) >>
+                match_mp_tac (GEN_ALL notinsupp_fnapp) >>
+                EXISTS_TAC ppm >>
+                srw_tac [] rwts)
+  in
+    PROVE_HYP h_th th
+  end
+in
+  HOLset.foldl foldthis th (hypset th)
+end
+
+  applying [notinsupp_fnapp]
+  |- v NOTIN supp (fn_pmact dpm rpm) f /\ v NOTIN supp dpm x ==>
+      v NOTIN supp rpm (f x)
 
 val subst_exists =
-    subst_exists1
+    subst_exists2
  |> prove_alpha_fcbhyp {ppm = “pair_pmact string_pmact string_pmact”,
                         rwts = [],
                         alphas = [tpm_ALPHA_Res, tpm_ALPHA_Input,
