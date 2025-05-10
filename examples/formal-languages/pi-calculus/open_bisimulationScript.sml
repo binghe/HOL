@@ -20,6 +20,11 @@ Overload sc = “symmetric_closure”
 
 val T_TAC = rpt (Q.PAT_X_ASSUM ‘T’ K_TAC);
 
+val _ = temp_delsimps [
+   "lift_disj_eq", "lift_imp_disj",
+   "IN_UNION" (* |- !s t x. x IN s UNION t <=> x IN s \/ x IN t *)
+];
+
 (* ----------------------------------------------------------------------
    Pi-calculus as a nominal datatype in HOL4
 
@@ -157,103 +162,8 @@ QED
 Theorem dpm_union :
     !pi D1 D2. dpm pi (D1 UNION D2) = dpm pi D1 UNION dpm pi D2
 Proof
-    rw [Once EXTENSION]
+    rw [Once EXTENSION, IN_UNION]
 QED
-
-(* The original open transition relation *)
-Inductive TRANS :
-[TAU]
-    !P.       TRANS (Tau P) (TauR P)
-[INPUT]
-    !a x P.   x <> a ==> TRANS (Input (Name a) x P) (InputS (Name a) x P)
-[OUTPUT]
-    !a b P.   TRANS (Output (Name a) (Name b) P) (FreeOutput (Name a) (Name b) P)
-[MATCH]
-    !P Rs b.   TRANS P Rs ==> TRANS (Match (Name b) (Name b) P) Rs
-[MISMACH]
-    !P Rs a b. TRANS P Rs /\ a <> b ==> TRANS (Mismatch (Name a) (Name b) P) Rs
-
-[OPEN]
-    !P P' a b. TRANS P (FreeOutput (Name a) (Name b) P') /\ a <> b ==>
-               TRANS (Res b P) (BoundOutput (Name a) b P')
-[SUM1]
-    !P Q Rs. TRANS P Rs ==> TRANS (Sum P Q) Rs
-[SUM2]
-    !P Q Rs. TRANS Q Rs ==> TRANS (Sum P Q) Rs
-
-[PAR1_I]
-    !P P' Q a x.
-       TRANS P (InputS (Name a) x P') /\ x # P /\ x # Q /\ x <> a ==>
-       TRANS (Par P Q) (InputS (Name a) x (Par P' Q))
-[PAR1_BO]
-    !P P' Q a x.
-       TRANS P (BoundOutput (Name a) x P') /\ x # P /\ x # Q /\ x <> a ==>
-       TRANS (Par P Q) (BoundOutput (Name a) x (Par P' Q))
-[PAR1_FO]
-    !P P' Q a b.
-       TRANS P (FreeOutput (Name a) (Name b) P') ==>
-       TRANS (Par P Q) (FreeOutput (Name a) (Name b) (Par P' Q))
-[PAR1_T]
-    !P P' Q. TRANS P (TauR P') ==> TRANS (Par P Q) (TauR (Par P' Q))
-
-[PAR2_I]
-    !P Q Q' a x.
-       TRANS Q (InputS (Name a) x Q') /\ x # Q /\ x # P /\ x <> a ==>
-       TRANS (Par P Q) (InputS (Name a) x (Par P Q'))
-[PAR2_BO]
-    !P Q Q' a x.
-       TRANS Q (BoundOutput (Name a) x Q') /\ x # Q /\ x # P /\ x <> a ==>
-       TRANS (Par P Q) (BoundOutput (Name a) x (Par P Q'))
-[PAR2_FO]
-    !P Q Q' a b.
-       TRANS Q (FreeOutput (Name a) (Name b) Q') ==>
-       TRANS (Par P Q) (FreeOutput (Name a) (Name b) (Par P Q'))
-[PAR2_T]
-    !P Q Q'. TRANS Q (TauR Q') ==> TRANS (Par P Q) (TauR (Par P Q'))
-
-[COMM1] (* TODO: tpm should change to SUB *)
-    !P P' Q Q' a b x.
-       TRANS P (InputS (Name a) x P') /\ TRANS Q (FreeOutput (Name a) (Name b) Q') /\
-       x # P /\ x # Q /\ x <> a /\ x <> b /\ x # Q' ==>
-       TRANS (Par P Q) (TauR (Par (tpm [(x,b)] P') Q'))
-[COMM2] (* TODO: tpm should change to SUB *)
-    !P P' Q Q' a b x.
-       TRANS P (FreeOutput (Name a) (Name b) P') /\ TRANS Q (InputS (Name a) x Q') /\
-       x # Q /\ x # P /\ x <> a /\ x <> b /\ x # P' ==>
-       TRANS (Par P Q) (TauR (Par P' (tpm [(x,b)] Q')))
-[CLOSE1] (* TODO: tpm should change to SUB *)
-    !P P' Q Q' a x y.
-       TRANS P (InputS (Name a) x P') /\
-       TRANS Q (BoundOutput (Name a) y Q') /\
-       x # P /\ x # Q /\ y # P /\ y # Q /\
-       x <> a /\ x # Q' /\ y <> a /\ y # P' /\ x <> y ==>
-       TRANS (Par P Q) (TauR (Res y (Par (tpm [(x,y)] P') Q')))
-[CLOSE2] (* TODO: tpm should change to SUB *)
-    !P P' Q Q' a x y.
-       TRANS P (BoundOutput (Name a) y P') /\
-       TRANS Q (InputS (Name a) x Q') /\
-       x # P /\ x # Q /\ y # P /\ y # Q /\
-       x <> a /\ x # P' /\ y <> a /\ y # Q' /\ x <> y ==>
-       TRANS (Par P Q) (TauR (Res y (Par P' (tpm [(x,y)] Q'))))
-[RES_I]
-    !P P' a x y.
-       TRANS P (InputS (Name a) x P') /\
-       y <> a /\ y <> x /\ x # P /\ x <> a ==>
-       TRANS (Res y P) (InputS (Name a) x (Res y P'))
-[RES_BO]
-    !P P' a x y.
-       TRANS P (BoundOutput (Name a) x P') /\
-       y <> a /\ y <> x /\ x # P /\ x <> a ==>
-       TRANS (Res y P) (BoundOutput (Name a) x (Res y P'))
-[RES_FO]
-    !P P' a b y.
-       TRANS P (FreeOutput (Name a) (Name b) P') /\
-       y <> a /\ y <> b ==>
-       TRANS (Res y P) (FreeOutput (Name a) (Name b) (Res y P'))
-[RES_T]
-    !P P' y.
-       TRANS P (TauR P') ==> TRANS (Res y P) (TauR (Res y P'))
-End
 
 (* Open transition relation w.r.t. distinction *)
 Inductive DTRANS :
@@ -274,7 +184,7 @@ Inductive DTRANS :
 [DOPEN]
     !D D' P P' a b.
     (* begin extra antecedents *)
-       distinction D /\ b # D /\
+       distinction D /\ b # D /\ a # P /\
        D' = D UNION sc {(a,s) | s IN FV (Res b P)} /\
     (* end extra antecedents *)
        DTRANS D' P (FreeOutput (Name a) (Name b) P') /\ a <> b ==>
@@ -417,9 +327,9 @@ Definition dist_simulation_def :
     (* 4 *)
       (!a x P'. DTRANS D P (BoundOutput (Name a) x P') /\
                 x # D /\ x # P /\ x # Q /\ a # P /\ a # Q /\ x <> a ==>
-                ?Q' D'. DTRANS D Q (BoundOutput (Name a) x Q') /\
-                        D' = D UNION sc {(a,b) | b | b IN FV P UNION FV Q} /\
-                       (P',Q',D') IN R)
+               ?Q' D'. DTRANS D Q (BoundOutput (Name a) x Q') /\
+                       D' = D UNION sc {(a,b) | b | b IN FV P UNION FV Q} /\
+                      (P',Q',D') IN R)
 End
 
 Theorem dist_simulation_id :
@@ -442,7 +352,7 @@ Theorem dist_simulation_union :
     !R1 R2. dist_simulation R1 /\ dist_simulation R2 ==>
             dist_simulation (R1 UNION R2)
 Proof
-    rw [dist_simulation_def] (* 7+7 subgoals *)
+    rw [dist_simulation_def, IN_UNION] (* 7+7 subgoals *)
  (* goal 1 (of 14) *)
  >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
       (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [])
@@ -585,7 +495,7 @@ Proof
  >> qabbrev_tac ‘R' = {(Q,P,D) | (P,Q,D) IN R}’
  >> Q.EXISTS_TAC ‘R UNION R'’
  >> reverse CONJ_TAC
- >- (simp [] \\
+ >- (simp [IN_UNION] \\
      DISJ2_TAC >> rw [Abbr ‘R'’])
  >> CONJ_TAC
  >- (MATCH_MP_TAC dist_simulation_union >> art [])
@@ -593,7 +503,7 @@ Proof
  >> Suff ‘R2 = R UNION R'’
  >- (Rewr' \\
      MATCH_MP_TAC dist_simulation_union >> art [])
- >> rw [Once EXTENSION, Abbr ‘R2’, Abbr ‘R'’]
+ >> rw [Once EXTENSION, Abbr ‘R2’, Abbr ‘R'’, IN_UNION]
  >> EQ_TAC >> rw []
  >> PairCases_on ‘x’ (* this asserts (x0,x1,x2) *)
  >> rename1 ‘(P',Q',D') IN R’
@@ -605,7 +515,7 @@ Theorem FV_InputS_lemma[local] :
             !P' a z x. Q = InputS (Name a) z P' /\ z <> x /\ z # P /\
                        x # P ==> x # P'
 Proof
-    HO_MATCH_MP_TAC DTRANS_ind >> rw [] (* 12 subgoals left *)
+    HO_MATCH_MP_TAC DTRANS_ind >> rw [IN_UNION] (* 12 subgoals left *)
  >- (gs [InputS_eq_thm] \\
      rename1 ‘swapstr x z y # Q’ \\
      Cases_on ‘x = y’ >> gs [])
@@ -615,6 +525,8 @@ Proof
  >- gs [InputS_eq_thm]
  >- gs [InputS_eq_thm]
  >- gs [InputS_eq_thm]
+ >> cheat
+ (*
  (* 5 subgoals left *)
  >- (gs [InputS_eq_thm] >- rw [] \\
      MP_TAC (Q.SPEC ‘P''’ pi_cases) >> rw [] >> fs [tpm_thm] \\
@@ -640,6 +552,7 @@ Proof
      Cases_on ‘x = y’ >> rw [])
  (* 3 subgoals left *)
  >> cheat
+  *)
 QED
 
 Theorem FV_InputS :
@@ -673,14 +586,12 @@ Theorem dist_bisimilar_transitive :
                  dist_bisimilar P1 P3 D
 Proof
     rw [dist_bisimilar_def]
- >> ‘distinction D’ by PROVE_TAC [dist_simulation_imp_distinction]
  >> Q.EXISTS_TAC
      ‘{e | ?x y z d. e = (x,z,d) /\ (x,y,d) IN R /\ (y,z,d) IN R'}’
  >> simp []
  >> reverse CONJ_TAC >- (Q.EXISTS_TAC ‘P2’ >> art [])
  >> Q.PAT_X_ASSUM ‘(P1,P2,D) IN R’  K_TAC
  >> Q.PAT_X_ASSUM ‘(P2,P3,D) IN R'’ K_TAC
- >> Q.PAT_X_ASSUM ‘distinction D’   K_TAC
  >> rw [dist_simulation_def, distinction_dpm] (* 7+7 subgoals *)
  (* goal 1 (of 14) *)
  >- (MATCH_MP_TAC dist_simulation_imp_distinction \\
@@ -738,7 +649,7 @@ Proof
                       FV D UNION FV y UNION FV P UNION FV Q UNION FV P'’ \\
     ‘FINITE X’ by rw [Abbr ‘X’] \\
      Q_TAC (NEW_TAC "z") ‘X’ \\
-     Q.PAT_X_ASSUM ‘FINITE X’ K_TAC >> fs [Abbr ‘X’] \\
+     Q.PAT_X_ASSUM ‘FINITE X’ K_TAC >> fs [Abbr ‘X’, IN_UNION] \\
   (* applying tpm_ALPHA_InputS *)
      Know ‘InputS (Name a) x P' = InputS (Name a) z (tpm [(z,x)] P')’
      >- (MATCH_MP_TAC tpm_ALPHA_InputS >> art []) \\
@@ -807,12 +718,7 @@ Proof
                       (P,Q,D) IN R ==> DTRANS D P (InputS _ x P') /\ _ ==> _’ K_TAC \\
      Q.PAT_X_ASSUM ‘!P Q D a b P'.
                       (P,Q,D) IN R ==> DTRANS D P (FreeOutput _ _ P') ==> _’ K_TAC \\
-  (* applying NEW_TAC, because we don't have ‘x # y’
-
-     NOTE: If we can prove “|- (P,y,D) IN R ==> FV P = FV y”, then “x # y” for sure.
-     But this statement is false, e.g. “Match a b Nil” and “Nil” should be bisimilar
-     but their FVs are not the same!
-   *)
+  (* applying NEW_TAC, because we don't have ‘x # y’, but how about “a # y”? *)
      qabbrev_tac ‘X = {a} UNION {x} UNION
                       FV D UNION FV y UNION FV P UNION FV Q UNION FV P'’ \\
     ‘FINITE X’ by rw [Abbr ‘X’] \\
