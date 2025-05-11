@@ -2467,19 +2467,16 @@ val sup_le_sup_imp' = store_thm
     REWRITE_TAC [IN_APP]
  >> PROVE_TAC [sup_le_sup_imp]);
 
-val sup_mono = store_thm
-  ("sup_mono",
-  ``!p q. (!n:num. p n <= q n) ==> sup (IMAGE p UNIV) <= sup (IMAGE q UNIV)``,
-    RW_TAC std_ss [sup_le,le_sup]
- >> Q.PAT_X_ASSUM `IMAGE p UNIV y` (MP_TAC o ONCE_REWRITE_RULE [GSYM SPECIFICATION])
- >> RW_TAC std_ss [IN_IMAGE,IN_UNIV]
- >> MATCH_MP_TAC le_trans
- >> Q.EXISTS_TAC `q x`
- >> RW_TAC std_ss []
- >> Q.PAT_X_ASSUM `!z. Q ==> z <= y'` MATCH_MP_TAC
- >> ONCE_REWRITE_TAC [GSYM SPECIFICATION]
- >> RW_TAC std_ss [IN_IMAGE,IN_UNIV]
- >> METIS_TAC []);
+(* NOTE: The type variable :num has been generalized to alpha *)
+Theorem sup_mono :
+    !p q. (!n. p n <= q n) ==> sup (IMAGE p UNIV) <= sup (IMAGE q UNIV)
+Proof
+    rw [sup_le', le_sup']
+ >> rename1 ‘p n <= z’
+ >> Q_TAC (TRANS_TAC le_trans) ‘q n’ >> art []
+ >> POP_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘n’ >> rw []
+QED
 
 (* This is more general than "sup_mono", as f <= g in arbitrary order *)
 Theorem sup_mono_ext : (* was: SUP_mono *)
@@ -2635,113 +2632,106 @@ val sup_max = store_thm
   ("sup_max", ``!p z. p z /\ (!x. p x ==> x <= z) ==> (sup p = z)``,
     RW_TAC std_ss [sup_eq]);
 
-val sup_add_mono = store_thm
-  ("sup_add_mono",
-  ``!f g. (!n. 0 <= f n) /\ (!n. f n <= f (SUC n)) /\
+Theorem sup_add_mono :
+    !f g. (!n. 0 <= f n) /\ (!n. f n <= f (SUC n)) /\
           (!n. 0 <= g n) /\ (!n. g n <= g (SUC n)) ==>
-          (sup (IMAGE (\n. f n + g n) UNIV) = sup (IMAGE f UNIV) + sup (IMAGE g UNIV))``,
- (* new proof *)
-  RW_TAC std_ss [sup_eq]
-  >- (POP_ASSUM (MP_TAC o ONCE_REWRITE_RULE [GSYM SPECIFICATION])
-      >> RW_TAC std_ss [IN_IMAGE,IN_UNIV]
-      >> MATCH_MP_TAC le_add2
-      >> RW_TAC std_ss [le_sup]
-      >> POP_ASSUM MATCH_MP_TAC
-      >> METIS_TAC [SPECIFICATION,IN_IMAGE,IN_UNIV])
-  >> Cases_on `y = PosInf` >- RW_TAC std_ss [le_infty]
-  >> Cases_on `sup (IMAGE f UNIV) = 0`
-  >- (RW_TAC std_ss [sup_le, add_lzero]
-      >> FULL_SIMP_TAC std_ss [sup_eq]
-      >> `!n. f n = 0` by METIS_TAC [EXTENSION, IN_IMAGE, IN_UNIV, SPECIFICATION, le_antisym]
-      >> Q.PAT_ASSUM `!z. Q z ==> z <= y` MATCH_MP_TAC
-      >> RW_TAC std_ss [add_lzero]
-      >> METIS_TAC [])
-  >> Cases_on `sup (IMAGE g UNIV) = 0`
-  >- (RW_TAC std_ss [sup_le, add_rzero]
-      >> FULL_SIMP_TAC std_ss [sup_eq]
-      >> `!n. g n = 0` by METIS_TAC [EXTENSION, IN_IMAGE, IN_UNIV, SPECIFICATION, le_antisym]
-      >> Q.PAT_ASSUM `!z. Q z ==> z <= y` MATCH_MP_TAC
-      >> RW_TAC std_ss [add_rzero]
-      >> METIS_TAC [])
-  >> `!n. f n + g n <= y`
-       by (RW_TAC std_ss []
-           >> Q.PAT_ASSUM `!z. Q z ==> P z` MATCH_MP_TAC
-           >> ONCE_REWRITE_TAC [GSYM SPECIFICATION]
-           >> RW_TAC std_ss [IN_IMAGE,IN_UNIV]
-           >> METIS_TAC [])
-  >> `!n. g n <= f n + g n` by METIS_TAC [add_lzero, le_add2, le_refl]
-  >> `!n. f n <= f n + g n` by METIS_TAC [add_rzero, le_add2, le_refl]
-  >> `!n. g n <> PosInf` by METIS_TAC [le_trans, lt_infty, let_trans]
-  >> `!n. g n <> NegInf` by METIS_TAC [le_trans, le_infty, lt_infty, lte_trans,
-                                       extreal_of_num_def, extreal_not_infty]
-  >> `!n. f n <> PosInf` by METIS_TAC [le_trans, lt_infty, let_trans]
-  >> `!n. f n <> NegInf` by METIS_TAC [le_trans, le_infty, lt_infty, lte_trans,
-                                       extreal_of_num_def, extreal_not_infty]
-  >> MATCH_MP_TAC le_trans
-  >> Q.EXISTS_TAC `sup (IMAGE (\n. (sup (IMAGE f UNIV)) + g n) UNIV)`
-  >> reverse (RW_TAC std_ss [sup_le])
-  >- (POP_ASSUM (MP_TAC o ONCE_REWRITE_RULE [GSYM SPECIFICATION])
-      >> RW_TAC std_ss [IN_IMAGE,IN_UNIV]
-      >> Suff `sup (IMAGE f UNIV) <= y - g n` >- RW_TAC std_ss [le_sub_eq]
-      >> RW_TAC std_ss [sup_le]
-      >> POP_ASSUM (MP_TAC o ONCE_REWRITE_RULE [GSYM SPECIFICATION])
-      >> RW_TAC std_ss [IN_IMAGE,IN_UNIV]
-      >> MATCH_MP_TAC le_sub_imp
-      >> RW_TAC std_ss []
-      >> Cases_on `x <= n`
-      >- (MATCH_MP_TAC le_trans
-          >> Q.EXISTS_TAC `f n + g n`
-          >> CONJ_TAC >- METIS_TAC [le_radd, ext_mono_increasing_def, ext_mono_increasing_suc]
-          >> Q.PAT_ASSUM `!z. Q z ==> z <= y` MATCH_MP_TAC
-          >> ONCE_REWRITE_TAC [GSYM SPECIFICATION]
-          >> RW_TAC std_ss [IN_IMAGE,IN_UNIV]
-          >> METIS_TAC [])
-      >> MATCH_MP_TAC le_trans
-      >> Q.EXISTS_TAC `f x + g x`
-      >> CONJ_TAC >- METIS_TAC [le_ladd, ext_mono_increasing_def, ext_mono_increasing_suc,
-                                le_refl, NOT_LEQ, le_trans]
-      >> Q.PAT_ASSUM `!z. Q z ==> z <= y` MATCH_MP_TAC
-      >> ONCE_REWRITE_TAC [GSYM SPECIFICATION]
-      >> RW_TAC std_ss [IN_IMAGE,IN_UNIV]
-      >> METIS_TAC [])
-  >> `sup (IMAGE f UNIV) <> NegInf`
-        by (RW_TAC std_ss [sup_eq,le_infty]
-            >> Q.EXISTS_TAC `f (CHOICE (UNIV:num->bool))`
-            >> RW_TAC std_ss []
-            >> ONCE_REWRITE_TAC [GSYM SPECIFICATION]
-            >> METIS_TAC [IN_UNIV,IN_IMAGE])
-  >> `sup (IMAGE g UNIV) <> NegInf`
-        by (RW_TAC std_ss [sup_eq,le_infty]
-            >> Q.EXISTS_TAC `g (CHOICE (UNIV:num->bool))`
-            >> RW_TAC std_ss []
-            >> ONCE_REWRITE_TAC [GSYM SPECIFICATION]
-            >> METIS_TAC [IN_UNIV,IN_IMAGE])
-  >> Cases_on `sup (IMAGE f univ(:num)) = PosInf`
-  >- (`sup (IMAGE (\n. sup (IMAGE f univ(:num)) + g n) univ(:num)) = PosInf`
-        by (RW_TAC std_ss [extreal_add_def,sup_eq,le_infty]
-          >> POP_ASSUM (MP_TAC o Q.SPEC `PosInf + g (CHOICE (UNIV:num->bool))`)
-          >> RW_TAC std_ss []
-          >> `PosInf + g (CHOICE univ(:num)) <= y'`
-               by (POP_ASSUM MATCH_MP_TAC
-                   >> ONCE_REWRITE_TAC [GSYM SPECIFICATION]
-                   >> RW_TAC std_ss [IN_UNIV,IN_IMAGE]
-                   >> METIS_TAC [extreal_add_def])
-          >> METIS_TAC [extreal_add_def,extreal_cases,le_infty])
-      >> METIS_TAC [le_infty])
-  >> RW_TAC std_ss [add_comm]
-  >> Suff `sup (IMAGE g UNIV) <=
-           sup (IMAGE (\n. g n + sup (IMAGE f UNIV)) UNIV) - sup (IMAGE f UNIV)`
-  >- METIS_TAC [le_sub_eq,add_comm]
-  >> RW_TAC std_ss [sup_le]
-  >> MATCH_MP_TAC le_sub_imp
-  >> RW_TAC std_ss []
-  >> RW_TAC std_ss [le_sup]
-  >> Q.PAT_ASSUM `IMAGE g UNIV y'` (MP_TAC o ONCE_REWRITE_RULE [GSYM SPECIFICATION])
-  >> RW_TAC std_ss [IN_IMAGE,IN_UNIV]
-  >> POP_ASSUM MATCH_MP_TAC
-  >> ONCE_REWRITE_TAC [GSYM SPECIFICATION]
-  >> RW_TAC std_ss [IN_IMAGE,IN_UNIV]
-  >> METIS_TAC []);
+          sup (IMAGE (\n. f n + g n) UNIV) =
+          sup (IMAGE f UNIV) + sup (IMAGE g UNIV)
+Proof
+    rw [sup_eq']
+ >- (MATCH_MP_TAC le_add2 >> rw [le_sup'] \\
+     POP_ASSUM MATCH_MP_TAC >> Q.EXISTS_TAC ‘n’ >> rw [])
+ >> Cases_on ‘y = PosInf’ >- rw [le_infty]
+ >> Cases_on ‘sup (IMAGE f UNIV) = 0’
+ >- (rw [sup_le'] >> fs [sup_eq'] \\
+    ‘!n. f n = 0’
+       by METIS_TAC [EXTENSION, IN_IMAGE, IN_UNIV, SPECIFICATION, le_antisym] \\
+     Q.PAT_X_ASSUM ‘!z. Q z ==> z <= y’ MATCH_MP_TAC \\
+     RW_TAC std_ss [add_lzero] \\
+     METIS_TAC [])
+ >> Cases_on ‘sup (IMAGE g UNIV) = 0’
+ >- (rw [sup_le'] >> fs [sup_eq'] \\
+    ‘!n. g n = 0’
+       by METIS_TAC [EXTENSION, IN_IMAGE, IN_UNIV, SPECIFICATION, le_antisym] \\
+     Q.PAT_X_ASSUM ‘!z. Q z ==> z <= y’ MATCH_MP_TAC \\
+     RW_TAC std_ss [add_rzero] \\
+     METIS_TAC [])
+ >> Know ‘!n. f n + g n <= y’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     Q.PAT_X_ASSUM ‘!z. Q z ==> z <= y’ MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘n’ >> rw [])
+ >> DISCH_TAC
+ >> ‘!n. g n <= f n + g n’ by METIS_TAC [add_lzero, le_add2, le_refl]
+ >> ‘!n. f n <= f n + g n’ by METIS_TAC [add_rzero, le_add2, le_refl]
+ >> ‘!n. g n <> PosInf’ by METIS_TAC [le_trans, lt_infty, let_trans]
+ >> ‘!n. g n <> NegInf’ by METIS_TAC [le_trans, le_infty, lt_infty, lte_trans,
+                                      extreal_of_num_def, extreal_not_infty]
+ >> ‘!n. f n <> PosInf’ by METIS_TAC [le_trans, lt_infty, let_trans]
+ >> ‘!n. f n <> NegInf’ by METIS_TAC [le_trans, le_infty, lt_infty, lte_trans,
+                                      extreal_of_num_def, extreal_not_infty]
+ >> MATCH_MP_TAC le_trans
+ (* stage work *)
+ >> Q.EXISTS_TAC ‘sup (IMAGE (\n. (sup (IMAGE f UNIV)) + g n) UNIV)’
+ >> reverse (rw [sup_le'])
+ >- (Suff ‘sup (IMAGE f UNIV) <= y - g n’ >- RW_TAC std_ss [le_sub_eq] \\
+     rw [sup_le'] \\
+     MATCH_MP_TAC le_sub_imp >> rw [] \\
+     Cases_on ‘x <= n’
+     >- (MATCH_MP_TAC le_trans \\
+         Q.EXISTS_TAC ‘f n + g n’ \\
+         CONJ_TAC
+         >- METIS_TAC [le_radd, ext_mono_increasing_def, ext_mono_increasing_suc] \\
+         Q.PAT_X_ASSUM ‘!z. Q z ==> z <= y’ MATCH_MP_TAC \\
+         Q.EXISTS_TAC ‘n’ >> rw []) \\
+     MATCH_MP_TAC le_trans \\
+     Q.EXISTS_TAC ‘f x + g x’ \\
+     CONJ_TAC
+     >- METIS_TAC [le_ladd, ext_mono_increasing_def, ext_mono_increasing_suc,
+                   le_refl, NOT_LEQ, le_trans] \\
+     Q.PAT_X_ASSUM ‘!z. Q z ==> z <= y’ MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘x’ >> rw [])
+ >> Know ‘sup (IMAGE f UNIV) <> NegInf’
+ >- (rw [sup_eq', le_infty] \\
+     Q.EXISTS_TAC ‘f 0’ >> rw [] \\
+     Q.EXISTS_TAC ‘0’ >> rw [])
+ >> DISCH_TAC
+ >> Know ‘sup (IMAGE g UNIV) <> NegInf’
+ >- (rw [sup_eq', le_infty] \\
+     Q.EXISTS_TAC ‘g 0’ >> rw [] \\
+     Q.EXISTS_TAC ‘0’ >> rw [])
+ >> DISCH_TAC
+ >> Cases_on ‘sup (IMAGE f UNIV) = PosInf’
+ >- (Know ‘sup (IMAGE (\n. sup (IMAGE f UNIV) + g n) UNIV) = PosInf’
+     >- (POP_ORW \\
+         qmatch_abbrev_tac ‘sup s = PosInf’ \\
+         Suff ‘s = \y. y = PosInf’ >- rw [sup_const] \\
+         rw [Abbr ‘s’, Once EXTENSION] \\
+         EQ_TAC >> rw []
+         >- (‘?r. g n = Normal r’ by METIS_TAC [extreal_cases] \\
+             rw [extreal_add_def]) \\
+         Q.EXISTS_TAC ‘0’ \\
+        ‘?r. g 0 = Normal r’ by METIS_TAC [extreal_cases] \\
+         rw [extreal_add_def]) >> Rewr' \\
+     METIS_TAC [le_infty])
+ >> RW_TAC std_ss [add_comm]
+ >> Suff ‘sup (IMAGE g UNIV) <=
+          sup (IMAGE (\n. g n + sup (IMAGE f UNIV)) UNIV) - sup (IMAGE f UNIV)’
+ >- METIS_TAC [le_sub_eq, add_comm]
+ >> rw [sup_le']
+ >> MATCH_MP_TAC le_sub_imp
+ >> rw [le_sup']
+ >> POP_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘x’ >> rw []
+QED
+
+Theorem inf_add_mono :
+    !f g. (!n. 0 <= f n) /\ (!n. f (SUC n) <= f n) /\
+          (!n. 0 <= g n) /\ (!n. g (SUC n) <= g n) ==>
+          inf (IMAGE (\n. f n + g n) UNIV) =
+          inf (IMAGE f UNIV) + inf (IMAGE g UNIV)
+Proof
+    cheat
+QED
 
 val sup_sum_mono = store_thm
   ("sup_sum_mono",
@@ -2758,14 +2748,17 @@ val sup_sum_mono = store_thm
   >> MATCH_MP_TAC FINITE_INDUCT
   >> RW_TAC std_ss [EXTREAL_SUM_IMAGE_EMPTY,UNIV_NOT_EMPTY,sup_const_over_set]
   >> `s DELETE e = s` by METIS_TAC [DELETE_NON_ELEMENT]
-  >> `!n. (SIGMA (\i. f i n) (e INSERT s) = (\i. f i n) e + SIGMA (\i. f i n) (s DELETE e))`
+  >> `!n. SIGMA (\i. f i n) (e INSERT s) =
+          (\i. f i n) e + SIGMA (\i. f i n) (s DELETE e)`
         by (STRIP_TAC
             >> (MATCH_MP_TAC o Q.SPEC `e` o UNDISCH o Q.SPECL [`(\i. f i n)`,`s`] o
                 INST_TYPE [alpha |-> ``:num``]) EXTREAL_SUM_IMAGE_PROPERTY
-            >> METIS_TAC [IN_INSERT, le_infty, lt_infty, extreal_of_num_def, extreal_not_infty])
+            >> METIS_TAC [IN_INSERT, le_infty, lt_infty, extreal_of_num_def,
+                          extreal_not_infty])
   >> RW_TAC std_ss []
   >> `!n. !x. x IN e INSERT s ==> f x n <> NegInf`
-      by METIS_TAC [IN_INSERT, le_infty, lt_infty, extreal_of_num_def, extreal_not_infty]
+        by METIS_TAC [IN_INSERT, le_infty, lt_infty, extreal_of_num_def,
+                      extreal_not_infty]
   >> `sup (IMAGE (\n. f e n + (\n. SIGMA (\i. f i n) s) n) UNIV) =
       sup (IMAGE (f e) UNIV) + sup (IMAGE (\n. SIGMA (\i. f i n) s) UNIV)`
         by ((MATCH_MP_TAC o Q.SPECL [`f e`, `(\n. SIGMA (\i. f i n) s)`] o
@@ -2903,35 +2896,38 @@ val sup_lt' = store_thm
     RW_TAC std_ss [IN_APP]
  >> REWRITE_TAC [sup_lt]);
 
-val sup_lt_epsilon = store_thm (* cf. realTheory.SUP_LT_EPSILON *)
-  ("sup_lt_epsilon",
-  ``!P e. (0 < e) /\ (?x. P x /\ x <> NegInf) /\ (sup P <> PosInf) ==>
-          ?x. P x /\ sup P < x + e``,
-  RW_TAC std_ss []
-  >> Cases_on `e = PosInf`
-  >- (Q.EXISTS_TAC `x`
-      >> RW_TAC std_ss []
-      >> METIS_TAC [extreal_add_def,lt_infty,extreal_cases])
-  >> `e <> NegInf` by METIS_TAC [le_sup_imp,lt_infty,lte_trans,
-                                 extreal_of_num_def,extreal_not_infty]
-  >> `sup P <> NegInf` by METIS_TAC [le_sup_imp,lt_infty,lte_trans]
-  >> `sup P < sup P + e`
-     by (Cases_on `sup P` >> Cases_on `e`
-         >> RW_TAC std_ss [extreal_cases, extreal_add_def, extreal_lt_def, extreal_le_def,
-                           GSYM real_lt]
-         >> METIS_TAC [REAL_LT_ADDR, extreal_lt_def, extreal_le_def, extreal_of_num_def, real_lt])
-  >> `sup P - e < sup P` by METIS_TAC [sub_lt_imp]
-  >> `?x. P x /\ (sup P - e) < x` by METIS_TAC [sup_lt]
-  >> Q.EXISTS_TAC `x'`
-  >> RW_TAC std_ss []
-  >> `x' <> PosInf` by METIS_TAC [le_sup_imp,let_trans,lt_infty]
-  >> `?r. sup P = Normal r` by METIS_TAC [extreal_cases]
-  >> `?r. e = Normal r` by METIS_TAC [extreal_cases]
-  >> FULL_SIMP_TAC std_ss [extreal_sub_def]
-  >> `x' <> NegInf` by METIS_TAC [lt_infty,extreal_not_infty,lt_trans]
-  >> `?r. x' = Normal r` by METIS_TAC [extreal_cases]
-  >> FULL_SIMP_TAC std_ss [extreal_add_def,extreal_lt_def,extreal_le_def,GSYM real_lt,
-                           REAL_LT_SUB_RADD]);
+(* cf. realTheory.SUP_LT_EPSILON *)
+Theorem sup_lt_epsilon :
+    !P e. 0 < e /\ (?x. P x /\ x <> NegInf) /\ sup P <> PosInf ==>
+          ?x. P x /\ sup P < x + e
+Proof
+    RW_TAC std_ss []
+ >> Cases_on ‘e = PosInf’
+ >- (Q.EXISTS_TAC ‘x’ >> RW_TAC std_ss [] \\
+     METIS_TAC [extreal_add_def, lt_infty, extreal_cases])
+ >> ‘e <> NegInf’ by METIS_TAC [le_sup_imp, lt_infty, lte_trans,
+                                extreal_of_num_def, extreal_not_infty]
+ >> ‘sup P <> NegInf’ by METIS_TAC [le_sup_imp, lt_infty, lte_trans]
+ >> ‘sup P < sup P + e’
+      by (Cases_on ‘sup P’ >> Cases_on ‘e’ \\
+          RW_TAC std_ss [extreal_cases, extreal_add_def, extreal_lt_def,
+                         extreal_le_def, GSYM real_lt] \\
+          METIS_TAC [REAL_LT_ADDR, extreal_lt_def, extreal_le_def,
+                     extreal_of_num_def, real_lt])
+ >> ‘sup P - e < sup P’ by METIS_TAC [sub_lt_imp]
+ >> ‘?x. P x /\ sup P - e < x’ by METIS_TAC [sup_lt]
+ >> rename1 ‘P y’
+ >> Q.EXISTS_TAC ‘y’
+ >> RW_TAC std_ss []
+ >> ‘y <> PosInf’ by METIS_TAC [le_sup_imp, let_trans, lt_infty]
+ >> ‘?r. sup P = Normal r’ by METIS_TAC [extreal_cases]
+ >> ‘?E. e = Normal E’ by METIS_TAC [extreal_cases]
+ >> FULL_SIMP_TAC std_ss [extreal_sub_def]
+ >> ‘y <> NegInf’ by METIS_TAC [lt_infty, extreal_not_infty, lt_trans]
+ >> ‘?z. y = Normal z’ by METIS_TAC [extreal_cases]
+ >> FULL_SIMP_TAC std_ss [extreal_add_def, extreal_lt_def, extreal_le_def,
+                          GSYM real_lt, REAL_LT_SUB_RADD]
+QED
 
 Theorem sup_lt_epsilon' :
     !P e. 0 < e /\ (?x. x IN P /\ x <> NegInf) /\ (sup P <> PosInf) ==>
@@ -3579,27 +3575,117 @@ Proof
  >> METIS_TAC []
 QED
 
-(* NOTE: It seems possible that even “PosInf + NegInf” is included in some items. *)
-Theorem ext_limsup_add :
-    !a b. (!n. a n <> PosInf /\ a n <> NegInf) /\
-          (!n. b n <> PosInf /\ b n <> NegInf) ==>
-          limsup (\n. a n + b n) <= limsup a + limsup b
+Theorem ext_limsup_bounded :
+    !a c. (!n. a n <= c) ==> limsup a <= c
 Proof
     rw [ext_limsup_def, inf_le']
- >> ‘y = y / 2 + y / 2’ by METIS_TAC [half_double] >> POP_ORW
- >> MATCH_MP_TAC le_add2
- >> simp [le_inf']
- >> cheat
+ >> Know ‘!m. y <= sup {a n | m <= n}’
+ >- (Q.X_GEN_TAC ‘m’ \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘m’ >> art [])
+ >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘!z. _ ==> y <= z’ K_TAC
+ >> Q_TAC (TRANS_TAC le_trans) ‘sup {a n | 0 <= n}’
+ >> rw [sup_le'] >> rw []
 QED
 
+Theorem ext_liminf_bounded :
+    !a c. (!n. a n <= c) ==> liminf a <= c
+Proof
+    rw [ext_liminf_def, sup_le']
+ >> rw [inf_le']
+ >> Know ‘!n. m <= n ==> y <= a n’
+ >- (rpt STRIP_TAC \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘n’ >> art [])
+ >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘!z. _ ==> y <= z’ K_TAC
+ >> Q_TAC (TRANS_TAC le_trans) ‘a m’ >> rw []
+QED
+
+(* NOTE: The proof is based on the existing [sup_add_mono] where a, b is positive. *)
 Theorem ext_liminf_add :
-    !a b. (!n. a n <> PosInf /\ a n <> NegInf) /\
-          (!n. b n <> PosInf /\ b n <> NegInf) ==>
+    !a b. (!n. 0 <= a n) /\ (!n. 0 <= b n) ==>
           liminf a + liminf b <= liminf (\n. a n + b n)
 Proof
+    rw [ext_liminf_def]
+ >> qmatch_abbrev_tac ‘sup (IMAGE f UNIV) + sup (IMAGE g UNIV) <= _’
+ >> Know ‘sup (IMAGE f UNIV) + sup (IMAGE g UNIV) = sup (IMAGE (\n. f n + g n) UNIV)’
+ >- (SYM_TAC >> MATCH_MP_TAC sup_add_mono \\
+     rpt STRIP_TAC >| (* 4 subgoals *)
+     [ (* goal 1 (of 4) *)
+       rw [Abbr ‘f’, le_inf'] >> rw [],
+       (* goal 2 (of 4) *)
+       rw [Abbr ‘f’] \\
+       MATCH_MP_TAC inf_mono_subset >> rw [SUBSET_DEF] \\
+       rename1 ‘SUC n <= m’ \\
+       Q.EXISTS_TAC ‘m’ >> rw [],
+       (* goal 3 (of 4) *)
+       rw [Abbr ‘g’, le_inf'] >> rw [],
+       (* goal 4 (of 4) *)
+       rw [Abbr ‘g’] \\
+       MATCH_MP_TAC inf_mono_subset >> rw [SUBSET_DEF] \\
+       rename1 ‘SUC n <= m’ \\
+       Q.EXISTS_TAC ‘m’ >> rw [] ])
+ >> Rewr'
+ >> MATCH_MP_TAC sup_mono
+ >> rw [le_inf']
+ >> rename1 ‘n <= m’
+ >> MATCH_MP_TAC le_add2
+ >> rw [Abbr ‘f’, Abbr ‘g’, inf_le'] (* 2 subgoals, same tactics *)
+ >> POP_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘m’ >> art []
+QED
+
+Theorem sup_pos :
+    !a m. (!n. 0 <= a n) ==> 0 <= sup {a n | m <= (n :num)}
+Proof
+    rw [le_sup']
+ >> Q_TAC (TRANS_TAC le_trans) ‘a m’ >> rw []
+ >> POP_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘m’ >> rw []
+QED
+
+Theorem sup_pos' :
+    !a. (!n. 0 <= a n) ==> 0 <= sup (IMAGE a UNIV)
+Proof
+    rw [le_sup']
+ >> Q_TAC (TRANS_TAC le_trans) ‘a ARB’ >> rw []
+ >> POP_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘ARB’ >> rw []
+QED
+
+Theorem ext_limsup_add :
+    !a b. (!n. 0 <= a n) /\ (!n. 0 <= b n) ==>
+          limsup (\n. a n + b n) <= limsup a + limsup b
+Proof
     rw [ext_limsup_def]
- >> rw [le_sup']
- >> cheat
+ >> qmatch_abbrev_tac ‘_ <= inf (IMAGE f UNIV) + inf (IMAGE g UNIV)’
+ >> Know ‘inf (IMAGE f UNIV) + inf (IMAGE g UNIV) = inf (IMAGE (\n. f n + g n) UNIV)’
+ >- (SYM_TAC >> MATCH_MP_TAC inf_add_mono \\
+     rpt STRIP_TAC >| (* 4 subgoals *)
+     [ (* goal 1 (of 4) *)
+       rw [Abbr ‘f’, sup_pos],
+       (* goal 2 (of 4) *)
+       rw [Abbr ‘f’] \\
+       MATCH_MP_TAC sup_mono_subset >> rw [SUBSET_DEF] \\
+       rename1 ‘SUC n <= m’ \\
+       Q.EXISTS_TAC ‘m’ >> rw [],
+       (* goal 3 (of 4) *)
+       rw [Abbr ‘g’, sup_pos],
+       (* goal 4 (of 4) *)
+       rw [Abbr ‘g’] \\
+       MATCH_MP_TAC sup_mono_subset >> rw [SUBSET_DEF] \\
+       rename1 ‘SUC n <= m’ \\
+       Q.EXISTS_TAC ‘m’ >> rw [] ])
+ >> Rewr'
+ >> MATCH_MP_TAC inf_mono
+ >> rw [sup_le']
+ >> rename1 ‘n <= m’
+ >> MATCH_MP_TAC le_add2
+ >> rw [Abbr ‘f’, Abbr ‘g’, le_sup'] (* 2 subgoals, same tactics *)
+ >> POP_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘m’ >> art []
 QED
 
 (* ------------------------------------------------------------------------- *)
