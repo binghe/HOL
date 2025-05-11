@@ -3489,7 +3489,7 @@ Theorem Portemanteau_iv_eq_v[local] :
     !E X Y. Portemanteau_antecedents E X Y ==>
            (Portemanteau_iv E X Y <=> Portemanteau_v E X Y)
 Proof
-    METIS_TAC [Portemanteau_iv_imp_v, Portemanteau_v_imp_vi]
+    METIS_TAC [Portemanteau_iv_imp_v, Portemanteau_v_imp_iv]
 QED
 
 Definition Portemanteau_vi_def :

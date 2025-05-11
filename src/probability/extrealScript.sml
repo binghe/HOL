@@ -3579,20 +3579,27 @@ Proof
  >> METIS_TAC []
 QED
 
-Theorem ext_liminf_add :
-    !a b. (!n. a n <> PosInf /\ a n <> NegInf) /\
-          (!n. b n <> PosInf /\ b n <> NegInf) ==>
-          liminf a + liminf b <= liminf (\n. a n + b n)
-Proof
-    cheat
-QED
-
+(* NOTE: It seems possible that even “PosInf + NegInf” is included in some items. *)
 Theorem ext_limsup_add :
     !a b. (!n. a n <> PosInf /\ a n <> NegInf) /\
           (!n. b n <> PosInf /\ b n <> NegInf) ==>
           limsup (\n. a n + b n) <= limsup a + limsup b
 Proof
-    cheat
+    rw [ext_limsup_def, inf_le']
+ >> ‘y = y / 2 + y / 2’ by METIS_TAC [half_double] >> POP_ORW
+ >> MATCH_MP_TAC le_add2
+ >> simp [le_inf']
+ >> cheat
+QED
+
+Theorem ext_liminf_add :
+    !a b. (!n. a n <> PosInf /\ a n <> NegInf) /\
+          (!n. b n <> PosInf /\ b n <> NegInf) ==>
+          liminf a + liminf b <= liminf (\n. a n + b n)
+Proof
+    rw [ext_limsup_def]
+ >> rw [le_sup']
+ >> cheat
 QED
 
 (* ------------------------------------------------------------------------- *)
