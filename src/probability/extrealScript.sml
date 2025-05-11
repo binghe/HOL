@@ -3579,6 +3579,22 @@ Proof
  >> METIS_TAC []
 QED
 
+Theorem ext_liminf_add :
+    !a b. (!n. a n <> PosInf /\ a n <> NegInf) /\
+          (!n. b n <> PosInf /\ b n <> NegInf) ==>
+          liminf a + liminf b <= liminf (\n. a n + b n)
+Proof
+    cheat
+QED
+
+Theorem ext_limsup_add :
+    !a b. (!n. a n <> PosInf /\ a n <> NegInf) /\
+          (!n. b n <> PosInf /\ b n <> NegInf) ==>
+          limsup (\n. a n + b n) <= limsup a + limsup b
+Proof
+    cheat
+QED
+
 (* ------------------------------------------------------------------------- *)
 (* Suminf over extended reals. Definition and properties                     *)
 (* ------------------------------------------------------------------------- *)

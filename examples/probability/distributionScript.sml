@@ -3321,7 +3321,7 @@ Definition Portemanteau_v_def :
 End
 
 (* "trivial" *)
-Theorem Portemanteau_v_imp_vi[local] :
+Theorem Portemanteau_v_imp_iv[local] :
     !E X Y. Portemanteau_antecedents E X Y /\
             Portemanteau_v E X Y ==> Portemanteau_iv E X Y
 Proof
@@ -3381,7 +3381,28 @@ Proof
      Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw [])
  >> Rewr'
  (* stage work *)
- >> cheat
+ >> simp [extreal_sub, ext_limsup_alt_liminf, o_DEF]
+ >> fs [subprobability_measure_def, finite_measure_thm]
+ >> ‘sp IN subsets b’ by METIS_TAC [SIGMA_ALGEBRA_SPACE]
+ >> Know ‘!n. -(X n sp + -X n s0) = -X n sp + -(-X n s0)’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     MATCH_MP_TAC neg_add >> simp [])
+ >> Rewr'
+ >> Know ‘--Y sp + -Y s0 = -(-Y sp + Y s0)’
+ >- (SYM_TAC \\
+     MATCH_MP_TAC neg_add >> simp [])
+ >> simp []
+ >> DISCH_THEN K_TAC
+ >> simp [le_neg]
+ (* applying ext_liminf_add *)
+ >> Q_TAC (TRANS_TAC le_trans) ‘liminf (\n. -X n sp) + liminf (\n. X n s0)’
+ >> reverse CONJ_TAC
+ >- (HO_MATCH_MP_TAC ext_liminf_add >> simp [] \\
+     Q.X_GEN_TAC ‘n’ \\
+    ‘?r1. X n sp = Normal r1’ by METIS_TAC [extreal_cases] \\
+     simp [extreal_ainv_def])
+ >> MATCH_MP_TAC le_add2 >> simp []
+ >> rw [ext_liminf_alt_limsup, o_DEF, le_neg]
 QED
 
 (* "trivial" *)
@@ -3392,6 +3413,74 @@ Proof
     rpt GEN_TAC
  >> simp [Portemanteau_antecedents_def, Portemanteau_iv_def, Portemanteau_v_def]
  >> STRIP_TAC
+ >> reverse CONJ_TAC
+ >- (Q.X_GEN_TAC ‘s’ >> STRIP_TAC \\
+     qabbrev_tac ‘sp = mspace E’ \\
+     qabbrev_tac ‘t = mtop E’ \\
+     qabbrev_tac ‘s0 = sp DIFF s’ \\
+    ‘s SUBSET sp’
+       by FULL_SIMP_TAC std_ss [OPEN_IN_SUBSET_TOPSPACE, mspace, Abbr ‘sp’] \\
+    ‘s0 SUBSET sp’ by ASM_SET_TAC [] \\
+     Know ‘closed_in t s0’
+     >- (FULL_SIMP_TAC std_ss [closed_in, Abbr ‘s0’, Abbr ‘sp’, mspace, Abbr ‘t’] \\
+         qabbrev_tac ‘sp = topspace (mtop E)’ \\
+         Suff ‘sp DIFF (sp DIFF s) = s’ >- rw [] \\
+         ASM_SET_TAC []) >> DISCH_TAC \\
+    ‘s = sp DIFF s0’ by ASM_SET_TAC [] >> POP_ORW \\
+     qabbrev_tac ‘b = B t’ \\
+    ‘sigma_algebra b’ by METIS_TAC [sigma_algebra_general_borel] \\
+     Know ‘space b = sp’
+     >- (rw [Abbr ‘sp’, Abbr ‘b’, space_general_borel] \\
+         rw [Abbr ‘t’, mspace]) >> DISCH_TAC \\
+     Know ‘s IN subsets b’
+     >- (simp [Abbr ‘b’, general_borel_def] \\
+         MATCH_MP_TAC IN_SIGMA >> rw [IN_APP]) >> DISCH_TAC \\
+     Know ‘s0 IN subsets b’
+     >- (qunabbrev_tac ‘s0’ \\
+         Q.PAT_X_ASSUM ‘space b = sp’ (REWRITE_TAC o wrap o SYM) \\
+         MATCH_MP_TAC SIGMA_ALGEBRA_COMPL >> art []) >> DISCH_TAC \\
+  (* applying MEASURE_SPACE_FINITE_DIFF *)
+     Know ‘Y (sp DIFF s0) = Y sp - Y s0’
+     >- (Q.PAT_X_ASSUM ‘subprobability_measure t Y’ MP_TAC \\
+         rw [subprobability_measure_thm] \\
+         qabbrev_tac ‘p = (topspace t,subsets (B t),Y)’ \\
+        ‘Y = measure p’ by rw [Abbr ‘p’] >> POP_ORW \\
+        ‘space b = m_space p’ by rw [Abbr ‘b’, Abbr ‘p’, space_general_borel] \\
+         POP_ORW \\
+         MATCH_MP_TAC MEASURE_SPACE_FINITE_DIFF >> rw [Abbr ‘p’] \\
+         simp [lt_infty] \\
+         Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw []) >> Rewr' \\
+     Know ‘!n. X n (sp DIFF s0) = X n sp - X n s0’
+     >- (Q.X_GEN_TAC ‘n’ \\
+         Q.PAT_X_ASSUM ‘!n. subprobability_measure t (X n)’ (MP_TAC o Q.SPEC ‘n’) \\
+         rw [subprobability_measure_thm] \\
+         qabbrev_tac ‘p = (topspace t,subsets (B t),X n)’ \\
+        ‘X n = measure p’ by rw [Abbr ‘p’] >> POP_ORW \\
+        ‘space b = m_space p’ by rw [Abbr ‘b’, Abbr ‘p’, space_general_borel] \\
+         POP_ORW \\
+         MATCH_MP_TAC MEASURE_SPACE_FINITE_DIFF >> rw [Abbr ‘p’] \\
+         simp [lt_infty] \\
+         Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw []) >> Rewr' \\
+   (* stage work *)
+      simp [extreal_sub, ext_liminf_alt_limsup, o_DEF] \\
+      fs [subprobability_measure_def, finite_measure_thm] \\
+     ‘sp IN subsets b’ by METIS_TAC [SIGMA_ALGEBRA_SPACE] \\
+      Know ‘!n. -(X n sp + -X n s0) = -X n sp + -(-X n s0)’
+      >- (Q.X_GEN_TAC ‘n’ \\
+          MATCH_MP_TAC neg_add >> simp []) >> Rewr' \\
+      Know ‘--Y sp + -Y s0 = -(-Y sp + Y s0)’
+      >- (SYM_TAC >> MATCH_MP_TAC neg_add >> simp []) \\
+      simp [] >> DISCH_THEN K_TAC \\
+      simp [le_neg] \\
+   (* applying ext_limsup_add *)
+      Q_TAC (TRANS_TAC le_trans) ‘limsup (\n. -X n sp) + limsup (\n. X n s0)’ \\
+      CONJ_TAC
+      >- (HO_MATCH_MP_TAC ext_limsup_add >> simp [] \\
+          Q.X_GEN_TAC ‘n’ \\
+         ‘?r1. X n sp = Normal r1’ by METIS_TAC [extreal_cases] \\
+          simp [extreal_ainv_def]) \\
+      MATCH_MP_TAC le_add2 >> simp [] \\
+      rw [ext_limsup_alt_liminf, o_DEF, le_neg])
  (* limsup (\n. X n (mspace E)) <= Y (mspace E) *)
  >> cheat
 QED
