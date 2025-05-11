@@ -3647,6 +3647,18 @@ Proof
  >> Q.EXISTS_TAC ‘ARB’ >> rw []
 QED
 
+Theorem inf_pos :
+    !a m. (!n. 0 <= a n) ==> 0 <= inf {a n | m <= (n :num)}
+Proof
+    rw [le_inf'] >> rw []
+QED
+
+Theorem inf_pos' :
+    !a. (!n. 0 <= a n) ==> 0 <= inf (IMAGE a UNIV)
+Proof
+    rw [le_inf'] >> rw []
+QED
+
 (* ------------------------------------------------------------------------- *)
 (* Suminf over extended reals. Definition and properties                     *)
 (* ------------------------------------------------------------------------- *)
@@ -4691,6 +4703,7 @@ Proof
  >- (MATCH_MP_TAC le_add2 \\
      rw [inf_le'] (* 2 subgoals, same tactics *) \\
      POP_ASSUM MATCH_MP_TAC >> Q.EXISTS_TAC ‘n’ >> rw [])
+ >> ‘mono_decreasing f /\ mono_decreasing g’ by PROVE_TAC [ext_mono_decreasing_suc]
  >> Cases_on ‘y = NegInf’ >- rw [le_infty]
  >> ‘!n. y <= f n + g n’ by METIS_TAC []
  >> Q.PAT_X_ASSUM ‘!z. _ ==> y <= z’ K_TAC
@@ -4715,7 +4728,6 @@ Proof
          CONJ_TAC >> MATCH_MP_TAC pos_not_neginf >> rw []) >> Rewr' \\
      MATCH_MP_TAC le_add2 \\
      simp [Abbr ‘m’] \\
-    ‘mono_decreasing f /\ mono_decreasing g’ by PROVE_TAC [ext_mono_decreasing_suc] \\
      fs [ext_mono_decreasing_def] \\
      Q_TAC (TRANS_TAC le_trans) ‘f n’ >> rw [])
  >> Cases_on ‘inf (IMAGE g UNIV) = 0’
@@ -4736,18 +4748,42 @@ Proof
      Q_TAC (TRANS_TAC le_trans) ‘f m + g m’ >> rw [] \\
      MATCH_MP_TAC le_add2 \\
      simp [Abbr ‘m’] \\
-    ‘mono_decreasing f /\ mono_decreasing g’ by PROVE_TAC [ext_mono_decreasing_suc] \\
      fs [ext_mono_decreasing_def] \\
      Q_TAC (TRANS_TAC le_trans) ‘g n’ >> rw [])
  >> ‘!n. g n <= f n + g n’ by METIS_TAC [add_lzero, le_add2, le_refl]
  >> ‘!n. f n <= f n + g n’ by METIS_TAC [add_rzero, le_add2, le_refl]
  >> ‘!n. f n <> NegInf’ by rw [pos_not_neginf]
  >> ‘!n. g n <> NegInf’ by rw [pos_not_neginf]
- (* TODO *)
+ >> Cases_on ‘!n. f n = PosInf’
+ >- (‘IMAGE f UNIV = \y. y = PosInf’ by rw [Once EXTENSION, FUN_EQ_THM] \\
+     POP_ORW >> simp [inf_const] \\
+     Cases_on ‘inf (IMAGE g UNIV) = PosInf’ >- rw [extreal_add_def, le_infty] \\
+    ‘0 <= inf (IMAGE g UNIV)’ by METIS_TAC [inf_pos'] \\
+    ‘inf (IMAGE g UNIV) <> NegInf’ by rw [pos_not_neginf] \\
+    ‘?r. inf (IMAGE g UNIV) = Normal r’ by METIS_TAC [extreal_cases] \\
+     simp [extreal_add_def, le_infty])
+ >> Cases_on ‘!n. g n = PosInf’
+ >- (‘IMAGE g UNIV = \y. y = PosInf’ by rw [Once EXTENSION, FUN_EQ_THM] \\
+     POP_ORW >> simp [inf_const] \\
+     Cases_on ‘inf (IMAGE f UNIV) = PosInf’ >- rw [extreal_add_def, le_infty] \\
+    ‘0 <= inf (IMAGE f UNIV)’ by METIS_TAC [inf_pos'] \\
+    ‘inf (IMAGE f UNIV) <> NegInf’ by rw [pos_not_neginf] \\
+    ‘?r. inf (IMAGE f UNIV) = Normal r’ by METIS_TAC [extreal_cases] \\
+     simp [extreal_add_def, le_infty])
+ >> fs []
+ >> rename1 ‘g m <> PosInf’
+ >> Know ‘!i. n <= i ==> f i <> PosInf’
+ >- (rw [lt_infty] \\
+     fs [ext_mono_decreasing_def, lt_infty] \\
+     Q_TAC (TRANS_TAC let_trans) ‘f n’ >> rw [])
+ >> DISCH_TAC
+ >> Know ‘!i. m <= i ==> g i <> PosInf’
+ >- (rw [lt_infty] \\
+     fs [ext_mono_decreasing_def, lt_infty] \\
+     Q_TAC (TRANS_TAC let_trans) ‘g m’ >> rw [])
+ >> DISCH_TAC
  >> cheat
  (*
- >> ‘!n. f n <> PosInf’ by METIS_TAC [le_trans, lt_infty, let_trans]
- >> ‘!n. g n <> PosInf’ by METIS_TAC [le_trans, lt_infty, let_trans]
  >> MATCH_MP_TAC le_trans
  (* stage work *)
  >> Q.EXISTS_TAC ‘sup (IMAGE (\n. (sup (IMAGE f UNIV)) + g n) UNIV)’
