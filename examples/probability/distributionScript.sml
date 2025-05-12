@@ -3424,14 +3424,6 @@ Proof
       MATCH_MP_TAC MEASURE_POSITIVE >> rw [Abbr ‘M’] ]
 QED
 
-Theorem limsup_sup_exchange :
-    !f. (!n. mono_increasing (f n)) ==>
-        limsup (\n. sup (IMAGE (f n) univ(:num))) =
-        sup (IMAGE (\m. limsup (\n. f n m)) UNIV)
-Proof
-    cheat
-QED
-
 (* "trivial" *)
 Theorem Portemanteau_iv_imp_v[local] :
     !E X Y. Portemanteau_antecedents E X Y /\
@@ -3557,9 +3549,9 @@ Proof
  >> Rewr'
  (* applying limsup_sup_exchange *)
  >> qabbrev_tac ‘g = \n. X n o f’ >> simp []
- >> Know ‘limsup (\n. sup (IMAGE (g n) UNIV)) =
-          sup (IMAGE (\m. limsup (\n. g n m)) UNIV)’
- >- (MATCH_MP_TAC limsup_sup_exchange \\
+ >> Q_TAC (TRANS_TAC le_trans) ‘sup (IMAGE (\m. limsup (\n. g n m)) UNIV)’
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC limsup_sup_exchange_lemma \\
      rw [Abbr ‘g’, o_DEF] \\
      simp [ext_mono_increasing_suc] \\
      Q.X_GEN_TAC ‘i’ \\
@@ -3569,7 +3561,6 @@ Proof
      qabbrev_tac ‘M = (mspace E,subsets (B E),X n)’ \\
      Know ‘increasing M’ >- rw [MEASURE_SPACE_INCREASING] \\
      rw [increasing_def, Abbr ‘M’])
- >> Rewr'
  >> simp [Abbr ‘g’, o_DEF]
  >> MATCH_MP_TAC sup_mono >> rw [] (* amazing *)
 QED

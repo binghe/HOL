@@ -7795,6 +7795,37 @@ Proof
  >> Q.EXISTS_TAC ‘m’ >> art []
 QED
 
+(* NOTE: see also
+
+   https://en.wikipedia.org/wiki/Interchange_of_limiting_operations
+ *)
+Theorem limsup_sup_exchange_lemma :
+    !f. (!n. mono_increasing (f n)) ==>
+        limsup (\n. sup (IMAGE (f n) UNIV)) <=
+        sup (IMAGE (\m. limsup (\n. f n m)) UNIV)
+Proof
+    rw [GSYM le_antisym, ext_mono_increasing_def]
+ >> MATCH_MP_TAC le_epsilon
+ >> rpt STRIP_TAC
+ >> ‘e <> NegInf’ by rw [pos_not_neginf, lt_imp_le]
+ >> qmatch_abbrev_tac ‘y <= z + e’
+ >> Know ‘y <= z + e <=> y - e <= z’
+ >- (SYM_TAC >> MATCH_MP_TAC sub_le_eq >> art [])
+ >> Rewr'
+ >> rw [le_sup', Abbr ‘z’]
+ >> rename1 ‘y - e <= z’
+ >> ‘!m. limsup (\n. f n m) <= z’ by METIS_TAC []
+ >> Q.PAT_X_ASSUM ‘!z'. _ ==> z' <= z’ K_TAC
+ >> Know ‘y - e <= z <=> y <= z + e’
+ >- (MATCH_MP_TAC sub_le_eq >> art [])
+ >> Rewr'
+ >> rw [Abbr ‘y’, ext_limsup_def, inf_le']
+ >> ‘!m. y <= sup {sup (IMAGE (f n) UNIV) | m <= n}’ by METIS_TAC []
+ >> Q.PAT_X_ASSUM ‘!z'. _ ==> y <= z'’ K_TAC
+ (* stage work *)
+ >> cheat
+QED
+
 (* ------------------------------------------------------------------------- *)
 (*   Analytic properties of mono-increasing functions (:extreal -> extreal)  *)
 (* ------------------------------------------------------------------------- *)
