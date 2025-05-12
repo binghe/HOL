@@ -7795,33 +7795,44 @@ Proof
  >> Q.EXISTS_TAC ‘m’ >> art []
 QED
 
-(* NOTE: see also
+Theorem ext_limsup_mono :
+    !p q. (!n. p n <= q n) ==> limsup p <= limsup q
+Proof
+    rw [ext_limsup_def]
+ >> MATCH_MP_TAC inf_mono >> rw []
+ >> qabbrev_tac ‘A = {i | n <= i}’
+ >> ‘{p i | n <= i} = {p i | i IN A}’ by rw [Once EXTENSION, Abbr ‘A’] >> POP_ORW
+ >> ‘{q i | n <= i} = {q i | i IN A}’ by rw [Once EXTENSION, Abbr ‘A’] >> POP_ORW
+ >> MATCH_MP_TAC sup_mono_ext
+ >> rw [Abbr ‘A’]
+ >> rename1 ‘n <= k’
+ >> Q.EXISTS_TAC ‘k’ >> rw []
+QED
 
-   https://en.wikipedia.org/wiki/Interchange_of_limiting_operations
+(* cf.
+   https://math.stackexchange.com/questions/3089365/interchanging-limsup-and-sup
  *)
-Theorem limsup_sup_exchange_lemma :
+Theorem ext_limsup_sup :
     !f. (!n. mono_increasing (f n)) ==>
         limsup (\n. sup (IMAGE (f n) UNIV)) <=
         sup (IMAGE (\m. limsup (\n. f n m)) UNIV)
 Proof
-    rw [GSYM le_antisym, ext_mono_increasing_def]
+    rw [ext_mono_increasing_def, le_sup']
+ >> Know ‘!m. limsup (\n. f n m) <= y’ >- METIS_TAC []
+ >> POP_ASSUM K_TAC >> DISCH_TAC
  >> MATCH_MP_TAC le_epsilon
  >> rpt STRIP_TAC
  >> ‘e <> NegInf’ by rw [pos_not_neginf, lt_imp_le]
- >> qmatch_abbrev_tac ‘y <= z + e’
- >> Know ‘y <= z + e <=> y - e <= z’
+ >> qmatch_abbrev_tac ‘z <= y + e’
+ >> Know ‘z <= y + e <=> z - e <= y’
  >- (SYM_TAC >> MATCH_MP_TAC sub_le_eq >> art [])
  >> Rewr'
- >> rw [le_sup', Abbr ‘z’]
- >> rename1 ‘y - e <= z’
- >> ‘!m. limsup (\n. f n m) <= z’ by METIS_TAC []
- >> Q.PAT_X_ASSUM ‘!z'. _ ==> z' <= z’ K_TAC
- >> Know ‘y - e <= z <=> y <= z + e’
- >- (MATCH_MP_TAC sub_le_eq >> art [])
- >> Rewr'
- >> rw [Abbr ‘y’, ext_limsup_def, inf_le']
- >> ‘!m. y <= sup {sup (IMAGE (f n) UNIV) | m <= n}’ by METIS_TAC []
- >> Q.PAT_X_ASSUM ‘!z'. _ ==> y <= z'’ K_TAC
+ >> qunabbrev_tac ‘z’
+ (* NOTE: use when needed
+ >> ‘?r. 0 < r /\ e = Normal r’
+       by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_lt_eq]
+ >> POP_ORW
+  *)
  (* stage work *)
  >> cheat
 QED

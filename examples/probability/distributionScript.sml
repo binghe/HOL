@@ -3547,11 +3547,10 @@ Proof
      SYM_TAC \\
      MATCH_MP_TAC MONOTONE_CONVERGENCE >> rw [IN_FUNSET, Abbr ‘M’])
  >> Rewr'
- (* applying limsup_sup_exchange *)
  >> qabbrev_tac ‘g = \n. X n o f’ >> simp []
  >> Q_TAC (TRANS_TAC le_trans) ‘sup (IMAGE (\m. limsup (\n. g n m)) UNIV)’
  >> CONJ_TAC
- >- (MATCH_MP_TAC limsup_sup_exchange_lemma \\
+ >- (MATCH_MP_TAC ext_limsup_sup \\
      rw [Abbr ‘g’, o_DEF] \\
      simp [ext_mono_increasing_suc] \\
      Q.X_GEN_TAC ‘i’ \\
