@@ -3424,6 +3424,14 @@ Proof
       MATCH_MP_TAC MEASURE_POSITIVE >> rw [Abbr ‘M’] ]
 QED
 
+Theorem limsup_sup_exchange :
+    !f. (!n. mono_increasing (f n)) ==>
+        limsup (\n. sup (IMAGE (f n) univ(:num))) =
+        sup (IMAGE (\m. limsup (\n. f n m)) UNIV)
+Proof
+    cheat
+QED
+
 (* "trivial" *)
 Theorem Portemanteau_iv_imp_v[local] :
     !E X Y. Portemanteau_antecedents E X Y /\
@@ -3531,54 +3539,39 @@ Proof
  >> ‘!n. closed_in (mtop E) (f n)’ by METIS_TAC [CLOSED_IN_MCBALL]
  (* applying MONOTONE_CONVERGENCE *)
  >> Know ‘Y (mspace E) = sup (IMAGE (Y o f) UNIV)’
- >- (Q.PAT_X_ASSUM ‘subprobability_measure t Y’ MP_TAC \\
+ >- (Q.PAT_X_ASSUM ‘subprobability_measure (mtop E) Y’ MP_TAC \\
      RW_TAC std_ss [subprobability_measure_thm, GSYM mspace] \\
      qabbrev_tac ‘M = (mspace E,subsets (B E),Y)’ \\
     ‘Y = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
      SYM_TAC \\
      MATCH_MP_TAC MONOTONE_CONVERGENCE >> rw [IN_FUNSET, Abbr ‘M’])
  >> Rewr'
- (* stage work *)
- >> MATCH_MP_TAC le_epsilon
- >> rpt STRIP_TAC
- >> ‘e <> NegInf’ by rw [lt_imp_le, pos_not_neginf]
- >> ‘?r. 0 < r /\ e = Normal r’
-       by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_lt_eq]
- >> POP_ORW
- (* applying sub_le_eq *)
- >> qmatch_abbrev_tac ‘(y :extreal) <= z + _’
- >> Know ‘y <= z + Normal r <=> y - Normal r <= z’
- >- (SYM_TAC >> MATCH_MP_TAC sub_le_eq >> rw [])
+ >> Know ‘!n. X n (mspace E) = sup (IMAGE (X n o f) UNIV)’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     Q.PAT_X_ASSUM ‘!n. subprobability_measure (mtop E) (X n)’ MP_TAC \\
+     RW_TAC std_ss [subprobability_measure_thm, GSYM mspace] \\
+     qabbrev_tac ‘M = (mspace E,subsets (B E),X n)’ \\
+    ‘X n = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
+     SYM_TAC \\
+     MATCH_MP_TAC MONOTONE_CONVERGENCE >> rw [IN_FUNSET, Abbr ‘M’])
  >> Rewr'
- >> rw [Abbr ‘z’, le_sup']
- >> rename1 ‘y - Normal r <= z’
- >> ‘!n. Y (f n) <= z’ by METIS_TAC []
- >> Q.PAT_X_ASSUM ‘!z'. _ ==> z' <= z’ K_TAC
- (* NOTE: so far so good:
-
-    (!n. Y (f n) <= z) |- y - Normal r <= z
-
-    Need to choose a suitable n such that ‘y - Normal r <= Y (f n)’ is provable.
-  *)
- >> Know ‘y - Normal r <= z <=> y <= z + Normal r’
- >- (MATCH_MP_TAC sub_le_eq >> rw [])
+ (* applying limsup_sup_exchange *)
+ >> qabbrev_tac ‘g = \n. X n o f’ >> simp []
+ >> Know ‘limsup (\n. sup (IMAGE (g n) UNIV)) =
+          sup (IMAGE (\m. limsup (\n. g n m)) UNIV)’
+ >- (MATCH_MP_TAC limsup_sup_exchange \\
+     rw [Abbr ‘g’, o_DEF] \\
+     simp [ext_mono_increasing_suc] \\
+     Q.X_GEN_TAC ‘i’ \\
+     Q.PAT_X_ASSUM ‘!n. subprobability_measure (mtop E) (X n)’
+       (MP_TAC o Q.SPEC ‘n’) \\
+     RW_TAC std_ss [subprobability_measure_thm, GSYM mspace] \\
+     qabbrev_tac ‘M = (mspace E,subsets (B E),X n)’ \\
+     Know ‘increasing M’ >- rw [MEASURE_SPACE_INCREASING] \\
+     rw [increasing_def, Abbr ‘M’])
  >> Rewr'
- >> rw [Abbr ‘y’, ext_limsup_def, inf_le']
- >> ‘!m. y <= sup {X n (mspace E) | m <= n}’ by METIS_TAC []
- >> Q.PAT_X_ASSUM ‘!z'. _ ==> y <= z'’ K_TAC
- (* NOTE: so far so good:
-
-    !m. y <= sup {X n (mspace E) | m <= n}
-  ------------------------------------------
-            y <= z + Normal r
-
-    Need to choose a suitable m such that
-
-      sup {X n (mspace E) | m <= n} <= z + Normal r
-
-    is provable.
-  *)
- >> cheat
+ >> simp [Abbr ‘g’, o_DEF]
+ >> MATCH_MP_TAC sup_mono >> rw [] (* amazing *)
 QED
 
 Theorem Portemanteau_iv_eq_v[local] :
