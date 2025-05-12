@@ -3521,6 +3521,14 @@ Proof
       ‘X n = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
        MATCH_MP_TAC MEASURE_POSITIVE >> rw [Abbr ‘M’] ])
  (* limsup (\n. X n (mspace E)) <= Y (mspace E) *)
+ >> MP_TAC (Q.SPECL [‘E’, ‘ARB’] exhausting_sequence_general_borel)
+ >> impl_tac >- simp [mspace]
+ >> simp [exhausting_sequence_def, IN_FUNSET]
+ >> ‘space (B E) = mspace E’ by rw [space_general_borel, mspace]
+ >> POP_ORW
+ >> qabbrev_tac ‘c = ARB’
+ >> qabbrev_tac ‘f = \n. mcball E (c,&n)’ >> rw []
+ >> ‘!n. closed_in (mtop E) (f n)’ by METIS_TAC [CLOSED_IN_MCBALL]
  >> cheat
 QED
 
