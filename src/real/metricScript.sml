@@ -391,6 +391,15 @@ Proof
    rw [mspace, METRIC_TRIANGLE]
 QED
 
+Theorem MDIST_TRIANGLE_SUB :
+    !m x y z. x IN mspace m /\ y IN mspace m /\ z IN mspace m ==>
+              mdist m (x,y) - mdist m (y,z) <= mdist m (x,z)
+Proof
+    RW_TAC std_ss [REAL_LE_SUB_RADD]
+ >> ‘dist m (y,z) = dist m (z,y)’ by rw [METRIC_SYM] >> POP_ORW
+ >> MATCH_MP_TAC MDIST_TRIANGLE >> art []
+QED
+
 Theorem MDIST_POS_LE :
     !m x y. x IN mspace m /\ y IN mspace m ==> &0 <= mdist m (x,y)
 Proof
@@ -1352,6 +1361,96 @@ let CONTINUOUS_MAP_FROM_METRIC = prove
     DISCH_THEN(MP_TAC o SPEC `u:B->bool`) THEN ASM_REWRITE_TAC[] THEN
     REWRITE_TAC[SUBSET; IN_MBALL; IN_ELIM_THM] THEN MESON_TAC[]]);;
  *)
+
+(*---------------------------------------------------------------------------*)
+(* closed ball in metric space + prove basic properties                      *)
+(*  (ported from HOL-Light's Multivariate/metric.ml)                         *)
+(*---------------------------------------------------------------------------*)
+
+Theorem CLOSED_IN_METRIC :
+   !m (c :'a set).
+     closed_in (mtopology m) c <=>
+     c SUBSET mspace m /\
+     (!x. x IN mspace m DIFF c ==> ?r. &0 < r /\ DISJOINT c (mball m (x,r)))
+Proof
+    rw[closed_in, OPEN_IN_MTOPOLOGY, DISJOINT_DEF, TOPSPACE_MTOPOLOGY]
+ >> MP_TAC MBALL_SUBSET_MSPACE >> ASM_SET_TAC[]
+QED
+
+Definition mcball :
+    mcball m (x :'a,r) =
+      {y | x IN mspace m /\ y IN mspace m /\ mdist m (x,y) <= r}
+End
+
+Theorem IN_MCBALL :
+   !m (x :'a) r y.
+     y IN mcball m (x,r) <=>
+     x IN mspace m /\ y IN mspace m /\ mdist m (x,y) <= r
+Proof
+    rw [mcball]
+QED
+
+Theorem CENTRE_IN_MCBALL :
+   !m (x :'a) r. &0 <= r /\ x IN mspace m ==> x IN mcball m (x,r)
+Proof
+  SIMP_TAC std_ss[IN_MCBALL, MDIST_REFL]
+QED
+
+Theorem CENTRE_IN_MCBALL_EQ :
+   !m (x :'a) r. x IN mcball m (x,r) <=> x IN mspace m /\ &0 <= r
+Proof
+  REPEAT GEN_TAC THEN REWRITE_TAC[IN_MCBALL] THEN
+  ASM_CASES_TAC “(x :'a) IN mspace m” THEN ASM_SIMP_TAC std_ss[MDIST_REFL]
+QED
+
+Theorem MCBALL_EQ_EMPTY :
+   !m (x :'a) r. mcball m (x,r) = {} <=> ~(x IN mspace m) \/ r < &0
+Proof
+  REPEAT GEN_TAC THEN
+  rw [Once EXTENSION, IN_MCBALL, NOT_IN_EMPTY] THEN
+  ASM_MESON_TAC[REAL_NOT_LT, REAL_LE_TRANS, MDIST_POS_LE, MDIST_REFL]
+QED
+
+Theorem MCBALL_EMPTY :
+   !m (x :'a) r. r < &0 ==> mcball m (x,r) = {}
+Proof
+  SIMP_TAC std_ss[MCBALL_EQ_EMPTY]
+QED
+
+Theorem MCBALL_EMPTY_ALT :
+   !m (x :'a) r. ~(x IN mspace m) ==> mcball m (x,r) = {}
+Proof
+  SIMP_TAC std_ss[MCBALL_EQ_EMPTY]
+QED
+
+Theorem MCBALL_SUBSET_MSPACE :
+   !m (x :'a) r. mcball m (x,r) SUBSET (mspace m)
+Proof
+  rw [mcball, SUBSET_DEF]
+QED
+
+Theorem CLOSED_IN_MCBALL :
+    !(m :'a metric) x r. closed_in (mtopology m) (mcball m (x,r))
+Proof
+    RW_TAC std_ss [CLOSED_IN_METRIC, MCBALL_SUBSET_MSPACE, IN_MCBALL,
+                   DE_MORGAN_THM, REAL_NOT_LE, IN_DIFF]
+ >> rename1 ‘y IN mspace m’
+ >- (simp [MCBALL_EMPTY_ALT] \\
+     Q.EXISTS_TAC ‘1’ >> rw [])
+ >> Q.EXISTS_TAC ‘mdist m (x,y) - r’
+ >> rw [REAL_SUB_LT]
+ >> simp [Once EXTENSION, DISJOINT_DEF, NOT_IN_EMPTY, IN_MBALL, IN_MCBALL]
+ >> Q.X_GEN_TAC ‘z’
+ >> Cases_on ‘z IN mspace m’ >> rw []
+ >> Cases_on ‘x IN mspace m’ >> rw []
+ >> STRONG_DISJ_TAC
+ >> simp [real_lt]
+ >> Know ‘dist m (x,y) - r <= dist m (y,z) <=>
+          dist m (x,y) - dist m (y,z) <= r’ >- REAL_ARITH_TAC
+ >> Rewr'
+ >> Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘dist m (x,z)’ >> art []
+ >> MATCH_MP_TAC MDIST_TRIANGLE_SUB >> art []
+QED
 
 val _ = remove_ovl_mapping "B" {Name = "B", Thy = "metric"};
 val _ = export_theory();

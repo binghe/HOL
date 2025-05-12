@@ -3432,6 +3432,7 @@ Proof
     rpt GEN_TAC
  >> simp [Portemanteau_antecedents_def, Portemanteau_iv_def, Portemanteau_v_def]
  >> STRIP_TAC
+ (* !s. open_in (mtop E) s ==> Y s <= liminf (\n. X n s) *)
  >> reverse CONJ_TAC
  >- (Q.X_GEN_TAC ‘s’ >> STRIP_TAC \\
      qabbrev_tac ‘sp = mspace E’ \\

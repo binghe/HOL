@@ -13,7 +13,6 @@
 (*            Contact:  <m_qasi@ece.concordia.ca>                            *)
 (*                                                                           *)
 (*    Note: This theory was ported from HOL Light                            *)
-(*                                                                           *)
 (* ========================================================================= *)
 
 open HolKernel Parse boolLib bossLib;
@@ -2091,15 +2090,22 @@ End
 
 (* old definition now becomes a theorem *)
 Theorem ball :
-    !x e. ball(x,e) = { y | dist(x,y) < e}
+    !x e. ball(x,e) = {y | dist(x,y) < e}
 Proof
     RW_TAC std_ss [ball_def, dist_def, metricTheory.ball,
                    Once EXTENSION, GSPECIFICATION]
  >> rw [IN_APP]
 QED
 
-val cball = new_definition ("cball",
-  ``cball(x,e) = { y | dist(x,y) <= e}``);
+Definition cball_def :
+    cball = mcball mr1
+End
+
+Theorem cball :
+    !x e. cball(x,e) = {y | dist(x,y) <= e}
+Proof
+    rw [cball_def, dist_def, mcball, mspace]
+QED
 
 val sphere = new_definition ("sphere",
   ``sphere(x,e) = { y | dist(x,y) = e}``);
@@ -6124,15 +6130,11 @@ val SEQ_HARMONIC = store_thm ("SEQ_HARMONIC",
 (* More properties of closed balls.                                          *)
 (* ------------------------------------------------------------------------- *)
 
-val CLOSED_CBALL = store_thm ("CLOSED_CBALL",
- ``!x:real e. closed(cball(x,e))``,
-  REWRITE_TAC[CLOSED_SEQUENTIAL_LIMITS, IN_CBALL, dist] THEN
-  GEN_TAC THEN GEN_TAC THEN X_GEN_TAC ``s:num->real`` THEN
-  X_GEN_TAC ``y:real`` THEN STRIP_TAC THEN
-  MATCH_MP_TAC(ISPEC ``sequentially`` LIM_ABS_UBOUND) THEN
-  EXISTS_TAC ``\n. x - (s:num->real) n`` THEN
-  REWRITE_TAC[TRIVIAL_LIMIT_SEQUENTIALLY, EVENTUALLY_SEQUENTIALLY] THEN
-  ASM_SIMP_TAC std_ss [LIM_SUB, LIM_CONST, SEQUENTIALLY]);
+Theorem CLOSED_CBALL :
+   !x:real e. closed(cball(x,e))
+Proof
+    rw [CLOSED_IN, cball_def, euclidean_def, CLOSED_IN_MCBALL]
+QED
 
 val IN_INTERIOR_CBALL = store_thm ("IN_INTERIOR_CBALL",
  ``!x s. x IN interior s <=> ?e. &0 < e /\ cball(x,e) SUBSET s``,
