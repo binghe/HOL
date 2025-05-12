@@ -1782,52 +1782,6 @@ val measure_split = store_thm
 (*  Uniqueness of Measure - Dynkin system [3]                                *)
 (* ------------------------------------------------------------------------- *)
 
-(* an "exhausting" sequence in a system of sets, moved from martingaleTheory *)
-Definition exhausting_sequence_def :
-    exhausting_sequence (a :'a algebra) (f :num -> 'a -> bool) =
-      (f IN (UNIV -> subsets a) /\ (!n. f n SUBSET f (SUC n)) /\
-       BIGUNION (IMAGE f UNIV) = space a)
-End
-
-Theorem exhausting_sequence_alt :
-   !a f. exhausting_sequence a f <=>
-         f IN (univ(:num) -> subsets a) /\ (!m n. m <= n ==> f m SUBSET f n) /\
-         BIGUNION (IMAGE f univ(:num)) = space a
-Proof
-    RW_TAC std_ss [exhausting_sequence_def]
- >> reverse EQ_TAC >- RW_TAC std_ss []
- >> STRIP_TAC >> art []
- >> GEN_TAC >> Induct_on ‘n’ >- RW_TAC arith_ss [SUBSET_REFL]
- >> DISCH_TAC
- >> ‘(m = SUC n) \/ m <= n’ by RW_TAC arith_ss [] >- rw [SUBSET_REFL]
- >> MATCH_MP_TAC SUBSET_TRANS
- >> Q.EXISTS_TAC ‘f n’ >> art []
- >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
-QED
-
-Definition has_exhausting_sequence :
-    has_exhausting_sequence a = ?f. exhausting_sequence a f
-End
-
-(* This was part of sigma_finite_def, but no requirement on the measure of each
-   (f n). The definition is useful because ‘space a IN subsets a’ does not hold
-   in general for semiring.
-
-   |- !a. has_exhausting_sequence a <=>
-          ?f. f IN (univ(:num) -> subsets a) /\ (!n. f n SUBSET f (SUC n)) /\
-              BIGUNION (IMAGE f univ(:num)) = space a
- *)
-Theorem has_exhausting_sequence_def =
-    REWRITE_RULE [exhausting_sequence_def] has_exhausting_sequence
-
-(* |- !a. has_exhausting_sequence a <=>
-          ?f. f IN (univ(:num) -> subsets a) /\
-              (!m n. m <= n ==> f m SUBSET f n) /\
-              BIGUNION (IMAGE f univ(:num)) = space a
- *)
-Theorem has_exhausting_sequence_alt =
-    REWRITE_RULE [exhausting_sequence_alt] has_exhausting_sequence
-
 (* `sigma-finite` is a property of measure space but sigma algebra.
 
    The new definition based on ‘exhausting_sequence’ (was in martingaleTheory):

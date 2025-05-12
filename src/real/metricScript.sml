@@ -378,9 +378,15 @@ val BALL_NEIGH = store_thm("BALL_NEIGH",
 (*---------------------------------------------------------------------------*)
 
 Theorem MDIST_REFL :
-   !m x:'a. x IN mspace m ==> mdist m (x,x) = &0
+   !m (x :'a). x IN mspace m ==> mdist m (x,x) = &0
 Proof
    rw [mspace, METRIC_SAME]
+QED
+
+Theorem MDIST_SYM :
+   !m (x :'a) y. x IN mspace m /\ y IN mspace m ==> mdist m (x,y) = mdist m (y,x)
+Proof
+   rw [mspace, METRIC_SYM]
 QED
 
 Theorem MDIST_TRIANGLE :
@@ -1427,6 +1433,31 @@ Theorem MCBALL_SUBSET_MSPACE :
    !m (x :'a) r. mcball m (x,r) SUBSET (mspace m)
 Proof
   rw [mcball, SUBSET_DEF]
+QED
+
+Theorem MBALL_SUBSET_MCBALL :
+   !m (x :'a) r. mball m (x,r) SUBSET mcball m (x,r)
+Proof
+  SIMP_TAC std_ss[SUBSET_DEF, IN_MBALL, IN_MCBALL, REAL_LT_IMP_LE]
+QED
+
+Theorem MCBALL_SUBSET :
+   !m x (y :'a) a b. y IN mspace m /\ mdist m (x,y) + a <= b
+                 ==> mcball m (x,a) SUBSET mcball m (y,b)
+Proof
+  REPEAT GEN_TAC THEN ASM_CASES_TAC “(x :'a) IN mspace m” THENL
+  [STRIP_TAC, rw [MCBALL_EMPTY_ALT]] THEN
+  simp [SUBSET_DEF, IN_MCBALL] \\
+  Q.X_GEN_TAC ‘z’ \\
+  STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+  Suff `mdist m (y,z) <= mdist m (x,y) + mdist m (x,z)` >- REAL_ASM_ARITH_TAC \\
+  ASM_MESON_TAC[MDIST_SYM, MDIST_TRIANGLE]
+QED
+
+Theorem MCBALL_SUBSET_CONCENTRIC :
+   !m (x :'a) a b. a <= b ==> mcball m (x,a) SUBSET mcball m (x,b)
+Proof
+  SIMP_TAC std_ss[SUBSET_DEF, IN_MCBALL] THEN MESON_TAC[REAL_LE_TRANS]
 QED
 
 Theorem CLOSED_IN_MCBALL :
