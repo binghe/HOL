@@ -3382,7 +3382,9 @@ Proof
  >> Rewr'
  (* stage work *)
  >> simp [extreal_sub, ext_limsup_alt_liminf, o_DEF]
- >> fs [subprobability_measure_def, finite_measure_thm]
+ >> ‘(!n. finite_measure t (X n)) /\ finite_measure t Y’
+        by FULL_SIMP_TAC std_ss [subprobability_measure_def]
+ >> FULL_SIMP_TAC std_ss [subprobability_measure_thm, finite_measure_thm]
  >> ‘sp IN subsets b’ by METIS_TAC [SIGMA_ALGEBRA_SPACE]
  >> Know ‘!n. -(X n sp + -X n s0) = -X n sp + -(-X n s0)’
  >- (Q.X_GEN_TAC ‘n’ \\
@@ -3396,13 +3398,30 @@ Proof
  >> simp [le_neg]
  (* applying ext_liminf_add *)
  >> Q_TAC (TRANS_TAC le_trans) ‘liminf (\n. -X n sp) + liminf (\n. X n s0)’
- >> reverse CONJ_TAC
- >- (HO_MATCH_MP_TAC ext_liminf_add >> simp [] \\
-     Q.X_GEN_TAC ‘n’ \\
-    ‘?r1. X n sp = Normal r1’ by METIS_TAC [extreal_cases] \\
-     simp [extreal_ainv_def])
- >> MATCH_MP_TAC le_add2 >> simp []
- >> rw [ext_liminf_alt_limsup, o_DEF, le_neg]
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC le_add2 >> simp [] \\
+     rw [ext_liminf_alt_limsup, o_DEF, le_neg])
+ >> HO_MATCH_MP_TAC ext_liminf_add
+ >> rw [ext_bounded_alt] (* 2 subgoals *)
+ >| [ (* goal 1 (of 2) *)
+      Q.EXISTS_TAC ‘1’ >> rw [normal_1] \\
+      REWRITE_TAC [abs_neg_eq] \\
+      simp [abs_bounds] \\
+      Q_TAC (TRANS_TAC le_trans) ‘-0’ >> rw [le_neg] \\
+      Q.PAT_X_ASSUM ‘!n. measure_space (topspace t,subsets (B t),X n) /\ _’
+        (MP_TAC o Q.SPEC ‘n’) \\
+      qmatch_abbrev_tac ‘measure_space M /\ _ ==> _’ >> STRIP_TAC \\
+     ‘X n = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
+      MATCH_MP_TAC MEASURE_POSITIVE >> rw [Abbr ‘M’],
+      (* goal 2 (of 2) *)
+      Q.EXISTS_TAC ‘1’ >> rw [normal_1] \\
+      simp [abs_bounds] \\
+      Q_TAC (TRANS_TAC le_trans) ‘-0’ >> rw [le_neg] \\
+      Q.PAT_X_ASSUM ‘!n. measure_space (topspace t,subsets (B t),X n) /\ _’
+        (MP_TAC o Q.SPEC ‘n’) \\
+      qmatch_abbrev_tac ‘measure_space M /\ _ ==> _’ >> STRIP_TAC \\
+     ‘X n = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
+      MATCH_MP_TAC MEASURE_POSITIVE >> rw [Abbr ‘M’] ]
 QED
 
 (* "trivial" *)
@@ -3461,26 +3480,45 @@ Proof
          MATCH_MP_TAC MEASURE_SPACE_FINITE_DIFF >> rw [Abbr ‘p’] \\
          simp [lt_infty] \\
          Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw []) >> Rewr' \\
-   (* stage work *)
-      simp [extreal_sub, ext_liminf_alt_limsup, o_DEF] \\
-      fs [subprobability_measure_def, finite_measure_thm] \\
-     ‘sp IN subsets b’ by METIS_TAC [SIGMA_ALGEBRA_SPACE] \\
-      Know ‘!n. -(X n sp + -X n s0) = -X n sp + -(-X n s0)’
-      >- (Q.X_GEN_TAC ‘n’ \\
-          MATCH_MP_TAC neg_add >> simp []) >> Rewr' \\
-      Know ‘--Y sp + -Y s0 = -(-Y sp + Y s0)’
-      >- (SYM_TAC >> MATCH_MP_TAC neg_add >> simp []) \\
-      simp [] >> DISCH_THEN K_TAC \\
-      simp [le_neg] \\
-   (* applying ext_limsup_add *)
-      Q_TAC (TRANS_TAC le_trans) ‘limsup (\n. -X n sp) + limsup (\n. X n s0)’ \\
-      CONJ_TAC
-      >- (HO_MATCH_MP_TAC ext_limsup_add >> simp [] \\
-          Q.X_GEN_TAC ‘n’ \\
-         ‘?r1. X n sp = Normal r1’ by METIS_TAC [extreal_cases] \\
-          simp [extreal_ainv_def]) \\
-      MATCH_MP_TAC le_add2 >> simp [] \\
-      rw [ext_limsup_alt_liminf, o_DEF, le_neg])
+  (* stage work *)
+     simp [extreal_sub, ext_liminf_alt_limsup, o_DEF] \\
+    ‘(!n. finite_measure t (X n)) /\ finite_measure t Y’
+        by FULL_SIMP_TAC std_ss [subprobability_measure_def] \\
+     FULL_SIMP_TAC std_ss [subprobability_measure_thm, finite_measure_thm] \\
+    ‘sp IN subsets b’ by METIS_TAC [SIGMA_ALGEBRA_SPACE] \\
+     Know ‘!n. -(X n sp + -X n s0) = -X n sp + -(-X n s0)’
+     >- (Q.X_GEN_TAC ‘n’ \\
+         MATCH_MP_TAC neg_add >> simp []) >> Rewr' \\
+     Know ‘--Y sp + -Y s0 = -(-Y sp + Y s0)’
+     >- (SYM_TAC >> MATCH_MP_TAC neg_add >> simp []) \\
+     simp [] >> DISCH_THEN K_TAC \\
+     simp [le_neg] \\
+     Q_TAC (TRANS_TAC le_trans) ‘limsup (\n. -X n sp) + limsup (\n. X n s0)’ \\
+     reverse CONJ_TAC
+     >- (MATCH_MP_TAC le_add2 >> simp [] \\
+         rw [ext_limsup_alt_liminf, o_DEF, le_neg]) \\
+  (* applying ext_limsup_add *)
+     HO_MATCH_MP_TAC ext_limsup_add \\
+     rw [ext_bounded_alt] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       Q.EXISTS_TAC ‘1’ >> rw [normal_1] \\
+       REWRITE_TAC [abs_neg_eq] \\
+       simp [abs_bounds] \\
+       Q_TAC (TRANS_TAC le_trans) ‘-0’ >> rw [le_neg] \\
+       Q.PAT_X_ASSUM ‘!n. measure_space (topspace t,subsets (B t),X n) /\ _’
+         (MP_TAC o Q.SPEC ‘n’) \\
+       qmatch_abbrev_tac ‘measure_space M /\ _ ==> _’ >> STRIP_TAC \\
+      ‘X n = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
+       MATCH_MP_TAC MEASURE_POSITIVE >> rw [Abbr ‘M’],
+       (* goal 2 (of 2) *)
+       Q.EXISTS_TAC ‘1’ >> rw [normal_1] \\
+       simp [abs_bounds] \\
+       Q_TAC (TRANS_TAC le_trans) ‘-0’ >> rw [le_neg] \\
+       Q.PAT_X_ASSUM ‘!n. measure_space (topspace t,subsets (B t),X n) /\ _’
+         (MP_TAC o Q.SPEC ‘n’) \\
+       qmatch_abbrev_tac ‘measure_space M /\ _ ==> _’ >> STRIP_TAC \\
+      ‘X n = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
+       MATCH_MP_TAC MEASURE_POSITIVE >> rw [Abbr ‘M’] ])
  (* limsup (\n. X n (mspace E)) <= Y (mspace E) *)
  >> cheat
 QED

@@ -2632,9 +2632,6 @@ val sup_max = store_thm
   ("sup_max", ``!p z. p z /\ (!x. p x ==> x <= z) ==> (sup p = z)``,
     RW_TAC std_ss [sup_eq]);
 
-(* NOTE: The proof would be much harder (but possible) if f,g also return
-   negative values.
- *)
 Theorem sup_add_mono :
     !f g. (!n. 0 <= f n) /\ (!n. f n <= f (SUC n)) /\
           (!n. 0 <= g n) /\ (!n. g n <= g (SUC n)) ==>
@@ -3567,7 +3564,7 @@ Proof
  >> METIS_TAC []
 QED
 
-Theorem ext_limsup_bounded :
+Theorem ext_limsup_upperbound :
     !a c. (!n. a n <= c) ==> limsup a <= c
 Proof
     rw [ext_limsup_def, inf_le']
@@ -3578,10 +3575,24 @@ Proof
  >> DISCH_TAC
  >> Q.PAT_X_ASSUM ‘!z. _ ==> y <= z’ K_TAC
  >> Q_TAC (TRANS_TAC le_trans) ‘sup {a n | 0 <= n}’
- >> rw [sup_le'] >> rw []
+ >> rw [sup_le'] >> art []
 QED
 
-Theorem ext_liminf_bounded :
+Theorem ext_limsup_lowerbound :
+    !a c. (!n. c <= a n) ==> c <= limsup a
+Proof
+    rw [ext_limsup_def, le_inf']
+ >> rw [le_sup']
+ >> Know ‘!n. m <= n ==> a n <= y’
+ >- (rpt STRIP_TAC \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘n’ >> art [])
+ >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘!z. _ ==> z <= y’ K_TAC
+ >> Q_TAC (TRANS_TAC le_trans) ‘a m’ >> rw []
+QED
+
+Theorem ext_liminf_upperbound :
     !a c. (!n. a n <= c) ==> liminf a <= c
 Proof
     rw [ext_liminf_def, sup_le']
@@ -3595,38 +3606,34 @@ Proof
  >> Q_TAC (TRANS_TAC le_trans) ‘a m’ >> rw []
 QED
 
-(* NOTE: The proof is based on the existing [sup_add_mono] where a, b is positive. *)
-Theorem ext_liminf_add :
-    !a b. (!n. 0 <= a n) /\ (!n. 0 <= b n) ==>
-          liminf a + liminf b <= liminf (\n. a n + b n)
+Theorem ext_liminf_lowerbound :
+    !a c. (!n. c <= a n) ==> c <= liminf a
 Proof
-    rw [ext_liminf_def]
- >> qmatch_abbrev_tac ‘sup (IMAGE f UNIV) + sup (IMAGE g UNIV) <= _’
- >> Know ‘sup (IMAGE f UNIV) + sup (IMAGE g UNIV) = sup (IMAGE (\n. f n + g n) UNIV)’
- >- (SYM_TAC >> MATCH_MP_TAC sup_add_mono \\
-     rpt STRIP_TAC >| (* 4 subgoals *)
-     [ (* goal 1 (of 4) *)
-       rw [Abbr ‘f’, le_inf'] >> rw [],
-       (* goal 2 (of 4) *)
-       rw [Abbr ‘f’] \\
-       MATCH_MP_TAC inf_mono_subset >> rw [SUBSET_DEF] \\
-       rename1 ‘SUC n <= m’ \\
-       Q.EXISTS_TAC ‘m’ >> rw [],
-       (* goal 3 (of 4) *)
-       rw [Abbr ‘g’, le_inf'] >> rw [],
-       (* goal 4 (of 4) *)
-       rw [Abbr ‘g’] \\
-       MATCH_MP_TAC inf_mono_subset >> rw [SUBSET_DEF] \\
-       rename1 ‘SUC n <= m’ \\
-       Q.EXISTS_TAC ‘m’ >> rw [] ])
- >> Rewr'
- >> MATCH_MP_TAC sup_mono
- >> rw [le_inf']
- >> rename1 ‘n <= m’
- >> MATCH_MP_TAC le_add2
- >> rw [Abbr ‘f’, Abbr ‘g’, inf_le'] (* 2 subgoals, same tactics *)
- >> POP_ASSUM MATCH_MP_TAC
- >> Q.EXISTS_TAC ‘m’ >> art []
+    rw [ext_liminf_def, le_sup']
+ >> Know ‘!m. inf {a n | m <= n} <= y’
+ >- (Q.X_GEN_TAC ‘m’ \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘m’ >> art [])
+ >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘!z. _ ==> z <= y’ K_TAC
+ >> Q_TAC (TRANS_TAC le_trans) ‘inf {a n | 0 <= n}’
+ >> rw [le_inf'] >> art []
+QED
+
+Theorem ext_limsup_bounded :
+    !a k. (!n. abs (a n) <= k) ==> abs (limsup a) <= k
+Proof
+    rw [abs_bounds]
+ >| [ MATCH_MP_TAC ext_limsup_lowerbound >> rw [],
+      MATCH_MP_TAC ext_limsup_upperbound >> rw [] ]
+QED
+
+Theorem ext_liminf_bounded :
+    !a k. (!n. abs (a n) <= k) ==> abs (liminf a) <= k
+Proof
+    rw [abs_bounds]
+ >| [ MATCH_MP_TAC ext_liminf_lowerbound >> rw [],
+      MATCH_MP_TAC ext_liminf_upperbound >> rw [] ]
 QED
 
 Theorem sup_pos :
@@ -3657,6 +3664,50 @@ Theorem inf_pos' :
     !a. (!n. 0 <= a n) ==> 0 <= inf (IMAGE a UNIV)
 Proof
     rw [le_inf'] >> rw []
+QED
+
+Theorem sup_bounded :
+    !a k. (!n. abs (a n) <= k) ==> !m. abs (sup {a n | m <= (n :num)}) <= k
+Proof
+    reverse (rw [abs_bounds])
+ >- (rw [sup_le'] >> art [])
+ >> rw [le_sup']
+ >> Q_TAC (TRANS_TAC le_trans) ‘a m’ >> rw []
+ >> POP_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘m’ >> rw []
+QED
+
+Theorem sup_bounded' :
+    !a k. (!n. abs (a n) <= k) ==> abs (sup (IMAGE a UNIV)) <= k
+Proof
+    reverse (rw [abs_bounds])
+ >- (rw [sup_le'] >> art [])
+ >> rw [le_sup']
+ >> Q_TAC (TRANS_TAC le_trans) ‘a ARB’ >> rw []
+ >> POP_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘ARB’ >> rw []
+QED
+
+Theorem inf_bounded :
+    !a k. (!n. abs (a n) <= k) ==> !m. abs (inf {a n | m <= (n :num)}) <= k
+Proof
+    rw [abs_bounds]
+ >- (rw [le_inf'] >> art [])
+ >> rw [inf_le']
+ >> Q_TAC (TRANS_TAC le_trans) ‘a m’ >> rw []
+ >> POP_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘m’ >> rw []
+QED
+
+Theorem inf_bounded' :
+    !a k. (!n. abs (a n) <= k) ==> !m. abs (inf (IMAGE a UNIV)) <= k
+Proof
+    rw [abs_bounds]
+ >- (rw [le_inf'] >> art [])
+ >> rw [inf_le']
+ >> Q_TAC (TRANS_TAC le_trans) ‘a ARB’ >> rw []
+ >> POP_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘ARB’ >> rw []
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -4692,186 +4743,6 @@ val le_inf_epsilon_set = store_thm
  >> `?x. x IN P /\ x < inf P + e` by PROVE_TAC [lt_inf_epsilon_set]
  >> Q.EXISTS_TAC `x'` >> ASM_REWRITE_TAC []
  >> PROVE_TAC [lt_le]);
-
-Theorem inf_add_mono :
-    !f g. (!n. 0 <= f n) /\ (!n. f (SUC n) <= f n) /\
-          (!n. 0 <= g n) /\ (!n. g (SUC n) <= g n) ==>
-          inf (IMAGE (\n. f n + g n) UNIV) =
-          inf (IMAGE f UNIV) + inf (IMAGE g UNIV)
-Proof
-    rw [inf_eq']
- >- (MATCH_MP_TAC le_add2 \\
-     rw [inf_le'] (* 2 subgoals, same tactics *) \\
-     POP_ASSUM MATCH_MP_TAC >> Q.EXISTS_TAC ‘n’ >> rw [])
- >> ‘mono_decreasing f /\ mono_decreasing g’ by PROVE_TAC [ext_mono_decreasing_suc]
- >> Cases_on ‘y = NegInf’ >- rw [le_infty]
- >> ‘!n. y <= f n + g n’ by METIS_TAC []
- >> Q.PAT_X_ASSUM ‘!z. _ ==> y <= z’ K_TAC
- >> Cases_on ‘inf (IMAGE f UNIV) = 0’
- >- (rw [le_inf'] \\
-     MATCH_MP_TAC le_epsilon >> rpt STRIP_TAC \\
-     qabbrev_tac ‘P = IMAGE f UNIV’ \\
-     MP_TAC (Q.SPECL [‘P’, ‘e’] le_inf_epsilon_set) >> simp [] \\
-     impl_tac
-     >- (rw [Abbr ‘P’] \\
-         Cases_on ‘!n. f n = PosInf’
-         >- (‘IMAGE f UNIV = (\y. y = PosInf)’ by rw [FUN_EQ_THM, Once EXTENSION] \\
-             POP_ASSUM (fs o wrap) >> fs [inf_const]) \\
-         fs [] \\
-         Q.EXISTS_TAC ‘f n’ >> rw [] \\
-         Q.EXISTS_TAC ‘n’ >> rw []) \\
-     rw [Abbr ‘P’] >> rename1 ‘f n <= e’ \\
-     qabbrev_tac ‘m = MAX n x’ \\
-     Q_TAC (TRANS_TAC le_trans) ‘f m + g m’ >> rw [] \\
-     Know ‘f m + g m = g m + f m’
-     >- (MATCH_MP_TAC add_comm >> DISJ1_TAC \\
-         CONJ_TAC >> MATCH_MP_TAC pos_not_neginf >> rw []) >> Rewr' \\
-     MATCH_MP_TAC le_add2 \\
-     simp [Abbr ‘m’] \\
-     fs [ext_mono_decreasing_def] \\
-     Q_TAC (TRANS_TAC le_trans) ‘f n’ >> rw [])
- >> Cases_on ‘inf (IMAGE g UNIV) = 0’
- >- (rw [le_inf'] \\
-     MATCH_MP_TAC le_epsilon >> rpt STRIP_TAC \\
-     qabbrev_tac ‘P = IMAGE g UNIV’ \\
-     MP_TAC (Q.SPECL [‘P’, ‘e’] le_inf_epsilon_set) >> simp [] \\
-     impl_tac
-     >- (rw [Abbr ‘P’] \\
-         Cases_on ‘!n. g n = PosInf’
-         >- (‘IMAGE g UNIV = (\y. y = PosInf)’ by rw [FUN_EQ_THM, Once EXTENSION] \\
-             POP_ASSUM (fs o wrap) >> fs [inf_const]) \\
-         fs [] \\
-         Q.EXISTS_TAC ‘g n’ >> rw [] \\
-         Q.EXISTS_TAC ‘n’ >> rw []) \\
-     rw [Abbr ‘P’] >> rename1 ‘g n <= e’ \\
-     qabbrev_tac ‘m = MAX n x’ \\
-     Q_TAC (TRANS_TAC le_trans) ‘f m + g m’ >> rw [] \\
-     MATCH_MP_TAC le_add2 \\
-     simp [Abbr ‘m’] \\
-     fs [ext_mono_decreasing_def] \\
-     Q_TAC (TRANS_TAC le_trans) ‘g n’ >> rw [])
- >> ‘!n. g n <= f n + g n’ by METIS_TAC [add_lzero, le_add2, le_refl]
- >> ‘!n. f n <= f n + g n’ by METIS_TAC [add_rzero, le_add2, le_refl]
- >> ‘!n. f n <> NegInf’ by rw [pos_not_neginf]
- >> ‘!n. g n <> NegInf’ by rw [pos_not_neginf]
- >> Cases_on ‘!n. f n = PosInf’
- >- (‘IMAGE f UNIV = \y. y = PosInf’ by rw [Once EXTENSION, FUN_EQ_THM] \\
-     POP_ORW >> simp [inf_const] \\
-     Cases_on ‘inf (IMAGE g UNIV) = PosInf’ >- rw [extreal_add_def, le_infty] \\
-    ‘0 <= inf (IMAGE g UNIV)’ by METIS_TAC [inf_pos'] \\
-    ‘inf (IMAGE g UNIV) <> NegInf’ by rw [pos_not_neginf] \\
-    ‘?r. inf (IMAGE g UNIV) = Normal r’ by METIS_TAC [extreal_cases] \\
-     simp [extreal_add_def, le_infty])
- >> Cases_on ‘!n. g n = PosInf’
- >- (‘IMAGE g UNIV = \y. y = PosInf’ by rw [Once EXTENSION, FUN_EQ_THM] \\
-     POP_ORW >> simp [inf_const] \\
-     Cases_on ‘inf (IMAGE f UNIV) = PosInf’ >- rw [extreal_add_def, le_infty] \\
-    ‘0 <= inf (IMAGE f UNIV)’ by METIS_TAC [inf_pos'] \\
-    ‘inf (IMAGE f UNIV) <> NegInf’ by rw [pos_not_neginf] \\
-    ‘?r. inf (IMAGE f UNIV) = Normal r’ by METIS_TAC [extreal_cases] \\
-     simp [extreal_add_def, le_infty])
- >> fs []
- >> rename1 ‘g m <> PosInf’
- >> Know ‘!i. n <= i ==> f i <> PosInf’
- >- (rw [lt_infty] \\
-     fs [ext_mono_decreasing_def, lt_infty] \\
-     Q_TAC (TRANS_TAC let_trans) ‘f n’ >> rw [])
- >> DISCH_TAC
- >> Know ‘!i. m <= i ==> g i <> PosInf’
- >- (rw [lt_infty] \\
-     fs [ext_mono_decreasing_def, lt_infty] \\
-     Q_TAC (TRANS_TAC let_trans) ‘g m’ >> rw [])
- >> DISCH_TAC
- >> cheat
- (*
- >> MATCH_MP_TAC le_trans
- (* stage work *)
- >> Q.EXISTS_TAC ‘sup (IMAGE (\n. (sup (IMAGE f UNIV)) + g n) UNIV)’
- >> reverse (rw [sup_le'])
- >- (Suff ‘sup (IMAGE f UNIV) <= y - g n’ >- RW_TAC std_ss [le_sub_eq] \\
-     rw [sup_le'] \\
-     MATCH_MP_TAC le_sub_imp >> rw [] \\
-     Cases_on ‘x <= n’
-     >- (MATCH_MP_TAC le_trans \\
-         Q.EXISTS_TAC ‘f n + g n’ \\
-         CONJ_TAC
-         >- METIS_TAC [le_radd, ext_mono_increasing_def, ext_mono_increasing_suc] \\
-         Q.PAT_X_ASSUM ‘!z. Q z ==> z <= y’ MATCH_MP_TAC \\
-         Q.EXISTS_TAC ‘n’ >> rw []) \\
-     MATCH_MP_TAC le_trans \\
-     Q.EXISTS_TAC ‘f x + g x’ \\
-     CONJ_TAC
-     >- METIS_TAC [le_ladd, ext_mono_increasing_def, ext_mono_increasing_suc,
-                   le_refl, NOT_LEQ, le_trans] \\
-     Q.PAT_X_ASSUM ‘!z. Q z ==> z <= y’ MATCH_MP_TAC \\
-     Q.EXISTS_TAC ‘x’ >> rw [])
- >> Know ‘sup (IMAGE f UNIV) <> NegInf’
- >- (rw [sup_eq', le_infty] \\
-     Q.EXISTS_TAC ‘f 0’ >> rw [] \\
-     Q.EXISTS_TAC ‘0’ >> rw [])
- >> DISCH_TAC
- >> Know ‘sup (IMAGE g UNIV) <> NegInf’
- >- (rw [sup_eq', le_infty] \\
-     Q.EXISTS_TAC ‘g 0’ >> rw [] \\
-     Q.EXISTS_TAC ‘0’ >> rw [])
- >> DISCH_TAC
- >> Cases_on ‘sup (IMAGE f UNIV) = PosInf’
- >- (Know ‘sup (IMAGE (\n. sup (IMAGE f UNIV) + g n) UNIV) = PosInf’
-     >- (POP_ORW \\
-         qmatch_abbrev_tac ‘sup s = PosInf’ \\
-         Suff ‘s = \y. y = PosInf’ >- rw [sup_const] \\
-         rw [Abbr ‘s’, Once EXTENSION] \\
-         EQ_TAC >> rw []
-         >- (‘?r. g n = Normal r’ by METIS_TAC [extreal_cases] \\
-             rw [extreal_add_def]) \\
-         Q.EXISTS_TAC ‘0’ \\
-        ‘?r. g 0 = Normal r’ by METIS_TAC [extreal_cases] \\
-         rw [extreal_add_def]) >> Rewr' \\
-     METIS_TAC [le_infty])
- >> RW_TAC std_ss [add_comm]
- >> Suff ‘sup (IMAGE g UNIV) <=
-          sup (IMAGE (\n. g n + sup (IMAGE f UNIV)) UNIV) - sup (IMAGE f UNIV)’
- >- METIS_TAC [le_sub_eq, add_comm]
- >> rw [sup_le']
- >> MATCH_MP_TAC le_sub_imp
- >> rw [le_sup']
- >> POP_ASSUM MATCH_MP_TAC
- >> Q.EXISTS_TAC ‘x’ >> rw []
- *)
-QED
-
-Theorem ext_limsup_add :
-    !a b. (!n. 0 <= a n) /\ (!n. 0 <= b n) ==>
-          limsup (\n. a n + b n) <= limsup a + limsup b
-Proof
-    rw [ext_limsup_def]
- >> qmatch_abbrev_tac ‘_ <= inf (IMAGE f UNIV) + inf (IMAGE g UNIV)’
- >> Know ‘inf (IMAGE f UNIV) + inf (IMAGE g UNIV) = inf (IMAGE (\n. f n + g n) UNIV)’
- >- (SYM_TAC >> MATCH_MP_TAC inf_add_mono \\
-     rpt STRIP_TAC >| (* 4 subgoals *)
-     [ (* goal 1 (of 4) *)
-       rw [Abbr ‘f’, sup_pos],
-       (* goal 2 (of 4) *)
-       rw [Abbr ‘f’] \\
-       MATCH_MP_TAC sup_mono_subset >> rw [SUBSET_DEF] \\
-       rename1 ‘SUC n <= m’ \\
-       Q.EXISTS_TAC ‘m’ >> rw [],
-       (* goal 3 (of 4) *)
-       rw [Abbr ‘g’, sup_pos],
-       (* goal 4 (of 4) *)
-       rw [Abbr ‘g’] \\
-       MATCH_MP_TAC sup_mono_subset >> rw [SUBSET_DEF] \\
-       rename1 ‘SUC n <= m’ \\
-       Q.EXISTS_TAC ‘m’ >> rw [] ])
- >> Rewr'
- >> MATCH_MP_TAC inf_mono
- >> rw [sup_le']
- >> rename1 ‘n <= m’
- >> MATCH_MP_TAC le_add2
- >> rw [Abbr ‘f’, Abbr ‘g’, le_sup'] (* 2 subgoals, same tactics *)
- >> POP_ASSUM MATCH_MP_TAC
- >> Q.EXISTS_TAC ‘m’ >> art []
-QED
 
 val pow_half_pos_lt = store_thm
   ("pow_half_pos_lt", ``!n. 0  < (1 / 2) pow (n + 1)``,
@@ -6792,8 +6663,6 @@ QED
 (* Thus ‘mtop extreal_mr1’ will be a possible topology of all extreals, and
   ‘open_in (mtop extreal_mr1)’ is the set of all extreal-valued "open" sets
   (w.r.t. ‘extreal_mr1’).
-
-   TODO: is ‘Borel’ the smallest sigma-algebra generated from these open sets?
  *)
 Definition extreal_mr1_def :
     extreal_mr1 = metric (UNCURRY extreal_dist)
@@ -6906,6 +6775,24 @@ End
 Definition ext_bounded_def :
     ext_bounded s <=> ?a. a <> PosInf /\ !x. x IN s ==> abs x <= a
 End
+
+Theorem ext_bounded_alt :
+    !s. ext_bounded s <=> ?k. 0 <= k /\ !x. x IN s ==> abs x <= Normal k
+Proof
+    rw [ext_bounded_def]
+ >> reverse EQ_TAC >> rw []
+ >- (Q.EXISTS_TAC ‘Normal k’ >> rw [])
+ >> Cases_on ‘s = {}’
+ >- (rw [] >> Q.EXISTS_TAC ‘0’ >> rw [])
+ >> Know ‘0 <= a’
+ >- (fs [GSYM MEMBER_NOT_EMPTY] \\
+     Q_TAC (TRANS_TAC le_trans) ‘abs x’ >> rw [abs_pos])
+ >> DISCH_TAC
+ >> ‘a <> NegInf’ by rw [pos_not_neginf]
+ >> ‘?k. a = Normal k /\ 0 <= k’
+       by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_le_eq]
+ >> Q.EXISTS_TAC ‘k’ >> rw []
+QED
 
 Theorem EXTREAL_LIM :
     !(f :'a -> extreal) l net.
@@ -7640,6 +7527,272 @@ Proof
  >- (Rewr' \\
      MATCH_MP_TAC inf_seq >> art [])
  >> REWRITE_TAC [LIM_SEQUENTIALLY_SEQ]
+QED
+
+Theorem bounded_imp_not_infty :
+    !x k. abs x <= Normal k ==> x <> NegInf /\ x <> PosInf
+Proof
+    rw [abs_bounds, lt_infty] (* 2 subgoals *)
+ >| [ (* goal 1 (of 2) *)
+      Q_TAC (TRANS_TAC lte_trans) ‘-Normal k’ >> art [] \\
+      rw [extreal_ainv_def, lt_infty],
+      (* goal 2 (of 2) *)
+      Q_TAC (TRANS_TAC let_trans) ‘Normal k’ >> art [] \\
+      rw [lt_infty] ]
+QED
+
+Theorem mono_increasing_ext :
+    !f f'. ext_mono_increasing f /\ (!n. f n = Normal (f' n)) ==>
+           mono_increasing f'
+Proof
+    rpt STRIP_TAC
+ >> rw [mono_increasing_def]
+ >> REWRITE_TAC [GSYM extreal_le_eq]
+ >> Q.PAT_X_ASSUM ‘!n. f n = Normal (f' n)’ (REWRITE_TAC o wrap o GSYM)
+ >> fs [ext_mono_increasing_def]
+QED
+
+Theorem mono_decreasing_ext :
+    !f f'. ext_mono_decreasing f /\ (!n. f n = Normal (f' n)) ==>
+           mono_decreasing f'
+Proof
+    rpt STRIP_TAC
+ >> rw [mono_decreasing_def]
+ >> REWRITE_TAC [GSYM extreal_le_eq]
+ >> Q.PAT_X_ASSUM ‘!n. f n = Normal (f' n)’ (REWRITE_TAC o wrap o GSYM)
+ >> fs [ext_mono_decreasing_def]
+QED
+
+Theorem sup_add_mono_bounded :
+    !f g. ext_bounded (IMAGE f UNIV) /\ ext_mono_increasing f /\
+          ext_bounded (IMAGE g UNIV) /\ ext_mono_increasing g ==>
+          sup (IMAGE (\n. f n + g n) UNIV) =
+          sup (IMAGE f UNIV) + sup (IMAGE g UNIV)
+Proof
+    rw [ext_bounded_alt]
+ >> ‘!n. abs (f n) <= Normal k /\ abs (g n) <= Normal k'’ by METIS_TAC []
+ >> Q.PAT_X_ASSUM ‘!x. _ ==> abs x <= Normal k’  K_TAC
+ >> Q.PAT_X_ASSUM ‘!x. _ ==> abs x <= Normal k'’ K_TAC
+ >> ‘!n. f n <> NegInf /\ f n <> PosInf /\ g n <> NegInf /\ g n <> PosInf’
+       by METIS_TAC [bounded_imp_not_infty]
+ >> qabbrev_tac ‘h = \n. f n + g n’
+ >> Know ‘!n. abs (h n) <= Normal (k + k')’
+ >- (rw [Abbr ‘h’] \\
+     Q_TAC (TRANS_TAC le_trans) ‘abs (f n) + abs (g n)’ \\
+     simp [abs_triangle, GSYM extreal_add_eq] \\
+     MATCH_MP_TAC le_add2 >> rw [])
+ >> DISCH_TAC
+ >> ‘!n. h n <> NegInf /\ h n <> PosInf’ by METIS_TAC [bounded_imp_not_infty]
+ >> Know ‘mono_increasing h’
+ >- (rw [ext_mono_increasing_def, Abbr ‘h’] \\
+     MATCH_MP_TAC le_add2 >> fs [ext_mono_increasing_def])
+ >> DISCH_TAC
+ >> qmatch_abbrev_tac ‘l3 = l1 + l2’
+ >> ‘abs l1 <= Normal k /\
+     abs l2 <= Normal k' /\
+     abs l3 <= Normal (k + k')’ by METIS_TAC [sup_bounded']
+ >> ‘l1 <> NegInf /\ l1 <> PosInf /\
+     l2 <> NegInf /\ l2 <> PosInf /\
+     l3 <> NegInf /\ l3 <> PosInf’ by PROVE_TAC [bounded_imp_not_infty]
+ >> ‘?r1. l1 = Normal r1’ by METIS_TAC [extreal_cases]
+ >> ‘?r2. l2 = Normal r2’ by METIS_TAC [extreal_cases]
+ >> ‘?r3. l3 = Normal r3’ by METIS_TAC [extreal_cases]
+ >> NTAC 3 (POP_ASSUM MP_TAC)
+ >> Know ‘!n. ?r. f n = Normal r’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     METIS_TAC [extreal_cases])
+ >> simp [SKOLEM_THM]
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘f'’ STRIP_ASSUME_TAC)
+ >> Know ‘!n. ?r. g n = Normal r’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     METIS_TAC [extreal_cases])
+ >> simp [SKOLEM_THM]
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘g'’ STRIP_ASSUME_TAC)
+ >> Know ‘!n. ?r. h n = Normal r’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     METIS_TAC [extreal_cases])
+ >> simp [SKOLEM_THM]
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘h'’ STRIP_ASSUME_TAC)
+ >> ‘mono_increasing f' /\
+     mono_increasing g' /\
+     mono_increasing h'’ by PROVE_TAC [mono_increasing_ext]
+ >> simp [Abbr ‘l1’, Abbr ‘l2’, Abbr ‘l3’]
+ >> ‘f = \n. Normal (f' n)’ by rw [FUN_EQ_THM] >> POP_ORW
+ >> ‘g = \n. Normal (g' n)’ by rw [FUN_EQ_THM] >> POP_ORW
+ >> ‘h = \n. Normal (h' n)’ by rw [FUN_EQ_THM] >> POP_ORW
+ >> simp [GSYM sup_seq']
+ >> Know ‘h' = \n. f' n + g' n’
+ >- (rw [FUN_EQ_THM] \\
+     REWRITE_TAC [GSYM extreal_11, GSYM extreal_add_eq] \\
+     Q.PAT_X_ASSUM ‘!n. f n = Normal (f' n)’ (REWRITE_TAC o wrap o GSYM) \\
+     Q.PAT_X_ASSUM ‘!n. g n = Normal (g' n)’ (REWRITE_TAC o wrap o GSYM) \\
+     Q.PAT_X_ASSUM ‘!n. h n = Normal (h' n)’ (REWRITE_TAC o wrap o GSYM) \\
+     simp [Abbr ‘h’])
+ >> Rewr'
+ >> rw [extreal_add_eq, extreal_11]
+ >> ‘((\n. f' n + g' n) --> (r1 + r2)) sequentially’
+      by METIS_TAC [real_topologyTheory.LIM_ADD]
+ >> METIS_TAC [TRIVIAL_LIMIT_SEQUENTIALLY, LIM_UNIQUE]
+QED
+
+Theorem inf_add_mono_bounded :
+    !f g. ext_bounded (IMAGE f UNIV) /\ ext_mono_decreasing f /\
+          ext_bounded (IMAGE g UNIV) /\ ext_mono_decreasing g ==>
+          inf (IMAGE (\n. f n + g n) UNIV) =
+          inf (IMAGE f UNIV) + inf (IMAGE g UNIV)
+Proof
+    rw [ext_bounded_alt]
+ >> ‘!n. abs (f n) <= Normal k /\ abs (g n) <= Normal k'’ by METIS_TAC []
+ >> Q.PAT_X_ASSUM ‘!x. _ ==> abs x <= Normal k’  K_TAC
+ >> Q.PAT_X_ASSUM ‘!x. _ ==> abs x <= Normal k'’ K_TAC
+ >> ‘!n. f n <> NegInf /\ f n <> PosInf /\ g n <> NegInf /\ g n <> PosInf’
+       by METIS_TAC [bounded_imp_not_infty]
+ >> qabbrev_tac ‘h = \n. f n + g n’
+ >> Know ‘!n. abs (h n) <= Normal (k + k')’
+ >- (rw [Abbr ‘h’] \\
+     Q_TAC (TRANS_TAC le_trans) ‘abs (f n) + abs (g n)’ \\
+     simp [abs_triangle, GSYM extreal_add_eq] \\
+     MATCH_MP_TAC le_add2 >> rw [])
+ >> DISCH_TAC
+ >> ‘!n. h n <> NegInf /\ h n <> PosInf’ by METIS_TAC [bounded_imp_not_infty]
+ >> Know ‘mono_decreasing h’
+ >- (rw [ext_mono_decreasing_def, Abbr ‘h’] \\
+     MATCH_MP_TAC le_add2 >> fs [ext_mono_decreasing_def])
+ >> DISCH_TAC
+ >> qmatch_abbrev_tac ‘l3 = l1 + l2’
+ >> ‘abs l1 <= Normal k /\
+     abs l2 <= Normal k' /\
+     abs l3 <= Normal (k + k')’ by METIS_TAC [inf_bounded']
+ >> ‘l1 <> NegInf /\ l1 <> PosInf /\
+     l2 <> NegInf /\ l2 <> PosInf /\
+     l3 <> NegInf /\ l3 <> PosInf’ by PROVE_TAC [bounded_imp_not_infty]
+ >> ‘?r1. l1 = Normal r1’ by METIS_TAC [extreal_cases]
+ >> ‘?r2. l2 = Normal r2’ by METIS_TAC [extreal_cases]
+ >> ‘?r3. l3 = Normal r3’ by METIS_TAC [extreal_cases]
+ >> NTAC 3 (POP_ASSUM MP_TAC)
+ >> Know ‘!n. ?r. f n = Normal r’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     METIS_TAC [extreal_cases])
+ >> simp [SKOLEM_THM]
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘f'’ STRIP_ASSUME_TAC)
+ >> Know ‘!n. ?r. g n = Normal r’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     METIS_TAC [extreal_cases])
+ >> simp [SKOLEM_THM]
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘g'’ STRIP_ASSUME_TAC)
+ >> Know ‘!n. ?r. h n = Normal r’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     METIS_TAC [extreal_cases])
+ >> simp [SKOLEM_THM]
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘h'’ STRIP_ASSUME_TAC)
+ >> ‘mono_decreasing f' /\
+     mono_decreasing g' /\
+     mono_decreasing h'’ by PROVE_TAC [mono_decreasing_ext]
+ >> simp [Abbr ‘l1’, Abbr ‘l2’, Abbr ‘l3’]
+ >> ‘f = \n. Normal (f' n)’ by rw [FUN_EQ_THM] >> POP_ORW
+ >> ‘g = \n. Normal (g' n)’ by rw [FUN_EQ_THM] >> POP_ORW
+ >> ‘h = \n. Normal (h' n)’ by rw [FUN_EQ_THM] >> POP_ORW
+ >> simp [GSYM inf_seq']
+ >> Know ‘h' = \n. f' n + g' n’
+ >- (rw [FUN_EQ_THM] \\
+     REWRITE_TAC [GSYM extreal_11, GSYM extreal_add_eq] \\
+     Q.PAT_X_ASSUM ‘!n. f n = Normal (f' n)’ (REWRITE_TAC o wrap o GSYM) \\
+     Q.PAT_X_ASSUM ‘!n. g n = Normal (g' n)’ (REWRITE_TAC o wrap o GSYM) \\
+     Q.PAT_X_ASSUM ‘!n. h n = Normal (h' n)’ (REWRITE_TAC o wrap o GSYM) \\
+     simp [Abbr ‘h’])
+ >> Rewr'
+ >> rw [extreal_add_eq, extreal_11]
+ >> ‘((\n. f' n + g' n) --> (r1 + r2)) sequentially’
+      by METIS_TAC [real_topologyTheory.LIM_ADD]
+ >> METIS_TAC [TRIVIAL_LIMIT_SEQUENTIALLY, LIM_UNIQUE]
+QED
+
+Theorem ext_liminf_add :
+    !a b. ext_bounded (IMAGE a UNIV) /\
+          ext_bounded (IMAGE b UNIV) ==>
+          liminf a + liminf b <= liminf (\n. a n + b n)
+Proof
+    rw [ext_liminf_def]
+ >> qmatch_abbrev_tac ‘sup (IMAGE f UNIV) + sup (IMAGE g UNIV) <= _’
+ >> Know ‘sup (IMAGE f UNIV) + sup (IMAGE g UNIV) = sup (IMAGE (\n. f n + g n) UNIV)’
+ >- (SYM_TAC >> MATCH_MP_TAC sup_add_mono_bounded \\
+     rpt STRIP_TAC >| (* 4 subgoals *)
+     [ (* goal 1 (of 4) *)
+       NTAC 2 (Q.PAT_X_ASSUM ‘ext_bounded _’ MP_TAC) \\
+       rw [ext_bounded_alt] \\
+       Q.EXISTS_TAC ‘k + k'’ >> rw [REAL_LE_ADD] \\
+       rename1 ‘abs (f n) <= Normal (k + k')’ \\
+       Q_TAC (TRANS_TAC le_trans) ‘Normal k’ \\
+       reverse CONJ_TAC >- rw [extreal_le_eq] \\
+       METIS_TAC [inf_bounded],
+       (* goal 2 (of 4) *)
+       rw [ext_mono_increasing_def, Abbr ‘f’] \\
+       MATCH_MP_TAC inf_mono_subset >> rw [SUBSET_DEF] \\
+       Q.EXISTS_TAC ‘n’ >> rw [],
+       (* goal 3 (of 4) *)
+       NTAC 2 (Q.PAT_X_ASSUM ‘ext_bounded _’ MP_TAC) \\
+       rw [ext_bounded_alt] \\
+       Q.EXISTS_TAC ‘k + k'’ >> rw [REAL_LE_ADD] \\
+       rename1 ‘abs (g n) <= Normal (k + k')’ \\
+       Q_TAC (TRANS_TAC le_trans) ‘Normal k'’ \\
+       reverse CONJ_TAC >- rw [extreal_le_eq] \\
+       METIS_TAC [inf_bounded],
+       (* goal 4 (of 4) *)
+       rw [ext_mono_increasing_def, Abbr ‘g’] \\
+       MATCH_MP_TAC inf_mono_subset >> rw [SUBSET_DEF] \\
+       Q.EXISTS_TAC ‘n’ >> rw [] ])
+ >> Rewr'
+ >> MATCH_MP_TAC sup_mono
+ >> rw [le_inf']
+ >> rename1 ‘n <= m’
+ >> MATCH_MP_TAC le_add2
+ >> rw [Abbr ‘f’, Abbr ‘g’, inf_le'] (* 2 subgoals, same tactics *)
+ >> POP_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘m’ >> art []
+QED
+
+Theorem ext_limsup_add :
+    !a b. ext_bounded (IMAGE a UNIV) /\
+          ext_bounded (IMAGE b UNIV) ==>
+          limsup (\n. a n + b n) <= limsup a + limsup b
+Proof
+    rw [ext_limsup_def]
+ >> qmatch_abbrev_tac ‘_ <= inf (IMAGE f UNIV) + inf (IMAGE g UNIV)’
+ >> Know ‘inf (IMAGE f UNIV) + inf (IMAGE g UNIV) = inf (IMAGE (\n. f n + g n) UNIV)’
+ >- (SYM_TAC >> MATCH_MP_TAC inf_add_mono_bounded \\
+     rpt STRIP_TAC >| (* 4 subgoals *)
+     [ (* goal 1 (of 4) *)
+       NTAC 2 (Q.PAT_X_ASSUM ‘ext_bounded _’ MP_TAC) \\
+       rw [ext_bounded_alt] \\
+       Q.EXISTS_TAC ‘k + k'’ >> rw [REAL_LE_ADD] \\
+       rename1 ‘abs (f n) <= Normal (k + k')’ \\
+       Q_TAC (TRANS_TAC le_trans) ‘Normal k’ \\
+       reverse CONJ_TAC >- rw [extreal_le_eq] \\
+       METIS_TAC [sup_bounded],
+       (* goal 2 (of 4) *)
+       rw [ext_mono_decreasing_def, Abbr ‘f’] \\
+       MATCH_MP_TAC sup_mono_subset >> rw [SUBSET_DEF] \\
+       Q.EXISTS_TAC ‘n’ >> rw [],
+       (* goal 3 (of 4) *)
+       NTAC 2 (Q.PAT_X_ASSUM ‘ext_bounded _’ MP_TAC) \\
+       rw [ext_bounded_alt] \\
+       Q.EXISTS_TAC ‘k + k'’ >> rw [REAL_LE_ADD] \\
+       rename1 ‘abs (g n) <= Normal (k + k')’ \\
+       Q_TAC (TRANS_TAC le_trans) ‘Normal k'’ \\
+       reverse CONJ_TAC >- rw [extreal_le_eq] \\
+       METIS_TAC [sup_bounded],
+       (* goal 4 (of 4) *)
+       rw [ext_mono_decreasing_def, Abbr ‘g’] \\
+       MATCH_MP_TAC sup_mono_subset >> rw [SUBSET_DEF] \\
+       Q.EXISTS_TAC ‘n’ >> rw [] ])
+ >> Rewr'
+ >> MATCH_MP_TAC inf_mono
+ >> rw [sup_le']
+ >> rename1 ‘n <= m’
+ >> MATCH_MP_TAC le_add2
+ >> rw [Abbr ‘f’, Abbr ‘g’, le_sup'] (* 2 subgoals, same tactics *)
+ >> POP_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘m’ >> art []
 QED
 
 (* ------------------------------------------------------------------------- *)
