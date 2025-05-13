@@ -7816,14 +7816,32 @@ Proof
 QED
  *)
 
+(*
+   https://math.stackexchange.com/questions/4606619/is-it-true-that-limsup-n-to-infty-sup-x-in-bf-nx-leq-sup-x-in-b-lim?rq=1
+ *)
+Theorem ext_limsup_sup_lemma[local] :
+    !f. sup (IMAGE (\m. limsup (\n. f n m)) univ(:num)) <=
+        limsup (\n. sup (IMAGE (f n) univ(:num)))
+Proof
+    rw [sup_le']
+ >> MATCH_MP_TAC ext_limsup_mono
+ >> rw [le_sup']
+ >> POP_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘m’ >> rw []
+QED
+
 (* cf. https://math.stackexchange.com/questions/3089365/interchanging-limsup-and-sup
+   (This link indicates that the involved function is bounded.)
  *)
 Theorem ext_limsup_sup :
     !f. (!n. mono_increasing (f n)) /\ (?k. !n m. abs (f n m) <= Normal k) ==>
-        limsup (\n. sup (IMAGE (f n) UNIV)) <=
+        limsup (\n. sup (IMAGE (f n) UNIV)) =
         sup (IMAGE (\m. limsup (\n. f n m)) UNIV)
 Proof
-    rw [ext_mono_increasing_def, le_sup']
+    rpt STRIP_TAC
+ >> rw [GSYM le_antisym, ext_limsup_sup_lemma]
+ (* stage work *)
+ >> rw [ext_mono_increasing_def, le_sup']
  >> Know ‘!m. limsup (\n. f n m) <= y’ >- METIS_TAC []
  >> POP_ASSUM K_TAC >> DISCH_TAC
  >> MATCH_MP_TAC le_epsilon

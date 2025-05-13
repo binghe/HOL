@@ -3548,10 +3548,12 @@ Proof
      MATCH_MP_TAC MONOTONE_CONVERGENCE >> rw [IN_FUNSET, Abbr ‘M’])
  >> Rewr'
  >> qabbrev_tac ‘g = \n. X n o f’ >> simp []
- >> Q_TAC (TRANS_TAC le_trans) ‘sup (IMAGE (\m. limsup (\n. g n m)) UNIV)’
- >> reverse CONJ_TAC
- >- (simp [Abbr ‘g’, o_DEF] \\
+ >> Suff ‘limsup (\n. sup (IMAGE (g n) UNIV)) =
+          sup (IMAGE (\m. limsup (\n. g n m)) UNIV)’
+ >- (Rewr' \\
+     simp [Abbr ‘g’, o_DEF] \\
      MATCH_MP_TAC sup_mono >> rw [])
+ (* applying ext_limsup_sup *)
  >> MATCH_MP_TAC ext_limsup_sup
  >> CONJ_TAC (* mono_increasing *)
  >- (rw [Abbr ‘g’, o_DEF] \\
@@ -3563,7 +3565,7 @@ Proof
      qabbrev_tac ‘M = (mspace E,subsets (B E),X n)’ \\
      Know ‘increasing M’ >- rw [MEASURE_SPACE_INCREASING] \\
      rw [increasing_def, Abbr ‘M’])
- (* bounded *)
+ (* g is bounded *)
  >> Q.EXISTS_TAC ‘1’
  >> rw [Abbr ‘g’, o_DEF, normal_1]
  >> Q.PAT_X_ASSUM ‘!n. subprobability_measure (mtop E) (X n)’
