@@ -3549,9 +3549,12 @@ Proof
  >> Rewr'
  >> qabbrev_tac ‘g = \n. X n o f’ >> simp []
  >> Q_TAC (TRANS_TAC le_trans) ‘sup (IMAGE (\m. limsup (\n. g n m)) UNIV)’
- >> CONJ_TAC
- >- (MATCH_MP_TAC ext_limsup_sup \\
-     rw [Abbr ‘g’, o_DEF] \\
+ >> reverse CONJ_TAC
+ >- (simp [Abbr ‘g’, o_DEF] \\
+     MATCH_MP_TAC sup_mono >> rw [])
+ >> MATCH_MP_TAC ext_limsup_sup
+ >> CONJ_TAC (* mono_increasing *)
+ >- (rw [Abbr ‘g’, o_DEF] \\
      simp [ext_mono_increasing_suc] \\
      Q.X_GEN_TAC ‘i’ \\
      Q.PAT_X_ASSUM ‘!n. subprobability_measure (mtop E) (X n)’
@@ -3560,8 +3563,16 @@ Proof
      qabbrev_tac ‘M = (mspace E,subsets (B E),X n)’ \\
      Know ‘increasing M’ >- rw [MEASURE_SPACE_INCREASING] \\
      rw [increasing_def, Abbr ‘M’])
- >> simp [Abbr ‘g’, o_DEF]
- >> MATCH_MP_TAC sup_mono >> rw [] (* amazing *)
+ (* bounded *)
+ >> Q.EXISTS_TAC ‘1’
+ >> rw [Abbr ‘g’, o_DEF, normal_1]
+ >> Q.PAT_X_ASSUM ‘!n. subprobability_measure (mtop E) (X n)’
+       (MP_TAC o Q.SPEC ‘n’)
+ >> rw [subprobability_measure_thm, abs_bounds]
+ >> Q_TAC (TRANS_TAC le_trans) ‘-0’ >> rw [le_neg]
+ >> qabbrev_tac ‘M = (univ(:'a),subsets (B E),X n)’
+ >> ‘X n = measure M’ by rw [Abbr ‘M’] >> POP_ORW
+ >> MATCH_MP_TAC MEASURE_POSITIVE >> rw [Abbr ‘M’]
 QED
 
 Theorem Portemanteau_iv_eq_v[local] :
