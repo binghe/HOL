@@ -316,7 +316,7 @@ Definition dist_simulation_def :
     (* 3a *)
       (!P'. DTRANS D P (TauR P') ==>
            ?Q'. DTRANS D Q (TauR Q') /\ (P',Q',D) IN R) /\
-    (* 3b: enriched with ‘x # D /\ x # P’ *)
+    (* 3b *)
       (!a x P'. DTRANS D P (InputS (Name a) x P') /\
                 x # D /\ x # P /\ x # Q /\ x <> a ==>
                ?Q'. DTRANS D Q (InputS (Name a) x Q') /\ (P',Q',D) IN R) /\
@@ -367,7 +367,8 @@ Proof
  (* goal 4 (of 14) *)
  >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
-     Q.PAT_X_ASSUM ‘!P'. DTRANS D P (TauR P') ==> _’ (MP_TAC o Q.SPEC ‘P'’) >> rw [] \\
+     Q.PAT_X_ASSUM ‘!P'. DTRANS D P (TauR P') ==> _’
+       (MP_TAC o Q.SPEC ‘P'’) >> rw [] \\
      Q.EXISTS_TAC ‘Q'’ >> rw [])
  (* goal 5 (of 14) *)
  >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
@@ -403,7 +404,8 @@ Proof
  (* goal 11 (of 14) *)
  >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
-     Q.PAT_X_ASSUM ‘!P'. DTRANS D P (TauR P') ==> _’ (MP_TAC o Q.SPEC ‘P'’) >> rw [] \\
+     Q.PAT_X_ASSUM ‘!P'. DTRANS D P (TauR P') ==> _’
+       (MP_TAC o Q.SPEC ‘P'’) >> rw [] \\
      Q.EXISTS_TAC ‘Q'’ >> rw [])
  (* goal 12 (of 14) *)
  >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
@@ -723,17 +725,16 @@ Proof
                       FV D UNION FV y UNION FV P UNION FV Q UNION FV P'’ \\
     ‘FINITE X’ by rw [Abbr ‘X’] \\
      Q_TAC (NEW_TAC "z") ‘X’ \\
-     Q.PAT_X_ASSUM ‘FINITE X’ K_TAC >> fs [Abbr ‘X’] \\
+     Q.PAT_X_ASSUM ‘FINITE X’ K_TAC >> fs [Abbr ‘X’, IN_UNION] \\
   (* applying tpm_ALPHA_BoundOutput *)
      Know ‘BoundOutput (Name a) x P' = BoundOutput (Name a) z (tpm [(z,x)] P')’
      >- (MATCH_MP_TAC tpm_ALPHA_BoundOutput >> art []) \\
      DISCH_THEN (fs o wrap) \\
      qabbrev_tac ‘P'' = tpm [(z,x)] P'’ \\
-     cheat
-  (* FIXME:
      Q.PAT_X_ASSUM ‘!P Q D a x P'. (P,Q,D) IN R ==>
                                    DTRANS D P (BoundOutput (Name b) x P') /\ _ ==> _’
        (MP_TAC o Q.SPECL [‘P’, ‘y’, ‘D’, ‘a’, ‘z’, ‘P''’]) >> rw [] \\
+  (* FIXME
      rename1 ‘DTRANS D y (BoundOutput (Name a) z y')’ \\
   (* stage work *)
      Q.PAT_X_ASSUM ‘dist_simulation R'’
@@ -784,9 +785,8 @@ Proof
            Cases_on ‘z = p_1’ >> fs [] ]) >> DISCH_TAC \\
     ‘dpm pi (D UNION A) = D UNION A’ by rw [dpm_union] \\
      POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM) \\
-     reverse CONJ_TAC >- simp [] \\
-  (* FIXME: We still don't know if x IN FV y or not !!! *)
-     *))
+     reverse CONJ_TAC >- simp [] *)
+     cheat)
  (* goal 8 (of 14): symmetric with goal 1 *)
  >- (MATCH_MP_TAC dist_simulation_imp_distinction \\
      qexistsl_tac [‘R'’, ‘y’, ‘P’] >> art [])

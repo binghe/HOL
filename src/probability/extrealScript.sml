@@ -7805,6 +7805,19 @@ Proof
  >> Q.EXISTS_TAC ‘k’ >> rw []
 QED
 
+Theorem ext_liminf_mono :
+    !p q. (!n. p n <= q n) ==> liminf p <= liminf q
+Proof
+    rw [ext_liminf_def]
+ >> MATCH_MP_TAC sup_mono >> rw []
+ >> rw [le_inf']
+ >> rename1 ‘n <= m’
+ >> Q_TAC (TRANS_TAC le_trans) ‘p m’ >> rw []
+ >> rw [inf_le']
+ >> POP_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘m’ >> rw []
+QED
+
 (* finish if needed
 Theorem ext_limsup_offset :
     !f c. c <> PosInf /\ c <> NegInf ==> limsup (\n. f n + c) = limsup f + c
@@ -7816,9 +7829,6 @@ Proof
 QED
  *)
 
-(*
-   https://math.stackexchange.com/questions/4606619/is-it-true-that-limsup-n-to-infty-sup-x-in-bf-nx-leq-sup-x-in-b-lim?rq=1
- *)
 Theorem ext_limsup_sup_lemma[local] :
     !f. sup (IMAGE (\m. limsup (\n. f n m)) univ(:num)) <=
         limsup (\n. sup (IMAGE (f n) univ(:num)))
@@ -7830,8 +7840,10 @@ Proof
  >> Q.EXISTS_TAC ‘m’ >> rw []
 QED
 
+val POP_DISCH_TAC = POP_ASSUM K_TAC >> DISCH_TAC;
+
 (* cf. https://math.stackexchange.com/questions/3089365/interchanging-limsup-and-sup
-   (This link indicates that the involved function is bounded.)
+   (This link indicates that the involved double-sequence is bounded.)
  *)
 Theorem ext_limsup_sup :
     !f. (!n. mono_increasing (f n)) /\ (?k. !n m. abs (f n m) <= Normal k) ==>
@@ -7840,13 +7852,23 @@ Theorem ext_limsup_sup :
 Proof
     rpt STRIP_TAC
  >> rw [GSYM le_antisym, ext_limsup_sup_lemma]
- (* stage work *)
+ (* stage work (left to right) *)
  >> rw [ext_mono_increasing_def, le_sup']
  >> Know ‘!m. limsup (\n. f n m) <= y’ >- METIS_TAC []
- >> POP_ASSUM K_TAC >> DISCH_TAC
+ >> POP_DISCH_TAC
+ (* stage work *)
  >> MATCH_MP_TAC le_epsilon
  >> rpt STRIP_TAC
  >> ‘e <> NegInf’ by rw [pos_not_neginf, lt_imp_le]
+ >> qabbrev_tac ‘g = \m. limsup (\n. f n m)’ >> fs []
+ >> Know ‘mono_increasing g’
+ >- (rw [ext_mono_increasing_def, Abbr ‘g’] \\
+     MATCH_MP_TAC ext_limsup_mono >> rw [] \\
+     Q.PAT_X_ASSUM ‘!n. mono_increasing (f n)’ (MP_TAC o Q.SPEC ‘n’) \\
+     rw [ext_mono_increasing_def])
+ >> DISCH_TAC
+ >> cheat
+ (*
  >> qmatch_abbrev_tac ‘z <= y + e’
  >> Know ‘z <= y + e <=> z - e <= y’
  >- (SYM_TAC >> MATCH_MP_TAC sub_le_eq >> art [])
@@ -7932,6 +7954,7 @@ Proof
  >> simp [SKOLEM_THM]
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘h'’ STRIP_ASSUME_TAC)
  >> cheat
+ *)
 QED
 
 (* ------------------------------------------------------------------------- *)
