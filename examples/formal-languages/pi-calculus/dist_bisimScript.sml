@@ -1,5 +1,5 @@
 (* ========================================================================== *)
-(* FILE          : open_bisimulationScript.sml                                *)
+(* FILE          : dist_bisimScript.sml                                       *)
 (* DESCRIPTION   : Open Bisimulation for the pi-Calculus with Mismatch [1]    *)
 (*                                                                            *)
 (* Copyright 2025  The Australian National University (Author: Chun Tian)     *)
@@ -11,7 +11,7 @@ open pairTheory pred_setTheory set_relationTheory hurdUtils;
 
 open basic_swapTheory nomsetTheory NEWLib pi_agentTheory;
 
-val _ = new_theory "open_bisimulation";
+val _ = new_theory "dist_bisim";
 
 (* some proofs here are large with too many assumptions *)
 val _ = set_trace "Goalstack.print_goal_at_top" 0;
@@ -42,7 +42,7 @@ val _ = temp_delsimps [
                 | Mismatch name name pi    (* [a <> b] P *)
                 | Sum pi pi                (* P + Q *)
                 | Par pi pi                (* P | Q *)
-                | Res 'bound pi            (* nu x. P *)
+                | Res 'bound pi            (* \nu x. P *)
 
        residual = TauR pi
                 | InputS name 'bound pi
@@ -170,6 +170,7 @@ Inductive DTRANS :
 [DTAU]
     !D P. DTRANS (D :dist) (Tau P) (TauR P)
 [DINPUT]
+       (* D : a(x).P --a(x)-> P *)
     !D a x P. x <> a ==> DTRANS D (Input (Name a) x P) (InputS (Name a) x P)
 [DOUTPUT]
     !D a b P. DTRANS D (Output (Name a) (Name b) P)
@@ -317,18 +318,20 @@ Definition dist_simulation_def :
       (!P'. DTRANS D P (TauR P') ==>
            ?Q'. DTRANS D Q (TauR Q') /\ (P',Q',D) IN R) /\
     (* 3b *)
-      (!a x P'. DTRANS D P (InputS (Name a) x P') /\
-                x # D /\ x # P /\ x # Q /\ x <> a ==>
-               ?Q'. DTRANS D Q (InputS (Name a) x Q') /\ (P',Q',D) IN R) /\
+      (!x z P'. DTRANS D P (InputS (Name x) z P') /\
+                z # D /\ z # P /\ z # Q /\ x <> z ==>
+               ?Q'. DTRANS D Q (InputS (Name x) z Q') /\ (P',Q',D) IN R) /\
     (* 3c *)
       (!a b P'. DTRANS D P (FreeOutput (Name a) (Name b) P') ==>
                ?Q'. DTRANS D Q (FreeOutput (Name a) (Name b) Q') /\
                    (P',Q',D) IN R) /\
     (* 4 *)
-      (!a x P'. DTRANS D P (BoundOutput (Name a) x P') /\
-                x # D /\ x # P /\ x # Q /\ a # P /\ a # Q /\ x <> a ==>
-               ?Q' D'. DTRANS D Q (BoundOutput (Name a) x Q') /\
-                       D' = D UNION sc {(a,b) | b | b IN FV P UNION FV Q} /\
+      (!x z P'. DTRANS D P (BoundOutput (Name x) z P') /\
+                z # D /\ z # P /\ z # Q /\ x <> z ==>
+               ?Q' D'. DTRANS D Q (BoundOutput (Name x) z Q') /\
+                       D' = D UNION
+                            symmetric_closure
+                              {(z,b) | b | b IN FV P UNION FV Q} /\
                       (P',Q',D') IN R)
 End
 
@@ -342,7 +345,7 @@ Proof
      rw [irreflexive_def])
  >> MATCH_MP_TAC finite_sc
  >> qmatch_abbrev_tac ‘FINITE s’
- >> Know ‘s = IMAGE (\b. (a,b)) (FV P)’
+ >> Know ‘s = IMAGE (\b. (z,b)) (FV P)’
  >- rw [Abbr ‘s’, Once EXTENSION]
  >> Rewr'
  >> MATCH_MP_TAC IMAGE_FINITE >> rw []
@@ -373,9 +376,9 @@ Proof
  (* goal 5 (of 14) *)
  >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
-     Q.PAT_X_ASSUM ‘!a x P'.
-                       DTRANS D P (InputS (Name a) x P') /\ _ ==> _’
-       (MP_TAC o Q.SPECL [‘a’, ‘x’, ‘P'’]) >> rw [] \\
+     Q.PAT_X_ASSUM ‘!x z P'.
+                       DTRANS D P (InputS (Name x) z P') /\ _ ==> _’
+       (MP_TAC o Q.SPECL [‘x’, ‘z’, ‘P'’]) >> rw [] \\
      Q.EXISTS_TAC ‘Q'’ >> rw [])
  (* goal 6 (of 14) *)
  >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
@@ -387,8 +390,8 @@ Proof
  (* goal 7 (of 14) *)
  >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
-     Q.PAT_X_ASSUM ‘!a x P'. DTRANS D P (BoundOutput (Name a) x P') /\ _ ==> _’
-       (MP_TAC o Q.SPECL [‘a’, ‘x’, ‘P'’]) >> rw [] \\
+     Q.PAT_X_ASSUM ‘!x z P'. DTRANS D P (BoundOutput (Name x) z P') /\ _ ==> _’
+       (MP_TAC o Q.SPECL [‘x’, ‘z’, ‘P'’]) >> rw [] \\
      Q.EXISTS_TAC ‘Q'’ >> rw [])
  (* goal 8 (of 14) *)
  >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
@@ -410,9 +413,9 @@ Proof
  (* goal 12 (of 14) *)
  >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
-     Q.PAT_X_ASSUM ‘!a x P'.
-                       DTRANS D P (InputS (Name a) x P') /\ _ ==> _’
-       (MP_TAC o Q.SPECL [‘a’, ‘x’, ‘P'’]) >> rw [] \\
+     Q.PAT_X_ASSUM ‘!x z P'.
+                       DTRANS D P (InputS (Name x) z P') /\ _ ==> _’
+       (MP_TAC o Q.SPECL [‘x’, ‘z’, ‘P'’]) >> rw [] \\
      Q.EXISTS_TAC ‘Q'’ >> rw [])
  (* goal 13 (of 14) *)
  >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
@@ -424,8 +427,8 @@ Proof
  (* goal 14 (of 14) *)
  >> (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
-     Q.PAT_X_ASSUM ‘!a x P'. DTRANS D P (BoundOutput (Name a) x P') /\ _ ==> _’
-       (MP_TAC o Q.SPECL [‘a’, ‘x’, ‘P'’]) >> rw [] \\
+     Q.PAT_X_ASSUM ‘!x z P'. DTRANS D P (BoundOutput (Name x) z P') /\ _ ==> _’
+       (MP_TAC o Q.SPECL [‘x’, ‘z’, ‘P'’]) >> rw [] \\
      Q.EXISTS_TAC ‘Q'’ >> rw [])
 QED
 
@@ -514,9 +517,10 @@ QED
 
 Theorem FV_InputS_lemma[local] :
     !D P Q. DTRANS D P Q ==>
-            !P' a z x. Q = InputS (Name a) z P' /\ z <> x /\ z # P /\
-                       x # P ==> x # P'
+            !P' x z. Q = InputS (Name x) z P' /\ x <> z /\ z # P /\
+                         !y. y # P /\ y <> z ==> y # P'
 Proof
+(*
     HO_MATCH_MP_TAC DTRANS_ind >> rw [IN_UNION] (* 12 subgoals left *)
  >- (gs [InputS_eq_thm] \\
      rename1 ‘swapstr x z y # Q’ \\
@@ -527,60 +531,31 @@ Proof
  >- gs [InputS_eq_thm]
  >- gs [InputS_eq_thm]
  >- gs [InputS_eq_thm]
- >> cheat
- (*
- (* 5 subgoals left *)
- >- (gs [InputS_eq_thm] >- rw [] \\
-     MP_TAC (Q.SPEC ‘P''’ pi_cases) >> rw [] >> fs [tpm_thm] \\
-     rename1 ‘y # A /\ y # B’ \\
-     CONJ_ASM1_TAC
-     >- (FIRST_X_ASSUM MATCH_MP_TAC \\
-         qexistsl_tac [‘a’, ‘z’] >> simp []) \\
-    ‘B = tpm [(x,z)] Q’ by rw [] >> POP_ORW \\
-     Q.PAT_X_ASSUM ‘_ = tpm [(x,z)] B’ K_TAC \\
-     simp [] \\
-     Cases_on ‘x = y’ >> rw [])
- (* 4 subgoals left *)
- >- (gs [InputS_eq_thm] >- rw [] \\
-     MP_TAC (Q.SPEC ‘P''’ pi_cases) >> rw [] >> fs [tpm_thm] \\
-     rename1 ‘y # A /\ y # B’ \\
-     ONCE_REWRITE_TAC [CONJ_COMM] \\
-     CONJ_ASM1_TAC
-     >- (FIRST_X_ASSUM MATCH_MP_TAC \\
-         qexistsl_tac [‘a’, ‘z’] >> simp []) \\
-    ‘A = tpm [(x,z)] P’ by rw [] >> POP_ORW \\
-     Q.PAT_X_ASSUM ‘_ = tpm [(x,z)] A’ K_TAC \\
-     simp [] \\
-     Cases_on ‘x = y’ >> rw [])
- (* 3 subgoals left *)
- >> cheat
-  *)
+ *)
+    cheat
 QED
 
 Theorem FV_InputS :
-    !D P P' a z x. DTRANS D P (InputS (Name a) z P') /\ z <> x /\ z # P /\
-                   x # P ==> x # P'
+    !D P P' x z y. DTRANS D P (InputS (Name x) z P') /\ x <> z /\ z # P /\
+                   y # P /\ y <> z ==> y # P'
 Proof
-    rpt GEN_TAC >> STRIP_TAC
- >> irule FV_InputS_lemma
- >> qexistsl_tac [‘D’, ‘P’, ‘InputS (Name a) z P'’, ‘a’, ‘z’] >> art []
+    METIS_TAC [FV_InputS_lemma]
 QED
 
 Theorem FV_BoundOutput_lemma[local] :
     !D P Q. DTRANS D P Q ==>
-            !P' a z x. Q = BoundOutput (Name a) z P' /\ z <> x /\ x # P ==> x # P'
+            !P' x z. Q = BoundOutput (Name x) z P' /\ x <> z /\ z # P /\
+                         !y. y # P /\ y <> z ==> y # P'
 Proof
     HO_MATCH_MP_TAC DTRANS_ind >> rw []
  >> cheat
 QED
 
 Theorem FV_BoundOutput :
-    !D P P' a z x. DTRANS D P (BoundOutput (Name a) z P') /\ z <> x /\
-                   x # P ==> x # P'
+    !D P P' x z y. DTRANS D P (BoundOutput (Name x) z P') /\ x <> z /\ z # P /\
+                   y # P /\ y <> z ==> y # P'
 Proof
-    rpt GEN_TAC >> STRIP_TAC
- >> irule FV_BoundOutput_lemma
- >> qexistsl_tac [‘D’, ‘P’, ‘BoundOutput (Name a) z P'’, ‘a’, ‘z’] >> art []
+    METIS_TAC [FV_BoundOutput_lemma]
 QED
 
 Theorem dist_bisimilar_transitive :
@@ -589,9 +564,11 @@ Theorem dist_bisimilar_transitive :
 Proof
     rw [dist_bisimilar_def]
  >> Q.EXISTS_TAC
+     (* {(x,z,d) | (x,y,d) IN R /\ (y,z,d) IN R'} *)
      ‘{e | ?x y z d. e = (x,z,d) /\ (x,y,d) IN R /\ (y,z,d) IN R'}’
  >> simp []
- >> reverse CONJ_TAC >- (Q.EXISTS_TAC ‘P2’ >> art [])
+ >> reverse CONJ_TAC
+ >- (Q.EXISTS_TAC ‘P2’ >> art [])
  >> Q.PAT_X_ASSUM ‘(P1,P2,D) IN R’  K_TAC
  >> Q.PAT_X_ASSUM ‘(P2,P3,D) IN R'’ K_TAC
  >> rw [dist_simulation_def, distinction_dpm] (* 7+7 subgoals *)
@@ -633,52 +610,52 @@ Proof
        (MP_TAC o Q.SPEC ‘y'’) >> rw [] >> rename1 ‘DTRANS D Q (TauR Q')’ \\
      Q.EXISTS_TAC ‘Q'’ >> art [] \\
      Q.EXISTS_TAC ‘y'’ >> art [])
- (* goal 5 (of 14): DTRANS D P (InputS (Name a) x P')
-                              |      alpha       | |
-                          x # P                  z P''
-                              |   R              | |
-                              y (InputS (Name a) z y')
-                              |   R'             | |
-                          x # Q (InputS (Name a) z Q')
-                              |      alpha       | |
-                    DTRANS D Q (InputS (Name a) x Q'')
+ (* goal 5 (of 14): DTRANS D  P (InputS (Name x) z  P')
+                              |      alpha       |  |
+                          x # P                  z  P''
+                              |   R              |  |
+                              y (InputS (Name x) z' y')
+                              |   R'             |  |
+                          x # Q (InputS (Name x) z' Q')
+                              |      alpha       |  |
+                     DTRANS D Q (InputS (Name x) z  Q'')
   *)
  >- (Q.PAT_X_ASSUM ‘dist_simulation R’
        (STRIP_ASSUME_TAC o SIMP_RULE (bool_ss ++ DNF_ss) [dist_simulation_def]) \\
     ‘distinction D’ by PROVE_TAC [] \\
   (* applying NEW_TAC *)
-     qabbrev_tac ‘X = {a} UNION {x} UNION
+     qabbrev_tac ‘X = {z} UNION {x} UNION
                       FV D UNION FV y UNION FV P UNION FV Q UNION FV P'’ \\
     ‘FINITE X’ by rw [Abbr ‘X’] \\
-     Q_TAC (NEW_TAC "z") ‘X’ \\
+     Q_TAC (NEW_TAC "z'") ‘X’ \\
      Q.PAT_X_ASSUM ‘FINITE X’ K_TAC >> fs [Abbr ‘X’, IN_UNION] \\
   (* applying tpm_ALPHA_InputS *)
-     Know ‘InputS (Name a) x P' = InputS (Name a) z (tpm [(z,x)] P')’
+     Know ‘InputS (Name x) z P' = InputS (Name x) z' (tpm [(z',z)] P')’
      >- (MATCH_MP_TAC tpm_ALPHA_InputS >> art []) \\
      DISCH_THEN (fs o wrap) \\
-     qabbrev_tac ‘P'' = tpm [(z,x)] P'’ \\
-     Q.PAT_X_ASSUM ‘!P Q D a x P'. (P,Q,D) IN R ==>
-                                      DTRANS D P (InputS (Name a) x P') /\ _ ==> _’
-       (MP_TAC o Q.SPECL [‘P’, ‘y’, ‘D’, ‘a’, ‘z’, ‘P''’]) >> rw [] \\
-     rename1 ‘DTRANS D y (InputS (Name a) z y')’ \\
+     qabbrev_tac ‘P'' = tpm [(z',z)] P'’ \\
+     Q.PAT_X_ASSUM ‘!P Q D x z P'. (P,Q,D) IN R ==>
+                                      DTRANS D P (InputS (Name x) z P') /\ _ ==> _’
+       (MP_TAC o Q.SPECL [‘P’, ‘y’, ‘D’, ‘x’, ‘z'’, ‘P''’]) >> rw [] \\
+     rename1 ‘DTRANS D y (InputS (Name x) z' y')’ \\
   (* stage work *)
      Q.PAT_X_ASSUM ‘dist_simulation R'’
        (STRIP_ASSUME_TAC o SIMP_RULE (bool_ss ++ DNF_ss) [dist_simulation_def]) \\
-     Q.PAT_X_ASSUM ‘!P Q D a x P'. (P,Q,D) IN R' ==>
-                                      DTRANS D P (InputS (Name a) x P') /\ _ ==> _’
-       (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘D’, ‘a’, ‘z’, ‘y'’]) >> rw [] \\
-     Know ‘InputS (Name a) z Q' = InputS (Name a) x (tpm [(x,z)] Q')’
+     Q.PAT_X_ASSUM ‘!P Q D x z P'. (P,Q,D) IN R' ==>
+                                      DTRANS D P (InputS (Name x) z P') /\ _ ==> _’
+       (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘D’, ‘x’, ‘z'’, ‘y'’]) >> rw [] \\
+     Know ‘InputS (Name x) z' Q' = InputS (Name x) z (tpm [(z,z')] Q')’
      >- (MATCH_MP_TAC tpm_ALPHA_InputS \\
          irule FV_InputS \\
-         qexistsl_tac [‘D’, ‘Q’, ‘a’, ‘z’] >> art []) \\
+         qexistsl_tac [‘D’, ‘Q’, ‘x’, ‘z'’] >> rw []) \\
      DISCH_THEN (fs o wrap) \\
-     qabbrev_tac ‘Q'' = tpm [(x,z)] Q'’ \\
+     qabbrev_tac ‘Q'' = tpm [(z,z')] Q'’ \\
      Q.EXISTS_TAC ‘Q''’ >> art [] \\
-    ‘P' = tpm [(z,x)] P''’ by rw [Abbr ‘P''’] >> POP_ORW \\
-    ‘tpm [(z,x)] P'' = tpm [(x,z)] P''’
+    ‘P' = tpm [(z',z)] P''’ by rw [Abbr ‘P''’] >> POP_ORW \\
+    ‘tpm [(z',z)] P'' = tpm [(z,z')] P''’
        by rw [Once pmact_flip_args] >> POP_ORW \\
-     Q.EXISTS_TAC ‘tpm [(x,z)] y'’ >> simp [Abbr ‘Q''’] \\
-     Suff ‘D = dpm [(x,z)] D’ >- (Rewr' >> simp []) \\
+     Q.EXISTS_TAC ‘tpm [(z,z')] y'’ >> simp [Abbr ‘Q''’] \\
+     Suff ‘D = dpm [(z,z')] D’ >- (Rewr' >> simp []) \\
      ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
      MATCH_MP_TAC dpm_unchanged >> simp [])
  (* goal 6 (of 14): DTRANS D P (FreeOutput (Name a) (Name b) P')
@@ -701,15 +678,15 @@ Proof
      rename1 ‘DTRANS D Q (FreeOutput (Name a) (Name b) Q')’ \\
      Q.EXISTS_TAC ‘Q'’ >> art [] \\
      Q.EXISTS_TAC ‘y'’ >> art [])
- (* goal 7 (of 14): DTRANS D P (BoundOutput (Name a) x P')
-                              |      alpha            | |
-                          x # P (BoundOutput (Name a) z P''
-                              |        R              | | R
-                          x ? y (BoundOutput (Name a) z y')
-                              |        R'             | | R'
-                          x # Q (BoundOutput (Name a) z Q')
-                              |      alpha            | |
-                    DTRANS D Q (BoundOutput (Name a) x Q'')
+ (* goal 7 (of 14): DTRANS D P (BoundOutput (Name x) z  P')
+                             |      alpha            |  |
+                         z # P (BoundOutput (Name x) z' P''
+                             |        R              |  | R
+                         z ? y (BoundOutput (Name x) z' y')
+                             |        R'             |  | R'
+                         z # Q (BoundOutput (Name x) z' Q')
+                             |      alpha            |  |
+                    DTRANS D Q (BoundOutput (Name x) z  Q'')
   *)
  >- (Q.PAT_X_ASSUM ‘dist_simulation R’
        (STRIP_ASSUME_TAC o SIMP_RULE (bool_ss ++ DNF_ss) [dist_simulation_def]) \\
@@ -721,21 +698,20 @@ Proof
      Q.PAT_X_ASSUM ‘!P Q D a b P'.
                       (P,Q,D) IN R ==> DTRANS D P (FreeOutput _ _ P') ==> _’ K_TAC \\
   (* applying NEW_TAC, because we don't have ‘x # y’, but how about “a # y”? *)
-     qabbrev_tac ‘X = {a} UNION {x} UNION
+     qabbrev_tac ‘X = {z} UNION {x} UNION
                       FV D UNION FV y UNION FV P UNION FV Q UNION FV P'’ \\
     ‘FINITE X’ by rw [Abbr ‘X’] \\
-     Q_TAC (NEW_TAC "z") ‘X’ \\
+     Q_TAC (NEW_TAC "z'") ‘X’ \\
      Q.PAT_X_ASSUM ‘FINITE X’ K_TAC >> fs [Abbr ‘X’, IN_UNION] \\
   (* applying tpm_ALPHA_BoundOutput *)
-     Know ‘BoundOutput (Name a) x P' = BoundOutput (Name a) z (tpm [(z,x)] P')’
+     Know ‘BoundOutput (Name x) z P' = BoundOutput (Name x) z' (tpm [(z',z)] P')’
      >- (MATCH_MP_TAC tpm_ALPHA_BoundOutput >> art []) \\
      DISCH_THEN (fs o wrap) \\
-     qabbrev_tac ‘P'' = tpm [(z,x)] P'’ \\
-     Q.PAT_X_ASSUM ‘!P Q D a x P'. (P,Q,D) IN R ==>
-                                   DTRANS D P (BoundOutput (Name b) x P') /\ _ ==> _’
-       (MP_TAC o Q.SPECL [‘P’, ‘y’, ‘D’, ‘a’, ‘z’, ‘P''’]) >> rw [] \\
-  (* FIXME
-     rename1 ‘DTRANS D y (BoundOutput (Name a) z y')’ \\
+     qabbrev_tac ‘P'' = tpm [(z',z)] P'’ \\
+     Q.PAT_X_ASSUM ‘!P Q D x z P'. (P,Q,D) IN R ==>
+                                   DTRANS D P (BoundOutput (Name x) z P') /\ _ ==> _’
+       (MP_TAC o Q.SPECL [‘P’, ‘y’, ‘D’, ‘x’, ‘z'’, ‘P''’]) >> rw [] \\
+     rename1 ‘DTRANS D y (BoundOutput (Name x) z' y')’ \\
   (* stage work *)
      Q.PAT_X_ASSUM ‘dist_simulation R'’
        (STRIP_ASSUME_TAC o SIMP_RULE (bool_ss ++ DNF_ss) [dist_simulation_def]) \\
@@ -745,32 +721,34 @@ Proof
                       (P,Q,D) IN R' ==> DTRANS D P (InputS _ x P') /\ _ ==> _’ K_TAC \\
      Q.PAT_X_ASSUM ‘!P Q D a b P'.
                       (P,Q,D) IN R' ==> DTRANS D P (FreeOutput _ _ P') ==> _’ K_TAC \\
-     Q.PAT_X_ASSUM ‘!P Q D a x P'. (P,Q,D) IN R' ==>
-                                   DTRANS D P (BoundOutput (Name b) x P') /\ _ ==> _’
-       (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘D’, ‘a’, ‘z’, ‘y'’]) >> rw [] \\
-     Know ‘BoundOutput (Name a) z Q' = BoundOutput (Name a) x (tpm [(x,z)] Q')’
+     Q.PAT_X_ASSUM ‘!P Q D x z P'. (P,Q,D) IN R' ==>
+                                   DTRANS D P (BoundOutput (Name x) z P') /\ _ ==> _’
+       (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘D’, ‘x’, ‘z'’, ‘y'’]) >> rw [] \\
+     Know ‘BoundOutput (Name x) z' Q' = BoundOutput (Name x) z (tpm [(z,z')] Q')’
      >- (MATCH_MP_TAC tpm_ALPHA_BoundOutput \\
          irule FV_BoundOutput \\
-         qexistsl_tac [‘D’, ‘Q’, ‘a’, ‘z’] >> art []) \\
+         qexistsl_tac [‘D’, ‘Q’, ‘x’, ‘z'’] >> rw []) \\
      DISCH_THEN (fs o wrap) \\
-     qabbrev_tac ‘Q'' = tpm [(x,z)] Q'’ \\
+     qabbrev_tac ‘Q'' = tpm [(z,z')] Q'’ \\
      Q.EXISTS_TAC ‘Q''’ >> art [] \\
-    ‘P' = tpm [(z,x)] P''’ by rw [Abbr ‘P''’] >> POP_ORW \\
-    ‘tpm [(z,x)] P'' = tpm [(x,z)] P''’
+    ‘P' = tpm [(z',z)] P''’ by rw [Abbr ‘P''’] >> POP_ORW \\
+    ‘tpm [(z',z)] P'' = tpm [(z,z')] P''’
        by rw [Once pmact_flip_args] >> POP_ORW \\
-     Q.EXISTS_TAC ‘tpm [(x,z)] y'’ >> simp [Abbr ‘Q''’] \\
-     Know ‘dpm [(x,z)] D = D’
+     Q.EXISTS_TAC ‘tpm [(z,z')] y'’ >> simp [Abbr ‘Q''’] \\
+     Know ‘dpm [(z,z')] D = D’
      >- (MATCH_MP_TAC dpm_unchanged >> simp []) >> DISCH_TAC \\
-     qabbrev_tac ‘pi = [(x,z)]’ \\
+     qabbrev_tac ‘pi = [(z,z')]’ \\
+  (*
      qmatch_abbrev_tac ‘(tpm pi P'',tpm pi y',D UNION A) IN R /\ _’ \\
      Know ‘dpm pi A = A’
      >- (simp [Once EXTENSION, Abbr ‘pi’, Abbr ‘A’, FORALL_PROD] \\
          rw [sc_def] >> EQ_TAC >> rw [] >| (* 4 subgoals *)
+         cheat
          [ (* goal 1 (of 4) *)
-           Cases_on ‘x = p_2’ >> fs [swapstr_def] \\
-           Cases_on ‘z = p_2’ >> fs [] \\
-           Cases_on ‘x = p_1’ >> fs [] \\
-           Cases_on ‘z = p_1’ >> fs [],
+           Cases_on ‘z = p_2’ >> fs [swapstr_def] \\
+           Cases_on ‘z' = p_2’ >> fs [] \\
+           Cases_on ‘z = p_1’ >> fs [] \\
+           Cases_on ‘z' = p_1’ >> fs [],
            (* goal 2 (of 4) *)
            Cases_on ‘x = p_2’ >> fs [swapstr_def] \\
            Cases_on ‘x = p_1’ >> fs [] \\
@@ -878,7 +856,7 @@ Proof
 QED
 
 val _ = export_theory ();
-val _ = html_theory "open_bisimulation";
+val _ = html_theory "dist_bisim";
 
 (* References:
 
