@@ -3276,9 +3276,10 @@ Proof
       Q.EXISTS_TAC ‘z’ >> art [] ]
 QED
 
-Theorem sup_comm : (* was: SUP_commute *)
-    !f. sup {sup {f i j | j IN univ(:num)} | i IN univ(:num)} =
-        sup {sup {f i j | i IN univ(:num)} | j IN univ(:num)}
+Theorem sup_comm_ext :
+    !(f :'a -> 'a -> extreal) A B.
+        sup {sup {f i j | j IN A} | i IN B} =
+        sup {sup {f i j | i IN B} | j IN A}
 Proof
   RW_TAC std_ss [sup_eq] THENL
   [POP_ASSUM (MP_TAC o ONCE_REWRITE_RULE [GSYM SPECIFICATION]) THEN
@@ -3286,28 +3287,32 @@ Proof
    GEN_TAC THEN GEN_REWR_TAC LAND_CONV [GSYM SPECIFICATION] THEN
    RW_TAC std_ss [GSPECIFICATION] THEN SIMP_TAC std_ss [le_sup] THEN
    GEN_TAC THEN
-   DISCH_THEN (MP_TAC o Q.SPEC `sup {f i (j:num) | i IN univ(:num)}`) THEN
-   Q_TAC SUFF_TAC `{sup {f i j | i IN univ(:num)} | j IN univ(:num)}
-    (sup {f i j | i IN univ(:num)})` THENL
-   [DISCH_TAC, ONCE_REWRITE_TAC [GSYM SPECIFICATION] THEN SET_TAC []] THEN
+   DISCH_THEN (MP_TAC o Q.SPEC `sup {f (i:'a) (j:'a) | i IN B}`) THEN
+   impl_tac >- (rw [] >> Q.EXISTS_TAC ‘j’ >> art []) \\
    RW_TAC std_ss [] THEN MATCH_MP_TAC le_trans THEN
-   Q.EXISTS_TAC `sup {f i j | i IN univ(:num)}` THEN ASM_REWRITE_TAC [le_sup] THEN
+   Q.EXISTS_TAC `sup {f i j | i IN B}` THEN ASM_REWRITE_TAC [le_sup] THEN
    GEN_TAC THEN DISCH_THEN MATCH_MP_TAC THEN
-   ONCE_REWRITE_TAC [GSYM SPECIFICATION] THEN SET_TAC [],
+   ONCE_REWRITE_TAC [GSYM SPECIFICATION] \\
+   rw [] >> Q.EXISTS_TAC ‘i’ >> art [],
    ALL_TAC] THEN
   SIMP_TAC std_ss [sup_le] THEN GEN_TAC THEN
   GEN_REWR_TAC LAND_CONV [GSYM SPECIFICATION] THEN
   RW_TAC std_ss [GSPECIFICATION] THEN SIMP_TAC std_ss [sup_le] THEN
   GEN_TAC THEN GEN_REWR_TAC LAND_CONV [GSYM SPECIFICATION] THEN
   RW_TAC std_ss [GSPECIFICATION] THEN
-  FIRST_X_ASSUM (MP_TAC o Q.SPEC `sup {f (i:num) j | j IN univ(:num)}`) THEN
-  Q_TAC SUFF_TAC `{sup {f i j | j IN univ(:num)} | i IN univ(:num)}
-   (sup {f i j | j IN univ(:num)})` THENL
-  [ALL_TAC, ONCE_REWRITE_TAC [GSYM SPECIFICATION] THEN SET_TAC []] THEN
+  FIRST_X_ASSUM (MP_TAC o Q.SPEC `sup {f (i:'a) (j:'a) | j IN A}`) THEN
+  impl_tac >- (rw [] >> Q.EXISTS_TAC ‘i’ >> art []) \\
   RW_TAC std_ss [] THEN MATCH_MP_TAC le_trans THEN
-  Q.EXISTS_TAC `sup {f i j | j IN univ(:num)}` THEN ASM_SIMP_TAC std_ss [le_sup] THEN
+  Q.EXISTS_TAC `sup {f i j | j IN A}` THEN ASM_SIMP_TAC std_ss [le_sup] THEN
   GEN_TAC THEN DISCH_THEN MATCH_MP_TAC THEN
-  ONCE_REWRITE_TAC [GSYM SPECIFICATION] THEN SET_TAC []
+  rw [] >> Q.EXISTS_TAC ‘j’ >> art []
+QED
+
+Theorem sup_comm : (* was: SUP_commute *)
+    !f. sup {sup {f i j | j IN univ(:num)} | i IN univ(:num)} =
+        sup {sup {f i j | i IN univ(:num)} | j IN univ(:num)}
+Proof
+    rw [sup_comm_ext]
 QED
 
 Theorem sup_close : (* was: Sup_ereal_close *)
@@ -7818,17 +7823,6 @@ Proof
  >> Q.EXISTS_TAC ‘m’ >> rw []
 QED
 
-(* finish if needed
-Theorem ext_limsup_offset :
-    !f c. c <> PosInf /\ c <> NegInf ==> limsup (\n. f n + c) = limsup f + c
-Proof
-    rpt STRIP_TAC
- >> ‘?r. c = Normal r’ by METIS_TAC [extreal_cases]
- >> POP_ORW
- >> cheat
-QED
- *)
-
 Theorem ext_limsup_sup_lemma[local] :
     !f. sup (IMAGE (\m. limsup (\n. f n m)) univ(:num)) <=
         limsup (\n. sup (IMAGE (f n) univ(:num)))
@@ -7843,7 +7837,14 @@ QED
 val POP_DISCH_TAC = POP_ASSUM K_TAC >> DISCH_TAC;
 
 (* cf. https://math.stackexchange.com/questions/3089365/interchanging-limsup-and-sup
-   (This link indicates that the involved double-sequence is bounded.)
+   (This link indicates that the involved double-sequence is bounded. Nothing else.)
+
+  NOTE: Let “g n = sup (IMAGE (f n) UNIV)“, the LHS “limsup g” is the maximal limit
+  of all convergent sub-sequences of g. Let “g o h” be such a sub-sequence.
+
+  The problem is that, for any m, “limsup (\n. f n m)” is another maximal limit of
+  all convergent sub-sequences of (f n), where that sub-sequence is in general not
+  the same as “g o h”.
  *)
 Theorem ext_limsup_sup :
     !f. (!n. mono_increasing (f n)) /\ (?k. !n m. abs (f n m) <= Normal k) ==>
@@ -7853,6 +7854,15 @@ Proof
     rpt STRIP_TAC
  >> rw [GSYM le_antisym, ext_limsup_sup_lemma]
  (* stage work (left to right) *)
+ >> rw [Once ext_limsup_def]
+ >> ‘!n. IMAGE (f n) UNIV = {f n i | i IN UNIV}’ by rw [Once EXTENSION]
+ >> POP_ORW
+ >> ‘!m. sup {sup {f n i | i IN UNIV} | m <= n} =
+         sup {sup {f i j | j IN UNIV} | i IN from m}’ by rw [from_def]
+ >> POP_ORW
+ >> ONCE_REWRITE_TAC [sup_comm_ext]
+ >> rw [inf_le']
+  (* version 2
  >> rw [ext_mono_increasing_def, le_sup']
  >> Know ‘!m. limsup (\n. f n m) <= y’ >- METIS_TAC []
  >> POP_DISCH_TAC
@@ -7867,8 +7877,8 @@ Proof
      Q.PAT_X_ASSUM ‘!n. mono_increasing (f n)’ (MP_TAC o Q.SPEC ‘n’) \\
      rw [ext_mono_increasing_def])
  >> DISCH_TAC
- >> cheat
- (*
+  *)
+ (* version 1
  >> qmatch_abbrev_tac ‘z <= y + e’
  >> Know ‘z <= y + e <=> z - e <= y’
  >- (SYM_TAC >> MATCH_MP_TAC sub_le_eq >> art [])
@@ -7953,8 +7963,8 @@ Proof
  >> POP_ASSUM K_TAC
  >> simp [SKOLEM_THM]
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘h'’ STRIP_ASSUME_TAC)
- >> cheat
  *)
+ >> cheat
 QED
 
 (* ------------------------------------------------------------------------- *)
