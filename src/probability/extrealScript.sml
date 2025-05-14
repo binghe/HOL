@@ -7823,148 +7823,62 @@ Proof
  >> Q.EXISTS_TAC ‘m’ >> rw []
 QED
 
-Theorem ext_limsup_sup_lemma[local] :
-    !f. sup (IMAGE (\m. limsup (\n. f n m)) univ(:num)) <=
-        limsup (\n. sup (IMAGE (f n) univ(:num)))
+Theorem inf_sup_comm :
+    !(f :num -> num -> extreal).
+       (!m. mono_increasing (f m)) /\ (!n. mono_decreasing (\m. f m n)) ==>
+       inf {sup {f i j | j | T} | i | T} = sup {inf {f i j | i | T} | j | T}
 Proof
-    rw [sup_le']
- >> MATCH_MP_TAC ext_limsup_mono
- >> rw [le_sup']
- >> POP_ASSUM MATCH_MP_TAC
- >> Q.EXISTS_TAC ‘m’ >> rw []
+    cheat
 QED
 
-val POP_DISCH_TAC = POP_ASSUM K_TAC >> DISCH_TAC;
+val POP_ASSUM_DISCH_TAC = POP_ASSUM K_TAC >> DISCH_TAC;
 
 (* cf. https://math.stackexchange.com/questions/3089365/interchanging-limsup-and-sup
    (This link indicates that the involved double-sequence is bounded. Nothing else.)
 
   NOTE: Let “g n = sup (IMAGE (f n) UNIV)“, the LHS “limsup g” is the maximal limit
-  of all convergent sub-sequences of g. Let “g o h” be such a sub-sequence.
-
-  The problem is that, for any m, “limsup (\n. f n m)” is another maximal limit of
-  all convergent sub-sequences of (f n), where that sub-sequence is in general not
-  the same as “g o h”.
+  of all convergent sub-sequences of g.
  *)
 Theorem ext_limsup_sup :
-    !f. (!n. mono_increasing (f n)) /\ (?k. !n m. abs (f n m) <= Normal k) ==>
+    !f. (!n. mono_increasing (f n)) ==>
         limsup (\n. sup (IMAGE (f n) UNIV)) =
         sup (IMAGE (\m. limsup (\n. f n m)) UNIV)
 Proof
-    rpt STRIP_TAC
- >> rw [GSYM le_antisym, ext_limsup_sup_lemma]
- (* stage work (left to right) *)
- >> rw [Once ext_limsup_def]
+    rw [Once ext_limsup_def]
  >> ‘!n. IMAGE (f n) UNIV = {f n i | i IN UNIV}’ by rw [Once EXTENSION]
  >> POP_ORW
  >> ‘!m. sup {sup {f n i | i IN UNIV} | m <= n} =
          sup {sup {f i j | j IN UNIV} | i IN from m}’ by rw [from_def]
  >> POP_ORW
  >> ONCE_REWRITE_TAC [sup_comm_ext]
- >> rw [inf_le']
-  (* version 2
- >> rw [ext_mono_increasing_def, le_sup']
- >> Know ‘!m. limsup (\n. f n m) <= y’ >- METIS_TAC []
- >> POP_DISCH_TAC
- (* stage work *)
- >> MATCH_MP_TAC le_epsilon
- >> rpt STRIP_TAC
- >> ‘e <> NegInf’ by rw [pos_not_neginf, lt_imp_le]
- >> qabbrev_tac ‘g = \m. limsup (\n. f n m)’ >> fs []
- >> Know ‘mono_increasing g’
- >- (rw [ext_mono_increasing_def, Abbr ‘g’] \\
-     MATCH_MP_TAC ext_limsup_mono >> rw [] \\
-     Q.PAT_X_ASSUM ‘!n. mono_increasing (f n)’ (MP_TAC o Q.SPEC ‘n’) \\
-     rw [ext_mono_increasing_def])
- >> DISCH_TAC
-  *)
- (* version 1
- >> qmatch_abbrev_tac ‘z <= y + e’
- >> Know ‘z <= y + e <=> z - e <= y’
- >- (SYM_TAC >> MATCH_MP_TAC sub_le_eq >> art [])
- >> Rewr'
- >> qunabbrev_tac ‘z’
- >> Cases_on ‘y = PosInf’ >- rw [le_infty]
- (* preparing for [sup_close] *)
- >> qabbrev_tac ‘s = \n. IMAGE (f n) UNIV’ >> simp []
- >> ‘!n. s n <> {}’ by rw [Abbr ‘s’, Once EXTENSION, NOT_IN_EMPTY]
- >> Know ‘!n. abs (sup (s n)) <> PosInf’
- >- (rw [Abbr ‘s’, lt_infty] \\
-     Q_TAC (TRANS_TAC let_trans) ‘Normal k’ >> rw [] \\
-     MATCH_MP_TAC sup_bounded' >> rw [])
- >> DISCH_TAC
- (* properties of ‘e / 2’ *)
- >> Know ‘e / 2 <> PosInf /\ e / 2 <> NegInf’
- >- (‘?r. 0 < r /\ e = Normal r’
-       by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_lt_eq] \\
+ >> simp [from_def]
+ >> qabbrev_tac ‘g = \m n. sup {f i n | m <= i}’ >> simp []
+ >> qmatch_abbrev_tac ‘inf (IMAGE h UNIV) = _’
+ >> ‘IMAGE h UNIV = {h i | i | T}’ by rw [Once EXTENSION] >> POP_ORW
+ >> rw [Abbr ‘h’]
+ >> Know ‘!m. mono_increasing (g m)’
+ >- (simp [ext_mono_increasing_def, Abbr ‘g’] \\
+     qx_genl_tac [‘m’, ‘j’, ‘n’] >> DISCH_TAC \\
+    ‘!l. {f i l | m <= i} = {f i l | i IN from m}’ by rw [from_def] \\
      POP_ORW \\
-     MATCH_MP_TAC div_not_infty >> rw [])
- >> STRIP_TAC
- >> Know ‘0 < e / Normal 2’
- >- (MATCH_MP_TAC lt_div >> rw [])
- >> rw [GSYM extreal_of_num_def]
- (* applying [sup_close] with the first half: “e / 2” *)
- >> Know ‘!n. ?x. x IN (s n) /\ sup (s n) - e / 2 < x’
- >- (Q.X_GEN_TAC ‘n’ \\
-     MATCH_MP_TAC sup_close >> simp [])
- >> simp [SKOLEM_THM]
- >> DISCH_THEN (Q.X_CHOOSE_THEN ‘h’ STRIP_ASSUME_TAC)
- (* re-shape the last assumption *)
- >> Know ‘!n. ?m. sup (s n) <= f n m + e / 2’
- >- (Q.X_GEN_TAC ‘n’ \\
-     POP_ASSUM (MP_TAC o Q.SPEC ‘n’) >> rw [Abbr ‘s’] \\
-     rename1 ‘h n = f n m’ \\
-     Q.EXISTS_TAC ‘m’ \\
-     Q.PAT_X_ASSUM ‘h n = f n m’ (fs o wrap) \\
-     MATCH_MP_TAC lt_imp_le \\
-     qmatch_abbrev_tac ‘z < x + e / 2’ \\
-     Suff ‘z < x + e / 2 <=> z - e / 2 < x’ >- rw [] \\
-     SYM_TAC >> MATCH_MP_TAC sub_lt_eq >> art [])
- >> POP_ASSUM K_TAC
- >> simp [SKOLEM_THM]
- >> DISCH_THEN (Q.X_CHOOSE_THEN ‘h’ STRIP_ASSUME_TAC)
- >> qabbrev_tac ‘g = \n. sup (s n)’ >> fs []
- (* stage work *)
- >> Know ‘limsup g - e <= y <=> limsup g <= y + e’
- >- (MATCH_MP_TAC sub_le_eq >> art [])
- >> Rewr'
- >> rw [ext_limsup_def, inf_le'] >> rename1 ‘z <= y + e’
- >> Know ‘!m. z <= sup {g n | m <= n}’ >- METIS_TAC []
- >> POP_ASSUM K_TAC >> DISCH_TAC
- >> qabbrev_tac ‘t = \m. {g n | m <= n}’ >> fs []
- >> Know ‘!n. t n <> {}’
- >- (rw [Abbr ‘t’, Once EXTENSION] \\
-     Q.EXISTS_TAC ‘n’ >> rw [])
+     HO_MATCH_MP_TAC sup_mono_ext >> rw [from_def] \\
+     Q.EXISTS_TAC ‘i’ >> art [] \\
+     fs [ext_mono_increasing_def])
  >> DISCH_TAC
- >> Know ‘!m. abs (sup (t m)) <> PosInf’
- >- (rw [Abbr ‘t’, lt_infty] \\
-     Q_TAC (TRANS_TAC let_trans) ‘Normal k’ >> rw [] \\
-     irule sup_bounded \\
-     rw [Abbr ‘g’, Abbr ‘s’] \\
-     MATCH_MP_TAC sup_bounded' >> rw [])
+ >> Know ‘!n. mono_decreasing (\m. g m n)’
+ >- (simp [ext_mono_decreasing_def, Abbr ‘g’] \\
+     qx_genl_tac [‘n’, ‘m’, ‘j’] >> DISCH_TAC \\
+     MATCH_MP_TAC sup_mono_subset \\
+     rw [SUBSET_DEF] \\
+     Q.EXISTS_TAC ‘i’ >> rw [])
  >> DISCH_TAC
- (* applying [sup_close] again on the second half: “e / 2” *)
- >> Know ‘!n. ?x. x IN (t n) /\ sup (t n) - e / 2 < x’
- >- (Q.X_GEN_TAC ‘n’ \\
-     MATCH_MP_TAC sup_close >> simp [])
- >> simp [SKOLEM_THM]
- >> DISCH_THEN (Q.X_CHOOSE_THEN ‘h'’ STRIP_ASSUME_TAC)
- (* re-shape the last assumption *)
- >> Know ‘!n. ?m. n <= m /\ sup (t n) <= g m + e / 2’
- >- (Q.X_GEN_TAC ‘n’ \\
-     POP_ASSUM (MP_TAC o Q.SPEC ‘n’) >> rw [Abbr ‘t’] \\
-     rename1 ‘h' n = g m’ \\
-     Q.EXISTS_TAC ‘m’ \\
-     Q.PAT_X_ASSUM ‘h' n = g m’ (fs o wrap) \\
-     MATCH_MP_TAC lt_imp_le \\
-     qmatch_abbrev_tac ‘w < x + e / 2’ \\
-     Suff ‘w < x + e / 2 <=> w - e / 2 < x’ >- rw [] \\
-     SYM_TAC >> MATCH_MP_TAC sub_lt_eq >> art [])
- >> POP_ASSUM K_TAC
- >> simp [SKOLEM_THM]
- >> DISCH_THEN (Q.X_CHOOSE_THEN ‘h'’ STRIP_ASSUME_TAC)
- *)
- >> cheat
+ >> rw [inf_sup_comm]
+ >> ‘!i j. {g i j | i | T} = IMAGE (\i. g i j) UNIV’ by rw [Once EXTENSION]
+ >> POP_ORW
+ >> qabbrev_tac ‘h = \j. inf (IMAGE (\i. g i j) UNIV)’ >> simp []
+ >> ‘{h j | j | T} = IMAGE h UNIV’ by rw [Once EXTENSION]
+ >> POP_ORW
+ >> rw [Abbr ‘h’, ext_limsup_def]
 QED
 
 (* ------------------------------------------------------------------------- *)

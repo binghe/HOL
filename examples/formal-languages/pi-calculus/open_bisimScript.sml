@@ -481,4 +481,4 @@ Proof
 QED
 
 val _ = export_theory ();
-val _ = html_theory "pi_bisimulation";
+val _ = html_theory "open_bisim";
