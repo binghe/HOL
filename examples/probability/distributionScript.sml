@@ -3321,6 +3321,114 @@ Definition Portemanteau_v_def :
 End
 
 (* "trivial" *)
+Theorem Portemanteau_iv_imp_v[local] :
+    !E X Y. Portemanteau_antecedents E X Y /\
+            Portemanteau_iv E X Y ==> Portemanteau_v E X Y
+Proof
+    rpt GEN_TAC
+ >> simp [Portemanteau_antecedents_def, Portemanteau_iv_def, Portemanteau_v_def]
+ >> STRIP_TAC
+ (* limsup (\n. X n (mspace E)) <= Y (mspace E) *)
+ >> CONJ_TAC
+ >- (POP_ASSUM MATCH_MP_TAC \\
+     REWRITE_TAC [mspace, CLOSED_IN_TOPSPACE])
+ (* !s. open_in (mtop E) s ==> Y s <= liminf (\n. X n s) *)
+ >> Q.X_GEN_TAC ‘s’ >> STRIP_TAC
+ >> qabbrev_tac ‘sp = mspace E’
+ >> qabbrev_tac ‘t = mtop E’
+ >> qabbrev_tac ‘s0 = sp DIFF s’
+ >> ‘s SUBSET sp’
+      by FULL_SIMP_TAC std_ss [OPEN_IN_SUBSET_TOPSPACE, mspace, Abbr ‘sp’]
+ >> ‘s0 SUBSET sp’ by ASM_SET_TAC []
+ >> Know ‘closed_in t s0’
+ >- (FULL_SIMP_TAC std_ss [closed_in, Abbr ‘s0’, Abbr ‘sp’, mspace, Abbr ‘t’] \\
+     qabbrev_tac ‘sp = topspace (mtop E)’ \\
+     Suff ‘sp DIFF (sp DIFF s) = s’ >- rw [] \\
+     ASM_SET_TAC [])
+ >> DISCH_TAC
+ >> ‘s = sp DIFF s0’ by ASM_SET_TAC [] >> POP_ORW
+ >> qabbrev_tac ‘b = B t’
+ >> ‘sigma_algebra b’ by METIS_TAC [sigma_algebra_general_borel]
+ >> Know ‘space b = sp’
+ >- (rw [Abbr ‘sp’, Abbr ‘b’, space_general_borel] \\
+     rw [Abbr ‘t’, mspace])
+ >> DISCH_TAC
+ >> Know ‘s IN subsets b’
+ >- (simp [Abbr ‘b’, general_borel_def] \\
+     MATCH_MP_TAC IN_SIGMA >> rw [IN_APP])
+ >> DISCH_TAC
+ >> Know ‘s0 IN subsets b’
+ >- (qunabbrev_tac ‘s0’ \\
+     Q.PAT_X_ASSUM ‘space b = sp’ (REWRITE_TAC o wrap o SYM) \\
+     MATCH_MP_TAC SIGMA_ALGEBRA_COMPL >> art [])
+ >> DISCH_TAC
+ (* applying MEASURE_SPACE_FINITE_DIFF *)
+ >> Know ‘Y (sp DIFF s0) = Y sp - Y s0’
+ >- (Q.PAT_X_ASSUM ‘subprobability_measure t Y’ MP_TAC \\
+     rw [subprobability_measure_thm] \\
+     qabbrev_tac ‘p = (topspace t,subsets (B t),Y)’ \\
+    ‘Y = measure p’ by rw [Abbr ‘p’] >> POP_ORW \\
+    ‘space b = m_space p’ by rw [Abbr ‘b’, Abbr ‘p’, space_general_borel] \\
+     POP_ORW \\
+     MATCH_MP_TAC MEASURE_SPACE_FINITE_DIFF >> rw [Abbr ‘p’] \\
+     simp [lt_infty] \\
+     Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw [])
+ >> Rewr'
+ >> Know ‘!n. X n (sp DIFF s0) = X n sp - X n s0’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     Q.PAT_X_ASSUM ‘!n. subprobability_measure t (X n)’ (MP_TAC o Q.SPEC ‘n’) \\
+     rw [subprobability_measure_thm] \\
+     qabbrev_tac ‘p = (topspace t,subsets (B t),X n)’ \\
+    ‘X n = measure p’ by rw [Abbr ‘p’] >> POP_ORW \\
+    ‘space b = m_space p’ by rw [Abbr ‘b’, Abbr ‘p’, space_general_borel] \\
+     POP_ORW \\
+     MATCH_MP_TAC MEASURE_SPACE_FINITE_DIFF >> rw [Abbr ‘p’] \\
+     simp [lt_infty] \\
+     Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw [])
+ >> Rewr'
+ (* stage work *)
+ >> simp [extreal_sub, ext_liminf_alt_limsup, o_DEF]
+ >> ‘(!n. finite_measure t (X n)) /\ finite_measure t Y’
+       by FULL_SIMP_TAC std_ss [subprobability_measure_def]
+ >> FULL_SIMP_TAC std_ss [subprobability_measure_thm, finite_measure_thm]
+ >> ‘sp IN subsets b’ by METIS_TAC [SIGMA_ALGEBRA_SPACE]
+ >> Know ‘!n. -(X n sp + -X n s0) = -X n sp + -(-X n s0)’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     MATCH_MP_TAC neg_add >> simp [])
+ >> Rewr'
+ >> Know ‘--Y sp + -Y s0 = -(-Y sp + Y s0)’
+ >- (SYM_TAC >> MATCH_MP_TAC neg_add >> simp [])
+ >> simp [] >> DISCH_THEN K_TAC
+ >> simp [le_neg]
+ >> Q_TAC (TRANS_TAC le_trans) ‘limsup (\n. -X n sp) + limsup (\n. X n s0)’
+ >> reverse CONJ_TAC
+ >- (MATCH_MP_TAC le_add2 >> simp [] \\
+     rw [ext_limsup_alt_liminf, o_DEF, le_neg])
+ (* applying ext_limsup_add *)
+ >> HO_MATCH_MP_TAC ext_limsup_add
+ >> rw [ext_bounded_alt] (* 2 subgoals *)
+ >| [ (* goal 1 (of 2) *)
+      Q.EXISTS_TAC ‘1’ >> rw [normal_1] \\
+      REWRITE_TAC [abs_neg_eq] \\
+      simp [abs_bounds] \\
+      Q_TAC (TRANS_TAC le_trans) ‘-0’ >> rw [le_neg] \\
+      Q.PAT_X_ASSUM ‘!n. measure_space (topspace t,subsets (B t),X n) /\ _’
+        (MP_TAC o Q.SPEC ‘n’) \\
+      qmatch_abbrev_tac ‘measure_space M /\ _ ==> _’ >> STRIP_TAC \\
+     ‘X n = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
+      MATCH_MP_TAC MEASURE_POSITIVE >> rw [Abbr ‘M’],
+      (* goal 2 (of 2) *)
+      Q.EXISTS_TAC ‘1’ >> rw [normal_1] \\
+      simp [abs_bounds] \\
+      Q_TAC (TRANS_TAC le_trans) ‘-0’ >> rw [le_neg] \\
+      Q.PAT_X_ASSUM ‘!n. measure_space (topspace t,subsets (B t),X n) /\ _’
+        (MP_TAC o Q.SPEC ‘n’) \\
+      qmatch_abbrev_tac ‘measure_space M /\ _ ==> _’ >> STRIP_TAC \\
+     ‘X n = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
+      MATCH_MP_TAC MEASURE_POSITIVE >> rw [Abbr ‘M’] ]
+QED
+
+(* "trivial" *)
 Theorem Portemanteau_v_imp_iv[local] :
     !E X Y. Portemanteau_antecedents E X Y /\
             Portemanteau_v E X Y ==> Portemanteau_iv E X Y
@@ -3422,149 +3530,6 @@ Proof
       qmatch_abbrev_tac ‘measure_space M /\ _ ==> _’ >> STRIP_TAC \\
      ‘X n = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
       MATCH_MP_TAC MEASURE_POSITIVE >> rw [Abbr ‘M’] ]
-QED
-
-(* "trivial" *)
-Theorem Portemanteau_iv_imp_v[local] :
-    !E X Y. Portemanteau_antecedents E X Y /\
-            Portemanteau_iv E X Y ==> Portemanteau_v E X Y
-Proof
-    rpt GEN_TAC
- >> simp [Portemanteau_antecedents_def, Portemanteau_iv_def, Portemanteau_v_def]
- >> STRIP_TAC
- (* !s. open_in (mtop E) s ==> Y s <= liminf (\n. X n s) *)
- >> reverse CONJ_TAC
- >- (Q.X_GEN_TAC ‘s’ >> STRIP_TAC \\
-     qabbrev_tac ‘sp = mspace E’ \\
-     qabbrev_tac ‘t = mtop E’ \\
-     qabbrev_tac ‘s0 = sp DIFF s’ \\
-    ‘s SUBSET sp’
-       by FULL_SIMP_TAC std_ss [OPEN_IN_SUBSET_TOPSPACE, mspace, Abbr ‘sp’] \\
-    ‘s0 SUBSET sp’ by ASM_SET_TAC [] \\
-     Know ‘closed_in t s0’
-     >- (FULL_SIMP_TAC std_ss [closed_in, Abbr ‘s0’, Abbr ‘sp’, mspace, Abbr ‘t’] \\
-         qabbrev_tac ‘sp = topspace (mtop E)’ \\
-         Suff ‘sp DIFF (sp DIFF s) = s’ >- rw [] \\
-         ASM_SET_TAC []) >> DISCH_TAC \\
-    ‘s = sp DIFF s0’ by ASM_SET_TAC [] >> POP_ORW \\
-     qabbrev_tac ‘b = B t’ \\
-    ‘sigma_algebra b’ by METIS_TAC [sigma_algebra_general_borel] \\
-     Know ‘space b = sp’
-     >- (rw [Abbr ‘sp’, Abbr ‘b’, space_general_borel] \\
-         rw [Abbr ‘t’, mspace]) >> DISCH_TAC \\
-     Know ‘s IN subsets b’
-     >- (simp [Abbr ‘b’, general_borel_def] \\
-         MATCH_MP_TAC IN_SIGMA >> rw [IN_APP]) >> DISCH_TAC \\
-     Know ‘s0 IN subsets b’
-     >- (qunabbrev_tac ‘s0’ \\
-         Q.PAT_X_ASSUM ‘space b = sp’ (REWRITE_TAC o wrap o SYM) \\
-         MATCH_MP_TAC SIGMA_ALGEBRA_COMPL >> art []) >> DISCH_TAC \\
-  (* applying MEASURE_SPACE_FINITE_DIFF *)
-     Know ‘Y (sp DIFF s0) = Y sp - Y s0’
-     >- (Q.PAT_X_ASSUM ‘subprobability_measure t Y’ MP_TAC \\
-         rw [subprobability_measure_thm] \\
-         qabbrev_tac ‘p = (topspace t,subsets (B t),Y)’ \\
-        ‘Y = measure p’ by rw [Abbr ‘p’] >> POP_ORW \\
-        ‘space b = m_space p’ by rw [Abbr ‘b’, Abbr ‘p’, space_general_borel] \\
-         POP_ORW \\
-         MATCH_MP_TAC MEASURE_SPACE_FINITE_DIFF >> rw [Abbr ‘p’] \\
-         simp [lt_infty] \\
-         Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw []) >> Rewr' \\
-     Know ‘!n. X n (sp DIFF s0) = X n sp - X n s0’
-     >- (Q.X_GEN_TAC ‘n’ \\
-         Q.PAT_X_ASSUM ‘!n. subprobability_measure t (X n)’ (MP_TAC o Q.SPEC ‘n’) \\
-         rw [subprobability_measure_thm] \\
-         qabbrev_tac ‘p = (topspace t,subsets (B t),X n)’ \\
-        ‘X n = measure p’ by rw [Abbr ‘p’] >> POP_ORW \\
-        ‘space b = m_space p’ by rw [Abbr ‘b’, Abbr ‘p’, space_general_borel] \\
-         POP_ORW \\
-         MATCH_MP_TAC MEASURE_SPACE_FINITE_DIFF >> rw [Abbr ‘p’] \\
-         simp [lt_infty] \\
-         Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw []) >> Rewr' \\
-  (* stage work *)
-     simp [extreal_sub, ext_liminf_alt_limsup, o_DEF] \\
-    ‘(!n. finite_measure t (X n)) /\ finite_measure t Y’
-        by FULL_SIMP_TAC std_ss [subprobability_measure_def] \\
-     FULL_SIMP_TAC std_ss [subprobability_measure_thm, finite_measure_thm] \\
-    ‘sp IN subsets b’ by METIS_TAC [SIGMA_ALGEBRA_SPACE] \\
-     Know ‘!n. -(X n sp + -X n s0) = -X n sp + -(-X n s0)’
-     >- (Q.X_GEN_TAC ‘n’ \\
-         MATCH_MP_TAC neg_add >> simp []) >> Rewr' \\
-     Know ‘--Y sp + -Y s0 = -(-Y sp + Y s0)’
-     >- (SYM_TAC >> MATCH_MP_TAC neg_add >> simp []) \\
-     simp [] >> DISCH_THEN K_TAC \\
-     simp [le_neg] \\
-     Q_TAC (TRANS_TAC le_trans) ‘limsup (\n. -X n sp) + limsup (\n. X n s0)’ \\
-     reverse CONJ_TAC
-     >- (MATCH_MP_TAC le_add2 >> simp [] \\
-         rw [ext_limsup_alt_liminf, o_DEF, le_neg]) \\
-  (* applying ext_limsup_add *)
-     HO_MATCH_MP_TAC ext_limsup_add \\
-     rw [ext_bounded_alt] >| (* 2 subgoals *)
-     [ (* goal 1 (of 2) *)
-       Q.EXISTS_TAC ‘1’ >> rw [normal_1] \\
-       REWRITE_TAC [abs_neg_eq] \\
-       simp [abs_bounds] \\
-       Q_TAC (TRANS_TAC le_trans) ‘-0’ >> rw [le_neg] \\
-       Q.PAT_X_ASSUM ‘!n. measure_space (topspace t,subsets (B t),X n) /\ _’
-         (MP_TAC o Q.SPEC ‘n’) \\
-       qmatch_abbrev_tac ‘measure_space M /\ _ ==> _’ >> STRIP_TAC \\
-      ‘X n = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
-       MATCH_MP_TAC MEASURE_POSITIVE >> rw [Abbr ‘M’],
-       (* goal 2 (of 2) *)
-       Q.EXISTS_TAC ‘1’ >> rw [normal_1] \\
-       simp [abs_bounds] \\
-       Q_TAC (TRANS_TAC le_trans) ‘-0’ >> rw [le_neg] \\
-       Q.PAT_X_ASSUM ‘!n. measure_space (topspace t,subsets (B t),X n) /\ _’
-         (MP_TAC o Q.SPEC ‘n’) \\
-       qmatch_abbrev_tac ‘measure_space M /\ _ ==> _’ >> STRIP_TAC \\
-      ‘X n = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
-       MATCH_MP_TAC MEASURE_POSITIVE >> rw [Abbr ‘M’] ])
- (* limsup (\n. X n (mspace E)) <= Y (mspace E) *)
- >> qabbrev_tac ‘c = ARB’
- >> MP_TAC (Q.SPECL [‘E’, ‘c’] exhausting_sequence_general_borel)
- >> impl_tac >- simp [mspace]
- >> simp [exhausting_sequence_def, IN_FUNSET]
- >> ‘space (B E) = mspace E’ by rw [space_general_borel, mspace]
- >> POP_ORW
- >> qabbrev_tac ‘f = \n. mcball E (c,&n)’ >> rw []
- >> ‘!n. closed_in (mtop E) (f n)’ by METIS_TAC [CLOSED_IN_MCBALL]
- (* applying MONOTONE_CONVERGENCE *)
- >> Know ‘Y (mspace E) = sup (IMAGE (Y o f) UNIV)’
- >- (Q.PAT_X_ASSUM ‘subprobability_measure (mtop E) Y’ MP_TAC \\
-     RW_TAC std_ss [subprobability_measure_thm, GSYM mspace] \\
-     qabbrev_tac ‘M = (mspace E,subsets (B E),Y)’ \\
-    ‘Y = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
-     SYM_TAC \\
-     MATCH_MP_TAC MONOTONE_CONVERGENCE >> rw [IN_FUNSET, Abbr ‘M’])
- >> Rewr'
- >> Know ‘!n. X n (mspace E) = sup (IMAGE (X n o f) UNIV)’
- >- (Q.X_GEN_TAC ‘n’ \\
-     Q.PAT_X_ASSUM ‘!n. subprobability_measure (mtop E) (X n)’ MP_TAC \\
-     RW_TAC std_ss [subprobability_measure_thm, GSYM mspace] \\
-     qabbrev_tac ‘M = (mspace E,subsets (B E),X n)’ \\
-    ‘X n = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
-     SYM_TAC \\
-     MATCH_MP_TAC MONOTONE_CONVERGENCE >> rw [IN_FUNSET, Abbr ‘M’])
- >> Rewr'
- >> qabbrev_tac ‘g = \n. X n o f’ >> simp []
- >> Suff ‘limsup (\n. sup (IMAGE (g n) UNIV)) =
-          sup (IMAGE (\m. limsup (\n. g n m)) UNIV)’
- >- (Rewr' \\
-     simp [Abbr ‘g’, o_DEF] \\
-     MATCH_MP_TAC sup_mono >> rw [])
- (* applying ext_limsup_sup *)
- >> MATCH_MP_TAC ext_limsup_sup
- (* mono_increasing *)
- >> rw [Abbr ‘g’, o_DEF]
- >> simp [ext_mono_increasing_suc]
- >> Q.X_GEN_TAC ‘i’
- >> Q.PAT_X_ASSUM ‘!n. subprobability_measure (mtop E) (X n)’
-      (MP_TAC o Q.SPEC ‘n’)
- >> RW_TAC std_ss [subprobability_measure_thm, GSYM mspace]
- >> qabbrev_tac ‘M = (mspace E,subsets (B E),X n)’
- >> Know ‘increasing M’ >- rw [MEASURE_SPACE_INCREASING]
- >> rw [increasing_def, Abbr ‘M’]
 QED
 
 Theorem Portemanteau_iv_eq_v[local] :

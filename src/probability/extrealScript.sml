@@ -7823,62 +7823,16 @@ Proof
  >> Q.EXISTS_TAC ‘m’ >> rw []
 QED
 
-Theorem inf_sup_comm :
-    !(f :num -> num -> extreal).
-       (!m. mono_increasing (f m)) /\ (!n. mono_decreasing (\m. f m n)) ==>
-       inf {sup {f i j | j | T} | i | T} = sup {inf {f i j | i | T} | j | T}
+(* NOTE: The equation doesn't hold (even “!n. mono_increasing (f n)” is assumed) *)
+Theorem ext_limsup_sup_lemma :
+    !f. sup (IMAGE (\m. limsup (\n. f n m)) univ(:num)) <=
+        limsup (\n. sup (IMAGE (f n) univ(:num)))
 Proof
-    cheat
-QED
-
-val POP_ASSUM_DISCH_TAC = POP_ASSUM K_TAC >> DISCH_TAC;
-
-(* cf. https://math.stackexchange.com/questions/3089365/interchanging-limsup-and-sup
-   (This link indicates that the involved double-sequence is bounded. Nothing else.)
-
-  NOTE: Let “g n = sup (IMAGE (f n) UNIV)“, the LHS “limsup g” is the maximal limit
-  of all convergent sub-sequences of g.
- *)
-Theorem ext_limsup_sup :
-    !f. (!n. mono_increasing (f n)) ==>
-        limsup (\n. sup (IMAGE (f n) UNIV)) =
-        sup (IMAGE (\m. limsup (\n. f n m)) UNIV)
-Proof
-    rw [Once ext_limsup_def]
- >> ‘!n. IMAGE (f n) UNIV = {f n i | i IN UNIV}’ by rw [Once EXTENSION]
- >> POP_ORW
- >> ‘!m. sup {sup {f n i | i IN UNIV} | m <= n} =
-         sup {sup {f i j | j IN UNIV} | i IN from m}’ by rw [from_def]
- >> POP_ORW
- >> ONCE_REWRITE_TAC [sup_comm_ext]
- >> simp [from_def]
- >> qabbrev_tac ‘g = \m n. sup {f i n | m <= i}’ >> simp []
- >> qmatch_abbrev_tac ‘inf (IMAGE h UNIV) = _’
- >> ‘IMAGE h UNIV = {h i | i | T}’ by rw [Once EXTENSION] >> POP_ORW
- >> rw [Abbr ‘h’]
- >> Know ‘!m. mono_increasing (g m)’
- >- (simp [ext_mono_increasing_def, Abbr ‘g’] \\
-     qx_genl_tac [‘m’, ‘j’, ‘n’] >> DISCH_TAC \\
-    ‘!l. {f i l | m <= i} = {f i l | i IN from m}’ by rw [from_def] \\
-     POP_ORW \\
-     HO_MATCH_MP_TAC sup_mono_ext >> rw [from_def] \\
-     Q.EXISTS_TAC ‘i’ >> art [] \\
-     fs [ext_mono_increasing_def])
- >> DISCH_TAC
- >> Know ‘!n. mono_decreasing (\m. g m n)’
- >- (simp [ext_mono_decreasing_def, Abbr ‘g’] \\
-     qx_genl_tac [‘n’, ‘m’, ‘j’] >> DISCH_TAC \\
-     MATCH_MP_TAC sup_mono_subset \\
-     rw [SUBSET_DEF] \\
-     Q.EXISTS_TAC ‘i’ >> rw [])
- >> DISCH_TAC
- >> rw [inf_sup_comm]
- >> ‘!i j. {g i j | i | T} = IMAGE (\i. g i j) UNIV’ by rw [Once EXTENSION]
- >> POP_ORW
- >> qabbrev_tac ‘h = \j. inf (IMAGE (\i. g i j) UNIV)’ >> simp []
- >> ‘{h j | j | T} = IMAGE h UNIV’ by rw [Once EXTENSION]
- >> POP_ORW
- >> rw [Abbr ‘h’, ext_limsup_def]
+    rw [sup_le']
+ >> MATCH_MP_TAC ext_limsup_mono
+ >> rw [le_sup']
+ >> POP_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘m’ >> rw []
 QED
 
 (* ------------------------------------------------------------------------- *)
