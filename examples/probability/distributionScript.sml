@@ -3556,7 +3556,22 @@ Proof
  >> Know ‘!n. finite_measure t (X n) /\ finite_measure t Y’
  >- fs [subprobability_measure_def]
  >> rw [FORALL_AND_THM, finite_measure_thm]
+ (* applying extreal_lim_sequentially_eq *)
+ >> qmatch_abbrev_tac ‘(f --> l) sequentially’
+ >> Know ‘(f --> l) sequentially <=> (real o f --> real l) sequentially’
+ >- (MATCH_MP_TAC extreal_lim_sequentially_eq >> rw [Abbr ‘l’] \\
+     Q.EXISTS_TAC ‘0’ >> rw [Abbr ‘f’])
+ >> Rewr'
  (* applying ext_limsup_thm *)
+ >> simp [Abbr ‘l’]
+ >> qabbrev_tac ‘l = real (Y A)’
+ >> Know ‘(real o f --> l) sequentially <=>
+          limsup f = Normal l /\ liminf f = Normal l’
+ >- (MATCH_MP_TAC ext_limsup_thm \\
+     rw [Abbr ‘f’])
+ >> Rewr'
+ >> simp [Abbr ‘f’, Abbr ‘l’, normal_real]
+ >> ‘liminf (\n. X n A) <= limsup (\n. X n A)’ by rw [ext_liminf_le_limsup]
  >> cheat
 QED
 
