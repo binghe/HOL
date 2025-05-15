@@ -3275,7 +3275,7 @@ End
 
 (* "trivial" *)
 Theorem Portemanteau_iii_imp_i :
-    !E X Y. Portemanteau_antecedents E X Y ==>
+    !E X Y. Portemanteau_antecedents E X Y /\
             Portemanteau_iii E X Y ==> Portemanteau_i E X Y
 Proof
     rw [Portemanteau_iii_def, Portemanteau_i_def, continuous_functions_def,
@@ -3546,7 +3546,7 @@ Definition Portemanteau_vi_def :
 End
 
 (* "trivial" *)
-Theorem Portemanteau_v_imp_vi[local] :
+Theorem Portemanteau_v_imp_vi :
     !E X Y. Portemanteau_antecedents E X Y /\
             Portemanteau_v E X Y ==> Portemanteau_vi E X Y
 Proof
@@ -3669,6 +3669,47 @@ Proof
  >> rw [positive_def]
  >> POP_ASSUM MATCH_MP_TAC >> rw [Abbr ‘M’]
 QED
+
+Theorem Portemanteau_ii_imp_iv :
+    !E X Y. Portemanteau_antecedents E X Y /\
+            Portemanteau_ii E X Y ==> Portemanteau_iv E X Y
+Proof
+    cheat
+QED
+
+Theorem Portemanteau_vi_imp_iii :
+    !E X Y. Portemanteau_antecedents E X Y /\
+            Portemanteau_vi E X Y ==> Portemanteau_iii E X Y
+Proof
+    cheat
+QED
+
+(* NOTE: (2) ==> (4) <=> (5) ==> (6) ==> (3) ==> (1) ==> (2) *)
+Theorem Portemanteau_i_eq_ii :
+    !E X Y. Portemanteau_antecedents E X Y ==>
+           (Portemanteau_i E X Y <=> Portemanteau_ii E X Y)
+Proof
+    rpt STRIP_TAC
+ >> EQ_TAC >> rw [Portemanteau_i_imp_ii]
+ >> MATCH_MP_TAC Portemanteau_iii_imp_i  >> art []
+ >> MATCH_MP_TAC Portemanteau_vi_imp_iii >> art []
+ >> MATCH_MP_TAC Portemanteau_v_imp_vi   >> art []
+ >> ASM_SIMP_TAC bool_ss [GSYM Portemanteau_iv_eq_v]
+ >> MATCH_MP_TAC Portemanteau_ii_imp_iv  >> art []
+QED
+
+(* |- !E X Y.
+        (!n. subprobability_measure (mtop E) (X n)) /\
+        subprobability_measure (mtop E) Y ==>
+        (weak_converge_in_topology (mtop E) X Y <=>
+         !f. f IN C_b (mtop E) /\ Lipschitz_continuous (E,mr1) f ==>
+             ((\n. integral (mspace E,subsets (B E),X n) (Normal o f)) -->
+              integral (mspace E,subsets (B E),Y) (Normal o f)) sequentially)
+ *)
+Theorem weak_converge_in_topology_alt_Lipschitz =
+        SRULE [Portemanteau_antecedents_def, GSYM mspace, BL_def,
+               Portemanteau_i_def, Portemanteau_ii_def,
+               weak_convergence_condition_def] Portemanteau_i_eq_ii
 
 (* ------------------------------------------------------------------------- *)
 (*  Below are unfinished (cheated) theorems (TODO)                           *)
