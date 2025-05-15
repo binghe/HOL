@@ -159,7 +159,8 @@ Definition bounded_metric_def :
     bounded_metric (m :'a metric) = metric (\(x,y). ^bmetric_tm)
 End
 
-Theorem bounded_metric_alt[local] :
+(* NOTE: This lemma is useful when showing the metric is monotone w.r.t. x or y *)
+Theorem bounded_metric_alt :
     !m x y. ^bmetric_tm = 1 - inv (1 + dist m (x,y))
 Proof
     rw [FUN_EQ_THM]

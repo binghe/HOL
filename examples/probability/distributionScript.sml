@@ -30,6 +30,8 @@ val T_TAC = rpt (Q.PAT_X_ASSUM ‘T’ K_TAC);
 
 val _ = hide "equiv_class";
 
+val set_ss = std_ss ++ PRED_SET_ss;
+
 (* ------------------------------------------------------------------------- *)
 (*  Properties of distribution_functions                                     *)
 (* ------------------------------------------------------------------------- *)
@@ -3189,34 +3191,64 @@ Proof
 QED
 
 (* f :'a -> real *)
-Definition continuous_functions_def : (* C *)
-     continuous_functions top = {f | continuous_map (top,euclidean) f}
+Definition bounded_continuous_map :
+    bounded_continuous_map top f <=>
+    continuous_map (top,euclidean) f /\ bounded (IMAGE f UNIV)
 End
-Overload C[local] = “continuous_functions”
-
-(* f :'a -> real *)
-Definition continuous_bounded_functions_def : (* C_b *)
-    continuous_bounded_functions top =
-      {f | f IN continuous_functions top /\ bounded (IMAGE f UNIV)}
-End
-Overload C_b[local] = “continuous_bounded_functions”
+Overload C_b[local] = “bounded_continuous_map”
 
 (* Lipschitz condition *)
 Definition Lipschitz_condition_def :
     Lipschitz_condition (E1,E2) k f <=>
-    !x y. x IN mspace E1 /\ y IN mspace E1 ==> dist E2 (f x,f y) <= k * dist E1 (x,y)
+    !x y. x IN mspace E1 /\ y IN mspace E1 ==>
+          dist E2 (f x,f y) <= k * dist E1 (x,y)
 End
 
-(* Definition 13.8 [8, p.249] *)
-Definition Lipschitz_continuous_def :
-    Lipschitz_continuous (E1,E2) f <=>
+(* Definition 13.8 [8, p.249], cf. topologyTheory.continuous_map *)
+Definition Lipschitz_continuous_map_def :
+    Lipschitz_continuous_map (E1,E2) f <=>
     f IN (mspace E1 -> mspace E2) /\ ?k. Lipschitz_condition (E1,E2) k f
 End
 
+(* Lemma 13.10 [8, p.249] *)
+Theorem Lipschitz_continuous_map_exists :
+    !E A e. closed_in (mtop E) A /\ 0 < e ==>
+            ?f. f IN (UNIV -> interval[0,1]) /\
+                Lipschitz_continuous_map (E,mr1) f /\
+               (!x. x IN A ==> f x = 1) /\
+                !x. e < set_dist E ({x},A) ==> f x = 0
+
+Proof
+    rw [Lipschitz_continuous_map_def, IN_FUNSET, IN_INTERVAL]
+ >> qabbrev_tac ‘g :real -> real = \x. min 0 (max 1 x)’
+ >> ‘!x. 0 <= g x /\ g x <= 1’
+       by rw [Abbr ‘g’, REAL_LE_MAX, REAL_LE_MIN, REAL_MIN_LE, REAL_MAX_LE]
+ >> qabbrev_tac ‘f = \x. 1 - g (set_dist E ({x},A) / e)’
+ >> Q.EXISTS_TAC ‘f’ >> simp [mspace]
+ >> CONJ_TAC
+ >- (Q.X_GEN_TAC ‘x’ \\
+     simp [Abbr ‘f’, REAL_SUB_LE] \\
+     qmatch_abbrev_tac ‘1 - g y <= 1’ \\
+     Q.PAT_X_ASSUM ‘!x. 0 <= g x /\ g x <= 1’ (MP_TAC o Q.SPEC ‘y’) \\
+     REAL_ARITH_TAC)
+ >> CONJ_TAC
+ >- (simp [Lipschitz_condition_def, GSYM dist_def, dist, mspace] \\
+     Q.EXISTS_TAC ‘e’ >> rw [Abbr ‘f’] \\
+     qabbrev_tac ‘a = g (set_dist E ({x},A) / e)’ \\
+     qabbrev_tac ‘b = g (set_dist E ({y},A) / e)’ \\
+     simp [REAL_ARITH “1 - a - (1 - b) = b - (a :real)”] \\
+  (* applying MDIST_TRIANGLE_SUB *)
+     cheat)
+ >> CONJ_TAC
+ >- cheat
+ (* stage work *)
+ >> cheat
+QED
+
 (* f :'a -> real *)
 Definition BL_def :
-    BL E = {f | f IN continuous_bounded_functions (mtop E) /\
-                Lipschitz_continuous (E,mr1) f}
+    BL E = {f | f IN bounded_continuous_map (mtop E) /\
+                Lipschitz_continuous_map (E,mr1) f}
 End
 
 Definition weak_convergence_condition_def :
@@ -3228,7 +3260,7 @@ End
 (* Definition 13.12 [8, p.252] *)
 Definition weak_converge_in_topology_def :
     weak_converge_in_topology (top :'a topology) X Y <=>
-      !f. f IN continuous_bounded_functions top ==>
+      !f. f IN bounded_continuous_map top ==>
           weak_convergence_condition top X Y f
 End
 
@@ -3257,7 +3289,7 @@ Theorem Portemanteau_i_imp_ii :
     !E X Y. Portemanteau_i E X Y ==> Portemanteau_ii E X Y
 Proof
     rw [Portemanteau_i_def, weak_converge_in_topology_def,
-        Portemanteau_ii_def, BL_def]
+        Portemanteau_ii_def, BL_def, IN_APP]
 QED
 
 (* f :'a -> real *)
@@ -3278,9 +3310,8 @@ Theorem Portemanteau_iii_imp_i :
     !E X Y. Portemanteau_antecedents E X Y /\
             Portemanteau_iii E X Y ==> Portemanteau_i E X Y
 Proof
-    rw [Portemanteau_iii_def, Portemanteau_i_def, continuous_functions_def,
-        weak_converge_in_topology_def, continuous_bounded_functions_def,
-        Portemanteau_antecedents_def]
+    rw [Portemanteau_iii_def, Portemanteau_i_def,
+        weak_converge_in_topology_def, Portemanteau_antecedents_def]
  >> FIRST_X_ASSUM MATCH_MP_TAC
  >> reverse CONJ_TAC
  >- (Q.PAT_X_ASSUM ‘subprobability_measure (mtop E) Y’ MP_TAC \\
@@ -3291,7 +3322,8 @@ Proof
         ‘Y = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
          MATCH_MP_TAC MEASURE_EMPTY >> art []) \\
      rw [points_of_discontinuity_def, Once EXTENSION] \\
-     fs [CONTINUOUS_MAP_EQ_TOPCONTINUOUS_AT])
+     fs [CONTINUOUS_MAP_EQ_TOPCONTINUOUS_AT,
+         bounded_continuous_map, IN_APP])
  (* show that continuous function is borel measurable *)
  >> MATCH_MP_TAC in_borel_measurable_open_imp
  >> RW_TAC std_ss [sigma_algebra_general_borel, PREIMAGE_def,
@@ -3305,7 +3337,8 @@ Proof
  >> MATCH_MP_TAC IN_SIGMA
  >> REWRITE_TAC [Once IN_APP]
  >> MATCH_MP_TAC OPEN_IN_CONTINUOUS_MAP_PREIMAGE_GEN
- >> Q.EXISTS_TAC ‘euclidean’ >> art []
+ >> Q.EXISTS_TAC ‘euclidean’
+ >> fs [bounded_continuous_map, IN_APP]
 QED
 
 Definition Portemanteau_iv_def :
@@ -3674,7 +3707,12 @@ Theorem Portemanteau_ii_imp_iv :
     !E X Y. Portemanteau_antecedents E X Y /\
             Portemanteau_ii E X Y ==> Portemanteau_iv E X Y
 Proof
-    cheat
+    rpt GEN_TAC
+ >> SIMP_TAC set_ss [Portemanteau_antecedents_def, GSYM mspace,
+                     Portemanteau_ii_def, Portemanteau_iv_def,
+                     weak_convergence_condition_def, BL_def]
+ >> STRIP_TAC
+ >> cheat
 QED
 
 Theorem Portemanteau_vi_imp_iii :
@@ -3702,7 +3740,7 @@ QED
         (!n. subprobability_measure (mtop E) (X n)) /\
         subprobability_measure (mtop E) Y ==>
         (weak_converge_in_topology (mtop E) X Y <=>
-         !f. f IN C_b (mtop E) /\ Lipschitz_continuous (E,mr1) f ==>
+         !f. f IN C_b (mtop E) /\ Lipschitz_continuous_map (E,mr1) f ==>
              ((\n. integral (mspace E,subsets (B E),X n) (Normal o f)) -->
               integral (mspace E,subsets (B E),Y) (Normal o f)) sequentially)
  *)
