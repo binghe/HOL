@@ -3545,11 +3545,12 @@ Definition Portemanteau_vi_def :
          ((\n. X n A) --> Y A) sequentially
 End
 
+(* "trivial" *)
 Theorem Portemanteau_v_imp_vi[local] :
     !E X Y. Portemanteau_antecedents E X Y /\
             Portemanteau_v E X Y ==> Portemanteau_vi E X Y
 Proof
-    rw [Portemanteau_vi_def]
+    RW_TAC std_ss [Portemanteau_vi_def]
  >> ‘Portemanteau_iv E X Y’ by PROVE_TAC [Portemanteau_iv_eq_v]
  >> fs [Portemanteau_antecedents_def, Portemanteau_iv_def, Portemanteau_v_def]
  >> qabbrev_tac ‘t = mtop E’
@@ -3571,8 +3572,102 @@ Proof
      rw [Abbr ‘f’])
  >> Rewr'
  >> simp [Abbr ‘f’, Abbr ‘l’, normal_real]
- >> ‘liminf (\n. X n A) <= limsup (\n. X n A)’ by rw [ext_liminf_le_limsup]
- >> cheat
+ (* stage work *)
+ >> ‘sigma_algebra (B t)’ by rw [sigma_algebra_general_borel]
+ >> Know ‘A SUBSET topspace t’
+ >- (REWRITE_TAC [GSYM space_general_borel] \\
+     MATCH_MP_TAC SIGMA_ALGEBRA_SUBSET_SPACE >> art [])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘b = t frontier_of A’
+ >> ‘closed_in t b’ by rw [CLOSED_IN_FRONTIER_OF, Abbr ‘b’]
+ >> Know ‘b IN subsets (B t)’
+ >- (qunabbrev_tac ‘b’ \\
+     MATCH_MP_TAC closed_in_general_borel >> art [])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘A1 = A UNION b’
+ >> ‘A1 IN subsets (B t)’ by rw [SIGMA_ALGEBRA_UNION, Abbr ‘A1’]
+ >> Know ‘A1 = t closure_of A’
+ >- (simp [Abbr ‘A1’, Abbr ‘b’, frontier_of] \\
+     qabbrev_tac ‘c = t closure_of A’ \\
+    ‘A SUBSET c’ by PROVE_TAC [CLOSURE_OF_SUBSET] \\
+     qabbrev_tac ‘s = t interior_of A’ \\
+    ‘s SUBSET A’ by PROVE_TAC [INTERIOR_OF_SUBSET] \\
+     ASM_SET_TAC [])
+ >> DISCH_TAC
+ >> ‘closed_in t A1’ by PROVE_TAC [CLOSED_IN_CLOSURE_OF]
+ >> Q.PAT_X_ASSUM ‘_ = t closure_of A’ K_TAC
+ >> qabbrev_tac ‘A0 = A DIFF b’
+ >> ‘A0 IN subsets (B t)’ by rw [SIGMA_ALGEBRA_DIFF, Abbr ‘A0’]
+ >> Know ‘A0 = t interior_of A’
+ >- (simp [Abbr ‘A0’, Abbr ‘b’, frontier_of] \\
+     qabbrev_tac ‘c = t closure_of A’ \\
+    ‘A SUBSET c’ by PROVE_TAC [CLOSURE_OF_SUBSET] \\
+     qabbrev_tac ‘s = t interior_of A’ \\
+    ‘s SUBSET A’ by PROVE_TAC [INTERIOR_OF_SUBSET] \\
+     ASM_SET_TAC [])
+ >> DISCH_TAC
+ >> ‘open_in t A0’ by PROVE_TAC [OPEN_IN_INTERIOR_OF]
+ >> Q.PAT_X_ASSUM ‘_ = t interior_of A’ K_TAC
+ >> Suff ‘limsup (\n. X n A) <= Y A /\ Y A <= liminf (\n. X n A)’
+ >- (STRIP_TAC \\
+    ‘liminf (\n. X n A) <= limsup (\n. X n A)’ by rw [ext_liminf_le_limsup] \\
+     rw [GSYM le_antisym] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       Q_TAC (TRANS_TAC le_trans) ‘liminf (\n. X n A)’ >> art [],
+       (* goal 2 (of 2) *)
+       Q_TAC (TRANS_TAC le_trans) ‘limsup (\n. X n A)’ >> art [] ])
+ >> CONJ_TAC
+ >- ((* limsup (\n. X n A) <= Y A *)
+     Q_TAC (TRANS_TAC le_trans) ‘limsup (\n. X n A1)’ \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC ext_limsup_mono >> rw [Abbr ‘A1’] \\
+         Q.PAT_X_ASSUM ‘!n. measure_space (topspace t,subsets (B t),X n)’
+           (MP_TAC o Q.SPEC ‘n’) \\
+         qmatch_abbrev_tac ‘measure_space M ==> _’ >> DISCH_TAC \\
+        ‘X n = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
+         Know ‘increasing M’ >- rw [MEASURE_SPACE_INCREASING] \\
+         rw [increasing_def] \\
+         POP_ASSUM MATCH_MP_TAC >> rw [Abbr ‘M’]) \\
+     Q_TAC (TRANS_TAC le_trans) ‘Y A1’ >> rw [] \\
+    ‘Y A = Y A + Y b’ by rw [] >> POP_ORW \\
+     qabbrev_tac ‘M = (topspace t,subsets (B t),Y)’ \\
+    ‘Y = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
+     qunabbrev_tac ‘A1’ \\
+     Know ‘subadditive M’ >- rw [MEASURE_SPACE_SUBADDITIVE] \\
+     rw [subadditive_def] \\
+     POP_ASSUM MATCH_MP_TAC >> rw [Abbr ‘M’])
+ (* Y A <= liminf (\n. X n A) *)
+ >> Q_TAC (TRANS_TAC le_trans) ‘liminf (\n. X n A0)’
+ >> reverse CONJ_TAC
+ >- (MATCH_MP_TAC ext_liminf_mono >> rw [Abbr ‘A0’] \\
+     Q.PAT_X_ASSUM ‘!n. measure_space (topspace t,subsets (B t),X n)’
+       (MP_TAC o Q.SPEC ‘n’) \\
+     qmatch_abbrev_tac ‘measure_space M ==> _’ >> DISCH_TAC \\
+    ‘X n = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
+     Know ‘increasing M’ >- rw [MEASURE_SPACE_INCREASING] \\
+     rw [increasing_def] \\
+     POP_ASSUM MATCH_MP_TAC >> rw [Abbr ‘M’])
+ >> Q_TAC (TRANS_TAC le_trans) ‘Y A0’ >> rw []
+ >> qabbrev_tac ‘A2 = A INTER b’
+ >> ‘A2 IN subsets (B t)’ by rw [SIGMA_ALGEBRA_INTER, Abbr ‘A2’]
+ >> ‘A = A0 UNION A2’ by ASM_SET_TAC [] >> POP_ORW
+ >> qabbrev_tac ‘M = (topspace t,subsets (B t),Y)’
+ >> ‘Y = measure M’ by rw [Abbr ‘M’] >> POP_ORW
+ >> Know ‘measure M (A0 UNION A2) = measure M A0 + measure M A2’
+ >- (Know ‘additive M’ >- rw [MEASURE_SPACE_ADDITIVE] \\
+     rw [additive_def] \\
+     POP_ASSUM MATCH_MP_TAC >> rw [Abbr ‘M’, SIGMA_ALGEBRA_UNION] \\
+     ASM_SET_TAC [])
+ >> Rewr'
+ >> Suff ‘measure M A2 = 0’ >- rw []
+ >> rw [GSYM le_antisym]
+ >- (‘0 = measure M b’ by rw [Abbr ‘M’] >> POP_ORW \\
+     Know ‘increasing M’ >- rw [MEASURE_SPACE_INCREASING] \\
+     rw [increasing_def] \\
+     POP_ASSUM MATCH_MP_TAC >> rw [Abbr ‘M’, Abbr ‘A2’])
+ >> Know ‘positive M’ >- rw [MEASURE_SPACE_POSITIVE]
+ >> rw [positive_def]
+ >> POP_ASSUM MATCH_MP_TAC >> rw [Abbr ‘M’]
 QED
 
 (* ------------------------------------------------------------------------- *)
