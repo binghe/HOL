@@ -3532,7 +3532,7 @@ Proof
       MATCH_MP_TAC MEASURE_POSITIVE >> rw [Abbr ‘M’] ]
 QED
 
-Theorem Portemanteau_iv_eq_v[local] :
+Theorem Portemanteau_iv_eq_v :
     !E X Y. Portemanteau_antecedents E X Y ==>
            (Portemanteau_iv E X Y <=> Portemanteau_v E X Y)
 Proof
@@ -3544,6 +3544,21 @@ Definition Portemanteau_vi_def :
       !A. A IN subsets (B (mtop E)) /\ Y ((mtop E) frontier_of A) = 0 ==>
          ((\n. X n A) --> Y A) sequentially
 End
+
+Theorem Portemanteau_v_imp_vi[local] :
+    !E X Y. Portemanteau_antecedents E X Y /\
+            Portemanteau_v E X Y ==> Portemanteau_vi E X Y
+Proof
+    rw [Portemanteau_vi_def]
+ >> ‘Portemanteau_iv E X Y’ by PROVE_TAC [Portemanteau_iv_eq_v]
+ >> fs [Portemanteau_antecedents_def, Portemanteau_iv_def, Portemanteau_v_def]
+ >> qabbrev_tac ‘t = mtop E’
+ >> Know ‘!n. finite_measure t (X n) /\ finite_measure t Y’
+ >- fs [subprobability_measure_def]
+ >> rw [FORALL_AND_THM, finite_measure_thm]
+ (* applying ext_limsup_thm *)
+ >> cheat
+QED
 
 (* ------------------------------------------------------------------------- *)
 (*  Below are unfinished (cheated) theorems (TODO)                           *)
