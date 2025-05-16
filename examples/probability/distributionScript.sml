@@ -3205,7 +3205,7 @@ Definition Lipschitz_condition_def :
 End
 
 (* Definition 13.8 [8, p.249], cf. topologyTheory.continuous_map *)
-Definition Lipschitz_continuous_map_def :
+Definition Lipschitz_continuous_map :
     Lipschitz_continuous_map (E1,E2) f <=>
     f IN (mspace E1 -> mspace E2) /\ ?k. Lipschitz_condition (E1,E2) k f
 End
@@ -3217,12 +3217,20 @@ Theorem Lipschitz_continuous_map_exists :
                 Lipschitz_continuous_map (E,mr1) f /\
                (!x. x IN A ==> f x = 1) /\
                 !x. e < set_dist E ({x},A) ==> f x = 0
-
 Proof
-    rw [Lipschitz_continuous_map_def, IN_FUNSET, IN_INTERVAL]
- >> qabbrev_tac ‘g :real -> real = \x. min 0 (max 1 x)’
+    rw [Lipschitz_continuous_map, IN_FUNSET, IN_INTERVAL]
+ >> qabbrev_tac ‘g :real -> real = \x. max 0 (min 1 x)’
  >> ‘!x. 0 <= g x /\ g x <= 1’
        by rw [Abbr ‘g’, REAL_LE_MAX, REAL_LE_MIN, REAL_MIN_LE, REAL_MAX_LE]
+ >> Know ‘!x. 0 <= x /\ x <= 1 ==> g x = x’
+ >- (RW_TAC real_ss [Abbr ‘g’, max_def, min_def] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       rw [GSYM REAL_LE_ANTISYM],
+       (* goal 2 (of 2) *)
+       fs [GSYM real_lt] \\
+       Cases_on ‘1 <= x’ >> fs [] \\
+       rw [GSYM REAL_LE_ANTISYM, REAL_LT_IMP_LE] ])
+ >> DISCH_TAC
  >> qabbrev_tac ‘f = \x. 1 - g (set_dist E ({x},A) / e)’
  >> Q.EXISTS_TAC ‘f’ >> simp [mspace]
  >> CONJ_TAC

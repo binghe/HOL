@@ -1894,10 +1894,13 @@ val DIM_SUBSET_UNIV = store_thm ("DIM_SUBSET_UNIV",
 (* Open and closed sets                                                      *)
 (* ------------------------------------------------------------------------- *)
 
-(* new definition *)
 Definition euclidean_def :
     euclidean = mtop mr1
 End
+Overload euclideanreal[inferior] = “euclidean” (* HOL-Light compatible *)
+
+(* |- mtop mr1 = euclidean *)
+Theorem MTOPOLOGY_REAL_EUCLIDEAN_METRIC = SYM euclidean_def
 
 (* new definition *)
 Definition euclidean_open_def :
@@ -8234,23 +8237,6 @@ Definition uniformly_continuous_on :
      ==> dist(f(x'),f(x)) < e
 End
 
-(*
-Theorem CONTINUOUS_MAP_EUCLIDEAN :
-   !f:real->real s.
-     continuous_map (subtopology euclidean s,euclidean) f <=>
-     f continuous_on s
-Proof
-  REWRITE_TAC[GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC;
-              GSYM  MTOPOLOGY_EUCLIDEAN_METRIC;
-              GSYM MTOPOLOGY_SUBMETRIC] THEN
-  REWRITE_TAC[METRIC_CONTINUOUS_MAP; continuous_on] THEN
-  REWRITE_TAC[SUBMETRIC; EUCLIDEAN_METRIC; IN_UNIV; IN_INTER] THEN
-  REPEAT GEN_TAC THEN
-  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [DIST_SYM] THEN
-  MESON_TAC[]
-QED
- *)
-
 (* ------------------------------------------------------------------------- *)
 (* Some simple consequential lemmas.                                         *)
 (* ------------------------------------------------------------------------- *)
@@ -8899,6 +8885,26 @@ val CONTINUOUS_ON_IMP_OPEN_IN = store_thm ("CONTINUOUS_ON_IMP_OPEN_IN",
    open_in (subtopology euclidean (IMAGE f s)) t
    ==> open_in (subtopology euclidean s) {x | x IN s /\ f x IN t}``,
  METIS_TAC[CONTINUOUS_ON_OPEN]);
+
+(* NOTE: It's a bit strange that “open_in euclidean (IMAGE f s)” is required,
+   by [OPEN_IN_SUBTOPOLOGY]. cf. HOL-Light's CONTINUOUS_MAP_EUCLIDEAN.
+ *)
+Theorem continuous_on_alt_continuous_map :
+   !(f :real -> real) s. open_in euclidean (IMAGE f s) ==>
+     (f continuous_on s <=>
+      continuous_map (subtopology euclidean s,euclidean) f)
+Proof
+    rpt STRIP_TAC
+ >> reverse EQ_TAC
+ >- (rw [CONTINUOUS_MAP, CONTINUOUS_ON_OPEN, TOPSPACE_EUCLIDEAN] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     fs [OPEN_IN_SUBTOPOLOGY] \\
+     MATCH_MP_TAC OPEN_IN_INTER >> art [])
+ (* stage work *)
+ >> rw [CONTINUOUS_MAP, TOPSPACE_EUCLIDEAN]
+ >> MATCH_MP_TAC CONTINUOUS_OPEN_IN_PREIMAGE_GEN
+ >> Q.EXISTS_TAC ‘UNIV’ >> rw []
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Similarly in terms of closed sets. *)

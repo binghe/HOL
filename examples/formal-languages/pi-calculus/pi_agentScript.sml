@@ -1336,12 +1336,30 @@ Theorem parameter_tm_recursion = th
                  ‘dpm’ |-> ‘apm’]
       |> CONV_RULE (REDEPTH_CONV sort_uvars)
 
-Overload O0[local] = “OUTL”
-Overload O1[local] = “\z. OUTL (OUTR z)”
-Overload O2[local] = “\z. OUTR (OUTR z)”
 Overload I0[local] = “INL”
 Overload I1[local] = “\p. INR (INL p)”
 Overload I2[local] = “\r. INR (INR r)”
+
+Overload O0[local] = “OUTL”
+Overload O1[local] = “\z. OUTL (OUTR z)”
+Overload O2[local] = “\z. OUTR (OUTR z)”
+
+(*
+Definition O0_def :
+    O0 a ((I0 x) :name + pi + residual) = x /\
+    O0 a _ = a
+End
+
+Definition O1_def :
+    O1 a ((I1 x) :name + pi + residual) = x /\
+    O1 a _ = a
+End
+
+Definition O2_def :
+    O2 a ((I2 x) :name + pi + residual) = x /\
+    O2 a _ = a
+End
+ *)
 
 (* fn0 :name -> 'q -> 'r0 *)
 Theorem parameter_tm_recursion_general =

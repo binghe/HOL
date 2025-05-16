@@ -1302,7 +1302,7 @@ QED
 (* ------------------------------------------------------------------------- *)
 
 Theorem METRIC_CONTINUOUS_MAP :
-   !m m' f:'a->'b.
+   !m m' (f :'a -> 'b).
      continuous_map (mtopology m,mtopology m') f <=>
      (!x. x IN mspace m ==> f x IN mspace m') /\
      (!a e. &0 < e /\ a IN mspace m
@@ -1324,9 +1324,8 @@ Proof
    ASM_MESON_TAC[] ]
 QED
 
-(*
 Theorem CONTINUOUS_MAP_TO_METRIC :
-   !t m (f:'a->'b).
+   !t m (f :'a -> 'b).
      continuous_map (t,mtopology m) f <=>
      (!x. x IN topspace t
           ==> (!r. &0 < r
@@ -1335,39 +1334,52 @@ Theorem CONTINUOUS_MAP_TO_METRIC :
                             (!y. y IN u ==> f y IN mball m (f x,r)))))
 Proof
     rpt GEN_TAC
- >> REWRITE_TAC[CONTINUOUS_MAP_EQ_TOPCONTINUOUS_AT, topcontinuous_at;
-                TOPSPACE_MTOPOLOGY] THEN
-  EQ_TAC THENL
-  [INTRO_TAC "A; !x; x" THEN REMOVE_THEN "A" (MP_TAC o SPEC `x:A`) THEN
-   ASM_SIMP_TAC[OPEN_IN_MBALL; CENTRE_IN_MBALL];
-   INTRO_TAC "A; !x; x" THEN ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
-   [ASM_MESON_TAC[REAL_LT_01; IN_MBALL];
-    ASM_MESON_TAC[OPEN_IN_MTOPOLOGY; SUBSET]]]);;
+ >> REWRITE_TAC[CONTINUOUS_MAP_EQ_TOPCONTINUOUS_AT, topcontinuous_at,
+                TOPSPACE_MTOPOLOGY]
+ >> EQ_TAC
+ >- (rw [] \\
+     Q.PAT_X_ASSUM ‘!x. P’ (MP_TAC o Q.SPEC ‘x’) >> rw [] \\
+     POP_ASSUM MATCH_MP_TAC \\
+     ASM_SIMP_TAC std_ss[OPEN_IN_MBALL, CENTRE_IN_MBALL])
+ >> rw [] >- rw [mspace] (* A shortcut *)
+ >> Q.PAT_X_ASSUM ‘!x. P’ (MP_TAC o Q.SPEC ‘x’) >> rw []
+ >> fs [OPEN_IN_MTOPOLOGY]
+ >> Q.PAT_X_ASSUM ‘!x. x IN v ==> _’ (MP_TAC o Q.SPEC ‘f x’) >> rw []
+ >> Q.PAT_X_ASSUM ‘!r. 0 < r ==> _’ (MP_TAC o Q.SPEC ‘r’)
+ >> rw [IN_MBALL]
+ >> Q.EXISTS_TAC ‘u’ >> rw []
+ >> Suff ‘f y IN mball m (f x,r)’ >- METIS_TAC [SUBSET_DEF]
+ >> Q.PAT_X_ASSUM ‘!y. y IN u ==> _’ (MP_TAC o Q.SPEC ‘y’)
+ >> rw [IN_MBALL]
+QED
 
-let CONTINUOUS_MAP_FROM_METRIC = prove
- (`!m top f:A->B.
+Theorem CONTINUOUS_MAP_FROM_METRIC :
+   !m top (f :'a -> 'b).
         continuous_map (mtopology m,top) f <=>
         IMAGE f (mspace m) SUBSET topspace top /\
         !a. a IN mspace m
             ==> !u. open_in top u /\ f(a) IN u
                     ==> ?d. &0 < d /\
                             !x. x IN mspace m /\ mdist m (a,x) < d
-                                ==> f x IN u`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[CONTINUOUS_MAP; TOPSPACE_MTOPOLOGY] THEN
-  ASM_CASES_TAC `IMAGE (f:A->B) (mspace m) SUBSET topspace top` THEN
+                                ==> f x IN u
+Proof
+  REPEAT GEN_TAC THEN REWRITE_TAC[CONTINUOUS_MAP, TOPSPACE_MTOPOLOGY] THEN
+  ASM_CASES_TAC “IMAGE (f :'a -> 'b) (mspace m) SUBSET topspace top” THEN
   ASM_REWRITE_TAC[OPEN_IN_MTOPOLOGY] THEN EQ_TAC THEN DISCH_TAC THENL
-   [X_GEN_TAC `a:A` THEN DISCH_TAC THEN
-    X_GEN_TAC `u:B->bool` THEN STRIP_TAC THEN
-    FIRST_X_ASSUM(MP_TAC o SPEC `u:B->bool`) THEN
-    ASM_REWRITE_TAC[] THEN DISCH_THEN(MP_TAC o SPEC `a:A` o CONJUNCT2) THEN
-    ASM_REWRITE_TAC[IN_ELIM_THM; SUBSET; IN_MBALL] THEN MESON_TAC[];
-    X_GEN_TAC `u:B->bool` THEN DISCH_TAC THEN
-    REWRITE_TAC[SUBSET_RESTRICT; IN_ELIM_THM] THEN
-    X_GEN_TAC `a:A` THEN STRIP_TAC THEN
-    FIRST_X_ASSUM(MP_TAC o SPEC `a:A`) THEN ASM_REWRITE_TAC[] THEN
-    DISCH_THEN(MP_TAC o SPEC `u:B->bool`) THEN ASM_REWRITE_TAC[] THEN
-    REWRITE_TAC[SUBSET; IN_MBALL; IN_ELIM_THM] THEN MESON_TAC[]]);;
- *)
+  [ (* goal 1 (of 2) *)
+    X_GEN_TAC “a :'a” THEN DISCH_TAC THEN
+    X_GEN_TAC “u :'b set” THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC “u :'b set”) THEN
+    ASM_REWRITE_TAC[] THEN DISCH_THEN(MP_TAC o SPEC “a :'a” o CONJUNCT2) THEN
+    simp [SUBSET_DEF, IN_MBALL],
+    (* goal 2 (of 2) *)
+    X_GEN_TAC “u :'b set” THEN DISCH_TAC THEN
+    simp [SUBSET_RESTRICT] THEN
+    X_GEN_TAC “a :'a” THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC “a :'a”) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(MP_TAC o SPEC “u :'b set”) THEN ASM_REWRITE_TAC[] THEN
+    simp [SUBSET_DEF, IN_MBALL] ]
+QED
 
 (*---------------------------------------------------------------------------*)
 (* closed ball in metric space + prove basic properties                      *)
