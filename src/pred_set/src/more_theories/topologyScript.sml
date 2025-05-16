@@ -42,6 +42,8 @@ val DISC_RW_KILL = DISCH_TAC THEN ONCE_ASM_REWRITE_TAC [] THEN
 (* Begin of minimal hol-light compatibility layer *)
 Theorem IMP_CONJ      = cardinalTheory.CONJ_EQ_IMP
 Theorem IMP_IMP       = boolTheory.AND_IMP_INTRO
+Theorem EQ_IMP        = boolTheory.EQ_IMPLIES
+
 Theorem FINITE_SUBSET = pred_setTheory.SUBSET_FINITE_I
 
 Theorem FINITE_INDUCT_STRONG :
@@ -2287,9 +2289,6 @@ Proof
   DISCH_THEN(MP_TAC o MATCH_MP CONTINUOUS_MAP_IMAGE_SUBSET_TOPSPACE) THEN
   ASM_SET_TAC[]
 QED
-
-(* |- !t1 t2. (t1 <=> t2) ==> t1 ==> t2 *)
-val EQ_IMP = EQ_IMPLIES;
 
 Theorem CONTINUOUS_MAP_CLOSED_IN :
     !top top' f:'a->'b.
