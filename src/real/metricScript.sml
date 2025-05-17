@@ -1729,5 +1729,13 @@ Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC SET_DIST_SUBSET_LEFT THEN ASM_SET_TAC[]
 QED
 
+Theorem SET_DIST_SING_IN_SET :
+   !x s. x IN s ==> (set_dist m({x},s) = &0)
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC SET_DIST_ZERO
+ >> rw [DISJOINT_ALT]
+QED
+
 val _ = remove_ovl_mapping "B" {Name = "B", Thy = "metric"};
 val _ = export_theory();

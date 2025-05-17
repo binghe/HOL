@@ -3154,6 +3154,7 @@ Proof
        Cases_on ‘1 <= x’ >> fs [] \\
        rw [GSYM REAL_LE_ANTISYM, REAL_LT_IMP_LE] ])
  >> DISCH_TAC
+ >> ‘!x. 1 <= x ==> g x = 1’ by rw [Abbr ‘g’, min_def]
  >> qabbrev_tac ‘f = \x. 1 - g (set_dist E ({x},A) / e)’
  >> Q.EXISTS_TAC ‘f’ >> simp [mspace]
  >> CONJ_TAC (* !x. 0 <= f x /\ f x <= 1 *)
@@ -3162,13 +3163,15 @@ Proof
      qmatch_abbrev_tac ‘1 - g y <= 1’ \\
      Q.PAT_X_ASSUM ‘!x. 0 <= g x /\ g x <= 1’ (MP_TAC o Q.SPEC ‘y’) \\
      REAL_ARITH_TAC)
+ (* easy subgoals first *)
  >> simp [CONJ_ASSOC]
  >> reverse CONJ_TAC (* !x. x IN A ==> f x = 1 *)
- >- (
-     cheat)
+ >- rw [Abbr ‘f’, SET_DIST_SING_IN_SET]
  >> reverse CONJ_TAC (* !x. e < set_dist E ({x},A) ==> f x = 0 *)
- >- (
-     cheat)
+ >- (rw [Abbr ‘f’] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     qmatch_abbrev_tac ‘1 <= z / e’ \\
+     MATCH_MP_TAC REAL_LE_RDIV >> rw [REAL_LT_IMP_LE])
  (* ?k. Lipschitz_condition (E,mr1) k f *)
  >> simp [Lipschitz_condition_def, GSYM dist_def, dist, mspace]
  >> Q.EXISTS_TAC ‘e’ >> rw [Abbr ‘f’]
@@ -3179,10 +3182,9 @@ Proof
  >> cheat
 QED
 
-(* f :'a -> real *)
 Definition BL_def :
-    BL E = {f | f IN bounded_continuous (mtop E) /\
-                Lipschitz_continuous_map (E,mr1) f}
+    BL E = {f :'a -> real | f IN bounded_continuous (mtop E) /\
+                            Lipschitz_continuous_map (E,mr1) f}
 End
 
 Definition weak_convergence_condition_def :

@@ -18967,9 +18967,7 @@ val SETDIST_EQ_0_CLOSED_IN = store_thm ("SETDIST_EQ_0_CLOSED_IN",
            ==> ((setdist({x},s) = &0) <=> (s = {}) \/ x IN s)``,
   REWRITE_TAC[SETDIST_EQ_0_SING, CLOSED_IN_INTER_CLOSURE] THEN SET_TAC[]);
 
-val SETDIST_SING_IN_SET = store_thm ("SETDIST_SING_IN_SET",
- ``!x s. x IN s ==> (setdist({x},s) = &0)``,
-  SIMP_TAC std_ss [SETDIST_EQ_0_SING, REWRITE_RULE[SUBSET_DEF] CLOSURE_SUBSET]);
+Theorem SETDIST_SING_IN_SET = mr1_xfer SET_DIST_SING_IN_SET
 
 val SETDIST_SING_FRONTIER_CASES = store_thm ("SETDIST_SING_FRONTIER_CASES",
  ``!s x:real.
