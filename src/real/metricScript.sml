@@ -11,7 +11,8 @@
 open HolKernel Parse bossLib boolLib;
 
 open arithmeticTheory numTheory boolSimps simpLib mesonLib metisLib jrhUtils
-     pairTheory pairLib quotientTheory pred_setTheory pred_setLib RealArith;
+     pairTheory pairLib quotientTheory pred_setTheory pred_setLib RealArith
+     tautLib;
 
 open realTheory real_sigmaTheory cardinalTheory topologyTheory hurdUtils;
 
@@ -145,7 +146,7 @@ val METRIC_NZ = store_thm("METRIC_NZ",
   “!m:('a)metric. !x y. ~(x = y) ==> &0 < (dist m)(x,y)”,
   REPEAT GEN_TAC THEN
   SUBST1_TAC(SYM(SPECL [“m:('a)metric”, “x:'a”, “y:'a”] METRIC_ZERO)) THEN
-  ONCE_REWRITE_TAC[TAUT_CONV “~a ==> b <=> b \/ a”] THEN
+  ONCE_REWRITE_TAC[TAUT ‘~a ==> b <=> b \/ a’] THEN
   CONV_TAC(RAND_CONV SYM_CONV) THEN
   REWRITE_TAC[GSYM REAL_LE_LT, METRIC_POS]);
 
@@ -375,43 +376,23 @@ val BALL_NEIGH = store_thm("BALL_NEIGH",
   POP_ASSUM ACCEPT_TAC);
 
 (*---------------------------------------------------------------------------*)
-(* HOL-Light compatibile theorems                                            *)
+(* HOL-Light compatibile theorems (MDIST_)                                   *)
 (*---------------------------------------------------------------------------*)
 
-Theorem MDIST_REFL :
-   !m (x :'a). x IN mspace m ==> mdist m (x,x) = &0
-Proof
-   rw [mspace, METRIC_SAME]
-QED
-
-Theorem MDIST_SYM :
-   !m (x :'a) y. x IN mspace m /\ y IN mspace m ==> mdist m (x,y) = mdist m (y,x)
-Proof
-   rw [mspace, METRIC_SYM]
-QED
-
-Theorem MDIST_TRIANGLE :
-   !m x y z.
-         x IN mspace m /\ y IN mspace m /\ z IN mspace m
-         ==> mdist m (x,z) <= mdist m (x,y) + mdist m (y,z)
-Proof
-   rw [mspace, METRIC_TRIANGLE]
-QED
+Theorem MDIST_REFL     = METRIC_SAME
+Theorem MDIST_SYM      = METRIC_SYM
+Theorem MDIST_TRIANGLE = METRIC_TRIANGLE
 
 Theorem MDIST_TRIANGLE_SUB :
-    !m x y z. x IN mspace m /\ y IN mspace m /\ z IN mspace m ==>
-              mdist m (x,y) - mdist m (y,z) <= mdist m (x,z)
+    !m x y z. mdist m (x,y) - mdist m (y,z) <= mdist m (x,z)
 Proof
     RW_TAC std_ss [REAL_LE_SUB_RADD]
  >> ‘dist m (y,z) = dist m (z,y)’ by rw [METRIC_SYM] >> POP_ORW
- >> MATCH_MP_TAC MDIST_TRIANGLE >> art []
+ >> rw [MDIST_TRIANGLE]
 QED
 
-Theorem MDIST_POS_LE :
-    !m x y. x IN mspace m /\ y IN mspace m ==> &0 <= mdist m (x,y)
-Proof
-   rw [mspace, METRIC_POS]
-QED
+Theorem MDIST_POS_LE = METRIC_POS
+Theorem MDIST_EQ_0   = METRIC_ZERO
 
 Theorem mtopology :
    !m. mtopology (m:'a metric) =
@@ -1493,7 +1474,7 @@ Proof
           dist m (x,y) - dist m (y,z) <= r’ >- REAL_ARITH_TAC
  >> Rewr'
  >> Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘dist m (x,z)’ >> art []
- >> MATCH_MP_TAC MDIST_TRIANGLE_SUB >> art []
+ >> rw [MDIST_TRIANGLE_SUB]
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -1523,7 +1504,7 @@ Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[setdist] THEN
   COND_CASES_TAC THEN REWRITE_TAC[REAL_LE_REFL] THEN
   MATCH_MP_TAC REAL_LE_INF THEN
-  simp[FORALL_IN_GSPEC, MDIST_POS_LE, mspace] THEN
+  SIMP_TAC std_ss [FORALL_IN_GSPEC, MDIST_POS_LE] THEN
   SIMP_TAC std_ss [EXTENSION, GSPECIFICATION, EXISTS_PROD] THEN ASM_SET_TAC[]
 QED
 
@@ -1581,6 +1562,171 @@ Proof
      Q.EXISTS_TAC ‘d’ >> rw []],
      DISCH_TAC THEN ASM_REWRITE_TAC []] THEN
   ASM_MESON_TAC[]
+QED
+
+Theorem SET_DIST_LE_DIST :
+   !s t x y. x IN s /\ y IN t ==> setdist(s,t) <= dist m(x,y)
+Proof
+  REPEAT GEN_TAC THEN REWRITE_TAC[setdist] THEN
+  COND_CASES_TAC THENL [ASM_SET_TAC[], ALL_TAC] THEN
+  MP_TAC(ISPEC ``{dist m(x,y) | x IN s /\ y IN t}`` INF) THEN
+  SIMP_TAC std_ss [FORALL_IN_GSPEC] THEN
+  KNOW_TAC ``{dist m(x,y) | x IN s /\ y IN t} <> {} /\
+             (?b. !x y. x IN s /\ y IN t ==> b <= dist m(x,y))`` THENL
+   [CONJ_TAC THENL
+    [SIMP_TAC std_ss [EXTENSION, GSPECIFICATION, EXISTS_PROD] THEN
+     ASM_SET_TAC[],
+     Q.EXISTS_TAC ‘0’ >> simp[MDIST_POS_LE, mspace]],
+     DISCH_TAC THEN ASM_REWRITE_TAC []] THEN
+  ASM_MESON_TAC[]
+QED
+
+Theorem REAL_LE_SET_DIST_EQ :
+   !d s t:'a->bool.
+        d <= setdist(s,t) <=>
+        (!x y. x IN s /\ y IN t ==> d <= dist m(x,y)) /\
+        ((s = {}) \/ (t = {}) ==> d <= &0)
+Proof
+  REPEAT GEN_TAC THEN MAP_EVERY ASM_CASES_TAC
+   [``s:'a->bool = {}``, ``t:'a->bool = {}``] THEN
+  ASM_REWRITE_TAC[SET_DIST_EMPTY, NOT_IN_EMPTY] THEN
+  ASM_MESON_TAC[REAL_LE_SET_DIST, SET_DIST_LE_DIST, REAL_LE_TRANS]
+QED
+
+Theorem REAL_SET_DIST_LT_EXISTS :
+   !s t:'a->bool b.
+        ~(s = {}) /\ ~(t = {}) /\ setdist(s,t) < b
+        ==> ?x y. x IN s /\ y IN t /\ dist m(x,y) < b
+Proof
+  REWRITE_TAC[GSYM REAL_NOT_LE, REAL_LE_SET_DIST_EQ] THEN MESON_TAC[]
+QED
+
+Theorem SET_DIST_REFL :
+   !s:'a->bool. setdist(s,s) = &0
+Proof
+  GEN_TAC THEN REWRITE_TAC[GSYM REAL_LE_ANTISYM, SET_DIST_POS_LE] THEN
+  ASM_CASES_TAC ``s:'a->bool = {}`` THENL
+   [ASM_REWRITE_TAC[setdist, REAL_LE_REFL], ALL_TAC] THEN
+  ASM_MESON_TAC[SET_DIST_LE_DIST, MEMBER_NOT_EMPTY, MDIST_REFL]
+QED
+
+Theorem SET_DIST_SYM :
+   !s t. setdist(s,t) = setdist(t,s)
+Proof
+  REPEAT GEN_TAC THEN REWRITE_TAC[setdist] THEN ONCE_REWRITE_TAC [DISJ_SYM] THEN
+  COND_CASES_TAC THEN ONCE_REWRITE_TAC [DISJ_SYM] THEN ASM_SIMP_TAC std_ss [] THEN
+  AP_TERM_TAC THEN SIMP_TAC std_ss [EXTENSION, GSPECIFICATION, EXISTS_PROD] THEN
+  METIS_TAC[MDIST_SYM]
+QED
+
+Theorem SET_DIST_TRIANGLE :
+   !s a t:'a->bool.
+        setdist(s,t) <= setdist(s,{a}) + setdist({a},t)
+Proof
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC ``s:'a->bool = {}`` THEN
+  ASM_REWRITE_TAC[SET_DIST_EMPTY, REAL_ADD_LID, SET_DIST_POS_LE] THEN
+  ASM_CASES_TAC ``t:'a->bool = {}`` THEN
+  ASM_REWRITE_TAC[SET_DIST_EMPTY, REAL_ADD_RID, SET_DIST_POS_LE] THEN
+  ONCE_REWRITE_TAC[GSYM REAL_LE_SUB_RADD] THEN
+  MATCH_MP_TAC REAL_LE_SET_DIST THEN
+  ASM_SIMP_TAC std_ss [NOT_INSERT_EMPTY, IN_SING, CONJ_EQ_IMP,
+                  RIGHT_FORALL_IMP_THM, UNWIND_FORALL_THM2] THEN
+  X_GEN_TAC ``x:'a`` THEN DISCH_TAC THEN
+  ONCE_REWRITE_TAC[REAL_ARITH ``x - y <= z <=> x - z <= y:real``] THEN
+  MATCH_MP_TAC REAL_LE_SET_DIST THEN
+  ASM_REWRITE_TAC[NOT_INSERT_EMPTY, IN_SING, CONJ_EQ_IMP,
+                  RIGHT_FORALL_IMP_THM, UNWIND_FORALL_THM2] THEN
+  X_GEN_TAC ``y:'a`` THEN REPEAT STRIP_TAC THEN
+  REWRITE_TAC[REAL_LE_SUB_RADD] THEN MATCH_MP_TAC REAL_LE_TRANS THEN
+  EXISTS_TAC ``dist m(x:'a,y')`` THEN
+  ASM_SIMP_TAC std_ss [SET_DIST_LE_DIST] THEN
+  rename1 ‘z IN t’ THEN
+  Q.PAT_X_ASSUM ‘y = a’ (fs o wrap o SYM) \\
+  ONCE_REWRITE_TAC [REAL_ADD_COMM] \\
+  REWRITE_TAC [MDIST_TRIANGLE]
+QED
+
+Theorem SET_DIST_SINGS :
+   !x y. setdist({x},{y}) = dist m(x,y)
+Proof
+  REWRITE_TAC[setdist, NOT_INSERT_EMPTY] THEN
+  ONCE_REWRITE_TAC [METIS [] ``dist m(x,y) = (\x y. dist m(x,y)) x y``] THEN
+  KNOW_TAC ``!f:'a->'a->real x y a b. {f x y | x IN {a} /\ y IN {b}} = {f a b}`` THENL
+  [SIMP_TAC std_ss [EXTENSION, GSPECIFICATION, EXISTS_PROD] THEN SET_TAC [],
+   DISCH_TAC] THEN ASM_REWRITE_TAC [] THEN
+  SIMP_TAC std_ss [INF_INSERT_FINITE, FINITE_EMPTY]
+QED
+
+Theorem SET_DIST_LIPSCHITZ :
+   !s t x y:'a. abs(setdist({x},s) - setdist({y},s)) <= dist m(x,y)
+Proof
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM SET_DIST_SINGS] THEN
+  REWRITE_TAC[REAL_ARITH
+   ``abs(x - y) <= z <=> x <= z + y /\ y <= z + x:real``] THEN
+  MESON_TAC[SET_DIST_TRIANGLE, SET_DIST_SYM]
+QED
+
+Theorem SET_DIST_SUBSET_RIGHT :
+   !s t u:'a->bool.
+    ~(t = {}) /\ t SUBSET u ==> setdist(s,u) <= setdist(s,t)
+Proof
+  REPEAT STRIP_TAC THEN
+  MAP_EVERY ASM_CASES_TAC [``s:'a->bool = {}``, ``u:'a->bool = {}``] THEN
+  ASM_SIMP_TAC std_ss [SET_DIST_EMPTY, SET_DIST_POS_LE, REAL_LE_REFL] THEN
+  ASM_REWRITE_TAC[setdist] THEN MATCH_MP_TAC REAL_LE_INF_SUBSET THEN
+  ASM_SIMP_TAC std_ss [FORALL_IN_GSPEC, SUBSET_DEF, EXISTS_PROD, GSPECIFICATION] THEN
+  REPEAT(CONJ_TAC THENL
+  [ASM_SIMP_TAC std_ss [EXTENSION, EXISTS_PROD, GSPECIFICATION] THEN ASM_SET_TAC[],
+   ALL_TAC]) \\
+  Q.EXISTS_TAC ‘0’ >> rw [MDIST_POS_LE]
+QED
+
+Theorem SET_DIST_SUBSET_LEFT :
+   !s t u:'a->bool.
+    ~(s = {}) /\ s SUBSET t ==> setdist(t,u) <= setdist(s,u)
+Proof
+  MESON_TAC[SET_DIST_SUBSET_RIGHT, SET_DIST_SYM]
+QED
+
+Theorem SET_DIST_UNIQUE :
+   !s t a b:'a d.
+        a IN s /\ b IN t /\ (dist m(a,b) = d) /\
+        (!x y. x IN s /\ y IN t ==> dist m(a,b) <= dist m(x,y))
+        ==> (setdist(s,t) = d)
+Proof
+  REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM REAL_LE_ANTISYM] THEN CONJ_TAC THENL
+   [ASM_MESON_TAC[SET_DIST_LE_DIST],
+    MATCH_MP_TAC REAL_LE_SET_DIST THEN ASM_SET_TAC[]]
+QED
+
+Theorem SET_DIST_UNIV :
+   (!s. setdist(s,univ(:'a)) = &0) /\
+   (!t. setdist(univ(:'a),t) = &0)
+Proof
+  GEN_REWR_TAC (RAND_CONV o ONCE_DEPTH_CONV) [SET_DIST_SYM] THEN
+  REWRITE_TAC[] THEN X_GEN_TAC ``s:'a->bool`` THEN
+  ASM_CASES_TAC ``s:'a->bool = {}`` THEN ASM_REWRITE_TAC[SET_DIST_EMPTY] THEN
+  MATCH_MP_TAC SET_DIST_UNIQUE THEN
+  SIMP_TAC std_ss [IN_UNIV, MDIST_EQ_0, RIGHT_EXISTS_AND_THM] THEN
+  ASM_REWRITE_TAC[UNWIND_THM1, MDIST_REFL, MDIST_POS_LE, MEMBER_NOT_EMPTY]
+QED
+
+Theorem SET_DIST_ZERO :
+   !s t:'a->bool. ~(DISJOINT s t) ==> (setdist(s,t) = &0)
+Proof
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SET_DIST_UNIQUE THEN
+  KNOW_TAC ``?a. a IN s /\ a IN t /\ (dist m(a,a) = 0) /\
+             !x y. x IN s /\ y IN t ==> dist m(a,a) <= dist m(x,y)`` THENL
+  [ALL_TAC, METIS_TAC []] THEN
+  ONCE_REWRITE_TAC[TAUT `p /\ q /\ r /\ s <=> r /\ p /\ q /\ s`] THEN
+  REWRITE_TAC[MDIST_EQ_0, UNWIND_THM2, MDIST_REFL, MDIST_POS_LE] THEN
+  ASM_SET_TAC[]
+QED
+
+Theorem SET_DIST_LE_SING :
+   !s t x:'a. x IN s ==> setdist(s,t) <= setdist({x},t)
+Proof
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC SET_DIST_SUBSET_LEFT THEN ASM_SET_TAC[]
 QED
 
 val _ = remove_ovl_mapping "B" {Name = "B", Thy = "metric"};
