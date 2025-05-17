@@ -6763,6 +6763,60 @@ Proof
   SIMP_TAC arith_ss [count_def, GSPECIFICATION]
 QED
 
+Definition finite_measure_space_def :
+    finite_measure_space m <=> measure_space m /\ measure m (m_space m) < PosInf
+End
+
+Theorem finite_measure_space :
+    !m. finite_measure_space m <=>
+        measure_space m /\
+        !s. s IN measurable_sets m ==>
+            measure m s <> NegInf /\ measure m s <> PosInf
+Proof
+    RW_TAC std_ss [finite_measure_space_def]
+ >> reverse EQ_TAC >> rw []
+ >- (rw [GSYM lt_infty] \\
+     POP_ASSUM (MATCH_MP_TAC o cj 2) \\
+     MATCH_MP_TAC MEASURE_SPACE_SPACE >> art [])
+ >- (MATCH_MP_TAC pos_not_neginf \\
+     Know ‘positive m’ >- rw [MEASURE_SPACE_POSITIVE] \\
+     rw [positive_def])
+ >> rw [lt_infty]
+ >> Q_TAC (TRANS_TAC let_trans) ‘measure m (m_space m)’ >> art []
+ >> Know ‘increasing m’ >- rw [MEASURE_SPACE_INCREASING]
+ >> rw [increasing_def]
+ >> POP_ASSUM MATCH_MP_TAC >> art []
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC MEASURE_SPACE_SPACE >> art [])
+ >> MATCH_MP_TAC MEASURABLE_SETS_SUBSET_SPACE >> art []
+QED
+
+Definition subprobability_measure_space_def :
+    subprobability_measure_space m <=>
+    finite_measure_space m /\ measure m (m_space m) <= 1
+End
+
+Theorem subprobability_measure_space :
+    !m. subprobability_measure_space m <=>
+        measure_space m /\ !s. s IN measurable_sets m ==> measure m s <= 1
+Proof
+    RW_TAC std_ss [subprobability_measure_space_def, finite_measure_space_def,
+                   GSYM CONJ_ASSOC]
+ >> reverse EQ_TAC >> rw []
+ >- (Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw [] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     MATCH_MP_TAC MEASURE_SPACE_SPACE >> art [])
+ >- (POP_ASSUM MATCH_MP_TAC \\
+     MATCH_MP_TAC MEASURE_SPACE_SPACE >> art [])
+ >> Q_TAC (TRANS_TAC le_trans) ‘measure m (m_space m)’ >> art []
+ >> Know ‘increasing m’ >- rw [MEASURE_SPACE_INCREASING]
+ >> rw [increasing_def]
+ >> POP_ASSUM MATCH_MP_TAC >> art []
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC MEASURE_SPACE_SPACE >> art [])
+ >> MATCH_MP_TAC MEASURABLE_SETS_SUBSET_SPACE >> art []
+QED
+
 val _ = export_theory ();
 
 (* References:
