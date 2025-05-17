@@ -18678,8 +18678,10 @@ Proof
     RW_TAC std_ss [GSYM dist_def, dist, set_dist_def]
 QED
 
-(* This function translate set_dist theorems to setdist theorems *)
-val mr1_xfer = ISPEC “mr1” o Q.GEN ‘m’
+(* NOTE: This function translates “set_dist” theorems to “setdist” theorems. *)
+fun mr1_xfer th = th |> INST_TYPE [alpha |-> “:real”]
+                     |> INST [“m :real metric” |-> “mr1”]
+                     |> REWRITE_RULE [GSYM dist_def]
 
 Theorem SETDIST_EMPTY = mr1_xfer SET_DIST_EMPTY
 Theorem SETDIST_POS_LE = mr1_xfer SET_DIST_POS_LE
