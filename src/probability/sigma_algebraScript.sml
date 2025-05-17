@@ -5806,8 +5806,7 @@ QED
 
 (* Borel space generated from metric spaces always has exhausting sequences *)
 Theorem exhausting_sequence_general_borel :
-    !E c. c IN mspace E ==>
-          exhausting_sequence (general_borel (mtop E)) (\n. mcball E (c,&n))
+    !E c. exhausting_sequence (general_borel (mtop E)) (\n. mcball E (c,&n))
 Proof
     rw [exhausting_sequence_def, IN_FUNSET]
  >| [ (* goal 1 (of 3) *)
@@ -5833,7 +5832,7 @@ QED
    antecedents ‘mspace E <> {}’ always holds.
  *)
 Theorem has_exhausting_sequence_general_borel :
-    !E. mspace E <> {} ==> has_exhausting_sequence (general_borel (mtop E))
+    !E. has_exhausting_sequence (general_borel (mtop E))
 Proof
     rw [has_exhausting_sequence, GSYM MEMBER_NOT_EMPTY]
  >> Q.EXISTS_TAC ‘\n. mcball E (x,&n)’

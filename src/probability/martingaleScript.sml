@@ -9006,18 +9006,12 @@ Proof
   FULL_SIMP_TAC std_ss [sigma_sets_eq, sigma_algebra_iff2]
 QED
 
-(* HVG's original definition, ‘sigma_finite’ is unnecessary *)
-Definition finite_measure_space :
-    finite_measure_space m <=> sigma_finite_measure_space m /\
-                               measure m (m_space m) <> PosInf
-End
-
-(* Use this one instead *)
-Theorem finite_measure_space_def :
-    !m. finite_measure_space m <=> measure_space m /\
+(* This is HVG's original definition, ‘sigma_finite’ is unnecessary *)
+Theorem finite_measure_space :
+    !m. finite_measure_space m <=> sigma_finite_measure_space m /\
                                    measure m (m_space m) <> PosInf
 Proof
-    rw [finite_measure_space, sigma_finite_measure_space_def]
+    rw [finite_measure_space_def, sigma_finite_measure_space_def]
  >> EQ_TAC >> rw []
  >> MATCH_MP_TAC FINITE_IMP_SIGMA_FINITE >> art []
 QED

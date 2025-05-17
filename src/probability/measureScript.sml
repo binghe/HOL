@@ -6764,10 +6764,10 @@ Proof
 QED
 
 Definition finite_measure_space_def :
-    finite_measure_space m <=> measure_space m /\ measure m (m_space m) < PosInf
+    finite_measure_space m <=> measure_space m /\ measure m (m_space m) <> PosInf
 End
 
-Theorem finite_measure_space :
+Theorem finite_measure_space_thm :
     !m. finite_measure_space m <=>
         measure_space m /\
         !s. s IN measurable_sets m ==>
@@ -6775,13 +6775,12 @@ Theorem finite_measure_space :
 Proof
     RW_TAC std_ss [finite_measure_space_def]
  >> reverse EQ_TAC >> rw []
- >- (rw [GSYM lt_infty] \\
-     POP_ASSUM (MATCH_MP_TAC o cj 2) \\
+ >- (POP_ASSUM (MATCH_MP_TAC o cj 2) \\
      MATCH_MP_TAC MEASURE_SPACE_SPACE >> art [])
  >- (MATCH_MP_TAC pos_not_neginf \\
      Know ‘positive m’ >- rw [MEASURE_SPACE_POSITIVE] \\
      rw [positive_def])
- >> rw [lt_infty]
+ >> fs [lt_infty]
  >> Q_TAC (TRANS_TAC let_trans) ‘measure m (m_space m)’ >> art []
  >> Know ‘increasing m’ >- rw [MEASURE_SPACE_INCREASING]
  >> rw [increasing_def]
@@ -6796,13 +6795,13 @@ Definition subprobability_measure_space_def :
     finite_measure_space m /\ measure m (m_space m) <= 1
 End
 
-Theorem subprobability_measure_space :
+Theorem subprobability_measure_space_thm :
     !m. subprobability_measure_space m <=>
         measure_space m /\ !s. s IN measurable_sets m ==> measure m s <= 1
 Proof
     RW_TAC std_ss [subprobability_measure_space_def, finite_measure_space_def,
                    GSYM CONJ_ASSOC]
- >> reverse EQ_TAC >> rw []
+ >> reverse EQ_TAC >> rw [lt_infty]
  >- (Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw [] \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
      MATCH_MP_TAC MEASURE_SPACE_SPACE >> art [])
