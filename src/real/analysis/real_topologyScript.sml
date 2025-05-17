@@ -18666,13 +18666,6 @@ val CLOSEST_POINT_IN_FRONTIER = store_thm ("CLOSEST_POINT_IN_FRONTIER",
 (* More general infimum of distance between two sets.                        *)
 (* ------------------------------------------------------------------------- *)
 
-(* This is a generalized ‘setdist’ with a metric parameter d *)
-Definition set_dist_def :
-    set_dist (d :'a metric) ((s,t) :'a set # 'a set) =
-      if (s = {}) \/ (t = {}) then (0 :real)
-      else inf {dist d (x,y) | x IN s /\ y IN t}
-End
-
 (* New definition of ‘setdist’ *)
 Overload setdist = “set_dist mr1”
 
@@ -18685,68 +18678,13 @@ Proof
     RW_TAC std_ss [GSYM dist_def, dist, set_dist_def]
 QED
 
-val SETDIST_EMPTY = store_thm ("SETDIST_EMPTY",
- ``(!t. setdist({},t) = &0) /\ (!s. setdist(s,{}) = &0)``,
-  REWRITE_TAC[setdist]);
+(* This function translate set_dist theorems to setdist theorems *)
+val mr1_xfer = ISPEC “mr1” o Q.GEN ‘m’
 
-val SETDIST_POS_LE = store_thm ("SETDIST_POS_LE",
- ``!s t. &0 <= setdist(s,t)``,
-  REPEAT GEN_TAC THEN REWRITE_TAC[setdist] THEN
-  COND_CASES_TAC THEN REWRITE_TAC[REAL_LE_REFL] THEN
-  MATCH_MP_TAC REAL_LE_INF THEN
-  SIMP_TAC std_ss [FORALL_IN_GSPEC, DIST_POS_LE] THEN
-  SIMP_TAC std_ss [EXTENSION, GSPECIFICATION, EXISTS_PROD] THEN ASM_SET_TAC[]);
-
-val SETDIST_SUBSETS_EQ = store_thm ("SETDIST_SUBSETS_EQ",
- ``!s t s' t':real->bool.
-     s' SUBSET s /\ t' SUBSET t /\
-     (!x y. x IN s /\ y IN t
-            ==> ?x' y'. x' IN s' /\ y' IN t' /\ dist(x',y') <= dist(x,y))
-     ==> (setdist(s',t') = setdist(s,t))``,
-  REPEAT STRIP_TAC THEN
-  ASM_CASES_TAC ``s:real->bool = {}`` THENL
-   [ASM_CASES_TAC ``s':real->bool = {}`` THEN
-    ASM_REWRITE_TAC[SETDIST_EMPTY] THEN ASM_SET_TAC[],
-    ALL_TAC] THEN
-  ASM_CASES_TAC ``t:real->bool = {}`` THENL
-   [ASM_CASES_TAC ``t':real->bool = {}`` THEN
-    ASM_REWRITE_TAC[SETDIST_EMPTY] THEN ASM_SET_TAC[],
-    ALL_TAC] THEN
-  ASM_CASES_TAC ``s':real->bool = {}`` THENL [ASM_SET_TAC[], ALL_TAC] THEN
-  ASM_CASES_TAC ``t':real->bool = {}`` THENL [ASM_SET_TAC[], ALL_TAC] THEN
-  ASM_REWRITE_TAC[setdist] THEN MATCH_MP_TAC INF_EQ THEN
-  SIMP_TAC std_ss [FORALL_IN_GSPEC] THEN
-  CONJ_TAC >- (SIMP_TAC std_ss [EXTENSION, GSPECIFICATION,
-                                EXISTS_PROD, NOT_IN_EMPTY] \\
-               fs [GSYM MEMBER_NOT_EMPTY] \\
-               rename1 `a IN s'` >> Q.EXISTS_TAC `a` \\
-               rename1 `b IN t'` >> Q.EXISTS_TAC `b` \\
-               ASM_REWRITE_TAC []) \\
-  CONJ_TAC >- (Q.EXISTS_TAC `0` >> rw [DIST_POS_LE]) \\
-  CONJ_TAC >- (SIMP_TAC std_ss [EXTENSION, GSPECIFICATION,
-                                EXISTS_PROD, NOT_IN_EMPTY] \\
-               fs [GSYM MEMBER_NOT_EMPTY] \\
-               rename1 `a IN s` >> Q.EXISTS_TAC `a` \\
-               rename1 `b IN t` >> Q.EXISTS_TAC `b` \\
-               ASM_REWRITE_TAC []) \\
-  CONJ_TAC >- (Q.EXISTS_TAC `0` >> rw [DIST_POS_LE]) \\
-  ASM_MESON_TAC[SUBSET_DEF, REAL_LE_TRANS]);
-
-val REAL_LE_SETDIST = store_thm ("REAL_LE_SETDIST",
-  ``!s t:real->bool d.
-        ~(s = {}) /\ ~(t = {}) /\
-        (!x y. x IN s /\ y IN t ==> d <= dist(x,y))
-        ==> d <= setdist(s,t)``,
-  REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[setdist] THEN
-  MP_TAC(ISPEC ``{dist(x:real,y) | x IN s /\ y IN t}`` INF) THEN
-  SIMP_TAC std_ss [FORALL_IN_GSPEC] THEN
-  KNOW_TAC ``{dist (x,y) | x IN s /\ y IN t} <> {} /\
-             (?b. !x y. x IN s /\ y IN t ==> b <= dist (x,y))`` THENL
-   [CONJ_TAC THENL
-    [SIMP_TAC std_ss [EXTENSION, GSPECIFICATION, EXISTS_PROD] THEN
-     ASM_SET_TAC[], MESON_TAC[DIST_POS_LE]],
-     DISCH_TAC THEN ASM_REWRITE_TAC []] THEN
-  ASM_MESON_TAC[]);
+Theorem SETDIST_EMPTY = mr1_xfer SET_DIST_EMPTY
+Theorem SETDIST_POS_LE = mr1_xfer SET_DIST_POS_LE
+Theorem SETDIST_SUBSETS_EQ = mr1_xfer SET_DIST_SUBSETS_EQ
+Theorem REAL_LE_SETDIST = mr1_xfer REAL_LE_SET_DIST
 
 val SETDIST_LE_DIST = store_thm ("SETDIST_LE_DIST",
  ``!s t x y:real. x IN s /\ y IN t ==> setdist(s,t) <= dist(x,y)``,

@@ -3111,91 +3111,15 @@ QED
 Overload B[local] = “general_borel”
 Overload B[local] = “\E. general_borel (mtop E)”
 
-(* Definition 13.4 (ii) [8, p.247] *)
-Definition finite_measure_def :
-    finite_measure top m <=>
-      measure_space (topspace top,subsets (B top),m) /\
-      m (topspace top) < PosInf
-End
-
-Theorem finite_measure_thm :
-    !top m. finite_measure top m <=>
-            measure_space (topspace top,subsets (B top),m) /\
-            !s. s IN subsets (B top) ==>
-                m s <> NegInf /\ m s <> PosInf
-Proof
-    RW_TAC std_ss [finite_measure_def]
- >> qmatch_abbrev_tac ‘measure_space M /\ _ <=> _’
- >> reverse EQ_TAC >> rw []
- >- (rw [GSYM lt_infty] \\
-     POP_ASSUM (MATCH_MP_TAC o cj 2) \\
-     rename1 ‘topspace t IN subsets (B t)’ \\
-    ‘topspace t = m_space M’ by rw [Abbr ‘M’] >> POP_ORW \\
-    ‘subsets (B t) = measurable_sets M’ by rw [Abbr ‘M’] >> POP_ORW \\
-     MATCH_MP_TAC MEASURE_SPACE_SPACE >> art [])
- >- (MATCH_MP_TAC pos_not_neginf \\
-     Know ‘positive M’ >- rw [MEASURE_SPACE_POSITIVE] \\
-     rw [positive_def, Abbr ‘M’])
- >> rw [lt_infty]
- >> rename1 ‘m (topspace t) < PosInf’
- >> Q_TAC (TRANS_TAC let_trans) ‘m (topspace t)’ >> art []
- >> Know ‘increasing M’ >- rw [MEASURE_SPACE_INCREASING]
- >> Know ‘s SUBSET m_space M’
- >- (MATCH_MP_TAC MEASURABLE_SETS_SUBSET_SPACE >> art [] \\
-     rw [Abbr ‘M’])
- >> Know ‘topspace t IN subsets (B t)’
- >- (‘topspace t = m_space M’ by rw [Abbr ‘M’] >> POP_ORW \\
-     ‘subsets (B t) = measurable_sets M’ by rw [Abbr ‘M’] >> POP_ORW \\
-     MATCH_MP_TAC MEASURE_SPACE_SPACE >> art [])
- >> rw [increasing_def, Abbr ‘M’]
-QED
-
 (* Definition 13.4 (iv) [8, p.247]
 
    NOTE: The name "subprobability measure" (aka s.p.m.) is also from [2, p.85].
  *)
-Definition subprobability_measure_def :
-    subprobability_measure top m <=> finite_measure top m /\ m (topspace top) <= 1
-End
-
-Theorem subprobability_measure_thm :
-    !top m. subprobability_measure top m <=>
-            measure_space (topspace top,subsets (B top),m) /\
-            !s. s IN subsets (B top) ==> m s <= 1
-Proof
-    RW_TAC std_ss [subprobability_measure_def, finite_measure_def, GSYM CONJ_ASSOC]
- >> qmatch_abbrev_tac ‘measure_space M /\ _ <=> _’
- >> reverse EQ_TAC >> rw []
- >- (Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw [] \\
-     FIRST_X_ASSUM MATCH_MP_TAC \\
-     rename1 ‘topspace t IN subsets (B t)’ \\
-    ‘topspace t = m_space M’ by rw [Abbr ‘M’] >> POP_ORW \\
-    ‘subsets (B t) = measurable_sets M’ by rw [Abbr ‘M’] >> POP_ORW \\
-     MATCH_MP_TAC MEASURE_SPACE_SPACE >> art [])
- >- (POP_ASSUM MATCH_MP_TAC \\
-     rename1 ‘topspace t IN subsets (B t)’ \\
-    ‘topspace t = m_space M’ by rw [Abbr ‘M’] >> POP_ORW \\
-    ‘subsets (B t) = measurable_sets M’ by rw [Abbr ‘M’] >> POP_ORW \\
-     MATCH_MP_TAC MEASURE_SPACE_SPACE >> art [])
- >> rename1 ‘m (topspace t) < PosInf’
- >> Q_TAC (TRANS_TAC le_trans) ‘m (topspace t)’ >> art []
- >> Know ‘increasing M’ >- rw [MEASURE_SPACE_INCREASING]
- >> Know ‘s SUBSET m_space M’
- >- (MATCH_MP_TAC MEASURABLE_SETS_SUBSET_SPACE >> art [] \\
-     rw [Abbr ‘M’])
- >> Know ‘topspace t IN subsets (B t)’
- >- (‘topspace t = m_space M’ by rw [Abbr ‘M’] >> POP_ORW \\
-     ‘subsets (B t) = measurable_sets M’ by rw [Abbr ‘M’] >> POP_ORW \\
-     MATCH_MP_TAC MEASURE_SPACE_SPACE >> art [])
- >> rw [increasing_def, Abbr ‘M’]
-QED
-
-(* f :'a -> real *)
-Definition bounded_continuous_map :
-    bounded_continuous_map top f <=>
+Definition bounded_continuous_def :
+    bounded_continuous top (f :'a -> real) <=>
     continuous_map (top,euclidean) f /\ bounded (IMAGE f UNIV)
 End
-Overload C_b[local] = “bounded_continuous_map”
+Overload C_b[local] = “bounded_continuous”
 
 (* Lipschitz condition *)
 Definition Lipschitz_condition_def :
@@ -3215,8 +3139,7 @@ Theorem Lipschitz_continuous_map_exists :
     !E A e. closed_in (mtop E) A /\ 0 < e ==>
             ?f. f IN (UNIV -> interval[0,1]) /\
                 Lipschitz_continuous_map (E,mr1) f /\
-               (!x. x IN A ==> f x = 1) /\
-                !x. e < set_dist E ({x},A) ==> f x = 0
+               (!x. e < set_dist E ({x},A) ==> f x = 0) /\ !x. x IN A ==> f x = 1
 Proof
     rw [Lipschitz_continuous_map, IN_FUNSET, IN_INTERVAL]
  >> qabbrev_tac ‘g :real -> real = \x. max 0 (min 1 x)’
@@ -3233,29 +3156,32 @@ Proof
  >> DISCH_TAC
  >> qabbrev_tac ‘f = \x. 1 - g (set_dist E ({x},A) / e)’
  >> Q.EXISTS_TAC ‘f’ >> simp [mspace]
- >> CONJ_TAC
+ >> CONJ_TAC (* !x. 0 <= f x /\ f x <= 1 *)
  >- (Q.X_GEN_TAC ‘x’ \\
      simp [Abbr ‘f’, REAL_SUB_LE] \\
      qmatch_abbrev_tac ‘1 - g y <= 1’ \\
      Q.PAT_X_ASSUM ‘!x. 0 <= g x /\ g x <= 1’ (MP_TAC o Q.SPEC ‘y’) \\
      REAL_ARITH_TAC)
- >> CONJ_TAC
- >- (simp [Lipschitz_condition_def, GSYM dist_def, dist, mspace] \\
-     Q.EXISTS_TAC ‘e’ >> rw [Abbr ‘f’] \\
-     qabbrev_tac ‘a = g (set_dist E ({x},A) / e)’ \\
-     qabbrev_tac ‘b = g (set_dist E ({y},A) / e)’ \\
-     simp [REAL_ARITH “1 - a - (1 - b) = b - (a :real)”] \\
-  (* applying MDIST_TRIANGLE_SUB *)
+ >> simp [CONJ_ASSOC]
+ >> reverse CONJ_TAC (* !x. x IN A ==> f x = 1 *)
+ >- (
      cheat)
- >> CONJ_TAC
- >- cheat
- (* stage work *)
+ >> reverse CONJ_TAC (* !x. e < set_dist E ({x},A) ==> f x = 0 *)
+ >- (
+     cheat)
+ (* ?k. Lipschitz_condition (E,mr1) k f *)
+ >> simp [Lipschitz_condition_def, GSYM dist_def, dist, mspace]
+ >> Q.EXISTS_TAC ‘e’ >> rw [Abbr ‘f’]
+ >> qabbrev_tac ‘a = g (set_dist E ({x},A) / e)’
+ >> qabbrev_tac ‘b = g (set_dist E ({y},A) / e)’
+ >> simp [REAL_ARITH “1 - a - (1 - b) = b - (a :real)”]
+ (* applying MDIST_TRIANGLE_SUB *)
  >> cheat
 QED
 
 (* f :'a -> real *)
 Definition BL_def :
-    BL E = {f | f IN bounded_continuous_map (mtop E) /\
+    BL E = {f | f IN bounded_continuous (mtop E) /\
                 Lipschitz_continuous_map (E,mr1) f}
 End
 
@@ -3268,7 +3194,7 @@ End
 (* Definition 13.12 [8, p.252] *)
 Definition weak_converge_in_topology_def :
     weak_converge_in_topology (top :'a topology) X Y <=>
-      !f. f IN bounded_continuous_map top ==>
+      !f. f IN bounded_continuous top ==>
           weak_convergence_condition top X Y f
 End
 
@@ -3331,7 +3257,7 @@ Proof
          MATCH_MP_TAC MEASURE_EMPTY >> art []) \\
      rw [points_of_discontinuity_def, Once EXTENSION] \\
      fs [CONTINUOUS_MAP_EQ_TOPCONTINUOUS_AT,
-         bounded_continuous_map, IN_APP])
+         bounded_continuous, IN_APP])
  (* show that continuous function is borel measurable *)
  >> MATCH_MP_TAC in_borel_measurable_open_imp
  >> RW_TAC std_ss [sigma_algebra_general_borel, PREIMAGE_def,
@@ -3346,7 +3272,7 @@ Proof
  >> REWRITE_TAC [Once IN_APP]
  >> MATCH_MP_TAC OPEN_IN_CONTINUOUS_MAP_PREIMAGE_GEN
  >> Q.EXISTS_TAC ‘euclidean’
- >> fs [bounded_continuous_map, IN_APP]
+ >> fs [bounded_continuous_def, IN_APP]
 QED
 
 Definition Portemanteau_iv_def :

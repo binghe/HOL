@@ -13,7 +13,7 @@ open HolKernel Parse bossLib boolLib;
 open arithmeticTheory numTheory boolSimps simpLib mesonLib metisLib jrhUtils
      pairTheory pairLib quotientTheory pred_setTheory pred_setLib RealArith;
 
-open realTheory cardinalTheory topologyTheory hurdUtils;
+open realTheory real_sigmaTheory cardinalTheory topologyTheory hurdUtils;
 
 val _ = new_theory "metric";
 
@@ -1494,6 +1494,93 @@ Proof
  >> Rewr'
  >> Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘dist m (x,z)’ >> art []
  >> MATCH_MP_TAC MDIST_TRIANGLE_SUB >> art []
+QED
+
+(* ------------------------------------------------------------------------- *)
+(* More general infimum of distance between two sets.                        *)
+(* ------------------------------------------------------------------------- *)
+
+(* This is a generalized ‘setdist’ with a metric parameter d *)
+Definition set_dist_def :
+    set_dist (d :'a metric) ((s,t) :'a set # 'a set) =
+      if (s = {}) \/ (t = {}) then (0 :real)
+      else inf {dist d (x,y) | x IN s /\ y IN t}
+End
+
+(* NOTE: Theorems below contains free variable ‘m’ as the underlying metric. *)
+Overload setdist[local] = “set_dist m”
+val setdist = set_dist_def;
+
+Theorem SET_DIST_EMPTY :
+  (!t. setdist ({},t) = &0) /\ (!s. setdist (s,{}) = &0)
+Proof
+  REWRITE_TAC[setdist]
+QED
+
+Theorem SET_DIST_POS_LE :
+   !s t. &0 <= setdist (s,t)
+Proof
+  REPEAT GEN_TAC THEN REWRITE_TAC[setdist] THEN
+  COND_CASES_TAC THEN REWRITE_TAC[REAL_LE_REFL] THEN
+  MATCH_MP_TAC REAL_LE_INF THEN
+  simp[FORALL_IN_GSPEC, MDIST_POS_LE, mspace] THEN
+  SIMP_TAC std_ss [EXTENSION, GSPECIFICATION, EXISTS_PROD] THEN ASM_SET_TAC[]
+QED
+
+Theorem SET_DIST_SUBSETS_EQ :
+   !s t s' t'.
+     s' SUBSET s /\ t' SUBSET t /\
+     (!x y. x IN s /\ y IN t
+            ==> ?x' y'. x' IN s' /\ y' IN t' /\ dist m(x',y') <= dist m(x,y))
+     ==> (setdist(s',t') = setdist(s,t))
+Proof
+  REPEAT STRIP_TAC THEN
+  ASM_CASES_TAC ``s:'a->bool = {}`` THENL
+   [ASM_CASES_TAC ``s':'a->bool = {}`` THEN
+    ASM_REWRITE_TAC[SET_DIST_EMPTY] THEN ASM_SET_TAC[],
+    ALL_TAC] THEN
+  ASM_CASES_TAC ``t:'a->bool = {}`` THENL
+   [ASM_CASES_TAC ``t':'a->bool = {}`` THEN
+    ASM_REWRITE_TAC[SET_DIST_EMPTY] THEN ASM_SET_TAC[],
+    ALL_TAC] THEN
+  ASM_CASES_TAC ``s':'a->bool = {}`` THENL [ASM_SET_TAC[], ALL_TAC] THEN
+  ASM_CASES_TAC ``t':'a->bool = {}`` THENL [ASM_SET_TAC[], ALL_TAC] THEN
+  ASM_REWRITE_TAC[setdist] THEN MATCH_MP_TAC INF_EQ THEN
+  SIMP_TAC std_ss [FORALL_IN_GSPEC] THEN
+  CONJ_TAC >- (SIMP_TAC std_ss [EXTENSION, GSPECIFICATION,
+                                EXISTS_PROD, NOT_IN_EMPTY] \\
+               fs [GSYM MEMBER_NOT_EMPTY] \\
+               rename1 `a IN s'` >> Q.EXISTS_TAC `a` \\
+               rename1 `b IN t'` >> Q.EXISTS_TAC `b` \\
+               ASM_REWRITE_TAC []) \\
+  CONJ_TAC >- (Q.EXISTS_TAC `0` >> rw [MDIST_POS_LE, mspace]) \\
+  CONJ_TAC >- (SIMP_TAC std_ss [EXTENSION, GSPECIFICATION,
+                                EXISTS_PROD, NOT_IN_EMPTY] \\
+               fs [GSYM MEMBER_NOT_EMPTY] \\
+               rename1 `a IN s` >> Q.EXISTS_TAC `a` \\
+               rename1 `b IN t` >> Q.EXISTS_TAC `b` \\
+               ASM_REWRITE_TAC []) \\
+  CONJ_TAC >- (Q.EXISTS_TAC `0` >> rw [MDIST_POS_LE, mspace]) \\
+  ASM_MESON_TAC[SUBSET_DEF, REAL_LE_TRANS]
+QED
+
+Theorem REAL_LE_SET_DIST :
+    !s t:'a->bool d.
+        ~(s = {}) /\ ~(t = {}) /\
+        (!x y. x IN s /\ y IN t ==> d <= dist m(x,y))
+        ==> d <= setdist(s,t)
+Proof
+  REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[setdist] THEN
+  MP_TAC(ISPEC ``{dist m(x:'a,y) | x IN s /\ y IN t}`` INF) THEN
+  SIMP_TAC std_ss [FORALL_IN_GSPEC] THEN
+  KNOW_TAC ``{dist m(x,y) | x IN s /\ y IN t} <> {} /\
+             (?b. !x y. x IN s /\ y IN t ==> b <= dist m(x,y))`` THENL
+   [CONJ_TAC THENL
+    [SIMP_TAC std_ss [EXTENSION, GSPECIFICATION, EXISTS_PROD] THEN
+     ASM_SET_TAC[],
+     Q.EXISTS_TAC ‘d’ >> rw []],
+     DISCH_TAC THEN ASM_REWRITE_TAC []] THEN
+  ASM_MESON_TAC[]
 QED
 
 val _ = remove_ovl_mapping "B" {Name = "B", Thy = "metric"};
