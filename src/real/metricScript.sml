@@ -12,7 +12,7 @@ open HolKernel Parse bossLib boolLib;
 
 open arithmeticTheory numTheory boolSimps simpLib mesonLib metisLib jrhUtils
      pairTheory pairLib quotientTheory pred_setTheory pred_setLib RealArith
-     tautLib;
+     tautLib realSimps;
 
 open realTheory real_sigmaTheory cardinalTheory topologyTheory hurdUtils;
 
@@ -174,7 +174,7 @@ Proof
  >> Know ‘dist m (x,y) = z - 1’
  >- (Q.UNABBREV_TAC ‘z’ >> REAL_ARITH_TAC)
  >> Rewr'
- >> rw [real_div, REAL_SUB_RDISTRIB, REAL_MUL_RINV]
+ >> rw [real_div, REAL_SUB_LDISTRIB, REAL_MUL_RINV]
 QED
 
 Theorem bounded_metric_ismet :
@@ -1488,20 +1488,16 @@ Definition set_dist_def :
       else inf {dist d (x,y) | x IN s /\ y IN t}
 End
 
-(* NOTE: Theorems below contains free variable ‘m’ as the underlying metric. *)
-Overload setdist[local] = “set_dist m”
-val setdist = set_dist_def;
-
 Theorem SET_DIST_EMPTY :
-  (!t. setdist ({},t) = &0) /\ (!s. setdist (s,{}) = &0)
+  (!t. set_dist m({},t) = &0) /\ (!s. set_dist m(s,{}) = &0)
 Proof
-  REWRITE_TAC[setdist]
+  REWRITE_TAC[set_dist_def]
 QED
 
 Theorem SET_DIST_POS_LE :
-   !s t. &0 <= setdist (s,t)
+   !s t. &0 <= set_dist m(s,t)
 Proof
-  REPEAT GEN_TAC THEN REWRITE_TAC[setdist] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[set_dist_def] THEN
   COND_CASES_TAC THEN REWRITE_TAC[REAL_LE_REFL] THEN
   MATCH_MP_TAC REAL_LE_INF THEN
   SIMP_TAC std_ss [FORALL_IN_GSPEC, MDIST_POS_LE] THEN
@@ -1513,7 +1509,7 @@ Theorem SET_DIST_SUBSETS_EQ :
      s' SUBSET s /\ t' SUBSET t /\
      (!x y. x IN s /\ y IN t
             ==> ?x' y'. x' IN s' /\ y' IN t' /\ dist m(x',y') <= dist m(x,y))
-     ==> (setdist(s',t') = setdist(s,t))
+     ==> (set_dist m(s',t') = set_dist m(s,t))
 Proof
   REPEAT STRIP_TAC THEN
   ASM_CASES_TAC ``s:'a->bool = {}`` THENL
@@ -1526,7 +1522,7 @@ Proof
     ALL_TAC] THEN
   ASM_CASES_TAC ``s':'a->bool = {}`` THENL [ASM_SET_TAC[], ALL_TAC] THEN
   ASM_CASES_TAC ``t':'a->bool = {}`` THENL [ASM_SET_TAC[], ALL_TAC] THEN
-  ASM_REWRITE_TAC[setdist] THEN MATCH_MP_TAC INF_EQ THEN
+  ASM_REWRITE_TAC[set_dist_def] THEN MATCH_MP_TAC INF_EQ THEN
   SIMP_TAC std_ss [FORALL_IN_GSPEC] THEN
   CONJ_TAC >- (SIMP_TAC std_ss [EXTENSION, GSPECIFICATION,
                                 EXISTS_PROD, NOT_IN_EMPTY] \\
@@ -1549,9 +1545,9 @@ Theorem REAL_LE_SET_DIST :
     !s t:'a->bool d.
         ~(s = {}) /\ ~(t = {}) /\
         (!x y. x IN s /\ y IN t ==> d <= dist m(x,y))
-        ==> d <= setdist(s,t)
+        ==> d <= set_dist m(s,t)
 Proof
-  REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[setdist] THEN
+  REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[set_dist_def] THEN
   MP_TAC(ISPEC ``{dist m(x:'a,y) | x IN s /\ y IN t}`` INF) THEN
   SIMP_TAC std_ss [FORALL_IN_GSPEC] THEN
   KNOW_TAC ``{dist m(x,y) | x IN s /\ y IN t} <> {} /\
@@ -1565,9 +1561,9 @@ Proof
 QED
 
 Theorem SET_DIST_LE_DIST :
-   !s t x y. x IN s /\ y IN t ==> setdist(s,t) <= dist m(x,y)
+   !s t x y. x IN s /\ y IN t ==> set_dist m(s,t) <= dist m(x,y)
 Proof
-  REPEAT GEN_TAC THEN REWRITE_TAC[setdist] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[set_dist_def] THEN
   COND_CASES_TAC THENL [ASM_SET_TAC[], ALL_TAC] THEN
   MP_TAC(ISPEC ``{dist m(x,y) | x IN s /\ y IN t}`` INF) THEN
   SIMP_TAC std_ss [FORALL_IN_GSPEC] THEN
@@ -1576,14 +1572,14 @@ Proof
    [CONJ_TAC THENL
     [SIMP_TAC std_ss [EXTENSION, GSPECIFICATION, EXISTS_PROD] THEN
      ASM_SET_TAC[],
-     Q.EXISTS_TAC ‘0’ >> simp[MDIST_POS_LE, mspace]],
+     Q.EXISTS_TAC ‘0’ >> simp[MDIST_POS_LE]],
      DISCH_TAC THEN ASM_REWRITE_TAC []] THEN
   ASM_MESON_TAC[]
 QED
 
 Theorem REAL_LE_SET_DIST_EQ :
    !d s t:'a->bool.
-        d <= setdist(s,t) <=>
+        d <= set_dist m(s,t) <=>
         (!x y. x IN s /\ y IN t ==> d <= dist m(x,y)) /\
         ((s = {}) \/ (t = {}) ==> d <= &0)
 Proof
@@ -1595,25 +1591,25 @@ QED
 
 Theorem REAL_SET_DIST_LT_EXISTS :
    !s t:'a->bool b.
-        ~(s = {}) /\ ~(t = {}) /\ setdist(s,t) < b
+        ~(s = {}) /\ ~(t = {}) /\ set_dist m(s,t) < b
         ==> ?x y. x IN s /\ y IN t /\ dist m(x,y) < b
 Proof
   REWRITE_TAC[GSYM REAL_NOT_LE, REAL_LE_SET_DIST_EQ] THEN MESON_TAC[]
 QED
 
 Theorem SET_DIST_REFL :
-   !s:'a->bool. setdist(s,s) = &0
+   !s:'a->bool. set_dist m(s,s) = &0
 Proof
   GEN_TAC THEN REWRITE_TAC[GSYM REAL_LE_ANTISYM, SET_DIST_POS_LE] THEN
   ASM_CASES_TAC ``s:'a->bool = {}`` THENL
-   [ASM_REWRITE_TAC[setdist, REAL_LE_REFL], ALL_TAC] THEN
+   [ASM_REWRITE_TAC[set_dist_def, REAL_LE_REFL], ALL_TAC] THEN
   ASM_MESON_TAC[SET_DIST_LE_DIST, MEMBER_NOT_EMPTY, MDIST_REFL]
 QED
 
 Theorem SET_DIST_SYM :
-   !s t. setdist(s,t) = setdist(t,s)
+   !s t. set_dist m(s,t) = set_dist m(t,s)
 Proof
-  REPEAT GEN_TAC THEN REWRITE_TAC[setdist] THEN ONCE_REWRITE_TAC [DISJ_SYM] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[set_dist_def] THEN ONCE_REWRITE_TAC [DISJ_SYM] THEN
   COND_CASES_TAC THEN ONCE_REWRITE_TAC [DISJ_SYM] THEN ASM_SIMP_TAC std_ss [] THEN
   AP_TERM_TAC THEN SIMP_TAC std_ss [EXTENSION, GSPECIFICATION, EXISTS_PROD] THEN
   METIS_TAC[MDIST_SYM]
@@ -1621,7 +1617,7 @@ QED
 
 Theorem SET_DIST_TRIANGLE :
    !s a t:'a->bool.
-        setdist(s,t) <= setdist(s,{a}) + setdist({a},t)
+        set_dist m(s,t) <= set_dist m(s,{a}) + set_dist m({a},t)
 Proof
   REPEAT STRIP_TAC THEN ASM_CASES_TAC ``s:'a->bool = {}`` THEN
   ASM_REWRITE_TAC[SET_DIST_EMPTY, REAL_ADD_LID, SET_DIST_POS_LE] THEN
@@ -1647,9 +1643,9 @@ Proof
 QED
 
 Theorem SET_DIST_SINGS :
-   !x y. setdist({x},{y}) = dist m(x,y)
+   !x y. set_dist m({x},{y}) = dist m(x,y)
 Proof
-  REWRITE_TAC[setdist, NOT_INSERT_EMPTY] THEN
+  REWRITE_TAC[set_dist_def, NOT_INSERT_EMPTY] THEN
   ONCE_REWRITE_TAC [METIS [] ``dist m(x,y) = (\x y. dist m(x,y)) x y``] THEN
   KNOW_TAC ``!f:'a->'a->real x y a b. {f x y | x IN {a} /\ y IN {b}} = {f a b}`` THENL
   [SIMP_TAC std_ss [EXTENSION, GSPECIFICATION, EXISTS_PROD] THEN SET_TAC [],
@@ -1658,7 +1654,7 @@ Proof
 QED
 
 Theorem SET_DIST_LIPSCHITZ :
-   !s t x y:'a. abs(setdist({x},s) - setdist({y},s)) <= dist m(x,y)
+   !s t x y:'a. abs(set_dist m({x},s) - set_dist m({y},s)) <= dist m(x,y)
 Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM SET_DIST_SINGS] THEN
   REWRITE_TAC[REAL_ARITH
@@ -1668,12 +1664,12 @@ QED
 
 Theorem SET_DIST_SUBSET_RIGHT :
    !s t u:'a->bool.
-    ~(t = {}) /\ t SUBSET u ==> setdist(s,u) <= setdist(s,t)
+    ~(t = {}) /\ t SUBSET u ==> set_dist m(s,u) <= set_dist m(s,t)
 Proof
   REPEAT STRIP_TAC THEN
   MAP_EVERY ASM_CASES_TAC [``s:'a->bool = {}``, ``u:'a->bool = {}``] THEN
   ASM_SIMP_TAC std_ss [SET_DIST_EMPTY, SET_DIST_POS_LE, REAL_LE_REFL] THEN
-  ASM_REWRITE_TAC[setdist] THEN MATCH_MP_TAC REAL_LE_INF_SUBSET THEN
+  ASM_REWRITE_TAC[set_dist_def] THEN MATCH_MP_TAC REAL_LE_INF_SUBSET THEN
   ASM_SIMP_TAC std_ss [FORALL_IN_GSPEC, SUBSET_DEF, EXISTS_PROD, GSPECIFICATION] THEN
   REPEAT(CONJ_TAC THENL
   [ASM_SIMP_TAC std_ss [EXTENSION, EXISTS_PROD, GSPECIFICATION] THEN ASM_SET_TAC[],
@@ -1683,7 +1679,7 @@ QED
 
 Theorem SET_DIST_SUBSET_LEFT :
    !s t u:'a->bool.
-    ~(s = {}) /\ s SUBSET t ==> setdist(t,u) <= setdist(s,u)
+    ~(s = {}) /\ s SUBSET t ==> set_dist m(t,u) <= set_dist m(s,u)
 Proof
   MESON_TAC[SET_DIST_SUBSET_RIGHT, SET_DIST_SYM]
 QED
@@ -1692,7 +1688,7 @@ Theorem SET_DIST_UNIQUE :
    !s t a b:'a d.
         a IN s /\ b IN t /\ (dist m(a,b) = d) /\
         (!x y. x IN s /\ y IN t ==> dist m(a,b) <= dist m(x,y))
-        ==> (setdist(s,t) = d)
+        ==> (set_dist m(s,t) = d)
 Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM REAL_LE_ANTISYM] THEN CONJ_TAC THENL
    [ASM_MESON_TAC[SET_DIST_LE_DIST],
@@ -1700,8 +1696,8 @@ Proof
 QED
 
 Theorem SET_DIST_UNIV :
-   (!s. setdist(s,univ(:'a)) = &0) /\
-   (!t. setdist(univ(:'a),t) = &0)
+   (!s. set_dist m(s,univ(:'a)) = &0) /\
+   (!t. set_dist m(univ(:'a),t) = &0)
 Proof
   GEN_REWR_TAC (RAND_CONV o ONCE_DEPTH_CONV) [SET_DIST_SYM] THEN
   REWRITE_TAC[] THEN X_GEN_TAC ``s:'a->bool`` THEN
@@ -1712,7 +1708,7 @@ Proof
 QED
 
 Theorem SET_DIST_ZERO :
-   !s t:'a->bool. ~(DISJOINT s t) ==> (setdist(s,t) = &0)
+   !s t:'a->bool. ~(DISJOINT s t) ==> (set_dist m(s,t) = &0)
 Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC SET_DIST_UNIQUE THEN
   KNOW_TAC ``?a. a IN s /\ a IN t /\ (dist m(a,a) = 0) /\
@@ -1724,7 +1720,7 @@ Proof
 QED
 
 Theorem SET_DIST_LE_SING :
-   !s t x:'a. x IN s ==> setdist(s,t) <= setdist({x},t)
+   !s t x:'a. x IN s ==> set_dist m(s,t) <= set_dist m({x},t)
 Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC SET_DIST_SUBSET_LEFT THEN ASM_SET_TAC[]
 QED
@@ -1737,5 +1733,174 @@ Proof
  >> rw [DISJOINT_ALT]
 QED
 
+(* ------------------------------------------------------------------------- *)
+(*  Lipschitz continuous functions                                           *)
+(* ------------------------------------------------------------------------- *)
+
+Definition Lipschitz_condition_def :
+  Lipschitz_condition (E1,E2) k f <=> !x y. dist E2 (f x,f y) <= k * dist E1 (x,y)
+End
+
+(* Definition 13.8 [1, p.249], cf. topologyTheory.continuous_map *)
+Definition Lipschitz_continuous_map :
+  Lipschitz_continuous_map (E1,E2) f <=> ?k. Lipschitz_condition (E1,E2) k f
+End
+
+Theorem Lipschitz_continuous_map_def =
+        Lipschitz_continuous_map |> REWRITE_RULE [Lipschitz_condition_def]
+
+(* Another form of SET_DIST_LIPSCHITZ *)
+Theorem Lipschitz_continuous_map_set_dist :
+    !E s. Lipschitz_continuous_map (E,mr1) (\x. set_dist E ({x},s))
+Proof
+    rw [Lipschitz_continuous_map_def]
+ >> Q.EXISTS_TAC ‘1’
+ >> rw [GSYM dist_def, dist, SET_DIST_LIPSCHITZ]
+QED
+
+(* Lemma 13.10 [1, p.249] *)
+Theorem Lipschitz_continuous_map_exists :
+    !E A e. closed_in (mtop E) A /\ 0 < e ==>
+            ?f. (!x. 0 <= f x /\ f x <= 1) /\
+                Lipschitz_continuous_map (E,mr1) f /\
+               (!x. e < set_dist E ({x},A) ==> f x = 0) /\ !x. x IN A ==> f x = 1
+Proof
+    rw [Lipschitz_continuous_map, IN_FUNSET]
+ >> qabbrev_tac ‘g :real -> real = \x. max 0 (min 1 x)’
+ >> ‘!x. 0 <= g x /\ g x <= 1’
+       by rw [Abbr ‘g’, REAL_LE_MAX, REAL_LE_MIN, REAL_MIN_LE, REAL_MAX_LE]
+ >> Know ‘!x. 0 <= x /\ x <= 1 ==> g x = x’
+ >- (RW_TAC real_ss [Abbr ‘g’, max_def, min_def] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       rw [GSYM REAL_LE_ANTISYM],
+       (* goal 2 (of 2) *)
+       fs [GSYM real_lt] \\
+       Cases_on ‘1 <= x’ >> fs [] \\
+       rw [GSYM REAL_LE_ANTISYM, REAL_LT_IMP_LE] ])
+ >> DISCH_TAC
+ >> ‘!x. 1 <= x ==> g x = 1’ by rw [Abbr ‘g’, min_def]
+ >> qabbrev_tac ‘f = \x. 1 - g (set_dist E ({x},A) / e)’
+ >> Q.EXISTS_TAC ‘f’ >> simp [mspace]
+ >> CONJ_TAC (* !x. 0 <= f x /\ f x <= 1 *)
+ >- (Q.X_GEN_TAC ‘x’ \\
+     simp [Abbr ‘f’, REAL_SUB_LE] \\
+     qmatch_abbrev_tac ‘1 - g y <= 1’ \\
+     Q.PAT_X_ASSUM ‘!x. 0 <= g x /\ g x <= 1’ (MP_TAC o Q.SPEC ‘y’) \\
+     REAL_ARITH_TAC)
+ (* easy subgoals first *)
+ >> simp [CONJ_ASSOC]
+ >> reverse CONJ_TAC (* !x. x IN A ==> f x = 1 *)
+ >- rw [Abbr ‘f’, SET_DIST_SING_IN_SET]
+ >> reverse CONJ_TAC (* !x. e < set_dist E ({x},A) ==> f x = 0 *)
+ >- (rw [Abbr ‘f’] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     qmatch_abbrev_tac ‘1 <= z / e’ \\
+     MATCH_MP_TAC REAL_LE_RDIV >> rw [REAL_LT_IMP_LE])
+ (* ?k. Lipschitz_condition (E,mr1) k f *)
+ >> simp [Lipschitz_condition_def, GSYM dist_def, dist, mspace]
+ >> ‘e <> 0’ by rw [REAL_LT_IMP_NE]
+ >> Q.EXISTS_TAC ‘1 / e’ >> rw [Abbr ‘f’]
+ >> qabbrev_tac ‘a = g (set_dist E ({x},A) / e)’
+ >> qabbrev_tac ‘b = g (set_dist E ({y},A) / e)’
+ >> simp [REAL_ARITH “1 - a - (1 - b) = b - (a :real)”]
+ (* stage work *)
+ >> Cases_on ‘x IN A’
+ >- (simp [Abbr ‘a’, SET_DIST_SING_IN_SET] \\
+    ‘abs b = b’ by rw [ABS_REFL, Abbr ‘b’] >> POP_ORW \\
+     qunabbrev_tac ‘b’ \\
+     Cases_on ‘y IN A’ >- rw [SET_DIST_SING_IN_SET, MDIST_POS_LE] \\
+     qmatch_abbrev_tac ‘e * g (z / e) <= _’ \\
+    ‘0 <= z’ by rw [Abbr ‘z’, SET_DIST_POS_LE] \\
+     Cases_on ‘e <= z’
+     >- (‘1 <= z / e’ by rw [REAL_LE_LDIV_EQ_NEG] \\
+         ‘g (z / e) = 1’ by rw [] >> rw [] \\
+         Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘z’ >> art [] \\
+         simp [Abbr ‘z’, Once SET_DIST_SYM] \\
+         MATCH_MP_TAC SET_DIST_LE_DIST >> rw []) \\
+     fs [GSYM real_lt] \\
+    ‘z / e < 1’ by rw [REAL_LT_LDIV_EQ] \\
+     Know ‘g (z / e) = z / e’
+     >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [REAL_LT_IMP_LE]) >> Rewr' \\
+     simp [Abbr ‘z’, Once SET_DIST_SYM] \\
+     MATCH_MP_TAC SET_DIST_LE_DIST >> rw [])
+ >> Cases_on ‘y IN A’
+ >- (rw [Abbr ‘b’, SET_DIST_SING_IN_SET, MDIST_POS_LE] \\
+    ‘abs a = a’ by rw [ABS_REFL, Abbr ‘a’] >> POP_ORW \\
+     qunabbrev_tac ‘a’ \\
+     qmatch_abbrev_tac ‘e * g (z / e) <= _’ \\
+    ‘0 <= z’ by rw [Abbr ‘z’, SET_DIST_POS_LE] \\
+     Cases_on ‘e <= z’
+     >- (‘1 <= z / e’ by rw [REAL_LE_LDIV_EQ_NEG] \\
+         ‘g (z / e) = 1’ by rw [] >> rw [] \\
+         Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘z’ >> art [] \\
+         simp [Abbr ‘z’] \\
+         MATCH_MP_TAC SET_DIST_LE_DIST >> rw []) \\
+     fs [GSYM real_lt] \\
+    ‘z / e < 1’ by rw [REAL_LT_LDIV_EQ] \\
+     Know ‘g (z / e) = z / e’
+     >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [REAL_LT_IMP_LE]) >> Rewr' \\
+     simp [Abbr ‘z’] \\
+     MATCH_MP_TAC SET_DIST_LE_DIST >> rw [])
+ (* applying SET_DIST_LIPSCHITZ *)
+ >> rw [Abbr ‘a’, Abbr ‘b’]
+ >> qmatch_abbrev_tac ‘e * abs (g (z1 / e) - g (z2 / e)) <= _’
+ >> ‘0 <= z1 /\ 0 <= z2’ by rw [Abbr ‘z1’, Abbr ‘z2’, SET_DIST_POS_LE]
+ >> Cases_on ‘e <= z1’
+ >- (‘1 <= z1 / e’ by rw [REAL_LE_LDIV_EQ_NEG] \\
+     ‘g (z1 / e) = 1’ by rw [] >> POP_ORW \\
+     Cases_on ‘e <= z2’
+     >- (‘1 <= z2 / e’ by rw [REAL_LE_LDIV_EQ_NEG] \\
+         ‘g (z2 / e) = 1’ by rw [] >> POP_ORW \\
+         simp [MDIST_POS_LE]) \\
+     fs [GSYM real_lt] \\
+    ‘z2 / e < 1’ by rw [REAL_LT_LDIV_EQ] \\
+     Know ‘g (z2 / e) = z2 / e’
+     >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [REAL_LT_IMP_LE]) >> Rewr' \\
+    ‘0 < 1 - z2 / e’ by rw [REAL_SUB_LT] \\
+    ‘abs (1 - z2 / e) = 1 - z2 / e’ by rw [ABS_REFL, REAL_LT_IMP_LE] \\
+     POP_ORW \\
+     simp [REAL_SUB_LDISTRIB, Abbr ‘z2’] \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘z1 - set_dist E ({x},A)’ \\
+     simp [REAL_LE_SUB_CANCEL2, Abbr ‘z1’] \\
+     rw [Once MDIST_SYM] \\
+     qmatch_abbrev_tac ‘(a :real) - b <= _’ \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘abs (a - b)’ >> rw [ABS_LE] \\
+     simp [Abbr ‘a’, Abbr ‘b’, SET_DIST_LIPSCHITZ])
+ >> fs [GSYM real_lt]
+ >> Cases_on ‘e <= z2’
+ >- (‘1 <= z2 / e’ by rw [REAL_LE_LDIV_EQ_NEG] \\
+     ‘g (z2 / e) = 1’ by rw [] >> POP_ORW \\
+     ‘z1 / e < 1’ by rw [REAL_LT_LDIV_EQ] \\
+     Know ‘g (z1 / e) = z1 / e’
+     >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [REAL_LT_IMP_LE]) >> Rewr' \\
+    ‘z1 / e - 1 < 0’ by rw [REAL_LT_SUB_RADD] \\
+    ‘abs (z1 / e - 1) = -(z1 / e - 1)’ by rw [ABS_EQ_NEG] >> POP_ORW \\
+     REWRITE_TAC [REAL_NEG_SUB] \\
+     simp [REAL_SUB_LDISTRIB, Abbr ‘z1’] \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘z2 - set_dist E ({y},A)’ \\
+     simp [REAL_LE_SUB_CANCEL2, Abbr ‘z2’] \\
+     qmatch_abbrev_tac ‘(a :real) - b <= _’ \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘abs (a - b)’ >> rw [ABS_LE] \\
+     simp [Abbr ‘a’, Abbr ‘b’, SET_DIST_LIPSCHITZ])
+ >> fs [GSYM real_lt]
+ >> ‘z1 / e < 1 /\ z2 / e < 1’ by rw [REAL_LT_LDIV_EQ]
+ >> Know ‘g (z1 / e) = z1 / e’
+ >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [REAL_LT_IMP_LE])
+ >> Rewr'
+ >> Know ‘g (z2 / e) = z2 / e’
+ >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [REAL_LT_IMP_LE])
+ >> Rewr'
+ >> rw [REAL_DIV_SUB, ABS_DIV]
+ >> ‘abs e = e’ by rw [ABS_REFL, REAL_LT_IMP_LE] >> POP_ORW
+ >> simp [Abbr ‘z1’, Abbr ‘z2’]
+ >> rw [Once MDIST_SYM, SET_DIST_LIPSCHITZ]
+QED
+
 val _ = remove_ovl_mapping "B" {Name = "B", Thy = "metric"};
 val _ = export_theory();
+
+(* References:
+
+  [1] Klenke, A.: Probability Theory: A Comprehensive Course. Second Edition.
+      Springer Science & Business Media, London (2013).
+ *)
