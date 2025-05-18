@@ -32,6 +32,9 @@ val _ = hide "equiv_class";
 
 val set_ss = std_ss ++ PRED_SET_ss;
 
+val _ = intLib.deprecate_int();
+val _ = ratLib.deprecate_rat();
+
 (* ------------------------------------------------------------------------- *)
 (*  Properties of distribution_functions                                     *)
 (* ------------------------------------------------------------------------- *)
@@ -3217,8 +3220,59 @@ Proof
      >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [REAL_LT_IMP_LE]) >> Rewr' \\
      simp [Abbr ‘z’] \\
      MATCH_MP_TAC SET_DIST_LE_DIST >> rw [])
- (* stage work *)
- >> cheat
+ (* applying SET_DIST_LIPSCHITZ *)
+ >> rw [Abbr ‘a’, Abbr ‘b’]
+ >> qmatch_abbrev_tac ‘e * abs (g (z1 / e) - g (z2 / e)) <= _’
+ >> ‘0 <= z1 /\ 0 <= z2’ by rw [Abbr ‘z1’, Abbr ‘z2’, SET_DIST_POS_LE]
+ >> Cases_on ‘e <= z1’
+ >- (‘1 <= z1 / e’ by rw [REAL_LE_LDIV_EQ_NEG] \\
+     ‘g (z1 / e) = 1’ by rw [] >> POP_ORW \\
+     Cases_on ‘e <= z2’
+     >- (‘1 <= z2 / e’ by rw [REAL_LE_LDIV_EQ_NEG] \\
+         ‘g (z2 / e) = 1’ by rw [] >> POP_ORW \\
+         simp [MDIST_POS_LE]) \\
+     fs [GSYM real_lt] \\
+    ‘z2 / e < 1’ by rw [REAL_LT_LDIV_EQ] \\
+     Know ‘g (z2 / e) = z2 / e’
+     >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [REAL_LT_IMP_LE]) >> Rewr' \\
+    ‘0 < 1 - z2 / e’ by rw [REAL_SUB_LT] \\
+    ‘abs (1 - z2 / e) = 1 - z2 / e’ by rw [ABS_REFL, REAL_LT_IMP_LE] \\
+     POP_ORW \\
+     simp [REAL_SUB_LDISTRIB, Abbr ‘z2’] \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘z1 - set_dist E ({x},A)’ \\
+     simp [REAL_LE_SUB_CANCEL2, Abbr ‘z1’] \\
+     rw [Once MDIST_SYM] \\
+     qmatch_abbrev_tac ‘(a :real) - b <= _’ \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘abs (a - b)’ >> rw [ABS_LE] \\
+     simp [Abbr ‘a’, Abbr ‘b’, SET_DIST_LIPSCHITZ])
+ >> fs [GSYM real_lt]
+ >> Cases_on ‘e <= z2’
+ >- (‘1 <= z2 / e’ by rw [REAL_LE_LDIV_EQ_NEG] \\
+     ‘g (z2 / e) = 1’ by rw [] >> POP_ORW \\
+     ‘z1 / e < 1’ by rw [REAL_LT_LDIV_EQ] \\
+     Know ‘g (z1 / e) = z1 / e’
+     >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [REAL_LT_IMP_LE]) >> Rewr' \\
+    ‘z1 / e - 1 < 0’ by rw [REAL_LT_SUB_RADD] \\
+    ‘abs (z1 / e - 1) = -(z1 / e - 1)’ by rw [ABS_EQ_NEG] >> POP_ORW \\
+     REWRITE_TAC [REAL_NEG_SUB] \\
+     simp [REAL_SUB_LDISTRIB, Abbr ‘z1’] \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘z2 - set_dist E ({y},A)’ \\
+     simp [REAL_LE_SUB_CANCEL2, Abbr ‘z2’] \\
+     qmatch_abbrev_tac ‘(a :real) - b <= _’ \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘abs (a - b)’ >> rw [ABS_LE] \\
+     simp [Abbr ‘a’, Abbr ‘b’, SET_DIST_LIPSCHITZ])
+ >> fs [GSYM real_lt]
+ >> ‘z1 / e < 1 /\ z2 / e < 1’ by rw [REAL_LT_LDIV_EQ]
+ >> Know ‘g (z1 / e) = z1 / e’
+ >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [REAL_LT_IMP_LE])
+ >> Rewr'
+ >> Know ‘g (z2 / e) = z2 / e’
+ >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [REAL_LT_IMP_LE])
+ >> Rewr'
+ >> rw [REAL_DIV_SUB, ABS_DIV]
+ >> ‘abs e = e’ by rw [ABS_REFL, REAL_LT_IMP_LE] >> POP_ORW
+ >> simp [Abbr ‘z1’, Abbr ‘z2’]
+ >> rw [Once MDIST_SYM, SET_DIST_LIPSCHITZ]
 QED
 
 Definition BL_def :
