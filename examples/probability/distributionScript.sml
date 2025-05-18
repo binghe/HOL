@@ -3174,11 +3174,50 @@ Proof
      MATCH_MP_TAC REAL_LE_RDIV >> rw [REAL_LT_IMP_LE])
  (* ?k. Lipschitz_condition (E,mr1) k f *)
  >> simp [Lipschitz_condition_def, GSYM dist_def, dist, mspace]
- >> Q.EXISTS_TAC ‘e’ >> rw [Abbr ‘f’]
+ >> ‘e <> 0’ by rw [REAL_LT_IMP_NE]
+ >> Q.EXISTS_TAC ‘1 / e’ >> rw [Abbr ‘f’]
  >> qabbrev_tac ‘a = g (set_dist E ({x},A) / e)’
  >> qabbrev_tac ‘b = g (set_dist E ({y},A) / e)’
  >> simp [REAL_ARITH “1 - a - (1 - b) = b - (a :real)”]
- (* applying MDIST_TRIANGLE_SUB *)
+ (* stage work *)
+ >> Cases_on ‘x IN A’
+ >- (simp [Abbr ‘a’, SET_DIST_SING_IN_SET] \\
+    ‘abs b = b’ by rw [ABS_REFL, Abbr ‘b’] >> POP_ORW \\
+     qunabbrev_tac ‘b’ \\
+     Cases_on ‘y IN A’ >- rw [SET_DIST_SING_IN_SET, MDIST_POS_LE] \\
+     qmatch_abbrev_tac ‘e * g (z / e) <= _’ \\
+    ‘0 <= z’ by rw [Abbr ‘z’, SET_DIST_POS_LE] \\
+     Cases_on ‘e <= z’
+     >- (‘1 <= z / e’ by rw [REAL_LE_LDIV_EQ_NEG] \\
+         ‘g (z / e) = 1’ by rw [] >> rw [] \\
+         Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘z’ >> art [] \\
+         simp [Abbr ‘z’, Once SET_DIST_SYM] \\
+         MATCH_MP_TAC SET_DIST_LE_DIST >> rw []) \\
+     fs [GSYM real_lt] \\
+    ‘z / e < 1’ by rw [REAL_LT_LDIV_EQ] \\
+     Know ‘g (z / e) = z / e’
+     >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [REAL_LT_IMP_LE]) >> Rewr' \\
+     simp [Abbr ‘z’, Once SET_DIST_SYM] \\
+     MATCH_MP_TAC SET_DIST_LE_DIST >> rw [])
+ >> Cases_on ‘y IN A’
+ >- (rw [Abbr ‘b’, SET_DIST_SING_IN_SET, MDIST_POS_LE] \\
+    ‘abs a = a’ by rw [ABS_REFL, Abbr ‘a’] >> POP_ORW \\
+     qunabbrev_tac ‘a’ \\
+     qmatch_abbrev_tac ‘e * g (z / e) <= _’ \\
+    ‘0 <= z’ by rw [Abbr ‘z’, SET_DIST_POS_LE] \\
+     Cases_on ‘e <= z’
+     >- (‘1 <= z / e’ by rw [REAL_LE_LDIV_EQ_NEG] \\
+         ‘g (z / e) = 1’ by rw [] >> rw [] \\
+         Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘z’ >> art [] \\
+         simp [Abbr ‘z’] \\
+         MATCH_MP_TAC SET_DIST_LE_DIST >> rw []) \\
+     fs [GSYM real_lt] \\
+    ‘z / e < 1’ by rw [REAL_LT_LDIV_EQ] \\
+     Know ‘g (z / e) = z / e’
+     >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [REAL_LT_IMP_LE]) >> Rewr' \\
+     simp [Abbr ‘z’] \\
+     MATCH_MP_TAC SET_DIST_LE_DIST >> rw [])
+ (* stage work *)
  >> cheat
 QED
 
