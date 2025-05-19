@@ -1738,16 +1738,32 @@ QED
 (* ------------------------------------------------------------------------- *)
 
 Definition Lipschitz_condition_def :
-  Lipschitz_condition (E1,E2) k f <=> !x y. dist E2 (f x,f y) <= k * dist E1 (x,y)
+    Lipschitz_condition (E1,E2) k f <=>
+      !x y. dist E2 (f x,f y) <= k * dist E1 (x,y)
 End
 
 (* Definition 13.8 [1, p.249], cf. topologyTheory.continuous_map *)
 Definition Lipschitz_continuous_map :
-  Lipschitz_continuous_map (E1,E2) f <=> ?k. Lipschitz_condition (E1,E2) k f
+    Lipschitz_continuous_map (E1,E2) f <=>
+      ?k. 0 < k /\ Lipschitz_condition (E1,E2) k f
 End
 
+(* |- !E1 E2 f.
+        Lipschitz_continuous_map (E1,E2) f <=>
+        ?k. 0 < k /\ !x y. dist E2 (f x,f y) <= k * dist E1 (x,y)
+ *)
 Theorem Lipschitz_continuous_map_def =
         Lipschitz_continuous_map |> REWRITE_RULE [Lipschitz_condition_def]
+
+Theorem Lipschitz_continuous_map_imp_continuous_map :
+    !E1 E2 f. Lipschitz_continuous_map (E1,E2) f ==>
+              continuous_map (mtop E1,mtop E2) f
+Proof
+    rw [Lipschitz_continuous_map_def, METRIC_CONTINUOUS_MAP, mspace]
+ >> ‘k <> 0’ by rw [REAL_LT_IMP_NE]
+ >> Q.EXISTS_TAC ‘e / k’ >> rw [REAL_LT_DIV]
+ >> Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘k * dist E1 (a,x)’ >> art []
+QED
 
 (* Another form of SET_DIST_LIPSCHITZ *)
 Theorem Lipschitz_continuous_map_set_dist :
@@ -1761,9 +1777,10 @@ QED
 (* Lemma 13.10 [1, p.249] *)
 Theorem Lipschitz_continuous_map_exists :
     !E A e. closed_in (mtop E) A /\ 0 < e ==>
-            ?f. (!x. 0 <= f x /\ f x <= 1) /\
-                Lipschitz_continuous_map (E,mr1) f /\
-               (!x. e < set_dist E ({x},A) ==> f x = 0) /\ !x. x IN A ==> f x = 1
+            ?f. Lipschitz_continuous_map (E,mr1) f /\
+               (!x. 0 <= f x /\ f x <= 1) /\
+               (!x. x IN A ==> f x = 1) /\
+                !x. e < set_dist E ({x},A) ==> f x = 0
 Proof
     rw [Lipschitz_continuous_map, IN_FUNSET]
  >> qabbrev_tac ‘g :real -> real = \x. max 0 (min 1 x)’
@@ -1781,16 +1798,15 @@ Proof
  >> ‘!x. 1 <= x ==> g x = 1’ by rw [Abbr ‘g’, min_def]
  >> qabbrev_tac ‘f = \x. 1 - g (set_dist E ({x},A) / e)’
  >> Q.EXISTS_TAC ‘f’ >> simp [mspace]
- >> CONJ_TAC (* !x. 0 <= f x /\ f x <= 1 *)
+ >> Know ‘!x. 0 <= f x /\ f x <= 1’
  >- (Q.X_GEN_TAC ‘x’ \\
      simp [Abbr ‘f’, REAL_SUB_LE] \\
      qmatch_abbrev_tac ‘1 - g y <= 1’ \\
      Q.PAT_X_ASSUM ‘!x. 0 <= g x /\ g x <= 1’ (MP_TAC o Q.SPEC ‘y’) \\
      REAL_ARITH_TAC)
- (* easy subgoals first *)
- >> simp [CONJ_ASSOC]
- >> reverse CONJ_TAC (* !x. x IN A ==> f x = 1 *)
- >- rw [Abbr ‘f’, SET_DIST_SING_IN_SET]
+ >> DISCH_TAC
+ >> ‘!x. x IN A ==> f x = 1’ by rw [Abbr ‘f’, SET_DIST_SING_IN_SET]
+ >> simp []
  >> reverse CONJ_TAC (* !x. e < set_dist E ({x},A) ==> f x = 0 *)
  >- (rw [Abbr ‘f’] \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
