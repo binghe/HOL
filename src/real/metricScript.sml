@@ -1733,6 +1733,34 @@ Proof
  >> rw [DISJOINT_ALT]
 QED
 
+Theorem SET_DIST_EQ_0_CLOSED :
+   !s x. closed_in (mtop m) s ==> (set_dist m({x},s) = &0 <=> (s = {}) \/ x IN s)
+Proof
+    rpt STRIP_TAC
+ >> reverse EQ_TAC
+ >- (STRIP_TAC >- rw [SET_DIST_EMPTY] \\
+     MATCH_MP_TAC SET_DIST_ZERO \\
+     rw [DISJOINT_ALT])
+ >> DISCH_TAC
+ >> Cases_on ‘s = {}’ >> rw []
+ >> fs [CLOSED_IN_METRIC, mspace]
+ >> CCONTR_TAC
+ >> Q.PAT_X_ASSUM ‘!x. x NOTIN s ==> _’ (MP_TAC o Q.SPEC ‘x’) >> rw []
+ >> STRONG_DISJ_TAC
+ >> rw [DISJOINT_ALT, IN_MBALL, mspace]
+ >> fs [set_dist_def]
+ >> qabbrev_tac ‘p = {dist m (x',y) | x' = x /\ y IN s}’
+ (* applying INF_CLOSE *)
+ >> Know ‘?x. x IN p /\ x < inf p + r’
+ >- (MATCH_MP_TAC INF_CLOSE >> art [] \\
+     fs [GSYM MEMBER_NOT_EMPTY] \\
+     rename1 ‘y IN s’ \\
+     Q.EXISTS_TAC ‘dist m (x,y)’ >> rw [Abbr ‘p’] \\
+     Q.EXISTS_TAC ‘y’ >> art [])
+ >> rw [Abbr ‘p’]
+ >> Q.EXISTS_TAC ‘y’ >> art []
+QED
+
 (* ------------------------------------------------------------------------- *)
 (*  Lipschitz continuous functions                                           *)
 (* ------------------------------------------------------------------------- *)
