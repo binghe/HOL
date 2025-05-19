@@ -1774,13 +1774,15 @@ Proof
  >> rw [GSYM dist_def, dist, SET_DIST_LIPSCHITZ]
 QED
 
-(* Lemma 13.10 [1, p.249] *)
+(* Lemma 13.10 [1, p.249]
+   NOTE: The original antecedent “closed_in (mtop E) A” is not needed.
+ *)
 Theorem Lipschitz_continuous_map_exists :
-    !E A e. closed_in (mtop E) A /\ 0 < e ==>
+    !E A e. 0 < e ==>
             ?f. Lipschitz_continuous_map (E,mr1) f /\
                (!x. 0 <= f x /\ f x <= 1) /\
                (!x. x IN A ==> f x = 1) /\
-                !x. e < set_dist E ({x},A) ==> f x = 0
+                !x. e <= set_dist E ({x},A) ==> f x = 0
 Proof
     rw [Lipschitz_continuous_map, IN_FUNSET]
  >> qabbrev_tac ‘g :real -> real = \x. max 0 (min 1 x)’
@@ -1807,11 +1809,11 @@ Proof
  >> DISCH_TAC
  >> ‘!x. x IN A ==> f x = 1’ by rw [Abbr ‘f’, SET_DIST_SING_IN_SET]
  >> simp []
- >> reverse CONJ_TAC (* !x. e < set_dist E ({x},A) ==> f x = 0 *)
+ >> reverse CONJ_TAC (* !x. e <= set_dist E ({x},A) ==> f x = 0 *)
  >- (rw [Abbr ‘f’] \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
      qmatch_abbrev_tac ‘1 <= z / e’ \\
-     MATCH_MP_TAC REAL_LE_RDIV >> rw [REAL_LT_IMP_LE])
+     MATCH_MP_TAC REAL_LE_RDIV >> rw [])
  (* ?k. Lipschitz_condition (E,mr1) k f *)
  >> simp [Lipschitz_condition_def, GSYM dist_def, dist, mspace]
  >> ‘e <> 0’ by rw [REAL_LT_IMP_NE]

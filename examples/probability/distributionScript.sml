@@ -3600,6 +3600,47 @@ Proof
                      Portemanteau_ii_def, Portemanteau_iv_def,
                      weak_convergence_condition_def, BL_def]
  >> STRIP_TAC
+ >> MP_TAC (Q.SPEC ‘E’ Lipschitz_continuous_map_exists)
+ >> simp [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM]
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘f’ STRIP_ASSUME_TAC)
+ >> Know ‘!A e x. closed_in (mtop E) A /\ 0 < e ==>
+                  inf (IMAGE (\n. f A (inv &SUC n) x) UNIV) = indicator A x’
+ >- (reverse (rw [GSYM REAL_LE_ANTISYM])
+     >- (MATCH_MP_TAC REAL_IMP_LE_INF' \\
+         CONJ_TAC >- rw [Once EXTENSION, NOT_IN_EMPTY] \\
+         Q.X_GEN_TAC ‘y’ >> rw [indicator] \\
+         simp []) \\
+     MATCH_MP_TAC REAL_LE_EPSILON \\
+     Q.X_GEN_TAC ‘z’ >> DISCH_TAC \\
+     MATCH_MP_TAC REAL_IMP_INF_LE' >> simp [] \\
+     CONJ_TAC
+     >- (Q.EXISTS_TAC ‘0’ \\
+         Q.X_GEN_TAC ‘y’ >> rw [] >> simp []) \\
+     Suff ‘?n. f A (realinv (&SUC n)) x <= indicator A x + z’ >- METIS_TAC [] \\
+     rw [indicator, REAL_LT_IMP_LE] \\
+     qabbrev_tac ‘d = set_dist E ({x},A)’ \\
+     Q.EXISTS_TAC ‘inv ’
+     cheat)
+ >> DISCH_TAC
+ >> qabbrev_tac ‘sp = mspace E’
+ >> qabbrev_tac ‘t = mtop E’
+ >> qabbrev_tac ‘b = B t’
+ >> ‘sigma_algebra b’ by METIS_TAC [sigma_algebra_general_borel]
+ >> Know ‘space b = sp’
+ >- (rw [Abbr ‘sp’, Abbr ‘b’, space_general_borel] \\
+     rw [Abbr ‘t’, mspace])
+ >> DISCH_TAC
+ >> Know ‘(!n. finite_measure_space (space b,subsets b,X n)) /\
+          finite_measure_space (space b,subsets b,Y)’
+ >- (Q.PAT_X_ASSUM ‘space b = sp’ K_TAC \\
+     FULL_SIMP_TAC std_ss [subprobability_measure_space_def])
+ >> STRIP_TAC
+ >> gs [subprobability_measure_space_thm, finite_measure_space_thm, FORALL_AND_THM]
+ (* Y sp <= liminf (\n. X n sp) *)
+ >> CONJ_TAC
+ >- (
+     cheat)
+ (* stage work *)
  >> cheat
 QED
 

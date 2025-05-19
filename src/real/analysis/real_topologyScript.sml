@@ -6949,6 +6949,7 @@ QED
 (* Compactness (the definition is the one based on convegent subsequences).  *)
 (* ------------------------------------------------------------------------- *)
 
+(* cf. [compact_def] connecting “compact” with “compact_in” (topologyTheory) *)
 val compact = new_definition ("compact",
  ``compact s <=> !f:num->real. (!n. f(n) IN s)
    ==> ?l r. l IN s /\ (!m n:num. m < n ==> r(m) < r(n)) /\
@@ -7511,6 +7512,13 @@ val COMPACT_EQ_HEINE_BOREL = store_thm ("COMPACT_EQ_HEINE_BOREL",
   DISCH_TAC THEN MATCH_MP_TAC BOUNDED_CLOSED_IMP_COMPACT THEN
   ASM_MESON_TAC[BOLZANO_WEIERSTRASS_IMP_BOUNDED,
    BOLZANO_WEIERSTRASS_IMP_CLOSED]);
+
+Theorem compact_def :
+    !s. compact s <=> compact_in euclidean s
+Proof
+    rw [COMPACT_EQ_HEINE_BOREL, compact_in, TOPSPACE_EUCLIDEAN, euclidean_open_def]
+ >> METIS_TAC []
+QED
 
 val COMPACT_EQ_BOLZANO_WEIERSTRASS = store_thm ("COMPACT_EQ_BOLZANO_WEIERSTRASS",
  ``!s:real->bool. compact s <=>
