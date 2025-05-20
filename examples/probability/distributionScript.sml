@@ -3600,35 +3600,6 @@ Proof
                      Portemanteau_ii_def, Portemanteau_iv_def,
                      weak_convergence_condition_def]
  >> STRIP_TAC
- >> MP_TAC (Q.SPEC ‘E’ Lipschitz_continuous_map_exists)
- >> simp [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM]
- >> DISCH_THEN (Q.X_CHOOSE_THEN ‘f’ STRIP_ASSUME_TAC)
- >> Know ‘!A e x. closed_in (mtop E) A /\ A <> {} /\ 0 < e ==>
-                  inf (IMAGE (\n. f A (inv &SUC n) x) UNIV) = indicator A x’
- >- (reverse (rw [GSYM REAL_LE_ANTISYM])
-     >- (MATCH_MP_TAC REAL_IMP_LE_INF' \\
-         CONJ_TAC >- rw [Once EXTENSION, NOT_IN_EMPTY] \\
-         Q.X_GEN_TAC ‘y’ >> rw [indicator] \\
-         simp []) \\
-     MATCH_MP_TAC REAL_LE_EPSILON \\
-     Q.X_GEN_TAC ‘z’ >> DISCH_TAC \\
-     MATCH_MP_TAC REAL_IMP_INF_LE' >> simp [] \\
-     CONJ_TAC
-     >- (Q.EXISTS_TAC ‘0’ \\
-         Q.X_GEN_TAC ‘y’ >> rw [] >> simp []) \\
-     Suff ‘?n. f A (realinv (&SUC n)) x <= indicator A x + z’ >- METIS_TAC [] \\
-     rw [indicator, REAL_LT_IMP_LE] \\
-     qabbrev_tac ‘d = set_dist E ({x},A)’ \\
-    ‘d <> 0’ by METIS_TAC [SET_DIST_EQ_0_CLOSED] \\
-    ‘0 < d’ by METIS_TAC [SET_DIST_POS_LE, REAL_LE_LT] \\
-     MP_TAC (Q.SPEC ‘d’ REAL_ARCH_INV_SUC) >> RW_TAC std_ss [] \\
-     Q.EXISTS_TAC ‘n’ \\
-     qmatch_abbrev_tac ‘f A a x <= z’ \\
-     Suff ‘f A a x = 0’ >- rw [REAL_LT_IMP_LE] \\
-     FIRST_X_ASSUM (irule o cj 4) \\
-     RW_TAC std_ss [REAL_LT_IMP_LE, Abbr ‘a’] \\
-     MATCH_MP_TAC REAL_INV_POS >> rw [])
- >> DISCH_TAC
  >> qabbrev_tac ‘sp = mspace E’
  >> qabbrev_tac ‘t = mtop E’
  >> ‘closed_in t sp’ by METIS_TAC [CLOSED_IN_TOPSPACE, mspace]
@@ -3695,8 +3666,95 @@ Proof
         ‘Y = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
          rw [MEASURE_EMPTY]) >> Rewr' \\
      rw [EXTREAL_LIM_CONST])
- (* stage work *)
  >> ‘s IN subsets b’ by rw [closed_in_general_borel, Abbr ‘b’]
+ (* applying Lipschitz_continuous_map_exists *)
+ >> MP_TAC (Q.SPEC ‘E’ Lipschitz_continuous_map_exists)
+ >> simp [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM]
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘f’ STRIP_ASSUME_TAC)
+ >> ‘!n. (0 :real) < inv (&SUC n)’ by rw [REAL_INV_POS]
+ >> Know ‘!A x. closed_in t A /\ A <> {} ==>
+                inf (IMAGE (\n. f A (inv (&SUC n)) x) UNIV) = indicator A x’
+ >- (reverse (rw [GSYM REAL_LE_ANTISYM])
+     >- (MATCH_MP_TAC REAL_IMP_LE_INF' \\
+         CONJ_TAC >- rw [Once EXTENSION, NOT_IN_EMPTY] \\
+         Q.X_GEN_TAC ‘y’ >> rw [indicator] \\
+         simp []) \\
+     MATCH_MP_TAC REAL_LE_EPSILON \\
+     Q.X_GEN_TAC ‘z’ >> DISCH_TAC \\
+     MATCH_MP_TAC REAL_IMP_INF_LE' >> simp [] \\
+     CONJ_TAC
+     >- (Q.EXISTS_TAC ‘0’ \\
+         Q.X_GEN_TAC ‘y’ >> rw [] >> simp []) \\
+     Suff ‘?n. f A (inv (&SUC n)) x <= indicator A x + z’ >- METIS_TAC [] \\
+     rw [indicator, REAL_LT_IMP_LE] \\
+     qabbrev_tac ‘d = set_dist E ({x},A)’ \\
+    ‘d <> 0’ by METIS_TAC [SET_DIST_EQ_0_CLOSED] \\
+    ‘0 < d’ by METIS_TAC [SET_DIST_POS_LE, REAL_LE_LT] \\
+     MP_TAC (Q.SPEC ‘d’ REAL_ARCH_INV_SUC) >> RW_TAC std_ss [] \\
+     Q.EXISTS_TAC ‘n’ \\
+     qmatch_abbrev_tac ‘f A a x <= z’ \\
+     Suff ‘f A a x = 0’ >- rw [REAL_LT_IMP_LE] \\
+     FIRST_X_ASSUM (irule o cj 4) \\
+     RW_TAC std_ss [REAL_LT_IMP_LE, Abbr ‘a’])
+ >> DISCH_TAC
+ >> Know ‘!A e. 0 < e ==> f A e IN C_b t’
+ >- (rw [bounded_continuous_def, IN_APP, Abbr ‘t’, euclidean_def]
+     >- (MATCH_MP_TAC Lipschitz_continuous_map_imp_continuous_map >> rw []) \\
+     simp [bounded_def] \\
+     Q.EXISTS_TAC ‘1’ >> rw [] \\
+     simp [ABS_BOUNDS] \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘-0’ >> rw [REAL_LE_NEG])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘fi = \i x. f s (inv (&SUC i)) x’
+ >> Know ‘!x. mono_decreasing (\i. fi i x)’
+ >- (rw [mono_decreasing_def, Abbr ‘fi’] >> rename1 ‘i <= j’ \\
+     qabbrev_tac ‘d = set_dist E ({x},s)’ \\
+     Cases_on ‘x IN s’ >- rw [] \\
+    ‘d <> 0’ by METIS_TAC [SET_DIST_EQ_0_CLOSED] \\
+    ‘0 < d’ by METIS_TAC [SET_DIST_POS_LE, REAL_LE_LT] \\
+     Q.PAT_X_ASSUM ‘!A e. 0 < e ==> Lipschitz_continuous_map (E,mr1) (f A e) /\ _’
+       (MP_TAC o Q.SPEC ‘s’) >> rw [] \\
+    ‘inv (&SUC j) <= (inv (&SUC i)) :real’ by rw [REAL_INV_LE_ANTIMONO] \\
+     Cases_on ‘inv (&SUC j) <= d’
+     >- (‘f s (inv (&SUC j)) x = 0’ by METIS_TAC [] >> simp []) \\
+     FULL_SIMP_TAC std_ss [GSYM real_lt] \\
+     Know ‘d < inv (&SUC i)’
+     >- (MATCH_MP_TAC REAL_LTE_TRANS \\
+         Q.EXISTS_TAC ‘inv (&SUC j)’ >> art []) >> DISCH_TAC \\
+     Know ‘f s (inv (&SUC j)) x = 1 - d / inv (&SUC j)’
+     >- (Q.PAT_X_ASSUM ‘!e. 0 < e ==> Lipschitz_continuous_map (E,mr1) (f s e) /\ _’
+           (MP_TAC o Q.SPEC ‘inv (&SUC j)’) >> RW_TAC std_ss [] \\
+         POP_ASSUM (MP_TAC o Q.SPEC ‘x’) \\
+         RW_TAC std_ss [REAL_LT_IMP_LE]) >> Rewr' \\
+     Know ‘f s (inv (&SUC i)) x = 1 - d / inv (&SUC i)’
+     >- (Q.PAT_X_ASSUM ‘!e. 0 < e ==> Lipschitz_continuous_map (E,mr1) (f s e) /\ _’
+           (MP_TAC o Q.SPEC ‘inv (&SUC i)’) >> RW_TAC std_ss [] \\
+         POP_ASSUM (MP_TAC o Q.SPEC ‘x’) \\
+         RW_TAC std_ss [REAL_LT_IMP_LE]) >> Rewr' \\
+     REWRITE_TAC [REAL_LE_SUB_CANCEL1] \\
+     ASM_SIMP_TAC real_ss [REAL_LE_LDIV_CANCEL])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘fi' = \i x. Normal (fi i x)’
+ >> Know ‘!x. ext_mono_decreasing (\i. fi' i x)’
+ >- (rw [ext_mono_decreasing_def, Abbr ‘fi'’] \\
+     fs [mono_decreasing_def])
+ >> DISCH_TAC
+ (* applying lebesgue_monotone_convergence_decreasing
+
+    X n s
+  = pos_fn_integral (sp,subsets b,X n) (indicator_fn s)
+  = pos_fn_integral (sp,subsets b,X n) (\x. N (indicator s x))
+  = pos_fn_integral (,,X n) (inf (IMAGE (\i. (\x. N (f s (inv (&SUC i)) x)) UNIV))
+  = pos_fn_integral (,,X n) (inf (IMAGE (\i. fi' i x) UNIV))
+  = inf (IMAGE (\i. pos_fn_integral (,,X n) (fi' i)) UNIV)
+   --n-->
+    inf (IMAGE (\i. pos_fn_integral (,,Y) (fi' i)) UNIV) (by assumption)
+  = pos_fn_integral (,,Y) (inf (IMAGE (\i. fi' i x) UNIV))
+  = pos_fn_integral (,,Y) (inf (IMAGE (\i. (\x. N (f s (inv (&SUC i)) x)) UNIV))
+  = pos_fn_integral (sp,subsets b,Y) (\x. N (indicator s x))
+  = pos_fn_integral (sp,subsets b,Y) (indicator_fn s)
+  = Y s
+  *)
  >> cheat
 QED
 

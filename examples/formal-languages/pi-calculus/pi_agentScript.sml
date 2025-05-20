@@ -23,35 +23,32 @@ val _ = new_theory "pi_agent";
 
    Nominal_datatype :
 
-           name = Name string
-
            pi   = Nil                      (* 0 *)
                 | Tau pi                   (* tau.P *)
-                | Input name ''name pi     (* a(x).P *)
-                | Output name name pi      (* {a}b.P *)
-                | Match name name pi       (* [a == b] P *)
-                | Mismatch name name pi    (* [a <> b] P *)
+                | Input 'free 'bound pi    (* a(x).P *)
+                | Output 'free 'free pi    (* {a}b.P *)
+                | Match 'free 'free pi     (* [a == b] P *)
+                | Mismatch 'free 'free pi  (* [a <> b] P *)
                 | Sum pi pi                (* P + Q *)
                 | Par pi pi                (* P | Q *)
-                | Res ''name pi            (* nu x. P *)
+                | Res 'bound pi            (* nu x. P *)
 
        residual = TauR pi
-                | InputS name ''name pi      (* Input *)
-                | BoundOutput name ''name pi (* Bound output *)
-                | FreeOutput name name pi    (* Free output *)
+                | InputS 'free 'bound pi      (* Input *)
+                | BoundOutput 'free 'bound pi (* Bound output *)
+                | FreeOutput 'free 'free pi   (* Free output *)
    End
 
-   NOTE: Replication ("!") is not need so far.
+   NOTE: Replication ("!") is not needed so far, but can be supported later.
    ---------------------------------------------------------------------- *)
 
-val tyname0 = "name";
 val tyname1 = "pi";
 val tyname2 = "residual";
 
-(* "Name" is under GVAR (of type 0); There's an extra "Var" under type 1 *)
+(* For pi-calculus, no constructor is under GVAR *)
 val unit_t = “:unit”;
 val u_tm = mk_var("u", unit_t);
-val vp = “(\n ^u_tm. n = 0)”;
+val vp = “(\n ^u_tm. F)”;
 
 Datatype:
   repcode = rNil | rTau | rInput | rOutput | rMatch | rMismatch | rSum
