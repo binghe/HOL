@@ -6805,6 +6805,13 @@ Proof
     rw [ext_tendsto_def, eventually] >> PROVE_TAC []
 QED
 
+Theorem EXTREAL_LIM_CONST :
+    !net (a :extreal). ((\x. a) --> a) net
+Proof
+    rw [EXTREAL_LIM, trivial_limit, MDIST_REFL]
+ >> METIS_TAC []
+QED
+
 (* Name convention: "EXTREAL_" + (theorem name as in real_topologyTheory)
 
    e.g. cf. LIM_SEQUENTIALLY for EXTREAL_LIM_SEQUENTIALLY below:

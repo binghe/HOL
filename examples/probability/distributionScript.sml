@@ -3596,14 +3596,14 @@ Theorem Portemanteau_ii_imp_iv :
             Portemanteau_ii E X Y ==> Portemanteau_iv E X Y
 Proof
     rpt GEN_TAC
- >> SIMP_TAC set_ss [Portemanteau_antecedents_def, GSYM mspace,
+ >> SIMP_TAC set_ss [Portemanteau_antecedents_def, GSYM mspace, BL_def,
                      Portemanteau_ii_def, Portemanteau_iv_def,
-                     weak_convergence_condition_def, BL_def]
+                     weak_convergence_condition_def]
  >> STRIP_TAC
  >> MP_TAC (Q.SPEC ‘E’ Lipschitz_continuous_map_exists)
  >> simp [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM]
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘f’ STRIP_ASSUME_TAC)
- >> Know ‘!A e x. closed_in (mtop E) A /\ 0 < e ==>
+ >> Know ‘!A e x. closed_in (mtop E) A /\ A <> {} /\ 0 < e ==>
                   inf (IMAGE (\n. f A (inv &SUC n) x) UNIV) = indicator A x’
  >- (reverse (rw [GSYM REAL_LE_ANTISYM])
      >- (MATCH_MP_TAC REAL_IMP_LE_INF' \\
@@ -3619,28 +3619,84 @@ Proof
      Suff ‘?n. f A (realinv (&SUC n)) x <= indicator A x + z’ >- METIS_TAC [] \\
      rw [indicator, REAL_LT_IMP_LE] \\
      qabbrev_tac ‘d = set_dist E ({x},A)’ \\
-     Q.EXISTS_TAC ‘inv ’
-     cheat)
+    ‘d <> 0’ by METIS_TAC [SET_DIST_EQ_0_CLOSED] \\
+    ‘0 < d’ by METIS_TAC [SET_DIST_POS_LE, REAL_LE_LT] \\
+     MP_TAC (Q.SPEC ‘d’ REAL_ARCH_INV_SUC) >> RW_TAC std_ss [] \\
+     Q.EXISTS_TAC ‘n’ \\
+     qmatch_abbrev_tac ‘f A a x <= z’ \\
+     Suff ‘f A a x = 0’ >- rw [REAL_LT_IMP_LE] \\
+     FIRST_X_ASSUM (irule o cj 4) \\
+     RW_TAC std_ss [REAL_LT_IMP_LE, Abbr ‘a’] \\
+     MATCH_MP_TAC REAL_INV_POS >> rw [])
  >> DISCH_TAC
  >> qabbrev_tac ‘sp = mspace E’
  >> qabbrev_tac ‘t = mtop E’
+ >> ‘closed_in t sp’ by METIS_TAC [CLOSED_IN_TOPSPACE, mspace]
  >> qabbrev_tac ‘b = B t’
  >> ‘sigma_algebra b’ by METIS_TAC [sigma_algebra_general_borel]
  >> Know ‘space b = sp’
  >- (rw [Abbr ‘sp’, Abbr ‘b’, space_general_borel] \\
      rw [Abbr ‘t’, mspace])
  >> DISCH_TAC
+ >> ‘sp IN subsets b’ by METIS_TAC [SIGMA_ALGEBRA_SPACE]
  >> Know ‘(!n. finite_measure_space (space b,subsets b,X n)) /\
           finite_measure_space (space b,subsets b,Y)’
  >- (Q.PAT_X_ASSUM ‘space b = sp’ K_TAC \\
      FULL_SIMP_TAC std_ss [subprobability_measure_space_def])
  >> STRIP_TAC
  >> gs [subprobability_measure_space_thm, finite_measure_space_thm, FORALL_AND_THM]
- (* Y sp <= liminf (\n. X n sp) *)
- >> CONJ_TAC
- >- (
-     cheat)
+ (* NOTE: The plan here is to show “((\n. X n s) --> Y s) sequentially”, and thus
+    limsup (\n. X n s) = liminf (\n. X n s) = Y s. All involves sets are closed.
+  *)
+ >> Suff ‘!s. closed_in t s ==> ((\n. X n s) --> Y s) sequentially’
+ >- (DISCH_TAC \\
+     CONJ_TAC (* Y sp <= liminf (\n. X n sp) *)
+     >- (POP_ASSUM (MP_TAC o Q.SPEC ‘sp’) >> simp [] \\
+         qabbrev_tac ‘g = \n. X n sp’ \\
+         qabbrev_tac ‘l = Y sp’ \\
+         Know ‘(g --> l) sequentially <=> (real o g --> real l) sequentially’
+         >- (MATCH_MP_TAC extreal_lim_sequentially_eq >> rw [Abbr ‘l’] \\
+             Q.EXISTS_TAC ‘0’ >> rw [Abbr ‘g’]) >> Rewr' \\
+         qabbrev_tac ‘l' = real l’ \\
+         Know ‘(real o g --> l') sequentially <=>
+               limsup g = Normal l' /\ liminf g = Normal l'’
+         >- (MATCH_MP_TAC ext_limsup_thm >> rw [Abbr ‘g’]) >> Rewr' \\
+         rw [Abbr ‘l'’, Abbr ‘l’] \\
+         Know ‘Normal (real (Y (space b))) = Y (space b)’
+         >- (MATCH_MP_TAC normal_real >> rw []) >> Rewr' \\
+         simp []) \\
+     rpt STRIP_TAC \\
+     Q.PAT_X_ASSUM ‘!s. closed_in t s ==> _’ (MP_TAC o Q.SPEC ‘s’) >> simp [] \\
+     qabbrev_tac ‘g = \n. X n s’ \\
+     qabbrev_tac ‘l = Y s’ \\
+    ‘s IN subsets b’ by rw [closed_in_general_borel, Abbr ‘b’] \\
+     Know ‘(g --> l) sequentially <=> (real o g --> real l) sequentially’
+     >- (MATCH_MP_TAC extreal_lim_sequentially_eq >> rw [Abbr ‘l’] \\
+         Q.EXISTS_TAC ‘0’ >> rw [Abbr ‘g’]) >> Rewr' \\
+     qabbrev_tac ‘l' = real l’ \\
+     Know ‘(real o g --> l') sequentially <=>
+           limsup g = Normal l' /\ liminf g = Normal l'’
+     >- (MATCH_MP_TAC ext_limsup_thm >> rw [Abbr ‘g’]) >> Rewr' \\
+     rw [Abbr ‘l'’, Abbr ‘l’] \\
+     Know ‘Normal (real (Y s)) = Y s’
+     >- (MATCH_MP_TAC normal_real >> rw []) >> Rewr' \\
+     simp [])
+ (* first special case without using Lipschitz_continuous_map *)
+ >> rpt STRIP_TAC
+ >> Cases_on ‘s = {}’
+ >- (Know ‘!n. X n s = 0’
+     >- (Q.X_GEN_TAC ‘n’ \\
+         Q.PAT_X_ASSUM ‘!n. measure_space (sp,subsets b,X n)’ (MP_TAC o Q.SPEC ‘n’) \\
+         qmatch_abbrev_tac ‘measure_space M ==> _’ >> DISCH_TAC \\
+        ‘X n = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
+         rw [MEASURE_EMPTY]) >> Rewr' \\
+     Know ‘Y s = 0’
+     >- (qabbrev_tac ‘M = (sp,subsets b,Y)’ \\
+        ‘Y = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
+         rw [MEASURE_EMPTY]) >> Rewr' \\
+     rw [EXTREAL_LIM_CONST])
  (* stage work *)
+ >> ‘s IN subsets b’ by rw [closed_in_general_borel, Abbr ‘b’]
  >> cheat
 QED
 
