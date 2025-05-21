@@ -3723,6 +3723,32 @@ Proof
  >> Q.EXISTS_TAC ‘ARB’ >> rw []
 QED
 
+Theorem sup_normal :
+    !s k. abs (sup s) <= Normal k ==> Normal (sup (s o Normal)) = sup s
+Proof
+    rw [extreal_sup_def, extreal_abs_def, abs_bounds, le_infty, extreal_ainv_def,
+        extreal_le_eq, o_DEF]
+QED
+
+Theorem inf_normal :
+    !s k. abs (inf s) <= Normal k ==> Normal (inf (s o Normal)) = inf s
+Proof
+    rw [extreal_inf_def, inf_def, GSYM extreal_ainv_def, abs_bounds, le_neg]
+ >> Know ‘(\r. s (-Normal r)) = s o numeric_negate o Normal’
+ >- rw [o_DEF, FUN_EQ_THM]
+ >> Rewr'
+ >> REWRITE_TAC [o_ASSOC]
+ >> Know ‘IMAGE numeric_negate s = s o numeric_negate’
+ >- (rw [Once EXTENSION, o_DEF, IN_APP] \\
+     METIS_TAC [neg_neg])
+ >> DISCH_THEN (FULL_SIMP_TAC bool_ss o wrap)
+ >> qabbrev_tac ‘P = s o numeric_negate’
+ >> MATCH_MP_TAC sup_normal
+ >> Q.EXISTS_TAC ‘k’
+ >> rw [abs_bounds]
+ >> METIS_TAC [neg_neg, le_neg]
+QED
+
 (* ------------------------------------------------------------------------- *)
 (* Suminf over extended reals. Definition and properties                     *)
 (* ------------------------------------------------------------------------- *)
@@ -6544,7 +6570,8 @@ QED
 
 Theorem indicator_fn_suminf :
     !a x. (!m n. m <> n ==> DISJOINT (a m) (a n)) ==>
-          (suminf (\i. indicator_fn (a i) x) = indicator_fn (BIGUNION (IMAGE a univ(:num))) x)
+          suminf (\i. indicator_fn (a i) x) =
+          indicator_fn (BIGUNION (IMAGE a univ(:num))) x
 Proof
     rpt STRIP_TAC
  >> Know `!n. 0 <= (\i. indicator_fn (a i) x) n`

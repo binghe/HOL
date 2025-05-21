@@ -1,5 +1,5 @@
 (* ========================================================================= *)
-(*   Probability Density Function Theory (former normal_rvTheory) [1]        *)
+(*   Theory of Probability Distributions (former normal_rvTheory [1])        *)
 (*                                                                           *)
 (*        (c) Copyright 2015,                                                *)
 (*                       Muhammad Qasim,                                     *)
@@ -3736,11 +3736,10 @@ Proof
  >> DISCH_TAC
  >> qabbrev_tac ‘fi' = \i x. Normal (fi i x)’
  >> Know ‘!x. ext_mono_decreasing (\i. fi' i x)’
- >- (rw [ext_mono_decreasing_def, Abbr ‘fi'’] \\
-     fs [mono_decreasing_def])
+ >- (rw [Abbr ‘fi'’] \\
+     HO_MATCH_MP_TAC (REWRITE_RULE [o_DEF] mono_decreasing_imp_ext) >> art [])
  >> DISCH_TAC
- (* applying lebesgue_monotone_convergence_decreasing
-
+ (* NOTE: (proof sketch)
     X n s
   = pos_fn_integral (sp,subsets b,X n) (indicator_fn s)
   = pos_fn_integral (sp,subsets b,X n) (\x. N (indicator s x))
@@ -3773,7 +3772,33 @@ Proof
        (MP_TAC o Q.SPECL [‘s’, ‘x’]) >> rw [])
  >> Rewr'
  >> Q.PAT_X_ASSUM ‘!A x. closed_in t A /\ A <> {} ==> _’ K_TAC
- >> simp [] (* rewrite f by fi *)
+ >> simp [] (* this rewrites f to fi in the goal *)
+ (* applying inf_normal *)
+ >> qabbrev_tac ‘P = \x. IMAGE (\i. fi' i x) UNIV’
+ >> Know ‘!x. Normal (inf (IMAGE (\i. fi i x) UNIV)) =
+              Normal (inf (P x o Normal))’
+ >- (rw [Abbr ‘P’, o_DEF, Abbr ‘fi'’] \\
+     AP_TERM_TAC >> rw [Once EXTENSION])
+ >> Rewr'
+ >> Know ‘!x. Normal (inf (P x o Normal)) = inf (P x)’
+ >- (Q.X_GEN_TAC ‘x’ \\
+     MATCH_MP_TAC inf_normal >> Q.EXISTS_TAC ‘1’ >> rw [normal_1] \\
+     rw [Abbr ‘P’] \\
+     MATCH_MP_TAC inf_bounded' \\
+     rw [Abbr ‘fi'’, extreal_abs_def] \\
+     rw [Abbr ‘fi’, ABS_BOUNDS] \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘-0’ >> rw [REAL_LE_NEG])
+ >> Rewr'
+ >> simp [Abbr ‘P’]
+ (* applying lebesgue_monotone_convergence_decreasing, finally *)
+ >> Know ‘!n. pos_fn_integral (sp,subsets b,X n)
+                              (\x. inf (IMAGE (\i. fi' i x) UNIV)) =
+              inf (IMAGE (\i. pos_fn_integral (sp,subsets b,X n) (fi' i)) UNIV)’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     MATCH_MP_TAC lebesgue_monotone_convergence_decreasing \\
+     simp [lt_infty] \\
+     cheat)
+ (* stage work *)
  >> cheat
 QED
 
