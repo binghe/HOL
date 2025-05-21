@@ -3755,6 +3755,25 @@ Proof
   = pos_fn_integral (sp,subsets b,Y) (indicator_fn s)
   = Y s
   *)
+ >> Know ‘!n. X n s = pos_fn_integral (sp,subsets b,X n) (indicator_fn s)’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     SYM_TAC >> qmatch_abbrev_tac ‘pos_fn_integral M _ = _’ \\
+    ‘X n = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
+     MATCH_MP_TAC pos_fn_integral_indicator >> rw [Abbr ‘M’])
+ >> Rewr'
+ >> Know ‘Y s = pos_fn_integral (sp,subsets b,Y) (indicator_fn s)’
+ >- (SYM_TAC >> qmatch_abbrev_tac ‘pos_fn_integral M _ = _’ \\
+    ‘Y = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
+     MATCH_MP_TAC pos_fn_integral_indicator >> rw [Abbr ‘M’])
+ >> Rewr'
+ >> simp [indicator_fn, o_DEF]
+ >> Know ‘!x. indicator s x = inf (IMAGE (\i. f s (realinv (&SUC i)) x) UNIV)’
+ >- (Q.X_GEN_TAC ‘x’ \\
+     Q.PAT_X_ASSUM ‘!A x. closed_in t A /\ A <> {} ==> _’
+       (MP_TAC o Q.SPECL [‘s’, ‘x’]) >> rw [])
+ >> Rewr'
+ >> Q.PAT_X_ASSUM ‘!A x. closed_in t A /\ A <> {} ==> _’ K_TAC
+ >> simp [] (* rewrite f by fi *)
  >> cheat
 QED
 

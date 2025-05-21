@@ -790,6 +790,18 @@ val ext_mono_decreasing_suc = store_thm
 Overload mono_increasing = “ext_mono_increasing”
 Overload mono_decreasing = “ext_mono_decreasing”
 
+Theorem mono_increasing_imp_ext :
+    !f. mono_increasing f ==> mono_increasing (Normal o f)
+Proof
+    RW_TAC std_ss [extreal_le_eq, mono_increasing_def, ext_mono_increasing_def]
+QED
+
+Theorem mono_decreasing_imp_ext :
+    !f. mono_decreasing f ==> mono_decreasing (Normal o f)
+Proof
+    RW_TAC std_ss [extreal_le_eq, mono_decreasing_def, ext_mono_decreasing_def]
+QED
+
 Theorem EXTREAL_ARCH_POW2 : (* was: EXTREAL_ARCH_POW *)
     !x. x <> PosInf ==> ?n. x < 2 pow n
 Proof

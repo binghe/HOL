@@ -5098,25 +5098,6 @@ val LIM_WITHIN_OPEN = store_thm ("LIM_WITHIN_OPEN",
 (* More limit point characterizations.                                       *)
 (* ------------------------------------------------------------------------- *)
 
-val TRANSITIVE_STEPWISE_LT_EQ = store_thm ("TRANSITIVE_STEPWISE_LT_EQ",
- ``!R. (!x y z. R x y /\ R y z ==> R x z)
-         ==> ((!m n. m < n ==> R m n) <=> (!n. R n (SUC n)))``,
-  REPEAT STRIP_TAC THEN EQ_TAC THEN ASM_SIMP_TAC std_ss [LESS_THM] THEN
-  DISCH_TAC THEN SIMP_TAC std_ss [LT_EXISTS] THEN
-  KNOW_TAC ``(!m n. (?d. n = m + SUC d) ==> R m n) =
-              (!m d n. (n = m + SUC d) ==> R m (m + SUC d))`` THENL
-  [METIS_TAC [LEFT_EXISTS_IMP_THM, SWAP_FORALL_THM], ALL_TAC] THEN
-  DISC_RW_KILL THEN GEN_TAC THEN
-  SIMP_TAC std_ss [LEFT_FORALL_IMP_THM, EXISTS_REFL, ADD_CLAUSES] THEN
-  INDUCT_TAC THEN REWRITE_TAC[ADD_CLAUSES] THEN ASM_MESON_TAC[]);
-
-val TRANSITIVE_STEPWISE_LT = store_thm ("TRANSITIVE_STEPWISE_LT",
- ``!R. (!x y z. R x y /\ R y z ==> R x z) /\ (!n. R n (SUC n))
-       ==> !m n. m < n ==> R m n``,
-  REPEAT GEN_TAC THEN MATCH_MP_TAC(TAUT
-   `(a ==> (c <=> b)) ==> a /\ b ==> c`) THEN
-  MATCH_ACCEPT_TAC TRANSITIVE_STEPWISE_LT_EQ);
-
 val LIMPT_SEQUENTIAL_INJ = store_thm ("LIMPT_SEQUENTIAL_INJ",
  ``!x:real s.
       x limit_point_of s <=>
