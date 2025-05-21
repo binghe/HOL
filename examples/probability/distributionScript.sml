@@ -3739,6 +3739,7 @@ Proof
  >- (rw [Abbr ‘fi'’] \\
      HO_MATCH_MP_TAC (REWRITE_RULE [o_DEF] mono_decreasing_imp_ext) >> art [])
  >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘!x. mono_decreasing (\i. fi i x)’ K_TAC
  (* NOTE: (proof sketch)
     X n s
   = pos_fn_integral (sp,subsets b,X n) (indicator_fn s)
@@ -3790,14 +3791,37 @@ Proof
      Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘-0’ >> rw [REAL_LE_NEG])
  >> Rewr'
  >> simp [Abbr ‘P’]
+ >> Know ‘!i. fi' i IN Borel_measurable (sp,subsets b)’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     POP_ASSUM K_TAC >> rw [Abbr ‘fi'’] \\
+     MATCH_MP_TAC (REWRITE_RULE [o_DEF] IN_MEASURABLE_BOREL_IMP_BOREL') >> art [] \\
+     rw [Abbr ‘fi’, in_borel_measurable_le, IN_FUNSET] \\
+     Cases_on ‘a < 0’
+     >- (Know ‘{w | w IN space b /\ f s (inv (&SUC n)) w <= a} = {}’
+         >- (rw [Once EXTENSION, NOT_IN_EMPTY] \\
+             CCONTR_TAC >> FULL_SIMP_TAC bool_ss [] \\
+            ‘f s (inv (&SUC n)) x < 0’ by PROVE_TAC [REAL_LET_TRANS] \\
+             METIS_TAC [REAL_LET_ANTISYM]) >> Rewr' \\
+         MATCH_MP_TAC SIGMA_ALGEBRA_EMPTY >> art []) \\
+     FULL_SIMP_TAC std_ss [real_lt] \\
+     cheat)
+ >> DISCH_TAC
  (* applying lebesgue_monotone_convergence_decreasing, finally *)
  >> Know ‘!n. pos_fn_integral (sp,subsets b,X n)
                               (\x. inf (IMAGE (\i. fi' i x) UNIV)) =
               inf (IMAGE (\i. pos_fn_integral (sp,subsets b,X n) (fi' i)) UNIV)’
  >- (Q.X_GEN_TAC ‘n’ \\
-     MATCH_MP_TAC lebesgue_monotone_convergence_decreasing \\
-     simp [lt_infty] \\
+     MATCH_MP_TAC lebesgue_monotone_convergence_decreasing >> simp [] \\
+     rw [GSYM lt_infty, Abbr ‘fi'’, Abbr ‘fi’] \\
      cheat)
+ >> Rewr'
+ >> Know ‘pos_fn_integral (sp,subsets b,Y)
+                          (\x. inf (IMAGE (\i. fi' i x) UNIV)) =
+          inf (IMAGE (\i. pos_fn_integral (sp,subsets b,Y) (fi' i)) UNIV)’
+ >- (MATCH_MP_TAC lebesgue_monotone_convergence_decreasing >> simp [] \\
+     rw [GSYM lt_infty, Abbr ‘fi'’, Abbr ‘fi’] \\
+     cheat)
+ >> Rewr'
  (* stage work *)
  >> cheat
 QED
