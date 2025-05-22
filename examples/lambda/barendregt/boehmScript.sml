@@ -28,6 +28,7 @@ val _ = new_theory "boehm";
 (* These theorems usually give unexpected results, should be applied manually *)
 val _ = temp_delsimps [
    "lift_disj_eq", "lift_imp_disj",
+(* "if_option_eq", "if_option_neq", *)
    "IN_UNION",     (* |- !s t x. x IN s UNION t <=> x IN s \/ x IN t *)
    "APPEND_ASSOC", (* |- !l1 l2 l3. l1 ++ (l2 ++ l3) = l1 ++ l2 ++ l3 *)
    "SNOC_APPEND"   (* |- !x l. SNOC x l = l ++ [x] *)

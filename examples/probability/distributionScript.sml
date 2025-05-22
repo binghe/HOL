@@ -3591,6 +3591,7 @@ Proof
  >> POP_ASSUM MATCH_MP_TAC >> rw [Abbr ‘M’]
 QED
 
+(* not easy *)
 Theorem Portemanteau_ii_imp_iv :
     !E X Y. Portemanteau_antecedents E X Y /\
             Portemanteau_ii E X Y ==> Portemanteau_iv E X Y
@@ -3791,20 +3792,101 @@ Proof
      Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘-0’ >> rw [REAL_LE_NEG])
  >> Rewr'
  >> simp [Abbr ‘P’]
+ (* hard *)
  >> Know ‘!i. fi' i IN Borel_measurable (sp,subsets b)’
  >- (Q.X_GEN_TAC ‘n’ \\
      POP_ASSUM K_TAC >> rw [Abbr ‘fi'’] \\
      MATCH_MP_TAC (REWRITE_RULE [o_DEF] IN_MEASURABLE_BOREL_IMP_BOREL') >> art [] \\
-     rw [Abbr ‘fi’, in_borel_measurable_le, IN_FUNSET] \\
-     Cases_on ‘a < 0’
-     >- (Know ‘{w | w IN space b /\ f s (inv (&SUC n)) w <= a} = {}’
+     rw [Abbr ‘fi’, in_borel_measurable_ge, IN_FUNSET] \\
+     Cases_on ‘a <= 0’
+     >- (Know ‘{w | w IN space b /\ a <= f s (inv (&SUC n)) w} = space b’
+         >- (rw [Once EXTENSION] \\
+             EQ_TAC >> rw [] \\
+             Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘0’ >> rw []) >> Rewr' \\
+         MATCH_MP_TAC SIGMA_ALGEBRA_SPACE >> art []) \\
+     FULL_SIMP_TAC std_ss [GSYM real_lt] \\
+     Cases_on ‘1 < a’
+     >- (Know ‘{w | w IN space b /\ a <= f s (realinv (&SUC n)) w} = {}’
          >- (rw [Once EXTENSION, NOT_IN_EMPTY] \\
              CCONTR_TAC >> FULL_SIMP_TAC bool_ss [] \\
-            ‘f s (inv (&SUC n)) x < 0’ by PROVE_TAC [REAL_LET_TRANS] \\
-             METIS_TAC [REAL_LET_ANTISYM]) >> Rewr' \\
+            ‘1 < f s (inv (&SUC n)) x’ by PROVE_TAC [REAL_LTE_TRANS] \\
+             METIS_TAC [REAL_LTE_ANTISYM]) >> Rewr' \\
          MATCH_MP_TAC SIGMA_ALGEBRA_EMPTY >> art []) \\
-     FULL_SIMP_TAC std_ss [real_lt] \\
-     cheat)
+     POP_ASSUM (ASSUME_TAC o REWRITE_RULE [real_lt]) \\
+     qunabbrev_tac ‘b’ \\
+     MATCH_MP_TAC closed_in_general_borel \\
+     rw [closed_in, space_general_borel] >- rw [SUBSET_DEF] \\
+     SIMP_TAC std_ss [Abbr ‘t’, OPEN_IN_MTOPOLOGY, GSYM mspace] \\
+     CONJ_TAC >- rw [SUBSET_DEF] \\
+     rw [GSYM real_lt, space_general_borel] \\
+     qabbrev_tac ‘e :real = inv (&SUC n)’ \\
+    ‘0 < e’ by rw [Abbr ‘e’] \\
+    ‘f s e x < 1’ by PROVE_TAC [REAL_LTE_TRANS] \\
+    ‘x NOTIN s’ by METIS_TAC [REAL_LT_LE] \\
+     qabbrev_tac ‘r = set_dist E ({x},s)’ \\
+    ‘r <> 0’ by METIS_TAC [SET_DIST_EQ_0_CLOSED] \\
+    ‘0 < r’ by METIS_TAC [SET_DIST_POS_LE, REAL_LE_LT] \\
+     simp [SUBSET_DEF, GSYM real_lt, IN_MBALL, space_general_borel] \\
+     Q.PAT_X_ASSUM ‘!A e. 0 < e ==> Lipschitz_continuous_map (E,mr1) (f A e) /\ _’
+       (MP_TAC o Q.SPECL [‘s’, ‘e’]) >> rw [] \\
+     Cases_on ‘e < r’ (* easy case: x is at (or outside) the border *)
+     >- (‘f s e x = 0’ by METIS_TAC [REAL_LT_IMP_LE] \\
+         Q.EXISTS_TAC ‘a * e’ (* This is the minimal safe radius of the cball *) \\
+         simp [REAL_LT_MUL] \\
+         Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+         qabbrev_tac ‘r' = set_dist E ({y},s)’ \\
+         Cases_on ‘e <= r'’ >- METIS_TAC [] \\
+         FULL_SIMP_TAC bool_ss [GSYM real_lt] \\
+         Know ‘f s e y = 1 - set_dist E ({y},s) / e’
+         >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [REAL_LT_IMP_LE]) >> Rewr' \\
+         simp [] \\
+        ‘e <> 0’ by rw [REAL_LT_IMP_NE] \\
+      (* applying SET_DIST_LIPSCHITZ *)
+         Know ‘abs (r - r') <= dist E (x,y)’ >- METIS_TAC [SET_DIST_LIPSCHITZ] \\
+        ‘r' < r’ by PROVE_TAC [REAL_LT_TRANS] \\
+        ‘abs (r - r') = r - r'’ by simp [ABS_REFL, REAL_SUB_LE, REAL_LT_IMP_LE] \\
+         POP_ORW >> DISCH_TAC \\
+        ‘r - r' < a * e’ by PROVE_TAC [REAL_LET_TRANS] \\
+         Know ‘e - r' < r - r'’
+         >- (Q.PAT_X_ASSUM ‘e < r’ MP_TAC \\
+             REAL_ARITH_TAC) >> DISCH_TAC \\
+        ‘e - r' < a * e’ by PROVE_TAC [REAL_LT_TRANS] \\
+         Know ‘1 - r' / e < a <=> (1 - r' / e) * e < a * e’
+         >- (SYM_TAC >> MATCH_MP_TAC REAL_LT_RMUL >> art []) >> Rewr' \\
+         ASM_SIMP_TAC std_ss [REAL_SUB_RDISTRIB, REAL_DIV_RMUL, REAL_MUL_LID]) \\
+  (* hard case: x is inside the ring area surrounding s *)
+     FULL_SIMP_TAC bool_ss [REAL_NOT_LT] \\
+     qabbrev_tac ‘a' = 1 - a’ \\
+     Q.PAT_X_ASSUM ‘1 - r / e < 1’ K_TAC \\
+     Q.PAT_X_ASSUM ‘1 - r / e < a’ MP_TAC \\
+    ‘e <> 0’ by rw [REAL_LT_IMP_NE] \\
+     simp [REAL_ARITH “1 - r / e < a <=> 1 - a < r / (e :real)”] \\
+     DISCH_TAC (* a' * e < r *) \\
+     Q.EXISTS_TAC ‘r - a' * e’ \\
+     simp [REAL_SUB_LT] \\
+     Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+     qabbrev_tac ‘r' = set_dist E ({y},s)’ \\
+     Cases_on ‘e <= r'’ >- METIS_TAC [] \\
+     FULL_SIMP_TAC bool_ss [GSYM real_lt] \\
+     Know ‘f s e y = 1 - set_dist E ({y},s) / e’
+     >- (FIRST_X_ASSUM MATCH_MP_TAC >> rw [REAL_LT_IMP_LE]) >> Rewr' \\
+     simp [] (* 1 - r' / e < a *) \\
+  (* applying SET_DIST_LIPSCHITZ *)
+     Know ‘abs (r - r') <= dist E (x,y)’ >- METIS_TAC [SET_DIST_LIPSCHITZ] \\
+     Cases_on ‘0 <= r - r'’
+     >- (‘abs (r - r') = r - r'’ by rw [ABS_REFL] >> POP_ORW \\
+         POP_ASSUM MP_TAC \\
+         rw [REAL_SUB_LE] \\
+         Know ‘r - r' < r - a' * e’
+         >- (Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘dist E (x,y)’ >> art []) \\
+         simp [REAL_ARITH “a - b < a - c <=> c < (b :real)”] \\
+         simp [REAL_ARITH “1 - r' / e < a <=> 1 - a < r' / (e :real)”]) \\
+     FULL_SIMP_TAC bool_ss [GSYM real_lt] \\
+    ‘abs (r - r') = -(r - r')’ by rw [ABS_EQ_NEG] >> POP_ORW \\
+     rw [REAL_NEG_SUB] \\
+     FULL_SIMP_TAC real_ss [REAL_LT_SUB_RADD] \\
+     simp [REAL_ARITH “1 < a + r' / e <=> 1 - a < r' / (e :real)”] \\
+     Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘r’ >> art [])
  >> DISCH_TAC
  (* applying lebesgue_monotone_convergence_decreasing, finally *)
  >> Know ‘!n. pos_fn_integral (sp,subsets b,X n)
@@ -3812,17 +3894,41 @@ Proof
               inf (IMAGE (\i. pos_fn_integral (sp,subsets b,X n) (fi' i)) UNIV)’
  >- (Q.X_GEN_TAC ‘n’ \\
      MATCH_MP_TAC lebesgue_monotone_convergence_decreasing >> simp [] \\
-     rw [GSYM lt_infty, Abbr ‘fi'’, Abbr ‘fi’] \\
-     cheat)
+     NTAC 2 (POP_ASSUM K_TAC) \\
+     rw [lt_infty, Abbr ‘fi'’, Abbr ‘fi’] \\
+     qmatch_abbrev_tac ‘pos_fn_integral M _ < PosInf’ \\
+     Q_TAC (TRANS_TAC let_trans) ‘Normal 1 * measure M (m_space M)’ \\
+     reverse CONJ_TAC
+     >- (simp [Abbr ‘M’, normal_1] \\
+         Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw []) \\
+     Know ‘Normal 1 * measure M (m_space M) = pos_fn_integral M (\x. Normal 1)’
+     >- (SYM_TAC \\
+         MATCH_MP_TAC pos_fn_integral_const >> rw [Abbr ‘M’] \\
+         Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw []) >> Rewr' \\
+     MATCH_MP_TAC pos_fn_integral_mono >> rw [Abbr ‘M’, mspace])
  >> Rewr'
  >> Know ‘pos_fn_integral (sp,subsets b,Y)
                           (\x. inf (IMAGE (\i. fi' i x) UNIV)) =
           inf (IMAGE (\i. pos_fn_integral (sp,subsets b,Y) (fi' i)) UNIV)’
  >- (MATCH_MP_TAC lebesgue_monotone_convergence_decreasing >> simp [] \\
-     rw [GSYM lt_infty, Abbr ‘fi'’, Abbr ‘fi’] \\
-     cheat)
+     NTAC 2 (POP_ASSUM K_TAC) \\
+     rw [lt_infty, Abbr ‘fi'’, Abbr ‘fi’] \\
+     qmatch_abbrev_tac ‘pos_fn_integral M _ < PosInf’ \\
+     Q_TAC (TRANS_TAC let_trans) ‘Normal 1 * measure M (m_space M)’ \\
+     reverse CONJ_TAC
+     >- (simp [Abbr ‘M’, normal_1] \\
+         Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw []) \\
+     Know ‘Normal 1 * measure M (m_space M) = pos_fn_integral M (\x. Normal 1)’
+     >- (SYM_TAC \\
+         MATCH_MP_TAC pos_fn_integral_const >> rw [Abbr ‘M’] \\
+         Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw []) >> Rewr' \\
+     MATCH_MP_TAC pos_fn_integral_mono >> rw [Abbr ‘M’, mspace])
  >> Rewr'
- (* stage work *)
+ >> NTAC 2 (POP_ASSUM K_TAC)
+ >> simp [Abbr ‘fi'’]
+ (* stage work, now it remains to show that “inf” (of mono-decreasing functions)
+    and sequential limits (therefore actually a double limit) can be exchanged.
+  *)
  >> cheat
 QED
 
