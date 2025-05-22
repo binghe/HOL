@@ -48,7 +48,7 @@ val tyname2 = "residual";
 (* For pi-calculus, no constructor is under GVAR *)
 val unit_t = “:unit”;
 val u_tm = mk_var("u", unit_t);
-val vp = “(\n ^u_tm. F)”;
+val vp = “(\n ^u_tm. n = 1)”;
 
 Datatype:
   repcode = rNil | rTau | rInput | rOutput | rMatch | rMismatch | rSum
@@ -60,37 +60,25 @@ End
 val rep_t = “:repcode”
 val d_tm = mk_var("d", rep_t);
 val lp =
-  “(\n d tns uns.
-     n = 1 /\ d = rNil ∧ tns = [] ∧ uns = [] \/
-     n = 1 /\ d = rTau ∧ tns = [] /\ uns = [1] \/
-     n = 1 /\ d = rInput ∧ tns = [1] /\ uns = [0] \/
-     n = 1 /\ d = rOutput ∧ tns = [] /\ uns = [0; 0; 1] \/
-     n = 1 /\ d = rMatch ∧ tns = [] /\ uns = [0; 0; 1] \/
-     n = 1 /\ d = rMismatch ∧ tns = [] /\ uns = [0; 0; 1] \/
-     n = 1 /\ d = rSum ∧ tns = [] /\ uns = [1; 1] \/
-     n = 1 /\ d = rPar ∧ tns = [] /\ uns = [1; 1] \/
-     n = 1 /\ d = rRes ∧ tns = [1] /\ uns = [] \/
+  “(\n lfvs d tns uns.
+     n = 1 /\ lfvs = 0 /\ d = rNil ∧ tns = [] ∧ uns = [] \/
+     n = 1 /\ lfvs = 0 /\ d = rTau ∧ tns = [] /\ uns = [1] \/
+     n = 1 /\ lfvs = 1 /\ d = rInput ∧ tns = [1] /\ uns = [0] \/
+     n = 1 /\ lfvs = 2 /\ d = rOutput ∧ tns = [] /\ uns = [0; 0; 1] \/
+     n = 1 /\ lfvs = 2 /\ d = rMatch ∧ tns = [] /\ uns = [0; 0; 1] \/
+     n = 1 /\ lfvs = 2 /\ d = rMismatch ∧ tns = [] /\ uns = [0; 0; 1] \/
+     n = 1 /\ lfvs = 0 /\ d = rSum ∧ tns = [] /\ uns = [1; 1] \/
+     n = 1 /\ lfvs = 0 /\ d = rPar ∧ tns = [] /\ uns = [1; 1] \/
+     n = 1 /\ lfvs = 0 /\ d = rRes ∧ tns = [1] /\ uns = [] \/
 
-     n = 2 /\ d = rTauR ∧ tns = [] ∧ uns = [1] \/
-     n = 2 /\ d = rInputS ∧ tns = [1] /\ uns = [0] \/
-     n = 2 /\ d = rBoundOutput ∧ tns = [1] /\ uns = [0] \/
-     n = 2 /\ d = rFreeOutput ∧ tns = [] /\ uns = [0; 0; 1]
+     n = 2 /\ lfvs = 0 /\ d = rTauR ∧ tns = [] ∧ uns = [1] \/
+     n = 2 /\ lfvs = 1 /\ d = rInputS ∧ tns = [1] /\ uns = [0] \/
+     n = 2 /\ lfvs = 1 /\ d = rBoundOutput ∧ tns = [1] /\ uns = [0] \/
+     n = 2 /\ lfvs = 2 /\ d = rFreeOutput ∧ tns = [] /\ uns = [0; 0; 1]
     )”;
 
 (* This is often useful for debugging purposes *)
 Overload LP = lp;
-
-(* type 0 (:name) *)
-val {term_ABS_pseudo11 = term_ABS_pseudo11_0,
-     term_REP_11 = term_REP_11_0,
-     genind_term_REP = genind_term_REP0,
-     genind_exists = genind_exists0,
-     termP = termP0,
-     absrep_id = absrep_id0,
-     repabs_pseudo_id = repabs_pseudo_id0,
-     term_REP_t = term_REP_t0,
-     term_ABS_t = term_ABS_t0,
-     newty = newty0, ...} = new_type_step1 tyname0 0 [] {vp = vp, lp = lp};
 
 (* type 1 (:pi) *)
 val {term_ABS_pseudo11 = term_ABS_pseudo11_1,
