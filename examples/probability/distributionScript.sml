@@ -3929,6 +3929,26 @@ Proof
  (* stage work, now it remains to show that “inf” (of mono-decreasing functions)
     and sequential limits (therefore actually a double limit) can be exchanged.
   *)
+ >> qabbrev_tac ‘g = \n i. pos_fn_integral (sp,subsets b,X n) (\x. Normal (fi i x))’
+ >> qabbrev_tac ‘l = \i. pos_fn_integral (sp,subsets b,Y) (\x. Normal (fi i x))’
+ >> simp []
+ >> Know ‘!i. ((\n. g n i) --> l i) sequentially’
+ >- (Q.X_GEN_TAC ‘j’ \\
+     simp [Abbr ‘g’, Abbr ‘l’] \\
+     Know ‘!n. pos_fn_integral (sp,subsets b,X n) (\x. Normal (fi j x)) =
+                      integral (sp,subsets b,X n) (Normal o (fi j))’
+     >- (rw [o_DEF] \\
+         MATCH_MP_TAC (GSYM integral_pos_fn) >> rw [Abbr ‘fi’]) >> Rewr' \\
+     Know ‘pos_fn_integral (sp,subsets b,Y) (\x. Normal (fi j x)) =
+                  integral (sp,subsets b,Y) (Normal o (fi j))’
+     >- (rw [o_DEF] \\
+         MATCH_MP_TAC (GSYM integral_pos_fn) >> rw [Abbr ‘fi’]) >> Rewr' \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     qabbrev_tac ‘e :real = inv (&SUC j)’ \\
+    ‘0 < e’ by rw [Abbr ‘e’] \\
+    ‘fi j = f s e’ by rw [FUN_EQ_THM, Abbr ‘fi’, Abbr ‘e’] >> POP_ORW \\
+     simp [])
+ >> DISCH_TAC
  >> cheat
 QED
 
