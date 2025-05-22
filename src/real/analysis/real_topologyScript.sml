@@ -5377,9 +5377,9 @@ val LIM_SUB = store_thm ("LIM_SUB",
     (f --> l) net /\ (g --> m) net ==> ((\x. f(x) - g(x)) --> (l - m)) net``,
   REWRITE_TAC[real_sub] THEN ASM_SIMP_TAC std_ss [LIM_ADD, LIM_NEG]);
 
-(* NOTE: The idea of this proof may be generalized to sup/inf of limits *)
+(* NOTE: “max f g = 1 / 2 * abs (f - g) + (f + g)” *)
 Theorem LIM_MAX :
-   !net:('a)net f g l:real m:real.
+   !net:('a)net f g (l :real) (m :real).
     (f --> l) net /\ (g --> m) net
     ==> ((\x. max (f(x)) (g(x))) --> (max (l) (m)):real) net
 Proof
