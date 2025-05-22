@@ -5377,11 +5377,12 @@ val LIM_SUB = store_thm ("LIM_SUB",
     (f --> l) net /\ (g --> m) net ==> ((\x. f(x) - g(x)) --> (l - m)) net``,
   REWRITE_TAC[real_sub] THEN ASM_SIMP_TAC std_ss [LIM_ADD, LIM_NEG]);
 
-val LIM_MAX = store_thm ("LIM_MAX",
- ``!net:('a)net f g l:real m:real.
+(* NOTE: The idea of this proof may be generalized to sup/inf of limits *)
+Theorem LIM_MAX :
+   !net:('a)net f g l:real m:real.
     (f --> l) net /\ (g --> m) net
-    ==> ((\x. max (f(x)) (g(x)))
-         --> (max (l) (m)):real) net``,
+    ==> ((\x. max (f(x)) (g(x))) --> (max (l) (m)):real) net
+Proof
   REPEAT GEN_TAC THEN DISCH_TAC THEN
   FIRST_ASSUM(MP_TAC o MATCH_MP LIM_ADD) THEN
   FIRST_ASSUM(MP_TAC o MATCH_MP LIM_SUB) THEN
@@ -5393,19 +5394,28 @@ val LIM_MAX = store_thm ("LIM_MAX",
   SIMP_TAC std_ss [FUN_EQ_THM, max_def, abs] THEN
   ONCE_REWRITE_TAC [REAL_MUL_SYM] THEN ONCE_REWRITE_TAC [GSYM real_div] THEN
   SIMP_TAC arith_ss [REAL_EQ_LDIV_EQ, REAL_ARITH ``0 < 2:real``] THEN
-  ONCE_REWRITE_TAC [REAL_MUL_COMM] THEN (RW_TAC arith_ss [REAL_SUB_LE] THENL
-  [REPEAT (POP_ASSUM MP_TAC) THEN RW_TAC std_ss [AND_IMP_INTRO, REAL_LE_ANTISYM, REAL_SUB_REFL,
-    REAL_ADD_LID] THEN  REWRITE_TAC [GSYM REAL_DOUBLE],
-   REWRITE_TAC [REAL_ARITH ``a - b + (a + b) = a + a - b + b:real``, REAL_SUB_ADD, REAL_DOUBLE],
+  ONCE_REWRITE_TAC [REAL_MUL_COMM] THEN
+ (* 2 subgoals here, same tactics (each with 4 subgoals) *)
+ (RW_TAC arith_ss [REAL_SUB_LE] THENL
+  [(* goal 1 (of 4) *)
+   REPEAT (POP_ASSUM MP_TAC) THEN
+   RW_TAC std_ss [AND_IMP_INTRO, REAL_LE_ANTISYM, REAL_SUB_REFL,
+                  REAL_ADD_LID] THEN  REWRITE_TAC [GSYM REAL_DOUBLE],
+   (* goal 2 (of 4) *)
+   REWRITE_TAC [REAL_ARITH ``a - b + (a + b) = a + a - b + b:real``,
+                REAL_SUB_ADD, REAL_DOUBLE],
+   (* goal 3 (of 4) *)
    REWRITE_TAC [REAL_ARITH ``-(a - b) + (a + b) = b + b - a + a:real``,
-    REAL_SUB_ADD, REAL_DOUBLE],
-   FULL_SIMP_TAC real_ss [REAL_NOT_LE] THEN METIS_TAC [REAL_LT_ANTISYM]]));
+                REAL_SUB_ADD, REAL_DOUBLE],
+   (* goal 4 (of 4) *)
+   FULL_SIMP_TAC real_ss [REAL_NOT_LE] THEN METIS_TAC [REAL_LT_ANTISYM]])
+QED
 
-val LIM_MIN = store_thm ("LIM_MIN",
- ``!net:('a)net f g l:real m:real.
+Theorem LIM_MIN :
+   !net:('a)net f g l:real m:real.
     (f --> l) net /\ (g --> m) net
-    ==> ((\x. min (f(x)) (g(x)))
-         --> (min (l) (m)):real) net``,
+    ==> ((\x. min (f(x)) (g(x))) --> (min (l) (m)):real) net
+Proof
   REPEAT GEN_TAC THEN
   DISCH_THEN(CONJUNCTS_THEN(MP_TAC o MATCH_MP LIM_NEG)) THEN
   REWRITE_TAC[AND_IMP_INTRO] THEN
@@ -5413,7 +5423,8 @@ val LIM_MIN = store_thm ("LIM_MIN",
   MATCH_MP_TAC EQ_IMPLIES THEN AP_THM_TAC THEN
   reverse BINOP_TAC >- PROVE_TAC [GSYM REAL_MIN_MAX, REAL_MIN_ACI] THEN
   SIMP_TAC std_ss [FUN_EQ_THM] THEN
-  GEN_TAC >> PROVE_TAC [GSYM REAL_MIN_MAX, REAL_MIN_ACI]);
+  GEN_TAC >> PROVE_TAC [GSYM REAL_MIN_MAX, REAL_MIN_ACI]
+QED
 
 val LIM_NULL = store_thm ("LIM_NULL",
  ``!net f l. (f --> l) net <=> ((\x. f(x) - l) --> 0) net``,
