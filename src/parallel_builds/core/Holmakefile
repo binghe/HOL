@@ -42,7 +42,6 @@ EXDIRS = algebra/aat \
 	 formal-languages formal-languages/context-free \
          formal-languages/contig formal-languages/json \
          formal-languages/lambek formal-languages/regular/regular-play \
-         formal-languages/pi-calculus \
          fun-op-sem/lprefix_lub fun-op-sem/for \
          hardware hfs \
          imperative ind_def \
