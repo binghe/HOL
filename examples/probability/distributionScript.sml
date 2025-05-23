@@ -3740,7 +3740,6 @@ Proof
  >- (rw [Abbr ‘fi'’] \\
      HO_MATCH_MP_TAC (REWRITE_RULE [o_DEF] mono_decreasing_imp_ext) >> art [])
  >> DISCH_TAC
- >> Q.PAT_X_ASSUM ‘!x. mono_decreasing (\i. fi i x)’ K_TAC
  (* NOTE: (proof sketch)
     X n s
   = pos_fn_integral (sp,subsets b,X n) (indicator_fn s)
@@ -3924,24 +3923,22 @@ Proof
          Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw []) >> Rewr' \\
      MATCH_MP_TAC pos_fn_integral_mono >> rw [Abbr ‘M’, mspace])
  >> Rewr'
- >> NTAC 2 (POP_ASSUM K_TAC)
- >> simp [Abbr ‘fi'’]
  (* stage work, now it remains to show that “inf” (of mono-decreasing functions)
     and sequential limits (therefore actually a double limit) can be exchanged.
   *)
- >> qabbrev_tac ‘g = \n i. pos_fn_integral (sp,subsets b,X n) (\x. Normal (fi i x))’
- >> qabbrev_tac ‘l = \i. pos_fn_integral (sp,subsets b,Y) (\x. Normal (fi i x))’
+ >> qabbrev_tac ‘g = \n i. pos_fn_integral (sp,subsets b,X n) (fi' i)’
+ >> qabbrev_tac ‘l = \i. pos_fn_integral (sp,subsets b,Y) (fi' i)’
  >> simp []
  >> Know ‘!i. ((\n. g n i) --> l i) sequentially’
  >- (Q.X_GEN_TAC ‘j’ \\
      simp [Abbr ‘g’, Abbr ‘l’] \\
-     Know ‘!n. pos_fn_integral (sp,subsets b,X n) (\x. Normal (fi j x)) =
+     Know ‘!n. pos_fn_integral (sp,subsets b,X n) (fi' j) =
                       integral (sp,subsets b,X n) (Normal o (fi j))’
-     >- (rw [o_DEF] \\
+     >- (rw [o_DEF, Abbr ‘fi'’] \\
          MATCH_MP_TAC (GSYM integral_pos_fn) >> rw [Abbr ‘fi’]) >> Rewr' \\
-     Know ‘pos_fn_integral (sp,subsets b,Y) (\x. Normal (fi j x)) =
+     Know ‘pos_fn_integral (sp,subsets b,Y) (fi' j) =
                   integral (sp,subsets b,Y) (Normal o (fi j))’
-     >- (rw [o_DEF] \\
+     >- (rw [o_DEF, Abbr ‘fi'’] \\
          MATCH_MP_TAC (GSYM integral_pos_fn) >> rw [Abbr ‘fi’]) >> Rewr' \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
      qabbrev_tac ‘e :real = inv (&SUC j)’ \\
@@ -3949,7 +3946,16 @@ Proof
     ‘fi j = f s e’ by rw [FUN_EQ_THM, Abbr ‘fi’, Abbr ‘e’] >> POP_ORW \\
      simp [])
  >> DISCH_TAC
- >> cheat
+ >> Know ‘!n. mono_decreasing (g n)’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     simp [ext_mono_decreasing_def, Abbr ‘g’] \\
+     qx_genl_tac [‘i’, ‘j’] >> DISCH_TAC \\
+     MATCH_MP_TAC pos_fn_integral_mono >> simp [Abbr ‘fi'’] \\
+     CONJ_TAC >- rw [Abbr ‘fi’] \\
+     fs [mono_decreasing_def])
+ >> DISCH_TAC
+ (* applying extreal_lim_inf *)
+ >> MATCH_MP_TAC extreal_lim_inf >> art []
 QED
 
 Theorem Portemanteau_vi_imp_iii :
