@@ -42,19 +42,19 @@ val _ = new_theory "pi_agent";
    NOTE: Replication ("!") is not needed so far, but can be supported later.
    ---------------------------------------------------------------------- *)
 
+Datatype:
+  repcode = rNil | rTau | rInput | rOutput | rMatch | rMismatch | rSum
+          | rPar | rRes
+          | rTauR | rInputS | rBoundOutput | rFreeOutput
+End
+
 val tyname1 = "pi";
 val tyname2 = "residual";
 
 (* For pi-calculus, no constructor is under GVAR *)
 val unit_t = “:unit”;
 val u_tm = mk_var("u", unit_t);
-val vp = “(\n ^u_tm. n = 1)”;
-
-Datatype:
-  repcode = rNil | rTau | rInput | rOutput | rMatch | rMismatch | rSum
-          | rPar | rRes
-          | rTauR | rInputS | rBoundOutput | rFreeOutput
-End
+val vp = “(\n ^u_tm. n = 0)”;
 
 (* type 0 = name; 1 = pi; 2 = residual *)
 val rep_t = “:repcode”
@@ -63,18 +63,18 @@ val lp =
   “(\n lfvs d tns uns.
      n = 1 /\ lfvs = 0 /\ d = rNil ∧ tns = [] ∧ uns = [] \/
      n = 1 /\ lfvs = 0 /\ d = rTau ∧ tns = [] /\ uns = [1] \/
-     n = 1 /\ lfvs = 1 /\ d = rInput ∧ tns = [1] /\ uns = [0] \/
-     n = 1 /\ lfvs = 2 /\ d = rOutput ∧ tns = [] /\ uns = [0; 0; 1] \/
-     n = 1 /\ lfvs = 2 /\ d = rMatch ∧ tns = [] /\ uns = [0; 0; 1] \/
-     n = 1 /\ lfvs = 2 /\ d = rMismatch ∧ tns = [] /\ uns = [0; 0; 1] \/
+     n = 1 /\ lfvs = 1 /\ d = rInput ∧ tns = [1] /\ uns = [] \/
+     n = 1 /\ lfvs = 2 /\ d = rOutput ∧ tns = [] /\ uns = [1] \/
+     n = 1 /\ lfvs = 2 /\ d = rMatch ∧ tns = [] /\ uns = [1] \/
+     n = 1 /\ lfvs = 2 /\ d = rMismatch ∧ tns = [] /\ uns = [1] \/
      n = 1 /\ lfvs = 0 /\ d = rSum ∧ tns = [] /\ uns = [1; 1] \/
      n = 1 /\ lfvs = 0 /\ d = rPar ∧ tns = [] /\ uns = [1; 1] \/
      n = 1 /\ lfvs = 0 /\ d = rRes ∧ tns = [1] /\ uns = [] \/
 
      n = 2 /\ lfvs = 0 /\ d = rTauR ∧ tns = [] ∧ uns = [1] \/
-     n = 2 /\ lfvs = 1 /\ d = rInputS ∧ tns = [1] /\ uns = [0] \/
-     n = 2 /\ lfvs = 1 /\ d = rBoundOutput ∧ tns = [1] /\ uns = [0] \/
-     n = 2 /\ lfvs = 2 /\ d = rFreeOutput ∧ tns = [] /\ uns = [0; 0; 1]
+     n = 2 /\ lfvs = 1 /\ d = rInputS ∧ tns = [1] /\ uns = [] \/
+     n = 2 /\ lfvs = 1 /\ d = rBoundOutput ∧ tns = [1] /\ uns = [] \/
+     n = 2 /\ lfvs = 2 /\ d = rFreeOutput ∧ tns = [] /\ uns = [1]
     )”;
 
 (* This is often useful for debugging purposes *)
@@ -103,7 +103,7 @@ val {term_ABS_pseudo11 = term_ABS_pseudo11_2,
      term_REP_t = term_REP_t2,
      term_ABS_t = term_ABS_t2,
      newty = newty2, ...} =
-     new_type_step1 tyname2 2 [genind_exists0, genind_exists1] {vp = vp, lp = lp};
+     new_type_step1 tyname2 2 [genind_exists1] {vp = vp, lp = lp};
 
 (* ----------------------------------------------------------------------
     Pi-calculus operators
