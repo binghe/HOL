@@ -7881,10 +7881,13 @@ Proof
  >> Q.EXISTS_TAC ‘m’ >> rw []
 QED
 
+(* NOTE: inf_seq' is needed; g, l should be always finite and bounded *)
 Theorem extreal_lim_inf :
     !g l. (!n. ext_mono_decreasing (g n)) /\
-          (!i. ((\n. g n i) --> l i) sequentially) ==>
-          ((\n. inf (IMAGE (\i. g n i) univ(:num))) -->
+          (!i. ((\n. g n i) --> l i) sequentially) /\
+          (!n. l n <> PosInf /\ l n <> NegInf) /\
+          (!n i. g n i <> PosInf /\ g n i <> NegInf)
+      ==> ((\n. inf (IMAGE (\i. g n i) univ(:num))) -->
            inf (IMAGE l univ(:num))) sequentially
 Proof
     cheat

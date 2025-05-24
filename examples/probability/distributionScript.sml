@@ -3791,7 +3791,9 @@ Proof
      Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘-0’ >> rw [REAL_LE_NEG])
  >> Rewr'
  >> simp [Abbr ‘P’]
- (* hard *)
+ (* NOTE: How about showing fi' is continuous, and then Borel-measurable?
+    (The current idea is showing the preimage of half-closed interval is closed.)
+  *)
  >> Know ‘!i. fi' i IN Borel_measurable (sp,subsets b)’
  >- (Q.X_GEN_TAC ‘n’ \\
      POP_ASSUM K_TAC >> rw [Abbr ‘fi'’] \\
@@ -3887,14 +3889,29 @@ Proof
      simp [REAL_ARITH “1 < a + r' / e <=> 1 - a < r' / (e :real)”] \\
      Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘r’ >> art [])
  >> DISCH_TAC
+ >> Know ‘!n i. pos_fn_integral (sp,subsets b,X n) (fi' i) <> PosInf’
+ >- (rw [lt_infty, Abbr ‘fi'’, Abbr ‘fi’] \\
+     qmatch_abbrev_tac ‘pos_fn_integral M _ < PosInf’ \\
+     Q_TAC (TRANS_TAC let_trans) ‘Normal 1 * measure M (m_space M)’ \\
+     reverse CONJ_TAC
+     >- (simp [Abbr ‘M’, normal_1] \\
+         Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw []) \\
+     Know ‘Normal 1 * measure M (m_space M) = pos_fn_integral M (\x. Normal 1)’
+     >- (SYM_TAC \\
+         MATCH_MP_TAC pos_fn_integral_const >> rw [Abbr ‘M’] \\
+         Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw []) >> Rewr' \\
+     MATCH_MP_TAC pos_fn_integral_mono >> rw [Abbr ‘M’, mspace])
+ >> DISCH_TAC
  (* applying lebesgue_monotone_convergence_decreasing, finally *)
  >> Know ‘!n. pos_fn_integral (sp,subsets b,X n)
                               (\x. inf (IMAGE (\i. fi' i x) UNIV)) =
               inf (IMAGE (\i. pos_fn_integral (sp,subsets b,X n) (fi' i)) UNIV)’
  >- (Q.X_GEN_TAC ‘n’ \\
      MATCH_MP_TAC lebesgue_monotone_convergence_decreasing >> simp [] \\
-     NTAC 2 (POP_ASSUM K_TAC) \\
-     rw [lt_infty, Abbr ‘fi'’, Abbr ‘fi’] \\
+     rw [lt_infty, Abbr ‘fi'’, Abbr ‘fi’])
+ >> Rewr'
+ >> Know ‘!i. pos_fn_integral (sp,subsets b,Y) (fi' i) <> PosInf’
+ >- (rw [lt_infty, Abbr ‘fi'’, Abbr ‘fi’] \\
      qmatch_abbrev_tac ‘pos_fn_integral M _ < PosInf’ \\
      Q_TAC (TRANS_TAC let_trans) ‘Normal 1 * measure M (m_space M)’ \\
      reverse CONJ_TAC
@@ -3905,23 +3922,12 @@ Proof
          MATCH_MP_TAC pos_fn_integral_const >> rw [Abbr ‘M’] \\
          Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw []) >> Rewr' \\
      MATCH_MP_TAC pos_fn_integral_mono >> rw [Abbr ‘M’, mspace])
- >> Rewr'
+ >> DISCH_TAC
  >> Know ‘pos_fn_integral (sp,subsets b,Y)
                           (\x. inf (IMAGE (\i. fi' i x) UNIV)) =
           inf (IMAGE (\i. pos_fn_integral (sp,subsets b,Y) (fi' i)) UNIV)’
  >- (MATCH_MP_TAC lebesgue_monotone_convergence_decreasing >> simp [] \\
-     NTAC 2 (POP_ASSUM K_TAC) \\
-     rw [lt_infty, Abbr ‘fi'’, Abbr ‘fi’] \\
-     qmatch_abbrev_tac ‘pos_fn_integral M _ < PosInf’ \\
-     Q_TAC (TRANS_TAC let_trans) ‘Normal 1 * measure M (m_space M)’ \\
-     reverse CONJ_TAC
-     >- (simp [Abbr ‘M’, normal_1] \\
-         Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw []) \\
-     Know ‘Normal 1 * measure M (m_space M) = pos_fn_integral M (\x. Normal 1)’
-     >- (SYM_TAC \\
-         MATCH_MP_TAC pos_fn_integral_const >> rw [Abbr ‘M’] \\
-         Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw []) >> Rewr' \\
-     MATCH_MP_TAC pos_fn_integral_mono >> rw [Abbr ‘M’, mspace])
+     rw [lt_infty, Abbr ‘fi'’, Abbr ‘fi’])
  >> Rewr'
  (* stage work, now it remains to show that “inf” (of mono-decreasing functions)
     and sequential limits (therefore actually a double limit) can be exchanged.
@@ -3956,6 +3962,12 @@ Proof
  >> DISCH_TAC
  (* applying extreal_lim_inf *)
  >> MATCH_MP_TAC extreal_lim_inf >> art []
+ >> simp [Abbr ‘g’, Abbr ‘l’]
+ >> CONJ_TAC (* 2 subgoals, same ending tactics *)
+ >> rpt GEN_TAC
+ >> MATCH_MP_TAC pos_not_neginf
+ >> MATCH_MP_TAC pos_fn_integral_pos
+ >> rw [Abbr ‘fi'’, Abbr ‘fi’]
 QED
 
 Theorem Portemanteau_vi_imp_iii :
