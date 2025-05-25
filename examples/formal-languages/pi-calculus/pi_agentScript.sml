@@ -117,40 +117,38 @@ Proof
   simp[GLAM_NIL_EQ]
 QED
 
-(* TODO *)
-
 (* Nil *)
 val Nil_t = mk_var("Nil", “:^newty1”);
 val Nil_def = new_definition(
    "Nil_def",
-  “^Nil_t = ^term_ABS_t1 (GLAM ARB rNil [] [])”);
+  “^Nil_t = ^term_ABS_t1 (GLAM ARB [] rNil [] [])”);
 val Nil_termP = prove(
-   “^termP1 (GLAM x rNil [] [])”,
+   “^termP1 (GLAM x [] rNil [] [])”,
     match_mp_tac glam >> srw_tac [][genind_term_REP1]);
 val Nil_t = defined_const Nil_def;
 val Nil_def' = prove(
-  “^term_ABS_t1 (GLAM v rNil [] []) = ^Nil_t”,
+  “^term_ABS_t1 (GLAM v [] rNil [] []) = ^Nil_t”,
     srw_tac [][Nil_def, GLAM_NIL_EQ, term_ABS_pseudo11_1, Nil_termP]);
 
 (* Tau prefix *)
 val Tau_t = mk_var("Tau", “:^newty1 -> ^newty1”);
 val Tau_def = new_definition(
    "Tau_def",
-  “^Tau_t P = ^term_ABS_t1 (GLAM ARB rTau [] [^term_REP_t1 P])”);
+  “^Tau_t P = ^term_ABS_t1 (GLAM ARB [] rTau [] [^term_REP_t1 P])”);
 val Tau_termP = prove(
-   “^termP1 (GLAM x rTau [] [^term_REP_t1 P])”,
+   “^termP1 (GLAM x [] rTau [] [^term_REP_t1 P])”,
     match_mp_tac glam >> srw_tac [][genind_term_REP1]);
 val Tau_t = defined_const Tau_def;
 val Tau_def' = prove(
-  “^term_ABS_t1 (GLAM v rTau [] [^term_REP_t1 P]) = ^Tau_t P”,
+  “^term_ABS_t1 (GLAM v [] rTau [] [^term_REP_t1 P]) = ^Tau_t P”,
     srw_tac [][Tau_def, GLAM_NIL_EQ, term_ABS_pseudo11_1, Tau_termP]);
 
 (* Input prefix *)
-val Input_t = mk_var("Input", “:^newty0 -> string -> ^newty1 -> ^newty1”);
+val Input_t = mk_var("Input", “:^newty0 -> string -> string -> ^newty1”);
 val Input_def = new_definition(
    "Input_def",
   “^Input_t a x P =
-   ^term_ABS_t1 (GLAM x rInput [^term_REP_t1 P] [^term_REP_t0 a])”);
+   ^term_ABS_t1 (GLAM x [?] rInput [^term_REP_t1 P] [])”);
 val Input_termP = prove(
     mk_comb(termP1, Input_def |> SPEC_ALL |> concl |> rhs |> rand),
     match_mp_tac glam >> srw_tac [][genind_term_REP0, genind_term_REP1]);
@@ -677,7 +675,8 @@ val term_ind1 =
                              GSYM Name_def,
                              Nil_def', Tau_def', GSYM Input_def,
                              Output_def', Match_def', Mismatch_def',
-                             Sum_def', Par_def', GSYM Res_def]
+                             Sum_def', Par_def', GSYM Res_def,
+                             LENGTH_NIL]
         |> SIMP_RULE (srw_ss()) [GSYM supp_tpm, GSYM supp_npm]
         |> elim_unnecessary_atoms {finite_fv = FINITE_FV}
                                   [ASSUME “!x:'c. FINITE (fv x:string set)”]
