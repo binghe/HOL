@@ -3960,8 +3960,7 @@ Proof
      CONJ_TAC >- rw [Abbr ‘fi’] \\
      fs [mono_decreasing_def])
  >> DISCH_TAC
- (* applying extreal_lim_inf *)
- >> MATCH_MP_TAC extreal_lim_inf >> art []
+ >> MATCH_MP_TAC lim_inf_cong >> art []
  >> simp [Abbr ‘g’, Abbr ‘l’]
  >> CONJ_TAC (* 2 subgoals, same ending tactics *)
  >> rpt GEN_TAC

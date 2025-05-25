@@ -7834,8 +7834,7 @@ Proof
        Q.EXISTS_TAC ‘n’ >> rw [] ])
  >> Rewr'
  >> MATCH_MP_TAC inf_mono
- >> rw [sup_le']
- >> rename1 ‘n <= m’
+ >> rw [sup_le'] >> rename1 ‘n <= m’
  >> MATCH_MP_TAC le_add2
  >> rw [Abbr ‘f’, Abbr ‘g’, le_sup'] (* 2 subgoals, same tactics *)
  >> POP_ASSUM MATCH_MP_TAC
@@ -7882,7 +7881,7 @@ Proof
 QED
 
 (* NOTE: inf_seq' is needed; g, l should be always finite and bounded *)
-Theorem extreal_lim_inf :
+Theorem lim_inf_cong :
     !g l. (!n. ext_mono_decreasing (g n)) /\
           (!i. ((\n. g n i) --> l i) sequentially) /\
           (!n. l n <> PosInf /\ l n <> NegInf) /\
@@ -7890,7 +7889,8 @@ Theorem extreal_lim_inf :
       ==> ((\n. inf (IMAGE (\i. g n i) univ(:num))) -->
            inf (IMAGE l univ(:num))) sequentially
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> cheat
 QED
 
 (* ------------------------------------------------------------------------- *)
