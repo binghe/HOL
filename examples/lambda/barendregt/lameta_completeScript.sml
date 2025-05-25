@@ -6744,7 +6744,7 @@ Proof
       MATCH_MP_TAC Boehm_apply_lameta_cong >> art [] ]
 QED
 
-Theorem separability_thm' :
+Theorem separability_thm_final :
     !M N. has_benf M /\ has_benf N /\ ~(lameta M N) ==>
           !P Q. ?pi. Boehm_transform pi /\
                      lameta (apply pi M) P /\ lameta (apply pi N) Q
@@ -6766,7 +6766,7 @@ Proof
     rpt STRIP_TAC
  >> ‘?pi. Boehm_transform pi /\
           lameta (apply pi M) P /\ lameta (apply pi N) Q’
-       by METIS_TAC [separability_thm']
+       by METIS_TAC [separability_thm_final]
  >> ‘?Ns. !M. closed M ==> apply pi M == M @* Ns’
        by METIS_TAC [Boehm_transform_lameq_appstar]
  >> Q.EXISTS_TAC ‘Ns’
@@ -6791,7 +6791,7 @@ Theorem distinct_benf_imp_inconsistent :
           inconsistent (conversion (RINSERT (beta RUNION eta) M N))
 Proof
     rw [inconsistent_def]
- >> MP_TAC (Q.SPECL [‘M’, ‘N’] separability_thm') >> rw []
+ >> MP_TAC (Q.SPECL [‘M’, ‘N’] separability_thm_final) >> rw []
  >> POP_ASSUM (MP_TAC o Q.SPECL [‘M'’, ‘N'’])
  >> STRIP_TAC
  (* M' ~ apply pi M  ~ apply pi N ~ N' *)
