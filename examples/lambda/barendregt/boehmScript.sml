@@ -1057,7 +1057,8 @@ Proof
  >> reverse (Cases_on ‘solvable M’)
  >- rw [subterm_def, BT_of_unsolvables, ltree_el_def]
  (* stage work *)
- >> rw [subterm_def, BT_def, BT_generator_def, Once ltree_unfold, ltree_el_def]
+ >> rw [subterm_def, BT_def, BT_generator_def, Once ltree_unfold, ltree_el_def,
+        IF_NONE_EQUALS_OPTION]
  >> qabbrev_tac ‘M0 = principal_hnf M’
  >> qabbrev_tac ‘n  = LAMl_size M0’
  >> Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
