@@ -54,7 +54,7 @@ val tyname2 = "residual";
 (* For pi-calculus, no constructor is under GVAR *)
 val unit_t = “:unit”;
 val u_tm = mk_var("u", unit_t);
-val vp = “(\n ^u_tm. n = 0)”;
+val vp = “(\n ^u_tm. n = 0)”; (* NOTE: “n = 0” is now equivalent to “F” *)
 
 (* type 0 = name; 1 = pi; 2 = residual *)
 val rep_t = “:repcode”
@@ -112,19 +112,12 @@ val {term_ABS_pseudo11 = term_ABS_pseudo11_2,
 val [gvar,glam] = genind_rules |> SPEC_ALL |> CONJUNCTS;
 
 Theorem GLAM_NIL_ELIM[local]:
-  GLAM u bv [] ts = GLAM ARB bv [] ts
+  GLAM u fvs bv [] ts = GLAM ARB fvs bv [] ts
 Proof
   simp[GLAM_NIL_EQ]
 QED
 
-(* "Name" of type 0 (:name) *)
-val Name_t = mk_var("Name", “:string -> ^newty0”);
-val Name_def = new_definition(
-   "Name_def", “^Name_t s = ^term_ABS_t0 (GVAR s ())”);
-val Name_termP = prove(
-    mk_comb(termP0, Name_def |> SPEC_ALL |> concl |> rhs |> rand),
-    srw_tac [][genind_rules]);
-val Name_t = defined_const Name_def;
+(* TODO *)
 
 (* Nil *)
 val Nil_t = mk_var("Nil", “:^newty1”);
