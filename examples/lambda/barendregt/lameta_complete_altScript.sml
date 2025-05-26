@@ -49,6 +49,52 @@ fun PRINT_TAC pfx g = (print (pfx ^ "\n"); ALL_TAC g);
 Overload FV  = “supp term_pmact”
 Overload VAR = “term$VAR”
 
+Definition equivalent_def :
+    equivalent M N =
+        if solvable M /\ solvable N then
+           let M0 = principal_hnf M;
+               N0 = principal_hnf N;
+               n  = LAMl_size M0;
+               n' = LAMl_size N0;
+               vs = NEWS (MAX n n') (FV M UNION FV N);
+              vsM = TAKE n  vs;
+              vsN = TAKE n' vs;
+               M1 = principal_hnf (M0 @* MAP VAR vsM);
+               N1 = principal_hnf (N0 @* MAP VAR vsN);
+               y  = hnf_head M1;
+               y' = hnf_head N1;
+               m  = LENGTH (hnf_children M1);
+               m' = LENGTH (hnf_children N1);
+           in
+               y = y' /\ n = n' /\ m = m'
+        else
+           ~solvable M /\ ~solvable N
+End
+
+Theorem equivalent_reflexive :
+    reflexive equivalent
+Proof
+    rw [reflexive_def, equivalent_def]
+QED
+
+(* |- equivalent x x *)
+Theorem equivalent_refl[simp] =
+    SPEC_ALL (REWRITE_RULE [reflexive_def] equivalent_reflexive)
+
+Theorem equivalent_symmetric :
+    symmetric equivalent
+Proof
+    RW_TAC std_ss [symmetric_def, equivalent_def, Once MAX_COMM, Once UNION_COMM]
+ >> reverse (Cases_on ‘solvable x /\ solvable y’) >- fs []
+ >> simp []
+ >> rename1 ‘y1 = y2 /\ n = n1 /\ m = m1 <=> y3 = y4 /\ n1 = n3 /\ m2 = m3’
+ >> ‘n3 = n’ by rw [Abbr ‘n3’, Abbr ‘n’] >> gs []
+ >> EQ_TAC >> rw []
+QED
+
+(* |- !x y. equivalent x y <=> equivalent y x *)
+Theorem equivalent_comm = REWRITE_RULE [symmetric_def] equivalent_symmetric
+
 Definition equivalent2_def :
     equivalent2 X M N r =
         if solvable M /\ solvable N then
@@ -4542,6 +4588,64 @@ Proof
       FIRST_X_ASSUM MATCH_MP_TAC \\
       Q.EXISTS_TAC ‘M’ >> art [] ]
 QED
+
+Definition faithful_def :
+    faithful p X Ms pi r <=>
+        (!M. MEM M Ms ==> (p IN BT_valid_paths M <=> solvable (apply pi M))) /\
+         !M N. MEM M Ms /\ MEM N Ms ==>
+              (subtree_equal X M N p r <=>
+               equivalent (apply pi M) (apply pi N))
+End
+
+Theorem faithful_two :
+    !X M N p r pi.
+       faithful p X [M; N] pi r <=>
+         (p IN BT_valid_paths M <=> solvable (apply pi M)) /\
+         (p IN BT_valid_paths N <=> solvable (apply pi N)) /\
+         (subtree_equal X M N p r <=> equivalent (apply pi M) (apply pi N))
+Proof
+    rpt STRIP_TAC
+ >> EQ_TAC >> rw [faithful_def] >> rw []
+ >> simp [Once subtree_equal_comm, Once equivalent_comm]
+QED
+
+Overload faithful' = “faithful []”
+
+(* TODO
+Theorem faithful' :
+    !X Ms pi r. FINITE X /\ 0 < r /\
+               (!M. MEM M Ms ==> FV M SUBSET X UNION RANK r) ==>
+      (faithful' X Ms pi r <=>
+        (!M. MEM M Ms ==> (solvable M <=> solvable (apply pi M))) /\
+         !M N. MEM M Ms /\ MEM N Ms ==>
+              (equivalent (apply pi M) (apply pi N) <=> equivalent M N))
+Proof
+    rw [faithful_def]
+ >> Suff ‘!M N. MEM M Ms /\ MEM N Ms ==>
+               (subtree_equal X M N [] r <=> equivalent M N)’
+ >- METIS_TAC []
+ >> rpt STRIP_TAC
+ >> MATCH_MP_TAC subtree_equiv_alt_equivalent >> rw []
+QED
+
+Theorem faithful_two' :
+    !X Ms pi r.
+       FINITE X /\ FV M UNION FV N SUBSET X UNION RANK r /\ 0 < r ==>
+      (faithful' X [M; N] pi r <=>
+         (solvable M <=> solvable (apply pi M)) /\
+         (solvable N <=> solvable (apply pi N)) /\
+         (equivalent (apply pi M) (apply pi N) <=> equivalent M N))
+Proof
+    rw [UNION_SUBSET]
+ >> MP_TAC (Q.SPECL [‘X’, ‘[M; N]’, ‘pi’, ‘r’] faithful')
+ >> simp []
+ >> impl_tac >- METIS_TAC []
+ >> Rewr'
+ >> EQ_TAC >> rw [] >> rw []
+ >> simp [Once equivalent_comm]
+ >> simp [Once equivalent_comm]
+QED
+*)
 
 val _ = export_theory ();
 val _ = html_theory "lameta_complete_alt";
