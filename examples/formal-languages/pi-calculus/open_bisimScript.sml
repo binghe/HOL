@@ -19,13 +19,13 @@ val _ = set_trace "Goalstack.print_goal_at_top" 0;
 (* The original open transition relation *)
 Inductive TRANS :
 [TAU]
-    !P.       TRANS (Tau P) (TauR P)
+    !P. TRANS (Tau P) (TauR P)
 [INPUT]
-    !a x P.   x <> a ==> TRANS (Input (Name a) x P) (InputS (Name a) x P)
+    !a x P. x <> a ==> TRANS (Input (Name a) x P) (InputS (Name a) x P)
 [OUTPUT]
-    !a b P.   TRANS (Output (Name a) (Name b) P) (FreeOutput (Name a) (Name b) P)
+    !a b P. TRANS (Output (Name a) (Name b) P) (FreeOutput (Name a) (Name b) P)
 [MATCH]
-    !P Rs b.   TRANS P Rs ==> TRANS (Match (Name b) (Name b) P) Rs
+    !P Rs b. TRANS P Rs ==> TRANS (Match (Name b) (Name b) P) Rs
 [MISMACH]
     !P Rs a b. TRANS P Rs /\ a <> b ==> TRANS (Mismatch (Name a) (Name b) P) Rs
 

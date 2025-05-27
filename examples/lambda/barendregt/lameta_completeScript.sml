@@ -5273,7 +5273,7 @@ Proof
 QED
 
 Theorem faithful_two' :
-    !X Ms pi r.
+    !X M N pi r.
        FINITE X /\ FV M UNION FV N SUBSET X UNION RANK r /\ 0 < r ==>
       (faithful' X [M; N] pi r <=>
          (solvable M <=> solvable (apply pi M)) /\
