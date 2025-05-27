@@ -680,11 +680,11 @@ Proof
      Q.EXISTS_TAC ‘y'’ >> art [])
  (* goal 7 (of 14): DTRANS D P (BoundOutput (Name x) z  P')
                              |      alpha            |  |
-                         z # P (BoundOutput (Name x) z' P''
-                             |        R              |  | R
-                         z ? y (BoundOutput (Name x) z' y')
+                         z # P (BoundOutput (Name x) z1 P2
+                             |        R              |  | (R, D1)
+                         D : y (BoundOutput (Name x) z1 y1)
                              |        R'             |  | R'
-                         z # Q (BoundOutput (Name x) z' Q')
+                         z # Q (BoundOutput (Name x) z1 Q1)
                              |      alpha            |  |
                     DTRANS D Q (BoundOutput (Name x) z  Q'')
   *)
@@ -701,17 +701,20 @@ Proof
      qabbrev_tac ‘X = {z} UNION {x} UNION
                       FV D UNION FV y UNION FV P UNION FV Q UNION FV P'’ \\
     ‘FINITE X’ by rw [Abbr ‘X’] \\
-     Q_TAC (NEW_TAC "z'") ‘X’ \\
+     Q_TAC (NEW_TAC "z1") ‘X’ \\
      Q.PAT_X_ASSUM ‘FINITE X’ K_TAC >> fs [Abbr ‘X’, IN_UNION] \\
   (* applying tpm_ALPHA_BoundOutput *)
-     Know ‘BoundOutput (Name x) z P' = BoundOutput (Name x) z' (tpm [(z',z)] P')’
+     Know ‘BoundOutput (Name x) z P' = BoundOutput (Name x) z1 (tpm [(z1,z)] P')’
      >- (MATCH_MP_TAC tpm_ALPHA_BoundOutput >> art []) \\
      DISCH_THEN (fs o wrap) \\
-     qabbrev_tac ‘P'' = tpm [(z',z)] P'’ \\
+     qabbrev_tac ‘P2 = tpm [(z1,z)] P'’ \\
      Q.PAT_X_ASSUM ‘!P Q D x z P'. (P,Q,D) IN R ==>
                                    DTRANS D P (BoundOutput (Name x) z P') /\ _ ==> _’
-       (MP_TAC o Q.SPECL [‘P’, ‘y’, ‘D’, ‘x’, ‘z'’, ‘P''’]) >> rw [] \\
-     rename1 ‘DTRANS D y (BoundOutput (Name x) z' y')’ \\
+       (MP_TAC o Q.SPECL [‘P’, ‘y’, ‘D’, ‘x’, ‘z1’, ‘P2’]) >> rw [] \\
+     rename1 ‘DTRANS D y (BoundOutput (Name x) z1 y1)’ \\
+     qabbrev_tac ‘D1 = D UNION sc {(z1,b) | b IN FV P \/ b IN FV y}’ \\
+    ‘D SUBSET D1’ by rw [Abbr ‘D1’] \\
+    ‘distinction D1’ by PROVE_TAC [] \\
   (* stage work *)
      Q.PAT_X_ASSUM ‘dist_simulation R'’
        (STRIP_ASSUME_TAC o SIMP_RULE (bool_ss ++ DNF_ss) [dist_simulation_def]) \\
@@ -721,49 +724,37 @@ Proof
                       (P,Q,D) IN R' ==> DTRANS D P (InputS _ x P') /\ _ ==> _’ K_TAC \\
      Q.PAT_X_ASSUM ‘!P Q D a b P'.
                       (P,Q,D) IN R' ==> DTRANS D P (FreeOutput _ _ P') ==> _’ K_TAC \\
+  (* NOTE: no way to use D1 instead of D here, because z1 # D1 doesn't hold *)
      Q.PAT_X_ASSUM ‘!P Q D x z P'. (P,Q,D) IN R' ==>
                                    DTRANS D P (BoundOutput (Name x) z P') /\ _ ==> _’
-       (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘D’, ‘x’, ‘z'’, ‘y'’]) >> rw [] \\
-     Know ‘BoundOutput (Name x) z' Q' = BoundOutput (Name x) z (tpm [(z,z')] Q')’
+       (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘D’, ‘x’, ‘z1’, ‘y1’]) >> rw [IN_UNION] \\
+     rename1 ‘DTRANS D Q (BoundOutput (Name x) z1 Q1)’ \\
+     qabbrev_tac ‘D2 = D UNION sc {(z1,b) | b IN FV y \/ b IN FV Q}’ \\
+     Know ‘BoundOutput (Name x) z1 Q1 = BoundOutput (Name x) z (tpm [(z,z1)] Q1)’
      >- (MATCH_MP_TAC tpm_ALPHA_BoundOutput \\
          irule FV_BoundOutput \\
-         qexistsl_tac [‘D’, ‘Q’, ‘x’, ‘z'’] >> rw []) \\
+         qexistsl_tac [‘D’, ‘Q’, ‘x’, ‘z1’] >> rw []) \\
      DISCH_THEN (fs o wrap) \\
-     qabbrev_tac ‘Q'' = tpm [(z,z')] Q'’ \\
-     Q.EXISTS_TAC ‘Q''’ >> art [] \\
-    ‘P' = tpm [(z',z)] P''’ by rw [Abbr ‘P''’] >> POP_ORW \\
-    ‘tpm [(z',z)] P'' = tpm [(z,z')] P''’
-       by rw [Once pmact_flip_args] >> POP_ORW \\
-     Q.EXISTS_TAC ‘tpm [(z,z')] y'’ >> simp [Abbr ‘Q''’] \\
-     Know ‘dpm [(z,z')] D = D’
-     >- (MATCH_MP_TAC dpm_unchanged >> simp []) >> DISCH_TAC \\
-     qabbrev_tac ‘pi = [(z,z')]’ \\
-  (*
-     qmatch_abbrev_tac ‘(tpm pi P'',tpm pi y',D UNION A) IN R /\ _’ \\
-     Know ‘dpm pi A = A’
-     >- (simp [Once EXTENSION, Abbr ‘pi’, Abbr ‘A’, FORALL_PROD] \\
-         rw [sc_def] >> EQ_TAC >> rw [] >| (* 4 subgoals *)
-         cheat
-         [ (* goal 1 (of 4) *)
-           Cases_on ‘z = p_2’ >> fs [swapstr_def] \\
-           Cases_on ‘z' = p_2’ >> fs [] \\
-           Cases_on ‘z = p_1’ >> fs [] \\
-           Cases_on ‘z' = p_1’ >> fs [],
-           (* goal 2 (of 4) *)
-           Cases_on ‘x = p_2’ >> fs [swapstr_def] \\
-           Cases_on ‘x = p_1’ >> fs [] \\
-           Cases_on ‘z = p_1’ >> fs [] \\
-           Cases_on ‘z = p_2’ >> fs [],
-           (* goal 3 (of 4) *)
-           Cases_on ‘x = a’ >> fs [swapstr_def] \\
-           Cases_on ‘x = p_2’ >> fs [] \\
-           Cases_on ‘z = p_2’ >> fs [],
-           (* goal 4 (of 4) *)
-           Cases_on ‘x = p_1’ >> fs [swapstr_def] \\
-           Cases_on ‘z = p_1’ >> fs [] ]) >> DISCH_TAC \\
-    ‘dpm pi (D UNION A) = D UNION A’ by rw [dpm_union] \\
-     POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM) \\
-     reverse CONJ_TAC >- simp [] *)
+     qabbrev_tac ‘Q2 = tpm [(z,z1)] Q1’ \\
+     Q.EXISTS_TAC ‘Q2’ >> art [] \\
+    ‘P' = tpm [(z1,z)] P2’ by rw [Abbr ‘P2’] >> POP_ORW \\
+    ‘tpm [(z1,z)] P2 = tpm [(z,z1)] P2’ by rw [Once pmact_flip_args] >> POP_ORW \\
+     Q.EXISTS_TAC ‘tpm [(z,z1)] y1’ >> simp [Abbr ‘Q2’] \\
+     qabbrev_tac ‘D3 = D UNION sc {(z,b) | b IN FV P \/ b IN FV Q}’ \\
+     qabbrev_tac ‘D4 = D UNION sc {(z1,b) | b IN FV P \/ b IN FV Q}’ \\
+     Know ‘D3 = dpm [(z,z1)] D4’
+     >- (rw [Abbr ‘D3’, Abbr ‘D4’, dpm_union] \\
+         Know ‘dpm [(z,z1)] D = D’
+         >- (MATCH_MP_TAC dpm_unchanged >> simp []) >> Rewr' \\
+         Suff ‘sc {(z,b) | b IN FV P \/ b IN FV Q} =
+               dpm [(z,z1)] (sc {(z1,b) | b IN FV P \/ b IN FV Q})’ >- rw [] \\
+         simp [Once EXTENSION, sc_def] \\
+         simp [FORALL_PROD] \\
+         rw [EQ_IMP_THM, swapstr_def] \\ (* 8 subgoals, same tactics *)
+         METIS_TAC []) >> Rewr' \\
+     qunabbrev_tac ‘D3’ \\
+     Suff ‘(P2,y1,D4) IN R /\ (y1,Q1,D4) IN R'’ >- METIS_TAC [] \\
+  (* NOTE: seems impossible because ‘FV y’ is completely unknown *)
      cheat)
  (* goal 8 (of 14): symmetric with goal 1 *)
  >- (MATCH_MP_TAC dist_simulation_imp_distinction \\
