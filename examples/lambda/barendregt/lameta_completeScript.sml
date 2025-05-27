@@ -6683,7 +6683,11 @@ Proof
  >> simp []
 QED
 
-(* Theorem 10.4.2 (i) [1, p.256] *)
+(* Theorem 10.4.2 (i) [1, p.256]
+
+   NOTE: It is actually "eta-separability" because we have “lameta (apply pi M) P”
+   instead of “apply pi M == P”.
+ *)
 Theorem separability_thm :
     !X M N r.
        FINITE X /\ FV M UNION FV N SUBSET X UNION RANK r /\ 0 < r /\
@@ -6750,11 +6754,57 @@ Theorem separability_thm_final :
                      lameta (apply pi M) P /\ lameta (apply pi N) Q
 Proof
     rpt STRIP_TAC
- >> MP_TAC (Q.SPECL [‘FV M UNION FV N’, ‘M’, ‘N’, ‘1’] separability_thm) >> art []
+ >> MP_TAC (Q.SPECL [‘FV M UNION FV N’, ‘M’, ‘N’, ‘1’] separability_thm)
  >> simp []
  >> impl_tac >- SET_TAC []
  >> DISCH_THEN (STRIP_ASSUME_TAC o Q.SPECL [‘P’, ‘Q’])
  >> Q.EXISTS_TAC ‘pi’ >> art []
+QED
+
+(* NOTE: Here we use the original definition from [4] based on contexts.
+  (cf. Definition 10.4.4 [1, p.256])
+ *)
+Definition separable_def :
+    separable R Ms <=>
+    !Ns. LENGTH Ns = LENGTH Ms ==>
+         ?c. ctxt c /\
+             !i. i < LENGTH Ms ==>
+                 conversion (beta RUNION R) (c (EL i Ms)) (EL i Ns)
+End
+
+Overload separable'    = “separable REMPTY”
+Overload eta_separable = “separable eta”
+
+(* |- !Ms.
+        eta_separable Ms <=>
+        !Ns.
+          LENGTH Ns = LENGTH Ms ==>
+          ?c. ctxt c /\ !i. i < LENGTH Ms ==> lameta (c (EL i Ms)) (EL i Ns)
+ *)
+Theorem eta_separable_def =
+        separable_def |> Q.SPEC ‘eta’
+                      |> REWRITE_RULE [beta_eta_lameta]
+
+Theorem eta_separable_thm :
+    !M N. has_benf M /\ has_benf N /\ ~(lameta M N) ==> eta_separable [M; N]
+Proof
+    rw [eta_separable_def]
+ >> MP_TAC (Q.SPECL [‘M’, ‘N’] separability_thm_final) >> simp []
+ >> DISCH_THEN (MP_TAC o Q.SPECL [‘EL 0 Ns’, ‘EL 1 Ns’])
+ >> STRIP_TAC
+ (* applying Boehm_transform_lameq_ctxt *)
+ >> ‘?c. ctxt c /\ !M. apply pi M == c M’ by PROVE_TAC [Boehm_transform_lameq_ctxt]
+ >> Q.EXISTS_TAC ‘c’ >> art []
+ >> CONV_TAC (BOUNDED_FORALL_CONV (SIMP_CONV list_ss []))
+ >> CONJ_TAC
+ >- (Q_TAC (TRANS_TAC lameta_TRANS) ‘apply pi N’ >> art [] \\
+     MATCH_MP_TAC lameta_SYM \\
+     MATCH_MP_TAC lameq_imp_lameta >> art [])
+ >> CONV_TAC (BOUNDED_FORALL_CONV (SIMP_CONV list_ss []))
+ >> ASM_SIMP_TAC bool_ss [GSYM EL]
+ >> Q_TAC (TRANS_TAC lameta_TRANS) ‘apply pi M’ >> art []
+ >> MATCH_MP_TAC lameta_SYM
+ >> MATCH_MP_TAC lameq_imp_lameta >> art []
 QED
 
 (* Theorem 10.4.2 (ii) [1, p.256] *)
@@ -6767,9 +6817,9 @@ Proof
  >> ‘?pi. Boehm_transform pi /\
           lameta (apply pi M) P /\ lameta (apply pi N) Q’
        by METIS_TAC [separability_thm_final]
- >> ‘?Ns. !M. closed M ==> apply pi M == M @* Ns’
+ >> ‘?L. !M. closed M ==> apply pi M == M @* L’
        by METIS_TAC [Boehm_transform_lameq_appstar]
- >> Q.EXISTS_TAC ‘Ns’
+ >> Q.EXISTS_TAC ‘L’
  >> CONJ_TAC (* 2 subgoals *)
  >| [ (* goal 1 (of 2) *)
       MATCH_MP_TAC lameta_TRANS \\
@@ -6851,4 +6901,7 @@ val _ = html_theory "lameta_complete";
      Pubblicazioni dell'IAC 696, 1-19 (1968)
      English translation: "Some properties of beta-eta-normal forms in the
      lambda-K-calculus" (https://arxiv.org/abs/2502.05774)
+ [4] Coppo, M. et al.: (Semi-) separability of Finite Sets of Terms in Scott's
+     D-infinity-models of the Lambda-calculus. In: LNCS 62 - Automata, Languages
+     and Programming (ICALP 1978). Springer (1978).
  *)
