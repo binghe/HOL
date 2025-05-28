@@ -5,7 +5,7 @@
 open HolKernel Parse boolLib bossLib BasicProvers;
 
 open pred_setTheory pred_setLib listTheory rich_listTheory finite_mapTheory
-     arithmeticTheory string_numTheory hurdUtils pairTheory;
+     arithmeticTheory string_numTheory hurdUtils pairTheory listLib;
 
 open basic_swapTheory termTheory nomsetTheory binderLib appFOLDLTheory;
 
@@ -1567,9 +1567,13 @@ QED
 
 (* By prefixing a list of abstractions of FVs, any term can be "closed". The
    set ‘closures M’ represent such closures with different order of FVs.
+
+   NOTE: The condition “set vs = FV M” was replaced with “FV M SUBSET set vs”,
+   which allows more flexible binding variable lists. This is useful for
+   constructing a share binding variable list closing a finite list of terms.
  *)
 Definition closures_def :
-    closures M = {LAMl vs M | vs | ALL_DISTINCT vs /\ set vs = FV M}
+    closures M = {LAMl vs M | vs | ALL_DISTINCT vs /\ FV M SUBSET set vs}
 End
 
 Theorem closures_not_empty :
@@ -1583,48 +1587,51 @@ Proof
  >> rw [SET_TO_LIST_INV]
 QED
 
-Theorem closures_of_closed[simp] :
-    !M. closed M ==> closures M = {M}
+Theorem closures_of_closed :
+    !M. closed M ==> M IN closures M
 Proof
     rw [closures_def, closed_def]
- >> rw [Once EXTENSION]
+ >> Q.EXISTS_TAC ‘[]’ >> rw []
 QED
 
 Theorem closures_of_open_sing :
-    !M v. FV M = {v} ==> closures M = {LAM v M}
+    !M v. FV M = {v} ==> LAM v M IN closures M
 Proof
     rw [closures_def, LIST_TO_SET_SING]
- >> rw [Once EXTENSION]
+ >> Q.EXISTS_TAC ‘[v]’ >> rw []
 QED
 
-(* ‘closure M’ is just one arbitrary element in ‘closures M’. *)
-Overload closure = “\M. CHOICE (closures M)”
+(* ‘closure M’ is the canonical element in ‘closures M’. *)
+Definition closure_def :
+    closure M = LAMl (SET_TO_LIST (FV M)) M
+End
 
 Theorem closure_in_closures :
     !M. closure M IN closures M
 Proof
-    rw [CHOICE_DEF, closures_not_empty]
+    rw [closure_def, closures_def]
+ >> Q.EXISTS_TAC ‘SET_TO_LIST (FV M)’
+ >> rw [ALL_DISTINCT_SET_TO_LIST]
+ >> rw [SUBSET_DEF]
 QED
 
 Theorem closure_idem[simp] :
-    !M. closed M ==> closure M = M
+    closed M ==> closure M = M
 Proof
-    rw [closures_of_closed]
+    rw [closure_def, closed_def]
 QED
 
 Theorem closure_open_sing :
     !M v. FV M = {v} ==> closure M = LAM v M
 Proof
-    rpt STRIP_TAC
- >> ‘closures M = {LAM v M}’ by PROVE_TAC [closures_of_open_sing]
- >> rw []
+    rw [closure_def]
 QED
 
 Theorem closed_closure[simp]:
   closed (closure M)
 Proof
   qspec_then ‘M’ assume_tac closure_in_closures >> gvs[closures_def] >>
-  simp[closed_def, appFOLDLTheory.FV_LAMl]
+  simp[closed_def, appFOLDLTheory.FV_LAMl] >> ASM_SET_TAC []
 QED
 
 (*---------------------------------------------------------------------------*
@@ -1636,18 +1643,47 @@ Definition solvable_def :
     solvable (M :term) = ?M' Ns. M' IN closures M /\ M' @* Ns == I
 End
 
-Theorem closures_alt_closed :
-    !M. closed M ==> closures M = {M}
-Proof
-    rw [closures_def, closed_def]
- >> rw [Once EXTENSION]
-QED
-
 (* 8.3.1 (i) [1, p.171] *)
 Theorem solvable_alt_closed :
     !M. closed M ==> (solvable M <=> ?Ns. M @* Ns == I)
 Proof
-    rw [solvable_def, closures_alt_closed]
+    rw [solvable_def, closures_def, closed_def]
+ >> reverse EQ_TAC
+ >- (STRIP_TAC \\
+     qexistsl_tac [‘M’, ‘Ns’] >> art [] \\
+     Q.EXISTS_TAC ‘[]’ >> rw [])
+ >> rw []
+ (* stage work *)
+ >> rpt (POP_ASSUM MP_TAC)
+ >> qid_spec_tac ‘M’
+ >> qid_spec_tac ‘vs’
+ >> SNOC_INDUCT_TAC
+ >- (rw [] \\
+     Q.EXISTS_TAC ‘Ns’ >> art [])
+ >> rw [LAMl_SNOC, ALL_DISTINCT_SNOC]
+ >> qabbrev_tac ‘N = LAM x M’
+ >> ‘FV N = {}’ by rw [Abbr ‘N’]
+ >> Know ‘?Ps. N @* Ps == I’
+ >- (FIRST_X_ASSUM irule >> art [])
+ >> STRIP_TAC
+ >> Cases_on ‘Ps’ >> fs [Abbr ‘N’]
+ >- (‘LAM x M @@ I == I @@ I’ by rw [lameq_APPL] \\
+     ‘I @@ I == I’ by rw [lameq_I] \\
+     ‘LAM x M @@ I == I’ by PROVE_TAC [lameq_TRANS] \\
+     ‘LAM x M @@ I == [I/x] M’ by rw [lameq_BETA] \\
+     ‘[I/x] M = M’ by rw [lemma14b] \\
+     POP_ASSUM (fs o wrap) \\
+    ‘M == I’ by PROVE_TAC [lameq_TRANS, lameq_SYM] \\
+     Q.EXISTS_TAC ‘[]’ >> rw [])
+ >> ‘LAM x M @@ h == [h/x] M’ by rw [lameq_BETA]
+ >> ‘[h/x] M = M’ by rw [lemma14b]
+ >> POP_ASSUM (fs o wrap)
+ >> qabbrev_tac ‘N = LAM x M’
+ >> Know ‘N @@ h @* t == M @* t’
+ >- (MATCH_MP_TAC lameq_appstar_cong >> art [])
+ >> DISCH_TAC
+ >> ‘M @* t == I’ by PROVE_TAC [lameq_TRANS, lameq_SYM]
+ >> Q.EXISTS_TAC ‘t’ >> art []
 QED
 
 (* 8.3.1 (iii) [1, p.171] *)

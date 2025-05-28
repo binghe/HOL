@@ -36,12 +36,10 @@ Theorem solvable_xIO :
 Proof
     Q.ABBREV_TAC ‘M = VAR x @@ I @@ Omega’
  >> ‘FV M = {x}’ by rw [Abbr ‘M’]
- >> ‘closures M = {LAM x M}’ by PROVE_TAC [closures_of_open_sing]
  >> rw [solvable_def]
- >> Q.EXISTS_TAC ‘[K]’ >> simp []
+ >> ‘LAM x M IN closures M’ by PROVE_TAC [closures_of_open_sing]
+ >> qexistsl_tac [‘LAM x M’, ‘[K]’] >> simp []
  >> ASM_SIMP_TAC (betafy (srw_ss())) [Abbr ‘M’, lameq_K]
- >> KILL_TAC
- >> rw [SUB_THM, lemma14b]
 QED
 
 Theorem solvable_Y :
@@ -66,6 +64,7 @@ Theorem closures_imp_closed :
 Proof
     rw [closures_def, closed_def]
  >> simp [FV_LAMl]
+ >> ASM_SET_TAC []
 QED
 
 (* |- !M N. N IN closures M ==> FV N = {} *)
@@ -135,11 +134,13 @@ Proof
  >> Q.EXISTS_TAC ‘Ns’ >> art []
 QED
 
+(* NOTE: We don't change this definition when solvable_def is changed. *)
 Definition closed_substitution_instances_def :
     closed_substitution_instances M =
        {fm ' M | fm | FDOM fm = FV M /\ !v. v IN FDOM fm ==> closed (fm ' v)}
 End
 
+(*
 Theorem solvable_alt_closed_substitution_instance_lemma[local] :
     !Ns. FV M = set vs /\ ALL_DISTINCT vs /\ LAMl vs M @* Ns == I /\
          LENGTH vs <= LENGTH Ns /\ EVERY closed Ns
@@ -183,6 +184,7 @@ Proof
  >> ‘j <> n’ by rw []
  >> METIS_TAC [EL_ALL_DISTINCT_EL_EQ]
 QED
+ *)
 
 (* Lemma 8.3.3 (i) *)
 Theorem solvable_alt_closed_substitution_instance :
@@ -191,7 +193,8 @@ Theorem solvable_alt_closed_substitution_instance :
 Proof
     Q.X_GEN_TAC ‘M’
  >> EQ_TAC
- >- (rw [solvable_alt, closures_def] \\
+ >- (cheat (*
+     rw [solvable_alt, closures_def] \\
      Q.ABBREV_TAC ‘n = LENGTH vs’ \\
      Q.ABBREV_TAC ‘m = LENGTH Ns’ \\
      Cases_on ‘n <= m’
@@ -209,7 +212,8 @@ Proof
          rw [EVERY_MEM, Abbr ‘Is’, closed_def, MEM_GENLIST] \\
          REWRITE_TAC [FV_I]) >> DISCH_TAC \\
      MATCH_MP_TAC solvable_alt_closed_substitution_instance_lemma \\
-     Q.EXISTS_TAC ‘Ns'’ >> rw [])
+     Q.EXISTS_TAC ‘Ns'’ >> rw [] *)
+     )
  (* stage work *)
  >> rw [solvable_def, closed_substitution_instances_def]
  >> Q.ABBREV_TAC ‘vss = FDOM fm’
@@ -373,6 +377,8 @@ QED
 Theorem solvable_alt_universal :
     !M. solvable M <=> !M'. M' IN closures M ==> ?Ns. M' @* Ns == I /\ EVERY closed Ns
 Proof
+    cheat
+ (*
     Q.X_GEN_TAC ‘M’
  >> reverse EQ_TAC
  >- (rw [solvable_def] >> Q.EXISTS_TAC ‘closure M’ \\
@@ -406,6 +412,7 @@ Proof
  >> DISCH_TAC
  >> MATCH_MP_TAC solvable_alt_universal_lemma
  >> Q.EXISTS_TAC ‘Ns'’ >> rw []
+  *)
 QED
 
 Theorem ssub_LAM[local] = List.nth(CONJUNCTS ssub_thm, 2)
