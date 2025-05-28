@@ -2,7 +2,7 @@
 (* FILE    : lameta_completeScript.sml (chap10_4Script.sml)                   *)
 (* TITLE   : Completeness of (Untyped) Lambda-Calculus [1, Chapter 10.4]      *)
 (*                                                                            *)
-(* AUTHORS : 2024-2025 The Australian National University (Chun Tian)         *)
+(* AUTHORS : 2024 - 2025 The Australian National University (Chun Tian)       *)
 (* ========================================================================== *)
 
 open HolKernel Parse boolLib bossLib;
@@ -6748,6 +6748,9 @@ Proof
       MATCH_MP_TAC Boehm_apply_lameta_cong >> art [] ]
 QED
 
+(* NOTE: We call it "final" if there's no “FINITE X /\ FV M SUBSET X UNION RANK r”
+   in antecedents.
+ *)
 Theorem separability_thm_final :
     !M N. has_benf M /\ has_benf N /\ ~(lameta M N) ==>
           !P Q. ?pi. Boehm_transform pi /\
@@ -6759,52 +6762,6 @@ Proof
  >> impl_tac >- SET_TAC []
  >> DISCH_THEN (STRIP_ASSUME_TAC o Q.SPECL [‘P’, ‘Q’])
  >> Q.EXISTS_TAC ‘pi’ >> art []
-QED
-
-(* NOTE: Here we use the original definition from [4] based on contexts.
-  (cf. Definition 10.4.4 [1, p.256])
- *)
-Definition separable_def :
-    separable R Ms <=>
-    !Ns. LENGTH Ns = LENGTH Ms ==>
-         ?c. ctxt c /\
-             !i. i < LENGTH Ms ==>
-                 conversion (beta RUNION R) (c (EL i Ms)) (EL i Ns)
-End
-
-Overload separable'    = “separable REMPTY”
-Overload eta_separable = “separable eta”
-
-(* |- !Ms.
-        eta_separable Ms <=>
-        !Ns.
-          LENGTH Ns = LENGTH Ms ==>
-          ?c. ctxt c /\ !i. i < LENGTH Ms ==> lameta (c (EL i Ms)) (EL i Ns)
- *)
-Theorem eta_separable_def =
-        separable_def |> Q.SPEC ‘eta’
-                      |> REWRITE_RULE [beta_eta_lameta]
-
-Theorem eta_separable_thm :
-    !M N. has_benf M /\ has_benf N /\ ~(lameta M N) ==> eta_separable [M; N]
-Proof
-    rw [eta_separable_def]
- >> MP_TAC (Q.SPECL [‘M’, ‘N’] separability_thm_final) >> simp []
- >> DISCH_THEN (MP_TAC o Q.SPECL [‘EL 0 Ns’, ‘EL 1 Ns’])
- >> STRIP_TAC
- (* applying Boehm_transform_lameq_ctxt *)
- >> ‘?c. ctxt c /\ !M. apply pi M == c M’ by PROVE_TAC [Boehm_transform_lameq_ctxt]
- >> Q.EXISTS_TAC ‘c’ >> art []
- >> CONV_TAC (BOUNDED_FORALL_CONV (SIMP_CONV list_ss []))
- >> CONJ_TAC
- >- (Q_TAC (TRANS_TAC lameta_TRANS) ‘apply pi N’ >> art [] \\
-     MATCH_MP_TAC lameta_SYM \\
-     MATCH_MP_TAC lameq_imp_lameta >> art [])
- >> CONV_TAC (BOUNDED_FORALL_CONV (SIMP_CONV list_ss []))
- >> ASM_SIMP_TAC bool_ss [GSYM EL]
- >> Q_TAC (TRANS_TAC lameta_TRANS) ‘apply pi M’ >> art []
- >> MATCH_MP_TAC lameta_SYM
- >> MATCH_MP_TAC lameq_imp_lameta >> art []
 QED
 
 (* Theorem 10.4.2 (ii) [1, p.256] *)
