@@ -272,9 +272,7 @@ Proof
      >- (qunabbrev_tac ‘vs'’ \\
          MATCH_MP_TAC FILTER_ALL_DISTINCT >> art []) >> DISCH_TAC \\
      Q.ABBREV_TAC ‘n = LENGTH vs’ \\
-     Q.ABBREV_TAC ‘k = LENGTH vs'’ \\
      Q.ABBREV_TAC ‘m = LENGTH Ns’ \\
-    ‘k <= n’ by rw [Abbr ‘k’, Abbr ‘vs'’, Abbr ‘n’, LENGTH_FILTER_LEQ] \\
   (* NOTE: The LENGTH of “Ns ++ Is” cannot be smaller than k. By forcely
      appending (n - m) elements of “I” combinator (Is), the total length of
     “Ns ++ Is” is “m + (n - m) = n” or “m” (if n <= m), or MAX m n, enough.
@@ -295,6 +293,8 @@ Proof
     ‘LAMl vs M @* Ps == I’ by PROVE_TAC [lameq_TRANS] \\
      Q.PAT_X_ASSUM ‘_ == I @* Is’ K_TAC \\
      Q.PAT_X_ASSUM ‘I @* Is == _’ K_TAC \\
+     Q.ABBREV_TAC ‘k = LENGTH vs'’ \\
+    ‘k <= n’ by rw [Abbr ‘k’, Abbr ‘vs'’, Abbr ‘n’, LENGTH_FILTER_LEQ] \\
   (* applying lameq_LAMl_appstar_FILTER *)
      MP_TAC (Q.SPECL [‘vs’, ‘vs'’, ‘M’, ‘Ps’] lameq_LAMl_appstar_FILTER) >> rw [] \\
     ‘LAMl vs' M @* Ns' == I’ by PROVE_TAC [lameq_TRANS, lameq_SYM] \\
@@ -347,10 +347,10 @@ QED
 
 (* NOTE: this proof needs sortingTheory (PERM) *)
 Theorem solvable_alt_universal_lemma[local] :
-    !Ns. ALL_DISTINCT vs /\ ALL_DISTINCT vs' /\
-         set vs = FV M /\ set vs' = FV M /\
-         LENGTH vs <= LENGTH Ns /\ EVERY closed Ns /\
-         LAMl vs M @* Ns == I ==> ?Ns'. LAMl vs' M @* Ns' == I
+    !vs vs' M Ns. ALL_DISTINCT vs /\ ALL_DISTINCT vs' /\
+                  set vs = FV M /\ set vs' = FV M /\
+                  LENGTH vs <= LENGTH Ns /\ EVERY closed Ns /\
+                  LAMl vs M @* Ns == I ==> ?Ns'. LAMl vs' M @* Ns' == I
 Proof
     rpt STRIP_TAC
  >> Know ‘PERM vs vs'’
@@ -458,12 +458,13 @@ QED
 
    NOTE: This is actually 8.3.5 [1, p.172] showing the definition of solvability of
          open terms is independent of the order of the variables in its closure.
+
+   NOTE: How to use lameq_LAMl_appstar_FILTER here?
  *)
 Theorem solvable_alt_universal :
-    !M. solvable M <=> !M'. M' IN closures M ==> ?Ns. M' @* Ns == I /\ EVERY closed Ns
+    !M. solvable M <=>
+        !M'. M' IN closures M ==> ?Ns. M' @* Ns == I /\ EVERY closed Ns
 Proof
-    cheat
- (*
     Q.X_GEN_TAC ‘M’
  >> reverse EQ_TAC
  >- (rw [solvable_def] >> Q.EXISTS_TAC ‘closure M’ \\
@@ -477,27 +478,40 @@ Proof
  >> rw [solvable_alt_closed]
  (* applying solvable_alt *)
  >> fs [solvable_alt, closures_def]
+ >> Q.PAT_X_ASSUM ‘M' = LAMl vs M’ (fs o wrap)
+ >> rename1 ‘M0 = LAMl xs M’ (* rename vs' to xs *)
+ (* below are some tactics from solvable_alt_closed_substitution_instance *)
+ >> qabbrev_tac ‘vs' = FILTER (\e. e IN FV M) vs’
+ >> Know ‘set vs' = FV M’
+ >- (rw [Abbr ‘vs'’, LIST_TO_SET_FILTER] \\
+     ASM_SET_TAC [])
+ >> DISCH_TAC
+ >> Know ‘ALL_DISTINCT vs'’
+ >- (qunabbrev_tac ‘vs'’ \\
+     MATCH_MP_TAC FILTER_ALL_DISTINCT >> art [])
+ >> DISCH_TAC
  >> Q.ABBREV_TAC ‘n = LENGTH vs’
  >> Q.ABBREV_TAC ‘m = LENGTH Ns’
- >> Cases_on ‘n <= m’
- >- (MATCH_MP_TAC solvable_alt_universal_lemma \\
-     Q.EXISTS_TAC ‘Ns’ >> rw [])
- (* additional steps when ‘m < n’ *)
  >> Q.ABBREV_TAC ‘Is = GENLIST (\i. I) (n - m)’
  >> ‘(LAMl vs M @* Ns) @* Is == I @* Is’ by PROVE_TAC [lameq_appstar_cong]
- >> ‘I @* Is == I’ by METIS_TAC [I_appstar]
- >> ‘LAMl vs M @* (Ns ++ Is) == I @* Is’ by rw [appstar_APPEND]
- >> Q.ABBREV_TAC ‘Ns' = Ns ++ Is’
- >> ‘LENGTH Ns' = n’ by (rw [Abbr ‘Ns'’, Abbr ‘Is’])
- >> ‘LAMl vs M @* Ns' == I’ by PROVE_TAC [lameq_TRANS]
- >> Know ‘EVERY closed Ns'’
- >- (rw [EVERY_APPEND, Abbr ‘Ns'’] \\
-     rw [EVERY_MEM, Abbr ‘Is’, closed_def, MEM_GENLIST] \\
-     REWRITE_TAC [FV_I])
+ >> ‘I @* Is == I’ by PROVE_TAC [I_appstar]
+ >> FULL_SIMP_TAC std_ss [GSYM appstar_APPEND]
+ >> Q.ABBREV_TAC ‘Ps = Ns ++ Is’
+ >> ‘LENGTH Ps = MAX m n’ by rw [Abbr ‘Ps’, Abbr ‘Is’, MAX_DEF]
+ >> Know ‘EVERY closed Ps’
+ >- (rw [Abbr ‘Ps’] \\
+     rw [Abbr ‘Is’, EVERY_GENLIST, closed_def])
  >> DISCH_TAC
- >> MATCH_MP_TAC solvable_alt_universal_lemma
- >> Q.EXISTS_TAC ‘Ns'’ >> rw []
-  *)
+ >> ‘LAMl vs M @* Ps == I’ by PROVE_TAC [lameq_TRANS]
+ >> Q.PAT_X_ASSUM ‘_ == I @* Is’ K_TAC
+ >> Q.PAT_X_ASSUM ‘I @* Is == _’ K_TAC
+ >> Q.ABBREV_TAC ‘k = LENGTH vs'’
+ >> ‘k <= n’ by rw [Abbr ‘k’, Abbr ‘vs'’, Abbr ‘n’, LENGTH_FILTER_LEQ]
+ (* applying lameq_LAMl_appstar_FILTER *)
+ >> MP_TAC (Q.SPECL [‘vs’, ‘vs'’, ‘M’, ‘Ps’] lameq_LAMl_appstar_FILTER) >> rw []
+ >> ‘LAMl vs' M @* Ns' == I’ by PROVE_TAC [lameq_TRANS, lameq_SYM]
+ >> Q.PAT_X_ASSUM ‘_ == LAMl vs' M @* Ns'’ K_TAC
+ >> cheat
 QED
 
 Theorem ssub_LAM[local] = List.nth(CONJUNCTS ssub_thm, 2)
