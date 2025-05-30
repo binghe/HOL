@@ -140,9 +140,9 @@ Definition closed_substitution_instances_def :
        {fm ' M | fm | FDOM fm = FV M /\ !v. v IN FDOM fm ==> closed (fm ' v)}
 End
 
-(*
 Theorem solvable_alt_closed_substitution_instance_lemma[local] :
-    !Ns. FV M = set vs /\ ALL_DISTINCT vs /\ LAMl vs M @* Ns == I /\
+    !M Ns vs.
+         FV M = set vs /\ ALL_DISTINCT vs /\ LAMl vs M @* Ns == I /\
          LENGTH vs <= LENGTH Ns /\ EVERY closed Ns
      ==> ?M' Ns'. M' IN closed_substitution_instances M /\
                   M' @* Ns' == I /\ EVERY closed Ns'
@@ -184,42 +184,89 @@ Proof
  >> ‘j <> n’ by rw []
  >> METIS_TAC [EL_ALL_DISTINCT_EL_EQ]
 QED
- *)
 
-(* Lemma 8.3.3 (i) *)
+(* NOTE: If there's any variable v in vs not in FV M, then it contracts with
+   a term N in Ns at the corresponding position, leading to [N/v] M = M. As the
+   result, we get a shorter LAMl and appstar which is beta-equivalent to the
+   original LAMl and appstar.
+ *)
+Theorem lameq_LAMl_appstar_FILTER :
+    !vs vs' M Ns. ALL_DISTINCT vs /\ FV M SUBSET set vs /\ EVERY closed Ns /\
+                  LENGTH vs <= LENGTH Ns /\
+                  vs' = FILTER (\e. e IN FV M) vs ==>
+                 ?Ns'. set Ns' SUBSET set Ns /\ LENGTH vs' <= LENGTH Ns' /\
+                       LAMl vs M @* Ns == LAMl vs' M @* Ns'
+Proof
+    Induct_on ‘vs’
+ >- (rw [] >> Q.EXISTS_TAC ‘Ns’ >> rw [])
+ >> rw [GSYM LESS_EQ] (* 2 subgoals *)
+ (* h IN FV M *)
+ >- (qabbrev_tac ‘vs' = FILTER (\e. e IN FV M) vs’ \\
+     Cases_on ‘Ns’ >> fs [] \\ (* Ns cannot be [] *)
+     rename1 ‘closed N’ \\ (* the head of Ns *)
+     cheat)
+ (* h # M *)
+ >> cheat
+QED
+
+(* Lemma 8.3.3 (i) [1, p.172] *)
 Theorem solvable_alt_closed_substitution_instance :
     !M. solvable M <=> ?M' Ns. M' IN closed_substitution_instances M /\
                                M' @* Ns == I /\ EVERY closed Ns
 Proof
     Q.X_GEN_TAC ‘M’
  >> EQ_TAC
- >- (cheat (*
-     rw [solvable_alt, closures_def] \\
+ >- (rw [solvable_alt, closures_def] \\
+  (* NOTE: Here we need to get the indexes of vs whose corresponding element is
+     outside of FV M, then we construct Ns' from these corresponding indexes.
+     There's also the extra complications when Ns and Ns' are not long enough,
+     in which case we must append enough Is to it. Not easy.
+   *)
+     qabbrev_tac ‘vs' = FILTER (\e. e IN FV M) vs’ \\
+     Know ‘set vs' = FV M’
+     >- (rw [Abbr ‘vs'’, LIST_TO_SET_FILTER] \\
+         ASM_SET_TAC []) >> DISCH_TAC \\
+     Know ‘ALL_DISTINCT vs'’
+     >- (qunabbrev_tac ‘vs'’ \\
+         MATCH_MP_TAC FILTER_ALL_DISTINCT >> art []) >> DISCH_TAC \\
      Q.ABBREV_TAC ‘n = LENGTH vs’ \\
+     Q.ABBREV_TAC ‘k = LENGTH vs'’ \\
      Q.ABBREV_TAC ‘m = LENGTH Ns’ \\
-     Cases_on ‘n <= m’
-     >- (MATCH_MP_TAC solvable_alt_closed_substitution_instance_lemma \\
-         Q.EXISTS_TAC ‘Ns’ >> rw []) \\
+    ‘k <= n’ by rw [Abbr ‘k’, Abbr ‘vs'’, Abbr ‘n’, LENGTH_FILTER_LEQ] \\
+  (* NOTE: The LENGTH of “Ns ++ Is” cannot be smaller than k. By forcely
+     appending (n - m) elements of “I” combinator (Is), the total length of
+    “Ns ++ Is” is “m + (n - m) = n” or “m” (if n <= m), or MAX m n, enough.
+
+                 LAMl                appstar
+     |<---------- n ----------->|<----- m ------>|    (n - m)
+     |<------- k ------->|      |<----- m ------>|<---- Is ---->|
+   *)
      Q.ABBREV_TAC ‘Is = GENLIST (\i. I) (n - m)’ \\
     ‘(LAMl vs M @* Ns) @* Is == I @* Is’ by PROVE_TAC [lameq_appstar_cong] \\
     ‘I @* Is == I’ by PROVE_TAC [I_appstar] \\
      FULL_SIMP_TAC std_ss [GSYM appstar_APPEND] \\
-     Q.ABBREV_TAC ‘Ns' = Ns ++ Is’ \\
-    ‘LENGTH Ns' = n’ by (rw [Abbr ‘Ns'’, Abbr ‘Is’]) \\
-    ‘LAMl vs M @* Ns' == I’ by PROVE_TAC [lameq_TRANS] \\
-     Know ‘EVERY closed Ns'’
-     >- (rw [EVERY_APPEND, Abbr ‘Ns'’] \\
-         rw [EVERY_MEM, Abbr ‘Is’, closed_def, MEM_GENLIST] \\
-         REWRITE_TAC [FV_I]) >> DISCH_TAC \\
+     Q.ABBREV_TAC ‘Ps = Ns ++ Is’ \\
+    ‘LENGTH Ps = MAX m n’ by rw [Abbr ‘Ps’, Abbr ‘Is’, MAX_DEF] \\
+     Know ‘EVERY closed Ps’
+     >- (rw [Abbr ‘Ps’] \\
+         rw [Abbr ‘Is’, EVERY_GENLIST, closed_def]) >> DISCH_TAC \\
+    ‘LAMl vs M @* Ps == I’ by PROVE_TAC [lameq_TRANS] \\
+     Q.PAT_X_ASSUM ‘_ == I @* Is’ K_TAC \\
+     Q.PAT_X_ASSUM ‘I @* Is == _’ K_TAC \\
+  (* applying lameq_LAMl_appstar_FILTER *)
+     MP_TAC (Q.SPECL [‘vs’, ‘vs'’, ‘M’, ‘Ps’] lameq_LAMl_appstar_FILTER) >> rw [] \\
+    ‘LAMl vs' M @* Ns' == I’ by PROVE_TAC [lameq_TRANS, lameq_SYM] \\
      MATCH_MP_TAC solvable_alt_closed_substitution_instance_lemma \\
-     Q.EXISTS_TAC ‘Ns'’ >> rw [] *)
-     )
+     qexistsl_tac [‘Ns'’, ‘vs'’] >> simp [] \\
+     Q.PAT_X_ASSUM ‘set Ns' SUBSET set Ps’ MP_TAC \\
+     Q.PAT_X_ASSUM ‘EVERY closed Ps’ MP_TAC \\
+     rw [EVERY_MEM, SUBSET_DEF])
  (* stage work *)
  >> rw [solvable_def, closed_substitution_instances_def]
- >> Q.ABBREV_TAC ‘vss = FDOM fm’
- >> ‘FINITE vss’ by rw [FDOM_FINITE, Abbr ‘vss’]
+ >> Q.ABBREV_TAC ‘xs = FDOM fm’
+ >> ‘FINITE xs’ by rw [FDOM_FINITE, Abbr ‘xs’]
  (* preparing for lameq_LAMl_appstar_ssub_closed *)
- >> Q.ABBREV_TAC ‘vs = SET_TO_LIST vss’
+ >> Q.ABBREV_TAC ‘vs = SET_TO_LIST xs’
  >> ‘ALL_DISTINCT vs’ by PROVE_TAC [Abbr ‘vs’, ALL_DISTINCT_SET_TO_LIST]
  >> Q.ABBREV_TAC ‘Ps = MAP (\v. fm ' v) vs’
  >> ‘LENGTH Ps = LENGTH vs’ by rw [Abbr ‘Ps’]
