@@ -186,27 +186,69 @@ Proof
 QED
 
 (* NOTE: If there's any variable v in vs not in FV M, then it contracts with
-   a term N in Ns at the corresponding position, leading to [N/v] M = M. As the
-   result, we get a shorter LAMl and appstar which is beta-equivalent to the
+   a term N in Ns at the corresponding position, leading to [N/v] M = M. As a
+   result, we obtain shorter LAMl and appstar which is beta-equivalent to the
    original LAMl and appstar.
  *)
 Theorem lameq_LAMl_appstar_FILTER :
-    !vs vs' M Ns. ALL_DISTINCT vs /\ FV M SUBSET set vs /\ EVERY closed Ns /\
-                  LENGTH vs <= LENGTH Ns /\
-                  vs' = FILTER (\e. e IN FV M) vs ==>
-                 ?Ns'. set Ns' SUBSET set Ns /\ LENGTH vs' <= LENGTH Ns' /\
-                       LAMl vs M @* Ns == LAMl vs' M @* Ns'
+    !vs vs' M Ns.
+        ALL_DISTINCT vs /\ FV M SUBSET set vs /\ EVERY closed Ns /\
+        LENGTH vs <= LENGTH Ns /\ vs' = FILTER (\e. e IN FV M) vs ==>
+        ?Ns'. LENGTH vs' <= LENGTH Ns' /\ EVERY closed Ns' /\
+              LAMl vs M @* Ns == LAMl vs' M @* Ns'
 Proof
     Induct_on ‘vs’
  >- (rw [] >> Q.EXISTS_TAC ‘Ns’ >> rw [])
- >> rw [GSYM LESS_EQ] (* 2 subgoals *)
- (* h IN FV M *)
+ >> reverse (rw [GSYM LESS_EQ]) (* 2 subgoals *)
+ (* h # M (easy case) *)
  >- (qabbrev_tac ‘vs' = FILTER (\e. e IN FV M) vs’ \\
-     Cases_on ‘Ns’ >> fs [] \\ (* Ns cannot be [] *)
-     rename1 ‘closed N’ \\ (* the head of Ns *)
-     cheat)
- (* h # M *)
- >> cheat
+     Cases_on ‘Ns’ >> fs [LT_SUC_LE] \\ (* Ns cannot be [] *)
+     rename1 ‘closed N’ \\ (* It's the head of Ns *)
+     Q.PAT_X_ASSUM ‘!M Ns. P’ (MP_TAC o Q.SPECL [‘M’, ‘t’]) >> rw [] \\
+     Q.EXISTS_TAC ‘Ns'’ >> simp [] \\
+     qabbrev_tac ‘P = LAMl vs M’ \\
+     Q_TAC (TRANS_TAC lameq_TRANS) ‘P @* t’ >> art [] \\
+     MATCH_MP_TAC lameq_appstar_cong \\
+    ‘LAM h P @@ N == [N/h] P’ by rw [lameq_BETA] \\
+     Suff ‘[N/h] P = P’ >- PROVE_TAC [] \\
+     MATCH_MP_TAC lemma14b \\
+     simp [Abbr ‘P’, FV_LAMl])
+ (* h IN FV M *)
+ >> qabbrev_tac ‘vs' = FILTER (\e. e IN FV M) vs’
+ >> Cases_on ‘Ns’ >> fs [LT_SUC_LE]
+ >> rename1 ‘closed N’
+ >> qabbrev_tac ‘P = LAMl vs M’
+ >> ‘LAM h P @@ N == [N/h] P’ by rw [lameq_BETA]
+ >> Know ‘[N/h] P = LAMl vs ([N/h] M)’
+ >- (qunabbrev_tac ‘P’ \\
+     MATCH_MP_TAC LAMl_SUB >> fs [closed_def])
+ >> DISCH_THEN (fs o wrap)
+ >> qabbrev_tac ‘M' = [N/h] M’
+ >> Q.PAT_X_ASSUM ‘!M Ns. _’ (MP_TAC o Q.SPECL [‘M'’, ‘t’]) >> simp []
+ >> impl_tac (* FV M' SUBSET set vs *)
+ >- (rw [Abbr ‘M'’, FV_SUB] >- fs [closed_def] \\
+     ASM_SET_TAC [])
+ >> STRIP_TAC
+ >> Know ‘FILTER (\e. e IN FV M') vs = vs'’
+ >- (rw [Abbr ‘vs'’, FILTER_EQ] \\
+     rw [Abbr ‘M'’, FV_SUB] \\
+    ‘e <> h’ by PROVE_TAC [] \\
+     fs [closed_def])
+ >> DISCH_THEN (fs o wrap)
+ >> Q.EXISTS_TAC ‘N :: Ns'’
+ >> REWRITE_TAC [GSYM appstar_CONS]
+ >> simp [LT_SUC_LE]
+ >> Q_TAC (TRANS_TAC lameq_TRANS) ‘LAMl vs M' @* t’
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC lameq_appstar_cong >> art [])
+ >> Q_TAC (TRANS_TAC lameq_TRANS) ‘LAMl vs' M' @* Ns'’ >> art []
+ >> MATCH_MP_TAC lameq_appstar_cong
+ >> MATCH_MP_TAC lameq_SYM
+ >> Q_TAC (TRANS_TAC lameq_TRANS) ‘[N/h] (LAMl vs' M)’ >> rw [lameq_BETA]
+ >> Suff ‘[N/h] (LAMl vs' M) = LAMl vs' ([N/h] M)’ >- rw [lameq_REFL]
+ >> MATCH_MP_TAC LAMl_SUB
+ >> fs [closed_def]
+ >> rw [Abbr ‘vs'’, MEM_FILTER]
 QED
 
 (* Lemma 8.3.3 (i) [1, p.172] *)
@@ -257,10 +299,7 @@ Proof
      MP_TAC (Q.SPECL [‘vs’, ‘vs'’, ‘M’, ‘Ps’] lameq_LAMl_appstar_FILTER) >> rw [] \\
     ‘LAMl vs' M @* Ns' == I’ by PROVE_TAC [lameq_TRANS, lameq_SYM] \\
      MATCH_MP_TAC solvable_alt_closed_substitution_instance_lemma \\
-     qexistsl_tac [‘Ns'’, ‘vs'’] >> simp [] \\
-     Q.PAT_X_ASSUM ‘set Ns' SUBSET set Ps’ MP_TAC \\
-     Q.PAT_X_ASSUM ‘EVERY closed Ps’ MP_TAC \\
-     rw [EVERY_MEM, SUBSET_DEF])
+     qexistsl_tac [‘Ns'’, ‘vs'’] >> simp [])
  (* stage work *)
  >> rw [solvable_def, closed_substitution_instances_def]
  >> Q.ABBREV_TAC ‘xs = FDOM fm’
@@ -303,8 +342,7 @@ Proof
  >> ‘LAMl vs M @* Ps @* Ns == I’ by PROVE_TAC [lameq_TRANS]
  >> qexistsl_tac [‘LAMl vs M’, ‘Ps ++ Ns’]
  >> rw [appstar_APPEND, closures_def]
- >> Q.EXISTS_TAC ‘vs’ >> art []
- >> rw [Abbr ‘vs’, SET_TO_LIST_INV]
+ >> Q.EXISTS_TAC ‘vs’ >> rw [Abbr ‘vs’, SET_TO_LIST_INV]
 QED
 
 (* NOTE: this proof needs sortingTheory (PERM) *)
