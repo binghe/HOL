@@ -477,44 +477,40 @@ Proof
      MATCH_MP_TAC lemma14b \\
      simp [Abbr ‘P’, FV_LAMl])
  (* h IN FV M *)
- >> cheat
- (*
  >> qabbrev_tac ‘vs' = FILTER (\e. e IN FV M) vs’
- >> Cases_on ‘Ns’ >> fs [LT_SUC_LE]
+ >> Cases_on ‘Ns'’ >> fs []
  >> rename1 ‘closed N’
- >> qabbrev_tac ‘P = LAMl vs M’
- >> ‘LAM h P @@ N == [N/h] P’ by rw [lameq_BETA]
- >> Know ‘[N/h] P = LAMl vs ([N/h] M)’
- >- (qunabbrev_tac ‘P’ \\
+ >> qabbrev_tac ‘P' = LAMl vs' M’
+ >> ‘LAM h P' @@ N == [N/h] P'’ by rw [lameq_BETA]
+ >> ‘~MEM h vs'’ by rw [Abbr ‘vs'’, MEM_FILTER]
+ >> Know ‘[N/h] P' = LAMl vs' ([N/h] M)’
+ >- (qunabbrev_tac ‘P'’ \\
      MATCH_MP_TAC LAMl_SUB >> fs [closed_def])
  >> DISCH_THEN (fs o wrap)
  >> qabbrev_tac ‘M' = [N/h] M’
  >> Q.PAT_X_ASSUM ‘!M Ns. _’ (MP_TAC o Q.SPECL [‘M'’, ‘t’]) >> simp []
- >> impl_tac (* FV M' SUBSET set vs *)
- >- (rw [Abbr ‘M'’, FV_SUB] >- fs [closed_def] \\
-     ASM_SET_TAC [])
- >> STRIP_TAC
  >> Know ‘FILTER (\e. e IN FV M') vs = vs'’
  >- (rw [Abbr ‘vs'’, FILTER_EQ] \\
      rw [Abbr ‘M'’, FV_SUB] \\
     ‘e <> h’ by PROVE_TAC [] \\
      fs [closed_def])
- >> DISCH_THEN (fs o wrap)
- >> Q.EXISTS_TAC ‘N :: Ns'’
+ >> Rewr'
+ >> simp []
+ >> impl_tac (* FV M' SUBSET set vs *)
+ >- (rw [Abbr ‘M'’, FV_SUB] >- fs [closed_def] \\
+     ASM_SET_TAC [])
+ >> STRIP_TAC (* this asserts Ns *)
+ >> Q.EXISTS_TAC ‘N :: Ns’
  >> REWRITE_TAC [GSYM appstar_CONS]
- >> simp [LT_SUC_LE]
- >> Q_TAC (TRANS_TAC lameq_TRANS) ‘LAMl vs M' @* t’
- >> CONJ_TAC
- >- (MATCH_MP_TAC lameq_appstar_cong >> art [])
- >> Q_TAC (TRANS_TAC lameq_TRANS) ‘LAMl vs' M' @* Ns'’ >> art []
+ >> Q_TAC (TRANS_TAC lameq_TRANS) ‘LAMl vs' M' @* t’
+ >> reverse CONJ_TAC
+ >- (MATCH_MP_TAC lameq_appstar_cong >> rw [lameq_SYM])
+ >> Q_TAC (TRANS_TAC lameq_TRANS) ‘LAMl vs M' @* Ns’ >> art []
  >> MATCH_MP_TAC lameq_appstar_cong
- >> MATCH_MP_TAC lameq_SYM
- >> Q_TAC (TRANS_TAC lameq_TRANS) ‘[N/h] (LAMl vs' M)’ >> rw [lameq_BETA]
- >> Suff ‘[N/h] (LAMl vs' M) = LAMl vs' ([N/h] M)’ >- rw [lameq_REFL]
+ >> Q_TAC (TRANS_TAC lameq_TRANS) ‘[N/h] (LAMl vs M)’ >> rw [lameq_BETA]
+ >> Suff ‘[N/h] (LAMl vs M) = LAMl vs ([N/h] M)’ >- rw [lameq_REFL]
  >> MATCH_MP_TAC LAMl_SUB
  >> fs [closed_def]
- >> rw [Abbr ‘vs'’, MEM_FILTER]
- *)
 QED
 
 (* Lemma 8.3.5 [1, p.172] showing the definition of solvability of
