@@ -349,8 +349,9 @@ QED
 Theorem solvable_alt_universal_lemma[local] :
     !vs vs' M Ns. ALL_DISTINCT vs /\ ALL_DISTINCT vs' /\
                   set vs = FV M /\ set vs' = FV M /\
-                  LENGTH vs <= LENGTH Ns /\ EVERY closed Ns /\
-                  LAMl vs M @* Ns == I ==> ?Ns'. LAMl vs' M @* Ns' == I
+                  LENGTH vs <= LENGTH Ns /\ EVERY closed Ns ==>
+                 ?Ns'. LENGTH vs' <= LENGTH Ns' /\ EVERY closed Ns' /\
+                       LAMl vs M @* Ns == LAMl vs' M @* Ns'
 Proof
     rpt STRIP_TAC
  >> Know ‘PERM vs vs'’
@@ -361,9 +362,10 @@ Proof
      PROVE_TAC [PERM_TRANS, PERM_SYM])
  (* asserts an bijection ‘f’ mapping vs to vs' *)
  >> DISCH_THEN (STRIP_ASSUME_TAC o (MATCH_MP PERM_BIJ))
+ >> POP_ASSUM (fs o wrap)
  >> Q.ABBREV_TAC ‘n = LENGTH vs’
+ >> Q.ABBREV_TAC ‘vs' = GENLIST (\i. EL (f i) vs) n’
  >> Q.ABBREV_TAC ‘m = LENGTH Ns’
- >> Q.PAT_X_ASSUM ‘LAMl vs M @* Ns == I’ MP_TAC
  >> Q.ABBREV_TAC ‘Ns0 = TAKE n Ns’
  >> ‘LENGTH Ns0 = n’ by rw [Abbr ‘Ns0’, LENGTH_TAKE]
  >> Q.ABBREV_TAC ‘Ns1 = DROP n Ns’
@@ -372,7 +374,6 @@ Proof
       by FULL_SIMP_TAC std_ss [EVERY_APPEND]
  >> Q.PAT_X_ASSUM ‘Ns = Ns0 ++ Ns1’ (ONCE_REWRITE_TAC o wrap)
  >> REWRITE_TAC [appstar_APPEND]
- >> DISCH_TAC
  (* construct the 1st finite map *)
  >> Q.ABBREV_TAC ‘fm = FEMPTY |++ ZIP (vs,Ns0)’
  >> Know ‘LAMl vs M @* Ns0 == fm ' M’
@@ -380,7 +381,6 @@ Proof
      MATCH_MP_TAC lameq_LAMl_appstar_ssub_closed >> rw [])
  >> DISCH_TAC
  >> ‘LAMl vs M @* Ns0 @* Ns1 == fm ' M @* Ns1’ by PROVE_TAC [lameq_appstar_cong]
- >> ‘fm ' M @* Ns1 == I’ by PROVE_TAC [lameq_TRANS, lameq_SYM]
  (* Ns0' is the permuted version of Ns0 *)
  >> Q.ABBREV_TAC ‘Ns0' = GENLIST (\i. EL (f i) Ns0) n’
  >> ‘LENGTH Ns0' = n’ by rw [Abbr ‘Ns0'’, LENGTH_GENLIST]
@@ -400,22 +400,21 @@ Proof
  >> Q.ABBREV_TAC ‘fm' = FEMPTY |++ ZIP (vs',Ns0')’
  >> Know ‘LAMl vs' M @* Ns0' == fm' ' M’
  >- (Q.UNABBREV_TAC ‘fm'’ \\
-     MATCH_MP_TAC lameq_LAMl_appstar_ssub_closed >> rw [])
+     MATCH_MP_TAC lameq_LAMl_appstar_ssub_closed >> rw [Abbr ‘vs'’])
  >> DISCH_TAC
  >> ‘LAMl vs' M @* Ns0' @* Ns1 == fm' ' M @* Ns1’ by PROVE_TAC [lameq_appstar_cong]
- >> MATCH_MP_TAC lameq_TRANS
- >> Q.EXISTS_TAC ‘fm' ' M @* Ns1’ >> art []
- >> MATCH_MP_TAC lameq_TRANS
- >> Q.EXISTS_TAC ‘fm ' M @* Ns1’ >> art []
+ >> ‘LENGTH vs' = n’ by rw [Abbr ‘vs'’]
+ >> simp []
+ >> Q_TAC (TRANS_TAC lameq_TRANS) ‘fm ' M @* Ns1’ >> art []
+ >> Q_TAC (TRANS_TAC lameq_TRANS) ‘fm' ' M @* Ns1’ >> rw [lameq_SYM]
  >> Suff ‘fm = fm'’ >- rw []
  (* cleanup uncessary assumptions *)
- >> Q.PAT_X_ASSUM ‘LAMl vs M @* Ns0 @* Ns1 == I’                K_TAC
  >> Q.PAT_X_ASSUM ‘LAMl vs M @* Ns0 == fm ' M’                  K_TAC
  >> Q.PAT_X_ASSUM ‘LAMl vs M @* Ns0 @* Ns1 == fm ' M @* Ns1’    K_TAC
- >> Q.PAT_X_ASSUM ‘fm ' M @* Ns1 == I’                          K_TAC
  >> Q.PAT_X_ASSUM ‘LAMl vs' M @* Ns0' == fm' ' M’               K_TAC
  >> Q.PAT_X_ASSUM ‘LAMl vs' M @* Ns0' @* Ns1 == fm' ' M @* Ns1’ K_TAC
  (* g is bijection inversion of f *)
+ >> qabbrev_tac ‘n = LENGTH vs'’
  >> MP_TAC (Q.ISPECL [‘f :num -> num’, ‘count n’, ‘count n’] BIJ_INV)
  >> RW_TAC std_ss [IN_COUNT]
  >> ‘LENGTH vs = LENGTH Ns0’ by PROVE_TAC []
@@ -423,27 +422,24 @@ Proof
  >> rw [Abbr ‘fm’, Abbr ‘fm'’, fmap_EXT, FDOM_FUPDATE_LIST, MAP_ZIP]
  >> ‘MEM x vs’ by PROVE_TAC []
  >> Cases_on ‘INDEX_OF x vs’ >- fs [INDEX_OF_eq_NONE]
- >> rename1 ‘INDEX_OF x vs = SOME n’
+ >> rename1 ‘INDEX_OF x vs = SOME k’
  >> fs [INDEX_OF_eq_SOME]
- >> Q.PAT_X_ASSUM ‘EL n vs = x’ (ONCE_REWRITE_TAC o wrap o SYM)
+ >> Q.PAT_X_ASSUM ‘EL k vs = x’ (ONCE_REWRITE_TAC o wrap o SYM)
  (* applying FUPDATE_LIST_APPLY_MEM *)
- >> Know ‘(FEMPTY |++ ZIP (vs,Ns0)) ' (EL n vs) = EL n Ns0’
+ >> Know ‘(FEMPTY |++ ZIP (vs,Ns0)) ' (EL k vs) = EL k Ns0’
  >- (MATCH_MP_TAC FUPDATE_LIST_APPLY_MEM \\
-     Q.EXISTS_TAC ‘n’ \\
+     Q.EXISTS_TAC ‘k’ \\
      rw [LENGTH_ZIP, EL_MAP, MAP_ZIP, EL_ZIP] \\
-     rename1 ‘n < k’ >> ‘k <> n’ by rw [] \\
+     rename1 ‘k < l’ >> ‘k <> l’ by rw [] \\
      METIS_TAC [EL_ALL_DISTINCT_EL_EQ])
  >> Rewr'
- >> Q.ABBREV_TAC ‘n0 = LENGTH Ns0'’
- >> Know ‘g n < n0’
- >- (Q.PAT_X_ASSUM ‘g PERMUTES count n0’ MP_TAC \\
+ >> Q.ABBREV_TAC ‘n = LENGTH Ns0'’
+ >> Know ‘g k < n’
+ >- (Q.PAT_X_ASSUM ‘g PERMUTES count n’ MP_TAC \\
      rw [BIJ_ALT, IN_FUNSET])
  >> DISCH_TAC
- >> Q.ABBREV_TAC ‘vs' = GENLIST (\i. EL (f i) vs) n0’
- >> ‘LENGTH vs' = LENGTH Ns0'’ by rw [Abbr ‘vs'’, LENGTH_GENLIST]
- >> ‘EL n vs = EL (g n) vs'’
-       by (rw [Abbr ‘vs'’, EL_GENLIST]) >> POP_ORW
- >> Q.ABBREV_TAC ‘i = g n’
+ >> ‘EL k vs = EL (g k) vs'’ by rw [EL_GENLIST, Abbr ‘vs'’] >> POP_ORW
+ >> Q.ABBREV_TAC ‘i = g k’
  >> Know ‘(FEMPTY |++ ZIP (vs',Ns0')) ' (EL i vs') = EL i Ns0'’
  >- (MATCH_MP_TAC FUPDATE_LIST_APPLY_MEM \\
      Q.EXISTS_TAC ‘i’ \\
@@ -454,12 +450,77 @@ Proof
  >> rw [Abbr ‘Ns0'’, Abbr ‘i’, EL_GENLIST]
 QED
 
-(* cf. solvable_def, with the existential quantifier "upgraded" to universal
+(* From the shorter “LAMl vs' M @* Ns'” there exists a longer “LAMl vs M @* Ns”,
+   whose gaps are filled by fresh variables (vs DIFF vs') and Is (Ns DIFF Ns').
+ *)
+Theorem lameq_LAMl_appstar_FILTER' :
+    !vs vs' M Ns'.
+        ALL_DISTINCT vs /\ FV M SUBSET set vs /\ EVERY closed Ns' /\
+        vs' = FILTER (\e. e IN FV M) vs /\ LENGTH vs' <= LENGTH Ns' ==>
+        ?Ns. EVERY closed Ns' /\
+             LAMl vs M @* Ns == LAMl vs' M @* Ns'
+Proof
+    Induct_on ‘vs’
+ >- (rw [] >> Q.EXISTS_TAC ‘Ns'’ >> rw [])
+ >> reverse (rw [GSYM LESS_EQ]) (* 2 subgoals *)
+ (* h # M (easy case) *)
+ >- (qabbrev_tac ‘vs' = FILTER (\e. e IN FV M) vs’ \\
+     Q.PAT_X_ASSUM ‘!vs' M Ns'. _’ (MP_TAC o Q.SPECL [‘vs'’, ‘M’, ‘Ns'’]) \\
+     rw [] (* this asserts Ns *) \\
+     Q.EXISTS_TAC ‘I :: Ns’ \\
+     REWRITE_TAC [GSYM appstar_CONS] \\
+     qabbrev_tac ‘P = LAMl vs M’ \\
+     Q_TAC (TRANS_TAC lameq_TRANS) ‘P @* Ns’ >> art [] \\
+     MATCH_MP_TAC lameq_appstar_cong \\
+    ‘LAM h P @@ I == [I/h] P’ by rw [lameq_BETA] \\
+     Suff ‘[I/h] P = P’ >- PROVE_TAC [] \\
+     MATCH_MP_TAC lemma14b \\
+     simp [Abbr ‘P’, FV_LAMl])
+ (* h IN FV M *)
+ >> cheat
+ (*
+ >> qabbrev_tac ‘vs' = FILTER (\e. e IN FV M) vs’
+ >> Cases_on ‘Ns’ >> fs [LT_SUC_LE]
+ >> rename1 ‘closed N’
+ >> qabbrev_tac ‘P = LAMl vs M’
+ >> ‘LAM h P @@ N == [N/h] P’ by rw [lameq_BETA]
+ >> Know ‘[N/h] P = LAMl vs ([N/h] M)’
+ >- (qunabbrev_tac ‘P’ \\
+     MATCH_MP_TAC LAMl_SUB >> fs [closed_def])
+ >> DISCH_THEN (fs o wrap)
+ >> qabbrev_tac ‘M' = [N/h] M’
+ >> Q.PAT_X_ASSUM ‘!M Ns. _’ (MP_TAC o Q.SPECL [‘M'’, ‘t’]) >> simp []
+ >> impl_tac (* FV M' SUBSET set vs *)
+ >- (rw [Abbr ‘M'’, FV_SUB] >- fs [closed_def] \\
+     ASM_SET_TAC [])
+ >> STRIP_TAC
+ >> Know ‘FILTER (\e. e IN FV M') vs = vs'’
+ >- (rw [Abbr ‘vs'’, FILTER_EQ] \\
+     rw [Abbr ‘M'’, FV_SUB] \\
+    ‘e <> h’ by PROVE_TAC [] \\
+     fs [closed_def])
+ >> DISCH_THEN (fs o wrap)
+ >> Q.EXISTS_TAC ‘N :: Ns'’
+ >> REWRITE_TAC [GSYM appstar_CONS]
+ >> simp [LT_SUC_LE]
+ >> Q_TAC (TRANS_TAC lameq_TRANS) ‘LAMl vs M' @* t’
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC lameq_appstar_cong >> art [])
+ >> Q_TAC (TRANS_TAC lameq_TRANS) ‘LAMl vs' M' @* Ns'’ >> art []
+ >> MATCH_MP_TAC lameq_appstar_cong
+ >> MATCH_MP_TAC lameq_SYM
+ >> Q_TAC (TRANS_TAC lameq_TRANS) ‘[N/h] (LAMl vs' M)’ >> rw [lameq_BETA]
+ >> Suff ‘[N/h] (LAMl vs' M) = LAMl vs' ([N/h] M)’ >- rw [lameq_REFL]
+ >> MATCH_MP_TAC LAMl_SUB
+ >> fs [closed_def]
+ >> rw [Abbr ‘vs'’, MEM_FILTER]
+ *)
+QED
 
-   NOTE: This is actually 8.3.5 [1, p.172] showing the definition of solvability of
-         open terms is independent of the order of the variables in its closure.
+(* Lemma 8.3.5 [1, p.172] showing the definition of solvability of
+   open terms is independent of the order of the variables in its closure.
 
-   NOTE: How to use lameq_LAMl_appstar_FILTER here?
+   NOTE: This theorem is NOT used (so far) anywhere.
  *)
 Theorem solvable_alt_universal :
     !M. solvable M <=>
@@ -480,7 +541,6 @@ Proof
  >> fs [solvable_alt, closures_def]
  >> Q.PAT_X_ASSUM ‘M' = LAMl vs M’ (fs o wrap)
  >> rename1 ‘M0 = LAMl xs M’ (* rename vs' to xs *)
- (* below are some tactics from solvable_alt_closed_substitution_instance *)
  >> qabbrev_tac ‘vs' = FILTER (\e. e IN FV M) vs’
  >> Know ‘set vs' = FV M’
  >- (rw [Abbr ‘vs'’, LIST_TO_SET_FILTER] \\
@@ -511,7 +571,28 @@ Proof
  >> MP_TAC (Q.SPECL [‘vs’, ‘vs'’, ‘M’, ‘Ps’] lameq_LAMl_appstar_FILTER) >> rw []
  >> ‘LAMl vs' M @* Ns' == I’ by PROVE_TAC [lameq_TRANS, lameq_SYM]
  >> Q.PAT_X_ASSUM ‘_ == LAMl vs' M @* Ns'’ K_TAC
- >> cheat
+ (* stage work *)
+ >> qabbrev_tac ‘xs' = FILTER (\e. e IN FV M) xs’
+ >> Know ‘set xs' = FV M’
+ >- (rw [Abbr ‘xs'’, LIST_TO_SET_FILTER] \\
+     ASM_SET_TAC [])
+ >> DISCH_TAC
+ >> Know ‘ALL_DISTINCT xs'’
+ >- (qunabbrev_tac ‘xs'’ \\
+     MATCH_MP_TAC FILTER_ALL_DISTINCT >> art [])
+ >> DISCH_TAC
+ (* applying solvable_alt_universal_lemma *)
+ >> MP_TAC (Q.SPECL [‘vs'’, ‘xs'’, ‘M’, ‘Ns'’] solvable_alt_universal_lemma)
+ >> simp []
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘Ns2’ STRIP_ASSUME_TAC)
+ (* applying lameq_LAMl_appstar_FILTER' *)
+ >> MP_TAC (Q.SPECL [‘xs’, ‘xs'’, ‘M’, ‘Ns2’] lameq_LAMl_appstar_FILTER')
+ >> simp []
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘Qs’ STRIP_ASSUME_TAC)
+ >> Q.EXISTS_TAC ‘Qs’
+ >> Q_TAC (TRANS_TAC lameq_TRANS) ‘LAMl xs' M @* Ns2’ >> art []
+ >> Q_TAC (TRANS_TAC lameq_TRANS) ‘LAMl vs' M @* Ns'’ >> art []
+ >> MATCH_MP_TAC lameq_SYM >> art []
 QED
 
 Theorem ssub_LAM[local] = List.nth(CONJUNCTS ssub_thm, 2)
