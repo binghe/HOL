@@ -791,8 +791,7 @@ Proof
      rw [ssub_thm] \\
      MATCH_MP_TAC FUPDATE_LIST_APPLY_MEM >> simp [MAP_ZIP] \\
      Q.EXISTS_TAC ‘i’ >> rw [] \\
-     rename1 ‘EL j vs <> EL i vs’ \\
-     ‘j <> i’ by rw [] \\
+     rename1 ‘EL j vs <> EL i vs’ >> ‘j <> i’ by rw [] \\
      METIS_TAC [EL_ALL_DISTINCT_EL_EQ])
  >> Rewr'
  >> Know ‘EL i Ms = FUNPOW (APP K) m I’

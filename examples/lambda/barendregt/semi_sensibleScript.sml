@@ -7,9 +7,9 @@
 
 open HolKernel Parse boolLib bossLib;
 
-open listTheory numLib hurdUtils;
+open listTheory numLib hurdUtils pred_setTheory pred_setLib topologyTheory;
 
-open chap2Theory chap3Theory boehmTheory lameta_completeTheory;
+open termTheory chap2Theory chap3Theory boehmTheory lameta_completeTheory;
 
 (* These theorems usually give unexpected results, should be applied manually *)
 val _ = temp_delsimps [
@@ -35,48 +35,59 @@ val _ = new_theory "semi_sensible";
  *)
 Definition separable_def :
     separable R Ms <=>
-    !Ps Ns. LENGTH Ps = LENGTH Ms /\
-            LENGTH Ns = LENGTH Ms /\
-          (!i. i < LENGTH Ms ==> EL i Ps IN closures (EL i Ms)) ==>
+    let X = BIGUNION (IMAGE FV (set Ms));
+       Fs = MAP (LAMl (SET_TO_LIST X)) Ms
+    in
+      !Ns. LENGTH Ns = LENGTH Ms ==>
            ?f. !i. i < LENGTH Ms ==>
-                   conversion (beta RUNION R) (f @@ (EL i Ps)) (EL i Ns)
+                   conversion (beta RUNION R) (f @@ (EL i Fs)) (EL i Ns)
 End
 
-(* Definition 10.4.4 (i) [1, p.256]
+(* Definition 10.4.4 (i) [1, p.256], now an equivalent theorem *)
 Theorem separable_alt_closed :
     !R Ms. EVERY closed Ms ==>
           (separable R Ms <=>
-          !Ns. LENGTH Ns = LENGTH Ms ==>
-              ?f. !i. i < LENGTH Ms ==>
-                      conversion (beta RUNION R) (f @@ (EL i Ms)) (EL i Ns))
+           !Ns. LENGTH Ns = LENGTH Ms ==>
+                ?f. !i. i < LENGTH Ms ==>
+                        conversion (beta RUNION R) (f @@ (EL i Ms)) (EL i Ns))
 Proof
-    rw [EVERY_EL, separable_def]
- >> reverse EQ_TAC
- >- (rpt STRIP_TAC \\
-     Q.PAT_X_ASSUM ‘!Ns. LENGTH Ns = LENGTH Ms ==> _’ (MP_TAC o Q.SPEC ‘Ns’) \\
-     rw [])
- >> rpt STRIP_TAC
- >> Q.PAT_X_ASSUM ‘!Ps Ns. LENGTH Ps = LENGTH Ms /\ _ ==> _’
-      (MP_TAC o Q.SPECL [‘Ms’, ‘Ns’])
- >> simp []
+    RW_TAC std_ss [EVERY_EL, separable_def]
+ >> Know ‘X = {}’
+ >- (Cases_on ‘Ms = []’ >- rw [Abbr ‘X’] \\
+     rw [Abbr ‘X’, Once EXTENSION] \\
+     fs [closed_def] \\
+     EQ_TAC >> rw [MEM_EL] >> rw [] \\
+    ‘0 < LENGTH Ms’ by rw [LENGTH_NON_NIL] \\
+     Q.EXISTS_TAC ‘EL 0 Ms’ >> rw [] \\
+     Q.EXISTS_TAC ‘0’ >> rw [])
+ >> DISCH_THEN (fs o wrap)
 QED
 
 (* Lemma 10.4.5 [1, p.257] or Definition 17.1.3 (ii) [1, p.432]
 
-   NOTE: From now on, we always use this theorem as the definition of "separable".
+   NOTE: From now on, one should use this theorem as the canonical definition.
  *)
 Theorem separable_alt :
     !R Ms. separable R Ms <=>
-          !Ns. LENGTH Ns = LENGTH Ms ==>
-              ?c. ctxt c /\
-                 !i. i < LENGTH Ms ==>
-                     conversion (beta RUNION R) (c (EL i Ms)) (EL i Ns)
+           !Ns. LENGTH Ns = LENGTH Ms ==>
+                ?c. ctxt c /\
+                    !i. i < LENGTH Ms ==>
+                        conversion (beta RUNION R) (c (EL i Ms)) (EL i Ns)
 Proof
-    rw [separable_def]
- >> EQ_TAC
- >- (rpt STRIP_TAC \\
-     cheat)
+    RW_TAC std_ss [separable_def]
+ >> qabbrev_tac ‘vs = SET_TO_LIST X’
+ >> EQ_TAC >> rw []
+ >- (Q.PAT_X_ASSUM ‘!Ns. LENGTH Ns = LENGTH Ms ==> _’
+       (MP_TAC o Q.SPEC ‘Ns’) >> rw [] \\
+     Q.EXISTS_TAC ‘\x. f @@ LAMl vs x’ \\
+     reverse CONJ_TAC
+     >- (POP_ASSUM MP_TAC >> rw [Abbr ‘Fs’, EL_MAP]) \\
+     HO_MATCH_MP_TAC ctxt_APPR \\
+     HO_MATCH_MP_TAC ctxt_LAMl \\
+     rw [ctxt_I])
  (* stage work *)
+ >> Q.PAT_X_ASSUM ‘!Ns. LENGTH Ns = LENGTH Ms ==> _’
+      (MP_TAC o Q.SPEC ‘Ns’) >> rw []
  >> cheat
 QED
 

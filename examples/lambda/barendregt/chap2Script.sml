@@ -17,18 +17,44 @@ structure Q = struct open Q open OldAbbrevTactics end;
 
 val _ = new_theory "chap2";
 
-val (ctxt_rules, ctxt_indn, ctxt_cases) =  (* p. 10 *)
-  Hol_reln`(!s. ctxt (\x. VAR s))                       /\
-           ctxt (\x. x)                                 /\
-           (!c1 c2. ctxt c1 /\ ctxt c2 ==>
-                    ctxt (\x. c1 x @@ c2 x))            /\
-           (!v c.   ctxt c ==> ctxt (\x. LAM v (c x)))`;
+Inductive ctxt :
+[~VAR:]
+    !s. ctxt (\x. VAR s)
+[~I:]
+    ctxt (\x. x)
+[~APP:]
+    !c1 c2. ctxt c1 /\ ctxt c2 ==> ctxt (\x. c1 x @@ c2 x)
+[~LAM:]
+    !v c. ctxt c ==> ctxt (\x. LAM v (c x))
+End
 
 val constant_contexts_exist = store_thm(
   "constant_contexts_exist",
   ``!t. ctxt (\x. t)``,
   HO_MATCH_MP_TAC simple_induction THEN REPEAT STRIP_TAC THEN
   SRW_TAC [][ctxt_rules]);
+
+Theorem ctxt_LAMl :
+    !vs c. ctxt c ==> ctxt (\x. LAMl vs (c x))
+Proof
+    Induct_on ‘vs’ >> rw [ETA_AX]
+ >> HO_MATCH_MP_TAC ctxt_LAM
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+QED
+
+Theorem ctxt_APPL :
+    !c t. ctxt c ==> ctxt (\x. c x @@ t)
+Proof
+    rpt STRIP_TAC
+ >> HO_MATCH_MP_TAC ctxt_APP >> rw [constant_contexts_exist]
+QED
+
+Theorem ctxt_APPR :
+    !c t. ctxt c ==> ctxt (\x. t @@ c x)
+Proof
+    rpt STRIP_TAC
+ >> HO_MATCH_MP_TAC ctxt_APP >> rw [constant_contexts_exist]
+QED
 
 val (one_hole_context_rules, one_hole_context_ind, one_hole_context_cases) =
   Hol_reln`one_hole_context (\x.x) /\
@@ -231,7 +257,7 @@ val lemma2_13 = store_thm( (* p.20 *)
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   MAP_EVERY Q.ID_SPEC_TAC [`n`, `n'`] THEN
   POP_ASSUM MP_TAC THEN Q.ID_SPEC_TAC `c` THEN
-  HO_MATCH_MP_TAC ctxt_indn THEN PROVE_TAC [lameq_rules]);
+  HO_MATCH_MP_TAC ctxt_ind THEN PROVE_TAC [lameq_rules]);
 
 Theorem lameq_LAMl_cong :
     !vs M N. M == N ==> LAMl vs M == LAMl vs N
