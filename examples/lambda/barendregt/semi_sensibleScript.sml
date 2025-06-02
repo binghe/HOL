@@ -8,7 +8,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open listTheory numLib hurdUtils pred_setTheory pred_setLib relationTheory
-     topologyTheory;
+     topologyTheory pairTheory;
 
 open termTheory chap2Theory chap3Theory chap4Theory horeductionTheory
      boehmTheory lameta_completeTheory;
@@ -44,6 +44,20 @@ Definition gen_separable_def :
       !Ns. LENGTH Ns = LENGTH Ms ==>
            ?f. !i. i < LENGTH Ms ==> R (f @@ (EL i Fs),EL i Ns)
 End
+
+Theorem gen_separable_mono :
+    !R1 R2 Ms. lambdathy R1 /\ lambdathy R2 /\ R1 SUBSET R2 /\
+               gen_separable R1 Ms ==> gen_separable R2 Ms
+Proof
+    rw [gen_separable_def]
+ >> qabbrev_tac ‘X = BIGUNION (IMAGE FV (set Ms))’
+ >> qabbrev_tac ‘vs = SET_TO_LIST X’
+ >> Q.PAT_X_ASSUM ‘!Ns. P’ (MP_TAC o Q.SPEC ‘Ns’) >> rw []
+ >> qabbrev_tac ‘n = LENGTH Ms’
+ >> Q.EXISTS_TAC ‘f’
+ >> rpt STRIP_TAC
+ >> fs [SUBSET_DEF, FORALL_PROD, IN_APP]
+QED
 
 (* Definition 10.4.4 (i) [1, p.256], now an equivalent theorem *)
 Theorem gen_separable_alt_closed :
@@ -171,7 +185,7 @@ Theorem eta_separable_thm :
     !M N. has_benf M /\ has_benf N /\ ~(lameta M N) ==> eta_separable [M; N]
 Proof
     rw [eta_separable_def]
- >> MP_TAC (Q.SPECL [‘M’, ‘N’] separability_thm_final) >> simp []
+ >> MP_TAC (Q.SPECL [‘M’, ‘N’] separability_final) >> simp []
  >> DISCH_THEN (MP_TAC o Q.SPECL [‘EL 0 Ns’, ‘EL 1 Ns’])
  >> STRIP_TAC
  >> ‘?c. ctxt c /\ !M. apply pi M == c M’
@@ -187,6 +201,16 @@ Proof
  >> Q_TAC (TRANS_TAC lameta_TRANS) ‘apply pi M’ >> art []
  >> MATCH_MP_TAC lameta_SYM
  >> MATCH_MP_TAC lameq_imp_lameta >> art []
+QED
+
+Theorem separable_imp_eta_separable :
+    !Ms. separable Ms ==> eta_separable Ms
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC gen_separable_mono
+ >> Q.EXISTS_TAC ‘UNCURRY (==)’
+ >> simp [lambdathy_lameq, lambdathy_lameta, SUBSET_DEF, FORALL_PROD]
+ >> rw [lameq_imp_lameta]
 QED
 
 val _ = export_theory ();
