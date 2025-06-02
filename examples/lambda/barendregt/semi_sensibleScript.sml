@@ -10,8 +10,8 @@ open HolKernel Parse boolLib bossLib;
 open listTheory numLib hurdUtils pred_setTheory pred_setLib relationTheory
      topologyTheory;
 
-open termTheory chap2Theory chap3Theory horeductionTheory boehmTheory
-     lameta_completeTheory;
+open termTheory chap2Theory chap3Theory chap4Theory horeductionTheory
+     boehmTheory lameta_completeTheory;
 
 (* These theorems usually give unexpected results, should be applied manually *)
 val _ = temp_delsimps [
@@ -171,11 +171,9 @@ Theorem eta_separable_thm :
     !M N. has_benf M /\ has_benf N /\ ~(lameta M N) ==> eta_separable [M; N]
 Proof
     rw [eta_separable_def]
- (* applying separability_thm_final (from lameta_completeTheory) *)
  >> MP_TAC (Q.SPECL [‘M’, ‘N’] separability_thm_final) >> simp []
  >> DISCH_THEN (MP_TAC o Q.SPECL [‘EL 0 Ns’, ‘EL 1 Ns’])
  >> STRIP_TAC
- (* applying Boehm_transform_lameq_ctxt (from boehmTheory) *)
  >> ‘?c. ctxt c /\ !M. apply pi M == c M’
       by PROVE_TAC [Boehm_transform_lameq_ctxt]
  >> Q.EXISTS_TAC ‘c’ >> art []
