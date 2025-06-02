@@ -6751,7 +6751,7 @@ QED
 (* NOTE: We call it "final" if there's no “FINITE X /\ FV M SUBSET X UNION RANK r”
    in antecedents.
  *)
-Theorem separability_thm_final :
+Theorem separability_final :
     !M N. has_benf M /\ has_benf N /\ ~(lameta M N) ==>
           !P Q. ?pi. Boehm_transform pi /\
                      lameta (apply pi M) P /\ lameta (apply pi N) Q
@@ -6773,7 +6773,7 @@ Proof
     rpt STRIP_TAC
  >> ‘?pi. Boehm_transform pi /\
           lameta (apply pi M) P /\ lameta (apply pi N) Q’
-       by METIS_TAC [separability_thm_final]
+       by METIS_TAC [separability_final]
  >> ‘?L. !M. closed M ==> apply pi M == M @* L’
        by METIS_TAC [Boehm_transform_lameq_appstar]
  >> Q.EXISTS_TAC ‘L’
@@ -6798,7 +6798,7 @@ Theorem distinct_benf_imp_inconsistent :
           inconsistent (conversion (RINSERT (beta RUNION eta) M N))
 Proof
     rw [inconsistent_def]
- >> MP_TAC (Q.SPECL [‘M’, ‘N’] separability_thm_final) >> rw []
+ >> MP_TAC (Q.SPECL [‘M’, ‘N’] separability_final) >> rw []
  >> POP_ASSUM (MP_TAC o Q.SPECL [‘M'’, ‘N'’])
  >> STRIP_TAC
  (* M' ~ apply pi M  ~ apply pi N ~ N' *)
