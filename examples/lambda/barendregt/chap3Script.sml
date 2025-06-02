@@ -65,6 +65,11 @@ val ubeta_arrow = "-" ^ UnicodeChars.beta ^ "->"
 val _ = Unicode.unicode_version {u = ubeta_arrow, tmnm = "-b->"}
 val _ = Unicode.unicode_version {u = ubeta_arrow^"*", tmnm = "-b->*"}
 
+val _ = TeX_notation { hol = "-b->",
+        TeX = ("\\ensuremath{\\rightarrow}", 1) };
+
+val _ = TeX_notation { hol = "-b->*",
+        TeX = ("\\ensuremath{\\twoheadrightarrow}", 1) };
 
 Theorem permutative_beta[simp]:
   permutative beta
@@ -1287,6 +1292,12 @@ val _ = set_fixity "-βη->" (Infix(NONASSOC, 450))
 val _ = set_fixity "-βη->*" (Infix(NONASSOC, 450))
 val _ = set_fixity "-η->" (Infix(NONASSOC, 450))
 val _ = set_fixity "-η->*" (Infix(NONASSOC, 450))
+
+val _ = TeX_notation { hol = "-η->",
+        TeX = ("\\ensuremath{\\rightarrow_{\\eta}}", 1) };
+
+val _ = TeX_notation { hol = "-η->*",
+        TeX = ("\\ensuremath{\\twoheadrightarrow_{\\eta}}", 1) };
 
 Theorem eta_FV_EQN:
   eta M N ⇒ FV N = FV M

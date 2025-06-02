@@ -122,6 +122,12 @@ Inductive lameq :
   !M N x. M == N ==> LAM x M == LAM x N
 End
 
+(* lameq *)
+val _ = TeX_notation { hol = "==", TeX = ("\\HOLTokenLameq", 1) };
+
+Overload "=/=" = “λ(M:term) N. ¬(M == N)”
+val _ = set_fixity "=/=" (Infix(NONASSOC, 450))
+
 Theorem lameq_refl[simp] = lameq_REFL
 
 Theorem lameq_tpm:
@@ -302,6 +308,11 @@ Inductive lameta : (* p. 21 *)
 [~ETA:]
   !M x. ~(x IN FV M) ==> lameta (LAM x (M @@ VAR x)) M
 End
+
+(* lameta *)
+val _ = set_fixity "===" (Infix(NONASSOC, 450))
+val _ = overload_on("===", “lameta”);
+val _ = TeX_notation { hol = "===", TeX = ("\\HOLTokenLameta", 1) };
 
 Theorem lameta_subst :
     !M N P x. lameta M N ==> lameta ([P/x] M) ([P/x] N)

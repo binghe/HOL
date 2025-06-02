@@ -345,7 +345,8 @@ Overload bot = “(NONE, SOME 0) :(BT_node # num option)”
 
 (* Unicode name: "base" *)
 val _ = Unicode.unicode_version {u = UTF8.chr 0x22A5, tmnm = "bot"};
-val _ = TeX_notation {hol = "bot", TeX = ("\\ensuremath{\\bot}", 1)};
+val _ = TeX_notation {hol = "bot", TeX = ("\\HOLTokenBottom}", 1)};
+val _ = TeX_notation {hol = UTF8.chr 0x22A5, TeX = ("\\HOLTokenBottom", 1) };
 
 Theorem BT_of_unsolvables :
     !X M r. unsolvable M ==> BT' X M r = bot

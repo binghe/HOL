@@ -112,6 +112,9 @@ val supp_tpm = prove(
 
 Overload FV = “supp ^t_pmact_t”
 
+val _ = TeX_notation { hol = "FV",
+        TeX = ("\\ensuremath{\\mathrm{FV}\\!}", 1) };
+
 Theorem FINITE_FV[simp]: FINITE (FV t)
 Proof srw_tac [][supp_tpm, FINITE_GFV]
 QED
@@ -286,8 +289,8 @@ Theorem FV_tpm[simp] = ``x ∈ FV (tpm p t)``
                       |> REWRITE_CONV [perm_supp,pmact_IN]
                       |> GEN_ALL
 
-val _ = set_mapped_fixity { term_name = "APP", tok = "@@",
-                            fixity = Infixl 901}
+val _ = set_fixity "@@" (Infixl 901);
+Overload "@@" = “term$APP”
 
 (* NOTE: The following overload "incompatible" was in sttScript.sml.
 
