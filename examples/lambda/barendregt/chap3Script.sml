@@ -789,6 +789,16 @@ val lameq_consistent = store_thm(
   `S = K` by PROVE_TAC [corollary3_2_1] THEN
   FULL_SIMP_TAC (srw_ss()) [S_def, K_def]);
 
+Theorem incompatible_not_lameq :
+    !M N. incompatible M N ==> ~(M == N)
+Proof
+    rw [incompatible_def, inconsistent_def]
+ >> CCONTR_TAC >> fs []
+ >> ‘!P Q. P == Q’ by METIS_TAC [asmlam_absorb]
+ >> MP_TAC lameq_consistent
+ >> rw [consistent_def]
+QED
+
 val has_bnf_thm = store_thm(
   "has_bnf_thm",
   ``has_bnf M <=> ?N. M -b->* N /\ bnf N``,

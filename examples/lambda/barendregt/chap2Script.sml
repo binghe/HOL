@@ -171,10 +171,15 @@ Theorem lameq_ind_X =
                        |> Q.INST[‘Q’ |-> ‘P’]
                        |> Q.GENL [‘P’, ‘X’]
 
-val lameq_app_cong = store_thm(
-  "lameq_app_cong",
-  ``M1 == M2 ==> N1 == N2 ==> M1 @@ N1 == M2 @@ N2``,
-  METIS_TAC [lameq_rules]);
+(* NOTE: The previous proof (by METIS_TAC [lameq_rules]) is a bit slow *)
+Theorem lameq_app_cong :
+    M1 == M2 ==> N1 == N2 ==> M1 @@ N1 == M2 @@ N2
+Proof
+    rpt STRIP_TAC
+ >> Q_TAC (TRANS_TAC lameq_TRANS) ‘M2 @@ N1’
+ >> CONJ_TAC >- (MATCH_MP_TAC lameq_APPL >> art [])
+ >> MATCH_MP_TAC lameq_APPR >> art []
+QED
 
 val lameq_weaken_cong = store_thm(
   "lameq_weaken_cong",
@@ -390,6 +395,36 @@ Proof
  >> MATCH_MP_TAC asmlam_trans
  >> Q.EXISTS_TAC ‘LAM x M @@ P’
  >> simp [asmlam_rules]
+QED
+
+Theorem asmlam_app_cong :
+    !M1 M2 N1 N2. asmlam eqns M1 M2 /\ asmlam eqns N1 N2 ==>
+                  asmlam eqns (M1 @@ N1) (M2 @@ N2)
+Proof
+    rpt STRIP_TAC
+ >> Q_TAC (TRANS_TAC asmlam_trans) ‘M2 @@ N1’
+ >> CONJ_TAC >- (MATCH_MP_TAC asmlam_lcong >> art [])
+ >> MATCH_MP_TAC asmlam_rcong >> art []
+QED
+
+Theorem asmlam_ctxt_cong :
+    !c. ctxt c ==> !M N. asmlam eqns M N ==> asmlam eqns (c M) (c N)
+Proof
+    HO_MATCH_MP_TAC ctxt_ind >> rw [asmlam_refl] (* 2 subgoals *)
+ >- (MATCH_MP_TAC asmlam_app_cong >> rw [])
+ >> MATCH_MP_TAC asmlam_abscong >> rw []
+QED
+
+Theorem asmlam_absorb :
+    !M N. M == N ==> asmlam {(M,N)} = (==)
+Proof
+    rpt STRIP_TAC
+ >> simp [FUN_EQ_THM, EQ_IMP_THM, FORALL_AND_THM]
+ >> CONJ_TAC
+ >- (HO_MATCH_MP_TAC asmlam_ind >> simp [] \\
+     METIS_TAC [lameq_rules])
+ >> HO_MATCH_MP_TAC lameq_ind
+ >> METIS_TAC [asmlam_rules]
 QED
 
 (* Definition 2.1.32 [1, p.33]
@@ -1054,6 +1089,7 @@ Proof
   Induct_on ‘Ns’ using SNOC_INDUCT >> rw [appstar_SNOC, lameq_APPL]
 QED
 
+(* Lemma 2.1.23 [1, p.30] *)
 Theorem lameq_LAMl_appstar_VAR[simp] :
     !xs. LAMl xs t @* (MAP VAR xs) == t
 Proof

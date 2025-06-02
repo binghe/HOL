@@ -35,8 +35,8 @@ val _ = new_theory "semi_sensible";
 
    This definition combined the cases of closed and open terms, cf. solvable_def
  *)
-Definition separable_def :
-    separable R Ms <=>
+Definition gen_separable_def :
+    gen_separable R Ms <=>
     let X = BIGUNION (IMAGE FV (set Ms));
        Fs = MAP (LAMl (SET_TO_LIST X)) Ms
     in
@@ -46,14 +46,14 @@ Definition separable_def :
 End
 
 (* Definition 10.4.4 (i) [1, p.256], now an equivalent theorem *)
-Theorem separable_alt_closed :
+Theorem gen_separable_alt_closed :
     !R Ms. EVERY closed Ms ==>
-          (separable R Ms <=>
+          (gen_separable R Ms <=>
            !Ns. LENGTH Ns = LENGTH Ms ==>
                 ?f. !i. i < LENGTH Ms ==>
                         conversion (beta RUNION R) (f @@ (EL i Ms)) (EL i Ns))
 Proof
-    RW_TAC std_ss [EVERY_EL, separable_def]
+    RW_TAC std_ss [EVERY_EL, gen_separable_def]
  >> Know ‘X = {}’
  >- (Cases_on ‘Ms = []’ >- rw [Abbr ‘X’] \\
      rw [Abbr ‘X’, Once EXTENSION] \\
@@ -69,14 +69,14 @@ QED
 
    NOTE: From now on, one should use this theorem as the canonical definition.
  *)
-Theorem separable_alt :
-    !R Ms. separable R Ms <=>
+Theorem gen_separable_alt :
+    !R Ms. gen_separable R Ms <=>
            !Ns. LENGTH Ns = LENGTH Ms ==>
                 ?c. ctxt c /\
                     !i. i < LENGTH Ms ==>
                         conversion (beta RUNION R) (c (EL i Ms)) (EL i Ns)
 Proof
-    RW_TAC std_ss [separable_def]
+    RW_TAC std_ss [gen_separable_def]
  >> qabbrev_tac ‘vs = SET_TO_LIST X’
  >> EQ_TAC >> rw []
  >- (Q.PAT_X_ASSUM ‘!Ns. LENGTH Ns = LENGTH Ms ==> _’
@@ -112,32 +112,72 @@ Proof
  >> simp [RUNION, GSYM lameq_betaconversion]
 QED
 
-(* The usual “separable” with empty theory (i.e. with beta-conversion only)
-   is now overloaded as “separable'”.
- *)
-Overload separable'    = “separable REMPTY”
-
-(* “eta_separable” is another common instance with beta- and eta-conversion. *)
-Overload eta_separable = “separable eta”
+(* The usual “separable” with empty theory (i.e. with beta-conversion only) *)
+Overload separable = “gen_separable REMPTY”
 
 (* |- !Ms.
-        separable eta Ms <=>
+        separable Ms <=>
+        !Ns.
+          LENGTH Ns = LENGTH Ms ==>
+          ?c. ctxt c /\ !i. i < LENGTH Ms ==> c (EL i Ms) == EL i Ns
+ *)
+Theorem separable_def =
+        gen_separable_alt |> Q.SPEC ‘REMPTY’
+                          |> SRULE [GSYM lameq_betaconversion, RUNION]
+
+Theorem separable_incompatible :
+    !M N. separable [M; N] ==> M # N
+Proof
+    rw [separable_def, incompatible_def]
+ >> simp [inconsistent_def]
+ >> qx_genl_tac [‘P’, ‘Q’]
+ >> POP_ASSUM (MP_TAC o Q.SPEC ‘[P; Q]’) >> rw []
+ >> Know ‘c N == Q’
+ >- (POP_ASSUM (MP_TAC o Q.SPEC ‘1’) >> rw [])
+ >> Know ‘c M == P’
+ >- (POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> rw [])
+ >> POP_ASSUM K_TAC
+ >> NTAC 2 STRIP_TAC
+ >> Q_TAC (TRANS_TAC asmlam_trans) ‘c N’
+ >> reverse CONJ_TAC
+ >- (MATCH_MP_TAC lameq_asmlam >> art [])
+ >> Q_TAC (TRANS_TAC asmlam_trans) ‘c M’
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC asmlam_sym \\
+     MATCH_MP_TAC lameq_asmlam >> art [])
+ >> irule asmlam_ctxt_cong >> art []
+ >> MATCH_MP_TAC asmlam_eqn >> rw []
+QED
+
+Theorem separable_not_lameq :
+    !M N. separable [M; N] ==> ~(M == N)
+Proof
+    METIS_TAC [separable_incompatible, incompatible_not_lameq]
+QED
+
+(* “eta_separable” is another common instance with beta- and eta-conversion. *)
+Overload eta_separable = “gen_separable eta”
+
+(* |- !Ms.
+        eta_separable Ms <=>
         !Ns.
           LENGTH Ns = LENGTH Ms ==>
           ?c. ctxt c /\ !i. i < LENGTH Ms ==> lameta (c (EL i Ms)) (EL i Ns)
  *)
 Theorem eta_separable_def =
-        separable_alt |> Q.SPEC ‘eta’ |> REWRITE_RULE [beta_eta_lameta]
+        gen_separable_alt |> Q.SPEC ‘eta’ |> REWRITE_RULE [beta_eta_lameta]
 
 Theorem eta_separable_thm :
     !M N. has_benf M /\ has_benf N /\ ~(lameta M N) ==> eta_separable [M; N]
 Proof
     rw [eta_separable_def]
+ (* applying separability_thm_final (from lameta_completeTheory) *)
  >> MP_TAC (Q.SPECL [‘M’, ‘N’] separability_thm_final) >> simp []
  >> DISCH_THEN (MP_TAC o Q.SPECL [‘EL 0 Ns’, ‘EL 1 Ns’])
  >> STRIP_TAC
- (* applying Boehm_transform_lameq_ctxt *)
- >> ‘?c. ctxt c /\ !M. apply pi M == c M’ by PROVE_TAC [Boehm_transform_lameq_ctxt]
+ (* applying Boehm_transform_lameq_ctxt (from boehmTheory) *)
+ >> ‘?c. ctxt c /\ !M. apply pi M == c M’
+      by PROVE_TAC [Boehm_transform_lameq_ctxt]
  >> Q.EXISTS_TAC ‘c’ >> art []
  >> CONV_TAC (BOUNDED_FORALL_CONV (SIMP_CONV list_ss []))
  >> CONJ_TAC

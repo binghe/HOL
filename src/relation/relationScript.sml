@@ -1918,6 +1918,13 @@ val _ = Unicode.unicode_version {u = UnicodeChars.union ^ UnicodeChars.sub_r,
 val _ = TeX_notation { hol = UnicodeChars.union ^ UnicodeChars.sub_r,
                        TeX = ("\\HOLTokenRUnion{}", 1) }
 
+Theorem RUNION_REMPTY[simp] :
+    R RUNION REMPTY = R /\
+    REMPTY RUNION R = R
+Proof
+    SRW_TAC [][FUN_EQ_THM, RUNION, EMPTY_REL_DEF]
+QED
+
 (* ----------------------------------------------------------------------
     relational intersection
    ---------------------------------------------------------------------- *)
