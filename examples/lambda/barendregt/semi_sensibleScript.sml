@@ -1,15 +1,17 @@
 (* ========================================================================== *)
 (* FILE    : semi_sensibleScript.sml (chap17_1Script.sml)                     *)
-(* TITLE   : Semi sensible theories [1, Chapter 17.1]                         *)
+(* TITLE   : Semi-sensible theories of lambda calculus [Barendregt 17.1]      *)
 (*                                                                            *)
 (* AUTHORS : 2025  The Australian National University (Chun Tian)             *)
 (* ========================================================================== *)
 
 open HolKernel Parse boolLib bossLib;
 
-open listTheory numLib hurdUtils pred_setTheory pred_setLib topologyTheory;
+open listTheory numLib hurdUtils pred_setTheory pred_setLib relationTheory
+     topologyTheory;
 
-open termTheory chap2Theory chap3Theory boehmTheory lameta_completeTheory;
+open termTheory chap2Theory chap3Theory horeductionTheory boehmTheory
+     lameta_completeTheory;
 
 (* These theorems usually give unexpected results, should be applied manually *)
 val _ = temp_delsimps [
@@ -83,12 +85,31 @@ Proof
      reverse CONJ_TAC
      >- (POP_ASSUM MP_TAC >> rw [Abbr ‘Fs’, EL_MAP]) \\
      HO_MATCH_MP_TAC ctxt_APPR \\
-     HO_MATCH_MP_TAC ctxt_LAMl \\
-     rw [ctxt_I])
+     HO_MATCH_MP_TAC ctxt_LAMl >> rw [ctxt_I])
  (* stage work *)
  >> Q.PAT_X_ASSUM ‘!Ns. LENGTH Ns = LENGTH Ms ==> _’
       (MP_TAC o Q.SPEC ‘Ns’) >> rw []
- >> cheat
+ >> Know ‘set vs = X’
+ >- (qunabbrev_tac ‘vs’ \\
+     MATCH_MP_TAC SET_TO_LIST_INV \\
+     qunabbrev_tac ‘X’ \\
+     MATCH_MP_TAC FINITE_BIGUNION >> rw [] >> rw [])
+ >> DISCH_TAC
+ >> Know ‘!i. i < LENGTH Ms ==> FV (EL i Ms) SUBSET set vs’
+ >- (rw [Abbr ‘vs’] \\
+     rw [Abbr ‘X’, SUBSET_DEF] \\
+     Q.EXISTS_TAC ‘FV (EL i Ms)’ >> rw [] \\
+     Q.EXISTS_TAC ‘EL i Ms’ >> rw [EL_MEM])
+ >> DISCH_TAC
+ (* applying lameq_ctxt_app_lemma *)
+ >> MP_TAC (Q.SPECL [‘vs’, ‘c’] lameq_ctxt_app_lemma) >> rw []
+ >> Q.EXISTS_TAC ‘f’
+ >> rw [Abbr ‘Fs’, EL_MAP]
+ >> Q_TAC (TRANS_TAC conversion_TRANS) ‘c (EL i Ms)’ >> rw []
+ >> MATCH_MP_TAC conversion_SYM
+ >> irule (REWRITE_RULE [RSUBSET] conversion_monotone)
+ >> Q.EXISTS_TAC ‘beta’
+ >> simp [RUNION, GSYM lameq_betaconversion]
 QED
 
 (* The usual “separable” with empty theory (i.e. with beta-conversion only)
@@ -106,9 +127,8 @@ Overload eta_separable = “separable eta”
           ?c. ctxt c /\ !i. i < LENGTH Ms ==> lameta (c (EL i Ms)) (EL i Ns)
  *)
 Theorem eta_separable_def =
-        separable_alt |> Q.SPEC ‘eta’
-                      |> REWRITE_RULE [beta_eta_lameta]
-(*
+        separable_alt |> Q.SPEC ‘eta’ |> REWRITE_RULE [beta_eta_lameta]
+
 Theorem eta_separable_thm :
     !M N. has_benf M /\ has_benf N /\ ~(lameta M N) ==> eta_separable [M; N]
 Proof
@@ -130,9 +150,6 @@ Proof
  >> MATCH_MP_TAC lameta_SYM
  >> MATCH_MP_TAC lameq_imp_lameta >> art []
 QED
- *)
-
- *)
 
 val _ = export_theory ();
 val _ = html_theory "semi_sensible";

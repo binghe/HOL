@@ -1,5 +1,5 @@
 (*---------------------------------------------------------------------------*
- * Beta-equivalence and combinators (Chapter 2 of Hankin [2])
+ * Beta-equivalence and combinators (Chapter 2 of Barendregt [1] & Hankin [2])
  *---------------------------------------------------------------------------*)
 
 open HolKernel Parse boolLib bossLib BasicProvers;
@@ -17,6 +17,7 @@ structure Q = struct open Q open OldAbbrevTactics end;
 
 val _ = new_theory "chap2";
 
+(* Definition 2.1.18 [1, p.29] *)
 Inductive ctxt :
 [~VAR:]
     !s. ctxt (\x. VAR s)
@@ -251,7 +252,8 @@ Proof
  >> MATCH_MP_TAC (cj 1 lemma2_12) >> art []
 QED
 
-val lemma2_13 = store_thm( (* p.20 *)
+(* This is also Proposition 2.1.19 [1, p.29] *)
+val lemma2_13 = store_thm( (* [2, p.20] *)
   "lemma2_13",
   ``!c n n'. ctxt c ==> (n == n') ==> (c n == c n')``,
   REPEAT GEN_TAC THEN STRIP_TAC THEN
@@ -1063,6 +1065,96 @@ Proof
  >> MATCH_MP_TAC lameq_appstar_cong
  >> rw [Once lameq_cases]
  >> DISJ1_TAC >> qexistsl_tac [‘h’, ‘M’] >> rw []
+QED
+
+(* Lemma 2.1.20 (i) [1, p.29] *)
+Theorem lameq_ctxt_app_lemma :
+    !vs c. ctxt c ==> ?f. !M. FV M SUBSET set vs ==> c M == f @@ (LAMl vs M)
+Proof
+    Q.X_GEN_TAC ‘vs’
+ >> HO_MATCH_MP_TAC ctxt_ind >> rw [] (* 4 subgoals *)
+ (* ?f. !M. FV M SUBSET set vs ==> VAR s == f @@ LAMl vs M *)
+ >- (Q_TAC (NEW_TAC "x") ‘{s}’ \\
+     Q.EXISTS_TAC ‘LAM x (VAR s)’ >> rw [] \\
+     MATCH_MP_TAC lameq_SYM \\
+     qabbrev_tac ‘N = LAMl vs M’ \\
+     Q_TAC (TRANS_TAC lameq_TRANS) ‘[N/x] (VAR s)’ >> rw [lameq_BETA])
+ (* ?f. !M. FV M SUBSET set vs ==> M == f @@ LAMl vs M *)
+ >- (Q_TAC (NEW_TAC "x") ‘set vs’ \\
+     Q.EXISTS_TAC ‘LAM x (VAR x @* MAP VAR vs)’ >> rw [] \\
+     MATCH_MP_TAC lameq_SYM \\
+     qmatch_abbrev_tac ‘LAM x N @@ P == M’ \\
+     Q_TAC (TRANS_TAC lameq_TRANS) ‘[P/x] N’ >> rw [lameq_BETA] \\
+     simp [Abbr ‘N’, appstar_SUB] \\
+     Know ‘MAP [P/x] (MAP VAR vs) = MAP VAR vs’
+     >- (REWRITE_TAC [MAP_MAP_o] \\
+         simp [LIST_EQ_REWRITE, EL_MAP] \\
+         Q.X_GEN_TAC ‘i’ >> STRIP_TAC \\
+         MATCH_MP_TAC lemma14b \\
+         Q.PAT_X_ASSUM ‘~MEM x vs’ MP_TAC \\
+         rw [MEM_EL] >> METIS_TAC []) >> Rewr' \\
+     simp [Abbr ‘P’])
+ (* ?f. !M. FV M SUBSET set vs ==> c M @@ c' M == f @@ LAMl vs M *)
+ >- (Q_TAC (NEW_TAC "x") ‘set vs UNION FV f UNION FV f'’ \\
+     Q.EXISTS_TAC ‘LAM x ((f @@ VAR x) @@ (f' @@ VAR x))’ >> rw [] \\
+     NTAC 2 (Q.PAT_X_ASSUM ‘!M. FV M SUBSET set vs ==> _’
+               (MP_TAC o Q.SPEC ‘M’)) >> rw [] \\
+     Q_TAC (TRANS_TAC lameq_TRANS) ‘(f @@ LAMl vs M) @@ (f' @@ LAMl vs M)’ \\
+     CONJ_TAC >- (irule lameq_app_cong >> art []) \\
+     qmatch_abbrev_tac ‘_ == LAM x N @@ P’ \\
+     MATCH_MP_TAC lameq_SYM \\
+     Suff ‘f @@ P @@ (f' @@ P) = [P/x] N’
+     >- (Rewr' >> rw [lameq_BETA]) \\
+     simp [Abbr ‘N’, SUB_THM] \\
+     ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
+     CONJ_TAC >> MATCH_MP_TAC lemma14b >> rw [])
+ (* ?f. !M. FV M SUBSET set vs ==> LAM v (c M) == f @@ LAMl vs M
+
+    LAM v (c M)
+ == LAM v (f @@ LAMl vs M)
+ == g @@ LAMl vs M ==> g = LAM x (LAM v (f @@ VAR x))
+  *)
+ >> Q_TAC (NEW_TAC "x") ‘{v} UNION (set vs) UNION FV f’
+ >> Q.EXISTS_TAC ‘LAM x (LAM v (f @@ VAR x))’ >> rw []
+ >> Q.PAT_X_ASSUM ‘!M. FV M SUBSET set vs ==> _’ (MP_TAC o Q.SPEC ‘M’) >> rw []
+ >> Q_TAC (TRANS_TAC lameq_TRANS) ‘LAM v (f @@ LAMl vs M)’
+ >> CONJ_TAC >- (MATCH_MP_TAC lameq_ABS >> art [])
+ >> POP_ASSUM K_TAC (* c M == ... *)
+ >> qmatch_abbrev_tac ‘_ == LAM x N @@ P’
+ >> MATCH_MP_TAC lameq_SYM
+ >> Suff ‘LAM v (f @@ P) = [P/x] N’ >- rw [lameq_BETA]
+ >> simp [Abbr ‘N’]
+ >> qabbrev_tac ‘t = f @@ VAR x’
+ >> Know ‘[P/x] (LAM v t) = LAM v ([P/x] t)’
+ >- (MATCH_MP_TAC SUB_LAM >> rw [Abbr ‘P’] \\
+     simp [FV_LAMl] \\
+     STRONG_DISJ_TAC >> fs [SUBSET_DEF])
+ >> Rewr'
+ >> simp [Abbr ‘t’, SUB_THM, Once EQ_SYM_EQ]
+ >> MATCH_MP_TAC lemma14b >> art []
+QED
+
+Theorem lameq_ctxt_app_closed :
+    !c. ctxt c ==> ?f. !M. closed M ==> c M == f @@ M
+Proof
+    rw [closed_def]
+ >> MP_TAC (Q.SPECL [‘[]’, ‘c’] lameq_ctxt_app_lemma) >> rw []
+QED
+
+(* Lemma 2.1.20 (ii) [1, p.29] *)
+Theorem lameq_ctxt_app :
+    !c M. ctxt c ==> ?vs f. c M == f @@ (LAMl vs M)
+Proof
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘X = FV M’
+ >> qabbrev_tac ‘vs = SET_TO_LIST X’
+ >> Know ‘FV M = set vs’
+ >- (simp [Abbr ‘vs’, Once EQ_SYM_EQ] \\
+     MATCH_MP_TAC SET_TO_LIST_INV >> rw [Abbr ‘X’])
+ >> DISCH_TAC
+ >> MP_TAC (Q.SPECL [‘vs’, ‘c’] lameq_ctxt_app_lemma) >> rw []
+ >> qexistsl_tac [‘vs’, ‘f’]
+ >> POP_ASSUM MATCH_MP_TAC >> rw []
 QED
 
 Theorem lameq_LAMl_appstar_reduce :
