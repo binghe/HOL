@@ -37,21 +37,21 @@ val _ = new_theory "semi_sensible";
  *)
 Definition gen_separable_def :
     gen_separable R Ms <=>
+    lambdathy R /\
     let X = BIGUNION (IMAGE FV (set Ms));
        Fs = MAP (LAMl (SET_TO_LIST X)) Ms
     in
       !Ns. LENGTH Ns = LENGTH Ms ==>
-           ?f. !i. i < LENGTH Ms ==>
-                   conversion (beta RUNION R) (f @@ (EL i Fs)) (EL i Ns)
+           ?f. !i. i < LENGTH Ms ==> R (f @@ (EL i Fs),EL i Ns)
 End
 
 (* Definition 10.4.4 (i) [1, p.256], now an equivalent theorem *)
 Theorem gen_separable_alt_closed :
     !R Ms. EVERY closed Ms ==>
           (gen_separable R Ms <=>
+           lambdathy R /\
            !Ns. LENGTH Ns = LENGTH Ms ==>
-                ?f. !i. i < LENGTH Ms ==>
-                        conversion (beta RUNION R) (f @@ (EL i Ms)) (EL i Ns))
+                ?f. !i. i < LENGTH Ms ==> R (f @@ (EL i Ms),EL i Ns))
 Proof
     RW_TAC std_ss [EVERY_EL, gen_separable_def]
  >> Know ‘X = {}’
@@ -65,16 +65,13 @@ Proof
  >> DISCH_THEN (fs o wrap)
 QED
 
-(* Lemma 10.4.5 [1, p.257] or Definition 17.1.3 (ii) [1, p.432]
-
-   NOTE: From now on, one should use this theorem as the canonical definition.
- *)
+(* Lemma 10.4.5 [1, p.257] or Definition 17.1.3 (ii) [1, p.432] *)
 Theorem gen_separable_alt :
     !R Ms. gen_separable R Ms <=>
+           lambdathy R /\
            !Ns. LENGTH Ns = LENGTH Ms ==>
                 ?c. ctxt c /\
-                    !i. i < LENGTH Ms ==>
-                        conversion (beta RUNION R) (c (EL i Ms)) (EL i Ns)
+                    !i. i < LENGTH Ms ==> R (c (EL i Ms),EL i Ns)
 Proof
     RW_TAC std_ss [gen_separable_def]
  >> qabbrev_tac ‘vs = SET_TO_LIST X’
@@ -105,15 +102,17 @@ Proof
  >> MP_TAC (Q.SPECL [‘vs’, ‘c’] lameq_ctxt_app_lemma) >> rw []
  >> Q.EXISTS_TAC ‘f’
  >> rw [Abbr ‘Fs’, EL_MAP]
- >> Q_TAC (TRANS_TAC conversion_TRANS) ‘c (EL i Ms)’ >> rw []
- >> MATCH_MP_TAC conversion_SYM
- >> irule (REWRITE_RULE [RSUBSET] conversion_monotone)
- >> Q.EXISTS_TAC ‘beta’
- >> simp [RUNION, GSYM lameq_betaconversion]
+ >> fs [lambdathy_def]
+ >> qabbrev_tac ‘A = UNCURRY R^+’
+ >> Q.PAT_X_ASSUM ‘A = R’ (fs o wrap o SYM)
+ >> fs [Abbr ‘A’]
+ >> Q_TAC (TRANS_TAC asmlam_trans) ‘c (EL i Ms)’ >> rw []
+ >> MATCH_MP_TAC asmlam_sym
+ >> MATCH_MP_TAC lameq_asmlam >> rw []
 QED
 
 (* The usual “separable” with empty theory (i.e. with beta-conversion only) *)
-Overload separable = “gen_separable REMPTY”
+Overload separable = “gen_separable (UNCURRY (==))”
 
 (* |- !Ms.
         separable Ms <=>
@@ -122,8 +121,8 @@ Overload separable = “gen_separable REMPTY”
           ?c. ctxt c /\ !i. i < LENGTH Ms ==> c (EL i Ms) == EL i Ns
  *)
 Theorem separable_def =
-        gen_separable_alt |> Q.SPEC ‘REMPTY’
-                          |> SRULE [GSYM lameq_betaconversion, RUNION]
+        gen_separable_alt |> Q.SPEC ‘UNCURRY (==)’
+                          |> SRULE [lambdathy_lameq]
 
 Theorem separable_incompatible :
     !M N. separable [M; N] ==> M # N
@@ -156,7 +155,7 @@ Proof
 QED
 
 (* “eta_separable” is another common instance with beta- and eta-conversion. *)
-Overload eta_separable = “gen_separable eta”
+Overload eta_separable = “gen_separable (UNCURRY lameta)”
 
 (* |- !Ms.
         eta_separable Ms <=>
@@ -165,7 +164,8 @@ Overload eta_separable = “gen_separable eta”
           ?c. ctxt c /\ !i. i < LENGTH Ms ==> lameta (c (EL i Ms)) (EL i Ns)
  *)
 Theorem eta_separable_def =
-        gen_separable_alt |> Q.SPEC ‘eta’ |> REWRITE_RULE [beta_eta_lameta]
+        gen_separable_alt |> Q.SPEC ‘UNCURRY lameta’
+                          |> SRULE [lambdathy_lameta]
 
 Theorem eta_separable_thm :
     !M N. has_benf M /\ has_benf N /\ ~(lameta M N) ==> eta_separable [M; N]
