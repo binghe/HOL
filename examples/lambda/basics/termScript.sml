@@ -289,8 +289,8 @@ Theorem FV_tpm[simp] = ``x ∈ FV (tpm p t)``
                       |> REWRITE_CONV [perm_supp,pmact_IN]
                       |> GEN_ALL
 
-val _ = set_fixity "@@" (Infixl 901);
-Overload "@@" = “term$APP”
+val _ = set_mapped_fixity { term_name = "APP", tok = "@@",
+                            fixity = Infixl 901}
 
 (* NOTE: The following overload "incompatible" was in sttScript.sml.
 
