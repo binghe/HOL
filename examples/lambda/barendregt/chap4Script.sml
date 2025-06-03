@@ -326,7 +326,7 @@ Proof
       METIS_TAC [conversion_rules],
       (* goal 6 (of 8) *)
       PROVE_TAC [conversion_compatible, compatible_def, rightctxt, rightctxt_thm],
-      (* goal 8 (of 8) *)
+      (* goal 7 (of 8) *)
       PROVE_TAC [conversion_compatible, compatible_def, leftctxt],
       (* goal 8 (of 8) *)
       PROVE_TAC [conversion_compatible, compatible_def, absctxt] ]
