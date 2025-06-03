@@ -665,6 +665,25 @@ Proof
   SRW_TAC [][pmact_flip_args]
 QED
 
+(* Lemma 2.1.16 (Substitution Lemma) [1, p.27] *)
+Theorem substitution_lemma :
+    !x N y L M. x <> y /\ x # L ==> [L/y] ([N/x] M) = [[L/y] N/x]([L/y] M)
+Proof
+    NTAC 4 GEN_TAC
+ >> HO_MATCH_MP_TAC nc_INDUCTION2
+ >> Q.EXISTS_TAC ‘{x; y} UNION FV N UNION FV L’ >> rw []
+ (* Cases 1: VAR s *)
+ >- (Cases_on ‘s = x’ >- rw [] \\
+     Cases_on ‘s = y’ >- rw [Once EQ_SYM_EQ, lemma14b] \\
+     simp [])
+ (* Case 2: LAM z M *)
+ >> rename1 ‘LAM z _ = _’
+ >> qmatch_abbrev_tac ‘_ = [P/x] (LAM z Q)’
+ >> Suff ‘[P/x] (LAM z Q) = LAM z ([P/x] Q)’ >- Rewr
+ >> MATCH_MP_TAC SUB_LAM >> rw [Abbr ‘P’, FV_SUB]
+ (* Case 3 (M1 @@ M2) is automatically eliminated *)
+QED
+
 (* ----------------------------------------------------------------------
     alpha-convertibility results
    ---------------------------------------------------------------------- *)
