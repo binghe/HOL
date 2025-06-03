@@ -665,23 +665,25 @@ Proof
   SRW_TAC [][pmact_flip_args]
 QED
 
+(* from Isabelle/HOL [3] *)
+Theorem fresh_fact[local] :
+    !z N y L. z # N /\ z # L ==> z # [L/y] N
+Proof
+    rw [FV_SUB]
+QED
+
 (* Lemma 2.1.16 (Substitution Lemma) [1, p.27] *)
 Theorem substitution_lemma :
     !x N y L M. x <> y /\ x # L ==> [L/y] ([N/x] M) = [[L/y] N/x]([L/y] M)
 Proof
     NTAC 4 GEN_TAC
  >> HO_MATCH_MP_TAC nc_INDUCTION2
- >> Q.EXISTS_TAC ‘{x; y} UNION FV N UNION FV L’ >> rw []
- (* Cases 1: VAR s *)
- >- (Cases_on ‘s = x’ >- rw [] \\
-     Cases_on ‘s = y’ >- rw [Once EQ_SYM_EQ, lemma14b] \\
-     simp [])
- (* Case 2: LAM z M *)
- >> rename1 ‘LAM z _ = _’
- >> qmatch_abbrev_tac ‘_ = [P/x] (LAM z Q)’
- >> Suff ‘[P/x] (LAM z Q) = LAM z ([P/x] Q)’ >- Rewr
- >> MATCH_MP_TAC SUB_LAM >> rw [Abbr ‘P’, FV_SUB]
- (* Case 3 (M1 @@ M2) is automatically eliminated *)
+ >> Q.EXISTS_TAC ‘{x; y} UNION FV N UNION FV L’
+ >> rw [fresh_fact]
+ (* NOTE: only one case (M = VAR s) is left *)
+ >> Cases_on ‘s = x’ >- rw []
+ >> Cases_on ‘s = y’ >- rw [Once EQ_SYM_EQ, lemma14b]
+ >> simp []
 QED
 
 (* ----------------------------------------------------------------------
@@ -2088,4 +2090,6 @@ val _ = html_theory "term";
      College Publications, London (1984).
  [2] Hindley, J.R., Seldin, J.P.: Lambda-calculus and combinators, an introduction.
      Second Edition. Cambridge University Press, Cambridge (2008).
+ [3] Urban, C.: Nominal Techniques in Isabelle/HOL. J. Autom. Reason. 40,
+     327–356 (2008).
  *)
