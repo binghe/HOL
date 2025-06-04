@@ -768,8 +768,7 @@ val tlf =
 Theorem parameter_tm_recursion =
   parameter_gtm_recursion
       |> INST_TYPE [alpha |-> rep_t, gamma |-> “:'r”]
-      |> Q.INST [‘lf’ |-> ‘^tlf’,
-                 ‘lp’ |-> ‘^lp’, ‘n’ |-> ‘0’]
+      |> Q.INST [‘lf’ |-> ‘^tlf’, ‘lp’ |-> ‘^lp’]
       |> SIMP_RULE (srw_ss()) [sumTheory.FORALL_SUM, FORALL_AND_THM,
                                GSYM RIGHT_FORALL_IMP_THM, IMP_CONJ_THM,
                                GSYM RIGHT_EXISTS_AND_THM,

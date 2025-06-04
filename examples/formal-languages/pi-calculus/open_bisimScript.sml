@@ -9,7 +9,7 @@ open HolKernel Parse boolLib bossLib;
 
 open pairTheory pred_setTheory relationTheory hurdUtils;
 
-open nomsetTheory NEWLib pi_agentTheory;
+open nomsetTheory NEWLib pi_nominalTheory;
 
 val _ = new_theory "open_bisim";
 

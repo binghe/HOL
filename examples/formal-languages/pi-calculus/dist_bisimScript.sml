@@ -9,7 +9,7 @@ open HolKernel Parse boolLib bossLib;
 
 open pairTheory pred_setTheory set_relationTheory hurdUtils;
 
-open basic_swapTheory nomsetTheory NEWLib pi_agentTheory;
+open basic_swapTheory nomsetTheory NEWLib pi_nominalTheory;
 
 val _ = new_theory "dist_bisim";
 
