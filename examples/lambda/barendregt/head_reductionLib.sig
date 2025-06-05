@@ -6,4 +6,6 @@ sig
   val T_TAC      : tactic
   val UNBETA_TAC : thm list -> term -> tactic
 
+  val RW_TAC'    : simpLib.simpset -> thm list -> tactic
+  val rw'        : thm list -> tactic
 end

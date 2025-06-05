@@ -1243,8 +1243,9 @@ Proof
       qexists_tac ‘\M (x,y). f y x M’ >> srw_tac [][] ]
 QED
 
-Overload NilR[local] = “TauR Nil”
-Overload I1[local] = “\(p :pi).       (p,NilR)”
+Overload NilR[local] = “TauR Nil” (* A closed term of :residual *)
+
+Overload I1[local] = “\(p :pi). (p,NilR)”
 Overload I2[local] = “\(r :residual). (Nil,r)”
 Overload O1[local] = “\(z :pi # residual). FST z”
 Overload O2[local] = “\(z :pi # residual). SND z”
@@ -1312,6 +1313,9 @@ val th = subst_exists0;
 val th = rpt_hyp_dest_conj (UNDISCH th);
 val ths = hypset th;
 
+val h = el 1 (HOLset.listItems ths);
+set_goal ([], h);
+
 fun prove_alpha_fcbhyp {ppm, alphas, rwts} th = let
   open nomsetTheory
   val th = rpt_hyp_dest_conj (UNDISCH th)
@@ -1322,8 +1326,6 @@ fun prove_alpha_fcbhyp {ppm, alphas, rwts} th = let
                 FIRST (map (match_mp_tac o GSYM) alphas) >>
                 match_mp_tac (GEN_ALL notinsupp_fnapp) >>
                 EXISTS_TAC ppm \\
-                CONJ_TAC >- cheat (* TODO *)
-                EXISTS_TAC ppm2
                 srw_tac [] rwts)
   in
     PROVE_HYP h_th th
@@ -1331,18 +1333,6 @@ fun prove_alpha_fcbhyp {ppm, alphas, rwts} th = let
 in
   HOLset.foldl foldthis th (hypset th)
 end
-
-  applying [notinsupp_fnapp]
-  |- v NOTIN supp (fn_pmact dpm rpm) f /\ v NOTIN supp dpm x ==>
-      v NOTIN supp rpm (f x)
-
-val subst_exists =
-    subst_exists2
- |> prove_alpha_fcbhyp {ppm = “pair_pmact string_pmact string_pmact”,
-                        rwts = [],
-                        alphas = [tpm_ALPHA_Res, tpm_ALPHA_Input,
-                                  tpm_ALPHA_InputS,
-                                  tpm_ALPHA_BoundOutput]};
 
 val SUB_DEF = new_specification("SUB_DEF", ["SUB"], subst_exists);
 
