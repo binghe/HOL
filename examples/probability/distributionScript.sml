@@ -3591,6 +3591,17 @@ Proof
  >> POP_ASSUM MATCH_MP_TAC >> rw [Abbr ‘M’]
 QED
 
+(* TODO: move to extrealTheory *)
+Theorem inf_lim_lemma :
+    !g l. (!n i. 0 <= g n i) /\ (!n. mono_decreasing (g n)) /\
+          (!i. 0 <= l i) /\ mono_decreasing l /\
+          (!i. ((\n. g n i) --> l i) sequentially) ==>
+          ((\n. inf (IMAGE (\i. Normal (g n i)) UNIV)) -->
+                inf (IMAGE (\i. Normal (l i)) UNIV)) sequentially
+Proof
+    cheat
+QED
+
 (* not easy *)
 Theorem Portemanteau_ii_imp_iv :
     !E X Y. Portemanteau_antecedents E X Y /\
@@ -3863,15 +3874,24 @@ Proof
  >> qabbrev_tac ‘g = \n i. pos_fn_integral (sp,subsets b,X n) (fi' i)’
  >> qabbrev_tac ‘l = \i. pos_fn_integral (sp,subsets b,Y) (fi' i)’
  >> simp []
- >> Know ‘!n i. g n i <> NegInf /\ g n i <> PosInf’
+ >> Know ‘!n i. 0 <= g n i’
  >- (rw [Abbr ‘g’] \\
-     MATCH_MP_TAC pos_not_neginf \\
      MATCH_MP_TAC pos_fn_integral_pos >> rw [Abbr ‘fi’, Abbr ‘fi'’])
  >> DISCH_TAC
- >> Know ‘!i. l i <> NegInf /\ l i <> PosInf’
+ >> Know ‘!i. 0 <= l i’
  >- (rw [Abbr ‘l’] \\
-     MATCH_MP_TAC pos_not_neginf \\
      MATCH_MP_TAC pos_fn_integral_pos >> rw [Abbr ‘fi’, Abbr ‘fi'’])
+ >> DISCH_TAC
+ >> ‘!n i. g n i <> NegInf’ by rw [pos_not_neginf]
+ >> Know ‘!n i. g n i <> NegInf /\ g n i <> PosInf’
+ >- (rpt GEN_TAC >> STRIP_TAC
+     >- (MATCH_MP_TAC pos_not_neginf >> art []) \\
+     simp [Abbr ‘g’])
+ >> DISCH_TAC
+ >> Know ‘!i. l i <> NegInf /\ l i <> PosInf’
+ >- (Q.X_GEN_TAC ‘i’ >> STRIP_TAC
+     >- (MATCH_MP_TAC pos_not_neginf >> art []) \\
+     simp [Abbr ‘l’])
  >> DISCH_TAC
  >> Know ‘!i. ((\n. g n i) --> l i) sequentially’
  >- (Q.X_GEN_TAC ‘j’ \\
@@ -3898,9 +3918,47 @@ Proof
      CONJ_TAC >- rw [Abbr ‘fi’] \\
      fs [mono_decreasing_def])
  >> DISCH_TAC
+ >> Know ‘mono_decreasing l’
+ >- (simp [ext_mono_decreasing_def, Abbr ‘l’] \\
+     qx_genl_tac [‘i’, ‘j’] >> DISCH_TAC \\
+     MATCH_MP_TAC pos_fn_integral_mono >> simp [Abbr ‘fi'’] \\
+     CONJ_TAC >- rw [Abbr ‘fi’] \\
+     fs [mono_decreasing_def])
+ >> DISCH_TAC
  (* applying inf_seq' *)
  >> qabbrev_tac ‘g' = \n i. real (g n i)’
  >> qabbrev_tac ‘l' = \i. real (l i)’
+ >> Know ‘!n i. 0 <= g' n i’
+ >- (rw [Abbr ‘g'’] \\
+    ‘?r. 0 <= r /\ g n i = Normal r’
+       by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_le_eq] \\
+     simp [])
+ >> DISCH_TAC
+ >> Know ‘!i. 0 <= l' i’
+ >- (rw [Abbr ‘l'’] \\
+    ‘?r. 0 <= r /\ l i = Normal r’
+       by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_le_eq] \\
+     simp [])
+ >> DISCH_TAC
+ >> Know ‘!n. mono_decreasing (g' n)’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     simp [Abbr ‘g'’, mono_decreasing_def] \\
+     qx_genl_tac [‘i’, ‘j’] >> DISCH_TAC \\
+     Q.PAT_X_ASSUM ‘!n. mono_decreasing (g n)’ (MP_TAC o Q.SPEC ‘n’) \\
+     rw [ext_mono_decreasing_def] \\
+     POP_ASSUM (MP_TAC o Q.SPECL [‘i’, ‘j’]) >> rw [] \\
+    ‘?r1. g n j = Normal r1’ by METIS_TAC [extreal_cases] \\
+    ‘?r2. g n i = Normal r2’ by METIS_TAC [extreal_cases] >> fs [])
+ >> DISCH_TAC
+ >> Know ‘mono_decreasing l'’
+ >- (simp [Abbr ‘l'’, mono_decreasing_def] \\
+     qx_genl_tac [‘i’, ‘j’] >> DISCH_TAC \\
+     Q.PAT_X_ASSUM ‘mono_decreasing l’ MP_TAC \\
+     rw [ext_mono_decreasing_def] \\
+     POP_ASSUM (MP_TAC o Q.SPECL [‘i’, ‘j’]) >> rw [] \\
+    ‘?r1. l j = Normal r1’ by METIS_TAC [extreal_cases] \\
+    ‘?r2. l i = Normal r2’ by METIS_TAC [extreal_cases] >> fs [])
+ >> DISCH_TAC
  (* applying extreal_lim_sequentially_eq *)
  >> Know ‘!i. ((\n. g' n i) --> l' i) sequentially’
  >- (rw [Abbr ‘g'’, Abbr ‘l'’] \\
@@ -3911,6 +3969,7 @@ Proof
      MATCH_MP_TAC extreal_lim_sequentially_eq >> simp [Abbr ‘q’] \\
      Q.EXISTS_TAC ‘0’ >> rw [Abbr ‘p’])
  >> DISCH_TAC
+ (* now rewriting the goal with g' and l' *)
  >> Know ‘!n i. g n i = Normal (g' n i)’
  >- (rw [Abbr ‘g'’, Once EQ_SYM_EQ] \\
      MATCH_MP_TAC normal_real >> rw [])
@@ -3919,7 +3978,7 @@ Proof
  >- (rw [Abbr ‘l'’, Once EQ_SYM_EQ, FUN_EQ_THM] \\
      MATCH_MP_TAC normal_real >> rw [])
  >> Rewr'
- >> cheat
+ >> MATCH_MP_TAC inf_lim_lemma >> art []
 QED
 
 Theorem Portemanteau_vi_imp_iii :
