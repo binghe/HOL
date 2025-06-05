@@ -35,6 +35,9 @@ val set_ss = std_ss ++ PRED_SET_ss;
 val _ = intLib.deprecate_int();
 val _ = ratLib.deprecate_rat();
 
+(* some proofs here are large with too many assumptions *)
+val _ = set_trace "Goalstack.print_goal_at_top" 0;
+
 (* ------------------------------------------------------------------------- *)
 (*  Properties of distribution_functions                                     *)
 (* ------------------------------------------------------------------------- *)
@@ -3591,15 +3594,15 @@ Proof
  >> POP_ASSUM MATCH_MP_TAC >> rw [Abbr ‘M’]
 QED
 
-(* TODO: move to extrealTheory *)
-Theorem inf_lim_lemma :
-    !g l. (!n i. 0 <= g n i) /\ (!n. mono_decreasing (g n)) /\
-          (!i. 0 <= l i) /\ mono_decreasing l /\
-          (!i. ((\n. g n i) --> l i) sequentially) ==>
-          ((\n. inf (IMAGE (\i. Normal (g n i)) UNIV)) -->
-                inf (IMAGE (\i. Normal (l i)) UNIV)) sequentially
+Theorem real_inf_lim_lemma :
+    !(g :num -> num -> real) (l :num -> real).
+        (!n i. 0 <= g n i) /\ (!n. mono_decreasing (g n)) /\
+        (!i. 0 <= l i) /\ mono_decreasing l /\
+        (!i. ((\n. g n i) --> l i) sequentially) ==>
+        ((\n. inf (IMAGE (g n) UNIV)) --> inf (IMAGE l UNIV)) sequentially
 Proof
-    cheat
+    rw [LIM_SEQUENTIALLY, dist]
+ >> cheat
 QED
 
 (* not easy *)
@@ -3969,6 +3972,29 @@ Proof
      MATCH_MP_TAC extreal_lim_sequentially_eq >> simp [Abbr ‘q’] \\
      Q.EXISTS_TAC ‘0’ >> rw [Abbr ‘p’])
  >> DISCH_TAC
+ (* applying inf_normal, again *)
+ >> qabbrev_tac ‘P = \n. IMAGE (\i. g n i) UNIV’ >> simp []
+ >> Know ‘!n. inf (P n) = Normal (inf (P n o Normal))’
+ >- (rw [Once EQ_SYM_EQ] \\
+     MATCH_MP_TAC inf_normal \\
+     Q.EXISTS_TAC ‘1’ >> rw [normal_1] \\
+     simp [Abbr ‘P’] \\
+     MATCH_MP_TAC inf_bounded' >> simp [] \\
+     Q.X_GEN_TAC ‘i’ >> rw [abs_bounds]
+     >- (Q_TAC (TRANS_TAC le_trans) ‘-0’ >> rw [le_neg]) \\
+     fs [Abbr ‘g’])
+ >> Rewr'
+ >> qabbrev_tac ‘Q = IMAGE l UNIV’
+ >> Know ‘inf Q = Normal (inf (Q o Normal))’
+ >- (SYM_TAC >> MATCH_MP_TAC inf_normal \\
+     Q.EXISTS_TAC ‘1’ >> rw [normal_1] \\
+     simp [Abbr ‘Q’] \\
+     MATCH_MP_TAC inf_bounded' >> simp [] \\
+     Q.X_GEN_TAC ‘i’ >> rw [abs_bounds]
+     >- (Q_TAC (TRANS_TAC le_trans) ‘-0’ >> rw [le_neg]) \\
+     fs [Abbr ‘l’])
+ >> Rewr'
+ >> simp [Abbr ‘P’, Abbr ‘Q’, o_DEF]
  (* now rewriting the goal with g' and l' *)
  >> Know ‘!n i. g n i = Normal (g' n i)’
  >- (rw [Abbr ‘g'’, Once EQ_SYM_EQ] \\
@@ -3978,7 +4004,20 @@ Proof
  >- (rw [Abbr ‘l'’, Once EQ_SYM_EQ, FUN_EQ_THM] \\
      MATCH_MP_TAC normal_real >> rw [])
  >> Rewr'
- >> MATCH_MP_TAC inf_lim_lemma >> art []
+ >> simp []
+ >> ‘!n. (\x. ?i. x = g' n i) = IMAGE (g' n) UNIV’ by rw [Once EXTENSION]
+ >> POP_ORW
+ >> ‘(\x. ?x'. x = l' x') = IMAGE l' UNIV’ by rw [Once EXTENSION]
+ >> POP_ORW
+ (* applying extreal_lim_sequentially_eq, again *)
+ >> qmatch_abbrev_tac ‘(h --> c) sequentially’
+ >> Know ‘(h --> c) sequentially <=> (real o h --> real c) sequentially’
+ >- (MATCH_MP_TAC extreal_lim_sequentially_eq \\
+     reverse CONJ_TAC >- simp [Abbr ‘c’] \\
+     Q.EXISTS_TAC ‘0’ >> rw [Abbr ‘h’])
+ >> Rewr'
+ >> simp [Abbr ‘h’, Abbr ‘c’, o_DEF]
+ >> MATCH_MP_TAC real_inf_lim_lemma >> art []
 QED
 
 Theorem Portemanteau_vi_imp_iii :
