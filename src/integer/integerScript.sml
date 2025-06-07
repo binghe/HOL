@@ -312,7 +312,7 @@ val TINT_LT_REFL =
               THEN REWRITE_TAC[tint_lt]
               THEN ARITH_TAC)
 
-fun unfold_dec l =  REPEAT GEN_PAIR_TAC THEN REWRITE_TAC l THEN ARITH_TAC;
+fun unfold_dec l = REPEAT GEN_PAIR_TAC THEN REWRITE_TAC l THEN ARITH_TAC;
 
 val TINT_LT_TRANS =
     store_thm
@@ -2089,6 +2089,7 @@ val negcase = prove(
     `(tot = q' * n + r) /\ r < n` by METIS_TAC [DIVISION] THEN
     `q * n = q' * n + m` by ASM_SIMP_TAC int_ss [Abbr`tot`] THEN
     `(q * n) DIV n = (q' * n + m) DIV n` by SRW_TAC [][] THEN
+    rpt VAR_EQ_TAC THEN
     FULL_SIMP_TAC (srw_ss()) [ASSUME ``0n < n``, MULT_DIV,
                               ASSUME ``(m:num) < n``, DIV_MULT],
     Q_TAC SUFF_TAC `(q * n - m) DIV n = q - 1` THEN1
