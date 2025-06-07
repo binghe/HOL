@@ -4082,7 +4082,12 @@ Theorem Portemanteau_vi_imp_iii :
     !E X Y. Portemanteau_antecedents E X Y /\
             Portemanteau_vi E X Y ==> Portemanteau_iii E X Y
 Proof
-    cheat
+    rpt GEN_TAC
+ >> SIMP_TAC set_ss [Portemanteau_antecedents_def,
+                     Portemanteau_vi_def, Portemanteau_iii_def,
+                     weak_convergence_condition_def]
+ >> STRIP_TAC
+ >> cheat
 QED
 
 (* NOTE: (2) ==> (4) <=> (5) ==> (6) ==> (3) ==> (1) ==> (2) *)
