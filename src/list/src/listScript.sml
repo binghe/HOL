@@ -2836,11 +2836,15 @@ val EL_LENGTH_SNOC = store_thm("EL_LENGTH_SNOC",
     (“!l:'a list. !x. EL (LENGTH l) (SNOC x l) = x”),
     LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[EL, SNOC, HD, TL, LENGTH]);
 
-val APPEND_SNOC = store_thm("APPEND_SNOC",
-    (“!l1 (x:'a) l2. APPEND l1 (SNOC x l2) = SNOC x (APPEND l1 l2)”),
-    LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[APPEND, SNOC]);
+(* NOTE: Added [simp] because APPEND (APPEND on CONS) also does it automatically *)
+Theorem APPEND_SNOC[simp] :
+    !l1 (x:'a) l2. APPEND l1 (SNOC x l2) = SNOC x (APPEND l1 l2)
+Proof
+    LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[APPEND, SNOC]
+QED
 
-Theorem EVERY_SNOC:
+(* NOTE: Added [simp] because EVERY_DEF (EVERY on CONS) also does it automatically *)
+Theorem EVERY_SNOC[simp] :
   !P (x:'a) l. EVERY P (SNOC x l) <=> EVERY P l /\ P x
 Proof
     GEN_TAC THEN GEN_TAC THEN LIST_INDUCT_TAC
