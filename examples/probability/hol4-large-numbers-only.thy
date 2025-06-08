@@ -1,6 +1,6 @@
-name: hol-large-numbers
-version: 1.1
-description: HOL theories up to the Law of Large Numbers (including OpenTheory base)
+name: hol-large-numbers-only
+version: 1.0
+description: HOL and OT theories towards to the Law of Large Numbers
 author: Chun Tian <binghe.lisp@gmail.com>
 license: MIT
 show: "HOL4"
@@ -22,7 +22,8 @@ main {
   import: hol-extreal
   import: hol-analysis
   import: hol-probability
-  import: large-number
+  article: "large_number.ot.art"
+  interpretation: "../../src/opentheory/hol4.int"
 }
 base {
   package: base-1.221
@@ -110,16 +111,6 @@ hol-probability {
   import: hol-analysis
   import: hol-extreal
   import: hol-words
+  import: hol-sort
   package: hol-probability-1.1
-}
-large-number {
-  import: base
-  import: hol-base
-  import: hol-set
-  import: hol-real
-  import: hol-extreal
-  import: hol-analysis
-  import: hol-probability
-  article: "large_number.ot.art"
-  interpretation: "../../src/opentheory/hol4.int"
 }
