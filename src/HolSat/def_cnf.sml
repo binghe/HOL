@@ -130,7 +130,7 @@ fun localdefs cnfv tm (n,defs,lfn) =
                 localdefs cnfv  (List.nth(args,1)) (n1,defs1,lfn1)
             val (n3,v3,defs3,lfn3) =
                 localdefs cnfv  (List.nth(args,2)) (n2,defs2,lfn2)
-            val tm' =  mk_comb(mk_comb(mk_comb(opr,v1),v2),v3)
+            val tm' = mk_comb(mk_comb(mk_comb(opr,v1),v2),v3)
         in (n3,rbapply defs3 tm',defs2,lfn3)
            handle NotFound =>
                   let val n4 = n3 + 1
@@ -216,7 +216,6 @@ fun clausify tm lfn eq cls =
         val xth = ADD_ASSUM tm (EQ_MP tth (REFL(rbapply lfn (land eq))))
     in zip (strip_conj(rand(concl eth))) (CONJUNCTS xth) @ cls end
 
-(* entry function *)
 fun to_cnf is_cnf tm =
     if is_cnf then
         (NONE,HOLset.numItems(FVL[tm](HOLset.empty Term.var_compare)),
@@ -276,5 +275,7 @@ List.app (fn eq =>
                     end
                  end
              else print "Not top-level eq!\n") eqs
+
+
 
 end

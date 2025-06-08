@@ -73,4 +73,28 @@ in
  >> ASM_SIMP_TAC std_ss [Abbr ‘^P’]
 end;
 
+(* NOTE: CONJ_TAC has been removed here *)
+fun STRIP_GOAL_THEN' ttac = FIRST [GEN_TAC, DISCH_THEN ttac]
+fun STRIP_TAC' g =
+    STRIP_GOAL_THEN STRIP_ASSUME_TAC g
+
+(* A simpler version of RW_TAC without using VAR_EQ_TAC, etc. *)
+fun STP_TAC' ss finisher = let
+    val ASM_SIMP = simpLib.ASM_SIMP_TAC ss []
+in
+    rpt GEN_TAC
+ >> ASM_SIMP
+ >> TRY (rpt IF_CASES_TAC >> ASM_SIMP)
+ >> rpt STRIP_TAC'
+ >> rpt (CHANGED_TAC (BasicProvers.LET_ELIM_TAC ORELSE ASM_SIMP))
+ >> TRY finisher
+end;
+
+fun RW_TAC' ss thl g = markerLib.ABBRS_THEN
+                         (markerLib.mk_require_tac
+                           (fn thl => STP_TAC' (simpLib.&& (ss,thl)) NO_TAC))
+                         thl g;
+
+fun rw' ths = RW_TAC' (BasicProvers.srw_ss()) ths;
+
 end (* struct *)

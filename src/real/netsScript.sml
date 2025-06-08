@@ -1017,6 +1017,30 @@ Definition limit :
      (!u. open_in top u /\ l IN u ==> eventually (\x. f x IN u) net)
 End
 
+(*
+let CONTINUOUS_MAP_ATPOINTOF = prove
+ (`!top top' f:A->B.
+        continuous_map (top,top') f <=>
+        !x. x IN topspace top ==> limit top' f (f x) (atpointof top x)`,
+  REPEAT STRIP_TAC THEN REWRITE_TAC[CONTINUOUS_MAP_EQ_TOPCONTINUOUS_AT] THEN
+  ASM_SIMP_TAC[TOPCONTINUOUS_AT_ATPOINTOF] THEN
+  REWRITE_TAC[limit_def] THEN SET_TAC[]);;
+
+let LIMIT_CONTINUOUS_MAP = prove
+ (`!top top' (f:A->B) a b.
+        continuous_map(top,top') f /\ a IN topspace top /\ f a = b
+        ==> limit top' f b (atpointof top a)`,
+  REWRITE_TAC[CONTINUOUS_MAP_ATPOINTOF] THEN MESON_TAC[]);;
+
+let LIMIT_CONTINUOUS_MAP_WITHIN = prove
+ (`!top top' (f:A->B) a b.
+        continuous_map(subtopology top s,top') f /\
+        a IN s /\ a IN topspace top /\ f a = b
+        ==> limit top' f b (atpointof top a within s)`,
+  SIMP_TAC[GSYM ATPOINTOF_SUBTOPOLOGY] THEN
+  SIMP_TAC[LIMIT_CONTINUOUS_MAP; TOPSPACE_SUBTOPOLOGY; IN_INTER]);;
+*)
+
 (* Connection between HOL-Light's ‘limit’ and HOL4's ‘tends’
 
    NOTE: The net with ‘limit’ must be reflexive, which is not assumed in general.

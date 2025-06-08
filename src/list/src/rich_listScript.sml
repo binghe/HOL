@@ -1212,7 +1212,7 @@ val BUTLASTN_LENGTH_NIL = Q.store_thm ("BUTLASTN_LENGTH_NIL",
    SNOC_INDUCT_TAC THEN ASM_REWRITE_TAC [LENGTH, LENGTH_SNOC, BUTLASTN]);
 
 val BUTLASTN_SUC_FRONT = Q.store_thm ("BUTLASTN_SUC_FRONT",
-   `!n l. n < LENGTH l ==> (BUTLASTN (SUC n) l =  BUTLASTN n (FRONT l))`,
+   `!n l. n < LENGTH l ==> (BUTLASTN (SUC n) l = BUTLASTN n (FRONT l))`,
    INDUCT_TAC
    THEN SNOC_INDUCT_TAC
    THEN REWRITE_TAC [LENGTH, NOT_LESS_0, BUTLASTN, FRONT_SNOC]);
@@ -3628,6 +3628,12 @@ QED
 
 Theorem REPLICATE_NIL[simp]:  REPLICATE x y = [] <=> x = 0
 Proof Cases_on`x` >> rw[]
+QED
+
+Theorem REPLICATE_EQ_CONS:
+  REPLICATE n x = y :: r <=> y = x /\ ?m. n = SUC m /\ r = REPLICATE m x
+Proof
+  Cases_on`n` \\ rw[REPLICATE, EQ_IMP_THM]
 QED
 
 val REPLICATE_APPEND = Q.store_thm("REPLICATE_APPEND",

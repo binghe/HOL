@@ -14,6 +14,7 @@
 (*                                                                          *)
 (*==========================================================================*)
 
+
 open HolKernel Parse boolLib bossLib;
 
 open jrhUtils quotient liteLib pred_setTheory arithmeticTheory prim_recTheory
@@ -311,7 +312,7 @@ val TINT_LT_REFL =
               THEN REWRITE_TAC[tint_lt]
               THEN ARITH_TAC)
 
-fun unfold_dec l =  REPEAT GEN_PAIR_TAC THEN REWRITE_TAC l THEN ARITH_TAC;
+fun unfold_dec l = REPEAT GEN_PAIR_TAC THEN REWRITE_TAC l THEN ARITH_TAC;
 
 val TINT_LT_TRANS =
     store_thm
@@ -2088,6 +2089,7 @@ val negcase = prove(
     `(tot = q' * n + r) /\ r < n` by METIS_TAC [DIVISION] THEN
     `q * n = q' * n + m` by ASM_SIMP_TAC int_ss [Abbr`tot`] THEN
     `(q * n) DIV n = (q' * n + m) DIV n` by SRW_TAC [][] THEN
+    rpt VAR_EQ_TAC THEN
     FULL_SIMP_TAC (srw_ss()) [ASSUME ``0n < n``, MULT_DIV,
                               ASSUME ``(m:num) < n``, DIV_MULT],
     Q_TAC SUFF_TAC `(q * n - m) DIV n = q - 1` THEN1
@@ -3716,19 +3718,13 @@ val NUM_INT_MUL = store_thm("NUM_INT_MUL",
   Term`!m n. m * n = Num (&m * &n)`,
   REWRITE_TAC [INT_MUL, NUM_OF_INT])
 
-(* NOTE: Added ‘0 < m’ under the original definition of DIV *)
-Theorem NUM_INT_EDIV :
-    !n m. 0 < m ==> n DIV m = if m = 0 then 0 else Num (ediv (&n) (&m))
-Proof
-    rw [EDIV_DEF, INT_POS, INT_LT_LE, INT_DIV, NUM_OF_INT]
-QED
+val NUM_INT_EDIV = store_thm("NUM_INT_EDIV",
+  Term`!n m. n DIV m = if m = 0 then 0 else Num (ediv (&n) (&m))`,
+  METIS_TAC[EDIV_DEF, INT_POS, INT_LT_LE, INT_DIV, NUM_OF_INT, DIV_def])
 
-(* NOTE: Added ‘0 < m’ under the original definition of DIV *)
-Theorem NUM_INT_EMOD :
-    !n m. 0 < m ==> n MOD m = if m = 0 then n else Num (emod (&n) (&m))
-Proof
-    rw [EMOD_DEF, INT_ABS_NUM, INT_MOD, NUM_OF_INT]
-QED
+val NUM_INT_EMOD = store_thm("NUM_INT_EMOD",
+  Term`!n m. n MOD m = if m = 0 then n else Num (emod (&n) (&m))`,
+  METIS_TAC[EMOD_DEF, INT_ABS_NUM, INT_MOD, NUM_OF_INT, MOD_def])
 
 (*---------------------------------------------------------------------------*)
 

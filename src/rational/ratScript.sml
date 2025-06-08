@@ -2787,65 +2787,8 @@ Proof
       simp[NUM_LT])
 QED
 
-(* NOTE: errors when generating rat.ot.art
-
- different constants at path 11011110 subterms:
-      HOL4.rat.RATD
-   vs HOL4.rat.RATN
- different constants: HOL4.rat.RATD vs HOL4.rat.RATN
- different constant names
- *)
-
-(* |- !r. r = rat_of_int (RATN r) / &RATD r /\ 0 < RATD r /\
-          (RATN r = 0 ==> RATD r = 1) /\
-          !n' d'.
-            r = rat_of_int n' / &d' /\ 0 < d' ==> ABS (RATN r) <= ABS n'
-
 val RATND_THM = new_specification("RATND_THM", ["RATN", "RATD"],
   CONV_RULE (SKOLEM_CONV THENC BINDER_CONV SKOLEM_CONV) numdenom_exists)
- *)
-
-(* BEGIN OpenTheory workarounds *)
-Theorem numdenom_exists1[local] =
-    CONV_RULE (SKOLEM_CONV THENC BINDER_CONV SKOLEM_CONV) numdenom_exists
-
-Theorem numdenom_exists2[local] :
-    ?(f :rat -> int # num). !r.
-       r = rat_of_int (FST (f r)) / &(SND (f r)) /\ 0 < SND (f r) /\
-       (FST (f r) = 0 ==> SND (f r) = 1) /\
-       !n' d'. (r = rat_of_int n' / &d') /\ 0 < d' ==> ABS (FST (f r)) <= ABS n'
-Proof
-    rpt STRIP_TAC
- >> STRIP_ASSUME_TAC numdenom_exists1
- >> Q.EXISTS_TAC ‘\r. (n r,d r)’ >> rw []
- >> Q.PAT_X_ASSUM ‘!r. P’ (MP_TAC o Q.SPEC ‘rat_of_int n' / &d'’)
- >> rw []
-QED
-
-(* |- !r. r = rat_of_int (FST (RATND r)) / &SND (RATND r) /\
-          0 < SND (RATND r) /\
-          (FST (RATND r) = 0 ==> SND (RATND r) = 1) /\
-          !n' d'.
-            r = rat_of_int n' / &d' /\ 0 < d' ==>
-            ABS (FST (RATND r)) <= ABS n'
- *)
-val RATND_LEMMA = new_specification("RATND_LEMMA", ["RATND"], numdenom_exists2);
-
-Definition RATN_DEF :
-    RATN r = FST (RATND r)
-End
-
-Definition RATD_DEF :
-    RATD r = SND (RATND r)
-End
-
-(* |- !r. r = rat_of_int (RATN r) / &RATD r /\ 0 < RATD r /\
-          (RATN r = 0 ==> RATD r = 1) /\
-          !n' d'.
-            r = rat_of_int n' / &d' /\ 0 < d' ==> ABS (RATN r) <= ABS n'
- *)
-Theorem RATND_THM = REWRITE_RULE [GSYM RATN_DEF, GSYM RATD_DEF] RATND_LEMMA
-(* END OpenTheory workarounds *)
 
 val RATD_NZERO = save_thm(
   "RATD_NZERO[simp]",
@@ -3198,7 +3141,6 @@ Proof
     rw [GSYM RAT_DIV_AINV, RATND_of_coprimes]
 QED
 
-(* NOTE: Disabled under original DIV/MOD
 Definition div_gcd_def:
   div_gcd a b =
     let d = gcd (Num a) b in
@@ -3274,7 +3216,6 @@ Proof
   imp_res_tac div_gcd_reduces >> gvs[] >>
   gvs[AC INT_MUL_ASSOC INT_MUL_COMM]
 QED
- *)
 
 (* ----------------------------------------------------------------------
     rational min and max

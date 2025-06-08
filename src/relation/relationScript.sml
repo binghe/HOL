@@ -1918,6 +1918,13 @@ val _ = Unicode.unicode_version {u = UnicodeChars.union ^ UnicodeChars.sub_r,
 val _ = TeX_notation { hol = UnicodeChars.union ^ UnicodeChars.sub_r,
                        TeX = ("\\HOLTokenRUnion{}", 1) }
 
+Theorem RUNION_REMPTY[simp] :
+    R RUNION REMPTY = R /\
+    REMPTY RUNION R = R
+Proof
+    SRW_TAC [][FUN_EQ_THM, RUNION, EMPTY_REL_DEF]
+QED
+
 (* ----------------------------------------------------------------------
     relational intersection
    ---------------------------------------------------------------------- *)
@@ -2302,7 +2309,7 @@ val _ = export_rewrites ["RDOM_DELETE_DEF"]
 
 (* this syntax is compatible (easily confused) with that for finite maps *)
 val _ = set_fixity "\\\\" (Infixl 600)
-Overload "\\\\" =  “RDOM_DELETE”
+Overload "\\\\" = “RDOM_DELETE”
 
 val IN_RDOM_DELETE = store_thm(
   "IN_RDOM_DELETE",

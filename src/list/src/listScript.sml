@@ -156,6 +156,7 @@ val _ = overload_on ("++", Term‘APPEND’);
 val _ = Unicode.unicode_version {u = UnicodeChars.doubleplus, tmnm = "++"}
 val _ = TeX_notation { hol = UnicodeChars.doubleplus,
                        TeX = ("\\HOLTokenDoublePlus", 1) }
+val _ = TeX_notation { hol = "++", TeX = ("\\HOLTokenDoublePlus", 1) };
 
 (* preserving old choice of quantification order *)
 Theorem APPEND[simp]:
@@ -834,6 +835,12 @@ val NULL_LENGTH = Q.store_thm("NULL_LENGTH",
   ‘!l. NULL l = (LENGTH l = 0)’,
   REWRITE_TAC[NULL_EQ, LENGTH_NIL]);
 
+Theorem NULL_MAP[simp]:
+  NULL (MAP f ls) = NULL ls
+Proof
+  rw[NULL_EQ]
+QED
+
 val LENGTH_CONS = store_thm("LENGTH_CONS",
  “!l n. (LENGTH l = SUC n) =
           ?h:'a. ?l'. (LENGTH l' = n) /\ (l = CONS h l')”,
@@ -1075,6 +1082,12 @@ val LENGTH_TL = Q.store_thm
 ("LENGTH_TL",
   ‘!l. 0 < LENGTH l ==> (LENGTH (TL l) = LENGTH l - 1)’,
   Cases_on ‘l’ THEN SIMP_TAC arith_ss [LENGTH, TL]);
+
+Theorem LENGTH_TL_LE:
+  !ls. LENGTH (TL ls) <= LENGTH ls
+Proof
+  Cases \\ rw[]
+QED
 
 val FILTER_EQ_NIL = Q.store_thm
 ("FILTER_EQ_NIL",
@@ -1418,7 +1431,7 @@ QED
      recursive definitions by so-called higher-order recursion.
  ---------------------------------------------------------------------------*)
 
-val list_size_def =
+Theorem list_size_thm[simp] =
   REWRITE_RULE [arithmeticTheory.ADD_ASSOC]
                (#2 (TypeBase.size_of “:'a list”));
 
@@ -1431,10 +1444,10 @@ Theorem list_size_cong[defncong]:
     list_size f M = list_size f' N
 Proof
 Induct
-  THEN REWRITE_TAC [list_size_def, MEM]
+  THEN REWRITE_TAC [list_size_thm, MEM]
   THEN REPEAT STRIP_TAC
   THEN PAT_X_ASSUM (Term‘x = y’) (SUBST_ALL_TAC o SYM)
-  THEN REWRITE_TAC [list_size_def]
+  THEN REWRITE_TAC [list_size_thm]
   THEN MK_COMB_TAC THENL
   [NTAC 2 (MK_COMB_TAC THEN TRY REFL_TAC)
      THEN FIRST_ASSUM MATCH_MP_TAC THEN REWRITE_TAC [MEM],
@@ -1448,7 +1461,7 @@ QED
 Theorem list_size_append:
   !f xs ys. list_size f (xs ++ ys) = list_size f xs + list_size f ys
 Proof
-  GEN_TAC \\ Induct \\ FULL_SIMP_TAC arith_ss [APPEND, list_size_def]
+  GEN_TAC \\ Induct \\ FULL_SIMP_TAC arith_ss [APPEND, list_size_thm]
 QED
 
 Theorem FOLDR_CONG[defncong]:
@@ -2895,7 +2908,7 @@ val SNOC_Axiom_old = prove(
           (fn1[] = e) /\
           (!x l. fn1(SNOC x l) = f(fn1 l)x l)”,
 
- let val  lemma =  CONV_RULE (EXISTS_UNIQUE_CONV)
+ let val lemma = CONV_RULE (EXISTS_UNIQUE_CONV)
        (REWRITE_RULE[REVERSE_REVERSE] (BETA_RULE (SPECL
          [“e:'b”,“(\ft x l. f ft x (REVERSE l)):'b -> ('a -> (('a)list -> 'b))”]
         (PURE_ONCE_REWRITE_RULE
@@ -2933,7 +2946,7 @@ val SNOC_Axiom = store_thm(
   Q.EXISTS_TAC ‘fn1’ THEN ASM_REWRITE_TAC []);
 
 val SNOC_INDUCT = save_thm("SNOC_INDUCT", prove_induction_thm SNOC_Axiom_old);
-val SNOC_CASES =  save_thm("SNOC_CASES", hd (prove_cases_thm SNOC_INDUCT));
+val SNOC_CASES = save_thm("SNOC_CASES", hd (prove_cases_thm SNOC_INDUCT));
 
 (* cf. rich_listTheory.IS_PREFIX_SNOC *)
 Theorem isPREFIX_SNOC[simp] :
@@ -4916,6 +4929,15 @@ Proof
   \\ FULL_SIMP_TAC (srw_ss() ++ boolSimps.DNF_ss) []
 QED
 
+Theorem IS_SOME_OPT_MMAP:
+  IS_SOME (OPT_MMAP f ls) <=> EVERY IS_SOME (MAP f ls)
+Proof
+  Induct_on`ls` \\ rw[]
+  \\ Q.MATCH_GOALSUB_RENAME_TAC`IS_SOME (f x)`
+  \\ Cases_on`f x` \\ rw[]
+  \\ Cases_on`OPT_MMAP f ls` \\ fs[]
+QED
+
 val LAST_compute = Q.store_thm("LAST_compute",
    ‘(!x. LAST [x] = x) /\
     (!h1 h2 t. LAST (h1::h2::t) = LAST (h2::t))’,
@@ -5340,5 +5362,53 @@ Proof
   rpt strip_tac >> rpt (dxrule_then assume_tac QUOTIENT_ABS_REP) >>
   simp[MAP_MAP_o, FUN_MAP, combinTheory.o_DEF, SF ETA_ss]
 QED
+
+(*---------------------------------------------------------------------------*)
+(* relation of list_size to other list operations.                           *)
+(*---------------------------------------------------------------------------*)
+
+val ADD_AC = AC ADD_ASSOC ADD_SYM;
+
+Theorem list_size_reverse[simp]:
+  list_size f (REVERSE l) = list_size f l
+Proof
+  Induct_on ‘l’ >> rw [list_size_append,ADD_AC]
+QED
+
+Theorem list_size_map[simp]:
+  list_size f (MAP g l) = list_size (λx. f (g x)) l
+Proof
+  Induct_on ‘l’ >> rw []
+QED
+
+Theorem list_size_snoc[simp]:
+  list_size f (SNOC x l) = list_size f (x::l)
+Proof
+  Induct_on ‘l’ >> rw [ADD_AC]
+QED
+
+Theorem list_size_filter[simp]:
+  list_size f (FILTER P l) <= list_size f l
+Proof
+  Induct_on ‘l’ >> rw [] >> numLib.DECIDE_TAC
+QED
+
+Theorem list_size_take[simp]:
+  ∀l n. list_size f (TAKE n l) <= list_size f l
+Proof
+  Induct >> rw [] >> Cases_on ‘n’ >> rw[]
+QED
+
+Theorem list_size_drop[simp]:
+  ∀l n. list_size f (DROP n l) <= list_size f l
+Proof
+  Induct >> rw [] >> Cases_on ‘n’ >> rw[] >>
+  pop_assum (mp_tac o Q.SPEC ‘n'’) >> numLib.DECIDE_TAC
+QED
+
+val _ =
+ List.app TotalDefn.export_termsimp
+   ["list.list_size_append", "list.list_size_reverse",
+    "list.list_size_map", "list.list_size_snoc"];
 
 val _ = export_theory();

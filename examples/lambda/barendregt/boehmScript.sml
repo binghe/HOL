@@ -345,7 +345,8 @@ Overload bot = “(NONE, SOME 0) :(BT_node # num option)”
 
 (* Unicode name: "base" *)
 val _ = Unicode.unicode_version {u = UTF8.chr 0x22A5, tmnm = "bot"};
-val _ = TeX_notation {hol = "bot", TeX = ("\\ensuremath{\\bot}", 1)};
+val _ = TeX_notation {hol = "bot", TeX = ("\\HOLTokenBottom}", 1)};
+val _ = TeX_notation {hol = UTF8.chr 0x22A5, TeX = ("\\HOLTokenBottom", 1) };
 
 Theorem BT_of_unsolvables :
     !X M r. unsolvable M ==> BT' X M r = bot
@@ -1056,7 +1057,8 @@ Proof
  >> reverse (Cases_on ‘solvable M’)
  >- rw [subterm_def, BT_of_unsolvables, ltree_el_def]
  (* stage work *)
- >> rw [subterm_def, BT_def, BT_generator_def, Once ltree_unfold, ltree_el_def]
+ >> rw [subterm_def, BT_def, BT_generator_def, Once ltree_unfold, ltree_el_def,
+        IF_NONE_EQUALS_OPTION]
  >> qabbrev_tac ‘M0 = principal_hnf M’
  >> qabbrev_tac ‘n  = LAMl_size M0’
  >> Q_TAC (RNEWS_TAC (“vs :string list”, “r :num”, “n :num”)) ‘X’
@@ -2032,116 +2034,6 @@ Proof
  >> MATCH_MP_TAC FV_tpm_lemma
  >> Q.EXISTS_TAC ‘r’ >> art []
  >> ASM_SET_TAC []
-QED
-
-(* NOTE: M may contain free variables from xs, but after the fresh tpm
-   there's no more xs variables, thus is disjoint with xs.
- *)
-Theorem FV_renaming_disjoint :
-    !xs ys M. ALL_DISTINCT xs /\ ALL_DISTINCT ys /\
-              LENGTH xs = LENGTH ys /\
-              DISJOINT (set xs) (set ys) /\
-              DISJOINT (set ys) (FV M)
-          ==> DISJOINT (FV (M ISUB ZIP (MAP VAR ys,xs))) (set xs)
-Proof
-    rpt STRIP_TAC
- >> Q.PAT_X_ASSUM ‘ALL_DISTINCT xs’ MP_TAC
- >> Q.PAT_X_ASSUM ‘ALL_DISTINCT ys’ MP_TAC
- >> Q.PAT_X_ASSUM ‘DISJOINT (set xs) (set ys)’ MP_TAC
- >> Q.PAT_X_ASSUM ‘DISJOINT (set ys) (FV M)’ MP_TAC
- >> qabbrev_tac ‘pi = ZIP (xs,ys)’
- >> ‘xs = MAP FST pi /\ ys = MAP SND pi’ by rw [Abbr ‘pi’, MAP_ZIP]
- >> NTAC 2 POP_ORW
- >> KILL_TAC
- >> Q.ID_SPEC_TAC ‘M’
- >> Induct_on ‘pi’ >- rw []
- >> simp [FORALL_PROD]
- >> qx_genl_tac [‘x’, ‘y’, ‘M’]
- >> qabbrev_tac ‘xs = MAP FST pi’
- >> qabbrev_tac ‘ys = MAP SND pi’
- >> NTAC 4 STRIP_TAC
- >> CONJ_TAC
- >- (FIRST_X_ASSUM irule >> art [] \\
-     simp [FV_SUB] \\
-     Cases_on ‘x IN FV M’ >> simp [] \\
-     MATCH_MP_TAC DISJOINT_SUBSET' \\
-     Q.EXISTS_TAC ‘FV M’ >> simp [Once DISJOINT_SYM])
- (* stage work *)
- >> qabbrev_tac ‘sub = ZIP (MAP VAR ys,xs)’
- >> fs []
- >> qabbrev_tac ‘t = [VAR y/x] M’
- >> Know ‘FV (t ISUB sub) SUBSET FV t UNION FVS sub’
- >- rw [FV_ISUB_upperbound]
- >> ‘LENGTH ys = LENGTH xs’ by rw [Abbr ‘xs’, Abbr ‘ys’]
- >> Know ‘FVS sub = set ys’
- >- (rw [Abbr ‘sub’, FVS_ALT, Once EXTENSION] \\
-     EQ_TAC >> rw []
-     >- (rename1 ‘MEM z ys’ \\
-         gvs [MEM_MAP] \\
-         POP_ASSUM MP_TAC \\
-         rw [MEM_ZIP, LENGTH_MAP] \\
-         gvs [EL_MAP] \\
-         simp [EL_MEM]) \\
-     simp [MEM_MAP] \\
-     rename1 ‘MEM z ys’ \\
-     Q.EXISTS_TAC ‘FV (VAR z)’ >> simp [] \\
-     fs [MEM_EL] \\
-     Q.EXISTS_TAC ‘(VAR (EL n ys),EL n xs)’ >> simp [] \\
-     Q.EXISTS_TAC ‘n’ >> simp [EL_ZIP, EL_MAP])
- >> Rewr'
- >> simp [Abbr ‘t’, FV_SUB]
- >> Cases_on ‘x IN FV M’ >> simp []
- >- (DISCH_TAC \\
-     CCONTR_TAC >> fs [] \\
-     Know ‘x IN {y} UNION (FV M DELETE x) UNION set ys’
-     >- METIS_TAC [SUBSET_DEF] \\
-     simp [IN_UNION])
- >> qabbrev_tac ‘t = [VAR y/x] M’
- >> DISCH_TAC
- >> CCONTR_TAC >> fs []
- >> Know ‘x IN FV M UNION set ys’ >- METIS_TAC [SUBSET_DEF]
- >> simp [IN_UNION]
-QED
-
-(* NOTE: M is disjoint with zs, and the tpm (not a fresh tpm) is irrelevant
-   with zs, thus after the tpm the resulting term is still disjoint with zs.
- *)
-Theorem FV_tpm_disjoint :
-    !zs xs ys M. ALL_DISTINCT xs /\ ALL_DISTINCT ys /\
-                 LENGTH xs = LENGTH ys /\
-                 DISJOINT (set xs) (set ys) /\
-                 DISJOINT (set xs) (set zs) /\
-                 DISJOINT (set ys) (set zs) /\
-                 DISJOINT (set zs) (FV M)
-             ==> DISJOINT (set zs) (FV (tpm (ZIP (xs,ys)) M))
-Proof
-    rpt STRIP_TAC
- >> Q.PAT_X_ASSUM ‘ALL_DISTINCT xs’ MP_TAC
- >> Q.PAT_X_ASSUM ‘ALL_DISTINCT ys’ MP_TAC
- >> Q.PAT_X_ASSUM ‘DISJOINT (set xs) (set ys)’ MP_TAC
- >> Q.PAT_X_ASSUM ‘DISJOINT (set ys) (set zs)’ MP_TAC
- >> Q.PAT_X_ASSUM ‘DISJOINT (set xs) (set zs)’ MP_TAC
- >> Q.PAT_X_ASSUM ‘DISJOINT (set zs) (FV M)’   MP_TAC
- >> qabbrev_tac ‘pi = ZIP (xs,ys)’
- >> ‘xs = MAP FST pi /\ ys = MAP SND pi’ by rw [Abbr ‘pi’, MAP_ZIP]
- >> NTAC 2 POP_ORW
- >> KILL_TAC
- >> Q.ID_SPEC_TAC ‘M’
- >> Induct_on ‘pi’ >- rw []
- >> simp [FORALL_PROD]
- >> qx_genl_tac [‘x’, ‘y’, ‘M’]
- >> qabbrev_tac ‘xs = MAP FST pi’
- >> qabbrev_tac ‘ys = MAP SND pi’
- >> rpt STRIP_TAC
- >> Q.PAT_X_ASSUM ‘!M. P’ (MP_TAC o Q.SPEC ‘M’) >> rw []
- >> simp [Once tpm_CONS]
- >> qabbrev_tac ‘t = tpm pi M’
- >> rw [DISJOINT_ALT', FV_tpm]
- >> rename1 ‘swapstr x y z IN FV t’
- >> Cases_on ‘x = z’ >> fs [swapstr_def]
- >> Cases_on ‘y = z’ >> fs []
- >> Q.PAT_X_ASSUM ‘DISJOINT (set zs) (FV t)’ MP_TAC
- >> rw [DISJOINT_ALT']
 QED
 
 (* In this special version, X = Y *)
@@ -6678,6 +6570,10 @@ QED
    NOTE: When adding a set of new paths to an existing Boehm tree, the order
    is to make sure ‘ltree_el (BT' X M r) (FRONT p) = SOME (SOME (vs,y),SOME m)’
    and ‘LAST p = m’ always hold when adding the new path p.
+
+   NOTE: The old conclusion “... = SNOC m p INSERT ltree_paths (BT' X M r)” is
+   hard to read due to lacks of parenthesis, and has been changed to equivalent
+  “... = ltree_paths (BT' X M r) UNION {SNOC m p}”, for audience/reviewers.
  *)
 Theorem ltree_paths_BT_expand :
     !X M p r m.
@@ -6685,12 +6581,12 @@ Theorem ltree_paths_BT_expand :
        p IN ltree_paths (BT' X M r) /\
        ltree_branching (BT' X M r) p = SOME m ==>
        ltree_paths (BT_expand X (BT' X M r) p r) =
-       SNOC m p INSERT ltree_paths (BT' X M r)
+       ltree_paths (BT' X M r) UNION {SNOC m p}
 Proof
     rw [BT_expand_def]
  >> qabbrev_tac ‘r' = r + LENGTH p’
  >> MP_TAC (Q.SPECL [‘X’, ‘M’, ‘p’, ‘r’] BT_ltree_el_cases) >> rw []
- >> simp []
+ >> simp [] (* this simp after rw does beta-reduction on paired variables *)
  >> qabbrev_tac ‘n = LENGTH vs’
  >> Q_TAC (RNEWS_TAC (“vs' :string list”, “r' :num”, “SUC n”)) ‘X’
  >> qabbrev_tac ‘v = LAST vs'’
@@ -6705,7 +6601,6 @@ Proof
  >> simp []
  >> DISCH_THEN K_TAC
  >> simp [Abbr ‘t0’]
- >> SET_TAC []
 QED
 
 Theorem ltree_paths_BT_expand' :
@@ -6714,7 +6609,7 @@ Theorem ltree_paths_BT_expand' :
        p IN ltree_paths (BT' X M r) /\
        ltree_branching (BT' X M r) p = SOME m ==>
        ltree_paths (BT_expand X (BT' X M r) p r) =
-       SNOC m p INSERT ltree_paths (BT' X M r)
+       ltree_paths (BT' X M r) UNION {SNOC m p}
 Proof
     rw [has_bnf_thm]
  >> ‘M == N’ by PROVE_TAC [betastar_lameq]
@@ -6861,7 +6756,10 @@ Proof
  >> impl_tac >- POP_ASSUM (simp o wrap o SYM)
  >> STRIP_TAC
  >> Suff ‘p = SNOC m p'’
- >- (Rewr' >> MATCH_MP_TAC ltree_paths_BT_expand' \\
+ >- (Rewr' \\
+     simp [SET_RULE “SNOC m p' INSERT ltree_paths (BT' X N r) =
+                     ltree_paths (BT' X N r) UNION {SNOC m p'}”] \\
+     MATCH_MP_TAC ltree_paths_BT_expand' \\
      simp [ltree_branching_def] \\
      Q.PAT_X_ASSUM ‘_ = ltree_paths (BT' X N r)’ (simp o wrap o SYM))
  (* final goal: p = SNOC m p' *)

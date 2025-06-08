@@ -17,6 +17,8 @@ open Prim_rec pairLib numLib numpairTheory hurdUtils tautLib pureSimps
      metisLib mesonLib simpLib boolSimps dividesTheory
      combinTheory relationTheory optionTheory TotalDefn;
 
+local open pred_setpp in end
+
 val AP = numLib.ARITH_PROVE
 val ARITH_ss = numSimps.ARITH_ss
 val arith_ss = bool_ss ++ ARITH_ss
@@ -175,6 +177,7 @@ val GSPEC_DEF_LEMMA = prove(
 
 val GSPECIFICATION = new_specification
   ("GSPECIFICATION", ["GSPEC"], GSPEC_DEF_LEMMA);
+
 val _ = TeX_notation {hol = "|", TeX = ("\\HOLTokenBar{}", 1)}
 val _ = ot0 "GSPEC" "specification"
 
@@ -385,7 +388,7 @@ val _ = set_fixity UnicodeChars.universal_set (Prefix 2200)
    abstraction produces ARB terms.)  To turn printing off, we overload the
    same pattern to "" *)
 val _ = overload_on ("", “\x:'a itself. UNIV : 'a set”)
-local open pred_setpp in end
+
 val _ = add_ML_dependency "pred_setpp"
 val _ = add_user_printer ("pred_set.UNIV", ``UNIV:'a set``)
 
@@ -538,7 +541,7 @@ val SUBSET_K = store_thm (* from util_prob *)
 (* Proper subset.                                                        *)
 (* ===================================================================== *)
 
-val PSUBSET_DEF =  new_definition(
+val PSUBSET_DEF = new_definition(
   "PSUBSET_DEF",
   ``PSUBSET (s:'a set) t <=> s SUBSET t /\ ~(s = t)``);
 val _ = set_fixity "PSUBSET" (Infix(NONASSOC, 450))
@@ -3166,7 +3169,7 @@ val card_rel_def =
 (* Prove that such a relation exists.                                   *)
 (* ---------------------------------------------------------------------*)
 
-val CARD_REL_EXISTS =  prove_rec_fn_exists num_Axiom card_rel_def;
+val CARD_REL_EXISTS = prove_rec_fn_exists num_Axiom card_rel_def;
 
 (* ---------------------------------------------------------------------*)
 (* Now, prove that it doesn't matter which element we delete            *)

@@ -2011,10 +2011,29 @@ val MOD_DIV_exist = prove(
             Now define MOD and DIV by a constant specification.
  ---------------------------------------------------------------------------*)
 
-val DIVISION = new_specification ("DIVISION", ["MOD", "DIV"], MOD_DIV_exist);
+val OT_DIVISION =
+  new_specification ("OT_DIVISION", ["OT_MOD", "OT_DIV"], MOD_DIV_exist);
+
+(* HOL4 now switches to HOL-Light compatible version of DIV and MOD *)
+val DIV_def = new_definition
+  ("DIV_def", “DIV m n = if n = 0 then 0 else OT_DIV m n”);
+
+val MOD_def = new_definition
+  ("MOD_def", “MOD m n = if n = 0 then m else OT_MOD m n”);
 
 val _ = set_fixity "MOD" (Infixl 650);
 val _ = set_fixity "DIV" (Infixl 600);
+
+Theorem DIVISION:
+  !n. 0 < n ==> !k. k = k DIV n * n + k MOD n /\ k MOD n < n
+Proof
+  NTAC 2 STRIP_TAC
+  THEN IMP_RES_TAC prim_recTheory.LESS_NOT_EQ
+  THEN POP_ASSUM (ASSUME_TAC o GSYM)
+  THEN ASM_REWRITE_TAC [DIV_def,MOD_def]
+  THEN MATCH_MP_TAC OT_DIVISION
+  THEN ASM_REWRITE_TAC []
+QED
 
 val DIV2_def = new_definition("DIV2_def", “DIV2 n = n DIV 2”);
 
@@ -2210,6 +2229,24 @@ val ZERO_DIV = store_thm ("ZERO_DIV",
      MATCH_MP_TAC DIV_UNIQUE THEN
      EXISTS_TAC (“0”) THEN
      ASM_REWRITE_TAC [MULT_CLAUSES,ADD_CLAUSES]);
+
+Theorem DIV_0[simp]:
+  k DIV 0 = 0 /\ 0 DIV n = 0
+Proof
+  conj_tac >- REWRITE_TAC [DIV_def] >> Cases_on ‘0 < n’ >>
+  ASM_SIMP_TAC bool_ss [ZERO_DIV] >>
+  RULE_ASSUM_TAC (REWRITE_RULE[NOT_LT_ZERO_EQ_ZERO]) >>
+  ASM_REWRITE_TAC [DIV_def]
+QED
+
+Theorem MOD_0[simp]:
+  k MOD 0 = k /\ 0 MOD n = 0
+Proof
+  conj_tac >- REWRITE_TAC [MOD_def] >> Cases_on ‘0 < n’ >>
+  ASM_SIMP_TAC bool_ss [ZERO_MOD] >>
+  RULE_ASSUM_TAC (REWRITE_RULE[NOT_LT_ZERO_EQ_ZERO]) >>
+  ASM_REWRITE_TAC [MOD_def]
+QED
 
 val MOD_MULT = store_thm ("MOD_MULT",
  “!n r. r < n ==> !q. (q * n + r) MOD n = r”,
@@ -4995,37 +5032,27 @@ Proof
   rw[bool_to_bit_def, ODD, ONE, SUB_MONO_EQ, SUB_0]
 QED
 
-(* NOTE: The proof is reworked under the old DIVISION; added quantifiers x y *)
 Theorem bool_to_bit_neq_add:
-    !x y. bool_to_bit (x <> y) = (bool_to_bit x + bool_to_bit y) MOD 2
+  bool_to_bit (x <> y) =
+  (bool_to_bit x + bool_to_bit y) MOD 2
 Proof
-    rw[bool_to_bit_def, ADD_0, ADD] (* 4 subgoals *)
- >| [ (* goal 1 (of 4) *)
-      SYM_TAC >> irule ONE_MOD \\
-      rw[ONE, TWO, LESS_MONO, LESS_0],
-      (* goal 2 (of 4) *)
-      SYM_TAC >> irule ONE_MOD \\
-      rw[ONE, TWO, LESS_MONO, LESS_0],
-      (* goal 3 (of 4) *)
-      rw[GSYM ADD1, GSYM TWO] \\
-      SYM_TAC >> irule (cj 2 DIVMOD_ID) \\
-      rw[TWO, LESS_0],
-      (* goal 4 (of 4) *)
-      SYM_TAC >> irule ZERO_MOD \\
-      rw[TWO, LESS_0] ]
+  reverse(rw[bool_to_bit_def, ADD_0, ADD])
+  >- (
+    rw[ONE, ADD] \\ rw[GSYM TWO, GSYM ONE]
+    \\ irule EQ_SYM
+    \\ irule (DIVMOD_ID |> SPEC_ALL |> UNDISCH |> cj 2 |> DISCH_ALL)
+    \\ rw[TWO, LESS_0] )
+  \\ irule EQ_SYM
+  \\ irule ONE_MOD
+  \\ rw[ONE, TWO, LESS_MONO, LESS_0]
 QED
 
-(* NOTE: The proof is reworked under the old DIVISION *)
 Theorem bool_to_bit_MOD_2[simp]:
   bool_to_bit x MOD 2 = bool_to_bit x
 Proof
-    rw[bool_to_bit_def]
- >| [ (* goal 1 (of 2) *)
-      irule ONE_MOD \\
-      rw[ONE, TWO, LESS_MONO, LESS_0],
-      (* goal 2 (of 2) *)
-      irule ZERO_MOD \\
-      rw[TWO, LESS_0] ]
+  rw[bool_to_bit_def]
+  \\ irule ONE_MOD
+  \\ rw[ONE, TWO, LESS_MONO, LESS_0]
 QED
 
 val _ = export_theory()

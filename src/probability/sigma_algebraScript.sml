@@ -17,7 +17,7 @@ open HolKernel Parse boolLib bossLib;
 
 open arithmeticTheory optionTheory pairTheory combinTheory pred_setTheory
      pred_setLib numLib topologyTheory hurdUtils jrhUtils res_quanTools
-     iterateTheory prim_recTheory;
+     iterateTheory prim_recTheory metricTheory realTheory;
 
 val _ = new_theory "sigma_algebra";
 
@@ -1461,7 +1461,7 @@ val ALGEBRA_ALT_INTER = store_thm
    RW_TAC std_ss [algebra_def, subset_class_def]
    >> EQ_TAC >|
    [RW_TAC std_ss []
-    >> Know `s INTER t =  space a DIFF ((space a DIFF s) UNION (space a DIFF t))`
+    >> Know `s INTER t = space a DIFF ((space a DIFF s) UNION (space a DIFF t))`
     >- (RW_TAC std_ss [EXTENSION, IN_INTER, IN_DIFF, IN_UNION]
         >> EQ_TAC
         >- (RW_TAC std_ss [] >> FULL_SIMP_TAC std_ss [SUBSET_DEF] >> PROVE_TAC [])
@@ -5700,6 +5700,143 @@ Theorem trivial_algebra_of_two_points :
 Proof
     rw [algebra_def, subset_class_def]
  >> ASM_SET_TAC []
+QED
+
+(* ------------------------------------------------------------------------- *)
+(*  exhausting_sequence in family of sets                                    *)
+(* ------------------------------------------------------------------------- *)
+
+(* an "exhausting" sequence in a system of sets, moved from martingaleTheory *)
+Definition exhausting_sequence_def :
+    exhausting_sequence (a :'a algebra) (f :num -> 'a -> bool) =
+      (f IN (UNIV -> subsets a) /\ (!n. f n SUBSET f (SUC n)) /\
+       BIGUNION (IMAGE f UNIV) = space a)
+End
+
+Theorem exhausting_sequence_alt :
+   !a f. exhausting_sequence a f <=>
+         f IN (univ(:num) -> subsets a) /\ (!m n. m <= n ==> f m SUBSET f n) /\
+         BIGUNION (IMAGE f univ(:num)) = space a
+Proof
+    RW_TAC std_ss [exhausting_sequence_def]
+ >> reverse EQ_TAC >- RW_TAC std_ss []
+ >> STRIP_TAC >> art []
+ >> GEN_TAC >> Induct_on ‘n’ >- RW_TAC arith_ss [SUBSET_REFL]
+ >> DISCH_TAC
+ >> ‘(m = SUC n) \/ m <= n’ by RW_TAC arith_ss [] >- rw [SUBSET_REFL]
+ >> MATCH_MP_TAC SUBSET_TRANS
+ >> Q.EXISTS_TAC ‘f n’ >> art []
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+QED
+
+Definition has_exhausting_sequence :
+    has_exhausting_sequence a = ?f. exhausting_sequence a f
+End
+
+(* This was part of sigma_finite_def, but no requirement on the measure of each
+   (f n). The definition is useful because ‘space a IN subsets a’ does not hold
+   in general for semiring.
+
+   |- !a. has_exhausting_sequence a <=>
+          ?f. f IN (univ(:num) -> subsets a) /\ (!n. f n SUBSET f (SUC n)) /\
+              BIGUNION (IMAGE f univ(:num)) = space a
+ *)
+Theorem has_exhausting_sequence_def =
+    REWRITE_RULE [exhausting_sequence_def] has_exhausting_sequence
+
+(* |- !a. has_exhausting_sequence a <=>
+          ?f. f IN (univ(:num) -> subsets a) /\
+              (!m n. m <= n ==> f m SUBSET f n) /\
+              BIGUNION (IMAGE f univ(:num)) = space a
+ *)
+Theorem has_exhausting_sequence_alt =
+    REWRITE_RULE [exhausting_sequence_alt] has_exhausting_sequence
+
+(* ------------------------------------------------------------------------- *)
+(*  Borel sigma-algebra generated from any topology                          *)
+(* ------------------------------------------------------------------------- *)
+
+Definition general_borel_def :
+    general_borel top = sigma (topspace top) (open_in top)
+End
+
+Theorem sigma_algebra_general_borel[simp] :
+    sigma_algebra (general_borel top)
+Proof
+    rw [general_borel_def]
+ >> MATCH_MP_TAC SIGMA_ALGEBRA_SIGMA
+ >> rw [subset_class_def, topspace, IN_APP]
+ >> rw [SUBSET_DEF]
+ >> rename1 ‘y IN s’
+ >> Q.EXISTS_TAC ‘s’ >> art []
+QED
+
+Theorem space_general_borel :
+    !top. space (general_borel top) = topspace top
+Proof
+    REWRITE_TAC [general_borel_def, SPACE_SIGMA]
+QED
+
+Theorem space_general_borel_mtop :
+    !E. space (general_borel (mtop E)) = mspace E
+Proof
+    REWRITE_TAC [space_general_borel, TOPSPACE_MTOPOLOGY]
+QED
+
+Theorem open_in_general_borel :
+    !top s. open_in top s ==> s IN subsets (general_borel top)
+Proof
+    rw [general_borel_def]
+ >> MATCH_MP_TAC IN_SIGMA
+ >> rw [IN_APP]
+QED
+
+Theorem closed_in_general_borel :
+    !top s. closed_in top s ==> s IN subsets (general_borel top)
+Proof
+    rw [closed_in]
+ >> qabbrev_tac ‘a = general_borel top’
+ >> ‘topspace top = space a’ by PROVE_TAC [space_general_borel] >> fs []
+ >> qabbrev_tac ‘t = space a DIFF s’
+ >> ‘s = space a DIFF t’ by ASM_SET_TAC [] >> POP_ORW
+ >> MATCH_MP_TAC SIGMA_ALGEBRA_COMPL
+ >> rw [Abbr ‘a’]
+ >> MATCH_MP_TAC open_in_general_borel >> art []
+QED
+
+(* Borel space generated from metric spaces always has exhausting sequences *)
+Theorem exhausting_sequence_general_borel :
+    !E c. exhausting_sequence (general_borel (mtop E)) (\n. mcball E (c,&n))
+Proof
+    rw [exhausting_sequence_def, IN_FUNSET]
+ >| [ (* goal 1 (of 3) *)
+      qmatch_abbrev_tac ‘s IN subsets _’ \\
+      MATCH_MP_TAC closed_in_general_borel \\
+      rw [Abbr ‘s’, CLOSED_IN_MCBALL],
+      (* goal 2 (of 3) *)
+      MATCH_MP_TAC MCBALL_SUBSET_CONCENTRIC >> rw [],
+      (* goal 3 (of 3) *)
+      rw [Once EXTENSION, space_general_borel_mtop] \\
+      EQ_TAC >> rw [] >> fs [IN_MCBALL] \\
+      qabbrev_tac ‘d = dist E (x,c)’ \\
+      MP_TAC (Q.SPEC ‘1’ REAL_ARCH) >> simp [] \\
+      DISCH_THEN (STRIP_ASSUME_TAC o Q.SPEC ‘d’) \\
+      Q.EXISTS_TAC ‘mcball E (c,&n)’ \\
+      reverse (rw [IN_MCBALL, mspace, Abbr ‘d’])
+      >- (Q.EXISTS_TAC ‘n’ >> rw []) \\
+      rw [Once MDIST_SYM] \\
+      MATCH_MP_TAC REAL_LT_IMP_LE >> art [] ]
+QED
+
+(* NOTE: In HOL4's current setting, “mspace E = UNIV” and therefore the
+   antecedents ‘mspace E <> {}’ always holds.
+ *)
+Theorem has_exhausting_sequence_general_borel :
+    !E. has_exhausting_sequence (general_borel (mtop E))
+Proof
+    rw [has_exhausting_sequence, GSYM MEMBER_NOT_EMPTY]
+ >> Q.EXISTS_TAC ‘\n. mcball E (x,&n)’
+ >> rw [exhausting_sequence_general_borel]
 QED
 
 val _ = export_theory ();

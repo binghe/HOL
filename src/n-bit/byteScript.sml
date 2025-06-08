@@ -142,7 +142,6 @@ Termination
   WF_REL_TAC `measure (LENGTH o SND)` \\ fs []
 End
 
-(* NOTE: Disabled under original DIV/MOD
 Theorem LENGTH_words_of_bytes:
    8 <= dimindex(:'a) ==>
    !be ls.
@@ -228,7 +227,6 @@ Proof
   \\ Cases_on`w2n (bytes_in_word:'a word)` \\ fs[] \\ rw[]
   \\ Cases_on`n''` \\ fs[] \\ metis_tac []
 QED
- *)
 
 Theorem words_of_bytes_append_word:
   0 < LENGTH l1 /\ (LENGTH l1 = w2n (bytes_in_word:'a word)) ==>
@@ -312,6 +310,18 @@ Definition word_to_bytes_def:
   word_to_bytes (w:'a word) be =
   word_to_bytes_aux (dimindex (:'a) DIV 8) w be
 End
+
+Theorem LENGTH_word_to_bytes_aux[simp]:
+  LENGTH (word_to_bytes_aux n w b) = n
+Proof
+  Induct_on`n` \\ rw[word_to_bytes_aux_def]
+QED
+
+Theorem LENGTH_word_to_bytes[simp]:
+  LENGTH (word_to_bytes (w:'a word) be) = dimindex(:'a) DIV 8
+Proof
+  rw[word_to_bytes_def]
+QED
 
 Theorem byte_index_cycle:
   8 <= dimindex (:'a) ==>
@@ -424,7 +434,6 @@ Proof
   first_x_assum $ qspec_then ‘n’ assume_tac>>fs[]
 QED
 
-(* NOTE: Disabled under original DIV/MOD
 Theorem get_byte_set_byte_irrelevant:
   16 <= dimindex (:'a) /\
   w2n (a:'a word) MOD (dimindex(:'a) DIV 8) <> w2n a' MOD (dimindex(:'a) DIV 8)
@@ -682,7 +691,6 @@ Proof
          rewrite_tac[Once MULT_ASSOC]>>
          simp[MULT_DIV])>>simp[]
 QED
- *)
 
 (*
 Theorem word_to_bytes_word_of_bytes_32:
