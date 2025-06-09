@@ -502,14 +502,11 @@ Proof
         Q.PAT_X_ASSUM `LTL3_belief_run l u <> {}` K_TAC \\
         fs [LTL3_belief_run_def, EXTENSION, NOT_IN_EMPTY, GSPECIFICATION,
             LTL_SEM_def, LTL_SEM_TIME_def, extends_def] \\
-        POP_ASSUM (STRIP_ASSUME_TAC o (Q.SPEC `c`)) \\
         METIS_TAC [],
         (* goal 4.2 (of 2) *)
-        Q.PAT_X_ASSUM `~!w. P` K_TAC \\
         Q.PAT_X_ASSUM `LTL3_belief_run (LTL_NOT l) u <> {}` K_TAC \\
         fs [LTL3_belief_run_def, EXTENSION, NOT_IN_EMPTY, GSPECIFICATION,
             LTL_SEM_def, LTL_SEM_TIME_def, extends_def] \\
-        POP_ASSUM (STRIP_ASSUME_TAC o (Q.SPEC `c`)) \\
         METIS_TAC [] ] ]
 QED
 
@@ -575,14 +572,11 @@ Proof
         Q.PAT_X_ASSUM `GEN_LTL3_belief_run l u t <> {}` K_TAC \\
         fs [GEN_LTL3_belief_run_def, EXTENSION, NOT_IN_EMPTY, GSPECIFICATION,
             LTL_SEM_TIME_def, extends_def] \\
-        POP_ASSUM (STRIP_ASSUME_TAC o (Q.SPEC `c`)) \\
         METIS_TAC [],
         (* goal 4.2 (of 2) *)
-        Q.PAT_X_ASSUM `~!w. P` K_TAC \\
         Q.PAT_X_ASSUM `GEN_LTL3_belief_run (LTL_NOT l) u t <> {}` K_TAC \\
         fs [GEN_LTL3_belief_run_def, EXTENSION, NOT_IN_EMPTY, GSPECIFICATION,
             LTL_SEM_TIME_def, extends_def] \\
-        POP_ASSUM (STRIP_ASSUME_TAC o (Q.SPEC `c`)) \\
         METIS_TAC [] ] ]
 QED
 
@@ -642,17 +636,15 @@ Proof
           LTL_SEM_TIME_def] \\
       rw [LTL4_SEM_TIME_def, compatible_def] >| (* 3 subgoals *)
       [ (* goal 1.1 (of 3) *)
-        CCONTR_TAC \\
+        fs [] \\
         Q.PAT_X_ASSUM `!w. u ++ w IN K ==> _` (MP_TAC o Q.SPEC `c`) >> rw [] \\
        `u ++ c extends u` by METIS_TAC [extends_def] \\
         METIS_TAC [],
         (* goal 1.2 (of 3) *)
-        CCONTR_TAC >> fs [] \\
-       `u ++ w extends u` by METIS_TAC [extends_def] \\
+        fs [] >> `u ++ w extends u` by METIS_TAC [extends_def] \\
         METIS_TAC [],
         (* goal 1.3 (of 3) *)
-        CCONTR_TAC >> fs [] \\
-       `u ++ w extends u` by METIS_TAC [extends_def] \\
+        fs [] >> `u ++ w extends u` by METIS_TAC [extends_def] \\
         METIS_TAC [] ],
       (* goal 2 (of 4) *)
       fs [GEN_LTL4_belief_run_def, EXTENSION, NOT_IN_EMPTY, GSPECIFICATION,
