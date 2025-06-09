@@ -2808,6 +2808,7 @@ val FRONT_SNOC = store_thm(
   RW_TAC bool_ss [SNOC]);
 val _ = export_rewrites ["FRONT_SNOC"]
 
+(* NOTE: Do NOT put [simp] here! *)
 val SNOC_APPEND = store_thm("SNOC_APPEND",
    “!x (l:('a) list). SNOC x l = APPEND l [x]”,
    GEN_TAC THEN LIST_INDUCT_TAC THEN ASM_REWRITE_TAC [SNOC, APPEND]);
@@ -2836,14 +2837,12 @@ val EL_LENGTH_SNOC = store_thm("EL_LENGTH_SNOC",
     (“!l:'a list. !x. EL (LENGTH l) (SNOC x l) = x”),
     LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[EL, SNOC, HD, TL, LENGTH]);
 
-(* NOTE: Added [simp] because APPEND (APPEND on CONS) also does it automatically *)
 Theorem APPEND_SNOC[simp] :
     !l1 (x:'a) l2. APPEND l1 (SNOC x l2) = SNOC x (APPEND l1 l2)
 Proof
     LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[APPEND, SNOC]
 QED
 
-(* NOTE: Added [simp] because EVERY_DEF (EVERY on CONS) also does it automatically *)
 Theorem EVERY_SNOC[simp] :
   !P (x:'a) l. EVERY P (SNOC x l) <=> EVERY P l /\ P x
 Proof
