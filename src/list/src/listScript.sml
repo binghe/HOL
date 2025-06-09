@@ -2098,7 +2098,7 @@ Theorem TAKE1:
 Proof Induct_on ‘l’ >> srw_tac[][]
 QED
 
-Theorem TAKE1_DROP:
+Theorem TAKE1_DROP[simp]:
   !n l. n < LENGTH l ==> (TAKE 1 (DROP n l) = [EL n l])
 Proof
   Induct_on ‘l’ >> rw[] >> Cases_on ‘n’ >> fs[EL_restricted]
