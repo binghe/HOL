@@ -27,6 +27,12 @@ val _ = temp_overload_on("TWICE", ``\n. 2 * n``);
 val _ = temp_overload_on ("RISING", ``\f. !x:num. x <= f x``);
 val _ = temp_overload_on ("FALLING", ``\f. !x:num. f x <= x``);
 
+Overload MONO[local] = “\f:num -> num. !x y. x <= y ==> f x <= f y”
+Overload MONO2[local] =
+        “\f:num -> num -> num.
+           !x1 y1 x2 y2. x1 <= x2 /\ y1 <= y2 ==> f x1 y1 <= f x2 y2”
+Overload RMONO[local] = “\f:num -> num. !x y. x <= y ==> f y <= f x”
+
 (* ------------------------------------------------------------------------- *)
 (* Loop Recurrence with Dividing argument Documentation                      *)
 (* ------------------------------------------------------------------------- *)

@@ -29,6 +29,12 @@ open arithmeticTheory dividesTheory numberTheory combinatoricsTheory listTheory
 (* Overload sublist by infix operator *)
 val _ = temp_overload_on ("<=", ``sublist``);
 
+Overload MONO[local] = “\f:num -> num. !x y. x <= y ==> f x <= f y”
+Overload MONO2[local] =
+        “\f:num -> num -> num.
+           !x1 y1 x2 y2. x1 <= x2 /\ y1 <= y2 ==> f x1 y1 <= f x2 y2”
+Overload RMONO[local] = “\f:num -> num. !x y. x <= y ==> f y <= f x”
+
 (* ------------------------------------------------------------------------- *)
 (* Loop Recurrence with List argument Documentation                          *)
 (* ------------------------------------------------------------------------- *)
