@@ -36,6 +36,8 @@ val _ = temp_overload_on("SQ", ``\n. n * n``);
 val _ = temp_overload_on("HALF", ``\n. n DIV 2``);
 val _ = temp_overload_on("TWICE", ``\n. 2 * n``);
 
+Overload MONO[local] = “\f:num -> num. !x y. x <= y ==> f x <= f y”
+
 (* ------------------------------------------------------------------------- *)
 (* Basic Computations with Count Monad Documentation                         *)
 (* ------------------------------------------------------------------------- *)
