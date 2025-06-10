@@ -222,17 +222,15 @@ val lookup_thm = add_prove(
   Induct \\ ONCE_REWRITE_TAC [milawa_defsTheory.lookup_def] \\ FS [LOOKUP_DOT_def]
   \\ Cases \\ FS [LOOKUP_DOT_def]);
 
-Theorem MEM_IMP_INDEX_OF[local]:
-  !xs y n. MEM y xs ==>
-           ?k. (milawa_exec$INDEX_OF n y xs = SOME (n+k)) /\ (EL k xs = y)
-Proof
+val MEM_IMP_INDEX_OF = prove(
+  ``!xs y n. MEM y xs ==>
+             ?k. (milawa_exec$INDEX_OF n y xs = SOME (n+k)) /\ (EL k xs = y)``,
   Induct \\ SIMP_TAC std_ss [MEM,milawa_execTheory.INDEX_OF_def]
   \\ NTAC 3 STRIP_TAC
   \\ Cases_on `y = h` \\ FULL_SIMP_TAC std_ss [] \\ REPEAT STRIP_TAC
-  \\ simp[]
+  THEN1 (Q.EXISTS_TAC `0` \\ FULL_SIMP_TAC std_ss [EL,HD])
   \\ RES_TAC \\ POP_ASSUM (STRIP_ASSUME_TAC o Q.SPEC `n+1`)
-  \\ Q.EXISTS_TAC `k+1` \\ ASM_SIMP_TAC std_ss [EL,GSYM ADD1,TL] \\ DECIDE_TAC
-QED
+  \\ Q.EXISTS_TAC `k+1` \\ ASM_SIMP_TAC std_ss [EL,GSYM ADD1,TL] \\ DECIDE_TAC);
 
 val bad_names_tm =
   ``["NIL"; "QUOTE"; "CONS"; "EQUAL"; "<"; "SYMBOL-<"; "+"; "-"; "CONSP";
