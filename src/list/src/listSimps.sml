@@ -123,42 +123,9 @@ val GSYM_CONS_APPEND_CONV =
 (* LIST_EQ_SIMP_CONV : conv                                              *)
 (* --------------------------------------------------------------------- *)
 
-(*examples
-val t = ``[x1;x2] ++ l1 ++ l2 ++ [x3] ++ l3 = x1::x2'::l1' ++ l3``
- |- ([x1; x2] ++ l1 ++ l2 ++ [x3] ++ l3 = x1::x2'::l1' ++ l3) <=>
-    (x2 = x2') /\ (l1 ++ l2 ++ [x3] = l1')
-
-val t = ``[x1;x2] ++ l1 ++ l2 ++ [x3] ++ [x4;x5;x6] = x1'::l1' ++ [x5;x6]``
-
- |- ([x1; x2] ++ l1 ++ l2 ++ [x3] ++ [x4; x5; x6] = x1'::l1' ++ [x5; x6]) <=>
-     (x1 = x1') /\ (x2::(l1 ++ l2 ++ [x3; x4]) = l1') : thm
-
-val t = ``l1 ++ l2 ++ [x3] ++ l3 = l1 ++ l2' ++ x3'::l3``
-
- |- (l1 ++ l2 ++ [x3] ++ l3 = l1 ++ l2' ++ x3'::l3) <=>
-    (l2 = l2') /\ (x3 = x3')
-
-val t = ``[x1;x2;x3] ++ l2 ++ [x3] ++ l3 = [x1;x2] ++ l1 ++ l2' ++ l3``
-
- |- ([x1; x2; x3] ++ l2 ++ [x3] ++ l3 = [x1; x2] ++ l1 ++ l2' ++ l3) <=>
-     (x3::(l2 ++ [x3]) = l1 ++ l2')
-
-val t = ``(x::l) = (l ++ l)``
-
-
-ListConv1.LIST_EQ_SIMP_CONV t
-
-*)
+(* NOTE: the old examples here are moved to selftest.sml *)
 
 local
-   fun strip_cons_append tt =
-   let
-      val (eL, b) = strip_cons tt
-      val lL = strip_append b
-   in
-      (eL, lL)
-   end
-
    fun EQ_CONV c = LHS_CONV c THENC RHS_CONV c
 
    fun is_non_empty_list t = is_list t andalso not (is_nil t)
@@ -169,11 +136,14 @@ local
    fun left_nil_intro_CONV l = if is_append l then raise UNCHANGED else
                               (ISPEC l (GSYM (CONJUNCT1 listTheory.APPEND)))
 
+   fun strip_append_or_snoc l =
+       if is_append l then strip_append l else strip_snoc_to_lists l
+
    fun LIST_EQ_SIMP_CONV___internal_right_elim conv l =
    let
       val (l1, l2) = dest_eq l
-      val lL1 = strip_append l1
-      val lL2 = strip_append l2
+      val lL1 = strip_append_or_snoc l1
+      val lL2 = strip_append_or_snoc l2
    in
       if (is_right_same lL1 lL2) then
          ((EQ_CONV left_nil_intro_CONV) THENC
@@ -192,7 +162,14 @@ local
            val thm0 = ((if turn then SYM_CONV else ALL_CONV)
                        THENC (EQ_CONV left_nil_intro_CONV)) l
                       handle UNCHANGED => REFL l
-           val thm1 = if n1 = n2 then thm0 else
+
+        (* NOTE: this step eliminates all potential SNOC from the rhs of thm0,
+           rendering the output compatible with the rest of steps. --Chun Tian
+         *)
+           val thm0' = GEN_REWRITE_RULE (RAND_CONV o DEPTH_CONV) empty_rewrites
+                                        [SNOC_APPEND, APPEND_ASSOC] thm0
+
+           val thm1 = if n1 = n2 then thm0' else
                let
                   val (L21, L22) = Lib.split_after (n2 - n1) L2
                   val ty = type_of (hd L21)
@@ -203,7 +180,7 @@ local
                in
                   CONV_RULE ((RHS_CONV o RHS_CONV)
                      (RAND_CONV (K split_thm) THENC
-                      REWR_CONV listTheory.APPEND_ASSOC)) thm0
+                      REWR_CONV listTheory.APPEND_ASSOC)) thm0'
                end
 
            val thm2a =
@@ -287,7 +264,7 @@ local
            val thm2 = TRANS thm1 (MP thm2b TRUTH)
 
            val thm3 = if turn then
-              CONV_RULE ((RHS_CONV o RAND_CONV) SYM_CONV) thm2 else thm2
+                      CONV_RULE ((RHS_CONV o ONCE_DEPTH_CONV) SYM_CONV) thm2 else thm2
 
            val thm4 = CONV_RULE ((RHS_CONV o RAND_CONV)
                          (LIST_EQ_SIMP_CONV___internal_left_elim conv)) thm3
@@ -335,7 +312,6 @@ in
           key   = SOME ([],Term `l1:'a list = l2:'a list`),
           conv  = K (K (CHANGED_CONV LIST_EQ_SIMP_CONV))})
 end
-
 
 (*---------------------------------------------------------------------------
         For the simplifier.
