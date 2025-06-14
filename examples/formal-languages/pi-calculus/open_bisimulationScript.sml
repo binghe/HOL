@@ -1,17 +1,17 @@
 (* ========================================================================== *)
-(* FILE          : open_bisimScript.sml                                       *)
+(* FILE          : open_bisimulationScript.sml                                *)
 (* DESCRIPTION   : Open bisimulation for the pi-calculus                      *)
 (*                                                                            *)
-(* Copyright 2025  The Australian National University (Author: Chun Tian)     *)
+(* Copyright 2025  Chun Tian <binghe.lisp@gmail.com>                          *)
 (* ========================================================================== *)
 
 open HolKernel Parse boolLib bossLib;
 
 open pairTheory pred_setTheory relationTheory hurdUtils;
 
-open nomsetTheory NEWLib pi_nominalTheory;
+open nomsetTheory NEWLib pi_agentTheory;
 
-val _ = new_theory "open_bisim";
+val _ = new_theory "open_bisimulation";
 
 (* some proofs here are large with too many assumptions *)
 val _ = set_trace "Goalstack.print_goal_at_top" 0;
@@ -481,4 +481,4 @@ Proof
 QED
 
 val _ = export_theory ();
-val _ = html_theory "open_bisim";
+val _ = html_theory "open_bisimulation";

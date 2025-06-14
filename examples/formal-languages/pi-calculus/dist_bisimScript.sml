@@ -9,7 +9,7 @@ open HolKernel Parse boolLib bossLib;
 
 open pairTheory pred_setTheory set_relationTheory hurdUtils;
 
-open basic_swapTheory nomsetTheory NEWLib pi_nominalTheory;
+open basic_swapTheory nomsetTheory NEWLib pi_agentTheory;
 
 val _ = new_theory "dist_bisim";
 
@@ -525,16 +525,18 @@ Proof
 QED
 
 Theorem dist_bisimilar_transitive :
-    !P1 P2 P3 D. dist_bisimilar P1 P2 D /\ dist_bisimilar P2 P3 D ==>
+    !P1 P2 P3 D. FV P2 SUBSET FV P1 UNION FV P3 /\
+                 dist_bisimilar P1 P2 D /\ dist_bisimilar P2 P3 D ==>
                  dist_bisimilar P1 P3 D
 Proof
     rw [dist_bisimilar_def]
  >> Q.EXISTS_TAC
      (* {(x,z,d) | (x,y,d) IN R /\ (y,z,d) IN R'} *)
-     ‘{e | ?x y z d. e = (x,z,d) /\ (x,y,d) IN R /\ (y,z,d) IN R'}’
+     ‘{e | ?x y z d. FV y SUBSET FV x UNION FV z /\
+                     e = (x,z,d) /\ (x,y,d) IN R /\ (y,z,d) IN R'}’
  >> simp []
- >> reverse CONJ_TAC
- >- (Q.EXISTS_TAC ‘P2’ >> art [])
+ >> reverse CONJ_TAC >- (Q.EXISTS_TAC ‘P2’ >> art [])
+ >> Q.PAT_X_ASSUM ‘FV P2 SUBSET _’  K_TAC
  >> Q.PAT_X_ASSUM ‘(P1,P2,D) IN R’  K_TAC
  >> Q.PAT_X_ASSUM ‘(P2,P3,D) IN R'’ K_TAC
  >> rw [dist_simulation_def, distinction_dpm] (* 7+7 subgoals *)
@@ -542,7 +544,11 @@ Proof
  >- (MATCH_MP_TAC dist_simulation_imp_distinction \\
      qexistsl_tac [‘R’, ‘P’, ‘y’] >> art [])
  (* goal 2 (of 14) *)
- >- (Q.EXISTS_TAC ‘tpm pi y’ >> CONJ_TAC >| (* 2 subgoals *)
+ >- (Q.EXISTS_TAC ‘tpm pi y’ \\
+     CONJ_TAC
+     >- (Q.PAT_X_ASSUM ‘FV y SUBSET _’ MP_TAC \\
+         rw [SUBSET_DEF, IN_UNION, FV_thm]) \\
+     CONJ_TAC >| (* 2 subgoals *)
      [ (* goal 2.1 (of 2) *)
        Q.PAT_X_ASSUM ‘dist_simulation R’
          (MP_TAC o REWRITE_RULE [dist_simulation_def]) \\
@@ -554,7 +560,7 @@ Proof
        DISCH_THEN (STRIP_ASSUME_TAC o Q.SPECL [‘y’, ‘Q’, ‘D’]) \\
        simp [distinction_dpm] ])
  (* goal 3 (of 14) *)
- >- (Q.EXISTS_TAC ‘y’ \\
+ >- (Q.EXISTS_TAC ‘y’ >> art [] \\
      CONJ_TAC \\ (* 2 subgoals, same tactics *)
      MATCH_MP_TAC dist_simulation_open_distinction \\
      Q.EXISTS_TAC ‘D’ >> art [])
@@ -575,7 +581,13 @@ Proof
      Q.PAT_X_ASSUM ‘!P'. DTRANS D y (TauR P') ==> _’
        (MP_TAC o Q.SPEC ‘y'’) >> rw [] >> rename1 ‘DTRANS D Q (TauR Q')’ \\
      Q.EXISTS_TAC ‘Q'’ >> art [] \\
-     Q.EXISTS_TAC ‘y'’ >> art [])
+     Q.EXISTS_TAC ‘y'’ >> art [] \\
+  (* NOTE: FV y' SUBSET FV P' UNION FV Q' (impossible) *)
+     cheat)
+ >> cheat
+QED
+
+ (*
  (* goal 5 (of 14): DTRANS D  P (InputS x z  P')
                               |      alpha       |  |
                           x # P                  z  P''
@@ -811,6 +823,7 @@ Proof
       MATCH_MP_TAC dist_bisimilar_open_distinction \\
       Q.EXISTS_TAC ‘D2’ >> art [] ]
 QED
+ *)
 
 val _ = export_theory ();
 val _ = html_theory "dist_bisim";

@@ -2,7 +2,7 @@
 (* FILE          : pi_nominalScript.sml                                       *)
 (* DESCRIPTION   : Nominal type for process (agent) of pi-calculus            *)
 (*                                                                            *)
-(* Copyright 2025 Michael Norrish and Chun Tian                               *)
+(* Copyright 2025  Michael Norrish and Chun Tian                              *)
 (* ========================================================================== *)
 
 open HolKernel Parse boolLib bossLib;
@@ -14,7 +14,7 @@ open basic_swapTheory generic_termsTheory binderLib nomsetTheory nomdatatype;
 (* only for its syntax of SUB *)
 local open termTheory in end;
 
-val _ = new_theory "pi_nominal";
+val _ = new_theory "pi_agent";
 
 (* ----------------------------------------------------------------------
    Pi-calculus as a nominal datatype in HOL4
@@ -1360,4 +1360,4 @@ val _ = export_rewrites ["SUB_THM"];
  *)
 
 val _ = export_theory ();
-val _ = html_theory "pi_nominal";
+val _ = html_theory "pi_agent";
