@@ -1,5 +1,5 @@
 (* ========================================================================== *)
-(* FILE          : pi_nominalScript.sml                                       *)
+(* FILE          : pi_agentScript.sml                                         *)
 (* DESCRIPTION   : Nominal type for process (agent) of pi-calculus            *)
 (*                                                                            *)
 (* Copyright 2025  Michael Norrish and Chun Tian                              *)

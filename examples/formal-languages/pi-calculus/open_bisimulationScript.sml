@@ -2,7 +2,7 @@
 (* FILE          : open_bisimulationScript.sml                                *)
 (* DESCRIPTION   : Open bisimulation for the pi-calculus                      *)
 (*                                                                            *)
-(* Copyright 2025  Chun Tian <binghe.lisp@gmail.com>                          *)
+(* Copyright 2025  The Australian National University (Author: Chun Tian)     *)
 (* ========================================================================== *)
 
 open HolKernel Parse boolLib bossLib;
