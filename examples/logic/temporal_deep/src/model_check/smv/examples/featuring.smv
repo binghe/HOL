@@ -1,0 +1,22 @@
+MODULE main
+VAR
+  request : boolean;
+  state : {ready,busy};
+  monitor: {ready,busy};
+INVAR
+  monitor = state
+
+ASSIGN
+  init(state) := ready;
+  next(state) := case
+                   state = ready & request : busy;
+                   1 : {ready,busy};
+                 esac;
+SPEC
+  AG(request -> AF state = busy)
+
+SPEC AG(monitor = state)
+
+PRINT expose state: monitor=busy
+
+PRINT 1

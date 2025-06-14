@@ -1,0 +1,19 @@
+SMV in this directory is a beta SMV r2.5 with the added features (on
+top of 2.4):
+
+	- A lot of additional options to have more control over the
+          verification;
+
+	- Signal handling, and in particular, on-the-fly toggle of
+	  dynamic variable reordering;
+
+	- On-the-fly evaluation of AG specs (-early option);
+
+	- Printing BDDs as propositional formulas;
+
+	- Emacs library for SMV mode (file smv-mode.el), etc.
+
+Check the NEW file for more details.
+
+Notice that these added features are still experimental code.
+The SMV code is stable, but the newly added features may be not.
