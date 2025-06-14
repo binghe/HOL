@@ -25,34 +25,6 @@ val _ = temp_delsimps [
    "IN_UNION" (* |- !s t x. x IN s UNION t <=> x IN s \/ x IN t *)
 ];
 
-(* ----------------------------------------------------------------------
-   Pi-calculus as a nominal datatype in HOL4
-
-   HOL4 syntax ('free and 'bound are special type variables (alias of string)
-
-   Nominal_datatype :
-
-           name = Name 'free
-
-           pi   = Nil                      (* 0 *)
-                | Tau pi                   (* tau.P *)
-                | Input name 'bound pi     (* a(x).P *)
-                | Output name name pi      (* {a}b.P *)
-                | Match name name pi       (* [a == b] P *)
-                | Mismatch name name pi    (* [a <> b] P *)
-                | Sum pi pi                (* P + Q *)
-                | Par pi pi                (* P | Q *)
-                | Res 'bound pi            (* \nu x. P *)
-
-       residual = TauR pi
-                | InputS name 'bound pi
-                | FreeOutput name name pi
-                | BoundOutput name 'bound pi
-   End
-
-   NOTE: Replication ("!") is not supported.
-   ---------------------------------------------------------------------- *)
-
 (* NOTE: We fallback to “:(string # string) -> bool” for the need of permutation
    on pairs in the dist set.
  *)
@@ -165,22 +137,20 @@ Proof
     rw [Once EXTENSION, IN_UNION]
 QED
 
-(* Open transition relation w.r.t. distinction *)
+(* Open transition with distinction (cf. open_bisimTheory.TRANS_rules) *)
 Inductive DTRANS :
 [DTAU]
     !D P. DTRANS (D :dist) (Tau P) (TauR P)
 [DINPUT]
-       (* D : a(x).P --a(x)-> P *)
-    !D a x P. x <> a ==> DTRANS D (Input (Name a) x P) (InputS (Name a) x P)
+    !D a x P. x <> a ==> DTRANS D (Input a x P) (InputS a x P)
 [DOUTPUT]
-    !D a b P. DTRANS D (Output (Name a) (Name b) P)
-                       (FreeOutput (Name a) (Name b) P)
+    !D a b P. DTRANS D (Output a b P) (FreeOutput a b P)
 [DMATCH]
-    !D P Rs b. DTRANS D P Rs ==> DTRANS D (Match (Name b) (Name b) P) Rs
+    !D P Rs b. DTRANS D P Rs ==> DTRANS D (Match b b P) Rs
 [DMISMACH]
     !D P Rs a b.
        distinction D /\ (a,b) IN D /\ DTRANS D P Rs ==>
-       DTRANS D (Mismatch (Name a) (Name b) P) Rs
+       DTRANS D (Mismatch a b P) Rs
 
 [DOPEN]
     !D D' P P' a b.
@@ -188,8 +158,8 @@ Inductive DTRANS :
        distinction D /\ b # D /\ a # P /\
        D' = D UNION sc {(a,s) | s IN FV (Res b P)} /\
     (* end extra antecedents *)
-       DTRANS D' P (FreeOutput (Name a) (Name b) P') /\ a <> b ==>
-       DTRANS D (Res b P) (BoundOutput (Name a) b P')
+       DTRANS D' P (FreeOutput a b P') /\ a <> b ==>
+       DTRANS D (Res b P) (BoundOutput a b P')
 [DSUM1]
     !D P Q Rs. DTRANS D P Rs ==> DTRANS D (Sum P Q) Rs
 [DSUM2]
@@ -197,64 +167,64 @@ Inductive DTRANS :
 
 [DPAR1_I]
     !D P P' Q a x.
-       DTRANS D P (InputS (Name a) x P') /\
+       DTRANS D P (InputS a x P') /\
        x # P /\ x # Q /\ x <> a ==>
-       DTRANS D (Par P Q) (InputS (Name a) x (Par P' Q))
+       DTRANS D (Par P Q) (InputS a x (Par P' Q))
 [DPAR1_BO]
     !D P P' Q a x.
-       DTRANS D P (BoundOutput (Name a) x P') /\
+       DTRANS D P (BoundOutput a x P') /\
        x # P /\ x # Q /\ x <> a ==>
-       DTRANS D (Par P Q) (BoundOutput (Name a) x (Par P' Q))
+       DTRANS D (Par P Q) (BoundOutput a x (Par P' Q))
 [DPAR1_FO]
     !D P P' Q a b.
-       DTRANS D P (FreeOutput (Name a) (Name b) P') ==>
-       DTRANS D (Par P Q) (FreeOutput (Name a) (Name b) (Par P' Q))
+       DTRANS D P (FreeOutput a b P') ==>
+       DTRANS D (Par P Q) (FreeOutput a b (Par P' Q))
 [DPAR1_T]
     !D P P' Q. DTRANS D P (TauR P') ==> DTRANS D (Par P Q) (TauR (Par P' Q))
 
 [DPAR2_I]
     !D P Q Q' a x.
-       DTRANS D Q (InputS (Name a) x Q') /\
+       DTRANS D Q (InputS a x Q') /\
        x # P /\ x # Q /\ x <> a ==>
-       DTRANS D (Par P Q) (InputS (Name a) x (Par P Q'))
+       DTRANS D (Par P Q) (InputS a x (Par P Q'))
 [DPAR2_BO]
     !D P Q Q' a x.
-       DTRANS D Q (BoundOutput (Name a) x Q') /\
+       DTRANS D Q (BoundOutput a x Q') /\
        x # P /\ x # Q /\ x <> a ==>
-       DTRANS D (Par P Q) (BoundOutput (Name a) x (Par P Q'))
+       DTRANS D (Par P Q) (BoundOutput a x (Par P Q'))
 [DPAR2_FO]
     !D P Q Q' a b.
-       DTRANS D Q (FreeOutput (Name a) (Name b) Q') ==>
-       DTRANS D (Par P Q) (FreeOutput (Name a) (Name b) (Par P Q'))
+       DTRANS D Q (FreeOutput a b Q') ==>
+       DTRANS D (Par P Q) (FreeOutput a b (Par P Q'))
 [DPAR2_T]
     !D P Q Q'. DTRANS D Q (TauR Q') ==> DTRANS D (Par P Q) (TauR (Par P Q'))
 
 [DCOMM1] (* TODO: tpm should change to SUB *)
     !D P P' Q Q' a b x.
-       DTRANS D P (InputS (Name a) x P') /\
-       DTRANS D Q (FreeOutput (Name a) (Name b) Q') /\
+       DTRANS D P (InputS a x P') /\
+       DTRANS D Q (FreeOutput a b Q') /\
        x # P /\ x # Q /\ x <> a /\ x <> b /\ x # Q' ==>
        DTRANS D (Par P Q) (TauR (Par (tpm [(x,b)] P') Q'))
 
 [DCOMM2] (* TODO: tpm should change to SUB *)
     !D P P' Q Q' a b x.
-       DTRANS D P (FreeOutput (Name a) (Name b) P') /\
-       DTRANS D Q (InputS (Name a) x Q') /\
+       DTRANS D P (FreeOutput a b P') /\
+       DTRANS D Q (InputS a x Q') /\
        x # P /\ x # Q /\ x <> a /\ x <> b /\ x # P' ==>
        DTRANS D (Par P Q) (TauR (Par P' (tpm [(x,b)] Q')))
 
 [DCLOSE1] (* TODO: tpm should change to SUB *)
     !D P P' Q Q' a x y.
-       DTRANS D P (InputS      (Name a) x P') /\
-       DTRANS D Q (BoundOutput (Name a) y Q') /\
+       DTRANS D P (InputS      a x P') /\
+       DTRANS D Q (BoundOutput a y Q') /\
        x # P /\ x # Q /\ y # P /\ y # Q /\
        x <> a /\ x # Q' /\ y <> a /\ y # P' /\ x <> y ==>
        DTRANS D (Par P Q) (TauR (Res y (Par (tpm [(x,y)] P') Q')))
 
 [DCLOSE2] (* TODO: tpm should change to SUB *)
     !D P P' Q Q' a x y.
-       DTRANS D P (BoundOutput (Name a) y P') /\
-       DTRANS D Q (InputS      (Name a) x Q') /\
+       DTRANS D P (BoundOutput a y P') /\
+       DTRANS D Q (InputS      a x Q') /\
        x # P /\ x # Q /\ y # P /\ y # Q /\
        x <> a /\ x # P' /\ y <> a /\ y # Q' /\ x <> y ==>
        DTRANS D (Par P Q) (TauR (Res y (Par P' (tpm [(x,y)] Q'))))
@@ -265,9 +235,9 @@ Inductive DTRANS :
        distinction D /\
        D' = D UNION sc {(y,s) | s | s IN FV (Res y P)} /\
     (* end extra antecedents *)
-       DTRANS D' P (InputS (Name a) x P') /\
+       DTRANS D' P (InputS a x P') /\
        y <> a /\ y <> x /\ x # P /\ x <> a ==>
-       DTRANS D (Res y P) (InputS (Name a) x (Res y P'))
+       DTRANS D (Res y P) (InputS a x (Res y P'))
 
 [DRES_BO]
     !D D' P P' a x y.
@@ -275,9 +245,9 @@ Inductive DTRANS :
        distinction D /\
        D' = D UNION sc {(y,s) | s | s IN FV (Res y P)} /\
     (* end extra antecedents *)
-       DTRANS D' P (BoundOutput (Name a) x P') /\
+       DTRANS D' P (BoundOutput a x P') /\
        y <> a /\ y <> x /\ x # P /\ x <> a ==>
-       DTRANS D (Res y P) (BoundOutput (Name a) x (Res y P'))
+       DTRANS D (Res y P) (BoundOutput a x (Res y P'))
 
 [DRES_FO]
     !D D' P P' a b y.
@@ -285,9 +255,9 @@ Inductive DTRANS :
        distinction D /\
        D' = D UNION sc {(y,s) | s | s IN FV (Res y P)} /\
     (* end extra antecedents *)
-       DTRANS D' P (FreeOutput (Name a) (Name b) P') /\
+       DTRANS D' P (FreeOutput a b P') /\
        y <> a /\ y <> b ==>
-       DTRANS D (Res y P) (FreeOutput (Name a) (Name b) (Res y P'))
+       DTRANS D (Res y P) (FreeOutput a b (Res y P'))
 
 [DRES_T]
     !D D' P P' y.
@@ -297,10 +267,6 @@ Inductive DTRANS :
     (* end extra antecedents *)
        DTRANS D' P (TauR P') ==> DTRANS D (Res y P) (TauR (Res y P'))
 End
-
-(* uncomment this if needed:
-val DTRANS_strongind = DB.fetch "-" "DTRANS_strongind";
- *)
 
 (* NOTE: "simulation" is a property of 3-way relation R as tuples (P, Q, D), where
    P and Q are pi-agents, D is a distinction.
@@ -318,17 +284,17 @@ Definition dist_simulation_def :
       (!P'. DTRANS D P (TauR P') ==>
            ?Q'. DTRANS D Q (TauR Q') /\ (P',Q',D) IN R) /\
     (* 3b *)
-      (!x z P'. DTRANS D P (InputS (Name x) z P') /\
+      (!x z P'. DTRANS D P (InputS x z P') /\
                 z # D /\ z # P /\ z # Q /\ x <> z ==>
-               ?Q'. DTRANS D Q (InputS (Name x) z Q') /\ (P',Q',D) IN R) /\
+               ?Q'. DTRANS D Q (InputS x z Q') /\ (P',Q',D) IN R) /\
     (* 3c *)
-      (!a b P'. DTRANS D P (FreeOutput (Name a) (Name b) P') ==>
-               ?Q'. DTRANS D Q (FreeOutput (Name a) (Name b) Q') /\
+      (!a b P'. DTRANS D P (FreeOutput a b P') ==>
+               ?Q'. DTRANS D Q (FreeOutput a b Q') /\
                    (P',Q',D) IN R) /\
     (* 4 *)
-      (!x z P'. DTRANS D P (BoundOutput (Name x) z P') /\
+      (!x z P'. DTRANS D P (BoundOutput x z P') /\
                 z # D /\ z # P /\ z # Q /\ x <> z ==>
-               ?Q' D'. DTRANS D Q (BoundOutput (Name x) z Q') /\
+               ?Q' D'. DTRANS D Q (BoundOutput x z Q') /\
                        D' = D UNION
                             symmetric_closure
                               {(z,b) | b | b IN FV P UNION FV Q} /\
@@ -377,20 +343,20 @@ Proof
  >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
      Q.PAT_X_ASSUM ‘!x z P'.
-                       DTRANS D P (InputS (Name x) z P') /\ _ ==> _’
+                       DTRANS D P (InputS x z P') /\ _ ==> _’
        (MP_TAC o Q.SPECL [‘x’, ‘z’, ‘P'’]) >> rw [] \\
      Q.EXISTS_TAC ‘Q'’ >> rw [])
  (* goal 6 (of 14) *)
  >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
      Q.PAT_X_ASSUM ‘!a b P'.
-                       DTRANS D P (FreeOutput (Name a) (Name b) P') ==> _’
+                       DTRANS D P (FreeOutput a b P') ==> _’
        (MP_TAC o Q.SPECL [‘a’, ‘b’, ‘P'’]) >> rw [] \\
      Q.EXISTS_TAC ‘Q'’ >> rw [])
  (* goal 7 (of 14) *)
  >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R1 ==> _’
        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
-     Q.PAT_X_ASSUM ‘!x z P'. DTRANS D P (BoundOutput (Name x) z P') /\ _ ==> _’
+     Q.PAT_X_ASSUM ‘!x z P'. DTRANS D P (BoundOutput x z P') /\ _ ==> _’
        (MP_TAC o Q.SPECL [‘x’, ‘z’, ‘P'’]) >> rw [] \\
      Q.EXISTS_TAC ‘Q'’ >> rw [])
  (* goal 8 (of 14) *)
@@ -414,20 +380,20 @@ Proof
  >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
      Q.PAT_X_ASSUM ‘!x z P'.
-                       DTRANS D P (InputS (Name x) z P') /\ _ ==> _’
+                       DTRANS D P (InputS x z P') /\ _ ==> _’
        (MP_TAC o Q.SPECL [‘x’, ‘z’, ‘P'’]) >> rw [] \\
      Q.EXISTS_TAC ‘Q'’ >> rw [])
  (* goal 13 (of 14) *)
  >- (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
      Q.PAT_X_ASSUM ‘!a b P'.
-                       DTRANS D P (FreeOutput (Name a) (Name b) P') ==> _’
+                       DTRANS D P (FreeOutput a b P') ==> _’
        (MP_TAC o Q.SPECL [‘a’, ‘b’, ‘P'’]) >> rw [] \\
      Q.EXISTS_TAC ‘Q'’ >> rw [])
  (* goal 14 (of 14) *)
  >> (Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R2 ==> _’
        (MP_TAC o Q.SPECL [‘P’, ‘Q’, ‘D’]) >> rw [] \\
-     Q.PAT_X_ASSUM ‘!x z P'. DTRANS D P (BoundOutput (Name x) z P') /\ _ ==> _’
+     Q.PAT_X_ASSUM ‘!x z P'. DTRANS D P (BoundOutput x z P') /\ _ ==> _’
        (MP_TAC o Q.SPECL [‘x’, ‘z’, ‘P'’]) >> rw [] \\
      Q.EXISTS_TAC ‘Q'’ >> rw [])
 QED
@@ -517,7 +483,7 @@ QED
 
 Theorem FV_InputS_lemma[local] :
     !D P Q. DTRANS D P Q ==>
-            !P' x z. Q = InputS (Name x) z P' /\ x <> z /\ z # P /\
+            !P' x z. Q = InputS x z P' /\ x <> z /\ z # P /\
                          !y. y # P /\ y <> z ==> y # P'
 Proof
 (*
@@ -536,7 +502,7 @@ Proof
 QED
 
 Theorem FV_InputS :
-    !D P P' x z y. DTRANS D P (InputS (Name x) z P') /\ x <> z /\ z # P /\
+    !D P P' x z y. DTRANS D P (InputS x z P') /\ x <> z /\ z # P /\
                    y # P /\ y <> z ==> y # P'
 Proof
     METIS_TAC [FV_InputS_lemma]
@@ -544,7 +510,7 @@ QED
 
 Theorem FV_BoundOutput_lemma[local] :
     !D P Q. DTRANS D P Q ==>
-            !P' x z. Q = BoundOutput (Name x) z P' /\ x <> z /\ z # P /\
+            !P' x z. Q = BoundOutput x z P' /\ x <> z /\ z # P /\
                          !y. y # P /\ y <> z ==> y # P'
 Proof
     HO_MATCH_MP_TAC DTRANS_ind >> rw []
@@ -552,7 +518,7 @@ Proof
 QED
 
 Theorem FV_BoundOutput :
-    !D P P' x z y. DTRANS D P (BoundOutput (Name x) z P') /\ x <> z /\ z # P /\
+    !D P P' x z y. DTRANS D P (BoundOutput x z P') /\ x <> z /\ z # P /\
                    y # P /\ y <> z ==> y # P'
 Proof
     METIS_TAC [FV_BoundOutput_lemma]
@@ -610,15 +576,15 @@ Proof
        (MP_TAC o Q.SPEC ‘y'’) >> rw [] >> rename1 ‘DTRANS D Q (TauR Q')’ \\
      Q.EXISTS_TAC ‘Q'’ >> art [] \\
      Q.EXISTS_TAC ‘y'’ >> art [])
- (* goal 5 (of 14): DTRANS D  P (InputS (Name x) z  P')
+ (* goal 5 (of 14): DTRANS D  P (InputS x z  P')
                               |      alpha       |  |
                           x # P                  z  P''
                               |   R              |  |
-                              y (InputS (Name x) z' y')
+                              y (InputS x z' y')
                               |   R'             |  |
-                          x # Q (InputS (Name x) z' Q')
+                          x # Q (InputS x z' Q')
                               |      alpha       |  |
-                     DTRANS D Q (InputS (Name x) z  Q'')
+                     DTRANS D Q (InputS x z  Q'')
   *)
  >- (Q.PAT_X_ASSUM ‘dist_simulation R’
        (STRIP_ASSUME_TAC o SIMP_RULE (bool_ss ++ DNF_ss) [dist_simulation_def]) \\
@@ -630,21 +596,21 @@ Proof
      Q_TAC (NEW_TAC "z'") ‘X’ \\
      Q.PAT_X_ASSUM ‘FINITE X’ K_TAC >> fs [Abbr ‘X’, IN_UNION] \\
   (* applying tpm_ALPHA_InputS *)
-     Know ‘InputS (Name x) z P' = InputS (Name x) z' (tpm [(z',z)] P')’
+     Know ‘InputS x z P' = InputS x z' (tpm [(z',z)] P')’
      >- (MATCH_MP_TAC tpm_ALPHA_InputS >> art []) \\
      DISCH_THEN (fs o wrap) \\
      qabbrev_tac ‘P'' = tpm [(z',z)] P'’ \\
      Q.PAT_X_ASSUM ‘!P Q D x z P'. (P,Q,D) IN R ==>
-                                      DTRANS D P (InputS (Name x) z P') /\ _ ==> _’
+                                      DTRANS D P (InputS x z P') /\ _ ==> _’
        (MP_TAC o Q.SPECL [‘P’, ‘y’, ‘D’, ‘x’, ‘z'’, ‘P''’]) >> rw [] \\
-     rename1 ‘DTRANS D y (InputS (Name x) z' y')’ \\
+     rename1 ‘DTRANS D y (InputS x z' y')’ \\
   (* stage work *)
      Q.PAT_X_ASSUM ‘dist_simulation R'’
        (STRIP_ASSUME_TAC o SIMP_RULE (bool_ss ++ DNF_ss) [dist_simulation_def]) \\
      Q.PAT_X_ASSUM ‘!P Q D x z P'. (P,Q,D) IN R' ==>
-                                      DTRANS D P (InputS (Name x) z P') /\ _ ==> _’
+                                      DTRANS D P (InputS x z P') /\ _ ==> _’
        (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘D’, ‘x’, ‘z'’, ‘y'’]) >> rw [] \\
-     Know ‘InputS (Name x) z' Q' = InputS (Name x) z (tpm [(z,z')] Q')’
+     Know ‘InputS x z' Q' = InputS x z (tpm [(z,z')] Q')’
      >- (MATCH_MP_TAC tpm_ALPHA_InputS \\
          irule FV_InputS \\
          qexistsl_tac [‘D’, ‘Q’, ‘x’, ‘z'’] >> rw []) \\
@@ -658,35 +624,35 @@ Proof
      Suff ‘D = dpm [(z,z')] D’ >- (Rewr' >> simp []) \\
      ONCE_REWRITE_TAC [EQ_SYM_EQ] \\
      MATCH_MP_TAC dpm_unchanged >> simp [])
- (* goal 6 (of 14): DTRANS D P (FreeOutput (Name a) (Name b) P')
+ (* goal 6 (of 14): DTRANS D P (FreeOutput a b P')
                               | R                             |
                               y                               y'
                               | R'                            |
-                    DTRANS D Q (FreeOutput (Name a) (Name b) Q')
+                    DTRANS D Q (FreeOutput a b Q')
   *)
  >- (Q.PAT_X_ASSUM ‘dist_simulation R’ MP_TAC >> rw [dist_simulation_def] \\
      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R ==> _’
        (MP_TAC o Q.SPECL [‘P’, ‘y’, ‘D’]) >> rw [] \\
-     Q.PAT_X_ASSUM ‘!a b P'. DTRANS D P (FreeOutput (Name a) (Name b) P') ==> _’
+     Q.PAT_X_ASSUM ‘!a b P'. DTRANS D P (FreeOutput a b P') ==> _’
        (MP_TAC o Q.SPECL [‘a’, ‘b’, ‘P'’]) >> rw [] \\
-     rename1 ‘DTRANS D y (FreeOutput (Name a) (Name b) y')’ \\
+     rename1 ‘DTRANS D y (FreeOutput a b y')’ \\
      Q.PAT_X_ASSUM ‘dist_simulation R'’ MP_TAC >> rw [dist_simulation_def] \\
      Q.PAT_X_ASSUM ‘!P Q D. (P,Q,D) IN R' ==> _’
        (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘D’]) >> rw [] \\
-     Q.PAT_X_ASSUM ‘!a b P'. DTRANS D y (FreeOutput (Name a) (Name b) P') ==> _’
+     Q.PAT_X_ASSUM ‘!a b P'. DTRANS D y (FreeOutput a b P') ==> _’
        (MP_TAC o Q.SPECL [‘a’, ‘b’, ‘y'’]) >> rw [] \\
-     rename1 ‘DTRANS D Q (FreeOutput (Name a) (Name b) Q')’ \\
+     rename1 ‘DTRANS D Q (FreeOutput a b Q')’ \\
      Q.EXISTS_TAC ‘Q'’ >> art [] \\
      Q.EXISTS_TAC ‘y'’ >> art [])
- (* goal 7 (of 14): DTRANS D P (BoundOutput (Name x) z  P')
+ (* goal 7 (of 14): DTRANS D P (BoundOutput x z  P')
                              |      alpha            |  |
-                         z # P (BoundOutput (Name x) z1 P2
+                         z # P (BoundOutput x z1 P2
                              |        R              |  | (R, D1)
-                         D : y (BoundOutput (Name x) z1 y1)
+                         D : y (BoundOutput x z1 y1)
                              |        R'             |  | R'
-                         z # Q (BoundOutput (Name x) z1 Q1)
+                         z # Q (BoundOutput x z1 Q1)
                              |      alpha            |  |
-                    DTRANS D Q (BoundOutput (Name x) z  Q'')
+                    DTRANS D Q (BoundOutput x z  Q'')
   *)
  >- (Q.PAT_X_ASSUM ‘dist_simulation R’
        (STRIP_ASSUME_TAC o SIMP_RULE (bool_ss ++ DNF_ss) [dist_simulation_def]) \\
@@ -704,14 +670,14 @@ Proof
      Q_TAC (NEW_TAC "z1") ‘X’ \\
      Q.PAT_X_ASSUM ‘FINITE X’ K_TAC >> fs [Abbr ‘X’, IN_UNION] \\
   (* applying tpm_ALPHA_BoundOutput *)
-     Know ‘BoundOutput (Name x) z P' = BoundOutput (Name x) z1 (tpm [(z1,z)] P')’
+     Know ‘BoundOutput x z P' = BoundOutput x z1 (tpm [(z1,z)] P')’
      >- (MATCH_MP_TAC tpm_ALPHA_BoundOutput >> art []) \\
      DISCH_THEN (fs o wrap) \\
      qabbrev_tac ‘P2 = tpm [(z1,z)] P'’ \\
      Q.PAT_X_ASSUM ‘!P Q D x z P'. (P,Q,D) IN R ==>
-                                   DTRANS D P (BoundOutput (Name x) z P') /\ _ ==> _’
+                                   DTRANS D P (BoundOutput x z P') /\ _ ==> _’
        (MP_TAC o Q.SPECL [‘P’, ‘y’, ‘D’, ‘x’, ‘z1’, ‘P2’]) >> rw [] \\
-     rename1 ‘DTRANS D y (BoundOutput (Name x) z1 y1)’ \\
+     rename1 ‘DTRANS D y (BoundOutput x z1 y1)’ \\
      qabbrev_tac ‘D1 = D UNION sc {(z1,b) | b IN FV P \/ b IN FV y}’ \\
     ‘D SUBSET D1’ by rw [Abbr ‘D1’] \\
     ‘distinction D1’ by PROVE_TAC [] \\
@@ -726,11 +692,11 @@ Proof
                       (P,Q,D) IN R' ==> DTRANS D P (FreeOutput _ _ P') ==> _’ K_TAC \\
   (* NOTE: no way to use D1 instead of D here, because z1 # D1 doesn't hold *)
      Q.PAT_X_ASSUM ‘!P Q D x z P'. (P,Q,D) IN R' ==>
-                                   DTRANS D P (BoundOutput (Name x) z P') /\ _ ==> _’
+                                   DTRANS D P (BoundOutput x z P') /\ _ ==> _’
        (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘D’, ‘x’, ‘z1’, ‘y1’]) >> rw [IN_UNION] \\
-     rename1 ‘DTRANS D Q (BoundOutput (Name x) z1 Q1)’ \\
+     rename1 ‘DTRANS D Q (BoundOutput x z1 Q1)’ \\
      qabbrev_tac ‘D2 = D UNION sc {(z1,b) | b IN FV y \/ b IN FV Q}’ \\
-     Know ‘BoundOutput (Name x) z1 Q1 = BoundOutput (Name x) z (tpm [(z,z1)] Q1)’
+     Know ‘BoundOutput x z1 Q1 = BoundOutput x z (tpm [(z,z1)] Q1)’
      >- (MATCH_MP_TAC tpm_ALPHA_BoundOutput \\
          irule FV_BoundOutput \\
          qexistsl_tac [‘D’, ‘Q’, ‘x’, ‘z1’] >> rw []) \\
@@ -803,26 +769,26 @@ Proof
  >- (
      cheat)
  (* goal 13 (of 14): symmetric with goal 6
-                    DTRANS D P (FreeOutput (Name a) (Name b) P')
+                    DTRANS D P (FreeOutput a b P')
                               | R'                            |
                               y                               y'
                               | R                             |
-                    DTRANS D Q (FreeOutput (Name a) (Name b) Q')
+                    DTRANS D Q (FreeOutput a b Q')
   *)
  >- (Q.PAT_X_ASSUM ‘dist_simulation {(Q,P,D) | (P,Q,D) IN R'}’ MP_TAC \\
      rw [dist_simulation_def] \\
      Q.PAT_X_ASSUM ‘!P Q D. (Q,P,D) IN R' ==> _’
        (MP_TAC o Q.SPECL [‘P’, ‘y’, ‘D’]) >> rw [] \\
-     Q.PAT_X_ASSUM ‘!a b P'. DTRANS D P (FreeOutput (Name a) (Name b) P') ==> _’
+     Q.PAT_X_ASSUM ‘!a b P'. DTRANS D P (FreeOutput a b P') ==> _’
        (MP_TAC o Q.SPECL [‘a’, ‘b’, ‘P'’]) >> rw [] \\
-     rename1 ‘DTRANS D y (FreeOutput (Name a) (Name b) y')’ \\
+     rename1 ‘DTRANS D y (FreeOutput a b y')’ \\
      Q.PAT_X_ASSUM ‘dist_simulation {(Q,P,D) | (P,Q,D) IN R}’ MP_TAC \\
      rw [dist_simulation_def] \\
      Q.PAT_X_ASSUM ‘!P Q D. (Q,P,D) IN R ==> _’
        (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘D’]) >> rw [] \\
-     Q.PAT_X_ASSUM ‘!a b P'. DTRANS D y (FreeOutput (Name a) (Name b) P') ==> _’
+     Q.PAT_X_ASSUM ‘!a b P'. DTRANS D y (FreeOutput a b P') ==> _’
        (MP_TAC o Q.SPECL [‘a’, ‘b’, ‘y'’]) >> rw [] \\
-     rename1 ‘DTRANS D Q (FreeOutput (Name a) (Name b) Q')’ \\
+     rename1 ‘DTRANS D Q (FreeOutput a b Q')’ \\
      Q.EXISTS_TAC ‘Q'’ >> art [] \\
      Q.EXISTS_TAC ‘y'’ >> art [])
  (* goal 14 (of 14): symmetric with goal 7 *)

@@ -21,17 +21,17 @@ Inductive TRANS :
 [TAU]
     !P. TRANS (Tau P) (TauR P)
 [INPUT]
-    !a x P. x <> a ==> TRANS (Input (Name a) x P) (InputS (Name a) x P)
+    !a x P. x <> a ==> TRANS (Input a x P) (InputS a x P)
 [OUTPUT]
-    !a b P. TRANS (Output (Name a) (Name b) P) (FreeOutput (Name a) (Name b) P)
+    !a b P. TRANS (Output a b P) (FreeOutput a b P)
 [MATCH]
-    !P Rs b. TRANS P Rs ==> TRANS (Match (Name b) (Name b) P) Rs
+    !P Rs b. TRANS P Rs ==> TRANS (Match b b P) Rs
 [MISMACH]
-    !P Rs a b. TRANS P Rs /\ a <> b ==> TRANS (Mismatch (Name a) (Name b) P) Rs
+    !P Rs a b. TRANS P Rs /\ a <> b ==> TRANS (Mismatch a b P) Rs
 
 [OPEN]
-    !P P' a b. TRANS P (FreeOutput (Name a) (Name b) P') /\ a <> b ==>
-               TRANS (Res b P) (BoundOutput (Name a) b P')
+    !P P' a b. TRANS P (FreeOutput a b P') /\ a <> b ==>
+               TRANS (Res b P) (BoundOutput a b P')
 [SUM1]
     !P Q Rs. TRANS P Rs ==> TRANS (Sum P Q) Rs
 [SUM2]
@@ -39,73 +39,73 @@ Inductive TRANS :
 
 [PAR1_I]
     !P P' Q a x.
-       TRANS P (InputS (Name a) x P') /\ x # P /\ x # Q /\ x <> a ==>
-       TRANS (Par P Q) (InputS (Name a) x (Par P' Q))
+       TRANS P (InputS a x P') /\ x # P /\ x # Q /\ x <> a ==>
+       TRANS (Par P Q) (InputS a x (Par P' Q))
 [PAR1_BO]
     !P P' Q a x.
-       TRANS P (BoundOutput (Name a) x P') /\ x # P /\ x # Q /\ x <> a ==>
-       TRANS (Par P Q) (BoundOutput (Name a) x (Par P' Q))
+       TRANS P (BoundOutput a x P') /\ x # P /\ x # Q /\ x <> a ==>
+       TRANS (Par P Q) (BoundOutput a x (Par P' Q))
 [PAR1_FO]
     !P P' Q a b.
-       TRANS P (FreeOutput (Name a) (Name b) P') ==>
-       TRANS (Par P Q) (FreeOutput (Name a) (Name b) (Par P' Q))
+       TRANS P (FreeOutput a b P') ==>
+       TRANS (Par P Q) (FreeOutput a b (Par P' Q))
 [PAR1_T]
     !P P' Q. TRANS P (TauR P') ==> TRANS (Par P Q) (TauR (Par P' Q))
 
 [PAR2_I]
     !P Q Q' a x.
-       TRANS Q (InputS (Name a) x Q') /\ x # Q /\ x # P /\ x <> a ==>
-       TRANS (Par P Q) (InputS (Name a) x (Par P Q'))
+       TRANS Q (InputS a x Q') /\ x # Q /\ x # P /\ x <> a ==>
+       TRANS (Par P Q) (InputS a x (Par P Q'))
 [PAR2_BO]
     !P Q Q' a x.
-       TRANS Q (BoundOutput (Name a) x Q') /\ x # Q /\ x # P /\ x <> a ==>
-       TRANS (Par P Q) (BoundOutput (Name a) x (Par P Q'))
+       TRANS Q (BoundOutput a x Q') /\ x # Q /\ x # P /\ x <> a ==>
+       TRANS (Par P Q) (BoundOutput a x (Par P Q'))
 [PAR2_FO]
     !P Q Q' a b.
-       TRANS Q (FreeOutput (Name a) (Name b) Q') ==>
-       TRANS (Par P Q) (FreeOutput (Name a) (Name b) (Par P Q'))
+       TRANS Q (FreeOutput a b Q') ==>
+       TRANS (Par P Q) (FreeOutput a b (Par P Q'))
 [PAR2_T]
     !P Q Q'. TRANS Q (TauR Q') ==> TRANS (Par P Q) (TauR (Par P Q'))
 
 [COMM1] (* TODO: tpm should change to SUB *)
     !P P' Q Q' a b x.
-       TRANS P (InputS (Name a) x P') /\ TRANS Q (FreeOutput (Name a) (Name b) Q') /\
+       TRANS P (InputS a x P') /\ TRANS Q (FreeOutput a b Q') /\
        x # P /\ x # Q /\ x <> a /\ x <> b /\ x # Q' ==>
        TRANS (Par P Q) (TauR (Par (tpm [(x,b)] P') Q'))
 [COMM2] (* TODO: tpm should change to SUB *)
     !P P' Q Q' a b x.
-       TRANS P (FreeOutput (Name a) (Name b) P') /\ TRANS Q (InputS (Name a) x Q') /\
+       TRANS P (FreeOutput a b P') /\ TRANS Q (InputS a x Q') /\
        x # Q /\ x # P /\ x <> a /\ x <> b /\ x # P' ==>
        TRANS (Par P Q) (TauR (Par P' (tpm [(x,b)] Q')))
 [CLOSE1] (* TODO: tpm should change to SUB *)
     !P P' Q Q' a x y.
-       TRANS P (InputS (Name a) x P') /\
-       TRANS Q (BoundOutput (Name a) y Q') /\
+       TRANS P (InputS a x P') /\
+       TRANS Q (BoundOutput a y Q') /\
        x # P /\ x # Q /\ y # P /\ y # Q /\
        x <> a /\ x # Q' /\ y <> a /\ y # P' /\ x <> y ==>
        TRANS (Par P Q) (TauR (Res y (Par (tpm [(x,y)] P') Q')))
 [CLOSE2] (* TODO: tpm should change to SUB *)
     !P P' Q Q' a x y.
-       TRANS P (BoundOutput (Name a) y P') /\
-       TRANS Q (InputS (Name a) x Q') /\
+       TRANS P (BoundOutput a y P') /\
+       TRANS Q (InputS a x Q') /\
        x # P /\ x # Q /\ y # P /\ y # Q /\
        x <> a /\ x # P' /\ y <> a /\ y # Q' /\ x <> y ==>
        TRANS (Par P Q) (TauR (Res y (Par P' (tpm [(x,y)] Q'))))
 [RES_I]
     !P P' a x y.
-       TRANS P (InputS (Name a) x P') /\
+       TRANS P (InputS a x P') /\
        y <> a /\ y <> x /\ x # P /\ x <> a ==>
-       TRANS (Res y P) (InputS (Name a) x (Res y P'))
+       TRANS (Res y P) (InputS a x (Res y P'))
 [RES_BO]
     !P P' a x y.
-       TRANS P (BoundOutput (Name a) x P') /\
+       TRANS P (BoundOutput a x P') /\
        y <> a /\ y <> x /\ x # P /\ x <> a ==>
-       TRANS (Res y P) (BoundOutput (Name a) x (Res y P'))
+       TRANS (Res y P) (BoundOutput a x (Res y P'))
 [RES_FO]
     !P P' a b y.
-       TRANS P (FreeOutput (Name a) (Name b) P') /\
+       TRANS P (FreeOutput a b P') /\
        y <> a /\ y <> b ==>
-       TRANS (Res y P) (FreeOutput (Name a) (Name b) (Res y P'))
+       TRANS (Res y P) (FreeOutput a b (Res y P'))
 [RES_T]
     !P P' y.
        TRANS P (TauR P') ==> TRANS (Res y P) (TauR (Res y P'))
@@ -119,16 +119,16 @@ Definition open_simulation_def :
     (* 3a *)
       (!P'. TRANS P (TauR P') ==> ?Q'. TRANS Q (TauR Q') /\ R P' Q') /\
     (* 3b *)
-      (!x z P'. TRANS P (InputS (Name x) z P') /\
+      (!x z P'. TRANS P (InputS x z P') /\
                 z # P /\ z # Q /\ x <> z ==>
-               ?Q'. TRANS Q (InputS (Name x) z Q') /\ R P' Q') /\
+               ?Q'. TRANS Q (InputS x z Q') /\ R P' Q') /\
     (* 3c *)
-      (!a b P'. TRANS P (FreeOutput (Name a) (Name b) P') ==>
-               ?Q'. TRANS Q (FreeOutput (Name a) (Name b) Q') /\ R P' Q') /\
+      (!a b P'. TRANS P (FreeOutput a b P') ==>
+               ?Q'. TRANS Q (FreeOutput a b Q') /\ R P' Q') /\
     (* 4 *)
-      (!x z P'. TRANS P (BoundOutput (Name x) z P') /\
+      (!x z P'. TRANS P (BoundOutput x z P') /\
                 z # P /\ z # Q /\ x <> z ==>
-               ?Q'. TRANS Q (BoundOutput (Name x) z Q') /\ R P' Q')
+               ?Q'. TRANS Q (BoundOutput x z Q') /\ R P' Q')
 End
 
 Definition open_bisimulation_def :
@@ -175,17 +175,17 @@ Proof
      Q.EXISTS_TAC ‘Q'’ >> rw [])
  (* goal 3 (of 10) *)
  >- (Q.PAT_X_ASSUM ‘!P Q. R1 P Q ==> _’ (MP_TAC o Q.SPECL [‘P’, ‘Q’]) >> rw [] \\
-     Q.PAT_X_ASSUM ‘!x z P'. TRANS P (InputS (Name x) z P') /\ _ ==> _’
+     Q.PAT_X_ASSUM ‘!x z P'. TRANS P (InputS x z P') /\ _ ==> _’
        (MP_TAC o Q.SPECL [‘x’, ‘z’, ‘P'’]) >> rw [] \\
      Q.EXISTS_TAC ‘Q'’ >> rw [])
  (* goal 4 (of 10) *)
  >- (Q.PAT_X_ASSUM ‘!P Q. R1 P Q ==> _’ (MP_TAC o Q.SPECL [‘P’, ‘Q’]) >> rw [] \\
-     Q.PAT_X_ASSUM ‘!a b P'. TRANS P (FreeOutput (Name a) (Name b) P') ==> _’
+     Q.PAT_X_ASSUM ‘!a b P'. TRANS P (FreeOutput a b P') ==> _’
        (MP_TAC o Q.SPECL [‘a’, ‘b’, ‘P'’]) >> rw [] \\
      Q.EXISTS_TAC ‘Q'’ >> rw [])
  (* goal 5 (of 10) *)
  >- (Q.PAT_X_ASSUM ‘!P Q. R1 P Q ==> _’ (MP_TAC o Q.SPECL [‘P’, ‘Q’]) >> rw [] \\
-     Q.PAT_X_ASSUM ‘!x z P'. TRANS P (BoundOutput (Name x) z P') /\ _ ==> _’
+     Q.PAT_X_ASSUM ‘!x z P'. TRANS P (BoundOutput x z P') /\ _ ==> _’
        (MP_TAC o Q.SPECL [‘x’, ‘z’, ‘P'’]) >> rw [] \\
      Q.EXISTS_TAC ‘Q'’ >> rw [])
  (* goal 6 (of 10) *)
@@ -196,17 +196,17 @@ Proof
      Q.EXISTS_TAC ‘Q'’ >> rw [])
  (* goal 8 (of 10) *)
  >- (Q.PAT_X_ASSUM ‘!P Q. R2 P Q ==> _’ (MP_TAC o Q.SPECL [‘P’, ‘Q’]) >> rw [] \\
-     Q.PAT_X_ASSUM ‘!x z P'. TRANS P (InputS (Name x) z P') /\ _ ==> _’
+     Q.PAT_X_ASSUM ‘!x z P'. TRANS P (InputS x z P') /\ _ ==> _’
        (MP_TAC o Q.SPECL [‘x’, ‘z’, ‘P'’]) >> rw [] \\
      Q.EXISTS_TAC ‘Q'’ >> rw [])
  (* goal 9 (of 10) *)
  >- (Q.PAT_X_ASSUM ‘!P Q. R2 P Q ==> _’ (MP_TAC o Q.SPECL [‘P’, ‘Q’]) >> rw [] \\
-     Q.PAT_X_ASSUM ‘!a b P'. TRANS P (FreeOutput (Name a) (Name b) P') ==> _’
+     Q.PAT_X_ASSUM ‘!a b P'. TRANS P (FreeOutput a b P') ==> _’
        (MP_TAC o Q.SPECL [‘a’, ‘b’, ‘P'’]) >> rw [] \\
      Q.EXISTS_TAC ‘Q'’ >> rw [])
  (* goal 10 (of 10) *)
  >> (Q.PAT_X_ASSUM ‘!P Q. R2 P Q ==> _’ (MP_TAC o Q.SPECL [‘P’, ‘Q’]) >> rw [] \\
-     Q.PAT_X_ASSUM ‘!x z P'. TRANS P (BoundOutput (Name x) z P') /\ _ ==> _’
+     Q.PAT_X_ASSUM ‘!x z P'. TRANS P (BoundOutput x z P') /\ _ ==> _’
        (MP_TAC o Q.SPECL [‘x’, ‘z’, ‘P'’]) >> rw [] \\
      Q.EXISTS_TAC ‘Q'’ >> rw [])
 QED
@@ -229,14 +229,14 @@ QED
 
 Theorem FV_InputS_lemma[local] :
     !P Q. TRANS P Q ==>
-         !P' x z. Q = InputS (Name x) z P' /\ x <> z /\ z # P /\
+         !P' x z. Q = InputS x z P' /\ x <> z /\ z # P /\
                       !y. y # P /\ y <> z ==> y # P'
 Proof
     cheat
 QED
 
 Theorem FV_InputS :
-    !P P' x z y. TRANS P (InputS (Name x) z P') /\ x <> z /\ z # P /\
+    !P P' x z y. TRANS P (InputS x z P') /\ x <> z /\ z # P /\
                  y # P /\ y <> z ==> y # P'
 Proof
     METIS_TAC [FV_InputS_lemma]
@@ -244,14 +244,14 @@ QED
 
 Theorem FV_BoundOutput_lemma[local] :
     !P Q. TRANS P Q ==>
-          !P' x z. Q = BoundOutput (Name x) z P' /\ x <> z /\ z # P /\
+          !P' x z. Q = BoundOutput x z P' /\ x <> z /\ z # P /\
                        !y. y # P /\ y <> z ==> y # P'
 Proof
     cheat
 QED
 
 Theorem FV_BoundOutput :
-    !P P' x z y. TRANS P (BoundOutput (Name x) z P') /\ x <> z /\ z # P /\
+    !P P' x z y. TRANS P (BoundOutput x z P') /\ x <> z /\ z # P /\
                  y # P /\ y <> z ==> y # P'
 Proof
     METIS_TAC [FV_BoundOutput_lemma]
@@ -293,18 +293,18 @@ Proof
      ‘FINITE X’ by rw [Abbr ‘X’] \\
       Q_TAC (NEW_TAC "z'") ‘X’ \\
       Q.PAT_X_ASSUM ‘FINITE X’ K_TAC >> fs [Abbr ‘X’, IN_UNION] \\
-      Know ‘InputS (Name x) z P' = InputS (Name x) z' (tpm [(z',z)] P')’
+      Know ‘InputS x z P' = InputS x z' (tpm [(z',z)] P')’
       >- (MATCH_MP_TAC tpm_ALPHA_InputS >> art []) \\
       DISCH_THEN (fs o wrap) \\
       qabbrev_tac ‘P'' = tpm [(z',z)] P'’ \\
-      Q.PAT_X_ASSUM ‘!P Q x z P'. R P Q ==> TRANS P (InputS (Name x) z P') /\ _ ==> _’
+      Q.PAT_X_ASSUM ‘!P Q x z P'. R P Q ==> TRANS P (InputS x z P') /\ _ ==> _’
         (MP_TAC o Q.SPECL [‘P’, ‘y’, ‘x’, ‘z'’, ‘P''’]) >> rw [] \\
-      rename1 ‘TRANS y (InputS (Name x) z' y')’ \\
+      rename1 ‘TRANS y (InputS x z' y')’ \\
       Q.PAT_X_ASSUM ‘open_simulation R'’
         (STRIP_ASSUME_TAC o SIMP_RULE (std_ss ++ DNF_ss) [open_simulation_def]) \\
-      Q.PAT_X_ASSUM ‘!P Q x z P'. R' P Q ==> TRANS P (InputS (Name x) z P') /\ _ ==> _’
+      Q.PAT_X_ASSUM ‘!P Q x z P'. R' P Q ==> TRANS P (InputS x z P') /\ _ ==> _’
         (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘x’, ‘z'’, ‘y'’]) >> rw [] \\
-      Know ‘InputS (Name x) z' Q' = InputS (Name x) z (tpm [(z,z')] Q')’
+      Know ‘InputS x z' Q' = InputS x z (tpm [(z,z')] Q')’
       >- (MATCH_MP_TAC tpm_ALPHA_InputS >> art [] \\
           irule FV_InputS \\
           qexistsl_tac [‘Q’, ‘x’, ‘z'’] >> rw []) \\
@@ -319,13 +319,13 @@ Proof
       Q.PAT_X_ASSUM ‘open_simulation R’
         (STRIP_ASSUME_TAC o SIMP_RULE (std_ss ++ DNF_ss) [open_simulation_def]) \\
       Q.PAT_X_ASSUM ‘!P Q a b P'. R P Q ==>
-                                  TRANS P (FreeOutput (Name a) (Name b) P') ==> _’
+                                  TRANS P (FreeOutput a b P') ==> _’
         (MP_TAC o Q.SPECL [‘P’, ‘y’, ‘a’, ‘b’, ‘P'’]) >> rw [] \\
-      rename1 ‘TRANS y (FreeOutput (Name a) (Name b) y')’ \\
+      rename1 ‘TRANS y (FreeOutput a b y')’ \\
       Q.PAT_X_ASSUM ‘open_simulation R'’
         (STRIP_ASSUME_TAC o SIMP_RULE (std_ss ++ DNF_ss) [open_simulation_def]) \\
       Q.PAT_X_ASSUM ‘!P Q a b P'. R' P Q ==>
-                                  TRANS P (FreeOutput (Name a) (Name b) P') ==> _’
+                                  TRANS P (FreeOutput a b P') ==> _’
         (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘a’, ‘b’, ‘y'’]) >> rw [] \\
       Q.EXISTS_TAC ‘Q'’ >> rw [] \\
       Q.EXISTS_TAC ‘y'’ >> rw [],
@@ -336,20 +336,20 @@ Proof
      ‘FINITE X’ by rw [Abbr ‘X’] \\
       Q_TAC (NEW_TAC "z'") ‘X’ \\
       Q.PAT_X_ASSUM ‘FINITE X’ K_TAC >> fs [Abbr ‘X’, IN_UNION] \\
-      Know ‘BoundOutput (Name x) z P' = BoundOutput (Name x) z' (tpm [(z',z)] P')’
+      Know ‘BoundOutput x z P' = BoundOutput x z' (tpm [(z',z)] P')’
       >- (MATCH_MP_TAC tpm_ALPHA_BoundOutput >> art []) \\
       DISCH_THEN (fs o wrap) \\
       qabbrev_tac ‘P'' = tpm [(z',z)] P'’ \\
       Q.PAT_X_ASSUM ‘!P Q x z P'. R P Q ==>
-                                  TRANS P (BoundOutput (Name x) z P') /\ _ ==> _’
+                                  TRANS P (BoundOutput x z P') /\ _ ==> _’
         (MP_TAC o Q.SPECL [‘P’, ‘y’, ‘x’, ‘z'’, ‘P''’]) >> rw [] \\
-      rename1 ‘TRANS y (BoundOutput (Name x) z' y')’ \\
+      rename1 ‘TRANS y (BoundOutput x z' y')’ \\
       Q.PAT_X_ASSUM ‘open_simulation R'’
         (STRIP_ASSUME_TAC o SIMP_RULE (std_ss ++ DNF_ss) [open_simulation_def]) \\
       Q.PAT_X_ASSUM ‘!P Q x z P'. R' P Q ==>
-                                  TRANS P (BoundOutput (Name x) z P') /\ _ ==> _’
+                                  TRANS P (BoundOutput x z P') /\ _ ==> _’
         (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘x’, ‘z'’, ‘y'’]) >> rw [] \\
-      Know ‘BoundOutput (Name x) z' Q' = BoundOutput (Name x) z (tpm [(z,z')] Q')’
+      Know ‘BoundOutput x z' Q' = BoundOutput x z (tpm [(z,z')] Q')’
       >- (MATCH_MP_TAC tpm_ALPHA_BoundOutput >> art [] \\
           irule FV_BoundOutput \\
           qexistsl_tac [‘Q’, ‘x’, ‘z'’] >> rw []) \\
@@ -383,27 +383,27 @@ Proof
       Q.EXISTS_TAC ‘y'’ >> rw [],
       (* goal 8 (of 10) *)
       rename1 ‘R P y'’ >> rename1 ‘R' y Q’ \\
-      rename1 ‘TRANS Q (InputS (Name x) z Q')’ \\
+      rename1 ‘TRANS Q (InputS x z Q')’ \\
       Q.PAT_X_ASSUM ‘open_simulation (\x y. R' y x)’
         (STRIP_ASSUME_TAC o SIMP_RULE (std_ss ++ DNF_ss) [open_simulation_def]) \\
       qabbrev_tac ‘X = {z} UNION {x} UNION FV y UNION FV P UNION FV Q UNION FV Q'’ \\
      ‘FINITE X’ by rw [Abbr ‘X’] \\
       Q_TAC (NEW_TAC "z'") ‘X’ \\
       Q.PAT_X_ASSUM ‘FINITE X’ K_TAC >> fs [Abbr ‘X’, IN_UNION] \\
-      Know ‘InputS (Name x) z Q' = InputS (Name x) z' (tpm [(z',z)] Q')’
+      Know ‘InputS x z Q' = InputS x z' (tpm [(z',z)] Q')’
       >- (MATCH_MP_TAC tpm_ALPHA_InputS >> art []) \\
       DISCH_THEN (fs o wrap) \\
       qabbrev_tac ‘Q'' = tpm [(z',z)] Q'’ \\
       Q.PAT_X_ASSUM
-        ‘!x y x' z x''. R' y x ==> TRANS x (InputS (Name x') z x'') /\ _ ==> _’
+        ‘!x y x' z x''. R' y x ==> TRANS x (InputS x' z x'') /\ _ ==> _’
         (MP_TAC o Q.SPECL [‘Q’, ‘y’, ‘x’, ‘z'’, ‘Q''’]) >> rw [] \\
       Q.PAT_X_ASSUM ‘open_simulation (\x y. R y x)’
         (STRIP_ASSUME_TAC o SIMP_RULE (std_ss ++ DNF_ss) [open_simulation_def]) \\
       Q.PAT_X_ASSUM
-        ‘!x y x' z x''. R y x ==> TRANS x (InputS (Name x') z x'') /\ _ ==> _’
+        ‘!x y x' z x''. R y x ==> TRANS x (InputS x' z x'') /\ _ ==> _’
         (MP_TAC o Q.SPECL [‘y’, ‘P’, ‘x’, ‘z'’, ‘y'’]) >> rw [] \\
-      rename1 ‘TRANS P (InputS (Name x) z' P')’ \\
-      Know ‘InputS (Name x) z' P' = InputS (Name x) z (tpm [(z,z')] P')’
+      rename1 ‘TRANS P (InputS x z' P')’ \\
+      Know ‘InputS x z' P' = InputS x z (tpm [(z,z')] P')’
       >- (MATCH_MP_TAC tpm_ALPHA_InputS >> art [] \\
           irule FV_InputS \\
           qexistsl_tac [‘P’, ‘x’, ‘z'’] >> rw []) \\
@@ -416,43 +416,43 @@ Proof
       Q.EXISTS_TAC ‘tpm [(z,z')] y'’ >> simp [Abbr ‘P''’],
       (* goal 9 (of 10) *)
       rename1 ‘R P y'’ >> rename1 ‘R' y Q’ \\
-      rename1 ‘TRANS Q (FreeOutput (Name a) (Name b) Q')’ \\
+      rename1 ‘TRANS Q (FreeOutput a b Q')’ \\
       Q.PAT_X_ASSUM ‘open_simulation (\x y. R' y x)’
         (STRIP_ASSUME_TAC o SIMP_RULE (std_ss ++ DNF_ss) [open_simulation_def]) \\
       Q.PAT_X_ASSUM ‘!x y a b x'. R' y x ==>
-                                  TRANS x (FreeOutput (Name a) (Name b) x') ==> _’
+                                  TRANS x (FreeOutput a b x') ==> _’
         (MP_TAC o Q.SPECL [‘Q’, ‘y’, ‘a’, ‘b’, ‘Q'’]) >> rw [] \\
       Q.PAT_X_ASSUM ‘open_simulation (\x y. R y x)’
         (STRIP_ASSUME_TAC o SIMP_RULE (std_ss ++ DNF_ss) [open_simulation_def]) \\
       Q.PAT_X_ASSUM ‘!x y a b x'. R y x ==>
-                                  TRANS x (FreeOutput (Name a) (Name b) x') ==> _’
+                                  TRANS x (FreeOutput a b x') ==> _’
         (MP_TAC o Q.SPECL [‘y’, ‘P’, ‘a’, ‘b’, ‘y'’]) >> rw [] \\
-      rename1 ‘TRANS P (FreeOutput (Name a) (Name b) P')’ \\
+      rename1 ‘TRANS P (FreeOutput a b P')’ \\
       Q.EXISTS_TAC ‘P'’ >> rw [] \\
       Q.EXISTS_TAC ‘y'’ >> rw [],
       (* goal 10 (of 10) *)
       rename1 ‘R P y'’ >> rename1 ‘R' y Q’ \\
-      rename1 ‘TRANS Q (BoundOutput (Name x) z Q')’ \\
+      rename1 ‘TRANS Q (BoundOutput x z Q')’ \\
       Q.PAT_X_ASSUM ‘open_simulation (\x y. R' y x)’
         (STRIP_ASSUME_TAC o SIMP_RULE (std_ss ++ DNF_ss) [open_simulation_def]) \\
       qabbrev_tac ‘X = {z} UNION {x} UNION FV y UNION FV P UNION FV Q UNION FV Q'’ \\
      ‘FINITE X’ by rw [Abbr ‘X’] \\
       Q_TAC (NEW_TAC "z'") ‘X’ \\
       Q.PAT_X_ASSUM ‘FINITE X’ K_TAC >> fs [Abbr ‘X’, IN_UNION] \\
-      Know ‘BoundOutput (Name x) z Q' = BoundOutput (Name x) z' (tpm [(z',z)] Q')’
+      Know ‘BoundOutput x z Q' = BoundOutput x z' (tpm [(z',z)] Q')’
       >- (MATCH_MP_TAC tpm_ALPHA_BoundOutput >> art []) \\
       DISCH_THEN (fs o wrap) \\
       qabbrev_tac ‘Q'' = tpm [(z',z)] Q'’ \\
       Q.PAT_X_ASSUM ‘!x y x' z x''. R' y x ==>
-                                    TRANS x (BoundOutput (Name x') z x'') /\ _ ==> _’
+                                    TRANS x (BoundOutput x' z x'') /\ _ ==> _’
         (MP_TAC o Q.SPECL [‘Q’, ‘y’, ‘x’, ‘z'’, ‘Q''’]) >> rw [] \\
       Q.PAT_X_ASSUM ‘open_simulation (\x y. R y x)’
         (STRIP_ASSUME_TAC o SIMP_RULE (std_ss ++ DNF_ss) [open_simulation_def]) \\
       Q.PAT_X_ASSUM ‘!x y x' z x''. R y x ==>
-                                    TRANS x (BoundOutput (Name x') z x'') /\ _ ==> _’
+                                    TRANS x (BoundOutput x' z x'') /\ _ ==> _’
         (MP_TAC o Q.SPECL [‘y’, ‘P’, ‘x’, ‘z'’, ‘y'’]) >> rw [] \\
-      rename1 ‘TRANS P (BoundOutput (Name x) z' P')’ \\
-      Know ‘BoundOutput (Name x) z' P' = BoundOutput (Name x) z (tpm [(z,z')] P')’
+      rename1 ‘TRANS P (BoundOutput x z' P')’ \\
+      Know ‘BoundOutput x z' P' = BoundOutput x z (tpm [(z,z')] P')’
       >- (MATCH_MP_TAC tpm_ALPHA_BoundOutput >> art [] \\
           irule FV_BoundOutput \\
           qexistsl_tac [‘P’, ‘x’, ‘z'’] >> rw []) \\
