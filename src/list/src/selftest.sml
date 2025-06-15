@@ -65,7 +65,10 @@ val _ = app(test "LASTN_CONV" Term.compare term_to_string LASTN_CONV)
 val _ = app(test "LIST_EQ_SIMP_CONV" Term.compare term_to_string
                  listSimps.LIST_EQ_SIMP_CONV)
            [(“(l1:'a list ++ [])::t = p ++ q”, “(l1:'a list)::t = p ++ q”),
+            (“[a; b] = [a; b]”, “T”),
+            (* old examples from listSimps.sml *)
             (“[x1;x2] ++ l1 ++ l2 ++ [x3] ++ l3 = x1::x2'::l1' ++ l3 :'a list”,
+            (* was: “x2' = x2 /\ ...” due a conversion bug from thm2 to thm3 *)
              “(x2 = x2' :'a) /\ (l1 ++ l2 ++ [x3] = l1' :'a list)”),
             (“[x1;x2] ++ l1 ++ l2 ++ [x3] ++ [x4;x5;x6] = x1'::l1' ++ [x5;x6]:'a list”,
              “(x1 = x1' :'a) /\ (x2::(l1 ++ l2 ++ [x3; x4]) = l1' :'a list)”),
@@ -73,7 +76,18 @@ val _ = app(test "LIST_EQ_SIMP_CONV" Term.compare term_to_string
              “(l2 = l2' :'a list) /\ (x3 = x3' :'a)”),
             (“[x1;x2;x3] ++ l2 ++ [x3] ++ l3 = [x1;x2] ++ l1 ++ l2' ++ l3 :'a list”,
              “(x3::(l2 ++ [x3]) = l1 ++ l2' :'a list)”),
-            (“(x::l) = (l ++ l :'a list)”, “[x] = l :'a list”)]
+            (“(x::l) = (l ++ l :'a list)”, “[x] = l :'a list”),
+            (* new test cases for the SNOC support *)
+            (“[a;b;c;d] = SNOC d l”, “[a; b; c] = l”),
+            (“SNOC x l = l' ++ [y]”, “l = (l' :'a list) /\ x = (y :'a)”),
+            (“SNOC x l = l ++ [c]”, “x = c :'a”),
+            (* FIXME
+            (“SNOC x l = l ++ [x]”, “T”) (* was: UNCHANGED *),
+            (“SNOC a b = SNOC c d”,
+             “a = (c :'a) /\ b = (d :'a list)”) (* was: b = d /\ a = c *),
+             *)
+            (“l ++ [x] = SNOC y l'”, “l = (l' :'a list) /\ x = (y :'a)”)
+            ]
 
 val _ = app(test "APPEND_CONV" Term.compare term_to_string
                  ListConv1.APPEND_CONV)

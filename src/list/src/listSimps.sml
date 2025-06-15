@@ -163,8 +163,8 @@ local
                        THENC (EQ_CONV left_nil_intro_CONV)) l
                       handle UNCHANGED => REFL l
 
-        (* NOTE: this step eliminates all potential SNOC from the rhs of thm0,
-           rendering the output compatible with the rest of steps. --Chun Tian
+        (* NOTE: This step eliminates all potential SNOC from the rhs of thm0,
+           rendering the output compatible with the rest of steps.
          *)
            val thm0' = GEN_REWRITE_RULE (RAND_CONV o DEPTH_CONV) empty_rewrites
                                         [SNOC_APPEND, APPEND_ASSOC] thm0
@@ -264,7 +264,7 @@ local
            val thm2 = TRANS thm1 (MP thm2b TRUTH)
 
            val thm3 = if turn then
-                      CONV_RULE ((RHS_CONV o ONCE_DEPTH_CONV) SYM_CONV) thm2 else thm2
+               CONV_RULE ((RHS_CONV o ONCE_DEPTH_CONV) SYM_CONV) thm2 else thm2
 
            val thm4 = CONV_RULE ((RHS_CONV o RAND_CONV)
                          (LIST_EQ_SIMP_CONV___internal_left_elim conv)) thm3

@@ -39,19 +39,19 @@ LEXFLAGS = -l
 $(EXEC): $(OBJ) $(DEBUG)
 	rm -f $(EXEC)
 	$(CC) $(CFLAGS) $(OBJ) $(LIB) $(DEBUG) -o $(EXEC)
-grammar.y:	grammar.m4
+grammar.y: grammar.m4
 	rm -f grammar.y
 	$(M4) $(TM4) grammar.m4 > grammar.y
 grammar.c y.tab.h: grammar.y
 	$(YACC) -d grammar.y; mv y.tab.c grammar.c
-input.lex:	input.m4
+input.lex: input.m4
 	rm -f input.lex
 	$(M4) $(TM4) input.m4 > input.lex
 input.c: input.lex
 	$(LEX) $(LEXFLAGS) input.lex; mv lex.yy.c input.c
 
 # Recompile main.c if makefile changes.  This may be the change of version.
-main.o: main.c init.h makefile
+main.o: main.c init.h Makefile
 init.o: init.c init.h y.tab.h assoc.h  storage.h bdd.h hash.h node.h string.h
 assoc.o: assoc.c assoc.h storage.h hash.h node.h
 bdd.o: bdd.c assoc.h storage.h bdd.h hash.h node.h y.tab.h
@@ -66,7 +66,7 @@ input.o: input.c node.h y.tab.h
 clean:
 	rm -f *.o grammar.c grammar.y input.lex input.c y.tab.h
 SRC= \
-  makefile \
+  Makefile \
   README \
   assoc.c \
   assoc.h \
