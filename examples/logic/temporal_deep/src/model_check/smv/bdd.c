@@ -147,12 +147,12 @@ void init_bdd()
 }
 
 
-bdd_ptr leaf_bdd(n)
+bdd_ptr leaf_bdd(bdd_ptr n)
 {
   return(find_bdd(LEAFLEVEL,n,0));
 }
 
-bdd_ptr atomic_bdd(n)
+bdd_ptr atomic_bdd(int n)
 {
   return(find_bdd(THE_CURRENT_VAR(n),ZERO,ONE));
 }
@@ -1595,7 +1595,7 @@ int n;
   else return(n+(int)((L-x)*(b*(L-x)+GC_ALPHA)));
 }
 
-static force_garbage()
+static void force_garbage()
 {
   if(verbose) fprintf(stderr,"[GC at %d...",reduce_table.elements_in_table);
   flush_apply();
@@ -1625,7 +1625,7 @@ static force_garbage()
   if(verbose)pr_status();
 }
 #else /* not OTHER_SIMP */
-static force_garbage()
+static void force_garbage()
 {
 
   flush_apply();
@@ -1658,7 +1658,7 @@ int get_bdd_nodes_allocated()
   return(bdd_nodes_allocated);
 }
 
-mygarbage()
+void mygarbage()
 {
 #ifdef REORDER
   if(((reduce_table.elements_in_table) >= maxnodes)
@@ -1687,13 +1687,13 @@ mygarbage()
 /* #ifdef SMV_SIGNALS */
 /* Forces garbage collection next time mygarbage is called.
    Normally is called from the signal handler. */
-reset_maxnodes()
+void reset_maxnodes()
 {
   maxnodes = MIN_NODES;
 }
 /* #endif */
 
-restart_bdd()
+void restart_bdd()
 {
   save_bdd_list = NIL;
   save_bdd(ZERO);
@@ -1701,7 +1701,7 @@ restart_bdd()
   force_garbage();
 }
 
-pr_status()
+void pr_status()
 {
 #ifdef REORDER
   fprintf(stderr,"nodes allocated: %d\n",reduce_table.elements_in_table);

@@ -1,4 +1,16 @@
-#include <init.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "storage.h"
+#include "hash.h"
+#include "node.h"
+#include "symbols.h"
+#include "assoc.h"
+#include "init.h"
+
+int yyparse (void);
 
 /* Global variables */
 
@@ -62,7 +74,7 @@ extern int indent_size;
 
 /* The main function - the only function in this file */
 
-main(argc,argv)
+int main(argc,argv)
 int argc;
 char **argv;
 {
@@ -235,7 +247,7 @@ char **argv;
       argv++;
       sscanf(*(argv++),"%d",&option_othersimp);
       if(option_othersimp < 0 || option_othersimp > 2) {
-	fprintf(stderr,"Error: -othersimp %d: must be 0, 1 or 2\n");
+	fprintf(stderr,"Error: -othersimp %d: must be 0, 1 or 2\n", option_othersimp);
 	exit(1);
       }
     }

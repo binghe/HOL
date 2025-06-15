@@ -98,35 +98,42 @@ typedef struct {
 
 /* functions we provide */
 
-void init_bdd();
-bdd_ptr find_bdd();
-void sweep_reduce();
-void save_apply();
-void insert_apply();
-bdd_ptr find_apply();
-void flush_apply();
-void repairmark();
-void renumber();
-int size_bdd();
-void mark_bdd();
-bdd_ptr and_bdd();
-bdd_ptr or_bdd();
-bdd_ptr xor_bdd();
-bdd_ptr not_bdd();
-bdd_ptr forsome();
+void init_bdd(void);
+bdd_ptr find_bdd(register int level, register bdd_ptr d1, register bdd_ptr d2);
+void sweep_reduce(void);
+void save_apply(int op, register bdd_ptr d1, register bdd_ptr d2);
+void insert_apply(int op, register bdd_ptr d1, register bdd_ptr d2, register bdd_ptr d);
+bdd_ptr find_apply(int op, register bdd_ptr d1, register bdd_ptr d2);
+void flush_apply(void);
+void repairmark(register bdd_ptr d);
+void renumber(register bdd_ptr d, register int* pcount);
+int size_bdd(register bdd_ptr d);
+void mark_bdd(register bdd_ptr d);
+bdd_ptr and_bdd(bdd_ptr a, bdd_ptr b);
+bdd_ptr or_bdd(bdd_ptr a, bdd_ptr b);
+bdd_ptr xor_bdd(bdd_ptr a, bdd_ptr b);
+bdd_ptr not_bdd(bdd_ptr d);
+bdd_ptr forsome(bdd_ptr a, bdd_ptr b);
 #ifdef OTHER_SIMP
-bdd_ptr simplify_assuming2();
+bdd_ptr simplify_assuming2(bdd_ptr a, bdd_ptr b);
 #endif
-bdd_ptr simplify_assuming();
-bdd_ptr sat_bdd();
-double count_bdd(),n_count_bdd();
-bdd_ptr save_bdd();
-void release_bdd();
-bdd_ptr leaf_bdd(),atomic_bdd(),r_shift(),f_shift(),r_collapse(),collapse();
-bdd_ptr apply_bdd(),if_then_else_bdd();
+bdd_ptr simplify_assuming(bdd_ptr a, bdd_ptr b);
+bdd_ptr sat_bdd(bdd_ptr d);
+double count_bdd(bdd_ptr d);
+double n_count_bdd(bdd_ptr d, int n);
+bdd_ptr save_bdd(bdd_ptr d);
+void release_bdd(bdd_ptr d);
+bdd_ptr leaf_bdd(bdd_ptr n);
+bdd_ptr atomic_bdd(int n);
+bdd_ptr r_shift(bdd_ptr a);
+bdd_ptr f_shift(bdd_ptr a);
+bdd_ptr r_collapse(bdd_ptr a, bdd_ptr b);
+bdd_ptr collapse(bdd_ptr a, bdd_ptr b);
+bdd_ptr apply_bdd(int (*f)(), bdd_ptr a, bdd_ptr b);
+bdd_ptr if_then_else_bdd(bdd_ptr a, bdd_ptr b, bdd_ptr c);
 
-bdd_ptr bdd_trim_to_level();
-int var_level();
+bdd_ptr bdd_trim_to_level(bdd_ptr d, int n);
+int var_level(node_ptr v);
 
 #define IS_CURRENT_VAR(s) (((s)&1)==0)
 #define IS_NEXT_VAR(s) (((s)&1)==1)
@@ -135,3 +142,6 @@ int var_level();
 #define VAR_NUM(s) ((s)>>1)
 #define NEXT_TO_CURRENT(s) ((s)-1)
 #define CURRENT_TO_NEXT(s) ((s)+1)
+
+int get_bdd_nodes_allocated(void);
+void reset_maxnodes(void);

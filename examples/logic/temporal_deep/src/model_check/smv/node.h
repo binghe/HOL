@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 typedef union {
   int inttype;
   struct node *nodetype;
@@ -11,15 +13,25 @@ typedef struct node{
   value left,right;
 } node_rec,*node_ptr;
 
-node_ptr new_node(),find_node();
-void init_node(),free_node();
-void print_node();
-void fprint_node();
-node_ptr subst_node(),map(),key_node();
-int list_length(),member();
-void free_list();
-node_ptr cons(),car(),cdr(),append(),reverse(),list_minus();
-node_ptr unify_node();
+node_ptr new_node(int type, node_ptr left, node_ptr right);
+node_ptr find_node(int type, node_ptr left, node_ptr right);
+void init_node(void);
+void free_node(node_ptr a);
+void print_node(FILE *stream, node_ptr n);
+void fprint_node(FILE *ff, node_ptr n);
+node_ptr subst_node(node_ptr n);
+node_ptr map(node_ptr (*f)(), node_ptr l);
+node_ptr key_node(node_ptr n);
+int list_length(node_ptr l);
+int member(node_ptr x, node_ptr l);
+void free_list(node_ptr a);
+node_ptr cons(node_ptr x, node_ptr y);
+node_ptr car(node_ptr x);
+node_ptr cdr(node_ptr x);
+node_ptr append(node_ptr x, node_ptr y);
+node_ptr reverse(node_ptr x);
+node_ptr list_minus(node_ptr l1, node_ptr l2);
+node_ptr unify_node(node_ptr n1, node_ptr n2, node_ptr sl);
 
 #define NIL ((node_ptr)0)
 #define FAILURE_NODE ((node_ptr)(-1))

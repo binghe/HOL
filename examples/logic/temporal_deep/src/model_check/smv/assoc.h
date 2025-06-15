@@ -4,7 +4,7 @@ typedef struct assoc{
   node_ptr y;
 } assoc_rec,*assoc_ptr;
 
-hash_ptr new_assoc();
-node_ptr find_assoc();
-void insert_assoc();
-void assoc_init();
+void init_assoc(void);
+hash_ptr new_assoc(void);
+node_ptr find_assoc(hash_ptr hash, node_ptr x);
+void insert_assoc(hash_ptr hash, node_ptr x, node_ptr y);

@@ -3,5 +3,5 @@ typedef struct string{
   char *text;
 } string_rec,*string_ptr;
 
-string_ptr find_string();
-void init_string();
+string_ptr find_string(char *x);
+void init_string(void);

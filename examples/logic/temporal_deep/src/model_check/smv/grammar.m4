@@ -1,13 +1,16 @@
 %{
-#include <storage.h>
-#include <node.h>
-#include <hash.h>
-#include <assoc.h>
-#include <setjmp.h>
+#include "storage.h"
+#include "node.h"
+#include "symbols.h"
+#include "hash.h"
+#include "assoc.h"
+#include "setjmp.h"
+#include "init.h"
 #define catch_err(c) {longjmp_on_err = 1; if(!setjmp(longjmp_buf))c; longjmp_on_err = 0;}
 
 extern int longjmp_on_err;
 extern jmp_buf longjmp_buf;
+int yylex (void);
 
 node_ptr parse_tree;
 %}
@@ -17,7 +20,7 @@ node_ptr parse_tree;
 }
 
 /* all of the terminal grammar symbols (tokens recognized
-by the lexical analyzer) 
+by the lexical analyzer)
 note: all binary operators associate from left to right
 ops are listed from lowest to highest priority */
 
@@ -26,7 +29,7 @@ ifdef(`TIMING',
 %left ASYNC MODULE PROCESS MODTYPE LAMBDA CONTEXT EU AU EBU ABU MINU MAXU,
 %left ASYNC MODULE PROCESS MODTYPE LAMBDA CONTEXT EU AU EBU ABU)
 ifdef(`TIMING',
-%left VAR DEFINE INIT TRANS INVAR FORMAT PRINT SPEC COMPUTE 
+%left VAR DEFINE INIT TRANS INVAR FORMAT PRINT SPEC COMPUTE
                                              FAIRNESS ISA CONSTANT ASSIGN,
 %left VAR DEFINE INIT TRANS INVAR FORMAT PRINT SPEC FAIRNESS ISA CONSTANT ASSIGN)
 %left INPUT OUTPUT IMPLEMENTS HIDE EXPOSE
@@ -109,7 +112,7 @@ declaration   : var
 ifdef(`TIMING',
 `              | compute')
               | fairness
-              | assign 
+              | assign
               | input
               | output
               | implements
@@ -264,7 +267,7 @@ hexpr         : HIDE netermlist COLON `expr' { $$ = new_node(HIDE,$2,$4); }
               | `expr' GT `expr' { $$ = new_node(GT,$1,$3); }
               | `expr' LE `expr' { $$ = new_node(LE,$1,$3); }
               | `expr' GE `expr' { $$ = new_node(GE,$1,$3); }
-              | LCB neatomset RCB { $$ = $2; } 
+              | LCB neatomset RCB { $$ = $2; }
               | `expr' UNION `expr' { $$ = new_node(UNION,$1,$3); }
               | `expr' SETIN `expr' { $$ = new_node(SETIN,$1,$3); }
               | `expr' SETNOTIN `expr'
@@ -280,7 +283,7 @@ ifdef(`TIMING',
 
 neatomset     : constant
               | neatomset COMMA constant {$$ = new_node(UNION,$1,$3);}
-              ; 
+              ;
 
 constant      : ATOM
               | number

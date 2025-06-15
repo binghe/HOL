@@ -1,4 +1,12 @@
-#include <init.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <unistd.h>
+
+#include "storage.h"
+#include "hash.h"
+#include "node.h"
+#include "init.h"
 
 /* Global variables */
 
@@ -227,25 +235,31 @@ void print_usage()
 }
 
 /*VARARGS1*/
-void rpterr(s,a1,a2,a3,a4)
-char *s,*a1,*a2,*a3,*a4;
+void rpterr(const char* format, ...)
 {
+  va_list argptr;
+  va_start(argptr, format);
   start_err();
-  fprintf(stderr,s,a1,a2,a3,a4);
+  vfprintf(stderr, format, argptr);
   finish_err();
+  va_end(argptr);
 }
 
 /*VARARGS1*/
-void catastrophe(s,a1,a2,a3,a4)
-char *s,*a1,*a2,*a3,*a4;
+void catastrophe(const char* format, ...)
 {
+  va_list argptr;
+  va_start(argptr, format);
+  
   fprintf(stderr,"\n\n*** internal error *** ");
 #ifdef VERSION
   fprintf(stderr,"\n%s", VERSION);
 #endif
-  fprintf(stderr,s,a1,a2,a3,a4);
+  vfprintf(stderr, format, argptr);
   fprintf(stderr,"\nPlease report this error to sergey.berezin@cs.cmu.edu\n");
   fprintf(stderr,"Send a copy of this output and your input.\n");
+
+  va_end(argptr);
   my_exit(1);
 }
 
@@ -267,7 +281,7 @@ void pop_atom()
 void yyerror(s)
 char *s;
 {
-    extern yytext;
+    extern char yytext[];
     start_err();
     fprintf(stderr,"at token \"%s\": %s\n",&yytext,s);
     if(!interactive_mode)finish_err();

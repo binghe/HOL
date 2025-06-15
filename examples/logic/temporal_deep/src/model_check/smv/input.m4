@@ -1,6 +1,7 @@
 %{
-#include <node.h>
-#include <y.tab.h>
+#include "node.h"
+#include "str.h"
+#include "y.tab.h"
 %}
 %a	15000
 %o	25000
@@ -98,20 +99,20 @@ ifdef(`TIMING',
 "|"                     return(OR);
 "&"                     return(AND);
 "!"                     return(NOT);
-[A-Za-z_][A-Za-z0-9_\$#-]*  { 
+[A-Za-z_][A-Za-z0-9_\$#-]*  {
                              yylval.node = new_node(ATOM,
-                                                     find_string(yytext),NIL);
+                                                     (node_ptr)find_string(yytext),NIL);
                              return(ATOM);
                            }
 [0-9]+                  {
                           int i;
                           sscanf(yytext,"%d",&i);
-                          yylval.node = new_node(NUMBER,i,NIL);
+                          yylval.node = new_node(NUMBER,(node_ptr)(size_t)i,NIL);
                           return(NUMBER);
                         }
 \"[^\"]*\"              {
                           yylval.node = new_node(QUOTE,
-                                                  find_string(yytext),NIL);
+                                                  (node_ptr)find_string(yytext),NIL);
                              return(QUOTE);
                         }
 ","                     return(COMMA);
@@ -119,4 +120,3 @@ ifdef(`TIMING',
 ";"                     return(SEMI);
 .			;/* rpterr("illegal character"); */
 %%
-

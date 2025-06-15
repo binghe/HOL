@@ -1,13 +1,9 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/times.h>
-#include <storage.h>
-#include <string.h>
-#include <node.h>
-#include <hash.h>
-#include <bdd.h>
-#include <assoc.h>
-#include <y.tab.h>
+#include "str.h"
+#include "bdd.h"
+#include "y.tab.h"
 #include <setjmp.h>
 #ifdef SMV_SIGNALS
 #include <signal.h>
@@ -19,25 +15,25 @@
 
 /* Functions */
 
-void init_eval();
-void signal_handler();
-void open_input();
-void close_input();
-void undefined();
-void redefining();
-void circular();
-void toomanyvars();
-void start_err();
-void finish_err();
-int my_setjmp();
-void cancel_my_setjmp();
-void my_exit();
-void print_usage();
-void rpterr();
-void catastrophe();
-void push_atom();
-void pop_atom();
-void yyerror();
-int yywrap();
-void indent();
-void indent_node();
+void init_eval(void);
+void signal_handler(int sig);
+void open_input(char *filename);
+void close_input(void);
+void undefined(node_ptr s);
+void redefining(node_ptr s);
+void circular(node_ptr s);
+void toomanyvars(node_ptr s);
+void start_err(void);
+void finish_err(void);
+int my_setjmp(void);
+void cancel_my_setjmp(void);
+void my_exit(int n);
+void print_usage(void);
+void rpterr(const char* format, ...);
+void catastrophe(const char* format, ...);
+void push_atom(node_ptr s);
+void pop_atom(void);
+void yyerror(char *s);
+int yywrap(void);
+void indent(FILE *stream);
+void indent_node(FILE *stream, char *s1, node_ptr n, char *s2);

@@ -1,6 +1,6 @@
-#include <storage.h>
-#include <hash.h>
-#include <string.h>
+#include "storage.h"
+#include "hash.h"
+#include "str.h"
 
 static mgr_ptr string_mgr;
 static hash_ptr string_hash;

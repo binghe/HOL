@@ -20,7 +20,7 @@ DFLAGS = -DBETTERHASH -DSMV_SIGNALS -DOTHER_SIMP
 CFLAGS =  $(OPTFLAGS) -I. $(DFLAGS) $(REORDER) $(TIMING) $(VERFLAG)
 LIB = -lm $(MACHLIB)
 OBJ = grammar.o input.o init.o main.o assoc.o bdd.o  hash.o node.o storage.o \
-	string.o symbols.o
+	str.o symbols.o
 EXEC = smv
 CC = gcc
 M4 = m4
@@ -52,14 +52,14 @@ input.c: input.lex
 
 # Recompile main.c if makefile changes.  This may be the change of version.
 main.o: main.c init.h Makefile
-init.o: init.c init.h y.tab.h assoc.h  storage.h bdd.h hash.h node.h string.h
+init.o: init.c init.h y.tab.h assoc.h  storage.h bdd.h hash.h node.h str.h
 assoc.o: assoc.c assoc.h storage.h hash.h node.h
 bdd.o: bdd.c assoc.h storage.h bdd.h hash.h node.h y.tab.h
 symbols.o : symbols.c storage.h node.h hash.h bdd.h assoc.h y.tab.h
 hash.o: hash.c storage.h hash.h
 node.o: node.c y.tab.h assoc.h storage.h bdd.h hash.h node.h
 storage.o: storage.c storage.h
-string.o: string.c assoc.h storage.h hash.h string.h
+str.o: str.c assoc.h storage.h hash.h str.h
 grammar.o: grammar.c storage.h node.h hash.h assoc.h
 input.o: input.c node.h y.tab.h
 
@@ -96,9 +96,10 @@ SRC= \
   smv.1 \
   storage.c \
   storage.h \
-  string.c \
-  string.h \
+  str.c \
+  str.h \
   symbols.c \
+  symbols.h \
   timing.m4 \
   smv-mode.el \
   NEW \
