@@ -136,14 +136,11 @@ local
    fun left_nil_intro_CONV l = if is_append l then raise UNCHANGED else
                               (ISPEC l (GSYM (CONJUNCT1 listTheory.APPEND)))
 
-   fun strip_append_or_snoc l =
-       if is_append l then strip_append l else strip_snoc_to_lists l
-
    fun LIST_EQ_SIMP_CONV___internal_right_elim conv l =
    let
       val (l1, l2) = dest_eq l
-      val lL1 = strip_append_or_snoc l1
-      val lL2 = strip_append_or_snoc l2
+      val lL1 = strip_append l1
+      val lL2 = strip_append l2
    in
       if (is_right_same lL1 lL2) then
          ((EQ_CONV left_nil_intro_CONV) THENC
@@ -162,14 +159,7 @@ local
            val thm0 = ((if turn then SYM_CONV else ALL_CONV)
                        THENC (EQ_CONV left_nil_intro_CONV)) l
                       handle UNCHANGED => REFL l
-
-        (* NOTE: This step eliminates all potential SNOC from the rhs of thm0,
-           rendering the output compatible with the rest of steps.
-         *)
-           val thm0' = GEN_REWRITE_RULE (RAND_CONV o DEPTH_CONV) empty_rewrites
-                                        [SNOC_APPEND, APPEND_ASSOC] thm0
-
-           val thm1 = if n1 = n2 then thm0' else
+           val thm1 = if n1 = n2 then thm0 else
                let
                   val (L21, L22) = Lib.split_after (n2 - n1) L2
                   val ty = type_of (hd L21)
@@ -180,7 +170,7 @@ local
                in
                   CONV_RULE ((RHS_CONV o RHS_CONV)
                      (RAND_CONV (K split_thm) THENC
-                      REWR_CONV listTheory.APPEND_ASSOC)) thm0'
+                      REWR_CONV listTheory.APPEND_ASSOC)) thm0
                end
 
            val thm2a =
@@ -300,7 +290,12 @@ in
             val (l1', _) = dest_eq t
             val _ = if is_list_type (type_of l1') then () else raise UNCHANGED
          in
-            conv t
+             let val th = PURE_REWRITE_CONV [SNOC_APPEND] t
+                 val (t1, t2) = dest_eq (concl th)
+             in
+                 TRANS th (conv t2)
+             end
+             handle UNCHANGED => conv t
          end
    end
 
@@ -312,6 +307,7 @@ in
           key   = SOME ([],Term `l1:'a list = l2:'a list`),
           conv  = K (K (CHANGED_CONV LIST_EQ_SIMP_CONV))})
 end
+
 
 (*---------------------------------------------------------------------------
         For the simplifier.
