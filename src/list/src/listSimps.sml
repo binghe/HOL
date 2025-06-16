@@ -293,9 +293,17 @@ in
              let val th = PURE_REWRITE_CONV [SNOC_APPEND] t
                  val (t1, t2) = dest_eq (concl th)
              in
-                 TRANS th (conv t2)
+                 (* If the list equation after eliminating SNOC actually cannot be
+                    simplified, the entire conversion should return UNCHANGED, by
+                    throwing HOL_ERR here, to be handled later.
+                  *)
+                 let val th' = CHANGED_CONV conv t2
+                 in
+                     TRANS th th'
+                 end
              end
              handle UNCHANGED => conv t
+                  | HOL_ERR _ => raise UNCHANGED
          end
    end
 
