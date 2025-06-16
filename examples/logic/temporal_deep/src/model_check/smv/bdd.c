@@ -8,10 +8,14 @@
 /* BDD routines */
 
 #include <stdio.h>
-#include <storage.h>
-#include <bdd.h>
-#include <node.h>
+#include <stdlib.h>
+
+#include "storage.h"
+#include "node.h"
+#include "bdd.h"
+#include "symbols.h"
 #include "y.tab.h"
+#include "init.h"
 
 #define MIN_NODES 10000
 
@@ -86,6 +90,8 @@ int             primes[] = {
 			    /* 8588840951	 92671 92681	 */
 };
 
+static void create_keytable(register keytable_ptr kp,
+			    register int n);
 
 /* Create a keytable. */
 /* Keytable is the hash table which allows us
@@ -97,9 +103,8 @@ int             primes[] = {
             of pointers to BDD nodes.
 	    all pointers all initialized to NULL
 */
-static void create_keytable(kp, n)
-register keytable_ptr kp;
-register int n;
+static void create_keytable(register keytable_ptr kp,
+			    register int n)
 {
 #ifdef REORDER
   if(!reorder)
@@ -405,7 +410,7 @@ int level1, level2;
   register struct node *bddlist = save_bdd_list;
 
   while(bddlist)
-    { register k = GETLEVEL(bddlist->left.bddtype);
+    { register int k = GETLEVEL(bddlist->left.bddtype);
       if(k>=level1 && k<level2)
 	SETMARK(bddlist->left.bddtype);
       bddlist = bddlist->right.nodetype;
@@ -528,7 +533,7 @@ extern node_ptr variables;
 extern bdd_ptr find_assoc_bdd_var();
 
 
-set_variable_names()
+void set_variable_names()
 {
   node_ptr l;
   int i;
@@ -957,7 +962,7 @@ bdd_ptr a,b;
   else if(alevel<blevel)
     temp1=find_bdd(alevel,apply_bdd(f,a->left,b),apply_bdd(f,a->right,b));
   else temp1=find_bdd(blevel,apply_bdd(f,a,b->left),apply_bdd(f,a,b->right));
-  insert_apply(f,a,b,temp1);
+  insert_apply((int)f,a,b,temp1);
   return(temp1);
 }
 
@@ -977,7 +982,7 @@ bdd_ptr a,b;
 #else
   if(ISLEAF(a))type_error(a->left);
 #endif
-  if(temp1=find_apply(if_then_bdd,a,b))return(temp1);
+  if(temp1=find_apply((int)if_then_bdd,a,b))return(temp1);
   alevel=GETLEVEL(a);
   blevel=GETLEVEL(b);
   if(alevel==blevel)
@@ -986,7 +991,7 @@ bdd_ptr a,b;
   else if(alevel<blevel)
     temp1=find_bdd(alevel,if_then_bdd(a->left,b),if_then_bdd(a->right,b));
   else temp1=find_bdd(blevel,if_then_bdd(a,b->left),if_then_bdd(a,b->right));
-  insert_apply(if_then_bdd,a,b,temp1);
+  insert_apply((int)if_then_bdd,a,b,temp1);
   return(temp1);
 }
 
@@ -999,7 +1004,7 @@ bdd_ptr a,b;
     if(a->left != ELSE_LEAF)return(a);
     else return(b);
   }
-  if(temp1=find_apply(else_bdd,a,b))return(temp1);
+  if(temp1=find_apply((int)else_bdd,a,b))return(temp1);
   alevel=GETLEVEL(a);
   blevel=GETLEVEL(b);
   if(alevel==blevel)
@@ -1008,7 +1013,7 @@ bdd_ptr a,b;
   else if(alevel<blevel)
     temp1=find_bdd(alevel,else_bdd(a->left,b),else_bdd(a->right,b));
   else temp1=find_bdd(blevel,else_bdd(a,b->left),else_bdd(a,b->right));
-  insert_apply(else_bdd,a,b,temp1);
+  insert_apply((int)else_bdd,a,b,temp1);
   return(temp1);
 }
 
@@ -1041,12 +1046,12 @@ bdd_ptr a;
   int tmp;
   if(a==ZERO || a==ONE)return(1);
   if(ISLEAF(a))type_error(a->left);
-  if(tmp=(int)(find_apply(check_bdd_current,a,a)))return(tmp);
+  if(tmp=(int)(find_apply((int)check_bdd_current,a,a)))return(tmp);
   alevel = GETLEVEL(a);
   if(IS_CURRENT_VAR(alevel))
     tmp = check_bdd_current(a->left) && check_bdd_current(a->right);
   else tmp = 0;
-  insert_apply(check_bdd_current,a,a,(bdd_ptr)tmp);
+  insert_apply((int)check_bdd_current,a,a,(bdd_ptr)tmp);
   return(tmp);
 }
 
@@ -1057,12 +1062,12 @@ bdd_ptr a;
   int tmp;
   if(a==ZERO || a==ONE)return(1);
   if(ISLEAF(a))type_error(a->left);
-  if(tmp=(int)(find_apply(check_bdd_next,a,a)))return(tmp);
+  if(tmp=(int)(find_apply((int)check_bdd_next,a,a)))return(tmp);
   alevel = GETLEVEL(a);
   if(!IS_CURRENT_VAR(alevel))
     tmp = check_bdd_next(a->left) && check_bdd_next(a->right);
   else tmp = 0;
-  insert_apply(check_bdd_next,a,a,(bdd_ptr)tmp);
+  insert_apply((int)check_bdd_next,a,a,(bdd_ptr)tmp);
   return(tmp);
 }
 #endif
@@ -1372,7 +1377,7 @@ bdd_ptr a,b;
   if(a == ONE || b == ONE || b == ZERO)return(b);
   if(a == ZERO)catastrophe("forall: a == ZERO");
   {
-    register bdd_ptr result = find_apply(forall,a,b);
+    register bdd_ptr result = find_apply((int)forall,a,b);
     if(result)return(result);
     {
       register int alevel = GETLEVEL(a);
@@ -1384,7 +1389,7 @@ bdd_ptr a,b;
       else 
 	result = find_bdd(blevel,forall(a,b->left),forall(a,b->right));
     }
-    insert_apply(forall,a,b,result);
+    insert_apply((int)forall,a,b,result);
     return(result);
   }
 }
@@ -1553,7 +1558,7 @@ bdd_ptr d;
   save_bdd_list_length--;
 }
 
-static markbddlist(bddlist)
+static void markbddlist(bddlist)
 struct node *bddlist;
 {
   /*  if(bddlist==NIL)return;
@@ -1562,7 +1567,7 @@ struct node *bddlist;
   for( ; bddlist != NIL ; bddlist = cdr(bddlist)) mark_bdd(car(bddlist));
 }
 
-check_bdd(d)
+void check_bdd(d)
 bdd_ptr d;
 {
   node_ptr p = save_bdd_list;
@@ -1777,12 +1782,12 @@ bdd_ptr a;
   int alevel;
   bdd_ptr temp1,temp2;
   if(ISLEAF(a))return(a);
-  if(temp1=find_apply(r_shift,a,0))return(temp1);
+  if(temp1=find_apply((int)r_shift,a,0))return(temp1);
   alevel = GETLEVEL(a);
   if(IS_CURRENT_VAR(alevel)){
     temp1 = find_bdd(CURRENT_TO_NEXT(alevel),
 		     r_shift(a->left),r_shift(a->right));
-    insert_apply(r_shift,a,0,temp1);
+    insert_apply((int)r_shift,a,0,temp1);
     return(temp1);
   }
   else
@@ -1800,12 +1805,12 @@ bdd_ptr a;
   int alevel;
   bdd_ptr temp1,temp2;
   if(ISLEAF(a))return(a);
-  if(temp1=find_apply(f_shift,a,0))return(temp1);
+  if(temp1=find_apply((int)f_shift,a,0))return(temp1);
   alevel = GETLEVEL(a);
   if(!IS_CURRENT_VAR(alevel)){
     temp1 = find_bdd(NEXT_TO_CURRENT(alevel),
 		     f_shift(a->left),f_shift(a->right));
-    insert_apply(f_shift,a,0,temp1);
+    insert_apply((int)f_shift,a,0,temp1);
     return(temp1);
   }
   else
@@ -1865,7 +1870,7 @@ bdd_ptr a,b;
   bdd_ptr temp1;
   if(a==ZERO || b==ZERO)return(ZERO);
   if(a==ONE && b == ONE)return(ONE);
-  if(temp1=find_apply(collapse_no_shift,a,b))return(temp1);
+  if(temp1=find_apply((int)collapse_no_shift,a,b))return(temp1);
   alevel=GETLEVEL(a);
   blevel=GETLEVEL(b);
   if(alevel<blevel){
@@ -1890,7 +1895,7 @@ bdd_ptr a,b;
 			collapse_no_shift(a,b->left),
 			collapse_no_shift(a,b->right));
   }
-  insert_apply(collapse_no_shift,a,b,temp1);
+  insert_apply((int)collapse_no_shift,a,b,temp1);
   return(temp1);
 }
 
@@ -1901,7 +1906,7 @@ bdd_ptr a,b,v;
   bdd_ptr temp1;
   if(a==ZERO || b==ZERO)return(ZERO);
   if(a==ONE && b == ONE)return(ONE);
-  if(temp1=find_apply(collapse_vars,a,b))return(temp1);
+  if(temp1=find_apply((int)collapse_vars,a,b))return(temp1);
   alevel=GETLEVEL(a);
   blevel=GETLEVEL(b);
   vlevel=GETLEVEL(v);
@@ -1931,7 +1936,7 @@ bdd_ptr a,b,v;
 			collapse_vars(a,b->left,v),
 			collapse_vars(a,b->right,v));
   }
-  insert_apply(collapse_vars,a,b,temp1);
+  insert_apply((int)collapse_vars,a,b,temp1);
   return(temp1);
 }
 
@@ -1944,6 +1949,8 @@ bdd_ptr a;
   if(temp == (int)ELSE_LEAF) temp = value_bdd(a->right);
   return(temp);
 }
+
+static node_ptr wl_bdd(void (*f)(), bdd_ptr d);
 
 static node_ptr wl_bdd(f,d)
 void (*f)();
@@ -1967,7 +1974,7 @@ bdd_ptr d;
   return;
 }
 
-  
+static int aux_lowest_var_bdd(bdd_ptr d, int n);
 
 static int aux_lowest_var_bdd(d,n)
 bdd_ptr d;
@@ -1988,6 +1995,8 @@ bdd_ptr d;
   repairmark(d);
   return(res);
 }
+
+static bdd_ptr aux_make_var_mask(bdd_ptr d, int n, int l);
 
 static bdd_ptr aux_make_var_mask(d,n,l)
 bdd_ptr d;

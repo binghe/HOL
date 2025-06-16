@@ -145,3 +145,7 @@ int var_level(node_ptr v);
 
 int get_bdd_nodes_allocated(void);
 void reset_maxnodes(void);
+void set_variable_names(void);
+void pr_status(void);
+void walk_leaves(void (*f)(), bdd_ptr d);
+int lowest_var_bdd(bdd_ptr d);

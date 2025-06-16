@@ -11,7 +11,8 @@ typedef struct mgr{
 
 #define ALLOCSIZE (2<<15)
 
-void init_storage();
-mgr_ptr new_mgr();
-rec_ptr new_rec(),dup_rec();
-void free_rec();
+void init_storage(void);
+mgr_ptr new_mgr(int rec_size);
+rec_ptr new_rec(register mgr_ptr mp);
+rec_ptr dup_rec(mgr_ptr mp, rec_ptr r);
+void free_rec(register mgr_ptr mp, rec_ptr r);

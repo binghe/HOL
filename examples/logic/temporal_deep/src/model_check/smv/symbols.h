@@ -12,3 +12,4 @@ void goto_state(node_ptr s);
 void assign_command(node_ptr var, node_ptr val);
 void single_step(void);
 void build_symbols(void);
+void type_error(node_ptr n);
