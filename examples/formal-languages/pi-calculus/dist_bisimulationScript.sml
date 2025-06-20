@@ -1,5 +1,5 @@
 (* ========================================================================== *)
-(* FILE          : dist_bisimScript.sml                                       *)
+(* FILE          : dist_bisimulationScript.sml                                *)
 (* DESCRIPTION   : Open Bisimulation for the pi-Calculus with Mismatch [1]    *)
 (*                                                                            *)
 (* Copyright 2025  The Australian National University (Author: Chun Tian)     *)
@@ -11,7 +11,7 @@ open pairTheory pred_setTheory set_relationTheory hurdUtils;
 
 open basic_swapTheory nomsetTheory NEWLib pi_agentTheory;
 
-val _ = new_theory "dist_bisim";
+val _ = new_theory "dist_bisimulation";
 
 (* some proofs here are large with too many assumptions *)
 val _ = set_trace "Goalstack.print_goal_at_top" 0;
@@ -826,7 +826,7 @@ QED
  *)
 
 val _ = export_theory ();
-val _ = html_theory "dist_bisim";
+val _ = html_theory "dist_bisimulation";
 
 (* References:
 
