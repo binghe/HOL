@@ -6797,8 +6797,9 @@ Theorem distinct_benf_imp_inconsistent :
           inconsistent (conversion (RINSERT (beta RUNION eta) M N))
 Proof
     rw [inconsistent_def]
+ >> rename1 ‘conversion _ P Q’
  >> MP_TAC (Q.SPECL [‘M’, ‘N’] separability_final) >> rw []
- >> POP_ASSUM (MP_TAC o Q.SPECL [‘M'’, ‘N'’])
+ >> POP_ASSUM (MP_TAC o Q.SPECL [‘P’, ‘Q’])
  >> STRIP_TAC
  (* M' ~ apply pi M  ~ apply pi N ~ N' *)
  >> MATCH_MP_TAC conversion_TRANS
