@@ -1292,33 +1292,54 @@ val subst_exists0 =
                                  tpm_COND, tpm_fresh, pmact_sing_inv,
                                  rpm_COND, rpm_fresh, rpm_thm, tpm_thm,
                                  basic_swapTheory.swapstr_eq_left]
+        (* TODO: why this is needed? *)
+        |> SIMP_RULE (srw_ss()) [GSYM term_REP_tpm,
+                                 GSYM InputS_def, GSYM BoundOutput_def]
         |> SIMP_RULE (srw_ss()) [rewrite_pairing, pairTheory.FORALL_PROD]
         |> CONV_RULE (DEPTH_CONV (rename_vars [("p_1", "u"), ("p_2", "E")]))
 
 (* debug
 val ppm = “pair_pmact pi_pmact residual_pmact”;
 val ppm2 = “pair_pmact string_pmact string_pmact”;
+val ppms = [ppm,ppm2];
 val alphas = [tpm_ALPHA_Res, tpm_ALPHA_Input, tpm_ALPHA_InputS,
               tpm_ALPHA_BoundOutput];
 val rwts :thm list = [];
 val th = subst_exists0;
 val th = rpt_hyp_dest_conj (UNDISCH th);
 val ths = hypset th;
-
+val n = HOLset.numItems ths;
 val h = el 1 (HOLset.listItems ths);
 set_goal ([], h);
+val h = el 2 (HOLset.listItems ths);
+set_goal ([], h);
+val h = el 3 (HOLset.listItems ths);
+set_goal ([], h);
+val h = el 4 (HOLset.listItems ths);
+set_goal ([], h);
+(* fail *)
+val h = el 5 (HOLset.listItems ths);
+set_goal ([], h);
+val h = el 6 (HOLset.listItems ths);
+set_goal ([], h);
+ *)
 
-fun prove_alpha_fcbhyp {ppm, alphas, rwts} th = let
+fun gen_tactics [] : tactic = ALL_TAC
+  | gen_tactics (ppm::xs) =
+    match_mp_tac (GEN_ALL notinsupp_fnapp) \\
+    EXISTS_TAC ppm \\
+    srw_tac [] rwts \\
+    gen_tactics xs;
+
+fun prove_alpha_fcbhyp {ppms, alphas, rwts} th = let
   open nomsetTheory
   val th = rpt_hyp_dest_conj (UNDISCH th)
+  val tac = gen_tactics ppms
   fun foldthis (h,th) = let
     val h_th =
       TAC_PROOF(([], h),
                 rpt gen_tac >> strip_tac >>
-                FIRST (map (match_mp_tac o GSYM) alphas) >>
-                match_mp_tac (GEN_ALL notinsupp_fnapp) >>
-                EXISTS_TAC ppm \\
-                srw_tac [] rwts)
+                FIRST (map (match_mp_tac o GSYM) alphas) >> tac)
   in
     PROVE_HYP h_th th
   end
@@ -1328,14 +1349,17 @@ end
 
 val subst_exists =
     subst_exists0
-        |> prove_alpha_fcbhyp {ppm = ``pair_pmact string_pmact string_pmact``,
+        |> prove_alpha_fcbhyp {ppms = [“pair_pmact pi_pmact residual_pmact”,
+                                       “pair_pmact string_pmact string_pmact”],
                                rwts = [],
                                alphas = [tpm_ALPHA_Res, tpm_ALPHA_Input,
                                          tpm_ALPHA_InputS,
                                          tpm_ALPHA_BoundOutput]};
 
-val SUB_DEF = new_specification("SUB_DEF", ["SUB"], subst_exists);
+(* NOTE: "PSUB" stands for "pre-substitution" *)
+val PSUB_DEF = new_specification("PSUB_DEF", ["SUB1", "SUB2"], subst_exists);
 
+(*
 Overload SUB = “SUB”; (* use the syntax already defined in termTheory *)
 
 val SUB_THMv = prove(
