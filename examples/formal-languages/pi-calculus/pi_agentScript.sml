@@ -1262,7 +1262,7 @@ Proof
     rw [subst_def, swapstr_def] >> METIS_TAC []
 QED
 
-val subst_exists0 =
+val subst_exists =
     parameter_tm_recursion
         |> INST_TYPE [“:'q” |-> “:string # string” (* (key,value) *),
                       “:'r” |-> “:pi # residual”]
@@ -1291,64 +1291,11 @@ val subst_exists0 =
         |> SIMP_RULE (srw_ss()) [support_def, FUN_EQ_THM, fnpm_def,
                                  tpm_COND, tpm_fresh, pmact_sing_inv,
                                  rpm_COND, rpm_fresh, rpm_thm, tpm_thm,
-                                 basic_swapTheory.swapstr_eq_left]
-        (* TODO: why this is needed? *)
-        |> SIMP_RULE (srw_ss()) [GSYM term_REP_tpm,
+                                 basic_swapTheory.swapstr_eq_left,
+                                 SYM term_REP_tpm, SYM term_REP_rpm,
                                  GSYM InputS_def, GSYM BoundOutput_def]
         |> SIMP_RULE (srw_ss()) [rewrite_pairing, pairTheory.FORALL_PROD]
         |> CONV_RULE (DEPTH_CONV (rename_vars [("p_1", "u"), ("p_2", "E")]))
-
-(* debug
-val ppm = “pair_pmact pi_pmact residual_pmact”;
-val ppm2 = “pair_pmact string_pmact string_pmact”;
-val ppms = [ppm,ppm2];
-val alphas = [tpm_ALPHA_Res, tpm_ALPHA_Input, tpm_ALPHA_InputS,
-              tpm_ALPHA_BoundOutput];
-val rwts :thm list = [];
-val th = subst_exists0;
-val th = rpt_hyp_dest_conj (UNDISCH th);
-val ths = hypset th;
-val n = HOLset.numItems ths;
-val h = el 1 (HOLset.listItems ths);
-set_goal ([], h);
-val h = el 2 (HOLset.listItems ths);
-set_goal ([], h);
-val h = el 3 (HOLset.listItems ths);
-set_goal ([], h);
-val h = el 4 (HOLset.listItems ths);
-set_goal ([], h);
-(* fail *)
-val h = el 5 (HOLset.listItems ths);
-set_goal ([], h);
-val h = el 6 (HOLset.listItems ths);
-set_goal ([], h);
- *)
-
-fun gen_tactics [] : tactic = ALL_TAC
-  | gen_tactics (ppm::xs) =
-    match_mp_tac (GEN_ALL notinsupp_fnapp) \\
-    EXISTS_TAC ppm \\
-    srw_tac [] rwts \\
-    gen_tactics xs;
-
-fun prove_alpha_fcbhyp {ppms, alphas, rwts} th = let
-  open nomsetTheory
-  val th = rpt_hyp_dest_conj (UNDISCH th)
-  val tac = gen_tactics ppms
-  fun foldthis (h,th) = let
-    val h_th =
-      TAC_PROOF(([], h),
-                rpt gen_tac >> strip_tac >>
-                FIRST (map (match_mp_tac o GSYM) alphas) >> tac)
-  in
-    PROVE_HYP h_th th
-  end
-in
-  HOLset.foldl foldthis th (hypset th)
-end
-
-val subst_exists =
-    subst_exists0
         |> prove_alpha_fcbhyp {ppms = [“pair_pmact pi_pmact residual_pmact”,
                                        “pair_pmact string_pmact string_pmact”],
                                rwts = [],
@@ -1356,11 +1303,38 @@ val subst_exists =
                                          tpm_ALPHA_InputS,
                                          tpm_ALPHA_BoundOutput]};
 
-(* NOTE: "PSUB" stands for "pre-substitution" *)
-val PSUB_DEF = new_specification("PSUB_DEF", ["SUB1", "SUB2"], subst_exists);
+val SUB12 = new_specification ("SUB0", ["SUB1", "SUB2"], subst_exists);
+
+Definition pi_sub_def :
+    pi_sub E u P = O1 (SUB1 P (u,E))
+End
+Overload SUB = “pi_sub”
+
+Definition residual_sub_def :
+    residual_sub E u P = O2 (SUB2 P (u,E))
+End
+Overload SUB = “residual_sub”
+
+(* sample usage of underAIs (Drule):
+fun cj i = underAIs (el i o CONJUNCTS)
+val iffLR = underAIs (#1 o EQ_IMP_RULE)
+val iffRL = underAIs (#2 o EQ_IMP_RULE)
+ *)
+
+(* debug
+val ths = CONJUNCTS SUB12;
+val n = List.length ths; (* 15 here *)
+val th = el 1 (CONJUNCTS SUB12);
+ *)
+
+fun is_sub1_left th = let
+    val (l,r) = th |> SPEC_ALL |> concl |> dest_eq
+in
+    term_eq (rator (rator l)) “SUB1”
+end;
 
 (*
-Overload SUB = “SUB”; (* use the syntax already defined in termTheory *)
+th |> SPEC_ALL |> AP_TERM “O2” |> BETA_RULE |> REWRITE_RULE [GSYM pi_sub_def]
 
 val SUB_THMv = prove(
   “([N/x](var x) = (N :'a CCS)) /\ (x <> y ==> [N/y](var x) = var x)”,
