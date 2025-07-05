@@ -67,30 +67,34 @@ Inductive TRANS :
 [PAR2_T]
     !P Q Q'. TRANS Q (TauR Q') ==> TRANS (Par P Q) (TauR (Par P Q'))
 
-[COMM1] (* TODO: tpm should change to SUB *)
+[COMM1]
     !P P' Q Q' a b x.
        TRANS P (InputS a x P') /\ TRANS Q (FreeOutput a b Q') /\
        x # P /\ x # Q /\ x <> a /\ x <> b /\ x # Q' ==>
-       TRANS (Par P Q) (TauR (Par (tpm [(x,b)] P') Q'))
-[COMM2] (* TODO: tpm should change to SUB *)
+       TRANS (Par P Q) (TauR (Par ([b/x] P') Q'))
+
+[COMM2]
     !P P' Q Q' a b x.
        TRANS P (FreeOutput a b P') /\ TRANS Q (InputS a x Q') /\
        x # Q /\ x # P /\ x <> a /\ x <> b /\ x # P' ==>
-       TRANS (Par P Q) (TauR (Par P' (tpm [(x,b)] Q')))
-[CLOSE1] (* TODO: tpm should change to SUB *)
+       TRANS (Par P Q) (TauR (Par P' ([b/x] Q')))
+
+[CLOSE1]
     !P P' Q Q' a x y.
        TRANS P (InputS a x P') /\
        TRANS Q (BoundOutput a y Q') /\
        x # P /\ x # Q /\ y # P /\ y # Q /\
        x <> a /\ x # Q' /\ y <> a /\ y # P' /\ x <> y ==>
-       TRANS (Par P Q) (TauR (Res y (Par (tpm [(x,y)] P') Q')))
-[CLOSE2] (* TODO: tpm should change to SUB *)
+       TRANS (Par P Q) (TauR (Res y (Par ([y/x] P') Q')))
+
+[CLOSE2]
     !P P' Q Q' a x y.
        TRANS P (BoundOutput a y P') /\
        TRANS Q (InputS a x Q') /\
        x # P /\ x # Q /\ y # P /\ y # Q /\
        x <> a /\ x # P' /\ y <> a /\ y # Q' /\ x <> y ==>
-       TRANS (Par P Q) (TauR (Res y (Par P' (tpm [(x,y)] Q'))))
+       TRANS (Par P Q) (TauR (Res y (Par P' ([y/x] Q'))))
+
 [RES_I]
     !P P' a x y.
        TRANS P (InputS a x P') /\
@@ -227,12 +231,13 @@ Proof
  >> MATCH_MP_TAC open_simulation_union >> art []
 QED
 
+(*
 Theorem FV_InputS_lemma[local] :
     !P Q. TRANS P Q ==>
          !P' x z. Q = InputS x z P' /\ x <> z /\ z # P /\
                       !y. y # P /\ y <> z ==> y # P'
 Proof
-    cheat
+    HO_MATCH_MP_TAC TRANS_ind >> simp []
 QED
 
 Theorem FV_InputS :
@@ -479,6 +484,7 @@ Proof
       MATCH_MP_TAC open_bisimilar_transitive \\
       Q.EXISTS_TAC ‘y’ >> art [] ]
 QED
+*)
 
 val _ = export_theory ();
 val _ = html_theory "open_bisimulation";

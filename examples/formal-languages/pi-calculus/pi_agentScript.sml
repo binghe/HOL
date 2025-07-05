@@ -1331,34 +1331,43 @@ val iffLR = underAIs (#1 o EQ_IMP_RULE)
 val iffRL = underAIs (#2 o EQ_IMP_RULE)
  *)
 
-(* debug
 val ths = CONJUNCTS SUB12;
+
+(* debug
 val n = List.length ths; (* 15 here *)
 val th = el 1 (CONJUNCTS SUB12);
  *)
 
-(*
-th |> SPEC_ALL |> AP_TERM “O2” |> BETA_RULE |> REWRITE_RULE [GSYM pi_sub_def]
+(* it returns the actual conclusion without antecedents *)
+fun concl1 th =
+    let val tm = concl (SPEC_ALL th) in
+        if is_imp tm then (snd (dest_imp tm)) else tm
+    end;
 
-val SUB_THMv = prove(
-  “([N/x](var x) = (N :'a CCS)) /\ (x <> y ==> [N/y](var x) = var x)”,
-  SRW_TAC [][SUB_DEF]);
+(* it takes “f b” or “f a b” and returns “f” *)
+fun rator2 tm =
+    let val tm1 = rator tm in
+        if is_comb tm1 then rator tm1 else tm1
+    end;
 
-Theorem SUB_COMM = prove(
-   “!N x x' y (t :'a CCS).
-        x' <> x /\ x' # N ∧ y <> x /\ y # N ==>
-        (tpm [(x',y)] ([N/x] t) = [N/x] (tpm [(x',y)] t))”,
-  srw_tac [][SUB_DEF, supp_fresh]);
+fun has_term sub_tm th =
+    let val (l,r) = (dest_eq (concl1 th)) in
+       (aconv (rator2 l) sub_tm) orelse
+       (aconv (rator2 r) sub_tm)
+    end;
+val has_sub1 = has_term “SUB1”;
+val has_sub2 = has_term “SUB2”;
 
-val SUB_THM = save_thm("SUB_THM",
-  let val (eqns,_) = CONJ_PAIR SUB_DEF
-  in
-    CONJ (REWRITE_RULE [GSYM CONJ_ASSOC]
-                       (LIST_CONJ (SUB_THMv :: tl (CONJUNCTS eqns))))
-         SUB_COMM
-  end);
-val _ = export_rewrites ["SUB_THM"];
- *)
+val th1s = map (underAIs (SRULE [GSYM pi_sub_def] o
+                          BETA_RULE o AP_TERM “O1”))
+               (filter has_sub1 ths);
+
+val th2s = map (underAIs (SRULE [GSYM residual_sub_def, GSYM pi_sub_def] o
+                          BETA_RULE o AP_TERM “O2”))
+               (filter has_sub2 ths);
+
+Theorem pi_sub_thm[simp]       = LIST_CONJ th1s
+Theorem residual_sub_thm[simp] = LIST_CONJ th2s
 
 val _ = export_theory ();
 val _ = html_theory "pi_agent";
