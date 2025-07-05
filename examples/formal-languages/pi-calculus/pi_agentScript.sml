@@ -1296,6 +1296,14 @@ val subst_exists =
                                  GSYM InputS_def, GSYM BoundOutput_def]
         |> SIMP_RULE (srw_ss()) [rewrite_pairing, pairTheory.FORALL_PROD]
         |> CONV_RULE (DEPTH_CONV (rename_vars [("p_1", "u"), ("p_2", "E")]))
+     (* NOTE: The first ppm represents the two nominal types being constructed,
+        and it should be always like this for any recursive function on multiple
+        nominal types. (This part should be automated.)
+
+        The second ppm represents the parameters of the recursive function. In
+        this case it's from string to string. It varies among different recursive
+        functions being constructed.
+      *)
         |> prove_alpha_fcbhyp {ppms = [“pair_pmact pi_pmact residual_pmact”,
                                        “pair_pmact string_pmact string_pmact”],
                                rwts = [],
@@ -1303,8 +1311,10 @@ val subst_exists =
                                          tpm_ALPHA_InputS,
                                          tpm_ALPHA_BoundOutput]};
 
-val SUB12 = new_specification ("SUB0", ["SUB1", "SUB2"], subst_exists);
+val SUB12 = new_specification
+  ("SUB12", ["SUB1", "SUB2"], subst_exists);
 
+(* “[E/u] P” aka “P [u |-> E]” *)
 Definition pi_sub_def :
     pi_sub E u P = O1 (SUB1 P (u,E))
 End
@@ -1327,12 +1337,6 @@ val n = List.length ths; (* 15 here *)
 val th = el 1 (CONJUNCTS SUB12);
  *)
 
-fun is_sub1_left th = let
-    val (l,r) = th |> SPEC_ALL |> concl |> dest_eq
-in
-    term_eq (rator (rator l)) “SUB1”
-end;
-
 (*
 th |> SPEC_ALL |> AP_TERM “O2” |> BETA_RULE |> REWRITE_RULE [GSYM pi_sub_def]
 
@@ -1354,7 +1358,6 @@ val SUB_THM = save_thm("SUB_THM",
          SUB_COMM
   end);
 val _ = export_rewrites ["SUB_THM"];
-
  *)
 
 val _ = export_theory ();
