@@ -41,14 +41,17 @@ Inductive TRANS :
     !P P' Q a x.
        TRANS P (InputS a x P') /\ x # P /\ x # Q /\ x <> a ==>
        TRANS (Par P Q) (InputS a x (Par P' Q))
+
 [PAR1_BO]
     !P P' Q a x.
        TRANS P (BoundOutput a x P') /\ x # P /\ x # Q /\ x <> a ==>
        TRANS (Par P Q) (BoundOutput a x (Par P' Q))
+
 [PAR1_FO]
     !P P' Q a b.
        TRANS P (FreeOutput a b P') ==>
        TRANS (Par P Q) (FreeOutput a b (Par P' Q))
+
 [PAR1_T]
     !P P' Q. TRANS P (TauR P') ==> TRANS (Par P Q) (TauR (Par P' Q))
 

@@ -1325,12 +1325,6 @@ Definition residual_sub_def :
 End
 Overload SUB = “residual_sub”
 
-(* sample usage of underAIs (Drule):
-fun cj i = underAIs (el i o CONJUNCTS)
-val iffLR = underAIs (#1 o EQ_IMP_RULE)
-val iffRL = underAIs (#2 o EQ_IMP_RULE)
- *)
-
 val ths = CONJUNCTS SUB12;
 
 (* debug
@@ -1338,20 +1332,20 @@ val n = List.length ths; (* 15 here *)
 val th = el 1 (CONJUNCTS SUB12);
  *)
 
-(* it returns the actual conclusion without antecedents *)
+(* This function returns the conclusion ignoring antecedents *)
 fun concl1 th =
     let val tm = concl (SPEC_ALL th) in
-        if is_imp tm then (snd (dest_imp tm)) else tm
+        if is_imp tm then snd (dest_imp tm) else tm
     end;
 
-(* it takes “f b” or “f a b” and returns “f” *)
+(* This function takes “f b” or “f a b” and returns “f” *)
 fun rator2 tm =
     let val tm1 = rator tm in
         if is_comb tm1 then rator tm1 else tm1
     end;
 
 fun has_term sub_tm th =
-    let val (l,r) = (dest_eq (concl1 th)) in
+    let val (l,r) = dest_eq (concl1 th) in
        (aconv (rator2 l) sub_tm) orelse
        (aconv (rator2 r) sub_tm)
     end;
