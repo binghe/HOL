@@ -9,153 +9,154 @@ open HolKernel Parse boolLib bossLib;
 
 open pairTheory pred_setTheory relationTheory hurdUtils;
 
-open nomsetTheory NEWLib pi_agentTheory;
+open basic_swapTheory nomsetTheory NEWLib pi_agentTheory;
 
 val _ = new_theory "open_bisimulation";
 
 (* some proofs here are large with too many assumptions *)
 val _ = set_trace "Goalstack.print_goal_at_top" 0;
 
+(* NOTE: The type 'a is reserved for TRANS_bvc_gen_ind *)
 Type transition[pp] = “:pi -> residual -> bool”
+Type gen_trans[pp]  = “:'a -> trans”
 
 Definition TRANS_TAU_def :
-    TRANS_TAU (R :transition) P <=> R (Tau P) (TauR P)
+    TRANS_TAU (R :'a gen_trans) z P <=> R z (Tau P) (TauR P)
 End
 
 Definition TRANS_INPUT_def :
-    TRANS_INPUT R a x P <=> x <> a ==> R (Input a x P) (InputS a x P)
+    TRANS_INPUT R z a x P <=> x <> a ==> R z (Input a x P) (InputS a x P)
 End
 
 Definition TRANS_OUTPUT_def :
-    TRANS_OUTPUT (R :transition) a b P <=> R (Output a b P) (FreeOutput a b P)
+    TRANS_OUTPUT (R :'a gen_trans) z a b P <=> R z (Output a b P) (FreeOutput a b P)
 End
 
 Definition TRANS_MATCH_def :
-    TRANS_MATCH (R :transition) P Rs b <=> R P Rs ==> R (Match b b P) Rs
+    TRANS_MATCH (R :'a gen_trans) z P Rs b <=> R z P Rs ==> R z (Match b b P) Rs
 End
 
 Definition TRANS_MISMATCH_def :
-    TRANS_MISMATCH (R :transition) P Rs a b <=>
-        R P Rs /\ a <> b ==> R (Mismatch a b P) Rs
+    TRANS_MISMATCH (R :'a gen_trans) z P Rs a b <=>
+        R z P Rs /\ a <> b ==> R z (Mismatch a b P) Rs
 End
 
 Definition TRANS_OPEN_def :
-    TRANS_OPEN R P P' a b <=>
-               R P (FreeOutput a b P') /\ a <> b ==>
-               R (Res b P) (BoundOutput a b P')
+    TRANS_OPEN R z P P' a b <=>
+               R z P (FreeOutput a b P') /\ a <> b ==>
+               R z (Res b P) (BoundOutput a b P')
 End
 
 Definition TRANS_SUM1_def :
-    TRANS_SUM1 (R :transition) P Q Rs <=> R P Rs ==> R (Sum P Q) Rs
+    TRANS_SUM1 (R :'a gen_trans) z P Q Rs <=> R z P Rs ==> R z (Sum P Q) Rs
 End
 
 Definition TRANS_SUM2_def :
-    TRANS_SUM2 (R :transition) P Q Rs <=> R Q Rs ==> R (Sum P Q) Rs
+    TRANS_SUM2 (R :'a gen_trans) z P Q Rs <=> R z Q Rs ==> R z (Sum P Q) Rs
 End
 
 Definition TRANS_PAR1_I_def :
-    TRANS_PAR1_I R P P' Q a x <=>
-       R P (InputS a x P') /\ x # P /\ x # Q /\ x <> a ==>
-       R (Par P Q) (InputS a x (Par P' Q))
+    TRANS_PAR1_I R z P P' Q a x <=>
+       R z P (InputS a x P') /\ x # P /\ x # Q /\ x <> a ==>
+       R z (Par P Q) (InputS a x (Par P' Q))
 End
 
 Definition TRANS_PAR1_BO_def :
-    TRANS_PAR1_BO R P P' Q a x <=>
-       R P (BoundOutput a x P') /\ x # P /\ x # Q /\ x <> a ==>
-       R (Par P Q) (BoundOutput a x (Par P' Q))
+    TRANS_PAR1_BO R z P P' Q a x <=>
+       R z P (BoundOutput a x P') /\ x # P /\ x # Q /\ x <> a ==>
+       R z (Par P Q) (BoundOutput a x (Par P' Q))
 End
 
 Definition TRANS_PAR1_FO_def :
-    TRANS_PAR1_FO R P P' Q a b <=>
-       R P (FreeOutput a b P') ==>
-       R (Par P Q) (FreeOutput a b (Par P' Q))
+    TRANS_PAR1_FO R z P P' Q a b <=>
+       R z P (FreeOutput a b P') ==>
+       R z (Par P Q) (FreeOutput a b (Par P' Q))
 End
 
 Definition TRANS_PAR1_T_def :
-    TRANS_PAR1_T R P P' Q <=> R P (TauR P') ==> R (Par P Q) (TauR (Par P' Q))
+    TRANS_PAR1_T R z P P' Q <=> R z P (TauR P') ==> R z (Par P Q) (TauR (Par P' Q))
 End
 
 Definition TRANS_PAR2_I_def :
-    TRANS_PAR2_I R P Q Q' a x <=>
-       R Q (InputS a x Q') /\ x # Q /\ x # P /\ x <> a ==>
-       R (Par P Q) (InputS a x (Par P Q'))
+    TRANS_PAR2_I R z P Q Q' a x <=>
+       R z Q (InputS a x Q') /\ x # Q /\ x # P /\ x <> a ==>
+       R z (Par P Q) (InputS a x (Par P Q'))
 End
 
 Definition TRANS_PAR2_BO_def :
-    TRANS_PAR2_BO R P Q Q' a x <=>
-       R Q (BoundOutput a x Q') /\ x # Q /\ x # P /\ x <> a ==>
-       R (Par P Q) (BoundOutput a x (Par P Q'))
+    TRANS_PAR2_BO R z P Q Q' a x <=>
+       R z Q (BoundOutput a x Q') /\ x # Q /\ x # P /\ x <> a ==>
+       R z (Par P Q) (BoundOutput a x (Par P Q'))
 End
 
 Definition TRANS_PAR2_FO_def :
-    TRANS_PAR2_FO R P Q Q' a b <=>
-       R Q (FreeOutput a b Q') ==>
-       R (Par P Q) (FreeOutput a b (Par P Q'))
+    TRANS_PAR2_FO R z P Q Q' a b <=>
+       R z Q (FreeOutput a b Q') ==>
+       R z (Par P Q) (FreeOutput a b (Par P Q'))
 End
 
 Definition TRANS_PAR2_T_def :
-    TRANS_PAR2_T R P Q Q' <=> R Q (TauR Q') ==> R (Par P Q) (TauR (Par P Q'))
+    TRANS_PAR2_T R z P Q Q' <=> R z Q (TauR Q') ==> R z (Par P Q) (TauR (Par P Q'))
 End
 
 Definition TRANS_COMM1_def :
-    TRANS_COMM1 R P P' Q Q' a b x <=>
-       R P (InputS a x P') /\ R Q (FreeOutput a b Q') /\
+    TRANS_COMM1 R z P P' Q Q' a b x <=>
+       R z P (InputS a x P') /\ R z Q (FreeOutput a b Q') /\
        x # P /\ x # Q /\ x <> a /\ x <> b /\ x # Q' ==>
-       R (Par P Q) (TauR (Par ([b/x] P') Q'))
+       R z (Par P Q) (TauR (Par ([b/x] P') Q'))
 End
 
 Definition TRANS_COMM2_def :
-    TRANS_COMM2 R P P' Q Q' a b x <=>
-       R P (FreeOutput a b P') /\ R Q (InputS a x Q') /\
+    TRANS_COMM2 R z P P' Q Q' a b x <=>
+       R z P (FreeOutput a b P') /\ R z Q (InputS a x Q') /\
        x # Q /\ x # P /\ x <> a /\ x <> b /\ x # P' ==>
-       R (Par P Q) (TauR (Par P' ([b/x] Q')))
+       R z (Par P Q) (TauR (Par P' ([b/x] Q')))
 End
 
 Definition TRANS_CLOSE1_def :
-    TRANS_CLOSE1 R P P' Q Q' a x y <=>
-       R P (InputS a x P') /\
-       R Q (BoundOutput a y Q') /\
+    TRANS_CLOSE1 R z P P' Q Q' a x y <=>
+       R z P (InputS a x P') /\ R z Q (BoundOutput a y Q') /\
        x # P /\ x # Q /\ y # P /\ y # Q /\
        x <> a /\ x # Q' /\ y <> a /\ y # P' /\ x <> y ==>
-       R (Par P Q) (TauR (Res y (Par ([y/x] P') Q')))
+       R z (Par P Q) (TauR (Res y (Par ([y/x] P') Q')))
 End
 
 Definition TRANS_CLOSE2_def :
-    TRANS_CLOSE2 R P P' Q Q' a x y <=>
-       R P (BoundOutput a y P') /\
-       R Q (InputS a x Q') /\
+    TRANS_CLOSE2 R z P P' Q Q' a x y <=>
+       R z P (BoundOutput a y P') /\
+       R z Q (InputS a x Q') /\
        x # P /\ x # Q /\ y # P /\ y # Q /\
        x <> a /\ x # P' /\ y <> a /\ y # Q' /\ x <> y ==>
-       R (Par P Q) (TauR (Res y (Par P' ([y/x] Q'))))
+       R z (Par P Q) (TauR (Res y (Par P' ([y/x] Q'))))
 End
 
 Definition TRANS_RES_I_def :
-    TRANS_RES_I R P P' a x y <=>
-       R P (InputS a x P') /\
+    TRANS_RES_I R z P P' a x y <=>
+       R z P (InputS a x P') /\
        y <> a /\ y <> x /\ x # P /\ x <> a ==>
-       R (Res y P) (InputS a x (Res y P'))
+       R z (Res y P) (InputS a x (Res y P'))
 End
 
 Definition TRANS_RES_BO_def :
-    TRANS_RES_BO R P P' a x y <=>
-       R P (BoundOutput a x P') /\
+    TRANS_RES_BO R z P P' a x y <=>
+       R z P (BoundOutput a x P') /\
        y <> a /\ y <> x /\ x # P /\ x <> a ==>
-       R (Res y P) (BoundOutput a x (Res y P'))
+       R z (Res y P) (BoundOutput a x (Res y P'))
 End
 
 Definition TRANS_RES_FO_def :
-    TRANS_RES_FO R P P' a b y <=>
-       R P (FreeOutput a b P') /\
+    TRANS_RES_FO R z P P' a b y <=>
+       R z P (FreeOutput a b P') /\
        y <> a /\ y <> b ==>
-       R (Res y P) (FreeOutput a b (Res y P'))
+       R z (Res y P) (FreeOutput a b (Res y P'))
 End
 
 Definition TRANS_RES_T_def :
-    TRANS_RES_T R P P' y <=> R P (TauR P') ==> R (Res y P) (TauR (Res y P'))
+    TRANS_RES_T R z P P' y <=> R z P (TauR P') ==> R z (Res y P) (TauR (Res y P'))
 End
 
 (* A list of 24 definitions *)
-val TRANS_defs =
+val TRANS_gen_defs =
    [TRANS_TAU_def, TRANS_INPUT_def, TRANS_OUTPUT_def, TRANS_MATCH_def,
     TRANS_MISMATCH_def, TRANS_OPEN_def, TRANS_SUM1_def, TRANS_SUM2_def,
     TRANS_PAR1_I_def, TRANS_PAR1_BO_def, TRANS_PAR1_FO_def, TRANS_PAR1_T_def,
@@ -163,14 +164,23 @@ val TRANS_defs =
     TRANS_COMM1_def, TRANS_COMM2_def, TRANS_CLOSE1_def, TRANS_CLOSE2_def,
     TRANS_RES_I_def, TRANS_RES_BO_def, TRANS_RES_FO_def, TRANS_RES_T_def];
 
+val R_tm = “R :pi -> residual -> bool”;
+
+fun mk_spec_def d =
+    d |> SPEC “\x:'a. ^R_tm” |> Q.SPEC ‘ARB’ |> BETA_RULE |> Q.GEN ‘R’
+
+val TRANS_defs = map mk_spec_def TRANS_gen_defs
+
 (* and their GSYM versions *)
 val GSYM_TRANS_defs = map GSYM TRANS_defs;
 
+
+(* This function generates Inductive-compatible rule terms
+   val d = TRANS_TAU_def *)
 val trans_tm = “TRANS :pi -> residual -> bool”;
 
-(* This function generates Inductive-compatible rule terms *)
 fun mk_ind_rule d = let
-    val th = SPEC trans_tm d;
+    val th = d |> SPEC “\x:'a. ^trans_tm” |> Q.SPEC ‘ARB’ |> BETA_RULE;
     val (vars,eq_tm) = strip_forall (concl th);
     val body_tm = snd (dest_eq eq_tm)
 in
@@ -232,6 +242,7 @@ End
 (* NOTE: No way to simplify TRANS_cases in the same manner *)
 Theorem TRANS_rules' = REWRITE_RULE GSYM_TRANS_defs TRANS_rules
 Theorem TRANS_ind'   = REWRITE_RULE GSYM_TRANS_defs TRANS_ind
+                    |> Q.SPEC ‘R’ |> Q.GEN ‘R’
 
 Theorem TRANS_tpm :
     !P Q. TRANS P Q ==> !pi. TRANS (tpm pi P) (rpm pi Q)
@@ -276,37 +287,231 @@ Proof
      Q.EXISTS_TAC ‘lswapstr pi a’ >> simp [])
 QED
 
-Theorem FV_InputS_lemma[local] :
-    !P P' x z. TRANS P (InputS x z P') /\ x <> z /\ z # P ==>
-              !y. y # P /\ y <> z ==> y # P'
-Proof
-    Induct_on ‘TRANS’ >> simp []
- >> rpt STRIP_TAC
- >> cheat
-QED
-
-Theorem FV_InputS :
-    !P P' x z y. TRANS P (InputS x z P') /\ x <> z /\ z # P /\
-                 y # P /\ y <> z ==> y # P'
-Proof
-    METIS_TAC [FV_InputS_lemma]
-QED
-
-Theorem FV_BoundOutput_lemma[local] :
-    !P Q. TRANS P Q ==>
-          !P' x z. Q = BoundOutput x z P' /\ x <> z /\ z # P /\
-                       !y. y # P /\ y <> z ==> y # P'
+(*
+Theorem TRANS_bvc_gen_ind :
+   !R fv. (!P z. TRANS_TAU R z P) /\
+          (!a x P z. x NOTIN fv z ==> TRANS_INPUT R z a x P) /\
+          (!a b P z. TRANS_OUTPUT R z a b P) /\
+          (!P Rs b z. TRANS_MATCH R z P Rs b) /\
+          (!P Rs a b z. TRANS_MISMATCH R z P Rs a b) /\
+          (!P P' a b z. TRANS_OPEN R z P P' a b) /\
+          (!P Q Rs z. TRANS_SUM1 R z P Q Rs) /\
+          (!P Q Rs z. TRANS_SUM2 R z P Q Rs) /\
+          (!P P' Q a x z. x NOTIN fv z ==> TRANS_PAR1_I R z P P' Q a x) /\
+          (!P P' Q a x z. x NOTIN fv z ==> TRANS_PAR1_BO R z P P' Q a x) /\
+          (!P P' Q a b z. TRANS_PAR1_FO R z P P' Q a b) /\
+          (!P P' Q z. TRANS_PAR1_T R z P P' Q) /\
+          (!P Q Q' a x z. x NOTIN fv z ==> TRANS_PAR2_I R z P Q Q' a x) /\
+          (!P Q Q' a x z. x NOTIN fv z ==> TRANS_PAR2_BO R z P Q Q' a x) /\
+          (!P Q Q' a b z. TRANS_PAR2_FO R z P Q Q' a b) /\
+          (!P Q Q' z. TRANS_PAR2_T R z P Q Q') /\
+          (!P P' a x y z. x NOTIN fv z /\ y NOTIN fv z ==>
+                          TRANS_RES_I R z P P' a x y) /\
+          (!P P' a x y z. x NOTIN fv z /\ y NOTIN fv z ==>
+                          TRANS_RES_BO R z P P' a x y) /\
+          (!P P' a b y z. y NOTIN fv z ==> TRANS_RES_FO R z P P' a b y) /\
+          (!P P' y z. TRANS_RES_T R z P P' y) /\
+          (!P P' Q Q' a b x z. x NOTIN fv z ==>
+                               TRANS_COMM1 R z P P' Q Q' a b x) /\
+          (!P P' Q Q' a b x z. x NOTIN fv z ==>
+                               TRANS_COMM2 R z P P' Q Q' a b x) /\
+          (!P P' Q Q' a x y z. x NOTIN fv z /\ y NOTIN fv z ==>
+                               TRANS_CLOSE1 R z P P' Q Q' a x y) /\
+          (!P P' Q Q' a x y z. x NOTIN fv z /\ y NOTIN fv z ==>
+                               TRANS_CLOSE2 R z P P' Q Q' a x y) /\
+          (!z:'a. FINITE (fv z)) ==>
+        !a0 a1. TRANS a0 a1 ==> !z. R z a0 a1
 Proof
     cheat
 QED
 
-Theorem FV_BoundOutput :
-    !P P' x z y. TRANS P (BoundOutput x z P') /\ x <> z /\ z # P /\
-                 y # P /\ y <> z ==> y # P'
+Theorem TRANS_bvc_ind = TRANS_bvc_gen_ind
+                     |> Q.SPEC ‘\z M N. P0 M N :bool’
+                     |> Q.SPEC ‘\x:'a. X :string set’
+                     |> SIMP_RULE bool_ss []
+                     |> Q.GENL [‘P0’, ‘X’]
+ *)
+
+Theorem FV_InputS_lemma[local] :
+    !P P' x z. TRANS P (InputS x z P') /\ x <> z /\ z # P ==>
+               !y. y # P /\ y <> z ==> y # P'
 Proof
-    METIS_TAC [FV_BoundOutput_lemma]
+    Induct_on ‘TRANS’ using TRANS_ind' >> rw [] (* 24 subgoals *)
+ >- rw [TRANS_TAU_def]
+ >- (rw [TRANS_INPUT_def, InputS_eq_thm] (* 3 subgoals here *) \\
+     rw [] (* only one goal is left *) \\
+     Cases_on ‘x = y’ >> simp [swapstr_def])
+ >- rw [TRANS_OUTPUT_def]
+ >- (rw [TRANS_MATCH_def] \\
+     FIRST_X_ASSUM irule >> rw [] \\
+     qexistsl_tac [‘x’, ‘z’] >> rw [])
+ >- (rw [TRANS_MISMATCH_def] \\
+     FIRST_X_ASSUM irule >> rw [] \\
+     qexistsl_tac [‘x’, ‘z’] >> rw [])
+ >- rw [TRANS_OPEN_def]
+ >- (rw [TRANS_SUM1_def] \\
+     FIRST_X_ASSUM irule >> rw [] \\
+     qexistsl_tac [‘x’, ‘z’] >> rw [])
+ >- (rw [TRANS_SUM2_def] \\
+     FIRST_X_ASSUM irule >> rw [] \\
+     qexistsl_tac [‘x’, ‘z’] >> rw [])
+ >- (rw [TRANS_PAR1_I_def] \\
+     Q.PAT_X_ASSUM ‘InputS _ _ _ = InputS _ _ _’ MP_TAC \\
+     rw [InputS_eq_thm] >> simp []
+     >- (FIRST_X_ASSUM irule >> rw [] \\
+         qexistsl_tac [‘a’, ‘x’] >> rw []) \\
+     Cases_on ‘x = y’ >> simp [] \\
+     FIRST_X_ASSUM irule >> rw [] \\
+     qexistsl_tac [‘a’, ‘x’] >> rw [])
+ >- rw [TRANS_PAR1_BO_def]
+ >- rw [TRANS_PAR1_FO_def]
+ >- rw [TRANS_PAR1_T_def]
+ (* 12 subgoals left *)
+ >- (rw [TRANS_PAR2_I_def] \\
+     Q.PAT_X_ASSUM ‘InputS _ _ _ = InputS _ _ _’ MP_TAC \\
+     rw [InputS_eq_thm] >> simp []
+     >- (FIRST_X_ASSUM irule >> rw [] \\
+         qexistsl_tac [‘a’, ‘x’] >> rw []) \\
+     Cases_on ‘x = y’ >> simp [] \\
+     FIRST_X_ASSUM irule >> rw [] \\
+     qexistsl_tac [‘a’, ‘x’] >> rw [])
+ >- rw [TRANS_PAR2_BO_def]
+ >- rw [TRANS_PAR2_FO_def]
+ >- rw [TRANS_PAR2_T_def]
+ >- (rw [TRANS_RES_I_def] >| (* 3 subgoals *)
+     [ (* goal 1 (of 3) *)
+       Q.PAT_X_ASSUM ‘InputS _ _ _ = InputS _ _ _’ MP_TAC \\
+       rw [InputS_eq_thm] >> simp [] >| (* 3 subgoals *)
+       [ (* goal 1.1 (of 3) *)
+         DISJ1_TAC \\
+         FIRST_X_ASSUM irule >> rw [] \\
+         qexistsl_tac [‘a’, ‘x’] >> rw [],
+         (* goal 1.2 (of 3) *)
+         DISJ1_TAC \\
+         Cases_on ‘x = y'’ >> simp [] \\
+         FIRST_X_ASSUM irule >> rw [] \\
+         qexistsl_tac [‘a’, ‘x’] >> rw [],
+         (* goal 1.3 (of 3) *)
+         Cases_on ‘x = y'’ >> simp [] \\
+         FIRST_X_ASSUM irule >> rw [] \\
+         qexistsl_tac [‘a’, ‘x’] >> rw [] ],
+       (* goal 2 (of 3) *)
+       Q.PAT_X_ASSUM ‘InputS _ _ _ = InputS _ _ _’ MP_TAC \\
+       rw [InputS_eq_thm] >> simp [],
+       (* goal 3 (of 3) *)
+       Q.PAT_X_ASSUM ‘InputS _ _ _ = InputS _ _ _’ MP_TAC \\
+       rw [InputS_eq_thm] >> simp [] \\
+       Cases_on ‘x = y'’ >> simp [] \\
+       FIRST_X_ASSUM irule >> rw [] \\
+       qexistsl_tac [‘a’, ‘x’] >> rw [] ])
+ (* 7 subgoals left *)
+ >- rw [TRANS_RES_BO_def]
+ >- rw [TRANS_RES_FO_def]
+ >- rw [TRANS_RES_T_def]
+ >- rw [TRANS_COMM1_def]
+ >- rw [TRANS_COMM2_def]
+ >- rw [TRANS_CLOSE1_def]
+ >> rw [TRANS_CLOSE2_def]
 QED
-*)
+
+Theorem FV_InputS :
+    !P P' x z. TRANS P (InputS x z P') /\ x <> z /\ z # P ==>
+               FV P' SUBSET z INSERT FV P
+Proof
+    rw [SUBSET_DEF, IN_INSERT]
+ >> METIS_TAC [FV_InputS_lemma]
+QED
+
+(*
+Theorem FV_BoundOutput_lemma[local] :
+    !P P' x z. TRANS P (BoundOutput x z P') /\ x <> z /\ z # P ==>
+               !y. y # P /\ y <> z ==> y # P'
+Proof
+    Induct_on ‘TRANS’ using TRANS_ind' >> rw [] (* 24 subgoals *)
+ >- rw [TRANS_TAU_def]
+ >- rw [TRANS_INPUT_def]
+ >- rw [TRANS_OUTPUT_def]
+ >- (rw [TRANS_MATCH_def] \\
+     FIRST_X_ASSUM irule >> rw [] \\
+     qexistsl_tac [‘x’, ‘z’] >> rw [])
+ >- (rw [TRANS_MISMATCH_def] \\
+     FIRST_X_ASSUM irule >> rw [] \\
+     qexistsl_tac [‘x’, ‘z’] >> rw [])
+ >- (rw [TRANS_OPEN_def, BoundOutput_eq_thm] >| (* 3 subgoals *)
+     cheat)
+ >- (rw [TRANS_SUM1_def] \\
+     FIRST_X_ASSUM irule >> rw [] \\
+     qexistsl_tac [‘x’, ‘z’] >> rw [])
+ >- (rw [TRANS_SUM2_def] \\
+     FIRST_X_ASSUM irule >> rw [] \\
+     qexistsl_tac [‘x’, ‘z’] >> rw [])
+ >- (rw [TRANS_PAR1_I_def] \\
+     Q.PAT_X_ASSUM ‘InputS _ _ _ = InputS _ _ _’ MP_TAC \\
+     rw [InputS_eq_thm] >> simp []
+     >- (FIRST_X_ASSUM irule >> rw [] \\
+         qexistsl_tac [‘a’, ‘x’] >> rw []) \\
+     Cases_on ‘x = y’ >> simp [] \\
+     FIRST_X_ASSUM irule >> rw [] \\
+     qexistsl_tac [‘a’, ‘x’] >> rw [])
+ >- rw [TRANS_PAR1_BO_def]
+ >- rw [TRANS_PAR1_FO_def]
+ >- rw [TRANS_PAR1_T_def]
+ (* 12 subgoals left *)
+ >- (rw [TRANS_PAR2_I_def] \\
+     Q.PAT_X_ASSUM ‘InputS _ _ _ = InputS _ _ _’ MP_TAC \\
+     rw [InputS_eq_thm] >> simp []
+     >- (FIRST_X_ASSUM irule >> rw [] \\
+         qexistsl_tac [‘a’, ‘x’] >> rw []) \\
+     Cases_on ‘x = y’ >> simp [] \\
+     FIRST_X_ASSUM irule >> rw [] \\
+     qexistsl_tac [‘a’, ‘x’] >> rw [])
+ >- rw [TRANS_PAR2_BO_def]
+ >- rw [TRANS_PAR2_FO_def]
+ >- rw [TRANS_PAR2_T_def]
+ >- (rw [TRANS_RES_I_def] >| (* 3 subgoals *)
+     [ (* goal 1 (of 3) *)
+       Q.PAT_X_ASSUM ‘InputS _ _ _ = InputS _ _ _’ MP_TAC \\
+       rw [InputS_eq_thm] >> simp [] >| (* 3 subgoals *)
+       [ (* goal 1.1 (of 3) *)
+         DISJ1_TAC \\
+         FIRST_X_ASSUM irule >> rw [] \\
+         qexistsl_tac [‘a’, ‘x’] >> rw [],
+         (* goal 1.2 (of 3) *)
+         DISJ1_TAC \\
+         Cases_on ‘x = y'’ >> simp [] \\
+         FIRST_X_ASSUM irule >> rw [] \\
+         qexistsl_tac [‘a’, ‘x’] >> rw [],
+         (* goal 1.3 (of 3) *)
+         Cases_on ‘x = y'’ >> simp [] \\
+         FIRST_X_ASSUM irule >> rw [] \\
+         qexistsl_tac [‘a’, ‘x’] >> rw [] ],
+       (* goal 2 (of 3) *)
+       Q.PAT_X_ASSUM ‘InputS _ _ _ = InputS _ _ _’ MP_TAC \\
+       rw [InputS_eq_thm] >> simp [],
+       (* goal 3 (of 3) *)
+       Q.PAT_X_ASSUM ‘InputS _ _ _ = InputS _ _ _’ MP_TAC \\
+       rw [InputS_eq_thm] >> simp [] \\
+       Cases_on ‘x = y'’ >> simp [] \\
+       FIRST_X_ASSUM irule >> rw [] \\
+       qexistsl_tac [‘a’, ‘x’] >> rw [] ])
+ (* 7 subgoals left *)
+ >- rw [TRANS_RES_BO_def]
+ >- rw [TRANS_RES_FO_def]
+ >- rw [TRANS_RES_T_def]
+ >- rw [TRANS_COMM1_def]
+ >- rw [TRANS_COMM2_def]
+ >- rw [TRANS_CLOSE1_def]
+ >> rw [TRANS_CLOSE2_def]
+QED
+
+Theorem FV_BoundOutput :
+    !P P' x z. TRANS P (BoundOutput x z P') /\ x <> z /\ z # P ==>
+               FV P' SUBSET z INSERT FV P
+Proof
+    rw [SUBSET_DEF, IN_INSERT]
+ >> METIS_TAC [FV_BoundOutput_lemma]
+QED
+ *)
 
 Definition open_simulation_def :
     open_simulation (R :pi -> pi -> bool) <=>
