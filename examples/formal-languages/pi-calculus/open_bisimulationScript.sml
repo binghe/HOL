@@ -18,10 +18,10 @@ val _ = set_trace "Goalstack.print_goal_at_top" 0;
 
 (* NOTE: The type 'a is reserved for TRANS_bvc_gen_ind *)
 Type transition[pp] = “:pi -> residual -> bool”
-Type gen_trans[pp]  = “:'a -> trans”
+Type gen_transition = “:'a -> transition”
 
 Definition TRANS_TAU_def :
-    TRANS_TAU (R :'a gen_trans) z P <=> R z (Tau P) (TauR P)
+    TRANS_TAU (R :'a gen_transition) z P <=> R z (Tau P) (TauR P)
 End
 
 Definition TRANS_INPUT_def :
@@ -29,15 +29,16 @@ Definition TRANS_INPUT_def :
 End
 
 Definition TRANS_OUTPUT_def :
-    TRANS_OUTPUT (R :'a gen_trans) z a b P <=> R z (Output a b P) (FreeOutput a b P)
+    TRANS_OUTPUT (R :'a gen_transition) z a b P <=>
+        R z (Output a b P) (FreeOutput a b P)
 End
 
 Definition TRANS_MATCH_def :
-    TRANS_MATCH (R :'a gen_trans) z P Rs b <=> R z P Rs ==> R z (Match b b P) Rs
+    TRANS_MATCH (R :'a gen_transition) z P Rs b <=> R z P Rs ==> R z (Match b b P) Rs
 End
 
 Definition TRANS_MISMATCH_def :
-    TRANS_MISMATCH (R :'a gen_trans) z P Rs a b <=>
+    TRANS_MISMATCH (R :'a gen_transition) z P Rs a b <=>
         R z P Rs /\ a <> b ==> R z (Mismatch a b P) Rs
 End
 
@@ -48,11 +49,11 @@ Definition TRANS_OPEN_def :
 End
 
 Definition TRANS_SUM1_def :
-    TRANS_SUM1 (R :'a gen_trans) z P Q Rs <=> R z P Rs ==> R z (Sum P Q) Rs
+    TRANS_SUM1 (R :'a gen_transition) z P Q Rs <=> R z P Rs ==> R z (Sum P Q) Rs
 End
 
 Definition TRANS_SUM2_def :
-    TRANS_SUM2 (R :'a gen_trans) z P Q Rs <=> R z Q Rs ==> R z (Sum P Q) Rs
+    TRANS_SUM2 (R :'a gen_transition) z P Q Rs <=> R z Q Rs ==> R z (Sum P Q) Rs
 End
 
 Definition TRANS_PAR1_I_def :
@@ -332,7 +333,7 @@ Theorem TRANS_bvc_ind = TRANS_bvc_gen_ind
                      |> Q.GENL [‘P0’, ‘X’]
  *)
 
-Theorem FV_InputS_lemma[local] :
+Theorem FV_InputS_lemma :
     !P P' x z. TRANS P (InputS x z P') /\ x <> z /\ z # P ==>
                !y. y # P /\ y <> z ==> y # P'
 Proof
@@ -422,11 +423,12 @@ Proof
  >> METIS_TAC [FV_InputS_lemma]
 QED
 
-(*
-Theorem FV_BoundOutput_lemma[local] :
+Theorem FV_BoundOutput_lemma :
     !P P' x z. TRANS P (BoundOutput x z P') /\ x <> z /\ z # P ==>
                !y. y # P /\ y <> z ==> y # P'
 Proof
+    cheat
+ (*
     Induct_on ‘TRANS’ using TRANS_ind' >> rw [] (* 24 subgoals *)
  >- rw [TRANS_TAU_def]
  >- rw [TRANS_INPUT_def]
@@ -502,6 +504,7 @@ Proof
  >- rw [TRANS_COMM2_def]
  >- rw [TRANS_CLOSE1_def]
  >> rw [TRANS_CLOSE2_def]
+ *)
 QED
 
 Theorem FV_BoundOutput :
@@ -511,7 +514,6 @@ Proof
     rw [SUBSET_DEF, IN_INSERT]
  >> METIS_TAC [FV_BoundOutput_lemma]
 QED
- *)
 
 Definition open_simulation_def :
     open_simulation (R :pi -> pi -> bool) <=>
@@ -678,7 +680,7 @@ Proof
         (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘x’, ‘z'’, ‘y'’]) >> rw [] \\
       Know ‘InputS x z' Q' = InputS x z (tpm [(z,z')] Q')’
       >- (MATCH_MP_TAC tpm_ALPHA_InputS >> art [] \\
-          irule FV_InputS \\
+          irule FV_InputS_lemma \\
           qexistsl_tac [‘Q’, ‘x’, ‘z'’] >> rw []) \\
       DISCH_THEN (fs o wrap) \\
       qabbrev_tac ‘Q'' = tpm [(z,z')] Q'’ \\
@@ -723,7 +725,7 @@ Proof
         (MP_TAC o Q.SPECL [‘y’, ‘Q’, ‘x’, ‘z'’, ‘y'’]) >> rw [] \\
       Know ‘BoundOutput x z' Q' = BoundOutput x z (tpm [(z,z')] Q')’
       >- (MATCH_MP_TAC tpm_ALPHA_BoundOutput >> art [] \\
-          irule FV_BoundOutput \\
+          irule FV_BoundOutput_lemma \\
           qexistsl_tac [‘Q’, ‘x’, ‘z'’] >> rw []) \\
       DISCH_THEN (fs o wrap) \\
       qabbrev_tac ‘Q'' = tpm [(z,z')] Q'’ \\
@@ -777,7 +779,7 @@ Proof
       rename1 ‘TRANS P (InputS x z' P')’ \\
       Know ‘InputS x z' P' = InputS x z (tpm [(z,z')] P')’
       >- (MATCH_MP_TAC tpm_ALPHA_InputS >> art [] \\
-          irule FV_InputS \\
+          irule FV_InputS_lemma \\
           qexistsl_tac [‘P’, ‘x’, ‘z'’] >> rw []) \\
       DISCH_THEN (fs o wrap) \\
       qabbrev_tac ‘P'' = tpm [(z,z')] P'’ \\
@@ -826,7 +828,7 @@ Proof
       rename1 ‘TRANS P (BoundOutput x z' P')’ \\
       Know ‘BoundOutput x z' P' = BoundOutput x z (tpm [(z,z')] P')’
       >- (MATCH_MP_TAC tpm_ALPHA_BoundOutput >> art [] \\
-          irule FV_BoundOutput \\
+          irule FV_BoundOutput_lemma \\
           qexistsl_tac [‘P’, ‘x’, ‘z'’] >> rw []) \\
       DISCH_THEN (fs o wrap) \\
       qabbrev_tac ‘P'' = tpm [(z,z')] P'’ \\
@@ -837,7 +839,7 @@ Proof
       Q.EXISTS_TAC ‘tpm [(z,z')] y'’ >> simp [Abbr ‘P''’] ]
 QED
 
-Theorem equivalence_open_bisimilar :
+Theorem open_bisimilar_equivalence :
     equivalence open_bisimilar
 Proof
     rw [equivalence_def]
@@ -851,7 +853,6 @@ Proof
       MATCH_MP_TAC open_bisimilar_transitive \\
       Q.EXISTS_TAC ‘y’ >> art [] ]
 QED
-*)
 
 val _ = export_theory ();
 val _ = html_theory "open_bisimulation";
