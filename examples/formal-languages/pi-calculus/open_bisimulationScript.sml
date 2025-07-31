@@ -259,17 +259,21 @@ Proof
  >- rw [TRANS_RES_FO_def, RES_FO]
  >- rw [TRANS_RES_T_def, RES_T]
  (* 4 subgoals left *)
- >- (rw [TRANS_COMM1_def] \\
-     cheat)
+ >- (rw [TRANS_COMM1_def, tpm_subst] \\
+     MATCH_MP_TAC COMM1 \\
+     Q.EXISTS_TAC ‘lswapstr pi a’ >> simp [])
  (* 3 subgoals left *)
- >- (rw [TRANS_COMM2_def] \\
-     cheat)
+ >- (rw [TRANS_COMM2_def, tpm_subst] \\
+     MATCH_MP_TAC COMM2 \\
+     Q.EXISTS_TAC ‘lswapstr pi a’ >> simp [])
  (* 2 subgoals left *)
- >- (rw [TRANS_CLOSE1_def] \\
-     cheat)
+ >- (rw [TRANS_CLOSE1_def, tpm_subst] \\
+     MATCH_MP_TAC CLOSE1 \\
+     Q.EXISTS_TAC ‘lswapstr pi a’ >> simp [])
  (* 1 subgoal left *)
- >> (rw [TRANS_CLOSE2_def] \\
-     cheat)
+ >> (rw [TRANS_CLOSE2_def, tpm_subst] \\
+     MATCH_MP_TAC CLOSE2 \\
+     Q.EXISTS_TAC ‘lswapstr pi a’ >> simp [])
 QED
 
 Theorem FV_InputS_lemma[local] :
