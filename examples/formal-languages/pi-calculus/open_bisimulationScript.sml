@@ -193,54 +193,84 @@ val PAR2_I_rule   = mk_ind_rule TRANS_PAR2_I_def
 val PAR2_BO_rule  = mk_ind_rule TRANS_PAR2_BO_def
 val PAR2_FO_rule  = mk_ind_rule TRANS_PAR2_FO_def
 val PAR2_T_rule   = mk_ind_rule TRANS_PAR2_T_def
-val COMM1_rule    = mk_ind_rule TRANS_COMM1_def
-val COMM2_rule    = mk_ind_rule TRANS_COMM2_def
-val CLOSE1_rule   = mk_ind_rule TRANS_CLOSE1_def
-val CLOSE2_rule   = mk_ind_rule TRANS_CLOSE2_def
 val RES_I_rule    = mk_ind_rule TRANS_RES_I_def
 val RES_BO_rule   = mk_ind_rule TRANS_RES_BO_def
 val RES_FO_rule   = mk_ind_rule TRANS_RES_FO_def
 val RES_T_rule    = mk_ind_rule TRANS_RES_T_def
+val COMM1_rule    = mk_ind_rule TRANS_COMM1_def
+val COMM2_rule    = mk_ind_rule TRANS_COMM2_def
+val CLOSE1_rule   = mk_ind_rule TRANS_CLOSE1_def
+val CLOSE2_rule   = mk_ind_rule TRANS_CLOSE2_def
 
 Inductive TRANS :
-[TAU]     ^TAU_rule
-[INPUT]   ^INPUT_rule
-[OUTPUT]  ^OUTPUT_rule
-[MATCH]   ^MATCH_rule
-[MISMACH] ^MISMATCH_rule
-[OPEN]    ^OPEN_rule
-[SUM1]    ^SUM1_rule
-[SUM2]    ^SUM2_rule
-[PAR1_I]  ^PAR1_I_rule
-[PAR1_BO] ^PAR1_BO_rule
-[PAR1_FO] ^PAR1_FO_rule
-[PAR1_T]  ^PAR1_T_rule
-[PAR2_I]  ^PAR2_I_rule
-[PAR2_BO] ^PAR2_BO_rule
-[PAR2_FO] ^PAR2_FO_rule
-[PAR2_T]  ^PAR2_T_rule
-[COMM1]   ^COMM1_rule
-[COMM2]   ^COMM2_rule
-[CLOSE1]  ^CLOSE1_rule
-[CLOSE2]  ^CLOSE2_rule
-[RES_I]   ^RES_I_rule
-[RES_BO]  ^RES_BO_rule
-[RES_FO]  ^RES_FO_rule
-[RES_T]   ^RES_T_rule
+[TAU]      ^TAU_rule
+[INPUT]    ^INPUT_rule
+[OUTPUT]   ^OUTPUT_rule
+[MATCH]    ^MATCH_rule
+[MISMATCH] ^MISMATCH_rule
+[OPEN]     ^OPEN_rule
+[SUM1]     ^SUM1_rule
+[SUM2]     ^SUM2_rule
+[PAR1_I]   ^PAR1_I_rule
+[PAR1_BO]  ^PAR1_BO_rule
+[PAR1_FO]  ^PAR1_FO_rule
+[PAR1_T]   ^PAR1_T_rule
+[PAR2_I]   ^PAR2_I_rule
+[PAR2_BO]  ^PAR2_BO_rule
+[PAR2_FO]  ^PAR2_FO_rule
+[PAR2_T]   ^PAR2_T_rule
+[RES_I]    ^RES_I_rule
+[RES_BO]   ^RES_BO_rule
+[RES_FO]   ^RES_FO_rule
+[RES_T]    ^RES_T_rule
+[COMM1]    ^COMM1_rule
+[COMM2]    ^COMM2_rule
+[CLOSE1]   ^CLOSE1_rule
+[CLOSE2]   ^CLOSE2_rule
 End
 
 (* NOTE: No way to simplify TRANS_cases in the same manner *)
 Theorem TRANS_rules' = REWRITE_RULE GSYM_TRANS_defs TRANS_rules
 Theorem TRANS_ind'   = REWRITE_RULE GSYM_TRANS_defs TRANS_ind
 
-(* TODO
 Theorem TRANS_tpm :
     !P Q. TRANS P Q ==> !pi. TRANS (tpm pi P) (rpm pi Q)
 Proof
-  Induct_on ‘M == N’ >> simp[tpm_thm, tpm_subst, lameq_BETA] >>
-  metis_tac[lameq_rules]
+    HO_MATCH_MP_TAC TRANS_ind'
+ >> rpt STRIP_TAC (* 24 subgoals *)
+ >- rw [TRANS_TAU_def, TAU]
+ >- rw [TRANS_INPUT_def, INPUT]
+ >- rw [TRANS_OUTPUT_def, OUTPUT]
+ >- rw [TRANS_MATCH_def, MATCH]
+ >- rw [TRANS_MISMATCH_def, MISMATCH]
+ >- rw [TRANS_OPEN_def, OPEN]
+ >- rw [TRANS_SUM1_def, SUM1]
+ >- rw [TRANS_SUM2_def, SUM2]
+ >- rw [TRANS_PAR1_I_def, PAR1_I]
+ >- rw [TRANS_PAR1_BO_def, PAR1_BO]
+ >- rw [TRANS_PAR1_FO_def, PAR1_FO]
+ >- rw [TRANS_PAR1_T_def, PAR1_T]
+ >- rw [TRANS_PAR2_I_def, PAR2_I]
+ >- rw [TRANS_PAR2_BO_def, PAR2_BO]
+ >- rw [TRANS_PAR2_FO_def, PAR2_FO]
+ >- rw [TRANS_PAR2_T_def, PAR2_T]
+ >- rw [TRANS_RES_I_def, RES_I]
+ >- rw [TRANS_RES_BO_def, RES_BO]
+ >- rw [TRANS_RES_FO_def, RES_FO]
+ >- rw [TRANS_RES_T_def, RES_T]
+ (* 4 subgoals left *)
+ >- (rw [TRANS_COMM1_def] \\
+     cheat)
+ (* 3 subgoals left *)
+ >- (rw [TRANS_COMM2_def] \\
+     cheat)
+ (* 2 subgoals left *)
+ >- (rw [TRANS_CLOSE1_def] \\
+     cheat)
+ (* 1 subgoal left *)
+ >> (rw [TRANS_CLOSE2_def] \\
+     cheat)
 QED
- *)
 
 Theorem FV_InputS_lemma[local] :
     !P P' x z. TRANS P (InputS x z P') /\ x <> z /\ z # P ==>

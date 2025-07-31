@@ -3594,7 +3594,7 @@ Proof
  >> POP_ASSUM MATCH_MP_TAC >> rw [Abbr ‘M’]
 QED
 
-(* hard *)
+(* hard, or impossible
 Theorem real_inf_lim_lemma :
     !(g :num -> num -> real) (l :num -> real).
         (!n i. 0 <= g n i) /\ (!n. mono_decreasing (g n)) /\
@@ -3662,6 +3662,7 @@ Proof
   *)
  >> cheat
 QED
+ *)
 
 (* not easy *)
 Theorem Portemanteau_ii_imp_iv :
@@ -3740,6 +3741,10 @@ Proof
          rw [MEASURE_EMPTY]) >> Rewr' \\
      rw [EXTREAL_LIM_CONST])
  >> ‘s IN subsets b’ by rw [closed_in_general_borel, Abbr ‘b’]
+ >> cheat
+QED
+
+ (* old steps
  (* applying Lipschitz_continuous_map_exists *)
  >> MP_TAC (Q.SPEC ‘E’ Lipschitz_continuous_map_exists)
  >> simp [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM]
@@ -4077,6 +4082,7 @@ Proof
  >> simp [Abbr ‘h’, Abbr ‘c’, o_DEF]
  >> MATCH_MP_TAC real_inf_lim_lemma >> art []
 QED
+ *)
 
 Theorem Portemanteau_vi_imp_iii :
     !E X Y. Portemanteau_antecedents E X Y /\

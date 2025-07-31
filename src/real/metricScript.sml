@@ -1804,6 +1804,10 @@ QED
 
 (* Lemma 13.10 [1, p.249]
    NOTE: The original antecedent “closed_in (mtop E) A” is not needed.
+
+   TODO: The last conclusion which gives explicit "definition" of f, should be
+   eliminated whenever possible. (The user should only rely on other conclusions
+   i.e. "key properties" (indicator-like) of f. -- Chun Tian, 30 July 2025
  *)
 Theorem Lipschitz_continuous_map_exists :
     !E A e. 0 < e ==>
