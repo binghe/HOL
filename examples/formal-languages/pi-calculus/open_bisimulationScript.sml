@@ -166,22 +166,23 @@ val TRANS_gen_defs =
     TRANS_RES_I_def, TRANS_RES_BO_def, TRANS_RES_FO_def, TRANS_RES_T_def];
 
 val R_tm = “R :pi -> residual -> bool”;
-
 fun mk_spec_def d =
-    d |> SPEC “\x:'a. ^R_tm” |> Q.SPEC ‘ARB’ |> BETA_RULE |> Q.GEN ‘R’
+    d |> Q.SPECL [‘K ^R_tm’, ‘ARB’]
+      |> SIMP_RULE std_ss [SimpRHS]
+      |> GEN R_tm
 
 val TRANS_defs = map mk_spec_def TRANS_gen_defs
 
 (* and their GSYM versions *)
 val GSYM_TRANS_defs = map GSYM TRANS_defs;
 
-
 (* This function generates Inductive-compatible rule terms
    val d = TRANS_TAU_def *)
 val trans_tm = “TRANS :pi -> residual -> bool”;
 
 fun mk_ind_rule d = let
-    val th = d |> SPEC “\x:'a. ^trans_tm” |> Q.SPEC ‘ARB’ |> BETA_RULE;
+    val th = d |> Q.SPECL [‘K ^trans_tm’, ‘ARB’]
+               |> SIMP_RULE std_ss [SimpRHS];
     val (vars,eq_tm) = strip_forall (concl th);
     val body_tm = snd (dest_eq eq_tm)
 in
@@ -241,9 +242,24 @@ Inductive TRANS :
 End
 
 (* NOTE: No way to simplify TRANS_cases in the same manner *)
-Theorem TRANS_rules' = REWRITE_RULE GSYM_TRANS_defs TRANS_rules
-Theorem TRANS_ind'   = REWRITE_RULE GSYM_TRANS_defs TRANS_ind
-                    |> Q.SPEC ‘R’ |> Q.GEN ‘R’
+Theorem TRANS_rules' = TRANS_rules |> REWRITE_RULE GSYM_TRANS_defs
+Theorem TRANS_ind'   = TRANS_ind   |> REWRITE_RULE GSYM_TRANS_defs
+                                   |> Q.SPEC ‘R’ |> Q.GEN ‘R’
+
+val lemma1 = Q.prove (
+   ‘!P A B C. (TRANS P A /\ B ==> C) <=> (TRANS P A ==> B ==> C)’,
+    METIS_TAC []);
+
+val lemma2 = Q.prove (
+   ‘!P Q A B C D E.
+       (TRANS P A /\ B /\ TRANS Q C /\ D ==> E) <=>
+       (TRANS P A /\ TRANS Q C ==> B /\ D ==> E)’,
+    METIS_TAC []);
+
+Theorem TRANS_strongind' =
+        TRANS_strongind |> SIMP_RULE bool_ss [lemma2]
+                        |> SIMP_RULE bool_ss [lemma1]
+                        |> REWRITE_RULE GSYM_TRANS_defs
 
 Theorem TRANS_tpm :
     !P Q. TRANS P Q ==> !pi. TRANS (tpm pi P) (rpm pi Q)
@@ -288,7 +304,7 @@ Proof
      Q.EXISTS_TAC ‘lswapstr pi a’ >> simp [])
 QED
 
-(*
+(* TODO *)
 Theorem TRANS_bvc_gen_ind :
    !R fv. (!P z. TRANS_TAU R z P) /\
           (!a x P z. x NOTIN fv z ==> TRANS_INPUT R z a x P) /\
@@ -321,7 +337,7 @@ Theorem TRANS_bvc_gen_ind :
           (!P P' Q Q' a x y z. x NOTIN fv z /\ y NOTIN fv z ==>
                                TRANS_CLOSE2 R z P P' Q Q' a x y) /\
           (!z:'a. FINITE (fv z)) ==>
-        !a0 a1. TRANS a0 a1 ==> !z. R z a0 a1
+        !M N. TRANS M N ==> !z. R z M N
 Proof
     cheat
 QED
@@ -331,7 +347,6 @@ Theorem TRANS_bvc_ind = TRANS_bvc_gen_ind
                      |> Q.SPEC ‘\x:'a. X :string set’
                      |> SIMP_RULE bool_ss []
                      |> Q.GENL [‘P0’, ‘X’]
- *)
 
 Theorem FV_InputS_lemma :
     !P P' x z. TRANS P (InputS x z P') /\ x <> z /\ z # P ==>
@@ -423,13 +438,58 @@ Proof
  >> METIS_TAC [FV_InputS_lemma]
 QED
 
+Theorem FV_FreeOutput_lemma :
+    !P P' a b. TRANS P (FreeOutput a b P') ==> !y. y # P ==> y # P'
+Proof
+    Induct_on ‘TRANS’ using TRANS_ind' >> rw [] (* 24 subgoals *)
+ >- rw [TRANS_TAU_def]
+ >- rw [TRANS_INPUT_def]
+ >- rw [TRANS_OUTPUT_def]
+ >- (rw [TRANS_MATCH_def] \\
+     FIRST_X_ASSUM irule >> art [] \\
+     qexistsl_tac [‘a’, ‘b'’] >> rw [])
+ >- (rw [TRANS_MISMATCH_def] \\
+     FIRST_X_ASSUM irule >> art [] \\
+     qexistsl_tac [‘a'’, ‘b'’] >> rw [])
+ >- rw [TRANS_OPEN_def]
+ >- (rw [TRANS_SUM1_def] \\
+     FIRST_X_ASSUM irule >> art [] \\
+     qexistsl_tac [‘a’, ‘b’] >> rw [])
+ >- (rw [TRANS_SUM2_def] \\
+     FIRST_X_ASSUM irule >> art [] \\
+     qexistsl_tac [‘a’, ‘b’] >> rw [])
+ >- rw [TRANS_PAR1_I_def]
+ >- rw [TRANS_PAR1_BO_def]
+ >- rw [TRANS_PAR1_FO_def]
+ >- rw [TRANS_PAR1_T_def]
+ >- rw [TRANS_PAR2_I_def]
+ >- rw [TRANS_PAR2_BO_def]
+ >- rw [TRANS_PAR2_FO_def]
+ >- rw [TRANS_PAR2_T_def]
+ >- rw [TRANS_RES_I_def]
+ >- rw [TRANS_RES_BO_def]
+ >- (rw [TRANS_RES_FO_def] \\
+     DISJ1_TAC \\
+     FIRST_X_ASSUM irule >> art [])
+ >- rw [TRANS_RES_T_def]
+ >- rw [TRANS_COMM1_def]
+ >- rw [TRANS_COMM2_def]
+ >- rw [TRANS_CLOSE1_def]
+ >> rw [TRANS_CLOSE2_def]
+QED
+
+Theorem FV_FreeOutput :
+    !P P' a b. TRANS P (FreeOutput a b P') ==> FV P' SUBSET FV P
+Proof
+    rw [SUBSET_DEF]
+ >> METIS_TAC [FV_FreeOutput_lemma]
+QED
+
 Theorem FV_BoundOutput_lemma :
     !P P' x z. TRANS P (BoundOutput x z P') /\ x <> z /\ z # P ==>
                !y. y # P /\ y <> z ==> y # P'
 Proof
-    cheat
- (*
-    Induct_on ‘TRANS’ using TRANS_ind' >> rw [] (* 24 subgoals *)
+    Induct_on ‘TRANS’ using TRANS_strongind' >> rw [] (* 24 subgoals *)
  >- rw [TRANS_TAU_def]
  >- rw [TRANS_INPUT_def]
  >- rw [TRANS_OUTPUT_def]
@@ -439,8 +499,10 @@ Proof
  >- (rw [TRANS_MISMATCH_def] \\
      FIRST_X_ASSUM irule >> rw [] \\
      qexistsl_tac [‘x’, ‘z’] >> rw [])
- >- (rw [TRANS_OPEN_def, BoundOutput_eq_thm] >| (* 3 subgoals *)
+ >- (rw [TRANS_OPEN_def, BoundOutput_eq_thm] \\ (* 3 subgoals *)
      cheat)
+ >> cheat
+ (*
  >- (rw [TRANS_SUM1_def] \\
      FIRST_X_ASSUM irule >> rw [] \\
      qexistsl_tac [‘x’, ‘z’] >> rw [])
