@@ -242,29 +242,67 @@ Inductive TRANS :
 End
 
 (* NOTE: No way to simplify TRANS_cases in the same manner *)
-Theorem TRANS_rules' = TRANS_rules |> REWRITE_RULE GSYM_TRANS_defs
-Theorem TRANS_ind'   = TRANS_ind   |> REWRITE_RULE GSYM_TRANS_defs
-                                   |> Q.SPEC ‘R’ |> Q.GEN ‘R’
+Theorem TRANS_rules[allow_rebind] =
+        TRANS_rules |> REWRITE_RULE GSYM_TRANS_defs
 
+Theorem TRANS_ind[allow_rebind] =
+        TRANS_ind |> REWRITE_RULE GSYM_TRANS_defs
+                  |> Q.SPEC ‘R’ |> Q.GEN ‘R’
+
+Overload TRANS_TAU'      = “\R. TRANS_TAU      (K R) ARB”
+Overload TRANS_INPUT'    = “\R. TRANS_INPUT    (K R) ARB”
+Overload TRANS_OUTPUT'   = “\R. TRANS_OUTPUT   (K R) ARB”
+Overload TRANS_MATCH'    = “\R. TRANS_MATCH    (K R) ARB”
+Overload TRANS_MISMATCH' = “\R. TRANS_MISMATCH (K R) ARB”
+Overload TRANS_OPEN'     = “\R. TRANS_OPEN     (K R) ARB”
+Overload TRANS_SUM1'     = “\R. TRANS_SUM1     (K R) ARB”
+Overload TRANS_SUM2'     = “\R. TRANS_SUM2     (K R) ARB”
+Overload TRANS_PAR1_I'   = “\R. TRANS_PAR1_I   (K R) ARB”
+Overload TRANS_PAR1_BO'  = “\R. TRANS_PAR1_BO  (K R) ARB”
+Overload TRANS_PAR1_FO'  = “\R. TRANS_PAR1_FO  (K R) ARB”
+Overload TRANS_PAR1_T'   = “\R. TRANS_PAR1_T   (K R) ARB”
+Overload TRANS_PAR2_I'   = “\R. TRANS_PAR2_I   (K R) ARB”
+Overload TRANS_PAR2_BO'  = “\R. TRANS_PAR2_BO  (K R) ARB”
+Overload TRANS_PAR2_FO'  = “\R. TRANS_PAR2_FO  (K R) ARB”
+Overload TRANS_PAR2_T'   = “\R. TRANS_PAR2_T   (K R) ARB”
+Overload TRANS_RES_I'    = “\R. TRANS_RES_I    (K R) ARB”
+Overload TRANS_RES_BO'   = “\R. TRANS_RES_BO   (K R) ARB”
+Overload TRANS_RES_FO'   = “\R. TRANS_RES_FO   (K R) ARB”
+Overload TRANS_RES_T'    = “\R. TRANS_RES_T    (K R) ARB”
+Overload TRANS_COMM1'    = “\R. TRANS_COMM1    (K R) ARB”
+Overload TRANS_COMM2'    = “\R. TRANS_COMM2    (K R) ARB”
+Overload TRANS_CLOSE1'   = “\R. TRANS_CLOSE1   (K R) ARB”
+Overload TRANS_CLOSE2'   = “\R. TRANS_CLOSE2   (K R) ARB”
+
+(* NOTE: The following 3 lemmas reshape the statements of strong induction to
+   make the abbreviation TRANS-symbols work.
+ *)
 val lemma1 = Q.prove (
-   ‘!P A B C. (TRANS P A /\ B ==> C) <=> (TRANS P A ==> B ==> C)’,
-    METIS_TAC []);
-
-val lemma2 = Q.prove (
    ‘!P Q A B C D E.
        (TRANS P A /\ B /\ TRANS Q C /\ D ==> E) <=>
        (TRANS P A /\ TRANS Q C ==> B /\ D ==> E)’,
     METIS_TAC []);
 
-Theorem TRANS_strongind' =
-        TRANS_strongind |> SIMP_RULE bool_ss [lemma2]
-                        |> SIMP_RULE bool_ss [lemma1]
+val lemma2 = Q.prove (
+   ‘!P A B C. (TRANS P A /\ B ==> C) <=> (TRANS P A ==> B ==> C)’,
+    METIS_TAC []);
+
+val lemma3 = Q.prove (
+   ‘!P Q A B C.
+       (TRANS P A ==> TRANS Q B ==> C) <=>
+       (TRANS P A /\ TRANS Q B ==> C)’,
+    METIS_TAC []);
+
+Theorem TRANS_strongind[allow_rebind] =
+        TRANS_strongind |> SIMP_RULE bool_ss [lemma1]
+                        |> SIMP_RULE bool_ss [lemma2]
+                        |> SIMP_RULE bool_ss [lemma3]
                         |> REWRITE_RULE GSYM_TRANS_defs
 
 Theorem TRANS_tpm :
     !P Q. TRANS P Q ==> !pi. TRANS (tpm pi P) (rpm pi Q)
 Proof
-    HO_MATCH_MP_TAC TRANS_ind'
+    HO_MATCH_MP_TAC TRANS_ind
  >> rpt STRIP_TAC (* 24 subgoals *)
  >- rw [TRANS_TAU_def, TAU]
  >- rw [TRANS_INPUT_def, INPUT]
@@ -308,7 +346,7 @@ Theorem FV_InputS_lemma :
     !P P' x z. TRANS P (InputS x z P') /\ x <> z /\ z # P ==>
                !y. y # P /\ y <> z ==> y # P'
 Proof
-    Induct_on ‘TRANS’ using TRANS_ind' >> rw [] (* 24 subgoals *)
+    Induct_on ‘TRANS’ using TRANS_ind >> rw [] (* 24 subgoals *)
  >- rw [TRANS_TAU_def]
  >- (rw [TRANS_INPUT_def, InputS_eq_thm] (* 3 subgoals here *) \\
      rw [] (* only one goal is left *) \\
@@ -397,7 +435,7 @@ QED
 Theorem FV_FreeOutput_lemma :
     !P P' a b. TRANS P (FreeOutput a b P') ==> !y. y # P ==> y # P'
 Proof
-    Induct_on ‘TRANS’ using TRANS_ind' >> rw [] (* 24 subgoals *)
+    Induct_on ‘TRANS’ using TRANS_ind >> rw [] (* 24 subgoals *)
  >- rw [TRANS_TAU_def]
  >- rw [TRANS_INPUT_def]
  >- rw [TRANS_OUTPUT_def]
@@ -445,7 +483,7 @@ Theorem FV_BoundOutput_lemma :
     !P P' x z. TRANS P (BoundOutput x z P') /\ x <> z /\ z # P ==>
                !y. y # P /\ y <> z ==> y # P'
 Proof
-    Induct_on ‘TRANS’ using TRANS_strongind' >> rw [] (* 24 subgoals *)
+    Induct_on ‘TRANS’ using TRANS_strongind >> rw [] (* 24 subgoals *)
  >- rw [TRANS_TAU_def]
  >- rw [TRANS_INPUT_def]
  >- rw [TRANS_OUTPUT_def]
