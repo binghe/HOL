@@ -304,50 +304,6 @@ Proof
      Q.EXISTS_TAC ‘lswapstr pi a’ >> simp [])
 QED
 
-(* TODO *)
-Theorem TRANS_bvc_gen_ind :
-   !R fv. (!P z. TRANS_TAU R z P) /\
-          (!a x P z. x NOTIN fv z ==> TRANS_INPUT R z a x P) /\
-          (!a b P z. TRANS_OUTPUT R z a b P) /\
-          (!P Rs b z. TRANS_MATCH R z P Rs b) /\
-          (!P Rs a b z. TRANS_MISMATCH R z P Rs a b) /\
-          (!P P' a b z. TRANS_OPEN R z P P' a b) /\
-          (!P Q Rs z. TRANS_SUM1 R z P Q Rs) /\
-          (!P Q Rs z. TRANS_SUM2 R z P Q Rs) /\
-          (!P P' Q a x z. x NOTIN fv z ==> TRANS_PAR1_I R z P P' Q a x) /\
-          (!P P' Q a x z. x NOTIN fv z ==> TRANS_PAR1_BO R z P P' Q a x) /\
-          (!P P' Q a b z. TRANS_PAR1_FO R z P P' Q a b) /\
-          (!P P' Q z. TRANS_PAR1_T R z P P' Q) /\
-          (!P Q Q' a x z. x NOTIN fv z ==> TRANS_PAR2_I R z P Q Q' a x) /\
-          (!P Q Q' a x z. x NOTIN fv z ==> TRANS_PAR2_BO R z P Q Q' a x) /\
-          (!P Q Q' a b z. TRANS_PAR2_FO R z P Q Q' a b) /\
-          (!P Q Q' z. TRANS_PAR2_T R z P Q Q') /\
-          (!P P' a x y z. x NOTIN fv z /\ y NOTIN fv z ==>
-                          TRANS_RES_I R z P P' a x y) /\
-          (!P P' a x y z. x NOTIN fv z /\ y NOTIN fv z ==>
-                          TRANS_RES_BO R z P P' a x y) /\
-          (!P P' a b y z. y NOTIN fv z ==> TRANS_RES_FO R z P P' a b y) /\
-          (!P P' y z. TRANS_RES_T R z P P' y) /\
-          (!P P' Q Q' a b x z. x NOTIN fv z ==>
-                               TRANS_COMM1 R z P P' Q Q' a b x) /\
-          (!P P' Q Q' a b x z. x NOTIN fv z ==>
-                               TRANS_COMM2 R z P P' Q Q' a b x) /\
-          (!P P' Q Q' a x y z. x NOTIN fv z /\ y NOTIN fv z ==>
-                               TRANS_CLOSE1 R z P P' Q Q' a x y) /\
-          (!P P' Q Q' a x y z. x NOTIN fv z /\ y NOTIN fv z ==>
-                               TRANS_CLOSE2 R z P P' Q Q' a x y) /\
-          (!z:'a. FINITE (fv z)) ==>
-        !M N. TRANS M N ==> !z. R z M N
-Proof
-    cheat
-QED
-
-Theorem TRANS_bvc_ind = TRANS_bvc_gen_ind
-                     |> Q.SPEC ‘\z M N. P0 M N :bool’
-                     |> Q.SPEC ‘\x:'a. X :string set’
-                     |> SIMP_RULE bool_ss []
-                     |> Q.GENL [‘P0’, ‘X’]
-
 Theorem FV_InputS_lemma :
     !P P' x z. TRANS P (InputS x z P') /\ x <> z /\ z # P ==>
                !y. y # P /\ y <> z ==> y # P'
@@ -359,25 +315,25 @@ Proof
      Cases_on ‘x = y’ >> simp [swapstr_def])
  >- rw [TRANS_OUTPUT_def]
  >- (rw [TRANS_MATCH_def] \\
-     FIRST_X_ASSUM irule >> rw [] \\
+     FIRST_X_ASSUM irule >> art [] \\
      qexistsl_tac [‘x’, ‘z’] >> rw [])
  >- (rw [TRANS_MISMATCH_def] \\
-     FIRST_X_ASSUM irule >> rw [] \\
+     FIRST_X_ASSUM irule >> art [] \\
      qexistsl_tac [‘x’, ‘z’] >> rw [])
  >- rw [TRANS_OPEN_def]
  >- (rw [TRANS_SUM1_def] \\
-     FIRST_X_ASSUM irule >> rw [] \\
+     FIRST_X_ASSUM irule >> art [] \\
      qexistsl_tac [‘x’, ‘z’] >> rw [])
  >- (rw [TRANS_SUM2_def] \\
-     FIRST_X_ASSUM irule >> rw [] \\
+     FIRST_X_ASSUM irule >> art [] \\
      qexistsl_tac [‘x’, ‘z’] >> rw [])
  >- (rw [TRANS_PAR1_I_def] \\
      Q.PAT_X_ASSUM ‘InputS _ _ _ = InputS _ _ _’ MP_TAC \\
      rw [InputS_eq_thm] >> simp []
-     >- (FIRST_X_ASSUM irule >> rw [] \\
+     >- (FIRST_X_ASSUM irule >> art [] \\
          qexistsl_tac [‘a’, ‘x’] >> rw []) \\
      Cases_on ‘x = y’ >> simp [] \\
-     FIRST_X_ASSUM irule >> rw [] \\
+     FIRST_X_ASSUM irule >> art [] \\
      qexistsl_tac [‘a’, ‘x’] >> rw [])
  >- rw [TRANS_PAR1_BO_def]
  >- rw [TRANS_PAR1_FO_def]
@@ -386,10 +342,10 @@ Proof
  >- (rw [TRANS_PAR2_I_def] \\
      Q.PAT_X_ASSUM ‘InputS _ _ _ = InputS _ _ _’ MP_TAC \\
      rw [InputS_eq_thm] >> simp []
-     >- (FIRST_X_ASSUM irule >> rw [] \\
+     >- (FIRST_X_ASSUM irule >> art [] \\
          qexistsl_tac [‘a’, ‘x’] >> rw []) \\
      Cases_on ‘x = y’ >> simp [] \\
-     FIRST_X_ASSUM irule >> rw [] \\
+     FIRST_X_ASSUM irule >> art [] \\
      qexistsl_tac [‘a’, ‘x’] >> rw [])
  >- rw [TRANS_PAR2_BO_def]
  >- rw [TRANS_PAR2_FO_def]
@@ -400,16 +356,16 @@ Proof
        rw [InputS_eq_thm] >> simp [] >| (* 3 subgoals *)
        [ (* goal 1.1 (of 3) *)
          DISJ1_TAC \\
-         FIRST_X_ASSUM irule >> rw [] \\
+         FIRST_X_ASSUM irule >> art [] \\
          qexistsl_tac [‘a’, ‘x’] >> rw [],
          (* goal 1.2 (of 3) *)
          DISJ1_TAC \\
          Cases_on ‘x = y'’ >> simp [] \\
-         FIRST_X_ASSUM irule >> rw [] \\
+         FIRST_X_ASSUM irule >> art [] \\
          qexistsl_tac [‘a’, ‘x’] >> rw [],
          (* goal 1.3 (of 3) *)
          Cases_on ‘x = y'’ >> simp [] \\
-         FIRST_X_ASSUM irule >> rw [] \\
+         FIRST_X_ASSUM irule >> art [] \\
          qexistsl_tac [‘a’, ‘x’] >> rw [] ],
        (* goal 2 (of 3) *)
        Q.PAT_X_ASSUM ‘InputS _ _ _ = InputS _ _ _’ MP_TAC \\
@@ -418,7 +374,7 @@ Proof
        Q.PAT_X_ASSUM ‘InputS _ _ _ = InputS _ _ _’ MP_TAC \\
        rw [InputS_eq_thm] >> simp [] \\
        Cases_on ‘x = y'’ >> simp [] \\
-       FIRST_X_ASSUM irule >> rw [] \\
+       FIRST_X_ASSUM irule >> art [] \\
        qexistsl_tac [‘a’, ‘x’] >> rw [] ])
  (* 7 subgoals left *)
  >- rw [TRANS_RES_BO_def]
@@ -499,74 +455,84 @@ Proof
  >- (rw [TRANS_MISMATCH_def] \\
      FIRST_X_ASSUM irule >> rw [] \\
      qexistsl_tac [‘x’, ‘z’] >> rw [])
- >- (rw [TRANS_OPEN_def, BoundOutput_eq_thm] \\ (* 3 subgoals *)
-     cheat)
- >> cheat
- (*
+ >- (rw [TRANS_OPEN_def, BoundOutput_eq_thm] >| (* 4 subgoals *)
+     [ (* goal 1 (of 4) *)
+       irule FV_FreeOutput_lemma \\
+       qexistsl_tac [‘P’, ‘a’, ‘b’] >> art [],
+       (* goal 2 (of 4) *)
+       irule FV_FreeOutput_lemma \\
+       qexistsl_tac [‘P’, ‘a’, ‘b’] >> art [],
+       (* goal 3 (of 4) *)
+       rw [FV_tpm] \\
+       Cases_on ‘b = y’ >> simp [] \\
+       irule FV_FreeOutput_lemma \\
+       qexistsl_tac [‘P’, ‘a’, ‘b’] >> art [],
+       (* goal 4 (of 4) *)
+       rw [FV_tpm] ])
+ (* 18 subgoals left *)
  >- (rw [TRANS_SUM1_def] \\
-     FIRST_X_ASSUM irule >> rw [] \\
+     FIRST_X_ASSUM irule >> art [] \\
      qexistsl_tac [‘x’, ‘z’] >> rw [])
  >- (rw [TRANS_SUM2_def] \\
-     FIRST_X_ASSUM irule >> rw [] \\
+     FIRST_X_ASSUM irule >> art [] \\
      qexistsl_tac [‘x’, ‘z’] >> rw [])
- >- (rw [TRANS_PAR1_I_def] \\
-     Q.PAT_X_ASSUM ‘InputS _ _ _ = InputS _ _ _’ MP_TAC \\
-     rw [InputS_eq_thm] >> simp []
-     >- (FIRST_X_ASSUM irule >> rw [] \\
+ >- rw [TRANS_PAR1_I_def]
+ >- (rw [TRANS_PAR1_BO_def] \\
+     Q.PAT_X_ASSUM ‘BoundOutput _ _ _ = BoundOutput _ _ _’ MP_TAC \\
+     rw [BoundOutput_eq_thm] >> simp []
+     >- (FIRST_X_ASSUM irule >> art [] \\
          qexistsl_tac [‘a’, ‘x’] >> rw []) \\
      Cases_on ‘x = y’ >> simp [] \\
-     FIRST_X_ASSUM irule >> rw [] \\
+     FIRST_X_ASSUM irule >> art [] \\
      qexistsl_tac [‘a’, ‘x’] >> rw [])
- >- rw [TRANS_PAR1_BO_def]
  >- rw [TRANS_PAR1_FO_def]
  >- rw [TRANS_PAR1_T_def]
  (* 12 subgoals left *)
- >- (rw [TRANS_PAR2_I_def] \\
-     Q.PAT_X_ASSUM ‘InputS _ _ _ = InputS _ _ _’ MP_TAC \\
-     rw [InputS_eq_thm] >> simp []
-     >- (FIRST_X_ASSUM irule >> rw [] \\
+ >- rw [TRANS_PAR2_I_def]
+ >- (rw [TRANS_PAR2_BO_def] \\
+     Q.PAT_X_ASSUM ‘BoundOutput _ _ _ = BoundOutput _ _ _’ MP_TAC \\
+     rw [BoundOutput_eq_thm] >> simp []
+     >- (FIRST_X_ASSUM irule >> art [] \\
          qexistsl_tac [‘a’, ‘x’] >> rw []) \\
      Cases_on ‘x = y’ >> simp [] \\
-     FIRST_X_ASSUM irule >> rw [] \\
+     FIRST_X_ASSUM irule >> art [] \\
      qexistsl_tac [‘a’, ‘x’] >> rw [])
- >- rw [TRANS_PAR2_BO_def]
  >- rw [TRANS_PAR2_FO_def]
  >- rw [TRANS_PAR2_T_def]
- >- (rw [TRANS_RES_I_def] >| (* 3 subgoals *)
+ >- rw [TRANS_RES_I_def]
+ >- (rw [TRANS_RES_BO_def] >| (* 3 subgoals *)
      [ (* goal 1 (of 3) *)
-       Q.PAT_X_ASSUM ‘InputS _ _ _ = InputS _ _ _’ MP_TAC \\
-       rw [InputS_eq_thm] >> simp [] >| (* 3 subgoals *)
+       Q.PAT_X_ASSUM ‘BoundOutput _ _ _ = BoundOutput _ _ _’ MP_TAC \\
+       rw [BoundOutput_eq_thm] >> simp [] >| (* 3 subgoals *)
        [ (* goal 1.1 (of 3) *)
          DISJ1_TAC \\
-         FIRST_X_ASSUM irule >> rw [] \\
+         FIRST_X_ASSUM irule >> art [] \\
          qexistsl_tac [‘a’, ‘x’] >> rw [],
          (* goal 1.2 (of 3) *)
          DISJ1_TAC \\
          Cases_on ‘x = y'’ >> simp [] \\
-         FIRST_X_ASSUM irule >> rw [] \\
+         FIRST_X_ASSUM irule >> art [] \\
          qexistsl_tac [‘a’, ‘x’] >> rw [],
          (* goal 1.3 (of 3) *)
          Cases_on ‘x = y'’ >> simp [] \\
-         FIRST_X_ASSUM irule >> rw [] \\
+         FIRST_X_ASSUM irule >> art [] \\
          qexistsl_tac [‘a’, ‘x’] >> rw [] ],
        (* goal 2 (of 3) *)
-       Q.PAT_X_ASSUM ‘InputS _ _ _ = InputS _ _ _’ MP_TAC \\
-       rw [InputS_eq_thm] >> simp [],
+       Q.PAT_X_ASSUM ‘BoundOutput _ _ _ = BoundOutput _ _ _’ MP_TAC \\
+       rw [BoundOutput_eq_thm] >> simp [],
        (* goal 3 (of 3) *)
-       Q.PAT_X_ASSUM ‘InputS _ _ _ = InputS _ _ _’ MP_TAC \\
-       rw [InputS_eq_thm] >> simp [] \\
+       Q.PAT_X_ASSUM ‘BoundOutput _ _ _ = BoundOutput _ _ _’ MP_TAC \\
+       rw [BoundOutput_eq_thm] >> simp [] \\
        Cases_on ‘x = y'’ >> simp [] \\
        FIRST_X_ASSUM irule >> rw [] \\
        qexistsl_tac [‘a’, ‘x’] >> rw [] ])
- (* 7 subgoals left *)
- >- rw [TRANS_RES_BO_def]
+ (* 6 subgoals left *)
  >- rw [TRANS_RES_FO_def]
  >- rw [TRANS_RES_T_def]
  >- rw [TRANS_COMM1_def]
  >- rw [TRANS_COMM2_def]
  >- rw [TRANS_CLOSE1_def]
  >> rw [TRANS_CLOSE2_def]
- *)
 QED
 
 Theorem FV_BoundOutput :
@@ -915,6 +881,50 @@ Proof
       MATCH_MP_TAC open_bisimilar_transitive \\
       Q.EXISTS_TAC ‘y’ >> art [] ]
 QED
+
+(* TODO *)
+Theorem TRANS_bvc_gen_ind :
+   !R fv. (!P z. TRANS_TAU R z P) /\
+          (!a x P z. x NOTIN fv z ==> TRANS_INPUT R z a x P) /\
+          (!a b P z. TRANS_OUTPUT R z a b P) /\
+          (!P Rs b z. TRANS_MATCH R z P Rs b) /\
+          (!P Rs a b z. TRANS_MISMATCH R z P Rs a b) /\
+          (!P P' a b z. TRANS_OPEN R z P P' a b) /\
+          (!P Q Rs z. TRANS_SUM1 R z P Q Rs) /\
+          (!P Q Rs z. TRANS_SUM2 R z P Q Rs) /\
+          (!P P' Q a x z. x NOTIN fv z ==> TRANS_PAR1_I R z P P' Q a x) /\
+          (!P P' Q a x z. x NOTIN fv z ==> TRANS_PAR1_BO R z P P' Q a x) /\
+          (!P P' Q a b z. TRANS_PAR1_FO R z P P' Q a b) /\
+          (!P P' Q z. TRANS_PAR1_T R z P P' Q) /\
+          (!P Q Q' a x z. x NOTIN fv z ==> TRANS_PAR2_I R z P Q Q' a x) /\
+          (!P Q Q' a x z. x NOTIN fv z ==> TRANS_PAR2_BO R z P Q Q' a x) /\
+          (!P Q Q' a b z. TRANS_PAR2_FO R z P Q Q' a b) /\
+          (!P Q Q' z. TRANS_PAR2_T R z P Q Q') /\
+          (!P P' a x y z. x NOTIN fv z /\ y NOTIN fv z ==>
+                          TRANS_RES_I R z P P' a x y) /\
+          (!P P' a x y z. x NOTIN fv z /\ y NOTIN fv z ==>
+                          TRANS_RES_BO R z P P' a x y) /\
+          (!P P' a b y z. y NOTIN fv z ==> TRANS_RES_FO R z P P' a b y) /\
+          (!P P' y z. TRANS_RES_T R z P P' y) /\
+          (!P P' Q Q' a b x z. x NOTIN fv z ==>
+                               TRANS_COMM1 R z P P' Q Q' a b x) /\
+          (!P P' Q Q' a b x z. x NOTIN fv z ==>
+                               TRANS_COMM2 R z P P' Q Q' a b x) /\
+          (!P P' Q Q' a x y z. x NOTIN fv z /\ y NOTIN fv z ==>
+                               TRANS_CLOSE1 R z P P' Q Q' a x y) /\
+          (!P P' Q Q' a x y z. x NOTIN fv z /\ y NOTIN fv z ==>
+                               TRANS_CLOSE2 R z P P' Q Q' a x y) /\
+          (!z:'a. FINITE (fv z)) ==>
+        !M N. TRANS M N ==> !z. R z M N
+Proof
+    cheat
+QED
+
+Theorem TRANS_bvc_ind = TRANS_bvc_gen_ind
+                     |> Q.SPEC ‘\z M N. P0 M N :bool’
+                     |> Q.SPEC ‘\x:'a. X :string set’
+                     |> SIMP_RULE bool_ss []
+                     |> Q.GENL [‘P0’, ‘X’]
 
 val _ = export_theory ();
 val _ = html_theory "open_bisimulation";
