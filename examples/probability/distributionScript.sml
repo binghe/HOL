@@ -3117,7 +3117,7 @@ QED
 Overload B[local] = “general_borel”
 Overload B[local] = “\E. general_borel (mtop E)”
 
-(* Definition 13.4 (iv) [8, p.247]
+(* Definition 13.4 (iv) [8, p.276]
 
    NOTE: The name "subprobability measure" (aka s.p.m.) is also from [2, p.85].
  *)
@@ -3138,14 +3138,14 @@ Definition weak_convergence_condition_def :
           integral (topspace top,subsets (B top),Y  ) (Normal o f)) sequentially
 End
 
-(* Definition 13.12 [8, p.252] *)
+(* Definition 13.12 [8, p.281] *)
 Definition weak_converge_in_topology_def :
     weak_converge_in_topology (top :'a topology) X Y <=>
       !f. f IN bounded_continuous top ==>
           weak_convergence_condition top X Y f
 End
 
-(* Theorem 13.16 (Portemanteau) [8, p.254]
+(* Theorem 13.16 (Portemanteau) [8, p.283]
 
   "In the following theorem, a whole bunch of such statements will be hung on
    a coat hanger (French: portemanteau)."
@@ -3234,7 +3234,18 @@ Definition Portemanteau_v_def :
       !s. open_in (mtop E) s ==> Y s <= liminf (\n. X n s)
 End
 
-(* "trivial" *)
+(* "trivial"
+
+   NOTE: This proof cannot finish if the 1st parts of the two antecedents
+
+   Y (mspace E) <= liminf (\n. X n (mspace E))
+   limsup (\n. X n (mspace E)) <= Y (mspace E)
+
+   were removed from Portemanteau_iv_def and Portemanteau_v_def, even they
+   are easily provable from the 2nd parts of the other antecedents. Some
+   textbook versions of the "Portmanteau theorem" do not have them, and they
+   are just wrong. -- Chun Tian (binghe), 4 August 2025.
+ *)
 Theorem Portemanteau_iv_imp_v[local] :
     !E X Y. Portemanteau_antecedents E X Y /\
             Portemanteau_iv E X Y ==> Portemanteau_v E X Y
@@ -3594,77 +3605,12 @@ Proof
  >> POP_ASSUM MATCH_MP_TAC >> rw [Abbr ‘M’]
 QED
 
-(* hard, or impossible
-Theorem real_inf_lim_lemma :
-    !(g :num -> num -> real) (l :num -> real).
-        (!n i. 0 <= g n i) /\ (!n. mono_decreasing (g n)) /\
-        (!i. 0 <= l i) /\ mono_decreasing l /\
-        (!i. ((\n. g n i) --> l i) sequentially) ==>
-        ((\n. inf (IMAGE (g n) UNIV)) --> inf (IMAGE l UNIV)) sequentially
-Proof
-    rw [LIM_SEQUENTIALLY, dist]
- >> qabbrev_tac ‘P = \n. inf (IMAGE (g n) UNIV)’ >> simp []
- >> qabbrev_tac ‘Q = inf (IMAGE l UNIV)’
- (* applying REAL_INF_LE', twice *)
- >> Know ‘!n i. P n <= g n i’
- >- (rw [Abbr ‘P’] \\
-     qmatch_abbrev_tac ‘inf p <= (x :real)’ \\
-     Know ‘inf p <= x <=> !y. (!z. z IN p ==> y <= z) ==> y <= x’
-     >- (MATCH_MP_TAC REAL_INF_LE' >> rw [Abbr ‘p’] \\
-         Q.EXISTS_TAC ‘0’ >> rw [] >> art []) >> Rewr' \\
-     rw [Abbr ‘p’, Abbr ‘x’] \\
-     POP_ASSUM MATCH_MP_TAC \\
-     Q.EXISTS_TAC ‘i’ >> art [])
- >> DISCH_TAC
- >> Know ‘!i. Q <= l i’
- >- (rw [Abbr ‘Q’] \\
-     qmatch_abbrev_tac ‘inf p <= (x :real)’ \\
-     Know ‘inf p <= x <=> !y. (!z. z IN p ==> y <= z) ==> y <= x’
-     >- (MATCH_MP_TAC REAL_INF_LE' >> rw [Abbr ‘p’] \\
-         Q.EXISTS_TAC ‘0’ >> rw [] >> art []) >> Rewr' \\
-     rw [Abbr ‘p’, Abbr ‘x’] \\
-     POP_ASSUM MATCH_MP_TAC \\
-     Q.EXISTS_TAC ‘i’ >> art [])
- >> DISCH_TAC
- (* stage work *)
- >> ‘0 < e / 3’ by rw [REAL_LT_DIV]
- >> qabbrev_tac ‘E = e / 3’
- (* applying REAL_INF_CLOSE', twice *)
- >> Know ‘?n0. !n. n0 <= n ==> l n < Q + E’
- >- (MP_TAC (Q.SPECL [‘IMAGE l univ(:num)’, ‘E’] REAL_INF_CLOSE') >> rw [] \\
-     rename1 ‘l i < Q + E’ \\
-     Q.EXISTS_TAC ‘MAX i n’ >> rw [MAX_LE] \\
-     Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘l (i :num)’ >> art [] \\
-     fs [mono_decreasing_def])
- >> STRIP_TAC
- >> Know ‘!n. ?n1. n <= n1 /\ !i. n1 <= i ==> g n i < P n + E’
- >- (Q.X_GEN_TAC ‘n’ \\
-     MP_TAC (Q.SPECL [‘IMAGE (g (n :num)) univ(:num)’, ‘E’] REAL_INF_CLOSE') \\
-     rw [] >> rename1 ‘g n i < P n + E’ \\
-     Q.EXISTS_TAC ‘MAX i n’ >> rw [MAX_LE] >> rename1 ‘n <= j’ \\
-     Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘g (n :num) (i :num)’ >> art [] \\
-     fs [mono_decreasing_def])
- >> rw [SKOLEM_THM] (* this asserts ‘f’, which is NOT monotonic *)
- (* finding a sufficiently big N in the goal *)
- >> qabbrev_tac ‘n1 = f n0’
- >> ‘n0 <= n1’ by rw [Abbr ‘n1’]
- >> Q.PAT_X_ASSUM ‘!i e. 0 < e ==> _’ (MP_TAC o Q.SPECL [‘n1’, ‘E’])
- >> rw [] (* This asserts N *)
- >> qabbrev_tac ‘n2 = MAX N n1’
- >> Q.EXISTS_TAC ‘n2’
- >> rw [Abbr ‘n2’, MAX_LE]
- (* NOTE: the proof idea is this (values in each next row are smaller):
+(* not easy
 
-    P n + E              Q + E
-    g n n1 (?)           l n1
-    g n i                l n
-    P n                  Q
-  *)
- >> cheat
-QED
+   NOTE: Since the part “Y (mspace E) <= liminf (\n. X n (mspace E))” cannot
+   be removed from Portemanteau_iv_def, this part may require a dedicated
+   proof not mentioned in [8].
  *)
-
-(* not easy *)
 Theorem Portemanteau_ii_imp_iv :
     !E X Y. Portemanteau_antecedents E X Y /\
             Portemanteau_ii E X Y ==> Portemanteau_iv E X Y
@@ -4469,6 +4415,76 @@ QED
 val _ = export_theory ();
 val _ = html_theory "distribution";
 
+(* Backup proofs
+Theorem real_inf_lim_lemma :
+    !(g :num -> num -> real) (l :num -> real).
+        (!n i. 0 <= g n i) /\ (!n. mono_decreasing (g n)) /\
+        (!i. 0 <= l i) /\ mono_decreasing l /\
+        (!i. ((\n. g n i) --> l i) sequentially) ==>
+        ((\n. inf (IMAGE (g n) UNIV)) --> inf (IMAGE l UNIV)) sequentially
+Proof
+    rw [LIM_SEQUENTIALLY, dist]
+ >> qabbrev_tac ‘P = \n. inf (IMAGE (g n) UNIV)’ >> simp []
+ >> qabbrev_tac ‘Q = inf (IMAGE l UNIV)’
+ (* applying REAL_INF_LE', twice *)
+ >> Know ‘!n i. P n <= g n i’
+ >- (rw [Abbr ‘P’] \\
+     qmatch_abbrev_tac ‘inf p <= (x :real)’ \\
+     Know ‘inf p <= x <=> !y. (!z. z IN p ==> y <= z) ==> y <= x’
+     >- (MATCH_MP_TAC REAL_INF_LE' >> rw [Abbr ‘p’] \\
+         Q.EXISTS_TAC ‘0’ >> rw [] >> art []) >> Rewr' \\
+     rw [Abbr ‘p’, Abbr ‘x’] \\
+     POP_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘i’ >> art [])
+ >> DISCH_TAC
+ >> Know ‘!i. Q <= l i’
+ >- (rw [Abbr ‘Q’] \\
+     qmatch_abbrev_tac ‘inf p <= (x :real)’ \\
+     Know ‘inf p <= x <=> !y. (!z. z IN p ==> y <= z) ==> y <= x’
+     >- (MATCH_MP_TAC REAL_INF_LE' >> rw [Abbr ‘p’] \\
+         Q.EXISTS_TAC ‘0’ >> rw [] >> art []) >> Rewr' \\
+     rw [Abbr ‘p’, Abbr ‘x’] \\
+     POP_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘i’ >> art [])
+ >> DISCH_TAC
+ (* stage work *)
+ >> ‘0 < e / 3’ by rw [REAL_LT_DIV]
+ >> qabbrev_tac ‘E = e / 3’
+ (* applying REAL_INF_CLOSE', twice *)
+ >> Know ‘?n0. !n. n0 <= n ==> l n < Q + E’
+ >- (MP_TAC (Q.SPECL [‘IMAGE l univ(:num)’, ‘E’] REAL_INF_CLOSE') >> rw [] \\
+     rename1 ‘l i < Q + E’ \\
+     Q.EXISTS_TAC ‘MAX i n’ >> rw [MAX_LE] \\
+     Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘l (i :num)’ >> art [] \\
+     fs [mono_decreasing_def])
+ >> STRIP_TAC
+ >> Know ‘!n. ?n1. n <= n1 /\ !i. n1 <= i ==> g n i < P n + E’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     MP_TAC (Q.SPECL [‘IMAGE (g (n :num)) univ(:num)’, ‘E’] REAL_INF_CLOSE') \\
+     rw [] >> rename1 ‘g n i < P n + E’ \\
+     Q.EXISTS_TAC ‘MAX i n’ >> rw [MAX_LE] >> rename1 ‘n <= j’ \\
+     Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘g (n :num) (i :num)’ >> art [] \\
+     fs [mono_decreasing_def])
+ >> rw [SKOLEM_THM] (* this asserts ‘f’, which is NOT monotonic *)
+ (* finding a sufficiently big N in the goal *)
+ >> qabbrev_tac ‘n1 = f n0’
+ >> ‘n0 <= n1’ by rw [Abbr ‘n1’]
+ >> Q.PAT_X_ASSUM ‘!i e. 0 < e ==> _’ (MP_TAC o Q.SPECL [‘n1’, ‘E’])
+ >> rw [] (* This asserts N *)
+ >> qabbrev_tac ‘n2 = MAX N n1’
+ >> Q.EXISTS_TAC ‘n2’
+ >> rw [Abbr ‘n2’, MAX_LE]
+ (* NOTE: the proof idea is this (values in each next row are smaller):
+
+    P n + E              Q + E
+    g n n1 (?)           l n1
+    g n i                l n
+    P n                  Q
+  *)
+ >> cheat
+QED
+ *)
+
 (* References:
 
   [1] Qasim, M.: Formalization of Normal Random Variables,
@@ -4483,6 +4499,6 @@ val _ = html_theory "distribution";
   [6] math.stackexchange.com:
       https://math.stackexchange.com/questions/1400327/existence-of-a-random-variable
   [7] Resnick, S.: A Probability Path. Springer (2019).
-  [8] Klenke, A.: Probability Theory: A Comprehensive Course.
-      Springer Science & Business Media, London (2013).
+  [8] Klenke, A.: Probability Theory: A Comprehensive Course. Third Edition.
+      Springer Science & Business Media, London (2020).
  *)

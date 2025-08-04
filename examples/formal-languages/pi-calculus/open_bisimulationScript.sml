@@ -959,10 +959,10 @@ Proof
 QED
 
 Theorem TRANS_bvc_ind = TRANS_bvc_gen_ind
-                     |> Q.SPEC ‘\z M N. P0 M N :bool’
+                     |> Q.SPEC ‘\z M N. R M N :bool’
                      |> Q.SPEC ‘\x:'a. X :string set’
                      |> SIMP_RULE bool_ss []
-                     |> Q.GENL [‘P0’, ‘X’]
+                     |> Q.GENL [‘R’, ‘X’]
 
 val _ = export_theory ();
 val _ = html_theory "open_bisimulation";
