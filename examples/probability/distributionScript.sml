@@ -3636,8 +3636,10 @@ Proof
      FULL_SIMP_TAC std_ss [subprobability_measure_space_def])
  >> STRIP_TAC
  >> gs [subprobability_measure_space_thm, finite_measure_space_thm, FORALL_AND_THM]
+ >> cheat
+ (* Old steps
  (* NOTE: The plan here is to show “((\n. X n s) --> Y s) sequentially”, and thus
-    limsup (\n. X n s) = liminf (\n. X n s) = Y s. All involves sets are closed.
+    limsup (\n. X n s) = liminf (\n. X n s) = Y s. All involved sets are closed.
   *)
  >> Suff ‘!s. closed_in t s ==> ((\n. X n s) --> Y s) sequentially’
  >- (DISCH_TAC \\
@@ -3688,9 +3690,10 @@ Proof
      rw [EXTREAL_LIM_CONST])
  >> ‘s IN subsets b’ by rw [closed_in_general_borel, Abbr ‘b’]
  >> cheat
+ *)
 QED
 
- (* old steps
+ (* Even older steps
  (* applying Lipschitz_continuous_map_exists *)
  >> MP_TAC (Q.SPEC ‘E’ Lipschitz_continuous_map_exists)
  >> simp [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM]
