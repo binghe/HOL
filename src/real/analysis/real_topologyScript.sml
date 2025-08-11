@@ -14444,6 +14444,21 @@ val IS_INTERVAL_CASES = store_thm ("IS_INTERVAL_CASES",
   REWRITE_TAC[GSYM REAL_NOT_LE] THEN
   ASM_MESON_TAC [REAL_LE_TRANS, REAL_LE_TOTAL, REAL_LE_ANTISYM]);
 
+Theorem IS_INTERVAL_POSSIBILITIES:
+    (is_interval ∅) ∧
+    (is_interval 𝕌(:real)) ∧
+    (∀a. is_interval {x | a ≤ x}) ∧
+    (∀a. is_interval {x | a < x}) ∧
+    (∀b. is_interval {x | x ≤ b}) ∧
+    (∀b. is_interval {x | x < b}) ∧
+    (∀a b. is_interval {x | a ≤ x ∧ x ≤ b}) ∧
+    (∀a b. is_interval {x | a ≤ x ∧ x < b}) ∧
+    (∀a b. is_interval {x | a < x ∧ x ≤ b}) ∧
+    (∀a b. is_interval {x | a < x ∧ x < b})
+Proof
+    metis_tac[IS_INTERVAL_CASES]
+QED
+
 val IS_INTERVAL_INTER = store_thm ("IS_INTERVAL_INTER",
  ``!s t:real->bool.
         is_interval s /\ is_interval t ==> is_interval(s INTER t)``,
@@ -14685,6 +14700,28 @@ val CARD_FRONTIER_INTERVAL = store_thm ("CARD_FRONTIER_INTERVAL",
   DISCH_THEN(MP_TAC o SPECL [``u:real``, ``v:real``, ``w:real``]) THEN
   ASM_REWRITE_TAC[] THEN FULL_SIMP_TAC std_ss [REAL_LT_RDIV_EQ, REAL_ARITH ``0 < 2:real``] THEN
   ASM_REAL_ARITH_TAC);
+
+Theorem INTERIOR_INTERVAL_CASES:
+    (interior ∅ = ∅) ∧
+    (interior 𝕌(:real) = 𝕌(:real)) ∧
+    (∀a. interior {x | a ≤ x} = {x | a < x}) ∧
+    (∀a. interior {x | a < x} = {x | a < x}) ∧
+    (∀b. interior {x | x ≤ b} = {x | x < b}) ∧
+    (∀b. interior {x | x < b} = {x | x < b}) ∧
+    (∀a b. interior {x | a ≤ x ∧ x ≤ b} = {x | a < x ∧ x < b}) ∧
+    (∀a b. interior {x | a ≤ x ∧ x < b} = {x | a < x ∧ x < b}) ∧
+    (∀a b. interior {x | a < x ∧ x ≤ b} = {x | a < x ∧ x < b}) ∧
+    (∀a b. interior {x | a < x ∧ x < b} = {x | a < x ∧ x < b})
+Proof
+    simp[SRULE [CLOSED_interval,OPEN_interval] INTERIOR_INTERVAL] >>
+    ‘∀a b. {x | a ≤ x ∧ x < b} = {x | a ≤ x} ∩ {x | x < b}’ by simp[EXTENSION] >>
+    ‘∀a b. {x | a < x ∧ x ≤ b} = {x | a < x} ∩ {x | x ≤ b}’ by simp[EXTENSION] >>
+    ‘∀a b. {x | a < x ∧ x < b} = {x | a < x} ∩ {x | x < b}’ by simp[EXTENSION] >>
+    csimp[INTERIOR_INTER] >>
+    simp[INTERIOR_EMPTY,INTERIOR_UNIV,INTERIOR_HALFSPACE_COMPONENT_LE,
+        SRULE [real_ge,real_gt] INTERIOR_HALFSPACE_COMPONENT_GE] >>
+    simp[INTERIOR_EQ,OPEN_INTERVAL_RIGHT,OPEN_INTERVAL_LEFT]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Limit component bounds.                                                   *)
