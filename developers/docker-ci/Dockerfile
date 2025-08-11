@@ -52,7 +52,7 @@ RUN ${SML} < tools/smart-configure.sml
 RUN bin/build ${BUILDOPTS}
 
 # Building HOL manuals when PolyML is used
-RUN if [ "poly" = "${SML}" ]; then \
+RUN if [ "poly" = "${SML}" ] && [ "linux/amd64" = "$TARGETPLATFORM" ]; then \
     if echo ${BUILDOPTS} | grep -q "otknl"; then \
        echo Skip manual building; \
     else \
