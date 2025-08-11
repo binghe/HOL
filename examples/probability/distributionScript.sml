@@ -3145,15 +3145,15 @@ Definition weak_converge_in_topology_def :
           weak_convergence_condition top X Y f
 End
 
-Definition sub_prob_space_def : (* aka s.p.m. *)
-    sub_prob_space m <=> measure_space m /\ measure m (m_space m) <= 1
+Definition subprob_space_def : (* aka s.p.m. *)
+    subprob_space m <=> measure_space m /\ measure m (m_space m) <= 1
 End
 
-Theorem sub_prob_space_thm :
-    !m. sub_prob_space m <=>
+Theorem subprob_space_thm :
+    !m. subprob_space m <=>
         measure_space m /\ !s. s IN measurable_sets m ==> measure m s <= 1
 Proof
-    RW_TAC std_ss [sub_prob_space_def, GSYM CONJ_ASSOC]
+    RW_TAC std_ss [subprob_space_def, GSYM CONJ_ASSOC]
  >> reverse EQ_TAC >> rw []
  >- (FIRST_X_ASSUM MATCH_MP_TAC \\
      MATCH_MP_TAC MEASURE_SPACE_SPACE >> art [])
@@ -3166,17 +3166,17 @@ Proof
  >> MATCH_MP_TAC MEASURABLE_SETS_SUBSET_SPACE >> art []
 QED
 
-Theorem sub_prob_space_imp_finite :
-    !m. sub_prob_space m ==> finite_measure_space m
+Theorem subprob_space_imp_finite :
+    !m. subprob_space m ==> finite_measure_space m
 Proof
-    rw [sub_prob_space_def, finite_measure_space_def, lt_infty]
+    rw [subprob_space_def, finite_measure_space_def, lt_infty]
  >> Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw []
 QED
 
 Theorem prob_space_sub :
-    !p. prob_space p ==> sub_prob_space p
+    !p. prob_space p ==> subprob_space p
 Proof
-    rw [prob_space_def, sub_prob_space_def]
+    rw [prob_space_def, subprob_space_def]
 QED
 
 (* Theorem 13.16 (Portemanteau) [8, p.283]
@@ -3186,8 +3186,8 @@ QED
  *)
 Definition Portemanteau_antecedents_def :
     Portemanteau_antecedents E X Y <=>
-   (!n. sub_prob_space (space (B E),subsets (B E),X n)) /\
-    sub_prob_space (space (B E),subsets (B E),Y)
+   (!n. subprob_space (space (B E),subsets (B E),X n)) /\
+    subprob_space (space (B E),subsets (B E),Y)
 End
 
 Definition Portemanteau_i_def :
@@ -3230,7 +3230,7 @@ Proof
  >> FIRST_X_ASSUM MATCH_MP_TAC
  >> reverse CONJ_TAC
  >- (Q.PAT_X_ASSUM ‘subprobability_measure (space (B E),subsets (B E),Y)’ MP_TAC \\
-     rw [sub_prob_space_thm] \\
+     rw [subprob_space_thm] \\
      Suff ‘U (mtop E) f = {}’
      >- (Rewr' \\
          qabbrev_tac ‘M = (space (B E),subsets (B E),Y)’ \\
@@ -3315,8 +3315,8 @@ Proof
  >> DISCH_TAC
  (* applying MEASURE_SPACE_FINITE_DIFF *)
  >> Know ‘Y (sp DIFF s0) = Y sp - Y s0’
- >- (Q.PAT_X_ASSUM ‘sub_prob_space (space b,subsets b,Y)’ MP_TAC \\
-     rw [sub_prob_space_thm] \\
+ >- (Q.PAT_X_ASSUM ‘subprob_space (space b,subsets b,Y)’ MP_TAC \\
+     rw [subprob_space_thm] \\
      qabbrev_tac ‘p = (space b,subsets b,Y)’ \\
     ‘Y = measure p’ by rw [Abbr ‘p’] >> POP_ORW \\
     ‘space b = m_space p’ by rw [Abbr ‘b’, Abbr ‘p’, space_general_borel] \\
@@ -3327,9 +3327,9 @@ Proof
  >> Rewr'
  >> Know ‘!n. X n (sp DIFF s0) = X n sp - X n s0’
  >- (Q.X_GEN_TAC ‘n’ \\
-     Q.PAT_X_ASSUM ‘!n. sub_prob_space (space b,subsets b,X n)’
+     Q.PAT_X_ASSUM ‘!n. subprob_space (space b,subsets b,X n)’
        (MP_TAC o Q.SPEC ‘n’) \\
-     rw [sub_prob_space_thm] \\
+     rw [subprob_space_thm] \\
      qabbrev_tac ‘p = (space b,subsets b,X n)’ \\
     ‘X n = measure p’ by rw [Abbr ‘p’] >> POP_ORW \\
     ‘space b = m_space p’ by rw [Abbr ‘b’, Abbr ‘p’, space_general_borel] \\
@@ -3342,8 +3342,8 @@ Proof
  >> simp [extreal_sub, ext_liminf_alt_limsup, o_DEF]
  >> ‘(!n. finite_measure_space (space b,subsets b,X n)) /\
           finite_measure_space (space b,subsets b,Y)’
-      by PROVE_TAC [sub_prob_space_imp_finite]
- >> gs [sub_prob_space_thm, finite_measure_space_thm]
+      by PROVE_TAC [subprob_space_imp_finite]
+ >> gs [subprob_space_thm, finite_measure_space_thm]
  >> ‘sp IN subsets b’ by METIS_TAC [SIGMA_ALGEBRA_SPACE]
  >> Know ‘!n. -(X n sp + -X n s0) = -X n sp + -(-X n s0)’
  >- (Q.X_GEN_TAC ‘n’ \\
@@ -3419,8 +3419,8 @@ Proof
  >> DISCH_TAC
  (* applying MEASURE_SPACE_FINITE_DIFF *)
  >> Know ‘Y (sp DIFF s0) = Y sp - Y s0’
- >- (Q.PAT_X_ASSUM ‘sub_prob_space (space b,subsets b,Y)’ MP_TAC \\
-     rw [sub_prob_space_thm] \\
+ >- (Q.PAT_X_ASSUM ‘subprob_space (space b,subsets b,Y)’ MP_TAC \\
+     rw [subprob_space_thm] \\
      qabbrev_tac ‘p = (space b,subsets b,Y)’ \\
     ‘Y = measure p’ by rw [Abbr ‘p’] >> POP_ORW \\
     ‘space b = m_space p’ by rw [Abbr ‘b’, Abbr ‘p’, space_general_borel] \\
@@ -3431,9 +3431,9 @@ Proof
  >> Rewr'
  >> Know ‘!n. X n (sp DIFF s0) = X n sp - X n s0’
  >- (Q.X_GEN_TAC ‘n’ \\
-     Q.PAT_X_ASSUM ‘!n. sub_prob_space (space b,subsets b,X n)’
+     Q.PAT_X_ASSUM ‘!n. subprob_space (space b,subsets b,X n)’
        (MP_TAC o Q.SPEC ‘n’) \\
-     rw [sub_prob_space_thm] \\
+     rw [subprob_space_thm] \\
      qabbrev_tac ‘p = (space b,subsets b,X n)’ \\
     ‘X n = measure p’ by rw [Abbr ‘p’] >> POP_ORW \\
     ‘space b = m_space p’ by rw [Abbr ‘b’, Abbr ‘p’, space_general_borel] \\
@@ -3446,8 +3446,8 @@ Proof
  >> simp [extreal_sub, ext_limsup_alt_liminf, o_DEF]
  >> ‘(!n. finite_measure_space (space b,subsets b,X n)) /\
           finite_measure_space (space b,subsets b,Y)’
-      by PROVE_TAC [sub_prob_space_imp_finite]
- >> gs [sub_prob_space_thm, finite_measure_space_thm]
+      by PROVE_TAC [subprob_space_imp_finite]
+ >> gs [subprob_space_thm, finite_measure_space_thm]
  >> ‘sp IN subsets b’ by METIS_TAC [SIGMA_ALGEBRA_SPACE]
  >> Know ‘!n. -(X n sp + -X n s0) = -X n sp + -(-X n s0)’
  >- (Q.X_GEN_TAC ‘n’ \\
@@ -3511,7 +3511,7 @@ Proof
  >> qabbrev_tac ‘t = mtop E’
  >> ‘(!n. finite_measure_space (space (B t),subsets (B t),X n)) /\
           finite_measure_space (space (B t),subsets (B t),Y)’
-      by PROVE_TAC [sub_prob_space_imp_finite]
+      by PROVE_TAC [subprob_space_imp_finite]
  >> fs [FORALL_AND_THM, finite_measure_space_thm]
  (* applying extreal_lim_sequentially_eq *)
  >> qmatch_abbrev_tac ‘(f --> l) sequentially’
@@ -3653,8 +3653,8 @@ Proof
  >> ‘sp IN subsets b’ by METIS_TAC [SIGMA_ALGEBRA_SPACE]
  >> ‘(!n. finite_measure_space (space b,subsets b,X n)) /\
           finite_measure_space (space b,subsets b,Y)’
-      by PROVE_TAC [sub_prob_space_imp_finite]
- >> gs [sub_prob_space_thm, finite_measure_space_thm, FORALL_AND_THM]
+      by PROVE_TAC [subprob_space_imp_finite]
+ >> gs [subprob_space_thm, finite_measure_space_thm, FORALL_AND_THM]
  >> cheat
  (* Old steps
  (* NOTE: The plan here is to show “((\n. X n s) --> Y s) sequentially”, and thus
