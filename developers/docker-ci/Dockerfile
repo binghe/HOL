@@ -47,8 +47,13 @@ fi
 # remove potential local poly-includes.ML for docker builds
 RUN rm -f tools-poly/poly-includes.ML
 
-# Building HOL itself
-RUN ${SML} < tools/smart-configure.sml 
+# Building HOL itself (PolyML is now installed in non-system directories)
+RUN if [ "poly" = "$SML" ]; then \
+    /ML/polyml/bin/${SML} < tools/smart-configure.sml; \
+else \
+    ${SML} < tools/smart-configure.sml; \
+fi
+
 RUN bin/build ${BUILDOPTS}
 
 # Building HOL manuals when PolyML is used
