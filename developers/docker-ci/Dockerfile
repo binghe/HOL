@@ -25,6 +25,9 @@ ARG Z3_VERSION
 ARG CVC_VERSION
 ARG YICES_VERSION
 
+# this overrides the PATH environment from upstream images
+ENV PATH=/ML/HOL/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
 # if --build-arg Z3_VERSION=anything, set HOL4_Z3_EXECUTABLE to system-installed z3
 ENV HOL4_Z3_EXECUTABLE=${Z3_VERSION:+/ML/z3-${Z3_VERSION}/bin/z3}
 RUN if [ "" != "${Z3_VERSION}" ]; then \
