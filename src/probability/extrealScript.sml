@@ -2430,12 +2430,11 @@ val sup_const_alt = store_thm
  >> POP_ASSUM MATCH_MP_TAC
  >> RW_TAC std_ss []);
 
-val sup_const_alt' = store_thm
-  ("sup_const_alt'",
-  ``!p z. (?x. x IN p) /\ (!x. x IN p ==> (x = z)) ==> (sup p = z)``,
-    RW_TAC std_ss [sup_eq,le_refl,IN_APP]
- >> POP_ASSUM MATCH_MP_TAC
- >> RW_TAC std_ss []);
+Theorem sup_const_alt' :
+    !p z. (?x. x IN p) /\ (!x. x IN p ==> (x = z)) ==> (sup p = z)
+Proof
+    rw [IN_APP, sup_const_alt]
+QED
 
 val sup_const_over_set = store_thm
   ("sup_const_over_set", ``!s k. s <> {} ==> (sup (IMAGE (\x. k) s) = k)``,
@@ -3045,6 +3044,12 @@ val inf_const_alt = store_thm
   RW_TAC std_ss [inf_eq,le_refl]
   >> POP_ASSUM MATCH_MP_TAC
   >> RW_TAC std_ss []);
+
+Theorem inf_const_alt' :
+    !p z. (?x. x IN p) /\ (!x. x IN p ==> (x = z)) ==> (inf p = z)
+Proof
+    rw [IN_APP, inf_const_alt]
+QED
 
 val inf_const_over_set = store_thm
   ("inf_const_over_set", ``!s k. s <> {} ==> (inf (IMAGE (\x. k) s) = k)``,
@@ -7878,6 +7883,24 @@ Proof
  >> rw [le_sup']
  >> POP_ASSUM MATCH_MP_TAC
  >> Q.EXISTS_TAC ‘m’ >> rw []
+QED
+
+Theorem ext_limsup_const :
+    !(c :extreal). limsup (\n. c) = c
+Proof
+    rw [ext_limsup_def]
+ >> Know ‘!(m :num). sup {c | n | m <= n} = c’
+ >- (Q.X_GEN_TAC ‘m’ \\
+     MATCH_MP_TAC sup_const_alt' >> simp [GSPECIFICATION] \\
+     rw [] >> Q.EXISTS_TAC ‘m’ >> simp [])
+ >> rw []
+ >> MATCH_MP_TAC inf_const_alt' >> simp []
+QED
+
+Theorem ext_liminf_const :
+    !(c :extreal). liminf (\n. c) = c
+Proof
+    rw [ext_liminf_alt_limsup, o_DEF, ext_limsup_const]
 QED
 
 (* ------------------------------------------------------------------------- *)
