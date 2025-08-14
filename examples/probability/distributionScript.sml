@@ -3117,10 +3117,6 @@ QED
 Overload B[local] = “general_borel”
 Overload B[local] = “\E. general_borel (mtop E)”
 
-(* Definition 13.4 (iv) [8, p.276]
-
-   NOTE: The name "subprobability measure" (aka s.p.m.) is also from [2, p.85].
- *)
 Definition bounded_continuous_def :
     bounded_continuous top (f :'a -> real) <=>
     continuous_map (top,euclidean) f /\ bounded (IMAGE f UNIV)
@@ -3173,7 +3169,7 @@ Proof
  >> Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw []
 QED
 
-Theorem prob_space_sub :
+Theorem prob_space_imp_subprob_space :
     !p. prob_space p ==> subprob_space p
 Proof
     rw [prob_space_def, subprob_space_def]
@@ -3626,6 +3622,21 @@ Proof
  >> POP_ASSUM MATCH_MP_TAC >> rw [Abbr ‘M’]
 QED
 
+(* Alternative antecedents using ‘prob_space’ instead of ‘subprob_space’ *)
+Definition Portemanteau_antecedents_alt_def :
+    Portemanteau_antecedents_alt E X Y <=>
+   (!n. prob_space (space (B E),subsets (B E),X n)) /\
+    prob_space (space (B E),subsets (B E),Y)
+End
+
+Theorem Portemanteau_antecedents_alt_imp_antecedents :
+    !E X Y. Portemanteau_antecedents_alt E X Y ==>
+            Portemanteau_antecedents E X Y
+Proof
+    rw [Portemanteau_antecedents_def, Portemanteau_antecedents_alt_def]
+ >> MATCH_MP_TAC prob_space_imp_subprob_space >> art []
+QED
+
 (* not easy
 
    NOTE: Since the part “Y (mspace E) <= liminf (\n. X n (mspace E))” cannot
@@ -3633,14 +3644,17 @@ QED
    proof not mentioned in [8].
  *)
 Theorem Portemanteau_ii_imp_iv :
-    !E X Y. Portemanteau_antecedents E X Y /\
+    !E X Y. Portemanteau_antecedents_alt E X Y /\
             Portemanteau_ii E X Y ==> Portemanteau_iv E X Y
 Proof
-    rpt GEN_TAC
+    rpt STRIP_TAC
+ >> ‘Portemanteau_antecedents E X Y’
+       by PROVE_TAC [Portemanteau_antecedents_alt_imp_antecedents]
+ >> NTAC 2 (POP_ASSUM MP_TAC)
  >> SIMP_TAC set_ss [Portemanteau_antecedents_def, GSYM mspace, BL_def,
                      Portemanteau_ii_def, Portemanteau_iv_def,
                      weak_convergence_condition_def]
- >> STRIP_TAC
+ >> NTAC 2 STRIP_TAC
  >> qabbrev_tac ‘sp = mspace E’
  >> qabbrev_tac ‘t = mtop E’
  >> ‘closed_in t sp’ by METIS_TAC [CLOSED_IN_TOPSPACE, mspace]
@@ -3800,9 +3814,29 @@ Proof
          rw [Abbr ‘M'’]) >> Rewr' \\
      MATCH_MP_TAC pos_fn_integral_mono \\
      rw [o_DEF, extreal_of_num_def, indicator_fn] \\
-     cheat)
+  (* final goal: f x <= indicator (A' e) x
+     (1) if x IN (A' e), LHS <= 1, RHS = 1
+     (2) if x NOTIN A' e, LHS = 0, RHS = 0
+   *)
+     Cases_on ‘x IN A' e’ >> rw [indicator] \\
+     POP_ASSUM MP_TAC >> rw [Abbr ‘A'’, GSYM real_lt] \\
+     Suff ‘f x = 0’ >- rw [] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     MATCH_MP_TAC REAL_LT_IMP_LE >> art [])
  (* Y sp <= liminf (\n. X n sp) *)
- >> cheat
+ >> fs [Portemanteau_antecedents_alt_def]
+ (* applying PROB_UNIV *)
+ >> qabbrev_tac ‘M = \n. (sp,subsets b,X n)’
+ >> qabbrev_tac ‘M' = (sp,subsets b,Y)’
+ >> Know ‘prob M' (p_space M') = 1’
+ >- (MATCH_MP_TAC PROB_UNIV >> art [])
+ >> simp [Abbr ‘M'’, p_space_def, prob_def]
+ >> DISCH_TAC
+ >> Know ‘!n. prob (M n) (p_space (M n)) = 1’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     MATCH_MP_TAC PROB_UNIV >> fs [])
+ >> simp [Abbr ‘M’, p_space_def, prob_def]
+ >> rw [ext_liminf_const]
 QED
 
 (* hard *)
