@@ -1762,6 +1762,22 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
+(*  Extending a set by a set_dist                                            *)
+(* ------------------------------------------------------------------------- *)
+
+Definition set_dist_extension_def :
+    set_dist_extension m s e = {x | set_dist m({x},s) <= e}
+End
+
+(* NOTE: Usually ‘0 < e’ is assumed, but the lemma also holds when ‘e <= 0’. *)
+Theorem closed_in_set_dist_extension :
+    !m s e. closed_in (mtop m) s ==>
+            closed_in (mtop m) (set_dist_extension m s e)
+Proof
+    cheat
+QED
+
+(* ------------------------------------------------------------------------- *)
 (*  Lipschitz continuous functions                                           *)
 (* ------------------------------------------------------------------------- *)
 

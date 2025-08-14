@@ -3141,15 +3141,15 @@ Definition weak_converge_in_topology_def :
           weak_convergence_condition top X Y f
 End
 
-Definition subprob_space_def : (* aka s.p.m. *)
-    subprob_space m <=> measure_space m /\ measure m (m_space m) <= 1
+Definition subprobability_measure_def : (* aka s.p.m. *)
+    subprobability_measure m <=> measure_space m /\ measure m (m_space m) <= 1
 End
 
-Theorem subprob_space_thm :
-    !m. subprob_space m <=>
+Theorem subprobability_measure_alt :
+    !m. subprobability_measure m <=>
         measure_space m /\ !s. s IN measurable_sets m ==> measure m s <= 1
 Proof
-    RW_TAC std_ss [subprob_space_def, GSYM CONJ_ASSOC]
+    RW_TAC std_ss [subprobability_measure_def, GSYM CONJ_ASSOC]
  >> reverse EQ_TAC >> rw []
  >- (FIRST_X_ASSUM MATCH_MP_TAC \\
      MATCH_MP_TAC MEASURE_SPACE_SPACE >> art [])
@@ -3162,17 +3162,17 @@ Proof
  >> MATCH_MP_TAC MEASURABLE_SETS_SUBSET_SPACE >> art []
 QED
 
-Theorem subprob_space_imp_finite :
-    !m. subprob_space m ==> finite_measure_space m
+Theorem subprobability_measure_imp_finite :
+    !m. subprobability_measure m ==> finite_measure_space m
 Proof
-    rw [subprob_space_def, finite_measure_space_def, lt_infty]
+    rw [subprobability_measure_def, finite_measure_space_def, lt_infty]
  >> Q_TAC (TRANS_TAC let_trans) ‘1’ >> rw []
 QED
 
-Theorem prob_space_imp_subprob_space :
-    !p. prob_space p ==> subprob_space p
+Theorem prob_space_imp_subprobability_measure :
+    !p. prob_space p ==> subprobability_measure p
 Proof
-    rw [prob_space_def, subprob_space_def]
+    rw [prob_space_def, subprobability_measure_def]
 QED
 
 (* Theorem 13.16 (Portemanteau) [8, p.283]
@@ -3182,8 +3182,8 @@ QED
  *)
 Definition Portemanteau_antecedents_def :
     Portemanteau_antecedents E X Y <=>
-   (!n. subprob_space (space (B E),subsets (B E),X n)) /\
-    subprob_space (space (B E),subsets (B E),Y)
+   (!n. subprobability_measure (space (B E),subsets (B E),X n)) /\
+    subprobability_measure (space (B E),subsets (B E),Y)
 End
 
 Definition Portemanteau_i_def :
@@ -3226,7 +3226,7 @@ Proof
  >> FIRST_X_ASSUM MATCH_MP_TAC
  >> reverse CONJ_TAC
  >- (Q.PAT_X_ASSUM ‘subprobability_measure (space (B E),subsets (B E),Y)’ MP_TAC \\
-     rw [subprob_space_thm] \\
+     rw [subprobability_measure_alt] \\
      Suff ‘U (mtop E) f = {}’
      >- (Rewr' \\
          qabbrev_tac ‘M = (space (B E),subsets (B E),Y)’ \\
@@ -3311,8 +3311,8 @@ Proof
  >> DISCH_TAC
  (* applying MEASURE_SPACE_FINITE_DIFF *)
  >> Know ‘Y (sp DIFF s0) = Y sp - Y s0’
- >- (Q.PAT_X_ASSUM ‘subprob_space (space b,subsets b,Y)’ MP_TAC \\
-     rw [subprob_space_thm] \\
+ >- (Q.PAT_X_ASSUM ‘subprobability_measure (space b,subsets b,Y)’ MP_TAC \\
+     rw [subprobability_measure_alt] \\
      qabbrev_tac ‘p = (space b,subsets b,Y)’ \\
     ‘Y = measure p’ by rw [Abbr ‘p’] >> POP_ORW \\
     ‘space b = m_space p’ by rw [Abbr ‘b’, Abbr ‘p’, space_general_borel] \\
@@ -3323,9 +3323,9 @@ Proof
  >> Rewr'
  >> Know ‘!n. X n (sp DIFF s0) = X n sp - X n s0’
  >- (Q.X_GEN_TAC ‘n’ \\
-     Q.PAT_X_ASSUM ‘!n. subprob_space (space b,subsets b,X n)’
+     Q.PAT_X_ASSUM ‘!n. subprobability_measure (space b,subsets b,X n)’
        (MP_TAC o Q.SPEC ‘n’) \\
-     rw [subprob_space_thm] \\
+     rw [subprobability_measure_alt] \\
      qabbrev_tac ‘p = (space b,subsets b,X n)’ \\
     ‘X n = measure p’ by rw [Abbr ‘p’] >> POP_ORW \\
     ‘space b = m_space p’ by rw [Abbr ‘b’, Abbr ‘p’, space_general_borel] \\
@@ -3338,8 +3338,8 @@ Proof
  >> simp [extreal_sub, ext_liminf_alt_limsup, o_DEF]
  >> ‘(!n. finite_measure_space (space b,subsets b,X n)) /\
           finite_measure_space (space b,subsets b,Y)’
-      by PROVE_TAC [subprob_space_imp_finite]
- >> gs [subprob_space_thm, finite_measure_space_thm]
+      by PROVE_TAC [subprobability_measure_imp_finite]
+ >> gs [subprobability_measure_alt, finite_measure_space_thm]
  >> ‘sp IN subsets b’ by METIS_TAC [SIGMA_ALGEBRA_SPACE]
  >> Know ‘!n. -(X n sp + -X n s0) = -X n sp + -(-X n s0)’
  >- (Q.X_GEN_TAC ‘n’ \\
@@ -3415,8 +3415,8 @@ Proof
  >> DISCH_TAC
  (* applying MEASURE_SPACE_FINITE_DIFF *)
  >> Know ‘Y (sp DIFF s0) = Y sp - Y s0’
- >- (Q.PAT_X_ASSUM ‘subprob_space (space b,subsets b,Y)’ MP_TAC \\
-     rw [subprob_space_thm] \\
+ >- (Q.PAT_X_ASSUM ‘subprobability_measure (space b,subsets b,Y)’ MP_TAC \\
+     rw [subprobability_measure_alt] \\
      qabbrev_tac ‘p = (space b,subsets b,Y)’ \\
     ‘Y = measure p’ by rw [Abbr ‘p’] >> POP_ORW \\
     ‘space b = m_space p’ by rw [Abbr ‘b’, Abbr ‘p’, space_general_borel] \\
@@ -3427,9 +3427,9 @@ Proof
  >> Rewr'
  >> Know ‘!n. X n (sp DIFF s0) = X n sp - X n s0’
  >- (Q.X_GEN_TAC ‘n’ \\
-     Q.PAT_X_ASSUM ‘!n. subprob_space (space b,subsets b,X n)’
+     Q.PAT_X_ASSUM ‘!n. subprobability_measure (space b,subsets b,X n)’
        (MP_TAC o Q.SPEC ‘n’) \\
-     rw [subprob_space_thm] \\
+     rw [subprobability_measure_alt] \\
      qabbrev_tac ‘p = (space b,subsets b,X n)’ \\
     ‘X n = measure p’ by rw [Abbr ‘p’] >> POP_ORW \\
     ‘space b = m_space p’ by rw [Abbr ‘b’, Abbr ‘p’, space_general_borel] \\
@@ -3442,8 +3442,8 @@ Proof
  >> simp [extreal_sub, ext_limsup_alt_liminf, o_DEF]
  >> ‘(!n. finite_measure_space (space b,subsets b,X n)) /\
           finite_measure_space (space b,subsets b,Y)’
-      by PROVE_TAC [subprob_space_imp_finite]
- >> gs [subprob_space_thm, finite_measure_space_thm]
+      by PROVE_TAC [subprobability_measure_imp_finite]
+ >> gs [subprobability_measure_alt, finite_measure_space_thm]
  >> ‘sp IN subsets b’ by METIS_TAC [SIGMA_ALGEBRA_SPACE]
  >> Know ‘!n. -(X n sp + -X n s0) = -X n sp + -(-X n s0)’
  >- (Q.X_GEN_TAC ‘n’ \\
@@ -3507,7 +3507,7 @@ Proof
  >> qabbrev_tac ‘t = mtop E’
  >> ‘(!n. finite_measure_space (space (B t),subsets (B t),X n)) /\
           finite_measure_space (space (B t),subsets (B t),Y)’
-      by PROVE_TAC [subprob_space_imp_finite]
+      by PROVE_TAC [subprobability_measure_imp_finite]
  >> fs [FORALL_AND_THM, finite_measure_space_thm]
  (* applying extreal_lim_sequentially_eq *)
  >> qmatch_abbrev_tac ‘(f --> l) sequentially’
@@ -3622,7 +3622,7 @@ Proof
  >> POP_ASSUM MATCH_MP_TAC >> rw [Abbr ‘M’]
 QED
 
-(* Alternative antecedents using ‘prob_space’ instead of ‘subprob_space’ *)
+(* alternative antecedents using ‘prob_space’ instead of ‘subprobability_measure’ *)
 Definition Portemanteau_antecedents_alt_def :
     Portemanteau_antecedents_alt E X Y <=>
    (!n. prob_space (space (B E),subsets (B E),X n)) /\
@@ -3634,7 +3634,7 @@ Theorem Portemanteau_antecedents_alt_imp_antecedents :
             Portemanteau_antecedents E X Y
 Proof
     rw [Portemanteau_antecedents_def, Portemanteau_antecedents_alt_def]
- >> MATCH_MP_TAC prob_space_imp_subprob_space >> art []
+ >> MATCH_MP_TAC prob_space_imp_subprobability_measure >> art []
 QED
 
 (* not easy
@@ -3667,8 +3667,8 @@ Proof
  >> ‘sp IN subsets b’ by METIS_TAC [SIGMA_ALGEBRA_SPACE]
  >> ‘(!n. finite_measure_space (space b,subsets b,X n)) /\
           finite_measure_space (space b,subsets b,Y)’
-      by PROVE_TAC [subprob_space_imp_finite]
- >> gs [subprob_space_thm, finite_measure_space_thm, FORALL_AND_THM]
+      by PROVE_TAC [subprobability_measure_imp_finite]
+ >> gs [subprobability_measure_alt, finite_measure_space_thm, FORALL_AND_THM]
  (* provable part *)
  >> reverse CONJ_TAC
  >- (Q.X_GEN_TAC ‘A’ >> DISCH_TAC \\
@@ -3686,16 +3686,18 @@ Proof
             ‘Y = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
              rw [MEASURE_EMPTY]) >> Rewr' \\
          simp [ext_limsup_const]) \\
-     qabbrev_tac ‘A' = \e. {x | set_dist E ({x},A) <= e}’ \\
+     qabbrev_tac ‘A' = set_dist_extension E A’ \\
      Know ‘!e. A' e IN subsets b’
      >- (rw [Abbr ‘A'’, Abbr ‘b’] \\
          MATCH_MP_TAC closed_in_general_borel \\
-         cheat) >> DISCH_TAC \\
+         qunabbrev_tac ‘t’ \\
+         MATCH_MP_TAC closed_in_set_dist_extension >> art []) \\
+     DISCH_TAC \\
      qabbrev_tac ‘M' = (sp,subsets b,Y)’ \\
     ‘Y = measure M'’ by rw [Abbr ‘M'’] >> POP_ORW \\
   (* preparing for MONOTONE_CONVERGENCE_BIGINTER2 *)
      Know ‘A = BIGINTER (IMAGE (\n. A' (inv &SUC n)) UNIV)’
-     >- (rw [Once EXTENSION, IN_BIGINTER_IMAGE, Abbr ‘A'’] \\
+     >- (rw [Once EXTENSION, IN_BIGINTER_IMAGE, Abbr ‘A'’, set_dist_extension_def] \\
          Cases_on ‘x IN A’ >> simp [SET_DIST_SING_IN_SET] \\
          qabbrev_tac ‘d = set_dist E ({x},A)’ \\
         ‘0 <= d’ by METIS_TAC [SET_DIST_POS_LE] \\
@@ -3703,7 +3705,7 @@ Proof
         ‘0 < d’ by PROVE_TAC [REAL_LE_LT] \\
          MP_TAC (Q.SPEC ‘d’ REAL_ARCH_INV_SUC) >> rw [GSYM real_lt]) \\
      DISCH_THEN
-      (GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) empty_rewrites o wrap) \\
+       (GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) empty_rewrites o wrap) \\
      qmatch_abbrev_tac ‘limsup _ <= measure M' (BIGINTER (IMAGE g UNIV))’ \\
   (* applying MONOTONE_CONVERGENCE_BIGINTER2 *)
      Know ‘measure M' (BIGINTER (IMAGE g UNIV)) = inf (IMAGE (measure M' o g) UNIV)’
@@ -3712,7 +3714,7 @@ Proof
          simp [IN_FUNSET, Abbr ‘M'’] \\
          CONJ_ASM1_TAC >- rw [Abbr ‘g’] \\
          CONJ_TAC >- METIS_TAC [] \\
-         RW_TAC set_ss [Abbr ‘g’, Abbr ‘A'’, SUBSET_DEF] \\
+         RW_TAC set_ss [Abbr ‘g’, Abbr ‘A'’, SUBSET_DEF, set_dist_extension_def] \\
          Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘inv (&SUC (SUC n))’ >> art [] \\
          MATCH_MP_TAC REAL_LE_INV2 >> simp []) >> Rewr' \\
      simp [le_inf', Abbr ‘g’] \\
@@ -3819,11 +3821,15 @@ Proof
      (2) if x NOTIN A' e, LHS = 0, RHS = 0
    *)
      Cases_on ‘x IN A' e’ >> rw [indicator] \\
-     POP_ASSUM MP_TAC >> rw [Abbr ‘A'’, GSYM real_lt] \\
+     POP_ASSUM MP_TAC \\
+     rw [Abbr ‘A'’, set_dist_extension_def, GSYM real_lt] \\
      Suff ‘f x = 0’ >- rw [] \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
      MATCH_MP_TAC REAL_LT_IMP_LE >> art [])
- (* Y sp <= liminf (\n. X n sp) *)
+ (* Y sp <= liminf (\n. X n sp)
+
+    NOTE: This subgoal is trivial under ‘Portemanteau_antecedents_alt’
+  *)
  >> fs [Portemanteau_antecedents_alt_def]
  (* applying PROB_UNIV *)
  >> qabbrev_tac ‘M = \n. (sp,subsets b,X n)’
@@ -3854,10 +3860,12 @@ QED
 
 (* NOTE: (2) ==> (4) <=> (5) ==> (6) ==> (3) ==> (1) ==> (2) *)
 Theorem Portemanteau_i_eq_ii :
-    !E X Y. Portemanteau_antecedents E X Y ==>
+    !E X Y. Portemanteau_antecedents_alt E X Y ==>
            (Portemanteau_i E X Y <=> Portemanteau_ii E X Y)
 Proof
     rpt STRIP_TAC
+ >> ‘Portemanteau_antecedents E X Y’
+      by PROVE_TAC [Portemanteau_antecedents_alt_imp_antecedents]
  >> EQ_TAC >> rw [Portemanteau_i_imp_ii]
  >> MATCH_MP_TAC Portemanteau_iii_imp_i  >> art []
  >> MATCH_MP_TAC Portemanteau_vi_imp_iii >> art []
@@ -3867,15 +3875,15 @@ Proof
 QED
 
 (* |- !E X Y.
-        (!n. subprobability_measure (mtop E) (X n)) /\
-        subprobability_measure (mtop E) Y ==>
+        (!n. prob_space (space (B E),subsets (B E),X n)) /\
+        prob_space (space (B E),subsets (B E),Y) ==>
         (weak_converge_in_topology (mtop E) X Y <=>
          !f. f IN C_b (mtop E) /\ Lipschitz_continuous_map (E,mr1) f ==>
              ((\n. integral (mspace E,subsets (B E),X n) (Normal o f)) -->
               integral (mspace E,subsets (B E),Y) (Normal o f)) sequentially)
  *)
 Theorem weak_converge_in_topology_alt_Lipschitz =
-        SRULE [Portemanteau_antecedents_def, GSYM mspace, BL_def,
+        SRULE [Portemanteau_antecedents_alt_def, GSYM mspace, BL_def,
                Portemanteau_i_def, Portemanteau_ii_def,
                weak_convergence_condition_def] Portemanteau_i_eq_ii
 
