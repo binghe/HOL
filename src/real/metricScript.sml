@@ -1654,7 +1654,7 @@ Proof
 QED
 
 Theorem SET_DIST_LIPSCHITZ :
-   !s t x y:'a. abs(set_dist m({x},s) - set_dist m({y},s)) <= dist m(x,y)
+   !s x (y :'a). abs(set_dist m({x},s) - set_dist m({y},s)) <= dist m(x,y)
 Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[GSYM SET_DIST_SINGS] THEN
   REWRITE_TAC[REAL_ARITH
@@ -1762,19 +1762,44 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
-(*  Extending a set by a set_dist                                            *)
+(*  closed ball based on a set                                               *)
 (* ------------------------------------------------------------------------- *)
 
-Definition set_dist_extension_def :
-    set_dist_extension m s e = {x | set_dist m({x},s) <= e}
+(* Unlike the usual closed ball (cball) generated from a single point, this
+   version generates it from a set of points.
+ *)
+Definition set_mcball_def :
+    set_mcball m s e = {x | set_dist m({x},s) <= e}
 End
 
 (* NOTE: Usually ‘0 < e’ is assumed, but the lemma also holds when ‘e <= 0’. *)
-Theorem closed_in_set_dist_extension :
-    !m s e. closed_in (mtop m) s ==>
-            closed_in (mtop m) (set_dist_extension m s e)
+Theorem closed_in_set_mcball :
+    !m s e. closed_in (mtop m) (set_mcball m s e)
 Proof
-    cheat
+    rw [CLOSED_IN_METRIC, mspace, set_mcball_def, GSYM real_lt]
+ >> qabbrev_tac ‘d = set_dist m ({x},s)’
+ >> qabbrev_tac ‘r = d - e’
+ >> ‘0 < r’ by simp [Abbr ‘r’, REAL_SUB_LT]
+ >> Q.EXISTS_TAC ‘r’ >> art []
+ >> simp [DISJOINT_ALT, IN_MBALL]
+ >> Q.X_GEN_TAC ‘y’ >> rw [mspace, real_lt]
+ (* applying SET_DIST_LIPSCHITZ *)
+ >> MP_TAC (Q.SPECL [‘s’, ‘x’, ‘y’] SET_DIST_LIPSCHITZ)
+ >> qabbrev_tac ‘r' = dist m (x,y)’
+ >> qabbrev_tac ‘d' = set_dist m ({y},s)’
+ >> simp []
+ >> Cases_on ‘0 <= d - d'’
+ >- (‘abs (d - d') = d - d'’ by rw [ABS_REFL] \\
+     rw [Abbr ‘r’] \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘d - d'’ >> simp [] \\
+     simp [REAL_LE_SUB_CANCEL1])
+ >> fs [GSYM real_lt]
+ >> ‘abs (d - d') = -(d - d')’ by rw [ABS_EQ_NEG]
+ >> POP_ORW
+ >> rw [REAL_NEG_SUB]
+ >> fs [REAL_ARITH “a - b < 0 <=> a < (b :real)”, Abbr ‘r’, REAL_SUB_LT]
+ >> ‘d < e’ by PROVE_TAC [REAL_LTE_TRANS]
+ >> PROVE_TAC [REAL_LT_ANTISYM]
 QED
 
 (* ------------------------------------------------------------------------- *)

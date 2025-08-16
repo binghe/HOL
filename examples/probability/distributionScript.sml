@@ -3686,18 +3686,18 @@ Proof
             ‘Y = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
              rw [MEASURE_EMPTY]) >> Rewr' \\
          simp [ext_limsup_const]) \\
-     qabbrev_tac ‘A' = set_dist_extension E A’ \\
+     qabbrev_tac ‘A' = set_mcball E A’ \\
      Know ‘!e. A' e IN subsets b’
      >- (rw [Abbr ‘A'’, Abbr ‘b’] \\
          MATCH_MP_TAC closed_in_general_borel \\
          qunabbrev_tac ‘t’ \\
-         MATCH_MP_TAC closed_in_set_dist_extension >> art []) \\
+         simp [closed_in_set_mcball]) \\
      DISCH_TAC \\
      qabbrev_tac ‘M' = (sp,subsets b,Y)’ \\
     ‘Y = measure M'’ by rw [Abbr ‘M'’] >> POP_ORW \\
   (* preparing for MONOTONE_CONVERGENCE_BIGINTER2 *)
      Know ‘A = BIGINTER (IMAGE (\n. A' (inv &SUC n)) UNIV)’
-     >- (rw [Once EXTENSION, IN_BIGINTER_IMAGE, Abbr ‘A'’, set_dist_extension_def] \\
+     >- (rw [Once EXTENSION, IN_BIGINTER_IMAGE, Abbr ‘A'’, set_mcball_def] \\
          Cases_on ‘x IN A’ >> simp [SET_DIST_SING_IN_SET] \\
          qabbrev_tac ‘d = set_dist E ({x},A)’ \\
         ‘0 <= d’ by METIS_TAC [SET_DIST_POS_LE] \\
@@ -3714,7 +3714,7 @@ Proof
          simp [IN_FUNSET, Abbr ‘M'’] \\
          CONJ_ASM1_TAC >- rw [Abbr ‘g’] \\
          CONJ_TAC >- METIS_TAC [] \\
-         RW_TAC set_ss [Abbr ‘g’, Abbr ‘A'’, SUBSET_DEF, set_dist_extension_def] \\
+         RW_TAC set_ss [Abbr ‘g’, Abbr ‘A'’, SUBSET_DEF, set_mcball_def] \\
          Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘inv (&SUC (SUC n))’ >> art [] \\
          MATCH_MP_TAC REAL_LE_INV2 >> simp []) >> Rewr' \\
      simp [le_inf', Abbr ‘g’] \\
@@ -3822,7 +3822,7 @@ Proof
    *)
      Cases_on ‘x IN A' e’ >> rw [indicator] \\
      POP_ASSUM MP_TAC \\
-     rw [Abbr ‘A'’, set_dist_extension_def, GSYM real_lt] \\
+     rw [Abbr ‘A'’, set_mcball_def, GSYM real_lt] \\
      Suff ‘f x = 0’ >- rw [] \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
      MATCH_MP_TAC REAL_LT_IMP_LE >> art [])
