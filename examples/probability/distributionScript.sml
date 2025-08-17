@@ -3845,6 +3845,18 @@ Proof
  >> rw [ext_liminf_const]
 QED
 
+(* NOTE: This lemma was part of the proof of Portemanteau_vi_imp_iii *)
+Theorem mtop_frontier_of_preimage :
+    !E f D. mtop E frontier_of PREIMAGE f D SUBSET
+            PREIMAGE f (frontier D) UNION U (mtop E) (f :'a -> real)
+Proof
+    rw [frontier_def, points_of_discontinuity_def, SUBSET_DEF, Once DISJ_SYM]
+ (* assuming f is continuous at x *)
+ >> STRONG_DISJ_TAC
+ >> fs [frontier_of, PREIMAGE_def]
+ >> cheat
+QED
+
 (* hard *)
 Theorem Portemanteau_vi_imp_iii :
     !E X Y. Portemanteau_antecedents E X Y /\
