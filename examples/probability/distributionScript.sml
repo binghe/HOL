@@ -3845,16 +3845,45 @@ Proof
  >> rw [ext_liminf_const]
 QED
 
-(* NOTE: This lemma was part of the proof of Portemanteau_vi_imp_iii *)
+(* NOTE: This lemma may be generated to metricTheory (or even topologyTheory) *)
 Theorem mtop_frontier_of_preimage :
     !E f D. mtop E frontier_of PREIMAGE f D SUBSET
             PREIMAGE f (frontier D) UNION U (mtop E) (f :'a -> real)
 Proof
-    rw [frontier_def, points_of_discontinuity_def, SUBSET_DEF, Once DISJ_SYM]
- (* assuming f is continuous at x *)
+    rw [points_of_discontinuity_def, SUBSET_DEF, Once DISJ_SYM]
+ (* assuming f is continuous at x (the non-trivial case) *)
  >> STRONG_DISJ_TAC
- >> fs [frontier_of, PREIMAGE_def]
- >> cheat
+ (* NOTE: Here we need an equivalent definition of “frontier_of”, saying a point x
+    is at the frontier of D if any open set containing it must have two distinct
+    points y, z such that y is inside D, and z is outside.
+
+    See FRONTIER_STRADDLE and FRONTIER_OF_OPEN_IN_STRADDLE_INTER for this property.
+  *)
+ >> simp [FRONTIER_STRADDLE]
+ >> Q.X_GEN_TAC ‘e’
+ >> DISCH_TAC
+ >> fs [topcontinuous_at, TOPSPACE_EUCLIDEAN, GSYM euclidean_open_def]
+ >> Q.PAT_X_ASSUM ‘!v. open v /\ f x IN v ==> _’ (MP_TAC o Q.SPEC ‘ball (f x,e)’)
+ >> simp [OPEN_BALL, IN_BALL, DIST_REFL]
+ >> STRIP_TAC
+ (* applying FRONTIER_OF_OPEN_IN_STRADDLE_INTER *)
+ >> qabbrev_tac ‘t = mtop E’
+ >> qabbrev_tac ‘s = PREIMAGE f D’
+ >> MP_TAC (Q.SPECL [‘t’, ‘s’, ‘u’] FRONTIER_OF_OPEN_IN_STRADDLE_INTER)
+ >> simp [GSYM DISJOINT_DEF]
+ >> impl_tac >- (simp [DISJOINT_ALT] \\
+                 Q.EXISTS_TAC ‘x’ >> art [])
+ >> simp [DISJOINT_ALT, Abbr ‘s’, PREIMAGE_def, Once EXTENSION]
+ >> ONCE_REWRITE_TAC [TAUT ‘P /\ Q ==> R <=> P ==> Q ==> R’]
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘y’ STRIP_ASSUME_TAC)
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘z’ STRIP_ASSUME_TAC)
+ >> CONJ_TAC
+ >| [ (* goal 1 (of 2) *)
+      Q.EXISTS_TAC ‘f y’ >> art [] \\
+      FIRST_X_ASSUM MATCH_MP_TAC >> art [],
+      (* goal 2 (of 2) *)
+      Q.EXISTS_TAC ‘f z’ >> art [] \\
+      FIRST_X_ASSUM MATCH_MP_TAC >> art [] ]
 QED
 
 (* hard *)
