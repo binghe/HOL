@@ -3903,6 +3903,7 @@ Proof
                    Portemanteau_vi_def, Portemanteau_iii_def,
                    weak_convergence_condition_def]
  >> qabbrev_tac ‘m = Y o PREIMAGE f’
+ (* TODO: extract this sub-proof into a lemma about PREIMAGE and measure_space *)
  >> Know ‘finite_measure_space (space borel,subsets borel,m)’
  >- (Know ‘finite_measure_space (space (B E),subsets (B E),Y)’
      >- PROVE_TAC [subprobability_measure_imp_finite] \\
@@ -3918,7 +3919,26 @@ Proof
          POP_ASSUM MATCH_MP_TAC \\
          Q.PAT_X_ASSUM ‘f IN borel_measurable (B E)’ MP_TAC \\
          rw [measurable_def, IN_FUNSET, space_general_borel, TOPSPACE_MTOP]) \\
-     cheat)
+     simp [countably_additive_def, IN_FUNSET, Abbr ‘m’, o_DEF] \\
+     Q.X_GEN_TAC ‘g’ >> rw [PREIMAGE_BIGUNION, IMAGE_IMAGE] \\
+     Know ‘countably_additive M’ >- PROVE_TAC [measure_space_def] \\
+     rw [countably_additive_def, IN_FUNSET, Abbr ‘M’] \\
+     qabbrev_tac ‘h = PREIMAGE f o g’ \\
+    ‘(\x. Y (PREIMAGE f (g x))) = Y o h’ by rw [Abbr ‘h’, o_DEF, FUN_EQ_THM] \\
+     POP_ORW \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     CONJ_ASM1_TAC (* !x. h x IN subsets (B E) *)
+     >- (Q.X_GEN_TAC ‘n’ >> rw [Abbr ‘h’, o_DEF] \\
+         Q.PAT_X_ASSUM ‘f IN borel_measurable (B E)’ MP_TAC \\
+         rw [measurable_def, IN_FUNSET, space_general_borel, TOPSPACE_MTOP]) \\
+     reverse CONJ_TAC
+     >- (MATCH_MP_TAC SIGMA_ALGEBRA_ENUM \\
+         rw [sigma_algebra_general_borel, IN_FUNSET]) \\
+     POP_ASSUM K_TAC (* useless *) \\
+     rw [Abbr ‘h’, o_DEF] \\
+     MATCH_MP_TAC PREIMAGE_DISJOINT \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> art [])
+ >> DISCH_TAC
  >> qabbrev_tac ‘A = {y | 0 < g {y}}’
  >> cheat
 QED
