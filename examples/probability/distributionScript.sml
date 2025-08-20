@@ -3846,7 +3846,7 @@ Proof
 QED
 
 (* NOTE: This lemma may be generated to metricTheory (or even topologyTheory) *)
-Theorem mtop_frontier_of_preimage :
+Theorem frontier_of_preimage_subset :
     !E f D. mtop E frontier_of PREIMAGE f D SUBSET
             PREIMAGE f (frontier D) UNION U (mtop E) (f :'a -> real)
 Proof
@@ -3856,8 +3856,6 @@ Proof
  (* NOTE: Here we need an equivalent definition of “frontier_of”, saying a point x
     is at the frontier of D if any open set containing it must have two distinct
     points y, z such that y is inside D, and z is outside.
-
-    See FRONTIER_STRADDLE and FRONTIER_OF_OPEN_IN_STRADDLE_INTER for this property.
   *)
  >> simp [FRONTIER_STRADDLE]
  >> Q.X_GEN_TAC ‘e’
@@ -3871,10 +3869,8 @@ Proof
  >> qabbrev_tac ‘s = PREIMAGE f D’
  >> MP_TAC (Q.SPECL [‘t’, ‘s’, ‘u’] FRONTIER_OF_OPEN_IN_STRADDLE_INTER)
  >> simp [GSYM DISJOINT_DEF]
- >> impl_tac >- (simp [DISJOINT_ALT] \\
-                 Q.EXISTS_TAC ‘x’ >> art [])
- >> simp [DISJOINT_ALT, Abbr ‘s’, PREIMAGE_def, Once EXTENSION]
- >> ONCE_REWRITE_TAC [TAUT ‘P /\ Q ==> R <=> P ==> Q ==> R’]
+ >> impl_tac >- (simp [DISJOINT_ALT] >> Q.EXISTS_TAC ‘x’ >> art [])
+ >> simp [DISJOINT_ALT, Abbr ‘s’, PREIMAGE_def, Once EXTENSION, IMP_CONJ]
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘y’ STRIP_ASSUME_TAC)
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘z’ STRIP_ASSUME_TAC)
  >> CONJ_TAC
@@ -3886,16 +3882,44 @@ Proof
       FIRST_X_ASSUM MATCH_MP_TAC >> art [] ]
 QED
 
+(* NOTE: This proof is taken from https://math.stackexchange.com/questions/869583 *)
+Theorem disjoint_measurable_sets_imp_countable :
+    !m c. finite_measure_space (space borel,subsets borel,m) /\
+          disjoint c /\
+         (!s. s IN c ==> s IN subsets borel /\ 0 < m s) ==> countable c
+Proof
+    rw [disjoint_def]
+ >> qabbrev_tac ‘M = (space borel,subsets borel,m)’
+ >> CCONTR_TAC
+ >> cheat
+QED
+
 (* hard *)
 Theorem Portemanteau_vi_imp_iii :
     !E X Y. Portemanteau_antecedents E X Y /\
             Portemanteau_vi E X Y ==> Portemanteau_iii E X Y
 Proof
-    rpt GEN_TAC
- >> SIMP_TAC set_ss [Portemanteau_antecedents_def,
-                     Portemanteau_vi_def, Portemanteau_iii_def,
-                     weak_convergence_condition_def]
- >> STRIP_TAC
+    RW_TAC set_ss [Portemanteau_antecedents_def,
+                   Portemanteau_vi_def, Portemanteau_iii_def,
+                   weak_convergence_condition_def]
+ >> qabbrev_tac ‘m = Y o PREIMAGE f’
+ >> Know ‘finite_measure_space (space borel,subsets borel,m)’
+ >- (Know ‘finite_measure_space (space (B E),subsets (B E),Y)’
+     >- PROVE_TAC [subprobability_measure_imp_finite] \\
+     reverse (rw [finite_measure_space_def, space_general_borel, TOPSPACE_MTOP])
+     >- rw [Abbr ‘m’, o_DEF, PREIMAGE_UNIV, space_borel] \\
+     qabbrev_tac ‘M = (univ(:'a),subsets (B E),Y)’ \\
+     rw [measure_space_def, SPACE, sigma_algebra_borel]
+     >- (rw [positive_def, Abbr ‘m’]
+         >- (‘Y {} = measure M {}’ by rw [Abbr ‘M’] >> POP_ORW \\
+             MATCH_MP_TAC MEASURE_EMPTY >> art []) \\
+         Know ‘positive M’ >- PROVE_TAC [MEASURE_SPACE_POSITIVE] \\
+         rw [positive_def, Abbr ‘M’] \\
+         POP_ASSUM MATCH_MP_TAC \\
+         Q.PAT_X_ASSUM ‘f IN borel_measurable (B E)’ MP_TAC \\
+         rw [measurable_def, IN_FUNSET, space_general_borel, TOPSPACE_MTOP]) \\
+     cheat)
+ >> qabbrev_tac ‘A = {y | 0 < g {y}}’
  >> cheat
 QED
 
