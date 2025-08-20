@@ -3882,18 +3882,6 @@ Proof
       FIRST_X_ASSUM MATCH_MP_TAC >> art [] ]
 QED
 
-(* NOTE: This proof is taken from https://math.stackexchange.com/questions/869583 *)
-Theorem disjoint_measurable_sets_imp_countable :
-    !m c. finite_measure_space (space borel,subsets borel,m) /\
-          disjoint c /\
-         (!s. s IN c ==> s IN subsets borel /\ 0 < m s) ==> countable c
-Proof
-    rw [disjoint_def]
- >> qabbrev_tac ‘M = (space borel,subsets borel,m)’
- >> CCONTR_TAC
- >> cheat
-QED
-
 (* hard *)
 Theorem Portemanteau_vi_imp_iii :
     !E X Y. Portemanteau_antecedents E X Y /\
@@ -3925,8 +3913,7 @@ Proof
      rw [countably_additive_def, IN_FUNSET, Abbr ‘M’] \\
      qabbrev_tac ‘h = PREIMAGE f o g’ \\
     ‘(\x. Y (PREIMAGE f (g x))) = Y o h’ by rw [Abbr ‘h’, o_DEF, FUN_EQ_THM] \\
-     POP_ORW \\
-     FIRST_X_ASSUM MATCH_MP_TAC \\
+     POP_ORW >> FIRST_X_ASSUM MATCH_MP_TAC \\
      CONJ_ASM1_TAC (* !x. h x IN subsets (B E) *)
      >- (Q.X_GEN_TAC ‘n’ >> rw [Abbr ‘h’, o_DEF] \\
          Q.PAT_X_ASSUM ‘f IN borel_measurable (B E)’ MP_TAC \\
@@ -3939,7 +3926,26 @@ Proof
      MATCH_MP_TAC PREIMAGE_DISJOINT \\
      FIRST_X_ASSUM MATCH_MP_TAC >> art [])
  >> DISCH_TAC
- >> qabbrev_tac ‘A = {y | 0 < g {y}}’
+ >> qabbrev_tac ‘A = {y | 0 < m {y}}’
+ >> Know ‘countable A’
+ >- (qabbrev_tac ‘a = \n. {y | inv (&SUC n) < m {y}}’ \\
+     Know ‘A = BIGUNION (IMAGE a UNIV)’
+     >- (rw [Once EXTENSION, IN_BIGUNION_IMAGE, Abbr ‘A’, Abbr ‘a’] \\
+         reverse EQ_TAC >> rw []
+         >- (Q_TAC (TRANS_TAC lt_trans) ‘inv (&SUC n)’ >> art [] \\
+             MATCH_MP_TAC inv_pos' >> rw [extreal_of_num_def]) \\
+         POP_ASSUM (STRIP_ASSUME_TAC o (MATCH_MP EXTREAL_ARCH_INV)) \\
+         Q.EXISTS_TAC ‘n’ >> art []) >> Rewr' \\
+     CCONTR_TAC \\
+     Know ‘?n. INFINITE (a n)’
+     >- (CCONTR_TAC >> fs [] \\
+         Q.PAT_X_ASSUM ‘uncountable (BIGUNION (IMAGE a UNIV))’ MP_TAC \\
+         simp [] \\
+         MATCH_MP_TAC bigunion_countable \\
+         rw [COUNTABLE_IMAGE, COUNTABLE_NUM] \\
+         MATCH_MP_TAC FINITE_IMP_COUNTABLE >> art []) >> STRIP_TAC \\
+     cheat)
+ >> DISCH_TAC
  >> cheat
 QED
 
