@@ -4087,17 +4087,6 @@ Theorem weak_converge_in_topology_alt_Lipschitz =
            Portemanteau_i_def, Portemanteau_ii_def,
            weak_convergence_condition_def]
 
-Theorem converge_in_dist_alt_in_topology :
-    !p X Y. prob_space p /\
-           (!n. real_random_variable (X n) p) /\ real_random_variable Y p ==>
-           ((X --> Y) (in_distribution p) <=>
-
-Proof
-QED
-
-
-
-
 (* ------------------------------------------------------------------------- *)
 (*  Below are unfinished (cheated) theorems (TODO)                           *)
 (* ------------------------------------------------------------------------- *)
