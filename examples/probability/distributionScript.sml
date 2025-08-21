@@ -3949,8 +3949,39 @@ Proof
      DISCH_THEN (Q.X_CHOOSE_THEN ‘h’ MP_TAC) \\
      DISCH_THEN (STRIP_ASSUME_TAC o SRULE [INJ_DEF]) \\
   (* NOTE: The idea is to use enough (finite) number of elements from (a n) to
-     go beyond (m UNIV), which is finite. The least such number is ‘SUC n’.
-   *)
+     go beyond (m UNIV), which is finite. *)
+     qabbrev_tac ‘M = (space borel,subsets borel,m)’ \\
+     qabbrev_tac ‘b = measure M (m_space M)’ \\
+    ‘b <> PosInf’ by PROVE_TAC [finite_measure_space_def] \\
+    ‘?N. b <= &N’ by METIS_TAC [SIMP_EXTREAL_ARCH] \\
+     qabbrev_tac ‘g = \i. {h i}’ \\
+     qabbrev_tac ‘k = SUC n * N’ \\
+     Know ‘finite_additive M’
+     >- PROVE_TAC [MEASURE_FINITE_ADDITIVE, finite_measure_space_def] \\
+     DISCH_THEN (STRIP_ASSUME_TAC o REWRITE_RULE [finite_additive_def]) \\
+     POP_ASSUM (MP_TAC o Q.SPECL [‘g’, ‘k’]) \\
+    ‘!i. i < k ==> g i IN measurable_sets M’
+       by rw [Abbr ‘g’, Abbr ‘M’, borel_measurable_sets] \\
+     qabbrev_tac ‘s = BIGUNION (IMAGE g (count k))’ \\
+     Know ‘s IN measurable_sets M’
+     >- (qunabbrev_tac ‘s’ \\
+         MATCH_MP_TAC MEASURE_SPACE_FINITE_UNION >> art [] \\
+         FULL_SIMP_TAC std_ss [finite_measure_space_def]) >> DISCH_TAC \\
+     simp [] \\
+     CONJ_TAC >- (rw [DISJOINT_ALT, Abbr ‘g’] >> METIS_TAC []) \\
+     MATCH_MP_TAC lt_imp_ne \\
+     Q_TAC (TRANS_TAC let_trans) ‘measure M (m_space M)’ \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC MEASURE_INCREASING \\
+         CONJ_ASM1_TAC >- FULL_SIMP_TAC std_ss [finite_measure_space_def] \\
+         simp [MEASURE_SPACE_SPACE] \\
+         simp [Abbr ‘M’, space_borel]) \\
+     POP_ASSUM K_TAC (* now useless *) \\
+     simp [Abbr ‘s’, Abbr ‘M’, o_DEF, Abbr ‘g’] \\
+     Q_TAC (TRANS_TAC let_trans) ‘SIGMA (\i. inv (&SUC n)) (count k)’ \\
+     reverse CONJ_TAC
+     >- (
+         cheat) \\
      cheat)
  >> DISCH_TAC
  >> cheat

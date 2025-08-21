@@ -1748,6 +1748,39 @@ val EXTREAL_SUM_IMAGE_MONO = store_thm
                       DISJ_IMP_THM, FORALL_AND_THM]
    >> METIS_TAC [le_add2,EXTREAL_SUM_IMAGE_NOT_INFTY]);
 
+(* NOTE: There's no way to have better (and weaker) antecedents such as
+  “(!x. x IN s ==> f x <= g x) /\ (?x. x IN s /\ f x < g x)” as in
+   REAL_SUM_IMAGE_MONO_LT, because, if there exists x such that f x = g x = PosInf,
+   then both sums become PosInf, making the conclusion impossible.
+ *)
+Theorem EXTREAL_SUM_IMAGE_MONO_LT :
+    !f g s. FINITE s ∧ s <> {} /\
+            ((!x. x IN s ==> f x <> NegInf /\ g x <> NegInf) \/
+             (!x. x IN s ==> f x <> PosInf /\ g x <> PosInf)) /\
+            (!x. x IN s ==> f x < g x) ==>
+            EXTREAL_SUM_IMAGE f s < EXTREAL_SUM_IMAGE g s
+Proof
+    Suff ‘!s. FINITE s ==>
+              (\s. s <> {} ==>
+                  !f g. ((!x. x IN s ==> f x <> NegInf /\ g x <> NegInf) \/
+                          (!x. x IN s ==> f x <> PosInf /\ g x <> PosInf)) /\
+                         (!x. x IN s ==> f x < g x) ==>
+                          EXTREAL_SUM_IMAGE f s < EXTREAL_SUM_IMAGE g s) s’
+ >- METIS_TAC []
+ >> MATCH_MP_TAC FINITE_INDUCT
+ >> RW_TAC real_ss [EXTREAL_SUM_IMAGE_EMPTY, le_refl, NOT_IN_EMPTY]
+ >> FULL_SIMP_TAC std_ss [EXTREAL_SUM_IMAGE_PROPERTY, DELETE_NON_ELEMENT, IN_INSERT,
+                          DISJ_IMP_THM, FORALL_AND_THM]
+ >| [ (* goal 1 (of 2) *)
+      Cases_on ‘s = {}’ >> simp [EXTREAL_SUM_IMAGE_EMPTY] \\
+      MATCH_MP_TAC lt_add2 >> art [] \\
+      FIRST_X_ASSUM irule >> rw [],
+      (* goal 2 (of 2) *)
+      Cases_on ‘s = {}’ >> simp [EXTREAL_SUM_IMAGE_EMPTY] \\
+      MATCH_MP_TAC lt_add2 >> art [] \\
+      FIRST_X_ASSUM irule >> rw [] ]
+QED
+
 val EXTREAL_SUM_IMAGE_MONO_SET = store_thm
   ("EXTREAL_SUM_IMAGE_MONO_SET",
    ``!f s t. (FINITE s /\ FINITE t /\ s SUBSET t /\ (!x. x IN t ==> 0 <= f x)) ==>
