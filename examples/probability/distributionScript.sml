@@ -4052,7 +4052,7 @@ Proof
      simp [extreal_of_num_def])
  (* stage work *)
  >> simp [COUNTABLE_ENUM]
- (* NOTE: Can we prove ‘A <> {}’ here? *)
+ (* NOTE: can we prove ‘A <> {}’ here, or prove ‘A = {}’ as a trivial case? *)
  >> cheat
 QED
 
@@ -4082,10 +4082,10 @@ QED
               integral (mspace E,subsets (B E),Y) (Normal o f)) sequentially)
  *)
 Theorem weak_converge_in_topology_alt_Lipschitz =
-    Portemanteau_i_eq_ii
- |> SRULE [Portemanteau_antecedents_alt_def, GSYM mspace, BL_alt,
-           Portemanteau_i_def, Portemanteau_ii_def,
-           weak_convergence_condition_def]
+        Portemanteau_i_eq_ii
+     |> SRULE [Portemanteau_antecedents_alt_def, GSYM mspace, BL_alt,
+               Portemanteau_i_def, Portemanteau_ii_def,
+               weak_convergence_condition_def]
 
 (* ------------------------------------------------------------------------- *)
 (*  Below are unfinished (cheated) theorems (TODO)                           *)

@@ -60,6 +60,29 @@ Definition Borel :
                          S IN {EMPTY; {NegInf}; {PosInf}; {NegInf; PosInf}}})
 End
 
+Theorem Borel_alt_open_in :
+    Borel = sigma univ(:extreal) {s | open_in ext_euclidean s}
+Proof
+    rw [Borel, ext_euclidean_def]
+ >> qmatch_abbrev_tac ‘(UNIV,sts) = _’
+ >> Suff ‘sts = subsets (sigma UNIV {s | open_in (mtop extreal_mr1) s})’
+ >- METIS_TAC [SPACE_SIGMA, subsets_def, SPACE]
+ >> rw [Once EXTENSION, Abbr ‘sts’]
+ >> reverse EQ_TAC >> rw []
+ >- (
+     cheat)
+ (* stage work *)
+ >> cheat
+QED
+
+Theorem Borel_alt_general :
+    Borel = general_borel ext_euclidean
+Proof
+    rw [Borel_alt_open_in, general_borel_def, topspace_ext_euclidean]
+ >> AP_TERM_TAC
+ >> rw [Once EXTENSION, IN_APP]
+QED
+
 (* MATHEMATICAL DOUBLE-STRUCK CAPITAL B
 val _ = Unicode.unicode_version {u = UTF8.chr 0x1D539, tmnm = "Borel"};
 val _ = TeX_notation {hol = "Borel", TeX = ("\\ensuremath{{\\cal{B}}}", 1)};
