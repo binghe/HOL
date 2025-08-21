@@ -4030,18 +4030,29 @@ Proof
  >> MATCH_MP_TAC Portemanteau_ii_imp_iv  >> art []
 QED
 
-(* |- !E X Y.
+Theorem Lipschitz_continuous_map_rewrite[local] :
+    !E f. f IN C_b (mtop E) /\ Lipschitz_continuous_map (E,mr1) f <=>
+          bounded (IMAGE f UNIV) /\ Lipschitz_continuous_map (E,mr1) f
+Proof
+    rw [IN_APP, bounded_continuous_def, euclidean_def]
+ >> METIS_TAC [Lipschitz_continuous_map_imp_continuous_map]
+QED
+
+(* The "final" form of Portemanteau_i_eq_ii for actual application
+   |- !E X Y.
         (!n. prob_space (space (B E),subsets (B E),X n)) /\
         prob_space (space (B E),subsets (B E),Y) ==>
         (weak_converge_in_topology (mtop E) X Y <=>
-         !f. f IN C_b (mtop E) /\ Lipschitz_continuous_map (E,mr1) f ==>
+         !f. bounded (IMAGE f univ(:'a)) /\
+             Lipschitz_continuous_map (E,mr1) f ==>
              ((\n. integral (mspace E,subsets (B E),X n) (Normal o f)) -->
               integral (mspace E,subsets (B E),Y) (Normal o f)) sequentially)
  *)
 Theorem weak_converge_in_topology_alt_Lipschitz =
-        SRULE [Portemanteau_antecedents_alt_def, GSYM mspace, BL_def,
-               Portemanteau_i_def, Portemanteau_ii_def,
-               weak_convergence_condition_def] Portemanteau_i_eq_ii
+    Portemanteau_i_eq_ii
+ |> SRULE [Portemanteau_antecedents_alt_def, GSYM mspace, BL_def,
+           Portemanteau_i_def, Portemanteau_ii_def,
+           weak_convergence_condition_def, Lipschitz_continuous_map_rewrite]
 
 (* ------------------------------------------------------------------------- *)
 (*  Below are unfinished (cheated) theorems (TODO)                           *)
