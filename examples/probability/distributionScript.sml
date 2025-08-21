@@ -3165,6 +3165,15 @@ Theorem weak_converge_in_topology = weak_converge_in_topology_def
      |> REWRITE_RULE [weak_convergence_condition_def]
 
 Theorem weak_converge_alt_in_topology :
+    !fi f. weak_converge fi f <=> weak_converge_in_topology ext_euclidean fi f
+Proof
+    rw [weak_converge_def, weak_converge_in_topology, IN_APP,
+        bounded_continuous_def, continuous_on_univ_alt_continuous_map,
+        GSYM SPACE_BOREL, general_borel_def]
+ >> cheat
+QED
+
+Theorem weak_converge_alt_in_topology' :
     !fi f. weak_converge fi f <=>
            weak_converge_in_topology euclidean
              (\n s. fi n (IMAGE Normal s)) (f o IMAGE Normal)
