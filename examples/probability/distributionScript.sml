@@ -3887,11 +3887,11 @@ Theorem Portemanteau_vi_imp_iii :
     !E X Y. Portemanteau_antecedents E X Y /\
             Portemanteau_vi E X Y ==> Portemanteau_iii E X Y
 Proof
-    RW_TAC set_ss [Portemanteau_antecedents_def,
+    RW_TAC std_ss [Portemanteau_antecedents_def,
                    Portemanteau_vi_def, Portemanteau_iii_def,
                    weak_convergence_condition_def]
+ (* define a (finite) measure by PREIMAGE of a measurable function *)
  >> qabbrev_tac ‘m = Y o PREIMAGE f’
- (* TODO: extract this sub-proof into a lemma about PREIMAGE and measure_space *)
  >> Know ‘finite_measure_space (space borel,subsets borel,m)’
  >- (Know ‘finite_measure_space (space (B E),subsets (B E),Y)’
      >- PROVE_TAC [subprobability_measure_imp_finite] \\
@@ -3944,6 +3944,13 @@ Proof
          MATCH_MP_TAC bigunion_countable \\
          rw [COUNTABLE_IMAGE, COUNTABLE_NUM] \\
          MATCH_MP_TAC FINITE_IMP_COUNTABLE >> art []) >> STRIP_TAC \\
+  (* applying infinite_num_inj *)
+     POP_ASSUM (MP_TAC o REWRITE_RULE [infinite_num_inj]) \\
+     DISCH_THEN (Q.X_CHOOSE_THEN ‘h’ MP_TAC) \\
+     DISCH_THEN (STRIP_ASSUME_TAC o SRULE [INJ_DEF]) \\
+  (* NOTE: The idea is to use enough (finite) number of elements from (a n) to
+     go beyond (m UNIV), which is finite. The least such number is ‘SUC n’.
+   *)
      cheat)
  >> DISCH_TAC
  >> cheat

@@ -796,14 +796,28 @@ Proof
  >> MATCH_MP_TAC MEASURE_SPACE_SPACE >> art []
 QED
 
-val MEASURE_SPACE_BIGUNION = store_thm
-  ("MEASURE_SPACE_BIGUNION",
-  ``!m s. measure_space m /\ (!n:num. s n IN measurable_sets m) ==>
-          (BIGUNION (IMAGE s UNIV) IN measurable_sets m)``,
+Theorem MEASURE_SPACE_BIGUNION :
+    !m s. measure_space m /\ (!n:num. s n IN measurable_sets m) ==>
+         (BIGUNION (IMAGE s UNIV) IN measurable_sets m)
+Proof
     RW_TAC std_ss []
  >> (MP_TAC o REWRITE_RULE [subsets_def,space_def,IN_UNIV,IN_FUNSET] o
      (Q.SPEC `(m_space m,measurable_sets m)`)) SIGMA_ALGEBRA_FN
- >> METIS_TAC [measure_space_def]);
+ >> METIS_TAC [measure_space_def]
+QED
+
+Theorem MEASURE_SPACE_FINITE_UNION :
+    !m f n. measure_space m /\ (!i. i < n ==> f i IN measurable_sets m) ==>
+            BIGUNION (IMAGE f (count n)) IN measurable_sets m
+Proof
+    rpt STRIP_TAC
+ >> ‘sigma_algebra (measurable_space m)’ by PROVE_TAC [measure_space_def]
+ >> MP_TAC (Q.SPECL [‘measurable_space m’, ‘IMAGE f (count n)’]
+                    SIGMA_ALGEBRA_FINITE_UNION)
+ >> rw [SUBSET_DEF]
+ >> POP_ASSUM MATCH_MP_TAC >> rw []
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+QED
 
 (* NOTE: changed order of universal quantifiers *)
 Theorem MEASURE_SPACE_SUBSET_MSPACE :
@@ -819,18 +833,33 @@ Proof
    METIS_TAC [MEASURE_SPACE_SUBSET_MSPACE, SUBSET_DEF]
 QED
 
-val MEASURE_SPACE_EMPTY_MEASURABLE = store_thm
-  ("MEASURE_SPACE_EMPTY_MEASURABLE",``!m. measure_space m ==> {} IN measurable_sets m``,
-   RW_TAC std_ss [measure_space_def, sigma_algebra_def, algebra_def,subsets_def, space_def]);
+Theorem MEASURE_SPACE_EMPTY_MEASURABLE :
+    !m. measure_space m ==> {} IN measurable_sets m
+Proof
+    RW_TAC std_ss [measure_space_def, sigma_algebra_def, algebra_def,
+                   subsets_def, space_def]
+QED
 
-val MEASURE_SPACE_BIGINTER = store_thm
-  ("MEASURE_SPACE_BIGINTER",
-  ``!m s. measure_space m /\ (!n:num. s n IN measurable_sets m) ==>
-         (BIGINTER (IMAGE s UNIV) IN measurable_sets m)``,
+Theorem MEASURE_SPACE_BIGINTER :
+    !m s. measure_space m /\ (!n:num. s n IN measurable_sets m) ==>
+         (BIGINTER (IMAGE s UNIV) IN measurable_sets m)
+Proof
   RW_TAC std_ss []
   >> (MP_TAC o REWRITE_RULE [subsets_def,space_def,IN_UNIV,IN_FUNSET] o
       (Q.SPEC `(m_space m,measurable_sets m)`)) SIGMA_ALGEBRA_FN_BIGINTER
-  >> METIS_TAC [measure_space_def]);
+  >> METIS_TAC [measure_space_def]
+QED
+
+Theorem MEASURE_SPACE_FINITE_INTER :
+    !m f n. measure_space m /\ (!i. i < n ==> f i IN measurable_sets m) /\ 0 < n ==>
+            BIGINTER (IMAGE f (count n)) IN measurable_sets m
+Proof
+    rpt STRIP_TAC
+ >> ‘sigma_algebra (measurable_space m)’ by PROVE_TAC [measure_space_def]
+ >> MP_TAC (Q.SPECL [‘measurable_space m’, ‘f’, ‘n’]
+                    SIGMA_ALGEBRA_FINITE_INTER)
+ >> rw [SUBSET_DEF]
+QED
 
 (* use MONOTONE_CONVERGENCE when `f 0 = {}` doesn't hold *)
 Theorem MEASURE_COUNTABLE_INCREASING :
