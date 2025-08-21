@@ -8907,6 +8907,28 @@ Proof
  >> Q.EXISTS_TAC ‘UNIV’ >> rw []
 QED
 
+Theorem continuous_on_univ_alt_continuous_map :
+   !(f :real -> real).
+     f continuous_on UNIV <=> continuous_map (euclidean,euclidean) f
+Proof
+    Q.X_GEN_TAC ‘f’
+ >> EQ_TAC
+ >- (rw [CONTINUOUS_MAP, TOPSPACE_EUCLIDEAN] \\
+     MP_TAC (Q.SPECL [‘f’, ‘UNIV’, ‘UNIV’, ‘u’] CONTINUOUS_OPEN_IN_PREIMAGE_GEN) \\
+     rw [SUBTOPOLOGY_UNIV])
+ >> rw [CONTINUOUS_MAP, TOPSPACE_EUCLIDEAN, continuous_on, GSYM euclidean_open_def]
+ >> Q.PAT_X_ASSUM ‘!u. open u ==> _’ (MP_TAC o Q.SPEC ‘ball (f (x :real),e)’)
+ >> simp [OPEN_BALL, IN_BALL]
+ >> rw [open_def]
+ >> POP_ASSUM (MP_TAC o Q.SPEC ‘x’) >> simp [DIST_REFL]
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘r’ STRIP_ASSUME_TAC)
+ >> Q.EXISTS_TAC ‘r’ >> art []
+ >> Q.X_GEN_TAC ‘y’
+ >> DISCH_TAC
+ >> ONCE_REWRITE_TAC [DIST_SYM]
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+QED
+
 (* ------------------------------------------------------------------------- *)
 (* Similarly in terms of closed sets. *)
 (* ------------------------------------------------------------------------- *)

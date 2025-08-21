@@ -3128,6 +3128,20 @@ Definition BL_def :
                             Lipschitz_continuous_map (E,mr1) f}
 End
 
+Theorem Lipschitz_continuous_map_rewrite[local] :
+    !E f. f IN C_b (mtop E) /\ Lipschitz_continuous_map (E,mr1) f <=>
+          bounded (IMAGE f UNIV) /\ Lipschitz_continuous_map (E,mr1) f
+Proof
+    rw [IN_APP, bounded_continuous_def, euclidean_def]
+ >> METIS_TAC [Lipschitz_continuous_map_imp_continuous_map]
+QED
+
+Theorem BL_alt :
+    !E. BL E = {f | bounded (IMAGE f UNIV) /\ Lipschitz_continuous_map (E,mr1) f}
+Proof
+    rw [Once EXTENSION, BL_def, Lipschitz_continuous_map_rewrite]
+QED
+
 Definition weak_convergence_condition_def :
     weak_convergence_condition top X Y f <=>
     ((\n. integral (topspace top,subsets (B top),X n) (Normal o f)) -->
@@ -3137,9 +3151,28 @@ End
 (* Definition 13.12 [8, p.281] *)
 Definition weak_converge_in_topology_def :
     weak_converge_in_topology (top :'a topology) X Y <=>
-      !f. f IN bounded_continuous top ==>
-          weak_convergence_condition top X Y f
+    !f. f IN bounded_continuous top ==> weak_convergence_condition top X Y f
 End
+
+(* |- !top X Y.
+        weak_converge_in_topology top X Y <=>
+        !f. f IN C_b top ==>
+            ((\n. integral (topspace top,subsets (B top),X n) (Normal o f)) -->
+             integral (topspace top,subsets (B top),Y) (Normal o f))
+              sequentially
+ *)
+Theorem weak_converge_in_topology = weak_converge_in_topology_def
+     |> REWRITE_RULE [weak_convergence_condition_def]
+
+Theorem weak_converge_alt_in_topology :
+    !fi f. weak_converge fi f <=>
+           weak_converge_in_topology euclidean
+             (\n s. fi n (IMAGE Normal s)) (f o IMAGE Normal)
+Proof
+    rw [weak_converge_def, weak_converge_in_topology, IN_APP,
+        bounded_continuous_def, continuous_on_univ_alt_continuous_map]
+ >> cheat
+QED
 
 Definition subprobability_measure_def : (* aka s.p.m. *)
     subprobability_measure m <=> measure_space m /\ measure m (m_space m) <= 1
@@ -4000,9 +4033,9 @@ Proof
      Know ‘SIGMA (\i. inv (&SUC n)) (count k) = &CARD (count k) * inv (&SUC n)’
      >- (irule EXTREAL_SUM_IMAGE_FINITE_CONST >> rw []) >> Rewr' \\
     ‘&SUC n <> (0 :real)’ by rw [] \\
-     ASM_SIMP_TAC std_ss [CARD_COUNT, Abbr ‘k’, extreal_of_num_def, extreal_inv_eq,
+     ASM_SIMP_TAC std_ss [CARD_COUNT, Abbr ‘k’, extreal_of_num_def,
                           GSYM REAL_OF_NUM_MUL, GSYM extreal_mul_eq,
-                          GSYM mul_assoc] \\
+                          GSYM mul_assoc, extreal_inv_eq] \\
     ‘Normal (&SUC n) * Normal (realinv (&SUC n)) = 1’
        by simp [extreal_of_num_def, extreal_mul_eq] \\
      simp [GSYM extreal_of_num_def] \\
@@ -4030,16 +4063,7 @@ Proof
  >> MATCH_MP_TAC Portemanteau_ii_imp_iv  >> art []
 QED
 
-Theorem Lipschitz_continuous_map_rewrite[local] :
-    !E f. f IN C_b (mtop E) /\ Lipschitz_continuous_map (E,mr1) f <=>
-          bounded (IMAGE f UNIV) /\ Lipschitz_continuous_map (E,mr1) f
-Proof
-    rw [IN_APP, bounded_continuous_def, euclidean_def]
- >> METIS_TAC [Lipschitz_continuous_map_imp_continuous_map]
-QED
-
-(* The "final" form of Portemanteau_i_eq_ii for actual application
-   |- !E X Y.
+(* |- !E X Y.
         (!n. prob_space (space (B E),subsets (B E),X n)) /\
         prob_space (space (B E),subsets (B E),Y) ==>
         (weak_converge_in_topology (mtop E) X Y <=>
@@ -4050,9 +4074,20 @@ QED
  *)
 Theorem weak_converge_in_topology_alt_Lipschitz =
     Portemanteau_i_eq_ii
- |> SRULE [Portemanteau_antecedents_alt_def, GSYM mspace, BL_def,
+ |> SRULE [Portemanteau_antecedents_alt_def, GSYM mspace, BL_alt,
            Portemanteau_i_def, Portemanteau_ii_def,
-           weak_convergence_condition_def, Lipschitz_continuous_map_rewrite]
+           weak_convergence_condition_def]
+
+Theorem converge_in_dist_alt_in_topology :
+    !p X Y. prob_space p /\
+           (!n. real_random_variable (X n) p) /\ real_random_variable Y p ==>
+           ((X --> Y) (in_distribution p) <=>
+
+Proof
+QED
+
+
+
 
 (* ------------------------------------------------------------------------- *)
 (*  Below are unfinished (cheated) theorems (TODO)                           *)
