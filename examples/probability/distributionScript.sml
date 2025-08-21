@@ -3955,7 +3955,8 @@ Proof
     ‘b <> PosInf’ by PROVE_TAC [finite_measure_space_def] \\
     ‘?N. b <= &N’ by METIS_TAC [SIMP_EXTREAL_ARCH] \\
      qabbrev_tac ‘g = \i. {h i}’ \\
-     qabbrev_tac ‘k = SUC n * N’ \\
+     qabbrev_tac ‘k = SUC N * SUC n’ \\
+    ‘0 < k’ by rw [Abbr ‘k’] \\
      Know ‘finite_additive M’
      >- PROVE_TAC [MEASURE_FINITE_ADDITIVE, finite_measure_space_def] \\
      DISCH_THEN (STRIP_ASSUME_TAC o REWRITE_RULE [finite_additive_def]) \\
@@ -3979,11 +3980,37 @@ Proof
      POP_ASSUM K_TAC (* now useless *) \\
      simp [Abbr ‘s’, Abbr ‘M’, o_DEF, Abbr ‘g’] \\
      Q_TAC (TRANS_TAC let_trans) ‘SIGMA (\i. inv (&SUC n)) (count k)’ \\
+  (* applying EXTREAL_SUM_IMAGE_MONO_LT *)
      reverse CONJ_TAC
-     >- (
-         cheat) \\
-     cheat)
- >> DISCH_TAC
+     >- (MATCH_MP_TAC EXTREAL_SUM_IMAGE_MONO_LT >> simp [] \\
+         CONJ_TAC
+         >- (DISJ1_TAC \\
+             Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+             CONJ_TAC >> MATCH_MP_TAC pos_not_neginf
+             >- (MATCH_MP_TAC le_inv >> rw [extreal_of_num_def]) \\
+             qabbrev_tac ‘M = (space borel,subsets borel,m)’ \\
+             Know ‘positive M’
+             >- PROVE_TAC [finite_measure_space_def, MEASURE_SPACE_POSITIVE] \\
+             rw [positive_def, Abbr ‘M’] \\
+             POP_ASSUM MATCH_MP_TAC >> rw [borel_measurable_sets]) \\
+         Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+         Q.PAT_X_ASSUM ‘!x. h x IN a n’ (MP_TAC o Q.SPEC ‘i’) \\
+         simp [Abbr ‘a’]) \\
+  (* applying EXTREAL_SUM_IMAGE_FINITE_CONST *)
+     Know ‘SIGMA (\i. inv (&SUC n)) (count k) = &CARD (count k) * inv (&SUC n)’
+     >- (irule EXTREAL_SUM_IMAGE_FINITE_CONST >> rw []) >> Rewr' \\
+    ‘&SUC n <> (0 :real)’ by rw [] \\
+     ASM_SIMP_TAC std_ss [CARD_COUNT, Abbr ‘k’, extreal_of_num_def, extreal_inv_eq,
+                          GSYM REAL_OF_NUM_MUL, GSYM extreal_mul_eq,
+                          GSYM mul_assoc] \\
+    ‘Normal (&SUC n) * Normal (realinv (&SUC n)) = 1’
+       by simp [extreal_of_num_def, extreal_mul_eq] \\
+     simp [GSYM extreal_of_num_def] \\
+     Q_TAC (TRANS_TAC le_trans) ‘&N’ >> art [] \\
+     simp [extreal_of_num_def])
+ (* stage work *)
+ >> simp [COUNTABLE_ENUM]
+ (* NOTE: Can we prove ‘A <> {}’ here? *)
  >> cheat
 QED
 
