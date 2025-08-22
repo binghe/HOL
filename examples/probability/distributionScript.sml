@@ -3136,6 +3136,7 @@ Proof
  >> METIS_TAC [Lipschitz_continuous_map_imp_continuous_map]
 QED
 
+(* NOTE: “Lipschitz_continuous_map” implies the part “continuous_map” in “C_b” *)
 Theorem BL_alt :
     !E. BL E = {f | bounded (IMAGE f UNIV) /\ Lipschitz_continuous_map (E,mr1) f}
 Proof
@@ -3170,16 +3171,6 @@ Proof
     rw [weak_converge_def, weak_converge_in_topology, IN_APP,
         bounded_continuous_def, continuous_on_univ_alt_continuous_map,
         GSYM SPACE_BOREL, general_borel_def]
- >> cheat
-QED
-
-Theorem weak_converge_alt_in_topology' :
-    !fi f. weak_converge fi f <=>
-           weak_converge_in_topology euclidean
-             (\n s. fi n (IMAGE Normal s)) (f o IMAGE Normal)
-Proof
-    rw [weak_converge_def, weak_converge_in_topology, IN_APP,
-        bounded_continuous_def, continuous_on_univ_alt_continuous_map]
  >> cheat
 QED
 
@@ -3254,7 +3245,8 @@ Overload U[local] = “points_of_discontinuity”
 
 Definition Portemanteau_iii_def :
     Portemanteau_iii E X Y <=>
-    !f. f IN borel_measurable (B (mtop E)) /\ Y (U (mtop E) f) = 0 ==>
+    !f. bounded (IMAGE f UNIV) /\
+        f IN borel_measurable (B (mtop E)) /\ Y (U (mtop E) f) = 0 ==>
         weak_convergence_condition (mtop E) X Y f
 End
 
@@ -3266,6 +3258,7 @@ Proof
     rw [Portemanteau_iii_def, Portemanteau_i_def,
         weak_converge_in_topology_def, Portemanteau_antecedents_def]
  >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> CONJ_TAC >- fs [bounded_continuous_def, IN_APP]
  >> reverse CONJ_TAC
  >- (Q.PAT_X_ASSUM ‘subprobability_measure (space (B E),subsets (B E),Y)’ MP_TAC \\
      rw [subprobability_measure_alt] \\
@@ -3929,9 +3922,8 @@ Theorem Portemanteau_vi_imp_iii :
     !E X Y. Portemanteau_antecedents E X Y /\
             Portemanteau_vi E X Y ==> Portemanteau_iii E X Y
 Proof
-    RW_TAC std_ss [Portemanteau_antecedents_def,
-                   Portemanteau_vi_def, Portemanteau_iii_def,
-                   weak_convergence_condition_def]
+    RW_TAC std_ss [Portemanteau_antecedents_def, Portemanteau_vi_def,
+                   Portemanteau_iii_def, weak_convergence_condition_def]
  (* define a (finite) measure by PREIMAGE of a measurable function *)
  >> qabbrev_tac ‘m = Y o PREIMAGE f’
  >> Know ‘finite_measure_space (space borel,subsets borel,m)’
@@ -3969,6 +3961,9 @@ Proof
      FIRST_X_ASSUM MATCH_MP_TAC >> art [])
  >> DISCH_TAC
  >> qabbrev_tac ‘A = {y | 0 < m {y}}’
+ (* NOTE: This is just to make sure any interval of univ(:real) diff A has infinite
+    many elements: uncountable DIFF countable = uncountable (thus INFINITE).
+  *)
  >> Know ‘countable A’
  >- (qabbrev_tac ‘a = \n. {y | inv (&SUC n) < m {y}}’ \\
      Know ‘A = BIGUNION (IMAGE a UNIV)’
@@ -4050,13 +4045,39 @@ Proof
      simp [GSYM extreal_of_num_def] \\
      Q_TAC (TRANS_TAC le_trans) ‘&N’ >> art [] \\
      simp [extreal_of_num_def])
- (* stage work *)
- >> simp [COUNTABLE_ENUM]
- (* NOTE: can we prove ‘A <> {}’ here, or prove ‘A = {}’ as a trivial case? *)
+ >> DISCH_TAC
+ (* stage work, now get the (abs) bounds of f *)
+ >> Know ‘?a. !x. abs (f x) <= a’
+ >- (Q.PAT_X_ASSUM ‘bounded (IMAGE f UNIV)’ MP_TAC \\
+     rw [bounded_def] \\
+     Q.EXISTS_TAC ‘a’ >> METIS_TAC [])
+ >> STRIP_TAC
+ >> Know ‘0 <= a’ (* any bound must be non-negative *)
+ >- (CCONTR_TAC >> fs [GSYM real_lt] \\
+    ‘0 <= abs (f ARB)’ by simp [ABS_POS] \\
+    ‘abs (f ARB) <= a’ by simp [] \\
+    ‘0 <= a’ by PROVE_TAC [REAL_LE_TRANS] \\
+     METIS_TAC [REAL_LET_ANTISYM])
+ >> DISCH_TAC
+ (* NOTE: Here, for any e > 0, we want to divide (-a, a) into enough segments,
+    by finding y(i) such that y(0) < -a, y(i+1) - y(i) < e, a < y(N), such that
+    y(i) NOTIN A. This is possible by choose freely a point from each of the
+    following open intervals: (also works when a = 0)
+
+        y0      y1      y2
+    |--e/2--|--e/2--|--e/2--|...|--e/2--|--e/2--|--e/2--|
+           -a <-------------- f -----------> a -|
+
+    Note that the distance of two points from near intervals is small than e.
+    The total length of these intervals is (2*a)/(e/2)+2 = 4*a/e+2, rounded
+    to next integer (clg). Each interval misses at most countable points of A.
+  *)
+ >> qabbrev_tac ‘N :num = clg (4 * a / e + 2)’
+ >> ‘4 * a / e + 2 <= &N’ by rw [Abbr ‘N’, LE_NUM_CEILING]
  >> cheat
 QED
 
-(* NOTE: (2) ==> (4) <=> (5) ==> (6) ==> (3) ==> (1) ==> (2) *)
+(* NOTE: (2) ===> (4) <=> (5) ==> (6) =?=> (3) ==> (1) ==> (2) *)
 Theorem Portemanteau_i_eq_ii :
     !E X Y. Portemanteau_antecedents_alt E X Y ==>
            (Portemanteau_i E X Y <=> Portemanteau_ii E X Y)

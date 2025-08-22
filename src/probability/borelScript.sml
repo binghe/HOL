@@ -68,10 +68,7 @@ Proof
  >> Suff ‘sts = subsets (sigma UNIV {s | open_in (mtop extreal_mr1) s})’
  >- METIS_TAC [SPACE_SIGMA, subsets_def, SPACE]
  >> rw [Once EXTENSION, Abbr ‘sts’]
- >> reverse EQ_TAC >> rw []
- >- (
-     cheat)
- (* stage work *)
+ >> EQ_TAC >> rw []
  >> cheat
 QED
 
