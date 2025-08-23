@@ -4129,9 +4129,22 @@ Proof
          POP_ASSUM (MP_TAC o Q.SPEC ‘{y (i :num)}’) \\
          rw [borel_measurable_sets] \\
          simp [GSYM le_antisym]) \\
-     rpt STRIP_TAC (* y i < y (SUC i) *)
-     >- (Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘b + e' * &SUC i’ >> art [])
-     cheat)
+     Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+     CONJ_ASM1_TAC (* y i < y (SUC i) *)
+     >- (Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘b + e' * &SUC i’ >> art []) \\
+    ‘e = e' + e'’ by simp [REAL_HALF, REAL_DOUBLE, Abbr ‘e'’] >> POP_ORW \\
+     simp [REAL_ARITH “a - b < e + e <=> a - e < b + (e :real)”] \\
+     Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘b + e' * &SUC i’ \\
+     CONJ_TAC >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       simp [REAL_LT_SUB_RADD, GSYM REAL_ADD_ASSOC] \\
+       Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘b + e' * &SUC (SUC i)’ >> art [] \\
+       simp [REAL_LE_LADD] \\
+      ‘&SUC (SUC i) = &SUC i + (1 :real)’ by simp [] >> POP_ORW \\
+       simp [REAL_LDISTRIB],
+       (* goal 2 (of 2) *)
+      ‘&SUC i = &i + (1 :real)’ by simp [] >> POP_ORW \\
+       simp [REAL_LDISTRIB, REAL_ADD_ASSOC] ])
  >> DISCH_TAC
  >> cheat
 QED
