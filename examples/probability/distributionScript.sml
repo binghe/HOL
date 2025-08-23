@@ -4064,20 +4064,79 @@ Proof
     y(i) NOTIN A. This is possible by choose freely a point from each of the
     following open intervals: (also works when a = 0)
 
-        y0      y1      y2
-    |--e/2--|--e/2--|--e/2--|...|--e/2--|--e/2--|--e/2--|
-           -a <-------------- f -----------> a -|
+       y(0)    y(1)    y(2)                        y(N)
+    |--e/2--|--e/2--|--e/2--|...|--e/2--|--e/2--|--e/2--|   let e' = e/2
+    b      -a <-------------- f -----------> a -|
 
     Note that the distance of two points from near intervals is small than e.
-    The total length of these intervals is (2*a)/(e/2)+2 = 4*a/e+2, rounded
-    to next integer (clg). Each interval misses at most countable points of A.
+    The total length of these intervals is (2 * a) / (e / 2) + 2, rounded to
+    the next integer (clg). Each interval misses at most countable points of A.
   *)
- >> qabbrev_tac ‘N :num = clg (4 * a / e + 2)’
- >> ‘4 * a / e + 2 <= &N’ by rw [Abbr ‘N’, LE_NUM_CEILING]
+ >> Know ‘!e. 0 < e ==>
+              ?N. 0 < N /\
+                  ?y. y 0 < -a /\ a < y N /\
+                     (!i. i < N ==> y i < y (SUC i) /\ y (SUC i) - y i < e) /\
+                     (!i. i < N ==> m {y i} = 0)’
+ >- (rpt STRIP_TAC \\
+     qabbrev_tac ‘e' = e / 2’ \\
+    ‘0 < e'’ by simp [Abbr ‘e'’, REAL_LT_DIV] \\
+     qabbrev_tac ‘N :num = clg (a * 2 / e' + 2)’ \\
+    ‘a * 2 / e' + 2 <= &N’ by rw [Abbr ‘N’, LE_NUM_CEILING] \\
+     Q.EXISTS_TAC ‘N’ \\
+    ‘0 <= a * 2 / e'’ by simp [REAL_LE_DIV, REAL_LT_IMP_LE] \\
+     CONJ_ASM1_TAC (* 0 < N *)
+     >- (Suff ‘(0 :real) < &N’ >- simp [] \\
+         Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘a * 2 / e'’ >> art [] \\
+         Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘a * 2 / e' + 2’ >> art [] \\
+         simp []) \\
+     qabbrev_tac ‘b = -a - e'’ (* the left-most bound *) \\
+     qabbrev_tac ‘g = \i. OPEN_interval (b + &i * e', b + &SUC i * e')’ \\
+  (* applying UNCOUNTABLE_INTERVAL, UNCOUNTABLE_DIFF_COUNTABLE, etc. *)
+     Know ‘!i. ?y. y IN g i DIFF A’
+     >- (Q.X_GEN_TAC ‘i’ \\
+        ‘g i <> {}’ by rw [Abbr ‘g’, INTERVAL_NE_EMPTY] \\
+        ‘uncountable (g i)’ by METIS_TAC [UNCOUNTABLE_INTERVAL] \\
+        ‘uncountable (g i DIFF A)’ by PROVE_TAC [UNCOUNTABLE_DIFF_COUNTABLE] \\
+         Know ‘INFINITE (g i DIFF A)’ >- PROVE_TAC [FINITE_IMP_COUNTABLE] \\
+         rw [INFINITE_INHAB]) \\
+     Q.PAT_X_ASSUM ‘countable A’ K_TAC \\
+     simp [SKOLEM_THM, Abbr ‘g’, IN_INTERVAL, Abbr ‘A’, extreal_lt_def] \\
+     DISCH_THEN (Q.X_CHOOSE_THEN ‘y’
+                  (STRIP_ASSUME_TAC o SIMP_RULE std_ss [FORALL_AND_THM])) \\
+     Q.EXISTS_TAC ‘y’ \\
+     CONJ_TAC (* y 0 < -a *)
+     >- (Q.PAT_X_ASSUM ‘!i. y i < _’ (MP_TAC o Q.SPEC ‘0’) \\
+         simp [Abbr ‘b’, REAL_SUB_ADD]) \\
+     CONJ_TAC (* a < y N *)
+     >- (Q.PAT_X_ASSUM ‘!i. _ < y i’ (STRIP_ASSUME_TAC o Q.SPEC ‘N’) \\
+         Know ‘e' * (a * 2 / e' + 2) <= e' * &N’
+         >- (ASM_SIMP_TAC std_ss [REAL_LE_LMUL]) \\
+        ‘e' <> 0’ by PROVE_TAC [REAL_LT_IMP_NE] \\
+        ‘e' * (a * 2 / e' + 2) = 2 * a + 2 * e'’
+           by simp [real_div, REAL_LDISTRIB] >> POP_ORW \\
+         DISCH_TAC \\
+         Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘b + e' * &N’ >> art [] \\
+         simp [REAL_ARITH “a < b + c <=> a - b < c:real”] \\
+         Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘2 * a + 2 * e'’ >> art [] \\
+         simp [Abbr ‘b’, real_sub, REAL_NEG_ADD, REAL_ADD_ASSOC, REAL_DOUBLE]) \\
+     reverse CONJ_TAC (* m {y i} = 0 *)
+     >- (rpt STRIP_TAC \\
+         qabbrev_tac ‘M = (space borel,subsets borel,m)’ \\
+         Know ‘positive M’
+         >- (MATCH_MP_TAC MEASURE_SPACE_POSITIVE \\
+             FULL_SIMP_TAC std_ss [finite_measure_space_def]) \\
+         rw [positive_def, Abbr ‘M’] \\
+         POP_ASSUM (MP_TAC o Q.SPEC ‘{y (i :num)}’) \\
+         rw [borel_measurable_sets] \\
+         simp [GSYM le_antisym]) \\
+     rpt STRIP_TAC (* y i < y (SUC i) *)
+     >- (Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘b + e' * &SUC i’ >> art [])
+     cheat)
+ >> DISCH_TAC
  >> cheat
 QED
 
-(* NOTE: (2) ===> (4) <=> (5) ==> (6) =?=> (3) ==> (1) ==> (2) *)
+(* NOTE: (2) ==> (4) <=> (5) ==> (6) ==> (3) ==> (1) ==> (2) *)
 Theorem Portemanteau_i_eq_ii :
     !E X Y. Portemanteau_antecedents_alt E X Y ==>
            (Portemanteau_i E X Y <=> Portemanteau_ii E X Y)
