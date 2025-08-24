@@ -4064,7 +4064,7 @@ Proof
     y(i) NOTIN A. This is possible by choose freely a point from each of the
     following open intervals: (also works when a = 0)
 
-       y(0)    y(1)    y(2)                        y(N)
+       y(0)    y(1)    y(2)                        y(N) ... (y is infinite)
     |--e/2--|--e/2--|--e/2--|...|--e/2--|--e/2--|--e/2--|   let e' = e/2
     b      -a <-------------- f -----------> a -|
 
@@ -4075,8 +4075,8 @@ Proof
  >> Know ‘!e. 0 < e ==>
               ?N. 0 < N /\
                   ?y. y 0 < -a /\ a < y N /\
-                     (!i. i < N ==> y i < y (SUC i) /\ y (SUC i) - y i < e) /\
-                     (!i. i < N ==> m {y i} = 0)’
+                     (!i. y i < y (SUC i) /\ y (SUC i) - y i < e) /\
+                     (!i. m {y i} = 0)’
  >- (rpt STRIP_TAC \\
      qabbrev_tac ‘e' = e / 2’ \\
     ‘0 < e'’ by simp [Abbr ‘e'’, REAL_LT_DIV] \\
@@ -4129,7 +4129,7 @@ Proof
          POP_ASSUM (MP_TAC o Q.SPEC ‘{y (i :num)}’) \\
          rw [borel_measurable_sets] \\
          simp [GSYM le_antisym]) \\
-     Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+     Q.X_GEN_TAC ‘i’ \\
      CONJ_ASM1_TAC (* y i < y (SUC i) *)
      >- (Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘b + e' * &SUC i’ >> art []) \\
     ‘e = e' + e'’ by simp [REAL_HALF, REAL_DOUBLE, Abbr ‘e'’] >> POP_ORW \\
@@ -4188,9 +4188,38 @@ Proof
     ‘liminf g <= limsup g’ by PROVE_TAC [ext_liminf_le_limsup] \\
     ‘liminf g <= l /\ l <= limsup g’ by PROVE_TAC [le_trans] \\
      METIS_TAC [le_antisym])
- (* stage work *)
+ (* stage work, the follow two subgoals have similar proofs *)
  >> CONJ_TAC
  >| [ (* goal 1 (of 2) *)
+      MATCH_MP_TAC le_epsilon >> rpt STRIP_TAC \\
+     ‘e <> NegInf’ by PROVE_TAC [pos_not_neginf, lt_imp_le] \\
+     ‘?r. 0 < r /\ e = Normal r’
+        by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_lt_eq] \\
+      POP_ORW \\
+      Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ (MP_TAC o Q.SPEC ‘r’) >> rw [] \\
+      Know ‘!i j. i < j ==> y i < y j’
+      >- (HO_MATCH_MP_TAC TRANSITIVE_STEPWISE_LT >> simp [] \\
+          METIS_TAC [REAL_LT_TRANS]) >> DISCH_TAC \\
+      qabbrev_tac ‘s = \i. right_open_interval (y i) (y (SUC i))’ \\
+      Know ‘!i. BIGUNION (IMAGE s (count1 i)) =
+                right_open_interval (y 0) (y (SUC i))’
+      >- (Induct_on ‘i’ >- simp [Abbr ‘s’, COUNT_ONE] \\
+          rw [Once COUNT_SUC, Abbr ‘s’] \\
+          rw [Once EXTENSION, right_open_interval] \\
+          EQ_TAC >> rpt STRIP_TAC >> rw [] >| (* 3 subgoals *)
+          [ (* goal 1 (of 3) *)
+            Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘y (SUC i)’ >> art [] \\
+            MATCH_MP_TAC REAL_LT_IMP_LE >> simp [],
+            (* goal 2 (of 3) *)
+            Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘y (SUC i)’ >> simp [],
+            (* goal 3 (of 3) *)
+            METIS_TAC [REAL_LET_TOTAL] ]) >> DISCH_TAC \\
+      qabbrev_tac ‘h = \i. PREIMAGE f (s i)’ \\
+      Cases_on ‘N’ >> fs [] >> T_TAC \\
+      Know ‘BIGUNION (IMAGE h (count n)) = UNIV’
+      >- (rw [Once EXTENSION, IN_BIGUNION_IMAGE] \\
+          simp [Abbr ‘h’, IN_PREIMAGE, right_open_interval] \\
+          cheat) \\
       cheat,
       (* goal 2 (of 2) *)
       cheat ]
