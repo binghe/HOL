@@ -3144,9 +3144,9 @@ Proof
 QED
 
 Definition weak_convergence_condition_def :
-    weak_convergence_condition top X Y f <=>
-    ((\n. integral (topspace top,subsets (B top),X n) (Normal o f)) -->
-          integral (topspace top,subsets (B top),Y  ) (Normal o f)) sequentially
+    weak_convergence_condition (top :'a topology) X Y f <=>
+    ((\n. integral (space (B top),subsets (B top),X n) (Normal o f)) -->
+          integral (space (B top),subsets (B top),Y  ) (Normal o f)) sequentially
 End
 
 (* Definition 13.12 [8, p.281] *)
@@ -3158,8 +3158,8 @@ End
 (* |- !top X Y.
         weak_converge_in_topology top X Y <=>
         !f. f IN C_b top ==>
-            ((\n. integral (topspace top,subsets (B top),X n) (Normal o f)) -->
-             integral (topspace top,subsets (B top),Y) (Normal o f))
+            ((\n. integral (space (B top),subsets (B top),X n) (Normal o f)) -->
+             integral (space (B top),subsets (B top),Y) (Normal o f))
               sequentially
  *)
 Theorem weak_converge_in_topology = weak_converge_in_topology_def
@@ -3267,8 +3267,8 @@ Proof
          qabbrev_tac ‘M = (space (B E),subsets (B E),Y)’ \\
         ‘Y = measure M’ by rw [Abbr ‘M’] >> POP_ORW \\
          MATCH_MP_TAC MEASURE_EMPTY >> art []) \\
-     rw [points_of_discontinuity_def, Once EXTENSION] \\
-     fs [CONTINUOUS_MAP_EQ_TOPCONTINUOUS_AT,
+     rw [points_of_discontinuity_def, Once EXTENSION, TOPSPACE_MTOP] \\
+     fs [CONTINUOUS_MAP_EQ_TOPCONTINUOUS_AT, TOPSPACE_MTOP,
          bounded_continuous_def, IN_APP])
  (* show that continuous function is borel measurable *)
  >> MATCH_MP_TAC in_borel_measurable_open_imp
@@ -3885,7 +3885,7 @@ Theorem frontier_of_preimage_subset :
     !E f D. mtop E frontier_of PREIMAGE f D SUBSET
             PREIMAGE f (frontier D) UNION U (mtop E) (f :'a -> real)
 Proof
-    rw [points_of_discontinuity_def, SUBSET_DEF, Once DISJ_SYM]
+    rw [points_of_discontinuity_def, SUBSET_DEF, Once DISJ_SYM, TOPSPACE_MTOP]
  (* assuming f is continuous at x (the non-trivial case) *)
  >> STRONG_DISJ_TAC
  (* NOTE: Here we need an equivalent definition of “frontier_of”, saying a point x
@@ -4146,6 +4146,20 @@ Proof
       ‘&SUC i = &i + (1 :real)’ by simp [] >> POP_ORW \\
        simp [REAL_LDISTRIB, REAL_ADD_ASSOC] ])
  >> DISCH_TAC
+ (* applying extreal_lim_sequentially_eq (and ext_limsup_thm) *)
+ >> qmatch_abbrev_tac ‘(g --> l) sequentially’
+ >> Know ‘l <> PosInf /\ l <> NegInf’
+ >- (qunabbrev_tac ‘l’ >> MATCH_MP_TAC integrable_finite_integral \\
+     fs [subprobability_measure_def] \\
+     MATCH_MP_TAC integrable_bounded \\
+     simp [extreal_abs_def] \\
+     Q.EXISTS_TAC ‘\x. Normal a’ >> simp [] \\
+     reverse CONJ_TAC
+     >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_IMP_BOREL' \\
+         simp [sigma_algebra_general_borel]) \\
+     MATCH_MP_TAC integrable_const >> simp [] \\
+     Q_TAC (TRANS_TAC let_trans) ‘1’ >> simp [])
+ >> STRIP_TAC
  >> cheat
 QED
 
