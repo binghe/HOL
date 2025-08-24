@@ -4149,7 +4149,8 @@ Proof
  (* applying extreal_lim_sequentially_eq (and ext_limsup_thm) *)
  >> qmatch_abbrev_tac ‘(g --> l) sequentially’
  >> Know ‘l <> PosInf /\ l <> NegInf’
- >- (qunabbrev_tac ‘l’ >> MATCH_MP_TAC integrable_finite_integral \\
+ >- (qunabbrev_tac ‘l’ \\
+     MATCH_MP_TAC integrable_finite_integral \\
      fs [subprobability_measure_def] \\
      MATCH_MP_TAC integrable_bounded \\
      simp [extreal_abs_def] \\
@@ -4160,7 +4161,39 @@ Proof
      MATCH_MP_TAC integrable_const >> simp [] \\
      Q_TAC (TRANS_TAC let_trans) ‘1’ >> simp [])
  >> STRIP_TAC
- >> cheat
+ >> Know ‘!n. g n <> PosInf /\ g n <> NegInf’
+ >- (Q.X_GEN_TAC ‘n’ >> simp [Abbr ‘g’] \\
+     MATCH_MP_TAC integrable_finite_integral \\
+     fs [subprobability_measure_def] \\
+     MATCH_MP_TAC integrable_bounded \\
+     simp [extreal_abs_def] \\
+     Q.EXISTS_TAC ‘\x. Normal a’ >> simp [] \\
+     reverse CONJ_TAC
+     >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_IMP_BOREL' \\
+         simp [sigma_algebra_general_borel]) \\
+     MATCH_MP_TAC integrable_const >> simp [] \\
+     Q_TAC (TRANS_TAC let_trans) ‘1’ >> simp [])
+ >> DISCH_TAC
+ >> Know ‘((g --> l) sequentially <=> (real o g --> real l) sequentially)’
+ >- (MATCH_MP_TAC extreal_lim_sequentially_eq >> art [])
+ >> Rewr'
+ >> ‘?r. l = Normal r’ by METIS_TAC [extreal_cases] >> simp []
+ >> Know ‘((real o g --> r) sequentially <=>
+           limsup g = Normal r /\ liminf g = Normal r)’
+ >- (MATCH_MP_TAC ext_limsup_thm >> art [])
+ >> Rewr'
+ >> POP_ASSUM (REWRITE_TAC o wrap o SYM)
+ >> Suff ‘limsup g <= l /\ l <= liminf g’
+ >- (STRIP_TAC \\
+    ‘liminf g <= limsup g’ by PROVE_TAC [ext_liminf_le_limsup] \\
+    ‘liminf g <= l /\ l <= limsup g’ by PROVE_TAC [le_trans] \\
+     METIS_TAC [le_antisym])
+ (* stage work *)
+ >> CONJ_TAC
+ >| [ (* goal 1 (of 2) *)
+      cheat,
+      (* goal 2 (of 2) *)
+      cheat ]
 QED
 
 (* NOTE: (2) ==> (4) <=> (5) ==> (6) ==> (3) ==> (1) ==> (2) *)
