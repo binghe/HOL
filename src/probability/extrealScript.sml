@@ -6809,7 +6809,7 @@ Theorem ext_tendsto_def :
     !f l net. ext_tendsto f l net <=>
              !e. &0 < e ==> eventually (\x. dist extreal_mr1 (f(x),l) < e) net
 Proof
-    rw [ext_tendsto, ext_euclidean_def, limit]
+    rw [ext_tendsto, ext_euclidean_def, limit, TOPSPACE_MTOP]
  >> EQ_TAC >> rpt STRIP_TAC
  >- (Q.PAT_X_ASSUM ‘!u. open_in (mtop extreal_mr1) u /\ l IN u ==> P’
        (MP_TAC o Q.SPEC ‘mball extreal_mr1 (l,e)’) \\

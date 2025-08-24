@@ -2108,7 +2108,7 @@ End
 Theorem cball :
     !x e. cball(x,e) = {y | dist(x,y) <= e}
 Proof
-    rw [cball_def, dist_def, mcball, mspace]
+    rw [cball_def, dist_def, mcball, MSPACE]
 QED
 
 val sphere = new_definition ("sphere",

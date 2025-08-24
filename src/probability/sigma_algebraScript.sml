@@ -5822,7 +5822,7 @@ Proof
       MP_TAC (Q.SPEC ‘1’ REAL_ARCH) >> simp [] \\
       DISCH_THEN (STRIP_ASSUME_TAC o Q.SPEC ‘d’) \\
       Q.EXISTS_TAC ‘mcball E (c,&n)’ \\
-      reverse (rw [IN_MCBALL, mspace, Abbr ‘d’])
+      reverse (rw [IN_MCBALL, MSPACE, Abbr ‘d’])
       >- (Q.EXISTS_TAC ‘n’ >> rw []) \\
       rw [Once MDIST_SYM] \\
       MATCH_MP_TAC REAL_LT_IMP_LE >> art [] ]
