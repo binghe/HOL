@@ -4148,9 +4148,24 @@ Proof
  >> DISCH_TAC
  (* applying extreal_lim_sequentially_eq (and ext_limsup_thm) *)
  >> qmatch_abbrev_tac ‘(g --> l) sequentially’
+ >> Know ‘integrable (space (B E),subsets (B E),Y) (Normal o f)’
+ >- (fs [subprobability_measure_def] \\
+     MATCH_MP_TAC integrable_bounded \\
+     simp [extreal_abs_def] \\
+     Q.EXISTS_TAC ‘\x. Normal a’ >> simp [] \\
+     reverse CONJ_TAC
+     >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_IMP_BOREL' \\
+         simp [sigma_algebra_general_borel]) \\
+     MATCH_MP_TAC integrable_const >> simp [] \\
+     Q_TAC (TRANS_TAC let_trans) ‘1’ >> simp [])
+ >> DISCH_TAC
  >> Know ‘l <> PosInf /\ l <> NegInf’
  >- (qunabbrev_tac ‘l’ \\
      MATCH_MP_TAC integrable_finite_integral \\
+     fs [subprobability_measure_def])
+ >> STRIP_TAC
+ >> Know ‘!n. integrable (space (B E),subsets (B E),X n) (Normal o f)’
+ >- (Q.X_GEN_TAC ‘n’ \\
      fs [subprobability_measure_def] \\
      MATCH_MP_TAC integrable_bounded \\
      simp [extreal_abs_def] \\
@@ -4160,19 +4175,11 @@ Proof
          simp [sigma_algebra_general_borel]) \\
      MATCH_MP_TAC integrable_const >> simp [] \\
      Q_TAC (TRANS_TAC let_trans) ‘1’ >> simp [])
- >> STRIP_TAC
+ >> DISCH_TAC
  >> Know ‘!n. g n <> PosInf /\ g n <> NegInf’
  >- (Q.X_GEN_TAC ‘n’ >> simp [Abbr ‘g’] \\
      MATCH_MP_TAC integrable_finite_integral \\
-     fs [subprobability_measure_def] \\
-     MATCH_MP_TAC integrable_bounded \\
-     simp [extreal_abs_def] \\
-     Q.EXISTS_TAC ‘\x. Normal a’ >> simp [] \\
-     reverse CONJ_TAC
-     >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_IMP_BOREL' \\
-         simp [sigma_algebra_general_borel]) \\
-     MATCH_MP_TAC integrable_const >> simp [] \\
-     Q_TAC (TRANS_TAC let_trans) ‘1’ >> simp [])
+     fs [subprobability_measure_def])
  >> DISCH_TAC
  >> Know ‘((g --> l) sequentially <=> (real o g --> real l) sequentially)’
  >- (MATCH_MP_TAC extreal_lim_sequentially_eq >> art [])
@@ -4205,7 +4212,7 @@ Proof
                 right_open_interval (y 0) (y (SUC i))’
       >- (Induct_on ‘i’ >- simp [Abbr ‘s’, COUNT_ONE] \\
           rw [Once COUNT_SUC, Abbr ‘s’] \\
-          rw [Once EXTENSION, right_open_interval] \\
+          rw [Once EXTENSION, in_right_open_interval] \\
           EQ_TAC >> rpt STRIP_TAC >> rw [] >| (* 3 subgoals *)
           [ (* goal 1 (of 3) *)
             Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘y (SUC i)’ >> art [] \\
@@ -4215,11 +4222,21 @@ Proof
             (* goal 3 (of 3) *)
             METIS_TAC [REAL_LET_TOTAL] ]) >> DISCH_TAC \\
       qabbrev_tac ‘h = \i. PREIMAGE f (s i)’ \\
-      Cases_on ‘N’ >> fs [] >> T_TAC \\
-      Know ‘BIGUNION (IMAGE h (count n)) = UNIV’
+      Know ‘BIGUNION (IMAGE h (count N)) = UNIV’
       >- (rw [Once EXTENSION, IN_BIGUNION_IMAGE] \\
-          simp [Abbr ‘h’, IN_PREIMAGE, right_open_interval] \\
-          cheat) \\
+          simp [Abbr ‘h’, IN_PREIMAGE, in_right_open_interval] \\
+          Know ‘interval [-a,a] SUBSET right_open_interval (y 0) (y N)’
+          >- (rw [SUBSET_DEF, IN_INTERVAL, in_right_open_interval]
+              >- (Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘-a’ \\
+                  simp [REAL_LT_IMP_LE]) \\
+              Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘a’ >> art []) >> DISCH_TAC \\
+         ‘!x. f x IN interval [-a,a]’ by fs [ABS_BOUNDS, IN_INTERVAL] \\
+          Know ‘f x IN right_open_interval (y 0) (y N)’ >- METIS_TAC [SUBSET_DEF] \\
+          Cases_on ‘N’ >> fs [] \\
+          Q.PAT_X_ASSUM ‘!i. BIGUNION (IMAGE s (count1 i)) = _’
+             (REWRITE_TAC o wrap o GSYM) \\
+          simp [IN_BIGUNION_IMAGE, IN_COUNT]) >> DISCH_TAC \\
+   (* applying frontier_of_preimage_subset *)
       cheat,
       (* goal 2 (of 2) *)
       cheat ]

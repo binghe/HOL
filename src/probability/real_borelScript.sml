@@ -1639,6 +1639,27 @@ Proof
     RW_TAC std_ss [right_open_interval, GSPECIFICATION, REAL_LE_REFL]
 QED
 
+Theorem right_open_interval_frontier :
+    !a b. a < b ==> frontier (right_open_interval a b) = {a; b}
+Proof
+    rw [right_open_interval, FRONTIER_CLOSURES]
+ >> Know ‘UNIV DIFF {x | a <= x /\ x < b} = {x | x < a} UNION {x | b <= x}’
+ >- rw [Once EXTENSION, REAL_NOT_LT, REAL_NOT_LE]
+ >> Rewr'
+ >> Know ‘{x | a <= x /\ x < b} = {a} UNION interval (a,b)’
+ >- (rw [Once EXTENSION, REAL_LE_LT, IN_INTERVAL] \\
+     METIS_TAC [])
+ >> Rewr'
+ >> ‘interval (a,b) <> {}’ by PROVE_TAC [INTERVAL_NE_EMPTY]
+ >> simp [CLOSURE_UNION, CLOSURE_INTERVAL, CLOSURE_SING,
+          CLOSURE_HALFSPACE_COMPONENT_LT]
+ >> ASSUME_TAC
+      (REWRITE_RULE [real_ge] (Q.SPEC ‘b’ CLOSED_HALFSPACE_COMPONENT_GE))
+ >> simp [CLOSURE_CLOSED]
+ >> rw [Once EXTENSION, IN_INTERVAL]
+ >> METIS_TAC [REAL_LE_ANTISYM, REAL_LE_REFL, REAL_LT_IMP_LE]
+QED
+
 (* cf. `open_intervals_set` in extrealTheory *)
 Definition right_open_intervals :
    right_open_intervals = (univ(:real), {right_open_interval a b | T})

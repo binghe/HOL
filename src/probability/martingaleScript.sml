@@ -355,6 +355,82 @@ Proof
  >> MATCH_MP_TAC integral_add' >> rw []
 QED
 
+(* NOTE: This simple proof is based on integral_split' *)
+Theorem integral_disjoint_sets :
+    !m f s t.
+        measure_space m /\ integrable m f /\
+        DISJOINT s t /\ s IN measurable_sets m /\ t IN measurable_sets m ==>
+        integral m (\x. f x * indicator_fn (s UNION t) x) =
+        integral m (\x. f x * indicator_fn s x) +
+        integral m (\x. f x * indicator_fn t x)
+Proof
+    rpt STRIP_TAC
+ >> ‘s UNION t IN measurable_sets m’ by PROVE_TAC [MEASURE_SPACE_UNION]
+ >> ‘integrable m (\x. f x * indicator_fn (s UNION t) x)’
+       by METIS_TAC [integrable_mul_indicator]
+ >> qmatch_abbrev_tac ‘integral m g = _’
+ >> MP_TAC (Q.SPECL [‘m’, ‘g’, ‘s’] integral_split')
+ >> simp [] >> DISCH_THEN K_TAC
+ >> simp [Abbr ‘g’, GSYM mul_assoc]
+ >> ‘!x. indicator_fn (s UNION t) x * indicator_fn s x =
+         indicator_fn ((s UNION t) INTER s) x’
+      by rw [INDICATOR_FN_INTER]
+ >> POP_ORW
+ >> ‘(s UNION t) INTER s = s’ by SET_TAC [] >> POP_ORW
+ >> ‘!x. indicator_fn (s UNION t) x * indicator_fn (m_space m DIFF s) x =
+         indicator_fn ((s UNION t) INTER (m_space m DIFF s)) x’
+      by rw [INDICATOR_FN_INTER]
+ >> POP_ORW
+ >> Suff ‘(s UNION t) INTER (m_space m DIFF s) = t’ >- rw []
+ >> ‘s SUBSET m_space m /\ t SUBSET m_space m’
+       by PROVE_TAC [MEASURE_SPACE_SUBSET_MSPACE]
+ >> ASM_SET_TAC []
+QED
+
+Theorem integral_disjoint_sets_sum :
+    !m f s a.
+        FINITE s /\ measure_space m /\ integrable m f /\
+        (!i. i IN s ==> a i IN measurable_sets m) /\
+        disjoint_family_on a s ==>
+        integral m (\x. f x * indicator_fn (BIGUNION (IMAGE a s)) x) =
+        SIGMA (\i. integral m (\x. f x * indicator_fn (a i) x)) s
+Proof
+    Suff ‘!s. FINITE (s :'b set) ==>
+             (\s. !m f a. measure_space m /\ integrable m f /\
+                    (!i. i IN s ==> a i IN measurable_sets m) /\
+                     disjoint_family_on a s ==>
+                integral m (\x. f x * indicator_fn (BIGUNION (IMAGE a s)) x) =
+                SIGMA (\i. integral m (\x. f x * indicator_fn (a i) x)) s) s’
+ >- RW_TAC std_ss []
+ >> MATCH_MP_TAC FINITE_INDUCT
+ >> RW_TAC std_ss [EXTREAL_SUM_IMAGE_EMPTY, IMAGE_EMPTY, BIGUNION_EMPTY,
+                   FINITE_INSERT, DELETE_NON_ELEMENT, IN_INSERT, BIGUNION_INSERT,
+                   IMAGE_INSERT, disjoint_family_on_def]
+ >- rw [indicator_fn_def, mul_rzero, mul_rone, NOT_IN_EMPTY, integral_zero]
+ >> MP_TAC (Q.SPECL [‘\i. integral m (\x. f x * indicator_fn (a i) x)’, ‘s’]
+                    (INST_TYPE [alpha |-> beta] EXTREAL_SUM_IMAGE_PROPERTY))
+ >> simp []
+ >> DISCH_THEN (MP_TAC o Q.SPEC ‘e’)
+ >> impl_tac
+ >- (DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+     Suff ‘integrable m (\x. f x * indicator_fn (a i) x)’
+     >- METIS_TAC [integrable_finite_integral] \\
+     MATCH_MP_TAC integrable_mul_indicator >> art [] \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> art [])
+ >> Rewr'
+ >> `e NOTIN s` by METIS_TAC [DELETE_NON_ELEMENT]
+ >> `DISJOINT (a e) (BIGUNION (IMAGE a s))`
+       by (RW_TAC std_ss [DISJOINT_BIGUNION, IN_IMAGE] >> METIS_TAC [])
+ >> `(IMAGE a s) SUBSET measurable_sets m`
+       by (RW_TAC std_ss [SUBSET_DEF, IMAGE_DEF, GSPECIFICATION] \\
+           METIS_TAC [])
+ >> `countable (IMAGE a s)` by METIS_TAC [image_countable, finite_countable]
+ >> `BIGUNION (IMAGE a s) IN measurable_sets m`
+       by METIS_TAC [sigma_algebra_def, measure_space_def, subsets_def,
+                     measurable_sets_def]
+ >> METIS_TAC [integral_disjoint_sets]
+QED
+
 (* ------------------------------------------------------------------------- *)
 (*   Convergence theorems and their applications [1, Chapter 9 & 12]         *)
 (* ------------------------------------------------------------------------- *)
