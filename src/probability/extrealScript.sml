@@ -6427,6 +6427,12 @@ Proof
     RW_TAC std_ss [indicator_fn_def, NOT_IN_EMPTY]
 QED
 
+Theorem INDICATOR_FN_UNIV :
+    !x. indicator_fn UNIV (x :'a) = 1
+Proof
+    rw [indicator_fn_def]
+QED
+
 (* Properties of the indicator function [1, p.14] *)
 val INDICATOR_FN_INTER = store_thm (* new *)
   ("INDICATOR_FN_INTER",

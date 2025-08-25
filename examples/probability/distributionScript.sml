@@ -4195,7 +4195,7 @@ Proof
     ‘liminf g <= limsup g’ by PROVE_TAC [ext_liminf_le_limsup] \\
     ‘liminf g <= l /\ l <= limsup g’ by PROVE_TAC [le_trans] \\
      METIS_TAC [le_antisym])
- (* stage work, the follow two subgoals have similar proofs *)
+ (* stage work *)
  >> CONJ_TAC
  >| [ (* goal 1 (of 2) *)
       MATCH_MP_TAC le_epsilon >> rpt STRIP_TAC \\
@@ -4208,6 +4208,8 @@ Proof
       >- (HO_MATCH_MP_TAC TRANSITIVE_STEPWISE_LT >> simp [] \\
           METIS_TAC [REAL_LT_TRANS]) >> DISCH_TAC \\
       qabbrev_tac ‘s = \i. right_open_interval (y i) (y (SUC i))’ \\
+      ‘!i. s i IN subsets borel’
+         by rw [Abbr ‘s’, right_open_interval, borel_measurable_sets] \\
       Know ‘!i. BIGUNION (IMAGE s (count1 i)) =
                 right_open_interval (y 0) (y (SUC i))’
       >- (Induct_on ‘i’ >- simp [Abbr ‘s’, COUNT_ONE] \\
@@ -4222,6 +4224,10 @@ Proof
             (* goal 3 (of 3) *)
             METIS_TAC [REAL_LET_TOTAL] ]) >> DISCH_TAC \\
       qabbrev_tac ‘h = \i. PREIMAGE f (s i)’ \\
+      Know ‘!i. h i IN subsets (B E)’
+      >- (Q.PAT_X_ASSUM ‘f IN borel_measurable (B E)’ MP_TAC \\
+          rw [measurable_def, Abbr ‘h’, space_general_borel, IN_FUNSET,
+              TOPSPACE_MTOP, space_borel]) >> DISCH_TAC \\
       Know ‘BIGUNION (IMAGE h (count N)) = UNIV’
       >- (rw [Once EXTENSION, IN_BIGUNION_IMAGE] \\
           simp [Abbr ‘h’, IN_PREIMAGE, in_right_open_interval] \\
@@ -4236,6 +4242,76 @@ Proof
           Q.PAT_X_ASSUM ‘!i. BIGUNION (IMAGE s (count1 i)) = _’
              (REWRITE_TAC o wrap o GSYM) \\
           simp [IN_BIGUNION_IMAGE, IN_COUNT]) >> DISCH_TAC \\
+      simp [Abbr ‘g’] \\
+   (* applying integral_disjoint_sets_sum *)
+      qabbrev_tac ‘g = Normal o f’ \\
+      Know ‘!n. integral (space (B E),subsets (B E),X n) g =
+                integral (space (B E),subsets (B E),X n)
+                         (\x. g x * indicator_fn UNIV x)’
+      >- rw [INDICATOR_FN_UNIV, ETA_THM] >> Rewr' \\
+      Q.PAT_X_ASSUM ‘_ = UNIV’ (REWRITE_TAC o wrap o SYM) \\
+      qabbrev_tac ‘J = count N’ \\
+      Know ‘!n. integral (space (B E),subsets (B E),X n)
+                  (\x. g x * indicator_fn (BIGUNION (IMAGE h J)) x) =
+                SIGMA (\i. integral (space (B E),subsets (B E),X n)
+                                    (\x. g x * indicator_fn (h i) x)) J’
+      >- (Q.X_GEN_TAC ‘n’ \\
+          fs [Abbr ‘J’, subprobability_measure_def] \\
+          MATCH_MP_TAC integral_disjoint_sets_sum \\
+          simp [disjoint_family_on_def] \\
+          rw [Abbr ‘h’] >> MATCH_MP_TAC PREIMAGE_DISJOINT \\
+          rw [DISJOINT_ALT, Abbr ‘s’, in_right_open_interval] \\
+          simp [REAL_NOT_LE, REAL_NOT_LT] \\
+         ‘i < j \/ j < i’ by simp [] >| (* 2 subgoals *)
+          [ (* goal 1 (of 2): y i <= x < y (SUC i) <= y j *)
+            DISJ1_TAC \\
+           ‘SUC i <= j’ by simp [] \\
+           ‘j = SUC i \/ SUC i < j’ by simp [] >- simp [] \\
+            Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘y (SUC i)’ >> simp [],
+            (* goal 2 (of 2): y (SUC j) < y i <= x < y (SUC i) *)
+            DISJ2_TAC \\
+           ‘SUC j <= i’ by simp [] \\
+           ‘SUC j = i \/ SUC j < i’ by simp [] >- simp [] \\
+            Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘y i’ \\
+            simp [REAL_LT_IMP_LE] ]) >> Rewr' \\
+   (* applying ext_limsup_mono and EXTREAL_SUM_IMAGE_MONO *)
+      Q_TAC (TRANS_TAC le_trans)
+            ‘limsup (\n. SIGMA (\i. X n (h i) * Normal (y (SUC i))) J)’ \\
+      CONJ_TAC
+      >- (MATCH_MP_TAC ext_limsup_mono >> rw [] \\
+          irule EXTREAL_SUM_IMAGE_MONO >> simp [Abbr ‘J’] \\
+          reverse CONJ_TAC
+          >- (DISJ2_TAC >> Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+              fs [subprobability_measure_def, FORALL_AND_THM] >> T_TAC \\
+              CONJ_TAC
+              >- (qmatch_abbrev_tac ‘integral M f' <> PosInf’ \\
+                  Suff ‘integrable M f'’ >- METIS_TAC [integrable_finite_integral] \\
+                  qunabbrev_tac ‘f'’ \\
+                  MATCH_MP_TAC integrable_mul_indicator \\
+                  simp [Abbr ‘M’]) \\
+              qabbrev_tac ‘M = (space (B E),subsets (B E),X n)’ \\
+              Know ‘measure M (h i) <= measure M (m_space M)’
+              >- (MATCH_MP_TAC INCREASING \\
+                 ‘measure_space M’ by METIS_TAC [] \\
+                  simp [MEASURE_SPACE_SPACE, MEASURE_SPACE_INCREASING, Abbr ‘M’] \\
+                  simp [space_general_borel, TOPSPACE_MTOP]) \\
+              Know ‘positive M’ >- PROVE_TAC [MEASURE_SPACE_POSITIVE] \\
+              rw [positive_def, Abbr ‘M’] \\
+              qabbrev_tac ‘z = X n (h i)’ \\
+             ‘0 <= z’ by PROVE_TAC [] \\
+             ‘z <> NegInf’ by simp [pos_not_neginf] \\
+              Know ‘z <> PosInf’
+              >- (simp [lt_infty] \\
+                  Q_TAC (TRANS_TAC let_trans) ‘X n (space (B E))’ >> art [] \\
+                  Q_TAC (TRANS_TAC let_trans) ‘1’ >> simp []) >> DISCH_TAC \\
+             ‘?r. z = Normal r’ by METIS_TAC [extreal_cases] \\
+              simp [extreal_mul_eq]) \\
+          Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+          simp [Abbr ‘g’, Abbr ‘h’, PREIMAGE_def, Abbr ‘s’, right_open_interval] \\
+          qabbrev_tac ‘M = (space (B E),subsets (B E),X n)’ \\
+          qabbrev_tac ‘t = {x | y i <= f x /\ f x < y (SUC i)}’ \\
+       (* applying integral_cmul_indicator *)
+          cheat) \\
    (* applying frontier_of_preimage_subset *)
       cheat,
       (* goal 2 (of 2) *)
