@@ -4307,12 +4307,42 @@ Proof
              ‘?r. z = Normal r’ by METIS_TAC [extreal_cases] \\
               simp [extreal_mul_eq]) \\
           Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
-          simp [Abbr ‘g’, Abbr ‘h’, PREIMAGE_def, Abbr ‘s’, right_open_interval] \\
+          qabbrev_tac ‘c = y (SUC i)’ \\
+         ‘X n (h i) * Normal c = Normal c * X n (h i)’
+            by simp [Once mul_comm] >> POP_ORW \\
           qabbrev_tac ‘M = (space (B E),subsets (B E),X n)’ \\
-          qabbrev_tac ‘t = {x | y i <= f x /\ f x < y (SUC i)}’ \\
+         ‘X n (h i) = measure M (h i)’ by simp [Abbr ‘M’] >> POP_ORW \\
+          Know ‘finite_measure_space M’
+          >- PROVE_TAC [subprobability_measure_imp_finite] \\
+          rw [finite_measure_space_thm] \\
+         ‘measure_space M’ by METIS_TAC [finite_measure_space_def] \\
        (* applying integral_cmul_indicator *)
-          cheat) \\
+          Know ‘Normal c * measure M (h i) =
+                integral M (\x. Normal c * indicator_fn (h i) x)’
+          >- (SYM_TAC >> MATCH_MP_TAC integral_cmul_indicator >> art [] \\
+              CONJ_ASM1_TAC >- simp [Abbr ‘M’] \\
+              simp [GSYM lt_infty]) >> Rewr' \\
+          MATCH_MP_TAC integral_mono >> simp [] \\
+          CONJ_TAC >- (MATCH_MP_TAC integrable_mul_indicator >> simp [Abbr ‘M’]) \\
+          CONJ_TAC
+          >- (HO_MATCH_MP_TAC integrable_mul_indicator >> art [] \\
+              CONJ_TAC >- simp [Abbr ‘M’] \\
+              MATCH_MP_TAC integrable_const >> art [] \\
+              REWRITE_TAC [GSYM lt_infty] \\
+              Suff ‘m_space M IN measurable_sets M’ >- rw [] \\
+              simp [MEASURE_SPACE_SPACE]) \\
+          Q.X_GEN_TAC ‘z’ \\
+          rw [Abbr ‘M’, Abbr ‘g’, Abbr ‘h’, Abbr ‘s’, Abbr ‘c’, PREIMAGE_def,
+              in_right_open_interval] \\
+          qabbrev_tac ‘s = {x | y i <= f x /\ f x < y (SUC i)}’ \\
+          reverse (Cases_on ‘z IN s’) >- simp [indicator_fn_def] \\
+          POP_ASSUM MP_TAC \\
+          rw [Abbr ‘s’, indicator_fn_def, lt_imp_le]) \\
    (* applying frontier_of_preimage_subset *)
+      Know ‘!i. Y (mtop E frontier_of (h i)) = 0’
+      >- (rw [Abbr ‘h’] \\
+          MP_TAC (Q.SPECL [‘E’, ‘f’, ‘s (i :num)’] frontier_of_preimage_subset) \\
+          cheat) >> DISCH_TAC \\
       cheat,
       (* goal 2 (of 2) *)
       cheat ]

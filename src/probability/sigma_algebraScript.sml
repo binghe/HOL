@@ -5839,6 +5839,51 @@ Proof
  >> rw [exhausting_sequence_general_borel]
 QED
 
+(* NOTE: This is a companion of SIGMA_ALGEBRA_COUNTABLE_UNION *)
+Theorem SIGMA_ALGEBRA_COUNTABLE_INTER :
+    !a c. sigma_algebra a /\ countable c /\ c <> {} /\ c SUBSET subsets a ==>
+          BIGINTER c IN subsets a
+Proof
+    rw [COUNTABLE_ENUM]
+ >> irule (cj 4 SIGMA_ALGEBRA_FN_BIGINTER)
+ >> fs [SUBSET_DEF, IN_FUNSET]
+ >> Q.X_GEN_TAC ‘n’
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘n’ >> art []
+QED
+
+Overload countably_infinite[local] = “\s. countable s /\ INFINITE s”
+
+Theorem SIGMA_ALGEBRA_COUNTABLE_INTERSECTION_OF :
+    !a P. sigma_algebra a /\ P SUBSET subsets a ==>
+          countably_infinite INTERSECTION_OF P SUBSET subsets a
+Proof
+    rw [SUBSET_DEF, INTERSECTION_OF, COUNTABLE_ENUM]
+ >- fs [FINITE_EMPTY]
+ >> irule (cj 4 SIGMA_ALGEBRA_FN_BIGINTER)
+ >> simp [IN_FUNSET]
+ >> Q.X_GEN_TAC ‘n’
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> rw [IN_APP]
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘n’ >> art []
+QED
+
+Theorem SIGMA_ALGEBRA_COUNTABLE_UNION_OF :
+    !a P. sigma_algebra a /\ P SUBSET subsets a ==>
+          COUNTABLE UNION_OF P SUBSET subsets a
+Proof
+    rw [SUBSET_DEF, UNION_OF, COUNTABLE_ENUM]
+ >- simp [SIGMA_ALGEBRA_EMPTY]
+ >> fs [SIGMA_ALGEBRA_ALT, IN_FUNSET]
+ >> LAST_X_ASSUM MATCH_MP_TAC
+ >> Q.X_GEN_TAC ‘n’
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> rw [IN_APP]
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘n’ >> art []
+QED
+
 val _ = export_theory ();
 
 (* References:
