@@ -5852,7 +5852,11 @@ Proof
  >> Q.EXISTS_TAC ‘n’ >> art []
 QED
 
+(* NOTE: The following overloads as variants of “countable” and “FINITE” are
+   perhaps what one usually thought they were, when actually mentioning them.
+ *)
 Overload countably_infinite[local] = “\s. countable s /\ INFINITE s”
+Overload finitely_many[local]      = “\s. FINITE s /\ s <> {}”
 
 Theorem SIGMA_ALGEBRA_COUNTABLE_INTERSECTION_OF :
     !a P. sigma_algebra a /\ P SUBSET subsets a ==>
@@ -5882,6 +5886,29 @@ Proof
  >> rw [IN_APP]
  >> FIRST_X_ASSUM MATCH_MP_TAC
  >> Q.EXISTS_TAC ‘n’ >> art []
+QED
+
+Theorem SIGMA_ALGEBRA_FINITE_INTERSECTION_OF :
+    !a P. sigma_algebra a /\ P SUBSET subsets a ==>
+          finitely_many INTERSECTION_OF P SUBSET subsets a
+Proof
+    rw [SUBSET_DEF, INTERSECTION_OF]
+ >> rename1 ‘s <> {}’
+ >> MATCH_MP_TAC SIGMA_ALGEBRA_FINITE_INTER'
+ >> rw [SUBSET_DEF]
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> rw [IN_APP]
+QED
+
+Theorem SIGMA_ALGEBRA_FINITE_UNION_OF :
+    !a P. sigma_algebra a /\ P SUBSET subsets a ==>
+          FINITE UNION_OF P SUBSET subsets a
+Proof
+    rw [SUBSET_DEF, UNION_OF]
+ >> MATCH_MP_TAC SIGMA_ALGEBRA_FINITE_UNION
+ >> rw [SUBSET_DEF]
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> rw [IN_APP]
 QED
 
 val _ = export_theory ();
