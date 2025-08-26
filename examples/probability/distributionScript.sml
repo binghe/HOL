@@ -3236,12 +3236,56 @@ Proof
         Portemanteau_ii_def, BL_def, IN_APP]
 QED
 
-(* f :'a -> real *)
+(* NOTE: This concept really belongs to real_topologyTheory *)
 Definition points_of_discontinuity_def :
-    points_of_discontinuity top f =
+    points_of_discontinuity top (f :'a -> real) =
       {x | x IN topspace top /\ ~topcontinuous_at top euclidean f x}
 End
 Overload U[local] = “points_of_discontinuity”
+
+(* NOTE: This proof is from https://math.stackexchange.com/questions/4945291 *)
+Theorem points_of_discontinuity_borel_measurable :
+    !(t :'a topology) f.
+       f IN borel_measurable (B t) ==> U t f IN subsets (B t)
+Proof
+    rw [points_of_discontinuity_def]
+ >> ‘sigma_algebra (B t)’ by PROVE_TAC [sigma_algebra_general_borel]
+ >> qmatch_abbrev_tac ‘s IN subsets (B t)’
+ >> Know ‘s = space (B t) DIFF
+              {x | x IN topspace t /\ topcontinuous_at t euclidean f x}’
+ >- (rw [Abbr ‘s’, Once EXTENSION, space_general_borel] \\
+     EQ_TAC >> rw [])
+ >> Rewr'
+ >> MATCH_MP_TAC SIGMA_ALGEBRA_COMPL >> art []
+ >> simp [Abbr ‘s’, topcontinuous_at, TOPSPACE_EUCLIDEAN, CONJ_ASSOC]
+ >> simp [GSYM CONJ_ASSOC, GSYM euclidean_open_def]
+ >> qmatch_abbrev_tac ‘s IN subsets (B t)’
+ >> Know ‘s = {x | x IN topspace t /\
+                   !n. ?u. open_in t u /\ x IN u /\
+                           !y. y IN u ==> dist (f y,f x) < inv (&SUC n)}’
+ >- (RW_TAC set_ss [Abbr ‘s’, Once EXTENSION] \\
+     EQ_TAC >> RW_TAC std_ss []
+     >- (POP_ASSUM (MP_TAC o Q.SPEC ‘ball (f x,inv (&SUC n))’) \\
+         rw [OPEN_BALL, IN_BALL, DIST_REFL] \\
+         Q.EXISTS_TAC ‘u’ >> rw [Once DIST_SYM]) \\
+     FULL_SIMP_TAC std_ss [OPEN_CONTAINS_BALL] \\
+     Q.PAT_X_ASSUM ‘!x. x IN v ==> _’ (MP_TAC o Q.SPEC ‘f x’) >> rw [] \\
+     MP_TAC (Q.SPEC ‘e’ REAL_ARCH_INV_SUC) \\
+     RW_TAC std_ss [] \\
+     Q.PAT_X_ASSUM ‘!n. ?u. _’ (MP_TAC o Q.SPEC ‘n’) \\
+     RW_TAC std_ss [] \\
+     Q.EXISTS_TAC ‘u’ >> rw [] \\
+     Suff ‘f y IN ball (f x,e)’ >- METIS_TAC [SUBSET_DEF] \\
+     rw [IN_BALL] \\
+     Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘inv (&SUC n)’ >> art [] \\
+     ONCE_REWRITE_TAC [DIST_SYM] \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> art [])
+ >> Rewr'
+ >> SIMP_TAC std_ss [Abbr ‘s’, SKOLEM_THM]
+ (* stage work *)
+ >> qmatch_abbrev_tac ‘s IN subsets (B t)’
+ >> cheat
+QED
 
 Definition Portemanteau_iii_def :
     Portemanteau_iii E X Y <=>
