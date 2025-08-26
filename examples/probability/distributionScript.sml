@@ -3243,7 +3243,7 @@ Definition points_of_discontinuity_def :
 End
 Overload U[local] = “points_of_discontinuity”
 
-(* NOTE: This proof is from https://math.stackexchange.com/questions/4945291 *)
+(* NOTE: This proof is inspired by https://math.stackexchange.com/questions/4945291 *)
 Theorem points_of_discontinuity_borel_measurable :
     !(t :'a topology) f.
        f IN borel_measurable (B t) ==> U t f IN subsets (B t)
@@ -3284,6 +3284,33 @@ Proof
  >> SIMP_TAC std_ss [Abbr ‘s’, SKOLEM_THM]
  (* stage work *)
  >> qmatch_abbrev_tac ‘s IN subsets (B t)’
+ >> Know ‘!x. x IN s ==>
+              ?g. !n. open_in t (g n) /\ x IN g n /\
+                      !y. y IN g n ==> dist (f y,f x) < inv (&SUC n)’
+ >- RW_TAC set_ss [Abbr ‘s’]
+ >> SIMP_TAC std_ss [EXT_SKOLEM_THM']
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘g’ STRIP_ASSUME_TAC)
+ >> qabbrev_tac ‘h = \i. BIGUNION (IMAGE (\x. g x i) s)’
+ >> Know ‘!n. open_in t (h n)’
+ >- (rw [Abbr ‘h’] \\
+     MATCH_MP_TAC OPEN_IN_BIGUNION \\
+     Q.X_GEN_TAC ‘a’ >> rw [] \\
+     METIS_TAC [])
+ >> DISCH_TAC
+ >> Know ‘s = BIGINTER (IMAGE h UNIV) INTER topspace t’
+ >- (RW_TAC set_ss [GSYM SUBSET_ANTISYM_EQ, SUBSET_DEF, IN_BIGINTER_IMAGE] >|
+     [ (* goal 1 (of 3) *)
+       rw [Abbr ‘h’] \\
+       Q.PAT_X_ASSUM ‘!x. x IN s ==> _’ (MP_TAC o Q.SPEC ‘x’) \\
+       RW_TAC std_ss [] \\
+       POP_ASSUM (MP_TAC o Q.SPEC ‘y’) >> RW_TAC std_ss [] \\
+       Q.EXISTS_TAC ‘g x (y :num)’ >> rw [] \\
+       Q.EXISTS_TAC ‘x’ >> art [],
+       (* goal 2 (of 3) *)
+       fs [Abbr ‘s’],
+       (* goal 3 (of 3) *)
+       cheat ])
+ >> Rewr'
  >> cheat
 QED
 
