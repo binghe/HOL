@@ -8092,11 +8092,40 @@ Theorem ext_limsup_triangle :
        FINITE J /\ (!i. ext_bounded (IMAGE (\n. f n i) UNIV)) ==>
        limsup (\n. SIGMA (f n) J) <= SIGMA (\i. limsup (\n. f n i)) J
 Proof
-    Suff ‘!J. FINITE (J :'index set) ==>
-              !f. (!i. ext_bounded (IMAGE (\n. f n i) UNIV)) ==>
-                  limsup (\n. SIGMA (f n) J) <= SIGMA (\i. limsup (\n. f n i)) J’
- >- METIS_TAC []
+    rpt STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘FINITE J’ MP_TAC
  >> Induct_on ‘J’ >> rw [ext_limsup_const]
+ >> Know ‘!n. SIGMA (f n) (e INSERT J) = f n e + SIGMA (f n) (J DELETE e)’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     irule EXTREAL_SUM_IMAGE_PROPERTY >> art [] \\
+     DISJ2_TAC (* or DISJ1_TAC *) \\
+     Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+     Q.PAT_X_ASSUM ‘!i. ext_bounded _’ (MP_TAC o Q.SPEC ‘i’) \\
+     rw [lt_infty, ext_bounded_def, abs_bounds] \\
+     Q_TAC (TRANS_TAC let_trans) ‘a’ >> art [] \\
+     POP_ASSUM (MATCH_MP_TAC o cj 2) \\
+     Q.EXISTS_TAC ‘n’ >> art [])
+ >> Rewr'
+ >> qmatch_abbrev_tac ‘_ <= SIGMA g _’
+ >> Know ‘SIGMA g (e INSERT J) = g e + SIGMA g (J DELETE e)’
+ >- (irule EXTREAL_SUM_IMAGE_PROPERTY >> art [] \\
+     DISJ2_TAC \\
+     Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+     Q.PAT_X_ASSUM ‘!i. ext_bounded _’ (MP_TAC o Q.SPEC ‘i’) \\
+     rw [lt_infty, ext_bounded_def, Abbr ‘g’] \\
+     Q_TAC (TRANS_TAC let_trans) ‘a’ >> art [] \\
+     Suff ‘abs (limsup (\n. f n i)) <= a’ >- simp [abs_bounds] \\
+     MATCH_MP_TAC ext_limsup_bounded >> rw [] \\
+     POP_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘n’ >> art [])
+ >> Rewr'
+ >> ‘J DELETE e = J’ by PROVE_TAC [DELETE_NON_ELEMENT] >> POP_ORW
+ (* applying ext_limsup_add *)
+ >> Q_TAC (TRANS_TAC le_trans) ‘limsup (\n. f n e) + limsup (\n. SIGMA (f n) J)’
+ >> CONJ_TAC
+ >- (HO_MATCH_MP_TAC ext_limsup_add >> art [] \\
+     rw [ext_bounded_def, lt_infty] \\
+     cheat)
  >> cheat
 QED
 
