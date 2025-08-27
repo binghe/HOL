@@ -1754,7 +1754,7 @@ val EXTREAL_SUM_IMAGE_MONO = store_thm
    then both sums become PosInf, making the conclusion impossible.
  *)
 Theorem EXTREAL_SUM_IMAGE_MONO_LT :
-    !f g s. FINITE s ∧ s <> {} /\
+    !f g s. FINITE s /\ s <> {} /\
             ((!x. x IN s ==> f x <> NegInf /\ g x <> NegInf) \/
              (!x. x IN s ==> f x <> PosInf /\ g x <> PosInf)) /\
             (!x. x IN s ==> f x < g x) ==>
@@ -5245,6 +5245,31 @@ Proof
  >> Cases_on ‘y’ >> fs [real_normal]
 QED
 
+Theorem pow_real :
+    !x n. x <> PosInf /\ x <> NegInf ==> real x pow n = real (x pow n)
+Proof
+  rw []
+  >> ASM_SIMP_TAC std_ss [GSYM extreal_11, normal_real, pow_not_infty]
+  >> ‘?r. x = Normal r’ by METIS_TAC [extreal_cases] >> gs [real_normal, extreal_pow_def]
+QED
+
+Theorem add_real :
+    !x y. x <> PosInf /\ x <> NegInf /\
+          y <> PosInf /\ y <> NegInf ==> real (x + y) = real x + real y
+Proof
+    rw []
+ >> ASM_SIMP_TAC std_ss [GSYM extreal_11, normal_real, add_not_infty, GSYM extreal_add_eq]
+QED
+
+Theorem sub_real :
+    !x y. x <> PosInf /\ x <> NegInf /\
+          y <> PosInf /\ y <> NegInf ==>
+          real (x - y) = real x - real y
+Proof
+    rw []
+ >> ASM_SIMP_TAC std_ss [GSYM extreal_11, normal_real, sub_not_infty, GSYM extreal_sub_eq]
+QED
+
 Theorem real_set_INTER :
     !s t. real_set (s INTER t) = real_set s INTER real_set t
 Proof
@@ -7324,6 +7349,18 @@ Proof
     simp[pow_0,ADD1,pow_add,pow_1]
 QED
 
+Theorem sqrt_real :
+  !x. 0 <= x ==> real (sqrt x) = sqrt (real x)
+Proof
+  rpt STRIP_TAC
+  >> ‘x <> NegInf’ by METIS_TAC [extreal_0_simps, lt_trans]
+  >> Cases_on ‘x = PosInf’
+  >- (gs [extreal_sqrt_def, real_def, GSYM SQRT_0])
+  >> ‘?r. x = Normal r’ by METIS_TAC [extreal_cases]
+  >> gs [real_normal, extreal_sqrt_def, normal_real]
+  >> METIS_TAC [extreal_cases, real_normal]
+QED
+
 (*** EXTREAL_SUM_IMAGE Theorems ***)
 
 Theorem EXTREAL_SUM_IMAGE_ALT_FOLDR:
@@ -7376,6 +7413,87 @@ Proof
  >> irule EXTREAL_SUM_IMAGE_DISJOINT_UNION >> simp[]
 QED
 
+Theorem EXTREAL_SUM_IMAGE_CDIV :
+  !s. FINITE s ==>
+      !f c. ((!x. x IN s ==> f x <> NegInf) \/ (!x. x IN s ==> f x <> PosInf)) /\
+            c <> 0 ==> SIGMA (λx. f x / Normal c) s = SIGMA f s / Normal c
+Proof
+   rw [extreal_div_def, extreal_inv_def, Once mul_comm]
+ >> ‘SIGMA f s * Normal (inv c) = Normal (inv c) *  ∑ f s’ by rw [mul_comm]
+ >> POP_ORW
+ >> irule EXTREAL_SUM_IMAGE_CMUL
+ >> art []
+QED
+
+Theorem EXTREAL_SUM_IMAGE_ABS_TRIANGLE :
+    !f s. FINITE s ==> abs (SIGMA f s) <= SIGMA (λx. abs (f x)) s
+Proof
+    ‘!f l. (!x. MEM x l ==> T) ==>
+           abs (FOLDR (λe acc. f e + acc) 0x l) <=
+           FOLDR (λe acc. abs (f e) + acc) 0x l’
+      suffices_by rw [EXTREAL_SUM_IMAGE_ALT_FOLDR]
+ >> Induct_on ‘l’ >> rw[listTheory.FOLDR]
+ >> ‘abs (f h + FOLDR (λe acc. f e + acc) 0x l)
+     <= abs (f h) + abs (FOLDR (λe acc. f e + acc) 0x l)’
+      by (irule abs_triangle_full >> simp[])
+ >> ‘abs (FOLDR (λe acc. f e + acc) 0x l)
+     <= FOLDR (λe acc. abs (f e) + acc) 0x l’ by simp[]
+ >> ‘abs (f h) + abs (FOLDR (λe acc. f e + acc) 0x l)
+     <= abs (f h) + FOLDR (λe acc. abs (f e) + acc) 0x l’ by (irule le_add2 >> simp[])
+ >> METIS_TAC [le_trans]
+QED
+
+Theorem EXTREAL_SUM_IMAGE_ABS_LE :
+    !f g s. FINITE s /\ (!x. x IN s ==> abs (f x) <= g x) ==>
+            abs (SIGMA f s) <= SIGMA g s
+Proof
+    rpt STRIP_TAC
+ >> ‘abs (SIGMA f s) <= SIGMA (λx. abs (f x)) s’
+      by (irule EXTREAL_SUM_IMAGE_ABS_TRIANGLE >> rw[])
+ >> ‘(!x. x IN s ==> (λx. abs (f x)) x <= g x)’ by simp[]
+ >> ‘SIGMA (λx. abs (f x)) s <= SIGMA g s’ by (irule EXTREAL_SUM_IMAGE_MONO' >> rw[])
+ >> METIS_TAC [le_trans]
+QED
+
+Theorem EXTREAL_SUM_IMAGE_REAL :
+    !s f. FINITE s ==>
+          (!x. x IN s ==> f x <> NegInf) /\ (!x. x IN s ==> f x <> PosInf) ==>
+          SIGMA (λx. real (f x)) s = real (SIGMA f s)
+Proof
+    Induct_on ‘CARD s’ >> rw [o_DEF]
+ >- (‘s = {}’ by METIS_TAC [CARD_EQ_0] \\
+     gs [EXTREAL_SUM_IMAGE_EMPTY, real_0])
+ >> MP_TAC (Q.SPEC ‘f’ EXTREAL_SUM_IMAGE_THM)
+ >> Cases_on ‘s = {}’ >> rw [EXTREAL_SUM_IMAGE_EMPTY, real_0]
+ >> fs [GSYM MEMBER_NOT_EMPTY]
+ >> Q.ABBREV_TAC ‘t = s DELETE x’
+ >> Q.PAT_X_ASSUM ‘!e s'. _’ (STRIP_ASSUME_TAC o Q.SPECL [‘x’, ‘t’])
+ >> gs [FINITE_DELETE, Abbr ‘t’]
+ >> ‘SIGMA f s = f x + SIGMA f (s DELETE x)’
+       by (POP_ASSUM MATCH_MP_TAC >> METIS_TAC [])
+ >> gs []
+ >> Q.ABBREV_TAC ‘t = s DELETE x’
+ >> Q.PAT_X_ASSUM ‘!s. v = CARD s ==> _’ (STRIP_ASSUME_TAC o Q.SPEC ‘t’)
+ >> ‘v = CARD t’ by rw [Abbr ‘t’, CARD_DELETE] >> gs []
+ >> Q.PAT_X_ASSUM ‘!f. FINITE t ==> _’ (STRIP_ASSUME_TAC o Q.SPEC ‘f’)
+ >> ‘FINITE t’ by rw [Abbr ‘t’, FINITE_DELETE] >> gs []
+ >> ‘s = x INSERT t’ by rw [Abbr ‘t’, INSERT_DELETE]
+ >> POP_ORW
+ >> MP_TAC (Q.SPECL [‘f x’, ‘SIGMA f t’] add_real)
+ >> impl_tac
+ >- (‘f x <> PosInf /\ f x <> NegInf’ by METIS_TAC [] >> simp [] \\
+     ‘SIGMA f t = SIGMA f s - f x’ by (fs [] >> METIS_TAC [GSYM add_sub2]) \\
+     POP_ORW \\
+     ‘SIGMA f s <> PosInf /\ SIGMA f s <> NegInf’
+        by METIS_TAC [EXTREAL_SUM_IMAGE_NOT_INFTY] \\
+     rw [sub_not_infty])
+ >> Rewr
+ >> MP_TAC (Q.SPEC ‘λx. real (f x)’ REAL_SUM_IMAGE_THM)
+ >> rw [Abbr ‘t’, REAL_SUM_IMAGE_EMPTY]
+ >> POP_ASSUM (STRIP_ASSUME_TAC o Q.SPECL [‘x’, ‘s’])
+ >> gs [o_DEF, ABSORPTION]
+QED
+
 (*** EXTREAL_PROD_IMAGE Theorems ***)
 
 Theorem EXTREAL_PROD_IMAGE_NOT_INFTY:
@@ -7389,10 +7507,12 @@ Proof
 QED
 
 Theorem EXTREAL_PROD_IMAGE_NORMAL:
-    !f s. FINITE s ==> EXTREAL_PROD_IMAGE (λx. Normal (f x)) s = Normal (REAL_PROD_IMAGE f s)
+    !f s. FINITE s ==>
+          EXTREAL_PROD_IMAGE (λx. Normal (f x)) s = Normal (REAL_PROD_IMAGE f s)
 Proof
     strip_tac >> Induct_on ‘s’ >>
-    rw[EXTREAL_PROD_IMAGE_THM,REAL_PROD_IMAGE_THM,DELETE_NON_ELEMENT_RWT,extreal_mul_def,normal_1]
+    rw [EXTREAL_PROD_IMAGE_THM,REAL_PROD_IMAGE_THM,DELETE_NON_ELEMENT_RWT,
+        extreal_mul_def,normal_1]
 QED
 
 Theorem EXTREAL_PROD_IMAGE_0:
@@ -7452,6 +7572,31 @@ Proof
     rw[] >> qspecl_then [‘f’,‘n’,‘count n’] assume_tac EXTREAL_PROD_IMAGE_PROPERTY >>
     rfs[] >> simp[mul_comm] >> pop_assum $ SUBST1_TAC o SYM >>
     ‘count (SUC n) = n INSERT count n’ suffices_by simp[] >> simp[EXTENSION]
+QED
+
+Theorem EXTREAL_PROD_IMAGE_SUPPORT :
+  !s t f. FINITE s /\ FINITE t /\
+          s SUBSET t /\ (!x. x IN t DIFF s ==> f x = 1) ==> PI f t = PI f s
+Proof
+  rpt STRIP_TAC
+  >> ‘t = s UNION (t DIFF s)’ by rw [UNION_DIFF] >> POP_ORW
+  >> Know ‘PI f (s UNION (t DIFF s)) = PI f s * PI f (t DIFF s)’
+  >- (irule EXTREAL_PROD_IMAGE_DISJOINT_UNION >> simp [DISJOINT_DIFF]) >> Rewr
+  >> Know ‘PI f (t DIFF s) = 1’
+  >- (Know ‘PI f (t DIFF s) = PI (λi. 1) (t DIFF s)’
+      >- (MATCH_MP_TAC EXTREAL_PROD_IMAGE_EQ >> fs []) >> Rewr \\
+      irule EXTREAL_PROD_IMAGE_1 >> fs []) >> Rewr >> rw [mul_rone]
+QED
+
+Theorem EXTREAL_PROD_IMAGE_SUPPORT' :
+  !s t f. FINITE t /\ FINITE s /\ s SUBSET t ==>
+          PI (λx. if x IN s then f x else (1 :extreal)) t = PI f s
+Proof
+  rpt STRIP_TAC
+  >> MP_TAC (Q.SPECL [‘s’, ‘t’, ‘λx. if x IN s then f x else 1’]
+                     EXTREAL_PROD_IMAGE_SUPPORT)
+  >> simp [] >> Rewr
+  >> MATCH_MP_TAC EXTREAL_PROD_IMAGE_EQ >> METIS_TAC []
 QED
 
 (*** Miscellany Within Miscellany ***)
