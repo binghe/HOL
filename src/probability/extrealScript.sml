@@ -8087,6 +8087,19 @@ Proof
     rw [ext_liminf_alt_limsup, o_DEF, ext_limsup_const]
 QED
 
+Theorem ext_limsup_triangle :
+    !f (J :'index set).
+       FINITE J /\ (!i. ext_bounded (IMAGE (\n. f n i) UNIV)) ==>
+       limsup (\n. SIGMA (f n) J) <= SIGMA (\i. limsup (\n. f n i)) J
+Proof
+    Suff ‘!J. FINITE (J :'index set) ==>
+              !f. (!i. ext_bounded (IMAGE (\n. f n i) UNIV)) ==>
+                  limsup (\n. SIGMA (f n) J) <= SIGMA (\i. limsup (\n. f n i)) J’
+ >- METIS_TAC []
+ >> Induct_on ‘J’ >> rw [ext_limsup_const]
+ >> cheat
+QED
+
 (* ------------------------------------------------------------------------- *)
 (*   Analytic properties of mono-increasing functions (:extreal -> extreal)  *)
 (* ------------------------------------------------------------------------- *)
