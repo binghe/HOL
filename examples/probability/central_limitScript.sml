@@ -5427,7 +5427,11 @@ Proof
      METIS_TAC [normal_real, pow_real, real_random_variable])
  >> DISCH_TAC
  >> ASM_SIMP_TAC std_ss [extreal_sub_eq, extreal_mul_eq]
- >> fs [add_real, real_random_variable] >> REAL_ARITH_TAC
+ >> fs [add_real, real_random_variable]
+ >> Suff ‘f (real (Z x) + real (X x)) =
+          f (real (X x) + real (Z x))’ >- rw []
+ >> AP_TERM_TAC
+ >> simp [Once REAL_ADD_COMM]
 QED
 
 Theorem abs_bounds_finite :
