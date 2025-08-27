@@ -3243,10 +3243,9 @@ Definition points_of_discontinuity_def :
 End
 Overload U[local] = “points_of_discontinuity”
 
-(* NOTE: This proof is inspired by https://math.stackexchange.com/questions/4945291 *)
-Theorem points_of_discontinuity_borel_measurable :
-    !(t :'a topology) f.
-       f IN borel_measurable (B t) ==> U t f IN subsets (B t)
+(* NOTE: This proof is from https://math.stackexchange.com/questions/211511 *)
+Theorem points_of_discontinuity_in_general_borel :
+    !(t :'a topology) f. U t f IN subsets (B t)
 Proof
     rw [points_of_discontinuity_def]
  >> ‘sigma_algebra (B t)’ by PROVE_TAC [sigma_algebra_general_borel]
@@ -3281,37 +3280,48 @@ Proof
      ONCE_REWRITE_TAC [DIST_SYM] \\
      FIRST_X_ASSUM MATCH_MP_TAC >> art [])
  >> Rewr'
- >> SIMP_TAC std_ss [Abbr ‘s’, SKOLEM_THM]
+ >> qunabbrev_tac ‘s’
  (* stage work *)
  >> qmatch_abbrev_tac ‘s IN subsets (B t)’
- >> Know ‘!x. x IN s ==>
-              ?g. !n. open_in t (g n) /\ x IN g n /\
-                      !y. y IN g n ==> dist (f y,f x) < inv (&SUC n)’
- >- RW_TAC set_ss [Abbr ‘s’]
- >> SIMP_TAC std_ss [EXT_SKOLEM_THM']
- >> DISCH_THEN (Q.X_CHOOSE_THEN ‘g’ STRIP_ASSUME_TAC)
- >> qabbrev_tac ‘h = \i. BIGUNION (IMAGE (\x. g x i) s)’
- >> Know ‘!n. open_in t (h n)’
- >- (rw [Abbr ‘h’] \\
-     MATCH_MP_TAC OPEN_IN_BIGUNION \\
-     Q.X_GEN_TAC ‘a’ >> rw [] \\
-     METIS_TAC [])
- >> DISCH_TAC
- >> Know ‘s = BIGINTER (IMAGE h UNIV) INTER topspace t’
- >- (RW_TAC set_ss [GSYM SUBSET_ANTISYM_EQ, SUBSET_DEF, IN_BIGINTER_IMAGE] >|
-     [ (* goal 1 (of 3) *)
-       rw [Abbr ‘h’] \\
-       Q.PAT_X_ASSUM ‘!x. x IN s ==> _’ (MP_TAC o Q.SPEC ‘x’) \\
-       RW_TAC std_ss [] \\
-       POP_ASSUM (MP_TAC o Q.SPEC ‘y’) >> RW_TAC std_ss [] \\
-       Q.EXISTS_TAC ‘g x (y :num)’ >> rw [] \\
-       Q.EXISTS_TAC ‘x’ >> art [],
-       (* goal 2 (of 3) *)
-       fs [Abbr ‘s’],
-       (* goal 3 (of 3) *)
-       cheat ])
+ >> qabbrev_tac ‘A = \n. {x | x IN topspace t /\
+                              ?u. open_in t u /\ x IN u /\
+                                  !y. y IN u ==> dist (f y,f x) < inv (&SUC n)}’
+ >> Know ‘s = BIGINTER (IMAGE A UNIV)’
+ >- (RW_TAC set_ss [Once EXTENSION, IN_BIGINTER_IMAGE, Abbr ‘s’, Abbr ‘A’] \\
+     EQ_TAC >> RW_TAC std_ss [])
  >> Rewr'
+ >> qunabbrev_tac ‘s’
+ >> irule (cj 4 SIGMA_ALGEBRA_FN_BIGINTER)
+ >> simp [IN_FUNSET]
+ >> Q.X_GEN_TAC ‘n’
+ >> MATCH_MP_TAC open_in_general_borel
+ >> Q.PAT_X_ASSUM ‘sigma_algebra (B t)’ K_TAC
+ (* stage work *)
+ >> RW_TAC set_ss [Once OPEN_NEIGH', Abbr ‘A’, SUBSET_DEF]
+ >> qabbrev_tac ‘r :real = inv (&SUC n)’
+ >> ‘0 < r’ by rw [Abbr ‘r’, REAL_INV_POS]
+ >> ‘0 < r / 2’ by rw [REAL_LT_DIV]
+ >> Q.EXISTS_TAC ‘u’
+ >> CONJ_TAC >- (MATCH_MP_TAC OPEN_OWN_NEIGH >> fs [IN_APP])
+ >> Q.X_GEN_TAC ‘z’
+ >> rpt STRIP_TAC
+ >- (Suff ‘u SUBSET topspace t’ >- METIS_TAC [SUBSET_DEF] \\
+     MATCH_MP_TAC OPEN_IN_SUBSET >> art [])
+ >> qabbrev_tac ‘c = f x’
+ >> qabbrev_tac ‘b = ball (c,r / 2)’
+ >> ‘open b’ by rw [Abbr ‘b’, OPEN_BALL]
+ >> qabbrev_tac ‘s = PREIMAGE f b INTER topspace t’
+ >> Q.EXISTS_TAC ‘u INTER s’
  >> cheat
+QED
+
+Theorem frontier_of_in_general_borel :
+    !t s. t frontier_of s IN subsets (B t)
+Proof
+    rw [FRONTIER_OF_CLOSURES]
+ >> MATCH_MP_TAC SIGMA_ALGEBRA_INTER >> rw [] (* 2 subgoals, same tactics *)
+ >> MATCH_MP_TAC closed_in_general_borel
+ >> rw [CLOSED_IN_CLOSURE_OF]
 QED
 
 Definition Portemanteau_iii_def :
@@ -4412,8 +4422,77 @@ Proof
    (* applying frontier_of_preimage_subset *)
       Know ‘!i. Y (mtop E frontier_of (h i)) = 0’
       >- (rw [Abbr ‘h’] \\
+          qmatch_abbrev_tac ‘Y s1 = 0’ \\
+         ‘s1 IN subsets (B E)’ by rw [Abbr ‘s1’, frontier_of_in_general_borel] \\
+          reverse (rw [GSYM le_antisym])
+          >- (qabbrev_tac ‘M = (space (B E),subsets (B E),Y)’ \\
+              Know ‘positive M’
+              >- (MATCH_MP_TAC MEASURE_SPACE_POSITIVE \\
+                  FULL_SIMP_TAC std_ss [subprobability_measure_def]) \\
+              rw [positive_def, Abbr ‘M’]) \\
           MP_TAC (Q.SPECL [‘E’, ‘f’, ‘s (i :num)’] frontier_of_preimage_subset) \\
-          cheat) >> DISCH_TAC \\
+          qmatch_abbrev_tac ‘_ SUBSET s2 ==> _’ >> rw [] \\
+          qabbrev_tac ‘M = (space (B E),subsets (B E),Y)’ \\
+         ‘Y s1 = measure M s1’ by rw [Abbr ‘M’] >> POP_ORW \\
+          Q_TAC (TRANS_TAC le_trans) ‘measure M s2’ \\
+          CONJ_TAC
+          >- (Know ‘increasing M’
+              >- (MATCH_MP_TAC MEASURE_SPACE_INCREASING \\
+                  FULL_SIMP_TAC std_ss [subprobability_measure_def]) \\
+              rw [increasing_def] \\
+              POP_ASSUM MATCH_MP_TAC >> simp [Abbr ‘M’, Abbr ‘s2’] \\
+              MATCH_MP_TAC SIGMA_ALGEBRA_UNION \\
+              simp [points_of_discontinuity_in_general_borel] \\
+              Q.PAT_X_ASSUM ‘f IN borel_measurable (B E)’ MP_TAC \\
+              rw [measurable_def, space_general_borel, TOPSPACE_MTOP,
+                  IN_FUNSET, space_borel] \\
+              POP_ASSUM MATCH_MP_TAC \\
+              REWRITE_TAC [borel_frontier]) \\
+          Q.PAT_X_ASSUM ‘s1 SUBSET s2’        K_TAC \\
+          Q.PAT_X_ASSUM ‘s1 IN subsets (B E)’ K_TAC \\
+          simp [Abbr ‘s1’, Abbr ‘s2’, Abbr ‘g’, Abbr ‘J’] \\
+          qmatch_abbrev_tac ‘measure M (s3 UNION s4) <= 0’ \\
+          Q_TAC (TRANS_TAC le_trans) ‘measure M s3 + measure M s4’ \\
+          CONJ_TAC
+          >- (Know ‘subadditive M’
+              >- (MATCH_MP_TAC MEASURE_SPACE_SUBADDITIVE \\
+                  FULL_SIMP_TAC std_ss [subprobability_measure_def]) \\
+              SIMP_TAC (srw_ss()) [Abbr ‘M’, subadditive_def] \\
+              DISCH_THEN MATCH_MP_TAC \\
+              CONJ_ASM1_TAC
+              >- (Q.PAT_X_ASSUM ‘f IN borel_measurable (B E)’ MP_TAC \\
+                  rw [measurable_def, space_general_borel, TOPSPACE_MTOP,
+                      IN_FUNSET, space_borel, Abbr ‘s3’] \\
+                  POP_ASSUM MATCH_MP_TAC \\
+                  REWRITE_TAC [borel_frontier]) \\
+              CONJ_ASM1_TAC
+              >- simp [Abbr ‘s4’, points_of_discontinuity_in_general_borel] \\
+              MATCH_MP_TAC SIGMA_ALGEBRA_UNION >> simp []) \\
+          simp [Abbr ‘M’, Abbr ‘s3’] \\
+          qmatch_abbrev_tac ‘Y (PREIMAGE f s5) <= 0’ \\
+         ‘Y (PREIMAGE f s5) = m s5’ by simp [Abbr ‘m’, o_DEF] >> POP_ORW \\
+       (* applying right_open_interval_frontier *)
+          Know ‘s5 = {y i; y (SUC i)}’
+          >- (simp [Abbr ‘s5’, Abbr ‘s’] \\
+              MATCH_MP_TAC right_open_interval_frontier >> simp []) >> Rewr' \\
+          qunabbrevl_tac [‘s4’, ‘s5’] \\
+          qabbrev_tac ‘M = (space borel,subsets borel,m)’ \\
+         ‘measure_space M’ by PROVE_TAC [finite_measure_space_def] \\
+          qmatch_abbrev_tac ‘m s6 <= 0’ \\
+         ‘m s6 = measure M s6’ by simp [Abbr ‘M’] >> POP_ORW \\
+          qunabbrev_tac ‘s6’ \\
+          Q_TAC (TRANS_TAC le_trans) ‘measure M {y i} + measure M {y (SUC i)}’ \\
+          CONJ_TAC
+          >- (Know ‘subadditive M’
+              >- (MATCH_MP_TAC MEASURE_SPACE_SUBADDITIVE >> art []) \\
+              rw [subadditive_def] \\
+             ‘{y i; y (SUC i)} = {y i} UNION {y (SUC i)}’ by SET_TAC [] \\
+              POP_ORW \\
+              FIRST_X_ASSUM MATCH_MP_TAC \\
+              CONJ_ASM1_TAC >- simp [Abbr ‘M’, borel_measurable_sets] \\
+              CONJ_ASM1_TAC >- simp [Abbr ‘M’, borel_measurable_sets] \\
+              MATCH_MP_TAC MEASURE_SPACE_UNION >> art []) \\
+          simp [Abbr ‘M’]) >> DISCH_TAC \\
       cheat,
       (* goal 2 (of 2) *)
       cheat ]

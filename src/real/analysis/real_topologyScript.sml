@@ -2101,6 +2101,11 @@ Proof
  >> rw [IN_APP]
 QED
 
+(* |- !x e. 0 < e ==> neigh euclidean (ball (x,e),x) *)
+Theorem ball_neigh =
+        BALL_NEIGH |> Q.ISPEC ‘mr1’
+                   |> REWRITE_RULE [GSYM euclidean_def, GSYM ball_def]
+
 Definition cball_def :
     cball = mcball mr1
 End

@@ -1660,6 +1660,16 @@ Proof
  >> METIS_TAC [REAL_LE_ANTISYM, REAL_LE_REFL, REAL_LT_IMP_LE]
 QED
 
+Theorem borel_frontier :
+    !s. frontier s IN subsets borel
+Proof
+    rw [FRONTIER_CLOSURES]
+ >> MATCH_MP_TAC SIGMA_ALGEBRA_INTER
+ >> rw [sigma_algebra_borel]
+ >> MATCH_MP_TAC borel_closed
+ >> REWRITE_TAC [CLOSED_CLOSURE]
+QED
+
 (* cf. `open_intervals_set` in extrealTheory *)
 Definition right_open_intervals :
    right_open_intervals = (univ(:real), {right_open_interval a b | T})
