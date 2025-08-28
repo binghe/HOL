@@ -1457,8 +1457,7 @@ Theorem EXTREAL_SUM_IMAGE_MINUS :
           EXTREAL_SUM_IMAGE (\x. -f x) s = -EXTREAL_SUM_IMAGE f s
 Proof
     rpt GEN_TAC >> DISCH_TAC
- >> ONCE_REWRITE_TAC [neg_minus1]
- >> simp [extreal_of_num_def, extreal_ainv_def]
+ >> simp [neg_minus1']
  >> irule EXTREAL_SUM_IMAGE_CMUL >> simp []
 QED
 

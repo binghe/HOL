@@ -1188,6 +1188,12 @@ Proof
  >> RW_TAC real_ss [extreal_ainv_def, extreal_of_num_def, extreal_mul_def]
 QED
 
+Theorem neg_minus1' :
+    !x. -x = Normal (-1) * x
+Proof
+    rw [Once neg_minus1, extreal_of_num_def, extreal_ainv_def]
+QED
+
 (* NOTE: the original unconditional statement is recovered *)
 Theorem sub_rneg :
     !x y :extreal. x - -y = x + y
