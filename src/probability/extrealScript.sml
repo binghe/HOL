@@ -1451,6 +1451,17 @@ Proof
  >> METIS_TAC [add_ldistrib_normal, EXTREAL_SUM_IMAGE_NOT_INFTY, IN_INSERT]
 QED
 
+Theorem EXTREAL_SUM_IMAGE_MINUS :
+    !f s. FINITE s /\
+         ((!x. x IN s ==> f x <> NegInf) \/ (!x. x IN s ==> f x <> PosInf)) ==>
+          EXTREAL_SUM_IMAGE (\x. -f x) s = -EXTREAL_SUM_IMAGE f s
+Proof
+    rpt GEN_TAC >> DISCH_TAC
+ >> ONCE_REWRITE_TAC [neg_minus1]
+ >> simp [extreal_of_num_def, extreal_ainv_def]
+ >> irule EXTREAL_SUM_IMAGE_CMUL >> simp []
+QED
+
 (* more antecedents added, cf. SUM_IMAGE_INJ_o *)
 Theorem EXTREAL_SUM_IMAGE_IMAGE :
     !s. FINITE s ==>
@@ -8120,13 +8131,38 @@ Proof
      Q.EXISTS_TAC ‘n’ >> art [])
  >> Rewr'
  >> ‘J DELETE e = J’ by PROVE_TAC [DELETE_NON_ELEMENT] >> POP_ORW
+ >> Cases_on ‘J = {}’ >- simp []
  (* applying ext_limsup_add *)
  >> Q_TAC (TRANS_TAC le_trans) ‘limsup (\n. f n e) + limsup (\n. SIGMA (f n) J)’
  >> CONJ_TAC
  >- (HO_MATCH_MP_TAC ext_limsup_add >> art [] \\
-     rw [ext_bounded_def, lt_infty] \\
-     cheat)
- >> cheat
+     fs [ext_bounded_def, SKOLEM_THM] \\
+     Q.EXISTS_TAC ‘SIGMA f' J’ \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_POSINF >> simp []) \\
+     reverse (rw [abs_bounds])
+     >- (irule EXTREAL_SUM_IMAGE_MONO >> fs [abs_bounds] \\
+         CONJ_ASM1_TAC >- METIS_TAC [] \\
+         DISJ2_TAC >> rpt STRIP_TAC \\
+         Q.PAT_X_ASSUM ‘!x. x IN J ==> f n x <= f' x’ (MP_TAC o Q.SPEC ‘x’) \\
+         simp [GSYM extreal_lt_def, GSYM lt_infty]) \\
+     Know ‘-SIGMA f' J =  SIGMA (\x. -f' x) J’
+     >- (SYM_TAC >> MATCH_MP_TAC EXTREAL_SUM_IMAGE_MINUS >> art []) >> Rewr' \\
+     irule EXTREAL_SUM_IMAGE_MONO >> fs [abs_bounds] \\
+     CONJ_TAC >- METIS_TAC [] \\
+     DISJ1_TAC >> RW_TAC std_ss []
+     >- (‘NegInf = -PosInf’ by rw [extreal_ainv_def] >> POP_ORW \\
+         simp [eq_neg]) \\
+     CCONTR_TAC >> fs [] \\
+     Q.PAT_X_ASSUM ‘!i. _’ (MP_TAC o Q.SPEC ‘x’) >> STRIP_TAC \\
+     POP_ASSUM (MP_TAC o Q.SPEC ‘(f :num -> 'index -> extreal) n x’) \\
+     impl_tac >- (Q.EXISTS_TAC ‘n’ >> REWRITE_TAC []) \\
+     simp [le_infty] \\
+    ‘NegInf = -PosInf’ by rw [extreal_ainv_def] >> POP_ORW \\
+     simp [eq_neg])
+ (* stage work *)
+ >> simp []
+ >> MATCH_MP_TAC le_ladd_imp >> art []
 QED
 
 (* ------------------------------------------------------------------------- *)
