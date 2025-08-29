@@ -91,6 +91,18 @@ Proof
     rw [extreal_of_num_def]
 QED
 
+Theorem normal_0:
+    Normal 0 = 0
+Proof
+    rw [extreal_of_num_def]
+QED
+
+Theorem normal_1:
+    Normal 1 = 1
+Proof
+    rw [extreal_of_num_def]
+QED
+
 (* ------------------------------------------------------------------------- *)
 (*     Definitions of Arithmetic Operations                                  *)
 (* ------------------------------------------------------------------------- *)

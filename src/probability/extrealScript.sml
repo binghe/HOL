@@ -2836,46 +2836,50 @@ val sup_le_mono = store_thm
        by METIS_TAC [IN_IMAGE,IN_UNIV,lt_imp_le]
   >> METIS_TAC [sup_le,SPECIFICATION,extreal_lt_def]);
 
-Theorem sup_cmul :
-    !f c. 0 <= c ==> sup (IMAGE (\n. (Normal c) * f n) UNIV) =
-                     Normal c * sup (IMAGE f UNIV)
+Theorem sup_cmul_general :
+    !f c J. 0 <= c /\ (J :'index set) <> {} ==>
+            sup (IMAGE (\n. Normal c * f n) J) = Normal c * sup (IMAGE f J)
 Proof
     RW_TAC std_ss []
- >> Cases_on `c = 0`
- >- RW_TAC real_ss [mul_lzero, GSYM extreal_of_num_def, UNIV_NOT_EMPTY,
-                    sup_const_over_set]
- >> `0 < c` by METIS_TAC [REAL_LT_LE]
- >> RW_TAC std_ss [sup_eq]
- >- (POP_ASSUM (MP_TAC o ONCE_REWRITE_RULE [GSYM SPECIFICATION])
-      >> RW_TAC std_ss [IN_IMAGE,IN_UNIV]
-      >> Cases_on `sup (IMAGE f UNIV) = PosInf`
-      >- RW_TAC std_ss [extreal_mul_def,le_infty]
-      >> Cases_on `f n = NegInf`
-      >- RW_TAC std_ss [extreal_mul_def,le_infty]
-      >> `f n <= sup (IMAGE f UNIV)`
-          by (MATCH_MP_TAC le_sup_imp
-              >> ONCE_REWRITE_TAC [GSYM SPECIFICATION]
-              >> RW_TAC std_ss [IN_IMAGE,IN_UNIV]
-              >> METIS_TAC [])
-      >> `f n <> PosInf /\ sup (IMAGE f UNIV) <> NegInf`
-          by METIS_TAC [let_trans,lte_trans,lt_infty]
-      >> `?r. f n = Normal r` by METIS_TAC [extreal_cases]
-      >> `?r. sup (IMAGE f UNIV) = Normal r` by METIS_TAC [extreal_cases]
-      >> RW_TAC std_ss [extreal_mul_def,extreal_le_def]
-      >> METIS_TAC [REAL_LE_LMUL,extreal_le_def])
-  >> `!n. Normal c * f n <= y`
-        by (RW_TAC std_ss []
-            >> POP_ASSUM MATCH_MP_TAC
-            >> ONCE_REWRITE_TAC [GSYM SPECIFICATION]
-            >> RW_TAC std_ss [IN_IMAGE,IN_UNIV]
-            >> METIS_TAC [])
-  >> `!n. f n <= y / (Normal c)` by METIS_TAC [le_rdiv,mul_comm]
-  >> ONCE_REWRITE_TAC [mul_comm]
-  >> RW_TAC std_ss [le_rdiv,sup_le]
-  >> POP_ASSUM (MP_TAC o ONCE_REWRITE_RULE [GSYM SPECIFICATION])
-  >> RW_TAC std_ss [IN_IMAGE,IN_UNIV]
-  >> METIS_TAC []
+ >> Cases_on ‘c = 0’ >- simp [sup_const_over_set, normal_0]
+ >> ‘0 < c’ by PROVE_TAC [REAL_LT_LE]
+ >> rw [sup_eq']
+ >- (Cases_on ‘sup (IMAGE f J) = PosInf’
+     >- simp [extreal_mul_def, le_infty] \\
+     Cases_on ‘f n = NegInf’
+     >- simp [extreal_mul_def, le_infty] \\
+     MATCH_MP_TAC le_lmul_imp >> simp [extreal_of_num_def, extreal_le_eq] \\
+     MATCH_MP_TAC le_sup_imp' >> simp [])
+ >> Know ‘!n. n IN J ==> Normal c * f n <= y’
+ >- (rw [] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘n’ >> simp [])
+ >> DISCH_TAC
+ >> Know ‘!n. n IN J ==> f n <= y / Normal c’
+ >- (rpt STRIP_TAC \\
+     Know ‘f n <= y / Normal c <=> f n * Normal c <= y’
+     >- (SYM_TAC \\
+         MATCH_MP_TAC le_rdiv >> art []) >> Rewr' \\
+     ONCE_REWRITE_TAC [mul_comm] \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> art [])
+ >> DISCH_TAC
+ >> ONCE_REWRITE_TAC [mul_comm]
+ >> Know ‘sup (IMAGE f J) * Normal c <= y <=>
+          sup (IMAGE f J) <= y / Normal c’
+ >- (MATCH_MP_TAC le_rdiv >> art [])
+ >> Rewr'
+ >> rw [sup_le']
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
 QED
+
+(* |- !f c.
+        0 <= c ==>
+        sup (IMAGE (\n. Normal c * f n) univ(:'a)) =
+        Normal c * sup (IMAGE f univ(:'a))
+ *)
+Theorem sup_cmul =
+        sup_cmul_general |> INST_TYPE [“:'index” |-> alpha]
+                         |> Q.SPECL [‘f’, ‘c’, ‘UNIV’] |> SRULE [] |> GEN_ALL
 
 (* Another version of `sup_cmul`: f is positive, c can be PosInf *)
 Theorem sup_cmult :
@@ -3335,6 +3339,35 @@ Proof
       FIRST_X_ASSUM MATCH_MP_TAC \\
       Q.EXISTS_TAC ‘z’ >> art [] ]
 QED
+
+(* NOTE: This theorem is based on sup_cmul_general and extreal_inf_def *)
+Theorem inf_cmul_general :
+    !f c J.
+        0 <= c /\ J <> {} ==>
+        inf (IMAGE (\n. Normal c * f n) J) = Normal c * inf (IMAGE f J)
+Proof
+    rw [extreal_inf_def, IMAGE_IMAGE, o_DEF]
+ >> Know ‘!n. -(Normal c * f n) = Normal c * -f n’
+ >- (rw [neg_minus1', mul_assoc] \\
+     AP_THM_TAC >> AP_TERM_TAC \\
+     simp [Once mul_comm])
+ >> Rewr'
+ >> qabbrev_tac ‘g = \n. -f n’
+ >> ‘!n. -f n = g n’ by rw [Abbr ‘g’] >> POP_ORW
+ >> simp [sup_cmul_general]
+ >> simp [neg_minus1', mul_assoc]
+ >> AP_THM_TAC >> AP_TERM_TAC
+ >> simp [Once mul_comm]
+QED
+
+(* |- !f c.
+        0 <= c ==>
+        inf (IMAGE (\n. Normal c * f n) univ(:'a)) =
+        Normal c * inf (IMAGE f univ(:'a))
+ *)
+Theorem inf_cmul' =
+        inf_cmul_general |> INST_TYPE [“:'index” |-> alpha]
+                         |> Q.SPECL [‘f’, ‘c’, ‘UNIV’] |> SRULE [] |> GEN_ALL
 
 Theorem sup_comm_ext :
     !(f :'a -> 'a -> extreal) A B.
@@ -7268,24 +7301,10 @@ QED
       in order to manipulate the simplifier without breaking anything
       - Jared Yeager                                                    *)
 
-(*** Basic Theorems ***)
-
-Theorem normal_0:
-    Normal 0 = 0
-Proof
-    rw[extreal_of_num_def]
-QED
-
-Theorem normal_1:
-    Normal 1 = 1
-Proof
-    rw[extreal_of_num_def]
-QED
-
 Theorem normal_minus1:
     Normal (-1) = -1
 Proof
-    rw[extreal_of_num_def, extreal_ainv_def]
+    rw [extreal_of_num_def, extreal_ainv_def]
 QED
 
 Theorem extreal_le_simps[simp]:
@@ -8162,6 +8181,48 @@ Proof
  (* stage work *)
  >> simp []
  >> MATCH_MP_TAC le_ladd_imp >> art []
+QED
+
+Theorem ext_limsup_cmul :
+    !f c. 0 <= c ==> limsup (\n. Normal c * f n) = Normal c * limsup f
+Proof
+    rw [ext_limsup_def]
+ >> Know ‘!m. {Normal c * f n | m <= n} = IMAGE (\n. Normal c * f n) {i | m <= i}’
+ >- rw [Once EXTENSION]
+ >> Rewr'
+ >> Know ‘!m. {f n | m <= n} = IMAGE f {i | m <= i}’
+ >- rw [Once EXTENSION]
+ >> Rewr'
+ >> Know ‘!m. sup (IMAGE (\n. Normal c * f n) {i | m <= i}) =
+              Normal c * sup (IMAGE f {i | m <= i})’
+ >- (Q.X_GEN_TAC ‘m’ \\
+     MATCH_MP_TAC sup_cmul_general >> rw [Once EXTENSION] \\
+     Q.EXISTS_TAC ‘m’ >> simp [])
+ >> Rewr'
+ >> qabbrev_tac ‘g = \m. sup (IMAGE f {i | m <= i})’
+ >> simp []
+ >> MATCH_MP_TAC inf_cmul' >> art []
+QED
+
+Theorem ext_liminf_cmul :
+    !f c. 0 <= c ==> liminf (\n. Normal c * f n) = Normal c * liminf f
+Proof
+    rw [ext_liminf_def]
+ >> Know ‘!m. {Normal c * f n | m <= n} = IMAGE (\n. Normal c * f n) {i | m <= i}’
+ >- rw [Once EXTENSION]
+ >> Rewr'
+ >> Know ‘!m. {f n | m <= n} = IMAGE f {i | m <= i}’
+ >- rw [Once EXTENSION]
+ >> Rewr'
+ >> Know ‘!m. inf (IMAGE (\n. Normal c * f n) {i | m <= i}) =
+              Normal c * inf (IMAGE f {i | m <= i})’
+ >- (Q.X_GEN_TAC ‘m’ \\
+     MATCH_MP_TAC inf_cmul_general >> rw [Once EXTENSION] \\
+     Q.EXISTS_TAC ‘m’ >> simp [])
+ >> Rewr'
+ >> qabbrev_tac ‘g = \m. inf (IMAGE f {i | m <= i})’
+ >> simp []
+ >> MATCH_MP_TAC sup_cmul >> art []
 QED
 
 (* ------------------------------------------------------------------------- *)
