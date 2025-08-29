@@ -9043,6 +9043,8 @@ val _ = map (fn name => save_thm (name, DB.fetch "extreal_base" name))
        "neg_sub",
        "neg_neg",
        "neg_not_posinf",
+       "normal_0",
+       "normal_1",
        "normal_inv_eq",
        "num_lt_infty",
        "num_not_infty",
