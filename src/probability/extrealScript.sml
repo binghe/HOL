@@ -9022,7 +9022,7 @@ Proof
 QED
 
 (* NOTE: This is a combination of ext_limsup_thm and extreal_lim_sequentially_eq *)
-Theorem ext_limsup_alt :
+Theorem ext_limsup_thm' :
     !f l. (!n. f n <> PosInf /\ f n <> NegInf) /\ l <> PosInf /\ l <> NegInf ==>
           ((f --> l) sequentially <=> limsup f = l /\ liminf f = l)
 Proof

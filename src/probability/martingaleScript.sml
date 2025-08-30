@@ -540,7 +540,7 @@ Proof
 QED
 
 (* Properties A.1 (v) [1, p.409] (a simple version for non-negative sequences) *)
-Theorem ext_limsup_thm'[local] :
+Theorem ext_limsup_lemma[local] :
     !a. (!n. 0 <= a n /\ a n <> PosInf) ==>
         (((\n. real (a n)) --> 0) sequentially <=> limsup a = 0 /\ liminf a = 0)
 Proof
@@ -692,16 +692,17 @@ Proof
      HO_MATCH_MP_TAC (REWRITE_RULE [o_DEF] integrable_abs) >> art [] \\
      MATCH_MP_TAC integrable_sub >> rw [])
  >> DISCH_TAC
- >> ‘!i. integral m (\x. abs (u i x - f x)) = b i’ by rw [Abbr ‘a’, Abbr ‘b’] >> POP_ORW
- (* applying ext_limsup_thm' *)
+ >> ‘!i. integral m (\x. abs (u i x - f x)) = b i’
+       by rw [Abbr ‘a’, Abbr ‘b’] >> POP_ORW
+ (* applying ext_limsup_lemma *)
  >> Know ‘!n. 0 <= b n /\ b n <> PosInf’
  >- (Q.X_GEN_TAC ‘n’ >> SIMP_TAC std_ss [Abbr ‘b’] \\
      reverse CONJ_TAC >- METIS_TAC [integrable_finite_integral] \\
      MATCH_MP_TAC integral_pos >> rw [Abbr ‘a’, abs_pos])
  >> DISCH_THEN
-     (ONCE_REWRITE_TAC o wrap o (MATCH_MP ext_limsup_thm'))
+     (ONCE_REWRITE_TAC o wrap o (MATCH_MP ext_limsup_lemma))
  >> Q.UNABBREV_TAC ‘b’
- (* applying ext_limsup_thm' again *)
+ (* applying ext_limsup_lemma again *)
  >> Know ‘!x. x IN m_space m ==>
               limsup (\i. a i x) = Normal 0 /\ liminf (\i. a i x) = Normal 0’
  >- (Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
@@ -714,7 +715,7 @@ Proof
         ‘?r. u n x = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
         ‘?z. f x   = Normal z’ by METIS_TAC [extreal_cases] >> POP_ORW \\
          rw [extreal_sub_def, extreal_abs_def]) \\
-     DISCH_THEN (REWRITE_TAC o wrap o (MATCH_MP ext_limsup_thm')) \\
+     DISCH_THEN (REWRITE_TAC o wrap o (MATCH_MP ext_limsup_lemma)) \\
      REWRITE_TAC [GSYM extreal_of_num_def])
  >> REWRITE_TAC [GSYM extreal_of_num_def]
  >> DISCH_TAC

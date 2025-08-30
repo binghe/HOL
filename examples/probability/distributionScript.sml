@@ -4329,15 +4329,15 @@ Proof
                integral (space (B E),subsets (B E),X n)
                         (\x. f' x * indicator_fn UNIV x)’
      >- rw [INDICATOR_FN_UNIV, ETA_THM] >> Rewr' \\
-     Q.PAT_X_ASSUM ‘_ = UNIV’ (REWRITE_TAC o wrap o SYM) \\
+     Q.PAT_ASSUM ‘_ = UNIV’ (REWRITE_TAC o wrap o SYM) \\
      qabbrev_tac ‘J = count N’ \\
      Know ‘!n. integral (space (B E),subsets (B E),X n)
                         (\x. f' x * indicator_fn (BIGUNION (IMAGE h J)) x) =
                SIGMA (\i. integral (space (B E),subsets (B E),X n)
                                    (\x. f' x * indicator_fn (h i) x)) J’
      >- (Q.X_GEN_TAC ‘n’ \\
-         fs [Abbr ‘J’, subprobability_measure_def] \\
          MATCH_MP_TAC integral_disjoint_sets_sum \\
+         fs [Abbr ‘J’, subprobability_measure_def] \\
          simp [disjoint_family_on_def] \\
          rw [Abbr ‘h’] >> MATCH_MP_TAC PREIMAGE_DISJOINT \\
          rw [DISJOINT_ALT, Abbr ‘s’, in_right_open_interval] \\
@@ -4520,6 +4520,47 @@ Proof
                Normal (abs (y (SUC i))) * limsup (\n. X n (h i))’
      >- (Q.X_GEN_TAC ‘i’ \\
          HO_MATCH_MP_TAC ext_limsup_cmul >> simp [ABS_POS]) >> Rewr' \\
+  (* applying ext_limsup_thm' *)
+     Know ‘!i. limsup (\n. X n (h i)) = Y (h i)’
+     >- (Q.X_GEN_TAC ‘i’ \\
+         Q.PAT_X_ASSUM ‘!A. A IN subsets (B E) /\ Y (mtop E frontier_of A) = 0 ==> _’
+           (MP_TAC o Q.SPEC ‘h (i :num)’) >> art [] \\
+         qabbrev_tac ‘t = h i’ \\
+         Suff ‘((\n. X n t) --> Y t) sequentially <=>
+               limsup (\n. X n t) = Y t /\ liminf (\n. X n t) = Y t’ >- rw [] \\
+         MATCH_MP_TAC ext_limsup_thm' \\
+         cheat) >> Rewr' \\
+  (* stage work, now rewrite RHS and only Y remains in both LHS and RHS *)
+     simp [Abbr ‘l’, Abbr ‘f'’] \\
+  (* applying integral_disjoint_sets_sum, again *)
+     qabbrev_tac ‘f' = Normal o f’ \\
+     Know ‘integral (space (B E),subsets (B E),Y) f' =
+           integral (space (B E),subsets (B E),Y)
+                    (\x. f' x * indicator_fn UNIV x)’
+     >- rw [INDICATOR_FN_UNIV, ETA_THM] >> Rewr' \\
+     Q.PAT_X_ASSUM ‘_ = UNIV’ (REWRITE_TAC o wrap o SYM) \\
+     Know ‘integral (space (B E),subsets (B E),Y)
+                    (\x. f' x * indicator_fn (BIGUNION (IMAGE h J)) x) =
+           SIGMA (\i. integral (space (B E),subsets (B E),Y)
+                               (\x. f' x * indicator_fn (h i) x)) J’
+     >- (MATCH_MP_TAC integral_disjoint_sets_sum \\
+         fs [Abbr ‘J’, subprobability_measure_def] \\
+         simp [disjoint_family_on_def] \\
+         rw [Abbr ‘h’] >> MATCH_MP_TAC PREIMAGE_DISJOINT \\
+         rw [DISJOINT_ALT, Abbr ‘s’, in_right_open_interval] \\
+         simp [REAL_NOT_LE, REAL_NOT_LT] \\
+        ‘i < j \/ j < i’ by simp [] >| (* 2 subgoals *)
+         [ (* goal 1 (of 2): y i <= x < y (SUC i) <= y j *)
+           DISJ1_TAC \\
+          ‘SUC i <= j’ by simp [] \\
+          ‘j = SUC i \/ SUC i < j’ by simp [] >- simp [] \\
+           Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘y (SUC i)’ >> simp [],
+           (* goal 2 (of 2): y (SUC j) < y i <= x < y (SUC i) *)
+           DISJ2_TAC \\
+          ‘SUC j <= i’ by simp [] \\
+          ‘SUC j = i \/ SUC j < i’ by simp [] >- simp [] \\
+           Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘y i’ \\
+           simp [REAL_LT_IMP_LE] ]) >> Rewr' \\
      cheat)
  (* stage work *)
  >> cheat
