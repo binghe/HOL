@@ -4278,7 +4278,8 @@ Proof
      METIS_TAC [le_antisym])
  (* stage work *)
  >> CONJ_ASM1_TAC
- >- (MATCH_MP_TAC le_epsilon >> rpt STRIP_TAC \\
+ >- (MATCH_MP_TAC le_epsilon \\
+     rpt STRIP_TAC \\
     ‘e <> NegInf’ by PROVE_TAC [pos_not_neginf, lt_imp_le] \\
     ‘?r. 0 < r /\ e = Normal r’
        by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_lt_eq] \\
@@ -4308,6 +4309,18 @@ Proof
      >- (Q.PAT_X_ASSUM ‘f IN borel_measurable (B E)’ MP_TAC \\
          rw [measurable_def, Abbr ‘h’, space_general_borel, IN_FUNSET,
              TOPSPACE_MTOP, space_borel]) >> DISCH_TAC \\
+     Know ‘!i n. X n (h i) <> PosInf /\ X n (h i) <> NegInf’
+     >- (rpt GEN_TAC \\
+         qabbrev_tac ‘M = (space (B E),subsets (B E),X n)’ \\
+         Know ‘finite_measure_space M’
+         >- PROVE_TAC [subprobability_measure_imp_finite] \\
+         simp [Abbr ‘M’, finite_measure_space_thm]) >> DISCH_TAC \\
+     Know ‘!i. Y (h i) <> PosInf /\ Y (h i) <> NegInf’
+     >- (Q.X_GEN_TAC ‘i’ \\
+         qabbrev_tac ‘M = (space (B E),subsets (B E),Y)’ \\
+         Know ‘finite_measure_space M’
+         >- PROVE_TAC [subprobability_measure_imp_finite] \\
+         simp [Abbr ‘M’, finite_measure_space_thm]) >> DISCH_TAC \\
      Know ‘BIGUNION (IMAGE h (count N)) = UNIV’
      >- (rw [Once EXTENSION, IN_BIGUNION_IMAGE] \\
          simp [Abbr ‘h’, IN_PREIMAGE, in_right_open_interval] \\
@@ -4356,38 +4369,22 @@ Proof
            simp [REAL_LT_IMP_LE] ]) >> Rewr' \\
   (* applying ext_limsup_mono and EXTREAL_SUM_IMAGE_MONO *)
      Q_TAC (TRANS_TAC le_trans)
-           ‘limsup (\n. SIGMA (\i. X n (h i) * Normal (abs (y (SUC i)))) J)’ \\
+           ‘limsup (\n. SIGMA (\i. X n (h i) * Normal (y (SUC i))) J)’ \\
      CONJ_TAC
      >- (MATCH_MP_TAC ext_limsup_mono >> rw [] \\
          irule EXTREAL_SUM_IMAGE_MONO >> simp [Abbr ‘J’] \\
          reverse CONJ_TAC
-         >- (DISJ2_TAC \\
-             Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
-             fs [subprobability_measure_def, FORALL_AND_THM] >> T_TAC \\
+         >- (DISJ2_TAC >> Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
              CONJ_TAC
              >- (qmatch_abbrev_tac ‘integral M f2 <> PosInf’ \\
+                ‘measure_space M’ by PROVE_TAC [subprobability_measure_def] \\
                  Suff ‘integrable M f2’ >- METIS_TAC [integrable_finite_integral] \\
                  qunabbrev_tac ‘f2’ \\
                  MATCH_MP_TAC integrable_mul_indicator >> simp [Abbr ‘M’]) \\
-             qabbrev_tac ‘M = (space (B E),subsets (B E),X n)’ \\
-             Know ‘measure M (h i) <= measure M (m_space M)’
-             >- (MATCH_MP_TAC INCREASING \\
-                ‘measure_space M’ by METIS_TAC [] \\
-                 simp [MEASURE_SPACE_SPACE, MEASURE_SPACE_INCREASING, Abbr ‘M’] \\
-                 simp [space_general_borel, TOPSPACE_MTOP]) \\
-             Know ‘positive M’ >- PROVE_TAC [MEASURE_SPACE_POSITIVE] \\
-             rw [positive_def, Abbr ‘M’] \\
-             qabbrev_tac ‘z = X n (h i)’ \\
-            ‘0 <= z’ by PROVE_TAC [] \\
-            ‘z <> NegInf’ by simp [pos_not_neginf] \\
-             Know ‘z <> PosInf’
-             >- (simp [lt_infty] \\
-                 Q_TAC (TRANS_TAC let_trans) ‘X n (space (B E))’ >> art [] \\
-                 Q_TAC (TRANS_TAC let_trans) ‘1’ >> simp []) >> DISCH_TAC \\
-            ‘?r. z = Normal r’ by METIS_TAC [extreal_cases] \\
+            ‘?r. X n (h i) = Normal r’ by METIS_TAC [extreal_cases] \\
              simp [extreal_mul_eq]) \\
          Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
-         qabbrev_tac ‘c = abs (y (SUC i))’ \\
+         qabbrev_tac ‘c = y (SUC i)’ \\
         ‘X n (h i) * Normal c = Normal c * X n (h i)’
            by simp [Once mul_comm] >> POP_ORW \\
          qabbrev_tac ‘M = (space (B E),subsets (B E),X n)’ \\
@@ -4416,7 +4413,7 @@ Proof
          qabbrev_tac ‘s = {x | y i <= f x /\ f x < y (SUC i)}’ \\
          reverse (Cases_on ‘z IN s’) >- simp [indicator_fn_def] \\
          POP_ASSUM MP_TAC >> rw [Abbr ‘s’, indicator_fn_def] \\
-         simp [LE_ABS_BOUNDS, REAL_LT_IMP_LE]) \\
+         MATCH_MP_TAC REAL_LT_IMP_LE >> art []) \\
   (* applying frontier_of_preimage_subset *)
      Know ‘!i. Y (mtop E frontier_of (h i)) = 0’
      >- (rw [Abbr ‘h’] \\
@@ -4491,49 +4488,60 @@ Proof
              CONJ_ASM1_TAC >- simp [Abbr ‘M’, borel_measurable_sets] \\
              MATCH_MP_TAC MEASURE_SPACE_UNION >> art []) \\
          simp [Abbr ‘M’]) >> DISCH_TAC \\
-  (* applying ext_limsup_triangle *)
-     qabbrev_tac ‘ff = \n i. X n (h i) * Normal (abs (y (SUC i)))’ >> simp [] \\
-    ‘!n. (\i. ff n i) = ff n’ by rw [FUN_EQ_THM] >> POP_ORW \\
-     Q_TAC (TRANS_TAC le_trans) ‘SIGMA (\i. limsup (\n. ff n i)) J’ \\
-     CONJ_TAC
-     >- (MATCH_MP_TAC ext_limsup_triangle \\
-         rw [ext_bounded_def, Abbr ‘J’, Abbr ‘ff’] \\
-         qabbrev_tac ‘z = abs (y (SUC i))’ \\
-         Q.EXISTS_TAC ‘Normal z’ >> rw [] \\
-         simp [abs_mul, GSYM extreal_abs_def] \\
-        ‘abs (Normal z) = Normal z’ by rw [Abbr ‘z’, extreal_abs_def, abs_abs] \\
-         POP_ORW \\
-         Suff ‘abs (X n (h i)) * Normal z <= 1 * Normal z’ >- rw [] \\
-         MATCH_MP_TAC le_rmul_imp \\
-         CONJ_TAC >- simp [Abbr ‘z’, extreal_of_num_def, ABS_POS] \\
-         fs [subprobability_measure_alt, FORALL_AND_THM] \\
-         qabbrev_tac ‘M = (space (B E),subsets (B E),X n)’ \\
-         Know ‘abs (X n (h i)) = X n (h i)’
-         >- (simp [abs_refl] \\
-             Know ‘positive M’
-             >- (MATCH_MP_TAC MEASURE_SPACE_POSITIVE >> PROVE_TAC []) \\
-             rw [positive_def, Abbr ‘M’]) >> Rewr' \\
-         FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
-  (* applying ext_limsup_cmul *)
-     simp [Abbr ‘ff’, Once mul_comm] \\
-     Know ‘!i. limsup (\n. Normal (abs (y (SUC i))) * X n (h i)) =
-               Normal (abs (y (SUC i))) * limsup (\n. X n (h i))’
+  (* applying lim_sequentially_cmul and lim_sequentially_sum *)
+     Know ‘!i. ((\n. X n (h i) * Normal (y (SUC i))) -->
+                (Y (h i) * Normal (y (SUC i)))) sequentially’
      >- (Q.X_GEN_TAC ‘i’ \\
-         HO_MATCH_MP_TAC ext_limsup_cmul >> simp [ABS_POS]) >> Rewr' \\
+         ONCE_REWRITE_TAC [mul_comm] \\
+         HO_MATCH_MP_TAC lim_sequentially_cmul >> simp []) \\
+     qabbrev_tac ‘ff = \i n. X n (h i) * Normal (y (SUC i))’ \\
+     qabbrev_tac ‘ll = \i. Y (h i) * Normal (y (SUC i))’ \\
+     simp [] \\
+    ‘!i. (\n. ff i n) = ff i’ by rw [FUN_EQ_THM] >> POP_ORW \\
+     DISCH_TAC \\
+     Know ‘((\n. SIGMA (\i. ff i n) J) --> SIGMA ll J) sequentially’
+     >- (MATCH_MP_TAC lim_sequentially_sum >> simp [Abbr ‘J’] \\
+         reverse CONJ_TAC
+         >- (Q.X_GEN_TAC ‘i’ >> simp [Abbr ‘ll’] \\
+            ‘?r. Y (h i) = Normal r’ by METIS_TAC [extreal_cases] \\
+             simp [extreal_mul_eq]) \\
+         rpt GEN_TAC >> DISCH_TAC \\
+         simp [Abbr ‘ff’] \\
+        ‘?r. X n (h i) = Normal r’ by METIS_TAC [extreal_cases] \\
+         simp [extreal_mul_eq]) \\
   (* applying ext_limsup_thm' *)
-     Know ‘!i. limsup (\n. X n (h i)) = Y (h i)’
-     >- (Q.X_GEN_TAC ‘i’ \\
-         Q.PAT_X_ASSUM ‘!A. A IN subsets (B E) /\ Y (mtop E frontier_of A) = 0 ==> _’
-           (MP_TAC o Q.SPEC ‘h (i :num)’) >> art [] \\
-         qabbrev_tac ‘t = h i’ \\
-         Suff ‘((\n. X n t) --> Y t) sequentially <=>
-               limsup (\n. X n t) = Y t /\ liminf (\n. X n t) = Y t’ >- rw [] \\
-         MATCH_MP_TAC ext_limsup_thm' \\
-         cheat) >> Rewr' \\
+     qmatch_abbrev_tac ‘(gg --> mm) sequentially ==> _’ \\
+     Know ‘((gg --> mm) sequentially <=> limsup gg = mm /\ liminf gg = mm)’
+     >- (MATCH_MP_TAC ext_limsup_thm' \\
+         CONJ_TAC
+         >- (rw [Abbr ‘gg’, Abbr ‘ff’] >| (* 2 subgoals *)
+             [ (* goal 1 (of 2) *)
+               MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_POSINF >> simp [Abbr ‘J’] \\
+               Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+              ‘?r. X n (h i) = Normal r’ by METIS_TAC [extreal_cases] \\
+               simp [extreal_mul_eq],
+               (* goal 2 (of 2) *)
+               MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_NEGINF >> simp [Abbr ‘J’] \\
+               Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+              ‘?r. X n (h i) = Normal r’ by METIS_TAC [extreal_cases] \\
+               simp [extreal_mul_eq] ]) \\
+          rw [Abbr ‘mm’, Abbr ‘ll’] >| (* 2 subgoals *)
+          [ (* goal 1 (of 2) *)
+             MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_POSINF >> simp [Abbr ‘J’] \\
+             Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+            ‘?r. Y (h i) = Normal r’ by METIS_TAC [extreal_cases] \\
+             simp [extreal_mul_eq],
+             (* goal 2 (of 2) *)
+             MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_NEGINF >> simp [Abbr ‘J’] \\
+             Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+            ‘?r. Y (h i) = Normal r’ by METIS_TAC [extreal_cases] \\
+             simp [extreal_mul_eq] ]) >> Rewr' \\
+     rw [Abbr ‘gg’, Abbr ‘mm’] \\
+     NTAC 3 (POP_ASSUM K_TAC) \\
+     qunabbrevl_tac [‘ll’, ‘ff’] \\
   (* stage work, now rewrite RHS and only Y remains in both LHS and RHS *)
-     simp [Abbr ‘l’, Abbr ‘f'’] \\
+     simp [Abbr ‘l’] \\
   (* applying integral_disjoint_sets_sum, again *)
-     qabbrev_tac ‘f' = Normal o f’ \\
      Know ‘integral (space (B E),subsets (B E),Y) f' =
            integral (space (B E),subsets (B E),Y)
                     (\x. f' x * indicator_fn UNIV x)’
