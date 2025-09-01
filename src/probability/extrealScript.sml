@@ -22,8 +22,7 @@ val _ = new_theory "extreal";
 fun METIS ths tm = prove(tm, METIS_TAC ths);
 val set_ss = std_ss ++ PRED_SET_ss;
 val T_TAC = rpt (Q.PAT_X_ASSUM ‘T’ K_TAC);
-val DISC_RW_KILL = DISCH_TAC THEN ONCE_ASM_REWRITE_TAC [] THEN
-                   POP_ASSUM K_TAC;
+val DISC_RW_KILL = DISCH_TAC >> ONCE_ASM_REWRITE_TAC [] >> POP_ASSUM K_TAC;
 
 val _ = intLib.deprecate_int ();
 val _ = ratLib.deprecate_rat ();
@@ -9206,6 +9205,85 @@ Proof
  >> ‘?r. l = Normal r’ by METIS_TAC [extreal_cases]
  >> simp [real_normal]
  >> MATCH_MP_TAC ext_limsup_thm >> art []
+QED
+
+Theorem lim_sequentially_add :
+    !f g l (m :extreal).
+       (!n. f n <> PosInf /\ f n <> NegInf) /\ l <> PosInf /\ l <> NegInf /\
+       (!n. g n <> PosInf /\ g n <> NegInf) /\ m <> PosInf /\ m <> NegInf /\
+       (f --> l) sequentially /\ (g --> m) sequentially ==>
+       ((\x. f(x) + g(x)) --> (l + m)) sequentially
+Proof
+    rpt STRIP_TAC
+ >> qmatch_abbrev_tac ‘(h --> z) sequentially’
+ >> Know ‘(h --> z) sequentially <=> (real o h --> real z) sequentially’
+ >- (MATCH_MP_TAC extreal_lim_sequentially_eq \\
+     simp [Abbr ‘z’, add_real] \\
+    ‘?L. l = Normal L’ by METIS_TAC [extreal_cases] \\
+    ‘?M. m = Normal M’ by METIS_TAC [extreal_cases] \\
+     simp [extreal_add_def] \\
+     Q.EXISTS_TAC ‘0’ >> simp [] \\
+     Q.X_GEN_TAC ‘n’ \\
+     simp [Abbr ‘h’] \\
+    ‘?a. f n = Normal a’ by METIS_TAC [extreal_cases] \\
+    ‘?b. g n = Normal b’ by METIS_TAC [extreal_cases] \\
+     simp [extreal_add_def])
+ >> Rewr'
+ >> simp [Abbr ‘h’, Abbr ‘z’, add_real, o_DEF]
+ >> HO_MATCH_MP_TAC real_topologyTheory.LIM_ADD
+ >> ‘(\x. real (f x)) = real o f’ by rw [o_DEF, FUN_EQ_THM] >> POP_ORW
+ >> ‘(\x. real (g x)) = real o g’ by rw [o_DEF, FUN_EQ_THM] >> POP_ORW
+ >> Know ‘(real o f --> real l) sequentially <=> (f --> l) sequentially’
+ >- (SYM_TAC \\
+     MATCH_MP_TAC extreal_lim_sequentially_eq >> simp [])
+ >> Rewr'
+ >> Know ‘(real o g --> real m) sequentially <=> (g --> m) sequentially’
+ >- (SYM_TAC \\
+     MATCH_MP_TAC extreal_lim_sequentially_eq >> simp [])
+ >> Rewr'
+ >> simp []
+QED
+
+Theorem lim_sequentially_sum :
+    !f l s. FINITE s /\ (!i. i IN s ==> (f i --> l i) sequentially) /\
+           (!i n. i IN s ==> f i n <> PosInf /\ f i n <> NegInf) /\
+           (!i. l i <> PosInf /\ l i <> NegInf) ==>
+           ((\x. SIGMA (\i. f i x) s) --> SIGMA l s) sequentially
+Proof
+    qx_genl_tac [‘f’, ‘l’]
+ >> Suff ‘!s. FINITE s ==>
+             (!i. i IN s ==> (f i --> l i) sequentially) /\
+             (!i n. i IN s ==> f i n <> PosInf /\ f i n <> NegInf) /\
+             (!i. l i <> PosInf /\ l i <> NegInf) ==>
+             ((\x. SIGMA (\i. f i x) s) --> SIGMA l s) sequentially’
+ >- METIS_TAC []
+ >> HO_MATCH_MP_TAC FINITE_INDUCT
+ >> simp [EXTREAL_LIM_CONST]
+ >> rpt STRIP_TAC
+ (* applying EXTREAL_SUM_IMAGE_PROPERTY *)
+ >> Know ‘!x. SIGMA (\i. f i x) (e INSERT s) =
+              (\i. f i x) e + SIGMA (\i. f i x) (s DELETE e)’
+ >- (Q.X_GEN_TAC ‘x’ \\
+     irule EXTREAL_SUM_IMAGE_PROPERTY >> simp [] \\
+     METIS_TAC [])
+ >> Rewr'
+ >> Know ‘SIGMA l (e INSERT s) = l e + SIGMA l (s DELETE e)’
+ >- (irule EXTREAL_SUM_IMAGE_PROPERTY >> simp [])
+ >> Rewr'
+ >> ‘s DELETE e = s’ by rw [GSYM DELETE_NON_ELEMENT]
+ >> simp []
+ >> HO_MATCH_MP_TAC lim_sequentially_add >> simp []
+ >> CONJ_TAC
+ >- (Q.X_GEN_TAC ‘x’ \\
+     CONJ_TAC >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_POSINF >> simp [],
+       (* goal 2 (of 2) *)
+       MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_NEGINF >> simp [] ])
+ >> CONJ_TAC >- (MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_POSINF >> simp [])
+ >> CONJ_TAC >- (MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_NEGINF >> simp [])
+ >> ‘(\x. f e x) = f e’ by rw [FUN_EQ_THM] >> POP_ORW
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> simp []
 QED
 
 (* ------------------------------------------------------------------------- *)
