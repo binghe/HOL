@@ -22,6 +22,8 @@ val _ = new_theory "extreal";
 fun METIS ths tm = prove(tm, METIS_TAC ths);
 val set_ss = std_ss ++ PRED_SET_ss;
 val T_TAC = rpt (Q.PAT_X_ASSUM ‘T’ K_TAC);
+val DISC_RW_KILL = DISCH_TAC THEN ONCE_ASM_REWRITE_TAC [] THEN
+                   POP_ASSUM K_TAC;
 
 val _ = intLib.deprecate_int ();
 val _ = ratLib.deprecate_rat ();
@@ -6853,6 +6855,147 @@ Proof
  >> rw [bounded_metric_lt_1]
 QED
 
+Theorem extreal_mr1_eq_1[simp] :
+    dist extreal_mr1 (Normal r,PosInf) = 1 /\
+    dist extreal_mr1 (Normal r,NegInf) = 1 /\
+    dist extreal_mr1 (PosInf,Normal r) = 1 /\
+    dist extreal_mr1 (NegInf,Normal r) = 1 /\
+    dist extreal_mr1 (PosInf,NegInf) = 1 /\
+    dist extreal_mr1 (NegInf,PosInf) = 1
+Proof
+    simp [extreal_mr1_thm, extreal_dist_def]
+QED
+
+(* NOTE: This theorem holds even when ‘x1 + y1’ or ’x2 + y2’ is "unspecified" *)
+Theorem dist_triangle_add :
+    !x1 y1 x2 y2. dist extreal_mr1 (x1 + y1,x2 + y2) <=
+                  dist extreal_mr1 (x1,x2) + dist extreal_mr1 (y1,y2)
+Proof
+    rpt GEN_TAC
+ >> Cases_on ‘x1 = PosInf’
+ >- (Cases_on ‘y1 = PosInf’
+     >- (simp [extreal_add_def] \\
+         Cases_on ‘x2 = PosInf’
+         >- (simp [MDIST_REFL] \\
+             Cases_on ‘y2 = PosInf’ >- simp [MDIST_REFL, extreal_add_def] \\
+             Cases_on ‘y2 = NegInf’ >- simp [extreal_mr1_le_1] \\
+            ‘?r. y2 = Normal r’ by METIS_TAC [extreal_cases] \\
+             simp [extreal_add_def, MDIST_REFL, MDIST_POS_LE]) \\
+         Cases_on ‘x2 = NegInf’
+         >- (simp [] \\
+             Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘1’ \\
+             simp [REAL_LE_ADDR, MDIST_POS_LE, extreal_mr1_le_1]) \\
+        ‘?r. x2 = Normal r’ by METIS_TAC [extreal_cases] \\
+         simp [] \\
+         Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘1’ \\
+         simp [REAL_LE_ADDR, MDIST_POS_LE, extreal_mr1_le_1]) \\
+     Cases_on ‘y1 = NegInf’
+     >- (simp [] \\
+         Cases_on ‘x2 = PosInf’
+         >- (simp [MDIST_REFL] \\
+             Cases_on ‘y2 = PosInf’ >- simp [extreal_mr1_le_1] \\
+             Cases_on ‘y2 = NegInf’ >- simp [MDIST_REFL, extreal_add_def] \\
+            ‘?r. y2 = Normal r’ by METIS_TAC [extreal_cases] \\
+             simp [extreal_add_def, extreal_mr1_le_1]) \\
+         Cases_on ‘x2 = NegInf’
+         >- (simp [] \\
+             Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘1’ \\
+             simp [REAL_LE_ADDR, MDIST_POS_LE, extreal_mr1_le_1]) \\
+        ‘?r. x2 = Normal r’ by METIS_TAC [extreal_cases] \\
+         simp [] \\
+         Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘1’ \\
+         simp [REAL_LE_ADDR, MDIST_POS_LE, extreal_mr1_le_1]) \\
+    ‘?r. y1 = Normal r’ by METIS_TAC [extreal_cases] \\
+     simp [extreal_add_def] \\
+     Cases_on ‘y2 = PosInf’
+     >- (simp [] \\
+         Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘1’ \\
+         simp [REAL_LE_ADDL, MDIST_POS_LE, extreal_mr1_le_1]) \\
+     Cases_on ‘y2 = NegInf’
+     >- (simp [] \\
+         Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘1’ \\
+         simp [REAL_LE_ADDL, MDIST_POS_LE, extreal_mr1_le_1]) \\
+    ‘?z. y2 = Normal z’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+     Cases_on ‘x2 = NegInf’
+     >- (simp [] \\
+         Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘1’ \\
+         simp [REAL_LE_ADDR, MDIST_POS_LE, extreal_mr1_le_1]) \\
+     Cases_on ‘x2 = PosInf’ >- simp [extreal_add_def, MDIST_POS_LE] \\
+    ‘?a. x2 = Normal a’ by METIS_TAC [extreal_cases] \\
+     simp [] \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘1’ \\
+     simp [REAL_LE_ADDR, MDIST_POS_LE, extreal_mr1_le_1])
+ >> Cases_on ‘x1 = NegInf’
+ >- (POP_ORW \\
+     Cases_on ‘x2 = PosInf’
+     >- (simp [] \\
+         Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘1’ \\
+         simp [REAL_LE_ADDR, MDIST_POS_LE, extreal_mr1_le_1]) \\
+     Cases_on ‘x2 = NegInf’
+     >- (simp [MDIST_REFL] \\
+         Cases_on ‘y1 = PosInf’
+         >- (POP_ORW \\
+             Cases_on ‘y2 = PosInf’ >- simp [MDIST_REFL] \\
+             Cases_on ‘y2 = NegInf’ >- simp [extreal_mr1_le_1] \\
+            ‘?r. y2 = Normal r’ by METIS_TAC [extreal_cases] \\
+             simp [extreal_mr1_le_1]) \\
+         Cases_on ‘y1 = NegInf’
+         >- (simp [extreal_add_def] \\
+             Cases_on ‘y2 = PosInf’ >- simp [extreal_mr1_le_1] \\
+             Cases_on ‘y2 = NegInf’ >- simp [extreal_add_def] \\
+            ‘?r. y2 = Normal r’ by METIS_TAC [extreal_cases] \\
+             simp [extreal_add_def, extreal_mr1_le_1]) \\
+        ‘?r. y1 = Normal r’ by METIS_TAC [extreal_cases] \\
+         simp [extreal_add_def] \\
+         Cases_on ‘y2 = PosInf’ >- simp [extreal_mr1_le_1] \\
+         Cases_on ‘y2 = NegInf’ >- simp [extreal_mr1_le_1] \\
+        ‘?z. y2 = Normal z’ by METIS_TAC [extreal_cases] \\
+         simp [extreal_add_def, MDIST_REFL, MDIST_POS_LE]) \\
+    ‘?r. x2 = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+     simp [] \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘1’ \\
+     simp [REAL_LE_ADDR, MDIST_POS_LE, extreal_mr1_le_1])
+ >> ‘?a. x1 = Normal a’ by METIS_TAC [extreal_cases] >> POP_ORW
+ >> Cases_on ‘x2 = PosInf’
+ >- (simp [] \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘1’ \\
+     simp [REAL_LE_ADDR, MDIST_POS_LE, extreal_mr1_le_1])
+ >> Cases_on ‘x2 = NegInf’
+ >- (simp [] \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘1’ \\
+     simp [REAL_LE_ADDR, MDIST_POS_LE, extreal_mr1_le_1])
+ >> ‘?c. x2 = Normal c’ by METIS_TAC [extreal_cases] >> POP_ORW
+ >> Cases_on ‘y1 = PosInf’
+ >- (simp [extreal_add_def] \\
+     Cases_on ‘y2 = PosInf’ >- simp [extreal_add_def, MDIST_POS_LE] \\
+     Cases_on ‘y2 = NegInf’
+     >- (simp [] \\
+         Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘1’ \\
+         simp [REAL_LE_ADDL, MDIST_POS_LE, extreal_mr1_le_1]) \\
+    ‘?r. y2 = Normal r’ by METIS_TAC [extreal_cases] \\
+     simp [] \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘1’ \\
+     simp [REAL_LE_ADDL, MDIST_POS_LE, extreal_mr1_le_1])
+ >> Cases_on ‘y1 = NegInf’
+ >- (simp [extreal_add_def] \\
+     Cases_on ‘y2 = PosInf’
+     >- (simp [] \\
+         Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘1’ \\
+         simp [REAL_LE_ADDL, MDIST_POS_LE, extreal_mr1_le_1]) \\
+     Cases_on ‘y2 = NegInf’ >- simp [extreal_add_def, MDIST_REFL, MDIST_POS_LE] \\
+    ‘?z. y2 = Normal z’ by METIS_TAC [extreal_cases] \\
+     simp [] \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘1’ \\
+     simp [REAL_LE_ADDL, MDIST_POS_LE, extreal_mr1_le_1])
+ >> ‘?b. y1 = Normal b’ by METIS_TAC [extreal_cases] >> POP_ORW
+ >> Cases_on ‘y2 = PosInf’ >- simp [extreal_add_def, MDIST_POS_LE]
+ >> Cases_on ‘y2 = NegInf’ >- simp [extreal_add_def, MDIST_POS_LE]
+ >> ‘?d. y2 = Normal d’ by METIS_TAC [extreal_cases] >> POP_ORW
+ >> KILL_TAC
+ >> simp [extreal_add_def, extreal_mr1_thm, extreal_dist_normal]
+ >> cheat
+QED
+
 (* cf. real_topologyTheory.euclidean_def *)
 Definition ext_euclidean_def :
     ext_euclidean = mtop extreal_mr1
@@ -6899,6 +7042,7 @@ Proof
  >> rw [Once METRIC_SYM]
 QED
 
+(* see EXTREAL_LIM which corresponds real_topologyTheory.LIM_DEF *)
 Definition extreal_lim_def :
     extreal_lim net f = @l. ext_tendsto f l net
 End
@@ -6961,6 +7105,34 @@ Theorem EXTREAL_LIM_CONST :
 Proof
     rw [EXTREAL_LIM, trivial_limit, MDIST_REFL]
  >> METIS_TAC []
+QED
+
+(* NOTE: This proof is derived from real_topologyTheory.LIM_ADD *)
+Theorem EXTREAL_LIM_ADD :
+    !net:('a)net f g l (m :extreal).
+       (f --> l) net /\ (g --> m) net ==> ((\x. f(x) + g(x)) --> (l + m)) net
+Proof
+  REPEAT GEN_TAC THEN REWRITE_TAC[EXTREAL_LIM] THEN
+  ASM_CASES_TAC ``trivial_limit (net:('a)net)`` THEN
+  ASM_SIMP_TAC std_ss [GSYM FORALL_AND_THM] THEN
+  DISCH_TAC THEN X_GEN_TAC ``e:real`` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC ``e / &2:real``) THEN
+  ASM_REWRITE_TAC[REAL_LT_HALF1] THEN
+  qabbrev_tac ‘dist' = dist extreal_mr1’ \\
+  Know `!x y. (dist'(f x, l) < e / 2:real) =
+              (\x. (dist'(f x, l) < e / 2:real)) x` THENL
+  [FULL_SIMP_TAC std_ss [], ALL_TAC] THEN DISC_RW_KILL THEN
+  Know `!x y. (dist'(g x, m) < e / 2:real) =
+              (\x. (dist'(g x, m) < e / 2:real)) x` THENL
+  [FULL_SIMP_TAC std_ss [], ALL_TAC] THEN DISC_RW_KILL THEN
+  DISCH_THEN(MP_TAC o MATCH_MP NET_DILEMMA) THEN BETA_TAC THEN
+  STRIP_TAC THEN EXISTS_TAC ``c:'a`` THEN CONJ_TAC THENL [METIS_TAC [], ALL_TAC] THEN
+  GEN_TAC THEN POP_ASSUM (MP_TAC o Q.SPEC `x'`) THEN REPEAT STRIP_TAC THEN
+  FULL_SIMP_TAC std_ss [] THEN MATCH_MP_TAC REAL_LET_TRANS THEN
+  Q.EXISTS_TAC `dist' (f x', l) + dist' (g x', m)` THEN
+  reverse CONJ_TAC
+  >- METIS_TAC[REAL_LT_HALF1, REAL_LT_ADD2, GSYM REAL_HALF_DOUBLE] \\
+  simp [Abbr ‘dist'’, dist_triangle_add]
 QED
 
 (* Name convention: "EXTREAL_" + (theorem name as in real_topologyTheory)
@@ -8857,7 +9029,8 @@ Proof
  >> Know ‘(real o P --> 0) sequentially’
  >- (rw [LIM_SEQUENTIALLY, o_DEF, dist] \\
     ‘0 < e / 2’ by rw [] \\
-     NTAC 2 (Q.PAT_X_ASSUM ‘!z. 0 < z ==> ?x. R’ (MP_TAC o (Q.SPEC ‘Normal (e / 2)’))) \\
+     NTAC 2 (Q.PAT_X_ASSUM ‘!z. 0 < z ==> ?x. R’
+               (MP_TAC o (Q.SPEC ‘Normal (e / 2)’))) \\
      rw [extreal_of_num_def, extreal_lt_eq] (* this asserts ‘m’ and ‘m'’ *) \\
      fs [Abbr ‘P’] \\
      Q.EXISTS_TAC ‘MAX m m'’ \\
@@ -8978,8 +9151,8 @@ Proof
      rw [extreal_add_def, extreal_sub_def] >> REAL_ARITH_TAC)
  >> Rewr'
  (* applying abs_triangle *)
- >> MATCH_MP_TAC let_trans
- >> Q.EXISTS_TAC ‘abs (a i - inf {a n | i <= n}) + abs (inf {a n | i <= n} - Normal l)’
+ >> Q_TAC (TRANS_TAC let_trans) ‘abs (a i - inf {a n | i <= n}) +
+                                 abs (inf {a n | i <= n} - Normal l)’
  >> CONJ_TAC
  >- (MATCH_MP_TAC abs_triangle \\
     ‘?r. a i = Normal r’                by METIS_TAC [extreal_cases] >> POP_ORW \\
