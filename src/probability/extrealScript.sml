@@ -6433,7 +6433,6 @@ Proof
     simp [extreal_mr1_thm, extreal_dist_def]
 QED
 
-(* NOTE: This dirty proof works even when ‘x1 + y1’ or ’x2 + y2’ is unspecified *)
 Theorem dist_triangle_add :
     !x1 y1 x2 y2. dist extreal_mr1 (x1 + y1,x2 + y2) <=
                   dist extreal_mr1 (x1,x2) + dist extreal_mr1 (y1,y2)
@@ -6614,13 +6613,13 @@ Definition ext_euclidean_def :
     ext_euclidean = mtop extreal_mr1
 End
 
-Theorem topspace_ext_euclidean[simp] :
+Theorem topspace_ext_euclidean :
     topspace ext_euclidean = UNIV
 Proof
     rw [TOPSPACE_MTOP, ext_euclidean_def]
 QED
 
-Theorem mspace_extreal_mr1[simp] :
+Theorem mspace_extreal_mr1 :
     mspace extreal_mr1 = UNIV
 Proof
     rw [mspace, GSYM ext_euclidean_def, topspace_ext_euclidean]
@@ -6643,14 +6642,14 @@ Proof
  >> EQ_TAC >> rpt STRIP_TAC
  >- (Q.PAT_X_ASSUM ‘!u. open_in (mtop extreal_mr1) u /\ l IN u ==> P’
        (MP_TAC o Q.SPEC ‘mball extreal_mr1 (l,e)’) \\
-     simp [OPEN_IN_MBALL, IN_MBALL] \\
+     simp [OPEN_IN_MBALL, IN_MBALL, mspace_extreal_mr1] \\
      rw [MDIST_REFL, Once METRIC_SYM])
- >> fs [OPEN_IN_MTOPOLOGY]
+ >> fs [OPEN_IN_MTOPOLOGY, mspace_extreal_mr1]
  >> Q.PAT_X_ASSUM ‘!x. x IN u ==> P’ (MP_TAC o Q.SPEC ‘l’) >> rw []
  >> Q.PAT_X_ASSUM ‘!e. 0 < e ==> P’  (MP_TAC o Q.SPEC ‘r’) >> rw []
  >> MATCH_MP_TAC EVENTUALLY_MONO
  >> Q.EXISTS_TAC ‘\x. dist extreal_mr1 (f x,l) < r’ >> rw []
- >> fs [SUBSET_DEF, IN_MBALL]
+ >> fs [SUBSET_DEF, IN_MBALL, mspace_extreal_mr1]
  >> FIRST_X_ASSUM MATCH_MP_TAC
  >> rw [Once METRIC_SYM]
 QED

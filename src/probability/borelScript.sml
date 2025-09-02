@@ -18,7 +18,7 @@ open prim_recTheory arithmeticTheory numLib combinTheory res_quanTheory
      res_quanTools pairTheory pred_setTheory pred_setLib relationTheory;
 
 open realTheory realLib seqTheory transcTheory real_sigmaTheory RealArith
-     real_topologyTheory listTheory metricTheory;
+     topologyTheory real_topologyTheory listTheory metricTheory;
 
 open extrealTheory sigma_algebraTheory iterateTheory real_borelTheory
      measureTheory hurdUtils;
@@ -60,24 +60,58 @@ Definition Borel :
                          S IN {EMPTY; {NegInf}; {PosInf}; {NegInf; PosInf}}})
 End
 
-Theorem Borel_alt_open_in :
-    Borel = sigma univ(:extreal) {s | open_in ext_euclidean s}
+(* NOTE: singleton sets are closed in the usual Euclidean space, but singleton
+   of PosInf or NegInf are open in extended Euclidean space, because there's
+   no other points in their neighbor when the distance is less than 1.
+ *)
+Theorem open_in_posinf :
+    open_in ext_euclidean {PosInf}
 Proof
-    rw [Borel, ext_euclidean_def]
- >> qmatch_abbrev_tac ‘(UNIV,sts) = _’
- >> Suff ‘sts = subsets (sigma UNIV {s | open_in (mtop extreal_mr1) s})’
- >- METIS_TAC [SPACE_SIGMA, subsets_def, SPACE]
- >> rw [Once EXTENSION, Abbr ‘sts’]
- >> EQ_TAC >> rw []
- >> cheat
+    rw [ext_euclidean_def, OPEN_IN_MTOPOLOGY, MSPACE]
+ >> Q.EXISTS_TAC ‘1’
+ >> rw [SUBSET_DEF, IN_MBALL, MSPACE]
+ >> CCONTR_TAC
+ >> Cases_on ‘x = NegInf’ >> fs []
+ >> ‘?r. x = Normal r’ by METIS_TAC [extreal_cases]
+ >> fs []
+QED
+
+Theorem open_in_neginf :
+    open_in ext_euclidean {NegInf}
+Proof
+    rw [ext_euclidean_def, OPEN_IN_MTOPOLOGY, MSPACE]
+ >> Q.EXISTS_TAC ‘1’
+ >> rw [SUBSET_DEF, IN_MBALL, MSPACE]
+ >> CCONTR_TAC
+ >> Cases_on ‘x = PosInf’ >> fs []
+ >> ‘?r. x = Normal r’ by METIS_TAC [extreal_cases]
+ >> fs []
+QED
+
+Theorem open_in_infty :
+    open_in ext_euclidean {NegInf; PosInf}
+Proof
+    ‘{NegInf; PosInf} = {NegInf} UNION {PosInf}’ by SET_TAC []
+ >> POP_ORW
+ >> MATCH_MP_TAC OPEN_IN_UNION
+ >> REWRITE_TAC [open_in_neginf, open_in_posinf]
 QED
 
 Theorem Borel_alt_general :
     Borel = general_borel ext_euclidean
 Proof
-    rw [Borel_alt_open_in, general_borel_def, topspace_ext_euclidean]
- >> AP_TERM_TAC
- >> rw [Once EXTENSION, IN_APP]
+    cheat
+ (*
+    rw [Borel, general_borel_def]
+ >> qmatch_abbrev_tac ‘(UNIV,sts) = _’
+ >> Suff ‘sts = subsets (sigma UNIV {s | open_in (mtop extreal_mr1) s})’
+ >- METIS_TAC [SPACE_SIGMA, subsets_def, SPACE]
+ >> Know ‘!s. s IN subsets borel ==> IMAGE Normal s IN subsets’
+ >> rw [Once EXTENSION, Abbr ‘sts’]
+ >> EQ_TAC >> rw [] (* 5 subgoals *)
+ >- (simp [] \\
+     cheat)
+  *)
 QED
 
 (* MATHEMATICAL DOUBLE-STRUCK CAPITAL B
