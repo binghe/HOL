@@ -1323,6 +1323,17 @@ Proof
  >> RW_TAC std_ss []
 QED
 
+Theorem in_borel_measurable_ainv :
+    !a f. sigma_algebra a /\ f IN measurable a borel ==>
+          (\x. -f x) IN measurable a borel
+Proof
+    rpt STRIP_TAC
+ >> ‘(\x. -f x) = (\x. -1 * f x)’ by rw [Once REAL_NEG_MINUS1, FUN_EQ_THM]
+ >> POP_ORW
+ >> MATCH_MP_TAC in_borel_measurable_cmul
+ >> qexistsl_tac [‘f’, ‘-1’] >> rw []
+QED
+
 (* cf. borel_measurable_sub_borel_measurable (real_measureTheory) *)
 Theorem in_borel_measurable_sub :
     !a f g h. sigma_algebra a /\ f IN measurable a borel /\ g IN measurable a borel /\
