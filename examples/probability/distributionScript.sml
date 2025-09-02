@@ -3263,31 +3263,38 @@ Proof
  >> qmatch_abbrev_tac ‘s IN subsets (B t)’
  >> Know ‘s = {x | x IN topspace t /\
                    !n. ?u. open_in t u /\ x IN u /\
-                           !y. y IN u ==> dist (f y,f x) < inv (&SUC n)}’
+                           !y z. y IN u /\ z IN u ==> dist (f y,f z) < inv (&SUC n)}’
  >- (RW_TAC set_ss [Abbr ‘s’, Once EXTENSION] \\
      EQ_TAC >> RW_TAC std_ss []
-     >- (POP_ASSUM (MP_TAC o Q.SPEC ‘ball (f x,inv (&SUC n))’) \\
-         rw [OPEN_BALL, IN_BALL, DIST_REFL] \\
-         Q.EXISTS_TAC ‘u’ >> rw [Once DIST_SYM]) \\
+     >- (POP_ASSUM (MP_TAC o Q.SPEC ‘ball (f x,inv (&SUC n) / 2)’) \\
+         RW_TAC real_ss [OPEN_BALL, IN_BALL, DIST_REFL] \\
+         Q.EXISTS_TAC ‘u’ >> RW_TAC real_ss [] \\
+         Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘dist (f y,f x) + dist (f x,f z)’ \\
+         qabbrev_tac ‘r :real = inv (&SUC n)’ \\
+         REWRITE_TAC [DIST_TRIANGLE] \\
+         simp [Once DIST_SYM] \\
+        ‘r = r / 2 + r / 2’ by rw [REAL_HALF_DOUBLE] >> POP_ORW \\
+         MATCH_MP_TAC REAL_LT_ADD2 >> simp []) \\
      FULL_SIMP_TAC std_ss [OPEN_CONTAINS_BALL] \\
      Q.PAT_X_ASSUM ‘!x. x IN v ==> _’ (MP_TAC o Q.SPEC ‘f x’) >> rw [] \\
      MP_TAC (Q.SPEC ‘e’ REAL_ARCH_INV_SUC) \\
      RW_TAC std_ss [] \\
+     qabbrev_tac ‘r :real = inv (&SUC n)’ \\
      Q.PAT_X_ASSUM ‘!n. ?u. _’ (MP_TAC o Q.SPEC ‘n’) \\
      RW_TAC std_ss [] \\
      Q.EXISTS_TAC ‘u’ >> rw [] \\
      Suff ‘f y IN ball (f x,e)’ >- METIS_TAC [SUBSET_DEF] \\
      rw [IN_BALL] \\
-     Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘inv (&SUC n)’ >> art [] \\
-     ONCE_REWRITE_TAC [DIST_SYM] \\
+     Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘r’ >> art [] \\
      FIRST_X_ASSUM MATCH_MP_TAC >> art [])
  >> Rewr'
  >> qunabbrev_tac ‘s’
  (* stage work *)
  >> qmatch_abbrev_tac ‘s IN subsets (B t)’
- >> qabbrev_tac ‘A = \n. {x | x IN topspace t /\
-                              ?u. open_in t u /\ x IN u /\
-                                  !y. y IN u ==> dist (f y,f x) < inv (&SUC n)}’
+ >> qabbrev_tac
+   ‘A = \n. {x | x IN topspace t /\
+                 ?u. open_in t u /\ x IN u /\
+                     !y z. y IN u /\ z IN u ==> dist (f y,f z) < inv (&SUC n)}’
  >> Know ‘s = BIGINTER (IMAGE A UNIV)’
  >- (RW_TAC set_ss [Once EXTENSION, IN_BIGINTER_IMAGE, Abbr ‘s’, Abbr ‘A’] \\
      EQ_TAC >> RW_TAC std_ss [])
@@ -3301,20 +3308,17 @@ Proof
  (* stage work *)
  >> RW_TAC set_ss [Once OPEN_NEIGH', Abbr ‘A’, SUBSET_DEF]
  >> qabbrev_tac ‘r :real = inv (&SUC n)’
+ (* stage work *)
  >> ‘0 < r’ by rw [Abbr ‘r’, REAL_INV_POS]
- >> ‘0 < r / 2’ by rw [REAL_LT_DIV]
  >> Q.EXISTS_TAC ‘u’
  >> CONJ_TAC >- (MATCH_MP_TAC OPEN_OWN_NEIGH >> fs [IN_APP])
- >> Q.X_GEN_TAC ‘z’
+ >> Q.PAT_X_ASSUM ‘x IN topspace t’ K_TAC
+ >> Q.PAT_X_ASSUM ‘x IN u’          K_TAC
+ >> Q.X_GEN_TAC ‘x’
  >> rpt STRIP_TAC
  >- (Suff ‘u SUBSET topspace t’ >- METIS_TAC [SUBSET_DEF] \\
      MATCH_MP_TAC OPEN_IN_SUBSET >> art [])
- >> qabbrev_tac ‘c = f x’
- >> qabbrev_tac ‘b = ball (c,r / 2)’
- >> ‘open b’ by rw [Abbr ‘b’, OPEN_BALL]
- >> qabbrev_tac ‘s = PREIMAGE f b INTER topspace t’
- >> Q.EXISTS_TAC ‘u INTER s’
- >> cheat
+ >> Q.EXISTS_TAC ‘u’ >> simp []
 QED
 
 Theorem frontier_of_in_general_borel :
