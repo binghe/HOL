@@ -5665,6 +5665,14 @@ val integral_indicator = store_thm
      by RW_TAC std_ss [indicator_fn_def, mul_rone, mul_rzero, le_refl, le_01]
  >> METIS_TAC [pos_fn_integral_indicator, integral_pos_fn]);
 
+(* enhanced with more general antecedents, old:
+
+      (!x. x IN m_space m ==> f2 x <> PosInf)
+
+   new:
+
+      (!x. x IN m_space m ==> f1 x <> PosInf \/ f2 x <> PosInf)
+ *)
 Theorem integral_add_lemma :
     !m f f1 f2.
        measure_space m /\ integrable m f /\
@@ -5735,6 +5743,10 @@ Proof
  >> METIS_TAC [eq_add_sub_switch]
 QED
 
+(* an improved version without the following antecedents: (used by FUBINI)
+
+   !x. x IN m_space m ==> f1 x <> PosInf \/ f2 x <> PosInf
+ *)
 Theorem integral_add_lemma' :
     !m f f1 f2.
        measure_space m /\ integrable m f /\
@@ -5778,6 +5790,14 @@ Proof
  >> MATCH_MP_TAC pos_not_neginf >> simp []
 QED
 
+(* enhanced with more general antecedents, old:
+
+           (!x. x IN m_space m ==> (f x <> NegInf /\ g x <> NegInf))
+
+   new:
+           (!x. x IN m_space m ==> (f x <> NegInf /\ g x <> NegInf) \/
+                                   (f x <> PosInf /\ g x <> PosInf))
+ *)
 Theorem integral_add :
     !m f g. measure_space m /\ integrable m f /\ integrable m g /\
            (!x. x IN m_space m ==> (f x <> NegInf /\ g x <> NegInf) \/
@@ -6927,7 +6947,8 @@ Definition density_of :
            pos_fn_integral M (\x. max 0 (f x * indicator_fn A x)) else 0))
 End
 
-Theorem measure_space_density_of : (* was: measure_space_density *)
+(* This was HVG's measure_space_density *)
+Theorem measure_space_density_of :
     !M f. measure_space M /\ f IN measurable (m_space M, measurable_sets M) Borel
       ==> measure_space (density_of M f)
 Proof

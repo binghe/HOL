@@ -6393,11 +6393,23 @@ Proof
     rw [extreal_dist_def, bounded_metric_thm, mr1_def]
 QED
 
+Theorem extreal_dist_normal' :
+    !x y. extreal_dist (Normal x) (Normal y) = 1 - inv (1 + abs (x - y))
+Proof
+    rw [extreal_dist_def, bounded_metric_thm, bounded_metric_alt, mr1_def]
+QED
+
 (* Use this theorem to calculate the "distance" between two normal extreals *)
 Theorem extreal_mr1_normal :
     !x y. dist extreal_mr1 (Normal x,Normal y) = abs (x - y) / (1 + abs (x - y))
 Proof
     rw [extreal_mr1_thm, extreal_dist_normal]
+QED
+
+Theorem extreal_mr1_normal' :
+    !x y. dist extreal_mr1 (Normal x,Normal y) = 1 - inv (1 + abs (x - y))
+Proof
+    rw [extreal_mr1_thm, extreal_dist_normal']
 QED
 
 Theorem extreal_mr1_le_1 :
@@ -6421,7 +6433,7 @@ Proof
     simp [extreal_mr1_thm, extreal_dist_def]
 QED
 
-(* NOTE: This theorem holds even when ‘x1 + y1’ or ’x2 + y2’ is "unspecified" *)
+(* NOTE: This dirty proof works even when ‘x1 + y1’ or ’x2 + y2’ is unspecified *)
 Theorem dist_triangle_add :
     !x1 y1 x2 y2. dist extreal_mr1 (x1 + y1,x2 + y2) <=
                   dist extreal_mr1 (x1,x2) + dist extreal_mr1 (y1,y2)
@@ -6547,8 +6559,54 @@ Proof
  >> Cases_on ‘y2 = NegInf’ >- simp [extreal_add_def, MDIST_POS_LE]
  >> ‘?d. y2 = Normal d’ by METIS_TAC [extreal_cases] >> POP_ORW
  >> KILL_TAC
- >> simp [extreal_add_def, extreal_mr1_thm, extreal_dist_normal]
- >> cheat
+ >> simp [extreal_add_def, extreal_mr1_thm, extreal_dist_normal']
+ >> qmatch_abbrev_tac ‘_ <= _ - x + (_ - y :real)’
+ >> simp [REAL_ARITH “1 - x + (1 - y) = 1 - (x + y - (1 :real))”]
+ >> REWRITE_TAC [REAL_LE_SUB_CANCEL1]
+ >> REWRITE_TAC [REAL_ADD2_SUB2]
+ >> qunabbrevl_tac [‘x’, ‘y’]
+ >> Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘inv (1 + abs (a - c) + abs (b - d))’
+ >> reverse CONJ_TAC
+ >- (MATCH_MP_TAC REAL_INV_LE_ANTIMONO_IMPR \\
+     CONJ_TAC
+     >- (REWRITE_TAC [GSYM REAL_ADD_ASSOC] \\
+         MATCH_MP_TAC REAL_LTE_ADD >> simp [REAL_LE_ADD, ABS_POS]) \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC REAL_LTE_ADD >> simp [ABS_POS]) \\
+     REWRITE_TAC [GSYM REAL_ADD_ASSOC, REAL_LE_LADD] \\
+     REWRITE_TAC [ABS_TRIANGLE])
+ >> qmatch_abbrev_tac ‘_ <= inv (1 + x + (y :real))’
+ >> REWRITE_TAC [REAL_LE_SUB_RADD]
+ >> REWRITE_TAC [REAL_INV_1OVER]
+ >> Know ‘0 < 1 + x /\ 0 < 1 + y’
+ >- (CONJ_TAC \\ (* 2 subgoals, same tactics *)
+     MATCH_MP_TAC REAL_LTE_ADD >> simp [Abbr ‘x’, Abbr ‘y’, ABS_POS])
+ >> STRIP_TAC
+ >> ‘1 + x <> 0 /\ 1 + y <> 0’ by PROVE_TAC [REAL_LT_IMP_NE]
+ >> ASM_SIMP_TAC real_ss [RAT_LEMMA2]
+ >> ASM_SIMP_TAC real_ss [GSYM REAL_MUL_ASSOC, GSYM REAL_INV_MUL]
+ >> ‘1 / (1 + x + y) + 1 = 1 / (1 + x + y) + 1 / 1’ by simp [] >> POP_ORW
+ >> Know ‘0 < 1 + x + y’
+ >- (REWRITE_TAC [GSYM REAL_ADD_ASSOC] \\
+     MATCH_MP_TAC REAL_LTE_ADD \\
+     simp [Abbr ‘x’, Abbr ‘y’, REAL_LE_ADD, ABS_POS])
+ >> DISCH_TAC
+ >> ‘0 < (1 :real)’ by simp []
+ >> ASM_SIMP_TAC std_ss [RAT_LEMMA2]
+ >> ‘1 + x + y <> 0’ by PROVE_TAC [REAL_LT_IMP_NE]
+ >> simp [REAL_ADD_ASSOC]
+ >> ‘1 + y + 1 + x = 2 + x + (y :real)’ by REAL_ARITH_TAC >> POP_ORW
+ >> qabbrev_tac ‘z = 2 + x + y’
+ >> MATCH_MP_TAC REAL_LE_RMUL_IMP
+ >> ‘0 <= x /\ 0 <= y’ by simp [Abbr ‘x’, Abbr ‘y’, ABS_POS]
+ >> CONJ_TAC
+ >- (simp [Abbr ‘z’, GSYM REAL_ADD_ASSOC] \\
+     MATCH_MP_TAC REAL_LE_ADD >> simp [] \\
+     MATCH_MP_TAC REAL_LE_ADD >> simp [])
+ >> simp [REAL_LDISTRIB, REAL_RDISTRIB, GSYM REAL_ADD_ASSOC]
+ >> REWRITE_TAC [Once REAL_ADD_COMM]
+ >> simp []
+ >> MATCH_MP_TAC REAL_LE_MUL >> art []
 QED
 
 (* cf. real_topologyTheory.euclidean_def *)
@@ -8763,42 +8821,11 @@ Proof
  >> MATCH_MP_TAC ext_limsup_thm >> art []
 QED
 
-Theorem lim_sequentially_add :
-    !f g l (m :extreal).
-       (!n. f n <> PosInf /\ f n <> NegInf) /\ l <> PosInf /\ l <> NegInf /\
-       (!n. g n <> PosInf /\ g n <> NegInf) /\ m <> PosInf /\ m <> NegInf /\
-       (f --> l) sequentially /\ (g --> m) sequentially ==>
-       ((\x. f(x) + g(x)) --> (l + m)) sequentially
-Proof
-    rpt STRIP_TAC
- >> qmatch_abbrev_tac ‘(h --> z) sequentially’
- >> Know ‘(h --> z) sequentially <=> (real o h --> real z) sequentially’
- >- (MATCH_MP_TAC extreal_lim_sequentially_eq \\
-     simp [Abbr ‘z’, add_real] \\
-    ‘?L. l = Normal L’ by METIS_TAC [extreal_cases] \\
-    ‘?M. m = Normal M’ by METIS_TAC [extreal_cases] \\
-     simp [extreal_add_def] \\
-     Q.EXISTS_TAC ‘0’ >> simp [] \\
-     Q.X_GEN_TAC ‘n’ \\
-     simp [Abbr ‘h’] \\
-    ‘?a. f n = Normal a’ by METIS_TAC [extreal_cases] \\
-    ‘?b. g n = Normal b’ by METIS_TAC [extreal_cases] \\
-     simp [extreal_add_def])
- >> Rewr'
- >> simp [Abbr ‘h’, Abbr ‘z’, add_real, o_DEF]
- >> HO_MATCH_MP_TAC real_topologyTheory.LIM_ADD
- >> ‘(\x. real (f x)) = real o f’ by rw [o_DEF, FUN_EQ_THM] >> POP_ORW
- >> ‘(\x. real (g x)) = real o g’ by rw [o_DEF, FUN_EQ_THM] >> POP_ORW
- >> Know ‘(real o f --> real l) sequentially <=> (f --> l) sequentially’
- >- (SYM_TAC \\
-     MATCH_MP_TAC extreal_lim_sequentially_eq >> simp [])
- >> Rewr'
- >> Know ‘(real o g --> real m) sequentially <=> (g --> m) sequentially’
- >- (SYM_TAC \\
-     MATCH_MP_TAC extreal_lim_sequentially_eq >> simp [])
- >> Rewr'
- >> simp []
-QED
+(* |- !f g l m.
+        (f --> l) sequentially /\ (g --> m) sequentially ==>
+        ((\x. f x + g x) --> (l + m)) sequentially
+ *)
+Theorem lim_sequentially_add = Q.ISPEC ‘sequentially’ EXTREAL_LIM_ADD
 
 Theorem lim_sequentially_sum :
     !f l s. FINITE s /\ (!i. i IN s ==> (f i --> l i) sequentially) /\
@@ -8829,15 +8856,6 @@ Proof
  >> ‘s DELETE e = s’ by rw [GSYM DELETE_NON_ELEMENT]
  >> simp []
  >> HO_MATCH_MP_TAC lim_sequentially_add >> simp []
- >> CONJ_TAC
- >- (Q.X_GEN_TAC ‘n’ \\
-     CONJ_TAC >| (* 2 subgoals *)
-     [ (* goal 1 (of 2) *)
-       MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_POSINF >> simp [],
-       (* goal 2 (of 2) *)
-       MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_NEGINF >> simp [] ])
- >> CONJ_TAC >- (MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_POSINF >> simp [])
- >> CONJ_TAC >- (MATCH_MP_TAC EXTREAL_SUM_IMAGE_NOT_NEGINF >> simp [])
  >> ‘(\n. f e n) = f e’ by rw [FUN_EQ_THM] >> POP_ORW
  >> FIRST_X_ASSUM MATCH_MP_TAC >> simp []
 QED
@@ -9688,8 +9706,7 @@ val _ = map (fn name => save_thm (name, DB.fetch "extreal_base" name))
        "neg_sub",
        "neg_neg",
        "neg_not_posinf",
-       "normal_0",
-       "normal_1",
+       "normal_0", "normal_1",
        "normal_inv_eq",
        "normal_real_set",
        "num_lt_infty",
