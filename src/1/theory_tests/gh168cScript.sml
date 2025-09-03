@@ -5,7 +5,7 @@ open gh294aTheory gh294bTheory testutils
 val _ = new_theory "gh168c";
 
 val tyg0 = type_grammar()
-val privthy = Binarymap.find(type_grammar.privileged_abbrevs tyg0, "foo")
+val privthy = HOLdict.find(type_grammar.privileged_abbrevs tyg0, "foo")
 val unprivthy = if privthy = "gh294a" then "gh294b" else "gh294a"
 
 val _ = remove_type_abbrev (privthy ^ "$foo")
