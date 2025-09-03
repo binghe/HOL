@@ -64,7 +64,7 @@ End
    of PosInf or NegInf are open in extended Euclidean space, because there's
    no other points in their neighbor when the distance is less than 1.
  *)
-Theorem open_in_posinf :
+Theorem open_in_ext_euclidean_posinf :
     open_in ext_euclidean {PosInf}
 Proof
     rw [ext_euclidean_def, OPEN_IN_MTOPOLOGY, MSPACE]
@@ -76,7 +76,7 @@ Proof
  >> fs []
 QED
 
-Theorem open_in_neginf :
+Theorem open_in_ext_euclidean_neginf :
     open_in ext_euclidean {NegInf}
 Proof
     rw [ext_euclidean_def, OPEN_IN_MTOPOLOGY, MSPACE]
@@ -88,13 +88,13 @@ Proof
  >> fs []
 QED
 
-Theorem open_in_infty :
+Theorem open_in_ext_euclidean_infty :
     open_in ext_euclidean {NegInf; PosInf}
 Proof
     ‘{NegInf; PosInf} = {NegInf} UNION {PosInf}’ by SET_TAC []
  >> POP_ORW
  >> MATCH_MP_TAC OPEN_IN_UNION
- >> REWRITE_TAC [open_in_neginf, open_in_posinf]
+ >> REWRITE_TAC [open_in_ext_euclidean_neginf, open_in_ext_euclidean_posinf]
 QED
 
 Theorem Borel_alt_general :
