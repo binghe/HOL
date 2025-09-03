@@ -130,6 +130,8 @@ val cline_opts = [
    desc = setStringOpt "filename" #base_state},
   {help = "thread count", long = ["mt"], short = "",
    desc = OptArg (set_threadcount, "c")},
+  {help = "Don't use user config file in HOL repl", long = ["noconfig"], short = "",
+   desc = NoArg (fn () => fn r => r)}, (* checked for and acted on by HOL repl *)
   {help = "output heap/munger name", long = [], short = "o",
    desc = setStringOpt "filename" #output},
   {help = "use poly as base", long = ["poly"], short = "",
@@ -158,7 +160,7 @@ val initial_cline = OR {all_forced = false,
                         z_repl = false}
 end
 
-fun member s [] = false
+fun member _ [] = false
   | member s (h::t) = s = h orelse member s t
 
 fun fullPath ps = List.foldl (fn (p,acc) => OS.Path.concat(acc,p))
@@ -204,7 +206,7 @@ fun fix s =
 
 fun create_heap diag qp findMod (objs, outputheap) = let
   open Systeml TextIO
-  val p = if qp then fn s => () else fn s => print (s ^ "\n")
+  val p = if qp then fn _ => () else fn s => print (s ^ "\n")
   fun hload obj = (p ("Loading "^obj); load (fix obj))
                   handle e => die ("Loading "^obj^": "^General.exnMessage e)
 in
@@ -298,7 +300,7 @@ fun main() = let
   val OR options = List.foldl (fn (f, opts) => f opts) initial_cline cline_upds
   val {quietp = qp, output, base_state, all_forced, forced_objs,
        repl, z_repl, help, debug, extra_data, defaultout, exe, ...} = options
-  val diag = if debug then (fn s => warn ("DIAG: "^s)) else (fn s => ())
+  val diag = if debug then (fn s => warn ("DIAG: "^s)) else (fn _ => ())
   val _ = not help orelse (print usage; OS.Process.exit OS.Process.success)
   val outrepl_error = "Can't simultaneously dump output and start REPL"
   val _ =
@@ -312,7 +314,7 @@ fun main() = let
   val objs = if all_forced then forced_objs @ map force objs0
              else forced_objs @ map unforce objs0
   val _ = diag ("#objs = "^Int.toString (length objs))
-  val warn = if qp then (fn s => ()) else warn
+  val warn = if qp then (fn _ => ()) else warn
   val original_die = die
   fun die s = if qp then OS.Process.exit OS.Process.failure else original_die s
   val allincs = ReadHMF.find_includes (OS.FileSys.getDir())
