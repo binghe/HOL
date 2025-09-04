@@ -60,60 +60,6 @@ Definition Borel :
                          S IN {EMPTY; {NegInf}; {PosInf}; {NegInf; PosInf}}})
 End
 
-(* NOTE: singleton sets are closed in the usual Euclidean space, but singleton
-   of PosInf or NegInf are open in extended Euclidean space, because there's
-   no other points in their neighbor when the distance is less than 1.
- *)
-Theorem open_in_ext_euclidean_posinf :
-    open_in ext_euclidean {PosInf}
-Proof
-    rw [ext_euclidean_def, OPEN_IN_MTOPOLOGY, MSPACE]
- >> Q.EXISTS_TAC ‘1’
- >> rw [SUBSET_DEF, IN_MBALL, MSPACE]
- >> CCONTR_TAC
- >> Cases_on ‘x = NegInf’ >> fs []
- >> ‘?r. x = Normal r’ by METIS_TAC [extreal_cases]
- >> fs []
-QED
-
-Theorem open_in_ext_euclidean_neginf :
-    open_in ext_euclidean {NegInf}
-Proof
-    rw [ext_euclidean_def, OPEN_IN_MTOPOLOGY, MSPACE]
- >> Q.EXISTS_TAC ‘1’
- >> rw [SUBSET_DEF, IN_MBALL, MSPACE]
- >> CCONTR_TAC
- >> Cases_on ‘x = PosInf’ >> fs []
- >> ‘?r. x = Normal r’ by METIS_TAC [extreal_cases]
- >> fs []
-QED
-
-Theorem open_in_ext_euclidean_infty :
-    open_in ext_euclidean {NegInf; PosInf}
-Proof
-    ‘{NegInf; PosInf} = {NegInf} UNION {PosInf}’ by SET_TAC []
- >> POP_ORW
- >> MATCH_MP_TAC OPEN_IN_UNION
- >> REWRITE_TAC [open_in_ext_euclidean_neginf, open_in_ext_euclidean_posinf]
-QED
-
-Theorem Borel_alt_general :
-    Borel = general_borel ext_euclidean
-Proof
-    cheat
- (*
-    rw [Borel, general_borel_def]
- >> qmatch_abbrev_tac ‘(UNIV,sts) = _’
- >> Suff ‘sts = subsets (sigma UNIV {s | open_in (mtop extreal_mr1) s})’
- >- METIS_TAC [SPACE_SIGMA, subsets_def, SPACE]
- >> Know ‘!s. s IN subsets borel ==> IMAGE Normal s IN subsets’
- >> rw [Once EXTENSION, Abbr ‘sts’]
- >> EQ_TAC >> rw [] (* 5 subgoals *)
- >- (simp [] \\
-     cheat)
-  *)
-QED
-
 (* MATHEMATICAL DOUBLE-STRUCK CAPITAL B
 val _ = Unicode.unicode_version {u = UTF8.chr 0x1D539, tmnm = "Borel"};
 val _ = TeX_notation {hol = "Borel", TeX = ("\\ensuremath{{\\cal{B}}}", 1)};
@@ -8455,6 +8401,180 @@ Proof
                  ‘λx. SIGMA (C f x) s = SIGMA (C fae x) s’]
         (irule o SIMP_RULE (srw_ss ()) []) AE_subset
  >> rw[] >> irule EXTREAL_SUM_IMAGE_EQ' >> rw[combinTheory.C_DEF]
+QED
+
+(* ------------------------------------------------------------------------- *)
+(* Borel and general_borel (of ext_euclidean)                                *)
+(* ------------------------------------------------------------------------- *)
+
+(* NOTE: singleton sets are closed in the usual Euclidean space, but singleton
+   of PosInf or NegInf are open in extended Euclidean space, because there's
+   no other points in their neighbor when the distance is less than 1.
+ *)
+Theorem open_in_ext_euclidean_posinf :
+    open_in ext_euclidean {PosInf}
+Proof
+    rw [ext_euclidean_def, OPEN_IN_MTOPOLOGY, MSPACE]
+ >> Q.EXISTS_TAC ‘1’
+ >> rw [SUBSET_DEF, IN_MBALL, MSPACE]
+ >> CCONTR_TAC
+ >> Cases_on ‘x = NegInf’ >> fs []
+ >> ‘?r. x = Normal r’ by METIS_TAC [extreal_cases]
+ >> fs []
+QED
+
+Theorem open_in_ext_euclidean_neginf :
+    open_in ext_euclidean {NegInf}
+Proof
+    rw [ext_euclidean_def, OPEN_IN_MTOPOLOGY, MSPACE]
+ >> Q.EXISTS_TAC ‘1’
+ >> rw [SUBSET_DEF, IN_MBALL, MSPACE]
+ >> CCONTR_TAC
+ >> Cases_on ‘x = PosInf’ >> fs []
+ >> ‘?r. x = Normal r’ by METIS_TAC [extreal_cases]
+ >> fs []
+QED
+
+Theorem open_in_ext_euclidean_infty :
+    open_in ext_euclidean {NegInf; PosInf}
+Proof
+    ‘{NegInf; PosInf} = {NegInf} UNION {PosInf}’ by SET_TAC []
+ >> POP_ORW
+ >> MATCH_MP_TAC OPEN_IN_UNION
+ >> REWRITE_TAC [open_in_ext_euclidean_neginf, open_in_ext_euclidean_posinf]
+QED
+
+Theorem Borel_alt_general :
+    Borel = general_borel ext_euclidean
+Proof
+    SIMP_TAC std_ss [Borel]
+ >> qmatch_abbrev_tac ‘(UNIV,sts) = _’
+ >> Suff ‘sts = (subsets (general_borel ext_euclidean))’
+ >- METIS_TAC [space_general_borel, subsets_def, SPACE, topspace_ext_euclidean]
+ >> simp [Once EXTENSION, Abbr ‘sts’]
+ >> Q.X_GEN_TAC ‘s’
+ >> EQ_TAC
+ >- (qmatch_abbrev_tac ‘_ ==> s IN subsets A’ \\
+    ‘sigma_algebra A’ by simp [Abbr ‘A’, sigma_algebra_general_borel] \\
+     Suff ‘!a. a IN subsets borel ==> IMAGE Normal a IN subsets A’
+     >- (DISCH_TAC >> rw [] >| (* 4 subgoals *)
+         [ (* goal 1 (of 4) *)
+           simp [],
+           (* goal 2 (of 4) *)
+           MATCH_MP_TAC SIGMA_ALGEBRA_UNION >> simp [] \\
+           qunabbrev_tac ‘A’ \\
+           MATCH_MP_TAC open_in_general_borel \\
+           REWRITE_TAC [open_in_ext_euclidean_neginf],
+           (* goal 3 (of 4) *)
+           MATCH_MP_TAC SIGMA_ALGEBRA_UNION >> simp [] \\
+           qunabbrev_tac ‘A’ \\
+           MATCH_MP_TAC open_in_general_borel \\
+           REWRITE_TAC [open_in_ext_euclidean_posinf],
+           (* goal 4 (of 4) *)
+           MATCH_MP_TAC SIGMA_ALGEBRA_UNION >> simp [] \\
+           qunabbrev_tac ‘A’ \\
+           MATCH_MP_TAC open_in_general_borel \\
+           REWRITE_TAC [open_in_ext_euclidean_infty] ]) \\
+  (* applying SIGMA_SUBSET *)
+     qabbrev_tac ‘P = \a. IMAGE Normal a IN subsets A’ >> simp [] \\
+     Suff ‘subsets borel SUBSET P’ >- METIS_TAC [SUBSET_DEF, IN_APP] \\
+     REWRITE_TAC [borel_eq_gr] \\
+     qabbrev_tac ‘b = (univ(:real),P)’ \\
+    ‘univ(:real) = space b’ by simp [Abbr ‘b’] >> POP_ORW \\
+    ‘P = subsets b’ by simp [Abbr ‘b’] >> POP_ORW \\
+     MATCH_MP_TAC SIGMA_PROPERTY_ALT \\
+     simp [Abbr ‘b’, subset_class_def, IN_FUNSET] \\
+     CONJ_TAC >- simp [Abbr ‘P’, SIGMA_ALGEBRA_EMPTY] \\
+     CONJ_TAC
+     >- (rw [SUBSET_DEF, Abbr ‘P’, Abbr ‘A’] \\
+         MATCH_MP_TAC open_in_general_borel \\
+         REWRITE_TAC [ext_euclidean_def] \\
+         rw [OPEN_IN_MTOPOLOGY, mspace_extreal_mr1] \\
+         rename1 ‘a < c’ \\
+         qabbrev_tac ‘d = c - a’ \\
+        ‘0 < d’ by simp [Abbr ‘d’] \\
+         Q.EXISTS_TAC ‘1 - inv (1 + d)’ \\
+         CONJ_ASM1_TAC >- simp [REAL_SUB_LT] \\
+         rw [SUBSET_DEF, IN_MBALL, mspace_extreal_mr1] \\
+        ‘1 - inv (1 + d) < 1’ by simp [REAL_LT_SUB_RADD] \\
+         Cases_on ‘x = PosInf’ >- fs [] \\
+         Cases_on ‘x = NegInf’ >- fs [] \\
+        ‘?r. x = Normal r’ by METIS_TAC [extreal_cases] >> rw [] \\
+         Q.PAT_X_ASSUM ‘dist extreal_mr1 _ < _’ MP_TAC \\
+         simp [extreal_mr1_normal'] \\
+         simp [REAL_ARITH “a - b < a - c <=> c < (b :real)”] \\
+         simp [Abbr ‘d’]) \\
+     CONJ_TAC
+     >- (rw [Abbr ‘P’] \\
+         Suff ‘IMAGE Normal (univ(:real) DIFF s) =
+               space A DIFF (IMAGE Normal s UNION {NegInf; PosInf})’
+         >- (Rewr' \\
+             MATCH_MP_TAC SIGMA_ALGEBRA_COMPL >> art [] \\
+             MATCH_MP_TAC SIGMA_ALGEBRA_UNION >> art [] \\
+             qunabbrev_tac ‘A’ \\
+             MATCH_MP_TAC open_in_general_borel \\
+             REWRITE_TAC [open_in_ext_euclidean_infty]) \\
+         rw [Once EXTENSION, Abbr ‘A’, space_general_borel, topspace_ext_euclidean] \\
+         EQ_TAC >> rw [] >> rw [] \\
+        ‘?r. x = Normal r’ by METIS_TAC [extreal_cases] >> fs []) \\
+     rw [Abbr ‘P’, IMAGE_BIGUNION, IMAGE_IMAGE] \\
+     MATCH_MP_TAC SIGMA_ALGEBRA_COUNTABLE_UNION >> simp [image_countable] \\
+     rw [SUBSET_DEF] >> simp [])
+ (* stage work *)
+ >> DISCH_TAC
+ >> qabbrev_tac ‘A = general_borel ext_euclidean’
+ >> ‘sigma_algebra A’ by simp [Abbr ‘A’, sigma_algebra_general_borel]
+ >> Suff ‘!a. a IN subsets A /\ PosInf NOTIN a /\ NegInf NOTIN a ==>
+              ?B. a = IMAGE Normal B /\ B IN subsets borel’
+ >- (DISCH_TAC \\
+     Cases_on ‘PosInf IN s’ >> Cases_on ‘NegInf IN s’ >| (* 4 subgoals *)
+     [ (* goal 1 (of 4) *)
+       qabbrev_tac ‘t = s DIFF {NegInf; PosInf}’ \\
+       Know ‘t IN subsets A’
+       >- (qunabbrev_tac ‘t’ \\
+           MATCH_MP_TAC SIGMA_ALGEBRA_DIFF >> art [] \\
+           qunabbrev_tac ‘A’ \\
+           MATCH_MP_TAC open_in_general_borel \\
+           REWRITE_TAC [open_in_ext_euclidean_infty]) >> DISCH_TAC \\
+      ‘PosInf NOTIN t /\ NegInf NOTIN t /\
+       s = t UNION {NegInf; PosInf}’ by ASM_SET_TAC [] >> POP_ORW \\
+       Q.PAT_X_ASSUM ‘!A. P’ (MP_TAC o Q.SPEC ‘t’) >> rw [] \\
+       qexistsl_tac [‘B’, ‘{NegInf; PosInf}’] >> simp [],
+       (* goal 2 (of 4) *)
+       qabbrev_tac ‘t = s DIFF {PosInf}’ \\
+       Know ‘t IN subsets A’
+       >- (qunabbrev_tac ‘t’ \\
+           MATCH_MP_TAC SIGMA_ALGEBRA_DIFF >> art [] \\
+           qunabbrev_tac ‘A’ \\
+           MATCH_MP_TAC open_in_general_borel \\
+           REWRITE_TAC [open_in_ext_euclidean_posinf]) >> DISCH_TAC \\
+      ‘PosInf NOTIN t /\ NegInf NOTIN t /\
+       s = t UNION {PosInf}’ by ASM_SET_TAC [] >> POP_ORW \\
+       Q.PAT_X_ASSUM ‘!A. P’ (MP_TAC o Q.SPEC ‘t’) >> rw [] \\
+       qexistsl_tac [‘B’, ‘{PosInf}’] >> simp [],
+       (* goal 3 (of 4) *)
+       qabbrev_tac ‘t = s DIFF {NegInf}’ \\
+       Know ‘t IN subsets A’
+       >- (qunabbrev_tac ‘t’ \\
+           MATCH_MP_TAC SIGMA_ALGEBRA_DIFF >> art [] \\
+           qunabbrev_tac ‘A’ \\
+           MATCH_MP_TAC open_in_general_borel \\
+           REWRITE_TAC [open_in_ext_euclidean_neginf]) >> DISCH_TAC \\
+      ‘PosInf NOTIN t /\ NegInf NOTIN t /\
+       s = t UNION {NegInf}’ by ASM_SET_TAC [] >> POP_ORW \\
+       Q.PAT_X_ASSUM ‘!A. P’ (MP_TAC o Q.SPEC ‘t’) >> rw [] \\
+       qexistsl_tac [‘B’, ‘{NegInf}’] >> simp [],
+       (* goal 4 (of 4) *)
+       Q.PAT_X_ASSUM ‘!A. P’ (MP_TAC o Q.SPEC ‘s’) >> rw [] \\
+       qexistsl_tac [‘B’, ‘{}’] >> simp [] ])
+ (* stage work
+
+    NOTE: Here we need to prove that, any open set in ext_euclidean without
+    infinities is still an open set (in euclidean) by “real_set”. There's no
+    other better generator we can use (from ext_euclidean) at this moment.
+  *)
+ >> Q.PAT_X_ASSUM ‘s IN subsets A’ K_TAC
+ >> cheat
 QED
 
 val _ = export_theory ();
