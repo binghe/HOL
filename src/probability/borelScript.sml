@@ -8569,11 +8569,47 @@ Proof
        qexistsl_tac [‘B’, ‘{}’] >> simp [] ])
  (* stage work
 
-    NOTE: Here we need to prove that, any open set in ext_euclidean without
+    NOTE: Here we need to prove that, any open set in ext_euclidean removing
     infinities is still an open set (in euclidean) by “real_set”. There's no
     other better generator we can use (from ext_euclidean) at this moment.
   *)
  >> Q.PAT_X_ASSUM ‘s IN subsets A’ K_TAC
+ >> qabbrev_tac ‘sp = IMAGE Normal UNIV’ (* a restricted space *)
+ >> Know ‘sp IN subsets A’
+ >- (qunabbrev_tac ‘A’ \\
+     MATCH_MP_TAC closed_in_general_borel \\
+     simp [closed_in, topspace_ext_euclidean] \\
+     Know ‘UNIV DIFF sp = {NegInf; PosInf}’
+     >- (rw [Abbr ‘sp’, Once EXTENSION] \\
+         EQ_TAC >> rw [] \\
+         METIS_TAC [extreal_cases]) >> Rewr' \\
+     REWRITE_TAC [open_in_ext_euclidean_infty])
+ >> DISCH_TAC
+ >> Suff ‘!a. a IN subsets A ==> real_set (a INTER sp) IN subsets borel’
+ >- (DISCH_TAC \\
+     rpt STRIP_TAC \\
+     Q.PAT_X_ASSUM ‘!a. a IN subsets A ==> _’ (MP_TAC o Q.SPEC ‘a’) >> rw [] \\
+     Q.EXISTS_TAC ‘real_set (a INTER sp)’ >> art [] \\
+     rw [Once EXTENSION, real_set_def] \\
+     EQ_TAC >> rw []
+     >- (‘?r. x = Normal r’ by METIS_TAC [extreal_cases] \\
+         Q.EXISTS_TAC ‘r’ >> rw [] \\
+         Q.EXISTS_TAC ‘Normal r’ >> rw [real_normal] \\
+         simp [Abbr ‘sp’]) \\
+     simp [normal_real])
+ >> qabbrev_tac ‘P = \a. real_set (a INTER sp) IN subsets borel’
+ >> simp []
+ >> Suff ‘subsets A SUBSET P’ >- METIS_TAC [SUBSET_DEF, IN_APP]
+ >> simp [Abbr ‘A’, general_borel_def, topspace_ext_euclidean]
+ >> MATCH_MP_TAC SIGMA_PROPERTY_ALT
+ >> simp [subset_class_def, IN_FUNSET]
+ >> CONJ_TAC (* {} IN P *)
+ >- (simp [Abbr ‘P’] \\
+     MATCH_MP_TAC SIGMA_ALGEBRA_EMPTY \\
+     REWRITE_TAC [sigma_algebra_borel])
+ >> CONJ_TAC (* open_in ext_euclidean SUBSET P *)
+ >- (
+     cheat)
  >> cheat
 QED
 
