@@ -5209,6 +5209,12 @@ Definition open_interval_def :
     open_interval (a :extreal) b = {x | a < x /\ x < b}
 End
 
+Theorem IN_open_interval :
+    !a b x. x IN open_interval a b <=> a < x /\ x < b
+Proof
+    rw [open_interval_def]
+QED
+
 (* renamed from `open_intervals_set`, needed in borelTheory (lambda0_premeasure) *)
 Definition open_intervals_def :
     open_intervals = {open_interval a b | T}
@@ -6670,48 +6676,6 @@ Definition extreal_lim_def :
 End
 Overload lim = “extreal_lim”
 
-(* NOTE: The type of ‘f’ is “:'a -> extreal”, suitable for any use. *)
-Definition ext_continuous_def :
-    ext_continuous f net <=> ext_tendsto f (f (netlimit net)) net
-End
-
-(* NOTE: because of the type of ‘at x within s’, here the type of ‘f’ is
-  “:real -> extreal”. For a function ‘g :extreal -> extreal’, to say it's
-   continuous on a set ‘s’ of (normal) real numbers, one can write:
-
-     (g o Normal) continuous_on s
-
-   I think it's not very meaningful to say a function "continuous at PosInf",
-   thus no need to invent another net "at ... within" for extreals.
-   -- Chun Tian (binghe), 15 ago 2024
-*)
-Definition ext_continuous_on_def :
-    ext_continuous_on f s <=> !x. x IN s ==> ext_continuous f (at x within s)
-End
-
-(* Use ‘ext_bounded (IMAGE f UNIV)’ to say a function f is bounded (on UNIV) *)
-Definition ext_bounded_def :
-    ext_bounded s <=> ?a. a <> PosInf /\ !x. x IN s ==> abs x <= a
-End
-
-Theorem ext_bounded_alt :
-    !s. ext_bounded s <=> ?k. 0 <= k /\ !x. x IN s ==> abs x <= Normal k
-Proof
-    rw [ext_bounded_def]
- >> reverse EQ_TAC >> rw []
- >- (Q.EXISTS_TAC ‘Normal k’ >> rw [])
- >> Cases_on ‘s = {}’
- >- (rw [] >> Q.EXISTS_TAC ‘0’ >> rw [])
- >> Know ‘0 <= a’
- >- (fs [GSYM MEMBER_NOT_EMPTY] \\
-     Q_TAC (TRANS_TAC le_trans) ‘abs x’ >> rw [abs_pos])
- >> DISCH_TAC
- >> ‘a <> NegInf’ by rw [pos_not_neginf]
- >> ‘?k. a = Normal k /\ 0 <= k’
-       by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_le_eq]
- >> Q.EXISTS_TAC ‘k’ >> rw []
-QED
-
 Theorem EXTREAL_LIM :
     !(f :'a -> extreal) l net.
        (f --> l) net <=>
@@ -6896,6 +6860,55 @@ Proof
  >> rw [real_normal]
  >> POP_ASSUM MATCH_MP_TAC
  >> Q.EXISTS_TAC ‘N’ >> rw []
+QED
+
+(* ------------------------------------------------------------------------- *)
+(*  Various definitions of bounded and continuous functions                  *)
+(* ------------------------------------------------------------------------- *)
+
+Definition ext_continuous_def :
+    ext_continuous (f :'a -> extreal) net <=> ext_tendsto f (f (netlimit net)) net
+End
+
+Definition ext_continuous_on_def :
+    ext_continuous_on f s <=> !x. x IN s ==> ext_continuous f (at x within s)
+End
+
+(* Use ‘ext_bounded (IMAGE f UNIV)’ to say a function f is bounded (on UNIV) *)
+Definition ext_bounded_def :
+    ext_bounded s <=> ?a. a <> PosInf /\ !x. x IN s ==> abs x <= a
+End
+
+Theorem ext_bounded_alt :
+    !s. ext_bounded s <=> ?k. 0 <= k /\ !x. x IN s ==> abs x <= Normal k
+Proof
+    rw [ext_bounded_def]
+ >> reverse EQ_TAC >> rw []
+ >- (Q.EXISTS_TAC ‘Normal k’ >> rw [])
+ >> Cases_on ‘s = {}’
+ >- (rw [] >> Q.EXISTS_TAC ‘0’ >> rw [])
+ >> Know ‘0 <= a’
+ >- (fs [GSYM MEMBER_NOT_EMPTY] \\
+     Q_TAC (TRANS_TAC le_trans) ‘abs x’ >> rw [abs_pos])
+ >> DISCH_TAC
+ >> ‘a <> NegInf’ by rw [pos_not_neginf]
+ >> ‘?k. a = Normal k /\ 0 <= k’
+       by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_le_eq]
+ >> Q.EXISTS_TAC ‘k’ >> rw []
+QED
+
+(* NOTE: This is the general definition actually used in converge_in_dist_def *)
+Definition bounded_continuous_def :
+    bounded_continuous top (f :'a -> real) <=>
+    continuous_map (top,euclidean) f /\ bounded (IMAGE f UNIV)
+End
+Overload C_b = “bounded_continuous”
+
+Theorem IN_bounded_continuous :
+    !top f. f IN C_b top <=>
+            continuous_map (top,euclidean) f /\ bounded (IMAGE f UNIV)
+Proof
+    REWRITE_TAC [IN_APP, bounded_continuous_def]
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -9001,6 +9014,25 @@ Proof
  >> MATCH_MP_TAC REAL_LT_IMP_LE >> art []
 QED
 
+(* A function is "right-continuous" if it's right-continuous at every point.
+
+   NOTE: the requirement of mono-increasing is included since this version of
+  "right-continuous" definition only works on mono-increasing functions.
+
+   NOTE: The concept of "right-continuous" at points PosInf/NegInf is tricky,
+   and (may) not be true for all distribution functions, thus is excluded.
+ *)
+Definition right_continuous :
+    right_continuous (f :extreal -> extreal) <=>
+      (!x y. x <= y ==> f x <= f y) /\ !x. f right_continuous_at (Normal x)
+End
+
+(* |- !f. right_continuous f <=>
+         (!x y. x <= y ==> f x <= f y) /\ !x. inf {f x' | x < x'} = f (Normal x)
+ *)
+Theorem right_continuous_def =
+        right_continuous |> REWRITE_RULE [right_continuous_at]
+
 (* NOTE: This core lemma holds also for other shapes of intervals (not used) *)
 Theorem countable_disjoint_interval_lemma :
     !s. s = {interval (c,d) | c < d} /\ disjoint s ==> countable s
@@ -9041,12 +9073,6 @@ Proof
  >> NTAC 2 (Q.PAT_X_ASSUM ‘!a b. _’ K_TAC)
  >> simp [DISJOINT_ALT, OPEN_interval]
  >> Q.EXISTS_TAC ‘y’ >> art []
-QED
-
-Theorem IN_open_interval :
-    !a b x. x IN open_interval a b <=> a < x /\ x < b
-Proof
-    rw [open_interval_def]
 QED
 
 (* NOTE: It's surprising hard to prove such a simple and obvious statement *)

@@ -8708,6 +8708,58 @@ Proof
  >> Q.EXISTS_TAC ‘n’ >> art []
 QED
 
+Theorem IN_MEASURABLE_CONTINUOUS_MAP :
+    !top1 top2 f. continuous_map (top1,top2) f ==>
+                  f IN measurable (general_borel top1) (general_borel top2)
+Proof
+    rw [CONTINUOUS_MAP, measurable_def, IN_FUNSET, SUBSET_DEF, space_general_borel]
+ >- (rename1 ‘f y IN topspace top2’ \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘y’ >> art [])
+ >> POP_ASSUM MP_TAC
+ >> Q.ID_SPEC_TAC ‘s’
+ >> qabbrev_tac
+     ‘P = \s. PREIMAGE f s INTER topspace top1 IN subsets (general_borel top1)’
+ >> simp []
+ >> Suff ‘subsets (general_borel top2) SUBSET {s | s SUBSET topspace top2 /\ P s}’
+ >- SET_TAC []
+ >> REWRITE_TAC [general_borel_def]
+ >> MATCH_MP_TAC SIGMA_PROPERTY_ALT
+ >> CONJ_TAC >- rw [Abbr ‘P’, subset_class_def]
+ >> CONJ_TAC
+ >- (simp [Abbr ‘P’] \\
+     MATCH_MP_TAC SIGMA_ALGEBRA_EMPTY \\
+     REWRITE_TAC [sigma_algebra_general_borel])
+ >> CONJ_TAC
+ >- (simp [SUBSET_DEF, Once IN_APP] \\
+     Q.X_GEN_TAC ‘s’ >> rw [Abbr ‘P’]
+     >- (rename1 ‘y IN s’ \\
+         simp [topspace, IN_BIGUNION] \\
+         Q.EXISTS_TAC ‘s’ >> art []) \\
+     simp [PREIMAGE_def] \\
+     MATCH_MP_TAC open_in_general_borel \\
+    ‘{x | f x IN s} INTER topspace top1 = {x | x IN topspace top1 /\ f x IN s}’
+       by SET_TAC [] >> POP_ORW \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> art [])
+ >> CONJ_TAC
+ >- (rw [Abbr ‘P’] \\
+     Suff ‘PREIMAGE f (topspace top2 DIFF s) INTER topspace top1 =
+           space (general_borel top1) DIFF (PREIMAGE f s INTER topspace top1)’
+     >- (Rewr' \\
+         MATCH_MP_TAC SIGMA_ALGEBRA_COMPL \\
+         simp [sigma_algebra_general_borel]) \\
+     simp [PREIMAGE_DIFF, space_general_borel] \\
+     rw [Once EXTENSION] >> METIS_TAC [])
+ >> rw [IN_FUNSET, Abbr ‘P’, FORALL_AND_THM, SUBSET_DEF]
+ >- (FIRST_X_ASSUM MATCH_MP_TAC \\
+     rename1 ‘x IN g n’ \\
+     Q.EXISTS_TAC ‘n’ >> art [])
+ >> simp [PREIMAGE_BIGUNION, IMAGE_IMAGE, BIGUNION_OVER_INTER_L]
+ >> MATCH_MP_TAC SIGMA_ALGEBRA_COUNTABLE_UNION
+ >> simp [sigma_algebra_general_borel, image_countable]
+ >> rw [SUBSET_DEF] >> simp []
+QED
+
 val _ = export_theory ();
 
 (* References:
