@@ -6412,6 +6412,15 @@ Proof
     rw [extreal_mr1_thm, extreal_dist_normal']
 QED
 
+Theorem extreal_mr1_lt_1 :
+    !x y. dist extreal_mr1 (Normal x,Normal y) < 1
+Proof
+    rw [extreal_mr1_thm, extreal_dist_normal']
+ >> Suff ‘0 < inv (1 + abs (x - y))’ >- REAL_ARITH_TAC
+ >> MATCH_MP_TAC REAL_INV_POS
+ >> Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘1’ >> simp []
+QED
+
 Theorem extreal_mr1_le_1 :
     !x y. dist extreal_mr1 (x,y) <= 1
 Proof
@@ -6432,6 +6441,7 @@ Theorem extreal_mr1_eq_1[simp] :
 Proof
     simp [extreal_mr1_thm, extreal_dist_def]
 QED
+
 
 Theorem dist_triangle_add :
     !x1 y1 x2 y2. dist extreal_mr1 (x1 + y1,x2 + y2) <=

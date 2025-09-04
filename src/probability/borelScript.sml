@@ -8608,9 +8608,104 @@ Proof
      MATCH_MP_TAC SIGMA_ALGEBRA_EMPTY \\
      REWRITE_TAC [sigma_algebra_borel])
  >> CONJ_TAC (* open_in ext_euclidean SUBSET P *)
- >- (
-     cheat)
- >> cheat
+ >- (simp [SUBSET_DEF, Abbr ‘P’, Once IN_APP] \\
+     Q.X_GEN_TAC ‘s’ >> DISCH_TAC \\
+     Know ‘open_in ext_euclidean sp’
+     >- (Q.PAT_X_ASSUM ‘sp IN subsets _’ K_TAC \\
+         simp [Once OPEN_IN_SUBOPEN, Abbr ‘sp’] \\
+         Q.X_GEN_TAC ‘z’ \\
+         DISCH_THEN (Q.X_CHOOSE_THEN ‘r’ MP_TAC) >> rw [] \\
+         Q.EXISTS_TAC ‘mball extreal_mr1 (Normal r,1 / 2)’ \\
+         CONJ_TAC >- simp [ext_euclidean_def, OPEN_IN_MBALL] \\
+         reverse CONJ_TAC
+         >- (rw [SUBSET_DEF, IN_MBALL, extreal_mr1_normal', mspace_extreal_mr1] \\
+             Cases_on ‘x = PosInf’ >> fs [] \\
+             Cases_on ‘x = NegInf’ >> fs [] \\
+             METIS_TAC [extreal_cases]) \\
+         simp [IN_MBALL, extreal_mr1_normal', mspace_extreal_mr1]) >> DISCH_TAC \\
+    ‘open_in ext_euclidean (s INTER sp)’ by PROVE_TAC [OPEN_IN_INTER] \\
+     MATCH_MP_TAC borel_open \\
+     qabbrev_tac ‘t = s INTER sp’ \\
+     simp [open_def, real_set_def] \\
+     Q.X_GEN_TAC ‘x’ \\
+     DISCH_THEN (Q.X_CHOOSE_THEN ‘z’ MP_TAC) >> rw [] \\
+     POP_ASSUM MP_TAC \\
+    ‘?r. z = Normal r’ by METIS_TAC [extreal_cases] >> rw [] \\
+     Q.PAT_X_ASSUM ‘open_in ext_euclidean t’ MP_TAC \\
+     rw [ext_euclidean_def, OPEN_IN_MTOPOLOGY, mspace_extreal_mr1] \\
+     POP_ASSUM (MP_TAC o Q.SPEC ‘Normal r’) >> art [] \\
+     DISCH_THEN (Q.X_CHOOSE_THEN ‘e’ MP_TAC) \\
+     rw [SUBSET_DEF, IN_MBALL, mspace_extreal_mr1] \\
+     Cases_on ‘1 < e’ (* impossible case *)
+     >- (Q.PAT_X_ASSUM ‘!x. _ ==> x IN t’ (MP_TAC o Q.SPEC ‘PosInf’) \\
+         simp [Abbr ‘t’, Abbr ‘sp’]) \\
+     FULL_SIMP_TAC std_ss [REAL_NOT_LT, Once DIST_SYM] \\
+     Cases_on ‘e = 1’ (* trivial case *)
+     >- (POP_ASSUM (fs o wrap) \\
+        ‘t SUBSET sp’ by ASM_SET_TAC [] \\
+         qabbrev_tac ‘d = sp DIFF t’ \\
+         Know ‘t = sp’
+         >- (Suff ‘d = {}’ >- ASM_SET_TAC [] \\
+             CCONTR_TAC \\
+             fs [GSYM MEMBER_NOT_EMPTY, Abbr ‘d’, Abbr ‘sp’] \\
+             rename1 ‘x = Normal z’ \\
+             Q.PAT_X_ASSUM ‘!x. _ ==> x IN t’ (MP_TAC o Q.SPEC ‘x’) \\
+             rw [extreal_mr1_lt_1]) >> Rewr' \\
+         qunabbrev_tac ‘d’ \\
+         simp [Abbr ‘sp’] \\
+         Q.EXISTS_TAC ‘1’ >> simp [] \\
+         Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+         Q.EXISTS_TAC ‘Normal y’ >> simp []) \\
+    ‘e < 1’ by simp [lt_le] \\
+     Know ‘!y. dist extreal_mr1 (Normal r,Normal y) < e ==> Normal y IN t’
+     >- rw [] \\
+     SIMP_TAC real_ss [extreal_mr1_normal', dist] \\
+     SIMP_TAC std_ss [REAL_ARITH “x - y < z <=> x - z < (y :real)”] \\
+     Know ‘1 - e = inv (inv (1 - e))’
+     >- (SYM_TAC >> MATCH_MP_TAC REAL_INVINV \\
+         Suff ‘0 < 1 - e’ >- PROVE_TAC [REAL_LT_IMP_NE] \\
+         simp [REAL_SUB_LT]) >> Rewr' \\
+     Know ‘!y. inv (inv (1 - e)) < inv (1 + abs (r - y)) <=>
+               1 + abs (r - y) < inv (1 - e)’
+     >- (Q.X_GEN_TAC ‘x’ \\
+         MATCH_MP_TAC REAL_INV_LT_ANTIMONO >> simp []) >> Rewr' \\
+         SIMP_TAC std_ss [REAL_ARITH “x + y < z <=> y < z - (x :real)”] \\
+         DISCH_TAC \\
+         Q.EXISTS_TAC ‘inv (1 - e) - 1’ \\
+         CONJ_TAC >- simp [REAL_SUB_LT] \\
+         Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+         Q.EXISTS_TAC ‘Normal y’ >> simp [real_normal])
+ >> CONJ_TAC
+ >- (rw [Abbr ‘P’] \\
+     qabbrev_tac ‘t = real_set (s INTER sp)’ \\
+     Suff ‘real_set ((univ(:extreal) DIFF s) INTER sp) = space borel DIFF t’
+     >- (Rewr' >> MATCH_MP_TAC SIGMA_ALGEBRA_COMPL \\
+         simp [sigma_algebra_borel]) \\
+     rw [space_borel, Once EXTENSION, real_set_def, Abbr ‘t’] \\
+     simp [Abbr ‘sp’] \\
+     EQ_TAC >> rw [] >> fs [real_normal]
+     >- (rename1 ‘real x = r’ \\
+         Cases_on ‘x = PosInf’ >- simp [] \\
+         Cases_on ‘x = NegInf’ >- simp [] \\
+        ‘?z. x = Normal z’ by METIS_TAC [extreal_cases] \\
+         fs [real_normal]) \\
+     POP_ASSUM (MP_TAC o Q.SPEC ‘Normal x’) >> rw [] \\
+     Q.EXISTS_TAC ‘Normal x’ >> simp [])
+ >> rw [Abbr ‘P’, FORALL_AND_THM]
+ >> Suff ‘real_set (BIGUNION (IMAGE f univ(:num)) INTER sp) =
+          BIGUNION (IMAGE (\i. real_set (f i INTER sp)) UNIV)’
+ >- (Rewr' \\
+     MATCH_MP_TAC SIGMA_ALGEBRA_COUNTABLE_UNION \\
+     simp [image_countable, sigma_algebra_borel] \\
+     rw [SUBSET_DEF] >> art [])
+ >> NTAC 3 (POP_ASSUM K_TAC)
+ >> rw [Once EXTENSION, IN_BIGUNION_IMAGE, Abbr ‘sp’, real_set_def]
+ >> EQ_TAC >> rw []
+ >- (rename1 ‘Normal r IN f n’ \\
+     qexistsl_tac [‘n’, ‘Normal r’] >> simp [])
+ >> rename1 ‘Normal r IN f n’
+ >> Q.EXISTS_TAC ‘Normal r’ >> simp []
+ >> Q.EXISTS_TAC ‘n’ >> art []
 QED
 
 val _ = export_theory ();
