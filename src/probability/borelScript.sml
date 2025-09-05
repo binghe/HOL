@@ -8438,7 +8438,7 @@ QED
 Theorem open_in_ext_euclidean_infty :
     open_in ext_euclidean {NegInf; PosInf}
 Proof
-    ‘{NegInf; PosInf} = {NegInf} UNION {PosInf}’ by SET_TAC []
+   ‘{NegInf; PosInf} = {NegInf} UNION {PosInf}’ by SET_TAC []
  >> POP_ORW
  >> MATCH_MP_TAC OPEN_IN_UNION
  >> REWRITE_TAC [open_in_ext_euclidean_neginf, open_in_ext_euclidean_posinf]
@@ -8479,11 +8479,8 @@ Proof
      qabbrev_tac ‘P = \a. IMAGE Normal a IN subsets A’ >> simp [] \\
      Suff ‘subsets borel SUBSET P’ >- METIS_TAC [SUBSET_DEF, IN_APP] \\
      REWRITE_TAC [borel_eq_gr] \\
-     qabbrev_tac ‘b = (univ(:real),P)’ \\
-    ‘univ(:real) = space b’ by simp [Abbr ‘b’] >> POP_ORW \\
-    ‘P = subsets b’ by simp [Abbr ‘b’] >> POP_ORW \\
      MATCH_MP_TAC SIGMA_PROPERTY_ALT \\
-     simp [Abbr ‘b’, subset_class_def, IN_FUNSET] \\
+     simp [subset_class_def, IN_FUNSET] \\
      CONJ_TAC >- simp [Abbr ‘P’, SIGMA_ALGEBRA_EMPTY] \\
      CONJ_TAC
      >- (rw [SUBSET_DEF, Abbr ‘P’, Abbr ‘A’] \\
@@ -8604,7 +8601,7 @@ Proof
  >> MATCH_MP_TAC SIGMA_PROPERTY_ALT
  >> simp [subset_class_def, IN_FUNSET]
  >> CONJ_TAC (* {} IN P *)
- >- (simp [Abbr ‘P’] \\
+ >- (simp [Abbr ‘P’, real_set_empty] \\
      MATCH_MP_TAC SIGMA_ALGEBRA_EMPTY \\
      REWRITE_TAC [sigma_algebra_borel])
  >> CONJ_TAC (* open_in ext_euclidean SUBSET P *)
