@@ -4840,7 +4840,7 @@ Proof
     rw [real_random_variable_def, converge_in_dist_def, FORALL_AND_THM]
  >> reverse EQ_TAC >> rpt STRIP_TAC
  (* old to new *)
- >- (fs [IN_bounded_continuous] \\
+ >- (FULL_SIMP_TAC std_ss [IN_bounded_continuous] \\
      qabbrev_tac ‘g = f o Normal’ \\
      Know ‘!n. expectation p (Normal o f o X n) =
                expectation p (Normal o g o real o X n)’
@@ -4852,7 +4852,16 @@ Proof
      >- (MATCH_MP_TAC expectation_cong >> rw [o_DEF, Abbr ‘g’] \\
          AP_TERM_TAC >> simp [normal_real]) >> Rewr' \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
-     cheat)
+     CONJ_TAC
+     >- (fs [bounded_def, Abbr ‘g’] \\
+         Q.EXISTS_TAC ‘a’ \\
+         Q.X_GEN_TAC ‘z’ \\
+         DISCH_THEN (Q.X_CHOOSE_THEN ‘x’ STRIP_ASSUME_TAC) \\
+         FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
+         Q.EXISTS_TAC ‘Normal x’ >> simp []) \\
+     simp [continuous_on_univ_alt_continuous_map, Abbr ‘g’] \\
+     MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE \\
+     Q.EXISTS_TAC ‘ext_euclidean’ >> simp [CONTINUOUS_MAP_NORMAL])
  (* new to old *)
  >> cheat
 QED

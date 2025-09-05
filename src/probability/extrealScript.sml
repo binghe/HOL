@@ -6910,6 +6910,34 @@ Proof
     REWRITE_TAC [IN_APP, bounded_continuous_def]
 QED
 
+Theorem CONTINUOUS_MAP_NORMAL :
+    continuous_map (euclidean,ext_euclidean) Normal
+Proof
+    rw [euclidean_def, ext_euclidean_def, METRIC_CONTINUOUS_MAP, MSPACE]
+ >> Cases_on ‘1 <= e’
+ >- (Q.EXISTS_TAC ‘1’ >> rw [] \\
+     Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘1’ >> art [] \\
+     simp [extreal_mr1_lt_1])
+ >> fs [REAL_NOT_LE]
+ >> simp [extreal_mr1_normal', GSYM dist_def, dist]
+ >> ‘!x. 1 - inv (1 + abs (a - x)) < e <=> 1 - e < inv (1 + abs (a - x))’
+      by REAL_ARITH_TAC >> POP_ORW
+ >> ‘1 - e <> 0’ by REAL_ASM_ARITH_TAC
+ >> ‘1 - e = inv (inv (1 - e))’ by simp [REAL_INVINV]
+ >> POP_ORW
+ >> Know ‘!x. inv (inv (1 - e)) < inv (1 + abs (a - x)) <=>
+              1 + abs (a - x) < inv (1 - e)’
+ >- (Q.X_GEN_TAC ‘x’ \\
+     MATCH_MP_TAC  REAL_INV_LT_ANTIMONO \\
+     CONJ_TAC >- (MATCH_MP_TAC REAL_INV_POS >> simp [REAL_SUB_LT]) \\
+     Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘1’ >> simp [])
+ >> Rewr'
+ >> ‘!x. 1 + abs (a - x) < inv (1 - e) <=> abs (a - x) < inv (1 - e) - 1’
+      by REAL_ARITH_TAC >> POP_ORW
+ >> Q.EXISTS_TAC ‘inv (1 - e) - 1’ >> simp [REAL_SUB_LT]
+ >> REAL_ASM_ARITH_TAC
+QED
+
 (* ------------------------------------------------------------------------- *)
 (*  Preliminary for Radon-Nikodym Theorem                                    *)
 (* ------------------------------------------------------------------------- *)
