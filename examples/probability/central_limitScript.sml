@@ -1750,6 +1750,7 @@ QED
 (*  Convergence in distribution                                              *)
 (* ------------------------------------------------------------------------- *)
 
+(*
 Theorem converge_in_dist_cong_full :
     !p X Y A B m. prob_space p ∧
                  (!n x. m <= n /\ x IN p_space p ==> X n x = Y n x) /\
@@ -1791,6 +1792,7 @@ Proof
  >> MATCH_MP_TAC converge_in_dist_cong_full
  >> Q.EXISTS_TAC ‘m’ >> rw []
 QED
+ *)
 
 Definition CnR_def :
     CnR n = {f | (∀x. higher_differentiable n f x) ∧
