@@ -4828,10 +4828,8 @@ Proof
       simp [Abbr ‘g’] ]
 QED
 
-(* NOTE: The old definition of “converge_in_dist” (involving Normal and real)
-   is now an equivalent theorem.
- *)
-Theorem converge_in_dist_old :
+(* NOTE: This was the old definition of “converge_in_dist” *)
+Theorem converge_in_dist_alt_continuous_on :
     !X Y p. prob_space p /\ (!n. real_random_variable (X n) p) /\
             real_random_variable Y p ==>
            ((X --> Y) (in_distribution p) <=>
@@ -4842,7 +4840,19 @@ Proof
     rw [real_random_variable_def, converge_in_dist_def, FORALL_AND_THM]
  >> reverse EQ_TAC >> rpt STRIP_TAC
  (* old to new *)
- >- (cheat)
+ >- (fs [IN_bounded_continuous] \\
+     qabbrev_tac ‘g = f o Normal’ \\
+     Know ‘!n. expectation p (Normal o f o X n) =
+               expectation p (Normal o g o real o X n)’
+     >- (Q.X_GEN_TAC ‘n’ \\
+         MATCH_MP_TAC expectation_cong >> rw [o_DEF, Abbr ‘g’] \\
+         AP_TERM_TAC >> simp [normal_real]) >> Rewr' \\
+     Know ‘expectation p (Normal o f o Y) =
+           expectation p (Normal o g o real o Y)’
+     >- (MATCH_MP_TAC expectation_cong >> rw [o_DEF, Abbr ‘g’] \\
+         AP_TERM_TAC >> simp [normal_real]) >> Rewr' \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     cheat)
  (* new to old *)
  >> cheat
 QED
