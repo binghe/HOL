@@ -3091,24 +3091,58 @@ Proof
          MATCH_MP_TAC IN_MEASURABLE_CONTINUOUS_MAP >> art []) >> Rewr ]
 QED
 
-Definition BL_def :
-    BL E = {f :'a -> real | f IN bounded_continuous (mtop E) /\
-                            Lipschitz_continuous_map (E,mr1) f}
-End
-
-Theorem Lipschitz_continuous_map_rewrite[local] :
-    !E f. f IN C_b (mtop E) /\ Lipschitz_continuous_map (E,mr1) f <=>
-          bounded (IMAGE f UNIV) /\ Lipschitz_continuous_map (E,mr1) f
+Theorem converge_in_dist_alt_continuous_on :
+    !X Y p. prob_space p /\ (!n. real_random_variable (X n) p) /\
+            real_random_variable Y p ==>
+           ((X --> Y) (in_distribution p) <=>
+            !f. bounded (IMAGE f UNIV) /\ f continuous_on UNIV ==>
+               ((\n. expectation p (Normal o f o real o X n)) -->
+                expectation p (Normal o f o real o Y)) sequentially)
 Proof
-    rw [IN_APP, bounded_continuous_def, euclidean_def]
- >> METIS_TAC [Lipschitz_continuous_map_imp_continuous_map]
-QED
-
-(* NOTE: “Lipschitz_continuous_map” implies the part “continuous_map” in “C_b” *)
-Theorem BL_alt :
-    !E. BL E = {f | bounded (IMAGE f UNIV) /\ Lipschitz_continuous_map (E,mr1) f}
-Proof
-    rw [Once EXTENSION, BL_def, Lipschitz_continuous_map_rewrite]
+    rw [real_random_variable_def, converge_in_dist_def, FORALL_AND_THM]
+ >> reverse EQ_TAC >> rpt STRIP_TAC
+ (* old to new *)
+ >- (FULL_SIMP_TAC std_ss [IN_bounded_continuous] \\
+     qabbrev_tac ‘g = f o Normal’ \\
+     Know ‘!n. expectation p (Normal o f o X n) =
+               expectation p (Normal o g o real o X n)’
+     >- (Q.X_GEN_TAC ‘n’ \\
+         MATCH_MP_TAC expectation_cong >> rw [o_DEF, Abbr ‘g’] \\
+         AP_TERM_TAC >> simp [normal_real]) >> Rewr' \\
+     Know ‘expectation p (Normal o f o Y) =
+           expectation p (Normal o g o real o Y)’
+     >- (MATCH_MP_TAC expectation_cong >> rw [o_DEF, Abbr ‘g’] \\
+         AP_TERM_TAC >> simp [normal_real]) >> Rewr' \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     CONJ_TAC
+     >- (fs [bounded_def, Abbr ‘g’] \\
+         Q.EXISTS_TAC ‘a’ \\
+         Q.X_GEN_TAC ‘z’ \\
+         DISCH_THEN (Q.X_CHOOSE_THEN ‘x’ STRIP_ASSUME_TAC) \\
+         FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
+         Q.EXISTS_TAC ‘Normal x’ >> simp []) \\
+     simp [continuous_on_univ_alt_continuous_map, Abbr ‘g’] \\
+     MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE \\
+     Q.EXISTS_TAC ‘ext_euclidean’ >> simp [continuous_map_normal])
+ (* new to old *)
+ >> qabbrev_tac ‘g = f o real’
+ >> ‘!n. Normal o f o real o X n = Normal o g o X n’
+       by rw [Abbr ‘g’, GSYM o_ASSOC] >> POP_ORW
+ >> ‘Normal o f o real o Y = Normal o g o Y’
+       by rw [Abbr ‘g’, GSYM o_ASSOC] >> POP_ORW
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> simp [Abbr ‘g’, IN_bounded_continuous, o_DEF]
+ >> reverse CONJ_TAC
+ >- (fs [bounded_def] \\
+     Q.EXISTS_TAC ‘a’ \\
+     Q.X_GEN_TAC ‘z’ \\
+     DISCH_THEN (Q.X_CHOOSE_THEN ‘x’ MP_TAC) >> rw [] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘real x’ >> REWRITE_TAC [])
+ >> ‘(\x. f (real x)) = f o real’ by rw [o_DEF, FUN_EQ_THM] >> POP_ORW
+ >> MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE
+ >> Q.EXISTS_TAC ‘euclidean’
+ >> fs [continuous_on_univ_alt_continuous_map, continuous_map_real]
 QED
 
 Definition subprobability_measure_def : (* aka s.p.m. *)
@@ -4826,44 +4860,6 @@ Proof
           simp [SIGMA_ALGEBRA_BOREL, borel_alt_general, Borel_alt_general] \\
           MATCH_MP_TAC IN_MEASURABLE_CONTINUOUS_MAP >> art []) >> Rewr' \\
       simp [Abbr ‘g’] ]
-QED
-
-(* NOTE: This was the old definition of “converge_in_dist” *)
-Theorem converge_in_dist_alt_continuous_on :
-    !X Y p. prob_space p /\ (!n. real_random_variable (X n) p) /\
-            real_random_variable Y p ==>
-           ((X --> Y) (in_distribution p) <=>
-            !f. bounded (IMAGE f UNIV) /\ f continuous_on UNIV ==>
-               ((\n. expectation p (Normal o f o real o X n)) -->
-                expectation p (Normal o f o real o Y)) sequentially)
-Proof
-    rw [real_random_variable_def, converge_in_dist_def, FORALL_AND_THM]
- >> reverse EQ_TAC >> rpt STRIP_TAC
- (* old to new *)
- >- (FULL_SIMP_TAC std_ss [IN_bounded_continuous] \\
-     qabbrev_tac ‘g = f o Normal’ \\
-     Know ‘!n. expectation p (Normal o f o X n) =
-               expectation p (Normal o g o real o X n)’
-     >- (Q.X_GEN_TAC ‘n’ \\
-         MATCH_MP_TAC expectation_cong >> rw [o_DEF, Abbr ‘g’] \\
-         AP_TERM_TAC >> simp [normal_real]) >> Rewr' \\
-     Know ‘expectation p (Normal o f o Y) =
-           expectation p (Normal o g o real o Y)’
-     >- (MATCH_MP_TAC expectation_cong >> rw [o_DEF, Abbr ‘g’] \\
-         AP_TERM_TAC >> simp [normal_real]) >> Rewr' \\
-     FIRST_X_ASSUM MATCH_MP_TAC \\
-     CONJ_TAC
-     >- (fs [bounded_def, Abbr ‘g’] \\
-         Q.EXISTS_TAC ‘a’ \\
-         Q.X_GEN_TAC ‘z’ \\
-         DISCH_THEN (Q.X_CHOOSE_THEN ‘x’ STRIP_ASSUME_TAC) \\
-         FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
-         Q.EXISTS_TAC ‘Normal x’ >> simp []) \\
-     simp [continuous_on_univ_alt_continuous_map, Abbr ‘g’] \\
-     MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE \\
-     Q.EXISTS_TAC ‘ext_euclidean’ >> simp [CONTINUOUS_MAP_NORMAL])
- (* new to old *)
- >> cheat
 QED
 
 (* ------------------------------------------------------------------------- *)
