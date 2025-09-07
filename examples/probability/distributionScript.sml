@@ -3145,6 +3145,26 @@ Proof
  >> fs [continuous_on_univ_alt_continuous_map, continuous_map_real]
 QED
 
+Definition BL_def :
+    BL E = {f :'a -> real | f IN bounded_continuous (mtop E) /\
+                            Lipschitz_continuous_map (E,mr1) f}
+End
+
+Theorem Lipschitz_continuous_map_rewrite[local] :
+    !E f. f IN C_b (mtop E) /\ Lipschitz_continuous_map (E,mr1) f <=>
+          bounded (IMAGE f UNIV) /\ Lipschitz_continuous_map (E,mr1) f
+Proof
+    rw [IN_APP, bounded_continuous_def, euclidean_def]
+ >> METIS_TAC [Lipschitz_continuous_map_imp_continuous_map]
+QED
+
+(* NOTE: “Lipschitz_continuous_map” implies the part “continuous_map” in “C_b” *)
+Theorem BL_alt :
+    !E. BL E = {f | bounded (IMAGE f UNIV) /\ Lipschitz_continuous_map (E,mr1) f}
+Proof
+    rw [Once EXTENSION, BL_def, Lipschitz_continuous_map_rewrite]
+QED
+
 Definition subprobability_measure_def : (* aka s.p.m. *)
     subprobability_measure m <=> measure_space m /\ measure m (m_space m) <= 1
 End
