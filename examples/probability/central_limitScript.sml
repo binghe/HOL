@@ -5,16 +5,16 @@
 open HolKernel Parse boolLib bossLib;
 
 open pairTheory combinTheory optionTheory prim_recTheory arithmeticTheory
-                pred_setTheory pred_setLib topologyTheory hurdUtils;
+     pred_setTheory pred_setLib hurdUtils listTheory rich_listTheory;
 
-open realTheory realLib iterateTheory seqTheory transcTheory real_sigmaTheory
-                real_topologyTheory;
+open realaxTheory realTheory realLib iterateTheory seqTheory transcTheory
+     real_sigmaTheory limTheory topologyTheory real_topologyTheory;
 
 open extrealTheory sigma_algebraTheory measureTheory
      real_borelTheory borelTheory lebesgueTheory martingaleTheory
      probabilityTheory derivativeTheory extreal_baseTheory;
 
-open distributionTheory realaxTheory stochastic_processTheory listTheory rich_listTheory;
+open distributionTheory stochastic_processTheory complexityTheory;
 
 val _ = new_theory "central_limit";
 
@@ -912,7 +912,7 @@ Proof
     rpt STRIP_TAC
  >> FULL_SIMP_TAC std_ss [BigO_def]
  >> qexistsl_tac [‘c * c'’, ‘MAX n0 n0'’]
- >> rw [REAL_MAX_LE, REAL_LT_MUL']
+ >> rw [REAL_MAX_LE, REAL_LT_MUL]
  >> Q.PAT_X_ASSUM ‘∀n. n0 ≤ n ⇒ abs (f1 n) ≤ c * abs (g1 n)’
     (MP_TAC o Q.SPEC ‘n’)
  >> rw []
@@ -1377,110 +1377,10 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
-(*  Differentiable                                                           *)
-(* ------------------------------------------------------------------------- *)
-
-Definition diff_def :
-    (diff 0       f x = f x) /\
-    (diff (SUC m) f x = @y. ((diff m f) diffl y)(x))
-End
-
-Definition higher_differentiable_def :
-    (higher_differentiable 0 f x <=> T) /\
-    (higher_differentiable (SUC m) f x <=> (?y. (diff m f diffl y) x) /\
-                                           higher_differentiable m f x)
-End
-
-Theorem higher_differentiable_thm :
-    !f.
-        (diff 0 f = f) /\
-        (!m t. (higher_differentiable (SUC m) f t ==>
-               (diff m f diffl (diff (SUC m) f t)) t))
-Proof
-    rw [higher_differentiable_def, diff_def, FUN_EQ_THM]
- >> SELECT_ELIM_TAC >> simp []
- >> qexists ‘y’ >> simp []
-QED
-
-Theorem diff_thm :
-  !f. (!m t. (higher_differentiable (SUC m) f t)) ==>
-      (diff 0 f = f) /\
-      (!m t. ((diff m f) diffl (diff (SUC m) f t))(t))
-Proof
-  rw [diff_def, FUN_EQ_THM]
-  >> SELECT_ELIM_TAC >> simp []
-  >> POP_ASSUM (STRIP_ASSUME_TAC o Q.SPECL [‘m’, ‘t’])
-  >> fs [higher_differentiable_def]
-  >> qexists ‘y’ >> fs []
-QED
-
-Theorem higher_differentiable_mono :
-    ∀f n m t. m ≤ n ∧ higher_differentiable n f t ⇒
-              higher_differentiable m f t
-Proof
-    rpt STRIP_TAC
- >> Cases_on ‘m = n’ >- (fs [])
- >> Induct_on ‘n’ >- (rw [higher_differentiable_def])
- >> rw []
- >> Cases_on ‘m’
- >- (simp [higher_differentiable_def])
- >> ‘n < SUC n’ by rw [LESS_SUC_REFL]
- >> ‘n < SUC n ⇒  higher_differentiable (SUC n) f t ⇒
-     higher_differentiable n f t’ by METIS_TAC [higher_differentiable_def]
- >> rw []
- >> Cases_on ‘SUC n' = n’ >- (rw [])
- >> Suff ‘SUC n' < n’ >- (fs [])
- >> MATCH_MP_TAC LESS_NOT_SUC >> simp []
-QED
-
-Theorem diff_0[simp] :
-    diff 0 f = f
-Proof
-    rw [FUN_EQ_THM, diff_def]
-QED
-
-Theorem diff1_def :
-    ∀f x. diff 1 f x = @y. (f diffl y) x
-Proof
-    EVAL_TAC >> simp []
-QED
-
-Theorem higher_differentiable_1:
-    ∀f x.
-          higher_differentiable 1 f x ⇔
-          ∃y. (f diffl y) x
-Proof
-    rpt STRIP_TAC
- >> MP_TAC ( Q.SPECL [‘0’, ‘f’, ‘x’] (cj 2 higher_differentiable_def))
- >> simp [cj 1 higher_differentiable_def]
-QED
-
-Theorem higher_differentiable_imp_continuous:
-    ∀f x. higher_differentiable 1 f x ⇒
-          f continuous (at x)
-Proof
-    rw [higher_differentiable_1, GSYM limTheory.contl_eq_continuous_at]
- >> METIS_TAC [limTheory.DIFF_CONT]
-QED
-
-Theorem higher_differentiable_1_eq_differentiable:
-    ∀f x. higher_differentiable 1 f x <=> f differentiable at x
-Proof
-    rw []
- >> fs [higher_differentiable_1, limTheory.diffl_has_vector_derivative,
-        GSYM limTheory.differentiable_alt, limTheory.differentiable_has_vector_derivative]
-QED
-
-Theorem higher_differentiable_1_eq_differentiable_on:
-    ∀f. (∀x. higher_differentiable 1 f x) ⇔ f differentiable_on 𝕌(:real)
-Proof
-    rw [higher_differentiable_1_eq_differentiable, derivativeTheory.differentiable_on]
- >> METIS_TAC [netsTheory.WITHIN_UNIV]
-QED
-
-(* ------------------------------------------------------------------------- *)
 (*  Taylor Theorem                                                           *)
 (* ------------------------------------------------------------------------- *)
+
+Overload diff[local] = “diffn”
 
 Theorem TAYLOR_REMAINDER :
     ∀(n :num) x f.
@@ -1834,7 +1734,7 @@ Proof
       >- (simp []) \\
       METIS_TAC [higher_differentiable_1_eq_differentiable_on])
   >> POP_ASSUM (MP_TAC o Q.SPEC ‘0’)
-  >> rw[diff_0]
+  >> rw[diffn_0]
 QED
 
 Theorem CnR_subset_C_b :
@@ -1850,7 +1750,7 @@ Proof
       MATCH_MP_TAC higher_differentiable_mono \\
       qexists ‘n’ >> fs [])
   >> POP_ASSUM (MP_TAC o Q.SPEC ‘0’)
-  >> rw[diff_0]
+  >> rw[diffn_0]
 QED
 
 Theorem C3_subset_C_b :
@@ -1927,7 +1827,7 @@ Proof
                                   GSYM limTheory.contl_eq_continuous_at]
  >> ‘∀x. f differentiable x’ by fs [higher_differentiable_1_eq_differentiable,
                                     GSYM limTheory.differentiable_alt]
- >> fs [Lipschitz_fun_thm, bounded_def, diff1_def, higher_differentiable_1]
+ >> fs [Lipschitz_fun_thm, bounded_def, diffn_1, higher_differentiable_1]
  >> Cases_on ‘a = 0’
  >- (DISJ2_TAC >> gs [] \\
      MATCH_MP_TAC limTheory.DIFF_ISCONST_ALL >> rw [] \\
@@ -3988,115 +3888,6 @@ Proof
   >> simp [EVENTS_SIGMA_ALGEBRA]
 QED
 
-Theorem DIFF_CONG:
-    ∀f g y x.
-      (∀x. f x = g x) ∧ (g diffl y) x ⇒ (f diffl y) x
-Proof
-    rw [limTheory.diffl]
-QED
-
-Theorem SELECT_EQ_THM:
-    ∀P Q. (∀x. P x ⇔ Q x) ⇒ (@x. P x) = (@x. Q x)
-Proof
-    rw []
-QED
-
-Theorem diff_cong :
-    ∀n f g x.
-      (∀x. f x = g x) ⇒ diff n f x = diff n g x
-Proof
-    Induct_on ‘n’ >- (gs [])
- >> rw [diff_def]
- >> HO_MATCH_MP_TAC SELECT_EQ_THM
- >> rw [] >> EQ_TAC >> rw []
- >- (MATCH_MP_TAC DIFF_CONG \\
-     qexists ‘diff n f’ >> simp [])
- >> MATCH_MP_TAC DIFF_CONG
- >> qexists ‘diff n g’
- >> simp []
-QED
-
-Theorem diff_SUC :
-    ∀m f.
-      (∀x. higher_differentiable (SUC m) f x) ⇒
-      diff m (diff 1 f) = diff (SUC m) f
-Proof
-    Induct_on ‘m’ >- (gs [])
- >> rw [diff_def, FUN_EQ_THM]
- >> HO_MATCH_MP_TAC SELECT_EQ_THM
- >> rw [] >> EQ_TAC >> rw []
- >> (Know ‘∀x. higher_differentiable (SUC m) f x’
-     >- (Q.X_GEN_TAC ‘z’ \\
-         MATCH_MP_TAC higher_differentiable_mono \\
-         qexists ‘SUC (SUC m)’ \\
-         simp [LESS_EQ_SUC_REFL]) \\
-     Q.PAT_X_ASSUM ‘∀f. _ ⇒ _’ (STRIP_ASSUME_TAC o Q.SPEC ‘f’) \\
-     DISCH_THEN (fs o wrap))
-QED
-
-Theorem diff_SUC' :
-    ∀m f.
-      (∀x. higher_differentiable (SUC m) f x) ⇒
-      diff 1 (diff m f) = diff (SUC m) f
-Proof
-    rpt STRIP_TAC
-  >> ‘1 = SUC 0’ by simp[] >> POP_ORW
-  >> rw [diff_def, FUN_EQ_THM]
-QED
-
-Theorem higher_differentiable_imp_11 :
-    ∀n f x.
-      1 < n ∧ higher_differentiable n f x ⇒ higher_differentiable 1 (diff 1 f) x
-Proof
-    Induct_on ‘n’ >- (gs [])
- >> rw [higher_differentiable_def]
- >> FIRST_X_ASSUM (STRIP_ASSUME_TAC o Q.SPECL [‘f’, ‘x’])
- >> fs [LESS_THM]  >> gs []
- >> ‘1 = SUC 0’ by simp []
- >> POP_ORW
- >> rw [higher_differentiable_def] >> qexists ‘y’ >> simp []
-QED
-
-Theorem higher_differentiable_imp_n1 :
-    ∀n f. (∀x. higher_differentiable (SUC n) f x) ⇒
-          (∀x. higher_differentiable n (diff 1 f) x)
-Proof
-    STRIP_TAC
- >> Induct_on ‘n’ >> fs [higher_differentiable_def]
- >> rw []
- >> MP_TAC (Q.SPECL [‘n’, ‘f’] diff_SUC)
- >> impl_tac
- >- (rw [higher_differentiable_def] \\
-     POP_ASSUM (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-     qexists ‘y'’ >> simp [])
- >> Rewr
- >> Know ‘∀x. ∃y. (diff n f diffl y) x ∧ higher_differentiable n f x’
- >- (rw [] \\
-     POP_ASSUM (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-     qexists ‘y'’ >> simp [])
- >> DISCH_THEN (fs o wrap)
-QED
-
-Theorem higher_differentiable_imp_1n :
-    ∀n f. (∀x. higher_differentiable (SUC n) f x) ⇒
-          (∀x. higher_differentiable 1 (diff n f) x)
-Proof
-    STRIP_TAC
- >> Induct_on ‘n’
- >- (‘1 = SUC 0’ by simp [] >> POP_ORW >> fs [])
- >> rw []
- >> MP_TAC (Q.SPECL [‘n’, ‘f’] diff_SUC)
- >> impl_tac >- (rw [] \\
-                 MATCH_MP_TAC higher_differentiable_mono \\
-                 qexists ‘SUC (SUC n)’ >> fs [])
- >> DISCH_THEN (rw o wrap o SYM)
- >> Q.PAT_X_ASSUM ‘∀f. (∀x. _) ⇒ _’ (STRIP_ASSUME_TAC o Q.SPEC ‘diff 1 f’)
- >> Know ‘∀x. higher_differentiable (SUC n) (diff 1 f) x’
- >- (rw [] \\
-     MATCH_MP_TAC higher_differentiable_imp_n1 >> fs [])
- >> gs []
-QED
-
 Theorem CnR_subset_class_lipschitz :
     ∀n. 1 ≤ n ⇒ CnR n ⊆ C_bounded_lipschitz
 Proof
@@ -4106,7 +3897,7 @@ Proof
       rw []
       >- (MATCH_MP_TAC higher_differentiable_mono \\
           qexists ‘n’ >> gs []))
-  >> ‘f = diff 0 f’ by fs [GSYM diff_def, GSYM ETA_AX]
+  >> ‘f = diff 0 f’ by fs [GSYM diffn_def, GSYM ETA_AX]
   >> POP_ORW
   >> POP_ASSUM (STRIP_ASSUME_TAC o Q.SPEC ‘0’)
   >> gs [LTE_TRANS, LT_IMP_LE]
@@ -4126,8 +3917,8 @@ Proof
  >> rename1 ‘abs (diff 1 (diff (n − 1) f) x) ≤ a’
  >> POP_ASSUM (STRIP_ASSUME_TAC o Q.SPEC ‘diff 1 (diff (n − 1) f) x’)
  >> Know ‘∃x'. diff 1 (diff (n − 1) f) x = diff n f x'’
- >- (qexists ‘x’ >> rw [diff_def] \\
-     MP_TAC (Q.SPECL [‘n - 1’, ‘f’] diff_SUC') \\
+ >- (qexists ‘x’ >> rw [diffn_def] \\
+     MP_TAC (Q.SPECL [‘n - 1’, ‘f’] diffn_SUC') \\
      rw [ADD1])
  >> DISCH_THEN (fs o wrap)
 QED
@@ -4172,478 +3963,6 @@ Proof
  >> fs []
 QED
 
-Theorem diff_chain :
-    ∀f g.
-      (∀t. higher_differentiable 1 f t) ∧ (∀t. higher_differentiable 1 g t) ⇒
-      diff 1 (λx. f (g x)) = λx. diff 1 f (g x) * diff 1 g x
-Proof
-    rpt STRIP_TAC
- >> ‘1 = SUC 0’ by simp [] >> POP_ORW
- >> fs [diff_def, higher_differentiable_1, FUN_EQ_THM] >> rw []
- >> SELECT_ELIM_TAC
- >> STRONG_CONJ_TAC
- >- (POP_ASSUM (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-     FIRST_X_ASSUM (STRIP_ASSUME_TAC o Q.SPEC ‘g (x :real)’) \\
-     rename1 ‘(f diffl z) (g x)’ \\
-     qexists ‘z * y’ \\
-     MATCH_MP_TAC limTheory.DIFF_CHAIN >> simp [])
- >> DISCH_THEN (Q.X_CHOOSE_THEN ‘y’ ASSUME_TAC)
- >> Q.X_GEN_TAC ‘z’
- >> DISCH_TAC
- >> ‘y = z’ by METIS_TAC [limTheory.DIFF_UNIQ]
- >> NTAC 2 (SELECT_ELIM_TAC >> rw [] >> fs [])
- >> rename1 ‘y = l * m’
- >> MP_TAC (Q.SPECL [‘f’, ‘g’, ‘l’, ‘m’, ‘(x :real)’] limTheory.DIFF_CHAIN)
- >> simp []
- >> METIS_TAC [limTheory.DIFF_UNIQ]
-QED
-
-Theorem diff_const :
-    ∀k. diff 1 (λx. k) = λx. 0
-Proof
-    rw [diff1_def, FUN_EQ_THM]
- >> SELECT_ELIM_TAC >> rw []
- >- (qexists ‘0’ >> irule limTheory.DIFF_CONST)
- >> MP_TAC (Q.SPECL [‘k’, ‘x’] limTheory.DIFF_CONST)
- >> METIS_TAC [limTheory.DIFF_UNIQ]
-QED
-
-Theorem diff_cmul :
-    ∀f c.
-      (∀x. higher_differentiable 1 f x) ⇒
-      diff 1 (λx. c * f x) = λx. c * diff 1 f x
-Proof
-    rw [diff1_def, higher_differentiable_1, FUN_EQ_THM]
- >> SELECT_ELIM_TAC >> rw []
- >- (POP_ASSUM (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-     qexists ‘c * y’ >> METIS_TAC [limTheory.DIFF_CMUL])
- >> SELECT_ELIM_TAC >> rw [] >> fs []
- >> rename1 ‘y = c * z’
- >> MP_TAC (Q.SPECL [‘f’, ‘c’, ‘z’, ‘x’] limTheory.DIFF_CMUL)
- >> simp []
- >> METIS_TAC [limTheory.DIFF_UNIQ]
-QED
-
-Theorem diffl_imp_diff :
-    ∀m f x y. (diff m f diffl y) x ⇒ diff (SUC m) f x = y
-Proof
-    rw [diff_def]
- >> SELECT_ELIM_TAC >> rw []
- >- (qexists ‘y’ >> fs [])
- >> irule limTheory.DIFF_UNIQ
- >> qexistsl [‘diff m f’, ‘x’] >> fs []
-QED
-
-Theorem diff_imp_diffl :
-    ∀f x y n.
-      higher_differentiable (SUC n) f x ∧ diff (SUC n) f x = y ⇒
-      (diff n f diffl y) x
-Proof
-    rpt STRIP_TAC
- >> MP_TAC (Q.SPECL [‘f’] higher_differentiable_thm)
- >> rw []
-QED
-
-Theorem diff_mul :
-    ∀f g.
-      (∀t. higher_differentiable 1 f t) ∧ (∀t. higher_differentiable 1 g t) ⇒
-      diff 1 (λx. f x * g x) = (λx. diff 1 f x * g x + diff 1 g x * f x)
-Proof
-    rw [FUN_EQ_THM, diff1_def]
- >> SELECT_ELIM_TAC
- >> STRONG_CONJ_TAC
- >- (fs [higher_differentiable_1] \\
-     POP_ASSUM (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-     FIRST_X_ASSUM (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-     rename1 ‘(f diffl l) x’ >> rename1 ‘(g diffl m) x’ \\
-     qexists ‘l * g x + m * f x’ \\
-     MATCH_MP_TAC limTheory.DIFF_MUL >> simp [])
- >> DISCH_THEN (Q.X_CHOOSE_THEN ‘y’ ASSUME_TAC)
- >> Q.X_GEN_TAC ‘z’
- >> DISCH_TAC
- >> ‘y = z’ by METIS_TAC [limTheory.DIFF_UNIQ]
- >> SELECT_ELIM_TAC >> rw []
- >- (Q.PAT_X_ASSUM ‘∀t. higher_differentiable 1 f t’ (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-     fs [higher_differentiable_1] \\
-     qexists ‘y'’ >> fs [])
- >> SELECT_ELIM_TAC >> rw []
- >- (Q.PAT_X_ASSUM ‘∀t. higher_differentiable 1 g t’ (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-     fs [higher_differentiable_1] \\
-     qexists ‘y'’ >> fs [])
- >> qmatch_abbrev_tac ‘y = l * g x + m * f x’
- >> MP_TAC (Q.SPECL [‘f’, ‘g’, ‘l’, ‘m’, ‘x’] limTheory.DIFF_MUL) >> rw []
- >> METIS_TAC [limTheory.DIFF_UNIQ]
-QED
-
-Theorem diff_add :
-    ∀f g.
-      (∀t. higher_differentiable 1 f t) ∧ (∀t. higher_differentiable 1 g t) ⇒
-      diff 1 (λx. f x + g x) = (λx. diff 1 f x + diff 1 g x)
-Proof
-    rw [FUN_EQ_THM, diff1_def]
- >> SELECT_ELIM_TAC
- >> STRONG_CONJ_TAC
- >- (fs [higher_differentiable_1] \\
-     POP_ASSUM (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-     FIRST_X_ASSUM (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-     rename1 ‘(f diffl l) x’ >> rename1 ‘(g diffl m) x’ \\
-     qexists ‘l + m’ \\
-     MATCH_MP_TAC limTheory.DIFF_ADD >> simp [])
- >> DISCH_THEN (Q.X_CHOOSE_THEN ‘y’ ASSUME_TAC)
- >> Q.X_GEN_TAC ‘z’
- >> DISCH_TAC
- >> ‘y = z’ by METIS_TAC [limTheory.DIFF_UNIQ]
- >> SELECT_ELIM_TAC >> rw []
- >- (Q.PAT_X_ASSUM ‘∀t. higher_differentiable 1 f t’ (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-     fs [higher_differentiable_1] \\
-     qexists ‘y'’ >> fs [])
- >> SELECT_ELIM_TAC >> rw []
- >- (Q.PAT_X_ASSUM ‘∀t. higher_differentiable 1 g t’ (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-     fs [higher_differentiable_1] \\
-     qexists ‘y'’ >> fs [])
- >> qmatch_abbrev_tac ‘y = l + m’
- >> MP_TAC (Q.SPECL [‘f’, ‘g’, ‘l’, ‘m’, ‘x’] limTheory.DIFF_ADD) >> rw []
- >> METIS_TAC [limTheory.DIFF_UNIQ]
-QED
-
-Theorem diff_sub :
-    ∀f g.
-      (∀t. higher_differentiable 1 f t) ∧ (∀t. higher_differentiable 1 g t) ⇒
-      diff 1 (λx. f x - g x) = (λx. diff 1 f x - diff 1 g x)
-Proof
-    rw [FUN_EQ_THM, diff1_def]
- >> SELECT_ELIM_TAC
- >> STRONG_CONJ_TAC
- >- (fs [higher_differentiable_1] \\
-     POP_ASSUM (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-     FIRST_X_ASSUM (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-     rename1 ‘(f diffl l) x’ >> rename1 ‘(g diffl m) x’ \\
-     qexists ‘l - m’ \\
-     MATCH_MP_TAC limTheory.DIFF_SUB >> simp [])
- >> DISCH_THEN (Q.X_CHOOSE_THEN ‘y’ ASSUME_TAC)
- >> Q.X_GEN_TAC ‘z’
- >> DISCH_TAC
- >> ‘y = z’ by METIS_TAC [limTheory.DIFF_UNIQ]
- >> SELECT_ELIM_TAC >> rw []
- >- (Q.PAT_X_ASSUM ‘∀t. higher_differentiable 1 f t’ (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-     fs [higher_differentiable_1] \\
-     qexists ‘y'’ >> fs [])
- >> SELECT_ELIM_TAC >> rw []
- >- (Q.PAT_X_ASSUM ‘∀t. higher_differentiable 1 g t’ (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-     fs [higher_differentiable_1] \\
-     qexists ‘y'’ >> fs [])
- >> qmatch_abbrev_tac ‘y = l - m’
- >> MP_TAC (Q.SPECL [‘f’, ‘g’, ‘l’, ‘m’, ‘x’] limTheory.DIFF_SUB) >> rw []
- >> METIS_TAC [limTheory.DIFF_UNIQ]
-QED
-
-val higher_differentiable_n_imp_1_tactic =
-    rw []
-    >- (Q.PAT_X_ASSUM ‘∀x. higher_differentiable (SUC n') f x’
-         (STRIP_ASSUME_TAC o Q.SPEC ‘t’) \\
-        MATCH_MP_TAC higher_differentiable_mono \\
-        qexists ‘SUC n'’ >> simp []) \\
-    Q.PAT_X_ASSUM ‘∀x. higher_differentiable (SUC n') g x’
-     (STRIP_ASSUME_TAC o Q.SPEC ‘t’) \\
-    MATCH_MP_TAC higher_differentiable_mono \\
-    qexists ‘SUC n'’ >> simp [];
-
-Theorem higher_differentiable_add :
-  ∀f g n.
-    (∀x. higher_differentiable n f x) ∧
-    (∀x. higher_differentiable n g x) ⇒
-    (∀x. higher_differentiable n (λx. f x + g x) x)
-Proof
-    Induct_on ‘n’ >- (gs [higher_differentiable_def])
- >> rw [higher_differentiable_def, FORALL_AND_THM]
- >> Cases_on ‘n’
- >- (fs [diff_0] \\
-     Q.PAT_X_ASSUM ‘∀x. ∃y. (g diffl y) x’ (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-     Q.PAT_X_ASSUM ‘∀x. ∃y. (f diffl y) (x :real)’ (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-     rename1 ‘(f diffl l) x’ >> rename1 ‘(g diffl m) x’ \\
-     qexists ‘l + m’ \\
-     MATCH_MP_TAC limTheory.DIFF_ADD >> simp [])
- >> gs [GSYM diff_SUC]
- >> MP_TAC (Q.SPECL [‘f’, ‘g’] diff_add)
- >> impl_tac
- >- (higher_differentiable_n_imp_1_tactic)
- >> Rewr
- >> Q.ABBREV_TAC ‘df = diff 1 f’
- >> Q.ABBREV_TAC ‘dg = diff 1 g’
- >> Q.PAT_X_ASSUM ‘∀f g. _’ (STRIP_ASSUME_TAC o Q.SPECL [‘df’, ‘dg’])
- >> Know ‘(∀x. higher_differentiable (SUC n') df x) ∧
-          (∀x. higher_differentiable (SUC n') dg x)’
- >- (rw [Abbr ‘df’, Abbr ‘dg’, higher_differentiable_def] \\
-     MATCH_MP_TAC higher_differentiable_imp_n1 >> gs [])
- >> DISCH_THEN (fs o wrap)
- >> fs [higher_differentiable_def]
-QED
-
-Theorem higher_differentiable_sub :
-    ∀f g n.
-      (∀x. higher_differentiable n f x) ∧
-      (∀x. higher_differentiable n g x) ⇒
-      (∀x. higher_differentiable n (λx. f x - g x) x)
-Proof
-    Induct_on ‘n’ >- (gs [higher_differentiable_def])
- >> rw [higher_differentiable_def, FORALL_AND_THM]
- >> Cases_on ‘n’
- >- (fs [diff_0] \\
-     Q.PAT_X_ASSUM ‘∀x. ∃y. (g diffl y) x’ (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-     Q.PAT_X_ASSUM ‘∀x. ∃y. (f diffl y) (x :real)’ (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-     rename1 ‘(f diffl l) x’ >> rename1 ‘(g diffl m) x’ \\
-     qexists ‘l - m’ \\
-     MATCH_MP_TAC limTheory.DIFF_SUB >> simp [])
- >> gs [GSYM diff_SUC]
- >> MP_TAC (Q.SPECL [‘f’, ‘g’] diff_sub)
- >> impl_tac
- >- (higher_differentiable_n_imp_1_tactic)
- >> Rewr
- >> Q.ABBREV_TAC ‘df = diff 1 f’
- >> Q.ABBREV_TAC ‘dg = diff 1 g’
- >> Q.PAT_X_ASSUM ‘∀f g. _’ (STRIP_ASSUME_TAC o Q.SPECL [‘df’, ‘dg’])
- >> Know ‘(∀x. higher_differentiable (SUC n') df x) ∧
-          (∀x. higher_differentiable (SUC n') dg x)’
- >- (rw [Abbr ‘df’, Abbr ‘dg’, higher_differentiable_def] \\
-     MATCH_MP_TAC higher_differentiable_imp_n1 >> gs [])
- >> DISCH_THEN (fs o wrap)
- >> fs [higher_differentiable_def]
-QED
-
-Theorem higher_differentiable_mul :
-    ∀f g n.
-      (∀x. higher_differentiable n f x) ∧
-      (∀x. higher_differentiable n g x) ⇒
-      (∀x. higher_differentiable n (λx. f x * g x) x)
-Proof
-    Induct_on ‘n’ >- (gs [higher_differentiable_def])
- >> rw [higher_differentiable_def, FORALL_AND_THM]
- >> Cases_on ‘n’
- >- (fs [diff_0] \\
-     Q.PAT_X_ASSUM ‘∀x. ∃y. (g diffl y) x’ (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-     Q.PAT_X_ASSUM ‘∀x. ∃y. (f diffl y) (x :real)’ (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-     rename1 ‘(f diffl l) x’ >> rename1 ‘(g diffl m) x’ \\
-     qexists ‘l * g x + m * f x’ \\
-     MATCH_MP_TAC limTheory.DIFF_MUL >> simp [])
- >> gs [GSYM diff_SUC]
- >> MP_TAC (Q.SPECL [‘f’, ‘g’] diff_mul)
- >> impl_tac
- >- (higher_differentiable_n_imp_1_tactic)
- >> Rewr
- >> Q.ABBREV_TAC ‘df = diff 1 f’
- >> Q.ABBREV_TAC ‘dg = diff 1 g’
- >> Know ‘∀x. higher_differentiable (SUC n') (λx. df x * g x) x’
- >- (Q.PAT_X_ASSUM ‘∀f g. _’ (MP_TAC o Q.SPECL [‘df’, ‘g’]) \\
-     Know ‘(∀x. higher_differentiable (SUC n') df x) ∧
-           (∀x. higher_differentiable (SUC n') g x)’
-     >- (rw [Abbr ‘df’, higher_differentiable_def] \\
-         MATCH_MP_TAC higher_differentiable_imp_n1 >> gs []) >> Rewr)
- >> DISCH_TAC
- >> Know ‘∀x. higher_differentiable (SUC n') (λx. f x * dg x) x’
- >- (Q.PAT_X_ASSUM ‘∀f g. _’ (MP_TAC o Q.SPECL [‘f’, ‘dg’]) \\
-     Know ‘(∀x. higher_differentiable (SUC n') f x) ∧
-           (∀x. higher_differentiable (SUC n') dg x)’
-     >- (rw [Abbr ‘dg’, higher_differentiable_def] \\
-         MATCH_MP_TAC higher_differentiable_imp_n1 >> gs []) >> Rewr)
- >> DISCH_TAC
- >> MP_TAC (Q.SPECL [‘λx. df x * g x’, ‘λx. dg x * f x’, ‘SUC n'’] higher_differentiable_add)
- >> Suff ‘(∀x. higher_differentiable (SUC n') (λx. df x * g x) x) ∧
-          (∀x. higher_differentiable (SUC n') (λx. dg x * f x) x)’
- >- (rw [higher_differentiable_def])
- >> rw [Abbr ‘df’, Abbr ‘dg’]
-QED
-
-Theorem higher_differentiable_chain :
-    ∀n f g.
-      (∀x. higher_differentiable n f x) ∧
-      (∀x. higher_differentiable n g x) ⇒
-      (∀x. higher_differentiable n (λx. f (g x)) x)
-Proof
-    Induct_on ‘n’ >- (gs [higher_differentiable_def])
- >> rw [higher_differentiable_def, FORALL_AND_THM]
- >> Cases_on ‘n’
- >- (fs [diff_0] \\
-     Q.PAT_X_ASSUM ‘∀x. ∃y. (g diffl y) x’ (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-     Q.PAT_X_ASSUM ‘∀x. ∃y. (f diffl y) (x :real)’ (STRIP_ASSUME_TAC o Q.SPEC ‘g (x :real)’) \\
-     rename1 ‘(f diffl z) (g x)’ \\
-     qexists ‘z * y’ \\
-     MATCH_MP_TAC limTheory.DIFF_CHAIN >> simp [])
- >> gs [GSYM diff_SUC]
- >> Know ‘diff 1 (λx. f (g x)) = λx. diff 1 f (g x) * diff 1 g x’
-    >- (MATCH_MP_TAC diff_chain >> rw [] \\
-        Q.PAT_X_ASSUM ‘∀x. higher_differentiable (SUC n') f x’
-         (STRIP_ASSUME_TAC o Q.SPEC ‘t’) \\
-        MATCH_MP_TAC higher_differentiable_mono \\
-        qexists ‘SUC n'’ >> simp [])
- >> Rewr
- >> Q.ABBREV_TAC ‘df = diff 1 f’
- >> Q.ABBREV_TAC ‘dg = diff 1 g’
- >> Q.ABBREV_TAC ‘dfg = λx. df (g x)’ >> simp []
- >> MP_TAC (Q.SPECL [‘dfg’, ‘dg’, ‘SUC n'’] higher_differentiable_mul)
- >> impl_tac
- >- (rw [Abbr ‘dfg’, Abbr ‘dg’, higher_differentiable_def] \\
-     Q.PAT_X_ASSUM ‘∀f g. _’ (MP_TAC o Q.SPECL [‘df’, ‘g’]) \\
-     simp [] \\
-     Suff ‘(∀x. higher_differentiable (SUC n') df x)’
-     >- (rw [higher_differentiable_def]) \\
-     rw [Abbr ‘df’, higher_differentiable_def]
-     >> MATCH_MP_TAC higher_differentiable_imp_n1 >> gs [])
- >> rw [higher_differentiable_def]
-QED
-
-Theorem diff_linear :
-    ∀a b. diff 1 (λx. a * x + b) = λx. a
-Proof
-    rw [diff1_def, FUN_EQ_THM]
- >> SELECT_ELIM_TAC >> rw []
- >- (qexists ‘a’ \\
-     MP_TAC (Q.SPECL [‘λx. a * x’, ‘λx. b’, ‘a’, ‘0’, ‘x’] limTheory.DIFF_ADD) \\
-     impl_tac
-     >- (reverse CONJ_TAC >- (METIS_TAC [limTheory.DIFF_CONST]) \\
-         MP_TAC (Q.SPECL [‘λx. x’, ‘a’, ‘1’, ‘x’] limTheory.DIFF_CMUL) \\
-         impl_tac >- (METIS_TAC [limTheory.DIFF_X]) >> gs []) \\
-     gs [])
- >> rename1 ‘y = a’
- >> MP_TAC (Q.SPECL [‘λx. a * x’, ‘λx. b’, ‘a’, ‘0’, ‘x’] limTheory.DIFF_ADD)
- >> impl_tac
- >- (reverse CONJ_TAC >- (METIS_TAC [limTheory.DIFF_CONST]) \\
-     MP_TAC (Q.SPECL [‘λx. x’, ‘a’, ‘1’, ‘x’] limTheory.DIFF_CMUL) \\
-     impl_tac >- (METIS_TAC [limTheory.DIFF_X]) >> gs [])
- >> rw []
- >> METIS_TAC [limTheory.DIFF_UNIQ]
-QED
-
-Theorem diff_linear' :
-    ∀a b n. 2 ≤ n ∧
-            (∀t. higher_differentiable n (λx. a * x + b) t) ⇒
-            diff n (λx. a * x + b) = λx. 0
-Proof
-    Induct_on ‘n’ >- (gs [diff_def])
- >> rw [diff_def, FUN_EQ_THM]
- >> SELECT_ELIM_TAC >> rw []
- >- (Cases_on ‘n = 0’ >- (gs [diff_def]) \\
-     Cases_on ‘n = 1’ >- (gs [diff1_def, diff_linear] \\
-                          qexists ‘0’ \\
-                          simp [limTheory.DIFF_CONST]) \\
-     Q.PAT_X_ASSUM ‘∀a b. _’ (MP_TAC o Q.SPECL [‘a’, ‘b’]) \\
-     Suff ‘2 ≤ n ∧ (∀t. higher_differentiable n (λx. a * x + b) t)’
-     >- (rw [] >> qexists ‘0’ \\
-         simp [limTheory.DIFF_CONST]) \\
-     rw [] \\
-     FIRST_X_ASSUM (STRIP_ASSUME_TAC o Q.SPEC ‘t’) \\
-     MATCH_MP_TAC higher_differentiable_mono \\
-     qexists ‘SUC n’ >> gs [])
- >> Cases_on ‘n = 0’ >- (gs [diff_def])
- >> Cases_on ‘n = 1’ >- (gs [diff1_def, diff_linear] \\
-                         METIS_TAC [limTheory.DIFF_CONST, limTheory.DIFF_UNIQ])
- >> Q.PAT_X_ASSUM ‘∀a b. _’ (MP_TAC o Q.SPECL [‘a’, ‘b’])
- >> Suff ‘2 ≤ n ∧ (∀t. higher_differentiable n (λx. a * x + b) t)’
- >- (rw [] >> gs [] \\
-     METIS_TAC [limTheory.DIFF_CONST, limTheory.DIFF_UNIQ])
- >> rw []
- >> FIRST_X_ASSUM (STRIP_ASSUME_TAC o Q.SPEC ‘t’)
- >> MATCH_MP_TAC higher_differentiable_mono
- >> qexists ‘SUC n’ >> gs []
-QED
-
-Theorem higher_differentiable_sub_linear :
-    ∀a k x. higher_differentiable k (λx. a − x) x
-Proof
-    STRIP_TAC
- >> Induct_on ‘k’ >- (gs [higher_differentiable_def])
- >> rw [higher_differentiable_def]
- >> Know ‘∀x. ((λx. a − x) diffl -1) x’
- >- (rw [limTheory.diffl] \\
-     ‘∀h. a − (x + h) − (a − x) = -h’ by REAL_ARITH_TAC >> POP_ORW \\
-     MP_TAC (Q.SPECL [‘λh. -h / h’, ‘λx. -1’, ‘-1’, ‘0’] limTheory.LIM_EQUAL) \\
-     rw [] \\
-     METIS_TAC [limTheory.LIM_CONST])
- >> DISCH_TAC
- >> MP_TAC (Q.SPECL [‘-1’, ‘a’, ‘k’] diff_linear') >> rw []
- >> ‘∀x. -x + a = a - x’ by (rw [] >> REAL_ARITH_TAC)
- >> POP_ASSUM (fs o wrap)
- >> Cases_on ‘k = 0’
- >- (qexists ‘-1’ \\
-     rw [limTheory.diffl] \\
-     ‘∀h. a − (x + h) − (a − x) = -h’ by REAL_ARITH_TAC \\
-     POP_ORW \\
-     MP_TAC (Q.SPECL [‘λh. -h / h’, ‘λx. -1’, ‘-1’, ‘0’] limTheory.LIM_EQUAL) \\
-     rw [] \\
-     METIS_TAC [limTheory.LIM_CONST])
- >> Cases_on ‘k = 1’
- >- (qexists ‘0’ >> gs [] \\
-     MP_TAC (Q.SPECL [‘λx. a’, ‘λx. x’, ‘0’, ‘1’, ‘x’] limTheory.DIFF_SUB) \\
-     impl_tac >- (METIS_TAC [limTheory.DIFF_CONST, limTheory.DIFF_X]) \\
-     rw [] \\
-     Know ‘diff 1 (λx. a - x) = λx. -1’
-     >- (rw [FUN_EQ_THM] \\
-         POP_ASSUM (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
-         ‘1 = SUC 0’ by simp [] >> POP_ORW \\
-         irule diffl_imp_diff >> fs [diff_def]) >> Rewr \\
-     METIS_TAC [limTheory.DIFF_CONST])
- >> gs []
- >> qexists ‘0’
- >> METIS_TAC [limTheory.DIFF_CONST]
-QED
-
-Theorem pow_neg_1[local] :
-  -(1 :real) pow 1 = -1
-Proof
-  REAL_ARITH_TAC
-QED
-
-Theorem diff_neg_subst :
-    ∀n f a.
-      (∀x. higher_differentiable n f x) ⇒
-      diff n (λx. f (a − x)) = λx. (-1) pow n * diff n f (a − x)
-Proof
-    Induct_on ‘n’ >- (gs [diff_def])
- >> rw [FUN_EQ_THM]
- >> Q.ABBREV_TAC ‘g = λx. f (a − x)’
- >> MP_TAC (Q.SPECL [‘n’, ‘g’] diff_SUC')
- >> impl_tac
- >- (rw [Abbr ‘g’] \\
-     irule higher_differentiable_chain >> simp [] \\
-     METIS_TAC [higher_differentiable_sub_linear])
- >> DISCH_THEN (rw o wrap o SYM)
- >> Q.PAT_X_ASSUM ‘∀f a. _’ (STRIP_ASSUME_TAC o Q.SPECL [‘f’, ‘a’])
- >> Know ‘∀x. higher_differentiable n f x’
- >- (rw [] \\
-     MATCH_MP_TAC higher_differentiable_mono \\
-     qexists ‘SUC n’ >> gs [])
- >> DISCH_THEN (fs o wrap) >> gs []
- >> POP_ORW
- >> rw [Abbr ‘g’]
- >> Know ‘∀x. higher_differentiable 1 f x’
- >- (rw [] \\
-     MATCH_MP_TAC higher_differentiable_mono \\
-     qexists ‘SUC n’ >> fs [])
- >> DISCH_TAC
- >> Q.ABBREV_TAC ‘g = λx. diff n f (a − x)’
- >> Know ‘∀x. higher_differentiable 1 g x’
- >- (rw [Abbr ‘g’] \\
-     irule higher_differentiable_chain >> rw []
-     >- (METIS_TAC [higher_differentiable_imp_1n]) \\
-     METIS_TAC [higher_differentiable_sub_linear])
- >> DISCH_TAC
- >> ASM_SIMP_TAC std_ss [diff_cmul]
- >> ‘-(1 :real) pow SUC n = -1 pow n * -1’ by rw [ADD1, POW_ADD, pow_neg_1]
- >> POP_ORW
- >> rw [REAL_MUL_COMM, Abbr ‘g’]
- >> Q.ABBREV_TAC ‘dfn = diff n f’
-  >> MP_TAC (Q.SPECL [‘dfn’, ‘λx. a - x’] diff_chain)
- >> impl_tac >- (rw [Abbr ‘dfn’]
-                 >- (METIS_TAC [higher_differentiable_imp_1n]) \\
-                 METIS_TAC [higher_differentiable_sub_linear])
- >> rw []
- >> Know ‘diff 1 (λx. a − x) x = -1’
-  >- (MP_TAC (Q.SPECL [‘-1’, ‘a’] diff_linear) \\
-      ‘∀x. a - x = -x + a’ by (rw [] >> REAL_ARITH_TAC) \\
-      rw [FUN_EQ_THM])
- >> Rewr
- >> rw [Abbr ‘dfn’, REAL_MUL_COMM]
- >> METIS_TAC [diff_SUC']
-QED
 
 val TAYLOR_THEOREM_GENERAL_TACTIC =
     Cases_on ‘x < a’
@@ -4699,7 +4018,7 @@ QED
             ‘x - a = -h’ by (fs [Abbr ‘h’] >> REAL_ARITH_TAC) \\
             rw [REAL_POW_NEG2]
             >- (DISJ2_TAC \\
-                MP_TAC (Q.SPECL [‘z’, ‘f’, ‘a’] diff_neg_subst) \\
+                MP_TAC (Q.SPECL [‘z’, ‘f’, ‘a’] diffn_neg_sub) \\
                 impl_tac
                 >- (rw [] \\
                     FIRST_X_ASSUM (STRIP_ASSUME_TAC o Q.SPECL [‘z’, ‘x'’]) \\
@@ -4709,7 +4028,7 @@ QED
                 Rewr >> rw [REAL_POW_NEG2]) \\
             DISJ2_TAC \\
             fs [GSYM ODD_EVEN] \\
-            MP_TAC (Q.SPECL [‘z’, ‘0’, ‘f’, ‘a’] diff_neg_subst') \\
+            MP_TAC (Q.SPECL [‘z’, ‘0’, ‘f’, ‘a’] diffn_neg_eq') \\
             impl_tac
             >- (simp [] \\
                 FIRST_X_ASSUM (STRIP_ASSUME_TAC o Q.SPECL [‘z’, ‘a’]) \\
@@ -4724,7 +4043,7 @@ QED
         ‘x - a = -b’ by (fs [Abbr ‘b’] >> REAL_ARITH_TAC) \\
         rw [REAL_POW_NEG2]
         >- (DISJ2_TAC \\
-            MP_TAC (Q.SPECL [‘n’, ‘0’, ‘f’, ‘a’] diff_neg_subst') \\
+            MP_TAC (Q.SPECL [‘n’, ‘0’, ‘f’, ‘a’] diffn_neg_eq') \\
             impl_tac
             >- (simp [] \\
                 FIRST_X_ASSUM (STRIP_ASSUME_TAC o Q.SPECL [‘n - 1’, ‘a’]) \\
@@ -4732,7 +4051,7 @@ QED
                 ‘SUC (n - 1) = n’ by rw [ADD1, GSYM ADD_ASSOC] \\
                 POP_ASSUM (fs o wrap)) \\
             Rewr >> rw [REAL_POW_NEG2] \\
-            MP_TAC (Q.SPECL [‘n’, ‘t’, ‘f’, ‘a’] diff_neg_subst') \\
+            MP_TAC (Q.SPECL [‘n’, ‘t’, ‘f’, ‘a’] diffn_neg_eq') \\
             impl_tac
             >- (simp [] \\
                 FIRST_X_ASSUM (STRIP_ASSUME_TAC o Q.SPECL [‘n - 1’, ‘a - t’]) \\
@@ -4743,7 +4062,7 @@ QED
             Rewr >> rw [REAL_POW_NEG2]) \\
         DISJ2_TAC \\
         fs [GSYM ODD_EVEN] \\
-        MP_TAC (Q.SPECL [‘n’, ‘t’, ‘f’, ‘a’] diff_neg_subst') \\
+        MP_TAC (Q.SPECL [‘n’, ‘t’, ‘f’, ‘a’] diffn_neg_sub') \\
         impl_tac
         >- (simp [] \\
             FIRST_X_ASSUM (STRIP_ASSUME_TAC o Q.SPECL [‘n - 1’, ‘a - t’]) \\
@@ -4807,44 +4126,6 @@ Proof
       f a − h * diff 1 f a − 1 / 2 * (h² * diff 2 f a) = 1 / 6 * (h³ * diff 3 f t)’
     by REAL_ARITH_TAC >> POP_ASSUM (rw o wrap)
   >> simp [TAYLOR_REMAINDER_THIRD_ORDER_BOUND]
-QED
-
-Theorem higher_differentiable_continuous_on :
-    ∀m n f.
-      (∀x. higher_differentiable n f x) ∧ m < n ∧ 0 < n ⇒
-      diff m f continuous_on 𝕌(:real)
-Proof
-    Induct_on ‘m’
- >- (rw [] \\
-     ‘1 ≤ n’ by fs [] \\
-     MP_TAC (Q.SPECL [‘f’, ‘n’, ‘1’] higher_differentiable_mono) >> fs [] \\
-     STRIP_TAC \\
-     MP_TAC (Q.SPECL [‘f’] higher_differentiable_imp_continuous) >> gs [] \\
-     fs [continuous_at, continuous_on, IN_UNIV])
- >> rpt STRIP_TAC
- >> Know ‘∀x. higher_differentiable (SUC m) f x’
- >- (rw [] \\
-     HO_MATCH_MP_TAC higher_differentiable_mono \\
-     qexists ‘n’ \\
-     METIS_TAC [LT_IMP_LE])
- >> DISCH_TAC
- >> Q.ABBREV_TAC ‘g = diff 1 f’
- >> Know ‘diff m g = diff (SUC m) f’
- >- (rw [Abbr ‘g’] \\
-     HO_MATCH_MP_TAC diff_SUC \\
-     simp [])
- >> DISCH_TAC >> gs []
- >> Cases_on ‘m = 0’
- >- (rw [diff_0, Abbr ‘g’, continuous_on_def] \\
-     MATCH_MP_TAC CONTINUOUS_AT_WITHIN \\
-     MATCH_MP_TAC higher_differentiable_imp_continuous \\
-     HO_MATCH_MP_TAC higher_differentiable_imp_11 \\
-     qexists ‘n’ >> gs [])
- >> Cases_on ‘n’ >> fs []
- >> Q.PAT_X_ASSUM ‘ diff m g = _’ (rw o wrap o SYM)
- >> FIRST_X_ASSUM (MATCH_MP_TAC)
- >> qexists ‘n'’ >> rw [Abbr ‘g’]
- >> MATCH_MP_TAC higher_differentiable_imp_n1 >> simp []
 QED
 
 Theorem in_borel_measurable_diff :
