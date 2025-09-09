@@ -1842,6 +1842,21 @@ Proof
  >> Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘k * dist E1 (a,x)’ >> art []
 QED
 
+(* cf. CONTINUOUS_MAP_COMPOSE *)
+Theorem Lipschitz_continuous_map_compose :
+    !top1 top2 top3 f g. Lipschitz_continuous_map (top1,top2) f /\
+                         Lipschitz_continuous_map (top2,top3) g ==>
+                         Lipschitz_continuous_map (top1,top3) (g o f)
+Proof
+    rw [Lipschitz_continuous_map_def]
+ >> Q.EXISTS_TAC ‘k * k'’
+ >> rw [REAL_LT_MUL]
+ >> ‘k * k' * dist top1 (x,y) = k' * (k * dist top1 (x,y))’ by REAL_ARITH_TAC
+ >> POP_ORW
+ >> Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘k' * dist top2 (f x,f y)’
+ >> simp []
+QED
+
 (* Another form of SET_DIST_LIPSCHITZ *)
 Theorem Lipschitz_continuous_map_set_dist :
     !E s. Lipschitz_continuous_map (E,mr1) (\x. set_dist E ({x},s))
