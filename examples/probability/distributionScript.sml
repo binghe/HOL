@@ -4891,6 +4891,114 @@ Proof
       simp [Abbr ‘g’] ]
 QED
 
+(* NOTE: “|- Lipschitz_continuous_map (extreal_mr1,mr1) real” doesn't hold. *)
+Theorem Lipschitz_continuous_map_compose_real :
+    !f. Lipschitz_continuous_map (mr1,mr1) f /\ bounded (IMAGE f UNIV) ==>
+        Lipschitz_continuous_map (extreal_mr1,mr1) (f o real)
+Proof
+    rw [Lipschitz_continuous_map_def, GSYM dist_def, dist]
+ >> Suff ‘?d. 0 < d /\
+              !x y. abs (f x - f y) <= d * dist extreal_mr1 (Normal x,Normal y)’
+ >- (STRIP_TAC \\
+     Q.EXISTS_TAC ‘d’ >> rw [] \\
+     Cases_on ‘x = PosInf’ >> simp []
+     >- (Cases_on ‘y = PosInf’ >> simp [MDIST_REFL] \\
+         Cases_on ‘y = NegInf’ >> simp [REAL_LT_IMP_LE] \\
+        ‘?b. y = Normal b’ by METIS_TAC [extreal_cases] \\
+         simp [real_normal] \\
+         Q.PAT_X_ASSUM ‘!x y. abs (f x - f y) <=
+                              d * dist extreal_mr1 (Normal x,Normal y)’
+           (MP_TAC o Q.SPECL [‘0’, ‘b’]) >> rw [] \\
+        ‘d = d * 1’ by simp [] >> POP_ORW \\
+         Q_TAC (TRANS_TAC REAL_LE_TRANS)
+               ‘d * dist extreal_mr1 (Normal 0,Normal b)’ >> art [] \\
+         MATCH_MP_TAC REAL_LE_LMUL_IMP \\
+         simp [extreal_mr1_le_1, REAL_LT_IMP_LE]) \\
+     Cases_on ‘x = NegInf’ >> simp []
+     >- (Cases_on ‘y = NegInf’ >> simp [MDIST_REFL] \\
+         Cases_on ‘y = PosInf’ >> simp [REAL_LT_IMP_LE] \\
+        ‘?b. y = Normal b’ by METIS_TAC [extreal_cases] \\
+         simp [real_normal] \\
+         Q.PAT_X_ASSUM ‘!x y. abs (f x - f y) <=
+                              d * dist extreal_mr1 (Normal x,Normal y)’
+           (MP_TAC o Q.SPECL [‘0’, ‘b’]) >> rw [] \\
+        ‘d = d * 1’ by simp [] >> POP_ORW \\
+         Q_TAC (TRANS_TAC REAL_LE_TRANS)
+               ‘d * dist extreal_mr1 (Normal 0,Normal b)’ >> art [] \\
+         MATCH_MP_TAC REAL_LE_LMUL_IMP \\
+         simp [extreal_mr1_le_1, REAL_LT_IMP_LE]) \\
+     ‘?a. x = Normal a’ by METIS_TAC [extreal_cases] \\
+      simp [real_normal] \\
+      Cases_on ‘y = PosInf’ >> simp []
+      >- (Q.PAT_X_ASSUM ‘!x y. abs (f x - f y) <=
+                               d * dist extreal_mr1 (Normal x,Normal y)’
+            (MP_TAC o Q.SPECL [‘a’, ‘0’]) >> rw [] \\
+         ‘d = d * 1’ by simp [] >> POP_ORW \\
+          Q_TAC (TRANS_TAC REAL_LE_TRANS)
+                ‘d * dist extreal_mr1 (Normal a,Normal 0)’ >> art [] \\
+          MATCH_MP_TAC REAL_LE_LMUL_IMP \\
+          simp [extreal_mr1_le_1, REAL_LT_IMP_LE]) \\
+      Cases_on ‘y = NegInf’ >> simp []
+      >- (Q.PAT_X_ASSUM ‘!x y. abs (f x - f y) <=
+                               d * dist extreal_mr1 (Normal x,Normal y)’
+            (MP_TAC o Q.SPECL [‘a’, ‘0’]) >> rw [] \\
+         ‘d = d * 1’ by simp [] >> POP_ORW \\
+          Q_TAC (TRANS_TAC REAL_LE_TRANS)
+                ‘d * dist extreal_mr1 (Normal a,Normal 0)’ >> art [] \\
+          MATCH_MP_TAC REAL_LE_LMUL_IMP \\
+          simp [extreal_mr1_le_1, REAL_LT_IMP_LE]) \\
+     ‘?b. y = Normal b’ by METIS_TAC [extreal_cases] \\
+      simp [real_normal])
+ (* stage work *)
+ >> simp [extreal_mr1_normal]
+ >> fs [bounded_def]
+ >> Cases_on ‘a < 0’
+ >- (qabbrev_tac ‘z = f ARB’ \\
+     Q.PAT_X_ASSUM ‘!x. _ ==> abs x <= a’ (MP_TAC o Q.SPEC ‘z’) \\
+     impl_tac >- (Q.EXISTS_TAC ‘ARB’ >> simp [Abbr ‘z’]) \\
+     DISCH_TAC \\
+    ‘0 <= abs z’ by simp [ABS_POS] \\
+    ‘0 <= a’ by PROVE_TAC [REAL_LE_TRANS] \\
+     PROVE_TAC [REAL_LTE_ANTISYM])
+ >> fs [REAL_NOT_LT]
+ (* NOTE: Below is the reasoning process for “d”
+
+    1. abs (f x - f y) <= d * abs (x - y) * inv (1 + abs (x - y))
+    2. k * abs (x - y) <= d * abs (x - y) * inv (1 + abs (x - y))
+    3. k <= d * inv (1 + abs (x - y))
+    4. k / d <= inv (1 + abs (x - y))
+    5. 1 + abs (x - y) <= d / k
+    6. 1 + abs x + abs y <= d / k
+    7. 1 + a + a <= d / k (WRONG !!)
+    8. k * (1 + a + a) <= d
+  *)
+ >> Q.EXISTS_TAC ‘k * (1 + a + a)’
+ >> Know ‘0 < 1 + a + a’
+ >- (Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘1’ \\
+     simp [GSYM REAL_ADD_ASSOC, REAL_DOUBLE])
+ >> DISCH_TAC
+ >> CONJ_TAC >- (MATCH_MP_TAC REAL_LT_MUL >> art [])
+ (* stage work *)
+ >> rpt GEN_TAC
+ >> Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘k * abs (x - y)’ >> art []
+ >> REWRITE_TAC [GSYM REAL_MUL_ASSOC]
+ >> MATCH_MP_TAC REAL_LE_LMUL_IMP >> simp [REAL_LT_IMP_LE]
+ >> GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites [GSYM REAL_MUL_RID]
+ >> REWRITE_TAC [GSYM REAL_MUL_ASSOC]
+ >> MATCH_MP_TAC REAL_LE_LMUL_IMP >> simp [ABS_POS]
+ >> qabbrev_tac ‘b = 1 + a + a’
+ >> ‘b = inv (inv b)’ by PROVE_TAC [REAL_INVINV, REAL_LT_IMP_NE] >> POP_ORW
+ >> ONCE_REWRITE_TAC [REAL_MUL_COMM]
+ >> REWRITE_TAC [GSYM real_div]
+ >> Know ‘1 <= b / (1 + abs (x - y)) <=> 1 * (1 + abs (x - y)) <= b’
+ >- (MATCH_MP_TAC REAL_LE_RDIV_EQ \\
+     Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘1’ >> simp [])
+ >> Rewr'
+ >> simp [Abbr ‘b’, GSYM REAL_ADD_ASSOC]
+ >> Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘abs x + abs y’ >> simp [ABS_TRIANGLE_NEG]
+ >> cheat (* impossible! *)
+QED
+
 (* cf. converge_in_dist_alt_continuous_on *)
 Theorem converge_in_dist_alt_Lipschitz_real :
     !X Y p. prob_space p /\ (!n. real_random_variable (X n) p) /\
@@ -4903,23 +5011,41 @@ Proof
     rw [real_random_variable_def, FORALL_AND_THM]
  >> simp [converge_in_dist_alt_Lipschitz]
  >> reverse EQ_TAC >> rw [BL_alt]
- >- (
-     cheat)
- >> (qabbrev_tac ‘g = f o real’ \\
-    ‘!n. Normal o f o real o X n = Normal o g o X n’
-       by METIS_TAC [o_ASSOC] >> POP_ORW \\
-    ‘Normal o f o real o Y = Normal o g o Y’ by METIS_TAC [o_ASSOC] >> POP_ORW \\
+ >- (qabbrev_tac ‘g = f o Normal’ \\
+     Know ‘!n. expectation p (Normal o f o X n) =
+               expectation p (Normal o g o real o X n)’
+     >- (Q.X_GEN_TAC ‘n’ \\
+         MATCH_MP_TAC expectation_cong >> rw [o_DEF, Abbr ‘g’] \\
+         AP_TERM_TAC >> simp [normal_real]) >> Rewr' \\
+     Know ‘expectation p (Normal o f o Y) =
+           expectation p (Normal o g o real o Y)’
+     >- (MATCH_MP_TAC expectation_cong >> rw [o_DEF, Abbr ‘g’] \\
+         AP_TERM_TAC >> simp [normal_real]) >> Rewr' \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
      CONJ_TAC
-     >- (fs [bounded_def] \\
-         Q.EXISTS_TAC ‘a’ >> Q.X_GEN_TAC ‘x’ \\
-         DISCH_THEN (Q.X_CHOOSE_THEN ‘y’ (simp o wrap)) \\
-         FIRST_X_ASSUM MATCH_MP_TAC >> rw [Abbr ‘g’, o_DEF] \\
-         Q.EXISTS_TAC ‘real y’ >> REWRITE_TAC []) \\
+     >- (fs [bounded_def, Abbr ‘g’] \\
+         Q.EXISTS_TAC ‘a’ \\
+         Q.X_GEN_TAC ‘z’ \\
+         DISCH_THEN (Q.X_CHOOSE_THEN ‘x’ STRIP_ASSUME_TAC) \\
+         FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
+         Q.EXISTS_TAC ‘Normal x’ >> simp []) \\
      qunabbrev_tac ‘g’ \\
      MATCH_MP_TAC Lipschitz_continuous_map_compose \\
-     Q.EXISTS_TAC ‘mr1’ >> art [] \\
-     cheat)
+     Q.EXISTS_TAC ‘extreal_mr1’ >> simp [Lipschitz_continuous_map_normal])
+ (* stage work *)
+ >> qabbrev_tac ‘g = f o real’
+ >> ‘!n. Normal o f o real o X n = Normal o g o X n’
+       by METIS_TAC [o_ASSOC] >> POP_ORW
+ >> ‘Normal o f o real o Y = Normal o g o Y’ by METIS_TAC [o_ASSOC] >> POP_ORW
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> CONJ_TAC
+ >- (fs [bounded_def] \\
+     Q.EXISTS_TAC ‘a’ >> Q.X_GEN_TAC ‘x’ \\
+     DISCH_THEN (Q.X_CHOOSE_THEN ‘y’ (simp o wrap)) \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> rw [Abbr ‘g’, o_DEF] \\
+     Q.EXISTS_TAC ‘real y’ >> REWRITE_TAC [])
+ >> qunabbrev_tac ‘g’
+ >> MATCH_MP_TAC Lipschitz_continuous_map_compose_real >> art []
 QED
 
 (* ------------------------------------------------------------------------- *)
