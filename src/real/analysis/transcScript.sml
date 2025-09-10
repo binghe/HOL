@@ -2450,6 +2450,37 @@ Proof
       ASM_REWRITE_TAC[]]]
 QED
 
+Theorem MCLAURIN_ALT :
+    !f h n. 0 < h /\ 0 < n /\
+           (!m t. m < n /\ 0 <= t /\ t <= h ==> higher_differentiable (SUC m) f t) ==>
+      ?t. 0 < t /\ t < h /\
+          f h =
+          SIGMA (λm. diffn m f 0 / &FACT m * h pow m) (count n) +
+          diffn n f t / &FACT n * h pow n
+Proof
+    rpt STRIP_TAC
+ >> Q.ABBREV_TAC ‘diff' = (λm x. diffn m f x)’
+ >> MP_TAC (Q.SPECL [‘f’, ‘diff'’, ‘h’, ‘n’] MCLAURIN)
+ >> impl_tac
+ >- (simp [] \\
+     CONJ_TAC >- (rw [Abbr ‘diff'’] >> METIS_TAC []) \\
+     Q.UNABBREV_TAC ‘diff'’ \\
+     BETA_TAC \\
+     qx_genl_tac [‘m’, ‘t’] \\
+     STRIP_TAC \\
+     Q.PAT_X_ASSUM ‘!m x. _’ (MP_TAC o Q.SPECL [‘m’, ‘t’]) \\
+     DISCH_TAC \\
+     gs [LT_IMP_LE] \\
+     MP_TAC (Q.SPEC ‘f’ higher_differentiable_thm) >> rw [] \\
+     POP_ASSUM (STRIP_ASSUME_TAC o Q.SPECL [‘m’, ‘t’]) \\
+     METIS_TAC [ETA_AX])
+ >> STRIP_TAC
+ >> qexists ‘t’ >> fs []
+ >> MP_TAC (Q.SPECL [‘λm. inv (&FACT m) * diff' m (0:real) * h pow m’, ‘n’]
+                    (INST_TYPE [“:'a” |-> “:num”] REAL_SUM_IMAGE_COUNT))
+ >> fs []
+QED
+
 (* By Kai Phan. This proof is based on the above MCLAURIN *)
 Theorem TAYLOR_THEOREM :
     !f a x n. a < x /\ 0 < n /\

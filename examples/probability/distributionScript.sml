@@ -4798,6 +4798,15 @@ Theorem weak_converge_in_topology_alt_Lipschitz =
                Portemanteau_i_def, Portemanteau_ii_def,
                weak_convergence_condition_def]
 
+(* |- !X Y.
+        (!n. prob_space (space Borel,subsets Borel,X n)) /\
+        prob_space (space Borel,subsets Borel,Y) ==>
+        (X --> Y <=>
+         !f. f IN BL extreal_mr1 ==>
+             ((\n. expectation (space Borel,subsets Borel,X n) (Normal o f)) -->
+              expectation (space Borel,subsets Borel,Y) (Normal o f))
+               sequentially)
+ *)
 Theorem converge_in_dist_alt_Lipschitz_lemma[local] =
         weak_converge_in_topology_alt_Lipschitz
      |> ISPEC “extreal_mr1”
@@ -4880,6 +4889,37 @@ Proof
           simp [SIGMA_ALGEBRA_BOREL, borel_alt_general, Borel_alt_general] \\
           MATCH_MP_TAC IN_MEASURABLE_CONTINUOUS_MAP >> art []) >> Rewr' \\
       simp [Abbr ‘g’] ]
+QED
+
+(* cf. converge_in_dist_alt_continuous_on *)
+Theorem converge_in_dist_alt_Lipschitz_real :
+    !X Y p. prob_space p /\ (!n. real_random_variable (X n) p) /\
+            real_random_variable Y p ==>
+           ((X --> Y) (in_distribution p) <=>
+             !f. f IN BL mr1 ==>
+                ((\n. expectation p (Normal o f o real o X n)) -->
+                 expectation p (Normal o f o real o Y)) sequentially)
+Proof
+    rw [real_random_variable_def, FORALL_AND_THM]
+ >> simp [converge_in_dist_alt_Lipschitz]
+ >> reverse EQ_TAC >> rw [BL_alt]
+ >- (
+     cheat)
+ >> (qabbrev_tac ‘g = f o real’ \\
+    ‘!n. Normal o f o real o X n = Normal o g o X n’
+       by METIS_TAC [o_ASSOC] >> POP_ORW \\
+    ‘Normal o f o real o Y = Normal o g o Y’ by METIS_TAC [o_ASSOC] >> POP_ORW \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     CONJ_TAC
+     >- (fs [bounded_def] \\
+         Q.EXISTS_TAC ‘a’ >> Q.X_GEN_TAC ‘x’ \\
+         DISCH_THEN (Q.X_CHOOSE_THEN ‘y’ (simp o wrap)) \\
+         FIRST_X_ASSUM MATCH_MP_TAC >> rw [Abbr ‘g’, o_DEF] \\
+         Q.EXISTS_TAC ‘real y’ >> REWRITE_TAC []) \\
+     qunabbrev_tac ‘g’ \\
+     MATCH_MP_TAC Lipschitz_continuous_map_compose \\
+     Q.EXISTS_TAC ‘mr1’ >> art [] \\
+     cheat)
 QED
 
 (* ------------------------------------------------------------------------- *)

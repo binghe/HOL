@@ -3864,40 +3864,6 @@ Proof
  >> METIS_TAC [higher_differentiable_mono]
 QED
 
-Theorem MCLAURIN_ALT :
-    ∀f h n.
-      0 < h ∧ 0 < n ∧
-      (∀m t. m < n ∧ 0 ≤ t ∧ t ≤ h ⇒ higher_differentiable (SUC m) f t) ⇒
-      ∃t. 0 < t ∧ t < h ∧
-          f h =
-          SIGMA (λm. diff m f 0 / &FACT m * h pow m) (count n) +
-          diff n f t / &FACT n * h pow n
-Proof
-    rpt STRIP_TAC
- >> Q.ABBREV_TAC ‘diff' = (λm x. diff m f x)’
- >> MP_TAC (Q.SPECL [‘f’, ‘diff'’, ‘h’, ‘n’] MCLAURIN)
- >> impl_tac
- >- (simp [] \\
-     CONJ_TAC >- (rw [Abbr ‘diff'’] \\
-                  METIS_TAC []) \\
-     Q.UNABBREV_TAC ‘diff'’ \\
-     BETA_TAC \\
-     qx_genl_tac [‘m’, ‘t’] \\
-     STRIP_TAC \\
-     Q.PAT_X_ASSUM ‘∀m x. _’ (MP_TAC o Q.SPECL [‘m’, ‘t’]) \\
-     DISCH_TAC \\
-     gs [LT_IMP_LE] \\
-     MP_TAC (Q.SPEC ‘f’ higher_differentiable_thm) >> rw [] \\
-     POP_ASSUM (STRIP_ASSUME_TAC o Q.SPECL [‘m’, ‘t’]) \\
-     METIS_TAC [ETA_AX])
- >> STRIP_TAC
- >> qexists ‘t’ >> fs []
- >> MP_TAC (Q.SPECL [‘λm. (&FACT m)⁻¹ * diff' m (0:real) * h pow m’, ‘n’]
-             (INST_TYPE [“:'a” |-> “:num”] REAL_SUM_IMAGE_COUNT))
- >> fs []
-QED
-
-
 val TAYLOR_THEOREM_GENERAL_TACTIC =
     Cases_on ‘x < a’
 >- (cheat)
