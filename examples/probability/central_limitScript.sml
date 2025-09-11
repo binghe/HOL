@@ -1629,18 +1629,17 @@ QED
  *)
 
 Definition CnR_def :
-    CnR n = {f | (∀x. higher_differentiable n f x) ∧
-                      (∀m. m ≤ n ⇒ bounded (IMAGE (diff m f) 𝕌(:real))) }
+    CnR n = {f | (!x. higher_differentiable n f x) /\
+                  !m. m <= n ==> bounded (IMAGE (diffn m f) UNIV)}
 End
 
-Definition CinftyR_def :
-    CinftyR = { f | (∀n x. higher_differentiable n f x) ∧
-                           (∀n. bounded (IMAGE (diff n f) 𝕌(:real))) }
-End
-
-Definition C_b_def :
-    C_b ⇔ { f | f continuous_on 𝕌(:real) ∧ bounded (IMAGE f 𝕌(:real)) }
-End
+(* NOTE: The old definition becomes a theorem based on “bounded_continuous” *)
+Theorem C_b_def :
+    C_b euclidean = {f | f continuous_on UNIV /\ bounded (IMAGE f UNIV)}
+Proof
+    rw [Once EXTENSION, IN_bounded_continuous,
+        continuous_on_univ_alt_continuous_map]
+QED
 
 Theorem CinftyR_subset_C3 :
     CinftyR ⊆ CnR 3
@@ -1658,7 +1657,7 @@ Proof
 QED
 
 Theorem C1_subset_C_b :
-    CnR 1 ⊆ C_b
+    CnR 1 ⊆ C_b euclidean
 Proof
   rw [CnR_def, C_b_def, SUBSET_DEF]
   >- (rename1 ‘∀x. higher_differentiable 1 f x’ \\
@@ -1672,7 +1671,7 @@ Proof
 QED
 
 Theorem CnR_subset_C_b :
-    ∀n. 0 < n ⇒ CnR n ⊆ C_b
+    ∀n. 0 < n ⇒ CnR n ⊆ C_b euclidean
 Proof
   rw [CnR_def, C_b_def, SUBSET_DEF]
   >- (rename1 ‘∀x. higher_differentiable n f x’ \\
@@ -1688,13 +1687,13 @@ Proof
 QED
 
 Theorem C3_subset_C_b :
-    CnR 3 ⊆ C_b
+    CnR 3 ⊆ C_b euclidean
 Proof
     METIS_TAC [C3_subset_C1, C1_subset_C_b, SUBSET_TRANS]
 QED
 
 Theorem CinftyR_subset_C_b :
-    CinftyR ⊆ C_b
+    CinftyR ⊆ C_b euclidean
 Proof
     METIS_TAC [CinftyR_subset_C3, C3_subset_C_b, SUBSET_TRANS]
 QED
@@ -1728,7 +1727,7 @@ Definition C_bounded_lipschitz_def :
 End
 
 Theorem class_lipschitz_subset_C_b :
-    C_bounded_lipschitz ⊆ C_b
+    C_bounded_lipschitz ⊆ C_b euclidean
 Proof
     rw [C_bounded_lipschitz_def, C_b_def, SUBSET_DEF]
  >> rename1 ‘Lipschitz_fun f’
@@ -1852,7 +1851,7 @@ Theorem in_borel_measurable_CnR :
       f ∈ borel_measurable borel
 Proof
   rpt STRIP_TAC
-  >> Know ‘f IN C_b’
+  >> Know ‘f IN C_b euclidean’
   >- (MP_TAC (C3_subset_C_b) \\
       fs [SUBSET_DEF])
   >> DISCH_TAC
@@ -1877,7 +1876,7 @@ QED
 Theorem integrable_bounded_continuous :
     ∀p X f. prob_space p ∧
             real_random_variable X p ∧
-            f ∈ C_b ⇒
+            f ∈ C_b euclidean ⇒
             integrable p (Normal ∘ f ∘ real ∘ X)
 Proof
     rw [C_b_def, bounded_def]
@@ -3158,7 +3157,7 @@ QED
 Theorem integrable_bounded_continuous_rv[local] :
     ∀p X f. prob_space p ∧
             random_variable X p borel ∧
-            f ∈ C_b ⇒
+            f ∈ C_b euclidean ⇒
             integrable p (Normal ∘ f ∘ X)
 Proof
   rw [C_b_def, bounded_def]
@@ -4036,7 +4035,7 @@ Proof
     rpt STRIP_TAC
  >> MP_TAC (CnR_subset_C_b) >> rw []
  >> POP_ASSUM (STRIP_ASSUME_TAC o Q.SPEC ‘n’)
- >> ‘f IN C_b’ by fs [SUBSET_DEF]
+ >> ‘f IN C_b euclidean’ by fs [SUBSET_DEF]
  >> Q.PAT_X_ASSUM ‘0 < n ⇒ CnR n ⊆ _’ K_TAC
  >> fs [C_b_def, CnR_def]
  >> MP_TAC (Q.SPEC ‘f’ in_borel_measurable_continuous_on)
@@ -4111,7 +4110,7 @@ Proof
 QED
 
 Theorem C_b_o :
-    ∀f g. f ∈ C_b ∧ g ∈ C_b ⇒ f o g ∈ C_b
+    ∀f g. f ∈ C_b euclidean ∧ g ∈ C_b euclidean ⇒ f o g ∈ C_b euclidean
 Proof
   rw [C_b_def, CONTINUOUS_ON_COMPOSE_UNIV, bounded_o]
 QED

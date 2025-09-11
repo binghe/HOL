@@ -1819,7 +1819,7 @@ Definition Lipschitz_condition_def :
       !x y. dist E2 (f x,f y) <= k * dist E1 (x,y)
 End
 
-(* Definition 13.8 [1, p.249], cf. topologyTheory.continuous_map *)
+(* Definition 13.8 [1, p.249] (or [2]), cf. topologyTheory.continuous_map *)
 Definition Lipschitz_continuous_map :
     Lipschitz_continuous_map (E1,E2) f <=>
       ?k. 0 < k /\ Lipschitz_condition (E1,E2) k f
@@ -2012,4 +2012,5 @@ val _ = export_theory();
 
   [1] Klenke, A.: Probability Theory: A Comprehensive Course. Second Edition.
       Springer Science & Business Media, London (2013).
+  [2] https://en.wikipedia.org/wiki/Lipschitz_continuity
  *)

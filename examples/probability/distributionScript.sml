@@ -4891,7 +4891,31 @@ Proof
       simp [Abbr ‘g’] ]
 QED
 
-(* NOTE: “|- Lipschitz_continuous_map (extreal_mr1,mr1) real” doesn't hold. *)
+(* Solution 0 *)
+Theorem converge_in_dist_alt_Lipschitz_mr1_lemma[local] =
+        weak_converge_in_topology_alt_Lipschitz
+     |> ISPEC “mr1”
+     |> SRULE [GSYM euclidean_def, GSYM borel_alt_general, BL_alt]
+
+(* Solution 1 *)
+Definition CinftyR_def :
+    CinftyR = {f | (!n x. higher_differentiable n f x) /\
+                    !n. bounded (IMAGE (diffn n f) UNIV)}
+End
+
+Theorem converge_in_dist_alt_CinftyR :
+    !X Y p. prob_space p /\ (!n. real_random_variable (X n) p) /\
+            real_random_variable Y p ==>
+           ((X --> Y) (in_distribution p) <=>
+             !f. f IN CinftyR ==>
+                ((\n. expectation p (Normal o f o real o X n)) -->
+                 expectation p (Normal o f o real o Y)) sequentially)
+Proof
+    rpt STRIP_TAC
+    cheat
+QED
+
+(* Solution 2 (failed) *)
 Theorem Lipschitz_continuous_map_compose_real :
     !f. Lipschitz_continuous_map (mr1,mr1) f /\ bounded (IMAGE f UNIV) ==>
         Lipschitz_continuous_map (extreal_mr1,mr1) (f o real)
@@ -4961,7 +4985,7 @@ Proof
     ‘0 <= a’ by PROVE_TAC [REAL_LE_TRANS] \\
      PROVE_TAC [REAL_LTE_ANTISYM])
  >> fs [REAL_NOT_LT]
- (* NOTE: Below is the reasoning process for “d”
+ (* NOTE: Below is the reasoning process for (lower bound of) “d”
 
     1. abs (f x - f y) <= d * abs (x - y) * inv (1 + abs (x - y))
     2. k * abs (x - y) <= d * abs (x - y) * inv (1 + abs (x - y))
