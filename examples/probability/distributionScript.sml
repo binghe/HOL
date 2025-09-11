@@ -4912,7 +4912,7 @@ Theorem converge_in_dist_alt_CinftyR :
                  expectation p (Normal o f o real o Y)) sequentially)
 Proof
     rpt STRIP_TAC
-    cheat
+ >> cheat
 QED
 
 (* Solution 2 (failed) *)
