@@ -4892,137 +4892,123 @@ Proof
       simp [Abbr ‘g’] ]
 QED
 
-(* Solution 0 *)
-Theorem converge_in_dist_alt_Lipschitz_mr1_lemma[local] =
-        weak_converge_in_topology_alt_Lipschitz
-     |> ISPEC “mr1”
-     |> SRULE [GSYM euclidean_def, GSYM borel_alt_general, BL_alt]
-
-(* Solution 1 *)
-Definition CinftyR_def :
-    CinftyR = {f | (!n x. higher_differentiable n f x) /\
-                    !n. bounded (IMAGE (diffn n f) UNIV)}
+(* weak convergence of real-typed measures *)
+Definition real_weak_converge :
+    real_weak_converge X Y = weak_converge_in_topology euclidean X Y
 End
+Overload "-->" = “real_weak_converge”
 
-Theorem converge_in_dist_alt_CinftyR :
-    !X Y p. prob_space p /\ (!n. real_random_variable (X n) p) /\
-            real_random_variable Y p ==>
-           ((X --> Y) (in_distribution p) <=>
-             !f. f IN CinftyR ==>
-                ((\n. expectation p (Normal o f o real o X n)) -->
-                 expectation p (Normal o f o real o Y)) sequentially)
+(* |- !X (Y :num -> real measure).
+        X --> Y <=>
+        !f. f IN C_b euclidean ==>
+            ((\n. integral (space borel,subsets borel,X n) (Normal o f)) -->
+             integral (space borel,subsets borel,Y) (Normal o f))
+              sequentially
+ *)
+Theorem real_weak_converge_def =
+        real_weak_converge
+     |> REWRITE_RULE [weak_converge_in_topology, GSYM borel_alt_general]
+
+Theorem prob_space_normal :
+    !X. prob_space (space Borel,subsets Borel,X) /\
+        X {PosInf} = 0 /\ X {NegInf} = 0 ==>
+        prob_space (space borel,subsets borel,X o IMAGE Normal)
 Proof
-    rpt STRIP_TAC
+    reverse (rw [prob_space_def])
+ >- (Know ‘IMAGE Normal (space borel) = UNIV DIFF {PosInf; NegInf}’
+     >- (rw [Once EXTENSION, space_borel] \\
+         METIS_TAC [extreal_cases, extreal_not_infty]) >> Rewr' \\
+         qabbrev_tac ‘M = (space Borel,subsets Borel,X)’ \\
+        ‘X = measure M’ by simp [Abbr ‘M’] >> POP_ORW \\
+         qmatch_abbrev_tac ‘measure M (UNIV DIFF s) = 1’ \\
+         REWRITE_TAC [GSYM SPACE_BOREL] \\
+        ‘space Borel = m_space M’ by simp [Abbr ‘M’] >> POP_ORW \\
+         Know ‘measure M (m_space M DIFF s) =
+               measure M (m_space M) - measure M s’
+         >- (MATCH_MP_TAC MEASURE_DIFF_SUBSET \\
+             simp [MEASURE_SPACE_SPACE] \\
+             CONJ_ASM1_TAC
+             >- (simp [Abbr ‘s’, Abbr ‘M’] \\
+                ‘{PosInf; NegInf} = {PosInf} UNION {NegInf}’ by SET_TAC [] \\
+                 POP_ORW >> MATCH_MP_TAC SIGMA_ALGEBRA_UNION \\
+                 simp [SIGMA_ALGEBRA_BOREL, BOREL_MEASURABLE_SETS]) \\
+             CONJ_TAC >- simp [Abbr ‘M’, SPACE_BOREL] \\
+             Q_TAC (TRANS_TAC let_trans) ‘measure M (space Borel)’ \\
+             reverse CONJ_TAC >- simp [GSYM lt_infty, Abbr ‘M’] \\
+             MATCH_MP_TAC INCREASING >> art [] \\
+            ‘space Borel = m_space M’ by simp [Abbr ‘M’] >> POP_ORW \\
+             simp [MEASURE_SPACE_SPACE, MEASURE_SPACE_INCREASING] \\
+             simp [Abbr ‘M’, SPACE_BOREL]) >> Rewr' \\
+     Know ‘measure M s = 0’
+     >- (qunabbrev_tac ‘s’ \\
+        ‘{PosInf; NegInf} = {PosInf} UNION {NegInf}’ by SET_TAC [] >> POP_ORW \\
+         Know ‘measure M ({PosInf} UNION {NegInf}) =
+               measure M {PosInf} + measure M {NegInf}’
+         >- (MATCH_MP_TAC ADDITIVE >> simp [MEASURE_SPACE_ADDITIVE] \\
+             CONJ_ASM1_TAC >- simp [Abbr ‘M’, BOREL_MEASURABLE_SETS] \\
+             CONJ_ASM1_TAC >- simp [Abbr ‘M’, BOREL_MEASURABLE_SETS] \\
+             MATCH_MP_TAC MEASURE_SPACE_UNION >> art []) >> Rewr' \\
+         simp [Abbr ‘M’]) >> Rewr' \\
+     simp [Abbr ‘M’])
+ >> qabbrev_tac ‘M = (space Borel,subsets Borel,X)’
+ >> rw [measure_space_def, sigma_algebra_borel]
+ >- (rw [positive_def, o_DEF]
+     >- (‘X = measure M’ by simp [Abbr ‘M’] >> POP_ORW \\
+         MATCH_MP_TAC MEASURE_EMPTY >> art []) \\
+    ‘X = measure M’ by simp [Abbr ‘M’] >> POP_ORW \\
+     MATCH_MP_TAC MEASURE_POSITIVE >> art [] \\
+     simp [Abbr ‘M’, BOREL_MEASURABLE_SETS_NORMAL])
+ >> rw [countably_additive_def, IMAGE_BIGUNION, IMAGE_IMAGE, IN_FUNSET]
+ >> qabbrev_tac ‘g = IMAGE Normal o f’
+ >> ‘X = measure M’ by simp [Abbr ‘M’] >> POP_ORW
+ >> SYM_TAC
+ >> MATCH_MP_TAC COUNTABLY_ADDITIVE
+ >> simp [MEASURE_SPACE_COUNTABLY_ADDITIVE, IN_FUNSET]
+ >> CONJ_ASM1_TAC
+ >- (rw [Abbr ‘g’, Abbr ‘M’] \\
+     MATCH_MP_TAC BOREL_MEASURABLE_SETS_NORMAL >> art [])
+ >> reverse CONJ_TAC
+ >- (fs [Abbr ‘M’] \\
+     MATCH_MP_TAC SIGMA_ALGEBRA_COUNTABLE_UNION \\
+     rw [SIGMA_ALGEBRA_BOREL, image_countable, SUBSET_DEF] >> art [])
+ >> rw [Abbr ‘g’, DISJOINT_ALT]
+ >> rename1 ‘y NOTIN f j’
+ >> Q.PAT_X_ASSUM ‘!i j. i <> j ==> _’ (MP_TAC o Q.SPECL [‘i’, ‘j’])
+ >> rw [DISJOINT_ALT]
+QED
+
+Theorem prob_space_real :
+    !X. prob_space (space borel,subsets borel,X) ==>
+        prob_space (space Borel,subsets Borel,X o IMAGE real)
+Proof
+    reverse (rw [prob_space_def])
+ >- (Know ‘IMAGE real (space Borel) = UNIV’
+     >- (rw [Once EXTENSION, SPACE_BOREL] \\
+         Q.EXISTS_TAC ‘Normal x’ >> simp []) >> Rewr' \\
+     fs [space_borel])
+ >> qabbrev_tac ‘M = (space borel,subsets borel,X)’
+ >> rw [measure_space_def, SIGMA_ALGEBRA_BOREL]
+ >- (rw [positive_def, o_DEF]
+     >- (‘X = measure M’ by simp [Abbr ‘M’] >> POP_ORW \\
+         MATCH_MP_TAC MEASURE_EMPTY >> art []) \\
+    ‘X = measure M’ by simp [Abbr ‘M’] >> POP_ORW \\
+     MATCH_MP_TAC MEASURE_POSITIVE >> art [] \\
+     simp [Abbr ‘M’, borel_measurable_image_real])
+ >> rw [countably_additive_def, IMAGE_BIGUNION, IMAGE_IMAGE, IN_FUNSET]
+ (*
+ >> qabbrev_tac ‘g = IMAGE real o f’
+ >> ‘X = measure M’ by simp [Abbr ‘M’] >> POP_ORW
+ >> SYM_TAC
+ >> MATCH_MP_TAC COUNTABLY_ADDITIVE
+  *)
  >> cheat
 QED
 
-(* Solution 2 (failed) *)
-Theorem Lipschitz_continuous_map_compose_real :
-    !f. Lipschitz_continuous_map (mr1,mr1) f /\ bounded (IMAGE f UNIV) ==>
-        Lipschitz_continuous_map (extreal_mr1,mr1) (f o real)
-Proof
-    rw [Lipschitz_continuous_map_def, GSYM dist_def, dist]
- >> Suff ‘?d. 0 < d /\
-              !x y. abs (f x - f y) <= d * dist extreal_mr1 (Normal x,Normal y)’
- >- (STRIP_TAC \\
-     Q.EXISTS_TAC ‘d’ >> rw [] \\
-     Cases_on ‘x = PosInf’ >> simp []
-     >- (Cases_on ‘y = PosInf’ >> simp [MDIST_REFL] \\
-         Cases_on ‘y = NegInf’ >> simp [REAL_LT_IMP_LE] \\
-        ‘?b. y = Normal b’ by METIS_TAC [extreal_cases] \\
-         simp [real_normal] \\
-         Q.PAT_X_ASSUM ‘!x y. abs (f x - f y) <=
-                              d * dist extreal_mr1 (Normal x,Normal y)’
-           (MP_TAC o Q.SPECL [‘0’, ‘b’]) >> rw [] \\
-        ‘d = d * 1’ by simp [] >> POP_ORW \\
-         Q_TAC (TRANS_TAC REAL_LE_TRANS)
-               ‘d * dist extreal_mr1 (Normal 0,Normal b)’ >> art [] \\
-         MATCH_MP_TAC REAL_LE_LMUL_IMP \\
-         simp [extreal_mr1_le_1, REAL_LT_IMP_LE]) \\
-     Cases_on ‘x = NegInf’ >> simp []
-     >- (Cases_on ‘y = NegInf’ >> simp [MDIST_REFL] \\
-         Cases_on ‘y = PosInf’ >> simp [REAL_LT_IMP_LE] \\
-        ‘?b. y = Normal b’ by METIS_TAC [extreal_cases] \\
-         simp [real_normal] \\
-         Q.PAT_X_ASSUM ‘!x y. abs (f x - f y) <=
-                              d * dist extreal_mr1 (Normal x,Normal y)’
-           (MP_TAC o Q.SPECL [‘0’, ‘b’]) >> rw [] \\
-        ‘d = d * 1’ by simp [] >> POP_ORW \\
-         Q_TAC (TRANS_TAC REAL_LE_TRANS)
-               ‘d * dist extreal_mr1 (Normal 0,Normal b)’ >> art [] \\
-         MATCH_MP_TAC REAL_LE_LMUL_IMP \\
-         simp [extreal_mr1_le_1, REAL_LT_IMP_LE]) \\
-     ‘?a. x = Normal a’ by METIS_TAC [extreal_cases] \\
-      simp [real_normal] \\
-      Cases_on ‘y = PosInf’ >> simp []
-      >- (Q.PAT_X_ASSUM ‘!x y. abs (f x - f y) <=
-                               d * dist extreal_mr1 (Normal x,Normal y)’
-            (MP_TAC o Q.SPECL [‘a’, ‘0’]) >> rw [] \\
-         ‘d = d * 1’ by simp [] >> POP_ORW \\
-          Q_TAC (TRANS_TAC REAL_LE_TRANS)
-                ‘d * dist extreal_mr1 (Normal a,Normal 0)’ >> art [] \\
-          MATCH_MP_TAC REAL_LE_LMUL_IMP \\
-          simp [extreal_mr1_le_1, REAL_LT_IMP_LE]) \\
-      Cases_on ‘y = NegInf’ >> simp []
-      >- (Q.PAT_X_ASSUM ‘!x y. abs (f x - f y) <=
-                               d * dist extreal_mr1 (Normal x,Normal y)’
-            (MP_TAC o Q.SPECL [‘a’, ‘0’]) >> rw [] \\
-         ‘d = d * 1’ by simp [] >> POP_ORW \\
-          Q_TAC (TRANS_TAC REAL_LE_TRANS)
-                ‘d * dist extreal_mr1 (Normal a,Normal 0)’ >> art [] \\
-          MATCH_MP_TAC REAL_LE_LMUL_IMP \\
-          simp [extreal_mr1_le_1, REAL_LT_IMP_LE]) \\
-     ‘?b. y = Normal b’ by METIS_TAC [extreal_cases] \\
-      simp [real_normal])
- (* stage work *)
- >> simp [extreal_mr1_normal]
- >> fs [bounded_def]
- >> Cases_on ‘a < 0’
- >- (qabbrev_tac ‘z = f ARB’ \\
-     Q.PAT_X_ASSUM ‘!x. _ ==> abs x <= a’ (MP_TAC o Q.SPEC ‘z’) \\
-     impl_tac >- (Q.EXISTS_TAC ‘ARB’ >> simp [Abbr ‘z’]) \\
-     DISCH_TAC \\
-    ‘0 <= abs z’ by simp [ABS_POS] \\
-    ‘0 <= a’ by PROVE_TAC [REAL_LE_TRANS] \\
-     PROVE_TAC [REAL_LTE_ANTISYM])
- >> fs [REAL_NOT_LT]
- (* NOTE: Below is the reasoning process for (lower bound of) “d”
-
-    1. abs (f x - f y) <= d * abs (x - y) * inv (1 + abs (x - y))
-    2. k * abs (x - y) <= d * abs (x - y) * inv (1 + abs (x - y))
-    3. k <= d * inv (1 + abs (x - y))
-    4. k / d <= inv (1 + abs (x - y))
-    5. 1 + abs (x - y) <= d / k
-    6. 1 + abs x + abs y <= d / k
-    7. 1 + a + a <= d / k (WRONG !!)
-    8. k * (1 + a + a) <= d
-  *)
- >> Q.EXISTS_TAC ‘k * (1 + a + a)’
- >> Know ‘0 < 1 + a + a’
- >- (Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘1’ \\
-     simp [GSYM REAL_ADD_ASSOC, REAL_DOUBLE])
- >> DISCH_TAC
- >> CONJ_TAC >- (MATCH_MP_TAC REAL_LT_MUL >> art [])
- (* stage work *)
- >> rpt GEN_TAC
- >> Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘k * abs (x - y)’ >> art []
- >> REWRITE_TAC [GSYM REAL_MUL_ASSOC]
- >> MATCH_MP_TAC REAL_LE_LMUL_IMP >> simp [REAL_LT_IMP_LE]
- >> GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites [GSYM REAL_MUL_RID]
- >> REWRITE_TAC [GSYM REAL_MUL_ASSOC]
- >> MATCH_MP_TAC REAL_LE_LMUL_IMP >> simp [ABS_POS]
- >> qabbrev_tac ‘b = 1 + a + a’
- >> ‘b = inv (inv b)’ by PROVE_TAC [REAL_INVINV, REAL_LT_IMP_NE] >> POP_ORW
- >> ONCE_REWRITE_TAC [REAL_MUL_COMM]
- >> REWRITE_TAC [GSYM real_div]
- >> Know ‘1 <= b / (1 + abs (x - y)) <=> 1 * (1 + abs (x - y)) <= b’
- >- (MATCH_MP_TAC REAL_LE_RDIV_EQ \\
-     Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘1’ >> simp [])
- >> Rewr'
- >> simp [Abbr ‘b’, GSYM REAL_ADD_ASSOC]
- >> Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘abs x + abs y’ >> simp [ABS_TRIANGLE_NEG]
- >> cheat (* impossible! *)
-QED
+Theorem real_weak_converge_alt_Lipschitz_lemma[local] =
+        weak_converge_in_topology_alt_Lipschitz
+     |> ISPEC “mr1”
+     |> SRULE [GSYM euclidean_def, GSYM borel_alt_general]
+     |> REWRITE_RULE [GSYM real_weak_converge]
 
 (* cf. converge_in_dist_alt_continuous_on *)
 Theorem converge_in_dist_alt_Lipschitz_real :
@@ -5070,7 +5056,24 @@ Proof
      FIRST_X_ASSUM MATCH_MP_TAC >> rw [Abbr ‘g’, o_DEF] \\
      Q.EXISTS_TAC ‘real y’ >> REWRITE_TAC [])
  >> qunabbrev_tac ‘g’
- >> MATCH_MP_TAC Lipschitz_continuous_map_compose_real >> art []
+ >> cheat
+QED
+
+Definition CinftyR_def :
+    CinftyR = {f | (!n x. higher_differentiable n f x) /\
+                    !n. bounded (IMAGE (diffn n f) UNIV)}
+End
+
+Theorem converge_in_dist_alt_CinftyR :
+    !X Y p. prob_space p /\ (!n. real_random_variable (X n) p) /\
+            real_random_variable Y p ==>
+           ((X --> Y) (in_distribution p) <=>
+             !f. f IN CinftyR ==>
+                ((\n. expectation p (Normal o f o real o X n)) -->
+                 expectation p (Normal o f o real o Y)) sequentially)
+Proof
+    rpt STRIP_TAC
+ >> cheat
 QED
 
 (* ------------------------------------------------------------------------- *)
