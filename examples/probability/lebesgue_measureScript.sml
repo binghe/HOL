@@ -40,6 +40,8 @@ val DISC_RW_KILL = DISCH_TAC >> ONCE_ASM_REWRITE_TAC [] >> POP_ASSUM K_TAC;
 
 fun METIS ths tm = prove(tm, METIS_TAC ths);
 
+val _ = hide "top"; (* defined in posetTheory *)
+
 (* ========================================================================= *)
 (* Cantor's Ternary Set, see, e.g. [1, p.4,59] and [6]                       *)
 (* ========================================================================= *)
@@ -112,11 +114,10 @@ Proof
  >> fs [GSYM MEMBER_NOT_EMPTY, Cantor_def]
  >> rename1 ‘i IN Cantor n’
  >> Q.ABBREV_TAC
-         ‘s = {interval
-                 [interval_lowerbound i,
-                  interval_lowerbound i + 1 / 3 * (interval_upperbound i - interval_lowerbound i)];
-               interval
-                 [interval_lowerbound i +
+   ‘s = {interval [interval_lowerbound i,
+                   interval_lowerbound i +
+                   1 / 3 * (interval_upperbound i - interval_lowerbound i)];
+         interval [interval_lowerbound i +
                    2 / 3 * (interval_upperbound i - interval_lowerbound i),
                    interval_upperbound i]}’
  >> qexistsl_tac [‘CHOICE s’, ‘s’]
@@ -190,15 +191,15 @@ QED
 (* The explicit closed formulas for the Cantor set [6] *)
 Theorem Cantor_ternary_set_explicit :
     Cantor_ternary_set =
-      interval[0,1] DIFF
-      BIGUNION (IMAGE (\n. BIGUNION (IMAGE (\k. interval((3 * &k + 1) / 3 pow SUC n,
-                                                         (3 * &k + 2) / 3 pow SUC n))
-                                           (count (3 ** n))))
-                      univ(:num))
+    interval[0,1] DIFF
+    BIGUNION (IMAGE (\n. BIGUNION (IMAGE (\k. interval((3 * &k + 1) / 3 pow SUC n,
+                                                       (3 * &k + 2) / 3 pow SUC n))
+                                         (count (3 ** n)))) UNIV)
 Proof
  (* applying GEN_COMPL_BIGUNION_IMAGE *)
     Q.ABBREV_TAC ‘sp = interval [0,1]’
- >> Q.ABBREV_TAC ‘g = \n k. interval ((3 * &k + 1) / 3 pow SUC n,(3 * &k + 2) / 3 pow SUC n)’
+ >> Q.ABBREV_TAC
+   ‘g = \n k. interval ((3 * &k + 1) / 3 pow SUC n,(3 * &k + 2) / 3 pow SUC n)’
  >> simp []
  >> Q.ABBREV_TAC ‘f = \n. BIGUNION (IMAGE (\k. g n k) (count (3 ** n)))’
  >> Know ‘sp DIFF BIGUNION (IMAGE f univ(:num)) =
@@ -812,26 +813,6 @@ QED
 (* ------------------------------------------------------------------------- *)
 (* Non-measurable sets                                                       *)
 (* ------------------------------------------------------------------------- *)
-
-val _ = hide "top" (* defined in posetTheory *)
-
-(* Borel generator (general definition)
-
-   The so-called "Borel" for any topological space is the smallest sigma-algebra
-   generated from all open sets (of that topological space).
- *)
-Definition Borel_generator_def :
-    Borel_generator top = sigma (topspace top) (open_in top)
-End
-
-(* For example, ‘borel’ is generated from ‘euclidean’ *)
-Theorem borel_alt_generator :
-    borel = Borel_generator euclidean
-Proof
-    rw [borel, Borel_generator_def, TOPSPACE_EUCLIDEAN]
- >> AP_TERM_TAC
- >> rw [Once EXTENSION, IN_APP, GSYM OPEN_IN]
-QED
 
 Definition Borel_pointclass_def :
    (additive_class (top :'a topology) (ord :'b ordinal) =

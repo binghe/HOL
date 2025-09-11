@@ -29,6 +29,7 @@ fun METIS ths tm = prove(tm,METIS_TAC ths);
 val T_TAC = rpt (Q.PAT_X_ASSUM ‘T’ K_TAC);
 
 val _ = hide "equiv_class"; (* in pred_setTheory *)
+val _ = hide "top"; (* defined in posetTheory *)
 
 val set_ss = std_ss ++ PRED_SET_ss;
 
