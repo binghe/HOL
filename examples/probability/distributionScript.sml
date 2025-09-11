@@ -4981,10 +4981,10 @@ Proof
  >> rw [DISJOINT_ALT]
 QED
 
-(* not easy *)
-Theorem prob_space_real :
+(*
+Theorem prob_space_real_set :
     !X. prob_space (space borel,subsets borel,X) ==>
-        prob_space (space Borel,subsets Borel,X o IMAGE real)
+        prob_space (space Borel,subsets Borel,X o real_set)
 Proof
     reverse (rw [prob_space_def])
  >- (Know ‘IMAGE real (space Borel) = UNIV’
@@ -5003,51 +5003,9 @@ Proof
  >> qabbrev_tac ‘g = IMAGE real o f’
  >> ‘X = measure M’ by simp [Abbr ‘M’] >> POP_ORW
  >> SYM_TAC
- (* NOTE: The problem here is that each “g i” here may not be fully disjoint,
-    e.g. if “f i” contains PosInf and “f j” contains NegInf as elements, even
-    they are disjoint, “g i” and “g j” are not: there's a shared element, 0,
-    causing failure when directly applying COUNTABLY_ADDITIVE.
-  *)
- >> qabbrev_tac ‘f' = \n. f n DIFF {PosInf; NegInf}’
- >> Know ‘!n. f' n IN subsets Borel’
- >- (rw [Abbr ‘f'’] \\
-     MATCH_MP_TAC SIGMA_ALGEBRA_DIFF >> simp [SIGMA_ALGEBRA_BOREL] \\
-    ‘{PosInf; NegInf} = {PosInf} UNION {NegInf}’ by SET_TAC [] >> POP_ORW \\
-     MATCH_MP_TAC SIGMA_ALGEBRA_UNION \\
-     simp [SIGMA_ALGEBRA_BOREL, BOREL_MEASURABLE_SETS])
- >> DISCH_TAC
- >> Know ‘!i j. i <> j ==> DISJOINT (f' i) (f' j)’
- >- (rw [DISJOINT_ALT, Abbr ‘f'’] \\
-     Q.PAT_X_ASSUM ‘!i j. i <> j ==> _’ (MP_TAC o Q.SPECL [‘i’, ‘j’]) \\
-     rw [DISJOINT_ALT])
- >> DISCH_TAC
- >> qabbrev_tac ‘g' = IMAGE real o f'’
- (* NOTE: PosInf and NegInf each occurs at most once in all “f n”. When they
-    occurs, an extra value “measure M {0}” (not zero in general) occurs at
-    both LHS and RHS of the equation conclusion. There are 4 cases in total.
-  *)
- >> Cases_on ‘?k. PosInf IN f k’
- >> Cases_on ‘?l. NegInf IN f l’
- >> FULL_SIMP_TAC bool_ss [] (* 4 subgoals *)
- >| [ (* goal 1 (of 4) *)
-      Know ‘!n. n <> k ==> PosInf NOTIN f n’
-      >- (rpt STRIP_TAC \\
-          Q.PAT_X_ASSUM ‘!i j. i <> j ==> DISJOINT (f i) (f j)’
-            (MP_TAC o Q.SPECL [‘n’, ‘k’]) >> rw [DISJOINT_ALT] \\
-          Q.EXISTS_TAC ‘PosInf’ >> art []) >> DISCH_TAC \\
-      Know ‘!n. n <> l ==> NegInf NOTIN f n’
-      >- (rpt STRIP_TAC \\
-          Q.PAT_X_ASSUM ‘!i j. i <> j ==> DISJOINT (f i) (f j)’
-            (MP_TAC o Q.SPECL [‘n’, ‘l’]) >> rw [DISJOINT_ALT] \\
-          Q.EXISTS_TAC ‘NegInf’ >> art []) >> DISCH_TAC \\
-      cheat,
-      (* goal 2 (of 4) *)
-      cheat,
-      (* goal 3 (of 4) *)
-      cheat,
-      (* goal 4 (of 4) *)
-      cheat ]
+ >> cheat
 QED
+ *)
 
 Theorem real_weak_converge_alt_Lipschitz_lemma[local] =
         weak_converge_in_topology_alt_Lipschitz
