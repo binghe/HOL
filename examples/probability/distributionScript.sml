@@ -4972,23 +4972,20 @@ Proof
  >- (rw [Abbr ‘g’, Abbr ‘M’] \\
      MATCH_MP_TAC BOREL_MEASURABLE_SETS_NORMAL >> art [])
  >> reverse CONJ_TAC
- >- (fs [Abbr ‘M’] \\
-     MATCH_MP_TAC SIGMA_ALGEBRA_COUNTABLE_UNION \\
-     rw [SIGMA_ALGEBRA_BOREL, image_countable, SUBSET_DEF] >> art [])
+ >- (MATCH_MP_TAC MEASURE_SPACE_BIGUNION >> art [])
  >> rw [Abbr ‘g’, DISJOINT_ALT]
  >> rename1 ‘y NOTIN f j’
  >> Q.PAT_X_ASSUM ‘!i j. i <> j ==> _’ (MP_TAC o Q.SPECL [‘i’, ‘j’])
  >> rw [DISJOINT_ALT]
 QED
 
-(*
 Theorem prob_space_real_set :
     !X. prob_space (space borel,subsets borel,X) ==>
         prob_space (space Borel,subsets Borel,X o real_set)
 Proof
     reverse (rw [prob_space_def])
- >- (Know ‘IMAGE real (space Borel) = UNIV’
-     >- (rw [Once EXTENSION, SPACE_BOREL] \\
+ >- (Know ‘real_set (space Borel) = UNIV’
+     >- (rw [Once EXTENSION, SPACE_BOREL, real_set_def] \\
          Q.EXISTS_TAC ‘Normal x’ >> simp []) >> Rewr' \\
      fs [space_borel])
  >> qabbrev_tac ‘M = (space borel,subsets borel,X)’
@@ -4998,14 +4995,38 @@ Proof
          MATCH_MP_TAC MEASURE_EMPTY >> art []) \\
     ‘X = measure M’ by simp [Abbr ‘M’] >> POP_ORW \\
      MATCH_MP_TAC MEASURE_POSITIVE >> art [] \\
-     simp [Abbr ‘M’, borel_measurable_image_real])
+     simp [Abbr ‘M’, borel_measurable_real_set])
  >> rw [countably_additive_def, IMAGE_BIGUNION, IMAGE_IMAGE, IN_FUNSET]
- >> qabbrev_tac ‘g = IMAGE real o f’
+ >> qabbrev_tac ‘g = real_set o f’
  >> ‘X = measure M’ by simp [Abbr ‘M’] >> POP_ORW
  >> SYM_TAC
- >> cheat
+ >> MATCH_MP_TAC COUNTABLY_ADDITIVE
+ >> simp [MEASURE_SPACE_COUNTABLY_ADDITIVE, IN_FUNSET]
+ >> CONJ_ASM1_TAC
+ >- (Q.X_GEN_TAC ‘n’ \\
+     rw [Abbr ‘M’, Abbr ‘g’] \\
+     MATCH_MP_TAC borel_measurable_real_set >> art [])
+ >> CONJ_TAC
+ >- (rw [DISJOINT_ALT, Abbr ‘g’, real_set_def] \\
+     rename1 ‘real y = real z’ \\
+     Cases_on ‘y = PosInf’ >> simp [] \\
+     Cases_on ‘y = NegInf’ >> simp [] \\
+     gs [real_11] \\
+     Q.PAT_X_ASSUM ‘!i j. i <> j ==> _’ (MP_TAC o Q.SPECL [‘i’, ‘j’]) \\
+     rw [DISJOINT_ALT])
+ >> CONJ_ASM1_TAC
+ >- (rw [Once EXTENSION, real_set_def, IN_BIGUNION_IMAGE] \\
+     EQ_TAC >> rw [Abbr ‘g’, real_set_def] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       rename1 ‘y IN f n’ \\
+       qexistsl_tac [‘n’, ‘y’] >> art [],
+       (* goal 2 (of 2) *)
+       rename1 ‘y IN f n’ \\
+       Q.EXISTS_TAC ‘y’ >> art [] \\
+       Q.EXISTS_TAC ‘n’ >> art [] ])
+ >> POP_ORW
+ >> MATCH_MP_TAC MEASURE_SPACE_BIGUNION >> art []
 QED
- *)
 
 Theorem real_weak_converge_alt_Lipschitz_lemma[local] =
         weak_converge_in_topology_alt_Lipschitz

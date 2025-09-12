@@ -1684,6 +1684,13 @@ val SIGMA_ALGEBRA_ALT = store_thm
    >> Q.PAT_X_ASSUM `BIJ i j k` MP_TAC
    >> RW_TAC std_ss [BIJ_DEF, SURJ_DEF, IN_UNIV]);
 
+Theorem SIGMA_ALGEBRA_BIGUNION :
+    !a f. sigma_algebra a /\ (!n. f n IN subsets a) ==>
+          BIGUNION (IMAGE f univ(:num)) IN subsets a
+Proof
+    rw [SIGMA_ALGEBRA_ALT, IN_FUNSET]
+QED
+
 val SIGMA_ALGEBRA_ALT_MONO = store_thm
   ("SIGMA_ALGEBRA_ALT_MONO",
    ``!a.
@@ -5852,6 +5859,15 @@ Proof
  >> Q.X_GEN_TAC ‘n’
  >> FIRST_X_ASSUM MATCH_MP_TAC
  >> Q.EXISTS_TAC ‘n’ >> art []
+QED
+
+Theorem SIGMA_ALGEBRA_BIGINTER :
+    !a f. sigma_algebra a /\ (!n. f n IN subsets a) ==>
+          BIGINTER (IMAGE f univ(:num)) IN subsets a
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC SIGMA_ALGEBRA_COUNTABLE_INTER
+ >> rw [image_countable, SUBSET_DEF] >> art []
 QED
 
 (* NOTE: The following overloads as variants of “countable” and “FINITE” are
