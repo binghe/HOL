@@ -6739,11 +6739,8 @@ Proof
  >> MP_TAC (Q.SPECL [‘q’, ‘Y’, ‘f’] (INST_TYPE [alpha |-> beta] (cj 1 expectation_distribution))) >> rw []
  >> MATCH_MP_TAC integral_cong_measure
  >> fs [prob_space_def]
- >> CONJ_TAC
- >- (MP_TAC (Q.SPECL [‘p’, ‘Borel’, ‘X’] (INST_TYPE [“:'b” |-> “:extreal”] measure_space_distr)) \\
-     gs [random_variable_def, p_space_def, events_def] \\
-     rw [SIGMA_ALGEBRA_BOREL, distr_def, distribution_def, prob_def, p_space_def])
- >> MP_TAC (Q.SPECL [‘q’, ‘Borel’, ‘Y’] (INST_TYPE [“:'b” |-> “:extreal”, “:'a” |-> “:'b”] measure_space_distr))
+ >> MP_TAC (Q.SPECL [‘p’, ‘Borel’, ‘X’]
+                    (INST_TYPE [“:'b” |-> “:extreal”] measure_space_distr))
  >> gs [random_variable_def, p_space_def, events_def]
  >> rw [SIGMA_ALGEBRA_BOREL, distr_def, distribution_def, prob_def, p_space_def]
 QED

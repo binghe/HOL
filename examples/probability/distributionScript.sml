@@ -5051,6 +5051,92 @@ Proof
  >> simp [Abbr ‘p’, o_DEF, prob_def]
 QED
 
+(* NOTE: This theorem is inspired by [prob_space_normal] *)
+Theorem converge_in_dist_alt_real_weak_converge :
+    !p X Y. prob_space p /\ (!n. real_random_variable (X n) p) /\
+            real_random_variable Y p ==>
+           ((X --> Y) (in_distribution p) <=>
+            (\n. distribution p (X n) o IMAGE Normal) -->
+                 distribution p Y o IMAGE Normal)
+Proof
+    RW_TAC std_ss [real_random_variable_def, FORALL_AND_THM,
+                   converge_in_dist_alt_weak_converge]
+ >> Know ‘!n. prob_space (space Borel,subsets Borel,distribution p (X n))’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     MATCH_MP_TAC distribution_prob_space >> rw [SIGMA_ALGEBRA_BOREL])
+ >> DISCH_TAC
+ >> Know ‘prob_space (space Borel,subsets Borel,distribution p Y)’
+ >- (MATCH_MP_TAC distribution_prob_space >> rw [SIGMA_ALGEBRA_BOREL])
+ >> DISCH_TAC
+ >> rw [weak_converge_def, real_weak_converge_def, IN_bounded_continuous]
+ >> qabbrev_tac ‘M = \n. space Borel,subsets Borel,distribution p (X n)’
+ >> qabbrev_tac ‘N = (space Borel,subsets Borel,distribution p Y)’
+ >> qabbrev_tac ‘M' = \n. (space borel,subsets borel,
+                           distribution p (X n) o IMAGE Normal)’
+ >> qabbrev_tac ‘N' = (space borel,subsets borel,
+                       distribution p Y o IMAGE Normal)’
+ >> fs []
+ >> Know ‘!n. prob_space (M' n)’
+ >- (rw [Abbr ‘M'’] \\
+     MATCH_MP_TAC prob_space_normal >> simp [] \\
+     simp [distribution_def, PREIMAGE_def] \\
+     Know ‘{x | X n x = PosInf} INTER p_space p = {}’
+     >- (rw [Once EXTENSION, NOT_IN_EMPTY] >> PROVE_TAC []) >> Rewr' \\
+     Know ‘{x | X n x = NegInf} INTER p_space p = {}’
+     >- (rw [Once EXTENSION, NOT_IN_EMPTY] >> PROVE_TAC []) >> Rewr \\
+     simp [PROB_EMPTY])
+ >> DISCH_TAC
+ >> Know ‘prob_space N'’
+ >- (qunabbrev_tac ‘N'’ \\
+     MATCH_MP_TAC prob_space_normal >> simp [] \\
+     simp [distribution_def, PREIMAGE_def] \\
+     Know ‘{x | Y x = PosInf} INTER p_space p = {}’
+     >- (rw [Once EXTENSION, NOT_IN_EMPTY] >> PROVE_TAC []) >> Rewr' \\
+     Know ‘{x | Y x = NegInf} INTER p_space p = {}’
+     >- (rw [Once EXTENSION, NOT_IN_EMPTY] >> PROVE_TAC []) >> Rewr \\
+     simp [PROB_EMPTY])
+ >> DISCH_TAC
+ >> Know ‘!n s. s IN subsets borel ==>
+               (distribution p (X n) o IMAGE Normal) s =
+                distribution p (real o X n) s’
+ >- (rw [o_DEF, distribution_def, PREIMAGE_def] \\
+     Suff ‘{x | ?x'. X n x = Normal x' /\ x' IN s} INTER p_space p =
+           {x | real (X n x) IN s} INTER p_space p’ >- rw [] \\
+     rw [Once EXTENSION] \\
+     Cases_on ‘x IN p_space p’ >> simp [] \\
+    ‘?r. X n x = Normal r’ by METIS_TAC [extreal_cases] \\
+     simp [])
+ >> DISCH_TAC
+ (* Y :'a -> extreal, “(real o Y) :'a -> real *)
+ >> Know ‘!n f. integral (M' n) (Normal o f) =
+                integral (space borel,subsets borel,distribution p (real o X n))
+                         (Normal o f)’
+ >- (rpt GEN_TAC \\
+     fs [Abbr ‘M'’, prob_space_def, FORALL_AND_THM] \\
+     MATCH_MP_TAC integral_cong_measure >> simp [])
+ >> Rewr'
+ >> Know ‘!s. s IN subsets borel ==>
+             (distribution p Y o IMAGE Normal) s =
+              distribution p (real o Y) s’
+ >- (rw [o_DEF, distribution_def, PREIMAGE_def] \\
+     Suff ‘{x | ?x'. Y x = Normal x' /\ x' IN s} INTER p_space p =
+           {x | real (Y x) IN s} INTER p_space p’ >- rw [] \\
+     rw [Once EXTENSION] \\
+     Cases_on ‘x IN p_space p’ >> simp [] \\
+    ‘?r. Y x = Normal r’ by METIS_TAC [extreal_cases] \\
+     simp [])
+ >> DISCH_TAC
+ >> Know ‘!f. integral N' (Normal o f) =
+              integral (space borel,subsets borel,distribution p (real o Y))
+                       (Normal o f)’
+ >- (Q.X_GEN_TAC ‘f’ \\
+     fs [Abbr ‘N'’, prob_space_def, FORALL_AND_THM] \\
+     MATCH_MP_TAC integral_cong_measure >> simp [])
+ >> Rewr'
+ >> FULL_SIMP_TAC std_ss [distribution_distr]
+ >> cheat
+QED
+
 (* |- !X Y.
         (!n. prob_space (space borel,subsets borel,X n)) /\
         prob_space (space borel,subsets borel,Y) ==>
