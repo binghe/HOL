@@ -4979,7 +4979,7 @@ Proof
  >> rw [DISJOINT_ALT]
 QED
 
-Theorem prob_space_real_set :
+Theorem prob_space_real_set[local] :
     !X. prob_space (space borel,subsets borel,X) ==>
         prob_space (space Borel,subsets Borel,X o real_set)
 Proof
@@ -5028,11 +5028,42 @@ Proof
  >> MATCH_MP_TAC MEASURE_SPACE_BIGUNION >> art []
 QED
 
+Theorem prob_space_real_set_eq :
+    !X. prob_space (space borel,subsets borel,X) <=>
+        prob_space (space Borel,subsets Borel,X o real_set)
+Proof
+    Q.X_GEN_TAC ‘X’
+ >> EQ_TAC >- REWRITE_TAC [prob_space_real_set]
+ >> DISCH_TAC
+ >> qabbrev_tac ‘Y = X o real_set’
+ >> Know ‘X = Y o IMAGE Normal’
+ >- (rw [FUN_EQ_THM, Abbr ‘Y’, o_DEF] \\
+     Suff ‘real_set (IMAGE Normal x) = x’ >- rw [] \\
+     rw [Once EXTENSION, real_set_def] \\
+     EQ_TAC >> rw [] >> simp [] \\
+     rename1 ‘y IN s’ \\
+     Q.EXISTS_TAC ‘Normal y’ >> simp [])
+ >> Rewr'
+ >> MATCH_MP_TAC prob_space_normal >> art []
+ >> simp [Abbr ‘Y’, o_DEF]
+ >> qabbrev_tac ‘p = (space Borel,subsets Borel,X o real_set)’
+ >> Know ‘prob p {} = 0’ >- PROVE_TAC [PROB_EMPTY]
+ >> simp [Abbr ‘p’, o_DEF, prob_def]
+QED
+
+(* |- !X Y.
+        (!n. prob_space (space borel,subsets borel,X n)) /\
+        prob_space (space borel,subsets borel,Y) ==>
+        (weak_converge_in_topology euclidean X Y <=>
+         !f. f IN BL mr1 ==>
+             ((\n. integral (space borel,subsets borel,X n) (Normal o f)) -->
+              integral (space borel,subsets borel,Y) (Normal o f))
+               sequentially)
+ *)
 Theorem real_weak_converge_alt_Lipschitz_lemma[local] =
         weak_converge_in_topology_alt_Lipschitz
      |> ISPEC “mr1”
-     |> SRULE [GSYM euclidean_def, GSYM borel_alt_general]
-     |> REWRITE_RULE [GSYM real_weak_converge]
+     |> REWRITE_RULE [GSYM euclidean_def, GSYM borel_alt_general]
 
 (* cf. converge_in_dist_alt_continuous_on *)
 Theorem converge_in_dist_alt_Lipschitz_real :
