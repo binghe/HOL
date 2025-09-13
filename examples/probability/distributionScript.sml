@@ -5036,7 +5036,7 @@ Proof
      rw [DISJOINT_ALT])
  >> CONJ_ASM1_TAC
  >- (rw [Once EXTENSION, real_set_def, IN_BIGUNION_IMAGE] \\
-     EQ_TAC >> rw [Abbr ‘g’, real_set_def] >| (* 2 subgoals *)
+     EQ_TAC >> rw [GSPECIFICATION, Abbr ‘g’, real_set_def] >| (* 2 subgoals *)
      [ (* goal 1 (of 2) *)
        rename1 ‘y IN f n’ \\
        qexistsl_tac [‘n’, ‘y’] >> art [],
@@ -5075,7 +5075,7 @@ QED
    integral_distr, when "change of variables" is not yet available for
    our Lebesgue integration.
  *)
-Theorem converge_in_dist_alt_real_weak_converge_lemma :
+Theorem converge_in_dist_alt_real_weak_converge_lemma[local] :
     !p X Y. prob_space p /\ (!n. real_random_variable (X n) p) /\
             real_random_variable Y p ==>
            ((X --> Y) (in_distribution p) <=>
