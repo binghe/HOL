@@ -2450,7 +2450,7 @@ Proof
       ASM_REWRITE_TAC[]]]
 QED
 
-Theorem MCLAURIN_ALT :
+Theorem MCLAURIN_ALT_lemma[local] :
     !f h n. 0 < h /\ 0 < n /\
            (!m t. m < n /\ 0 <= t /\ t <= h ==> higher_differentiable (SUC m) f t) ==>
       ?t. 0 < t /\ t < h /\
@@ -2481,8 +2481,23 @@ Proof
  >> fs []
 QED
 
+(* NOTE: This is modern form of MCLAURIN with SIGMA and higher_differentiable *)
+Theorem MCLAURIN_ALT :
+    !f h n. 0 < h /\ 0 < n /\
+           (!t. 0 <= t /\ t <= h ==> higher_differentiable n f t) ==>
+      ?t. 0 < t /\ t < h /\
+          f h =
+          SIGMA (λm. diffn m f 0 / &FACT m * h pow m) (count n) +
+          diffn n f t / &FACT n * h pow n
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC MCLAURIN_ALT_lemma >> rw []
+ >> MATCH_MP_TAC higher_differentiable_mono
+ >> Q.EXISTS_TAC ‘n’ >> rw []
+QED
+
 (* By Kai Phan. This proof is based on the above MCLAURIN *)
-Theorem TAYLOR_THEOREM :
+Theorem TAYLOR_lemma[local] :
     !f a x n. a < x /\ 0 < n /\
              (!m t. m < n /\ a <= t /\ t <= x ==>
                     higher_differentiable (SUC m) f t) ==>
@@ -2532,7 +2547,7 @@ Proof
 QED
 
 (* A modern version based on SIGMA (REAL_SUM_IMAGE) *)
-Theorem TAYLOR_THEOREM' :
+Theorem TAYLOR :
     !f a x n. a < x /\ 0 < n /\
              (!t. a <= t /\ t <= x ==> higher_differentiable n f t) ==>
               ?t. a < t /\ t < x /\
@@ -2540,7 +2555,7 @@ Theorem TAYLOR_THEOREM' :
                         diffn n f t / &FACT n * (x - a) pow n
 Proof
     RW_TAC std_ss [REAL_SUM_IMAGE_COUNT]
- >> MATCH_MP_TAC TAYLOR_THEOREM >> rw []
+ >> MATCH_MP_TAC TAYLOR_lemma >> rw []
  >> MATCH_MP_TAC higher_differentiable_mono
  >> Q.EXISTS_TAC ‘n’ >> rw []
 QED
@@ -2588,6 +2603,85 @@ Proof
     (Term`a * (b * (c * d)) = (b * c) * (a * d)`)] THEN
   REWRITE_TAC[GSYM POW_MUL, GSYM REAL_NEG_MINUS1, REAL_NEGNEG] THEN
   REWRITE_TAC[REAL_MUL_ASSOC]
+QED
+
+Theorem TAYLOR_NEG_lemma[local] :
+    !f a x n.
+      x < a /\ 0 < n /\
+      (!m t. m < n /\ x <= t /\ t <= a ==> higher_differentiable (SUC m) f t) ==>
+      ?t. x < t /\ t < a /\
+          f x =
+          sum (0,n) (λm. diffn m f a / &FACT m * (x - a) pow m) +
+          diffn n f t / &FACT n * (x - a) pow n
+Proof
+    rpt STRIP_TAC
+ >> Q.ABBREV_TAC ‘g = λx. f (x + a)’
+ >> ‘!x. g x = f (x + a)’ by rw [Abbr ‘g’]
+ >> POP_ASSUM (MP_TAC o Q.SPEC ‘x - a’)
+ >> ‘x - a + a = x’ by REAL_ARITH_TAC >> POP_ORW
+ >> DISCH_TAC
+ >> Q.ABBREV_TAC ‘diff' = \n x. diffn n f (x + a)’
+ >> MP_TAC (Q.SPECL [‘g’, ‘diff'’, ‘x - a’, ‘n’] MCLAURIN_NEG)
+ >> impl_tac
+ >- (fs [REAL_LT_SUB_RADD, Abbr ‘diff'’, ETA_AX] \\
+     qx_genl_tac [‘m’, ‘t’] >> STRIP_TAC \\
+     ‘t + a <= a’ by rw [REAL_ADDL_LE] \\
+     ‘x <= t + a’ by METIS_TAC [REAL_LE_SUB_RADD] \\
+     Q.PAT_X_ASSUM ‘!m t. m < n /\ x <= t /\ t <= a ==> _’
+      (MP_TAC o Q.SPECL [‘m’, ‘t + a’]) >> DISCH_TAC >> gs [] \\
+     MP_TAC (Q.SPECL [‘diffn (m:num) f’, ‘λx. (x + a)’,
+                      ‘diffn (SUC m) f (t + a:real)’, ‘1’, ‘t’]
+              DIFF_CHAIN) \\
+     impl_tac
+     >- (CONJ_TAC >- (BETA_TAC \\
+                      MP_TAC (Q.SPEC ‘f’ higher_differentiable_thm) >> rw []) \\
+         Know ‘((λx. x + a) diffl (1 + 0)) t’
+         >- (MP_TAC (Q.SPECL [‘λx. x’, ‘λx. a’, ‘1’, ‘0’, ‘t’] DIFF_ADD) \\
+             impl_tac >- METIS_TAC [DIFF_X, DIFF_CONST] >> simp []) \\
+         simp [REAL_ADD_RID]) \\
+     simp [])
+ >> simp []
+ >> DISCH_THEN (Q.X_CHOOSE_TAC ‘t’)
+ >> Q.EXISTS_TAC ‘t + a’ >> fs [FORALL_AND_THM]
+ >> rw [GSYM REAL_LT_SUB_RADD, REAL_LT_ADD_SUB]
+ >> Know ‘!m. diff' m 0 = diffn m f a’ >- simp [Abbr ‘diff'’]
+ >> simp []
+QED
+
+Theorem TAYLOR_NEG :
+    !f a x n.
+      x < a /\ 0 < n /\
+      (!t. x <= t /\ t <= a ==> higher_differentiable n f t) ==>
+      ?t. x < t /\ t < a /\
+          f x = SIGMA (λm. diffn m f a / &FACT m * (x - a) pow m) (count n) +
+                diffn n f t / &FACT n * (x - a) pow n
+Proof
+    RW_TAC std_ss [REAL_SUM_IMAGE_COUNT]
+ >> MATCH_MP_TAC TAYLOR_NEG_lemma >> rw []
+ >> MATCH_MP_TAC higher_differentiable_mono
+ >> Q.EXISTS_TAC ‘n’ >> rw []
+QED
+
+Theorem TAYLOR_ALL_LT :
+    !f a x n.
+       0 < n /\ a <> x /\
+      (!t. min a x <= t /\ t <= max a x ==> higher_differentiable n f t) ==>
+      (?t. min a x < t /\ t < max a x /\
+          f x =
+          SIGMA (λm. diffn m f a / &FACT m * (x - a) pow m) (count n) +
+          diffn n f t / &FACT n * (x - a) pow n)
+Proof
+    rpt STRIP_TAC
+ >> Cases_on ‘x < a’
+ >- (fs [REAL_MIN_REDUCE, REAL_MAX_REDUCE, REAL_LT_IMP_LE] \\
+     MP_TAC (Q.SPECL [‘f’, ‘a’, ‘x’, ‘n’] TAYLOR_NEG) >> rw [] \\
+     qexists ‘t’ >> simp [] \\
+     METIS_TAC [REAL_SUM_IMAGE_COUNT])
+ >> ‘a < x’ by METIS_TAC [GSYM REAL_LT_LE, REAL_NOT_LT]
+ >> fs [REAL_MIN_REDUCE, REAL_MAX_REDUCE, REAL_LT_IMP_LE]
+ >> MP_TAC (Q.SPECL [‘f’, ‘a’, ‘x’, ‘n’] TAYLOR) >> rw []
+ >> qexists ‘t’ >> simp []
+ >> METIS_TAC [REAL_SUM_IMAGE_COUNT]
 QED
 
 (* ------------------------------------------------------------------------- *)
