@@ -1128,7 +1128,7 @@ val (WEAK_DNF_CONV,STRONG_DNF_CONV) = let
       DEPTH_BINOP_CONV disjunction CONJ_CANON_CONV THENC DISJ_CANON_CONV;
 
   fun weakdnf tm =
-      if is_forall tm andalso is_exists tm then
+      if is_forall tm orelse is_exists tm then
           BINDER_CONV weakdnf tm
       else if is_disj tm then
           BINOP_CONV weakdnf tm
@@ -1141,7 +1141,7 @@ val (WEAK_DNF_CONV,STRONG_DNF_CONV) = let
       else REFL tm
 
   and substrongdnf tm =
-      if is_forall tm andalso is_exists tm then
+      if is_forall tm orelse is_exists tm then
           BINDER_CONV strongdnf tm
       else if is_disj tm then
           BINOP_CONV substrongdnf tm
@@ -1194,7 +1194,7 @@ val (WEAK_CNF_CONV,STRONG_CNF_CONV) = let
       DEPTH_BINOP_CONV conjunction DISJ_CANON_CONV THENC CONJ_CANON_CONV;
 
   fun weakcnf tm =
-    if is_forall tm andalso is_exists tm then
+    if is_forall tm orelse is_exists tm then
         BINDER_CONV weakcnf tm
     else if is_conj tm then
         BINOP_CONV weakcnf tm
@@ -1207,7 +1207,7 @@ val (WEAK_CNF_CONV,STRONG_CNF_CONV) = let
     else REFL tm
 
   and substrongcnf tm =
-    if is_forall tm andalso is_exists tm then
+    if is_forall tm orelse is_exists tm then
         BINDER_CONV strongcnf tm
     else if is_conj tm then
         BINOP_CONV substrongcnf tm

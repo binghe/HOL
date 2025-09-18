@@ -2311,7 +2311,7 @@ let
     NNF_NORM_CONV THENC
     SKOLEM_CONV THENC
     PRENEX_CONV THENC
-    DNF_CONV; (* was: WEAK_DNF_CONV in HOL-Light *)
+    WEAK_DNF_CONV;
 
   fun overall dun ths =
     case ths of
