@@ -2,7 +2,8 @@
 (* FILE    : boehmScript.sml (aka chap10Script.sml)                           *)
 (* TITLE   : (Effective) Böhm Trees (Barendregt 1984 [1], Chapter 10)         *)
 (*                                                                            *)
-(* AUTHORS : 2023-2024 The Australian National University (Chun Tian)         *)
+(* AUTHORS : 2023 - 2025 The Australian National University (Chun Tian)       *)
+(*           2025 - 2026 Chun Tian (binghe) <binghe.lisp@gmail.com>           *)
 (* ========================================================================== *)
 
 open HolKernel Parse boolLib bossLib;

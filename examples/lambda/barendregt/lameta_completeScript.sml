@@ -47,6 +47,7 @@ fun PRINT_TAC pfx g = (print (pfx ^ "\n"); ALL_TAC g);
 (* Disable some conflicting overloads from labelledTermsTheory *)
 Overload FV  = “supp term_pmact”
 Overload VAR = “term$VAR”
+Overload LAM = “term$LAM”
 
 (*---------------------------------------------------------------------------*
  *  head equivalence
