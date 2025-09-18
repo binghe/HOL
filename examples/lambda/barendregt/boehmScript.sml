@@ -1110,7 +1110,11 @@ Theorem BT_ltree_el_thm =
                                   |> Q.SPECL [‘p’, ‘BT' X M r’]
                                   |> Q.GENL [‘X’, ‘M’, ‘p’, ‘r’]
 
-(* Lemma 10.1.15 [1, p.222] (subterm and ltree_lookup) *)
+(* Lemma 10.1.15 [1, p.222] (subterm and ltree_lookup)
+
+   NOTE: The conclusion “ltree_lookup (BT' X M r) p <> NONE” is no more useful
+   after [BT_ltree_paths_thm] is found and proved.
+ *)
 Theorem BT_subterm_lemma :
     !p X M r. FINITE X /\ FV M SUBSET X UNION RANK r /\
               subterm X M p r <> NONE ==>
@@ -1147,6 +1151,12 @@ Proof
  >> MATCH_MP_TAC subterm_induction_lemma'
  >> qexistsl_tac [‘M’, ‘M0’, ‘n’, ‘m’, ‘vs’, ‘M1’] >> simp []
 QED
+
+(* |- !p X M r.
+        FINITE X /\ FV M SUBSET X UNION RANK r /\ subterm X M p r <> NONE ==>
+        BT X (THE (subterm X M p r)) = THE (ltree_lookup (BT' X M r) p)
+ *)
+Theorem BT_subterm_lemma' = cj 2 BT_subterm_lemma
 
 (* NOTE: In the above theorem, when the antecedents hold, i.e.
 
