@@ -795,6 +795,13 @@ val (is_comb_thm, _) = define_recursive_term_function
    (is_comb (LAM v t) = F)`;
 val _ = export_rewrites ["is_comb_thm"]
 
+Theorem is_comb_cases :
+    !t. is_comb t <=> ?t1 t2. t = t1 @@ t2
+Proof
+    HO_MATCH_MP_TAC simple_induction
+ >> rw [is_comb_thm]
+QED
+
 Theorem is_comb_LAMl[simp] :
     is_comb (LAMl vs M) <=> (vs = []) /\ is_comb M
 Proof

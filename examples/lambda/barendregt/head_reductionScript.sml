@@ -165,6 +165,24 @@ val hreduce1_rwts = store_thm(
     METIS_TAC [lemma15a, pmact_flip_args, fresh_tpm_subst]
   ]);
 
+Theorem hreduce1_cases' :
+    !M N. M -h-> N <=>
+        (?x t u. M = LAM x t @@ u /\ N = [u/x] t) \/
+        (?x t u. M = LAM x t /\ N = LAM x u /\ t -h-> u) \/
+         ?t u s r. M = t @@ u @@ r /\ N = s @@ r /\ t @@ u -h-> (s :term)
+Proof
+    qx_genl_tac [‘M0’, ‘N0’]
+ >> rw [Once hreduce1_cases]
+ >> EQ_TAC >> rw [] >> simp [] (* 5 subgoals *)
+ >- (qexistsl_tac [‘v’, ‘M’] >> simp [])
+ >- (qexistsl_tac [‘v’, ‘M1’, ‘M2’] >> simp [])
+ >- (‘is_var M1 \/ is_comb M1’ by METIS_TAC [term_cases]
+     >- gs [is_var_cases, hreduce1_rwts] \\
+     gs [is_comb_cases])
+ >- (qexistsl_tac [‘x’, ‘t’] >> simp [])
+ >> qexistsl_tac [‘x’, ‘t’, ‘u’] >> simp []
+QED
+
 val hreduce1_unique = store_thm(
   "hreduce1_unique",
   ``∀M N1 N2. M -h-> N1 ∧ M -h-> N2 ⇒ (N1 = N2)``,
