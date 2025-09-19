@@ -36,6 +36,18 @@ End
 val _ = set_fixity "-h->" (Infix(NONASSOC, 450))
 val _ = overload_on ("-h->", ``hreduce1``)
 
+(* NOTE: This version avoids using “is_abs”, closer to textbook definition *)
+Theorem hreduce1_rules' :
+   (!x t u. LAM x t @@ u -h-> [u/x] t) /\
+   (!x t u. t -h-> u ==> LAM x t -h-> LAM x u) /\
+    !t u s r. t @@ u -h-> s ==> t @@ u @@ r -h-> s @@ r
+Proof
+    rw [hreduce1_rules]
+QED
+
+(* |- !t u s r. t @@ u -h-> s ==> t @@ u @@ r -h-> s @@ r *)
+Theorem hreduce1_APP' = cj 3 hreduce1_rules'
+
 val _ = set_fixity "-h->*" (Infix(NONASSOC, 450))
 val _ = overload_on ("-h->*", ``hreduce1^*``)
 
