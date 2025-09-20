@@ -348,6 +348,15 @@ Definition HP_complete_def :
             asmlam thy M N \/ inconsistent (asmlam (thy UNION {(M,N)}))
 End
 
+(* In other words, "any consistent extension must be already in the theory". *)
+Theorem HP_complete_alt :
+    !thy P. HP_complete thy P <=>
+            !M N. P M /\ P N /\ consistent (asmlam (thy UNION {(M,N)})) ==>
+                  asmlam thy M N
+Proof
+    METIS_TAC [HP_complete_def]
+QED
+
 (* NOTE: This is the unconditional version of HP-completeness.
 
   "It will be proved in Chapter 16 that “Kthy” has a quite natural unique HP-complete

@@ -4469,9 +4469,7 @@ Definition equivalent_def :
            ~solvable M /\ ~solvable N
 End
 
-(* A more general definition (but many existing hard proofs are still
-   using the above “equivalent”).
- *)
+(* Another definition of “equivalent” used for proving [faithful_nil] below *)
 Definition equivalent2_def :
     equivalent2 X M N r =
         if solvable M /\ solvable N then
@@ -4793,27 +4791,6 @@ Theorem equivalent_of_solvables :
               y = y' /\ n + m' = n' + m)
 Proof
     RW_TAC std_ss [equivalent_def]
-QED
-
-Theorem equivalent2_of_solvables :
-    !X M N r. solvable M /\ solvable N ==>
-          (equivalent2 X M N r =
-           let M0 = principal_hnf M;
-               N0 = principal_hnf N;
-               n1 = LAMl_size M0;
-               n2 = LAMl_size N0;
-              vs1 = RNEWS r n1 X;
-              vs2 = RNEWS r n2 X;
-               M1 = principal_hnf (M0 @* MAP VAR vs1);
-               N1 = principal_hnf (N0 @* MAP VAR vs2);
-               y1  = hnf_head M1;
-               y2 = hnf_head N1;
-               m1 = LENGTH (hnf_children M1);
-               m2 = LENGTH (hnf_children N1);
-           in
-               y1 = y2 /\ n1 + m2 = n2 + m1)
-Proof
-    RW_TAC std_ss [equivalent2_def]
 QED
 
 (* beta-equivalent terms are also equivalent here *)
@@ -5162,12 +5139,11 @@ Proof
  >> simp [Once subtree_equiv_comm, Once equivalent_comm]
 QED
 
-Overload faithful' = “faithful []”
-
-Theorem faithful' :
+(* NOTE: ‘equivalent2’ is only (indirectly) needed here *)
+Theorem faithful_nil :
     !X Ms pi r. FINITE X /\ 0 < r /\
                (!M. MEM M Ms ==> FV M SUBSET X UNION RANK r) ==>
-      (faithful' X Ms pi r <=>
+      (faithful [] X Ms pi r <=>
         (!M. MEM M Ms ==> (solvable M <=> solvable (apply pi M))) /\
          !M N. MEM M Ms /\ MEM N Ms ==>
               (equivalent (apply pi M) (apply pi N) <=> equivalent M N))
@@ -5178,24 +5154,6 @@ Proof
  >- METIS_TAC []
  >> rpt STRIP_TAC
  >> MATCH_MP_TAC subtree_equiv_alt_equivalent >> rw []
-QED
-
-Theorem faithful_two' :
-    !X M N pi r.
-       FINITE X /\ FV M UNION FV N SUBSET X UNION RANK r /\ 0 < r ==>
-      (faithful' X [M; N] pi r <=>
-         (solvable M <=> solvable (apply pi M)) /\
-         (solvable N <=> solvable (apply pi N)) /\
-         (equivalent (apply pi M) (apply pi N) <=> equivalent M N))
-Proof
-    rw [UNION_SUBSET]
- >> MP_TAC (Q.SPECL [‘X’, ‘[M; N]’, ‘pi’, ‘r’] faithful')
- >> simp []
- >> impl_tac >- METIS_TAC []
- >> Rewr'
- >> EQ_TAC >> rw [] >> rw []
- >> simp [Once equivalent_comm]
- >> simp [Once equivalent_comm]
 QED
 
 (* Proposition 10.3.13 [1, p.253]
@@ -5213,7 +5171,7 @@ Theorem agree_upto_thm :
 Proof
     Q.X_GEN_TAC ‘X’
  >> Induct_on ‘p’
- >- (rpt STRIP_TAC >> Q.EXISTS_TAC ‘[]’ >> rw [faithful'])
+ >- (rpt STRIP_TAC >> Q.EXISTS_TAC ‘[]’ >> rw [faithful_nil])
  (* stage work *)
  >> rw [faithful_def]
  (* trivial case: all unsolvable *)
