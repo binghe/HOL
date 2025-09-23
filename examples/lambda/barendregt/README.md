@@ -50,17 +50,21 @@ and
 
 solvableScript.sml :
       solvability of lambda-terms; Wadsworth's theorem (solvable iff has_hnf)
-    
+
 boehmScript.sml :
       Effective Boehm trees
 
 lameta_completeScript.sml :
-      Hilbert-Post Completeness of Lambda-Eta-Calculus
+      Hilbert-Post Completeness of λη-Calculus
 
 takahashiS3Script.sml :
-      Section 3 of Takahashi's paper (has_benf iff has_bnf)
+      Section 3 of Takahashi's paper (has_benf <=> has_bnf)
 
-These files are new work.
+These files are new work described in:
+
+    Tian, C., Norrish, M.: Mechanising Böhm Trees and λη-Completeness. (UOK)
+    In: 16th International Conference on Interactive Theorem Proving (ITP 2025).
+    pp. 28:1-28:18. LIPIcs (2025).
 
 # Coverage of [Barendregt 1984] (and other materials)
 

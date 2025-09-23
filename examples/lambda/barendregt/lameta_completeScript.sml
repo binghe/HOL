@@ -2357,8 +2357,7 @@ Proof
          REWRITE_TAC [LAMl_APPEND, MAP_APPEND, appstar_APPEND] \\
          REWRITE_TAC [hreduce_BETA_extended]) >> DISCH_TAC \\
   (* NOTE: The following disjointness hold for names from different rows *)
-     Know ‘DISJOINT (set vs) (set ys1) /\
-           DISJOINT (set vs) (set ys2)’
+     Know ‘DISJOINT (set vs) (set ys1) /\ DISJOINT (set vs) (set ys2)’
      >- (CONJ_TAC \\
          MATCH_MP_TAC DISJOINT_SUBSET \\
          Q.EXISTS_TAC ‘set vs3’ \\
@@ -2367,8 +2366,7 @@ Proof
          Q.EXISTS_TAC ‘set vs0’ >> art [] \\
          qunabbrevl_tac [‘vs0’, ‘vs3’] \\
          MATCH_MP_TAC DISJOINT_RNEWS >> simp [Abbr ‘r1’]) >> STRIP_TAC \\
-     Know ‘DISJOINT (set ys) (set ys1) /\
-           DISJOINT (set ys) (set ys2)’
+     Know ‘DISJOINT (set ys) (set ys1) /\ DISJOINT (set ys) (set ys2)’
      >- (CONJ_TAC \\
          MATCH_MP_TAC DISJOINT_SUBSET \\
          Q.EXISTS_TAC ‘set vs3’ \\
@@ -3117,8 +3115,7 @@ Proof
  >> fs []
  >> Q.PAT_X_ASSUM ‘y2' = y2’ (fs o wrap)
  >> Q.PAT_X_ASSUM ‘y1' = y1’ (fs o wrap)
- >> Know ‘subterm X (H j1) q r <> NONE /\
-          subterm X (H j2) q r <> NONE’
+ >> Know ‘subterm X (H j1) q r <> NONE /\ subterm X (H j2) q r <> NONE’
  >- ASM_SIMP_TAC std_ss []
  >> STRIP_TAC
  >> Know ‘IMAGE y (count k) SUBSET X UNION RANK r1’

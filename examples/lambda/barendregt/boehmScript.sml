@@ -1,6 +1,6 @@
 (* ========================================================================== *)
 (* FILE    : boehmScript.sml (aka chap10Script.sml)                           *)
-(* TITLE   : (Effective) Böhm Trees (Barendregt 1984 [1], Chapter 10)         *)
+(* TITLE   : (Effective) Böhm Trees [1, Chapter 10.1]                         *)
 (*                                                                            *)
 (* AUTHORS : 2023 - 2025 The Australian National University (Chun Tian)       *)
 (*           2025 - 2026 Chun Tian (binghe) <binghe.lisp@gmail.com>           *)
@@ -44,6 +44,7 @@ val _ = set_trace "Goalstack.print_goal_at_top" 0;
 (* Disable some conflicting overloads from labelledTermsTheory *)
 Overload FV  = “supp term_pmact”
 Overload VAR = “term$VAR”
+Overload LAM = “term$LAM”
 
 (*---------------------------------------------------------------------------*
  *  Boehm Trees (and subterms) - name after Corrado Böhm [2]                 *
