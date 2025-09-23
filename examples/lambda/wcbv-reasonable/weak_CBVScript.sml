@@ -83,7 +83,7 @@ QED
 Theorem bound_closed_k:
         ∀s k u. bound k s ⇒ subst s k u = s
 Proof
-        Induct_on `s` >> rw[]
+  Induct_on `s` >> rw[]
   >- fs[Once bound_cases]
   >- (pop_assum mp_tac >> rw[Once bound_cases])
   >- (pop_assum mp_tac >> rw[Once bound_cases])
@@ -94,17 +94,17 @@ QED
 Theorem bound_ge:
         ∀k s. bound k s ⇒ ∀m. k ≤ m ⇒ bound m s
 Proof
-        Induct_on `s` >> rw[]
-        >- fs[Once bound_cases]
-        >- (qpat_x_assum (`bound _ _`) mp_tac >>
-                rw[Once bound_cases] >>
-                first_x_assum drule_all >> rw[] >>
-                first_x_assum drule_all >> rw[] >>
-                rw[Once bound_cases])
-        >> qpat_x_assum (`bound _ _`) mp_tac >>
-        rw[Once bound_cases] >>
-        first_x_assum drule >> rw[] >>
-        rw[Once bound_cases]
+  Induct_on `s` >> rw[]
+  >- fs[Once bound_cases]
+  >- (qpat_x_assum (`bound _ _`) mp_tac >>
+      rw[Once bound_cases] >>
+      first_x_assum drule_all >> rw[] >>
+      first_x_assum drule_all >> rw[] >>
+      rw[Once bound_cases])
+  >> qpat_x_assum (`bound _ _`) mp_tac >>
+  rw[Once bound_cases] >>
+  first_x_assum drule >> rw[] >>
+  rw[Once bound_cases]
 QED
 
 Theorem bound_closed:
@@ -122,7 +122,7 @@ Theorem closed_k_bound:
     (∀n. k ≤ n ⇒ subst s n u = s) ⇒
     bound k s
 Proof
-        Induct_on `s` >> rw[]
+  Induct_on `s` >> rw[]
   >- (Cases_on `k ≤ n` >> rw[]
       >- (first_x_assum drule  >> rw[] >>
           fs[closed, Once bound_cases])
@@ -130,7 +130,7 @@ Proof
   >- (last_x_assum drule >> rw[] >>
       last_x_assum drule >> rw[] >>
       rw[Once bound_cases])
-        >> rw[Once bound_cases, ADD1] >>
+  >> rw[Once bound_cases, ADD1] >>
   first_x_assum irule >> rw[] >>
   qexists_tac `u` >> rw[] >>
   drule lift_closed >> rw[] >>

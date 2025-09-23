@@ -33,3 +33,6 @@ MANIFEST
 ## `wcbv-reasonable/`
     * "The Weak Call-by-Value 𝜆-Calculus Is Reasonable for Both Time and Space"
       (translated from Coq formalisation by Zhuo Zhen)
+
+## `cbpv-reasonable/`
+    * "A Verified Cost Model for Call-By-Push-Value (𝜆-Calculus)" (by Zhuo Zhen et al.)

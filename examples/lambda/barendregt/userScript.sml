@@ -1,15 +1,15 @@
 open HolKernel Parse boolLib bossLib;
 
-open nomsetTheory basic_swapTheory NEWLib termTheory appFOLDLTheory chap2Theory
-     chap3Theory horeductionTheory reductionEval solvableTheory takahashiS3Theory
-     head_reductionTheory head_reductionLib standardisationTheory boehmTheory
-     chap4Theory;
+open basic_swapTheory termTheory appFOLDLTheory chap2Theory chap3Theory
+     chap4Theory head_reductionTheory solvableTheory boehmTheory
+     semi_sensibleTheory lameta_completeTheory;
 
 val _ = new_theory "user";
 
 Overload FV  = “supp term_pmact”
 Overload VAR = “term$VAR”
 Overload LAM = “term$LAM”
+Overload APP = “term$APP”
 
 Theorem term_is_norminal :
     LAM "x" (VAR "x") = LAM "y" (VAR "y")
