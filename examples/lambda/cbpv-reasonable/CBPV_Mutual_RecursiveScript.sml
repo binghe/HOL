@@ -21,7 +21,7 @@ val _ = new_theory "CBPV_Mutual_Recursive";
 Datatype:
         val = var num | thunk comp ;
         comp = force val | lam comp | app comp val | ret val |
-                   seq comp comp | letin val comp | pseq comp comp comp 
+                   seq comp comp | letin val comp | pseq comp comp comp
 End
 
 Definition sizeVal_def:
@@ -47,10 +47,10 @@ Definition substVal_def:
   (substComp (ret v) k u = ret (substVal v k u)) ∧
   (substComp (seq m n) k u = seq (substComp m k u) (substComp n (SUC k) u)) ∧
   (substComp (letin v m) k u = letin (substVal v k u) (substComp m (SUC k) u)) ∧
-  (substComp (pseq m2 m1 n) k u = pseq (substComp m2 k u) (substComp m1 k u) (substComp n (SUC (SUC k)) u)) 
-End 
+  (substComp (pseq m2 m1 n) k u = pseq (substComp m2 k u) (substComp m1 k u) (substComp n (SUC (SUC k)) u))
+End
 
-val t1 = ``force (thunk (app (lam (ret (var 0))) (var 1)))`` 
+val t1 = ``force (thunk (app (lam (ret (var 0))) (var 1)))``
 
 Inductive is_terminal:
         (is_terminal (ret s)) ∧
@@ -66,14 +66,14 @@ Inductive primitive_step:
         (∀m m' v. substComp m 0 v = m' ⇒ primitive_step (app (lam m) v) m') ∧
         (∀m m' v. (substComp m 0 v) = m' ⇒ (primitive_step (letin v m) m')) ∧
         (∀n n' v.  (substComp n 0 v) = n' ⇒ (primitive_step (seq (ret v) n) n')) ∧
-        (∀v1 v2 n n'.  (substComp (substComp n 0 v1) 1 v2) = n' ⇒ (primitive_step (pseq (ret v2) (ret v1) n) n')) 
+        (∀v1 v2 n n'.  (substComp (substComp n 0 v1) 1 v2) = n' ⇒ (primitive_step (pseq (ret v2) (ret v1) n) n'))
 End
 
 Inductive small_step:
         (∀m m'. primitive_step m m' ⇒ small_step m m') ∧
         (∀m m' v. small_step m m' ⇒ small_step (app m v) (app m' v)) ∧
         (∀m m' n. small_step m m' ⇒ small_step (seq m n) (seq m' n)) ∧
-        (∀m1 m1' m2 n. small_step m1 m1' ⇒ small_step (pseq m2 m1 n) (pseq m2 m1' n)) ∧ 
+        (∀m1 m1' m2 n. small_step m1 m1' ⇒ small_step (pseq m2 m1 n) (pseq m2 m1' n)) ∧
         (∀v m2 m2' n. small_step m2 m2' ⇒ small_step (pseq m2 (ret v) n) (pseq m2' (ret v) n))
 End
 
@@ -157,7 +157,7 @@ Inductive spaceBS:
     spaceBS k2 m2 (ret v2) ∧
     spaceBS k3 (substComp (substComp n 0 v1) 1 v2) u ∧
     k = MAX (k1 + sizeComp m2 + 1 + sizeComp n) $ MAX (k2 + sizeVal v1 + 1 + sizeComp n) k3 ⇒
-    spaceBS k (pseq m2 m1 n) u) 
+    spaceBS k (pseq m2 m1 n) u)
 [~Letin:]
   (∀m v u k0 k.
     spaceBS k0 (substComp m 0 v) u ∧

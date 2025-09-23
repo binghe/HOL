@@ -429,7 +429,7 @@ Proof
   rw[rich_listTheory.CONS_APPEND]
 QED
 
-        
+
 Theorem jumpPseq_eq':
   ∀k c c0 c1 c2.
     jumpPseq k c0 c = SOME (c1,c2)
@@ -571,7 +571,7 @@ Theorem jumpLetin_eq:
   ⇒ c1++[endLetinT]++c2=c0++c
 Proof
   metis_tac[jumpLetin_eq']
-QED        
+QED
 
 (* extracts the body of a thunk *)
 Definition jumpThunk:
@@ -828,7 +828,7 @@ Definition substP:
     | pseqT::P => pseqT::substP P (SUC (SUC k)) Q
     | endPseqT::P => (endPseqT::(case k of
                                | SUC (SUC k) => substP P k Q
-                               | _ => [ARB]) )                         
+                               | _ => [ARB]) )
     | letinT::P => letinT::substP P (SUC k) Q
     | endLetinT::P => (endLetinT::(case k of
                           | SUC k => substP P k Q
@@ -971,7 +971,7 @@ Theorem balanced_pseqs:
 Proof
   Induct_on ‘balanced’ >> rw[] >>
   gvs[FILTER_APPEND_DISTRIB]
-QED        
+QED
 
 Theorem balanced_seqs:
   balanced xs ⇒ LENGTH(FILTER ($= seqT) xs) = LENGTH(FILTER ($= endSeqT) xs)
@@ -981,7 +981,7 @@ Proof
 QED
 
 val isPREFIX_APPEND1 = REWRITE_RULE [SNOC_APPEND] isPREFIX_SNOC_EQ;
-        
+
 Theorem balanced_thunks_prefix:
   ∀xs ys.
   balanced xs ∧ IS_PREFIX xs ys ⇒ LENGTH(FILTER ($= endThunkT) ys) ≤ LENGTH(FILTER ($= thunkT) ys)
@@ -1106,7 +1106,7 @@ Proof
       conj_tac >- (PURE_ONCE_REWRITE_TAC[oneline TAKE_def] >> simp[] >> rw[]) >>
       Cases_on ‘n ≤ LENGTH xs’ >> simp[] >>
       simp[TAKE_LENGTH_TOO_LONG] >>
-      imp_res_tac balanced_pseqs >> simp[])      
+      imp_res_tac balanced_pseqs >> simp[])
   >- (gvs[rich_listTheory.IS_PREFIX_EQ_TAKE, SF DNF_ss,rich_listTheory.TAKE_APPEND,
           FILTER_APPEND_DISTRIB] >>
       irule LESS_EQ_LESS_EQ_MONO >>
@@ -1265,7 +1265,7 @@ Proof
       drule balanced_seqs_prefix >>
       simp[] >>
       rename1 ‘l ++ compileComp ccc ++ _ ++ _’ >>
-      disch_then(qspec_then ‘l ++ compileComp ccc’ mp_tac) >>      
+      disch_then(qspec_then ‘l ++ compileComp ccc’ mp_tac) >>
       impl_tac
       >- (PURE_REWRITE_TAC[GSYM APPEND_ASSOC,rich_listTheory.IS_PREFIX_APPENDS] >>
           PURE_REWRITE_TAC[rich_listTheory.IS_PREFIX_APPEND3]) >>
@@ -1363,7 +1363,7 @@ Proof
       drule balanced_pseqs_prefix >>
       simp[] >>
       rename1 ‘l4 ++ _ ++ _’ >>
-      disch_then(qspec_then ‘l4’ mp_tac) >>      
+      disch_then(qspec_then ‘l4’ mp_tac) >>
       impl_tac
       >- (PURE_REWRITE_TAC[GSYM APPEND_ASSOC,rich_listTheory.IS_PREFIX_APPENDS] >>
           PURE_REWRITE_TAC[rich_listTheory.IS_PREFIX_APPEND3]) >>
@@ -1385,7 +1385,7 @@ Theorem compileComp_compileVal_append:
 Proof
   strip_tac >> gvs[APPEND_EQ_APPEND,compileVal_append_left']
 QED
-        
+
 Theorem compileVal_injective:
   (∀s t. compileVal s = compileVal t ⇒ s = t) ∧
   (∀s t. compileComp s = compileComp t ⇒ s = t)

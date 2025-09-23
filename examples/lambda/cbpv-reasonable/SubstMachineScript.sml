@@ -26,7 +26,7 @@ Theorem tc_not_empty:
 Proof
   rw[tc] >> Cases_on ‘x’ >> rw[]
 QED
-       
+
 Theorem tc_empty[simp]:
   tc [] C = C
 Proof
@@ -34,13 +34,13 @@ Proof
 QED
 
 Theorem tc_size:
-  SUM (MAP sizeT P) + SUM (MAP sizeP Ps) ≤ SUM (MAP sizeP (tc P Ps)) 
+  SUM (MAP sizeT P) + SUM (MAP sizeP Ps) ≤ SUM (MAP sizeP (tc P Ps))
 Proof
    Cases_on ‘P’ >> rw[tc_not_empty] >> rw[sizeP]
 QED
 
 Theorem tc_size_empty:
-  SUM (MAP sizeP (tc [] Ps)) = SUM (MAP sizeT []) + SUM (MAP sizeP Ps) 
+  SUM (MAP sizeP (tc [] Ps)) = SUM (MAP sizeT []) + SUM (MAP sizeP Ps)
 Proof
   rw[sizeP]
 QED
@@ -194,7 +194,7 @@ Proof
   rw[] >> rpt BasicProvers.TOP_CASE_TAC >>
   fs[Once subst_step_cases] >> gs[]
 QED
-        
+
 Theorem subst_machine_letin[simp,compute]:
   ∀P P' M V T V.
     jumpLetin 0 [] P = SOME (M, P') ⇒
@@ -317,7 +317,7 @@ Proof
           >> metis_tac[jumpSeq_correct, APPEND_ASSOC, APPEND])
       >> `tc [] (tc c0 C) = tc c0 C` by rw[tc] >> gs[])
   (* pseq *)
-  >- (last_x_assum (qspecl_then [‘compileComp s' ⧺ [pseqT] ⧺ compileComp n ⧺ [endPseqT] ⧺ c0’, ‘C’, ‘V’] ASSUME_TAC) >> 
+  >- (last_x_assum (qspecl_then [‘compileComp s' ⧺ [pseqT] ⧺ compileComp n ⧺ [endPseqT] ⧺ c0’, ‘C’, ‘V’] ASSUME_TAC) >>
       last_x_assum (qspecl_then [‘[pseqT] ⧺ compileComp n ⧺ [endPseqT] ⧺ c0’, ‘C’, ‘compileComp (ret v1) :: V’] ASSUME_TAC)  >>
       first_x_assum (qspecl_then [‘[]’, ‘tc c0 C’, ‘V’] ASSUME_TAC) >> fs[] >>
       qexists_tac `n' + n'' + (1+n''')` >> irule NRC_ADD_I >>
@@ -340,7 +340,7 @@ Proof
       rw[] >> rw[Once tc] >> rw[Once subst_step_cases, compileVal_def] >>
       qexistsl_tac [‘c0’, ‘compileComp n’] >> rw[]
       >- metis_tac[GSYM substP_correct]
-      >> metis_tac[jumpPseq_correct, APPEND_ASSOC, APPEND])     
+      >> metis_tac[jumpPseq_correct, APPEND_ASSOC, APPEND])
   (* letin *)
   >- (last_x_assum (qspecl_then [`[]`, `tc c0 C`, `V`] ASSUME_TAC) >> fs[] >>
       qexists_tac `1+1+n` >> irule NRC_ADD_I >>
@@ -443,12 +443,12 @@ Proof
           >> metis_tac[jumpSeq_correct, APPEND_ASSOC, APPEND])
       >> `tc [] (tc c0 C) = tc c0 C` by rw[tc] >> gs[])
   (* pseq *)
-  >- (last_x_assum (qspecl_then [‘compileComp s' ⧺ [pseqT] ⧺ compileComp n ⧺ [endPseqT] ⧺ c0’, ‘C’, ‘V’] ASSUME_TAC) >> 
+  >- (last_x_assum (qspecl_then [‘compileComp s' ⧺ [pseqT] ⧺ compileComp n ⧺ [endPseqT] ⧺ c0’, ‘C’, ‘V’] ASSUME_TAC) >>
       last_x_assum (qspecl_then [‘[pseqT] ⧺ compileComp n ⧺ [endPseqT] ⧺ c0’, ‘C’, ‘compileComp (ret v1) :: V’] ASSUME_TAC)  >>
       first_x_assum (qspecl_then [‘[]’, ‘tc c0 C’, ‘V’] ASSUME_TAC) >> fs[] >>
       qexists_tac ‘n' + n'' + (1+n''')’ >> reverse(conj_tac)
       >- rw[]
-      >> irule NRC_ADD_I >> 
+      >> irule NRC_ADD_I >>
       qexists_tac `tc (pseqT::(compileComp n ⧺ [endPseqT] ⧺ c0)) C,
       compileComp (ret v2)::compileComp (ret v1)::V` >>
       rw[]
@@ -468,7 +468,7 @@ Proof
       rw[] >> rw[Once tc] >> rw[Once subst_step_cases, compileVal_def] >>
       qexistsl_tac [‘c0’, ‘compileComp n’] >> rw[]
       >- metis_tac[GSYM substP_correct]
-      >> metis_tac[jumpPseq_correct, APPEND_ASSOC, APPEND])   
+      >> metis_tac[jumpPseq_correct, APPEND_ASSOC, APPEND])
   (* letin *)
   >- (last_x_assum (qspecl_then [`[]`, `tc c0 C`, `V`] ASSUME_TAC) >> fs[] >>
       qexists_tac `1+1+n` >> reverse(strip_tac) >- rw[] >> irule NRC_ADD_I >>
@@ -598,7 +598,7 @@ End
 
 Theorem size_le_sizeT:
   (∀v. sizeVal v ≤ SUM (MAP sizeT (compileVal v))) ∧
-  ∀c. sizeComp c ≤ SUM (MAP sizeT (compileComp c))          
+  ∀c. sizeComp c ≤ SUM (MAP sizeT (compileComp c))
 Proof
   ho_match_mp_tac CBPV_Mutual_RecursiveTheory.val_induction >>
   rw[sizeVal_def, compileVal_def, sizeT, SUM_APPEND]
@@ -645,7 +645,7 @@ Proof
       rw[jumpTarget_correct_conc] >>
       irule_at (Pos hd) redWithMaxSize_R >> rw[]
       >- (rw[sizeP] >> disj2_tac >> rw[Once sizeVal_def] >> rw[SUM_APPEND] >>
-          qspec_then ‘s’ assume_tac (cj 2 sizeP_size') >> intLib.COOPER_TAC) 
+          qspec_then ‘s’ assume_tac (cj 2 sizeP_size') >> intLib.COOPER_TAC)
       >- (rw[sizeP, sizeT, SUM_APPEND, sizeVal_def] >> rw[tc] >>
           Cases_on ‘P’ >> rw[]
           >- (qspec_then ‘s’ assume_tac (cj 2 sizeP_size) >> intLib.COOPER_TAC)
@@ -659,7 +659,7 @@ Proof
       rw[jumpRet_correct_conc] >>
       irule_at (Pos hd) redWithMaxSize_R >> rw[]
       >- (rw[sizeP] >> disj2_tac >> rw[Once sizeVal_def] >> rw[SUM_APPEND] >>
-          qspec_then ‘s’ assume_tac (cj 1 sizeP_size') >> intLib.COOPER_TAC) 
+          qspec_then ‘s’ assume_tac (cj 1 sizeP_size') >> intLib.COOPER_TAC)
       >- (rw[sizeP, sizeT, SUM_APPEND, sizeVal_def] >> rw[tc] >>
           Cases_on ‘P’ >> rw[]
           >- (qspec_then ‘s’ assume_tac (cj 1 sizeP_size) >> intLib.COOPER_TAC)
@@ -675,14 +675,14 @@ Proof
       PURE_ONCE_REWRITE_TAC[GSYM APPEND_ASSOC] >>
       irule_at (Pos hd) subst_step_compileVal >> rw[Once tc] >>
       irule_at (Pos hd) $ cj 2 redWithMaxSize_rules >> rw[Once subst_step_cases, PULL_EXISTS] >>
-      rw[substP_correct] >> 
+      rw[substP_correct] >>
       first_x_assum (qspecl_then [‘[]’, ‘tc P T'’, ‘V’] strip_assume_tac) >> gs[] >>
       rename [‘m2 ≤ 9 * k2 + (_ + SUM (MAP sizeP (tc P T')))’] >>
-      first_x_assum $ irule_at $ Pos hd >> rw[sizeP] (* 5 *) 
+      first_x_assum $ irule_at $ Pos hd >> rw[sizeP] (* 5 *)
       >- (gs[sizeP, sizeT, SUM_APPEND] >> Cases_on ‘k1 + (sizeVal v + 1) < k2’ >> rw[MAX_DEF] >>
           disj1_tac >> Cases_on ‘P = []’ >> rw[tc_size_not_empty, tc_size_empty] >> gs[] >>
           qspec_then ‘v’ assume_tac $ cj 1 size_le_sizeT >> intLib.COOPER_TAC)
-      >- (gs[sizeP, sizeT, SUM_APPEND] >> 
+      >- (gs[sizeP, sizeT, SUM_APPEND] >>
           Cases_on ‘P = []’ >> rw[tc_size_not_empty, tc_size_empty] >>
           gs[] (* 2 *) >> rw[MAX_DEF] (* 2 *) >>
           qspec_then ‘v’ assume_tac $ cj 1 sizeP_size >> rw[] >> intLib.COOPER_TAC)
@@ -698,9 +698,9 @@ Proof
           qspecl_then [‘k1’, ‘s’, ‘lam s'’] assume_tac spaceBS_ge >> gs[sizeVal_def] >>
           qspecl_then [‘s'’, ‘k1’] assume_tac $ cj 2 size_le_m_comp >> gs[] >>
           qspecl_then [‘v’, ‘sizeVal v’] assume_tac $ cj 1 size_le_m_comp >> gs[])
-      >> gs[sizeP, sizeT, SUM_APPEND] >> 
+      >> gs[sizeP, sizeT, SUM_APPEND] >>
       Cases_on ‘P = []’ >> gs[tc_size_not_empty, tc_size_empty] >>
-      gs[] (* 2 *) >> rw[MAX_DEF]) 
+      gs[] (* 2 *) >> rw[MAX_DEF])
      (* Seq *)
   >- (gs[compileVal_def] >>
       last_x_assum (qspecl_then [‘ [seqT] ⧺ compileComp n ⧺ [endSeqT] ⧺ P’, ‘T'’, ‘V’] mp_tac) >>
@@ -727,18 +727,18 @@ Proof
       >>  Cases_on ‘P = []’ >> gs[tc_size_not_empty, tc_size_empty] >>
       gs[] (* 2 *) >> rw[MAX_DEF])
     (* Pseq *)
-  >- (gs[compileVal_def] >> 
+  >- (gs[compileVal_def] >>
       last_x_assum (qspecl_then [‘compileComp s' ++ [pseqT] ⧺ compileComp n ⧺ [endPseqT] ⧺ P’,
                                  ‘T'’, ‘V’] mp_tac) >>
       rw[] >>
       irule_at (Pos hd) redWithMaxSize_trans >> first_x_assum $ irule_at $ Pos hd >>
-      fs[tc_not_empty] >> 
+      fs[tc_not_empty] >>
       last_x_assum (qspecl_then [‘[pseqT] ⧺ compileComp n ⧺ [endPseqT] ⧺ P’,
                                  ‘T'’, ‘compileComp (ret v1) :: V’] mp_tac) >>
       rw[] >> fs[tc_not_empty] >> irule_at (Pos hd) redWithMaxSize_trans >>
       fs[compileVal_def] >> first_x_assum $ irule_at $ Pos hd >>
       rw[] >> irule_at (Pos hd) $ cj 2 redWithMaxSize_rules >>
-      rw[subst_step_cases] >>          
+      rw[subst_step_cases] >>
       first_x_assum (qspecl_then [‘[]’, ‘tc P T'’, ‘V’] strip_assume_tac) >> gs[] >>
       gs[GSYM substP_correct] >>
       rw[jumpPseq_correct_conc] >> rw[PULL_EXISTS] >>
@@ -809,7 +809,7 @@ Proof
       >- (rw[substP_correct] >>
           qspecl_then [‘k1’, ‘substComp m 0 v’, ‘t’] assume_tac spaceBS_ge >>
           gs[sizeVal_def] >> rw[] >>
-          qspecl_then [‘substComp m 0 v’, ‘k1’] assume_tac $ cj 2 size_le_3m_comp >> gs[] >> 
+          qspecl_then [‘substComp m 0 v’, ‘k1’] assume_tac $ cj 2 size_le_3m_comp >> gs[] >>
           Cases_on ‘P = []’ >> rw[tc_size_not_empty, tc_size_empty] >>
           gs[] (* 2 *) >> rw[MAX_DEF] (* 2 *)) >>
       rw[MAX_DEF] >> disj1_tac >>
@@ -828,7 +828,7 @@ Proof
   irule_at (Pos hd) $ cj 2 redWithMaxSize_rules >> (* Force Step *)
   rw[Once subst_step_cases, PULL_EXISTS] >>
   qspecl_then [‘s’, ‘[]’] assume_tac $ cj 2 jumpThunk_correct_conc >> gs[] >>
-  ‘compileComp s++P ≠ []’ 
+  ‘compileComp s++P ≠ []’
     by (Cases_on ‘compileComp s ++ P’ >> fs[compile_not_empty] >> rw[tc_not_empty]) >>
   rw[tc_not_empty] >>
   irule_at (Pos hd) $ cj 1 redWithMaxSize_rules >> (* Reflexive Step *)
@@ -847,7 +847,7 @@ Proof
   >- (rw[MAX_DEF] >> (* 2 *) qspec_then ‘s’ assume_tac $ cj 2 sizeP_size >>
       Cases_on ‘P = []’ >> rw[tc_not_empty, tc_empty] >> gs[] >>
       rw[sizeP])
-  >> rw[MAX_DEF]               
+  >> rw[MAX_DEF]
 QED
 
 Theorem subst_big_step_correctSpace:
