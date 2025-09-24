@@ -348,7 +348,9 @@ Definition HP_complete_def :
             asmlam thy M N \/ inconsistent (asmlam (thy UNION {(M,N)}))
 End
 
-(* In other words, "any consistent extension must be already in the theory". *)
+(* NOTE: Completeness means that you can prove anything that's right.
+  (|= M = N ==> |- M = N)
+ *)
 Theorem HP_complete_alt :
     !thy P. HP_complete thy P <=>
             !M N. P M /\ P N /\ consistent (asmlam (thy UNION {(M,N)})) ==>
@@ -359,10 +361,54 @@ QED
 
 (* NOTE: This is the unconditional version of HP-completeness.
 
-  "It will be proved in Chapter 16 that “Kthy” has a quite natural unique HP-complete
-   extension “Kthy_star” such that “|- HP_complete' Kthy_star” holds.
+  "It will be proved in Chapter 16 that “Kthy” has a quite natural unique
+   HP-complete extension 'Kthy_star' such that “|- HP_complete' Kthy_star”
+   holds." -- [1, p.
  *)
 Overload HP_complete' = “\thy. HP_complete thy (K T)”
+
+(* cf. Fact 2.1.37 of [1, p.35]
+
+   NOTE: Soundness means that you cannot prove anything that's wrong.
+ *)
+Definition sound_def :
+   sound R <=>
+   !M N. normal_form R M /\ normal_form R N /\ M <> N ==> ~conversion R M N
+End
+
+(* |- M = N ==> |= M = N *)
+Theorem sound_alt :
+    !R. sound R <=>
+        !M N. normal_form R M /\ normal_form R N /\ conversion R M N ==> M = N
+Proof
+    METIS_TAC [sound_def]
+QED
+
+Theorem sound_beta:
+    sound beta
+Proof
+    rw [sound_def, beta_normal_form_bnf, GSYM lameq_betaconversion]
+ >> CCONTR_TAC >> fs []
+ >> MP_TAC (Q.SPECL [‘M’, ‘N’, ‘M’] (GEN_ALL lameq_triangle))
+ >> simp []
+QED
+
+Theorem sound_beta_eta :
+    sound (beta RUNION eta)
+Proof
+    rw [sound_def, beta_eta_normal_form_benf, beta_eta_lameta]
+ >> CCONTR_TAC >> fs []
+ >> MP_TAC (Q.SPECL [‘M’, ‘N’, ‘M’] (GEN_ALL lameta_triangle))
+ >> simp [lameta_REFL]
+QED
+
+(* NOTE: For beta, S and K are the two needed distinct normal forms. *)
+Theorem sound_imp_consistent :
+    !R. sound R /\ (?M N. normal_form R M /\ normal_form R N /\ M <> N) ==>
+        consistent (conversion R)
+Proof
+    METIS_TAC [sound_def, consistent_def]
+QED
 
 val _ = export_theory ();
 val _ = html_theory "chap4";

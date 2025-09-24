@@ -1293,11 +1293,42 @@ val _ = set_fixity "-βη->*" (Infix(NONASSOC, 450))
 val _ = set_fixity "-η->" (Infix(NONASSOC, 450))
 val _ = set_fixity "-η->*" (Infix(NONASSOC, 450))
 
+val _ = TeX_notation { hol = "-βη->",
+        TeX = ("\\ensuremath{\\rightarrow_{\\beta\\eta}}", 1) };
+
+val _ = TeX_notation { hol = "-βη->*",
+        TeX = ("\\ensuremath{\\twoheadrightarrow_{\\beta\\eta}}", 1) };
+
 val _ = TeX_notation { hol = "-η->",
         TeX = ("\\ensuremath{\\rightarrow_{\\eta}}", 1) };
 
 val _ = TeX_notation { hol = "-η->*",
         TeX = ("\\ensuremath{\\twoheadrightarrow_{\\eta}}", 1) };
+
+Theorem beta_eta_star_lameta :
+    !M N. M -βη->* N ==> lameta M N
+Proof
+    SRW_TAC [][GSYM beta_eta_lameta, RTC_EQC]
+QED
+
+Theorem benf_reduction_to_self :
+    benf M ==> (M -βη->* N <=> (N = M))
+Proof
+    METIS_TAC [corollary3_2_1, beta_eta_normal_form_benf, RTC_RULES]
+QED
+
+Theorem beta_eta_star_lameta_benf :
+    !M N. benf N ==> (M -βη->* N <=> lameta M N)
+Proof
+    METIS_TAC [theorem3_13, beta_eta_CR, beta_eta_star_lameta,
+               benf_reduction_to_self, beta_eta_lameta]
+QED
+
+Theorem lameta_triangle :
+    !M N P. lameta M N /\ lameta M P /\ benf N ∧ benf P ==> (N = P)
+Proof
+    METIS_TAC [beta_eta_star_lameta_benf, lameta_rules, benf_reduction_to_self]
+QED
 
 Theorem eta_FV_EQN:
   eta M N ⇒ FV N = FV M
@@ -1391,8 +1422,6 @@ Theorem eta_beta_reorder:
 Proof
   metis_tac[eta_beta_reorder0]
 QED
-
-
 
 Theorem strong_grandbeta_gen_ind =
         grandbeta_bvc_gen_ind
@@ -1581,7 +1610,6 @@ Proof
   irule (cj 2 RTC_RULES) >> gs[CC_RUNION_DISTRIB, RUNION] >> metis_tac[]
 QED
 
-
 (* ----------------------------------------------------------------------
     Congruence and rewrite rules for -b-> and -b->*
    ---------------------------------------------------------------------- *)
@@ -1683,6 +1711,22 @@ Proof
      MATCH_MP_TAC compat_closure_R >> art [])
  >> MATCH_MP_TAC lameta_TRANS
  >> Q.EXISTS_TAC ‘N’ >> art []
+QED
+
+Definition has_nf_def :
+    has_nf R M = ?N. conversion R M N /\ normal_form R N
+End
+
+Theorem has_bnf_alt_has_nf :
+    !M. has_bnf M <=> has_nf beta M
+Proof
+    rw [has_bnf_def, has_nf_def, beta_normal_form_bnf, lameq_betaconversion]
+QED
+
+Theorem has_benf_alt_has_nf :
+    !M. has_benf M <=> has_nf (beta RUNION eta) M
+Proof
+    rw [has_benf_def, has_nf_def, beta_eta_normal_form_benf, beta_eta_lameta]
 QED
 
 val _ = export_theory();
