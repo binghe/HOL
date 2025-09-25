@@ -839,6 +839,12 @@ Proof
  >> simp [FORALL_PROD, FVS_DEF]
 QED
 
+Theorem FVS_APPEND :
+    !l1 l2. FVS (l1 ++ l2) = FVS l1 UNION FVS l2
+Proof
+    rw [FVS_ALT]
+QED
+
 Theorem FINITE_DOM[simp] :
     !ss. FINITE (DOM ss)
 Proof

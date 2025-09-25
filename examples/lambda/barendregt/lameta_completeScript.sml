@@ -6367,16 +6367,6 @@ Proof
  >> MATCH_MP_TAC lameta_complete >> art []
 QED
 
-(* Definition 4.1.22 [1, p.83]
-
-   Another way to define HP-completeness by only a reduction relation.
- *)
-Definition complete_def :
-    complete R <=>
-    !M N. has_nf R M /\ has_nf R N ==>
-          conversion R M N \/ inconsistent (conversion (RINSERT R M N))
-End
-
 (* NOTE: “|- complete beta” doesn't hold *)
 Theorem complete_beta_eta :
     complete (beta RUNION eta)

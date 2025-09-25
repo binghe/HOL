@@ -370,6 +370,8 @@ Overload HP_complete' = “\thy. HP_complete thy (K T)”
 (* cf. Fact 2.1.37 of [1, p.35]
 
    NOTE: Soundness means that you cannot prove anything that's wrong.
+        (Whatever you can prove is right, but you may not prove anything
+         that's right. cf. completeness)
  *)
 Definition sound_def :
    sound R <=>
@@ -409,6 +411,18 @@ Theorem sound_imp_consistent :
 Proof
     METIS_TAC [sound_def, consistent_def]
 QED
+
+(* Definition 4.1.22 [1, p.83]
+
+   Another way to define HP-completeness by only a reduction relation.
+
+   "Completeness means that you can prove anything that's right."
+ *)
+Definition complete_def :
+    complete R <=>
+    !M N. has_nf R M /\ has_nf R N ==>
+          conversion R M N \/ inconsistent (conversion (RINSERT R M N))
+End
 
 val _ = export_theory ();
 val _ = html_theory "chap4";

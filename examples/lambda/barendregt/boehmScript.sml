@@ -5376,18 +5376,22 @@ Proof
  >> simp []
 QED
 
-(* Proposition 10.3.7 (i) [1, p.248] (Boehm out lemma) *)
+(* Proposition 10.3.7 (i) [1, p.248] (Boehm out lemma)
+
+   NOTE: “FVS ss = {}” indicates that ss is a closed substitution.
+ *)
 Theorem Boehm_out_lemma :
     !X p M r. FINITE X /\ FV M SUBSET X UNION RANK r /\
               subterm X M p r <> NONE ==>
               ?pi. Boehm_transform pi /\
-                   ?ss. apply pi M == subterm' X M p r ISUB ss
+                   ?ss. FVS ss = {} /\
+                        apply pi M == subterm' X M p r ISUB ss
 Proof
     Q.X_GEN_TAC ‘X’
  >> Induct_on ‘p’
  >- (rw [] \\
      Q.EXISTS_TAC ‘[]’ >> rw [] \\
-     Q.EXISTS_TAC ‘[]’ >> rw [])
+     Q.EXISTS_TAC ‘[]’ >> rw [FVS_DEF])
  >> rpt STRIP_TAC
  >> rename1 ‘subterm X M (h::t) r <> NONE’
  >> qabbrev_tac ‘p = h::t’ (* head and tail *)
@@ -5467,6 +5471,10 @@ Proof
  >> Q.EXISTS_TAC ‘p2 ++ p10’
  >> CONJ_TAC >- (MATCH_MP_TAC Boehm_transform_APPEND >> art [])
  >> Q.EXISTS_TAC ‘[(P,v)] ++ ss'’
+ >> CONJ_TAC
+ >- (simp [FVS_APPEND] \\
+     simp [FVS_DEF] \\
+     fs [closed_def])
  >> MATCH_MP_TAC lameq_TRANS
  >> Q.EXISTS_TAC ‘apply p2 N’
  >> simp [ISUB_def]
