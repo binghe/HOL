@@ -5807,6 +5807,19 @@ Proof
  >> Q_TAC (TRANS_TAC SUBSET_TRANS) ‘FV M’ >> art []
 QED
 
+Theorem BT_prop_bnf_iff_has_bnf :
+    !P. (!X M r. FINITE X /\ FV M SUBSET X UNION RANK r /\ bnf M ==>
+                 P (BT' X M r)) <=>
+        (!X M r. FINITE X /\ FV M SUBSET X UNION RANK r /\ has_bnf M ==>
+                 P (BT' X M r))
+Proof
+    Q.X_GEN_TAC ‘P’
+ >> EQ_TAC >- REWRITE_TAC [BT_prop_bnf_imp_has_bnf]
+ >> rw [has_bnf_def]
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+ >> Q.EXISTS_TAC ‘M’ >> simp []
+QED
+
 Theorem BT_prop_bnf_imp_has_benf :
     !P. (!X M r. FINITE X /\ FV M SUBSET X UNION RANK r /\ bnf M ==>
                  P (BT' X M r)) ==>
