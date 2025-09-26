@@ -17,13 +17,15 @@
 \***************************************************************************/
 
 #include <stdio.h>
-#include <storage.h>
 #include <string.h>
-#include <node.h>
-#include <hash.h>
-#include <bdd.h>
-#include <assoc.h>
-#include <y.tab.h>
+
+#include "storage.h"
+#include "node.h"
+#include "hash.h"
+#include "bdd.h"
+#include "assoc.h"
+#include "y.tab.h"
+#include "init.h"
 
 static hash_ptr module_hash;
 static hash_ptr symbol_hash;

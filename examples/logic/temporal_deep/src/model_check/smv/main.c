@@ -9,6 +9,7 @@
 #include "symbols.h"
 #include "assoc.h"
 #include "init.h"
+#include "bdd.h"
 
 int yyparse (void);
 

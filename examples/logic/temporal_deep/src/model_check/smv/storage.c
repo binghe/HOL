@@ -1,57 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <storage.h>
+#include <strings.h>
+
+#include "node.h"
+#include "init.h"
+#include "storage.h"
+
 static char *addrlimit;
 static char *addrfree;
 
 /* this routine initializes the storage manager */
 void init_storage()
 {
-#ifdef MACH
-  mach_init();		/* needed to make sbrk() work */
-#endif MACH
-  /* addrfree points to the first free byte
-     addrlimit points to the memory limit */
-    addrfree = addrlimit = (char *) sbrk(0);
-}
-
-/* get ALLOCSIZE more bytes from the O.S. */
-static getmore()
-{
-  char *na;
-/*  fprintf(stderr,"Getting %d more bytes\n",ALLOCSIZE); */
-  if(addrlimit != (char *)sbrk(0)){ /* in case someone else did sbrk */
-    sbrk((4 - (sbrk(0) % 4)) % 4);
-    addrfree = addrlimit = (char *)sbrk(0);
-    if(((unsigned)addrlimit) % 4 != 0)
-      rpterr("Failed to allocate %d bytes: addrlimit = %xH, na = %xH\n",
-	     ALLOCSIZE,(int)addrlimit,(int)na);
-  }
-  if((na = (char *)sbrk(ALLOCSIZE)) != addrlimit)
-    rpterr("Failed to allocate %d bytes: addrlimit = %xH, na = %xH\n",
-	   ALLOCSIZE,(int)addrlimit,(int)na);
-  addrlimit += ALLOCSIZE;
-}
-
-/* provide malloc for miscellaneuos storage allocation */
-char *malloc(n)
-int n;
-{
-  if(n % 4)n=n+4-(n%4);  /* always allocate multiple of four bytes */
-  while(addrfree + n > addrlimit)getmore();
-  {
-    char *r = addrfree;
-    addrfree += n;
-    return(r);
-  }
-}
-
-/* very simple implementation of free */
-void free(p)
-char *p;
-{
-  return;
 }
 
 /* initialize a record manager.
@@ -69,8 +30,6 @@ int rec_size;
   mp->free_hook = 0;
   return(mp);
 }
-
-
 
 /* get a new record. if the free list
    is not empty, pull the first record off this
@@ -90,7 +49,7 @@ register mgr_ptr mp;
     r->link = 0;
     return(r);
   }
-  getmore();
+
   p1 = &(mp->free);
   while(addrlimit-addrfree >= mp->rec_size){
     p1->link = (rec_ptr)addrfree;
@@ -122,4 +81,3 @@ rec_ptr r;
   res->link = 0;
   return(res);
 }
-

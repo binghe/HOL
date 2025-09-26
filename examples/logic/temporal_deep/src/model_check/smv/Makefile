@@ -23,8 +23,8 @@ OBJ = grammar.o input.o init.o main.o assoc.o bdd.o  hash.o node.o storage.o \
 	str.o symbols.o
 EXEC = smv
 CC = gcc
-M4 = m4
-#M4 = gm4
+#M4 = m4
+M4 = gm4
 
 YACC = yacc
 LEX = lex
@@ -34,7 +34,7 @@ LEX = lex
 # On some Linux platforms you may have a new version of lex that
 # requires a command line option for backward compatibility:
 LEXFLAGS = -l
-#LEXFLAGS = 
+#LEXFLAGS =
 
 $(EXEC): $(OBJ) $(DEBUG)
 	rm -f $(EXEC)

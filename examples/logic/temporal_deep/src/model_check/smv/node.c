@@ -14,12 +14,15 @@
 *                                                                           *
 \***************************************************************************/
 #include <stdio.h>
-#include <storage.h>
-#include <node.h>
-#include <hash.h>
+#include <stdlib.h>
 #include <string.h>
-#include <assoc.h>
-#include <y.tab.h>
+
+#include "storage.h"
+#include "node.h"
+#include "hash.h"
+#include "assoc.h"
+#include "y.tab.h"
+#include "init.h"
 
 extern int option_print_node_length;
 extern int option_print_width;

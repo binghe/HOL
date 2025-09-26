@@ -1,3 +1,6 @@
+#include <string.h>
+#include <stdlib.h>
+
 #include "storage.h"
 #include "hash.h"
 #include "str.h"

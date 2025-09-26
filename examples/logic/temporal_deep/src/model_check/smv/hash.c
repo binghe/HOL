@@ -1,6 +1,10 @@
-#include <storage.h>
-#include <hash.h>
+#include <stdlib.h>
+#include <strings.h>
 
+#include "storage.h"
+#include "node.h"
+#include "hash.h"
+#include "init.h"
 
 hash_ptr new_hash(init_size,hash_fun,eq_fun,mgr)
 int init_size;

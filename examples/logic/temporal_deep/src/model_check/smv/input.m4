@@ -1,3 +1,5 @@
+%option noyywrap
+
 %{
 #include "node.h"
 #include "str.h"

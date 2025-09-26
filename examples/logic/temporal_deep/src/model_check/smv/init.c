@@ -7,6 +7,7 @@
 #include "hash.h"
 #include "node.h"
 #include "init.h"
+#include "bdd.h"
 
 /* Global variables */
 

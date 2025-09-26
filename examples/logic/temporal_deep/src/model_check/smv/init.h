@@ -2,7 +2,6 @@
 #include <sys/types.h>
 #include <sys/times.h>
 #include "str.h"
-#include "bdd.h"
 #include "y.tab.h"
 #include <setjmp.h>
 #ifdef SMV_SIGNALS

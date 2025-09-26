@@ -149,3 +149,5 @@ void set_variable_names(void);
 void pr_status(void);
 void walk_leaves(void (*f)(), bdd_ptr d);
 int lowest_var_bdd(bdd_ptr d);
+
+void mygarbage(void);
