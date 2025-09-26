@@ -5789,39 +5789,68 @@ Proof
  >> simp []
 QED
 
-Theorem ltree_finite_BT_has_bnf :
-    !X M r. FINITE X /\ FV M SUBSET X UNION RANK r /\ has_bnf M ==>
-            ltree_finite (BT' X M r)
+Theorem BT_prop_bnf_imp_has_bnf :
+    !P. (!X M r. FINITE X /\ FV M SUBSET X UNION RANK r /\ bnf M ==>
+                 P (BT' X M r)) ==>
+        (!X M r. FINITE X /\ FV M SUBSET X UNION RANK r /\ has_bnf M ==>
+                 P (BT' X M r))
 Proof
     rw [has_bnf_thm] >> rename1 ‘bnf N’
  >> ‘M == N’ by PROVE_TAC [betastar_lameq]
  >> ‘FV N SUBSET FV M’ by PROVE_TAC [betastar_FV_SUBSET]
- (* applying ltree_finite_BT_bnf *)
- >> Suff ‘BT' X M r = BT' X N r’
- >- (Rewr' \\
-     MATCH_MP_TAC ltree_finite_BT_bnf >> art [] \\
-     Q_TAC (TRANS_TAC SUBSET_TRANS) ‘FV M’ >> art [])
+ >> ‘FV N SUBSET X UNION RANK r’ by PROVE_TAC [SUBSET_TRANS]
+ >> Q.PAT_X_ASSUM ‘!X M r. _’ (MP_TAC o Q.SPECL [‘X’, ‘N’, ‘r’])
+ >> simp []
+ >> Suff ‘BT' X M r = BT' X N r’ >- rw []
  (* applying lameq_BT_cong *)
  >> MATCH_MP_TAC lameq_BT_cong >> art []
  >> Q_TAC (TRANS_TAC SUBSET_TRANS) ‘FV M’ >> art []
+QED
+
+Theorem BT_prop_bnf_imp_has_benf :
+    !P. (!X M r. FINITE X /\ FV M SUBSET X UNION RANK r /\ bnf M ==>
+                 P (BT' X M r)) ==>
+        (!X M r. FINITE X /\ FV M SUBSET X UNION RANK r /\ has_benf M ==>
+                 P (BT' X M r))
+Proof
+    simp [BT_prop_bnf_imp_has_bnf]
+QED
+
+Theorem BT_prop_bnf_imp_benf :
+    !P. (!X M r. FINITE X /\ FV M SUBSET X UNION RANK r /\ bnf M ==>
+                 P (BT' X M r)) ==>
+        (!X M r. FINITE X /\ FV M SUBSET X UNION RANK r /\ benf M ==>
+                 P (BT' X M r))
+Proof
+    rpt STRIP_TAC
+ >> ‘!X M r. FINITE X /\ FV M SUBSET X UNION RANK r /\ has_benf M ==>
+             P (BT' X M r)’ by PROVE_TAC [BT_prop_bnf_imp_has_benf]
+ >> POP_ASSUM MATCH_MP_TAC >> rw [has_benf_def]
+ >> Q.EXISTS_TAC ‘M’ >> rw [lameta_REFL]
+QED
+
+Theorem ltree_finite_BT_has_bnf :
+    !X M r. FINITE X /\ FV M SUBSET X UNION RANK r /\ has_bnf M ==>
+            ltree_finite (BT' X M r)
+Proof
+    HO_MATCH_MP_TAC BT_prop_bnf_imp_has_bnf
+ >> REWRITE_TAC [ltree_finite_BT_bnf]
 QED
 
 Theorem ltree_finite_BT_has_benf :
     !X M r. FINITE X /\ FV M SUBSET X UNION RANK r /\ has_benf M ==>
             ltree_finite (BT' X M r)
 Proof
-    rw [has_benf_has_bnf]
- >> MATCH_MP_TAC ltree_finite_BT_has_bnf >> art []
+    HO_MATCH_MP_TAC BT_prop_bnf_imp_has_benf
+ >> REWRITE_TAC [ltree_finite_BT_bnf]
 QED
 
 Theorem ltree_finite_BT_benf :
     !X M r. FINITE X /\ FV M SUBSET X UNION RANK r /\ benf M ==>
             ltree_finite (BT' X M r)
 Proof
-    rpt STRIP_TAC
- >> MATCH_MP_TAC ltree_finite_BT_has_benf
- >> rw [has_benf_def]
- >> Q.EXISTS_TAC ‘M’ >> rw [lameta_REFL]
+    HO_MATCH_MP_TAC BT_prop_bnf_imp_benf
+ >> REWRITE_TAC [ltree_finite_BT_bnf]
 QED
 
 (* NOTE: All bottoms ($\bot$) are translated to “Omega” (Omega_def). If a term
