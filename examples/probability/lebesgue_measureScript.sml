@@ -29,7 +29,8 @@ val ASM_ARITH_TAC = rpt (POP_ASSUM MP_TAC) >> ARITH_TAC; (* numLib *)
 val DISC_RW_KILL = DISCH_TAC >> ONCE_ASM_REWRITE_TAC [] >> POP_ASSUM K_TAC;
 fun METIS ths tm = prove(tm, METIS_TAC ths);
 
-val _ = hide "top"; (* defined in posetTheory *)
+val _ = hide "top"; (* posetTheory *)
+val _ = hide "nf";  (* relationTheory *)
 
 val integral_def = integrationTheory.integral_def;
 
@@ -606,6 +607,20 @@ Proof
 QED
 
 Overload m_lebesgue = “measure lebesgue”
+
+Theorem integral_lborel_eq_gauge_integral :
+    !f. f IN borel_measurable borel ==>
+        integral lborel (Normal o f) = Normal (integral UNIV f)
+Proof
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘g = Normal o f’
+ >> Know ‘g IN Borel_measurable borel’
+ >- (qunabbrev_tac ‘g’ \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_IMP_BOREL' >> simp [sigma_algebra_borel])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘h = fn_seq lborel g’
+ >> cheat
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Non-measurable sets                                                       *)
