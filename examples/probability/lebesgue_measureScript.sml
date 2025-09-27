@@ -31,6 +31,8 @@ fun METIS ths tm = prove(tm, METIS_TAC ths);
 
 val _ = hide "top"; (* defined in posetTheory *)
 
+val integral_def = integrationTheory.integral_def;
+
 (* ------------------------------------------------------------------------- *)
 (*  Lebesgue sigma-algebra with the household Lebesgue measure (lebesgue)    *)
 (* ------------------------------------------------------------------------- *)
@@ -58,17 +60,21 @@ Proof
  >> METIS_TAC [ETA_AX]
 QED
 
-val integral_indicator_UNIV = store_thm ("integral_indicator_UNIV",
-  ``!s A. integral UNIV (indicator (s INTER A)) =
-          integral A (indicator s)``,
+Theorem integral_indicator_UNIV :
+    !s A. integral UNIV (indicator (s INTER A)) =
+          integral A (indicator s)
+Proof
   REWRITE_TAC [integral_def] THEN REPEAT STRIP_TAC THEN AP_TERM_TAC THEN
-  ABS_TAC THEN METIS_TAC [has_integral_indicator_UNIV]);
+  ABS_TAC THEN METIS_TAC [has_integral_indicator_UNIV]
+QED
 
-val integrable_indicator_UNIV = store_thm ("integrable_indicator_UNIV",
-  ``!s A. (indicator (s INTER A)) integrable_on UNIV <=>
-          (indicator s) integrable_on A``,
+Theorem integrable_indicator_UNIV :
+    !s A. (indicator (s INTER A)) integrable_on UNIV <=>
+          (indicator s) integrable_on A
+Proof
   RW_TAC std_ss [integrable_on] THEN AP_TERM_TAC THEN
-  ABS_TAC THEN METIS_TAC [has_integral_indicator_UNIV]);
+  ABS_TAC THEN METIS_TAC [has_integral_indicator_UNIV]
+QED
 
 Theorem integral_one : (* was: MEASURE_HOLLIGHT_EQ_ISABELLE *)
     !A. integral A (\x. 1) = integral univ(:real) (indicator A)
@@ -598,6 +604,8 @@ Proof
        by METIS_TAC [borel_measurable_sets, interval]
  >> ASM_SIMP_TAC std_ss [lebesgue_eq_lambda, lambda_open_interval]
 QED
+
+Overload m_lebesgue = “measure lebesgue”
 
 (* ------------------------------------------------------------------------- *)
 (* Non-measurable sets                                                       *)
