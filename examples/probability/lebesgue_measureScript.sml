@@ -608,17 +608,37 @@ QED
 
 Overload m_lebesgue = “measure lebesgue”
 
-Theorem integral_lborel_eq_gauge_integral :
-    !f. f IN borel_measurable borel ==>
-        integral lborel (Normal o f) = Normal (integral UNIV f)
+Theorem pos_fn_integral_fn_seq :
+    pos_fn_integral m (fn_seq m f n) = fn_seq_integral m f n
 Proof
-    rpt STRIP_TAC
- >> qabbrev_tac ‘g = Normal o f’
- >> Know ‘g IN Borel_measurable borel’
- >- (qunabbrev_tac ‘g’ \\
-     MATCH_MP_TAC IN_MEASURABLE_BOREL_IMP_BOREL' >> simp [sigma_algebra_borel])
+    cheat
+QED
+
+(* TODO: MONOTONE_CONVERGENCE_INCREASING *)
+Theorem lebesgue_eq_gauge_integral_lemma1[local] :
+    !f. f IN borel_measurable borel /\
+        pos_fn_integral lborel (Normal o f) <> PosInf /\
+       (!x. 0 <= f x) /\ bounded (IMAGE f UNIV) ==>
+        pos_fn_integral lborel (Normal o f) = Normal (integral UNIV f)
+Proof
+    rw [bounded_def]
+ >> qabbrev_tac ‘nf = Normal o f’
+ >> ‘!x. 0 <= nf x’ by rw [Abbr ‘nf’, o_DEF]
+ >> Know ‘nf IN Borel_measurable borel’
+ >- (qunabbrev_tac ‘nf’ \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_IMP_BOREL' \\
+     simp [sigma_algebra_borel])
  >> DISCH_TAC
- >> qabbrev_tac ‘h = fn_seq lborel g’
+ >> MP_TAC (ISPECL [“lborel”, “nf :real -> extreal”] integral_sequence)
+ >> impl_tac >- simp [lborel_def, space_lborel]
+ >> qabbrev_tac ‘fi = fn_seq lborel nf’
+ >> Rewr'
+ >> Know ‘f = \x. real (sup (IMAGE (\n. fi n x) UNIV))’
+ >- (rw [FUN_EQ_THM, Abbr ‘fi’] \\
+     MP_TAC (ISPECL [“lborel”, “nf :real -> extreal”] lemma_fn_seq_sup) \\
+     rw [lborel_def, space_lborel] \\
+     simp [Abbr ‘nf’, o_DEF, real_normal])
+ >> Rewr'
  >> cheat
 QED
 
