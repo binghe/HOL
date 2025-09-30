@@ -609,9 +609,48 @@ QED
 Overload m_lebesgue = “measure lebesgue”
 
 Theorem pos_fn_integral_fn_seq :
-    pos_fn_integral m (fn_seq m f n) = fn_seq_integral m f n
+    !m f n. measure_space m /\ f IN Borel_measurable (measurable_space m) ==>
+            pos_fn_integral m (fn_seq m f n) = fn_seq_integral m f n
 Proof
-    cheat
+    RW_TAC std_ss [fn_seq_integral_def, fn_seq_def]
+ >> qabbrev_tac ‘s = \n. count (4 ** n)’
+ >> qabbrev_tac ‘a = \n k. {x | x IN m_space m /\ &k / 2 pow n <= f x /\
+                                f x < (&k + 1) / 2 pow n}’
+ >> qabbrev_tac ‘b = \n. {x | x IN m_space m /\ 2 pow n <= f x}’
+ >> qabbrev_tac ‘c = \n k. (&k / 2 pow n) :extreal’
+ >> Know ‘!i k. 0 <= c i k’
+ >- (rw [Abbr ‘c’] \\
+    ‘2 pow i = Normal (2 pow i)’
+      by simp [extreal_of_num_def, extreal_pow_def] >> POP_ORW \\
+     MATCH_MP_TAC le_div >> simp [REAL_POW_LT])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘h = \x. SIGMA (\k. c n k * indicator_fn (a n k) x) (s n)’
+ >> qabbrev_tac ‘g = \x. 2 pow n * indicator_fn (b n) x’
+ >> simp []
+ >> Know ‘pos_fn_integral m (\x. h x + g x) =
+          pos_fn_integral m h + pos_fn_integral m g’
+ >- (MATCH_MP_TAC pos_fn_integral_add >> art [] \\
+     CONJ_TAC (* !x. x IN m_space m ==> 0 <= h x *)
+     >- (rw [Abbr ‘h’] \\
+         irule EXTREAL_SUM_IMAGE_POS >> simp [Abbr ‘s’] \\
+         Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+         MATCH_MP_TAC le_mul >> rw [Abbr ‘c’, INDICATOR_FN_POS]) \\
+     CONJ_TAC (* !x. x IN m_space m ==> 0 <= g x *)
+     >- (rw [Abbr ‘g’] \\
+         MATCH_MP_TAC le_mul >> simp [pow_pos_le, INDICATOR_FN_POS]) \\
+     CONJ_TAC (* h IN Borel_measurable (measurable_space m) *)
+     >- (MATCH_MP_TAC (INST_TYPE [beta |-> “:num”] IN_MEASURABLE_BOREL_SUM) \\
+         simp [MEASURE_SPACE_SIGMA_ALGEBRA, Abbr ‘h’] \\
+         qexistsl_tac [‘\k x. c n k * indicator_fn (a n k) x’, ‘s n’] \\
+         simp [Abbr ‘s’] \\
+         reverse CONJ_TAC
+         >- (rpt GEN_TAC >> STRIP_TAC \\
+             MATCH_MP_TAC pos_not_neginf \\
+             MATCH_MP_TAC le_mul >> simp [INDICATOR_FN_POS]) \\
+         cheat) \\
+     cheat)
+ >> Rewr'
+ >> cheat
 QED
 
 (* TODO: MONOTONE_CONVERGENCE_INCREASING *)

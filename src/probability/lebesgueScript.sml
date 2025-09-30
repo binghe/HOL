@@ -9990,5 +9990,6 @@ val _ = export_theory ();
   [4] Wikipedia: https://en.wikipedia.org/wiki/Beppo_Levi
   [5] Wikipedia: https://en.wikipedia.org/wiki/Giuseppe_Vitali
   [6] Shiryaev, A.N.: Probability-1. Springer-Verlag New York (2016).
-  [7] Coble, A.R.: Anonymity, information, and machine-assisted proof. University of Cambridge (2010).
+  [7] Coble, A.R.: Anonymity, information, and machine-assisted proof.
+      University of Cambridge (2010).
  *)
