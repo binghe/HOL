@@ -15,13 +15,15 @@
 open HolKernel Parse boolLib bossLib;
 
 open prim_recTheory arithmeticTheory numTheory numLib pred_setTheory pred_setLib
-     combinTheory hurdUtils jrhUtils cardinalTheory ordinalTheory relationTheory;
+     combinTheory hurdUtils jrhUtils cardinalTheory relationTheory;
 
 open realTheory realLib seqTheory transcTheory real_sigmaTheory iterateTheory
      topologyTheory metricTheory real_topologyTheory integrationTheory;
 
 open sigma_algebraTheory extrealTheory real_borelTheory measureTheory borelTheory
      lebesgueTheory martingaleTheory;
+
+open ordinalTheory; (* TODO *)
 
 val _ = new_theory "lebesgue_measure";
 
@@ -608,6 +610,10 @@ QED
 
 Overload m_lebesgue = “measure lebesgue”
 
+(* ------------------------------------------------------------------------- *)
+(*  Equivalence of Lebesgue and Gauge (Henstock-Kurzweil) Integration        *)
+(* ------------------------------------------------------------------------- *)
+
 Theorem pos_fn_integral_fn_seq :
     !m f n. measure_space m /\ f IN Borel_measurable (measurable_space m) ==>
             pos_fn_integral m (fn_seq m f n) = fn_seq_integral m f n
@@ -644,12 +650,11 @@ Proof
      Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
      MATCH_MP_TAC le_mul >> rw [Abbr ‘c’, INDICATOR_FN_POS])
  >> DISCH_TAC
- >> qabbrev_tac ‘g = \x. 2 pow n * indicator_fn (b n) x’
+ >> qabbrev_tac ‘g = \x. 2 pow n * indicator_fn (b n) x’ >> simp []
  >> Know ‘!x. x IN m_space m ==> 0 <= g x’
  >- (rw [Abbr ‘g’] \\
      MATCH_MP_TAC le_mul >> simp [pow_pos_le, INDICATOR_FN_POS])
  >> DISCH_TAC
- >> simp []
  >> Know ‘pos_fn_integral m (\x. h x + g x) =
           pos_fn_integral m h + pos_fn_integral m g’
  >- (MATCH_MP_TAC pos_fn_integral_add >> art [] \\
@@ -710,12 +715,11 @@ Proof
  >> POP_ASSUM K_TAC (* h-assumption *)
  >> qunabbrev_tac ‘h’
  (* re-define another g *)
- >> qabbrev_tac ‘g = \k x. c n k * indicator_fn (a n k) x’
+ >> qabbrev_tac ‘g = \k x. c n k * indicator_fn (a n k) x’ >> simp []
  >> Know ‘!i x. x IN m_space m ==> 0 <= g i x’
  >- (rw [Abbr ‘g’] \\
      MATCH_MP_TAC le_mul >> simp [INDICATOR_FN_POS])
  >> DISCH_TAC
- >> simp []
  >> MP_TAC (Q.SPECL [‘m’, ‘g’, ‘s (n :num)’]
                     (INST_TYPE [beta |-> “:num”] pos_fn_integral_sum))
  >> impl_tac
@@ -753,6 +757,13 @@ Theorem lebesgue_eq_gauge_integral_lemma1[local] :
         pos_fn_integral lborel (Normal o f) = Normal (integral UNIV f)
 Proof
     rw [bounded_def]
+ >> Know ‘0 <= a’
+ >- (CCONTR_TAC >> fs [GSYM real_lt] \\
+    ‘0 <= abs (f ARB)’ by simp [ABS_POS] \\
+    ‘abs (f ARB) <= a’ by PROVE_TAC [] \\
+    ‘0 <= a’ by PROVE_TAC [REAL_LE_TRANS] \\
+     METIS_TAC [REAL_LET_ANTISYM])
+ >> DISCH_TAC
  >> qabbrev_tac ‘nf = Normal o f’
  >> ‘!x. 0 <= nf x’ by rw [Abbr ‘nf’, o_DEF]
  >> Know ‘nf IN Borel_measurable borel’
@@ -775,6 +786,46 @@ Proof
               fn_seq_integral lborel nf i’
  >- (Q.X_GEN_TAC ‘n’ \\
      MATCH_MP_TAC pos_fn_integral_fn_seq >> rw [lborel_def])
+ >> Rewr'
+ >> qabbrev_tac ‘fn = \n x. real (fn_seq lborel nf n x)’
+ (* applying sup_normal *)
+ >> qabbrev_tac ‘s = \x. IMAGE (\n. fn_seq lborel nf n x) UNIV’ >> simp []
+ >> Know ‘!x. sup (s x) = Normal (sup (s x o Normal))’
+ >- (rw [Once EQ_SYM_EQ] \\
+     MATCH_MP_TAC sup_normal \\
+     Q.EXISTS_TAC ‘a’ >> rw [abs_bounds] (* 2 subgoals *)
+     >- (rw [Abbr ‘s’, le_sup'] \\
+         Q_TAC (TRANS_TAC le_trans) ‘0’ \\
+         CONJ_TAC >- simp [extreal_of_num_def, extreal_ainv_def] \\
+         Q_TAC (TRANS_TAC le_trans) ‘fn_seq lborel nf 0 x’ \\
+         reverse CONJ_TAC
+         >- (POP_ASSUM MATCH_MP_TAC \\
+             Q.EXISTS_TAC ‘0’ >> art []) \\
+         MATCH_MP_TAC lemma_fn_seq_positive >> art []) \\
+     rw [Abbr ‘s’, sup_le'] \\
+     Q_TAC (TRANS_TAC le_trans) ‘nf x’ \\
+     CONJ_TAC >- (MATCH_MP_TAC lemma_fn_seq_upper_bounded >> art []) \\
+     rw [Abbr ‘nf’, o_DEF] \\
+     Suff ‘abs (f x) <= a’ >- simp [ABS_BOUNDS] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘x’ >> art [])
+ >> Rewr'
+ >> simp [real_normal, Abbr ‘s’]
+ >> Know ‘!x. IMAGE (\n. fn_seq lborel nf n x) UNIV o Normal =
+              IMAGE (\n. fn n x) UNIV’
+ >- (Q.X_GEN_TAC ‘y’ >> rw [Once EXTENSION, o_DEF] \\
+     EQ_TAC >> rw [Abbr ‘fn’]
+     >- (Q.EXISTS_TAC ‘n’ \\
+         POP_ASSUM (simp o wrap o SYM)) \\
+     Q.EXISTS_TAC ‘n’ \\
+     MATCH_MP_TAC normal_real \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC pos_not_neginf \\
+         MATCH_MP_TAC lemma_fn_seq_positive >> art []) \\
+     REWRITE_TAC [lt_infty] \\
+     Q_TAC (TRANS_TAC let_trans) ‘nf y’ \\
+     CONJ_TAC >- (MATCH_MP_TAC lemma_fn_seq_upper_bounded >> art []) \\
+     simp [Abbr ‘nf’, o_DEF])
  >> Rewr'
  >> cheat
 QED
@@ -1033,13 +1084,15 @@ Proof
  >> rpt STRIP_TAC >- METIS_TAC [SUBSET_TRANS]
  >> rename1 ‘Cantor_set (SUC n) SUBSET Cantor_set n’
  >> REWRITE_TAC [Cantor_set_def, Once Cantor_def]
- >> rw [SUBSET_DEF, IN_BIGUNION_IMAGE, IN_BIGUNION] (* 2 subgoals, same initial tactics *)
+ >> rw [SUBSET_DEF, IN_BIGUNION_IMAGE, IN_BIGUNION]
+ (* 2 subgoals, same initial tactics *)
  >> Q.EXISTS_TAC ‘i’ >> art []
  >> ‘?a b. a <= b /\ i = CLOSED_interval[a,b]’
       by METIS_TAC [Cantor_closed_intervals]
  >> fs [INTERVAL_LOWERBOUND, INTERVAL_UPPERBOUND, INTERVAL_NE_EMPTY, REAL_SUB_LE]
  >| [ (* goal 1 (of 2) *)
-      Suff ‘interval[a,a + 1 / 3 * (b - a)] SUBSET interval[a,b]’ >- rw [SUBSET_DEF] \\
+      Suff ‘interval[a,a + 1 / 3 * (b - a)] SUBSET interval[a,b]’
+      >- rw [SUBSET_DEF] \\
       rw [SUBSET_INTERVAL] \\
       ONCE_REWRITE_TAC [REAL_ADD_COMM] \\
       REWRITE_TAC [GSYM REAL_LE_SUB_LADD] \\
@@ -1047,7 +1100,8 @@ Proof
       Suff ‘1 / 3 * c <= 1 * c’ >- rw [] \\
       MATCH_MP_TAC REAL_LE_RMUL_IMP >> RW_TAC real_ss [],
       (* goal 2 (of 2) *)
-      Suff ‘interval[a + 2 / 3 * (b - a),b] SUBSET interval[a,b]’ >- rw [SUBSET_DEF] \\
+      Suff ‘interval[a + 2 / 3 * (b - a),b] SUBSET interval[a,b]’
+      >- rw [SUBSET_DEF] \\
       rw [SUBSET_INTERVAL, REAL_SUB_LE] ]
 QED
 
