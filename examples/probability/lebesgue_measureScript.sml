@@ -107,6 +107,9 @@ QED
    constructed by Henstock-Kurzweil (gauge) Integration.
 
    Named after Henri Lebesgue (1875-1941), a French mathematician [5]
+
+   NOTE: This definition of "Lebesgue measurable sets (and Lebesgue measure)"
+   is aligned with Definition 18.1 of [2, p.300].
  *)
 Definition lebesgue_def :
   lebesgue = (univ(:real),
@@ -359,7 +362,8 @@ Proof
    DISCH_TAC] THEN
   ONCE_REWRITE_TAC [realTheory.sum] THEN ASM_REWRITE_TAC [] THEN
   ONCE_REWRITE_TAC [EQ_SYM_EQ] THEN REWRITE_TAC [ADD] THEN
-  GEN_REWR_TAC (RAND_CONV o ONCE_DEPTH_CONV) [METIS [] ``!f. indicator f = (\x. indicator f x)``] THEN
+  GEN_REWR_TAC (RAND_CONV o ONCE_DEPTH_CONV)
+               [METIS [] ``!f. indicator f = (\x. indicator f x)``] THEN
   SIMP_TAC std_ss [] THEN
   KNOW_TAC ``integral (line n') (indicator (BIGUNION {f i | i < SUC m})) =
              integral (line n') ((\x. (\x. indicator (BIGUNION {f i | i < m}) x) x +
@@ -383,7 +387,8 @@ Proof
    FULL_SIMP_TAC std_ss [SIGMA_ALGEBRA, GSPECIFICATION, subsets_def, space_def] THEN
    POP_ASSUM MATCH_MP_TAC THEN
    ASM_SIMP_TAC std_ss [SUBSET_DEF, GSPECIFICATION, IN_UNIV] THEN CONJ_TAC THENL
-   [REWRITE_TAC [pred_setTheory.COUNTABLE_ALT] THEN SET_TAC [], ALL_TAC] THEN METIS_TAC [],
+   [REWRITE_TAC [pred_setTheory.COUNTABLE_ALT] THEN SET_TAC [], ALL_TAC] THEN
+    METIS_TAC [],
     DISCH_TAC] THEN METIS_TAC [lebesgueD],
    SIMP_TAC std_ss [line, GSYM interval, INTEGRABLE_CONST],
    FULL_SIMP_TAC std_ss [DROP_INDICATOR_ABS_LE_1], ALL_TAC] THEN
@@ -480,13 +485,12 @@ QED
 
 val lmeasure_eq_0 = lebesgue_of_negligible;
 
-Theorem lebesgue_measure_iff_LIMSEQ : (* was: lmeasure_iff_LIMSEQ *)
+Theorem lebesgue_measure_iff_LIMSEQ[local] :
     !A m. A IN measurable_sets lebesgue /\ 0 <= m ==>
-         ((measure lebesgue A = Normal m) <=>
+         (measure lebesgue A = Normal m <=>
           ((\n. integral (line n) (indicator A)) --> m) sequentially)
 Proof
-    RW_TAC std_ss []
- >> ONCE_REWRITE_TAC [EQ_SYM_EQ]
+    RW_TAC std_ss [Once EQ_SYM_EQ]
  >> `!n. Normal (integral (line n) (indicator A)) =
          Normal ((\n. integral (line n) (indicator A)) n)` by METIS_TAC []
  >> SIMP_TAC std_ss [measure_lebesgue, GSYM IMAGE_DEF]
@@ -749,7 +753,7 @@ Proof
  >> MATCH_MP_TAC REAL_LE_DIV >> simp [POW_POS]
 QED
 
-(* TODO: MONOTONE_CONVERGENCE_INCREASING *)
+(* At first we prove it for bounded positive (non-negative) functions *)
 Theorem lebesgue_eq_gauge_integral_lemma1[local] :
     !f. f IN borel_measurable borel /\
         pos_fn_integral lborel (Normal o f) <> PosInf /\
@@ -827,6 +831,7 @@ Proof
      CONJ_TAC >- (MATCH_MP_TAC lemma_fn_seq_upper_bounded >> art []) \\
      simp [Abbr ‘nf’, o_DEF])
  >> Rewr'
+ (* applying BEPPO_LEVI_MONOTONE_CONVERGENCE_INCREASING *)
  >> cheat
 QED
 
