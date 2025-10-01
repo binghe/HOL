@@ -733,13 +733,13 @@ Proof
 QED
 
 Theorem sup_in:
-    ∀a s. a ∈ s ⇒ a ≤ sup s
+    ∀a s. a ∈ s ⇒ a ≤ sup (s :extreal set)
 Proof
   rw [le_sup']
 QED
 
 Theorem sup_not_in:
-    ∀a s. sup s < a ⇒ a ∉ s
+    ∀a s. sup s < a ⇒ a ∉ (s :extreal set)
 Proof
   rw []
   >> CCONTR_TAC
@@ -3376,7 +3376,9 @@ Proof
      ‘a + c = c / r * r’ by METIS_TAC [REAL_EQ_LDIV_EQ] \\
      METIS_TAC [REAL_DIV_RMUL, REAL_LT_IMP_NE])
  >> STRIP_TAC
- >> MP_TAC (Q.SPECL [‘p’, ‘λx. ((X x + Z x) / Normal r = Z x / Normal r)’, ‘λx. (X x + Z x = Z x)’] AE_cong)
+ >> MP_TAC (Q.SPECL [‘p’,
+                     ‘λx. ((X x + Z x :extreal) / Normal r = Z x / Normal r)’,
+                     ‘λx. (X x + Z x = Z x :extreal)’] AE_cong)
  >> simp [] >> STRIP_TAC
  >> Know ‘∀x. x IN m_space p ⇒ ((Y x + Z x) = Z x ⇔ (Y x + Z x) / Normal r = Z x / Normal r)’
  >- (rw [] >> ‘∃a. Y x = Normal a’ by METIS_TAC [extreal_cases] \\
@@ -3387,7 +3389,9 @@ Proof
      ‘a + c = c / r * r’ by METIS_TAC [REAL_EQ_LDIV_EQ] \\
      METIS_TAC [REAL_DIV_RMUL, REAL_LT_IMP_NE])
  >> STRIP_TAC
- >> MP_TAC (Q.SPECL [‘p’, ‘λx. ((Y x + Z x) / Normal r = Z x / Normal r)’, ‘λx. (Y x + Z x = Z x)’] AE_cong)
+ >> MP_TAC (Q.SPECL [‘p’,
+                     ‘λx. ((Y x + Z x :extreal) / Normal r = Z x / Normal r)’,
+                     ‘λx. (Y x + Z x = Z x :extreal)’] AE_cong)
  >> simp [] >> STRIP_TAC
  >> ‘AE x::p. Normal (f (real ((X x + Z x) / Normal r))) =
      Normal (f (real (Z x / Normal r)))’ by METIS_TAC [AE_comp]
@@ -6119,7 +6123,7 @@ Proof
   >> MP_TAC (Q.SPECL [‘p’, ‘X’, ‘2’, ‘3’] liapounov_ineq_rv)
   >> impl_tac
   >- (fs [real_random_variable, p_space_def, events_def, prob_space_def] \\
-      ‘2 < 3’ by EVAL_TAC >> POP_ASSUM (simp o wrap) \\
+      ‘2 < (3 :num)’ by EVAL_TAC >> POP_ASSUM (simp o wrap) \\
       rw [L2_space_alt_integrable_square, lp_space_def] \\
       POP_ASSUM (MP_TAC) >> rw [integrable_alt_def] \\
       fs [pow_abs, abs_abs, o_DEF, gen_powr] >> gs [])
@@ -6520,7 +6524,7 @@ Proof
 QED
 
 Theorem ne_imp_lt :
-    ∀x y. x ≠ y ⇒ x < y ∨ y < x
+    ∀x y. x ≠ y ⇒ x < y ∨ y < (x :extreal)
 Proof
   rw []
   >> CCONTR_TAC
@@ -7386,10 +7390,12 @@ val _ = html_theory "central_limit";
 
   [1] Shiryaev, A.N.: Probability-1. Springer-Verlag New York (2016).
   [2] Shiryaev, A.N.: Probability-2. Springer-Verlag New York (2019).
-  [3] Chung, K.L.: A Course in Probability Theory, Third Edition. Academic Press (2001).
-  [4] Qasim, M.: Formalization of Normal Random Variables, Concordia University (2016).
-  [5] Rosenthal, J.S.: A First Look at Rigorous Probability Theory (Second Edition).
-      World Scientific Publishing Company (2006).
+  [3] Chung, K.L.: A Course in Probability Theory, Third Edition.
+      Academic Press (2001).
+  [4] Qasim, M.: Formalization of Normal Random Variables,
+      Concordia University (2016).
+  [5] Rosenthal, J.S.: A First Look at Rigorous Probability Theory
+      (Second Edition). World Scientific Publishing Company (2006).
   [6] Noll, W.: The chain rule for higher derivatives. (1995).
 
 
