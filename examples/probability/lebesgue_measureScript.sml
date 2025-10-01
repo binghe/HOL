@@ -616,7 +616,20 @@ Proof
  >> qabbrev_tac ‘s = \n. count (4 ** n)’
  >> qabbrev_tac ‘a = \n k. {x | x IN m_space m /\ &k / 2 pow n <= f x /\
                                 f x < (&k + 1) / 2 pow n}’
+ >> Know ‘!n i. a n i IN measurable_sets m’
+ >- (rw [Abbr ‘a’] \\
+    ‘{x | x IN m_space m /\ &i / 2 pow n <= f x /\ f x < (&i + 1) / 2 pow n} =
+     {x | &i / 2 pow n <= f x /\ f x < (&i + 1) / 2 pow n} INTER m_space m’
+       by SET_TAC [] >> POP_ORW \\
+     METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE, MEASURE_SPACE_SIGMA_ALGEBRA])
+ >> DISCH_TAC
  >> qabbrev_tac ‘b = \n. {x | x IN m_space m /\ 2 pow n <= f x}’
+ >> Know ‘!i. b i IN measurable_sets m’
+ >- (Q.X_GEN_TAC ‘n’ >> simp [Abbr ‘b’] \\
+    ‘{x | x IN m_space m /\ 2 pow n <= f x} =
+     {x | 2 pow n <= f x} INTER m_space m’ by SET_TAC [] >> POP_ORW \\
+     METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE, MEASURE_SPACE_SIGMA_ALGEBRA])
+ >> DISCH_TAC
  >> qabbrev_tac ‘c = \n k. (&k / 2 pow n) :extreal’
  >> Know ‘!i k. 0 <= c i k’
  >- (rw [Abbr ‘c’] \\
@@ -625,19 +638,21 @@ Proof
      MATCH_MP_TAC le_div >> simp [REAL_POW_LT])
  >> DISCH_TAC
  >> qabbrev_tac ‘h = \x. SIGMA (\k. c n k * indicator_fn (a n k) x) (s n)’
+ >> Know ‘!x. x IN m_space m ==> 0 <= h x’
+ >- (rw [Abbr ‘h’] \\
+     irule EXTREAL_SUM_IMAGE_POS >> simp [Abbr ‘s’] \\
+     Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+     MATCH_MP_TAC le_mul >> rw [Abbr ‘c’, INDICATOR_FN_POS])
+ >> DISCH_TAC
  >> qabbrev_tac ‘g = \x. 2 pow n * indicator_fn (b n) x’
+ >> Know ‘!x. x IN m_space m ==> 0 <= g x’
+ >- (rw [Abbr ‘g’] \\
+     MATCH_MP_TAC le_mul >> simp [pow_pos_le, INDICATOR_FN_POS])
+ >> DISCH_TAC
  >> simp []
  >> Know ‘pos_fn_integral m (\x. h x + g x) =
           pos_fn_integral m h + pos_fn_integral m g’
  >- (MATCH_MP_TAC pos_fn_integral_add >> art [] \\
-     CONJ_TAC (* !x. x IN m_space m ==> 0 <= h x *)
-     >- (rw [Abbr ‘h’] \\
-         irule EXTREAL_SUM_IMAGE_POS >> simp [Abbr ‘s’] \\
-         Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
-         MATCH_MP_TAC le_mul >> rw [Abbr ‘c’, INDICATOR_FN_POS]) \\
-     CONJ_TAC (* !x. x IN m_space m ==> 0 <= g x *)
-     >- (rw [Abbr ‘g’] \\
-         MATCH_MP_TAC le_mul >> simp [pow_pos_le, INDICATOR_FN_POS]) \\
      CONJ_TAC (* h IN Borel_measurable (measurable_space m) *)
      >- (MATCH_MP_TAC (INST_TYPE [beta |-> “:num”] IN_MEASURABLE_BOREL_SUM) \\
          simp [MEASURE_SPACE_SIGMA_ALGEBRA, Abbr ‘h’] \\
@@ -647,10 +662,87 @@ Proof
          >- (rpt GEN_TAC >> STRIP_TAC \\
              MATCH_MP_TAC pos_not_neginf \\
              MATCH_MP_TAC le_mul >> simp [INDICATOR_FN_POS]) \\
-         cheat) \\
-     cheat)
+         rw [Abbr ‘c’] \\
+         simp [extreal_of_num_def, extreal_pow_def] \\
+        ‘(0 :real) < 2 pow n’ by simp [REAL_POW_LT] \\
+        ‘2 pow n <> 0 :real’ by PROVE_TAC [REAL_LT_IMP_NE] \\
+         simp [extreal_div_eq] \\
+         MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL_INDICATOR \\
+         simp [MEASURE_SPACE_SIGMA_ALGEBRA]) \\
+  (* g IN Borel_measurable (measurable_space m) *)
+     rw [Abbr ‘g’, extreal_of_num_def, extreal_pow_def] \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL_INDICATOR \\
+     simp [MEASURE_SPACE_SIGMA_ALGEBRA])
  >> Rewr'
- >> cheat
+ >> Know ‘pos_fn_integral m g = 2 pow n * measure m (b n)’
+ >- (simp [Abbr ‘g’, extreal_of_num_def, extreal_pow_def] \\
+     MATCH_MP_TAC pos_fn_integral_cmul_indicator \\
+     simp [REAL_POW_LE])
+ >> Rewr'
+ >> qmatch_abbrev_tac ‘x1 + y = x2 + (y :extreal)’
+ >> Know ‘y <> NegInf’
+ >- (MATCH_MP_TAC pos_not_neginf \\
+     qunabbrev_tac ‘y’ \\
+     MATCH_MP_TAC le_mul >> simp [pow_pos_le] \\
+     MATCH_MP_TAC MEASURE_POSITIVE >> art [])
+ >> DISCH_TAC
+ >> Cases_on ‘y = PosInf’
+ >- (POP_ORW \\
+     Suff ‘x1 + PosInf = PosInf /\ x2 + PosInf = PosInf’ >- simp [] \\
+     Suff ‘x1 <> NegInf /\ x2 <> NegInf’ >- PROVE_TAC [add_infty] \\
+     CONJ_TAC >> MATCH_MP_TAC pos_not_neginf >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       qunabbrev_tac ‘x1’ \\
+       MATCH_MP_TAC pos_fn_integral_pos >> art [],
+       (* goal 2 (of 2) *)
+       qunabbrev_tac ‘x2’ \\
+       irule EXTREAL_SUM_IMAGE_POS >> rw [Abbr ‘s’] \\
+       MATCH_MP_TAC le_mul >> art [] \\
+       MATCH_MP_TAC MEASURE_POSITIVE >> art [] ])
+ >> Know ‘x1 + y = x2 + y <=> x1 = x2’
+ >- (MATCH_MP_TAC EXTREAL_EQ_RADD >> art [])
+ >> Rewr'
+ >> qunabbrevl_tac [‘x1’, ‘x2’]
+ (* cleanup y and y-assumptions *)
+ >> NTAC 2 (POP_ASSUM K_TAC) >> qunabbrev_tac ‘y’
+ (* cleanup g and g-assumptions *)
+ >> POP_ASSUM K_TAC >> qunabbrev_tac ‘g’
+ >> POP_ASSUM K_TAC (* h-assumption *)
+ >> qunabbrev_tac ‘h’
+ (* re-define another g *)
+ >> qabbrev_tac ‘g = \k x. c n k * indicator_fn (a n k) x’
+ >> Know ‘!i x. x IN m_space m ==> 0 <= g i x’
+ >- (rw [Abbr ‘g’] \\
+     MATCH_MP_TAC le_mul >> simp [INDICATOR_FN_POS])
+ >> DISCH_TAC
+ >> simp []
+ >> MP_TAC (Q.SPECL [‘m’, ‘g’, ‘s (n :num)’]
+                    (INST_TYPE [beta |-> “:num”] pos_fn_integral_sum))
+ >> impl_tac
+ >- (simp [Abbr ‘s’] \\
+     rw [Abbr ‘g’, Abbr ‘c’, extreal_of_num_def, extreal_pow_def] \\
+    ‘(0 :real) < 2 pow n’ by simp [REAL_POW_LT] \\
+    ‘2 pow n <> 0 :real’ by PROVE_TAC [REAL_LT_IMP_NE] \\
+     simp [extreal_div_eq] \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL_INDICATOR \\
+     simp [MEASURE_SPACE_SIGMA_ALGEBRA])
+ >> Rewr'
+ >> irule EXTREAL_SUM_IMAGE_EQ
+ >> simp [Abbr ‘s’]
+ >> reverse CONJ_TAC
+ >- (DISJ1_TAC \\
+     Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+     CONJ_TAC >> MATCH_MP_TAC pos_not_neginf
+     >- (MATCH_MP_TAC pos_fn_integral_pos >> art []) \\
+     MATCH_MP_TAC le_mul >> art [] \\
+     MATCH_MP_TAC MEASURE_POSITIVE >> art [])
+ >> rw [Abbr ‘g’]
+ >> simp [Abbr ‘c’, extreal_of_num_def, extreal_pow_def]
+ >> ‘(0 :real) < 2 pow n’ by simp [REAL_POW_LT]
+ >> ‘2 pow n <> 0 :real’ by PROVE_TAC [REAL_LT_IMP_NE]
+ >> simp [extreal_div_eq]
+ >> MATCH_MP_TAC pos_fn_integral_cmul_indicator >> art []
+ >> MATCH_MP_TAC REAL_LE_DIV >> simp [POW_POS]
 QED
 
 (* TODO: MONOTONE_CONVERGENCE_INCREASING *)
@@ -677,6 +769,12 @@ Proof
      MP_TAC (ISPECL [“lborel”, “nf :real -> extreal”] lemma_fn_seq_sup) \\
      rw [lborel_def, space_lborel] \\
      simp [Abbr ‘nf’, o_DEF, real_normal])
+ >> Rewr'
+ >> qunabbrev_tac ‘fi’
+ >> Know ‘!i. pos_fn_integral lborel (fn_seq lborel nf i) =
+              fn_seq_integral lborel nf i’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     MATCH_MP_TAC pos_fn_integral_fn_seq >> rw [lborel_def])
  >> Rewr'
  >> cheat
 QED

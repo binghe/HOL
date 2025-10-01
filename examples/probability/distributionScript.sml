@@ -21,7 +21,7 @@ open realTheory realLib seqTheory transcTheory real_sigmaTheory iterateTheory
 
 open sigma_algebraTheory extreal_baseTheory extrealTheory real_borelTheory
      measureTheory borelTheory lebesgueTheory martingaleTheory
-     probabilityTheory;
+     probabilityTheory lebesgue_measureTheory;
 
 val _ = new_theory "distribution"; (* was: "normal_rv" *)
 
