@@ -109,7 +109,7 @@ QED
    Named after Henri Lebesgue (1875-1941), a French mathematician [5]
 
    NOTE: This definition of "Lebesgue measurable sets (and Lebesgue measure)"
-   is aligned with Definition 18.1 of [2, p.300].
+   is aligned with Definition 18.1 [2, p.300] and 18.7 [2, p.304].
  *)
 Definition lebesgue_def :
   lebesgue = (univ(:real),
@@ -433,13 +433,13 @@ val lebesgueI_borel = borel_imp_lebesgue_sets;
    Lebesgue-measurable sets.
  *)
 Theorem lborel_subset_lebesgue :
-    (measurable_sets lborel) SUBSET (measurable_sets lebesgue)
+    measurable_sets lborel SUBSET measurable_sets lebesgue
 Proof
     RW_TAC std_ss [SUBSET_DEF, sets_lborel]
  >> MATCH_MP_TAC lebesgueI_borel >> art []
 QED
 
-Theorem borel_imp_lebesgue_measurable : (* was: borel_measurable_lebesgueI *)
+Theorem borel_imp_lebesgue_measurable :
     !f. f IN borel_measurable (space borel, subsets borel) ==>
         f IN borel_measurable (m_space lebesgue, measurable_sets lebesgue)
 Proof
@@ -458,7 +458,7 @@ val borel_measurable_lebesgueI = borel_imp_lebesgue_measurable;
 Theorem borel_imp_lebesgue_measurable' =
     REWRITE_RULE [SPACE] borel_imp_lebesgue_measurable
 
-Theorem negligible_in_lebesgue : (* was: lebesgueI_negligible *)
+Theorem negligible_in_lebesgue :
     !s. negligible s ==> s IN measurable_sets lebesgue
 Proof
     RW_TAC std_ss [negligible]
@@ -468,7 +468,7 @@ QED
 
 val lebesgueI_negligible = negligible_in_lebesgue;
 
-Theorem lebesgue_of_negligible : (* was: lmeasure_eq_0 *)
+Theorem lebesgue_of_negligible :
     !s. negligible s ==> (measure lebesgue s = 0)
 Proof
     RW_TAC std_ss [measure_lebesgue]
@@ -511,7 +511,7 @@ val lmeasure_iff_LIMSEQ = lebesgue_measure_iff_LIMSEQ;
    Most steps are from "lborel_eqI" (HVG's lebesgue_measure_hvgScript.sml).
  *)
 Theorem lebesgue_closed_interval :
-    !a b. a <= b ==> (measure lebesgue (interval [a,b]) = Normal (b - a))
+    !a b. a <= b ==> measure lebesgue (interval [a,b]) = Normal (b - a)
 Proof
     RW_TAC std_ss [lebesgue_def, measure_def, GSYM CONTENT_CLOSED_INTERVAL]
  >> SIMP_TAC std_ss [sup_eq']

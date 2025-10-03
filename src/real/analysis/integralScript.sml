@@ -2834,7 +2834,8 @@ Proof
      RW_TAC std_ss [] >> rename1 ‘interval [a1,b1] SUBSET interval [a,b]’ \\
      Q.PAT_ASSUM ‘!x k. (x,k) IN p ==> P’ (MP_TAC o (Q.SPECL [‘x2’, ‘k2’])) \\
      RW_TAC std_ss [] >> rename1 ‘interval [a2,b2] SUBSET interval [a,b]’ \\
-    ‘interval [a1,b1] <> {} /\ interval [a2,b2] <> {}’ by METIS_TAC [MEMBER_NOT_EMPTY] \\
+    ‘interval [a1,b1] <> {} /\ interval [a2,b2] <> {}’
+       by METIS_TAC [MEMBER_NOT_EMPTY] \\
     ‘a1 <= b1 /\ a2 <= b2’ by PROVE_TAC [INTERVAL_NE_EMPTY] \\
      FULL_SIMP_TAC std_ss [INTERVAL_LOWERBOUND, CONTENT_POS_LT_EQ] \\
     ‘a1 = a2’ by PROVE_TAC [REAL_LE_ANTISYM] \\
@@ -2877,7 +2878,8 @@ Proof
  >- (rpt STRIP_TAC \\
      Q.PAT_X_ASSUM ‘!j k. j < N /\ k < N /\ j < k ==> ~R (h k) (h j)’
        (MP_TAC o (Q.SPECL [‘i’, ‘j’])) \\
-     Cases_on ‘h i’ >> Cases_on ‘h j’ >> rw [Abbr ‘R’] (* 5 subgoals, same tactics *) \\
+     Cases_on ‘h i’ >> Cases_on ‘h j’ \\
+     rw [Abbr ‘R’] (* 5 subgoals, same tactics *) \\
      METIS_TAC [SND, real_lt])
  >> DISCH_TAC
  >> Q.PAT_X_ASSUM ‘!j k. j < N /\ k < N /\ j < k ==> ~R (h k) (h j)’ K_TAC
@@ -2946,7 +2948,8 @@ Proof
            METIS_TAC []) >> DISCH_TAC \\
       ‘a0 <= b0’ by PROVE_TAC [INTERVAL_NE_EMPTY] \\
        FULL_SIMP_TAC bool_ss [INTERVAL_LOWERBOUND_NONEMPTY, SUBSET_INTERVAL] \\
-       CCONTR_TAC >> ‘a0 < a \/ a < a0’ by PROVE_TAC [REAL_LT_TOTAL] (* 2 subgoals *)
+       CCONTR_TAC \\
+      ‘a0 < a \/ a < a0’ by PROVE_TAC [REAL_LT_TOTAL] (* 2 subgoals *)
        >- (Q.PAT_X_ASSUM ‘a0 <> a’ K_TAC \\
            Q.PAT_X_ASSUM ‘!x. _ <=> a <= x /\ x <= b’ (MP_TAC o (Q.SPEC ‘a0’)) \\
            Suff ‘?s. a0 IN s /\ ?x. (x,s) IN p’ >- (Rewr >> rw [GSYM real_lt]) \\
@@ -2988,18 +2991,22 @@ Proof
     (* ordering: (a, y, [a0,b0], b) *)
       ‘m = 0 \/ 0 < m’ by RW_TAC arith_ss []
        >- (Know ‘s = SND (h m)’
-           >- (Q.PAT_X_ASSUM ‘(x,s) = h m’ (ONCE_REWRITE_TAC o wrap o SYM) >> rw []) \\
+           >- (Q.PAT_X_ASSUM ‘(x,s) = h m’
+                (ONCE_REWRITE_TAC o wrap o SYM) >> rw []) \\
            DISCH_TAC \\
            Know ‘y IN interval [a0,b0]’ >- METIS_TAC [] \\
            fs [IN_INTERVAL, GSYM real_lt]) \\
-       Q.PAT_X_ASSUM ‘!x k. (x,k) IN p ==> x IN k /\ _’ (MP_TAC o (Q.SPECL [‘x’,‘s’])) \\
+       Q.PAT_X_ASSUM ‘!x k. (x,k) IN p ==> x IN k /\ _’
+         (MP_TAC o (Q.SPECL [‘x’,‘s’])) \\
        RW_TAC std_ss [] \\
        CCONTR_TAC >> FULL_SIMP_TAC bool_ss [] >> rename1 ‘s = interval[a1,b1]’ \\
       ‘interval [a1,b1] <> {}’ by METIS_TAC [MEMBER_NOT_EMPTY] \\
       ‘a1 <= b1’ by PROVE_TAC [INTERVAL_NE_EMPTY] \\
-       Know ‘interval_lowerbound (SND (h 0)) < interval_lowerbound (SND (h m))’ >- rw [] \\
+       Know ‘interval_lowerbound (SND (h 0)) < interval_lowerbound (SND (h m))’
+       >- rw [] \\
        Know ‘SND (h m) = interval[a1,b1]’
-       >- (Q.PAT_X_ASSUM ‘(x,s) = h m’ (ONCE_REWRITE_TAC o wrap o SYM) >> rw []) >> Rewr \\
+       >- (Q.PAT_X_ASSUM ‘(x,s) = h m’
+            (ONCE_REWRITE_TAC o wrap o SYM) >> rw []) >> Rewr \\
        Q.PAT_X_ASSUM ‘SND (h 0) = interval [a0,b0]’ (REWRITE_TAC o wrap) \\
        rw [INTERVAL_LOWERBOUND_NONEMPTY, real_lt] >> fs [IN_INTERVAL] \\
        MATCH_MP_TAC REAL_LT_IMP_LE >> MATCH_MP_TAC REAL_LET_TRANS \\
@@ -3038,7 +3045,8 @@ Proof
       ‘a0 <= b0’ by PROVE_TAC [INTERVAL_NE_EMPTY] \\
       ‘FST (h n) IN SND (h n)’ by rw [] \\
        Q.PAT_X_ASSUM ‘SND (h n) = interval[a0,b0]’
-         (fn th => FULL_SIMP_TAC std_ss [th, INTERVAL_LOWERBOUND_NONEMPTY, IN_INTERVAL]),
+         (fn th => FULL_SIMP_TAC std_ss
+                    [th, INTERVAL_LOWERBOUND_NONEMPTY, IN_INTERVAL]),
        (* goal 4 (of 4) *)
        Cases_on ‘n < N’ >> reverse (rw []) >| (* 2 subgoals *)
        [ (* goal 4.1 (of 2): FST (h n) <= b *)
@@ -3078,9 +3086,11 @@ Proof
                (fn th => FULL_SIMP_TAC std_ss [th, INTERVAL_UPPERBOUND_NONEMPTY,
                                                IN_INTERVAL])) \\
          CCONTR_TAC >> FULL_SIMP_TAC bool_ss [GSYM real_lt] \\
-        ‘interval_lowerbound (SND (h n)) < interval_lowerbound (SND (h (SUC n)))’ by rw [] \\
+        ‘interval_lowerbound (SND (h n)) < interval_lowerbound (SND (h (SUC n)))’
+           by rw [] \\
       (* stage work *)
-        ‘h n IN p /\ h (SUC n) IN p /\ 0 < content (SND (h (SUC n)))’ by PROVE_TAC [] \\
+        ‘h n IN p /\ h (SUC n) IN p /\ 0 < content (SND (h (SUC n)))’
+           by PROVE_TAC [] \\
          Q.PAT_X_ASSUM ‘!x1 k1 x2 k2. (x1,k1) IN p /\ (x2,k2) IN p /\ _ ==> P’
            (MP_TAC o (Q.SPECL [‘FST ((h :num -> real # (real set)) n)’,
                                ‘SND ((h :num -> real # (real set)) n)’,
@@ -3117,7 +3127,8 @@ Proof
          rw [DISJOINT_ALT, INTERIOR_CLOSED_INTERVAL, IN_INTERVAL] \\
       (* ordering: a0 < a1 < b0,b1 *)
          Know ‘?z. max a0 a1 < z /\ z < min b0 b1’
-         >- (MATCH_MP_TAC REAL_MEAN >> rw [REAL_MAX_LT, REAL_LT_MIN] \\ (* 2 subgoals *)
+         >- (MATCH_MP_TAC REAL_MEAN \\
+             rw [REAL_MAX_LT, REAL_LT_MIN] \\ (* 2 subgoals *)
              MATCH_MP_TAC REAL_LT_TRANS >> Q.EXISTS_TAC ‘a1’ >> art []) \\
          RW_TAC std_ss [REAL_MAX_LT, REAL_LT_MIN] \\
          Q.EXISTS_TAC ‘z’ >> art [] ] ])
@@ -3127,7 +3138,8 @@ Proof
               interval_lowerbound (SND (h (SUC n))) = interval_upperbound (SND (h n))’
  >- (rpt STRIP_TAC \\
      Q.PAT_X_ASSUM ‘L = IMAGE h (count N)’ K_TAC (* not needed here *) \\
-    ‘interval_lowerbound (SND (h n)) < interval_lowerbound (SND (h (SUC n)))’ by rw [] \\
+    ‘interval_lowerbound (SND (h n)) < interval_lowerbound (SND (h (SUC n)))’
+       by rw [] \\
     ‘h n IN p /\ h (SUC n) IN p /\
      0 < content (SND (h n)) /\ 0 < content (SND (h (SUC n)))’ by PROVE_TAC [] \\
      Q.PAT_ASSUM ‘!x k. (x,k) IN p ==> x IN k /\ _’
@@ -3197,7 +3209,8 @@ Proof
     ‘x IN Z’ by (rw [Abbr ‘Z’] >> Q.EXISTS_TAC ‘s’ >> art []) \\
      Know ‘(x,s) IN L’
      >- (simp [Abbr ‘L’] (* now ‘0 < content s’ *) \\
-         Q.PAT_X_ASSUM ‘!x k. (x,k) IN p ==> x IN k /\ _’ (MP_TAC o (Q.SPECL [‘x’, ‘s’])) \\
+         Q.PAT_X_ASSUM ‘!x k. (x,k) IN p ==> x IN k /\ _’
+           (MP_TAC o (Q.SPECL [‘x’, ‘s’])) \\
          simp [] >> STRIP_TAC >> rename1 ‘s = interval[a2,b2]’ \\
         ‘interval [a2,b2] <> {}’ by METIS_TAC [MEMBER_NOT_EMPTY] \\
         ‘a2 <= b2’ by PROVE_TAC [INTERVAL_NE_EMPTY] \\
@@ -3208,7 +3221,8 @@ Proof
          fs [INTERVAL_SING, IN_SING]) >> DISCH_TAC \\
      Know ‘0 < content s’
      >- (POP_ASSUM MP_TAC >> simp [Abbr ‘L’]) >> DISCH_TAC \\
-    ‘?m. m < N /\ (x,s) = h m’ by METIS_TAC [] (* this ‘m’ is between ‘n’ and ‘SUC n’ *) \\
+  (* NOTE: this ‘m’ is between ‘n’ and ‘SUC n’ *)
+    ‘?m. m < N /\ (x,s) = h m’ by METIS_TAC [] \\
      Q.PAT_ASSUM ‘!x k. (x,k) IN p ==> x IN k /\ _’ (MP_TAC o (Q.SPECL [‘x’, ‘s’])) \\
      simp [] >> CCONTR_TAC >> FULL_SIMP_TAC bool_ss [] \\
      rename1 ‘s = interval [a2,b2]’ \\
@@ -3324,7 +3338,8 @@ Proof
      since otherwise we will have x = y, but this is impossible. *)
      Know ‘(x,s) IN L’
      >- (rw [Abbr ‘L’] (* now ‘0 < content s’ *) \\
-         Q.PAT_X_ASSUM ‘!x k. (x,k) IN p ==> x IN k /\ _’ (MP_TAC o (Q.SPECL [‘x’, ‘s’])) \\
+         Q.PAT_X_ASSUM ‘!x k. (x,k) IN p ==> x IN k /\ _’
+           (MP_TAC o (Q.SPECL [‘x’, ‘s’])) \\
          RW_TAC std_ss [] >> rename1 ‘(x,interval[a1,b1]) IN p’ \\
         ‘interval [a1,b1] <> {}’ by METIS_TAC [MEMBER_NOT_EMPTY] \\
         ‘a1 <= b1’ by PROVE_TAC [INTERVAL_NE_EMPTY] \\
@@ -3341,13 +3356,15 @@ Proof
          DISCH_TAC \\
          Know ‘y IN interval [a0,b0]’ >- METIS_TAC [] \\
          fs [IN_INTERVAL, GSYM real_lt]) \\
-     Q.PAT_X_ASSUM ‘!x k. (x,k) IN p ==> x IN k /\ _’ (MP_TAC o (Q.SPECL [‘x’,‘s’])) \\
+     Q.PAT_X_ASSUM ‘!x k. (x,k) IN p ==> x IN k /\ _’
+       (MP_TAC o (Q.SPECL [‘x’,‘s’])) \\
      RW_TAC std_ss [] \\
      CCONTR_TAC >> FULL_SIMP_TAC bool_ss [] >> rename1 ‘s = interval[a1,b1]’ \\
     ‘interval [a1,b1] <> {}’ by METIS_TAC [MEMBER_NOT_EMPTY] \\
     ‘a1 <= b1’ by PROVE_TAC [INTERVAL_NE_EMPTY] \\
   (* stage work *)
-     Know ‘interval_lowerbound (SND (h m)) < interval_lowerbound (SND (h n))’ >- rw [] \\
+     Know ‘interval_lowerbound (SND (h m)) < interval_lowerbound (SND (h n))’
+     >- rw [] \\
      Know ‘SND (h m) = interval[a1,b1]’
      >- (Q.PAT_X_ASSUM ‘(x,s) = h m’ (ONCE_REWRITE_TAC o wrap o SYM) >> rw []) \\
      DISCH_TAC >> art [] >> Q.PAT_X_ASSUM ‘(x,s) = h m’ K_TAC \\
@@ -3398,8 +3415,9 @@ Proof
          >- (Q.UNABBREV_TAC ‘D’ >> BETA_TAC >> art []) \\
         ‘D M = b’ by rw [Abbr ‘D’] >> POP_ASSUM (REWRITE_TAC o wrap) \\
          Q.PAT_X_ASSUM ‘SND (h M) = interval[a0,b0]’
-           (fn th => FULL_SIMP_TAC std_ss [th, CONTENT_CLOSED_INTERVAL, SUBSET_INTERVAL,
-                                           INTERVAL_LOWERBOUND_NONEMPTY, REAL_SUB_LT]) \\
+           (fn th => FULL_SIMP_TAC std_ss
+                       [th, CONTENT_CLOSED_INTERVAL, SUBSET_INTERVAL,
+                        INTERVAL_LOWERBOUND_NONEMPTY, REAL_SUB_LT]) \\
          CCONTR_TAC >> METIS_TAC [REAL_LET_ANTISYM]) \\
      DISCH_THEN (FULL_SIMP_TAC bool_ss o wrap) \\
      STRONG_CONJ_TAC (* dsize D = N *)
@@ -3408,8 +3426,8 @@ Proof
          Q.X_GEN_TAC ‘M’ >> rpt STRIP_TAC \\
          CCONTR_TAC >> ‘N < M \/ M < N’ by fs []
          >- (‘D N = b /\ D (SUC N) = b’ by rw [Abbr ‘D’] \\
-             Q.PAT_X_ASSUM ‘!n. n < M ==> D n < D (SUC n)’ (MP_TAC o (Q.SPEC ‘N’)) \\
-             rw []) \\
+             Q.PAT_X_ASSUM ‘!n. n < M ==> D n < D (SUC n)’
+               (MP_TAC o (Q.SPEC ‘N’)) >> rw []) \\
         ‘h M IN p /\ 0 < content (SND (h M))’ by PROVE_TAC [] \\
          Q.PAT_ASSUM ‘!x k. (x,k) IN p ==> x IN k /\ _’
            (MP_TAC o (Q.SPECL [‘FST ((h :num -> real # (real set)) M)’,
@@ -3428,8 +3446,9 @@ Proof
          >- (FIRST_X_ASSUM MATCH_MP_TAC \\
              Q.EXISTS_TAC ‘N’ >> rw []) >> DISCH_THEN (REWRITE_TAC o wrap) \\
          Q.PAT_X_ASSUM ‘SND (h M) = interval[a0,b0]’
-           (fn th => FULL_SIMP_TAC std_ss [th, CONTENT_CLOSED_INTERVAL, SUBSET_INTERVAL,
-                                           INTERVAL_LOWERBOUND_NONEMPTY, REAL_SUB_LT]) \\
+           (fn th => FULL_SIMP_TAC std_ss
+                       [th, CONTENT_CLOSED_INTERVAL, SUBSET_INTERVAL,
+                        INTERVAL_LOWERBOUND_NONEMPTY, REAL_SUB_LT]) \\
          CCONTR_TAC >> METIS_TAC [REAL_LET_ANTISYM]) \\
      DISCH_THEN (FULL_SIMP_TAC bool_ss o wrap) \\
   (* stage work: !n. n < N ==> D (SUC n) - D n < g (t n) *)
@@ -3438,7 +3457,8 @@ Proof
      Know ‘D (SUC n) = interval_upperbound (SND (h n))’
      >- (Cases_on ‘SUC n < N’ >| (* 2 subgoals *)
          [ (* goal 1 (of 2) *)
-          ‘D (SUC n) = interval_lowerbound (SND (h (SUC n)))’ by rw [Abbr ‘D’] >> POP_ORW \\
+          ‘D (SUC n) = interval_lowerbound (SND (h (SUC n)))’
+             by rw [Abbr ‘D’] >> POP_ORW \\
            FIRST_X_ASSUM MATCH_MP_TAC >> art [],
            (* goal 2 (of 2) *)
           ‘D (SUC n) = b’ by rw [Abbr ‘D’] >> POP_ORW \\
@@ -3486,7 +3506,8 @@ Proof
      Know ‘p = L UNION V’
      >- (rw [Once EXTENSION, Abbr ‘L’, Abbr ‘V’] >> Cases_on ‘x’ \\
          EQ_TAC >> STRIP_TAC >> fs [] >> rename1 ‘(x,k) IN p’ \\
-         Q.PAT_X_ASSUM ‘!x k. (x,k) IN p ==> x IN k /\ _’ (MP_TAC o (Q.SPECL [‘x’, ‘k’])) \\
+         Q.PAT_X_ASSUM ‘!x k. (x,k) IN p ==> x IN k /\ _’
+           (MP_TAC o (Q.SPECL [‘x’, ‘k’])) \\
          simp [] >> STRIP_TAC >> rename1 ‘k = interval[a0,b0]’ \\
         ‘interval [a0,b0] <> {}’ by METIS_TAC [MEMBER_NOT_EMPTY] \\
         ‘a0 <= b0’ by PROVE_TAC [INTERVAL_NE_EMPTY] \\
@@ -3522,10 +3543,12 @@ Proof
     ‘a0 <= b0’ by PROVE_TAC [INTERVAL_NE_EMPTY] \\
      CCONTR_TAC >> ‘i < j \/ j < i’ by rw [] >| (* 2 subgoals *)
      [ (* goal 1 (of 2) *)
-      ‘interval_lowerbound (SND (h i)) < interval_lowerbound (SND (h j))’ by PROVE_TAC [] \\
+      ‘interval_lowerbound (SND (h i)) < interval_lowerbound (SND (h j))’
+         by PROVE_TAC [] \\
        METIS_TAC [INTERVAL_LOWERBOUND_NONEMPTY, REAL_LT_REFL],
        (* goal 2 (of 2) *)
-      ‘interval_lowerbound (SND (h j)) < interval_lowerbound (SND (h i))’ by PROVE_TAC [] \\
+      ‘interval_lowerbound (SND (h j)) < interval_lowerbound (SND (h i))’
+         by PROVE_TAC [] \\
        METIS_TAC [INTERVAL_LOWERBOUND_NONEMPTY, REAL_LT_REFL] ])
  >> Rewr'
  >> MATCH_MP_TAC REAL_SUM_IMAGE_EQ >> simp [Abbr ‘t’]
@@ -3563,7 +3586,8 @@ Proof
 QED
 
 Theorem lemma1[local] :
-    !xs. FST xs IN SND xs /\ open (SND xs) ==> ?e. 0 < e /\ cball (FST xs,e) SUBSET (SND xs)
+    !xs. FST xs IN SND xs /\ open (SND xs) ==>
+         ?e. 0 < e /\ cball (FST xs,e) SUBSET (SND xs)
 Proof
     rw [OPEN_CONTAINS_CBALL]
 QED
@@ -3590,7 +3614,8 @@ Proof
     is the construction of old gauges from new guages. *)
  >> STRIP_ASSUME_TAC lemma2 (* this asserts ‘h’ *)
  >> Q.ABBREV_TAC ‘cb = \x. cball (x,h(x,d x))’
- >> Q.ABBREV_TAC ‘g = \x. 1 / 2 * (interval_upperbound (cb x) - interval_lowerbound (cb x))’
+ >> Q.ABBREV_TAC
+   ‘g = \x. 1 / 2 * (interval_upperbound (cb x) - interval_lowerbound (cb x))’
  >> Q.EXISTS_TAC ‘g’
  >> STRONG_CONJ_TAC (* gauge E g *)
  >- (FULL_SIMP_TAC std_ss [gauge, gauge_def] \\
@@ -3607,7 +3632,8 @@ Proof
  >> rpt STRIP_TAC
  (* stage work *)
  >> rename1 ‘tdiv (a,b) (D,t)’
- >> Q.ABBREV_TAC ‘p = {(x,k) | ?n. n < dsize D /\ x = t n /\ k = interval[D n,D (SUC n)]}’
+ >> Q.ABBREV_TAC
+   ‘p = {(x,k) | ?n. n < dsize D /\ x = t n /\ k = interval[D n,D (SUC n)]}’
  >> Know ‘FINITE p’
  >- (Know ‘p = IMAGE (\n. (t n,interval[D n,D (SUC n)])) (count (dsize D))’
      >- (rw [Abbr ‘p’, Once EXTENSION, IN_IMAGE] >> Cases_on ‘x’ \\
@@ -3716,7 +3742,8 @@ Proof
      fs [REAL_LE_SUB_RADD])
  >> DISCH_TAC
  (* stage work *)
- >> Q.PAT_X_ASSUM ‘!p. p tagged_division_of interval [a,b] /\ d FINE p ==> P’ drule_all
+ >> Q.PAT_X_ASSUM
+     ‘!p. p tagged_division_of interval [a,b] /\ d FINE p ==> P’ drule_all
  >> simp [rsum, GSYM REAL_SUM_IMAGE_COUNT, GSYM REAL_SUM_IMAGE_sum]
  >> Q.ABBREV_TAC ‘N = dsize D’
  >> Suff ‘SIGMA (\n. f (t n) * (D (SUC n) - D n)) (count N) =
