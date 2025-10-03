@@ -834,6 +834,12 @@ val REAL_LT_INV = store_thm("REAL_LT_INV",
     “x * (y * z) = (x * z) * y”] THEN
   ASM_REWRITE_TAC[REAL_MUL_LID]);
 
+Theorem REAL_LE_INV2 :
+    !x y. 0 < x /\ x <= y ==> inv y <= inv x
+Proof
+  metis_tac [REAL_LE_LT, REAL_LT_INV]
+QED
+
 val REAL_SUB_LNEG = store_thm("REAL_SUB_LNEG",
   “!x y. ~x - y = ~(x + y)”,
   REAL_ARITH_TAC);
@@ -4573,18 +4579,6 @@ Theorem REAL_INV_LE_ANTIMONO_IMPR:
     0 < x /\ 0 < y /\ y <= x ==> inv x <= inv y
 Proof
   rpt strip_tac >> fs[REAL_INV_LE_ANTIMONO]
-QED
-
-(* for HOL-Light compatibility *)
-Theorem REAL_LE_INV2 :
-    !x y. (&0:real) < x /\ x <= y ==> inv(y) <= inv(x)
-Proof
-    rpt STRIP_TAC
- >> MATCH_MP_TAC REAL_INV_LE_ANTIMONO_IMPR
- >> ASM_REWRITE_TAC []
- >> MATCH_MP_TAC REAL_LTE_TRANS
- >> Q.EXISTS_TAC ‘x’
- >> ASM_REWRITE_TAC []
 QED
 
 Theorem REAL_INV_LE_1 :

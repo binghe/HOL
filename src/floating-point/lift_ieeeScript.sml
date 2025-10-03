@@ -275,7 +275,7 @@ val lem2 = Q.prove(
 Theorem error_bound_lemma1:
   !fracw x.
        0r <= x /\ x < 1 /\ 0 < fracw ==>
-       ?n. n < 2n EXP fracw /\ &n / 2 pow fracw <= x /\
+       ?n. n < 2 EXP fracw /\ &n / 2 pow fracw <= x /\
            x < &(SUC n) / 2 pow fracw
 Proof
   rpt strip_tac
@@ -305,13 +305,12 @@ Proof
                 realTheory.real_lt]
 QED
 
-(* ------------------------------------------------------------------------ *)
-
-val error_bound_lemma2 = Q.prove(
-  `!fracw x.
+Theorem error_bound_lemma2 :
+   !fracw x.
       0r <= x /\ x < 1 /\ 0 < fracw ==>
       ?n. n <= 2 EXP fracw /\
-          abs (x - &n / 2 pow fracw) <= inv (2 pow (fracw + 1))`,
+          abs (x - &n / 2 pow fracw) <= inv (2 pow (fracw + 1))
+Proof
   ntac 2 gen_tac
   \\ disch_then
        (fn th => Q.X_CHOOSE_THEN `n` (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)
@@ -330,15 +329,14 @@ val error_bound_lemma2 = Q.prove(
   >- (qexists_tac `n` \\ fs [])
   \\ qexists_tac `SUC n`
   \\ fs []
-  );
+QED
 
-(* ------------------------------------------------------------------------ *)
-
-val error_bound_lemma3 = Q.prove(
-  `!fracw x.
+Theorem error_bound_lemma3 :
+   !fracw x.
        1r <= x /\ x < 2 /\ 0 < fracw ==>
        ?n. n <= 2 EXP fracw /\
-           abs ((1 + &n / 2 pow fracw) - x) <= inv (2 pow (fracw + 1))`,
+           abs ((1 + &n / 2 pow fracw) - x) <= inv (2 pow (fracw + 1))
+Proof
   rpt strip_tac
   \\ Q.SUBGOAL_THEN `0r <= x - 1 /\ x - 1 < 1 /\ 0 < fracw`
        (assume_tac o MATCH_MP error_bound_lemma2)
@@ -349,7 +347,7 @@ val error_bound_lemma3 = Q.prove(
      )
   \\ metis_tac
        [ABS_NEG, REAL_NEG_SUB, REAL_ARITH ``a - (b - c) = (c + a:real) - b``]
-  );
+QED
 
 (* ------------------------------------------------------------------------ *)
 
@@ -423,9 +421,6 @@ val error_bound_lemma5 = Q.prove(
   );
 
 (* ------------------------------------------------------------------------ *)
-
-val REAL_LE_LCANCEL_IMP =
-  METIS_PROVE [REAL_LE_LMUL] ``!x y z. 0r < x /\ x * y <= x * z ==> y <= z``
 
 val lem = Q.prove(
   `!a x.
@@ -818,10 +813,6 @@ val error_bound_small1 = Q.prove(
   \\ simp [REAL_POW_LT, REAL_SUB_LDISTRIB, REAL_POS_NZ, REAL_INV_MUL]
   \\ NO_STRIP_FULL_SIMP_TAC (srw_ss()) [AC REAL_MUL_ASSOC REAL_MUL_COMM]
   );
-
-val REAL_LE_INV2 = Q.prove(
-  `!x y. 0 < x /\ x <= y ==> inv y <= inv x`,
-  metis_tac [REAL_LE_LT, REAL_LT_INV])
 
 val lem = Q.prove(
   `!n m. 2n <= n /\ 0 < m ==>

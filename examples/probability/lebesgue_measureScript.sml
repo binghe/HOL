@@ -18,7 +18,8 @@ open prim_recTheory arithmeticTheory numTheory numLib pred_setTheory pred_setLib
      combinTheory hurdUtils jrhUtils cardinalTheory relationTheory;
 
 open realTheory realLib seqTheory transcTheory real_sigmaTheory iterateTheory
-     topologyTheory metricTheory real_topologyTheory integrationTheory;
+     topologyTheory metricTheory real_topologyTheory integrationTheory
+     lift_ieeeTheory;
 
 open sigma_algebraTheory extrealTheory real_borelTheory measureTheory borelTheory
      lebesgueTheory martingaleTheory;
