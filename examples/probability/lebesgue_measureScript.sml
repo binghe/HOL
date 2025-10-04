@@ -18,13 +18,14 @@ open prim_recTheory arithmeticTheory numTheory numLib pred_setTheory pred_setLib
      combinTheory hurdUtils jrhUtils cardinalTheory relationTheory;
 
 open realTheory realLib seqTheory transcTheory real_sigmaTheory iterateTheory
-     topologyTheory metricTheory real_topologyTheory integrationTheory
-     lift_ieeeTheory;
+     topologyTheory metricTheory real_topologyTheory integrationTheory;
 
 open sigma_algebraTheory extrealTheory real_borelTheory measureTheory borelTheory
      lebesgueTheory martingaleTheory;
 
 open ordinalTheory; (* TODO *)
+
+local open integralTheory lift_ieeeTheory in end;
 
 val _ = new_theory "lebesgue_measure";
 
@@ -618,6 +619,33 @@ Overload m_lebesgue = “measure lebesgue”
 (* ------------------------------------------------------------------------- *)
 (*  Equivalence of Lebesgue and Gauge (Henstock-Kurzweil) Integration        *)
 (* ------------------------------------------------------------------------- *)
+
+val lemma1 = GEN_ALL (Q.SPEC ‘k’ lift_ieeeTheory.error_bound_lemma1);
+val lemma2 = GEN_ALL (Q.SPEC ‘k’ lift_ieeeTheory.error_bound_lemma2);
+val lemma3 = GEN_ALL (Q.SPEC ‘k’ lift_ieeeTheory.error_bound_lemma3);
+
+(* NOTE: Here we use the “gauge” definition from the old integralTheory, as it
+   avoids “open” sets and directly gives the radius g(x) as a positive real.
+
+   REAL_ARCH_POW_INV
+ *)
+Theorem dyadic_covering_lemma1[local] :
+    !g E. gauge UNIV g /\ E SUBSET interval [0,1] ==>
+          ?J t. !(i :num). t i IN E INTER J i /\
+                           E INTER J i SUBSET cball (t i,g (t i))
+Proof
+    rw [integralTheory.gauge, SUBSET_DEF, IN_INTERVAL, IN_CBALL, dist]
+ >> qabbrev_tac ‘f = \k n. {(x :real) | &n / 2 pow k <= x /\ x <= &SUC n / 2 pow k}’
+ >> qabbrev_tac ‘J0 = {s | ?n k. n < 2 ** k /\ s = f k n}’
+ >> Know ‘countable J0’
+ >- (qabbrev_tac ‘t = \k. count (2 ** k)’ \\
+     Know ‘J0 = {f x y | x IN univ(:num) /\ y IN t x}’
+     >- (rw [Once EXTENSION, Abbr ‘J0’, Abbr ‘t’, IN_COUNT] \\
+         METIS_TAC []) >> Rewr' \\
+     MATCH_MP_TAC COUNTABLE_PRODUCT_DEPENDENT >> rw [])
+ >> DISCH_TAC
+ >> cheat
+QED
 
 Theorem pos_fn_integral_fn_seq :
     !m f n. measure_space m /\ f IN Borel_measurable (measurable_space m) ==>
