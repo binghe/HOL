@@ -4363,7 +4363,7 @@ Proof
  >> Know ‘A - B = expectation p (λx. Normal (f (real (X x + Z x)))) −
                   expectation p (λx. Normal (f (real (Y x + Z x))))’
  >- (rw [Abbr ‘A’, Abbr ‘B’] \\
-     qmatch_abbrev_tac ‘_ = a - b’ \\
+     qmatch_abbrev_tac ‘_ = a - (b :extreal)’ \\
      Q.ABBREV_TAC ‘c = expectation p (λx. Normal (f (real (Z x))))’ \\
      qmatch_abbrev_tac ‘a - c - d - _ = _’ \\
      Know ‘a ≠ PosInf ∧ a ≠ NegInf’
@@ -7397,6 +7397,5 @@ val _ = html_theory "central_limit";
   [5] Rosenthal, J.S.: A First Look at Rigorous Probability Theory
       (Second Edition). World Scientific Publishing Company (2006).
   [6] Noll, W.: The chain rule for higher derivatives. (1995).
-
 
  *)

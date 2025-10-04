@@ -3459,7 +3459,7 @@ Proof
  >- (Q.X_GEN_TAC ‘n’ \\
      MATCH_MP_TAC neg_add >> simp [])
  >> Rewr'
- >> Know ‘--Y sp + -Y s0 = -(-Y sp + Y s0)’
+ >> Know ‘- -Y sp + -Y s0 = -(-Y sp + Y s0)’
  >- (SYM_TAC >> MATCH_MP_TAC neg_add >> simp [])
  >> simp [] >> DISCH_THEN K_TAC
  >> simp [le_neg]
@@ -3563,7 +3563,7 @@ Proof
  >- (Q.X_GEN_TAC ‘n’ \\
      MATCH_MP_TAC neg_add >> simp [])
  >> Rewr'
- >> Know ‘--Y sp + -Y s0 = -(-Y sp + Y s0)’
+ >> Know ‘- -Y sp + -Y s0 = -(-Y sp + Y s0)’
  >- (SYM_TAC \\
      MATCH_MP_TAC neg_add >> simp [])
  >> simp []
