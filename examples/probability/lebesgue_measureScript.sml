@@ -641,13 +641,13 @@ val lemma4 = REAL_ARCH_POW_INV |> Q.SPEC ‘1 / 2’
    avoids “open” sets and directly gives the radius g(x) as a positive real.
  *)
 Theorem dyadic_covering_lemma_01[local] :
-    !g E. gauge UNIV g /\ E SUBSET {x | 0 <= x /\ x < 1} ==>
+    !g E. gauge UNIV g /\ E SUBSET right_open_interval 0 1 ==>
           ?J t. !(i :num). t i IN E INTER J i /\
                            E INTER J i SUBSET cball (t i,g (t i))
 Proof
-    rw [integralTheory.gauge, SUBSET_DEF, IN_INTERVAL, IN_CBALL, dist]
- (* NOTE: f describes intervals in the shape of the above lemma1 *)
- >> qabbrev_tac ‘f = \k n. {(x :real) | &n / 2 pow k <= x /\ x < &SUC n / 2 pow k}’
+    rw [integralTheory.gauge, SUBSET_DEF, IN_INTERVAL, IN_CBALL, dist,
+        in_right_open_interval]
+ >> qabbrev_tac ‘f = \k n. right_open_interval (&n / 2 pow k) (&SUC n / 2 pow k)’
  >> qabbrev_tac ‘J0 = {s | ?n k. n < 2 ** k /\ s = f k n}’
  >> Know ‘countable J0’
  >- (qabbrev_tac ‘t = \k. count (2 ** k)’ \\
@@ -656,12 +656,26 @@ Proof
          METIS_TAC []) >> Rewr' \\
      MATCH_MP_TAC COUNTABLE_PRODUCT_DEPENDENT >> rw [])
  >> DISCH_TAC
- (* Find minimal k (maximal 1/2^k) such that:
-    x - g(x) < n/2^k < x < (n+1)/2^k < x + g(x)
-  *)
  >> ‘!x. ?n. 1 / 2 pow n < g x’ by METIS_TAC [lemma4]
  >> FULL_SIMP_TAC std_ss [SKOLEM_THM]
  >> rename1 ‘!x. 1 / 2 pow d x < g x’
+ (* goal: find minimal k (maximal 1/2^k) such that:
+    x - g(x) < x - n/2^k < x < x + n/2^k <= x + 1 / 2^(k+1) < x + g(x)
+  *)
+ >> Know ‘!x. x IN E ==> ?k n. n <= 2 ** k /\ x IN cball (&n / 2 pow k,g x)’
+ >- (RW_TAC std_ss [IN_CBALL, Once DIST_SYM] \\
+    ‘0 <= x /\ x < 1’ by PROVE_TAC [] \\
+     MP_TAC (Q.SPECL [‘SUC (d (x :real))’, ‘x’] lemma2) \\
+     ASM_SIMP_TAC real_ss [] \\
+     qabbrev_tac ‘D = \x. SUC (d x)’ \\
+     ASM_SIMP_TAC real_ss [dist] >> STRIP_TAC \\
+     qexistsl_tac [‘D (x :real)’, ‘n’] >> art [] \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘1 / 2 pow SUC (D x)’ >> art [] \\
+     MATCH_MP_TAC REAL_LT_IMP_LE \\
+     Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘1 / 2 pow d x’ >> art [] \\
+     simp [Abbr ‘D’] \\
+     MATCH_MP_TAC REAL_POW_MONO_LT >> simp [])
+ >> DISCH_TAC
  >> cheat
 QED
 
