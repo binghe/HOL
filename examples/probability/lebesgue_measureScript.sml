@@ -620,22 +620,34 @@ Overload m_lebesgue = “measure lebesgue”
 (*  Equivalence of Lebesgue and Gauge (Henstock-Kurzweil) Integration        *)
 (* ------------------------------------------------------------------------- *)
 
-val lemma1 = GEN_ALL (Q.SPEC ‘k’ lift_ieeeTheory.error_bound_lemma1);
-val lemma2 = GEN_ALL (Q.SPEC ‘k’ lift_ieeeTheory.error_bound_lemma2);
-val lemma3 = GEN_ALL (Q.SPEC ‘k’ lift_ieeeTheory.error_bound_lemma3);
+(* |- !k x.
+        0 <= x /\ x < 1 /\ 0 < k ==>
+        ?n. n < 2 ** k /\ &n / 2 pow k <= x /\ x < &SUC n / 2 pow k
+ *)
+val lemma1 = lift_ieeeTheory.error_bound_lemma1 |> Q.SPEC ‘k’ |> GEN_ALL
+
+(* |- !k x.
+        0 <= x /\ x < 1 /\ 0 < k ==>
+        ?n. n <= 2 ** k /\ abs (x - &n / 2 pow k) <= 1 / 2 pow SUC k
+ *)
+val lemma2 = lift_ieeeTheory.error_bound_lemma2 |> Q.SPEC ‘k’ |> GEN_ALL
+          |> SIMP_RULE real_ss [REAL_INV_1OVER, GSYM ADD1]
+
+(* |- !y. 0 < y ==> ?n. 1 / 2 pow n < y *)
+val lemma4 = REAL_ARCH_POW_INV |> Q.SPEC ‘1 / 2’
+          |> SIMP_RULE real_ss [pow_div, POW_ONE]
 
 (* NOTE: Here we use the “gauge” definition from the old integralTheory, as it
    avoids “open” sets and directly gives the radius g(x) as a positive real.
-
-   REAL_ARCH_POW_INV
  *)
-Theorem dyadic_covering_lemma1[local] :
-    !g E. gauge UNIV g /\ E SUBSET interval [0,1] ==>
+Theorem dyadic_covering_lemma_01[local] :
+    !g E. gauge UNIV g /\ E SUBSET {x | 0 <= x /\ x < 1} ==>
           ?J t. !(i :num). t i IN E INTER J i /\
                            E INTER J i SUBSET cball (t i,g (t i))
 Proof
     rw [integralTheory.gauge, SUBSET_DEF, IN_INTERVAL, IN_CBALL, dist]
- >> qabbrev_tac ‘f = \k n. {(x :real) | &n / 2 pow k <= x /\ x <= &SUC n / 2 pow k}’
+ (* NOTE: f describes intervals in the shape of the above lemma1 *)
+ >> qabbrev_tac ‘f = \k n. {(x :real) | &n / 2 pow k <= x /\ x < &SUC n / 2 pow k}’
  >> qabbrev_tac ‘J0 = {s | ?n k. n < 2 ** k /\ s = f k n}’
  >> Know ‘countable J0’
  >- (qabbrev_tac ‘t = \k. count (2 ** k)’ \\
@@ -644,7 +656,21 @@ Proof
          METIS_TAC []) >> Rewr' \\
      MATCH_MP_TAC COUNTABLE_PRODUCT_DEPENDENT >> rw [])
  >> DISCH_TAC
+ (* Find minimal k (maximal 1/2^k) such that:
+    x - g(x) < n/2^k < x < (n+1)/2^k < x + g(x)
+  *)
+ >> ‘!x. ?n. 1 / 2 pow n < g x’ by METIS_TAC [lemma4]
+ >> FULL_SIMP_TAC std_ss [SKOLEM_THM]
+ >> rename1 ‘!x. 1 / 2 pow d x < g x’
  >> cheat
+QED
+
+Theorem dyadic_covering_lemma :
+    !g E. gauge UNIV g ==>
+          ?J t. !(i :num). t i IN E INTER J i /\
+                           E INTER J i SUBSET cball (t i,g (t i))
+Proof
+    cheat
 QED
 
 Theorem pos_fn_integral_fn_seq :
