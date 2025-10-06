@@ -626,12 +626,77 @@ Overload m_lebesgue = “measure lebesgue”
  *)
 val lemma1 = lift_ieeeTheory.error_bound_lemma1 |> Q.SPEC ‘k’ |> GEN_ALL
 
+(* lemma1 also holds if “0 < k” is removed *)
+Theorem lemma1a[local] :
+    !k x. 0 <= x /\ x < (1 :real) ==>
+          ?n. n < 2 ** k /\ &n / 2 pow k <= x /\ x < &SUC n / 2 pow k
+Proof
+    rpt STRIP_TAC
+ >> ‘k = 0 \/ 0 < k’ by simp [] >- rw []
+ >> MATCH_MP_TAC lemma1 >> art []
+QED
+
 (* |- !k x.
         0 <= x /\ x < 1 /\ 0 < k ==>
         ?n. n <= 2 ** k /\ abs (x - &n / 2 pow k) <= 1 / 2 pow SUC k
  *)
 val lemma2 = lift_ieeeTheory.error_bound_lemma2 |> Q.SPEC ‘k’ |> GEN_ALL
           |> SIMP_RULE real_ss [REAL_INV_1OVER, GSYM ADD1]
+
+(* remove “0 < k”, use “_ <= 1 / 2 pow k” instead of “_ <= 1 / 2 pow SUC k” *)
+Theorem lemma2a[local] :
+    !k x. 0 <= x /\ x < (1 :real) ==>
+          ?n. n <= 2 ** k /\ abs (x - &n / 2 pow k) <= 1 / 2 pow k
+Proof
+    rpt STRIP_TAC
+ >> ‘k = 0 \/ 0 < k’ by simp []
+ >- (Q.EXISTS_TAC ‘0’ >> simp [ABS_BOUNDS, REAL_LT_IMP_LE] \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘0’ >> simp [])
+ >> MP_TAC (Q.SPECL [‘k’, ‘x’] lemma2)
+ >> RW_TAC std_ss []
+ >> Q.EXISTS_TAC ‘n’ >> art []
+ >> Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘1 / 2 pow SUC k’ >> art []
+ >> MATCH_MP_TAC REAL_LT_IMP_LE
+ >> simp [REAL_POW_MONO_LT]
+QED
+
+(* furthermore, use “n < 2 ** k” instead of “n <= 2 ** k” *)
+Theorem lemma2b[local] :
+    !k x. 0 <= x /\ x < (1 :real) ==>
+          ?n. n < 2 ** k /\ abs (x - &n / 2 pow k) <= 1 / 2 pow k
+Proof
+    rpt STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘k’, ‘x’] lemma2a)
+ >> RW_TAC std_ss []
+ >> ‘n < 2 ** k \/ n = 2 ** k’ by simp []
+ >- (Q.EXISTS_TAC ‘n’ >> art [])
+ >> Q.PAT_X_ASSUM ‘abs _ <= 1 / 2 pow k’ MP_TAC
+ >> ASM_SIMP_TAC real_ss [GSYM REAL_POW]
+ >> ‘2 pow k / 2 pow k = (1 :real)’ by simp [REAL_DIV_REFL] >> POP_ORW
+ >> ‘x - 1 < 0 :real’ by simp [REAL_SUB_LT_NEG]
+ >> ASM_SIMP_TAC real_ss [ABS_EQ_NEG]
+ >> ‘1 - x <= 1 / 2 pow k <=> 1 - 1 / 2 pow k <= x’ by REAL_ARITH_TAC
+ >> POP_ORW
+ >> Know ‘(1 - 1 / 2 pow k) :real = &(2 ** k) / 2 pow k - 1 / 2 pow k’
+ >- (ASM_SIMP_TAC real_ss [GSYM REAL_POW] \\
+     Suff ‘2 pow k / 2 pow k = (1 :real)’ >- rw [] \\
+     MATCH_MP_TAC REAL_DIV_REFL >> simp [])
+ >> Rewr'
+ >> REWRITE_TAC [REAL_DIV_SUB]
+ >> ‘&(2 ** k) - (1 :real) = &(2 ** k - 1)’
+      by simp [realaxTheory.REAL_OF_NUM_SUB] >> POP_ORW
+ >> STRIP_TAC
+ >> Q.EXISTS_TAC ‘2 ** k - 1’
+ >> SIMP_TAC real_ss [EXP_POS]
+ >> ‘(0 :real) <= x - &(2 ** k - 1) / 2 pow k’ by simp [REAL_SUB_LE]
+ >> ASM_SIMP_TAC real_ss [ABS_EQ_POS]
+ >> REWRITE_TAC [REAL_LE_SUB_RADD, REAL_DIV_ADD]
+ >> SIMP_TAC real_ss [REAL_OF_NUM_ADD]
+ >> SIMP_TAC arith_ss [GSYM LESS_EQ_ADD_SUB]
+ >> SIMP_TAC real_ss [GSYM REAL_POW]
+ >> Suff ‘2 pow k / 2 pow k = (1 :real)’ >- rw [REAL_LT_IMP_LE]
+ >> MATCH_MP_TAC REAL_DIV_REFL >> simp []
+QED
 
 (* |- !y. 0 < y ==> ?n. 1 / 2 pow n < y *)
 val lemma4 = REAL_ARCH_POW_INV |> Q.SPEC ‘1 / 2’
@@ -656,25 +721,15 @@ Proof
          METIS_TAC []) >> Rewr' \\
      MATCH_MP_TAC COUNTABLE_PRODUCT_DEPENDENT >> rw [])
  >> DISCH_TAC
- >> ‘!x. ?n. 1 / 2 pow n < g x’ by METIS_TAC [lemma4]
+ >> ‘!x. ?n. 0 < n /\ 1 / 2 pow n < g x’ by METIS_TAC [lemma4']
  >> FULL_SIMP_TAC std_ss [SKOLEM_THM]
- >> rename1 ‘!x. 1 / 2 pow d x < g x’
- (* goal: find minimal k (maximal 1/2^k) such that:
-    x - g(x) < x - n/2^k < x < x + n/2^k <= x + 1 / 2^(k+1) < x + g(x)
-  *)
- >> Know ‘!x. x IN E ==> ?k n. n <= 2 ** k /\ x IN cball (&n / 2 pow k,g x)’
- >- (RW_TAC std_ss [IN_CBALL, Once DIST_SYM] \\
+ >> rename1 ‘!x. 0 < d x /\ 1 / 2 pow d x < g x’
+ >> Know ‘!x. x IN E ==> ?k n. n < 2 ** k /\ f k n SUBSET cball (x,g x)’
+ >- (RW_TAC std_ss [Abbr ‘f’, SUBSET_DEF, IN_CBALL, in_right_open_interval, dist] \\
     ‘0 <= x /\ x < 1’ by PROVE_TAC [] \\
-     MP_TAC (Q.SPECL [‘SUC (d (x :real))’, ‘x’] lemma2) \\
-     ASM_SIMP_TAC real_ss [] \\
-     qabbrev_tac ‘D = \x. SUC (d x)’ \\
-     ASM_SIMP_TAC real_ss [dist] >> STRIP_TAC \\
-     qexistsl_tac [‘D (x :real)’, ‘n’] >> art [] \\
-     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘1 / 2 pow SUC (D x)’ >> art [] \\
-     MATCH_MP_TAC REAL_LT_IMP_LE \\
-     Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘1 / 2 pow d x’ >> art [] \\
-     simp [Abbr ‘D’] \\
-     MATCH_MP_TAC REAL_POW_MONO_LT >> simp [])
+     MP_TAC (Q.SPECL [‘d (x :real)’, ‘x’] lemma2b) >> art [] \\
+     STRIP_TAC \\
+     cheat)
  >> DISCH_TAC
  >> cheat
 QED

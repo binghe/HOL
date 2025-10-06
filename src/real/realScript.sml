@@ -315,6 +315,12 @@ val REAL_NEG_SUB = save_thm("REAL_NEG_SUB", REAL_NEG_SUB);
 (* |- !x y. 0 < x - y <=> y < x *)
 val REAL_SUB_LT = save_thm("REAL_SUB_LT", REAL_SUB_LT);
 
+Theorem REAL_SUB_LT_NEG :
+    !x (y :real). x - y < 0 <=> x < y
+Proof
+    REAL_ARITH_TAC
+QED
+
 (* |- !x y. 0 <= x - y <=> y <= x *)
 val REAL_SUB_LE = save_thm("REAL_SUB_LE", REAL_SUB_LE);
 
@@ -1296,6 +1302,12 @@ Proof
   CONV_TAC(ONCE_DEPTH_CONV NUM_EQ_CONV) THEN REWRITE_TAC[] THEN
   DISCH_THEN SUBST_ALL_TAC THEN POP_ASSUM MP_TAC THEN
   REWRITE_TAC[REAL_LE_REFL]
+QED
+
+Theorem ABS_EQ_POS :
+    !(x :real). 0 <= x ==> abs x = x
+Proof
+    RW_TAC std_ss [ABS_REFL]
 QED
 
 Theorem ABS_EQ_NEG :
