@@ -698,6 +698,13 @@ Proof
  >> MATCH_MP_TAC REAL_DIV_REFL >> simp []
 QED
 
+(* |- !k x.
+        1 <= x /\ x < 2 /\ 0 < k ==>
+        ?n. n <= 2 ** k /\ abs (1 + &n / 2 pow k - x) <= 1 / 2 pow SUC k
+ *)
+val lemma3 = lift_ieeeTheory.error_bound_lemma3 |> Q.SPEC ‘k’ |> GEN_ALL
+          |> SIMP_RULE real_ss [REAL_INV_1OVER, GSYM ADD1]
+
 (* |- !y. 0 < y ==> ?n. 1 / 2 pow n < y *)
 val lemma4 = REAL_ARCH_POW_INV |> Q.SPEC ‘1 / 2’
           |> SIMP_RULE real_ss [pow_div, POW_ONE]
@@ -716,38 +723,30 @@ Proof
  >> ‘!x. ?n. 1 / 2 pow n < g x’ by METIS_TAC [lemma4]
  >> FULL_SIMP_TAC std_ss [SKOLEM_THM]
  >> rename1 ‘!x. 1 / 2 pow d x < g x’
- >> Know ‘!x. 0 <= x /\ x < 1 ==> ?k n. n < 2 ** k /\ f k n SUBSET cball (x,g x)’
+ >> Know ‘!x. 0 <= x /\ x < 1 ==>
+              ?k n. n < 2 ** k /\ x IN f k n /\ f k n SUBSET cball (x,g x)’
  >- (RW_TAC std_ss [Abbr ‘f’, SUBSET_DEF, in_right_open_interval, IN_CBALL] \\
      Q.PAT_X_ASSUM ‘!x. _ < g x’ (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
      qabbrev_tac ‘k = d x’ \\
-     MP_TAC (Q.SPECL [‘SUC k’, ‘x’] lemma2b) >> RW_TAC std_ss [] \\
-     qexistsl_tac [‘SUC k’, ‘n’] >> art [] \\
+     MP_TAC (Q.SPECL [‘k’, ‘x’] lemma1a) >> RW_TAC std_ss [] \\
+     qexistsl_tac [‘k’, ‘n’] >> art [] \\
      Q.X_GEN_TAC ‘y’ \\
      RW_TAC std_ss [dist] \\
      MATCH_MP_TAC REAL_LT_IMP_LE \\
      Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘1 / 2 pow k’ >> art [] \\
-    ‘x - y = x - &n / 2 pow SUC k - (y - &n / 2 pow SUC k)’ by REAL_ARITH_TAC \\
-     POP_ORW \\
-     qabbrev_tac ‘a = x - &n / 2 pow SUC k’ \\
-     qabbrev_tac ‘b = y - &n / 2 pow SUC k’ \\
-     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘abs a + abs b’ \\
-     REWRITE_TAC [ABS_TRIANGLE_NEG] \\
-     Know ‘abs b <= 1 / 2 pow SUC k’
-     >- (RW_TAC std_ss [Abbr ‘b’, ABS_BOUNDS] >| (* 2 subgoals *)
-         [ (* goal 1 (of 2) *)
-           Suff ‘&n / 2 pow SUC k - 1 / 2 pow SUC k <= y’ >- REAL_ARITH_TAC \\
-           Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘&n / 2 pow SUC k’ >> art [] \\
-           qmatch_abbrev_tac ‘(x0 :real) - y0 <= _’ \\
-           Suff ‘0 <= (y0 :real)’ >- REAL_ARITH_TAC \\
-           simp [Abbr ‘y0’],
-           (* goal 2 (of 2) *)
-           Suff ‘y <= &n / 2 pow SUC k + 1 / 2 pow SUC k’ >- REAL_ARITH_TAC \\
-           MATCH_MP_TAC REAL_LT_IMP_LE \\
-           ASM_SIMP_TAC real_ss [REAL_DIV_ADD, GSYM ADD1] ]) >> DISCH_TAC \\
-     Know ‘(1 / 2 pow k) :real = 1 / 2 pow SUC k + 1 / 2 pow SUC k’
-     >- (ASM_SIMP_TAC real_ss [REAL_DIV_ADD, pow] \\
-         simp []) >> Rewr' \\
-     MATCH_MP_TAC REAL_LE_ADD2 >> art [])
+     Cases_on ‘0 <= x - y’
+     >- (ASM_SIMP_TAC real_ss [ABS_EQ_POS] \\
+         Suff ‘x < 1 / 2 pow k + y’ >- REAL_ARITH_TAC \\
+         Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘&SUC n / 2 pow k’ >> art [] \\
+         Suff ‘&SUC n / 2 pow k - 1 / 2 pow k <= y’ >- REAL_ARITH_TAC \\
+         ASM_SIMP_TAC real_ss [REAL_DIV_SUB] \\
+         Suff ‘&SUC n - 1 = (&n :real)’ >- (Rewr' >> art []) \\
+         simp [GSYM realaxTheory.REAL_OF_NUM_SUB]) \\
+     FULL_SIMP_TAC real_ss [GSYM real_lt, ABS_EQ_NEG] \\
+     Suff ‘y - 1 / 2 pow k <= x’ >- REAL_ARITH_TAC \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘&n / 2 pow k’ >> art [] \\
+     Suff ‘y <= &n / 2 pow k + 1 / 2 pow k’ >- REAL_ARITH_TAC \\
+     ASM_SIMP_TAC real_ss [REAL_DIV_ADD, GSYM ADD1, REAL_LT_IMP_LE])
  >> DISCH_TAC
  >> qabbrev_tac ‘J0 = {s | ?n k. n < 2 ** k /\ s = f k n}’
  >> Know ‘countable J0’
