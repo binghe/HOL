@@ -756,6 +756,53 @@ Proof
          METIS_TAC []) >> Rewr' \\
      MATCH_MP_TAC COUNTABLE_PRODUCT_DEPENDENT >> rw [])
  >> DISCH_TAC
+ >> Know ‘J0 <> {}’
+ >- (rw [Abbr ‘J0’, Once EXTENSION, NOT_IN_EMPTY] \\
+     qexistsl_tac [‘0’, ‘0’] >> simp [])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘h = \x. LEAST k. ?n. n < 2 ** k /\
+                                  x IN f k n /\ f k n SUBSET cball (x,g x)’
+ >> Know ‘!x. 0 <= x /\ x < 1 ==>
+              ?n. n < 2 ** h x /\ x IN f (h x) n /\
+                  f (h x) n SUBSET cball (x,g x)’
+ >- (rw [Abbr ‘h’] \\
+     LEAST_ELIM_TAC \\
+     CONJ_TAC >- (FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+     RW_TAC std_ss [])
+ >> DISCH_TAC
+ >> qabbrev_tac
+   ‘J1 = J0 DIFF {s | ~?x k n. 0 <= x /\ x < 1 /\ s = f k n /\
+                               n < 2 ** k /\ x IN f k n /\
+                               f k n SUBSET cball (x,g x)}’
+ >> ‘countable J1’ by (‘J1 SUBSET J0’ by rw [SUBSET_DEF, Abbr ‘J1’] \\
+                       PROVE_TAC [COUNTABLE_SUBSET])
+ >> Know ‘!s. s IN J1 ==> ?x k n. 0 <= x /\ x < 1 /\ s = f k n /\
+                                  n < 2 ** k /\ x IN f k n /\
+                                  f k n SUBSET cball (x,g x)’
+ >- (rw [Abbr ‘J1’, Abbr ‘J0’] \\
+     rename1 ‘y IN f i m’ \\
+     qexistsl_tac [‘y’, ‘i’, ‘m’] >> art [])
+ >> DISCH_TAC
+ >> Know ‘!x. 0 <= x /\ x < 1 ==>
+              ?s n. s IN J1 /\ s = f (h x) n /\
+                    n < 2 ** (h x) /\ x IN f (h x) n /\
+                    f (h x) n SUBSET cball (x,g x)’
+ >- (NTAC 2 (Q.PAT_X_ASSUM ‘countable _’ K_TAC) \\
+     rw [Abbr ‘J1’, Abbr ‘J0’] \\
+     Q.PAT_X_ASSUM ‘!x. 0 <= x /\ x < 1 ==> ?n. _’ (MP_TAC o Q.SPEC ‘x’) \\
+     RW_TAC std_ss [] \\
+     Q.EXISTS_TAC ‘n’ >> simp [] \\
+     CONJ_TAC >- (qexistsl_tac [‘n’, ‘h (x :real)’] >> art []) \\
+     qexistsl_tac [‘x’, ‘h (x :real)’, ‘n’] >> art [])
+ >> DISCH_TAC
+ >> Know ‘J1 <> {}’
+ >- (rw [Once EXTENSION, NOT_IN_EMPTY] \\
+     POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> rw [] \\
+     Q.EXISTS_TAC ‘f (h 0) n’ >> art [])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘J2 = J1 DIFF {s | s IN J1 /\ ?s0. s0 IN J1 /\ s0 SUBSET s}’
+ >> ‘countable J2’ by (‘J2 SUBSET J1’ by rw [SUBSET_DEF, Abbr ‘J2’] \\
+                       PROVE_TAC [COUNTABLE_SUBSET])
  >> cheat
 QED
 
