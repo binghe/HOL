@@ -713,6 +713,42 @@ Proof
     rw [integralTheory.gauge, SUBSET_DEF, IN_INTERVAL, IN_CBALL, dist,
         in_right_open_interval]
  >> qabbrev_tac ‘f = \k n. right_open_interval (&n / 2 pow k) (&SUC n / 2 pow k)’
+ >> ‘!x. ?n. 1 / 2 pow n < g x’ by METIS_TAC [lemma4]
+ >> FULL_SIMP_TAC std_ss [SKOLEM_THM]
+ >> rename1 ‘!x. 1 / 2 pow d x < g x’
+ >> Know ‘!x. 0 <= x /\ x < 1 ==> ?k n. n < 2 ** k /\ f k n SUBSET cball (x,g x)’
+ >- (RW_TAC std_ss [Abbr ‘f’, SUBSET_DEF, in_right_open_interval, IN_CBALL] \\
+     Q.PAT_X_ASSUM ‘!x. _ < g x’ (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
+     qabbrev_tac ‘k = d x’ \\
+     MP_TAC (Q.SPECL [‘SUC k’, ‘x’] lemma2b) >> RW_TAC std_ss [] \\
+     qexistsl_tac [‘SUC k’, ‘n’] >> art [] \\
+     Q.X_GEN_TAC ‘y’ \\
+     RW_TAC std_ss [dist] \\
+     MATCH_MP_TAC REAL_LT_IMP_LE \\
+     Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘1 / 2 pow k’ >> art [] \\
+    ‘x - y = x - &n / 2 pow SUC k - (y - &n / 2 pow SUC k)’ by REAL_ARITH_TAC \\
+     POP_ORW \\
+     qabbrev_tac ‘a = x - &n / 2 pow SUC k’ \\
+     qabbrev_tac ‘b = y - &n / 2 pow SUC k’ \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘abs a + abs b’ \\
+     REWRITE_TAC [ABS_TRIANGLE_NEG] \\
+     Know ‘abs b <= 1 / 2 pow SUC k’
+     >- (RW_TAC std_ss [Abbr ‘b’, ABS_BOUNDS] >| (* 2 subgoals *)
+         [ (* goal 1 (of 2) *)
+           Suff ‘&n / 2 pow SUC k - 1 / 2 pow SUC k <= y’ >- REAL_ARITH_TAC \\
+           Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘&n / 2 pow SUC k’ >> art [] \\
+           qmatch_abbrev_tac ‘(x0 :real) - y0 <= _’ \\
+           Suff ‘0 <= (y0 :real)’ >- REAL_ARITH_TAC \\
+           simp [Abbr ‘y0’],
+           (* goal 2 (of 2) *)
+           Suff ‘y <= &n / 2 pow SUC k + 1 / 2 pow SUC k’ >- REAL_ARITH_TAC \\
+           MATCH_MP_TAC REAL_LT_IMP_LE \\
+           ASM_SIMP_TAC real_ss [REAL_DIV_ADD, GSYM ADD1] ]) >> DISCH_TAC \\
+     Know ‘(1 / 2 pow k) :real = 1 / 2 pow SUC k + 1 / 2 pow SUC k’
+     >- (ASM_SIMP_TAC real_ss [REAL_DIV_ADD, pow] \\
+         simp []) >> Rewr' \\
+     MATCH_MP_TAC REAL_LE_ADD2 >> art [])
+ >> DISCH_TAC
  >> qabbrev_tac ‘J0 = {s | ?n k. n < 2 ** k /\ s = f k n}’
  >> Know ‘countable J0’
  >- (qabbrev_tac ‘t = \k. count (2 ** k)’ \\
@@ -720,16 +756,6 @@ Proof
      >- (rw [Once EXTENSION, Abbr ‘J0’, Abbr ‘t’, IN_COUNT] \\
          METIS_TAC []) >> Rewr' \\
      MATCH_MP_TAC COUNTABLE_PRODUCT_DEPENDENT >> rw [])
- >> DISCH_TAC
- >> ‘!x. ?n. 0 < n /\ 1 / 2 pow n < g x’ by METIS_TAC [lemma4']
- >> FULL_SIMP_TAC std_ss [SKOLEM_THM]
- >> rename1 ‘!x. 0 < d x /\ 1 / 2 pow d x < g x’
- >> Know ‘!x. x IN E ==> ?k n. n < 2 ** k /\ f k n SUBSET cball (x,g x)’
- >- (RW_TAC std_ss [Abbr ‘f’, SUBSET_DEF, IN_CBALL, in_right_open_interval, dist] \\
-    ‘0 <= x /\ x < 1’ by PROVE_TAC [] \\
-     MP_TAC (Q.SPECL [‘d (x :real)’, ‘x’] lemma2b) >> art [] \\
-     STRIP_TAC \\
-     cheat)
  >> DISCH_TAC
  >> cheat
 QED
