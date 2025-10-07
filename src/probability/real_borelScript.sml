@@ -1751,6 +1751,17 @@ Proof
       Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘b’ >> art [] ]
 QED
 
+(* [c [a, b) d) *)
+Theorem right_open_interval_SUBSET :
+    !a b c d. a < b /\ c < d /\
+              right_open_interval a b SUBSET right_open_interval c d ==>
+              b - a <= d - c
+Proof
+    rpt STRIP_TAC
+ >> gs [right_open_interval_SUBSET_EQ]
+ >> REAL_ASM_ARITH_TAC
+QED
+
 Theorem right_open_interval_11 :
     !a b c d. a < b /\ c < d ==>
              ((right_open_interval a b = right_open_interval c d) <=>

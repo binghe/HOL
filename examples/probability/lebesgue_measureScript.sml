@@ -713,10 +713,28 @@ val lemma3 = lift_ieeeTheory.error_bound_lemma3 |> Q.SPEC ‘k’ |> GEN_ALL
 val lemma4 = REAL_ARCH_POW_INV |> Q.SPEC ‘1 / 2’
           |> SIMP_RULE real_ss [pow_div, POW_ONE]
 
+Theorem lemma5[local] :
+    !n k. &n / 2 pow k < (&SUC n / 2 pow k) :real
+Proof
+    rpt GEN_TAC
+ >> qmatch_abbrev_tac ‘x / z < y / (z :real)’
+ >> Know ‘x / z < y / z <=> x < y’
+ >- (MATCH_MP_TAC REAL_LT_RDIV >> simp [Abbr ‘z’])
+ >> Rewr'
+ >> simp [Abbr ‘x’, Abbr ‘y’]
+QED
+
+Theorem lemma6[local] :
+    !n k. &SUC n / 2 pow k - &n / 2 pow k = (1 / 2 pow k) :real
+Proof
+    RW_TAC real_ss [REAL_DIV_SUB]
+ >> simp [GSYM realaxTheory.REAL_OF_NUM_SUB]
+QED
+
 (* NOTE: Here we use the “gauge” definition from the old integralTheory, as it
    avoids “open” sets and directly gives the radius g(x) as a positive real.
 
-   NOTE: The asserted ‘J’ may contain duplicated elements.
+   NOTE: The asserted ‘J’ may contain duplicated elements, i.e. J(i) is finite.
  *)
 Theorem dyadic_covering_lemma_01[local] :
     !g E. gauge UNIV g /\ E SUBSET right_open_interval 0 1 /\ E <> {} ==>
@@ -826,7 +844,8 @@ Proof
     ‘?x. x IN E’ by METIS_TAC [MEMBER_NOT_EMPTY] \\
      METIS_TAC [])
  >> DISCH_TAC
- >> qabbrev_tac ‘J2 = J1 DIFF {s | s IN J1 /\ ?s0. s0 IN J1 /\ s0 PSUBSET s}’
+ (* J2 is done by removing smaller sets from J1 *)
+ >> qabbrev_tac ‘J2 = J1 DIFF {s | s IN J1 /\ ?t. t IN J1 /\ s PSUBSET t}’
  >> ‘J2 SUBSET J1’ by rw [SUBSET_DEF, Abbr ‘J2’]
  >> ‘countable J2’ by PROVE_TAC [COUNTABLE_SUBSET]
  >> Know ‘J2 <> {}’
@@ -850,10 +869,23 @@ Proof
      >- (rw [Abbr ‘J1’, Abbr ‘J0’]
          >- (qexistsl_tac [‘n’, ‘l’] >> art []) \\
          qexistsl_tac [‘x’, ‘l’, ‘n’] >> art []) \\
-     Q.X_GEN_TAC ‘s’ >> DISCH_TAC \\
-     Q.PAT_X_ASSUM ‘!s. s IN J1 ==> _’ (MP_TAC o Q.SPEC ‘s’) >> POP_ORW \\
+     NTAC 2 STRIP_TAC \\
+     Q.PAT_X_ASSUM ‘!s. s IN J1 ==> _’ (MP_TAC o Q.SPEC ‘t’) >> POP_ORW \\
      RW_TAC std_ss [] >> rename1 ‘y IN f k m’ \\
-     cheat)
+     Know ‘&SUC n / 2 pow l - (&n / 2 pow l) :real <=
+           &SUC m / 2 pow k - &m / 2 pow k’
+     >- (MATCH_MP_TAC right_open_interval_SUBSET \\
+         REWRITE_TAC [lemma5] \\
+         POP_ASSUM MP_TAC >> simp [Abbr ‘f’]) \\
+     simp [lemma6] \\
+     Know ‘2 pow k <= (2 pow l) :real <=> k <= l’
+     >- (MATCH_MP_TAC REAL_POW_MONO_EQ >> simp []) >> Rewr' \\
+     DISCH_TAC \\
+    ‘k = l \/ k < l’ by simp [] (* 2 subgoals *)
+     >- (Q.PAT_X_ASSUM ‘f l n SUBSET f k m’ MP_TAC \\
+         simp [Abbr ‘f’, right_open_interval_SUBSET_EQ, lemma5] \\
+         simp [LE_ANTISYM]) \\
+     METIS_TAC [])
  >> DISCH_TAC
  >> Know ‘!s1 s2. s1 IN J2 /\ s2 IN J2 /\ s1 <> s2 ==> ~(s1 SUBSET s2)’
  >- (rw [Abbr ‘J2’, PSUBSET_DEF] \\

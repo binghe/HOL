@@ -1859,6 +1859,20 @@ Proof
     ASM_REWRITE_TAC[REAL_LT,prim_recTheory.LESS_0, ONE]]
 QED
 
+Theorem REAL_POW_MONO_EQ :
+    !m n (x :real). 1 < x ==> (x pow m <= x pow n <=> m <= n)
+Proof
+    rpt STRIP_TAC
+ >> reverse EQ_TAC
+ >- (DISCH_TAC \\
+     MATCH_MP_TAC REAL_POW_MONO >> art [] \\
+     MATCH_MP_TAC REAL_LT_IMP_LE >> art [])
+ >> DISCH_TAC
+ >> SPOSE_NOT_THEN (ASSUME_TAC o REWRITE_RULE [NOT_LE])
+ >> ‘x pow n < (x pow m) :real’ by PROVE_TAC [REAL_POW_MONO_LT]
+ >> METIS_TAC [REAL_LET_ANTISYM]
+QED
+
 Theorem REAL_POW_POW :
     !x m n. (x pow m) pow n = x pow (m * n)
 Proof
