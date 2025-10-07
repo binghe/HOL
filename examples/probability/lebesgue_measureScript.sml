@@ -38,6 +38,9 @@ val _ = hide "nf";  (* relationTheory *)
 
 val integral_def = integrationTheory.integral_def;
 
+(* some proofs here are large with too many assumptions *)
+val _ = set_trace "Goalstack.print_goal_at_top" 0;
+
 (* ------------------------------------------------------------------------- *)
 (*  Lebesgue sigma-algebra with the household Lebesgue measure (lebesgue)    *)
 (* ------------------------------------------------------------------------- *)
@@ -737,8 +740,9 @@ QED
    NOTE: The asserted ‘J’ may contain duplicated elements, i.e. J(i) is finite.
  *)
 Theorem dyadic_covering_lemma_01[local] :
-    !g E. gauge UNIV g /\ E SUBSET right_open_interval 0 1 /\ E <> {} ==>
-          ?J t. (!(i :num). t i IN E INTER J i /\
+    !g E. gauge UNIV g /\ E <> {} /\ E SUBSET right_open_interval 0 1 ==>
+          ?J t. (!(i :num). J i SUBSET right_open_interval 0 1 /\
+                            t i IN E INTER J i /\
                             E INTER J i SUBSET cball (t i,g (t i))) /\
                 (!i j. J i <> J j ==> DISJOINT (J i) (J j))
 Proof
@@ -905,6 +909,7 @@ Proof
  >> simp [SKOLEM_THM]
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘ts’ STRIP_ASSUME_TAC)
  >> qexistsl_tac [‘J’, ‘\i. FST (ts i)’]
+ (* !i j. J i <> J j ==> DISJOINT (J i) (J j) *)
  >> reverse CONJ_TAC
  >- (POP_ASSUM K_TAC >> rpt STRIP_TAC \\
     ‘J2 SUBSET J0’ by PROVE_TAC [SUBSET_TRANS] \\
@@ -914,16 +919,29 @@ Proof
  >> POP_ASSUM (MP_TAC o Q.SPEC ‘i’)
  >> Cases_on ‘ts i’ >> simp []
  >> PairCases_on ‘r’ >> simp []
- >> rename1 ‘ts i = (y,k,n)’ >> rw []
- >- (Q.PAT_X_ASSUM ‘J i = f k n’ (REWRITE_TAC o wrap o SYM) >> art [])
- >> Know ‘x IN cball (y,g y)’ >- METIS_TAC [SUBSET_DEF]
- >> simp [IN_CBALL]
+ >> rename1 ‘ts i = (y,k,n)’ >> simp []
+ >> STRIP_TAC
+ >> reverse CONJ_TAC
+ >- (CONJ_TAC (* y IN f k n *)
+     >- (Q.PAT_X_ASSUM ‘J i = f k n’ (REWRITE_TAC o wrap o SYM) >> art []) \\
+     rpt STRIP_TAC \\
+     Know ‘x IN cball (y,g y)’ >- METIS_TAC [SUBSET_DEF] \\
+     simp [IN_CBALL])
+ (* !x. x IN f k n ==> 0 <= x /\ x < 1 *)
+ >> RW_TAC real_ss [Abbr ‘f’, in_right_open_interval]
+ >| [ (* goal 1 (of 2) *)
+      Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘&n / 2 pow k’ >> art [] \\
+      MATCH_MP_TAC REAL_LE_DIV >> simp [],
+      (* goal 2 (of 2) *)
+      Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘&SUC n / 2 pow k’ >> art [] \\
+      simp [ADD1, REAL_POW] ]
 QED
 
 Theorem dyadic_covering_lemma :
-    !g E. gauge UNIV g ==>
-          ?J t. !(i :num). t i IN E INTER J i /\
-                           E INTER J i SUBSET cball (t i,g (t i))
+    !g E. gauge UNIV g /\ E <> {} ==>
+          ?J t. (!(i :num). t i IN E INTER J i /\
+                            E INTER J i SUBSET cball (t i,g (t i))) /\
+                (!i j. J i <> J j ==> DISJOINT (J i) (J j))
 Proof
     cheat
 QED
