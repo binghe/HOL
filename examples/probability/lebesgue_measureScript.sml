@@ -711,13 +711,16 @@ val lemma4 = REAL_ARCH_POW_INV |> Q.SPEC ‘1 / 2’
 
 (* NOTE: Here we use the “gauge” definition from the old integralTheory, as it
    avoids “open” sets and directly gives the radius g(x) as a positive real.
+
+   NOTE: The asserted ‘J’ may contain duplicated elements.
  *)
 Theorem dyadic_covering_lemma_01[local] :
-    !g E. gauge UNIV g /\ E SUBSET right_open_interval 0 1 ==>
-          ?J t. !(i :num). t i IN E INTER J i /\
-                           E INTER J i SUBSET cball (t i,g (t i))
+    !g E. gauge UNIV g /\ E SUBSET right_open_interval 0 1 /\ E <> {} ==>
+          ?J t. (!(i :num). t i IN E INTER J i /\
+                            E INTER J i SUBSET cball (t i,g (t i))) /\
+                (!i j. J i <> J j ==> DISJOINT (J i) (J j))
 Proof
-    rw [integralTheory.gauge, SUBSET_DEF, IN_INTERVAL, IN_CBALL, Once DIST_SYM,
+    rw [integralTheory.gauge, SUBSET_DEF, IN_INTERVAL, IN_CBALL,
         in_right_open_interval]
  >> qabbrev_tac ‘f = \k n. right_open_interval (&n / 2 pow k) (&SUC n / 2 pow k)’
  >> ‘!x. ?n. 1 / 2 pow n < g x’ by METIS_TAC [lemma4]
@@ -791,20 +794,19 @@ Proof
  >- (rw [Abbr ‘J0’, Once EXTENSION, NOT_IN_EMPTY] \\
      qexistsl_tac [‘0’, ‘0’] >> simp [])
  >> DISCH_TAC
- >> qabbrev_tac
-   ‘J1 = J0 DIFF {s | ~?x k n. 0 <= x /\ x < 1 /\ s = f k n /\
-                               n < 2 ** k /\ x IN f k n /\
-                               f k n SUBSET cball (x,g x)}’
+ >> qabbrev_tac ‘J1 = J0 DIFF {s | ~?x k n. x IN E /\ s = f k n /\
+                                            n < 2 ** k /\ x IN f k n /\
+                                            f k n SUBSET cball (x,g x)}’
  >> ‘J1 SUBSET J0’ by rw [SUBSET_DEF, Abbr ‘J1’]
  >> ‘countable J1’ by PROVE_TAC [COUNTABLE_SUBSET]
- >> Know ‘!s. s IN J1 ==> ?x k n. 0 <= x /\ x < 1 /\ s = f k n /\
+ >> Know ‘!s. s IN J1 ==> ?x k n. x IN E /\ s = f k n /\
                                   n < 2 ** k /\ x IN f k n /\
                                   f k n SUBSET cball (x,g x)’
  >- (rw [Abbr ‘J1’, Abbr ‘J0’] \\
      rename1 ‘y IN f i m’ \\
      qexistsl_tac [‘y’, ‘i’, ‘m’] >> art [])
  >> DISCH_TAC
- >> Know ‘!x. 0 <= x /\ x < 1 ==>
+ >> Know ‘!x. x IN E ==>
               ?s k n. s IN J1 /\ s = f k n /\ n < 2 ** k /\ x IN f k n /\
                       f k n SUBSET cball (x,g x)’
  >- (rpt (Q.PAT_X_ASSUM ‘countable _’ K_TAC) \\
@@ -816,31 +818,59 @@ Proof
      CONJ_TAC >- (qexistsl_tac [‘n’, ‘k’] >> art []) \\
      qexistsl_tac [‘x’, ‘k’, ‘n’] >> art [])
  >> DISCH_TAC
+ (* “E <> {}” is needed here *)
  >> Know ‘J1 <> {}’
  >- (rw [Once EXTENSION, NOT_IN_EMPTY] \\
-     POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> rw [] \\
-     Q.EXISTS_TAC ‘f k n’ >> art [])
+    ‘?x. x IN E’ by METIS_TAC [MEMBER_NOT_EMPTY] \\
+     METIS_TAC [])
  >> DISCH_TAC
  >> qabbrev_tac ‘J2 = J1 DIFF {s | s IN J1 /\ ?s0. s0 IN J1 /\ s0 PSUBSET s}’
  >> ‘J2 SUBSET J1’ by rw [SUBSET_DEF, Abbr ‘J2’]
  >> ‘countable J2’ by PROVE_TAC [COUNTABLE_SUBSET]
- >> ‘!s1 s2. s1 IN J2 /\ s2 IN J2 ==> ~(s1 PSUBSET s2)’
-       by rw [Abbr ‘J2’, GSYM IMP_DISJ_THM]
- >> qabbrev_tac ‘h = \x. LEAST k. ?n. n < 2 ** k /\
-                                  x IN f k n /\ f k n SUBSET cball (x,g x)’
- >> Know ‘!x. 0 <= x /\ x < 1 ==>
-              ?n. n < 2 ** h x /\ x IN f (h x) n /\
-                  f (h x) n SUBSET cball (x,g x)’
- >- (rw [Abbr ‘h’] \\
-     LEAST_ELIM_TAC \\
-     CONJ_TAC >- (FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
-     RW_TAC std_ss [])
+ >> Know ‘!s1 s2. s1 IN J2 /\ s2 IN J2 /\ s1 <> s2 ==> ~(s1 SUBSET s2)’
+ >- (rw [Abbr ‘J2’, PSUBSET_DEF] \\
+     METIS_TAC [])
  >> DISCH_TAC
  >> Know ‘J2 <> {}’
- >- (rw [Abbr ‘J2’, Once EXTENSION, NOT_IN_EMPTY, GSYM IMP_DISJ_THM] \\
+ >- (rw [Abbr ‘J2’, Once EXTENSION, NOT_IN_EMPTY, PSUBSET_DEF] \\
+     qabbrev_tac ‘h = \x. LEAST k. ?n. n < 2 ** k /\
+                                       x IN f k n /\ f k n SUBSET cball (x,g x)’ \\
+     Know ‘!x. 0 <= x /\ x < 1 ==>
+               ?n. n < 2 ** h x /\ x IN f (h x) n /\
+                   f (h x) n SUBSET cball (x,g x)’
+     >- (rw [Abbr ‘h’] \\
+         LEAST_ELIM_TAC \\
+         CONJ_TAC >- (FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+         RW_TAC std_ss []) >> DISCH_TAC \\
      cheat)
  >> DISCH_TAC
- >> cheat
+ >> ‘?J. J2 = IMAGE J univ(:num)’ by METIS_TAC [COUNTABLE_AS_IMAGE]
+ >> ‘!i. J i IN J2’ by rw []
+ >> Know ‘!i. ?xs. FST xs IN E /\
+                   J i = f (FST (SND xs)) (SND (SND xs)) /\
+                   SND (SND xs) < 2 ** FST (SND xs) /\ FST xs IN J i /\
+                   J i SUBSET cball (FST xs,g (FST xs))’
+ >- (Q.X_GEN_TAC ‘i’ \\
+    ‘J i IN J1’ by PROVE_TAC [SUBSET_DEF] \\
+     Q.PAT_X_ASSUM ‘!s. s IN J1 ==> ?x k n. P’ (MP_TAC o Q.SPEC ‘J (i :num)’) \\
+     RW_TAC std_ss [] \\
+     Q.EXISTS_TAC ‘(x,k,n)’ >> simp [])
+ >> simp [SKOLEM_THM]
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘ts’ STRIP_ASSUME_TAC)
+ >> qexistsl_tac [‘J’, ‘\i. FST (ts i)’]
+ >> reverse CONJ_TAC
+ >- (POP_ASSUM K_TAC >> rpt STRIP_TAC \\
+    ‘J2 SUBSET J0’ by PROVE_TAC [SUBSET_TRANS] \\
+    ‘!i. J i IN J0’ by PROVE_TAC [SUBSET_DEF] \\
+     METIS_TAC [])
+ >> Q.X_GEN_TAC ‘i’ >> simp []
+ >> POP_ASSUM (MP_TAC o Q.SPEC ‘i’)
+ >> Cases_on ‘ts i’ >> simp []
+ >> PairCases_on ‘r’ >> simp []
+ >> rename1 ‘ts i = (y,k,n)’ >> rw []
+ >- (Q.PAT_X_ASSUM ‘J i = f k n’ (REWRITE_TAC o wrap o SYM) >> art [])
+ >> Know ‘x IN cball (y,g y)’ >- METIS_TAC [SUBSET_DEF]
+ >> simp [IN_CBALL]
 QED
 
 Theorem dyadic_covering_lemma :
