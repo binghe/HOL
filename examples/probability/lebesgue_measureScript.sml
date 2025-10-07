@@ -717,7 +717,7 @@ Theorem dyadic_covering_lemma_01[local] :
           ?J t. !(i :num). t i IN E INTER J i /\
                            E INTER J i SUBSET cball (t i,g (t i))
 Proof
-    rw [integralTheory.gauge, SUBSET_DEF, IN_INTERVAL, IN_CBALL, dist,
+    rw [integralTheory.gauge, SUBSET_DEF, IN_INTERVAL, IN_CBALL, Once DIST_SYM,
         in_right_open_interval]
  >> qabbrev_tac ‘f = \k n. right_open_interval (&n / 2 pow k) (&SUC n / 2 pow k)’
  >> ‘!x. ?n. 1 / 2 pow n < g x’ by METIS_TAC [lemma4]
@@ -730,8 +730,7 @@ Proof
      qabbrev_tac ‘k = d x’ \\
      MP_TAC (Q.SPECL [‘k’, ‘x’] lemma1a) >> RW_TAC std_ss [] \\
      qexistsl_tac [‘k’, ‘n’] >> art [] \\
-     Q.X_GEN_TAC ‘y’ \\
-     RW_TAC std_ss [dist] \\
+     Q.X_GEN_TAC ‘y’ >> RW_TAC std_ss [dist] \\
      MATCH_MP_TAC REAL_LT_IMP_LE \\
      Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘1 / 2 pow k’ >> art [] \\
      Cases_on ‘0 <= x - y’
@@ -749,6 +748,38 @@ Proof
      ASM_SIMP_TAC real_ss [REAL_DIV_ADD, GSYM ADD1, REAL_LT_IMP_LE])
  >> DISCH_TAC
  >> qabbrev_tac ‘J0 = {s | ?n k. n < 2 ** k /\ s = f k n}’
+ >> Know ‘!s1 s2. s1 IN J0 /\ s2 IN J0 /\ s1 <> s2 ==>
+                  s1 SUBSET s2 \/ s2 SUBSET s1 \/ DISJOINT s1 s2’
+ >- (rw [Abbr ‘J0’, Abbr ‘f’] \\
+     POP_ASSUM MP_TAC >> rename1 ‘m < 2 ** l’ \\
+    ‘&n / 2 pow k < (&SUC n / 2 pow k) :real /\
+     &m / 2 pow l < (&SUC m / 2 pow l) :real’ by simp [] \\
+     ASM_SIMP_TAC std_ss [right_open_interval_11] \\
+     Cases_on ‘k = l’
+     >- (simp [] >> DISCH_TAC \\
+         simp [right_open_interval_SUBSET_EQ, right_open_interval_DISJOINT_EQ]) \\
+     NTAC 5 (POP_ASSUM MP_TAC) \\
+  (* applying wlog_tac *)
+     wlog_tac ‘k <= l’ []
+     >- (rpt STRIP_TAC \\
+        ‘l <= k /\ l < k’ by simp [] \\
+         ONCE_REWRITE_TAC [DISJOINT_SYM] \\
+         Q.PAT_X_ASSUM ‘!k l n m. P’ (MP_TAC o Q.SPECL [‘l’, ‘k’, ‘m’, ‘n’]) \\
+         METIS_TAC []) \\
+     rpt STRIP_TAC \\
+    ‘k < l’ by simp [] \\
+     Q.PAT_X_ASSUM ‘k <= l’ K_TAC \\
+    ‘?p. p + k = l’ by METIS_TAC [LESS_ADD] \\
+     POP_ASSUM (FULL_SIMP_TAC std_ss o wrap o SYM) \\
+    ‘(&n / 2 pow k) :real = &(n * 2 ** p) / 2 pow (p + k)’
+       by (simp [POW_ADD] >> simp [REAL_OF_NUM_MUL, REAL_POW]) \\
+     POP_ASSUM (FULL_SIMP_TAC std_ss o wrap) \\
+    ‘(&SUC n / 2 pow k) :real = &(SUC n * 2 ** p) / 2 pow (p + k)’
+       by (simp [POW_ADD] >> simp [REAL_OF_NUM_MUL, REAL_POW]) \\
+     POP_ASSUM (FULL_SIMP_TAC std_ss o wrap) \\
+     qabbrev_tac ‘l = p + k’ \\
+     simp [right_open_interval_SUBSET_EQ, right_open_interval_DISJOINT_EQ])
+ >> DISCH_TAC
  >> Know ‘countable J0’
  >- (qabbrev_tac ‘t = \k. count (2 ** k)’ \\
      Know ‘J0 = {f x y | x IN univ(:num) /\ y IN t x}’
@@ -760,6 +791,41 @@ Proof
  >- (rw [Abbr ‘J0’, Once EXTENSION, NOT_IN_EMPTY] \\
      qexistsl_tac [‘0’, ‘0’] >> simp [])
  >> DISCH_TAC
+ >> qabbrev_tac
+   ‘J1 = J0 DIFF {s | ~?x k n. 0 <= x /\ x < 1 /\ s = f k n /\
+                               n < 2 ** k /\ x IN f k n /\
+                               f k n SUBSET cball (x,g x)}’
+ >> ‘J1 SUBSET J0’ by rw [SUBSET_DEF, Abbr ‘J1’]
+ >> ‘countable J1’ by PROVE_TAC [COUNTABLE_SUBSET]
+ >> Know ‘!s. s IN J1 ==> ?x k n. 0 <= x /\ x < 1 /\ s = f k n /\
+                                  n < 2 ** k /\ x IN f k n /\
+                                  f k n SUBSET cball (x,g x)’
+ >- (rw [Abbr ‘J1’, Abbr ‘J0’] \\
+     rename1 ‘y IN f i m’ \\
+     qexistsl_tac [‘y’, ‘i’, ‘m’] >> art [])
+ >> DISCH_TAC
+ >> Know ‘!x. 0 <= x /\ x < 1 ==>
+              ?s k n. s IN J1 /\ s = f k n /\ n < 2 ** k /\ x IN f k n /\
+                      f k n SUBSET cball (x,g x)’
+ >- (rpt (Q.PAT_X_ASSUM ‘countable _’ K_TAC) \\
+     rpt (Q.PAT_X_ASSUM ‘_ SUBSET _’  K_TAC) \\
+     rw [Abbr ‘J1’, Abbr ‘J0’] \\
+     Q.PAT_X_ASSUM ‘!x. 0 <= x /\ x < 1 ==> ?k n. _’ (MP_TAC o Q.SPEC ‘x’) \\
+     RW_TAC std_ss [] \\
+     qexistsl_tac [‘k’, ‘n’] >> art [] \\
+     CONJ_TAC >- (qexistsl_tac [‘n’, ‘k’] >> art []) \\
+     qexistsl_tac [‘x’, ‘k’, ‘n’] >> art [])
+ >> DISCH_TAC
+ >> Know ‘J1 <> {}’
+ >- (rw [Once EXTENSION, NOT_IN_EMPTY] \\
+     POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> rw [] \\
+     Q.EXISTS_TAC ‘f k n’ >> art [])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘J2 = J1 DIFF {s | s IN J1 /\ ?s0. s0 IN J1 /\ s0 PSUBSET s}’
+ >> ‘J2 SUBSET J1’ by rw [SUBSET_DEF, Abbr ‘J2’]
+ >> ‘countable J2’ by PROVE_TAC [COUNTABLE_SUBSET]
+ >> ‘!s1 s2. s1 IN J2 /\ s2 IN J2 ==> ~(s1 PSUBSET s2)’
+       by rw [Abbr ‘J2’, GSYM IMP_DISJ_THM]
  >> qabbrev_tac ‘h = \x. LEAST k. ?n. n < 2 ** k /\
                                   x IN f k n /\ f k n SUBSET cball (x,g x)’
  >> Know ‘!x. 0 <= x /\ x < 1 ==>
@@ -770,39 +836,10 @@ Proof
      CONJ_TAC >- (FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
      RW_TAC std_ss [])
  >> DISCH_TAC
- >> qabbrev_tac
-   ‘J1 = J0 DIFF {s | ~?x k n. 0 <= x /\ x < 1 /\ s = f k n /\
-                               n < 2 ** k /\ x IN f k n /\
-                               f k n SUBSET cball (x,g x)}’
- >> ‘countable J1’ by (‘J1 SUBSET J0’ by rw [SUBSET_DEF, Abbr ‘J1’] \\
-                       PROVE_TAC [COUNTABLE_SUBSET])
- >> Know ‘!s. s IN J1 ==> ?x k n. 0 <= x /\ x < 1 /\ s = f k n /\
-                                  n < 2 ** k /\ x IN f k n /\
-                                  f k n SUBSET cball (x,g x)’
- >- (rw [Abbr ‘J1’, Abbr ‘J0’] \\
-     rename1 ‘y IN f i m’ \\
-     qexistsl_tac [‘y’, ‘i’, ‘m’] >> art [])
+ >> Know ‘J2 <> {}’
+ >- (rw [Abbr ‘J2’, Once EXTENSION, NOT_IN_EMPTY, GSYM IMP_DISJ_THM] \\
+     cheat)
  >> DISCH_TAC
- >> Know ‘!x. 0 <= x /\ x < 1 ==>
-              ?s n. s IN J1 /\ s = f (h x) n /\
-                    n < 2 ** (h x) /\ x IN f (h x) n /\
-                    f (h x) n SUBSET cball (x,g x)’
- >- (NTAC 2 (Q.PAT_X_ASSUM ‘countable _’ K_TAC) \\
-     rw [Abbr ‘J1’, Abbr ‘J0’] \\
-     Q.PAT_X_ASSUM ‘!x. 0 <= x /\ x < 1 ==> ?n. _’ (MP_TAC o Q.SPEC ‘x’) \\
-     RW_TAC std_ss [] \\
-     Q.EXISTS_TAC ‘n’ >> simp [] \\
-     CONJ_TAC >- (qexistsl_tac [‘n’, ‘h (x :real)’] >> art []) \\
-     qexistsl_tac [‘x’, ‘h (x :real)’, ‘n’] >> art [])
- >> DISCH_TAC
- >> Know ‘J1 <> {}’
- >- (rw [Once EXTENSION, NOT_IN_EMPTY] \\
-     POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> rw [] \\
-     Q.EXISTS_TAC ‘f (h 0) n’ >> art [])
- >> DISCH_TAC
- >> qabbrev_tac ‘J2 = J1 DIFF {s | s IN J1 /\ ?s0. s0 IN J1 /\ s0 SUBSET s}’
- >> ‘countable J2’ by (‘J2 SUBSET J1’ by rw [SUBSET_DEF, Abbr ‘J2’] \\
-                       PROVE_TAC [COUNTABLE_SUBSET])
  >> cheat
 QED
 
