@@ -15,7 +15,7 @@
 open HolKernel Parse boolLib bossLib;
 
 open prim_recTheory arithmeticTheory numTheory numLib pred_setTheory pred_setLib
-     combinTheory hurdUtils jrhUtils cardinalTheory relationTheory;
+     combinTheory hurdUtils jrhUtils cardinalTheory relationTheory whileTheory;
 
 open realTheory realLib seqTheory transcTheory real_sigmaTheory iterateTheory
      topologyTheory metricTheory real_topologyTheory integrationTheory;
@@ -660,7 +660,11 @@ Proof
  >> simp [REAL_POW_MONO_LT]
 QED
 
-(* furthermore, use “n < 2 ** k” instead of “n <= 2 ** k” *)
+(* furthermore, use “n < 2 ** k” instead of “n <= 2 ** k”
+
+   NOTE: It turns out that lemma2 (and all variants) are not needed. Only
+   lemma1a is used in [dyadic_covering_lemma_01] below.
+ *)
 Theorem lemma2b[local] :
     !k x. 0 <= x /\ x < (1 :real) ==>
           ?n. n < 2 ** k /\ abs (x - &n / 2 pow k) <= 1 / 2 pow k
@@ -750,7 +754,7 @@ Proof
      Suff ‘y <= &n / 2 pow k + 1 / 2 pow k’ >- REAL_ARITH_TAC \\
      ASM_SIMP_TAC real_ss [REAL_DIV_ADD, GSYM ADD1, REAL_LT_IMP_LE])
  >> DISCH_TAC
- >> qabbrev_tac ‘J0 = {s | ?n k. n < 2 ** k /\ s = f k n}’
+ >> qabbrev_tac ‘J0 = {s | ?n k. s = f k n /\ n < 2 ** k}’
  >> Know ‘!s1 s2. s1 IN J0 /\ s2 IN J0 /\ s1 <> s2 ==>
                   s1 SUBSET s2 \/ s2 SUBSET s1 \/ DISJOINT s1 s2’
  >- (rw [Abbr ‘J0’, Abbr ‘f’] \\
@@ -794,17 +798,15 @@ Proof
  >- (rw [Abbr ‘J0’, Once EXTENSION, NOT_IN_EMPTY] \\
      qexistsl_tac [‘0’, ‘0’] >> simp [])
  >> DISCH_TAC
- >> qabbrev_tac ‘J1 = J0 DIFF {s | ~?x k n. x IN E /\ s = f k n /\
-                                            n < 2 ** k /\ x IN f k n /\
+ >> qabbrev_tac ‘J1 = J0 DIFF {s | ~?x k n. x IN E INTER s /\ s = f k n /\
                                             f k n SUBSET cball (x,g x)}’
  >> ‘J1 SUBSET J0’ by rw [SUBSET_DEF, Abbr ‘J1’]
  >> ‘countable J1’ by PROVE_TAC [COUNTABLE_SUBSET]
- >> Know ‘!s. s IN J1 ==> ?x k n. x IN E /\ s = f k n /\
-                                  n < 2 ** k /\ x IN f k n /\
+ >> Know ‘!s. s IN J1 ==> ?x k n. x IN E /\ x IN s /\ s = f k n /\ n < 2 ** k /\
                                   f k n SUBSET cball (x,g x)’
  >- (rw [Abbr ‘J1’, Abbr ‘J0’] \\
-     rename1 ‘y IN f i m’ \\
-     qexistsl_tac [‘y’, ‘i’, ‘m’] >> art [])
+     rename1 ‘y IN f l m’ \\
+     qexistsl_tac [‘y’, ‘k’, ‘n’] >> rw [] >> gs [])
  >> DISCH_TAC
  >> Know ‘!x. x IN E ==>
               ?s k n. s IN J1 /\ s = f k n /\ n < 2 ** k /\ x IN f k n /\
@@ -827,22 +829,35 @@ Proof
  >> qabbrev_tac ‘J2 = J1 DIFF {s | s IN J1 /\ ?s0. s0 IN J1 /\ s0 PSUBSET s}’
  >> ‘J2 SUBSET J1’ by rw [SUBSET_DEF, Abbr ‘J2’]
  >> ‘countable J2’ by PROVE_TAC [COUNTABLE_SUBSET]
+ >> Know ‘J2 <> {}’
+ >- (rpt (Q.PAT_X_ASSUM ‘countable _’ K_TAC) \\
+     Q.PAT_X_ASSUM ‘J2 SUBSET J1’ K_TAC \\
+     rw [Abbr ‘J2’, Once EXTENSION, NOT_IN_EMPTY, PSUBSET_DEF] \\
+     SIMP_TAC (bool_ss ++ DNF_ss) [GSYM IMP_DISJ_THM] \\
+     qabbrev_tac ‘P = \k. ?x n. n < 2 ** k /\ x IN E INTER f k n /\
+                                f k n SUBSET cball (x,g x)’ \\
+     MP_TAC (Q.SPEC ‘P’ LEAST_EXISTS_IMP) \\
+     qabbrev_tac ‘l = $LEAST P’ (* here “l” means least *) \\
+     impl_tac
+     >- (simp [Abbr ‘P’] \\
+        ‘?s. s IN J1’ by METIS_TAC [MEMBER_NOT_EMPTY] \\
+         Q.PAT_X_ASSUM ‘!s. s IN J1 ==> ?x k n. _’ (MP_TAC o Q.SPEC ‘s’) \\
+         RW_TAC std_ss [] \\
+         qexistsl_tac [‘k’, ‘x’, ‘n’] >> art []) \\
+     rw [Abbr ‘P’] \\
+     Q.EXISTS_TAC ‘f l n’ \\
+     CONJ_TAC
+     >- (rw [Abbr ‘J1’, Abbr ‘J0’]
+         >- (qexistsl_tac [‘n’, ‘l’] >> art []) \\
+         qexistsl_tac [‘x’, ‘l’, ‘n’] >> art []) \\
+     Q.X_GEN_TAC ‘s’ >> DISCH_TAC \\
+     Q.PAT_X_ASSUM ‘!s. s IN J1 ==> _’ (MP_TAC o Q.SPEC ‘s’) >> POP_ORW \\
+     RW_TAC std_ss [] >> rename1 ‘y IN f k m’ \\
+     cheat)
+ >> DISCH_TAC
  >> Know ‘!s1 s2. s1 IN J2 /\ s2 IN J2 /\ s1 <> s2 ==> ~(s1 SUBSET s2)’
  >- (rw [Abbr ‘J2’, PSUBSET_DEF] \\
      METIS_TAC [])
- >> DISCH_TAC
- >> Know ‘J2 <> {}’
- >- (rw [Abbr ‘J2’, Once EXTENSION, NOT_IN_EMPTY, PSUBSET_DEF] \\
-     qabbrev_tac ‘h = \x. LEAST k. ?n. n < 2 ** k /\
-                                       x IN f k n /\ f k n SUBSET cball (x,g x)’ \\
-     Know ‘!x. 0 <= x /\ x < 1 ==>
-               ?n. n < 2 ** h x /\ x IN f (h x) n /\
-                   f (h x) n SUBSET cball (x,g x)’
-     >- (rw [Abbr ‘h’] \\
-         LEAST_ELIM_TAC \\
-         CONJ_TAC >- (FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
-         RW_TAC std_ss []) >> DISCH_TAC \\
-     cheat)
  >> DISCH_TAC
  >> ‘?J. J2 = IMAGE J univ(:num)’ by METIS_TAC [COUNTABLE_AS_IMAGE]
  >> ‘!i. J i IN J2’ by rw []
@@ -852,9 +867,9 @@ Proof
                    J i SUBSET cball (FST xs,g (FST xs))’
  >- (Q.X_GEN_TAC ‘i’ \\
     ‘J i IN J1’ by PROVE_TAC [SUBSET_DEF] \\
-     Q.PAT_X_ASSUM ‘!s. s IN J1 ==> ?x k n. P’ (MP_TAC o Q.SPEC ‘J (i :num)’) \\
+     Q.PAT_X_ASSUM ‘!s. s IN J1 ==> ?x k n. _’ (MP_TAC o Q.SPEC ‘J (i :num)’) \\
      RW_TAC std_ss [] \\
-     Q.EXISTS_TAC ‘(x,k,n)’ >> simp [])
+     Q.EXISTS_TAC ‘(x,k,n)’ >> simp [] >> fs [])
  >> simp [SKOLEM_THM]
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘ts’ STRIP_ASSUME_TAC)
  >> qexistsl_tac [‘J’, ‘\i. FST (ts i)’]
