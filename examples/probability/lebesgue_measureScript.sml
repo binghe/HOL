@@ -1024,7 +1024,8 @@ Proof
     Then, by COUNTABLE_ENUM or COUNTABLE_AS_IMAGE, the final existence of J/t
     is derived from this countable set.
   *)
- >> qabbrev_tac ‘a = \i. IMAGE (\j. (f i j,f' i j)) UNIV’
+ >> qabbrev_tac ‘a = \i. IMAGE (\j. (IMAGE (\x. x + real_of_int i) (f i j),
+                                     f' i j + real_of_int i)) UNIV’
  >> qabbrev_tac ‘s = \i. if e' i <> {} then a i else {}’
  >> qabbrev_tac ‘c = BIGUNION (IMAGE s UNIV)’
  >> Know ‘c <> {}’
@@ -1045,8 +1046,36 @@ Proof
      CONJ_TAC >- (MATCH_MP_TAC COUNTABLE_IMAGE \\
                   REWRITE_TAC [COUNTABLE_INT_UNIV]) \\
      rw [Abbr ‘s’] \\
-     rename1 ‘countable (if e' n <> {} then a n else {})’
+     rename1 ‘countable (if e' n <> {} then a n else {})’ \\
      Cases_on ‘e' n = {}’ >> simp [COUNTABLE_EMPTY, Abbr ‘a’])
+ >> DISCH_TAC
+ (* NOTE: “z1 <> z2” is equivalent to “FST z1 <> FST z2” here. *)
+ >> Know ‘!z1 z2. z1 IN c /\ z2 IN c /\ FST z1 <> FST z2 ==>
+                  DISJOINT (FST z1) (FST z2)’
+ >- (rw [Abbr ‘c’, Abbr ‘s’, IN_BIGUNION_IMAGE] \\
+     rename1 ‘z2 IN if e' j <> {} then a j else {}’ \\
+     Cases_on ‘e' i = {}’ >> fs [] \\
+     Cases_on ‘e' j = {}’ >> fs [] \\
+     Q.PAT_X_ASSUM ‘z2 IN a j’ MP_TAC \\
+     Q.PAT_X_ASSUM ‘z1 IN a i’ MP_TAC \\
+     Q.PAT_X_ASSUM ‘FST z1 <> FST z2’ MP_TAC \\
+     rw [Abbr ‘a’] >> fs [] \\
+     rename1 ‘IMAGE (\x. x + real_of_int i) (f i m) <>
+              IMAGE (\x. x + real_of_int j) (f j n)’ \\
+     Cases_on ‘i = j’
+     >- (rw [] \\
+        ‘f i m <> f i n’ by PROVE_TAC [] \\
+         qabbrev_tac ‘h = \x. x + real_of_int i’ \\
+         Know ‘DISJOINT (IMAGE h (f i m)) (IMAGE h (f i n)) <=>
+               DISJOINT (f i m) (f i n)’
+         >- (MATCH_MP_TAC DISJOINT_IMAGE \\
+             rw [Abbr ‘h’]) >> Rewr' \\
+         Q.PAT_X_ASSUM ‘!n. e' n <> {} ==> _’ (MP_TAC o Q.SPEC ‘i’) \\
+         RW_TAC std_ss []) \\
+     Q.PAT_X_ASSUM ‘ IMAGE (\x. x + real_of_int i) (f i m) <> _’ K_TAC \\
+    ‘f i m SUBSET right_open_interval 0 1 /\
+     f j n SUBSET right_open_interval 0 1’ by PROVE_TAC [] \\
+     cheat)
  >> DISCH_TAC
  >> cheat
 QED
