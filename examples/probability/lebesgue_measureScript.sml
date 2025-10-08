@@ -984,7 +984,7 @@ Proof
  >> Q.EXISTS_TAC ‘n’ >> art []
 QED
 
-(* Lemma 18.15 [2, p.311] (Dyadic Covering Lemma) *)
+(* 18.15 Dyadic Covering Lemma [2, p.311] *)
 Theorem dyadic_covering_lemma :
     !g E. gauge UNIV g /\ E <> {} ==>
           ?J t. (!i. t i IN E INTER J (i :num) /\
@@ -1107,6 +1107,17 @@ Proof
  >> POP_ASSUM (MP_TAC o Q.SPEC ‘j’)
  >> rw [Abbr ‘e’, IN_CBALL, SUBSET_DEF, in_right_open_interval]
  >> POP_ASSUM MATCH_MP_TAC >> simp [] >> fs []
+QED
+
+(* 18.16 Approximation Theorem [2, p.312] *)
+Theorem approximation_thm :
+    !E e. indicator E integrable_on UNIV /\ 0 < e ==>
+          ?J. disjoint_family J /\ (!i. compact (J i)) /\
+              E SUBSET BIGUNION (IMAGE J UNIV) /\
+              m_lebesgue E <= suminf (m_lebesgue o J) /\
+              suminf (m_lebesgue o J) <= m_lebesgue E + e
+Proof
+    cheat
 QED
 
 Theorem pos_fn_integral_fn_seq :
