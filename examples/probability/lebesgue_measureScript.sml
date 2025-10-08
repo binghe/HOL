@@ -19,7 +19,7 @@ open prim_recTheory arithmeticTheory numTheory numLib pred_setTheory pred_setLib
 
 open realTheory realLib seqTheory transcTheory real_sigmaTheory iterateTheory
      topologyTheory metricTheory real_topologyTheory integrationTheory
-     intrealTheory;
+     integerTheory intrealTheory;
 
 open sigma_algebraTheory extrealTheory real_borelTheory measureTheory borelTheory
      lebesgueTheory martingaleTheory;
@@ -38,6 +38,9 @@ val _ = hide "top"; (* posetTheory *)
 val _ = hide "nf";  (* relationTheory *)
 
 val integral_def = integrationTheory.integral_def;
+
+val _ = intLib.deprecate_int ();
+val _ = ratLib.deprecate_rat ();
 
 (* some proofs here are large with too many assumptions *)
 val _ = set_trace "Goalstack.print_goal_at_top" 0;
@@ -951,6 +954,22 @@ Proof
  >> REAL_ARITH_TAC
 QED
 
+(* cf. INFINITE_INT_UNIV *)
+Theorem COUNTABLE_INT_UNIV :
+    countable univ(:int)
+Proof
+    Suff ‘univ(:int) = IMAGE int_of_num UNIV UNION
+                       IMAGE (\n. -int_of_num n) UNIV’
+ >- (Rewr' \\
+     MATCH_MP_TAC COUNTABLE_UNION_IMP \\
+     CONJ_TAC >> MATCH_MP_TAC COUNTABLE_IMAGE >> simp [])
+ >> rw [Once EXTENSION]
+ >> STRIP_ASSUME_TAC (Q.SPEC ‘x’ int_cases)
+ >- (DISJ1_TAC >> Q.EXISTS_TAC ‘n’ >> art [])
+ >> DISJ2_TAC
+ >> Q.EXISTS_TAC ‘n’ >> art []
+QED
+
 (* NOTE: This proof has used full integers (:int) *)
 Theorem dyadic_covering_lemma :
     !g E. gauge UNIV g /\ E <> {} ==>
@@ -989,9 +1008,47 @@ Proof
  >> Know ‘E = BIGUNION (IMAGE e UNIV)’
  >- (simp [Abbr ‘e’, GSYM BIGUNION_OVER_INTER_R] \\
      simp [GSYM real_of_int_partition_lemma])
- >> Rewr'
+ >> DISCH_TAC
+ >> Know ‘?n0. e n0 <> {}’
+ >- (Suff ‘BIGUNION (IMAGE e univ(:int)) <> {}’
+     >- (POP_ASSUM K_TAC \\
+         rw [Once EXTENSION, IN_BIGUNION_IMAGE] \\
+         Cases_on ‘x = {}’ >> fs [] \\
+         rename1 ‘x = e n0’ \\
+         Q.EXISTS_TAC ‘n0’ >> rw []) \\
+     POP_ASSUM (art o wrap o SYM))
+ >> STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘E = _’ (REWRITE_TAC o wrap)
+ (* NOTE: Here I want to construct an non-empty countable set holding pairs
+    (a,b) which comes from all (f i,f' i) pairs of each non-empty (e' n).
+    Then, by COUNTABLE_ENUM or COUNTABLE_AS_IMAGE, the final existence of J/t
+    is derived from this countable set.
+  *)
+ >> qabbrev_tac ‘a = \i. IMAGE (\j. (f i j,f' i j)) UNIV’
+ >> qabbrev_tac ‘s = \i. if e' i <> {} then a i else {}’
+ >> qabbrev_tac ‘c = BIGUNION (IMAGE s UNIV)’
+ >> Know ‘c <> {}’
+ >- (simp [Abbr ‘c’, Once EXTENSION, IN_BIGUNION_IMAGE, Abbr ‘s’, NOT_IN_EMPTY] \\
+     Suff ‘?i. e' i <> {}’
+     >- (STRIP_TAC \\
+         Q.EXISTS_TAC ‘a i’ \\
+         Know ‘a i <> {}’ >- rw [Abbr ‘a’, Once EXTENSION, NOT_IN_EMPTY] \\
+         rw [] >> Q.EXISTS_TAC ‘i’ >> art []) \\
+     Q.EXISTS_TAC ‘n0’ \\
+     rw [Abbr ‘e'’, Once EXTENSION, NOT_IN_EMPTY] \\
+     simp [MEMBER_NOT_EMPTY])
+ >> DISCH_TAC
+ >> Know ‘countable c’
+ >- (POP_ASSUM K_TAC (* c <> {} *) \\
+     qunabbrev_tac ‘c’ \\
+     MATCH_MP_TAC COUNTABLE_BIGUNION \\
+     CONJ_TAC >- (MATCH_MP_TAC COUNTABLE_IMAGE \\
+                  REWRITE_TAC [COUNTABLE_INT_UNIV]) \\
+     rw [Abbr ‘s’] \\
+     rename1 ‘countable (if e' n <> {} then a n else {})’
+     Cases_on ‘e' n = {}’ >> simp [COUNTABLE_EMPTY, Abbr ‘a’])
+ >> DISCH_TAC
  >> cheat
- (* COUNTABLE_CROSS *)
 QED
 
 Theorem pos_fn_integral_fn_seq :

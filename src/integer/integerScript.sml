@@ -1700,9 +1700,11 @@ val _ = TypeBase.export [
     Discreteness of <
    ---------------------------------------------------------------------- *)
 
-val int_cases = prove(
-  Term`!x:int. (?n. x = &n) \/ (?n. ~(n = 0) /\ (x = ~&n))`,
-  PROVE_TAC [INT_NUM_CASES]);
+Theorem int_cases :
+    !x:int. (?n. x = &n) \/ (?n. ~(n = 0) /\ (x = ~&n))
+Proof
+  PROVE_TAC [INT_NUM_CASES]
+QED
 
 val INT_DISCRETE = store_thm(
   "INT_DISCRETE",
