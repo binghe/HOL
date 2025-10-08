@@ -1762,10 +1762,32 @@ Proof
  >> REAL_ASM_ARITH_TAC
 QED
 
+Theorem right_open_interval_shift_lemma :
+    !s c. s SUBSET right_open_interval 0 1 ==>
+          IMAGE (\x. x + c) s SUBSET right_open_interval c (c + 1)
+Proof
+    rw [SUBSET_DEF, in_right_open_interval]
+ >> rename1 ‘y IN s’
+ >- (Suff ‘0 <= y’ >- REAL_ARITH_TAC >> simp [])
+ >> Suff ‘y < 1’ >- REAL_ARITH_TAC
+ >> simp []
+QED
+
+Theorem right_open_interval_shift :
+    !c. IMAGE (\x. x + c) (right_open_interval a b) =
+        right_open_interval (a + c) (b + c)
+Proof
+    rw [Once EXTENSION, in_right_open_interval]
+ >> EQ_TAC >> rw []
+ >- REAL_ASM_ARITH_TAC
+ >- REAL_ASM_ARITH_TAC
+ >> Q.EXISTS_TAC ‘x - c’
+ >> REAL_ASM_ARITH_TAC
+QED
+
 Theorem right_open_interval_11 :
     !a b c d. a < b /\ c < d ==>
-             ((right_open_interval a b = right_open_interval c d) <=>
-              (a = c) /\ (b = d))
+        (right_open_interval a b = right_open_interval c d <=> a = c /\ b = d)
 Proof
     RW_TAC std_ss [GSYM SUBSET_ANTISYM_EQ, right_open_interval_SUBSET_EQ]
  >> METIS_TAC [REAL_LE_ANTISYM]

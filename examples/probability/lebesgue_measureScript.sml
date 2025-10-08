@@ -741,7 +741,8 @@ QED
 (* NOTE: Here we use the “gauge” definition from the old integralTheory, as it
    avoids “open” sets and directly gives the radius g(x) as a positive real.
 
-   NOTE: The asserted ‘J’ may contain duplicated elements, i.e. J(i) is finite.
+   The asserted ‘J’ may contain duplicated elements, i.e. J(i) is finite. This is
+   why we used “J i <> J j” instead of “i <> j” in the disjointness conclusion.
  *)
 Theorem dyadic_covering_lemma_01[local] :
     !g E. gauge UNIV g /\ E <> {} /\ E SUBSET right_open_interval 0 1 ==>
@@ -942,10 +943,10 @@ Proof
 QED
 
 (* NOTE: intrealTheory is used here *)
-Theorem real_of_int_partition_lemma :
-    univ(:real) =
+Theorem right_open_interval_partition[local] :
     BIGUNION (IMAGE (\i. right_open_interval (real_of_int i)
-                                             (real_of_int i + 1)) UNIV)
+                                             (real_of_int i + 1)) UNIV) =
+    univ(:real)
 Proof
     rw [Once EXTENSION, IN_BIGUNION_IMAGE, in_right_open_interval]
  >> Q.EXISTS_TAC ‘INT_FLOOR x’
@@ -961,7 +962,7 @@ Proof
     Suff ‘univ(:int) = IMAGE int_of_num UNIV UNION
                        IMAGE (\n. -int_of_num n) UNIV’
  >- (Rewr' \\
-     MATCH_MP_TAC COUNTABLE_UNION_IMP \\
+     MATCH_MP_TAC COUNTABLE_UNION_IMP (* cardinalTheory *) \\
      CONJ_TAC >> MATCH_MP_TAC COUNTABLE_IMAGE >> simp [])
  >> rw [Once EXTENSION]
  >> STRIP_ASSUME_TAC (Q.SPEC ‘x’ int_cases)
@@ -970,11 +971,11 @@ Proof
  >> Q.EXISTS_TAC ‘n’ >> art []
 QED
 
-(* NOTE: This proof has used full integers (:int) *)
+(* Lemma 18.15 [2, p.311] (Dyadic Covering Lemma) *)
 Theorem dyadic_covering_lemma :
     !g E. gauge UNIV g /\ E <> {} ==>
-          ?J t. (!(i :num). t i IN E INTER J i /\
-                            E INTER J i SUBSET cball (t i,g (t i))) /\
+          ?J t. (!i. t i IN E INTER J (i :num) /\
+                     E INTER J i SUBSET cball (t i,g (t i))) /\
                 (!i j. J i <> J j ==> DISJOINT (J i) (J j))
 Proof
     rpt STRIP_TAC
@@ -1007,7 +1008,7 @@ Proof
                 SIMP_RULE std_ss [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM])
  >> Know ‘E = BIGUNION (IMAGE e UNIV)’
  >- (simp [Abbr ‘e’, GSYM BIGUNION_OVER_INTER_R] \\
-     simp [GSYM real_of_int_partition_lemma])
+     simp [right_open_interval_partition])
  >> DISCH_TAC
  >> Know ‘?n0. e n0 <> {}’
  >- (Suff ‘BIGUNION (IMAGE e univ(:int)) <> {}’
@@ -1039,6 +1040,7 @@ Proof
      rw [Abbr ‘e'’, Once EXTENSION, NOT_IN_EMPTY] \\
      simp [MEMBER_NOT_EMPTY])
  >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘e n0 <> {}’ K_TAC
  >> Know ‘countable c’
  >- (POP_ASSUM K_TAC (* c <> {} *) \\
      qunabbrev_tac ‘c’ \\
@@ -1049,7 +1051,6 @@ Proof
      rename1 ‘countable (if e' n <> {} then a n else {})’ \\
      Cases_on ‘e' n = {}’ >> simp [COUNTABLE_EMPTY, Abbr ‘a’])
  >> DISCH_TAC
- (* NOTE: “z1 <> z2” is equivalent to “FST z1 <> FST z2” here. *)
  >> Know ‘!z1 z2. z1 IN c /\ z2 IN c /\ FST z1 <> FST z2 ==>
                   DISJOINT (FST z1) (FST z2)’
  >- (rw [Abbr ‘c’, Abbr ‘s’, IN_BIGUNION_IMAGE] \\
@@ -1075,8 +1076,46 @@ Proof
      Q.PAT_X_ASSUM ‘ IMAGE (\x. x + real_of_int i) (f i m) <> _’ K_TAC \\
     ‘f i m SUBSET right_open_interval 0 1 /\
      f j n SUBSET right_open_interval 0 1’ by PROVE_TAC [] \\
-     cheat)
+     MATCH_MP_TAC SUBSET_DISJOINT \\
+     qexistsl_tac [‘right_open_interval (real_of_int i) (real_of_int i + 1)’,
+                   ‘right_open_interval (real_of_int j) (real_of_int j + 1)’] \\
+     simp [right_open_interval_shift_lemma] \\
+     simp [right_open_interval_DISJOINT_EQ] \\
+     SIMP_TAC real_ss [GSYM real_of_int_add, GSYM real_of_int_num] \\
+     simp [] \\
+     Q.PAT_X_ASSUM ‘i <> j’ MP_TAC >> intLib.ARITH_TAC)
  >> DISCH_TAC
+ >> Suff ‘!z. z IN c ==> SND z IN BIGUNION (IMAGE e UNIV) INTER FST z /\
+                         BIGUNION (IMAGE e UNIV) INTER FST z SUBSET
+                         cball (SND z,g (SND z))’
+ >- (DISCH_TAC \\
+     MP_TAC (ISPEC “c :(real set # real) set” COUNTABLE_AS_IMAGE) \\
+     simp [] >> DISCH_THEN (Q.X_CHOOSE_THEN ‘h’ STRIP_ASSUME_TAC) \\
+    ‘!n. h n IN c’ by rw [] \\
+     qexistsl_tac [‘FST o h’, ‘SND o h’] >> simp [o_DEF] \\
+     Q.X_GEN_TAC ‘n’ \\
+     Q.PAT_X_ASSUM ‘!z. z IN c ==> _’ (MP_TAC o Q.SPEC ‘h (n :num)’) \\
+     rw [])
+ (* stage work *)
+ >> NTAC 3 (POP_ASSUM K_TAC)
+ >> Q.X_GEN_TAC ‘z’
+ >> simp [Abbr ‘c’, Abbr ‘s’, IN_BIGUNION_IMAGE, SUBSET_DEF]
+ >> STRIP_TAC
+ >> Cases_on ‘e' i = {}’ >> fs []
+ >> Q.PAT_X_ASSUM ‘z IN a i’ MP_TAC
+ >> simp [Abbr ‘a’]
+ >> STRIP_TAC >> POP_ORW >> simp []
+ >> CONJ_TAC
+ >- (Q.PAT_X_ASSUM ‘!n. e' n <> {} ==> _’ (MP_TAC o Q.SPEC ‘i’) >> simp [] \\
+     STRIP_TAC >> POP_ASSUM K_TAC (* DISJOINT, useless *) \\
+     POP_ASSUM (MP_TAC o Q.SPEC ‘j’) >> rw [Abbr ‘e'’] \\
+     simp [REAL_SUB_ADD] \\
+     Q.EXISTS_TAC ‘i’ >> art [])
+ >> rw [] >> rename1 ‘y + real_of_int i IN e n’
+ >> Q.PAT_X_ASSUM ‘!n. e' n <> {} ==> _’ (MP_TAC o Q.SPEC ‘i’) >> simp []
+ >> STRIP_TAC >> POP_ASSUM K_TAC (* DISJOINT, useless *)
+ >> POP_ASSUM (MP_TAC o Q.SPEC ‘j’)
+ >> rw [Abbr ‘e'’, IN_CBALL, SUBSET_DEF, in_right_open_interval, DIST_ADD]
  >> cheat
 QED
 

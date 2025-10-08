@@ -683,6 +683,12 @@ val DIST_TRIANGLE_ADD = store_thm ("DIST_TRIANGLE_ADD",
  ``!x x' y y'. dist(x + y,x' + y') <= dist(x,x') + dist(y,y')``,
   SIMP_TAC std_ss [dist] THEN REAL_ARITH_TAC);
 
+Theorem DIST_ADD :
+    !x y c. dist (x + c,y + c) = dist (x,y)
+Proof
+    RW_TAC std_ss [dist] >> REAL_ARITH_TAC
+QED
+
 val DIST_MUL = store_thm ("DIST_MUL",
  ``!x y c. dist(c * x,c * y) = abs(c) * dist(x,y)``,
   REWRITE_TAC[dist, GSYM ABS_MUL] THEN REAL_ARITH_TAC);
