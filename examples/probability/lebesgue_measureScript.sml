@@ -643,6 +643,18 @@ Proof
  >> MATCH_MP_TAC lemma1 >> art []
 QED
 
+Theorem lemma1b[local] :
+    !k x c. c <= x /\ x < c + (1 :real) ==>
+            ?n. n < 2 ** k /\ c + &n / 2 pow k <= x /\ x < c + &SUC n / 2 pow k
+Proof
+    rpt STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘k’, ‘x - c’] lemma1a)
+ >> impl_tac >- REAL_ASM_ARITH_TAC
+ >> STRIP_TAC
+ >> Q.EXISTS_TAC ‘n’
+ >> REAL_ASM_ARITH_TAC
+QED
+
 (* |- !k x.
         0 <= x /\ x < 1 /\ 0 < k ==>
         ?n. n <= 2 ** k /\ abs (x - &n / 2 pow k) <= 1 / 2 pow SUC k
@@ -744,25 +756,27 @@ QED
    The asserted ‘J’ may contain duplicated elements, i.e. J(i) is finite. This is
    why we used “J i <> J j” instead of “i <> j” in the disjointness conclusion.
  *)
-Theorem dyadic_covering_lemma_01[local] :
-    !g E. gauge UNIV g /\ E <> {} /\ E SUBSET right_open_interval 0 1 ==>
-          ?J t. (!(i :num). J i SUBSET right_open_interval 0 1 /\
-                            t i IN E INTER J i /\
-                            E INTER J i SUBSET cball (t i,g (t i))) /\
-                (!i j. J i <> J j ==> DISJOINT (J i) (J j))
+Theorem dyadic_covering_lemma_interval[local] :
+    !g E c. gauge UNIV g /\ E <> {} /\
+            E SUBSET right_open_interval c (c + 1) ==>
+           ?J t. (!i. J i SUBSET right_open_interval c (c + 1) /\
+                      t i IN E INTER J (i :num) /\
+                      E INTER J i SUBSET cball (t i,g (t i))) /\
+                 (!i j. J i <> J j ==> DISJOINT (J i) (J j))
 Proof
     rw [integralTheory.gauge, SUBSET_DEF, IN_INTERVAL, IN_CBALL,
         in_right_open_interval]
- >> qabbrev_tac ‘f = \k n. right_open_interval (&n / 2 pow k) (&SUC n / 2 pow k)’
+ >> qabbrev_tac
+   ‘f = \k n. right_open_interval (c + &n / 2 pow k) (c + &SUC n / 2 pow k)’
  >> ‘!x. ?n. 1 / 2 pow n < g x’ by METIS_TAC [lemma4]
  >> FULL_SIMP_TAC std_ss [SKOLEM_THM]
  >> rename1 ‘!x. 1 / 2 pow d x < g x’
- >> Know ‘!x. 0 <= x /\ x < 1 ==>
+ >> Know ‘!x. c <= x /\ x < c + 1 ==>
               ?k n. n < 2 ** k /\ x IN f k n /\ f k n SUBSET cball (x,g x)’
  >- (RW_TAC std_ss [Abbr ‘f’, SUBSET_DEF, in_right_open_interval, IN_CBALL] \\
      Q.PAT_X_ASSUM ‘!x. _ < g x’ (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
      qabbrev_tac ‘k = d x’ \\
-     MP_TAC (Q.SPECL [‘k’, ‘x’] lemma1a) >> RW_TAC std_ss [] \\
+     MP_TAC (Q.SPECL [‘k’, ‘x’, ‘c’] lemma1b) >> RW_TAC std_ss [] \\
      qexistsl_tac [‘k’, ‘n’] >> art [] \\
      Q.X_GEN_TAC ‘y’ >> RW_TAC std_ss [dist] \\
      MATCH_MP_TAC REAL_LT_IMP_LE \\
@@ -770,15 +784,15 @@ Proof
      Cases_on ‘0 <= x - y’
      >- (ASM_SIMP_TAC real_ss [ABS_EQ_POS] \\
          Suff ‘x < 1 / 2 pow k + y’ >- REAL_ARITH_TAC \\
-         Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘&SUC n / 2 pow k’ >> art [] \\
-         Suff ‘&SUC n / 2 pow k - 1 / 2 pow k <= y’ >- REAL_ARITH_TAC \\
+         Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘c + &SUC n / 2 pow k’ >> art [] \\
+         Suff ‘c + (&SUC n / 2 pow k - 1 / 2 pow k) <= y’ >- REAL_ARITH_TAC \\
          ASM_SIMP_TAC real_ss [REAL_DIV_SUB] \\
          Suff ‘&SUC n - 1 = (&n :real)’ >- (Rewr' >> art []) \\
          simp [GSYM realaxTheory.REAL_OF_NUM_SUB]) \\
      FULL_SIMP_TAC real_ss [GSYM real_lt, ABS_EQ_NEG] \\
      Suff ‘y - 1 / 2 pow k <= x’ >- REAL_ARITH_TAC \\
-     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘&n / 2 pow k’ >> art [] \\
-     Suff ‘y <= &n / 2 pow k + 1 / 2 pow k’ >- REAL_ARITH_TAC \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘c + &n / 2 pow k’ >> art [] \\
+     Suff ‘y <= c + (&n / 2 pow k + 1 / 2 pow k)’ >- REAL_ARITH_TAC \\
      ASM_SIMP_TAC real_ss [REAL_DIV_ADD, GSYM ADD1, REAL_LT_IMP_LE])
  >> DISCH_TAC
  >> qabbrev_tac ‘J0 = {s | ?n k. s = f k n /\ n < 2 ** k}’
@@ -786,11 +800,12 @@ Proof
                   s1 SUBSET s2 \/ s2 SUBSET s1 \/ DISJOINT s1 s2’
  >- (rw [Abbr ‘J0’, Abbr ‘f’] \\
      POP_ASSUM MP_TAC >> rename1 ‘m < 2 ** l’ \\
-    ‘&n / 2 pow k < (&SUC n / 2 pow k) :real /\
-     &m / 2 pow l < (&SUC m / 2 pow l) :real’ by simp [] \\
+    ‘c + &n / 2 pow k < (c + &SUC n / 2 pow k) :real /\
+     c + &m / 2 pow l < (c + &SUC m / 2 pow l) :real’ by simp [] \\
      ASM_SIMP_TAC std_ss [right_open_interval_11] \\
      Cases_on ‘k = l’
-     >- (simp [] >> DISCH_TAC \\
+     >- (simp [] (* n <> m *) \\
+         DISCH_TAC \\
          simp [right_open_interval_SUBSET_EQ, right_open_interval_DISJOINT_EQ]) \\
      NTAC 5 (POP_ASSUM MP_TAC) \\
   (* applying wlog_tac *)
@@ -801,8 +816,7 @@ Proof
          Q.PAT_X_ASSUM ‘!k l n m. P’ (MP_TAC o Q.SPECL [‘l’, ‘k’, ‘m’, ‘n’]) \\
          METIS_TAC []) \\
      rpt STRIP_TAC \\
-    ‘k < l’ by simp [] \\
-     Q.PAT_X_ASSUM ‘k <= l’ K_TAC \\
+    ‘k < l’ by simp [] >> Q.PAT_X_ASSUM ‘k <= l’ K_TAC \\
     ‘?p. p + k = l’ by METIS_TAC [LESS_ADD] \\
      POP_ASSUM (FULL_SIMP_TAC std_ss o wrap o SYM) \\
     ‘(&n / 2 pow k) :real = &(n * 2 ** p) / 2 pow (p + k)’
@@ -841,7 +855,7 @@ Proof
  >- (rpt (Q.PAT_X_ASSUM ‘countable _’ K_TAC) \\
      rpt (Q.PAT_X_ASSUM ‘_ SUBSET _’  K_TAC) \\
      rw [Abbr ‘J1’, Abbr ‘J0’] \\
-     Q.PAT_X_ASSUM ‘!x. 0 <= x /\ x < 1 ==> ?k n. _’ (MP_TAC o Q.SPEC ‘x’) \\
+     Q.PAT_X_ASSUM ‘!x. c <= x /\ x < c + 1 ==> ?k n. _’ (MP_TAC o Q.SPEC ‘x’) \\
      RW_TAC std_ss [] \\
      qexistsl_tac [‘k’, ‘n’] >> art [] \\
      CONJ_TAC >- (qexistsl_tac [‘n’, ‘k’] >> art []) \\
@@ -881,12 +895,12 @@ Proof
      NTAC 2 STRIP_TAC \\
      Q.PAT_X_ASSUM ‘!s. s IN J1 ==> _’ (MP_TAC o Q.SPEC ‘t’) >> POP_ORW \\
      RW_TAC std_ss [] >> rename1 ‘y IN f k m’ \\
-     Know ‘&SUC n / 2 pow l - (&n / 2 pow l) :real <=
-           &SUC m / 2 pow k - &m / 2 pow k’
+     Know ‘c + &SUC n / 2 pow l - (c + &n / 2 pow l) :real <=
+           c + &SUC m / 2 pow k - (c + &m / 2 pow k)’
      >- (MATCH_MP_TAC right_open_interval_SUBSET \\
          REWRITE_TAC [lemma5] \\
          POP_ASSUM MP_TAC >> simp [Abbr ‘f’]) \\
-     simp [lemma6] \\
+     simp [lemma6, REAL_ARITH “c + a - (c + b) = a - (b :real)”] \\
      Know ‘2 pow k <= (2 pow l) :real <=> k <= l’
      >- (MATCH_MP_TAC REAL_POW_MONO_EQ >> simp []) >> Rewr' \\
      DISCH_TAC \\
@@ -932,17 +946,16 @@ Proof
      rpt STRIP_TAC \\
      Know ‘x IN cball (y,g y)’ >- METIS_TAC [SUBSET_DEF] \\
      simp [IN_CBALL])
- (* !x. x IN f k n ==> 0 <= x /\ x < 1 *)
+ (* !x. x IN f k n ==> c <= x /\ x < c + 1 *)
  >> RW_TAC real_ss [Abbr ‘f’, in_right_open_interval]
  >| [ (* goal 1 (of 2) *)
-      Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘&n / 2 pow k’ >> art [] \\
-      MATCH_MP_TAC REAL_LE_DIV >> simp [],
+      Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘c + &n / 2 pow k’ >> art [] \\
+      simp [REAL_LE_ADDR],
       (* goal 2 (of 2) *)
-      Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘&SUC n / 2 pow k’ >> art [] \\
+      Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘c + &SUC n / 2 pow k’ >> art [] \\
       simp [ADD1, REAL_POW] ]
 QED
 
-(* NOTE: intrealTheory is used here *)
 Theorem right_open_interval_partition[local] :
     BIGUNION (IMAGE (\i. right_open_interval (real_of_int i)
                                              (real_of_int i + 1)) UNIV) =
@@ -950,7 +963,7 @@ Theorem right_open_interval_partition[local] :
 Proof
     rw [Once EXTENSION, IN_BIGUNION_IMAGE, in_right_open_interval]
  >> Q.EXISTS_TAC ‘INT_FLOOR x’
- >> MP_TAC (Q.SPEC ‘x’ INT_FLOOR_BOUNDS')
+ >> MP_TAC (Q.SPEC ‘x’ INT_FLOOR_BOUNDS') (* intrealTheory *)
  >> qabbrev_tac ‘r = real_of_int (INT_FLOOR x)’
  >> REAL_ARITH_TAC
 QED
@@ -981,28 +994,17 @@ Proof
     rpt STRIP_TAC
  >> qabbrev_tac ‘e = \i. E INTER right_open_interval (real_of_int i)
                                                      (real_of_int i + 1)’
- >> qabbrev_tac ‘e' = \i. IMAGE (\x. x - real_of_int i) (e i)’
- >> Know ‘!i. e' i SUBSET right_open_interval 0 1’
- >- (rw [SUBSET_DEF, Abbr ‘e'’, Abbr ‘e’, in_right_open_interval]
-     >- simp [REAL_SUB_LE] \\
-     POP_ASSUM MP_TAC >> REAL_ARITH_TAC)
- >> DISCH_TAC
- >> Know ‘!i. IMAGE (\x. x + real_of_int i) (e' i) = e i’
- >- (rw [Once EXTENSION, Abbr ‘e'’] \\
-     EQ_TAC >> rw [] >- simp [REAL_SUB_ADD] \\
-     Q.EXISTS_TAC ‘x - real_of_int i’ \\
-     simp [REAL_SUB_ADD] \\
-     Q.EXISTS_TAC ‘x’ >> art [])
- >> DISCH_TAC
- (* applying dyadic_covering_lemma_01 *)
- >> Know ‘!n. e' n <> {} ==>
-              ?J t. (!i. J i SUBSET right_open_interval 0 1 /\
-                         t i IN e' n INTER J (i :num) /\
-                         e' n INTER J i SUBSET cball (t i,g (t i))) /\
+ >> ‘!i. e i SUBSET right_open_interval (real_of_int i) (real_of_int i + 1)’
+      by rw [SUBSET_DEF, Abbr ‘e’, in_right_open_interval]
+ (* applying dyadic_covering_lemma_interval *)
+ >> Know ‘!n. e n <> {} ==>
+              ?J t. (!i. J (i :num) SUBSET
+                         right_open_interval (real_of_int n) (real_of_int n + 1) /\
+                         t i IN e n INTER J i /\
+                         e n INTER J i SUBSET cball (t i,g (t i))) /\
                      !i j. J i <> J j ==> DISJOINT (J i) (J j)’
  >- (rpt STRIP_TAC \\
-     qabbrev_tac ‘E' = e' n’ \\
-     MATCH_MP_TAC dyadic_covering_lemma_01 >> simp [Abbr ‘E'’])
+     MATCH_MP_TAC dyadic_covering_lemma_interval >> simp [])
  (* This asserts f and f' in place of J and t *)
  >> DISCH_THEN (STRIP_ASSUME_TAC o
                 SIMP_RULE std_ss [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM])
@@ -1025,22 +1027,21 @@ Proof
     Then, by COUNTABLE_ENUM or COUNTABLE_AS_IMAGE, the final existence of J/t
     is derived from this countable set.
   *)
- >> qabbrev_tac ‘a = \i. IMAGE (\j. (IMAGE (\x. x + real_of_int i) (f i j),
-                                     f' i j + real_of_int i)) UNIV’
- >> qabbrev_tac ‘s = \i. if e' i <> {} then a i else {}’
+ >> qabbrev_tac ‘a = \i. IMAGE (\j. (f i j, f' i j)) UNIV’
+ >> qabbrev_tac ‘s = \i. if e i <> {} then a i else {}’
  >> qabbrev_tac ‘c = BIGUNION (IMAGE s UNIV)’
  >> Know ‘c <> {}’
  >- (simp [Abbr ‘c’, Once EXTENSION, IN_BIGUNION_IMAGE, Abbr ‘s’, NOT_IN_EMPTY] \\
-     Suff ‘?i. e' i <> {}’
+     Suff ‘?i. e i <> {}’
      >- (STRIP_TAC \\
          Q.EXISTS_TAC ‘a i’ \\
          Know ‘a i <> {}’ >- rw [Abbr ‘a’, Once EXTENSION, NOT_IN_EMPTY] \\
          rw [] >> Q.EXISTS_TAC ‘i’ >> art []) \\
      Q.EXISTS_TAC ‘n0’ \\
-     rw [Abbr ‘e'’, Once EXTENSION, NOT_IN_EMPTY] \\
+     rw [Abbr ‘e’, Once EXTENSION, NOT_IN_EMPTY] \\
      simp [MEMBER_NOT_EMPTY])
  >> DISCH_TAC
- >> Q.PAT_X_ASSUM ‘e n0 <> {}’ K_TAC
+ >> Q.PAT_X_ASSUM ‘e n0 <> {}’ K_TAC (* no more needed *)
  >> Know ‘countable c’
  >- (POP_ASSUM K_TAC (* c <> {} *) \\
      qunabbrev_tac ‘c’ \\
@@ -1048,34 +1049,24 @@ Proof
      CONJ_TAC >- (MATCH_MP_TAC COUNTABLE_IMAGE \\
                   REWRITE_TAC [COUNTABLE_INT_UNIV]) \\
      rw [Abbr ‘s’] \\
-     rename1 ‘countable (if e' n <> {} then a n else {})’ \\
-     Cases_on ‘e' n = {}’ >> simp [COUNTABLE_EMPTY, Abbr ‘a’])
+     rename1 ‘countable (if e n <> {} then a n else {})’ \\
+     Cases_on ‘e n = {}’ >> simp [COUNTABLE_EMPTY, Abbr ‘a’])
  >> DISCH_TAC
  >> Know ‘!z1 z2. z1 IN c /\ z2 IN c /\ FST z1 <> FST z2 ==>
                   DISJOINT (FST z1) (FST z2)’
  >- (rw [Abbr ‘c’, Abbr ‘s’, IN_BIGUNION_IMAGE] \\
-     rename1 ‘z2 IN if e' j <> {} then a j else {}’ \\
-     Cases_on ‘e' i = {}’ >> fs [] \\
-     Cases_on ‘e' j = {}’ >> fs [] \\
+     rename1 ‘z2 IN if e j <> {} then a j else {}’ \\
+     Cases_on ‘e i = {}’ >> fs [] \\
+     Cases_on ‘e j = {}’ >> fs [] \\
      Q.PAT_X_ASSUM ‘z2 IN a j’ MP_TAC \\
      Q.PAT_X_ASSUM ‘z1 IN a i’ MP_TAC \\
      Q.PAT_X_ASSUM ‘FST z1 <> FST z2’ MP_TAC \\
-     rw [Abbr ‘a’] >> fs [] \\
-     rename1 ‘IMAGE (\x. x + real_of_int i) (f i m) <>
-              IMAGE (\x. x + real_of_int j) (f j n)’ \\
-     Cases_on ‘i = j’
-     >- (rw [] \\
-        ‘f i m <> f i n’ by PROVE_TAC [] \\
-         qabbrev_tac ‘h = \x. x + real_of_int i’ \\
-         Know ‘DISJOINT (IMAGE h (f i m)) (IMAGE h (f i n)) <=>
-               DISJOINT (f i m) (f i n)’
-         >- (MATCH_MP_TAC DISJOINT_IMAGE \\
-             rw [Abbr ‘h’]) >> Rewr' \\
-         Q.PAT_X_ASSUM ‘!n. e' n <> {} ==> _’ (MP_TAC o Q.SPEC ‘i’) \\
-         RW_TAC std_ss []) \\
-     Q.PAT_X_ASSUM ‘ IMAGE (\x. x + real_of_int i) (f i m) <> _’ K_TAC \\
-    ‘f i m SUBSET right_open_interval 0 1 /\
-     f j n SUBSET right_open_interval 0 1’ by PROVE_TAC [] \\
+     rw [Abbr ‘a’] >> fs [] >> rename1 ‘f i m <> f j n’ \\
+     Cases_on ‘i = j’ >- rw [] \\
+     Q.PAT_X_ASSUM ‘f i m <> f j n’ K_TAC \\
+    ‘f i m SUBSET right_open_interval (real_of_int i) (real_of_int i + 1) /\
+     f j n SUBSET right_open_interval (real_of_int j) (real_of_int j + 1)’
+       by PROVE_TAC [] \\
      MATCH_MP_TAC SUBSET_DISJOINT \\
      qexistsl_tac [‘right_open_interval (real_of_int i) (real_of_int i + 1)’,
                    ‘right_open_interval (real_of_int j) (real_of_int j + 1)’] \\
@@ -1101,22 +1092,21 @@ Proof
  >> Q.X_GEN_TAC ‘z’
  >> simp [Abbr ‘c’, Abbr ‘s’, IN_BIGUNION_IMAGE, SUBSET_DEF]
  >> STRIP_TAC
- >> Cases_on ‘e' i = {}’ >> fs []
+ >> Cases_on ‘e i = {}’ >> fs []
  >> Q.PAT_X_ASSUM ‘z IN a i’ MP_TAC
  >> simp [Abbr ‘a’]
  >> STRIP_TAC >> POP_ORW >> simp []
  >> CONJ_TAC
- >- (Q.PAT_X_ASSUM ‘!n. e' n <> {} ==> _’ (MP_TAC o Q.SPEC ‘i’) >> simp [] \\
+ >- (Q.PAT_X_ASSUM ‘!n. e n <> {} ==> _’ (MP_TAC o Q.SPEC ‘i’) >> simp [] \\
      STRIP_TAC >> POP_ASSUM K_TAC (* DISJOINT, useless *) \\
-     POP_ASSUM (MP_TAC o Q.SPEC ‘j’) >> rw [Abbr ‘e'’] \\
-     simp [REAL_SUB_ADD] \\
+     POP_ASSUM (MP_TAC o Q.SPEC ‘j’) >> rw [Abbr ‘e’] \\
      Q.EXISTS_TAC ‘i’ >> art [])
- >> rw [] >> rename1 ‘y + real_of_int i IN e n’
- >> Q.PAT_X_ASSUM ‘!n. e' n <> {} ==> _’ (MP_TAC o Q.SPEC ‘i’) >> simp []
+ >> rw [] >> rename1 ‘x IN e n’
+ >> Q.PAT_X_ASSUM ‘!n. e n <> {} ==> _’ (MP_TAC o Q.SPEC ‘i’) >> simp []
  >> STRIP_TAC >> POP_ASSUM K_TAC (* DISJOINT, useless *)
  >> POP_ASSUM (MP_TAC o Q.SPEC ‘j’)
- >> rw [Abbr ‘e'’, IN_CBALL, SUBSET_DEF, in_right_open_interval, DIST_ADD]
- >> cheat
+ >> rw [Abbr ‘e’, IN_CBALL, SUBSET_DEF, in_right_open_interval]
+ >> POP_ASSUM MATCH_MP_TAC >> simp [] >> fs []
 QED
 
 Theorem pos_fn_integral_fn_seq :
