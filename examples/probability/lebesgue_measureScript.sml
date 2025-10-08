@@ -18,7 +18,8 @@ open prim_recTheory arithmeticTheory numTheory numLib pred_setTheory pred_setLib
      combinTheory hurdUtils jrhUtils cardinalTheory relationTheory whileTheory;
 
 open realTheory realLib seqTheory transcTheory real_sigmaTheory iterateTheory
-     topologyTheory metricTheory real_topologyTheory integrationTheory;
+     topologyTheory metricTheory real_topologyTheory integrationTheory
+     intrealTheory;
 
 open sigma_algebraTheory extrealTheory real_borelTheory measureTheory borelTheory
      lebesgueTheory martingaleTheory;
@@ -937,13 +938,60 @@ Proof
       simp [ADD1, REAL_POW] ]
 QED
 
+(* NOTE: intrealTheory is used here *)
+Theorem real_of_int_partition_lemma :
+    univ(:real) =
+    BIGUNION (IMAGE (\i. right_open_interval (real_of_int i)
+                                             (real_of_int i + 1)) UNIV)
+Proof
+    rw [Once EXTENSION, IN_BIGUNION_IMAGE, in_right_open_interval]
+ >> Q.EXISTS_TAC ‘INT_FLOOR x’
+ >> MP_TAC (Q.SPEC ‘x’ INT_FLOOR_BOUNDS')
+ >> qabbrev_tac ‘r = real_of_int (INT_FLOOR x)’
+ >> REAL_ARITH_TAC
+QED
+
+(* NOTE: This proof has used full integers (:int) *)
 Theorem dyadic_covering_lemma :
     !g E. gauge UNIV g /\ E <> {} ==>
           ?J t. (!(i :num). t i IN E INTER J i /\
                             E INTER J i SUBSET cball (t i,g (t i))) /\
                 (!i j. J i <> J j ==> DISJOINT (J i) (J j))
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘e = \i. E INTER right_open_interval (real_of_int i)
+                                                     (real_of_int i + 1)’
+ >> qabbrev_tac ‘e' = \i. IMAGE (\x. x - real_of_int i) (e i)’
+ >> Know ‘!i. e' i SUBSET right_open_interval 0 1’
+ >- (rw [SUBSET_DEF, Abbr ‘e'’, Abbr ‘e’, in_right_open_interval]
+     >- simp [REAL_SUB_LE] \\
+     POP_ASSUM MP_TAC >> REAL_ARITH_TAC)
+ >> DISCH_TAC
+ >> Know ‘!i. IMAGE (\x. x + real_of_int i) (e' i) = e i’
+ >- (rw [Once EXTENSION, Abbr ‘e'’] \\
+     EQ_TAC >> rw [] >- simp [REAL_SUB_ADD] \\
+     Q.EXISTS_TAC ‘x - real_of_int i’ \\
+     simp [REAL_SUB_ADD] \\
+     Q.EXISTS_TAC ‘x’ >> art [])
+ >> DISCH_TAC
+ (* applying dyadic_covering_lemma_01 *)
+ >> Know ‘!n. e' n <> {} ==>
+              ?J t. (!i. J i SUBSET right_open_interval 0 1 /\
+                         t i IN e' n INTER J (i :num) /\
+                         e' n INTER J i SUBSET cball (t i,g (t i))) /\
+                     !i j. J i <> J j ==> DISJOINT (J i) (J j)’
+ >- (rpt STRIP_TAC \\
+     qabbrev_tac ‘E' = e' n’ \\
+     MATCH_MP_TAC dyadic_covering_lemma_01 >> simp [Abbr ‘E'’])
+ (* This asserts f and f' in place of J and t *)
+ >> DISCH_THEN (STRIP_ASSUME_TAC o
+                SIMP_RULE std_ss [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM])
+ >> Know ‘E = BIGUNION (IMAGE e UNIV)’
+ >- (simp [Abbr ‘e’, GSYM BIGUNION_OVER_INTER_R] \\
+     simp [GSYM real_of_int_partition_lemma])
+ >> Rewr'
+ >> cheat
+ (* COUNTABLE_CROSS *)
 QED
 
 Theorem pos_fn_integral_fn_seq :
