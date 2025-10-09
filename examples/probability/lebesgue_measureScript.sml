@@ -1,7 +1,7 @@
 (* ========================================================================= *)
-(*                        Lebesgue Measure Theory                            *)
+(*        Lebesgue Measure Theory (lebesgue_measure_hvgScript.sml)           *)
 (*                                                                           *)
-(*        (c) Copyright,                                                     *)
+(*        (c) Copyright 2015,                                                *)
 (*                       Muhammad Qasim,                                     *)
 (*                       Osman Hasan,                                        *)
 (*                       Hardware Verification Group,                        *)
@@ -10,6 +10,8 @@
 (*            Contact:  <m_qasi@ece.concordia.ca>                            *)
 (*                                                                           *)
 (* Note: This theory is inspired from isabelle                               *)
+(* ------------------------------------------------------------------------- *)
+(*  Equivalence of Lebesgue and Gauge (Henstock-Kurzweil) Integration        *)
 (* ========================================================================= *)
 
 open HolKernel Parse boolLib bossLib;
@@ -24,9 +26,11 @@ open realTheory realLib seqTheory transcTheory real_sigmaTheory iterateTheory
 open sigma_algebraTheory extrealTheory real_borelTheory measureTheory borelTheory
      lebesgueTheory martingaleTheory;
 
-open ordinalTheory; (* TODO *)
-
+(* We only need very few theorems from these theories, which may be conflict
+   with other opened theories.
+ *)
 local open integralTheory lift_ieeeTheory in end;
+val integral_def = integrationTheory.integral_def;
 
 val _ = new_theory "lebesgue_measure";
 
@@ -37,12 +41,10 @@ fun METIS ths tm = prove(tm, METIS_TAC ths);
 val _ = hide "top"; (* posetTheory *)
 val _ = hide "nf";  (* relationTheory *)
 
-val integral_def = integrationTheory.integral_def;
-
 val _ = intLib.deprecate_int ();
 val _ = ratLib.deprecate_rat ();
 
-(* some proofs here are large with too many assumptions *)
+(* Some proofs here are large with too many assumptions *)
 val _ = set_trace "Goalstack.print_goal_at_top" 0;
 
 (* ------------------------------------------------------------------------- *)
@@ -1334,10 +1336,11 @@ QED
 (* 18.16 Approximation Theorem [2, p.312] *)
 Theorem approximation_thm :
     !E e. indicator E integrable_on UNIV /\ 0 < e ==>
-          ?J. disjoint_family J /\ (!i. compact (J i)) /\
-              E SUBSET BIGUNION (IMAGE J UNIV) /\
-              m_lebesgue E <= suminf (m_lebesgue o J) /\
-              suminf (m_lebesgue o J) <= m_lebesgue E + e
+          ?J. (!i. compact (J i)) /\
+              (!i j. J i <> J j ==> nonoverlapping (J i) (J j)) /\
+               E SUBSET BIGUNION (IMAGE J UNIV) /\
+               m_lebesgue E <= suminf (m_lebesgue o J) /\
+               suminf (m_lebesgue o J) <= m_lebesgue E + e
 Proof
     cheat
 QED
@@ -1562,6 +1565,8 @@ QED
 (* ------------------------------------------------------------------------- *)
 (* Non-measurable sets                                                       *)
 (* ------------------------------------------------------------------------- *)
+
+open ordinalTheory;
 
 Definition Borel_pointclass_def :
    (additive_class (top :'a topology) (ord :'b ordinal) =
