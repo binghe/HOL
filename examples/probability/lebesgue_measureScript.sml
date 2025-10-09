@@ -779,129 +779,6 @@ Proof
     rw [REAL_ARITH “c + a - (c + b) = a - (b :real)”, lemma6]
 QED
 
-Definition nonoverlapping_def :
-    nonoverlapping s t <=> DISJOINT (interior s) (interior t)
-End
-
-(* cf. right_open_interval_11 *)
-Theorem closed_interval_11 :
-    !a b c d. a < b /\ c < d ==>
-             (interval [a,b] = interval [c,d] <=> a = c /\ b = d)
-Proof
-    rw [EQ_INTERVAL, GSYM INTERVAL_EQ_EMPTY]
- >> REAL_ASM_ARITH_TAC
-QED
-
-(* cf. right_open_interval_SUBSET_EQ, ordering: [c [a, b] d] *)
-Theorem closed_interval_subset_eq :
-    !a b c d. a < b /\ c < d ==>
-             (interval [a,b] SUBSET interval [c,d] <=> c <= a /\ b <= d)
-Proof
-    rpt STRIP_TAC
- >> EQ_TAC >> rw [SUBSET_DEF, IN_INTERVAL] (* 4 subgoals *)
- >| [ (* goal 1 (of 4) *)
-      CCONTR_TAC >> fs [GSYM real_lt] \\
-      (* a < z < b,c < d *)
-      MP_TAC (Q.SPECL [‘a’, ‘min b c’] REAL_MEAN) \\
-      ASM_REWRITE_TAC [REAL_LT_MIN] \\
-      CCONTR_TAC >> fs [] \\
-     ‘a <= z /\ z <= b’ by simp [REAL_LT_IMP_LE] \\
-     ‘c <= z’ by PROVE_TAC [] \\
-      METIS_TAC [REAL_LTE_ANTISYM],
-      (* goal 2 (of 4) *)
-      CCONTR_TAC >> fs [GSYM real_lt] \\
-      (* c < d,a < z < b *)
-      MP_TAC (Q.SPECL [‘max d a’, ‘b’] REAL_MEAN) \\
-      ASM_REWRITE_TAC [REAL_MAX_LT] \\
-      CCONTR_TAC >> fs [] \\
-     ‘a <= z /\ z <= b’ by simp [REAL_LT_IMP_LE] \\
-     ‘z <= d’ by PROVE_TAC [] \\
-      METIS_TAC [REAL_LTE_ANTISYM],
-      (* goal 3 (of 4) *)
-      Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘a’ >> art [],
-      (* goal 3 (of 3) *)
-      Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘b’ >> art [] ]
-QED
-
-(* cf. right_open_interval_SUBSET *)
-Theorem closed_interval_subset :
-    !a b c d. a < b /\ c < d /\ interval [a,b] SUBSET interval [c,d] ==>
-              b - a <= d - c
-Proof
-    rpt STRIP_TAC
- >> POP_ASSUM MP_TAC
- >> simp [closed_interval_subset_eq]
- >> REAL_ASM_ARITH_TAC
-QED
-
-(* cf. right_open_interval_DISJOINT_EQ *)
-Theorem closed_interval_nonoverlapping :
-    !a b c d. a < b /\ c < d ==>
-             (nonoverlapping (interval [a,b]) (interval [c,d]) <=>
-              b <= c \/ d <= a)
-Proof
-    RW_TAC std_ss [nonoverlapping_def, INTERIOR_INTERVAL]
- >> EQ_TAC >> rw [DISJOINT_ALT, IN_INTERVAL, REAL_NOT_LT] (* 3 subgoals *)
- >| [ (* goal 1 (of 3): a < b <= c < d  or  c < d <= a < b *)
-      CCONTR_TAC >> fs [REAL_NOT_LE] \\
-      MP_TAC (Q.SPECL [‘max a c’, ‘min b d’] REAL_MEAN) \\
-      ASM_REWRITE_TAC [REAL_MAX_LT, REAL_LT_MIN] \\
-      CCONTR_TAC >> fs [] \\
-     ‘z <= c \/ d <= z’ by PROVE_TAC [] >- METIS_TAC [REAL_LTE_ANTISYM] \\
-      METIS_TAC [REAL_LTE_ANTISYM],
-      (* goal 2 (of 3) *)
-      CCONTR_TAC >> fs [REAL_NOT_LE] \\
-      (* a < x < b <= c < x < d *)
-     ‘x < c’ by PROVE_TAC [REAL_LTE_TRANS] \\
-      METIS_TAC [REAL_LT_ANTISYM],
-      (* goal 3 (of 3) *)
-      CCONTR_TAC >> fs [REAL_NOT_LE] \\
-      (* c < x < d <= a < x < b *)
-     ‘x < a’ by PROVE_TAC [REAL_LTE_TRANS] \\
-      METIS_TAC [REAL_LT_ANTISYM] ]
-QED
-
-Theorem nonoverlapping_comm :
-    !s t. nonoverlapping s t <=> nonoverlapping t s
-Proof
-    RW_TAC std_ss [nonoverlapping_def, Once DISJOINT_SYM]
-QED
-
-(* cf. SUBSET_DISJOINT *)
-Theorem subset_nonoverlapping :
-    !s t u v. nonoverlapping s t /\ u SUBSET s /\ v SUBSET t ==>
-              nonoverlapping u v
-Proof
-    rw [nonoverlapping_def]
- >> MATCH_MP_TAC SUBSET_DISJOINT
- >> qexistsl_tac [‘interior s’, ‘interior t’] >> art []
- >> rw [SUBSET_INTERIOR]
-QED
-
-(* cf. right_open_interval_DISJOINT_EQ *)
-Theorem closed_interval_disjoint_eq :
-    !a b c d. a < b /\ c < d ==>
-             (DISJOINT (interval (a,b)) (interval (c,d)) <=> b <= c \/ d <= a)
-Proof
-    rw [DISJOINT_ALT, IN_INTERVAL]
- >> EQ_TAC >> rpt STRIP_TAC (* 3 subgoals *)
- >| [ (* goal 1 (of 3) *)
-      CCONTR_TAC >> fs [REAL_NOT_LE, REAL_NOT_LT] \\
-      (* a < c < b < d *)
-      MP_TAC (Q.SPECL [‘max a c’, ‘min b d’] REAL_MEAN) \\
-      rw [REAL_MAX_LT, REAL_LT_MIN] \\
-      CCONTR_TAC >> fs [] (* a < c < z < b < d *) \\
-      METIS_TAC [REAL_LET_ANTISYM],
-      (* goal 2 (of 3) *)
-      CCONTR_TAC >> fs [] \\
-     ‘x < c’ by PROVE_TAC [REAL_LTE_TRANS] \\
-      METIS_TAC [REAL_LT_ANTISYM],
-      (* goal 3 (of 3) *)
-      CCONTR_TAC >> fs [] \\
-     ‘d < x’ by PROVE_TAC [REAL_LET_TRANS] \\
-      METIS_TAC [REAL_LT_ANTISYM] ]
-QED
-
 (* NOTE: Here we use the “gauge” definition from the old integralTheory, as it
    avoids “open” sets and directly gives the radius g(x) as a positive real.
 
@@ -1333,7 +1210,10 @@ Proof
  >> POP_ASSUM MATCH_MP_TAC >> simp [] >> fs []
 QED
 
-(* 18.16 Approximation Theorem [2, p.312] *)
+(* 18.16 Approximation Theorem [2, p.312]
+
+   NOTE: HENSTOCK_LEMMA (Saks-Henstock Lemma) is needed.
+ *)
 Theorem approximation_thm :
     !E e. indicator E integrable_on UNIV /\ 0 < e ==>
           ?J. (!i. compact (J i)) /\
@@ -1342,7 +1222,13 @@ Theorem approximation_thm :
                m_lebesgue E <= suminf (m_lebesgue o J) /\
                suminf (m_lebesgue o J) <= m_lebesgue E + e
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> Know ‘E IN measurable_sets lebesgue’
+ >- (rw [lebesgue_def, line_def] \\
+     MATCH_MP_TAC INTEGRABLE_ON_SUBINTERVAL \\
+     Q.EXISTS_TAC ‘UNIV’ >> simp [])
+ >> DISCH_TAC
+ >> cheat
 QED
 
 Theorem pos_fn_integral_fn_seq :

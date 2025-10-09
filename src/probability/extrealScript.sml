@@ -5203,8 +5203,9 @@ Proof
       Cases_on `e <= inf p` >> fs [] ]
 QED
 
-(* `open interval` of extreal sets. c.f. `OPEN_interval` / `CLOSE_interval`
-    in real_toplogyTheory, `half_open_interval` in borelTheory *)
+(* `open interval` of extreal sets. c.f. `OPEN_interval` / `CLOSED_interval`
+   in real_toplogyTheory, `right_open_interval` in real_borelTheory.
+ *)
 Definition open_interval_def :
     open_interval (a :extreal) b = {x | a < x /\ x < b}
 End
