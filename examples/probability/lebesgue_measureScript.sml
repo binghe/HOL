@@ -1236,12 +1236,12 @@ QED
    NOTE: HENSTOCK_LEMMA (Saks-Henstock Lemma) is needed.
  *)
 Theorem approximation_thm :
-    !E e. indicator E integrable_on UNIV /\ 0 < e /\ e <> PosInf ==>
+    !E e. indicator E integrable_on UNIV /\ 0 < e ==>
           ?J. (!i. compact (J i)) /\
               (!i j. J i <> J j ==> nonoverlapping (J i) (J j)) /\
                E SUBSET BIGUNION (IMAGE J UNIV) /\
                m_lebesgue E <= suminf (m_lebesgue o J) /\
-               suminf (m_lebesgue o J) <= m_lebesgue E + e
+               suminf (m_lebesgue o J) <= m_lebesgue E + Normal e
 Proof
     rpt STRIP_TAC
  >> Know ‘E IN measurable_sets lebesgue’
@@ -1256,9 +1256,6 @@ Proof
  >- (rw [Once EXTENSION, IN_INTERVAL, REAL_NOT_LE] \\
      Q.EXISTS_TAC ‘b + 1’ >> simp [])
  >> Rewr
- >> ‘e <> NegInf’ by PROVE_TAC [pos_not_neginf, lt_imp_le]
- >> ‘?r. 0 < r /\ e = Normal r’
-      by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_lt_eq]
  >> DISCH_THEN drule
  >> STRIP_TAC (* this asserts ‘B’ *)
  >> POP_ASSUM (MP_TAC o Q.SPECL [‘-B’, ‘B’])
@@ -1267,7 +1264,7 @@ Proof
  >> Q.PAT_X_ASSUM ‘(_ has_integral_compact_interval z) _’ MP_TAC
  >> simp [has_integral_compact_interval]
  >> DISCH_THEN drule
- >> STRIP_TAC (* this asserts ‘d’, finally *)
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘g’ STRIP_ASSUME_TAC)
  >> cheat
 QED
 

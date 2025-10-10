@@ -17183,8 +17183,9 @@ val _ = hide "summable";
 
 val _ = set_fixity "sums" (Infix(NONASSOC, 450));
 
-Definition sums_def : (* cf. seqTheory.sums *)
-   (f sums l) s = ((\n. sum (s INTER { 0n..n}) f) --> l) sequentially
+(* cf. seqTheory.sums, use [REAL_SUM_IMAGE_sum] to convert “sum” to “SIGMA”. *)
+Definition sums_def :
+   (f sums l) s = ((\n. sum (s INTER {0..n}) f) --> l) sequentially
 End
 val sums = sums_def;
 
