@@ -1236,7 +1236,7 @@ QED
    NOTE: HENSTOCK_LEMMA (Saks-Henstock Lemma) is needed.
  *)
 Theorem approximation_thm :
-    !E e. indicator E integrable_on UNIV /\ 0 < e ==>
+    !E e. indicator E integrable_on UNIV /\ 0 < e /\ e <> PosInf ==>
           ?J. (!i. compact (J i)) /\
               (!i j. J i <> J j ==> nonoverlapping (J i) (J j)) /\
                E SUBSET BIGUNION (IMAGE J UNIV) /\
@@ -1249,6 +1249,25 @@ Proof
      MATCH_MP_TAC INTEGRABLE_ON_SUBINTERVAL \\
      Q.EXISTS_TAC ‘UNIV’ >> simp [])
  >> DISCH_TAC
+ >> fs [integrable_on] (* this asserts ‘y’ *)
+ >> Q.PAT_X_ASSUM ‘(_ has_integral y) _’ MP_TAC
+ >> simp [has_integral_def]
+ >> Know ‘~?a b. interval [a,b] = UNIV’
+ >- (rw [Once EXTENSION, IN_INTERVAL, REAL_NOT_LE] \\
+     Q.EXISTS_TAC ‘b + 1’ >> simp [])
+ >> Rewr
+ >> ‘e <> NegInf’ by PROVE_TAC [pos_not_neginf, lt_imp_le]
+ >> ‘?r. 0 < r /\ e = Normal r’
+      by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_lt_eq]
+ >> DISCH_THEN drule
+ >> STRIP_TAC (* this asserts ‘B’ *)
+ >> POP_ASSUM (MP_TAC o Q.SPECL [‘-B’, ‘B’])
+ >> impl_tac >- rw [BALL_INTERVAL, IN_INTERVAL, SUBSET_DEF, REAL_LT_IMP_LE]
+ >> STRIP_TAC (* this asserts ‘z’ *)
+ >> Q.PAT_X_ASSUM ‘(_ has_integral_compact_interval z) _’ MP_TAC
+ >> simp [has_integral_compact_interval]
+ >> DISCH_THEN drule
+ >> STRIP_TAC (* this asserts ‘d’, finally *)
  >> cheat
 QED
 
