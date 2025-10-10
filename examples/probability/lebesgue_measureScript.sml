@@ -1210,6 +1210,27 @@ Proof
  >> POP_ASSUM MATCH_MP_TAC >> simp [] >> fs []
 QED
 
+(* NOTE: This version uses “gauge” of integrationTheory.gauge_def *)
+Theorem dyadic_covering_lemma' :
+    !g E. gauge g /\ E <> {} ==>
+          ?J t. (!i. compact (J i) /\ t i IN E INTER J (i :num) /\
+                     E INTER J i SUBSET g (t i)) /\
+                (!i j. J i <> J j ==> nonoverlapping (J i) (J j)) /\
+                 E SUBSET BIGUNION (IMAGE J UNIV)
+Proof
+    rpt STRIP_TAC
+ >> Know ‘?d. gauge UNIV d /\ !x. cball (x,d x) SUBSET (g x)’
+ >- (fs [gauge_def, OPEN_CONTAINS_CBALL, FORALL_AND_THM,
+         GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM] \\
+     Q.EXISTS_TAC ‘\x. f x x’ \\
+     rw [integralTheory.gauge])
+ >> STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘d’, ‘E’] dyadic_covering_lemma)
+ >> rw [FORALL_AND_THM]
+ >> qexistsl_tac [‘J’, ‘t’] >> rw []
+ >> Q_TAC (TRANS_TAC SUBSET_TRANS) ‘cball (t i,d (t i))’ >> art []
+QED
+
 (* 18.16 Approximation Theorem [2, p.312]
 
    NOTE: HENSTOCK_LEMMA (Saks-Henstock Lemma) is needed.
