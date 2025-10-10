@@ -11,6 +11,16 @@
 (*   Enriched by Chun Tian (Australian National University, 2024 - 2025)     *)
 (* ========================================================================= *)
 
+(*
+Theory distribution
+Ancestors
+  combin arithmetic logroot pred_set topology pair cardinal real
+  seq transc real_sigma iterate real_topology derivative metric
+  nets sigma_algebra extreal_base extreal real_borel measure
+  borel lebesgue martingale probability
+Libs
+  numLib hurdUtils pred_setLib tautLib jrhUtils realLib
+ *)
 open HolKernel Parse boolLib bossLib;
 
 open combinTheory arithmeticTheory numLib logrootTheory hurdUtils pred_setLib

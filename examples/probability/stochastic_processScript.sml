@@ -4,6 +4,15 @@
 (* Author: Chun Tian (binghe) <binghe.lisp@gmail.com> (2021 - 2025)          *)
 (* ========================================================================= *)
 
+(*
+Theory stochastic_process
+Ancestors
+  combin arithmetic pred_set poset list fcp topology real iterate
+  real_sigma real_topology extreal_base extreal sigma_algebra
+  real_borel borel measure lebesgue martingale probability
+Libs
+  pred_setLib numLib hurdUtils fcpLib realLib
+ *)
 open HolKernel Parse boolLib bossLib;
 
 open combinTheory arithmeticTheory pred_setTheory pred_setLib numLib hurdUtils

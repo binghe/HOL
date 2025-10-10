@@ -14,6 +14,16 @@
 (*  Equivalence of Lebesgue and Gauge (Henstock-Kurzweil) Integration        *)
 (* ========================================================================= *)
 
+(*
+Theory lebesgue_measure
+Ancestors
+  prim_rec arithmetic num pred_set combin cardinal ordinal
+  relation real seq transc real_sigma iterate topology metric
+  real_topology integration sigma_algebra extreal real_borel
+  measure borel
+Libs
+  numLib pred_setLib hurdUtils jrhUtils realLib
+ *)
 open HolKernel Parse boolLib bossLib;
 
 open prim_recTheory arithmeticTheory numTheory numLib pred_setTheory pred_setLib
@@ -1233,10 +1243,14 @@ QED
 
 (* 18.16 Approximation Theorem [2, p.312]
 
-   NOTE: HENSTOCK_LEMMA (Saks-Henstock Lemma) is needed.
+   NOTE: HENSTOCK_LEMMA (Saks-Henstock Lemma) is needed here.
+
+   TODO: Check if ‘E <> {}’ can be removed (as a trivial case).
+
+   TODO: Is “m_lebesgue E = Normal y” true?
  *)
 Theorem approximation_thm :
-    !E e. indicator E integrable_on UNIV /\ 0 < e ==>
+    !E e. indicator E integrable_on UNIV /\ E <> {} /\ 0 < e ==>
           ?J. (!i. compact (J i)) /\
               (!i j. J i <> J j ==> nonoverlapping (J i) (J j)) /\
                E SUBSET BIGUNION (IMAGE J UNIV) /\
@@ -1265,6 +1279,10 @@ Proof
  >> simp [has_integral_compact_interval]
  >> DISCH_THEN drule
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘g’ STRIP_ASSUME_TAC)
+ (* applying dyadic_covering_lemma' *)
+ >> MP_TAC (Q.SPECL [‘g’, ‘E’] dyadic_covering_lemma') >> rw []
+ (* NOTE: J may be an infinite sequence containing duplicated elements! *)
+ >> Q.EXISTS_TAC ‘J’ >> simp []
  >> cheat
 QED
 
@@ -1485,332 +1503,6 @@ Proof
  >> cheat
 QED
 
-(* ------------------------------------------------------------------------- *)
-(* Non-measurable sets                                                       *)
-(* ------------------------------------------------------------------------- *)
-
-open ordinalTheory;
-
-Definition Borel_pointclass_def :
-   (additive_class (top :'a topology) (ord :'b ordinal) =
-           if ord = 0o then {}
-      else if ord = 1o then open_in top
-      else COUNTABLE UNION_OF
-             (BIGUNION (IMAGE (\i. multiplicative_class top i) (preds ord))))
-    /\
-   (multiplicative_class (top :'a topology) (ord :'b ordinal) =
-           if ord = 0o then {}
-      else if ord = 1o then closed_in top
-      else COUNTABLE INTERSECTION_OF
-             (BIGUNION (IMAGE (\i. additive_class top i) (preds ord)))
-           relative_to (topspace top))
-Termination
- (* val _ = Defn.tgoal (Hol_defn "Borel_pointclass" Borel_pointclass_def);
-    The termination tactics are provided by Michael Norrish:
-  *)
-    WF_REL_TAC ‘inv_image ordlt (\s. case s of INL (x,a) => a | INR (y,a) => a)’
- >> rw [ordlt_WF]
-End
-
-Theorem additive_class_def :
-    !(top :'a topology).
-       (additive_class top (0o :'b ordinal) = {}) /\
-       (additive_class top (1o :'b ordinal) = open_in top) /\
-       !ord. 1o < (ord :'b ordinal) ==>
-             additive_class top ord =
-             COUNTABLE UNION_OF
-               (BIGUNION (IMAGE (\i. multiplicative_class top i) (preds ord)))
-Proof
-    NTAC 2 (rw [Once Borel_pointclass_def])
-QED
-
-Theorem multiplicative_class_def :
-    !(top :'a topology).
-       (multiplicative_class top (0o :'b ordinal) = {}) /\
-       (multiplicative_class top (1o :'b ordinal) = closed_in top) /\
-       !ord. 1o < (ord :'b ordinal) ==>
-             multiplicative_class top ord =
-             COUNTABLE INTERSECTION_OF
-               (BIGUNION (IMAGE (\i. additive_class top i) (preds ord)))
-             relative_to (topspace top)
-Proof
-    NTAC 2 (rw [Once Borel_pointclass_def])
-QED
-
-Definition ambiguous_class_def :
-    ambiguous_class (top :'a topology) (ord :'b ordinal) =
-      (additive_class top ord) INTER (multiplicative_class top ord)
-End
-
-Theorem preds_2[local] :
-    preds (2o :'b ordinal) = {0o; 1o}
-Proof
-    rw [preds_nat]
- >> ‘count 2 = {0; 1}’ by rw [Once EXTENSION]
- >> POP_ORW
- >> rw [Once EXTENSION]
- >> EQ_TAC >> rw [] (* 2 subgoals *)
- >| [ Q.EXISTS_TAC ‘0’ >> rw [],
-      Q.EXISTS_TAC ‘1’ >> rw [] ]
-QED
-
-Theorem additive_class_2 :
-    !(top :'a topology). additive_class top (2o :'b ordinal) = fsigma_in top
-Proof
-    rw [additive_class_def, multiplicative_class_def, fsigma_in, preds_2]
-QED
-
-Theorem multiplicative_class_2 :
-    !(top :'a topology). multiplicative_class top (2o :'b ordinal) = gdelta_in top
-Proof
-    rw [additive_class_def, multiplicative_class_def, gdelta_in, preds_2]
-QED
-
-Overload gdelta_sigma_in =
-  “\top. COUNTABLE UNION_OF (gdelta_in top)”
-Overload fsigma_delta_in =
-  “\top. COUNTABLE INTERSECTION_OF (fsigma_in top) relative_to (topspace top)”
-
-Theorem preds_3[local] :
-    preds (3o :'b ordinal) = {0o; 1o; 2o}
-Proof
-    rw [preds_nat]
- >> ‘count 3 = {0; 1; 2}’ by rw [Once EXTENSION]
- >> POP_ORW
- >> rw [Once EXTENSION]
- >> EQ_TAC >> rw [] (* 3 subgoals *)
- >| [ Q.EXISTS_TAC ‘0’ >> rw [],
-      Q.EXISTS_TAC ‘1’ >> rw [],
-      Q.EXISTS_TAC ‘2’ >> rw [] ]
-QED
-
-Theorem additive_class_3 :
-    !(top :'a topology).
-        metrizable_space top ==>
-        additive_class top (3o :'b ordinal) = gdelta_sigma_in top
-Proof
-    rw [additive_class_def, multiplicative_class_def, gdelta_in, preds_2, preds_3]
- >> AP_TERM_TAC
- >> rw [GSYM gdelta_in]
- >> Suff ‘closed_in top SUBSET gdelta_in top’ >- SET_TAC []
- >> METIS_TAC [SUBSET_DEF, IN_APP, CLOSED_IMP_GDELTA_IN]
-QED
-
-Theorem multiplicative_class_3 :
-    !(top :'a topology).
-        metrizable_space top ==>
-        multiplicative_class top (3o :'b ordinal) = fsigma_delta_in top
-Proof
-    rw [additive_class_def, multiplicative_class_def, fsigma_in, preds_2, preds_3]
- >> GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) empty_rewrites
-      [COUNTABLE_INTERSECTION_OF_RELATIVE_TO]
- >> Suff ‘open_in top UNION countable UNION_OF closed_in top =
-          countable UNION_OF closed_in top relative_to topspace top’ >- Rewr
- >> rw [GSYM fsigma_in, FSIGMA_IN_RELATIVE_TO_TOPSPACE]
- >> Suff ‘open_in top SUBSET fsigma_in top’ >- SET_TAC []
- >> METIS_TAC [SUBSET_DEF, IN_APP, OPEN_IMP_FSIGMA_IN]
-QED
-
-Theorem additive_class_mono :
-    !(top :'a topology). metrizable_space top ==>
-        !o1 (o2 :'b ordinal). o1 <= o2 ==>
-            additive_class top o1 SUBSET additive_class top o2
-Proof
-    NTAC 2 STRIP_TAC
- >> Q.X_GEN_TAC ‘o1’
- >> HO_MATCH_MP_TAC ord_induction
- >> rpt STRIP_TAC
- >> cheat
-QED
-
-(* ========================================================================= *)
-(* Cantor's Ternary Set, see, e.g. [1, p.4,59] and [6]                       *)
-(* ========================================================================= *)
-
-(* Recursive construction Cantor Set C(n), a set of reals (C is the generator)
-
-   C(0) = [0,1]
-
-   For each closed interval in C(n), denoted by [a,b], we divide it into three
-   parts:
-
-   [a, a+1/3*(b-a)], (a+1/3*(b-a), a+2/3*(b-a)) and [a+2/3*(b-a), b]
-
-   Then C(n+1) contains the 1st and 3rd (closed) intervals.
- *)
-Definition Cantor_def :
-    Cantor      0  = { interval[0,1] } /\
-    Cantor (SUC n) = BIGUNION (IMAGE (\i. let a = interval_lowerbound i;
-                                              b = interval_upperbound i in
-                                          { interval[a, a + 1 / 3 * (b - a)];
-                                            interval[a + 2 / 3 * (b - a), b] })
-                              (Cantor n))
-End
-
-(* This merges the set of closed intervals in ‘Cantor n’ to single set of reals *)
-Definition Cantor_set_def :
-    Cantor_set n = BIGUNION (Cantor n)
-End
-
-(* The final "Cantor's ternary set" is a BIGINTER of all ‘Cantor_set n’ *)
-Definition Cantor_ternary_set_def :
-    Cantor_ternary_set = BIGINTER (IMAGE Cantor_set UNIV)
-End
-
-Theorem Cantor_interval_lemma[local] :
-    a <= b ==> a + 2 / 3 * (b - a) <= (b :real)
-Proof
-    DISCH_TAC
- >> ONCE_REWRITE_TAC [REAL_ADD_COMM]
- >> REWRITE_TAC [GSYM REAL_LE_SUB_LADD]
- >> ‘0 <= b - a’ by PROVE_TAC [REAL_SUB_LE]
- >> Q.ABBREV_TAC ‘c = b - a’
- >> Suff ‘2 / 3 * c <= 1 * c’ >- rw []
- >> MATCH_MP_TAC REAL_LE_RMUL_IMP >> RW_TAC real_ss []
-QED
-
-Theorem Cantor_closed_intervals[local] :
-    !n s. s IN Cantor n ==> ?a b. a <= b /\ s = interval[a,b]
-Proof
-    Induct_on ‘n’
- >- (rw [Cantor_def] \\
-     qexistsl_tac [‘0’, ‘1’] >> RW_TAC real_ss [])
- >> rw [Cantor_def]
- >> Q.PAT_X_ASSUM ‘!s. s IN Cantor n ==> P’ (MP_TAC o (Q.SPEC ‘i’))
- >> RW_TAC std_ss [] (* this asserts a and b *)
- >> fs [INTERVAL_LOWERBOUND, INTERVAL_UPPERBOUND] (* 2 subgoals *)
- >| [ (* goal 1 (of 2) *)
-      qexistsl_tac [‘a’, ‘a + 1 / 3 * (b - a)’] \\
-      simp [REAL_SUB_LE],
-      (* goal 2 (of 2) *)
-      qexistsl_tac [‘a + 2 / 3 * (b - a)’, ‘b’] >> simp [] \\
-      MATCH_MP_TAC Cantor_interval_lemma >> art [] ]
-QED
-
-Theorem Cantor_itself_not_empty[local]:
-    !n. Cantor n <> EMPTY
-Proof
-    Induct_on ‘n’
- >- rw [GSYM MEMBER_NOT_EMPTY, Cantor_def]
- >> fs [GSYM MEMBER_NOT_EMPTY, Cantor_def]
- >> rename1 ‘i IN Cantor n’
- >> Q.ABBREV_TAC
-   ‘s = {interval [interval_lowerbound i,
-                   interval_lowerbound i +
-                   1 / 3 * (interval_upperbound i - interval_lowerbound i)];
-         interval [interval_lowerbound i +
-                   2 / 3 * (interval_upperbound i - interval_lowerbound i),
-                   interval_upperbound i]}’
- >> qexistsl_tac [‘CHOICE s’, ‘s’]
- >> CONJ_TAC
- >- (MATCH_MP_TAC CHOICE_DEF \\
-     rw [GSYM MEMBER_NOT_EMPTY, Abbr ‘s’] \\
-     METIS_TAC [])
- >> Q.EXISTS_TAC ‘i’ >> METIS_TAC []
-QED
-
-Theorem Cantor_elements_not_empty[local] :
-    !n s. s IN Cantor n ==> s <> EMPTY
-Proof
-    Induct_on ‘n’
- >- rw [Cantor_def, INTERVAL_NE_EMPTY]
- >> rw [Cantor_def, INTERVAL_NE_EMPTY]
- >> ‘?a b. a <= b /\ i = CLOSED_interval[a,b]’
-      by METIS_TAC [Cantor_closed_intervals]
- >> fs [INTERVAL_LOWERBOUND, INTERVAL_UPPERBOUND, INTERVAL_NE_EMPTY, REAL_SUB_LE]
- >> MATCH_MP_TAC Cantor_interval_lemma >> art []
-QED
-
-Theorem Cantor_set_not_empty :
-    !n. Cantor_set n <> EMPTY
-Proof
-    rw [Cantor_set_def, GSYM MEMBER_NOT_EMPTY]
- >> ‘?s. s IN Cantor n’ by METIS_TAC [Cantor_itself_not_empty, MEMBER_NOT_EMPTY]
- >> ‘?x. x IN s’ by METIS_TAC [Cantor_elements_not_empty, MEMBER_NOT_EMPTY]
- >> qexistsl_tac [‘x’, ‘s’] >> art []
-QED
-
-Theorem Cantor_set_decreasing :
-    !i j. i <= j ==> Cantor_set j SUBSET Cantor_set i
-Proof
-    rpt GEN_TAC
- >> Suff ‘!i j. i < j ==> Cantor_set j SUBSET Cantor_set i’
- >- (rpt STRIP_TAC \\
-    ‘i = j \/ i < j’ by rw [] >> rw [SUBSET_REFL])
- >> HO_MATCH_MP_TAC TRANSITIVE_STEPWISE_LT (* real_topologyTheory *)
- >> rpt STRIP_TAC >- METIS_TAC [SUBSET_TRANS]
- >> rename1 ‘Cantor_set (SUC n) SUBSET Cantor_set n’
- >> REWRITE_TAC [Cantor_set_def, Once Cantor_def]
- >> rw [SUBSET_DEF, IN_BIGUNION_IMAGE, IN_BIGUNION]
- (* 2 subgoals, same initial tactics *)
- >> Q.EXISTS_TAC ‘i’ >> art []
- >> ‘?a b. a <= b /\ i = CLOSED_interval[a,b]’
-      by METIS_TAC [Cantor_closed_intervals]
- >> fs [INTERVAL_LOWERBOUND, INTERVAL_UPPERBOUND, INTERVAL_NE_EMPTY, REAL_SUB_LE]
- >| [ (* goal 1 (of 2) *)
-      Suff ‘interval[a,a + 1 / 3 * (b - a)] SUBSET interval[a,b]’
-      >- rw [SUBSET_DEF] \\
-      rw [SUBSET_INTERVAL] \\
-      ONCE_REWRITE_TAC [REAL_ADD_COMM] \\
-      REWRITE_TAC [GSYM REAL_LE_SUB_LADD] \\
-      Q.ABBREV_TAC ‘c = b - a’ \\
-      Suff ‘1 / 3 * c <= 1 * c’ >- rw [] \\
-      MATCH_MP_TAC REAL_LE_RMUL_IMP >> RW_TAC real_ss [],
-      (* goal 2 (of 2) *)
-      Suff ‘interval[a + 2 / 3 * (b - a),b] SUBSET interval[a,b]’
-      >- rw [SUBSET_DEF] \\
-      rw [SUBSET_INTERVAL, REAL_SUB_LE] ]
-QED
-
-Theorem Cantor_set_bounded :
-    !n. Cantor_set n SUBSET interval[0,1]
-Proof
-    Induct_on ‘n’
- >- rw [Cantor_set_def, Cantor_def]
- >> MATCH_MP_TAC SUBSET_TRANS
- >> Q.EXISTS_TAC ‘Cantor_set n’ >> art []
- >> MATCH_MP_TAC Cantor_set_decreasing >> rw []
-QED
-
-(* The explicit closed formulas for the Cantor set [6] *)
-Theorem Cantor_ternary_set_explicit :
-    Cantor_ternary_set =
-    interval[0,1] DIFF
-    BIGUNION (IMAGE (\n. BIGUNION (IMAGE (\k. interval((3 * &k + 1) / 3 pow SUC n,
-                                                       (3 * &k + 2) / 3 pow SUC n))
-                                         (count (3 ** n)))) UNIV)
-Proof
- (* applying GEN_COMPL_BIGUNION_IMAGE *)
-    Q.ABBREV_TAC ‘sp = interval [0,1]’
- >> Q.ABBREV_TAC
-   ‘g = \n k. interval ((3 * &k + 1) / 3 pow SUC n,(3 * &k + 2) / 3 pow SUC n)’
- >> simp []
- >> Q.ABBREV_TAC ‘f = \n. BIGUNION (IMAGE (\k. g n k) (count (3 ** n)))’
- >> Know ‘sp DIFF BIGUNION (IMAGE f univ(:num)) =
-          BIGINTER (IMAGE (\n. sp DIFF f n) univ(:num))’
- >- (MATCH_MP_TAC GEN_COMPL_BIGUNION_IMAGE \\
-     rw [Abbr ‘f’, SUBSET_DEF, IN_BIGUNION_IMAGE] \\
-     POP_ASSUM MP_TAC \\
-     Suff ‘g n k SUBSET sp’ >- rw [SUBSET_DEF] \\
-     rw [SUBSET_INTERVAL, Abbr ‘sp’, Abbr ‘g’] \\
-     REWRITE_TAC [pow, GSYM REAL_ADD, GSYM REAL_MUL] \\
-    ‘3 * &k + (2 :real) = 3 * (&k + 2 / 3)’ by REAL_ARITH_TAC >> POP_ORW \\
-     MATCH_MP_TAC REAL_LE_LMUL_IMP >> rw [] \\
-    ‘k + 1 <= 3 ** n’ by rw [] \\
-     MATCH_MP_TAC REAL_LE_TRANS >> Q.EXISTS_TAC ‘&k + 1’ \\
-     reverse CONJ_TAC >- rw [REAL_OF_NUM_POW] \\
-     rw [REAL_LE_LADD])
- >> Rewr'
- (* applying GEN_COMPL_FINITE_UNION *)
- >> simp [Abbr ‘f’]
- >> Know ‘!n. sp DIFF BIGUNION (IMAGE (\k. g n k) (count (3 ** n))) =
-              BIGINTER (IMAGE (\i. sp DIFF (\k. g n k) i) (count (3 ** n)))’
- >- (Q.X_GEN_TAC ‘n’ \\
-     MATCH_MP_TAC GEN_COMPL_FINITE_UNION >> rw [])
- >> Rewr'
- >> cheat
-QED
-
 val _ = export_theory ();
 val _ = html_theory "lebesgue_measure";
 
@@ -1819,10 +1511,7 @@ val _ = html_theory "lebesgue_measure";
   [1] Schilling, R.L.: Measures, Integrals and Martingales (Second Edition).
       Cambridge University Press (2017).
   [2] Bartle, R.G.: A Modern Theory of Integration. American Mathematical Soc. (2001).
-  [3] Srivastava, S.M.: A Course on Borel Sets. Springer, Berlin, Heidelberg (1998).
-  [4] Kechris, A.S.: Classical Descriptive Set Theory. Springer-Verlag, New York (1995).
   [5] Wikipedia: https://en.wikipedia.org/wiki/Henri_Lebesgue
-  [6] Wikipedia: https://en.wikipedia.org/wiki/Cantor_set
   [7] Swartz, C.W., Kurtz, D.S.: Theories Of Integration: The Integrals Of Riemann,
       Lebesgue, Henstock-kurzweil, And Mcshane (2nd Edition).
       World Scientific Publishing Company (2011).

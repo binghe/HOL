@@ -4,6 +4,16 @@
 (* Author: Chun Tian (binghe) <binghe.lisp@gmail.com> (2020 - 2023)          *)
 (* ========================================================================= *)
 
+(*
+Theory large_number
+Ancestors
+  combin arithmetic pred_set logroot topology list real seq
+  transc real_sigma iterate real_topology metric sigma_algebra
+  extreal measure borel lebesgue martingale probability
+  stochastic_process
+Libs
+  pred_setLib numLib hurdUtils realLib
+ *)
 open HolKernel Parse boolLib bossLib;
 
 open combinTheory arithmeticTheory pred_setTheory pred_setLib logrootTheory
