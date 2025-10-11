@@ -1248,8 +1248,10 @@ End
 (* NOTE: The other direction is not true. For example, UNIV is in lebesgue,
    but “indicator UNIV integrable_on UNIV” doesn't hold, as the integral
    is clearly infinity, not a normal real value.
+
+   This set is denoted as I(R) in [2, p.300] (Definition 18.1).
  *)
-Theorem integrable_sets_SUBSET_lebesgue :
+Theorem integrable_sets_subset_lebesgue :
     integrable_sets SUBSET measurable_sets lebesgue
 Proof
     rw [integrable_sets_def, SUBSET_DEF, lebesgue_def, line_def]
@@ -1260,11 +1262,11 @@ QED
 (* |- !E. indicator E integrable_on univ(:real) ==>
           E IN measurable_sets lebesgue
  *)
-Theorem indicator_integrable_on_univ_imp_lebesgue =
-        integrable_sets_SUBSET_lebesgue
+Theorem integrable_indicator_imp_lebesgue =
+        integrable_sets_subset_lebesgue
      |> SRULE [SUBSET_DEF, integrable_sets_def] |> Q.SPEC ‘E’ |> GEN_ALL
 
-Theorem indicator_has_integral_imp_lebesgue :
+Theorem has_integral_indicator_imp_lebesgue :
     !E y. (indicator E has_integral y) UNIV ==> m_lebesgue E = Normal y
 Proof
     rw [lebesgue_def]
@@ -1277,7 +1279,38 @@ Proof
      MATCH_MP_TAC INTEGRABLE_ON_SUBINTERVAL \\
      Q.EXISTS_TAC ‘UNIV’ >> simp [])
  >> DISCH_TAC
+ (* applying has_integral_indicator_UNIV *)
+ >> qabbrev_tac ‘f = \k. indicator (E INTER line k)’
+ >> Know ‘!k. f k integrable_on UNIV’
+ >- (rw [integrable_on, Abbr ‘f’, has_integral_indicator_UNIV] \\
+     fs [integrable_on])
+ >> DISCH_TAC
+ >> Know ‘!k x. f k x <= f (SUC k) x’
+ >- (rw [Abbr ‘f’] \\
+     MATCH_MP_TAC INDICATOR_MONO \\
+     rw [line_def, SUBSET_DEF, IN_INTERVAL] >| (* 2 subgoals *)
+     [ Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘-&k’ >> simp [],
+       Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘&k’ >> simp [] ])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘g = indicator E’
+ >> Know ‘!x. ((\k. f k x) --> g x) sequentially’
+ >- (rw [LIM_SEQUENTIALLY, dist, Abbr ‘f’, Abbr ‘g’] \\
+     MP_TAC (Q.SPEC ‘abs x’ SIMP_REAL_ARCH) \\
+     rw [ABS_BOUNDS] \\
+    ‘x IN line n’ by simp [line] \\
+     Q.EXISTS_TAC ‘n’ >> rw [] \\
+    ‘line n SUBSET line k’ by PROVE_TAC [LINE_MONO] \\
+    ‘x IN line k’ by PROVE_TAC [SUBSET_DEF] \\
+     simp [indicator])
+ >> DISCH_TAC
  (* applying MONOTONE_CONVERGENCE_INCREASING *)
+ >> MP_TAC (Q.SPECL [‘f’, ‘g’, ‘UNIV’] MONOTONE_CONVERGENCE_INCREASING)
+ >> simp []
+ >> impl_tac (* bounded *)
+ >- (simp [bounded_def] \\
+     Q.EXISTS_TAC ‘y’ >> rw [] \\
+     cheat)
+ (* stage work *)
  >> cheat
 QED
 
