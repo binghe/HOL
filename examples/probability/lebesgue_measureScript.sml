@@ -1241,6 +1241,46 @@ Proof
  >> Q_TAC (TRANS_TAC SUBSET_TRANS) ‘cball (t i,d (t i))’ >> art []
 QED
 
+Definition integrable_sets_def :
+    integrable_sets = {E | indicator E integrable_on UNIV}
+End
+
+(* NOTE: The other direction is not true. For example, UNIV is in lebesgue,
+   but “indicator UNIV integrable_on UNIV” doesn't hold, as the integral
+   is clearly infinity, not a normal real value.
+ *)
+Theorem integrable_sets_SUBSET_lebesgue :
+    integrable_sets SUBSET measurable_sets lebesgue
+Proof
+    rw [integrable_sets_def, SUBSET_DEF, lebesgue_def, line_def]
+ >> MATCH_MP_TAC INTEGRABLE_ON_SUBINTERVAL
+ >> Q.EXISTS_TAC ‘UNIV’ >> simp []
+QED
+
+(* |- !E. indicator E integrable_on univ(:real) ==>
+          E IN measurable_sets lebesgue
+ *)
+Theorem indicator_integrable_on_univ_imp_lebesgue =
+        integrable_sets_SUBSET_lebesgue
+     |> SRULE [SUBSET_DEF, integrable_sets_def] |> Q.SPEC ‘E’ |> GEN_ALL
+
+Theorem indicator_has_integral_imp_lebesgue :
+    !E y. (indicator E has_integral y) UNIV ==> m_lebesgue E = Normal y
+Proof
+    rw [lebesgue_def]
+ >> Know ‘indicator E integrable_on UNIV’
+ >- (simp [integrable_on] \\
+     Q.EXISTS_TAC ‘y’ >> art [])
+ >> DISCH_TAC
+ >> Know ‘!n. (indicator E) integrable_on (line n)’
+ >- (rw [line_def] \\
+     MATCH_MP_TAC INTEGRABLE_ON_SUBINTERVAL \\
+     Q.EXISTS_TAC ‘UNIV’ >> simp [])
+ >> DISCH_TAC
+ (* applying MONOTONE_CONVERGENCE_INCREASING *)
+ >> cheat
+QED
+
 (* 18.16 Approximation Theorem [2, p.312]
 
    NOTE: HENSTOCK_LEMMA (Saks-Henstock Lemma) is needed here.
