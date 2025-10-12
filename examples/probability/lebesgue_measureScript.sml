@@ -1262,7 +1262,7 @@ QED
 (* |- !E. indicator E integrable_on univ(:real) ==>
           E IN measurable_sets lebesgue
  *)
-Theorem integrable_indicator_imp_lebesgue =
+Theorem integrable_indicator_imp_sets_lebesgue =
         integrable_sets_subset_lebesgue
      |> SRULE [SUBSET_DEF, integrable_sets_def] |> Q.SPEC ‘E’ |> GEN_ALL
 
@@ -1293,6 +1293,15 @@ Proof
  >> MATCH_MP_TAC INTEGRAL_ABS_BOUND_INTEGRAL >> rw []
  >> Suff ‘abs (f x) = f x’ >- (Rewr' >> simp [])
  >> simp [ABS_REFL]
+QED
+
+Theorem INTEGRAL_HAS_INTEGRAL :
+    !f s y. (f has_integral y) s ==> integral s f = y
+Proof
+    RW_TAC std_ss [integral_def]
+ >> SELECT_ELIM_TAC
+ >> CONJ_TAC >- (Q.EXISTS_TAC ‘y’ >> art [])
+ >> METIS_TAC [HAS_INTEGRAL_UNIQUE]
 QED
 
 Theorem has_integral_indicator_imp_lebesgue :
@@ -1335,12 +1344,8 @@ Proof
  >> Know ‘bounded {integral UNIV (f n) | n | T}’
  >- (simp [bounded_def] \\
      Q.EXISTS_TAC ‘y’ >> rw [] \\
-     Know ‘integral UNIV g = y’
-     >- (simp [integral_def] \\
-         SELECT_ELIM_TAC \\
-         CONJ_TAC >- (Q.EXISTS_TAC ‘y’ >> art []) \\
-         METIS_TAC [HAS_INTEGRAL_UNIQUE]) \\
-     DISCH_THEN (REWRITE_TAC o wrap o SYM) \\
+    ‘integral UNIV g = y’ by PROVE_TAC [INTEGRAL_HAS_INTEGRAL] \\
+     POP_ASSUM (REWRITE_TAC o wrap o SYM) \\
      MATCH_MP_TAC INTEGRAL_ABS_BOUND_INTEGRAL >> rw [] \\
      Know ‘abs (f n x) = f n x’
      >- (MATCH_MP_TAC ABS_EQ_POS \\
@@ -1357,9 +1362,13 @@ Proof
      CONJ_TAC >- (Q.EXISTS_TAC ‘y’ >> art []) \\
      METIS_TAC [HAS_INTEGRAL_UNIQUE])
  >> Rewr'
+ >> Know ‘!n. integral (line n) g = integral UNIV (f n)’
+ >- (rw [Once EQ_SYM_EQ, Abbr ‘g’, Abbr ‘f’] \\
+     simp [integral_indicator_UNIV])
+ >> Rewr'
  >> DISCH_TAC
- >> qabbrev_tac ‘s = {integral (line n) g | n | T}’
- >> Know ‘{Normal (integral (line n) g) | n | T} = IMAGE Normal s’
+ >> qabbrev_tac ‘s = {integral UNIV (f n) | n | T}’
+ >> Know ‘{Normal (integral UNIV (f n)) | n | T} = IMAGE Normal s’
  >- (rw [Once EXTENSION, Abbr ‘s’] \\
      METIS_TAC [])
  >> Rewr'
@@ -1367,14 +1376,46 @@ Proof
  >> Know ‘sup (IMAGE Normal s) = Normal (sup s)’
  >- (MATCH_MP_TAC sup_image_normal \\
      CONJ_TAC >- rw [Abbr ‘s’, Once EXTENSION, NOT_IN_EMPTY] \\
-     simp [Abbr ‘s’] \\
-     Know ‘!n. integral (line n) g = integral UNIV (f n)’
-     >- (rw [Once EQ_SYM_EQ, Abbr ‘g’, Abbr ‘f’] \\
-         simp [integral_indicator_UNIV]) >> Rewr' \\
-     simp [])
+     simp [Abbr ‘s’])
  >> Rewr'
  >> simp [Abbr ‘s’]
- >> cheat
+ (* applying mono_increasing_converges_to_sup *)
+ >> qabbrev_tac ‘h = \n. integral UNIV (f n)’
+ >> ‘{integral UNIV (f n) | n | T} = IMAGE h UNIV’
+      by rw [Once EXTENSION, Abbr ‘h’]
+ >> POP_ORW
+ >> ONCE_REWRITE_TAC [EQ_SYM_EQ]
+ >> MATCH_MP_TAC mono_increasing_converges_to_sup
+ >> simp [GSYM LIM_SEQUENTIALLY_SEQ]
+ >> simp [mono_increasing_def, Abbr ‘h’]
+ >> qx_genl_tac [‘i’, ‘j’] >> DISCH_TAC
+ >> MATCH_MP_TAC INTEGRAL_MONO_LEMMA >> simp []
+ >> ‘!n x. 0 <= f n x’ by rw [Abbr ‘f’, INDICATOR_POS]
+ >> simp []
+ >> rw [Abbr ‘f’]
+ >> MATCH_MP_TAC INDICATOR_MONO
+ >> Suff ‘line i SUBSET line j’ >- SET_TAC []
+ >> MATCH_MP_TAC LINE_MONO >> art []
+QED
+
+(* Another form of has_integral_indicator_imp_lebesgue *)
+Theorem integrable_indicator_imp_m_lebesgue :
+    !E y. indicator E integrable_on UNIV ==>
+          m_lebesgue E = Normal (integral UNIV (indicator E))
+Proof
+    rw [integrable_on]
+ >> ‘integral UNIV (indicator E) = y’ by PROVE_TAC [INTEGRAL_HAS_INTEGRAL]
+ >> POP_ORW
+ >> MATCH_MP_TAC has_integral_indicator_imp_lebesgue >> art []
+QED
+
+(* Yet another form *)
+Theorem integral_indicator_m_lebesgue :
+    !E y. indicator E integrable_on UNIV ==>
+          m_lebesgue E <> PosInf /\
+          integral UNIV (indicator E) = real (m_lebesgue E)
+Proof
+    rw [integrable_indicator_imp_m_lebesgue]
 QED
 
 (* 18.16 Approximation Theorem [2, p.312]
