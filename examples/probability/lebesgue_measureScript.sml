@@ -17,7 +17,7 @@
 (*
 Theory lebesgue_measure
 Ancestors
-  prim_rec arithmetic num pred_set combin cardinal ordinal
+  prim_rec arithmetic num pred_set combin cardinal While
   relation real seq transc real_sigma iterate topology metric
   real_topology integration sigma_algebra extreal real_borel
   measure borel
@@ -1266,6 +1266,35 @@ Theorem integrable_indicator_imp_lebesgue =
         integrable_sets_subset_lebesgue
      |> SRULE [SUBSET_DEF, integrable_sets_def] |> Q.SPEC ‘E’ |> GEN_ALL
 
+Theorem INTEGRAL_POS :
+    !f s. f integrable_on s /\ (!x. x IN s ==> 0 <= f x) ==>
+          0 <= integral s f
+Proof
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘g :real -> real = \x. 0’
+ >> ‘0 = abs (integral s g)’ by simp [Abbr ‘g’, INTEGRAL_0]
+ >> POP_ORW
+ >> MATCH_MP_TAC INTEGRAL_ABS_BOUND_INTEGRAL
+ >> rw [Abbr ‘g’, INTEGRABLE_0]
+QED
+
+(* This restrict version is based on INTEGRAL_ABS_BOUND_INTEGRAL *)
+Theorem INTEGRAL_MONO_LEMMA :
+    !f g s. f integrable_on s /\ g integrable_on s /\
+           (!x. x IN s ==> 0 <= f x) /\
+           (!x. x IN s ==> 0 <= g x) /\
+           (!x. x IN s ==> f x <= g x) ==> integral s f <= integral s g
+Proof
+    rpt STRIP_TAC
+ >> Know ‘integral s f = abs (integral s f)’
+ >- (simp [Once EQ_SYM_EQ, ABS_REFL] \\
+     MATCH_MP_TAC INTEGRAL_POS >> art [])
+ >> Rewr'
+ >> MATCH_MP_TAC INTEGRAL_ABS_BOUND_INTEGRAL >> rw []
+ >> Suff ‘abs (f x) = f x’ >- (Rewr' >> simp [])
+ >> simp [ABS_REFL]
+QED
+
 Theorem has_integral_indicator_imp_lebesgue :
     !E y. (indicator E has_integral y) UNIV ==> m_lebesgue E = Normal y
 Proof
@@ -1303,14 +1332,48 @@ Proof
     ‘x IN line k’ by PROVE_TAC [SUBSET_DEF] \\
      simp [indicator])
  >> DISCH_TAC
+ >> Know ‘bounded {integral UNIV (f n) | n | T}’
+ >- (simp [bounded_def] \\
+     Q.EXISTS_TAC ‘y’ >> rw [] \\
+     Know ‘integral UNIV g = y’
+     >- (simp [integral_def] \\
+         SELECT_ELIM_TAC \\
+         CONJ_TAC >- (Q.EXISTS_TAC ‘y’ >> art []) \\
+         METIS_TAC [HAS_INTEGRAL_UNIQUE]) \\
+     DISCH_THEN (REWRITE_TAC o wrap o SYM) \\
+     MATCH_MP_TAC INTEGRAL_ABS_BOUND_INTEGRAL >> rw [] \\
+     Know ‘abs (f n x) = f n x’
+     >- (MATCH_MP_TAC ABS_EQ_POS \\
+         simp [Abbr ‘f’, INDICATOR_POS]) >> Rewr' \\
+     simp [Abbr ‘f’, Abbr ‘g’] \\
+     MATCH_MP_TAC INDICATOR_MONO >> SET_TAC [])
+ >> DISCH_TAC
  (* applying MONOTONE_CONVERGENCE_INCREASING *)
  >> MP_TAC (Q.SPECL [‘f’, ‘g’, ‘UNIV’] MONOTONE_CONVERGENCE_INCREASING)
  >> simp []
- >> impl_tac (* bounded *)
- >- (simp [bounded_def] \\
-     Q.EXISTS_TAC ‘y’ >> rw [] \\
-     cheat)
- (* stage work *)
+ >> Know ‘integral UNIV g = y’
+ >- (simp [integral_def] \\
+     SELECT_ELIM_TAC \\
+     CONJ_TAC >- (Q.EXISTS_TAC ‘y’ >> art []) \\
+     METIS_TAC [HAS_INTEGRAL_UNIQUE])
+ >> Rewr'
+ >> DISCH_TAC
+ >> qabbrev_tac ‘s = {integral (line n) g | n | T}’
+ >> Know ‘{Normal (integral (line n) g) | n | T} = IMAGE Normal s’
+ >- (rw [Once EXTENSION, Abbr ‘s’] \\
+     METIS_TAC [])
+ >> Rewr'
+ (* applying sup_image_normal *)
+ >> Know ‘sup (IMAGE Normal s) = Normal (sup s)’
+ >- (MATCH_MP_TAC sup_image_normal \\
+     CONJ_TAC >- rw [Abbr ‘s’, Once EXTENSION, NOT_IN_EMPTY] \\
+     simp [Abbr ‘s’] \\
+     Know ‘!n. integral (line n) g = integral UNIV (f n)’
+     >- (rw [Once EQ_SYM_EQ, Abbr ‘g’, Abbr ‘f’] \\
+         simp [integral_indicator_UNIV]) >> Rewr' \\
+     simp [])
+ >> Rewr'
+ >> simp [Abbr ‘s’]
  >> cheat
 QED
 

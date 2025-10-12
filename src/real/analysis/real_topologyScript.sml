@@ -6357,6 +6357,23 @@ Definition bounded_def :
 End
 Overload bounded = “Bounded”
 
+(* NOTE: The alternative definition is usually better for providing “0 <= a” *)
+Theorem bounded_alt :
+    !(s :real set). bounded s <=> ?a. 0 <= a /\ !x. x IN s ==> abs x <= a
+Proof
+    rw [bounded_def]
+ >> reverse EQ_TAC >- (STRIP_TAC >> Q.EXISTS_TAC ‘a’ >> art [])
+ >> STRIP_TAC
+ >> Cases_on ‘s = {}’ >> simp []
+ >- (Q.EXISTS_TAC ‘0’ >> simp [])
+ >> fs [GSYM MEMBER_NOT_EMPTY]
+ >> Cases_on ‘0 <= a’ >- (Q.EXISTS_TAC ‘a’ >> art [])
+ >> fs [REAL_NOT_LE]
+ >> ‘abs x <= a’ by PROVE_TAC []
+ >> ‘abs x < 0’ by PROVE_TAC [REAL_LET_TRANS]
+ >> METIS_TAC [ABS_POS, REAL_LET_ANTISYM]
+QED
+
 val BOUNDED_EMPTY = store_thm ("BOUNDED_EMPTY",
  ``bounded {}``,
   REWRITE_TAC[bounded_def, NOT_IN_EMPTY]);

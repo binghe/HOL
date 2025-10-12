@@ -3872,6 +3872,16 @@ Proof
  >> Q.EXISTS_TAC ‘ARB’ >> rw []
 QED
 
+Theorem sup_bounded_alt :
+    !s. s <> {} /\ (!x. x IN s ==> abs x <= Normal k) ==>
+        abs (sup s) <= Normal k
+Proof
+    reverse (rw [abs_bounds]) >- rw [sup_le']
+ >> rw [le_sup']
+ >> fs [GSYM MEMBER_NOT_EMPTY]
+ >> Q_TAC (TRANS_TAC le_trans) ‘x’ >> rw []
+QED
+
 Theorem inf_bounded :
     !a k. (!n. abs (a n) <= k) ==> !m. abs (inf {a n | m <= (n :num)}) <= k
 Proof
@@ -3892,6 +3902,16 @@ Proof
  >> Q_TAC (TRANS_TAC le_trans) ‘a ARB’ >> rw []
  >> POP_ASSUM MATCH_MP_TAC
  >> Q.EXISTS_TAC ‘ARB’ >> rw []
+QED
+
+Theorem inf_bounded_alt :
+    !s. s <> {} /\ (!x. x IN s ==> abs x <= Normal k) ==>
+        abs (inf s) <= Normal k
+Proof
+    rw [abs_bounds] >- rw [le_inf']
+ >> rw [inf_le']
+ >> fs [GSYM MEMBER_NOT_EMPTY]
+ >> Q_TAC (TRANS_TAC le_trans) ‘x’ >> rw []
 QED
 
 Theorem sup_normal :
@@ -7019,6 +7039,32 @@ Proof
  >> ‘?k. a = Normal k /\ 0 <= k’
        by METIS_TAC [extreal_cases, extreal_of_num_def, extreal_le_eq]
  >> Q.EXISTS_TAC ‘k’ >> rw []
+QED
+
+Theorem sup_normal' :
+    !s. ext_bounded s /\ s <> {} ==> Normal (sup (s o Normal)) = sup s
+Proof
+    rw [ext_bounded_alt]
+ >> MATCH_MP_TAC sup_normal
+ >> Q.EXISTS_TAC ‘k’
+ >> MATCH_MP_TAC sup_bounded_alt >> art []
+QED
+
+(* NOTE: “sup (s :real set)” doesn't exist (i.e. unspecified) when “s = {}” *)
+Theorem sup_image_normal :
+    !s. s <> {} /\ bounded s ==> sup (IMAGE Normal s) = Normal (sup s)
+Proof
+    Q.X_GEN_TAC ‘t’ >> rw [bounded_alt]
+ >> qabbrev_tac ‘s = IMAGE Normal t’
+ >> MP_TAC (Q.SPEC ‘s’ sup_normal')
+ >> impl_tac
+ >- (reverse CONJ_TAC >- rw [Once EXTENSION, NOT_IN_EMPTY, Abbr ‘s’] \\
+     rw [ext_bounded_def, Abbr ‘s’] \\
+     Q.EXISTS_TAC ‘Normal a’ >> rw [] \\
+     simp [extreal_abs_def, extreal_le_eq])
+ >> DISCH_THEN (REWRITE_TAC o wrap o SYM)
+ >> AP_TERM_TAC
+ >> simp [Abbr ‘s’, o_DEF, IN_APP, ETA_AX]
 QED
 
 (* NOTE: This is the general definition actually used in converge_in_dist_def *)
