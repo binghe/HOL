@@ -737,7 +737,7 @@ Proof
  >> Q.EXISTS_TAC ‘2 ** k - 1’
  >> SIMP_TAC real_ss [EXP_POS]
  >> ‘(0 :real) <= x - &(2 ** k - 1) / 2 pow k’ by simp [REAL_SUB_LE]
- >> ASM_SIMP_TAC real_ss [ABS_EQ_POS]
+ >> ASM_SIMP_TAC real_ss [ABS_REDUCE]
  >> REWRITE_TAC [REAL_LE_SUB_RADD, REAL_DIV_ADD]
  >> SIMP_TAC real_ss [REAL_OF_NUM_ADD]
  >> SIMP_TAC arith_ss [GSYM LESS_EQ_ADD_SUB]
@@ -819,7 +819,7 @@ Proof
      MATCH_MP_TAC REAL_LT_IMP_LE \\
      Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘1 / 2 pow k’ >> art [] \\
      Cases_on ‘0 <= x - y’
-     >- (ASM_SIMP_TAC real_ss [ABS_EQ_POS] \\
+     >- (ASM_SIMP_TAC real_ss [ABS_REDUCE] \\
          Suff ‘x <= 1 / 2 pow k + y’ >- REAL_ARITH_TAC \\
          Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘c + &SUC n / 2 pow k’ >> art [] \\
          Suff ‘c + (&SUC n / 2 pow k - 1 / 2 pow k) <= y’ >- REAL_ARITH_TAC \\
@@ -1244,6 +1244,7 @@ QED
 Definition integrable_sets_def :
     integrable_sets = {E | indicator E integrable_on UNIV}
 End
+Overload IR = “integrable_sets”
 
 (* NOTE: The other direction is not true. For example, UNIV is in lebesgue,
    but “indicator UNIV integrable_on UNIV” doesn't hold, as the integral
@@ -1317,7 +1318,6 @@ Proof
      MATCH_MP_TAC INTEGRABLE_ON_SUBINTERVAL \\
      Q.EXISTS_TAC ‘UNIV’ >> simp [])
  >> DISCH_TAC
- (* applying has_integral_indicator_UNIV *)
  >> qabbrev_tac ‘f = \k. indicator (E INTER line k)’
  >> Know ‘!k. f k integrable_on UNIV’
  >- (rw [integrable_on, Abbr ‘f’, has_integral_indicator_UNIV] \\
@@ -1348,7 +1348,7 @@ Proof
      POP_ASSUM (REWRITE_TAC o wrap o SYM) \\
      MATCH_MP_TAC INTEGRAL_ABS_BOUND_INTEGRAL >> rw [] \\
      Know ‘abs (f n x) = f n x’
-     >- (MATCH_MP_TAC ABS_EQ_POS \\
+     >- (MATCH_MP_TAC ABS_REDUCE \\
          simp [Abbr ‘f’, INDICATOR_POS]) >> Rewr' \\
      simp [Abbr ‘f’, Abbr ‘g’] \\
      MATCH_MP_TAC INDICATOR_MONO >> SET_TAC [])
@@ -1411,11 +1411,10 @@ QED
 
 (* Yet another form *)
 Theorem integral_indicator_m_lebesgue :
-    !E y. indicator E integrable_on UNIV ==>
-          m_lebesgue E <> PosInf /\
-          integral UNIV (indicator E) = real (m_lebesgue E)
+    !E y. E IN IR ==> m_lebesgue E <> PosInf /\
+                      integral UNIV (indicator E) = real (m_lebesgue E)
 Proof
-    rw [integrable_indicator_imp_m_lebesgue]
+    rw [integrable_sets_def, integrable_indicator_imp_m_lebesgue]
 QED
 
 (* 18.16 Approximation Theorem [2, p.312]
@@ -1427,14 +1426,14 @@ QED
    TODO: Is “m_lebesgue E = Normal y” true?
  *)
 Theorem approximation_thm :
-    !E e. indicator E integrable_on UNIV /\ E <> {} /\ 0 < e ==>
+    !E e. E IN IR /\ E <> {} /\ 0 < e ==>
           ?J. (!i. compact (J i)) /\
               (!i j. J i <> J j ==> nonoverlapping (J i) (J j)) /\
                E SUBSET BIGUNION (IMAGE J UNIV) /\
                m_lebesgue E <= suminf (m_lebesgue o J) /\
                suminf (m_lebesgue o J) <= m_lebesgue E + Normal e
 Proof
-    rpt STRIP_TAC
+    rw [integrable_sets_def]
  >> Know ‘E IN measurable_sets lebesgue’
  >- (rw [lebesgue_def, line_def] \\
      MATCH_MP_TAC INTEGRABLE_ON_SUBINTERVAL \\

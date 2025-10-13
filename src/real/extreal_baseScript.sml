@@ -7,6 +7,13 @@
 (* Updated and further enriched by Chun Tian (2018 - 2025)                   *)
 (* ------------------------------------------------------------------------- *)
 
+(*
+Theory extreal_base
+Ancestors
+  combin prim_rec arithmetic real iterate real_sigma real_of_rat pred_set
+Libs
+  tautLib numLib hurdUtils realLib
+ *)
 open HolKernel Parse boolLib bossLib;
 
 open combinTheory tautLib prim_recTheory arithmeticTheory numLib hurdUtils;
