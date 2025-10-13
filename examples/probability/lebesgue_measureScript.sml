@@ -1400,10 +1400,9 @@ QED
 
 (* Another form of has_integral_indicator_imp_lebesgue *)
 Theorem integrable_indicator_imp_m_lebesgue :
-    !E y. indicator E integrable_on UNIV ==>
-          m_lebesgue E = Normal (integral UNIV (indicator E))
+    !E y. E IN IR ==> m_lebesgue E = Normal (integral UNIV (indicator E))
 Proof
-    rw [integrable_on]
+    rw [integrable_on, integrable_sets_def]
  >> ‘integral UNIV (indicator E) = y’ by PROVE_TAC [INTEGRAL_HAS_INTEGRAL]
  >> POP_ORW
  >> MATCH_MP_TAC has_integral_indicator_imp_lebesgue >> art []
@@ -1414,16 +1413,12 @@ Theorem integral_indicator_m_lebesgue :
     !E y. E IN IR ==> m_lebesgue E <> PosInf /\
                       integral UNIV (indicator E) = real (m_lebesgue E)
 Proof
-    rw [integrable_sets_def, integrable_indicator_imp_m_lebesgue]
+    rw [integrable_indicator_imp_m_lebesgue]
 QED
 
 (* 18.16 Approximation Theorem [2, p.312]
 
    NOTE: HENSTOCK_LEMMA (Saks-Henstock Lemma) is needed here.
-
-   TODO: Check if ‘E <> {}’ can be removed (as a trivial case).
-
-   TODO: Is “m_lebesgue E = Normal y” true?
  *)
 Theorem approximation_thm :
     !E e. E IN IR /\ E <> {} /\ 0 < e ==>
@@ -1440,6 +1435,8 @@ Proof
      Q.EXISTS_TAC ‘UNIV’ >> simp [])
  >> DISCH_TAC
  >> fs [integrable_on] (* this asserts ‘y’ *)
+ >> ‘m_lebesgue E = Normal y’
+      by PROVE_TAC [has_integral_indicator_imp_lebesgue] >> POP_ORW
  >> Q.PAT_X_ASSUM ‘(_ has_integral y) _’ MP_TAC
  >> simp [has_integral_def]
  >> Know ‘~?a b. interval [a,b] = UNIV’
@@ -1457,8 +1454,11 @@ Proof
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘g’ STRIP_ASSUME_TAC)
  (* applying dyadic_covering_lemma' *)
  >> MP_TAC (Q.SPECL [‘g’, ‘E’] dyadic_covering_lemma') >> rw []
- (* NOTE: J may be an infinite sequence containing duplicated elements! *)
- >> Q.EXISTS_TAC ‘J’ >> simp []
+ (* NOTE: J may be an infinite sequence containing duplicated elements!
+    We need to rebuild another indexed sets without redundancies now.
+  *)
+ >> qabbrev_tac ‘s = IMAGE (\i. (J i,t i)) UNIV’
+ (* applying HENSTOCK_LEMMA *)
  >> cheat
 QED
 
@@ -1676,6 +1676,7 @@ Proof
      simp [Abbr ‘nf’, o_DEF])
  >> Rewr'
  (* applying BEPPO_LEVI_MONOTONE_CONVERGENCE_INCREASING *)
+ (* applying mono_increasing_converges_to_sup *)
  >> cheat
 QED
 
