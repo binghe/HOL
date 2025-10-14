@@ -789,6 +789,65 @@ Proof
     rw [REAL_ARITH “c + a - (c + b) = a - (b :real)”, lemma6]
 QED
 
+(* "non-overlapping" = disjoint interiors *)
+Definition nonoverlapping_def :
+    nonoverlapping s t <=> DISJOINT (interior s) (interior t)
+End
+
+(* cf. right_open_interval_DISJOINT_EQ *)
+Theorem closed_interval_nonoverlapping :
+    !a b c d. a < b /\ c < d ==>
+             (nonoverlapping (interval [a,b]) (interval [c,d]) <=>
+              b <= c \/ d <= a)
+Proof
+    RW_TAC std_ss [nonoverlapping_def, INTERIOR_INTERVAL]
+ >> EQ_TAC >> rw [DISJOINT_ALT, IN_INTERVAL, REAL_NOT_LT] (* 3 subgoals *)
+ >| [ (* goal 1 (of 3): a < b <= c < d  or  c < d <= a < b *)
+      CCONTR_TAC >> fs [REAL_NOT_LE] \\
+      MP_TAC (Q.SPECL [‘max a c’, ‘min b d’] REAL_MEAN) \\
+      ASM_REWRITE_TAC [REAL_MAX_LT, REAL_LT_MIN] \\
+      CCONTR_TAC >> fs [] \\
+     ‘z <= c \/ d <= z’ by PROVE_TAC [] >- METIS_TAC [REAL_LTE_ANTISYM] \\
+      METIS_TAC [REAL_LTE_ANTISYM],
+      (* goal 2 (of 3) *)
+      CCONTR_TAC >> fs [REAL_NOT_LE] \\
+      (* a < x < b <= c < x < d *)
+     ‘x < c’ by PROVE_TAC [REAL_LTE_TRANS] \\
+      METIS_TAC [REAL_LT_ANTISYM],
+      (* goal 3 (of 3) *)
+      CCONTR_TAC >> fs [REAL_NOT_LE] \\
+      (* c < x < d <= a < x < b *)
+     ‘x < a’ by PROVE_TAC [REAL_LTE_TRANS] \\
+      METIS_TAC [REAL_LT_ANTISYM] ]
+QED
+
+Theorem nonoverlapping_comm :
+    !s t. nonoverlapping s t <=> nonoverlapping t s
+Proof
+    RW_TAC std_ss [nonoverlapping_def, Once DISJOINT_SYM]
+QED
+
+(* cf. SUBSET_DISJOINT *)
+Theorem subset_nonoverlapping :
+    !s t u v. nonoverlapping s t /\ u SUBSET s /\ v SUBSET t ==>
+              nonoverlapping u v
+Proof
+    rw [nonoverlapping_def]
+ >> MATCH_MP_TAC SUBSET_DISJOINT
+ >> qexistsl_tac [‘interior s’, ‘interior t’] >> art []
+ >> rw [SUBSET_INTERIOR]
+QED
+
+Theorem nonoverlapping_empty[simp] :
+    nonoverlapping s {} /\ nonoverlapping {} s
+Proof
+    simp [nonoverlapping_def, INTERIOR_EMPTY, DISJOINT_EMPTY]
+QED
+
+Definition closed_interval_def :
+    closed_interval k <=> ?a b. k = interval [a,b]
+End
+
 (* NOTE: Here we use the “gauge” definition from the old integralTheory, as it
    avoids “open” sets and directly gives the radius g(x) as a positive real.
 
@@ -798,7 +857,7 @@ QED
 Theorem dyadic_covering_lemma_unit[local] :
     !g E c. gauge UNIV g /\ E <> {} /\ E SUBSET interval [c,c + 1] ==>
             ?J t. (!i. J i SUBSET interval [c,c + 1] /\
-                       compact (J i) /\ t i IN E INTER J (i :num) /\
+                       closed_interval (J i) /\ t i IN E INTER J (i :num) /\
                        E INTER J i SUBSET cball (t i,g (t i))) /\
                   (!i j. J i <> J j ==> nonoverlapping (J i) (J j)) /\
                    E SUBSET BIGUNION (IMAGE J UNIV)
@@ -1016,8 +1075,11 @@ Proof
     ‘!i. J i IN J0’ by PROVE_TAC [SUBSET_DEF] \\
      METIS_TAC [])
  >> Rewr
- >> Know ‘!i. compact (J i)’
- >- simp [Abbr ‘f’, COMPACT_INTERVAL]
+ >> Know ‘!i. closed_interval (J i)’
+ >- (rw [Abbr ‘f’, closed_interval_def] \\
+     qexistsl_tac [‘c + &SND (SND (ts i)) / 2 pow FST (SND (ts i))’,
+                   ‘c + &SUC (SND (SND (ts i))) / 2 pow FST (SND (ts i))’] \\
+     REFL_TAC)
  >> Rewr
  (* !x. x IN E ==> ?s. x IN s /\ ?x. s = J x *)
  >> reverse CONJ_TAC
@@ -1074,7 +1136,7 @@ QED
 (* 18.15 Dyadic Covering Lemma [2, p.311] *)
 Theorem dyadic_covering_lemma :
     !g E. gauge UNIV g /\ E <> {} ==>
-          ?J t. (!i. compact (J i) /\ t i IN E INTER J (i :num) /\
+          ?J t. (!i. closed_interval (J i) /\ t i IN E INTER J (i :num) /\
                      E INTER J i SUBSET cball (t i,g (t i))) /\
                 (!i j. J i <> J j ==> nonoverlapping (J i) (J j)) /\
                  E SUBSET BIGUNION (IMAGE J UNIV)
@@ -1086,7 +1148,7 @@ Proof
  (* applying dyadic_covering_lemma_unit *)
  >> Know ‘!n. e n <> {} ==>
               ?J t. (!i. J i SUBSET interval [real_of_int n,real_of_int n + 1] /\
-                         compact (J i) /\
+                         closed_interval (J i) /\
                          t i IN e n INTER J (i :num) /\
                          e n INTER J i SUBSET cball (t i,g (t i))) /\
                     (!i j. J i <> J j ==> nonoverlapping (J i) (J j)) /\
@@ -1165,7 +1227,7 @@ Proof
      Q.PAT_X_ASSUM ‘i <> j’ MP_TAC >> intLib.ARITH_TAC)
  >> DISCH_TAC
  (* stage work *)
- >> Suff ‘!z. z IN c ==> compact (FST z) /\
+ >> Suff ‘!z. z IN c ==> closed_interval (FST z) /\
                          SND z IN BIGUNION (IMAGE e UNIV) INTER FST z /\
                          BIGUNION (IMAGE e UNIV) INTER FST z SUBSET
                          cball (SND z,g (SND z))’
@@ -1223,7 +1285,7 @@ QED
 (* NOTE: This version uses “gauge” of integrationTheory.gauge_def *)
 Theorem dyadic_covering_lemma' :
     !g E. gauge g /\ E <> {} ==>
-          ?J t. (!i. compact (J i) /\ t i IN E INTER J (i :num) /\
+          ?J t. (!i. closed_interval (J i) /\ t i IN E INTER J (i :num) /\
                      E INTER J i SUBSET g (t i)) /\
                 (!i j. J i <> J j ==> nonoverlapping (J i) (J j)) /\
                  E SUBSET BIGUNION (IMAGE J UNIV)
@@ -1416,25 +1478,19 @@ Proof
     rw [integrable_indicator_imp_m_lebesgue]
 QED
 
-(* 18.16 Approximation Theorem [2, p.312]
-
-   NOTE: HENSTOCK_LEMMA (Saks-Henstock Lemma) is needed here.
- *)
+(* 18.16 Approximation Theorem [2, p.312] *)
 Theorem approximation_thm :
     !E e. E IN IR /\ E <> {} /\ 0 < e ==>
-          ?J. (!i. compact (J i)) /\
+          ?J. (!i. closed_interval (J i)) /\
               (!i j. J i <> J j ==> nonoverlapping (J i) (J j)) /\
                E SUBSET BIGUNION (IMAGE J UNIV) /\
                m_lebesgue E <= suminf (m_lebesgue o J) /\
                suminf (m_lebesgue o J) <= m_lebesgue E + Normal e
 Proof
-    rw [integrable_sets_def]
- >> Know ‘E IN measurable_sets lebesgue’
- >- (rw [lebesgue_def, line_def] \\
-     MATCH_MP_TAC INTEGRABLE_ON_SUBINTERVAL \\
-     Q.EXISTS_TAC ‘UNIV’ >> simp [])
- >> DISCH_TAC
- >> fs [integrable_on] (* this asserts ‘y’ *)
+    rpt STRIP_TAC
+ >> ‘E IN measurable_sets lebesgue’
+      by PROVE_TAC [SUBSET_DEF, integrable_sets_subset_lebesgue]
+ >> fs [integrable_sets_def, integrable_on] (* this asserts ‘y’ *)
  >> ‘m_lebesgue E = Normal y’
       by PROVE_TAC [has_integral_indicator_imp_lebesgue] >> POP_ORW
  >> Q.PAT_X_ASSUM ‘(_ has_integral y) _’ MP_TAC
@@ -1443,22 +1499,18 @@ Proof
  >- (rw [Once EXTENSION, IN_INTERVAL, REAL_NOT_LE] \\
      Q.EXISTS_TAC ‘b + 1’ >> simp [])
  >> Rewr
- >> DISCH_THEN drule
- >> STRIP_TAC (* this asserts ‘B’ *)
+ >> DISCH_THEN drule >> STRIP_TAC (* this asserts ‘B’ *)
  >> POP_ASSUM (MP_TAC o Q.SPECL [‘-B’, ‘B’])
  >> impl_tac >- rw [BALL_INTERVAL, IN_INTERVAL, SUBSET_DEF, REAL_LT_IMP_LE]
  >> STRIP_TAC (* this asserts ‘z’ *)
  >> Q.PAT_X_ASSUM ‘(_ has_integral_compact_interval z) _’ MP_TAC
  >> simp [has_integral_compact_interval]
- >> DISCH_THEN drule
- >> DISCH_THEN (Q.X_CHOOSE_THEN ‘g’ STRIP_ASSUME_TAC)
+ >> DISCH_THEN (MP_TAC o Q.SPEC ‘e’) >> rw [] (* this asserts ‘d’ *)
  (* applying dyadic_covering_lemma' *)
- >> MP_TAC (Q.SPECL [‘g’, ‘E’] dyadic_covering_lemma') >> rw []
- (* NOTE: J may be an infinite sequence containing duplicated elements!
-    We need to rebuild another indexed sets without redundancies now.
-  *)
- >> qabbrev_tac ‘s = IMAGE (\i. (J i,t i)) UNIV’
- (* applying HENSTOCK_LEMMA *)
+ >> MP_TAC (Q.SPECL [‘d’, ‘E’] dyadic_covering_lemma')
+ >> rw [GSYM CONJ_ASSOC, FORALL_AND_THM]
+ >> Q.EXISTS_TAC ‘J’ >> simp []
+ (* applying REAL_SUM_IMAGE_sum *)
  >> cheat
 QED
 

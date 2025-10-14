@@ -2478,54 +2478,6 @@ Proof
  >> REAL_ASM_ARITH_TAC
 QED
 
-Definition nonoverlapping_def :
-    nonoverlapping s t <=> DISJOINT (interior s) (interior t)
-End
-
-(* cf. right_open_interval_DISJOINT_EQ *)
-Theorem closed_interval_nonoverlapping :
-    !a b c d. a < b /\ c < d ==>
-             (nonoverlapping (interval [a,b]) (interval [c,d]) <=>
-              b <= c \/ d <= a)
-Proof
-    RW_TAC std_ss [nonoverlapping_def, INTERIOR_INTERVAL]
- >> EQ_TAC >> rw [DISJOINT_ALT, IN_INTERVAL, REAL_NOT_LT] (* 3 subgoals *)
- >| [ (* goal 1 (of 3): a < b <= c < d  or  c < d <= a < b *)
-      CCONTR_TAC >> fs [REAL_NOT_LE] \\
-      MP_TAC (Q.SPECL [‘max a c’, ‘min b d’] REAL_MEAN) \\
-      ASM_REWRITE_TAC [REAL_MAX_LT, REAL_LT_MIN] \\
-      CCONTR_TAC >> fs [] \\
-     ‘z <= c \/ d <= z’ by PROVE_TAC [] >- METIS_TAC [REAL_LTE_ANTISYM] \\
-      METIS_TAC [REAL_LTE_ANTISYM],
-      (* goal 2 (of 3) *)
-      CCONTR_TAC >> fs [REAL_NOT_LE] \\
-      (* a < x < b <= c < x < d *)
-     ‘x < c’ by PROVE_TAC [REAL_LTE_TRANS] \\
-      METIS_TAC [REAL_LT_ANTISYM],
-      (* goal 3 (of 3) *)
-      CCONTR_TAC >> fs [REAL_NOT_LE] \\
-      (* c < x < d <= a < x < b *)
-     ‘x < a’ by PROVE_TAC [REAL_LTE_TRANS] \\
-      METIS_TAC [REAL_LT_ANTISYM] ]
-QED
-
-Theorem nonoverlapping_comm :
-    !s t. nonoverlapping s t <=> nonoverlapping t s
-Proof
-    RW_TAC std_ss [nonoverlapping_def, Once DISJOINT_SYM]
-QED
-
-(* cf. SUBSET_DISJOINT *)
-Theorem subset_nonoverlapping :
-    !s t u v. nonoverlapping s t /\ u SUBSET s /\ v SUBSET t ==>
-              nonoverlapping u v
-Proof
-    rw [nonoverlapping_def]
- >> MATCH_MP_TAC SUBSET_DISJOINT
- >> qexistsl_tac [‘interior s’, ‘interior t’] >> art []
- >> rw [SUBSET_INTERIOR]
-QED
-
 (* cf. right_open_interval_DISJOINT_EQ *)
 Theorem closed_interval_disjoint_eq :
     !a b c d. a < b /\ c < d ==>
