@@ -4565,15 +4565,6 @@ val lemma = prove (
     SIMP_TAC std_ss [EXISTS_PROD, FORALL_PROD] THEN
     ASM_MESON_TAC[]);
 
-val REAL_MUL_POS_LT = store_thm ("REAL_MUL_POS_LT",
- ``!x y:real. &0 < x * y <=> &0 < x /\ &0 < y \/ x < &0 /\ y < &0``,
-  REPEAT STRIP_TAC THEN
-  STRIP_ASSUME_TAC(SPEC ``x:real`` REAL_LT_NEGTOTAL) THEN
-  STRIP_ASSUME_TAC(SPEC ``y:real`` REAL_LT_NEGTOTAL) THEN
-  ASM_REWRITE_TAC[REAL_MUL_LZERO, REAL_MUL_RZERO, REAL_LT_REFL] THEN
-  ASSUM_LIST(MP_TAC o MATCH_MP REAL_LT_MUL o end_itlist CONJ) THEN
-  REPEAT(POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC);
-
 val HAS_INTEGRAL_NEGLIGIBLE = store_thm ("HAS_INTEGRAL_NEGLIGIBLE",
  ``!f:real->real s t.
         negligible s /\ (!x. x IN (t DIFF s) ==> (f x = 0))

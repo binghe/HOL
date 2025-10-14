@@ -1304,9 +1304,8 @@ Proof
 QED
 
 Definition integrable_sets_def :
-    integrable_sets = {E | indicator E integrable_on UNIV}
+    integrable_sets X = {E | indicator E integrable_on X}
 End
-Overload IR = “integrable_sets”
 
 (* NOTE: The other direction is not true. For example, UNIV is in lebesgue,
    but “indicator UNIV integrable_on UNIV” doesn't hold, as the integral
@@ -1315,7 +1314,7 @@ Overload IR = “integrable_sets”
    This set is denoted as I(R) in [2, p.300] (Definition 18.1).
  *)
 Theorem integrable_sets_subset_lebesgue :
-    integrable_sets SUBSET measurable_sets lebesgue
+    integrable_sets UNIV SUBSET measurable_sets lebesgue
 Proof
     rw [integrable_sets_def, SUBSET_DEF, lebesgue_def, line_def]
  >> MATCH_MP_TAC INTEGRABLE_ON_SUBINTERVAL
@@ -1462,7 +1461,8 @@ QED
 
 (* Another form of has_integral_indicator_imp_lebesgue *)
 Theorem integrable_indicator_imp_m_lebesgue :
-    !E y. E IN IR ==> m_lebesgue E = Normal (integral UNIV (indicator E))
+    !E y. E IN integrable_sets UNIV ==>
+          m_lebesgue E = Normal (integral UNIV (indicator E))
 Proof
     rw [integrable_on, integrable_sets_def]
  >> ‘integral UNIV (indicator E) = y’ by PROVE_TAC [INTEGRAL_HAS_INTEGRAL]
@@ -1472,15 +1472,16 @@ QED
 
 (* Yet another form *)
 Theorem integral_indicator_m_lebesgue :
-    !E y. E IN IR ==> m_lebesgue E <> PosInf /\
-                      integral UNIV (indicator E) = real (m_lebesgue E)
+    !E y. E IN integrable_sets UNIV ==>
+          m_lebesgue E <> PosInf /\
+          integral UNIV (indicator E) = real (m_lebesgue E)
 Proof
     rw [integrable_indicator_imp_m_lebesgue]
 QED
 
 (* 18.16 Approximation Theorem [2, p.312] *)
 Theorem approximation_thm :
-    !E e. E IN IR /\ E <> {} /\ 0 < e ==>
+    !E e. E IN integrable_sets UNIV /\ E <> {} /\ 0 < e ==>
           ?J. (!i. closed_interval (J i)) /\
               (!i j. J i <> J j ==> nonoverlapping (J i) (J j)) /\
                E SUBSET BIGUNION (IMAGE J UNIV) /\
@@ -1502,7 +1503,7 @@ Proof
  >> DISCH_THEN drule >> STRIP_TAC (* this asserts ‘B’ *)
  >> POP_ASSUM (MP_TAC o Q.SPECL [‘-B’, ‘B’])
  >> impl_tac >- rw [BALL_INTERVAL, IN_INTERVAL, SUBSET_DEF, REAL_LT_IMP_LE]
- >> STRIP_TAC (* this asserts ‘z’ *)
+ >> STRIP_TAC (* this asserts ‘z’, a smaller value than ‘y’ *)
  >> Q.PAT_X_ASSUM ‘(_ has_integral_compact_interval z) _’ MP_TAC
  >> simp [has_integral_compact_interval]
  >> DISCH_THEN (MP_TAC o Q.SPEC ‘e’) >> rw [] (* this asserts ‘d’ *)
@@ -1510,6 +1511,7 @@ Proof
  >> MP_TAC (Q.SPECL [‘d’, ‘E’] dyadic_covering_lemma')
  >> rw [GSYM CONJ_ASSOC, FORALL_AND_THM]
  >> Q.EXISTS_TAC ‘J’ >> simp []
+ >> qabbrev_tac ‘b = interval [-B,B]’ (* a large enough interval *)
  (* applying REAL_SUM_IMAGE_sum *)
  >> cheat
 QED
