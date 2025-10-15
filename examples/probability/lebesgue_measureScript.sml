@@ -1626,7 +1626,7 @@ Proof
  >> MP_TAC (Q.SPECL [‘d’, ‘E’] dyadic_covering_lemma')
  >> RW_TAC std_ss [FORALL_AND_THM, GSYM CONJ_ASSOC]
  >> Q.EXISTS_TAC ‘J’ >> simp []
- >> CONJ_ASM1_TAC
+ >> CONJ_TAC
  >- (Q.PAT_X_ASSUM ‘m_lebesgue E = Normal y’ (REWRITE_TAC o wrap o SYM) \\
      Know ‘!n. J n IN measurable_sets lebesgue’
      >- (Q.X_GEN_TAC ‘n’ \\
@@ -1700,28 +1700,13 @@ Proof
          Suff ‘interior (J n) SUBSET J n’ >- SET_TAC [] \\
          REWRITE_TAC [INTERIOR_SUBSET]) >> DISCH_TAC \\
   (* NOTE: BIGUNION (IMAGE A UNIV) and BIGUNION (IMAGE C UNIV) are not
-     disjoint in general: some C in form of [x,x] may stand in an (A n),
-     but they don't contribute in any additional measure.
+     disjoint in general: some C in form of [x,x] may stand in the middle
+     of another (A n). But these singleton sets do not contribute measures.
    *)
      Know ‘BIGUNION (IMAGE J UNIV) =
            BIGUNION (IMAGE A UNIV) UNION BIGUNION (IMAGE C UNIV)’
-     >- (REWRITE_TAC [GSYM BIGUNION_UNION] \\
-         rw [Once EXTENSION, IN_BIGUNION_IMAGE] \\
-         EQ_TAC >> rw [] >| (* 4 subgoals *)
-         [ (* goal 1 (of 4) *)
-           rename1 ‘x IN A i’ \\
-           Q.EXISTS_TAC ‘A i’ >> art [] \\
-           DISJ1_TAC >> Q.EXISTS_TAC ‘i’ >> REFL_TAC,
-           (* goal 2 (of 4) *)
-           rename1 ‘x IN C i’ \\
-           Q.EXISTS_TAC ‘C i’ >> art [] \\
-           DISJ2_TAC >> Q.EXISTS_TAC ‘i’ >> REFL_TAC,
-           (* goal 3 (of 4) *)
-           rename1 ‘x IN A i’ \\
-           Q.EXISTS_TAC ‘i’ >> art [],
-           (* goal 4 (of 4) *)
-           rename1 ‘x IN C i’ \\
-           Q.EXISTS_TAC ‘i’ >> art [] ]) >> Rewr' \\
+     >- (REWRITE_TAC [BIGUNION_IMAGE_UNION] \\
+         POP_ASSUM (fn th => simp [GSYM th, ETA_THM])) >> Rewr' \\
   (* applying MEASURE_ADD_ABSORB *)
      SYM_TAC >> MATCH_MP_TAC MEASURE_ADD_ABSORB \\
      simp [measure_space_lebesgue] \\
