@@ -1626,16 +1626,17 @@ Proof
  >> MP_TAC (Q.SPECL [‘d’, ‘E’] dyadic_covering_lemma')
  >> RW_TAC std_ss [FORALL_AND_THM, GSYM CONJ_ASSOC]
  >> Q.EXISTS_TAC ‘J’ >> simp []
+ >> Know ‘!n. J n IN measurable_sets lebesgue’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     fs [closed_interval_def, GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM,
+         INTERIOR_INTERVAL] \\
+     rename1 ‘!i. J i = interval [a i,b i]’ \\
+     Suff ‘interval [a n,b n] IN measurable_sets lborel’
+     >- PROVE_TAC [SUBSET_DEF, lborel_subset_lebesgue] \\
+     simp [sets_lborel, borel_measurable_sets, CLOSED_interval])
+ >> DISCH_TAC
  >> CONJ_TAC
  >- (Q.PAT_X_ASSUM ‘m_lebesgue E = Normal y’ (REWRITE_TAC o wrap o SYM) \\
-     Know ‘!n. J n IN measurable_sets lebesgue’
-     >- (Q.X_GEN_TAC ‘n’ \\
-         fs [closed_interval_def, GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM,
-             INTERIOR_INTERVAL] \\
-         rename1 ‘!i. J i = interval [a i,b i]’ \\
-         Suff ‘interval [a n,b n] IN measurable_sets lborel’
-         >- PROVE_TAC [SUBSET_DEF, lborel_subset_lebesgue] \\
-         simp [sets_lborel, borel_measurable_sets, CLOSED_interval]) >> DISCH_TAC \\
      Know ‘BIGUNION (IMAGE J UNIV) IN measurable_sets lebesgue’
      >- (MATCH_MP_TAC MEASURE_SPACE_BIGUNION \\
          simp [measure_space_lebesgue]) >> DISCH_TAC \\
@@ -1673,8 +1674,7 @@ Proof
      Suff ‘m_lebesgue (BIGUNION (IMAGE A UNIV)) =
            m_lebesgue (BIGUNION (IMAGE J UNIV))’
      >- (Rewr' \\
-         MATCH_MP_TAC MEASURE_INCREASING \\
-         simp [measure_space_lebesgue]) \\
+         MATCH_MP_TAC MEASURE_INCREASING >> simp [measure_space_lebesgue]) \\
      qabbrev_tac ‘C = frontier o J’ \\
      Know ‘!n. C n IN measurable_sets lebesgue’
      >- (Q.X_GEN_TAC ‘n’ \\
@@ -1711,8 +1711,7 @@ Proof
      SYM_TAC >> MATCH_MP_TAC MEASURE_ADD_ABSORB \\
      simp [measure_space_lebesgue] \\
      reverse (rw [GSYM le_antisym])
-     >- (MATCH_MP_TAC MEASURE_POSITIVE \\
-         simp [measure_space_lebesgue]) \\
+     >- (MATCH_MP_TAC MEASURE_POSITIVE >> simp [measure_space_lebesgue]) \\
      Q_TAC (TRANS_TAC le_trans) ‘suminf (m_lebesgue o C)’ \\
      CONJ_TAC
      >- (MATCH_MP_TAC MEASURE_COUNTABLY_SUBADDITIVE \\
@@ -1737,14 +1736,21 @@ Proof
         ‘{x2} UNION {x2} = {x2}’ by SET_TAC [] >> POP_ORW \\
          simp [lebesgue_sing]) \\
      Suff ‘m_lebesgue ({x1} UNION {x2}) = m_lebesgue ({x1}) + m_lebesgue ({x2})’
-     >- (Rewr' \\
-         simp [lebesgue_sing]) \\
+     >- (Rewr' >> simp [lebesgue_sing]) \\
      MATCH_MP_TAC MEASURE_ADDITIVE >> simp [measure_space_lebesgue] \\
      Suff ‘{x1} IN measurable_sets lborel /\
            {x2} IN measurable_sets lborel’
      >- PROVE_TAC [SUBSET_DEF, lborel_subset_lebesgue] \\
      simp [sets_lborel, borel_measurable_sets])
+ (* applying ext_suminf_def *)
+ >> qmatch_abbrev_tac ‘suminf f <= _’
+ >> Know ‘suminf f = sup (IMAGE (\n. SIGMA f (count n)) UNIV)’
+ >- (MATCH_MP_TAC ext_suminf_def \\
+     rw [Abbr ‘f’] \\
+     MATCH_MP_TAC MEASURE_POSITIVE >> simp [measure_space_lebesgue])
+ >> Rewr'
  (* applying sup_le', REAL_SUM_IMAGE_sum, etc. *)
+ >> rw [sup_le', Abbr ‘f’]
  >> cheat
 QED
 
