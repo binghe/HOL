@@ -2973,6 +2973,22 @@ Proof
  >> MATCH_MP_TAC MEASURE_SPACE_UNION >> art []
 QED
 
+(* NOTE: t is neither subset nor disjoint with s but it contributes no
+   additional measure in “measure m (s UNION t)”.
+ *)
+Theorem MEASURE_ADD_ABSORB :
+    !m s t. measure_space m /\ s IN measurable_sets m /\ t IN measurable_sets m /\
+            measure m t = 0 ==> measure m (s UNION t) = measure m s
+Proof
+    rpt STRIP_TAC
+ >> reverse (rw [GSYM le_antisym])
+ >- (MATCH_MP_TAC MEASURE_INCREASING >> simp [] \\
+     MATCH_MP_TAC MEASURE_SPACE_UNION >> art [])
+ >> ‘measure m s = measure m s + measure m t’ by simp []
+ >> POP_ORW
+ >> MATCH_MP_TAC MEASURE_SUBADDITIVE >> art []
+QED
+
 Theorem RING_PREMEASURE_FINITE_SUBADDITIVE:
     !m. ring (m_space m, measurable_sets m) /\ premeasure m ==> finite_subadditive m
 Proof

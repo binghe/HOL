@@ -1699,6 +1699,10 @@ Proof
          simp [CLOSURE_CLOSED] \\
          Suff ‘interior (J n) SUBSET J n’ >- SET_TAC [] \\
          REWRITE_TAC [INTERIOR_SUBSET]) >> DISCH_TAC \\
+  (* NOTE: BIGUNION (IMAGE A UNIV) and BIGUNION (IMAGE C UNIV) are not
+     disjoint in general: some C in form of [x,x] may stand in an (A n),
+     but they don't contribute in any additional measure.
+   *)
      Know ‘BIGUNION (IMAGE J UNIV) =
            BIGUNION (IMAGE A UNIV) UNION BIGUNION (IMAGE C UNIV)’
      >- (REWRITE_TAC [GSYM BIGUNION_UNION] \\
@@ -1718,20 +1722,9 @@ Proof
            (* goal 4 (of 4) *)
            rename1 ‘x IN C i’ \\
            Q.EXISTS_TAC ‘i’ >> art [] ]) >> Rewr' \\
-  (* applying MEASURE_INCREASING, again *)
-     RW_TAC std_ss [GSYM le_antisym]
-     >- (MATCH_MP_TAC MEASURE_INCREASING \\
-         simp [measure_space_lebesgue] \\
-         MATCH_MP_TAC MEASURE_SPACE_UNION \\
-         simp [measure_space_lebesgue]) \\
-     Suff ‘m_lebesgue (BIGUNION (IMAGE C UNIV)) = 0’
-     >- (DISCH_TAC \\
-        ‘m_lebesgue (BIGUNION (IMAGE A UNIV)) =
-         m_lebesgue (BIGUNION (IMAGE A UNIV)) + 0’ by simp [add_rzero] \\
-         POP_ORW \\
-         POP_ASSUM (REWRITE_TAC o wrap o SYM) \\
-         MATCH_MP_TAC MEASURE_SUBADDITIVE \\
-         simp [measure_space_lebesgue]) \\
+  (* applying MEASURE_ADD_ABSORB *)
+     SYM_TAC >> MATCH_MP_TAC MEASURE_ADD_ABSORB \\
+     simp [measure_space_lebesgue] \\
      reverse (rw [GSYM le_antisym])
      >- (MATCH_MP_TAC MEASURE_POSITIVE \\
          simp [measure_space_lebesgue]) \\
@@ -1766,7 +1759,7 @@ Proof
            {x2} IN measurable_sets lborel’
      >- PROVE_TAC [SUBSET_DEF, lborel_subset_lebesgue] \\
      simp [sets_lborel, borel_measurable_sets])
- (* applying REAL_SUM_IMAGE_sum, etc. *)
+ (* applying sup_le', REAL_SUM_IMAGE_sum, etc. *)
  >> cheat
 QED
 
