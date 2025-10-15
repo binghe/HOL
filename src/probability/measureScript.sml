@@ -2963,6 +2963,16 @@ Proof
  >> PROVE_TAC [SIGMA_ALGEBRA_ALGEBRA, premeasure_def]
 QED
 
+Theorem MEASURE_SUBADDITIVE :
+    !m s t u. measure_space m /\ s IN measurable_sets m /\ t IN measurable_sets m /\
+              u = s UNION t ==> measure m u <= measure m s + measure m t
+Proof
+    RW_TAC std_ss []
+ >> MATCH_MP_TAC SUBADDITIVE
+ >> RW_TAC std_ss [MEASURE_SPACE_SUBADDITIVE]
+ >> MATCH_MP_TAC MEASURE_SPACE_UNION >> art []
+QED
+
 Theorem RING_PREMEASURE_FINITE_SUBADDITIVE:
     !m. ring (m_space m, measurable_sets m) /\ premeasure m ==> finite_subadditive m
 Proof
@@ -3071,6 +3081,18 @@ Proof
  >> MATCH_MP_TAC RING_PREMEASURE_COUNTABLY_SUBADDITIVE
  >> ASM_REWRITE_TAC [premeasure_def]
  >> MATCH_MP_TAC ALGEBRA_IMP_RING >> art []
+QED
+
+Theorem MEASURE_COUNTABLY_SUBADDITIVE :
+    !m f s. measure_space m /\ f IN (univ(:num) -> measurable_sets m) /\
+            s = BIGUNION (IMAGE f univ(:num)) ==>
+            measure m s <= suminf (measure m o f)
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC COUNTABLY_SUBADDITIVE
+ >> RW_TAC std_ss [MEASURE_SPACE_COUNTABLY_SUBADDITIVE]
+ >> MATCH_MP_TAC MEASURE_SPACE_BIGUNION
+ >> fs [IN_FUNSET]
 QED
 
 Theorem RING_ADDITIVE_INCREASING :

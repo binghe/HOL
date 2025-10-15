@@ -848,6 +848,13 @@ Definition closed_interval_def :
     closed_interval k <=> ?a b. k = interval [a,b]
 End
 
+Theorem closed_interval_closed :
+    closed_interval k ==> closed k
+Proof
+    RW_TAC std_ss [closed_interval_def]
+ >> REWRITE_TAC [CLOSED_INTERVAL]
+QED
+
 Theorem closed_interval_interval :
     closed_interval (interval [a,b])
 Proof
@@ -1291,12 +1298,15 @@ Proof
  >> POP_ASSUM MATCH_MP_TAC >> simp [] >> fs []
 QED
 
-(* NOTE: This version uses “gauge” of integrationTheory.gauge_def *)
+(* NOTE: This version uses “gauge” of integrationTheory.gauge_def, and it
+   improve the conclusion to “!i j. i <> j ==> nonoverlapping (J i) (J j)”,
+   which means that the constructed sequence is indeed infinitely countable.
+ *)
 Theorem dyadic_covering_lemma' :
     !g E. gauge g /\ E <> {} ==>
           ?J t. (!i. closed_interval (J i) /\ t i IN E INTER J (i :num) /\
                      E INTER J i SUBSET g (t i)) /\
-                (!i j. J i <> J j ==> nonoverlapping (J i) (J j)) /\
+                (!i j. i <> j ==> nonoverlapping (J i) (J j)) /\
                  E SUBSET BIGUNION (IMAGE J UNIV)
 Proof
     rpt STRIP_TAC
@@ -1307,9 +1317,103 @@ Proof
      rw [integralTheory.gauge])
  >> STRIP_TAC
  >> MP_TAC (Q.SPECL [‘d’, ‘E’] dyadic_covering_lemma)
- >> rw [FORALL_AND_THM]
- >> qexistsl_tac [‘J’, ‘t’] >> rw []
- >> Q_TAC (TRANS_TAC SUBSET_TRANS) ‘cball (t i,d (t i))’ >> art []
+ >> RW_TAC std_ss [FORALL_AND_THM]
+ >> qabbrev_tac ‘s = IMAGE J UNIV’
+ >> ‘countable s’ by simp [image_countable, Abbr ‘s’]
+ >> reverse (Cases_on ‘FINITE s’)
+ >- (FULL_SIMP_TAC std_ss [COUNTABLE_ALT_BIJ] \\
+     qabbrev_tac ‘h = enumerate s’ \\
+     Know ‘!i. h i IN s’
+     >- (Q.X_GEN_TAC ‘i’ \\
+         Q.PAT_X_ASSUM ‘BIJ h UNIV s’ MP_TAC \\
+         rw [BIJ_DEF, INJ_DEF]) >> DISCH_TAC \\
+     Know ‘!i j. i <> j ==> h i <> h j’
+     >- (rpt STRIP_TAC \\
+         Q.PAT_X_ASSUM ‘BIJ h UNIV s’ MP_TAC \\
+         rw [BIJ_DEF, INJ_DEF] \\
+         DISJ1_TAC >> qexistsl_tac [‘i’, ‘j’] >> art []) >> DISCH_TAC \\
+     Know ‘!i. ?n. h i = J n’
+     >- (Q.X_GEN_TAC ‘i’ \\
+         Q.PAT_X_ASSUM ‘!i. h i IN s’ (MP_TAC o Q.SPEC ‘i’) \\
+         rw [Abbr ‘s’]) \\
+     RW_TAC std_ss [SKOLEM_THM] (* this asserts f *) \\
+     qexistsl_tac [‘h’, ‘t o f’] \\
+     ASM_SIMP_TAC std_ss [o_DEF] \\
+     CONJ_TAC
+     >- (Q.X_GEN_TAC ‘i’ \\
+         Q_TAC (TRANS_TAC SUBSET_TRANS) ‘cball (t (f i),d (t (f i)))’ \\
+         simp []) \\
+     CONJ_TAC
+     >- (rpt STRIP_TAC \\
+         FIRST_X_ASSUM MATCH_MP_TAC \\
+         Q.PAT_X_ASSUM ‘!i. h i = J (f i)’ (REWRITE_TAC o wrap o GSYM) \\
+         FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+     Suff ‘IMAGE h UNIV = s’ >- simp [] \\
+     POP_ASSUM K_TAC (* !i. h i = J (f i) *) \\
+     rw [Once EXTENSION] \\
+     EQ_TAC >- (rw [] >> simp []) \\
+     Q.PAT_X_ASSUM ‘BIJ h UNIV s’ MP_TAC \\
+     rw [BIJ_DEF, SURJ_DEF] \\
+     Q.PAT_X_ASSUM ‘!x. x IN s ==> ?y. h y = x’ (MP_TAC o Q.SPEC ‘x’) \\
+     simp [] >> DISCH_THEN (Q.X_CHOOSE_THEN ‘j’ STRIP_ASSUME_TAC) \\
+     Q.EXISTS_TAC ‘j’ >> art [])
+ (* FINITE s *)
+ >> FULL_SIMP_TAC std_ss [FINITE_BIJ_COUNT_EQ, GSYM MEMBER_NOT_EMPTY]
+ >> Know ‘!i. i < n ==> c i IN s’
+ >- (rpt STRIP_TAC \\
+     Q.PAT_X_ASSUM ‘BIJ c (count n) s’ MP_TAC >> rw [BIJ_DEF, INJ_DEF])
+ >> DISCH_TAC
+ >> Know ‘!i j. i < n /\ j < n /\ i <> j ==> c i <> c j’
+ >- (rpt STRIP_TAC \\
+     Q.PAT_X_ASSUM ‘BIJ c (count n) s’ MP_TAC >> rw [BIJ_DEF, INJ_DEF] \\
+     DISJ1_TAC >> qexistsl_tac [‘i’, ‘j’] >> art [])
+ >> DISCH_TAC
+ >> Know ‘!i. i < n ==> ?n. c i = J n’
+ >- (rpt STRIP_TAC \\
+     Q.PAT_X_ASSUM ‘!i. i < n ==> c i IN s’ (MP_TAC o Q.SPEC ‘i’) \\
+     rw [Abbr ‘s’])
+ >> RW_TAC std_ss [EXT_SKOLEM_THM'] (* this asserts f *)
+ >> qabbrev_tac ‘L = \i. if i < n then c i else interval [x,x]’
+ >> qabbrev_tac ‘u = \i. if i < n then t (f i) else x’
+ >> qexistsl_tac [‘L’, ‘u’]
+ >> Know ‘!i j. i <> j ==> nonoverlapping (L i) (L j)’
+ >- (rw [Abbr ‘L’] >| (* 4 subgoals *)
+     [ (* goal 1 (of 4) *)
+       FIRST_X_ASSUM MATCH_MP_TAC \\
+       Q.PAT_X_ASSUM ‘!i. i < n ==> c i = J (f i)’
+         (ASM_SIMP_TAC std_ss o wrap o GSYM),
+       (* goal 2 (of 4) *)
+       simp [nonoverlapping_def, INTERIOR_INTERVAL] \\
+       simp [iffLR (cj 2 INTERVAL_EQ_EMPTY)],
+       (* goal 3 (of 4) *)
+       simp [nonoverlapping_def, INTERIOR_INTERVAL] \\
+       simp [iffLR (cj 2 INTERVAL_EQ_EMPTY)],
+       (* goal 4 (of 4) *)
+       simp [nonoverlapping_def, INTERIOR_INTERVAL] \\
+       simp [iffLR (cj 2 INTERVAL_EQ_EMPTY)] ])
+ >> Rewr
+ >> reverse CONJ_TAC
+ >- (simp [SUBSET_DEF] \\
+     Q.X_GEN_TAC ‘w’ >> DISCH_TAC \\
+     Know ‘w IN BIGUNION s’ >- PROVE_TAC [SUBSET_DEF] \\
+     rw [IN_BIGUNION] >> rename1 ‘A IN s’ \\
+     Q.EXISTS_TAC ‘A’ >> art [] \\
+     Q.PAT_X_ASSUM ‘BIJ c (count n) s’ MP_TAC \\
+     rw [BIJ_DEF, SURJ_DEF] \\
+     POP_ASSUM (MP_TAC o Q.SPEC ‘A’) >> art [] \\
+     DISCH_THEN (Q.X_CHOOSE_THEN ‘j’ STRIP_ASSUME_TAC) \\
+     Q.EXISTS_TAC ‘j’ >> rw [Abbr ‘L’])
+ >> RW_TAC std_ss [Abbr ‘L’, Abbr ‘u’, closed_interval_interval] (* 3 subgoals *)
+ >| [ (* goal 1 (of 3) *)
+      simp [IN_INTERVAL],
+      (* goal 2 (of 3) *)
+      Q_TAC (TRANS_TAC SUBSET_TRANS) ‘cball (t (f i),d (t (f i)))’ \\
+      simp [],
+      (* goal 3 (of 3) *)
+      simp [closed_interval_def, SUBSET_DEF, IN_INTERVAL] \\
+      Q.X_GEN_TAC ‘w’ >> STRIP_TAC \\
+     ‘w = x’ by PROVE_TAC [REAL_LE_ANTISYM] >> POP_ORW \\
+      FULL_SIMP_TAC std_ss [gauge_def] ]
 QED
 
 Definition integrable_sets_def :
@@ -1520,108 +1624,148 @@ Proof
  >> RW_TAC real_ss [] (* this asserts ‘d’, the gauge *)
  (* applying dyadic_covering_lemma' *)
  >> MP_TAC (Q.SPECL [‘d’, ‘E’] dyadic_covering_lemma')
- >> RW_TAC std_ss []
- (* NOTE: Convert J into a (possibly finite) sequence of "distinct" intervals,
-    otherwise COUNTABLY_ADDITIVE cannot apply. In case the sequence is finite,
-    we put L i = [x,x], where x IN E (E <> {}) and u i = x. Two such elements
-    are still non-overlapping because “DISJOINT {} {}”.
-  *)
- >> Know ‘?L u. (!i. closed_interval (L i) /\ u i IN E INTER L i /\
-                     E INTER L i SUBSET d (u i)) /\
-                (!i j. i <> j ==> nonoverlapping (L i) (L j)) /\
-                 E SUBSET BIGUNION (IMAGE L univ(:num))’
- >- (qabbrev_tac ‘s = IMAGE J UNIV’ \\
-    ‘countable s’ by simp [image_countable, Abbr ‘s’] \\
-     reverse (Cases_on ‘FINITE s’)
-     >- (FULL_SIMP_TAC std_ss [COUNTABLE_ALT_BIJ] \\
-         qabbrev_tac ‘h = enumerate s’ \\
-         Know ‘!i. h i IN s’
-         >- (Q.X_GEN_TAC ‘i’ \\
-             Q.PAT_X_ASSUM ‘BIJ h UNIV s’ MP_TAC \\
-             rw [BIJ_DEF, INJ_DEF]) >> DISCH_TAC \\
-         Know ‘!i j. i <> j ==> h i <> h j’
-         >- (rpt STRIP_TAC \\
-             Q.PAT_X_ASSUM ‘BIJ h UNIV s’ MP_TAC \\
-             rw [BIJ_DEF, INJ_DEF] \\
-             DISJ1_TAC >> qexistsl_tac [‘i’, ‘j’] >> art []) >> DISCH_TAC \\
-         Know ‘!i. ?n. h i = J n’
-         >- (Q.X_GEN_TAC ‘i’ \\
-             Q.PAT_X_ASSUM ‘!i. h i IN s’ (MP_TAC o Q.SPEC ‘i’) \\
-             rw [Abbr ‘s’]) \\
-         RW_TAC std_ss [SKOLEM_THM] (* this asserts f *) \\
-         qexistsl_tac [‘h’, ‘t o f’] \\
-         ASM_SIMP_TAC std_ss [o_DEF] \\
-         CONJ_TAC
-         >- (rpt STRIP_TAC \\
-             FIRST_X_ASSUM MATCH_MP_TAC \\
-             Q.PAT_X_ASSUM ‘!i. h i = J (f i)’ (REWRITE_TAC o wrap o GSYM) \\
-             FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
-         Suff ‘IMAGE h UNIV = s’ >- simp [] \\
-         POP_ASSUM K_TAC (* !i. h i = J (f i) *) \\
-         rw [Once EXTENSION] \\
-         EQ_TAC >- (rw [] >> simp []) \\
-         Q.PAT_X_ASSUM ‘BIJ h UNIV s’ MP_TAC \\
-         rw [BIJ_DEF, SURJ_DEF] \\
-         Q.PAT_X_ASSUM ‘!x. x IN s ==> ?y. h y = x’ (MP_TAC o Q.SPEC ‘x’) \\
-         simp [] >> DISCH_THEN (Q.X_CHOOSE_THEN ‘j’ STRIP_ASSUME_TAC) \\
-         Q.EXISTS_TAC ‘j’ >> art []) \\
-  (* FINITE s *)
-     FULL_SIMP_TAC std_ss [FINITE_BIJ_COUNT_EQ, GSYM MEMBER_NOT_EMPTY] \\
-     Know ‘!i. i < n ==> c i IN s’
-     >- (rpt STRIP_TAC \\
-         Q.PAT_X_ASSUM ‘BIJ c (count n) s’ MP_TAC \\
-         rw [BIJ_DEF, INJ_DEF]) >> DISCH_TAC \\
-     Know ‘!i j. i < n /\ j < n /\ i <> j ==> c i <> c j’
-     >- (rpt STRIP_TAC \\
-         Q.PAT_X_ASSUM ‘BIJ c (count n) s’ MP_TAC \\
-         rw [BIJ_DEF, INJ_DEF] \\
-         DISJ1_TAC >> qexistsl_tac [‘i’, ‘j’] >> art []) >> DISCH_TAC \\
-     Know ‘!i. i < n ==> ?n. c i = J n’
-     >- (rpt STRIP_TAC \\
-         Q.PAT_X_ASSUM ‘!i. i < n ==> c i IN s’ (MP_TAC o Q.SPEC ‘i’) \\
-         rw [Abbr ‘s’]) \\
-     RW_TAC std_ss [EXT_SKOLEM_THM'] (* this asserts f *) \\
-     qabbrev_tac ‘L = \i. if i < n then c i else interval [x,x]’ \\
-     qabbrev_tac ‘u = \i. if i < n then t (f i) else x’ \\
-     qexistsl_tac [‘L’, ‘u’] \\
-     Know ‘!i j. i <> j ==> nonoverlapping (L i) (L j)’
-     >- (rw [Abbr ‘L’] >| (* 4 subgoals *)
-         [ (* goal 1 (of 4) *)
-           FIRST_X_ASSUM MATCH_MP_TAC \\
-           Q.PAT_X_ASSUM ‘!i. i < n ==> c i = J (f i)’
-             (ASM_SIMP_TAC std_ss o wrap o GSYM),
-           (* goal 2 (of 4) *)
-           simp [nonoverlapping_def, INTERIOR_INTERVAL] \\
-           simp [iffLR (cj 2 INTERVAL_EQ_EMPTY)],
-           (* goal 3 (of 4) *)
-           simp [nonoverlapping_def, INTERIOR_INTERVAL] \\
-           simp [iffLR (cj 2 INTERVAL_EQ_EMPTY)],
-           (* goal 4 (of 4) *)
-           simp [nonoverlapping_def, INTERIOR_INTERVAL] \\
-           simp [iffLR (cj 2 INTERVAL_EQ_EMPTY)] ]) >> Rewr \\
-     reverse CONJ_TAC
-     >- (simp [SUBSET_DEF] \\
-         Q.X_GEN_TAC ‘w’ >> DISCH_TAC \\
-         Know ‘w IN BIGUNION s’ >- PROVE_TAC [SUBSET_DEF] \\
-         rw [IN_BIGUNION] >> rename1 ‘A IN s’ \\
-         Q.EXISTS_TAC ‘A’ >> art [] \\
-         Q.PAT_X_ASSUM ‘BIJ c (count n) s’ MP_TAC \\
-         rw [BIJ_DEF, SURJ_DEF] \\
-         POP_ASSUM (MP_TAC o Q.SPEC ‘A’) >> art [] \\
-         DISCH_THEN (Q.X_CHOOSE_THEN ‘j’ STRIP_ASSUME_TAC) \\
-         Q.EXISTS_TAC ‘j’ >> rw [Abbr ‘L’]) \\
-     RW_TAC std_ss [Abbr ‘L’, Abbr ‘u’, closed_interval_interval]
-     >- rw [IN_INTERVAL] \\
-     simp [SUBSET_DEF, IN_INTERVAL] \\
-     Q.X_GEN_TAC ‘w’ >> STRIP_TAC \\
-    ‘w = x’ by PROVE_TAC [REAL_LE_ANTISYM] >> POP_ORW \\
-     FULL_SIMP_TAC std_ss [gauge_def])
- >> RW_TAC std_ss [FORALL_AND_THM, IN_INTER, GSYM CONJ_ASSOC]
- >> Q.EXISTS_TAC ‘L’ >> simp []
- (* COUNTABLY_ADDITIVE, MEASURE_INCREASING, etc. *)
+ >> RW_TAC std_ss [FORALL_AND_THM, GSYM CONJ_ASSOC]
+ >> Q.EXISTS_TAC ‘J’ >> simp []
  >> CONJ_ASM1_TAC
  >- (Q.PAT_X_ASSUM ‘m_lebesgue E = Normal y’ (REWRITE_TAC o wrap o SYM) \\
-     cheat)
+     Know ‘!n. J n IN measurable_sets lebesgue’
+     >- (Q.X_GEN_TAC ‘n’ \\
+         fs [closed_interval_def, GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM,
+             INTERIOR_INTERVAL] \\
+         rename1 ‘!i. J i = interval [a i,b i]’ \\
+         Suff ‘interval [a n,b n] IN measurable_sets lborel’
+         >- PROVE_TAC [SUBSET_DEF, lborel_subset_lebesgue] \\
+         simp [sets_lborel, borel_measurable_sets, CLOSED_interval]) >> DISCH_TAC \\
+     Know ‘BIGUNION (IMAGE J UNIV) IN measurable_sets lebesgue’
+     >- (MATCH_MP_TAC MEASURE_SPACE_BIGUNION \\
+         simp [measure_space_lebesgue]) >> DISCH_TAC \\
+     qabbrev_tac ‘A = interior o J’ \\
+     Know ‘m_lebesgue o J = m_lebesgue o A’
+     >- (simp [FUN_EQ_THM, Abbr ‘A’] \\
+         Q.X_GEN_TAC ‘i’ \\
+         fs [closed_interval_def, GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM,
+             INTERIOR_INTERVAL] \\
+         rename1 ‘!i. J i = interval [a i,b i]’ \\
+         Cases_on ‘a i <= b i’
+         >- simp [lebesgue_open_interval, lebesgue_closed_interval] \\
+        ‘b i < a i /\ b i <= a i’ by PROVE_TAC [REAL_NOT_LE, REAL_LT_IMP_LE] \\
+         simp [iffLR (cj 1 INTERVAL_EQ_EMPTY),
+               iffLR (cj 2 INTERVAL_EQ_EMPTY)]) >> Rewr' \\
+     Know ‘!n. A n IN measurable_sets lebesgue’
+     >- (rw [Abbr ‘A’] \\
+         fs [closed_interval_def, GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM,
+             INTERIOR_INTERVAL] \\
+         rename1 ‘!i. J i = interval [a i,b i]’ \\
+         Suff ‘interval (a n,b n) IN measurable_sets lborel’
+         >- PROVE_TAC [SUBSET_DEF, lborel_subset_lebesgue] \\
+         simp [sets_lborel, borel_measurable_sets, OPEN_interval]) >> DISCH_TAC \\
+     Know ‘BIGUNION (IMAGE A UNIV) IN measurable_sets lebesgue’
+     >- (MATCH_MP_TAC MEASURE_SPACE_BIGUNION \\
+         simp [measure_space_lebesgue]) >> DISCH_TAC \\
+  (* applying COUNTABLY_ADDITIVE *)
+     Know ‘suminf (m_lebesgue o A) = m_lebesgue (BIGUNION (IMAGE A UNIV))’
+     >- (MATCH_MP_TAC COUNTABLY_ADDITIVE \\
+         simp [countably_additive_lebesgue, IN_FUNSET] \\
+         rpt STRIP_TAC \\
+         Q.PAT_X_ASSUM ‘!i j. i <> j ==> nonoverlapping (J i) (J j)’
+           (MP_TAC o Q.SPECL [‘i’, ‘j’]) \\
+         simp [nonoverlapping_def, Abbr ‘A’]) >> Rewr' \\
+     Suff ‘m_lebesgue (BIGUNION (IMAGE A UNIV)) =
+           m_lebesgue (BIGUNION (IMAGE J UNIV))’
+     >- (Rewr' \\
+         MATCH_MP_TAC MEASURE_INCREASING \\
+         simp [measure_space_lebesgue]) \\
+     qabbrev_tac ‘C = frontier o J’ \\
+     Know ‘!n. C n IN measurable_sets lebesgue’
+     >- (Q.X_GEN_TAC ‘n’ \\
+         Suff ‘C n IN measurable_sets lborel’
+         >- PROVE_TAC [SUBSET_DEF, lborel_subset_lebesgue] \\
+         SIMP_TAC std_ss [Abbr ‘C’, sets_lborel] \\
+         fs [closed_interval_def, GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM] \\
+         rename1 ‘!i. J i = interval [a i,b i]’ \\
+         simp [FRONTIER_CLOSED_INTERVAL] \\
+         MATCH_MP_TAC SIGMA_ALGEBRA_DIFF \\
+         simp [sigma_algebra_borel, borel_measurable_sets,
+               OPEN_interval, CLOSED_interval]) >> DISCH_TAC \\
+     Know ‘BIGUNION (IMAGE C UNIV) IN measurable_sets lebesgue’
+     >- (MATCH_MP_TAC MEASURE_SPACE_BIGUNION \\
+         simp [measure_space_lebesgue]) >> DISCH_TAC \\
+     Know ‘!n. DISJOINT (A n) (C n)’
+     >- (rw [Abbr ‘A’, Abbr ‘C’] \\
+         simp [GSYM SET_DIFF_FRONTIER, DISJOINT_ALT]) >> DISCH_TAC \\
+     Know ‘!n. J n = A n UNION C n’
+     >- (rw [Abbr ‘A’, Abbr ‘C’, frontier] \\
+        ‘closed (J n)’ by PROVE_TAC [closed_interval_closed] \\
+         simp [CLOSURE_CLOSED] \\
+         Suff ‘interior (J n) SUBSET J n’ >- SET_TAC [] \\
+         REWRITE_TAC [INTERIOR_SUBSET]) >> DISCH_TAC \\
+     Know ‘BIGUNION (IMAGE J UNIV) =
+           BIGUNION (IMAGE A UNIV) UNION BIGUNION (IMAGE C UNIV)’
+     >- (REWRITE_TAC [GSYM BIGUNION_UNION] \\
+         rw [Once EXTENSION, IN_BIGUNION_IMAGE] \\
+         EQ_TAC >> rw [] >| (* 4 subgoals *)
+         [ (* goal 1 (of 4) *)
+           rename1 ‘x IN A i’ \\
+           Q.EXISTS_TAC ‘A i’ >> art [] \\
+           DISJ1_TAC >> Q.EXISTS_TAC ‘i’ >> REFL_TAC,
+           (* goal 2 (of 4) *)
+           rename1 ‘x IN C i’ \\
+           Q.EXISTS_TAC ‘C i’ >> art [] \\
+           DISJ2_TAC >> Q.EXISTS_TAC ‘i’ >> REFL_TAC,
+           (* goal 3 (of 4) *)
+           rename1 ‘x IN A i’ \\
+           Q.EXISTS_TAC ‘i’ >> art [],
+           (* goal 4 (of 4) *)
+           rename1 ‘x IN C i’ \\
+           Q.EXISTS_TAC ‘i’ >> art [] ]) >> Rewr' \\
+  (* applying MEASURE_INCREASING, again *)
+     RW_TAC std_ss [GSYM le_antisym]
+     >- (MATCH_MP_TAC MEASURE_INCREASING \\
+         simp [measure_space_lebesgue] \\
+         MATCH_MP_TAC MEASURE_SPACE_UNION \\
+         simp [measure_space_lebesgue]) \\
+     Suff ‘m_lebesgue (BIGUNION (IMAGE C UNIV)) = 0’
+     >- (DISCH_TAC \\
+        ‘m_lebesgue (BIGUNION (IMAGE A UNIV)) =
+         m_lebesgue (BIGUNION (IMAGE A UNIV)) + 0’ by simp [add_rzero] \\
+         POP_ORW \\
+         POP_ASSUM (REWRITE_TAC o wrap o SYM) \\
+         MATCH_MP_TAC MEASURE_SUBADDITIVE \\
+         simp [measure_space_lebesgue]) \\
+     reverse (rw [GSYM le_antisym])
+     >- (MATCH_MP_TAC MEASURE_POSITIVE \\
+         simp [measure_space_lebesgue]) \\
+     Q_TAC (TRANS_TAC le_trans) ‘suminf (m_lebesgue o C)’ \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC MEASURE_COUNTABLY_SUBADDITIVE \\
+         simp [measure_space_lebesgue, IN_FUNSET]) \\
+     Suff ‘suminf (m_lebesgue o C) = 0’ >- simp [] \\
+     MATCH_MP_TAC ext_suminf_zero \\
+     NTAC 4 (POP_ASSUM K_TAC) (* C-assumptions *) \\
+     rw [o_DEF, Abbr ‘C’] \\
+     fs [closed_interval_def, GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM] \\
+     rename1 ‘!i. J i = interval [a i,b i]’ \\
+     simp [FRONTIER_CLOSED_INTERVAL] \\
+     Know ‘interval [(a n,b n)] DIFF interval (a n,b n) = {a n} UNION {b n}’
+     >- (rw [Once EXTENSION, IN_INTERVAL, REAL_NOT_LT] \\
+         Know ‘a n <= b n’
+         >- (CCONTR_TAC >> fs [REAL_NOT_LE] \\
+             Q.PAT_X_ASSUM ‘!i. t i IN E /\ t i IN J i’ (MP_TAC o Q.SPEC ‘n’) \\
+             simp [iffLR (cj 1 INTERVAL_EQ_EMPTY)]) \\
+         REAL_ARITH_TAC) >> Rewr' \\
+     qmatch_abbrev_tac ‘m_lebesgue ({x1} UNION {x2}) = 0’ \\
+     Cases_on ‘x1 = x2’
+     >- (POP_ORW \\
+        ‘{x2} UNION {x2} = {x2}’ by SET_TAC [] >> POP_ORW \\
+         simp [lebesgue_sing]) \\
+     Suff ‘m_lebesgue ({x1} UNION {x2}) = m_lebesgue ({x1}) + m_lebesgue ({x2})’
+     >- (Rewr' \\
+         simp [lebesgue_sing]) \\
+     MATCH_MP_TAC MEASURE_ADDITIVE >> simp [measure_space_lebesgue] \\
+     Suff ‘{x1} IN measurable_sets lborel /\
+           {x2} IN measurable_sets lborel’
+     >- PROVE_TAC [SUBSET_DEF, lborel_subset_lebesgue] \\
+     simp [sets_lborel, borel_measurable_sets])
  (* applying REAL_SUM_IMAGE_sum, etc. *)
  >> cheat
 QED
