@@ -1604,24 +1604,42 @@ Proof
     rpt STRIP_TAC
  >> ‘E IN measurable_sets lebesgue’
       by PROVE_TAC [SUBSET_DEF, integrable_sets_subset_lebesgue]
- >> fs [integrable_sets_def, integrable_on] (* this asserts ‘y’ *)
+ >> fs [integrable_sets_def]
+ >> Know ‘!a b. indicator E integrable_on interval [a,b]’
+ >- (rpt GEN_TAC \\
+     MATCH_MP_TAC INTEGRABLE_ON_SUBINTERVAL \\
+     Q.EXISTS_TAC ‘UNIV’ >> simp [])
+ >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘indicator E integrable_on UNIV’ MP_TAC
+ >> rw [integrable_on] (* this asserts ‘y’ *)
  >> ‘m_lebesgue E = Normal y’
       by PROVE_TAC [has_integral_indicator_imp_lebesgue]
- >> Q.PAT_X_ASSUM ‘(_ has_integral y) _’ MP_TAC
+ >> ‘integral UNIV (indicator E) = y’ by PROVE_TAC [INTEGRAL_HAS_INTEGRAL]
+ >> Q.PAT_X_ASSUM ‘(indicator E has_integral y) UNIV’ MP_TAC
  >> simp [has_integral_def]
+ >> ‘(\x. indicator E x) = indicator E’ by rw [FUN_EQ_THM] >> POP_ORW
  >> Know ‘~?a b. interval [a,b] = UNIV’
  >- (rw [Once EXTENSION, IN_INTERVAL, REAL_NOT_LE] \\
      Q.EXISTS_TAC ‘b + 1’ >> simp [])
  >> Rewr
  >> DISCH_THEN (MP_TAC o Q.SPEC ‘e / 2’)
  >> RW_TAC real_ss [] (* this asserts ‘B’ *)
- >> POP_ASSUM (MP_TAC o Q.SPECL [‘-B’, ‘B’])
+ >> qabbrev_tac ‘y = integral UNIV (indicator E)’
+ >> Q.PAT_X_ASSUM ‘!a b. P ==> ?z. _’ (MP_TAC o Q.SPECL [‘-B’, ‘B’])
  >> impl_tac >- rw [BALL_INTERVAL, IN_INTERVAL, SUBSET_DEF, REAL_LT_IMP_LE]
  >> STRIP_TAC (* this asserts ‘z’, a smaller value than ‘y’ *)
+ >> Know ‘(indicator E has_integral z) (interval [-B,B])’
+ >- (rw [has_integral_def] \\
+     DISJ1_TAC \\
+     qexistsl_tac [‘-B’, ‘B’] >> REFL_TAC)
+ >> DISCH_TAC
+ >> ‘integral (interval [-B,B]) (indicator E) = z’
+      by PROVE_TAC [INTEGRAL_HAS_INTEGRAL]
  >> Q.PAT_X_ASSUM ‘(_ has_integral_compact_interval z) _’ MP_TAC
  >> simp [has_integral_compact_interval]
  >> DISCH_THEN (MP_TAC o Q.SPEC ‘e / 2’)
  >> RW_TAC real_ss [] (* this asserts ‘d’, the gauge *)
+ >> qabbrev_tac ‘z = integral (interval [-B,B]) (indicator E)’
  (* applying dyadic_covering_lemma' *)
  >> MP_TAC (Q.SPECL [‘d’, ‘E’] dyadic_covering_lemma')
  >> RW_TAC std_ss [FORALL_AND_THM, GSYM CONJ_ASSOC]
@@ -1635,6 +1653,7 @@ Proof
      >- PROVE_TAC [SUBSET_DEF, lborel_subset_lebesgue] \\
      simp [sets_lborel, borel_measurable_sets, CLOSED_interval])
  >> DISCH_TAC
+ (* The first subgoal involves only a measure-theoretic proof *)
  >> CONJ_TAC
  >- (Q.PAT_X_ASSUM ‘m_lebesgue E = Normal y’ (REWRITE_TAC o wrap o SYM) \\
      Know ‘BIGUNION (IMAGE J UNIV) IN measurable_sets lebesgue’
@@ -1749,8 +1768,9 @@ Proof
      rw [Abbr ‘f’] \\
      MATCH_MP_TAC MEASURE_POSITIVE >> simp [measure_space_lebesgue])
  >> Rewr'
- (* applying sup_le', REAL_SUM_IMAGE_sum, etc. *)
+ (* applying sup_le', fixing ‘n’ *)
  >> rw [sup_le', Abbr ‘f’]
+ (* applying HENSTOCK_LEMMA_PART1 (Saks-Henstock Lemma 5.3 [2, p.76]) *)
  >> cheat
 QED
 
