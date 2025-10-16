@@ -1784,6 +1784,27 @@ Proof
  (* applying HENSTOCK_LEMMA_PART1 (Saks-Henstock Lemma 5.3 [2, p.76]) *)
  >> MP_TAC (Q.SPECL [‘f’, ‘-B’, ‘B’, ‘d’, ‘e / 2’] HENSTOCK_LEMMA_PART1)
  >> RW_TAC real_ss [] (* all antecedents are eliminated *)
+ (* applying lebesgue_closed_interval_content, eliminating “m_lebesgue” *)
+ >> Know ‘m_lebesgue o J = Normal o content o J’
+ >- (rw [o_DEF, FUN_EQ_THM] \\
+     fs [closed_interval_def, GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM] \\
+     rename1 ‘!i. J i = interval [a i,b i]’ \\
+     REWRITE_TAC [lebesgue_closed_interval_content])
+ >> Rewr'
+ (* next, eliminating extreals! *)
+ >> Know ‘SIGMA (Normal o content o J) (count n) =
+          Normal (SIGMA (content o J) (count n))’
+ >- (simp [o_DEF] \\
+     HO_MATCH_MP_TAC EXTREAL_SUM_IMAGE_NORMAL >> simp [])
+ >> Rewr'
+ >> simp [extreal_add_eq]
+ (* rewrite SIGMA to sum (iterateTheory) *)
+ >> Know ‘SIGMA (content o J) (count n) = sum (count n) (content o J)’
+ >- (MATCH_MP_TAC REAL_SUM_IMAGE_sum >> simp [])
+ >> Rewr'
+ (* NOTE: Now the problem is that “BIGUNION (IMAGE J (count n))” may go beyond
+    [-B,B], rendering the last assumption useless. What's the solution here?
+  *)
  >> cheat
 QED
 
