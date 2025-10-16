@@ -1610,39 +1610,47 @@ Proof
      MATCH_MP_TAC INTEGRABLE_ON_SUBINTERVAL \\
      Q.EXISTS_TAC ‘UNIV’ >> simp [])
  >> DISCH_TAC
- >> Q.PAT_X_ASSUM ‘indicator E integrable_on UNIV’ MP_TAC
- >> rw [integrable_on] (* this asserts ‘y’ *)
+ >> Q.PAT_X_ASSUM ‘indicator E integrable_on UNIV’
+      (STRIP_ASSUME_TAC o REWRITE_RULE [integrable_on]) (* this asserts ‘y’ *)
  >> ‘m_lebesgue E = Normal y’
       by PROVE_TAC [has_integral_indicator_imp_lebesgue]
  >> ‘integral UNIV (indicator E) = y’ by PROVE_TAC [INTEGRAL_HAS_INTEGRAL]
- >> Q.PAT_X_ASSUM ‘(indicator E has_integral y) UNIV’ MP_TAC
- >> simp [has_integral_def]
+ (* stage work, now we try to focus on “integral [-B,B] f = z” *)
+ >> Q.PAT_X_ASSUM ‘(indicator E has_integral y) UNIV’
+      (MP_TAC o SRULE [has_integral_def])
  >> ‘(\x. indicator E x) = indicator E’ by rw [FUN_EQ_THM] >> POP_ORW
  >> Know ‘~?a b. interval [a,b] = UNIV’
  >- (rw [Once EXTENSION, IN_INTERVAL, REAL_NOT_LE] \\
      Q.EXISTS_TAC ‘b + 1’ >> simp [])
  >> Rewr
+ (* NOTE: What else can we do here? *)
  >> DISCH_THEN (MP_TAC o Q.SPEC ‘e / 2’)
- >> RW_TAC real_ss [] (* this asserts ‘B’ *)
- >> qabbrev_tac ‘y = integral UNIV (indicator E)’
+ >> RW_TAC real_ss [] (* this consumes ‘y’ and asserts ‘B’ *)
+ >> qabbrev_tac ‘y = integral UNIV (indicator E)’ (* re-create ‘y’ *)
+ (* NOTE: Here we want to focus on the integration of “indicator E” on an
+   (closed, thus compact) interval instead of UNIV, so that the conclusion
+    of the Saks-Henstock Lemma (HENSTOCK_LEMMA_PART1) can be useful. This
+    integral ‘z’ only differs with the above ‘y’ by a small value (e / 2).
+  *)
  >> Q.PAT_X_ASSUM ‘!a b. P ==> ?z. _’ (MP_TAC o Q.SPECL [‘-B’, ‘B’])
  >> impl_tac >- rw [BALL_INTERVAL, IN_INTERVAL, SUBSET_DEF, REAL_LT_IMP_LE]
  >> STRIP_TAC (* this asserts ‘z’, a smaller value than ‘y’ *)
  >> Know ‘(indicator E has_integral z) (interval [-B,B])’
  >- (rw [has_integral_def] \\
-     DISJ1_TAC \\
-     qexistsl_tac [‘-B’, ‘B’] >> REFL_TAC)
+     DISJ1_TAC >> qexistsl_tac [‘-B’, ‘B’] >> REFL_TAC)
  >> DISCH_TAC
  >> ‘integral (interval [-B,B]) (indicator E) = z’
       by PROVE_TAC [INTEGRAL_HAS_INTEGRAL]
- >> Q.PAT_X_ASSUM ‘(_ has_integral_compact_interval z) _’ MP_TAC
- >> simp [has_integral_compact_interval]
+ >> Q.PAT_X_ASSUM ‘(_ has_integral_compact_interval z) _’
+      (MP_TAC o REWRITE_RULE [has_integral_compact_interval])
  >> DISCH_THEN (MP_TAC o Q.SPEC ‘e / 2’)
- >> RW_TAC real_ss [] (* this asserts ‘d’, the gauge *)
+ >> RW_TAC real_ss [] (* this consumes ‘z’ and asserts ‘d’ (the gauge). *)
  >> qabbrev_tac ‘z = integral (interval [-B,B]) (indicator E)’
+ >> qabbrev_tac ‘f = indicator E’
  (* applying dyadic_covering_lemma' *)
  >> MP_TAC (Q.SPECL [‘d’, ‘E’] dyadic_covering_lemma')
  >> RW_TAC std_ss [FORALL_AND_THM, GSYM CONJ_ASSOC]
+ (* NOTE: J may covers entire univ(:real), including those outside of [-B,B]. *)
  >> Q.EXISTS_TAC ‘J’ >> simp []
  >> Know ‘!n. J n IN measurable_sets lebesgue’
  >- (Q.X_GEN_TAC ‘n’ \\
@@ -1762,205 +1770,17 @@ Proof
      >- PROVE_TAC [SUBSET_DEF, lborel_subset_lebesgue] \\
      simp [sets_lborel, borel_measurable_sets])
  (* applying ext_suminf_def *)
- >> qmatch_abbrev_tac ‘suminf f <= _’
- >> Know ‘suminf f = sup (IMAGE (\n. SIGMA f (count n)) UNIV)’
+ >> qmatch_abbrev_tac ‘suminf g <= _’
+ >> Know ‘suminf g = sup (IMAGE (\n. SIGMA g (count n)) UNIV)’
  >- (MATCH_MP_TAC ext_suminf_def \\
-     rw [Abbr ‘f’] \\
+     rw [Abbr ‘g’] \\
      MATCH_MP_TAC MEASURE_POSITIVE >> simp [measure_space_lebesgue])
  >> Rewr'
  (* applying sup_le', fixing ‘n’ *)
- >> rw [sup_le', Abbr ‘f’]
+ >> rw [sup_le', Abbr ‘g’]
  (* applying HENSTOCK_LEMMA_PART1 (Saks-Henstock Lemma 5.3 [2, p.76]) *)
- >> MP_TAC (Q.SPECL [‘indicator E’, ‘-B’, ‘B’, ‘d’, ‘e / 2’]
-                    HENSTOCK_LEMMA_PART1)
- >> ASM_SIMP_TAC real_ss [] (* all antecedents are eliminated *)
- >> DISCH_TAC
- >> cheat
-QED
-
-(* An experimental version *)
-Theorem approximation_thm' :
-    !E e. E IN integrable_sets UNIV /\ E <> {} /\ 0 < e ==>
-          ?J. (!i. closed_interval (J i)) /\
-              (!i j. i <> j ==> nonoverlapping (J i) (J j)) /\
-               E SUBSET BIGUNION (IMAGE J UNIV) /\
-               m_lebesgue E <= suminf (m_lebesgue o J) /\
-               suminf (m_lebesgue o J) <= m_lebesgue E + Normal e
-Proof
-    rpt STRIP_TAC
- >> ‘E IN measurable_sets lebesgue’
-      by PROVE_TAC [SUBSET_DEF, integrable_sets_subset_lebesgue]
- >> fs [integrable_sets_def]
- >> Know ‘!a b. indicator E integrable_on interval [a,b]’
- >- (rpt GEN_TAC \\
-     MATCH_MP_TAC INTEGRABLE_ON_SUBINTERVAL \\
-     Q.EXISTS_TAC ‘UNIV’ >> simp [])
- >> DISCH_TAC
- >> Q.PAT_X_ASSUM ‘indicator E integrable_on UNIV’ MP_TAC
- >> rw [integrable_on] (* this asserts ‘y’ *)
- >> ‘m_lebesgue E = Normal y’
-      by PROVE_TAC [has_integral_indicator_imp_lebesgue]
- >> ‘integral UNIV (indicator E) = y’ by PROVE_TAC [INTEGRAL_HAS_INTEGRAL]
- >> Q.PAT_X_ASSUM ‘(indicator E has_integral y) UNIV’ MP_TAC
- >> simp [has_integral_def]
- >> ‘(\x. indicator E x) = indicator E’ by rw [FUN_EQ_THM] >> POP_ORW
- >> Know ‘~?a b. interval [a,b] = UNIV’
- >- (rw [Once EXTENSION, IN_INTERVAL, REAL_NOT_LE] \\
-     Q.EXISTS_TAC ‘b + 1’ >> simp [])
- >> Rewr
- >> DISCH_THEN (MP_TAC o Q.SPEC ‘e / 2’)
- >> RW_TAC real_ss [] (* this asserts ‘B’ *)
- >> qabbrev_tac ‘y = integral UNIV (indicator E)’
- >> Q.PAT_X_ASSUM ‘!a b. P ==> ?z. _’ (MP_TAC o Q.SPECL [‘-B’, ‘B’])
- >> impl_tac >- rw [BALL_INTERVAL, IN_INTERVAL, SUBSET_DEF, REAL_LT_IMP_LE]
- >> STRIP_TAC (* this asserts ‘z’, a smaller value than ‘y’ *)
- >> Know ‘(indicator E has_integral z) (interval [-B,B])’
- >- (rw [has_integral_def] \\
-     DISJ1_TAC \\
-     qexistsl_tac [‘-B’, ‘B’] >> REFL_TAC)
- >> DISCH_TAC
- >> ‘integral (interval [-B,B]) (indicator E) = z’
-      by PROVE_TAC [INTEGRAL_HAS_INTEGRAL]
- >> Q.PAT_X_ASSUM ‘(_ has_integral_compact_interval z) _’ MP_TAC
- >> simp [has_integral_compact_interval]
- >> DISCH_THEN (MP_TAC o Q.SPEC ‘e / 2’)
- >> RW_TAC real_ss [] (* this asserts ‘d’, the gauge *)
- >> qabbrev_tac ‘z = integral (interval [-B,B]) (indicator E)’
- (* applying dyadic_covering_lemma' *)
- >> MP_TAC (Q.SPECL [‘d’, ‘E’] dyadic_covering_lemma')
- >> RW_TAC std_ss [FORALL_AND_THM, GSYM CONJ_ASSOC]
- >> Q.EXISTS_TAC ‘J’ >> simp []
- >> Know ‘!n. J n IN measurable_sets lebesgue’
- >- (Q.X_GEN_TAC ‘n’ \\
-     fs [closed_interval_def, GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM,
-         INTERIOR_INTERVAL] \\
-     rename1 ‘!i. J i = interval [a i,b i]’ \\
-     Suff ‘interval [a n,b n] IN measurable_sets lborel’
-     >- PROVE_TAC [SUBSET_DEF, lborel_subset_lebesgue] \\
-     simp [sets_lborel, borel_measurable_sets, CLOSED_interval])
- >> DISCH_TAC
- (* The first subgoal involves only a measure-theoretic proof *)
- >> CONJ_TAC
- >- (Q.PAT_X_ASSUM ‘m_lebesgue E = Normal y’ (REWRITE_TAC o wrap o SYM) \\
-     Know ‘BIGUNION (IMAGE J UNIV) IN measurable_sets lebesgue’
-     >- (MATCH_MP_TAC MEASURE_SPACE_BIGUNION \\
-         simp [measure_space_lebesgue]) >> DISCH_TAC \\
-     qabbrev_tac ‘A = interior o J’ \\
-     Know ‘m_lebesgue o J = m_lebesgue o A’
-     >- (simp [FUN_EQ_THM, Abbr ‘A’] \\
-         Q.X_GEN_TAC ‘i’ \\
-         fs [closed_interval_def, GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM,
-             INTERIOR_INTERVAL] \\
-         rename1 ‘!i. J i = interval [a i,b i]’ \\
-         Cases_on ‘a i <= b i’
-         >- simp [lebesgue_open_interval, lebesgue_closed_interval] \\
-        ‘b i < a i /\ b i <= a i’ by PROVE_TAC [REAL_NOT_LE, REAL_LT_IMP_LE] \\
-         simp [iffLR (cj 1 INTERVAL_EQ_EMPTY),
-               iffLR (cj 2 INTERVAL_EQ_EMPTY)]) >> Rewr' \\
-     Know ‘!n. A n IN measurable_sets lebesgue’
-     >- (rw [Abbr ‘A’] \\
-         fs [closed_interval_def, GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM,
-             INTERIOR_INTERVAL] \\
-         rename1 ‘!i. J i = interval [a i,b i]’ \\
-         Suff ‘interval (a n,b n) IN measurable_sets lborel’
-         >- PROVE_TAC [SUBSET_DEF, lborel_subset_lebesgue] \\
-         simp [sets_lborel, borel_measurable_sets, OPEN_interval]) >> DISCH_TAC \\
-     Know ‘BIGUNION (IMAGE A UNIV) IN measurable_sets lebesgue’
-     >- (MATCH_MP_TAC MEASURE_SPACE_BIGUNION \\
-         simp [measure_space_lebesgue]) >> DISCH_TAC \\
-  (* applying COUNTABLY_ADDITIVE *)
-     Know ‘suminf (m_lebesgue o A) = m_lebesgue (BIGUNION (IMAGE A UNIV))’
-     >- (MATCH_MP_TAC COUNTABLY_ADDITIVE \\
-         simp [countably_additive_lebesgue, IN_FUNSET] \\
-         rpt STRIP_TAC \\
-         Q.PAT_X_ASSUM ‘!i j. i <> j ==> nonoverlapping (J i) (J j)’
-           (MP_TAC o Q.SPECL [‘i’, ‘j’]) \\
-         simp [nonoverlapping_def, Abbr ‘A’]) >> Rewr' \\
-     Suff ‘m_lebesgue (BIGUNION (IMAGE A UNIV)) =
-           m_lebesgue (BIGUNION (IMAGE J UNIV))’
-     >- (Rewr' \\
-         MATCH_MP_TAC MEASURE_INCREASING >> simp [measure_space_lebesgue]) \\
-     qabbrev_tac ‘C = frontier o J’ \\
-     Know ‘!n. C n IN measurable_sets lebesgue’
-     >- (Q.X_GEN_TAC ‘n’ \\
-         Suff ‘C n IN measurable_sets lborel’
-         >- PROVE_TAC [SUBSET_DEF, lborel_subset_lebesgue] \\
-         SIMP_TAC std_ss [Abbr ‘C’, sets_lborel] \\
-         fs [closed_interval_def, GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM] \\
-         rename1 ‘!i. J i = interval [a i,b i]’ \\
-         simp [FRONTIER_CLOSED_INTERVAL] \\
-         MATCH_MP_TAC SIGMA_ALGEBRA_DIFF \\
-         simp [sigma_algebra_borel, borel_measurable_sets,
-               OPEN_interval, CLOSED_interval]) >> DISCH_TAC \\
-     Know ‘BIGUNION (IMAGE C UNIV) IN measurable_sets lebesgue’
-     >- (MATCH_MP_TAC MEASURE_SPACE_BIGUNION \\
-         simp [measure_space_lebesgue]) >> DISCH_TAC \\
-     Know ‘!n. DISJOINT (A n) (C n)’
-     >- (rw [Abbr ‘A’, Abbr ‘C’] \\
-         simp [GSYM SET_DIFF_FRONTIER, DISJOINT_ALT]) >> DISCH_TAC \\
-     Know ‘!n. J n = A n UNION C n’
-     >- (rw [Abbr ‘A’, Abbr ‘C’, frontier] \\
-        ‘closed (J n)’ by PROVE_TAC [closed_interval_closed] \\
-         simp [CLOSURE_CLOSED] \\
-         Suff ‘interior (J n) SUBSET J n’ >- SET_TAC [] \\
-         REWRITE_TAC [INTERIOR_SUBSET]) >> DISCH_TAC \\
-  (* NOTE: BIGUNION (IMAGE A UNIV) and BIGUNION (IMAGE C UNIV) are not
-     disjoint in general: some C in form of [x,x] may stand in the middle
-     of another (A n). But these singleton sets do not contribute measures.
-   *)
-     Know ‘BIGUNION (IMAGE J UNIV) =
-           BIGUNION (IMAGE A UNIV) UNION BIGUNION (IMAGE C UNIV)’
-     >- (REWRITE_TAC [BIGUNION_IMAGE_UNION] \\
-         POP_ASSUM (fn th => simp [GSYM th, ETA_THM])) >> Rewr' \\
-  (* applying MEASURE_ADD_ABSORB *)
-     SYM_TAC >> MATCH_MP_TAC MEASURE_ADD_ABSORB \\
-     simp [measure_space_lebesgue] \\
-     reverse (rw [GSYM le_antisym])
-     >- (MATCH_MP_TAC MEASURE_POSITIVE >> simp [measure_space_lebesgue]) \\
-     Q_TAC (TRANS_TAC le_trans) ‘suminf (m_lebesgue o C)’ \\
-     CONJ_TAC
-     >- (MATCH_MP_TAC MEASURE_COUNTABLY_SUBADDITIVE \\
-         simp [measure_space_lebesgue, IN_FUNSET]) \\
-     Suff ‘suminf (m_lebesgue o C) = 0’ >- simp [] \\
-     MATCH_MP_TAC ext_suminf_zero \\
-     NTAC 4 (POP_ASSUM K_TAC) (* C-assumptions *) \\
-     rw [o_DEF, Abbr ‘C’] \\
-     fs [closed_interval_def, GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM] \\
-     rename1 ‘!i. J i = interval [a i,b i]’ \\
-     simp [FRONTIER_CLOSED_INTERVAL] \\
-     Know ‘interval [(a n,b n)] DIFF interval (a n,b n) = {a n} UNION {b n}’
-     >- (rw [Once EXTENSION, IN_INTERVAL, REAL_NOT_LT] \\
-         Know ‘a n <= b n’
-         >- (CCONTR_TAC >> fs [REAL_NOT_LE] \\
-             Q.PAT_X_ASSUM ‘!i. t i IN E /\ t i IN J i’ (MP_TAC o Q.SPEC ‘n’) \\
-             simp [iffLR (cj 1 INTERVAL_EQ_EMPTY)]) \\
-         REAL_ARITH_TAC) >> Rewr' \\
-     qmatch_abbrev_tac ‘m_lebesgue ({x1} UNION {x2}) = 0’ \\
-     Cases_on ‘x1 = x2’
-     >- (POP_ORW \\
-        ‘{x2} UNION {x2} = {x2}’ by SET_TAC [] >> POP_ORW \\
-         simp [lebesgue_sing]) \\
-     Suff ‘m_lebesgue ({x1} UNION {x2}) = m_lebesgue ({x1}) + m_lebesgue ({x2})’
-     >- (Rewr' >> simp [lebesgue_sing]) \\
-     MATCH_MP_TAC MEASURE_ADDITIVE >> simp [measure_space_lebesgue] \\
-     Suff ‘{x1} IN measurable_sets lborel /\
-           {x2} IN measurable_sets lborel’
-     >- PROVE_TAC [SUBSET_DEF, lborel_subset_lebesgue] \\
-     simp [sets_lborel, borel_measurable_sets])
- (* applying ext_suminf_def *)
- >> qmatch_abbrev_tac ‘suminf f <= _’
- >> Know ‘suminf f = sup (IMAGE (\n. SIGMA f (count n)) UNIV)’
- >- (MATCH_MP_TAC ext_suminf_def \\
-     rw [Abbr ‘f’] \\
-     MATCH_MP_TAC MEASURE_POSITIVE >> simp [measure_space_lebesgue])
- >> Rewr'
- (* applying sup_le', fixing ‘n’ *)
- >> rw [sup_le', Abbr ‘f’]
- (* applying HENSTOCK_LEMMA_PART1 (Saks-Henstock Lemma 5.3 [2, p.76]) *)
- >> MP_TAC (Q.SPECL [‘indicator E’, ‘-B’, ‘B’, ‘d’, ‘e / 2’]
-                    HENSTOCK_LEMMA_PART1)
- >> ASM_SIMP_TAC real_ss [] (* all antecedents are eliminated *)
- >> DISCH_TAC
+ >> MP_TAC (Q.SPECL [‘f’, ‘-B’, ‘B’, ‘d’, ‘e / 2’] HENSTOCK_LEMMA_PART1)
+ >> RW_TAC real_ss [] (* all antecedents are eliminated *)
  >> cheat
 QED
 
