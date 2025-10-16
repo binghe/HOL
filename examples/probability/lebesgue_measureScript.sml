@@ -867,13 +867,17 @@ QED
 
    The asserted ‘J’ may contain duplicated elements, i.e. J(i) is finite. This is
    why we used “J i <> J j” instead of “i <> j” in the disjointness conclusion.
+
+   NOTE: Instead of proving “E INTER J i SUBSET cball (t i,g (t i))” as required
+   in textbook, we use the same proof to show “J i SUBSET cball (t i,g (t i))”,
+   which is required by definition of [FINE] later.
  *)
 Theorem dyadic_covering_lemma_unit[local] :
     !g E c. gauge UNIV g /\ E <> {} /\ E SUBSET interval [c,c + 1] ==>
             ?J t. (!i. J i SUBSET interval [c,c + 1] /\
                        closed_interval (J i) /\
                        t i IN E INTER J (i :num) /\
-                       E INTER J i SUBSET cball (t i,g (t i))) /\
+                       J i SUBSET cball (t i,g (t i))) /\
                   (!i j. J i <> J j ==> nonoverlapping (J i) (J j)) /\
                    E SUBSET BIGUNION (IMAGE J UNIV)
 Proof
@@ -1153,7 +1157,7 @@ Theorem dyadic_covering_lemma :
     !g E. gauge UNIV g /\ E <> {} ==>
           ?J t. (!i. closed_interval (J i) /\
                      t i IN E INTER J (i :num) /\
-                     E INTER J i SUBSET cball (t i,g (t i))) /\
+                     J i SUBSET cball (t i,g (t i))) /\
                 (!i j. J i <> J j ==> nonoverlapping (J i) (J j)) /\
                  E SUBSET BIGUNION (IMAGE J UNIV)
 Proof
@@ -1166,12 +1170,12 @@ Proof
               ?J t. (!i. J i SUBSET interval [real_of_int n,real_of_int n + 1] /\
                          closed_interval (J i) /\
                          t i IN e n INTER J (i :num) /\
-                         e n INTER J i SUBSET cball (t i,g (t i))) /\
+                         J i SUBSET cball (t i,g (t i))) /\
                     (!i j. J i <> J j ==> nonoverlapping (J i) (J j)) /\
                      e n SUBSET BIGUNION (IMAGE J UNIV)’
  >- (rpt STRIP_TAC \\
      MATCH_MP_TAC dyadic_covering_lemma_unit >> simp [])
- (* This asserts f and f' in place of J and t *)
+ (* this asserts f and f' in place of J and t *)
  >> DISCH_THEN (STRIP_ASSUME_TAC o
                 SIMP_RULE std_ss [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM])
  >> Know ‘E = BIGUNION (IMAGE e UNIV)’
@@ -1245,8 +1249,7 @@ Proof
  (* stage work *)
  >> Suff ‘!z. z IN c ==> closed_interval (FST z) /\
                          SND z IN BIGUNION (IMAGE e UNIV) INTER FST z /\
-                         BIGUNION (IMAGE e UNIV) INTER FST z SUBSET
-                         cball (SND z,g (SND z))’
+                         FST z SUBSET cball (SND z,g (SND z))’
  >- (DISCH_TAC \\
      MP_TAC (ISPEC “c :(real set # real) set” COUNTABLE_AS_IMAGE) \\
      simp [] >> DISCH_THEN (Q.X_CHOOSE_THEN ‘h’ STRIP_ASSUME_TAC) \\
@@ -1289,13 +1292,12 @@ Proof
      NTAC 2 (POP_ASSUM K_TAC) \\
      POP_ASSUM (MP_TAC o Q.SPEC ‘j’) >> rw [Abbr ‘e’] \\
      Q.EXISTS_TAC ‘i’ >> art [])
- >> rw [] >> rename1 ‘x IN e n’
+ >> rw []
  >> Q.PAT_X_ASSUM ‘!n. e n <> {} ==> _’ (MP_TAC o Q.SPEC ‘i’) >> simp []
  >> STRIP_TAC
  >> NTAC 2 (POP_ASSUM K_TAC)
  >> POP_ASSUM (MP_TAC o Q.SPEC ‘j’)
- >> rw [Abbr ‘e’, IN_CBALL, SUBSET_DEF, IN_INTERVAL]
- >> POP_ASSUM MATCH_MP_TAC >> simp [] >> fs []
+ >> rw [SUBSET_DEF]
 QED
 
 (* NOTE: This version uses “gauge” of integrationTheory.gauge_def, and it
@@ -1304,8 +1306,9 @@ QED
  *)
 Theorem dyadic_covering_lemma' :
     !g E. gauge g /\ E <> {} ==>
-          ?J t. (!i. closed_interval (J i) /\ t i IN E INTER J (i :num) /\
-                     E INTER J i SUBSET g (t i)) /\
+          ?J t. (!i. closed_interval (J i) /\
+                     t i IN E INTER J (i :num) /\
+                     J i SUBSET g (t i)) /\
                 (!i j. i <> j ==> nonoverlapping (J i) (J j)) /\
                  E SUBSET BIGUNION (IMAGE J UNIV)
 Proof
