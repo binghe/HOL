@@ -2427,6 +2427,19 @@ Proof
     GEN_TAC THEN MATCH_MP_TAC LINE_MONO THEN ARITH_TAC
 QED
 
+(* [-n [a, b] n] *)
+Theorem LINE_EXISTS :
+    !a b. ?n. interval [a,b] SUBSET line n
+Proof
+    rpt STRIP_TAC
+ >> STRIP_ASSUME_TAC (Q.SPEC ‘max (abs a) (abs b)’ SIMP_REAL_ARCH)
+ >> fs [REAL_MAX_LE, ABS_BOUNDS]
+ >> Q.EXISTS_TAC ‘n’
+ >> rw [SUBSET_DEF, line_def, IN_INTERVAL]
+ >| [ Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘a’ >> art [],
+      Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘b’ >> art [] ]
+QED
+
 (* cf. right_open_interval_11 *)
 Theorem closed_interval_11 :
     !a b c d. a < b /\ c < d ==>
