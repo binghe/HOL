@@ -1919,6 +1919,57 @@ Proof
  >> Know ‘SIGMA (content o J) (count n) = sum (count n) (content o J)’
  >- (MATCH_MP_TAC REAL_SUM_IMAGE_sum >> simp [])
  >> Rewr'
+ (* stage work *)
+ >> qabbrev_tac ‘p = IMAGE (\i. (t i,J i)) (count n)’
+ >> Q.PAT_X_ASSUM ‘!p. p tagged_partial_division_of s /\ d FINE p ==> _’
+      (MP_TAC o Q.SPEC ‘p’)
+ >> impl_tac
+ >- (rw [Abbr ‘p’, tagged_partial_division_of, FINE] >| (* 5 subgoals *)
+     [ (* goal 1 (of 5) *)
+       FULL_SIMP_TAC std_ss [IN_INTER],
+       (* goal 2 (of 5) *)
+       ASM_REWRITE_TAC [],
+       (* goal 3 (of 5) *)
+       fs [closed_interval_def],
+       (* goal 4 (of 5) *)
+       rename1 ‘j < n’ \\
+       Cases_on ‘i = j’ >- METIS_TAC [] \\
+       Q.PAT_X_ASSUM ‘!i j. i <> j ==> _’ drule \\
+       rw [nonoverlapping_def, DISJOINT_DEF],
+       (* goal 5 (of 5) *)
+       ASM_REWRITE_TAC [] ])
+ (* applying real_sigmaTheory.SUM_SUB' *)
+ >> Know ‘(\(x,k). content k * f x - integral k f) =
+          (\z. content (SND z) * f (FST z) - integral (SND z) f)’
+ >- (rw [FUN_EQ_THM] \\
+     PairCases_on ‘z’ >> simp [])
+ >> Rewr'
+ >> Know ‘sum p (\z. content (SND z) * f (FST z) - integral (SND z) f) =
+          sum p (\z. content (SND z) * f (FST z)) -
+          sum p (\z. integral (SND z) f)’
+ >- (HO_MATCH_MP_TAC SUM_SUB' >> simp [Abbr ‘p’])
+ >> Rewr'
+ >> Know ‘(\z. content (SND z) * f (FST z)) = (\(x,k). content k * f x)’
+ >- (rw [FUN_EQ_THM] \\
+     PairCases_on ‘z’ >> simp [])
+ >> Rewr'
+ >> Know ‘(\(z :real # real set). integral (SND z) f) =
+          (\((x :real),k). integral k f)’
+ >- (rw [FUN_EQ_THM] \\
+     PairCases_on ‘z’ >> simp [])
+ >> Rewr'
+ (* applying SUM_IMAGE *)
+ >> qabbrev_tac ‘h = (\i. (t i,J i))’
+ >> qmatch_abbrev_tac ‘abs (sum p g1 - sum p g2) <= e ==> _’
+ >> simp [Abbr ‘p’]
+ (* NOTE: This is not true due to some trivial J(i) = [x,x] whose content is 0 *)
+ >> Know ‘sum (IMAGE h (count n)) g1 = sum (count n) (g1 o h)’
+ >- (MATCH_MP_TAC SUM_IMAGE \\
+     qx_genl_tac [‘i’, ‘j’] >> rw [Abbr ‘h’] \\
+     CCONTR_TAC \\
+     Q.PAT_X_ASSUM ‘!i j. i <> j ==> _’ drule \\
+     cheat)
+ >> Rewr'
  >> cheat
 QED
 
