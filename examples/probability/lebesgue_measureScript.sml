@@ -1986,9 +1986,9 @@ Proof
  >> simp [Abbr ‘p’]
  (* ‘N’ is the trivial set of indexes with zero contents *)
  >> qabbrev_tac ‘N = {i | i < n /\ ?x. J i = interval [x,x]}’
- >> qabbrev_tac ‘N' = count n DIFF N’
- >> Know ‘!i j. i IN N' /\ j IN N' /\ J i = J j ==> i = j’
- >- (rw [Abbr ‘N’, Abbr ‘N'’] \\
+ >> qabbrev_tac ‘M = count n DIFF N’
+ >> Know ‘!i j. i IN M /\ j IN M /\ J i = J j ==> i = j’
+ >- (rw [Abbr ‘N’, Abbr ‘M’] \\
      CCONTR_TAC \\
      Q.PAT_X_ASSUM ‘!i j. i <> j ==> nonoverlapping (J i) (J j)’ drule \\
      fs [closed_interval_def, GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM] \\
@@ -2008,32 +2008,32 @@ Proof
  >> Know ‘!i. i IN N ==> integral (J i) f = 0’
  >- (rw [Abbr ‘N’] >> simp [INTEGRAL_REFL])
  >> DISCH_TAC
- >> ‘DISJOINT N N' /\ count n = N UNION N'’ by ASM_SET_TAC [] >> POP_ORW
+ >> ‘DISJOINT N M /\ count n = N UNION M’ by ASM_SET_TAC [] >> POP_ORW
  >> Know ‘FINITE N’
  >- (irule SUBSET_FINITE >> Q.EXISTS_TAC ‘count n’ >> simp [FINITE_COUNT])
  >> DISCH_TAC
- >> Know ‘FINITE N'’
+ >> Know ‘FINITE M’
  >- (irule SUBSET_FINITE >> Q.EXISTS_TAC ‘count n’ >> simp [FINITE_COUNT] \\
-     rw [SUBSET_DEF, Abbr ‘N'’])
+     rw [SUBSET_DEF, Abbr ‘M’])
  >> DISCH_TAC
  >> REWRITE_TAC [IMAGE_UNION]
- >> Know ‘DISJOINT (IMAGE h N) (IMAGE h N')’
- >- (rw [DISJOINT_ALT, Abbr ‘N'’, Abbr ‘h’, Abbr ‘N’] \\
+ >> Know ‘DISJOINT (IMAGE h N) (IMAGE h M)’
+ >- (rw [DISJOINT_ALT, Abbr ‘M’, Abbr ‘h’, Abbr ‘N’] \\
      rename1 ‘t j = t i’ >> simp [] \\
      STRONG_DISJ_TAC >> art [] \\
      rename1 ‘J i = interval [x,x]’ \\
      Q.EXISTS_TAC ‘x’ >> REFL_TAC)
  >> DISCH_TAC
- >> Know ‘sum (IMAGE h N UNION IMAGE h N') g1 =
-          sum (IMAGE h N) g1 + sum (IMAGE h N') g1’
+ >> Know ‘sum (IMAGE h N UNION IMAGE h M) g1 =
+          sum (IMAGE h N) g1 + sum (IMAGE h M) g1’
  >- (MATCH_MP_TAC SUM_UNION >> simp [IMAGE_FINITE])
  >> Rewr'
- >> Know ‘sum (IMAGE h N UNION IMAGE h N') g2 =
-          sum (IMAGE h N) g2 + sum (IMAGE h N') g2’
+ >> Know ‘sum (IMAGE h N UNION IMAGE h M) g2 =
+          sum (IMAGE h N) g2 + sum (IMAGE h M) g2’
  >- (MATCH_MP_TAC SUM_UNION >> simp [IMAGE_FINITE])
  >> Rewr'
- >> Know ‘sum (N UNION N') (content o J) =
-          sum N (content o J) + sum N' (content o J)’
+ >> Know ‘sum (N UNION M) (content o J) =
+          sum N (content o J) + sum M (content o J)’
  >- (MATCH_MP_TAC SUM_UNION >> simp [])
  >> Rewr'
  (* applying SUM_EQ_0' *)
@@ -2048,15 +2048,15 @@ Proof
  >> Know ‘sum N (content o J) = 0’
  >- (MATCH_MP_TAC SUM_EQ_0' >> rw [o_DEF])
  >> DISCH_THEN (simp o wrap)
- >> Know ‘sum (IMAGE h N') g1 = sum N' (g1 o h)’
+ >> Know ‘sum (IMAGE h M) g1 = sum M (g1 o h)’
  >- (MATCH_MP_TAC SUM_IMAGE >> rw [Abbr ‘h’])
  >> Rewr'
- >> Know ‘sum (IMAGE h N') g2 = sum N' (g2 o h)’
+ >> Know ‘sum (IMAGE h M) g2 = sum M (g2 o h)’
  >- (MATCH_MP_TAC SUM_IMAGE >> rw [Abbr ‘h’])
  >> Rewr'
  >> simp [o_DEF, Abbr ‘h’, Abbr ‘g1’, Abbr ‘g2’]
- >> Know ‘sum N' (\i. f (t i) * content (J i)) =
-          sum N' (\x. content (J x))’
+ >> Know ‘sum M (\i. f (t i) * content (J i)) =
+          sum M (\x. content (J x))’
  >- (MATCH_MP_TAC SUM_EQ' \\
      Q.X_GEN_TAC ‘j’ >> rw [Abbr ‘f’] \\
      DISJ2_TAC \\
@@ -2064,8 +2064,8 @@ Proof
      rw [indicator])
  >> Rewr'
  (* eliminating “abs” by ABS_REFL, etc. *)
- >> Know ‘abs (sum N' (\x. content (J x)) - sum N' (\i. integral (J i) f)) =
-               sum N' (\x. content (J x)) - sum N' (\i. integral (J i) f)’
+ >> Know ‘abs (sum M (\x. content (J x)) - sum M (\i. integral (J i) f)) =
+               sum M (\x. content (J x)) - sum M (\i. integral (J i) f)’
  >- (simp [ABS_REFL, REAL_SUB_LE] \\
      MATCH_MP_TAC SUM_LE' >> art [] \\
      Q.X_GEN_TAC ‘j’ >> rw [] \\
@@ -2085,22 +2085,22 @@ Proof
  >> Rewr'
  >> simp [REAL_ARITH “a - b <= c <=> a <= b + (c :real)”]
  >> DISCH_TAC
- >> Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘sum N' (\i. integral (J i) f) + e’
+ >> Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘sum M (\i. integral (J i) f) + e’
  >> POP_ASSUM (simp o wrap)
  >> qunabbrev_tac ‘y’
  (* applying SUM_IMAGE again *)
  >> ‘(\i. integral (J i) f) = (\s. integral s f) o J’ by rw [FUN_EQ_THM, o_DEF]
  >> POP_ORW
  >> qabbrev_tac ‘g = \(s :real set). integral s f’
- >> Know ‘sum N' (g o J) = sum (IMAGE J N') g’
+ >> Know ‘sum M (g o J) = sum (IMAGE J M) g’
  >- (SYM_TAC >> MATCH_MP_TAC SUM_IMAGE >> art [])
  >> Rewr'
  (* applying INTEGRAL_BIGUNION *)
- >> MP_TAC (Q.SPECL [‘f’, ‘IMAGE J (N' :num set)’] INTEGRAL_BIGUNION)
+ >> MP_TAC (Q.SPECL [‘f’, ‘IMAGE J (M :num set)’] INTEGRAL_BIGUNION)
  >> ASM_SIMP_TAC std_ss [FINITE_IMAGE]
  >> impl_tac
- >- (RW_TAC std_ss [IN_IMAGE] (* 2 subgoals, first is easy *)
-     >- (rename1 ‘j IN N'’ \\
+ >- (RW_TAC std_ss [IN_IMAGE] (* 2 subgoals, first one is easy *)
+     >- (rename1 ‘j IN M’ \\
          fs [closed_interval_def, GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM] \\
          rename1 ‘!i. J i = interval [a i,b i]’ \\
          MATCH_MP_TAC INTEGRABLE_ON_SUBINTERVAL \\
@@ -2108,8 +2108,58 @@ Proof
          Q.PAT_X_ASSUM ‘!i. J i = interval [a i,b i]’ (simp o wrap o GSYM)) \\
      rename1 ‘J j <> J k’ \\
   (* applying NEGLIGIBLE_SING or NEGLIGIBLE_EMPTY *)
-     cheat)
- >> cheat
+    ‘j <> k’ by PROVE_TAC [] \\
+     Q.PAT_X_ASSUM ‘!i j. i <> j ==> nonoverlapping (J i) (J j)’ drule \\
+     fs [closed_interval_def, GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM] \\
+     rename1 ‘!i. J i = interval [a i,b i]’ \\
+     simp [nonoverlapping_def, INTERIOR_INTERVAL] \\
+     simp [DISJOINT_DEF, DISJOINT_INTERVAL] \\
+     Know ‘interval [a j,b j] <> {} /\
+           interval [a k,b k] <> {}’ >- METIS_TAC [NOT_IN_EMPTY] \\
+     simp [INTERVAL_NE_EMPTY] >> STRIP_TAC \\
+     STRIP_TAC >| (* 4 subgoals *)
+     [ (* goal 1 (of 4) *)
+      ‘a j = b j’ by PROVE_TAC [REAL_LE_ANTISYM] \\
+       simp [INTERVAL_SING] \\
+       qmatch_abbrev_tac ‘negligible ({x} INTER A)’ \\
+       Suff ‘{x} INTER A = {} \/ {x} INTER A = {x}’
+       >- METIS_TAC [NEGLIGIBLE_SING, NEGLIGIBLE_EMPTY] \\
+       SET_TAC [],
+       (* goal 2 (of 4) *)
+      ‘a k = b k’ by PROVE_TAC [REAL_LE_ANTISYM] \\
+       simp [INTERVAL_SING] \\
+       qmatch_abbrev_tac ‘negligible (A INTER {x})’ \\
+       Suff ‘A INTER {x}  = {} \/ A INTER {x} = {x}’
+       >- METIS_TAC [NEGLIGIBLE_SING, NEGLIGIBLE_EMPTY] \\
+       SET_TAC [],
+       (* goal 3 (of 4): [a j, b j] <= [a k, b k] *)
+      ‘b j = a k \/ b j < a k’ by PROVE_TAC [REAL_LE_LT]
+       >- (simp [INTER_INTERVAL] \\
+          ‘a j <= a k’ by PROVE_TAC [REAL_LE_TRANS] \\
+           simp [REAL_MAX_REDUCE, REAL_MIN_REDUCE] \\
+           simp [INTERVAL_SING, NEGLIGIBLE_SING]) \\
+      ‘a j < a k’ by PROVE_TAC [REAL_LET_TRANS] \\
+      ‘b j < b k’ by PROVE_TAC [REAL_LTE_TRANS] \\
+       simp [INTER_INTERVAL, REAL_MAX_REDUCE, REAL_MIN_REDUCE] \\
+      ‘interval [a k,b j] = {}’ by simp [GSYM INTERVAL_EQ_EMPTY] \\
+       simp [NEGLIGIBLE_EMPTY],
+       (* goal 4 (of 4): [a k, b k] <= [a j, b j] *)
+      ‘b k = a j \/ b k < a j’ by PROVE_TAC [REAL_LE_LT]
+       >- (simp [INTER_INTERVAL] \\
+          ‘a k <= a j’ by PROVE_TAC [REAL_LE_TRANS] \\
+           simp [REAL_MAX_REDUCE, REAL_MIN_REDUCE] \\
+           simp [INTERVAL_SING, NEGLIGIBLE_SING]) \\
+      ‘a k < a j’ by PROVE_TAC [REAL_LET_TRANS] \\
+      ‘b k < b j’ by PROVE_TAC [REAL_LTE_TRANS] \\
+       simp [INTER_INTERVAL, REAL_MAX_REDUCE, REAL_MIN_REDUCE] \\
+      ‘interval [a j,b k] = {}’ by simp [GSYM INTERVAL_EQ_EMPTY] \\
+       simp [NEGLIGIBLE_EMPTY] ])
+ >> STRIP_TAC
+ >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM)
+ >> simp [Abbr ‘g’]
+ >> MATCH_MP_TAC INTEGRAL_SUBSET_DROP_LE
+ >> simp [Abbr ‘f’, INDICATOR_POS]
+ >> rw [BIGUNION_SUBSET] >> art []
 QED
 
 (* 18.16 Approximation Theorem [2, p.312] *)
@@ -2121,6 +2171,8 @@ Theorem approximation_thm :
                m_lebesgue E <= suminf (m_lebesgue o J) /\
                suminf (m_lebesgue o J) <= m_lebesgue E + Normal e
 Proof
+    cheat
+ (* old proof
     rpt STRIP_TAC
  >> ‘E IN measurable_sets lebesgue’
       by PROVE_TAC [SUBSET_DEF, integrable_sets_subset_lebesgue]
@@ -2319,7 +2371,7 @@ Proof
  >> Know ‘SIGMA (content o J) (count n) = sum (count n) (content o J)’
  >- (MATCH_MP_TAC REAL_SUM_IMAGE_sum >> simp [])
  >> Rewr'
- >> cheat
+ *)
 QED
 
 Theorem pos_fn_integral_fn_seq :
