@@ -828,7 +828,7 @@ Proof
 QED
 
 (* cf. SUBSET_DISJOINT *)
-Theorem subset_nonoverlapping :
+Theorem nonoverlapping_subset_imp :
     !s t u v. nonoverlapping s t /\ u SUBSET s /\ v SUBSET t ==>
               nonoverlapping u v
 Proof
@@ -1360,7 +1360,7 @@ Proof
      Q.PAT_X_ASSUM ‘f i m <> f j n’ K_TAC \\
     ‘f i m SUBSET interval [real_of_int i,real_of_int i + 1] /\
      f j n SUBSET interval [real_of_int j,real_of_int j + 1]’ by rw [] \\
-     MATCH_MP_TAC subset_nonoverlapping \\
+     MATCH_MP_TAC nonoverlapping_subset_imp \\
      qexistsl_tac [‘interval [real_of_int i,real_of_int i + 1]’,
                    ‘interval [real_of_int j,real_of_int j + 1]’] \\
      simp [nonoverlapping_def, INTERIOR_INTERVAL] \\
@@ -2313,16 +2313,23 @@ Proof
        (* goal 2 (of 2) *)
        rename1 ‘x IN J2 j’ >> DISJ1_TAC \\
        PROVE_TAC [SUBSET_DEF] ])
+ >> Know ‘nonoverlapping A B’
+ >- (simp [Abbr ‘A’, Abbr ‘B’, nonoverlapping_def, INTERIOR_INTERVAL] \\
+     simp [DISJOINT_DEF, DISJOINT_INTERVAL])
+ >> DISCH_TAC
  >> CONJ_TAC (* nonoverlapping *)
- >- (RW_TAC arith_ss [Abbr ‘J’] >| (* 4 subgoals *)
+ >- (RW_TAC std_ss [Abbr ‘J’] >| (* 4 subgoals *)
      [ (* goal 1 (of 4) *)
        FIRST_X_ASSUM MATCH_MP_TAC >> fs [EVEN_EXISTS],
        (* goal 2 (of 4) *)
-       cheat,
+       MATCH_MP_TAC nonoverlapping_subset_imp \\
+       qexistsl_tac [‘A’, ‘B’] >> art [],
        (* goal 3 (of 4) *)
-       cheat,
+       MATCH_MP_TAC nonoverlapping_subset_imp \\
+       qexistsl_tac [‘B’, ‘A’] >> simp [Once nonoverlapping_comm],
        (* goal 4 (of 4) *)
        FIRST_X_ASSUM MATCH_MP_TAC >> fs [GSYM ODD_EVEN, ODD_EXISTS] ])
+ (* E1 UNION E2 SUBSET _ *)
  >> CONJ_TAC
  >- (RW_TAC std_ss [IN_UNION, SUBSET_DEF, IN_BIGUNION_IMAGE, IN_UNIV] >|
      [ (* goal 1 (of 2) *)
@@ -2335,7 +2342,60 @@ Proof
        rw [IN_BIGUNION_IMAGE, Abbr ‘J’] \\
        rename1 ‘x IN J2 (i :num)’ \\
        Q.EXISTS_TAC ‘SUC (2 * i)’ >> simp [EVEN_ODD, ODD_DOUBLE] ])
- (* stage work *)
+ (* applying le_add2, twice *)
+ >> Suff ‘suminf (m_lebesgue o J) =
+          suminf (m_lebesgue o J1) + suminf (m_lebesgue o J2)’
+ >- (Rewr' \\
+     CONJ_TAC >- (MATCH_MP_TAC le_add2 >> art []) \\
+     MATCH_MP_TAC le_add2 >> art [])
+ (* preparing for sup_add_mono *)
+ >> qmatch_abbrev_tac ‘suminf h = suminf f + suminf g’
+ >> Know ‘!i. 0 <= f i’
+ >- (rw [Abbr ‘f’, o_DEF] \\
+     MATCH_MP_TAC MEASURE_POSITIVE >> simp [measure_space_lebesgue] \\
+     Suff ‘J1 i IN measurable_sets lborel’
+     >- PROVE_TAC [lborel_subset_lebesgue, SUBSET_DEF] \\
+     Q.PAT_X_ASSUM ‘!i. closed_interval (J1 i)’ (MP_TAC o Q.SPEC ‘i’) \\
+     rw [closed_interval_def, CLOSED_interval] \\
+     simp [borel_measurable_sets, sets_lborel])
+ >> DISCH_TAC
+ >> Know ‘!i. 0 <= g i’
+ >- (rw [Abbr ‘g’, o_DEF] \\
+     MATCH_MP_TAC MEASURE_POSITIVE >> simp [measure_space_lebesgue] \\
+     Suff ‘J2 i IN measurable_sets lborel’
+     >- PROVE_TAC [lborel_subset_lebesgue, SUBSET_DEF] \\
+     Q.PAT_X_ASSUM ‘!i. closed_interval (J2 i)’ (MP_TAC o Q.SPEC ‘i’) \\
+     rw [closed_interval_def, CLOSED_interval] \\
+     simp [borel_measurable_sets, sets_lborel])
+ >> DISCH_TAC
+ >> Know ‘!i. 0 <= h i’
+ >- (rw [Abbr ‘h’, o_DEF, Abbr ‘J’] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       qmatch_abbrev_tac ‘0 <= m_lebesgue (J1 j)’ \\
+       Q.PAT_X_ASSUM ‘!i. 0 <= f i’ (MP_TAC o Q.SPEC ‘j’) \\
+       rw [Abbr ‘f’, o_DEF],
+       (* goal 2 (of 2) *)
+       qmatch_abbrev_tac ‘0 <= m_lebesgue (J2 j)’ \\
+       Q.PAT_X_ASSUM ‘!i. 0 <= g i’ (MP_TAC o Q.SPEC ‘j’) \\
+       rw [Abbr ‘g’, o_DEF] ])
+ >> DISCH_TAC
+ >> simp [ext_suminf_def]
+ (* applying sup_add_mono *)
+ >> qmatch_abbrev_tac ‘sup (IMAGE h' UNIV) =
+                       sup (IMAGE f' UNIV) + sup (IMAGE g' UNIV)’
+ >> Suff ‘sup (IMAGE h' UNIV) = sup (IMAGE (\i. f' i + g' i) UNIV)’
+ >- (Rewr' >> MATCH_MP_TAC sup_add_mono \\
+     CONJ_ASM1_TAC
+     >- (rw [Abbr ‘f'’] \\
+         MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> rw []) \\
+     CONJ_TAC
+     >- (Q.X_GEN_TAC ‘i’ >> rw [Abbr ‘f'’] \\
+         MATCH_MP_TAC EXTREAL_SUM_IMAGE_MONO_SET >> rw [SUBSET_DEF]) \\
+     CONJ_ASM1_TAC
+     >- (rw [Abbr ‘g'’] \\
+         MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> rw []) \\
+     Q.X_GEN_TAC ‘i’ >> rw [Abbr ‘g'’] \\
+     MATCH_MP_TAC EXTREAL_SUM_IMAGE_MONO_SET >> rw [SUBSET_DEF])
  >> cheat
 QED
 
