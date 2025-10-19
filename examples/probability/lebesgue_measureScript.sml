@@ -2385,18 +2385,196 @@ Proof
                        sup (IMAGE f' UNIV) + sup (IMAGE g' UNIV)’
  >> Suff ‘sup (IMAGE h' UNIV) = sup (IMAGE (\i. f' i + g' i) UNIV)’
  >- (Rewr' >> MATCH_MP_TAC sup_add_mono \\
-     CONJ_ASM1_TAC
+     Know ‘!i. 0 <= f' i’
      >- (rw [Abbr ‘f'’] \\
-         MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> rw []) \\
-     CONJ_TAC
-     >- (Q.X_GEN_TAC ‘i’ >> rw [Abbr ‘f'’] \\
-         MATCH_MP_TAC EXTREAL_SUM_IMAGE_MONO_SET >> rw [SUBSET_DEF]) \\
-     CONJ_ASM1_TAC
+         MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> rw []) >> DISCH_TAC \\
+     Know ‘!i. 0 <= g' i’
      >- (rw [Abbr ‘g'’] \\
-         MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> rw []) \\
-     Q.X_GEN_TAC ‘i’ >> rw [Abbr ‘g'’] \\
-     MATCH_MP_TAC EXTREAL_SUM_IMAGE_MONO_SET >> rw [SUBSET_DEF])
- >> cheat
+         MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> rw []) >> DISCH_TAC \\
+     simp [Abbr ‘f'’, Abbr ‘g'’] \\
+     CONJ_TAC >> Q.X_GEN_TAC ‘i’ >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       MATCH_MP_TAC EXTREAL_SUM_IMAGE_MONO_SET >> rw [SUBSET_DEF],
+       (* goal 2 (of 2) *)
+       MATCH_MP_TAC EXTREAL_SUM_IMAGE_MONO_SET >> rw [SUBSET_DEF] ])
+ (* final goal *)
+ >> RW_TAC std_ss [GSYM le_antisym]
+ >| [ (* goal 1 (of 2) *)
+      MATCH_MP_TAC sup_le_sup_imp' \\
+      Q.X_GEN_TAC ‘z’ >> simp [] \\
+      DISCH_THEN (Q.X_CHOOSE_THEN ‘N’ STRIP_ASSUME_TAC) >> POP_ORW \\
+      Suff ‘?i. h' N <= f' i + g' i’
+      >- (STRIP_TAC \\
+          Q.EXISTS_TAC ‘f' i + g' i’ >> art [] \\
+          Q.EXISTS_TAC ‘i’ >> REFL_TAC) \\
+   (* NOTE: The choice ‘N’ is more than enough (actually “N DIV 2” may just work) *)
+      Q.EXISTS_TAC ‘N’ >> simp [Abbr ‘f'’, Abbr ‘g'’, Abbr ‘h'’] \\
+      qabbrev_tac ‘s = {i | i < N /\ EVEN i}’ \\
+      qabbrev_tac ‘t = {i | i < N /\ ODD i}’ \\
+      Know ‘SIGMA h (count N) = SIGMA h (s UNION t)’
+      >- (AP_TERM_TAC \\
+          rw [Once EXTENSION, Abbr ‘s’, Abbr ‘t’] \\
+          METIS_TAC [EVEN_ODD]) >> Rewr' \\
+     ‘DISJOINT s t’ by rw [DISJOINT_ALT, Abbr ‘s’, Abbr ‘t’, EVEN_ODD] \\
+      Know ‘FINITE s’
+      >- (irule SUBSET_FINITE \\
+          Q.EXISTS_TAC ‘count N’ >> simp [SUBSET_DEF, Abbr ‘s’]) >> DISCH_TAC \\
+      Know ‘FINITE t’
+      >- (irule SUBSET_FINITE \\
+          Q.EXISTS_TAC ‘count N’ >> simp [SUBSET_DEF, Abbr ‘t’]) >> DISCH_TAC \\
+      Know ‘SIGMA h (s UNION t) = SIGMA h s + SIGMA h t’
+      >- (irule EXTREAL_SUM_IMAGE_DISJOINT_UNION >> simp [] \\
+          DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+          MATCH_MP_TAC pos_not_neginf >> art []) >> Rewr' \\
+      qabbrev_tac ‘s' = {i DIV 2 | i < N /\ EVEN i}’ \\
+     ‘s' = IMAGE (\i. i DIV 2) s’ by rw [Once EXTENSION, Abbr ‘s'’, Abbr ‘s’] \\
+      Know ‘SIGMA h s = SIGMA f s'’
+      >- (POP_ORW \\
+          qmatch_abbrev_tac ‘_ = SIGMA f (IMAGE f' s)’ \\
+          Know ‘SIGMA f (IMAGE f' s) = SIGMA (f o f') s’
+          >- (irule EXTREAL_SUM_IMAGE_IMAGE >> simp [] \\
+              CONJ_TAC
+              >- (DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> STRIP_TAC \\
+                  MATCH_MP_TAC pos_not_neginf >> art []) \\
+              rw [INJ_DEF, Abbr ‘s’, Abbr ‘f'’]
+              >- (Q.EXISTS_TAC ‘i’ >> art []) \\
+              rename1 ‘j < N’ \\
+              gs [EVEN_EXISTS]) >> Rewr' \\
+          irule EXTREAL_SUM_IMAGE_EQ >> simp [] \\
+          reverse CONJ_TAC
+          >- (DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+              CONJ_TAC >> MATCH_MP_TAC pos_not_neginf >> art []) \\
+          Q.X_GEN_TAC ‘i’ >> rw [Abbr ‘s’, Abbr ‘h’, Abbr ‘f’, Abbr ‘f'’] \\
+          simp [Abbr ‘J’]) >> Rewr' \\
+     ‘FINITE s'’ by simp [IMAGE_FINITE] \\
+      Q.PAT_X_ASSUM ‘s' = _’ K_TAC \\
+      qabbrev_tac ‘t' = {(i - 1) DIV 2 | i < N /\ ODD i}’ \\
+     ‘t' = IMAGE (\i. (i - 1) DIV 2) t’ by rw [Once EXTENSION, Abbr ‘t'’, Abbr ‘t’] \\
+      Know ‘SIGMA h t = SIGMA g t'’
+      >- (POP_ORW \\
+          qmatch_abbrev_tac ‘_ = SIGMA g (IMAGE g' t)’ \\
+          Know ‘SIGMA g (IMAGE g' t) = SIGMA (g o g') t’
+          >- (irule EXTREAL_SUM_IMAGE_IMAGE >> simp [] \\
+              CONJ_TAC
+              >- (DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> STRIP_TAC \\
+                  MATCH_MP_TAC pos_not_neginf >> art []) \\
+              rw [INJ_DEF, Abbr ‘t’, Abbr ‘g'’]
+              >- (Q.EXISTS_TAC ‘i’ >> art []) \\
+              rename1 ‘j < N’ \\
+              gs [ODD_EXISTS]) >> Rewr' \\
+          irule EXTREAL_SUM_IMAGE_EQ >> simp [] \\
+          reverse CONJ_TAC
+          >- (DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+              CONJ_TAC >> MATCH_MP_TAC pos_not_neginf >> art []) \\
+          Q.X_GEN_TAC ‘i’ >> rw [Abbr ‘t’, Abbr ‘h’, Abbr ‘g’, Abbr ‘g'’] \\
+          fs [ODD_EVEN] \\
+          simp [Abbr ‘J’]) >> Rewr' \\
+     ‘FINITE t'’ by simp [IMAGE_FINITE] \\
+      Q.PAT_X_ASSUM ‘t' = _’ K_TAC \\
+      MATCH_MP_TAC le_add2 >> CONJ_TAC >| (* 2 subgoals *)
+      [ (* goal 1.1 (of 2) *)
+        MATCH_MP_TAC EXTREAL_SUM_IMAGE_MONO_SET >> simp [] \\
+        rw [SUBSET_DEF, Abbr ‘s'’] \\
+        Q_TAC (TRANS_TAC LESS_EQ_LESS_TRANS) ‘i’ >> art [] \\
+        MATCH_MP_TAC DIV_LESS_EQ >> simp [],
+        (* goal 1.2 (of 2) *)
+        MATCH_MP_TAC EXTREAL_SUM_IMAGE_MONO_SET >> simp [] \\
+        rw [SUBSET_DEF, Abbr ‘t'’] \\
+        Q_TAC (TRANS_TAC LESS_EQ_LESS_TRANS) ‘i’ >> art [] \\
+        Q_TAC (TRANS_TAC LESS_EQ_TRANS) ‘i - 1’ >> simp [] \\
+        MATCH_MP_TAC DIV_LESS_EQ >> simp [] ],
+      (* goal 2 (of 2) *)
+      MATCH_MP_TAC sup_le_sup_imp' \\
+      Q.X_GEN_TAC ‘z’ >> simp [] \\
+      DISCH_THEN (Q.X_CHOOSE_THEN ‘N’ STRIP_ASSUME_TAC) >> POP_ORW \\
+      Suff ‘?i. f' N + g' N <= h' i’
+      >- (STRIP_TAC \\
+          Q.EXISTS_TAC ‘h' i’ >> art [] \\
+          Q.EXISTS_TAC ‘i’ >> REFL_TAC) \\
+   (* NOTE: The choice ‘N’ here is just enough *)
+      Q.EXISTS_TAC ‘2 * N’ >> simp [Abbr ‘f'’, Abbr ‘g'’, Abbr ‘h'’] \\
+      qabbrev_tac ‘s = {i | i < 2 * N /\ EVEN i}’ \\
+      qabbrev_tac ‘t = {i | i < 2 * N /\ ODD i}’ \\
+      Know ‘SIGMA h (count (2 * N)) = SIGMA h (s UNION t)’
+      >- (AP_TERM_TAC \\
+          rw [Once EXTENSION, Abbr ‘s’, Abbr ‘t’] \\
+          METIS_TAC [EVEN_ODD]) >> Rewr' \\
+     ‘DISJOINT s t’ by rw [DISJOINT_ALT, Abbr ‘s’, Abbr ‘t’, EVEN_ODD] \\
+      Know ‘FINITE s’
+      >- (irule SUBSET_FINITE \\
+          Q.EXISTS_TAC ‘count (2 * N)’ >> simp [SUBSET_DEF, Abbr ‘s’]) \\
+      DISCH_TAC \\
+      Know ‘FINITE t’
+      >- (irule SUBSET_FINITE \\
+          Q.EXISTS_TAC ‘count (2 * N)’ >> simp [SUBSET_DEF, Abbr ‘t’]) \\
+      DISCH_TAC \\
+      Know ‘SIGMA h (s UNION t) = SIGMA h s + SIGMA h t’
+      >- (irule EXTREAL_SUM_IMAGE_DISJOINT_UNION >> simp [] \\
+          DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+          MATCH_MP_TAC pos_not_neginf >> art []) >> Rewr' \\
+
+(* TODO *)
+
+(*
+      qabbrev_tac ‘s' = {i DIV 2 | i < N /\ EVEN i}’ \\
+     ‘s' = IMAGE (\i. i DIV 2) s’ by rw [Once EXTENSION, Abbr ‘s'’, Abbr ‘s’] \\
+      Know ‘SIGMA h s = SIGMA f s'’
+      >- (POP_ORW \\
+          qmatch_abbrev_tac ‘_ = SIGMA f (IMAGE f' s)’ \\
+          Know ‘SIGMA f (IMAGE f' s) = SIGMA (f o f') s’
+          >- (irule EXTREAL_SUM_IMAGE_IMAGE >> simp [] \\
+              CONJ_TAC
+              >- (DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> STRIP_TAC \\
+                  MATCH_MP_TAC pos_not_neginf >> art []) \\
+              rw [INJ_DEF, Abbr ‘s’, Abbr ‘f'’]
+              >- (Q.EXISTS_TAC ‘i’ >> art []) \\
+              rename1 ‘j < N’ \\
+              gs [EVEN_EXISTS]) >> Rewr' \\
+          irule EXTREAL_SUM_IMAGE_EQ >> simp [] \\
+          reverse CONJ_TAC
+          >- (DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+              CONJ_TAC >> MATCH_MP_TAC pos_not_neginf >> art []) \\
+          Q.X_GEN_TAC ‘i’ >> rw [Abbr ‘s’, Abbr ‘h’, Abbr ‘f’, Abbr ‘f'’] \\
+          simp [Abbr ‘J’]) >> Rewr' \\
+     ‘FINITE s'’ by simp [IMAGE_FINITE] \\
+      Q.PAT_X_ASSUM ‘s' = _’ K_TAC \\
+      qabbrev_tac ‘t' = {(i - 1) DIV 2 | i < N /\ ODD i}’ \\
+     ‘t' = IMAGE (\i. (i - 1) DIV 2) t’ by rw [Once EXTENSION, Abbr ‘t'’, Abbr ‘t’] \\
+      Know ‘SIGMA h t = SIGMA g t'’
+      >- (POP_ORW \\
+          qmatch_abbrev_tac ‘_ = SIGMA g (IMAGE g' t)’ \\
+          Know ‘SIGMA g (IMAGE g' t) = SIGMA (g o g') t’
+          >- (irule EXTREAL_SUM_IMAGE_IMAGE >> simp [] \\
+              CONJ_TAC
+              >- (DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> STRIP_TAC \\
+                  MATCH_MP_TAC pos_not_neginf >> art []) \\
+              rw [INJ_DEF, Abbr ‘t’, Abbr ‘g'’]
+              >- (Q.EXISTS_TAC ‘i’ >> art []) \\
+              rename1 ‘j < N’ \\
+              gs [ODD_EXISTS]) >> Rewr' \\
+          irule EXTREAL_SUM_IMAGE_EQ >> simp [] \\
+          reverse CONJ_TAC
+          >- (DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+              CONJ_TAC >> MATCH_MP_TAC pos_not_neginf >> art []) \\
+          Q.X_GEN_TAC ‘i’ >> rw [Abbr ‘t’, Abbr ‘h’, Abbr ‘g’, Abbr ‘g'’] \\
+          fs [ODD_EVEN] \\
+          simp [Abbr ‘J’]) >> Rewr' \\
+     ‘FINITE t'’ by simp [IMAGE_FINITE] \\
+      Q.PAT_X_ASSUM ‘t' = _’ K_TAC \\
+      MATCH_MP_TAC le_add2 >> CONJ_TAC >| (* 2 subgoals *)
+      [ (* goal 1.1 (of 2) *)
+        MATCH_MP_TAC EXTREAL_SUM_IMAGE_MONO_SET >> simp [] \\
+        rw [SUBSET_DEF, Abbr ‘s'’] \\
+        Q_TAC (TRANS_TAC LESS_EQ_LESS_TRANS) ‘i’ >> art [] \\
+        MATCH_MP_TAC DIV_LESS_EQ >> simp [],
+        (* goal 1.2 (of 2) *)
+        MATCH_MP_TAC EXTREAL_SUM_IMAGE_MONO_SET >> simp [] \\
+        rw [SUBSET_DEF, Abbr ‘t'’] \\
+        Q_TAC (TRANS_TAC LESS_EQ_LESS_TRANS) ‘i’ >> art [] \\
+        Q_TAC (TRANS_TAC LESS_EQ_TRANS) ‘i - 1’ >> simp [] \\
+        MATCH_MP_TAC DIV_LESS_EQ >> simp [] ],
+ *)
+      cheat ]
 QED
 
 (* 18.16 Approximation Theorem [2, p.312]
