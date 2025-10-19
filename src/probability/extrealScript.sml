@@ -5395,8 +5395,8 @@ QED
 
 Theorem EXTREAL_PROD_IMAGE_THM :
     !f. (EXTREAL_PROD_IMAGE f {} = 1) /\
-        !e s. FINITE s ==>
-             (EXTREAL_PROD_IMAGE f (e INSERT s) = f e * EXTREAL_PROD_IMAGE f (s DELETE e))
+        !e s. FINITE s ==> (EXTREAL_PROD_IMAGE f (e INSERT s) =
+                            f e * EXTREAL_PROD_IMAGE f (s DELETE e))
 Proof
     Q.X_GEN_TAC ‘f’
  >> ASSUME_TAC monoidal_mul

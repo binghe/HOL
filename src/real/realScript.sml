@@ -3014,6 +3014,8 @@ Theorem REAL_ADD_RDISTRIB = REAL_RDISTRIB;
 (* !m n. &m + &n = &(m + n) *)
 Theorem REAL_OF_NUM_ADD = REAL_ADD;
 
+Theorem REAL_OF_NUM_SUB = realaxTheory.REAL_OF_NUM_SUB;
+
 (* |- !m n. &m <= &n <=> m <= n *)
 Theorem REAL_OF_NUM_LE = REAL_LE;
 Theorem REAL_OF_NUM_LT = REAL_LT;
