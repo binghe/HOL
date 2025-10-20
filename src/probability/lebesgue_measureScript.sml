@@ -2753,6 +2753,61 @@ Proof
     rpt STRIP_TAC
  >> qabbrev_tac ‘A = \n. interval [-&SUC n,-&n]’
  >> qabbrev_tac ‘B = \n. interval [&n,&SUC n]’
+ >> Know ‘!n. closed_interval (A n)’
+ >- (rw [closed_interval_def, Abbr ‘A’] \\
+     qexistsl_tac [‘-&SUC n’, ‘-&n’] >> REFL_TAC)
+ >> DISCH_TAC
+ >> Know ‘!n. closed_interval (B n)’
+ >- (rw [closed_interval_def, Abbr ‘B’] \\
+     qexistsl_tac [‘&n’, ‘&SUC n’] >> REFL_TAC)
+ >> DISCH_TAC
+ >> Know ‘!i j. i <> j ==> nonoverlapping (A i) (A j)’
+ >- (rw [Abbr ‘A’] \\
+     simp [closed_interval_nonoverlapping])
+ >> DISCH_TAC
+ >> Know ‘!i j. i <> j ==> nonoverlapping (B i) (B j)’
+ >- (rw [Abbr ‘B’] \\
+     simp [closed_interval_nonoverlapping])
+ >> DISCH_TAC
+ >> Know ‘!i j. (A i UNION B i) INTER (A j UNION B j) =
+                (A i INTER A j) UNION (B i INTER B j)’
+ >- (rpt GEN_TAC \\
+     Cases_on ‘i = j’ >- simp [] \\
+     rw [Once EXTENSION] \\
+     EQ_TAC >> rw [] >> simp [] >| (* only 2 subgoals left *)
+     [ (* goal 1 (of 2) *)
+       Suff ‘F’ >- simp [] \\
+       NTAC 3 (POP_ASSUM MP_TAC) >> simp [Abbr ‘A’, Abbr ‘B’] \\
+       KILL_TAC >> rw [IN_INTERVAL] \\
+       CCONTR_TAC >> fs [] (* -&SUC i <= x <= -&i < &j <= x <= &SUC j *) \\
+      ‘i < j \/ j < i’ by simp [] >| (* 2 subgoals *)
+       [ (* goal 1.1 (of 2) *)
+        ‘-&i <= (&i :real)’ by simp [] \\
+        ‘&i < (&j :real)’ by simp [] \\
+        ‘-&i < (&j :real)’ by PROVE_TAC [REAL_LET_TRANS] \\
+        ‘x < &j’ by PROVE_TAC [REAL_LET_TRANS] \\
+         METIS_TAC [REAL_LET_ANTISYM],
+         (* goal 1.2 (of 2) *)
+        ‘-&i < (&j :real)’ by simp [] \\
+        ‘x < &j’ by PROVE_TAC [REAL_LET_TRANS] \\
+         METIS_TAC [REAL_LET_ANTISYM] ],
+       (* goal 2 (of 2) *)
+       Suff ‘F’ >- simp [] \\
+       NTAC 3 (POP_ASSUM MP_TAC) >> simp [Abbr ‘A’, Abbr ‘B’] \\
+       KILL_TAC >> rw [IN_INTERVAL] \\
+       CCONTR_TAC >> fs [] (* -&SUC j <= x <= -&j < &i <= x <= &SUC i *) \\
+      ‘i < j \/ j < i’ by simp [] >| (* 2 subgoals *)
+       [ (* goal 2.1 (of 2) *)
+        ‘-&j < (&i :real)’ by simp [] \\
+        ‘x < &i’ by PROVE_TAC [REAL_LET_TRANS] \\
+         METIS_TAC [REAL_LET_ANTISYM],
+         (* goal 2.2 (of 2) *)
+        ‘-&j <= (&j :real)’ by simp [] \\
+        ‘&j < (&i :real)’ by simp [] \\
+        ‘-&j < (&i :real)’ by PROVE_TAC [REAL_LET_TRANS] \\
+        ‘x < &i’ by PROVE_TAC [REAL_LET_TRANS] \\
+         METIS_TAC [REAL_LET_ANTISYM] ] ])
+ >> DISCH_TAC
  >> Know ‘!n. A n IN measurable_sets lebesgue /\
               B n IN measurable_sets lebesgue’
  >- (Q.X_GEN_TAC ‘n’ \\
@@ -2791,6 +2846,22 @@ Proof
                      approximation_lemma2) >> simp [])
  >> simp [SKOLEM_THM] (* this asserts f *)
  >> STRIP_TAC
+ >> Know ‘!i j. i <> j ==> negligible (s i INTER s j)’
+ >- (rpt STRIP_TAC \\
+     MATCH_MP_TAC NEGLIGIBLE_SUBSET \\
+     Q.EXISTS_TAC ‘(A i UNION B i) INTER (A j UNION B j)’ \\
+     reverse CONJ_TAC >- (simp [Abbr ‘s’] >> SET_TAC []) \\
+     simp [] \\
+     MATCH_MP_TAC NEGLIGIBLE_UNION \\
+     CONJ_TAC \\ (* 2 subgoals, same tactics *)
+     MATCH_MP_TAC nonoverlapping_closed_interval_imp_negligible >> simp [])
+ >> DISCH_TAC
+ (* applying lebesgue_countably_additive *)
+ >> Know ‘m_lebesgue (BIGUNION (IMAGE s UNIV)) = suminf (m_lebesgue o s)’
+ >- (SYM_TAC >> MATCH_MP_TAC lebesgue_countably_additive \\
+     simp [IN_FUNSET])
+ >> Rewr'
+ (* applying ext_suminf_2d_full *)
  >> cheat
 QED
 
