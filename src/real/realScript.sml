@@ -2430,16 +2430,6 @@ Proof
  >> MATCH_MP_TAC REAL_LT_IMP_LE >> art []
 QED
 
-Theorem SIMP_REAL_ARCH_SUC :
-    !(x :real). 0 <= x ==> ?n. &n <= x /\ x < &SUC n
-Proof
-    rpt STRIP_TAC
- >> Q.EXISTS_TAC ‘flr x’
- >> ASM_SIMP_TAC std_ss [NUM_FLOOR_LE, ADD1, GSYM REAL_OF_NUM_ADD]
- >> MP_TAC (Q.SPEC ‘x’ NUM_FLOOR_LT)
- >> REAL_ARITH_TAC
-QED
-
 Theorem REAL_ARCH_INV :
     !e. &0 < e <=> ?n. ~(n = 0) /\ &0:real < inv(&n) /\ inv(&n) < e:real
 Proof
@@ -4753,6 +4743,16 @@ Proof
   THEN `n' - 1 < n'` by DECIDE_TAC
   THEN RES_TAC
   THEN FULL_SIMP_TAC arith_ss []
+QED
+
+Theorem SIMP_REAL_ARCH_SUC :
+    !(x :real). 0 <= x ==> ?n. &n <= x /\ x < &SUC n
+Proof
+    rpt STRIP_TAC
+ >> Q.EXISTS_TAC ‘flr x’
+ >> ASM_SIMP_TAC std_ss [NUM_FLOOR_LE, ADD1, GSYM REAL_OF_NUM_ADD]
+ >> MP_TAC (Q.SPEC ‘x’ NUM_FLOOR_LT)
+ >> REAL_ARITH_TAC
 QED
 
 (*---------------------------------------------------------------------------*)

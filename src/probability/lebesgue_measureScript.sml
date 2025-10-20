@@ -1252,8 +1252,9 @@ Proof
 QED
 
 Theorem UNIT_INTERVAL_PARTITION :
+    univ(:real) =
     BIGUNION (IMAGE (\i. interval [real_of_int i, real_of_int i + 1])
-                    UNIV) = UNIV
+                    univ(:int))
 Proof
     rw [Once EXTENSION, IN_BIGUNION_IMAGE, IN_INTERVAL]
  >> Q.EXISTS_TAC ‘INT_FLOOR x’
@@ -1304,7 +1305,7 @@ Proof
                 SIMP_RULE std_ss [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM])
  >> Know ‘E = BIGUNION (IMAGE e UNIV)’
  >- (simp [Abbr ‘e’, GSYM BIGUNION_OVER_INTER_R] \\
-     simp [UNIT_INTERVAL_PARTITION])
+     simp [GSYM UNIT_INTERVAL_PARTITION])
  >> DISCH_TAC
  >> Know ‘?n0. e n0 <> {}’
  >- (Suff ‘BIGUNION (IMAGE e univ(:int)) <> {}’
@@ -2558,6 +2559,27 @@ Proof
         Q.EXISTS_TAC ‘SUC (2 * j)’ >> simp [ODD_DOUBLE] ] ]
 QED
 
+Theorem UNIT_INTERVAL_PARTITION' :
+    univ(:real) = BIGUNION (IMAGE (\n. interval [-&SUC n,-&n] UNION
+                                       interval [&n,&SUC n]) univ(:num))
+Proof
+    qabbrev_tac ‘A = \n. interval [-&SUC n,-&n]’
+ >> qabbrev_tac ‘B = \n. interval [&n,&SUC n]’
+ >> simp []
+ >> rw [Once EXTENSION, IN_BIGUNION_IMAGE]
+ >> Cases_on ‘0 <= x’
+ >- (MP_TAC (Q.SPEC ‘x’ SIMP_REAL_ARCH_SUC) >> rw [] \\
+     Q.EXISTS_TAC ‘n’ >> DISJ2_TAC >> rw [Abbr ‘B’, IN_INTERVAL] \\
+     MATCH_MP_TAC REAL_LT_IMP_LE >> art [])
+ >> fs [REAL_NOT_LE]
+ >> ‘x <= 0’ by simp [REAL_LT_IMP_LE]
+ >> ‘0 <= -x’ by simp []
+ >> MP_TAC (Q.SPEC ‘-x’ SIMP_REAL_ARCH_SUC) >> rw []
+ >> Q.EXISTS_TAC ‘n’ >> DISJ1_TAC
+ >> rw [Abbr ‘A’, IN_INTERVAL] (* 2 subgoals, same tactic *)
+ >> REAL_ASM_ARITH_TAC
+QED
+
 (* 18.16 Approximation Theorem [2, p.312]
 
    NOTE: It's a stronger result than textbook for all Lebesgue measurable sets.
@@ -2581,22 +2603,10 @@ Proof
      simp [Abbr ‘A’, Abbr ‘B’, CLOSED_interval, sets_lborel,
            borel_measurable_sets])
  >> DISCH_THEN (STRIP_ASSUME_TAC o SIMP_RULE std_ss [FORALL_AND_THM])
- >> Know ‘UNIV = BIGUNION (IMAGE (\n. A n UNION B n) UNIV)’
- >- (rw [Once EXTENSION, IN_BIGUNION_IMAGE] \\
-     Cases_on ‘0 <= x’
-     >- (MP_TAC (Q.SPEC ‘x’ SIMP_REAL_ARCH_SUC) >> rw [] \\
-         Q.EXISTS_TAC ‘n’ >> DISJ2_TAC >> rw [Abbr ‘B’, IN_INTERVAL] \\
-         MATCH_MP_TAC REAL_LT_IMP_LE >> art []) \\
-     fs [REAL_NOT_LE] \\
-    ‘x <= 0’ by simp [REAL_LT_IMP_LE] \\
-    ‘0 <= -x’ by simp [] \\
-     MP_TAC (Q.SPEC ‘-x’ SIMP_REAL_ARCH_SUC) >> rw [] \\
-     Q.EXISTS_TAC ‘n’ >> DISJ1_TAC \\
-     rw [Abbr ‘A’, IN_INTERVAL] (* 2 subgoals, same tactic *) \\
-     REAL_ASM_ARITH_TAC)
- >> DISCH_TAC
  (* decompose E *)
- >> Know ‘E = E INTER UNIV’ >- SET_TAC [] >> POP_ORW
+ >> Know ‘E = E INTER UNIV’ >- SET_TAC []
+ >> ‘UNIV = BIGUNION (IMAGE (\n. A n UNION B n) UNIV)’
+      by simp [UNIT_INTERVAL_PARTITION']  >> POP_ORW
  >> SIMP_TAC std_ss [BIGUNION_OVER_INTER_R]
  >> qmatch_abbrev_tac ‘E = BIGUNION (IMAGE s UNIV) ==> _’ (* this asserts “s” *)
  >> Rewr'
