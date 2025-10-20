@@ -2412,25 +2412,32 @@ Proof
     FIRST_ASSUM(SUBST1_TAC o SYM) THEN REWRITE_TAC[PRE, LESS_SUC_REFL]]
 QED
 
-Theorem SIMP_REAL_ARCH :
-    !x:real. ?n. x <= &n
-Proof
-    REWRITE_TAC [REAL_LE_LT]
- >> FULL_SIMP_TAC std_ss [EXISTS_OR_THM]
- >> RW_TAC std_ss []
- >> DISJ1_TAC
- >> MP_TAC (Q.SPEC `1` REAL_ARCH)
- >> REWRITE_TAC [REAL_LT_01, REAL_MUL_RID]
- >> RW_TAC std_ss []
-QED
-
 Theorem REAL_BIGNUM :
-    !r : real. ?n : num. r < &n
+    !(r :real). ?(n :num). r < &n
 Proof
    GEN_TAC
    THEN MP_TAC (Q.SPEC `1` REAL_ARCH)
    THEN REWRITE_TAC [REAL_LT_01, REAL_MUL_RID]
    THEN PROVE_TAC []
+QED
+
+Theorem SIMP_REAL_ARCH :
+    !(x:real). ?n. x <= &n
+Proof
+    Q.X_GEN_TAC ‘x’
+ >> STRIP_ASSUME_TAC (Q.SPEC ‘x’ REAL_BIGNUM)
+ >> Q.EXISTS_TAC ‘n’
+ >> MATCH_MP_TAC REAL_LT_IMP_LE >> art []
+QED
+
+Theorem SIMP_REAL_ARCH_SUC :
+    !(x :real). 0 <= x ==> ?n. &n <= x /\ x < &SUC n
+Proof
+    rpt STRIP_TAC
+ >> Q.EXISTS_TAC ‘flr x’
+ >> ASM_SIMP_TAC std_ss [NUM_FLOOR_LE, ADD1, GSYM REAL_OF_NUM_ADD]
+ >> MP_TAC (Q.SPEC ‘x’ NUM_FLOOR_LT)
+ >> REAL_ARITH_TAC
 QED
 
 Theorem REAL_ARCH_INV :

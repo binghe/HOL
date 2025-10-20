@@ -19,8 +19,9 @@ Theory lebesgue_measure
 Ancestors
   prim_rec arithmetic num pred_set combin cardinal While
   relation real seq transc real_sigma iterate topology metric
-  real_topology integration sigma_algebra extreal_base extreal real_borel
-  measure borel
+  real_topology integration sigma_algebra extreal_base extreal
+  real_borel measure borel
+  integral[qualified] lift_ieee[qualified]
 Libs
   numLib pred_setLib hurdUtils jrhUtils realLib
  *)
@@ -2562,14 +2563,67 @@ QED
    NOTE: It's a stronger result than textbook for all Lebesgue measurable sets.
  *)
 Theorem approximation_thm :
-    !E e. E IN measurable_sets lebesgue /\ E <> {} /\ 0 < e ==>
+    !E e. E IN measurable_sets lebesgue /\ 0 < e ==>
           ?J. (!i. closed_interval (J i)) /\
               (!i j. i <> j ==> nonoverlapping (J i) (J j)) /\
                E SUBSET BIGUNION (IMAGE J UNIV) /\
                m_lebesgue E <= suminf (m_lebesgue o J) /\
                suminf (m_lebesgue o J) <= m_lebesgue E + Normal e
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘A = \n. interval [-&SUC n,-&n]’
+ >> qabbrev_tac ‘B = \n. interval [&n,&SUC n]’
+ >> Know ‘!n. A n IN measurable_sets lebesgue /\
+              B n IN measurable_sets lebesgue’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     Suff ‘A n IN measurable_sets lborel /\ B n IN measurable_sets lborel’
+     >- METIS_TAC [SUBSET_DEF, lborel_subset_lebesgue] \\
+     simp [Abbr ‘A’, Abbr ‘B’, CLOSED_interval, sets_lborel,
+           borel_measurable_sets])
+ >> DISCH_THEN (STRIP_ASSUME_TAC o SIMP_RULE std_ss [FORALL_AND_THM])
+ >> Know ‘UNIV = BIGUNION (IMAGE (\n. A n UNION B n) UNIV)’
+ >- (rw [Once EXTENSION, IN_BIGUNION_IMAGE] \\
+     Cases_on ‘0 <= x’
+     >- (MP_TAC (Q.SPEC ‘x’ SIMP_REAL_ARCH_SUC) >> rw [] \\
+         Q.EXISTS_TAC ‘n’ >> DISJ2_TAC >> rw [Abbr ‘B’, IN_INTERVAL] \\
+         MATCH_MP_TAC REAL_LT_IMP_LE >> art []) \\
+     fs [REAL_NOT_LE] \\
+    ‘x <= 0’ by simp [REAL_LT_IMP_LE] \\
+    ‘0 <= -x’ by simp [] \\
+     MP_TAC (Q.SPEC ‘-x’ SIMP_REAL_ARCH_SUC) >> rw [] \\
+     Q.EXISTS_TAC ‘n’ >> DISJ1_TAC \\
+     rw [Abbr ‘A’, IN_INTERVAL] (* 2 subgoals, same tactic *) \\
+     REAL_ASM_ARITH_TAC)
+ >> DISCH_TAC
+ (* decompose E *)
+ >> Know ‘E = E INTER UNIV’ >- SET_TAC [] >> POP_ORW
+ >> SIMP_TAC std_ss [BIGUNION_OVER_INTER_R]
+ >> qmatch_abbrev_tac ‘E = BIGUNION (IMAGE s UNIV) ==> _’ (* this asserts “s” *)
+ >> Rewr'
+ >> Know ‘!n. s n IN measurable_sets lebesgue’
+ >- (RW_TAC std_ss [Abbr ‘s’] \\
+     MATCH_MP_TAC MEASURE_SPACE_INTER >> simp [measure_space_lebesgue] \\
+     MATCH_MP_TAC MEASURE_SPACE_UNION >> simp [measure_space_lebesgue])
+ >> DISCH_TAC
+ >> Know ‘!n. (0 :real) < 1 / 2 pow SUC n’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     MATCH_MP_TAC REAL_LT_DIV >> simp [])
+ >> DISCH_TAC
+ >> ‘!n. s n SUBSET A n UNION B n’ by rw [Abbr ‘s’]
+ (* applying approximation_lemma2 *)
+ >> Know ‘!n. ?J. (!i. closed_interval (J i)) /\
+                  (!i. J i SUBSET (A n UNION B n)) /\
+                  (!i j. i <> j ==> nonoverlapping (J i) (J j)) /\
+                  s n SUBSET BIGUNION (IMAGE J univ(:num)) /\
+                  m_lebesgue (s n) <= suminf (m_lebesgue o J) /\
+                  suminf (m_lebesgue o J) <=
+                  m_lebesgue (s n) + Normal (1 / 2 pow SUC n)’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     MP_TAC (Q.SPECL [‘s (n :num)’, ‘1 / 2 pow SUC n’, ‘n’]
+                     approximation_lemma2) >> simp [])
+ >> simp [SKOLEM_THM] (* this asserts f *)
+ >> STRIP_TAC
+ >> cheat
 QED
 
 Theorem pos_fn_integral_fn_seq :
