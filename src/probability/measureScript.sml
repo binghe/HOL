@@ -2989,6 +2989,30 @@ Proof
  >> MATCH_MP_TAC MEASURE_SUBADDITIVE >> art []
 QED
 
+(* NOTE: t is neither subset nor disjoint with s *)
+Theorem MEASURE_SUB_ABSORB :
+    !m s t. measure_space m /\ s IN measurable_sets m /\ t IN measurable_sets m /\
+            measure m t = 0 ==> measure m (s DIFF t) = measure m s
+Proof
+    rpt STRIP_TAC
+ >> Know ‘measure m s = measure m ((s DIFF t) UNION (s INTER t))’
+ >- (AP_TERM_TAC >> SET_TAC [])
+ >> Rewr'
+ >> qmatch_abbrev_tac ‘_ = measure m (A UNION B)’
+ >> ‘DISJOINT A B’ by ASM_SET_TAC []
+ >> ‘A IN measurable_sets m’ by METIS_TAC [MEASURE_SPACE_DIFF]
+ >> ‘B IN measurable_sets m’ by METIS_TAC [MEASURE_SPACE_INTER]
+ >> Know ‘measure m (A UNION B) = measure m A + measure m B’
+ >- (MATCH_MP_TAC MEASURE_ADDITIVE >> art [])
+ >> Rewr'
+ >> Suff ‘measure m B = 0’ >- simp []
+ >> reverse (rw [GSYM le_antisym])
+ >- (MATCH_MP_TAC MEASURE_POSITIVE >> art [])
+ >> Q.PAT_X_ASSUM ‘measure m t = 0’ (REWRITE_TAC o wrap o SYM)
+ >> MATCH_MP_TAC MEASURE_INCREASING >> art []
+ >> simp [Abbr ‘B’]
+QED
+
 Theorem RING_PREMEASURE_FINITE_SUBADDITIVE:
     !m. ring (m_space m, measurable_sets m) /\ premeasure m ==> finite_subadditive m
 Proof

@@ -864,6 +864,76 @@ Proof
  >> qexistsl_tac [‘a’, ‘b’] >> art []
 QED
 
+Theorem nonoverlapping_closed_interval_imp_negligible :
+    !s t. closed_interval s /\ closed_interval t /\ nonoverlapping s t ==>
+          negligible (s INTER t)
+Proof
+    rw [closed_interval_def, nonoverlapping_def]
+ >> fs [INTERIOR_INTERVAL]
+ >> rename1 ‘DISJOINT (interval (a,b)) (interval (c,d))’
+ >> fs [DISJOINT_DEF, DISJOINT_INTERVAL] (* 4 subgoals *)
+ >| [ (* goal 1 (of 4) *)
+     ‘b < a \/ b = a’ by fs [REAL_LE_LT]
+      >- (‘interval [a,b] = {}’ by simp [GSYM INTERVAL_EQ_EMPTY] \\
+          simp [NEGLIGIBLE_EMPTY]) \\
+      simp [INTERVAL_SING] \\
+      Cases_on ‘a IN interval [c,d]’
+      >- (Suff ‘{a} INTER interval [c,d] = {a}’ >- simp [NEGLIGIBLE_SING] \\
+          fs [IN_INTERVAL] \\
+          rw [Once EXTENSION, IN_INTERVAL] \\
+          EQ_TAC >> rw []) \\
+      Suff ‘{a} INTER interval [c,d] = {}’ >- simp [NEGLIGIBLE_EMPTY] \\
+      rw [Once EXTENSION, IN_INTERVAL, REAL_NOT_LE] \\
+      fs [IN_INTERVAL, REAL_NOT_LE],
+      (* goal 2 (of 4) *)
+     ‘d < c \/ d = c’ by fs [REAL_LE_LT]
+      >- (‘interval [c,d] = {}’ by simp [GSYM INTERVAL_EQ_EMPTY] \\
+          simp [NEGLIGIBLE_EMPTY]) \\
+      simp [INTERVAL_SING] \\
+      Cases_on ‘c IN interval [a,b]’
+      >- (Suff ‘interval [a,b] INTER {c} = {c}’ >- simp [NEGLIGIBLE_SING] \\
+          fs [IN_INTERVAL] \\
+          rw [Once EXTENSION, IN_INTERVAL] \\
+          EQ_TAC >> rw []) \\
+      Suff ‘interval [a,b] INTER {c} = {}’ >- simp [NEGLIGIBLE_EMPTY] \\
+      rw [Once EXTENSION, IN_INTERVAL, REAL_NOT_LE] \\
+      fs [IN_INTERVAL, REAL_NOT_LE],
+      (* goal 3 (of 4) *)
+      reverse (Cases_on ‘a <= b’)
+      >- (fs [REAL_NOT_LE] \\
+         ‘interval [a,b] = {}’ by simp [GSYM INTERVAL_EQ_EMPTY] \\
+          simp [NEGLIGIBLE_EMPTY]) \\
+      reverse (Cases_on ‘c <= d’)
+      >- (fs [REAL_NOT_LE] \\
+         ‘interval [c,d] = {}’ by simp [GSYM INTERVAL_EQ_EMPTY] \\
+          simp [NEGLIGIBLE_EMPTY]) \\
+   (* now we have: a <= b <= c <= d *)
+      simp [INTER_INTERVAL] \\
+     ‘a <= c /\ b <= d’ by PROVE_TAC [REAL_LE_TRANS] \\
+      simp [REAL_MAX_REDUCE, REAL_MIN_REDUCE] \\
+     ‘b < c \/ b = c’ by PROVE_TAC [REAL_LE_LT]
+      >- (‘interval [c,b] = {}’ by simp [GSYM INTERVAL_EQ_EMPTY] \\
+          simp [NEGLIGIBLE_EMPTY]) \\
+      simp [INTERVAL_SING, NEGLIGIBLE_SING],
+      (* goal 4 (of 4) *)
+      reverse (Cases_on ‘a <= b’)
+      >- (fs [REAL_NOT_LE] \\
+         ‘interval [a,b] = {}’ by simp [GSYM INTERVAL_EQ_EMPTY] \\
+          simp [NEGLIGIBLE_EMPTY]) \\
+      reverse (Cases_on ‘c <= d’)
+      >- (fs [REAL_NOT_LE] \\
+         ‘interval [c,d] = {}’ by simp [GSYM INTERVAL_EQ_EMPTY] \\
+          simp [NEGLIGIBLE_EMPTY]) \\
+   (* now we have: c <= d <= a <= b *)
+      simp [INTER_INTERVAL] \\
+     ‘c <= a /\ d <= b’ by PROVE_TAC [REAL_LE_TRANS] \\
+      simp [REAL_MAX_REDUCE, REAL_MIN_REDUCE] \\
+     ‘d < a \/ d = a’ by PROVE_TAC [REAL_LE_LT]
+      >- (‘interval [a,d] = {}’ by simp [GSYM INTERVAL_EQ_EMPTY] \\
+          simp [NEGLIGIBLE_EMPTY]) \\
+      simp [INTERVAL_SING, NEGLIGIBLE_SING] ]
+QED
+
 (* NOTE: Here we use the “gauge” definition from the old integralTheory, as it
    avoids “open” sets and directly gives the radius g(x) as a positive real.
 
@@ -2220,7 +2290,7 @@ Proof
  >> simp [Abbr ‘d’, REAL_MIN_LE]
 QED
 
-Theorem lebesgue_additivity :
+Theorem lebesgue_additive :
     !s t. s IN measurable_sets lebesgue /\
           t IN measurable_sets lebesgue /\ negligible (s INTER t) ==>
           m_lebesgue (s UNION t) = m_lebesgue s + m_lebesgue t
@@ -2228,6 +2298,94 @@ Proof
     rpt STRIP_TAC
  >> MP_TAC (ISPECL [“lebesgue”, “s :real set”, “t :real set”]
                    MEASURE_SPACE_STRONG_ADDITIVE)
+ >> simp [measure_space_lebesgue, lebesgue_of_negligible]
+QED
+
+Theorem NEGLIGIBLE_COUNTABLE_BIGUNION' :
+    !s. (!n. negligible (s n)) ==> negligible (BIGUNION (IMAGE s univ(:num)))
+Proof
+    rpt STRIP_TAC
+ >> ‘IMAGE s UNIV = {s n | n IN UNIV}’ by rw [Once EXTENSION]
+ >> POP_ORW
+ >> MATCH_MP_TAC NEGLIGIBLE_COUNTABLE_BIGUNION >> art []
+QED
+
+Theorem lebesgue_countably_additive :
+    !f s. f IN (univ(:num) -> measurable_sets lebesgue) /\
+         (!i j. i <> j ==> negligible (f i INTER f j)) /\
+          s = BIGUNION (IMAGE f univ(:num)) ==>
+          suminf (m_lebesgue o f) = m_lebesgue s
+Proof
+    RW_TAC std_ss [IN_FUNSET, IN_UNIV]
+ >> qmatch_abbrev_tac ‘_ = m_lebesgue s’
+ (* NOTE: Now that each two (f n) are not disjoint, but can we modify them
+    to make them disjoint while still keeping their existing measure?
+  *)
+ >> qabbrev_tac
+   ‘g = \i. BIGUNION (IMAGE (\j. if j = i then {} else f i INTER f j) UNIV)’
+ >> Know ‘!n. negligible (g n)’
+ >- (rw [Abbr ‘g’] \\
+     MATCH_MP_TAC NEGLIGIBLE_COUNTABLE_BIGUNION' \\
+     Q.X_GEN_TAC ‘i’ >> simp [] \\
+     Cases_on ‘n = i’ >> simp [NEGLIGIBLE_EMPTY])
+ >> DISCH_TAC
+ >> ‘!n. g n IN measurable_sets lebesgue’ by PROVE_TAC [negligible_in_lebesgue]
+ >> qabbrev_tac ‘h = \i. f i DIFF g i’
+ >> Know ‘!n. h n IN measurable_sets lebesgue’
+ >- (rw [Abbr ‘h’] \\
+     MATCH_MP_TAC MEASURE_SPACE_DIFF \\
+     simp [measure_space_lebesgue])
+ >> DISCH_TAC
+ >> Know ‘!n. m_lebesgue (h n) = m_lebesgue (f n)’
+ >- (rw [Abbr ‘h’] \\
+     MATCH_MP_TAC MEASURE_SUB_ABSORB \\
+     simp [measure_space_lebesgue, lebesgue_of_negligible])
+ >> DISCH_TAC
+ >> ‘m_lebesgue o f = m_lebesgue o h’ by rw [FUN_EQ_THM, o_DEF] >> POP_ORW
+ >> Know ‘!i j. i <> j ==> DISJOINT (h i) (h j)’
+ >- (rw [DISJOINT_ALT, Abbr ‘h’] \\
+     DISJ1_TAC \\
+     POP_ASSUM MP_TAC \\
+     rw [Abbr ‘g’, IN_BIGUNION_IMAGE] \\
+     POP_ASSUM (MP_TAC o Q.SPEC ‘j’) >> simp [])
+ >> DISCH_TAC
+ (* applying MEASURE_COUNTABLY_ADDITIVE *)
+ >> qabbrev_tac ‘t = BIGUNION (IMAGE h UNIV)’
+ >> Know ‘t IN measurable_sets lebesgue’
+ >- (qunabbrev_tac ‘t’ \\
+     MATCH_MP_TAC MEASURE_SPACE_BIGUNION \\
+     simp [measure_space_lebesgue])
+ >> DISCH_TAC
+ >> Know ‘suminf (m_lebesgue o h) = m_lebesgue t’
+ >- (MATCH_MP_TAC MEASURE_COUNTABLY_ADDITIVE \\
+     simp [IN_FUNSET, measure_space_lebesgue])
+ >> Rewr'
+ >> qabbrev_tac ‘N = BIGUNION (IMAGE g UNIV)’
+ >> Know ‘N IN measurable_sets lebesgue’
+ >- (qunabbrev_tac ‘N’ \\
+     MATCH_MP_TAC MEASURE_SPACE_BIGUNION \\
+     simp [measure_space_lebesgue])
+ >> DISCH_TAC
+ >> ‘negligible N’ by PROVE_TAC [NEGLIGIBLE_COUNTABLE_BIGUNION']
+ >> Know ‘s = t UNION N’
+ >- (rw [Once EXTENSION, Abbr ‘s’, IN_BIGUNION_IMAGE, Abbr ‘t’, Abbr ‘N’] \\
+     EQ_TAC
+     >- (DISCH_THEN (Q.X_CHOOSE_THEN ‘i’ STRIP_ASSUME_TAC) \\
+         simp [Abbr ‘h’] \\
+         Cases_on ‘?j. x IN g j’ >> simp [] \\
+         fs [] \\
+         Q.EXISTS_TAC ‘i’ >> simp []) \\
+     simp [Abbr ‘h’] \\
+     STRIP_TAC
+     >- (rename1 ‘x IN f i’ \\
+         Q.EXISTS_TAC ‘i’ >> simp []) \\
+     rename1 ‘x IN g i’ \\
+     POP_ASSUM MP_TAC >> rw [Abbr ‘g’, IN_BIGUNION_IMAGE] \\
+     Cases_on ‘j = i’ >> fs [] \\
+     Q.EXISTS_TAC ‘i’ >> simp [])
+ >> Rewr'
+ >> SYM_TAC
+ >> MATCH_MP_TAC MEASURE_ADD_ABSORB
  >> simp [measure_space_lebesgue, lebesgue_of_negligible]
 QED
 
@@ -2282,7 +2440,7 @@ Proof
  >> DISCH_TAC
  >> ‘E = E1 UNION E2’ by ASM_SET_TAC [] >> POP_ORW
  >> Know ‘m_lebesgue (E1 UNION E2) = m_lebesgue E1 + m_lebesgue E2’
- >- (MATCH_MP_TAC lebesgue_additivity >> art [])
+ >- (MATCH_MP_TAC lebesgue_additive >> art [])
  >> Rewr'
  >> ‘Normal e = Normal (e / 2) + Normal (e / 2)’
       by simp [extreal_add_eq, REAL_HALF_DOUBLE] >> POP_ORW
