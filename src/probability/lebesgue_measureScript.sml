@@ -634,7 +634,8 @@ Proof
  >> ASM_SIMP_TAC std_ss [lebesgue_eq_lambda, lambda_open_interval]
 QED
 
-Overload m_lebesgue = “measure lebesgue”
+(* NOTE: This name is inspired by HVG's old theorem name lmeasure_eq_0 *)
+Overload lmeasure = “measure lebesgue”
 
 (* ------------------------------------------------------------------------- *)
 (*  Equivalence of Lebesgue and Gauge (Henstock-Kurzweil) Integration        *)
@@ -864,7 +865,18 @@ Proof
  >> qexistsl_tac [‘a’, ‘b’] >> art []
 QED
 
-Theorem nonoverlapping_closed_interval_imp_negligible :
+Theorem closed_interval_imp_lebesgue :
+    !s. closed_interval s ==> s IN measurable_sets lebesgue
+Proof
+    rpt STRIP_TAC
+ >> Suff ‘s IN measurable_sets lborel’
+ >- METIS_TAC [SUBSET_DEF, lborel_subset_lebesgue]
+ >> REWRITE_TAC [sets_lborel]
+ >> MATCH_MP_TAC borel_closed
+ >> MATCH_MP_TAC closed_interval_closed >> art []
+QED
+
+Theorem closed_interval_nonoverlapping_imp_negligible[local] :
     !s t. closed_interval s /\ closed_interval t /\ nonoverlapping s t ==>
           negligible (s INTER t)
 Proof
@@ -932,6 +944,22 @@ Proof
       >- (‘interval [a,d] = {}’ by simp [GSYM INTERVAL_EQ_EMPTY] \\
           simp [NEGLIGIBLE_EMPTY]) \\
       simp [INTERVAL_SING, NEGLIGIBLE_SING] ]
+QED
+
+Theorem closed_interval_negligible_imp_nonoverlapping[local] :
+    !s t. closed_interval s /\ closed_interval t /\ negligible (s INTER t) ==>
+          nonoverlapping s t
+Proof
+    rw [closed_interval_def, nonoverlapping_def]
+ >> cheat
+QED
+
+Theorem closed_interval_negligible_eq_nonoverlapping :
+    !s t. closed_interval s /\ closed_interval t ==>
+         (negligible (s INTER t) <=> nonoverlapping s t)
+Proof
+    PROVE_TAC [closed_interval_nonoverlapping_imp_negligible,
+               closed_interval_negligible_imp_nonoverlapping]
 QED
 
 (* NOTE: Here we use the “gauge” definition from the old integralTheory, as it
@@ -1675,7 +1703,7 @@ Proof
 QED
 
 Theorem has_integral_indicator_imp_lebesgue :
-    !E y. (indicator E has_integral y) UNIV ==> m_lebesgue E = Normal y
+    !E y. (indicator E has_integral y) UNIV ==> lmeasure E = Normal y
 Proof
     rw [lebesgue_def]
  >> Know ‘indicator E integrable_on UNIV’
@@ -1768,9 +1796,9 @@ Proof
 QED
 
 (* Another form of has_integral_indicator_imp_lebesgue *)
-Theorem integrable_indicator_imp_m_lebesgue :
+Theorem integrable_indicator_imp_lmeasure :
     !E y. E IN integrable_sets UNIV ==>
-          m_lebesgue E = Normal (integral UNIV (indicator E))
+          lmeasure E = Normal (integral UNIV (indicator E))
 Proof
     rw [integrable_on, integrable_sets_def]
  >> ‘integral UNIV (indicator E) = y’ by PROVE_TAC [INTEGRAL_HAS_INTEGRAL]
@@ -1779,17 +1807,17 @@ Proof
 QED
 
 (* Yet another form *)
-Theorem integral_indicator_m_lebesgue :
+Theorem integral_indicator_lmeasure :
     !E y. E IN integrable_sets UNIV ==>
-          m_lebesgue E <> PosInf /\
-          integral UNIV (indicator E) = real (m_lebesgue E)
+          lmeasure E <> PosInf /\
+          integral UNIV (indicator E) = real (lmeasure E)
 Proof
-    rw [integrable_indicator_imp_m_lebesgue]
+    rw [integrable_indicator_imp_lmeasure]
 QED
 
 Theorem has_integral_indicator_imp_lebesgue' :
     !E y s. E IN measurable_sets lebesgue /\ E SUBSET s ==>
-           (indicator E has_integral y) s ==> m_lebesgue E = Normal y
+           (indicator E has_integral y) s ==> lmeasure E = Normal y
 Proof
     rpt STRIP_TAC
  >> MATCH_MP_TAC has_integral_indicator_imp_lebesgue
@@ -1833,8 +1861,8 @@ Theorem approximation_lemma1[local] :
                 (!i. closed_interval (J i)) /\
                 (!i j. i <> j ==> nonoverlapping (J i) (J j)) /\
                  E SUBSET BIGUNION (IMAGE J UNIV) /\
-                 m_lebesgue E <= suminf (m_lebesgue o J) /\
-                 suminf (m_lebesgue o J) <= m_lebesgue E + Normal e
+                 lmeasure E <= suminf (lmeasure o J) /\
+                 suminf (lmeasure o J) <= lmeasure E + Normal e
 Proof
     rpt STRIP_TAC
  >> Know ‘!a b. indicator E integrable_on interval [a,b]’
@@ -1846,7 +1874,7 @@ Proof
  >> DISCH_TAC
  >> POP_ASSUM (STRIP_ASSUME_TAC o REWRITE_RULE [integrable_on] o
                Q.SPECL [‘c’, ‘c + 1’]) (* this asserts ‘y’ *)
- >> ‘m_lebesgue E = Normal y’
+ >> ‘lmeasure E = Normal y’
       by PROVE_TAC [has_integral_indicator_imp_lebesgue']
  >> qabbrev_tac ‘s = interval [c,c + 1]’
  >> ‘(indicator E) integrable_on s /\ integral s (indicator E) = y’
@@ -1867,23 +1895,16 @@ Proof
  >> RW_TAC std_ss [FORALL_AND_THM, GSYM CONJ_ASSOC]
  (* NOTE: J may covers entire univ(:real), including those outside of [-B,B]. *)
  >> Q.EXISTS_TAC ‘J’ >> simp []
- >> Know ‘!n. J n IN measurable_sets lebesgue’
- >- (Q.X_GEN_TAC ‘n’ \\
-     fs [closed_interval_def, GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM,
-         INTERIOR_INTERVAL] \\
-     rename1 ‘!i. J i = interval [a i,b i]’ \\
-     Suff ‘interval [a n,b n] IN measurable_sets lborel’
-     >- PROVE_TAC [SUBSET_DEF, lborel_subset_lebesgue] \\
-     simp [sets_lborel, borel_measurable_sets, CLOSED_interval])
- >> DISCH_TAC
+ >> ‘!n. J n IN measurable_sets lebesgue’
+      by PROVE_TAC [closed_interval_imp_lebesgue]
  (* The first subgoal involves only a measure-theoretic proof *)
  >> CONJ_TAC
- >- (Q.PAT_X_ASSUM ‘m_lebesgue E = Normal y’ (REWRITE_TAC o wrap o SYM) \\
+ >- (Q.PAT_X_ASSUM ‘lmeasure E = Normal y’ (REWRITE_TAC o wrap o SYM) \\
      Know ‘BIGUNION (IMAGE J UNIV) IN measurable_sets lebesgue’
      >- (MATCH_MP_TAC MEASURE_SPACE_BIGUNION \\
          simp [measure_space_lebesgue]) >> DISCH_TAC \\
      qabbrev_tac ‘A = interior o J’ \\
-     Know ‘m_lebesgue o J = m_lebesgue o A’
+     Know ‘lmeasure o J = lmeasure o A’
      >- (simp [FUN_EQ_THM, Abbr ‘A’] \\
          Q.X_GEN_TAC ‘i’ \\
          fs [closed_interval_def, GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM,
@@ -1906,15 +1927,15 @@ Proof
      >- (MATCH_MP_TAC MEASURE_SPACE_BIGUNION \\
          simp [measure_space_lebesgue]) >> DISCH_TAC \\
   (* applying COUNTABLY_ADDITIVE *)
-     Know ‘suminf (m_lebesgue o A) = m_lebesgue (BIGUNION (IMAGE A UNIV))’
+     Know ‘suminf (lmeasure o A) = lmeasure (BIGUNION (IMAGE A UNIV))’
      >- (MATCH_MP_TAC COUNTABLY_ADDITIVE \\
          simp [countably_additive_lebesgue, IN_FUNSET] \\
          rpt STRIP_TAC \\
          Q.PAT_X_ASSUM ‘!i j. i <> j ==> nonoverlapping (J i) (J j)’
            (MP_TAC o Q.SPECL [‘i’, ‘j’]) \\
          simp [nonoverlapping_def, Abbr ‘A’]) >> Rewr' \\
-     Suff ‘m_lebesgue (BIGUNION (IMAGE A UNIV)) =
-           m_lebesgue (BIGUNION (IMAGE J UNIV))’
+     Suff ‘lmeasure (BIGUNION (IMAGE A UNIV)) =
+           lmeasure (BIGUNION (IMAGE J UNIV))’
      >- (Rewr' \\
          MATCH_MP_TAC MEASURE_INCREASING >> simp [measure_space_lebesgue]) \\
      qabbrev_tac ‘C = frontier o J’ \\
@@ -1954,11 +1975,11 @@ Proof
      simp [measure_space_lebesgue] \\
      reverse (rw [GSYM le_antisym])
      >- (MATCH_MP_TAC MEASURE_POSITIVE >> simp [measure_space_lebesgue]) \\
-     Q_TAC (TRANS_TAC le_trans) ‘suminf (m_lebesgue o C)’ \\
+     Q_TAC (TRANS_TAC le_trans) ‘suminf (lmeasure o C)’ \\
      CONJ_TAC
      >- (MATCH_MP_TAC MEASURE_COUNTABLY_SUBADDITIVE \\
          simp [measure_space_lebesgue, IN_FUNSET]) \\
-     Suff ‘suminf (m_lebesgue o C) = 0’ >- simp [] \\
+     Suff ‘suminf (lmeasure o C) = 0’ >- simp [] \\
      MATCH_MP_TAC ext_suminf_zero \\
      NTAC 4 (POP_ASSUM K_TAC) (* C-assumptions *) \\
      rw [o_DEF, Abbr ‘C’] \\
@@ -1972,12 +1993,12 @@ Proof
              Q.PAT_X_ASSUM ‘!i. t i IN E /\ t i IN J i’ (MP_TAC o Q.SPEC ‘n’) \\
              simp [iffLR (cj 1 INTERVAL_EQ_EMPTY)]) \\
          REAL_ARITH_TAC) >> Rewr' \\
-     qmatch_abbrev_tac ‘m_lebesgue ({x1} UNION {x2}) = 0’ \\
+     qmatch_abbrev_tac ‘lmeasure ({x1} UNION {x2}) = 0’ \\
      Cases_on ‘x1 = x2’
      >- (POP_ORW \\
         ‘{x2} UNION {x2} = {x2}’ by SET_TAC [] >> POP_ORW \\
          simp [lebesgue_sing]) \\
-     Suff ‘m_lebesgue ({x1} UNION {x2}) = m_lebesgue ({x1}) + m_lebesgue ({x2})’
+     Suff ‘lmeasure ({x1} UNION {x2}) = lmeasure ({x1}) + lmeasure ({x2})’
      >- (Rewr' >> simp [lebesgue_sing]) \\
      MATCH_MP_TAC MEASURE_ADDITIVE >> simp [measure_space_lebesgue] \\
      Suff ‘{x1} IN measurable_sets lborel /\
@@ -1996,8 +2017,8 @@ Proof
  (* applying HENSTOCK_LEMMA_PART1 (Saks-Henstock Lemma 5.3 [2, p.76]) *)
  >> MP_TAC (Q.SPECL [‘f’, ‘c’, ‘c + 1’, ‘d’, ‘e’] HENSTOCK_LEMMA_PART1)
  >> RW_TAC real_ss [] (* all antecedents are eliminated *)
- (* applying lebesgue_closed_interval_content, eliminating “m_lebesgue” *)
- >> Know ‘m_lebesgue o J = Normal o content o J’
+ (* applying lebesgue_closed_interval_content, eliminating “lmeasure” *)
+ >> Know ‘lmeasure o J = Normal o content o J’
  >- (rw [o_DEF, FUN_EQ_THM] \\
      fs [closed_interval_def, GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM] \\
      rename1 ‘!i. J i = interval [a i,b i]’ \\
@@ -2243,8 +2264,8 @@ Theorem approximation_lemma1'[local] :
                 (!i. closed_interval (J i)) /\
                 (!i j. i <> j ==> nonoverlapping (J i) (J j)) /\
                  E SUBSET BIGUNION (IMAGE J UNIV) /\
-                 m_lebesgue E <= suminf (m_lebesgue o J) /\
-                 suminf (m_lebesgue o J) <= m_lebesgue E + Normal e
+                 lmeasure E <= suminf (lmeasure o J) /\
+                 suminf (lmeasure o J) <= lmeasure E + Normal e
 Proof
     rpt STRIP_TAC
  >> reverse (Cases_on ‘E = {}’)
@@ -2272,9 +2293,9 @@ Proof
  >- (rw [nonoverlapping_def] \\
      Cases_on ‘i = 0’ >> simp [INTERIOR_INTERVAL] >> simp [INTERVAL_SING])
  (* applying ext_suminf_sum *)
- >> ‘!i. i <> 0 ==> m_lebesgue (J i) = 0’
+ >> ‘!i. i <> 0 ==> lmeasure (J i) = 0’
       by rw [lebesgue_closed_interval, REAL_LT_IMP_LE, normal_0]
- >> qabbrev_tac ‘f = m_lebesgue o J’
+ >> qabbrev_tac ‘f = lmeasure o J’
  >> Know ‘suminf f = SIGMA f (count 1)’
  >- (MATCH_MP_TAC ext_suminf_sum \\
      reverse CONJ_TAC >- rw [Abbr ‘f’] \\
@@ -2293,7 +2314,7 @@ QED
 Theorem lebesgue_additive :
     !s t. s IN measurable_sets lebesgue /\
           t IN measurable_sets lebesgue /\ negligible (s INTER t) ==>
-          m_lebesgue (s UNION t) = m_lebesgue s + m_lebesgue t
+          lmeasure (s UNION t) = lmeasure s + lmeasure t
 Proof
     rpt STRIP_TAC
  >> MP_TAC (ISPECL [“lebesgue”, “s :real set”, “t :real set”]
@@ -2314,10 +2335,10 @@ Theorem lebesgue_countably_additive :
     !f s. f IN (univ(:num) -> measurable_sets lebesgue) /\
          (!i j. i <> j ==> negligible (f i INTER f j)) /\
           s = BIGUNION (IMAGE f univ(:num)) ==>
-          suminf (m_lebesgue o f) = m_lebesgue s
+          suminf (lmeasure o f) = lmeasure s
 Proof
     RW_TAC std_ss [IN_FUNSET, IN_UNIV]
- >> qmatch_abbrev_tac ‘_ = m_lebesgue s’
+ >> qmatch_abbrev_tac ‘_ = lmeasure s’
  (* NOTE: Now that each two (f n) are not disjoint, but can we modify them
     to make them disjoint while still keeping their existing measure?
   *)
@@ -2336,12 +2357,12 @@ Proof
      MATCH_MP_TAC MEASURE_SPACE_DIFF \\
      simp [measure_space_lebesgue])
  >> DISCH_TAC
- >> Know ‘!n. m_lebesgue (h n) = m_lebesgue (f n)’
+ >> Know ‘!n. lmeasure (h n) = lmeasure (f n)’
  >- (rw [Abbr ‘h’] \\
      MATCH_MP_TAC MEASURE_SUB_ABSORB \\
      simp [measure_space_lebesgue, lebesgue_of_negligible])
  >> DISCH_TAC
- >> ‘m_lebesgue o f = m_lebesgue o h’ by rw [FUN_EQ_THM, o_DEF] >> POP_ORW
+ >> ‘lmeasure o f = lmeasure o h’ by rw [FUN_EQ_THM, o_DEF] >> POP_ORW
  >> Know ‘!i j. i <> j ==> DISJOINT (h i) (h j)’
  >- (rw [DISJOINT_ALT, Abbr ‘h’] \\
      DISJ1_TAC \\
@@ -2356,7 +2377,7 @@ Proof
      MATCH_MP_TAC MEASURE_SPACE_BIGUNION \\
      simp [measure_space_lebesgue])
  >> DISCH_TAC
- >> Know ‘suminf (m_lebesgue o h) = m_lebesgue t’
+ >> Know ‘suminf (lmeasure o h) = lmeasure t’
  >- (MATCH_MP_TAC MEASURE_COUNTABLY_ADDITIVE \\
      simp [IN_FUNSET, measure_space_lebesgue])
  >> Rewr'
@@ -2394,12 +2415,12 @@ Theorem approximation_lemma2[local] :
     !E e n. E IN measurable_sets lebesgue /\ 0 < e /\
             E SUBSET interval [-&SUC n,-&n] UNION interval [&n,&SUC n] ==>
             ?J. (!i. closed_interval (J i)) /\
-                (!i. J i SUBSET
-                         interval [-&SUC n,-&n] UNION interval [&n,&SUC n]) /\
+                (!i. J i SUBSET interval [-&SUC n,-&n] UNION
+                                interval [&n,&SUC n]) /\
                 (!i j. i <> j ==> nonoverlapping (J i) (J j)) /\
                  E SUBSET BIGUNION (IMAGE J UNIV) /\
-                 m_lebesgue E <= suminf (m_lebesgue o J) /\
-                 suminf (m_lebesgue o J) <= m_lebesgue E + Normal e
+                 lmeasure E <= suminf (lmeasure o J) /\
+                 suminf (lmeasure o J) <= lmeasure E + Normal e
 Proof
     rpt STRIP_TAC
  >> qabbrev_tac ‘A = interval [&n,&SUC n]’
@@ -2439,13 +2460,13 @@ Proof
      ASM_SET_TAC [])
  >> DISCH_TAC
  >> ‘E = E1 UNION E2’ by ASM_SET_TAC [] >> POP_ORW
- >> Know ‘m_lebesgue (E1 UNION E2) = m_lebesgue E1 + m_lebesgue E2’
+ >> Know ‘lmeasure (E1 UNION E2) = lmeasure E1 + lmeasure E2’
  >- (MATCH_MP_TAC lebesgue_additive >> art [])
  >> Rewr'
  >> ‘Normal e = Normal (e / 2) + Normal (e / 2)’
       by simp [extreal_add_eq, REAL_HALF_DOUBLE] >> POP_ORW
- >> Know ‘m_lebesgue E1 + m_lebesgue E2 + (Normal (e / 2) + Normal (e / 2)) =
-          m_lebesgue E1 + Normal (e / 2) + (m_lebesgue E2 + Normal (e / 2))’
+ >> Know ‘lmeasure E1 + lmeasure E2 + (Normal (e / 2) + Normal (e / 2)) =
+          lmeasure E1 + Normal (e / 2) + (lmeasure E2 + Normal (e / 2))’
  >- (MATCH_MP_TAC add2_assoc \\
      rpt CONJ_TAC >> MATCH_MP_TAC pos_not_neginf >| (* 4 subgoals *)
      [ (* goal 1 (of 4) *)
@@ -2503,8 +2524,8 @@ Proof
        rename1 ‘x IN J2 (i :num)’ \\
        Q.EXISTS_TAC ‘SUC (2 * i)’ >> simp [EVEN_ODD, ODD_DOUBLE] ])
  (* applying le_add2, twice *)
- >> Suff ‘suminf (m_lebesgue o J) =
-          suminf (m_lebesgue o J1) + suminf (m_lebesgue o J2)’
+ >> Suff ‘suminf (lmeasure o J) =
+          suminf (lmeasure o J1) + suminf (lmeasure o J2)’
  >- (Rewr' \\
      CONJ_TAC >- (MATCH_MP_TAC le_add2 >> art []) \\
      MATCH_MP_TAC le_add2 >> art [])
@@ -2531,11 +2552,11 @@ Proof
  >> Know ‘!i. 0 <= h i’
  >- (rw [Abbr ‘h’, o_DEF, Abbr ‘J’] >| (* 2 subgoals *)
      [ (* goal 1 (of 2) *)
-       qmatch_abbrev_tac ‘0 <= m_lebesgue (J1 j)’ \\
+       qmatch_abbrev_tac ‘0 <= lmeasure (J1 j)’ \\
        Q.PAT_X_ASSUM ‘!i. 0 <= f i’ (MP_TAC o Q.SPEC ‘j’) \\
        rw [Abbr ‘f’, o_DEF],
        (* goal 2 (of 2) *)
-       qmatch_abbrev_tac ‘0 <= m_lebesgue (J2 j)’ \\
+       qmatch_abbrev_tac ‘0 <= lmeasure (J2 j)’ \\
        Q.PAT_X_ASSUM ‘!i. 0 <= g i’ (MP_TAC o Q.SPEC ‘j’) \\
        rw [Abbr ‘g’, o_DEF] ])
  >> DISCH_TAC
@@ -2687,7 +2708,8 @@ Proof
      ‘FINITE s'’ by simp [IMAGE_FINITE] \\
       Q.PAT_X_ASSUM ‘s' = _’ K_TAC \\
       qabbrev_tac ‘t' = {(i - 1) DIV 2 | i < 2 * N /\ ODD i}’ \\
-     ‘t' = IMAGE (\i. (i - 1) DIV 2) t’ by rw [Once EXTENSION, Abbr ‘t'’, Abbr ‘t’] \\
+     ‘t' = IMAGE (\i. (i - 1) DIV 2) t’
+       by rw [Once EXTENSION, Abbr ‘t'’, Abbr ‘t’] \\
       Know ‘SIGMA h t = SIGMA g t'’
       >- (POP_ORW >> qmatch_abbrev_tac ‘_ = SIGMA g (IMAGE g' t)’ \\
           Know ‘SIGMA g (IMAGE g' t) = SIGMA (g o g') t’
@@ -2747,8 +2769,8 @@ Theorem approximation_thm :
           ?J. (!i. closed_interval (J i)) /\
               (!i j. i <> j ==> nonoverlapping (J i) (J j)) /\
                E SUBSET BIGUNION (IMAGE J UNIV) /\
-               m_lebesgue E <= suminf (m_lebesgue o J) /\
-               suminf (m_lebesgue o J) <= m_lebesgue E + Normal e
+               lmeasure E <= suminf (lmeasure o J) /\
+               suminf (lmeasure o J) <= lmeasure E + Normal e
 Proof
     rpt STRIP_TAC
  >> qabbrev_tac ‘A = \n. interval [-&SUC n,-&n]’
@@ -2838,13 +2860,13 @@ Proof
                   (!i. J i SUBSET (A n UNION B n)) /\
                   (!i j. i <> j ==> nonoverlapping (J i) (J j)) /\
                   s n SUBSET BIGUNION (IMAGE J univ(:num)) /\
-                  m_lebesgue (s n) <= suminf (m_lebesgue o J) /\
-                  suminf (m_lebesgue o J) <=
-                  m_lebesgue (s n) + Normal (1 / 2 pow SUC n)’
+                  lmeasure (s n) <= suminf (lmeasure o J) /\
+                  suminf (lmeasure o J) <=
+                  lmeasure (s n) + Normal (1 / 2 pow SUC n)’
  >- (Q.X_GEN_TAC ‘n’ \\
      MP_TAC (Q.SPECL [‘s (n :num)’, ‘1 / 2 pow SUC n’, ‘n’]
                      approximation_lemma2) >> simp [])
- >> simp [SKOLEM_THM] (* this asserts f *)
+ >> simp [SKOLEM_THM, FORALL_AND_THM] (* this asserts f *)
  >> STRIP_TAC
  >> Know ‘!i j. i <> j ==> negligible (s i INTER s j)’
  >- (rpt STRIP_TAC \\
@@ -2854,14 +2876,46 @@ Proof
      simp [] \\
      MATCH_MP_TAC NEGLIGIBLE_UNION \\
      CONJ_TAC \\ (* 2 subgoals, same tactics *)
-     MATCH_MP_TAC nonoverlapping_closed_interval_imp_negligible >> simp [])
+     MATCH_MP_TAC closed_interval_nonoverlapping_imp_negligible >> simp [])
  >> DISCH_TAC
  (* applying lebesgue_countably_additive *)
- >> Know ‘m_lebesgue (BIGUNION (IMAGE s UNIV)) = suminf (m_lebesgue o s)’
+ >> Know ‘lmeasure (BIGUNION (IMAGE s UNIV)) = suminf (lmeasure o s)’
  >- (SYM_TAC >> MATCH_MP_TAC lebesgue_countably_additive \\
      simp [IN_FUNSET])
  >> Rewr'
+ (* applying NUM_2D_BIJ_INV *)
+ >> Q.X_CHOOSE_THEN ‘h’ STRIP_ASSUME_TAC NUM_2D_BIJ_INV
+ >> Q.EXISTS_TAC ‘UNCURRY f o h’
+ >> qabbrev_tac ‘l = \n i. lmeasure (f n i)’
+ >> Know ‘lmeasure o UNCURRY f o h = UNCURRY l o h’
+ >- (rw [FUN_EQ_THM, o_DEF, Abbr ‘l’] \\
+     qabbrev_tac ‘t = h x’ \\
+     PairCases_on ‘t’ >> simp [])
+ >> Rewr'
  (* applying ext_suminf_2d_full *)
+ >> Know ‘suminf (UNCURRY l o h) = suminf (\n. suminf (l n))’
+ >- (MATCH_MP_TAC ext_suminf_2d_full >> simp [] \\
+     rw [Abbr ‘l’] \\
+     MATCH_MP_TAC MEASURE_POSITIVE \\
+     simp [measure_space_lebesgue, closed_interval_imp_lebesgue])
+ >> Rewr'
+ >> CONJ_TAC (* closed_interval *)
+ >- (rw [o_DEF] >> Cases_on ‘h (i :num)’ >> simp [])
+ >> CONJ_TAC (* nonoverlapping *)
+ >- (rw [o_DEF] \\
+     Cases_on ‘h (i :num)’ >> rename1 ‘h i = (n1,i1)’ \\
+     Cases_on ‘h (j :num)’ >> rename1 ‘h j = (n2,i2)’ \\
+     simp [] \\
+     Cases_on ‘n1 = n2’
+     >- (Suff ‘i1 <> i2’ >- rw [] \\
+         CCONTR_TAC >> fs [] \\
+        ‘h i = h j’ by PROVE_TAC [] \\
+         Q.PAT_X_ASSUM ‘BIJ h _ _’ MP_TAC \\
+         rw [BIJ_DEF, INJ_DEF] >> DISJ1_TAC \\
+         qexistsl_tac [‘i’, ‘j’] >> simp []) \\
+     MATCH_MP_TAC nonoverlapping_subset_imp \\
+     qexistsl_tac [‘A n1 UNION B n1’, ‘A n2 UNION B n2’] >> art [] \\
+     cheat)
  >> cheat
 QED
 
