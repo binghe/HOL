@@ -505,7 +505,7 @@ Proof
  >> SIMP_TAC std_ss [sup_sing]
 QED
 
-val lmeasure_eq_0 = lebesgue_of_negligible;
+Theorem lmeasure_eq_0 = lebesgue_of_negligible
 
 Theorem lebesgue_measure_iff_LIMSEQ[local] :
     !A m. A IN measurable_sets lebesgue /\ 0 <= m ==>
@@ -951,7 +951,24 @@ Theorem closed_interval_negligible_imp_nonoverlapping[local] :
           nonoverlapping s t
 Proof
     rw [closed_interval_def, nonoverlapping_def]
- >> cheat
+ >> simp [INTERIOR_INTERVAL]
+ >> simp [DISJOINT_DEF, DISJOINT_INTERVAL]
+ >> rename1 ‘negligible (interval [a,b] INTER interval [c,d])’
+ >> fs [INTER_INTERVAL]
+ >> ‘lmeasure (interval [max a c,min b d]) = 0’
+      by PROVE_TAC [lebesgue_of_negligible]
+ >> CCONTR_TAC >> fs [REAL_NOT_LE]
+ (* a < b,
+    c < d *)
+ >> Know ‘max a c < min b d’ >- simp [REAL_MAX_LT, REAL_LT_MIN]
+ >> qmatch_abbrev_tac ‘x < (y :real) ==> F’ >> DISCH_TAC
+ >> ‘x <= y’ by simp [REAL_LT_IMP_LE]
+ (* applying lebesgue_closed_interval *)
+ >> ‘lmeasure (interval [x,y]) = Normal (y - x)’
+      by PROVE_TAC [lebesgue_closed_interval]
+ >> Suff ‘y - x <> 0’ >- METIS_TAC [extreal_11, normal_0]
+ >> Q.PAT_X_ASSUM ‘x < y’ MP_TAC
+ >> REAL_ARITH_TAC
 QED
 
 Theorem closed_interval_negligible_eq_nonoverlapping :
@@ -2901,6 +2918,12 @@ Proof
  >> Rewr'
  >> CONJ_TAC (* closed_interval *)
  >- (rw [o_DEF] >> Cases_on ‘h (i :num)’ >> simp [])
+ (* [-&SUC j,-&j] < [-&SUC i,-&i] < [&i,&SUC i] < [&j,&SUC j] *)
+ >> Know ‘!i j. i < j ==> nonoverlapping (A i UNION B i) (A j UNION B j)’
+ >- (rpt STRIP_TAC \\
+     MATCH_MP_TAC nonoverlapping_subset_imp \\
+     cheat)
+ >> DISCH_TAC
  >> CONJ_TAC (* nonoverlapping *)
  >- (rw [o_DEF] \\
      Cases_on ‘h (i :num)’ >> rename1 ‘h i = (n1,i1)’ \\
@@ -2915,7 +2938,8 @@ Proof
          qexistsl_tac [‘i’, ‘j’] >> simp []) \\
      MATCH_MP_TAC nonoverlapping_subset_imp \\
      qexistsl_tac [‘A n1 UNION B n1’, ‘A n2 UNION B n2’] >> art [] \\
-     cheat)
+    ‘n1 < n2 \/ n2 < n1’ by simp [] >- simp [] \\
+     simp [Once nonoverlapping_comm])
  >> cheat
 QED
 
