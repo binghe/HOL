@@ -34,7 +34,7 @@ open realTheory realLib seqTheory transcTheory real_sigmaTheory iterateTheory
      integerTheory intrealTheory extreal_baseTheory;
 
 open sigma_algebraTheory extrealTheory real_borelTheory measureTheory borelTheory
-     lebesgueTheory martingaleTheory;
+     lebesgueTheory;
 
 (* We only need very few theorems from these theories, which may be conflict
    with other opened theories.
@@ -2429,17 +2429,13 @@ Proof
       qabbrev_tac ‘s' = {i DIV 2 | i < N /\ EVEN i}’ \\
      ‘s' = IMAGE (\i. i DIV 2) s’ by rw [Once EXTENSION, Abbr ‘s'’, Abbr ‘s’] \\
       Know ‘SIGMA h s = SIGMA f s'’
-      >- (POP_ORW \\
-          qmatch_abbrev_tac ‘_ = SIGMA f (IMAGE f' s)’ \\
+      >- (POP_ORW >> qmatch_abbrev_tac ‘_ = SIGMA f (IMAGE f' s)’ \\
           Know ‘SIGMA f (IMAGE f' s) = SIGMA (f o f') s’
           >- (irule EXTREAL_SUM_IMAGE_IMAGE >> simp [] \\
-              CONJ_TAC
-              >- (DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> STRIP_TAC \\
-                  MATCH_MP_TAC pos_not_neginf >> art []) \\
-              rw [INJ_DEF, Abbr ‘s’, Abbr ‘f'’]
-              >- (Q.EXISTS_TAC ‘i’ >> art []) \\
-              rename1 ‘j < N’ \\
-              gs [EVEN_EXISTS]) >> Rewr' \\
+              CONJ_TAC >- (DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> STRIP_TAC \\
+                           MATCH_MP_TAC pos_not_neginf >> art []) \\
+              rw [INJ_DEF, Abbr ‘s’, Abbr ‘f'’] >- (Q.EXISTS_TAC ‘i’ >> art []) \\
+              rename1 ‘j < N’ >> gs [EVEN_EXISTS]) >> Rewr' \\
           irule EXTREAL_SUM_IMAGE_EQ >> simp [] \\
           reverse CONJ_TAC
           >- (DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
@@ -2451,17 +2447,14 @@ Proof
       qabbrev_tac ‘t' = {(i - 1) DIV 2 | i < N /\ ODD i}’ \\
      ‘t' = IMAGE (\i. (i - 1) DIV 2) t’ by rw [Once EXTENSION, Abbr ‘t'’, Abbr ‘t’] \\
       Know ‘SIGMA h t = SIGMA g t'’
-      >- (POP_ORW \\
-          qmatch_abbrev_tac ‘_ = SIGMA g (IMAGE g' t)’ \\
+      >- (POP_ORW >> qmatch_abbrev_tac ‘_ = SIGMA g (IMAGE g' t)’ \\
           Know ‘SIGMA g (IMAGE g' t) = SIGMA (g o g') t’
           >- (irule EXTREAL_SUM_IMAGE_IMAGE >> simp [] \\
               CONJ_TAC
               >- (DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> STRIP_TAC \\
                   MATCH_MP_TAC pos_not_neginf >> art []) \\
-              rw [INJ_DEF, Abbr ‘t’, Abbr ‘g'’]
-              >- (Q.EXISTS_TAC ‘i’ >> art []) \\
-              rename1 ‘j < N’ \\
-              gs [ODD_EXISTS]) >> Rewr' \\
+              rw [INJ_DEF, Abbr ‘t’, Abbr ‘g'’] >- (Q.EXISTS_TAC ‘i’ >> art []) \\
+              rename1 ‘j < N’ >> gs [ODD_EXISTS]) >> Rewr' \\
           irule EXTREAL_SUM_IMAGE_EQ >> simp [] \\
           reverse CONJ_TAC
           >- (DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
@@ -2512,15 +2505,10 @@ Proof
       >- (irule EXTREAL_SUM_IMAGE_DISJOINT_UNION >> simp [] \\
           DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
           MATCH_MP_TAC pos_not_neginf >> art []) >> Rewr' \\
-
-(* TODO *)
-
-(*
-      qabbrev_tac ‘s' = {i DIV 2 | i < N /\ EVEN i}’ \\
+      qabbrev_tac ‘s' = {i DIV 2 | i < 2 * N /\ EVEN i}’ \\
      ‘s' = IMAGE (\i. i DIV 2) s’ by rw [Once EXTENSION, Abbr ‘s'’, Abbr ‘s’] \\
       Know ‘SIGMA h s = SIGMA f s'’
-      >- (POP_ORW \\
-          qmatch_abbrev_tac ‘_ = SIGMA f (IMAGE f' s)’ \\
+      >- (POP_ORW >> qmatch_abbrev_tac ‘_ = SIGMA f (IMAGE f' s)’ \\
           Know ‘SIGMA f (IMAGE f' s) = SIGMA (f o f') s’
           >- (irule EXTREAL_SUM_IMAGE_IMAGE >> simp [] \\
               CONJ_TAC
@@ -2528,7 +2516,7 @@ Proof
                   MATCH_MP_TAC pos_not_neginf >> art []) \\
               rw [INJ_DEF, Abbr ‘s’, Abbr ‘f'’]
               >- (Q.EXISTS_TAC ‘i’ >> art []) \\
-              rename1 ‘j < N’ \\
+              rename1 ‘j < 2 * N’ \\
               gs [EVEN_EXISTS]) >> Rewr' \\
           irule EXTREAL_SUM_IMAGE_EQ >> simp [] \\
           reverse CONJ_TAC
@@ -2538,48 +2526,40 @@ Proof
           simp [Abbr ‘J’]) >> Rewr' \\
      ‘FINITE s'’ by simp [IMAGE_FINITE] \\
       Q.PAT_X_ASSUM ‘s' = _’ K_TAC \\
-      qabbrev_tac ‘t' = {(i - 1) DIV 2 | i < N /\ ODD i}’ \\
+      qabbrev_tac ‘t' = {(i - 1) DIV 2 | i < 2 * N /\ ODD i}’ \\
      ‘t' = IMAGE (\i. (i - 1) DIV 2) t’ by rw [Once EXTENSION, Abbr ‘t'’, Abbr ‘t’] \\
       Know ‘SIGMA h t = SIGMA g t'’
-      >- (POP_ORW \\
-          qmatch_abbrev_tac ‘_ = SIGMA g (IMAGE g' t)’ \\
+      >- (POP_ORW >> qmatch_abbrev_tac ‘_ = SIGMA g (IMAGE g' t)’ \\
           Know ‘SIGMA g (IMAGE g' t) = SIGMA (g o g') t’
           >- (irule EXTREAL_SUM_IMAGE_IMAGE >> simp [] \\
-              CONJ_TAC
-              >- (DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> STRIP_TAC \\
-                  MATCH_MP_TAC pos_not_neginf >> art []) \\
+              CONJ_TAC >- (DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> STRIP_TAC \\
+                           MATCH_MP_TAC pos_not_neginf >> art []) \\
               rw [INJ_DEF, Abbr ‘t’, Abbr ‘g'’]
               >- (Q.EXISTS_TAC ‘i’ >> art []) \\
-              rename1 ‘j < N’ \\
+              rename1 ‘j < 2 * N’ \\
               gs [ODD_EXISTS]) >> Rewr' \\
           irule EXTREAL_SUM_IMAGE_EQ >> simp [] \\
           reverse CONJ_TAC
           >- (DISJ1_TAC >> Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
               CONJ_TAC >> MATCH_MP_TAC pos_not_neginf >> art []) \\
           Q.X_GEN_TAC ‘i’ >> rw [Abbr ‘t’, Abbr ‘h’, Abbr ‘g’, Abbr ‘g'’] \\
-          fs [ODD_EVEN] \\
-          simp [Abbr ‘J’]) >> Rewr' \\
+          fs [ODD_EVEN] >> simp [Abbr ‘J’]) >> Rewr' \\
      ‘FINITE t'’ by simp [IMAGE_FINITE] \\
       Q.PAT_X_ASSUM ‘t' = _’ K_TAC \\
       MATCH_MP_TAC le_add2 >> CONJ_TAC >| (* 2 subgoals *)
       [ (* goal 1.1 (of 2) *)
         MATCH_MP_TAC EXTREAL_SUM_IMAGE_MONO_SET >> simp [] \\
-        rw [SUBSET_DEF, Abbr ‘s'’] \\
-        Q_TAC (TRANS_TAC LESS_EQ_LESS_TRANS) ‘i’ >> art [] \\
-        MATCH_MP_TAC DIV_LESS_EQ >> simp [],
+        rw [SUBSET_DEF, Abbr ‘s'’] >> rename1 ‘j < N’ \\
+        Q.EXISTS_TAC ‘2 * j’ >> simp [EVEN_DOUBLE],
         (* goal 1.2 (of 2) *)
         MATCH_MP_TAC EXTREAL_SUM_IMAGE_MONO_SET >> simp [] \\
-        rw [SUBSET_DEF, Abbr ‘t'’] \\
-        Q_TAC (TRANS_TAC LESS_EQ_LESS_TRANS) ‘i’ >> art [] \\
-        Q_TAC (TRANS_TAC LESS_EQ_TRANS) ‘i - 1’ >> simp [] \\
-        MATCH_MP_TAC DIV_LESS_EQ >> simp [] ],
- *)
-      cheat ]
+        rw [SUBSET_DEF, Abbr ‘t'’] >> rename1 ‘j < N’ \\
+        Q.EXISTS_TAC ‘SUC (2 * j)’ >> simp [ODD_DOUBLE] ] ]
 QED
 
 (* 18.16 Approximation Theorem [2, p.312]
 
-   NOTE: This is stronger result (than textbook) of all Lebesgue measurable sets!
+   NOTE: It's a stronger result than textbook for all Lebesgue measurable sets.
  *)
 Theorem approximation_thm :
     !E e. E IN measurable_sets lebesgue /\ E <> {} /\ 0 < e ==>
