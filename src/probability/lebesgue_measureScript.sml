@@ -139,6 +139,9 @@ Definition lebesgue_def :
               (\A. sup {Normal (integral (line n) (indicator A)) | n IN UNIV}))
 End
 
+(* NOTE: This name is inspired by HVG's old theorem name lmeasure_eq_0 *)
+Overload lmeasure = “measure lebesgue”
+
 Theorem space_lebesgue :
     m_space lebesgue = univ(:real)
 Proof
@@ -507,6 +510,56 @@ QED
 
 Theorem lmeasure_eq_0 = lebesgue_of_negligible
 
+Theorem INTEGRAL_POS :
+    !f s. f integrable_on s /\ (!x. x IN s ==> 0 <= f x) ==>
+          0 <= integral s f
+Proof
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘g :real -> real = \x. 0’
+ >> ‘0 = abs (integral s g)’ by simp [Abbr ‘g’, INTEGRAL_0]
+ >> POP_ORW
+ >> MATCH_MP_TAC INTEGRAL_ABS_BOUND_INTEGRAL
+ >> rw [Abbr ‘g’, INTEGRABLE_0]
+QED
+
+Theorem negligible_iff_lmeasure_eq_0 :
+    !s. s IN measurable_sets lebesgue ==> (negligible s <=> lmeasure s = 0)
+Proof
+    rpt STRIP_TAC
+ >> EQ_TAC >- REWRITE_TAC [lebesgue_of_negligible]
+ >> DISCH_TAC
+ >> rw [negligible]
+ >> MP_TAC (Q.SPECL [‘a’, ‘b’] LINE_EXISTS) >> rw []
+ >> Know ‘indicator s integrable_on line n’
+ >- (Q.PAT_X_ASSUM ‘s IN measurable_sets lebesgue’ MP_TAC \\
+     rw [lebesgue_def])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘f = indicator s’
+ >> Know ‘f integrable_on interval [a,b]’
+ >- (MATCH_MP_TAC INTEGRABLE_ON_SUBINTERVAL \\
+     Q.EXISTS_TAC ‘line n’ >> art [])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘t = interval [a,b]’
+ >> simp [HAS_INTEGRAL_INTEGRABLE_INTEGRAL]
+ >> reverse (rw [GSYM REAL_LE_ANTISYM])
+ >- (MATCH_MP_TAC INTEGRAL_POS >> rw [Abbr ‘f’, INDICATOR_POS])
+ >> Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘integral (line n) f’
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC INTEGRAL_SUBSET_DROP_LE \\
+     rw [Abbr ‘f’, INDICATOR_POS])
+ >> Know ‘sup (IMAGE (\n. Normal (integral (line n) f)) UNIV) = 0’
+ >- (Q.PAT_X_ASSUM ‘lmeasure s = 0’ MP_TAC \\
+     rw [lebesgue_def] \\
+     POP_ASSUM (REWRITE_TAC o wrap o SYM) \\
+     AP_TERM_TAC >> rw [Once EXTENSION])
+ >> DISCH_TAC
+ >> REWRITE_TAC [GSYM extreal_le_eq, normal_0]
+ >> POP_ASSUM (REWRITE_TAC o wrap o SYM)
+ >> rw [le_sup']
+ >> POP_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘n’ >> REFL_TAC
+QED
+
 Theorem lebesgue_measure_iff_LIMSEQ[local] :
     !A m. A IN measurable_sets lebesgue /\ 0 <= m ==>
          (measure lebesgue A = Normal m <=>
@@ -637,9 +690,6 @@ QED
 (* ------------------------------------------------------------------------- *)
 (*  Equivalence of Lebesgue and Gauge (Henstock-Kurzweil) Integration        *)
 (* ------------------------------------------------------------------------- *)
-
-(* NOTE: This name is inspired by HVG's old theorem name lmeasure_eq_0 *)
-Overload lmeasure = “measure lebesgue”
 
 (* |- !k x.
         0 <= x /\ x < 1 /\ 0 < k ==>
@@ -1683,18 +1733,6 @@ QED
 Theorem integrable_indicator_imp_sets_lebesgue =
         integrable_sets_subset_lebesgue
      |> SRULE [SUBSET_DEF, integrable_sets_def] |> Q.SPEC ‘E’ |> GEN_ALL
-
-Theorem INTEGRAL_POS :
-    !f s. f integrable_on s /\ (!x. x IN s ==> 0 <= f x) ==>
-          0 <= integral s f
-Proof
-    rpt STRIP_TAC
- >> qabbrev_tac ‘g :real -> real = \x. 0’
- >> ‘0 = abs (integral s g)’ by simp [Abbr ‘g’, INTEGRAL_0]
- >> POP_ORW
- >> MATCH_MP_TAC INTEGRAL_ABS_BOUND_INTEGRAL
- >> rw [Abbr ‘g’, INTEGRABLE_0]
-QED
 
 (* This restrict version is based on INTEGRAL_ABS_BOUND_INTEGRAL *)
 Theorem INTEGRAL_MONO_LEMMA :
@@ -2867,9 +2905,9 @@ Proof
      MATCH_MP_TAC MEASURE_SPACE_INTER >> simp [measure_space_lebesgue] \\
      MATCH_MP_TAC MEASURE_SPACE_UNION >> simp [measure_space_lebesgue])
  >> DISCH_TAC
- >> Know ‘!n. (0 :real) < e * (1 / 2) pow SUC n’
+ >> Know ‘!n. (0 :real) < e * (1 / 2) pow (n + 1)’
  >- (Q.X_GEN_TAC ‘n’ \\
-     MATCH_MP_TAC REAL_LT_MUL >> art [] \\
+     MATCH_MP_TAC REAL_LT_MUL >> art [GSYM ADD1] \\
      MATCH_MP_TAC POW_POS_LT >> simp [])
  >> DISCH_TAC
  >> ‘!n. s n SUBSET A n UNION B n’ by rw [Abbr ‘s’]
@@ -2880,12 +2918,12 @@ Proof
                   s n SUBSET BIGUNION (IMAGE J univ(:num)) /\
                   lmeasure (s n) <= suminf (lmeasure o J) /\
                   suminf (lmeasure o J) <=
-                  lmeasure (s n) + Normal (e * (1 / 2) pow SUC n)’
+                  lmeasure (s n) + Normal (e * (1 / 2) pow (n + 1))’
  >- (Q.X_GEN_TAC ‘n’ \\
-     MP_TAC (Q.SPECL [‘s (n :num)’, ‘e * (1 / 2) pow SUC n’, ‘n’]
+     MP_TAC (Q.SPECL [‘s (n :num)’, ‘e * (1 / 2) pow (n + 1)’, ‘n’]
                      approximation_lemma2) >> simp [])
  >> SIMP_TAC std_ss [SKOLEM_THM, FORALL_AND_THM] (* this asserts f *)
- >> Know ‘!n. Normal (e * (1 / 2) pow SUC n) = Normal e * (1 / 2) pow SUC n’
+ >> Know ‘!n. Normal (e * (1 / 2) pow (n + 1)) = Normal e * (1 / 2) pow (n + 1)’
  >- (RW_TAC std_ss [GSYM extreal_mul_eq] \\
      AP_TERM_TAC \\
      REWRITE_TAC [GSYM extreal_pow_def] \\
@@ -2992,20 +3030,13 @@ Proof
      rw [o_DEF, Abbr ‘l’] \\
      Q.PAT_X_ASSUM ‘!n. lmeasure (s n) <= suminf (lmeasure o f n)’
        (MP_TAC o Q.SPEC ‘n’) >> simp [o_DEF])
- (* final goal *)
- >> Know ‘Normal e = suminf (\n. Normal e * (1 / 2) pow SUC n)’
- >- (Suff ‘suminf (\n. Normal e * (1 / 2) pow SUC n) =
-           Normal e * suminf (\n. (1 / 2) pow SUC n)’
-     >- (Rewr' \\
-         simp [pow_half_ser']) \\
-     HO_MATCH_MP_TAC ext_suminf_cmul \\
-     CONJ_TAC >- simp [extreal_of_num_def, REAL_LT_IMP_LE] \\
-     Q.X_GEN_TAC ‘n’ \\
-     MATCH_MP_TAC pow_pos_le >> simp [])
+ (* applying pow_half_ser_by_e *)
+ >> Know ‘Normal e = suminf (\n. Normal e * (1 / 2) pow (n + 1))’
+ >- (MATCH_MP_TAC pow_half_ser_by_e >> simp [extreal_of_num_def])
  >> Rewr'
  (* applying ext_suminf_add *)
- >> Know ‘suminf (lmeasure o s) + suminf (\n. Normal e * (1 / 2) pow SUC n) =
-          suminf (\n. (lmeasure o s) n + (\n. Normal e * (1 / 2) pow SUC n) n)’
+ >> Know ‘suminf (lmeasure o s) + suminf (\n. Normal e * (1 / 2) pow (n + 1)) =
+          suminf (\n. (lmeasure o s) n + (\n. Normal e * (1 / 2) pow (n + 1)) n)’
  >- (SYM_TAC >> MATCH_MP_TAC ext_suminf_add >> rw []
      >- (MATCH_MP_TAC MEASURE_POSITIVE \\
          simp [measure_space_lebesgue]) \\
@@ -3022,6 +3053,111 @@ Proof
      MATCH_MP_TAC closed_interval_imp_lebesgue >> art [])
  >> Q.PAT_X_ASSUM ‘!n. suminf (lmeasure o f n) <= _’ (MP_TAC o Q.SPEC ‘n’)
  >> simp [Abbr ‘l’, o_DEF]
+QED
+
+Theorem lebesgue_approximation :
+    !E e. E IN measurable_sets lebesgue /\ 0 < e ==>
+          ?s. s IN subsets borel /\ E SUBSET s /\
+              lmeasure E <= lambda s /\
+              lambda s <= lmeasure E + Normal e
+Proof
+    rpt STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘E’, ‘e’] approximation_thm) >> rw []
+ >> qabbrev_tac ‘s = BIGUNION (IMAGE J UNIV)’
+ >> Q.EXISTS_TAC ‘s’ >> art []
+ >> CONJ_ASM1_TAC
+ >- (qunabbrev_tac ‘s’ \\
+     MATCH_MP_TAC SIGMA_ALGEBRA_BIGUNION \\
+     rw [sigma_algebra_borel] \\
+     MATCH_MP_TAC borel_closed \\
+     MATCH_MP_TAC closed_interval_closed >> art [])
+ >> ‘lambda s = lmeasure s’ by PROVE_TAC [lebesgue_eq_lambda]
+ >> POP_ORW
+ >> Suff ‘lmeasure s = suminf (lmeasure o J)’ >- simp []
+ >> SYM_TAC
+ >> MATCH_MP_TAC lebesgue_countably_additive
+ >> rw [IN_FUNSET]
+ >- (MATCH_MP_TAC closed_interval_imp_lebesgue >> art [])
+ >> MATCH_MP_TAC closed_interval_nonoverlapping_imp_negligible
+ >> simp []
+QED
+
+Theorem negligible_approximation_lemma[local] :
+    !E e. E IN measurable_sets lebesgue /\ lmeasure E = 0 /\ 0 < e ==>
+          ?s. s IN subsets borel /\ E SUBSET s /\ lambda s <= Normal e
+Proof
+    rpt STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘E’, ‘e’] lebesgue_approximation) >> rw []
+ >> Q.EXISTS_TAC ‘s’ >> art []
+QED
+
+Theorem negligible_approximation :
+    !E e. negligible E /\ 0 < e ==>
+          ?s. s IN subsets borel /\ E SUBSET s /\ lambda s <= Normal e
+Proof
+    rpt STRIP_TAC
+ >> ‘E IN measurable_sets lebesgue’ by PROVE_TAC [negligible_in_lebesgue]
+ >> ‘lmeasure E = 0’ by PROVE_TAC [lebesgue_of_negligible]
+ >> MATCH_MP_TAC negligible_approximation_lemma >> art []
+QED
+
+Theorem negligible_approximation_null_set :
+    !E. negligible E ==> ?s. s IN null_set lborel /\ E SUBSET s
+Proof
+    rpt STRIP_TAC
+ >> Know ‘!n. (0 :real) < inv &SUC n’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     MATCH_MP_TAC REAL_INV_POS >> simp [])
+ >> DISCH_TAC
+ >> Know ‘!n. ?s. s IN subsets borel /\ E SUBSET s /\
+                  lambda s <= Normal (inv &SUC n)’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     MP_TAC (Q.SPECL [‘E’, ‘inv &SUC n’] negligible_approximation) >> rw [] \\
+     Q.EXISTS_TAC ‘s’ >> art [])
+ >> simp [SKOLEM_THM, FORALL_AND_THM] (* this asserts ‘f’ *)
+ >> STRIP_TAC
+ >> qabbrev_tac ‘g = \n. BIGINTER (IMAGE f (count1 n))’
+ >> Know ‘!n. g n IN subsets borel’
+ >- (rw [Abbr ‘g’] \\
+     MATCH_MP_TAC SIGMA_ALGEBRA_FINITE_INTER >> rw [sigma_algebra_borel])
+ >> DISCH_TAC
+ >> ‘!n. g n SUBSET f n’ by rw [Abbr ‘g’, IN_BIGINTER_IMAGE, SUBSET_DEF]
+ >> Know ‘!n. lambda (g n) <= Normal (inv &SUC n)’
+ >- (rpt STRIP_TAC \\
+     Q_TAC (TRANS_TAC le_trans) ‘lambda (f n)’ >> art [] \\
+     MATCH_MP_TAC MEASURE_INCREASING >> rw [lborel_def, sets_lborel])
+ >> DISCH_TAC
+ >> ‘!n. g (SUC n) SUBSET g n’ by rw [Abbr ‘g’, IN_BIGINTER_IMAGE, SUBSET_DEF]
+ >> qabbrev_tac ‘s = BIGINTER (IMAGE g UNIV)’
+ >> Q.EXISTS_TAC ‘s’
+ >> reverse CONJ_TAC
+ >- (rw [SUBSET_DEF, Abbr ‘s’, IN_BIGINTER_IMAGE] \\
+     rw [Abbr ‘g’, IN_BIGINTER_IMAGE] \\
+     METIS_TAC [SUBSET_DEF])
+ >> simp [IN_NULL_SET, null_set_def, sets_lborel]
+ >> CONJ_ASM1_TAC
+ >- (qunabbrev_tac ‘s’ \\
+     MATCH_MP_TAC SIGMA_ALGEBRA_BIGINTER >> simp [sigma_algebra_borel])
+ >> reverse (rw [GSYM le_antisym])
+ >- (MATCH_MP_TAC MEASURE_POSITIVE \\
+     simp [lborel_def, sets_lborel])
+ >> Know ‘lambda s = inf (IMAGE (lambda o g) UNIV)’
+ >- (SYM_TAC >> MATCH_MP_TAC MONOTONE_CONVERGENCE_BIGINTER \\
+     rw [IN_FUNSET, lborel_def, sets_lborel, lt_infty] \\
+     Q_TAC (TRANS_TAC let_trans) ‘Normal (inv &SUC n)’ \\
+     simp [GSYM lt_infty])
+ >> Rewr'
+ >> MATCH_MP_TAC le_epsilon >> rw []
+ >> rw [inf_le']
+ >> MP_TAC (Q.SPEC ‘e’ EXTREAL_ARCH_INV) >> rw []
+ >> Q_TAC (TRANS_TAC le_trans) ‘inv &SUC n’ >> simp [lt_imp_le]
+ >> Know ‘inv &SUC n = Normal (inv &SUC n)’
+ >- (‘&SUC n <> (0 :real)’ by simp [] \\
+     simp [extreal_of_num_def, extreal_inv_eq])
+ >> Rewr'
+ >> Q_TAC (TRANS_TAC le_trans) ‘lambda (g n)’ >> art []
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘n’ >> REFL_TAC
 QED
 
 Theorem pos_fn_integral_fn_seq :

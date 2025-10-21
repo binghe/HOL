@@ -2440,6 +2440,16 @@ Proof
       Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘b’ >> art [] ]
 QED
 
+Theorem BOUNDED_LINE_EXISTS :
+    !s. bounded s ==> ?n. s SUBSET line n
+Proof
+    rw [bounded_def, ABS_BOUNDS]
+ >> MP_TAC (Q.SPECL [‘-a’, ‘a’] LINE_EXISTS) >> rw []
+ >> Q.EXISTS_TAC ‘n’
+ >> Q_TAC (TRANS_TAC SUBSET_TRANS) ‘interval [-a,a]’ >> art []
+ >> rw [SUBSET_DEF, IN_INTERVAL]
+QED
+
 (* cf. right_open_interval_11 *)
 Theorem closed_interval_11 :
     !a b c d. a < b /\ c < d ==>
