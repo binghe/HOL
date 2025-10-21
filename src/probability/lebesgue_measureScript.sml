@@ -523,7 +523,7 @@ Proof
  >> ASM_SIMP_TAC std_ss [LINE_MONO, lebesgueD, DROP_INDICATOR_POS_LE]
 QED
 
-val lmeasure_iff_LIMSEQ = lebesgue_measure_iff_LIMSEQ;
+Theorem lmeasure_iff_LIMSEQ = lebesgue_measure_iff_LIMSEQ
 
 (* It's hard to calculate `measure lebesgue` on intervals by "lebesgue_def",
    but once the following lemma is proven, by UNIQUENESS_OF_MEASURE we
@@ -604,7 +604,7 @@ val lemma =
                   lebesgue_closed_interval_content]
       (Q.SPEC `(space borel, subsets borel, measure lebesgue)` lambda_eq);
 
-(* final theorem (in this section): lborel and lebesgue coincide on borel *)
+(* lborel and lebesgue coincide on borel *)
 Theorem lambda_eq_lebesgue :
     !s. s IN subsets borel ==> lambda s = measure lebesgue s
 Proof
@@ -634,12 +634,12 @@ Proof
  >> ASM_SIMP_TAC std_ss [lebesgue_eq_lambda, lambda_open_interval]
 QED
 
-(* NOTE: This name is inspired by HVG's old theorem name lmeasure_eq_0 *)
-Overload lmeasure = “measure lebesgue”
-
 (* ------------------------------------------------------------------------- *)
 (*  Equivalence of Lebesgue and Gauge (Henstock-Kurzweil) Integration        *)
 (* ------------------------------------------------------------------------- *)
+
+(* NOTE: This name is inspired by HVG's old theorem name lmeasure_eq_0 *)
+Overload lmeasure = “measure lebesgue”
 
 (* |- !k x.
         0 <= x /\ x < 1 /\ 0 < k ==>
@@ -2867,9 +2867,10 @@ Proof
      MATCH_MP_TAC MEASURE_SPACE_INTER >> simp [measure_space_lebesgue] \\
      MATCH_MP_TAC MEASURE_SPACE_UNION >> simp [measure_space_lebesgue])
  >> DISCH_TAC
- >> Know ‘!n. (0 :real) < 1 / 2 pow SUC n’
+ >> Know ‘!n. (0 :real) < e * (1 / 2) pow SUC n’
  >- (Q.X_GEN_TAC ‘n’ \\
-     MATCH_MP_TAC REAL_LT_DIV >> simp [])
+     MATCH_MP_TAC REAL_LT_MUL >> art [] \\
+     MATCH_MP_TAC POW_POS_LT >> simp [])
  >> DISCH_TAC
  >> ‘!n. s n SUBSET A n UNION B n’ by rw [Abbr ‘s’]
  (* applying approximation_lemma2 *)
@@ -2879,11 +2880,17 @@ Proof
                   s n SUBSET BIGUNION (IMAGE J univ(:num)) /\
                   lmeasure (s n) <= suminf (lmeasure o J) /\
                   suminf (lmeasure o J) <=
-                  lmeasure (s n) + Normal (1 / 2 pow SUC n)’
+                  lmeasure (s n) + Normal (e * (1 / 2) pow SUC n)’
  >- (Q.X_GEN_TAC ‘n’ \\
-     MP_TAC (Q.SPECL [‘s (n :num)’, ‘1 / 2 pow SUC n’, ‘n’]
+     MP_TAC (Q.SPECL [‘s (n :num)’, ‘e * (1 / 2) pow SUC n’, ‘n’]
                      approximation_lemma2) >> simp [])
- >> simp [SKOLEM_THM, FORALL_AND_THM] (* this asserts f *)
+ >> SIMP_TAC std_ss [SKOLEM_THM, FORALL_AND_THM] (* this asserts f *)
+ >> Know ‘!n. Normal (e * (1 / 2) pow SUC n) = Normal e * (1 / 2) pow SUC n’
+ >- (RW_TAC std_ss [GSYM extreal_mul_eq] \\
+     AP_TERM_TAC \\
+     REWRITE_TAC [GSYM extreal_pow_def] \\
+     simp [extreal_div_eq, extreal_of_num_def])
+ >> Rewr'
  >> STRIP_TAC
  >> Know ‘!i j. i <> j ==> negligible (s i INTER s j)’
  >- (rpt STRIP_TAC \\
@@ -2918,11 +2925,41 @@ Proof
  >> Rewr'
  >> CONJ_TAC (* closed_interval *)
  >- (rw [o_DEF] >> Cases_on ‘h (i :num)’ >> simp [])
- (* [-&SUC j,-&j] < [-&SUC i,-&i] < [&i,&SUC i] < [&j,&SUC j] *)
+ (* [-&SUC j,-&j] < [-&SUC i,-&i] < [&i,&SUC i] < [&j,&SUC j]
+         A j            A i             B i           B j     *)
  >> Know ‘!i j. i < j ==> nonoverlapping (A i UNION B i) (A j UNION B j)’
  >- (rpt STRIP_TAC \\
      MATCH_MP_TAC nonoverlapping_subset_imp \\
-     cheat)
+     qexistsl_tac [‘interval [-&SUC i,&SUC i]’, ‘{x | x <= -&j \/ &j <= x}’] \\
+     reverse CONJ_TAC
+     >- (rw [Abbr ‘A’, Abbr ‘B’, SUBSET_DEF, IN_INTERVAL] >| (* 2 subgoals *)
+         [ (* goal 1 (of 2) *)
+          ‘-&i <= (&i) :real’ by simp [] \\
+           Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘-&i’ >> art [] \\
+           Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘&i’ >> simp [],
+           (* goal 2 (of 2) *)
+          ‘-&i <= (&i) :real’ by simp [] \\
+          ‘-&i <= x’ by PROVE_TAC [REAL_LE_TRANS] \\
+           Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘-&i’ >> simp [] ]) \\
+     simp [nonoverlapping_def, INTERIOR_INTERVAL] \\
+    ‘SUC i <= j’ by simp [] \\
+     qabbrev_tac ‘n = SUC i’ \\
+     rw [DISJOINT_ALT, IN_INTERIOR, IN_INTERVAL] \\
+     STRONG_DISJ_TAC >> rename1 ‘0 < r’ \\
+     rw [SUBSET_DEF, IN_BALL, REAL_NOT_LE] \\
+  (* -&j <= -&n < x < y < &n <= &j *)
+     MP_TAC (Q.SPECL [‘x’, ‘min (x + r) &n’] REAL_MEAN) \\
+     simp [REAL_LT_MIN] >> STRIP_TAC (* this asserts ‘z’ *) \\
+     Q.EXISTS_TAC ‘z’ >> simp [dist] \\
+    ‘x - z < 0’ by simp [REAL_SUB_LT_NEG] \\
+     simp [ABS_EQ_NEG] \\
+     CONJ_TAC >- (Q.PAT_X_ASSUM ‘z < x + r’ MP_TAC >> REAL_ARITH_TAC) \\
+     CONJ_TAC >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘-&n’ >> simp [] \\
+       Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘x’ >> art [],
+       (* goal 2 (of 2) *)
+       Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘&n’ >> simp [] ])
  >> DISCH_TAC
  >> CONJ_TAC (* nonoverlapping *)
  >- (rw [o_DEF] \\
@@ -2940,7 +2977,51 @@ Proof
      qexistsl_tac [‘A n1 UNION B n1’, ‘A n2 UNION B n2’] >> art [] \\
     ‘n1 < n2 \/ n2 < n1’ by simp [] >- simp [] \\
      simp [Once nonoverlapping_comm])
- >> cheat
+ >> CONJ_TAC (* SUBSET *)
+ >- (rw [SUBSET_DEF, IN_BIGUNION_IMAGE, o_DEF] \\
+     rename1 ‘x IN s n’ \\
+     Know ‘x IN BIGUNION (IMAGE (f n) UNIV)’ >- METIS_TAC [SUBSET_DEF] \\
+     rw [IN_BIGUNION_IMAGE] >> rename1 ‘x IN f n j’ \\
+     Q.PAT_X_ASSUM ‘BIJ h _ _’ MP_TAC >> rw [BIJ_DEF, SURJ_DEF] \\
+     POP_ASSUM (MP_TAC o Q.SPEC ‘(n,j)’) >> rw [] \\
+     Q.EXISTS_TAC ‘y’ >> simp [])
+ >> CONJ_TAC (* suminf <= suminf *)
+ >- (MATCH_MP_TAC ext_suminf_mono \\
+     CONJ_TAC >- (rw [o_DEF] >> MATCH_MP_TAC MEASURE_POSITIVE \\
+                  simp [measure_space_lebesgue]) \\
+     rw [o_DEF, Abbr ‘l’] \\
+     Q.PAT_X_ASSUM ‘!n. lmeasure (s n) <= suminf (lmeasure o f n)’
+       (MP_TAC o Q.SPEC ‘n’) >> simp [o_DEF])
+ (* final goal *)
+ >> Know ‘Normal e = suminf (\n. Normal e * (1 / 2) pow SUC n)’
+ >- (Suff ‘suminf (\n. Normal e * (1 / 2) pow SUC n) =
+           Normal e * suminf (\n. (1 / 2) pow SUC n)’
+     >- (Rewr' \\
+         simp [pow_half_ser']) \\
+     HO_MATCH_MP_TAC ext_suminf_cmul \\
+     CONJ_TAC >- simp [extreal_of_num_def, REAL_LT_IMP_LE] \\
+     Q.X_GEN_TAC ‘n’ \\
+     MATCH_MP_TAC pow_pos_le >> simp [])
+ >> Rewr'
+ (* applying ext_suminf_add *)
+ >> Know ‘suminf (lmeasure o s) + suminf (\n. Normal e * (1 / 2) pow SUC n) =
+          suminf (\n. (lmeasure o s) n + (\n. Normal e * (1 / 2) pow SUC n) n)’
+ >- (SYM_TAC >> MATCH_MP_TAC ext_suminf_add >> rw []
+     >- (MATCH_MP_TAC MEASURE_POSITIVE \\
+         simp [measure_space_lebesgue]) \\
+     MATCH_MP_TAC le_mul \\
+     CONJ_TAC >- simp [extreal_of_num_def, REAL_LT_IMP_LE] \\
+     MATCH_MP_TAC pow_pos_le >> simp [])
+ >> Rewr'
+ >> simp [o_DEF]
+ >> MATCH_MP_TAC ext_suminf_mono >> rw []
+ >- (MATCH_MP_TAC ext_suminf_pos \\
+     Q.X_GEN_TAC ‘j’ >> rw [Abbr ‘l’] \\
+     MATCH_MP_TAC MEASURE_POSITIVE \\
+     simp [measure_space_lebesgue] \\
+     MATCH_MP_TAC closed_interval_imp_lebesgue >> art [])
+ >> Q.PAT_X_ASSUM ‘!n. suminf (lmeasure o f n) <= _’ (MP_TAC o Q.SPEC ‘n’)
+ >> simp [Abbr ‘l’, o_DEF]
 QED
 
 Theorem pos_fn_integral_fn_seq :
