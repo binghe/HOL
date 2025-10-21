@@ -584,14 +584,16 @@ Proof
 QED
 
 (* cf. REAL_INVINV *)
-val REAL_INV_INV = store_thm("REAL_INV_INV",
- Term`!x. inv(inv x) = x`,
+Theorem REAL_INV_INV:
+ !x. inv(inv x) = x
+Proof
   GEN_TAC THEN ASM_CASES_TAC (Term `x = 0`) THEN
   ASM_REWRITE_TAC[REAL_INV_0] THEN
   ONCE_REWRITE_TAC [EQ_SYM_EQ] THEN
   MATCH_MP_TAC REAL_RINV_UNIQ THEN
   MATCH_MP_TAC REAL_MUL_LINV THEN
-  ASM_REWRITE_TAC[]);;
+  ASM_REWRITE_TAC[]
+QED
 
 Theorem REAL_INV_EQ_0[simp]:
  !x. (inv(x) = 0) <=> (x = 0)
@@ -644,9 +646,11 @@ Proof
   MESON_TAC[REAL_INV_EQ_0]
 QED
 
-val REAL_LE_INV = store_thm("REAL_LE_INV",
- Term `!x. 0 <= x ==> 0 <= inv(x)`,
-  REWRITE_TAC[REAL_LE_INV_EQ]);;
+Theorem REAL_LE_INV:
+ !x. 0 <= x ==> 0 <= inv(x)
+Proof
+  REWRITE_TAC[REAL_LE_INV_EQ]
+QED
 
 Theorem REAL_LE_ADDR[simp] = REAL_LE_ADDR
 
@@ -1181,15 +1185,19 @@ Proof
     THEN MATCH_MP_TAC REAL_LE_RMUL THEN POP_ASSUM ACCEPT_TAC]
 QED
 
-val REAL_LT_DIV = store_thm("REAL_LT_DIV",
- Term`!x y. 0 < x /\ 0 < y ==> 0 < x / y`,
+Theorem REAL_LT_DIV:
+ !x y. 0 < x /\ 0 < y ==> 0 < x / y
+Proof
  REWRITE_TAC [real_div] THEN REPEAT STRIP_TAC
-  THEN MATCH_MP_TAC REAL_LT_MUL THEN ASM_REWRITE_TAC [REAL_LT_INV_EQ]);
+  THEN MATCH_MP_TAC REAL_LT_MUL THEN ASM_REWRITE_TAC [REAL_LT_INV_EQ]
+QED
 
-val REAL_LE_DIV = store_thm("REAL_LE_DIV",
- Term`!x y. 0 <= x /\ 0 <= y ==> 0 <= x / y`,
+Theorem REAL_LE_DIV:
+ !x y. 0 <= x /\ 0 <= y ==> 0 <= x / y
+Proof
  REWRITE_TAC [real_div] THEN REPEAT STRIP_TAC
-  THEN MATCH_MP_TAC REAL_LE_MUL THEN ASM_REWRITE_TAC [REAL_LE_INV_EQ]);
+  THEN MATCH_MP_TAC REAL_LE_MUL THEN ASM_REWRITE_TAC [REAL_LE_INV_EQ]
+QED
 
 Theorem REAL_LT_1:
    !x y. 0 <= x /\ x < y ==> (x / y) < &1
@@ -2017,11 +2025,13 @@ Proof
     ASM_REWRITE_TAC[] THEN MATCH_MP_TAC POW_POS THEN ASM_REWRITE_TAC[]]
 QED
 
-val REAL_POW_LT = store_thm("REAL_POW_LT",
- Term`!x n. 0 < x ==> 0 < (x pow n)`,
+Theorem REAL_POW_LT:
+ !x n. 0 < x ==> 0 < (x pow n)
+Proof
   REPEAT STRIP_TAC THEN SPEC_TAC(Term`n:num`,Term`n:num`) THEN
   INDUCT_TAC THEN REWRITE_TAC[pow, REAL_LT_01] THEN
-  MATCH_MP_TAC REAL_LT_MUL THEN ASM_REWRITE_TAC[]);;
+  MATCH_MP_TAC REAL_LT_MUL THEN ASM_REWRITE_TAC[]
+QED
 
 Theorem REAL_POW_LE_1 :
     !(n:num) (x:real). (&1:real) <= x ==> (&1:real) <= x pow n
@@ -2080,13 +2090,15 @@ Proof
   DISCH_THEN SUBST1_TAC THEN REWRITE_TAC[POW_0]
 QED
 
-val REAL_POW_LT2 = store_thm("REAL_POW_LT2",
- Term `!n x y. ~(n = 0) /\ 0 <= x /\ x < y ==> x pow n < y pow n`,
+Theorem REAL_POW_LT2:
+ !n x y. ~(n = 0) /\ 0 <= x /\ x < y ==> x pow n < y pow n
+Proof
  INDUCT_TAC THEN REWRITE_TAC[NOT_SUC, pow] THEN REPEAT STRIP_TAC THEN
   ASM_CASES_TAC (Term `n = 0:num`) THEN ASM_REWRITE_TAC[pow, REAL_MUL_RID] THEN
   MATCH_MP_TAC REAL_LT_MUL2 THEN ASM_REWRITE_TAC[] THEN CONJ_TAC THENL
    [MATCH_MP_TAC POW_POS THEN ASM_REWRITE_TAC[],
-    FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]]);;
+    FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]]
+QED
 
 Theorem REAL_POW_INV :
     !x n. (inv x) pow n = inv(x pow n)
@@ -4441,22 +4453,26 @@ Theorem NUM_CEILING_def = NUM_CEILING_def
 val lem = SIMP_RULE arith_ss [REAL_POS,REAL_ADD_RID]
               (Q.SPECL[`y`,`&n`,`0r`,`1r`] REAL_LTE_ADD2);
 
-val add1_gt_exists = prove(
-  ``!y : real. ?n. & (n + 1) > y``,
+Theorem add1_gt_exists[local]:
+    !y : real. ?n. & (n + 1) > y
+Proof
   GEN_TAC THEN Q.SPEC_THEN `1` MP_TAC REAL_ARCH THEN
   SIMP_TAC (srw_ss()) [] THEN
   DISCH_THEN (Q.SPEC_THEN `y` STRIP_ASSUME_TAC) THEN
   Q.EXISTS_TAC `n` THEN
   SIMP_TAC arith_ss [GSYM REAL_ADD,real_gt,REAL_LT_ADDL,REAL_LT_ADDR] THEN
-  METIS_TAC [lem]);
+  METIS_TAC [lem]
+QED
 
-val lt_add1_exists = prove(
-  ``!y: real. ?n. y < &(n + 1)``,
+Theorem lt_add1_exists[local]:
+    !y: real. ?n. y < &(n + 1)
+Proof
   GEN_TAC THEN Q.SPEC_THEN `1` MP_TAC REAL_ARCH THEN
   SIMP_TAC (srw_ss()) [] THEN
   DISCH_THEN (Q.SPEC_THEN `y` STRIP_ASSUME_TAC) THEN
   Q.EXISTS_TAC `n` THEN
-  SIMP_TAC bool_ss [GSYM REAL_ADD] THEN METIS_TAC [lem]);
+  SIMP_TAC bool_ss [GSYM REAL_ADD] THEN METIS_TAC [lem]
+QED
 
 Theorem NUM_FLOOR_LE:
     0 <= x ==> &(NUM_FLOOR x) <= x
@@ -4557,20 +4573,23 @@ val lem =
   metisLib.METIS_PROVE [REAL_LT_01, REAL_LET_TRANS]
     ``!r: real. r <= 0 ==> r < 1``
 
-val NUM_FLOOR_NEG = Q.prove(
-  `NUM_FLOOR (~real_of_num n) = 0`,
+Theorem NUM_FLOOR_NEG[local]:
+   NUM_FLOOR (~real_of_num n) = 0
+Proof
   MATCH_MP_TAC NUM_FLOOR_BASE
   THEN MATCH_MP_TAC lem
-  THEN REWRITE_TAC [REAL_NEG_LE0, REAL_POS])
+  THEN REWRITE_TAC [REAL_NEG_LE0, REAL_POS]
+QED
 
-val NUM_FLOOR_NEGQ = Q.prove(
-  `0 < m ==> (NUM_FLOOR (~real_of_num n / real_of_num m) = 0)`,
+Theorem NUM_FLOOR_NEGQ[local]:
+   0 < m ==> (NUM_FLOOR (~real_of_num n / real_of_num m) = 0)
+Proof
   ONCE_REWRITE_TAC [GSYM REAL_LT]
   THEN STRIP_TAC
   THEN MATCH_MP_TAC NUM_FLOOR_BASE
   THEN ASM_SIMP_TAC std_ss [REAL_LT_LDIV_EQ, REAL_MUL_LID, lt_int]
   THEN FULL_SIMP_TAC arith_ss [REAL_LT]
-  )
+QED
 
 Theorem NUM_FLOOR_EQNS:
     (NUM_FLOOR (real_of_num n) = n) /\
@@ -5900,8 +5919,9 @@ Proof
   ASM_REWRITE_TAC[real_sub, GSYM REAL_MUL_LNEG]
 QED
 
-val lemma = Q.prove
-   (`!x y. &0 < y ==> (&0 <= x * y <=> &0 <= x)`,
+Theorem lemma[local]:
+     !x y. &0 < y ==> (&0 <= x * y <=> &0 <= x)
+Proof
     rpt GEN_TAC THEN DISCH_TAC THEN EQ_TAC THEN DISCH_TAC THENL
     [ (* goal 1 (of 2) *)
       Q.SUBGOAL_THEN `&0 <= x * (y * inv y)` MP_TAC THENL
@@ -5916,7 +5936,8 @@ val lemma = Q.prove
         Q.UNDISCH_TAC `&0 < y` THEN REAL_ARITH_TAC ],
       (* goal 2 (of 2) *)
       MATCH_MP_TAC REAL_LE_MUL THEN ASM_REWRITE_TAC[] THEN
-      MATCH_MP_TAC REAL_LT_IMP_LE THEN ASM_REWRITE_TAC[] ]);
+      MATCH_MP_TAC REAL_LT_IMP_LE THEN ASM_REWRITE_TAC[] ]
+QED
 
 (* These are HOL-Light compatible names (locally used):
    |- !x y. 0 < x /\ x < y ==> realinv y < realinv x
@@ -6044,4 +6065,5 @@ Proof
   REPEAT(POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC
 QED
 
+(* END *)
 val _ = export_theory();

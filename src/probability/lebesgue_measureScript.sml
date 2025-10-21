@@ -20,7 +20,7 @@ Ancestors
   prim_rec arithmetic num pred_set combin cardinal While
   relation real seq transc real_sigma iterate topology metric
   real_topology integration sigma_algebra extreal_base extreal
-  real_borel measure borel
+  real_borel measure borel integer intreal lebesgue
   integral[qualified] lift_ieee[qualified]
 Libs
   numLib pred_setLib hurdUtils jrhUtils realLib
@@ -558,6 +558,13 @@ Proof
  >> rw [le_sup']
  >> POP_ASSUM MATCH_MP_TAC
  >> Q.EXISTS_TAC ‘n’ >> REFL_TAC
+QED
+
+Theorem negligible_iff_null_set :
+    !s. negligible s <=> s IN null_set lebesgue
+Proof
+    rw [IN_NULL_SET, null_set_def]
+ >> METIS_TAC [negligible_in_lebesgue, negligible_iff_lmeasure_eq_0]
 QED
 
 Theorem lebesgue_measure_iff_LIMSEQ[local] :
@@ -3102,7 +3109,7 @@ Proof
 QED
 
 Theorem negligible_approximation_null_set :
-    !E. negligible E ==> ?s. s IN null_set lborel /\ E SUBSET s
+    !E. negligible E ==> ?N. N IN null_set lborel /\ E SUBSET N
 Proof
     rpt STRIP_TAC
  >> Know ‘!n. (0 :real) < inv &SUC n’
@@ -3159,6 +3166,10 @@ Proof
  >> FIRST_X_ASSUM MATCH_MP_TAC
  >> Q.EXISTS_TAC ‘n’ >> REFL_TAC
 QED
+
+(* |- !E. E IN null_set lebesgue ==> ?N. N IN null_set lborel /\ E SUBSET N *)
+Theorem negligible_approximation_null_set' =
+        negligible_approximation_null_set |> REWRITE_RULE [negligible_iff_null_set]
 
 Theorem pos_fn_integral_fn_seq :
     !m f n. measure_space m /\ f IN Borel_measurable (measurable_space m) ==>

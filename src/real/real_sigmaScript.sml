@@ -240,8 +240,9 @@ QED
 (* REAL_COMPLETE                                                             *)
 (* ------------------------------------------------------------------------- *)
 
-val lemma1 = prove (
- ``!P s. (!x:real. P x ==> x <= s) = (!y:real. (?x. P x /\ y < x) ==> y < s)``,
+Theorem lemma1[local]:
+   !P s. (!x:real. P x ==> x <= s) = (!y:real. (?x. P x /\ y < x) ==> y < s)
+Proof
   REPEAT GEN_TAC THEN EQ_TAC THENL
   [DISCH_TAC THEN GEN_TAC THEN STRIP_TAC THEN
    FIRST_X_ASSUM (MP_TAC o SPEC ``x:real``) THEN ASM_REWRITE_TAC [] THEN
@@ -249,10 +250,12 @@ val lemma1 = prove (
    ONCE_REWRITE_TAC [MONO_NOT_EQ] THEN RW_TAC std_ss [REAL_NOT_LE, REAL_NOT_LT] THEN
    POP_ASSUM MP_TAC THEN GEN_REWR_TAC LAND_CONV [REAL_LT_BETWEEN] THEN
    STRIP_TAC THEN EXISTS_TAC ``x':real`` THEN ASM_REWRITE_TAC [REAL_LE_LT] THEN
-   EXISTS_TAC ``x:real`` THEN ASM_REWRITE_TAC []]);
+   EXISTS_TAC ``x:real`` THEN ASM_REWRITE_TAC []]
+QED
 
-val lemma2 = prove (
- ``!P s. (!M:real. (!x. P x ==> x <= M) ==> s <= M) = (!y. y < s ==> (?x. P x /\ y < x))``,
+Theorem lemma2[local]:
+   !P s. (!M:real. (!x. P x ==> x <= M) ==> s <= M) = (!y. y < s ==> (?x. P x /\ y < x))
+Proof
   REPEAT GEN_TAC THEN EQ_TAC THENL
   [ONCE_REWRITE_TAC [MONO_NOT_EQ] THEN
    RW_TAC std_ss [REAL_NOT_LE, REAL_NOT_LT] THEN UNDISCH_TAC ``y < s:real`` THEN
@@ -260,26 +263,31 @@ val lemma2 = prove (
    EXISTS_TAC ``x:real`` THEN ASM_REWRITE_TAC [] THEN GEN_TAC THEN
    METIS_TAC [REAL_LE_TRANS, REAL_LE_LT],
    ONCE_REWRITE_TAC [MONO_NOT_EQ] THEN RW_TAC std_ss [REAL_NOT_LE, REAL_NOT_LT] THEN
-   EXISTS_TAC ``M:real`` THEN METIS_TAC []]);
+   EXISTS_TAC ``M:real`` THEN METIS_TAC []]
+QED
 
-val lemma3 = prove (
- ``(?s:real. !y. (?x. P x /\ y < x) <=> y < s) =
-   (?M:real. (!x. P x ==> x <= M) /\ (!M'. (!x. P x ==> x <= M') ==> M <= M'))``,
- SIMP_TAC std_ss [lemma1, lemma2] THEN METIS_TAC []);
+Theorem lemma3[local]:
+   (?s:real. !y. (?x. P x /\ y < x) <=> y < s) =
+   (?M:real. (!x. P x ==> x <= M) /\ (!M'. (!x. P x ==> x <= M') ==> M <= M'))
+Proof
+ SIMP_TAC std_ss [lemma1, lemma2] THEN METIS_TAC []
+QED
 
-val lemma4 = prove (
- ``!P:real->bool.
+Theorem lemma4[local]:
+   !P:real->bool.
     ((?x. P x) /\ (?z. !x. P x ==> x < z) ==>
      (?s. !y. (?x. P x /\ y < x) <=> y < s)) ==>
     ((?x. P x) /\ (?s. !x. P x ==> x <= s)
        ==> ?s. (!x. P x ==> x <= s) /\
-               !M'. (!x. P x ==> x <= M') ==> s <= M')``,
+               !M'. (!x. P x ==> x <= M') ==> s <= M')
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC [GSYM lemma3] THEN
   FIRST_X_ASSUM MATCH_MP_TAC THEN CONJ_TAC THENL
   [METIS_TAC [], ALL_TAC] THEN
   EXISTS_TAC ``s + 1:real`` THEN GEN_TAC THEN STRIP_TAC THEN
   FIRST_X_ASSUM (MP_TAC o SPEC ``x':real``) THEN
-  ASM_REWRITE_TAC [] THEN REAL_ARITH_TAC);
+  ASM_REWRITE_TAC [] THEN REAL_ARITH_TAC
+QED
 
 Theorem REAL_COMPLETE:
    !P:real->bool. (?x. P x) /\ (?M. !x. P x ==> x <= M)
@@ -1145,11 +1153,13 @@ Proof
   SIMP_TAC std_ss [sum_def, GSYM NEUTRAL_REAL_ADD, ITERATE_SUPERSET, MONOIDAL_REAL_ADD]
 QED
 
-val lemma = prove (
-  ``!s. DISJOINT {x | x IN s /\ P x} {x | x IN s /\ ~P x}``,
+Theorem lemma[local]:
+    !s. DISJOINT {x | x IN s /\ P x} {x | x IN s /\ ~P x}
+Proof
   GEN_TAC THEN SIMP_TAC std_ss [DISJOINT_DEF, INTER_DEF, EXTENSION, GSPECIFICATION]
   THEN GEN_TAC THEN EQ_TAC THENL
-  [RW_TAC std_ss [], RW_TAC std_ss [NOT_IN_EMPTY]]);
+  [RW_TAC std_ss [], RW_TAC std_ss [NOT_IN_EMPTY]]
+QED
 
 Theorem SUM_UNION_RZERO:
    !f:'a->real u v.

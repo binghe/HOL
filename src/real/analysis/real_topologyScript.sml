@@ -15,6 +15,16 @@
 (*    Note: This theory was ported from HOL Light                            *)
 (* ========================================================================= *)
 
+(*
+Theory real_topology
+Ancestors
+  num prim_rec combin quotient arithmetic real real_sigma pair
+  bool pred_set option sum list topology metric nets wellorder
+  cardinal permutes iterate
+Libs
+  numLib unwindLib tautLib jrhUtils InductiveDefinition mesonLib
+  realLib hurdUtils
+ *)
 open HolKernel Parse boolLib bossLib;
 
 open numTheory numLib unwindLib tautLib prim_recTheory
@@ -6374,43 +6384,58 @@ Proof
  >> METIS_TAC [ABS_POS, REAL_LET_ANTISYM]
 QED
 
-val BOUNDED_EMPTY = store_thm ("BOUNDED_EMPTY",
- ``bounded {}``,
-  REWRITE_TAC[bounded_def, NOT_IN_EMPTY]);
+Theorem BOUNDED_EMPTY:
+   bounded {}
+Proof
+  REWRITE_TAC[bounded_def, NOT_IN_EMPTY]
+QED
 
-val BOUNDED_SUBSET = store_thm ("BOUNDED_SUBSET",
- ``!s t. bounded t /\ s SUBSET t ==> bounded s``,
-  MESON_TAC[bounded_def, SUBSET_DEF]);
+Theorem BOUNDED_SUBSET:
+   !s t. bounded t /\ s SUBSET t ==> bounded s
+Proof
+  MESON_TAC[bounded_def, SUBSET_DEF]
+QED
 
-val BOUNDED_INTERIOR = store_thm ("BOUNDED_INTERIOR",
- ``!s:real->bool. bounded s ==> bounded(interior s)``,
-  MESON_TAC[BOUNDED_SUBSET, INTERIOR_SUBSET]);
+Theorem BOUNDED_INTERIOR:
+   !s:real->bool. bounded s ==> bounded(interior s)
+Proof
+  MESON_TAC[BOUNDED_SUBSET, INTERIOR_SUBSET]
+QED
 
-val BOUNDED_CLOSURE = store_thm ("BOUNDED_CLOSURE",
- ``!s:real->bool. bounded s ==> bounded(closure s)``,
+Theorem BOUNDED_CLOSURE:
+   !s:real->bool. bounded s ==> bounded(closure s)
+Proof
   REWRITE_TAC[bounded_def, CLOSURE_SEQUENTIAL] THEN
   GEN_TAC THEN STRIP_TAC THEN EXISTS_TAC ``a:real`` THEN
   GEN_TAC THEN
   METIS_TAC[REWRITE_RULE[eventually] LIM_ABS_UBOUND,
-   TRIVIAL_LIMIT_SEQUENTIALLY, trivial_limit]);
+   TRIVIAL_LIMIT_SEQUENTIALLY, trivial_limit]
+QED
 
-val BOUNDED_CLOSURE_EQ = store_thm ("BOUNDED_CLOSURE_EQ",
- ``!s:real->bool. bounded(closure s) <=> bounded s``,
+Theorem BOUNDED_CLOSURE_EQ:
+   !s:real->bool. bounded(closure s) <=> bounded s
+Proof
   GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[BOUNDED_CLOSURE] THEN
-  MESON_TAC[BOUNDED_SUBSET, CLOSURE_SUBSET]);
+  MESON_TAC[BOUNDED_SUBSET, CLOSURE_SUBSET]
+QED
 
-val BOUNDED_CBALL = store_thm ("BOUNDED_CBALL",
- ``!x:real e. bounded(cball(x,e))``,
+Theorem BOUNDED_CBALL:
+   !x:real e. bounded(cball(x,e))
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[bounded_def] THEN
   EXISTS_TAC ``abs(x:real) + e`` THEN REWRITE_TAC[IN_CBALL, dist] THEN
-  REAL_ARITH_TAC);
+  REAL_ARITH_TAC
+QED
 
-val BOUNDED_BALL = store_thm ("BOUNDED_BALL",
- ``!x e. bounded(ball(x,e))``,
-  MESON_TAC[BALL_SUBSET_CBALL, BOUNDED_CBALL, BOUNDED_SUBSET]);
+Theorem BOUNDED_BALL:
+   !x e. bounded(ball(x,e))
+Proof
+  MESON_TAC[BALL_SUBSET_CBALL, BOUNDED_CBALL, BOUNDED_SUBSET]
+QED
 
-val FINITE_IMP_BOUNDED = store_thm ("FINITE_IMP_BOUNDED",
- ``!s:real->bool. FINITE s ==> bounded s``,
+Theorem FINITE_IMP_BOUNDED:
+   !s:real->bool. FINITE s ==> bounded s
+Proof
   KNOW_TAC ``!s:real->bool. (bounded s) = (\s. bounded s) s`` THENL
   [FULL_SIMP_TAC std_ss [], ALL_TAC] THEN DISC_RW_KILL THEN
   MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN REWRITE_TAC[BOUNDED_EMPTY] THEN
@@ -6419,11 +6444,14 @@ val FINITE_IMP_BOUNDED = store_thm ("FINITE_IMP_BOUNDED",
   REWRITE_TAC [AND_IMP_INTRO] THEN STRIP_TAC THEN
   EXISTS_TAC ``abs(x:real) + abs a`` THEN REPEAT STRIP_TAC THEN
   ASM_MESON_TAC[ABS_POS, REAL_ARITH
-   ``(y <= b /\ &0 <= x ==> y <= x + abs b) /\ x <= x + abs b:real``]);
+   ``(y <= b /\ &0 <= x ==> y <= x + abs b) /\ x <= x + abs b:real``]
+QED
 
-val BOUNDED_UNION = store_thm ("BOUNDED_UNION",
- ``!s t. bounded (s UNION t) <=> bounded s /\ bounded t``,
-  REWRITE_TAC[bounded_def, IN_UNION] THEN MESON_TAC[REAL_LE_MAX]);
+Theorem BOUNDED_UNION:
+   !s t. bounded (s UNION t) <=> bounded s /\ bounded t
+Proof
+  REWRITE_TAC[bounded_def, IN_UNION] THEN MESON_TAC[REAL_LE_MAX]
+QED
 
 val BOUNDED_BIGUNION = store_thm ("BOUNDED_BIGUNION",
  ``!f. FINITE f /\ (!s. s IN f ==> bounded s) ==> bounded(BIGUNION f)``,

@@ -2,6 +2,13 @@
    Some basic properties of IEEE-754 (base 2) floating-point arithmetic
    ------------------------------------------------------------------------ *)
 
+(*
+Theory lift_ieee
+Ancestors
+  binary_ieee real words[qualified]
+Libs
+  wordsLib realLib realSimps
+ *)
 open HolKernel boolLib bossLib
 open binary_ieeeTheory realTheory wordsLib realLib
 open realSimps

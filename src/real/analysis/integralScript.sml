@@ -19,6 +19,16 @@
                         Beijing, China
    ===================================================================== *)
 
+(*
+Theory integral
+Ancestors
+  bool powser lim real_sigma pair arithmetic num prim_rec real
+  metric nets seq pred_set relation topology iterate
+  real_topology integration
+Libs
+  PairedLambda Diff mesonLib tautLib numLib reduceLib pairLib
+  jrhUtils realLib
+ *)
 open HolKernel Parse bossLib boolLib;
 
 open boolTheory powserTheory PairedLambda Diff mesonLib tautLib
@@ -852,27 +862,32 @@ Definition integral :
     integral(a,b) f = @i. Dint(a,b) f i
 End
 
-val INTEGRABLE_DINT = store_thm("INTEGRABLE_DINT",
- “!f a b. integrable(a,b) f ==> Dint(a,b) f (integral(a,b) f)”,
+Theorem INTEGRABLE_DINT:
+  !f a b. integrable(a,b) f ==> Dint(a,b) f (integral(a,b) f)
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[integrable, integral] THEN
-  CONV_TAC(RAND_CONV SELECT_CONV) THEN REWRITE_TAC[]);
+  CONV_TAC(RAND_CONV SELECT_CONV) THEN REWRITE_TAC[]
+QED
 
 (* ------------------------------------------------------------------------ *)
 (* Lemmas about combining gauges                                            *)
 (* ------------------------------------------------------------------------ *)
 
-val GAUGE_MIN = store_thm("GAUGE_MIN",
-  ``!E g1 g2. gauge(E) g1 /\ gauge(E) g2 ==>
-        gauge(E) (\x. if g1(x) < g2(x) then g1(x) else g2(x))``,
+Theorem GAUGE_MIN:
+    !E g1 g2. gauge(E) g1 /\ gauge(E) g2 ==>
+        gauge(E) (\x. if g1(x) < g2(x) then g1(x) else g2(x))
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[gauge] THEN STRIP_TAC THEN
   X_GEN_TAC (Term`x:real`) THEN BETA_TAC THEN DISCH_TAC THEN
   COND_CASES_TAC THEN FIRST_ASSUM MATCH_MP_TAC THEN
-  FIRST_ASSUM ACCEPT_TAC);;
+  FIRST_ASSUM ACCEPT_TAC
+QED
 
-val FINE_MIN = store_thm("FINE_MIN",
-  ``!g1 g2 D p.
+Theorem FINE_MIN:
+    !g1 g2 D p.
         fine (\x. if g1(x) < g2(x) then g1(x) else g2(x)) (D,p) ==>
-        fine(g1) (D,p) /\ fine(g2) (D,p)``,
+        fine(g1) (D,p) /\ fine(g2) (D,p)
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[fine] THEN
   BETA_TAC THEN DISCH_TAC THEN CONJ_TAC THEN
   X_GEN_TAC (Term`n:num`) THEN DISCH_THEN(ANTE_RES_THEN MP_TAC) THEN
@@ -881,15 +896,17 @@ val FINE_MIN = store_thm("FINE_MIN",
     MATCH_MP_TAC REAL_LTE_TRANS,
     MATCH_MP_TAC REAL_LT_TRANS] THEN
   FIRST_ASSUM(fn th => EXISTS_TAC(rand(concl th)) THEN
-                   ASM_REWRITE_TAC[] THEN NO_TAC));;
+                   ASM_REWRITE_TAC[] THEN NO_TAC)
+QED
 
 (* ------------------------------------------------------------------------ *)
 (* The integral is unique if it exists                                      *)
 (* ------------------------------------------------------------------------ *)
 
-val DINT_UNIQ = store_thm("DINT_UNIQ",
- ``!a b f k1 k2.
-        a <= b /\ Dint(a,b) f k1 /\ Dint(a,b) f k2 ==> (k1 = k2)``,
+Theorem DINT_UNIQ:
+   !a b f k1 k2.
+        a <= b /\ Dint(a,b) f k1 /\ Dint(a,b) f k2 ==> (k1 = k2)
+Proof
   REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
   GEN_REWRITE_TAC RAND_CONV empty_rewrites [GSYM REAL_SUB_0] THEN
   CONV_TAC CONTRAPOS_CONV THEN ONCE_REWRITE_TAC[ABS_NZ] THEN DISCH_TAC THEN
@@ -923,7 +940,8 @@ val DINT_UNIQ = store_thm("DINT_UNIQ",
     REWRITE_TAC[real_sub, REAL_NEG_ADD, REAL_NEG_SUB] THEN
     ONCE_REWRITE_TAC[AC (REAL_ADD_ASSOC,REAL_ADD_SYM)
       (Term`(a + b) + (c + d) = (d + a) + (c + b)`)] THEN
-    REWRITE_TAC[REAL_ADD_LINV, REAL_ADD_LID, REAL_LT_REFL]]);
+    REWRITE_TAC[REAL_ADD_LINV, REAL_ADD_LID, REAL_LT_REFL]]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Other more or less trivial lemmas.                                        *)
