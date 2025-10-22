@@ -887,7 +887,7 @@ Proof
 QED
 
 (* cf. SUBSET_DISJOINT *)
-Theorem nonoverlapping_subset_imp :
+Theorem nonoverlapping_subset_inclusive :
     !s t u v. nonoverlapping s t /\ u SUBSET s /\ v SUBSET t ==>
               nonoverlapping u v
 Proof
@@ -1534,7 +1534,7 @@ Proof
      Q.PAT_X_ASSUM ‘f i m <> f j n’ K_TAC \\
     ‘f i m SUBSET interval [real_of_int i,real_of_int i + 1] /\
      f j n SUBSET interval [real_of_int j,real_of_int j + 1]’ by rw [] \\
-     MATCH_MP_TAC nonoverlapping_subset_imp \\
+     MATCH_MP_TAC nonoverlapping_subset_inclusive \\
      qexistsl_tac [‘interval [real_of_int i,real_of_int i + 1]’,
                    ‘interval [real_of_int j,real_of_int j + 1]’] \\
      simp [nonoverlapping_def, INTERIOR_INTERVAL] \\
@@ -2565,10 +2565,10 @@ Proof
      [ (* goal 1 (of 4) *)
        FIRST_X_ASSUM MATCH_MP_TAC >> fs [EVEN_EXISTS],
        (* goal 2 (of 4) *)
-       MATCH_MP_TAC nonoverlapping_subset_imp \\
+       MATCH_MP_TAC nonoverlapping_subset_inclusive \\
        qexistsl_tac [‘A’, ‘B’] >> art [],
        (* goal 3 (of 4) *)
-       MATCH_MP_TAC nonoverlapping_subset_imp \\
+       MATCH_MP_TAC nonoverlapping_subset_inclusive \\
        qexistsl_tac [‘B’, ‘A’] >> simp [Once nonoverlapping_comm],
        (* goal 4 (of 4) *)
        FIRST_X_ASSUM MATCH_MP_TAC >> fs [GSYM ODD_EVEN, ODD_EXISTS] ])
@@ -2974,7 +2974,7 @@ Proof
          A j            A i             B i           B j     *)
  >> Know ‘!i j. i < j ==> nonoverlapping (A i UNION B i) (A j UNION B j)’
  >- (rpt STRIP_TAC \\
-     MATCH_MP_TAC nonoverlapping_subset_imp \\
+     MATCH_MP_TAC nonoverlapping_subset_inclusive \\
      qexistsl_tac [‘interval [-&SUC i,&SUC i]’, ‘{x | x <= -&j \/ &j <= x}’] \\
      reverse CONJ_TAC
      >- (rw [Abbr ‘A’, Abbr ‘B’, SUBSET_DEF, IN_INTERVAL] >| (* 2 subgoals *)
@@ -3018,7 +3018,7 @@ Proof
          Q.PAT_X_ASSUM ‘BIJ h _ _’ MP_TAC \\
          rw [BIJ_DEF, INJ_DEF] >> DISJ1_TAC \\
          qexistsl_tac [‘i’, ‘j’] >> simp []) \\
-     MATCH_MP_TAC nonoverlapping_subset_imp \\
+     MATCH_MP_TAC nonoverlapping_subset_inclusive \\
      qexistsl_tac [‘A n1 UNION B n1’, ‘A n2 UNION B n2’] >> art [] \\
     ‘n1 < n2 \/ n2 < n1’ by simp [] >- simp [] \\
      simp [Once nonoverlapping_comm])
@@ -3062,9 +3062,10 @@ Proof
  >> simp [Abbr ‘l’, o_DEF]
 QED
 
-Theorem lebesgue_approximation :
+(* NOTE: “fsigma” is overload_on “fsigma_in euclidean” *)
+Theorem lebesgue_approximation_fsigma :
     !E e. E IN measurable_sets lebesgue /\ 0 < e ==>
-          ?s. s IN subsets borel /\ E SUBSET s /\
+          ?s. fsigma s /\ E SUBSET s /\
               lmeasure E <= lambda s /\
               lambda s <= lmeasure E + Normal e
 Proof
@@ -3074,19 +3075,30 @@ Proof
  >> Q.EXISTS_TAC ‘s’ >> art []
  >> CONJ_ASM1_TAC
  >- (qunabbrev_tac ‘s’ \\
-     MATCH_MP_TAC SIGMA_ALGEBRA_BIGUNION \\
-     rw [sigma_algebra_borel] \\
-     MATCH_MP_TAC borel_closed \\
+     MATCH_MP_TAC (ISPEC “euclidean” FSIGMA_IN_UNIONS) >> rw [] \\
+     MATCH_MP_TAC CLOSED_IMP_FSIGMA_IN \\
+     REWRITE_TAC [GSYM CLOSED_IN] \\
      MATCH_MP_TAC closed_interval_closed >> art [])
- >> ‘lambda s = lmeasure s’ by PROVE_TAC [lebesgue_eq_lambda]
- >> POP_ORW
+ >> ‘s IN subsets borel’ by PROVE_TAC [borel_fsigma]
+ >> ‘lambda s = lmeasure s’ by PROVE_TAC [lebesgue_eq_lambda] >> POP_ORW
  >> Suff ‘lmeasure s = suminf (lmeasure o J)’ >- simp []
- >> SYM_TAC
- >> MATCH_MP_TAC lebesgue_countably_additive
+ >> SYM_TAC >> MATCH_MP_TAC lebesgue_countably_additive
  >> rw [IN_FUNSET]
  >- (MATCH_MP_TAC closed_interval_imp_lebesgue >> art [])
  >> MATCH_MP_TAC closed_interval_nonoverlapping_imp_negligible
  >> simp []
+QED
+
+Theorem lebesgue_approximation :
+    !E e. E IN measurable_sets lebesgue /\ 0 < e ==>
+          ?s. s IN subsets borel /\ E SUBSET s /\
+              lmeasure E <= lambda s /\
+              lambda s <= lmeasure E + Normal e
+Proof
+    rpt STRIP_TAC
+ >> drule_all_then STRIP_ASSUME_TAC lebesgue_approximation_fsigma
+ >> Q.EXISTS_TAC ‘s’ >> art []
+ >> MATCH_MP_TAC borel_fsigma >> art []
 QED
 
 Theorem negligible_approximation_lemma[local] :
@@ -3306,21 +3318,14 @@ Proof
  >> MATCH_MP_TAC REAL_LE_DIV >> simp [POW_POS]
 QED
 
-(* At first we prove it for bounded positive (non-negative) functions *)
+(* NOTE: first we prove the equivalence for bounded positive functions *)
 Theorem lebesgue_eq_gauge_integral_lemma1[local] :
     !f. f IN borel_measurable borel /\
         pos_fn_integral lborel (Normal o f) <> PosInf /\
        (!x. 0 <= f x) /\ bounded (IMAGE f UNIV) ==>
         pos_fn_integral lborel (Normal o f) = Normal (integral UNIV f)
 Proof
-    rw [bounded_def]
- >> Know ‘0 <= a’
- >- (CCONTR_TAC >> fs [GSYM real_lt] \\
-    ‘0 <= abs (f ARB)’ by simp [ABS_POS] \\
-    ‘abs (f ARB) <= a’ by PROVE_TAC [] \\
-    ‘0 <= a’ by PROVE_TAC [REAL_LE_TRANS] \\
-     METIS_TAC [REAL_LET_ANTISYM])
- >> DISCH_TAC
+    RW_TAC std_ss [bounded_alt, IN_IMAGE, IN_UNIV]
  >> qabbrev_tac ‘nf = Normal o f’
  >> ‘!x. 0 <= nf x’ by rw [Abbr ‘nf’, o_DEF]
  >> Know ‘nf IN Borel_measurable borel’

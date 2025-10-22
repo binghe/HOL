@@ -184,6 +184,25 @@ Proof
   ASM_SIMP_TAC std_ss [SET_RULE ``UNIV DIFF (UNIV DIFF A) = A``]
 QED
 
+Theorem borel_fsigma :
+    !s. fsigma s ==> s IN subsets borel
+Proof
+    rw [fsigma]
+ >> MATCH_MP_TAC SIGMA_ALGEBRA_COUNTABLE_UNION
+ >> rw [SUBSET_DEF, sigma_algebra_borel]
+ >> MATCH_MP_TAC borel_closed >> simp []
+QED
+
+Theorem borel_gdelta :
+    !s. gdelta s ==> s IN subsets borel
+Proof
+    rw [gdelta]
+ >> Cases_on ‘g = {}’ >- simp [space_in_borel]
+ >> MATCH_MP_TAC SIGMA_ALGEBRA_COUNTABLE_INTER
+ >> rw [SUBSET_DEF, sigma_algebra_borel]
+ >> MATCH_MP_TAC borel_open >> simp []
+QED
+
 Theorem borel_singleton:
     !A x. A IN subsets borel ==> x INSERT A IN subsets borel
 Proof
