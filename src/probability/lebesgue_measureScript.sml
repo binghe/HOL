@@ -3325,7 +3325,7 @@ Theorem lebesgue_eq_gauge_integral_lemma1[local] :
        (!x. 0 <= f x) /\ bounded (IMAGE f UNIV) ==>
         pos_fn_integral lborel (Normal o f) = Normal (integral UNIV f)
 Proof
-    RW_TAC std_ss [bounded_alt, IN_IMAGE, IN_UNIV]
+    rw [bounded_alt]
  >> qabbrev_tac ‘nf = Normal o f’
  >> ‘!x. 0 <= nf x’ by rw [Abbr ‘nf’, o_DEF]
  >> Know ‘nf IN Borel_measurable borel’
@@ -3390,6 +3390,8 @@ Proof
      simp [Abbr ‘nf’, o_DEF])
  >> Rewr'
  (* applying BEPPO_LEVI_MONOTONE_CONVERGENCE_INCREASING *)
+ >> MP_TAC (Q.SPECL [‘fn’, ‘UNIV’] BEPPO_LEVI_MONOTONE_CONVERGENCE_INCREASING)
+ >> simp []
  (* applying mono_increasing_converges_to_sup *)
  >> cheat
 QED
