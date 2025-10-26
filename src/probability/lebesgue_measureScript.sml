@@ -560,7 +560,7 @@ Proof
  >> Q.EXISTS_TAC ‘n’ >> REFL_TAC
 QED
 
-Theorem negligible_iff_null_set :
+Theorem negligible_alt_lebesgue_null_set :
     !s. negligible s <=> s IN null_set lebesgue
 Proof
     rw [IN_NULL_SET, null_set_def]
@@ -3181,7 +3181,8 @@ QED
 
 (* |- !E. E IN null_set lebesgue ==> ?N. N IN null_set lborel /\ E SUBSET N *)
 Theorem negligible_approximation_null_set' =
-        negligible_approximation_null_set |> REWRITE_RULE [negligible_iff_null_set]
+        negligible_approximation_null_set
+     |> REWRITE_RULE [negligible_alt_lebesgue_null_set]
 
 Theorem pos_fn_integral_fn_seq :
     !m f n. measure_space m /\ f IN Borel_measurable (measurable_space m) ==>
@@ -3318,6 +3319,46 @@ Proof
  >> MATCH_MP_TAC REAL_LE_DIV >> simp [POW_POS]
 QED
 
+(* cf. measureTheory.fn_seq_def. Here is the version for (f :'a -> real) *)
+Definition real_fn_seq_def :
+    real_fn_seq m (f :'a -> real) =
+       (\n x. SIGMA
+                (\k. &k / 2 pow n *
+                     indicator
+                       {x | x IN m_space m /\ &k / 2 pow n <= f x /\
+                            f x < (&k + 1) / 2 pow n} x) (count (4 ** n)) +
+              2 pow n * indicator {x | x IN m_space m /\ 2 pow n <= f x} x)
+End
+
+Theorem fn_seq_alt_real_fn_seq :
+    !m f n x. fn_seq m (Normal o f) n x = Normal (real_fn_seq m f n x)
+Proof
+    RW_TAC std_ss [fn_seq_def, real_fn_seq_def]
+ >> ASM_SIMP_TAC real_ss [extreal_of_num_def, extreal_pow_eq]
+ >> ‘2 pow n <> (0 :real)’ by simp []
+ >> ASM_SIMP_TAC real_ss
+      [extreal_div_eq, extreal_le_eq, extreal_lt_eq, extreal_add_eq]
+ >> qabbrev_tac ‘A = \k. {x | x IN m_space m /\ &k / 2 pow n <= f x /\
+                              f x < &(k + 1) / 2 pow n}’
+ >> qabbrev_tac ‘B = {x | x IN m_space m /\ 2 pow n <= f x}’
+ >> qabbrev_tac ‘N = count (4 ** n)’
+ >> qabbrev_tac ‘c = \k. (&k / 2 pow n) :real’
+ >> ASM_SIMP_TAC std_ss []
+ >> simp [indicator_fn, o_DEF, extreal_mul_eq]
+ >> qabbrev_tac ‘g = \k. c k * indicator (A k) x’ >> simp []
+ >> Know ‘SIGMA (\k. Normal (g k)) N = Normal (SIGMA g N)’
+ >- (MATCH_MP_TAC EXTREAL_SUM_IMAGE_NORMAL \\
+     simp [Abbr ‘N’])
+ >> Rewr'
+ >> simp [extreal_add_eq]
+QED
+
+Theorem real_fn_seq_alt_fn_seq :
+    !m f n x. real_fn_seq m f n x = real (fn_seq m (Normal o f) n x)
+Proof
+    rw [fn_seq_alt_real_fn_seq]
+QED
+
 (* NOTE: first we prove the equivalence for bounded positive functions *)
 Theorem lebesgue_eq_gauge_integral_lemma1[local] :
     !f. f IN borel_measurable borel /\
@@ -3333,10 +3374,11 @@ Proof
      MATCH_MP_TAC IN_MEASURABLE_BOREL_IMP_BOREL' \\
      simp [sigma_algebra_borel])
  >> DISCH_TAC
+ (* applying integral_sequence *)
  >> MP_TAC (ISPECL [“lborel”, “nf :real -> extreal”] integral_sequence)
  >> impl_tac >- simp [lborel_def, space_lborel]
- >> qabbrev_tac ‘fi = fn_seq lborel nf’
  >> Rewr'
+ >> qabbrev_tac ‘fi = fn_seq lborel nf’
  >> Know ‘f = \x. real (sup (IMAGE (\n. fi n x) UNIV))’
  >- (rw [FUN_EQ_THM, Abbr ‘fi’] \\
      MP_TAC (ISPECL [“lborel”, “nf :real -> extreal”] lemma_fn_seq_sup) \\
@@ -3348,7 +3390,18 @@ Proof
               fn_seq_integral lborel nf i’
  >- (Q.X_GEN_TAC ‘n’ \\
      MATCH_MP_TAC pos_fn_integral_fn_seq >> rw [lborel_def])
- >> Rewr'
+ >> DISCH_TAC
+ >> Know ‘!i. fn_seq_integral lborel nf i <= pos_fn_integral lborel nf’
+ >- (Q.X_GEN_TAC ‘i’ \\
+     POP_ASSUM (simp o wrap o GSYM) \\
+     MATCH_MP_TAC pos_fn_integral_mono \\
+     simp [space_lborel, lemma_fn_seq_positive] \\
+     Q.X_GEN_TAC ‘x’ \\
+     MATCH_MP_TAC lemma_fn_seq_upper_bounded \\
+     rw [Abbr ‘nf’, o_DEF])
+ >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘!i. pos_fn_integral lborel (fn_seq lborel nf i) = _’
+      (REWRITE_TAC o wrap)
  >> qabbrev_tac ‘fn = \n x. real (fn_seq lborel nf n x)’
  (* applying sup_normal *)
  >> qabbrev_tac ‘s = \x. IMAGE (\n. fn_seq lborel nf n x) UNIV’ >> simp []
@@ -3392,6 +3445,11 @@ Proof
  (* applying BEPPO_LEVI_MONOTONE_CONVERGENCE_INCREASING *)
  >> MP_TAC (Q.SPECL [‘fn’, ‘UNIV’] BEPPO_LEVI_MONOTONE_CONVERGENCE_INCREASING)
  >> simp []
+ (* applying fn_seq_alt_real_fn_seq *)
+ >> ‘fn = (\n x. real_fn_seq lborel f n x)’
+       by rw [Abbr ‘fn’, Abbr ‘nf’, fn_seq_alt_real_fn_seq, FUN_EQ_THM]
+ >> POP_ORW
+ >> simp [Abbr ‘fn’]
  (* applying mono_increasing_converges_to_sup *)
  >> cheat
 QED

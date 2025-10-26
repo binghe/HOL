@@ -292,6 +292,8 @@ Definition extreal_pow_def :
        (if n = 0 then Normal 1 else (if (EVEN n) then PosInf else NegInf)))
 End
 
+Theorem extreal_pow_eq = cj 1 extreal_pow_def
+
 Definition extreal_sqrt_def :
    (extreal_sqrt (Normal x) = Normal (sqrt x)) /\
    (extreal_sqrt PosInf = PosInf)
