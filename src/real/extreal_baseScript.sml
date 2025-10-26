@@ -3590,6 +3590,16 @@ Proof
  >> Cases_on ‘y’ >> fs [real_normal]
 QED
 
+Theorem real_le_11 :
+    !x y. x <> PosInf /\ x <> NegInf /\ y <> PosInf /\ y <> NegInf ==>
+         (real x <= real y <=> x <= y)
+Proof
+    rpt STRIP_TAC
+ >> ‘?a. x = Normal a’ by METIS_TAC [extreal_cases]
+ >> ‘?b. y = Normal b’ by METIS_TAC [extreal_cases]
+ >> simp [real_normal]
+QED
+
 Theorem pow_real :
     !x n. x <> PosInf /\ x <> NegInf ==> real x pow n = real (x pow n)
 Proof
