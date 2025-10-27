@@ -3682,7 +3682,7 @@ Proof
  >> simp [HAS_INTEGRAL_INTEGRABLE_INTEGRAL]
 QED
 
-Theorem finite_lmeasure_imp_has_integral :
+Theorem finite_lmeasure_has_integral :
     !s y. s IN measurable_sets lebesgue /\ lmeasure s = Normal y ==>
           (indicator s has_integral y) UNIV
 Proof
@@ -3722,7 +3722,7 @@ Proof
      simp [measure_space_lebesgue])
  >> DISCH_TAC
  >> ‘?r. lmeasure s = Normal r’ by METIS_TAC [extreal_cases]
- >> MP_TAC (Q.SPECL [‘s’, ‘r’] finite_lmeasure_imp_has_integral) >> rw []
+ >> MP_TAC (Q.SPECL [‘s’, ‘r’] finite_lmeasure_has_integral) >> rw []
 QED
 
 (* |- !s. s IN integrable_sets univ(:real) ==>
