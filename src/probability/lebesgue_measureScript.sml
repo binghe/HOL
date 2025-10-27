@@ -3570,12 +3570,12 @@ QED
 
 Theorem finite_lmeasure_imp_integrable_sets :
     !s y. s IN measurable_sets lebesgue /\ lmeasure s = Normal y ==>
-          s IN integrable_sets UNIV /\
-          integral UNIV (indicator s) = y
+          s IN integrable_sets UNIV /\ integral UNIV (indicator s) = y
 Proof
-    rpt GEN_TAC >> simp [lebesgue_def, integrable_sets_def]
- >> STRIP_TAC
+    rpt GEN_TAC
+ >> simp [lebesgue_def, integrable_sets_def] >> STRIP_TAC
  >> qabbrev_tac ‘f = \n. indicator (s INTER line n)’
+ >> ‘!n x. 0 <= f n x’ by rw [Abbr ‘f’, INDICATOR_POS]
  >> Know ‘!m n x. m <= n ==> f m x <= f n x’
  >- (rw [Abbr ‘f’] \\
      MATCH_MP_TAC INDICATOR_MONO \\
@@ -3619,38 +3619,84 @@ Proof
      simp [Abbr ‘f’, integral_indicator_UNIV])
  >> STRIP_TAC (* this asserts ‘g’, and ‘k’ (negligible) *)
  >> rename1 ‘negligible N’
- >> fs [Abbr ‘f’, integral_indicator_UNIV]
- (* applying mono_increasing_converges_to_sup *)
- >> qabbrev_tac ‘h = \n. integral (line n) (indicator s)’
+ (* stage work *)
+ >> qabbrev_tac ‘h = \n. integral UNIV (f n)’
  >> qabbrev_tac ‘r = integral univ(:real) g’
+ (* applying mono_increasing_converges_to_sup *)
  >> Know ‘r = sup (IMAGE h UNIV)’
  >- (MATCH_MP_TAC mono_increasing_converges_to_sup \\
      simp [GSYM LIM_SEQUENTIALLY_SEQ] \\
      simp [mono_increasing_def, Abbr ‘h’] \\
      qx_genl_tac [‘i’, ‘j’] >> DISCH_TAC \\
-     MATCH_MP_TAC INTEGRAL_SUBSET_DROP_LE \\
-     simp [LINE_MONO, INDICATOR_POS])
- >> ‘IMAGE h UNIV = t’ by rw [Abbr ‘t’, Once EXTENSION] >> POP_ORW
+     MATCH_MP_TAC INTEGRAL_MONO_LEMMA >> simp [])
+ >> Know ‘IMAGE h UNIV = t’
+ >- (rw [Abbr ‘t’, Once EXTENSION, Abbr ‘h’] \\
+     simp [integral_indicator_UNIV, Abbr ‘f’])
+ >> Rewr'
  >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘(h --> r) sequentially’ K_TAC
  (* applying mono_increasing_converges_to_sup again *)
- >> qabbrev_tac ‘f = \x k. indicator (s INTER line k) x’ >> fs []
- >> ‘!x. (\k. f x k) = f x’ by rw [FUN_EQ_THM]
+ >> qabbrev_tac ‘f' = flip f’
+ >> ‘!x. (\k. f k x) = f' x’ by rw [FUN_EQ_THM, Abbr ‘f'’]
  >> POP_ASSUM (fs o wrap)
- >> Know ‘!x. x NOTIN N ==> g x = sup (IMAGE (f x) UNIV)’
+ >> Know ‘!x. x NOTIN N ==> g x = sup (IMAGE (f' x) UNIV)’
  >- (rpt STRIP_TAC \\
      MATCH_MP_TAC mono_increasing_converges_to_sup \\
      simp [GSYM LIM_SEQUENTIALLY_SEQ] \\
-     simp [mono_increasing_def])
+     simp [mono_increasing_def, Abbr ‘f'’])
  >> DISCH_TAC
- >> Know ‘!x. sup (IMAGE (f x) univ(:num)) = indicator s x’
- >- (rw [Abbr ‘f’, GSYM REAL_LE_ANTISYM]
-     >- (MATCH_MP_TAC REAL_IMP_SUP_LE' >> simp [] \\
-         rw [] \\
+ >> Know ‘!x. sup (IMAGE (f' x) univ(:num)) = indicator s x’
+ >- (rw [Abbr ‘f'’, GSYM REAL_LE_ANTISYM]
+     >- (MATCH_MP_TAC REAL_IMP_SUP_LE' >> simp [Abbr ‘f’] \\
+         RW_TAC std_ss [] \\
          MATCH_MP_TAC INDICATOR_MONO >> SET_TAC []) \\
-     qmatch_abbrev_tac ‘(z :real) <= sup p’ \\
-  (* realTheory.REAL_LE_SUP' *)
-     cheat)
- >> cheat
+     qmatch_abbrev_tac ‘(r :real) <= sup p’ \\
+  (* applying REAL_LE_SUP' *)
+     Know ‘r <= sup p <=> !y. (!z. z IN p ==> z <= y) ==> r <= y’
+     >- (MATCH_MP_TAC REAL_LE_SUP' \\
+         CONJ_TAC >- rw [Once EXTENSION, Abbr ‘p’] \\
+         Q.EXISTS_TAC ‘1’ \\
+         rw [Abbr ‘p’, Abbr ‘f’] \\
+         REWRITE_TAC [DROP_INDICATOR_LE_1]) >> Rewr' \\
+     rw [Abbr ‘p’, Abbr ‘r’, Abbr ‘f’] \\
+     Know ‘!n. indicator (s INTER line n) x <= y’
+     >- (Q.X_GEN_TAC ‘n’ \\
+         POP_ASSUM MATCH_MP_TAC \\
+         Q.EXISTS_TAC ‘n’ >> REFL_TAC) >> DISCH_TAC \\
+     STRIP_ASSUME_TAC (Q.SPEC ‘x’ REAL_IN_LINE) \\
+     Suff ‘indicator s x = indicator (s INTER line n) x’ >- rw [] \\
+     rw [indicator])
+ >> DISCH_THEN (fs o wrap)
+ >> Q.PAT_X_ASSUM ‘!x. x NOTIN N ==> (f' x --> indicator s x) sequentially’ K_TAC
+ >> qunabbrev_tac ‘f'’
+ (* stage work *)
+ >> Suff ‘(indicator s has_integral y) UNIV’
+ >- METIS_TAC [HAS_INTEGRAL_INTEGRABLE_INTEGRAL]
+ >> Know ‘(indicator s has_integral y) UNIV <=> (g has_integral y) UNIV’
+ >- (MATCH_MP_TAC HAS_INTEGRAL_SPIKE_EQ \\
+     Q.EXISTS_TAC ‘N’ >> rw [])
+ >> Rewr'
+ >> simp [HAS_INTEGRAL_INTEGRABLE_INTEGRAL]
+QED
+
+Theorem integrable_sets_alt_finite_measurable_sets :
+    !s. s IN integrable_sets UNIV <=>
+        s IN measurable_sets lebesgue /\ lmeasure s <> PosInf
+Proof
+    Q.X_GEN_TAC ‘s’ >> EQ_TAC
+ >- (rpt STRIP_TAC
+     >- METIS_TAC [integrable_sets_subset_lebesgue, SUBSET_DEF] \\
+    ‘lmeasure s = Normal (integral univ(:real) (indicator s))’
+       by PROVE_TAC [integrable_indicator_imp_lmeasure] >> fs [])
+ >> rpt STRIP_TAC
+ >> Know ‘lmeasure s <> NegInf’
+ >- (MATCH_MP_TAC pos_not_neginf \\
+     MATCH_MP_TAC MEASURE_POSITIVE \\
+     simp [measure_space_lebesgue])
+ >> DISCH_TAC
+ >> ‘?r. lmeasure s = Normal r’ by METIS_TAC [extreal_cases]
+ >> MATCH_MP_TAC (cj 1 finite_lmeasure_imp_integrable_sets)
+ >> Q.EXISTS_TAC ‘r’ >> art []
 QED
 
 Theorem real_fn_seq_has_integral :

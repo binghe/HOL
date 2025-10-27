@@ -2386,6 +2386,12 @@ Definition line :
     line n = {x:real | -&n <= x /\ x <= &n}
 End
 
+Theorem IN_LINE :
+    !x n. x IN line n <=> -&n <= x /\ x <= &n
+Proof
+    rw [line]
+QED
+
 Theorem line_def :
     !n. line n = interval [-&n,&n]
 Proof
