@@ -3570,12 +3570,13 @@ Proof
  >> simp [Abbr ‘nf’, extreal_of_num_def, extreal_pow_def]
 QED
 
-Theorem finite_lmeasure_imp_integrable_sets :
+Theorem finite_lmeasure_imp_integral_indicator :
     !s y. s IN measurable_sets lebesgue /\ lmeasure s = Normal y ==>
-          s IN integrable_sets UNIV /\ integral UNIV (indicator s) = y
+          indicator s integrable_on UNIV /\
+          integral UNIV (indicator s) = y
 Proof
     rpt GEN_TAC
- >> simp [lebesgue_def, integrable_sets_def] >> STRIP_TAC
+ >> simp [lebesgue_def] >> STRIP_TAC
  >> qabbrev_tac ‘f = \n. indicator (s INTER line n)’
  >> ‘!n x. 0 <= f n x’ by rw [Abbr ‘f’, INDICATOR_POS]
  >> Know ‘!m n x. m <= n ==> f m x <= f n x’
@@ -3681,13 +3682,21 @@ Proof
  >> simp [HAS_INTEGRAL_INTEGRABLE_INTEGRAL]
 QED
 
+Theorem finite_lmeasure_imp_has_integral :
+    !s y. s IN measurable_sets lebesgue /\ lmeasure s = Normal y ==>
+          (indicator s has_integral y) UNIV
+Proof
+    rpt STRIP_TAC
+ >> REWRITE_TAC [HAS_INTEGRAL_INTEGRABLE_INTEGRAL]
+ >> MATCH_MP_TAC finite_lmeasure_imp_integral_indicator >> art []
+QED
+
 Theorem integrable_sets_alt_finite_measurable_sets :
     !s. s IN integrable_sets UNIV <=>
         s IN measurable_sets lebesgue /\ lmeasure s <> PosInf
 Proof
     Q.X_GEN_TAC ‘s’ >> EQ_TAC
- >- (rpt STRIP_TAC
-     >- METIS_TAC [integrable_sets_subset_lebesgue, SUBSET_DEF] \\
+ >- (rpt STRIP_TAC >- METIS_TAC [integrable_sets_subset_lebesgue, SUBSET_DEF] \\
     ‘lmeasure s = Normal (integral univ(:real) (indicator s))’
        by PROVE_TAC [integrable_indicator_imp_lmeasure] >> fs [])
  >> rpt STRIP_TAC
@@ -3697,9 +3706,31 @@ Proof
      simp [measure_space_lebesgue])
  >> DISCH_TAC
  >> ‘?r. lmeasure s = Normal r’ by METIS_TAC [extreal_cases]
- >> MATCH_MP_TAC (cj 1 finite_lmeasure_imp_integrable_sets)
+ >> simp [integrable_sets_def]
+ >> MATCH_MP_TAC (cj 1 finite_lmeasure_imp_integral_indicator)
  >> Q.EXISTS_TAC ‘r’ >> art []
 QED
+
+Theorem finite_lmeasure_has_integral_real :
+    !s y. s IN measurable_sets lebesgue /\ lmeasure s <> PosInf ==>
+         (indicator s has_integral (real (lmeasure s))) UNIV
+Proof
+    rpt STRIP_TAC
+ >> Know ‘lmeasure s <> NegInf’
+ >- (MATCH_MP_TAC pos_not_neginf \\
+     MATCH_MP_TAC MEASURE_POSITIVE \\
+     simp [measure_space_lebesgue])
+ >> DISCH_TAC
+ >> ‘?r. lmeasure s = Normal r’ by METIS_TAC [extreal_cases]
+ >> MP_TAC (Q.SPECL [‘s’, ‘r’] finite_lmeasure_imp_has_integral) >> rw []
+QED
+
+(* |- !s. s IN integrable_sets univ(:real) ==>
+          (indicator s has_integral real (lmeasure s)) univ(:real)
+ *)
+Theorem integrable_sets_has_integral_real =
+        finite_lmeasure_has_integral_real
+     |> REWRITE_RULE [GSYM integrable_sets_alt_finite_measurable_sets]
 
 Theorem real_fn_seq_has_integral :
     !f n. f IN borel_measurable borel /\ (!x. 0 <= f x) /\
@@ -3713,6 +3744,11 @@ Proof
      MP_TAC (Q.SPECL [‘f’, ‘n’] lemma_fn_seq_finite_measure2') >> rw [] \\
      qabbrev_tac ‘s = {x | 2 pow n <= f x}’ \\
     ‘(\x. indicator s x) = indicator s’ by rw [FUN_EQ_THM] >> POP_ORW \\
+     Know ‘s IN subsets borel’
+     >- (qunabbrev_tac ‘s’ \\
+         MP_TAC (ISPECL [“f :real -> real”, “borel”] in_borel_measurable_ge) \\
+         rw [sigma_algebra_borel, IN_FUNSET, space_borel]) >> DISCH_TAC \\
+     gs [lambda_eq_lebesgue] \\
      cheat)
  (* stage work *)
  >> cheat
