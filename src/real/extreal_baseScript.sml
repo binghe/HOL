@@ -3597,7 +3597,7 @@ Proof
     rpt STRIP_TAC
  >> ‘?a. x = Normal a’ by METIS_TAC [extreal_cases]
  >> ‘?b. y = Normal b’ by METIS_TAC [extreal_cases]
- >> simp [real_normal]
+ >> ASM_SIMP_TAC std_ss [real_normal, extreal_le_eq]
 QED
 
 Theorem pow_real :

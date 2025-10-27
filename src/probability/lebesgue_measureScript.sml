@@ -3393,19 +3393,143 @@ Proof
       simp [GSYM lt_infty] ]
 QED
 
-Overload lambda'[local] = “real o lambda”
+Overload lmeasure'[local] = “real o lmeasure”
 
-(* cf. fn_seq_integral_def *)
+(* cf. fn_seq_integral_def
+
+   NOTE: This definition requires all (k <> 0) “lambda _” must be finite, such
+   that “lambda' _” is meaningful. This may be derived from “integrable lborel f”
+   aka “pos_fn_integral lborel f <> PosInf”.
+ *)
 Definition real_fn_seq_integral_def :
     real_fn_seq_integral (f :real -> real) n =
     SIGMA (\k. &k / 2 pow n *
-               lambda' {x | &k / 2 pow n <= f x /\
-                            f x < (&k + 1) / 2 pow n}) (count (4 ** n)) +
-    2 pow n * lambda' {x | 2 pow n <= f x}
+               lmeasure' {x | &k / 2 pow n <= f x /\
+                              f x < (&k + 1) / 2 pow n}) (count (4 ** n)) +
+    2 pow n * lmeasure' {x | 2 pow n <= f x}
 End
 
+(* NOTE: If k = 0, then “&k / 2 pow n * lmeasure s = 0” even the measure is inf *)
+Theorem lemma_fn_seq_finite_measure1 :
+    !m f k n. measure_space m /\ f IN Borel_measurable (measurable_space m) /\
+             (!x. x IN m_space m ==> 0 <= f x) /\
+              pos_fn_integral m f <> PosInf /\ k < 4 ** n /\ k <> 0 ==>
+              measure m {x | x IN m_space m /\ &k / 2 pow n <= f x /\
+                             f x < (&k + 1) / 2 pow n} <> PosInf
+Proof
+    rpt STRIP_TAC
+ >> ASSUME_TAC (Q.SPECL [‘m’, ‘f’, ‘n’] lemma_fn_seq_positive')
+ >> ASSUME_TAC (Q.SPECL [‘m’, ‘f’, ‘n’] lemma_fn_seq_upper_bounded')
+ >> Know ‘pos_fn_integral m (fn_seq m f n) <> PosInf’
+ >- (REWRITE_TAC [lt_infty] \\
+     Q_TAC (TRANS_TAC let_trans) ‘pos_fn_integral m f’ \\
+     reverse CONJ_TAC >- art [GSYM lt_infty] \\
+     MATCH_MP_TAC pos_fn_integral_mono >> simp [])
+ >> Know ‘pos_fn_integral m (fn_seq m f n) = fn_seq_integral m f n’
+ >- (MATCH_MP_TAC pos_fn_integral_fn_seq >> art [])
+ >> simp [] >> DISCH_THEN K_TAC
+ >> simp [fn_seq_integral_def]
+ >> qmatch_abbrev_tac ‘a + b = PosInf’
+ >> ‘sigma_algebra (measurable_space m)’ by PROVE_TAC [MEASURE_SPACE_SIGMA_ALGEBRA]
+ >> Know ‘0 <= b’
+ >- (qunabbrev_tac ‘b’ \\
+     MATCH_MP_TAC le_mul >> simp [pow_pos_le] \\
+     MATCH_MP_TAC MEASURE_POSITIVE >> art [] \\
+    ‘{x | x IN m_space m /\ 2 pow n <= f x} =
+     {x | 2 pow n <= f x} INTER m_space m’ by SET_TAC [] >> POP_ORW \\
+     METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE])
+ >> DISCH_TAC
+ >> qunabbrev_tac ‘a’
+ >> qmatch_abbrev_tac ‘SIGMA g _ + b = PosInf’
+ >> qmatch_abbrev_tac ‘a + b = PosInf’
+ >> Know ‘!i. 0 <= g i’
+ >- (rw [Abbr ‘g’] \\
+     MATCH_MP_TAC le_mul \\
+     CONJ_TAC
+     >- (‘2 pow n = Normal (2 pow n)’
+           by rw [extreal_of_num_def, extreal_pow_def] >> POP_ORW \\
+         MATCH_MP_TAC le_div >> simp []) \\
+     MATCH_MP_TAC MEASURE_POSITIVE >> art [] \\
+     qmatch_abbrev_tac ‘s IN measurable_sets m’ \\
+    ‘s = {x | &i / 2 pow n <= f x /\ f x < (&i + 1) / 2 pow n} INTER m_space m’
+       by (qunabbrev_tac ‘s’ >> SET_TAC []) >> POP_ORW \\
+     METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE])
+ >> DISCH_TAC
+ >> Know ‘0 <= a’
+ >- (qunabbrev_tac ‘a’ \\
+     MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> simp [])
+ >> DISCH_TAC
+ >> Suff ‘a = PosInf’
+ >- (Rewr' \\
+     Suff ‘b <> NegInf’ >- METIS_TAC [add_infty] \\
+     MATCH_MP_TAC pos_not_neginf >> art [])
+ >> qunabbrev_tac ‘a’
+ >> MATCH_MP_TAC EXTREAL_SUM_IMAGE_EQ_POSINF >> simp []
+ >> Q.EXISTS_TAC ‘k’
+ >> simp [Abbr ‘g’]
+ >> Suff ‘0 < &k / 2 pow n’ >- PROVE_TAC [mul_rposinf]
+ >> ‘2 pow n = Normal (2 pow n)’
+      by rw [extreal_of_num_def, extreal_pow_def] >> POP_ORW
+ >> MATCH_MP_TAC lt_div
+ >> simp [extreal_of_num_def]
+QED
+
+Theorem lemma_fn_seq_finite_measure2 :
+    !m f n. measure_space m /\ f IN Borel_measurable (measurable_space m) /\
+           (!x. x IN m_space m ==> 0 <= f x) /\
+            pos_fn_integral m f <> PosInf ==>
+            measure m {x | x IN m_space m /\ 2 pow n <= f x} <> PosInf
+Proof
+    rpt STRIP_TAC
+ >> ASSUME_TAC (Q.SPECL [‘m’, ‘f’, ‘n’] lemma_fn_seq_positive')
+ >> ASSUME_TAC (Q.SPECL [‘m’, ‘f’, ‘n’] lemma_fn_seq_upper_bounded')
+ >> Know ‘pos_fn_integral m (fn_seq m f n) <> PosInf’
+ >- (REWRITE_TAC [lt_infty] \\
+     Q_TAC (TRANS_TAC let_trans) ‘pos_fn_integral m f’ \\
+     reverse CONJ_TAC >- art [GSYM lt_infty] \\
+     MATCH_MP_TAC pos_fn_integral_mono >> simp [])
+ >> Know ‘pos_fn_integral m (fn_seq m f n) = fn_seq_integral m f n’
+ >- (MATCH_MP_TAC pos_fn_integral_fn_seq >> art [])
+ >> simp [] >> DISCH_THEN K_TAC
+ >> simp [fn_seq_integral_def]
+ >> qmatch_abbrev_tac ‘a + b = PosInf’
+ >> ‘sigma_algebra (measurable_space m)’ by PROVE_TAC [MEASURE_SPACE_SIGMA_ALGEBRA]
+ >> Know ‘0 <= b’
+ >- (qunabbrev_tac ‘b’ \\
+     MATCH_MP_TAC le_mul >> simp [pow_pos_le])
+ >> DISCH_TAC
+ >> qunabbrev_tac ‘a’
+ >> qmatch_abbrev_tac ‘SIGMA g _ + b = PosInf’
+ >> qmatch_abbrev_tac ‘a + b = PosInf’
+ >> Know ‘!i. 0 <= g i’
+ >- (rw [Abbr ‘g’] \\
+     MATCH_MP_TAC le_mul \\
+     CONJ_TAC
+     >- (‘2 pow n = Normal (2 pow n)’
+           by rw [extreal_of_num_def, extreal_pow_def] >> POP_ORW \\
+         MATCH_MP_TAC le_div >> simp []) \\
+     MATCH_MP_TAC MEASURE_POSITIVE >> art [] \\
+     qmatch_abbrev_tac ‘s IN measurable_sets m’ \\
+    ‘s = {x | &i / 2 pow n <= f x /\ f x < (&i + 1) / 2 pow n} INTER m_space m’
+       by (qunabbrev_tac ‘s’ >> SET_TAC []) >> POP_ORW \\
+     METIS_TAC [IN_MEASURABLE_BOREL_ALL_MEASURE])
+ >> DISCH_TAC
+ >> Know ‘0 <= a’
+ >- (qunabbrev_tac ‘a’ \\
+     MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> simp [])
+ >> DISCH_TAC
+ >> Suff ‘b = PosInf’
+ >- (Rewr' \\
+     Suff ‘a <> NegInf’ >- METIS_TAC [add_infty] \\
+     MATCH_MP_TAC pos_not_neginf >> art [])
+ >> qunabbrev_tac ‘b’
+ >> Suff ‘0 < 2 pow n’ >- PROVE_TAC [mul_rposinf]
+ >> simp [pow_pos_lt]
+QED
+
 Theorem real_fn_seq_has_integral :
-    !f n. measure_space m /\ f IN borel_measurable borel ==>
+    !f n. f IN borel_measurable borel /\ (!x. 0 <= f x) /\
+          pos_fn_integral lborel (Normal o f) <> PosInf ==>
          (real_fn_seq lborel f n has_integral real_fn_seq_integral f n) UNIV
 Proof
     cheat
