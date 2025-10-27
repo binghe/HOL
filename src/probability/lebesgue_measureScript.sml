@@ -3568,13 +3568,12 @@ Proof
  >> simp [Abbr ‘nf’, extreal_of_num_def, extreal_pow_def]
 QED
 
-Theorem finite_lmeasure_imp_integral_indicator :
+Theorem finite_lmeasure_imp_integrable_sets :
     !s y. s IN measurable_sets lebesgue /\ lmeasure s = Normal y ==>
           s IN integrable_sets UNIV /\
           integral UNIV (indicator s) = y
 Proof
-    rpt GEN_TAC
- >> simp [lebesgue_def]
+    rpt GEN_TAC >> simp [lebesgue_def, integrable_sets_def]
  >> STRIP_TAC
  >> qabbrev_tac ‘f = \n. indicator (s INTER line n)’
  >> Know ‘!m n x. m <= n ==> f m x <= f n x’
@@ -3584,23 +3583,73 @@ Proof
      MATCH_MP_TAC LINE_MONO >> art [])
  >> DISCH_TAC
  >> ‘!n. f n integrable_on univ(:real)’ by PROVE_TAC [integrable_indicator_UNIV]
- >> MP_TAC (Q.SPECL [‘f’, ‘UNIV’] BEPPO_LEVI_MONOTONE_CONVERGENCE_INCREASING)
- >> simp []
- >> impl_tac
+ >> Know ‘{Normal (integral (line n) (indicator s)) | n | T} =
+          IMAGE Normal {integral (line n) (indicator s) | n | T}’
+ >- (rw [Once EXTENSION] \\
+     EQ_TAC >> rw [] \\ (* 2 subgoals, same tactics *)
+     Q.EXISTS_TAC ‘n’ >> REFL_TAC)
+ >> DISCH_THEN (fs o wrap)
+ >> qabbrev_tac ‘t = {integral (line n) (indicator s) | n | T}’
+ >> Know ‘bounded t’
  >- (rw [bounded_def] \\
-     Q.EXISTS_TAC ‘y’ >> rw [Abbr ‘f’] \\
-     simp [integral_indicator_UNIV] \\
+     Q.EXISTS_TAC ‘y’ >> rw [Abbr ‘t’] \\
      Q.PAT_X_ASSUM ‘sup _ = Normal y’ MP_TAC >> rw [sup_eq'] \\
      Q.PAT_X_ASSUM ‘!z. _ ==> z <= Normal y’
-       (MP_TAC o Q.SPEC ‘Normal (integral (line k) (indicator s))’) \\
-     impl_tac >- (Q.EXISTS_TAC ‘k’ >> REFL_TAC) \\
+       (MP_TAC o Q.SPEC ‘Normal (integral (line n) (indicator s))’) \\
+     impl_tac
+     >- (Q.EXISTS_TAC ‘integral (line n) (indicator s)’ >> simp [] \\
+         Q.EXISTS_TAC ‘n’ >> REFL_TAC) \\
      rw [] \\
      qmatch_abbrev_tac ‘abs x <= y’ \\
      Suff ‘abs x = x’ >- (Rewr' >> art []) \\
      rw [abs_refl, Abbr ‘x’] \\
      MATCH_MP_TAC INTEGRAL_POS >> simp [INDICATOR_POS])
- >> STRIP_TAC (* this asserts ‘g’ and ‘k’ *)
+ >> DISCH_TAC
+ (* applying sup_image_normal *)
+ >> Know ‘sup (IMAGE Normal t) = Normal (sup t)’
+ >- (MATCH_MP_TAC sup_image_normal >> art [] \\
+     rw [Abbr ‘t’, Once EXTENSION])
+ >> DISCH_THEN (fs o wrap)
+ >> MP_TAC (Q.SPECL [‘f’, ‘UNIV’] BEPPO_LEVI_MONOTONE_CONVERGENCE_INCREASING)
+ >> simp []
+ >> impl_tac
+ >- (Q.PAT_X_ASSUM ‘bounded t’ MP_TAC \\
+     rw [Abbr ‘t’, bounded_def] \\
+     Q.EXISTS_TAC ‘a’ \\
+     simp [Abbr ‘f’, integral_indicator_UNIV])
+ >> STRIP_TAC (* this asserts ‘g’, and ‘k’ (negligible) *)
+ >> rename1 ‘negligible N’
+ >> fs [Abbr ‘f’, integral_indicator_UNIV]
  (* applying mono_increasing_converges_to_sup *)
+ >> qabbrev_tac ‘h = \n. integral (line n) (indicator s)’
+ >> qabbrev_tac ‘r = integral univ(:real) g’
+ >> Know ‘r = sup (IMAGE h UNIV)’
+ >- (MATCH_MP_TAC mono_increasing_converges_to_sup \\
+     simp [GSYM LIM_SEQUENTIALLY_SEQ] \\
+     simp [mono_increasing_def, Abbr ‘h’] \\
+     qx_genl_tac [‘i’, ‘j’] >> DISCH_TAC \\
+     MATCH_MP_TAC INTEGRAL_SUBSET_DROP_LE \\
+     simp [LINE_MONO, INDICATOR_POS])
+ >> ‘IMAGE h UNIV = t’ by rw [Abbr ‘t’, Once EXTENSION] >> POP_ORW
+ >> DISCH_TAC
+ (* applying mono_increasing_converges_to_sup again *)
+ >> qabbrev_tac ‘f = \x k. indicator (s INTER line k) x’ >> fs []
+ >> ‘!x. (\k. f x k) = f x’ by rw [FUN_EQ_THM]
+ >> POP_ASSUM (fs o wrap)
+ >> Know ‘!x. x NOTIN N ==> g x = sup (IMAGE (f x) UNIV)’
+ >- (rpt STRIP_TAC \\
+     MATCH_MP_TAC mono_increasing_converges_to_sup \\
+     simp [GSYM LIM_SEQUENTIALLY_SEQ] \\
+     simp [mono_increasing_def])
+ >> DISCH_TAC
+ >> Know ‘!x. sup (IMAGE (f x) univ(:num)) = indicator s x’
+ >- (rw [Abbr ‘f’, GSYM REAL_LE_ANTISYM]
+     >- (MATCH_MP_TAC REAL_IMP_SUP_LE' >> simp [] \\
+         rw [] \\
+         MATCH_MP_TAC INDICATOR_MONO >> SET_TAC []) \\
+     qmatch_abbrev_tac ‘(z :real) <= sup p’ \\
+  (* realTheory.REAL_LE_SUP' *)
+     cheat)
  >> cheat
 QED
 

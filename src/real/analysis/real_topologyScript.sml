@@ -65,13 +65,16 @@ Overload UNCOUNTABLE[inferior] = “uncountable”
 
 (* ------------------------------------------------------------------------- *)
 
-val EXISTS_IN_INSERT = store_thm ("EXISTS_IN_INSERT",
- ``!P a s. (?x. x IN (a INSERT s) /\ P x) <=> P a \/ ?x. x IN s /\ P x``,
-  REWRITE_TAC[IN_INSERT] THEN MESON_TAC[]);
+Theorem EXISTS_IN_INSERT:
+   !P a s. (?x. x IN (a INSERT s) /\ P x) <=> P a \/ ?x. x IN s /\ P x
+Proof
+  REWRITE_TAC[IN_INSERT] THEN MESON_TAC[]
+QED
 
-val DEPENDENT_CHOICE_FIXED = store_thm ("DEPENDENT_CHOICE_FIXED",
- ``!P R a:'a. P 0 a /\ (!n x. P n x ==> ?y. P (SUC n) y /\ R n x y) ==>
-          ?f. (f 0 = a) /\ (!n. P n (f n)) /\ (!n. R n (f n) (f(SUC n)))``,
+Theorem DEPENDENT_CHOICE_FIXED:
+   !P R a:'a. P 0 a /\ (!n x. P n x ==> ?y. P (SUC n) y /\ R n x y) ==>
+          ?f. (f 0 = a) /\ (!n. P n (f n)) /\ (!n. R n (f n) (f(SUC n)))
+Proof
   REPEAT STRIP_TAC THEN KNOW_TAC ``(?f. (f 0 = (a:'a)) /\
     (!n. f(SUC n) = (@y. P (SUC n) y /\ R n (f n) y)))`` THENL
   [RW_TAC std_ss [num_Axiom], ALL_TAC] THEN
@@ -79,18 +82,23 @@ val DEPENDENT_CHOICE_FIXED = store_thm ("DEPENDENT_CHOICE_FIXED",
   ONCE_REWRITE_TAC[METIS [] ``(!n. P n (f n)) = (!n. (\n. P n (f n)) n)``] THEN
   GEN_REWR_TAC LAND_CONV
    [MESON[num_CASES] ``(!n. P n) <=> P 0 /\ !n. P(SUC n)``] THEN
-  ASM_SIMP_TAC std_ss [GSYM FORALL_AND_THM] THEN INDUCT_TAC THEN METIS_TAC[]);
+  ASM_SIMP_TAC std_ss [GSYM FORALL_AND_THM] THEN INDUCT_TAC THEN METIS_TAC[]
+QED
 
-val DEPENDENT_CHOICE = store_thm ("DEPENDENT_CHOICE",
- ``!P R:num->'a->'a->bool. (?a. P 0 a) /\
+Theorem DEPENDENT_CHOICE:
+   !P R:num->'a->'a->bool. (?a. P 0 a) /\
    (!n x. P n x ==> ?y. P (SUC n) y /\ R n x y) ==>
-   ?f. (!n. P n (f n)) /\ (!n. R n (f n) (f(SUC n)))``,
-  MESON_TAC[DEPENDENT_CHOICE_FIXED]);
+   ?f. (!n. P n (f n)) /\ (!n. R n (f n) (f(SUC n)))
+Proof
+  MESON_TAC[DEPENDENT_CHOICE_FIXED]
+QED
 
-val BIGUNION_MONO_IMAGE = store_thm ("BIGUNION_MONO_IMAGE",
- ``(!x. x IN s ==> f x SUBSET g x) ==>
-    BIGUNION(IMAGE f s) SUBSET BIGUNION(IMAGE g s)``,
-  SET_TAC[]);
+Theorem BIGUNION_MONO_IMAGE:
+   (!x. x IN s ==> f x SUBSET g x) ==>
+    BIGUNION(IMAGE f s) SUBSET BIGUNION(IMAGE g s)
+Proof
+  SET_TAC[]
+QED
 (** proof without SET_TAC
     RW_TAC std_ss [SUBSET_DEF, IN_BIGUNION_IMAGE]
  >> rename1 `y IN s`
@@ -99,9 +107,11 @@ val BIGUNION_MONO_IMAGE = store_thm ("BIGUNION_MONO_IMAGE",
  >> ASM_REWRITE_TAC []
  *)
 
-val BIGUNION_MONO = store_thm ("BIGUNION_MONO",
- ``(!x. x IN s ==> ?y. y IN t /\ x SUBSET y) ==> BIGUNION s SUBSET BIGUNION t``,
-  SET_TAC[]);
+Theorem BIGUNION_MONO:
+   (!x. x IN s ==> ?y. y IN t /\ x SUBSET y) ==> BIGUNION s SUBSET BIGUNION t
+Proof
+  SET_TAC[]
+QED
 (** proof without SET_TAC
     rpt STRIP_TAC
  >> RW_TAC std_ss [SUBSET_DEF, IN_BIGUNION]
@@ -118,10 +128,11 @@ val BIGUNION_MONO = store_thm ("BIGUNION_MONO",
 (* Linear functions.                                                         *)
 (* ------------------------------------------------------------------------- *)
 
-val linear = new_definition ("linear",
-  ``linear (f:real->real) <=>
+Definition linear[nocompute]:
+  linear (f:real->real) <=>
         (!x y. f(x + y) = f(x) + f(y)) /\
-        (!c x. f(c * x) = c * f(x))``);
+        (!c x. f(c * x) = c * f(x))
+End
 
 (* Courtesy to Thomas Sewell for providing this proof (first) on Slack
 
@@ -166,45 +177,64 @@ Proof
  >> MATCH_MP_TAC linear_lemma >> art []
 QED
 
-val LINEAR_SCALING = store_thm ("LINEAR_SCALING",
- ``!c. linear(\x:real. c * x)``,
- SIMP_TAC std_ss [linear] THEN REAL_ARITH_TAC);
+Theorem LINEAR_SCALING:
+   !c. linear(\x:real. c * x)
+Proof
+ SIMP_TAC std_ss [linear] THEN REAL_ARITH_TAC
+QED
 
-val LINEAR_COMPOSE_CMUL = store_thm ("LINEAR_COMPOSE_CMUL",
- ``!f c. linear f ==> linear (\x. c * f(x))``,
-  SIMP_TAC std_ss [linear] THEN REPEAT STRIP_TAC THEN REAL_ARITH_TAC);
+Theorem LINEAR_COMPOSE_CMUL:
+   !f c. linear f ==> linear (\x. c * f(x))
+Proof
+  SIMP_TAC std_ss [linear] THEN REPEAT STRIP_TAC THEN REAL_ARITH_TAC
+QED
 
-val LINEAR_COMPOSE_NEG = store_thm ("LINEAR_COMPOSE_NEG",
- ``!f. linear f ==> linear (\x. -(f(x)))``,
-  SIMP_TAC std_ss [linear] THEN REPEAT STRIP_TAC THEN REAL_ARITH_TAC);
+Theorem LINEAR_COMPOSE_NEG:
+   !f. linear f ==> linear (\x. -(f(x)))
+Proof
+  SIMP_TAC std_ss [linear] THEN REPEAT STRIP_TAC THEN REAL_ARITH_TAC
+QED
 
-val LINEAR_COMPOSE_ADD = store_thm ("LINEAR_COMPOSE_ADD",
- ``!f g. linear f /\ linear g ==> linear (\x. f(x) + g(x))``,
-  SIMP_TAC std_ss [linear] THEN REPEAT STRIP_TAC THEN REAL_ARITH_TAC);
+Theorem LINEAR_COMPOSE_ADD:
+   !f g. linear f /\ linear g ==> linear (\x. f(x) + g(x))
+Proof
+  SIMP_TAC std_ss [linear] THEN REPEAT STRIP_TAC THEN REAL_ARITH_TAC
+QED
 
-val LINEAR_COMPOSE_SUB = store_thm ("LINEAR_COMPOSE_SUB",
- ``!f g. linear f /\ linear g ==> linear (\x. f(x) - g(x))``,
-  SIMP_TAC std_ss [linear] THEN REPEAT STRIP_TAC THEN REAL_ARITH_TAC);
+Theorem LINEAR_COMPOSE_SUB:
+   !f g. linear f /\ linear g ==> linear (\x. f(x) - g(x))
+Proof
+  SIMP_TAC std_ss [linear] THEN REPEAT STRIP_TAC THEN REAL_ARITH_TAC
+QED
 
-val LINEAR_COMPOSE = store_thm ("LINEAR_COMPOSE",
- ``!f g. linear f /\ linear g ==> linear (g o f)``,
-  SIMP_TAC std_ss [linear, o_THM]);
+Theorem LINEAR_COMPOSE:
+   !f g. linear f /\ linear g ==> linear (g o f)
+Proof
+  SIMP_TAC std_ss [linear, o_THM]
+QED
 
-val LINEAR_ID = store_thm ("LINEAR_ID",
- ``linear (\x. x)``,
-  SIMP_TAC std_ss [linear]);
+Theorem LINEAR_ID:
+   linear (\x. x)
+Proof
+  SIMP_TAC std_ss [linear]
+QED
 
-val LINEAR_ZERO = store_thm ("LINEAR_ZERO",
- ``linear (\x. 0)``,
-  SIMP_TAC std_ss [linear] THEN CONJ_TAC THEN REAL_ARITH_TAC);
+Theorem LINEAR_ZERO:
+   linear (\x. 0)
+Proof
+  SIMP_TAC std_ss [linear] THEN CONJ_TAC THEN REAL_ARITH_TAC
+QED
 
-val LINEAR_NEGATION = store_thm ("LINEAR_NEGATION",
- ``linear (\x. -x)``,
-  SIMP_TAC std_ss [linear] THEN REAL_ARITH_TAC);
+Theorem LINEAR_NEGATION:
+   linear (\x. -x)
+Proof
+  SIMP_TAC std_ss [linear] THEN REAL_ARITH_TAC
+QED
 
-val LINEAR_COMPOSE_SUM = store_thm ("LINEAR_COMPOSE_SUM",
- ``!f s. FINITE s /\ (!a. a IN s ==> linear(f a))
-         ==> linear(\x. sum s (\a. f a x))``,
+Theorem LINEAR_COMPOSE_SUM:
+   !f s. FINITE s /\ (!a. a IN s ==> linear(f a))
+         ==> linear(\x. sum s (\a. f a x))
+Proof
   GEN_TAC THEN REWRITE_TAC[GSYM AND_IMP_INTRO] THEN GEN_TAC THEN
   KNOW_TAC
     ``((!a. a IN s ==> linear (f a)) ==> linear (\x. sum s (\a. f a x))) =
@@ -215,35 +245,49 @@ val LINEAR_COMPOSE_SUM = store_thm ("LINEAR_COMPOSE_SUM",
   KNOW_TAC ``(linear (\x. f e x + sum s (\a. f a x))) =
               linear (\x. (\x. f e x) x + (\x. sum s (\a. f a x)) x)`` THENL
   [FULL_SIMP_TAC std_ss [], ALL_TAC] THEN DISC_RW_KILL THEN
-  MATCH_MP_TAC LINEAR_COMPOSE_ADD THEN METIS_TAC [IN_INSERT]);
+  MATCH_MP_TAC LINEAR_COMPOSE_ADD THEN METIS_TAC [IN_INSERT]
+QED
 
-val LINEAR_MUL_COMPONENT = store_thm ("LINEAR_MUL_COMPONENT",
- ``!f:real->real v.
-     linear f ==> linear (\x. f(x) * v)``,
-  SIMP_TAC std_ss [linear] THEN REPEAT STRIP_TAC THEN REAL_ARITH_TAC);
+Theorem LINEAR_MUL_COMPONENT:
+   !f:real->real v.
+     linear f ==> linear (\x. f(x) * v)
+Proof
+  SIMP_TAC std_ss [linear] THEN REPEAT STRIP_TAC THEN REAL_ARITH_TAC
+QED
 
-val LINEAR_0 = store_thm ("LINEAR_0",
- ``!f. linear f ==> (f(0) = 0)``,
-  METIS_TAC [REAL_MUL_LZERO, linear]);
+Theorem LINEAR_0:
+   !f. linear f ==> (f(0) = 0)
+Proof
+  METIS_TAC [REAL_MUL_LZERO, linear]
+QED
 
-val LINEAR_CMUL = store_thm ("LINEAR_CMUL",
- ``!f c x. linear f ==> (f(c * x) = c * f(x))``,
-  SIMP_TAC std_ss [linear]);
+Theorem LINEAR_CMUL:
+   !f c x. linear f ==> (f(c * x) = c * f(x))
+Proof
+  SIMP_TAC std_ss [linear]
+QED
 
-val LINEAR_NEG = store_thm ("LINEAR_NEG",
- ``!f x. linear f ==> (f(-x) = -(f x))``,
-  ONCE_REWRITE_TAC[REAL_NEG_MINUS1] THEN SIMP_TAC std_ss [LINEAR_CMUL]);
+Theorem LINEAR_NEG:
+   !f x. linear f ==> (f(-x) = -(f x))
+Proof
+  ONCE_REWRITE_TAC[REAL_NEG_MINUS1] THEN SIMP_TAC std_ss [LINEAR_CMUL]
+QED
 
-val LINEAR_ADD = store_thm ("LINEAR_ADD",
- ``!f x y. linear f ==> (f(x + y) = f(x) + f(y))``,
-  SIMP_TAC std_ss [linear]);
+Theorem LINEAR_ADD:
+   !f x y. linear f ==> (f(x + y) = f(x) + f(y))
+Proof
+  SIMP_TAC std_ss [linear]
+QED
 
-val LINEAR_SUB = store_thm ("LINEAR_SUB",
- ``!f x y. linear f ==> (f(x - y) = f(x) - f(y))``,
-  SIMP_TAC std_ss [real_sub, LINEAR_ADD, LINEAR_NEG]);
+Theorem LINEAR_SUB:
+   !f x y. linear f ==> (f(x - y) = f(x) - f(y))
+Proof
+  SIMP_TAC std_ss [real_sub, LINEAR_ADD, LINEAR_NEG]
+QED
 
-val LINEAR_SUM = store_thm ("LINEAR_SUM",
- ``!f g s. linear f /\ FINITE s ==> (f(sum s g) = sum s (f o g))``,
+Theorem LINEAR_SUM:
+   !f g s. linear f /\ FINITE s ==> (f(sum s g) = sum s (f o g))
+Proof
   GEN_TAC THEN GEN_TAC THEN SIMP_TAC std_ss [GSYM AND_IMP_INTRO, RIGHT_FORALL_IMP_THM] THEN
   DISCH_TAC THEN GEN_TAC THEN
   KNOW_TAC ``(f (sum s g) = sum s (f o g)) =
@@ -251,20 +295,26 @@ val LINEAR_SUM = store_thm ("LINEAR_SUM",
   [FULL_SIMP_TAC std_ss [], ALL_TAC] THEN DISC_RW_KILL THEN
   MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN
   SIMP_TAC std_ss [SUM_CLAUSES] THEN FIRST_ASSUM(fn th =>
-    SIMP_TAC std_ss [MATCH_MP LINEAR_0 th, MATCH_MP LINEAR_ADD th, o_THM]));
+    SIMP_TAC std_ss [MATCH_MP LINEAR_0 th, MATCH_MP LINEAR_ADD th, o_THM])
+QED
 
-val LINEAR_SUM_MUL = store_thm ("LINEAR_SUM_MUL",
- ``!f s c v.
+Theorem LINEAR_SUM_MUL:
+   !f s c v.
         linear f /\ FINITE s
-        ==> (f(sum s (\i. c i * v i)) = sum s (\i. c(i) * f(v i)))``,
-  SIMP_TAC std_ss [LINEAR_SUM, o_DEF, LINEAR_CMUL]);
+        ==> (f(sum s (\i. c i * v i)) = sum s (\i. c(i) * f(v i)))
+Proof
+  SIMP_TAC std_ss [LINEAR_SUM, o_DEF, LINEAR_CMUL]
+QED
 
-val lemma = prove (
- ``x = sum {1..1} (\i. x * &i)``,
-  REWRITE_TAC [SUM_SING_NUMSEG] THEN BETA_TAC THEN REAL_ARITH_TAC);
+Theorem lemma[local]:
+   x = sum {1..1} (\i. x * &i)
+Proof
+  REWRITE_TAC [SUM_SING_NUMSEG] THEN BETA_TAC THEN REAL_ARITH_TAC
+QED
 
-val LINEAR_BOUNDED = store_thm ("LINEAR_BOUNDED",
- ``!f:real->real. linear f ==> ?B. !x. abs(f x) <= B * abs(x)``,
+Theorem LINEAR_BOUNDED:
+   !f:real->real. linear f ==> ?B. !x. abs(f x) <= B * abs(x)
+Proof
   REPEAT STRIP_TAC THEN EXISTS_TAC
    ``sum{1:num..1:num} (\i. abs((f:real->real)(&i)))`` THEN
   GEN_TAC THEN
@@ -274,87 +324,118 @@ val LINEAR_BOUNDED = store_thm ("LINEAR_BOUNDED",
   MATCH_MP_TAC SUM_ABS_LE THEN REWRITE_TAC [FINITE_NUMSEG, IN_NUMSEG] THEN
   BETA_TAC THEN ONCE_REWRITE_TAC [REAL_MUL_COMM] THEN
   ASM_SIMP_TAC std_ss [o_DEF, ABS_MUL, LINEAR_CMUL] THEN
-  METIS_TAC [REAL_LE_RMUL, ABS_POS, REAL_LE_LT, REAL_MUL_COMM]);
+  METIS_TAC [REAL_LE_RMUL, ABS_POS, REAL_LE_LT, REAL_MUL_COMM]
+QED
 
-val LINEAR_BOUNDED_POS = store_thm ("LINEAR_BOUNDED_POS",
- ``!f:real->real. linear f ==> ?B. &0 < B /\ !x. abs(f x) <= B * abs(x)``,
+Theorem LINEAR_BOUNDED_POS:
+   !f:real->real. linear f ==> ?B. &0 < B /\ !x. abs(f x) <= B * abs(x)
+Proof
   REPEAT STRIP_TAC THEN
   FIRST_ASSUM(X_CHOOSE_TAC ``B:real`` o MATCH_MP LINEAR_BOUNDED) THEN
   EXISTS_TAC ``abs(B) + &1:real`` THEN CONJ_TAC THENL [REAL_ARITH_TAC, ALL_TAC] THEN
   GEN_TAC THEN POP_ASSUM (MP_TAC o Q.SPEC `x:real`) THEN
   MATCH_MP_TAC(REAL_ARITH ``a <= b ==> x <= a ==> x <= b:real``) THEN
   MATCH_MP_TAC REAL_LE_RMUL_IMP THEN REWRITE_TAC[ABS_POS] THEN
-  REAL_ARITH_TAC);
+  REAL_ARITH_TAC
+QED
 
-val SYMMETRIC_LINEAR_IMAGE = store_thm ("SYMMETRIC_LINEAR_IMAGE",
- ``!f s. (!x. x IN s ==> -x IN s) /\ linear f
-          ==> !x. x IN (IMAGE f s) ==> -x IN (IMAGE f s)``,
+Theorem SYMMETRIC_LINEAR_IMAGE:
+   !f s. (!x. x IN s ==> -x IN s) /\ linear f
+          ==> !x. x IN (IMAGE f s) ==> -x IN (IMAGE f s)
+Proof
   SIMP_TAC std_ss [FORALL_IN_IMAGE] THEN
-  SIMP_TAC std_ss [GSYM LINEAR_NEG] THEN SET_TAC[]);
+  SIMP_TAC std_ss [GSYM LINEAR_NEG] THEN SET_TAC[]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Bilinear functions.                                                       *)
 (* ------------------------------------------------------------------------- *)
 
-val bilinear = new_definition ("bilinear",
-  ``bilinear f <=> (!x. linear(\y. f x y)) /\ (!y. linear(\x. f x y))``);
+Definition bilinear[nocompute]:
+  bilinear f <=> (!x. linear(\y. f x y)) /\ (!y. linear(\x. f x y))
+End
 
-val BILINEAR_SWAP = store_thm ("BILINEAR_SWAP",
- ``!op:real->real->real.
-        bilinear(\x y. op y x) <=> bilinear op``,
-  SIMP_TAC std_ss [bilinear, ETA_AX] THEN METIS_TAC[]);
+Theorem BILINEAR_SWAP:
+   !op:real->real->real.
+        bilinear(\x y. op y x) <=> bilinear op
+Proof
+  SIMP_TAC std_ss [bilinear, ETA_AX] THEN METIS_TAC[]
+QED
 
-val BILINEAR_LADD = store_thm ("BILINEAR_LADD",
- ``!h x y z. bilinear h ==> (h (x + y) z = (h x z) + (h y z))``,
-  SIMP_TAC std_ss [bilinear, linear]);
+Theorem BILINEAR_LADD:
+   !h x y z. bilinear h ==> (h (x + y) z = (h x z) + (h y z))
+Proof
+  SIMP_TAC std_ss [bilinear, linear]
+QED
 
-val BILINEAR_RADD = store_thm ("BILINEAR_RADD",
- ``!h x y z. bilinear h ==> (h x (y + z) = (h x y) + (h x z))``,
-  SIMP_TAC std_ss [bilinear, linear]);
+Theorem BILINEAR_RADD:
+   !h x y z. bilinear h ==> (h x (y + z) = (h x y) + (h x z))
+Proof
+  SIMP_TAC std_ss [bilinear, linear]
+QED
 
-val BILINEAR_LMUL = store_thm ("BILINEAR_LMUL",
- ``!h c x y. bilinear h ==> (h (c * x) y = c * (h x y))``,
-  SIMP_TAC std_ss [bilinear, linear]);
+Theorem BILINEAR_LMUL:
+   !h c x y. bilinear h ==> (h (c * x) y = c * (h x y))
+Proof
+  SIMP_TAC std_ss [bilinear, linear]
+QED
 
-val BILINEAR_RMUL = store_thm ("BILINEAR_RMUL",
- ``!h c x y. bilinear h ==> (h x (c * y) = c * (h x y))``,
-  SIMP_TAC std_ss [bilinear, linear]);
+Theorem BILINEAR_RMUL:
+   !h c x y. bilinear h ==> (h x (c * y) = c * (h x y))
+Proof
+  SIMP_TAC std_ss [bilinear, linear]
+QED
 
-val BILINEAR_LNEG = store_thm ("BILINEAR_LNEG",
- ``!h x y. bilinear h ==> (h (-x) y = -(h x y))``,
-  ONCE_REWRITE_TAC[REAL_NEG_MINUS1] THEN SIMP_TAC std_ss [BILINEAR_LMUL]);
+Theorem BILINEAR_LNEG:
+   !h x y. bilinear h ==> (h (-x) y = -(h x y))
+Proof
+  ONCE_REWRITE_TAC[REAL_NEG_MINUS1] THEN SIMP_TAC std_ss [BILINEAR_LMUL]
+QED
 
-val BILINEAR_RNEG = store_thm ("BILINEAR_RNEG",
- ``!h x y. bilinear h ==> (h x (-y) = -(h x y))``,
-  ONCE_REWRITE_TAC[REAL_NEG_MINUS1] THEN SIMP_TAC std_ss [BILINEAR_RMUL]);
+Theorem BILINEAR_RNEG:
+   !h x y. bilinear h ==> (h x (-y) = -(h x y))
+Proof
+  ONCE_REWRITE_TAC[REAL_NEG_MINUS1] THEN SIMP_TAC std_ss [BILINEAR_RMUL]
+QED
 
-val BILINEAR_LZERO = store_thm ("BILINEAR_LZERO",
- ``!h x. bilinear h ==> (h (0) x = 0)``,
+Theorem BILINEAR_LZERO:
+   !h x. bilinear h ==> (h (0) x = 0)
+Proof
   ONCE_REWRITE_TAC[REAL_ARITH ``(x = 0:real) <=> (x + x = x)``] THEN
-  SIMP_TAC std_ss [GSYM BILINEAR_LADD, REAL_ADD_LID]);
+  SIMP_TAC std_ss [GSYM BILINEAR_LADD, REAL_ADD_LID]
+QED
 
-val BILINEAR_RZERO = store_thm ("BILINEAR_RZERO",
- ``!h x. bilinear h ==> (h x (0) = 0)``,
+Theorem BILINEAR_RZERO:
+   !h x. bilinear h ==> (h x (0) = 0)
+Proof
   ONCE_REWRITE_TAC[REAL_ARITH ``(x = 0:real) <=> (x + x = x)``] THEN
-  SIMP_TAC std_ss [GSYM BILINEAR_RADD, REAL_ADD_LID]);
+  SIMP_TAC std_ss [GSYM BILINEAR_RADD, REAL_ADD_LID]
+QED
 
-val BILINEAR_LSUB = store_thm ("BILINEAR_LSUB",
- ``!h x y z. bilinear h ==> (h (x - y) z = (h x z) - (h y z))``,
-  SIMP_TAC std_ss [real_sub, BILINEAR_LNEG, BILINEAR_LADD]);
+Theorem BILINEAR_LSUB:
+   !h x y z. bilinear h ==> (h (x - y) z = (h x z) - (h y z))
+Proof
+  SIMP_TAC std_ss [real_sub, BILINEAR_LNEG, BILINEAR_LADD]
+QED
 
-val BILINEAR_RSUB = store_thm ("BILINEAR_RSUB",
- ``!h x y z. bilinear h ==> (h x (y - z) = (h x y) - (h x z))``,
-  SIMP_TAC std_ss [real_sub, BILINEAR_RNEG, BILINEAR_RADD]);
+Theorem BILINEAR_RSUB:
+   !h x y z. bilinear h ==> (h x (y - z) = (h x y) - (h x z))
+Proof
+  SIMP_TAC std_ss [real_sub, BILINEAR_RNEG, BILINEAR_RADD]
+QED
 
-val lemma = prove (
- ``!s t. s CROSS t = {(x,y) | x IN s /\ y IN t}``,
+Theorem lemma[local]:
+   !s t. s CROSS t = {(x,y) | x IN s /\ y IN t}
+Proof
   REWRITE_TAC [CROSS_DEF] THEN
-  SIMP_TAC std_ss [EXTENSION, GSPECIFICATION, EXISTS_PROD]);
+  SIMP_TAC std_ss [EXTENSION, GSPECIFICATION, EXISTS_PROD]
+QED
 
-val BILINEAR_SUM = store_thm ("BILINEAR_SUM",
- ``!h:real->real->real.
+Theorem BILINEAR_SUM:
+   !h:real->real->real.
        bilinear h /\ FINITE s /\ FINITE t
-       ==> (h (sum s f) (sum t g) = sum (s CROSS t) (\(i,j). h (f i) (g j)))``,
+       ==> (h (sum s f) (sum t g) = sum (s CROSS t) (\(i,j). h (f i) (g j)))
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC [bilinear] THEN
   KNOW_TAC ``(!x. linear (\y. h:real->real->real x y)) = (!x. linear (h x))`` THENL
   [METIS_TAC [ETA_AX], ALL_TAC] THEN DISC_RW_KILL THEN
@@ -367,15 +448,19 @@ val BILINEAR_SUM = store_thm ("BILINEAR_SUM",
   FIRST_ASSUM(MP_TAC o GEN_ALL o MATCH_MP LINEAR_SUM o SPEC_ALL) THEN
   SIMP_TAC std_ss [] THEN
   ASM_SIMP_TAC std_ss [LINEAR_SUM, o_DEF, SUM_SUM_PRODUCT] THEN
-  SIMP_TAC std_ss [lemma]);
+  SIMP_TAC std_ss [lemma]
+QED
 
-val lemma = prove (
- ``!x. x = sum {1:num..1:num} (\i. x * &i)``,
-  REWRITE_TAC [SUM_SING_NUMSEG] THEN BETA_TAC THEN REAL_ARITH_TAC);
+Theorem lemma[local]:
+   !x. x = sum {1:num..1:num} (\i. x * &i)
+Proof
+  REWRITE_TAC [SUM_SING_NUMSEG] THEN BETA_TAC THEN REAL_ARITH_TAC
+QED
 
-val BILINEAR_BOUNDED = store_thm ("BILINEAR_BOUNDED",
- ``!h:real->real->real.
-        bilinear h ==> ?B. !x y. abs(h x y) <= B * abs(x) * abs(y)``,
+Theorem BILINEAR_BOUNDED:
+   !h:real->real->real.
+        bilinear h ==> ?B. !x y. abs(h x y) <= B * abs(x) * abs(y)
+Proof
   REPEAT STRIP_TAC THEN
   EXISTS_TAC ``sum ({1:num..1:num} CROSS {1:num..1:num})
                   (\ (i,j). abs((h:real->real->real)
@@ -389,11 +474,13 @@ val BILINEAR_BOUNDED = store_thm ("BILINEAR_BOUNDED",
   REWRITE_TAC[IN_NUMSEG] THEN REPEAT STRIP_TAC THEN
   ASM_SIMP_TAC std_ss [BILINEAR_LMUL, ABS_MUL] THEN
   ASM_SIMP_TAC std_ss [BILINEAR_RMUL, ABS_MUL, REAL_MUL_ASSOC] THEN
-  METIS_TAC [REAL_LE_LT]);
+  METIS_TAC [REAL_LE_LT]
+QED
 
-val BILINEAR_BOUNDED_POS = store_thm ("BILINEAR_BOUNDED_POS",
- ``!h. bilinear h
-       ==> ?B. &0 < B /\ !x y. abs(h x y) <= B * abs(x) * abs(y)``,
+Theorem BILINEAR_BOUNDED_POS:
+   !h. bilinear h
+       ==> ?B. &0 < B /\ !x y. abs(h x y) <= B * abs(x) * abs(y)
+Proof
   REPEAT STRIP_TAC THEN
   FIRST_ASSUM(X_CHOOSE_TAC ``B:real`` o MATCH_MP BILINEAR_BOUNDED) THEN
   EXISTS_TAC ``abs(B) + &1:real`` THEN CONJ_TAC THENL [REAL_ARITH_TAC, ALL_TAC] THEN
@@ -401,15 +488,17 @@ val BILINEAR_BOUNDED_POS = store_thm ("BILINEAR_BOUNDED_POS",
   MATCH_MP_TAC(REAL_ARITH ``a <= b ==> x <= a ==> x <= b:real``) THEN
   REPEAT(MATCH_MP_TAC REAL_LE_RMUL_IMP THEN
          SIMP_TAC std_ss [ABS_POS, REAL_LE_MUL]) THEN
-  REAL_ARITH_TAC);
+  REAL_ARITH_TAC
+QED
 
-val BILINEAR_SUM_PARTIAL_SUC = store_thm ("BILINEAR_SUM_PARTIAL_SUC",
- ``!f g h:real->real->real m n.
+Theorem BILINEAR_SUM_PARTIAL_SUC:
+   !f g h:real->real->real m n.
         bilinear h
         ==> (sum {m..n} (\k. h (f k) (g(k + 1) - g(k))) =
                 if m <= n then h (f(n + 1)) (g(n + 1)) - h (f m) (g m) -
                                sum {m..n} (\k. h (f(k + 1) - f(k)) (g(k + 1)))
-                else 0)``,
+                else 0)
+Proof
   SIMP_TAC std_ss [RIGHT_FORALL_IMP_THM] THEN REPEAT GEN_TAC THEN DISCH_TAC THEN
   GEN_TAC THEN INDUCT_TAC THEN
   COND_CASES_TAC THEN ASM_SIMP_TAC std_ss [SUM_TRIV_NUMSEG, NOT_LESS_EQ] THEN
@@ -426,119 +515,155 @@ val BILINEAR_SUM_PARTIAL_SUC = store_thm ("BILINEAR_SUM_PARTIAL_SUC",
   REWRITE_TAC [DE_MORGAN_THM] THEN
   ASM_SIMP_TAC std_ss [GSYM NOT_LESS, SUM_TRIV_NUMSEG, ARITH_PROVE ``n < SUC n``] THEN
   ASM_SIMP_TAC std_ss [GSYM ADD1, ADD_CLAUSES] THEN
-  ASM_SIMP_TAC std_ss [BILINEAR_RSUB, BILINEAR_LSUB] THEN REAL_ARITH_TAC);
+  ASM_SIMP_TAC std_ss [BILINEAR_RSUB, BILINEAR_LSUB] THEN REAL_ARITH_TAC
+QED
 
-val BILINEAR_SUM_PARTIAL_PRE = store_thm ("BILINEAR_SUM_PARTIAL_PRE",
- ``!f g h:real->real->real m n.
+Theorem BILINEAR_SUM_PARTIAL_PRE:
+   !f g h:real->real->real m n.
         bilinear h
         ==> (sum {m..n} (\k. h (f k) (g(k) - g(k - 1))) =
                 if m <= n then h (f(n + 1)) (g(n)) - h (f m) (g(m - 1)) -
                                sum {m..n} (\k. h (f(k + 1) - f(k)) (g(k)))
-                else 0)``,
+                else 0)
+Proof
   REPEAT STRIP_TAC THEN
   FIRST_ASSUM(MP_TAC o ISPECL [``f:num->real``, ``\k. (g:num->real)(k - 1)``,
                  ``m:num``, ``n:num``] o MATCH_MP BILINEAR_SUM_PARTIAL_SUC) THEN
   BETA_TAC THEN REWRITE_TAC[ADD_SUB] THEN DISCH_THEN SUBST1_TAC THEN
-  COND_CASES_TAC THEN REWRITE_TAC[]);
+  COND_CASES_TAC THEN REWRITE_TAC[]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* A bit of linear algebra.                                                  *)
 (* ------------------------------------------------------------------------- *)
 
-val subspace = new_definition ("subspace",
- ``subspace s <=>
+Definition subspace[nocompute]:
+ subspace s <=>
         (0:real) IN s /\
         (!x y. x IN s /\ y IN s ==> (x + y) IN s) /\
-        (!c x. x IN s ==> (c * x) IN s)``);
+        (!c x. x IN s ==> (c * x) IN s)
+End
 
-val span = new_definition ("span",
-  ``span s = subspace hull s``);
+Definition span[nocompute]:
+  span s = subspace hull s
+End
 
-val dependent = new_definition ("dependent",
- ``dependent s <=> ?a. a IN s /\ a IN span(s DELETE a)``);
+Definition dependent[nocompute]:
+ dependent s <=> ?a. a IN s /\ a IN span(s DELETE a)
+End
 
-val independent = new_definition ("independent",
- ``independent s <=> ~(dependent s)``);
+Definition independent[nocompute]:
+ independent s <=> ~(dependent s)
+End
 
 (* ------------------------------------------------------------------------- *)
 (* Closure properties of subspaces.                                          *)
 (* ------------------------------------------------------------------------- *)
 
-val SUBSPACE_UNIV = store_thm ("SUBSPACE_UNIV",
- ``subspace(UNIV:real->bool)``,
-  REWRITE_TAC[subspace, IN_UNIV]);
+Theorem SUBSPACE_UNIV:
+   subspace(UNIV:real->bool)
+Proof
+  REWRITE_TAC[subspace, IN_UNIV]
+QED
 
-val SUBSPACE_IMP_NONEMPTY = store_thm ("SUBSPACE_IMP_NONEMPTY",
- ``!s. subspace s ==> ~(s = {})``,
-  REWRITE_TAC[subspace] THEN SET_TAC[]);
+Theorem SUBSPACE_IMP_NONEMPTY:
+   !s. subspace s ==> ~(s = {})
+Proof
+  REWRITE_TAC[subspace] THEN SET_TAC[]
+QED
 
-val SUBSPACE_0 = store_thm ("SUBSPACE_0",
- ``subspace s ==> (0:real) IN s``,
-  SIMP_TAC std_ss [subspace]);
+Theorem SUBSPACE_0:
+   subspace s ==> (0:real) IN s
+Proof
+  SIMP_TAC std_ss [subspace]
+QED
 
-val SUBSPACE_ADD = store_thm ("SUBSPACE_ADD",
- ``!x y s. subspace s /\ x IN s /\ y IN s ==> (x + y) IN s``,
-  SIMP_TAC std_ss [subspace]);
+Theorem SUBSPACE_ADD:
+   !x y s. subspace s /\ x IN s /\ y IN s ==> (x + y) IN s
+Proof
+  SIMP_TAC std_ss [subspace]
+QED
 
-val SUBSPACE_MUL = store_thm ("SUBSPACE_MUL",
- ``!x c s. subspace s /\ x IN s ==> (c * x) IN s``,
-  SIMP_TAC std_ss [subspace]);
+Theorem SUBSPACE_MUL:
+   !x c s. subspace s /\ x IN s ==> (c * x) IN s
+Proof
+  SIMP_TAC std_ss [subspace]
+QED
 
-val SUBSPACE_NEG = store_thm ("SUBSPACE_NEG",
- ``!x s. subspace s /\ x IN s ==> (-x) IN s``,
-  METIS_TAC [REAL_ARITH ``-x = -(&1) * x:real``, SUBSPACE_MUL]);
+Theorem SUBSPACE_NEG:
+   !x s. subspace s /\ x IN s ==> (-x) IN s
+Proof
+  METIS_TAC [REAL_ARITH ``-x = -(&1) * x:real``, SUBSPACE_MUL]
+QED
 
-val SUBSPACE_SUB = store_thm ("SUBSPACE_SUB",
- ``!x y s. subspace s /\ x IN s /\ y IN s ==> (x - y) IN s``,
-  SIMP_TAC std_ss [real_sub, SUBSPACE_ADD, SUBSPACE_NEG]);
+Theorem SUBSPACE_SUB:
+   !x y s. subspace s /\ x IN s /\ y IN s ==> (x - y) IN s
+Proof
+  SIMP_TAC std_ss [real_sub, SUBSPACE_ADD, SUBSPACE_NEG]
+QED
 
-val SUBSPACE_SUM = store_thm ("SUBSPACE_SUM",
- ``!s f t. subspace s /\ FINITE t /\ (!x. x IN t ==> f(x) IN s)
-           ==> (sum t f) IN s``,
+Theorem SUBSPACE_SUM:
+   !s f t. subspace s /\ FINITE t /\ (!x. x IN t ==> f(x) IN s)
+           ==> (sum t f) IN s
+Proof
   SIMP_TAC std_ss [CONJ_EQ_IMP, RIGHT_FORALL_IMP_THM] THEN
   GEN_TAC THEN DISCH_TAC THEN GEN_TAC THEN
   ONCE_REWRITE_TAC [METIS [] ``!t. ((!x. x IN t ==> f x IN s) ==> sum t f IN s) =
                                (\t. (!x. x IN t ==> f x IN s) ==> sum t f IN s) t``] THEN
   MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN
-  ASM_SIMP_TAC std_ss [SUM_CLAUSES, SUBSPACE_0, IN_INSERT, SUBSPACE_ADD]);
+  ASM_SIMP_TAC std_ss [SUM_CLAUSES, SUBSPACE_0, IN_INSERT, SUBSPACE_ADD]
+QED
 
-val SUBSPACE_LINEAR_IMAGE = store_thm ("SUBSPACE_LINEAR_IMAGE",
- ``!f s. linear f /\ subspace s ==> subspace(IMAGE f s)``,
+Theorem SUBSPACE_LINEAR_IMAGE:
+   !f s. linear f /\ subspace s ==> subspace(IMAGE f s)
+Proof
   SIMP_TAC std_ss [subspace, CONJ_EQ_IMP, RIGHT_FORALL_IMP_THM] THEN
   SIMP_TAC std_ss [FORALL_IN_IMAGE] THEN REWRITE_TAC[IN_IMAGE] THEN
-  METIS_TAC [linear, LINEAR_0]);
+  METIS_TAC [linear, LINEAR_0]
+QED
 
-val SUBSPACE_LINEAR_PREIMAGE = store_thm ("SUBSPACE_LINEAR_PREIMAGE",
- ``!f s. linear f /\ subspace s ==> subspace {x | f(x) IN s}``,
+Theorem SUBSPACE_LINEAR_PREIMAGE:
+   !f s. linear f /\ subspace s ==> subspace {x | f(x) IN s}
+Proof
   SIMP_TAC std_ss [subspace, GSPECIFICATION] THEN
-  METIS_TAC [linear, LINEAR_0]);
+  METIS_TAC [linear, LINEAR_0]
+QED
 
-val SUBSPACE_TRIVIAL = store_thm ("SUBSPACE_TRIVIAL",
- ``subspace {0}``,
-  SIMP_TAC std_ss [subspace, IN_SING] THEN CONJ_TAC THEN REAL_ARITH_TAC);
+Theorem SUBSPACE_TRIVIAL:
+   subspace {0}
+Proof
+  SIMP_TAC std_ss [subspace, IN_SING] THEN CONJ_TAC THEN REAL_ARITH_TAC
+QED
 
-val SUBSPACE_INTER = store_thm ("SUBSPACE_INTER",
- ``!s t. subspace s /\ subspace t ==> subspace (s INTER t)``,
-  REWRITE_TAC[subspace, IN_INTER] THEN METIS_TAC []);
+Theorem SUBSPACE_INTER:
+   !s t. subspace s /\ subspace t ==> subspace (s INTER t)
+Proof
+  REWRITE_TAC[subspace, IN_INTER] THEN METIS_TAC []
+QED
 
-val SUBSPACE_BIGINTER = store_thm ("SUBSPACE_BIGINTER",
- ``!f. (!s. s IN f ==> subspace s) ==> subspace(BIGINTER f)``,
-  SIMP_TAC std_ss [subspace, CONJ_EQ_IMP, RIGHT_FORALL_IMP_THM, IN_BIGINTER]);
+Theorem SUBSPACE_BIGINTER:
+   !f. (!s. s IN f ==> subspace s) ==> subspace(BIGINTER f)
+Proof
+  SIMP_TAC std_ss [subspace, CONJ_EQ_IMP, RIGHT_FORALL_IMP_THM, IN_BIGINTER]
+QED
 
-val LINEAR_INJECTIVE_0_SUBSPACE = store_thm ("LINEAR_INJECTIVE_0_SUBSPACE",
- ``!f:real->real s.
+Theorem LINEAR_INJECTIVE_0_SUBSPACE:
+   !f:real->real s.
         linear f /\ subspace s
          ==> ((!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y)) <=>
-              (!x. x IN s /\ (f x = 0) ==> (x = 0)))``,
+              (!x. x IN s /\ (f x = 0) ==> (x = 0)))
+Proof
   REPEAT STRIP_TAC THEN
   GEN_REWR_TAC (LAND_CONV o ONCE_DEPTH_CONV) [GSYM REAL_SUB_0] THEN
   ASM_SIMP_TAC std_ss [GSYM LINEAR_SUB] THEN
-  METIS_TAC [REAL_SUB_RZERO, SUBSPACE_SUB, SUBSPACE_0]);
+  METIS_TAC [REAL_SUB_RZERO, SUBSPACE_SUB, SUBSPACE_0]
+QED
 
-val SUBSPACE_UNION_CHAIN = store_thm ("SUBSPACE_UNION_CHAIN",
- ``!s t:real->bool.
+Theorem SUBSPACE_UNION_CHAIN:
+   !s t:real->bool.
         subspace s /\ subspace t /\ subspace(s UNION t)
-         ==> s SUBSET t \/ t SUBSET s``,
+         ==> s SUBSET t \/ t SUBSET s
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC [SET_RULE
    ``s SUBSET t \/ t SUBSET s <=>
     ~(?x y. x IN s /\ ~(x IN t) /\ y IN t /\ ~(y IN s))``] THEN
@@ -546,68 +671,92 @@ val SUBSPACE_UNION_CHAIN = store_thm ("SUBSPACE_UNION_CHAIN",
    [MATCH_MP_TAC SUBSPACE_ADD THEN ASM_REWRITE_TAC[] THEN ASM_SET_TAC[],
     REWRITE_TAC[IN_UNION, DE_MORGAN_THM] THEN
     METIS_TAC [SUBSPACE_SUB, REAL_ARITH
-     ``((x + y) - x:real = y) /\ ((x + y) - y:real = x)``]]);
+     ``((x + y) - x:real = y) /\ ((x + y) - y:real = x)``]]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Lemmas.                                                                   *)
 (* ------------------------------------------------------------------------- *)
 
-val SPAN_SPAN = store_thm ("SPAN_SPAN",
- ``!s. span(span s) = span s``,
-  REWRITE_TAC[span, HULL_HULL]);
+Theorem SPAN_SPAN:
+   !s. span(span s) = span s
+Proof
+  REWRITE_TAC[span, HULL_HULL]
+QED
 
-val SPAN_MONO = store_thm ("SPAN_MONO",
- ``!s t. s SUBSET t ==> span s SUBSET span t``,
-  REWRITE_TAC[span, HULL_MONO]);
+Theorem SPAN_MONO:
+   !s t. s SUBSET t ==> span s SUBSET span t
+Proof
+  REWRITE_TAC[span, HULL_MONO]
+QED
 
-val SUBSPACE_SPAN = store_thm ("SUBSPACE_SPAN",
- ``!s. subspace(span s)``,
+Theorem SUBSPACE_SPAN:
+   !s. subspace(span s)
+Proof
   GEN_TAC THEN REWRITE_TAC[span] THEN MATCH_MP_TAC P_HULL THEN
-  SIMP_TAC std_ss [subspace, IN_BIGINTER]);
+  SIMP_TAC std_ss [subspace, IN_BIGINTER]
+QED
 
-val SPAN_CLAUSES = store_thm ("SPAN_CLAUSES",
- ``(!a s. a IN s ==> a IN span s) /\
+Theorem SPAN_CLAUSES:
+   (!a s. a IN s ==> a IN span s) /\
    ((0) IN span s) /\
    (!x y s. x IN span s /\ y IN span s ==> (x + y) IN span s) /\
-   (!x c s. x IN span s ==> (c * x) IN span s)``,
-  MESON_TAC[span, HULL_SUBSET, SUBSET_DEF, SUBSPACE_SPAN, subspace]);
+   (!x c s. x IN span s ==> (c * x) IN span s)
+Proof
+  MESON_TAC[span, HULL_SUBSET, SUBSET_DEF, SUBSPACE_SPAN, subspace]
+QED
 
-val SPAN_INDUCT = store_thm ("SPAN_INDUCT",
- ``!s h. (!x. x IN s ==> x IN h) /\ subspace h ==> !x. x IN span(s) ==> h(x)``,
-  REWRITE_TAC[span] THEN MESON_TAC[SUBSET_DEF, HULL_MINIMAL, IN_DEF]);
+Theorem SPAN_INDUCT:
+   !s h. (!x. x IN s ==> x IN h) /\ subspace h ==> !x. x IN span(s) ==> h(x)
+Proof
+  REWRITE_TAC[span] THEN MESON_TAC[SUBSET_DEF, HULL_MINIMAL, IN_DEF]
+QED
 
-val SPAN_EMPTY = store_thm ("SPAN_EMPTY",
- ``span {} = {0}``,
+Theorem SPAN_EMPTY:
+   span {} = {0}
+Proof
   REWRITE_TAC[span] THEN MATCH_MP_TAC HULL_UNIQUE THEN
   SIMP_TAC std_ss [subspace, SUBSET_DEF, IN_SING, NOT_IN_EMPTY] THEN
-  REPEAT STRIP_TAC THEN REAL_ARITH_TAC);
+  REPEAT STRIP_TAC THEN REAL_ARITH_TAC
+QED
 
-val INDEPENDENT_EMPTY = store_thm ("INDEPENDENT_EMPTY",
- ``independent {}``,
-  REWRITE_TAC[independent, dependent, NOT_IN_EMPTY]);
+Theorem INDEPENDENT_EMPTY:
+   independent {}
+Proof
+  REWRITE_TAC[independent, dependent, NOT_IN_EMPTY]
+QED
 
-val INDEPENDENT_NONZERO = store_thm ("INDEPENDENT_NONZERO",
- ``!s. independent s ==> ~(0 IN s)``,
-  REWRITE_TAC[independent, dependent] THEN MESON_TAC[SPAN_CLAUSES]);
+Theorem INDEPENDENT_NONZERO:
+   !s. independent s ==> ~(0 IN s)
+Proof
+  REWRITE_TAC[independent, dependent] THEN MESON_TAC[SPAN_CLAUSES]
+QED
 
-val INDEPENDENT_MONO = store_thm ("INDEPENDENT_MONO",
- ``!s t. independent t /\ s SUBSET t ==> independent s``,
+Theorem INDEPENDENT_MONO:
+   !s t. independent t /\ s SUBSET t ==> independent s
+Proof
   REWRITE_TAC[independent, dependent] THEN
-  ASM_MESON_TAC[SPAN_MONO, SUBSET_DEF, IN_DELETE]);
+  ASM_MESON_TAC[SPAN_MONO, SUBSET_DEF, IN_DELETE]
+QED
 
-val DEPENDENT_MONO = store_thm ("DEPENDENT_MONO",
- ``!s t:real->bool. dependent s /\ s SUBSET t ==> dependent t``,
+Theorem DEPENDENT_MONO:
+   !s t:real->bool. dependent s /\ s SUBSET t ==> dependent t
+Proof
   ONCE_REWRITE_TAC[TAUT `p /\ q ==> r <=> ~r /\ q ==> ~p`] THEN
-  REWRITE_TAC[GSYM independent, INDEPENDENT_MONO]);
+  REWRITE_TAC[GSYM independent, INDEPENDENT_MONO]
+QED
 
-val SPAN_SUBSPACE = store_thm ("SPAN_SUBSPACE",
- ``!b s. b SUBSET s /\ s SUBSET (span b) /\ subspace s ==> (span b = s)``,
-  MESON_TAC[SUBSET_ANTISYM, span, HULL_MINIMAL]);
+Theorem SPAN_SUBSPACE:
+   !b s. b SUBSET s /\ s SUBSET (span b) /\ subspace s ==> (span b = s)
+Proof
+  MESON_TAC[SUBSET_ANTISYM, span, HULL_MINIMAL]
+QED
 
-val SPAN_INDUCT_ALT = store_thm ("SPAN_INDUCT_ALT",
- ``!s h. h(0) /\
+Theorem SPAN_INDUCT_ALT:
+   !s h. h(0) /\
          (!c x y. x IN s /\ h(y) ==> h(c * x + y))
-          ==> !x:real. x IN span(s) ==> h(x)``,
+          ==> !x:real. x IN span(s) ==> h(x)
+Proof
   REPEAT GEN_TAC THEN DISCH_TAC THEN
   FIRST_ASSUM(MP_TAC o prove_nonschematic_inductive_relations_exist bool_monoset o concl) THEN
   DISCH_THEN(X_CHOOSE_THEN ``g:real->bool`` STRIP_ASSUME_TAC) THEN
@@ -633,112 +782,152 @@ val SPAN_INDUCT_ALT = store_thm ("SPAN_INDUCT_ALT",
    FIRST_X_ASSUM MATCH_MP_TAC THEN
    SIMP_TAC std_ss [REAL_ADD_LDISTRIB, REAL_MUL_ASSOC] THEN
    ASM_MESON_TAC [IN_DEF, REAL_ADD_LID, REAL_ADD_ASSOC, REAL_ADD_SYM,
-                REAL_MUL_LID, REAL_MUL_RZERO]]);
+                  REAL_MUL_LID, REAL_MUL_RZERO]]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Individual closure properties.                                            *)
 (* ------------------------------------------------------------------------- *)
 
-val SPAN_SUPERSET = store_thm ("SPAN_SUPERSET",
- ``!x. x IN s ==> x IN span s``,
-  MESON_TAC[SPAN_CLAUSES]);
+Theorem SPAN_SUPERSET:
+   !x. x IN s ==> x IN span s
+Proof
+  MESON_TAC[SPAN_CLAUSES]
+QED
 
-val SPAN_INC = store_thm ("SPAN_INC",
- ``!s. s SUBSET span s``,
-  REWRITE_TAC[SUBSET_DEF, SPAN_SUPERSET]);
+Theorem SPAN_INC:
+   !s. s SUBSET span s
+Proof
+  REWRITE_TAC[SUBSET_DEF, SPAN_SUPERSET]
+QED
 
-val SPAN_UNION_SUBSET = store_thm ("SPAN_UNION_SUBSET",
- ``!s t. span s UNION span t SUBSET span(s UNION t)``,
-  REWRITE_TAC[span, HULL_UNION_SUBSET]);
+Theorem SPAN_UNION_SUBSET:
+   !s t. span s UNION span t SUBSET span(s UNION t)
+Proof
+  REWRITE_TAC[span, HULL_UNION_SUBSET]
+QED
 
-val SPAN_UNIV = store_thm ("SPAN_UNIV",
- ``span univ(:real) = univ(:real)``,
-  SIMP_TAC std_ss [SPAN_INC, SET_RULE ``UNIV SUBSET s ==> (s = UNIV)``]);
+Theorem SPAN_UNIV:
+   span univ(:real) = univ(:real)
+Proof
+  SIMP_TAC std_ss [SPAN_INC, SET_RULE ``UNIV SUBSET s ==> (s = UNIV)``]
+QED
 
-val SPAN_0 = store_thm ("SPAN_0",
- ``(0) IN span s``,
-  MESON_TAC[SUBSPACE_SPAN, SUBSPACE_0]);
+Theorem SPAN_0:
+   (0) IN span s
+Proof
+  MESON_TAC[SUBSPACE_SPAN, SUBSPACE_0]
+QED
 
-val SPAN_ADD = store_thm ("SPAN_ADD",
- ``!x y s. x IN span s /\ y IN span s ==> (x + y) IN span s``,
-  MESON_TAC[SUBSPACE_SPAN, SUBSPACE_ADD]);
+Theorem SPAN_ADD:
+   !x y s. x IN span s /\ y IN span s ==> (x + y) IN span s
+Proof
+  MESON_TAC[SUBSPACE_SPAN, SUBSPACE_ADD]
+QED
 
-val SPAN_MUL = store_thm ("SPAN_MUL",
- ``!x c s. x IN span s ==> (c * x) IN span s``,
-  MESON_TAC[SUBSPACE_SPAN, SUBSPACE_MUL]);
+Theorem SPAN_MUL:
+   !x c s. x IN span s ==> (c * x) IN span s
+Proof
+  MESON_TAC[SUBSPACE_SPAN, SUBSPACE_MUL]
+QED
 
-val SPAN_MUL_EQ = store_thm ("SPAN_MUL_EQ",
- ``!x:real c s. ~(c = &0) ==> ((c * x) IN span s <=> x IN span s)``,
+Theorem SPAN_MUL_EQ:
+   !x:real c s. ~(c = &0) ==> ((c * x) IN span s <=> x IN span s)
+Proof
   REPEAT(STRIP_TAC ORELSE EQ_TAC) THEN ASM_SIMP_TAC std_ss [SPAN_MUL] THEN
   SUBGOAL_THEN ``(inv(c) * c * x:real) IN span s`` MP_TAC THENL
    [REWRITE_TAC [GSYM REAL_MUL_ASSOC] THEN ASM_SIMP_TAC std_ss [SPAN_MUL],
-    ASM_SIMP_TAC std_ss [REAL_MUL_ASSOC, REAL_MUL_LINV, REAL_MUL_LID]]);
+    ASM_SIMP_TAC std_ss [REAL_MUL_ASSOC, REAL_MUL_LINV, REAL_MUL_LID]]
+QED
 
-val SPAN_NEG = store_thm ("SPAN_NEG",
- ``!x s. x IN span s ==> (-x) IN span s``,
-  MESON_TAC[SUBSPACE_SPAN, SUBSPACE_NEG]);
+Theorem SPAN_NEG:
+   !x s. x IN span s ==> (-x) IN span s
+Proof
+  MESON_TAC[SUBSPACE_SPAN, SUBSPACE_NEG]
+QED
 
-val SPAN_NEG_EQ = store_thm ("SPAN_NEG_EQ",
- ``!x s. -x IN span s <=> x IN span s``,
-  MESON_TAC[SPAN_NEG, REAL_NEG_NEG]);
+Theorem SPAN_NEG_EQ:
+   !x s. -x IN span s <=> x IN span s
+Proof
+  MESON_TAC[SPAN_NEG, REAL_NEG_NEG]
+QED
 
-val SPAN_SUB = store_thm ("SPAN_SUB",
- ``!x y s. x IN span s /\ y IN span s ==> (x - y) IN span s``,
-  MESON_TAC[SUBSPACE_SPAN, SUBSPACE_SUB]);
+Theorem SPAN_SUB:
+   !x y s. x IN span s /\ y IN span s ==> (x - y) IN span s
+Proof
+  MESON_TAC[SUBSPACE_SPAN, SUBSPACE_SUB]
+QED
 
-val SPAN_SUM = store_thm ("SPAN_SUM",
- ``!s f t. FINITE t /\ (!x. x IN t ==> f(x) IN span(s))
-           ==> (sum t f) IN span(s)``,
-  MESON_TAC[SUBSPACE_SPAN, SUBSPACE_SUM]);
+Theorem SPAN_SUM:
+   !s f t. FINITE t /\ (!x. x IN t ==> f(x) IN span(s))
+           ==> (sum t f) IN span(s)
+Proof
+  MESON_TAC[SUBSPACE_SPAN, SUBSPACE_SUM]
+QED
 
-val SPAN_ADD_EQ = store_thm ("SPAN_ADD_EQ",
- ``!s x y. x IN span s ==> ((x + y) IN span s <=> y IN span s)``,
-  MESON_TAC[SPAN_ADD, SPAN_SUB, REAL_ARITH ``(x + y) - x:real = y``]);
+Theorem SPAN_ADD_EQ:
+   !s x y. x IN span s ==> ((x + y) IN span s <=> y IN span s)
+Proof
+  MESON_TAC[SPAN_ADD, SPAN_SUB, REAL_ARITH ``(x + y) - x:real = y``]
+QED
 
-val SPAN_EQ_SELF = store_thm ("SPAN_EQ_SELF",
- ``!s. (span s = s) <=> subspace s``,
+Theorem SPAN_EQ_SELF:
+   !s. (span s = s) <=> subspace s
+Proof
   GEN_TAC THEN EQ_TAC THENL [MESON_TAC[SUBSPACE_SPAN], ALL_TAC] THEN
   DISCH_TAC THEN MATCH_MP_TAC SPAN_SUBSPACE THEN
-  ASM_REWRITE_TAC[SUBSET_REFL, SPAN_INC]);
+  ASM_REWRITE_TAC[SUBSET_REFL, SPAN_INC]
+QED
 
-val SPAN_SUBSET_SUBSPACE = store_thm ("SPAN_SUBSET_SUBSPACE",
- ``!s t:real->bool. s SUBSET t /\ subspace t ==> span s SUBSET t``,
-  MESON_TAC[SPAN_MONO, SPAN_EQ_SELF]);
+Theorem SPAN_SUBSET_SUBSPACE:
+   !s t:real->bool. s SUBSET t /\ subspace t ==> span s SUBSET t
+Proof
+  MESON_TAC[SPAN_MONO, SPAN_EQ_SELF]
+QED
 
-val SURJECTIVE_IMAGE_EQ = store_thm ("SURJECTIVE_IMAGE_EQ",
- ``!s t. (!y. y IN t ==> ?x. f x = y) /\ (!x. (f x) IN t <=> x IN s)
-         ==> (IMAGE f s = t)``,
-  SET_TAC[]);
+Theorem SURJECTIVE_IMAGE_EQ:
+   !s t. (!y. y IN t ==> ?x. f x = y) /\ (!x. (f x) IN t <=> x IN s)
+         ==> (IMAGE f s = t)
+Proof
+  SET_TAC[]
+QED
 
-val SUBSPACE_TRANSLATION_SELF = store_thm ("SUBSPACE_TRANSLATION_SELF",
- ``!s a. subspace s /\ a IN s ==> (IMAGE (\x. a + x) s = s)``,
+Theorem SUBSPACE_TRANSLATION_SELF:
+   !s a. subspace s /\ a IN s ==> (IMAGE (\x. a + x) s = s)
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC SURJECTIVE_IMAGE_EQ THEN
   FIRST_ASSUM(SUBST1_TAC o SYM o REWRITE_RULE [GSYM SPAN_EQ_SELF]) THEN
   ASM_SIMP_TAC std_ss [SPAN_ADD_EQ, SPAN_CLAUSES] THEN
-  REWRITE_TAC[REAL_ARITH ``(a + x:real = y) <=> (x = y - a)``, EXISTS_REFL]);
+  REWRITE_TAC[REAL_ARITH ``(a + x:real = y) <=> (x = y - a)``, EXISTS_REFL]
+QED
 
-val SUBSPACE_TRANSLATION_SELF_EQ = store_thm ("SUBSPACE_TRANSLATION_SELF_EQ",
- ``!s a:real. subspace s ==> ((IMAGE (\x. a + x) s = s) <=> a IN s)``,
+Theorem SUBSPACE_TRANSLATION_SELF_EQ:
+   !s a:real. subspace s ==> ((IMAGE (\x. a + x) s = s) <=> a IN s)
+Proof
   REPEAT STRIP_TAC THEN EQ_TAC THEN
   ASM_SIMP_TAC std_ss [SUBSPACE_TRANSLATION_SELF] THEN
   DISCH_THEN(MP_TAC o AP_TERM ``\s. (a:real) IN s``) THEN
   SIMP_TAC std_ss [] THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
   REWRITE_TAC[IN_IMAGE] THEN EXISTS_TAC ``0:real`` THEN
-  ASM_MESON_TAC[subspace, REAL_ADD_RID]);
+  ASM_MESON_TAC[subspace, REAL_ADD_RID]
+QED
 
-val SUBSPACE_SUMS = store_thm ("SUBSPACE_SUMS",
- ``!s t. subspace s /\ subspace t
-         ==> subspace {x + y | x IN s /\ y IN t}``,
+Theorem SUBSPACE_SUMS:
+   !s t. subspace s /\ subspace t
+         ==> subspace {x + y | x IN s /\ y IN t}
+Proof
   SIMP_TAC std_ss [subspace, FORALL_IN_GSPEC, CONJ_EQ_IMP, RIGHT_FORALL_IMP_THM] THEN
   SIMP_TAC std_ss [GSPECIFICATION, EXISTS_PROD] THEN REPEAT STRIP_TAC THENL
    [ASM_MESON_TAC[REAL_ADD_LID],
     ONCE_REWRITE_TAC[REAL_ARITH
      ``(x + y) + (x' + y'):real = (x + x') + (y + y')``] THEN
     ASM_MESON_TAC[],
-    REWRITE_TAC[REAL_ADD_LDISTRIB] THEN ASM_MESON_TAC[]]);
+    REWRITE_TAC[REAL_ADD_LDISTRIB] THEN ASM_MESON_TAC[]]
+QED
 
-val SPAN_UNION = store_thm ("SPAN_UNION",
- ``!s t. span(s UNION t) = {x + y:real | x IN span s /\ y IN span t}``,
+Theorem SPAN_UNION:
+   !s t. span(s UNION t) = {x + y:real | x IN span s /\ y IN span t}
+Proof
   REPEAT GEN_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
    [MATCH_MP_TAC SPAN_SUBSET_SUBSPACE THEN
     SIMP_TAC std_ss [SUBSPACE_SUMS, SUBSPACE_SPAN] THEN
@@ -750,47 +939,53 @@ val SPAN_UNION = store_thm ("SPAN_UNION",
       ASM_SIMP_TAC std_ss [SPAN_SUPERSET, SPAN_0, REAL_ADD_LID]],
     SIMP_TAC std_ss [SUBSET_DEF, FORALL_IN_GSPEC] THEN
     REPEAT STRIP_TAC THEN MATCH_MP_TAC SPAN_ADD THEN
-    ASM_MESON_TAC[SPAN_MONO, SUBSET_UNION, SUBSET_DEF]]);
+    ASM_MESON_TAC[SPAN_MONO, SUBSET_UNION, SUBSET_DEF]]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Equality in Cauchy-Schwarz and triangle inequalities.                     *)
 (* ------------------------------------------------------------------------- *)
 
-val ABS_CAUCHY_SCHWARZ_EQ = store_thm
-  ("ABS_CAUCHY_SCHWARZ_EQ",
- ``!x:real y. (x * y = abs(x) * abs(y)) <=> (abs(x) * y = abs(y) * x)``,
+Theorem ABS_CAUCHY_SCHWARZ_EQ:
+   !x:real y. (x * y = abs(x) * abs(y)) <=> (abs(x) * y = abs(y) * x)
+Proof
    REPEAT GEN_TAC THEN ASM_CASES_TAC ``0 <= x:real`` THEN
   (ASM_CASES_TAC ``0 <= y:real``) THEN ASM_REWRITE_TAC [abs] THENL
   [ASM_REAL_ARITH_TAC, ALL_TAC, ALL_TAC, ASM_REAL_ARITH_TAC] THEN
   ((MP_TAC o SPECL [``x:real``,``y:real``]) REAL_LT_TOTAL THEN STRIP_TAC THEN
   TRY (ASM_REAL_ARITH_TAC)) THEN COND_CASES_TAC THEN EQ_TAC THEN
-  TRY (ASM_REAL_ARITH_TAC));
+  TRY (ASM_REAL_ARITH_TAC)
+QED
 
-val ABS_CAUCHY_SCHWARZ_ABS_EQ = store_thm
-  ("ABS_CAUCHY_SCHWARZ_ABS_EQ",
- ``!x:real y. (abs(x * y) = abs(x) * abs(y)) <=>
-                (abs(x) * y = abs(y) * x) \/ (abs(x) * y = -abs(y) * x)``,
+Theorem ABS_CAUCHY_SCHWARZ_ABS_EQ:
+   !x:real y. (abs(x * y) = abs(x) * abs(y)) <=>
+                (abs(x) * y = abs(y) * x) \/ (abs(x) * y = -abs(y) * x)
+Proof
   SIMP_TAC std_ss [REAL_ARITH ``&0 <= a ==> ((abs x = a) <=> (x = a) \/ (-x = a:real))``,
            REAL_LE_MUL, ABS_POS, REAL_MUL_RNEG] THEN
-  REAL_ARITH_TAC);
+  REAL_ARITH_TAC
+QED
 
-val REAL_EQ_LINV = store_thm
-  ("REAL_EQ_LINV", ``!x. (-x = (x :real)) <=> (x = 0)``,
+Theorem REAL_EQ_LINV:   !x. (-x = (x :real)) <=> (x = 0)
+Proof
     GEN_TAC
  >> REWRITE_TAC [SYM (Q.SPECL [`x`, `-x`, `x`] REAL_EQ_LADD)]
  >> REWRITE_TAC [REAL_ADD_RINV, REAL_DOUBLE]
- >> RW_TAC real_ss [REAL_ENTIRE]);
+ >> RW_TAC real_ss [REAL_ENTIRE]
+QED
 
-val REAL_EQ_RINV = store_thm
-  ("REAL_EQ_RINV", ``!x. ((x :real) = -x) <=> (x = 0)``,
+Theorem REAL_EQ_RINV:   !x. ((x :real) = -x) <=> (x = 0)
+Proof
     GEN_TAC
  >> REWRITE_TAC [SYM (Q.SPECL [`x`, `x`, `-x`] REAL_EQ_LADD)]
  >> REWRITE_TAC [REAL_ADD_RINV, REAL_DOUBLE]
- >> RW_TAC real_ss [REAL_ENTIRE]);
+ >> RW_TAC real_ss [REAL_ENTIRE]
+QED
 
 (* this proof is too advanced in realScript *)
-val ABS_TRIANGLE_EQ = store_thm ("ABS_TRIANGLE_EQ",
-  ``!x y:real. (abs(x + y) = abs(x) + abs(y)) <=> (abs(x) * y = abs(y) * x)``,
+Theorem ABS_TRIANGLE_EQ:
+    !x y:real. (abs(x + y) = abs(x) + abs(y)) <=> (abs(x) * y = abs(y) * x)
+Proof
     rpt GEN_TAC
  >> ASM_CASES_TAC ``0 <= x:real``
  >> ASM_CASES_TAC ``0 <= y:real``
@@ -830,12 +1025,15 @@ val ABS_TRIANGLE_EQ = store_thm ("ABS_TRIANGLE_EQ",
           PROVE_TAC [REAL_LT_ADD2, REAL_ADD_RID]) \\
       DISCH_TAC >> ASM_SIMP_TAC bool_ss [] \\
       REWRITE_TAC [REAL_NEG_ADD] \\
-      PROVE_TAC [REAL_NEG_RMUL, REAL_MUL_SYM] ]);
+      PROVE_TAC [REAL_NEG_RMUL, REAL_MUL_SYM] ]
+QED
 
-val DIST_TRIANGLE_EQ = store_thm ("DIST_TRIANGLE_EQ",
- ``!x y z:real. (dist(x,z) = dist(x,y) + dist(y,z)) <=>
-                (abs (x - y) * (y - z) = abs (y - z) * (x - y))``,
-  REWRITE_TAC[GSYM ABS_TRIANGLE_EQ, dist] THEN REAL_ARITH_TAC);
+Theorem DIST_TRIANGLE_EQ:
+   !x y z:real. (dist(x,z) = dist(x,y) + dist(y,z)) <=>
+                (abs (x - y) * (y - z) = abs (y - z) * (x - y))
+Proof
+  REWRITE_TAC[GSYM ABS_TRIANGLE_EQ, dist] THEN REAL_ARITH_TAC
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Collinearity.                                                             *)
@@ -843,51 +1041,65 @@ val DIST_TRIANGLE_EQ = store_thm ("DIST_TRIANGLE_EQ",
 
 val _ = hide "collinear";
 
-val collinear = new_definition ("collinear",
- ``collinear s <=> ?u. !x y:real. x IN s /\ y IN s ==> ?c. x - y = c * u``);
+Definition collinear[nocompute]:
+ collinear s <=> ?u. !x y:real. x IN s /\ y IN s ==> ?c. x - y = c * u
+End
 
-val COLLINEAR_SUBSET = store_thm ("COLLINEAR_SUBSET",
- ``!s t. collinear t /\ s SUBSET t ==> collinear s``,
-  REWRITE_TAC[collinear] THEN SET_TAC[]);
+Theorem COLLINEAR_SUBSET:
+   !s t. collinear t /\ s SUBSET t ==> collinear s
+Proof
+  REWRITE_TAC[collinear] THEN SET_TAC[]
+QED
 
-val COLLINEAR_EMPTY = store_thm ("COLLINEAR_EMPTY",
- ``collinear {}``,
-  REWRITE_TAC[collinear, NOT_IN_EMPTY]);
+Theorem COLLINEAR_EMPTY:
+   collinear {}
+Proof
+  REWRITE_TAC[collinear, NOT_IN_EMPTY]
+QED
 
-val COLLINEAR_SING = store_thm ("COLLINEAR_SING",
- ``!x:real. collinear {x}``,
+Theorem COLLINEAR_SING:
+   !x:real. collinear {x}
+Proof
   SIMP_TAC std_ss [collinear, IN_SING, REAL_SUB_REFL] THEN
-  METIS_TAC [REAL_MUL_LZERO]);
+  METIS_TAC [REAL_MUL_LZERO]
+QED
 
-val COLLINEAR_2 = store_thm ("COLLINEAR_2",
- ``!x y:real. collinear {x;y}``,
+Theorem COLLINEAR_2:
+   !x y:real. collinear {x;y}
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[collinear, IN_INSERT, NOT_IN_EMPTY] THEN
   EXISTS_TAC ``x - y:real`` THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THENL
    [EXISTS_TAC ``&0:real``, EXISTS_TAC ``&1:real``,
     EXISTS_TAC ``- &1:real``, EXISTS_TAC ``&0:real``] THEN
-  REAL_ARITH_TAC);
+  REAL_ARITH_TAC
+QED
 
-val COLLINEAR_SMALL = store_thm ("COLLINEAR_SMALL",
- ``!s. FINITE s /\ CARD s <= 2 ==> collinear s``,
+Theorem COLLINEAR_SMALL:
+   !s. FINITE s /\ CARD s <= 2 ==> collinear s
+Proof
   REWRITE_TAC[ARITH_PROVE ``s <= 2 <=> (s = 0) \/ (s = 1) \/ (s = 2:num)``] THEN
   REWRITE_TAC[LEFT_AND_OVER_OR, GSYM HAS_SIZE] THEN
   REWRITE_TAC [ONE, TWO, HAS_SIZE_CLAUSES] THEN
   REPEAT STRIP_TAC THEN
-  ASM_REWRITE_TAC[COLLINEAR_EMPTY, COLLINEAR_SING, COLLINEAR_2]);
+  ASM_REWRITE_TAC[COLLINEAR_EMPTY, COLLINEAR_SING, COLLINEAR_2]
+QED
 
-val COLLINEAR_3 = store_thm ("COLLINEAR_3",
- ``!x y z. collinear {x;y;z} <=> collinear {0;x - y;z - y}``,
+Theorem COLLINEAR_3:
+   !x y z. collinear {x;y;z} <=> collinear {0;x - y;z - y}
+Proof
   REPEAT GEN_TAC THEN
   SIMP_TAC std_ss [collinear, FORALL_IN_INSERT, CONJ_EQ_IMP,
                    RIGHT_FORALL_IMP_THM, NOT_IN_EMPTY] THEN
   AP_TERM_TAC THEN ABS_TAC THEN
   METIS_TAC [REAL_ARITH ``x - y = (x - y) - 0:real``,
              REAL_ARITH ``y - x = 0 - (x - y:real)``,
-             REAL_ARITH ``x - z:real = (x - y) - (z - y)``]);
+             REAL_ARITH ``x - z:real = (x - y) - (z - y)``]
+QED
 
-val COLLINEAR_LEMMA = store_thm ("COLLINEAR_LEMMA",
- ``!x y:real. collinear {0;x;y} <=>
-                   (x = 0) \/ (y = 0) \/ ?c. y = c * x``,
+Theorem COLLINEAR_LEMMA:
+   !x y:real. collinear {0;x;y} <=>
+                   (x = 0) \/ (y = 0) \/ ?c. y = c * x
+Proof
   REPEAT GEN_TAC THEN
   MAP_EVERY ASM_CASES_TAC [``x:real = 0``, ``y:real = 0``] THEN
   TRY(ONCE_REWRITE_TAC [INSERT_COMM] THEN
@@ -908,14 +1120,18 @@ val COLLINEAR_LEMMA = store_thm ("COLLINEAR_LEMMA",
      [EXISTS_TAC ``&0:real``, EXISTS_TAC ``- &1:real``, EXISTS_TAC ``-c:real``,
       EXISTS_TAC ``&1:real``, EXISTS_TAC ``&0:real``, EXISTS_TAC ``&1 - c:real``,
       EXISTS_TAC ``c:real``, EXISTS_TAC ``c - &1:real``, EXISTS_TAC ``&0:real``] THEN
-    REAL_ARITH_TAC]);
+    REAL_ARITH_TAC]
+QED
 
-val COLLINEAR_LEMMA_ALT = store_thm ("COLLINEAR_LEMMA_ALT",
- ``!x y. collinear {0;x;y} <=> (x = 0) \/ ?c. y = c * x``,
-  REWRITE_TAC[COLLINEAR_LEMMA] THEN METIS_TAC [REAL_MUL_LZERO]);
+Theorem COLLINEAR_LEMMA_ALT:
+   !x y. collinear {0;x;y} <=> (x = 0) \/ ?c. y = c * x
+Proof
+  REWRITE_TAC[COLLINEAR_LEMMA] THEN METIS_TAC [REAL_MUL_LZERO]
+QED
 
-val ABS_CAUCHY_SCHWARZ_EQUAL = store_thm ("ABS_CAUCHY_SCHWARZ_EQUAL",
- ``!x y:real. (abs(x * y) = abs(x) * abs(y)) <=> collinear {0;x;y}``,
+Theorem ABS_CAUCHY_SCHWARZ_EQUAL:
+   !x y:real. (abs(x * y) = abs(x) * abs(y)) <=> collinear {0;x;y}
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[ABS_CAUCHY_SCHWARZ_ABS_EQ] THEN
   MAP_EVERY ASM_CASES_TAC [``x:real = 0``, ``y:real = 0``] THEN
   TRY(ONCE_ASM_REWRITE_TAC [INSERT_COMM] THEN
@@ -925,21 +1141,25 @@ val ABS_CAUCHY_SCHWARZ_EQUAL = store_thm ("ABS_CAUCHY_SCHWARZ_EQUAL",
    [STRIP_TAC THENL
      [EXISTS_TAC ``y / x:real``, EXISTS_TAC ``y / x:real``] THEN
     ASM_SIMP_TAC std_ss [REAL_DIV_RMUL],
-    ASM_REAL_ARITH_TAC]);
+    ASM_REAL_ARITH_TAC]
+QED
 
-val MUL_CAUCHY_SCHWARZ_EQUAL = store_thm ("MUL_CAUCHY_SCHWARZ_EQUAL",
- ``!x y:real.
+Theorem MUL_CAUCHY_SCHWARZ_EQUAL:
+   !x y:real.
         ((x * y) pow 2 = (x * x) * (y * y)) <=>
-        collinear {0;x;y}``,
+        collinear {0;x;y}
+Proof
   REWRITE_TAC[GSYM ABS_CAUCHY_SCHWARZ_EQUAL] THEN
   REPEAT GEN_TAC THEN MATCH_MP_TAC(REAL_ARITH
    ``&0 <= y /\ ((u:real = v) <=> (x = abs y)) ==> ((u = v) <=> (x = y:real))``) THEN
   SIMP_TAC std_ss [ABS_POS, REAL_LE_MUL] THEN
   REWRITE_TAC[REAL_EQ_SQUARE_ABS] THEN REWRITE_TAC[POW_MUL, GSYM POW_2] THEN
-  REWRITE_TAC [POW_2] THEN REAL_ARITH_TAC);
+  REWRITE_TAC [POW_2] THEN REAL_ARITH_TAC
+QED
 
-val COLLINEAR_3_EXPAND = store_thm ("COLLINEAR_3_EXPAND",
- ``!a b c:real. collinear{a;b;c} <=> ((a = c) \/ ?u. b = u * a + (&1 - u) * c)``,
+Theorem COLLINEAR_3_EXPAND:
+   !a b c:real. collinear{a;b;c} <=> ((a = c) \/ ?u. b = u * a + (&1 - u) * c)
+Proof
   REPEAT GEN_TAC THEN
   ONCE_REWRITE_TAC[SET_RULE ``{a;b;c} = {a;c;b}``] THEN
   ONCE_REWRITE_TAC[COLLINEAR_3] THEN
@@ -948,13 +1168,15 @@ val COLLINEAR_3_EXPAND = store_thm ("COLLINEAR_3_EXPAND",
   ASM_CASES_TAC ``b:real = c`` THEN
   ASM_REWRITE_TAC[REAL_ARITH ``u * c + (&1 - u) * c = c:real``] THENL
    [EXISTS_TAC ``&0:real`` THEN REAL_ARITH_TAC,
-     AP_TERM_TAC THEN ABS_TAC THEN REAL_ARITH_TAC]);
+     AP_TERM_TAC THEN ABS_TAC THEN REAL_ARITH_TAC]
+QED
 
-val COLLINEAR_TRIPLES = store_thm ("COLLINEAR_TRIPLES",
- ``!s a b:real.
+Theorem COLLINEAR_TRIPLES:
+   !s a b:real.
         ~(a = b)
         ==> (collinear(a INSERT b INSERT s) <=>
-             !x. x IN s ==> collinear{a;b;x})``,
+             !x. x IN s ==> collinear{a;b;x})
+Proof
   REPEAT STRIP_TAC THEN EQ_TAC THENL
    [REPEAT STRIP_TAC THEN FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
      (REWRITE_RULE[CONJ_EQ_IMP] COLLINEAR_SUBSET)) THEN
@@ -976,65 +1198,86 @@ val COLLINEAR_TRIPLES = store_thm ("COLLINEAR_TRIPLES",
       ASM_REWRITE_TAC[REAL_ARITH
        ``(u * a + (&1 - u) * b) - (v * a + (&1 - v) * b):real =
          (v - u) * (b - a)``] THEN
-      METIS_TAC []]]);
+      METIS_TAC []]]
+QED
 
-val COLLINEAR_4_3 = store_thm ("COLLINEAR_4_3",
- ``!a b c d:real.
+Theorem COLLINEAR_4_3:
+   !a b c d:real.
         ~(a = b)
-        ==> (collinear {a;b;c;d} <=> collinear{a;b;c} /\ collinear{a;b;d})``,
+        ==> (collinear {a;b;c;d} <=> collinear{a;b;c} /\ collinear{a;b;d})
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [``{c:real;d}``, ``a:real``, ``b:real``]
     COLLINEAR_TRIPLES) THEN
   ASM_REWRITE_TAC[] THEN DISCH_THEN SUBST1_TAC THEN
-  SIMP_TAC real_ss [FORALL_IN_INSERT, NOT_IN_EMPTY]);
+  SIMP_TAC real_ss [FORALL_IN_INSERT, NOT_IN_EMPTY]
+QED
 
-val COLLINEAR_3_TRANS = store_thm ("COLLINEAR_3_TRANS",
- ``!a b c d:real.
-        collinear{a;b;c} /\ collinear{b;c;d} /\ ~(b = c) ==> collinear{a;b;d}``,
+Theorem COLLINEAR_3_TRANS:
+   !a b c d:real.
+        collinear{a;b;c} /\ collinear{b;c;d} /\ ~(b = c) ==> collinear{a;b;d}
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC COLLINEAR_SUBSET THEN
   EXISTS_TAC ``{b:real;c;a;d}`` THEN ASM_SIMP_TAC std_ss [COLLINEAR_4_3] THEN
   CONJ_TAC THENL [ALL_TAC, SET_TAC[]] THEN
-  ONCE_ASM_REWRITE_TAC [SET_RULE ``{b;c;a} = {a;b;c}``] THEN METIS_TAC []);
+  ONCE_ASM_REWRITE_TAC [SET_RULE ``{b;c;a} = {a;b;c}``] THEN METIS_TAC []
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Between-ness.                                                             *)
 (* ------------------------------------------------------------------------- *)
 
-val between = new_definition ("between",
- ``between x (a,b) <=> (dist(a,b) = dist(a,x) + dist(x,b))``);
+Definition between[nocompute]:
+ between x (a,b) <=> (dist(a,b) = dist(a,x) + dist(x,b))
+End
 
-val BETWEEN_REFL = store_thm ("BETWEEN_REFL",
- ``!a b. between a (a,b) /\ between b (a,b) /\ between a (a,a)``,
-  REWRITE_TAC[between, dist] THEN REAL_ARITH_TAC);
+Theorem BETWEEN_REFL:
+   !a b. between a (a,b) /\ between b (a,b) /\ between a (a,a)
+Proof
+  REWRITE_TAC[between, dist] THEN REAL_ARITH_TAC
+QED
 
-val BETWEEN_REFL_EQ = store_thm ("BETWEEN_REFL_EQ",
- ``!a x. between x (a,a) <=> (x = a)``,
-  REWRITE_TAC[between, dist] THEN REAL_ARITH_TAC);
+Theorem BETWEEN_REFL_EQ:
+   !a x. between x (a,a) <=> (x = a)
+Proof
+  REWRITE_TAC[between, dist] THEN REAL_ARITH_TAC
+QED
 
-val BETWEEN_SYM = store_thm ("BETWEEN_SYM",
- ``!a b x. between x (a,b) <=> between x (b,a)``,
-  REWRITE_TAC[between, dist] THEN REAL_ARITH_TAC);
+Theorem BETWEEN_SYM:
+   !a b x. between x (a,b) <=> between x (b,a)
+Proof
+  REWRITE_TAC[between, dist] THEN REAL_ARITH_TAC
+QED
 
-val BETWEEN_ANTISYM = store_thm ("BETWEEN_ANTISYM",
- ``!a b c. between a (b,c) /\ between b (a,c) ==> (a = b)``,
-  REWRITE_TAC[between, dist] THEN REAL_ARITH_TAC);
+Theorem BETWEEN_ANTISYM:
+   !a b c. between a (b,c) /\ between b (a,c) ==> (a = b)
+Proof
+  REWRITE_TAC[between, dist] THEN REAL_ARITH_TAC
+QED
 
-val BETWEEN_TRANS = store_thm ("BETWEEN_TRANS",
- ``!a b c d. between a (b,c) /\ between d (a,c) ==> between d (b,c)``,
-  REWRITE_TAC[between, dist] THEN REAL_ARITH_TAC);
+Theorem BETWEEN_TRANS:
+   !a b c d. between a (b,c) /\ between d (a,c) ==> between d (b,c)
+Proof
+  REWRITE_TAC[between, dist] THEN REAL_ARITH_TAC
+QED
 
-val BETWEEN_TRANS_2 = store_thm ("BETWEEN_TRANS_2",
- ``!a b c d. between a (b,c) /\ between d (a,b) ==> between a (c,d)``,
-  REWRITE_TAC[between, dist] THEN REAL_ARITH_TAC);
+Theorem BETWEEN_TRANS_2:
+   !a b c d. between a (b,c) /\ between d (a,b) ==> between a (c,d)
+Proof
+  REWRITE_TAC[between, dist] THEN REAL_ARITH_TAC
+QED
 
-val BETWEEN_ABS = store_thm ("BETWEEN_ABS",
- ``!a b x:real.
-     between x (a,b) <=> (abs(x - a) * (b - x) = abs(b - x) * (x - a))``,
+Theorem BETWEEN_ABS:
+   !a b x:real.
+     between x (a,b) <=> (abs(x - a) * (b - x) = abs(b - x) * (x - a))
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[between, DIST_TRIANGLE_EQ] THEN
-  GEN_REWR_TAC (RAND_CONV o ONCE_DEPTH_CONV) [ABS_SUB] THEN REAL_ARITH_TAC);
+  GEN_REWR_TAC (RAND_CONV o ONCE_DEPTH_CONV) [ABS_SUB] THEN REAL_ARITH_TAC
+QED
 
-val BETWEEN_IMP_COLLINEAR = store_thm ("BETWEEN_IMP_COLLINEAR",
- ``!a b x:real. between x (a,b) ==> collinear {a;x;b}``,
+Theorem BETWEEN_IMP_COLLINEAR:
+   !a b x:real. between x (a,b) ==> collinear {a;x;b}
+Proof
   REPEAT GEN_TAC THEN ASM_CASES_TAC ``x:real = a`` THENL
   [ONCE_REWRITE_TAC[COLLINEAR_3, BETWEEN_ABS] THEN
    DISCH_TAC THEN ASM_REWRITE_TAC[COLLINEAR_LEMMA, REAL_SUB_REFL] THEN
@@ -1044,12 +1287,14 @@ val BETWEEN_IMP_COLLINEAR = store_thm ("BETWEEN_IMP_COLLINEAR",
    DISJ2_TAC THEN DISJ2_TAC THEN EXISTS_TAC ``(b - x) / (a - x:real)`` THEN
    RULE_ASSUM_TAC (ONCE_REWRITE_RULE [REAL_ARITH
                    ``(x <> a) = ((a - x) <> 0:real)``]) THEN
-   ASM_SIMP_TAC real_ss [REAL_DIV_RMUL]]);
+   ASM_SIMP_TAC real_ss [REAL_DIV_RMUL]]
+QED
 
-val COLLINEAR_BETWEEN_CASES = store_thm ("COLLINEAR_BETWEEN_CASES",
- ``!a b c:real.
+Theorem COLLINEAR_BETWEEN_CASES:
+   !a b c:real.
         collinear {a;b;c} <=>
-        between a (b,c) \/ between b (c,a) \/ between c (a,b)``,
+        between a (b,c) \/ between b (c,a) \/ between c (a,b)
+Proof
   REPEAT STRIP_TAC THEN EQ_TAC THENL
    [REWRITE_TAC[COLLINEAR_3_EXPAND] THEN
     ASM_CASES_TAC ``c:real = a`` THEN ASM_REWRITE_TAC[BETWEEN_REFL] THEN
@@ -1057,16 +1302,20 @@ val COLLINEAR_BETWEEN_CASES = store_thm ("COLLINEAR_BETWEEN_CASES",
     ASM_REAL_ARITH_TAC,
     DISCH_THEN(REPEAT_TCL DISJ_CASES_THEN (MP_TAC o MATCH_MP
       BETWEEN_IMP_COLLINEAR)) THEN
-    METIS_TAC[INSERT_COMM]]);
+    METIS_TAC[INSERT_COMM]]
+QED
 
-val COLLINEAR_DIST_BETWEEN = store_thm ("COLLINEAR_DIST_BETWEEN",
- ``!a b x. collinear {x;a;b} /\
+Theorem COLLINEAR_DIST_BETWEEN:
+   !a b x. collinear {x;a;b} /\
            dist(x,a) <= dist(a,b) /\ dist(x,b) <= dist(a,b)
-           ==> between x (a,b)``,
-  SIMP_TAC std_ss [COLLINEAR_BETWEEN_CASES, between, dist] THEN REAL_ARITH_TAC);
+           ==> between x (a,b)
+Proof
+  SIMP_TAC std_ss [COLLINEAR_BETWEEN_CASES, between, dist] THEN REAL_ARITH_TAC
+QED
 
-val COLLINEAR_1 = store_thm ("COLLINEAR_1",
- ``!s:real->bool. collinear s``,
+Theorem COLLINEAR_1:
+   !s:real->bool. collinear s
+Proof
   GEN_TAC THEN MATCH_MP_TAC COLLINEAR_SUBSET THEN
   EXISTS_TAC ``(0:real) INSERT (1:real) INSERT s`` THEN
   CONJ_TAC THENL [ALL_TAC, SET_TAC[]] THEN
@@ -1074,14 +1323,16 @@ val COLLINEAR_1 = store_thm ("COLLINEAR_1",
   REWRITE_TAC[REAL_ARITH ``0 <> 1:real``] THEN DISCH_THEN SUBST1_TAC THEN
   REWRITE_TAC[COLLINEAR_BETWEEN_CASES] THEN
   REWRITE_TAC[between, dist, ABS_N] THEN
-  REAL_ARITH_TAC);
+  REAL_ARITH_TAC
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Midpoint between two points.                                              *)
 (* ------------------------------------------------------------------------- *)
 
-val midpoint = new_definition ("midpoint",
- ``midpoint(a,b) = inv(&2:real) * (a + b)``);
+Definition midpoint[nocompute]:
+ midpoint(a,b) = inv(&2:real) * (a + b)
+End
 
 Theorem MIDPOINT_REFL: !x. midpoint(x,x) = x
 Proof
@@ -1090,36 +1341,43 @@ Proof
   REAL_ARITH_TAC
 QED
 
-val MIDPOINT_SYM = store_thm ("MIDPOINT_SYM",
- ``!a b. midpoint(a,b) = midpoint(b,a)``,
-  METIS_TAC[midpoint, REAL_ADD_SYM]);
+Theorem MIDPOINT_SYM:
+   !a b. midpoint(a,b) = midpoint(b,a)
+Proof
+  METIS_TAC[midpoint, REAL_ADD_SYM]
+QED
 
-val DIST_MIDPOINT = store_thm ("DIST_MIDPOINT",
- ``!a b. (dist(a,midpoint(a,b)) = dist(a,b) / &2) /\
+Theorem DIST_MIDPOINT:
+   !a b. (dist(a,midpoint(a,b)) = dist(a,b) / &2) /\
          (dist(b,midpoint(a,b)) = dist(a,b) / &2) /\
          (dist(midpoint(a,b),a) = dist(a,b) / &2) /\
-         (dist(midpoint(a,b),b) = dist(a,b) / &2)``,
+         (dist(midpoint(a,b),b) = dist(a,b) / &2)
+Proof
   REWRITE_TAC[midpoint, dist] THEN
   SIMP_TAC std_ss [REAL_EQ_RDIV_EQ, REAL_ARITH ``0 < 2:real``] THEN
   ONCE_REWRITE_TAC [GSYM ABS_N] THEN
   REWRITE_TAC [GSYM ABS_MUL, REAL_SUB_RDISTRIB] THEN REWRITE_TAC [ABS_N] THEN
   ONCE_REWRITE_TAC [REAL_ARITH ``a * b * c = a * c * b:real``] THEN
   SIMP_TAC std_ss [REAL_MUL_LINV, REAL_ARITH ``2 <> 0:real``] THEN
-  REAL_ARITH_TAC);
+  REAL_ARITH_TAC
+QED
 
-val MIDPOINT_EQ_ENDPOINT = store_thm ("MIDPOINT_EQ_ENDPOINT",
- ``!a b. ((midpoint(a,b) = a) <=> (a = b)) /\
+Theorem MIDPOINT_EQ_ENDPOINT:
+   !a b. ((midpoint(a,b) = a) <=> (a = b)) /\
          ((midpoint(a,b) = b) <=> (a = b)) /\
          ((a = midpoint(a,b)) <=> (a = b)) /\
-         ((b = midpoint(a,b)) <=> (a = b))``,
+         ((b = midpoint(a,b)) <=> (a = b))
+Proof
   REWRITE_TAC[midpoint] THEN ONCE_REWRITE_TAC [REAL_MUL_SYM] THEN
   REWRITE_TAC [GSYM real_div] THEN
   SIMP_TAC std_ss
     [REAL_EQ_RDIV_EQ, REAL_EQ_LDIV_EQ, REAL_ARITH ``0 < 2:real``] THEN
-  REAL_ARITH_TAC);
+  REAL_ARITH_TAC
+QED
 
-val BETWEEN_MIDPOINT = store_thm ("BETWEEN_MIDPOINT",
- ``!a b. between (midpoint(a,b)) (a,b) /\ between (midpoint(a,b)) (b,a)``,
+Theorem BETWEEN_MIDPOINT:
+   !a b. between (midpoint(a,b)) (a,b) /\ between (midpoint(a,b)) (b,a)
+Proof
   REWRITE_TAC[between, midpoint] THEN ONCE_REWRITE_TAC [REAL_MUL_SYM] THEN
   REWRITE_TAC [dist, GSYM real_div] THEN
   ONCE_REWRITE_TAC [REAL_ARITH ``a / 2 - b = a / 2 - b * 1:real``] THEN
@@ -1133,21 +1391,26 @@ val BETWEEN_MIDPOINT = store_thm ("BETWEEN_MIDPOINT",
   SIMP_TAC std_ss [ABS_N, ABS_INV, REAL_ARITH ``2 <> 0:real``] THEN
   REWRITE_TAC [GSYM REAL_ADD_RDISTRIB] THEN REWRITE_TAC [GSYM real_div] THEN
   SIMP_TAC std_ss [REAL_EQ_RDIV_EQ, REAL_ARITH ``0 < 2:real``] THEN
-  REAL_ARITH_TAC);
+  REAL_ARITH_TAC
+QED
 
-val MIDPOINT_LINEAR_IMAGE = store_thm ("MIDPOINT_LINEAR_IMAGE",
- ``!f a b. linear f ==> (midpoint(f a,f b) = f(midpoint(a,b)))``,
-  SIMP_TAC std_ss [midpoint, LINEAR_ADD, LINEAR_CMUL]);
+Theorem MIDPOINT_LINEAR_IMAGE:
+   !f a b. linear f ==> (midpoint(f a,f b) = f(midpoint(a,b)))
+Proof
+  SIMP_TAC std_ss [midpoint, LINEAR_ADD, LINEAR_CMUL]
+QED
 
-val COLLINEAR_MIDPOINT = store_thm ("COLLINEAR_MIDPOINT",
- ``!a b. collinear{a;midpoint(a,b);b}``,
+Theorem COLLINEAR_MIDPOINT:
+   !a b. collinear{a;midpoint(a,b);b}
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[COLLINEAR_3_EXPAND, midpoint] THEN
   DISJ2_TAC THEN REWRITE_TAC [REAL_ARITH ``u * a + (1 - u) * b =
                                            a * u - b * u + b:real``] THEN
   EXISTS_TAC ``inv &2:real`` THEN GEN_REWR_TAC LAND_CONV [REAL_MUL_SYM] THEN
   REWRITE_TAC [REAL_ADD_RDISTRIB] THEN
   GEN_REWR_TAC (RAND_CONV o RAND_CONV) [GSYM REAL_HALF] THEN
-  REWRITE_TAC [GSYM real_div] THEN REAL_ARITH_TAC);
+  REWRITE_TAC [GSYM real_div] THEN REAL_ARITH_TAC
+QED
 
 Theorem MIDPOINT_COLLINEAR:
    !a b c:real.
@@ -1171,8 +1434,9 @@ QED
 (*  MISC                                                                    *)
 (* ------------------------------------------------------------------------ *)
 
-val SPAN_BREAKDOWN = store_thm ("SPAN_BREAKDOWN",
- ``!b s a:real. b IN s /\ a IN span s ==> ?k. (a - k * b) IN span(s DELETE b)``,
+Theorem SPAN_BREAKDOWN:
+   !b s a:real. b IN s /\ a IN span s ==> ?k. (a - k * b) IN span(s DELETE b)
+Proof
   SIMP_TAC std_ss [CONJ_EQ_IMP, RIGHT_FORALL_IMP_THM] THEN
   REPEAT GEN_TAC THEN DISCH_TAC THEN
   ONCE_REWRITE_TAC [METIS []
@@ -1201,11 +1465,13 @@ val SPAN_BREAKDOWN = store_thm ("SPAN_BREAKDOWN",
       REAL_ARITH ``(c * x - (c * k) * y = c * (x - k * y:real))``] THEN
     ONCE_REWRITE_TAC [GSYM SPECIFICATION] THEN
     RULE_ASSUM_TAC (ONCE_REWRITE_RULE [GSYM SPECIFICATION]) THEN
-    METIS_TAC [SPAN_CLAUSES]]);
+    METIS_TAC [SPAN_CLAUSES]]
+QED
 
-val IN_SPAN_INSERT = store_thm ("IN_SPAN_INSERT",
- ``!a b:real s. a IN span(b INSERT s) /\ ~(a IN span s)
-   ==> b IN span(a INSERT s)``,
+Theorem IN_SPAN_INSERT:
+   !a b:real s. a IN span(b INSERT s) /\ ~(a IN span s)
+   ==> b IN span(a INSERT s)
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [``b:real``, ``(b:real) INSERT s``, ``a:real``]
     SPAN_BREAKDOWN) THEN ASM_REWRITE_TAC[IN_INSERT] THEN
@@ -1222,11 +1488,13 @@ val IN_SPAN_INSERT = store_thm ("IN_SPAN_INSERT",
                         SPAN_MONO] THEN
   POP_ASSUM MP_TAC THEN ABBREV_TAC ``y = inv k * a - b:real`` THEN
   SPEC_TAC (``y:real``, ``y:real``) THEN REWRITE_TAC [GSYM SUBSET_DEF] THEN
-  MATCH_MP_TAC SPAN_MONO THEN ASM_SET_TAC []);
+  MATCH_MP_TAC SPAN_MONO THEN ASM_SET_TAC []
+QED
 
-val INDEPENDENT_INSERT = store_thm ("INDEPENDENT_INSERT",
- ``!a:real s. independent(a INSERT s) <=>
-    if a IN s then independent s else independent s /\ ~(a IN span s)``,
+Theorem INDEPENDENT_INSERT:
+   !a:real s. independent(a INSERT s) <=>
+    if a IN s then independent s else independent s /\ ~(a IN span s)
+Proof
   REPEAT GEN_TAC THEN ASM_CASES_TAC ``(a:real) IN s`` THEN
   ASM_SIMP_TAC std_ss [SET_RULE ``x IN s ==> (x INSERT s = s)``] THEN
   EQ_TAC THENL
@@ -1244,21 +1512,27 @@ val INDEPENDENT_INSERT = store_thm ("INDEPENDENT_INSERT",
   ASM_SIMP_TAC std_ss [SET_RULE ``~(a IN s) /\ ~(b = a)
      ==> ((a INSERT s) DELETE b = a INSERT (s DELETE b))``] THEN
   ASM_MESON_TAC[IN_SPAN_INSERT, SET_RULE
-    ``b IN s ==> (b INSERT (s DELETE b) = s)``]);
+    ``b IN s ==> (b INSERT (s DELETE b) = s)``]
+QED
 
-val INDEPENDENT_SING = store_thm ("INDEPENDENT_SING",
- ``!x. independent {x} <=> ~(x = 0)``,
+Theorem INDEPENDENT_SING:
+   !x. independent {x} <=> ~(x = 0)
+Proof
   REWRITE_TAC[INDEPENDENT_INSERT, NOT_IN_EMPTY, SPAN_EMPTY] THEN
-  REWRITE_TAC[INDEPENDENT_EMPTY] THEN SET_TAC[]);
+  REWRITE_TAC[INDEPENDENT_EMPTY] THEN SET_TAC[]
+QED
 
-val INDEPENDENT_STDBASIS = store_thm ("INDEPENDENT_STDBASIS",
- ``independent {i:real | 1 <= i /\ i <= 1}``,
+Theorem INDEPENDENT_STDBASIS:
+   independent {i:real | 1 <= i /\ i <= 1}
+Proof
  REWRITE_TAC [REAL_LE_ANTISYM, GSPEC_EQ2] THEN
- REWRITE_TAC [INDEPENDENT_SING] THEN REAL_ARITH_TAC);
+ REWRITE_TAC [INDEPENDENT_SING] THEN REAL_ARITH_TAC
+QED
 
-val SPANNING_SUBSET_INDEPENDENT = store_thm ("SPANNING_SUBSET_INDEPENDENT",
- ``!s t:real->bool.
-        t SUBSET s /\ independent s /\ s SUBSET span(t) ==> (s = t)``,
+Theorem SPANNING_SUBSET_INDEPENDENT:
+   !s t:real->bool.
+        t SUBSET s /\ independent s /\ s SUBSET span(t) ==> (s = t)
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN
   ASM_REWRITE_TAC[] THEN REWRITE_TAC[SUBSET_DEF] THEN
   X_GEN_TAC ``a:real`` THEN DISCH_TAC THEN
@@ -1266,16 +1540,20 @@ val SPANNING_SUBSET_INDEPENDENT = store_thm ("SPANNING_SUBSET_INDEPENDENT",
   FIRST_X_ASSUM(MP_TAC o REWRITE_RULE [independent]) THEN
   SIMP_TAC std_ss [dependent, NOT_EXISTS_THM] THEN
   DISCH_THEN(MP_TAC o SPEC ``a:real``) THEN ASM_REWRITE_TAC[] THEN
-  ASM_MESON_TAC[SPAN_MONO, SUBSET_DEF, IN_DELETE]);
+  ASM_MESON_TAC[SPAN_MONO, SUBSET_DEF, IN_DELETE]
+QED
 
-val IN_SPAN_DELETE = store_thm ("IN_SPAN_DELETE",
- ``!a b s.
+Theorem IN_SPAN_DELETE:
+   !a b s.
          a IN span s /\ ~(a IN span (s DELETE b))
-         ==> b IN span (a INSERT (s DELETE b))``,
-  ASM_MESON_TAC[IN_SPAN_INSERT, SPAN_MONO, SUBSET_DEF, IN_INSERT, IN_DELETE]);
+         ==> b IN span (a INSERT (s DELETE b))
+Proof
+  ASM_MESON_TAC[IN_SPAN_INSERT, SPAN_MONO, SUBSET_DEF, IN_INSERT, IN_DELETE]
+QED
 
-val SPAN_TRANS = store_thm ("SPAN_TRANS",
- ``!x y:real s. x IN span(s) /\ y IN span(x INSERT s) ==> y IN span(s)``,
+Theorem SPAN_TRANS:
+   !x y:real s. x IN span(s) /\ y IN span(x INSERT s) ==> y IN span(s)
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(SPECL [``x:real``, ``(x:real) INSERT s``, ``y:real``]
          SPAN_BREAKDOWN) THEN
@@ -1283,13 +1561,15 @@ val SPAN_TRANS = store_thm ("SPAN_TRANS",
   DISCH_THEN(X_CHOOSE_THEN ``k:real`` STRIP_ASSUME_TAC) THEN
   SUBST1_TAC(REAL_ARITH ``y:real = (y - k * x) + k * x``) THEN
   MATCH_MP_TAC SPAN_ADD THEN ASM_SIMP_TAC std_ss [SPAN_MUL] THEN
-  ASM_MESON_TAC[SPAN_MONO, SUBSET_DEF, IN_INSERT, IN_DELETE]);
+  ASM_MESON_TAC[SPAN_MONO, SUBSET_DEF, IN_INSERT, IN_DELETE]
+QED
 
-val EXCHANGE_LEMMA = store_thm ("EXCHANGE_LEMMA",
- ``!s t:real->bool.
+Theorem EXCHANGE_LEMMA:
+   !s t:real->bool.
         FINITE t /\ independent s /\ s SUBSET span t
         ==> ?t'. t' HAS_SIZE (CARD t) /\
-                 s SUBSET t' /\ t' SUBSET (s UNION t) /\ s SUBSET (span t')``,
+                 s SUBSET t' /\ t' SUBSET (s UNION t) /\ s SUBSET (span t')
+Proof
   REPEAT GEN_TAC THEN
   completeInduct_on `CARD(t DIFF s :real->bool)` THEN
   GEN_TAC THEN GEN_TAC THEN DISCH_TAC THEN FULL_SIMP_TAC std_ss [] THEN
@@ -1374,22 +1654,28 @@ val EXCHANGE_LEMMA = store_thm ("EXCHANGE_LEMMA",
                        FINITE_DELETE,
                        IN_DELETE, ARITH_PROVE ``(SUC(n - 1) = n) <=> ~(n = 0)``,
                        CARD_EQ_0] THEN
-  UNDISCH_TAC ``(b:real) IN t`` THEN ASM_SET_TAC[]);
+  UNDISCH_TAC ``(b:real) IN t`` THEN ASM_SET_TAC[]
+QED
 
-val CARD_STDBASIS = store_thm ("CARD_STDBASIS",
- ``CARD {1:real} = 1``,
-   MESON_TAC[CARD_SING]);
+Theorem CARD_STDBASIS:
+   CARD {1:real} = 1
+Proof
+   MESON_TAC[CARD_SING]
+QED
 
-val INDEPENDENT_SPAN_BOUND = store_thm ("INDEPENDENT_SPAN_BOUND",
- ``!s t. FINITE t /\ independent s /\ s SUBSET span(t)
-         ==> FINITE s /\ CARD(s) <= CARD(t)``,
+Theorem INDEPENDENT_SPAN_BOUND:
+   !s t. FINITE t /\ independent s /\ s SUBSET span(t)
+         ==> FINITE s /\ CARD(s) <= CARD(t)
+Proof
   REPEAT GEN_TAC THEN DISCH_TAC THEN
   FIRST_ASSUM(MP_TAC o MATCH_MP EXCHANGE_LEMMA) THEN
-  ASM_MESON_TAC[HAS_SIZE, CARD_SUBSET, SUBSET_FINITE_I]);
+  ASM_MESON_TAC[HAS_SIZE, CARD_SUBSET, SUBSET_FINITE_I]
+QED
 
-val INDEPENDENT_BOUND = store_thm ("INDEPENDENT_BOUND",
- ``!s:real->bool.
-        independent s ==> FINITE s /\ CARD(s) <= 1:num``,
+Theorem INDEPENDENT_BOUND:
+   !s:real->bool.
+        independent s ==> FINITE s /\ CARD(s) <= 1:num
+Proof
   REPEAT GEN_TAC THEN DISCH_TAC THEN
   ONCE_REWRITE_TAC[GSYM CARD_STDBASIS] THEN
   MATCH_MP_TAC INDEPENDENT_SPAN_BOUND THEN
@@ -1399,11 +1685,13 @@ val INDEPENDENT_BOUND = store_thm ("INDEPENDENT_BOUND",
    REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC [GSYM REAL_MUL_RID] THEN
    FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC [],
    DISCH_TAC THEN ASM_REWRITE_TAC []] THEN
-  ASM_REWRITE_TAC[FINITE_SING, SUBSET_UNIV]);
+  ASM_REWRITE_TAC[FINITE_SING, SUBSET_UNIV]
+QED
 
-val MAXIMAL_INDEPENDENT_SUBSET_EXTEND = store_thm ("MAXIMAL_INDEPENDENT_SUBSET_EXTEND",
- ``!s v:real->bool. s SUBSET v /\ independent s ==> ?b. s SUBSET b /\ b SUBSET v /\
-   independent b /\ v SUBSET (span b)``,
+Theorem MAXIMAL_INDEPENDENT_SUBSET_EXTEND:
+   !s v:real->bool. s SUBSET v /\ independent s ==> ?b. s SUBSET b /\ b SUBSET v /\
+   independent b /\ v SUBSET (span b)
+Proof
   REPEAT GEN_TAC THEN
   completeInduct_on ` 1n - CARD(s:real->bool)` THEN
   GEN_TAC THEN DISCH_TAC THEN FULL_SIMP_TAC std_ss [] THEN POP_ASSUM K_TAC THEN
@@ -1432,15 +1720,19 @@ val MAXIMAL_INDEPENDENT_SUBSET_EXTEND = store_thm ("MAXIMAL_INDEPENDENT_SUBSET_E
   ASM_REWRITE_TAC[INSERT_SUBSET] THEN
   MATCH_MP_TAC(ARITH_PROVE ``(b = a + 1) /\ b <= n ==> n - b < n - a:num``) THEN
   ASM_SIMP_TAC std_ss [CARD_EMPTY, CARD_INSERT, INDEPENDENT_BOUND] THEN
-  METIS_TAC[SPAN_SUPERSET, ADD1]);
+  METIS_TAC[SPAN_SUPERSET, ADD1]
+QED
 
-val MAXIMAL_INDEPENDENT_SUBSET = store_thm ("MAXIMAL_INDEPENDENT_SUBSET",
- ``!v:real->bool. ?b. b SUBSET v /\ independent b /\ v SUBSET (span b)``,
+Theorem MAXIMAL_INDEPENDENT_SUBSET:
+   !v:real->bool. ?b. b SUBSET v /\ independent b /\ v SUBSET (span b)
+Proof
   MP_TAC(SPEC ``EMPTY:real->bool`` MAXIMAL_INDEPENDENT_SUBSET_EXTEND) THEN
-  REWRITE_TAC[EMPTY_SUBSET, INDEPENDENT_EMPTY]);
+  REWRITE_TAC[EMPTY_SUBSET, INDEPENDENT_EMPTY]
+QED
 
-val SPAN_BREAKDOWN_EQ = store_thm ("SPAN_BREAKDOWN_EQ",
- ``!a:real s. (x IN span(a INSERT s) <=> (?k. (x - k * a) IN span s))``,
+Theorem SPAN_BREAKDOWN_EQ:
+   !a:real s. (x IN span(a INSERT s) <=> (?k. (x - k * a) IN span s))
+Proof
   REPEAT STRIP_TAC THEN EQ_TAC THENL
    [DISCH_THEN(MP_TAC o CONJ(SET_RULE ``(a:real) IN (a INSERT s)``)) THEN
     DISCH_THEN(MP_TAC o MATCH_MP SPAN_BREAKDOWN) THEN
@@ -1450,13 +1742,15 @@ val SPAN_BREAKDOWN_EQ = store_thm ("SPAN_BREAKDOWN_EQ",
     DISCH_THEN(X_CHOOSE_TAC ``k:real``) THEN
     SUBST1_TAC(REAL_ARITH ``x = (x - k * a) + k * a:real``) THEN
     MATCH_MP_TAC SPAN_ADD THEN
-    ASM_MESON_TAC[SPAN_MONO, SUBSET_DEF, IN_INSERT, SPAN_CLAUSES]]);
+    ASM_MESON_TAC[SPAN_MONO, SUBSET_DEF, IN_INSERT, SPAN_CLAUSES]]
+QED
 
-val LINEAR_INDEPENDENT_EXTEND_LEMMA = store_thm ("LINEAR_INDEPENDENT_EXTEND_LEMMA",
- ``!f b. FINITE b ==> independent b ==>
+Theorem LINEAR_INDEPENDENT_EXTEND_LEMMA:
+   !f b. FINITE b ==> independent b ==>
     ?g:real->real. (!x y. x IN span b /\ y IN span b ==>
      (g(x + y) = g(x) + g(y))) /\ (!x c. x IN span b ==>
-     (g(c * x) = c * g(x))) /\ (!x. x IN b ==> (g x = f x))``,
+     (g(c * x) = c * g(x))) /\ (!x. x IN b ==> (g x = f x))
+Proof
   GEN_TAC THEN
   ONCE_REWRITE_TAC [METIS []
    ``!b. (independent b ==>
@@ -1542,10 +1836,12 @@ val LINEAR_INDEPENDENT_EXTEND_LEMMA = store_thm ("LINEAR_INDEPENDENT_EXTEND_LEMM
   SUBGOAL_THEN ``&0:real = h(x:real)`` (SUBST1_TAC o SYM) THENL
    [FIRST_X_ASSUM MATCH_MP_TAC, ALL_TAC] THEN
   SIMP_TAC std_ss [REAL_ADD_LID, REAL_MUL_LZERO, REAL_SUB_RZERO] THEN
-  ASM_MESON_TAC[SUBSET_DEF, IN_INSERT, SPAN_SUPERSET]);
+  ASM_MESON_TAC[SUBSET_DEF, IN_INSERT, SPAN_SUPERSET]
+QED
 
-val LINEAR_INDEPENDENT_EXTEND = store_thm ("LINEAR_INDEPENDENT_EXTEND",
- ``!f b. independent b ==> ?g:real->real. linear g /\ (!x. x IN b ==> (g x = f x))``,
+Theorem LINEAR_INDEPENDENT_EXTEND:
+   !f b. independent b ==> ?g:real->real. linear g /\ (!x. x IN b ==> (g x = f x))
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [``b:real->bool``, ``univ(:real)``]
            MAXIMAL_INDEPENDENT_SUBSET_EXTEND) THEN
@@ -1555,39 +1851,49 @@ val LINEAR_INDEPENDENT_EXTEND = store_thm ("LINEAR_INDEPENDENT_EXTEND",
   MP_TAC(ISPECL [``f:real->real``, ``c:real->bool``]
     LINEAR_INDEPENDENT_EXTEND_LEMMA) THEN
   ASM_SIMP_TAC std_ss [INDEPENDENT_BOUND, linear] THEN
-  ASM_MESON_TAC[SUBSET_DEF]);
+  ASM_MESON_TAC[SUBSET_DEF]
+QED
 
-val SUBSPACE_KERNEL = store_thm ("SUBSPACE_KERNEL",
- ``!f. linear f ==> subspace {x | f(x) = 0}``,
+Theorem SUBSPACE_KERNEL:
+   !f. linear f ==> subspace {x | f(x) = 0}
+Proof
   SIMP_TAC std_ss [subspace, GSPECIFICATION] THEN
   SIMP_TAC std_ss [LINEAR_ADD, LINEAR_CMUL, REAL_ADD_LID, REAL_MUL_RZERO] THEN
-  MESON_TAC[LINEAR_0]);
+  MESON_TAC[LINEAR_0]
+QED
 
-val LINEAR_EQ_0_SPAN = store_thm ("LINEAR_EQ_0_SPAN",
- ``!f:real->real b. linear f /\ (!x. x IN b ==> (f(x) = 0))
-   ==> !x. x IN span(b) ==> (f(x) = 0)``,
+Theorem LINEAR_EQ_0_SPAN:
+   !f:real->real b. linear f /\ (!x. x IN b ==> (f(x) = 0))
+   ==> !x. x IN span(b) ==> (f(x) = 0)
+Proof
   REPEAT GEN_TAC THEN STRIP_TAC THEN RULE_ASSUM_TAC(SIMP_RULE std_ss [IN_DEF]) THEN
   ONCE_REWRITE_TAC [METIS [] ``(f x = 0) = (\x. (f:real->real) x = 0) x``] THEN
   MATCH_MP_TAC SPAN_INDUCT THEN ASM_SIMP_TAC std_ss [IN_DEF] THEN
   MP_TAC(ISPEC ``f:real->real`` SUBSPACE_KERNEL) THEN ASM_REWRITE_TAC[] THEN
   MATCH_MP_TAC EQ_IMPLIES THEN AP_TERM_TAC THEN
-  SIMP_TAC std_ss [EXTENSION, GSPECIFICATION, IN_DEF]);
+  SIMP_TAC std_ss [EXTENSION, GSPECIFICATION, IN_DEF]
+QED
 
-val LINEAR_EQ_0 = store_thm ("LINEAR_EQ_0",
- ``!f b s. linear f /\ s SUBSET (span b) /\
-   (!x. x IN b ==> (f(x) = 0)) ==> !x. x IN s ==> (f(x) = 0)``,
-  MESON_TAC[LINEAR_EQ_0_SPAN, SUBSET_DEF]);
+Theorem LINEAR_EQ_0:
+   !f b s. linear f /\ s SUBSET (span b) /\
+   (!x. x IN b ==> (f(x) = 0)) ==> !x. x IN s ==> (f(x) = 0)
+Proof
+  MESON_TAC[LINEAR_EQ_0_SPAN, SUBSET_DEF]
+QED
 
-val LINEAR_EQ = store_thm ("LINEAR_EQ",
- ``!f g b s. linear f /\ linear g /\ s SUBSET (span b) /\
-    (!x. x IN b ==> (f(x) = g(x))) ==> !x. x IN s ==> (f(x) = g(x))``,
+Theorem LINEAR_EQ:
+   !f g b s. linear f /\ linear g /\ s SUBSET (span b) /\
+    (!x. x IN b ==> (f(x) = g(x))) ==> !x. x IN s ==> (f(x) = g(x))
+Proof
   REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[GSYM REAL_SUB_0] THEN STRIP_TAC THEN
   ONCE_REWRITE_TAC [METIS [] ``(f x - g x = 0) = ((\x. (f:real->real) x - g x) x = 0)``] THEN
-  MATCH_MP_TAC LINEAR_EQ_0 THEN SIMP_TAC std_ss [] THEN METIS_TAC[LINEAR_COMPOSE_SUB]);
+  MATCH_MP_TAC LINEAR_EQ_0 THEN SIMP_TAC std_ss [] THEN METIS_TAC[LINEAR_COMPOSE_SUB]
+QED
 
-val LINEAR_EQ_STDBASIS = store_thm ("LINEAR_EQ_STDBASIS",
- ``!f:real->real g. linear f /\ linear g /\
-   (!i. 1 <= i /\ i <= 1 ==> (f i = g i)) ==> (f = g)``,
+Theorem LINEAR_EQ_STDBASIS:
+   !f:real->real g. linear f /\ linear g /\
+   (!i. 1 <= i /\ i <= 1 ==> (f i = g i)) ==> (f = g)
+Proof
   REPEAT STRIP_TAC THEN
   SUBGOAL_THEN ``!x. x IN UNIV ==> ((f:real->real) x = g x)``
    (fn th => MP_TAC th THEN SIMP_TAC std_ss [FUN_EQ_THM, IN_UNIV]) THEN
@@ -1600,11 +1906,13 @@ val LINEAR_EQ_STDBASIS = store_thm ("LINEAR_EQ_STDBASIS",
   SIMP_TAC std_ss [EXTENSION, span, hull, IN_BIGINTER, IN_UNIV] THEN
   SIMP_TAC std_ss [SING_SUBSET, GSPECIFICATION, subspace] THEN
   REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC [GSYM REAL_MUL_RID] THEN
-  FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC []);
+  FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC []
+QED
 
-val LINEAR_INJECTIVE_LEFT_INVERSE = store_thm ("LINEAR_INJECTIVE_LEFT_INVERSE",
- ``!f:real->real. linear f /\ (!x y. (f x = f y) ==> (x = y))
-                  ==> ?g. linear g /\ (g o f = (\x. x))``,
+Theorem LINEAR_INJECTIVE_LEFT_INVERSE:
+   !f:real->real. linear f /\ (!x y. (f x = f y) ==> (x = y))
+                  ==> ?g. linear g /\ (g o f = (\x. x))
+Proof
   REWRITE_TAC[INJECTIVE_LEFT_INVERSE] THEN REPEAT STRIP_TAC THEN
   SUBGOAL_THEN ``?h. linear(h:real->real) /\
                     !x. x IN IMAGE (f:real->real) {i | 1 <= i /\ i <= 1}
@@ -1626,24 +1934,31 @@ val LINEAR_INJECTIVE_LEFT_INVERSE = store_thm ("LINEAR_INJECTIVE_LEFT_INVERSE",
    ASM_SIMP_TAC std_ss [FORALL_IN_IMAGE, GSPECIFICATION] THEN STRIP_TAC THEN
    ASM_REWRITE_TAC[] THEN MATCH_MP_TAC LINEAR_EQ_STDBASIS THEN
    ASM_SIMP_TAC std_ss [LINEAR_ID, LINEAR_COMPOSE, LINEAR_ID, o_THM] THEN
-   ASM_MESON_TAC[]]);
+   ASM_MESON_TAC[]]
+QED
 
-val dim = new_definition ("dim",
-  ``dim v = @n. ?b. b SUBSET v /\ independent b /\ v SUBSET (span b) /\
-                   b HAS_SIZE n``);
+Definition dim[nocompute]:
+  dim v = @n. ?b. b SUBSET v /\ independent b /\ v SUBSET (span b) /\
+                   b HAS_SIZE n
+End
 
-val BASIS_EXISTS = store_thm ("BASIS_EXISTS",
- ``!v. ?b. b SUBSET v /\ independent b /\ v SUBSET (span b) /\ b HAS_SIZE (dim v)``,
+Theorem BASIS_EXISTS:
+   !v. ?b. b SUBSET v /\ independent b /\ v SUBSET (span b) /\ b HAS_SIZE (dim v)
+Proof
   GEN_TAC THEN REWRITE_TAC[dim] THEN CONV_TAC SELECT_CONV THEN
-  MESON_TAC[MAXIMAL_INDEPENDENT_SUBSET, HAS_SIZE, INDEPENDENT_BOUND]);
+  MESON_TAC[MAXIMAL_INDEPENDENT_SUBSET, HAS_SIZE, INDEPENDENT_BOUND]
+QED
 
-val INDEPENDENT_CARD_LE_DIM = store_thm ("INDEPENDENT_CARD_LE_DIM",
- ``!v b:real->bool. b SUBSET v /\ independent b ==> FINITE b /\ CARD(b) <= dim v``,
-  METIS_TAC[BASIS_EXISTS, INDEPENDENT_SPAN_BOUND, HAS_SIZE, SUBSET_TRANS]);
+Theorem INDEPENDENT_CARD_LE_DIM:
+   !v b:real->bool. b SUBSET v /\ independent b ==> FINITE b /\ CARD(b) <= dim v
+Proof
+  METIS_TAC[BASIS_EXISTS, INDEPENDENT_SPAN_BOUND, HAS_SIZE, SUBSET_TRANS]
+QED
 
-val CARD_GE_DIM_INDEPENDENT = store_thm ("CARD_GE_DIM_INDEPENDENT",
- ``!v b:real->bool. b SUBSET v /\ independent b /\ dim v <= CARD(b)
-        ==> v SUBSET (span b)``,
+Theorem CARD_GE_DIM_INDEPENDENT:
+   !v b:real->bool. b SUBSET v /\ independent b /\ dim v <= CARD(b)
+        ==> v SUBSET (span b)
+Proof
   REPEAT STRIP_TAC THEN
   SUBGOAL_THEN ``!a:real. ~(a IN v /\ ~(a IN span b))`` MP_TAC THENL
    [ALL_TAC, SET_TAC[]] THEN
@@ -1654,11 +1969,13 @@ val CARD_GE_DIM_INDEPENDENT = store_thm ("CARD_GE_DIM_INDEPENDENT",
                 INDEPENDENT_CARD_LE_DIM) THEN
   ASM_SIMP_TAC std_ss [INSERT_SUBSET, CARD_EMPTY, CARD_INSERT, INDEPENDENT_BOUND] THEN
   METIS_TAC[SPAN_SUPERSET, SUBSET_DEF, ARITH_PROVE
-    ``x <= y ==> ~(SUC y <= x)``]);
+    ``x <= y ==> ~(SUC y <= x)``]
+QED
 
-val SPAN_EXPLICIT = store_thm ("SPAN_EXPLICIT",
- ``!(p:real -> bool). span p =
-    {y | ?s u. FINITE s /\ s SUBSET p /\ (sum s (\v. u v * v) = y)}``,
+Theorem SPAN_EXPLICIT:
+   !(p:real -> bool). span p =
+    {y | ?s u. FINITE s /\ s SUBSET p /\ (sum s (\v. u v * v) = y)}
+Proof
   GEN_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
    [ALL_TAC,
     SIMP_TAC std_ss [SUBSET_DEF, GSPECIFICATION] THEN
@@ -1690,12 +2007,14 @@ val SPAN_EXPLICIT = store_thm ("SPAN_EXPLICIT",
     MATCH_MP_TAC(REAL_ARITH
       ``(y = z) ==> ((c + d) * x + y = d * x + (c * x + z:real))``),
     AP_TERM_TAC] THEN
-  MATCH_MP_TAC SUM_EQ THEN METIS_TAC[IN_DELETE]);
+  MATCH_MP_TAC SUM_EQ THEN METIS_TAC[IN_DELETE]
+QED
 
-val DEPENDENT_EXPLICIT = store_thm ("DEPENDENT_EXPLICIT",
- ``!p. dependent (p:real -> bool) <=>
+Theorem DEPENDENT_EXPLICIT:
+   !p. dependent (p:real -> bool) <=>
        ?s u. FINITE s /\ s SUBSET p /\ (?v. v IN s /\ ~(u v = &0)) /\
-             (sum s (\v. u v * v) = 0)``,
+             (sum s (\v. u v * v) = 0)
+Proof
   GEN_TAC THEN SIMP_TAC std_ss [dependent, SPAN_EXPLICIT, GSPECIFICATION] THEN
   SIMP_TAC std_ss [GSYM RIGHT_EXISTS_AND_THM, GSYM LEFT_EXISTS_AND_THM] THEN
   EQ_TAC THEN SIMP_TAC std_ss [LEFT_IMP_EXISTS_THM] THENL
@@ -1724,7 +2043,8 @@ val DEPENDENT_EXPLICIT = store_thm ("DEPENDENT_EXPLICIT",
      ASM_SIMP_TAC real_ss [REAL_MUL_LNEG, GSYM REAL_MUL_ASSOC,
                            REAL_MUL_RNEG, REAL_MUL_RZERO] THEN
      ASM_SIMP_TAC real_ss [REAL_MUL_RINV], DISCH_TAC THEN ASM_REWRITE_TAC []] THEN
-    ASM_SET_TAC []]);
+    ASM_SET_TAC []]
+QED
 
 Theorem INDEPENDENT_INJECTIVE_IMAGE_GEN :
    !(f:real->real) s. independent s /\ linear f /\
@@ -1759,11 +2079,13 @@ Proof
     DISCH_THEN MATCH_MP_TAC THEN ASM_MESON_TAC[SPAN_SUPERSET, SUBSET_DEF]]
 QED
 
-val INDEPENDENT_INJECTIVE_IMAGE = store_thm ("INDEPENDENT_INJECTIVE_IMAGE",
- ``!f:real->real s. independent s /\ linear f /\
-     (!x y. (f(x) = f(y)) ==> (x = y)) ==> independent (IMAGE f s)``,
+Theorem INDEPENDENT_INJECTIVE_IMAGE:
+   !f:real->real s. independent s /\ linear f /\
+     (!x y. (f(x) = f(y)) ==> (x = y)) ==> independent (IMAGE f s)
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC INDEPENDENT_INJECTIVE_IMAGE_GEN THEN
-  ASM_MESON_TAC[]);
+  ASM_MESON_TAC[]
+QED
 
 Theorem SPAN_LINEAR_IMAGE :
     !f:real->real s. linear f ==> (span(IMAGE f s) = IMAGE f (span s))
@@ -1791,9 +2113,10 @@ QED
 (* An injective map real->real is also surjective.                       *)
 (* ------------------------------------------------------------------------- *)
 
-val LINEAR_INJECTIVE_IMP_SURJECTIVE = store_thm ("LINEAR_INJECTIVE_IMP_SURJECTIVE",
- ``!f:real->real. linear f /\ (!x y. (f(x) = f(y)) ==> (x = y))
-                 ==> !y. ?x. f(x) = y``,
+Theorem LINEAR_INJECTIVE_IMP_SURJECTIVE:
+   !f:real->real. linear f /\ (!x y. (f(x) = f(y)) ==> (x = y))
+                 ==> !y. ?x. f(x) = y
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPEC ``univ(:real)`` BASIS_EXISTS) THEN
   REWRITE_TAC[SUBSET_UNIV, HAS_SIZE] THEN
@@ -1803,15 +2126,17 @@ val LINEAR_INJECTIVE_IMP_SURJECTIVE = store_thm ("LINEAR_INJECTIVE_IMP_SURJECTIV
     ASM_MESON_TAC[INDEPENDENT_INJECTIVE_IMAGE, LESS_EQ_REFL,
                   SUBSET_UNIV, CARD_IMAGE_INJ],
     ASM_SIMP_TAC std_ss [SPAN_LINEAR_IMAGE] THEN
-    ASM_MESON_TAC[SUBSET_DEF, IN_IMAGE, IN_UNIV]]);
+    ASM_MESON_TAC[SUBSET_DEF, IN_IMAGE, IN_UNIV]]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Left-invertible linear transformation has a lower bound.                  *)
 (* ------------------------------------------------------------------------- *)
 
-val LINEAR_INVERTIBLE_BOUNDED_BELOW_POS = store_thm ("LINEAR_INVERTIBLE_BOUNDED_BELOW_POS",
- ``!f:real->real g. linear f /\ linear g /\ (g o f = I)
-   ==> ?B. &0 < B /\ !x. B * abs(x) <= abs(f x)``,
+Theorem LINEAR_INVERTIBLE_BOUNDED_BELOW_POS:
+   !f:real->real g. linear f /\ linear g /\ (g o f = I)
+   ==> ?B. &0 < B /\ !x. B * abs(x) <= abs(f x)
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPEC ``g:real->real`` LINEAR_BOUNDED_POS) THEN
   ASM_REWRITE_TAC[] THEN
@@ -1822,83 +2147,108 @@ val LINEAR_INVERTIBLE_BOUNDED_BELOW_POS = store_thm ("LINEAR_INVERTIBLE_BOUNDED_
   CONJ_TAC THENL [ASM_SIMP_TAC real_ss [I_THM, REAL_LE_REFL], ALL_TAC] THEN
   ONCE_REWRITE_TAC [REAL_MUL_SYM] THEN REWRITE_TAC [GSYM real_div] THEN
   ASM_SIMP_TAC real_ss [o_THM, REAL_LE_LDIV_EQ] THEN
-  ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN ASM_REWRITE_TAC[]);
+  ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN ASM_REWRITE_TAC[]
+QED
 
-val LINEAR_INVERTIBLE_BOUNDED_BELOW = store_thm ("LINEAR_INVERTIBLE_BOUNDED_BELOW",
- ``!f:real->real g. linear f /\ linear g /\ (g o f = I) ==>
-   ?B. !x. B * abs(x) <= abs(f x)``,
-  MESON_TAC[LINEAR_INVERTIBLE_BOUNDED_BELOW_POS]);
+Theorem LINEAR_INVERTIBLE_BOUNDED_BELOW:
+   !f:real->real g. linear f /\ linear g /\ (g o f = I) ==>
+   ?B. !x. B * abs(x) <= abs(f x)
+Proof
+  MESON_TAC[LINEAR_INVERTIBLE_BOUNDED_BELOW_POS]
+QED
 
-val LINEAR_INJECTIVE_BOUNDED_BELOW_POS = store_thm ("LINEAR_INJECTIVE_BOUNDED_BELOW_POS",
- ``!f:real->real. linear f /\ (!x y. (f x = f y) ==> (x = y))
-    ==> ?B. &0 < B /\ !x. abs(x) * B <= abs(f x)``,
+Theorem LINEAR_INJECTIVE_BOUNDED_BELOW_POS:
+   !f:real->real. linear f /\ (!x y. (f x = f y) ==> (x = y))
+    ==> ?B. &0 < B /\ !x. abs(x) * B <= abs(f x)
+Proof
   REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[REAL_MUL_SYM] THEN
   MATCH_MP_TAC LINEAR_INVERTIBLE_BOUNDED_BELOW_POS THEN
-  METIS_TAC[LINEAR_INJECTIVE_LEFT_INVERSE, I_THM]);
+  METIS_TAC[LINEAR_INJECTIVE_LEFT_INVERSE, I_THM]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Consequences of independence or spanning for cardinality.                 *)
 (* ------------------------------------------------------------------------- *)
 
-val SPAN_CARD_GE_DIM = store_thm ("SPAN_CARD_GE_DIM",
- ``!v b:real->bool. v SUBSET (span b) /\ FINITE b ==> dim(v) <= CARD(b)``,
-  METIS_TAC[BASIS_EXISTS, INDEPENDENT_SPAN_BOUND, HAS_SIZE, SUBSET_TRANS]);
+Theorem SPAN_CARD_GE_DIM:
+   !v b:real->bool. v SUBSET (span b) /\ FINITE b ==> dim(v) <= CARD(b)
+Proof
+  METIS_TAC[BASIS_EXISTS, INDEPENDENT_SPAN_BOUND, HAS_SIZE, SUBSET_TRANS]
+QED
 
-val BASIS_CARD_EQ_DIM = store_thm ("BASIS_CARD_EQ_DIM",
- ``!v b. b SUBSET v /\ v SUBSET (span b) /\ independent b
-   ==> FINITE b /\ (CARD b = dim v)``,
-  METIS_TAC[LESS_EQUAL_ANTISYM, INDEPENDENT_CARD_LE_DIM, SPAN_CARD_GE_DIM]);
+Theorem BASIS_CARD_EQ_DIM:
+   !v b. b SUBSET v /\ v SUBSET (span b) /\ independent b
+   ==> FINITE b /\ (CARD b = dim v)
+Proof
+  METIS_TAC[LESS_EQUAL_ANTISYM, INDEPENDENT_CARD_LE_DIM, SPAN_CARD_GE_DIM]
+QED
 
-val BASIS_HAS_SIZE_DIM = store_thm ("BASIS_HAS_SIZE_DIM",
- ``!v b. independent b /\ (span b = v) ==> b HAS_SIZE (dim v)``,
+Theorem BASIS_HAS_SIZE_DIM:
+   !v b. independent b /\ (span b = v) ==> b HAS_SIZE (dim v)
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[HAS_SIZE] THEN
   MATCH_MP_TAC BASIS_CARD_EQ_DIM THEN ASM_REWRITE_TAC[SUBSET_REFL] THEN
-  FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN REWRITE_TAC[SPAN_INC]);
+  FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN REWRITE_TAC[SPAN_INC]
+QED
 
-val DIM_UNIQUE = store_thm ("DIM_UNIQUE",
- ``!v b. b SUBSET v /\ v SUBSET (span b) /\ independent b /\ b HAS_SIZE n
-        ==> (dim v = n)``,
-  MESON_TAC[BASIS_CARD_EQ_DIM, HAS_SIZE]);
+Theorem DIM_UNIQUE:
+   !v b. b SUBSET v /\ v SUBSET (span b) /\ independent b /\ b HAS_SIZE n
+        ==> (dim v = n)
+Proof
+  MESON_TAC[BASIS_CARD_EQ_DIM, HAS_SIZE]
+QED
 
-val DIM_LE_CARD = store_thm ("DIM_LE_CARD",
- ``!s. FINITE s ==> dim s <= CARD s``,
+Theorem DIM_LE_CARD:
+   !s. FINITE s ==> dim s <= CARD s
+Proof
   GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC SPAN_CARD_GE_DIM THEN
-  ASM_REWRITE_TAC[SPAN_INC, SUBSET_REFL]);
+  ASM_REWRITE_TAC[SPAN_INC, SUBSET_REFL]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Standard bases are a spanning set, and obviously finite.                  *)
 (* ------------------------------------------------------------------------- *)
 
-val SPAN_STDBASIS = store_thm ("SPAN_STDBASIS",
- ``span {i :real | 1 <= i /\ i <= 1} = UNIV``,
+Theorem SPAN_STDBASIS:
+   span {i :real | 1 <= i /\ i <= 1} = UNIV
+Proof
   REWRITE_TAC [REAL_LE_ANTISYM, GSPEC_EQ2] THEN
   SIMP_TAC std_ss [EXTENSION, span, hull, IN_BIGINTER, IN_UNIV] THEN
   SIMP_TAC std_ss [SING_SUBSET, GSPECIFICATION, subspace] THEN
   REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC [GSYM REAL_MUL_RID] THEN
-  FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC []);
+  FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC []
+QED
 
-val HAS_SIZE_STDBASIS = store_thm ("HAS_SIZE_STDBASIS",
- ``{i :real | 1 <= i /\ i <= 1} HAS_SIZE 1``,
+Theorem HAS_SIZE_STDBASIS:
+   {i :real | 1 <= i /\ i <= 1} HAS_SIZE 1
+Proof
   REWRITE_TAC [REAL_LE_ANTISYM, GSPEC_EQ2, HAS_SIZE] THEN
-  REWRITE_TAC [FINITE_SING, CARD_SING]);
+  REWRITE_TAC [FINITE_SING, CARD_SING]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* More lemmas about dimension.                                              *)
 (* ------------------------------------------------------------------------- *)
 
-val DIM_UNIV = store_thm ("DIM_UNIV",
- ``dim univ(:real) = 1:num``,
+Theorem DIM_UNIV:
+   dim univ(:real) = 1:num
+Proof
   MATCH_MP_TAC DIM_UNIQUE THEN EXISTS_TAC ``{i :real | &1 <= i /\ i <= &1}`` THEN
-  REWRITE_TAC[SUBSET_UNIV, SPAN_STDBASIS, HAS_SIZE_STDBASIS, INDEPENDENT_STDBASIS]);
+  REWRITE_TAC[SUBSET_UNIV, SPAN_STDBASIS, HAS_SIZE_STDBASIS, INDEPENDENT_STDBASIS]
+QED
 
-val DIM_SUBSET = store_thm ("DIM_SUBSET",
- ``!s t:real->bool. s SUBSET t ==> dim(s) <= dim(t)``,
-  MESON_TAC[BASIS_EXISTS, INDEPENDENT_SPAN_BOUND, SUBSET_DEF, HAS_SIZE]);
+Theorem DIM_SUBSET:
+   !s t:real->bool. s SUBSET t ==> dim(s) <= dim(t)
+Proof
+  MESON_TAC[BASIS_EXISTS, INDEPENDENT_SPAN_BOUND, SUBSET_DEF, HAS_SIZE]
+QED
 
-val DIM_SUBSET_UNIV = store_thm ("DIM_SUBSET_UNIV",
- ``!s:real->bool. dim(s) <= 1n``,
+Theorem DIM_SUBSET_UNIV:
+   !s:real->bool. dim(s) <= 1n
+Proof
   GEN_TAC THEN REWRITE_TAC[GSYM DIM_UNIV] THEN
-  MATCH_MP_TAC DIM_SUBSET THEN REWRITE_TAC[SUBSET_UNIV]);
+  MATCH_MP_TAC DIM_SUBSET THEN REWRITE_TAC[SUBSET_UNIV]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Open and closed sets                                                      *)
@@ -1942,9 +2292,11 @@ fun convert thm =
 (* |- open {} *)
 Theorem OPEN_EMPTY = convert OPEN_IN_EMPTY
 
-val OPEN_UNIV = store_thm ("OPEN_UNIV",
- ``open univ(:real)``,
-  REWRITE_TAC[open_def, IN_UNIV] THEN MESON_TAC[REAL_LT_01]);
+Theorem OPEN_UNIV:
+   open univ(:real)
+Proof
+  REWRITE_TAC[open_def, IN_UNIV] THEN MESON_TAC[REAL_LT_01]
+QED
 
 (* |- !s t. open s /\ open t ==> open (s INTER t) *)
 Theorem OPEN_INTER = convert OPEN_IN_INTER
@@ -1956,19 +2308,23 @@ Proof
     REWRITE_TAC [open_def, IN_BIGUNION] >> MESON_TAC []
 QED
 
-val OPEN_EXISTS_IN = store_thm ("OPEN_EXISTS_IN",
- ``!P Q:'a->real->bool.
-        (!a. P a ==> open {x | Q a x}) ==> open {x | ?a. P a /\ Q a x}``,
+Theorem OPEN_EXISTS_IN:
+   !P Q:'a->real->bool.
+        (!a. P a ==> open {x | Q a x}) ==> open {x | ?a. P a /\ Q a x}
+Proof
   REPEAT STRIP_TAC THEN
   SUBGOAL_THEN ``open(BIGUNION {{x | Q (a:'a) (x:real)} | P a})`` MP_TAC THENL
    [MATCH_MP_TAC OPEN_BIGUNION THEN ASM_SIMP_TAC std_ss [GSPECIFICATION] THEN
     METIS_TAC [], MATCH_MP_TAC (TAUT `(a <=> b) ==> a ==> b`) THEN AP_TERM_TAC THEN
     SIMP_TAC std_ss [EXTENSION, IN_BIGUNION, GSPECIFICATION] THEN
-    SET_TAC[]]);
+    SET_TAC[]]
+QED
 
-val OPEN_EXISTS = store_thm ("OPEN_EXISTS",
- ``!Q:'a->real->bool. (!a. open {x | Q a x}) ==> open {x | ?a. Q a x}``,
-  MP_TAC(ISPEC ``\x:'a. T`` OPEN_EXISTS_IN) THEN REWRITE_TAC[]);
+Theorem OPEN_EXISTS:
+   !Q:'a->real->bool. (!a. open {x | Q a x}) ==> open {x | ?a. Q a x}
+Proof
+  MP_TAC(ISPEC ``\x:'a. T`` OPEN_EXISTS_IN) THEN REWRITE_TAC[]
+QED
 
 Theorem OPEN_IN :
     !s. open s <=> open_in euclidean s
@@ -1982,13 +2338,17 @@ Proof
     rw [TOPSPACE_MTOP, euclidean_def]
 QED
 
-val TOPSPACE_EUCLIDEAN_SUBTOPOLOGY = store_thm ("TOPSPACE_EUCLIDEAN_SUBTOPOLOGY",
- ``!s. topspace (subtopology euclidean s) = s``,
-  REWRITE_TAC[TOPSPACE_EUCLIDEAN, TOPSPACE_SUBTOPOLOGY, INTER_UNIV]);
+Theorem TOPSPACE_EUCLIDEAN_SUBTOPOLOGY:
+   !s. topspace (subtopology euclidean s) = s
+Proof
+  REWRITE_TAC[TOPSPACE_EUCLIDEAN, TOPSPACE_SUBTOPOLOGY, INTER_UNIV]
+QED
 
-val OPEN_IN_REFL = store_thm ("OPEN_IN_REFL",
- ``!s:real->bool. open_in (subtopology euclidean s) s``,
-  REWRITE_TAC[OPEN_IN_SUBTOPOLOGY_REFL, TOPSPACE_EUCLIDEAN, SUBSET_UNIV]);
+Theorem OPEN_IN_REFL:
+   !s:real->bool. open_in (subtopology euclidean s) s
+Proof
+  REWRITE_TAC[OPEN_IN_SUBTOPOLOGY_REFL, TOPSPACE_EUCLIDEAN, SUBSET_UNIV]
+QED
 
 (* new definition *)
 Definition euclidean_closed_def :
@@ -2003,9 +2363,11 @@ Proof
     rw [euclidean_closed_def, closed_in, euclidean_open_def, TOPSPACE_EUCLIDEAN]
 QED
 
-val CLOSED_IN_REFL = store_thm ("CLOSED_IN_REFL",
- ``!s:real->bool. closed_in (subtopology euclidean s) s``,
-  REWRITE_TAC[CLOSED_IN_SUBTOPOLOGY_REFL, TOPSPACE_EUCLIDEAN, SUBSET_UNIV]);
+Theorem CLOSED_IN_REFL:
+   !s:real->bool. closed_in (subtopology euclidean s) s
+Proof
+  REWRITE_TAC[CLOSED_IN_SUBTOPOLOGY_REFL, TOPSPACE_EUCLIDEAN, SUBSET_UNIV]
+QED
 
 Theorem CLOSED_IN :
     !s. closed s <=> closed_in euclidean s
@@ -2023,57 +2385,78 @@ Proof
  >> METIS_TAC []
 QED
 
-val CLOSED_EMPTY = store_thm ("CLOSED_EMPTY",
- ``closed {}``,
-  REWRITE_TAC[CLOSED_IN, CLOSED_IN_EMPTY]);
+Theorem CLOSED_EMPTY:
+   closed {}
+Proof
+  REWRITE_TAC[CLOSED_IN, CLOSED_IN_EMPTY]
+QED
 
-val CLOSED_UNIV = store_thm ("CLOSED_UNIV",
- ``closed(UNIV:real->bool)``,
-  REWRITE_TAC[CLOSED_IN, GSYM TOPSPACE_EUCLIDEAN, CLOSED_IN_TOPSPACE]);
+Theorem CLOSED_UNIV:
+   closed(UNIV:real->bool)
+Proof
+  REWRITE_TAC[CLOSED_IN, GSYM TOPSPACE_EUCLIDEAN, CLOSED_IN_TOPSPACE]
+QED
 
-val CLOSED_UNION = store_thm ("CLOSED_UNION",
- ``!s t. closed s /\ closed t ==> closed(s UNION t)``,
-  REWRITE_TAC[CLOSED_IN, CLOSED_IN_UNION]);
+Theorem CLOSED_UNION:
+   !s t. closed s /\ closed t ==> closed(s UNION t)
+Proof
+  REWRITE_TAC[CLOSED_IN, CLOSED_IN_UNION]
+QED
 
-val CLOSED_INTER = store_thm ("CLOSED_INTER",
- ``!s t. closed s /\ closed t ==> closed(s INTER t)``,
-  REWRITE_TAC[CLOSED_IN, CLOSED_IN_INTER]);
+Theorem CLOSED_INTER:
+   !s t. closed s /\ closed t ==> closed(s INTER t)
+Proof
+  REWRITE_TAC[CLOSED_IN, CLOSED_IN_INTER]
+QED
 
-val CLOSED_BIGINTER = store_thm ("CLOSED_BIGINTER",
- ``!f. (!s:real->bool. s IN f ==> closed s) ==> closed(BIGINTER f)``,
+Theorem CLOSED_BIGINTER:
+   !f. (!s:real->bool. s IN f ==> closed s) ==> closed(BIGINTER f)
+Proof
   REWRITE_TAC[CLOSED_IN] THEN REPEAT STRIP_TAC THEN
   ASM_CASES_TAC ``f:(real->bool)->bool = {}`` THEN
   ASM_SIMP_TAC std_ss [CLOSED_IN_BIGINTER, BIGINTER_EMPTY] THEN
-  REWRITE_TAC[GSYM TOPSPACE_EUCLIDEAN, CLOSED_IN_TOPSPACE]);
+  REWRITE_TAC[GSYM TOPSPACE_EUCLIDEAN, CLOSED_IN_TOPSPACE]
+QED
 
-val CLOSED_FORALL_IN = store_thm ("CLOSED_FORALL_IN",
- ``!P Q:'a->real->bool.
-        (!a. P a ==> closed {x | Q a x}) ==> closed {x | !a. P a ==> Q a x}``,
+Theorem CLOSED_FORALL_IN:
+   !P Q:'a->real->bool.
+        (!a. P a ==> closed {x | Q a x}) ==> closed {x | !a. P a ==> Q a x}
+Proof
   REPEAT STRIP_TAC THEN
   SUBGOAL_THEN ``closed(BIGINTER {{x | Q (a:'a) (x:real)} | P a})`` MP_TAC THENL
    [MATCH_MP_TAC CLOSED_BIGINTER THEN ASM_SIMP_TAC std_ss [FORALL_IN_GSPEC],
     MATCH_MP_TAC EQ_IMPLIES THEN AP_TERM_TAC THEN SIMP_TAC std_ss [BIGINTER_GSPEC] THEN
-    SET_TAC[]]);
+    SET_TAC[]]
+QED
 
-val CLOSED_FORALL = store_thm ("CLOSED_FORALL",
- ``!Q:'a->real->bool. (!a. closed {x | Q a x}) ==> closed {x | !a. Q a x}``,
-  MP_TAC(ISPEC ``\x:'a. T`` CLOSED_FORALL_IN) THEN REWRITE_TAC[]);
+Theorem CLOSED_FORALL:
+   !Q:'a->real->bool. (!a. closed {x | Q a x}) ==> closed {x | !a. Q a x}
+Proof
+  MP_TAC(ISPEC ``\x:'a. T`` CLOSED_FORALL_IN) THEN REWRITE_TAC[]
+QED
 
-val OPEN_CLOSED = store_thm ("OPEN_CLOSED",
- ``!s:real->bool. open s <=> closed(UNIV DIFF s)``,
+Theorem OPEN_CLOSED:
+   !s:real->bool. open s <=> closed(UNIV DIFF s)
+Proof
   SIMP_TAC std_ss [OPEN_IN, CLOSED_IN, TOPSPACE_EUCLIDEAN, SUBSET_UNIV,
-           OPEN_IN_CLOSED_IN_EQ]);
+           OPEN_IN_CLOSED_IN_EQ]
+QED
 
-val OPEN_DIFF = store_thm ("OPEN_DIFF",
- ``!s t. open s /\ closed t ==> open(s DIFF t)``,
-  REWRITE_TAC[OPEN_IN, CLOSED_IN, OPEN_IN_DIFF]);
+Theorem OPEN_DIFF:
+   !s t. open s /\ closed t ==> open(s DIFF t)
+Proof
+  REWRITE_TAC[OPEN_IN, CLOSED_IN, OPEN_IN_DIFF]
+QED
 
-val CLOSED_DIFF = store_thm ("CLOSED_DIFF",
- ``!s t. closed s /\ open t ==> closed(s DIFF t)``,
-  REWRITE_TAC[OPEN_IN, CLOSED_IN, CLOSED_IN_DIFF]);
+Theorem CLOSED_DIFF:
+   !s t. closed s /\ open t ==> closed(s DIFF t)
+Proof
+  REWRITE_TAC[OPEN_IN, CLOSED_IN, CLOSED_IN_DIFF]
+QED
 
-val OPEN_BIGINTER = store_thm ("OPEN_BIGINTER",
-  ``!s. FINITE s /\ (!t. t IN s ==> open t) ==> (open (BIGINTER s))``,
+Theorem OPEN_BIGINTER:
+    !s. FINITE s /\ (!t. t IN s ==> open t) ==> (open (BIGINTER s))
+Proof
   REWRITE_TAC [GSYM AND_IMP_INTRO] THEN GEN_TAC THEN
   KNOW_TAC `` (!t. t IN s ==> open t) ==> open (BIGINTER s) <=>
          (\x. (!t. t IN x ==> open t) ==> open (BIGINTER x)) s`` THENL
@@ -2081,17 +2464,20 @@ val OPEN_BIGINTER = store_thm ("OPEN_BIGINTER",
    ASM_REWRITE_TAC [], ALL_TAC] THEN DISC_RW_KILL THEN
    MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN
    REWRITE_TAC [BIGINTER_INSERT, BIGINTER_EMPTY, OPEN_UNIV,
-   IN_INSERT] THEN MESON_TAC [OPEN_INTER]);
+   IN_INSERT] THEN MESON_TAC [OPEN_INTER]
+QED
 
-val CLOSED_BIGUNION = store_thm ("CLOSED_BIGUNION",
- ``!s. FINITE s /\ (!t. t IN s ==> closed t) ==> closed(BIGUNION s)``,
+Theorem CLOSED_BIGUNION:
+   !s. FINITE s /\ (!t. t IN s ==> closed t) ==> closed(BIGUNION s)
+Proof
   REWRITE_TAC[GSYM AND_IMP_INTRO] THEN
   KNOW_TAC ``!s. ((!t. t IN s ==> closed t) ==> closed(BIGUNION s)) <=>
              (\s. (!t. t IN s ==> closed t) ==> closed(BIGUNION s)) s`` THENL
   [FULL_SIMP_TAC std_ss [], ALL_TAC] THEN DISC_RW_KILL THEN
   MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN
   REWRITE_TAC[BIGUNION_INSERT, BIGUNION_EMPTY, CLOSED_EMPTY, IN_INSERT] THEN
-  MESON_TAC[CLOSED_UNION]);
+  MESON_TAC[CLOSED_UNION]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Open and closed balls.                                                    *)
@@ -2126,120 +2512,162 @@ Proof
     rw [cball_def, dist_def, mcball, MSPACE]
 QED
 
-val sphere = new_definition ("sphere",
-  ``sphere(x,e) = { y | dist(x,y) = e}``);
+Definition sphere[nocompute]:
+  sphere(x,e) = { y | dist(x,y) = e}
+End
 
-val IN_BALL = store_thm ("IN_BALL",
- ``!x y e. y IN ball(x,e) <=> dist(x,y) < e``,
-  REPEAT GEN_TAC THEN FULL_SIMP_TAC std_ss [ball, GSPECIFICATION]);
+Theorem IN_BALL:
+   !x y e. y IN ball(x,e) <=> dist(x,y) < e
+Proof
+  REPEAT GEN_TAC THEN FULL_SIMP_TAC std_ss [ball, GSPECIFICATION]
+QED
 
-val IN_CBALL = store_thm ("IN_CBALL",
- ``!x y e. y IN cball(x,e) <=> dist(x,y) <= e``,
-  REPEAT GEN_TAC THEN FULL_SIMP_TAC std_ss [cball, GSPECIFICATION]);
+Theorem IN_CBALL:
+   !x y e. y IN cball(x,e) <=> dist(x,y) <= e
+Proof
+  REPEAT GEN_TAC THEN FULL_SIMP_TAC std_ss [cball, GSPECIFICATION]
+QED
 
-val IN_SPHERE = store_thm ("IN_SPHERE",
- ``!x y e. y IN sphere(x,e) <=> (dist(x,y) = e)``,
-  REPEAT GEN_TAC THEN FULL_SIMP_TAC std_ss [sphere, GSPECIFICATION]);
+Theorem IN_SPHERE:
+   !x y e. y IN sphere(x,e) <=> (dist(x,y) = e)
+Proof
+  REPEAT GEN_TAC THEN FULL_SIMP_TAC std_ss [sphere, GSPECIFICATION]
+QED
 
-val IN_BALL_0 = store_thm ("IN_BALL_0",
- ``!x e. x IN ball(0,e) <=> abs(x) < e``,
-  REWRITE_TAC [IN_BALL, dist, REAL_SUB_LZERO, ABS_NEG]);
+Theorem IN_BALL_0:
+   !x e. x IN ball(0,e) <=> abs(x) < e
+Proof
+  REWRITE_TAC [IN_BALL, dist, REAL_SUB_LZERO, ABS_NEG]
+QED
 
-val IN_CBALL_0 = store_thm ("IN_CBALL_0",
- ``!x e. x IN cball(0,e) <=> abs(x) <= e``,
-  REWRITE_TAC[IN_CBALL, dist, REAL_SUB_LZERO, ABS_NEG]);
+Theorem IN_CBALL_0:
+   !x e. x IN cball(0,e) <=> abs(x) <= e
+Proof
+  REWRITE_TAC[IN_CBALL, dist, REAL_SUB_LZERO, ABS_NEG]
+QED
 
-val IN_SPHERE_0 = store_thm ("IN_SPHERE_0",
- ``!x e. x IN sphere(0,e) <=> (abs(x) = e)``,
-  REWRITE_TAC[IN_SPHERE, dist, REAL_SUB_LZERO, ABS_NEG]);
+Theorem IN_SPHERE_0:
+   !x e. x IN sphere(0,e) <=> (abs(x) = e)
+Proof
+  REWRITE_TAC[IN_SPHERE, dist, REAL_SUB_LZERO, ABS_NEG]
+QED
 
-val BALL_TRIVIAL = store_thm ("BALL_TRIVIAL",
- ``!x. ball(x,&0) = {}``,
-  REWRITE_TAC[EXTENSION, IN_BALL, IN_SING, NOT_IN_EMPTY, dist] THEN REAL_ARITH_TAC);
+Theorem BALL_TRIVIAL:
+   !x. ball(x,&0) = {}
+Proof
+  REWRITE_TAC[EXTENSION, IN_BALL, IN_SING, NOT_IN_EMPTY, dist] THEN REAL_ARITH_TAC
+QED
 
-val CBALL_TRIVIAL = store_thm ("CBALL_TRIVIAL",
- ``!x. cball(x,&0) = {x}``,
-  REWRITE_TAC[EXTENSION, IN_CBALL, IN_SING, NOT_IN_EMPTY, dist] THEN REAL_ARITH_TAC);
+Theorem CBALL_TRIVIAL:
+   !x. cball(x,&0) = {x}
+Proof
+  REWRITE_TAC[EXTENSION, IN_CBALL, IN_SING, NOT_IN_EMPTY, dist] THEN REAL_ARITH_TAC
+QED
 
-val CENTRE_IN_CBALL = store_thm ("CENTRE_IN_CBALL",
- ``!x e. x IN cball(x,e) <=> &0 <= e``,
-  MESON_TAC[IN_CBALL, DIST_REFL]);
+Theorem CENTRE_IN_CBALL:
+   !x e. x IN cball(x,e) <=> &0 <= e
+Proof
+  MESON_TAC[IN_CBALL, DIST_REFL]
+QED
 
-val BALL_SUBSET_CBALL = store_thm ("BALL_SUBSET_CBALL",
- ``!x e. ball(x,e) SUBSET cball(x,e)``,
-  REWRITE_TAC[IN_BALL, IN_CBALL, SUBSET_DEF] THEN REAL_ARITH_TAC);
+Theorem BALL_SUBSET_CBALL:
+   !x e. ball(x,e) SUBSET cball(x,e)
+Proof
+  REWRITE_TAC[IN_BALL, IN_CBALL, SUBSET_DEF] THEN REAL_ARITH_TAC
+QED
 
-val SPHERE_SUBSET_CBALL = store_thm ("SPHERE_SUBSET_CBALL",
- ``!x e. sphere(x,e) SUBSET cball(x,e)``,
-  REWRITE_TAC[IN_SPHERE, IN_CBALL, SUBSET_DEF] THEN REAL_ARITH_TAC);
+Theorem SPHERE_SUBSET_CBALL:
+   !x e. sphere(x,e) SUBSET cball(x,e)
+Proof
+  REWRITE_TAC[IN_SPHERE, IN_CBALL, SUBSET_DEF] THEN REAL_ARITH_TAC
+QED
 
-val SUBSET_BALL = store_thm ("SUBSET_BALL",
- ``!x d e. d <= e ==> ball(x,d) SUBSET ball(x,e)``,
-  REWRITE_TAC[SUBSET_DEF, IN_BALL] THEN MESON_TAC[REAL_LTE_TRANS]);
+Theorem SUBSET_BALL:
+   !x d e. d <= e ==> ball(x,d) SUBSET ball(x,e)
+Proof
+  REWRITE_TAC[SUBSET_DEF, IN_BALL] THEN MESON_TAC[REAL_LTE_TRANS]
+QED
 
-val SUBSET_CBALL = store_thm ("SUBSET_CBALL",
- ``!x d e. d <= e ==> cball(x,d) SUBSET cball(x,e)``,
-  REWRITE_TAC[SUBSET_DEF, IN_CBALL] THEN MESON_TAC[REAL_LE_TRANS]);
+Theorem SUBSET_CBALL:
+   !x d e. d <= e ==> cball(x,d) SUBSET cball(x,e)
+Proof
+  REWRITE_TAC[SUBSET_DEF, IN_CBALL] THEN MESON_TAC[REAL_LE_TRANS]
+QED
 
-val BALL_MAX_UNION = store_thm ("BALL_MAX_UNION",
-  ``!a r s. ball(a,max r s) = ball(a,r) UNION ball(a,s)``,
+Theorem BALL_MAX_UNION:
+    !a r s. ball(a,max r s) = ball(a,r) UNION ball(a,s)
+Proof
     rpt GEN_TAC
  >> REWRITE_TAC [IN_BALL, IN_UNION, EXTENSION, dist]
  >> GEN_TAC >> Q.ABBREV_TAC `b = abs (a - x)`
- >> REWRITE_TAC [REAL_LT_MAX]);
+ >> REWRITE_TAC [REAL_LT_MAX]
+QED
 
-val BALL_MIN_INTER = store_thm ("BALL_MIN_INTER",
-  ``!a r s. ball(a,min r s) = ball(a,r) INTER ball(a,s)``,
+Theorem BALL_MIN_INTER:
+    !a r s. ball(a,min r s) = ball(a,r) INTER ball(a,s)
+Proof
     rpt GEN_TAC
  >> REWRITE_TAC [IN_BALL, IN_INTER, EXTENSION, dist]
  >> GEN_TAC >> Q.ABBREV_TAC `b = abs (a - x)`
- >> REWRITE_TAC [REAL_LT_MIN]);
+ >> REWRITE_TAC [REAL_LT_MIN]
+QED
 
-val CBALL_MAX_UNION = store_thm ("CBALL_MAX_UNION",
-  ``!a r s. cball(a,max r s) = cball(a,r) UNION cball(a,s)``,
+Theorem CBALL_MAX_UNION:
+    !a r s. cball(a,max r s) = cball(a,r) UNION cball(a,s)
+Proof
     rpt GEN_TAC
  >> REWRITE_TAC [IN_CBALL, IN_UNION, EXTENSION, dist]
  >> GEN_TAC >> Q.ABBREV_TAC `b = abs (a - x)`
- >> REWRITE_TAC [REAL_LE_MAX]);
+ >> REWRITE_TAC [REAL_LE_MAX]
+QED
 
-val CBALL_MIN_INTER = store_thm ("CBALL_MIN_INTER",
-  ``!x d e. cball(x,min d e) = cball(x,d) INTER cball(x,e)``,
+Theorem CBALL_MIN_INTER:
+    !x d e. cball(x,min d e) = cball(x,d) INTER cball(x,e)
+Proof
     rpt GEN_TAC
  >> REWRITE_TAC [EXTENSION, IN_INTER, IN_CBALL, dist]
  >> Q.X_GEN_TAC `a` >> Q.ABBREV_TAC `b = abs (x - a)`
- >> REWRITE_TAC [REAL_LE_MIN]);
+ >> REWRITE_TAC [REAL_LE_MIN]
+QED
 
-val BALL_TRANSLATION = store_thm ("BALL_TRANSLATION",
- ``!a x r. ball(a + x,r) = IMAGE (\y. a + y) (ball(x,r))``,
+Theorem BALL_TRANSLATION:
+   !a x r. ball(a + x,r) = IMAGE (\y. a + y) (ball(x,r))
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC [EXTENSION, IN_BALL, IN_IMAGE, dist] THEN
   GEN_TAC THEN EQ_TAC THENL [DISCH_TAC THEN EXISTS_TAC ``x' - a:real`` THEN
   RW_TAC std_ss [REAL_SUB_ADD2] THEN
   ASM_REWRITE_TAC [REAL_ARITH ``x - (x' - a) = a + x - x':real``],
   RW_TAC std_ss [] THEN
-  METIS_TAC [REAL_ARITH ``a - (b + c) = a - b - c:real``, REAL_ADD_SUB]]);
+  METIS_TAC [REAL_ARITH ``a - (b + c) = a - b - c:real``, REAL_ADD_SUB]]
+QED
 
-val CBALL_TRANSLATION = store_thm ("CBALL_TRANSLATION",
- ``!a x r. cball(a + x,r) = IMAGE (\y. a + y) (cball(x,r))``,
+Theorem CBALL_TRANSLATION:
+   !a x r. cball(a + x,r) = IMAGE (\y. a + y) (cball(x,r))
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC [EXTENSION, IN_CBALL, IN_IMAGE, dist] THEN
   GEN_TAC THEN EQ_TAC THENL [DISCH_TAC THEN EXISTS_TAC ``x' - a:real`` THEN
   RW_TAC std_ss [REAL_SUB_ADD2] THEN
   ASM_REWRITE_TAC [REAL_ARITH ``x - (x' - a) = a + x - x':real``],
   RW_TAC std_ss [] THEN
-  METIS_TAC [REAL_ARITH ``a - (b + c) = a - b - c:real``, REAL_ADD_SUB]]);
+  METIS_TAC [REAL_ARITH ``a - (b + c) = a - b - c:real``, REAL_ADD_SUB]]
+QED
 
-val SPHERE_TRANSLATION = store_thm ("SPHERE_TRANSLATION",
- ``!a x r. sphere(a + x,r) = IMAGE (\y. a + y) (sphere(x,r))``,
+Theorem SPHERE_TRANSLATION:
+   !a x r. sphere(a + x,r) = IMAGE (\y. a + y) (sphere(x,r))
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC [EXTENSION, IN_SPHERE, IN_IMAGE, dist] THEN
   GEN_TAC THEN EQ_TAC THENL [DISCH_TAC THEN EXISTS_TAC ``x' - a:real`` THEN
   RW_TAC std_ss [REAL_SUB_ADD2] THEN
   ASM_REWRITE_TAC [REAL_ARITH ``x - (x' - a) = a + x - x':real``],
   RW_TAC std_ss [] THEN
-  METIS_TAC [REAL_ARITH ``a - (b + c) = a - b - c:real``, REAL_ADD_SUB]]);
+  METIS_TAC [REAL_ARITH ``a - (b + c) = a - b - c:real``, REAL_ADD_SUB]]
+QED
 
-val BALL_LINEAR_IMAGE = store_thm ("BALL_LINEAR_IMAGE",
- ``!f:real->real x r.
+Theorem BALL_LINEAR_IMAGE:
+   !f:real->real x r.
         linear f /\ (!y. ?x. f x = y) /\ (!x. abs(f x) = abs x)
-        ==> (ball(f x,r) = IMAGE f (ball(x,r)))``,
+        ==> (ball(f x,r) = IMAGE f (ball(x,r)))
+Proof
   REWRITE_TAC[ball] THEN
   SIMP_TAC std_ss [linear, IN_IMAGE, dist, EXTENSION, GSPECIFICATION] THEN
   REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THENL
@@ -2260,12 +2688,14 @@ val BALL_LINEAR_IMAGE = store_thm ("BALL_LINEAR_IMAGE",
    ASM_REWRITE_TAC [] THEN ONCE_REWRITE_TAC [REAL_ARITH ``-1 * x:real = -x``] THEN
    UNDISCH_TAC ``!x y. (f:real->real) (x + y) = f x + f y`` THEN
    DISCH_THEN (MP_TAC o SYM o SPECL [``x:real``, ``-x'':real``]) THEN DISCH_TAC THEN
-   ASM_REWRITE_TAC [GSYM real_sub]]);
+   ASM_REWRITE_TAC [GSYM real_sub]]
+QED
 
-val CBALL_LINEAR_IMAGE = store_thm ("CBALL_LINEAR_IMAGE",
- ``!f:real->real x r.
+Theorem CBALL_LINEAR_IMAGE:
+   !f:real->real x r.
         linear f /\ (!y. ?x. f x = y) /\ (!x. abs(f x) = abs x)
-        ==> (cball(f x,r) = IMAGE f (cball(x,r)))``,
+        ==> (cball(f x,r) = IMAGE f (cball(x,r)))
+Proof
   REWRITE_TAC[cball] THEN
   SIMP_TAC std_ss [linear, IN_IMAGE, dist, EXTENSION, GSPECIFICATION] THEN
   REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THENL
@@ -2286,12 +2716,14 @@ val CBALL_LINEAR_IMAGE = store_thm ("CBALL_LINEAR_IMAGE",
    ASM_REWRITE_TAC [] THEN ONCE_REWRITE_TAC [REAL_ARITH ``-1 * x:real = -x``] THEN
    UNDISCH_TAC ``!x y. (f:real->real) (x + y) = f x + f y`` THEN
    DISCH_THEN (MP_TAC o SYM o SPECL [``x:real``, ``-x'':real``]) THEN DISCH_TAC THEN
-   ASM_REWRITE_TAC [GSYM real_sub]]);
+   ASM_REWRITE_TAC [GSYM real_sub]]
+QED
 
-val SPHERE_LINEAR_IMAGE = store_thm ("SPHERE_LINEAR_IMAGE",
- ``!f:real->real x r.
+Theorem SPHERE_LINEAR_IMAGE:
+   !f:real->real x r.
         linear f /\ (!y. ?x. f x = y) /\ (!x. abs(f x) = abs x)
-        ==> (sphere(f x,r) = IMAGE f (sphere(x,r)))``,
+        ==> (sphere(f x,r) = IMAGE f (sphere(x,r)))
+Proof
   REWRITE_TAC[sphere] THEN
   SIMP_TAC std_ss [linear, IN_IMAGE, dist, EXTENSION, GSPECIFICATION] THEN
   REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THENL
@@ -2312,10 +2744,12 @@ val SPHERE_LINEAR_IMAGE = store_thm ("SPHERE_LINEAR_IMAGE",
    ASM_REWRITE_TAC [] THEN ONCE_REWRITE_TAC [REAL_ARITH ``-1 * x:real = -x``] THEN
    UNDISCH_TAC ``!x y. (f:real->real) (x + y) = f x + f y`` THEN
    DISCH_THEN (MP_TAC o SYM o SPECL [``x:real``, ``-x'':real``]) THEN DISCH_TAC THEN
-   ASM_REWRITE_TAC [GSYM real_sub]]);
+   ASM_REWRITE_TAC [GSYM real_sub]]
+QED
 
-val BALL_SCALING = store_thm ("BALL_SCALING",
- ``!c. &0 < c ==> !x r. ball(c * x,c * r) = IMAGE (\x. c * x) (ball(x,r))``,
+Theorem BALL_SCALING:
+   !c. &0 < c ==> !x r. ball(c * x,c * r) = IMAGE (\x. c * x) (ball(x,r))
+Proof
   REWRITE_TAC [IMAGE_DEF, IN_BALL] THEN BETA_TAC THEN
   SIMP_TAC std_ss [ball, EXTENSION, GSPECIFICATION, dist] THEN
   REPEAT STRIP_TAC THEN EQ_TAC THENL [DISCH_TAC THEN
@@ -2326,10 +2760,12 @@ val BALL_SCALING = store_thm ("BALL_SCALING",
   DISC_RW_KILL THEN REWRITE_TAC [GSYM ABS_MUL] THEN
   FULL_SIMP_TAC std_ss [REAL_SUB_LDISTRIB, REAL_DIV_LMUL, REAL_POS_NZ],
   STRIP_TAC THEN FULL_SIMP_TAC std_ss [GSYM dist, DIST_MUL, abs,
-                 REAL_LT_IMP_LE, REAL_LT_LMUL]]);
+                 REAL_LT_IMP_LE, REAL_LT_LMUL]]
+QED
 
-val CBALL_SCALING = store_thm ("CBALL_SCALING",
- ``!c. &0 < c ==> !x r. cball(c * x,c * r) = IMAGE (\x. c * x) (cball(x,r))``,
+Theorem CBALL_SCALING:
+   !c. &0 < c ==> !x r. cball(c * x,c * r) = IMAGE (\x. c * x) (cball(x,r))
+Proof
   REWRITE_TAC [IMAGE_DEF, IN_CBALL] THEN BETA_TAC THEN
   SIMP_TAC std_ss [cball, EXTENSION, GSPECIFICATION, dist] THEN
   REPEAT STRIP_TAC THEN EQ_TAC THENL [DISCH_TAC THEN
@@ -2340,58 +2776,80 @@ val CBALL_SCALING = store_thm ("CBALL_SCALING",
   DISC_RW_KILL THEN REWRITE_TAC [GSYM ABS_MUL] THEN
   FULL_SIMP_TAC std_ss [REAL_SUB_LDISTRIB, REAL_DIV_LMUL, REAL_POS_NZ],
   STRIP_TAC THEN FULL_SIMP_TAC std_ss [GSYM dist, DIST_MUL, abs,
-                 REAL_LT_IMP_LE, REAL_LE_LMUL]]);
+                 REAL_LT_IMP_LE, REAL_LE_LMUL]]
+QED
 
-val CBALL_DIFF_BALL = store_thm ("CBALL_DIFF_BALL",
- ``!a r. cball(a,r) DIFF ball(a,r) = sphere(a,r)``,
+Theorem CBALL_DIFF_BALL:
+   !a r. cball(a,r) DIFF ball(a,r) = sphere(a,r)
+Proof
   SIMP_TAC std_ss [ball, cball, sphere, EXTENSION, IN_DIFF, GSPECIFICATION] THEN
-  REAL_ARITH_TAC);
+  REAL_ARITH_TAC
+QED
 
-val BALL_UNION_SPHERE = store_thm ("BALL_UNION_SPHERE",
- ``!a r. ball(a,r) UNION sphere(a,r) = cball(a,r)``,
+Theorem BALL_UNION_SPHERE:
+   !a r. ball(a,r) UNION sphere(a,r) = cball(a,r)
+Proof
   SIMP_TAC std_ss [ball, cball, sphere, EXTENSION, IN_UNION, GSPECIFICATION] THEN
-  REAL_ARITH_TAC);
+  REAL_ARITH_TAC
+QED
 
-val SPHERE_UNION_BALL = store_thm ("SPHERE_UNION_BALL",
- ``!a r. sphere(a,r) UNION ball(a,r)  = cball(a,r)``,
+Theorem SPHERE_UNION_BALL:
+   !a r. sphere(a,r) UNION ball(a,r)  = cball(a,r)
+Proof
   SIMP_TAC std_ss [ball, cball, sphere, EXTENSION, IN_UNION, GSPECIFICATION] THEN
-  REAL_ARITH_TAC);
+  REAL_ARITH_TAC
+QED
 
-val CBALL_DIFF_SPHERE = store_thm ("CBALL_DIFF_SPHERE",
- ``!a r. cball(a,r) DIFF sphere(a,r) = ball(a,r)``,
+Theorem CBALL_DIFF_SPHERE:
+   !a r. cball(a,r) DIFF sphere(a,r) = ball(a,r)
+Proof
   REWRITE_TAC[EXTENSION, IN_DIFF, IN_SPHERE, IN_BALL, IN_CBALL] THEN
-  REAL_ARITH_TAC);
+  REAL_ARITH_TAC
+QED
 
-val OPEN_BALL = store_thm ("OPEN_BALL",
- ``!x e. open(ball(x,e))``,
+Theorem OPEN_BALL:
+   !x e. open(ball(x,e))
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[open_def, ball] THEN
   FULL_SIMP_TAC std_ss [GSPECIFICATION] THEN ONCE_REWRITE_TAC[DIST_SYM] THEN
   MESON_TAC [REAL_SUB_LT, REAL_LT_SUB_LADD, REAL_ADD_SYM, REAL_LET_TRANS,
-  DIST_TRIANGLE_ALT]);
+  DIST_TRIANGLE_ALT]
+QED
 
-val CENTRE_IN_BALL = store_thm ("CENTRE_IN_BALL",
- ``!x e. x IN ball(x,e) <=> &0 < e``,
-  MESON_TAC[IN_BALL, DIST_REFL]);
+Theorem CENTRE_IN_BALL:
+   !x e. x IN ball(x,e) <=> &0 < e
+Proof
+  MESON_TAC[IN_BALL, DIST_REFL]
+QED
 
-val OPEN_CONTAINS_BALL = store_thm ("OPEN_CONTAINS_BALL",
- ``!s. open s <=> !x. x IN s ==> ?e. &0 < e /\ ball(x,e) SUBSET s``,
-  REWRITE_TAC[open_def, SUBSET_DEF, IN_BALL] THEN SIMP_TAC std_ss [DIST_SYM]);
+Theorem OPEN_CONTAINS_BALL:
+   !s. open s <=> !x. x IN s ==> ?e. &0 < e /\ ball(x,e) SUBSET s
+Proof
+  REWRITE_TAC[open_def, SUBSET_DEF, IN_BALL] THEN SIMP_TAC std_ss [DIST_SYM]
+QED
 
-val OPEN_CONTAINS_BALL_EQ = store_thm ("OPEN_CONTAINS_BALL_EQ",
- ``!s. open s ==> (!x. x IN s <=> ?e. &0 < e /\ ball(x,e) SUBSET s)``,
-  MESON_TAC[OPEN_CONTAINS_BALL, SUBSET_DEF, CENTRE_IN_BALL]);
+Theorem OPEN_CONTAINS_BALL_EQ:
+   !s. open s ==> (!x. x IN s <=> ?e. &0 < e /\ ball(x,e) SUBSET s)
+Proof
+  MESON_TAC[OPEN_CONTAINS_BALL, SUBSET_DEF, CENTRE_IN_BALL]
+QED
 
-val BALL_EQ_EMPTY = store_thm ("BALL_EQ_EMPTY",
- ``!x e. (ball(x,e) = {}) <=> e <= &0``,
+Theorem BALL_EQ_EMPTY:
+   !x e. (ball(x,e) = {}) <=> e <= &0
+Proof
   REWRITE_TAC[EXTENSION, IN_BALL, NOT_IN_EMPTY, REAL_NOT_LT] THEN
-  MESON_TAC[DIST_POS_LE, REAL_LE_TRANS, DIST_REFL]);
+  MESON_TAC[DIST_POS_LE, REAL_LE_TRANS, DIST_REFL]
+QED
 
-val BALL_EMPTY = store_thm ("BALL_EMPTY",
- ``!x e. e <= &0 ==> (ball(x,e) = {})``,
-  REWRITE_TAC[BALL_EQ_EMPTY]);
+Theorem BALL_EMPTY:
+   !x e. e <= &0 ==> (ball(x,e) = {})
+Proof
+  REWRITE_TAC[BALL_EQ_EMPTY]
+QED
 
-val OPEN_CONTAINS_CBALL = store_thm ("OPEN_CONTAINS_CBALL",
- ``!s. open s <=> !x. x IN s ==> ?e. &0 < e /\ cball(x,e) SUBSET s``,
+Theorem OPEN_CONTAINS_CBALL:
+   !s. open s <=> !x. x IN s ==> ?e. &0 < e /\ cball(x,e) SUBSET s
+Proof
   GEN_TAC THEN REWRITE_TAC[OPEN_CONTAINS_BALL] THEN EQ_TAC THENL
    [ALL_TAC, ASM_MESON_TAC[SUBSET_TRANS, BALL_SUBSET_CBALL]] THEN
    KNOW_TAC ``!x. (x IN s ==> ?e. 0 < e /\ cball (x,e) SUBSET s) =
@@ -2406,14 +2864,18 @@ val OPEN_CONTAINS_CBALL = store_thm ("OPEN_CONTAINS_CBALL",
   DISCH_THEN(X_CHOOSE_THEN ``e:real`` STRIP_ASSUME_TAC) THEN
   EXISTS_TAC ``e / &2:real`` THEN ASM_REWRITE_TAC[REAL_LT_HALF1] THEN
   SUBGOAL_THEN ``e / &2 < e:real`` (fn th => ASM_MESON_TAC[th, REAL_LET_TRANS]) THEN
-  UNDISCH_TAC ``0 < e:real`` THEN SIMP_TAC arith_ss [REAL_LT_HALF2]);
+  UNDISCH_TAC ``0 < e:real`` THEN SIMP_TAC arith_ss [REAL_LT_HALF2]
+QED
 
-val OPEN_CONTAINS_CBALL_EQ = store_thm ("OPEN_CONTAINS_CBALL_EQ",
- ``!s. open s ==> (!x. x IN s <=> ?e. &0 < e /\ cball(x,e) SUBSET s)``,
-  MESON_TAC[OPEN_CONTAINS_CBALL, SUBSET_DEF, REAL_LT_IMP_LE, CENTRE_IN_CBALL]);
+Theorem OPEN_CONTAINS_CBALL_EQ:
+   !s. open s ==> (!x. x IN s <=> ?e. &0 < e /\ cball(x,e) SUBSET s)
+Proof
+  MESON_TAC[OPEN_CONTAINS_CBALL, SUBSET_DEF, REAL_LT_IMP_LE, CENTRE_IN_CBALL]
+QED
 
-val SPHERE_EQ_EMPTY = store_thm ("SPHERE_EQ_EMPTY",
- ``!a:real r. (sphere(a,r) = {}) <=> r < &0``,
+Theorem SPHERE_EQ_EMPTY:
+   !a:real r. (sphere(a,r) = {}) <=> r < &0
+Proof
   SIMP_TAC std_ss [sphere, EXTENSION, GSPECIFICATION, NOT_IN_EMPTY] THEN
   REPEAT GEN_TAC THEN EQ_TAC THENL [CCONTR_TAC THEN
   FULL_SIMP_TAC std_ss [REAL_NOT_LT] THEN
@@ -2423,117 +2885,151 @@ val SPHERE_EQ_EMPTY = store_thm ("SPHERE_EQ_EMPTY",
   REAL_ARITH_TAC, EXISTS_TAC ``a:real`` THEN
   METIS_TAC [REAL_SUB_REFL, EQ_SYM_EQ, ABS_0]], DISCH_TAC THEN
   ONCE_REWRITE_TAC [EQ_SYM_EQ] THEN CCONTR_TAC THEN
-  UNDISCH_TAC ``r < 0:real`` THEN FULL_SIMP_TAC std_ss [REAL_NOT_LT, DIST_POS_LE]]);
+  UNDISCH_TAC ``r < 0:real`` THEN FULL_SIMP_TAC std_ss [REAL_NOT_LT, DIST_POS_LE]]
+QED
 
-val SPHERE_EMPTY = store_thm ("SPHERE_EMPTY",
- ``!a:real r. r < &0 ==> (sphere(a,r) = {})``,
-  REWRITE_TAC[SPHERE_EQ_EMPTY]);
+Theorem SPHERE_EMPTY:
+   !a:real r. r < &0 ==> (sphere(a,r) = {})
+Proof
+  REWRITE_TAC[SPHERE_EQ_EMPTY]
+QED
 
-val NEGATIONS_BALL = store_thm ("NEGATIONS_BALL",
- ``!r. IMAGE (\x:real. -x) (ball(0:real,r)) = ball(0,r)``,
+Theorem NEGATIONS_BALL:
+   !r. IMAGE (\x:real. -x) (ball(0:real,r)) = ball(0,r)
+Proof
   GEN_TAC THEN SIMP_TAC std_ss [EXTENSION, IN_IMAGE, IN_BALL_0] THEN
   GEN_TAC THEN EQ_TAC THENL [METIS_TAC [ABS_NEG], DISCH_TAC THEN
   EXISTS_TAC ``-x:real`` THEN
-  FULL_SIMP_TAC std_ss [ABS_NEG, REAL_NEG_NEG]]);
+  FULL_SIMP_TAC std_ss [ABS_NEG, REAL_NEG_NEG]]
+QED
 
-val NEGATIONS_CBALL = store_thm ("NEGATIONS_CBALL",
- ``!r. IMAGE (\x. -x) (cball(0:real,r)) = cball(0,r)``,
+Theorem NEGATIONS_CBALL:
+   !r. IMAGE (\x. -x) (cball(0:real,r)) = cball(0,r)
+Proof
   GEN_TAC THEN SIMP_TAC std_ss [EXTENSION, IN_IMAGE, IN_CBALL_0] THEN
   GEN_TAC THEN EQ_TAC THENL [METIS_TAC [ABS_NEG], DISCH_TAC THEN
   EXISTS_TAC ``-x:real`` THEN
-  FULL_SIMP_TAC std_ss [ABS_NEG, REAL_NEG_NEG]]);
+  FULL_SIMP_TAC std_ss [ABS_NEG, REAL_NEG_NEG]]
+QED
 
-val NEGATIONS_SPHERE = store_thm ("NEGATIONS_SPHERE",
- ``!r. IMAGE (\x. -x) (sphere(0:real,r)) = sphere(0,r)``,
+Theorem NEGATIONS_SPHERE:
+   !r. IMAGE (\x. -x) (sphere(0:real,r)) = sphere(0,r)
+Proof
   GEN_TAC THEN SIMP_TAC std_ss [EXTENSION, IN_IMAGE, IN_SPHERE_0] THEN
   GEN_TAC THEN EQ_TAC THENL [METIS_TAC [ABS_NEG], DISCH_TAC THEN
   EXISTS_TAC ``-x:real`` THEN
-  FULL_SIMP_TAC std_ss [ABS_NEG, REAL_NEG_NEG]]);
+  FULL_SIMP_TAC std_ss [ABS_NEG, REAL_NEG_NEG]]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Basic "localization" results are handy for connectedness.                 *)
 (* ------------------------------------------------------------------------- *)
 
-val OPEN_IN_OPEN = store_thm ("OPEN_IN_OPEN",
- ``!s:real->bool u.
-        open_in (subtopology euclidean u) s <=> ?t. open t /\ (s = u INTER t)``,
+Theorem OPEN_IN_OPEN:
+   !s:real->bool u.
+        open_in (subtopology euclidean u) s <=> ?t. open t /\ (s = u INTER t)
+Proof
   REPEAT STRIP_TAC THEN SIMP_TAC std_ss [OPEN_IN_SUBTOPOLOGY, GSYM OPEN_IN] THEN
-  SIMP_TAC std_ss [INTER_ACI]);
+  SIMP_TAC std_ss [INTER_ACI]
+QED
 
-val OPEN_IN_INTER_OPEN = store_thm ("OPEN_IN_INTER_OPEN",
- ``!s t u:real->bool.
+Theorem OPEN_IN_INTER_OPEN:
+   !s t u:real->bool.
         open_in (subtopology euclidean u) s /\ open t
-        ==> open_in (subtopology euclidean u) (s INTER t)``,
+        ==> open_in (subtopology euclidean u) (s INTER t)
+Proof
   SIMP_TAC std_ss [OPEN_IN_OPEN] THEN REPEAT STRIP_TAC THEN
-  ASM_MESON_TAC[INTER_ASSOC, OPEN_INTER]);
+  ASM_MESON_TAC[INTER_ASSOC, OPEN_INTER]
+QED
 
-val OPEN_IN_OPEN_INTER = store_thm ("OPEN_IN_OPEN_INTER",
- ``!u s. open s ==> open_in (subtopology euclidean u) (u INTER s)``,
-  REWRITE_TAC[OPEN_IN_OPEN] THEN MESON_TAC[]);
+Theorem OPEN_IN_OPEN_INTER:
+   !u s. open s ==> open_in (subtopology euclidean u) (u INTER s)
+Proof
+  REWRITE_TAC[OPEN_IN_OPEN] THEN MESON_TAC[]
+QED
 
-val OPEN_OPEN_IN_TRANS = store_thm ("OPEN_OPEN_IN_TRANS",
- ``!s t. open s /\ open t /\ t SUBSET s
-         ==> open_in (subtopology euclidean s) t``,
-  MESON_TAC[OPEN_IN_OPEN_INTER, SET_RULE ``(t:real->bool) SUBSET s ==> (t = s INTER t)``]);
+Theorem OPEN_OPEN_IN_TRANS:
+   !s t. open s /\ open t /\ t SUBSET s
+         ==> open_in (subtopology euclidean s) t
+Proof
+  MESON_TAC[OPEN_IN_OPEN_INTER, SET_RULE ``(t:real->bool) SUBSET s ==> (t = s INTER t)``]
+QED
 
-val OPEN_SUBSET = store_thm ("OPEN_SUBSET",
- ``!s t:real->bool.
-        s SUBSET t /\ open s ==> open_in (subtopology euclidean t) s``,
+Theorem OPEN_SUBSET:
+   !s t:real->bool.
+        s SUBSET t /\ open s ==> open_in (subtopology euclidean t) s
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[OPEN_IN_OPEN] THEN
-  EXISTS_TAC ``s:real->bool`` THEN REPEAT (POP_ASSUM MP_TAC) THEN SET_TAC[]);
+  EXISTS_TAC ``s:real->bool`` THEN REPEAT (POP_ASSUM MP_TAC) THEN SET_TAC[]
+QED
 
-val CLOSED_IN_CLOSED = store_thm ("CLOSED_IN_CLOSED",
- ``!s:real->bool u.
-    closed_in (subtopology euclidean u) s <=> ?t. closed t /\ (s = u INTER t)``,
+Theorem CLOSED_IN_CLOSED:
+   !s:real->bool u.
+    closed_in (subtopology euclidean u) s <=> ?t. closed t /\ (s = u INTER t)
+Proof
   REPEAT STRIP_TAC THEN SIMP_TAC std_ss [CLOSED_IN_SUBTOPOLOGY, GSYM CLOSED_IN] THEN
-  SIMP_TAC std_ss [INTER_ACI]);
+  SIMP_TAC std_ss [INTER_ACI]
+QED
 
-val CLOSED_SUBSET_EQ = store_thm ("CLOSED_SUBSET_EQ",
- ``!u s:real->bool.
-        closed s ==> (closed_in (subtopology euclidean u) s <=> s SUBSET u)``,
+Theorem CLOSED_SUBSET_EQ:
+   !u s:real->bool.
+        closed s ==> (closed_in (subtopology euclidean u) s <=> s SUBSET u)
+Proof
   REPEAT STRIP_TAC THEN EQ_TAC THEN DISCH_TAC THENL
    [FIRST_ASSUM(MP_TAC o MATCH_MP CLOSED_IN_SUBSET) THEN
     REWRITE_TAC[TOPSPACE_EUCLIDEAN_SUBTOPOLOGY],
     REWRITE_TAC[CLOSED_IN_CLOSED] THEN EXISTS_TAC ``s:real->bool`` THEN
-    REPEAT (POP_ASSUM MP_TAC) THEN SET_TAC[]]);
+    REPEAT (POP_ASSUM MP_TAC) THEN SET_TAC[]]
+QED
 
-val CLOSED_IN_INTER_CLOSED = store_thm ("CLOSED_IN_INTER_CLOSED",
- ``!s t u:real->bool.
+Theorem CLOSED_IN_INTER_CLOSED:
+   !s t u:real->bool.
         closed_in (subtopology euclidean u) s /\ closed t
-        ==> closed_in (subtopology euclidean u) (s INTER t)``,
+        ==> closed_in (subtopology euclidean u) (s INTER t)
+Proof
   SIMP_TAC std_ss [CLOSED_IN_CLOSED] THEN REPEAT STRIP_TAC THEN
-  ASM_MESON_TAC[INTER_ASSOC, CLOSED_INTER]);
+  ASM_MESON_TAC[INTER_ASSOC, CLOSED_INTER]
+QED
 
-val CLOSED_IN_CLOSED_INTER = store_thm ("CLOSED_IN_CLOSED_INTER",
- ``!u s. closed s ==> closed_in (subtopology euclidean u) (u INTER s)``,
-  REWRITE_TAC[CLOSED_IN_CLOSED] THEN MESON_TAC[]);
+Theorem CLOSED_IN_CLOSED_INTER:
+   !u s. closed s ==> closed_in (subtopology euclidean u) (u INTER s)
+Proof
+  REWRITE_TAC[CLOSED_IN_CLOSED] THEN MESON_TAC[]
+QED
 
-val CLOSED_SUBSET = store_thm ("CLOSED_SUBSET",
- ``!s t:real->bool.
-        s SUBSET t /\ closed s ==> closed_in (subtopology euclidean t) s``,
+Theorem CLOSED_SUBSET:
+   !s t:real->bool.
+        s SUBSET t /\ closed s ==> closed_in (subtopology euclidean t) s
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[CLOSED_IN_CLOSED] THEN
-  EXISTS_TAC ``s:real->bool`` THEN REPEAT (POP_ASSUM MP_TAC) THEN SET_TAC[]);
+  EXISTS_TAC ``s:real->bool`` THEN REPEAT (POP_ASSUM MP_TAC) THEN SET_TAC[]
+QED
 
-val OPEN_IN_SUBSET_TRANS = store_thm ("OPEN_IN_SUBSET_TRANS",
- ``!s t u:real->bool.
+Theorem OPEN_IN_SUBSET_TRANS:
+   !s t u:real->bool.
         open_in (subtopology euclidean u) s /\ s SUBSET t /\ t SUBSET u
-        ==> open_in (subtopology euclidean t) s``,
+        ==> open_in (subtopology euclidean t) s
+Proof
   REPEAT GEN_TAC THEN SIMP_TAC std_ss [OPEN_IN_OPEN, LEFT_EXISTS_AND_THM] THEN
-  SET_TAC[]);
+  SET_TAC[]
+QED
 
-val CLOSED_IN_SUBSET_TRANS = store_thm ("CLOSED_IN_SUBSET_TRANS",
- ``!s t u:real->bool.
+Theorem CLOSED_IN_SUBSET_TRANS:
+   !s t u:real->bool.
         closed_in (subtopology euclidean u) s /\ s SUBSET t /\ t SUBSET u
-        ==> closed_in (subtopology euclidean t) s``,
+        ==> closed_in (subtopology euclidean t) s
+Proof
   REPEAT GEN_TAC THEN SIMP_TAC std_ss [CLOSED_IN_CLOSED] THEN
-  REPEAT STRIP_TAC THEN REPEAT (POP_ASSUM MP_TAC) THEN SET_TAC[]);
+  REPEAT STRIP_TAC THEN REPEAT (POP_ASSUM MP_TAC) THEN SET_TAC[]
+QED
 
-val open_in = store_thm ("open_in",
- ``!u s:real->bool.
+Theorem open_in:
+   !u s:real->bool.
         open_in (subtopology euclidean u) s <=>
           s SUBSET u /\
           !x. x IN s ==> ?e. &0 < e /\
-                             !x'. x' IN u /\ dist(x',x) < e ==> x' IN s``,
+                             !x'. x' IN u /\ dist(x',x) < e ==> x' IN s
+Proof
   REPEAT GEN_TAC THEN
   SIMP_TAC std_ss [OPEN_IN_SUBTOPOLOGY, GSYM OPEN_IN] THEN EQ_TAC THENL
    [REWRITE_TAC[open_def] THEN REPEAT (POP_ASSUM MP_TAC) THEN SET_TAC[INTER_SUBSET, IN_INTER],
@@ -2547,26 +3043,31 @@ val open_in = store_thm ("open_in",
     ASM_SIMP_TAC std_ss [GSPECIFICATION] THEN METIS_TAC [LEFT_EXISTS_IMP_THM, OPEN_BALL],
     GEN_REWR_TAC I [EXTENSION] THEN
     SIMP_TAC std_ss [IN_INTER, IN_BIGUNION, GSPECIFICATION] THEN
-    ASM_MESON_TAC[SUBSET_DEF, DIST_REFL, DIST_SYM, IN_BALL]]);
+    ASM_MESON_TAC[SUBSET_DEF, DIST_REFL, DIST_SYM, IN_BALL]]
+QED
 
-val OPEN_IN_CONTAINS_BALL = store_thm ("OPEN_IN_CONTAINS_BALL",
- ``!s t:real->bool.
+Theorem OPEN_IN_CONTAINS_BALL:
+   !s t:real->bool.
         open_in (subtopology euclidean t) s <=>
         s SUBSET t /\
-        !x. x IN s ==> ?e. &0 < e /\ ball(x,e) INTER t SUBSET s``,
+        !x. x IN s ==> ?e. &0 < e /\ ball(x,e) INTER t SUBSET s
+Proof
   SIMP_TAC std_ss [open_in, INTER_DEF, SUBSET_DEF, GSPECIFICATION, IN_BALL] THEN
-  MESON_TAC[DIST_SYM]);
+  MESON_TAC[DIST_SYM]
+QED
 
-val OPEN_IN_CONTAINS_CBALL = store_thm ("OPEN_IN_CONTAINS_CBALL",
- ``!s t:real->bool.
+Theorem OPEN_IN_CONTAINS_CBALL:
+   !s t:real->bool.
         open_in (subtopology euclidean t) s <=>
         s SUBSET t /\
-        !x. x IN s ==> ?e. &0 < e /\ cball(x,e) INTER t SUBSET s``,
+        !x. x IN s ==> ?e. &0 < e /\ cball(x,e) INTER t SUBSET s
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[OPEN_IN_CONTAINS_BALL] THEN
   AP_TERM_TAC THEN REWRITE_TAC[IN_BALL, IN_INTER, SUBSET_DEF, IN_CBALL] THEN
   MESON_TAC[METIS [REAL_LT_HALF1, REAL_LT_HALF2, REAL_LET_TRANS]
     ``&0 < e:real ==> &0 < e / &2 /\ (x <= e / &2 ==> x < e)``,
-            REAL_LT_IMP_LE]);
+            REAL_LT_IMP_LE]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* These "transitivity" results are handy too.                               *)
@@ -19494,18 +19995,20 @@ val CONNECTED_NEST_GEN = store_thm ("CONNECTED_NEST_GEN",
 (* Hausdorff distance between sets.                                          *)
 (* ------------------------------------------------------------------------- *)
 
-val hausdist = new_definition ("hausdist",
- ``hausdist(s:real->bool,t:real->bool) =
+Definition hausdist[nocompute]:
+ hausdist(s:real->bool,t:real->bool) =
         if (({setdist({x},t) | x IN s} UNION {setdist({y},s) | y IN t} <> {}) /\
             (?b. !d. d IN {setdist({x},t) | x IN s} UNION {setdist({y},s) | y IN t} ==> d <= b))
-        then sup ({setdist({x},t) | x IN s} UNION {setdist({y},s) | y IN t}) else &0``);
+        then sup ({setdist({x},t) | x IN s} UNION {setdist({y},s) | y IN t}) else &0
+End
 
-val HAUSDIST_POS_LE = store_thm ("HAUSDIST_POS_LE",
- ``!s t:real->bool. &0 <= hausdist(s,t)``,
+Theorem HAUSDIST_POS_LE:
+   !s t:real->bool. &0 <= hausdist(s,t)
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[hausdist] THEN
   SIMP_TAC std_ss [FORALL_IN_GSPEC, FORALL_IN_UNION] THEN
   COND_CASES_TAC THEN REWRITE_TAC[REAL_LE_REFL] THEN
-  MATCH_MP_TAC REAL_LE_SUP' THEN
+  MATCH_MP_TAC REAL_LE_SUP2 THEN
   ASM_SIMP_TAC std_ss [FORALL_IN_GSPEC, FORALL_IN_UNION, SETDIST_POS_LE] THEN
   KNOW_TAC ``?(y :real) (b :real).
   y IN {setdist ({x},(t :real -> bool)) | x IN (s :real -> bool)} UNION
@@ -19517,43 +20020,52 @@ val HAUSDIST_POS_LE = store_thm ("HAUSDIST_POS_LE",
   ONCE_REWRITE_TAC [METIS [] ``(0 <= y:real) = (\y. 0 <= y) y``] THEN
   MATCH_MP_TAC(SET_RULE
    ``~(s = {}) /\ (!x. x IN s ==> P x) ==> ?y. y IN s /\ P y``) THEN
-  ASM_SIMP_TAC std_ss [FORALL_IN_GSPEC, FORALL_IN_UNION, SETDIST_POS_LE]);
+  ASM_SIMP_TAC std_ss [FORALL_IN_GSPEC, FORALL_IN_UNION, SETDIST_POS_LE]
+QED
 
-val HAUSDIST_REFL = store_thm ("HAUSDIST_REFL",
- ``!s:real->bool. hausdist(s,s) = &0``,
+Theorem HAUSDIST_REFL:
+   !s:real->bool. hausdist(s,s) = &0
+Proof
   GEN_TAC THEN SIMP_TAC std_ss [GSYM REAL_LE_ANTISYM, HAUSDIST_POS_LE] THEN
   REWRITE_TAC[hausdist] THEN
   COND_CASES_TAC THEN REWRITE_TAC[REAL_LE_REFL] THEN
   MATCH_MP_TAC REAL_SUP_LE' THEN
   SIMP_TAC std_ss [FORALL_IN_GSPEC, FORALL_IN_UNION] THEN
-  ASM_SIMP_TAC std_ss [SETDIST_SING_IN_SET, REAL_LE_REFL]);
+  ASM_SIMP_TAC std_ss [SETDIST_SING_IN_SET, REAL_LE_REFL]
+QED
 
-val HAUSDIST_SYM = store_thm ("HAUSDIST_SYM",
- ``!s t:real->bool. hausdist(s,t) = hausdist(t,s)``,
+Theorem HAUSDIST_SYM:
+   !s t:real->bool. hausdist(s,t) = hausdist(t,s)
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[hausdist] THEN
   GEN_REWR_TAC (RAND_CONV o ONCE_DEPTH_CONV) [UNION_COMM] THEN
-  REWRITE_TAC[]);
+  REWRITE_TAC[]
+QED
 
-val HAUSDIST_EMPTY = store_thm ("HAUSDIST_EMPTY",
- ``(!t:real->bool. hausdist ({},t) = &0) /\
-   (!s:real->bool. hausdist (s,{}) = &0)``,
+Theorem HAUSDIST_EMPTY:
+   (!t:real->bool. hausdist ({},t) = &0) /\
+   (!s:real->bool. hausdist (s,{}) = &0)
+Proof
   REWRITE_TAC[hausdist, SETDIST_EMPTY] THEN
   REWRITE_TAC[SET_RULE ``{setdist ({x},t) | x IN {}} = {}``, UNION_EMPTY] THEN
   REWRITE_TAC[SET_RULE ``({c |x| x IN s} = {}) <=> (s = {})``] THEN
   X_GEN_TAC ``s:real->bool`` THEN
   ASM_CASES_TAC ``s:real->bool = {}`` THEN ASM_REWRITE_TAC[] THEN
   ASM_SIMP_TAC std_ss [SET_RULE ``~(s = {}) ==> ({c |x| x IN s} = {c})``] THEN
-  REWRITE_TAC[SUP_SING, COND_ID]);
+  REWRITE_TAC[SUP_SING, COND_ID]
+QED
 
-val HAUSDIST_SINGS = store_thm ("HAUSDIST_SINGS",
- ``!x y:real. hausdist({x},{y}) = dist(x,y)``,
+Theorem HAUSDIST_SINGS:
+   !x y:real. hausdist({x},{y}) = dist(x,y)
+Proof
   REWRITE_TAC[hausdist, SETDIST_SINGS] THEN
   REWRITE_TAC[SET_RULE ``{dist (x,y) | x IN {a}} = {dist (a,y)}``] THEN
   ONCE_REWRITE_TAC [METIS [DIST_SYM] ``{dist (x,y)} UNION {dist (y,x)} =
                                {dist (x,y)} UNION {dist (x,y)}``] THEN
   SIMP_TAC std_ss [UNION_IDEMPOT, SUP_SING, NOT_INSERT_EMPTY] THEN
   SIMP_TAC std_ss [IN_SING, UNWIND_FORALL_THM2] THEN
-  METIS_TAC[REAL_LE_REFL]);
+  METIS_TAC[REAL_LE_REFL]
+QED
 
 Theorem HAUSDIST_EQ :
    !s t:real->bool s' t':real->bool.
@@ -19585,27 +20097,32 @@ Proof
   SET_TAC[]
 QED
 
-val HAUSDIST_TRANSLATION = store_thm ("HAUSDIST_TRANSLATION",
- ``!a s t:real->bool.
-        hausdist(IMAGE (\x. a + x) s,IMAGE (\x. a + x) t) = hausdist(s,t)``,
+Theorem HAUSDIST_TRANSLATION:
+   !a s t:real->bool.
+        hausdist(IMAGE (\x. a + x) s,IMAGE (\x. a + x) t) = hausdist(s,t)
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[hausdist] THEN
   SIMP_TAC real_ss [SET_RULE ``{f x | x IN IMAGE g s} = {f(g x) | x IN s}``] THEN
   SIMP_TAC real_ss [SET_RULE ``{a + x:real} = IMAGE (\x. a + x) {x}``] THEN
-  REWRITE_TAC[SETDIST_TRANSLATION]);
+  REWRITE_TAC[SETDIST_TRANSLATION]
+QED
 
-val HAUSDIST_LINEAR_IMAGE = store_thm ("HAUSDIST_LINEAR_IMAGE",
- ``!f:real->real s t.
+Theorem HAUSDIST_LINEAR_IMAGE:
+   !f:real->real s t.
            linear f /\ (!x. abs(f x) = abs x)
-           ==> (hausdist(IMAGE f s,IMAGE f t) = hausdist(s,t))``,
+           ==> (hausdist(IMAGE f s,IMAGE f t) = hausdist(s,t))
+Proof
   REPEAT STRIP_TAC THEN
   REPEAT GEN_TAC THEN REWRITE_TAC[hausdist] THEN
   SIMP_TAC real_ss [SET_RULE ``{f x | x IN IMAGE g s} = {f(g x) | x IN s}``] THEN
   ONCE_REWRITE_TAC[SET_RULE ``{(f:real->real) x} = IMAGE f {x}``] THEN
-  ASM_SIMP_TAC std_ss [SETDIST_LINEAR_IMAGE]);
+  ASM_SIMP_TAC std_ss [SETDIST_LINEAR_IMAGE]
+QED
 
-val HAUSDIST_CLOSURE = store_thm ("HAUSDIST_CLOSURE",
- ``(!s t:real->bool. hausdist(closure s,t) = hausdist(s,t)) /\
-   (!s t:real->bool. hausdist(s,closure t) = hausdist(s,t))``,
+Theorem HAUSDIST_CLOSURE:
+   (!s t:real->bool. hausdist(closure s,t) = hausdist(s,t)) /\
+   (!s t:real->bool. hausdist(s,closure t) = hausdist(s,t))
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC HAUSDIST_EQ THEN
   GEN_TAC THEN BINOP_TAC THEN REWRITE_TAC[SETDIST_CLOSURE] THEN
   ONCE_REWRITE_TAC [METIS [] ``setdist ({x},t) <= b <=> (\x. setdist ({x},t) <= b) x``] THEN
@@ -19619,14 +20136,16 @@ val HAUSDIST_CLOSURE = store_thm ("HAUSDIST_CLOSURE",
       {x | x IN UNIV /\ (f x) IN {x | x <= b}}``] THEN
   MATCH_MP_TAC CONTINUOUS_CLOSED_PREIMAGE THEN
   SIMP_TAC std_ss [CLOSED_UNIV, CONTINUOUS_ON_SETDIST] THEN
-  REWRITE_TAC[CLOSED_HALFSPACE_COMPONENT_LE]);
+  REWRITE_TAC[CLOSED_HALFSPACE_COMPONENT_LE]
+QED
 
-val REAL_HAUSDIST_LE = store_thm ("REAL_HAUSDIST_LE",
- ``!s t:real->bool b.
+Theorem REAL_HAUSDIST_LE:
+   !s t:real->bool b.
         ~(s = {}) /\ ~(t = {}) /\
         (!x. x IN s ==> setdist({x},t) <= b) /\
         (!y. y IN t ==> setdist({y},s) <= b)
-        ==> hausdist(s,t) <= b``,
+        ==> hausdist(s,t) <= b
+Proof
   REPEAT STRIP_TAC THEN
   REWRITE_TAC[hausdist, SETDIST_SINGS] THEN
   ASM_SIMP_TAC real_ss [EMPTY_UNION, SET_RULE ``({f x | x IN s} = {}) <=> (s = {})``] THEN
@@ -19634,44 +20153,50 @@ val REAL_HAUSDIST_LE = store_thm ("REAL_HAUSDIST_LE",
   COND_CASES_TAC THENL [ALL_TAC, METIS_TAC[]] THEN
   MATCH_MP_TAC REAL_SUP_LE' THEN
   ASM_SIMP_TAC real_ss [EMPTY_UNION, SET_RULE ``({f x | x IN s} = {}) <=> (s = {})``] THEN
-  ASM_SIMP_TAC real_ss [FORALL_IN_UNION, FORALL_IN_GSPEC]);
+  ASM_SIMP_TAC real_ss [FORALL_IN_UNION, FORALL_IN_GSPEC]
+QED
 
-val REAL_HAUSDIST_LE_SUMS = store_thm ("REAL_HAUSDIST_LE_SUMS",
- ``!s t:real->bool b.
+Theorem REAL_HAUSDIST_LE_SUMS:
+   !s t:real->bool b.
         ~(s = {}) /\ ~(t = {}) /\
         s SUBSET {y + z | y IN t /\ z IN cball(0,b)} /\
         t SUBSET {y + z | y IN s /\ z IN cball(0,b)}
-        ==> hausdist(s,t) <= b``,
+        ==> hausdist(s,t) <= b
+Proof
   SIMP_TAC real_ss [SUBSET_DEF, GSPECIFICATION, EXISTS_PROD, IN_CBALL_0] THEN
   SIMP_TAC real_ss [REAL_ARITH ``(a:real = b + x) <=> (a - b = x)``,
               ONCE_REWRITE_RULE[CONJ_SYM] UNWIND_THM1] THEN
   REWRITE_TAC[GSYM dist] THEN REPEAT STRIP_TAC THEN
   MATCH_MP_TAC REAL_HAUSDIST_LE THEN
-  METIS_TAC[SETDIST_LE_DIST, REAL_LE_TRANS, IN_SING]);
+  METIS_TAC[SETDIST_LE_DIST, REAL_LE_TRANS, IN_SING]
+QED
 
-val REAL_LE_HAUSDIST = store_thm ("REAL_LE_HAUSDIST",
- ``!s t:real->bool a b c z.
+Theorem REAL_LE_HAUSDIST:
+   !s t:real->bool a b c z.
         ~(s = {}) /\ ~(t = {}) /\
         (!x. x IN s ==> setdist({x},t) <= b) /\
         (!y. y IN t ==> setdist({y},s) <= c) /\
         (z IN s /\ a <= setdist({z},t) \/ z IN t /\ a <= setdist({z},s))
-        ==> a <= hausdist(s,t)``,
+        ==> a <= hausdist(s,t)
+Proof
   REPEAT GEN_TAC THEN DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
   REWRITE_TAC[hausdist, SETDIST_SINGS] THEN
   ASM_SIMP_TAC real_ss [EMPTY_UNION, SET_RULE ``({f x | x IN s} = {}) <=> (s = {})``] THEN
   SIMP_TAC real_ss [FORALL_IN_UNION, FORALL_IN_GSPEC] THEN COND_CASES_TAC THENL
-   [MATCH_MP_TAC REAL_LE_SUP' THEN
+   [MATCH_MP_TAC REAL_LE_SUP2 THEN
     ASM_SIMP_TAC real_ss [EMPTY_UNION, SET_RULE ``({f x | x IN s} = {}) <=> (s = {})``] THEN
     SIMP_TAC real_ss [FORALL_IN_UNION, FORALL_IN_GSPEC],
     FIRST_X_ASSUM(MP_TAC o REWRITE_RULE [NOT_EXISTS_THM]) THEN
     ONCE_REWRITE_TAC[MONO_NOT_EQ] THEN DISCH_TAC THEN
     SIMP_TAC real_ss [NOT_FORALL_THM]] THEN
   EXISTS_TAC ``max b c:real`` THEN
-  ASM_SIMP_TAC real_ss [REAL_LE_MAX] THEN ASM_SET_TAC[]);
+  ASM_SIMP_TAC real_ss [REAL_LE_MAX] THEN ASM_SET_TAC[]
+QED
 
-val SETDIST_LE_HAUSDIST = store_thm ("SETDIST_LE_HAUSDIST",
- ``!s t:real->bool.
-        bounded s /\ bounded t ==> setdist(s,t) <= hausdist(s,t)``,
+Theorem SETDIST_LE_HAUSDIST:
+   !s t:real->bool.
+        bounded s /\ bounded t ==> setdist(s,t) <= hausdist(s,t)
+Proof
   REPEAT STRIP_TAC THEN
   ASM_CASES_TAC ``s:real->bool = {}`` THEN
   ASM_SIMP_TAC real_ss [SETDIST_EMPTY, HAUSDIST_EMPTY, REAL_LE_REFL] THEN
@@ -19685,11 +20210,13 @@ val SETDIST_LE_HAUSDIST = store_thm ("SETDIST_LE_HAUSDIST",
   ASM_REWRITE_TAC[] THEN SIMP_TAC real_ss [bounded_def, FORALL_IN_GSPEC, GSYM dist] THEN
   DISCH_THEN(X_CHOOSE_TAC ``b:real``) THEN
   CONJ_TAC THEN EXISTS_TAC ``b:real`` THEN REPEAT STRIP_TAC THEN
-  METIS_TAC[REAL_LE_TRANS, SETDIST_LE_DIST, MEMBER_NOT_EMPTY, IN_SING, DIST_SYM]);
+  METIS_TAC[REAL_LE_TRANS, SETDIST_LE_DIST, MEMBER_NOT_EMPTY, IN_SING, DIST_SYM]
+QED
 
-val SETDIST_SING_LE_HAUSDIST = store_thm ("SETDIST_SING_LE_HAUSDIST",
- ``!s t x:real.
-        bounded s /\ bounded t /\ x IN s ==> setdist({x},t) <= hausdist(s,t)``,
+Theorem SETDIST_SING_LE_HAUSDIST:
+   !s t x:real.
+        bounded s /\ bounded t /\ x IN s ==> setdist({x},t) <= hausdist(s,t)
+Proof
   REPEAT GEN_TAC THEN
   ASM_CASES_TAC ``s:real->bool = {}`` THEN ASM_REWRITE_TAC[NOT_IN_EMPTY] THEN
   ASM_CASES_TAC ``t:real->bool = {}`` THEN
@@ -19715,12 +20242,14 @@ val SETDIST_SING_LE_HAUSDIST = store_thm ("SETDIST_SING_LE_HAUSDIST",
   FIRST_X_ASSUM(MP_TAC o SPEC ``z:real``) THEN ASM_REWRITE_TAC[] THEN
   MATCH_MP_TAC(REWRITE_RULE[CONJ_EQ_IMP] REAL_LE_TRANS) THENL
    [ALL_TAC, ONCE_REWRITE_TAC[DIST_SYM]] THEN
-  MATCH_MP_TAC SETDIST_LE_DIST THEN ASM_REWRITE_TAC[IN_SING]);
+  MATCH_MP_TAC SETDIST_LE_DIST THEN ASM_REWRITE_TAC[IN_SING]
+QED
 
-val SETDIST_HAUSDIST_TRIANGLE = store_thm ("SETDIST_HAUSDIST_TRIANGLE",
- ``!s t u:real->bool.
+Theorem SETDIST_HAUSDIST_TRIANGLE:
+   !s t u:real->bool.
         ~(t = {}) /\ bounded t /\ bounded u
-        ==> setdist(s,u) <= setdist(s,t) + hausdist(t,u)``,
+        ==> setdist(s,u) <= setdist(s,t) + hausdist(t,u)
+Proof
   REPEAT STRIP_TAC THEN
   MAP_EVERY ASM_CASES_TAC [``s:real->bool = {}``, ``u:real->bool = {}``] THEN
   ASM_SIMP_TAC real_ss [SETDIST_EMPTY, REAL_LE_ADD, REAL_ADD_LID,
@@ -19735,20 +20264,24 @@ val SETDIST_HAUSDIST_TRIANGLE = store_thm ("SETDIST_HAUSDIST_TRIANGLE",
         SETDIST_SING_TRIANGLE) THEN
   MATCH_MP_TAC(REAL_ARITH
    ``yu <= z ==> abs(xu - yu) <= d ==> xu <= d + z:real``) THEN
-  MATCH_MP_TAC SETDIST_SING_LE_HAUSDIST THEN ASM_REWRITE_TAC[]);
+  MATCH_MP_TAC SETDIST_SING_LE_HAUSDIST THEN ASM_REWRITE_TAC[]
+QED
 
-val HAUSDIST_SETDIST_TRIANGLE = store_thm ("HAUSDIST_SETDIST_TRIANGLE",
- ``!s t u:real->bool.
+Theorem HAUSDIST_SETDIST_TRIANGLE:
+   !s t u:real->bool.
         ~(t = {}) /\ bounded s /\ bounded t
-        ==> setdist(s,u) <= hausdist(s,t) + setdist(t,u)``,
+        ==> setdist(s,u) <= hausdist(s,t) + setdist(t,u)
+Proof
   ONCE_REWRITE_TAC[SETDIST_SYM, HAUSDIST_SYM] THEN
   ONCE_REWRITE_TAC[REAL_ADD_SYM] THEN
-  SIMP_TAC real_ss [SETDIST_HAUSDIST_TRIANGLE]);
+  SIMP_TAC real_ss [SETDIST_HAUSDIST_TRIANGLE]
+QED
 
-val REAL_LT_HAUSDIST_POINT_EXISTS = store_thm ("REAL_LT_HAUSDIST_POINT_EXISTS",
- ``!s t x:real d.
+Theorem REAL_LT_HAUSDIST_POINT_EXISTS:
+   !s t x:real d.
         bounded s /\ bounded t /\ ~(t = {}) /\ hausdist(s,t) < d /\ x IN s
-        ==> ?y. y IN t /\ dist(x,y) < d``,
+        ==> ?y. y IN t /\ dist(x,y) < d
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [``{x:real}``, ``t:real->bool``, ``d:real``]
         REAL_SETDIST_LT_EXISTS) THEN
@@ -19757,10 +20290,11 @@ val REAL_LT_HAUSDIST_POINT_EXISTS = store_thm ("REAL_LT_HAUSDIST_POINT_EXISTS",
   ASM_REWRITE_TAC[NOT_INSERT_EMPTY] THEN
   MATCH_MP_TAC REAL_LET_TRANS THEN EXISTS_TAC ``hausdist(s:real->bool,t)`` THEN
   ASM_SIMP_TAC real_ss [] THEN MATCH_MP_TAC SETDIST_SING_LE_HAUSDIST THEN
-  ASM_REWRITE_TAC[]);
+  ASM_REWRITE_TAC[]
+QED
 
-val UPPER_LOWER_HEMICONTINUOUS = store_thm ("UPPER_LOWER_HEMICONTINUOUS",
- ``!f:real->real->bool t s.
+Theorem UPPER_LOWER_HEMICONTINUOUS:
+   !f:real->real->bool t s.
       (!x. x IN s ==> f(x) SUBSET t) /\
       (!u. open_in (subtopology euclidean t) u
            ==> open_in (subtopology euclidean s)
@@ -19771,7 +20305,8 @@ val UPPER_LOWER_HEMICONTINUOUS = store_thm ("UPPER_LOWER_HEMICONTINUOUS",
       ==> !x e. x IN s /\ &0 < e /\ bounded(f x)
                 ==> ?d. &0 < d /\
                         !x'. x' IN s /\ dist(x,x') < d
-                             ==> hausdist(f x,f x') < e``,
+                             ==> hausdist(f x,f x') < e
+Proof
   REPEAT GEN_TAC THEN DISCH_TAC THEN REPEAT STRIP_TAC THEN
   ASM_CASES_TAC ``(f:real->real->bool) x = {}`` THENL
    [ASM_REWRITE_TAC[HAUSDIST_EMPTY] THEN METIS_TAC[REAL_LT_01], ALL_TAC] THEN
@@ -19798,14 +20333,15 @@ val UPPER_LOWER_HEMICONTINUOUS = store_thm ("UPPER_LOWER_HEMICONTINUOUS",
   GEN_REWR_TAC RAND_CONV [GSYM REAL_HALF] THEN
   MATCH_MP_TAC(REAL_ARITH ``&0 < e / 2 /\ x <= e / &2 ==> x < e / 2 + e / 2:real``) THEN
   ASM_REWRITE_TAC[] THEN MATCH_MP_TAC REAL_HAUSDIST_LE THEN
-  METIS_TAC[SETDIST_LE_DIST, DIST_SYM, REAL_LE_TRANS,
-                IN_SING, REAL_LT_IMP_LE]);
+  METIS_TAC[SETDIST_LE_DIST, DIST_SYM, REAL_LE_TRANS, IN_SING, REAL_LT_IMP_LE]
+QED
 
-val HAUSDIST_NONTRIVIAL = store_thm ("HAUSDIST_NONTRIVIAL",
- ``!s t:real->bool.
+Theorem HAUSDIST_NONTRIVIAL:
+   !s t:real->bool.
         bounded s /\ bounded t /\ ~(s = {}) /\ ~(t = {})
         ==> (hausdist(s,t) =
-             sup({setdist ({x},t) | x IN s} UNION {setdist ({y},s) | y IN t}))``,
+             sup({setdist ({x},t) | x IN s} UNION {setdist ({y},s) | y IN t}))
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[hausdist] THEN
   COND_CASES_TAC THEN ASM_SIMP_TAC real_ss [] THEN
   FIRST_X_ASSUM(MP_TAC o SIMP_RULE real_ss [DE_MORGAN_THM]) THEN
@@ -19818,13 +20354,15 @@ val HAUSDIST_NONTRIVIAL = store_thm ("HAUSDIST_NONTRIVIAL",
   DISCH_THEN (X_CHOOSE_TAC ``a:real``) THEN EXISTS_TAC ``a:real`` THEN POP_ASSUM MP_TAC THEN
   SIMP_TAC real_ss [FORALL_IN_GSPEC] THEN
   METIS_TAC[SETDIST_LE_DIST, dist, DIST_SYM, REAL_LE_TRANS,
-                MEMBER_NOT_EMPTY, IN_SING]);
+                MEMBER_NOT_EMPTY, IN_SING]
+QED
 
-val HAUSDIST_NONTRIVIAL_ALT = store_thm ("HAUSDIST_NONTRIVIAL_ALT",
- ``!s t:real->bool.
+Theorem HAUSDIST_NONTRIVIAL_ALT:
+   !s t:real->bool.
         bounded s /\ bounded t /\ ~(s = {}) /\ ~(t = {})
         ==> (hausdist(s,t) = max (sup {setdist ({x},t) | x IN s})
-                                (sup {setdist ({y},s) | y IN t}))``,
+                                (sup {setdist ({y},s) | y IN t}))
+Proof
   REPEAT STRIP_TAC THEN ASM_SIMP_TAC real_ss [HAUSDIST_NONTRIVIAL] THEN
   MATCH_MP_TAC SUP_UNION THEN
   ASM_SIMP_TAC real_ss [GSYM IMAGE_DEF, FORALL_IN_IMAGE, IMAGE_EQ_EMPTY] THEN
@@ -19834,14 +20372,16 @@ val HAUSDIST_NONTRIVIAL_ALT = store_thm ("HAUSDIST_NONTRIVIAL_ALT",
   DISCH_THEN (X_CHOOSE_TAC ``a:real``) THEN EXISTS_TAC ``a:real`` THEN
   POP_ASSUM MP_TAC THEN SIMP_TAC real_ss [FORALL_IN_GSPEC, GSYM dist] THEN
   METIS_TAC [SETDIST_LE_DIST, dist, DIST_SYM, REAL_LE_TRANS,
-                MEMBER_NOT_EMPTY, IN_SING]);
+                MEMBER_NOT_EMPTY, IN_SING]
+QED
 
-val REAL_HAUSDIST_LE_EQ = store_thm ("REAL_HAUSDIST_LE_EQ",
- ``!s t:real->bool b.
+Theorem REAL_HAUSDIST_LE_EQ:
+   !s t:real->bool b.
         ~(s = {}) /\ ~(t = {}) /\ bounded s /\ bounded t
         ==> (hausdist(s,t) <= b <=>
              (!x. x IN s ==> setdist({x},t) <= b) /\
-             (!y. y IN t ==> setdist({y},s) <= b))``,
+             (!y. y IN t ==> setdist({y},s) <= b))
+Proof
   REPEAT STRIP_TAC THEN
   ASM_SIMP_TAC real_ss [HAUSDIST_NONTRIVIAL_ALT, REAL_MAX_LE] THEN
   BINOP_TAC THEN
@@ -19855,12 +20395,14 @@ val REAL_HAUSDIST_LE_EQ = store_thm ("REAL_HAUSDIST_LE_EQ",
   DISCH_THEN (X_CHOOSE_TAC ``a:real``) THEN EXISTS_TAC ``a:real`` THEN
   POP_ASSUM MP_TAC THEN SIMP_TAC real_ss [FORALL_IN_GSPEC, GSYM dist] THEN
   METIS_TAC[SETDIST_LE_DIST, dist, DIST_SYM, REAL_LE_TRANS,
-                MEMBER_NOT_EMPTY, IN_SING]);
+            MEMBER_NOT_EMPTY, IN_SING]
+QED
 
-val HAUSDIST_UNION_LE = store_thm ("HAUSDIST_UNION_LE",
- ``!s t u:real->bool.
+Theorem HAUSDIST_UNION_LE:
+   !s t u:real->bool.
         bounded s /\ bounded t /\ bounded u /\ ~(t = {}) /\ ~(u = {})
-        ==> hausdist(s UNION t,s UNION u) <= hausdist(t,u)``,
+        ==> hausdist(s UNION t,s UNION u) <= hausdist(t,u)
+Proof
   REPEAT STRIP_TAC THEN
   ASM_SIMP_TAC real_ss [REAL_HAUSDIST_LE_EQ, BOUNDED_UNION, EMPTY_UNION] THEN
   SIMP_TAC real_ss [FORALL_IN_UNION] THEN
@@ -19871,19 +20413,23 @@ val HAUSDIST_UNION_LE = store_thm ("HAUSDIST_UNION_LE",
     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC ``setdist({x:real},t)``] THEN
   ASM_SIMP_TAC real_ss [SETDIST_SUBSET_RIGHT, SUBSET_UNION] THENL
    [ALL_TAC, ONCE_REWRITE_TAC[HAUSDIST_SYM]] THEN
-  MATCH_MP_TAC SETDIST_SING_LE_HAUSDIST THEN ASM_REWRITE_TAC[]);
+  MATCH_MP_TAC SETDIST_SING_LE_HAUSDIST THEN ASM_REWRITE_TAC[]
+QED
 
-val HAUSDIST_INSERT_LE = store_thm ("HAUSDIST_INSERT_LE",
- ``!s t a:real.
+Theorem HAUSDIST_INSERT_LE:
+   !s t a:real.
         bounded s /\ bounded t /\ ~(s = {}) /\ ~(t = {})
-        ==> hausdist(a INSERT s,a INSERT t) <= hausdist(s,t)``,
+        ==> hausdist(a INSERT s,a INSERT t) <= hausdist(s,t)
+Proof
   ONCE_REWRITE_TAC[SET_RULE ``a INSERT s = {a} UNION s``] THEN
-  ASM_SIMP_TAC real_ss [HAUSDIST_UNION_LE, NOT_INSERT_EMPTY, BOUNDED_SING]);
+  ASM_SIMP_TAC real_ss [HAUSDIST_UNION_LE, NOT_INSERT_EMPTY, BOUNDED_SING]
+QED
 
-val HAUSDIST_COMPACT_EXISTS = store_thm ("HAUSDIST_COMPACT_EXISTS",
- ``!s t:real->bool.
+Theorem HAUSDIST_COMPACT_EXISTS:
+   !s t:real->bool.
         bounded s /\ compact t /\ ~(t = {})
-        ==> !x. x IN s ==> ?y. y IN t /\ dist(x,y) <= hausdist(s,t)``,
+        ==> !x. x IN s ==> ?y. y IN t /\ dist(x,y) <= hausdist(s,t)
+Proof
   REPEAT STRIP_TAC THEN
   ASM_CASES_TAC ``s:real->bool = {}`` THENL [ASM_SET_TAC[], ALL_TAC] THEN
   MP_TAC(ISPECL [``{x:real}``, ``t:real->bool``]
@@ -19901,12 +20447,14 @@ val HAUSDIST_COMPACT_EXISTS = store_thm ("HAUSDIST_COMPACT_EXISTS",
   SIMP_TAC real_ss [bounded_def, FORALL_IN_GSPEC, GSYM dist] THEN
   DISCH_THEN (X_CHOOSE_TAC ``a:real``) THEN EXISTS_TAC ``a:real`` THEN
   METIS_TAC[SETDIST_LE_DIST, dist, DIST_SYM, REAL_LE_TRANS,
-                MEMBER_NOT_EMPTY, IN_SING]);
+                MEMBER_NOT_EMPTY, IN_SING]
+QED
 
-val HAUSDIST_TRIANGLE = store_thm ("HAUSDIST_TRIANGLE",
- ``!s t u:real->bool.
+Theorem HAUSDIST_TRIANGLE:
+   !s t u:real->bool.
         bounded s /\ bounded t /\ bounded u /\ ~(t = {})
-        ==> hausdist(s,u) <= hausdist(s,t) + hausdist(t,u)``,
+        ==> hausdist(s,u) <= hausdist(s,t) + hausdist(t,u)
+Proof
   ONCE_REWRITE_TAC[GSYM(CONJUNCT1 HAUSDIST_CLOSURE)] THEN
   ONCE_REWRITE_TAC[GSYM(CONJUNCT2 HAUSDIST_CLOSURE)] THEN
   ONCE_REWRITE_TAC[GSYM COMPACT_CLOSURE, GSYM CLOSURE_EQ_EMPTY] THEN
@@ -19947,22 +20495,26 @@ val HAUSDIST_TRIANGLE = store_thm ("HAUSDIST_TRIANGLE",
   FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (REAL_ARITH
    ``abs(y - z) <= b ==> abs(x - y) <= a /\ s <= abs(x - z) ==> s <= a + b:real``)) THEN
   ASM_REWRITE_TAC[GSYM dist] THEN MATCH_MP_TAC SETDIST_LE_DIST THEN
-  ASM_REWRITE_TAC[IN_SING]);
+  ASM_REWRITE_TAC[IN_SING]
+QED
 
-val HAUSDIST_COMPACT_SUMS = store_thm ("HAUSDIST_COMPACT_SUMS",
- ``!s t:real->bool.
+Theorem HAUSDIST_COMPACT_SUMS:
+   !s t:real->bool.
         bounded s /\ compact t /\ ~(t = {})
-        ==> s SUBSET {y + z | y IN t /\ z IN cball(0,hausdist(s,t))}``,
+        ==> s SUBSET {y + z | y IN t /\ z IN cball(0,hausdist(s,t))}
+Proof
   SIMP_TAC real_ss [SUBSET_DEF, GSPECIFICATION, IN_CBALL_0, EXISTS_PROD] THEN
   SIMP_TAC real_ss [REAL_ARITH ``(a:real = b + x) <=> (a - b = x)``,
               ONCE_REWRITE_RULE[CONJ_SYM] UNWIND_THM1] THEN
-  SIMP_TAC real_ss [GSYM dist, HAUSDIST_COMPACT_EXISTS]);
+  SIMP_TAC real_ss [GSYM dist, HAUSDIST_COMPACT_EXISTS]
+QED
 
-val lemma = prove (
- ``!s t u:real->bool.
+Theorem lemma[local]:
+   !s t u:real->bool.
           bounded s /\ bounded t /\ bounded u /\
           ~(s = {}) /\ ~(t = {}) /\ ~(u = {})
-          ==> !x. x IN s ==> setdist({x},u) <= hausdist(s,t) + hausdist(t,u)``,
+          ==> !x. x IN s ==> setdist({x},u) <= hausdist(s,t) + hausdist(t,u)
+Proof
     REPEAT STRIP_TAC THEN
     MP_TAC(ISPECL [``closure s:real->bool``, ``closure t:real->bool``]
         HAUSDIST_COMPACT_EXISTS) THEN
@@ -19979,39 +20531,45 @@ val lemma = prove (
     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC ``dist(x:real,z)`` THEN CONJ_TAC THENL
      [METIS_TAC[SETDIST_CLOSURE, SETDIST_LE_DIST, IN_SING], ALL_TAC] THEN
     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC ``dist(x:real,y) + dist(y,z)`` THEN
-    REWRITE_TAC[DIST_TRIANGLE] THEN ASM_REAL_ARITH_TAC);
+    REWRITE_TAC[DIST_TRIANGLE] THEN ASM_REAL_ARITH_TAC
+QED
 
-val HAUSDIST_TRANS = store_thm ("HAUSDIST_TRANS",
- ``!s t u:real->bool.
+Theorem HAUSDIST_TRANS:
+   !s t u:real->bool.
         bounded s /\ bounded t /\ bounded u /\ ~(t = {})
-        ==> hausdist(s,u) <= hausdist(s,t) + hausdist(t,u)``,
+        ==> hausdist(s,u) <= hausdist(s,t) + hausdist(t,u)
+Proof
   REPEAT STRIP_TAC THEN
   ASM_CASES_TAC ``s:real->bool = {}`` THEN
   ASM_REWRITE_TAC[HAUSDIST_EMPTY, REAL_ADD_LID, HAUSDIST_POS_LE] THEN
   ASM_CASES_TAC ``u:real->bool = {}`` THEN
   ASM_REWRITE_TAC[HAUSDIST_EMPTY, REAL_ADD_RID, HAUSDIST_POS_LE] THEN
   ASM_SIMP_TAC real_ss [REAL_HAUSDIST_LE_EQ] THEN
-  ASM_MESON_TAC[lemma, HAUSDIST_SYM, SETDIST_SYM, REAL_ADD_SYM]);
+  ASM_MESON_TAC[lemma, HAUSDIST_SYM, SETDIST_SYM, REAL_ADD_SYM]
+QED
 
-val HAUSDIST_EQ_0 = store_thm ("HAUSDIST_EQ_0",
- ``!s t:real->bool.
+Theorem HAUSDIST_EQ_0:
+   !s t:real->bool.
       bounded s /\ bounded t
-      ==> ((hausdist(s,t) = &0) <=> (s = {}) \/ (t = {}) \/ (closure s = closure t))``,
+      ==> ((hausdist(s,t) = &0) <=> (s = {}) \/ (t = {}) \/ (closure s = closure t))
+Proof
   REPEAT STRIP_TAC THEN
   MAP_EVERY ASM_CASES_TAC [``s:real->bool = {}``, ``t:real->bool = {}``] THEN
   ASM_REWRITE_TAC[HAUSDIST_EMPTY] THEN
   ASM_SIMP_TAC real_ss [GSYM REAL_LE_ANTISYM, HAUSDIST_POS_LE, REAL_HAUSDIST_LE_EQ] THEN
   SIMP_TAC real_ss [SETDIST_POS_LE, REAL_ARITH ``&0 <= x ==> (x <= &0 <=> (x = &0:real))``] THEN
   ASM_SIMP_TAC real_ss [SETDIST_EQ_0_SING, GSYM SUBSET_ANTISYM_EQ, SUBSET_DEF] THEN
-  SIMP_TAC std_ss [FORALL_IN_CLOSURE_EQ, CLOSED_CLOSURE, CONTINUOUS_ON_ID]);
+  SIMP_TAC std_ss [FORALL_IN_CLOSURE_EQ, CLOSED_CLOSURE, CONTINUOUS_ON_ID]
+QED
 
-val HAUSDIST_COMPACT_NONTRIVIAL = store_thm ("HAUSDIST_COMPACT_NONTRIVIAL",
- ``!s t:real->bool.
+Theorem HAUSDIST_COMPACT_NONTRIVIAL:
+   !s t:real->bool.
         compact s /\ compact t /\ ~(s = {}) /\ ~(t = {})
         ==> (hausdist(s,t) =
             inf {e | &0 <= e /\
                    s SUBSET {x + y | x IN t /\ abs y <= e} /\
-                   t SUBSET {x + y | x IN s /\ abs y <= e}})``,
+                   t SUBSET {x + y | x IN s /\ abs y <= e}})
+Proof
   REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
   MATCH_MP_TAC REAL_INF_UNIQUE THEN
   SIMP_TAC real_ss [FORALL_IN_GSPEC, EXISTS_IN_GSPEC] THEN
@@ -20026,7 +20584,8 @@ val HAUSDIST_COMPACT_NONTRIVIAL = store_thm ("HAUSDIST_COMPACT_NONTRIVIAL",
     REPEAT STRIP_TAC THEN EXISTS_TAC ``hausdist(s:real->bool,t)`` THEN
     ASM_REWRITE_TAC[HAUSDIST_POS_LE] THEN
     METIS_TAC[DIST_SYM, HAUSDIST_SYM,
-                  HAUSDIST_COMPACT_EXISTS, COMPACT_IMP_BOUNDED]]);
+                  HAUSDIST_COMPACT_EXISTS, COMPACT_IMP_BOUNDED]]
+QED
 
 Theorem HAUSDIST_BALLS :
    (!a b:real r s.
