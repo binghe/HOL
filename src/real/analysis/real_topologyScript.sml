@@ -3073,75 +3073,96 @@ QED
 (* These "transitivity" results are handy too.                               *)
 (* ------------------------------------------------------------------------- *)
 
-val OPEN_IN_TRANS = store_thm ("OPEN_IN_TRANS",
- ``!s t u. open_in (subtopology euclidean t) s /\
+Theorem OPEN_IN_TRANS:
+   !s t u. open_in (subtopology euclidean t) s /\
            open_in (subtopology euclidean u) t
-           ==> open_in (subtopology euclidean u) s``,
-  ASM_MESON_TAC[OPEN_IN_OPEN, OPEN_IN, OPEN_INTER, INTER_ASSOC]);
+           ==> open_in (subtopology euclidean u) s
+Proof
+  ASM_MESON_TAC[OPEN_IN_OPEN, OPEN_IN, OPEN_INTER, INTER_ASSOC]
+QED
 
-val OPEN_IN_TRANS_EQ = store_thm ("OPEN_IN_TRANS_EQ",
- ``!s t:real->bool.
+Theorem OPEN_IN_TRANS_EQ:
+   !s t:real->bool.
         (!u. open_in (subtopology euclidean t) u
              ==> open_in (subtopology euclidean s) t)
-        <=> open_in (subtopology euclidean s) t``,
-  MESON_TAC[OPEN_IN_TRANS, OPEN_IN_REFL]);
+        <=> open_in (subtopology euclidean s) t
+Proof
+  MESON_TAC[OPEN_IN_TRANS, OPEN_IN_REFL]
+QED
 
-val OPEN_IN_OPEN_TRANS = store_thm ("OPEN_IN_OPEN_TRANS",
- ``!s t. open_in (subtopology euclidean t) s /\ open t ==> open s``,
+Theorem OPEN_IN_OPEN_TRANS:
+   !s t. open_in (subtopology euclidean t) s /\ open t ==> open s
+Proof
   REWRITE_TAC[ONCE_REWRITE_RULE[GSYM SUBTOPOLOGY_UNIV] OPEN_IN] THEN
-  REWRITE_TAC[OPEN_IN_TRANS]);
+  REWRITE_TAC[OPEN_IN_TRANS]
+QED
 
-val CLOSED_IN_TRANS = store_thm ("CLOSED_IN_TRANS",
- ``!s t u. closed_in (subtopology euclidean t) s /\
+Theorem CLOSED_IN_TRANS:
+   !s t u. closed_in (subtopology euclidean t) s /\
            closed_in (subtopology euclidean u) t
-           ==> closed_in (subtopology euclidean u) s``,
-  ASM_MESON_TAC[CLOSED_IN_CLOSED, CLOSED_IN, CLOSED_INTER, INTER_ASSOC]);
+           ==> closed_in (subtopology euclidean u) s
+Proof
+  ASM_MESON_TAC[CLOSED_IN_CLOSED, CLOSED_IN, CLOSED_INTER, INTER_ASSOC]
+QED
 
-val CLOSED_IN_TRANS_EQ = store_thm ("CLOSED_IN_TRANS_EQ",
- ``!s t:real->bool.
+Theorem CLOSED_IN_TRANS_EQ:
+   !s t:real->bool.
         (!u. closed_in (subtopology euclidean t) u
              ==> closed_in (subtopology euclidean s) t)
-        <=> closed_in (subtopology euclidean s) t``,
-  MESON_TAC[CLOSED_IN_TRANS, CLOSED_IN_REFL]);
+        <=> closed_in (subtopology euclidean s) t
+Proof
+  MESON_TAC[CLOSED_IN_TRANS, CLOSED_IN_REFL]
+QED
 
-val CLOSED_IN_CLOSED_TRANS = store_thm ("CLOSED_IN_CLOSED_TRANS",
- ``!s t. closed_in (subtopology euclidean t) s /\ closed t ==> closed s``,
+Theorem CLOSED_IN_CLOSED_TRANS:
+   !s t. closed_in (subtopology euclidean t) s /\ closed t ==> closed s
+Proof
   REWRITE_TAC[ONCE_REWRITE_RULE[GSYM SUBTOPOLOGY_UNIV] CLOSED_IN] THEN
-  REWRITE_TAC[CLOSED_IN_TRANS]);
+  REWRITE_TAC[CLOSED_IN_TRANS]
+QED
 
-val OPEN_IN_SUBTOPOLOGY_INTER_SUBSET = store_thm ("OPEN_IN_SUBTOPOLOGY_INTER_SUBSET",
- ``!s u v. open_in (subtopology euclidean u) (u INTER s) /\ v SUBSET u
-           ==> open_in (subtopology euclidean v) (v INTER s)``,
+Theorem OPEN_IN_SUBTOPOLOGY_INTER_SUBSET:
+   !s u v. open_in (subtopology euclidean u) (u INTER s) /\ v SUBSET u
+           ==> open_in (subtopology euclidean v) (v INTER s)
+Proof
   REPEAT GEN_TAC THEN SIMP_TAC std_ss [OPEN_IN_OPEN, GSYM LEFT_EXISTS_AND_THM] THEN
-  STRIP_TAC THEN EXISTS_TAC ``t:real->bool`` THEN REPEAT (POP_ASSUM MP_TAC) THEN SET_TAC[]);
+  STRIP_TAC THEN EXISTS_TAC ``t:real->bool`` THEN REPEAT (POP_ASSUM MP_TAC) THEN SET_TAC[]
+QED
 
-val OPEN_IN_OPEN_EQ = store_thm ("OPEN_IN_OPEN_EQ",
- ``!s t. open s
-         ==> (open_in (subtopology euclidean s) t <=> open t /\ t SUBSET s)``,
-  MESON_TAC[OPEN_OPEN_IN_TRANS, OPEN_IN_OPEN_TRANS, open_in]);
+Theorem OPEN_IN_OPEN_EQ:
+   !s t. open s
+         ==> (open_in (subtopology euclidean s) t <=> open t /\ t SUBSET s)
+Proof
+  MESON_TAC[OPEN_OPEN_IN_TRANS, OPEN_IN_OPEN_TRANS, open_in]
+QED
 
-val CLOSED_IN_CLOSED_EQ = store_thm ("CLOSED_IN_CLOSED_EQ",
- ``!s t. closed s
+Theorem CLOSED_IN_CLOSED_EQ:
+   !s t. closed s
          ==> (closed_in (subtopology euclidean s) t <=>
-              closed t /\ t SUBSET s)``,
+              closed t /\ t SUBSET s)
+Proof
   MESON_TAC[CLOSED_SUBSET, CLOSED_IN_CLOSED_TRANS, closed_in,
-            TOPSPACE_EUCLIDEAN_SUBTOPOLOGY]);
+            TOPSPACE_EUCLIDEAN_SUBTOPOLOGY]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Line segments, with open/closed overloading of (a,b) and [a,b].           *)
 (* ------------------------------------------------------------------------- *)
 
-val closed_segment = new_definition ("closed_segment",
-  ``closed_segment (l:(real#real)list) =
-   {((&1:real) - u) * FST(HD l) + u * SND(HD l) | &0 <= u /\ u <= &1}``);
+Definition closed_segment[nocompute]:
+  closed_segment (l:(real#real)list) =
+   {((&1:real) - u) * FST(HD l) + u * SND(HD l) | &0 <= u /\ u <= &1}
+End
 
-val open_segment = new_definition ("open_segment",
- ``open_segment(a,b) = closed_segment[a,b] DIFF {a;b}``);
+Definition open_segment[nocompute]:
+ open_segment(a,b) = closed_segment[a,b] DIFF {a;b}
+End
 
-val OPEN_SEGMENT_ALT = store_thm ("OPEN_SEGMENT_ALT",
- ``!a b:real.
+Theorem OPEN_SEGMENT_ALT:
+   !a b:real.
         ~(a = b)
-        ==> (open_segment(a,b) = {(&1 - u) * a + u * b | &0 < u /\ u < &1:real})``,
+        ==> (open_segment(a,b) = {(&1 - u) * a + u * b | &0 < u /\ u < &1:real})
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[open_segment, closed_segment, FST, SND, HD] THEN
   SIMP_TAC std_ss [EXTENSION, IN_DIFF, IN_INSERT, NOT_IN_EMPTY, GSPECIFICATION] THEN
   X_GEN_TAC ``x:real`` THEN SIMP_TAC std_ss [GSYM LEFT_EXISTS_AND_THM] THEN
@@ -3152,81 +3173,101 @@ val OPEN_SEGMENT_ALT = store_thm ("OPEN_SEGMENT_ALT",
     REAL_ARITH ``((&1 - u) * a + u * b = b) <=> ((&1 - u) * (b - a) = 0:real)``,
     REAL_ENTIRE, REAL_SUB_0] THEN UNDISCH_TAC ``a <> b:real`` THEN DISCH_TAC THEN
         POP_ASSUM (MP_TAC o ONCE_REWRITE_RULE [EQ_SYM_EQ]) THEN DISCH_TAC THEN
-        ASM_REWRITE_TAC [] THEN REAL_ARITH_TAC);
+        ASM_REWRITE_TAC [] THEN REAL_ARITH_TAC
+QED
 
 val _ = overload_on ("segment", ``open_segment``);
 val _ = overload_on ("segment", ``closed_segment``);
 
-val segment = store_thm ("segment",
- ``(segment[a,b] = {(&1 - u) * a + u * b | &0 <= u /\ u <= &1:real}) /\
-   (segment(a,b) = segment[a,b] DIFF {a;b:real})``,
-  REWRITE_TAC[open_segment, closed_segment, HD]);
+Theorem segment:
+   (segment[a,b] = {(&1 - u) * a + u * b | &0 <= u /\ u <= &1:real}) /\
+   (segment(a,b) = segment[a,b] DIFF {a;b:real})
+Proof
+  REWRITE_TAC[open_segment, closed_segment, HD]
+QED
 
-val SEGMENT_REFL = store_thm ("SEGMENT_REFL",
- ``(!a. segment[a,a] = {a}) /\
-   (!a. segment(a,a) = {})``,
+Theorem SEGMENT_REFL:
+   (!a. segment[a,a] = {a}) /\
+   (!a. segment(a,a) = {})
+Proof
   REWRITE_TAC[segment, REAL_ARITH ``(&1 - u) * a + u * a = a:real``] THEN
   CONJ_TAC THENL [ALL_TAC, SET_TAC[REAL_POS]] THEN
   SIMP_TAC std_ss [EXTENSION, GSPECIFICATION] THEN REPEAT GEN_TAC THEN
   EQ_TAC THEN REWRITE_TAC [IN_SING] THENL [METIS_TAC [], ALL_TAC] THEN DISCH_TAC THEN
-  ASM_REWRITE_TAC [] THEN EXISTS_TAC ``1:real`` THEN REAL_ARITH_TAC);
+  ASM_REWRITE_TAC [] THEN EXISTS_TAC ``1:real`` THEN REAL_ARITH_TAC
+QED
 
-val IN_SEGMENT = store_thm ("IN_SEGMENT",
- ``!a b x:real.
+Theorem IN_SEGMENT:
+   !a b x:real.
         ((x IN segment[a,b] <=>
          ?u. &0 <= u /\ u <= &1 /\ (x = (&1 - u) * a + u * b:real))) /\
         ((x IN segment(a,b) <=>
-         ~(a = b) /\ ?u. &0 < u /\ u < &1 /\ (x = (&1 - u) * a + u * b:real)))``,
+         ~(a = b) /\ ?u. &0 < u /\ u < &1 /\ (x = (&1 - u) * a + u * b:real)))
+Proof
   REPEAT STRIP_TAC THENL
    [SIMP_TAC std_ss [segment, GSPECIFICATION, CONJ_ASSOC], ALL_TAC] THEN
   ASM_CASES_TAC ``a:real = b`` THEN
   ASM_REWRITE_TAC[SEGMENT_REFL, NOT_IN_EMPTY] THEN
-  ASM_SIMP_TAC std_ss [OPEN_SEGMENT_ALT, GSPECIFICATION, CONJ_ASSOC] THEN METIS_TAC []);
+  ASM_SIMP_TAC std_ss [OPEN_SEGMENT_ALT, GSPECIFICATION, CONJ_ASSOC] THEN METIS_TAC []
+QED
 
-val SEGMENT_SYM = store_thm ("SEGMENT_SYM",
- ``(!a b:real. segment[a,b] = segment[b,a]) /\
-   (!a b:real. segment(a,b) = segment(b,a))``,
+Theorem SEGMENT_SYM:
+   (!a b:real. segment[a,b] = segment[b,a]) /\
+   (!a b:real. segment(a,b) = segment(b,a))
+Proof
   MATCH_MP_TAC(TAUT `a /\ (a ==> b) ==> a /\ b`) THEN
   SIMP_TAC std_ss [open_segment] THEN
   CONJ_TAC THENL [ALL_TAC, SIMP_TAC std_ss [INSERT_COMM, INSERT_INSERT]] THEN
   REWRITE_TAC[EXTENSION, IN_SEGMENT] THEN REPEAT GEN_TAC THEN EQ_TAC THEN
   DISCH_THEN(X_CHOOSE_TAC ``u:real``) THEN EXISTS_TAC ``&1 - u:real`` THEN
   ASM_REWRITE_TAC[] THEN
-  REPEAT CONJ_TAC THEN TRY ASM_ARITH_TAC THEN ASM_REAL_ARITH_TAC);
+  REPEAT CONJ_TAC THEN TRY ASM_ARITH_TAC THEN ASM_REAL_ARITH_TAC
+QED
 
-val ENDS_IN_SEGMENT = store_thm ("ENDS_IN_SEGMENT",
- ``!a b. a IN segment[a,b] /\ b IN segment[a,b]``,
+Theorem ENDS_IN_SEGMENT:
+   !a b. a IN segment[a,b] /\ b IN segment[a,b]
+Proof
   REPEAT STRIP_TAC THEN SIMP_TAC std_ss [segment, GSPECIFICATION] THENL
    [EXISTS_TAC ``&0:real``, EXISTS_TAC ``&1:real``] THEN
-  (CONJ_TAC THENL [REAL_ARITH_TAC, REAL_ARITH_TAC]));
+  (CONJ_TAC THENL [REAL_ARITH_TAC, REAL_ARITH_TAC])
+QED
 
-val ENDS_NOT_IN_SEGMENT = store_thm ("ENDS_NOT_IN_SEGMENT",
- ``!a b. ~(a IN segment(a,b)) /\ ~(b IN segment(a,b))``,
-  REWRITE_TAC[open_segment] THEN SET_TAC[]);
+Theorem ENDS_NOT_IN_SEGMENT:
+   !a b. ~(a IN segment(a,b)) /\ ~(b IN segment(a,b))
+Proof
+  REWRITE_TAC[open_segment] THEN SET_TAC[]
+QED
 
-val SEGMENT_CLOSED_OPEN = store_thm ("SEGMENT_CLOSED_OPEN",
- ``!a b. segment[a,b] = segment(a,b) UNION {a;b}``,
+Theorem SEGMENT_CLOSED_OPEN:
+   !a b. segment[a,b] = segment(a,b) UNION {a;b}
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[open_segment] THEN MATCH_MP_TAC(SET_RULE
    ``a IN s /\ b IN s ==> (s = (s DIFF {a;b}) UNION {a;b})``) THEN
-  REWRITE_TAC[ENDS_IN_SEGMENT]);
+  REWRITE_TAC[ENDS_IN_SEGMENT]
+QED
 
-val SEGMENT_OPEN_SUBSET_CLOSED = store_thm ("SEGMENT_OPEN_SUBSET_CLOSED",
- ``!a b. segment(a,b) SUBSET segment[a,b]``,
-  REWRITE_TAC[CONJUNCT2(SPEC_ALL segment)] THEN SET_TAC[]);
+Theorem SEGMENT_OPEN_SUBSET_CLOSED:
+   !a b. segment(a,b) SUBSET segment[a,b]
+Proof
+  REWRITE_TAC[CONJUNCT2(SPEC_ALL segment)] THEN SET_TAC[]
+QED
 
-val MIDPOINT_IN_SEGMENT = store_thm ("MIDPOINT_IN_SEGMENT",
- ``(!a b:real. midpoint(a,b) IN segment[a,b]) /\
-   (!a b:real. midpoint(a,b) IN segment(a,b) <=> ~(a = b))``,
+Theorem MIDPOINT_IN_SEGMENT:
+   (!a b:real. midpoint(a,b) IN segment[a,b]) /\
+   (!a b:real. midpoint(a,b) IN segment(a,b) <=> ~(a = b))
+Proof
   REWRITE_TAC[IN_SEGMENT] THEN REPEAT STRIP_TAC THENL
    [ALL_TAC, ASM_CASES_TAC ``a:real = b`` THEN ASM_REWRITE_TAC[]] THEN
   EXISTS_TAC ``&1 / &2:real`` THEN REWRITE_TAC[midpoint] THEN
   REWRITE_TAC [REAL_HALF_BETWEEN] THEN
   REWRITE_TAC [METIS [REAL_HALF_DOUBLE, REAL_EQ_SUB_RADD]
    ``1 - 1 / 2 = 1 / 2:real``] THEN REWRITE_TAC [GSYM REAL_LDISTRIB] THEN
-   REWRITE_TAC [REAL_INV_1OVER]);
+   REWRITE_TAC [REAL_INV_1OVER]
+QED
 
-val BETWEEN_IN_SEGMENT = store_thm ("BETWEEN_IN_SEGMENT",
- ``!x a b:real. between x (a,b) <=> x IN segment[a,b]``,
+Theorem BETWEEN_IN_SEGMENT:
+   !x a b:real. between x (a,b) <=> x IN segment[a,b]
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[between] THEN
   ASM_CASES_TAC ``a:real = b`` THEN
   ASM_REWRITE_TAC[SEGMENT_REFL, IN_SING] THENL
@@ -3265,11 +3306,13 @@ val BETWEEN_IN_SEGMENT = store_thm ("BETWEEN_IN_SEGMENT",
                 REAL_ARITH ``((&1 - u) * a + u * b) - b = (&1 - u) * (a - b:real)``,
                 ABS_MUL, GSYM REAL_ADD_RDISTRIB] THEN
         FULL_SIMP_TAC std_ss [REAL_ARITH ``u <= 1 <=> 0 <= 1 - u:real``, GSYM ABS_REFL] THEN
-        REAL_ARITH_TAC);
+        REAL_ARITH_TAC
+QED
 
-val REAL_CONVEX_BOUND_LE = store_thm ("REAL_CONVEX_BOUND_LE",
- ``!x y a u v. x <= a /\ y <= a /\ &0 <= u /\ &0 <= v /\ (u + v = &1:real)
-   ==> u * x + v * y <= a:real``,
+Theorem REAL_CONVEX_BOUND_LE:
+   !x y a u v. x <= a /\ y <= a /\ &0 <= u /\ &0 <= v /\ (u + v = &1:real)
+   ==> u * x + v * y <= a:real
+Proof
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC ``(u + v) * a:real`` THEN
   CONJ_TAC THENL [ALL_TAC, ASM_SIMP_TAC std_ss [REAL_LE_REFL, REAL_MUL_LID]] THEN
@@ -3279,11 +3322,13 @@ val REAL_CONVEX_BOUND_LE = store_thm ("REAL_CONVEX_BOUND_LE",
   GEN_REWR_TAC LAND_CONV [REAL_LE_LT] THEN STRIP_TAC THEN
   ASM_SIMP_TAC std_ss [REAL_LE_LMUL] THEN POP_ASSUM (MP_TAC o ONCE_REWRITE_RULE [EQ_SYM_EQ]) THEN
   POP_ASSUM (MP_TAC o ONCE_REWRITE_RULE [EQ_SYM_EQ]) THEN DISCH_TAC THEN
-  DISCH_TAC THEN ASM_REWRITE_TAC [REAL_LE_LT, REAL_MUL_LZERO]);
+  DISCH_TAC THEN ASM_REWRITE_TAC [REAL_LE_LT, REAL_MUL_LZERO]
+QED
 
-val IN_SEGMENT_COMPONENT = store_thm ("IN_SEGMENT_COMPONENT",
- ``!a b x:real i. x IN segment[a,b]
-        ==> min (a) (b) <= x /\ x <= max (a) (b)``,
+Theorem IN_SEGMENT_COMPONENT:
+   !a b x:real i. x IN segment[a,b]
+        ==> min (a) (b) <= x /\ x <= max (a) (b)
+Proof
   REPEAT STRIP_TAC THEN
   FIRST_X_ASSUM(MP_TAC o REWRITE_RULE [IN_SEGMENT]) THEN
   DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
@@ -3292,11 +3337,13 @@ val IN_SEGMENT_COMPONENT = store_thm ("IN_SEGMENT_COMPONENT",
   SIMP_TAC std_ss [REAL_ARITH ``c <= u * a + t * b <=> u * -a + t * -b <= -c:real``] THEN
   MATCH_MP_TAC REAL_CONVEX_BOUND_LE THEN
   RW_TAC real_ss [] THEN
-  ASM_REAL_ARITH_TAC);
+  ASM_REAL_ARITH_TAC
+QED
 
-val SEGMENT_TRANSLATION = store_thm ("SEGMENT_TRANSLATION",
- ``(!c a b. segment[c + a,c + b] = IMAGE (\x. c + x) (segment[a,b])) /\
-   (!c a b. segment(c + a,c + b) = IMAGE (\x. c + x) (segment(a,b)))``,
+Theorem SEGMENT_TRANSLATION:
+   (!c a b. segment[c + a,c + b] = IMAGE (\x. c + x) (segment[a,b])) /\
+   (!c a b. segment(c + a,c + b) = IMAGE (\x. c + x) (segment(a,b)))
+Proof
   SIMP_TAC std_ss [EXTENSION, IN_SEGMENT, IN_IMAGE] THEN
   SIMP_TAC std_ss [REAL_ARITH ``(&1 - u) * (c + a) + u * (c + b) =
                             c + (&1 - u) * a + u * b:real``] THEN
@@ -3307,20 +3354,24 @@ val SEGMENT_TRANSLATION = store_thm ("SEGMENT_TRANSLATION",
     ASM_SIMP_TAC std_ss [REAL_ADD_ASSOC] THEN EXISTS_TAC ``u:real`` THEN
         ASM_SIMP_TAC std_ss [],
         REPEAT STRIP_TAC THEN EXISTS_TAC ``u:real`` THEN
-        ASM_SIMP_TAC std_ss [REAL_ADD_ASSOC]]));
+        ASM_SIMP_TAC std_ss [REAL_ADD_ASSOC]])
+QED
 
-val CLOSED_SEGMENT_LINEAR_IMAGE = store_thm ("CLOSED_SEGMENT_LINEAR_IMAGE",
- ``!f a b. linear f
-           ==> (segment[f a,f b] = IMAGE f (segment[a,b]))``,
+Theorem CLOSED_SEGMENT_LINEAR_IMAGE:
+   !f a b. linear f
+           ==> (segment[f a,f b] = IMAGE f (segment[a,b]))
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[EXTENSION, IN_IMAGE, IN_SEGMENT] THEN
   FIRST_ASSUM(fn th => REWRITE_TAC[GSYM(MATCH_MP LINEAR_CMUL th)]) THEN
   FIRST_ASSUM(fn th => REWRITE_TAC[GSYM(MATCH_MP LINEAR_ADD th)]) THEN
-  MESON_TAC[]);
+  MESON_TAC[]
+QED
 
-val OPEN_SEGMENT_LINEAR_IMAGE = store_thm ("OPEN_SEGMENT_LINEAR_IMAGE",
- ``!f:real->real a b.
+Theorem OPEN_SEGMENT_LINEAR_IMAGE:
+   !f:real->real a b.
         linear f /\ (!x y. (f x = f y) ==> (x = y))
-        ==> (segment(f a,f b) = IMAGE f (segment(a,b)))``,
+        ==> (segment(f a,f b) = IMAGE f (segment(a,b)))
+Proof
   REWRITE_TAC[open_segment, closed_segment, FST, SND, HD] THEN
   SIMP_TAC std_ss [linear, IN_IMAGE, dist, EXTENSION, GSPECIFICATION, IN_DIFF] THEN
   REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THENL
@@ -3329,39 +3380,49 @@ val OPEN_SEGMENT_LINEAR_IMAGE = store_thm ("OPEN_SEGMENT_LINEAR_IMAGE",
    CONJ_TAC THENL [EXISTS_TAC ``u:real`` THEN ASM_REWRITE_TAC [], ALL_TAC] THEN
    ASM_SET_TAC [],
    CONJ_TAC THENL [EXISTS_TAC ``u:real`` THEN METIS_TAC [], ALL_TAC] THEN
-   ASM_SET_TAC []]);
+   ASM_SET_TAC []]
+QED
 
-val IN_OPEN_SEGMENT = store_thm ("IN_OPEN_SEGMENT",
- ``!a b x:real.
-        x IN segment(a,b) <=> x IN segment[a,b] /\ ~(x = a) /\ ~(x = b)``,
-  REPEAT GEN_TAC THEN REWRITE_TAC[open_segment, IN_DIFF] THEN SET_TAC[]);
+Theorem IN_OPEN_SEGMENT:
+   !a b x:real.
+        x IN segment(a,b) <=> x IN segment[a,b] /\ ~(x = a) /\ ~(x = b)
+Proof
+  REPEAT GEN_TAC THEN REWRITE_TAC[open_segment, IN_DIFF] THEN SET_TAC[]
+QED
 
-val IN_OPEN_SEGMENT_ALT = store_thm ("IN_OPEN_SEGMENT_ALT",
- ``!a b x:real.
+Theorem IN_OPEN_SEGMENT_ALT:
+   !a b x:real.
         x IN segment(a,b) <=>
-        x IN segment[a,b] /\ ~(x = a) /\ ~(x = b) /\ ~(a = b)``,
+        x IN segment[a,b] /\ ~(x = a) /\ ~(x = b) /\ ~(a = b)
+Proof
   REPEAT GEN_TAC THEN ASM_CASES_TAC ``a:real = b`` THEN
   ASM_REWRITE_TAC[SEGMENT_REFL, IN_SING, NOT_IN_EMPTY] THEN
-  ASM_MESON_TAC[IN_OPEN_SEGMENT]);
+  ASM_MESON_TAC[IN_OPEN_SEGMENT]
+QED
 
-val COLLINEAR_DIST_IN_CLOSED_SEGMENT = store_thm ("COLLINEAR_DIST_IN_CLOSED_SEGMENT",
- ``!a b x. collinear {x;a;b} /\
+Theorem COLLINEAR_DIST_IN_CLOSED_SEGMENT:
+   !a b x. collinear {x;a;b} /\
            dist(x,a) <= dist(a,b) /\ dist(x,b) <= dist(a,b)
-           ==> x IN segment[a,b]``,
-  REWRITE_TAC[GSYM BETWEEN_IN_SEGMENT, COLLINEAR_DIST_BETWEEN]);
+           ==> x IN segment[a,b]
+Proof
+  REWRITE_TAC[GSYM BETWEEN_IN_SEGMENT, COLLINEAR_DIST_BETWEEN]
+QED
 
-val COLLINEAR_DIST_IN_OPEN_SEGMENT = store_thm ("COLLINEAR_DIST_IN_OPEN_SEGMENT",
- ``!a b x. collinear {x;a;b} /\
+Theorem COLLINEAR_DIST_IN_OPEN_SEGMENT:
+   !a b x. collinear {x;a;b} /\
            dist(x,a) < dist(a,b) /\ dist(x,b) < dist(a,b)
-           ==> x IN segment(a,b)``,
+           ==> x IN segment(a,b)
+Proof
   REWRITE_TAC[IN_OPEN_SEGMENT] THEN
-  METIS_TAC[COLLINEAR_DIST_IN_CLOSED_SEGMENT, REAL_LT_LE, DIST_SYM]);
+  METIS_TAC[COLLINEAR_DIST_IN_CLOSED_SEGMENT, REAL_LT_LE, DIST_SYM]
+QED
 
-val DIST_IN_OPEN_CLOSED_SEGMENT = store_thm ("DIST_IN_OPEN_CLOSED_SEGMENT",
- ``(!a b x:real.
+Theorem DIST_IN_OPEN_CLOSED_SEGMENT:
+   (!a b x:real.
     x IN segment[a,b] ==> dist(x,a) <= dist(a,b) /\ dist(x,b) <= dist(a,b)) /\
    (!a b x:real.
-    x IN segment(a,b) ==> dist(x,a) < dist(a,b) /\ dist(x,b) < dist(a,b))``,
+    x IN segment(a,b) ==> dist(x,a) < dist(a,b) /\ dist(x,b) < dist(a,b))
+Proof
   SIMP_TAC std_ss [IN_SEGMENT, GSYM RIGHT_EXISTS_AND_THM, LEFT_IMP_EXISTS_THM, dist,
            REAL_ARITH
     ``(((&1 - u) * a + u * b) - a:real = u * (b - a)) /\
@@ -3377,17 +3438,22 @@ val DIST_IN_OPEN_CLOSED_SEGMENT = store_thm ("DIST_IN_OPEN_CLOSED_SEGMENT",
      ``x * y < abs (b - a) <=> x * y < abs (a - b:real)``] THEN
     REWRITE_TAC[REAL_ARITH ``x * y < y <=> x * y < &1 * y:real``] THEN
     CONJ_TAC THEN MATCH_MP_TAC REAL_LT_RMUL_IMP THEN
-    ASM_REAL_ARITH_TAC]);
+    ASM_REAL_ARITH_TAC]
+QED
 
-val DIST_IN_CLOSED_SEGMENT = store_thm ("DIST_IN_CLOSED_SEGMENT",
-  ``(!a b x:real.
-    x IN segment[a,b] ==> dist(x,a) <= dist(a,b) /\ dist(x,b) <= dist(a,b))``,
-  REWRITE_TAC [DIST_IN_OPEN_CLOSED_SEGMENT]);
+Theorem DIST_IN_CLOSED_SEGMENT:
+    (!a b x:real.
+    x IN segment[a,b] ==> dist(x,a) <= dist(a,b) /\ dist(x,b) <= dist(a,b))
+Proof
+  REWRITE_TAC [DIST_IN_OPEN_CLOSED_SEGMENT]
+QED
 
-val DIST_IN_OPEN_SEGMENT = store_thm ("DIST_IN_OPEN_SEGMENT",
-  ``(!a b x:real.
-    x IN segment(a,b) ==> dist(x,a) < dist(a,b) /\ dist(x,b) < dist(a,b))``,
-  REWRITE_TAC [DIST_IN_OPEN_CLOSED_SEGMENT]);
+Theorem DIST_IN_OPEN_SEGMENT:
+    (!a b x:real.
+    x IN segment(a,b) ==> dist(x,a) < dist(a,b) /\ dist(x,b) < dist(a,b))
+Proof
+  REWRITE_TAC [DIST_IN_OPEN_CLOSED_SEGMENT]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Connectedness.                                                            *)

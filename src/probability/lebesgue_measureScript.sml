@@ -522,7 +522,7 @@ Proof
  >> rw [Abbr ‘g’, INTEGRABLE_0]
 QED
 
-Theorem negligible_iff_lmeasure_eq_0 :
+Theorem negligible_iff_lmeasure_zero :
     !s. s IN measurable_sets lebesgue ==> (negligible s <=> lmeasure s = 0)
 Proof
     rpt STRIP_TAC
@@ -564,7 +564,7 @@ Theorem negligible_alt_lebesgue_null_set :
     !s. negligible s <=> s IN null_set lebesgue
 Proof
     rw [IN_NULL_SET, null_set_def]
- >> METIS_TAC [negligible_in_lebesgue, negligible_iff_lmeasure_eq_0]
+ >> METIS_TAC [negligible_in_lebesgue, negligible_iff_lmeasure_zero]
 QED
 
 Theorem lebesgue_measure_iff_LIMSEQ[local] :
@@ -702,10 +702,11 @@ QED
         0 <= x /\ x < 1 /\ 0 < k ==>
         ?n. n < 2 ** k /\ &n / 2 pow k <= x /\ x < &SUC n / 2 pow k
  *)
-val lemma1 = lift_ieeeTheory.error_bound_lemma1 |> Q.SPEC ‘k’ |> GEN_ALL
+Theorem lemma1[local] = lift_ieeeTheory.error_bound_lemma1
+                     |> Q.SPEC ‘k’ |> GEN_ALL
 
 (* lemma1 also holds if “0 < k” is removed *)
-Triviality lemma1a :
+Theorem lemma1a[local] :
     !k x. 0 <= x /\ x < (1 :real) ==>
           ?n. n < 2 ** k /\ &n / 2 pow k <= x /\ x < &SUC n / 2 pow k
 Proof
@@ -714,7 +715,7 @@ Proof
  >> MATCH_MP_TAC lemma1 >> art []
 QED
 
-Triviality lemma1b :
+Theorem lemma1b[local] :
     !k x. 0 <= x /\ x <= (1 :real) ==>
           ?n. n < 2 ** k /\ &n / 2 pow k <= x /\ x <= &SUC n / 2 pow k
 Proof
@@ -743,11 +744,12 @@ QED
         0 <= x /\ x < 1 /\ 0 < k ==>
         ?n. n <= 2 ** k /\ abs (x - &n / 2 pow k) <= 1 / 2 pow SUC k
  *)
-val lemma2 = lift_ieeeTheory.error_bound_lemma2 |> Q.SPEC ‘k’ |> GEN_ALL
-          |> SIMP_RULE real_ss [REAL_INV_1OVER, GSYM ADD1]
+Theorem lemma2[local] = lift_ieeeTheory.error_bound_lemma2
+                     |> Q.SPEC ‘k’ |> GEN_ALL
+                     |> SIMP_RULE real_ss [REAL_INV_1OVER, GSYM ADD1]
 
 (* remove “0 < k”, use “_ <= 1 / 2 pow k” instead of “_ <= 1 / 2 pow SUC k” *)
-Triviality lemma2a :
+Theorem lemma2a[local] :
     !k x. 0 <= x /\ x < (1 :real) ==>
           ?n. n <= 2 ** k /\ abs (x - &n / 2 pow k) <= 1 / 2 pow k
 Proof
@@ -768,7 +770,7 @@ QED
    NOTE: It turns out that lemma2 (and all variants) are not needed. Only
    lemma1a is used in [dyadic_covering_lemma_01] below.
  *)
-Triviality lemma2b :
+Theorem lemma2b[local] :
     !k x. 0 <= x /\ x < (1 :real) ==>
           ?n. n < 2 ** k /\ abs (x - &n / 2 pow k) <= 1 / 2 pow k
 Proof
@@ -809,14 +811,15 @@ QED
         1 <= x /\ x < 2 /\ 0 < k ==>
         ?n. n <= 2 ** k /\ abs (1 + &n / 2 pow k - x) <= 1 / 2 pow SUC k
  *)
-val lemma3 = lift_ieeeTheory.error_bound_lemma3 |> Q.SPEC ‘k’ |> GEN_ALL
-          |> SIMP_RULE real_ss [REAL_INV_1OVER, GSYM ADD1]
+Theorem lemma3[local] = lift_ieeeTheory.error_bound_lemma3
+                     |> Q.SPEC ‘k’ |> GEN_ALL
+                     |> SIMP_RULE real_ss [REAL_INV_1OVER, GSYM ADD1]
 
 (* |- !y. 0 < y ==> ?n. 1 / 2 pow n < y *)
-val lemma4 = REAL_ARCH_POW_INV |> Q.SPEC ‘1 / 2’
-          |> SIMP_RULE real_ss [pow_div, POW_ONE]
+Theorem lemma4[local] = REAL_ARCH_POW_INV |> Q.SPEC ‘1 / 2’
+                     |> SIMP_RULE real_ss [pow_div, POW_ONE]
 
-Triviality lemma5 :
+Theorem lemma5[local] :
     !n k. &n / 2 pow k < (&SUC n / 2 pow k) :real
 Proof
     rpt GEN_TAC
@@ -827,7 +830,7 @@ Proof
  >> simp [Abbr ‘x’, Abbr ‘y’]
 QED
 
-Triviality lemma5a :
+Theorem lemma5a[local] :
     !n k c. c + &n / 2 pow k < (c + &SUC n / 2 pow k) :real
 Proof
     rpt STRIP_TAC
@@ -835,14 +838,14 @@ Proof
  >> REWRITE_TAC [lemma5]
 QED
 
-Triviality lemma6 :
+Theorem lemma6[local] :
     !n k. &SUC n / 2 pow k - &n / 2 pow k = (1 / 2 pow k) :real
 Proof
     RW_TAC real_ss [REAL_DIV_SUB]
  >> simp [GSYM REAL_OF_NUM_SUB]
 QED
 
-Triviality lemma6a :
+Theorem lemma6a[local] :
     !n k c. (c + &SUC n / 2 pow k) - (c + &n / 2 pow k) = (1 / 2 pow k) :real
 Proof
     rw [REAL_ARITH “c + a - (c + b) = a - (b :real)”, lemma6]
@@ -1218,8 +1221,7 @@ Proof
      Q.PAT_X_ASSUM ‘countable J2’ K_TAC \\
      Q.PAT_X_ASSUM ‘K2 <> {}’     K_TAC \\
      rw [Abbr ‘J2’]
-     >- (rw [Abbr ‘J1’, Abbr ‘J0’]
-         >- (qexistsl_tac [‘n’, ‘l’] >> art []) \\
+     >- (rw [Abbr ‘J1’, Abbr ‘J0’] >- (qexistsl_tac [‘n’, ‘l’] >> art []) \\
          qexistsl_tac [‘y’, ‘l’, ‘n’] >> art []) \\
      STRONG_DISJ_TAC \\
      RW_TAC std_ss [PSUBSET_DEF, GSYM IMP_DISJ_THM] \\
