@@ -3492,9 +3492,9 @@ Proof
                     (ISPEC “lborel” lemma_fn_seq_finite_measure1))
  >> simp [lborel_def, space_lborel]
  >> ‘2 pow n <> (0 :real)’ by simp []
- >> ASM_SIMP_TAC std_ss [Abbr ‘nf’, extreal_div_eq, extreal_of_num_def,
-                         extreal_pow_def, extreal_add_eq, extreal_lt_eq,
-                         extreal_le_eq]
+ >> ASM_SIMP_TAC std_ss
+       [Abbr ‘nf’, extreal_div_eq, extreal_of_num_def, extreal_pow_def,
+        extreal_add_eq, extreal_lt_eq, extreal_le_eq]
 QED
 
 Theorem lemma_fn_seq_finite_measure2 :
@@ -3551,9 +3551,9 @@ Proof
 QED
 
 Theorem lemma_fn_seq_finite_measure2' :
-    !f k n. f IN borel_measurable borel /\ (!x. 0 <= f x) /\
-            pos_fn_integral lborel (Normal o f) <> PosInf ==>
-            lambda {x | 2 pow n <= f x} <> PosInf
+    !f n. f IN borel_measurable borel /\ (!x. 0 <= f x) /\
+          pos_fn_integral lborel (Normal o f) <> PosInf ==>
+          lambda {x | 2 pow n <= f x} <> PosInf
 Proof
     rpt STRIP_TAC
  >> qabbrev_tac ‘nf = Normal o f’
@@ -3568,6 +3568,42 @@ Proof
  >> simp [Abbr ‘nf’, extreal_of_num_def, extreal_pow_def]
 QED
 
+Theorem finite_lmeasure_imp_integral_indicator :
+    !s y. s IN measurable_sets lebesgue /\ lmeasure s = Normal y ==>
+          s IN integrable_sets UNIV /\
+          integral UNIV (indicator s) = y
+Proof
+    rpt GEN_TAC
+ >> simp [lebesgue_def]
+ >> STRIP_TAC
+ >> qabbrev_tac ‘f = \n. indicator (s INTER line n)’
+ >> Know ‘!m n x. m <= n ==> f m x <= f n x’
+ >- (rw [Abbr ‘f’] \\
+     MATCH_MP_TAC INDICATOR_MONO \\
+     Suff ‘line m SUBSET line n’ >- SET_TAC [] \\
+     MATCH_MP_TAC LINE_MONO >> art [])
+ >> DISCH_TAC
+ >> ‘!n. f n integrable_on univ(:real)’ by PROVE_TAC [integrable_indicator_UNIV]
+ >> MP_TAC (Q.SPECL [‘f’, ‘UNIV’] BEPPO_LEVI_MONOTONE_CONVERGENCE_INCREASING)
+ >> simp []
+ >> impl_tac
+ >- (rw [bounded_def] \\
+     Q.EXISTS_TAC ‘y’ >> rw [Abbr ‘f’] \\
+     simp [integral_indicator_UNIV] \\
+     Q.PAT_X_ASSUM ‘sup _ = Normal y’ MP_TAC >> rw [sup_eq'] \\
+     Q.PAT_X_ASSUM ‘!z. _ ==> z <= Normal y’
+       (MP_TAC o Q.SPEC ‘Normal (integral (line k) (indicator s))’) \\
+     impl_tac >- (Q.EXISTS_TAC ‘k’ >> REFL_TAC) \\
+     rw [] \\
+     qmatch_abbrev_tac ‘abs x <= y’ \\
+     Suff ‘abs x = x’ >- (Rewr' >> art []) \\
+     rw [abs_refl, Abbr ‘x’] \\
+     MATCH_MP_TAC INTEGRAL_POS >> simp [INDICATOR_POS])
+ >> STRIP_TAC (* this asserts ‘g’ and ‘k’ *)
+ (* applying mono_increasing_converges_to_sup *)
+ >> cheat
+QED
+
 Theorem real_fn_seq_has_integral :
     !f n. f IN borel_measurable borel /\ (!x. 0 <= f x) /\
           pos_fn_integral lborel (Normal o f) <> PosInf ==>
@@ -3575,9 +3611,11 @@ Theorem real_fn_seq_has_integral :
 Proof
     RW_TAC std_ss [real_fn_seq_def, real_fn_seq_integral_def, space_lborel, IN_UNIV]
  >> HO_MATCH_MP_TAC HAS_INTEGRAL_ADD
- (* easy part first *)
  >> reverse CONJ_TAC
- >- (
+ >- (HO_MATCH_MP_TAC HAS_INTEGRAL_CMUL \\
+     MP_TAC (Q.SPECL [‘f’, ‘n’] lemma_fn_seq_finite_measure2') >> rw [] \\
+     qabbrev_tac ‘s = {x | 2 pow n <= f x}’ \\
+    ‘(\x. indicator s x) = indicator s’ by rw [FUN_EQ_THM] >> POP_ORW \\
      cheat)
  (* stage work *)
  >> cheat
@@ -3666,11 +3704,9 @@ Proof
      CONJ_TAC >- (MATCH_MP_TAC lemma_fn_seq_upper_bounded >> art []) \\
      simp [Abbr ‘nf’, o_DEF])
  >> Rewr'
- (* applying BEPPO_LEVI_MONOTONE_CONVERGENCE_INCREASING *)
  >> MP_TAC (Q.SPECL [‘fn’, ‘UNIV’] BEPPO_LEVI_MONOTONE_CONVERGENCE_INCREASING)
  >> simp []
- (* applying fn_seq_alt_real_fn_seq *)
- >> ‘fn = (\n x. real_fn_seq lborel f n x)’
+  >> ‘fn = (\n x. real_fn_seq lborel f n x)’
        by rw [Abbr ‘fn’, Abbr ‘nf’, fn_seq_alt_real_fn_seq, FUN_EQ_THM]
  >> POP_ORW
  >> simp [Abbr ‘fn’]
