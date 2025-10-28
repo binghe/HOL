@@ -3432,7 +3432,7 @@ Definition real_fn_seq_integral_def :
     2 pow n * lambda' {x | 2 pow n <= f x}
 End
 
-Theorem fn_seq_lemma1[local] :
+Theorem real_fn_seq_lemma1[local] :
     !f i n. f IN borel_measurable borel ==>
            {x | &i / 2 pow n <= f x /\ f x < (&i + 1) / 2 pow n} IN subsets borel
 
@@ -3443,7 +3443,7 @@ Proof
              (ISPEC “borel” in_borel_measurable_ge_lt_imp)) >> art []
 QED
 
-Theorem fn_seq_lemma2[local] :
+Theorem real_fn_seq_lemma2[local] :
     !f n. f IN borel_measurable borel ==> {x | 2 pow n <= f x} IN subsets borel
 Proof
     rpt STRIP_TAC
@@ -3462,7 +3462,7 @@ Proof
  >- (MATCH_MP_TAC REAL_LE_MUL >> simp [] \\
      MATCH_MP_TAC real_positive \\
      MATCH_MP_TAC MEASURE_POSITIVE >> simp [lborel_def, sets_lborel] \\
-     MATCH_MP_TAC fn_seq_lemma2 >> art [])
+     MATCH_MP_TAC real_fn_seq_lemma2 >> art [])
  >> HO_MATCH_MP_TAC REAL_SUM_IMAGE_POS
  >> SIMP_TAC std_ss [FINITE_COUNT, IN_COUNT]
  >> Q.X_GEN_TAC ‘i’ >> DISCH_TAC
@@ -3471,7 +3471,7 @@ Proof
  >> MATCH_MP_TAC real_positive
  >> MATCH_MP_TAC MEASURE_POSITIVE
  >> SIMP_TAC std_ss [lborel_def, sets_lborel]
- >> MATCH_MP_TAC fn_seq_lemma1 >> art []
+ >> MATCH_MP_TAC real_fn_seq_lemma1 >> art []
 QED
 
 Theorem fn_seq_integral_positive :
@@ -3848,7 +3848,7 @@ Proof
     ‘(\x. indicator s x) = indicator s’ by rw [FUN_EQ_THM] >> POP_ORW \\
      Know ‘s IN subsets borel’
      >- (qunabbrev_tac ‘s’ \\
-         MATCH_MP_TAC fn_seq_lemma2 >> art []) >> DISCH_TAC \\
+         MATCH_MP_TAC real_fn_seq_lemma2 >> art []) >> DISCH_TAC \\
      gs [lambda_eq_lebesgue] \\
      MATCH_MP_TAC finite_lmeasure_has_integral_indicator_real >> art [] \\
      METIS_TAC [SUBSET_DEF, lborel_subset_lebesgue, sets_lborel])
@@ -3862,7 +3862,7 @@ Proof
  >> ‘(\x. indicator s x) = indicator s’ by rw [FUN_EQ_THM] >> POP_ORW
  >> Know ‘s IN subsets borel’
  >- (qunabbrev_tac ‘s’ \\
-     MATCH_MP_TAC fn_seq_lemma1 >> art [])
+     MATCH_MP_TAC real_fn_seq_lemma1 >> art [])
  >> DISCH_TAC
  >> gs [lambda_eq_lebesgue]
  >> MATCH_MP_TAC finite_lmeasure_has_integral_indicator_real
@@ -3895,12 +3895,12 @@ Proof
  >> qabbrev_tac ‘A = \k. {x | &k / 2 pow n <= f x /\ f x < (&k + 1) / 2 pow n}’
  >> Know ‘!k. (A k) IN subsets borel’
  >- (RW_TAC std_ss [Abbr ‘A’, Abbr ‘c’] \\
-     MATCH_MP_TAC fn_seq_lemma1 >> art [])
+     MATCH_MP_TAC real_fn_seq_lemma1 >> art [])
  >> DISCH_TAC
  >> qabbrev_tac ‘B = {x | 2 pow n <= f x}’
  >> Know ‘B IN subsets borel’
  >- (qunabbrev_tac ‘B’ \\
-     MATCH_MP_TAC fn_seq_lemma2 >> art [])
+     MATCH_MP_TAC real_fn_seq_lemma2 >> art [])
  >> DISCH_TAC
  >> qabbrev_tac ‘s = count (4 ** n)’
  >> ‘FINITE s’ by simp [Abbr ‘s’]
@@ -3959,7 +3959,7 @@ Proof
 QED
 
 (* NOTE: first we prove the equivalence for bounded positive functions *)
-Theorem lebesgue_eq_gauge_integral_lemma1[local] :
+Theorem lebesgue_eq_gauge_integral_positive_bounded :
     !f. f IN borel_measurable borel /\
        (!x. 0 <= f x) /\ bounded (IMAGE f UNIV) /\
         pos_fn_integral lborel (Normal o f) <> PosInf ==>
@@ -4083,7 +4083,14 @@ Proof
      MATCH_MP_TAC le_real_imp >> simp [] \\
      MATCH_MP_TAC fn_seq_integral_positive >> simp [lborel_def])
  >> STRIP_TAC (* this asserts g and k (negligible) *)
- >> rename1 ‘negligible N’
+ >> rename1 ‘negligible E’
+ >> ‘?N. N IN null_set lborel /\ E SUBSET N’
+       by METIS_TAC [negligible_approximation_null_set]
+ >> ‘(\k. real_fn_seq_integral f k) = real_fn_seq_integral f’ by rw [FUN_EQ_THM]
+ >> POP_ASSUM (fs o wrap)
+ >> qabbrev_tac ‘h = flip (real_fn_seq lborel f)’
+ >> ‘!x. (\k. real_fn_seq lborel f k x) = h x’ by rw [Abbr ‘h’, FUN_EQ_THM]
+ >> POP_ASSUM (fs o wrap)
  (* applying mono_increasing_converges_to_sup *)
  >> cheat
 QED
