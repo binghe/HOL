@@ -3375,7 +3375,7 @@ Proof
      qunabbrevl_tac [‘a’, ‘b’] \\
      MP_TAC (Q.SPECL [‘m’, ‘Normal o f’, ‘x’] lemma_fn_seq_mono_increasing) \\
      rw [o_DEF, extreal_of_num_def, ext_mono_increasing_def])
- >> MATCH_MP_TAC real_le_reduce
+ >> MATCH_MP_TAC le_real_reduce
  >> Know ‘a <> NegInf /\ b <> NegInf’
  >- (qunabbrevl_tac [‘a’, ‘b’] \\
      CONJ_TAC >> MATCH_MP_TAC pos_not_neginf \\ (* 2 subgoals, same tactics *)
@@ -4076,14 +4076,11 @@ Proof
      >- simp [ABS_REFL, real_fn_seq_integral_positive] >> Rewr' \\
      Know ‘real_fn_seq_integral f k =
            real (fn_seq_integral lborel (Normal o f) k)’
-     >- (MATCH_MP_TAC real_fn_seq_integral_alt_fn_seq_integral >> simp []) \\
-     Rewr' \\
-     simp [] \\
-     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘real (pos_fn_integral lborel nf)’ \\
-     simp [real_normal] \\
-    ‘r = real (pos_fn_integral lborel nf)’ by simp [real_normal] \\
-     POP_ORW \\
-     MATCH_MP_TAC real_le_imp >> simp [] \\
+     >- (MATCH_MP_TAC real_fn_seq_integral_alt_fn_seq_integral \\
+         simp []) >> Rewr' \\
+    ‘r = real (pos_fn_integral lborel nf)’ by simp [real_normal] >> POP_ORW \\
+     POP_ASSUM K_TAC >> simp [] \\
+     MATCH_MP_TAC le_real_imp >> simp [] \\
      MATCH_MP_TAC fn_seq_integral_positive >> simp [lborel_def])
  >> STRIP_TAC (* this asserts g and k (negligible) *)
  >> rename1 ‘negligible N’

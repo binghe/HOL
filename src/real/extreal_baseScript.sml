@@ -3593,7 +3593,7 @@ Proof
  >> Cases_on ‘y’ >> fs [real_normal]
 QED
 
-Theorem real_le_reduce :
+Theorem le_real_reduce :
     !x y. x <> PosInf /\ x <> NegInf /\ y <> PosInf /\ y <> NegInf ==>
          (real x <= real y <=> x <= y)
 Proof
@@ -3603,7 +3603,7 @@ Proof
  >> ASM_SIMP_TAC std_ss [real_normal, extreal_le_eq]
 QED
 
-Theorem real_le_imp :
+Theorem le_real_imp :
     !x y. 0 <= x /\ x <= y /\ y <> PosInf ==> real x <= real y
 Proof
     rpt STRIP_TAC
