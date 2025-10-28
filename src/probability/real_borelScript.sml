@@ -999,7 +999,8 @@ Proof
 QED
 
 Theorem sigma_gr_le:
-    !f A. sigma_algebra A /\ (!(a:real). {w | w IN space A /\ a < f w} IN subsets A) ==>
+    !f A. sigma_algebra A /\
+         (!(a:real). {w | w IN space A /\ a < f w} IN subsets A) ==>
           !a. {w | w IN space A /\ f w <= a} IN subsets A
 Proof
    rpt STRIP_TAC
@@ -1013,7 +1014,7 @@ QED
 
 (* NOTE: moved ‘sigma_algebra m’ to antecedents due to changes of ‘measurable’ *)
 Theorem in_borel_measurable_gr :
-    !f m. sigma_algebra m  ==>
+    !f m. sigma_algebra m ==>
          (f IN borel_measurable m <=>
           f IN (space m -> UNIV) /\
           !a. {w | w IN space m /\ a < f w} IN subsets m)
@@ -1109,6 +1110,23 @@ Proof
        >> POP_ORW
        >> METIS_TAC [SIGMA_ALGEBRA, space_def, subsets_def])
    >> METIS_TAC [sigma_ge_gr, sigma_gr_le, sigma_le_less, SPACE, subsets_def, space_def]
+QED
+
+Theorem in_borel_measurable_ge_lt_imp :
+    !A f a b. sigma_algebra A /\ f IN borel_measurable A ==>
+              {x | x IN space A /\ a <= f x /\ f x < b} IN subsets A
+Proof
+    rpt STRIP_TAC
+ >> ‘{x | x IN space A /\ a <= f x /\ f x < b} =
+     {x | x IN space A /\ a <= f x} INTER {x | x IN space A /\ f x < b}’
+       by SET_TAC [] >> POP_ORW
+ >> MATCH_MP_TAC SIGMA_ALGEBRA_INTER >> rw [] (* 2 subgoals *)
+ >| [ (* goal 1 (of 2) *)
+      MP_TAC (Q.SPECL [‘f’, ‘A’] (iffLR in_borel_measurable_ge)) \\
+      rw [IN_FUNSET],
+      (* goal 2 (of 2) *)
+      MP_TAC (Q.SPECL [‘f’, ‘A’] (iffLR in_borel_measurable_less)) \\
+      rw [IN_FUNSET] ]
 QED
 
 Theorem borel_measurable_sets_le :
