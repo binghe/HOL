@@ -3395,13 +3395,34 @@ Proof
       simp [GSYM lt_infty] ]
 QED
 
+(* cf. lemma_fn_seq_upper_bounded *)
+Theorem lemma_real_fn_seq_upper_bounded :
+    !m f n x. 0 <= f x ==> real_fn_seq m f n x <= f x
+Proof
+    RW_TAC std_ss [real_fn_seq_alt_fn_seq]
+ >> qabbrev_tac ‘nf = Normal o f’
+ >> ‘0 <= nf x’ by rw [Abbr ‘nf’, o_DEF, extreal_of_num_def]
+ >> MP_TAC (Q.SPECL [‘m’, ‘nf’, ‘n’, ‘x’] lemma_fn_seq_upper_bounded)
+ >> MP_TAC (Q.SPECL [‘m’, ‘nf’, ‘n’, ‘x’] lemma_fn_seq_positive)
+ >> rw [o_DEF]
+ >> qabbrev_tac ‘y = fn_seq m nf n x’
+ >> ‘y <> NegInf’ by simp [pos_not_neginf]
+ >> Know ‘y <> PosInf’
+ >- (REWRITE_TAC [lt_infty] \\
+     Q_TAC (TRANS_TAC let_trans) ‘nf x’ \\
+     simp [GSYM lt_infty, Abbr ‘nf’, o_DEF])
+ >> DISCH_TAC
+ >> ‘?r. y = Normal r’ by METIS_TAC [extreal_cases]
+ >> gs [Abbr ‘nf’, o_DEF]
+QED
+
 (* cf. fn_seq_integral_def
 
    NOTE: This definition requires all (k <> 0) “lambda _” must be finite, such
    that “lambda' _” is meaningful. This may be derived from “integrable lborel f”
    aka “pos_fn_integral lborel f <> PosInf”.
  *)
-Overload lambda'[local] = “real o lambda”
+Overload lambda'[local] = “\s. real (lambda s)”
 
 Definition real_fn_seq_integral_def :
     real_fn_seq_integral (f :real -> real) n =
@@ -3782,6 +3803,97 @@ Proof
  >> simp [lambda_eq_lebesgue]
 QED
 
+Theorem real_fn_seq_integral_alt_fn_seq_integral :
+    !f n. f IN borel_measurable borel /\ (!x. 0 <= f x) /\
+          pos_fn_integral lborel (Normal o f) <> PosInf ==>
+          real_fn_seq_integral f n = real (fn_seq_integral lborel (Normal o f) n)
+Proof
+    RW_TAC std_ss
+          [real_fn_seq_integral_def, fn_seq_integral_def, space_lborel, IN_UNIV]
+ >> qabbrev_tac ‘nf = Normal o f’
+ >> ‘!x. 0 <= nf x’ by rw [Abbr ‘nf’, o_DEF]
+ >> Know ‘nf IN Borel_measurable borel’
+ >- (qunabbrev_tac ‘nf’ \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_IMP_BOREL' \\
+     simp [sigma_algebra_borel])
+ >> DISCH_TAC
+ >> ‘2 pow n = Normal (2 pow n)’
+      by rw [extreal_of_num_def, extreal_pow_def] >> POP_ORW
+ >> ‘2 pow n <> (0 :real)’ by simp []
+ >> ASM_SIMP_TAC std_ss [extreal_of_num_def, extreal_div_eq, extreal_le_eq,
+                         extreal_lt_eq, extreal_add_eq]
+ >> qabbrev_tac ‘c = \k. (&k / 2 pow n) :real’
+ >> ‘!k. 0 <= c k’ by rw [Abbr ‘c’]
+ >> qabbrev_tac ‘A = \k. {x | &k / 2 pow n <= f x /\ f x < (&k + 1) / 2 pow n}’
+ >> Know ‘!k. (A k) IN subsets borel’
+ >- (RW_TAC std_ss [Abbr ‘A’] \\
+     MATCH_MP_TAC
+       (SRULE [sigma_algebra_borel, space_borel]
+              (ISPEC “borel” in_borel_measurable_ge_lt_imp)) >> art [])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘B = {x | 2 pow n <= f x}’
+ >> Know ‘B IN subsets borel’
+ >- (qunabbrev_tac ‘B’ \\
+     irule (SRULE [sigma_algebra_borel, space_borel]
+                  (ISPECL [“f :real -> real”,“borel”]
+                          (cj 2 (iffLR in_borel_measurable_ge)))) >> art [])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘s = count (4 ** n)’
+ >> ‘FINITE s’ by simp [Abbr ‘s’]
+ >> ASM_SIMP_TAC std_ss []
+ >> Know ‘SIGMA (\k. Normal (c k) * lambda (A k)) s =
+          SIGMA (\k. Normal (c k) * Normal (lambda' (A k))) s’
+ >- (irule EXTREAL_SUM_IMAGE_EQ >> art [] \\
+     reverse CONJ_TAC
+     >- (DISJ1_TAC \\
+         Q.X_GEN_TAC ‘i’ >> simp [Abbr ‘s’] >> DISCH_TAC \\
+         CONJ_TAC >> MATCH_MP_TAC pos_not_neginf (* 2 subgoals, same tactics *)
+         >- (MATCH_MP_TAC le_mul \\
+             CONJ_TAC >- simp [extreal_of_num_def] \\
+             MATCH_MP_TAC MEASURE_POSITIVE \\
+             simp [lborel_def, sets_lborel]) \\
+         Cases_on ‘i = 0’ >- simp [Abbr ‘c’, extreal_mul_eq] \\
+         MATCH_MP_TAC le_mul \\
+         CONJ_TAC >- simp [extreal_of_num_def] \\
+         Know ‘0 <= lambda (A i)’
+         >- (MATCH_MP_TAC MEASURE_POSITIVE \\
+             simp [lborel_def, sets_lborel]) >> DISCH_TAC \\
+         Suff ‘Normal (real (lambda (A i))) = lambda (A i)’
+         >- (Rewr' >> art []) \\
+         MATCH_MP_TAC normal_real \\
+         CONJ_TAC >- simp [pos_not_neginf] \\
+         POP_ASSUM K_TAC \\
+         SIMP_TAC std_ss [Abbr ‘A’] \\
+         MATCH_MP_TAC lemma_fn_seq_finite_measure1' >> simp []) \\
+     Q.X_GEN_TAC ‘i’ >> simp [Abbr ‘s’] >> DISCH_TAC \\
+     Cases_on ‘i = 0’ >- simp [Abbr ‘c’, normal_0] \\
+     Suff ‘Normal (lambda' (A i)) = lambda (A i)’ >- simp [] \\
+     MATCH_MP_TAC normal_real \\
+     Know ‘0 <= lambda (A i)’
+     >- (MATCH_MP_TAC MEASURE_POSITIVE \\
+         simp [lborel_def, sets_lborel]) >> DISCH_TAC \\
+     CONJ_TAC >- simp [pos_not_neginf] \\
+     POP_ASSUM K_TAC \\
+     SIMP_TAC std_ss [Abbr ‘A’] \\
+     MATCH_MP_TAC lemma_fn_seq_finite_measure1' >> simp [])
+ >> Rewr'
+ >> Know ‘lambda B = Normal (lambda' B)’
+ >- (SYM_TAC >> MATCH_MP_TAC normal_real \\
+     Know ‘0 <= lambda B’
+     >- (MATCH_MP_TAC MEASURE_POSITIVE \\
+         simp [lborel_def, sets_lborel]) >> DISCH_TAC \\
+     CONJ_TAC >- simp [pos_not_neginf] \\
+     SIMP_TAC std_ss [Abbr ‘B’] \\
+     MATCH_MP_TAC lemma_fn_seq_finite_measure2' >> simp [])
+ >> Rewr'
+ >> simp [extreal_mul_eq]
+ >> Know ‘SIGMA (\k. Normal (c k * lambda' (A k))) s =
+          Normal (SIGMA (\k. c k * lambda' (A k)) s)’
+ >- (HO_MATCH_MP_TAC EXTREAL_SUM_IMAGE_NORMAL >> art [])
+ >> Rewr'
+ >> simp [extreal_add_eq]
+QED
+
 (* NOTE: first we prove the equivalence for bounded positive functions *)
 Theorem lebesgue_eq_gauge_integral_lemma1[local] :
     !f. f IN borel_measurable borel /\
@@ -3880,6 +3992,18 @@ Proof
  >> Rewr
  >> ‘!k. (\x. real_fn_seq lborel f k x) = real_fn_seq lborel f k’
       by rw [FUN_EQ_THM] >> POP_ORW
+ (* applying real_fn_seq_has_integral *)
+ >> Know ‘!n. (real_fn_seq lborel f n has_integral real_fn_seq_integral f n)
+                univ(:real)’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     MATCH_MP_TAC real_fn_seq_has_integral >> simp [])
+ >> simp [HAS_INTEGRAL_INTEGRABLE_INTEGRAL]
+ >> DISCH_THEN (STRIP_ASSUME_TAC o SIMP_RULE std_ss [FORALL_AND_THM])
+ (* applying lemma_real_fn_seq_upper_bounded *)
+ >> impl_tac (* bounded *)
+ >- (rw [bounded_def] \\
+  (* real_fn_seq_integral_alt_fn_seq_integral *)
+     cheat)
  (* applying mono_increasing_converges_to_sup *)
  >> cheat
 QED
