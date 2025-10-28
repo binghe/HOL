@@ -433,6 +433,9 @@ QED
 (*    Ordering                                                               *)
 (* ------------------------------------------------------------------------- *)
 
+(* |- !x y. ~(y <= x) <=> x < y *)
+Theorem extreal_not_le = GSYM extreal_lt_def
+
 Theorem extreal_not_lt :
     !x y:extreal. ~(x < y) <=> y <= x
 Proof
@@ -3590,7 +3593,7 @@ Proof
  >> Cases_on ‘y’ >> fs [real_normal]
 QED
 
-Theorem real_le_11 :
+Theorem real_le_reduce :
     !x y. x <> PosInf /\ x <> NegInf /\ y <> PosInf /\ y <> NegInf ==>
          (real x <= real y <=> x <= y)
 Proof
@@ -3598,6 +3601,30 @@ Proof
  >> ‘?a. x = Normal a’ by METIS_TAC [extreal_cases]
  >> ‘?b. y = Normal b’ by METIS_TAC [extreal_cases]
  >> ASM_SIMP_TAC std_ss [real_normal, extreal_le_eq]
+QED
+
+Theorem real_le_imp :
+    !x y. 0 <= x /\ x <= y /\ y <> PosInf ==> real x <= real y
+Proof
+    rpt STRIP_TAC
+ >> ‘0 <= y’ by PROVE_TAC [le_trans]
+ >> Know ‘x <> PosInf’
+ >- (fs [lt_infty] \\
+     Q_TAC (TRANS_TAC let_trans) ‘y’ >> art [])
+ >> DISCH_TAC
+ >> ‘x <> NegInf /\ y <> NegInf’ by PROVE_TAC [pos_not_neginf]
+ >> ‘?a. x = Normal a’ by METIS_TAC [extreal_cases]
+ >> ‘?b. y = Normal b’ by METIS_TAC [extreal_cases]
+ >> ASM_SIMP_TAC std_ss [real_normal]
+ >> Q.PAT_X_ASSUM ‘x <= y’ MP_TAC
+ >> ASM_SIMP_TAC std_ss [extreal_le_eq]
+QED
+
+Theorem real_positive :
+    !x. 0 <= x ==> 0 <= real x
+Proof
+    Q.X_GEN_TAC ‘x’
+ >> Cases_on ‘x’ >> simp [extreal_of_num_def, extreal_le_eq]
 QED
 
 Theorem pow_real :
