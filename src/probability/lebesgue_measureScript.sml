@@ -4242,6 +4242,22 @@ Proof
  >> simp [GSYM LIM_SEQUENTIALLY_SEQ, real_fn_seq_integral_mono_increasing]
 QED
 
+(* NOTE: removed “bounded (IMAGE f UNIV)” from the above result *)
+Theorem lebesgue_eq_gauge_integral_positive :
+    !f. f IN borel_measurable borel /\ (!x. 0 <= f x) /\
+        pos_fn_integral lborel (Normal o f) <> PosInf ==>
+        pos_fn_integral lborel (Normal o f) = Normal (integral UNIV f)
+Proof
+    cheat
+QED
+
+Theorem lebesgue_eq_gauge_integral :
+    !f. f IN borel_measurable borel /\ integrable lborel (Normal o f) ==>
+        pos_fn_integral lborel (Normal o f) = Normal (integral UNIV f)
+Proof
+    cheat
+QED
+
 val _ = export_theory ();
 
 (* References:
