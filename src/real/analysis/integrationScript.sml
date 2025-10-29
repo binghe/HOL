@@ -4795,13 +4795,16 @@ val INTEGRABLE_SPIKE_EQ = store_thm ("INTEGRABLE_SPIKE_EQ",
         ==> (f integrable_on t <=> g integrable_on t)``,
   MESON_TAC[INTEGRABLE_SPIKE]);
 
-val INTEGRAL_SPIKE = store_thm ("INTEGRAL_SPIKE",
- ``!f:real->real g s t y.
+(* removed unused quantifier ‘y’ *)
+Theorem INTEGRAL_SPIKE :
+   !(f :real -> real) g s t.
         negligible s /\ (!x. x IN (t DIFF s) ==> (g x = f x))
-        ==> (integral t f = integral t g)``,
+        ==> (integral t f = integral t g)
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[integral] THEN
   AP_TERM_TAC THEN ABS_TAC THEN MATCH_MP_TAC HAS_INTEGRAL_SPIKE_EQ THEN
-  ASM_MESON_TAC[]);
+  ASM_MESON_TAC[]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Some other trivialities about negligible sets.                            *)
