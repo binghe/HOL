@@ -3378,7 +3378,7 @@ Proof
 QED
 
 (* cf. lemma_fn_seq_positive *)
-Theorem lemma_real_fn_seq_positive :
+Theorem lemma_real_fn_seq_positive[local] :
     !m f n x. 0 <= f x ==> 0 <= real_fn_seq m f n x
 Proof
     rw [real_fn_seq_alt_fn_seq]
@@ -3388,7 +3388,7 @@ Proof
 QED
 
 (* cf. lemma_fn_seq_upper_bounded *)
-Theorem lemma_real_fn_seq_upper_bounded :
+Theorem lemma_real_fn_seq_upper_bounded[local] :
     !m f n x. 0 <= f x ==> real_fn_seq m f n x <= f x
 Proof
     RW_TAC std_ss [real_fn_seq_alt_fn_seq]
@@ -3409,7 +3409,7 @@ Proof
 QED
 
 (* cf. lemma_fn_seq_mono_increasing *)
-Theorem lemma_real_fn_seq_mono_increasing :
+Theorem lemma_real_fn_seq_mono_increasing[local] :
     !m f x. 0 <= f x ==> mono_increasing (\n. real_fn_seq m f n x)
 Proof
     rpt GEN_TAC >> DISCH_TAC
@@ -3518,7 +3518,7 @@ Proof
 QED
 
 (* NOTE: If k = 0, then “&k / 2 pow n * lmeasure s = 0” even the measure is inf *)
-Theorem lemma_fn_seq_finite_measure1 :
+Theorem lemma_fn_seq_finite_measure1[local] :
     !m f k n. measure_space m /\ f IN Borel_measurable (measurable_space m) /\
              (!x. x IN m_space m ==> 0 <= f x) /\
               pos_fn_integral m f <> PosInf /\ k < 4 ** n /\ k <> 0 ==>
@@ -3582,7 +3582,7 @@ Proof
  >> simp [extreal_of_num_def]
 QED
 
-Theorem lemma_fn_seq_finite_measure1' :
+Theorem lemma_fn_seq_finite_measure1'[local] :
     !f k n. f IN borel_measurable borel /\ (!x. 0 <= f x) /\
             pos_fn_integral lborel (Normal o f) <> PosInf /\
             k < 4 ** n /\ k <> 0 ==>
@@ -3605,7 +3605,7 @@ Proof
         extreal_add_eq, extreal_lt_eq, extreal_le_eq]
 QED
 
-Theorem lemma_fn_seq_finite_measure2 :
+Theorem lemma_fn_seq_finite_measure2[local] :
     !m f n. measure_space m /\ f IN Borel_measurable (measurable_space m) /\
            (!x. x IN m_space m ==> 0 <= f x) /\
             pos_fn_integral m f <> PosInf ==>
@@ -3658,7 +3658,7 @@ Proof
  >> simp [pow_pos_lt]
 QED
 
-Theorem lemma_fn_seq_finite_measure2' :
+Theorem lemma_fn_seq_finite_measure2'[local] :
     !f n. f IN borel_measurable borel /\ (!x. 0 <= f x) /\
           pos_fn_integral lborel (Normal o f) <> PosInf ==>
           lambda {x | 2 pow n <= f x} <> PosInf
@@ -4253,7 +4253,7 @@ QED
 
 Theorem lebesgue_eq_gauge_integral :
     !f. f IN borel_measurable borel /\ integrable lborel (Normal o f) ==>
-        pos_fn_integral lborel (Normal o f) = Normal (integral UNIV f)
+        integral lborel (Normal o f) = Normal (integral UNIV f)
 Proof
     cheat
 QED
