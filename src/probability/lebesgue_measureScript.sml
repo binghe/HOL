@@ -4328,6 +4328,24 @@ Proof
     cheat
 QED
 
+Theorem lebesgue_eq_gauge_integral' :
+    !f. f IN Borel_measurable borel /\ integrable lborel f /\
+       (!x. f x <> NegInf /\ f x <> PosInf) ==>
+        integral lborel f = Normal (integral UNIV (real o f))
+Proof
+    rpt STRIP_TAC
+ >> qabbrev_tac ‘g = real o f’
+ >> Know ‘f = Normal o g’
+ >- (SYM_TAC >> rw [o_DEF, Abbr ‘g’, FUN_EQ_THM] \\
+     MATCH_MP_TAC normal_real >> art [])
+ >> DISCH_THEN (fs o wrap)
+ >> Know ‘real o (Normal o g) IN borel_measurable borel’
+ >- (MATCH_MP_TAC in_borel_measurable_from_Borel \\
+     simp [sigma_algebra_borel])
+ >> simp [] >> DISCH_TAC
+ >> MATCH_MP_TAC lebesgue_eq_gauge_integral >> art []
+QED
+
 val _ = export_theory ();
 
 (* References:
