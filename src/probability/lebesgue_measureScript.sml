@@ -4387,32 +4387,102 @@ Proof
  >> rw [ext_mono_increasing_def, o_DEF, Abbr ‘ng’]
 QED
 
+Definition real_fn_plus_def :
+    real_fn_plus f x = max (0 :real) (f x)
+End
+
+Definition real_fn_minus_def :
+    real_fn_minus f x = -min (0 :real) (f x)
+End
+
+Overload TC                = “real_fn_plus”
+Overload fn_plus[inferior] = “real_fn_plus”
+Overload fn_minus          = “real_fn_minus”
+
+Theorem real_fn_plus_pos :
+    !f x. 0 <= real_fn_plus f x
+Proof
+    rw [real_fn_plus_def, REAL_LE_MAX]
+QED
+
+Theorem real_fn_minus_pos :
+    !f x. 0 <= real_fn_minus f x
+Proof
+    rw [real_fn_minus_def, REAL_MIN_LE]
+QED
+
+(* cf. extrealTheory.FN_DECOMP *)
+Theorem fn_decompose :
+    !(f :real -> real) x. f x = fn_plus f x - fn_minus f x
+Proof
+    RW_TAC real_ss [real_fn_plus_def, real_fn_minus_def]
+ >> Cases_on ‘0 <= f x’
+ >- simp [REAL_MAX_REDUCE, REAL_MIN_REDUCE]
+ >> fs [REAL_NOT_LE]
+ >> simp [REAL_MAX_REDUCE, REAL_MIN_REDUCE]
+QED
+
+Theorem fn_plus_normal :
+    !f. fn_plus (Normal o f) = Normal o fn_plus f
+Proof
+    rw [FUN_EQ_THM, fn_plus, o_DEF, real_fn_plus_def]
+ >> simp [extreal_of_num_def, extreal_max_eq]
+QED
+
+Theorem fn_minus_normal :
+    !f. fn_minus (Normal o f) = Normal o fn_minus f
+Proof
+    rw [FUN_EQ_THM, fn_minus, o_DEF, real_fn_minus_def]
+ >> simp [extreal_of_num_def, extreal_min_eq, extreal_ainv_def]
+QED
+
 Theorem lebesgue_eq_gauge_integral :
     !f. f IN borel_measurable borel /\ integrable lborel (Normal o f) ==>
         f absolutely_integrable_on UNIV /\
         integral lborel (Normal o f) = Normal (integral UNIV f)
 Proof
-    cheat
-QED
-
-Theorem lebesgue_eq_gauge_integral' :
-    !f. f IN Borel_measurable borel /\ integrable lborel f /\
-       (!x. f x <> NegInf /\ f x <> PosInf) ==>
-        real o f absolutely_integrable_on UNIV /\
-        integral lborel f = Normal (integral UNIV (real o f))
-Proof
-    Q.X_GEN_TAC ‘f’ >> STRIP_TAC
- >> qabbrev_tac ‘g = real o f’
- >> Know ‘f = Normal o g’
- >- (SYM_TAC >> rw [o_DEF, Abbr ‘g’, FUN_EQ_THM] \\
-     MATCH_MP_TAC normal_real >> art [])
- >> DISCH_THEN (fs o wrap)
- >> Know ‘real o (Normal o g) IN borel_measurable borel’
- >- (MATCH_MP_TAC in_borel_measurable_from_Borel \\
-     simp [sigma_algebra_borel])
- >> simp []
+    Q.X_GEN_TAC ‘f’
+ >> simp [integrable_def, lebesgueTheory.integral_def,
+          fn_plus_normal, fn_minus_normal]
+ >> STRIP_TAC
+ >> Know ‘f absolutely_integrable_on UNIV <=>
+          (\x. fn_plus f x - fn_minus f x) absolutely_integrable_on UNIV’
+ >- (Suff ‘(\x. fn_plus f x - fn_minus f x) = f’ >- Rewr \\
+     rw [FUN_EQ_THM, GSYM fn_decompose])
+ >> Rewr'
+ >> Know ‘integral UNIV f = integral UNIV (\x. fn_plus f x - fn_minus f x)’
+ >- (Suff ‘(\x. fn_plus f x - fn_minus f x) = f’ >- Rewr \\
+     rw [FUN_EQ_THM, GSYM fn_decompose])
+ >> Rewr'
+ >> Know ‘fn_plus f IN borel_measurable borel’
+ >- (‘fn_plus f = \x. max 0 (f x)’ by rw [FUN_EQ_THM, real_fn_plus_def] \\
+     POP_ORW \\
+     HO_MATCH_MP_TAC in_borel_measurable_max >> simp [sigma_algebra_borel] \\
+     MATCH_MP_TAC in_borel_measurable_const \\
+     Q.EXISTS_TAC ‘0’ >> simp [sigma_algebra_borel])
  >> DISCH_TAC
- >> MATCH_MP_TAC lebesgue_eq_gauge_integral >> art []
+ >> Know ‘fn_minus f IN borel_measurable borel’
+ >- (‘fn_minus f = \x. -min 0 (f x)’ by rw [FUN_EQ_THM, real_fn_minus_def] \\
+     POP_ORW \\
+     HO_MATCH_MP_TAC in_borel_measurable_ainv >> simp [sigma_algebra_borel] \\
+     HO_MATCH_MP_TAC in_borel_measurable_min >> simp [sigma_algebra_borel] \\
+     MATCH_MP_TAC in_borel_measurable_const \\
+     Q.EXISTS_TAC ‘0’ >> simp [sigma_algebra_borel])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘f1 = fn_plus f’
+ >> qabbrev_tac ‘f2 = fn_minus f’
+ >> ‘!x. 0 <= f1 x’ by rw [Abbr ‘f1’, real_fn_plus_pos]
+ >> ‘!x. 0 <= f2 x’ by rw [Abbr ‘f2’, real_fn_minus_pos]
+ (* applying lebesgue_eq_gauge_integral_positive, twice *)
+ >> MP_TAC (Q.SPEC ‘f1’ lebesgue_eq_gauge_integral_positive)
+ >> simp [] >> STRIP_TAC
+ >> MP_TAC (Q.SPEC ‘f2’ lebesgue_eq_gauge_integral_positive)
+ >> simp [] >> STRIP_TAC
+ >> simp [extreal_sub_eq]
+ >> reverse CONJ_TAC >- (SYM_TAC >> MATCH_MP_TAC INTEGRAL_SUB >> art [])
+ >> MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_SUB
+ >> CONJ_TAC (* 2 subgoals, same tactics *)
+ >> MATCH_MP_TAC NONNEGATIVE_ABSOLUTELY_INTEGRABLE >> simp []
 QED
 
 val _ = export_theory ();

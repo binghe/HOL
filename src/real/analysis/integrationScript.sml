@@ -2647,7 +2647,7 @@ Proof
 QED
 
 Theorem INTEGRAL_SUB:
-   !f:real->real g k l s.
+   !(f :real -> real) g s.
         f integrable_on s /\ g integrable_on s
         ==> (integral s (\x. f x - g x) = integral s f - integral s g)
 Proof
