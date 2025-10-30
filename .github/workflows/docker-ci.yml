@@ -14,7 +14,7 @@ env:
 
 jobs:
   build-stdknl:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted, ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -52,7 +52,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   build-expk:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted, ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -90,7 +90,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   build-mosml:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted, ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -126,7 +126,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   build-otknl:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted, ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
