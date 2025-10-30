@@ -4491,7 +4491,6 @@ Proof
 QED
 
 (* END *)
-
 val _ = export_theory ();
 
 (* References:

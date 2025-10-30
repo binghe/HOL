@@ -14,7 +14,7 @@ open extrealTheory sigma_algebraTheory measureTheory
      real_borelTheory borelTheory lebesgueTheory martingaleTheory
      probabilityTheory derivativeTheory extreal_baseTheory;
 
-open distributionTheory stochastic_processTheory complexityTheory;
+open distributionTheory stochastic_processTheory;
 
 val _ = new_theory "central_limit";
 
