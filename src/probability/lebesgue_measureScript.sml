@@ -4350,8 +4350,41 @@ Proof
      >- (MATCH_MP_TAC (cj 1 REAL_MIN_REDUCE) >> DISJ1_TAC \\
          Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘&n’ >> simp []) >> Rewr' \\
      simp [])
- >> STRIP_TAC
- >> cheat
+ >> RW_TAC std_ss []
+ (* applying sup_image_normal *)
+ >> Know ‘IMAGE (\i. Normal (integral UNIV (g i))) UNIV =
+          IMAGE Normal {integral UNIV (g n) | n | T}’
+ >- (rw [Once EXTENSION] \\
+     EQ_TAC >> rw [] >| (* 2 subgoals *)
+     [ Q.EXISTS_TAC ‘i’ >> REFL_TAC,
+       Q.EXISTS_TAC ‘n’ >> REFL_TAC ])
+ >> Rewr'
+ (* applying sup_image_normal *)
+ >> qmatch_abbrev_tac ‘sup (IMAGE Normal s) = Normal r’
+ >> Know ‘sup (IMAGE Normal s) = Normal (sup s)’
+ >- (MATCH_MP_TAC sup_image_normal \\
+     CONJ_TAC >- rw [Abbr ‘s’, Once EXTENSION] \\
+     rw [bounded_def, Abbr ‘s’] \\
+     Q.EXISTS_TAC ‘integral UNIV f’ >> rw [] \\
+     Know ‘abs (integral UNIV (g n)) = integral UNIV (g n)’
+     >- (REWRITE_TAC [ABS_REFL] \\
+         MATCH_MP_TAC INTEGRAL_POS >> simp []) >> Rewr' \\
+     qunabbrev_tac ‘r’ \\
+     MATCH_MP_TAC INTEGRAL_MONO_LEMMA >> simp [])
+ >> Rewr'
+ >> REWRITE_TAC [extreal_11]
+ (* applying mono_increasing_converges_to_sup *)
+ >> SYM_TAC >> simp [Abbr ‘s’]
+ >> ‘{integral UNIV (g n) | n | T} = IMAGE (\n. integral UNIV (g n)) UNIV’
+      by rw [Once EXTENSION] >> POP_ORW
+ >> MATCH_MP_TAC mono_increasing_converges_to_sup
+ >> simp [GSYM LIM_SEQUENTIALLY_SEQ]
+ (* final goal (easy) *)
+ >> simp [mono_increasing_def]
+ >> qx_genl_tac [‘i’, ‘j’] >> DISCH_TAC
+ >> MATCH_MP_TAC INTEGRAL_MONO_LEMMA >> rw []
+ >> Q.PAT_X_ASSUM ‘!x. mono_increasing (\i. ng i x)’ (MP_TAC o Q.SPEC ‘x’)
+ >> rw [ext_mono_increasing_def, o_DEF, Abbr ‘ng’]
 QED
 
 Theorem lebesgue_eq_gauge_integral :
