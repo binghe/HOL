@@ -10163,6 +10163,7 @@ val _ = map (fn name => save_thm (name, DB.fetch "extreal_base" name))
        "zero_div",
        "zero_pow"];
 
+(* END *)
 val _ = export_theory();
 
 (* References:

@@ -10044,6 +10044,7 @@ Proof
  >> Q.EXISTS_TAC ‘f’ >> rw []
 QED
 
+(* END *)
 val _ = export_theory ();
 
 (* References:

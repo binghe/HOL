@@ -7126,6 +7126,7 @@ Proof
  >> MATCH_MP_TAC FINITE_IMP_SIGMA_FINITE >> art []
 QED
 
+(* END *)
 val _ = export_theory ();
 
 (* References:
