@@ -5205,7 +5205,6 @@ Proof
   MESON_TAC[INTEGRABLE_SPIKE]
 QED
 
-(* removed unused quantifier ‘y’ *)
 Theorem INTEGRAL_SPIKE:
    !f:real->real g s t.
         negligible s /\ (!x. x IN (t DIFF s) ==> (g x = f x))

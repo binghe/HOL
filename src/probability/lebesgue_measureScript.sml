@@ -4485,6 +4485,8 @@ Proof
  >> MATCH_MP_TAC NONNEGATIVE_ABSOLUTELY_INTEGRABLE >> simp []
 QED
 
+(* END *)
+
 val _ = export_theory ();
 
 (* References:

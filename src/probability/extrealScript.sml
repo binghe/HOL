@@ -993,7 +993,7 @@ val tactics =
       ASM_SIMP_TAC std_ss [delete_non_element] \\
       METIS_TAC [add_assoc, add_comm, add_not_infty] ] ];
 
-Triviality lem:
+Theorem lem[local]:
   !li.
      li = PosInf ==>
      !f s. FINITE s ==>
@@ -2260,7 +2260,7 @@ Proof
                            add_assoc, add_not_infty]
 QED
 
-val _ = overload_on ("SIGMA", ``EXTREAL_SUM_IMAGE``);
+Overload SIGMA = ``EXTREAL_SUM_IMAGE``
 
 (* N-ARY SUMMATION *)
 val _ = Unicode.unicode_version {u = UTF8.chr 0x2211, tmnm = "SIGMA"};
@@ -2381,8 +2381,8 @@ Definition extreal_inf_def:
     extreal_inf p = -extreal_sup (IMAGE numeric_negate p)
 End
 
-val _ = overload_on ("sup", Term `extreal_sup`);
-val _ = overload_on ("inf", Term `extreal_inf`);
+Overload sup = ``extreal_sup``
+Overload inf = ``extreal_inf``
 
 Theorem le_sup_imp :
     !p x. p x ==> x <= sup p
@@ -3718,8 +3718,8 @@ Definition ext_liminf_def:
     ext_liminf (a :num -> extreal) = sup (IMAGE (\m. inf {a n | m <= n}) UNIV)
 End
 
-val _ = overload_on ("limsup", ``ext_limsup``);
-val _ = overload_on ("liminf", ``ext_liminf``);
+Overload limsup = ``ext_limsup``
+Overload liminf = ``ext_liminf``
 
 Theorem ext_liminf_le_limsup :
     !a. liminf a <= limsup a
@@ -4185,15 +4185,15 @@ Proof
  >> METIS_TAC [EXTREAL_SUM_IMAGE_POS_MEM_LE]
 QED
 
-local val th =
+Theorem lemma[local] =
       SIMP_RULE std_ss [GSYM lt_infty]
                        (ONCE_REWRITE_RULE [MONO_NOT_EQ] (Q.SPEC `f` ext_suminf_lt_infty))
-in
-val ext_suminf_posinf = store_thm
-  ("ext_suminf_posinf",
-  ``!f. (!n. 0 <= f n) /\ (?n. f n = PosInf) ==> (ext_suminf f = PosInf)``,
-    METIS_TAC [th])
-end;
+
+Theorem ext_suminf_posinf:
+    !f. (!n. 0 <= f n) /\ (?n. f n = PosInf) ==> (ext_suminf f = PosInf)
+Proof
+    METIS_TAC [lemma]
+QED
 
 Theorem ext_suminf_suminf :
     !r. (!n. 0 <= r n) /\ ext_suminf (\n. Normal (r n)) <> PosInf ==>
@@ -4500,7 +4500,7 @@ Proof
  >> Q.EXISTS_TAC `n` >> REWRITE_TAC []
 QED
 
-val _ = overload_on ("suminf", ``ext_suminf``);
+Overload suminf = ``ext_suminf``
 
 Theorem ext_suminf_zero:   !f. (!n. f n = 0) ==> (ext_suminf f = 0)
 Proof
@@ -5625,7 +5625,7 @@ Definition fn_plus_def:   (* f^+ *)
     fn_plus (f :'a -> extreal) = (\x. if 0 < f x then f x else 0)
 End
 
-val _ = overload_on ("TC", ``fn_plus``); (* relationTheory *)
+Overload TC = ``fn_plus``(* relationTheory *)
 
 Definition fn_minus_def:   (* f^- *)
     fn_minus (f :'a -> extreal) = (\x. if f x < 0 then ~(f x) else 0)
