@@ -54,10 +54,11 @@ End
 (* convex                                                                    *)
 (* ------------------------------------------------------------------------- *)
 
-val convex = new_definition ("convex",
-  ``convex (s:real->bool) <=>
+Definition convex[nocompute]:
+  convex (s:real->bool) <=>
         !x y u v. x IN s /\ y IN s /\ &0 <= u /\ &0 <= v /\ (u + v = &1)
-                  ==> ((u * x) + (v * y)) IN s``);
+                  ==> ((u * x) + (v * y)) IN s
+End
 
 Theorem CONVEX_ALT :
     !s. convex s <=> !x y u. x IN s /\ y IN s /\ &0 <= u /\ u <= &1
@@ -69,17 +70,21 @@ Proof
              REAL_ARITH ``u <= &1 ==> &0:real <= &1 - u /\ ((&1 - u) + u = &1)``]
 QED
 
-val IN_CONVEX_SET = store_thm ("IN_CONVEX_SET",
- ``!s a b u.
+Theorem IN_CONVEX_SET:
+   !s a b u.
         convex s /\ a IN s /\ b IN s /\ &0 <= u /\ u <= &1
-        ==> ((&1 - u) * a + u * b) IN s``,
-  MESON_TAC[CONVEX_ALT]);
+        ==> ((&1 - u) * a + u * b) IN s
+Proof
+  MESON_TAC[CONVEX_ALT]
+QED
 
-val LIMPT_APPROACHABLE = store_thm ("LIMPT_APPROACHABLE",
- ``!x s. x limit_point_of s <=>
-                !e. &0 < e ==> ?x'. x' IN s /\ ~(x' = x) /\ dist(x',x) < e``,
+Theorem LIMPT_APPROACHABLE:
+   !x s. x limit_point_of s <=>
+                !e. &0 < e ==> ?x'. x' IN s /\ ~(x' = x) /\ dist(x',x) < e
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[limit_point_of] THEN
-  MESON_TAC[open_def, DIST_SYM, OPEN_BALL, CENTRE_IN_BALL, IN_BALL]);
+  MESON_TAC[open_def, DIST_SYM, OPEN_BALL, CENTRE_IN_BALL, IN_BALL]
+QED
 
 Theorem LIMPT_OF_CONVEX :
     !s x:real. convex s /\ x IN s ==> (x limit_point_of s <=> ~(s = {x}))
@@ -113,17 +118,20 @@ Proof
       Q.UNABBREV_TAC `u` >> FULL_SIMP_TAC real_ss [min_def] ]
 QED
 
-val TRIVIAL_LIMIT_WITHIN_CONVEX = store_thm ("TRIVIAL_LIMIT_WITHIN_CONVEX",
- ``!s x:real.
-        convex s /\ x IN s ==> (trivial_limit(at x within s) <=> (s = {x}))``,
-  SIMP_TAC std_ss [TRIVIAL_LIMIT_WITHIN, LIMPT_OF_CONVEX]);
+Theorem TRIVIAL_LIMIT_WITHIN_CONVEX:
+   !s x:real.
+        convex s /\ x IN s ==> (trivial_limit(at x within s) <=> (s = {x}))
+Proof
+  SIMP_TAC std_ss [TRIVIAL_LIMIT_WITHIN, LIMPT_OF_CONVEX]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* A general lemma.                                                          *)
 (* ------------------------------------------------------------------------- *)
 
-val CONVEX_CONNECTED = store_thm ("CONVEX_CONNECTED",
- ``!s:real->bool. convex s ==> connected s``,
+Theorem CONVEX_CONNECTED:
+   !s:real->bool. convex s ==> connected s
+Proof
   SIMP_TAC std_ss [CONVEX_ALT, connected, SUBSET_DEF, EXTENSION, IN_INTER,
               IN_UNION, NOT_IN_EMPTY, NOT_FORALL_THM, NOT_EXISTS_THM] THEN
   GEN_TAC THEN DISCH_TAC THEN REPEAT GEN_TAC THEN
@@ -141,7 +149,8 @@ val CONVEX_CONNECTED = store_thm ("CONVEX_CONNECTED",
   REWRITE_TAC[REAL_LE_LT] THEN STRIP_TAC THENL
    [ALL_TAC, METIS_TAC[REAL_MUL_RZERO, REAL_LT_01]] THEN
   EXISTS_TAC ``e / abs((x' - x):real)`` THEN
-  ASM_SIMP_TAC real_ss [REAL_LT_RDIV_EQ, REAL_LT_DIV]);
+  ASM_SIMP_TAC real_ss [REAL_LT_RDIV_EQ, REAL_LT_DIV]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Explicit expressions for convexity in terms of arbitrary sums.            *)
@@ -210,12 +219,13 @@ Proof
     FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_MESON_TAC[REAL_ADD_SYM]]
 QED
 
-val CONVEX_INDEXED = store_thm ("CONVEX_INDEXED",
- ``!s:real->bool.
+Theorem CONVEX_INDEXED:
+   !s:real->bool.
         convex s <=>
             !k u x. (!i:num. 1 <= i /\ i <= k ==> &0 <= u(i) /\ x(i) IN s) /\
                     (sum { 1n..k} u = &1)
-                    ==> sum { 1n..k} (\i. u(i) * x(i)) IN s``,
+                    ==> sum { 1n..k} (\i. u(i) * x(i)) IN s
+Proof
   REPEAT GEN_TAC THEN EQ_TAC THENL
    [REPEAT STRIP_TAC THEN MATCH_MP_TAC CONVEX_SUM THEN
     ASM_SIMP_TAC std_ss [IN_NUMSEG, FINITE_NUMSEG],
@@ -225,14 +235,16 @@ val CONVEX_INDEXED = store_thm ("CONVEX_INDEXED",
     DISCH_THEN(MP_TAC o SPEC ``\n:num. if n = 1 then u else v:real``) THEN
     DISCH_THEN(MP_TAC o SPEC ``\n:num. if n = 1 then x else y:real``) THEN
     REWRITE_TAC [TWO, SUM_CLAUSES_NUMSEG, NUMSEG_SING, SUM_SING] THEN
-    SIMP_TAC arith_ss [] THEN METIS_TAC[]]);
+    SIMP_TAC arith_ss [] THEN METIS_TAC[]]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Convexity of general and special intervals.                               *)
 (* ------------------------------------------------------------------------- *)
 
-val IS_INTERVAL_CONVEX = store_thm ("IS_INTERVAL_CONVEX",
- ``!s:real->bool. is_interval s ==> convex s``,
+Theorem IS_INTERVAL_CONVEX:
+   !s:real->bool. is_interval s ==> convex s
+Proof
   REWRITE_TAC[is_interval, convex] THEN
   REPEAT STRIP_TAC THEN
   KNOW_TAC ``x IN (s:real->bool) /\ y IN s ==>
@@ -247,14 +259,18 @@ val IS_INTERVAL_CONVEX = store_thm ("IS_INTERVAL_CONVEX",
   FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN
   ASM_SIMP_TAC real_ss [REAL_ADD_RDISTRIB] THEN
   ASM_SIMP_TAC real_ss [REAL_LE_LMUL, REAL_LE_LADD, REAL_LE_RADD] THEN
-  CONJ_TAC THEN MATCH_MP_TAC REAL_LE_LMUL_IMP THEN ASM_REWRITE_TAC []);
+  CONJ_TAC THEN MATCH_MP_TAC REAL_LE_LMUL_IMP THEN ASM_REWRITE_TAC []
+QED
 
-val IS_INTERVAL_CONNECTED = store_thm ("IS_INTERVAL_CONNECTED",
- ``!s:real->bool. is_interval s ==> connected s``,
-  MESON_TAC[IS_INTERVAL_CONVEX, CONVEX_CONNECTED]);
+Theorem IS_INTERVAL_CONNECTED:
+   !s:real->bool. is_interval s ==> connected s
+Proof
+  MESON_TAC[IS_INTERVAL_CONVEX, CONVEX_CONNECTED]
+QED
 
-val IS_INTERVAL_CONNECTED_1 = store_thm ("IS_INTERVAL_CONNECTED_1",
- ``!s:real->bool. is_interval s <=> connected s``,
+Theorem IS_INTERVAL_CONNECTED_1:
+   !s:real->bool. is_interval s <=> connected s
+Proof
   GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[IS_INTERVAL_CONNECTED] THEN
   ONCE_REWRITE_TAC[MONO_NOT_EQ] THEN
   SIMP_TAC std_ss [IS_INTERVAL, connected, NOT_FORALL_THM,
@@ -266,28 +282,35 @@ val IS_INTERVAL_CONNECTED_1 = store_thm ("IS_INTERVAL_CONNECTED_1",
    real_gt, NOT_IN_EMPTY, GSPECIFICATION] THEN
   SIMP_TAC real_ss [] THEN
   REPEAT CONJ_TAC THENL [simp[REAL_NOT_LT, REAL_LE_TOTAL],
-   metis_tac[REAL_LT_TOTAL], metis_tac[REAL_LE_LT], metis_tac[REAL_LE_LT]]);
+   metis_tac[REAL_LT_TOTAL], metis_tac[REAL_LE_LT], metis_tac[REAL_LE_LT]]
+QED
 
-val CONVEX_INTERVAL = store_thm ("CONVEX_INTERVAL",
- ``!a b:real. convex(interval [a,b]) /\ convex(interval (a,b))``,
-  METIS_TAC [IS_INTERVAL_CONVEX, IS_INTERVAL_INTERVAL]);
+Theorem CONVEX_INTERVAL:
+   !a b:real. convex(interval [a,b]) /\ convex(interval (a,b))
+Proof
+  METIS_TAC [IS_INTERVAL_CONVEX, IS_INTERVAL_INTERVAL]
+QED
 
 
 (* ------------------------------------------------------------------------- *)
 (* On real, is_interval, convex and connected are all equivalent.            *)
 (* ------------------------------------------------------------------------- *)
 
-val IS_INTERVAL_CONVEX_1 = store_thm ("IS_INTERVAL_CONVEX_1",
- ``!s:real->bool. is_interval s <=> convex s``,
-  MESON_TAC[IS_INTERVAL_CONVEX, CONVEX_CONNECTED, IS_INTERVAL_CONNECTED_1]);
+Theorem IS_INTERVAL_CONVEX_1:
+   !s:real->bool. is_interval s <=> convex s
+Proof
+  MESON_TAC[IS_INTERVAL_CONVEX, CONVEX_CONNECTED, IS_INTERVAL_CONNECTED_1]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (*                                                                           *)
 (* ------------------------------------------------------------------------- *)
 
-val CONNECTED_COMPACT_INTERVAL_1 = store_thm ("CONNECTED_COMPACT_INTERVAL_1",
- ``!s:real->bool. connected s /\ compact s <=> ?a b. s = interval[a,b]``,
-  REWRITE_TAC[GSYM IS_INTERVAL_CONNECTED_1, IS_INTERVAL_COMPACT]);
+Theorem CONNECTED_COMPACT_INTERVAL_1:
+   !s:real->bool. connected s /\ compact s <=> ?a b. s = interval[a,b]
+Proof
+  REWRITE_TAC[GSYM IS_INTERVAL_CONNECTED_1, IS_INTERVAL_COMPACT]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (*                                                                           *)
@@ -295,10 +318,11 @@ val CONNECTED_COMPACT_INTERVAL_1 = store_thm ("CONNECTED_COMPACT_INTERVAL_1",
 
 val _ = set_fixity "convex_on" (Infix(NONASSOC, 450));
 
-val convex_on = new_definition ("convex_on",
-  ``f convex_on s <=>
+Definition convex_on[nocompute]:
+  f convex_on s <=>
         !x y u v:real. x IN s /\ y IN s /\ &0 <= u /\ &0 <= v /\ (u + v = &1)
-                  ==> f(u * x + v * y) <= u * f(x) + v * f(y)``);
+                  ==> f(u * x + v * y) <= u * f(x) + v * f(y)
+End
 
 Theorem REAL_CONVEX_BOUND2_LT :
     !x y a b u v:real. x < a /\ y < b /\ &0 <= u /\ &0 <= v /\ (u + v = &1)
@@ -311,33 +335,39 @@ Proof
   MATCH_MP_TAC REAL_LT_LMUL_IMP THEN ASM_REAL_ARITH_TAC
 QED
 
-val REAL_CONVEX_BOUND_LT = store_thm ("REAL_CONVEX_BOUND_LT",
- ``!x y a u v:real. x < a /\ y < a /\ &0 <= u /\ &0 <= v /\ (u + v = &1)
-               ==> u * x + v * y < a``,
+Theorem REAL_CONVEX_BOUND_LT:
+   !x y a u v:real. x < a /\ y < a /\ &0 <= u /\ &0 <= v /\ (u + v = &1)
+               ==> u * x + v * y < a
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LTE_TRANS THEN
   Q.EXISTS_TAC `u * a + v * a:real` THEN CONJ_TAC THENL
    [ASM_SIMP_TAC real_ss [REAL_CONVEX_BOUND2_LT],
     ALL_TAC] THEN
    MATCH_MP_TAC REAL_EQ_IMP_LE THEN
    UNDISCH_TAC ``u + v = &1:real`` THEN
-   SIMP_TAC real_ss [GSYM REAL_ADD_RDISTRIB]);
+   SIMP_TAC real_ss [GSYM REAL_ADD_RDISTRIB]
+QED
 
-val CONVEX_DISTANCE = store_thm ("CONVEX_DISTANCE",
- ``!s a. (\x. dist(a,x)) convex_on s``,
+Theorem CONVEX_DISTANCE:
+   !s a. (\x. dist(a,x)) convex_on s
+Proof
   SIMP_TAC std_ss [convex_on, dist] THEN REPEAT STRIP_TAC THEN
   GEN_REWR_TAC (LAND_CONV o RAND_CONV o LAND_CONV) [GSYM REAL_MUL_LID] THEN
   FIRST_ASSUM(SUBST1_TAC o SYM) THEN
   REWRITE_TAC[REAL_ARITH
    ``(u + v) * z - (u * x + v * y) = u * (z - x) + v * (z - y:real)``] THEN
-  ASM_MESON_TAC[ABS_TRIANGLE, ABS_MUL, ABS_REFL]);
+  ASM_MESON_TAC[ABS_TRIANGLE, ABS_MUL, ABS_REFL]
+QED
 
 val lemma = REWRITE_RULE[convex_on, IN_UNIV]
    (ISPEC ``univ(:real)`` CONVEX_DISTANCE);
 
-val CONVEX_BALL = store_thm ("CONVEX_BALL",
- ``!x:real e. convex(ball(x,e))``,
+Theorem CONVEX_BALL:
+   !x:real e. convex(ball(x,e))
+Proof
   SIMP_TAC std_ss [convex, IN_BALL] THEN REPEAT STRIP_TAC THEN
-  ASM_MESON_TAC[REAL_LET_TRANS, REAL_CONVEX_BOUND_LT, lemma]);
+  ASM_MESON_TAC[REAL_LET_TRANS, REAL_CONVEX_BOUND_LT, lemma]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Derivatives. The definition is slightly tricky since we make it work over *)
@@ -347,35 +377,40 @@ val CONVEX_BALL = store_thm ("CONVEX_BALL",
 
 val _ = set_fixity "has_derivative" (Infix(NONASSOC, 450));
 
-val has_derivative = new_definition ("has_derivative",
-  ``(f has_derivative f') net <=>
+Definition has_derivative[nocompute]:
+  (f has_derivative f') net <=>
         linear f' /\
         ((\y. inv(abs(y - netlimit net)) *
               (f(y) -
-               (f(netlimit net) + f'(y - netlimit net)))) --> 0) net``);
+               (f(netlimit net) + f'(y - netlimit net)))) --> 0) net
+End
 
 (* ------------------------------------------------------------------------- *)
 (* These are the only cases we'll care about, probably.                      *)
 (* ------------------------------------------------------------------------- *)
 
-val has_derivative_within = store_thm ("has_derivative_within",
- ``!f:real->real f' x s.
+Theorem has_derivative_within:
+   !f:real->real f' x s.
     (f has_derivative f') (at x within s) <=>
          linear f' /\
          ((\y. inv(abs(y - x)) * (f(y) - (f(x) + f'(y - x)))) --> 0)
-         (at x within s)``,
+         (at x within s)
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[has_derivative] THEN AP_TERM_TAC THEN
   ASM_CASES_TAC ``trivial_limit(at (x:real) within s)`` THENL
-   [ASM_REWRITE_TAC[LIM], ASM_SIMP_TAC std_ss [NETLIMIT_WITHIN]]);
+   [ASM_REWRITE_TAC[LIM], ASM_SIMP_TAC std_ss [NETLIMIT_WITHIN]]
+QED
 
-val has_derivative_at = store_thm ("has_derivative_at",
- ``!f:real->real f' x.
+Theorem has_derivative_at:
+   !f:real->real f' x.
     (f has_derivative f') (at x) <=>
          linear f' /\
          ((\y. inv(abs(y - x)) * (f(y) - (f(x) + f'(y - x)))) --> 0)
-         (at x)``,
+         (at x)
+Proof
   ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
-  REWRITE_TAC[has_derivative_within]);
+  REWRITE_TAC[has_derivative_within]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* More explicit epsilon-delta forms.                                        *)
@@ -1181,12 +1216,13 @@ val OABS = store_thm ("OABS",
 (* Still more general bound theorem.   1168                                  *)
 (* ------------------------------------------------------------------------- *)
 
-val DIFFERENTIABLE_BOUND = store_thm ("DIFFERENTIABLE_BOUND",
- ``!f:real->real f' s B.
+Theorem DIFFERENTIABLE_BOUND:
+   !f:real->real f' s B.
         convex s /\
         (!x. x IN s ==> (f has_derivative f'(x)) (at x within s)) /\
         (!x. x IN s ==> oabs(f'(x)) <= B)
-        ==> !x y. x IN s /\ y IN s ==> abs(f(x) - f(y)) <= B * abs(x - y)``,
+        ==> !x y. x IN s /\ y IN s ==> abs(f(x) - f(y)) <= B * abs(x - y)
+Proof
   ONCE_REWRITE_TAC[ABS_SUB] THEN REPEAT STRIP_TAC THEN
   SUBGOAL_THEN
     ``!x y. x IN s ==> abs((f':real->real->real)(x) y) <= B * abs(y)``
@@ -1199,7 +1235,7 @@ val DIFFERENTIABLE_BOUND = store_thm ("DIFFERENTIABLE_BOUND",
     MATCH_MP_TAC REAL_LE_TRANS THEN Q.EXISTS_TAC `oabs (f' x') * abs y'` THEN
     ASM_SIMP_TAC std_ss [] THEN MATCH_MP_TAC REAL_LE_MUL2 THEN
     ASM_SIMP_TAC std_ss [REAL_LE_REFL, ABS_POS] THEN
-    SIMP_TAC std_ss [oabs] THEN MATCH_MP_TAC REAL_LE_SUP' THEN
+    SIMP_TAC std_ss [oabs] THEN MATCH_MP_TAC REAL_LE_SUP2 THEN
     SIMP_TAC std_ss [GSPECIFICATION] THEN Q.EXISTS_TAC `oabs (f' x') * abs 1` THEN
     Q.EXISTS_TAC `abs (f' x' 1)` THEN METIS_TAC [ABS_POS, ABS_1],
     ALL_TAC] THEN
@@ -1258,7 +1294,8 @@ val DIFFERENTIABLE_BOUND = store_thm ("DIFFERENTIABLE_BOUND",
   MATCH_MP_TAC HAS_DERIVATIVE_ADD THEN REWRITE_TAC [HAS_DERIVATIVE_CONST] THEN
   ONCE_REWRITE_TAC [REAL_MUL_COMM] THEN
   ONCE_REWRITE_TAC [METIS [] ``(\u. (y - x) * u) = (\u. (y - x) * (\u. u) u:real)``] THEN
-  MATCH_MP_TAC HAS_DERIVATIVE_CMUL THEN SIMP_TAC std_ss [HAS_DERIVATIVE_ID]);
+  MATCH_MP_TAC HAS_DERIVATIVE_CMUL THEN SIMP_TAC std_ss [HAS_DERIVATIVE_ID]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Uniformly convergent sequence of derivatives.   1948                      *)

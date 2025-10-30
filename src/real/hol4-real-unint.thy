@@ -7,6 +7,7 @@ main {
   import: realax
   import: real
   import: intreal
+  import: iterate
   import: real-sigma
   import: metric
   import: nets
@@ -23,9 +24,15 @@ intreal {
   import: real
   article: "intreal.ot.art"
 }
+iterate {
+  import: realax
+  import: real
+  article: "iterate.ot.art"
+}
 real-sigma {
   import: realax
   import: real
+  import: iterate
   article: "real_sigma.ot.art"
 }
 metric {
