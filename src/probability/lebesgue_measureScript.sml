@@ -58,6 +58,8 @@ val _ = ratLib.deprecate_rat ();
 (* Some proofs here are large with too many assumptions *)
 val _ = set_trace "Goalstack.print_goal_at_top" 0;
 
+(* val _ = diminish_srw_ss ["RMULRELNORM"]; *)
+
 (* ------------------------------------------------------------------------- *)
 (*  Lebesgue sigma-algebra with the household Lebesgue measure (lebesgue)    *)
 (* ------------------------------------------------------------------------- *)

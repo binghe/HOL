@@ -5487,28 +5487,10 @@ Proof
  >> simp [Abbr ‘g’]
 QED
 
-Definition CinftyR_def :
-    CinftyR = {f | (!n x. higher_differentiable n f x) /\
-                    !n. bounded (IMAGE (diffn n f) UNIV)}
-End
-
-Theorem converge_in_dist_alt_CinftyR :
-    !X Y p. prob_space p /\ (!n. real_random_variable (X n) p) /\
-            real_random_variable Y p ==>
-           ((X --> Y) (in_distribution p) <=>
-             !f. f IN CinftyR ==>
-                ((\n. expectation p (Normal o f o real o X n)) -->
-                 expectation p (Normal o f o real o Y)) sequentially)
-Proof
-    rpt STRIP_TAC
- >> cheat
-QED
-
-(* NOTE: currently impossible *)
-Theorem expectation_of_std_normal_rv :
-    !p X mu sig. prob_space p /\ normal_rv X p 0 1 ==>
+Theorem expectation_of_normal_rv :
+    !p X mu sig. prob_space p /\ normal_rv X p mu sig ==>
                  integrable p (Normal o X) /\
-                 expectation p (Normal o X) = 0
+                 expectation p (Normal o X) = mu
 Proof
     rpt GEN_TAC
  >> simp [normal_rv_def, distribution_distr, random_variable_def,
@@ -5527,12 +5509,30 @@ Proof
  >> qabbrev_tac ‘N = (space borel,subsets borel,normal_pmeasure 0 1)’
  >> ‘measure_space N’ by PROVE_TAC [normal_measure_space]
  >> ‘measure_space_eq M N’ by rw [measure_space_eq_def, Abbr ‘M’, Abbr ‘N’]
- >> ‘integrable M Normal <=> integrable N Normal’ by rw [integrable_cong_measure']
- >> POP_ORW
- >> ‘integral M Normal = integral N Normal’ by rw [integral_cong_measure']
- >> POP_ORW
+ >> ‘integrable M Normal <=> integrable N Normal’
+      by rw [integrable_cong_measure'] >> POP_ORW
+ >> ‘integral M Normal = integral N Normal’
+      by rw [integral_cong_measure'] >> POP_ORW
  >> simp [integral_def, integrable_def, GSYM CONJ_ASSOC]
  >> CONJ_TAC >- rw [Abbr ‘N’]
+ (* applying pos_fn_integral_density_reduce *)
+ >> cheat
+QED
+
+Definition CinftyR_def :
+    CinftyR = {f | (!n x. higher_differentiable n f x) /\
+                    !n. bounded (IMAGE (diffn n f) UNIV)}
+End
+
+Theorem converge_in_dist_alt_CinftyR :
+    !X Y p. prob_space p /\ (!n. real_random_variable (X n) p) /\
+            real_random_variable Y p ==>
+           ((X --> Y) (in_distribution p) <=>
+             !f. f IN CinftyR ==>
+                ((\n. expectation p (Normal o f o real o X n)) -->
+                 expectation p (Normal o f o real o Y)) sequentially)
+Proof
+    rpt STRIP_TAC
  >> cheat
 QED
 
