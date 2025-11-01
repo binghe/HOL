@@ -33,6 +33,9 @@ fun METIS ths tm = prove(tm, METIS_TAC ths);
 val _ = intLib.deprecate_int ();
 val _ = ratLib.deprecate_rat ();
 
+(* Some proofs here are large with too many assumptions *)
+val _ = set_trace "Goalstack.print_goal_at_top" 0;
+
 (* "The theory of martingales as we know it now goes back to Doob and most of
     the material of this and the following chapter can be found in his seminal
     monograph [2] from 1953.
@@ -3959,26 +3962,24 @@ Theorem tonelli_general :
         sigma_finite_measure_space (X,A,u) /\
         sigma_finite_measure_space (Y,B,v) /\
         f IN measurable (general_sigma cons (X,A) (Y,B)) Borel /\
-        (!s. s IN general_cross cons X Y ==> 0 <= f s)
-       ==>
-        (!y. y IN Y ==> (\x. f (cons x y)) IN measurable (X,A) Borel) /\
-        (!x. x IN X ==> (\y. f (cons x y)) IN measurable (Y,B) Borel) /\
-        (\x. pos_fn_integral (Y,B,v)
-                             (\y. f (cons x y))) IN measurable (X,A) Borel /\
-        (\y. pos_fn_integral (X,A,u)
-                             (\x. f (cons x y))) IN measurable (Y,B) Borel /\
-        (pos_fn_integral (general_prod_measure_space cons (X,A,u) (Y,B,v)) f =
-         pos_fn_integral (Y,B,v)
-           (\y. pos_fn_integral (X,A,u) (\x. f (cons x y)))) /\
-        (pos_fn_integral (general_prod_measure_space cons (X,A,u) (Y,B,v)) f =
-         pos_fn_integral (X,A,u)
-           (\x. pos_fn_integral (Y,B,v) (\y. f (cons x y))))
+       (!s. s IN general_cross cons X Y ==> 0 <= f s)
+      ==>
+       (!y. y IN Y ==> (\x. f (cons x y)) IN measurable (X,A) Borel) /\
+       (!x. x IN X ==> (\y. f (cons x y)) IN measurable (Y,B) Borel) /\
+       (\x. pos_fn_integral (Y,B,v)
+                            (\y. f (cons x y))) IN measurable (X,A) Borel /\
+       (\y. pos_fn_integral (X,A,u)
+                            (\x. f (cons x y))) IN measurable (Y,B) Borel /\
+       (pos_fn_integral (general_prod_measure_space cons (X,A,u) (Y,B,v)) f =
+        pos_fn_integral (Y,B,v)
+          (\y. pos_fn_integral (X,A,u) (\x. f (cons x y)))) /\
+       (pos_fn_integral (general_prod_measure_space cons (X,A,u) (Y,B,v)) f =
+        pos_fn_integral (X,A,u)
+          (\x. pos_fn_integral (Y,B,v) (\y. f (cons x y))))
 Proof
-    cheat
- (*
     rpt GEN_TAC >> STRIP_TAC
- >> ‘measure_space (general_prod_measure_space cons (X,A,u) CROSS (Y,B,v))’
-      by METIS_TAC [measure_space_prod_measure]
+ >> ‘measure_space (general_prod_measure_space cons (X,A,u) (Y,B,v))’
+      by PROVE_TAC [measure_space_general_prod_measure]
  (* preliminaries *)
  >> Know ‘!i n. (0 :extreal) <= &i / 2 pow n’
  >- (rpt GEN_TAC \\
@@ -3997,72 +3998,78 @@ Proof
      MATCH_MP_TAC pow_pos_lt >> REWRITE_TAC [lt_02])
  >> DISCH_TAC
  (* applying EXISTENCE_OF_PROD_MEASURE *)
- >> MP_TAC (Q.SPECL [‘X’, ‘Y’, ‘A’, ‘B’, ‘u’, ‘v’] EXISTENCE_OF_PROD_MEASURE)
- >> DISCH_THEN (MP_TAC o (Q.SPEC ‘\x. u (IMAGE FST x) * v (IMAGE SND x)’))
+ >> MP_TAC (Q.SPECL [‘cons’, ‘car’, ‘cdr’, ‘X’, ‘Y’, ‘A’, ‘B’, ‘u’, ‘v’]
+                    existence_of_prod_measure_general)
+ >> DISCH_THEN (MP_TAC o (Q.SPEC ‘\x. u (IMAGE car x) * v (IMAGE cdr x)’))
  >> Know ‘!s t. s IN A /\ t IN B ==>
-                (\x. u (IMAGE FST x) * v (IMAGE SND x)) (s CROSS t) = u s * v t’
+               (\x. u (IMAGE car x) * v (IMAGE cdr x)) (general_cross cons s t) =
+                    u s * v t’
  >- (rpt STRIP_TAC \\
-     fs [sigma_finite_measure_space_def] \\
-     Cases_on ‘s = {}’ >- (IMP_RES_TAC MEASURE_SPACE_POSITIVE >> fs [positive_def]) \\
-     Cases_on ‘t = {}’ >- (IMP_RES_TAC MEASURE_SPACE_POSITIVE >> fs [positive_def]) \\
-     Know ‘IMAGE FST (s CROSS t) = s’
-     >- (rw [Once EXTENSION] >> EQ_TAC >> RW_TAC std_ss [] >- art [] \\
-         Q.PAT_X_ASSUM ‘t <> {}’ (STRIP_ASSUME_TAC o
-                                  (REWRITE_RULE [GSYM MEMBER_NOT_EMPTY])) \\
-         rename1 ‘y IN t’ >> Q.EXISTS_TAC ‘(x,y)’ >> rw []) >> Rewr' \\
-     Know ‘IMAGE SND (s CROSS t) = t’
-     >- (rw [Once EXTENSION] >> EQ_TAC >> RW_TAC std_ss [] >- art [] \\
-         Q.PAT_X_ASSUM ‘t <> {}’ K_TAC \\
-         Q.PAT_X_ASSUM ‘s <> {}’ (STRIP_ASSUME_TAC o
-                                  (REWRITE_RULE [GSYM MEMBER_NOT_EMPTY])) \\
-         rename1 ‘y IN s’ >> Q.EXISTS_TAC ‘(y,x)’ >> rw []) >> Rewr)
+     fs [sigma_finite_measure_space_def, pair_operation_def, FORALL_AND_THM] \\
+     Cases_on ‘s = {}’
+     >- (Know ‘positive (X,A,u)’ >- simp [MEASURE_SPACE_POSITIVE] \\
+         rw [positive_def]) \\
+     Cases_on ‘t = {}’
+     >- (Know ‘positive (Y,B,v)’ >- simp [MEASURE_SPACE_POSITIVE] \\
+         rw [positive_def]) \\
+     Know ‘IMAGE car (general_cross cons s t) = s’
+     >- (irule (cj 1 general_cross_reduce) >> art [] \\
+         Q.EXISTS_TAC ‘cdr’ >> rw [pair_operation_def]) >> Rewr' \\
+     Know ‘IMAGE cdr (general_cross cons s t) = t’
+     >- (irule (cj 2 general_cross_reduce) >> art [] \\
+         Q.EXISTS_TAC ‘car’ >> rw [pair_operation_def]) >> Rewr)
  >> DISCH_TAC
  >> ASM_SIMP_TAC std_ss []
- >> STRIP_TAC
+ >> STRIP_TAC (* this asserts ‘m’ *)
  (* applying lemma_fn_seq_sup *)
- >> MP_TAC (Q.SPECL [‘(X,A,u) CROSS (Y,B,v)’, ‘f’]
-                    (INST_TYPE [alpha |-> “:'a # 'b”] lemma_fn_seq_sup))
- >> ‘m_space ((X,A,u) CROSS (Y,B,v)) = X CROSS Y’ by rw [prod_measure_space_alt]
- >> ASM_REWRITE_TAC [] >> DISCH_TAC
- >> ‘measurable_sets ((X,A,u) CROSS (Y,B,v)) =
-       subsets ((X,A) CROSS (Y,B))’ by rw [prod_measure_space_alt]
- >> Know ‘space ((X,A) CROSS (Y,B)) = X CROSS Y’
- >- (rw [prod_sigma_def] >> REWRITE_TAC [SPACE_SIGMA]) >> DISCH_TAC
+ >> qabbrev_tac ‘M = general_prod_measure_space cons (X,A,u) (Y,B,v)’
+ >> MP_TAC (Q.SPECL [‘M’, ‘f’] (INST_TYPE [alpha |-> gamma] lemma_fn_seq_sup))
+ >> ‘m_space M = general_cross cons X Y’
+      by simp [Abbr ‘M’, general_prod_measure_space] >> art []
+ >> DISCH_TAC
+ >> ‘measurable_sets M = subsets (general_sigma cons (X,A) (Y,B))’
+      by simp [Abbr ‘M’, general_prod_measure_space]
+ >> ‘space (general_sigma cons (X,A) (Y,B)) = general_cross cons X Y’
+      by simp [general_sigma_def, SPACE_SIGMA]
  >> fs [sigma_finite_measure_space_def]
  >> ‘sigma_algebra (X,A) /\ sigma_algebra (Y,B)’
       by METIS_TAC [measure_space_def, space_def, subsets_def, m_space_def,
                     measurable_sets_def]
- >> Know ‘sigma_algebra ((X,A) CROSS (Y,B))’
- >- (MATCH_MP_TAC SIGMA_ALGEBRA_PROD_SIGMA \\
-     fs [sigma_algebra_def, algebra_def]) >> DISCH_TAC
+ >> Know ‘sigma_algebra (general_sigma cons (X,A) (Y,B))’
+ >- (MATCH_MP_TAC sigma_algebra_general_sigma \\
+     fs [sigma_algebra_def, algebra_def])
+ >> DISCH_TAC
  (* common measurable sets inside fn_seq *)
- >> Q.ABBREV_TAC ‘s = \n k. {x | x IN X CROSS Y /\ &k / 2 pow n <= f x /\
-                                 f x < (&k + 1) / 2 pow n}’
- >> Know ‘!n i. s n i IN subsets ((X,A) CROSS (Y,B))’
+ >> qabbrev_tac ‘s = \n k. {x | x IN general_cross cons X Y /\ &k / 2 pow n <= f x /\
+                                f x < (&k + 1) / 2 pow n}’
+ >> Know ‘!n i. s n i IN subsets (general_sigma cons (X,A) (Y,B))’
  >- (rpt GEN_TAC \\
-     Know ‘s n i = ({x | &i / 2 pow n <= f x} INTER (X CROSS Y)) INTER
-                   ({x | f x < (&i + 1) / 2 pow n} INTER (X CROSS Y))’
+     Know ‘s n i = ({x | &i / 2 pow n <= f x} INTER general_cross cons X Y) INTER
+                   ({x | f x < (&i + 1) / 2 pow n} INTER general_cross cons X Y)’
      >- (rw [Abbr ‘s’, Once EXTENSION, IN_INTER] \\
          EQ_TAC >> RW_TAC std_ss []) >> Rewr' \\
      MATCH_MP_TAC SIGMA_ALGEBRA_INTER \\
-     MP_TAC (Q.SPECL [‘f’, ‘(X,A) CROSS (Y,B)’]
-                     (INST_TYPE [alpha |-> “:'a # 'b”] IN_MEASURABLE_BOREL_ALL)) >> rw [])
+     MP_TAC (Q.SPECL [‘f’, ‘general_sigma cons (X,A) (Y,B)’]
+                     (INST_TYPE [alpha |-> gamma] IN_MEASURABLE_BOREL_ALL)) \\
+     simp [])
  >> DISCH_TAC
- >> Q.ABBREV_TAC ‘t = \n. {x | x IN X CROSS Y /\ 2 pow n <= f x}’
- >> Know ‘!n. t n IN subsets ((X,A) CROSS (Y,B))’
+ >> qabbrev_tac ‘t = \n. {x | x IN general_cross cons X Y /\ 2 pow n <= f x}’
+ >> Know ‘!n. t n IN subsets (general_sigma cons (X,A) (Y,B))’
  >- (RW_TAC std_ss [Abbr ‘t’] \\
-    ‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
-        by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
-    ‘?r. 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
-    ‘{x | x IN X CROSS Y /\ Normal r <= f x} = {x | Normal r <= f x} INTER (X CROSS Y)’
-        by SET_TAC [] >> POP_ORW \\
-     MP_TAC (Q.SPECL [‘f’, ‘(X,A) CROSS (Y,B)’]
-                     (INST_TYPE [alpha |-> “:'a # 'b”] IN_MEASURABLE_BOREL_ALL)) >> rw [])
+    ‘{x | x IN general_cross cons X Y /\ 2 pow n <= f x} =
+     {x | 2 pow n <= f x} INTER general_cross cons X Y’ by SET_TAC [] \\
+     POP_ORW \\
+     MP_TAC (Q.SPECL [‘f’, ‘general_sigma cons (X,A) (Y,B)’]
+                     (INST_TYPE [alpha |-> gamma] IN_MEASURABLE_BOREL_ALL)) \\
+     simp [])
  >> DISCH_TAC
+ >> cheat (*
  (* important properties of fn_seq *)
- >> Know ‘!n y. y IN Y /\ (!s. s IN subsets ((X,A) CROSS (Y,B)) ==>
-                              (\x. indicator_fn s (x,y)) IN measurable (X,A) Borel) ==>
-               (\x. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y)) IN Borel_measurable (X,A)’
+ >> Know ‘!n y. y IN Y /\
+               (!s. s IN subsets ((X,A) CROSS (Y,B)) ==>
+                   (\x. indicator_fn s (x,y)) IN measurable (X,A) Borel) ==>
+               (\x. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y))
+                  IN Borel_measurable (X,A)’
  >- (rpt STRIP_TAC \\
      ASM_SIMP_TAC std_ss [fn_seq_def] \\
     ‘!k. {x | x IN X CROSS Y /\ &k / 2 pow n <= f x /\ f x < (&k + 1) / 2 pow n} = s n k’
