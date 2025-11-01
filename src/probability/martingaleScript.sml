@@ -1574,6 +1574,13 @@ Definition general_cross_def:
     general_cross (cons :'a -> 'b -> 'c) A B = {cons a b | a IN A /\ b IN B}
 End
 
+Theorem general_cross_empty[simp] :
+    general_cross cons {} B = {} /\
+    general_cross cons A {} = {}
+Proof
+    rw [general_cross_def, Once EXTENSION]
+QED
+
 Theorem IN_general_cross :
     !cons s A B. s IN (general_cross cons A B) <=>
                  ?a b. s = cons a b /\ a IN A /\ b IN B
@@ -1582,6 +1589,24 @@ Proof
  >> EQ_TAC >> rpt STRIP_TAC
  >- (Cases_on ‘x’ >> fs [] >> qexistsl_tac [‘q’,‘r’] >> art [])
  >> Q.EXISTS_TAC ‘(a,b)’ >> rw []
+QED
+
+Theorem general_cross_reduce :
+    !cons car cdr s t. pair_operation cons car cdr ==>
+                      (t <> {} ==> IMAGE car (general_cross cons s t) = s) /\
+                      (s <> {} ==> IMAGE cdr (general_cross cons s t) = t)
+Proof
+    rw [pair_operation_def, FORALL_AND_THM] (* 2 subgoals *)
+ >| [ (* goal 1 (of 2) *)
+      rw [Once EXTENSION, IN_general_cross] \\
+      EQ_TAC >> RW_TAC std_ss [] >- art [] \\
+      fs [GSYM MEMBER_NOT_EMPTY] >> rename1 ‘y IN t’ \\
+      Q.EXISTS_TAC ‘cons x y’ >> simp [],
+      (* goal 2 (of 2) *)
+      rw [Once EXTENSION, IN_general_cross] \\
+      EQ_TAC >> RW_TAC std_ss [] >- art [] \\
+      fs [GSYM MEMBER_NOT_EMPTY] >> rename1 ‘y IN s’ \\
+      Q.EXISTS_TAC ‘cons y x’ >> simp [] ]
 QED
 
 (* alternative definition of pred_set$CROSS *)
@@ -2330,8 +2355,8 @@ Proof
                       (INST_TYPE [alpha |-> “:'temp1”]) o
                       (INST_TYPE [beta |-> “:'temp2”]))
                      uniqueness_of_prod_measure_general'))
- >> RW_TAC std_ss [GSYM fcp_cross_alt, GSYM fcp_prod_alt, GSYM fcp_sigma_alt,
-                   pair_operation_FCP_CONCAT]
+ >> RW_TAC std_ss [GSYM fcp_cross_alt, GSYM fcp_prod_alt,
+                   GSYM fcp_sigma_alt, pair_operation_FCP_CONCAT]
 QED
 
 Theorem existence_of_prod_measure_general :
@@ -2341,8 +2366,10 @@ Theorem existence_of_prod_measure_general :
        sigma_finite_measure_space (Y,B,v) /\
        (!s t. s IN A /\ t IN B ==> (m0 (general_cross cons s t) = u s * v t)) ==>
        (!s. s IN subsets (general_sigma cons (X,A) (Y,B)) ==>
-           (!x. x IN X ==> (\y. indicator_fn s (cons x y)) IN measurable (Y,B) Borel) /\
-           (!y. y IN Y ==> (\x. indicator_fn s (cons x y)) IN measurable (X,A) Borel) /\
+           (!x. x IN X ==>
+               (\y. indicator_fn s (cons x y)) IN measurable (Y,B) Borel) /\
+           (!y. y IN Y ==>
+               (\x. indicator_fn s (cons x y)) IN measurable (X,A) Borel) /\
            (\y. pos_fn_integral (X,A,u)
                   (\x. indicator_fn s (cons x y))) IN measurable (Y,B) Borel /\
            (\x. pos_fn_integral (Y,B,v)
@@ -2352,9 +2379,11 @@ Theorem existence_of_prod_measure_general :
            (!s. s IN (general_prod cons A B) ==> (m s = m0 s)) /\
            (!s. s IN subsets (general_sigma cons (X,A) (Y,B)) ==>
                (m s = pos_fn_integral (Y,B,v)
-                        (\y. pos_fn_integral (X,A,u) (\x. indicator_fn s (cons x y)))) /\
+                        (\y. pos_fn_integral (X,A,u)
+                                             (\x. indicator_fn s (cons x y)))) /\
                (m s = pos_fn_integral (X,A,u)
-                        (\x. pos_fn_integral (Y,B,v) (\y. indicator_fn s (cons x y)))))
+                        (\x. pos_fn_integral (Y,B,v)
+                                             (\y. indicator_fn s (cons x y)))))
 Proof
     rpt GEN_TAC >> STRIP_TAC
  >> fs [sigma_finite_measure_space_def, sigma_finite_alt_exhausting_sequence]
@@ -2368,17 +2397,23 @@ Proof
  >> Q.ABBREV_TAC ‘D = \n.
      {d | d SUBSET (general_cross cons X Y) /\
           (!x. x IN X ==>
-               (\y. indicator_fn (d INTER (E n)) (cons x y)) IN Borel_measurable (Y,B)) /\
+              (\y. indicator_fn (d INTER (E n)) (cons x y))
+                 IN Borel_measurable (Y,B)) /\
           (!y. y IN Y ==>
-               (\x. indicator_fn (d INTER (E n)) (cons x y)) IN Borel_measurable (X,A)) /\
-          (\y. pos_fn_integral (X,A,u) (\x. indicator_fn (d INTER (E n)) (cons x y)))
+              (\x. indicator_fn (d INTER (E n)) (cons x y))
+                 IN Borel_measurable (X,A)) /\
+          (\y. pos_fn_integral (X,A,u)
+                               (\x. indicator_fn (d INTER (E n)) (cons x y)))
                  IN Borel_measurable (Y,B) /\
-          (\x. pos_fn_integral (Y,B,v) (\y. indicator_fn (d INTER (E n)) (cons x y)))
+          (\x. pos_fn_integral (Y,B,v)
+                               (\y. indicator_fn (d INTER (E n)) (cons x y)))
                  IN Borel_measurable (X,A) /\
           (pos_fn_integral (X,A,u)
-             (\x. pos_fn_integral (Y,B,v) (\y. indicator_fn (d INTER (E n)) (cons x y))) =
+             (\x. pos_fn_integral (Y,B,v)
+                                  (\y. indicator_fn (d INTER (E n)) (cons x y))) =
            pos_fn_integral (Y,B,v)
-             (\y. pos_fn_integral (X,A,u) (\x. indicator_fn (d INTER (E n)) (cons x y))))}’
+             (\y. pos_fn_integral (X,A,u)
+                                  (\x. indicator_fn (d INTER (E n)) (cons x y))))}’
  >> Know ‘!n. (general_prod cons A B) SUBSET (D n)’
  >- (rw [IN_general_prod, SUBSET_DEF] \\
      rename1 ‘s IN A’ >> rename1 ‘t IN B’ \\
@@ -2386,8 +2421,8 @@ Proof
      CONJ_TAC (* (s CROSS t) SUBSET (X CROSS Y) *)
      >- (MATCH_MP_TAC general_SUBSET_CROSS \\
         ‘subset_class X A /\ subset_class Y B’
-            by PROVE_TAC [measure_space_def, SIGMA_ALGEBRA_ALT_SPACE, m_space_def,
-                          measurable_sets_def, space_def, subsets_def] \\
+           by PROVE_TAC [measure_space_def, SIGMA_ALGEBRA_ALT_SPACE, m_space_def,
+                         measurable_sets_def, space_def, subsets_def] \\
          fs [subset_class_def]) \\
      Q.UNABBREV_TAC ‘E’ >> BETA_TAC \\
      rfs [exhausting_sequence_def, IN_FUNSET, IN_UNIV] \\
@@ -2537,20 +2572,26 @@ Proof
  (* a basic property of D *)
  >> Know ‘!n. E n IN D n’
  >- (rw [Abbr ‘E’] \\
-     Suff ‘general_cross cons (a n) (b n) IN general_prod cons A B’ >- PROVE_TAC [SUBSET_DEF] \\
+     Suff ‘general_cross cons (a n) (b n) IN general_prod cons A B’
+     >- PROVE_TAC [SUBSET_DEF] \\
      rw [IN_general_prod] >> qexistsl_tac [‘a n’, ‘b n’] >> REWRITE_TAC [] \\
-     REV_FULL_SIMP_TAC std_ss [exhausting_sequence_def, IN_FUNSET, IN_UNIV, subsets_def])
+     REV_FULL_SIMP_TAC std_ss [exhausting_sequence_def, IN_FUNSET, IN_UNIV,
+                               subsets_def])
  >> DISCH_TAC
  (* The following 4 D-properties are frequently needed.
     Note: the quantifiers (n,d,x,y) can be anything, in particular it's NOT
           required that ‘x IN X’ or ‘y IN y’ or ‘d IN D n’ *)
- >> ‘!n d y. pos_fn_integral (X,A,u) (\x. indicator_fn (d INTER E n) (cons x y)) <> NegInf’
+ >> ‘!n d y. pos_fn_integral (X,A,u) (\x. indicator_fn (d INTER E n) (cons x y))
+             <> NegInf’
       by (rpt GEN_TAC >> MATCH_MP_TAC pos_not_neginf \\
           MATCH_MP_TAC pos_fn_integral_pos >> rw [INDICATOR_FN_POS])
- >> Know ‘!n d y. pos_fn_integral (X,A,u) (\x. indicator_fn (d INTER E n) (cons x y)) <> PosInf’
+ >> Know ‘!n d y. pos_fn_integral (X,A,u)
+                                  (\x. indicator_fn (d INTER E n) (cons x y)) <>
+                  PosInf’
  >- (rw [Abbr ‘E’, lt_infty] >> MATCH_MP_TAC let_trans \\
      Q.EXISTS_TAC ‘pos_fn_integral (X,A,u)
-                     (\x. indicator_fn (general_cross cons (a n) (b n)) (cons x y))’ \\
+                     (\x. indicator_fn (general_cross cons (a n) (b n))
+                                       (cons x y))’ \\
      CONJ_TAC >- (MATCH_MP_TAC pos_fn_integral_mono >> rw [INDICATOR_FN_POS] \\
                   MATCH_MP_TAC INDICATOR_FN_MONO >> REWRITE_TAC [INTER_SUBSET]) \\
      Know ‘!x. indicator_fn (general_cross cons (a n) (b n)) (cons x y) =
@@ -2565,7 +2606,8 @@ Proof
      >- (MATCH_MP_TAC pos_fn_integral_cmul >> simp [INDICATOR_FN_POS]) >> Rewr' \\
      Know ‘pos_fn_integral (X,A,u) (indicator_fn (a n)) = measure (X,A,u) (a n)’
      >- (MATCH_MP_TAC pos_fn_integral_indicator >> art [measurable_sets_def] \\
-         FULL_SIMP_TAC std_ss [exhausting_sequence_def, subsets_def, IN_FUNSET, IN_UNIV]) \\
+         FULL_SIMP_TAC std_ss [exhausting_sequence_def, subsets_def, IN_FUNSET,
+                               IN_UNIV]) \\
      REWRITE_TAC [measure_def] >> Rewr' \\
      REWRITE_TAC [GSYM lt_infty] \\
      IMP_RES_TAC MEASURE_SPACE_POSITIVE \\
@@ -2617,7 +2659,8 @@ Proof
      [ (* goal 1 (of 4) *)
        rw [subset_class_def, Abbr ‘D’],
        (* goal 2 (of 4) *)
-       Suff ‘general_cross cons X Y IN general_prod cons A B’ >- PROVE_TAC [SUBSET_DEF] \\
+       Suff ‘general_cross cons X Y IN general_prod cons A B’
+       >- PROVE_TAC [SUBSET_DEF] \\
        rw [IN_general_prod] >> qexistsl_tac [‘X’, ‘Y’] >> REWRITE_TAC [] \\
        fs [SIGMA_ALGEBRA_ALT_SPACE],
        (* goal 3 (of 4): DIFF (hard) *)
@@ -2626,20 +2669,26 @@ Proof
        Suff ‘(general_cross cons X Y) DIFF d IN
              {d | d SUBSET general_cross cons X Y /\
                  (!x. x IN X ==>
-                      (\y. indicator_fn (d INTER E n) (cons x y)) IN Borel_measurable (Y,B)) /\
+                     (\y. indicator_fn (d INTER E n) (cons x y))
+                        IN Borel_measurable (Y,B)) /\
                  (!y. y IN Y ==>
-                      (\x. indicator_fn (d INTER E n) (cons x y)) IN Borel_measurable (X,A)) /\
-                 (\y. pos_fn_integral (X,A,u) (\x. indicator_fn (d INTER E n) (cons x y)))
+                     (\x. indicator_fn (d INTER E n) (cons x y))
+                        IN Borel_measurable (X,A)) /\
+                 (\y. pos_fn_integral (X,A,u)
+                                      (\x. indicator_fn (d INTER E n) (cons x y)))
                         IN Borel_measurable (Y,B) /\
-                 (\x. pos_fn_integral (Y,B,v) (\y. indicator_fn (d INTER E n) (cons x y)))
+                 (\x. pos_fn_integral (Y,B,v)
+                                      (\y. indicator_fn (d INTER E n) (cons x y)))
                         IN Borel_measurable (X,A) /\
-                 pos_fn_integral (X,A,u)
-                   (\x. pos_fn_integral (Y,B,v) (\y. indicator_fn (d INTER E n) (cons x y))) =
-                 pos_fn_integral (Y,B,v)
-                   (\y. pos_fn_integral (X,A,u) (\x. indicator_fn (d INTER E n) (cons x y)))}’
+                  pos_fn_integral (X,A,u)
+                    (\x. pos_fn_integral (Y,B,v) (\y. indicator_fn (d INTER E n)
+                                                                   (cons x y))) =
+                  pos_fn_integral (Y,B,v)
+                    (\y. pos_fn_integral (X,A,u) (\x. indicator_fn (d INTER E n)
+                                                                   (cons x y)))}’
        >- METIS_TAC [Abbr ‘D’] >> simp [GSPECIFICATION] \\
        Know ‘indicator_fn (((general_cross cons X Y) DIFF d) INTER E n) =
-               (\t. indicator_fn (E n) t - indicator_fn (d INTER E n) t)’
+            (\t. indicator_fn (E n) t - indicator_fn (d INTER E n) t)’
        >- (ONCE_REWRITE_TAC [INTER_COMM] \\
            MATCH_MP_TAC INDICATOR_FN_DIFF_SPACE \\
            rw [Abbr ‘E’]
@@ -2648,7 +2697,8 @@ Proof
                                      subsets_def, space_def] \\
                METIS_TAC [sigma_algebra_def, algebra_def, subset_class_def,
                           space_def, subsets_def]) \\
-           REV_FULL_SIMP_TAC std_ss [Abbr ‘D’, GSPECIFICATION]) >> Rewr' >> BETA_TAC \\
+           REV_FULL_SIMP_TAC std_ss [Abbr ‘D’, GSPECIFICATION]) >> Rewr' \\
+       BETA_TAC \\
        STRONG_CONJ_TAC (* Borel_measurable #1 *)
        >- (rpt STRIP_TAC \\
            MATCH_MP_TAC IN_MEASURABLE_BOREL_SUB >> BETA_TAC \\
@@ -3119,7 +3169,8 @@ Proof
            dynkin (general_cross cons X Y) (general_prod cons A B)’
      >- (Rewr' \\
          MATCH_MP_TAC (REWRITE_RULE [space_def, subsets_def]
-                        (Q.SPECL [‘general_prod cons A B’, ‘(general_cross cons X Y,D n)’]
+                        (Q.SPECL [‘general_prod cons A B’,
+                                  ‘(general_cross cons X Y,D n)’]
                           (INST_TYPE [alpha |-> gamma] DYNKIN_SUBSET))) >> art []) \\
      MATCH_MP_TAC EQ_SYM >> MATCH_MP_TAC DYNKIN_THM \\
      CONJ_TAC >- (rw [subset_class_def, IN_general_prod] \\
@@ -3165,13 +3216,15 @@ Proof
            (* goal 2 (of 2) *)
            rename1 ‘!z. (?n. z = indicator_fn (s INTER E n) (cons x y)) ==> z <= N’ \\
            Cases_on ‘!n. indicator_fn (s INTER E n) (cons x y) = 0’
-           >- (Q.PAT_X_ASSUM ‘_ = general_cross cons X Y’ (ONCE_REWRITE_TAC o wrap o SYM) \\
+           >- (Q.PAT_X_ASSUM ‘_ = general_cross cons X Y’
+                 (ONCE_REWRITE_TAC o wrap o SYM) \\
                POP_ASSUM MP_TAC \\
                rw [indicator_fn_def] >> METIS_TAC [ne_01]) \\
            fs [] >> FIRST_X_ASSUM MATCH_MP_TAC \\
            rename1 ‘indicator_fn (s INTER E i) (cons x y) <> 0’ \\
            Q.EXISTS_TAC ‘i’ \\
-           Q.PAT_X_ASSUM ‘_ = general_cross cons X Y’ (ONCE_REWRITE_TAC o wrap o SYM) \\
+           Q.PAT_X_ASSUM ‘_ = general_cross cons X Y’
+             (ONCE_REWRITE_TAC o wrap o SYM) \\
            POP_ASSUM MP_TAC >> rw [indicator_fn_def] \\
            METIS_TAC [] ]) >> Rewr' \\
      CONJ_TAC (* Borel_measurable #1 *)
@@ -3201,13 +3254,16 @@ Proof
      [ (* goal 1 (of 2) *)
        MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
                                   (Q.SPEC ‘(Y,B,v)’ IN_MEASURABLE_BOREL_EQ)) \\
-       Q.EXISTS_TAC ‘\y. sup (IMAGE (\n. pos_fn_integral (X,A,u)
-                                           (\x. indicator_fn (s INTER E n) (cons x y))) UNIV)’ \\
+       Q.EXISTS_TAC
+      ‘\y. sup (IMAGE (\n. pos_fn_integral (X,A,u)
+                             (\x. indicator_fn (s INTER E n) (cons x y))) UNIV)’ \\
        reverse CONJ_TAC
        >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_MONO_SUP >> simp [] \\
-           Q.EXISTS_TAC ‘\n y. pos_fn_integral (X,A,u)
-                                 (\x. indicator_fn (s INTER E n) (cons x y))’ >> simp [] \\
-           CONJ_TAC >- (GEN_TAC >> Q.PAT_X_ASSUM ‘!n. s IN D n’ (MP_TAC o (Q.SPEC ‘n’)) \\
+           Q.EXISTS_TAC
+          ‘\n y. pos_fn_integral (X,A,u)
+                   (\x. indicator_fn (s INTER E n) (cons x y))’ >> simp [] \\
+           CONJ_TAC >- (GEN_TAC \\
+                        Q.PAT_X_ASSUM ‘!n. s IN D n’ (MP_TAC o (Q.SPEC ‘n’)) \\
                         RW_TAC std_ss [Abbr ‘D’, GSPECIFICATION]) \\
            qx_genl_tac [‘n’, ‘y’] >> DISCH_TAC \\
            MATCH_MP_TAC pos_fn_integral_mono >> simp [INDICATOR_FN_POS] \\
@@ -3456,9 +3512,11 @@ Proof
  >- (RW_TAC std_ss [Once EQ_SYM_EQ] \\
      MATCH_MP_TAC indicator_fn_suminf >> simp []) >> Rewr'
  >> Know ‘pos_fn_integral (X,A,u)
-            (\x. pos_fn_integral (Y,B,v) (\y. suminf (\n. indicator_fn (f n) (cons x y)))) =
+            (\x. pos_fn_integral (Y,B,v)
+                   (\y. suminf (\n. indicator_fn (f n) (cons x y)))) =
           pos_fn_integral (X,A,u)
-            (\x. suminf (\n. pos_fn_integral (Y,B,v) (\y. indicator_fn (f n) (cons x y))))’
+            (\x. suminf (\n. pos_fn_integral (Y,B,v)
+                               (\y. indicator_fn (f n) (cons x y))))’
  >- (MATCH_MP_TAC pos_fn_integral_cong >> simp [] \\
      CONJ_TAC >- (rpt STRIP_TAC >> MATCH_MP_TAC pos_fn_integral_pos >> simp [] \\
                   Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
@@ -3468,7 +3526,8 @@ Proof
      rpt STRIP_TAC \\
   (* preparing for pos_fn_integral_suminf *)
     ‘pos_fn_integral (Y,B,v) (\y. suminf (\n. indicator_fn (f n) (cons x y))) =
-     pos_fn_integral (Y,B,v) (\y. suminf (\n. (\n y. indicator_fn (f n) (cons x y)) n y))’
+     pos_fn_integral (Y,B,v)
+                     (\y. suminf (\n. (\n y. indicator_fn (f n) (cons x y)) n y))’
        by PROVE_TAC [] >> POP_ORW \\
     ‘suminf (\n. pos_fn_integral (Y,B,v) (\y. indicator_fn (f n) (cons x y))) =
      suminf (\n. pos_fn_integral (Y,B,v) ((\n y. indicator_fn (f n) (cons x y)) n))’
@@ -3478,7 +3537,8 @@ Proof
             (\x. suminf (\n. (\n x. pos_fn_integral (Y,B,v)
                                       (\y. indicator_fn (f n) (cons x y))) n x)) =
           suminf (\n. pos_fn_integral (X,A,u)
-                        ((\n x. pos_fn_integral (Y,B,v) (\y. indicator_fn (f n) (cons x y))) n))’
+                        ((\n x. pos_fn_integral (Y,B,v)
+                                  (\y. indicator_fn (f n) (cons x y))) n))’
  >- (MATCH_MP_TAC pos_fn_integral_suminf >> rw [] \\
      MATCH_MP_TAC pos_fn_integral_pos >> rw [INDICATOR_FN_POS])
  >> BETA_TAC >> Rewr
@@ -3493,8 +3553,10 @@ Theorem EXISTENCE_OF_PROD_MEASURE :
        (!s. s IN subsets ((X,A) CROSS (Y,B)) ==>
            (!x. x IN X ==> (\y. indicator_fn s (x,y)) IN measurable (Y,B) Borel) /\
            (!y. y IN Y ==> (\x. indicator_fn s (x,y)) IN measurable (X,A) Borel) /\
-           (\y. pos_fn_integral (X,A,u) (\x. indicator_fn s (x,y))) IN measurable (Y,B) Borel /\
-           (\x. pos_fn_integral (Y,B,v) (\y. indicator_fn s (x,y))) IN measurable (X,A) Borel) /\
+           (\y. pos_fn_integral (X,A,u)
+                  (\x. indicator_fn s (x,y))) IN measurable (Y,B) Borel /\
+           (\x. pos_fn_integral (Y,B,v)
+                  (\y. indicator_fn s (x,y))) IN measurable (X,A) Borel) /\
        ?m. sigma_finite_measure_space (X CROSS Y,subsets ((X,A) CROSS (Y,B)),m) /\
            (!s. s IN (prod_sets A B) ==> (m s = m0 s)) /\
            (!s. s IN subsets ((X,A) CROSS (Y,B)) ==>
@@ -3505,7 +3567,8 @@ Theorem EXISTENCE_OF_PROD_MEASURE :
 Proof
     rpt GEN_TAC >> STRIP_TAC
  >> MP_TAC (Q.SPECL [‘pair$,’,‘FST’,‘SND’,‘X’,‘Y’,‘A’,‘B’,‘u’,‘v’,‘m0’]
-                    (INST_TYPE [gamma |-> “:'a # 'b”] existence_of_prod_measure_general))
+                    (INST_TYPE [gamma |-> “:'a # 'b”]
+                               existence_of_prod_measure_general))
  >> RW_TAC std_ss [GSYM CROSS_ALT, GSYM prod_sets_alt, GSYM prod_sigma_alt,
                    pair_operation_pair]
 QED
@@ -3521,27 +3584,33 @@ Theorem EXISTENCE_OF_PROD_MEASURE' :
        (!s. s IN subsets ((X,A) CROSS (Y,B)) ==>
            (!x. x IN X ==> (\y. indicator_fn s (x,y)) IN measurable (Y,B) Borel) /\
            (!y. y IN Y ==> (\x. indicator_fn s (x,y)) IN measurable (X,A) Borel) /\
-           (\y. integral (X,A,u) (\x. indicator_fn s (x,y))) IN measurable (Y,B) Borel /\
-           (\x. integral (Y,B,v) (\y. indicator_fn s (x,y))) IN measurable (X,A) Borel) /\
+           (\y. integral (X,A,u)
+                         (\x. indicator_fn s (x,y))) IN measurable (Y,B) Borel /\
+           (\x. integral (Y,B,v)
+                         (\y. indicator_fn s (x,y))) IN measurable (X,A) Borel) /\
        ?m. sigma_finite_measure_space (X CROSS Y,subsets ((X,A) CROSS (Y,B)),m) /\
            (!s. s IN (prod_sets A B) ==> (m s = m0 s)) /\
            (!s. s IN subsets ((X,A) CROSS (Y,B)) ==>
-               (m s = integral (Y,B,v) (\y. integral (X,A,u) (\x. indicator_fn s (x,y)))) /\
-               (m s = integral (X,A,u) (\x. integral (Y,B,v) (\y. indicator_fn s (x,y)))))
+               (m s = integral (Y,B,v)
+                               (\y. integral (X,A,u) (\x. indicator_fn s (x,y)))) /\
+               (m s = integral (X,A,u)
+                               (\x. integral (Y,B,v) (\y. indicator_fn s (x,y)))))
 Proof
     rpt GEN_TAC >> STRIP_TAC
  >> MP_TAC (Q.SPECL [‘X’,‘Y’,‘A’,‘B’,‘u’,‘v’,‘m0’] EXISTENCE_OF_PROD_MEASURE)
  >> FULL_SIMP_TAC std_ss [sigma_finite_measure_space_def]
  >> RW_TAC std_ss [] (* 3 subgoals *)
  >| [ (* goal 1 (of 3) *)
-     ‘(\y. pos_fn_integral (X,A,u) (\x. indicator_fn s (x,y))) IN Borel_measurable (Y,B)’
+     ‘(\y. pos_fn_integral (X,A,u)
+                           (\x. indicator_fn s (x,y))) IN Borel_measurable (Y,B)’
         by METIS_TAC [] \\
       MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
                                  (Q.SPEC ‘(Y,B,v)’ IN_MEASURABLE_BOREL_EQ)) \\
       Q.EXISTS_TAC ‘\y. pos_fn_integral (X,A,u) (\x. indicator_fn s (x,y))’ >> rw [] \\
       MATCH_MP_TAC integral_pos_fn >> rw [INDICATOR_FN_POS],
       (* goal 2 (of 3) *)
-     ‘(\x. pos_fn_integral (Y,B,v) (\y. indicator_fn s (x,y))) IN Borel_measurable (X,A)’
+     ‘(\x. pos_fn_integral (Y,B,v)
+                           (\y. indicator_fn s (x,y))) IN Borel_measurable (X,A)’
         by METIS_TAC [] \\
       MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
                                  (Q.SPEC ‘(X,A,u)’ IN_MEASURABLE_BOREL_EQ)) \\
@@ -3559,13 +3628,16 @@ Proof
         Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
         MATCH_MP_TAC pos_fn_integral_pos >> rw [INDICATOR_FN_POS],
         (* goal 3.2 (of 2) *)
-       ‘pos_fn_integral (Y,B,v) (\y. pos_fn_integral (X,A,u) (\x. indicator_fn s (x,y))) =
-        pos_fn_integral (X,A,u) (\x. pos_fn_integral (Y,B,v) (\y. indicator_fn s (x,y)))’
+       ‘pos_fn_integral (Y,B,v)
+                        (\y. pos_fn_integral (X,A,u) (\x. indicator_fn s (x,y))) =
+        pos_fn_integral (X,A,u)
+                        (\x. pos_fn_integral (Y,B,v) (\y. indicator_fn s (x,y)))’
            by METIS_TAC [] >> POP_ORW \\
         MATCH_MP_TAC EQ_SYM \\
         Know ‘!x. integral (Y,B,v) (\y. indicator_fn s (x,y)) =
                   pos_fn_integral (Y,B,v) (\y. indicator_fn s (x,y))’
-        >- (GEN_TAC >> MATCH_MP_TAC integral_pos_fn >> rw [INDICATOR_FN_POS]) >> Rewr' \\
+        >- (GEN_TAC >> MATCH_MP_TAC integral_pos_fn \\
+            rw [INDICATOR_FN_POS]) >> Rewr' \\
         MATCH_MP_TAC integral_pos_fn >> simp [] \\
         rpt STRIP_TAC \\
         MATCH_MP_TAC pos_fn_integral_pos >> rw [INDICATOR_FN_POS] ] ]
@@ -3579,19 +3651,24 @@ Theorem existence_of_prod_measure :
        sigma_finite_measure_space (Y,B,v) /\
        (!s t. s IN A /\ t IN B ==> (m0 (fcp_cross s t) = u s * v t)) ==>
        (!s. s IN subsets (fcp_sigma (X,A) (Y,B)) ==>
-           (!x. x IN X ==> (\y. indicator_fn s (FCP_CONCAT x y)) IN measurable (Y,B) Borel) /\
-           (!y. y IN Y ==> (\x. indicator_fn s (FCP_CONCAT x y)) IN measurable (X,A) Borel) /\
+           (!x. x IN X ==>
+               (\y. indicator_fn s (FCP_CONCAT x y)) IN measurable (Y,B) Borel) /\
+           (!y. y IN Y ==>
+               (\x. indicator_fn s (FCP_CONCAT x y)) IN measurable (X,A) Borel) /\
            (\y. pos_fn_integral (X,A,u)
                   (\x. indicator_fn s (FCP_CONCAT x y))) IN measurable (Y,B) Borel /\
            (\x. pos_fn_integral (Y,B,v)
                   (\y. indicator_fn s (FCP_CONCAT x y))) IN measurable (X,A) Borel) /\
-       ?m. sigma_finite_measure_space (fcp_cross X Y,subsets (fcp_sigma (X,A) (Y,B)),m) /\
+       ?m. sigma_finite_measure_space
+             (fcp_cross X Y,subsets (fcp_sigma (X,A) (Y,B)),m) /\
            (!s. s IN (fcp_prod A B) ==> (m s = m0 s)) /\
            (!s. s IN subsets (fcp_sigma (X,A) (Y,B)) ==>
                (m s = pos_fn_integral (Y,B,v)
-                        (\y. pos_fn_integral (X,A,u) (\x. indicator_fn s (FCP_CONCAT x y)))) /\
+                        (\y. pos_fn_integral (X,A,u)
+                               (\x. indicator_fn s (FCP_CONCAT x y)))) /\
                (m s = pos_fn_integral (X,A,u)
-                        (\x. pos_fn_integral (Y,B,v) (\y. indicator_fn s (FCP_CONCAT x y)))))
+                        (\x. pos_fn_integral (Y,B,v)
+                               (\y. indicator_fn s (FCP_CONCAT x y)))))
 Proof
     rpt GEN_TAC >> STRIP_TAC
  >> MP_TAC (Q.SPECL [‘FCP_CONCAT’,‘FCP_FST’,‘FCP_SND’,‘X’,‘Y’,‘A’,‘B’,‘u’,‘v’,‘m0’]
@@ -3599,7 +3676,8 @@ Proof
                       (INST_TYPE [“:'temp2” |-> “:'a['c]”]) o
                       (INST_TYPE [gamma |-> “:'a['b + 'c]”]) o
                       (INST_TYPE [alpha |-> “:'temp1”]) o
-                      (INST_TYPE [beta |-> “:'temp2”])) existence_of_prod_measure_general))
+                      (INST_TYPE [beta |-> “:'temp2”]))
+                      existence_of_prod_measure_general))
  >> RW_TAC std_ss [GSYM fcp_cross_alt, GSYM fcp_prod_alt, GSYM fcp_sigma_alt,
                    pair_operation_FCP_CONCAT]
 QED
@@ -3609,25 +3687,32 @@ local
   val thm = Q.prove (
      ‘?m. sigma_finite_measure_space m /\
          (m_space m = UNIV CROSS UNIV) /\
-         (measurable_sets m = subsets ((UNIV,subsets borel) CROSS (UNIV,subsets borel))) /\
+         (measurable_sets m =
+          subsets ((UNIV,subsets borel) CROSS (UNIV,subsets borel))) /\
          (!s t. s IN subsets borel /\ t IN subsets borel ==>
                (measure m (s CROSS t) = lambda s * lambda t)) /\
          (!s. s IN measurable_sets m ==>
              (!x. (\y. indicator_fn s (x,y)) IN Borel_measurable borel) /\
              (!y. (\x. indicator_fn s (x,y)) IN Borel_measurable borel) /\
-             (\y. pos_fn_integral lborel (\x. indicator_fn s (x,y))) IN Borel_measurable borel /\
-             (\x. pos_fn_integral lborel (\y. indicator_fn s (x,y))) IN Borel_measurable borel /\
-             (measure m s = pos_fn_integral lborel
-                              (\y. pos_fn_integral lborel (\x. indicator_fn s (x,y)))) /\
-             (measure m s = pos_fn_integral lborel
-                              (\x. pos_fn_integral lborel (\y. indicator_fn s (x,y)))))’,
+             (\y. pos_fn_integral lborel
+                    (\x. indicator_fn s (x,y))) IN Borel_measurable borel /\
+             (\x. pos_fn_integral lborel
+                    (\y. indicator_fn s (x,y))) IN Borel_measurable borel /\
+             (measure m s =
+              pos_fn_integral lborel
+                (\y. pos_fn_integral lborel (\x. indicator_fn s (x,y)))) /\
+             (measure m s =
+              pos_fn_integral lborel
+                (\x. pos_fn_integral lborel (\y. indicator_fn s (x,y)))))’,
    (* proof *)
-      MP_TAC (Q.ISPECL [‘univ(:real)’, ‘univ(:real)’, ‘subsets borel’, ‘subsets borel’,
-                        ‘lambda’, ‘lambda’, ‘\s. lambda (IMAGE FST s) * lambda (IMAGE SND s)’]
+      MP_TAC (Q.ISPECL [‘univ(:real)’, ‘univ(:real)’, ‘subsets borel’,
+                        ‘subsets borel’, ‘lambda’, ‘lambda’,
+                        ‘\s. lambda (IMAGE FST s) * lambda (IMAGE SND s)’]
                        EXISTENCE_OF_PROD_MEASURE) \\
       simp [sigma_finite_measure_space_def] \\
       Know ‘(univ(:real),subsets borel,lambda) = lborel’
-      >- (REWRITE_TAC [GSYM space_lborel, GSYM sets_lborel, MEASURE_SPACE_REDUCE]) >> Rewr' \\
+      >- REWRITE_TAC [GSYM space_lborel, GSYM sets_lborel, MEASURE_SPACE_REDUCE] \\
+      Rewr' \\
       REWRITE_TAC [measure_space_lborel, sigma_finite_lborel] \\
       Know ‘!s t. s IN subsets borel /\ t IN subsets borel ==>
                   lambda (IMAGE FST (s CROSS t)) * lambda (IMAGE SND (s CROSS t)) =
@@ -3646,7 +3731,8 @@ local
       RW_TAC std_ss [] \\
       Q.EXISTS_TAC ‘(UNIV CROSS UNIV,
                      subsets ((UNIV,subsets borel) CROSS (UNIV,subsets borel)),m)’ \\
-      Know ‘(univ(:real),subsets borel) = borel’ >- (REWRITE_TAC [GSYM space_borel, SPACE]) \\
+      Know ‘(univ(:real),subsets borel) = borel’
+      >- (REWRITE_TAC [GSYM space_borel, SPACE]) \\
       DISCH_THEN (fs o wrap) \\
       reverse CONJ_TAC >- METIS_TAC [] \\
       rpt STRIP_TAC \\
@@ -3725,7 +3811,7 @@ Proof
  >> simp [pos_fn_integral_indicator]
 QED
 
-Definition prod_measure_space_def : (* was: prod_measure_def or pair_measure_def *)
+Definition prod_measure_space_def :
     prod_measure_space m1 m2 =
       (m_space m1 CROSS m_space m2,
        subsets (prod_sigma (m_space m1,measurable_sets m1)
@@ -3748,45 +3834,94 @@ Overload CROSS = “prod_measure_space”
 Theorem prod_measure_space_alt =
     REWRITE_RULE [prod_measure_def] prod_measure_space_def
 
+Definition general_prod_measure_def :
+    general_prod_measure (cons :'a -> 'b -> 'c) m1 m2 =
+   (\s. pos_fn_integral m2
+          (\y. pos_fn_integral m1 (\x. indicator_fn s (cons x y))))
+End
+
+(* |- !cons m1 m2.
+        general_prod_measure_space cons m1 m2 =
+        (general_cross cons (m_space m1) (m_space m2),
+         subsets
+           (general_sigma cons (measurable_space m1) (measurable_space m2)),
+         (\s.
+              pos_fn_integral m2
+                (\y. pos_fn_integral m1 (\x. indicator_fn s (cons x y)))))
+ *)
+Definition general_prod_measure_space :
+    general_prod_measure_space (cons :'a -> 'b -> 'c) m1 m2 =
+   (general_cross cons (m_space m1) (m_space m2),
+    subsets (general_sigma cons (measurable_space m1) (measurable_space m2)),
+    general_prod_measure cons m1 m2)
+End
+
+Theorem general_prod_measure_space_def =
+        REWRITE_RULE [general_prod_measure_def] general_prod_measure_space
+
+Theorem prod_measure_space_alt_general :
+    !m1 m2. prod_measure_space m1 m2 =
+            general_prod_measure_space $, m1 m2
+Proof
+    RW_TAC std_ss [prod_measure_space_alt, general_prod_measure_space_def,
+                   CROSS_ALT, prod_sigma_alt]
+QED
+
+Theorem measure_space_general_prod_measure :
+    !(cons :'a -> 'b -> 'c) car cdr m1 m2.
+       pair_operation cons car cdr /\
+       sigma_finite_measure_space m1 /\
+       sigma_finite_measure_space m2 ==>
+       measure_space (general_prod_measure_space cons m1 m2)
+Proof
+    rw [pair_operation_def, FORALL_AND_THM]
+ >> PairCases_on ‘m1’ >> rename1 ‘sigma_finite_measure_space (X,A,u)’
+ >> PairCases_on ‘m2’ >> rename1 ‘sigma_finite_measure_space (Y,B,v)’
+ (* applying EXISTENCE_OF_PROD_MEASURE *)
+ >> MP_TAC (Q.SPECL [‘cons’, ‘car’, ‘cdr’, ‘X’, ‘Y’, ‘A’, ‘B’, ‘u’, ‘v’]
+                    existence_of_prod_measure_general)
+ >> DISCH_THEN (MP_TAC o (Q.SPEC ‘\x. u (IMAGE car x) * v (IMAGE cdr x)’))
+ >> Know ‘!s t. s IN A /\ t IN B ==>
+               (\x. u (IMAGE car x) * v (IMAGE cdr x)) (general_cross cons s t) =
+                    u s * v t’
+ >- (rpt STRIP_TAC \\
+     fs [sigma_finite_measure_space_def] \\
+     Cases_on ‘s = {}’
+     >- (Know ‘positive (X,A,u)’ >- simp [MEASURE_SPACE_POSITIVE] \\
+         rw [positive_def]) \\
+     Cases_on ‘t = {}’
+     >- (Know ‘positive (Y,B,v)’ >- simp [MEASURE_SPACE_POSITIVE] \\
+         rw [positive_def]) \\
+     Know ‘IMAGE car (general_cross cons s t) = s’
+     >- (irule (cj 1 general_cross_reduce) >> art [] \\
+         Q.EXISTS_TAC ‘cdr’ >> rw [pair_operation_def]) >> Rewr' \\
+     Know ‘IMAGE cdr (general_cross cons s t) = t’
+     >- (irule (cj 2 general_cross_reduce) >> art [] \\
+         Q.EXISTS_TAC ‘car’ >> rw [pair_operation_def]) >> Rewr)
+ >> RW_TAC std_ss [pair_operation_def]
+ >> qmatch_abbrev_tac ‘measure_space M’
+ >> ‘m_space M = general_cross cons X Y’
+      by simp [Abbr ‘M’, general_prod_measure_space]
+ >> ‘measurable_sets M = subsets (general_sigma cons (X,A) (Y,B))’
+      by simp [Abbr ‘M’, general_prod_measure_space]
+ >> ‘space (general_sigma cons (X,A) (Y,B)) = general_cross cons X Y’
+      by simp [general_sigma_def, SPACE_SIGMA]
+ >> fs [sigma_finite_measure_space_def]
+ >> MATCH_MP_TAC measure_space_eq
+ >> Q.EXISTS_TAC ‘(general_cross cons X Y,
+                   subsets (general_sigma cons (X,A) (Y,B)),
+                   m)’
+ >> simp [Abbr ‘M’, general_prod_measure_space_def]
+QED
+
 Theorem measure_space_prod_measure : (* was: measure_space_pair_measure *)
     !m1 m2. sigma_finite_measure_space m1 /\
             sigma_finite_measure_space m2 ==> measure_space (m1 CROSS m2)
 Proof
-    rpt STRIP_TAC
- >> Cases_on ‘m1’ >> Cases_on ‘r’
- >> rename1 ‘sigma_finite_measure_space (X,A,u)’
- >> Cases_on ‘m2’ >> Cases_on ‘r’
- >> rename1 ‘sigma_finite_measure_space (Y,B,v)’
- (* applying EXISTENCE_OF_PROD_MEASURE *)
- >> MP_TAC (Q.SPECL [‘X’, ‘Y’, ‘A’, ‘B’, ‘u’, ‘v’] EXISTENCE_OF_PROD_MEASURE)
- >> DISCH_THEN (MP_TAC o (Q.SPEC ‘\x. u (IMAGE FST x) * v (IMAGE SND x)’))
- >> Know ‘!s t. s IN A /\ t IN B ==>
-                (\x. u (IMAGE FST x) * v (IMAGE SND x)) (s CROSS t) = u s * v t’
- >- (rpt STRIP_TAC \\
-     fs [sigma_finite_measure_space_def] \\
-     Cases_on ‘s = {}’ >- (IMP_RES_TAC MEASURE_SPACE_POSITIVE >> fs [positive_def]) \\
-     Cases_on ‘t = {}’ >- (IMP_RES_TAC MEASURE_SPACE_POSITIVE >> fs [positive_def]) \\
-     Know ‘IMAGE FST (s CROSS t) = s’
-     >- (rw [Once EXTENSION] >> EQ_TAC >> RW_TAC std_ss [] >- art [] \\
-         Q.PAT_X_ASSUM ‘t <> {}’ (STRIP_ASSUME_TAC o
-                                  (REWRITE_RULE [GSYM MEMBER_NOT_EMPTY])) \\
-         rename1 ‘y IN t’ >> Q.EXISTS_TAC ‘(x,y)’ >> rw []) >> Rewr' \\
-     Know ‘IMAGE SND (s CROSS t) = t’
-     >- (rw [Once EXTENSION] >> EQ_TAC >> RW_TAC std_ss [] >- art [] \\
-         Q.PAT_X_ASSUM ‘t <> {}’ K_TAC \\
-         Q.PAT_X_ASSUM ‘s <> {}’ (STRIP_ASSUME_TAC o
-                                  (REWRITE_RULE [GSYM MEMBER_NOT_EMPTY])) \\
-         rename1 ‘y IN s’ >> Q.EXISTS_TAC ‘(y,x)’ >> rw []) >> Rewr)
- >> RW_TAC std_ss []
- >> ‘m_space ((X,A,u) CROSS (Y,B,v)) = X CROSS Y’ by rw [prod_measure_space_alt]
- >> ‘measurable_sets ((X,A,u) CROSS (Y,B,v)) =
-     subsets ((X,A) CROSS (Y,B))’ by rw [prod_measure_space_alt]
- >> Know ‘space ((X,A) CROSS (Y,B)) = X CROSS Y’
- >- (rw [prod_sigma_def] >> REWRITE_TAC [SPACE_SIGMA]) >> DISCH_TAC
- >> fs [sigma_finite_measure_space_def]
- >> MATCH_MP_TAC measure_space_eq
- >> Q.EXISTS_TAC ‘(X CROSS Y,subsets ((X,A) CROSS (Y,B)),m)’
- >> rw [prod_measure_space_alt]
+    rw [prod_measure_space_alt_general]
+ >> MATCH_MP_TAC measure_space_general_prod_measure
+ >> qexistsl_tac [‘FST’, ‘SND’]
+ >> simp [pair_operation_pair]
 QED
 
 (* ‘lborel_2d = lborel CROSS lborel’ doesn't hold *)
@@ -3818,7 +3953,1432 @@ QED
        (pos_fn_integral M1 (\x. pos_fn_integral M2 (\y. f (x,y))) =
         pos_fn_integral M2 (\y. pos_fn_integral M1 (\x. f (x,y)))): thm
  *)
-Theorem TONELLI : (* was: fubini (HVG concordia) *)
+Theorem tonelli_general :
+    !(cons :'a -> 'b -> 'c) car cdr X Y A B u v f.
+        pair_operation cons car cdr /\
+        sigma_finite_measure_space (X,A,u) /\
+        sigma_finite_measure_space (Y,B,v) /\
+        f IN measurable (general_sigma cons (X,A) (Y,B)) Borel /\
+        (!s. s IN general_cross cons X Y ==> 0 <= f s)
+       ==>
+        (!y. y IN Y ==> (\x. f (cons x y)) IN measurable (X,A) Borel) /\
+        (!x. x IN X ==> (\y. f (cons x y)) IN measurable (Y,B) Borel) /\
+        (\x. pos_fn_integral (Y,B,v)
+                             (\y. f (cons x y))) IN measurable (X,A) Borel /\
+        (\y. pos_fn_integral (X,A,u)
+                             (\x. f (cons x y))) IN measurable (Y,B) Borel /\
+        (pos_fn_integral (general_prod_measure_space cons (X,A,u) (Y,B,v)) f =
+         pos_fn_integral (Y,B,v)
+           (\y. pos_fn_integral (X,A,u) (\x. f (cons x y)))) /\
+        (pos_fn_integral (general_prod_measure_space cons (X,A,u) (Y,B,v)) f =
+         pos_fn_integral (X,A,u)
+           (\x. pos_fn_integral (Y,B,v) (\y. f (cons x y))))
+Proof
+    cheat
+ (*
+    rpt GEN_TAC >> STRIP_TAC
+ >> ‘measure_space (general_prod_measure_space cons (X,A,u) CROSS (Y,B,v))’
+      by METIS_TAC [measure_space_prod_measure]
+ (* preliminaries *)
+ >> Know ‘!i n. (0 :extreal) <= &i / 2 pow n’
+ >- (rpt GEN_TAC \\
+    ‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
+       by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
+    ‘?r. 0 < r /\ (2 pow n = Normal r)’
+       by METIS_TAC [lt_02, pow_pos_lt, extreal_cases, extreal_lt_eq,
+                     extreal_of_num_def] >> POP_ORW \\
+     MATCH_MP_TAC le_div >> rw [extreal_of_num_def, extreal_le_eq])
+ >> DISCH_TAC
+ >> Know ‘!i n. &i / 2 pow n <> PosInf /\ &i / 2 pow n <> NegInf’
+ >- (rpt GEN_TAC \\
+    ‘&i = Normal (&i)’ by METIS_TAC [extreal_of_num_def] >> POP_ORW \\
+     MATCH_MP_TAC div_not_infty \\
+     ONCE_REWRITE_TAC [EQ_SYM_EQ] >> MATCH_MP_TAC lt_imp_ne \\
+     MATCH_MP_TAC pow_pos_lt >> REWRITE_TAC [lt_02])
+ >> DISCH_TAC
+ (* applying EXISTENCE_OF_PROD_MEASURE *)
+ >> MP_TAC (Q.SPECL [‘X’, ‘Y’, ‘A’, ‘B’, ‘u’, ‘v’] EXISTENCE_OF_PROD_MEASURE)
+ >> DISCH_THEN (MP_TAC o (Q.SPEC ‘\x. u (IMAGE FST x) * v (IMAGE SND x)’))
+ >> Know ‘!s t. s IN A /\ t IN B ==>
+                (\x. u (IMAGE FST x) * v (IMAGE SND x)) (s CROSS t) = u s * v t’
+ >- (rpt STRIP_TAC \\
+     fs [sigma_finite_measure_space_def] \\
+     Cases_on ‘s = {}’ >- (IMP_RES_TAC MEASURE_SPACE_POSITIVE >> fs [positive_def]) \\
+     Cases_on ‘t = {}’ >- (IMP_RES_TAC MEASURE_SPACE_POSITIVE >> fs [positive_def]) \\
+     Know ‘IMAGE FST (s CROSS t) = s’
+     >- (rw [Once EXTENSION] >> EQ_TAC >> RW_TAC std_ss [] >- art [] \\
+         Q.PAT_X_ASSUM ‘t <> {}’ (STRIP_ASSUME_TAC o
+                                  (REWRITE_RULE [GSYM MEMBER_NOT_EMPTY])) \\
+         rename1 ‘y IN t’ >> Q.EXISTS_TAC ‘(x,y)’ >> rw []) >> Rewr' \\
+     Know ‘IMAGE SND (s CROSS t) = t’
+     >- (rw [Once EXTENSION] >> EQ_TAC >> RW_TAC std_ss [] >- art [] \\
+         Q.PAT_X_ASSUM ‘t <> {}’ K_TAC \\
+         Q.PAT_X_ASSUM ‘s <> {}’ (STRIP_ASSUME_TAC o
+                                  (REWRITE_RULE [GSYM MEMBER_NOT_EMPTY])) \\
+         rename1 ‘y IN s’ >> Q.EXISTS_TAC ‘(y,x)’ >> rw []) >> Rewr)
+ >> DISCH_TAC
+ >> ASM_SIMP_TAC std_ss []
+ >> STRIP_TAC
+ (* applying lemma_fn_seq_sup *)
+ >> MP_TAC (Q.SPECL [‘(X,A,u) CROSS (Y,B,v)’, ‘f’]
+                    (INST_TYPE [alpha |-> “:'a # 'b”] lemma_fn_seq_sup))
+ >> ‘m_space ((X,A,u) CROSS (Y,B,v)) = X CROSS Y’ by rw [prod_measure_space_alt]
+ >> ASM_REWRITE_TAC [] >> DISCH_TAC
+ >> ‘measurable_sets ((X,A,u) CROSS (Y,B,v)) =
+       subsets ((X,A) CROSS (Y,B))’ by rw [prod_measure_space_alt]
+ >> Know ‘space ((X,A) CROSS (Y,B)) = X CROSS Y’
+ >- (rw [prod_sigma_def] >> REWRITE_TAC [SPACE_SIGMA]) >> DISCH_TAC
+ >> fs [sigma_finite_measure_space_def]
+ >> ‘sigma_algebra (X,A) /\ sigma_algebra (Y,B)’
+      by METIS_TAC [measure_space_def, space_def, subsets_def, m_space_def,
+                    measurable_sets_def]
+ >> Know ‘sigma_algebra ((X,A) CROSS (Y,B))’
+ >- (MATCH_MP_TAC SIGMA_ALGEBRA_PROD_SIGMA \\
+     fs [sigma_algebra_def, algebra_def]) >> DISCH_TAC
+ (* common measurable sets inside fn_seq *)
+ >> Q.ABBREV_TAC ‘s = \n k. {x | x IN X CROSS Y /\ &k / 2 pow n <= f x /\
+                                 f x < (&k + 1) / 2 pow n}’
+ >> Know ‘!n i. s n i IN subsets ((X,A) CROSS (Y,B))’
+ >- (rpt GEN_TAC \\
+     Know ‘s n i = ({x | &i / 2 pow n <= f x} INTER (X CROSS Y)) INTER
+                   ({x | f x < (&i + 1) / 2 pow n} INTER (X CROSS Y))’
+     >- (rw [Abbr ‘s’, Once EXTENSION, IN_INTER] \\
+         EQ_TAC >> RW_TAC std_ss []) >> Rewr' \\
+     MATCH_MP_TAC SIGMA_ALGEBRA_INTER \\
+     MP_TAC (Q.SPECL [‘f’, ‘(X,A) CROSS (Y,B)’]
+                     (INST_TYPE [alpha |-> “:'a # 'b”] IN_MEASURABLE_BOREL_ALL)) >> rw [])
+ >> DISCH_TAC
+ >> Q.ABBREV_TAC ‘t = \n. {x | x IN X CROSS Y /\ 2 pow n <= f x}’
+ >> Know ‘!n. t n IN subsets ((X,A) CROSS (Y,B))’
+ >- (RW_TAC std_ss [Abbr ‘t’] \\
+    ‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
+        by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
+    ‘?r. 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+    ‘{x | x IN X CROSS Y /\ Normal r <= f x} = {x | Normal r <= f x} INTER (X CROSS Y)’
+        by SET_TAC [] >> POP_ORW \\
+     MP_TAC (Q.SPECL [‘f’, ‘(X,A) CROSS (Y,B)’]
+                     (INST_TYPE [alpha |-> “:'a # 'b”] IN_MEASURABLE_BOREL_ALL)) >> rw [])
+ >> DISCH_TAC
+ (* important properties of fn_seq *)
+ >> Know ‘!n y. y IN Y /\ (!s. s IN subsets ((X,A) CROSS (Y,B)) ==>
+                              (\x. indicator_fn s (x,y)) IN measurable (X,A) Borel) ==>
+               (\x. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y)) IN Borel_measurable (X,A)’
+ >- (rpt STRIP_TAC \\
+     ASM_SIMP_TAC std_ss [fn_seq_def] \\
+    ‘!k. {x | x IN X CROSS Y /\ &k / 2 pow n <= f x /\ f x < (&k + 1) / 2 pow n} = s n k’
+        by METIS_TAC [] >> POP_ORW \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_ADD \\
+     qexistsl_tac [‘\x. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) (x,y))
+                              (count (4 ** n))’,
+                   ‘\x. 2 pow n * indicator_fn (t n) (x,y)’] \\
+     ASM_SIMP_TAC std_ss [space_def] \\
+     CONJ_TAC (* Borel_measurable #1 *)
+     >- (MATCH_MP_TAC (INST_TYPE [beta |-> “:num”] IN_MEASURABLE_BOREL_SUM) \\
+         qexistsl_tac [‘\k x. &k / 2 pow n * indicator_fn (s n k) (x,y)’,
+                       ‘count (4 ** n)’] \\
+         ASM_SIMP_TAC std_ss [FINITE_COUNT, space_def] \\
+         reverse CONJ_TAC
+         >- (rpt GEN_TAC >> STRIP_TAC \\
+             MATCH_MP_TAC pos_not_neginf \\
+             MATCH_MP_TAC le_mul >> art [INDICATOR_FN_POS]) \\
+         RW_TAC std_ss [IN_COUNT] \\
+        ‘?z. &i / 2 pow n = Normal z’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+         MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> rw [] \\
+         qexistsl_tac [‘\x. indicator_fn (s n i) (x,y)’, ‘z’] >> rw []) \\
+     reverse CONJ_TAC
+     >- (GEN_TAC >> DISCH_TAC >> DISJ1_TAC \\
+         CONJ_TAC >> MATCH_MP_TAC pos_not_neginf >| (* 2 subgoals *)
+         [ (* goal 1 (of 2) *)
+           irule EXTREAL_SUM_IMAGE_POS \\
+           reverse CONJ_TAC >- REWRITE_TAC [FINITE_COUNT] \\
+           Q.X_GEN_TAC ‘i’ >> rw [] \\
+           MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS],
+           (* goal 2 (of 2) *)
+           MATCH_MP_TAC le_mul >> REWRITE_TAC [INDICATOR_FN_POS] \\
+           MATCH_MP_TAC pow_pos_le >> REWRITE_TAC [le_02] ]) \\
+    ‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
+        by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
+    ‘?r. 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> rw [] \\
+     qexistsl_tac [‘\x. indicator_fn (t n) (x,y)’, ‘r’] >> rw [])
+ >> DISCH_TAC
+ >> Know ‘!n x. x IN X /\
+               (!s. s IN subsets ((X,A) CROSS (Y,B)) ==>
+                     (\y. indicator_fn s (x,y)) IN measurable (Y,B) Borel) ==>
+               (\y. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y)) IN Borel_measurable (Y,B)’
+ >- (rpt STRIP_TAC \\
+     ASM_SIMP_TAC std_ss [fn_seq_def] \\
+    ‘!k. {x | x IN X CROSS Y /\ &k / 2 pow n <= f x /\ f x < (&k + 1) / 2 pow n} = s n k’
+        by METIS_TAC [] >> POP_ORW \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_ADD \\
+     qexistsl_tac [‘\y. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) (x,y))
+                              (count (4 ** n))’,
+                   ‘\y. 2 pow n * indicator_fn (t n) (x,y)’] \\
+     ASM_SIMP_TAC std_ss [space_def] \\
+     CONJ_TAC (* Borel_measurable #1 *)
+     >- (MATCH_MP_TAC (INST_TYPE [beta |-> “:num”] IN_MEASURABLE_BOREL_SUM) \\
+         qexistsl_tac [‘\k y. &k / 2 pow n * indicator_fn (s n k) (x,y)’,
+                       ‘count (4 ** n)’] \\
+         ASM_SIMP_TAC std_ss [FINITE_COUNT, space_def] \\
+         reverse CONJ_TAC
+         >- (rpt GEN_TAC >> STRIP_TAC \\
+             MATCH_MP_TAC pos_not_neginf \\
+             MATCH_MP_TAC le_mul >> art [INDICATOR_FN_POS]) \\
+         RW_TAC std_ss [IN_COUNT] \\
+        ‘?z. &i / 2 pow n = Normal z’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+         MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> rw [] \\
+         qexistsl_tac [‘\y. indicator_fn (s n i) (x,y)’, ‘z’] >> rw []) \\
+     reverse CONJ_TAC
+     >- (GEN_TAC >> DISCH_TAC >> DISJ1_TAC \\
+         CONJ_TAC >> MATCH_MP_TAC pos_not_neginf >| (* 2 subgoals *)
+         [ (* goal 1 (of 2) *)
+           irule EXTREAL_SUM_IMAGE_POS \\
+           reverse CONJ_TAC >- REWRITE_TAC [FINITE_COUNT] \\
+           Q.X_GEN_TAC ‘i’ >> rw [] \\
+           MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS],
+           (* goal 2 (of 2) *)
+           MATCH_MP_TAC le_mul >> REWRITE_TAC [INDICATOR_FN_POS] \\
+           MATCH_MP_TAC pow_pos_le >> REWRITE_TAC [le_02] ]) \\
+    ‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
+        by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
+    ‘?r. 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> rw [] \\
+     qexistsl_tac [‘\y. indicator_fn (t n) (x,y)’, ‘r’] >> rw [])
+ >> DISCH_TAC
+ (* shared property by goal 3 and 5/6 *)
+ >> Know ‘!n. (\x. pos_fn_integral (Y,B,v) (\y. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y)))
+              IN Borel_measurable (X,A)’
+ >- (RW_TAC std_ss [fn_seq_def] \\
+    ‘!k. {x | x IN X CROSS Y /\ &k / 2 pow n <= f x /\ f x < (&k + 1) / 2 pow n} = s n k’
+        by METIS_TAC [] >> POP_ORW \\
+     MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
+                                (Q.SPEC ‘(X,A,u)’ IN_MEASURABLE_BOREL_EQ)) >> BETA_TAC \\
+     Q.EXISTS_TAC ‘\x. pos_fn_integral (Y,B,v)
+                         (\y. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) (x,y))
+                                    (count (4 ** n))) +
+                       pos_fn_integral (Y,B,v)
+                         (\y. 2 pow n *
+                              indicator_fn {x | x IN X CROSS Y /\ 2 pow n <= f x} (x,y))’ \\
+     ASM_SIMP_TAC std_ss [] \\
+     Know ‘!x. x IN X ==> (\y. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) (x,y))
+                                     (count (4 ** n))) IN measurable (Y,B) Borel’
+     >- (rpt STRIP_TAC \\
+         MATCH_MP_TAC ((INST_TYPE [alpha |-> beta] o
+                        INST_TYPE [beta |-> “:num”]) IN_MEASURABLE_BOREL_SUM) >> simp [] \\
+         qexistsl_tac [‘\k y. &k / 2 pow n * indicator_fn (s n k) (x,y)’,
+                       ‘count (4 ** n)’] >> simp [] \\
+         CONJ_TAC
+         >- (rpt STRIP_TAC \\
+            ‘?z. &i / 2 pow n = Normal z’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+             MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> rw [] \\
+             qexistsl_tac [‘\y. indicator_fn (s n i) (x,y)’, ‘z’] >> rw []) \\
+         qx_genl_tac [‘i’, ‘y’] >> STRIP_TAC \\
+         MATCH_MP_TAC pos_not_neginf \\
+         MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) >> DISCH_TAC \\
+     Know ‘!x. x IN X ==>
+              (\y. 2 pow n * indicator_fn (t n) (x,y)) IN measurable (Y,B) Borel’
+     >- (rpt STRIP_TAC \\
+        ‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
+            by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
+        ‘?r. 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+         MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL \\
+         ASM_SIMP_TAC std_ss [space_def] \\
+         qexistsl_tac [‘\y. indicator_fn (t n) (x,y)’, ‘r’] >> rw []) \\
+     DISCH_TAC \\
+     RW_TAC std_ss []
+     >- (HO_MATCH_MP_TAC pos_fn_integral_add \\
+         ASM_SIMP_TAC std_ss [m_space_def, measurable_sets_def] \\
+         CONJ_TAC >- (rpt STRIP_TAC \\
+                      MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> rw [IN_COUNT] \\
+                      MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+         rpt STRIP_TAC \\
+         MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS, pow_pos_le]) \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_ADD \\
+     qexistsl_tac [‘\x. pos_fn_integral (Y,B,v)
+                          (\y. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) (x,y))
+                              (count (4 ** n)))’,
+                   ‘\x. pos_fn_integral (Y,B,v)
+                          (\y. 2 pow n * indicator_fn (t n) (x,y))’] \\
+     ASM_SIMP_TAC std_ss [space_def] \\
+     REWRITE_TAC [CONJ_ASSOC] >> reverse CONJ_TAC
+     >- (GEN_TAC >> DISCH_TAC >> DISJ1_TAC \\
+         CONJ_TAC >> MATCH_MP_TAC pos_not_neginf >|
+         [ (* goal 1 (of 2) *)
+           MATCH_MP_TAC pos_fn_integral_pos >> simp [] \\
+           Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+           MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> simp [] \\
+           Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+           MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS],
+           (* goal 2 (of 2) *)
+           MATCH_MP_TAC pos_fn_integral_pos >> simp [] \\
+           Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+           MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS, pow_pos_le] ]) \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
+                                    (Q.SPEC ‘(X,A,u)’ IN_MEASURABLE_BOREL_EQ)) \\
+         BETA_TAC \\
+         Q.EXISTS_TAC ‘\x. SIGMA (\k. pos_fn_integral (Y,B,v)
+                                     (\y. &k / 2 pow n * indicator_fn (s n k) (x,y)))
+                                 (count (4 ** n))’ \\
+         reverse CONJ_TAC
+         >- (MATCH_MP_TAC ((INST_TYPE [alpha |-> beta] o
+                            INST_TYPE [beta |-> “:num”]) IN_MEASURABLE_BOREL_SUM) \\
+             simp [] \\
+             qexistsl_tac [‘\k x. pos_fn_integral (Y,B,v)
+                                    (\y. &k / 2 pow n * indicator_fn (s n k) (x,y))’,
+                           ‘count (4 ** n)’] >> simp [] \\
+             CONJ_TAC
+             >- (rpt STRIP_TAC \\
+                ‘?z. 0 <= z /\ (&i / 2 pow n = Normal z)’
+                   by METIS_TAC [extreal_cases, extreal_le_eq, extreal_of_num_def] \\
+                 POP_ORW \\
+                 MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
+                                            (Q.SPEC ‘(X,A,u)’ IN_MEASURABLE_BOREL_EQ)) >> BETA_TAC \\
+                 Q.EXISTS_TAC ‘\x. Normal z * pos_fn_integral (Y,B,v)
+                                                (\y. indicator_fn (s n i) (x,y))’ >> BETA_TAC \\
+                 CONJ_TAC >- (rpt STRIP_TAC \\
+                              HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [INDICATOR_FN_POS]) \\
+                 MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> rw [] \\
+                 qexistsl_tac [‘\x. pos_fn_integral (Y,B,v) (\y. indicator_fn (s n i) (x,y))’,
+                               ‘z’] >> rw []) \\
+             qx_genl_tac [‘i’, ‘x’] >> STRIP_TAC \\
+             MATCH_MP_TAC pos_not_neginf \\
+             MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
+             MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+         RW_TAC std_ss [] \\
+         Q.ABBREV_TAC ‘g = \k y. &k / 2 pow n * indicator_fn (s n k) (x,y)’ \\
+         MP_TAC (Q.SPECL [‘(Y,B,v)’, ‘g’, ‘count (4 ** n)’]
+                         ((INST_TYPE [alpha |-> beta] o
+                           INST_TYPE [beta |-> “:num”]) pos_fn_integral_sum)) \\
+         simp [Abbr ‘g’] \\
+         Know ‘!i. i < 4 ** n ==>
+                   !y. y IN Y ==> 0 <= &i / 2 pow n * indicator_fn (s n i) (x,y)’
+         >- (rpt STRIP_TAC >> MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+         Suff ‘!i. i < 4 ** n ==>
+                   (\y. &i / 2 pow n * indicator_fn (s n i) (x,y))
+                        IN Borel_measurable (Y,B)’
+         >- RW_TAC std_ss [] \\
+         rpt STRIP_TAC \\
+        ‘?z. &i / 2 pow n = Normal z’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+         MATCH_MP_TAC (INST_TYPE [alpha |-> beta] IN_MEASURABLE_BOREL_CMUL) >> simp [] \\
+         qexistsl_tac [‘\y. indicator_fn (s n i) (x,y)’, ‘z’] >> rw []) \\
+    ‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
+        by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
+    ‘?r. 0 <= r /\ (2 pow n = Normal r)’
+        by METIS_TAC [extreal_cases, pow_pos_le, le_02, extreal_le_eq, extreal_of_num_def] \\
+     POP_ORW \\
+     MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
+                                (Q.SPEC ‘(X,A,u)’ IN_MEASURABLE_BOREL_EQ)) >> BETA_TAC \\
+     Q.EXISTS_TAC ‘\x. Normal r * (pos_fn_integral (Y,B,v) (\y. indicator_fn (t n) (x,y)))’ \\
+     BETA_TAC \\
+     CONJ_TAC >- (rpt STRIP_TAC \\
+                  HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [INDICATOR_FN_POS]) \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> simp [] \\
+     qexistsl_tac [‘\x. pos_fn_integral (Y,B,v) (\y. indicator_fn (t n) (x,y))’, ‘r’] >> rw [])
+ >> DISCH_TAC
+ (* shared property by goal 4 and 5/6 *)
+ >> Know ‘!n. (\y. pos_fn_integral (X,A,u) (\x. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y)))
+              IN Borel_measurable (Y,B)’
+ >- (RW_TAC std_ss [fn_seq_def] \\
+    ‘!k. {x | x IN X CROSS Y /\ &k / 2 pow n <= f x /\ f x < (&k + 1) / 2 pow n} = s n k’
+        by METIS_TAC [] >> POP_ORW \\
+     MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
+                                (Q.SPEC ‘(Y,B,v)’ IN_MEASURABLE_BOREL_EQ)) >> BETA_TAC \\
+     Q.EXISTS_TAC ‘\y. pos_fn_integral (X,A,u)
+                         (\x. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) (x,y))
+                                    (count (4 ** n))) +
+                       pos_fn_integral (X,A,u)
+                         (\x. 2 pow n * indicator_fn (t n) (x,y))’ \\
+     ASM_SIMP_TAC std_ss [] \\
+     Know ‘!y. y IN Y ==> (\x. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) (x,y))
+                                     (count (4 ** n))) IN measurable (X,A) Borel’
+     >- (rpt STRIP_TAC \\
+         MATCH_MP_TAC (INST_TYPE [beta |-> “:num”] IN_MEASURABLE_BOREL_SUM) >> simp [] \\
+         qexistsl_tac [‘\k x. &k / 2 pow n * indicator_fn (s n k) (x,y)’,
+                       ‘count (4 ** n)’] >> simp [] \\
+         CONJ_TAC
+         >- (rpt STRIP_TAC \\
+            ‘?z. &i / 2 pow n = Normal z’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+             MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> rw [] \\
+             qexistsl_tac [‘\x. indicator_fn (s n i) (x,y)’, ‘z’] >> rw []) \\
+         qx_genl_tac [‘i’, ‘x’] >> STRIP_TAC \\
+         MATCH_MP_TAC pos_not_neginf \\
+         MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+     DISCH_TAC \\
+     Know ‘!y. y IN Y ==> (\x. 2 pow n * indicator_fn (t n) (x,y)) IN measurable (X,A) Borel’
+     >- (rpt STRIP_TAC \\
+        ‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
+            by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
+        ‘?r. 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+         MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> rw [] \\
+         qexistsl_tac [‘\x. indicator_fn (t n) (x,y)’, ‘r’] >> rw []) >> DISCH_TAC \\
+     RW_TAC std_ss []
+     >- (HO_MATCH_MP_TAC pos_fn_integral_add \\
+         ASM_SIMP_TAC std_ss [m_space_def, measurable_sets_def] \\
+         CONJ_TAC >- (rpt STRIP_TAC \\
+                      MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> rw [IN_COUNT] \\
+                      MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+         rpt STRIP_TAC \\
+         MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS, pow_pos_le]) \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_ADD \\
+     qexistsl_tac [‘\y. pos_fn_integral (X,A,u)
+                          (\x. SIGMA (\k. &k / 2 pow n *
+                                          indicator_fn (s n k) (x,y)) (count (4 ** n)))’,
+                   ‘\y. pos_fn_integral (X,A,u)
+                          (\x. 2 pow n * indicator_fn (t n) (x,y))’] \\
+     ASM_SIMP_TAC std_ss [space_def] \\
+     REWRITE_TAC [CONJ_ASSOC] >> reverse CONJ_TAC
+     >- (Q.X_GEN_TAC ‘y’ >> DISCH_TAC >> DISJ1_TAC \\
+         CONJ_TAC >> MATCH_MP_TAC pos_not_neginf >|
+         [ (* goal 4.1 (of 2) *)
+           MATCH_MP_TAC pos_fn_integral_pos >> simp [] \\
+           Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+           MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> simp [] \\
+           Q.X_GEN_TAC ‘i’ >> DISCH_TAC \\
+           MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS],
+           (* goal 4.2 (of 2) *)
+           MATCH_MP_TAC pos_fn_integral_pos >> simp [] \\
+           Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+           MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS, pow_pos_le] ]) \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
+                                    (Q.SPEC ‘(Y,B,v)’ IN_MEASURABLE_BOREL_EQ)) >> BETA_TAC \\
+         Q.EXISTS_TAC ‘\y. SIGMA (\k. pos_fn_integral (X,A,u)
+                                        (\x. &k / 2 pow n * indicator_fn (s n k) (x,y)))
+                                 (count (4 ** n))’ \\
+         reverse CONJ_TAC
+         >- (MATCH_MP_TAC (INST_TYPE [beta |-> “:num”] IN_MEASURABLE_BOREL_SUM) >> simp [] \\
+             qexistsl_tac [‘\k y. pos_fn_integral (X,A,u)
+                                    (\x. &k / 2 pow n * indicator_fn (s n k) (x,y))’,
+                           ‘count (4 ** n)’] >> simp [] \\
+             CONJ_TAC
+             >- (rpt STRIP_TAC \\
+                ‘?z. 0 <= z /\ (&i / 2 pow n = Normal z)’
+                   by METIS_TAC [extreal_cases, extreal_le_eq, extreal_of_num_def] \\
+                 POP_ORW \\
+                 MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
+                                (Q.SPEC ‘(Y,B,v)’ IN_MEASURABLE_BOREL_EQ)) \\
+                 BETA_TAC \\
+                 Q.EXISTS_TAC ‘\y. Normal z * pos_fn_integral (X,A,u)
+                                                (\x. indicator_fn (s n i) (x,y))’ \\
+                 BETA_TAC \\
+                 CONJ_TAC >- (Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+                              HO_MATCH_MP_TAC pos_fn_integral_cmul \\
+                              rw [INDICATOR_FN_POS]) \\
+                 MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> rw [] \\
+                 qexistsl_tac [‘\y. pos_fn_integral (X,A,u)
+                                     (\x. indicator_fn (s n i) (x,y))’,
+                               ‘z’] >> rw []) \\
+             qx_genl_tac [‘i’, ‘y’] >> STRIP_TAC \\
+             MATCH_MP_TAC pos_not_neginf \\
+             MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
+             MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+         Q.X_GEN_TAC ‘y’ >> STRIP_TAC \\
+         Q.ABBREV_TAC ‘g = \k x. &k / 2 pow n * indicator_fn (s n k) (x,y)’ \\
+         MP_TAC (Q.SPECL [‘(X,A,u)’, ‘g’, ‘count (4 ** n)’]
+                         (INST_TYPE [beta |-> “:num”] pos_fn_integral_sum)) \\
+         simp [Abbr ‘g’] \\
+         Know ‘!i. i < 4 ** n ==>
+                   !x. x IN X ==> 0 <= &i / 2 pow n * indicator_fn (s n i) (x,y)’
+         >- (rpt STRIP_TAC >> MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+         Suff ‘!i. i < 4 ** n ==>
+                   (\x. &i / 2 pow n * indicator_fn (s n i) (x,y)) IN Borel_measurable (X,A)’
+         >- RW_TAC std_ss [] \\
+         rpt STRIP_TAC \\
+        ‘?z. &i / 2 pow n = Normal z’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+         MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> simp [] \\
+         qexistsl_tac [‘\x. indicator_fn (s n i) (x,y)’, ‘z’] >> rw []) \\
+    ‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
+        by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
+    ‘?r. 0 <= r /\ (2 pow n = Normal r)’
+        by METIS_TAC [extreal_cases, pow_pos_le, le_02, extreal_le_eq, extreal_of_num_def] \\
+     POP_ORW \\
+     MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
+                                (Q.SPEC ‘(Y,B,v)’ IN_MEASURABLE_BOREL_EQ)) >> BETA_TAC \\
+     Q.EXISTS_TAC ‘\y. Normal r * (pos_fn_integral (X,A,u) (\x. indicator_fn (t n) (x,y)))’ \\
+     BETA_TAC \\
+     CONJ_TAC >- (Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+                  HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [INDICATOR_FN_POS]) \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> simp [] \\
+     qexistsl_tac [‘\y. pos_fn_integral (X,A,u) (\x. indicator_fn (t n) (x,y))’, ‘r’] >> rw [])
+ >> DISCH_TAC
+ (* stage work *)
+ >> RW_TAC std_ss [] (* 6 subgoals *)
+ >| [ (* goal 1 (of 6) *)
+      MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
+                                 (Q.SPEC ‘(X,A,u)’ IN_MEASURABLE_BOREL_EQ)) \\
+      Q.EXISTS_TAC ‘\x. sup (IMAGE (\n. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y))
+                                   UNIV)’ >> rw [] \\
+      MATCH_MP_TAC IN_MEASURABLE_BOREL_MONO_SUP \\
+      Q.EXISTS_TAC ‘\n x. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y)’ >> rw [] \\
+      irule (SIMP_RULE std_ss [ext_mono_increasing_def]
+                              lemma_fn_seq_mono_increasing) >> rw [],
+      (* goal 2 (of 6), symmetric with goal 1 *)
+      MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
+                     (Q.SPEC ‘(Y,B,v)’
+                       (INST_TYPE [alpha |-> beta] IN_MEASURABLE_BOREL_EQ))) \\
+      Q.EXISTS_TAC ‘\y. sup (IMAGE (\n. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y))
+                                   UNIV)’ >> rw [] \\
+      MATCH_MP_TAC IN_MEASURABLE_BOREL_MONO_SUP \\
+      Q.EXISTS_TAC ‘\n y. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y)’ >> rw [] \\
+      irule (SIMP_RULE std_ss [ext_mono_increasing_def]
+                              lemma_fn_seq_mono_increasing) >> rw [],
+      (* goal 3 (of 6) *)
+      MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
+                                 (Q.SPEC ‘(X,A,u)’ IN_MEASURABLE_BOREL_EQ)) \\
+      BETA_TAC \\
+      Q.EXISTS_TAC ‘\x. pos_fn_integral (Y,B,v)
+                          (\y. sup (IMAGE (\n. fn_seq ((X,A,u) CROSS (Y,B,v))
+                                               f n (x,y)) UNIV))’ >> rw []
+      >- (MATCH_MP_TAC pos_fn_integral_cong >> rw []) \\
+      MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
+                                 (Q.SPEC ‘(X,A,u)’ IN_MEASURABLE_BOREL_EQ)) \\
+      BETA_TAC \\
+      Q.EXISTS_TAC ‘\x. sup (IMAGE (\n. pos_fn_integral (Y,B,v)
+                                          (\y. fn_seq ((X,A,u) CROSS (Y,B,v))
+                                               f n (x,y))) UNIV)’ >> rw []
+      >- (HO_MATCH_MP_TAC lebesgue_monotone_convergence \\
+          simp [lemma_fn_seq_positive, lemma_fn_seq_mono_increasing]) \\
+      MATCH_MP_TAC IN_MEASURABLE_BOREL_MONO_SUP >> simp [] \\
+      Q.EXISTS_TAC ‘\n x. pos_fn_integral (Y,B,v)
+                            (\y. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y))’ \\
+      RW_TAC std_ss [] \\
+      MATCH_MP_TAC pos_fn_integral_mono >> simp [lemma_fn_seq_positive] \\
+      Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+      irule (SIMP_RULE std_ss [ext_mono_increasing_def]
+                              lemma_fn_seq_mono_increasing) >> rw [],
+      (* goal 4 (of 6), symmetric with goal 3 *)
+      MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
+                                 (Q.SPEC ‘(Y,B,b)’ IN_MEASURABLE_BOREL_EQ)) \\
+      BETA_TAC \\
+      Q.EXISTS_TAC ‘\y. pos_fn_integral (X,A,u)
+                          (\x. sup (IMAGE (\n. fn_seq ((X,A,u) CROSS (Y,B,v))
+                                               f n (x,y)) UNIV))’ >> rw []
+      >- (MATCH_MP_TAC pos_fn_integral_cong >> rw []) \\
+      MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
+                                 (Q.SPEC ‘(Y,B,v)’ IN_MEASURABLE_BOREL_EQ)) \\
+      BETA_TAC \\
+      Q.EXISTS_TAC ‘\y. sup (IMAGE (\n. pos_fn_integral (X,A,u)
+                                          (\x. fn_seq ((X,A,u) CROSS (Y,B,v))
+                                               f n (x,y))) UNIV)’ >> rw []
+      >- (HO_MATCH_MP_TAC lebesgue_monotone_convergence \\
+          simp [lemma_fn_seq_positive, lemma_fn_seq_mono_increasing]) \\
+      MATCH_MP_TAC IN_MEASURABLE_BOREL_MONO_SUP >> simp [] \\
+      Q.EXISTS_TAC ‘\n y. pos_fn_integral (X,A,u)
+                            (\x. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y))’ \\
+      ASM_SIMP_TAC std_ss [] \\
+      qx_genl_tac [‘n’, ‘y’] >> DISCH_TAC \\
+      MATCH_MP_TAC pos_fn_integral_mono >> simp [lemma_fn_seq_positive] \\
+      Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+      irule (SIMP_RULE std_ss [ext_mono_increasing_def]
+                              lemma_fn_seq_mono_increasing) >> rw [],
+      (* goal 5 (of 6) *)
+      Know ‘pos_fn_integral ((X,A,u) CROSS (Y,B,v)) f =
+            pos_fn_integral ((X,A,u) CROSS (Y,B,v))
+              (\x. sup (IMAGE (\n. fn_seq ((X,A,u) CROSS (Y,B,v)) f n x) UNIV))’
+      >- (MATCH_MP_TAC pos_fn_integral_cong >> simp []) >> Rewr' \\
+      Know ‘pos_fn_integral ((X,A,u) CROSS (Y,B,v))
+              (\x. sup (IMAGE (\n. fn_seq ((X,A,u) CROSS (Y,B,v)) f n x) UNIV)) =
+            sup (IMAGE (\n. pos_fn_integral ((X,A,u) CROSS (Y,B,v))
+                              (\z. fn_seq ((X,A,u) CROSS (Y,B,v)) f n z)) UNIV)’
+      >- (HO_MATCH_MP_TAC lebesgue_monotone_convergence >> simp [] \\
+          REWRITE_TAC [CONJ_ASSOC] (* easier goals first *) \\
+          reverse CONJ_TAC (* mono_increasing *)
+          >- (rpt STRIP_TAC >> MATCH_MP_TAC lemma_fn_seq_mono_increasing \\
+              FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+          reverse CONJ_TAC (* positive *)
+          >- (rpt STRIP_TAC >> MATCH_MP_TAC lemma_fn_seq_positive \\
+              FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+          RW_TAC std_ss [fn_seq_def] \\
+         ‘(X CROSS Y,subsets ((X,A) CROSS (Y,B))) = (X,A) CROSS (Y,B)’
+            by METIS_TAC [SPACE] >> POP_ORW \\
+          MATCH_MP_TAC IN_MEASURABLE_BOREL_ADD \\
+          ASM_SIMP_TAC std_ss [space_def] \\
+          qexistsl_tac [‘\z. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) z)
+                            (count (4 ** n))’,
+                        ‘\z. 2 pow n * indicator_fn (t n) z’] \\
+          ASM_SIMP_TAC std_ss [CONJ_ASSOC] \\
+          reverse CONJ_TAC (* nonnegative *)
+          >- (Q.X_GEN_TAC ‘z’ >> DISCH_TAC >> DISJ1_TAC \\
+              CONJ_TAC >> MATCH_MP_TAC pos_not_neginf >| (* 2 subgoals *)
+              [ (* goal 5.1 (of 2) *)
+                MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> rw [] \\
+                MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS],
+                (* goal 5.2 (of 2) *)
+                MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS, pow_pos_le] ]) \\
+          CONJ_TAC (* Borel_measurable #1 *)
+          >- (MATCH_MP_TAC (INST_TYPE [beta |-> “:num”] IN_MEASURABLE_BOREL_SUM) \\
+              ASM_SIMP_TAC std_ss [space_def] \\
+              qexistsl_tac [‘\k z. &k / 2 pow n * indicator_fn (s n k) z’,
+                            ‘count (4 ** n)’] >> simp [] \\
+              reverse CONJ_TAC
+              >- (qx_genl_tac [‘i’, ‘z’] >> STRIP_TAC \\
+                  MATCH_MP_TAC pos_not_neginf \\
+                  MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+              rpt STRIP_TAC \\
+             ‘?r. &i / 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+              MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL_INDICATOR >> rw []) \\
+         ‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
+             by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
+         ‘?r. 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+          MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL_INDICATOR >> rw []) >> Rewr' \\
+      Know ‘pos_fn_integral (Y,B,v) (\y. pos_fn_integral (X,A,u) (\x. f (x,y))) =
+            pos_fn_integral (Y,B,v)
+              (\y. pos_fn_integral (X,A,u)
+                     (\x. sup (IMAGE (\n. fn_seq ((X,A,u) CROSS (Y,B,v))
+                                          f n (x,y)) UNIV)))’
+      >- (MATCH_MP_TAC pos_fn_integral_cong >> simp [] \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw []) \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw []) \\
+          Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+          MATCH_MP_TAC pos_fn_integral_cong >> simp []) >> Rewr' \\
+      Know ‘pos_fn_integral (Y,B,v)
+              (\y. pos_fn_integral (X,A,u)
+                     (\x. sup (IMAGE (\n. fn_seq ((X,A,u) CROSS (Y,B,v))
+                                          f n (x,y)) UNIV))) =
+            pos_fn_integral (Y,B,v)
+              (\y. sup (IMAGE (\n. pos_fn_integral (X,A,u)
+                                     (\x. fn_seq ((X,A,u) CROSS (Y,B,v))
+                                          f n (x,y))) UNIV))’
+      >- (MATCH_MP_TAC pos_fn_integral_cong >> simp [] \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw []) \\
+          CONJ_TAC
+          >- (Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+              rw [le_sup', IN_IMAGE, IN_UNIV] \\
+              MATCH_MP_TAC le_trans \\
+              Q.EXISTS_TAC ‘pos_fn_integral (X,A,u)
+                              (\x. fn_seq ((X,A,u) CROSS (Y,B,v)) f 0 (x,y))’ \\
+              CONJ_TAC >- (MATCH_MP_TAC pos_fn_integral_pos \\
+                           rw [lemma_fn_seq_positive]) \\
+              POP_ASSUM MATCH_MP_TAC >> Q.EXISTS_TAC ‘0’ >> REWRITE_TAC []) \\
+          Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+          HO_MATCH_MP_TAC lebesgue_monotone_convergence \\
+          simp [lemma_fn_seq_positive, lemma_fn_seq_mono_increasing]) >> Rewr' \\
+      Know ‘pos_fn_integral (Y,B,v)
+              (\y. sup (IMAGE (\n. pos_fn_integral (X,A,u)
+                                     (\x. fn_seq ((X,A,u) CROSS (Y,B,v))
+                                          f n (x,y))) UNIV)) =
+            sup (IMAGE (\n. pos_fn_integral (Y,B,v)
+                              (\y. pos_fn_integral (X,A,u)
+                                     (\x. fn_seq ((X,A,u) CROSS (Y,B,v))
+                                          f n (x,y)))) UNIV)’
+      >- (HO_MATCH_MP_TAC lebesgue_monotone_convergence >> simp [] \\
+          CONJ_TAC >- (rpt STRIP_TAC >> MATCH_MP_TAC pos_fn_integral_pos \\
+                       simp [lemma_fn_seq_positive]) \\
+          RW_TAC std_ss [ext_mono_increasing_def] \\
+          MATCH_MP_TAC pos_fn_integral_mono >> simp [lemma_fn_seq_positive] \\
+          rpt STRIP_TAC \\
+          irule (SIMP_RULE std_ss [ext_mono_increasing_def]
+                                  lemma_fn_seq_mono_increasing) >> art [] \\
+          FIRST_X_ASSUM MATCH_MP_TAC >> rw []) >> Rewr' \\
+      Suff ‘!n. pos_fn_integral (Y,B,v)
+                  (\y. pos_fn_integral (X,A,u) (\x. fn_seq ((X,A,u) CROSS (Y,B,v))
+                                                    f n (x,y))) =
+                pos_fn_integral ((X,A,u) CROSS (Y,B,v))
+                  (\z. fn_seq ((X,A,u) CROSS (Y,B,v)) f n z)’ >- rw [] \\
+   (* ‘sup’ disappeared now *)
+      GEN_TAC >> ASM_SIMP_TAC std_ss [fn_seq_def] \\
+     ‘!k. {x | x IN X CROSS Y /\ &k / 2 pow n <= f x /\ f x < (&k + 1) / 2 pow n}
+          = s n k’ by METIS_TAC [] >> POP_ORW \\
+   (* RHS simplification *)
+      Know ‘pos_fn_integral ((X,A,u) CROSS (Y,B,v))
+              (\z. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) z) (count (4 ** n)) +
+                   2 pow n * indicator_fn (t n) z) =
+            pos_fn_integral ((X,A,u) CROSS (Y,B,v))
+              (\z. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) z) (count (4 ** n))) +
+            pos_fn_integral ((X,A,u) CROSS (Y,B,v))
+              (\z. 2 pow n * indicator_fn (t n) z)’
+      >- (HO_MATCH_MP_TAC pos_fn_integral_add >> simp [] \\
+          CONJ_TAC >- (rpt STRIP_TAC \\
+                       MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> rw [] \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          CONJ_TAC >- (rpt STRIP_TAC \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS, pow_pos_le]) \\
+         ‘(X CROSS Y,subsets ((X,A) CROSS (Y,B))) = (X,A) CROSS (Y,B)’
+            by METIS_TAC [SPACE] >> POP_ORW \\
+          reverse CONJ_TAC
+          >- (‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
+                 by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
+              ‘?r. 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+              MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL_INDICATOR >> rw []) \\
+          MATCH_MP_TAC ((INST_TYPE [alpha |-> “:'a # 'b”] o
+                         INST_TYPE [beta |-> “:num”]) IN_MEASURABLE_BOREL_SUM) >> simp [] \\
+          qexistsl_tac [‘\k z. &k / 2 pow n * indicator_fn (s n k) z’,
+                        ‘count (4 ** n)’] >> simp [] \\
+          reverse CONJ_TAC >- (qx_genl_tac [‘i’, ‘z’] >> STRIP_TAC \\
+                               MATCH_MP_TAC pos_not_neginf \\
+                               MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          rpt STRIP_TAC \\
+         ‘?r. &i / 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+          MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL_INDICATOR >> rw []) >> Rewr' \\
+   (* LHS simplification *)
+      Know ‘pos_fn_integral (Y,B,v)
+              (\y. pos_fn_integral (X,A,u)
+                     (\x. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) (x,y)) (count (4 ** n)) +
+                          2 pow n * indicator_fn (t n) (x,y))) =
+            pos_fn_integral (Y,B,v)
+              (\y. pos_fn_integral (X,A,u)
+                     (\x. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) (x,y)) (count (4 ** n))) +
+                   pos_fn_integral (X,A,u)
+                     (\x. 2 pow n * indicator_fn (t n) (x,y)))’
+      >- (MATCH_MP_TAC pos_fn_integral_cong >> simp [] \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
+                       MATCH_MP_TAC le_add \\
+                       reverse CONJ_TAC
+                       >- (MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS, pow_pos_le]) \\
+                       MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> REWRITE_TAC [FINITE_COUNT] \\
+                       Q.X_GEN_TAC ‘i’ >> rw [] \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+                       MATCH_MP_TAC le_add \\
+                       reverse CONJ_TAC
+                       >- (MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
+                           MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS, pow_pos_le]) \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
+                       MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> REWRITE_TAC [FINITE_COUNT] \\
+                       Q.X_GEN_TAC ‘i’ >> rw [] \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS, pow_pos_le]) \\
+          Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+          HO_MATCH_MP_TAC pos_fn_integral_add >> simp [] \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+                       MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> REWRITE_TAC [FINITE_COUNT] \\
+                       Q.X_GEN_TAC ‘i’ >> rw [] \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS, pow_pos_le]) \\
+          reverse CONJ_TAC
+          >- (‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
+                 by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
+              ‘?r. 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+              MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> simp [] \\
+              qexistsl_tac [‘\x. indicator_fn (t n) (x,y)’, ‘r’] >> rw []) \\
+          MATCH_MP_TAC (INST_TYPE [beta |-> “:num”] IN_MEASURABLE_BOREL_SUM) >> simp [] \\
+          qexistsl_tac [‘\k x. &k / 2 pow n * indicator_fn (s n k) (x,y)’,
+                        ‘count (4 ** n)’] >> simp [] \\
+          reverse CONJ_TAC >- (rpt GEN_TAC >> STRIP_TAC \\
+                               MATCH_MP_TAC pos_not_neginf \\
+                               MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          rpt STRIP_TAC \\
+         ‘?r. &i / 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+          MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> simp [] \\
+          qexistsl_tac [‘\x. indicator_fn (s n i) (x,y)’, ‘r’] >> rw []) >> Rewr' \\
+   (* LHS simplification *)
+      Know ‘pos_fn_integral (Y,B,v)
+              (\y. pos_fn_integral (X,A,u)
+                     (\x. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) (x,y))
+                                (count (4 ** n))) +
+                   pos_fn_integral (X,A,u) (\x. 2 pow n * indicator_fn (t n) (x,y))) =
+            pos_fn_integral (Y,B,v)
+              (\y. pos_fn_integral (X,A,u)
+                     (\x. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) (x,y))
+                                (count (4 ** n)))) +
+            pos_fn_integral (Y,B,v)
+              (\y. pos_fn_integral (X,A,u) (\x. 2 pow n * indicator_fn (t n) (x,y)))’
+      >- (HO_MATCH_MP_TAC pos_fn_integral_add >> simp [] \\
+          CONJ_TAC >- (rpt STRIP_TAC \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
+                       MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> REWRITE_TAC [FINITE_COUNT] \\
+                       Q.X_GEN_TAC ‘i’ >> rw [] \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          CONJ_TAC >- (rpt STRIP_TAC \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS, pow_pos_le]) \\
+          reverse CONJ_TAC
+          >- (‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
+                 by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
+              ‘?r. 0 <= r /\ (2 pow n = Normal r)’
+                 by METIS_TAC [extreal_cases, pow_pos_le, extreal_le_eq,
+                               extreal_of_num_def, le_02] >> POP_ORW \\
+              MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
+                                         (Q.SPEC ‘(Y,B,v)’ IN_MEASURABLE_BOREL_EQ)) \\
+              BETA_TAC \\
+              Q.EXISTS_TAC ‘\y. Normal r *
+                                pos_fn_integral (X,A,u) (\x. indicator_fn (t n) (x,y))’ \\
+              reverse CONJ_TAC
+              >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> simp [] \\
+                  qexistsl_tac [‘\y. pos_fn_integral (X,A,u) (\x. indicator_fn (t n) (x,y))’,
+                                ‘r’] >> rw []) \\
+              Q.X_GEN_TAC ‘y’ >> RW_TAC std_ss [] \\
+              HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [INDICATOR_FN_POS]) \\
+          MATCH_MP_TAC ((INST_TYPE [alpha |-> beta] o
+                         INST_TYPE [beta |-> “:num”]) IN_MEASURABLE_BOREL_SUM) \\
+          ASM_SIMP_TAC std_ss [space_def] \\
+          qexistsl_tac [‘\k y. pos_fn_integral (X,A,u)
+                                 (\x. &k / 2 pow n * indicator_fn (s n k) (x,y))’,
+                        ‘count (4 ** n)’] >> simp [] \\
+          CONJ_TAC
+          >- (rpt STRIP_TAC \\
+             ‘?r. 0 <= r /\ (&i / 2 pow n = Normal r)’
+                 by METIS_TAC [extreal_cases, extreal_le_eq, extreal_of_num_def] >> POP_ORW \\
+              MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
+                                         (Q.SPEC ‘(Y,B,v)’ IN_MEASURABLE_BOREL_EQ)) \\
+              BETA_TAC \\
+              Q.EXISTS_TAC ‘\y. Normal r *
+                                pos_fn_integral (X,A,u) (\x. indicator_fn (s n i) (x,y))’ \\
+              simp [] \\
+              reverse CONJ_TAC
+              >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> simp [] \\
+                  qexistsl_tac [‘\y. pos_fn_integral (X,A,u) (\x. indicator_fn (s n i) (x,y))’,
+                                ‘r’] >> rw []) \\
+              Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+              HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [INDICATOR_FN_POS]) \\
+          CONJ_TAC >- (qx_genl_tac [‘i’, ‘y’] >> STRIP_TAC \\
+                       MATCH_MP_TAC pos_not_neginf \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+          MATCH_MP_TAC ((BETA_RULE o
+                         (Q.SPECL [‘(X,A,u)’,
+                                   ‘\k x. &k / 2 pow n * indicator_fn (s n k) (x,y)’,
+                                   ‘count (4 ** n)’]) o
+                         (INST_TYPE [beta |-> “:num”])) pos_fn_integral_sum) >> simp [] \\
+          CONJ_TAC >- (GEN_TAC >> DISCH_TAC \\
+                       Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          GEN_TAC >> DISCH_TAC \\
+         ‘?r. &i / 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+          MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL \\
+          ASM_SIMP_TAC std_ss [space_def] \\
+          qexistsl_tac [‘\x. indicator_fn (s n i) (x,y)’, ‘r’] >> rw []) >> Rewr' \\
+   (* LHS simplification *)
+      Know ‘pos_fn_integral (Y,B,v)
+              (\y. pos_fn_integral (X,A,u) (\x. 2 pow n * indicator_fn (t n) (x,y))) =
+            pos_fn_integral (Y,B,v)
+              (\y. 2 pow n * pos_fn_integral (X,A,u) (\x. indicator_fn (t n) (x,y)))’
+      >- (MATCH_MP_TAC pos_fn_integral_cong >> simp [] \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS, pow_pos_le]) \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+                       MATCH_MP_TAC le_mul >> rw [pow_pos_le] \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw [INDICATOR_FN_POS]) \\
+          Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+         ‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
+             by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
+         ‘?r. 0 <= r /\ (2 pow n = Normal r)’
+             by METIS_TAC [extreal_cases, pow_pos_le, extreal_le_eq,
+                           extreal_of_num_def, le_02] >> POP_ORW \\
+          HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [INDICATOR_FN_POS]) >> Rewr' \\
+      Know ‘pos_fn_integral (Y,B,v)
+              (\y. 2 pow n * pos_fn_integral (X,A,u) (\x. indicator_fn (t n) (x,y))) =
+            2 pow n * pos_fn_integral (Y,B,v)
+                        (\y. pos_fn_integral (X,A,u) (\x. indicator_fn (t n) (x,y)))’
+      >- (‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
+             by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
+          ‘?r. 0 <= r /\ (2 pow n = Normal r)’
+             by METIS_TAC [extreal_cases, pow_pos_le, extreal_le_eq,
+                           extreal_of_num_def, le_02] >> POP_ORW \\
+          HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [] \\
+          MATCH_MP_TAC pos_fn_integral_pos >> rw [INDICATOR_FN_POS]) >> Rewr' \\
+     ‘pos_fn_integral (Y,B,v)
+        (\y. pos_fn_integral (X,A,u) (\x. indicator_fn (t n) (x,y))) = m (t n)’
+         by METIS_TAC [] >> POP_ORW \\
+      Know ‘pos_fn_integral ((X,A,u) CROSS (Y,B,v)) (\z. 2 pow n * indicator_fn (t n) z) =
+            2 pow n * pos_fn_integral ((X,A,u) CROSS (Y,B,v)) (indicator_fn (t n))’
+      >- (‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
+             by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
+          ‘?r. 0 <= r /\ (2 pow n = Normal r)’
+             by METIS_TAC [extreal_cases, pow_pos_le, extreal_le_eq,
+                           extreal_of_num_def, le_02] >> POP_ORW \\
+          HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [INDICATOR_FN_POS]) >> Rewr' \\
+     ‘pos_fn_integral ((X,A,u) CROSS (Y,B,v)) (indicator_fn (t n)) =
+      measure ((X,A,u) CROSS (Y,B,v)) (t n)’
+         by METIS_TAC [pos_fn_integral_indicator] >> POP_ORW \\
+      Know ‘measure ((X,A,u) CROSS (Y,B,v)) (t n) = m (t n)’
+      >- (rw [prod_measure_space_alt]) >> Rewr' \\
+   (* stage work *)
+      Suff ‘pos_fn_integral (Y,B,v)
+              (\y. pos_fn_integral (X,A,u)
+                     (\x. SIGMA (\k. &k / 2 pow n *
+                                     indicator_fn (s n k) (x,y)) (count (4 ** n)))) =
+            pos_fn_integral ((X,A,u) CROSS (Y,B,v))
+              (\z. SIGMA (\k. &k / 2 pow n *
+                              indicator_fn (s n k) z) (count (4 ** n)))’ >- Rewr \\
+   (* RHS simplification *)
+      Know ‘pos_fn_integral ((X,A,u) CROSS (Y,B,v))
+              (\z. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) z) (count (4 ** n))) =
+            SIGMA (\k. pos_fn_integral ((X,A,u) CROSS (Y,B,v))
+                         (\z. &k / 2 pow n * indicator_fn (s n k) z)) (count (4 ** n))’
+      >- (MATCH_MP_TAC ((BETA_RULE o
+                         (Q.SPECL [‘(X,A,u) CROSS (Y,B,v)’,
+                                   ‘\k z. &k / 2 pow n * indicator_fn (s n k) z’,
+                                   ‘count (4 ** n)’]) o
+                         (INST_TYPE [alpha |-> “:'a # 'b”]) o
+                         (INST_TYPE [beta |-> “:num”])) pos_fn_integral_sum) >> simp [] \\
+          CONJ_TAC >- (rpt STRIP_TAC \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          rpt STRIP_TAC \\
+         ‘(X CROSS Y,subsets ((X,A) CROSS (Y,B))) = (X,A) CROSS (Y,B)’
+            by METIS_TAC [SPACE] >> POP_ORW \\
+         ‘?r. &i / 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+          MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL_INDICATOR >> rw []) >> Rewr' \\
+      Know ‘!k. pos_fn_integral ((X,A,u) CROSS (Y,B,v))
+                  (\z. &k / 2 pow n * indicator_fn (s n k) z) =
+                &k / 2 pow n *
+                pos_fn_integral ((X,A,u) CROSS (Y,B,v)) (indicator_fn (s n k))’
+      >- (GEN_TAC \\
+         ‘?r. 0 <= r /\ (&k / 2 pow n = Normal r)’
+             by METIS_TAC [extreal_cases, extreal_le_eq, extreal_of_num_def] >> POP_ORW \\
+          MATCH_MP_TAC pos_fn_integral_cmul >> rw [INDICATOR_FN_POS]) >> Rewr' \\
+     ‘!k. pos_fn_integral ((X,A,u) CROSS (Y,B,v)) (indicator_fn (s n k)) =
+          measure ((X,A,u) CROSS (Y,B,v)) (s n k)’
+         by METIS_TAC [pos_fn_integral_indicator] >> POP_ORW \\
+      Know ‘!k. measure ((X,A,u) CROSS (Y,B,v)) (s n k) = m (s n k)’
+      >- (rw [prod_measure_space_alt]) >> Rewr' \\
+   (* LHS simplification *)
+      Know ‘pos_fn_integral (Y,B,v)
+              (\y. pos_fn_integral (X,A,u)
+                     (\x. SIGMA (\k. &k / 2 pow n *
+                                     indicator_fn (s n k) (x,y)) (count (4 ** n)))) =
+            pos_fn_integral (Y,B,v)
+              (\y. SIGMA (\k. pos_fn_integral (X,A,u)
+                                (\x. &k / 2 pow n * indicator_fn (s n k) (x,y)))
+                         (count (4 ** n)))’
+      >- (MATCH_MP_TAC pos_fn_integral_cong >> simp [] \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
+                       MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> REWRITE_TAC [FINITE_COUNT] \\
+                       Q.X_GEN_TAC ‘i’ >> rw [] \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+                       MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> REWRITE_TAC [FINITE_COUNT] \\
+                       Q.X_GEN_TAC ‘i’ >> rw [] \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+          MATCH_MP_TAC ((BETA_RULE o
+                         (Q.SPECL [‘(X,A,u)’,
+                                   ‘\k x. &k / 2 pow n * indicator_fn (s n k) (x,y)’,
+                                   ‘count (4 ** n)’]) o
+                         (INST_TYPE [beta |-> “:num”])) pos_fn_integral_sum) >> simp [] \\
+          CONJ_TAC >- (rpt STRIP_TAC \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          rpt STRIP_TAC \\
+         ‘?r. &i / 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+          MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> simp [] \\
+          qexistsl_tac [‘\x. indicator_fn (s n i) (x,y)’, ‘r’] >> rw []) >> Rewr' \\
+      Know ‘pos_fn_integral (Y,B,v)
+              (\y. SIGMA (\k. pos_fn_integral (X,A,u)
+                                (\x. &k / 2 pow n * indicator_fn (s n k) (x,y)))
+                         (count (4 ** n))) =
+            SIGMA (\k. pos_fn_integral (Y,B,v)
+                         (\y. pos_fn_integral (X,A,u)
+                                (\x. &k / 2 pow n * indicator_fn (s n k) (x,y))))
+                  (count (4 ** n))’
+      >- (MATCH_MP_TAC ((BETA_RULE o
+                         (Q.SPECL [‘(Y,B,v)’,
+                                   ‘\k y. pos_fn_integral (X,A,u)
+                                            (\x. &k / 2 pow n * indicator_fn (s n k) (x,y))’,
+                                   ‘count (4 ** n)’]) o
+                         (INST_TYPE [alpha |-> beta]) o
+                         (INST_TYPE [beta |-> “:num”])) pos_fn_integral_sum) >> simp [] \\
+          CONJ_TAC >- (GEN_TAC >> DISCH_TAC \\
+                       Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          rpt STRIP_TAC \\
+         ‘?r. 0 <= r /\ (&i / 2 pow n = Normal r)’
+             by METIS_TAC [extreal_cases, extreal_le_eq, extreal_of_num_def] >> POP_ORW \\
+          MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
+                                     (Q.SPEC ‘(Y,B,v)’ IN_MEASURABLE_BOREL_EQ)) \\
+          BETA_TAC \\
+          Q.EXISTS_TAC ‘\y. Normal r *
+                            pos_fn_integral (X,A,u) (\x. indicator_fn (s n i) (x,y))’ \\
+          reverse CONJ_TAC
+          >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> simp [] \\
+              qexistsl_tac [‘\y. pos_fn_integral (X,A,u) (\x. indicator_fn (s n i) (x,y))’,
+                            ‘r’] >> rw []) \\
+          Q.X_GEN_TAC ‘y’ >> RW_TAC std_ss [] \\
+          HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [INDICATOR_FN_POS]) >> Rewr' \\
+      Suff ‘!k. pos_fn_integral (Y,B,v)
+                  (\y. pos_fn_integral (X,A,u)
+                         (\x. &k / 2 pow n * indicator_fn (s n k) (x,y))) =
+                &k / 2 pow n * m (s n k)’ >- Rewr \\
+      GEN_TAC \\
+     ‘?r. 0 <= r /\ (&k / 2 pow n = Normal r)’
+             by METIS_TAC [extreal_cases, extreal_le_eq, extreal_of_num_def] >> POP_ORW \\
+      Know ‘pos_fn_integral (Y,B,v)
+              (\y. pos_fn_integral (X,A,u)
+                     (\x. Normal r * indicator_fn (s n k) (x,y))) =
+            pos_fn_integral (Y,B,v)
+              (\y. Normal r * pos_fn_integral (X,A,u) (\x. indicator_fn (s n k) (x,y)))’
+      >- (MATCH_MP_TAC pos_fn_integral_cong >> simp [] \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
+                       MATCH_MP_TAC le_mul \\
+                       rw [INDICATOR_FN_POS, extreal_le_eq, extreal_of_num_def]) \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+                       MATCH_MP_TAC le_mul \\
+                       CONJ_TAC >- rw [extreal_le_eq, extreal_of_num_def] \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw [INDICATOR_FN_POS]) \\
+          Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+          HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [INDICATOR_FN_POS]) >> Rewr' \\
+      Know ‘pos_fn_integral (Y,B,v)
+              (\y. Normal r * pos_fn_integral (X,A,u) (\x. indicator_fn (s n k) (x,y))) =
+            Normal r * pos_fn_integral (Y,B,v)
+                         (\y. pos_fn_integral (X,A,u) (\x. indicator_fn (s n k) (x,y)))’
+      >- (HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [] \\
+          MATCH_MP_TAC pos_fn_integral_pos >> rw [INDICATOR_FN_POS]) >> Rewr' \\
+      Suff ‘pos_fn_integral (Y,B,v)
+              (\y. pos_fn_integral (X,A,u) (\x. indicator_fn (s n k) (x,y))) =
+            m (s n k)’ >- Rewr \\
+      METIS_TAC [],
+      (* goal 6 (of 6), symmetric with goal 5 *)
+      Know ‘pos_fn_integral ((X,A,u) CROSS (Y,B,v)) f =
+            pos_fn_integral ((X,A,u) CROSS (Y,B,v))
+              (\x. sup (IMAGE (\n. fn_seq ((X,A,u) CROSS (Y,B,v)) f n x) UNIV))’
+      >- (MATCH_MP_TAC pos_fn_integral_cong >> simp []) >> Rewr' \\
+      Know ‘pos_fn_integral ((X,A,u) CROSS (Y,B,v))
+              (\x. sup (IMAGE (\n. fn_seq ((X,A,u) CROSS (Y,B,v)) f n x) UNIV)) =
+            sup (IMAGE (\n. pos_fn_integral ((X,A,u) CROSS (Y,B,v))
+                              (\z. fn_seq ((X,A,u) CROSS (Y,B,v)) f n z)) UNIV)’
+      >- (HO_MATCH_MP_TAC lebesgue_monotone_convergence >> simp [] \\
+          REWRITE_TAC [CONJ_ASSOC] (* easier goals first *) \\
+          reverse CONJ_TAC (* mono_increasing *)
+          >- (rpt STRIP_TAC >> MATCH_MP_TAC lemma_fn_seq_mono_increasing \\
+              FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+          reverse CONJ_TAC (* positive *)
+          >- (rpt STRIP_TAC >> MATCH_MP_TAC lemma_fn_seq_positive \\
+              FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+          RW_TAC std_ss [fn_seq_def] \\
+         ‘(X CROSS Y,subsets ((X,A) CROSS (Y,B))) = (X,A) CROSS (Y,B)’
+            by METIS_TAC [SPACE] >> POP_ORW \\
+          MATCH_MP_TAC IN_MEASURABLE_BOREL_ADD \\
+          ASM_SIMP_TAC std_ss [space_def] \\
+          qexistsl_tac [‘\z. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) z) (count (4 ** n))’,
+                        ‘\z. 2 pow n * indicator_fn (t n) z’] \\
+          ASM_SIMP_TAC std_ss [CONJ_ASSOC] \\
+          reverse CONJ_TAC (* nonnegative *)
+          >- (Q.X_GEN_TAC ‘z’ >> DISCH_TAC >> DISJ1_TAC \\
+              CONJ_TAC >> MATCH_MP_TAC pos_not_neginf >| (* 2 subgoals *)
+              [ (* goal 5.1 (of 2) *)
+                MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> rw [] \\
+                MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS],
+                (* goal 5.2 (of 2) *)
+                MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS, pow_pos_le] ]) \\
+          CONJ_TAC (* Borel_measurable #1 *)
+          >- (MATCH_MP_TAC (INST_TYPE [beta |-> “:num”] IN_MEASURABLE_BOREL_SUM) \\
+              ASM_SIMP_TAC std_ss [space_def] \\
+              qexistsl_tac [‘\k z. &k / 2 pow n * indicator_fn (s n k) z’,
+                            ‘count (4 ** n)’] >> simp [] \\
+              reverse CONJ_TAC
+              >- (qx_genl_tac [‘i’, ‘z’] >> STRIP_TAC \\
+                  MATCH_MP_TAC pos_not_neginf \\
+                  MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+              rpt STRIP_TAC \\
+             ‘?r. &i / 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+              MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL_INDICATOR >> rw []) \\
+         ‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
+             by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
+         ‘?r. 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+          MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL_INDICATOR >> rw []) >> Rewr' \\
+      Know ‘pos_fn_integral (X,A,u) (\x. pos_fn_integral (Y,B,v) (\y. f (x,y))) =
+            pos_fn_integral (X,A,u)
+              (\x. pos_fn_integral (Y,B,v)
+                     (\y. sup (IMAGE (\n. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y)) UNIV)))’
+      >- (MATCH_MP_TAC pos_fn_integral_cong >> simp [] \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw []) \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw []) \\
+          Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+          MATCH_MP_TAC pos_fn_integral_cong >> simp []) >> Rewr' \\
+      Know ‘pos_fn_integral (X,A,u)
+              (\x. pos_fn_integral (Y,B,v)
+                     (\y. sup (IMAGE (\n. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y)) UNIV))) =
+            pos_fn_integral (X,A,u)
+              (\x. sup (IMAGE (\n. pos_fn_integral (Y,B,v)
+                                     (\y. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y))) UNIV))’
+      >- (MATCH_MP_TAC pos_fn_integral_cong >> simp [] \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw []) \\
+          CONJ_TAC
+          >- (Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+              rw [le_sup', IN_IMAGE, IN_UNIV] \\
+              MATCH_MP_TAC le_trans \\
+              Q.EXISTS_TAC ‘pos_fn_integral (Y,B,v)
+                              (\y. fn_seq ((X,A,u) CROSS (Y,B,v)) f 0 (x,y))’ \\
+              CONJ_TAC >- (MATCH_MP_TAC pos_fn_integral_pos >> rw [lemma_fn_seq_positive]) \\
+              POP_ASSUM MATCH_MP_TAC >> Q.EXISTS_TAC ‘0’ >> REWRITE_TAC []) \\
+          Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+          HO_MATCH_MP_TAC lebesgue_monotone_convergence \\
+          simp [lemma_fn_seq_positive, lemma_fn_seq_mono_increasing]) >> Rewr' \\
+      Know ‘pos_fn_integral (X,A,u)
+              (\x. sup (IMAGE (\n. pos_fn_integral (Y,B,v)
+                                     (\y. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y))) UNIV)) =
+            sup (IMAGE (\n. pos_fn_integral (X,A,u)
+                              (\x. pos_fn_integral (Y,B,v)
+                                     (\y. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y)))) UNIV)’
+      >- (HO_MATCH_MP_TAC lebesgue_monotone_convergence >> simp [] \\
+          CONJ_TAC >- (rpt STRIP_TAC >> MATCH_MP_TAC pos_fn_integral_pos \\
+                       simp [lemma_fn_seq_positive]) \\
+          RW_TAC std_ss [ext_mono_increasing_def] \\
+          MATCH_MP_TAC pos_fn_integral_mono >> simp [lemma_fn_seq_positive] \\
+          rpt STRIP_TAC \\
+          irule (SIMP_RULE std_ss [ext_mono_increasing_def]
+                                  lemma_fn_seq_mono_increasing) >> art [] \\
+          FIRST_X_ASSUM MATCH_MP_TAC >> rw []) >> Rewr' \\
+      Suff ‘!n. pos_fn_integral (X,A,u)
+                  (\x. pos_fn_integral (Y,B,v) (\y. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y))) =
+                pos_fn_integral ((X,A,u) CROSS (Y,B,v))
+                  (\z. fn_seq ((X,A,u) CROSS (Y,B,v)) f n z)’ >- rw [] \\
+   (* ‘sup’ disappeared now *)
+      GEN_TAC >> ASM_SIMP_TAC std_ss [fn_seq_def] \\
+     ‘!k. {x | x IN X CROSS Y /\ &k / 2 pow n <= f x /\ f x < (&k + 1) / 2 pow n} = s n k’
+         by METIS_TAC [] >> POP_ORW \\
+   (* RHS simplification *)
+      Know ‘pos_fn_integral ((X,A,u) CROSS (Y,B,v))
+              (\z. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) z) (count (4 ** n)) +
+                   2 pow n * indicator_fn (t n) z) =
+            pos_fn_integral ((X,A,u) CROSS (Y,B,v))
+              (\z. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) z) (count (4 ** n))) +
+            pos_fn_integral ((X,A,u) CROSS (Y,B,v))
+              (\z. 2 pow n * indicator_fn (t n) z)’
+      >- (HO_MATCH_MP_TAC pos_fn_integral_add >> simp [] \\
+          CONJ_TAC >- (rpt STRIP_TAC \\
+                       MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> rw [] \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          CONJ_TAC >- (rpt STRIP_TAC \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS, pow_pos_le]) \\
+         ‘(X CROSS Y,subsets ((X,A) CROSS (Y,B))) = (X,A) CROSS (Y,B)’
+            by METIS_TAC [SPACE] >> POP_ORW \\
+          reverse CONJ_TAC
+          >- (‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
+                 by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
+              ‘?r. 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+              MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL_INDICATOR >> rw []) \\
+          MATCH_MP_TAC ((INST_TYPE [alpha |-> “:'a # 'b”] o
+                         INST_TYPE [beta |-> “:num”]) IN_MEASURABLE_BOREL_SUM) >> simp [] \\
+          qexistsl_tac [‘\k z. &k / 2 pow n * indicator_fn (s n k) z’,
+                        ‘count (4 ** n)’] >> simp [] \\
+          reverse CONJ_TAC >- (qx_genl_tac [‘i’, ‘z’] >> STRIP_TAC \\
+                               MATCH_MP_TAC pos_not_neginf \\
+                               MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          rpt STRIP_TAC \\
+         ‘?r. &i / 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+          MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL_INDICATOR >> rw []) >> Rewr' \\
+   (* LHS simplification *)
+      Know ‘pos_fn_integral (X,A,u)
+              (\x. pos_fn_integral (Y,B,v)
+                     (\y. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) (x,y)) (count (4 ** n)) +
+                          2 pow n * indicator_fn (t n) (x,y))) =
+            pos_fn_integral (X,A,u)
+              (\x. pos_fn_integral (Y,B,v)
+                     (\y. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) (x,y)) (count (4 ** n))) +
+                   pos_fn_integral (Y,B,v)
+                     (\y. 2 pow n * indicator_fn (t n) (x,y)))’
+      >- (MATCH_MP_TAC pos_fn_integral_cong >> simp [] \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
+                       MATCH_MP_TAC le_add \\
+                       reverse CONJ_TAC
+                       >- (MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS, pow_pos_le]) \\
+                       MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> REWRITE_TAC [FINITE_COUNT] \\
+                       Q.X_GEN_TAC ‘i’ >> rw [] \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+                       MATCH_MP_TAC le_add \\
+                       reverse CONJ_TAC
+                       >- (MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
+                           MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS, pow_pos_le]) \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
+                       MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> REWRITE_TAC [FINITE_COUNT] \\
+                       Q.X_GEN_TAC ‘i’ >> rw [] \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS, pow_pos_le]) \\
+          Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+          HO_MATCH_MP_TAC pos_fn_integral_add >> simp [] \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+                       MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> REWRITE_TAC [FINITE_COUNT] \\
+                       Q.X_GEN_TAC ‘i’ >> rw [] \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS, pow_pos_le]) \\
+          reverse CONJ_TAC
+          >- (‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
+                 by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
+              ‘?r. 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+              MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> simp [] \\
+              qexistsl_tac [‘\y. indicator_fn (t n) (x,y)’, ‘r’] >> rw []) \\
+          MATCH_MP_TAC (INST_TYPE [beta |-> “:num”] IN_MEASURABLE_BOREL_SUM) >> simp [] \\
+          qexistsl_tac [‘\k y. &k / 2 pow n * indicator_fn (s n k) (x,y)’,
+                        ‘count (4 ** n)’] >> simp [] \\
+          reverse CONJ_TAC >- (rpt GEN_TAC >> STRIP_TAC \\
+                               MATCH_MP_TAC pos_not_neginf \\
+                               MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          rpt STRIP_TAC \\
+         ‘?r. &i / 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+          MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> simp [] \\
+          qexistsl_tac [‘\y. indicator_fn (s n i) (x,y)’, ‘r’] >> rw []) >> Rewr' \\
+   (* LHS simplification *)
+      Know ‘pos_fn_integral (X,A,u)
+              (\x. pos_fn_integral (Y,B,v)
+                     (\y. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) (x,y))
+                                (count (4 ** n))) +
+                   pos_fn_integral (Y,B,v) (\y. 2 pow n * indicator_fn (t n) (x,y))) =
+            pos_fn_integral (X,A,u)
+              (\x. pos_fn_integral (Y,B,v)
+                     (\y. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) (x,y))
+                                (count (4 ** n)))) +
+            pos_fn_integral (X,A,u)
+              (\x. pos_fn_integral (Y,B,v) (\y. 2 pow n * indicator_fn (t n) (x,y)))’
+      >- (HO_MATCH_MP_TAC pos_fn_integral_add >> simp [] \\
+          CONJ_TAC >- (rpt STRIP_TAC \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
+                       MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> REWRITE_TAC [FINITE_COUNT] \\
+                       Q.X_GEN_TAC ‘i’ >> rw [] \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          CONJ_TAC >- (rpt STRIP_TAC \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS, pow_pos_le]) \\
+          reverse CONJ_TAC
+          >- (‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
+                 by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
+              ‘?r. 0 <= r /\ (2 pow n = Normal r)’
+                 by METIS_TAC [extreal_cases, pow_pos_le, extreal_le_eq,
+                               extreal_of_num_def, le_02] >> POP_ORW \\
+              MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
+                                         (Q.SPEC ‘(X,A,u)’ IN_MEASURABLE_BOREL_EQ)) \\
+              BETA_TAC \\
+              Q.EXISTS_TAC ‘\x. Normal r *
+                                pos_fn_integral (Y,B,v) (\y. indicator_fn (t n) (x,y))’ \\
+              reverse CONJ_TAC
+              >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> simp [] \\
+                  qexistsl_tac [‘\x. pos_fn_integral (Y,B,v) (\y. indicator_fn (t n) (x,y))’,
+                                ‘r’] >> rw []) \\
+              Q.X_GEN_TAC ‘x’ >> RW_TAC std_ss [] \\
+              HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [INDICATOR_FN_POS]) \\
+          MATCH_MP_TAC (INST_TYPE [beta |-> “:num”] IN_MEASURABLE_BOREL_SUM) \\
+          ASM_SIMP_TAC std_ss [space_def] \\
+          qexistsl_tac [‘\k x. pos_fn_integral (Y,B,v)
+                                 (\y. &k / 2 pow n * indicator_fn (s n k) (x,y))’,
+                        ‘count (4 ** n)’] >> simp [] \\
+          CONJ_TAC
+          >- (rpt STRIP_TAC \\
+             ‘?r. 0 <= r /\ (&i / 2 pow n = Normal r)’
+                 by METIS_TAC [extreal_cases, extreal_le_eq, extreal_of_num_def] >> POP_ORW \\
+              MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
+                                         (Q.SPEC ‘(X,A,u)’ IN_MEASURABLE_BOREL_EQ)) \\
+              BETA_TAC \\
+              Q.EXISTS_TAC ‘\x. Normal r *
+                                pos_fn_integral (Y,B,v) (\y. indicator_fn (s n i) (x,y))’ \\
+              simp [] \\
+              reverse CONJ_TAC
+              >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> simp [] \\
+                  qexistsl_tac [‘\x. pos_fn_integral (Y,B,v) (\y. indicator_fn (s n i) (x,y))’,
+                                ‘r’] >> rw []) \\
+              Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+              HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [INDICATOR_FN_POS]) \\
+          CONJ_TAC >- (qx_genl_tac [‘i’, ‘x’] >> STRIP_TAC \\
+                       MATCH_MP_TAC pos_not_neginf \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+          MATCH_MP_TAC ((BETA_RULE o
+                         (Q.SPECL [‘(Y,B,v)’,
+                                   ‘\k y. &k / 2 pow n * indicator_fn (s n k) (x,y)’,
+                                   ‘count (4 ** n)’]) o
+                         (INST_TYPE [alpha |-> beta]) o
+                         (INST_TYPE [beta |-> “:num”])) pos_fn_integral_sum) >> simp [] \\
+          CONJ_TAC >- (GEN_TAC >> DISCH_TAC \\
+                       Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          GEN_TAC >> DISCH_TAC \\
+         ‘?r. &i / 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+          MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL \\
+          ASM_SIMP_TAC std_ss [space_def] \\
+          qexistsl_tac [‘\y. indicator_fn (s n i) (x,y)’, ‘r’] >> rw []) >> Rewr' \\
+   (* LHS simplification *)
+      Know ‘pos_fn_integral (X,A,u)
+              (\x. pos_fn_integral (Y,B,v) (\y. 2 pow n * indicator_fn (t n) (x,y))) =
+            pos_fn_integral (X,A,u)
+              (\x. 2 pow n * pos_fn_integral (Y,B,v) (\y. indicator_fn (t n) (x,y)))’
+      >- (MATCH_MP_TAC pos_fn_integral_cong >> simp [] \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS, pow_pos_le]) \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+                       MATCH_MP_TAC le_mul >> rw [pow_pos_le] \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw [INDICATOR_FN_POS]) \\
+          Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+         ‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
+             by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
+         ‘?r. 0 <= r /\ (2 pow n = Normal r)’
+             by METIS_TAC [extreal_cases, pow_pos_le, extreal_le_eq,
+                           extreal_of_num_def, le_02] >> POP_ORW \\
+          HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [INDICATOR_FN_POS]) >> Rewr' \\
+      Know ‘pos_fn_integral (X,A,u)
+              (\x. 2 pow n * pos_fn_integral (Y,B,v) (\y. indicator_fn (t n) (x,y))) =
+            2 pow n * pos_fn_integral (X,A,u)
+                        (\x. pos_fn_integral (Y,B,v) (\y. indicator_fn (t n) (x,y)))’
+      >- (‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
+             by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
+          ‘?r. 0 <= r /\ (2 pow n = Normal r)’
+             by METIS_TAC [extreal_cases, pow_pos_le, extreal_le_eq,
+                           extreal_of_num_def, le_02] >> POP_ORW \\
+          HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [] \\
+          MATCH_MP_TAC pos_fn_integral_pos >> rw [INDICATOR_FN_POS]) >> Rewr' \\
+     ‘pos_fn_integral (X,A,u)
+        (\x. pos_fn_integral (Y,B,v) (\y. indicator_fn (t n) (x,y))) = m (t n)’
+         by METIS_TAC [] >> POP_ORW \\
+      Know ‘pos_fn_integral ((X,A,u) CROSS (Y,B,v)) (\z. 2 pow n * indicator_fn (t n) z) =
+            2 pow n * pos_fn_integral ((X,A,u) CROSS (Y,B,v)) (indicator_fn (t n))’
+      >- (‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
+             by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
+          ‘?r. 0 <= r /\ (2 pow n = Normal r)’
+             by METIS_TAC [extreal_cases, pow_pos_le, extreal_le_eq,
+                           extreal_of_num_def, le_02] >> POP_ORW \\
+          HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [INDICATOR_FN_POS]) >> Rewr' \\
+     ‘pos_fn_integral ((X,A,u) CROSS (Y,B,v)) (indicator_fn (t n)) =
+      measure ((X,A,u) CROSS (Y,B,v)) (t n)’
+         by METIS_TAC [pos_fn_integral_indicator] >> POP_ORW \\
+      Know ‘measure ((X,A,u) CROSS (Y,B,v)) (t n) = m (t n)’
+      >- (rw [prod_measure_space_alt]) >> Rewr' \\
+   (* stage work *)
+      Suff ‘pos_fn_integral (X,A,u)
+              (\x. pos_fn_integral (Y,B,v)
+                     (\y. SIGMA (\k. &k / 2 pow n *
+                                     indicator_fn (s n k) (x,y)) (count (4 ** n)))) =
+            pos_fn_integral ((X,A,u) CROSS (Y,B,v))
+              (\z. SIGMA (\k. &k / 2 pow n *
+                              indicator_fn (s n k) z) (count (4 ** n)))’ >- Rewr \\
+   (* RHS simplification *)
+      Know ‘pos_fn_integral ((X,A,u) CROSS (Y,B,v))
+              (\z. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) z) (count (4 ** n))) =
+            SIGMA (\k. pos_fn_integral ((X,A,u) CROSS (Y,B,v))
+                         (\z. &k / 2 pow n * indicator_fn (s n k) z)) (count (4 ** n))’
+      >- (MATCH_MP_TAC ((BETA_RULE o
+                         (Q.SPECL [‘(X,A,u) CROSS (Y,B,v)’,
+                                   ‘\k z. &k / 2 pow n * indicator_fn (s n k) z’,
+                                   ‘count (4 ** n)’]) o
+                         (INST_TYPE [alpha |-> “:'a # 'b”]) o
+                         (INST_TYPE [beta |-> “:num”])) pos_fn_integral_sum) >> simp [] \\
+          CONJ_TAC >- (rpt STRIP_TAC \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          rpt STRIP_TAC \\
+         ‘(X CROSS Y,subsets ((X,A) CROSS (Y,B))) = (X,A) CROSS (Y,B)’
+            by METIS_TAC [SPACE] >> POP_ORW \\
+         ‘?r. &i / 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+          MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL_INDICATOR >> rw []) >> Rewr' \\
+      Know ‘!k. pos_fn_integral ((X,A,u) CROSS (Y,B,v))
+                  (\z. &k / 2 pow n * indicator_fn (s n k) z) =
+                &k / 2 pow n *
+                pos_fn_integral ((X,A,u) CROSS (Y,B,v)) (indicator_fn (s n k))’
+      >- (GEN_TAC \\
+         ‘?r. 0 <= r /\ (&k / 2 pow n = Normal r)’
+             by METIS_TAC [extreal_cases, extreal_le_eq, extreal_of_num_def] >> POP_ORW \\
+          MATCH_MP_TAC pos_fn_integral_cmul >> rw [INDICATOR_FN_POS]) >> Rewr' \\
+     ‘!k. pos_fn_integral ((X,A,u) CROSS (Y,B,v)) (indicator_fn (s n k)) =
+          measure ((X,A,u) CROSS (Y,B,v)) (s n k)’
+         by METIS_TAC [pos_fn_integral_indicator] >> POP_ORW \\
+      Know ‘!k. measure ((X,A,u) CROSS (Y,B,v)) (s n k) = m (s n k)’
+      >- (rw [prod_measure_space_alt]) >> Rewr' \\
+   (* LHS simplification *)
+      Know ‘pos_fn_integral (X,A,u)
+              (\x. pos_fn_integral (Y,B,v)
+                     (\y. SIGMA (\k. &k / 2 pow n *
+                                     indicator_fn (s n k) (x,y)) (count (4 ** n)))) =
+            pos_fn_integral (X,A,u)
+              (\x. SIGMA (\k. pos_fn_integral (Y,B,v)
+                                (\y. &k / 2 pow n * indicator_fn (s n k) (x,y)))
+                         (count (4 ** n)))’
+      >- (MATCH_MP_TAC pos_fn_integral_cong >> simp [] \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
+                       MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> REWRITE_TAC [FINITE_COUNT] \\
+                       Q.X_GEN_TAC ‘i’ >> rw [] \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+                       MATCH_MP_TAC EXTREAL_SUM_IMAGE_POS >> REWRITE_TAC [FINITE_COUNT] \\
+                       Q.X_GEN_TAC ‘i’ >> rw [] \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+          MATCH_MP_TAC ((BETA_RULE o
+                         (Q.SPECL [‘(Y,B,v)’,
+                                   ‘\k y. &k / 2 pow n * indicator_fn (s n k) (x,y)’,
+                                   ‘count (4 ** n)’]) o
+                         (INST_TYPE [alpha |-> beta]) o
+                         (INST_TYPE [beta |-> “:num”])) pos_fn_integral_sum) >> simp [] \\
+          CONJ_TAC >- (rpt STRIP_TAC \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          rpt STRIP_TAC \\
+         ‘?r. &i / 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
+          MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> simp [] \\
+          qexistsl_tac [‘\y. indicator_fn (s n i) (x,y)’, ‘r’] >> rw []) >> Rewr' \\
+      Know ‘pos_fn_integral (X,A,u)
+              (\x. SIGMA (\k. pos_fn_integral (Y,B,v)
+                                (\y. &k / 2 pow n * indicator_fn (s n k) (x,y)))
+                         (count (4 ** n))) =
+            SIGMA (\k. pos_fn_integral (X,A,u)
+                         (\x. pos_fn_integral (Y,B,v)
+                                (\y. &k / 2 pow n * indicator_fn (s n k) (x,y))))
+                  (count (4 ** n))’
+      >- (MATCH_MP_TAC ((BETA_RULE o
+                         (Q.SPECL [‘(X,A,u)’,
+                                   ‘\k x. pos_fn_integral (Y,B,v)
+                                            (\y. &k / 2 pow n * indicator_fn (s n k) (x,y))’,
+                                   ‘count (4 ** n)’]) o
+                         (INST_TYPE [beta |-> “:num”])) pos_fn_integral_sum) >> simp [] \\
+          CONJ_TAC >- (GEN_TAC >> DISCH_TAC \\
+                       Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw [] \\
+                       MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
+          rpt STRIP_TAC \\
+         ‘?r. 0 <= r /\ (&i / 2 pow n = Normal r)’
+             by METIS_TAC [extreal_cases, extreal_le_eq, extreal_of_num_def] >> POP_ORW \\
+          MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
+                                     (Q.SPEC ‘(X,A,u)’ IN_MEASURABLE_BOREL_EQ)) \\
+          BETA_TAC \\
+          Q.EXISTS_TAC ‘\x. Normal r *
+                            pos_fn_integral (Y,B,v) (\y. indicator_fn (s n i) (x,y))’ \\
+          reverse CONJ_TAC
+          >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> simp [] \\
+              qexistsl_tac [‘\x. pos_fn_integral (Y,B,v) (\y. indicator_fn (s n i) (x,y))’,
+                            ‘r’] >> rw []) \\
+          Q.X_GEN_TAC ‘x’ >> RW_TAC std_ss [] \\
+          HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [INDICATOR_FN_POS]) >> Rewr' \\
+      Suff ‘!k. pos_fn_integral (X,A,u)
+                  (\x. pos_fn_integral (Y,B,v)
+                         (\y. &k / 2 pow n * indicator_fn (s n k) (x,y))) =
+                &k / 2 pow n * m (s n k)’ >- Rewr \\
+      GEN_TAC \\
+     ‘?r. 0 <= r /\ (&k / 2 pow n = Normal r)’
+             by METIS_TAC [extreal_cases, extreal_le_eq, extreal_of_num_def] >> POP_ORW \\
+      Know ‘pos_fn_integral (X,A,u)
+              (\x. pos_fn_integral (Y,B,v)
+                     (\y. Normal r * indicator_fn (s n k) (x,y))) =
+            pos_fn_integral (X,A,u)
+              (\x. Normal r * pos_fn_integral (Y,B,v) (\y. indicator_fn (s n k) (x,y)))’
+      >- (MATCH_MP_TAC pos_fn_integral_cong >> simp [] \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> simp [] \\
+                       Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+                       MATCH_MP_TAC le_mul \\
+                       rw [INDICATOR_FN_POS, extreal_le_eq, extreal_of_num_def]) \\
+          CONJ_TAC >- (Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+                       MATCH_MP_TAC le_mul \\
+                       CONJ_TAC >- rw [extreal_le_eq, extreal_of_num_def] \\
+                       MATCH_MP_TAC pos_fn_integral_pos >> rw [INDICATOR_FN_POS]) \\
+          Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+          HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [INDICATOR_FN_POS]) >> Rewr' \\
+      Know ‘pos_fn_integral (X,A,u)
+              (\x. Normal r * pos_fn_integral (Y,B,v) (\y. indicator_fn (s n k) (x,y))) =
+            Normal r * pos_fn_integral (X,A,u)
+                         (\x. pos_fn_integral (Y,B,v) (\y. indicator_fn (s n k) (x,y)))’
+      >- (HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [] \\
+          MATCH_MP_TAC pos_fn_integral_pos >> rw [INDICATOR_FN_POS]) >> Rewr' \\
+      Suff ‘pos_fn_integral (X,A,u)
+              (\x. pos_fn_integral (Y,B,v) (\y. indicator_fn (s n k) (x,y))) =
+            m (s n k)’ >- Rewr \\
+      METIS_TAC [] ]
+ *)
+QED
+
+Theorem TONELLI :
     !(X :'a set) (Y :'b set) A B u v f.
         sigma_finite_measure_space (X,A,u) /\
         sigma_finite_measure_space (Y,B,v) /\
@@ -4034,14 +5594,16 @@ Proof
          qx_genl_tac [‘i’, ‘y’] >> STRIP_TAC \\
          MATCH_MP_TAC pos_not_neginf \\
          MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) >> DISCH_TAC \\
-     Know ‘!x. x IN X ==> (\y. 2 pow n * indicator_fn (t n) (x,y)) IN measurable (Y,B) Borel’
+     Know ‘!x. x IN X ==>
+              (\y. 2 pow n * indicator_fn (t n) (x,y)) IN measurable (Y,B) Borel’
      >- (rpt STRIP_TAC \\
         ‘2 pow n <> PosInf /\ 2 pow n <> NegInf’
             by METIS_TAC [pow_not_infty, extreal_of_num_def, extreal_not_infty] \\
         ‘?r. 2 pow n = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW \\
          MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL \\
          ASM_SIMP_TAC std_ss [space_def] \\
-         qexistsl_tac [‘\y. indicator_fn (t n) (x,y)’, ‘r’] >> rw []) >> DISCH_TAC \\
+         qexistsl_tac [‘\y. indicator_fn (t n) (x,y)’, ‘r’] >> rw []) \\
+     DISCH_TAC \\
      RW_TAC std_ss []
      >- (HO_MATCH_MP_TAC pos_fn_integral_add \\
          ASM_SIMP_TAC std_ss [m_space_def, measurable_sets_def] \\
@@ -4052,8 +5614,8 @@ Proof
          MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS, pow_pos_le]) \\
      MATCH_MP_TAC IN_MEASURABLE_BOREL_ADD \\
      qexistsl_tac [‘\x. pos_fn_integral (Y,B,v)
-                          (\y. SIGMA (\k. &k / 2 pow n *
-                                          indicator_fn (s n k) (x,y)) (count (4 ** n)))’,
+                          (\y. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) (x,y))
+                              (count (4 ** n)))’,
                    ‘\x. pos_fn_integral (Y,B,v)
                           (\y. 2 pow n * indicator_fn (t n) (x,y))’] \\
      ASM_SIMP_TAC std_ss [space_def] \\
@@ -4072,20 +5634,23 @@ Proof
            MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS, pow_pos_le] ]) \\
      CONJ_TAC
      >- (MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
-                                    (Q.SPEC ‘(X,A,u)’ IN_MEASURABLE_BOREL_EQ)) >> BETA_TAC \\
+                                    (Q.SPEC ‘(X,A,u)’ IN_MEASURABLE_BOREL_EQ)) \\
+         BETA_TAC \\
          Q.EXISTS_TAC ‘\x. SIGMA (\k. pos_fn_integral (Y,B,v)
-                                        (\y. &k / 2 pow n * indicator_fn (s n k) (x,y)))
+                                     (\y. &k / 2 pow n * indicator_fn (s n k) (x,y)))
                                  (count (4 ** n))’ \\
          reverse CONJ_TAC
          >- (MATCH_MP_TAC ((INST_TYPE [alpha |-> beta] o
-                            INST_TYPE [beta |-> “:num”]) IN_MEASURABLE_BOREL_SUM) >> simp [] \\
+                            INST_TYPE [beta |-> “:num”]) IN_MEASURABLE_BOREL_SUM) \\
+             simp [] \\
              qexistsl_tac [‘\k x. pos_fn_integral (Y,B,v)
                                     (\y. &k / 2 pow n * indicator_fn (s n k) (x,y))’,
                            ‘count (4 ** n)’] >> simp [] \\
              CONJ_TAC
              >- (rpt STRIP_TAC \\
                 ‘?z. 0 <= z /\ (&i / 2 pow n = Normal z)’
-                     by METIS_TAC [extreal_cases, extreal_le_eq, extreal_of_num_def] >> POP_ORW \\
+                   by METIS_TAC [extreal_cases, extreal_le_eq, extreal_of_num_def] \\
+                 POP_ORW \\
                  MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
                                             (Q.SPEC ‘(X,A,u)’ IN_MEASURABLE_BOREL_EQ)) >> BETA_TAC \\
                  Q.EXISTS_TAC ‘\x. Normal z * pos_fn_integral (Y,B,v)
@@ -4109,7 +5674,8 @@ Proof
                    !y. y IN Y ==> 0 <= &i / 2 pow n * indicator_fn (s n i) (x,y)’
          >- (rpt STRIP_TAC >> MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]) \\
          Suff ‘!i. i < 4 ** n ==>
-                   (\y. &i / 2 pow n * indicator_fn (s n i) (x,y)) IN Borel_measurable (Y,B)’
+                   (\y. &i / 2 pow n * indicator_fn (s n i) (x,y))
+                        IN Borel_measurable (Y,B)’
          >- RW_TAC std_ss [] \\
          rpt STRIP_TAC \\
         ‘?z. &i / 2 pow n = Normal z’ by METIS_TAC [extreal_cases] >> POP_ORW \\
@@ -4207,15 +5773,20 @@ Proof
              CONJ_TAC
              >- (rpt STRIP_TAC \\
                 ‘?z. 0 <= z /\ (&i / 2 pow n = Normal z)’
-                    by METIS_TAC [extreal_cases, extreal_le_eq, extreal_of_num_def] >> POP_ORW \\
+                   by METIS_TAC [extreal_cases, extreal_le_eq, extreal_of_num_def] \\
+                 POP_ORW \\
                  MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
-                                            (Q.SPEC ‘(Y,B,v)’ IN_MEASURABLE_BOREL_EQ)) >> BETA_TAC \\
+                                (Q.SPEC ‘(Y,B,v)’ IN_MEASURABLE_BOREL_EQ)) \\
+                 BETA_TAC \\
                  Q.EXISTS_TAC ‘\y. Normal z * pos_fn_integral (X,A,u)
-                                                (\x. indicator_fn (s n i) (x,y))’ >> BETA_TAC \\
+                                                (\x. indicator_fn (s n i) (x,y))’ \\
+                 BETA_TAC \\
                  CONJ_TAC >- (Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
-                              HO_MATCH_MP_TAC pos_fn_integral_cmul >> rw [INDICATOR_FN_POS]) \\
+                              HO_MATCH_MP_TAC pos_fn_integral_cmul \\
+                              rw [INDICATOR_FN_POS]) \\
                  MATCH_MP_TAC IN_MEASURABLE_BOREL_CMUL >> rw [] \\
-                 qexistsl_tac [‘\y. pos_fn_integral (X,A,u) (\x. indicator_fn (s n i) (x,y))’,
+                 qexistsl_tac [‘\y. pos_fn_integral (X,A,u)
+                                     (\x. indicator_fn (s n i) (x,y))’,
                                ‘z’] >> rw []) \\
              qx_genl_tac [‘i’, ‘y’] >> STRIP_TAC \\
              MATCH_MP_TAC pos_not_neginf \\
@@ -4263,8 +5834,8 @@ Proof
                               lemma_fn_seq_mono_increasing) >> rw [],
       (* goal 2 (of 6), symmetric with goal 1 *)
       MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
-                                 (Q.SPEC ‘(Y,B,v)’
-                                         (INST_TYPE [alpha |-> beta] IN_MEASURABLE_BOREL_EQ))) \\
+                     (Q.SPEC ‘(Y,B,v)’
+                       (INST_TYPE [alpha |-> beta] IN_MEASURABLE_BOREL_EQ))) \\
       Q.EXISTS_TAC ‘\y. sup (IMAGE (\n. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y))
                                    UNIV)’ >> rw [] \\
       MATCH_MP_TAC IN_MEASURABLE_BOREL_MONO_SUP \\
@@ -4273,16 +5844,18 @@ Proof
                               lemma_fn_seq_mono_increasing) >> rw [],
       (* goal 3 (of 6) *)
       MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
-                                 (Q.SPEC ‘(X,A,u)’ IN_MEASURABLE_BOREL_EQ)) >> BETA_TAC \\
+                                 (Q.SPEC ‘(X,A,u)’ IN_MEASURABLE_BOREL_EQ)) \\
+      BETA_TAC \\
       Q.EXISTS_TAC ‘\x. pos_fn_integral (Y,B,v)
-                          (\y. sup (IMAGE (\n. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y))
-                                          UNIV))’ >> rw []
+                          (\y. sup (IMAGE (\n. fn_seq ((X,A,u) CROSS (Y,B,v))
+                                               f n (x,y)) UNIV))’ >> rw []
       >- (MATCH_MP_TAC pos_fn_integral_cong >> rw []) \\
       MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
-                                 (Q.SPEC ‘(X,A,u)’ IN_MEASURABLE_BOREL_EQ)) >> BETA_TAC \\
+                                 (Q.SPEC ‘(X,A,u)’ IN_MEASURABLE_BOREL_EQ)) \\
+      BETA_TAC \\
       Q.EXISTS_TAC ‘\x. sup (IMAGE (\n. pos_fn_integral (Y,B,v)
-                                          (\y. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y)))
-                             UNIV)’ >> rw []
+                                          (\y. fn_seq ((X,A,u) CROSS (Y,B,v))
+                                               f n (x,y))) UNIV)’ >> rw []
       >- (HO_MATCH_MP_TAC lebesgue_monotone_convergence \\
           simp [lemma_fn_seq_positive, lemma_fn_seq_mono_increasing]) \\
       MATCH_MP_TAC IN_MEASURABLE_BOREL_MONO_SUP >> simp [] \\
@@ -4295,16 +5868,18 @@ Proof
                               lemma_fn_seq_mono_increasing) >> rw [],
       (* goal 4 (of 6), symmetric with goal 3 *)
       MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
-                                 (Q.SPEC ‘(Y,B,b)’ IN_MEASURABLE_BOREL_EQ)) >> BETA_TAC \\
+                                 (Q.SPEC ‘(Y,B,b)’ IN_MEASURABLE_BOREL_EQ)) \\
+      BETA_TAC \\
       Q.EXISTS_TAC ‘\y. pos_fn_integral (X,A,u)
-                          (\x. sup (IMAGE (\n. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y))
-                                          UNIV))’ >> rw []
+                          (\x. sup (IMAGE (\n. fn_seq ((X,A,u) CROSS (Y,B,v))
+                                               f n (x,y)) UNIV))’ >> rw []
       >- (MATCH_MP_TAC pos_fn_integral_cong >> rw []) \\
       MATCH_MP_TAC (REWRITE_RULE [m_space_def, measurable_sets_def]
-                                 (Q.SPEC ‘(Y,B,v)’ IN_MEASURABLE_BOREL_EQ)) >> BETA_TAC \\
+                                 (Q.SPEC ‘(Y,B,v)’ IN_MEASURABLE_BOREL_EQ)) \\
+      BETA_TAC \\
       Q.EXISTS_TAC ‘\y. sup (IMAGE (\n. pos_fn_integral (X,A,u)
-                                          (\x. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y)))
-                             UNIV)’ >> rw []
+                                          (\x. fn_seq ((X,A,u) CROSS (Y,B,v))
+                                               f n (x,y))) UNIV)’ >> rw []
       >- (HO_MATCH_MP_TAC lebesgue_monotone_convergence \\
           simp [lemma_fn_seq_positive, lemma_fn_seq_mono_increasing]) \\
       MATCH_MP_TAC IN_MEASURABLE_BOREL_MONO_SUP >> simp [] \\
@@ -4338,7 +5913,8 @@ Proof
             by METIS_TAC [SPACE] >> POP_ORW \\
           MATCH_MP_TAC IN_MEASURABLE_BOREL_ADD \\
           ASM_SIMP_TAC std_ss [space_def] \\
-          qexistsl_tac [‘\z. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) z) (count (4 ** n))’,
+          qexistsl_tac [‘\z. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) z)
+                            (count (4 ** n))’,
                         ‘\z. 2 pow n * indicator_fn (t n) z’] \\
           ASM_SIMP_TAC std_ss [CONJ_ASSOC] \\
           reverse CONJ_TAC (* nonnegative *)
@@ -4368,7 +5944,8 @@ Proof
       Know ‘pos_fn_integral (Y,B,v) (\y. pos_fn_integral (X,A,u) (\x. f (x,y))) =
             pos_fn_integral (Y,B,v)
               (\y. pos_fn_integral (X,A,u)
-                     (\x. sup (IMAGE (\n. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y)) UNIV)))’
+                     (\x. sup (IMAGE (\n. fn_seq ((X,A,u) CROSS (Y,B,v))
+                                          f n (x,y)) UNIV)))’
       >- (MATCH_MP_TAC pos_fn_integral_cong >> simp [] \\
           CONJ_TAC >- (Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
                        MATCH_MP_TAC pos_fn_integral_pos >> rw []) \\
@@ -4378,10 +5955,12 @@ Proof
           MATCH_MP_TAC pos_fn_integral_cong >> simp []) >> Rewr' \\
       Know ‘pos_fn_integral (Y,B,v)
               (\y. pos_fn_integral (X,A,u)
-                     (\x. sup (IMAGE (\n. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y)) UNIV))) =
+                     (\x. sup (IMAGE (\n. fn_seq ((X,A,u) CROSS (Y,B,v))
+                                          f n (x,y)) UNIV))) =
             pos_fn_integral (Y,B,v)
               (\y. sup (IMAGE (\n. pos_fn_integral (X,A,u)
-                                     (\x. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y))) UNIV))’
+                                     (\x. fn_seq ((X,A,u) CROSS (Y,B,v))
+                                          f n (x,y))) UNIV))’
       >- (MATCH_MP_TAC pos_fn_integral_cong >> simp [] \\
           CONJ_TAC >- (Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
                        MATCH_MP_TAC pos_fn_integral_pos >> rw []) \\
@@ -4391,17 +5970,20 @@ Proof
               MATCH_MP_TAC le_trans \\
               Q.EXISTS_TAC ‘pos_fn_integral (X,A,u)
                               (\x. fn_seq ((X,A,u) CROSS (Y,B,v)) f 0 (x,y))’ \\
-              CONJ_TAC >- (MATCH_MP_TAC pos_fn_integral_pos >> rw [lemma_fn_seq_positive]) \\
+              CONJ_TAC >- (MATCH_MP_TAC pos_fn_integral_pos \\
+                           rw [lemma_fn_seq_positive]) \\
               POP_ASSUM MATCH_MP_TAC >> Q.EXISTS_TAC ‘0’ >> REWRITE_TAC []) \\
           Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
           HO_MATCH_MP_TAC lebesgue_monotone_convergence \\
           simp [lemma_fn_seq_positive, lemma_fn_seq_mono_increasing]) >> Rewr' \\
       Know ‘pos_fn_integral (Y,B,v)
               (\y. sup (IMAGE (\n. pos_fn_integral (X,A,u)
-                                     (\x. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y))) UNIV)) =
+                                     (\x. fn_seq ((X,A,u) CROSS (Y,B,v))
+                                          f n (x,y))) UNIV)) =
             sup (IMAGE (\n. pos_fn_integral (Y,B,v)
                               (\y. pos_fn_integral (X,A,u)
-                                     (\x. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y)))) UNIV)’
+                                     (\x. fn_seq ((X,A,u) CROSS (Y,B,v))
+                                          f n (x,y)))) UNIV)’
       >- (HO_MATCH_MP_TAC lebesgue_monotone_convergence >> simp [] \\
           CONJ_TAC >- (rpt STRIP_TAC >> MATCH_MP_TAC pos_fn_integral_pos \\
                        simp [lemma_fn_seq_positive]) \\
@@ -4412,13 +5994,14 @@ Proof
                                   lemma_fn_seq_mono_increasing) >> art [] \\
           FIRST_X_ASSUM MATCH_MP_TAC >> rw []) >> Rewr' \\
       Suff ‘!n. pos_fn_integral (Y,B,v)
-                  (\y. pos_fn_integral (X,A,u) (\x. fn_seq ((X,A,u) CROSS (Y,B,v)) f n (x,y))) =
+                  (\y. pos_fn_integral (X,A,u) (\x. fn_seq ((X,A,u) CROSS (Y,B,v))
+                                                    f n (x,y))) =
                 pos_fn_integral ((X,A,u) CROSS (Y,B,v))
                   (\z. fn_seq ((X,A,u) CROSS (Y,B,v)) f n z)’ >- rw [] \\
    (* ‘sup’ disappeared now *)
       GEN_TAC >> ASM_SIMP_TAC std_ss [fn_seq_def] \\
-     ‘!k. {x | x IN X CROSS Y /\ &k / 2 pow n <= f x /\ f x < (&k + 1) / 2 pow n} = s n k’
-         by METIS_TAC [] >> POP_ORW \\
+     ‘!k. {x | x IN X CROSS Y /\ &k / 2 pow n <= f x /\ f x < (&k + 1) / 2 pow n}
+          = s n k’ by METIS_TAC [] >> POP_ORW \\
    (* RHS simplification *)
       Know ‘pos_fn_integral ((X,A,u) CROSS (Y,B,v))
               (\z. SIGMA (\k. &k / 2 pow n * indicator_fn (s n k) z) (count (4 ** n)) +
