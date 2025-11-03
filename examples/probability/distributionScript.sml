@@ -5490,8 +5490,10 @@ QED
 Theorem expectation_of_normal_rv :
     !p X mu sig. prob_space p /\ normal_rv X p mu sig ==>
                  integrable p (Normal o X) /\
-                 expectation p (Normal o X) = mu
+                 expectation p (Normal o X) = Normal mu
 Proof
+    cheat
+ (*
     rpt GEN_TAC
  >> simp [normal_rv_def, distribution_distr, random_variable_def,
           p_space_def, events_def, prob_def, prob_space_def, expectation_def]
@@ -5517,6 +5519,7 @@ Proof
  >> CONJ_TAC >- rw [Abbr ‘N’]
  (* applying pos_fn_integral_density_reduce *)
  >> cheat
+ *)
 QED
 
 Definition CinftyR_def :
