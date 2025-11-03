@@ -2942,19 +2942,22 @@ QED
  *)
 Definition Borel_inf_def :
     Borel_inf =
-      sigma UNIV {cylinder h N | 0 < N /\ !i. i < N ==> ?c. h i = {x | x <= c}}
+    sigma univ(:num -> extreal)
+         {cylinder h N | 0 < N /\ !i. i < N ==> ?c. h i = {x | x <= c}}
 End
 
 Definition Borel_inf1_def :
     Borel_inf1 =
-      sigma UNIV {cylinder h N | 0 < N /\ !i. i < N ==> h i IN subsets Borel}
+    sigma univ(:num -> extreal)
+         {cylinder h N | 0 < N /\ !i. i < N ==> h i IN subsets Borel}
 End
 
 (* NOTE: The extra condition ‘is_cylinder c N’ is beyond textbook [4, p.178] *)
 Definition Borel_inf2_def :
     Borel_inf2 =
-      sigma UNIV {c | ?N. 0 < N /\ is_cylinder c N /\
-                          cylinder2rect c N IN subsets (Borel_lists N)}
+    sigma univ(:num -> extreal)
+         {c | ?N. 0 < N /\ is_cylinder c N /\
+                  cylinder2rect c N IN subsets (Borel_lists N)}
 End
 
 Theorem space_Borel_inf :
@@ -3113,7 +3116,8 @@ Proof
      rw [IN_FUNSET])
  >> DISCH_TAC
  >> Q.PAT_X_ASSUM ‘algebra (sp,sts)’ K_TAC
- >> qabbrev_tac ‘src = {rectangle h N | h | !i. i < N ==> ?c. h i = {x | x <= c}}’
+ >> qabbrev_tac ‘src = {rectangle h N | h |
+                        !i. i < N ==> ?(c :extreal). h i = {x | x <= c}}’
  >> Q.PAT_X_ASSUM ‘B IN subsets (sigma sp src)’ MP_TAC
  >> Suff ‘subsets (sigma sp src) SUBSET sts’ >- rw [SUBSET_DEF]
  >> qabbrev_tac ‘b = (sp,sts)’
@@ -3126,7 +3130,7 @@ Proof
  >- fs [IN_list_rectangle, Abbr ‘sp’]
  >> fs [Borel_inf_def]
  >> qabbrev_tac ‘sts = {cylinder h N | 0 < N /\
-                                      !i. i < N ==> ?c. h i = {x | x <= c}}’
+                        !i. i < N ==> ?(c :extreal). h i = {x | x <= c}}’
  >> Suff ‘{f | GENLIST f N IN rectangle h N} IN sts’
  >- (Suff ‘sts SUBSET subsets (sigma univ(:num -> extreal) sts)’
      >- rw [SUBSET_DEF] \\
@@ -3538,7 +3542,8 @@ Proof
       Know ‘dimindex(:1 + 'N) = 1 + dimindex(:'N)’
       >- (rw [index_sum, finite_one, index_one]) >> DISCH_TAC \\
      ‘i < dimindex(:1 + 'N)’ by rw [] \\
-      Q.PAT_X_ASSUM ‘!i. i < dimindex (:'N) ==> _ ' i IN h i’ (MP_TAC o (Q.SPEC ‘i’)) \\
+      Q.PAT_X_ASSUM ‘!i. i < dimindex (:'N) ==> _ ' i IN h i’
+        (MP_TAC o (Q.SPEC ‘i’)) \\
       RW_TAC fcp_ss [] ]
 QED
 
@@ -3551,14 +3556,16 @@ Definition inverse_function_def :
 End
 
 Theorem f_o_inverse_function :
-    !(f :'a -> 'b) s t y. SURJ f s t /\ y IN t ==> (f o (inverse_function s f)) y = y
+    !(f :'a -> 'b) s t y.
+      SURJ f s t /\ y IN t ==> (f o (inverse_function s f)) y = y
 Proof
     RW_TAC std_ss [inverse_function_def, SURJ_DEF, o_DEF]
  >> SELECT_ELIM_TAC >> rw []
 QED
 
 Theorem inverse_function_o_f :
-    !(f :'a -> 'b) s t x. INJ f s t /\ x IN s ==> ((inverse_function s f) o f) x = x
+    !(f :'a -> 'b) s t x.
+      INJ f s t /\ x IN s ==> ((inverse_function s f) o f) x = x
 Proof
     RW_TAC pure_ss  (* bool_ss or std_ss is too slow here, why? *)
           [inverse_function_def, INJ_DEF, o_DEF, BETA_THM]
@@ -3577,7 +3584,8 @@ QED
 Theorem finite_dimensional_distribution_permutes :
     !(p :'a m_space) (X :'index -> 'a -> 'b) (l :'index['N]) (g :num -> num).
         FINITE univ(:'N) /\ g PERMUTES (count (dimindex(:'N))) ==>
-      ((finite_dimensional_distribution p X (fcp_permutes g l)) o (IMAGE (fcp_permutes g))) =
+      ((finite_dimensional_distribution p X (fcp_permutes g l)) o
+       (IMAGE (fcp_permutes g))) =
        (finite_dimensional_distribution p X l)
 Proof
     RW_TAC fcp_ss [FUN_EQ_THM, finite_dimensional_distribution_def, fcp_permutes_def]
