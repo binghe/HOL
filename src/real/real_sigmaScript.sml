@@ -3074,7 +3074,7 @@ Proof
   METIS_TAC []
 QED
 
-Theorem REAL_LE_MUL' :
+Theorem REAL_LE_MUL_NEG : (* was: REAL_LE_MUL' *)
     !x y. x <= 0 /\ y <= 0 ==> 0 <= x * y
 Proof
     rpt STRIP_TAC
@@ -3084,7 +3084,7 @@ Proof
  >> ASM_REWRITE_TAC []
 QED
 
-Theorem REAL_LT_MUL' :
+Theorem REAL_LT_MUL_NEG : (* was: REAL_LT_MUL' *)
     !x y. x < 0 /\ y < 0 ==> 0 < x * y
 Proof
     rpt STRIP_TAC
@@ -3094,8 +3094,8 @@ Proof
  >> ASM_REWRITE_TAC []
 QED
 
-Theorem REAL_LT_LMUL' :
-    !x y z. x < 0 ==> ((x * y) < (x * z) <=> z < y)
+Theorem REAL_LT_LMUL_NEG : (* was: REAL_LT_LMUL' *)
+    !x y z. x < 0 ==> (x * y < x * z <=> z < y)
 Proof
     rpt STRIP_TAC
  >> MP_TAC (Q.SPECL [‘-x’, ‘z’, ‘y’] REAL_LT_LMUL)
@@ -3103,8 +3103,8 @@ Proof
  >> rw [GSYM REAL_NEG_RMUL, REAL_LT_NEG]
 QED
 
-Theorem REAL_LT_RMUL' :
-    !x y z. z < 0 ==> ((x * z) < (y * z) <=> y < x)
+Theorem REAL_LT_RMUL_NEG : (* was: REAL_LT_RMUL' *)
+    !x y z. z < 0 ==> (x * z < y * z <=> y < x)
 Proof
     rpt STRIP_TAC
  >> MP_TAC (Q.SPECL [‘y’, ‘x’, ‘-z’] REAL_LT_RMUL)
