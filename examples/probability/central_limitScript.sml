@@ -6251,14 +6251,6 @@ Proof
  >> METIS_TAC [real_lt,REAL_LET_TRANS]
 QED
 
-Theorem real_lt_eq :
-    ∀x y. x ≠ +∞ ∧ x ≠ −∞ ∧ y ≠ +∞ ∧ y ≠ −∞ ⇒ (real x < real y ⇔ x < y)
-Proof
-    rpt STRIP_TAC
- >> ‘∃a. x = Normal a’ by METIS_TAC [extreal_cases]
- >> ‘∃b. y = Normal b’ by METIS_TAC [extreal_cases] >> gs []
-QED
-
 Theorem indep_rv_const :
   ∀p X c A B.
     random_variable X p A ∧ prob_space p ⇒

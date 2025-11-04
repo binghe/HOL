@@ -3593,7 +3593,16 @@ Proof
  >> Cases_on ‘y’ >> fs [real_normal]
 QED
 
-Theorem le_real_reduce :
+Theorem real_lt_eq :
+    !x y. x <> PosInf /\ x <> NegInf /\ y <> PosInf /\ y <> NegInf ==>
+         (real x < real y <=> x < y)
+Proof
+    rpt STRIP_TAC
+ >> ‘∃a. x = Normal a’ by METIS_TAC [extreal_cases]
+ >> ‘∃b. y = Normal b’ by METIS_TAC [extreal_cases] >> gs []
+QED
+
+Theorem real_le_eq :
     !x y. x <> PosInf /\ x <> NegInf /\ y <> PosInf /\ y <> NegInf ==>
          (real x <= real y <=> x <= y)
 Proof
