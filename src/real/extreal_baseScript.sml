@@ -3599,7 +3599,8 @@ Theorem real_lt_eq :
 Proof
     rpt STRIP_TAC
  >> ‘∃a. x = Normal a’ by METIS_TAC [extreal_cases]
- >> ‘∃b. y = Normal b’ by METIS_TAC [extreal_cases] >> gs []
+ >> ‘∃b. y = Normal b’ by METIS_TAC [extreal_cases]
+ >> ASM_SIMP_TAC std_ss [real_normal, extreal_lt_eq]
 QED
 
 Theorem real_le_eq :
