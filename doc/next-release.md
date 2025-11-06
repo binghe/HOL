@@ -14,7 +14,7 @@ Contents
 -   [Bugs fixed](#bugs-fixed)
 -   [New theories](#new-theories)
 -   [New tools](#new-tools)
--   [New Examples](#new-examples)
+-   [New examples](#new-examples)
 -   [Incompatibilities](#incompatibilities)
 
 New features:
@@ -89,17 +89,17 @@ Incompatibilities:
 -   In `set_relationTheory`, the constant `tc` has been renamed to `transitive_closure`.
 
 -   A few theorems (ended with `'`) in `real_sigmaTheory` are renamed to avoid naming conflicts
-    with `realaxTheory`) or better reflect their nature (see the table below for details.)
+    with `realaxTheory`, or to better reflect their nature (see the table below for details.)
     In particular, users are recommended to *not* directly opening `realaxTheory` (an intermediate
     theory for constructing real numbers), in which all useful theorems should be also covered by
    `realTheory` (under same or different theorem names).
-  
+
 |  Old name       | New name           | Statements                                    |
 | --------------- | ------------------ | --------------------------------------------- |
 | `REAL_LE_SUP'`  | `REAL_LE_SUP2`     | `!s a b y. y IN s /\ a <= y /\ (!x. x IN s ==> x <= b) ==> a <= sup s` |
 | `REAL_LE_MUL'`  | `REAL_LE_MUL_NEG`  | `!x y. x <= 0 /\ y <= 0 ==> 0 <= x * y`       |
 | `REAL_LT_MUL'`  | `REAL_LT_MUL_NEG`  | `!x y. x < 0 /\ y < 0 ==> 0 < x * y`          |
-| `REAL_LT_LMUL'` | `REAL_LT_LMUL_NEG` | `!x y z. x < 0 ==> (x * y < x * z <=> z < y)` | 
+| `REAL_LT_LMUL'` | `REAL_LT_LMUL_NEG` | `!x y z. x < 0 ==> (x * y < x * z <=> z < y)` |
 | `REAL_LT_RMUL'` | `REAL_LT_RMUL_NEG` | `!x y z. z < 0 ==> (x * z < y * z <=> y < x)` |
 
 * * * * *
