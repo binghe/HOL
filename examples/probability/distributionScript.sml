@@ -2998,24 +2998,31 @@ Proof
     rw [ext_normal_rv_def, o_DEF, real_normal, ETA_AX]
 QED
 
-Theorem expectation_of_normal_rv :
-    !p X mu sig. prob_space p /\ normal_rv X p mu sig ==>
-                 integrable p (Normal o X) /\
-                 expectation p (Normal o X) = Normal mu
+Theorem integration_of_normal_rv :
+    !p X mu sig g.
+       prob_space p /\ normal_rv X p mu sig /\ g IN borel_measurable borel ==>
+      (integrable p (Normal o g o X) <=>
+       integrable lborel (\x. Normal (g x * normal_density mu sig x)) /\
+       integral p (Normal o g o X) =
+       integral lborel (\x. Normal (g x * normal_density mu sig x)))
 Proof
     rpt GEN_TAC
  >> simp [normal_rv_def, distribution_distr, random_variable_def,
-          p_space_def, events_def, prob_def, prob_space_def, expectation_def]
+          p_space_def, events_def, prob_def, prob_space_def]
  >> STRIP_TAC
+ >> Know ‘Normal o g IN Borel_measurable borel’
+ >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_IMP_BOREL' \\
+     simp [sigma_algebra_borel])
+ >> DISCH_TAC
  (* NOTE: To use “normal_rv X p mu sig” (distr p X s = normal_pmeasure mu sig s),
     we have no choice but to use integral_distr.
   *)
- >> MP_TAC (Q.SPECL [‘p’, ‘borel’, ‘X’, ‘Normal’]
+ >> MP_TAC (Q.SPECL [‘p’, ‘borel’, ‘X’, ‘Normal o g’]
                     (INST_TYPE [beta |-> “:real”] integral_distr))
  >> simp [sigma_algebra_borel]
  >> STRIP_TAC
  >> NTAC 2 (POP_ASSUM (REWRITE_TAC o wrap o SYM))
- >> qmatch_abbrev_tac ‘integrable M Normal /\ _’
+ >> qabbrev_tac ‘M = (space borel,subsets borel,distr p X)’
  >> Know ‘measure_space M’
  >- (qunabbrev_tac ‘M’ \\
      MATCH_MP_TAC measure_space_distr >> simp [sigma_algebra_borel])
@@ -3024,9 +3031,10 @@ Proof
  >> qabbrev_tac ‘N = (space borel,subsets borel,normal_pmeasure mu sig)’
  >> ‘measure_space N’ by PROVE_TAC [normal_measure_space]
  >> ‘measure_space_eq M N’ by rw [measure_space_eq_def, Abbr ‘M’, Abbr ‘N’]
- >> ‘integrable M Normal <=> integrable N Normal’
+ >> ‘integrable M (Normal o g) <=> integrable N (Normal o g)’
       by simp [integrable_cong_measure']
- >> ‘integral M Normal = integral N Normal’ by simp [integral_cong_measure']
+ >> ‘integral M (Normal o g) = integral N (Normal o g)’
+      by simp [integral_cong_measure']
  >> NTAC 2 POP_ORW
  (* cleanups *)
  >> Q.PAT_X_ASSUM ‘measure_space p’              K_TAC
@@ -3050,16 +3058,17 @@ Proof
          lborel_def, space_lborel, sets_lborel, space_borel] \\
      simp [normal_pmeasure_def, density_measure_def, sets_lborel])
  >> DISCH_TAC
- >> ‘integrable N Normal <=> integrable M Normal’
+ >> ‘integrable N (Normal o g) <=> integrable M (Normal o g)’
       by simp [integrable_cong_measure']
- >> ‘integral N Normal = integral M Normal’ by simp [integral_cong_measure']
+ >> ‘integral N (Normal o g) = integral M (Normal o g)’
+      by simp [integral_cong_measure']
  >> NTAC 2 POP_ORW
- >> Q.PAT_X_ASSUM ‘measure_space M’ K_TAC
- >> Q.PAT_X_ASSUM ‘measure_space N’ K_TAC
+ >> Q.PAT_X_ASSUM ‘measure_space M’      K_TAC
+ >> Q.PAT_X_ASSUM ‘measure_space N’      K_TAC
  >> Q.PAT_X_ASSUM ‘measure_space_eq N M’ K_TAC
  >> qunabbrevl_tac [‘M’, ‘N’]
  (* applying integral_density *)
- >> MP_TAC (Q.SPECL [‘lborel’, ‘f’, ‘Normal’]
+ >> MP_TAC (Q.SPECL [‘lborel’, ‘f’, ‘Normal o g’]
                     (INST_TYPE [alpha |-> “:real”] integral_density))
  >> simp [lborel_def, IN_MEASURABLE_BOREL_NORMAL, space_lborel]
  >> impl_tac
@@ -3067,8 +3076,14 @@ Proof
           IN_MEASURABLE_BOREL_normal_density']
  >> Rewr'
  >> simp [Abbr ‘f’, extreal_mul_eq]
- (* applying lebesgue_eq_gauge_integral *)
- >> cheat
+QED
+
+Theorem expectation_of_normal_rv :
+    !p X mu sig. prob_space p /\ normal_rv X p mu sig ==>
+                 integrable p (Normal o X) /\
+                 expectation p (Normal o X) = Normal mu
+Proof
+    cheat
 QED
 
 (* ------------------------------------------------------------------------- *)
