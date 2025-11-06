@@ -3593,6 +3593,7 @@ Proof
  >> Cases_on ‘y’ >> fs [real_normal]
 QED
 
+(* NOTE: The (good) theorem name is given by Kai Phan *)
 Theorem real_lt_eq :
     !x y. x <> PosInf /\ x <> NegInf /\ y <> PosInf /\ y <> NegInf ==>
          (real x < real y <=> x < y)

@@ -5492,34 +5492,62 @@ Theorem expectation_of_normal_rv :
                  integrable p (Normal o X) /\
                  expectation p (Normal o X) = Normal mu
 Proof
-    cheat
- (*
     rpt GEN_TAC
  >> simp [normal_rv_def, distribution_distr, random_variable_def,
           p_space_def, events_def, prob_def, prob_space_def, expectation_def]
  >> STRIP_TAC
- >> ASSUME_TAC sigma_algebra_borel
+ (* NOTE: To use “normal_rv X p mu sig” (distr p X s = normal_pmeasure mu sig s),
+    we have no choice but to use integral_distr.
+  *)
  >> MP_TAC (Q.SPECL [‘p’, ‘borel’, ‘X’, ‘Normal’]
-                    (INST_TYPE [beta |-> “:real”] integral_distr)) >> simp []
+                    (INST_TYPE [beta |-> “:real”] integral_distr))
+ >> simp [sigma_algebra_borel]
  >> STRIP_TAC
  >> NTAC 2 (POP_ASSUM (REWRITE_TAC o wrap o SYM))
  >> qmatch_abbrev_tac ‘integrable M Normal /\ _’
  >> Know ‘measure_space M’
  >- (qunabbrev_tac ‘M’ \\
-     MATCH_MP_TAC measure_space_distr >> rw [])
+     MATCH_MP_TAC measure_space_distr >> simp [sigma_algebra_borel])
  >> DISCH_TAC
- >> qabbrev_tac ‘N = (space borel,subsets borel,normal_pmeasure 0 1)’
+ (* Now convert M to N, replacing “distr p X” by “normal_pmeasure mu sig” *)
+ >> qabbrev_tac ‘N = (space borel,subsets borel,normal_pmeasure mu sig)’
  >> ‘measure_space N’ by PROVE_TAC [normal_measure_space]
  >> ‘measure_space_eq M N’ by rw [measure_space_eq_def, Abbr ‘M’, Abbr ‘N’]
  >> ‘integrable M Normal <=> integrable N Normal’
-      by rw [integrable_cong_measure'] >> POP_ORW
- >> ‘integral M Normal = integral N Normal’
-      by rw [integral_cong_measure'] >> POP_ORW
- >> simp [integral_def, integrable_def, GSYM CONJ_ASSOC]
- >> CONJ_TAC >- rw [Abbr ‘N’]
- (* applying pos_fn_integral_density_reduce *)
+      by simp [integrable_cong_measure']
+ >> ‘integral M Normal = integral N Normal’ by simp [integral_cong_measure']
+ >> NTAC 2 POP_ORW
+ (* cleanups *)
+ >> Q.PAT_X_ASSUM ‘measure_space p’              K_TAC
+ >> Q.PAT_X_ASSUM ‘measure p (m_space p) = 1’    K_TAC
+ >> Q.PAT_X_ASSUM ‘X IN borel_measurable _’      K_TAC
+ >> Q.PAT_X_ASSUM ‘!s. s IN subsets borel ==> _’ K_TAC
+ >> Q.PAT_X_ASSUM ‘measure_space M’              K_TAC
+ >> Q.PAT_X_ASSUM ‘measure_space_eq M N’         K_TAC
+ >> qunabbrev_tac ‘M’
+ (* NOTE: now converting “normal_pmeasure” to “normal_density” *)
+ >> qabbrev_tac ‘f = Normal_density mu sig’
+ >> qabbrev_tac ‘M = density lborel f’
+ >> Know ‘measure_space M’
+ >- (qunabbrev_tac ‘M’ \\
+     MATCH_MP_TAC measure_space_density >> simp [lborel_def, space_lborel] \\
+     simp [Abbr ‘f’, extreal_of_num_def, normal_density_nonneg,
+           IN_MEASURABLE_BOREL_normal_density'])
+ >> DISCH_TAC
+ >> Know ‘measure_space_eq N M’
+ >- (rw [measure_space_eq_def, Abbr ‘M’, Abbr ‘N’, density_def,
+         lborel_def, space_lborel, sets_lborel, space_borel] \\
+     simp [normal_pmeasure_def, density_measure_def, sets_lborel])
+ >> DISCH_TAC
+ >> ‘integrable N Normal <=> integrable M Normal’
+      by simp [integrable_cong_measure']
+ >> ‘integral N Normal = integral M Normal’ by simp [integral_cong_measure']
+ >> NTAC 2 POP_ORW
+ >> Q.PAT_X_ASSUM ‘measure_space N’ K_TAC
+ >> Q.PAT_X_ASSUM ‘measure_space_eq N M’ K_TAC
+ >> qunabbrev_tac ‘N’
+ (* applying integral_density *)
  >> cheat
- *)
 QED
 
 Definition CinftyR_def :

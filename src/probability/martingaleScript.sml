@@ -8724,6 +8724,7 @@ Proof
  >> MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS]
 QED
 
+(* NOTE: This is the recommended version for “pos_fn_integral” and “density” *)
 Theorem pos_fn_integral_density_reduce :
     !m f g. measure_space m /\
             f IN measurable (m_space m, measurable_sets m) Borel /\
@@ -8777,6 +8778,59 @@ Proof
  >- (MATCH_MP_TAC pos_fn_integral_density_of >> art [])
  >> Rewr'
  >> MATCH_MP_TAC pos_fn_integral_density_reduce >> art []
+QED
+
+Theorem measurable_space_density[simp] :
+    measurable_space (density m f) = measurable_space m
+Proof
+    simp [density_def]
+QED
+
+Theorem integral_density :
+    !m f g. measure_space m /\
+            f IN measurable (m_space m, measurable_sets m) Borel /\
+            g IN measurable (m_space m, measurable_sets m) Borel /\
+           (!x. x IN m_space m ==> 0 <= f x)
+       ==> (integrable (density m f) g <=> integrable m (\x. f x * g x)) /\
+            integral (density m f) g = integral m (\x. f x * g x)
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> simp [integrable_def, integral_def]
+ >> Know ‘(\x. f x * g x) IN Borel_measurable (measurable_space m)’
+ >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_TIMES \\
+     qexistsl_tac [‘f’, ‘g’] >> simp [])
+ >> Rewr
+ >> Suff ‘pos_fn_integral (density m f) g^+ =
+          pos_fn_integral m (\x. f x * g x)^+ /\
+          pos_fn_integral (density m f) g^- =
+          pos_fn_integral m (\x. f x * g x)^-’ >- simp []
+ (* preparing for pos_fn_integral_density_reduce *)
+ >> Know ‘pos_fn_integral m (\x. f x * g x)^+ =
+          pos_fn_integral m (\x. f x * g^+ x)’
+ >- (MATCH_MP_TAC pos_fn_integral_cong >> simp [FN_PLUS_POS] \\
+     CONJ_TAC
+     >- (rpt STRIP_TAC >> MATCH_MP_TAC le_mul >> simp [FN_PLUS_POS]) \\
+     rpt STRIP_TAC \\
+     MATCH_MP_TAC fn_plus_fmul >> simp [])
+ >> Rewr'
+ >> Know ‘pos_fn_integral m (\x. f x * g x)^- =
+          pos_fn_integral m (\x. f x * g^- x)’
+ >- (MATCH_MP_TAC pos_fn_integral_cong >> simp [FN_MINUS_POS] \\
+     CONJ_TAC
+     >- (rpt STRIP_TAC >> MATCH_MP_TAC le_mul >> simp [FN_MINUS_POS]) \\
+     rpt STRIP_TAC \\
+     MATCH_MP_TAC fn_minus_fmul >> simp [])
+ >> Rewr'
+ (* applying pos_fn_integral_density_reduce *)
+ >> CONJ_TAC (* 2 subgoals *)
+ >| [ (* goal 1 (of 2) *)
+      MATCH_MP_TAC pos_fn_integral_density_reduce >> simp [FN_PLUS_POS] \\
+      MATCH_MP_TAC IN_MEASURABLE_BOREL_FN_PLUS \\
+      simp [MEASURE_SPACE_SIGMA_ALGEBRA],
+      (* goal 2 (of 2) *)
+      MATCH_MP_TAC pos_fn_integral_density_reduce >> simp [FN_MINUS_POS] \\
+      MATCH_MP_TAC IN_MEASURABLE_BOREL_FN_MINUS \\
+      simp [MEASURE_SPACE_SIGMA_ALGEBRA] ]
 QED
 
 (* NOTE: This is an easy corollary of TONELLI *)

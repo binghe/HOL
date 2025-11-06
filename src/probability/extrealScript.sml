@@ -5996,7 +5996,7 @@ Proof
 QED
 
 Theorem fn_plus_fmul :
-    !f c x. (!x. 0 <= c x) ==> fn_plus (\x. c x * f x) x = c x * fn_plus f x
+    !f c x. 0 <= c x ==> fn_plus (\x. c x * f x) x = c x * fn_plus f x
 Proof
     rpt GEN_TAC >> DISCH_TAC
  >> simp [fn_plus_def]
@@ -6016,7 +6016,7 @@ Proof
 QED
 
 Theorem fn_minus_fmul :
-    !f c x. (!x. 0 <= c x) ==> fn_minus (\x. c x * f x) x = c x * fn_minus f x
+    !f c x. 0 <= c x ==> fn_minus (\x. c x * f x) x = c x * fn_minus f x
 Proof
     rpt GEN_TAC >> DISCH_TAC
  >> simp [fn_minus_def]
