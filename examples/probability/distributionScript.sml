@@ -3080,7 +3080,7 @@ Proof
  >> simp [Abbr ‘f’, extreal_mul_eq]
 QED
 
-(* NOTE: The the special integration of “exp (-1 / x pow 2)” is avoided here
+(* NOTE: The the special integral of “exp (-1 / x pow 2)” is avoided here
    because it's contained in “normal_rv X p mu sig”, which actually *assumed*
    the existence of normal r.v.'s. What's really not proved (yet) and hard to
    prove, is |- ?p X. prob_space p /\ normal_rv X p mu sig
@@ -3105,11 +3105,13 @@ Proof
  >> simp [GSYM expectation_def, expectation_const]
 QED
 
+(* NOTE: The antecedents “?p X. prob_space p /\ normal_rv X p mu sig” can be
+   removed only if the special integral of “exp (-1 / x pow 2)” is computed.
+ *)
 Theorem integral_normal_density' :
-    !mu sig.
-       (?p X. prob_space p /\ normal_rv X p mu sig) ==>
-       integrable lborel (\x. Normal (normal_density mu sig x)) /\
-       integral lborel (\x. Normal (normal_density mu sig x)) = 1
+    !mu sig. (?p X. prob_space p /\ normal_rv X p mu sig) ==>
+             integrable lborel (\x. Normal (normal_density mu sig x)) /\
+             integral lborel (\x. Normal (normal_density mu sig x)) = 1
 Proof
     METIS_TAC [integral_normal_density]
 QED

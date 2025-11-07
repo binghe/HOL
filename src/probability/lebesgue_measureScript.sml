@@ -3588,7 +3588,8 @@ Theorem lemma_fn_seq_finite_measure1'[local] :
     !f k n. f IN borel_measurable borel /\ (!x. 0 <= f x) /\
             pos_fn_integral lborel (Normal o f) <> PosInf /\
             k < 4 ** n /\ k <> 0 ==>
-            lambda {x | &k / 2 pow n <= f x /\ f x < (&k + 1) / 2 pow n} <> PosInf
+            lambda {x | &k / 2 pow n <= f x /\ f x < (&k + 1) / 2 pow n} <>
+            PosInf
 Proof
     rpt STRIP_TAC
  >> qabbrev_tac ‘nf = Normal o f’
@@ -4490,6 +4491,53 @@ Proof
  >> MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_SUB
  >> CONJ_TAC (* 2 subgoals, same tactics *)
  >> MATCH_MP_TAC NONNEGATIVE_ABSOLUTELY_INTEGRABLE >> simp []
+QED
+
+Theorem lemma_fn_seq_finite_measure1_alt[local] :
+    !f k n. f IN borel_measurable borel /\ (!x. 0 <= f x) /\
+            f integrable_on univ(:real) /\
+            k < 4 ** n /\ k <> 0 ==>
+            lambda {x | &k / 2 pow n <= f x /\ f x < (&k + 1) / 2 pow n} <>
+            PosInf
+Proof
+    RW_TAC std_ss [integrable_on]
+ >> qmatch_abbrev_tac ‘lambda s <> PosInf’
+ >> ‘!x. x IN s ==> &k / 2 pow n <= f x’ by rw [Abbr ‘s’]
+ >> qabbrev_tac ‘c :real = &k / 2 pow n’
+ >> Know ‘0 < c’
+ >- (qunabbrev_tac ‘c’ \\
+     MATCH_MP_TAC REAL_LT_DIV >> simp [POW_POS_LT])
+ >> DISCH_TAC
+ >> Know ‘s IN subsets borel’
+ >- (qunabbrev_tac ‘s’ \\
+     MATCH_MP_TAC
+       (SRULE [sigma_algebra_borel, space_borel]
+              (ISPEC “borel” in_borel_measurable_ge_lt_imp)) >> art [])
+ >> DISCH_TAC
+ >> ‘s IN measurable_sets lborel’ by simp [sets_lborel]
+ >> ‘s IN measurable_sets lebesgue’
+      by METIS_TAC [SUBSET_DEF, lborel_subset_lebesgue]
+ >> Cases_on ‘negligible s’
+ >- (‘lmeasure s = 0’ by PROVE_TAC [negligible_iff_lmeasure_zero] \\
+     ‘lambda s = 0’ by PROVE_TAC [lambda_eq_lebesgue] \\
+     simp [])
+ >> CCONTR_TAC >> fs []
+ (* NOTE: The idea is to show that f does NOT have (finite) integral
+
+    c * lambda s =
+    c * integral UNIV (indicator s) =
+    integral UNIV (\x. c * indicator s x) <=
+    integral UNIV (\x. f x * indicator s x) <= integral UNIV f (= y)
+  *)
+ >> cheat
+QED
+
+Theorem lemma_fn_seq_finite_measure2_alt[local] :
+    !f n. f IN borel_measurable borel /\ (!x. 0 <= f x) /\
+          f integrable_on univ(:real) ==>
+          lambda {x | 2 pow n <= f x} <> PosInf
+Proof
+    cheat
 QED
 
 (* END *)
