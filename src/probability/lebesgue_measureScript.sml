@@ -4500,7 +4500,7 @@ Theorem lemma_fn_seq_finite_measure1_alt[local] :
             lambda {x | &k / 2 pow n <= f x /\ f x < (&k + 1) / 2 pow n} <>
             PosInf
 Proof
-    RW_TAC std_ss [integrable_on]
+    rpt GEN_TAC >> STRIP_TAC
  >> qmatch_abbrev_tac ‘lambda s <> PosInf’
  >> ‘!x. x IN s ==> &k / 2 pow n <= f x’ by rw [Abbr ‘s’]
  >> qabbrev_tac ‘c :real = &k / 2 pow n’
@@ -4521,14 +4521,15 @@ Proof
  >- (‘lmeasure s = 0’ by PROVE_TAC [negligible_iff_lmeasure_zero] \\
      ‘lambda s = 0’ by PROVE_TAC [lambda_eq_lebesgue] \\
      simp [])
- >> CCONTR_TAC >> fs []
  (* NOTE: The idea is to show that f does NOT have (finite) integral
 
-    c * lambda s =
     c * integral UNIV (indicator s) =
     integral UNIV (\x. c * indicator s x) <=
-    integral UNIV (\x. f x * indicator s x) <= integral UNIV f (= y)
+    integral UNIV (\x. f x * indicator s x) <= integral UNIV f
   *)
+ >> simp [lambda_eq_lebesgue]
+ >> Suff ‘s IN integrable_sets UNIV’
+ >- METIS_TAC [integrable_sets_iff_finite_measure]
  >> cheat
 QED
 
