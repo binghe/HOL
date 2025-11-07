@@ -6936,32 +6936,37 @@ QED
 (* More lemmas that are useful later.                                        *)
 (* ------------------------------------------------------------------------- *)
 
-val HAS_INTEGRAL_DROP_POS_AE = store_thm ("HAS_INTEGRAL_DROP_POS_AE",
- ``!f:real->real s t i.
+Theorem HAS_INTEGRAL_DROP_POS_AE:
+   !f:real->real s t i.
         (f has_integral i) s /\
         negligible t /\ (!x. x IN s DIFF t ==> &0 <= f x)
-        ==> &0 <= i``,
+        ==> &0 <= i
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC HAS_INTEGRAL_DROP_POS THEN
   EXISTS_TAC ``f:real->real`` THEN EXISTS_TAC ``s DIFF t:real->bool`` THEN
   ASM_REWRITE_TAC[] THEN MATCH_MP_TAC HAS_INTEGRAL_SPIKE_SET THEN
   EXISTS_TAC ``s:real->bool`` THEN ASM_REWRITE_TAC[] THEN
   FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
         NEGLIGIBLE_SUBSET)) THEN
-  SET_TAC[]);
+  SET_TAC[]
+QED
 
-val INTEGRAL_DROP_POS_AE = store_thm ("INTEGRAL_DROP_POS_AE",
- ``!f:real->real s t.
+Theorem INTEGRAL_DROP_POS_AE:
+   !f:real->real s t.
         f integrable_on s /\
         negligible t /\ (!x. x IN s DIFF t ==> &0 <=(f x))
-        ==> &0 <= (integral s f)``,
+        ==> &0 <= (integral s f)
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC HAS_INTEGRAL_DROP_POS_AE THEN
-  ASM_MESON_TAC[INTEGRABLE_INTEGRAL]);
+  ASM_MESON_TAC[INTEGRABLE_INTEGRAL]
+QED
 
-val HAS_INTEGRAL_SUBSET_COMPONENT_LE = store_thm ("HAS_INTEGRAL_SUBSET_COMPONENT_LE",
- ``!f:real->real s t i j.
+Theorem HAS_INTEGRAL_SUBSET_COMPONENT_LE:
+   !f:real->real s t i j.
         s SUBSET t /\ (f has_integral i) s /\ (f has_integral j) t /\
         (!x. x IN t ==> &0 <= f(x))
-        ==> i <= j``,
+        ==> i <= j
+Proof
   REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[GSYM HAS_INTEGRAL_RESTRICT_UNIV] THEN
   STRIP_TAC THEN MATCH_MP_TAC HAS_INTEGRAL_COMPONENT_LE THEN
   MAP_EVERY EXISTS_TAC
@@ -6971,35 +6976,42 @@ val HAS_INTEGRAL_SUBSET_COMPONENT_LE = store_thm ("HAS_INTEGRAL_SUBSET_COMPONENT
   ASM_SIMP_TAC std_ss [] THEN
   REPEAT STRIP_TAC THEN
   REPEAT(COND_CASES_TAC THEN ASM_REWRITE_TAC[REAL_LE_REFL]) THEN
-  ASM_SET_TAC[]);
+  ASM_SET_TAC[]
+QED
 
-val INTEGRAL_SUBSET_COMPONENT_LE = store_thm ("INTEGRAL_SUBSET_COMPONENT_LE",
- ``!f:real->real s t.
+Theorem INTEGRAL_SUBSET_COMPONENT_LE:
+   !f:real->real s t.
         s SUBSET t /\ f integrable_on s /\ f integrable_on t /\
         (!x. x IN t ==> &0 <= f(x))
-        ==> (integral s f) <= (integral t f)``,
+        ==> (integral s f) <= (integral t f)
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC HAS_INTEGRAL_SUBSET_COMPONENT_LE THEN
-  ASM_MESON_TAC[INTEGRABLE_INTEGRAL]);
+  ASM_MESON_TAC[INTEGRABLE_INTEGRAL]
+QED
 
-val HAS_INTEGRAL_SUBSET_DROP_LE = store_thm ("HAS_INTEGRAL_SUBSET_DROP_LE",
- ``!f:real->real s t i j.
+Theorem HAS_INTEGRAL_SUBSET_DROP_LE:
+   !f:real->real s t i j.
         s SUBSET t /\ (f has_integral i) s /\ (f has_integral j) t /\
         (!x. x IN t ==> &0 <= (f x))
-        ==> i <= j``,
+        ==> i <= j
+Proof
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC HAS_INTEGRAL_SUBSET_COMPONENT_LE THEN
-  REWRITE_TAC[LESS_EQ_REFL] THEN ASM_MESON_TAC[]);
+  REWRITE_TAC[LESS_EQ_REFL] THEN ASM_MESON_TAC[]
+QED
 
-val INTEGRAL_SUBSET_DROP_LE = store_thm ("INTEGRAL_SUBSET_DROP_LE",
- ``!f:real->real s t.
+Theorem INTEGRAL_SUBSET_DROP_LE:
+   !f:real->real s t.
         s SUBSET t /\ f integrable_on s /\ f integrable_on t /\
         (!x. x IN t ==> &0 <= (f(x)))
-        ==> (integral s f) <= (integral t f)``,
+        ==> (integral s f) <= (integral t f)
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC HAS_INTEGRAL_SUBSET_DROP_LE THEN
-  ASM_MESON_TAC[INTEGRABLE_INTEGRAL]);
+  ASM_MESON_TAC[INTEGRABLE_INTEGRAL]
+QED
 
-val HAS_INTEGRAL_ALT = store_thm ("HAS_INTEGRAL_ALT",
- ``!f:real->real s i.
+Theorem HAS_INTEGRAL_ALT:
+   !f:real->real s i.
         (f has_integral i) s <=>
             (!a b. (\x. if x IN s then f x else 0)
                    integrable_on interval[a,b]) /\
@@ -7008,7 +7020,8 @@ val HAS_INTEGRAL_ALT = store_thm ("HAS_INTEGRAL_ALT",
                          !a b. ball (0,B) SUBSET interval[a,b]
                                ==> abs(integral(interval[a,b])
                                           (\x. if x IN s then f x else 0) -
-                                        i) < e)``,
+                                        i) < e)
+Proof
   REPEAT GEN_TAC THEN GEN_REWR_TAC LAND_CONV [HAS_INTEGRAL] THEN
   SPEC_TAC(``\x. if x IN s then (f:real->real) x else 0``,
            ``f:real->real``) THEN
@@ -7031,10 +7044,11 @@ val HAS_INTEGRAL_ALT = store_thm ("HAS_INTEGRAL_ALT",
          @(f :real). f = max (b :real) B)]`` THENL
     [ALL_TAC, MESON_TAC[integrable_on]], ALL_TAC] THEN
     SIMP_TAC std_ss [SUBSET_DEF, IN_INTERVAL, IN_BALL,
-             REAL_MIN_LE, REAL_LE_MAX] THEN REWRITE_TAC [dist] THEN REAL_ARITH_TAC);
+             REAL_MIN_LE, REAL_LE_MAX] THEN REWRITE_TAC [dist] THEN REAL_ARITH_TAC
+QED
 
-val INTEGRABLE_ALT = store_thm ("INTEGRABLE_ALT",
- ``!f:real->real s.
+Theorem INTEGRABLE_ALT:
+   !f:real->real s.
         f integrable_on s <=>
           (!a b. (\x. if x IN s then f x else 0) integrable_on
                  interval[a,b]) /\
@@ -7046,7 +7060,8 @@ val INTEGRABLE_ALT = store_thm ("INTEGRABLE_ALT",
                           ==> abs(integral (interval[a,b])
                                     (\x. if x IN s then f x else 0) -
                                    integral (interval[c,d])
-                                    (\x. if x IN s then f x else 0)) < e)``,
+                                    (\x. if x IN s then f x else 0)) < e)
+Proof
   REPEAT GEN_TAC THEN
   GEN_REWR_TAC LAND_CONV [integrable_on] THEN
   ONCE_REWRITE_TAC[HAS_INTEGRAL_ALT] THEN
@@ -7114,10 +7129,11 @@ val INTEGRABLE_ALT = store_thm ("INTEGRABLE_ALT",
   REWRITE_TAC[GSYM ABS_BOUNDS] THEN MATCH_MP_TAC REAL_LE_TRANS THEN
   EXISTS_TAC ``abs(x:real)`` THEN ASM_SIMP_TAC std_ss [REAL_LE_REFL] THEN
   REPEAT(POP_ASSUM MP_TAC) THEN REWRITE_TAC[GSYM REAL_OF_NUM_GE, real_ge] THEN
-  METIS_TAC [REAL_LE_TRANS, REAL_LE_LT]);
+  METIS_TAC [REAL_LE_TRANS, REAL_LE_LT]
+QED
 
-val INTEGRABLE_ALT_SUBSET = store_thm ("INTEGRABLE_ALT_SUBSET",
- ``!f:real->real s.
+Theorem INTEGRABLE_ALT_SUBSET:
+   !f:real->real s.
         f integrable_on s <=>
           (!a b. (\x. if x IN s then f x else 0) integrable_on
                  interval[a,b]) /\
@@ -7129,7 +7145,8 @@ val INTEGRABLE_ALT_SUBSET = store_thm ("INTEGRABLE_ALT_SUBSET",
                           ==> abs(integral (interval[a,b])
                                     (\x. if x IN s then f x else 0) -
                                    integral (interval[c,d])
-                                    (\x. if x IN s then f x else 0)) < e)``,
+                                    (\x. if x IN s then f x else 0)) < e)
+Proof
   REPEAT GEN_TAC THEN GEN_REWR_TAC LAND_CONV [INTEGRABLE_ALT] THEN
   ABBREV_TAC ``g:real->real = \x. if x IN s then f x else 0`` THEN
   POP_ASSUM(K ALL_TAC) THEN
@@ -7149,18 +7166,21 @@ val INTEGRABLE_ALT_SUBSET = store_thm ("INTEGRABLE_ALT_SUBSET",
     MP_TAC(ISPECL [``a:real``, ``b:real``] th) THEN
     MP_TAC(ISPECL [``c:real``, ``d:real``] th)) THEN
   ASM_SIMP_TAC std_ss [INTER_SUBSET] THEN
-  GEN_REWR_TAC (RAND_CONV o RAND_CONV o RAND_CONV) [GSYM REAL_HALF] THEN REAL_ARITH_TAC);
+  GEN_REWR_TAC (RAND_CONV o RAND_CONV o RAND_CONV) [GSYM REAL_HALF] THEN REAL_ARITH_TAC
+QED
 
-val INTEGRABLE_ON_SUBINTERVAL = store_thm ("INTEGRABLE_ON_SUBINTERVAL",
- ``!f:real->real s a b.
+Theorem INTEGRABLE_ON_SUBINTERVAL:
+   !f:real->real s a b.
         f integrable_on s /\ interval[a,b] SUBSET s
-        ==> f integrable_on interval[a,b]``,
+        ==> f integrable_on interval[a,b]
+Proof
   REPEAT GEN_TAC THEN
   GEN_REWR_TAC (LAND_CONV o LAND_CONV) [INTEGRABLE_ALT] THEN
   DISCH_THEN(CONJUNCTS_THEN2 (MP_TAC o CONJUNCT1) ASSUME_TAC) THEN
   DISCH_THEN(MP_TAC o SPECL [``a:real``, ``b:real``]) THEN
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] INTEGRABLE_EQ) THEN
-  ASM_SET_TAC[]);
+  ASM_SET_TAC[]
+QED
 
 Theorem INTEGRAL_SPLIT :
     !f:real->real a b t.
@@ -7238,11 +7258,12 @@ Proof
       COND_CASES_TAC >> ASM_REAL_ARITH_TAC ] ]
 QED
 
-val lemma1 = prove (
-   ``!f:(num->bool)->real n.
+Theorem lemma1[local]:
+     !f:(num->bool)->real n.
           sum {s | s SUBSET { 1n..SUC n}} f =
           sum {s | s SUBSET { 1n..n}} f +
-          sum {s | s SUBSET { 1n..n}} (\s. f(SUC n INSERT s))``,
+          sum {s | s SUBSET { 1n..n}} (\s. f(SUC n INSERT s))
+Proof
     REPEAT STRIP_TAC THEN
     REWRITE_TAC[NUMSEG_CLAUSES, ARITH_PROVE ``1 <= SUC n``, POWERSET_CLAUSES] THEN
     W(MP_TAC o PART_MATCH (lhs o rand) SUM_UNION o lhs o snd) THEN
@@ -7261,7 +7282,7 @@ val lemma1 = prove (
       REWRITE_TAC[IN_INSERT, IN_NUMSEG] THEN ARITH_TAC,
       DISCH_TAC THEN ASM_REWRITE_TAC [] THEN POP_ASSUM K_TAC THEN
       DISCH_THEN SUBST1_TAC THEN AP_TERM_TAC THEN
-      REWRITE_TAC [METIS [o_DEF] `` (\s. f (SUC n INSERT s)) =  f o (\s. SUC n INSERT s)``]
+      REWRITE_TAC [METIS [o_DEF] `` (\s. f (SUC n INSERT s)) = f o (\s. SUC n INSERT s)``]
       THEN MATCH_MP_TAC (SUM_IMAGE) THEN
       SIMP_TAC std_ss [FINITE_POWERSET, FINITE_NUMSEG] THEN
       MAP_EVERY X_GEN_TAC [``s:num->bool``, ``t:num->bool``] THEN
@@ -7269,11 +7290,12 @@ val lemma1 = prove (
        ``~(a IN i)
         ==> s SUBSET i /\ t SUBSET i /\ (a INSERT s = a INSERT t)
             ==> (s = t)``) THEN
-      REWRITE_TAC[IN_NUMSEG] THEN ARITH_TAC]);
+      REWRITE_TAC[IN_NUMSEG] THEN ARITH_TAC]
+QED
 
-val lemma2 = prove (
-   ``!f:real->real m a:real c:real d:real.
-          f integrable_on univ(:real) /\ m <=  1n /\
+Theorem lemma2[local]:
+     !f:real->real m a:real c:real d:real.
+          f integrable_on univ(:real) /\ m <= 1n /\
           ((a = c) \/ (d = c)) /\
           ((a = c) ==> (a = d)) /\ ((a <= c) /\ (a <= d))
           ==> (integral(interval[a,d]) f =
@@ -7281,7 +7303,8 @@ val lemma2 = prove (
                  (\s. -(&1) pow CARD {i | i IN s /\ d < c} *
                    integral
                     (interval[(@f. f = if  1n IN s then min c d else a:real),
-                              (@f. f = if  1n IN s then max c d else c:real)]) f))``,
+                              (@f. f = if  1n IN s then max c d else c:real)]) f))
+Proof
     GEN_TAC THEN INDUCT_TAC THENL
      [SIMP_TAC arith_ss [NUMSEG_CLAUSES, SUBSET_EMPTY, GSPEC_EQ, GSPEC_EQ2] THEN
       SIMP_TAC std_ss [SUM_SING, NOT_IN_EMPTY, GSPEC_F, CARD_EMPTY, CARD_INSERT] THEN
@@ -7341,11 +7364,13 @@ val lemma2 = prove (
     [UNDISCH_TAC ``(a = c) ==> (c = d:real)`` THEN
      UNDISCH_TAC ``(a = c) \/ (d = c:real)`` THEN POP_ASSUM MP_TAC THEN
      REAL_ARITH_TAC, SIMP_TAC real_ss [REAL_LE_LT, min_def, max_def]] THEN
-     DISCH_TAC THEN SIMP_TAC real_ss [GSPEC_F, CARD_EMPTY, pow]);
+     DISCH_TAC THEN SIMP_TAC real_ss [GSPEC_F, CARD_EMPTY, pow]
+QED
 
-val HAS_INTEGRAL_REFLECT_GEN = store_thm ("HAS_INTEGRAL_REFLECT_GEN",
- ``!f:real->real i s.
-     ((\x. f(-x)) has_integral i) s <=> (f has_integral i) (IMAGE (\x. -x) s)``,
+Theorem HAS_INTEGRAL_REFLECT_GEN:
+   !f:real->real i s.
+     ((\x. f(-x)) has_integral i) s <=> (f has_integral i) (IMAGE (\x. -x) s)
+Proof
   REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[HAS_INTEGRAL_ALT] THEN
   SIMP_TAC std_ss [] THEN
   GEN_REWR_TAC (LAND_CONV o ONCE_DEPTH_CONV)
@@ -7377,24 +7402,29 @@ val HAS_INTEGRAL_REFLECT_GEN = store_thm ("HAS_INTEGRAL_REFLECT_GEN",
        ``(abs (-x') < B ==> -x' IN interval [(x,y)]) =
     (\x'. abs (-x') < B ==> -x' IN interval [(x,y)]) x'``] THEN
   SIMP_TAC std_ss [METIS [REAL_NEG_NEG] ``(!x:real. P (-x)) <=> (!x. P x)``] THEN
-  SIMP_TAC std_ss [ABS_NEG]);
+  SIMP_TAC std_ss [ABS_NEG]
+QED
 
-val INTEGRABLE_REFLECT_GEN = store_thm ("INTEGRABLE_REFLECT_GEN",
- ``!f:real->real s.
-        (\x. f(-x)) integrable_on s <=> f integrable_on (IMAGE (\x. -x) s)``,
-  REWRITE_TAC[integrable_on, HAS_INTEGRAL_REFLECT_GEN]);
+Theorem INTEGRABLE_REFLECT_GEN:
+   !f:real->real s.
+        (\x. f(-x)) integrable_on s <=> f integrable_on (IMAGE (\x. -x) s)
+Proof
+  REWRITE_TAC[integrable_on, HAS_INTEGRAL_REFLECT_GEN]
+QED
 
-val INTEGRAL_REFLECT_GEN = store_thm ("INTEGRAL_REFLECT_GEN",
- ``!f:real->real s.
-        integral s (\x. f(-x)) = integral (IMAGE (\x. -x) s) f``,
-   REWRITE_TAC[integral, HAS_INTEGRAL_REFLECT_GEN]);
+Theorem INTEGRAL_REFLECT_GEN:
+   !f:real->real s.
+        integral s (\x. f(-x)) = integral (IMAGE (\x. -x) s) f
+Proof
+   REWRITE_TAC[integral, HAS_INTEGRAL_REFLECT_GEN]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* A straddling criterion for integrability.                                 *)
 (* ------------------------------------------------------------------------- *)
 
-val INTEGRABLE_STRADDLE_INTERVAL = store_thm ("INTEGRABLE_STRADDLE_INTERVAL",
-  ``!f:real->real a b.
+Theorem INTEGRABLE_STRADDLE_INTERVAL:
+    !f:real->real a b.
         (!e. &0 < e
              ==> ?g h i j. (g has_integral i) (interval[a,b]) /\
                            (h has_integral j) (interval[a,b]) /\
@@ -7402,7 +7432,8 @@ val INTEGRABLE_STRADDLE_INTERVAL = store_thm ("INTEGRABLE_STRADDLE_INTERVAL",
                            !x. x IN interval[a,b]
                                ==> (g x) <= (f x) /\
                                    (f x) <= (h x))
-        ==> f integrable_on interval[a,b]``,
+        ==> f integrable_on interval[a,b]
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[INTEGRABLE_CAUCHY] THEN
   X_GEN_TAC ``e:real`` THEN DISCH_TAC THEN
   FIRST_X_ASSUM(MP_TAC o SPEC ``e / &3:real``) THEN
@@ -7449,11 +7480,14 @@ val INTEGRABLE_STRADDLE_INTERVAL = store_thm ("INTEGRABLE_STRADDLE_INTERVAL",
   CONJ_TAC THEN MATCH_MP_TAC SUM_LE THEN
   SIMP_TAC std_ss [FORALL_PROD] THEN REPEAT STRIP_TAC THEN
   ASM_SIMP_TAC std_ss [] THEN MATCH_MP_TAC REAL_LE_LMUL_IMP THEN
-  METIS_TAC[TAGGED_DIVISION_OF, CONTENT_POS_LE, SUBSET_DEF]);
+  METIS_TAC[TAGGED_DIVISION_OF, CONTENT_POS_LE, SUBSET_DEF]
+QED
 
-val lemma = prove (
-  ``&0:real <= x /\ x <= y ==> abs x <= abs y``,
-   REAL_ARITH_TAC);
+Theorem lemma[local]:
+    &0:real <= x /\ x <= y ==> abs x <= abs y
+Proof
+   REAL_ARITH_TAC
+QED
 
 Theorem INTEGRABLE_STRADDLE :
     !f:real->real s.
@@ -7616,11 +7650,12 @@ Proof
   COND_CASES_TAC THEN ASM_SIMP_TAC std_ss [REAL_LE_REFL]
 QED
 
-val HAS_INTEGRAL_STRADDLE_NULL = store_thm ("HAS_INTEGRAL_STRADDLE_NULL",
- ``!f g:real->real s.
+Theorem HAS_INTEGRAL_STRADDLE_NULL:
+   !f g:real->real s.
         (!x. x IN s ==> &0 <= (f x) /\ (f x) <= (g x)) /\
         (g has_integral (0)) s
-        ==> (f has_integral (0)) s``,
+        ==> (f has_integral (0)) s
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[HAS_INTEGRAL_INTEGRABLE_INTEGRAL] THEN
   MATCH_MP_TAC(TAUT `a /\ (a ==> b) ==> a /\ b`) THEN CONJ_TAC THENL
    [MATCH_MP_TAC INTEGRABLE_STRADDLE THEN
@@ -7636,16 +7671,18 @@ val HAS_INTEGRAL_STRADDLE_NULL = store_thm ("HAS_INTEGRAL_STRADDLE_NULL",
       MATCH_MP_TAC(ISPECL [``(\x. 0):real->real``, ``f:real->real``]
         HAS_INTEGRAL_DROP_LE)] THEN
     EXISTS_TAC ``s:real->bool`` THEN
-    ASM_SIMP_TAC std_ss [GSYM HAS_INTEGRAL_INTEGRAL, HAS_INTEGRAL_0]]);
+    ASM_SIMP_TAC std_ss [GSYM HAS_INTEGRAL_INTEGRAL, HAS_INTEGRAL_0]]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Adding integrals over several sets.                                       *)
 (* ------------------------------------------------------------------------- *)
 
-val HAS_INTEGRAL_UNION = store_thm ("HAS_INTEGRAL_UNION",
- ``!f:real->real i j s t.
+Theorem HAS_INTEGRAL_UNION:
+   !f:real->real i j s t.
         (f has_integral i) s /\ (f has_integral j) t /\ negligible(s INTER t)
-        ==> (f has_integral (i + j)) (s UNION t)``,
+        ==> (f has_integral (i + j)) (s UNION t)
+Proof
   REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[GSYM HAS_INTEGRAL_RESTRICT_UNIV] THEN
   REWRITE_TAC[CONJ_ASSOC] THEN DISCH_THEN(CONJUNCTS_THEN ASSUME_TAC) THEN
   MATCH_MP_TAC HAS_INTEGRAL_SPIKE THEN
@@ -7659,23 +7696,27 @@ val HAS_INTEGRAL_UNION = store_thm ("HAS_INTEGRAL_UNION",
   MATCH_MP_TAC EQ_IMPLIES THEN AP_THM_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
   REWRITE_TAC[FUN_EQ_THM] THEN GEN_TAC THEN
   MAP_EVERY ASM_CASES_TAC [``(x:real) IN s``, ``(x:real) IN t``] THEN
-  ASM_SIMP_TAC std_ss[] THEN REAL_ARITH_TAC);
+  ASM_SIMP_TAC std_ss[] THEN REAL_ARITH_TAC
+QED
 
-val INTEGRAL_UNION = store_thm ("INTEGRAL_UNION",
- ``!f:real->real s t.
+Theorem INTEGRAL_UNION:
+   !f:real->real s t.
         f integrable_on s /\ f integrable_on t /\ negligible(s INTER t)
-        ==> (integral (s UNION t) f = integral s f + integral t f)``,
+        ==> (integral (s UNION t) f = integral s f + integral t f)
+Proof
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC INTEGRAL_UNIQUE THEN
   MATCH_MP_TAC HAS_INTEGRAL_UNION THEN
-  ASM_SIMP_TAC std_ss [GSYM HAS_INTEGRAL_INTEGRAL]);
+  ASM_SIMP_TAC std_ss [GSYM HAS_INTEGRAL_INTEGRAL]
+QED
 
-val HAS_INTEGRAL_BIGUNION = store_thm ("HAS_INTEGRAL_BIGUNION",
- ``!f:real->real i t.
+Theorem HAS_INTEGRAL_BIGUNION:
+   !f:real->real i t.
         FINITE t /\
         (!s. s IN t ==> (f has_integral (i s)) s) /\
         (!s s'. s IN t /\ s' IN t /\ ~(s = s') ==> negligible(s INTER s'))
-        ==> (f has_integral (sum t i)) (BIGUNION t)``,
+        ==> (f has_integral (sum t i)) (BIGUNION t)
+Proof
   REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[GSYM HAS_INTEGRAL_RESTRICT_UNIV] THEN
   REWRITE_TAC[CONJ_ASSOC] THEN DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
   DISCH_TAC THEN POP_ASSUM (MP_TAC o ONCE_REWRITE_RULE [METIS []
@@ -7738,14 +7779,16 @@ val HAS_INTEGRAL_BIGUNION = store_thm ("HAS_INTEGRAL_BIGUNION",
       sum (t :(real -> bool) -> bool)
       (\(b :real -> bool). if (b :real -> bool) = a then f x else (0 :real))`` THENL
     [MATCH_MP_TAC SUM_EQ THEN METIS_TAC [], DISCH_TAC THEN ASM_REWRITE_TAC []] THEN
-    ASM_SIMP_TAC std_ss [SUM_DELTA]]);
+    ASM_SIMP_TAC std_ss [SUM_DELTA]]
+QED
 
-val HAS_INTEGRAL_DIFF = store_thm ("HAS_INTEGRAL_DIFF",
- ``!f:real->real i j s t.
+Theorem HAS_INTEGRAL_DIFF:
+   !f:real->real i j s t.
     (f has_integral i) s /\
     (f has_integral j) t /\
     negligible (t DIFF s)
-    ==> (f has_integral (i - j)) (s DIFF t)``,
+    ==> (f has_integral (i - j)) (s DIFF t)
+Proof
   REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[GSYM HAS_INTEGRAL_RESTRICT_UNIV] THEN
   REWRITE_TAC[CONJ_ASSOC] THEN DISCH_THEN(CONJUNCTS_THEN ASSUME_TAC) THEN
   MATCH_MP_TAC HAS_INTEGRAL_SPIKE THEN
@@ -7759,26 +7802,30 @@ val HAS_INTEGRAL_DIFF = store_thm ("HAS_INTEGRAL_DIFF",
   MATCH_MP_TAC EQ_IMPLIES THEN AP_THM_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
   REWRITE_TAC[FUN_EQ_THM] THEN GEN_TAC THEN
   MAP_EVERY ASM_CASES_TAC [``(x:real) IN s``, ``(x:real) IN t``] THEN
-  ASM_SIMP_TAC std_ss [] THEN REAL_ARITH_TAC);
+  ASM_SIMP_TAC std_ss [] THEN REAL_ARITH_TAC
+QED
 
-val INTEGRAL_DIFF = store_thm ("INTEGRAL_DIFF",
- ``!f:real->real s t.
+Theorem INTEGRAL_DIFF:
+   !f:real->real s t.
         f integrable_on s /\ f integrable_on t /\ negligible(t DIFF s)
-        ==> (integral (s DIFF t) f = integral s f - integral t f)``,
+        ==> (integral (s DIFF t) f = integral s f - integral t f)
+Proof
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC INTEGRAL_UNIQUE THEN
   MATCH_MP_TAC HAS_INTEGRAL_DIFF THEN
-  ASM_SIMP_TAC std_ss [GSYM HAS_INTEGRAL_INTEGRAL]);
+  ASM_SIMP_TAC std_ss [GSYM HAS_INTEGRAL_INTEGRAL]
+QED
 
 (* ------------------------------------------------------------------------------ *)
 (* In particular adding integrals over a division, maybe not of an interval. 7044 *)
 (* ------------------------------------------------------------------------------ *)
 
-val HAS_INTEGRAL_COMBINE_DIVISION = store_thm ("HAS_INTEGRAL_COMBINE_DIVISION",
- ``!f:real->real s d i.
+Theorem HAS_INTEGRAL_COMBINE_DIVISION:
+   !f:real->real s d i.
         d division_of s /\
         (!k. k IN d ==> (f has_integral (i k)) k)
-        ==> (f has_integral (sum d i)) s``,
+        ==> (f has_integral (sum d i)) s
+Proof
   REPEAT STRIP_TAC THEN
   UNDISCH_TAC ``d division_of s`` THEN DISCH_TAC THEN
   FIRST_ASSUM(SUBST1_TAC o SYM o last o CONJUNCTS o
@@ -7802,62 +7849,74 @@ val HAS_INTEGRAL_COMBINE_DIVISION = store_thm ("HAS_INTEGRAL_COMBINE_DIVISION",
   EXISTS_TAC ``(interval[u,v:real] DIFF interval(u,v)) UNION
                (interval[x,y] DIFF interval(x,y))`` THEN
   SIMP_TAC std_ss [NEGLIGIBLE_FRONTIER_INTERVAL, NEGLIGIBLE_UNION] THEN
-  ASM_SET_TAC[]);
+  ASM_SET_TAC[]
+QED
 
-val INTEGRAL_COMBINE_DIVISION_BOTTOMUP = store_thm ("INTEGRAL_COMBINE_DIVISION_BOTTOMUP",
- ``!f:real->real d s.
+Theorem INTEGRAL_COMBINE_DIVISION_BOTTOMUP:
+   !f:real->real d s.
         d division_of s /\ (!k. k IN d ==> f integrable_on k)
-        ==> (integral s f = sum d (\i. integral i f))``,
+        ==> (integral s f = sum d (\i. integral i f))
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC INTEGRAL_UNIQUE THEN
   MATCH_MP_TAC HAS_INTEGRAL_COMBINE_DIVISION THEN
-  ASM_SIMP_TAC std_ss [GSYM HAS_INTEGRAL_INTEGRAL]);
+  ASM_SIMP_TAC std_ss [GSYM HAS_INTEGRAL_INTEGRAL]
+QED
 
-val HAS_INTEGRAL_COMBINE_DIVISION_TOPDOWN = store_thm ("HAS_INTEGRAL_COMBINE_DIVISION_TOPDOWN",
- ``!f:real->real s d k.
+Theorem HAS_INTEGRAL_COMBINE_DIVISION_TOPDOWN:
+   !f:real->real s d k.
         f integrable_on s /\ d division_of k /\ k SUBSET s
-        ==> (f has_integral (sum d (\i. integral i f))) k``,
+        ==> (f has_integral (sum d (\i. integral i f))) k
+Proof
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC HAS_INTEGRAL_COMBINE_DIVISION THEN
   ASM_SIMP_TAC std_ss [GSYM HAS_INTEGRAL_INTEGRAL] THEN
   FIRST_ASSUM(fn th => REWRITE_TAC[MATCH_MP FORALL_IN_DIVISION th]) THEN
   REPEAT STRIP_TAC THEN MATCH_MP_TAC INTEGRABLE_ON_SUBINTERVAL THEN
   EXISTS_TAC ``s:real->bool`` THEN ASM_SIMP_TAC std_ss [] THEN
-  METIS_TAC[division_of, SUBSET_TRANS]);
+  METIS_TAC[division_of, SUBSET_TRANS]
+QED
 
-val INTEGRAL_COMBINE_DIVISION_TOPDOWN = store_thm ("INTEGRAL_COMBINE_DIVISION_TOPDOWN",
- ``!f:real->real d s.
+Theorem INTEGRAL_COMBINE_DIVISION_TOPDOWN:
+   !f:real->real d s.
         f integrable_on s /\ d division_of s
-        ==> (integral s f = sum d (\i. integral i f))``,
+        ==> (integral s f = sum d (\i. integral i f))
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC INTEGRAL_UNIQUE THEN
   MATCH_MP_TAC HAS_INTEGRAL_COMBINE_DIVISION_TOPDOWN THEN
-  EXISTS_TAC ``s:real->bool`` THEN ASM_SIMP_TAC std_ss [SUBSET_REFL]);
+  EXISTS_TAC ``s:real->bool`` THEN ASM_SIMP_TAC std_ss [SUBSET_REFL]
+QED
 
-val INTEGRABLE_COMBINE_DIVISION = store_thm ("INTEGRABLE_COMBINE_DIVISION",
- ``!f d s.
+Theorem INTEGRABLE_COMBINE_DIVISION:
+   !f d s.
         d division_of s /\ (!i. i IN d ==> f integrable_on i)
-        ==> f integrable_on s``,
-  REWRITE_TAC[integrable_on] THEN MESON_TAC[HAS_INTEGRAL_COMBINE_DIVISION]);
+        ==> f integrable_on s
+Proof
+  REWRITE_TAC[integrable_on] THEN MESON_TAC[HAS_INTEGRAL_COMBINE_DIVISION]
+QED
 
-val INTEGRABLE_ON_SUBDIVISION = store_thm ("INTEGRABLE_ON_SUBDIVISION",
- ``!f:real->real s d i.
+Theorem INTEGRABLE_ON_SUBDIVISION:
+   !f:real->real s d i.
         d division_of i /\
         f integrable_on s /\ i SUBSET s
-        ==> f integrable_on i``,
+        ==> f integrable_on i
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC INTEGRABLE_COMBINE_DIVISION THEN
   EXISTS_TAC ``d:(real->bool)->bool`` THEN ASM_REWRITE_TAC[] THEN
   FIRST_ASSUM(fn th => REWRITE_TAC[MATCH_MP FORALL_IN_DIVISION th]) THEN
   REPEAT STRIP_TAC THEN MATCH_MP_TAC INTEGRABLE_ON_SUBINTERVAL THEN
-  ASM_MESON_TAC[division_of, BIGUNION_SUBSET]);
+  ASM_MESON_TAC[division_of, BIGUNION_SUBSET]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Also tagged divisions.                                                    *)
 (* ------------------------------------------------------------------------- *)
 
-val HAS_INTEGRAL_COMBINE_TAGGED_DIVISION = store_thm ("HAS_INTEGRAL_COMBINE_TAGGED_DIVISION",
- ``!f:real->real s p i.
+Theorem HAS_INTEGRAL_COMBINE_TAGGED_DIVISION:
+   !f:real->real s p i.
         p tagged_division_of s /\
         (!x k. (x,k) IN p ==> (f has_integral (i k)) k)
-        ==> (f has_integral (sum p (\(x,k). i k))) s``,
+        ==> (f has_integral (sum p (\(x,k). i k))) s
+Proof
   REPEAT STRIP_TAC THEN
   SUBGOAL_THEN
    ``!x:real k:real->bool.
@@ -7883,51 +7942,60 @@ val HAS_INTEGRAL_COMBINE_TAGGED_DIVISION = store_thm ("HAS_INTEGRAL_COMBINE_TAGG
     GEN_REWR_TAC (LAND_CONV o ONCE_DEPTH_CONV)
      [METIS [] ``integral (k :real -> bool) f = (\k. integral k f) k``] THEN
     MATCH_MP_TAC SUM_OVER_TAGGED_DIVISION_LEMMA THEN
-    EXISTS_TAC ``s:real->bool`` THEN ASM_SIMP_TAC std_ss [INTEGRAL_NULL]]);
+    EXISTS_TAC ``s:real->bool`` THEN ASM_SIMP_TAC std_ss [INTEGRAL_NULL]]
+QED
 
-val INTEGRAL_COMBINE_TAGGED_DIVISION_BOTTOMUP = store_thm ("INTEGRAL_COMBINE_TAGGED_DIVISION_BOTTOMUP",
- ``!f:real->real p a b.
+Theorem INTEGRAL_COMBINE_TAGGED_DIVISION_BOTTOMUP:
+   !f:real->real p a b.
         p tagged_division_of interval[a,b] /\
         (!x k. (x,k) IN p ==> f integrable_on k)
-        ==> (integral (interval[a,b]) f = sum p (\(x,k). integral k f))``,
+        ==> (integral (interval[a,b]) f = sum p (\(x,k). integral k f))
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC INTEGRAL_UNIQUE THEN
   ONCE_REWRITE_TAC
      [METIS [] ``integral (k :real -> bool) f = (\k. integral k f) k``] THEN
   MATCH_MP_TAC HAS_INTEGRAL_COMBINE_TAGGED_DIVISION THEN
-  ASM_SIMP_TAC std_ss [GSYM HAS_INTEGRAL_INTEGRAL] THEN METIS_TAC []);
+  ASM_SIMP_TAC std_ss [GSYM HAS_INTEGRAL_INTEGRAL] THEN METIS_TAC []
+QED
 
-val HAS_INTEGRAL_COMBINE_TAGGED_DIVISION_TOPDOWN = store_thm ("HAS_INTEGRAL_COMBINE_TAGGED_DIVISION_TOPDOWN",
- ``!f:real->real a b p.
+Theorem HAS_INTEGRAL_COMBINE_TAGGED_DIVISION_TOPDOWN:
+   !f:real->real a b p.
         f integrable_on interval[a,b] /\ p tagged_division_of interval[a,b]
-        ==> (f has_integral (sum p (\(x,k). integral k f))) (interval[a,b])``,
+        ==> (f has_integral (sum p (\(x,k). integral k f))) (interval[a,b])
+Proof
   REPEAT STRIP_TAC THEN
   ONCE_REWRITE_TAC
      [METIS [] ``integral (k :real -> bool) f = (\k. integral k f) k``] THEN
   MATCH_MP_TAC HAS_INTEGRAL_COMBINE_TAGGED_DIVISION THEN
   ASM_SIMP_TAC std_ss [GSYM HAS_INTEGRAL_INTEGRAL] THEN
-  ASM_MESON_TAC[INTEGRABLE_SUBINTERVAL, TAGGED_DIVISION_OF]);
+  ASM_MESON_TAC[INTEGRABLE_SUBINTERVAL, TAGGED_DIVISION_OF]
+QED
 
-val INTEGRAL_COMBINE_TAGGED_DIVISION_TOPDOWN = store_thm ("INTEGRAL_COMBINE_TAGGED_DIVISION_TOPDOWN",
- ``!f:real->real a b p.
+Theorem INTEGRAL_COMBINE_TAGGED_DIVISION_TOPDOWN:
+   !f:real->real a b p.
         f integrable_on interval[a,b] /\ p tagged_division_of interval[a,b]
-        ==> (integral (interval[a,b]) f = sum p (\(x,k). integral k f))``,
+        ==> (integral (interval[a,b]) f = sum p (\(x,k). integral k f))
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC INTEGRAL_UNIQUE THEN
   MATCH_MP_TAC HAS_INTEGRAL_COMBINE_TAGGED_DIVISION_TOPDOWN THEN
-  ASM_SIMP_TAC std_ss []);
+  ASM_SIMP_TAC std_ss []
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Henstock's lemma.                          7180                           *)
 (* ------------------------------------------------------------------------- *)
 
-val lemma = prove (
-  ``(!k. &0 < k ==> x <= e + k) ==> x <= e:real``,
+Theorem lemma[local]:
+    (!k. &0 < k ==> x <= e + k) ==> x <= e:real
+Proof
    DISCH_THEN(MP_TAC o SPEC ``(x - e) / &2:real``) THEN
    ONCE_REWRITE_TAC [REAL_ADD_SYM] THEN REWRITE_TAC [GSYM REAL_LE_SUB_RADD] THEN
    SIMP_TAC std_ss [REAL_LE_RDIV_EQ, REAL_LT_RDIV_EQ, REAL_ARITH ``0 < 2:real``] THEN
-   REAL_ARITH_TAC);
+   REAL_ARITH_TAC
+QED
 
-val HENSTOCK_LEMMA_PART1 = store_thm ("HENSTOCK_LEMMA_PART1",
- ``!f:real->real a b d e.
+Theorem HENSTOCK_LEMMA_PART1:
+   !f:real->real a b d e.
         f integrable_on interval[a,b] /\
         &0 < e /\ gauge d /\
         (!p. p tagged_division_of interval[a,b] /\ d FINE p
@@ -7935,7 +8003,8 @@ val HENSTOCK_LEMMA_PART1 = store_thm ("HENSTOCK_LEMMA_PART1",
                        integral(interval[a,b]) f) < e)
         ==> !p. p tagged_partial_division_of interval[a,b] /\ d FINE p
                             ==> abs(sum p (\(x,k). content k * f x -
-                                                     integral k f)) <= e``,
+                                                     integral k f)) <= e
+Proof
   REPEAT GEN_TAC THEN STRIP_TAC THEN GEN_TAC THEN STRIP_TAC THEN
   MATCH_MP_TAC lemma THEN X_GEN_TAC ``k:real`` THEN DISCH_TAC THEN
   MP_TAC(ISPECL
@@ -8230,7 +8299,8 @@ val HENSTOCK_LEMMA_PART1 = store_thm ("HENSTOCK_LEMMA_PART1",
      METIS [REAL_LT, REAL_OF_NUM_ADD, GSYM ADD1, LESS_0]
     ``&0 < &n + &1:real``] THEN
     REWRITE_TAC[REAL_ARITH ``a * k < k * b <=> &0 < k * (b - a:real)``] THEN
-    MATCH_MP_TAC REAL_LT_MUL THEN ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC]);
+    MATCH_MP_TAC REAL_LT_MUL THEN ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC]
+QED
 
 Theorem ABS_LE_L1[local] :
     !x:real. abs x <= sum{ 1n.. 1n} (\i. abs(x))
@@ -8238,11 +8308,12 @@ Proof
   REWRITE_TAC [NUMSEG_SING, SUM_SING, REAL_LE_REFL]
 QED
 
-val SUM_ABS_ALLSUBSETS_BOUND = store_thm ("SUM_ABS_ALLSUBSETS_BOUND",
- ``!f:'a->real p e.
+Theorem SUM_ABS_ALLSUBSETS_BOUND:
+   !f:'a->real p e.
         FINITE p /\
         (!q. q SUBSET p ==> abs(sum q f) <= e)
-        ==> sum p (\x. abs(f x)) <= &2 * & 1n:real * e``,
+        ==> sum p (\x. abs(f x)) <= &2 * & 1n:real * e
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LE_TRANS THEN
   EXISTS_TAC
    ``sum p (\x:'a. sum { 1n.. 1n} ((\x i. abs((f x:real))) x))`` THEN
@@ -8280,10 +8351,11 @@ val SUM_ABS_ALLSUBSETS_BOUND = store_thm ("SUM_ABS_ALLSUBSETS_BOUND",
   ASM_SIMP_TAC std_ss [SUM_NEG', FINITE_RESTRICT] THEN
   MATCH_MP_TAC(REAL_ARITH ``abs(x) <= e ==> x <= e:real``) THEN
   SIMP_TAC std_ss [ABS_NEG, ETA_AX] THEN
-  FIRST_X_ASSUM MATCH_MP_TAC THEN SET_TAC[]);
+  FIRST_X_ASSUM MATCH_MP_TAC THEN SET_TAC[]
+QED
 
-val HENSTOCK_LEMMA_PART2 = store_thm ("HENSTOCK_LEMMA_PART2",
- ``!f:real->real a b d e.
+Theorem HENSTOCK_LEMMA_PART2:
+   !f:real->real a b d e.
         f integrable_on interval[a,b] /\
         &0 < e /\ gauge d /\
         (!p. p tagged_division_of interval[a,b] /\ d FINE p
@@ -8292,7 +8364,8 @@ val HENSTOCK_LEMMA_PART2 = store_thm ("HENSTOCK_LEMMA_PART2",
         ==> !p. p tagged_partial_division_of interval[a,b] /\ d FINE p
                             ==> sum p (\(x,k). abs(content k * f x -
                                                     integral k f))
-                                <= &2 * & 1n:real * e``,
+                                <= &2 * & 1n:real * e
+Proof
   REPEAT STRIP_TAC THEN SIMP_TAC std_ss [LAMBDA_PAIR] THEN
   ONCE_REWRITE_TAC [METIS []
    ``(content (SND p) * f (FST p) - integral (SND p) f) =
@@ -8306,17 +8379,19 @@ val HENSTOCK_LEMMA_PART2 = store_thm ("HENSTOCK_LEMMA_PART2",
   MAP_EVERY EXISTS_TAC
    [``a:real``, ``b:real``, ``d:real->real->bool``] THEN
   ASM_SIMP_TAC std_ss [] THEN
-  ASM_MESON_TAC[FINE_SUBSET, TAGGED_PARTIAL_DIVISION_SUBSET]);
+  ASM_MESON_TAC[FINE_SUBSET, TAGGED_PARTIAL_DIVISION_SUBSET]
+QED
 
-val HENSTOCK_LEMMA = store_thm ("HENSTOCK_LEMMA",
- ``!f:real->real a b.
+Theorem HENSTOCK_LEMMA:
+   !f:real->real a b.
         f integrable_on interval[a,b]
         ==> !e. &0 < e
                 ==> ?d. gauge d /\
                         !p. p tagged_partial_division_of interval[a,b] /\
                             d FINE p
                             ==> sum p (\(x,k). abs(content k * f x -
-                                                    integral k f)) < e``,
+                                                    integral k f)) < e
+Proof
   MP_TAC HENSTOCK_LEMMA_PART2 THEN
   DISCH_TAC THEN REPEAT GEN_TAC THEN
   POP_ASSUM (MP_TAC o Q.SPECL [`(f :real -> real)`, `(a :real)`, `(b :real)`]) THEN
@@ -8339,25 +8414,29 @@ val HENSTOCK_LEMMA = store_thm ("HENSTOCK_LEMMA",
   SIMP_TAC std_ss [GSYM real_div, REAL_LT_LDIV_EQ,
    METIS [REAL_LT, REAL_OF_NUM_ADD, GSYM ADD1, LESS_0]  ``&0 < &n + &1:real``] THEN
   SIMP_TAC std_ss [REAL_LT_LDIV_EQ, REAL_ARITH ``0:real < (2 * (1 + 1))``] THEN
-  UNDISCH_TAC ``&0 < e:real`` THEN REAL_ARITH_TAC);
+  UNDISCH_TAC ``&0 < e:real`` THEN REAL_ARITH_TAC
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Monotone convergence (bounded interval first).                            *)
 (* ------------------------------------------------------------------------- *)
 
-val lemma = prove (
-  ``{(x,y) | P x y} = {p | P (FST p) (SND p)}``,
-  SIMP_TAC std_ss [EXTENSION, FORALL_PROD, IN_ELIM_PAIR_THM, GSPECIFICATION]);
+Theorem lemma[local]:
+    {(x,y) | P x y} = {p | P (FST p) (SND p)}
+Proof
+  SIMP_TAC std_ss [EXTENSION, FORALL_PROD, IN_ELIM_PAIR_THM, GSPECIFICATION]
+QED
 
-val MONOTONE_CONVERGENCE_INTERVAL = store_thm ("MONOTONE_CONVERGENCE_INTERVAL",
- ``!f:num->real->real g a b.
+Theorem MONOTONE_CONVERGENCE_INTERVAL:
+   !f:num->real->real g a b.
         (!k. (f k) integrable_on interval[a,b]) /\
         (!k x. x IN interval[a,b] ==> (f k x) <= (f (SUC k) x)) /\
         (!x. x IN interval[a,b] ==> ((\k. f k x) --> g x) sequentially) /\
         bounded {integral (interval[a,b]) (f k) | k IN univ(:num)}
         ==> g integrable_on interval[a,b] /\
             ((\k. integral (interval[a,b]) (f k))
-             --> integral (interval[a,b]) g) sequentially``,
+             --> integral (interval[a,b]) g) sequentially
+Proof
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   ASM_CASES_TAC ``content(interval[a:real,b]) = &0`` THENL
    [ASM_SIMP_TAC std_ss [INTEGRAL_NULL, INTEGRABLE_ON_NULL, LIM_CONST],
@@ -8632,7 +8711,8 @@ val MONOTONE_CONVERGENCE_INTERVAL = store_thm ("MONOTONE_CONVERGENCE_INTERVAL",
     ALL_TAC] THEN
   CONJ_TAC THENL [ASM_MESON_TAC[integrable_on], ALL_TAC] THEN
   FIRST_ASSUM(SUBST1_TAC o MATCH_MP INTEGRAL_UNIQUE) THEN
-  ASM_SIMP_TAC std_ss []);
+  ASM_SIMP_TAC std_ss []
+QED
 
 Theorem MONOTONE_CONVERGENCE_INCREASING :
     !f:num->real->real g s.
@@ -8964,14 +9044,15 @@ Proof
   ASM_SIMP_TAC std_ss [REAL_LE_REFL]
 QED
 
-val MONOTONE_CONVERGENCE_DECREASING = store_thm ("MONOTONE_CONVERGENCE_DECREASING",
- ``!f:num->real->real g s.
+Theorem MONOTONE_CONVERGENCE_DECREASING:
+   !f:num->real->real g s.
         (!k. (f k) integrable_on s) /\
         (!k x. x IN s ==> (f (SUC k) x) <= (f k x)) /\
         (!x. x IN s ==> ((\k. f k x) --> g x) sequentially) /\
         bounded {integral s (f k) | k IN univ(:num)}
         ==> g integrable_on s /\
-            ((\k. integral s (f k)) --> integral s g) sequentially``,
+            ((\k. integral s (f k)) --> integral s g) sequentially
+Proof
   REPEAT GEN_TAC THEN DISCH_TAC THEN
   MP_TAC(ISPECL
    [``(\k x. -(f k x)):num->real->real``,
@@ -9012,17 +9093,19 @@ val MONOTONE_CONVERGENCE_DECREASING = store_thm ("MONOTONE_CONVERGENCE_DECREASIN
   ASM_SIMP_TAC std_ss [] THEN MATCH_MP_TAC EQ_IMPLIES THEN AP_THM_TAC THEN
   BINOP_TAC THEN REWRITE_TAC[FUN_EQ_THM] THEN TRY GEN_TAC THEN BETA_TAC THEN
   MATCH_MP_TAC(REAL_ARITH ``(x:real = -y) ==> (-x = y)``) THEN
-  MATCH_MP_TAC INTEGRAL_NEG THEN ASM_REWRITE_TAC[]);
+  MATCH_MP_TAC INTEGRAL_NEG THEN ASM_REWRITE_TAC[]
+QED
 
-val MONOTONE_CONVERGENCE_INCREASING_AE = store_thm ("MONOTONE_CONVERGENCE_INCREASING_AE",
- ``!f:num->real->real g s t.
+Theorem MONOTONE_CONVERGENCE_INCREASING_AE:
+   !f:num->real->real g s t.
         (!k. (f k) integrable_on s) /\
         negligible t /\
         (!k x. x IN s DIFF t ==> (f k x) <= (f (SUC k) x)) /\
         (!x. x IN s DIFF t ==> ((\k. f k x) --> g x) sequentially) /\
         bounded {integral s (f k) | k IN univ(:num)}
         ==> g integrable_on s /\
-            ((\k. integral s (f k)) --> integral s g) sequentially``,
+            ((\k. integral s (f k)) --> integral s g) sequentially
+Proof
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   MP_TAC(ISPECL
    [``\n x. if x IN t then 0
@@ -9083,17 +9166,19 @@ val MONOTONE_CONVERGENCE_INCREASING_AE = store_thm ("MONOTONE_CONVERGENCE_INCREA
       MATCH_MP_TAC EQ_IMPLIES THEN AP_THM_TAC THEN BINOP_TAC THEN
       REWRITE_TAC[FUN_EQ_THM] THEN REPEAT GEN_TAC THEN BETA_TAC THEN
       MATCH_MP_TAC INTEGRAL_SPIKE THEN EXISTS_TAC ``t:real->bool`` THEN
-      ASM_SIMP_TAC std_ss [IN_DIFF]]]);
+      ASM_SIMP_TAC std_ss [IN_DIFF]]]
+QED
 
-val MONOTONE_CONVERGENCE_DECREASING_AE = store_thm ("MONOTONE_CONVERGENCE_DECREASING_AE",
- ``!f:num->real->real g s t.
+Theorem MONOTONE_CONVERGENCE_DECREASING_AE:
+   !f:num->real->real g s t.
         (!k. (f k) integrable_on s) /\
         negligible t /\
         (!k x. x IN s DIFF t ==> (f (SUC k) x) <= (f k x)) /\
         (!x. x IN s DIFF t ==> ((\k. f k x) --> g x) sequentially) /\
         bounded {integral s (f k) | k IN univ(:num)}
         ==> g integrable_on s /\
-            ((\k. integral s (f k)) --> integral s g) sequentially``,
+            ((\k. integral s (f k)) --> integral s g) sequentially
+Proof
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   MP_TAC(ISPECL
    [``\n x. if x IN t then 0
@@ -9154,21 +9239,25 @@ val MONOTONE_CONVERGENCE_DECREASING_AE = store_thm ("MONOTONE_CONVERGENCE_DECREA
       MATCH_MP_TAC EQ_IMPLIES THEN AP_THM_TAC THEN BINOP_TAC THEN
       REWRITE_TAC[FUN_EQ_THM] THEN REPEAT GEN_TAC THEN BETA_TAC THEN
       MATCH_MP_TAC INTEGRAL_SPIKE THEN EXISTS_TAC ``t:real->bool`` THEN
-      ASM_SIMP_TAC std_ss [IN_DIFF]]]);
+      ASM_SIMP_TAC std_ss [IN_DIFF]]]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* More lemmas about existence and bounds between integrals.                 *)
 (* ------------------------------------------------------------------------- *)
 
-val lemma = prove (
- ``(!e:real. &0 < e ==> x < y + e) ==> x <= y``,
-   DISCH_THEN(MP_TAC o SPEC ``x - y:real``) THEN REAL_ARITH_TAC);
+Theorem lemma[local]:
+   (!e:real. &0 < e ==> x < y + e) ==> x <= y
+Proof
+   DISCH_THEN(MP_TAC o SPEC ``x - y:real``) THEN REAL_ARITH_TAC
+QED
 
-val INTEGRAL_ABS_BOUND_INTEGRAL = store_thm ("INTEGRAL_ABS_BOUND_INTEGRAL",
- ``!f:real->real g s.
+Theorem INTEGRAL_ABS_BOUND_INTEGRAL:
+   !f:real->real g s.
         f integrable_on s /\ g integrable_on s /\
         (!x. x IN s ==> abs(f x) <= (g x))
-        ==> abs(integral s f) <= (integral s g)``,
+        ==> abs(integral s f) <= (integral s g)
+Proof
   SUBGOAL_THEN
    ``!f:real->real g a b.
         f integrable_on interval[a,b] /\ g integrable_on interval[a,b] /\
@@ -9247,13 +9336,15 @@ val INTEGRAL_ABS_BOUND_INTEGRAL = store_thm ("INTEGRAL_ABS_BOUND_INTEGRAL",
   REPEAT(FIRST_X_ASSUM(SUBST1_TAC o SYM o MATCH_MP INTEGRAL_UNIQUE)) THEN
   FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN
   REPEAT STRIP_TAC THEN SIMP_TAC std_ss [] THEN
-  COND_CASES_TAC THEN ASM_SIMP_TAC std_ss [ABS_0, REAL_LE_REFL]);
+  COND_CASES_TAC THEN ASM_SIMP_TAC std_ss [ABS_0, REAL_LE_REFL]
+QED
 
-val INTEGRAL_ABS_BOUND_INTEGRAL_COMPONENT = store_thm ("INTEGRAL_ABS_BOUND_INTEGRAL_COMPONENT",
- ``!f:real->real g:real->real s.
+Theorem INTEGRAL_ABS_BOUND_INTEGRAL_COMPONENT:
+   !f:real->real g:real->real s.
         f integrable_on s /\ g integrable_on s /\
         (!x. x IN s ==> abs(f x) <= (g x))
-        ==> abs(integral s f) <= (integral s g)``,
+        ==> abs(integral s f) <= (integral s g)
+Proof
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC REAL_LE_TRANS THEN
   EXISTS_TAC ``(integral s ((\y. (y)) o (g:real->real)))`` THEN
@@ -9268,26 +9359,30 @@ val INTEGRAL_ABS_BOUND_INTEGRAL_COMPONENT = store_thm ("INTEGRAL_ABS_BOUND_INTEG
         (\y. (y)) (integral s g)``
   SUBST1_TAC THENL
    [MATCH_MP_TAC INTEGRAL_LINEAR THEN ASM_REWRITE_TAC[],
-    SIMP_TAC std_ss [REAL_LE_REFL]]);
+    SIMP_TAC std_ss [REAL_LE_REFL]]
+QED
 
-val HAS_INTEGRAL_ABS_BOUND_INTEGRAL_COMPONENT = store_thm ("HAS_INTEGRAL_ABS_BOUND_INTEGRAL_COMPONENT",
- ``!f:real->real g:real->real s i j.
+Theorem HAS_INTEGRAL_ABS_BOUND_INTEGRAL_COMPONENT:
+   !f:real->real g:real->real s i j.
         (f has_integral i) s /\ (g has_integral j) s /\
         (!x. x IN s ==> abs(f x) <= (g x))
-        ==> abs(i) <= j``,
+        ==> abs(i) <= j
+Proof
   REPEAT STRIP_TAC THEN
   REPEAT(FIRST_X_ASSUM(fn th =>
    SUBST1_TAC(SYM(MATCH_MP INTEGRAL_UNIQUE th)) THEN
    ASSUME_TAC(MATCH_MP HAS_INTEGRAL_INTEGRABLE th))) THEN
   MATCH_MP_TAC INTEGRAL_ABS_BOUND_INTEGRAL_COMPONENT THEN
-  ASM_SIMP_TAC std_ss []);
+  ASM_SIMP_TAC std_ss []
+QED
 
-val lemma = prove (
-   ``!f:real->real g.
+Theorem lemma[local]:
+     !f:real->real g.
           (!a b. f integrable_on interval[a,b]) /\
           (!x. abs(f x) <= (g x)) /\
           g integrable_on univ(:real)
-          ==> f integrable_on univ(:real)``,
+          ==> f integrable_on univ(:real)
+Proof
     REPEAT GEN_TAC THEN
     REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
     ONCE_REWRITE_TAC[INTEGRABLE_ALT_SUBSET] THEN
@@ -9309,22 +9404,25 @@ val lemma = prove (
     MATCH_MP_TAC(REAL_ARITH ``x <= y ==> x <= abs y:real``) THEN
     MATCH_MP_TAC INTEGRAL_ABS_BOUND_INTEGRAL THEN
     METIS_TAC[integrable_on, HAS_INTEGRAL_DIFF, NEGLIGIBLE_EMPTY,
-                 SET_RULE ``s SUBSET t ==> (s DIFF t = {})``]);
+                 SET_RULE ``s SUBSET t ==> (s DIFF t = {})``]
+QED
 
-val INTEGRABLE_ON_ALL_INTERVALS_INTEGRABLE_BOUND =  store_thm ("INTEGRABLE_ON_ALL_INTERVALS_INTEGRABLE_BOUND",
- ``!f:real->real g s.
+Theorem INTEGRABLE_ON_ALL_INTERVALS_INTEGRABLE_BOUND:
+   !f:real->real g s.
         (!a b. (\x. if x IN s then f x else 0)
                integrable_on interval[a,b]) /\
         (!x. x IN s ==> abs(f x) <= (g x)) /\
         g integrable_on s
-        ==> f integrable_on s``,
+        ==> f integrable_on s
+Proof
   REPEAT GEN_TAC THEN
   REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
   ONCE_REWRITE_TAC[GSYM INTEGRABLE_RESTRICT_UNIV] THEN
   DISCH_TAC THEN MATCH_MP_TAC lemma THEN
   EXISTS_TAC ``(\x. if x IN s then g x else 0):real->real`` THEN
   ASM_SIMP_TAC std_ss [] THEN
-  GEN_TAC THEN COND_CASES_TAC THEN ASM_SIMP_TAC std_ss [ABS_0, REAL_POS]);
+  GEN_TAC THEN COND_CASES_TAC THEN ASM_SIMP_TAC std_ss [ABS_0, REAL_POS]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Explicit limit statement for integrals over [0,inf].                      *)
@@ -9409,10 +9507,12 @@ Proof
     REAL_ARITH_TAC ]
 QED
 
-val FLOOR_POS = store_thm ("FLOOR_POS",
- ``!x. &0 <= x ==> (?n. flr x = &n)``,
+Theorem FLOOR_POS:
+   !x. &0 <= x ==> (?n. flr x = &n)
+Proof
   GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC [NUM_FLOOR_def] THEN
-  METIS_TAC []);
+  METIS_TAC []
+QED
 
 Theorem HAS_INTEGRAL_LIM_SEQUENTIALLY :
     !f:real->real l.
@@ -9564,29 +9664,34 @@ QED
 
 val _ = set_fixity "has_bounded_setvariation_on" (Infix(NONASSOC, 450));
 
-val set_variation = new_definition ("set_variation",
- ``set_variation s (f:(real->bool)->real) =
-        sup { sum d (\k. abs(f k)) | ?t. d division_of t /\ t SUBSET s}``);
+Definition set_variation[nocompute]:
+ set_variation s (f:(real->bool)->real) =
+        sup { sum d (\k. abs(f k)) | ?t. d division_of t /\ t SUBSET s}
+End
 
-val has_bounded_setvariation_on = new_definition ("has_bounded_setvariation_on",
-  ``(f:(real->bool)->real) has_bounded_setvariation_on s <=>
+Definition has_bounded_setvariation_on[nocompute]:
+  (f:(real->bool)->real) has_bounded_setvariation_on s <=>
         ?B. !d t. d division_of t /\ t SUBSET s
-                  ==> sum d (\k. abs(f k)) <= B``);
+                  ==> sum d (\k. abs(f k)) <= B
+End
 
-val HAS_BOUNDED_SETVARIATION_ON = store_thm ("HAS_BOUNDED_SETVARIATION_ON",
- ``!f:(real->bool)->real s.
+Theorem HAS_BOUNDED_SETVARIATION_ON:
+   !f:(real->bool)->real s.
         f  has_bounded_setvariation_on s <=>
         ?B. &0 < B /\ !d t. d division_of t /\ t SUBSET s
-                            ==> sum d (\k. abs(f k)) <= B``,
+                            ==> sum d (\k. abs(f k)) <= B
+Proof
   REWRITE_TAC[has_bounded_setvariation_on] THEN
-  MESON_TAC[REAL_ARITH ``&0 < abs B + &1 /\ (x <= B ==> x <= abs B + &1:real)``]);
+  MESON_TAC[REAL_ARITH ``&0 < abs B + &1 /\ (x <= B ==> x <= abs B + &1:real)``]
+QED
 
-val HAS_BOUNDED_SETVARIATION_ON_EQ = store_thm ("HAS_BOUNDED_SETVARIATION_ON_EQ",
- ``!f g:(real->bool)->real s.
+Theorem HAS_BOUNDED_SETVARIATION_ON_EQ:
+   !f g:(real->bool)->real s.
         (!a b. ~(interval[a,b] = {}) /\ interval[a,b] SUBSET s
                ==> (f(interval[a,b]) = g(interval[a,b]))) /\
         f has_bounded_setvariation_on s
-        ==> g has_bounded_setvariation_on s``,
+        ==> g has_bounded_setvariation_on s
+Proof
   REPEAT GEN_TAC THEN
   DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
   REWRITE_TAC[has_bounded_setvariation_on] THEN
@@ -9599,13 +9704,15 @@ val HAS_BOUNDED_SETVARIATION_ON_EQ = store_thm ("HAS_BOUNDED_SETVARIATION_ON_EQ"
   DISCH_TAC THEN FIRST_ASSUM(fn th =>
   ONCE_REWRITE_TAC [MATCH_MP FORALL_IN_DIVISION_NONEMPTY th]) THEN
   REPEAT STRIP_TAC THEN SIMP_TAC std_ss [] THEN AP_TERM_TAC THEN
-  METIS_TAC[division_of, SUBSET_TRANS]);
+  METIS_TAC[division_of, SUBSET_TRANS]
+QED
 
-val SET_VARIATION_EQ = store_thm ("SET_VARIATION_EQ",
- ``!f g:(real->bool)->real s.
+Theorem SET_VARIATION_EQ:
+   !f g:(real->bool)->real s.
         (!a b. ~(interval[a,b] = {}) /\ interval[a,b] SUBSET s
                ==> (f(interval[a,b]) = g(interval[a,b])))
-        ==> (set_variation s f = set_variation s g)``,
+        ==> (set_variation s f = set_variation s g)
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[set_variation] THEN AP_TERM_TAC THEN
   ONCE_REWRITE_TAC [METIS []
    ``{sum d (\k. abs (f k)) | ?t. d division_of t /\ t SUBSET s} =
@@ -9618,20 +9725,24 @@ val SET_VARIATION_EQ = store_thm ("SET_VARIATION_EQ",
   DISCH_TAC THEN FIRST_ASSUM(fn th =>
   ONCE_REWRITE_TAC [MATCH_MP FORALL_IN_DIVISION_NONEMPTY th]) THEN
   REPEAT STRIP_TAC THEN SIMP_TAC std_ss [] THEN AP_TERM_TAC THEN
-  METIS_TAC[division_of, SUBSET_TRANS]);
+  METIS_TAC[division_of, SUBSET_TRANS]
+QED
 
-val HAS_BOUNDED_SETVARIATION_ON_COMPONENTWISE = store_thm ("HAS_BOUNDED_SETVARIATION_ON_COMPONENTWISE",
- ``!f:(real->bool)->real s.
+Theorem HAS_BOUNDED_SETVARIATION_ON_COMPONENTWISE:
+   !f:(real->bool)->real s.
         f has_bounded_setvariation_on s <=>
-            (\k. f k) has_bounded_setvariation_on s``,
-  METIS_TAC []);
+            (\k. f k) has_bounded_setvariation_on s
+Proof
+  METIS_TAC []
+QED
 
-val HAS_BOUNDED_SETVARIATION_COMPARISON = store_thm ("HAS_BOUNDED_SETVARIATION_COMPARISON",
- ``!f:(real->bool)->real g:(real->bool)->real s.
+Theorem HAS_BOUNDED_SETVARIATION_COMPARISON:
+   !f:(real->bool)->real g:(real->bool)->real s.
         f has_bounded_setvariation_on s /\
         (!a b. ~(interval[a,b] = {}) /\ interval[a,b] SUBSET s
                ==> abs(g(interval[a,b])) <= abs(f(interval[a,b])))
-        ==> g has_bounded_setvariation_on s``,
+        ==> g has_bounded_setvariation_on s
+Proof
   REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
   REWRITE_TAC[has_bounded_setvariation_on] THEN
   DISCH_THEN (X_CHOOSE_TAC ``B:real``) THEN EXISTS_TAC ``B:real`` THEN
@@ -9642,7 +9753,8 @@ val HAS_BOUNDED_SETVARIATION_COMPARISON = store_thm ("HAS_BOUNDED_SETVARIATION_C
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] REAL_LE_TRANS) THEN
   MATCH_MP_TAC SUM_LE THEN
   CONJ_TAC THENL [ASM_MESON_TAC[division_of], ALL_TAC] THEN
-  SIMP_TAC std_ss [] THEN METIS_TAC[division_of, SUBSET_TRANS]);
+  SIMP_TAC std_ss [] THEN METIS_TAC[division_of, SUBSET_TRANS]
+QED
 
 Theorem HAS_BOUNDED_SETVARIATION_ON_ABS:
   !f:(real->bool)->real s.
@@ -9653,8 +9765,8 @@ Proof
   SIMP_TAC std_ss [ABS_ABS]
 QED
 
-val SETVARIATION_EQUAL_LEMMA = store_thm ("SETVARIATION_EQUAL_LEMMA",
- ``!mf:((real->bool)->real)->((real->bool)->real) ms ms'.
+Theorem SETVARIATION_EQUAL_LEMMA:
+   !mf:((real->bool)->real)->((real->bool)->real) ms ms'.
         (!s. (ms'(ms s) = s) /\ (ms(ms' s) = s)) /\
         (!f a b. ~(interval[a,b] = {})
                  ==> (mf f (ms (interval[a,b])) = f (interval[a,b])) /\
@@ -9666,7 +9778,8 @@ val SETVARIATION_EQUAL_LEMMA = store_thm ("SETVARIATION_EQUAL_LEMMA",
                    (IMAGE ms' d) division_of ms' t)
    ==> (!f s. (mf f) has_bounded_setvariation_on (ms s) <=>
               f has_bounded_setvariation_on s) /\
-       (!f s. set_variation (ms s) (mf f) = set_variation s f)``,
+       (!f s. set_variation (ms s) (mf f) = set_variation s f)
+Proof
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   REWRITE_TAC[has_bounded_setvariation_on, set_variation] THEN
   KNOW_TAC `` ((!(f :(real -> bool) -> real) (s :real -> bool).
@@ -9721,13 +9834,15 @@ val SETVARIATION_EQUAL_LEMMA = store_thm ("SETVARIATION_EQUAL_LEMMA",
   SUBGOAL_THEN ``?a' b':real. ~(interval[a',b'] = {}) /\
                         (ms' (interval[a:real,b]) = interval[a',b'])``
   STRIP_ASSUME_TAC THENL [ASM_MESON_TAC[], ALL_TAC] THEN
-  ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[]);
+  ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[]
+QED
 
-val HAS_BOUNDED_SETVARIATION_ON_ELEMENTARY = store_thm ("HAS_BOUNDED_SETVARIATION_ON_ELEMENTARY",
- ``!f:(real->bool)->real s.
+Theorem HAS_BOUNDED_SETVARIATION_ON_ELEMENTARY:
+   !f:(real->bool)->real s.
         (?d. d division_of s)
         ==> (f has_bounded_setvariation_on s <=>
-             ?B. !d. d division_of s ==> sum d (\k. abs(f k)) <= B)``,
+             ?B. !d. d division_of s ==> sum d (\k. abs(f k)) <= B)
+Proof
   REPEAT GEN_TAC THEN DISCH_TAC THEN
   REWRITE_TAC[has_bounded_setvariation_on] THEN EQ_TAC THEN
   DISCH_THEN (X_CHOOSE_TAC ``B:real``) THEN EXISTS_TAC ``B:real`` THEN
@@ -9742,31 +9857,38 @@ val HAS_BOUNDED_SETVARIATION_ON_ELEMENTARY = store_thm ("HAS_BOUNDED_SETVARIATIO
   MATCH_MP_TAC REAL_LE_TRANS THEN
   EXISTS_TAC ``sum d'' (\k:real->bool. abs(f k:real))`` THEN
   ASM_SIMP_TAC std_ss [] THEN MATCH_MP_TAC SUM_SUBSET_SIMPLE THEN
-  ASM_SIMP_TAC std_ss [ABS_POS] THEN ASM_MESON_TAC[DIVISION_OF_FINITE]);
+  ASM_SIMP_TAC std_ss [ABS_POS] THEN ASM_MESON_TAC[DIVISION_OF_FINITE]
+QED
 
-val HAS_BOUNDED_SETVARIATION_ON_INTERVAL = store_thm ("HAS_BOUNDED_SETVARIATION_ON_INTERVAL",
- ``!f:(real->bool)->real a b.
+Theorem HAS_BOUNDED_SETVARIATION_ON_INTERVAL:
+   !f:(real->bool)->real a b.
         f has_bounded_setvariation_on interval[a,b] <=>
-        ?B. !d. d division_of interval[a,b] ==> sum d (\k. abs(f k)) <= B``,
+        ?B. !d. d division_of interval[a,b] ==> sum d (\k. abs(f k)) <= B
+Proof
   REPEAT GEN_TAC THEN MATCH_MP_TAC HAS_BOUNDED_SETVARIATION_ON_ELEMENTARY THEN
-  REWRITE_TAC[ELEMENTARY_INTERVAL]);
+  REWRITE_TAC[ELEMENTARY_INTERVAL]
+QED
 
-val HAS_BOUNDED_SETVARIATION_ON_UNIV = store_thm ("HAS_BOUNDED_SETVARIATION_ON_UNIV",
- ``!f:(real->bool)->real.
+Theorem HAS_BOUNDED_SETVARIATION_ON_UNIV:
+   !f:(real->bool)->real.
         f has_bounded_setvariation_on univ(:real) <=>
-        ?B. !d. d division_of BIGUNION d ==> sum d (\k. abs(f k)) <= B``,
+        ?B. !d. d division_of BIGUNION d ==> sum d (\k. abs(f k)) <= B
+Proof
   REPEAT GEN_TAC THEN
   REWRITE_TAC[has_bounded_setvariation_on, SUBSET_UNIV] THEN
-  MESON_TAC[DIVISION_OF_UNION_SELF]);
+  MESON_TAC[DIVISION_OF_UNION_SELF]
+QED
 
-val HAS_BOUNDED_SETVARIATION_ON_SUBSET = store_thm ("HAS_BOUNDED_SETVARIATION_ON_SUBSET",
- ``!f:(real->bool)->real s t.
+Theorem HAS_BOUNDED_SETVARIATION_ON_SUBSET:
+   !f:(real->bool)->real s t.
         f has_bounded_setvariation_on s /\ t SUBSET s
-        ==> f has_bounded_setvariation_on t``,
+        ==> f has_bounded_setvariation_on t
+Proof
   REPEAT GEN_TAC THEN
   DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
   REWRITE_TAC[has_bounded_setvariation_on] THEN
-  METIS_TAC[SUBSET_TRANS]);
+  METIS_TAC[SUBSET_TRANS]
+QED
 
 Theorem HAS_BOUNDED_SETVARIATION_ON_IMP_BOUNDED_ON_SUBINTERVALS :
     !f:(real->bool)->real s.
@@ -9793,10 +9915,11 @@ Proof
  >> Q.EXISTS_TAC `abs B` >> art [ABS_LE]
 QED
 
-val HAS_BOUNDED_SETVARIATION_ON_COMPOSE_LINEAR = store_thm ("HAS_BOUNDED_SETVARIATION_ON_COMPOSE_LINEAR",
- ``!f:(real->bool)->real g:real->real s.
+Theorem HAS_BOUNDED_SETVARIATION_ON_COMPOSE_LINEAR:
+   !f:(real->bool)->real g:real->real s.
         f has_bounded_setvariation_on s /\ linear g
-        ==> (g o f) has_bounded_setvariation_on s``,
+        ==> (g o f) has_bounded_setvariation_on s
+Proof
   REPEAT GEN_TAC THEN
   REWRITE_TAC[HAS_BOUNDED_SETVARIATION_ON] THEN
   DISCH_THEN(CONJUNCTS_THEN2 (X_CHOOSE_TAC ``B:real``) ASSUME_TAC) THEN
@@ -9809,40 +9932,50 @@ val HAS_BOUNDED_SETVARIATION_ON_COMPOSE_LINEAR = store_thm ("HAS_BOUNDED_SETVARI
    [MATCH_MP_TAC SUM_LE THEN ASM_MESON_TAC[DIVISION_OF_FINITE],
     GEN_REWR_TAC RAND_CONV [REAL_MUL_SYM] THEN
     SIMP_TAC std_ss [SUM_LMUL] THEN ASM_SIMP_TAC std_ss [REAL_LE_LMUL] THEN
-    ASM_MESON_TAC[]]);
+    ASM_MESON_TAC[]]
+QED
 
-val HAS_BOUNDED_SETVARIATION_ON_0 = store_thm ("HAS_BOUNDED_SETVARIATION_ON_0",
- ``!s:real->bool. (\x. 0) has_bounded_setvariation_on s``,
+Theorem HAS_BOUNDED_SETVARIATION_ON_0:
+   !s:real->bool. (\x. 0) has_bounded_setvariation_on s
+Proof
   REWRITE_TAC[has_bounded_setvariation_on, ABS_0, SUM_0] THEN
-  MESON_TAC[REAL_LE_REFL]);
+  MESON_TAC[REAL_LE_REFL]
+QED
 
-val SET_VARIATION_0 = store_thm ("SET_VARIATION_0",
- ``!s:real->bool. set_variation s (\x. 0) = &0``,
+Theorem SET_VARIATION_0:
+   !s:real->bool. set_variation s (\x. 0) = &0
+Proof
   GEN_TAC THEN REWRITE_TAC[set_variation, ABS_0, SUM_0] THEN
   GEN_REWR_TAC RAND_CONV [GSYM SUP_SING] THEN
   AP_TERM_TAC THEN SIMP_TAC std_ss [EXTENSION, GSPECIFICATION, IN_SING] THEN
-  MESON_TAC[ELEMENTARY_EMPTY, EMPTY_SUBSET]);
+  MESON_TAC[ELEMENTARY_EMPTY, EMPTY_SUBSET]
+QED
 
-val HAS_BOUNDED_SETVARIATION_ON_CMUL = store_thm ("HAS_BOUNDED_SETVARIATION_ON_CMUL",
- ``!f:(real->bool)->real c s.
+Theorem HAS_BOUNDED_SETVARIATION_ON_CMUL:
+   !f:(real->bool)->real c s.
         f has_bounded_setvariation_on s
-        ==> (\x. c * f x) has_bounded_setvariation_on s``,
+        ==> (\x. c * f x) has_bounded_setvariation_on s
+Proof
   REPEAT GEN_TAC THEN
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT, o_DEF]
      HAS_BOUNDED_SETVARIATION_ON_COMPOSE_LINEAR) THEN
-  REWRITE_TAC[linear] THEN REAL_ARITH_TAC);
+  REWRITE_TAC[linear] THEN REAL_ARITH_TAC
+QED
 
-val HAS_BOUNDED_SETVARIATION_ON_NEG = store_thm ("HAS_BOUNDED_SETVARIATION_ON_NEG",
- ``!f:(real->bool)->real s.
+Theorem HAS_BOUNDED_SETVARIATION_ON_NEG:
+   !f:(real->bool)->real s.
         (\x. -(f x)) has_bounded_setvariation_on s <=>
-        f has_bounded_setvariation_on s``,
-  SIMP_TAC std_ss [has_bounded_setvariation_on, ABS_NEG]);
+        f has_bounded_setvariation_on s
+Proof
+  SIMP_TAC std_ss [has_bounded_setvariation_on, ABS_NEG]
+QED
 
-val HAS_BOUNDED_SETVARIATION_ON_ADD = store_thm ("HAS_BOUNDED_SETVARIATION_ON_ADD",
- ``!f:(real->bool)->real g s.
+Theorem HAS_BOUNDED_SETVARIATION_ON_ADD:
+   !f:(real->bool)->real g s.
         f has_bounded_setvariation_on s /\
         g has_bounded_setvariation_on s
-        ==> (\x. f x + g x) has_bounded_setvariation_on s``,
+        ==> (\x. f x + g x) has_bounded_setvariation_on s
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[has_bounded_setvariation_on] THEN
   DISCH_THEN(CONJUNCTS_THEN2
    (X_CHOOSE_THEN ``B:real`` STRIP_ASSUME_TAC)
@@ -9855,21 +9988,25 @@ val HAS_BOUNDED_SETVARIATION_ON_ADD = store_thm ("HAS_BOUNDED_SETVARIATION_ON_AD
   CONJ_TAC THENL [ALL_TAC, ASM_MESON_TAC[REAL_LE_ADD2]] THEN
   FIRST_ASSUM(ASSUME_TAC o MATCH_MP DIVISION_OF_FINITE) THEN
   ASM_SIMP_TAC std_ss [GSYM SUM_ADD] THEN
-  MATCH_MP_TAC SUM_LE THEN ASM_SIMP_TAC std_ss [ABS_TRIANGLE]);
+  MATCH_MP_TAC SUM_LE THEN ASM_SIMP_TAC std_ss [ABS_TRIANGLE]
+QED
 
-val HAS_BOUNDED_SETVARIATION_ON_SUB = store_thm ("HAS_BOUNDED_SETVARIATION_ON_SUB",
- ``!f:(real->bool)->real g s.
+Theorem HAS_BOUNDED_SETVARIATION_ON_SUB:
+   !f:(real->bool)->real g s.
         f has_bounded_setvariation_on s /\
         g has_bounded_setvariation_on s
-        ==> (\x. f x - g x) has_bounded_setvariation_on s``,
+        ==> (\x. f x - g x) has_bounded_setvariation_on s
+Proof
   REWRITE_TAC[REAL_ARITH ``x - y:real = x + -y``] THEN
-  SIMP_TAC std_ss [HAS_BOUNDED_SETVARIATION_ON_ADD, HAS_BOUNDED_SETVARIATION_ON_NEG]);
+  SIMP_TAC std_ss [HAS_BOUNDED_SETVARIATION_ON_ADD, HAS_BOUNDED_SETVARIATION_ON_NEG]
+QED
 
-val HAS_BOUNDED_SETVARIATION_ON_NULL = store_thm ("HAS_BOUNDED_SETVARIATION_ON_NULL",
- ``!f:(real->bool)->real s.
+Theorem HAS_BOUNDED_SETVARIATION_ON_NULL:
+   !f:(real->bool)->real s.
         (!a b. (content(interval[a,b]) = &0) ==> (f(interval[a,b]) = 0)) /\
         (content s = &0) /\ bounded s
-        ==> f has_bounded_setvariation_on s``,
+        ==> f has_bounded_setvariation_on s
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[has_bounded_setvariation_on] THEN
   EXISTS_TAC ``&0:real`` THEN REPEAT STRIP_TAC THEN
   MATCH_MP_TAC(REAL_ARITH ``(x = &0) ==> x <= &0:real``) THEN
@@ -9879,14 +10016,16 @@ val HAS_BOUNDED_SETVARIATION_ON_NULL = store_thm ("HAS_BOUNDED_SETVARIATION_ON_N
   REPEAT STRIP_TAC THEN FIRST_ASSUM MATCH_MP_TAC THEN
   MATCH_MP_TAC CONTENT_0_SUBSET_GEN THEN
   EXISTS_TAC ``s:real->bool`` THEN ASM_REWRITE_TAC[] THEN
-  ASM_MESON_TAC[division_of, SUBSET_TRANS]);
+  ASM_MESON_TAC[division_of, SUBSET_TRANS]
+QED
 
-val SET_VARIATION_ELEMENTARY_LEMMA = store_thm ("SET_VARIATION_ELEMENTARY_LEMMA",
- ``!f:(real->bool)->real s b.
+Theorem SET_VARIATION_ELEMENTARY_LEMMA:
+   !f:(real->bool)->real s b.
         (?d. d division_of s)
         ==> ((!d t. d division_of t /\ t SUBSET s
                     ==> sum d (\k. abs(f k)) <= b) <=>
-             (!d. d division_of s ==> sum d (\k. abs(f k)) <= b))``,
+             (!d. d division_of s ==> sum d (\k. abs(f k)) <= b))
+Proof
   REPEAT GEN_TAC THEN DISCH_THEN(X_CHOOSE_TAC ``d1:(real->bool)->bool``) THEN
   EQ_TAC THENL [MESON_TAC[SUBSET_REFL], ALL_TAC] THEN
   DISCH_TAC THEN X_GEN_TAC ``d2:(real->bool)->bool`` THEN
@@ -9898,32 +10037,38 @@ val SET_VARIATION_ELEMENTARY_LEMMA = store_thm ("SET_VARIATION_ELEMENTARY_LEMMA"
   MATCH_MP_TAC REAL_LE_TRANS THEN
   EXISTS_TAC ``sum d3 (\k:real->bool. abs(f k:real))`` THEN
   ASM_SIMP_TAC std_ss [] THEN MATCH_MP_TAC SUM_SUBSET_SIMPLE THEN
-  ASM_SIMP_TAC std_ss [ABS_POS] THEN ASM_MESON_TAC[DIVISION_OF_FINITE]);
+  ASM_SIMP_TAC std_ss [ABS_POS] THEN ASM_MESON_TAC[DIVISION_OF_FINITE]
+QED
 
-val SET_VARIATION_ON_ELEMENTARY = store_thm ("SET_VARIATION_ON_ELEMENTARY",
- ``!f:(real->bool)->real s.
+Theorem SET_VARIATION_ON_ELEMENTARY:
+   !f:(real->bool)->real s.
         (?d. d division_of s)
         ==> (set_variation s f =
-             sup { sum d (\k. abs(f k)) | d division_of s})``,
+             sup { sum d (\k. abs(f k)) | d division_of s})
+Proof
   REPEAT GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[set_variation, sup_alt] THEN
   SIMP_TAC std_ss [FORALL_IN_GSPEC, LEFT_IMP_EXISTS_THM] THEN
-  ASM_SIMP_TAC std_ss [SET_VARIATION_ELEMENTARY_LEMMA]);
+  ASM_SIMP_TAC std_ss [SET_VARIATION_ELEMENTARY_LEMMA]
+QED
 
-val SET_VARIATION_ON_INTERVAL = store_thm ("SET_VARIATION_ON_INTERVAL",
- ``!f:(real->bool)->real a b.
+Theorem SET_VARIATION_ON_INTERVAL:
+   !f:(real->bool)->real a b.
         set_variation (interval[a,b]) f =
-        sup { sum d (\k. abs(f k)) | d division_of interval[a,b]}``,
+        sup { sum d (\k. abs(f k)) | d division_of interval[a,b]}
+Proof
   REPEAT GEN_TAC THEN MATCH_MP_TAC SET_VARIATION_ON_ELEMENTARY THEN
-  REWRITE_TAC[ELEMENTARY_INTERVAL]);
+  REWRITE_TAC[ELEMENTARY_INTERVAL]
+QED
 
-val HAS_BOUNDED_SETVARIATION_WORKS = store_thm ("HAS_BOUNDED_SETVARIATION_WORKS",
- ``!f:(real->bool)->real s.
+Theorem HAS_BOUNDED_SETVARIATION_WORKS:
+   !f:(real->bool)->real s.
         f has_bounded_setvariation_on s
         ==> (!d t. d division_of t /\ t SUBSET s
                    ==> sum d (\k. abs(f k)) <= set_variation s f) /\
             (!B. (!d t. d division_of t /\ t SUBSET s
                         ==> sum d (\k. abs (f k)) <= B)
-                 ==> set_variation s f <= B)``,
+                 ==> set_variation s f <= B)
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[has_bounded_setvariation_on] THEN
   DISCH_TAC THEN
   MP_TAC(ISPEC ``{ sum d (\k. abs((f:(real->bool)->real) k)) |
@@ -9935,84 +10080,104 @@ val HAS_BOUNDED_SETVARIATION_WORKS = store_thm ("HAS_BOUNDED_SETVARIATION_WORKS"
   MAP_EVERY EXISTS_TAC [``{}:(real->bool)->bool``] THEN
   REWRITE_TAC[SUM_CLAUSES] THEN EXISTS_TAC ``{}:real->bool`` THEN
   SIMP_TAC std_ss [division_of, EMPTY_SUBSET, NOT_IN_EMPTY, FINITE_EMPTY,
-                   BIGUNION_EMPTY]);
+                   BIGUNION_EMPTY]
+QED
 
-val HAS_BOUNDED_SETVARIATION_WORKS_ON_ELEMENTARY = store_thm ("HAS_BOUNDED_SETVARIATION_WORKS_ON_ELEMENTARY",
- ``!f:(real->bool)->real s.
+Theorem HAS_BOUNDED_SETVARIATION_WORKS_ON_ELEMENTARY:
+   !f:(real->bool)->real s.
         f has_bounded_setvariation_on s /\ (?d. d division_of s)
         ==> (!d. d division_of s
                  ==> sum d (\k. abs(f k)) <= set_variation s f) /\
             (!B. (!d. d division_of s ==> sum d (\k. abs(f k)) <= B)
-                 ==> set_variation s f <= B)``,
+                 ==> set_variation s f <= B)
+Proof
   SIMP_TAC std_ss [GSYM SET_VARIATION_ELEMENTARY_LEMMA] THEN
-  METIS_TAC[HAS_BOUNDED_SETVARIATION_WORKS]);
+  METIS_TAC[HAS_BOUNDED_SETVARIATION_WORKS]
+QED
 
-val HAS_BOUNDED_SETVARIATION_WORKS_ON_INTERVAL = store_thm ("HAS_BOUNDED_SETVARIATION_WORKS_ON_INTERVAL",
- ``!f:(real->bool)->real a b.
+Theorem HAS_BOUNDED_SETVARIATION_WORKS_ON_INTERVAL:
+   !f:(real->bool)->real a b.
       f has_bounded_setvariation_on interval[a,b]
       ==> (!d. d division_of interval[a,b]
                ==> sum d (\k. abs(f k)) <= set_variation (interval[a,b]) f) /\
           (!B. (!d. d division_of interval[a,b]
                     ==> sum d (\k. abs(f k)) <= B)
-               ==> set_variation (interval[a,b]) f <= B)``,
-  SIMP_TAC std_ss [HAS_BOUNDED_SETVARIATION_WORKS_ON_ELEMENTARY, ELEMENTARY_INTERVAL]);
+               ==> set_variation (interval[a,b]) f <= B)
+Proof
+  SIMP_TAC std_ss [HAS_BOUNDED_SETVARIATION_WORKS_ON_ELEMENTARY, ELEMENTARY_INTERVAL]
+QED
 
-val SET_VARIATION_UBOUND = store_thm ("SET_VARIATION_UBOUND",
- ``!f:(real->bool)->real s B.
+Theorem SET_VARIATION_UBOUND:
+   !f:(real->bool)->real s B.
         f has_bounded_setvariation_on s /\
         (!d t. d division_of t /\ t SUBSET s ==> sum d (\k. abs(f k)) <= B)
-        ==> set_variation s f <= B``,
-  METIS_TAC[HAS_BOUNDED_SETVARIATION_WORKS]);
+        ==> set_variation s f <= B
+Proof
+  METIS_TAC[HAS_BOUNDED_SETVARIATION_WORKS]
+QED
 
-val SET_VARIATION_UBOUND_ON_INTERVAL = store_thm ("SET_VARIATION_UBOUND_ON_INTERVAL",
- ``!f:(real->bool)->real a b B.
+Theorem SET_VARIATION_UBOUND_ON_INTERVAL:
+   !f:(real->bool)->real a b B.
         f has_bounded_setvariation_on interval[a,b] /\
         (!d. d division_of interval[a,b] ==> sum d (\k. abs(f k)) <= B)
-        ==> set_variation (interval[a,b]) f <= B``,
+        ==> set_variation (interval[a,b]) f <= B
+Proof
   SIMP_TAC std_ss [GSYM SET_VARIATION_ELEMENTARY_LEMMA, ELEMENTARY_INTERVAL] THEN
-  METIS_TAC[SET_VARIATION_UBOUND]);
+  METIS_TAC[SET_VARIATION_UBOUND]
+QED
 
-val SET_VARIATION_LBOUND = store_thm ("SET_VARIATION_LBOUND",
- ``!f:(real->bool)->real s B.
+Theorem SET_VARIATION_LBOUND:
+   !f:(real->bool)->real s B.
         f has_bounded_setvariation_on s /\
         (?d t. d division_of t /\ t SUBSET s /\ B <= sum d (\k. abs(f k)))
-        ==> B <= set_variation s f``,
-  METIS_TAC[HAS_BOUNDED_SETVARIATION_WORKS, REAL_LE_TRANS]);
+        ==> B <= set_variation s f
+Proof
+  METIS_TAC[HAS_BOUNDED_SETVARIATION_WORKS, REAL_LE_TRANS]
+QED
 
-val SET_VARIATION_LBOUND_ON_INTERVAL = store_thm ("SET_VARIATION_LBOUND_ON_INTERVAL",
- ``!f:(real->bool)->real a b B.
+Theorem SET_VARIATION_LBOUND_ON_INTERVAL:
+   !f:(real->bool)->real a b B.
         f has_bounded_setvariation_on interval[a,b] /\
         (?d. d division_of interval[a,b] /\ B <= sum d (\k. abs(f k)))
-        ==> B <= set_variation (interval[a,b]) f``,
-  METIS_TAC[HAS_BOUNDED_SETVARIATION_WORKS_ON_INTERVAL, REAL_LE_TRANS]);
+        ==> B <= set_variation (interval[a,b]) f
+Proof
+  METIS_TAC[HAS_BOUNDED_SETVARIATION_WORKS_ON_INTERVAL, REAL_LE_TRANS]
+QED
 
-val SET_VARIATION = store_thm ("SET_VARIATION",
- ``!f:(real->bool)->real s d t.
+Theorem SET_VARIATION:
+   !f:(real->bool)->real s d t.
         f has_bounded_setvariation_on s /\ d division_of t /\ t SUBSET s
-        ==> sum d (\k. abs(f k)) <= set_variation s f``,
-  METIS_TAC[HAS_BOUNDED_SETVARIATION_WORKS]);
+        ==> sum d (\k. abs(f k)) <= set_variation s f
+Proof
+  METIS_TAC[HAS_BOUNDED_SETVARIATION_WORKS]
+QED
 
-val SET_VARIATION_WORKS_ON_INTERVAL = store_thm ("SET_VARIATION_WORKS_ON_INTERVAL",
- ``!f:(real->bool)->real a b d.
+Theorem SET_VARIATION_WORKS_ON_INTERVAL:
+   !f:(real->bool)->real a b d.
         f has_bounded_setvariation_on interval[a,b] /\
         d division_of interval[a,b]
-        ==> sum d (\k. abs(f k)) <= set_variation (interval[a,b]) f``,
-  METIS_TAC[HAS_BOUNDED_SETVARIATION_WORKS_ON_INTERVAL]);
+        ==> sum d (\k. abs(f k)) <= set_variation (interval[a,b]) f
+Proof
+  METIS_TAC[HAS_BOUNDED_SETVARIATION_WORKS_ON_INTERVAL]
+QED
 
-val SET_VARIATION_POS_LE = store_thm ("SET_VARIATION_POS_LE",
- ``!f:(real->bool)->real s.
-        f has_bounded_setvariation_on s ==> &0 <= set_variation s f``,
+Theorem SET_VARIATION_POS_LE:
+   !f:(real->bool)->real s.
+        f has_bounded_setvariation_on s ==> &0 <= set_variation s f
+Proof
   REPEAT STRIP_TAC THEN
   FIRST_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ] SET_VARIATION)) THEN
   DISCH_THEN(MP_TAC o SPECL[``{}:(real->bool)->bool``, ``{}:real->bool``]) THEN
-  REWRITE_TAC[EMPTY_SUBSET, SUM_CLAUSES, DIVISION_OF_TRIVIAL]);
+  REWRITE_TAC[EMPTY_SUBSET, SUM_CLAUSES, DIVISION_OF_TRIVIAL]
+QED
 
-val SET_VARIATION_COMPARISON = store_thm ("SET_VARIATION_COMPARISON",
- ``!f:(real->bool)->real g:(real->bool)->real s.
+Theorem SET_VARIATION_COMPARISON:
+   !f:(real->bool)->real g:(real->bool)->real s.
         f has_bounded_setvariation_on s /\
         (!a b. ~(interval[a,b] = {}) /\ interval[a,b] SUBSET s
                ==> abs(g(interval[a,b])) <= abs(f(interval[a,b])))
-        ==> set_variation s g <= set_variation s f``,
+        ==> set_variation s g <= set_variation s f
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC SET_VARIATION_UBOUND THEN CONJ_TAC THENL
    [ASM_MESON_TAC[HAS_BOUNDED_SETVARIATION_COMPARISON], ALL_TAC] THEN
   UNDISCH_TAC ``f has_bounded_setvariation_on s`` THEN DISCH_TAC THEN
@@ -10028,24 +10193,28 @@ val SET_VARIATION_COMPARISON = store_thm ("SET_VARIATION_COMPARISON",
   UNDISCH_TAC ``d division_of t`` THEN DISCH_TAC THEN FIRST_ASSUM
    (fn th => SIMP_TAC std_ss [MATCH_MP FORALL_IN_DIVISION_NONEMPTY th]) THEN
   REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
-  METIS_TAC[division_of, SUBSET_TRANS]);
+  METIS_TAC[division_of, SUBSET_TRANS]
+QED
 
-val SET_VARIATION_GE_FUNCTION = store_thm ("SET_VARIATION_GE_FUNCTION",
- ``!f:(real->bool)->real s a b.
+Theorem SET_VARIATION_GE_FUNCTION:
+   !f:(real->bool)->real s a b.
         f has_bounded_setvariation_on s /\
         interval[a,b] SUBSET s /\ ~(interval[a,b] = {})
-        ==> abs(f(interval[a,b])) <= set_variation s f``,
+        ==> abs(f(interval[a,b])) <= set_variation s f
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC SET_VARIATION_LBOUND THEN
   ASM_SIMP_TAC std_ss [] THEN EXISTS_TAC ``{interval[a:real,b]}`` THEN
   EXISTS_TAC ``interval[a:real,b]`` THEN
   ASM_SIMP_TAC std_ss [SUM_SING, REAL_LE_REFL] THEN
-  ASM_SIMP_TAC std_ss [DIVISION_OF_SELF]);
+  ASM_SIMP_TAC std_ss [DIVISION_OF_SELF]
+QED
 
-val SET_VARIATION_ON_NULL = store_thm ("SET_VARIATION_ON_NULL",
- ``!f:(real->bool)->real s.
+Theorem SET_VARIATION_ON_NULL:
+   !f:(real->bool)->real s.
         (!a b. (content(interval[a,b]) = &0) ==> (f(interval[a,b]) = 0)) /\
         (content s = &0) /\ bounded s
-        ==> (set_variation s f = &0)``,
+        ==> (set_variation s f = &0)
+Proof
   REPEAT STRIP_TAC THEN
   ONCE_REWRITE_TAC[GSYM REAL_LE_ANTISYM] THEN CONJ_TAC THENL
    [MATCH_MP_TAC SET_VARIATION_UBOUND THEN
@@ -10060,14 +10229,16 @@ val SET_VARIATION_ON_NULL = store_thm ("SET_VARIATION_ON_NULL",
     EXISTS_TAC ``s:real->bool`` THEN ASM_REWRITE_TAC[] THEN
     ASM_MESON_TAC[division_of, SUBSET_TRANS],
     MATCH_MP_TAC SET_VARIATION_POS_LE THEN
-    ASM_SIMP_TAC std_ss [HAS_BOUNDED_SETVARIATION_ON_NULL]]);
+    ASM_SIMP_TAC std_ss [HAS_BOUNDED_SETVARIATION_ON_NULL]]
+QED
 
-val SET_VARIATION_TRIANGLE = store_thm ("SET_VARIATION_TRIANGLE",
- ``!f:(real->bool)->real g s.
+Theorem SET_VARIATION_TRIANGLE:
+   !f:(real->bool)->real g s.
         f has_bounded_setvariation_on s /\
         g has_bounded_setvariation_on s
         ==> set_variation s (\x. f x + g x)
-             <= set_variation s f + set_variation s g``,
+             <= set_variation s f + set_variation s g
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC SET_VARIATION_UBOUND THEN
   ASM_SIMP_TAC std_ss [HAS_BOUNDED_SETVARIATION_ON_ADD] THEN
   MAP_EVERY X_GEN_TAC [``d:(real->bool)->bool``, ``t:real->bool``] THEN
@@ -10079,10 +10250,11 @@ val SET_VARIATION_TRIANGLE = store_thm ("SET_VARIATION_TRIANGLE",
     ASM_SIMP_TAC std_ss [GSYM SUM_ADD] THEN
     MATCH_MP_TAC SUM_LE THEN ASM_SIMP_TAC std_ss [ABS_TRIANGLE],
     MATCH_MP_TAC REAL_LE_ADD2 THEN
-    CONJ_TAC THEN MATCH_MP_TAC SET_VARIATION THEN ASM_MESON_TAC[]]);
+    CONJ_TAC THEN MATCH_MP_TAC SET_VARIATION THEN ASM_MESON_TAC[]]
+QED
 
-val HAS_BOUNDED_SETVARIATION_ON_SUM_AND_SET_VARIATION_SUM_LE = store_thm ("HAS_BOUNDED_SETVARIATION_ON_SUM_AND_SET_VARIATION_SUM_LE",
- ``(!f:'a->(real->bool)->real s k.
+Theorem HAS_BOUNDED_SETVARIATION_ON_SUM_AND_SET_VARIATION_SUM_LE:
+   (!f:'a->(real->bool)->real s k.
         FINITE k /\
         (!i. i IN k ==> f i has_bounded_setvariation_on s)
         ==> (\x. sum k (\i. f i x)) has_bounded_setvariation_on s) /\
@@ -10090,7 +10262,8 @@ val HAS_BOUNDED_SETVARIATION_ON_SUM_AND_SET_VARIATION_SUM_LE = store_thm ("HAS_B
         FINITE k /\
         (!i. i IN k ==> f i has_bounded_setvariation_on s)
         ==> set_variation s (\x. sum k (\i. f i x))
-            <= sum k (\i. set_variation s (f i)))``,
+            <= sum k (\i. set_variation s (f i)))
+Proof
   SIMP_TAC std_ss [GSYM FORALL_AND_THM, TAUT
    `(p ==> q) /\ (p ==> r) <=> p ==> q /\ r`] THEN
   GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
@@ -10118,25 +10291,30 @@ val HAS_BOUNDED_SETVARIATION_ON_SUM_AND_SET_VARIATION_SUM_LE = store_thm ("HAS_B
     SET_VARIATION_TRIANGLE o lhand o snd) THEN
   ASM_SIMP_TAC std_ss [METIS [ETA_AX] ``(\x. f e x) = f e``] THEN
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS) THEN
-  ASM_SIMP_TAC std_ss [REAL_LE_LADD]);
+  ASM_SIMP_TAC std_ss [REAL_LE_LADD]
+QED
 
-val HAS_BOUNDED_SETVARIATION_ON_SUM = store_thm ("HAS_BOUNDED_SETVARIATION_ON_SUM",
- ``(!f:'a->(real->bool)->real s k.
+Theorem HAS_BOUNDED_SETVARIATION_ON_SUM:
+   (!f:'a->(real->bool)->real s k.
         FINITE k /\
         (!i. i IN k ==> f i has_bounded_setvariation_on s)
-        ==> (\x. sum k (\i. f i x)) has_bounded_setvariation_on s)``,
-  REWRITE_TAC [HAS_BOUNDED_SETVARIATION_ON_SUM_AND_SET_VARIATION_SUM_LE]);
+        ==> (\x. sum k (\i. f i x)) has_bounded_setvariation_on s)
+Proof
+  REWRITE_TAC [HAS_BOUNDED_SETVARIATION_ON_SUM_AND_SET_VARIATION_SUM_LE]
+QED
 
-val SET_VARIATION_SUM_LE = store_thm ("SET_VARIATION_SUM_LE",
- ``(!f:'a->(real->bool)->real s k.
+Theorem SET_VARIATION_SUM_LE:
+   (!f:'a->(real->bool)->real s k.
         FINITE k /\
         (!i. i IN k ==> f i has_bounded_setvariation_on s)
         ==> set_variation s (\x. sum k (\i. f i x))
-            <= sum k (\i. set_variation s (f i)))``,
-  REWRITE_TAC [HAS_BOUNDED_SETVARIATION_ON_SUM_AND_SET_VARIATION_SUM_LE]);
+            <= sum k (\i. set_variation s (f i)))
+Proof
+  REWRITE_TAC [HAS_BOUNDED_SETVARIATION_ON_SUM_AND_SET_VARIATION_SUM_LE]
+QED
 
-val lemma1 = prove (
-   ``!f:(real->bool)->real B1 B2 a b.
+Theorem lemma1[local]:
+     !f:(real->bool)->real B1 B2 a b.
       (!a b. (content(interval[a,b]) = &0) ==> (f(interval[a,b]) = &0)) /\
       (!a b c. f(interval[a,b]) <=
                f(interval[a,b] INTER {x | x <= c}) +
@@ -10145,7 +10323,8 @@ val lemma1 = prove (
            ==> sum d f <= B1) /\
       (!d. d division_of (interval[a,b] INTER {x | x >= c})
            ==> sum d f <= B2)
-      ==> !d. d division_of interval[a,b] ==> sum d f <= B1 + B2``,
+      ==> !d. d division_of interval[a,b] ==> sum d f <= B1 + B2
+Proof
     REPEAT GEN_TAC THEN
     DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
     DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
@@ -10209,15 +10388,17 @@ val lemma1 = prove (
        (\x. ((f:(real -> bool) -> real o (\l. l INTER {x | x >= c})) x = 0)) x``] THEN
       REWRITE_TAC[SET_RULE ``(x IN s /\ ~(x IN {l | l IN s /\ P l}) ==> Q x) <=>
                              (x IN s ==> ~P x ==> Q x)``] THEN
-      SIMP_TAC std_ss [o_THM] THEN ASM_MESON_TAC[EMPTY_AS_INTERVAL, CONTENT_EMPTY]]);
+      SIMP_TAC std_ss [o_THM] THEN ASM_MESON_TAC[EMPTY_AS_INTERVAL, CONTENT_EMPTY]]
+QED
 
-val lemma2 = prove (
-   ``!f:(real->bool)->real B.
+Theorem lemma2[local]:
+     !f:(real->bool)->real B.
       (!a b. (content(interval[a,b]) = &0) ==> (f(interval[a,b]) = &0)) /\
       (!d. d division_of interval[a,b] ==> sum d f <= B)
       ==> !d1 d2. d1 division_of (interval[a,b] INTER {x | x <= c}) /\
                   d2 division_of (interval[a,b] INTER {x | x >= c})
-                  ==> sum d1 f + sum d2 f <= B``,
+                  ==> sum d1 f + sum d2 f <= B
+Proof
     REPEAT STRIP_TAC THEN
     FIRST_X_ASSUM(MP_TAC o SPEC ``d1 UNION d2:(real->bool)->bool``) THEN
     KNOW_TAC ``(d1:(real->bool)->bool) UNION d2 division_of interval [(a,b)]`` THENL
@@ -10269,14 +10450,16 @@ val lemma2 = prove (
         ASM_SIMP_TAC std_ss [INTER_ASSOC, INTERVAL_SPLIT] THEN
         SIMP_TAC std_ss [CONTENT_EQ_0, min_def, max_def] THEN KILL_TAC THEN
         rpt COND_CASES_TAC >> fs [REAL_LE_REFL] >> REAL_ASM_ARITH_TAC
-   ] ]);
+   ] ]
+QED
 
-val OPERATIVE_LIFTED_SETVARIATION = store_thm ("OPERATIVE_LIFTED_SETVARIATION",
- ``!f:(real->bool)->real.
+Theorem OPERATIVE_LIFTED_SETVARIATION:
+   !f:(real->bool)->real.
         operative(+) f
         ==> operative (lifted(+))
                       (\i. if f has_bounded_setvariation_on i
-                           then SOME(set_variation i f) else NONE)``,
+                           then SOME(set_variation i f) else NONE)
+Proof
   REWRITE_TAC[operative, NEUTRAL_REAL_ADD] THEN REPEAT GEN_TAC THEN
   DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (ASSUME_TAC o GSYM)) THEN
   ASM_SIMP_TAC std_ss [HAS_BOUNDED_SETVARIATION_ON_NULL, BOUNDED_INTERVAL,
@@ -10345,13 +10528,15 @@ val OPERATIVE_LIFTED_SETVARIATION = store_thm ("OPERATIVE_LIFTED_SETVARIATION",
         UNDISCH_TAC
          ``(f:(real->bool)->real) has_bounded_setvariation_on
           (interval[a,b] INTER {x | x >= c})`` THEN
-        ASM_SIMP_TAC std_ss [INTERVAL_SPLIT, SET_VARIATION_WORKS_ON_INTERVAL]]]);
+        ASM_SIMP_TAC std_ss [INTERVAL_SPLIT, SET_VARIATION_WORKS_ON_INTERVAL]]]
+QED
 
-val HAS_BOUNDED_SETVARIATION_ON_DIVISION = store_thm ("HAS_BOUNDED_SETVARIATION_ON_DIVISION",
- ``!f:(real->bool)->real a b d.
+Theorem HAS_BOUNDED_SETVARIATION_ON_DIVISION:
+   !f:(real->bool)->real a b d.
         operative (+) f /\ d division_of interval[a,b]
         ==> ((!k. k IN d ==> f has_bounded_setvariation_on k) <=>
-             f has_bounded_setvariation_on interval[a,b])``,
+             f has_bounded_setvariation_on interval[a,b])
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC OPERATIVE_DIVISION_AND THEN
   ASM_REWRITE_TAC[operative, NEUTRAL_AND] THEN CONJ_TAC THENL
    [RULE_ASSUM_TAC(REWRITE_RULE[operative, NEUTRAL_REAL_ADD]) THEN
@@ -10362,22 +10547,26 @@ val HAS_BOUNDED_SETVARIATION_ON_DIVISION = store_thm ("HAS_BOUNDED_SETVARIATION_
     POP_ASSUM (MP_TAC o SPECL [``a:real``,``b:real``,``c:real``]) THEN
     SIMP_TAC std_ss [] THEN
     REPEAT(COND_CASES_TAC THEN
-           ASM_SIMP_TAC std_ss [lifted, NOT_NONE_SOME, option_CLAUSES])]);
+           ASM_SIMP_TAC std_ss [lifted, NOT_NONE_SOME, option_CLAUSES])]
+QED
 
-val lemma0 = prove (
-   ``!op x y. ((lifted op (SOME x) y = SOME z) <=> ?w. (y = SOME w) /\ (op x w = z))``,
+Theorem lemma0[local]:
+     !op x y. ((lifted op (SOME x) y = SOME z) <=> ?w. (y = SOME w) /\ (op x w = z))
+Proof
     GEN_TAC THEN GEN_TAC THEN ONCE_REWRITE_TAC [METIS []
      ``((lifted op (SOME x) y = SOME z) <=> ?w. (y = SOME w) /\ (op x w = z)) =
   (\y. (lifted op (SOME x) y = SOME z) <=> ?w. (y = SOME w) /\ (op x w = z)) y``] THEN
     MATCH_MP_TAC option_induction THEN
     SIMP_TAC std_ss [lifted, NOT_NONE_SOME, SOME_11] THEN
-    MESON_TAC[]);
+    MESON_TAC[]
+QED
 
-val lemma = prove (
-   ``!P op f s z.
+Theorem lemma[local]:
+     !P op f s z.
           monoidal op /\ FINITE s /\
           (iterate(lifted op) s (\i. if P i then SOME(f i) else NONE) = SOME z)
-          ==> (iterate op s f = z)``,
+          ==> (iterate op s f = z)
+Proof
     SIMP_TAC std_ss [IMP_CONJ, RIGHT_FORALL_IMP_THM] THEN
     REPEAT GEN_TAC THEN DISCH_TAC THEN GEN_TAC THEN
     ONCE_REWRITE_TAC [METIS []
@@ -10389,13 +10578,15 @@ val lemma = prove (
     ASM_SIMP_TAC std_ss [ITERATE_CLAUSES, MONOIDAL_LIFTED, NEUTRAL_LIFTED] THEN
     SIMP_TAC std_ss [SOME_11] THEN REPEAT GEN_TAC THEN
     STRIP_TAC THEN GEN_TAC THEN COND_CASES_TAC THEN
-    SIMP_TAC std_ss [lifted, NOT_NONE_SOME] THEN ASM_MESON_TAC[lemma0]);
+    SIMP_TAC std_ss [lifted, NOT_NONE_SOME] THEN ASM_MESON_TAC[lemma0]
+QED
 
-val SET_VARIATION_ON_DIVISION = store_thm ("SET_VARIATION_ON_DIVISION",
- ``!f:(real->bool)->real a b d.
+Theorem SET_VARIATION_ON_DIVISION:
+   !f:(real->bool)->real a b d.
         operative (+) f /\ d division_of interval[a,b] /\
         f has_bounded_setvariation_on interval[a,b]
-        ==> (sum d (\k. set_variation k f) = set_variation (interval[a,b]) f)``,
+        ==> (sum d (\k. set_variation k f) = set_variation (interval[a,b]) f)
+Proof
   REPEAT STRIP_TAC THEN
   FIRST_ASSUM(MP_TAC o MATCH_MP OPERATIVE_LIFTED_SETVARIATION) THEN
   DISCH_THEN(MP_TAC o SPECL[``d:(real->bool)->bool``, ``a:real``, ``b:real``] o
@@ -10410,12 +10601,14 @@ val SET_VARIATION_ON_DIVISION = store_thm ("SET_VARIATION_ON_DIVISION",
     ``set_variation (interval[a,b]) (f:(real->bool)->real)``]
    lemma) THEN
   FIRST_X_ASSUM(ASSUME_TAC o MATCH_MP DIVISION_OF_FINITE) THEN
-  ASM_SIMP_TAC std_ss [sum_def, MONOIDAL_REAL_ADD]);
+  ASM_SIMP_TAC std_ss [sum_def, MONOIDAL_REAL_ADD]
+QED
 
-val SET_VARIATION_MONOTONE = store_thm ("SET_VARIATION_MONOTONE",
- ``!f:(real->bool)->real s t.
+Theorem SET_VARIATION_MONOTONE:
+   !f:(real->bool)->real s t.
         f has_bounded_setvariation_on s /\ t SUBSET s
-        ==> set_variation t f <= set_variation s f``,
+        ==> set_variation t f <= set_variation s f
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[set_variation] THEN
   MATCH_MP_TAC REAL_SUP_LE_SUBSET THEN REPEAT CONJ_TAC THENL
    [SIMP_TAC std_ss [GSYM MEMBER_NOT_EMPTY, GSPECIFICATION] THEN
@@ -10429,15 +10622,17 @@ val SET_VARIATION_MONOTONE = store_thm ("SET_VARIATION_MONOTONE",
      ``(!d. P d ==> Q d) ==> {f d | P d} SUBSET {f d | Q d}``) THEN
     ASM_MESON_TAC[SUBSET_TRANS],
     SIMP_TAC std_ss [FORALL_IN_GSPEC, LEFT_IMP_EXISTS_THM] THEN
-    ASM_REWRITE_TAC[GSYM has_bounded_setvariation_on]]);
+    ASM_REWRITE_TAC[GSYM has_bounded_setvariation_on]]
+QED
 
-val HAS_BOUNDED_SETVARIATION_REFLECT2_EQ_AND_SET_VARIATION_REFLECT2 = store_thm ("HAS_BOUNDED_SETVARIATION_REFLECT2_EQ_AND_SET_VARIATION_REFLECT2",
- ``(!f:(real->bool)->real s.
+Theorem HAS_BOUNDED_SETVARIATION_REFLECT2_EQ_AND_SET_VARIATION_REFLECT2:
+   (!f:(real->bool)->real s.
         (\k. f(IMAGE (\x. -x) k)) has_bounded_setvariation_on (IMAGE (\x. -x) s) <=>
         f has_bounded_setvariation_on s) /\
    (!f:(real->bool)->real s.
         set_variation (IMAGE (\x. -x) s) (\k. f(IMAGE (\x. -x) k)) =
-        set_variation s f)``,
+        set_variation s f)
+Proof
   ONCE_REWRITE_TAC [METIS [] ``(IMAGE (\x. -x) s) = (\s. (IMAGE (\x. -x) s)) s:real->bool``] THEN
   ONCE_REWRITE_TAC [METIS [] ``(\k. f ((\s. IMAGE (\x. -x) s) k)) =
                           (\f. (\k. f ((\s. IMAGE (\x. -x) s) k))) f:(real->bool)->real``] THEN
@@ -10450,28 +10645,34 @@ val HAS_BOUNDED_SETVARIATION_REFLECT2_EQ_AND_SET_VARIATION_REFLECT2 = store_thm 
   REWRITE_TAC[TAUT `p /\ q /\ r <=> r /\ q /\ p`] THEN
   SIMP_TAC std_ss [UNWIND_THM1, GSYM MONO_NOT_EQ] THEN
   SIMP_TAC std_ss [GSYM INTERVAL_EQ_EMPTY, REAL_LT_NEG] THEN
-  METIS_TAC [ETA_AX, DIVISION_OF_REFLECT]);
+  METIS_TAC [ETA_AX, DIVISION_OF_REFLECT]
+QED
 
-val HAS_BOUNDED_SETVARIATION_REFLECT2_EQ = store_thm ("HAS_BOUNDED_SETVARIATION_REFLECT2_EQ",
-  ``(!f:(real->bool)->real s.
+Theorem HAS_BOUNDED_SETVARIATION_REFLECT2_EQ:
+    (!f:(real->bool)->real s.
         (\k. f(IMAGE (\x. -x) k)) has_bounded_setvariation_on (IMAGE (\x. -x) s) <=>
-        f has_bounded_setvariation_on s)``,
-  REWRITE_TAC [HAS_BOUNDED_SETVARIATION_REFLECT2_EQ_AND_SET_VARIATION_REFLECT2]);
+        f has_bounded_setvariation_on s)
+Proof
+  REWRITE_TAC [HAS_BOUNDED_SETVARIATION_REFLECT2_EQ_AND_SET_VARIATION_REFLECT2]
+QED
 
-val SET_VARIATION_REFLECT2 = store_thm ("SET_VARIATION_REFLECT2",
-  ``(!f:(real->bool)->real s.
+Theorem SET_VARIATION_REFLECT2:
+    (!f:(real->bool)->real s.
         set_variation (IMAGE (\x. -x) s) (\k. f(IMAGE (\x. -x) k)) =
-        set_variation s f)``,
-  REWRITE_TAC [HAS_BOUNDED_SETVARIATION_REFLECT2_EQ_AND_SET_VARIATION_REFLECT2]);
+        set_variation s f)
+Proof
+  REWRITE_TAC [HAS_BOUNDED_SETVARIATION_REFLECT2_EQ_AND_SET_VARIATION_REFLECT2]
+QED
 
-val HAS_BOUNDED_SETVARIATION_TRANSLATION2_EQ_AND_SET_VARIATION_TRANSLATION2 = store_thm ("HAS_BOUNDED_SETVARIATION_TRANSLATION2_EQ_AND_SET_VARIATION_TRANSLATION2",
- ``(!a f:(real->bool)->real s.
+Theorem HAS_BOUNDED_SETVARIATION_TRANSLATION2_EQ_AND_SET_VARIATION_TRANSLATION2:
+   (!a f:(real->bool)->real s.
           (\k. f(IMAGE (\x. a + x) k))
           has_bounded_setvariation_on (IMAGE (\x. -a + x) s) <=>
           f has_bounded_setvariation_on s) /\
    (!a f:(real->bool)->real s.
           set_variation (IMAGE (\x. -a + x) s) (\k. f(IMAGE (\x. a + x) k)) =
-          set_variation s f)``,
+          set_variation s f)
+Proof
   SIMP_TAC std_ss [GSYM FORALL_AND_THM] THEN X_GEN_TAC ``a:real`` THEN
   SIMP_TAC std_ss [FORALL_AND_THM] THEN
   ONCE_REWRITE_TAC [METIS [] ``(IMAGE (\x. -a + x) s) =
@@ -10492,27 +10693,34 @@ val HAS_BOUNDED_SETVARIATION_TRANSLATION2_EQ_AND_SET_VARIATION_TRANSLATION2 = st
   SIMP_TAC std_ss [REAL_ARITH ``a + (-a + x) = x:real``, IMAGE_ID] THEN
   SIMP_TAC std_ss [REAL_ARITH ``-a + (a + x) = x:real``, IMAGE_ID] THEN
   (GEN_REWR_TAC (LAND_CONV o LAND_CONV) [ETA_AX] THEN
-   ASM_SIMP_TAC std_ss [DIVISION_OF_TRANSLATION]));
+   ASM_SIMP_TAC std_ss [DIVISION_OF_TRANSLATION])
+QED
 
-val HAS_BOUNDED_SETVARIATION_TRANSLATION2_EQ = store_thm ("HAS_BOUNDED_SETVARIATION_TRANSLATION2_EQ",
- ``(!a f:(real->bool)->real s.
+Theorem HAS_BOUNDED_SETVARIATION_TRANSLATION2_EQ:
+   (!a f:(real->bool)->real s.
           (\k. f(IMAGE (\x. a + x) k))
           has_bounded_setvariation_on (IMAGE (\x. -a + x) s) <=>
-          f has_bounded_setvariation_on s)``,
-  REWRITE_TAC [HAS_BOUNDED_SETVARIATION_TRANSLATION2_EQ_AND_SET_VARIATION_TRANSLATION2]);
+          f has_bounded_setvariation_on s)
+Proof
+  REWRITE_TAC [HAS_BOUNDED_SETVARIATION_TRANSLATION2_EQ_AND_SET_VARIATION_TRANSLATION2]
+QED
 
-val SET_VARIATION_TRANSLATION2 = store_thm ("SET_VARIATION_TRANSLATION2",
- ``(!a f:(real->bool)->real s.
+Theorem SET_VARIATION_TRANSLATION2:
+   (!a f:(real->bool)->real s.
           set_variation (IMAGE (\x. -a + x) s) (\k. f(IMAGE (\x. a + x) k)) =
-          set_variation s f)``,
-  REWRITE_TAC [HAS_BOUNDED_SETVARIATION_TRANSLATION2_EQ_AND_SET_VARIATION_TRANSLATION2]);
+          set_variation s f)
+Proof
+  REWRITE_TAC [HAS_BOUNDED_SETVARIATION_TRANSLATION2_EQ_AND_SET_VARIATION_TRANSLATION2]
+QED
 
-val HAS_BOUNDED_SETVARIATION_TRANSLATION = store_thm ("HAS_BOUNDED_SETVARIATION_TRANSLATION",
- ``!f:(real->bool)->real s a.
+Theorem HAS_BOUNDED_SETVARIATION_TRANSLATION:
+   !f:(real->bool)->real s a.
         f has_bounded_setvariation_on s
         ==> (\k. f(IMAGE (\x. a + x) k))
-            has_bounded_setvariation_on (IMAGE (\x. -a + x) s)``,
-  SIMP_TAC real_ss [HAS_BOUNDED_SETVARIATION_TRANSLATION2_EQ]);
+            has_bounded_setvariation_on (IMAGE (\x. -a + x) s)
+Proof
+  SIMP_TAC real_ss [HAS_BOUNDED_SETVARIATION_TRANSLATION2_EQ]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Absolute integrability (this is the same as Lebesgue integrability).      *)
@@ -10520,88 +10728,123 @@ val HAS_BOUNDED_SETVARIATION_TRANSLATION = store_thm ("HAS_BOUNDED_SETVARIATION_
 
 val _ = set_fixity "absolutely_integrable_on" (Infix(NONASSOC, 450));
 
-val absolutely_integrable_on = new_definition ("absolutely_integrable_on",
- ``f absolutely_integrable_on s <=>
-        f integrable_on s /\ (\x. abs(f x)) integrable_on s``);
+Definition absolutely_integrable_on[nocompute]:
+ f absolutely_integrable_on s <=>
+        f integrable_on s /\ (\x. abs(f x)) integrable_on s
+End
 
-val ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE = store_thm ("ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE",
- ``!f s. f absolutely_integrable_on s ==> f integrable_on s``,
-  SIMP_TAC std_ss [absolutely_integrable_on]);
+Theorem ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE:
+   !f s. f absolutely_integrable_on s ==> f integrable_on s
+Proof
+  SIMP_TAC std_ss [absolutely_integrable_on]
+QED
 
-val ABSOLUTELY_INTEGRABLE_IMP_ABS_INTEGRABLE = store_thm ("ABSOLUTELY_INTEGRABLE_IMP_ABS_INTEGRABLE",
- ``!f:real->real s.
-     f absolutely_integrable_on s ==> (\x. abs (f x)) integrable_on s``,
-  REWRITE_TAC[absolutely_integrable_on] THEN MESON_TAC[]);
+Theorem ABSOLUTELY_INTEGRABLE_IMP_ABS_INTEGRABLE:
+   !f:real->real s.
+     f absolutely_integrable_on s ==> (\x. abs (f x)) integrable_on s
+Proof
+  REWRITE_TAC[absolutely_integrable_on] THEN MESON_TAC[]
+QED
 
-val ABSOLUTELY_INTEGRABLE_LE = store_thm ("ABSOLUTELY_INTEGRABLE_LE",
- ``!f:real->real s.
+Theorem ABSOLUTELY_INTEGRABLE_LE:
+   !f:real->real s.
         f absolutely_integrable_on s
-        ==> abs(integral s f) <= (integral s (\x. abs(f x)))``,
+        ==> abs(integral s f) <= (integral s (\x. abs(f x)))
+Proof
   REWRITE_TAC[absolutely_integrable_on] THEN
   REPEAT STRIP_TAC THEN MATCH_MP_TAC INTEGRAL_ABS_BOUND_INTEGRAL THEN
-  ASM_SIMP_TAC std_ss [REAL_LE_REFL]);
+  ASM_SIMP_TAC std_ss [REAL_LE_REFL]
+QED
 
-val ABSOLUTELY_INTEGRABLE_ON_NULL = store_thm ("ABSOLUTELY_INTEGRABLE_ON_NULL",
- ``!f a b. (content(interval[a,b]) = &0)
-           ==> f absolutely_integrable_on interval[a,b]``,
-  SIMP_TAC std_ss [absolutely_integrable_on, INTEGRABLE_ON_NULL]);
+Theorem ABSOLUTELY_INTEGRABLE_ON_NULL:
+   !f a b. (content(interval[a,b]) = &0)
+           ==> f absolutely_integrable_on interval[a,b]
+Proof
+  SIMP_TAC std_ss [absolutely_integrable_on, INTEGRABLE_ON_NULL]
+QED
 
-val ABSOLUTELY_INTEGRABLE_0 = store_thm ("ABSOLUTELY_INTEGRABLE_0",
- ``!s. (\x. 0) absolutely_integrable_on s``,
-  REWRITE_TAC[absolutely_integrable_on, ABS_0, INTEGRABLE_0]);
+Theorem ABSOLUTELY_INTEGRABLE_0:
+   !s. (\x. 0) absolutely_integrable_on s
+Proof
+  REWRITE_TAC[absolutely_integrable_on, ABS_0, INTEGRABLE_0]
+QED
 
-val ABSOLUTELY_INTEGRABLE_CMUL = store_thm ("ABSOLUTELY_INTEGRABLE_CMUL",
- ``!f s c. f absolutely_integrable_on s
-           ==> (\x. c * f(x)) absolutely_integrable_on s``,
-  SIMP_TAC std_ss [absolutely_integrable_on, INTEGRABLE_CMUL, ABS_MUL]);
+Theorem ABSOLUTELY_INTEGRABLE_CMUL:
+   !f s c. f absolutely_integrable_on s
+           ==> (\x. c * f(x)) absolutely_integrable_on s
+Proof
+  SIMP_TAC std_ss [absolutely_integrable_on, INTEGRABLE_CMUL, ABS_MUL]
+QED
 
-val ABSOLUTELY_INTEGRABLE_NEG = store_thm ("ABSOLUTELY_INTEGRABLE_NEG",
- ``!f s. f absolutely_integrable_on s
-         ==> (\x. -f(x)) absolutely_integrable_on s``,
-  SIMP_TAC std_ss [absolutely_integrable_on, INTEGRABLE_NEG, ABS_NEG]);
+Theorem ABSOLUTELY_INTEGRABLE_NEG:
+   !f s. f absolutely_integrable_on s
+         ==> (\x. -f(x)) absolutely_integrable_on s
+Proof
+  SIMP_TAC std_ss [absolutely_integrable_on, INTEGRABLE_NEG, ABS_NEG]
+QED
 
-val ABSOLUTELY_INTEGRABLE_ABS = store_thm ("ABSOLUTELY_INTEGRABLE_ABS",
- ``!f s. f absolutely_integrable_on s
-         ==> (\x. abs(f x)) absolutely_integrable_on s``,
-  SIMP_TAC std_ss [absolutely_integrable_on, ABS_ABS]);
+Theorem ABSOLUTELY_INTEGRABLE_ABS:
+   !f s. f absolutely_integrable_on s
+         ==> (\x. abs(f x)) absolutely_integrable_on s
+Proof
+  SIMP_TAC std_ss [absolutely_integrable_on, ABS_ABS]
+QED
 
-val ABSOLUTELY_INTEGRABLE_ON_SUBINTERVAL = store_thm ("ABSOLUTELY_INTEGRABLE_ON_SUBINTERVAL",
- ``!f:real->real s a b.
+Theorem ABSOLUTELY_INTEGRABLE_ON_SUBINTERVAL:
+   !f:real->real s a b.
         f absolutely_integrable_on s /\ interval[a,b] SUBSET s
-        ==> f absolutely_integrable_on interval[a,b]``,
+        ==> f absolutely_integrable_on interval[a,b]
+Proof
   REWRITE_TAC[absolutely_integrable_on] THEN
-  MESON_TAC[INTEGRABLE_ON_SUBINTERVAL]);
+  MESON_TAC[INTEGRABLE_ON_SUBINTERVAL]
+QED
 
-val ABSOLUTELY_INTEGRABLE_SPIKE = store_thm ("ABSOLUTELY_INTEGRABLE_SPIKE",
- ``!f:real->real g s t.
+Theorem ABSOLUTELY_INTEGRABLE_SPIKE:
+   !f:real->real g s t.
         negligible s /\ (!x. x IN t DIFF s ==> (g x = f x))
-        ==> f absolutely_integrable_on t ==> g absolutely_integrable_on t``,
+        ==> f absolutely_integrable_on t ==> g absolutely_integrable_on t
+Proof
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   REWRITE_TAC[absolutely_integrable_on] THEN MATCH_MP_TAC MONO_AND THEN
   CONJ_TAC THEN MATCH_MP_TAC INTEGRABLE_SPIKE THEN
-  EXISTS_TAC ``s:real->bool`` THEN ASM_SIMP_TAC std_ss []);
+  EXISTS_TAC ``s:real->bool`` THEN ASM_SIMP_TAC std_ss []
+QED
 
-val ABSOLUTELY_INTEGRABLE_RESTRICT_INTER = store_thm ("ABSOLUTELY_INTEGRABLE_RESTRICT_INTER",
- ``!f:real->real s t.
+Theorem ABSOLUTELY_INTEGRABLE_RESTRICT_INTER:
+   !f:real->real s t.
         (\x. if x IN s then f x else 0) absolutely_integrable_on t <=>
-        f absolutely_integrable_on (s INTER t)``,
+        f absolutely_integrable_on (s INTER t)
+Proof
   SIMP_TAC std_ss [absolutely_integrable_on, GSYM INTEGRABLE_RESTRICT_INTER] THEN
-  SIMP_TAC std_ss [COND_RAND, ABS_0]);
+  SIMP_TAC std_ss [COND_RAND, ABS_0]
+QED
 
-val ABSOLUTELY_INTEGRABLE_EQ = store_thm ("ABSOLUTELY_INTEGRABLE_EQ",
- ``!f:real->real g s.
+Theorem HAS_ABSOLUTE_INTEGRAL :
+   !(f :real->real) s y.
+        f absolutely_integrable_on s /\ integral s f = y <=>
+        f absolutely_integrable_on s /\ (f has_integral y) s
+Proof
+  MESON_TAC[ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE,
+            HAS_INTEGRAL_INTEGRABLE_INTEGRAL]
+QED
+
+Theorem ABSOLUTELY_INTEGRABLE_EQ:
+   !f:real->real g s.
         (!x. x IN s ==> (f x = g x)) /\ f absolutely_integrable_on s
-        ==> g absolutely_integrable_on s``,
+        ==> g absolutely_integrable_on s
+Proof
   REWRITE_TAC[absolutely_integrable_on] THEN REPEAT STRIP_TAC THEN
   MATCH_MP_TAC INTEGRABLE_EQ THENL
    [EXISTS_TAC ``f:real->real``,
     EXISTS_TAC ``\x. abs((f:real->real) x)``] THEN
-  ASM_SIMP_TAC std_ss []);
+  ASM_SIMP_TAC std_ss []
+QED
 
-val ABSOLUTELY_INTEGRABLE_BOUNDED_SETVARIATION = store_thm ("ABSOLUTELY_INTEGRABLE_BOUNDED_SETVARIATION",
- ``!f:real->real s.
+Theorem ABSOLUTELY_INTEGRABLE_BOUNDED_SETVARIATION:
+   !f:real->real s.
         f absolutely_integrable_on s
-        ==> (\k. integral k f) has_bounded_setvariation_on s``,
+        ==> (\k. integral k f) has_bounded_setvariation_on s
+Proof
   REWRITE_TAC[has_bounded_setvariation_on] THEN REPEAT STRIP_TAC THEN
   EXISTS_TAC
    ``integral (s:real->bool) (\x. abs(f x:real))`` THEN
@@ -10644,13 +10887,15 @@ val ABSOLUTELY_INTEGRABLE_BOUNDED_SETVARIATION = store_thm ("ABSOLUTELY_INTEGRAB
     CONJ_TAC THENL [ASM_MESON_TAC[DIVISION_OF_UNION_SELF], ALL_TAC] THEN
     ASM_REWRITE_TAC[] THEN
     MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE THEN
-    MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_ABS THEN ASM_SIMP_TAC real_ss []]);
+    MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_ABS THEN ASM_SIMP_TAC real_ss []]
+QED
 
-val lemma = prove (
- ``!f:'a->real g s e.
+Theorem lemma[local]:
+   !f:'a->real g s e.
         sum s (\x. abs(f x - g x)) < e
         ==> FINITE s
-            ==> abs(sum s (\x. abs(f x)) - sum s (\x. abs(g x))) < e``,
+            ==> abs(sum s (\x. abs(f x)) - sum s (\x. abs(g x))) < e
+Proof
   REPEAT GEN_TAC THEN SIMP_TAC std_ss [GSYM SUM_SUB] THEN
   DISCH_THEN(fn th => DISCH_TAC THEN MP_TAC th) THEN
   MATCH_MP_TAC(REAL_ARITH ``x <= y ==> y < e ==> x < e:real``) THEN
@@ -10658,7 +10903,8 @@ val lemma = prove (
   ASM_SIMP_TAC std_ss [] THEN
   MATCH_MP_TAC(REAL_ARITH ``y <= z ==> x <= y ==> x <= z:real``) THEN
   MATCH_MP_TAC SUM_LE THEN ASM_SIMP_TAC std_ss [] THEN
-  REPEAT STRIP_TAC THEN REAL_ARITH_TAC);
+  REPEAT STRIP_TAC THEN REAL_ARITH_TAC
+QED
 
 Theorem BOUNDED_SETVARIATION_ABSOLUTELY_INTEGRABLE_INTERVAL :
     !f:real->real a b.
@@ -11259,11 +11505,12 @@ Proof
   EXISTS_TAC ``interval[a:real,b]`` THEN ASM_REWRITE_TAC[]
 QED
 
-val BOUNDED_SETVARIATION_ABSOLUTELY_INTEGRABLE = store_thm ("BOUNDED_SETVARIATION_ABSOLUTELY_INTEGRABLE",
- ``!f:real->real.
+Theorem BOUNDED_SETVARIATION_ABSOLUTELY_INTEGRABLE:
+   !f:real->real.
         f integrable_on UNIV /\
         (\k. integral k f) has_bounded_setvariation_on univ(:real)
-        ==> f absolutely_integrable_on UNIV``,
+        ==> f absolutely_integrable_on UNIV
+Proof
   REWRITE_TAC[HAS_BOUNDED_SETVARIATION_ON_UNIV] THEN
   REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[absolutely_integrable_on] THEN
   MP_TAC(ISPEC ``IMAGE (\d. sum d (\k. abs(integral k (f:real->real))))
@@ -11421,33 +11668,39 @@ val BOUNDED_SETVARIATION_ABSOLUTELY_INTEGRABLE = store_thm ("BOUNDED_SETVARIATIO
     ALL_TAC] THEN
   FIRST_X_ASSUM MATCH_MP_TAC THEN
   MATCH_MP_TAC PARTIAL_DIVISION_OF_TAGGED_DIVISION THEN
-  EXISTS_TAC ``interval[a:real,b]`` THEN ASM_MESON_TAC[tagged_division_of]);
+  EXISTS_TAC ``interval[a:real,b]`` THEN ASM_MESON_TAC[tagged_division_of]
+QED
 
-val ABSOLUTELY_INTEGRABLE_BOUNDED_SETVARIATION_UNIV_EQ = store_thm ("ABSOLUTELY_INTEGRABLE_BOUNDED_SETVARIATION_UNIV_EQ",
- ``!f:real->real.
+Theorem ABSOLUTELY_INTEGRABLE_BOUNDED_SETVARIATION_UNIV_EQ:
+   !f:real->real.
         f absolutely_integrable_on univ(:real) <=>
         f integrable_on univ(:real) /\
-        (\k. integral k f) has_bounded_setvariation_on univ(:real)``,
+        (\k. integral k f) has_bounded_setvariation_on univ(:real)
+Proof
   GEN_TAC THEN EQ_TAC THEN
   SIMP_TAC std_ss [ABSOLUTELY_INTEGRABLE_BOUNDED_SETVARIATION,
            BOUNDED_SETVARIATION_ABSOLUTELY_INTEGRABLE,
-           ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE]);
+           ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE]
+QED
 
-val ABSOLUTELY_INTEGRABLE_BOUNDED_SETVARIATION_EQ = store_thm ("ABSOLUTELY_INTEGRABLE_BOUNDED_SETVARIATION_EQ",
- ``!f:real->real a b.
+Theorem ABSOLUTELY_INTEGRABLE_BOUNDED_SETVARIATION_EQ:
+   !f:real->real a b.
         f absolutely_integrable_on interval[a,b] <=>
         f integrable_on interval[a,b] /\
-        (\k. integral k f) has_bounded_setvariation_on interval[a,b]``,
+        (\k. integral k f) has_bounded_setvariation_on interval[a,b]
+Proof
   REPEAT GEN_TAC THEN EQ_TAC THEN
   SIMP_TAC std_ss [ABSOLUTELY_INTEGRABLE_BOUNDED_SETVARIATION,
            BOUNDED_SETVARIATION_ABSOLUTELY_INTEGRABLE_INTERVAL,
-           ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE]);
+           ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE]
+QED
 
-val ABSOLUTELY_INTEGRABLE_SET_VARIATION = store_thm ("ABSOLUTELY_INTEGRABLE_SET_VARIATION",
- ``!f:real->real a b.
+Theorem ABSOLUTELY_INTEGRABLE_SET_VARIATION:
+   !f:real->real a b.
         f absolutely_integrable_on interval[a,b]
         ==> (set_variation (interval[a,b]) (\k. integral k f) =
-                  integral (interval[a,b]) (\x. abs(f x)))``,
+                  integral (interval[a,b]) (\x. abs(f x)))
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[set_variation] THEN
   MATCH_MP_TAC REAL_SUP_UNIQUE THEN
   SIMP_TAC std_ss [FORALL_IN_GSPEC, EXISTS_IN_GSPEC] THEN CONJ_TAC THENL
@@ -11553,24 +11806,30 @@ val ABSOLUTELY_INTEGRABLE_SET_VARIATION = store_thm ("ABSOLUTELY_INTEGRABLE_SET_
       DISCH_THEN(fn th =>
        W(MP_TAC o PART_MATCH (rand o rand) th o rand o snd)) THEN
       SIMP_TAC std_ss [INTEGRAL_NULL, ABS_0] THEN
-      DISCH_THEN(SUBST1_TAC o SYM) THEN ASM_REWRITE_TAC[]]]);
+      DISCH_THEN(SUBST1_TAC o SYM) THEN ASM_REWRITE_TAC[]]]
+QED
 
-val ABSOLUTELY_INTEGRABLE_RESTRICT_UNIV = store_thm ("ABSOLUTELY_INTEGRABLE_RESTRICT_UNIV",
- ``!f s. (\x. if x IN s then f x else 0)
+Theorem ABSOLUTELY_INTEGRABLE_RESTRICT_UNIV:
+   !f s. (\x. if x IN s then f x else 0)
               absolutely_integrable_on univ(:real) <=>
-         f absolutely_integrable_on s``,
+         f absolutely_integrable_on s
+Proof
   SIMP_TAC std_ss [absolutely_integrable_on, INTEGRABLE_RESTRICT_UNIV,
-              COND_RAND, ABS_0]);
+              COND_RAND, ABS_0]
+QED
 
-val ABSOLUTELY_INTEGRABLE_CONST = store_thm ("ABSOLUTELY_INTEGRABLE_CONST",
- ``!a b c. (\x. c) absolutely_integrable_on interval[a,b]``,
-  REWRITE_TAC[absolutely_integrable_on, INTEGRABLE_CONST]);
+Theorem ABSOLUTELY_INTEGRABLE_CONST:
+   !a b c. (\x. c) absolutely_integrable_on interval[a,b]
+Proof
+  REWRITE_TAC[absolutely_integrable_on, INTEGRABLE_CONST]
+QED
 
-val ABSOLUTELY_INTEGRABLE_ADD = store_thm ("ABSOLUTELY_INTEGRABLE_ADD",
- ``!f:real->real g s.
+Theorem ABSOLUTELY_INTEGRABLE_ADD:
+   !f:real->real g s.
         f absolutely_integrable_on s /\
         g absolutely_integrable_on s
-        ==> (\x. f(x) + g(x)) absolutely_integrable_on s``,
+        ==> (\x. f(x) + g(x)) absolutely_integrable_on s
+Proof
   SUBGOAL_THEN
    ``!f:real->real g.
         f absolutely_integrable_on univ(:real) /\
@@ -11611,20 +11870,24 @@ val ABSOLUTELY_INTEGRABLE_ADD = store_thm ("ABSOLUTELY_INTEGRABLE_ADD",
   MATCH_MP_TAC(REAL_ARITH ``(x = y + z) ==> abs(x) <= abs(y) + abs(z:real)``) THEN
   MATCH_MP_TAC INTEGRAL_ADD THEN CONJ_TAC THEN
   MATCH_MP_TAC INTEGRABLE_ON_SUBINTERVAL THEN
-  EXISTS_TAC ``univ(:real)`` THEN ASM_REWRITE_TAC[SUBSET_UNIV]);
+  EXISTS_TAC ``univ(:real)`` THEN ASM_REWRITE_TAC[SUBSET_UNIV]
+QED
 
-val ABSOLUTELY_INTEGRABLE_SUB = store_thm ("ABSOLUTELY_INTEGRABLE_SUB",
- ``!f:real->real g s.
+Theorem ABSOLUTELY_INTEGRABLE_SUB:
+   !f:real->real g s.
         f absolutely_integrable_on s /\
         g absolutely_integrable_on s
-        ==> (\x. f(x) - g(x)) absolutely_integrable_on s``,
+        ==> (\x. f(x) - g(x)) absolutely_integrable_on s
+Proof
   REWRITE_TAC[real_sub] THEN
-  SIMP_TAC std_ss [ABSOLUTELY_INTEGRABLE_ADD, ABSOLUTELY_INTEGRABLE_NEG]);
+  SIMP_TAC std_ss [ABSOLUTELY_INTEGRABLE_ADD, ABSOLUTELY_INTEGRABLE_NEG]
+QED
 
-val ABSOLUTELY_INTEGRABLE_LINEAR = store_thm ("ABSOLUTELY_INTEGRABLE_LINEAR",
- ``!f:real->real h:real->real s.
+Theorem ABSOLUTELY_INTEGRABLE_LINEAR:
+   !f:real->real h:real->real s.
         f absolutely_integrable_on s /\ linear h
-        ==> (h o f) absolutely_integrable_on s``,
+        ==> (h o f) absolutely_integrable_on s
+Proof
   SUBGOAL_THEN
    ``!f:real->real h:real->real.
         f absolutely_integrable_on univ(:real) /\ linear h
@@ -11659,13 +11922,15 @@ val ABSOLUTELY_INTEGRABLE_LINEAR = store_thm ("ABSOLUTELY_INTEGRABLE_LINEAR",
   MATCH_MP_TAC INTEGRAL_UNIQUE THEN MATCH_MP_TAC HAS_INTEGRAL_LINEAR THEN
   ASM_REWRITE_TAC[GSYM HAS_INTEGRAL_INTEGRAL] THEN
   MATCH_MP_TAC INTEGRABLE_ON_SUBINTERVAL THEN
-  EXISTS_TAC ``univ(:real)`` THEN ASM_REWRITE_TAC[SUBSET_UNIV]);
+  EXISTS_TAC ``univ(:real)`` THEN ASM_REWRITE_TAC[SUBSET_UNIV]
+QED
 
-val ABSOLUTELY_INTEGRABLE_SUM = store_thm ("ABSOLUTELY_INTEGRABLE_SUM",
- ``!f:'a->real->real s t.
+Theorem ABSOLUTELY_INTEGRABLE_SUM:
+   !f:'a->real->real s t.
         FINITE t /\
         (!a. a IN t ==> (f a) absolutely_integrable_on s)
-        ==>  (\x. sum t (\a. f a x)) absolutely_integrable_on s``,
+        ==>  (\x. sum t (\a. f a x)) absolutely_integrable_on s
+Proof
   GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
   ONCE_REWRITE_TAC [METIS []
    ``( (!a. a IN t ==> f a absolutely_integrable_on s) ==>
@@ -11678,7 +11943,8 @@ val ABSOLUTELY_INTEGRABLE_SUM = store_thm ("ABSOLUTELY_INTEGRABLE_SUM",
   REPEAT STRIP_TAC THEN
   ONCE_REWRITE_TAC [METIS [] ``(\x. f e x + sum s' (\a. f a x)) =
                   (\x. (\x. f e x) x + (\x. sum s' (\a. f a x)) x)``] THEN
-  MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_ADD THEN METIS_TAC [ETA_AX]);
+  MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_ADD THEN METIS_TAC [ETA_AX]
+QED
 
 Theorem ABSOLUTELY_INTEGRABLE_MAX :
     !f:real->real g:real->real s.
@@ -11725,11 +11991,12 @@ Proof
   Cases_on `f x <= g x` >> rw [] >> REAL_ASM_ARITH_TAC
 QED
 
-val ABSOLUTELY_INTEGRABLE_ABS_EQ = store_thm ("ABSOLUTELY_INTEGRABLE_ABS_EQ",
- ``!f:real->real s.
+Theorem ABSOLUTELY_INTEGRABLE_ABS_EQ:
+   !f:real->real s.
         f absolutely_integrable_on s <=>
           f integrable_on s /\
-          (\x. (abs(f(x))):real) integrable_on s``,
+          (\x. (abs(f(x))):real) integrable_on s
+Proof
   REPEAT GEN_TAC THEN EQ_TAC THEN
   SIMP_TAC std_ss [ABSOLUTELY_INTEGRABLE_ABS,
            ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE] THEN
@@ -11801,23 +12068,27 @@ val ABSOLUTELY_INTEGRABLE_ABS_EQ = store_thm ("ABSOLUTELY_INTEGRABLE_ABS_EQ",
     ASM_SIMP_TAC std_ss [SUBSET_UNIV, ABS_POS]] THEN
   MATCH_MP_TAC INTEGRABLE_ON_SUBDIVISION THEN
   MAP_EVERY EXISTS_TAC [``univ(:real)``, ``d:(real->bool)->bool``] THEN
-  ASM_REWRITE_TAC[SUBSET_UNIV]);
+  ASM_REWRITE_TAC[SUBSET_UNIV]
+QED
 
-val NONNEGATIVE_ABSOLUTELY_INTEGRABLE = store_thm ("NONNEGATIVE_ABSOLUTELY_INTEGRABLE",
- ``!f:real->real s.
+Theorem NONNEGATIVE_ABSOLUTELY_INTEGRABLE:
+   !f:real->real s.
         (!x i. x IN s ==> &0 <= f(x)) /\
         f integrable_on s
-        ==> f absolutely_integrable_on s``,
+        ==> f absolutely_integrable_on s
+Proof
   SIMP_TAC std_ss [ABSOLUTELY_INTEGRABLE_ABS_EQ] THEN
   REPEAT STRIP_TAC THEN MATCH_MP_TAC INTEGRABLE_EQ THEN
   EXISTS_TAC ``f:real->real`` THEN
-  ASM_SIMP_TAC std_ss [abs]);
+  ASM_SIMP_TAC std_ss [abs]
+QED
 
-val ABSOLUTELY_INTEGRABLE_INTEGRABLE_BOUND = store_thm ("ABSOLUTELY_INTEGRABLE_INTEGRABLE_BOUND",
- ``!f:real->real g s.
+Theorem ABSOLUTELY_INTEGRABLE_INTEGRABLE_BOUND:
+   !f:real->real g s.
         (!x. x IN s ==> abs(f x) <= (g x)) /\
         f integrable_on s /\ g integrable_on s
-        ==> f absolutely_integrable_on s``,
+        ==> f absolutely_integrable_on s
+Proof
   SUBGOAL_THEN
    ``!f:real->real g.
         (!x. abs(f x) <= (g x)) /\
@@ -11861,26 +12132,30 @@ val ABSOLUTELY_INTEGRABLE_INTEGRABLE_BOUND = store_thm ("ABSOLUTELY_INTEGRABLE_I
      [ALL_TAC, ASM_MESON_TAC[REAL_ARITH ``abs(x) <= y ==> &0 <= y:real``]] THEN
     MATCH_MP_TAC INTEGRABLE_ON_SUBDIVISION THEN
     MAP_EVERY EXISTS_TAC [``univ(:real)``, ``d:(real->bool)->bool``] THEN
-    ASM_REWRITE_TAC[SUBSET_UNIV]]);
+    ASM_REWRITE_TAC[SUBSET_UNIV]]
+QED
 
-val ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_BOUND = store_thm ("ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_BOUND",
- ``!f:real->real g:real->real s.
+Theorem ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_BOUND:
+   !f:real->real g:real->real s.
         (!x. x IN s ==> abs(f x) <= abs(g x)) /\
         f integrable_on s /\ g absolutely_integrable_on s
-        ==> f absolutely_integrable_on s``,
+        ==> f absolutely_integrable_on s
+Proof
   REPEAT STRIP_TAC THEN
   FIRST_X_ASSUM(STRIP_ASSUME_TAC o REWRITE_RULE
     [absolutely_integrable_on]) THEN
   MP_TAC(ISPECL
    [``f:real->real``, ``(\x. abs((g:real->real) x))``,
     ``s:real->bool``] ABSOLUTELY_INTEGRABLE_INTEGRABLE_BOUND) THEN
-  ASM_SIMP_TAC std_ss []);
+  ASM_SIMP_TAC std_ss []
+QED
 
-val ABSOLUTELY_INTEGRABLE_INF = store_thm ("ABSOLUTELY_INTEGRABLE_INF",
- ``!fs s:real->bool k:'a->bool.
+Theorem ABSOLUTELY_INTEGRABLE_INF:
+   !fs s:real->bool k:'a->bool.
         FINITE k /\ ~(k = {}) /\
         (!i. i IN k ==> (\x. (fs x i)) absolutely_integrable_on s)
-        ==> (\x. (inf (IMAGE (fs x) k))) absolutely_integrable_on s``,
+        ==> (\x. (inf (IMAGE (fs x) k))) absolutely_integrable_on s
+Proof
   GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
   ONCE_REWRITE_TAC [METIS []
    ``!k. (k <> {} ==>
@@ -11904,13 +12179,15 @@ val ABSOLUTELY_INTEGRABLE_INF = store_thm ("ABSOLUTELY_INTEGRABLE_INF",
   MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_MIN THEN
   CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN REWRITE_TAC[IN_INSERT] THEN
   REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
-  ASM_REWRITE_TAC[IN_INSERT]);
+  ASM_REWRITE_TAC[IN_INSERT]
+QED
 
-val ABSOLUTELY_INTEGRABLE_SUP = store_thm ("ABSOLUTELY_INTEGRABLE_SUP",
- ``!fs s:real->bool k:'a->bool.
+Theorem ABSOLUTELY_INTEGRABLE_SUP:
+   !fs s:real->bool k:'a->bool.
         FINITE k /\ ~(k = {}) /\
         (!i. i IN k ==> (\x. (fs x i)) absolutely_integrable_on s)
-        ==> (\x. (sup (IMAGE (fs x) k))) absolutely_integrable_on s``,
+        ==> (\x. (sup (IMAGE (fs x) k))) absolutely_integrable_on s
+Proof
   GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
   ONCE_REWRITE_TAC [METIS []
    ``!k. (k <> {} ==>
@@ -11932,12 +12209,14 @@ val ABSOLUTELY_INTEGRABLE_SUP = store_thm ("ABSOLUTELY_INTEGRABLE_SUP",
   MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_MAX THEN
   CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN REWRITE_TAC[IN_INSERT] THEN
   REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
-  ASM_REWRITE_TAC[IN_INSERT]);
+  ASM_REWRITE_TAC[IN_INSERT]
+QED
 
-val ABSOLUTELY_INTEGRABLE_CONTINUOUS = store_thm ("ABSOLUTELY_INTEGRABLE_CONTINUOUS",
- ``!f:real->real a b.
+Theorem ABSOLUTELY_INTEGRABLE_CONTINUOUS:
+   !f:real->real a b.
         f continuous_on interval[a,b]
-        ==> f absolutely_integrable_on interval[a,b]``,
+        ==> f absolutely_integrable_on interval[a,b]
+Proof
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_INTEGRABLE_BOUND THEN
   SUBGOAL_THEN ``compact(IMAGE (f:real->real) (interval[a,b]))`` MP_TAC THENL
@@ -11946,7 +12225,8 @@ val ABSOLUTELY_INTEGRABLE_CONTINUOUS = store_thm ("ABSOLUTELY_INTEGRABLE_CONTINU
   SIMP_TAC std_ss [BOUNDED_POS, FORALL_IN_IMAGE] THEN
   DISCH_THEN(X_CHOOSE_THEN ``B:real`` STRIP_ASSUME_TAC) THEN
   EXISTS_TAC ``\x:real. (B:real)`` THEN
-  ASM_SIMP_TAC std_ss [INTEGRABLE_CONST, INTEGRABLE_CONTINUOUS]);
+  ASM_SIMP_TAC std_ss [INTEGRABLE_CONST, INTEGRABLE_CONTINUOUS]
+QED
 
 Theorem INTEGRABLE_MIN_CONST :
     !f s t.
@@ -11991,11 +12271,12 @@ Proof
     RW_TAC real_ss [min_def] >> ASM_REAL_ARITH_TAC ]
 QED
 
-val ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_COMPONENT_UBOUND = store_thm ("ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_COMPONENT_UBOUND",
- ``!f:real->real g:real->real s.
+Theorem ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_COMPONENT_UBOUND:
+   !f:real->real g:real->real s.
         (!x i. x IN s ==> f(x) <= g(x)) /\
         f integrable_on s /\ g absolutely_integrable_on s
-        ==> f absolutely_integrable_on s``,
+        ==> f absolutely_integrable_on s
+Proof
   REPEAT STRIP_TAC THEN SUBGOAL_THEN
    ``(\x. (g:real->real)(x) - (g(x) - f(x))) absolutely_integrable_on s``
   MP_TAC THENL
@@ -12006,13 +12287,15 @@ val ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_COMPONENT_UBOUND = store_thm ("A
     ASM_SIMP_TAC std_ss [REAL_SUB_LE] THEN
     MATCH_MP_TAC INTEGRABLE_SUB THEN
     ASM_SIMP_TAC std_ss [ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE],
-    SIMP_TAC std_ss[REAL_ARITH ``x - (x - y):real = y``, ETA_AX]]);
+    SIMP_TAC std_ss[REAL_ARITH ``x - (x - y):real = y``, ETA_AX]]
+QED
 
-val ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_COMPONENT_LBOUND = store_thm ("ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_COMPONENT_LBOUND",
- ``!f:real->real g:real->real s.
+Theorem ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_COMPONENT_LBOUND:
+   !f:real->real g:real->real s.
         (!x i. x IN s ==> f(x) <= g(x)) /\
         f absolutely_integrable_on s /\ g integrable_on s
-        ==> g absolutely_integrable_on s``,
+        ==> g absolutely_integrable_on s
+Proof
   REPEAT STRIP_TAC THEN SUBGOAL_THEN
    ``(\x. (f:real->real)(x) + (g(x) - f(x))) absolutely_integrable_on s``
   MP_TAC THENL
@@ -12023,68 +12306,82 @@ val ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_COMPONENT_LBOUND = store_thm ("A
     ASM_SIMP_TAC std_ss [REAL_SUB_LE] THEN
     MATCH_MP_TAC INTEGRABLE_SUB THEN
     ASM_SIMP_TAC std_ss [ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE],
-    SIMP_TAC std_ss [REAL_ARITH ``y + (x - y):real = x``, ETA_AX]]);
+    SIMP_TAC std_ss [REAL_ARITH ``y + (x - y):real = x``, ETA_AX]]
+QED
 
-val ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_UBOUND = store_thm ("ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_UBOUND",
- ``!f:real->real g:real->real s.
+Theorem ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_UBOUND:
+   !f:real->real g:real->real s.
         (!x. x IN s ==> f(x) <= g(x)) /\
         f integrable_on s /\ g absolutely_integrable_on s
-        ==> f absolutely_integrable_on s``,
+        ==> f absolutely_integrable_on s
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC
     ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_COMPONENT_UBOUND THEN
   EXISTS_TAC ``g:real->real`` THEN
   ASM_SIMP_TAC std_ss [IMP_CONJ, RIGHT_FORALL_IMP_THM] THEN
-  ASM_SIMP_TAC std_ss [AND_IMP_INTRO]);
+  ASM_SIMP_TAC std_ss [AND_IMP_INTRO]
+QED
 
-val ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_LBOUND = store_thm ("ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_LBOUND",
- ``!f:real->real g:real->real s.
+Theorem ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_LBOUND:
+   !f:real->real g:real->real s.
         (!x. x IN s ==> f(x) <= g(x)) /\
         f absolutely_integrable_on s /\ g integrable_on s
-        ==> g absolutely_integrable_on s``,
+        ==> g absolutely_integrable_on s
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC
     ABSOLUTELY_INTEGRABLE_ABSOLUTELY_INTEGRABLE_COMPONENT_LBOUND THEN
   EXISTS_TAC ``f:real->real`` THEN
   ASM_SIMP_TAC std_ss [IMP_CONJ, RIGHT_FORALL_IMP_THM] THEN
-  ASM_SIMP_TAC std_ss [AND_IMP_INTRO]);
+  ASM_SIMP_TAC std_ss [AND_IMP_INTRO]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Relating vector integrals to integrals of components.                     *)
 (* ------------------------------------------------------------------------- *)
 
-val HAS_INTEGRAL_COMPONENTWISE = store_thm ("HAS_INTEGRAL_COMPONENTWISE",
- ``!f:real->real s y.
-        (f has_integral y) s <=> ((\x. (f x)) has_integral (y)) s``,
-  METIS_TAC [ETA_AX]);
+Theorem HAS_INTEGRAL_COMPONENTWISE:
+   !f:real->real s y.
+        (f has_integral y) s <=> ((\x. (f x)) has_integral (y)) s
+Proof
+  METIS_TAC [ETA_AX]
+QED
 
-val INTEGRABLE_COMPONENTWISE = store_thm ("INTEGRABLE_COMPONENTWISE",
- ``!f:real->real s.
+Theorem INTEGRABLE_COMPONENTWISE:
+   !f:real->real s.
         f integrable_on s <=>
-         (\x. (f x)) integrable_on s``,
-   METIS_TAC [ETA_AX]);
+         (\x. (f x)) integrable_on s
+Proof
+   METIS_TAC [ETA_AX]
+QED
 
-val INTEGRAL_COMPONENT = store_thm ("INTEGRAL_COMPONENT",
- ``!f:real->real s.
+Theorem INTEGRAL_COMPONENT:
+   !f:real->real s.
         f integrable_on s
-        ==> ((integral s f) = integral s (\x. (f x)))``,
-  METIS_TAC [ETA_AX]);
+        ==> ((integral s f) = integral s (\x. (f x)))
+Proof
+  METIS_TAC [ETA_AX]
+QED
 
-val ABSOLUTELY_INTEGRABLE_COMPONENTWISE = store_thm ("ABSOLUTELY_INTEGRABLE_COMPONENTWISE",
- ``!f:real->real s.
+Theorem ABSOLUTELY_INTEGRABLE_COMPONENTWISE:
+   !f:real->real s.
      f absolutely_integrable_on s <=>
-      ((\x. (f x)) absolutely_integrable_on s)``,
-  METIS_TAC [ETA_AX]);
+      ((\x. (f x)) absolutely_integrable_on s)
+Proof
+  METIS_TAC [ETA_AX]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Dominated convergence.                                                    *)
 (* ------------------------------------------------------------------------- *)
 
-val DOMINATED_CONVERGENCE = store_thm ("DOMINATED_CONVERGENCE",
- ``!f:num->real->real g h s.
+Theorem DOMINATED_CONVERGENCE:
+   !f:num->real->real g h s.
         (!k. (f k) integrable_on s) /\ h integrable_on s /\
         (!k x. x IN s ==> abs(f k x) <= (h x)) /\
         (!x. x IN s ==> ((\k. f k x) --> g x) sequentially)
         ==> g integrable_on s /\
-            ((\k. integral s (f k)) --> integral s g) sequentially``,
+            ((\k. integral s (f k)) --> integral s g) sequentially
+Proof
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   MP_TAC(GEN ``m:num``
    (ISPECL [``\k:num x:real. inf { f j x | j IN {m..m+k}}``,
@@ -12519,15 +12816,17 @@ val DOMINATED_CONVERGENCE = store_thm ("DOMINATED_CONVERGENCE",
       MATCH_MP_TAC(REAL_ARITH ``abs(x) <= a ==> x <= a:real``) THEN
       FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[],
       DISCH_TAC THEN ASM_REWRITE_TAC [] THEN POP_ASSUM K_TAC THEN
-      DISCH_THEN(MATCH_MP_TAC o CONJUNCT1) THEN REWRITE_TAC[LESS_EQ_REFL]]]);
+      DISCH_THEN(MATCH_MP_TAC o CONJUNCT1) THEN REWRITE_TAC[LESS_EQ_REFL]]]
+QED
 
-val lemma = prove (
-   ``!f:num->real->real g h s.
+Theorem lemma[local]:
+     !f:num->real->real g h s.
           (!k. f k absolutely_integrable_on s) /\
           h integrable_on s /\
           (!x. x IN s ==> abs(g x) <= (h x)) /\
           (!x. x IN s ==> ((\k. f k x) --> g x) sequentially)
-          ==> g integrable_on s``,
+          ==> g integrable_on s
+Proof
     REPEAT STRIP_TAC THEN
     SUBGOAL_THEN ``(h:real->real) absolutely_integrable_on s``
     ASSUME_TAC THENL
@@ -12589,38 +12888,44 @@ val lemma = prove (
       RW_TAC real_ss [] (* 2 subgoals *)
       >- ASM_REAL_ARITH_TAC \\
       Cases_on `-h x <= f n x` >> fs [] \\
-      ASM_REAL_ARITH_TAC ]);
+      ASM_REAL_ARITH_TAC ]
+QED
 
-val DOMINATED_CONVERGENCE_INTEGRABLE = store_thm ("DOMINATED_CONVERGENCE_INTEGRABLE",
- ``!f:num->real->real g h s.
+Theorem DOMINATED_CONVERGENCE_INTEGRABLE:
+   !f:num->real->real g h s.
          (!k. f k absolutely_integrable_on s) /\
          h integrable_on s /\
          (!k x. x IN s ==> abs(g x) <= (h x)) /\
          (!x. x IN s ==> ((\k. f k x) --> g x) sequentially)
-         ==> g integrable_on s``,
-  REWRITE_TAC [lemma] );
+         ==> g integrable_on s
+Proof
+  REWRITE_TAC [lemma]
+QED
 
-val DOMINATED_CONVERGENCE_ABSOLUTELY_INTEGRABLE = store_thm ("DOMINATED_CONVERGENCE_ABSOLUTELY_INTEGRABLE",
- ``!f:num->real->real g h s.
+Theorem DOMINATED_CONVERGENCE_ABSOLUTELY_INTEGRABLE:
+   !f:num->real->real g h s.
          (!k. f k absolutely_integrable_on s) /\
          h integrable_on s /\
          (!k x. x IN s ==> abs(g x) <= (h x)) /\
          (!x. x IN s ==> ((\k. f k x) --> g x) sequentially)
-         ==> g absolutely_integrable_on s``,
+         ==> g absolutely_integrable_on s
+Proof
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_INTEGRABLE_BOUND THEN
   EXISTS_TAC ``h:real->real`` THEN ASM_SIMP_TAC std_ss [] THEN
   MATCH_MP_TAC DOMINATED_CONVERGENCE_INTEGRABLE THEN
   EXISTS_TAC ``f:num->real->real`` THEN
-  EXISTS_TAC ``h:real->real`` THEN ASM_REWRITE_TAC[]);
+  EXISTS_TAC ``h:real->real`` THEN ASM_REWRITE_TAC[]
+QED
 
-val DOMINATED_CONVERGENCE_AE = store_thm ("DOMINATED_CONVERGENCE_AE",
- ``!f:num->real->real g h s t.
+Theorem DOMINATED_CONVERGENCE_AE:
+   !f:num->real->real g h s t.
         (!k. (f k) integrable_on s) /\ h integrable_on s /\ negligible t /\
         (!k x. x IN s DIFF t ==> abs(f k x) <= (h x)) /\
         (!x. x IN s DIFF t ==> ((\k. f k x) --> g x) sequentially)
         ==> g integrable_on s /\
-            ((\k. integral s (f k)) --> integral s g) sequentially``,
+            ((\k. integral s (f k)) --> integral s g) sequentially
+Proof
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   MP_TAC(ISPECL [``f:num->real->real``, ``g:real->real``,
                  ``h:real->real``, ``s DIFF t:real->bool``]
@@ -12640,14 +12945,16 @@ val DOMINATED_CONVERGENCE_AE = store_thm ("DOMINATED_CONVERGENCE_AE",
       TRY ABS_TAC THEN MATCH_MP_TAC INTEGRAL_SPIKE_SET]] THEN
   FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
     NEGLIGIBLE_SUBSET)) THEN
-  SET_TAC[]);
+  SET_TAC[]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* A few more properties of negligible sets.                                 *)
 (* ------------------------------------------------------------------------- *)
 
-val NEGLIGIBLE_ON_UNIV = store_thm ("NEGLIGIBLE_ON_UNIV",
- ``!s. negligible s <=> (indicator s has_integral 0) univ(:real)``,
+Theorem NEGLIGIBLE_ON_UNIV:
+   !s. negligible s <=> (indicator s has_integral 0) univ(:real)
+Proof
   GEN_TAC THEN EQ_TAC THENL [SIMP_TAC std_ss [NEGLIGIBLE], ALL_TAC] THEN
   DISCH_TAC THEN REWRITE_TAC[negligible] THEN
   MAP_EVERY X_GEN_TAC [``a:real``, ``b:real``] THEN
@@ -12662,11 +12969,13 @@ val NEGLIGIBLE_ON_UNIV = store_thm ("NEGLIGIBLE_ON_UNIV",
       MATCH_MP_TAC INTEGRAL_SUBSET_DROP_LE,
       MATCH_MP_TAC INTEGRAL_DROP_POS] THEN
     ASM_REWRITE_TAC[SUBSET_UNIV, DROP_INDICATOR_POS_LE] THEN
-    ASM_MESON_TAC[integrable_on]]);
+    ASM_MESON_TAC[integrable_on]]
+QED
 
-val NEGLIGIBLE_COUNTABLE_BIGUNION = store_thm ("NEGLIGIBLE_COUNTABLE_BIGUNION",
- ``!s:num->real->bool.
-        (!n. negligible(s n)) ==> negligible(BIGUNION {s(n) | n IN univ(:num)})``,
+Theorem NEGLIGIBLE_COUNTABLE_BIGUNION:
+   !s:num->real->bool.
+        (!n. negligible(s n)) ==> negligible(BIGUNION {s(n) | n IN univ(:num)})
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [``\n. indicator(BIGUNION {(s:num->real->bool)(m) | m <= n})``,
              ``indicator(BIGUNION {(s:num->real->bool)(m) | m IN univ(:num)})``,
@@ -12735,12 +13044,14 @@ val NEGLIGIBLE_COUNTABLE_BIGUNION = store_thm ("NEGLIGIBLE_COUNTABLE_BIGUNION",
       POP_ASSUM (MP_TAC o SIMP_RULE std_ss [BIGUNION_GSPEC]) THEN
       SIMP_TAC std_ss [BIGUNION_GSPEC, GSPECIFICATION, IN_UNIV]],
     REWRITE_TAC[SET_RULE ``{c | x | x IN UNIV} = {c}``,
-                BOUNDED_INSERT, BOUNDED_EMPTY]]);
+                BOUNDED_INSERT, BOUNDED_EMPTY]]
+QED
 
-val lemma = prove (
-   ``!f:real->real s.
+Theorem lemma[local]:
+     !f:real->real s.
           (!x. x IN s ==> &0 <= (f x)) /\ (f has_integral 0) s
-          ==> negligible {x | x IN s /\ ~(f x = 0)}``,
+          ==> negligible {x | x IN s /\ ~(f x = 0)}
+Proof
     REPEAT STRIP_TAC THEN MATCH_MP_TAC NEGLIGIBLE_SUBSET THEN EXISTS_TAC
      ``BIGUNION {{x | x IN s /\ abs((f:real->real) x) >= &1 / (&n + &1:real)} |
               n IN univ(:num)}`` THEN
@@ -12781,13 +13092,15 @@ val lemma = prove (
        ASM_REWRITE_TAC [GSYM REAL_INV_1OVER] THEN MATCH_MP_TAC REAL_LE_INV2 THEN
        SIMP_TAC std_ss [REAL_LT, REAL_OF_NUM_ADD, REAL_OF_NUM_LE] THEN
        UNDISCH_TAC ``n <> 0:num`` THEN ARITH_TAC,
-       EXISTS_TAC ``n:num`` THEN ASM_SIMP_TAC std_ss []]]);
+       EXISTS_TAC ``n:num`` THEN ASM_SIMP_TAC std_ss []]]
+QED
 
-val HAS_INTEGRAL_NEGLIGIBLE_EQ = store_thm ("HAS_INTEGRAL_NEGLIGIBLE_EQ",
- ``!f:real->real s.
+Theorem HAS_INTEGRAL_NEGLIGIBLE_EQ:
+   !f:real->real s.
         (!x i. x IN s ==> &0 <= f(x))
         ==> ((f has_integral 0) s <=>
-             negligible {x | x IN s /\ ~(f x = 0)})``,
+             negligible {x | x IN s /\ ~(f x = 0)})
+Proof
   REPEAT STRIP_TAC THEN EQ_TAC THEN DISCH_TAC THENL
    [ALL_TAC,
     MATCH_MP_TAC HAS_INTEGRAL_NEGLIGIBLE THEN
@@ -12801,15 +13114,19 @@ val HAS_INTEGRAL_NEGLIGIBLE_EQ = store_thm ("HAS_INTEGRAL_NEGLIGIBLE_EQ",
      IN_SING, FINITE_SING] THEN MATCH_MP_TAC lemma THEN
     ASM_SIMP_TAC std_ss [],
     SIMP_TAC std_ss [SUBSET_DEF, IN_BIGUNION, EXISTS_IN_GSPEC, IN_NUMSEG] THEN
-    SIMP_TAC std_ss [GSPECIFICATION, IN_SING] THEN MESON_TAC[]]);
+    SIMP_TAC std_ss [GSPECIFICATION, IN_SING] THEN MESON_TAC[]]
+QED
 
-val lemma = prove (
-  ``IMAGE f s = BIGUNION {(\x. {f x}) x | x IN s}``,
+Theorem lemma[local]:
+    IMAGE f s = BIGUNION {(\x. {f x}) x | x IN s}
+Proof
     SIMP_TAC std_ss [EXTENSION, IN_IMAGE, IN_BIGUNION, IN_SING, GSPECIFICATION] THEN
-    MESON_TAC[IN_SING]);
+    MESON_TAC[IN_SING]
+QED
 
-val NEGLIGIBLE_COUNTABLE = store_thm ("NEGLIGIBLE_COUNTABLE",
- ``!s:real->bool. COUNTABLE s ==> negligible s``,
+Theorem NEGLIGIBLE_COUNTABLE:
+   !s:real->bool. COUNTABLE s ==> negligible s
+Proof
   GEN_TAC THEN ASM_CASES_TAC ``s:real->bool = {}`` THEN
   ASM_REWRITE_TAC[NEGLIGIBLE_EMPTY] THEN
   POP_ASSUM MP_TAC THEN REWRITE_TAC[GSYM IMP_CONJ_ALT] THEN
@@ -12817,18 +13134,20 @@ val NEGLIGIBLE_COUNTABLE = store_thm ("NEGLIGIBLE_COUNTABLE",
     MATCH_MP COUNTABLE_AS_IMAGE) THEN
   ONCE_REWRITE_TAC[lemma] THEN
   MATCH_MP_TAC NEGLIGIBLE_COUNTABLE_BIGUNION THEN
-  SIMP_TAC std_ss [NEGLIGIBLE_SING]);
+  SIMP_TAC std_ss [NEGLIGIBLE_SING]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* More basic "almost everywhere" variants of other theorems.                *)
 (* ------------------------------------------------------------------------- *)
 
-val HAS_INTEGRAL_COMPONENT_LE_AE = store_thm ("HAS_INTEGRAL_COMPONENT_LE_AE",
- ``!f:real->real g:real->real s i j k t.
+Theorem HAS_INTEGRAL_COMPONENT_LE_AE:
+   !f:real->real g:real->real s i j k t.
         negligible t /\
         (f has_integral i) s /\ (g has_integral j) s /\
         (!x. x IN s DIFF t ==> (f x) <= (g x))
-        ==> i <= j``,
+        ==> i <= j
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC HAS_INTEGRAL_COMPONENT_LE THEN
   EXISTS_TAC ``\x. if x IN t then 0 else (f:real->real) x`` THEN
   EXISTS_TAC ``\x. if x IN t then 0 else (g:real->real) x`` THEN
@@ -12839,41 +13158,49 @@ val HAS_INTEGRAL_COMPONENT_LE_AE = store_thm ("HAS_INTEGRAL_COMPONENT_LE_AE",
     MATCH_MP_TAC HAS_INTEGRAL_SPIKE THEN EXISTS_TAC ``g:real->real`` THEN
     EXISTS_TAC ``t:real->bool`` THEN ASM_SIMP_TAC std_ss [IN_DIFF],
     SIMP_TAC std_ss [] THEN COND_CASES_TAC THEN
-    ASM_SIMP_TAC std_ss [IN_DIFF, REAL_LE_REFL]]);
+    ASM_SIMP_TAC std_ss [IN_DIFF, REAL_LE_REFL]]
+QED
 
-val INTEGRAL_COMPONENT_LE_AE = store_thm ("INTEGRAL_COMPONENT_LE_AE",
- ``!f:real->real g:real->real s k t.
+Theorem INTEGRAL_COMPONENT_LE_AE:
+   !f:real->real g:real->real s k t.
         negligible t /\
         f integrable_on s /\ g integrable_on s /\
         (!x. x IN s DIFF t ==> (f x) <= (g x))
-        ==> (integral s f) <= (integral s g)``,
+        ==> (integral s f) <= (integral s g)
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC HAS_INTEGRAL_COMPONENT_LE_AE THEN
-  ASM_MESON_TAC[INTEGRABLE_INTEGRAL]);
+  ASM_MESON_TAC[INTEGRABLE_INTEGRAL]
+QED
 
-val HAS_INTEGRAL_LE_AE = store_thm ("HAS_INTEGRAL_LE_AE",
- ``!f:real->real g:real->real s i j t.
+Theorem HAS_INTEGRAL_LE_AE:
+   !f:real->real g:real->real s i j t.
         (f has_integral i) s /\ (g has_integral j) s /\
         negligible t /\ (!x. x IN s DIFF t ==> (f x) <= (g x))
-        ==> i <= j``,
+        ==> i <= j
+Proof
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC HAS_INTEGRAL_COMPONENT_LE_AE THEN
-  REWRITE_TAC[LESS_EQ_REFL] THEN ASM_MESON_TAC[]);
+  REWRITE_TAC[LESS_EQ_REFL] THEN ASM_MESON_TAC[]
+QED
 
-val INTEGRAL_LE_AE = store_thm ("INTEGRAL_LE_AE",
- ``!f:real->real g:real->real s t.
+Theorem INTEGRAL_LE_AE:
+   !f:real->real g:real->real s t.
         f integrable_on s /\ g integrable_on s /\
         negligible t /\ (!x. x IN s DIFF t ==> (f x) <= (g x))
-        ==> (integral s f) <= (integral s g)``,
+        ==> (integral s f) <= (integral s g)
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC HAS_INTEGRAL_LE_AE THEN
-  ASM_MESON_TAC[INTEGRABLE_INTEGRAL]);
+  ASM_MESON_TAC[INTEGRABLE_INTEGRAL]
+QED
 
-val NONNEGATIVE_ABSOLUTELY_INTEGRABLE_AE = store_thm ("NONNEGATIVE_ABSOLUTELY_INTEGRABLE_AE",
- ``!f:real->real s t.
+Theorem NONNEGATIVE_ABSOLUTELY_INTEGRABLE_AE:
+   !f:real->real s t.
         negligible t /\
         (!x i. x IN s DIFF t
                ==> &0 <= f(x)) /\
         f integrable_on s
-        ==> f absolutely_integrable_on s``,
+        ==> f absolutely_integrable_on s
+Proof
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC(REWRITE_RULE[AND_IMP_INTRO] ABSOLUTELY_INTEGRABLE_SPIKE) THEN
   EXISTS_TAC ``\x. if x IN s DIFF t then (f:real->real) x else 0`` THEN
@@ -12883,13 +13210,15 @@ val NONNEGATIVE_ABSOLUTELY_INTEGRABLE_AE = store_thm ("NONNEGATIVE_ABSOLUTELY_IN
    [METIS_TAC[REAL_LE_REFL], ALL_TAC] THEN
   MATCH_MP_TAC(REWRITE_RULE[AND_IMP_INTRO] INTEGRABLE_SPIKE) THEN
   MAP_EVERY EXISTS_TAC [``f:real->real``, ``t:real->bool``] THEN
-  ASM_SIMP_TAC std_ss []);
+  ASM_SIMP_TAC std_ss []
+QED
 
-val INTEGRAL_ABS_BOUND_INTEGRAL_AE = store_thm ("INTEGRAL_ABS_BOUND_INTEGRAL_AE",
- ``!f:real->real g s t.
+Theorem INTEGRAL_ABS_BOUND_INTEGRAL_AE:
+   !f:real->real g s t.
         f integrable_on s /\ g integrable_on s /\
         negligible t /\ (!x. x IN s DIFF t ==> abs(f x) <= (g x))
-        ==> abs(integral s f) <= (integral s g)``,
+        ==> abs(integral s f) <= (integral s g)
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL
    [``\x. if x IN s DIFF t then (f:real->real) x else 0``,
@@ -12918,7 +13247,8 @@ val INTEGRAL_ABS_BOUND_INTEGRAL_AE = store_thm ("INTEGRAL_ABS_BOUND_INTEGRAL_AE"
     MATCH_MP_TAC EQ_IMPLIES THEN BINOP_TAC THENL
     [AP_TERM_TAC, ALL_TAC] THEN
     MATCH_MP_TAC INTEGRAL_SPIKE THEN EXISTS_TAC ``t:real->bool`` THEN
-    ASM_SIMP_TAC std_ss []]);
+    ASM_SIMP_TAC std_ss []]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Beppo Levi theorem.                                                       *)
@@ -13394,13 +13724,14 @@ Proof
         EXPAND_TAC "Z" THEN SIMP_TAC real_ss [GSPECIFICATION]]] ]
 QED
 
-val BEPPO_LEVI_DECREASING = store_thm ("BEPPO_LEVI_DECREASING",
- ``!f:num->real->real s.
+Theorem BEPPO_LEVI_DECREASING:
+   !f:num->real->real s.
         (!k. (f k) integrable_on s) /\
         (!k x. x IN s ==> (f (SUC k) x) <= (f k x)) /\
         bounded {integral s (f k) | k IN univ(:num)}
         ==> ?g k. negligible k /\
-                  !x. x IN (s DIFF k) ==> ((\k. f k x) --> g x) sequentially``,
+                  !x. x IN (s DIFF k) ==> ((\k. f k x) --> g x) sequentially
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [``\n x. -((f:num->real->real) n x)``, ``s:real->bool``]
         BEPPO_LEVI_INCREASING) THEN
@@ -13431,10 +13762,11 @@ val BEPPO_LEVI_DECREASING = store_thm ("BEPPO_LEVI_DECREASING",
     ASM_SIMP_TAC std_ss [] THEN REPEAT STRIP_TAC THEN
     GEN_REWR_TAC (RATOR_CONV o LAND_CONV o ABS_CONV)
       [GSYM REAL_NEG_NEG] THEN
-    ASM_SIMP_TAC std_ss [LIM_NEG_EQ]]);
+    ASM_SIMP_TAC std_ss [LIM_NEG_EQ]]
+QED
 
-val BEPPO_LEVI_MONOTONE_CONVERGENCE_INCREASING = store_thm ("BEPPO_LEVI_MONOTONE_CONVERGENCE_INCREASING",
- ``!f:num->real->real s.
+Theorem BEPPO_LEVI_MONOTONE_CONVERGENCE_INCREASING:
+   !f:num->real->real s.
         (!k. (f k) integrable_on s) /\
         (!k x. x IN s ==> (f k x) <= (f (SUC k) x)) /\
         bounded {integral s (f k) | k IN univ(:num)}
@@ -13442,7 +13774,8 @@ val BEPPO_LEVI_MONOTONE_CONVERGENCE_INCREASING = store_thm ("BEPPO_LEVI_MONOTONE
                   (!x. x IN (s DIFF k)
                        ==> ((\k. f k x) --> g x) sequentially) /\
                   g integrable_on s /\
-                  ((\k. integral s (f k)) --> integral s g) sequentially``,
+                  ((\k. integral s (f k)) --> integral s g) sequentially
+Proof
   REPEAT GEN_TAC THEN DISCH_TAC THEN
   FIRST_ASSUM(MP_TAC o MATCH_MP BEPPO_LEVI_INCREASING) THEN
   DISCH_THEN (X_CHOOSE_THEN ``g:real->real`` MP_TAC) THEN
@@ -13468,10 +13801,11 @@ val BEPPO_LEVI_MONOTONE_CONVERGENCE_INCREASING = store_thm ("BEPPO_LEVI_MONOTONE
     MATCH_MP_TAC INTEGRAL_SPIKE_SET) THEN
    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
         NEGLIGIBLE_SUBSET)) THEN
-     SET_TAC[]));
+     SET_TAC[])
+QED
 
-val BEPPO_LEVI_MONOTONE_CONVERGENCE_DECREASING = store_thm ("BEPPO_LEVI_MONOTONE_CONVERGENCE_DECREASING",
- ``!f:num->real->real s.
+Theorem BEPPO_LEVI_MONOTONE_CONVERGENCE_DECREASING:
+   !f:num->real->real s.
         (!k. (f k) integrable_on s) /\
         (!k x. x IN s ==> (f (SUC k) x) <= (f k x)) /\
         bounded {integral s (f k) | k IN univ(:num)}
@@ -13479,7 +13813,8 @@ val BEPPO_LEVI_MONOTONE_CONVERGENCE_DECREASING = store_thm ("BEPPO_LEVI_MONOTONE
                   (!x. x IN (s DIFF k)
                        ==> ((\k. f k x) --> g x) sequentially) /\
                   g integrable_on s /\
-                  ((\k. integral s (f k)) --> integral s g) sequentially``,
+                  ((\k. integral s (f k)) --> integral s g) sequentially
+Proof
   REPEAT GEN_TAC THEN DISCH_TAC THEN
   FIRST_ASSUM(MP_TAC o MATCH_MP BEPPO_LEVI_DECREASING) THEN
   DISCH_THEN (X_CHOOSE_THEN ``g:real->real`` MP_TAC) THEN
@@ -13505,10 +13840,11 @@ val BEPPO_LEVI_MONOTONE_CONVERGENCE_DECREASING = store_thm ("BEPPO_LEVI_MONOTONE
     MATCH_MP_TAC INTEGRAL_SPIKE_SET) THEN
    FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ]
         NEGLIGIBLE_SUBSET)) THEN
-     SET_TAC[]));
+     SET_TAC[])
+QED
 
-val BEPPO_LEVI_MONOTONE_CONVERGENCE_INCREASING_AE = store_thm ("BEPPO_LEVI_MONOTONE_CONVERGENCE_INCREASING_AE",
- ``!f:num->real->real s.
+Theorem BEPPO_LEVI_MONOTONE_CONVERGENCE_INCREASING_AE:
+   !f:num->real->real s.
         (!k. (f k) integrable_on s) /\
         (!k. ?t. negligible t /\
                  !x. x IN s DIFF t ==> (f k x) <= (f (SUC k) x)) /\
@@ -13517,7 +13853,8 @@ val BEPPO_LEVI_MONOTONE_CONVERGENCE_INCREASING_AE = store_thm ("BEPPO_LEVI_MONOT
                   (!x. x IN (s DIFF k)
                        ==> ((\k. f k x) --> g x) sequentially) /\
                   g integrable_on s /\
-                  ((\k. integral s (f k)) --> integral s g) sequentially``,
+                  ((\k. integral s (f k)) --> integral s g) sequentially
+Proof
   REPEAT GEN_TAC THEN SIMP_TAC std_ss [SKOLEM_THM] THEN
   DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
   DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
@@ -13585,10 +13922,11 @@ val BEPPO_LEVI_MONOTONE_CONVERGENCE_INCREASING_AE = store_thm ("BEPPO_LEVI_MONOT
       SIMP_TAC std_ss [FUN_EQ_THM] THEN GEN_TAC THEN
       MATCH_MP_TAC INTEGRAL_SPIKE THEN
       EXISTS_TAC ``BIGUNION {t k | k IN univ(:num)}:real->bool`` THEN
-      ASM_SIMP_TAC std_ss [IN_DIFF]]]);
+      ASM_SIMP_TAC std_ss [IN_DIFF]]]
+QED
 
-val BEPPO_LEVI_MONOTONE_CONVERGENCE_DECREASING_AE = store_thm ("BEPPO_LEVI_MONOTONE_CONVERGENCE_DECREASING_AE",
- ``!f:num->real->real s.
+Theorem BEPPO_LEVI_MONOTONE_CONVERGENCE_DECREASING_AE:
+   !f:num->real->real s.
         (!k. (f k) integrable_on s) /\
         (!k. ?t. negligible t /\
                  !x. x IN s DIFF t ==> (f (SUC k) x) <= (f k x)) /\
@@ -13597,7 +13935,8 @@ val BEPPO_LEVI_MONOTONE_CONVERGENCE_DECREASING_AE = store_thm ("BEPPO_LEVI_MONOT
                   (!x. x IN (s DIFF k)
                        ==> ((\k. f k x) --> g x) sequentially) /\
                   g integrable_on s /\
-                  ((\k. integral s (f k)) --> integral s g) sequentially``,
+                  ((\k. integral s (f k)) --> integral s g) sequentially
+Proof
   REPEAT GEN_TAC THEN SIMP_TAC std_ss [SKOLEM_THM] THEN
   DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
   DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
@@ -13667,21 +14006,23 @@ val BEPPO_LEVI_MONOTONE_CONVERGENCE_DECREASING_AE = store_thm ("BEPPO_LEVI_MONOT
       SIMP_TAC std_ss [FUN_EQ_THM] THEN GEN_TAC THEN
       MATCH_MP_TAC INTEGRAL_SPIKE THEN
       EXISTS_TAC ``BIGUNION {t k | k IN univ(:num)}:real->bool`` THEN
-      ASM_SIMP_TAC std_ss [IN_DIFF]]]);
+      ASM_SIMP_TAC std_ss [IN_DIFF]]]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Fatou's lemma and Lieb's extension.                                       *)
 (* ------------------------------------------------------------------------- *)
 
-val FATOU = store_thm ("FATOU",
- ``!f:num->real->real g s t B.
+Theorem FATOU:
+   !f:num->real->real g s t B.
         negligible t /\
         (!n. (f n) integrable_on s) /\
         (!n x. x IN s DIFF t ==> &0 <= (f n x)) /\
         (!x. x IN s DIFF t ==> ((\n. f n x) --> g x) sequentially) /\
         (!n. (integral s (f n)) <= B)
         ==> g integrable_on s /\
-            &0 <= (integral s g) /\ (integral s g) <= B``,
+            &0 <= (integral s g) /\ (integral s g) <= B
+Proof
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   ABBREV_TAC
    ``h = \n x. (inf {((f:num->real->real) j x) | n <= j})`` THEN
@@ -13909,19 +14250,21 @@ val FATOU = store_thm ("FATOU",
      [MATCH_MP_TAC(ISPEC ``sequentially`` LIM_DROP_LBOUND),
       MATCH_MP_TAC(ISPEC ``sequentially`` LIM_DROP_UBOUND)] THEN
     EXISTS_TAC ``\n. integral s ((h:num->real->real) n)`` THEN
-    ASM_SIMP_TAC real_ss [TRIVIAL_LIMIT_SEQUENTIALLY, EVENTUALLY_TRUE]]);
+    ASM_SIMP_TAC real_ss [TRIVIAL_LIMIT_SEQUENTIALLY, EVENTUALLY_TRUE]]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Fundamental theorem of calculus, starting with strong forms.   12023      *)
 (* ------------------------------------------------------------------------- *)
 
-val FUNDAMENTAL_THEOREM_OF_CALCULUS_STRONG = store_thm ("FUNDAMENTAL_THEOREM_OF_CALCULUS_STRONG",
- ``!f:real->real f' s a b.
+Theorem FUNDAMENTAL_THEOREM_OF_CALCULUS_STRONG:
+   !f:real->real f' s a b.
         COUNTABLE s /\
         a <= b /\ f continuous_on interval[a,b] /\
         (!x. x IN interval[a,b] DIFF s
              ==> (f has_vector_derivative f'(x)) (at x within interval[a,b]))
-        ==> (f' has_integral (f(b) - f(a))) (interval[a,b])``,
+        ==> (f' has_integral (f(b) - f(a))) (interval[a,b])
+Proof
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC HAS_INTEGRAL_SPIKE THEN
   EXISTS_TAC ``(\x. if x IN s then 0 else f' x):real->real`` THEN
@@ -14351,15 +14694,17 @@ val FUNDAMENTAL_THEOREM_OF_CALCULUS_STRONG = store_thm ("FUNDAMENTAL_THEOREM_OF_
       REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LE_MUL THEN
       CONJ_TAC THENL [REWRITE_TAC [REAL_LE_LT] THEN
       ASM_SIMP_TAC std_ss [REAL_HALF], ALL_TAC] THEN
-      POP_ASSUM MP_TAC THEN REAL_ARITH_TAC]]);
+      POP_ASSUM MP_TAC THEN REAL_ARITH_TAC]]
+QED
 
-val FUNDAMENTAL_THEOREM_OF_CALCULUS_INTERIOR_STRONG = store_thm ("FUNDAMENTAL_THEOREM_OF_CALCULUS_INTERIOR_STRONG",
- ``!f:real->real f' s a b.
+Theorem FUNDAMENTAL_THEOREM_OF_CALCULUS_INTERIOR_STRONG:
+   !f:real->real f' s a b.
         COUNTABLE s /\
         a <= b /\ f continuous_on interval[a,b] /\
         (!x. x IN interval(a,b) DIFF s
              ==> (f has_vector_derivative f'(x)) (at x))
-        ==> (f' has_integral (f(b) - f(a))) (interval[a,b])``,
+        ==> (f' has_integral (f(b) - f(a))) (interval[a,b])
+Proof
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC FUNDAMENTAL_THEOREM_OF_CALCULUS_STRONG THEN
   EXISTS_TAC ``(a:real) INSERT (b:real) INSERT s`` THEN
@@ -14368,38 +14713,44 @@ val FUNDAMENTAL_THEOREM_OF_CALCULUS_INTERIOR_STRONG = store_thm ("FUNDAMENTAL_TH
   REPEAT STRIP_TAC THEN MATCH_MP_TAC HAS_VECTOR_DERIVATIVE_AT_WITHIN THEN
   FIRST_X_ASSUM MATCH_MP_TAC THEN
   ASM_REWRITE_TAC[IN_INTERVAL, IN_DIFF, IN_INSERT] THEN
-  METIS_TAC[REAL_LT_LE]);
+  METIS_TAC[REAL_LT_LE]
+QED
 
-val FUNDAMENTAL_THEOREM_OF_CALCULUS = store_thm ("FUNDAMENTAL_THEOREM_OF_CALCULUS",
- ``!f:real->real f' a b.
+Theorem FUNDAMENTAL_THEOREM_OF_CALCULUS:
+   !f:real->real f' a b.
         a <= b /\
         (!x. x IN interval[a,b]
              ==> (f has_vector_derivative f'(x)) (at x within interval[a,b]))
-        ==> (f' has_integral (f(b) - f(a))) (interval[a,b])``,
+        ==> (f' has_integral (f(b) - f(a))) (interval[a,b])
+Proof
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC FUNDAMENTAL_THEOREM_OF_CALCULUS_STRONG THEN
   EXISTS_TAC ``{}:real->bool`` THEN
   ASM_REWRITE_TAC[COUNTABLE_EMPTY, DIFF_EMPTY] THEN
   MATCH_MP_TAC DIFFERENTIABLE_IMP_CONTINUOUS_ON THEN
   REWRITE_TAC[differentiable_on] THEN
-  METIS_TAC[has_vector_derivative, differentiable]);
+  METIS_TAC[has_vector_derivative, differentiable]
+QED
 
-val FUNDAMENTAL_THEOREM_OF_CALCULUS_INTERIOR = store_thm ("FUNDAMENTAL_THEOREM_OF_CALCULUS_INTERIOR",
- ``!f:real->real f' a b.
+Theorem FUNDAMENTAL_THEOREM_OF_CALCULUS_INTERIOR:
+   !f:real->real f' a b.
         a <= b /\ f continuous_on interval[a,b] /\
         (!x. x IN interval(a,b)
              ==> (f has_vector_derivative f'(x)) (at x))
-        ==> (f' has_integral (f(b) - f(a))) (interval[a,b])``,
+        ==> (f' has_integral (f(b) - f(a))) (interval[a,b])
+Proof
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC FUNDAMENTAL_THEOREM_OF_CALCULUS_INTERIOR_STRONG THEN
   EXISTS_TAC ``{}:real->bool`` THEN
-  ASM_REWRITE_TAC[COUNTABLE_EMPTY, DIFF_EMPTY]);
+  ASM_REWRITE_TAC[COUNTABLE_EMPTY, DIFF_EMPTY]
+QED
 
-val ANTIDERIVATIVE_INTEGRAL_CONTINUOUS = store_thm ("ANTIDERIVATIVE_INTEGRAL_CONTINUOUS",
- ``!f:real->real a b.
+Theorem ANTIDERIVATIVE_INTEGRAL_CONTINUOUS:
+   !f:real->real a b.
      (f continuous_on interval[a,b])
      ==> ?g. !u v. u IN interval[a,b] /\ v IN interval[a,b] /\ u <= v
-                   ==> (f has_integral (g(v) - g(u))) (interval[u,v])``,
+                   ==> (f has_integral (g(v) - g(u))) (interval[u,v])
+Proof
   REPEAT STRIP_TAC THEN
   FIRST_ASSUM(MP_TAC o MATCH_MP ANTIDERIVATIVE_CONTINUOUS) THEN
   STRIP_TAC THEN EXISTS_TAC ``g:real->real`` THEN
@@ -14410,18 +14761,20 @@ val ANTIDERIVATIVE_INTEGRAL_CONTINUOUS = store_thm ("ANTIDERIVATIVE_INTEGRAL_CON
    [FIRST_X_ASSUM MATCH_MP_TAC, ALL_TAC] THEN
   REPEAT(POP_ASSUM MP_TAC) THEN
   REWRITE_TAC[SUBSET_INTERVAL, IN_INTERVAL] THENL
-  [REAL_ARITH_TAC, METIS_TAC [REAL_LE_TRANS]]);
+  [REAL_ARITH_TAC, METIS_TAC [REAL_LE_TRANS]]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* This doesn't directly involve integration, but that gives an easy proof.  *)
 (* ------------------------------------------------------------------------- *)
 
-val HAS_DERIVATIVE_ZERO_UNIQUE_STRONG_INTERVAL = store_thm ("HAS_DERIVATIVE_ZERO_UNIQUE_STRONG_INTERVAL",
- ``!f:real->real a b k y.
+Theorem HAS_DERIVATIVE_ZERO_UNIQUE_STRONG_INTERVAL:
+   !f:real->real a b k y.
         COUNTABLE k /\ f continuous_on interval[a,b] /\ (f a = y) /\
         (!x. x IN (interval[a,b] DIFF k)
              ==> (f has_derivative (\h. 0)) (at x within interval[a,b]))
-        ==> !x. x IN interval[a,b] ==> (f x = y)``,
+        ==> !x. x IN interval[a,b] ==> (f x = y)
+Proof
   REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[GSYM REAL_SUB_0] THEN
   MATCH_MP_TAC(ISPEC ``(\x. 0):real->real`` HAS_INTEGRAL_UNIQUE) THEN
   EXISTS_TAC ``interval[a:real,x]`` THEN
@@ -14448,14 +14801,15 @@ val HAS_DERIVATIVE_ZERO_UNIQUE_STRONG_INTERVAL = store_thm ("HAS_DERIVATIVE_ZERO
     REWRITE_TAC[has_vector_derivative, REAL_MUL_RZERO] THEN
     MATCH_MP_TAC EQ_IMPLIES THEN MATCH_MP_TAC HAS_DERIVATIVE_WITHIN_OPEN THEN
     REPEAT(POP_ASSUM MP_TAC) THEN
-    SIMP_TAC std_ss [OPEN_INTERVAL, IN_INTERVAL, IN_DIFF] THEN REAL_ARITH_TAC]);
+    SIMP_TAC std_ss [OPEN_INTERVAL, IN_INTERVAL, IN_DIFF] THEN REAL_ARITH_TAC]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Integration by parts.                                                     *)
 (* ------------------------------------------------------------------------- *)
 
-val INTEGRATION_BY_PARTS = store_thm ("INTEGRATION_BY_PARTS",
- ``!(bop:real->real->real) f g f' g' a b c y.
+Theorem INTEGRATION_BY_PARTS:
+   !(bop:real->real->real) f g f' g' a b c y.
         bilinear bop /\ a <= b /\ COUNTABLE c /\
         (\x. bop (f x) (g x)) continuous_on interval[a,b] /\
         (!x. x IN interval(a,b) DIFF c
@@ -14464,7 +14818,8 @@ val INTEGRATION_BY_PARTS = store_thm ("INTEGRATION_BY_PARTS",
         ((\x. bop (f x) (g' x)) has_integral
          ((bop (f b) (g b) - bop (f a) (g a)) - y))
             (interval[a,b])
-        ==> ((\x. bop (f' x) (g x)) has_integral y) (interval[a,b])``,
+        ==> ((\x. bop (f' x) (g x)) has_integral y) (interval[a,b])
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [``\x:real. (bop:real->real->real) (f x) (g x)``,
                  ``\x:real. (bop:real->real->real) (f x) (g' x) +
@@ -14474,10 +14829,11 @@ val INTEGRATION_BY_PARTS = store_thm ("INTEGRATION_BY_PARTS",
   ASM_SIMP_TAC std_ss [HAS_VECTOR_DERIVATIVE_BILINEAR_AT] THEN
   FIRST_ASSUM(fn th => MP_TAC th THEN REWRITE_TAC[GSYM IMP_CONJ_ALT] THEN
         DISCH_THEN(MP_TAC o MATCH_MP HAS_INTEGRAL_SUB)) THEN
-  SIMP_TAC std_ss [REAL_ARITH ``b - a - (b - a - y):real = y``, REAL_ADD_SUB]);
+  SIMP_TAC std_ss [REAL_ARITH ``b - a - (b - a - y):real = y``, REAL_ADD_SUB]
+QED
 
-val INTEGRATION_BY_PARTS_SIMPLE = store_thm ("INTEGRATION_BY_PARTS_SIMPLE",
- ``!(bop:real->real->real) f g f' g' a b y.
+Theorem INTEGRATION_BY_PARTS_SIMPLE:
+   !(bop:real->real->real) f g f' g' a b y.
         bilinear bop /\ a <= b /\
         (!x. x IN interval[a,b]
              ==> (f has_vector_derivative f'(x)) (at x within interval[a,b]) /\
@@ -14485,7 +14841,8 @@ val INTEGRATION_BY_PARTS_SIMPLE = store_thm ("INTEGRATION_BY_PARTS_SIMPLE",
         ((\x. bop (f x) (g' x)) has_integral
          ((bop (f b) (g b) - bop (f a) (g a)) - y))
             (interval[a,b])
-        ==> ((\x. bop (f' x) (g x)) has_integral y) (interval[a,b])``,
+        ==> ((\x. bop (f' x) (g x)) has_integral y) (interval[a,b])
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [``\x:real. (bop:real->real->real) (f x) (g x)``,
                  ``\x:real. (bop:real->real->real) (f x) (g' x) +
@@ -14495,17 +14852,19 @@ val INTEGRATION_BY_PARTS_SIMPLE = store_thm ("INTEGRATION_BY_PARTS_SIMPLE",
   ASM_SIMP_TAC std_ss [HAS_VECTOR_DERIVATIVE_BILINEAR_WITHIN] THEN
   FIRST_ASSUM(fn th => MP_TAC th THEN REWRITE_TAC[GSYM IMP_CONJ_ALT] THEN
         DISCH_THEN(MP_TAC o MATCH_MP HAS_INTEGRAL_SUB)) THEN
-  SIMP_TAC std_ss [REAL_ARITH ``b - a - (b - a - y):real = y``, REAL_ADD_SUB]);
+  SIMP_TAC std_ss [REAL_ARITH ``b - a - (b - a - y):real = y``, REAL_ADD_SUB]
+QED
 
-val INTEGRABLE_BY_PARTS = store_thm ("INTEGRABLE_BY_PARTS",
- ``!(bop:real->real->real) f g f' g' a b c.
+Theorem INTEGRABLE_BY_PARTS:
+   !(bop:real->real->real) f g f' g' a b c.
         bilinear bop /\ COUNTABLE c /\
         (\x. bop (f x) (g x)) continuous_on interval[a,b] /\
         (!x. x IN interval(a,b) DIFF c
              ==> (f has_vector_derivative f'(x)) (at x) /\
                  (g has_vector_derivative g'(x)) (at x)) /\
         (\x. bop (f x) (g' x)) integrable_on interval[a,b]
-        ==> (\x. bop (f' x) (g x)) integrable_on interval[a,b]``,
+        ==> (\x. bop (f' x) (g x)) integrable_on interval[a,b]
+Proof
   REPEAT GEN_TAC THEN
   DISJ_CASES_TAC(REAL_ARITH ``b <= a \/ a <= b:real``) THENL
    [DISCH_THEN(K ALL_TAC) THEN MATCH_MP_TAC INTEGRABLE_ON_NULL THEN
@@ -14517,17 +14876,19 @@ val INTEGRABLE_BY_PARTS = store_thm ("INTEGRABLE_BY_PARTS",
                  bop (f a) (g a)) - (y:real)`` THEN
     MATCH_MP_TAC INTEGRATION_BY_PARTS THEN MAP_EVERY EXISTS_TAC
      [``f:real->real``, ``g':real->real``, ``c:real->bool``] THEN
-    ASM_REWRITE_TAC[REAL_ARITH ``b - a - ((b - a) - y):real = y``]]);
+    ASM_REWRITE_TAC[REAL_ARITH ``b - a - ((b - a) - y):real = y``]]
+QED
 
-val INTEGRABLE_BY_PARTS_EQ = store_thm ("INTEGRABLE_BY_PARTS_EQ",
- ``!(bop:real->real->real) f g f' g' a b c.
+Theorem INTEGRABLE_BY_PARTS_EQ:
+   !(bop:real->real->real) f g f' g' a b c.
         bilinear bop /\ COUNTABLE c /\
         (\x. bop (f x) (g x)) continuous_on interval[a,b] /\
         (!x. x IN interval(a,b) DIFF c
              ==> (f has_vector_derivative f'(x)) (at x) /\
                  (g has_vector_derivative g'(x)) (at x))
         ==> ((\x. bop (f x) (g' x)) integrable_on interval[a,b] <=>
-             (\x. bop (f' x) (g x)) integrable_on interval[a,b])``,
+             (\x. bop (f' x) (g x)) integrable_on interval[a,b])
+Proof
   REPEAT STRIP_TAC THEN EQ_TAC THENL
    [METIS_TAC[INTEGRABLE_BY_PARTS], DISCH_TAC] THEN
   MP_TAC(ISPEC ``\x y. (bop:real->real->real) y x``
@@ -14536,7 +14897,8 @@ val INTEGRABLE_BY_PARTS_EQ = store_thm ("INTEGRABLE_BY_PARTS_EQ",
   KNOW_TAC ``bilinear (\(x :real) (y :real). (bop :real -> real -> real) y x)`` THENL
   [ALL_TAC, METIS_TAC[]] THEN
   UNDISCH_TAC ``bilinear(bop:real->real->real)`` THEN
-  REWRITE_TAC[bilinear] THEN METIS_TAC[]);
+  REWRITE_TAC[bilinear] THEN METIS_TAC[]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Equiintegrability. The definition here only really makes sense for an     *)
@@ -14545,78 +14907,92 @@ val INTEGRABLE_BY_PARTS_EQ = store_thm ("INTEGRABLE_BY_PARTS_EQ",
 
 val _ = set_fixity "equiintegrable_on" (Infix(NONASSOC, 450));
 
-val equiintegrable_on = new_definition ("equiintegrable_on",
-  ``fs equiintegrable_on i <=>
+Definition equiintegrable_on[nocompute]:
+  fs equiintegrable_on i <=>
         (!f:real->real. f IN fs ==> f integrable_on i) /\
         (!e. &0 < e
              ==> ?d. gauge d /\
                     !f p. f IN fs /\ p tagged_division_of i /\ d FINE p
                         ==> abs(sum p (\(x,k). content(k) * f(x)) -
-                                 integral i f) < e)``);
+                                 integral i f) < e)
+End
 
-val EQUIINTEGRABLE_ON_SING = store_thm ("EQUIINTEGRABLE_ON_SING",
- ``!f:real->real a b.
+Theorem EQUIINTEGRABLE_ON_SING:
+   !f:real->real a b.
         {f} equiintegrable_on interval[a,b] <=>
-        f integrable_on interval[a,b]``,
+        f integrable_on interval[a,b]
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[equiintegrable_on] THEN
   SIMP_TAC std_ss [IN_SING, UNWIND_FORALL_THM2] THEN
   ASM_CASES_TAC ``(f:real->real) integrable_on interval[a,b]`` THEN
   ASM_SIMP_TAC std_ss [IMP_CONJ, RIGHT_FORALL_IMP_THM, UNWIND_FORALL_THM2] THEN
   FIRST_ASSUM(MP_TAC o MATCH_MP INTEGRABLE_INTEGRAL) THEN
-  REWRITE_TAC[has_integral, AND_IMP_INTRO]);
+  REWRITE_TAC[has_integral, AND_IMP_INTRO]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Basic combining theorems for the interval of integration.                 *)
 (* ------------------------------------------------------------------------- *)
 
-val EQUIINTEGRABLE_ON_NULL = store_thm ("EQUIINTEGRABLE_ON_NULL",
- ``!fs:(real->real)->bool a b.
-     (content(interval[a,b]) = &0) ==> fs equiintegrable_on interval[a,b]``,
+Theorem EQUIINTEGRABLE_ON_NULL:
+   !fs:(real->real)->bool a b.
+     (content(interval[a,b]) = &0) ==> fs equiintegrable_on interval[a,b]
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[equiintegrable_on] THEN
   ASM_SIMP_TAC std_ss [INTEGRABLE_ON_NULL] THEN X_GEN_TAC ``e:real`` THEN DISCH_TAC THEN
   EXISTS_TAC ``\x:real. ball(x,&1)`` THEN REWRITE_TAC[GAUGE_TRIVIAL] THEN
   FIRST_ASSUM(fn th => SIMP_TAC std_ss [MATCH_MP (REWRITE_RULE[IMP_CONJ]
                                            SUM_CONTENT_NULL) th]) THEN
-  ASM_SIMP_TAC std_ss [INTEGRAL_NULL, REAL_SUB_REFL, ABS_0]);
+  ASM_SIMP_TAC std_ss [INTEGRAL_NULL, REAL_SUB_REFL, ABS_0]
+QED
 
-val lemma1 = prove (
-  ``(!x k. (x,k) IN {x,f k | P x k} ==> Q x k) <=>
-     (!x k. P x k ==> Q x (f k))``,
+Theorem lemma1[local]:
+    (!x k. (x,k) IN {x,f k | P x k} ==> Q x k) <=>
+     (!x k. P x k ==> Q x (f k))
+Proof
     REWRITE_TAC[GSPECIFICATION, PAIR_EQ] THEN
-    SET_TAC[]);
+    SET_TAC[]
+QED
 
-val lemma2 = prove (
- ``!f:'b->'b s:('a#'b)->bool.
-      FINITE s ==> FINITE {x,f k | (x,k) IN s /\ P x k}``,
+Theorem lemma2[local]:
+   !f:'b->'b s:('a#'b)->bool.
+      FINITE s ==> FINITE {x,f k | (x,k) IN s /\ P x k}
+Proof
     REPEAT STRIP_TAC THEN MATCH_MP_TAC FINITE_SUBSET THEN
     EXISTS_TAC ``IMAGE (\(x:'a,k:'b). x,(f k:'b)) s`` THEN
     ASM_SIMP_TAC std_ss [IMAGE_FINITE] THEN
     SIMP_TAC std_ss [SUBSET_DEF, FORALL_PROD, lemma1, IN_IMAGE] THEN
-    SIMP_TAC std_ss [EXISTS_PROD, PAIR_EQ] THEN METIS_TAC[]);
+    SIMP_TAC std_ss [EXISTS_PROD, PAIR_EQ] THEN METIS_TAC[]
+QED
 
-val lemma3 = prove (
- ``!f:real->real g:(real->bool)->(real->bool) p.
+Theorem lemma3[local]:
+   !f:real->real g:(real->bool)->(real->bool) p.
      FINITE p
      ==> (sum {x,g k |x,k| (x,k) IN p /\ ~(g k = {})}
               (\(x,k). content k * f x) =
-          sum (IMAGE (\(x,k). x,g k) p) (\(x,k). content k * f x))``,
+          sum (IMAGE (\(x,k). x,g k) p) (\(x,k). content k * f x))
+Proof
     REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC SUM_SUPERSET THEN
     ASM_SIMP_TAC std_ss [IMAGE_FINITE, lemma2] THEN
     SIMP_TAC std_ss [IMP_CONJ, FORALL_IN_IMAGE] THEN
     SIMP_TAC std_ss [FORALL_PROD, SUBSET_DEF, IN_IMAGE, EXISTS_PROD] THEN
     SIMP_TAC std_ss [GSPECIFICATION, PAIR_EQ, REAL_ENTIRE, EXISTS_PROD] THEN
-    METIS_TAC[CONTENT_EMPTY]);
+    METIS_TAC[CONTENT_EMPTY]
+QED
 
-val lemma4 = prove (
-   ``(\(x,l). content (g l) * f x) =
-     (\(x,l). content l * f x) o (\(x,l). x,g l)``,
-    SIMP_TAC std_ss [FUN_EQ_THM, o_THM, FORALL_PROD]);
+Theorem lemma4[local]:
+     (\(x,l). content (g l) * f x) =
+     (\(x,l). content l * f x) o (\(x,l). x,g l)
+Proof
+    SIMP_TAC std_ss [FUN_EQ_THM, o_THM, FORALL_PROD]
+QED
 
-val EQUIINTEGRABLE_ON_SPLIT = store_thm ("EQUIINTEGRABLE_ON_SPLIT",
- ``!fs:(real->real)->bool k a b c.
+Theorem EQUIINTEGRABLE_ON_SPLIT:
+   !fs:(real->real)->bool k a b c.
       fs equiintegrable_on (interval[a,b] INTER {x | x <= c}) /\
       fs equiintegrable_on (interval[a,b] INTER {x | x >= c})
-      ==> fs equiintegrable_on (interval[a,b])``,
+      ==> fs equiintegrable_on (interval[a,b])
+Proof
   REPEAT GEN_TAC THEN
   REWRITE_TAC[equiintegrable_on] THEN
   MATCH_MP_TAC(TAUT
@@ -14801,13 +15177,15 @@ val EQUIINTEGRABLE_ON_SPLIT = store_thm ("EQUIINTEGRABLE_ON_SPLIT",
    MATCH_MP_TAC SUM_IMAGE_NONZERO THEN ASM_SIMP_TAC std_ss [FORALL_PROD] THEN
    SIMP_TAC std_ss [PAIR_EQ] THEN
    METIS_TAC[TAGGED_DIVISION_SPLIT_LEFT_INJ, REAL_MUL_LZERO,
-             TAGGED_DIVISION_SPLIT_RIGHT_INJ]));
+             TAGGED_DIVISION_SPLIT_RIGHT_INJ])
+QED
 
-val EQUIINTEGRABLE_DIVISION = store_thm ("EQUIINTEGRABLE_DIVISION",
- ``!fs:(real->real)->bool d a b.
+Theorem EQUIINTEGRABLE_DIVISION:
+   !fs:(real->real)->bool d a b.
         d division_of interval[a,b]
         ==> (fs equiintegrable_on interval[a,b] <=>
-             !i. i IN d ==> fs equiintegrable_on i)``,
+             !i. i IN d ==> fs equiintegrable_on i)
+Proof
   REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN
   MATCH_MP_TAC OPERATIVE_DIVISION_AND THEN
   ASM_REWRITE_TAC[operative, NEUTRAL_AND] THEN
@@ -14858,19 +15236,21 @@ val EQUIINTEGRABLE_DIVISION = store_thm ("EQUIINTEGRABLE_DIVISION",
    DISCH_THEN SUBST1_TAC THEN
    FIRST_ASSUM(ASSUME_TAC o MATCH_MP TAGGED_DIVISION_OF_FINITE) THEN
    ASM_SIMP_TAC std_ss [GSYM SUM_SUB] THEN MATCH_MP_TAC SUM_EQ THEN
-   SIMP_TAC std_ss [FORALL_PROD]));
+   SIMP_TAC std_ss [FORALL_PROD])
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Main limit theorem for an equiintegrable sequence.                        *)
 (* ------------------------------------------------------------------------- *)
 
-val EQUIINTEGRABLE_LIMIT = store_thm ("EQUIINTEGRABLE_LIMIT",
- ``!f g:real->real a b.
+Theorem EQUIINTEGRABLE_LIMIT:
+   !f g:real->real a b.
         {f n | n IN univ(:num)} equiintegrable_on interval[a,b] /\
         (!x. x IN interval[a,b] ==> ((\n. f n x) --> g x) sequentially)
         ==> g integrable_on interval[a,b] /\
             ((\n. integral(interval[a,b]) (f n)) --> integral(interval[a,b]) g)
-            sequentially``,
+            sequentially
+Proof
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   ASM_CASES_TAC ``content(interval[a:real,b]) = &0`` THEN
   ASM_SIMP_TAC std_ss [INTEGRABLE_ON_NULL, INTEGRAL_NULL, LIM_CONST] THEN
@@ -14973,21 +15353,25 @@ val EQUIINTEGRABLE_LIMIT = store_thm ("EQUIINTEGRABLE_LIMIT",
     MATCH_MP_TAC LIM_CMUL THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
     UNDISCH_TAC ``p tagged_division_of interval [(a,b)]`` THEN DISCH_TAC THEN
     FIRST_X_ASSUM(MP_TAC o REWRITE_RULE [TAGGED_DIVISION_OF]) THEN
-    ASM_SIMP_TAC std_ss [SUBSET_DEF] THEN ASM_MESON_TAC[]]);
+    ASM_SIMP_TAC std_ss [SUBSET_DEF] THEN ASM_MESON_TAC[]]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Combining theorems for the set of equiintegrable functions.               *)
 (* ------------------------------------------------------------------------- *)
 
-val EQUIINTEGRABLE_SUBSET = store_thm ("EQUIINTEGRABLE_SUBSET",
- ``!fs gs s.
-   fs equiintegrable_on s /\ gs SUBSET fs ==> gs equiintegrable_on s``,
-  REWRITE_TAC[equiintegrable_on, SUBSET_DEF] THEN METIS_TAC[]);
+Theorem EQUIINTEGRABLE_SUBSET:
+   !fs gs s.
+   fs equiintegrable_on s /\ gs SUBSET fs ==> gs equiintegrable_on s
+Proof
+  REWRITE_TAC[equiintegrable_on, SUBSET_DEF] THEN METIS_TAC[]
+QED
 
-val EQUIINTEGRABLE_UNION = store_thm ("EQUIINTEGRABLE_UNION",
- ``!fs:(real->real)->bool gs s.
+Theorem EQUIINTEGRABLE_UNION:
+   !fs:(real->real)->bool gs s.
         fs equiintegrable_on s /\ gs equiintegrable_on s
-        ==> (fs UNION gs) equiintegrable_on s``,
+        ==> (fs UNION gs) equiintegrable_on s
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[equiintegrable_on, IN_UNION] THEN
   REWRITE_TAC[TAUT `a \/ b ==> c <=> (a ==> c) /\ (b ==> c)`] THEN
   SIMP_TAC std_ss [FORALL_AND_THM] THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
@@ -14997,13 +15381,15 @@ val EQUIINTEGRABLE_UNION = store_thm ("EQUIINTEGRABLE_UNION",
   DISCH_THEN(X_CHOOSE_THEN ``d2:real->real->bool`` STRIP_ASSUME_TAC) THEN
   EXISTS_TAC ``\x. (d1:real->real->bool) x INTER d2 x`` THEN
   ASM_SIMP_TAC std_ss [GAUGE_INTER, FINE_INTER] THEN
-  REPEAT STRIP_TAC THEN ASM_SIMP_TAC std_ss []);
+  REPEAT STRIP_TAC THEN ASM_SIMP_TAC std_ss []
+QED
 
-val EQUIINTEGRABLE_EQ = store_thm ("EQUIINTEGRABLE_EQ",
- ``!fs gs:(real->real)->bool s.
+Theorem EQUIINTEGRABLE_EQ:
+   !fs gs:(real->real)->bool s.
         fs equiintegrable_on s /\
         (!g. g IN gs ==> ?f. f IN fs /\ (!x. x IN s ==> (f x = g x)))
-        ==> gs equiintegrable_on s``,
+        ==> gs equiintegrable_on s
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[equiintegrable_on] THEN
   DISCH_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC ASSUME_TAC) THEN
   CONJ_TAC THENL
@@ -15035,12 +15421,14 @@ val EQUIINTEGRABLE_EQ = store_thm ("EQUIINTEGRABLE_EQ",
      [MATCH_MP_TAC SUM_EQ THEN SIMP_TAC std_ss [FORALL_PROD] THEN
       RULE_ASSUM_TAC(REWRITE_RULE[TAGGED_DIVISION_OF, SUBSET_DEF]) THEN
       ASM_MESON_TAC[],
-      ASM_MESON_TAC[INTEGRAL_EQ]]]);
+      ASM_MESON_TAC[INTEGRAL_EQ]]]
+QED
 
-val EQUIINTEGRABLE_CMUL = store_thm ("EQUIINTEGRABLE_CMUL",
- ``!fs:(real->real)->bool s k.
+Theorem EQUIINTEGRABLE_CMUL:
+   !fs:(real->real)->bool s k.
         fs equiintegrable_on s
-        ==> {(\x. c * f x) | abs(c) <= k /\ f IN fs} equiintegrable_on s``,
+        ==> {(\x. c * f x) | abs(c) <= k /\ f IN fs} equiintegrable_on s
+Proof
   REPEAT GEN_TAC THEN
   SIMP_TAC std_ss [equiintegrable_on, INTEGRABLE_CMUL, FORALL_IN_GSPEC] THEN
   STRIP_TAC THEN X_GEN_TAC ``e:real`` THEN DISCH_TAC THEN
@@ -15066,12 +15454,14 @@ val EQUIINTEGRABLE_CMUL = store_thm ("EQUIINTEGRABLE_CMUL",
     SIMP_TAC std_ss [LAMBDA_PROD, REAL_MUL_ASSOC] THEN
     SIMP_TAC std_ss [REAL_MUL_SYM],
     MATCH_MP_TAC REAL_LE_RMUL_IMP THEN REWRITE_TAC[ABS_POS] THEN
-    UNDISCH_TAC ``abs c <= k:real`` THEN REAL_ARITH_TAC]);
+    UNDISCH_TAC ``abs c <= k:real`` THEN REAL_ARITH_TAC]
+QED
 
-val EQUIINTEGRABLE_ADD = store_thm ("EQUIINTEGRABLE_ADD",
- ``!fs:(real->real)->bool gs s.
+Theorem EQUIINTEGRABLE_ADD:
+   !fs:(real->real)->bool gs s.
         fs equiintegrable_on s /\ gs equiintegrable_on s
-        ==> {(\x. f x + g x) | f IN fs /\ g IN gs} equiintegrable_on s``,
+        ==> {(\x. f x + g x) | f IN fs /\ g IN gs} equiintegrable_on s
+Proof
   REPEAT GEN_TAC THEN
   SIMP_TAC std_ss [equiintegrable_on, INTEGRABLE_ADD, FORALL_IN_GSPEC] THEN
   DISCH_THEN(CONJUNCTS_THEN2
@@ -15103,12 +15493,14 @@ val EQUIINTEGRABLE_ADD = store_thm ("EQUIINTEGRABLE_ADD",
         ==> abs(t - (i + i')) < e / 2 + e / 2:real``) THEN
   FIRST_ASSUM(ASSUME_TAC o MATCH_MP TAGGED_DIVISION_OF_FINITE) THEN
   ASM_SIMP_TAC std_ss [GSYM SUM_ADD] THEN
-  SIMP_TAC std_ss [LAMBDA_PROD, REAL_ADD_LDISTRIB]);
+  SIMP_TAC std_ss [LAMBDA_PROD, REAL_ADD_LDISTRIB]
+QED
 
-val EQUIINTEGRABLE_NEG = store_thm ("EQUIINTEGRABLE_NEG",
- ``!fs:(real->real)->bool s.
+Theorem EQUIINTEGRABLE_NEG:
+   !fs:(real->real)->bool s.
         fs equiintegrable_on s
-        ==> {(\x. -(f x)) | f IN fs} equiintegrable_on s``,
+        ==> {(\x. -(f x)) | f IN fs} equiintegrable_on s
+Proof
   REPEAT STRIP_TAC THEN
   FIRST_ASSUM(MP_TAC o SPEC ``&1:real`` o MATCH_MP EQUIINTEGRABLE_CMUL) THEN
   MATCH_MP_TAC (REWRITE_RULE[IMP_CONJ_ALT] EQUIINTEGRABLE_SUBSET) THEN
@@ -15116,12 +15508,14 @@ val EQUIINTEGRABLE_NEG = store_thm ("EQUIINTEGRABLE_NEG",
   SIMP_TAC std_ss [GSPECIFICATION, EXISTS_PROD] THEN
   X_GEN_TAC ``f:real->real`` THEN DISCH_TAC THEN EXISTS_TAC ``- &1:real`` THEN
   EXISTS_TAC ``f:real->real`` THEN
-  ASM_REWRITE_TAC[REAL_MUL_LNEG, REAL_MUL_LID] THEN REAL_ARITH_TAC);
+  ASM_REWRITE_TAC[REAL_MUL_LNEG, REAL_MUL_LID] THEN REAL_ARITH_TAC
+QED
 
-val EQUIINTEGRABLE_SUB = store_thm ("EQUIINTEGRABLE_SUB",
- ``!fs:(real->real)->bool gs s.
+Theorem EQUIINTEGRABLE_SUB:
+   !fs:(real->real)->bool gs s.
         fs equiintegrable_on s /\ gs equiintegrable_on s
-        ==> {(\x. f x - g x) | f IN fs /\ g IN gs} equiintegrable_on s``,
+        ==> {(\x. f x - g x) | f IN fs /\ g IN gs} equiintegrable_on s
+Proof
   REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2
    MP_TAC (MP_TAC o MATCH_MP EQUIINTEGRABLE_NEG)) THEN
   REWRITE_TAC[GSYM IMP_CONJ_ALT] THEN
@@ -15133,16 +15527,18 @@ val EQUIINTEGRABLE_SUB = store_thm ("EQUIINTEGRABLE_SUB",
   STRIP_TAC THEN EXISTS_TAC ``f:real->real`` THEN
   EXISTS_TAC ``\x. -((g:real->real) x)`` THEN
   ASM_SIMP_TAC std_ss [real_sub] THEN EXISTS_TAC ``g:real->real`` THEN
-  ASM_REWRITE_TAC[]);
+  ASM_REWRITE_TAC[]
+QED
 
-val EQUIINTEGRABLE_SUM = store_thm ("EQUIINTEGRABLE_SUM",
- ``!fs:(real->real)->bool a b.
+Theorem EQUIINTEGRABLE_SUM:
+   !fs:(real->real)->bool a b.
         fs equiintegrable_on interval[a,b]
         ==> {(\x. sum t (\i. c i * f i x)) |
                FINITE t /\
                (!i:'a. i IN t ==> &0 <= c i /\ (f i) IN fs) /\
                (sum t c = &1)}
-            equiintegrable_on interval[a,b]``,
+            equiintegrable_on interval[a,b]
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[equiintegrable_on] THEN
   SIMP_TAC std_ss [IMP_CONJ, RIGHT_FORALL_IMP_THM, FORALL_IN_GSPEC] THEN
   SIMP_TAC std_ss [AND_IMP_INTRO, GSYM CONJ_ASSOC, RIGHT_IMP_FORALL_THM] THEN
@@ -15223,15 +15619,17 @@ val EQUIINTEGRABLE_SUM = store_thm ("EQUIINTEGRABLE_SUM",
   ``integral (interval [(a,b)]) (\(x :real). c i * (f :'a -> real -> real) i x) =
              (c:'a->real) i * integral (interval [(a,b)]) (f i)`` THENL
   [MATCH_MP_TAC INTEGRAL_CMUL THEN METIS_TAC [],
-   DISCH_THEN (fn th => REWRITE_TAC [th])]);
+   DISCH_THEN (fn th => REWRITE_TAC [th])]
+QED
 
-val EQUIINTEGRABLE_UNIFORM_LIMIT = store_thm ("EQUIINTEGRABLE_UNIFORM_LIMIT",
- ``!fs:(real->real)->bool a b.
+Theorem EQUIINTEGRABLE_UNIFORM_LIMIT:
+   !fs:(real->real)->bool a b.
         fs equiintegrable_on interval[a,b]
         ==> {g | !e. &0 < e
                      ==> ?f. f IN fs /\
                              !x. x IN interval[a,b] ==> abs(g x - f x) < e}
-            equiintegrable_on interval[a,b]``,
+            equiintegrable_on interval[a,b]
+Proof
   REPEAT STRIP_TAC THEN
   FIRST_ASSUM(MP_TAC o REWRITE_RULE [equiintegrable_on]) THEN
   SIMP_TAC std_ss [equiintegrable_on, GSPECIFICATION] THEN REPEAT GEN_TAC THEN
@@ -15320,12 +15718,15 @@ val EQUIINTEGRABLE_UNIFORM_LIMIT = store_thm ("EQUIINTEGRABLE_UNIFORM_LIMIT",
   FIRST_X_ASSUM (MP_TAC o SPEC ``n:num``) THEN
   FIRST_X_ASSUM(MP_TAC o SPECL
    [``(f:num->real->real) n``, ``p:(real#(real->bool))->bool``]) THEN
-  ASM_SIMP_TAC real_ss [dist, REAL_LT_RDIV_EQ] THEN REAL_ARITH_TAC);
+  ASM_SIMP_TAC real_ss [dist, REAL_LT_RDIV_EQ] THEN REAL_ARITH_TAC
+QED
 
-val lemma = prove (
-   ``(!x k. (x,k) IN IMAGE (\(x,k). f x k,g x k) s ==> Q x k) <=>
-     (!x k. (x,k) IN s ==> Q (f x k) (g x k))``,
-  SIMP_TAC std_ss [IN_IMAGE, PAIR_EQ, EXISTS_PROD] THEN SET_TAC[]);
+Theorem lemma[local]:
+     (!x k. (x,k) IN IMAGE (\(x,k). f x k,g x k) s ==> Q x k) <=>
+     (!x k. (x,k) IN s ==> Q (f x k) (g x k))
+Proof
+  SIMP_TAC std_ss [IN_IMAGE, PAIR_EQ, EXISTS_PROD] THEN SET_TAC[]
+QED
 
 Theorem EQUIINTEGRABLE_REFLECT :
     !(fs :(real->real)->bool) a b.
@@ -15469,21 +15870,23 @@ QED
 (* division, followed by subinterval resictions for equiintegrable family.   *)
 (* ------------------------------------------------------------------------- *)
 
-val lemma0 = prove (
-   ``!k:real->bool.
+Theorem lemma0[local]:
+     !k:real->bool.
           content k / (interval_upperbound k - interval_lowerbound k) =
               if content k = &0 then &0
-              else &1:real``,
+              else &1:real
+Proof
     REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
     ASM_REWRITE_TAC[real_div, REAL_MUL_LZERO] THEN
     REWRITE_TAC[content] THEN
     COND_CASES_TAC THENL [ASM_MESON_TAC[CONTENT_EMPTY], ALL_TAC] THEN
     UNDISCH_TAC ``~(content(k:real->bool) = &0)`` THEN
     ASM_REWRITE_TAC[content, PRODUCT_EQ_0_NUMSEG] THEN
-    ASM_MESON_TAC[REAL_MUL_RINV]);
+    ASM_MESON_TAC[REAL_MUL_RINV]
+QED
 
-val lemma1 = prove (
-   ``!d a b:real s.
+Theorem lemma1[local]:
+     !d a b:real s.
           d division_of s /\ s SUBSET interval[a,b] /\
           ((!k. k IN d
                 ==> ~(content k = &0) /\ ~(k INTER {x | x = a} = {})) \/
@@ -15492,7 +15895,8 @@ val lemma1 = prove (
           ==> (b - a) *
               sum d (\k. content k /
                          (interval_upperbound k - interval_lowerbound k))
-              <= content(interval[a,b])``,
+              <= content(interval[a,b])
+Proof
     REPEAT GEN_TAC THEN DISCH_THEN(REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
     FIRST_ASSUM(ASSUME_TAC o MATCH_MP DIVISION_OF_FINITE) THEN
     ABBREV_TAC ``extend = (\k:real->bool. interval [a, b:real])`` THEN
@@ -15630,7 +16034,8 @@ val lemma1 = prove (
        [CONJ_TAC THENL [ASM_SET_TAC[], ASM_SIMP_TAC std_ss []] THEN
         EXPAND_TAC "extend" THEN SIMP_TAC std_ss [] THEN MESON_TAC[],
         ASM_MESON_TAC[],
-        ASM_SIMP_TAC std_ss []]]);
+        ASM_SIMP_TAC std_ss []]]
+QED
 
 Theorem SUM_CONTENT_AREA_OVER_THIN_DIVISION :
     !d a b:real s c.
@@ -16223,10 +16628,12 @@ Proof
     METIS_TAC []]
 QED
 
-val lemma = prove (
-   ``(!x k. (x,k) IN IMAGE (\(x,k). f x k,g x k) s ==> Q x k) <=>
-     (!x k. (x,k) IN s ==> Q (f x k) (g x k))``,
-    SIMP_TAC std_ss [IN_IMAGE, PAIR_EQ, EXISTS_PROD] THEN SET_TAC[]);
+Theorem lemma[local]:
+     (!x k. (x,k) IN IMAGE (\(x,k). f x k,g x k) s ==> Q x k) <=>
+     (!x k. (x,k) IN s ==> Q (f x k) (g x k))
+Proof
+    SIMP_TAC std_ss [IN_IMAGE, PAIR_EQ, EXISTS_PROD] THEN SET_TAC[]
+QED
 
 Theorem EQUIINTEGRABLE_HALFSPACE_RESTRICTIONS_LE :
     !fs f:real->real a b.
@@ -16767,13 +17174,14 @@ Proof
      MATCH_MP_TAC SUBSET_INTERIOR THEN SIMP_TAC std_ss [INTER_SUBSET] ] ]
 QED
 
-val EQUIINTEGRABLE_HALFSPACE_RESTRICTIONS_GE = store_thm ("EQUIINTEGRABLE_HALFSPACE_RESTRICTIONS_GE",
- ``!fs f:real->real a b.
+Theorem EQUIINTEGRABLE_HALFSPACE_RESTRICTIONS_GE:
+   !fs f:real->real a b.
         fs equiintegrable_on interval[a,b] /\ f IN fs /\
         (!h x. h IN fs /\ x IN interval[a,b] ==> abs(h x) <= abs(f x))
         ==> { (\x. if x >= c then h x else 0) |
               c IN univ(:real) /\ h IN fs }
-            equiintegrable_on interval[a,b]``,
+            equiintegrable_on interval[a,b]
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL
    [``{\x. (f:real->real) (-x) | f IN fs}``,
@@ -16804,14 +17212,16 @@ val EQUIINTEGRABLE_HALFSPACE_RESTRICTIONS_GE = store_thm ("EQUIINTEGRABLE_HALFSP
      [``-c:real``, ``\x. (h:real->real)(-x)``] THEN
     ASM_REWRITE_TAC[IN_UNIV] THEN
     SIMP_TAC std_ss [REAL_ARITH ``-x >= c <=> x <= -c:real``] THEN
-    EXISTS_TAC ``h:real->real`` THEN ASM_REWRITE_TAC[]]);
+    EXISTS_TAC ``h:real->real`` THEN ASM_REWRITE_TAC[]]
+QED
 
-val EQUIINTEGRABLE_HALFSPACE_RESTRICTIONS_LT = store_thm ("EQUIINTEGRABLE_HALFSPACE_RESTRICTIONS_LT",
- ``!fs f:real->real a b.
+Theorem EQUIINTEGRABLE_HALFSPACE_RESTRICTIONS_LT:
+   !fs f:real->real a b.
         fs equiintegrable_on interval[a,b] /\ f IN fs /\
         (!h x. h IN fs /\ x IN interval[a,b] ==> abs(h x) <= abs(f x))
         ==> { (\x. if x < c then h x else 0) | c IN univ(:real) /\ h IN fs }
-            equiintegrable_on interval[a,b]``,
+            equiintegrable_on interval[a,b]
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [``fs:(real->real)->bool``, ``f:real->real``,
                  ``a:real``, ``b:real``]
@@ -16831,14 +17241,16 @@ val EQUIINTEGRABLE_HALFSPACE_RESTRICTIONS_LT = store_thm ("EQUIINTEGRABLE_HALFSP
     GEN_TAC THEN COND_CASES_TAC THEN ASM_SIMP_TAC std_ss [] THEN
     REAL_ARITH_TAC,
     MAP_EVERY EXISTS_TAC [``c:real``, ``h:real->real``] THEN
-    ASM_SIMP_TAC std_ss []]);
+    ASM_SIMP_TAC std_ss []]
+QED
 
-val EQUIINTEGRABLE_HALFSPACE_RESTRICTIONS_GT = store_thm ("EQUIINTEGRABLE_HALFSPACE_RESTRICTIONS_GT",
- ``!fs f:real->real a b.
+Theorem EQUIINTEGRABLE_HALFSPACE_RESTRICTIONS_GT:
+   !fs f:real->real a b.
         fs equiintegrable_on interval[a,b] /\ f IN fs /\
         (!h x. h IN fs /\ x IN interval[a,b] ==> abs(h x) <= abs(f x))
         ==> { (\x. if x > c then h x else 0) | c IN univ(:real) /\ h IN fs }
-            equiintegrable_on interval[a,b]``,
+            equiintegrable_on interval[a,b]
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [``fs:(real->real)->bool``, ``f:real->real``,
                  ``a:real``, ``b:real``]
@@ -16858,17 +17270,19 @@ val EQUIINTEGRABLE_HALFSPACE_RESTRICTIONS_GT = store_thm ("EQUIINTEGRABLE_HALFSP
     GEN_TAC THEN COND_CASES_TAC THEN FULL_SIMP_TAC std_ss [] THEN
     REAL_ARITH_TAC,
     MAP_EVERY EXISTS_TAC [``c:real``, ``h:real->real``] THEN
-    ASM_SIMP_TAC std_ss []]);
+    ASM_SIMP_TAC std_ss []]
+QED
 
-val EQUIINTEGRABLE_OPEN_INTERVAL_RESTRICTIONS = store_thm ("EQUIINTEGRABLE_OPEN_INTERVAL_RESTRICTIONS",
- ``!f:real->real a b.
+Theorem EQUIINTEGRABLE_OPEN_INTERVAL_RESTRICTIONS:
+   !f:real->real a b.
         f integrable_on interval[a,b]
         ==> { (\x. if x IN interval(c,d) then f x else 0) |
               c IN univ(:real) /\ d IN univ(:real) }
-            equiintegrable_on interval[a,b]``,
+            equiintegrable_on interval[a,b]
+Proof
   REPEAT STRIP_TAC THEN
   SUBGOAL_THEN
-   ``!n. (\n. n <=  1n
+   ``!n. (\n. n <= 1n
         ==> f INSERT
             { (\x. if !i. 1 <= i /\ i <= n ==> c < x /\ x < d
                    then (f:real->real) x else 0) |
@@ -16879,7 +17293,7 @@ val EQUIINTEGRABLE_OPEN_INTERVAL_RESTRICTIONS = store_thm ("EQUIINTEGRABLE_OPEN_
     SIMP_TAC std_ss [ARITH_PROVE ``~(1 <= i /\ i <= 0:num)``] THEN
     ASM_SIMP_TAC std_ss [ETA_AX, EQUIINTEGRABLE_ON_SING, SET_RULE
      ``f INSERT {f |(c,d)| c IN UNIV /\ d IN UNIV} = {f}``] THEN
-    X_GEN_TAC ``n:num`` THEN ASM_CASES_TAC ``SUC n <=  1n`` THEN
+    X_GEN_TAC ``n:num`` THEN ASM_CASES_TAC ``SUC n <= 1n`` THEN
     ASM_REWRITE_TAC[] THEN KNOW_TAC ``n <= 1:num`` THENL
     [ASM_ARITH_TAC, DISCH_TAC THEN ASM_REWRITE_TAC [] THEN POP_ASSUM K_TAC] THEN
      DISCH_THEN(MP_TAC o SPEC ``f:real->real`` o
@@ -16989,17 +17403,19 @@ val EQUIINTEGRABLE_OPEN_INTERVAL_RESTRICTIONS = store_thm ("EQUIINTEGRABLE_OPEN_
     REPEAT STRIP_TAC THEN ASM_CASES_TAC ``x = f:real->real`` THEN
     ASM_SIMP_TAC std_ss [] THEN EXISTS_TAC ``p_1:real`` THEN
     EXISTS_TAC ``p_2:real`` THEN ASM_SIMP_TAC std_ss [FUN_EQ_THM] THEN
-    X_GEN_TAC ``y:real`` THEN COND_CASES_TAC THEN ASM_SIMP_TAC arith_ss []]);
+    X_GEN_TAC ``y:real`` THEN COND_CASES_TAC THEN ASM_SIMP_TAC arith_ss []]
+QED
 
-val EQUIINTEGRABLE_CLOSED_INTERVAL_RESTRICTIONS = store_thm ("EQUIINTEGRABLE_CLOSED_INTERVAL_RESTRICTIONS",
- ``!f:real->real a b.
+Theorem EQUIINTEGRABLE_CLOSED_INTERVAL_RESTRICTIONS:
+   !f:real->real a b.
         f integrable_on interval[a,b]
         ==> { (\x. if x IN interval[c,d] then f x else 0) |
               c IN univ(:real) /\ d IN univ(:real) }
-            equiintegrable_on interval[a,b]``,
+            equiintegrable_on interval[a,b]
+Proof
   REPEAT STRIP_TAC THEN
   SUBGOAL_THEN
-   ``!n. (\n. n <=  1n
+   ``!n. (\n. n <= 1n
         ==> f INSERT
             { (\x. if !i. 1 <= i /\ i <= n ==> c <= x /\ x <= d
                    then (f:real->real) x else 0) |
@@ -17010,7 +17426,7 @@ val EQUIINTEGRABLE_CLOSED_INTERVAL_RESTRICTIONS = store_thm ("EQUIINTEGRABLE_CLO
     REWRITE_TAC[ARITH_PROVE ``~(1 <= i /\ i <= 0:num)``] THEN
     ASM_SIMP_TAC std_ss [ETA_AX, EQUIINTEGRABLE_ON_SING, SET_RULE
      ``f INSERT {f |(c,d)| c IN UNIV /\ d IN UNIV} = {f}``] THEN
-    X_GEN_TAC ``n:num`` THEN ASM_CASES_TAC ``SUC n <=  1n`` THEN
+    X_GEN_TAC ``n:num`` THEN ASM_CASES_TAC ``SUC n <= 1n`` THEN
     ASM_SIMP_TAC std_ss [] THEN KNOW_TAC ``n <= 1:num`` THENL
     [ASM_SIMP_TAC arith_ss [], DISCH_TAC THEN ASM_REWRITE_TAC [] THEN POP_ASSUM K_TAC] THEN
     DISCH_THEN(MP_TAC o SPEC ``f:real->real`` o
@@ -17120,14 +17536,15 @@ val EQUIINTEGRABLE_CLOSED_INTERVAL_RESTRICTIONS = store_thm ("EQUIINTEGRABLE_CLO
     REPEAT STRIP_TAC THEN ASM_CASES_TAC ``x = f:real->real`` THEN
     ASM_SIMP_TAC std_ss [] THEN EXISTS_TAC ``p_1:real`` THEN
     EXISTS_TAC ``p_2:real`` THEN ASM_SIMP_TAC std_ss [FUN_EQ_THM] THEN
-    X_GEN_TAC ``y:real`` THEN COND_CASES_TAC THEN ASM_SIMP_TAC arith_ss []]);
+    X_GEN_TAC ``y:real`` THEN COND_CASES_TAC THEN ASM_SIMP_TAC arith_ss []]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Continuity of the indefinite integral.                                    *)
 (* ------------------------------------------------------------------------- *)
 
-val INDEFINITE_INTEGRAL_CONTINUOUS = store_thm ("INDEFINITE_INTEGRAL_CONTINUOUS",
- ``!f:real->real a b c d e.
+Theorem INDEFINITE_INTEGRAL_CONTINUOUS:
+   !f:real->real a b c d e.
         f integrable_on interval[a,b] /\
         c IN interval[a,b] /\ d IN interval[a,b] /\ &0 < e
         ==> ?k. &0 < k /\
@@ -17135,7 +17552,8 @@ val INDEFINITE_INTEGRAL_CONTINUOUS = store_thm ("INDEFINITE_INTEGRAL_CONTINUOUS"
                         d' IN interval[a,b] /\
                         abs(c' - c) <= k /\ abs(d' - d) <= k
                         ==> abs(integral(interval[c',d']) f -
-                                 integral(interval[c,d]) f) < e``,
+                                 integral(interval[c,d]) f) < e
+Proof
   REPEAT STRIP_TAC THEN
   KNOW_TAC ``~(!(k :real).
   (0 :real) < k ==>
@@ -17248,12 +17666,14 @@ val INDEFINITE_INTEGRAL_CONTINUOUS = store_thm ("INDEFINITE_INTEGRAL_CONTINUOUS"
     FIRST_ASSUM(fn th => MP_TAC(SPEC ``N:num`` th) THEN MATCH_MP_TAC
     (REAL_ARITH ``(x = a) /\ (y = b) ==> e <= abs(x - y) ==> e <= abs(a - b:real)``)) THEN
     CONJ_TAC THEN SIMP_TAC std_ss [] THEN MATCH_MP_TAC INTEGRAL_SPIKE THEN
-    EXISTS_TAC ``k:real->bool`` THEN ASM_SIMP_TAC std_ss [IN_DIFF]]);;
+    EXISTS_TAC ``k:real->bool`` THEN ASM_SIMP_TAC std_ss [IN_DIFF]]
+QED
 
-val INDEFINITE_INTEGRAL_CONTINUOUS_RIGHT = store_thm ("INDEFINITE_INTEGRAL_CONTINUOUS_RIGHT",
- ``!f:real->real a b.
+Theorem INDEFINITE_INTEGRAL_CONTINUOUS_RIGHT:
+   !f:real->real a b.
         f integrable_on interval[a,b]
-         ==> (\x. integral (interval[a,x]) f) continuous_on interval[a,b]``,
+         ==> (\x. integral (interval[a,x]) f) continuous_on interval[a,b]
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN] THEN
   X_GEN_TAC ``x:real`` THEN DISCH_TAC THEN REWRITE_TAC[continuous_within] THEN
   X_GEN_TAC ``e:real`` THEN DISCH_TAC THEN
@@ -17268,12 +17688,14 @@ val INDEFINITE_INTEGRAL_CONTINUOUS_RIGHT = store_thm ("INDEFINITE_INTEGRAL_CONTI
   POP_ASSUM MP_TAC THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
   FIRST_X_ASSUM MATCH_MP_TAC THEN
   ASM_SIMP_TAC std_ss [ENDS_IN_INTERVAL, REAL_SUB_REFL, ABS_0, REAL_LT_IMP_LE] THEN
-  ASM_SET_TAC[]);
+  ASM_SET_TAC[]
+QED
 
-val INDEFINITE_INTEGRAL_CONTINUOUS_LEFT = store_thm ("INDEFINITE_INTEGRAL_CONTINUOUS_LEFT",
- ``!f:real->real a b.
+Theorem INDEFINITE_INTEGRAL_CONTINUOUS_LEFT:
+   !f:real->real a b.
         f integrable_on interval[a,b]
-        ==> (\x. integral(interval[x,b]) f) continuous_on interval[a,b]``,
+        ==> (\x. integral(interval[x,b]) f) continuous_on interval[a,b]
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN] THEN
   X_GEN_TAC ``x:real`` THEN DISCH_TAC THEN REWRITE_TAC[continuous_within] THEN
   X_GEN_TAC ``e:real`` THEN DISCH_TAC THEN
@@ -17288,19 +17710,21 @@ val INDEFINITE_INTEGRAL_CONTINUOUS_LEFT = store_thm ("INDEFINITE_INTEGRAL_CONTIN
   POP_ASSUM MP_TAC THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
   FIRST_X_ASSUM MATCH_MP_TAC THEN
   ASM_SIMP_TAC std_ss [ENDS_IN_INTERVAL, REAL_SUB_REFL, ABS_0, REAL_LT_IMP_LE] THEN
-  ASM_SET_TAC[]);
+  ASM_SET_TAC[]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Second mean value theorem and corollaries.                                *)
 (* ------------------------------------------------------------------------- *)
 
-val lemma1 = prove (
-   ``!f:real->real s.
+Theorem lemma1[local]:
+     !f:real->real s.
       (!x. x IN s ==> &0 <= f x /\ f x <= &1)
       ==> (!n x. x IN s /\ ~(n = 0)
                  ==> abs(f x -
                          sum{ 1n..n} (\k. if &k / &n <= f(x)
-                                        then inv(&n) else &0)) < inv(&n))``,
+                                        then inv(&n) else &0)) < inv(&n))
+Proof
     REPEAT STRIP_TAC THEN
     SUBGOAL_THEN ``?m. flr(&n * (f:real->real) x) = &m`` CHOOSE_TAC THENL
      [MATCH_MP_TAC FLOOR_POS THEN ASM_SIMP_TAC std_ss [REAL_LE_MUL, REAL_POS],
@@ -17337,14 +17761,16 @@ val lemma1 = prove (
     FIRST_X_ASSUM(SUBST1_TAC o SYM) THEN CONJ_TAC THENL
     [MATCH_MP_TAC NUM_FLOOR_LE THEN MATCH_MP_TAC REAL_LE_MUL THEN
      ASM_SIMP_TAC std_ss [REAL_POS],
-     REWRITE_TAC [GSYM NUM_FLOOR_LET] THEN SIMP_TAC std_ss [REAL_LE_REFL]]);
+     REWRITE_TAC [GSYM NUM_FLOOR_LET] THEN SIMP_TAC std_ss [REAL_LE_REFL]]
+QED
 
-val lemma2 = prove (
-   ``!f:real->real g a b.
+Theorem lemma2[local]:
+     !f:real->real g a b.
           f integrable_on interval[a,b] /\
           (!x y. x <= y ==> g(x) <= g(y))
           ==> {(\x. if c <= g(x) then f x else 0) | c IN univ(:real)}
-              equiintegrable_on interval[a,b]``,
+              equiintegrable_on interval[a,b]
+Proof
     REPEAT STRIP_TAC THEN
     UNDISCH_TAC ``f integrable_on interval [(a,b)]`` THEN DISCH_TAC THEN
     FIRST_ASSUM(MP_TAC o REWRITE_RULE [GSYM EQUIINTEGRABLE_ON_SING]) THEN
@@ -17396,16 +17822,18 @@ val lemma2 = prove (
      ``(!x. P x <=> Q x)
       ==> !x. (if P x then f x else b) = (if Q x then f x else b)``) THEN
     X_GEN_TAC ``x:real`` THEN SIMP_TAC std_ss [GSYM REAL_NOT_LE] THEN
-    METIS_TAC [REAL_LE_TOTAL, REAL_LT_ANTISYM, REAL_LE_TRANS]);
+    METIS_TAC [REAL_LE_TOTAL, REAL_LT_ANTISYM, REAL_LE_TRANS]
+QED
 
-val lemma3 = prove (
-   ``!f:real->real g:real->real a b.
+Theorem lemma3[local]:
+     !f:real->real g:real->real a b.
           f integrable_on interval[a,b] /\
           (!x y. x <= y ==> g(x) <= g(y))
           ==> {(\x. sum { 1n..n}
                      (\k. if &k / &n <= g x then inv(&n) * f(x) else 0)) |
                ~(n = 0)}
-              equiintegrable_on interval[a,b]``,
+              equiintegrable_on interval[a,b]
+Proof
     REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o
      MATCH_MP lemma2) THEN
     DISCH_THEN(MP_TAC o MATCH_MP
@@ -17419,10 +17847,11 @@ val lemma3 = prove (
     SIMP_TAC std_ss [FINITE_NUMSEG, COND_RAND, COND_RATOR, REAL_MUL_RZERO] THEN
     X_GEN_TAC ``k:num`` THEN
     REWRITE_TAC[IN_NUMSEG, REAL_LE_INV_EQ, REAL_POS] THEN STRIP_TAC THEN
-    EXISTS_TAC ``&k / &n:real`` THEN SIMP_TAC std_ss []);
+    EXISTS_TAC ``&k / &n:real`` THEN SIMP_TAC std_ss []
+QED
 
-val lemma4 = prove (
-   ``!f:real->real g:real->real a b.
+Theorem lemma4[local]:
+     !f:real->real g:real->real a b.
           ~(interval[a,b] = {}) /\
           f integrable_on interval[a,b] /\
           (!x y. x <= y ==> g(x) <= g(y)) /\
@@ -17430,7 +17859,8 @@ val lemma4 = prove (
           ==> (\x. g(x) * f(x)) integrable_on interval[a,b] /\
               ?c. c IN interval[a,b] /\
                   (integral (interval[a,b]) (\x. g(x) * f(x)) =
-                   integral (interval[c,b]) f)``,
+                   integral (interval[c,b]) f)
+Proof
     REPEAT GEN_TAC THEN STRIP_TAC THEN
     SUBGOAL_THEN
      ``?m M. IMAGE (\x. integral (interval[x,b]) (f:real->real))
@@ -17663,10 +18093,11 @@ val lemma4 = prove (
       DISCH_THEN(MP_TAC o SPEC ``d:real``) THEN ASM_REWRITE_TAC[] THEN
       REWRITE_TAC[CONTINUOUS_WITHIN_SEQUENTIALLY] THEN
       DISCH_THEN(MP_TAC o SPEC ``(c:num->real) o (s:num->num)``) THEN
-      ASM_REWRITE_TAC[] THEN ASM_SIMP_TAC std_ss [o_DEF]]);
+      ASM_REWRITE_TAC[] THEN ASM_SIMP_TAC std_ss [o_DEF]]
+QED
 
-val SECOND_MEAN_VALUE_THEOREM_FULL = store_thm ("SECOND_MEAN_VALUE_THEOREM_FULL",
- ``!f:real->real g a b.
+Theorem SECOND_MEAN_VALUE_THEOREM_FULL:
+   !f:real->real g a b.
         ~(interval[a,b] = {}) /\
         f integrable_on interval [a,b] /\
         (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ x <= y
@@ -17674,7 +18105,8 @@ val SECOND_MEAN_VALUE_THEOREM_FULL = store_thm ("SECOND_MEAN_VALUE_THEOREM_FULL"
         ==> ?c. c IN interval [a,b] /\
                 ((\x. g x * f x) has_integral
                  (g(a) * integral (interval[a,c]) f +
-                  g(b) * integral (interval[c,b]) f)) (interval[a,b])``,
+                  g(b) * integral (interval[c,b]) f)) (interval[a,b])
+Proof
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   SUBGOAL_THEN ``(g:real->real) a <= g b`` MP_TAC THENL
    [FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[ENDS_IN_INTERVAL] THEN
@@ -17768,10 +18200,11 @@ val SECOND_MEAN_VALUE_THEOREM_FULL = store_thm ("SECOND_MEAN_VALUE_THEOREM_FULL"
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] HAS_INTEGRAL_EQ) THEN
   X_GEN_TAC ``x:real`` THEN REWRITE_TAC[IN_INTERVAL] THEN STRIP_TAC THEN
   ASM_SIMP_TAC std_ss [GSYM REAL_NOT_LE, REAL_MUL_ASSOC] THEN
-  ASM_SIMP_TAC real_ss [REAL_DIV_LMUL, REAL_LT_IMP_NE, REAL_SUB_LT]);
+  ASM_SIMP_TAC real_ss [REAL_DIV_LMUL, REAL_LT_IMP_NE, REAL_SUB_LT]
+QED
 
-val SECOND_MEAN_VALUE_THEOREM = store_thm ("SECOND_MEAN_VALUE_THEOREM",
- ``!f:real->real g a b.
+Theorem SECOND_MEAN_VALUE_THEOREM:
+   !f:real->real g a b.
         ~(interval[a,b] = {}) /\
         f integrable_on interval [a,b] /\
         (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ x <= y
@@ -17779,15 +18212,17 @@ val SECOND_MEAN_VALUE_THEOREM = store_thm ("SECOND_MEAN_VALUE_THEOREM",
         ==> ?c. c IN interval [a,b] /\
                 (integral (interval[a,b]) (\x. g x * f x) =
                  g(a) * integral (interval[a,c]) f +
-                 g(b) * integral (interval[c,b]) f)``,
+                 g(b) * integral (interval[c,b]) f)
+Proof
   REPEAT GEN_TAC THEN
   DISCH_THEN(MP_TAC o MATCH_MP SECOND_MEAN_VALUE_THEOREM_FULL) THEN
   DISCH_THEN (X_CHOOSE_TAC ``c:real``) THEN EXISTS_TAC ``c:real`` THEN
   POP_ASSUM MP_TAC THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
-  FIRST_X_ASSUM(SUBST1_TAC o MATCH_MP INTEGRAL_UNIQUE) THEN REWRITE_TAC[]);
+  FIRST_X_ASSUM(SUBST1_TAC o MATCH_MP INTEGRAL_UNIQUE) THEN REWRITE_TAC[]
+QED
 
-val SECOND_MEAN_VALUE_THEOREM_GEN_FULL = store_thm ("SECOND_MEAN_VALUE_THEOREM_GEN_FULL",
- ``!f:real->real g a b u v.
+Theorem SECOND_MEAN_VALUE_THEOREM_GEN_FULL:
+   !f:real->real g a b u v.
         ~(interval[a,b] = {}) /\ f integrable_on interval [a,b] /\
         (!x. x IN interval(a,b) ==> u <= g x /\ g x <= v) /\
         (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ x <= y
@@ -17795,7 +18230,8 @@ val SECOND_MEAN_VALUE_THEOREM_GEN_FULL = store_thm ("SECOND_MEAN_VALUE_THEOREM_G
         ==> ?c. c IN interval [a,b] /\
                 ((\x. g x * f x) has_integral
                  (u * integral (interval[a,c]) f +
-                  v * integral (interval[c,b]) f)) (interval[a,b])``,
+                  v * integral (interval[c,b]) f)) (interval[a,b])
+Proof
   REPEAT STRIP_TAC THEN ASM_CASES_TAC ``b:real = a`` THENL
    [EXISTS_TAC ``a:real`` THEN ASM_REWRITE_TAC[INTERVAL_SING, IN_SING] THEN
     ASM_SIMP_TAC std_ss [GSYM INTERVAL_SING, INTEGRAL_NULL, CONTENT_EQ_0,
@@ -17838,10 +18274,11 @@ val SECOND_MEAN_VALUE_THEOREM_GEN_FULL = store_thm ("SECOND_MEAN_VALUE_THEOREM_G
         HAS_INTEGRAL_SPIKE) THEN
     EXISTS_TAC ``{a:real;b}`` THEN
     SIMP_TAC std_ss [NEGLIGIBLE_EMPTY, NEGLIGIBLE_INSERT, IN_DIFF, IN_INSERT,
-             NOT_IN_EMPTY, DE_MORGAN_THM]]);
+             NOT_IN_EMPTY, DE_MORGAN_THM]]
+QED
 
-val SECOND_MEAN_VALUE_THEOREM_GEN = store_thm ("SECOND_MEAN_VALUE_THEOREM_GEN",
- ``!f:real->real g a b u v.
+Theorem SECOND_MEAN_VALUE_THEOREM_GEN:
+   !f:real->real g a b u v.
         ~(interval[a,b] = {}) /\ f integrable_on interval [a,b] /\
         (!x. x IN interval(a,b) ==> u <= g x /\ g x <= v) /\
         (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ x <= y
@@ -17849,22 +18286,25 @@ val SECOND_MEAN_VALUE_THEOREM_GEN = store_thm ("SECOND_MEAN_VALUE_THEOREM_GEN",
         ==> ?c. c IN interval [a,b] /\
                (integral (interval[a,b]) (\x. g x * f x) =
                 u * integral (interval[a,c]) f +
-                v * integral (interval[c,b]) f)``,
+                v * integral (interval[c,b]) f)
+Proof
   REPEAT GEN_TAC THEN
   DISCH_THEN(MP_TAC o MATCH_MP SECOND_MEAN_VALUE_THEOREM_GEN_FULL) THEN
   DISCH_THEN (X_CHOOSE_TAC ``c:real``) THEN EXISTS_TAC ``c:real`` THEN
     POP_ASSUM MP_TAC THEN REPEAT STRIP_TAC THEN ASM_SIMP_TAC std_ss [] THEN
-  FIRST_X_ASSUM(SUBST1_TAC o MATCH_MP INTEGRAL_UNIQUE) THEN REWRITE_TAC[]);
+  FIRST_X_ASSUM(SUBST1_TAC o MATCH_MP INTEGRAL_UNIQUE) THEN REWRITE_TAC[]
+QED
 
-val SECOND_MEAN_VALUE_THEOREM_BONNET_FULL = store_thm ("SECOND_MEAN_VALUE_THEOREM_BONNET_FULL",
- ``!f:real->real g a b.
+Theorem SECOND_MEAN_VALUE_THEOREM_BONNET_FULL:
+   !f:real->real g a b.
         ~(interval[a,b] = {}) /\ f integrable_on interval [a,b] /\
         (!x. x IN interval[a,b] ==> &0 <= g x) /\
         (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ x <= y
                ==> g x <= g y)
         ==> ?c. c IN interval [a,b] /\
                 ((\x. g x * f x) has_integral
-                 (g(b) * integral (interval[c,b]) f)) (interval[a,b])``,
+                 (g(b) * integral (interval[c,b]) f)) (interval[a,b])
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL
    [``f:real->real``, ``g:real->real``, ``a:real``, ``b:real``,
@@ -17872,29 +18312,33 @@ val SECOND_MEAN_VALUE_THEOREM_BONNET_FULL = store_thm ("SECOND_MEAN_VALUE_THEORE
   ASM_REWRITE_TAC[REAL_MUL_LZERO, REAL_ADD_LID] THEN
   DISCH_THEN MATCH_MP_TAC THEN REWRITE_TAC[IN_INTERVAL] THEN
   REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
-  ASM_SIMP_TAC real_ss [IN_INTERVAL, REAL_LE_LT] THEN METIS_TAC [REAL_LT_TRANS]);
+  ASM_SIMP_TAC real_ss [IN_INTERVAL, REAL_LE_LT] THEN METIS_TAC [REAL_LT_TRANS]
+QED
 
-val SECOND_MEAN_VALUE_THEOREM_BONNET = store_thm ("SECOND_MEAN_VALUE_THEOREM_BONNET",
- ``!f:real->real g a b.
+Theorem SECOND_MEAN_VALUE_THEOREM_BONNET:
+   !f:real->real g a b.
         ~(interval[a,b] = {}) /\ f integrable_on interval[a,b] /\
         (!x. x IN interval[a,b] ==> &0 <= g x) /\
         (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ x <= y
                ==> g x <= g y)
         ==> ?c. c IN interval [a,b] /\
                (integral (interval[a,b]) (\x. g x * f x) =
-                g(b) * integral (interval[c,b]) f)``,
+                g(b) * integral (interval[c,b]) f)
+Proof
   REPEAT GEN_TAC THEN
   DISCH_THEN(MP_TAC o MATCH_MP SECOND_MEAN_VALUE_THEOREM_BONNET_FULL) THEN
   DISCH_THEN (X_CHOOSE_TAC ``c:real``) THEN EXISTS_TAC ``c:real`` THEN
     POP_ASSUM MP_TAC THEN REPEAT STRIP_TAC THEN ASM_SIMP_TAC std_ss [] THEN
-  FIRST_X_ASSUM(SUBST1_TAC o MATCH_MP INTEGRAL_UNIQUE) THEN REWRITE_TAC[]);
+  FIRST_X_ASSUM(SUBST1_TAC o MATCH_MP INTEGRAL_UNIQUE) THEN REWRITE_TAC[]
+QED
 
-val INTEGRABLE_INCREASING_PRODUCT = store_thm ("INTEGRABLE_INCREASING_PRODUCT",
- ``!f:real->real g a b.
+Theorem INTEGRABLE_INCREASING_PRODUCT:
+   !f:real->real g a b.
         f integrable_on interval[a,b] /\
         (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ x <= y
                ==> g(x) <= g(y))
-        ==> (\x. g(x) * f(x)) integrable_on interval[a,b]``,
+        ==> (\x. g(x) * f(x)) integrable_on interval[a,b]
+Proof
   REPEAT STRIP_TAC THEN ASM_CASES_TAC ``interval[a:real,b] = {}`` THEN
   ASM_REWRITE_TAC[INTEGRABLE_ON_EMPTY] THEN
   MP_TAC(ISPECL [``\x. ((f:real->real) x)``,
@@ -17904,14 +18348,16 @@ val INTEGRABLE_INCREASING_PRODUCT = store_thm ("INTEGRABLE_INCREASING_PRODUCT",
    [RULE_ASSUM_TAC(ONCE_REWRITE_RULE[INTEGRABLE_COMPONENTWISE]) THEN
     ASM_SIMP_TAC std_ss [],
     DISCH_TAC THEN ASM_REWRITE_TAC [] THEN POP_ASSUM K_TAC THEN
-    REWRITE_TAC[integrable_on] THEN MESON_TAC[]]);
+    REWRITE_TAC[integrable_on] THEN MESON_TAC[]]
+QED
 
-val lemma = prove (
-   ``!f:real->real g B.
+Theorem lemma[local]:
+     !f:real->real g B.
           f integrable_on univ(:real) /\
           (!x y. x <= y ==> g x <= g y) /\
           (!x. abs(g x) <= B)
-           ==> (\x. g x * f x) integrable_on univ(:real)``,
+           ==> (\x. g x * f x) integrable_on univ(:real)
+Proof
     REPEAT GEN_TAC THEN ONCE_REWRITE_TAC[INTEGRABLE_ALT_SUBSET] THEN
     SIMP_TAC std_ss [IN_UNIV, ETA_AX] THEN STRIP_TAC THEN
     MATCH_MP_TAC(TAUT `a /\ (a ==> b) ==> a /\ b`) THEN CONJ_TAC THENL
@@ -18067,33 +18513,39 @@ val lemma = prove (
       REWRITE_TAC [GSYM real_div] THEN
       ASM_SIMP_TAC real_ss [REAL_LT_LMUL, REAL_LT_LDIV_EQ,
                    REAL_ARITH ``&0 < &4 * abs B + &4:real``] THEN
-      REAL_ARITH_TAC]);
+      REAL_ARITH_TAC]
+QED
 
-val INTEGRABLE_INCREASING_PRODUCT_UNIV = store_thm ("INTEGRABLE_INCREASING_PRODUCT_UNIV",
- ``!f:real->real g B.
+Theorem INTEGRABLE_INCREASING_PRODUCT_UNIV:
+   !f:real->real g B.
         f integrable_on univ(:real) /\
         (!x y. x <= y ==> g x <= g y) /\
         (!x. abs(g x) <= B)
-         ==> (\x. g x * f x) integrable_on univ(:real)``,
-  REWRITE_TAC [lemma]);
+         ==> (\x. g x * f x) integrable_on univ(:real)
+Proof
+  REWRITE_TAC [lemma]
+QED
 
-val INTEGRABLE_INCREASING = store_thm ("INTEGRABLE_INCREASING",
- ``!f:real->real a b.
+Theorem INTEGRABLE_INCREASING:
+   !f:real->real a b.
         (!x y i. x IN interval[a,b] /\ y IN interval[a,b] /\
                  x <= y ==> f(x) <= f(y))
-        ==> f integrable_on interval[a,b]``,
+        ==> f integrable_on interval[a,b]
+Proof
   REPEAT STRIP_TAC THEN
   ONCE_REWRITE_TAC[METIS [ETA_AX, REAL_MUL_RID]
    ``(f:real->real) = (\x. f x * (\x. 1) x)``] THEN
   MATCH_MP_TAC INTEGRABLE_INCREASING_PRODUCT THEN
-  ASM_SIMP_TAC std_ss [INTEGRABLE_CONST]);
+  ASM_SIMP_TAC std_ss [INTEGRABLE_CONST]
+QED
 
-val INTEGRABLE_DECREASING_PRODUCT = store_thm ("INTEGRABLE_DECREASING_PRODUCT",
- ``!f:real->real g a b.
+Theorem INTEGRABLE_DECREASING_PRODUCT:
+   !f:real->real g a b.
         f integrable_on interval[a,b] /\
         (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ x <= y
                ==> g(y) <= g(x))
-        ==> (\x. g(x) * f(x)) integrable_on interval[a,b]``,
+        ==> (\x. g(x) * f(x)) integrable_on interval[a,b]
+Proof
   REPEAT STRIP_TAC THEN
   ONCE_REWRITE_TAC[REAL_ARITH ``x * y:real = -(-x * y)``] THEN
   ONCE_REWRITE_TAC [METIS [] ``(\x. -(-g x * f x)) =
@@ -18102,14 +18554,16 @@ val INTEGRABLE_DECREASING_PRODUCT = store_thm ("INTEGRABLE_DECREASING_PRODUCT",
   ONCE_REWRITE_TAC [METIS [] ``(\x. -g x * f x) =
           (\x. (\x. -(g:real->real) x) x * f x)``] THEN
   MATCH_MP_TAC INTEGRABLE_INCREASING_PRODUCT THEN
-  ASM_SIMP_TAC real_ss [REAL_LE_NEG2]);
+  ASM_SIMP_TAC real_ss [REAL_LE_NEG2]
+QED
 
-val INTEGRABLE_DECREASING_PRODUCT_UNIV = store_thm ("INTEGRABLE_DECREASING_PRODUCT_UNIV",
- ``!f:real->real g B.
+Theorem INTEGRABLE_DECREASING_PRODUCT_UNIV:
+   !f:real->real g B.
         f integrable_on univ(:real) /\
         (!x y. x <= y ==> g y <= g x) /\
         (!x. abs(g x) <= B)
-         ==> (\x. g x * f x) integrable_on univ(:real)``,
+         ==> (\x. g x * f x) integrable_on univ(:real)
+Proof
   REPEAT STRIP_TAC THEN
   ONCE_REWRITE_TAC[REAL_ARITH ``x * y:real = -(-x * y)``] THEN
   ONCE_REWRITE_TAC [METIS [] ``(\x. -(-g x * f x)) =
@@ -18118,18 +18572,21 @@ val INTEGRABLE_DECREASING_PRODUCT_UNIV = store_thm ("INTEGRABLE_DECREASING_PRODU
   ONCE_REWRITE_TAC [METIS [] ``(\x. -g x * f x) =
           (\x. (\x. -(g:real->real) x) x * f x)``] THEN
   MATCH_MP_TAC INTEGRABLE_INCREASING_PRODUCT_UNIV THEN
-  EXISTS_TAC ``B:real`` THEN ASM_SIMP_TAC real_ss [REAL_LE_NEG2, ABS_NEG]);
+  EXISTS_TAC ``B:real`` THEN ASM_SIMP_TAC real_ss [REAL_LE_NEG2, ABS_NEG]
+QED
 
-val INTEGRABLE_DECREASING = store_thm ("INTEGRABLE_DECREASING",
- ``!f:real->real a b.
+Theorem INTEGRABLE_DECREASING:
+   !f:real->real a b.
         (!x y i. x IN interval[a,b] /\ y IN interval[a,b] /\
                  x <= y ==> f(y) <= f(x))
-        ==> f integrable_on interval[a,b]``,
+        ==> f integrable_on interval[a,b]
+Proof
   REPEAT STRIP_TAC THEN GEN_REWR_TAC LAND_CONV [GSYM ETA_AX] THEN
   GEN_REWR_TAC (LAND_CONV o BINDER_CONV) [GSYM REAL_NEG_NEG] THEN
   ONCE_REWRITE_TAC [METIS [] ``(\x. --(f:real->real) x) = (\x. -((\x. -f x) x))``] THEN
   MATCH_MP_TAC INTEGRABLE_NEG THEN MATCH_MP_TAC INTEGRABLE_INCREASING THEN
-  ASM_SIMP_TAC std_ss [REAL_LE_NEG2]);
+  ASM_SIMP_TAC std_ss [REAL_LE_NEG2]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Bounded variation and variation function, for real->real functions.       *)
@@ -18137,47 +18594,55 @@ val INTEGRABLE_DECREASING = store_thm ("INTEGRABLE_DECREASING",
 
 val _ = set_fixity "has_bounded_variation_on" (Infix(NONASSOC, 450));
 
-val has_bounded_variation_on = new_definition ("has_bounded_variation_on",
- ``(f:real->real) has_bounded_variation_on s <=>
+Definition has_bounded_variation_on[nocompute]:
+ (f:real->real) has_bounded_variation_on s <=>
         (\k. f(interval_upperbound k) - f(interval_lowerbound k))
-        has_bounded_setvariation_on s``);
+        has_bounded_setvariation_on s
+End
 
-val vector_variation = new_definition ("vector_variation",
- ``vector_variation s (f:real->real) =
-   set_variation s (\k. f(interval_upperbound k) - f(interval_lowerbound k))``);
+Definition vector_variation[nocompute]:
+ vector_variation s (f:real->real) =
+   set_variation s (\k. f(interval_upperbound k) - f(interval_lowerbound k))
+End
 
-val HAS_BOUNDED_VARIATION_ON_EQ = store_thm ("HAS_BOUNDED_VARIATION_ON_EQ",
- ``!f g:real->real s.
+Theorem HAS_BOUNDED_VARIATION_ON_EQ:
+   !f g:real->real s.
         (!x. x IN s ==> (f x = g x)) /\ f has_bounded_variation_on s
-        ==> g has_bounded_variation_on s``,
+        ==> g has_bounded_variation_on s
+Proof
   REPEAT GEN_TAC THEN
   DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
   REWRITE_TAC[has_bounded_variation_on] THEN
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] HAS_BOUNDED_SETVARIATION_ON_EQ) THEN
   SIMP_TAC std_ss [INTERVAL_UPPERBOUND, INTERVAL_LOWERBOUND,
            GSYM INTERVAL_NE_EMPTY] THEN
-  ASM_MESON_TAC[ENDS_IN_INTERVAL, SUBSET_DEF]);
+  ASM_MESON_TAC[ENDS_IN_INTERVAL, SUBSET_DEF]
+QED
 
-val VECTOR_VARIATION_EQ = store_thm ("VECTOR_VARIATION_EQ",
- ``!f g:real->real s.
+Theorem VECTOR_VARIATION_EQ:
+   !f g:real->real s.
         (!x. x IN s ==> (f x = g x))
-        ==> (vector_variation s f = vector_variation s g)``,
+        ==> (vector_variation s f = vector_variation s g)
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[vector_variation] THEN
   MATCH_MP_TAC SET_VARIATION_EQ THEN
   SIMP_TAC std_ss [INTERVAL_UPPERBOUND, INTERVAL_LOWERBOUND,
            GSYM INTERVAL_NE_EMPTY] THEN
-  ASM_MESON_TAC[ENDS_IN_INTERVAL, SUBSET_DEF]);
+  ASM_MESON_TAC[ENDS_IN_INTERVAL, SUBSET_DEF]
+QED
 
-val HAS_BOUNDED_VARIATION_ON_COMPONENTWISE = store_thm ("HAS_BOUNDED_VARIATION_ON_COMPONENTWISE",
- ``!f:real->real s.
+Theorem HAS_BOUNDED_VARIATION_ON_COMPONENTWISE:
+   !f:real->real s.
         f has_bounded_variation_on s <=>
-          (\x. f x) has_bounded_variation_on s``,
+          (\x. f x) has_bounded_variation_on s
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[has_bounded_variation_on] THEN
   GEN_REWR_TAC LAND_CONV [HAS_BOUNDED_SETVARIATION_ON_COMPONENTWISE] THEN
-  SIMP_TAC std_ss []);
+  SIMP_TAC std_ss []
+QED
 
-val VARIATION_EQUAL_LEMMA = store_thm ("VARIATION_EQUAL_LEMMA",
- ``!ms ms'.
+Theorem VARIATION_EQUAL_LEMMA:
+   !ms ms'.
         (!s. (ms'(ms s) = s) /\ (ms(ms' s) = s)) /\
         (!d t. d division_of t
                ==> (IMAGE (IMAGE ms) d) division_of IMAGE ms t /\
@@ -18190,7 +18655,8 @@ val VARIATION_EQUAL_LEMMA = store_thm ("VARIATION_EQUAL_LEMMA",
             f has_bounded_variation_on s) /\
        (!f:real->real s.
             vector_variation (IMAGE ms s) (\x. f(ms' x)) =
-            vector_variation s f)``,
+            vector_variation s f)
+Proof
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   REWRITE_TAC[has_bounded_variation_on, vector_variation] THEN
   SIMP_TAC std_ss [GSYM FORALL_AND_THM] THEN X_GEN_TAC ``f:real->real`` THEN
@@ -18256,14 +18722,16 @@ val VARIATION_EQUAL_LEMMA = store_thm ("VARIATION_EQUAL_LEMMA",
   ASM_REWRITE_TAC[] THEN STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
   RULE_ASSUM_TAC(REWRITE_RULE[INTERVAL_NE_EMPTY]) THEN
   ASM_SIMP_TAC std_ss [INTERVAL_UPPERBOUND, INTERVAL_LOWERBOUND] THEN
-  REAL_ARITH_TAC);
+  REAL_ARITH_TAC
+QED
 
-val HAS_BOUNDED_VARIATION_COMPARISON = store_thm ("HAS_BOUNDED_VARIATION_COMPARISON",
- ``!f:real->real g:real->real s.
+Theorem HAS_BOUNDED_VARIATION_COMPARISON:
+   !f:real->real g:real->real s.
         f has_bounded_variation_on s /\
         (!x y. x IN s /\ y IN s /\ x < y
                ==> dist(g x,g y) <= dist(f x,f y))
-        ==> g has_bounded_variation_on s``,
+        ==> g has_bounded_variation_on s
+Proof
   REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
   REWRITE_TAC[has_bounded_variation_on] THEN
   MATCH_MP_TAC(ONCE_REWRITE_RULE[IMP_CONJ_ALT]
@@ -18281,14 +18749,16 @@ val HAS_BOUNDED_VARIATION_COMPARISON = store_thm ("HAS_BOUNDED_VARIATION_COMPARI
     MESON_TAC[DIST_SYM],
     ASM_SIMP_TAC std_ss [INTERVAL_LOWERBOUND_NONEMPTY,
                          INTERVAL_UPPERBOUND_NONEMPTY] THEN
-    ASM_MESON_TAC[ENDS_IN_INTERVAL, SUBSET_DEF]]);
+    ASM_MESON_TAC[ENDS_IN_INTERVAL, SUBSET_DEF]]
+QED
 
-val VECTOR_VARIATION_COMPARISON = store_thm ("VECTOR_VARIATION_COMPARISON",
- ``!f:real->real g:real->real s.
+Theorem VECTOR_VARIATION_COMPARISON:
+   !f:real->real g:real->real s.
         f has_bounded_variation_on s /\
         (!x y. x IN s /\ y IN s /\ x < y
                ==> dist(g x,g y) <= dist(f x,f y))
-        ==> vector_variation s g <= vector_variation s f``,
+        ==> vector_variation s g <= vector_variation s f
+Proof
   REPEAT STRIP_TAC THEN
   REWRITE_TAC[vector_variation] THEN
   MATCH_MP_TAC SET_VARIATION_COMPARISON THEN
@@ -18306,93 +18776,119 @@ val VECTOR_VARIATION_COMPARISON = store_thm ("VECTOR_VARIATION_COMPARISON",
     MESON_TAC[DIST_SYM],
     ASM_SIMP_TAC std_ss [INTERVAL_LOWERBOUND_NONEMPTY,
                          INTERVAL_UPPERBOUND_NONEMPTY] THEN
-    ASM_MESON_TAC[ENDS_IN_INTERVAL, SUBSET_DEF]]);
+    ASM_MESON_TAC[ENDS_IN_INTERVAL, SUBSET_DEF]]
+QED
 
-val VECTOR_VARIATION_ABS = store_thm ("VECTOR_VARIATION_ABS",
- ``!f:real->real s.
+Theorem VECTOR_VARIATION_ABS:
+   !f:real->real s.
         (\x. (f x)) has_bounded_variation_on s
         ==> vector_variation s (\x. (abs(f x)))
-            <= vector_variation s (\x. (f x))``,
+            <= vector_variation s (\x. (f x))
+Proof
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC VECTOR_VARIATION_COMPARISON THEN
-  ASM_SIMP_TAC std_ss [dist] THEN REAL_ARITH_TAC);
+  ASM_SIMP_TAC std_ss [dist] THEN REAL_ARITH_TAC
+QED
 
-val HAS_BOUNDED_VARIATION_ON_SUBSET = store_thm ("HAS_BOUNDED_VARIATION_ON_SUBSET",
- ``!f:real->real s t.
+Theorem HAS_BOUNDED_VARIATION_ON_SUBSET:
+   !f:real->real s t.
         f has_bounded_variation_on s /\ t SUBSET s
-        ==> f has_bounded_variation_on t``,
-  REWRITE_TAC[HAS_BOUNDED_SETVARIATION_ON_SUBSET, has_bounded_variation_on]);
+        ==> f has_bounded_variation_on t
+Proof
+  REWRITE_TAC[HAS_BOUNDED_SETVARIATION_ON_SUBSET, has_bounded_variation_on]
+QED
 
-val HAS_BOUNDED_VARIATION_ON_CONST = store_thm ("HAS_BOUNDED_VARIATION_ON_CONST",
- ``!s c:real. (\x. c) has_bounded_variation_on s``,
+Theorem HAS_BOUNDED_VARIATION_ON_CONST:
+   !s c:real. (\x. c) has_bounded_variation_on s
+Proof
   REWRITE_TAC[has_bounded_variation_on, REAL_SUB_REFL,
-              HAS_BOUNDED_SETVARIATION_ON_0]);
+              HAS_BOUNDED_SETVARIATION_ON_0]
+QED
 
-val VECTOR_VARIATION_CONST = store_thm ("VECTOR_VARIATION_CONST",
- ``!s c:real. vector_variation s (\x. c) = &0``,
-  REWRITE_TAC[vector_variation, REAL_SUB_REFL, SET_VARIATION_0]);
+Theorem VECTOR_VARIATION_CONST:
+   !s c:real. vector_variation s (\x. c) = &0
+Proof
+  REWRITE_TAC[vector_variation, REAL_SUB_REFL, SET_VARIATION_0]
+QED
 
-val HAS_BOUNDED_VARIATION_ON_CMUL = store_thm ("HAS_BOUNDED_VARIATION_ON_CMUL",
- ``!f:real->real c s.
+Theorem HAS_BOUNDED_VARIATION_ON_CMUL:
+   !f:real->real c s.
         f has_bounded_variation_on s
-        ==> (\x. c * f x) has_bounded_variation_on s``,
+        ==> (\x. c * f x) has_bounded_variation_on s
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[has_bounded_variation_on] THEN
-  SIMP_TAC std_ss [GSYM REAL_SUB_LDISTRIB, HAS_BOUNDED_SETVARIATION_ON_CMUL]);
+  SIMP_TAC std_ss [GSYM REAL_SUB_LDISTRIB, HAS_BOUNDED_SETVARIATION_ON_CMUL]
+QED
 
-val HAS_BOUNDED_VARIATION_ON_NEG = store_thm ("HAS_BOUNDED_VARIATION_ON_NEG",
- ``!f:real->real s.
+Theorem HAS_BOUNDED_VARIATION_ON_NEG:
+   !f:real->real s.
         f has_bounded_variation_on s
-        ==> (\x. -f x) has_bounded_variation_on s``,
+        ==> (\x. -f x) has_bounded_variation_on s
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[has_bounded_variation_on] THEN
   SIMP_TAC std_ss [REAL_ARITH ``-a - -b:real = -(a - b)``,
-              HAS_BOUNDED_SETVARIATION_ON_NEG]);
+              HAS_BOUNDED_SETVARIATION_ON_NEG]
+QED
 
-val HAS_BOUNDED_VARIATION_ON_ADD = store_thm ("HAS_BOUNDED_VARIATION_ON_ADD",
- ``!f g:real->real s.
+Theorem HAS_BOUNDED_VARIATION_ON_ADD:
+   !f g:real->real s.
         f has_bounded_variation_on s /\ g has_bounded_variation_on s
-        ==> (\x. f x + g x) has_bounded_variation_on s``,
+        ==> (\x. f x + g x) has_bounded_variation_on s
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[has_bounded_variation_on] THEN
   SIMP_TAC std_ss [REAL_ARITH ``(f + g) - (f' + g'):real = (f - f') + (g - g')``,
-              HAS_BOUNDED_SETVARIATION_ON_ADD]);
+              HAS_BOUNDED_SETVARIATION_ON_ADD]
+QED
 
-val HAS_BOUNDED_VARIATION_ON_SUB = store_thm ("HAS_BOUNDED_VARIATION_ON_SUB",
- ``!f g:real->real s.
+Theorem HAS_BOUNDED_VARIATION_ON_SUB:
+   !f g:real->real s.
         f has_bounded_variation_on s /\ g has_bounded_variation_on s
-        ==> (\x. f x - g x) has_bounded_variation_on s``,
+        ==> (\x. f x - g x) has_bounded_variation_on s
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[has_bounded_variation_on] THEN
   SIMP_TAC std_ss [REAL_ARITH ``(f - g) - (f' - g'):real = (f - f') - (g - g')``,
-              HAS_BOUNDED_SETVARIATION_ON_SUB]);
+              HAS_BOUNDED_SETVARIATION_ON_SUB]
+QED
 
-val HAS_BOUNDED_VARIATION_ON_COMPOSE_LINEAR = store_thm ("HAS_BOUNDED_VARIATION_ON_COMPOSE_LINEAR",
- ``!f:real->real g:real->real s.
+Theorem HAS_BOUNDED_VARIATION_ON_COMPOSE_LINEAR:
+   !f:real->real g:real->real s.
         f has_bounded_variation_on s /\ linear g
-        ==> (g o f) has_bounded_variation_on s``,
+        ==> (g o f) has_bounded_variation_on s
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[has_bounded_variation_on] THEN
   SIMP_TAC std_ss [o_THM, GSYM LINEAR_SUB] THEN
   DISCH_THEN(MP_TAC o MATCH_MP HAS_BOUNDED_SETVARIATION_ON_COMPOSE_LINEAR) THEN
-  SIMP_TAC std_ss [o_DEF]);
+  SIMP_TAC std_ss [o_DEF]
+QED
 
-val HAS_BOUNDED_VARIATION_ON_NULL = store_thm ("HAS_BOUNDED_VARIATION_ON_NULL",
- ``!f:real->real s.
-        (content s = &0) /\ bounded s ==> f has_bounded_variation_on s``,
+Theorem HAS_BOUNDED_VARIATION_ON_NULL:
+   !f:real->real s.
+        (content s = &0) /\ bounded s ==> f has_bounded_variation_on s
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[has_bounded_variation_on] THEN
   MATCH_MP_TAC HAS_BOUNDED_SETVARIATION_ON_NULL THEN
-  ASM_SIMP_TAC std_ss [INTERVAL_BOUNDS_NULL, REAL_SUB_REFL]);
+  ASM_SIMP_TAC std_ss [INTERVAL_BOUNDS_NULL, REAL_SUB_REFL]
+QED
 
-val HAS_BOUNDED_VARIATION_ON_EMPTY = store_thm ("HAS_BOUNDED_VARIATION_ON_EMPTY",
- ``!f:real->real. f has_bounded_variation_on {}``,
-  MESON_TAC[CONTENT_EMPTY, BOUNDED_EMPTY, HAS_BOUNDED_VARIATION_ON_NULL]);
+Theorem HAS_BOUNDED_VARIATION_ON_EMPTY:
+   !f:real->real. f has_bounded_variation_on {}
+Proof
+  MESON_TAC[CONTENT_EMPTY, BOUNDED_EMPTY, HAS_BOUNDED_VARIATION_ON_NULL]
+QED
 
-val VECTOR_VARIATION_ON_NULL = store_thm ("VECTOR_VARIATION_ON_NULL",
- ``!f s. (content s = &0) /\ bounded s ==> (vector_variation s f = &0)``,
+Theorem VECTOR_VARIATION_ON_NULL:
+   !f s. (content s = &0) /\ bounded s ==> (vector_variation s f = &0)
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[vector_variation] THEN
   MATCH_MP_TAC SET_VARIATION_ON_NULL THEN ASM_REWRITE_TAC[] THEN
-  SIMP_TAC std_ss [INTERVAL_BOUNDS_NULL, REAL_SUB_REFL]);
+  SIMP_TAC std_ss [INTERVAL_BOUNDS_NULL, REAL_SUB_REFL]
+QED
 
-val HAS_BOUNDED_VARIATION_ON_ABS = store_thm ("HAS_BOUNDED_VARIATION_ON_ABS",
- ``!f:real->real s.
+Theorem HAS_BOUNDED_VARIATION_ON_ABS:
+   !f:real->real s.
         f has_bounded_variation_on s
-        ==> (\x. (abs(f x))) has_bounded_variation_on s``,
+        ==> (\x. (abs(f x))) has_bounded_variation_on s
+Proof
   REWRITE_TAC[has_bounded_variation_on, has_bounded_setvariation_on] THEN
   REPEAT GEN_TAC THEN DISCH_THEN (X_CHOOSE_TAC ``B:real``) THEN
   EXISTS_TAC ``B:real`` THEN POP_ASSUM MP_TAC THEN
@@ -18401,7 +18897,8 @@ val HAS_BOUNDED_VARIATION_ON_ABS = store_thm ("HAS_BOUNDED_VARIATION_ON_ABS",
   DISCH_THEN(fn th => STRIP_TAC THEN MP_TAC th) THEN ASM_SIMP_TAC std_ss [] THEN
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] REAL_LE_TRANS) THEN
   MATCH_MP_TAC SUM_LE THEN SIMP_TAC std_ss [] THEN
-  CONJ_TAC THENL [ASM_MESON_TAC[DIVISION_OF_FINITE], REAL_ARITH_TAC]);
+  CONJ_TAC THENL [ASM_MESON_TAC[DIVISION_OF_FINITE], REAL_ARITH_TAC]
+QED
 
 Theorem HAS_BOUNDED_VARIATION_ON_MAX :
     !f g s. f has_bounded_variation_on s /\ g has_bounded_variation_on s
@@ -18457,11 +18954,12 @@ Proof
   MATCH_MP_TAC HAS_BOUNDED_VARIATION_ON_SUB THEN ASM_REWRITE_TAC[]
 QED
 
-val HAS_BOUNDED_VARIATION_ON_IMP_BOUNDED_ON_SUBINTERVALS = store_thm ("HAS_BOUNDED_VARIATION_ON_IMP_BOUNDED_ON_SUBINTERVALS",
- ``!f:real->real s.
+Theorem HAS_BOUNDED_VARIATION_ON_IMP_BOUNDED_ON_SUBINTERVALS:
+   !f:real->real s.
         f has_bounded_variation_on s
         ==> bounded { f(d) - f(c) | interval[c,d] SUBSET s /\
-                                    ~(interval[c,d] = {})}``,
+                                    ~(interval[c,d] = {})}
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[has_bounded_variation_on] THEN
   DISCH_THEN(MP_TAC o MATCH_MP
    HAS_BOUNDED_SETVARIATION_ON_IMP_BOUNDED_ON_SUBINTERVALS) THEN
@@ -18471,11 +18969,13 @@ val HAS_BOUNDED_VARIATION_ON_IMP_BOUNDED_ON_SUBINTERVALS = store_thm ("HAS_BOUND
   FULL_SIMP_TAC std_ss [GSYM INTERVAL_EQ_EMPTY, REAL_NOT_LT] THEN STRIP_TAC THEN
   SIMP_TAC std_ss [GSPECIFICATION, EXISTS_PROD] THEN
   MAP_EVERY EXISTS_TAC [``c:real``, ``d:real``] THEN
-  ASM_SIMP_TAC std_ss [INTERVAL_UPPERBOUND, INTERVAL_LOWERBOUND]);
+  ASM_SIMP_TAC std_ss [INTERVAL_UPPERBOUND, INTERVAL_LOWERBOUND]
+QED
 
-val HAS_BOUNDED_VARIATION_ON_IMP_BOUNDED = store_thm ("HAS_BOUNDED_VARIATION_ON_IMP_BOUNDED",
- ``!f:real->real s.
-        f has_bounded_variation_on s /\ is_interval s ==> bounded (IMAGE f s)``,
+Theorem HAS_BOUNDED_VARIATION_ON_IMP_BOUNDED:
+   !f:real->real s.
+        f has_bounded_variation_on s /\ is_interval s ==> bounded (IMAGE f s)
+Proof
   REPEAT STRIP_TAC THEN ASM_CASES_TAC ``s:real->bool = {}`` THEN
   ASM_SIMP_TAC std_ss [IMAGE_EMPTY, IMAGE_INSERT, BOUNDED_EMPTY] THEN
   FIRST_X_ASSUM(MP_TAC o REWRITE_RULE [GSYM MEMBER_NOT_EMPTY]) THEN
@@ -18495,19 +18995,23 @@ val HAS_BOUNDED_VARIATION_ON_IMP_BOUNDED = store_thm ("HAS_BOUNDED_VARIATION_ON_
   FULL_SIMP_TAC std_ss [INTERVAL_NE_EMPTY, REAL_LE_TOTAL] THEN
   SIMP_TAC std_ss [ABS_SUB, CONJ_SYM] THEN
   DISCH_THEN(MP_TAC o SPECL [``a:real``, ``b:real``]) THEN
-  FULL_SIMP_TAC std_ss [] THEN REAL_ARITH_TAC);
+  FULL_SIMP_TAC std_ss [] THEN REAL_ARITH_TAC
+QED
 
-val HAS_BOUNDED_VARIATION_ON_IMP_BOUNDED_ON_INTERVAL = store_thm ("HAS_BOUNDED_VARIATION_ON_IMP_BOUNDED_ON_INTERVAL",
- ``!f:real->real a b.
+Theorem HAS_BOUNDED_VARIATION_ON_IMP_BOUNDED_ON_INTERVAL:
+   !f:real->real a b.
         f has_bounded_variation_on interval[a,b]
-        ==> bounded(IMAGE f (interval[a,b]))``,
-  MESON_TAC[HAS_BOUNDED_VARIATION_ON_IMP_BOUNDED, IS_INTERVAL_INTERVAL]);
+        ==> bounded(IMAGE f (interval[a,b]))
+Proof
+  MESON_TAC[HAS_BOUNDED_VARIATION_ON_IMP_BOUNDED, IS_INTERVAL_INTERVAL]
+QED
 
-val HAS_BOUNDED_VARIATION_ON_MUL = store_thm ("HAS_BOUNDED_VARIATION_ON_MUL",
- ``!f g:real->real a b.
+Theorem HAS_BOUNDED_VARIATION_ON_MUL:
+   !f g:real->real a b.
         f has_bounded_variation_on interval[a,b] /\
         g has_bounded_variation_on interval[a,b]
-        ==> (\x. (f x) * g x) has_bounded_variation_on interval[a,b]``,
+        ==> (\x. (f x) * g x) has_bounded_variation_on interval[a,b]
+Proof
   REPEAT GEN_TAC THEN DISCH_TAC THEN
   SUBGOAL_THEN
     ``bounded(IMAGE (f:real->real) (interval[a,b])) /\
@@ -18556,18 +19060,22 @@ val HAS_BOUNDED_VARIATION_ON_MUL = store_thm ("HAS_BOUNDED_VARIATION_ON_MUL",
   CONJ_TAC THEN MATCH_MP_TAC REAL_LE_RMUL_IMP THEN SIMP_TAC std_ss [ABS_POS] THEN
   MATCH_MP_TAC REAL_LT_IMP_LE THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
   REWRITE_TAC[IN_INTERVAL] THEN POP_ASSUM MP_TAC THEN
-  POP_ASSUM MP_TAC THEN POP_ASSUM MP_TAC THEN REAL_ARITH_TAC);
+  POP_ASSUM MP_TAC THEN POP_ASSUM MP_TAC THEN REAL_ARITH_TAC
+QED
 
-val VECTOR_VARIATION_POS_LE = store_thm ("VECTOR_VARIATION_POS_LE",
- ``!f:real->real s.
-        f has_bounded_variation_on s ==> &0 <= vector_variation s f``,
+Theorem VECTOR_VARIATION_POS_LE:
+   !f:real->real s.
+        f has_bounded_variation_on s ==> &0 <= vector_variation s f
+Proof
   REWRITE_TAC[has_bounded_variation_on, vector_variation] THEN
-  SIMP_TAC std_ss [SET_VARIATION_POS_LE]);
+  SIMP_TAC std_ss [SET_VARIATION_POS_LE]
+QED
 
-val VECTOR_VARIATION_GE_ABS_FUNCTION = store_thm ("VECTOR_VARIATION_GE_ABS_FUNCTION",
- ``!f:real->real s a b.
+Theorem VECTOR_VARIATION_GE_ABS_FUNCTION:
+   !f:real->real s a b.
         f has_bounded_variation_on s /\ segment[a,b] SUBSET s
-        ==> abs(f b - f a) <= vector_variation s f``,
+        ==> abs(f b - f a) <= vector_variation s f
+Proof
   GEN_TAC THEN GEN_TAC THEN
   ONCE_REWRITE_TAC [METIS [] ``(!a b.
   f has_bounded_variation_on s /\ segment [(a,b)] SUBSET s ==>
@@ -18583,26 +19091,32 @@ val VECTOR_VARIATION_GE_ABS_FUNCTION = store_thm ("VECTOR_VARIATION_GE_ABS_FUNCT
    ``s:real->bool``, ``x:real``, ``y:real``] SET_VARIATION_GE_FUNCTION) THEN
   ASM_SIMP_TAC std_ss [vector_variation, INTERVAL_NE_EMPTY] THEN
   ASM_SIMP_TAC std_ss [INTERVAL_UPPERBOUND, INTERVAL_LOWERBOUND] THEN
-  METIS_TAC[SEGMENT]);
+  METIS_TAC[SEGMENT]
+QED
 
-val VECTOR_VARIATION_GE_FUNCTION = store_thm ("VECTOR_VARIATION_GE_FUNCTION",
- ``!f s a b.
+Theorem VECTOR_VARIATION_GE_FUNCTION:
+   !f s a b.
         f has_bounded_variation_on s /\ segment[a,b] SUBSET s
-        ==> (f b) - (f a) <= vector_variation s f``,
+        ==> (f b) - (f a) <= vector_variation s f
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LE_TRANS THEN
   EXISTS_TAC ``abs((f:real->real) b - f a)`` THEN
   ASM_SIMP_TAC std_ss [VECTOR_VARIATION_GE_ABS_FUNCTION] THEN
-  SIMP_TAC std_ss [] THEN REAL_ARITH_TAC);
+  SIMP_TAC std_ss [] THEN REAL_ARITH_TAC
+QED
 
-val CONVEX_CONTAINS_SEGMENT = store_thm ("CONVEX_CONTAINS_SEGMENT",
- ``!s. convex s <=> !a b. a IN s /\ b IN s ==> segment[a,b] SUBSET s``,
+Theorem CONVEX_CONTAINS_SEGMENT:
+   !s. convex s <=> !a b. a IN s /\ b IN s ==> segment[a,b] SUBSET s
+Proof
   SIMP_TAC std_ss [CONVEX_ALT, segment, SUBSET_DEF, GSPECIFICATION] THEN
-  MESON_TAC[]);
+  MESON_TAC[]
+QED
 
-val VECTOR_VARIATION_CONST_EQ = store_thm ("VECTOR_VARIATION_CONST_EQ",
- ``!f:real->real s.
+Theorem VECTOR_VARIATION_CONST_EQ:
+   !f:real->real s.
         is_interval s /\ f has_bounded_variation_on s
-        ==> ((vector_variation s f = &0) <=> ?c. !x. x IN s ==> (f x = c))``,
+        ==> ((vector_variation s f = &0) <=> ?c. !x. x IN s ==> (f x = c))
+Proof
   REPEAT STRIP_TAC THEN EQ_TAC THENL
    [DISCH_TAC THEN REWRITE_TAC [SPECIFICATION] THEN
     REWRITE_TAC[METIS[]
@@ -18619,32 +19133,39 @@ val VECTOR_VARIATION_CONST_EQ = store_thm ("VECTOR_VARIATION_CONST_EQ",
     DISCH_THEN(X_CHOOSE_TAC ``c:real``) THEN
     MP_TAC(ISPECL [``f:real->real``, ``(\x. c):real->real``,
                    ``s:real->bool``] VECTOR_VARIATION_EQ) THEN
-    ASM_SIMP_TAC std_ss [VECTOR_VARIATION_CONST]);
+    ASM_SIMP_TAC std_ss [VECTOR_VARIATION_CONST]
+QED
 
-val VECTOR_VARIATION_MONOTONE = store_thm ("VECTOR_VARIATION_MONOTONE",
- ``!f s t. f has_bounded_variation_on s /\ t SUBSET s
-           ==> vector_variation t f <= vector_variation s f``,
+Theorem VECTOR_VARIATION_MONOTONE:
+   !f s t. f has_bounded_variation_on s /\ t SUBSET s
+           ==> vector_variation t f <= vector_variation s f
+Proof
   REWRITE_TAC[has_bounded_variation_on, vector_variation] THEN
-  REWRITE_TAC[SET_VARIATION_MONOTONE]);
+  REWRITE_TAC[SET_VARIATION_MONOTONE]
+QED
 
-val VECTOR_VARIATION_NEG = store_thm ("VECTOR_VARIATION_NEG",
- ``!f:real->real s.
-        vector_variation s (\x. -(f x)) = vector_variation s f``,
+Theorem VECTOR_VARIATION_NEG:
+   !f:real->real s.
+        vector_variation s (\x. -(f x)) = vector_variation s f
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[vector_variation, set_variation] THEN
-  SIMP_TAC std_ss [REAL_ARITH ``abs(-x - -y:real) = abs(x - y)``]);
+  SIMP_TAC std_ss [REAL_ARITH ``abs(-x - -y:real) = abs(x - y)``]
+QED
 
-val VECTOR_VARIATION_TRIANGLE = store_thm ("VECTOR_VARIATION_TRIANGLE",
- ``!f g:real->real s.
+Theorem VECTOR_VARIATION_TRIANGLE:
+   !f g:real->real s.
         f has_bounded_variation_on s /\ g has_bounded_variation_on s
         ==> vector_variation s (\x. f x + g x)
-              <= vector_variation s f + vector_variation s g``,
+              <= vector_variation s f + vector_variation s g
+Proof
   REPEAT GEN_TAC THEN
   REWRITE_TAC[has_bounded_variation_on, vector_variation] THEN
   DISCH_THEN(MP_TAC o MATCH_MP SET_VARIATION_TRIANGLE) THEN
-  SIMP_TAC std_ss [REAL_ARITH ``(a + b) - (c + d):real = (a - c) + (b - d)``]);
+  SIMP_TAC std_ss [REAL_ARITH ``(a + b) - (c + d):real = (a - c) + (b - d)``]
+QED
 
-val HAS_BOUNDED_VARIATION_ON_SUM_AND_SUM_LE = store_thm ("HAS_BOUNDED_VARIATION_ON_SUM_AND_SUM_LE",
- ``(!f:'a->real->real s k.
+Theorem HAS_BOUNDED_VARIATION_ON_SUM_AND_SUM_LE:
+   (!f:'a->real->real s k.
         FINITE k /\
         (!i. i IN k ==> f i has_bounded_variation_on s)
         ==> (\x. sum k (\i. f i x)) has_bounded_variation_on s) /\
@@ -18652,7 +19173,8 @@ val HAS_BOUNDED_VARIATION_ON_SUM_AND_SUM_LE = store_thm ("HAS_BOUNDED_VARIATION_
         FINITE k /\
         (!i. i IN k ==> f i has_bounded_variation_on s)
         ==> vector_variation s (\x. sum k (\i. f i x))
-            <= sum k (\i. vector_variation s (f i)))``,
+            <= sum k (\i. vector_variation s (f i)))
+Proof
   SIMP_TAC std_ss [GSYM FORALL_AND_THM, TAUT
    `(p ==> q) /\ (p ==> r) <=> p ==> q /\ r`] THEN
   GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
@@ -18681,22 +19203,27 @@ val HAS_BOUNDED_VARIATION_ON_SUM_AND_SUM_LE = store_thm ("HAS_BOUNDED_VARIATION_
     VECTOR_VARIATION_TRIANGLE o lhand o snd) THEN
   ASM_SIMP_TAC std_ss [METIS [ETA_AX] ``(\x. (f:'a->real->real) e x) = f e``] THEN
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS) THEN
-  ASM_SIMP_TAC std_ss [REAL_LE_LADD]);
+  ASM_SIMP_TAC std_ss [REAL_LE_LADD]
+QED
 
-val HAS_BOUNDED_VARIATION_ON_SUM = store_thm ("HAS_BOUNDED_VARIATION_ON_SUM",
- ``(!f:'a->real->real s k.
+Theorem HAS_BOUNDED_VARIATION_ON_SUM:
+   (!f:'a->real->real s k.
         FINITE k /\
         (!i. i IN k ==> f i has_bounded_variation_on s)
-        ==> (\x. sum k (\i. f i x)) has_bounded_variation_on s)``,
-  REWRITE_TAC [HAS_BOUNDED_VARIATION_ON_SUM_AND_SUM_LE]);
+        ==> (\x. sum k (\i. f i x)) has_bounded_variation_on s)
+Proof
+  REWRITE_TAC [HAS_BOUNDED_VARIATION_ON_SUM_AND_SUM_LE]
+QED
 
-val HAS_BOUNDED_VARIATION_SUM_LE = store_thm ("HAS_BOUNDED_VARIATION_SUM_LE",
- ``(!f:'a->real->real s k.
+Theorem HAS_BOUNDED_VARIATION_SUM_LE:
+   (!f:'a->real->real s k.
         FINITE k /\
         (!i. i IN k ==> f i has_bounded_variation_on s)
         ==> vector_variation s (\x. sum k (\i. f i x))
-            <= sum k (\i. vector_variation s (f i)))``,
-  REWRITE_TAC [HAS_BOUNDED_VARIATION_ON_SUM_AND_SUM_LE]);
+            <= sum k (\i. vector_variation s (f i)))
+Proof
+  REWRITE_TAC [HAS_BOUNDED_VARIATION_ON_SUM_AND_SUM_LE]
+QED
 
 Theorem OPERATIVE_FUNCTION_ENDPOINT_DIFF :
     !f:real->real.
@@ -18741,48 +19268,57 @@ Proof
   ASM_REAL_ARITH_TAC
 QED
 
-val OPERATIVE_REAL_FUNCTION_ENDPOINT_DIFF = store_thm ("OPERATIVE_REAL_FUNCTION_ENDPOINT_DIFF",
- ``!f:real->real.
-    operative (+) (\k. f (interval_upperbound k) - f (interval_lowerbound k))``,
+Theorem OPERATIVE_REAL_FUNCTION_ENDPOINT_DIFF:
+   !f:real->real.
+    operative (+) (\k. f (interval_upperbound k) - f (interval_lowerbound k))
+Proof
   GEN_TAC THEN
   MP_TAC(ISPEC ``(f:real->real)`` OPERATIVE_FUNCTION_ENDPOINT_DIFF) THEN
-  REWRITE_TAC[operative, NEUTRAL_REAL_ADD] THEN REWRITE_TAC[o_THM]);
+  REWRITE_TAC[operative, NEUTRAL_REAL_ADD] THEN REWRITE_TAC[o_THM]
+QED
 
-val OPERATIVE_LIFTED_VECTOR_VARIATION = store_thm ("OPERATIVE_LIFTED_VECTOR_VARIATION",
- ``!f:real->real.
+Theorem OPERATIVE_LIFTED_VECTOR_VARIATION:
+   !f:real->real.
         operative (lifted(+))
                   (\i. if f has_bounded_variation_on i
-                       then SOME(vector_variation i f) else NONE)``,
+                       then SOME(vector_variation i f) else NONE)
+Proof
   GEN_TAC THEN REWRITE_TAC[has_bounded_variation_on, vector_variation] THEN
   MATCH_MP_TAC OPERATIVE_LIFTED_SETVARIATION THEN
-  REWRITE_TAC[OPERATIVE_FUNCTION_ENDPOINT_DIFF]);
+  REWRITE_TAC[OPERATIVE_FUNCTION_ENDPOINT_DIFF]
+QED
 
-val HAS_BOUNDED_VARIATION_ON_DIVISION = store_thm ("HAS_BOUNDED_VARIATION_ON_DIVISION",
- ``!f:real->real a b d.
+Theorem HAS_BOUNDED_VARIATION_ON_DIVISION:
+   !f:real->real a b d.
         d division_of interval[a,b]
         ==> ((!k. k IN d ==> f has_bounded_variation_on k) <=>
-             f has_bounded_variation_on interval[a,b])``,
+             f has_bounded_variation_on interval[a,b])
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[has_bounded_variation_on] THEN
   MATCH_MP_TAC HAS_BOUNDED_SETVARIATION_ON_DIVISION THEN
-  ASM_REWRITE_TAC[OPERATIVE_FUNCTION_ENDPOINT_DIFF]);
+  ASM_REWRITE_TAC[OPERATIVE_FUNCTION_ENDPOINT_DIFF]
+QED
 
-val VECTOR_VARIATION_ON_DIVISION = store_thm ("VECTOR_VARIATION_ON_DIVISION",
- ``!f:real->real a b d.
+Theorem VECTOR_VARIATION_ON_DIVISION:
+   !f:real->real a b d.
         d division_of interval[a,b] /\
         f has_bounded_variation_on interval[a,b]
         ==> (sum d (\k. vector_variation k f) =
-             vector_variation (interval[a,b]) f)``,
+             vector_variation (interval[a,b]) f)
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[vector_variation] THEN
   MATCH_MP_TAC SET_VARIATION_ON_DIVISION THEN
   ASM_REWRITE_TAC[OPERATIVE_FUNCTION_ENDPOINT_DIFF, GSYM
-                  has_bounded_variation_on]);
+                  has_bounded_variation_on]
+QED
 
-val HAS_BOUNDED_VARIATION_ON_COMBINE = store_thm ("HAS_BOUNDED_VARIATION_ON_COMBINE",
- ``!f:real->real a b c.
+Theorem HAS_BOUNDED_VARIATION_ON_COMBINE:
+   !f:real->real a b c.
         a <= c /\ c <= b
         ==> (f has_bounded_variation_on interval[a,b] <=>
              f has_bounded_variation_on interval[a,c] /\
-             f has_bounded_variation_on interval[c,b])``,
+             f has_bounded_variation_on interval[c,b])
+Proof
   REPEAT STRIP_TAC THEN MP_TAC
    (ISPEC ``f:real->real`` OPERATIVE_LIFTED_VECTOR_VARIATION) THEN
   REWRITE_TAC[operative] THEN
@@ -18796,7 +19332,8 @@ val HAS_BOUNDED_VARIATION_ON_COMBINE = store_thm ("HAS_BOUNDED_VARIATION_ON_COMB
    [SIMP_TAC std_ss [EXTENSION, IN_INTER, IN_INTERVAL, GSPECIFICATION] THEN
     ASM_REAL_ARITH_TAC,
     REPEAT(COND_CASES_TAC THEN
-           ASM_SIMP_TAC std_ss [NOT_NONE_SOME, lifted])]);
+           ASM_SIMP_TAC std_ss [NOT_NONE_SOME, lifted])]
+QED
 
 Theorem VECTOR_VARIATION_COMBINE :
     !f:real->real a b c.
@@ -18820,12 +19357,13 @@ Proof
   RW_TAC real_ss [min_def, max_def] THEN ASM_REAL_ARITH_TAC
 QED
 
-val VECTOR_VARIATION_MINUS_FUNCTION_MONOTONE = store_thm ("VECTOR_VARIATION_MINUS_FUNCTION_MONOTONE",
- ``!f a b c d.
+Theorem VECTOR_VARIATION_MINUS_FUNCTION_MONOTONE:
+   !f a b c d.
         f has_bounded_variation_on interval[a,b] /\
         interval[c,d] SUBSET interval[a,b] /\ ~(interval[c,d] = {})
         ==> vector_variation (interval[c,d]) f - (f d - f c) <=
-            vector_variation (interval[a,b]) f - (f b - f a)``,
+            vector_variation (interval[a,b]) f - (f b - f a)
+Proof
   REWRITE_TAC[SUBSET_INTERVAL, GSYM INTERVAL_EQ_EMPTY, REAL_NOT_LT] THEN
   REPEAT STRIP_TAC THEN
   SUBGOAL_THEN
@@ -18850,16 +19388,18 @@ val VECTOR_VARIATION_MINUS_FUNCTION_MONOTONE = store_thm ("VECTOR_VARIATION_MINU
      HAS_BOUNDED_VARIATION_ON_SUBSET)) THEN
     REWRITE_TAC[SUBSET_INTERVAL] THEN ASM_REAL_ARITH_TAC,
     DISCH_TAC THEN ASM_REWRITE_TAC [] THEN POP_ASSUM K_TAC THEN
-    ASM_REAL_ARITH_TAC]);
+    ASM_REAL_ARITH_TAC]
+QED
 
-val HAS_BOUNDED_VARIATION_NONTRIVIAL = store_thm ("HAS_BOUNDED_VARIATION_NONTRIVIAL",
- ``!f:real->real s.
+Theorem HAS_BOUNDED_VARIATION_NONTRIVIAL:
+   !f:real->real s.
         f has_bounded_variation_on s <=>
         ?B. !d t.
                   d division_of t /\ t SUBSET s /\
                   (!k. k IN d ==> ~(interior k = {}))
                   ==> sum d (\k. abs(f(interval_upperbound k) -
-                                      f (interval_lowerbound k))) <= B``,
+                                      f (interval_lowerbound k))) <= B
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[has_bounded_variation_on] THEN
   REWRITE_TAC[has_bounded_setvariation_on] THEN
   AP_TERM_TAC THEN GEN_REWR_TAC I [FUN_EQ_THM] THEN
@@ -18894,13 +19434,15 @@ val HAS_BOUNDED_VARIATION_NONTRIVIAL = store_thm ("HAS_BOUNDED_VARIATION_NONTRIV
     SIMP_TAC std_ss [INTERVAL_LOWERBOUND_NONEMPTY, INTERVAL_UPPERBOUND_NONEMPTY] THEN
     SIMP_TAC std_ss [INTERIOR_INTERVAL, INTERVAL_NE_EMPTY] THEN
     SIMP_TAC std_ss [GSYM INTERVAL_EQ_EMPTY, AND_IMP_INTRO, GSYM CONJ_ASSOC] THEN
-    SIMP_TAC std_ss [REAL_LE_ANTISYM, REAL_SUB_REFL, ABS_0]]);
+    SIMP_TAC std_ss [REAL_LE_ANTISYM, REAL_SUB_REFL, ABS_0]]
+QED
 
-val INCREASING_BOUNDED_VARIATION_GEN = store_thm ("INCREASING_BOUNDED_VARIATION_GEN",
- ``!f s.
+Theorem INCREASING_BOUNDED_VARIATION_GEN:
+   !f s.
       bounded(IMAGE f s) /\
       (!x y. x IN s /\ y IN s /\ x <= y ==> (f x) <= (f y))
-       ==> f has_bounded_variation_on s``,
+       ==> f has_bounded_variation_on s
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[HAS_BOUNDED_VARIATION_NONTRIVIAL] THEN
   UNDISCH_TAC ``(bounded (IMAGE (f :real -> real) (s :real -> bool)) :bool)`` THEN
   DISCH_TAC THEN FIRST_X_ASSUM(MP_TAC o REWRITE_RULE [BOUNDED_POS]) THEN
@@ -18983,20 +19525,23 @@ val INCREASING_BOUNDED_VARIATION_GEN = store_thm ("INCREASING_BOUNDED_VARIATION_
     MATCH_MP_TAC(REAL_ARITH ``(abs(x) <= B /\ abs(y) <= B)
       ==> x - y <= &2 * B:real``) THEN
     CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
-    ASM_MESON_TAC[IN_NUMSEG, LESS_EQ_REFL, LE_1]]);
+    ASM_MESON_TAC[IN_NUMSEG, LESS_EQ_REFL, LE_1]]
+QED
 
-val DECREASING_BOUNDED_VARIATION_GEN = store_thm ("DECREASING_BOUNDED_VARIATION_GEN",
- ``!f s.
+Theorem DECREASING_BOUNDED_VARIATION_GEN:
+   !f s.
       bounded(IMAGE f s) /\
       (!x y. x IN s /\ y IN s /\ x <= y ==> (f y) <= (f x))
-       ==> f has_bounded_variation_on s``,
+       ==> f has_bounded_variation_on s
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(SPECL [``(\x. -x) o (f:real->real)``, ``s:real->bool``]
         INCREASING_BOUNDED_VARIATION_GEN) THEN
   ASM_SIMP_TAC std_ss [REAL_LE_NEG2] THEN
   ASM_SIMP_TAC std_ss [BOUNDED_NEGATIONS, IMAGE_COMPOSE] THEN
   DISCH_THEN(MP_TAC o MATCH_MP HAS_BOUNDED_VARIATION_ON_NEG) THEN
-  METIS_TAC[o_DEF, REAL_NEG_NEG, ETA_AX]);
+  METIS_TAC[o_DEF, REAL_NEG_NEG, ETA_AX]
+QED
 
 Theorem INCREASING_BOUNDED_VARIATION :
     !f a b.
@@ -19017,11 +19562,12 @@ Proof
   REAL_ASM_ARITH_TAC
 QED
 
-val DECREASING_BOUNDED_VARIATION = store_thm ("DECREASING_BOUNDED_VARIATION",
- ``!f a b.
+Theorem DECREASING_BOUNDED_VARIATION:
+   !f a b.
         (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ x <= y
                ==> (f y) <= (f x))
-         ==> f has_bounded_variation_on interval[a,b]``,
+         ==> f has_bounded_variation_on interval[a,b]
+Proof
   REPEAT GEN_TAC THEN
   GEN_REWR_TAC (LAND_CONV o BINDER_CONV o BINDER_CONV o RAND_CONV)
    [GSYM REAL_LE_NEG2] THEN
@@ -19030,14 +19576,16 @@ val DECREASING_BOUNDED_VARIATION = store_thm ("DECREASING_BOUNDED_VARIATION",
    [METIS [] ``-f x <= -f y <=> (\x. -f x) x <= (\y. -f y) y:real``] THEN
   DISCH_THEN(MP_TAC o MATCH_MP INCREASING_BOUNDED_VARIATION) THEN
   DISCH_THEN(MP_TAC o MATCH_MP HAS_BOUNDED_VARIATION_ON_NEG) THEN
-  SIMP_TAC std_ss [REAL_NEG_NEG] THEN METIS_TAC [ETA_AX]);
+  SIMP_TAC std_ss [REAL_NEG_NEG] THEN METIS_TAC [ETA_AX]
+QED
 
-val INCREASING_VECTOR_VARIATION = store_thm ("INCREASING_VECTOR_VARIATION",
- ``!f a b.
+Theorem INCREASING_VECTOR_VARIATION:
+   !f a b.
         ~(interval[a,b] = {}) /\
         (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ x <= y
                ==> (f x) <= (f y))
-        ==> (vector_variation (interval[a,b]) f = (f b) - (f a))``,
+        ==> (vector_variation (interval[a,b]) f = (f b) - (f a))
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[vector_variation] THEN
   REWRITE_TAC[SET_VARIATION_ON_INTERVAL] THEN
   SUBGOAL_THEN
@@ -19072,14 +19620,16 @@ val INCREASING_VECTOR_VARIATION = store_thm ("INCREASING_VECTOR_VARIATION",
   FIRST_X_ASSUM MATCH_MP_TAC THEN REWRITE_TAC[IN_INTERVAL] THEN
   SUBGOAL_THEN ``interval[u:real,v] SUBSET interval[a,b]`` MP_TAC THENL
    [ASM_MESON_TAC[division_of], REWRITE_TAC[SUBSET_INTERVAL]] THEN
-  ASM_REAL_ARITH_TAC);
+  ASM_REAL_ARITH_TAC
+QED
 
-val DECREASING_VECTOR_VARIATION = store_thm ("DECREASING_VECTOR_VARIATION",
- ``!f a b.
+Theorem DECREASING_VECTOR_VARIATION:
+   !f a b.
         ~(interval[a,b] = {}) /\
         (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ x <= y
                ==> (f y) <= (f x))
-        ==> (vector_variation (interval[a,b]) f = (f a) - (f b))``,
+        ==> (vector_variation (interval[a,b]) f = (f a) - (f b))
+Proof
   REPEAT GEN_TAC THEN GEN_REWR_TAC
    (LAND_CONV o RAND_CONV o BINDER_CONV o BINDER_CONV o RAND_CONV)
    [GSYM REAL_LE_NEG2] THEN
@@ -19088,43 +19638,51 @@ val DECREASING_VECTOR_VARIATION = store_thm ("DECREASING_VECTOR_VARIATION",
    [METIS [] ``-f x <= -f y <=> (\x. -f x) x <= (\y. -(f:real->real) y) y``] THEN
   DISCH_THEN(MP_TAC o MATCH_MP INCREASING_VECTOR_VARIATION) THEN
   SIMP_TAC std_ss [VECTOR_VARIATION_NEG] THEN
-  DISCH_TAC THEN REAL_ARITH_TAC);
+  DISCH_TAC THEN REAL_ARITH_TAC
+QED
 
-val HAS_BOUNDED_VARIATION_TRANSLATION2_EQ_AND_VECTOR_VARIATION_TRANSLATION2 = store_thm ("HAS_BOUNDED_VARIATION_TRANSLATION2_EQ_AND_VECTOR_VARIATION_TRANSLATION2",
- ``(!a f:real->real s.
+Theorem HAS_BOUNDED_VARIATION_TRANSLATION2_EQ_AND_VECTOR_VARIATION_TRANSLATION2:
+   (!a f:real->real s.
         (\x. f(a + x)) has_bounded_variation_on (IMAGE (\x. -a + x) s) <=>
         f has_bounded_variation_on s) /\
    (!a f:real->real s.
         vector_variation (IMAGE (\x. -a + x) s) (\x. f(a + x)) =
-        vector_variation s f)``,
+        vector_variation s f)
+Proof
   SIMP_TAC std_ss [GSYM FORALL_AND_THM] THEN X_GEN_TAC ``a:real`` THEN
   SIMP_TAC std_ss [FORALL_AND_THM] THEN
   ONCE_REWRITE_TAC [METIS [] ``(\x. f (a + x:real)) = (\x. f ((\x. (a + x)) x))``] THEN
   MATCH_MP_TAC VARIATION_EQUAL_LEMMA THEN
   SIMP_TAC std_ss [] THEN CONJ_TAC THENL [REAL_ARITH_TAC, ALL_TAC] THEN
-  SIMP_TAC std_ss [DIVISION_OF_TRANSLATION, GSYM INTERVAL_TRANSLATION]);
+  SIMP_TAC std_ss [DIVISION_OF_TRANSLATION, GSYM INTERVAL_TRANSLATION]
+QED
 
-val HAS_BOUNDED_VARIATION_TRANSLATION2_EQ = store_thm ("HAS_BOUNDED_VARIATION_TRANSLATION2_EQ",
- ``(!a f:real->real s.
+Theorem HAS_BOUNDED_VARIATION_TRANSLATION2_EQ:
+   (!a f:real->real s.
         (\x. f(a + x)) has_bounded_variation_on (IMAGE (\x. -a + x) s) <=>
-        f has_bounded_variation_on s)``,
-  REWRITE_TAC [HAS_BOUNDED_VARIATION_TRANSLATION2_EQ_AND_VECTOR_VARIATION_TRANSLATION2]);
+        f has_bounded_variation_on s)
+Proof
+  REWRITE_TAC [HAS_BOUNDED_VARIATION_TRANSLATION2_EQ_AND_VECTOR_VARIATION_TRANSLATION2]
+QED
 
-val VECTOR_VARIATION_TRANSLATION2 = store_thm ("VECTOR_VARIATION_TRANSLATION2",
- ``(!a f:real->real s.
+Theorem VECTOR_VARIATION_TRANSLATION2:
+   (!a f:real->real s.
         vector_variation (IMAGE (\x. -a + x) s) (\x. f(a + x)) =
-        vector_variation s f)``,
-  REWRITE_TAC [HAS_BOUNDED_VARIATION_TRANSLATION2_EQ_AND_VECTOR_VARIATION_TRANSLATION2]);
+        vector_variation s f)
+Proof
+  REWRITE_TAC [HAS_BOUNDED_VARIATION_TRANSLATION2_EQ_AND_VECTOR_VARIATION_TRANSLATION2]
+QED
 
-val HAS_BOUNDED_VARIATION_AFFINITY2_EQ_AND_VECTOR_VARIATION_AFFINITY2 = store_thm ("HAS_BOUNDED_VARIATION_AFFINITY2_EQ_AND_VECTOR_VARIATION_AFFINITY2",
- ``(!m c f:real->real s.
+Theorem HAS_BOUNDED_VARIATION_AFFINITY2_EQ_AND_VECTOR_VARIATION_AFFINITY2:
+   (!m c f:real->real s.
         (\x. f (m * x + c)) has_bounded_variation_on
         IMAGE (\x. inv m * x + -(inv m * c)) s <=>
         (m = &0) \/ f has_bounded_variation_on s) /\
    (!m c f:real->real s.
         vector_variation (IMAGE (\x. inv m * x + -(inv m * c)) s)
                          (\x. f (m * x + c)) =
-        if m = &0 then &0 else vector_variation s f)``,
+        if m = &0 then &0 else vector_variation s f)
+Proof
   SIMP_TAC std_ss [GSYM FORALL_AND_THM] THEN X_GEN_TAC ``m:real`` THEN
   SIMP_TAC std_ss [GSYM FORALL_AND_THM] THEN X_GEN_TAC ``c:real`` THEN
   ASM_CASES_TAC ``m = &0:real`` THEN ASM_SIMP_TAC std_ss [] THENL
@@ -19136,29 +19694,35 @@ val HAS_BOUNDED_VARIATION_AFFINITY2_EQ_AND_VECTOR_VARIATION_AFFINITY2 = store_th
     ASM_SIMP_TAC std_ss [SIMP_RULE std_ss [FUN_EQ_THM, o_DEF] AFFINITY_INVERSES] THEN
     ASM_SIMP_TAC std_ss [IMAGE_AFFINITY_INTERVAL] THEN
     ASM_SIMP_TAC real_ss [DIVISION_OF_AFFINITY, REAL_INV_EQ_0] THEN
-    METIS_TAC[]]);
+    METIS_TAC[]]
+QED
 
-val HAS_BOUNDED_VARIATION_AFFINITY2_EQ = store_thm ("HAS_BOUNDED_VARIATION_AFFINITY2_EQ",
- ``(!m c f:real->real s.
+Theorem HAS_BOUNDED_VARIATION_AFFINITY2_EQ:
+   (!m c f:real->real s.
         (\x. f (m * x + c)) has_bounded_variation_on
         IMAGE (\x. inv m * x + -(inv m * c)) s <=>
-        (m = &0) \/ f has_bounded_variation_on s)``,
-  REWRITE_TAC [HAS_BOUNDED_VARIATION_AFFINITY2_EQ_AND_VECTOR_VARIATION_AFFINITY2]);
+        (m = &0) \/ f has_bounded_variation_on s)
+Proof
+  REWRITE_TAC [HAS_BOUNDED_VARIATION_AFFINITY2_EQ_AND_VECTOR_VARIATION_AFFINITY2]
+QED
 
-val VECTOR_VARIATION_AFFINITY2 = store_thm ("VECTOR_VARIATION_AFFINITY2",
- `` (!m c f:real->real s.
+Theorem VECTOR_VARIATION_AFFINITY2:
+    (!m c f:real->real s.
         vector_variation (IMAGE (\x. inv m * x + -(inv m * c)) s)
                          (\x. f (m * x + c)) =
-        if m = &0 then &0 else vector_variation s f)``,
-  REWRITE_TAC [HAS_BOUNDED_VARIATION_AFFINITY2_EQ_AND_VECTOR_VARIATION_AFFINITY2]);
+        if m = &0 then &0 else vector_variation s f)
+Proof
+  REWRITE_TAC [HAS_BOUNDED_VARIATION_AFFINITY2_EQ_AND_VECTOR_VARIATION_AFFINITY2]
+QED
 
-val HAS_BOUNDED_VARIATION_AFFINITY_EQ_AND_VECTOR_VARIATION_AFFINITY = store_thm ("HAS_BOUNDED_VARIATION_AFFINITY_EQ_AND_VECTOR_VARIATION_AFFINITY",
- ``(!m c f:real->real s.
+Theorem HAS_BOUNDED_VARIATION_AFFINITY_EQ_AND_VECTOR_VARIATION_AFFINITY:
+   (!m c f:real->real s.
         (\x. f(m * x + c)) has_bounded_variation_on s <=>
         (m = &0) \/ f has_bounded_variation_on (IMAGE (\x. m * x + c) s)) /\
    (!m c f:real->real s.
         vector_variation s (\x. f(m * x + c)) =
-        if m = &0 then &0 else vector_variation (IMAGE (\x. m * x + c) s) f)``,
+        if m = &0 then &0 else vector_variation (IMAGE (\x. m * x + c) s) f)
+Proof
   SIMP_TAC std_ss [GSYM FORALL_AND_THM] THEN REPEAT GEN_TAC THEN
   ASM_CASES_TAC ``m = &0:real`` THEN
   ASM_SIMP_TAC real_ss [REAL_MUL_LZERO, HAS_BOUNDED_VARIATION_ON_CONST,
@@ -19170,27 +19734,33 @@ val HAS_BOUNDED_VARIATION_AFFINITY_EQ_AND_VECTOR_VARIATION_AFFINITY = store_thm 
     MP_TAC(ISPECL[``m:real``, ``c:real``, ``f:real->real``,
                   ``IMAGE (\x:real. m * x + c) s``]
           VECTOR_VARIATION_AFFINITY2)] THEN
-  ASM_SIMP_TAC std_ss [AFFINITY_INVERSES, GSYM IMAGE_COMPOSE, IMAGE_ID]);
+  ASM_SIMP_TAC std_ss [AFFINITY_INVERSES, GSYM IMAGE_COMPOSE, IMAGE_ID]
+QED
 
-val HAS_BOUNDED_VARIATION_AFFINITY_EQ = store_thm ("HAS_BOUNDED_VARIATION_AFFINITY_EQ",
- ``(!m c f:real->real s.
+Theorem HAS_BOUNDED_VARIATION_AFFINITY_EQ:
+   (!m c f:real->real s.
         (\x. f(m * x + c)) has_bounded_variation_on s <=>
-        (m = &0) \/ f has_bounded_variation_on (IMAGE (\x. m * x + c) s))``,
-  REWRITE_TAC [HAS_BOUNDED_VARIATION_AFFINITY_EQ_AND_VECTOR_VARIATION_AFFINITY]);
+        (m = &0) \/ f has_bounded_variation_on (IMAGE (\x. m * x + c) s))
+Proof
+  REWRITE_TAC [HAS_BOUNDED_VARIATION_AFFINITY_EQ_AND_VECTOR_VARIATION_AFFINITY]
+QED
 
-val VECTOR_VARIATION_AFFINITY = store_thm ("VECTOR_VARIATION_AFFINITY",
- ``(!m c f:real->real s.
+Theorem VECTOR_VARIATION_AFFINITY:
+   (!m c f:real->real s.
         vector_variation s (\x. f(m * x + c)) =
-        if m = &0 then &0 else vector_variation (IMAGE (\x. m * x + c) s) f)``,
-  REWRITE_TAC [HAS_BOUNDED_VARIATION_AFFINITY_EQ_AND_VECTOR_VARIATION_AFFINITY]);
+        if m = &0 then &0 else vector_variation (IMAGE (\x. m * x + c) s) f)
+Proof
+  REWRITE_TAC [HAS_BOUNDED_VARIATION_AFFINITY_EQ_AND_VECTOR_VARIATION_AFFINITY]
+QED
 
-val HAS_BOUNDED_VARIATION_TRANSLATION_EQ_AND_VECTOR_VARIATION_TRANSLATION = store_thm ("HAS_BOUNDED_VARIATION_TRANSLATION_EQ_AND_VECTOR_VARIATION_TRANSLATION",
- ``(!a f:real->real s.
+Theorem HAS_BOUNDED_VARIATION_TRANSLATION_EQ_AND_VECTOR_VARIATION_TRANSLATION:
+   (!a f:real->real s.
         (\x. f(a + x)) has_bounded_variation_on s <=>
         f has_bounded_variation_on (IMAGE (\x. a + x) s)) /\
    (!a f:real->real s.
         vector_variation s (\x. f(a + x)) =
-        vector_variation (IMAGE (\x. a + x) s) f)``,
+        vector_variation (IMAGE (\x. a + x) s) f)
+Proof
   REPEAT STRIP_TAC THENL
    [MP_TAC(ISPECL[``a:real``, ``f:real->real``, ``IMAGE (\x:real. a + x) s``]
           HAS_BOUNDED_VARIATION_TRANSLATION2_EQ),
@@ -19198,128 +19768,160 @@ val HAS_BOUNDED_VARIATION_TRANSLATION_EQ_AND_VECTOR_VARIATION_TRANSLATION = stor
           VECTOR_VARIATION_TRANSLATION2)] THEN
   SIMP_TAC std_ss [GSYM IMAGE_COMPOSE, o_DEF] THEN
   SIMP_TAC real_ss [IMAGE_ID, REAL_ARITH ``-a + (a + x):real = x``,
-              REAL_ARITH ``a + -a + x:real = x``]);
+              REAL_ARITH ``a + -a + x:real = x``]
+QED
 
-val HAS_BOUNDED_VARIATION_TRANSLATION_EQ = store_thm ("HAS_BOUNDED_VARIATION_TRANSLATION_EQ",
- ``(!a f:real->real s.
+Theorem HAS_BOUNDED_VARIATION_TRANSLATION_EQ:
+   (!a f:real->real s.
         (\x. f(a + x)) has_bounded_variation_on s <=>
-        f has_bounded_variation_on (IMAGE (\x. a + x) s))``,
-  REWRITE_TAC [HAS_BOUNDED_VARIATION_TRANSLATION_EQ_AND_VECTOR_VARIATION_TRANSLATION]);
+        f has_bounded_variation_on (IMAGE (\x. a + x) s))
+Proof
+  REWRITE_TAC [HAS_BOUNDED_VARIATION_TRANSLATION_EQ_AND_VECTOR_VARIATION_TRANSLATION]
+QED
 
-val VECTOR_VARIATION_TRANSLATION = store_thm ("VECTOR_VARIATION_TRANSLATION",
- ``(!a f:real->real s.
+Theorem VECTOR_VARIATION_TRANSLATION:
+   (!a f:real->real s.
         vector_variation s (\x. f(a + x)) =
-        vector_variation (IMAGE (\x. a + x) s) f)``,
-  REWRITE_TAC [HAS_BOUNDED_VARIATION_TRANSLATION_EQ_AND_VECTOR_VARIATION_TRANSLATION]);
+        vector_variation (IMAGE (\x. a + x) s) f)
+Proof
+  REWRITE_TAC [HAS_BOUNDED_VARIATION_TRANSLATION_EQ_AND_VECTOR_VARIATION_TRANSLATION]
+QED
 
-val HAS_BOUNDED_VARIATION_TRANSLATION_EQ_INTERVAL_AND_VECTOR_VARIATION_TRANSLATION_INTERVAL = store_thm ("HAS_BOUNDED_VARIATION_TRANSLATION_EQ_INTERVAL_AND_VECTOR_VARIATION_TRANSLATION_INTERVAL",
- ``(!a f:real->real u v.
+Theorem HAS_BOUNDED_VARIATION_TRANSLATION_EQ_INTERVAL_AND_VECTOR_VARIATION_TRANSLATION_INTERVAL:
+   (!a f:real->real u v.
         (\x. f(a + x)) has_bounded_variation_on interval[u,v] <=>
         f has_bounded_variation_on interval[a+u,a+v]) /\
    (!a f:real->real u v.
         vector_variation (interval[u,v]) (\x. f(a + x)) =
-        vector_variation (interval[a+u,a+v]) f)``,
+        vector_variation (interval[a+u,a+v]) f)
+Proof
   SIMP_TAC std_ss [INTERVAL_TRANSLATION, HAS_BOUNDED_VARIATION_TRANSLATION_EQ,
-              VECTOR_VARIATION_TRANSLATION]);
+              VECTOR_VARIATION_TRANSLATION]
+QED
 
-val HAS_BOUNDED_VARIATION_TRANSLATION_EQ_INTERVAL = store_thm ("HAS_BOUNDED_VARIATION_TRANSLATION_EQ_INTERVAL",
- ``(!a f:real->real u v.
+Theorem HAS_BOUNDED_VARIATION_TRANSLATION_EQ_INTERVAL:
+   (!a f:real->real u v.
         (\x. f(a + x)) has_bounded_variation_on interval[u,v] <=>
-        f has_bounded_variation_on interval[a+u,a+v])``,
- REWRITE_TAC [HAS_BOUNDED_VARIATION_TRANSLATION_EQ_INTERVAL_AND_VECTOR_VARIATION_TRANSLATION_INTERVAL]);
+        f has_bounded_variation_on interval[a+u,a+v])
+Proof
+ REWRITE_TAC [HAS_BOUNDED_VARIATION_TRANSLATION_EQ_INTERVAL_AND_VECTOR_VARIATION_TRANSLATION_INTERVAL]
+QED
 
-val VECTOR_VARIATION_TRANSLATION_INTERVAL = store_thm ("VECTOR_VARIATION_TRANSLATION_INTERVAL",
- ``(!a f:real->real u v.
+Theorem VECTOR_VARIATION_TRANSLATION_INTERVAL:
+   (!a f:real->real u v.
         vector_variation (interval[u,v]) (\x. f(a + x)) =
-        vector_variation (interval[a+u,a+v]) f)``,
- REWRITE_TAC [HAS_BOUNDED_VARIATION_TRANSLATION_EQ_INTERVAL_AND_VECTOR_VARIATION_TRANSLATION_INTERVAL]);
+        vector_variation (interval[a+u,a+v]) f)
+Proof
+ REWRITE_TAC [HAS_BOUNDED_VARIATION_TRANSLATION_EQ_INTERVAL_AND_VECTOR_VARIATION_TRANSLATION_INTERVAL]
+QED
 
-val HAS_BOUNDED_VARIATION_TRANSLATION = store_thm ("HAS_BOUNDED_VARIATION_TRANSLATION",
- ``!f:real->real s a.
+Theorem HAS_BOUNDED_VARIATION_TRANSLATION:
+   !f:real->real s a.
         f has_bounded_variation_on s
-        ==> (\x. f(a + x)) has_bounded_variation_on (IMAGE (\x. -a + x) s)``,
-  REWRITE_TAC[HAS_BOUNDED_VARIATION_TRANSLATION2_EQ]);
+        ==> (\x. f(a + x)) has_bounded_variation_on (IMAGE (\x. -a + x) s)
+Proof
+  REWRITE_TAC[HAS_BOUNDED_VARIATION_TRANSLATION2_EQ]
+QED
 
-val HAS_BOUNDED_VARIATION_REFLECT2_EQ_AND_VECTOR_VARIATION_REFLECT2 = store_thm ("HAS_BOUNDED_VARIATION_REFLECT2_EQ_AND_VECTOR_VARIATION_REFLECT2",
- ``(!f:real->real s.
+Theorem HAS_BOUNDED_VARIATION_REFLECT2_EQ_AND_VECTOR_VARIATION_REFLECT2:
+   (!f:real->real s.
         (\x. f(-x)) has_bounded_variation_on (IMAGE (\x. -x) s) <=>
         f has_bounded_variation_on s) /\
    (!f:real->real s.
         vector_variation (IMAGE (\x. -x) s) (\x. f(-x)) =
-        vector_variation s f)``,
+        vector_variation s f)
+Proof
   MATCH_MP_TAC VARIATION_EQUAL_LEMMA THEN
   SIMP_TAC std_ss [] THEN CONJ_TAC THENL [REAL_ARITH_TAC, ALL_TAC] THEN
-  METIS_TAC [DIVISION_OF_REFLECT, REFLECT_INTERVAL]);
+  METIS_TAC [DIVISION_OF_REFLECT, REFLECT_INTERVAL]
+QED
 
-val HAS_BOUNDED_VARIATION_REFLECT2_EQ = store_thm ("HAS_BOUNDED_VARIATION_REFLECT2_EQ",
- ``(!f:real->real s.
+Theorem HAS_BOUNDED_VARIATION_REFLECT2_EQ:
+   (!f:real->real s.
         (\x. f(-x)) has_bounded_variation_on (IMAGE (\x. -x) s) <=>
-        f has_bounded_variation_on s)``,
-  REWRITE_TAC [HAS_BOUNDED_VARIATION_REFLECT2_EQ_AND_VECTOR_VARIATION_REFLECT2]);
+        f has_bounded_variation_on s)
+Proof
+  REWRITE_TAC [HAS_BOUNDED_VARIATION_REFLECT2_EQ_AND_VECTOR_VARIATION_REFLECT2]
+QED
 
-val VECTOR_VARIATION_REFLECT2 = store_thm ("VECTOR_VARIATION_REFLECT2",
- ``(!f:real->real s.
+Theorem VECTOR_VARIATION_REFLECT2:
+   (!f:real->real s.
         vector_variation (IMAGE (\x. -x) s) (\x. f(-x)) =
-        vector_variation s f)``,
-  REWRITE_TAC [HAS_BOUNDED_VARIATION_REFLECT2_EQ_AND_VECTOR_VARIATION_REFLECT2]);
+        vector_variation s f)
+Proof
+  REWRITE_TAC [HAS_BOUNDED_VARIATION_REFLECT2_EQ_AND_VECTOR_VARIATION_REFLECT2]
+QED
 
-val HAS_BOUNDED_VARIATION_REFLECT_EQ_AND_VECTOR_VARIATION_REFLECT = store_thm ("HAS_BOUNDED_VARIATION_REFLECT_EQ_AND_VECTOR_VARIATION_REFLECT",
- ``(!f:real->real s.
+Theorem HAS_BOUNDED_VARIATION_REFLECT_EQ_AND_VECTOR_VARIATION_REFLECT:
+   (!f:real->real s.
         (\x. f(-x)) has_bounded_variation_on s <=>
         f has_bounded_variation_on (IMAGE (\x. -x) s)) /\
    (!f:real->real s.
         vector_variation s (\x. f(-x)) =
-        vector_variation (IMAGE (\x. -x) s) f)``,
+        vector_variation (IMAGE (\x. -x) s) f)
+Proof
   REPEAT STRIP_TAC THENL
    [MP_TAC(ISPECL[``f:real->real``, ``IMAGE (\x. -x) (s:real->bool)``]
           HAS_BOUNDED_VARIATION_REFLECT2_EQ),
     MP_TAC(ISPECL[``f:real->real``, ``IMAGE (\x. -x) (s:real->bool)``]
           VECTOR_VARIATION_REFLECT2)] THEN
   SIMP_TAC std_ss [GSYM IMAGE_COMPOSE, o_DEF] THEN
-  REWRITE_TAC[IMAGE_ID, REAL_NEG_NEG]);
+  REWRITE_TAC[IMAGE_ID, REAL_NEG_NEG]
+QED
 
-val HAS_BOUNDED_VARIATION_REFLECT_EQ = store_thm ("HAS_BOUNDED_VARIATION_REFLECT_EQ",
- ``(!f:real->real s.
+Theorem HAS_BOUNDED_VARIATION_REFLECT_EQ:
+   (!f:real->real s.
         (\x. f(-x)) has_bounded_variation_on s <=>
-        f has_bounded_variation_on (IMAGE (\x. -x) s))``,
-  REWRITE_TAC [HAS_BOUNDED_VARIATION_REFLECT_EQ_AND_VECTOR_VARIATION_REFLECT]);
+        f has_bounded_variation_on (IMAGE (\x. -x) s))
+Proof
+  REWRITE_TAC [HAS_BOUNDED_VARIATION_REFLECT_EQ_AND_VECTOR_VARIATION_REFLECT]
+QED
 
-val VECTOR_VARIATION_REFLECT = store_thm ("VECTOR_VARIATION_REFLECT",
- ``(!f:real->real s.
+Theorem VECTOR_VARIATION_REFLECT:
+   (!f:real->real s.
         vector_variation s (\x. f(-x)) =
-        vector_variation (IMAGE (\x. -x) s) f)``,
-  REWRITE_TAC [HAS_BOUNDED_VARIATION_REFLECT_EQ_AND_VECTOR_VARIATION_REFLECT]);
+        vector_variation (IMAGE (\x. -x) s) f)
+Proof
+  REWRITE_TAC [HAS_BOUNDED_VARIATION_REFLECT_EQ_AND_VECTOR_VARIATION_REFLECT]
+QED
 
-val HAS_BOUNDED_VARIATION_REFLECT_EQ_INTERVAL_AND_VECTOR_VARIATION_REFLECT_INTERVAL = store_thm ("HAS_BOUNDED_VARIATION_REFLECT_EQ_INTERVAL_AND_VECTOR_VARIATION_REFLECT_INTERVAL",
- ``(!f:real->real u v.
+Theorem HAS_BOUNDED_VARIATION_REFLECT_EQ_INTERVAL_AND_VECTOR_VARIATION_REFLECT_INTERVAL:
+   (!f:real->real u v.
         (\x. f(-x)) has_bounded_variation_on interval[u,v] <=>
         f has_bounded_variation_on interval[-v,-u]) /\
    (!f:real->real u v.
         vector_variation (interval[u,v]) (\x. f(-x)) =
-        vector_variation (interval[-v,-u]) f)``,
+        vector_variation (interval[-v,-u]) f)
+Proof
   SIMP_TAC std_ss [GSYM REFLECT_INTERVAL, HAS_BOUNDED_VARIATION_REFLECT_EQ,
-              VECTOR_VARIATION_REFLECT]);
+              VECTOR_VARIATION_REFLECT]
+QED
 
-val HAS_BOUNDED_VARIATION_REFLECT_EQ_INTERVAL = store_thm ("HAS_BOUNDED_VARIATION_REFLECT_EQ_INTERVAL",
- ``(!f:real->real u v.
+Theorem HAS_BOUNDED_VARIATION_REFLECT_EQ_INTERVAL:
+   (!f:real->real u v.
         (\x. f(-x)) has_bounded_variation_on interval[u,v] <=>
-        f has_bounded_variation_on interval[-v,-u])``,
- REWRITE_TAC [HAS_BOUNDED_VARIATION_REFLECT_EQ_INTERVAL_AND_VECTOR_VARIATION_REFLECT_INTERVAL]);
+        f has_bounded_variation_on interval[-v,-u])
+Proof
+ REWRITE_TAC [HAS_BOUNDED_VARIATION_REFLECT_EQ_INTERVAL_AND_VECTOR_VARIATION_REFLECT_INTERVAL]
+QED
 
-val VECTOR_VARIATION_REFLECT_INTERVAL = store_thm ("VECTOR_VARIATION_REFLECT_INTERVAL",
- ``(!f:real->real u v.
+Theorem VECTOR_VARIATION_REFLECT_INTERVAL:
+   (!f:real->real u v.
         vector_variation (interval[u,v]) (\x. f(-x)) =
-        vector_variation (interval[-v,-u]) f)``,
- REWRITE_TAC [HAS_BOUNDED_VARIATION_REFLECT_EQ_INTERVAL_AND_VECTOR_VARIATION_REFLECT_INTERVAL]);
+        vector_variation (interval[-v,-u]) f)
+Proof
+ REWRITE_TAC [HAS_BOUNDED_VARIATION_REFLECT_EQ_INTERVAL_AND_VECTOR_VARIATION_REFLECT_INTERVAL]
+QED
 
-val HAS_BOUNDED_VARIATION_DARBOUX = store_thm ("HAS_BOUNDED_VARIATION_DARBOUX",
- ``!f a b.
+Theorem HAS_BOUNDED_VARIATION_DARBOUX:
+   !f a b.
      f has_bounded_variation_on interval[a,b] <=>
      ?g h. (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ x <= y
                   ==> (g x) <= (g y)) /\
            (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ x <= y
                   ==> (h x) <= (h y)) /\
-           (!x. f x = g x - h x)``,
+           (!x. f x = g x - h x)
+Proof
   REPEAT GEN_TAC THEN EQ_TAC THEN STRIP_TAC THENL
    [MAP_EVERY EXISTS_TAC
      [``\x:real. (vector_variation (interval[a,x]) (f:real->real))``,
@@ -19342,16 +19944,18 @@ val HAS_BOUNDED_VARIATION_DARBOUX = store_thm ("HAS_BOUNDED_VARIATION_DARBOUX",
     GEN_REWR_TAC LAND_CONV [GSYM ETA_AX] THEN ASM_REWRITE_TAC[] THEN
     MATCH_MP_TAC HAS_BOUNDED_VARIATION_ON_SUB THEN
     CONJ_TAC THEN MATCH_MP_TAC INCREASING_BOUNDED_VARIATION THEN
-    ASM_REWRITE_TAC[]]);
+    ASM_REWRITE_TAC[]]
+QED
 
-val HAS_BOUNDED_VARIATION_DARBOUX_STRICT = store_thm ("HAS_BOUNDED_VARIATION_DARBOUX_STRICT",
- ``!f a b.
+Theorem HAS_BOUNDED_VARIATION_DARBOUX_STRICT:
+   !f a b.
      f has_bounded_variation_on interval[a,b] <=>
      ?g h. (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ x < y
                   ==> (g x) < (g y)) /\
            (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ x < y
                   ==> (h x) < (h y)) /\
-           (!x. f x = g x - h x)``,
+           (!x. f x = g x - h x)
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[HAS_BOUNDED_VARIATION_DARBOUX] THEN
   EQ_TAC THEN SIMP_TAC std_ss [LEFT_IMP_EXISTS_THM] THEN
   MAP_EVERY X_GEN_TAC [``g:real->real``, ``h:real->real``] THEN
@@ -19362,14 +19966,16 @@ val HAS_BOUNDED_VARIATION_DARBOUX_STRICT = store_thm ("HAS_BOUNDED_VARIATION_DAR
     MATCH_MP_TAC REAL_LET_ADD2 THEN ASM_REWRITE_TAC[] THEN
     FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_SIMP_TAC std_ss [REAL_LT_IMP_LE],
     MAP_EVERY EXISTS_TAC [``g:real->real``, ``h:real->real``] THEN
-    ASM_REWRITE_TAC[REAL_LE_LT] THEN ASM_MESON_TAC[]]);
+    ASM_REWRITE_TAC[REAL_LE_LT] THEN ASM_MESON_TAC[]]
+QED
 
-val HAS_BOUNDED_VARIATION_COMPOSE_INCREASING = store_thm ("HAS_BOUNDED_VARIATION_COMPOSE_INCREASING",
- ``!f g:real->real a b.
+Theorem HAS_BOUNDED_VARIATION_COMPOSE_INCREASING:
+   !f g:real->real a b.
         (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ x <= y
                ==> (f x) <= (f y)) /\
         g has_bounded_variation_on interval[f a,f b]
-        ==> (g o f) has_bounded_variation_on interval[a,b]``,
+        ==> (g o f) has_bounded_variation_on interval[a,b]
+Proof
   REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
   ONCE_REWRITE_TAC[HAS_BOUNDED_VARIATION_ON_COMPONENTWISE] THEN
   ASM_SIMP_TAC std_ss [HAS_BOUNDED_VARIATION_DARBOUX, LEFT_IMP_EXISTS_THM] THEN
@@ -19385,12 +19991,14 @@ val HAS_BOUNDED_VARIATION_COMPOSE_INCREASING = store_thm ("HAS_BOUNDED_VARIATION
   FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN
   RULE_ASSUM_TAC(REWRITE_RULE[IN_INTERVAL]) THEN ASM_REWRITE_TAC[] THEN
   REWRITE_TAC[IN_INTERVAL] THEN POP_ASSUM MP_TAC THEN
-  POP_ASSUM MP_TAC THEN POP_ASSUM MP_TAC THEN REAL_ARITH_TAC);
+  POP_ASSUM MP_TAC THEN POP_ASSUM MP_TAC THEN REAL_ARITH_TAC
+QED
 
-val HAS_BOUNDED_VARIATION_ON_REFLECT = store_thm ("HAS_BOUNDED_VARIATION_ON_REFLECT",
- ``!f:real->real s.
+Theorem HAS_BOUNDED_VARIATION_ON_REFLECT:
+   !f:real->real s.
         f has_bounded_variation_on IMAGE (\x. -x) s
-        ==> (\x. f(-x)) has_bounded_variation_on s``,
+        ==> (\x. f(-x)) has_bounded_variation_on s
+Proof
   REPEAT GEN_TAC THEN
   REWRITE_TAC[has_bounded_variation_on] THEN
   REWRITE_TAC[has_bounded_setvariation_on] THEN
@@ -19422,21 +20030,25 @@ val HAS_BOUNDED_VARIATION_ON_REFLECT = store_thm ("HAS_BOUNDED_VARIATION_ON_REFL
     ASM_SIMP_TAC std_ss [o_THM, REFLECT_INTERVAL] THEN
     ASM_SIMP_TAC std_ss [INTERVAL_UPPERBOUND, INTERVAL_LOWERBOUND,
                  REAL_LE_NEG2] THEN
-    REAL_ARITH_TAC]);
+    REAL_ARITH_TAC]
+QED
 
-val HAS_BOUNDED_VARIATION_ON_REFLECT_INTERVAL = store_thm ("HAS_BOUNDED_VARIATION_ON_REFLECT_INTERVAL",
- ``!f:real->real a b.
+Theorem HAS_BOUNDED_VARIATION_ON_REFLECT_INTERVAL:
+   !f:real->real a b.
         f has_bounded_variation_on interval[-b,-a]
-        ==> (\x. f(-x)) has_bounded_variation_on interval[a,b]``,
+        ==> (\x. f(-x)) has_bounded_variation_on interval[a,b]
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC HAS_BOUNDED_VARIATION_ON_REFLECT THEN
-  ASM_REWRITE_TAC[REFLECT_INTERVAL]);
+  ASM_REWRITE_TAC[REFLECT_INTERVAL]
+QED
 
-val HAS_BOUNDED_VARIATION_COMPOSE_DECREASING = store_thm ("HAS_BOUNDED_VARIATION_COMPOSE_DECREASING",
- ``!f g:real->real a b.
+Theorem HAS_BOUNDED_VARIATION_COMPOSE_DECREASING:
+   !f g:real->real a b.
         (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ x <= y
                ==> (f y) <= (f x)) /\
         g has_bounded_variation_on interval[f b,f a]
-        ==> (g o f) has_bounded_variation_on interval[a,b]``,
+        ==> (g o f) has_bounded_variation_on interval[a,b]
+Proof
   REPEAT GEN_TAC THEN
   DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
   DISCH_THEN(MP_TAC o MATCH_MP (REWRITE_RULE[REAL_NEG_NEG]
@@ -19450,19 +20062,23 @@ val HAS_BOUNDED_VARIATION_COMPOSE_DECREASING = store_thm ("HAS_BOUNDED_VARIATION
   ONCE_REWRITE_TAC [METIS [] ``interval [(-f a,-f b:real)] =
                                interval [((\x. -f x) a,(\x. -f x) b)]``] THEN
   DISCH_THEN(MP_TAC o MATCH_MP HAS_BOUNDED_VARIATION_COMPOSE_INCREASING) THEN
-  SIMP_TAC std_ss [o_DEF, REAL_NEG_NEG]);
+  SIMP_TAC std_ss [o_DEF, REAL_NEG_NEG]
+QED
 
-val HAS_BOUNDED_VARIATION_ON_ID = store_thm ("HAS_BOUNDED_VARIATION_ON_ID",
- ``!a b. (\x. x) has_bounded_variation_on interval[a,b]``,
+Theorem HAS_BOUNDED_VARIATION_ON_ID:
+   !a b. (\x. x) has_bounded_variation_on interval[a,b]
+Proof
   REPEAT GEN_TAC THEN MATCH_MP_TAC INCREASING_BOUNDED_VARIATION THEN
-  SIMP_TAC std_ss []);
+  SIMP_TAC std_ss []
+QED
 
-val HAS_BOUNDED_VARIATION_ON_COMBINE_GEN = store_thm ("HAS_BOUNDED_VARIATION_ON_COMBINE_GEN",
- ``!f:real->real s a.
+Theorem HAS_BOUNDED_VARIATION_ON_COMBINE_GEN:
+   !f:real->real s a.
         is_interval s
         ==> (f has_bounded_variation_on s <=>
              f has_bounded_variation_on {x | x IN s /\ x <= a} /\
-             f has_bounded_variation_on {x | x IN s /\ x >= a})``,
+             f has_bounded_variation_on {x | x IN s /\ x >= a})
+Proof
   REPEAT STRIP_TAC THEN EQ_TAC THENL
    [DISCH_THEN(fn th => CONJ_TAC THEN MP_TAC th) THEN
     MATCH_MP_TAC(SIMP_RULE std_ss [IMP_CONJ_ALT]
@@ -19605,12 +20221,14 @@ val HAS_BOUNDED_VARIATION_ON_COMBINE_GEN = store_thm ("HAS_BOUNDED_VARIATION_ON_
     ASM_MESON_TAC[division_of, SUBSET_DEF, ENDS_IN_INTERVAL],
     ASM_SIMP_TAC std_ss [REAL_MUL_ASSOC, REAL_LE_RMUL] THEN
     REWRITE_TAC[REAL_ARITH ``x * &2 <= &4 <=> x <= &2:real``] THEN
-    ASM_REWRITE_TAC[REAL_OF_NUM_LE]]);
+    ASM_REWRITE_TAC[REAL_OF_NUM_LE]]
+QED
 
-val HAS_BOUNDED_VARIATION_ON_CLOSURE = store_thm ("HAS_BOUNDED_VARIATION_ON_CLOSURE",
- ``!f:real->real s.
+Theorem HAS_BOUNDED_VARIATION_ON_CLOSURE:
+   !f:real->real s.
         is_interval s /\ f has_bounded_variation_on s
-        ==> f has_bounded_variation_on (closure s)``,
+        ==> f has_bounded_variation_on (closure s)
+Proof
   REPEAT STRIP_TAC THEN
   FIRST_ASSUM(STRIP_ASSUME_TAC o MATCH_MP CARD_FRONTIER_INTERVAL) THEN
   SUBGOAL_THEN ``bounded (IMAGE (f:real->real) (closure (s:real->bool)))`` MP_TAC THENL
@@ -19735,10 +20353,12 @@ val HAS_BOUNDED_VARIATION_ON_CLOSURE = store_thm ("HAS_BOUNDED_VARIATION_ON_CLOS
           SUBST1_TAC(METIS [EXP_1] `` 2n = 2 EXP 1``) THEN
           REPEAT STRIP_TAC THEN SIMP_TAC std_ss [] THEN
           SUBST1_TAC(METIS [EXP_1] `` 2n = 2 EXP 1``) THEN
-          MATCH_MP_TAC DIVISION_COMMON_POINT_BOUND THEN METIS_TAC[]]]]]);
+          MATCH_MP_TAC DIVISION_COMMON_POINT_BOUND THEN METIS_TAC[]]]]]
+QED
 
-val HAS_BOUNDED_VARIATION_ON_SING = store_thm ("HAS_BOUNDED_VARIATION_ON_SING",
- ``!f a. f has_bounded_variation_on {a}``,
+Theorem HAS_BOUNDED_VARIATION_ON_SING:
+   !f a. f has_bounded_variation_on {a}
+Proof
   REWRITE_TAC[has_bounded_variation_on, has_bounded_setvariation_on,
               REWRITE_RULE[INTERVAL_SING] DIVISION_OF_SING] THEN
   REPEAT GEN_TAC THEN EXISTS_TAC ``&0:real`` THEN
@@ -19753,14 +20373,16 @@ val HAS_BOUNDED_VARIATION_ON_SING = store_thm ("HAS_BOUNDED_VARIATION_ON_SING",
    [REWRITE_TAC[INTERVAL_SING] THEN ASM_MESON_TAC[division_of, SUBSET_DEF],
     REWRITE_TAC[SUBSET_INTERVAL] THEN
     FIRST_X_ASSUM(MP_TAC o REWRITE_RULE [INTERVAL_NE_EMPTY]) THEN
-    REAL_ARITH_TAC]);
+    REAL_ARITH_TAC]
+QED
 
-val INCREASING_LEFT_LIMIT = store_thm ("INCREASING_LEFT_LIMIT",
- ``!f a b c.
+Theorem INCREASING_LEFT_LIMIT:
+   !f a b c.
         (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ x <= y
                ==> (f x) <= (f y)) /\
         c IN interval[a,b]
-       ==> ?l. (f --> l) (at c within interval[a,c])``,
+       ==> ?l. (f --> l) (at c within interval[a,c])
+Proof
   REPEAT STRIP_TAC THEN EXISTS_TAC
    ``(sup {(f x) | x IN interval[a,b] /\ x < c})`` THEN
   ONCE_REWRITE_TAC [METIS [] ``{f x | x IN interval [(a,b)] /\ x < c} =
@@ -19809,28 +20431,32 @@ val INCREASING_LEFT_LIMIT = store_thm ("INCREASING_LEFT_LIMIT",
                     REAL_ARITH_TAC, ALL_TAC] THEN
     X_GEN_TAC ``x:real`` THEN STRIP_TAC THEN
     FIRST_X_ASSUM(MP_TAC o SPECL [``d:real``, ``x:real``]) THEN
-    FIRST_X_ASSUM(MP_TAC o SPEC ``x:real``) THEN ASM_REAL_ARITH_TAC]);
+    FIRST_X_ASSUM(MP_TAC o SPEC ``x:real``) THEN ASM_REAL_ARITH_TAC]
+QED
 
-val DECREASING_LEFT_LIMIT = store_thm ("DECREASING_LEFT_LIMIT",
- ``!f a b c.
+Theorem DECREASING_LEFT_LIMIT:
+   !f a b c.
         (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ x <= y
                ==> (f y) <= (f x)) /\
         c IN interval[a,b]
-        ==> ?l. (f --> l) (at c within interval[a,c])``,
+        ==> ?l. (f --> l) (at c within interval[a,c])
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL
    [``\x. -((f:real->real) x)``, ``a:real``, ``b:real``, ``c:real``]
         INCREASING_LEFT_LIMIT) THEN
   ASM_SIMP_TAC std_ss [REAL_LE_NEG2] THEN
   GEN_REWR_TAC (LAND_CONV o ONCE_DEPTH_CONV) [GSYM LIM_NEG_EQ] THEN
-  SIMP_TAC std_ss [REAL_NEG_NEG, ETA_AX] THEN MESON_TAC[]);
+  SIMP_TAC std_ss [REAL_NEG_NEG, ETA_AX] THEN MESON_TAC[]
+QED
 
-val INCREASING_RIGHT_LIMIT = store_thm ("INCREASING_RIGHT_LIMIT",
- ``!f a b c.
+Theorem INCREASING_RIGHT_LIMIT:
+   !f a b c.
         (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ x <= y
                ==> (f x) <= (f y)) /\
         c IN interval[a,b]
-       ==> ?l. (f --> l) (at c within interval[c,b])``,
+       ==> ?l. (f --> l) (at c within interval[c,b])
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [``\x. (f:real->real) (-x)``,
                  ``-b:real``, ``-a:real``, ``-c:real``]
@@ -19859,26 +20485,30 @@ val INCREASING_RIGHT_LIMIT = store_thm ("INCREASING_RIGHT_LIMIT",
   GEN_REWR_TAC (LAND_CONV o ONCE_DEPTH_CONV)
    [MESON[REAL_NEG_NEG] ``(!x:real. P x) <=> (!x. P (-x))``] THEN
   SIMP_TAC std_ss [IN_INTERVAL_REFLECT, REAL_NEG_NEG, dist,
-              REAL_ARITH ``abs(-x:real - -y) = abs(x - y)``]);
+              REAL_ARITH ``abs(-x:real - -y) = abs(x - y)``]
+QED
 
-val DECREASING_RIGHT_LIMIT = store_thm ("DECREASING_RIGHT_LIMIT",
- ``!f a b c.
+Theorem DECREASING_RIGHT_LIMIT:
+   !f a b c.
         (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\ x <= y
                ==> (f y) <= (f x)) /\
         c IN interval[a,b]
-       ==> ?l. (f --> l) (at c within interval[c,b])``,
+       ==> ?l. (f --> l) (at c within interval[c,b])
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL
    [``\x. -((f:real->real) x)``, ``a:real``, ``b:real``, ``c:real``]
         INCREASING_RIGHT_LIMIT) THEN
   ASM_SIMP_TAC std_ss [REAL_LE_NEG2] THEN
   GEN_REWR_TAC (LAND_CONV o ONCE_DEPTH_CONV) [GSYM LIM_NEG_EQ] THEN
-  SIMP_TAC std_ss [REAL_NEG_NEG, ETA_AX] THEN MESON_TAC[]);
+  SIMP_TAC std_ss [REAL_NEG_NEG, ETA_AX] THEN MESON_TAC[]
+QED
 
-val HAS_BOUNDED_VECTOR_VARIATION_LEFT_LIMIT = store_thm ("HAS_BOUNDED_VECTOR_VARIATION_LEFT_LIMIT",
- ``!f:real->real a b c.
+Theorem HAS_BOUNDED_VECTOR_VARIATION_LEFT_LIMIT:
+   !f:real->real a b c.
         f has_bounded_variation_on interval[a,b] /\ c IN interval[a,b]
-        ==> ?l. (f --> l) (at c within interval[a,c])``,
+        ==> ?l. (f --> l) (at c within interval[a,c])
+Proof
   REPEAT GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
   DISCH_THEN
    (MP_TAC o REWRITE_RULE [HAS_BOUNDED_VARIATION_DARBOUX]) THEN
@@ -19892,12 +20522,14 @@ val HAS_BOUNDED_VECTOR_VARIATION_LEFT_LIMIT = store_thm ("HAS_BOUNDED_VECTOR_VAR
   X_GEN_TAC ``l1:real`` THEN DISCH_TAC THEN
   EXISTS_TAC ``l1 - l2:real`` THEN
   GEN_REWR_TAC (RATOR_CONV o LAND_CONV) [GSYM ETA_AX] THEN
-  ASM_SIMP_TAC std_ss [LIM_SUB]);
+  ASM_SIMP_TAC std_ss [LIM_SUB]
+QED
 
-val HAS_BOUNDED_VECTOR_VARIATION_RIGHT_LIMIT = store_thm ("HAS_BOUNDED_VECTOR_VARIATION_RIGHT_LIMIT",
- ``!f:real->real a b c.
+Theorem HAS_BOUNDED_VECTOR_VARIATION_RIGHT_LIMIT:
+   !f:real->real a b c.
         f has_bounded_variation_on interval[a,b] /\ c IN interval[a,b]
-        ==> ?l. (f --> l) (at c within interval[c,b])``,
+        ==> ?l. (f --> l) (at c within interval[c,b])
+Proof
   REPEAT GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
   DISCH_THEN
    (MP_TAC o REWRITE_RULE [HAS_BOUNDED_VARIATION_DARBOUX]) THEN
@@ -19911,14 +20543,16 @@ val HAS_BOUNDED_VECTOR_VARIATION_RIGHT_LIMIT = store_thm ("HAS_BOUNDED_VECTOR_VA
   X_GEN_TAC ``l1:real`` THEN DISCH_TAC THEN
   EXISTS_TAC ``l1 - l2:real`` THEN
   GEN_REWR_TAC (RATOR_CONV o LAND_CONV) [GSYM ETA_AX] THEN
-  ASM_SIMP_TAC std_ss [LIM_SUB]);
+  ASM_SIMP_TAC std_ss [LIM_SUB]
+QED
 
-val lemma = prove (
-   ``!f:real->real a b c.
+Theorem lemma[local]:
+     !f:real->real a b c.
           f has_bounded_variation_on interval[a,b] /\ c IN interval[a,b]
           ==> ((\x. (vector_variation(interval[a,x]) f))
                continuous (at c within interval[a,c]) <=>
-              f continuous (at c within interval[a,c]))``,
+              f continuous (at c within interval[a,c]))
+Proof
     REPEAT STRIP_TAC THEN EQ_TAC THENL
      [REWRITE_TAC[continuous_within] THEN
       SIMP_TAC std_ss [GSPECIFICATION, dist] THEN
@@ -20140,14 +20774,16 @@ val lemma = prove (
        DISCH_TAC THEN ASM_REWRITE_TAC [] THEN POP_ASSUM K_TAC THEN
        DISCH_THEN SUBST1_TAC]] THEN
     MATCH_MP_TAC(REAL_ARITH ``abs(x - y) < e ==> y - x < e:real``) THEN
-    FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]);
+    FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]
+QED
 
-val VECTOR_VARIATION_CONTINUOUS_LEFT = store_thm ("VECTOR_VARIATION_CONTINUOUS_LEFT",
- ``!f:real->real a b c.
+Theorem VECTOR_VARIATION_CONTINUOUS_LEFT:
+   !f:real->real a b c.
         f has_bounded_variation_on interval[a,b] /\ c IN interval[a,b]
         ==> ((\x. (vector_variation(interval[a,x]) f))
              continuous (at c within interval[a,c]) <=>
-            f continuous (at c within interval[a,c]))``,
+            f continuous (at c within interval[a,c]))
+Proof
   REPEAT STRIP_TAC THEN EQ_TAC THENL
    [REWRITE_TAC[continuous_within] THEN
     SIMP_TAC std_ss [GSPECIFICATION, dist] THEN
@@ -20219,14 +20855,16 @@ val VECTOR_VARIATION_CONTINUOUS_LEFT = store_thm ("VECTOR_VARIATION_CONTINUOUS_L
     RULE_ASSUM_TAC(REWRITE_RULE[IN_INTERVAL]) THEN
     ASM_SIMP_TAC std_ss [REAL_LE_REFL],
     REWRITE_TAC[REAL_ADD_SUB]] THEN
-  SIMP_TAC std_ss [NUMSEG_SING, SUM_SING, ETA_AX, REAL_LE_REFL]);
+  SIMP_TAC std_ss [NUMSEG_SING, SUM_SING, ETA_AX, REAL_LE_REFL]
+QED
 
-val lemma = prove (
-   ``!f:real->real a b c.
+Theorem lemma[local]:
+     !f:real->real a b c.
           f has_bounded_variation_on interval[a,b] /\ c IN interval[a,b]
           ==> ((\x. (vector_variation(interval[a,x]) f))
                continuous (at c within interval[c,b]) <=>
-              f continuous (at c within interval[c,b]))``,
+              f continuous (at c within interval[c,b]))
+Proof
     REPEAT STRIP_TAC THEN EQ_TAC THENL
      [REWRITE_TAC[continuous_within] THEN
       SIMP_TAC std_ss [GSPECIFICATION, dist] THEN
@@ -20445,14 +21083,16 @@ val lemma = prove (
        DISCH_THEN SUBST1_TAC]] THEN
     MATCH_MP_TAC(REAL_ARITH ``abs(x - y) < e ==> y - x < e:real``) THEN
     ONCE_REWRITE_TAC [ABS_SUB] THEN
-    FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]);
+    FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]
+QED
 
-val VECTOR_VARIATION_CONTINUOUS_RIGHT = store_thm ("VECTOR_VARIATION_CONTINUOUS_RIGHT",
- ``!f:real->real a b c.
+Theorem VECTOR_VARIATION_CONTINUOUS_RIGHT:
+   !f:real->real a b c.
         f has_bounded_variation_on interval[a,b] /\ c IN interval[a,b]
         ==> ((\x. (vector_variation(interval[a,x]) f))
              continuous (at c within interval[c,b]) <=>
-            f continuous (at c within interval[c,b]))``,
+            f continuous (at c within interval[c,b]))
+Proof
   REPEAT STRIP_TAC THEN EQ_TAC THENL
    [REWRITE_TAC[continuous_within] THEN
     SIMP_TAC std_ss [GSPECIFICATION, dist] THEN
@@ -20523,14 +21163,16 @@ val VECTOR_VARIATION_CONTINUOUS_RIGHT = store_thm ("VECTOR_VARIATION_CONTINUOUS_
        [HAS_BOUNDED_VARIATION_ON_COMPONENTWISE]) THEN
     ASM_SIMP_TAC std_ss [REAL_LE_REFL],
     REWRITE_TAC[REAL_ARITH ``a - (a + b):real = -b``]] THEN
-  SIMP_TAC std_ss [NUMSEG_SING, SUM_SING, ETA_AX, REAL_LE_REFL]);
+  SIMP_TAC std_ss [NUMSEG_SING, SUM_SING, ETA_AX, REAL_LE_REFL]
+QED
 
-val lemma = prove (
-    ``!f:real->real a b c.
+Theorem lemma[local]:
+      !f:real->real a b c.
         c IN interval[a,b]
         ==> (f continuous (at c within interval[a,b]) <=>
              f continuous (at c within interval[a,c]) /\
-             f continuous (at c within interval[c,b]))``,
+             f continuous (at c within interval[c,b]))
+Proof
      REPEAT STRIP_TAC THEN REWRITE_TAC[CONTINUOUS_WITHIN] THEN EQ_TAC THENL
       [DISCH_THEN(ASSUME_TAC o GEN_ALL o
        MATCH_MP (REWRITE_RULE[IMP_CONJ] LIM_WITHIN_SUBSET)) THEN
@@ -20538,29 +21180,34 @@ val lemma = prove (
        DISCH_THEN(MP_TAC o MATCH_MP LIM_UNION) THEN
        MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] LIM_WITHIN_SUBSET)] THEN
      REWRITE_TAC[SUBSET_DEF, IN_UNION, IN_INTERVAL] THEN
-     RULE_ASSUM_TAC(REWRITE_RULE[IN_INTERVAL]) THEN ASM_REAL_ARITH_TAC);
+     RULE_ASSUM_TAC(REWRITE_RULE[IN_INTERVAL]) THEN ASM_REAL_ARITH_TAC
+QED
 
-val VECTOR_VARIATION_CONTINUOUS = store_thm ("VECTOR_VARIATION_CONTINUOUS",
- ``!f:real->real a b c.
+Theorem VECTOR_VARIATION_CONTINUOUS:
+   !f:real->real a b c.
         f has_bounded_variation_on interval[a,b] /\ c IN interval[a,b]
         ==> ((\x. (vector_variation(interval[a,x]) f))
              continuous (at c within interval[a,b]) <=>
-            f continuous (at c within interval[a,b]))``,
+            f continuous (at c within interval[a,b]))
+Proof
   REPEAT STRIP_TAC THEN
   FIRST_ASSUM(fn th => ONCE_REWRITE_TAC[MATCH_MP lemma th]) THEN
   METIS_TAC[VECTOR_VARIATION_CONTINUOUS_LEFT,
-                VECTOR_VARIATION_CONTINUOUS_RIGHT]);
+                VECTOR_VARIATION_CONTINUOUS_RIGHT]
+QED
 
-val CONTINUOUS_ON_VECTOR_VARIATION = store_thm ("CONTINUOUS_ON_VECTOR_VARIATION",
- ``!f:real->real a b.
+Theorem CONTINUOUS_ON_VECTOR_VARIATION:
+   !f:real->real a b.
         f has_bounded_variation_on interval[a,b] /\
         f continuous_on interval[a,b]
         ==> (\x. (vector_variation (interval [a,x]) f)) continuous_on
-            interval[a,b]``,
-  SIMP_TAC std_ss [CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN, VECTOR_VARIATION_CONTINUOUS]);
+            interval[a,b]
+Proof
+  SIMP_TAC std_ss [CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN, VECTOR_VARIATION_CONTINUOUS]
+QED
 
-val HAS_BOUNDED_VARIATION_DARBOUX_STRONG = store_thm ("HAS_BOUNDED_VARIATION_DARBOUX_STRONG",
- ``!f a b.
+Theorem HAS_BOUNDED_VARIATION_DARBOUX_STRONG:
+   !f a b.
      f has_bounded_variation_on interval[a,b]
      ==> ?g h. (!x. f x = g x - h x) /\
                (!x y. x IN interval[a,b] /\ y IN interval[a,b] /\
@@ -20586,7 +21233,8 @@ val HAS_BOUNDED_VARIATION_DARBOUX_STRONG = store_thm ("HAS_BOUNDED_VARIATION_DAR
                (!x. x IN interval[a,b] /\
                     f continuous (at x within interval[a,b])
                     ==> g continuous (at x within interval[a,b]) /\
-                        h continuous (at x within interval[a,b]))``,
+                        h continuous (at x within interval[a,b]))
+Proof
   REPEAT STRIP_TAC THEN
   MAP_EVERY EXISTS_TAC
    [``\x:real. x + (vector_variation (interval[a,x]) (f:real->real))``,
@@ -20677,13 +21325,15 @@ val HAS_BOUNDED_VARIATION_DARBOUX_STRONG = store_thm ("HAS_BOUNDED_VARIATION_DAR
       ALL_TAC] THEN
     RULE_ASSUM_TAC(REWRITE_RULE[IN_INTERVAL]) THEN
     REWRITE_TAC[SUBSET_INTERVAL, GSYM INTERVAL_EQ_EMPTY] THEN
-    ASM_REAL_ARITH_TAC));
+    ASM_REAL_ARITH_TAC)
+QED
 
-val INTEGRABLE_BOUNDED_VARIATION_PRODUCT = store_thm ("INTEGRABLE_BOUNDED_VARIATION_PRODUCT",
- ``!f:real->real g a b.
+Theorem INTEGRABLE_BOUNDED_VARIATION_PRODUCT:
+   !f:real->real g a b.
         f integrable_on interval[a,b] /\
         g has_bounded_variation_on interval[a,b]
-        ==> (\x. (g x) * f x) integrable_on interval[a,b]``,
+        ==> (\x. (g x) * f x) integrable_on interval[a,b]
+Proof
   REPEAT STRIP_TAC THEN FIRST_X_ASSUM
    (MP_TAC o REWRITE_RULE [HAS_BOUNDED_VARIATION_DARBOUX]) THEN
   SIMP_TAC std_ss [LEFT_IMP_EXISTS_THM] THEN
@@ -20693,23 +21343,27 @@ val INTEGRABLE_BOUNDED_VARIATION_PRODUCT = store_thm ("INTEGRABLE_BOUNDED_VARIAT
                   (\x. (\x. h x * f x) x - (\x. k x * f x) x)``] THEN
   MATCH_MP_TAC INTEGRABLE_SUB THEN
   CONJ_TAC THEN MATCH_MP_TAC INTEGRABLE_INCREASING_PRODUCT THEN
-  ASM_REWRITE_TAC[]);
+  ASM_REWRITE_TAC[]
+QED
 
-val INTEGRABLE_BOUNDED_VARIATION_PRODUCT_ALT = store_thm ("INTEGRABLE_BOUNDED_VARIATION_PRODUCT_ALT",
- ``!f:real->real g a b.
+Theorem INTEGRABLE_BOUNDED_VARIATION_PRODUCT_ALT:
+   !f:real->real g a b.
         f integrable_on interval[a,b] /\
          g has_bounded_variation_on interval[a,b]
-        ==> (\x. g x * f x) integrable_on interval[a,b]``,
+        ==> (\x. g x * f x) integrable_on interval[a,b]
+Proof
   REPEAT GEN_TAC THEN
   DISCH_THEN(MP_TAC o MATCH_MP INTEGRABLE_BOUNDED_VARIATION_PRODUCT) THEN
-  SIMP_TAC std_ss [o_DEF]);
+  SIMP_TAC std_ss [o_DEF]
+QED
 
-val INTEGRABLE_BOUNDED_VARIATION_BILINEAR_LMUL = store_thm ("INTEGRABLE_BOUNDED_VARIATION_BILINEAR_LMUL",
- ``!op:real->real->real f g a b.
+Theorem INTEGRABLE_BOUNDED_VARIATION_BILINEAR_LMUL:
+   !op:real->real->real f g a b.
         bilinear op /\
         f integrable_on interval[a,b] /\
         g has_bounded_variation_on interval[a,b]
-        ==> (\x. op (g x) (f x)) integrable_on interval[a,b]``,
+        ==> (\x. op (g x) (f x)) integrable_on interval[a,b]
+Proof
   REPEAT STRIP_TAC THEN
   KNOW_TAC ``!x. (g:real->real) x = sum { 1n.. 1n} (\i. g x * &i)`` THENL
   [SIMP_TAC std_ss [SUM_SING, NUMSEG_SING, REAL_MUL_RID],
@@ -20735,24 +21389,28 @@ val INTEGRABLE_BOUNDED_VARIATION_BILINEAR_LMUL = store_thm ("INTEGRABLE_BOUNDED_
   MATCH_MP_TAC INTEGRABLE_LINEAR THEN ASM_REWRITE_TAC[] THEN
   UNDISCH_TAC ``bilinear op`` THEN DISCH_TAC THEN
   FIRST_ASSUM(MP_TAC o CONJUNCT1 o SIMP_RULE std_ss [bilinear]) THEN
-  METIS_TAC [ETA_AX]);
+  METIS_TAC [ETA_AX]
+QED
 
-val INTEGRABLE_BOUNDED_VARIATION_BILINEAR_RMUL = store_thm ("INTEGRABLE_BOUNDED_VARIATION_BILINEAR_RMUL",
- ``!op:real->real->real f g a b.
+Theorem INTEGRABLE_BOUNDED_VARIATION_BILINEAR_RMUL:
+   !op:real->real->real f g a b.
         bilinear op /\
         f integrable_on interval[a,b] /\
         g has_bounded_variation_on interval[a,b]
-        ==> (\x. op (f x) (g x)) integrable_on interval[a,b]``,
+        ==> (\x. op (f x) (g x)) integrable_on interval[a,b]
+Proof
   REPEAT STRIP_TAC THEN MP_TAC(ISPECL
    [``\x y. (op:real->real->real) y x``,
     ``f:real->real``, ``g:real->real``,
     ``a:real``, ``b:real``] INTEGRABLE_BOUNDED_VARIATION_BILINEAR_LMUL) THEN
-  ASM_SIMP_TAC std_ss [BILINEAR_SWAP]);
+  ASM_SIMP_TAC std_ss [BILINEAR_SWAP]
+QED
 
-val INTEGRABLE_BOUNDED_VARIATION = store_thm ("INTEGRABLE_BOUNDED_VARIATION",
- ``!f:real->real a b.
+Theorem INTEGRABLE_BOUNDED_VARIATION:
+   !f:real->real a b.
         f has_bounded_variation_on interval[a,b]
-        ==> f integrable_on interval[a,b]``,
+        ==> f integrable_on interval[a,b]
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL
    [``\x:real y:real. x * y``,
@@ -20760,13 +21418,15 @@ val INTEGRABLE_BOUNDED_VARIATION = store_thm ("INTEGRABLE_BOUNDED_VARIATION",
     ``f:real->real``, ``a:real``, ``b:real``]
         INTEGRABLE_BOUNDED_VARIATION_BILINEAR_RMUL) THEN
   ASM_SIMP_TAC std_ss [INTEGRABLE_CONST, BILINEAR_DOT] THEN
-  SIMP_TAC std_ss [REAL_MUL_LID, ETA_AX]);
+  SIMP_TAC std_ss [REAL_MUL_LID, ETA_AX]
+QED
 
-val HAS_BOUNDED_VARIATION_ON_INDEFINITE_INTEGRAL_RIGHT = store_thm ("HAS_BOUNDED_VARIATION_ON_INDEFINITE_INTEGRAL_RIGHT",
- ``!f:real->real a b.
+Theorem HAS_BOUNDED_VARIATION_ON_INDEFINITE_INTEGRAL_RIGHT:
+   !f:real->real a b.
         f absolutely_integrable_on interval[a,b]
         ==> (\c. integral (interval[a,c]) f) has_bounded_variation_on
-            interval[a,b]``,
+            interval[a,b]
+Proof
   REPEAT STRIP_TAC THEN REWRITE_TAC[has_bounded_variation_on] THEN
   FIRST_ASSUM(MP_TAC o
     MATCH_MP ABSOLUTELY_INTEGRABLE_BOUNDED_SETVARIATION) THEN
@@ -20778,13 +21438,15 @@ val HAS_BOUNDED_VARIATION_ON_INDEFINITE_INTEGRAL_RIGHT = store_thm ("HAS_BOUNDED
   MATCH_MP_TAC INTEGRAL_COMBINE THEN ASM_REWRITE_TAC[] THEN
   FIRST_ASSUM(MP_TAC o MATCH_MP ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE) THEN
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] INTEGRABLE_ON_SUBINTERVAL) THEN
-  ASM_REWRITE_TAC[SUBSET_INTERVAL] THEN ASM_REAL_ARITH_TAC);
+  ASM_REWRITE_TAC[SUBSET_INTERVAL] THEN ASM_REAL_ARITH_TAC
+QED
 
-val HAS_BOUNDED_VARIATION_ON_INDEFINITE_INTEGRAL_LEFT = store_thm ("HAS_BOUNDED_VARIATION_ON_INDEFINITE_INTEGRAL_LEFT",
- ``!f:real->real a b.
+Theorem HAS_BOUNDED_VARIATION_ON_INDEFINITE_INTEGRAL_LEFT:
+   !f:real->real a b.
         f absolutely_integrable_on interval[a,b]
         ==> (\c. integral (interval[c,b]) f) has_bounded_variation_on
-            interval[a,b]``,
+            interval[a,b]
+Proof
   REPEAT STRIP_TAC THEN
   REWRITE_TAC[has_bounded_variation_on] THEN
   ONCE_REWRITE_TAC[GSYM HAS_BOUNDED_SETVARIATION_ON_NEG] THEN
@@ -20798,7 +21460,8 @@ val HAS_BOUNDED_VARIATION_ON_INDEFINITE_INTEGRAL_LEFT = store_thm ("HAS_BOUNDED_
   MATCH_MP_TAC INTEGRAL_COMBINE THEN ASM_REWRITE_TAC[] THEN
   FIRST_ASSUM(MP_TAC o MATCH_MP ABSOLUTELY_INTEGRABLE_IMP_INTEGRABLE) THEN
   MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] INTEGRABLE_ON_SUBINTERVAL) THEN
-  ASM_REWRITE_TAC[SUBSET_INTERVAL] THEN ASM_REAL_ARITH_TAC);
+  ASM_REWRITE_TAC[SUBSET_INTERVAL] THEN ASM_REAL_ARITH_TAC
+QED
 
 (* TODO: hol-light's "Multivariate/integration.ml", starting from line 21056:
 
