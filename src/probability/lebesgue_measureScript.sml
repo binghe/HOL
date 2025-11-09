@@ -4493,6 +4493,9 @@ Proof
  >> MATCH_MP_TAC NONNEGATIVE_ABSOLUTELY_INTEGRABLE >> simp []
 QED
 
+(* NOTE: This lemma assumes “f integrable_on univ(:real)” and can only be
+   proved under gauge integration (harder).
+ *)
 Theorem lemma_fn_seq_finite_measure1_alt[local] :
     !f k n. f IN borel_measurable borel /\ (!x. 0 <= f x) /\
             f integrable_on univ(:real) /\
@@ -4500,7 +4503,7 @@ Theorem lemma_fn_seq_finite_measure1_alt[local] :
             lambda {x | &k / 2 pow n <= f x /\ f x < (&k + 1) / 2 pow n} <>
             PosInf
 Proof
-    rpt GEN_TAC >> STRIP_TAC
+    RW_TAC std_ss [integrable_on]
  >> qmatch_abbrev_tac ‘lambda s <> PosInf’
  >> ‘!x. x IN s ==> &k / 2 pow n <= f x’ by rw [Abbr ‘s’]
  >> qabbrev_tac ‘c :real = &k / 2 pow n’
@@ -4520,16 +4523,33 @@ Proof
  >> Cases_on ‘negligible s’
  >- (‘lmeasure s = 0’ by PROVE_TAC [negligible_iff_lmeasure_zero] \\
      ‘lambda s = 0’ by PROVE_TAC [lambda_eq_lebesgue] \\
-     simp [])
+     ASM_SIMP_TAC std_ss [extreal_of_num_def, extreal_not_infty])
  (* NOTE: The idea is to show that f does NOT have (finite) integral
 
-    c * integral UNIV (indicator s) =
-    integral UNIV (\x. c * indicator s x) <=
-    integral UNIV (\x. f x * indicator s x) <= integral UNIV f
+    c * integral (line N) (indicator s) =
+    integral (line N) (\x. c * indicator s x) <=
+    integral (line N) (\x. f x * indicator s x) =
+    integral (line N INTER s) f <=
+    integral (line N) f <= integral UNIV f (= y)
   *)
  >> simp [lambda_eq_lebesgue]
+ (* NOTE: The following tactics cannot work but looks interesting:
  >> Suff ‘s IN integrable_sets UNIV’
  >- METIS_TAC [integrable_sets_iff_finite_measure]
+ >> simp [integrable_sets_def]
+ *)
+ >> CCONTR_TAC >> fs [lebesgue_def]
+ >> Know ‘!z. ?N. z < integral (line N) (indicator s)’
+ >- (Q.X_GEN_TAC ‘z’ \\
+     POP_ASSUM MP_TAC \\
+     rw [GSYM le_infty, le_sup'] \\
+     POP_ASSUM (MP_TAC o Q.SPEC ‘Normal z’) \\
+     rw [le_infty, extreal_not_le] \\
+     fs [extreal_lt_eq] \\
+     rename1 ‘z < integral (line N) (indicator s)’ \\
+     Q.EXISTS_TAC ‘N’ >> art [])
+ >> POP_ASSUM K_TAC
+ >> DISCH_THEN (STRIP_ASSUME_TAC o Q.SPEC ‘y / c’)
  >> cheat
 QED
 
