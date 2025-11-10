@@ -5180,7 +5180,7 @@ Proof
  >> simp [sigma_algebra_borel]
 QED
 
-Theorem lebesgue_integrable_iff_gauge_absolutely_integrable :
+Theorem lebesgue_eq_gauge_integrable :
     !f. f IN borel_measurable borel ==>
        (integrable lborel (Normal o f) <=> f absolutely_integrable_on UNIV)
 Proof
