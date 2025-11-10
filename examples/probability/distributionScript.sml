@@ -3133,11 +3133,47 @@ QED
 
    NOTE: “exp (-x pow 2)” means “exp ((-x) pow 2)” (= “exp (x pow 2)”), wrong.
  *)
-Theorem has_vector_derivative_normal_density =
+Theorem neg_normal_density_has_vector_derivative[local] =
         SRULE [REAL_NEG_LMUL]
               (HAS_VECTOR_DERIVATIVE_CONV “\(x :real). -exp (-(x pow 2) / 2)”)
 
-(* FUNDAMENTAL_THEOREM_OF_CALCULUS is needed *)
+Theorem neg_normal_density_increasing[local] :
+    !x (y :real). 0 <= x /\ x <= y ==>
+                 -exp (-(x pow 2) / 2) <= -exp (-(y pow 2) / 2)
+Proof
+    rw [REAL_LE_NEG, EXP_MONO_LE]
+ >> MATCH_MP_TAC POW_LE >> art []
+QED
+
+Theorem neg_normal_density_upperbound[local] :
+    !(x :real). 0 <= x ==> -exp (-(x pow 2) / 2) <= 0
+Proof
+    rw [REAL_NEG_LE0, EXP_POS_LE]
+QED
+
+Theorem HAS_INTEGRAL_CMUL_INDICATOR :
+    !f s l. ((\x. f x * indicator s x) has_integral l) UNIV <=>
+            (f has_integral l) s
+Proof
+    rpt GEN_TAC
+ >> ONCE_REWRITE_TAC [GSYM HAS_INTEGRAL_RESTRICT_UNIV]
+ >> simp []
+ >> MATCH_MP_TAC HAS_INTEGRAL_EQ_EQ >> rw [indicator]
+QED
+
+(* Improper integral [a, +inf]
+
+   A combination of FUNDAMENTAL_THEOREM_OF_CALCULUS and
+   MONOTONE_CONVERGENCE_INCREASING and
+   mono_increasing_converges_to_sup
+ *)
+Theorem FUNDAMENTAL_THEOREM_OF_CALCULUS_HALFSPACE_GE :
+    !f f' a. (!x. (f has_vector_derivative f' x) (at x within {y | a <= y})) ==>
+             (f' has_integral (sup (IMAGE f UNIV) - f a)) {y | a <= y}
+Proof
+    cheat
+QED
+
 Theorem integral_x_normal_density_lemma[local] :
     ((\x. x * std_normal_density x * indicator {y | 0 <= y} x) has_integral y)
       UNIV
