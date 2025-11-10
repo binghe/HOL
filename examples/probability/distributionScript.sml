@@ -740,6 +740,71 @@ Proof
  >> MATCH_MP_TAC lebesgue_pos_integral_real_affine >> art []
 QED
 
+Theorem integral_real_affine :
+    !f c t. c <> 0 /\ integrable lborel f ==>
+            integrable lborel (\x. f (t + c * x)) /\
+            integral lborel f =
+            Normal (abs c) * integral lborel (\x. f (t + c * x))
+Proof
+    rpt GEN_TAC
+ >> simp [integrable_def, lebesgueTheory.integral_def, lborel_def,
+          GSYM CONJ_ASSOC]
+ >> STRIP_TAC
+ >> CONJ_ASM1_TAC
+ >- (‘(\x. f (t + c * x)) = f o (\x. t + c * x)’ by rw [o_DEF, FUN_EQ_THM] \\
+     POP_ORW \\
+     MATCH_MP_TAC MEASURABLE_COMP \\
+     Q.EXISTS_TAC ‘borel’ >> art [] \\
+     MATCH_MP_TAC in_borel_measurable_add \\
+     qexistsl_tac [‘\x. t’, ‘\x. c * x’] >> simp [sigma_algebra_borel] \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC in_borel_measurable_const \\
+         Q.EXISTS_TAC ‘t’ >> simp [sigma_algebra_borel]) \\
+     MATCH_MP_TAC in_borel_measurable_cmul \\
+     qexistsl_tac [‘\x. x’, ‘c’] \\
+     simp [sigma_algebra_borel, in_borel_measurable_I])
+ >> Know ‘(\x. f (t + c * x))^+ = (\x. f^+ (t + c * x))’
+ >- simp [FUN_EQ_THM, FN_PLUS_ALT]
+ >> Rewr'
+ >> Know ‘(\x. f (t + c * x))^- = (\x. f^- (t + c * x))’
+ >- simp [FUN_EQ_THM, FN_MINUS_ALT]
+ >> Rewr'
+ >> Know ‘f^+ IN Borel_measurable borel’
+ >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_FN_PLUS \\
+     simp [sigma_algebra_borel])
+ >> DISCH_TAC
+ >> Know ‘f^- IN Borel_measurable borel’
+ >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_FN_MINUS \\
+     simp [sigma_algebra_borel])
+ >> DISCH_TAC
+ >> MP_TAC (Q.SPECL [‘f^+’, ‘c’, ‘t’] lebesgue_pos_integral_real_affine')
+ >> simp [FN_PLUS_POS]
+ >> STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘f^-’, ‘c’, ‘t’] lebesgue_pos_integral_real_affine')
+ >> simp [FN_MINUS_POS]
+ >> STRIP_TAC
+ >> CONJ_ASM1_TAC
+ >- (CCONTR_TAC >> fs [] \\
+     Suff ‘Normal (abs c) * PosInf = PosInf’ >- PROVE_TAC [] \\
+     Suff ‘0 < Normal (abs c)’ >- PROVE_TAC [mul_infty] \\
+     rw [extreal_of_num_def])
+ >> CONJ_ASM1_TAC
+ >- (CCONTR_TAC >> fs [] \\
+     Suff ‘Normal (abs c) * PosInf = PosInf’ >- PROVE_TAC [] \\
+     Suff ‘0 < Normal (abs c)’ >- PROVE_TAC [mul_infty] \\
+     rw [extreal_of_num_def])
+ >> SYM_TAC
+ >> MATCH_MP_TAC sub_ldistrib >> rw [] (* 2 subgoals *)
+ >| [ (* goal 1 (of 2) *)
+      MATCH_MP_TAC pos_not_neginf \\
+      MATCH_MP_TAC pos_fn_integral_pos \\
+      rw [lborel_def, space_lborel, FN_PLUS_POS],
+      (* goal 2 (of 2) *)
+      MATCH_MP_TAC pos_not_neginf \\
+      MATCH_MP_TAC pos_fn_integral_pos \\
+      rw [lborel_def, space_lborel, FN_MINUS_POS] ]
+QED
+
 (* ------------------------------------------------------------------------- *)
 (*  PDF (for r.v.'s of type :'a -> real, aka old style r.v.'s)               *)
 (* ------------------------------------------------------------------------- *)
@@ -885,6 +950,24 @@ Proof
  >- (MATCH_MP_TAC SQRT_POS_LE \\
      MATCH_MP_TAC REAL_LE_MUL >> simp [REAL_LT_IMP_LE, PI_POS])
  >> MATCH_MP_TAC POW_LE >> art []
+QED
+
+Theorem normal_density_alt_std :
+    !mu sig x. 0 < sig ==>
+               normal_density mu sig x =
+               std_normal_density ((x - mu) / sig) / sig
+Proof
+    rw [normal_density]
+ >> ‘0 <= pi’ by simp [REAL_LT_IMP_LE, PI_POS]
+ >> Know ‘0 <= sig pow 2’
+ >- (MATCH_MP_TAC POW_POS \\
+     MATCH_MP_TAC REAL_LT_IMP_LE >> art [])
+ >> DISCH_TAC
+ >> ‘0 <= sig’ by simp [REAL_LT_IMP_LE]
+ >> simp [SQRT_MUL, REAL_LE_MUL, POW_2_SQRT, REAL_INV_MUL']
+ >> NTAC 3 (DISJ2_TAC)
+ >> AP_TERM_TAC
+ >> simp [real_div]
 QED
 
 Theorem normal_density_continuous_on :
@@ -3366,6 +3449,33 @@ Proof
  >> simp [I_EQ_IDABS, in_borel_measurable_I, expectation_def]
  >> DISCH_THEN K_TAC
  >> REWRITE_TAC [integral_x_std_normal_density]
+QED
+
+Theorem expectation_of_normal_rv :
+    !p X mu sig. prob_space p /\ normal_rv X p mu sig /\ 0 < sig ==>
+                 integrable p (Normal o X) /\
+                 expectation p (Normal o X) = Normal mu
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘p’, ‘X’, ‘mu’, ‘sig’, ‘I’] integration_of_normal_rv)
+ >> simp [I_EQ_IDABS, in_borel_measurable_I, expectation_def]
+ >> DISCH_THEN K_TAC
+ (* applying normal_density_alt_std *)
+ >> Know ‘!x. normal_density mu sig x =
+              std_normal_density ((x - mu) / sig) / sig’
+ >- simp [Once normal_density_alt_std]
+ >> Rewr'
+ >> simp [real_div]
+ >> qabbrev_tac ‘c = inv sig’
+ >> simp [REAL_SUB_LDISTRIB]
+ >> qabbrev_tac ‘t = -(c * mu)’
+ >> simp [real_sub]
+ >> ONCE_REWRITE_TAC [REAL_ADD_COMM]
+ >> qabbrev_tac ‘g = \x. t + c * x’
+ >> simp []
+ (* applying integral_x_std_normal_density *)
+ (* applying integral_real_affine *)
+ >> cheat
 QED
 
 (* ------------------------------------------------------------------------- *)
