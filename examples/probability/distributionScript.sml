@@ -875,13 +875,16 @@ Proof
   MATCH_MP_TAC REAL_POW_LT >> art []
 QED
 
-Theorem std_normal_density_pos :
-    !x. 0 <= std_normal_density x
+Theorem std_normal_density_decreasing :
+    !x y. 0 <= x /\ x <= y ==> std_normal_density y <= std_normal_density x
 Proof
-    Q.X_GEN_TAC ‘x’
- >> MATCH_MP_TAC REAL_LT_IMP_LE
- >> MATCH_MP_TAC normal_density_pos
- >> simp []
+    rw [std_normal_density_def]
+ >> MATCH_MP_TAC REAL_LE_RMUL_IMP
+ >> simp [EXP_MONO_LE]
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC SQRT_POS_LE \\
+     MATCH_MP_TAC REAL_LE_MUL >> simp [REAL_LT_IMP_LE, PI_POS])
+ >> MATCH_MP_TAC POW_LE >> art []
 QED
 
 Theorem normal_density_continuous_on :
@@ -3181,7 +3184,7 @@ Proof
  >> Know ‘!x. 0 <= x ==> 0 <= f x’
  >- (rw [Abbr ‘f’] \\
      MATCH_MP_TAC REAL_LE_MUL \\
-     simp [std_normal_density_pos])
+     simp [normal_density_nonneg])
  >> DISCH_TAC
  >> Know ‘f IN borel_measurable borel’
  >- (qunabbrev_tac ‘f’ \\
@@ -3276,7 +3279,7 @@ Proof
  >> Know ‘!n x. 0 <= h n x’
  >- (rw [Abbr ‘h’, indicator, Abbr ‘f’, IN_INTERVAL] \\
      MATCH_MP_TAC REAL_LE_MUL \\
-     simp [std_normal_density_pos])
+     simp [normal_density_nonneg])
  >> DISCH_TAC
  (* applying lebesgue_monotone_convergence *)
  >> Know ‘pos_fn_integral lborel (Normal o g) =
@@ -3331,7 +3334,27 @@ Proof
  >> POP_ORW
  >> qabbrev_tac ‘J = \n. std_normal_density 0 - std_normal_density (&n)’
  >> simp []
- >> cheat
+ >> Know ‘IMAGE (\i. Normal (J i)) UNIV = IMAGE Normal {J i | i | T}’
+ >- (rw [Once EXTENSION] \\
+     EQ_TAC >> rw [] >> (Q.EXISTS_TAC ‘i’ >> REFL_TAC))
+ >> Rewr'
+ >> qmatch_abbrev_tac ‘sup (IMAGE Normal s) <> PosInf’
+ >> Know ‘sup (IMAGE Normal s) = Normal (sup s)’
+ >- (MATCH_MP_TAC sup_image_normal \\
+     CONJ_TAC >- simp [Abbr ‘s’, Once EXTENSION] \\
+     rw [Abbr ‘s’, bounded_def] \\
+     Q.EXISTS_TAC ‘std_normal_density 0’ >> rw [Abbr ‘J’] \\
+     Know ‘abs (std_normal_density 0 - std_normal_density (&i)) =
+                std_normal_density 0 - std_normal_density (&i)’
+     >- (simp [ABS_REFL, REAL_SUB_LE] \\
+         MATCH_MP_TAC std_normal_density_decreasing >> simp []) >> Rewr' \\
+     Suff ‘0 <= std_normal_density (&i)’ >- REAL_ARITH_TAC \\
+     simp [normal_density_nonneg])
+ >> Rewr'
+ (* NOTE: Here the proof finish easily, but if we want to actually calculate
+    ‘sup s’ (= std_normal_density 0), just a little more work is needed.
+  *)
+ >> simp []
 QED
 
 Theorem expectation_of_std_normal_rv :
