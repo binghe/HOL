@@ -17,9 +17,9 @@ Ancestors
   combin arithmetic logroot pred_set topology pair cardinal real
   seq transc real_sigma iterate real_topology derivative metric
   nets sigma_algebra extreal_base extreal real_borel measure
-  borel lebesgue martingale probability
+  borel lebesgue martingale probability integration
 Libs
-  numLib hurdUtils pred_setLib tautLib jrhUtils realLib
+  numLib hurdUtils pred_setLib tautLib jrhUtils realLib Diff
  *)
 open HolKernel Parse boolLib bossLib;
 
@@ -27,7 +27,8 @@ open combinTheory arithmeticTheory numLib logrootTheory hurdUtils pred_setLib
      pred_setTheory topologyTheory pairTheory tautLib jrhUtils cardinalTheory;
 
 open realTheory realLib seqTheory transcTheory real_sigmaTheory iterateTheory
-     real_topologyTheory derivativeTheory metricTheory netsTheory;
+     real_topologyTheory metricTheory netsTheory derivativeTheory Diff
+     integrationTheory;
 
 open sigma_algebraTheory extreal_baseTheory extrealTheory real_borelTheory
      measureTheory borelTheory lebesgueTheory martingaleTheory
@@ -3116,6 +3117,135 @@ Proof
     METIS_TAC [integral_normal_density]
 QED
 
+(* By AXIOM/OpenAxiom/FriCAS, we have:
+
+   (2) -> integrate(x * exp(-x^2/2),x)
+
+               2
+              x
+            - --
+               2
+   (2)  - %e
+                                         Type: Union(Expression(Integer),...)
+
+   |- !x. ((\x. -exp (-(x pow 2) / 2)) has_vector_derivative
+           x * exp (-(x pow 2) / 2)) (at x)
+
+   NOTE: “exp (-x pow 2)” means “exp ((-x) pow 2)” (= “exp (x pow 2)”), wrong.
+ *)
+Theorem has_vector_derivative_normal_density =
+        SRULE [REAL_NEG_LMUL]
+              (HAS_VECTOR_DERIVATIVE_CONV “\(x :real). -exp (-(x pow 2) / 2)”)
+
+(* FUNDAMENTAL_THEOREM_OF_CALCULUS is needed *)
+Theorem integral_x_normal_density_lemma[local] :
+    ((\x. x * std_normal_density x * indicator {y | 0 <= y} x) has_integral y)
+      UNIV
+Proof
+    cheat
+QED
+
+Theorem integral_x_normal_density :
+    integrable lborel (\x. Normal (x * std_normal_density x)) /\
+    integral lborel (\x. Normal (x * std_normal_density x)) = 0
+Proof
+    qabbrev_tac ‘f = \x. x * std_normal_density x’
+ >> Know ‘f IN borel_measurable borel’
+ >- (qunabbrev_tac ‘f’ \\
+     MATCH_MP_TAC in_borel_measurable_mul \\
+     qexistsl_tac [‘\x. x’, ‘std_normal_density’] \\
+     simp [in_borel_measurable_I, space_borel, sigma_algebra_borel] \\
+     REWRITE_TAC [in_measurable_borel_normal_density])
+ >> DISCH_TAC
+ >> simp []
+ >> ‘(\x. Normal (f x)) = Normal o f’ by rw [FUN_EQ_THM, o_DEF] >> POP_ORW
+ (* stage work *)
+ >> simp [integrable_def, lebesgueTheory.integral_def,
+          fn_plus_normal, fn_minus_normal]
+ >> Know ‘Normal o f IN Borel_measurable (measurable_space lborel)’
+ >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_IMP_BOREL \\
+     simp [lborel_def])
+ >> Rewr
+ >> qabbrev_tac ‘g = \x. f x * indicator {y | 0 <= y} x’
+ >> Know ‘g IN borel_measurable borel’
+ >- (qunabbrev_tac ‘g’ \\
+     MATCH_MP_TAC in_borel_measurable_mul_indicator \\
+     simp [borel_measurable_sets, sigma_algebra_borel])
+ >> DISCH_TAC
+ >> Know ‘Normal o g IN Borel_measurable borel’
+ >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_IMP_BOREL' \\
+     simp [sigma_algebra_borel])
+ >> DISCH_TAC
+ >> Know ‘!x. 0 <= g x’
+ >- (rw [Abbr ‘g’, indicator] \\
+     simp [Abbr ‘f’] \\
+     MATCH_MP_TAC REAL_LE_MUL >> art [] \\
+     MATCH_MP_TAC REAL_LT_IMP_LE \\
+     MATCH_MP_TAC normal_density_pos >> simp [])
+ >> DISCH_TAC
+ >> Know ‘f^+ = g’
+ >- (rw [Abbr ‘f’, Abbr ‘g’, FUN_EQ_THM, real_fn_plus_def] \\
+     Cases_on ‘0 <= x’ >> rw [indicator]
+     >- (Suff ‘0 <= x * std_normal_density x’ >- PROVE_TAC [REAL_MAX_REDUCE] \\
+         MATCH_MP_TAC REAL_LE_MUL \\
+         simp [normal_density_pos, REAL_LT_IMP_LE]) \\
+     Suff ‘x * std_normal_density x <= 0’
+     >- METIS_TAC [REAL_MAX_ACI, REAL_MAX_REDUCE] \\
+     simp [REAL_MUL_SIGN] \\
+     fs [REAL_NOT_LE] \\
+     simp [REAL_LT_IMP_LE, normal_density_pos])
+ >> Rewr'
+ (* applying lebesgue_pos_integral_real_affine' *)
+ >> Know ‘f^- = \x. g (-x)’
+ >- (rw [Abbr ‘f’, Abbr ‘g’, FUN_EQ_THM, real_fn_minus_def] \\
+     Cases_on ‘0 <= x’ >> rw [indicator] >| (* 4 subgoals *)
+     [ (* goal 1 (of 4) *)
+      ‘x = 0’ by PROVE_TAC [REAL_LE_ANTISYM] \\
+       simp [],
+       (* goal 2 (of 4) *)
+       Suff ‘0 <= x * std_normal_density x’ >- PROVE_TAC [REAL_MIN_REDUCE] \\
+       MATCH_MP_TAC REAL_LE_MUL \\
+       simp [REAL_LT_IMP_LE, normal_density_pos],
+       (* goal 3 (of 4) *)
+      ‘min 0 (x * std_normal_density x) = min (x * std_normal_density x) 0’
+         by PROVE_TAC [REAL_MIN_ACI] >> POP_ORW \\
+       Know ‘min (x * std_normal_density x) 0 = x * std_normal_density x’
+       >- (Suff ‘x * std_normal_density x <= 0’
+           >- PROVE_TAC [REAL_MIN_REDUCE] \\
+           simp [REAL_MUL_SIGN] \\
+           fs [REAL_NOT_LE] \\
+           simp [REAL_LT_IMP_LE, normal_density_pos]) >> Rewr' \\
+       simp [normal_density],
+       (* goal 4 (of 4) *)
+       fs [REAL_NOT_LE] \\
+       PROVE_TAC [REAL_LT_ANTISYM] ])
+ >> Rewr'
+ >> Know ‘pos_fn_integral lborel (Normal o (\x. g (-x))) =
+          pos_fn_integral lborel (Normal o g)’
+ >- (MP_TAC (Q.SPECL [‘Normal o g’, ‘-1’, ‘0’]
+                     lebesgue_pos_integral_real_affine') >> art [] \\
+     simp [normal_1, o_DEF])
+ >> Rewr'
+ >> Suff ‘pos_fn_integral lborel (Normal o g) <> PosInf’
+ >- (rw [] \\
+     Know ‘pos_fn_integral lborel (Normal o g) <> NegInf’
+     >- (MATCH_MP_TAC pos_not_neginf \\
+         MATCH_MP_TAC pos_fn_integral_pos \\
+         simp [lborel_def, space_lborel, o_DEF, extreal_of_num_def]) \\
+     DISCH_TAC \\
+    ‘?r. pos_fn_integral lborel (Normal o g) = Normal r’
+       by METIS_TAC [extreal_cases] \\
+     simp [extreal_sub_eq, extreal_of_num_def])
+ (* NOTE: y is the integral that we need to compute by FTC:
+ >> qabbrev_tac ‘y = ...’
+  *)
+ >> Suff ‘(g has_integral y) UNIV’
+ >- (rw [HAS_INTEGRAL_INTEGRABLE_INTEGRAL] \\
+     MP_TAC (Q.SPEC ‘g’ lebesgue_eq_gauge_integral_positive_alt) >> rw [])
+ >> SIMP_TAC std_ss [Abbr ‘g’, Abbr ‘f’]
+ >> REWRITE_TAC [integral_x_normal_density_lemma]
+QED
+
 Theorem expectation_of_std_normal_rv :
     !p X. prob_space p /\ std_normal_rv X p ==>
           integrable p (Normal o X) /\ expectation p (Normal o X) = 0
@@ -3124,7 +3254,7 @@ Proof
  >> MP_TAC (Q.SPECL [‘p’, ‘X’, ‘0’, ‘1’, ‘I’] integration_of_normal_rv)
  >> simp [I_EQ_IDABS, in_borel_measurable_I, expectation_def]
  >> DISCH_THEN K_TAC
- >> cheat
+ >> REWRITE_TAC [integral_x_normal_density]
 QED
 
 (* ------------------------------------------------------------------------- *)
