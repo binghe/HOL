@@ -3467,15 +3467,60 @@ Proof
  >> Rewr'
  >> simp [real_div]
  >> qabbrev_tac ‘c = inv sig’
+ >> Know ‘c <> 0’
+ >- (qunabbrev_tac ‘c’ \\
+     MATCH_MP_TAC REAL_INV_NZ \\
+     PROVE_TAC [REAL_LT_IMP_NE])
+ >> DISCH_TAC
  >> simp [REAL_SUB_LDISTRIB]
  >> qabbrev_tac ‘t = -(c * mu)’
  >> simp [real_sub]
  >> ONCE_REWRITE_TAC [REAL_ADD_COMM]
  >> qabbrev_tac ‘g = \x. t + c * x’
  >> simp []
+ >> ‘!x. c * x = g x - t’ by simp [Abbr ‘g’, REAL_ADD_SUB]
+ >> POP_ORW
+ >> simp [REAL_SUB_RDISTRIB, GSYM extreal_sub_eq]
+ >> Know ‘!x. t * std_normal_density (g x) =
+              -mu * (std_normal_density ((x - mu) / sig) / sig)’
+ >- (rw [Abbr ‘g’, Abbr ‘t’, Abbr ‘c’, real_div] \\
+     DISJ2_TAC \\
+     AP_TERM_TAC \\
+     REAL_ARITH_TAC)
+ >> Rewr'
+ >> Know ‘!x. std_normal_density ((x - mu) / sig) / sig =
+              normal_density mu sig x’
+ >- simp [GSYM normal_density_alt_std]
+ >> Rewr'
+ >> qabbrev_tac ‘h = \x. g x * std_normal_density (g x)’
+ >> simp []
+ >> simp [GSYM extreal_mul_eq]
+ >> qabbrev_tac ‘d = -mu’
+ >> MP_TAC (Q.SPECL [‘p’, ‘X’, ‘mu’, ‘sig’] integral_normal_density)
+ >> simp [] >> STRIP_TAC
+ >> Know ‘integrable lborel (\x. Normal d * Normal_density mu sig x)’
+ >- (HO_MATCH_MP_TAC integrable_cmul >> simp [lborel_def])
+ >> DISCH_TAC
+ >> Know ‘integral lborel (\x. Normal d * Normal_density mu sig x) =
+          Normal d * integral lborel (\x. Normal_density mu sig x)’
+ >- (HO_MATCH_MP_TAC integral_cmul >> simp [lborel_def])
+ >> simp [] >> DISCH_TAC
  (* applying integral_x_std_normal_density *)
+ >> STRIP_ASSUME_TAC integral_x_std_normal_density
  (* applying integral_real_affine *)
- >> cheat
+ >> MP_TAC (Q.SPECL [‘\x. Normal (x * std_normal_density x)’, ‘c’, ‘t’]
+                    integral_real_affine)
+ >> simp [] >> STRIP_TAC
+ >> CONJ_TAC (* integrable *)
+ >- (HO_MATCH_MP_TAC integrable_sub \\
+     simp [extreal_mul_eq, lborel_def])
+ >> Know ‘integral lborel (\x. Normal (h x) - Normal d * Normal_density mu sig x) =
+          integral lborel (\x. Normal (h x)) -
+          integral lborel (\x. Normal d * Normal_density mu sig x)’
+ >- (HO_MATCH_MP_TAC integral_sub \\
+     simp [extreal_mul_eq, lborel_def])
+ >> Rewr'
+ >> simp [Abbr ‘d’, extreal_ainv_def]
 QED
 
 (* ------------------------------------------------------------------------- *)
