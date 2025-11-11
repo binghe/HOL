@@ -1549,6 +1549,14 @@ Proof
     RW_TAC std_ss [real_lt, real_abs]
 QED
 
+Theorem ABS_EQ_NEG' :
+    !(x :real). x <= 0 ==> abs x = -x
+Proof
+    RW_TAC std_ss [REAL_LE_LT]
+ >- (MATCH_MP_TAC ABS_EQ_NEG >> art [])
+ >> REWRITE_TAC [ABS_0, REAL_NEG_0]
+QED
+
 (* |- !n. abs (&n) = &n *)
 Theorem ABS_N[simp] = REAL_ABS_NUM
 
