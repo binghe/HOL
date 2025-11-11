@@ -18,6 +18,7 @@ Ancestors
   seq transc real_sigma iterate real_topology derivative metric
   nets sigma_algebra extreal_base extreal real_borel measure
   borel lebesgue lebesgue_measure martingale probability integration
+  lim[qualified]
 Libs
   numLib hurdUtils pred_setLib tautLib jrhUtils realLib Diff
  *)
@@ -33,6 +34,8 @@ open realTheory realLib seqTheory transcTheory real_sigmaTheory iterateTheory
 open sigma_algebraTheory extreal_baseTheory extrealTheory real_borelTheory
      measureTheory borelTheory lebesgueTheory martingaleTheory
      probabilityTheory lebesgue_measureTheory;
+
+local open limTheory in end;
 
 val _ = new_theory "distribution"; (* was: "normal_rv" *)
 
@@ -3225,7 +3228,7 @@ QED
 
    NOTE: Diff.HAS_VECTOR_DERIVATIVE_CONV is used here!
  *)
-Theorem has_vector_derivative_x_normal_density :
+Theorem has_vector_derivative_x_std_normal_density :
     !x. ((\x. -std_normal_density x) has_vector_derivative
          x * std_normal_density x) (at x)
 Proof
@@ -3256,7 +3259,7 @@ Proof
  >> HO_MATCH_MP_TAC FUNDAMENTAL_THEOREM_OF_CALCULUS
  >> rw [IN_INTERVAL]
  >> MATCH_MP_TAC HAS_VECTOR_DERIVATIVE_AT_WITHIN
- >> REWRITE_TAC [has_vector_derivative_x_normal_density]
+ >> REWRITE_TAC [has_vector_derivative_x_std_normal_density]
 QED
 
 Theorem integral_x_std_normal_density :
@@ -3537,7 +3540,7 @@ QED
 
    NOTE: Diff.HAS_VECTOR_DERIVATIVE_CONV is used here!
  *)
-Theorem has_vector_derivative_neg_x_normal_density :
+Theorem has_vector_derivative_neg_x_std_normal_density :
     !x. ((\x. -x * std_normal_density x) has_vector_derivative
          (x pow 2 - 1) * std_normal_density x) (at x)
 Proof
@@ -3554,6 +3557,46 @@ Proof
  >> simp [Abbr ‘a’, Abbr ‘b’] >> REAL_ARITH_TAC
 QED
 
+(* |- !x. ((\x. -x * std_normal_density x) diffl
+           ((x pow 2 - 1) * std_normal_density x)) x
+ *)
+Theorem diffl_neg_x_std_normal_density[local] =
+        has_vector_derivative_neg_x_std_normal_density
+     |> REWRITE_RULE [GSYM limTheory.diffl_has_vector_derivative]
+
+(* Based on limTheory.DIFF_POS_MONO_LT_CU *)
+Theorem neg_x_std_normal_density_increasing :
+    !x y. 1 <= x /\ x <= y ==> -x * std_normal_density x <=
+                               -y * std_normal_density y
+Proof
+    rpt STRIP_TAC
+ >> ASSUME_TAC diffl_neg_x_std_normal_density
+ >> qabbrev_tac ‘f = \x. -x * std_normal_density x’
+ >> ASM_SIMP_TAC std_ss []
+ >> ‘x = y \/ x < y’ by PROVE_TAC [REAL_LE_LT] >- simp []
+ >> MATCH_MP_TAC REAL_LT_IMP_LE
+ >> irule limTheory.DIFF_POS_MONO_LT_CU >> art []
+ >> Q.EXISTS_TAC ‘1’ >> art []
+ >> reverse CONJ_TAC
+ >- (MATCH_MP_TAC limTheory.DIFF_CONT \\
+     Q.EXISTS_TAC ‘(1 pow 2 - 1) * std_normal_density 1’ >> art [])
+ >> rpt STRIP_TAC
+ >> Q.EXISTS_TAC ‘(z pow 2 - 1) * std_normal_density z’ >> art []
+ >> MATCH_MP_TAC REAL_LT_MUL
+ >> simp [normal_density_pos, REAL_SUB_LT]
+ >> ‘1 :real = 1 pow 2’ by simp [] >> POP_ORW
+ >> ‘2 = SUC 1’ by simp [] >> POP_ORW
+ >> MATCH_MP_TAC POW_LT >> simp []
+QED
+
+(* |- !x y.
+        1 <= x /\ x <= y ==>
+        y * std_normal_density y <= x * std_normal_density x
+ *)
+Theorem x_std_normal_density_decreasing =
+        neg_x_std_normal_density_increasing
+     |> REWRITE_RULE [REAL_MUL_LNEG, REAL_LE_NEG2]
+
 Theorem has_integral_x_x_1_std_normal_density :
     !a b. a <= b ==>
           ((\x. (x pow 2 - 1) * std_normal_density x) has_integral
@@ -3567,7 +3610,7 @@ Proof
  >> HO_MATCH_MP_TAC FUNDAMENTAL_THEOREM_OF_CALCULUS
  >> rw [IN_INTERVAL]
  >> MATCH_MP_TAC HAS_VECTOR_DERIVATIVE_AT_WITHIN
- >> REWRITE_TAC [has_vector_derivative_neg_x_normal_density]
+ >> REWRITE_TAC [has_vector_derivative_neg_x_std_normal_density]
 QED
 
 (* NOTE: This (improper) integration can be split into two equal parts: [-inf,0]
@@ -3744,11 +3787,11 @@ Proof
  >- (SIMP_TAC std_ss [Abbr ‘f1’, Abbr ‘f’, Abbr ‘u’,
                       HAS_INTEGRAL_MUL_INDICATOR] \\
      MATCH_MP_TAC has_integral_x_x_1_std_normal_density >> simp [])
+ >> qabbrev_tac ‘c = 1 * std_normal_density 1’
  >> simp [HAS_INTEGRAL_INTEGRABLE_INTEGRAL]
  >> STRIP_TAC
- >> POP_ASSUM (fs o wrap)
+ >> POP_ASSUM (FULL_SIMP_TAC std_ss o wrap)
  (* stage work *)
- >> qabbrev_tac ‘c = std_normal_density 1’
  >> qabbrev_tac ‘f2 = \x. f x * indicator t x’
  >> Suff ‘integrable lborel (Normal o f2) /\
           integral lborel (Normal o f2) = Normal c’
@@ -3923,16 +3966,17 @@ Proof
      Know ‘abs (c - &SUC i * std_normal_density (&SUC i)) =
                 c - &SUC i * std_normal_density (&SUC i)’
      >- (simp [ABS_REFL, REAL_SUB_LE] \\
-      (* NOTE: need to prove “x * std_normal_density x” decreasing for 1 <= x *)
-         cheat) >> Rewr' \\
+         qunabbrev_tac ‘c’ \\
+         MATCH_MP_TAC x_std_normal_density_decreasing >> simp []) >> Rewr' \\
      Suff ‘0 <= &SUC i * std_normal_density (&SUC i)’ >- REAL_ARITH_TAC \\
      MATCH_MP_TAC REAL_LE_MUL \\
      simp [normal_density_nonneg])
  >> DISCH_TAC
+ (* applying sup_image_normal *)
  >> ‘sup (IMAGE Normal p) = Normal (sup p)’ by PROVE_TAC [sup_image_normal]
  >> POP_ORW
- >> simp []
- (* final goal: sup p = c *)
+ >> REWRITE_TAC [extreal_11]
+ (* final goal: sup p = c, dealing with only real numbers *)
  >> cheat
 QED
 
