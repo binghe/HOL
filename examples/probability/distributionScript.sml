@@ -3613,6 +3613,18 @@ Proof
  >> REWRITE_TAC [has_vector_derivative_neg_x_std_normal_density]
 QED
 
+Theorem n_std_normal_density_to_zero :
+    ((\n. &n * std_normal_density (&n)) --> 0) sequentially
+Proof
+    rw [LIM_SEQUENTIALLY, dist]
+ >> Know ‘!n. abs (&n * std_normal_density (&n)) =
+                   &n * std_normal_density (&n)’
+ >- (rw [ABS_REFL] \\
+     MATCH_MP_TAC REAL_LE_MUL >> simp [normal_density_nonneg])
+ >> Rewr'
+ >> cheat
+QED
+
 (* NOTE: This (improper) integration can be split into two equal parts: [-inf,0]
    and [0,inf], each part has integral zero. FTC from Gauge integration gives us
    the integral for [0,&n].
@@ -3976,8 +3988,24 @@ Proof
  >> ‘sup (IMAGE Normal p) = Normal (sup p)’ by PROVE_TAC [sup_image_normal]
  >> POP_ORW
  >> REWRITE_TAC [extreal_11]
- (* final goal: sup p = c, dealing with only real numbers *)
- >> cheat
+ (* applying mono_increasing_converges_to_sup *)
+ >> ‘p = IMAGE J UNIV’ by rw [Once EXTENSION, Abbr ‘p’]
+ >> POP_ASSUM (fs o wrap) >> T_TAC
+ >> qunabbrev_tac ‘p’
+ >> Suff ‘J --> c’
+ >- (DISCH_TAC \\
+     SYM_TAC >> MATCH_MP_TAC mono_increasing_converges_to_sup >> art [] \\
+     simp [mono_increasing_def, Abbr ‘J’] \\
+     qx_genl_tac [‘i’, ‘j’] >> DISCH_TAC \\
+     simp [REAL_LE_SUB_CANCEL1] \\
+     MATCH_MP_TAC x_std_normal_density_decreasing >> simp [])
+ >> Suff ‘(\n. &SUC n * std_normal_density (&SUC n)) --> 0’
+ >- (qmatch_abbrev_tac ‘g --> 0 ==> _’ \\
+     DISCH_TAC \\
+     MP_TAC (Q.SPECL [‘\x. c’, ‘c’, ‘g’, ‘0’] SEQ_SUB) \\
+     simp [SEQ_CONST, Abbr ‘g’, ETA_AX])
+ >> simp [GSYM SEQ_SUC]
+ >> simp [GSYM LIM_SEQUENTIALLY_SEQ, n_std_normal_density_to_zero]
 QED
 
 Theorem integral_x_x_std_normal_density :

@@ -326,6 +326,24 @@ GEN_TAC THEN DISCH_THEN(DISJ_CASES_TAC o REWRITE_RULE[REAL_LE_LT]) THENL
     POP_ASSUM(SUBST1_TAC o SYM) THEN
     REWRITE_TAC[EXP_0, REAL_ADD_RID, REAL_LE_REFL]]);
 
+Theorem EXP_LT_X :
+    !x. 0 < x ==> 1 + x < exp x
+Proof
+    rpt STRIP_TAC
+ >> ASSUME_TAC (Q.SPEC ‘x’ (SRULE [] exp))
+ >> ASSUME_TAC (MATCH_MP SUM_SUMMABLE (SRULE [] (Q.SPEC ‘x’ EXP_CONVERGES)))
+ >> qabbrev_tac ‘f = \n. inv (&FACT n) * x pow n’
+ >> MP_TAC (Q.SPECL [‘f’, ‘2’] SER_POS_LT)
+ >> Q.PAT_X_ASSUM ‘exp x = suminf f’ (REWRITE_TAC o wrap o SYM)
+ >> simp [] >> EVAL_TAC
+ >> impl_tac
+ >- (rw [Abbr ‘f’] \\
+     MATCH_MP_TAC REAL_LT_MUL >> simp [REAL_POW_LT, FACT_LESS])
+ >> qabbrev_tac ‘e = suminf f’
+ >> simp [Abbr ‘f’]
+ >> EVAL_TAC >> simp []
+QED
+
 (* also known REAL_EXP_LT_1 *)
 val EXP_LT_1 = store_thm("EXP_LT_1",
   “!x. &0 < x ==> &1 < exp(x)”,
@@ -706,6 +724,42 @@ Proof
   MP_TAC(SPEC (Term`ln(x)`) DIFF_EXP) THEN ASM_REWRITE_TAC[] THEN
   DISCH_TAC THEN ASM_REWRITE_TAC[LN_EXP] THEN
   EXISTS_TAC (Term`&1`) THEN MATCH_ACCEPT_TAC REAL_LT_01
+QED
+
+Theorem LN_LT_HALF_X :
+    !x. 2 <= x ==> ln x < x / 2
+Proof
+    RW_TAC std_ss [Once (GSYM REAL_SUB_LT)]
+ >> MP_TAC (DIFF_CONV “\x. x / 2 - ln x”)
+ >> simp [REAL_INV_1OVER] >> DISCH_TAC
+ >> qabbrev_tac ‘f = \x. x / 2 - ln x’ >> simp []
+ >> Cases_on ‘x = 2’
+ >- (simp [Abbr ‘f’, REAL_SUB_LT] \\
+    ‘1 = ln (exp 1)’ by simp [LN_EXP] >> POP_ORW \\
+     irule (iffRL LN_MONO_LT) >> simp [EXP_POS_LT] \\
+     MP_TAC (Q.SPEC ‘1’ EXP_LT_X) >> simp [])
+ >> ‘2 < x’ by PROVE_TAC [REAL_LE_LT]
+ >> Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘f 2’
+ >> CONJ_TAC
+ >- (simp [Abbr ‘f’, REAL_SUB_LE] \\
+    ‘1 = ln (exp 1)’ by simp [LN_EXP] >> POP_ORW \\
+     irule (iffRL LN_MONO_LE) >> simp [EXP_POS_LT] \\
+     MP_TAC (Q.SPEC ‘1’ EXP_LE_X) >> simp [])
+ >> irule DIFF_POS_MONO_LT_CU >> art []
+ >> Q.EXISTS_TAC ‘2’ >> simp []
+ >> reverse CONJ_TAC
+ >- (MATCH_MP_TAC DIFF_CONT \\
+     Q.EXISTS_TAC ‘1 / 2 - 1 / 2’ \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> simp [])
+ >> rpt STRIP_TAC
+ >> Q.EXISTS_TAC ‘1 / 2 - 1 / z’
+ >> Know ‘0 < z’
+ >- (Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘2’ >> simp [])
+ >> DISCH_TAC
+ >> reverse CONJ_TAC
+ >- (FIRST_X_ASSUM MATCH_MP_TAC >> art [])
+ >> REWRITE_TAC [REAL_SUB_LT, GSYM REAL_INV_1OVER]
+ >> irule (iffRL REAL_INV_LT_ANTIMONO) >> simp []
 QED
 
 (*---------------------------------------------------------------------------*)
