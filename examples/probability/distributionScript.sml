@@ -4087,14 +4087,16 @@ QED
 
 Theorem integral_x_x_std_normal_density :
     !p X. prob_space p /\ std_normal_rv X p ==>
+          integrable lborel (\x. Normal (x pow 2 * std_normal_density x)) /\
           integral lborel (\x. Normal (x pow 2 * std_normal_density x)) = 1
 Proof
-    rpt STRIP_TAC
+    rpt GEN_TAC >> STRIP_TAC
  >> ‘!(x :real). x pow 2 = x pow 2 - 1 + 1’ by simp [REAL_SUB_ADD]
  >> POP_ORW
  >> simp [REAL_ADD_RDISTRIB, GSYM extreal_add_eq]
  >> STRIP_ASSUME_TAC integral_x_x_1_std_normal_density
- >> MP_TAC (Q.SPECL [‘p’, ‘X’, ‘0’, ‘1’] integral_normal_density) >> rw []
+ >> MP_TAC (Q.SPECL [‘p’, ‘X’, ‘0’, ‘1’] integral_normal_density)
+ >> simp [] >> STRIP_TAC
  >> Know ‘integral lborel
              (\x. Normal ((x pow 2 - 1) * std_normal_density x) +
                   Normal_density 0 1 x) =
@@ -4104,10 +4106,13 @@ Proof
      simp [lborel_def, space_lborel])
  >> Rewr'
  >> simp []
+ >> HO_MATCH_MP_TAC integrable_add
+ >> simp [lborel_def, space_lborel]
 QED
 
 Theorem variance_of_std_normal_rv :
-    !p X. prob_space p /\ std_normal_rv X p ==> variance p (Normal o X) = 1
+    !p X. prob_space p /\ std_normal_rv X p ==>
+          variance p (Normal o X) = 1
 Proof
     rw [variance_alt]
  >> ‘expectation p (Normal o X) = 0’ by PROVE_TAC [expectation_of_std_normal_rv]
@@ -4121,8 +4126,69 @@ Proof
  >> MP_TAC (Q.SPECL [‘p’, ‘X’, ‘0’, ‘1’, ‘\x. x pow 2’] integration_of_normal_rv)
  >> simp [o_DEF]
  >> DISCH_THEN K_TAC
- >> MATCH_MP_TAC integral_x_x_std_normal_density
+ >> MATCH_MP_TAC (cj 2 integral_x_x_std_normal_density)
  >> qexistsl_tac [‘p’, ‘X’] >> art []
+QED
+
+(* NOTE: This proof is based on variance_cmul, variance_real_affine, etc. *)
+Theorem variance_of_normal_rv :
+    !p X mu sig. prob_space p /\ normal_rv X p mu sig /\ 0 < sig ==>
+                 variance p (Normal o X) = Normal (sig pow 2)
+Proof
+    rpt STRIP_TAC
+ >> ‘sig <> 0’ by PROVE_TAC [REAL_LT_IMP_NE]
+ >> qabbrev_tac ‘Y = \x. -inv sig * mu + inv sig * X x’
+ >> Know ‘std_normal_rv Y p’
+ >- (MP_TAC (Q.SPECL [‘X’, ‘p’, ‘mu’, ‘sig’, ‘Y’,
+                      ‘inv sig’ (* a *), ‘-inv sig * mu’ (* b *)]
+                     normal_rv_affine') >> simp [] \\
+     simp [REAL_ADD_LINV, REAL_MUL_LNEG] \\
+     qabbrev_tac ‘c = inv sig’ \\
+    ‘0 < c’ by simp [Abbr ‘c’, REAL_INV_POS] \\
+    ‘abs c = c’ by simp [ABS_REFL, REAL_LT_IMP_LE] >> POP_ORW \\
+     simp [Abbr ‘c’, REAL_MUL_LINV])
+ >> DISCH_TAC
+ >> MP_TAC (Q.SPECL [‘p’, ‘Y’] variance_of_std_normal_rv) >> rw []
+ >> ‘integrable p (Normal o Y)’ by PROVE_TAC [expectation_of_std_normal_rv]
+ >> Know ‘real_random_variable (Normal o Y) p’
+ >- (simp [real_random_variable_equiv] >> fs [normal_rv])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘Z = \x. inv sig * X x’ (* b + a * X x *)
+ >> Know ‘normal_rv Z p (inv sig * mu) 1’
+ >- (MP_TAC (Q.SPECL [‘X’, ‘p’, ‘mu’, ‘sig’, ‘Z’,
+                      ‘inv sig’ (* a *), ‘0’ (* b *)]
+                     normal_rv_affine') >> simp [] \\
+     qabbrev_tac ‘c = inv sig’ \\
+    ‘0 < c’ by simp [Abbr ‘c’, REAL_INV_POS] \\
+    ‘abs c = c’ by simp [ABS_REFL, REAL_LT_IMP_LE] >> POP_ORW \\
+     simp [Abbr ‘c’, REAL_MUL_LINV])
+ >> DISCH_TAC
+ >> Know ‘Normal o Z = \x. (Normal o Y) x + Normal (inv sig * mu)’
+ >- (rw [FUN_EQ_THM, o_DEF, Abbr ‘Z’, Abbr ‘Y’, extreal_add_eq] \\
+     simp [REAL_ADD_LDISTRIB] >> REAL_ARITH_TAC)
+ >> DISCH_TAC
+ >> Know ‘variance p (Normal o Z) = variance p (Normal o Y)’
+ >- (POP_ORW \\
+     MATCH_MP_TAC variance_real_affine >> simp [])
+ >> DISCH_TAC
+ >> Know ‘integrable p (Normal o Z)’
+ >- (MATCH_MP_TAC (cj 1 expectation_of_normal_rv) \\
+     qexistsl_tac [‘inv sig * mu’, ‘1’] >> simp [])
+ >> DISCH_TAC
+ >> Know ‘real_random_variable (Normal o Z) p’
+ >- (simp [real_random_variable_equiv] >> fs [normal_rv])
+ >> DISCH_TAC
+ >> Know ‘finite_second_moments p (Normal o Z)’
+ >- simp [finite_second_moments_eq_finite_variance, lt_infty]
+ >> DISCH_TAC
+ >> Know ‘Normal o X = \x. Normal sig * (Normal o Z) x’
+ >- rw [FUN_EQ_THM, o_DEF, Abbr ‘Z’, extreal_mul_eq]
+ >> DISCH_TAC
+ >> Know ‘variance p (Normal o X) = Normal (sig pow 2) * variance p (Normal o Z)’
+ >- (POP_ORW \\
+     MATCH_MP_TAC variance_cmul >> art [])
+ >> Rewr'
+ >> simp []
 QED
 
 (* ------------------------------------------------------------------------- *)

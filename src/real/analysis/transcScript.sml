@@ -5739,4 +5739,5 @@ Proof
     rw[] >> Cases_on ‘x = y’ >> gs[REAL_LE_LT,ACOTH_ANTIMONO_LT]
 QED
 
+(* END *)
 val _ = export_theory();
