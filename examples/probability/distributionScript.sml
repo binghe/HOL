@@ -3679,7 +3679,27 @@ Proof
  >- (qunabbrev_tac ‘z’ \\
      MATCH_MP_TAC REAL_POW_LT >> art [])
  >> DISCH_TAC
- >> cheat
+ (* stage work *)
+ >> Q.EXISTS_TAC ‘MAX 2 (2 * clg (ln z))’
+ >> rw [MAX_LE]
+ >> Know ‘0 < n’
+ >- (Q_TAC (TRANS_TAC LTE_TRANS) ‘2’ >> simp [])
+ >> DISCH_TAC
+ >> ASSUME_TAC (Q.SPEC ‘ln z’ LE_NUM_CEILING)
+ >> irule (iffLR LN_MONO_LT)
+ >> simp [EXP_POS_LT, LN_MUL, LN_EXP]
+ >> reverse CONJ_TAC
+ >- (MATCH_MP_TAC REAL_LT_MUL >> simp [])
+ >> Suff ‘ln z < &n - ln (&n)’ >- REAL_ARITH_TAC
+ >> Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘&clg (ln z)’ >> art []
+ >> irule (iffLR REAL_LT_LMUL)
+ >> Q.EXISTS_TAC ‘2’
+ >> CONJ_TAC >- simp []
+ >> Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘&n’ >> simp [REAL_SUB_LDISTRIB]
+ >> REWRITE_TAC [GSYM REAL_OF_NUM_MUL]
+ >> Suff ‘2 * ln (&n) < (&n :real)’ >- REAL_ARITH_TAC
+ >> Suff ‘ln (&n) < &n / (2 :real)’ >- simp []
+ >> MATCH_MP_TAC LN_LT_HALF_X >> simp []
 QED
 
 (* NOTE: This (improper) integration can be split into two equal parts: [-inf,0]
