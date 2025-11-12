@@ -3594,14 +3594,14 @@ QED
         y * std_normal_density y <= x * std_normal_density x
  *)
 Theorem x_std_normal_density_decreasing =
-        neg_x_std_normal_density_increasing
-     |> REWRITE_RULE [REAL_MUL_LNEG, REAL_LE_NEG2]
+        REWRITE_RULE [REAL_MUL_LNEG, REAL_LE_NEG2]
+                     neg_x_std_normal_density_increasing
 
 Theorem has_integral_x_x_1_std_normal_density :
     !a b. a <= b ==>
-          ((\x. (x pow 2 - 1) * std_normal_density x) has_integral
-           (a * std_normal_density a -
-            b * std_normal_density b)) (interval [a,b])
+         ((\x. (x pow 2 - 1) * std_normal_density x) has_integral
+          (a * std_normal_density a -
+           b * std_normal_density b)) (interval [a,b])
 Proof
     rpt STRIP_TAC
  >> ‘a * std_normal_density a - b * std_normal_density b =
@@ -3613,15 +3613,72 @@ Proof
  >> REWRITE_TAC [has_vector_derivative_neg_x_std_normal_density]
 QED
 
-Theorem n_std_normal_density_to_zero :
+(* NOTE: This proof is based on the new LN_LT_HALF_X (transc):
+
+   |- ln x < x / 2 (2 <= x)
+  <=> x - ln x > x - x / 2 (= x / 2)
+
+      exp n > z * n
+  <=> n > ln z + ln n
+  <=> n - ln n > n / 2 > ln z
+  <=> n > 2 * ln z
+ *)
+Theorem lim_sequentially_n_std_normal_density :
     ((\n. &n * std_normal_density (&n)) --> 0) sequentially
 Proof
     rw [LIM_SEQUENTIALLY, dist]
+ >> ‘e <> 0’ by PROVE_TAC [REAL_LT_IMP_NE]
  >> Know ‘!n. abs (&n * std_normal_density (&n)) =
                    &n * std_normal_density (&n)’
  >- (rw [ABS_REFL] \\
      MATCH_MP_TAC REAL_LE_MUL >> simp [normal_density_nonneg])
  >> Rewr'
+ >> simp [std_normal_density_def]
+ >> qabbrev_tac ‘c :real = inv (sqrt (2 * pi))’
+ >> Know ‘0 < c’
+ >- (simp [Abbr ‘c’] \\
+     MATCH_MP_TAC SQRT_POS_LT \\
+     MATCH_MP_TAC REAL_LT_MUL >> simp [PI_POS])
+ >> DISCH_TAC
+ >> REWRITE_TAC [GSYM neg_rat, EXP_NEG]
+ >> simp [EXP_DIV, GSYM sqrt, GSYM real_div]
+ >> Know ‘!n. c * &n / sqrt (exp (&n pow 2)) < e <=>
+              c * &n < e * sqrt (exp (&n pow 2))’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     MATCH_MP_TAC REAL_LT_LDIV_EQ \\
+     simp [SQRT_POS_LT, EXP_POS_LT])
+ >> Rewr'
+ >> ONCE_REWRITE_TAC [REAL_MUL_COMM]
+ >> ‘!n. &n * c < sqrt (exp (&n pow 2)) * e <=>
+         &n * c / e < sqrt (exp (&n pow 2))’ by rw [] >> POP_ORW
+ >> ‘!n. &n * c / e = c / e * &n’ by simp [] >> POP_ORW
+ >> qabbrev_tac ‘d = c / e’
+ >> ‘0 < d’ by simp [Abbr ‘d’, REAL_LT_DIV]
+ >> Know ‘!n. d * &n < sqrt (exp (&n pow 2)) <=>
+              (d * &n) pow 2 < sqrt (exp (&n pow 2)) pow 2’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     qmatch_abbrev_tac ‘a < (b :real) <=> _’ \\
+     SYM_TAC >> MATCH_MP_TAC REAL_POW_LT_EQ \\
+     simp [Abbr ‘a’, Abbr ‘b’, SQRT_POS_LE, EXP_POS_LE] \\
+     MATCH_MP_TAC REAL_LE_MUL \\
+     simp [REAL_LT_IMP_LE])
+ >> Rewr'
+ >> simp [SQRT_POW_2, EXP_POS_LE, POW_MUL]
+ >> qabbrev_tac ‘z = d pow 2’
+ >> Suff ‘?N. !n. N <= n ==> z * &n < exp (&n)’
+ >- (STRIP_TAC \\
+     Q.EXISTS_TAC ‘SUC (SQRT N) ** 2’ \\
+     STRIP_ASSUME_TAC (Q.SPEC ‘N’ SQRT_PROPERTY) \\
+     rw [REAL_POW] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     MATCH_MP_TAC LT_IMP_LE \\
+     Q_TAC (TRANS_TAC LTE_TRANS) ‘SUC (SQRT N) ** 2’ >> art [] \\
+     Q_TAC (TRANS_TAC LE_TRANS) ‘n’ >> art [] \\
+     MATCH_MP_TAC EXP_LE >> simp [])
+ >> Know ‘0 < z’
+ >- (qunabbrev_tac ‘z’ \\
+     MATCH_MP_TAC REAL_POW_LT >> art [])
+ >> DISCH_TAC
  >> cheat
 QED
 
@@ -4005,7 +4062,7 @@ Proof
      MP_TAC (Q.SPECL [‘\x. c’, ‘c’, ‘g’, ‘0’] SEQ_SUB) \\
      simp [SEQ_CONST, Abbr ‘g’, ETA_AX])
  >> simp [GSYM SEQ_SUC]
- >> simp [GSYM LIM_SEQUENTIALLY_SEQ, n_std_normal_density_to_zero]
+ >> simp [GSYM LIM_SEQUENTIALLY_SEQ, lim_sequentially_n_std_normal_density]
 QED
 
 Theorem integral_x_x_std_normal_density :

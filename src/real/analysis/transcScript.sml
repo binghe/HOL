@@ -897,6 +897,16 @@ Proof
     MATCH_MP_TAC ROOT_LT_LEMMA THEN ASM_REWRITE_TAC[]]
 QED
 
+Theorem EXP_DIV :
+    !n x. 1 < n ==> exp (x / &n) = root n (exp x)
+Proof
+    rw [Once EQ_SYM_EQ]
+ >> Cases_on ‘n’ >> fs []
+ >> rename1 ‘1 < SUC n’
+ >> MP_TAC (Q.SPECL [‘n’, ‘exp x’] ROOT_LN)
+ >> simp [EXP_POS_LT, LN_EXP]
+QED
+
 Theorem ROOT_0:
    !n. root(SUC n) (&0) = &0
 Proof
@@ -1055,6 +1065,15 @@ Proof
  >> METIS_TAC [ROOT_11, REAL_LT_LE]
 QED
 
+Theorem ROOT_MONO_LT :
+    !n x y. &0 <= x /\ x < y ==> root(SUC n) x < root(SUC n) y
+Proof
+    rw [REAL_LT_LE]
+ >- (MATCH_MP_TAC ROOT_MONO_LE >> art [])
+ >> ‘0 <= y’ by PROVE_TAC [REAL_LE_TRANS]
+ >> PROVE_TAC [ROOT_11]
+QED
+
 Theorem lem[local]:
   0<2:num
 Proof REWRITE_TAC[TWO,LESS_0]
@@ -1107,6 +1126,24 @@ Proof
      IMP_RES_TAC REAL_LT_REFL,
    PAT_X_ASSUM (Term `& 0 = _`) (SUBST_ALL_TAC o SYM)
    THEN REWRITE_TAC [POW_0, TWO, REAL_MUL_LZERO]]]
+QED
+
+Theorem REAL_POW_LT_EQ :
+    !n x y. 0 < n /\ 0 <= x /\ 0 <= y ==> (x pow n < y pow n <=> x < y)
+Proof
+    rpt STRIP_TAC
+ >> reverse EQ_TAC
+ >- (DISCH_TAC \\
+     MATCH_MP_TAC REAL_POW_LT2 >> simp [])
+ >> Cases_on ‘n’ >> fs []
+ >> rename1 ‘x pow SUC n < _ ==> _’
+ >> qmatch_abbrev_tac ‘a < b ==> _’
+ >> DISCH_TAC
+ >> Know ‘root (SUC n) a < root (SUC n) b’
+ >- (MATCH_MP_TAC ROOT_MONO_LT >> art [] \\
+     simp [Abbr ‘a’, POW_POS])
+ >> MP_TAC (Q.SPECL [‘n’, ‘x’] POW_ROOT_POS) >> simp [Abbr ‘a’]
+ >> MP_TAC (Q.SPECL [‘n’, ‘y’] POW_ROOT_POS) >> simp [Abbr ‘b’]
 QED
 
 (*---------------------------------------------------------------------------*)
