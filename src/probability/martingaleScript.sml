@@ -494,21 +494,22 @@ Proof
       Q.EXISTS_TAC ‘n'’ >> rw [] ]
 QED
 
-(* This is also called Reverse Fatou Lemma, c.f. [1, p. 80]
+(* This is also called Reverse Fatou Lemma [1, p.80]
 
    NOTE: the antecedents are just to make sure that WLLN_IID can be proved.
  *)
 Theorem fatou_lemma' :
     !m f w. measure_space m /\ pos_fn_integral m w < PosInf /\
            (!x n. x IN m_space m ==> 0 <= f n x /\ f n x <= w x /\ w x < PosInf) /\
-           (!n. f n IN measurable (m_space m,measurable_sets m) Borel) ==>
+           (!n. f n IN Borel_measurable (measurable_space m)) ==>
             limsup (\n. pos_fn_integral m (f n)) <=
             pos_fn_integral m (\x. limsup (\n. f n x))
 Proof
     rw [ext_limsup_def]
  >> Know ‘pos_fn_integral m (\x. inf (IMAGE (\m. sup {f n x | m <= n}) UNIV)) =
           inf (IMAGE (\i. pos_fn_integral m (\x. sup {f n x | i <= n})) UNIV)’
- >- (HO_MATCH_MP_TAC lebesgue_monotone_convergence_decreasing >> rw [] >| (* 5 subgoals *)
+ >- (HO_MATCH_MP_TAC lebesgue_monotone_convergence_decreasing \\
+     rw [] >| (* 5 subgoals *)
      [ (* goal 1 (of 5) *)
        MATCH_MP_TAC IN_MEASURABLE_BOREL_SUP >> simp [] \\
        qexistsl_tac [‘f’, ‘from i’] >> rw [IN_FROM] >| (* 2 subgoals *)
@@ -564,13 +565,8 @@ Proof
  >> MATCH_MP_TAC pos_not_neginf >> rw []
 QED
 
-(* Theorem 12.2 of [1, p.97], in slightly simplified form
-
-   NOTE: ‘integrable m f’ can be moved to conclusions, but the current form is
-          enough for WLLN_IID (directly used by truncated_vars_expectation).
- *)
-Theorem lebesgue_dominated_convergence :
-    !m f fi. measure_space m /\ (!i. integrable m (fi i)) /\ integrable m f /\
+Theorem lebesgue_dominated_convergence_lemma[local] :
+    !m f fi. measure_space m /\ (!i. integrable m (fi i)) /\
             (!i x. x IN m_space m ==> fi i x <> PosInf /\ fi i x <> NegInf) /\
             (!x. x IN m_space m ==> f x <> PosInf /\ f x <> NegInf) /\
             (!x. x IN m_space m ==>
@@ -578,9 +574,55 @@ Theorem lebesgue_dominated_convergence :
             (?w. integrable m w /\
                 (!x. x IN m_space m ==> 0 <= w x /\ w x <> PosInf) /\
                  !i x. x IN m_space m ==> abs (fi i x) <= w x)
-        ==> ((\i. real (integral m (fi i))) --> real (integral m f)) sequentially
+        ==> integrable m f
 Proof
     rpt STRIP_TAC
+ (* applying ext_limsup_thm *)
+ >> Know ‘!x. x IN m_space m ==> limsup (\i. fi i x) = f x /\
+                                 liminf (\i. fi i x) = f x’
+ >- (Q.X_GEN_TAC ‘x’ >> DISCH_TAC \\
+     qmatch_abbrev_tac ‘limsup (a :num -> extreal) = _ /\ _’ \\
+     MP_TAC (Q.SPECL [‘a’, ‘real (f x)’] ext_limsup_thm) \\
+     simp [Abbr ‘a’, o_DEF] \\
+     DISCH_THEN K_TAC \\
+     MATCH_MP_TAC normal_real >> simp [])
+ >> DISCH_TAC
+ >> MATCH_MP_TAC integrable_bounded
+ >> Q.EXISTS_TAC ‘w’ >> art []
+ >> CONJ_ASM1_TAC (* f IN Borel_measurable (measurable_space m) *)
+ >- (MATCH_MP_TAC IN_MEASURABLE_BOREL_EQ \\
+     Q.EXISTS_TAC ‘\x. limsup (\i. fi i x)’ >> simp [] \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_LIMSUP \\
+     Q.EXISTS_TAC ‘fi’ >> simp [] \\
+     fs [integrable_def, FORALL_AND_THM])
+ (* stage work *)
+ >> rpt STRIP_TAC
+ >> ‘f x = limsup (\i. fi i x)’ by simp [] >> POP_ORW
+ >> MATCH_MP_TAC ext_limsup_bounded >> rw []
+QED
+
+(* Theorem 12.2 of [1, p.97], in slightly simplified form
+
+   NOTE: moved “integrable m f” from antecedents (provable) to conclusion.
+ *)
+Theorem lebesgue_dominated_convergence :
+    !m f fi. measure_space m /\ (!i. integrable m (fi i)) /\
+            (!i x. x IN m_space m ==> fi i x <> PosInf /\ fi i x <> NegInf) /\
+            (!x. x IN m_space m ==> f x <> PosInf /\ f x <> NegInf) /\
+            (!x. x IN m_space m ==>
+                ((\i. real (fi i x)) --> real (f x)) sequentially) /\
+            (?w. integrable m w /\
+                (!x. x IN m_space m ==> 0 <= w x /\ w x <> PosInf) /\
+                 !i x. x IN m_space m ==> abs (fi i x) <= w x)
+        ==> integrable m f /\
+            ((\i. real (integral m (fi i))) --> real (integral m f)) sequentially
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> CONJ_ASM1_TAC
+ >- (MATCH_MP_TAC lebesgue_dominated_convergence_lemma \\
+     Q.EXISTS_TAC ‘fi’ >> simp [] \\
+     Q.EXISTS_TAC ‘w’ >> simp [])
+ (* original proof *)
  >> Suff ‘((\i. real (integral m (\x. abs (fi i x - f x)))) --> 0) sequentially’
  >- (rw [LIM_SEQUENTIALLY, dist] \\
      Q.PAT_X_ASSUM ‘!e. 0 < e ==> P’ (MP_TAC o (Q.SPEC ‘e’)) \\
@@ -701,20 +743,20 @@ Proof
      rw [extreal_sub_def, extreal_abs_def])
  >> DISCH_TAC
  >> Q.ABBREV_TAC ‘b = \i. integral m (a i)’
+ (* NOTE: “integrable m f” is needed here *)
  >> Know ‘!n. integrable m (a n)’
  >- (rw [Abbr ‘a’] \\
      HO_MATCH_MP_TAC (REWRITE_RULE [o_DEF] integrable_abs) >> art [] \\
      MATCH_MP_TAC integrable_sub >> rw [])
  >> DISCH_TAC
  >> ‘!i. integral m (\x. abs (u i x - f x)) = b i’
-       by rw [Abbr ‘a’, Abbr ‘b’] >> POP_ORW
+      by rw [Abbr ‘a’, Abbr ‘b’] >> POP_ORW
  (* applying ext_limsup_lemma *)
  >> Know ‘!n. 0 <= b n /\ b n <> PosInf’
  >- (Q.X_GEN_TAC ‘n’ >> SIMP_TAC std_ss [Abbr ‘b’] \\
      reverse CONJ_TAC >- METIS_TAC [integrable_finite_integral] \\
      MATCH_MP_TAC integral_pos >> rw [Abbr ‘a’, abs_pos])
- >> DISCH_THEN
-     (ONCE_REWRITE_TAC o wrap o (MATCH_MP ext_limsup_lemma))
+ >> DISCH_THEN (ONCE_REWRITE_TAC o wrap o (MATCH_MP ext_limsup_lemma))
  >> Q.UNABBREV_TAC ‘b’
  (* applying ext_limsup_lemma again *)
  >> Know ‘!x. x IN m_space m ==>
@@ -814,6 +856,50 @@ Proof
  >> ‘w x <> NegInf’ by METIS_TAC [pos_not_neginf]
  >> ‘?r. w x = Normal r’ by METIS_TAC [extreal_cases] >> POP_ORW
  >> rw [extreal_of_num_def, extreal_mul_def]
+QED
+
+(* The "modern" form (based on extreal_lim) *)
+Theorem lebesgue_dominated_convergence' :
+    !m f fi. measure_space m /\ (!i. integrable m (fi i)) /\
+            (!i x. x IN m_space m ==> fi i x <> PosInf /\ fi i x <> NegInf) /\
+            (!x. x IN m_space m ==> f x <> PosInf /\ f x <> NegInf) /\
+            (!x. x IN m_space m ==> ((\i. fi i x) --> f x) sequentially) /\
+            (?w. integrable m w /\
+                (!x. x IN m_space m ==> 0 <= w x /\ w x <> PosInf) /\
+                 !i x. x IN m_space m ==> abs (fi i x) <= w x)
+        ==> integrable m f /\
+            ((\i. integral m (fi i)) --> integral m f) sequentially
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> Know ‘!x. x IN m_space m ==>
+             ((\i. real (fi i x)) --> real (f x)) sequentially’
+ >- (rpt STRIP_TAC \\
+     qabbrev_tac ‘l = f x’ \\
+     qabbrev_tac ‘g = \i. fi i x’ >> simp [] \\
+    ‘(\i. real (g i)) = real o g’ by rw [FUN_EQ_THM, o_DEF] >> POP_ORW \\
+     Know ‘(real o g --> real l) sequentially <=> (g --> l) sequentially’
+     >- (SYM_TAC >> MATCH_MP_TAC extreal_lim_sequentially_eq \\
+         simp [Abbr ‘l’] \\
+         Q.EXISTS_TAC ‘0’ >> simp [Abbr ‘g’]) >> Rewr' \\
+     simp [Abbr ‘g’, Abbr ‘l’])
+ >> DISCH_TAC
+ >> CONJ_ASM1_TAC
+ >- (MATCH_MP_TAC (cj 1 lebesgue_dominated_convergence) \\
+     Q.EXISTS_TAC ‘fi’ >> simp [] \\
+     Q.EXISTS_TAC ‘w’ >> simp [])
+ >> qmatch_abbrev_tac ‘(g --> l) sequentially’
+ >> Know ‘(g --> l) sequentially <=> (real o g --> real l) sequentially’
+ >- (MATCH_MP_TAC extreal_lim_sequentially_eq \\
+     Know ‘l <> PosInf /\ l <> NegInf’
+     >- (qunabbrev_tac ‘l’ \\
+         MATCH_MP_TAC integrable_finite_integral >> art []) >> Rewr \\
+     Q.EXISTS_TAC ‘0’ >> simp [] \\
+     Q.X_GEN_TAC ‘n’ >> simp [Abbr ‘g’] \\
+     MATCH_MP_TAC integrable_finite_integral >> art [])
+ >> Rewr'
+ >> simp [Abbr ‘g’, Abbr ‘l’, o_DEF]
+ >> MATCH_MP_TAC (cj 2 lebesgue_dominated_convergence) >> simp []
+ >> Q.EXISTS_TAC ‘w’ >> simp []
 QED
 
 (* ------------------------------------------------------------------------- *)

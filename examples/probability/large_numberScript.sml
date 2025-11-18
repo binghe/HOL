@@ -2834,7 +2834,7 @@ Proof
  >> MATCH_MP_TAC integrable_abs >> art []
 QED
 
-(* this theorem requires lebesgue_dominated_convergence *)
+(* NOTE: This theorem requires lebesgue_dominated_convergence *)
 Theorem truncated_vars_expectation :
     !p X. prob_space p /\ (!n. real_random_variable (X n) p) /\
           identical_distribution p X Borel UNIV /\ integrable p (X 0) ==>
@@ -2861,7 +2861,7 @@ Proof
                           events_def, random_variable_def]
  >> Q.PAT_X_ASSUM ‘identical_distribution p X Borel univ(:num)’ K_TAC
  (* stage work, below is lebesgueTheory only *)
- >> HO_MATCH_MP_TAC lebesgue_dominated_convergence >> art []
+ >> HO_MATCH_MP_TAC (cj 2 lebesgue_dominated_convergence) >> art []
  >> ‘integrable p (abs o X 0)’ by METIS_TAC [integrable_abs]
  >> Know ‘?w. integrable p w /\
               (!x. x IN m_space p ==> 0 <= w x /\ w x <> PosInf) /\
