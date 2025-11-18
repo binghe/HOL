@@ -1506,6 +1506,47 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
+(*  Parameter-Dependent Integrals (Part of Chapter 12 of [1])                *)
+(* ------------------------------------------------------------------------- *)
+
+(* Theorem 12.4 [1, p.99]
+
+   NOTE: ext_continuous_on_def is not used, because we want to make sure the
+   type of u is (u :real -> 'a -> real) and see the “continuous_on” for real
+   functions (real -> real) is preserved by integration.
+
+   By lebesgue_eq_gauge_integral (not available here), the conclusion is also
+
+   real (integral m (Normal o u t)) = integral UNIV (u t)
+
+   i.e. (\t. integral UNIV (u t)) continuous_on interval (a,b)
+ *)
+Theorem continuity_lemma :
+    !m u a b. measure_space m /\ a < b /\
+             (!t. t IN interval (a,b) ==> integrable m (Normal o u t)) /\
+             (!x. x IN m_space m ==> (\t. u t x) continuous_on interval (a,b)) /\
+             (?w. integrable m w /\
+                  !t x. t IN interval (a,b) /\ x IN m_space m ==>
+                        Normal (abs (u t x)) <= w x) ==>
+             (\t. real (integral m (Normal o u t))) continuous_on interval (a,b)
+Proof
+    cheat
+QED
+
+(* Theorem 12.5 [1, p.100] *)
+Theorem differentiability_lemma :
+    !m u a b. measure_space m /\ a < b /\
+             (!t. t IN interval (a,b) ==> integrable m (Normal o u t)) /\
+             (!x. x IN m_space m ==> (\t. u t x) differentiable_on interval (a,b)) /\
+             (?w. integrable m w /\
+                  !t x. t IN interval (a,b) /\ x IN m_space m ==>
+                        Normal (abs (u t x)) <= w x) ==>
+             (\t. real (integral m (Normal o u t))) differentiable_on interval (a,b)
+Proof
+    cheat
+QED
+
+(* ------------------------------------------------------------------------- *)
 (*  Product measures and Fubini's theorem (Chapter 14 of [1])                *)
 (* ------------------------------------------------------------------------- *)
 
@@ -2051,7 +2092,8 @@ Proof
              (BIGUNION (IMAGE f univ(:num)) = X)’
            by METIS_TAC [has_exhausting_sequence_def, space_def, subsets_def] \\
          POP_ASSUM (* rewrite only LHS *)
-           ((GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites) o wrap o SYM) \\
+           ((GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites) o
+            wrap o SYM) \\
          REWRITE_TAC [general_BIGUNION_CROSS] \\
          MATCH_MP_TAC SIGMA_ALGEBRA_ENUM >> art [] \\
          rw [general_sigma_def, IN_FUNSET, IN_UNIV] \\
@@ -2095,9 +2137,10 @@ Proof
  >> NTAC 4 (POP_ASSUM K_TAC) >> Q.UNABBREV_TAC ‘S’
  >> DISCH_TAC
  (* Part III: hard *)
- >> Q.ABBREV_TAC ‘S = {b | b IN subsets B /\
-                          !e. e IN E ==>
-                             (general_cross cons e b) IN subsets (general_sigma cons (X,E) (Y,G))}’
+ >> Q.ABBREV_TAC
+   ‘S = {b | b IN subsets B /\
+            !e. e IN E ==>
+               (general_cross cons e b) IN subsets (general_sigma cons (X,E) (Y,G))}’
  >> Know ‘sigma_algebra (Y,S)’
  >- (simp [SIGMA_ALGEBRA_ALT_SPACE] \\
      CONJ_TAC (* subset_class *)
@@ -2112,7 +2155,8 @@ Proof
              (BIGUNION (IMAGE f univ(:num)) = Y)’
            by METIS_TAC [has_exhausting_sequence_def, space_def, subsets_def] \\
          POP_ASSUM (* rewrite only LHS *)
-           ((GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites) o wrap o SYM) \\
+           ((GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites) o
+            wrap o SYM) \\
          REWRITE_TAC [general_CROSS_BIGUNION] \\
          MATCH_MP_TAC SIGMA_ALGEBRA_ENUM >> art [] \\
          rw [general_sigma_def, IN_FUNSET, IN_UNIV] \\
@@ -2352,7 +2396,8 @@ Theorem UNIQUENESS_OF_PROD_MEASURE :
 Proof
     rpt GEN_TAC >> STRIP_TAC
  >> MP_TAC (Q.SPECL [‘pair$,’,‘FST’,‘SND’,‘X’,‘Y’,‘E’,‘G’,‘A’,‘B’,‘u’,‘v’,‘m’,‘m'’]
-                    (INST_TYPE [gamma |-> “:'a # 'b”] uniqueness_of_prod_measure_general))
+                    (INST_TYPE [gamma |-> “:'a # 'b”]
+                               uniqueness_of_prod_measure_general))
  >> RW_TAC std_ss [GSYM CROSS_ALT, GSYM prod_sets_alt, GSYM prod_sigma_alt,
                    pair_operation_pair]
 QED
