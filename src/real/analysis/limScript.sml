@@ -1995,6 +1995,7 @@ End
 (* NOTE: It's recommended for users to copy this overload to their theories:
 Overload D[local] = “diffn”
  *)
+Overload diff1 = “diffn 1”
 
 Theorem diffn_thm :
     !f. (!m t. ?x. (diffn m f diffl x) t) ==>
@@ -2011,11 +2012,12 @@ Proof
     rw [FUN_EQ_THM, diffn_def]
 QED
 
-Theorem diffn_1 : (* was: diff1_def *)
+Theorem diffn_1 :
     !f x. diffn 1 f x = @y. (f diffl y) x
 Proof
     EVAL_TAC >> simp []
 QED
+Theorem diff1_def = diffn_1
 
 Theorem SELECT_EQ_THM[local] :
     !P Q. (!x. P x <=> Q x) ==> ((@x. P x) = (@x. Q x))

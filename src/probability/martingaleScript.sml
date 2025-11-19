@@ -6,10 +6,9 @@
 (*
 Theory martingale
 Ancestors
-  pair relation prim_rec arithmetic pred_set combin fcp real seq
-  transc iterate real_sigma topology real_topology metric nets
-  extreal_base extreal sigma_algebra measure real_borel borel
-  lebesgue
+  pair relation prim_rec arithmetic pred_set combin fcp real seq lim
+  transc iterate real_sigma topology real_topology metric nets derivative
+  extreal_base extreal sigma_algebra measure real_borel borel lebesgue
 Libs
   hurdUtils jrhUtils tautLib realLib
  *)
@@ -19,10 +18,10 @@ open pairTheory relationTheory prim_recTheory arithmeticTheory pred_setTheory
      combinTheory fcpTheory hurdUtils jrhUtils tautLib;
 
 open realTheory realLib seqTheory transcTheory iterateTheory real_sigmaTheory
-     topologyTheory real_topologyTheory metricTheory netsTheory;
+     topologyTheory real_topologyTheory metricTheory netsTheory limTheory;
 
 open extreal_baseTheory extrealTheory sigma_algebraTheory measureTheory
-     real_borelTheory borelTheory lebesgueTheory;
+     real_borelTheory borelTheory lebesgueTheory derivativeTheory;
 
 val _ = new_theory "martingale";
 
@@ -1517,31 +1516,106 @@ QED
 
    By lebesgue_eq_gauge_integral (not available here), the conclusion is also
 
-   real (integral m (Normal o u t)) = integral UNIV (u t)
+      real (integral m (Normal o u t)) = integral UNIV (u t)
 
    i.e. (\t. integral UNIV (u t)) continuous_on interval (a,b)
  *)
 Theorem continuity_lemma :
     !m u a b. measure_space m /\ a < b /\
-             (!t. t IN interval (a,b) ==> integrable m (Normal o u t)) /\
-             (!x. x IN m_space m ==> (\t. u t x) continuous_on interval (a,b)) /\
-             (?w. integrable m w /\
-                  !t x. t IN interval (a,b) /\ x IN m_space m ==>
-                        Normal (abs (u t x)) <= w x) ==>
-             (\t. real (integral m (Normal o u t))) continuous_on interval (a,b)
+      (!t. t IN interval (a,b) ==> integrable m (Normal o u t)) /\
+      (!x. x IN m_space m ==> (\t. u t x) continuous_on interval (a,b)) /\
+      (?w. integrable m w /\
+          (!x. x IN m_space m ==> 0 <= w x /\ w x <> PosInf) /\
+           !t x. t IN interval (a,b) /\ x IN m_space m ==>
+                 Normal (abs (u t x)) <= w x) ==>
+      (\t. real (integral m (Normal o u t))) continuous_on interval (a,b)
 Proof
-    cheat
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC CONTINUOUS_AT_IMP_CONTINUOUS_ON
+ >> Q.X_GEN_TAC ‘t’ >> rw [IN_INTERVAL]
+ >> simp [CONTINUOUS_AT_SEQUENTIALLY]
+ >> Q.X_GEN_TAC ‘s0’
+ >> DISCH_TAC
+ (* NOTE: Some initial s0(i) may fall outside of (a,b), we need ti shift the
+    index so that all values are inside (a,b).
+  *)
+ >> Know ‘?N. !n. N <= n ==> s0 n IN interval (a,b)’
+ >- (POP_ASSUM MP_TAC >> rw [LIM_SEQUENTIALLY, dist] \\
+     POP_ASSUM (MP_TAC o Q.SPEC ‘min (t - a) (b - t)’) \\
+     rw [REAL_LT_MIN, REAL_SUB_LT] \\
+     Q.EXISTS_TAC ‘N’ >> rw [IN_INTERVAL] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       Cases_on ‘0 <= s0 n - t’ (* a < t <= s0(n) < b *)
+       >- (fs [REAL_SUB_LE] \\
+           Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘t’ >> art []) \\
+       fs [REAL_NOT_LE] \\
+       Q.PAT_X_ASSUM ‘!n. N <= n ==> _’ (MP_TAC o Q.SPEC ‘n’) \\
+       simp [ABS_EQ_NEG, REAL_NEG_SUB] \\
+       REAL_ARITH_TAC,
+       (* goal 2 (of 2) *)
+       reverse (Cases_on ‘0 <= s0 n - t’) (* a < s0(n) < t < b *)
+       >- (fs [REAL_NOT_LE, REAL_SUB_LT_NEG] \\
+           Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘t’ >> art []) \\
+       Q.PAT_X_ASSUM ‘!n. N <= n ==> _’ (MP_TAC o Q.SPEC ‘n’) \\
+       simp [ABS_REDUCE] \\
+       REAL_ARITH_TAC ])
+ >> STRIP_TAC (* this asserts ‘N’ *)
+ (* applying SEQ_OFFSET *)
+ >> qabbrev_tac ‘s = \i. s0 (i + N)’
+ >> ‘!n. s n IN interval (a,b)’ by rw [Abbr ‘s’]
+ >> Know ‘(s --> t) sequentially’
+ >- (qunabbrev_tac ‘s’ \\
+     MATCH_MP_TAC SEQ_OFFSET >> art [])
+ >> DISCH_TAC
+ (* stage work *)
+ >> simp [o_DEF]
+ >> HO_MATCH_MP_TAC SEQ_OFFSET_REV
+ >> Q.EXISTS_TAC ‘N’ >> simp []
+ >> qabbrev_tac ‘fi = \i x. Normal (u (s i) x)’
+ >> ‘(\x. real (integral m (\y. Normal (u (s x) y)))) =
+     (\i. real (integral m (fi i)))’
+       by rw [FUN_EQ_THM, Abbr ‘fi’] >> POP_ORW
+ >> qabbrev_tac ‘f = \x. Normal (u t x)’
+ (* applying lebesgue_dominated_convergence *)
+ >> MATCH_MP_TAC (cj 2 lebesgue_dominated_convergence) >> art []
+ >> CONJ_TAC (* !i. integrable m (fi i) *)
+ >- (rw [Abbr ‘fi’] \\
+     Q.PAT_X_ASSUM ‘!t. _ ==> integrable m (Normal o u t)’ MP_TAC \\
+     rw [o_DEF])
+ >> CONJ_TAC >- rw [Abbr ‘fi’]
+ >> CONJ_TAC >- rw [Abbr ‘f’]
+ >> reverse CONJ_TAC (* ?w. integrable m w /\ ... *)
+ >- (Q.EXISTS_TAC ‘w’ >> art [] \\
+     rw [Abbr ‘fi’, extreal_abs_def])
+ (* stage work *)
+ >> rw [LIM_SEQUENTIALLY, Abbr ‘fi’, Abbr ‘f’]
+ >> Q.PAT_X_ASSUM ‘!x. x IN m_space m ==> (\t. u t x) continuous_on _’
+      (MP_TAC o Q.SPEC ‘x’)
+ >> rw [continuous_on, IN_INTERVAL]
+ >> POP_ASSUM (MP_TAC o Q.SPEC ‘t’) >> rw []
+ >> POP_ASSUM (MP_TAC o Q.SPEC ‘e’) >> rw [] (* this asserts ‘d’ *)
+ >> Q.PAT_X_ASSUM ‘(s --> t) sequentially’ MP_TAC
+ >> rw [LIM_SEQUENTIALLY]
+ >> POP_ASSUM (MP_TAC o Q.SPEC ‘d’) >> simp []
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘N0’ STRIP_ASSUME_TAC)
+ >> Q.EXISTS_TAC ‘N0’ >> rpt STRIP_TAC
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> simp []
+ >> Q.PAT_X_ASSUM ‘!n. s n IN interval (a,b)’ MP_TAC
+ >> rw [IN_INTERVAL]
 QED
 
 (* Theorem 12.5 [1, p.100] *)
 Theorem differentiability_lemma :
     !m u a b. measure_space m /\ a < b /\
-             (!t. t IN interval (a,b) ==> integrable m (Normal o u t)) /\
-             (!x. x IN m_space m ==> (\t. u t x) differentiable_on interval (a,b)) /\
-             (?w. integrable m w /\
-                  !t x. t IN interval (a,b) /\ x IN m_space m ==>
-                        Normal (abs (u t x)) <= w x) ==>
-             (\t. real (integral m (Normal o u t))) differentiable_on interval (a,b)
+      (!t. t IN interval (a,b) ==> integrable m (Normal o u t)) /\
+      (!x. x IN m_space m ==> (\t. u t x) differentiable_on interval (a,b)) /\
+      (?w. integrable m w /\
+           !t x. t IN interval (a,b) /\ x IN m_space m ==>
+                 Normal (abs (u t x)) <= w x) ==>
+      (\t. real (integral m (Normal o u t))) differentiable_on interval (a,b) /\
+      !t. ((\t. real (integral m (Normal o u t))) has_vector_derivative
+                real (integral m (Normal o diff1 (u t))))
+          (at t within interval (a,b))
 Proof
     cheat
 QED
