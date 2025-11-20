@@ -352,6 +352,13 @@ Proof
   BETA_TAC THEN REWRITE_TAC[]
 QED
 
+Theorem OPEN_IN_MTOP :
+    !m u. open_in(mtop m) u =
+         (!x. x IN u ==> ?e. 0 < e /\ (!y. dist m (x,y) < e ==> y IN u))
+Proof
+    rw [IN_APP, MTOP_OPEN]
+QED
+
 (*---------------------------------------------------------------------------*)
 (* Define open ball in metric space + prove basic properties                 *)
 (*---------------------------------------------------------------------------*)
@@ -427,7 +434,14 @@ Proof
 QED
 
 Theorem MDIST_POS_LE = METRIC_POS
+Theorem MDIST_POS_LT = METRIC_NZ
 Theorem MDIST_EQ_0   = METRIC_ZERO
+
+Theorem MDIST_POS_EQ :
+    !m x y. 0 < dist m (x,y) <=> x <> y
+Proof
+    METIS_TAC [MDIST_POS_LT, MDIST_REFL, REAL_LT_REFL]
+QED
 
 Theorem mtopology :
    !m. mtopology (m:'a metric) =
@@ -1572,6 +1586,30 @@ Proof
  >> Rewr'
  >> Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘dist m (x,z)’ >> art []
  >> rw [MDIST_TRIANGLE_SUB]
+QED
+
+Theorem MDIST_LE_0 :
+    !m x y. dist m (x,y) <= 0 <=> dist m (x,y) = 0
+Proof
+    rpt GEN_TAC
+ >> reverse EQ_TAC >- rw []
+ >> rw [REAL_LE_LT]
+ >> PROVE_TAC [REAL_LET_ANTISYM, METRIC_POS]
+QED
+
+Theorem MCBALL_TRIVIAL :
+    !m x. mcball m (x,0) = {x}
+Proof
+    rw [Once EXTENSION, IN_MCBALL, MSPACE]
+ >> rename1 ‘_ <=> y = x’
+ >> simp [MDIST_LE_0, METRIC_ZERO]
+ >> PROVE_TAC []
+QED
+
+Theorem MCBALL_SING :
+    !m x e. e = 0 ==> mcball m (x,e) = {x}
+Proof
+    rw [MCBALL_TRIVIAL]
 QED
 
 (* ------------------------------------------------------------------------- *)

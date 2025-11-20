@@ -958,6 +958,13 @@ QED
 (* Some property holds "sufficiently close" to the limit point.              *)
 (* ------------------------------------------------------------------------- *)
 
+(* cf. HOL-Light's definition of “eventually”:
+let eventually = new_definition
+ `eventually (P:A->bool) net <=>
+        netfilter net = {} \/
+        ?u. u IN netfilter net /\
+            !x. x IN u DIFF netlimits net ==> P x`;;
+ *)
 Definition eventually :
     eventually p net <=>
       trivial_limit net \/
@@ -1099,6 +1106,67 @@ Theorem FORALL_EVENTUALLY :
    eventually (\x. !a. a IN s ==> p a x) net)
 Proof
   SIMP_TAC std_ss [EVENTUALLY_FORALL]
+QED
+
+(* NOTE: In HOL-Light, this theorem has “~(a IN topspace top) \/ _” as the
+   conclusion, but in HOL4, “topspace (mtop m) = UNIV”, thus not needed.
+ *)
+Theorem EVENTUALLY_ATPOINTOF :
+    !P m a. eventually P (atpointof m a) <=>
+            ?u. open_in (mtop m) u /\ a IN u /\ !x. x IN u DELETE a ==> P x
+Proof
+    RW_TAC std_ss [eventually, ATPOINTOF]
+ >> EQ_TAC >> rw []
+ (* goal 1 (of 3): trivial_limit ==> ?u. open_in (mtop m) u /\ ... *)
+ >- (fs [trivial_limit]
+     >- (Q.EXISTS_TAC ‘topspace (mtop m)’ \\
+         REWRITE_TAC [OPEN_IN_TOPSPACE] \\
+         simp [TOPSPACE_MTOP]) \\
+     rename1 ‘x <> y’ \\
+     fs [ATPOINTOF, REAL_NOT_LE, FORALL_AND_THM] \\
+     Cases_on ‘a = x’
+     >- (fs [METRIC_SAME] \\
+         Q.PAT_X_ASSUM ‘!z. _’ (MP_TAC o Q.SPEC ‘y’) \\
+         simp [METRIC_NZ]) \\
+     Q.PAT_X_ASSUM ‘!z. _ \/ dist m (x,a) < dist m (z,a)’ (MP_TAC o Q.SPEC ‘x’) \\
+     simp [METRIC_NZ])
+ (* goal 2 (of 3): a < x <= y (assuming 0 < a) *)
+ >- (qabbrev_tac ‘r = dist m (y,a)’ \\
+    ‘0 < r’ by PROVE_TAC [REAL_LTE_TRANS] \\
+     Q.EXISTS_TAC ‘B m (a,r)’ \\
+     REWRITE_TAC [OPEN_IN_MBALL] \\
+     CONJ_TAC >- (MATCH_MP_TAC CENTRE_IN_MBALL >> simp [MSPACE]) \\
+     Q.X_GEN_TAC ‘z’ \\
+     rw [IN_MBALL] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     simp [METRIC_NZ, Once MDIST_SYM] \\
+     MATCH_MP_TAC REAL_LT_IMP_LE >> art [])
+ (* goal 3 (of 3): a < x <= y (assuming 0 < a) *)
+ >> Cases_on ‘trivial_limit (atpointof m a)’ >> simp []
+ >> fs [trivial_limit, ATPOINTOF]
+ >> rename1 ‘x0 <> y0’
+ >> fs [OPEN_IN_MTOP]
+ >> Q.PAT_X_ASSUM ‘!x. x IN u ==> ?e. _’ (MP_TAC o Q.SPEC ‘a’) >> rw []
+ >> Know ‘!y. y <> a ==> ?z. 0 < dist m (z,a) /\ dist m (z,a) <= dist m (y,a)’
+ >- (rpt STRIP_TAC \\
+     Q.PAT_X_ASSUM ‘!a b. a = b \/ _’ (MP_TAC o Q.SPECL [‘y’, ‘a’]) \\
+     simp [METRIC_SAME, MDIST_LE_0] \\
+    ‘!x. 0 < dist m (x,a) /\ dist m (x,a) = 0 <=> F’ by rw [REAL_LT_LE] \\
+     POP_ASSUM (REWRITE_TAC o wrap))
+ >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘!a b. a = b \/ _’ K_TAC
+ >> Cases_on ‘?y. y <> a /\ dist m (y,a) < e’
+ >- (POP_ASSUM STRIP_ASSUME_TAC (* this asserts ‘y’ *) \\
+     Q.EXISTS_TAC ‘y’ \\
+     CONJ_TAC >- (Q.EXISTS_TAC ‘y’ >> simp [METRIC_NZ]) \\
+     rpt STRIP_TAC \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     reverse CONJ_TAC >- fs [MDIST_POS_EQ] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     ONCE_REWRITE_TAC [MDIST_SYM] \\
+     Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘dist m (y,a)’ >> art [])
+ >> fs [REAL_NOT_LT]
+ >> cheat
 QED
 
 (* ------------------------------------------------------------------------- *)

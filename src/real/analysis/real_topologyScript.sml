@@ -9853,6 +9853,19 @@ Proof
   REWRITE_TAC[tendsto, continuous_at, eventually] THEN MESON_TAC[]
 QED
 
+(*
+let LIM_WITHIN_SEQUENTIALLY = prove
+ (`!f:real^M->real^N s a l.
+        (f --> l) (at a within s) <=>
+        !x. (!n. x(n) IN s DELETE a) /\
+            (x --> a) sequentially
+            ==> ((f o x) --> l) sequentially`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM LIMIT_EUCLIDEAN; at] THEN
+  REWRITE_TAC[GSYM MTOPOLOGY_EUCLIDEAN_METRIC] THEN
+  GEN_REWRITE_TAC LAND_CONV [LIMIT_ATPOINTOF_SEQUENTIALLY_WITHIN] THEN
+  REWRITE_TAC[EUCLIDEAN_METRIC; IN_UNIV; INTER_UNIV]);;
+ *)
+
 (* ------------------------------------------------------------------------- *)
 (* Combination results for pointwise continuity.                             *)
 (* ------------------------------------------------------------------------- *)
