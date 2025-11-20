@@ -352,11 +352,11 @@ Proof
   BETA_TAC THEN REWRITE_TAC[]
 QED
 
-Theorem OPEN_IN_MTOP :
-    !m u. open_in(mtop m) u =
-         (!x. x IN u ==> ?e. 0 < e /\ (!y. dist m (x,y) < e ==> y IN u))
+Theorem MTOP_OPEN' :
+    !m s. open_in(mtop m) s <=>
+          !x. x IN s ==> ?e. 0 < e /\ !y. dist m (x,y) < e ==> y IN s
 Proof
-    rw [IN_APP, MTOP_OPEN]
+    RW_TAC std_ss [IN_APP, MTOP_OPEN]
 QED
 
 (*---------------------------------------------------------------------------*)
@@ -567,6 +567,13 @@ Proof
     REWRITE_TAC[SUBSET_applied] THEN DISCH_THEN MATCH_MP_TAC THEN
     FIRST_ASSUM ACCEPT_TAC
    ]
+QED
+
+Theorem MTOP_LIMPT' :
+    !m x s. limpt(mtop m) x s <=>
+            !e. 0 < e ==> ?y. x <> y /\ y IN s /\ dist m (x,y) < e
+Proof
+    RW_TAC std_ss [IN_APP, MTOP_LIMPT]
 QED
 
 (*---------------------------------------------------------------------------*)

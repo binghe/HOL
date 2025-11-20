@@ -1110,12 +1110,16 @@ QED
 
 (* NOTE: In HOL-Light, this theorem has “~(a IN topspace top) \/ _” as the
    conclusion, but in HOL4, “topspace (mtop m) = UNIV”, thus not needed.
+
+   NOTE: HOL4 requires “limpt (mtop m) a (mspace m)”, which seems reasonable
+   but why HOL-Light doesn't require it? --Chun Tian, 21 nov 2025.
  *)
 Theorem EVENTUALLY_ATPOINTOF :
-    !P m a. eventually P (atpointof m a) <=>
-            ?u. open_in (mtop m) u /\ a IN u /\ !x. x IN u DELETE a ==> P x
+    !P m a. limpt (mtop m) a (mspace m) ==>
+           (eventually P (atpointof m a) <=>
+            ?u. open_in (mtop m) u /\ a IN u /\ !x. x IN u DELETE a ==> P x)
 Proof
-    RW_TAC std_ss [eventually, ATPOINTOF]
+    RW_TAC std_ss [eventually, ATPOINTOF, MSPACE]
  >> EQ_TAC >> rw []
  (* goal 1 (of 3): trivial_limit ==> ?u. open_in (mtop m) u /\ ... *)
  >- (fs [trivial_limit]
@@ -1142,31 +1146,18 @@ Proof
      simp [METRIC_NZ, Once MDIST_SYM] \\
      MATCH_MP_TAC REAL_LT_IMP_LE >> art [])
  (* goal 3 (of 3): a < x <= y (assuming 0 < a) *)
- >> Cases_on ‘trivial_limit (atpointof m a)’ >> simp []
- >> fs [trivial_limit, ATPOINTOF]
- >> rename1 ‘x0 <> y0’
- >> fs [OPEN_IN_MTOP]
+ >> DISJ2_TAC
+ >> fs [MTOP_OPEN', MTOP_LIMPT']
  >> Q.PAT_X_ASSUM ‘!x. x IN u ==> ?e. _’ (MP_TAC o Q.SPEC ‘a’) >> rw []
- >> Know ‘!y. y <> a ==> ?z. 0 < dist m (z,a) /\ dist m (z,a) <= dist m (y,a)’
- >- (rpt STRIP_TAC \\
-     Q.PAT_X_ASSUM ‘!a b. a = b \/ _’ (MP_TAC o Q.SPECL [‘y’, ‘a’]) \\
-     simp [METRIC_SAME, MDIST_LE_0] \\
-    ‘!x. 0 < dist m (x,a) /\ dist m (x,a) = 0 <=> F’ by rw [REAL_LT_LE] \\
-     POP_ASSUM (REWRITE_TAC o wrap))
- >> DISCH_TAC
- >> Q.PAT_X_ASSUM ‘!a b. a = b \/ _’ K_TAC
- >> Cases_on ‘?y. y <> a /\ dist m (y,a) < e’
- >- (POP_ASSUM STRIP_ASSUME_TAC (* this asserts ‘y’ *) \\
-     Q.EXISTS_TAC ‘y’ \\
-     CONJ_TAC >- (Q.EXISTS_TAC ‘y’ >> simp [METRIC_NZ]) \\
-     rpt STRIP_TAC \\
-     FIRST_X_ASSUM MATCH_MP_TAC \\
-     reverse CONJ_TAC >- fs [MDIST_POS_EQ] \\
-     FIRST_X_ASSUM MATCH_MP_TAC \\
-     ONCE_REWRITE_TAC [MDIST_SYM] \\
-     Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘dist m (y,a)’ >> art [])
- >> fs [REAL_NOT_LT]
- >> cheat
+ >> Q.PAT_X_ASSUM ‘!e. 0 < e ==> ?y. _’ (MP_TAC o Q.SPEC ‘e’) >> rw []
+ >> Q.EXISTS_TAC ‘y’
+ >> CONJ_TAC >- (Q.EXISTS_TAC ‘y’ >> simp [METRIC_NZ])
+ >> rpt STRIP_TAC
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> reverse CONJ_TAC >- fs [MDIST_POS_EQ]
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘dist m (a,y)’ >> art []
+ >> ONCE_REWRITE_TAC [MDIST_SYM] >> art []
 QED
 
 (* ------------------------------------------------------------------------- *)
