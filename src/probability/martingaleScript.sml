@@ -901,6 +901,32 @@ Proof
  >> Q.EXISTS_TAC ‘w’ >> simp []
 QED
 
+(* NOTE: This lemma can be used to further weakening the antecedents of
+   lebesgue_dominated_convergence.
+ *)
+Theorem integrable_bounded_exists :
+    !m fi. measure_space m /\
+          (?w0. integrable m w0 /\
+                !i x. x IN m_space m ==> abs (fi i x) <= w0 x) ==>
+           ?w. integrable m w /\
+              (!x. x IN m_space m ==> 0 <= w x) /\
+              (AE x::m. w x <> PosInf) /\
+               !i x. x IN m_space m ==> abs (fi i x) <= w x
+Proof
+    rpt STRIP_TAC
+ >> Q.EXISTS_TAC ‘abs o w0’
+ >> CONJ_TAC
+ >- (MATCH_MP_TAC integrable_abs >> art [])
+ >> reverse (rw [o_DEF])
+ >- (Q_TAC (TRANS_TAC le_trans) ‘w0 x’ >> simp [le_abs])
+ >> MP_TAC (Q.SPECL [‘m’, ‘\x. w0 x <> PosInf /\ w0 x <> NegInf’,
+                     ‘\x. abs (w0 x) <> PosInf’] AE_subset)
+ >> simp [integrable_AE_normal_full]
+ >> DISCH_THEN MATCH_MP_TAC
+ >> NTAC 2 STRIP_TAC
+ >> MATCH_MP_TAC (cj 1 abs_not_infty) >> art []
+QED
+
 (* ------------------------------------------------------------------------- *)
 (*  Integrals with Respect to Image Measures [1, Chapter 15]                 *)
 (* ------------------------------------------------------------------------- *)
@@ -1527,7 +1553,8 @@ Theorem continuity_lemma :
       (?w. integrable m w /\
           (!x. x IN m_space m ==> 0 <= w x /\ w x <> PosInf) /\
            !t x. t IN interval (a,b) /\ x IN m_space m ==>
-                 Normal (abs (u t x)) <= w x) ==>
+                 Normal (abs (u t x)) <= w x)
+     ==>
       (\t. real (integral m (Normal o u t))) continuous_on interval (a,b)
 Proof
     rpt STRIP_TAC
@@ -1610,12 +1637,14 @@ Theorem differentiability_lemma :
       (!t. t IN interval (a,b) ==> integrable m (Normal o u t)) /\
       (!x. x IN m_space m ==> (\t. u t x) differentiable_on interval (a,b)) /\
       (?w. integrable m w /\
+          (!x. x IN m_space m ==> 0 <= w x /\ w x <> PosInf) /\
            !t x. t IN interval (a,b) /\ x IN m_space m ==>
-                 Normal (abs (u t x)) <= w x) ==>
+                 Normal (abs (u t x)) <= w x)
+     ==>
       (\t. real (integral m (Normal o u t))) differentiable_on interval (a,b) /\
-      !t. ((\t. real (integral m (Normal o u t))) has_vector_derivative
-                real (integral m (Normal o diff1 (u t))))
-          (at t within interval (a,b))
+       !t. ((\t. real (integral m (Normal o u t))) has_vector_derivative
+                 real (integral m (Normal o diff1 (u t))))
+           (at t within interval (a,b))
 Proof
     cheat
 QED
