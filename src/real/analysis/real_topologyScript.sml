@@ -4281,7 +4281,7 @@ QED
 
 Theorem LIMPT_APPROACHABLE_LE:
    !x s. x limit_point_of s <=>
-                !e. &0 < e ==> ?x'. x' IN s /\ ~(x' = x) /\ dist(x',x) <= e
+         !e. &0 < e ==> ?x'. x' IN s /\ ~(x' = x) /\ dist(x',x) <= e
 Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[LIMPT_APPROACHABLE] THEN
   MATCH_MP_TAC(TAUT `(~a <=> ~b) ==> (a <=> b)`) THEN
@@ -6817,14 +6817,6 @@ Proof
    SIMP_TAC std_ss [dist, REAL_ADD_SUB, REAL_SUB_RZERO],
   FIRST_X_ASSUM(MP_TAC o SPEC ``x - a:real``) THEN
   SIMP_TAC std_ss [dist, REAL_SUB_RZERO, REAL_SUB_ADD2]]
-QED
-
-Theorem NETLIMIT_AT:
-   !a. netlimit(at a) = a
-Proof
-  GEN_TAC THEN ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
-  MATCH_MP_TAC NETLIMIT_WITHIN THEN
-  SIMP_TAC std_ss [TRIVIAL_LIMIT_AT, WITHIN_UNIV]
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -24883,5 +24875,6 @@ val _ = export_theory();
 
 (* References:
 
-  [1] Bartle, R.G.: A Modern Theory of Integration. American Mathematical Soc. (2001).
+  [1] Bartle, R.G.: A Modern Theory of Integration.
+      American Mathematical Soc. (2001).
  *)

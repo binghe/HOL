@@ -88,14 +88,6 @@ Proof
   MESON_TAC[CONVEX_ALT]
 QED
 
-Theorem LIMPT_APPROACHABLE:
-   !x s. x limit_point_of s <=>
-                !e. &0 < e ==> ?x'. x' IN s /\ ~(x' = x) /\ dist(x',x) < e
-Proof
-  REPEAT GEN_TAC THEN REWRITE_TAC[limit_point_of] THEN
-  MESON_TAC[open_def, DIST_SYM, OPEN_BALL, CENTRE_IN_BALL, IN_BALL]
-QED
-
 Theorem LIMPT_OF_CONVEX :
     !s x:real. convex s /\ x IN s ==> (x limit_point_of s <=> ~(s = {x}))
 Proof

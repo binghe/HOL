@@ -2017,7 +2017,13 @@ Theorem diffn_1 :
 Proof
     EVAL_TAC >> simp []
 QED
+
+(* |- !f x. diff1 f x = @y. (f diffl y) x *)
 Theorem diff1_def = diffn_1
+
+(* |- !f x. diff1 f x = @y. (f has_vector_derivative y) (at x) *)
+Theorem diff1_alt =
+        diffn_1 |> REWRITE_RULE [diffl_has_vector_derivative]
 
 Theorem SELECT_EQ_THM[local] :
     !P Q. (!x. P x <=> Q x) ==> ((@x. P x) = (@x. Q x))
