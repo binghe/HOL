@@ -1337,7 +1337,6 @@ Definition limit :
      (!u. open_in top u /\ l IN u ==> eventually (\x. f x IN u) net)
 End
 
-(* NOTE: Added “limpt (mtop m) x univ(:'a)” as necessary antecedents. *)
 Theorem LIMIT_ATPOINTOF :
     !m top' f x y. limpt (mtop m) x univ(:'a) ==>
        (limit top' f y (atpointof m x) <=>
@@ -1353,41 +1352,34 @@ Proof
  >> SET_TAC [] (* amazing ... *)
 QED
 
-(*
-let TOPCONTINUOUS_AT_ATPOINTOF = prove
- (`!top top' f:A->B x.
-        topcontinuous_at top top' f x <=>
-        x IN topspace top /\
-        (!x. x IN topspace top ==> f x IN topspace top') /\
-        limit top' f (f x) (atpointof top x)`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[topcontinuous_at] THEN
-  MATCH_MP_TAC(TAUT
-   `(p /\ q ==> (r <=> s)) ==> (p /\ q /\ r <=> p /\ q /\ s)`) THEN
-  STRIP_TAC THEN ASM_SIMP_TAC[LIMIT_ATPOINTOF] THEN
-  AP_TERM_TAC THEN ABS_TAC THEN SET_TAC[]);;
+Theorem TOPCONTINUOUS_AT_ATPOINTOF :
+    !m top' f x. limpt (mtop m) x univ(:'a) ==>
+       (topcontinuous_at (mtop m) top' f x <=>
+        (!x. f x IN topspace top') /\
+        limit top' f (f x) (atpointof m x))
+Proof
+    rw [topcontinuous_at, TOPSPACE_MTOP, LIMIT_ATPOINTOF]
+ >> Cases_on ‘!x. f x IN topspace top'’ >> simp []
+ >> SET_TAC []
+QED
 
-let CONTINUOUS_MAP_ATPOINTOF = prove
- (`!top top' f:A->B.
-        continuous_map (top,top') f <=>
-        !x. x IN topspace top ==> limit top' f (f x) (atpointof top x)`,
-  REPEAT STRIP_TAC THEN REWRITE_TAC[CONTINUOUS_MAP_EQ_TOPCONTINUOUS_AT] THEN
-  ASM_SIMP_TAC[TOPCONTINUOUS_AT_ATPOINTOF] THEN
-  REWRITE_TAC[limit_def] THEN SET_TAC[]);;
+Theorem CONTINUOUS_MAP_ATPOINTOF :
+    !m top' f. (!x. limpt (mtop m) x univ(:'a)) ==>
+       (continuous_map (mtop m,top') f <=>
+        !x. limit top' f (f x) (atpointof m x))
+Proof
+    rw [CONTINUOUS_MAP_EQ_TOPCONTINUOUS_AT, TOPSPACE_MTOP]
+ >> simp [TOPCONTINUOUS_AT_ATPOINTOF, limit]
+ >> METIS_TAC []
+QED
 
-let LIMIT_CONTINUOUS_MAP = prove
- (`!top top' (f:A->B) a b.
-        continuous_map(top,top') f /\ a IN topspace top /\ f a = b
-        ==> limit top' f b (atpointof top a)`,
-  REWRITE_TAC[CONTINUOUS_MAP_ATPOINTOF] THEN MESON_TAC[]);;
-
-let LIMIT_CONTINUOUS_MAP_WITHIN = prove
- (`!top top' (f:A->B) a b.
-        continuous_map(subtopology top s,top') f /\
-        a IN s /\ a IN topspace top /\ f a = b
-        ==> limit top' f b (atpointof top a within s)`,
-  SIMP_TAC[GSYM ATPOINTOF_SUBTOPOLOGY] THEN
-  SIMP_TAC[LIMIT_CONTINUOUS_MAP; TOPSPACE_SUBTOPOLOGY; IN_INTER]);;
-*)
+Theorem LIMIT_CONTINUOUS_MAP :
+    !m top' f a b. (!x. limpt (mtop m) x univ(:'a)) /\
+        continuous_map(mtop m,top') f /\ f a = b
+        ==> limit top' f b (atpointof m a)
+Proof
+    MESON_TAC[CONTINUOUS_MAP_ATPOINTOF]
+QED
 
 (* Connection between HOL-Light's ‘limit’ and HOL4's ‘tends’
 
