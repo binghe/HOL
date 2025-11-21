@@ -892,7 +892,6 @@ Theorem NET_WITHIN_UNIV :
 Proof
     rw [within]
  >> ‘(\x y. netord net x y) = netord net’ by rw [FUN_EQ_THM]
- >> POP_ORW
  >> simp [net_tybij]
 QED
 
@@ -1020,6 +1019,28 @@ Proof
   MESON_TAC[]
 QED
 
+(* NOTE: The other direction seems non-provable in HOL4...
+
+let EVENTUALLY_WITHIN_IMP = prove
+ (`!net (P:A->bool) s.
+        eventually P (net within s) <=>
+        eventually (\x. x IN s ==> P x) net`,
+  REWRITE_TAC[eventually; WITHIN; RELATIVE_TO; EXISTS_IN_GSPEC] THEN
+  REWRITE_TAC[INTERS_GSPEC; NETLIMITS_WITHIN] THEN SET_TAC[]);;
+ *)
+Theorem EVENTUALLY_WITHIN_IMP :
+   !net (P:'a->bool) s. ~trivial_limit (net within s) /\
+         eventually P (net within s) ==>
+         eventually (\x. x IN s ==> P x) net
+Proof
+    rw [eventually]
+ >> DISJ2_TAC
+ >> fs [WITHIN]
+ >> Q.EXISTS_TAC ‘y’
+ >> CONJ_TAC >- (Q.EXISTS_TAC ‘x’ >> art [])
+ >> simp []
+QED
+
 Theorem EVENTUALLY_SEQUENTIALLY :
     !p. eventually p sequentially <=> ?N. !n. N <= n ==> p n
 Proof
@@ -1124,27 +1145,19 @@ QED
 (* NOTE: In HOL-Light, this theorem has “~(a IN topspace top) \/ _” as the
    conclusion, which in HOL4, “topspace (mtop m) = UNIV”, is not needed:
 
-let EVENTUALLY_ATPOINTOF = prove
- (`!P top a:A.
+   |- !P top a:A.
         eventually P (atpointof top a) <=>
         ~(a IN topspace top) \/
-        ?u. open_in top u /\ a IN u /\ !x. x IN u DELETE a ==> P x`,
-  REWRITE_TAC[eventually; ATPOINTOF; NETLIMITS_ATPOINTOF; EXISTS_IN_GSPEC] THEN
-  REWRITE_TAC[SET_RULE `{f x | P x} = {} <=> ~(?x. P x)`] THEN
-  REPEAT STRIP_TAC THEN ASM_CASES_TAC `(a:A) IN topspace top` THENL
-   [ALL_TAC; ASM_MESON_TAC[REWRITE_RULE[SUBSET] OPEN_IN_SUBSET]] THEN
-  ASM_SIMP_TAC[IN_DELETE; IN_DIFF; IN_SING] THEN
-  ASM_MESON_TAC[OPEN_IN_TOPSPACE]);;
+        ?u. open_in top u /\ a IN u /\ !x. x IN u DELETE a ==> P x
 
-   NOTE: HOL4 requires “limpt (mtop m) a (mspace m)”, which seems reasonable
-   but why HOL-Light doesn't require it? --Chun Tian, 21 nov 2025.
+   NOTE: Added “limpt (mtop m) a univ(:'a)” as necessary antecedents.
  *)
 Theorem EVENTUALLY_ATPOINTOF :
     !P m a. limpt (mtop m) a univ(:'a) ==>
            (eventually P (atpointof m a) <=>
             ?u. open_in (mtop m) u /\ a IN u /\ !x. x IN u DELETE a ==> P x)
 Proof
-    RW_TAC std_ss [eventually, ATPOINTOF]
+    rw [eventually, ATPOINTOF]
  >> EQ_TAC >> rw []
  (* goal 1 (of 3): trivial_limit ==> ?u. open_in (mtop m) u /\ ... *)
  >- (fs [trivial_limit]
@@ -1174,7 +1187,7 @@ Proof
  >> DISJ2_TAC
  >> fs [MTOP_OPEN', MTOP_LIMPT']
  >> Q.PAT_X_ASSUM ‘!x. x IN u ==> ?e. _’ (MP_TAC o Q.SPEC ‘a’) >> rw []
- >> Q.PAT_X_ASSUM ‘!e. 0 < e ==> ?y. _’ (MP_TAC o Q.SPEC ‘e’) >> rw []
+ >> Q.PAT_X_ASSUM ‘!e. 0 < e ==> ?y. _’ (MP_TAC o Q.SPEC ‘e’) >> rw [IN_APP]
  >> Q.EXISTS_TAC ‘y’
  >> CONJ_TAC >- (Q.EXISTS_TAC ‘y’ >> simp [METRIC_NZ])
  >> rpt STRIP_TAC
@@ -1185,8 +1198,8 @@ Proof
  >> ONCE_REWRITE_TAC [MDIST_SYM] >> art []
 QED
 
-(* NOTE: This theorem is trivial (by WITHIN_UNIV and MSPACE) in HOL4. The
-   original HOL-Light version is:
+(* NOTE: This theorem is trivial (by NET_WITHIN_UNIV and MSPACE) in HOL4.
+   The original HOL-Light version is:
 
    |- !top a:A. (atpointof top a) within (topspace top) = atpointof top a
  *)
@@ -1196,64 +1209,84 @@ Proof
     rw [NET_WITHIN_UNIV, MSPACE]
 QED
 
-(*
-let TRIVIAL_LIMIT_ATPOINTOF_WITHIN = prove
- (`!top s a:A.
-        trivial_limit(atpointof top a within s) <=>
-        ~(a IN top derived_set_of s)`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[trivial_limit; EVENTUALLY_WITHIN_IMP] THEN
-  ASM_SIMP_TAC[EVENTUALLY_ATPOINTOF] THEN
-  REWRITE_TAC[derived_set_of; IN_ELIM_THM] THEN
-  ASM_CASES_TAC `(a:A) IN topspace top` THEN ASM_REWRITE_TAC[] THEN
-  SET_TAC[]);;
+(* NOTE: The other direction seems non-provable in HOL4... *)
+Theorem TRIVIAL_LIMIT_ATPOINTOF_WITHIN :
+    !m s a. trivial_limit(atpointof m a within s) ==>
+            a NOTIN mtop m derived_set_of s
+Proof
+    rw [trivial_limit, WITHIN, ATPOINTOF, derived_set_of_alt_limpt]
+ >- (rw [MTOP_LIMPT'] \\
+     Q.EXISTS_TAC ‘1’ >> simp [])
+ >- (rename1 ‘x <> y’ \\
+     rw [MTOP_LIMPT'] \\
+     fs [FORALL_AND_THM, REAL_NOT_LT, REAL_NOT_LE] \\
+     fs [MDIST_LE_0, GSYM DISJ_ASSOC] \\
+     Cases_on ‘a <> x’
+     >- (Q.EXISTS_TAC ‘dist m (x,a)’ >> simp [METRIC_NZ] \\
+         Q.X_GEN_TAC ‘z’ \\
+         Cases_on ‘a = z’ >> simp [] \\
+         Q.PAT_X_ASSUM ‘!x'. _ \/ dist m (x,a) < dist m (x',a) \/ _’
+           (MP_TAC o Q.SPEC ‘z’) >> simp [MDIST_EQ_0] \\
+        ‘dist m (a,z) = dist m (z,a)’ by simp [MDIST_SYM] >> POP_ORW \\
+         reverse STRIP_TAC >- art [] \\
+         DISJ2_TAC \\
+         MATCH_MP_TAC REAL_LT_IMP_LE >> art []) \\
+     fs [] \\
+     POP_ASSUM (fs o wrap o SYM) \\
+     Q.EXISTS_TAC ‘dist m (y,a)’ >> simp [METRIC_NZ] \\
+     Q.X_GEN_TAC ‘z’ \\
+     Cases_on ‘a = z’ >> simp [] \\
+     Q.PAT_X_ASSUM ‘!x'. _ \/ dist m (y,a) < dist m (x',a) \/ _’
+        (MP_TAC o Q.SPEC ‘z’) >> simp [MDIST_EQ_0] \\
+    ‘dist m (a,z) = dist m (z,a)’ by simp [MDIST_SYM] >> POP_ORW \\
+     reverse STRIP_TAC >- art [] \\
+     DISJ2_TAC \\
+     MATCH_MP_TAC REAL_LT_IMP_LE >> art [])
+QED
 
-let DERIVED_SET_OF_TRIVIAL_LIMIT = prove
- (`!top s a:A.
-      a IN top derived_set_of s <=> ~trivial_limit(atpointof top a within s)`,
-  REWRITE_TAC[TRIVIAL_LIMIT_ATPOINTOF_WITHIN]);;
+Theorem DERIVED_SET_OF_TRIVIAL_LIMIT :
+   !m s a. a IN mtop m derived_set_of s ==>
+          ~trivial_limit (atpointof m a within s)
+Proof
+    PROVE_TAC [TRIVIAL_LIMIT_ATPOINTOF_WITHIN]
+QED
 
-let TRIVIAL_LIMIT_ATPOINTOF = prove
- (`!top a:A.
-        trivial_limit(atpointof top a) <=>
-        ~(a IN top derived_set_of topspace top)`,
+Theorem TRIVIAL_LIMIT_ATPOINTOF :
+   !m a. trivial_limit (atpointof m a) ==>
+         a NOTIN mtop m derived_set_of mspace m
+Proof
   ONCE_REWRITE_TAC[GSYM ATPOINTOF_WITHIN_TOPSPACE] THEN
-  REWRITE_TAC[TRIVIAL_LIMIT_ATPOINTOF_WITHIN]);;
+  REWRITE_TAC[TRIVIAL_LIMIT_ATPOINTOF_WITHIN]
+QED
 
-let ATPOINTOF_SUBTOPOLOGY = prove
- (`!top s a:A.
-        a IN s
-        ==> (atpointof (subtopology top s) a =
-             atpointof top a within s)`,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC(MESON[net_tybij]
-   `dest_net x = dest_net y ==> x = y`) THEN
-  GEN_REWRITE_TAC BINOP_CONV [GSYM PAIR] THEN
-  PURE_REWRITE_TAC[GSYM netfilter; GSYM netlimits] THEN
-  REWRITE_TAC[WITHIN; NETLIMITS_WITHIN] THEN
-  REWRITE_TAC[ATPOINTOF; NETLIMITS_ATPOINTOF] THEN
-  REWRITE_TAC[PAIR_EQ; RELATIVE_TO; OPEN_IN_SUBTOPOLOGY_ALT] THEN
-  REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN ASM SET_TAC[]);;
-
-let EVENTUALLY_ATPOINTOF_METRIC = prove
- (`!P m a:A.
-        eventually P (atpointof (mtopology m) a) <=>
+(* NOTE: Added “a IN mtop m derived_set_of P” as necessary antecedents *)
+Theorem EVENTUALLY_ATPOINTOF_METRIC :
+    !P m a. limpt (mtop m) a univ(:'a) ==>
+       (eventually P (atpointof m a) <=>
         a IN mspace m
         ==> ?d. &0 < d /\
                 !x. x IN mspace m /\ &0 < mdist m (x,a) /\ mdist m (x,a) < d
-                    ==> P x`,
-  REPEAT GEN_TAC THEN
-  REWRITE_TAC[EVENTUALLY_ATPOINTOF; TOPSPACE_MTOPOLOGY] THEN
-  ASM_CASES_TAC `(a:A) IN mspace m` THEN ASM_REWRITE_TAC[] THEN EQ_TAC THENL
-   [DISCH_THEN(X_CHOOSE_THEN `u:A->bool` STRIP_ASSUME_TAC) THEN
-    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_IN_MTOPOLOGY]) THEN
-    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (MP_TAC o SPEC `a:A`)) THEN
-    ASM_SIMP_TAC[IMP_CONJ; MDIST_POS_EQ; IN_MBALL; SUBSET; MDIST_SYM] THEN
-    ASM SET_TAC[];
-    ASM_SIMP_TAC[IMP_CONJ; MDIST_POS_EQ] THEN
-    DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
-    EXISTS_TAC `mball m (a:A,d)` THEN
-    ASM_SIMP_TAC[OPEN_IN_MBALL; CENTRE_IN_MBALL; IN_DELETE] THEN
-    REWRITE_TAC[IN_MBALL] THEN ASM_MESON_TAC[MDIST_SYM]]);;
-*)
+                    ==> P x)
+Proof
+    rpt STRIP_TAC
+ >> rw [EVENTUALLY_ATPOINTOF]
+ >> EQ_TAC >> rw [MSPACE]
+ >- (fs [MTOP_OPEN'] \\
+     Q.PAT_X_ASSUM ‘!x. x IN u ==> _’ (MP_TAC o Q.SPEC ‘a’) >> rw [] \\
+     Q.EXISTS_TAC ‘e’ >> rw [] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     reverse CONJ_TAC
+     >- (CCONTR_TAC >> fs [METRIC_SAME]) \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     simp [Once MDIST_SYM])
+ >> Q.EXISTS_TAC ‘B m (a,d)’
+ >> simp [OPEN_IN_MBALL]
+ >> CONJ_TAC >- (MATCH_MP_TAC CENTRE_IN_MBALL >> simp [MSPACE])
+ >> rw [IN_MBALL, MSPACE]
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> simp [MDIST_POS_LT]
+ >> simp [Once MDIST_SYM]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* It's also sometimes useful to extract the limit point from the net.       *)
@@ -1303,6 +1336,22 @@ Definition limit :
      l IN topspace top /\
      (!u. open_in top u /\ l IN u ==> eventually (\x. f x IN u) net)
 End
+
+(* NOTE: Added “limpt (mtop m) x univ(:'a)” as necessary antecedents. *)
+Theorem LIMIT_ATPOINTOF :
+    !m top' f x y. limpt (mtop m) x univ(:'a) ==>
+       (limit top' f y (atpointof m x) <=>
+        y IN topspace top' /\
+        !v. open_in top' v /\ y IN v
+                 ==> ?u. open_in (mtop m) u /\ x IN u /\
+                         IMAGE f (u DELETE x) SUBSET v)
+Proof
+    RW_TAC std_ss [limit, EVENTUALLY_ATPOINTOF]
+ >> qabbrev_tac ‘top = mtop m’
+ >> Cases_on ‘y IN topspace top'’ >> simp []
+ >> AP_TERM_TAC >> ABS_TAC
+ >> SET_TAC [] (* amazing ... *)
+QED
 
 (*
 let TOPCONTINUOUS_AT_ATPOINTOF = prove
