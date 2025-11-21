@@ -746,15 +746,16 @@ Definition atpointof_def[nocompute]:
     atpointof m a = mk_net (tendsto (m,a))
 End
 
-Definition at_def[nocompute] :
-    at z = mk_net (tendsto (mr1,z))
+(* HOL-Light: at a = atpointof euclidean a *)
+Definition at_DEF :
+    at z = atpointof mr1 z
 End
 
-(* HOL-Light: at a = atpointof euclidean a *)
-Theorem at_alt :
-    !z. at z = atpointof mr1 z
+(* The previous "definition" now (again) becomes a theorem. *)
+Theorem at_def :
+    !z. at z = mk_net (tendsto (mr1,z))
 Proof
-    rw [atpointof_def, at_def]
+    RW_TAC std_ss [at_DEF, atpointof_def]
 QED
 
 Theorem atpointof :
@@ -769,7 +770,7 @@ QED
 
 (* |- !a. at a = mk_net (\x y. 0 < dist (x,a) /\ dist (x,a) <= dist (y,a)) *)
 Theorem at = atpointof |> ISPEC “mr1”
-                       |> REWRITE_RULE [GSYM at_alt, GSYM dist_def]
+                       |> REWRITE_RULE [GSYM at_DEF, GSYM dist_def]
 
 (* HOL-Light: at_infinity = mk_net({{x | b <= norm x} | b IN (:real)},{}) *)
 Definition at_infinity[nocompute]:
@@ -807,6 +808,9 @@ fun NET_PROVE_TAC [def] =
   REWRITE_TAC [ETA_AX] THEN
   ASM_SIMP_TAC std_ss [GSYM(CONJUNCT2 net_tybij)];
 
+(* NOTE: Most of the time, user only need to use this theorem instead of the
+   definition(s) of “atpointof”.
+ *)
 Theorem ATPOINTOF :
    !m a x y.
       netord(atpointof m a) x y <=>
@@ -820,7 +824,7 @@ QED
         netord (at a) x y <=> 0 < dist (x,a) /\ dist (x,a) <= dist (y,a)
  *)
 Theorem AT = ATPOINTOF |> ISPEC “mr1”
-                       |> REWRITE_RULE [GSYM at_alt, GSYM dist_def]
+                       |> REWRITE_RULE [GSYM at_DEF, GSYM dist_def]
 
 Theorem tendsto_alt_atpointof :
     !m a. tendsto (m,a) = netord (atpointof m a)
@@ -834,7 +838,7 @@ QED
    |- !a. tendsto (mr1,a) = netord (at a)
  *)
 Theorem tendsto_mr1 = tendsto_alt_atpointof |> ISPEC “mr1”
-                                            |> REWRITE_RULE [GSYM at_alt]
+                                            |> REWRITE_RULE [GSYM at_DEF]
 
 Theorem AT_INFINITY:
    !x y. netord at_infinity x y <=> abs(x) >= abs(y)
@@ -1109,17 +1113,29 @@ Proof
 QED
 
 (* NOTE: In HOL-Light, this theorem has “~(a IN topspace top) \/ _” as the
-   conclusion, but in HOL4, “topspace (mtop m) = UNIV”, thus not needed.
+   conclusion, which in HOL4, “topspace (mtop m) = UNIV”, is not needed:
+
+let EVENTUALLY_ATPOINTOF = prove
+ (`!P top a:A.
+        eventually P (atpointof top a) <=>
+        ~(a IN topspace top) \/
+        ?u. open_in top u /\ a IN u /\ !x. x IN u DELETE a ==> P x`,
+  REWRITE_TAC[eventually; ATPOINTOF; NETLIMITS_ATPOINTOF; EXISTS_IN_GSPEC] THEN
+  REWRITE_TAC[SET_RULE `{f x | P x} = {} <=> ~(?x. P x)`] THEN
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `(a:A) IN topspace top` THENL
+   [ALL_TAC; ASM_MESON_TAC[REWRITE_RULE[SUBSET] OPEN_IN_SUBSET]] THEN
+  ASM_SIMP_TAC[IN_DELETE; IN_DIFF; IN_SING] THEN
+  ASM_MESON_TAC[OPEN_IN_TOPSPACE]);;
 
    NOTE: HOL4 requires “limpt (mtop m) a (mspace m)”, which seems reasonable
    but why HOL-Light doesn't require it? --Chun Tian, 21 nov 2025.
  *)
 Theorem EVENTUALLY_ATPOINTOF :
-    !P m a. limpt (mtop m) a (mspace m) ==>
+    !P m a. limpt (mtop m) a univ(:'a) ==>
            (eventually P (atpointof m a) <=>
             ?u. open_in (mtop m) u /\ a IN u /\ !x. x IN u DELETE a ==> P x)
 Proof
-    RW_TAC std_ss [eventually, ATPOINTOF, MSPACE]
+    RW_TAC std_ss [eventually, ATPOINTOF]
  >> EQ_TAC >> rw []
  (* goal 1 (of 3): trivial_limit ==> ?u. open_in (mtop m) u /\ ... *)
  >- (fs [trivial_limit]
@@ -1197,7 +1213,7 @@ QED
 
 (* |- !a. netlimit (at a) = a *)
 Theorem NETLIMIT_AT = NETLIMIT_ATPOINTOF |> ISPEC “mr1”
-                   |> REWRITE_RULE [GSYM at_alt]
+                   |> REWRITE_RULE [GSYM at_DEF]
 
 (* ------------------------------------------------------------------------- *)
 (* Limits in a topological space (from HOL-Light's Multivariate/metric.ml)   *)

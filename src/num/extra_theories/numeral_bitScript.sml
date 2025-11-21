@@ -560,4 +560,7 @@ val () =
    List.app (fn s => remove_ovl_mapping s {Name = s, Thy = "numeral_bit"})
             ["iBITWISE", "iSUC", "iDIV2", "iLOG2", "iMOD_2EXP"]
 
+(* Temporarily re-enable printing of numeral bits for help documents *)
+val _ = temp_remove_user_printer "num.numeral_computations";
+
 val _ = export_theory()

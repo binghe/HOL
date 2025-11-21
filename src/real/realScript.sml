@@ -6037,5 +6037,8 @@ Proof
   REPEAT(POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC
 QED
 
+(* Temporarily re-enable printing of numeral bits for help documents *)
+val _ = temp_remove_user_printer "num.numeral_computations";
+
 (* END *)
 val _ = export_theory();
