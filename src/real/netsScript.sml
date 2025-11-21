@@ -887,10 +887,19 @@ Proof
   SIMP_TAC std_ss [WITHIN, AT, in_direction, GSPECIFICATION] THEN METIS_TAC []
 QED
 
-Theorem WITHIN_UNIV:
-   !x:real. (at x within UNIV) = at x
+Theorem NET_WITHIN_UNIV :
+    !net. (net within UNIV) = net
 Proof
-  REWRITE_TAC[within, at, IN_UNIV] THEN REWRITE_TAC[ETA_AX, net_tybij]
+    rw [within]
+ >> ‘(\x y. netord net x y) = netord net’ by rw [FUN_EQ_THM]
+ >> POP_ORW
+ >> simp [net_tybij]
+QED
+
+Theorem WITHIN_UNIV :
+    !x. (at x within UNIV) = at x
+Proof
+    REWRITE_TAC [NET_WITHIN_UNIV]
 QED
 
 Theorem WITHIN_WITHIN:
@@ -1176,6 +1185,76 @@ Proof
  >> ONCE_REWRITE_TAC [MDIST_SYM] >> art []
 QED
 
+(* NOTE: This theorem is trivial (by WITHIN_UNIV and MSPACE) in HOL4. The
+   original HOL-Light version is:
+
+   |- !top a:A. (atpointof top a) within (topspace top) = atpointof top a
+ *)
+Theorem ATPOINTOF_WITHIN_TOPSPACE :
+    !m a. ((atpointof m a) within (mspace m)) = atpointof m a
+Proof
+    rw [NET_WITHIN_UNIV, MSPACE]
+QED
+
+(*
+let TRIVIAL_LIMIT_ATPOINTOF_WITHIN = prove
+ (`!top s a:A.
+        trivial_limit(atpointof top a within s) <=>
+        ~(a IN top derived_set_of s)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[trivial_limit; EVENTUALLY_WITHIN_IMP] THEN
+  ASM_SIMP_TAC[EVENTUALLY_ATPOINTOF] THEN
+  REWRITE_TAC[derived_set_of; IN_ELIM_THM] THEN
+  ASM_CASES_TAC `(a:A) IN topspace top` THEN ASM_REWRITE_TAC[] THEN
+  SET_TAC[]);;
+
+let DERIVED_SET_OF_TRIVIAL_LIMIT = prove
+ (`!top s a:A.
+      a IN top derived_set_of s <=> ~trivial_limit(atpointof top a within s)`,
+  REWRITE_TAC[TRIVIAL_LIMIT_ATPOINTOF_WITHIN]);;
+
+let TRIVIAL_LIMIT_ATPOINTOF = prove
+ (`!top a:A.
+        trivial_limit(atpointof top a) <=>
+        ~(a IN top derived_set_of topspace top)`,
+  ONCE_REWRITE_TAC[GSYM ATPOINTOF_WITHIN_TOPSPACE] THEN
+  REWRITE_TAC[TRIVIAL_LIMIT_ATPOINTOF_WITHIN]);;
+
+let ATPOINTOF_SUBTOPOLOGY = prove
+ (`!top s a:A.
+        a IN s
+        ==> (atpointof (subtopology top s) a =
+             atpointof top a within s)`,
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC(MESON[net_tybij]
+   `dest_net x = dest_net y ==> x = y`) THEN
+  GEN_REWRITE_TAC BINOP_CONV [GSYM PAIR] THEN
+  PURE_REWRITE_TAC[GSYM netfilter; GSYM netlimits] THEN
+  REWRITE_TAC[WITHIN; NETLIMITS_WITHIN] THEN
+  REWRITE_TAC[ATPOINTOF; NETLIMITS_ATPOINTOF] THEN
+  REWRITE_TAC[PAIR_EQ; RELATIVE_TO; OPEN_IN_SUBTOPOLOGY_ALT] THEN
+  REWRITE_TAC[EXTENSION; IN_ELIM_THM] THEN ASM SET_TAC[]);;
+
+let EVENTUALLY_ATPOINTOF_METRIC = prove
+ (`!P m a:A.
+        eventually P (atpointof (mtopology m) a) <=>
+        a IN mspace m
+        ==> ?d. &0 < d /\
+                !x. x IN mspace m /\ &0 < mdist m (x,a) /\ mdist m (x,a) < d
+                    ==> P x`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[EVENTUALLY_ATPOINTOF; TOPSPACE_MTOPOLOGY] THEN
+  ASM_CASES_TAC `(a:A) IN mspace m` THEN ASM_REWRITE_TAC[] THEN EQ_TAC THENL
+   [DISCH_THEN(X_CHOOSE_THEN `u:A->bool` STRIP_ASSUME_TAC) THEN
+    FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I [OPEN_IN_MTOPOLOGY]) THEN
+    DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC (MP_TAC o SPEC `a:A`)) THEN
+    ASM_SIMP_TAC[IMP_CONJ; MDIST_POS_EQ; IN_MBALL; SUBSET; MDIST_SYM] THEN
+    ASM SET_TAC[];
+    ASM_SIMP_TAC[IMP_CONJ; MDIST_POS_EQ] THEN
+    DISCH_THEN(X_CHOOSE_THEN `d:real` STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC `mball m (a:A,d)` THEN
+    ASM_SIMP_TAC[OPEN_IN_MBALL; CENTRE_IN_MBALL; IN_DELETE] THEN
+    REWRITE_TAC[IN_MBALL] THEN ASM_MESON_TAC[MDIST_SYM]]);;
+*)
+
 (* ------------------------------------------------------------------------- *)
 (* It's also sometimes useful to extract the limit point from the net.       *)
 (* ------------------------------------------------------------------------- *)
@@ -1226,6 +1305,18 @@ Definition limit :
 End
 
 (*
+let TOPCONTINUOUS_AT_ATPOINTOF = prove
+ (`!top top' f:A->B x.
+        topcontinuous_at top top' f x <=>
+        x IN topspace top /\
+        (!x. x IN topspace top ==> f x IN topspace top') /\
+        limit top' f (f x) (atpointof top x)`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[topcontinuous_at] THEN
+  MATCH_MP_TAC(TAUT
+   `(p /\ q ==> (r <=> s)) ==> (p /\ q /\ r <=> p /\ q /\ s)`) THEN
+  STRIP_TAC THEN ASM_SIMP_TAC[LIMIT_ATPOINTOF] THEN
+  AP_TERM_TAC THEN ABS_TAC THEN SET_TAC[]);;
+
 let CONTINUOUS_MAP_ATPOINTOF = prove
  (`!top top' f:A->B.
         continuous_map (top,top') f <=>
@@ -1289,6 +1380,224 @@ Proof
  >> ‘f m IN P’ by rw [IN_APP]
  >> ‘f m IN N’ by PROVE_TAC [SUBSET_DEF] >> fs [IN_APP]
 QED
+
+(* ------------------------------------------------------------------------- *)
+(* More sequential characterizations in a metric space.                      *)
+(* ------------------------------------------------------------------------- *)
+
+(*
+let [EVENTUALLY_ATPOINTOF_WITHIN_SEQUENTIALLY;
+     EVENTUALLY_ATPOINTOF_WITHIN_SEQUENTIALLY_INJ;
+     EVENTUALLY_ATPOINTOF_WITHIN_SEQUENTIALLY_DECREASING] = (CONJUNCTS o prove)
+ (`(!met P s a:A.
+        eventually P (atpointof (mtopology met) a within s) <=>
+        !x. (!n. x(n) IN (s INTER mspace met) DELETE a) /\
+            limit (mtopology met) x a sequentially
+            ==> eventually (\n. P(x n)) sequentially) /\
+   (!met P s a:A.
+        eventually P (atpointof (mtopology met) a within s) <=>
+        !x. (!n. x(n) IN (s INTER mspace met) DELETE a) /\
+            (!m n. x m = x n <=> m = n) /\
+            limit (mtopology met) x a sequentially
+            ==> eventually (\n. P(x n)) sequentially) /\
+   (!met P s a:A.
+        eventually P (atpointof (mtopology met) a within s) <=>
+        !x. (!n. x(n) IN (s INTER mspace met) DELETE a) /\
+            (!m n. m < n ==> mdist met (x n,a) < mdist met (x m,a)) /\
+            (!m n. x m = x n <=> m = n) /\
+            limit (mtopology met) x a sequentially
+            ==> eventually (\n. P(x n)) sequentially)`,
+  REWRITE_TAC[AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
+  MATCH_MP_TAC(TAUT
+   `(r ==> s) /\ (q ==> r) /\ (p ==> q) /\ (s ==> p)
+    ==> (p <=> q) /\ (p <=> r) /\ (p <=> s)`) THEN
+  REPEAT CONJ_TAC THENL
+   [MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `x:num->A` THEN
+    DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN MATCH_MP_TAC THEN
+    MATCH_MP_TAC WLOG_LT THEN REWRITE_TAC[] THEN
+    ASM_MESON_TAC[REAL_LT_REFL];
+    MATCH_MP_TAC MONO_FORALL THEN MESON_TAC[];
+    REWRITE_TAC[EVENTUALLY_WITHIN_IMP; EVENTUALLY_ATPOINTOF] THEN
+    REWRITE_TAC[limit; TOPSPACE_MTOPOLOGY] THEN
+    ASM_CASES_TAC `(a:A) IN mspace met` THEN ASM_REWRITE_TAC[] THEN
+    REWRITE_TAC[LEFT_IMP_EXISTS_THM; IMP_IMP; IN_DELETE; IN_INTER] THEN
+    X_GEN_TAC `u:A->bool` THEN STRIP_TAC THEN
+    X_GEN_TAC `x:num->A` THEN REWRITE_TAC[FORALL_AND_THM] THEN STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o SPEC `u:A->bool`) THEN ASM_REWRITE_TAC[] THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN ASM SET_TAC[];
+    STRIP_TAC THEN
+    REWRITE_TAC[EVENTUALLY_ATPOINTOF_METRIC; EVENTUALLY_WITHIN_IMP] THEN
+    DISCH_TAC THEN ASM_SIMP_TAC[IMP_CONJ; MDIST_POS_EQ] THEN
+    GEN_REWRITE_TAC I [MESON[]
+      `(?d. P d /\ Q d) <=> ~(!d. P d ==> ~Q d)`] THEN
+    GEN_REWRITE_TAC (RAND_CONV o TOP_DEPTH_CONV)
+     [NOT_FORALL_THM; NOT_IMP; GSYM CONJ_ASSOC] THEN
+    DISCH_TAC THEN
+    SUBGOAL_THEN
+     `?x. (!n. (x n) IN mspace met /\
+              ~(x n = a) /\
+               mdist met (x n,a) < inv(&n + &1) /\
+               x n IN s /\
+               ~P(x n:A)) /\
+          (!n. mdist met (x(SUC n),a) < mdist met (x n,a))`
+    STRIP_ASSUME_TAC THENL
+     [MATCH_MP_TAC DEPENDENT_CHOICE THEN CONV_TAC REAL_RAT_REDUCE_CONV THEN
+      CONJ_TAC THENL [ASM_MESON_TAC[REAL_LT_01]; ALL_TAC] THEN
+      MAP_EVERY X_GEN_TAC [`n:num`; `x:A`] THEN STRIP_TAC THEN
+      SIMP_TAC[TAUT `(p /\ q /\ r /\ s /\ t) /\ u <=>
+                      p /\ q /\ (r /\ u) /\ s /\ t`] THEN
+      REWRITE_TAC[GSYM REAL_LT_MIN] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+      ASM_SIMP_TAC[REAL_LT_MIN; MDIST_POS_EQ; REAL_LT_INV_EQ] THEN
+      REAL_ARITH_TAC;
+      FIRST_X_ASSUM(MP_TAC o SPEC `x:num->A`) THEN
+      ASM_REWRITE_TAC[NOT_IMP; IN_DELETE; IN_INTER; GSYM CONJ_ASSOC] THEN
+      MATCH_MP_TAC(TAUT `p /\ (p ==> q) ==> p /\ q`) THEN CONJ_TAC THENL
+       [MATCH_MP_TAC  TRANSITIVE_STEPWISE_LT THEN
+        ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC;
+        DISCH_TAC] THEN
+      REPEAT CONJ_TAC THENL
+       [MATCH_MP_TAC WLOG_LT THEN ASM_MESON_TAC[REAL_LT_REFL];
+        ASM_REWRITE_TAC[LIMIT_METRIC; EVENTUALLY_SEQUENTIALLY] THEN
+        MATCH_MP_TAC FORALL_POS_MONO_1 THEN CONJ_TAC THENL
+         [MESON_TAC[REAL_LT_TRANS]; ALL_TAC] THEN
+        X_GEN_TAC `N:num` THEN EXISTS_TAC `N:num` THEN
+        X_GEN_TAC `n:num` THEN DISCH_TAC THEN
+        TRANS_TAC REAL_LTE_TRANS `inv(&n + &1)` THEN
+        ASM_REWRITE_TAC[] THEN MATCH_MP_TAC REAL_LE_INV2 THEN
+        REWRITE_TAC[REAL_OF_NUM_LE; REAL_OF_NUM_LT; REAL_OF_NUM_ADD] THEN
+        ASM_ARITH_TAC;
+        REWRITE_TAC[EVENTUALLY_FALSE; TRIVIAL_LIMIT_SEQUENTIALLY]]]]);;
+*)
+
+(*
+let EVENTUALLY_ATPOINTOF_SEQUENTIALLY = prove
+ (`!met P a:A.
+        eventually P (atpointof (mtopology met) a) <=>
+        !x. (!n. x(n) IN mspace met DELETE a) /\
+            limit (mtopology met) x a sequentially
+            ==> eventually (\n. P(x n)) sequentially`,
+  REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [GSYM NET_WITHIN_UNIV] THEN
+  SIMP_TAC[EVENTUALLY_ATPOINTOF_WITHIN_SEQUENTIALLY; INTER_UNIV]);;
+
+let EVENTUALLY_ATPOINTOF_SEQUENTIALLY_INJ = prove
+ (`!met P a:A.
+        eventually P (atpointof (mtopology met) a) <=>
+        !x. (!n. x(n) IN mspace met DELETE a) /\
+            (!m n. x m = x n <=> m = n) /\
+            limit (mtopology met) x a sequentially
+            ==> eventually (\n. P(x n)) sequentially`,
+  REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [GSYM NET_WITHIN_UNIV] THEN
+  SIMP_TAC[EVENTUALLY_ATPOINTOF_WITHIN_SEQUENTIALLY_INJ; INTER_UNIV]);;
+
+let EVENTUALLY_ATPOINTOF_SEQUENTIALLY_DECREASING = prove
+ (`!met P a:A.
+        eventually P (atpointof (mtopology met) a) <=>
+        !x. (!n. x(n) IN mspace met DELETE a) /\
+            (!m n. m < n ==> mdist met (x n,a) < mdist met (x m,a)) /\
+            (!m n. x m = x n <=> m = n) /\
+            limit (mtopology met) x a sequentially
+            ==> eventually (\n. P(x n)) sequentially`,
+  REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [GSYM NET_WITHIN_UNIV] THEN
+  SIMP_TAC[EVENTUALLY_ATPOINTOF_WITHIN_SEQUENTIALLY_DECREASING; INTER_UNIV]);;
+*)
+
+(*
+let LIMIT_ATPOINTOF_SEQUENTIALLY_WITHIN = prove
+ (`!m1 m2 s f:A->B a l.
+        limit (mtopology m2) f l (atpointof (mtopology m1) a within s) <=>
+        l IN mspace m2 /\
+        !x. (!n. x(n) IN (s INTER mspace m1) DELETE a) /\
+            limit (mtopology m1) x a sequentially
+            ==> limit (mtopology m2) (f o x) l sequentially`,
+  REPEAT GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [limit] THEN
+  ASM_CASES_TAC `(l:B) IN mspace m2` THEN
+  ASM_REWRITE_TAC[TOPSPACE_MTOPOLOGY] THEN
+  GEN_REWRITE_TAC (RAND_CONV o BINDER_CONV o RAND_CONV) [limit] THEN
+  REWRITE_TAC[EVENTUALLY_ATPOINTOF_WITHIN_SEQUENTIALLY] THEN
+  ASM_REWRITE_TAC[TOPSPACE_MTOPOLOGY; o_DEF; RIGHT_IMP_FORALL_THM] THEN
+  GEN_REWRITE_TAC RAND_CONV [SWAP_FORALL_THM] THEN
+  REWRITE_TAC[IMP_IMP; CONJ_ACI]);;
+  *)
+
+(*
+let LIMIT_ATPOINTOF_SEQUENTIALLY_WITHIN_INJ = prove
+ (`!m1 m2 s f:A->B a l.
+        limit (mtopology m2) f l (atpointof (mtopology m1) a within s) <=>
+        l IN mspace m2 /\
+        !x. (!n. x(n) IN (s INTER mspace m1) DELETE a) /\
+            (!m n. x m = x n <=> m = n) /\
+            limit (mtopology m1) x a sequentially
+            ==> limit (mtopology m2) (f o x) l sequentially`,
+  REPEAT GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [limit] THEN
+  ASM_CASES_TAC `(l:B) IN mspace m2` THEN
+  ASM_REWRITE_TAC[TOPSPACE_MTOPOLOGY] THEN
+  GEN_REWRITE_TAC (RAND_CONV o BINDER_CONV o RAND_CONV) [limit] THEN
+  REWRITE_TAC[EVENTUALLY_ATPOINTOF_WITHIN_SEQUENTIALLY_INJ] THEN
+  ASM_REWRITE_TAC[TOPSPACE_MTOPOLOGY; o_DEF; RIGHT_IMP_FORALL_THM] THEN
+  GEN_REWRITE_TAC RAND_CONV [SWAP_FORALL_THM] THEN
+  REWRITE_TAC[IMP_IMP; CONJ_ACI]);;
+
+let LIMIT_ATPOINTOF_SEQUENTIALLY_WITHIN_DECREASING = prove
+ (`!m1 m2 s f:A->B a l.
+        limit (mtopology m2) f l (atpointof (mtopology m1) a within s) <=>
+        l IN mspace m2 /\
+        !x. (!n. x(n) IN (s INTER mspace m1) DELETE a) /\
+            (!m n. m < n ==> mdist m1 (x n,a) < mdist m1 (x m,a)) /\
+            (!m n. x m = x n <=> m = n) /\
+            limit (mtopology m1) x a sequentially
+            ==> limit (mtopology m2) (f o x) l sequentially`,
+  REPEAT GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [limit] THEN
+  ASM_CASES_TAC `(l:B) IN mspace m2` THEN
+  ASM_REWRITE_TAC[TOPSPACE_MTOPOLOGY] THEN
+  GEN_REWRITE_TAC (RAND_CONV o BINDER_CONV o RAND_CONV) [limit] THEN
+  REWRITE_TAC[EVENTUALLY_ATPOINTOF_WITHIN_SEQUENTIALLY_DECREASING] THEN
+  ASM_REWRITE_TAC[TOPSPACE_MTOPOLOGY; o_DEF; RIGHT_IMP_FORALL_THM] THEN
+  GEN_REWRITE_TAC RAND_CONV [SWAP_FORALL_THM] THEN
+  REWRITE_TAC[IMP_IMP; CONJ_ACI]);;
+
+let LIMIT_ATPOINTOF_SEQUENTIALLY = prove
+ (`!m1 m2 f:A->B a l.
+        limit (mtopology m2) f l (atpointof (mtopology m1) a) <=>
+        l IN mspace m2 /\
+        !x. (!n. x(n) IN mspace m1 DELETE a) /\
+            limit (mtopology m1) x a sequentially
+            ==> limit (mtopology m2) (f o x) l sequentially`,
+  REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [GSYM NET_WITHIN_UNIV] THEN
+  REWRITE_TAC[LIMIT_ATPOINTOF_SEQUENTIALLY_WITHIN] THEN
+  REWRITE_TAC[INTER_UNIV]);;
+
+let LIMIT_ATPOINTOF_SEQUENTIALLY_INJ = prove
+ (`!m1 m2 f:A->B a l.
+        limit (mtopology m2) f l (atpointof (mtopology m1) a) <=>
+        l IN mspace m2 /\
+        !x. (!n. x(n) IN mspace m1 DELETE a) /\
+            (!m n. x m = x n <=> m = n) /\
+            limit (mtopology m1) x a sequentially
+            ==> limit (mtopology m2) (f o x) l sequentially`,
+  REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [GSYM NET_WITHIN_UNIV] THEN
+  REWRITE_TAC[LIMIT_ATPOINTOF_SEQUENTIALLY_WITHIN_INJ] THEN
+  REWRITE_TAC[INTER_UNIV]);;
+
+let LIMIT_ATPOINTOF_SEQUENTIALLY_DECREASING = prove
+ (`!m1 m2 f:A->B a l.
+        limit (mtopology m2) f l (atpointof (mtopology m1) a) <=>
+        l IN mspace m2 /\
+        !x. (!n. x(n) IN mspace m1 DELETE a) /\
+            (!m n. m < n ==> mdist m1 (x n,a) < mdist m1 (x m,a)) /\
+            (!m n. x m = x n <=> m = n) /\
+            limit (mtopology m1) x a sequentially
+            ==> limit (mtopology m2) (f o x) l sequentially`,
+  REPEAT GEN_TAC THEN
+  GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [GSYM NET_WITHIN_UNIV] THEN
+  REWRITE_TAC[LIMIT_ATPOINTOF_SEQUENTIALLY_WITHIN_DECREASING] THEN
+  REWRITE_TAC[INTER_UNIV]);;
+*)
 
 (* END *)
 val _ = export_theory ();
