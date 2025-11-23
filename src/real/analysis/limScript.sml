@@ -2,6 +2,14 @@
 (* Theory of limits, continuity and differentiation of real->real functions  *)
 (*===========================================================================*)
 
+(*
+Theory lim
+Ancestors
+  pair arithmetic num prim_rec real metric nets combin pred_set
+  topology real_topology derivative seq
+Libs
+  numLib reduceLib pairLib jrhUtils realLib mesonLib hurdUtils
+ *)
 open HolKernel Parse bossLib boolLib;
 
 open numLib reduceLib pairLib pairTheory arithmeticTheory numTheory jrhUtils
@@ -15,7 +23,7 @@ val _ = ParseExtras.temp_loose_equality()
 
 val _ = Parse.reveal "B";
 
-val tendsto = netsTheory.tendsto;   (* conflict with real_topologyTheory.tendsto *)
+val tendsto = netsTheory.tendsto; (* conflict with real_topologyTheory.tendsto *)
 val EXACT_CONV = jrhUtils.EXACT_CONV; (* there's one also in hurdUtils *)
 
 (*---------------------------------------------------------------------------*)
@@ -28,18 +36,20 @@ Definition tends_real_real :
 End
 
 val _ = add_infix("->", 250, HOLgrammars.RIGHT)
-val _ = overload_on ("->", ``tends_real_real``);
+Overload "->" = ``tends_real_real``
 
-val LIM = store_thm("LIM",
-  “!f y0 x0. (f -> y0)(x0) =
+Theorem LIM:
+   !f y0 x0. (f -> y0)(x0) =
         !e. &0 < e ==>
             ?d. &0 < d /\ !x. &0 < abs(x - x0) /\ abs(x - x0) < d ==>
-                abs(f(x) - y0) < e”,
+                abs(f(x) - y0) < e
+Proof
   REPEAT GEN_TAC THEN
   REWRITE_TAC[tends_real_real, MATCH_MP LIM_TENDS2 (SPEC “x0:real” MR1_LIMPT)]
   THEN REWRITE_TAC[MR1_DEF] THEN
   GEN_REWR_TAC (RAND_CONV o ONCE_DEPTH_CONV) [ABS_SUB] THEN
-  REFL_TAC);
+  REFL_TAC
+QED
 
 (* connection to real_topologyTheory *)
 Theorem LIM_AT_LIM :
@@ -108,21 +118,25 @@ QED
 (* One extra theorem is handy                                                *)
 (*---------------------------------------------------------------------------*)
 
-val LIM_X = store_thm("LIM_X",
-  “!x0. ((\x. x) -> x0)(x0)”,
+Theorem LIM_X:
+   !x0. ((\x. x) -> x0)(x0)
+Proof
   GEN_TAC THEN REWRITE_TAC[LIM] THEN X_GEN_TAC “e:real” THEN
   DISCH_TAC THEN EXISTS_TAC “e:real” THEN ASM_REWRITE_TAC[] THEN
-  BETA_TAC THEN GEN_TAC THEN DISCH_TAC THEN ASM_REWRITE_TAC[]);
+  BETA_TAC THEN GEN_TAC THEN DISCH_TAC THEN ASM_REWRITE_TAC[]
+QED
 
 (*---------------------------------------------------------------------------*)
 (* Uniqueness of limit                                                       *)
 (*---------------------------------------------------------------------------*)
 
-val LIM_UNIQ = store_thm("LIM_UNIQ",
-  “!f l m x. (f -> l)(x) /\ (f -> m)(x) ==> (l = m)”,
+Theorem LIM_UNIQ:
+   !f l m x. (f -> l)(x) /\ (f -> m)(x) ==> (l = m)
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[tends_real_real] THEN
   MATCH_MP_TAC MTOP_TENDS_UNIQ THEN
-  MATCH_ACCEPT_TAC DORDER_TENDSTO);
+  MATCH_ACCEPT_TAC DORDER_TENDSTO
+QED
 
 (*---------------------------------------------------------------------------*)
 (* Show that limits are equal when functions are equal except at limit point *)
@@ -167,9 +181,11 @@ Proof
  >> ASSUME_TAC (Q.SPEC ‘l’ (ONCE_REWRITE_RULE [REAL_MUL_COMM] LINEAR_SCALING))
  >> EQ_TAC >> RW_TAC real_ss [LIM] (* 2 subgoals *)
  >| [ (* goal 1 (of 2) *)
-      Q.PAT_X_ASSUM ‘!e. 0 < e ==> P’ (MP_TAC o (Q.SPEC ‘e’)) >> RW_TAC std_ss [] \\
+      Q.PAT_X_ASSUM ‘!e. 0 < e ==> P’ (MP_TAC o (Q.SPEC ‘e’)) \\
+      RW_TAC std_ss [] \\
       Q.EXISTS_TAC ‘d’ >> RW_TAC std_ss [] \\
-      Q.PAT_X_ASSUM ‘!h. 0 < abs h /\ abs h < d ==> P’ (MP_TAC o (Q.SPEC ‘y - x’)) \\
+      Q.PAT_X_ASSUM ‘!h. 0 < abs h /\ abs h < d ==> P’
+       (MP_TAC o (Q.SPEC ‘y - x’)) \\
       RW_TAC real_ss [] \\
      ‘y - x <> 0’ by (CCONTR_TAC >> fs []) \\
      ‘inv (abs (y - x)) = abs (inv (y - x))’ by PROVE_TAC [ABS_INV] >> POP_ORW \\
@@ -181,10 +197,11 @@ Proof
       ONCE_REWRITE_TAC [REAL_MUL_COMM] \\
      ‘f y - (f x + (y - x) * l) = (f y - f x) - l * (y - x)’ by REAL_ARITH_TAC \\
       POP_ORW >> REWRITE_TAC [real_div] \\
-      GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites [REAL_SUB_RDISTRIB] \\
-      rw [],
+      GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites
+                      [REAL_SUB_RDISTRIB] >> rw [],
       (* goal 2 (of 2) *)
-      Q.PAT_X_ASSUM ‘!e. 0 < e ==> P’ (MP_TAC o (Q.SPEC ‘e’)) >> RW_TAC std_ss [] \\
+      Q.PAT_X_ASSUM ‘!e. 0 < e ==> P’ (MP_TAC o (Q.SPEC ‘e’)) \\
+      RW_TAC std_ss [] \\
       Q.EXISTS_TAC ‘d’ >> RW_TAC std_ss [] \\
       Q.PAT_X_ASSUM ‘!y. 0 < abs (y - x) /\ abs (y - x) < d ==> P’
         (MP_TAC o (Q.SPEC ‘x + h’)) >> RW_TAC real_ss [] \\
@@ -200,9 +217,16 @@ Proof
       ONCE_REWRITE_TAC [REAL_MUL_COMM] \\
      ‘f (x + h) - (f x + h * l) = f (x + h) - f x - l * h’ by REAL_ARITH_TAC \\
       POP_ORW >> REWRITE_TAC [real_div] \\
-      GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) empty_rewrites [REAL_SUB_RDISTRIB] \\
-      rw [] ]
+      GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) empty_rewrites
+                      [REAL_SUB_RDISTRIB] >> rw [] ]
 QED
+
+(* |- !f l x.
+        (f has_vector_derivative l) (at x) <=>
+        ((\h. (f (x + h) - f x) / h) --> l) (at 0)
+ *)
+Theorem HAS_VECTOR_DERIVATIVE_ALT =
+    REWRITE_RULE [diffl, GSYM LIM_AT_LIM] (GSYM diffl_has_vector_derivative)
 
 (* |- !f l x. (f diffl l) x <=> (f has_derivative (\x. x * l)) (at x) *)
 Theorem diffl_has_derivative =
@@ -229,7 +253,8 @@ Proof
       Q.PAT_X_ASSUM ‘!e. 0 < e ==> P’ (MP_TAC o (Q.SPEC ‘e’)) \\
       RW_TAC std_ss [] \\
       Q.EXISTS_TAC ‘d’ >> RW_TAC std_ss [] \\
-      Q.PAT_X_ASSUM ‘!h. 0 < abs h /\ abs h < d ==> P’ (MP_TAC o (Q.SPEC ‘x' - x’)) \\
+      Q.PAT_X_ASSUM ‘!h. 0 < abs h /\ abs h < d ==> P’
+        (MP_TAC o (Q.SPEC ‘x' - x’)) \\
       RW_TAC real_ss [],
       (* goal 2 (of 2) *)
       Q.PAT_X_ASSUM ‘!e. 0 < e ==> P’ (MP_TAC o (Q.SPEC ‘e’)) \\
@@ -270,10 +295,12 @@ QED
 (* Derivative is unique                                                      *)
 (*---------------------------------------------------------------------------*)
 
-val DIFF_UNIQ = store_thm("DIFF_UNIQ",
-  “!f l m x. (f diffl l)(x) /\ (f diffl m)(x) ==> (l = m)”,
+Theorem DIFF_UNIQ:
+   !f l m x. (f diffl l)(x) /\ (f diffl m)(x) ==> (l = m)
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[diffl] THEN
-  MATCH_ACCEPT_TAC LIM_UNIQ);
+  MATCH_ACCEPT_TAC LIM_UNIQ
+QED
 
 (*---------------------------------------------------------------------------*)
 (* Differentiability implies continuity                                      *)
