@@ -677,7 +677,7 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
-(*  Net As Type                                                              *)
+(*  Net As Type (re-worked by Chun Tian w.r.t. textbook definitions [2,3])   *)
 (* ------------------------------------------------------------------------- *)
 
 (* old definition *)
@@ -688,14 +688,16 @@ End
 (* new definition: (see, e.g. [2,p.65] (Directed Sets and Nets)
 
    NOTE: The 1st argument of the preorder is "greater (or equal)" than the 2nd
-   argument, i.e. ‘g x y’ means ‘x >= y’ (where >= is a preorder).
+   argument, i.e. ‘g x y’ means ‘x >= y’, i.e. “g” reads for "greater".
 
 Definition isnet_def :
-   isnet g <=> PreOrder g /\ !x y. ?z. g z x /\ g z y
+   isnet (A,g) <=> (!x. x IN A ==> g x x) /\
+                   (!x y z. x IN A /\ y IN A /\ z IN A /\
+                            g y x /\ g z y ==> g z x) /\
+                    !x y. x IN A /\ y IN A ==> ?z. z IN A /\ g z x /\ g z y
 End
  *)
 
-(* old way *)
 val net_tydef = new_type_definition
  ("net",
   prove (``?(g:'a->'a->bool). isnet g``,
@@ -713,12 +715,12 @@ Proof
   SIMP_TAC std_ss [net_ty_bij, GSYM isnet]
 QED
 
-(*
+(* new way
 Theorem net_EXISTS[local] :
-    ?g. isnet g
+    ?net. isnet net
 Proof
-    Q.EXISTS_TAC ‘\x y. T’ (* NOTE: “\x y. F” doesn't work *)
- >> rw [isnet_def, PreOrder, reflexive_def, transitive_def]
+    Q.EXISTS_TAC ‘(UNIV,\x y. T)’
+ >> simp [isnet_def]
 QED
 
 val net_tydef as {absrep_id, newty, repabs_pseudo_id,
@@ -728,44 +730,67 @@ val net_tydef as {absrep_id, newty, repabs_pseudo_id,
     rich_new_type {tyname = "net",
                    exthm  = net_EXISTS,
                    ABS    = "mk_net",
-                   REP    = "netord"};
+                   REP    = "dest_net"};
 
-(* |- (!a. mk_net (netord a) = a) /\ !r. isnet r ==> netord (mk_net r) = r *)
-Theorem net_tybij = LIST_CONJ [absrep_id, repabs_pseudo_id]
+Theorem net_tybij :
+    (!net. mk_net (dest_net net) = net) /\
+    (!A g. isnet (A,g) <=> dest_net (mk_net (A,g)) = (A,g))
+Proof
+    rw [absrep_id]
+ >> EQ_TAC
+ >- (DISCH_TAC \\
+     MATCH_MP_TAC repabs_pseudo_id >> art [])
+ >> rw [termP_exists]
+ >> Q.EXISTS_TAC ‘mk_net (A,g)’ >> art []
+QED
 
-(* |- !g. isnet (netord g) *)
-Theorem isnet_netord = GEN_ALL termP_term_REP
+(* |- !net. isnet (dest_net net) *)
+Theorem isnet_dest_net =
+        termP_term_REP |> Q.INST [‘g’ |-> ‘net’] |> GEN_ALL
 
-(* |- isnet x /\ isnet y ==> (mk_net x = mk_net y <=> x = y) *)
-Theorem mk_net_11 = term_ABS_pseudo11
+(* |- !net net'.
+        isnet net /\ isnet net' ==>
+       (mk_net net = mk_net net' <=> net = net')
+ *)
+Theorem mk_net_11 =
+        term_ABS_pseudo11 |> Q.INST [‘x’ |-> ‘net’, ‘y’ |-> ‘net'’]
+                          |> Q.GENL [‘net’, ‘net'’]
 
-(* |- !g h. netord g = netord h <=> g = h *)
-Theorem netord_11 = Q.GENL [‘g’, ‘h’] term_REP_11
+(* |- !net net'. dest_net net = dest_net net' <=> net = net' *)
+Theorem dest_net_11 =
+        term_REP_11 |> Q.INST [‘g’ |-> ‘net’, ‘h’ |-> ‘net'’]
+                    |> Q.GENL [‘net’, ‘net'’]
+
+Overload netdom  = “\net. FST (dest_net net)”
+Overload netord  = “\net. SND (dest_net net)”
 
 Theorem netord_reflexive :
-    !net x. netord net x x
+    !net x. x IN netdom net ==> netord net x x
 Proof
-    rpt GEN_TAC
- >> MP_TAC (Q.SPEC ‘net’ isnet_netord)
- >> rw [isnet_def, PreOrder, reflexive_def]
+    rpt STRIP_TAC
+ >> MP_TAC (Q.SPEC ‘net’ isnet_dest_net)
+ >> Cases_on ‘dest_net net’ >> fs [isnet_def]
 QED
 
 Theorem netord_transitive :
-    !net x y z. netord net x y /\ netord net y z ==> netord net x z
+    !net x y z. x IN netdom net /\ y IN netdom net /\ z IN netdom net /\
+                netord net y x /\ netord net z y ==> netord net z x
 Proof
     rpt STRIP_TAC
- >> MP_TAC (Q.SPEC ‘net’ isnet_netord)
- >> rw [isnet_def, PreOrder, transitive_def]
+ >> MP_TAC (Q.SPEC ‘net’ isnet_dest_net)
+ >> Cases_on ‘dest_net net’ >> fs [isnet_def]
+ >> rpt STRIP_TAC
  >> FIRST_X_ASSUM MATCH_MP_TAC
  >> Q.EXISTS_TAC ‘y’ >> art []
 QED
 
 Theorem netord_upward_directed :
-    !net x y. ?z. netord net z x /\ netord net z y
+    !net x y. x IN netdom net /\ y IN netdom net ==>
+              ?z. z IN netdom net /\ netord net z x /\ netord net z y
 Proof
-    rpt GEN_TAC
- >> MP_TAC (Q.SPEC ‘net’ isnet_netord)
- >> rw [isnet_def]
+    rpt STRIP_TAC
+ >> MP_TAC (Q.SPEC ‘net’ isnet_dest_net)
+ >> Cases_on ‘dest_net net’ >> fs [isnet_def]
 QED
  *)
 
@@ -786,30 +811,41 @@ QED
 
 (*
 Theorem OLDNET :
-    !n x y. netord n x x /\ netord n y y
-           ==> ?z. netord n z z /\
-                   !w. netord n w z ==> netord n w x /\ netord n w y
+    !net x y. x IN netdom net /\ y IN netdom net
+          ==> ?z. z IN netdom net /\
+                  !w. w IN netdom net /\ netord net w z ==>
+                      netord net w x /\ netord net w y
 Proof
-    rw [netord_reflexive]
- >> STRIP_ASSUME_TAC (Q.SPECL [‘n’, ‘x’, ‘y’] netord_upward_directed)
- >> Q.EXISTS_TAC ‘z’ >> rw []
- >| [ Q_TAC (TRANS_TAC netord_transitive) ‘z’ >> art [],
-      Q_TAC (TRANS_TAC netord_transitive) ‘z’ >> art [] ]
+    RW_TAC std_ss []
+ >> MP_TAC (Q.SPECL [‘net’, ‘x’, ‘y’] netord_upward_directed)
+ >> RW_TAC std_ss []
+ >> Q.EXISTS_TAC ‘z’
+ >> RW_TAC std_ss []
+ >| [ MATCH_MP_TAC netord_transitive \\
+      Q.EXISTS_TAC ‘z’ >> art [],
+      MATCH_MP_TAC netord_transitive \\
+      Q.EXISTS_TAC ‘z’ >> art [] ]
 QED
 
+(* NOTE: totality is additionally assumed here. *)
 Theorem NET :
-   !n x y. total (netord n) ==>
-           (!z. netord n z x ==> netord n z y) \/
-           (!z. netord n z y ==> netord n z x)
+   !net x y. x IN netdom net /\ y IN netdom net /\
+            (!a b. a IN netdom net /\ b IN netdom net ==>
+                   netord net a b \/ netord net b a) ==>
+            (!z. z IN netdom net /\ netord net z x ==> netord net z y) \/
+            (!z. z IN netdom net /\ netord net z y ==> netord net z x)
 Proof
-    rw [total_def]
- >> POP_ASSUM (MP_TAC o Q.SPECL [‘x’, ‘y’]) >> STRIP_TAC
+    rpt STRIP_TAC
+ >> POP_ASSUM (MP_TAC o Q.SPECL [‘x’, ‘y’])
+ >> RW_TAC std_ss []
  >| [ (* goal 1 (of 2) *)
       DISJ1_TAC >> rpt STRIP_TAC \\
-      Q_TAC (TRANS_TAC netord_transitive) ‘x’ >> art [],
+      MATCH_MP_TAC netord_transitive \\
+      Q.EXISTS_TAC ‘x’ >> art [],
       (* goal 2 (of 2) *)
       DISJ2_TAC >> rpt STRIP_TAC \\
-      Q_TAC (TRANS_TAC netord_transitive) ‘y’ >> art [] ]
+      MATCH_MP_TAC netord_transitive \\
+      Q.EXISTS_TAC ‘y’ >> art [] ]
 QED
  *)
 
@@ -821,18 +857,36 @@ Proof
   MESON_TAC[NET]
 QED
 
-(*
+(* new way
 Theorem NET_DILEMMA :
-   !net. total (netord net) /\
-         (?a. (?x. netord net x a) /\ (!x. netord net x a ==> P x)) /\
-         (?b. (?x. netord net x b) /\ (!x. netord net x b ==> Q x))
-     ==> ?c. (?x. netord net x c) /\ (!x. netord net x c ==> P x /\ Q x)
+   !net. (!a b. a IN netdom net /\ b IN netdom net ==>
+                netord net a b \/ netord net b a) /\
+         (?a. a IN netdom net /\
+              !x. x IN netdom net /\ netord net x a ==> P x) /\
+         (?b. b IN netdom net /\
+              !y. y IN netdom net /\ netord net y b ==> Q y)
+     ==> ?c. c IN netdom net /\
+             !z. z IN netdom net /\ netord net z c ==> P z /\ Q z
 Proof
-  MESON_TAC[NET]
+    rpt STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘!a b. _’ (MP_TAC o Q.SPECL [‘a’, ‘b’])
+ >> RW_TAC std_ss []
+ >| [ (* goal 1 (of 2): a is greater *)
+      Q.EXISTS_TAC ‘a’ >> rw [] \\
+      FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
+      MATCH_MP_TAC netord_transitive \\
+      Q.EXISTS_TAC ‘a’ >> art [],
+      (* goal 2 (of 2): b is greater *)
+      Q.EXISTS_TAC ‘b’ >> rw [] \\
+      FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
+      MATCH_MP_TAC netord_transitive \\
+      Q.EXISTS_TAC ‘b’ >> art [] ]
 QED
  *)
 
-(* NOTE: The previous “dorder” is equivalent to [OLDNET] but not to [NET]. *)
+(* NOTE: It seems that purpose of “g x x” in dorder for “at a”, is to make
+   sure ‘x <> a’, or 0 < mdist m (x,a).
+ *)
 Theorem DORDER_NET :
     !net. dorder (netord net)
 Proof
@@ -1261,7 +1315,7 @@ QED
         ?u. open_in top u /\ a IN u /\ !x. x IN u DELETE a ==> P x
 
    NOTE: Added “limpt (mtop m) a univ(:'a)” as necessary antecedents.
- *)
+
 Theorem EVENTUALLY_ATPOINTOF :
     !P m a. limpt (mtop m) a univ(:'a) ==>
            (eventually P (atpointof m a) <=>
@@ -1307,6 +1361,7 @@ Proof
  >> Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘dist m (a,y)’ >> art []
  >> ONCE_REWRITE_TAC [MDIST_SYM] >> art []
 QED
+ *)
 
 (* NOTE: This theorem is trivial (by NET_WITHIN_UNIV and MSPACE) in HOL4.
    The original HOL-Light version is:
@@ -1319,7 +1374,7 @@ Proof
     rw [NET_WITHIN_UNIV, MSPACE]
 QED
 
-(* TODO: The other direction seems non-provable in HOL4... *)
+(* TODO: The other direction seems non-provable in HOL4...
 Theorem TRIVIAL_LIMIT_ATPOINTOF_WITHIN :
     !m s a. trivial_limit(atpointof m a within s) <=>
             a NOTIN mtop m derived_set_of s
@@ -1421,6 +1476,7 @@ Proof
  >> simp [MDIST_POS_LT]
  >> simp [Once MDIST_SYM]
 QED
+ *)
 
 (* ------------------------------------------------------------------------- *)
 (* It's also sometimes useful to extract the limit point from the net.       *)
@@ -1471,6 +1527,7 @@ Definition limit :
      (!u. open_in top u /\ l IN u ==> eventually (\x. f x IN u) net)
 End
 
+(*
 Theorem LIMIT_ATPOINTOF :
     !m top' f x y. limpt (mtop m) x univ(:'a) ==>
        (limit top' f y (atpointof m x) <=>
@@ -1514,6 +1571,7 @@ Theorem LIMIT_CONTINUOUS_MAP :
 Proof
     MESON_TAC[CONTINUOUS_MAP_ATPOINTOF]
 QED
+ *)
 
 (* Connection between HOL-Light's ‘limit’ and HOL4's ‘tends’
 
@@ -1537,7 +1595,6 @@ Proof
  >> ‘f x IN u’ by PROVE_TAC [SUBSET_DEF] >> fs [IN_APP]
 QED
 
-(* NOTE: “!x y. netord net x y ==> netord net y y” ... *)
 Theorem limit_alt_tends :
     !top f l net. ~trivial_limit net /\ l IN topspace top /\
                  (!x y. netord net x y ==> netord net y y) ==>

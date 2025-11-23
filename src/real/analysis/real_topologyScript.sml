@@ -9840,7 +9840,8 @@ Proof
    X_GEN_TAC ``n:num`` THEN EXISTS_TAC ``n:num`` THEN X_GEN_TAC ``m:num`` THEN
    DISCH_TAC THEN MATCH_MP_TAC REAL_LTE_TRANS THEN
    EXISTS_TAC ``&1 / (&m + &1:real)`` THEN ASM_REWRITE_TAC[] THEN
-   ASM_SIMP_TAC std_ss [REAL_LE_INV2, real_div, REAL_ARITH ``&0 <= x ==> &0 < x + &1:real``,
+   ASM_SIMP_TAC std_ss [REAL_LE_INV2, real_div,
+                        REAL_ARITH ``&0 <= x ==> &0 < x + &1:real``,
     REAL_POS, REAL_MUL_LID, REAL_LE_RADD, REAL_OF_NUM_LE],
   EXISTS_TAC ``e:real`` THEN ASM_REWRITE_TAC[] THEN
   EXISTS_TAC ``\x:num. x`` THEN ASM_SIMP_TAC std_ss [LESS_EQ_REFL]]
@@ -9865,6 +9866,76 @@ let LIM_WITHIN_SEQUENTIALLY = prove
   GEN_REWRITE_TAC LAND_CONV [LIMIT_ATPOINTOF_SEQUENTIALLY_WITHIN] THEN
   REWRITE_TAC[EUCLIDEAN_METRIC; IN_UNIV; INTER_UNIV]);;
  *)
+Theorem LIM_WITHIN_SEQUENTIALLY :
+    !f s a l.
+        (f --> l) (at a within s) <=>
+        !x. (!n. x(n) IN s DELETE a) /\
+            (x --> a) sequentially
+            ==> ((f o x) --> l) sequentially
+Proof
+    cheat
+QED
+
+(*
+let LIM_WITHIN_SEQUENTIALLY_INJ = prove
+ (`!f:real^M->real^N s a l.
+        (f --> l) (at a within s) <=>
+        !x. (!n. x(n) IN s DELETE a) /\
+            (!m n. x m = x n <=> m = n) /\
+            (x --> a) sequentially
+            ==> ((f o x) --> l) sequentially`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM LIMIT_EUCLIDEAN; at] THEN
+  REWRITE_TAC[GSYM MTOPOLOGY_EUCLIDEAN_METRIC] THEN
+  GEN_REWRITE_TAC LAND_CONV [LIMIT_ATPOINTOF_SEQUENTIALLY_WITHIN_INJ] THEN
+  REWRITE_TAC[EUCLIDEAN_METRIC; IN_UNIV; INTER_UNIV]);;
+ *)
+Theorem LIM_WITHIN_SEQUENTIALLY_INJ :
+    !f s a l.
+        (f --> l) (at a within s) <=>
+        !x. (!n. x(n) IN s DELETE a) /\
+            (!m n. x m = x n <=> m = n) /\
+            (x --> a) sequentially
+            ==> ((f o x) --> l) sequentially
+Proof
+    cheat
+QED
+
+(*
+let LIM_WITHIN_SEQUENTIALLY_DECREASING = prove
+ (`!f:real^M->real^N s a l.
+        (f --> l) (at a within s) <=>
+        !x. (!n. x(n) IN s DELETE a) /\
+            (!m n. m < n ==> dist(x n,a) < dist(x m,a)) /\
+            (x --> a) sequentially
+            ==> ((f o x) --> l) sequentially`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM LIMIT_EUCLIDEAN; at] THEN
+  REWRITE_TAC[GSYM MTOPOLOGY_EUCLIDEAN_METRIC] THEN GEN_REWRITE_TAC LAND_CONV
+   [LIMIT_ATPOINTOF_SEQUENTIALLY_WITHIN_DECREASING] THEN
+  REWRITE_TAC[EUCLIDEAN_METRIC; IN_UNIV; INTER_UNIV] THEN
+  EQ_TAC THEN MATCH_MP_TAC MONO_FORALL THEN GEN_TAC THEN
+  REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC WLOG_LT THEN ASM_MESON_TAC[REAL_LT_REFL]);;
+ *)
+Theorem LIM_WITHIN_SEQUENTIALLY_DECREASING :
+    !f s a l.
+        (f --> l) (at a within s) <=>
+        !x. (!n. x(n) IN s DELETE a) /\
+            (!m n. m < n ==> dist(x n,a) < dist(x m,a)) /\
+            (x --> a) sequentially
+            ==> ((f o x) --> l) sequentially
+Proof
+    cheat
+QED
+
+Theorem LIM_AT_SEQUENTIALLY :
+    !f a l.
+        (f --> l) (at a) <=>
+        !x. (!n. ~(x(n) = a)) /\ (x --> a) sequentially
+            ==> ((f o x) --> l) sequentially
+Proof
+  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
+  REWRITE_TAC[LIM_WITHIN_SEQUENTIALLY, IN_UNIV, IN_DELETE]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Combination results for pointwise continuity.                             *)
