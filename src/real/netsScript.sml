@@ -9,13 +9,13 @@ Ancestors
   metric
 Libs
   numLib reduceLib pairLib mesonLib RealArith hurdUtils jrhUtils
-  tautLib
+  tautLib newtypeTools
  *)
 open HolKernel Parse boolLib bossLib;
 
 open numLib reduceLib pairLib pred_setTheory mesonLib RealArith hurdUtils
      pairTheory arithmeticTheory numTheory prim_recTheory relationTheory
-     jrhUtils realTheory topologyTheory metricTheory tautLib;
+     jrhUtils realTheory topologyTheory metricTheory tautLib newtypeTools;
 
 val _ = new_theory "nets";
 
@@ -680,10 +680,22 @@ QED
 (*  Net As Type                                                              *)
 (* ------------------------------------------------------------------------- *)
 
+(* old definition *)
 Definition isnet :
    isnet g <=> !x y. (!z. g z x ==> g z y) \/ (!z. g z y ==> g z x)
 End
 
+(* new definition: (see, e.g. [2,p.65] (Directed Sets and Nets)
+
+   NOTE: The 1st argument of the preorder is "greater (or equal)" than the 2nd
+   argument, i.e. ‘g x y’ means ‘x >= y’ (where >= is a preorder).
+
+Definition isnet_def :
+   isnet g <=> PreOrder g /\ !x y. ?z. g z x /\ g z y
+End
+ *)
+
+(* old way *)
 val net_tydef = new_type_definition
  ("net",
   prove (``?(g:'a->'a->bool). isnet g``,
@@ -701,6 +713,62 @@ Proof
   SIMP_TAC std_ss [net_ty_bij, GSYM isnet]
 QED
 
+(*
+Theorem net_EXISTS[local] :
+    ?g. isnet g
+Proof
+    Q.EXISTS_TAC ‘\x y. T’ (* NOTE: “\x y. F” doesn't work *)
+ >> rw [isnet_def, PreOrder, reflexive_def, transitive_def]
+QED
+
+val net_tydef as {absrep_id, newty, repabs_pseudo_id,
+                  termP, termP_exists, termP_term_REP,
+                  term_ABS_pseudo11, term_ABS_t,
+                  term_REP_11, term_REP_t} =
+    rich_new_type {tyname = "net",
+                   exthm  = net_EXISTS,
+                   ABS    = "mk_net",
+                   REP    = "netord"};
+
+(* |- (!a. mk_net (netord a) = a) /\ !r. isnet r ==> netord (mk_net r) = r *)
+Theorem net_tybij = LIST_CONJ [absrep_id, repabs_pseudo_id]
+
+(* |- !g. isnet (netord g) *)
+Theorem isnet_netord = GEN_ALL termP_term_REP
+
+(* |- isnet x /\ isnet y ==> (mk_net x = mk_net y <=> x = y) *)
+Theorem mk_net_11 = term_ABS_pseudo11
+
+(* |- !g h. netord g = netord h <=> g = h *)
+Theorem netord_11 = Q.GENL [‘g’, ‘h’] term_REP_11
+
+Theorem netord_reflexive :
+    !net x. netord net x x
+Proof
+    rpt GEN_TAC
+ >> MP_TAC (Q.SPEC ‘net’ isnet_netord)
+ >> rw [isnet_def, PreOrder, reflexive_def]
+QED
+
+Theorem netord_transitive :
+    !net x y z. netord net x y /\ netord net y z ==> netord net x z
+Proof
+    rpt STRIP_TAC
+ >> MP_TAC (Q.SPEC ‘net’ isnet_netord)
+ >> rw [isnet_def, PreOrder, transitive_def]
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> Q.EXISTS_TAC ‘y’ >> art []
+QED
+
+Theorem netord_upward_directed :
+    !net x y. ?z. netord net z x /\ netord net z y
+Proof
+    rpt GEN_TAC
+ >> MP_TAC (Q.SPEC ‘net’ isnet_netord)
+ >> rw [isnet_def]
+QED
+ *)
+
 Theorem NET :
    !n x y. (!z. netord n z x ==> netord n z y) \/
            (!z. netord n z y ==> netord n z x)
@@ -716,6 +784,35 @@ Proof
   MESON_TAC[NET]
 QED
 
+(*
+Theorem OLDNET :
+    !n x y. netord n x x /\ netord n y y
+           ==> ?z. netord n z z /\
+                   !w. netord n w z ==> netord n w x /\ netord n w y
+Proof
+    rw [netord_reflexive]
+ >> STRIP_ASSUME_TAC (Q.SPECL [‘n’, ‘x’, ‘y’] netord_upward_directed)
+ >> Q.EXISTS_TAC ‘z’ >> rw []
+ >| [ Q_TAC (TRANS_TAC netord_transitive) ‘z’ >> art [],
+      Q_TAC (TRANS_TAC netord_transitive) ‘z’ >> art [] ]
+QED
+
+Theorem NET :
+   !n x y. total (netord n) ==>
+           (!z. netord n z x ==> netord n z y) \/
+           (!z. netord n z y ==> netord n z x)
+Proof
+    rw [total_def]
+ >> POP_ASSUM (MP_TAC o Q.SPECL [‘x’, ‘y’]) >> STRIP_TAC
+ >| [ (* goal 1 (of 2) *)
+      DISJ1_TAC >> rpt STRIP_TAC \\
+      Q_TAC (TRANS_TAC netord_transitive) ‘x’ >> art [],
+      (* goal 2 (of 2) *)
+      DISJ2_TAC >> rpt STRIP_TAC \\
+      Q_TAC (TRANS_TAC netord_transitive) ‘y’ >> art [] ]
+QED
+ *)
+
 Theorem NET_DILEMMA :
    !net. (?a. (?x. netord net x a) /\ (!x. netord net x a ==> P x)) /\
          (?b. (?x. netord net x b) /\ (!x. netord net x b ==> Q x))
@@ -724,8 +821,20 @@ Proof
   MESON_TAC[NET]
 QED
 
+(*
+Theorem NET_DILEMMA :
+   !net. total (netord net) /\
+         (?a. (?x. netord net x a) /\ (!x. netord net x a ==> P x)) /\
+         (?b. (?x. netord net x b) /\ (!x. netord net x b ==> Q x))
+     ==> ?c. (?x. netord net x c) /\ (!x. netord net x c ==> P x /\ Q x)
+Proof
+  MESON_TAC[NET]
+QED
+ *)
+
+(* NOTE: The previous “dorder” is equivalent to [OLDNET] but not to [NET]. *)
 Theorem DORDER_NET :
-    !n. dorder (netord n)
+    !net. dorder (netord net)
 Proof
     RW_TAC std_ss [dorder, OLDNET]
 QED
@@ -791,6 +900,7 @@ Definition sequentially[nocompute]:
   sequentially = mk_net(\m:num n. m >= n)
 End
 
+(* NOTE: “within” only requires “x IN s” (next step) but not for “y” *)
 Definition within[nocompute]:
   (net within s) = mk_net(\x y. netord net x y /\ x IN s)
 End
@@ -1209,12 +1319,13 @@ Proof
     rw [NET_WITHIN_UNIV, MSPACE]
 QED
 
-(* NOTE: The other direction seems non-provable in HOL4... *)
+(* TODO: The other direction seems non-provable in HOL4... *)
 Theorem TRIVIAL_LIMIT_ATPOINTOF_WITHIN :
-    !m s a. trivial_limit(atpointof m a within s) ==>
+    !m s a. trivial_limit(atpointof m a within s) <=>
             a NOTIN mtop m derived_set_of s
 Proof
     rw [trivial_limit, WITHIN, ATPOINTOF, derived_set_of_alt_limpt]
+ >> EQ_TAC >> rw []
  >- (rw [MTOP_LIMPT'] \\
      Q.EXISTS_TAC ‘1’ >> simp [])
  >- (rename1 ‘x <> y’ \\
@@ -1242,6 +1353,29 @@ Proof
      reverse STRIP_TAC >- art [] \\
      DISJ2_TAC \\
      MATCH_MP_TAC REAL_LT_IMP_LE >> art [])
+ (* stage work *)
+ >> Cases_on ‘!a b. a = b’ >> simp []
+ >> fs [] >> rename1 ‘x <> y’
+ (* a is not a limit point in s, but do we know “a IN s”? *)
+ >> fs [MTOP_LIMPT', REAL_NOT_LT, REAL_NOT_LE]
+ >> simp [MDIST_LE_0, MDIST_EQ_0]
+ >> Cases_on ‘s = {}’ >> fs []
+ >- (qexistsl_tac [‘x’, ‘y’] >> art [])
+ >> Cases_on ‘s = {a}’ >> fs []
+ >- (qexistsl_tac [‘x’, ‘y’] >> art [])
+ >> qabbrev_tac ‘t = s DELETE a’
+ >> Know ‘?z. z IN t’
+ >- (Q.PAT_X_ASSUM ‘s <> {a}’ MP_TAC \\
+     simp [Once EXTENSION] \\
+     DISCH_THEN (Q.X_CHOOSE_THEN ‘z’ STRIP_ASSUME_TAC) \\
+     Cases_on ‘z = a’ >> fs []
+     >- (rw [Abbr ‘t’, Once EXTENSION] \\
+         fs [GSYM MEMBER_NOT_EMPTY] >> rename1 ‘b IN s’ \\
+         Q.EXISTS_TAC ‘b’ >> PROVE_TAC []) \\
+     rw [Abbr ‘t’, Once EXTENSION] \\
+     Q.EXISTS_TAC ‘z’ >> art [])
+ >> DISCH_TAC
+ >> cheat
 QED
 
 Theorem DERIVED_SET_OF_TRIVIAL_LIMIT :
@@ -1403,6 +1537,7 @@ Proof
  >> ‘f x IN u’ by PROVE_TAC [SUBSET_DEF] >> fs [IN_APP]
 QED
 
+(* NOTE: “!x y. netord net x y ==> netord net y y” ... *)
 Theorem limit_alt_tends :
     !top f l net. ~trivial_limit net /\ l IN topspace top /\
                  (!x y. netord net x y ==> netord net y y) ==>
@@ -1426,39 +1561,21 @@ QED
 (* More sequential characterizations in a metric space.                      *)
 (* ------------------------------------------------------------------------- *)
 
+(* !x. P x ==> Q x) ==> (!x. P x) ==> !x. Q x *)
+Theorem MONO_FORALL = MONO_ALL
+
+(* |- !P Q. (!x. P x) /\ (!x. Q x) <=> !x. P x /\ Q x *)
+Theorem AND_FORALL_THM = GSYM FORALL_AND_THM
+
 (*
-let [EVENTUALLY_ATPOINTOF_WITHIN_SEQUENTIALLY;
-     EVENTUALLY_ATPOINTOF_WITHIN_SEQUENTIALLY_INJ;
-     EVENTUALLY_ATPOINTOF_WITHIN_SEQUENTIALLY_DECREASING] = (CONJUNCTS o prove)
- (`(!met P s a:A.
-        eventually P (atpointof (mtopology met) a within s) <=>
+Theorem EVENTUALLY_ATPOINTOF_WITHIN_SEQUENTIALLY_lemma[local] :
+    !met P s a. limpt (mtop met) a univ(:'a) ==>
+       (eventually P (atpointof met a within s) <=>
         !x. (!n. x(n) IN (s INTER mspace met) DELETE a) /\
             limit (mtopology met) x a sequentially
-            ==> eventually (\n. P(x n)) sequentially) /\
-   (!met P s a:A.
-        eventually P (atpointof (mtopology met) a within s) <=>
-        !x. (!n. x(n) IN (s INTER mspace met) DELETE a) /\
-            (!m n. x m = x n <=> m = n) /\
-            limit (mtopology met) x a sequentially
-            ==> eventually (\n. P(x n)) sequentially) /\
-   (!met P s a:A.
-        eventually P (atpointof (mtopology met) a within s) <=>
-        !x. (!n. x(n) IN (s INTER mspace met) DELETE a) /\
-            (!m n. m < n ==> mdist met (x n,a) < mdist met (x m,a)) /\
-            (!m n. x m = x n <=> m = n) /\
-            limit (mtopology met) x a sequentially
-            ==> eventually (\n. P(x n)) sequentially)`,
-  REWRITE_TAC[AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
-  MATCH_MP_TAC(TAUT
-   `(r ==> s) /\ (q ==> r) /\ (p ==> q) /\ (s ==> p)
-    ==> (p <=> q) /\ (p <=> r) /\ (p <=> s)`) THEN
-  REPEAT CONJ_TAC THENL
-   [MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `x:num->A` THEN
-    DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN ASM_REWRITE_TAC[] THEN
-    DISCH_THEN MATCH_MP_TAC THEN
-    MATCH_MP_TAC WLOG_LT THEN REWRITE_TAC[] THEN
-    ASM_MESON_TAC[REAL_LT_REFL];
-    MATCH_MP_TAC MONO_FORALL THEN MESON_TAC[];
+            ==> eventually (\n. P(x n)) sequentially)
+Proof
+    rw [MSPACE]
     REWRITE_TAC[EVENTUALLY_WITHIN_IMP; EVENTUALLY_ATPOINTOF] THEN
     REWRITE_TAC[limit; TOPSPACE_MTOPOLOGY] THEN
     ASM_CASES_TAC `(a:A) IN mspace met` THEN ASM_REWRITE_TAC[] THEN
@@ -1509,6 +1626,39 @@ let [EVENTUALLY_ATPOINTOF_WITHIN_SEQUENTIALLY;
         REWRITE_TAC[REAL_OF_NUM_LE; REAL_OF_NUM_LT; REAL_OF_NUM_ADD] THEN
         ASM_ARITH_TAC;
         REWRITE_TAC[EVENTUALLY_FALSE; TRIVIAL_LIMIT_SEQUENTIALLY]]]]);;
+*)
+
+(*
+let [EVENTUALLY_ATPOINTOF_WITHIN_SEQUENTIALLY;
+     EVENTUALLY_ATPOINTOF_WITHIN_SEQUENTIALLY_INJ;
+     EVENTUALLY_ATPOINTOF_WITHIN_SEQUENTIALLY_DECREASING] = (CONJUNCTS o prove)
+ (`(
+   (!met P s a:A.
+        eventually P (atpointof (mtopology met) a within s) <=>
+        !x. (!n. x(n) IN (s INTER mspace met) DELETE a) /\
+            (!m n. x m = x n <=> m = n) /\
+            limit (mtopology met) x a sequentially
+            ==> eventually (\n. P(x n)) sequentially) /\
+   (!met P s a:A.
+        eventually P (atpointof (mtopology met) a within s) <=>
+        !x. (!n. x(n) IN (s INTER mspace met) DELETE a) /\
+            (!m n. m < n ==> mdist met (x n,a) < mdist met (x m,a)) /\
+            (!m n. x m = x n <=> m = n) /\
+            limit (mtopology met) x a sequentially
+            ==> eventually (\n. P(x n)) sequentially)
+   `,
+  REWRITE_TAC[AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
+  MATCH_MP_TAC(TAUT
+   `(r ==> s) /\ (q ==> r) /\ (p ==> q) /\ (s ==> p)
+    ==> (p <=> q) /\ (p <=> r) /\ (p <=> s)`) THEN
+  REPEAT CONJ_TAC THENL
+   [MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC `x:num->A` THEN
+    DISCH_THEN(fun th -> STRIP_TAC THEN MP_TAC th) THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN MATCH_MP_TAC THEN
+    MATCH_MP_TAC WLOG_LT THEN REWRITE_TAC[] THEN
+    ASM_MESON_TAC[REAL_LT_REFL];
+
+    MATCH_MP_TAC MONO_FORALL THEN MESON_TAC[];
 *)
 
 (*
@@ -1647,4 +1797,7 @@ val _ = export_theory ();
 
  [1] Moore, E.H., Smith, H.L.: A General Theory of Limits. American Journal of
      Mathematics. 44, 102-121 (1922).
+ [2] Kelley, J.L.: General Topology. Springer Science & Business Media (1975).
+ [3] https://en.wikipedia.org/wiki/Net_(mathematics)
+
  *)

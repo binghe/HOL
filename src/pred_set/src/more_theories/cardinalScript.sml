@@ -16,6 +16,14 @@
 (*                                                                           *)
 (* ========================================================================= *)
 
+(*
+Theory cardinal
+Ancestors
+  pred_set set_relation permutes prim_rec arithmetic num pair
+  option sum ind_type wellorder
+Libs
+  boolSimps tautLib numLib mesonLib hurdUtils
+ *)
 open HolKernel Parse boolLib bossLib;
 
 open boolSimps pred_setTheory set_relationTheory tautLib permutesTheory
@@ -45,83 +53,93 @@ val ASM_ARITH_TAC = REPEAT (POP_ASSUM MP_TAC) THEN ARITH_TAC;
 Overload "𝟙"[local] = “{()}” (* UOK *)
 Overload "𝟚" = “{T;F}”       (* UOK *)
 
-val cardeq_def = Define`
+Definition cardeq_def:
   cardeq s1 s2 <=> ?f. BIJ f s1 s2
-`
+End
 val _ = set_fixity "=~" (Infix(NONASSOC, 450));
 val _ = Unicode.unicode_version {u = UTF8.chr 0x2248, tmnm = "=~"};
 val _ = TeX_notation {hol = "=~",            TeX = ("\\ensuremath{\\approx}", 1)};
 val _ = TeX_notation {hol = UTF8.chr 0x2248, TeX = ("\\ensuremath{\\approx}", 1)};
 
-val _ = overload_on("=~", ``cardeq``)
+Overload "=~" = ``cardeq``
 
 Overload "≉" = “λa b. ¬(a ≈ b)”               (* UOK *)
 val _ = set_fixity "≉" (Infix(NONASSOC, 450)) (* UOK *)
 
-val cardeq_REFL = store_thm(
-  "cardeq_REFL",
-  ``!s. s =~ s``,
+Theorem cardeq_REFL:
+    !s. s =~ s
+Proof
   rw[cardeq_def] >> qexists_tac `\x. x` >> rw[BIJ_IFF_INV] >>
-  qexists_tac `\x. x` >> simp[]);
+  qexists_tac `\x. x` >> simp[]
+QED
 
-val cardeq_SYMlemma = prove(
-  ``!s t. s =~ t ==> t =~ s``,
-  rw[cardeq_def] >> metis_tac [BIJ_LINV_BIJ]);
+Theorem cardeq_SYMlemma[local]:
+    !s t. s =~ t ==> t =~ s
+Proof
+  rw[cardeq_def] >> metis_tac [BIJ_LINV_BIJ]
+QED
 
 
-val cardeq_SYM = store_thm(
-  "cardeq_SYM",
-  ``!s:'a set t:'b set. s =~ t <=> t =~ s``,
-  metis_tac [cardeq_SYMlemma]);
+Theorem cardeq_SYM:
+    !s:'a set t:'b set. s =~ t <=> t =~ s
+Proof
+  metis_tac [cardeq_SYMlemma]
+QED
 
-val cardeq_TRANS = store_thm(
-  "cardeq_TRANS",
-  ``!s t u. s =~ t /\ t =~ u ==> s =~ u``,
-  metis_tac [BIJ_COMPOSE, cardeq_def]);
+Theorem cardeq_TRANS:
+    !s t u. s =~ t /\ t =~ u ==> s =~ u
+Proof
+  metis_tac [BIJ_COMPOSE, cardeq_def]
+QED
 
 (* less-or-equal *)
-val cardleq_def = Define`
+Definition cardleq_def:
   cardleq s1 s2 <=> ?f. INJ f s1 s2
-`;
+End
 
-val _ = overload_on ("<<=", ``cardleq``)
+Overload "<<=" = ``cardleq``
 
-val cardleq_REFL = store_thm(
-  "cardleq_REFL",
-  ``!s:'a set. s <<= s``,
-  rw[cardleq_def] >> qexists_tac `\x. x` >> rw[INJ_ID]);
-val _ = export_rewrites ["cardleq_REFL"]
+Theorem cardleq_REFL[simp]:
+    !s:'a set. s <<= s
+Proof
+  rw[cardleq_def] >> qexists_tac `\x. x` >> rw[INJ_ID]
+QED
 
-val cardleq_TRANS = store_thm(
-  "cardleq_TRANS",
-  ``!s:'a set t:'b set u:'c set. s <<= t /\ t <<= u ==> s <<= u``,
-  rw[cardleq_def] >> metis_tac [INJ_COMPOSE]);
+Theorem cardleq_TRANS:
+    !s:'a set t:'b set u:'c set. s <<= t /\ t <<= u ==> s <<= u
+Proof
+  rw[cardleq_def] >> metis_tac [INJ_COMPOSE]
+QED
 
 (* Schroeder-Bernstein theorem *)
-val cardleq_ANTISYM = store_thm (
-   "cardleq_ANTISYM",
-  ``!s t. s <<= t /\ t <<= s ==> s =~ t``,
+Theorem cardleq_ANTISYM:
+    !s t. s <<= t /\ t <<= s ==> s =~ t
+Proof
     REWRITE_TAC [cardleq_def, cardeq_def]
- >> REWRITE_TAC [SCHROEDER_BERNSTEIN]); (* in pred_setTheory *)
+ >> REWRITE_TAC [SCHROEDER_BERNSTEIN]
+QED(* in pred_setTheory *)
 
-val CARDEQ_FINITE = store_thm(
-  "CARDEQ_FINITE",
-  ``s1 =~ s2 ==> (FINITE s1 <=> FINITE s2)``,
-  metis_tac [cardeq_def, BIJ_FINITE, BIJ_LINV_BIJ]);
+Theorem CARDEQ_FINITE:
+    s1 =~ s2 ==> (FINITE s1 <=> FINITE s2)
+Proof
+  metis_tac [cardeq_def, BIJ_FINITE, BIJ_LINV_BIJ]
+QED
 
-val CARDEQ_CARD = store_thm(
-  "CARDEQ_CARD",
-  ``s1 =~ s2 /\ FINITE s1 ==> (CARD s1 = CARD s2)``,
-  metis_tac [cardeq_def, FINITE_BIJ_CARD_EQ, CARDEQ_FINITE]);
+Theorem CARDEQ_CARD:
+    s1 =~ s2 /\ FINITE s1 ==> (CARD s1 = CARD s2)
+Proof
+  metis_tac [cardeq_def, FINITE_BIJ_CARD_EQ, CARDEQ_FINITE]
+QED
 
-val CARDEQ_0 = store_thm(
-  "CARDEQ_0",
-  ``(x =~ {} <=> (x = {})) /\ (({} =~ x) <=> (x = {}))``,
-  rw[cardeq_def, BIJ_EMPTY]);
+Theorem CARDEQ_0:
+    (x =~ {} <=> (x = {})) /\ (({} =~ x) <=> (x = {}))
+Proof
+  rw[cardeq_def, BIJ_EMPTY]
+QED
 
-val cardeq_INSERT = store_thm(
-  "cardeq_INSERT",
-  ``(x INSERT s) =~ s <=> x IN s \/ INFINITE s``,
+Theorem cardeq_INSERT:
+    (x INSERT s) =~ s <=> x IN s \/ INFINITE s
+Proof
   simp[EQ_IMP_THM] >> conj_tac
     >- (Cases_on `FINITE s` >> simp[] >> strip_tac >>
         `CARD (x INSERT s) = CARD s` by metis_tac [CARDEQ_CARD, cardeq_SYM] >>
@@ -144,27 +162,27 @@ val cardeq_INSERT = store_thm(
     pop_assum mp_tac >>
     DEEP_INTRO_TAC some_intro >> simp[] >>
     DEEP_INTRO_TAC some_intro >> simp[]
-  ]);
+  ]
+QED
 
 (* !s. INFINITE s ==> x INSERT s =~ s
 
    more useful then CARDEQ_INSERT as a (conditional) "rewrite", when
    working with the =~ congruence (rather than equality) *)
-val CARDEQ_INSERT_RWT = save_thm(
-  "CARDEQ_INSERT_RWT",
+Theorem CARDEQ_INSERT_RWT =
   ``INFINITE (s:'a set)`` |> ASSUME |> DISJ2 ``(x:'a) IN s``
                           |> EQ_MP (SYM cardeq_INSERT) |> DISCH_ALL
-                          |> Q.GEN `s`)
+                          |> Q.GEN `s`
 
-val EMPTY_CARDLEQ = store_thm(
-  "EMPTY_CARDLEQ",
-  ``{} <<= t``,
-  simp[cardleq_def, INJ_EMPTY]);  (* export_rewrites for pred_set *)
-val _ = export_rewrites ["EMPTY_CARDLEQ"]
+Theorem EMPTY_CARDLEQ[simp]:
+    {} <<= t
+Proof
+  simp[cardleq_def, INJ_EMPTY]
+QED
 
-val FINITE_CLE_INFINITE = store_thm(
-  "FINITE_CLE_INFINITE",
-  ``FINITE s /\ INFINITE t ==> s <<= t``,
+Theorem FINITE_CLE_INFINITE:
+    FINITE s /\ INFINITE t ==> s <<= t
+Proof
   qsuff_tac `INFINITE t ==> !s. FINITE s ==> s <<= t` >- metis_tac[] >>
   strip_tac >> Induct_on `FINITE` >> conj_tac >- simp[] >>
   simp[cardleq_def] >> gen_tac >>
@@ -174,94 +192,107 @@ val FINITE_CLE_INFINITE = store_thm(
   `FINITE (IMAGE f s)` by simp[] >>
   `?y. y IN t /\ y NOTIN IMAGE f s` by metis_tac [IN_INFINITE_NOT_FINITE] >>
   qexists_tac `\x. if x = e then y else f x` >>
-  fs[INJ_DEF] >> asm_simp_tac (srw_ss() ++ DNF_ss) [] >> rw[] >> metis_tac[])
+  fs[INJ_DEF] >> asm_simp_tac (srw_ss() ++ DNF_ss) [] >> rw[] >> metis_tac[]
+QED
 
 val FORALL_PROD = pairTheory.FORALL_PROD
-val CARDEQ_CROSS = store_thm(
-  "CARDEQ_CROSS",
-  ``s1 =~ s2 /\ t1 =~ t2 ==> (s1 CROSS t1 =~ s2 CROSS t2)``,
+Theorem CARDEQ_CROSS:
+    s1 =~ s2 /\ t1 =~ t2 ==> (s1 CROSS t1 =~ s2 CROSS t2)
+Proof
   simp[cardeq_def] >>
   disch_then (CONJUNCTS_THEN2 (Q.X_CHOOSE_THEN `f` assume_tac)
                               (Q.X_CHOOSE_THEN `g` assume_tac)) >>
   qexists_tac `f ## g` >>
   simp[BIJ_DEF, INJ_DEF, SURJ_DEF, FORALL_PROD,
        pairTheory.EXISTS_PROD] >>
-  fs[BIJ_DEF, INJ_DEF, SURJ_DEF] >> metis_tac []);
+  fs[BIJ_DEF, INJ_DEF, SURJ_DEF] >> metis_tac []
+QED
 
-val CARDEQ_CROSS_SYM = store_thm("CARDEQ_CROSS_SYM",
-  ``s CROSS t =~ t CROSS s``,
+Theorem CARDEQ_CROSS_SYM:
+    s CROSS t =~ t CROSS s
+Proof
   simp[cardeq_def] >>
   qexists_tac`\p. (SND p,FST p)` >>
   simp[BIJ_IFF_INV] >>
   qexists_tac`\p. (SND p,FST p)` >>
-  simp[])
+  simp[]
+QED
 
-val CARDEQ_SUBSET_CARDLEQ = store_thm(
-  "CARDEQ_SUBSET_CARDLEQ",
-  ``s =~ t ==> s <<= t``,
-  rw[cardeq_def, cardleq_def, BIJ_DEF] >> metis_tac[])
+Theorem CARDEQ_SUBSET_CARDLEQ:
+    s =~ t ==> s <<= t
+Proof
+  rw[cardeq_def, cardleq_def, BIJ_DEF] >> metis_tac[]
+QED
 
-val CARDEQ_CARDLEQ = store_thm(
-  "CARDEQ_CARDLEQ",
-  ``s1 =~ s2 /\ t1 =~ t2 ==> (s1 <<= t1 <=> s2 <<= t2)``,
-  metis_tac[cardeq_SYM, CARDEQ_SUBSET_CARDLEQ, cardleq_TRANS])
+Theorem CARDEQ_CARDLEQ:
+    s1 =~ s2 /\ t1 =~ t2 ==> (s1 <<= t1 <=> s2 <<= t2)
+Proof
+  metis_tac[cardeq_SYM, CARDEQ_SUBSET_CARDLEQ, cardleq_TRANS]
+QED
 
-val CARDLEQ_FINITE = store_thm("CARDLEQ_FINITE",
-  ``!s1 s2. FINITE s2 /\ s1 <<= s2 ==> FINITE s1``,
-  metis_tac[cardleq_def,FINITE_INJ])
+Theorem CARDLEQ_FINITE:
+    !s1 s2. FINITE s2 /\ s1 <<= s2 ==> FINITE s1
+Proof
+  metis_tac[cardleq_def,FINITE_INJ]
+QED
 
-val _ = type_abbrev ("inf", ``:num + 'a``)
+Type inf = ``:num + 'a``
 
-val INFINITE_UNIV_INF = store_thm(
-  "INFINITE_UNIV_INF",
-  ``INFINITE univ(:'a inf)``,
+Theorem INFINITE_UNIV_INF[simp]:
+    INFINITE univ(:'a inf)
+Proof
   simp[INFINITE_UNIV] >> qexists_tac `SUM_MAP SUC I` >>
-  simp[sumTheory.FORALL_SUM] >> qexists_tac `INL 0` >> simp[]);
-val _ = export_rewrites ["INFINITE_UNIV_INF"]
+  simp[sumTheory.FORALL_SUM] >> qexists_tac `INL 0` >> simp[]
+QED
 
-val IMAGE_cardleq = store_thm(
-  "IMAGE_cardleq",
-  ``!f s. IMAGE f s <<= s``,
-  simp[cardleq_def] >> metis_tac [SURJ_IMAGE, SURJ_INJ_INV]);
-val _ = export_rewrites ["IMAGE_cardleq"]
+Theorem IMAGE_cardleq[simp]:
+    !f s. IMAGE f s <<= s
+Proof
+  simp[cardleq_def] >> metis_tac [SURJ_IMAGE, SURJ_INJ_INV]
+QED
 
-val CARDLEQ_CROSS_CONG = store_thm(
-  "CARDLEQ_CROSS_CONG",
-  ``!x1 x2 y1 y2. x1 <<= x2 /\ y1 <<= y2 ==> x1 CROSS y1 <<= x2 CROSS y2``,
+Theorem CARDLEQ_CROSS_CONG:
+    !x1 x2 y1 y2. x1 <<= x2 /\ y1 <<= y2 ==> x1 CROSS y1 <<= x2 CROSS y2
+Proof
   rpt gen_tac \\
   simp[cardleq_def] >>
   disch_then (CONJUNCTS_THEN2 (Q.X_CHOOSE_THEN `f1` assume_tac)
                               (Q.X_CHOOSE_THEN `f2` assume_tac)) >>
   fs [INJ_DEF] >>
   qexists_tac `\(x,y). (f1 x, f2 y)` >>
-  simp[FORALL_PROD]);
+  simp[FORALL_PROD]
+QED
 
-val SUBSET_CARDLEQ = store_thm(
-  "SUBSET_CARDLEQ",
-  ``!x y. x SUBSET y ==> x <<= y``,
+Theorem SUBSET_CARDLEQ:
+    !x y. x SUBSET y ==> x <<= y
+Proof
   rpt gen_tac \\
   simp[SUBSET_DEF, cardleq_def] >> strip_tac >> qexists_tac `I` >>
-  simp[INJ_DEF]);
+  simp[INJ_DEF]
+QED
 
-val IMAGE_cardleq_rwt = store_thm(
-  "IMAGE_cardleq_rwt",
-  ``!s t. s <<= t ==> IMAGE f s <<= t``,
-  metis_tac [cardleq_TRANS, IMAGE_cardleq]);
+Theorem IMAGE_cardleq_rwt:
+    !s t. s <<= t ==> IMAGE f s <<= t
+Proof
+  metis_tac [cardleq_TRANS, IMAGE_cardleq]
+QED
 
-val countable_thm = store_thm(
-  "countable_thm",
-  ``!s. countable s <=> s <<= univ(:num)``,
-  simp[countable_def, cardleq_def]);
+Theorem countable_thm:
+    !s. countable s <=> s <<= univ(:num)
+Proof
+  simp[countable_def, cardleq_def]
+QED
 
-val countable_cardeq = store_thm(
-  "countable_cardeq",
-  ``!s t. s =~ t ==> (countable s <=> countable t)``,
+Theorem countable_cardeq:
+    !s t. s =~ t ==> (countable s <=> countable t)
+Proof
   simp[countable_def, cardeq_def, EQ_IMP_THM] >>
-  metis_tac [INJ_COMPOSE, BIJ_DEF, BIJ_LINV_BIJ]);
+  metis_tac [INJ_COMPOSE, BIJ_DEF, BIJ_LINV_BIJ]
+QED
 
-val cardleq_dichotomy = store_thm(
-  "cardleq_dichotomy",
-  ``!s t. s <<= t \/ t <<= s``,
+Theorem cardleq_dichotomy:
+    !s t. s <<= t \/ t <<= s
+Proof
   rpt gen_tac \\
   `(?w1. elsOf w1 = s) /\ (?w2. elsOf w2 = t)`
     by metis_tac [allsets_wellorderable] >>
@@ -286,7 +317,8 @@ val cardleq_dichotomy = store_thm(
     rw[] >> qsuff_tac `elsOf w2 <<= elsOf w1` >- simp[] >>
     simp[cardleq_def] >> qexists_tac `f` >>
     fs[BIJ_DEF, INJ_DEF, SUBSET_DEF]
-  ]);
+  ]
+QED
 
 val _ = set_fixity "<</=" (Infix(NONASSOC, 450));
 
@@ -294,44 +326,54 @@ val _ = Unicode.unicode_version {u = UTF8.chr 0x227A, tmnm = "<</="};
 val _ = TeX_notation {hol = "<</=",          TeX = ("\\ensuremath{\\prec}", 1)};
 val _ = TeX_notation {hol = UTF8.chr 0x227A, TeX = ("\\ensuremath{\\prec}", 1)};
 
-val _ = overload_on ("cardlt", ``\s1 s2. ~(cardleq s2 s1)``); (* cardlt *)
-val _ = overload_on ("<</=", ``cardlt``);
+Overload cardlt = ``\s1 s2. ~(cardleq s2 s1)``(* cardlt *)
+Overload "<</=" = ``cardlt``
 
-val cardleq_lteq = store_thm(
-  "cardleq_lteq",
-  ``!s1 s2. s1 <<= s2 <=> s1 <</= s2 \/ (s1 =~ s2)``,
-  metis_tac [cardleq_ANTISYM, cardleq_dichotomy, CARDEQ_SUBSET_CARDLEQ]);
+Theorem cardleq_lteq:
+    !s1 s2. s1 <<= s2 <=> s1 <</= s2 \/ (s1 =~ s2)
+Proof
+  metis_tac [cardleq_ANTISYM, cardleq_dichotomy, CARDEQ_SUBSET_CARDLEQ]
+QED
 
-val cardlt_REFL = store_thm(
-  "cardlt_REFL",
-  ``!s. ~(s <</= s)``,
-  simp[cardleq_REFL]);
+Theorem cardlt_REFL:
+    !s. ~(s <</= s)
+Proof
+  simp[cardleq_REFL]
+QED
 
-val cardlt_lenoteq = store_thm(
-  "cardlt_lenoteq",
-  ``!s t. s <</= t <=> s <<= t /\ ~(s =~ t)``,
+Theorem cardlt_lenoteq:
+    !s t. s <</= t <=> s <<= t /\ ~(s =~ t)
+Proof
   metis_tac [cardleq_dichotomy, CARDEQ_SUBSET_CARDLEQ, cardeq_SYM,
-             cardleq_ANTISYM, cardeq_REFL]);
+             cardleq_ANTISYM, cardeq_REFL]
+QED
 
-val cardlt_TRANS = store_thm(
-  "cardlt_TRANS",
-  ``!s t u:'a set. s <</= t /\ t <</= u ==> s <</= u``,
+Theorem cardlt_TRANS:
+    !s t u:'a set. s <</= t /\ t <</= u ==> s <</= u
+Proof
   metis_tac [cardleq_TRANS, cardleq_ANTISYM, CARDEQ_SUBSET_CARDLEQ,
-             cardeq_SYM, cardlt_lenoteq]);
+             cardeq_SYM, cardlt_lenoteq]
+QED
 
-val cardlt_leq_trans = store_thm("cardlt_leq_trans",
-  ``!r s t. r <</= s /\ s <<= t ==> r <</= t``,
+Theorem cardlt_leq_trans:
+    !r s t. r <</= s /\ s <<= t ==> r <</= t
+Proof
   rw[cardlt_lenoteq] >- metis_tac[cardleq_TRANS] >>
-  metis_tac[CARDEQ_CARDLEQ,cardeq_REFL,cardleq_ANTISYM])
+  metis_tac[CARDEQ_CARDLEQ,cardeq_REFL,cardleq_ANTISYM]
+QED
 
-val cardleq_lt_trans = store_thm("cardleq_lt_trans",
-  ``!r s t. r <<= s /\ s <</= t ==> r <</= t``,
+Theorem cardleq_lt_trans:
+    !r s t. r <<= s /\ s <</= t ==> r <</= t
+Proof
   rw[cardlt_lenoteq] >- metis_tac[cardleq_TRANS] >>
-  metis_tac[CARDEQ_CARDLEQ,cardeq_REFL,cardleq_ANTISYM])
+  metis_tac[CARDEQ_CARDLEQ,cardeq_REFL,cardleq_ANTISYM]
+QED
 
-val cardleq_empty = store_thm("cardleq_empty",
-  ``!x. x <<= {} <=> (x = {})``,
-  simp[cardleq_lteq,CARDEQ_0])
+Theorem cardleq_empty:
+    !x. x <<= {} <=> (x = {})
+Proof
+  simp[cardleq_lteq,CARDEQ_0]
+QED
 
 val better_BIJ = BIJ_DEF |> SIMP_RULE (srw_ss() ++ CONJ_ss) [INJ_DEF, SURJ_DEF]
 
@@ -360,10 +402,11 @@ Proof
   simp_tac (srw_ss() ++ DNF_ss) [DISJ_ASSOC]
 QED
 
-val lemma1 = prove(
-  ``INFINITE M /\ M =~ M CROSS M ==>
+Theorem lemma1[local]:
+    INFINITE M /\ M =~ M CROSS M ==>
     M =~ {T;F} CROSS M /\
-    !A B. DISJOINT A B /\ A =~ M /\ B =~ M ==> A UNION B =~ M``,
+    !A B. DISJOINT A B /\ A =~ M /\ B =~ M ==> A UNION B =~ M
+Proof
   strip_tac >> CONJ_ASM1_TAC
   >- (match_mp_tac cardleq_ANTISYM >> conj_tac
       >- (simp[cardleq_def] >> qexists_tac `\x. (T,x)` >> simp[INJ_DEF]) >>
@@ -385,13 +428,14 @@ val lemma1 = prove(
   >- (`?a. a IN A /\ (f1 a = m)` by metis_tac [BIJ_DEF, SURJ_DEF] >>
       qexists_tac `a` >> simp[]) >>
   `?b. b IN B /\ (f2 b = m)` by metis_tac [BIJ_DEF, SURJ_DEF] >>
-  qexists_tac `b` >> simp[] >> metis_tac[]);
+  qexists_tac `b` >> simp[] >> metis_tac[]
+QED
 
 fun PRINT_TAC s gl = (print ("** " ^ s ^ "\n"); ALL_TAC gl)
 
-val SET_SQUARED_CARDEQ_SET = store_thm(
-  "SET_SQUARED_CARDEQ_SET",
-  ``!s. INFINITE s ==> (s CROSS s =~ s)``,
+Theorem SET_SQUARED_CARDEQ_SET:
+    !s. INFINITE s ==> (s CROSS s =~ s)
+Proof
   PRINT_TAC "beginning s CROSS s =~ s proof" >>
   rpt strip_tac >>
   qabbrev_tac `
@@ -656,18 +700,20 @@ val SET_SQUARED_CARDEQ_SET = store_thm(
         fs[DISJOINT_DEF, EXTENSION] >> metis_tac[CARDEQ_0, MEMBER_NOT_EMPTY]) >>
   qsuff_tac `((M,mf), (M UNION E, FF)) IN rr` >- metis_tac[] >>
   simp[Abbr`rr`] >> conj_tac >- simp[Abbr`A`] >>
-  simp[Abbr`FF`]);
+  simp[Abbr`FF`]
+QED
 
-val SET_SUM_CARDEQ_SET = store_thm(
-  "SET_SUM_CARDEQ_SET",
-  ``INFINITE s ==>
+Theorem SET_SUM_CARDEQ_SET:
+    INFINITE s ==>
     s =~ {T;F} CROSS s /\
-    !A B. DISJOINT A B /\ A =~ s /\ B =~ s ==> A UNION B =~ s``,
-  metis_tac[lemma1, SET_SQUARED_CARDEQ_SET, cardeq_SYM]);
+    !A B. DISJOINT A B /\ A =~ s /\ B =~ s ==> A UNION B =~ s
+Proof
+  metis_tac[lemma1, SET_SQUARED_CARDEQ_SET, cardeq_SYM]
+QED
 
-val CARD_BIGUNION = store_thm(
-  "CARD_BIGUNION",
-  ``INFINITE k /\ s1 <<= k /\ (!e. e IN s1 ==> e <<= k) ==> BIGUNION s1 <<= k``,
+Theorem CARD_BIGUNION:
+    INFINITE k /\ s1 <<= k /\ (!e. e IN s1 ==> e <<= k) ==> BIGUNION s1 <<= k
+Proof
   `BIGUNION s1 = BIGUNION (s1 DELETE {})` by (simp[EXTENSION] >> metis_tac[]) >>
   pop_assum SUBST1_TAC >>
   Cases_on `INFINITE k` >> simp[cardleq_def] >>
@@ -690,23 +736,30 @@ val CARD_BIGUNION = store_thm(
   qexists_tac `\(k1,k2). g (ff k1) k2` >>
   asm_simp_tac (srw_ss() ++ DNF_ss)
        [SURJ_DEF, FORALL_PROD, pairTheory.EXISTS_PROD] >>
-  fs[SURJ_DEF] >> metis_tac[]);
+  fs[SURJ_DEF] >> metis_tac[]
+QED
 
-val CARD_MUL_ABSORB_LE = store_thm("CARD_MUL_ABSORB_LE",
-  ``!s t. INFINITE t /\ s <<= t ==> s CROSS t <<= t``,
+Theorem CARD_MUL_ABSORB_LE:
+    !s t. INFINITE t /\ s <<= t ==> s CROSS t <<= t
+Proof
   metis_tac[CARDLEQ_CROSS_CONG,SET_SQUARED_CARDEQ_SET,
-            cardleq_lteq,cardleq_TRANS,cardleq_REFL])
+            cardleq_lteq,cardleq_TRANS,cardleq_REFL]
+QED
 
-val CARD_MUL_LT_LEMMA = store_thm("CARD_MUL_LT_LEMMA",
-  ``!s t. s <<= t /\ t <</= u /\ INFINITE u ==> s CROSS t <</= u``,
+Theorem CARD_MUL_LT_LEMMA:
+    !s t. s <<= t /\ t <</= u /\ INFINITE u ==> s CROSS t <</= u
+Proof
   rw[] >>
   Cases_on`FINITE t` >- (
     metis_tac[CARDLEQ_FINITE,FINITE_CROSS] ) >>
-  metis_tac[CARD_MUL_ABSORB_LE,cardleq_lt_trans])
+  metis_tac[CARD_MUL_ABSORB_LE,cardleq_lt_trans]
+QED
 
-val CARD_MUL_LT_INFINITE = store_thm("CARD_MUL_LT_INFINITE",
-  ``!s t. s <</= t /\ t <</= u /\ INFINITE u ==> s CROSS t <</= u``,
-  metis_tac[CARD_MUL_LT_LEMMA,cardleq_lteq])
+Theorem CARD_MUL_LT_INFINITE:
+    !s t. s <</= t /\ t <</= u /\ INFINITE u ==> s CROSS t <</= u
+Proof
+  metis_tac[CARD_MUL_LT_LEMMA,cardleq_lteq]
+QED
 
 (* set exponentiation *)
 Definition set_exp_def:
@@ -757,13 +810,15 @@ Proof
   match_mp_tac BIJ_functions_agree >> qexists_tac `f` >> rw[]
 QED
 
-val CARDEQ_CARD_EQN = store_thm(
-  "CARDEQ_CARD_EQN",
-  ``FINITE s1 /\ FINITE s2 ==> (s1 =~ s2 <=> (CARD s1 = CARD s2))``,
-  metis_tac [CARD_CARDEQ_I, CARDEQ_CARD]);
+Theorem CARDEQ_CARD_EQN:
+    FINITE s1 /\ FINITE s2 ==> (s1 =~ s2 <=> (CARD s1 = CARD s2))
+Proof
+  metis_tac [CARD_CARDEQ_I, CARDEQ_CARD]
+QED
 
-val CARDLEQ_CARD = store_thm("CARDLEQ_CARD",
-  ``FINITE s1 /\ FINITE s2 ==> (s1 <<= s2 <=> CARD s1 <= CARD s2)``,
+Theorem CARDLEQ_CARD:
+    FINITE s1 /\ FINITE s2 ==> (s1 <<= s2 <=> CARD s1 <= CARD s2)
+Proof
   rw[EQ_IMP_THM] >-
     metis_tac[cardleq_def,INJ_CARD] >>
   Cases_on`CARD s1 = CARD s2` >-
@@ -771,11 +826,14 @@ val CARDLEQ_CARD = store_thm("CARDLEQ_CARD",
   simp[Once cardleq_lteq] >> disj1_tac >>
   simp[cardleq_def] >>
   gen_tac >> match_mp_tac PHP >>
-  fsrw_tac[ARITH_ss][])
+  fsrw_tac[ARITH_ss][]
+QED
 
-val CARD_LT_CARD = store_thm("CARD_LT_CARD",
-  ``FINITE s1 /\ FINITE s2 ==> (s1 <</= s2 <=> CARD s1 < CARD s2)``,
-  rw[] >> simp[cardlt_lenoteq,CARDLEQ_CARD,CARDEQ_CARD_EQN])
+Theorem CARD_LT_CARD:
+    FINITE s1 /\ FINITE s2 ==> (s1 <</= s2 <=> CARD s1 < CARD s2)
+Proof
+  rw[] >> simp[cardlt_lenoteq,CARDLEQ_CARD,CARDEQ_CARD_EQN]
+QED
 
 Theorem EMPTY_set_exp:
   A ** {} = { K ARB } /\ (B <> {} ==> {} ** B = {})
@@ -1024,20 +1082,22 @@ Proof
   pop_assum $ qspec_then ‘x’ mp_tac >> simp[] >> rw[]
 QED
 
-val INFINITE_Unum = store_thm(
-  "INFINITE_Unum",
-  ``INFINITE A <=> univ(:num) <<= A``,
-  simp[infinite_num_inj, cardleq_def]);
+Theorem INFINITE_Unum:
+    INFINITE A <=> univ(:num) <<= A
+Proof
+  simp[infinite_num_inj, cardleq_def]
+QED
 
-val cardleq_SURJ = store_thm(
-  "cardleq_SURJ",
-  ``A <<= B <=> (?f. SURJ f B A) \/ (A = {})``,
+Theorem cardleq_SURJ:
+    A <<= B <=> (?f. SURJ f B A) \/ (A = {})
+Proof
   simp[cardleq_def, EQ_IMP_THM] >>
-  metis_tac [SURJ_INJ_INV, inj_surj, INJ_EMPTY]);
+  metis_tac [SURJ_INJ_INV, inj_surj, INJ_EMPTY]
+QED
 
-val INFINITE_cardleq_INSERT = store_thm(
-  "INFINITE_cardleq_INSERT",
-  ``INFINITE A ==> (x INSERT s <<= A <=> s <<= A)``,
+Theorem INFINITE_cardleq_INSERT:
+    INFINITE A ==> (x INSERT s <<= A <=> s <<= A)
+Proof
   simp[cardleq_def, INJ_INSERT, EQ_IMP_THM] >> strip_tac >> conj_tac
   >- metis_tac[] >>
   disch_then (Q.X_CHOOSE_THEN `f` strip_assume_tac) >>
@@ -1064,11 +1124,12 @@ val INFINITE_cardleq_INSERT = store_thm(
   >- fs[INJ_DEF] >>
   qx_gen_tac `y` >> simp[] >> Cases_on `x = y` >> simp[] >>
   Cases_on `y IN s` >> simp[] >> DEEP_INTRO_TAC some_intro >>
-  simp[] >> fs[INJ_DEF] >> metis_tac [DECIDE ``0 <> n + 1``])
+  simp[] >> fs[INJ_DEF] >> metis_tac [DECIDE ``0 <> n + 1``]
+QED
 
-val list_def = Define`
+Definition list_def:
   list A = { l | !e. MEM e l ==> e IN A }
-`;
+End
 
 Theorem list_EMPTY[simp]: list {} = { [] }
 Proof
@@ -1136,9 +1197,9 @@ Proof
   simp[EMPTY_set_exp, INFINITE_cardleq_INSERT]
 QED
 
-val finite_subsets_bijection = store_thm(
-  "finite_subsets_bijection",
-  ``INFINITE A ==> A =~ { s | FINITE s /\ s SUBSET A }``,
+Theorem finite_subsets_bijection:
+    INFINITE A ==> A =~ { s | FINITE s /\ s SUBSET A }
+Proof
   strip_tac >> match_mp_tac cardleq_ANTISYM >> conj_tac
   >- (simp[cardleq_def] >> qexists_tac `\a. {a}` >>
       simp[INJ_DEF]) >>
@@ -1147,7 +1208,8 @@ val finite_subsets_bijection = store_thm(
   simp[cardleq_SURJ] >> disj1_tac >> qexists_tac `LIST_TO_SET` >>
   simp[SURJ_DEF, list_def] >> conj_tac >- simp[SUBSET_DEF] >>
   qx_gen_tac `s` >> strip_tac >> qexists_tac `SET_TO_LIST s` >>
-  simp[listTheory.SET_TO_LIST_INV] >> fs[SUBSET_DEF]);
+  simp[listTheory.SET_TO_LIST_INV] >> fs[SUBSET_DEF]
+QED
 
 fun qxchl qs thtac = case qs of [] => thtac
                               | q::rest => Q.X_CHOOSE_THEN q (qxchl rest thtac)
@@ -1299,7 +1361,7 @@ Theorem disjoint_countable_decomposition2:
 Proof
   rpt strip_tac >>
 
-  (* Step 1: Establish cardinal equivalence |A| = |A x N| *)
+  (* Step 1: Establish cardinal equivalence |A| = |A × ℕ| (UOK) *)
   ‘s =~ s CROSS univ(:num)’ by (
     irule cardleq_ANTISYM >> conj_tac >~
     [‘s <<= s CROSS univ(:num)’]
@@ -1348,9 +1410,9 @@ Proof
   metis_tac[]
 QED
 
-val count_cardle = Q.store_thm(
-  "count_cardle[simp]",
-  ‘count n <<= A <=> (FINITE A ==> n <= CARD A)’,
+Theorem count_cardle[simp]:
+   count n <<= A <=> (FINITE A ==> n <= CARD A)
+Proof
   simp[cardleq_def] >> Cases_on ‘FINITE A’ >> simp[]
   >- (eq_tac
       >- metis_tac[DECIDE “x:num <= y <=> ~(y < x)”, PHP, CARD_COUNT,
@@ -1366,7 +1428,8 @@ val count_cardle = Q.store_thm(
          metis_tac [IMAGE_FINITE, FINITE_COUNT, FINITE_DIFF_down]) >>
   qexists_tac ‘\m. if m < n then f m else a’ >> simp[] >> conj_tac
   >- fs[INJ_DEF] >>
-  rw[])
+  rw[]
+QED
 
 Theorem CANTOR[simp]:
   A <</= POW A
@@ -1383,10 +1446,11 @@ Proof
   csimp[] >> simp[] >> metis_tac[]
 QED
 
-val cardlt_cardle = Q.store_thm(
-  "cardlt_cardle",
-  ‘A <</= B ==> A <<= B’,
-  metis_tac[cardlt_lenoteq]);
+Theorem cardlt_cardle:
+   A <</= B ==> A <<= B
+Proof
+  metis_tac[cardlt_lenoteq]
+QED
 
 Theorem set_exp_product:
   (A ** B1) ** B2 =~ A ** (B1 CROSS B2)
@@ -1428,9 +1492,9 @@ Proof
   simp[set_exp_def, FUN_EQ_THM] >> metis_tac[]
 QED
 
-val POW_EQ_X_EXP_X = Q.store_thm(
-  "POW_EQ_X_EXP_X",
-  ‘INFINITE A ==> POW A =~ A ** A’,
+Theorem POW_EQ_X_EXP_X:
+   INFINITE A ==> POW A =~ A ** A
+Proof
   strip_tac >> irule cardleq_ANTISYM >> conj_tac
   >- (‘POW A =~ count 2 ** A’ by simp[POW_TWO_set_exp] >>
       ‘count 2 ** A <<= A ** A’
@@ -1449,7 +1513,8 @@ val POW_EQ_X_EXP_X = Q.store_thm(
   ‘count 2 ** (A CROSS A) <<= count 2 ** A’
     suffices_by metis_tac[CARDEQ_CARDLEQ, cardeq_REFL, set_exp_product] >>
   irule set_exp_cardle_cong >> simp[] >> irule CARDEQ_SUBSET_CARDLEQ >>
-  simp[SET_SQUARED_CARDEQ_SET]);
+  simp[SET_SQUARED_CARDEQ_SET]
+QED
 
 Theorem setexp_eq_EMPTY[simp]:
   A ** B = {} <=> A = {} /\ B <> {}
@@ -1591,21 +1656,29 @@ Proof
   SRW_TAC [][] THEN SET_TAC []
 QED
 
-val LEFT_IMP_EXISTS_THM = store_thm ("LEFT_IMP_EXISTS_THM",
- ``!P Q. (?x. P x) ==> Q <=> (!x. P x ==> Q)``,
- SIMP_TAC std_ss [PULL_EXISTS]);
+Theorem LEFT_IMP_EXISTS_THM:
+   !P Q. (?x. P x) ==> Q <=> (!x. P x ==> Q)
+Proof
+ SIMP_TAC std_ss [PULL_EXISTS]
+QED
 
-val LEFT_IMP_FORALL_THM = store_thm ("LEFT_IMP_FORALL_THM",
- ``!P Q. (!x. P x) ==> Q <=> (?x. P x ==> Q)``,
-  METIS_TAC [GSYM LEFT_FORALL_IMP_THM]);
+Theorem LEFT_IMP_FORALL_THM:
+   !P Q. (!x. P x) ==> Q <=> (?x. P x ==> Q)
+Proof
+  METIS_TAC [GSYM LEFT_FORALL_IMP_THM]
+QED
 
-val RIGHT_IMP_EXISTS_THM = store_thm ("RIGHT_IMP_EXISTS_THM",
- ``!P Q. P ==> (?x. Q x) <=> (?x. P ==> Q x)``,
- REWRITE_TAC [GSYM RIGHT_EXISTS_IMP_THM]);
+Theorem RIGHT_IMP_EXISTS_THM:
+   !P Q. P ==> (?x. Q x) <=> (?x. P ==> Q x)
+Proof
+ REWRITE_TAC [GSYM RIGHT_EXISTS_IMP_THM]
+QED
 
-val RIGHT_IMP_FORALL_THM = store_thm ("RIGHT_IMP_FORALL_THM",
- ``!P Q. P ==> (!x. Q x) <=> (!x. P ==> Q x)``,
- REWRITE_TAC [GSYM RIGHT_FORALL_IMP_THM]);
+Theorem RIGHT_IMP_FORALL_THM:
+   !P Q. P ==> (!x. Q x) <=> (!x. P ==> Q x)
+Proof
+ REWRITE_TAC [GSYM RIGHT_FORALL_IMP_THM]
+QED
 
 (* old name IMP_CONJ seems to be a conv function *)
 Theorem CONJ_EQ_IMP :
