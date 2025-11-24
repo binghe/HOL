@@ -1633,22 +1633,46 @@ QED
 
 (* Theorem 12.5 [1, p.100] *)
 Theorem differentiability_lemma :
-    !m u a b. measure_space m /\ a < b /\
-      (!t. t IN interval (a,b) ==> integrable m (Normal o u t)) /\
-      (!x. x IN m_space m ==> (\t. u t x) differentiable_on interval (a,b)) /\
+    !m u a b s. measure_space m /\ a < b /\ s = interval (a,b) /\
+      (!t. t IN s ==> integrable m (Normal o u t)) /\
+      (!x. x IN m_space m ==> (\t. u t x) differentiable_on s) /\
       (?w. integrable m w /\
           (!x. x IN m_space m ==> 0 <= w x /\ w x <> PosInf) /\
-           !t x. t IN interval (a,b) /\ x IN m_space m ==>
-                 Normal (abs (u t x)) <= w x)
+           !t x. t IN s /\ x IN m_space m ==> Normal (abs (u t x)) <= w x)
      ==>
-      (!t. t IN interval (a,b) ==> integrable m (Normal o diff1 (u t))) /\
-      ((\t. real (integral m (Normal o u t))) has_vector_derivative
-            real (integral m (Normal o diff1 (u t)))) (at t within interval (a,b))
+      (!t. t IN s ==> integrable m (Normal o diff1 (u t)) /\
+          ((\t. real (integral m (Normal o u t))) has_vector_derivative
+                real (integral m (Normal o diff1 (u t)))) (at t within s))
 Proof
     rpt GEN_TAC >> STRIP_TAC
- (* applying HAS_DERIVATIVE_WITHIN(_ALT) *)
- (* applying LIM_WITHIN_SEQUENTIALLY *)
+ (* eliminate ‘s’ and then re-create as abbreviation *)
+ >> Q.PAT_X_ASSUM ‘s = _’ (fn th => fs [IN_INTERVAL, GSYM CONJ_ASSOC, th])
+ >> Q.X_GEN_TAC ‘t’ >> STRIP_TAC
+ >> qabbrev_tac ‘s = interval (a,b)’
+ >> Q.PAT_X_ASSUM ‘!x. x IN m_space m ==> _ differentiable_on s’ MP_TAC
  >> cheat
+ (*
+ >> simp [differentiable_on, differentiable
+          ]
+ >> simp [GSYM RIGHT_FORALL_IMP_THM, AND_IMP_INTRO]
+ >> simp [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM]
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘g’ STRIP_ASSUME_TAC)
+ >> cheat
+
+ (* stage work *)
+ (* applying lebesgue_dominated_convergence *)
+ >> CONJ_ASM1_TAC
+ >- (fs [,
+
+ fs [GSYM RIGHT_EXISTS_IMP_THM]FORALL_RIGHT_IMP_THM] \\
+
+
+ simp [diff1_def, o_DEF] \\
+     cheat)
+ (* applying HAS_VECTOR_DERIVATIVE_WITHIN(_ALT) *)
+ (* applying LIM_WITHIN_SEQUENTIALLY, etc. *)
+ >> cheat
+ *)
 QED
 
 (* ------------------------------------------------------------------------- *)

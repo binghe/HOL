@@ -1841,6 +1841,28 @@ Definition vector_derivative[nocompute]:
         @f'. (f has_vector_derivative f') net
 End
 
+(* NOTE: This theorem is NOT from HOL-Light, as it's only possible under one
+   dimensional case, showing ‘has_derivative’ and ‘has_vector_derivative’ is
+   inter-changable in HOL4.
+ *)
+Theorem has_derivative_iff_has_vector_derivative :
+    !f net. (?f'. (f has_derivative f') net) <=>
+            (?l. (f has_vector_derivative l) net)
+Proof
+    rpt GEN_TAC
+ >> reverse EQ_TAC
+ >- (rw [has_vector_derivative] \\
+     Q.EXISTS_TAC ‘\x. l * x’ >> art [])
+ >> rw [has_derivative, has_vector_derivative]
+ >> gs [linear_repr]
+ >> Q.EXISTS_TAC ‘l’ >> art []
+ >> Q.EXISTS_TAC ‘l’ >> rw [FUN_EQ_THM]
+QED
+
+(* |- !f net. f differentiable net <=> ?f'. (f has_vector_derivative f') net *)
+Theorem differentiable_alt_has_vector_derivative =
+        REWRITE_RULE [has_derivative_iff_has_vector_derivative] differentiable
+
 (* |- !c. linear (\x. x * c) *)
 Theorem LINEAR_SCALING'[local] =
         ONCE_REWRITE_RULE [REAL_MUL_COMM] LINEAR_SCALING
