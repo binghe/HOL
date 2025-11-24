@@ -1641,15 +1641,13 @@ Theorem differentiability_lemma :
            !t x. t IN interval (a,b) /\ x IN m_space m ==>
                  Normal (abs (u t x)) <= w x)
      ==>
-       !t. t IN interval (a,b) ==>
-           integrable m (Normal o diff1 (u t)) /\
-           ((\t. real (integral m (Normal o u t))) has_vector_derivative
-                 real (integral m (Normal o diff1 (u t))))
-            (at t within interval (a,b))
+      (!t. t IN interval (a,b) ==> integrable m (Normal o diff1 (u t))) /\
+      ((\t. real (integral m (Normal o u t))) has_vector_derivative
+            real (integral m (Normal o diff1 (u t)))) (at t within interval (a,b))
 Proof
     rpt GEN_TAC >> STRIP_TAC
- >> Q.X_GEN_TAC ‘t’
- >> REWRITE_TAC [IN_INTERVAL] >> STRIP_TAC
+ (* applying HAS_DERIVATIVE_WITHIN(_ALT) *)
+ (* applying LIM_WITHIN_SEQUENTIALLY *)
  >> cheat
 QED
 
