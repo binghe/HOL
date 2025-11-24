@@ -9757,14 +9757,6 @@ QED
 (* Characterization of various kinds of continuity in terms of sequences.    *)
 (* ------------------------------------------------------------------------- *)
 
-Theorem FORALL_POS_MONO_1:
-   !P. (!d e. d < e /\ P d ==> P e) /\ (!n. P(inv(&n + &1)))
-       ==> !e. (&0:real) < e ==> P e
-Proof
-  SIMP_TAC std_ss [REAL_OF_NUM_SUC] THEN SIMP_TAC std_ss [GSYM FORALL_SUC] THEN
-  REWRITE_TAC [FORALL_POS_MONO]
-QED
-
 Theorem CONTINUOUS_WITHIN_SEQUENTIALLY:
    !f s a:real.
     f continuous (at a within s) <=>
@@ -9791,7 +9783,8 @@ Proof
   X_GEN_TAC ``n:num`` THEN EXISTS_TAC ``n:num`` THEN X_GEN_TAC ``m:num`` THEN
   DISCH_TAC THEN MATCH_MP_TAC REAL_LTE_TRANS THEN
   EXISTS_TAC ``&1 / (&m + &1:real)`` THEN ASM_REWRITE_TAC[] THEN
-  ASM_SIMP_TAC std_ss [REAL_LE_INV2, real_div, REAL_ARITH ``&0 <= x ==> &0 < x + &1:real``,
+  ASM_SIMP_TAC std_ss
+  [REAL_LE_INV2, real_div, REAL_ARITH ``&0 <= x ==> &0 < x + &1:real``,
    REAL_POS, REAL_MUL_LID, REAL_LE_RADD, REAL_OF_NUM_LE]
 QED
 
