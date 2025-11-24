@@ -2771,9 +2771,13 @@ Proof
          rw [] >> METIS_TAC [LIM_CONST]) \\
      MP_TAC (Q.SPECL [‘a’, ‘SUC n’] higher_differentiable_sub_linear) >> rw [] \\
      fs [higher_differentiable_def, FORALL_AND_THM] \\
-     Q.PAT_X_ASSUM ‘!x. ?y. (diffn n (λx. a - x) diffl y) x’ (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
+     Q.PAT_X_ASSUM ‘!x. ?y. (diffn n (λx. a - x) diffl y) x’
+       (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
      qexists ‘y’ >> METIS_TAC [])
  >> METIS_TAC [higher_differentiable_sub_linear]
 QED
+
+(* Temporarily re-enable printing of numeral bits for help documents *)
+val _ = temp_remove_user_printer "num.numeral_computations";
 
 val _ = export_theory ();
