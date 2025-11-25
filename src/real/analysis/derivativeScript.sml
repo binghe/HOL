@@ -1863,6 +1863,15 @@ QED
 Theorem differentiable_alt_has_vector_derivative =
         REWRITE_RULE [has_derivative_iff_has_vector_derivative] differentiable
 
+Theorem has_vector_derivative_within :
+   !f l x s.
+     (f has_vector_derivative l) (at x within s) <=>
+      ((\y. inv(abs(y - x)) * (f(y) - (f(x) + l * (y - x)))) --> 0)
+       (at x within s)
+Proof
+    rw [has_vector_derivative, has_derivative_within, LINEAR_SCALING]
+QED
+
 (* |- !c. linear (\x. x * c) *)
 Theorem LINEAR_SCALING'[local] =
         ONCE_REWRITE_RULE [REAL_MUL_COMM] LINEAR_SCALING
@@ -1893,6 +1902,16 @@ Theorem HAS_VECTOR_DERIVATIVE_WITHIN_ALT =
      |> Q.SPECL [‘f’, ‘\x. x * f'’, ‘x’, ‘s’]
      |> SIMP_RULE std_ss [GSYM has_vector_derivative, LINEAR_SCALING']
      |> Q.GENL [‘f’, ‘f'’, ‘x’, ‘s’]
+
+Theorem HAS_VECTOR_DERIVATIVE_WITHIN_OPEN :
+   !f f' a s.
+         a IN s /\ open s
+         ==> ((f has_vector_derivative f') (at a within s) <=>
+              (f has_vector_derivative f') (at a))
+Proof
+    RW_TAC std_ss [has_vector_derivative]
+ >> MATCH_MP_TAC HAS_DERIVATIVE_WITHIN_OPEN >> art []
+QED
 
 Theorem HAS_VECTOR_DERIVATIVE_WITHIN_SUBSET :
     !f f' s t x. (f has_vector_derivative f') (at x within s) /\ t SUBSET s

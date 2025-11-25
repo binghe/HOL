@@ -2052,6 +2052,20 @@ Theorem diff1_def = diffn_1
 Theorem diff1_alt =
         diffn_1 |> REWRITE_RULE [diffl_has_vector_derivative]
 
+Theorem diffl_imp_diff1 :
+    !f x y. (f diffl y) x ==> (diff1 f x = y)
+Proof
+    RW_TAC std_ss [diff1_def]
+ >> SELECT_ELIM_TAC
+ >> CONJ_TAC >- (Q.EXISTS_TAC ‘y’ >> art [])
+ >> Q.X_GEN_TAC ‘z’ >> DISCH_TAC
+ >> PROVE_TAC [DIFF_UNIQ]
+QED
+
+(* |- !f x y. (f has_vector_derivative y) (at x) ==> diff1 f x = y *)
+Theorem has_vector_derivative_imp_diff1 =
+        REWRITE_RULE [diffl_has_vector_derivative] diffl_imp_diff1
+
 Theorem SELECT_EQ_THM[local] :
     !P Q. (!x. P x <=> Q x) ==> ((@x. P x) = (@x. Q x))
 Proof
