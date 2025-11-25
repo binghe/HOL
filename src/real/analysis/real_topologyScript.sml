@@ -5918,8 +5918,9 @@ Proof
   REWRITE_TAC[LIM_WITHIN, NOT_IN_EMPTY] THEN MESON_TAC[REAL_LT_01]
 QED
 
+(* NOTE: added missing quantifier “t” at the end *)
 Theorem LIM_WITHIN_SUBSET:
-   !f l a s.
+   !f l a s t.
     (f --> l) (at a within s) /\ t SUBSET s ==> (f --> l) (at a within t)
 Proof
   REWRITE_TAC[LIM_WITHIN, SUBSET_DEF] THEN MESON_TAC[]

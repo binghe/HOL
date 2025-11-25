@@ -1633,6 +1633,7 @@ Theorem differentiability_lemma :
 Proof
     rpt GEN_TAC >> STRIP_TAC
  >> Q.X_GEN_TAC ‘t’ >> DISCH_TAC
+ (* eliminating ‘diff1’ *)
  >> Q.PAT_X_ASSUM ‘!x. x IN m_space m ==> _ differentiable_on s’ MP_TAC
  >> simp [differentiable_on, differentiable_alt_has_vector_derivative]
  >> simp [GSYM RIGHT_FORALL_IMP_THM, AND_IMP_INTRO, Once SWAP_FORALL_THM]
@@ -1654,12 +1655,100 @@ Proof
           integral m (Normal o g)’
  >- (MATCH_MP_TAC integral_cong >> rw [o_DEF])
  >> Rewr'
- >> POP_ASSUM K_TAC (* diff1 no more needed *)
+ >> POP_ASSUM K_TAC (* diff1 is no more needed *)
+ (* stage work *)
+ >> POP_ASSUM MP_TAC
+ >> simp [has_vector_derivative_within]
+ >> qabbrev_tac ‘d = \x. x - t’ >> simp []
+ >> simp [REAL_ADD_LDISTRIB, REAL_SUB_LDISTRIB]
+ >> ‘!x t'. d t' * g x * inv (abs (d t')) =
+            d t' * inv (abs (d t')) * g x’ by REAL_ARITH_TAC >> POP_ORW
+ >> REWRITE_TAC [REWRITE_RULE [real_div] (GSYM REAL_SGN)]
+ >> REWRITE_TAC [REAL_ARITH “a - (b + c) = a - b - (c :real)”]
+ >> REWRITE_TAC [GSYM REAL_SUB_LDISTRIB]
+ >> Know ‘!x. ((\t'. inv (abs (d t')) * (u t' x - u t x) -
+                     sgn (d t') * g x) --> 0) (at t within s) <=>
+              ((\t'. inv (d t') * (u t' x - u t x)) --> g x) (at t within s)’
+ >- (rw [LIM_WITHIN, dist] \\
+     EQ_TAC >> rw [Abbr ‘d’] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ (MP_TAC o Q.SPEC ‘e’) >> simp [] \\
+       DISCH_THEN (Q.X_CHOOSE_THEN ‘d’ STRIP_ASSUME_TAC) \\
+       Q.EXISTS_TAC ‘d’ >> art [] \\
+       Q.X_GEN_TAC ‘y’ >> STRIP_TAC \\
+       Q.PAT_X_ASSUM ‘!t'. t' IN s /\ _ ==> _’ (MP_TAC o Q.SPEC ‘y’) >> simp [] \\
+      ‘y - t <> 0’ by simp [] \\
+      ‘0 < y - t \/ y - t < 0’ by METIS_TAC [REAL_LT_TOTAL]
+       >- (‘0 <= y - t’ by simp [REAL_LT_IMP_LE] \\
+           simp [real_sgn, ABS_REDUCE]) \\
+      ‘sgn (y - t) = -1’ by simp [REAL_SGN_EQ] \\
+       simp [ABS_EQ_NEG, REAL_INV_NEG] \\
+       REWRITE_TAC [Once (GSYM ABS_NEG)] \\
+       REWRITE_TAC [REAL_NEG_SUB] \\
+       REWRITE_TAC [GSYM REAL_NEG_LMUL] \\
+       REWRITE_TAC [REAL_SUB_NEG2],
+       (* goal 2 (of 2) *)
+       Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ (MP_TAC o Q.SPEC ‘e’) >> simp [] \\
+       DISCH_THEN (Q.X_CHOOSE_THEN ‘d’ STRIP_ASSUME_TAC) \\
+       Q.EXISTS_TAC ‘d’ >> art [] \\
+       Q.X_GEN_TAC ‘y’ >> STRIP_TAC \\
+       Q.PAT_X_ASSUM ‘!t'. t' IN s /\ _ ==> _’ (MP_TAC o Q.SPEC ‘y’) >> simp [] \\
+      ‘y - t <> 0’ by simp [] \\
+      ‘0 < y - t \/ y - t < 0’ by METIS_TAC [REAL_LT_TOTAL]
+       >- (‘0 <= y - t’ by simp [REAL_LT_IMP_LE] \\
+           simp [real_sgn, ABS_REDUCE]) \\
+      ‘sgn (y - t) = -1’ by simp [REAL_SGN_EQ] \\
+       simp [ABS_EQ_NEG, REAL_INV_NEG] \\
+       REWRITE_TAC [Once (GSYM ABS_NEG)] \\
+       REWRITE_TAC [REAL_NEG_SUB] \\
+       REWRITE_TAC [GSYM REAL_NEG_LMUL] \\
+       REWRITE_TAC [REAL_SUB_NEG2] ])
+ >> Rewr'
+ >> qabbrev_tac ‘f = \t'. real (integral m (Normal o u t'))’
+ >> qabbrev_tac ‘k = real (integral m (Normal o u t))’
+ >> qabbrev_tac ‘c = real (integral m (Normal o g))’
+ >> simp []
+ >> Know ‘((\t'. inv (abs (d t')) * (f t' - k) - c * sgn (d t')) --> 0)
+           (at t within s) <=>
+          ((\t'. inv (d t') * (f t' - k)) --> c) (at t within s)’
+ >- (rw [LIM_WITHIN, dist] \\
+     EQ_TAC >> rw [Abbr ‘d’] >| (* 2 subgoals *)
+     [ (* goal 1 (of 2) *)
+       Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ (MP_TAC o Q.SPEC ‘e’) >> simp [] \\
+       DISCH_THEN (Q.X_CHOOSE_THEN ‘d’ STRIP_ASSUME_TAC) \\
+       Q.EXISTS_TAC ‘d’ >> art [] \\
+       Q.X_GEN_TAC ‘y’ >> STRIP_TAC \\
+       Q.PAT_X_ASSUM ‘!t'. t' IN s /\ _ ==> _’ (MP_TAC o Q.SPEC ‘y’) >> simp [] \\
+      ‘y - t <> 0’ by simp [] \\
+      ‘0 < y - t \/ y - t < 0’ by METIS_TAC [REAL_LT_TOTAL]
+       >- (‘0 <= y - t’ by simp [REAL_LT_IMP_LE] \\
+           simp [real_sgn, ABS_REDUCE]) \\
+      ‘sgn (y - t) = -1’ by simp [REAL_SGN_EQ] \\
+       simp [ABS_EQ_NEG, REAL_INV_NEG] \\
+       REWRITE_TAC [Once (GSYM ABS_NEG)] \\
+       REWRITE_TAC [REAL_NEG_SUB] \\
+       REWRITE_TAC [GSYM REAL_NEG_LMUL] \\
+       REWRITE_TAC [REAL_SUB_NEG2],
+       (* goal 2 (of 2) *)
+       Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ (MP_TAC o Q.SPEC ‘e’) >> simp [] \\
+       DISCH_THEN (Q.X_CHOOSE_THEN ‘d’ STRIP_ASSUME_TAC) \\
+       Q.EXISTS_TAC ‘d’ >> art [] \\
+       Q.X_GEN_TAC ‘y’ >> STRIP_TAC \\
+       Q.PAT_X_ASSUM ‘!t'. t' IN s /\ _ ==> _’ (MP_TAC o Q.SPEC ‘y’) >> simp [] \\
+      ‘y - t <> 0’ by simp [] \\
+      ‘0 < y - t \/ y - t < 0’ by METIS_TAC [REAL_LT_TOTAL]
+       >- (‘0 <= y - t’ by simp [REAL_LT_IMP_LE] \\
+           simp [real_sgn, ABS_REDUCE]) \\
+      ‘sgn (y - t) = -1’ by simp [REAL_SGN_EQ] \\
+       simp [ABS_EQ_NEG, REAL_INV_NEG] \\
+       REWRITE_TAC [Once (GSYM ABS_NEG)] \\
+       REWRITE_TAC [REAL_NEG_SUB] \\
+       REWRITE_TAC [GSYM REAL_NEG_LMUL] \\
+       REWRITE_TAC [REAL_SUB_NEG2] ])
+ >> Rewr'
  >> cheat
  (*
  (* applying lebesgue_dominated_convergence *)
- >> CONJ_ASM1_TAC
- >- cheat
  (* applying LIM_WITHIN_SEQUENTIALLY, etc. *)
  >> simp [LIM_WITHIN_SEQUENTIALLY]
  >> cheat
