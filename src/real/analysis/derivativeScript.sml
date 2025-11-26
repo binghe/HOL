@@ -1957,6 +1957,34 @@ Proof
     SIMP_TAC std_ss [has_vector_derivative, HAS_DERIVATIVE_AT_WITHIN]
 QED
 
+Theorem MVT_ALT :
+    !f f' a b.
+        a < b /\ f continuous_on interval[a,b] /\
+        (!x. x IN interval(a,b) ==> (f has_vector_derivative f' x) (at x))
+        ==> ?x. x IN interval(a,b) /\ (f(b) - f(a) = f' x * (b - a))
+Proof
+    rw [has_vector_derivative]
+ >> qabbrev_tac ‘g = (\x t. t * f' x)’ >> fs []
+ >> ‘!x. (\t. g x t) = g x’ by rw [FUN_EQ_THM]
+ >> POP_ASSUM (fs o wrap)
+ >> ‘!x. f' x * (b - a) = g x (b - a)’ by rw [Abbr ‘g’]  >> POP_ORW
+ >> MATCH_MP_TAC MVT >> art []
+QED
+
+Theorem MVT_GENERAL_ALT :
+    !f f' a b.
+        a < b /\ f continuous_on interval[a,b] /\
+        (!x. x IN interval(a,b) ==> (f has_vector_derivative f' x) (at x))
+        ==> ?x. x IN interval(a,b) /\ abs (f b - f a) <= abs (f' x * (b - a))
+Proof
+    rw [has_vector_derivative]
+ >> qabbrev_tac ‘g = (\x t. t * f' x)’ >> fs []
+ >> ‘!x. (\t. g x t) = g x’ by rw [FUN_EQ_THM]
+ >> POP_ASSUM (fs o wrap)
+ >> ‘!x. f' x * (b - a) = g x (b - a)’ by rw [Abbr ‘g’]  >> POP_ORW
+ >> MATCH_MP_TAC MVT_GENERAL >> art []
+QED
+
 (* ------------------------------------------------------------------------- *)
 (* CONTINUOUS_ON_EXP                                                         *)
 (* ------------------------------------------------------------------------- *)
