@@ -25,7 +25,9 @@ open extreal_baseTheory extrealTheory sigma_algebraTheory measureTheory
 
 val _ = new_theory "martingale";
 
-val _ = hide "S";
+val _ = hide "S";   (* combinTheory *)
+val _ = hide "top"; (* posetTheory *)
+val _ = hide "nf";  (* relationTheory *)
 
 fun METIS ths tm = prove(tm, METIS_TAC ths);
 
@@ -1769,129 +1771,179 @@ Proof
 
     For applying MVT, we need to find a cball inside s. (OPEN_IN_CONTAINS_CBALL)
   *)
- >> MP_TAC (Q.SPEC ‘s’ OPEN_CONTAINS_CBALL) >> simp []
- >> DISCH_THEN (MP_TAC o Q.SPEC ‘t’)
- >> simp [SUBSET_DEF, IN_CBALL] >> STRIP_TAC
- >> ASSUME_TAC (Q.SPEC ‘inv e’ SEQ_HARMONIC_OFFSET)
- >> qabbrev_tac ‘h = \n. inv (&n + inv e)’
- >> Know ‘!i. 0 <= h i’
- >- (rw [Abbr ‘h’] \\
-     MATCH_MP_TAC REAL_LE_ADD >> simp [REAL_LT_IMP_LE])
- >> DISCH_TAC
- >> Know ‘!i. 0 < h (SUC i)’
- >- (rw [Abbr ‘h’] \\
-     MATCH_MP_TAC REAL_LT_ADD >> simp [])
- >> DISCH_TAC
- >> Know ‘!i. h (SUC i) < e’
- >- (rw [Abbr ‘h’] \\
-     Suff ‘inv (&SUC i + inv e) < inv (inv e)’ >- REWRITE_TAC [REAL_INV_INV] \\
-     MATCH_MP_TAC REAL_LT_INV >> simp [])
- >> DISCH_TAC
- >> ‘!i. abs (h (SUC i)) < e’ by rw [ABS_REDUCE]
- >> MP_TAC (Q.SPECL [‘h’, ‘0’, ‘1’] SEQ_OFFSET) >> simp [GSYM ADD1]
- >> DISCH_TAC
- >> Know ‘((\i. h (SUC i) + t) --> (0 + t)) sequentially’
- >- (HO_MATCH_MP_TAC real_topologyTheory.LIM_ADD \\
-     simp [real_topologyTheory.LIM_CONST])
- >> simp [] >> DISCH_TAC
- >> qabbrev_tac ‘h1 = \i. h (SUC i) + t’
- >> Know ‘!n. h1 n IN cball (t,e) /\ h1 n <> t’
- >- (Q.X_GEN_TAC ‘n’ >> simp [Abbr ‘h1’, IN_CBALL] \\
-     reverse CONJ_TAC
-     >- (Suff ‘0 < h (SUC n)’ >- REAL_ARITH_TAC >> simp []) \\
-     ONCE_REWRITE_TAC [DIST_SYM] \\
-     simp [Abbr ‘d’, dist, REAL_ADD_SUB_ALT, REAL_LT_IMP_LE])
- >> DISCH_THEN (STRIP_ASSUME_TAC o SIMP_RULE bool_ss [FORALL_AND_THM])
- >> Know ‘!n. h1 n IN s’
- >- (Q.X_GEN_TAC ‘n’ \\
-     FIRST_X_ASSUM MATCH_MP_TAC >> fs [IN_CBALL])
- >> DISCH_TAC
- >> qabbrev_tac ‘gi = \i x. inv (d (h1 i)) * (u (h1 i) x - u t x)’
- >> Know ‘!x. x IN m_space m ==> ((\i. gi i x) --> g t x) sequentially’
- >- (rw [Abbr ‘gi’] \\
-     FIRST_X_ASSUM MATCH_MP_TAC >> art [])
- >> DISCH_TAC
- >> Know ‘!i. integrable m (\x. Normal (gi i x))’
- >- (Q.X_GEN_TAC ‘n’ \\
-     simp [Abbr ‘gi’, GSYM extreal_mul_eq, GSYM extreal_sub_eq] \\
-     HO_MATCH_MP_TAC integrable_cmul >> art [] \\
-     HO_MATCH_MP_TAC integrable_sub >> simp [] \\
-     Q.PAT_X_ASSUM ‘!t. t IN s ==> integrable m (Normal o u t)’ MP_TAC \\
-     simp [o_DEF])
- >> DISCH_TAC
- (* applying lebesgue_dominated_convergence *)
- >> MP_TAC (Q.SPECL [‘m’, ‘\x. Normal (g (t :real) x)’, ‘\i x. Normal (gi i x)’]
-                    lebesgue_dominated_convergence) >> simp []
- >> impl_tac
- >- (Q.EXISTS_TAC ‘w’ >> rw [extreal_abs_def] \\
-  (* applying MVT_GENERAL_ALT *)
-     Q.PAT_X_ASSUM ‘!x. x IN m_space m ==> (\t. u t x) continuous_on s’
-       (MP_TAC o Q.SPEC ‘x’) >> rw [] \\
-     Q.PAT_X_ASSUM ‘!t x. x IN m_space m /\ t IN s ==> _’
-       (MP_TAC o Q.SPEC ‘x’ o SIMP_RULE bool_ss [Once SWAP_FORALL_THM]) >> rw [] \\
-     qabbrev_tac ‘u0 = (\t. u t x)’ \\
-     qabbrev_tac ‘g0 = (\t. g t x)’ >> fs [] \\
-     Q.PAT_X_ASSUM ‘!x. _ ==> ((\i. gi i x) --> g t x) sequentially’ K_TAC \\
-     Q.PAT_X_ASSUM ‘!i. integrable m (\x. Normal (gi i x))’ K_TAC \\
-     simp [Abbr ‘gi’, ABS_MUL, Abbr ‘d’] \\
-     qabbrev_tac ‘t' = h1 i’ \\
-    ‘t < t'’ by simp [Abbr ‘t'’, Abbr ‘h1’] \\
-     MP_TAC (Q.SPECL [‘u0’, ‘g0’, ‘t’, ‘t'’] MVT_GENERAL_ALT) >> art [] \\
+ >> CONJ_ASM1_TAC
+ >- (MP_TAC (Q.SPEC ‘s’ OPEN_CONTAINS_CBALL) >> simp [] \\
+     DISCH_THEN (MP_TAC o Q.SPEC ‘t’) \\
+     simp [SUBSET_DEF, IN_CBALL] >> STRIP_TAC \\
+     ASSUME_TAC (Q.SPEC ‘inv e’ SEQ_HARMONIC_OFFSET) \\
+     qabbrev_tac ‘h = \n. inv (&n + inv e)’ \\
+     Know ‘!i. 0 <= h i’
+     >- (rw [Abbr ‘h’] \\
+         MATCH_MP_TAC REAL_LE_ADD >> simp [REAL_LT_IMP_LE]) >> DISCH_TAC \\
+     Know ‘!i. 0 < h (SUC i)’
+     >- (rw [Abbr ‘h’] \\
+         MATCH_MP_TAC REAL_LT_ADD >> simp []) >> DISCH_TAC \\
+     Know ‘!i. h (SUC i) < e’
+     >- (rw [Abbr ‘h’] \\
+         Suff ‘inv (&SUC i + inv e) < inv (inv e)’
+         >- REWRITE_TAC [REAL_INV_INV] \\
+         MATCH_MP_TAC REAL_LT_INV >> simp []) >> DISCH_TAC \\
+    ‘!i. abs (h (SUC i)) < e’ by rw [ABS_REDUCE] \\
+     MP_TAC (Q.SPECL [‘h’, ‘0’, ‘1’] SEQ_OFFSET) >> simp [GSYM ADD1] \\
+     DISCH_TAC \\
+     Know ‘((\i. h (SUC i) + t) --> (0 + t)) sequentially’
+     >- (HO_MATCH_MP_TAC real_topologyTheory.LIM_ADD \\
+         simp [real_topologyTheory.LIM_CONST]) \\
+     simp [] >> DISCH_TAC \\
+     qabbrev_tac ‘h1 = \i. h (SUC i) + t’ \\
+     Know ‘!n. h1 n IN cball (t,e) /\ h1 n <> t’
+     >- (Q.X_GEN_TAC ‘n’ >> simp [Abbr ‘h1’, IN_CBALL] \\
+         reverse CONJ_TAC
+         >- (Suff ‘0 < h (SUC n)’ >- REAL_ARITH_TAC >> simp []) \\
+         ONCE_REWRITE_TAC [DIST_SYM] \\
+         simp [Abbr ‘d’, dist, REAL_ADD_SUB_ALT, REAL_LT_IMP_LE]) \\
+     DISCH_THEN (STRIP_ASSUME_TAC o SIMP_RULE bool_ss [FORALL_AND_THM]) \\
+     Know ‘!n. h1 n IN s’
+     >- (Q.X_GEN_TAC ‘n’ \\
+         FIRST_X_ASSUM MATCH_MP_TAC >> fs [IN_CBALL]) >> DISCH_TAC \\
+     qabbrev_tac ‘gi = \i x. inv (d (h1 i)) * (u (h1 i) x - u t x)’ \\
+     Know ‘!x. x IN m_space m ==> ((\i. gi i x) --> g t x) sequentially’
+     >- (rw [Abbr ‘gi’] \\
+         FIRST_X_ASSUM MATCH_MP_TAC >> art []) >> DISCH_TAC \\
+     Know ‘!i. integrable m (\x. Normal (gi i x))’
+     >- (Q.X_GEN_TAC ‘n’ \\
+         simp [Abbr ‘gi’, GSYM extreal_mul_eq, GSYM extreal_sub_eq] \\
+         HO_MATCH_MP_TAC integrable_cmul >> art [] \\
+         HO_MATCH_MP_TAC integrable_sub >> simp [] \\
+         Q.PAT_X_ASSUM ‘!t. t IN s ==> integrable m (Normal o u t)’ MP_TAC \\
+         simp [o_DEF]) >> DISCH_TAC \\
+  (* applying lebesgue_dominated_convergence *)
+     MP_TAC (Q.SPECL [‘m’, ‘\x. Normal (g (t :real) x)’, ‘\i x. Normal (gi i x)’]
+                     lebesgue_dominated_convergence) >> simp [] \\
      impl_tac
-     >- (CONJ_TAC
-         >- (MATCH_MP_TAC CONTINUOUS_ON_SUBSET \\
-             Q.EXISTS_TAC ‘s’ >> simp [SUBSET_DEF, IN_INTERVAL] \\
-             Q.X_GEN_TAC ‘y’ >> STRIP_TAC \\
+     >- (Q.EXISTS_TAC ‘w’ >> rw [extreal_abs_def] \\
+      (* applying MVT_GENERAL_ALT *)
+         Q.PAT_X_ASSUM ‘!x. x IN m_space m ==> (\t. u t x) continuous_on s’
+           (MP_TAC o Q.SPEC ‘x’) >> rw [] \\
+         Q.PAT_X_ASSUM ‘!t x. x IN m_space m /\ t IN s ==> _’
+           (MP_TAC o Q.SPEC ‘x’ o SIMP_RULE bool_ss [Once SWAP_FORALL_THM]) \\
+         rw [] \\
+         qabbrev_tac ‘u0 = (\t. u t x)’ \\
+         qabbrev_tac ‘g0 = (\t. g t x)’ >> fs [] \\
+         Q.PAT_X_ASSUM ‘!x. _ ==> ((\i. gi i x) --> g t x) sequentially’ K_TAC \\
+         Q.PAT_X_ASSUM ‘!i. integrable m (\x. Normal (gi i x))’ K_TAC \\
+         simp [Abbr ‘gi’, ABS_MUL, Abbr ‘d’] \\
+         qabbrev_tac ‘t' = h1 i’ \\
+        ‘t < t'’ by simp [Abbr ‘t'’, Abbr ‘h1’] \\
+         MP_TAC (Q.SPECL [‘u0’, ‘g0’, ‘t’, ‘t'’] MVT_GENERAL_ALT) >> art [] \\
+         impl_tac
+         >- (CONJ_TAC
+             >- (MATCH_MP_TAC CONTINUOUS_ON_SUBSET \\
+                 Q.EXISTS_TAC ‘s’ >> simp [SUBSET_DEF, IN_INTERVAL] \\
+                 Q.X_GEN_TAC ‘y’ >> STRIP_TAC \\
+                 FIRST_X_ASSUM MATCH_MP_TAC \\
+                 simp [dist, ABS_BOUNDS] \\
+                 reverse CONJ_TAC
+                 >- (Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘0’ \\
+                     simp [REAL_LT_IMP_LE] \\
+                     Q.PAT_X_ASSUM ‘t <= y’ MP_TAC >> REAL_ARITH_TAC) \\
+                 Suff ‘y <= e + t’ >- REAL_ARITH_TAC \\
+                 Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘t'’ >> art [] \\
+                 simp [Abbr ‘t'’, Abbr ‘h1’, REAL_LT_IMP_LE]) \\
+             Q.X_GEN_TAC ‘y’ >> rw [IN_INTERVAL] \\
+             irule (iffLR HAS_VECTOR_DERIVATIVE_WITHIN_OPEN) \\
+             Q.EXISTS_TAC ‘s’ >> simp [] \\
+             CONJ_ASM1_TAC
+             >- (FIRST_X_ASSUM MATCH_MP_TAC \\
+                 simp [dist, ABS_BOUNDS] \\
+                 reverse CONJ_TAC
+                 >- (MATCH_MP_TAC REAL_LT_IMP_LE \\
+                     Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘0’ >> art [] \\
+                     Q.PAT_X_ASSUM ‘t < y’ MP_TAC >> REAL_ARITH_TAC) \\
+                 Suff ‘y <= e + t’ >- REAL_ARITH_TAC \\
+                 Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘t'’ \\
+                 simp [Abbr ‘t'’, Abbr ‘h1’, REAL_LT_IMP_LE]) \\
+             FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+         simp [IN_INTERVAL, ABS_MUL] \\
+         Know ‘abs (inv (t' - t)) = inv (abs (t' - t))’
+         >- (MATCH_MP_TAC ABS_INV \\
+             POP_ASSUM MP_TAC >> REAL_ARITH_TAC) >> Rewr' \\
+         DISCH_THEN (Q.X_CHOOSE_THEN ‘t0’ STRIP_ASSUME_TAC) \\
+         Q_TAC (TRANS_TAC le_trans) ‘Normal (abs (g0 t0))’ \\
+         reverse CONJ_TAC
+         >- (simp [Abbr ‘g0’] \\
+             FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
              FIRST_X_ASSUM MATCH_MP_TAC \\
-             simp [dist, ABS_BOUNDS] \\
-             reverse CONJ_TAC
-             >- (Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘0’ \\
-                 simp [REAL_LT_IMP_LE] \\
-                 Q.PAT_X_ASSUM ‘t <= y’ MP_TAC >> REAL_ARITH_TAC) \\
-             Suff ‘y <= e + t’ >- REAL_ARITH_TAC \\
-             Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘t'’ >> art [] \\
-             simp [Abbr ‘t'’, Abbr ‘h1’, REAL_LT_IMP_LE]) \\
-         Q.X_GEN_TAC ‘y’ >> rw [IN_INTERVAL] \\
-         irule (iffLR HAS_VECTOR_DERIVATIVE_WITHIN_OPEN) \\
-         Q.EXISTS_TAC ‘s’ >> simp [] \\
-         CONJ_ASM1_TAC
-         >- (FIRST_X_ASSUM MATCH_MP_TAC \\
              simp [dist, ABS_BOUNDS] \\
              reverse CONJ_TAC
              >- (MATCH_MP_TAC REAL_LT_IMP_LE \\
                  Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘0’ >> art [] \\
-                 Q.PAT_X_ASSUM ‘t < y’ MP_TAC >> REAL_ARITH_TAC) \\
-             Suff ‘y <= e + t’ >- REAL_ARITH_TAC \\
+                 Q.PAT_X_ASSUM ‘t < t0’ MP_TAC >> REAL_ARITH_TAC) \\
+             Suff ‘t0 <= e + t’ >- REAL_ARITH_TAC \\
              Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘t'’ \\
              simp [Abbr ‘t'’, Abbr ‘h1’, REAL_LT_IMP_LE]) \\
-         FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
-     simp [IN_INTERVAL, ABS_MUL] \\
-     Know ‘abs (inv (t' - t)) = inv (abs (t' - t))’
-     >- (MATCH_MP_TAC ABS_INV \\
-         POP_ASSUM MP_TAC >> REAL_ARITH_TAC) >> Rewr' \\
-     DISCH_THEN (Q.X_CHOOSE_THEN ‘t0’ STRIP_ASSUME_TAC) \\
-     Q_TAC (TRANS_TAC le_trans) ‘Normal (abs (g0 t0))’ \\
-     reverse CONJ_TAC
-     >- (simp [Abbr ‘g0’] \\
-         FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
-         FIRST_X_ASSUM MATCH_MP_TAC \\
-         simp [dist, ABS_BOUNDS] \\
-         reverse CONJ_TAC
-         >- (MATCH_MP_TAC REAL_LT_IMP_LE \\
-             Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘0’ >> art [] \\
-             Q.PAT_X_ASSUM ‘t < t0’ MP_TAC >> REAL_ARITH_TAC) \\
-         Suff ‘t0 <= e + t’ >- REAL_ARITH_TAC \\
-         Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘t'’ \\
-         simp [Abbr ‘t'’, Abbr ‘h1’, REAL_LT_IMP_LE]) \\
-    ‘0 < t' - t’ by simp [REAL_SUB_LT] \\
-     qabbrev_tac ‘d = t' - t’ \\
-    ‘d <> 0 /\ 0 <= d’ by PROVE_TAC [REAL_LT_IMP_LE, REAL_LT_IMP_NE] \\
-    ‘abs d <> 0’ by simp [GSYM ABS_NZ] \\
-    ‘0 < abs d’ by simp [ABS_NZ'] \\
-     simp [Once REAL_MUL_COMM, GSYM real_div] \\
-     ONCE_REWRITE_TAC [REAL_MUL_COMM] >> art [])
- >> RW_TAC std_ss []
+        ‘0 < t' - t’ by simp [REAL_SUB_LT] \\
+         qabbrev_tac ‘d = t' - t’ \\
+        ‘d <> 0 /\ 0 <= d’ by PROVE_TAC [REAL_LT_IMP_LE, REAL_LT_IMP_NE] \\
+        ‘abs d <> 0’ by simp [GSYM ABS_NZ] \\
+        ‘0 < abs d’ by simp [ABS_NZ'] \\
+         simp [Once REAL_MUL_COMM, GSYM real_div] \\
+         ONCE_REWRITE_TAC [REAL_MUL_COMM] >> art []) \\
+     RW_TAC std_ss [])
  (* stage work *)
+ >> Q.X_GEN_TAC ‘h’
+ >> RW_TAC std_ss [Abbr ‘c’, Abbr ‘f’, Abbr ‘k’]
+ >> Q.PAT_X_ASSUM ‘!h x. x IN m_space m /\ (!n. h n IN s /\ h n <> t) /\
+                        (h --> t) sequentially ==> _’
+                  (MP_TAC o Q.SPEC ‘h’) >> rw []
+ >> qabbrev_tac ‘q = Normal o g t’
+ >> qabbrev_tac ‘qi = \i x. Normal (inv (d (h i)) * (u (h i) x - u t x))’
+ >> Know ‘!x. x IN m_space m ==>
+              ((\i. real (qi i x)) --> real (q x)) sequentially’
+ >- rw [Abbr ‘qi’, Abbr ‘q’]
+ >> DISCH_TAC
+ >> qmatch_abbrev_tac ‘(q' --> real (integral m q)) sequentially’
+ >> Know ‘q' = (\i. real (integral m (qi i)))’
+ >- (rw [Abbr ‘q'’, FUN_EQ_THM, Abbr ‘qi’, GSYM extreal_mul_eq] \\
+     Know ‘integral m (\x. Normal (inv (d (h i))) *
+                           Normal (u (h i) x - u t x)) =
+           Normal (inv (d (h i))) *
+           integral m (\x. Normal (u (h i) x - u t x))’
+     >- (HO_MATCH_MP_TAC integral_cmul >> art [] \\
+         simp [GSYM extreal_sub_eq] \\
+         HO_MATCH_MP_TAC integrable_sub' >> art [] \\
+         Q.PAT_X_ASSUM ‘!t. t IN s ==> integrable m (Normal o u t)’ MP_TAC \\
+         simp [o_DEF]) >> Rewr' \\
+     simp [GSYM extreal_sub_eq] \\
+     Know ‘integral m (\x. Normal (u (h i) x) - Normal (u t x)) =
+           integral m (Normal o u (h i)) - integral m (Normal o u t)’
+     >- (simp [o_DEF] \\
+         HO_MATCH_MP_TAC integral_sub' >> art [] \\
+         Q.PAT_X_ASSUM ‘!t. t IN s ==> integrable m (Normal o u t)’ MP_TAC \\
+         simp [o_DEF]) >> Rewr' \\
+     qmatch_abbrev_tac ‘c * (real a - real b) = _’ \\
+    ‘a <> PosInf /\ a <> NegInf /\ b <> PosInf /\ b <> NegInf’
+       by METIS_TAC [integrable_finite_integral] \\
+  (* applying mul_real *)
+     Know ‘real (Normal c * (a - b)) = real (Normal c) * real (a - b)’
+     >- (MATCH_MP_TAC mul_real >> simp [] \\
+         METIS_TAC [sub_not_infty]) >> Rewr' \\
+     Know ‘real (a - b) = real a - real b’
+     >- (MATCH_MP_TAC sub_real >> art []) >> Rewr' \\
+     simp [])
+ >> Rewr'
+ >> qunabbrev_tac ‘q'’
+ (* applying lebesgue_dominated_convergence, again *)
+ >> MATCH_MP_TAC (cj 2 lebesgue_dominated_convergence) >> art []
+ >> CONJ_TAC
+ >- (rw [Abbr ‘qi’, GSYM extreal_mul_eq] \\
+     HO_MATCH_MP_TAC integrable_cmul >> art [] \\
+     simp [GSYM extreal_sub_eq] \\
+     HO_MATCH_MP_TAC integrable_sub' >> art [] \\
+     Q.PAT_X_ASSUM ‘!t. t IN s ==> integrable m (Normal o u t)’ MP_TAC \\
+     simp [o_DEF])
+ >> CONJ_TAC >- rw [Abbr ‘qi’]
+ >> CONJ_TAC >- rw [Abbr ‘q’, o_DEF]
  >> cheat
 QED
 
