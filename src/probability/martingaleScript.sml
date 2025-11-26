@@ -1534,7 +1534,7 @@ QED
 (*  Parameter-Dependent Integrals (Part of Chapter 12 of [1])                *)
 (* ------------------------------------------------------------------------- *)
 
-(* Theorem 12.4 [1, p.99]
+(* Theorem 12.4 [1, p.99] (generalized from open intervals to open sets)
 
    NOTE: ext_continuous_on_def is not used, because we want to make sure the
    type of u is (u :real -> 'a -> real) and see the “continuous_on” for real
@@ -1617,7 +1617,7 @@ Proof
  >> FIRST_X_ASSUM MATCH_MP_TAC >> simp []
 QED
 
-(* Theorem 12.5 [1, p.100] *)
+(* Theorem 12.5 [1, p.100] (generalized from open intervals to open sets) *)
 Theorem differentiability_lemma :
     !m u s. measure_space (m :'a m_space) /\ open s /\
       (!t. t IN s ==> integrable m (Normal o u t)) /\
@@ -1632,7 +1632,8 @@ Theorem differentiability_lemma :
                ) (at t within s)
 Proof
     rpt GEN_TAC >> STRIP_TAC
- >> Q.X_GEN_TAC ‘t’ >> DISCH_TAC
+ >> Q.X_GEN_TAC ‘t’
+ >> DISCH_TAC
  (* eliminating ‘diff1’ *)
  >> Q.PAT_X_ASSUM ‘!x. x IN m_space m ==> _ differentiable_on s’ MP_TAC
  >> simp [differentiable_on, differentiable_alt_has_vector_derivative]
@@ -1754,36 +1755,59 @@ Proof
     NOTE: Here we need to construct a concrete sequence which converges to t and
     is always inside s (by finding a open ball around t in s).
   *)
- >> CONJ_ASM1_TAC
- >- (Q.PAT_X_ASSUM ‘open s’ (MP_TAC o REWRITE_RULE [open_def]) \\
-     DISCH_THEN (MP_TAC o Q.SPEC ‘t’) >> rw [] (* this asserts ‘e’ *) \\
-    ‘0 < inv e’ by PROVE_TAC [REAL_INV_POS] \\
-     ASSUME_TAC (Q.SPEC ‘inv e’ SEQ_HARMONIC_OFFSET) \\
-     qabbrev_tac ‘h = \n. inv (&n + inv e)’ \\
-     MP_TAC (Q.SPECL [‘h’, ‘0’, ‘1’] SEQ_OFFSET) >> rw [GSYM ADD1] \\
-     Know ‘((\i. h (SUC i) + t) --> (0 + t)) sequentially’
-     >- (HO_MATCH_MP_TAC real_topologyTheory.LIM_ADD \\
-         simp [real_topologyTheory.LIM_CONST]) >> rw [] \\
-     qabbrev_tac ‘h1 = \i. h (SUC i) + t’ \\
-     Know ‘!n. h1 n IN s /\ h1 n <> t’
-     >- (Q.X_GEN_TAC ‘n’ >> simp [Abbr ‘h1’] \\
-         reverse CONJ_TAC
-         >- (Suff ‘0 < h (SUC n)’ >- REAL_ARITH_TAC \\
-             simp [Abbr ‘h’] \\
-             MATCH_MP_TAC REAL_LT_ADD >> simp []) \\
-         FIRST_X_ASSUM MATCH_MP_TAC \\
-         simp [Abbr ‘d’, dist, REAL_ADD_SUB_ALT] \\
-         Know ‘abs (h (SUC n)) = h (SUC n)’
-         >- (simp [ABS_REFL, Abbr ‘h’] \\
-             MATCH_MP_TAC REAL_LE_ADD >> simp [REAL_LT_IMP_LE]) >> Rewr' \\
-         simp [Abbr ‘h’] \\
-         Suff ‘inv (&SUC n + inv e) < inv (inv e)’ >- REWRITE_TAC [REAL_INV_INV] \\
-         MATCH_MP_TAC REAL_LT_INV >> simp []) >> DISCH_TAC \\
-     Q.PAT_X_ASSUM ‘!x' x. x IN m_space m /\ _ ==> _’ (MP_TAC o Q.SPEC ‘h1’) \\
-     simp [] \\
-     qabbrev_tac ‘gi = \i x. inv (d (h1 i)) * (u (h1 i) x - u t x)’ >> rw [] \\
-  (* applying lebesgue_dominated_convergence *)
-     cheat)
+ >> Q.PAT_X_ASSUM ‘open s’ (MP_TAC o REWRITE_RULE [open_def])
+ >> DISCH_THEN (MP_TAC o Q.SPEC ‘t’) >> simp []
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘e’ STRIP_ASSUME_TAC)
+ >> ‘0 < inv e’ by PROVE_TAC [REAL_INV_POS]
+ >> ASSUME_TAC (Q.SPEC ‘inv e’ SEQ_HARMONIC_OFFSET)
+ >> qabbrev_tac ‘h = \n. inv (&n + inv e)’
+ >> Know ‘!i. 0 <= h i’
+ >- (rw [Abbr ‘h’] \\
+     MATCH_MP_TAC REAL_LE_ADD >> simp [REAL_LT_IMP_LE])
+ >> DISCH_TAC
+ >> Know ‘!i. 0 < h (SUC i)’
+ >- (rw [Abbr ‘h’] \\
+     MATCH_MP_TAC REAL_LT_ADD >> simp [])
+ >> DISCH_TAC
+ >> Know ‘!i. abs (h (SUC i)) < e’
+ >- (rw [ABS_REDUCE, Abbr ‘h’] \\
+     Suff ‘inv (&SUC i + inv e) < inv (inv e)’ >- REWRITE_TAC [REAL_INV_INV] \\
+     MATCH_MP_TAC REAL_LT_INV >> simp [])
+ >> DISCH_TAC
+ >> MP_TAC (Q.SPECL [‘h’, ‘0’, ‘1’] SEQ_OFFSET) >> simp [GSYM ADD1]
+ >> DISCH_TAC
+ >> Know ‘((\i. h (SUC i) + t) --> (0 + t)) sequentially’
+ >- (HO_MATCH_MP_TAC real_topologyTheory.LIM_ADD \\
+     simp [real_topologyTheory.LIM_CONST])
+ >> simp [] >> DISCH_TAC
+ >> qabbrev_tac ‘h1 = \i. h (SUC i) + t’
+ >> Know ‘!n. h1 n IN s /\ h1 n <> t’
+ >- (Q.X_GEN_TAC ‘n’ >> simp [Abbr ‘h1’] \\
+     reverse CONJ_TAC
+     >- (Suff ‘0 < h (SUC n)’ >- REAL_ARITH_TAC \\
+         simp []) \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     simp [Abbr ‘d’, dist, REAL_ADD_SUB_ALT])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘gi = \i x. inv (d (h1 i)) * (u (h1 i) x - u t x)’
+ >> Know ‘!x. x IN m_space m ==> ((\i. gi i x) --> g x) sequentially’
+ >- (rw [Abbr ‘gi’] \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> art [])
+ >> DISCH_TAC
+ >> Know ‘!i. integrable m (\x. Normal (gi i x))’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     simp [Abbr ‘gi’, GSYM extreal_mul_eq, GSYM extreal_sub_eq] \\
+     HO_MATCH_MP_TAC integrable_cmul >> art [] \\
+     HO_MATCH_MP_TAC integrable_sub >> simp [] \\
+     Q.PAT_X_ASSUM ‘!t. t IN s ==> integrable m (Normal o u t)’ MP_TAC \\
+     simp [o_DEF])
+ >> DISCH_TAC
+ (* applying lebesgue_dominated_convergence *)
+ >> MP_TAC (Q.SPECL [‘m’, ‘\x. Normal (g x)’, ‘\i x. Normal (gi i x)’]
+                    lebesgue_dominated_convergence) >> simp []
+ >> impl_tac (* bounded exists *)
+ >- (cheat)
+ >> RW_TAC std_ss []
  (* stage work *)
  >> cheat
 QED
