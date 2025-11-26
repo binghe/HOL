@@ -1670,7 +1670,7 @@ Proof
                      sgn (d t') * g x) --> 0) (at t within s) <=>
               ((\t'. inv (d t') * (u t' x - u t x)) --> g x) (at t within s)’
  >- (rw [LIM_WITHIN, dist] \\
-     EQ_TAC >> rw [Abbr ‘d’] >| (* 2 subgoals *)
+     EQ_TAC >> rw [Abbr ‘d’] >| (* 2 subgoals, same tactics *)
      [ (* goal 1 (of 2) *)
        Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ (MP_TAC o Q.SPEC ‘e’) >> simp [] \\
        DISCH_THEN (Q.X_CHOOSE_THEN ‘d’ STRIP_ASSUME_TAC) \\
@@ -1712,7 +1712,7 @@ Proof
            (at t within s) <=>
           ((\t'. inv (d t') * (f t' - k)) --> c) (at t within s)’
  >- (rw [LIM_WITHIN, dist] \\
-     EQ_TAC >> rw [Abbr ‘d’] >| (* 2 subgoals *)
+     EQ_TAC >> rw [Abbr ‘d’] >| (* 2 subgoals, same tactics *)
      [ (* goal 1 (of 2) *)
        Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ (MP_TAC o Q.SPEC ‘e’) >> simp [] \\
        DISCH_THEN (Q.X_CHOOSE_THEN ‘d’ STRIP_ASSUME_TAC) \\
@@ -1746,13 +1746,46 @@ Proof
        REWRITE_TAC [GSYM REAL_NEG_LMUL] \\
        REWRITE_TAC [REAL_SUB_NEG2] ])
  >> Rewr'
- >> cheat
- (*
- (* applying lebesgue_dominated_convergence *)
- (* applying LIM_WITHIN_SEQUENTIALLY, etc. *)
  >> simp [LIM_WITHIN_SEQUENTIALLY]
- >> cheat
+ >> simp [GSYM RIGHT_FORALL_IMP_THM, AND_IMP_INTRO, Once SWAP_FORALL_THM, o_DEF]
+ >> DISCH_TAC
+ (* integrable m (\x. Normal (g x))
+
+    NOTE: Here we need to construct a concrete sequence which converges to t and
+    is always inside s (by finding a open ball around t in s).
   *)
+ >> CONJ_ASM1_TAC
+ >- (Q.PAT_X_ASSUM ‘open s’ (MP_TAC o REWRITE_RULE [open_def]) \\
+     DISCH_THEN (MP_TAC o Q.SPEC ‘t’) >> rw [] (* this asserts ‘e’ *) \\
+    ‘0 < inv e’ by PROVE_TAC [REAL_INV_POS] \\
+     ASSUME_TAC (Q.SPEC ‘inv e’ SEQ_HARMONIC_OFFSET) \\
+     qabbrev_tac ‘h = \n. inv (&n + inv e)’ \\
+     MP_TAC (Q.SPECL [‘h’, ‘0’, ‘1’] SEQ_OFFSET) >> rw [GSYM ADD1] \\
+     Know ‘((\i. h (SUC i) + t) --> (0 + t)) sequentially’
+     >- (HO_MATCH_MP_TAC real_topologyTheory.LIM_ADD \\
+         simp [real_topologyTheory.LIM_CONST]) >> rw [] \\
+     qabbrev_tac ‘h1 = \i. h (SUC i) + t’ \\
+     Know ‘!n. h1 n IN s /\ h1 n <> t’
+     >- (Q.X_GEN_TAC ‘n’ >> simp [Abbr ‘h1’] \\
+         reverse CONJ_TAC
+         >- (Suff ‘0 < h (SUC n)’ >- REAL_ARITH_TAC \\
+             simp [Abbr ‘h’] \\
+             MATCH_MP_TAC REAL_LT_ADD >> simp []) \\
+         FIRST_X_ASSUM MATCH_MP_TAC \\
+         simp [Abbr ‘d’, dist, REAL_ADD_SUB_ALT] \\
+         Know ‘abs (h (SUC n)) = h (SUC n)’
+         >- (simp [ABS_REFL, Abbr ‘h’] \\
+             MATCH_MP_TAC REAL_LE_ADD >> simp [REAL_LT_IMP_LE]) >> Rewr' \\
+         simp [Abbr ‘h’] \\
+         Suff ‘inv (&SUC n + inv e) < inv (inv e)’ >- REWRITE_TAC [REAL_INV_INV] \\
+         MATCH_MP_TAC REAL_LT_INV >> simp []) >> DISCH_TAC \\
+     Q.PAT_X_ASSUM ‘!x' x. x IN m_space m /\ _ ==> _’ (MP_TAC o Q.SPEC ‘h1’) \\
+     simp [] \\
+     qabbrev_tac ‘gi = \i x. inv (d (h1 i)) * (u (h1 i) x - u t x)’ >> rw [] \\
+  (* applying lebesgue_dominated_convergence *)
+     cheat)
+ (* stage work *)
+ >> cheat
 QED
 
 (* ------------------------------------------------------------------------- *)

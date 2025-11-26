@@ -6465,7 +6465,7 @@ Proof
 QED
 
 Theorem LIM_TRANSFORM_BOUND:
-   !f g. eventually (\n. abs(f n) <= abs(g n)) net /\ (g --> 0) net
+   !net f g. eventually (\n. abs(f n) <= abs(g n)) net /\ (g --> 0) net
          ==> (f --> 0) net
 Proof
   REPEAT GEN_TAC THEN
@@ -6477,7 +6477,7 @@ Proof
 QED
 
 Theorem LIM_NULL_CMUL_BOUNDED:
-   !f g:'a->real B.
+   !net f g:'a->real B.
         eventually (\a. (g a = 0) \/ abs(f a) <= B) net /\
         (g --> 0) net
         ==> ((\n. f n * g n) --> 0) net
