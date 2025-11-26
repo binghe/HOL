@@ -17491,6 +17491,14 @@ Proof
   ASM_SIMP_TAC std_ss [REAL_MUL_LID]
 QED
 
+Theorem CONNECTED_IVT :
+    !s x y a. connected s /\ x IN s /\ y IN s /\ x <= a /\ a <= y ==> a IN s
+Proof
+    rpt STRIP_TAC
+ >> ‘?z. z IN s /\ z = a’ by METIS_TAC [CONNECTED_IVT_COMPONENT]
+ >> POP_ASSUM (simp o wrap o SYM)
+QED
+
 (* This theorem is inspired by limTheory.IVT *)
 Theorem CONTINUOUS_ON_IVT :
     !f a b y. a <= b /\ f(a) <= y /\ y <= f(b) /\

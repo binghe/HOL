@@ -1619,9 +1619,13 @@ Proof
  >> FIRST_X_ASSUM MATCH_MP_TAC >> simp []
 QED
 
-(* Theorem 12.5 [1, p.100] (generalized from open intervals to open sets) *)
+(* Theorem 12.5 [1, p.100]
+
+   NOTE: “open s /\ connected s” is to make sure both OPEN_interval and UNIV
+   are included.
+ *)
 Theorem differentiability_lemma :
-    !m u s. measure_space (m :'a m_space) /\ open s /\
+    !m u s. measure_space (m :'a m_space) /\ open s /\ connected s /\
       (!t. t IN s ==> integrable m (Normal o u t)) /\
       (!x. x IN m_space m ==> (\t. u t x) differentiable_on s) /\
       (?w. integrable m w /\
@@ -1760,7 +1764,7 @@ Proof
        REWRITE_TAC [GSYM REAL_NEG_LMUL] \\
        REWRITE_TAC [REAL_SUB_NEG2] ])
  >> Rewr'
- (* applying LIM_WITHIN_SEQUENTIALLY *)
+ (* stage work *)
  >> simp [LIM_WITHIN_SEQUENTIALLY]
  >> simp [GSYM RIGHT_FORALL_IMP_THM, AND_IMP_INTRO, Once SWAP_FORALL_THM, o_DEF]
  >> DISCH_TAC
@@ -1944,7 +1948,100 @@ Proof
      simp [o_DEF])
  >> CONJ_TAC >- rw [Abbr ‘qi’]
  >> CONJ_TAC >- rw [Abbr ‘q’, o_DEF]
- >> cheat
+ (* stage work *)
+ >> Q.EXISTS_TAC ‘w’ >> art []
+ >> RW_TAC std_ss [Abbr ‘qi’, extreal_abs_def]
+ >> Q.PAT_X_ASSUM ‘!x. x IN m_space m ==> (\t. u t x) continuous_on s’
+      (MP_TAC o Q.SPEC ‘x’)
+ >> Q.PAT_X_ASSUM ‘!t x. x IN m_space m /\ t IN s ==> _’
+      (MP_TAC o Q.SPEC ‘x’ o SIMP_RULE bool_ss [Once SWAP_FORALL_THM])
+ >> qabbrev_tac ‘u0 = (\t. u t x)’
+ >> qabbrev_tac ‘g0 = (\t. g t x)’
+ >> RW_TAC std_ss []
+ >> Q.PAT_X_ASSUM ‘!x. x IN m_space m ==> (_ --> real (q x)) sequentially’ K_TAC
+ >> Q.PAT_X_ASSUM ‘!x. x IN m_space m ==> (_ --> g t x) sequentially’ K_TAC
+ >> ‘h i < t \/ t < h i’ by METIS_TAC [REAL_LT_TOTAL]
+ >| [ (* goal 1 (of 2) *)
+      simp [ABS_MUL, Abbr ‘d’] \\
+      qabbrev_tac ‘t' = h i’ \\
+   (* applying MVT_GENERAL_ALT *)
+      MP_TAC (Q.SPECL [‘u0’, ‘g0’, ‘t'’, ‘t’] MVT_GENERAL_ALT) >> art [] \\
+      Know ‘interval [t',t] SUBSET s’
+      >- (simp [IN_INTERVAL, SUBSET_DEF] \\
+          Q.X_GEN_TAC ‘z’ >> STRIP_TAC \\
+       (* applying CONNECTED_IVT *)
+          MATCH_MP_TAC CONNECTED_IVT \\
+          qexistsl_tac [‘t'’, ‘t’] >> simp [Abbr ‘t'’]) >> DISCH_TAC \\
+      impl_tac
+      >- (CONJ_TAC
+          >- (MATCH_MP_TAC CONTINUOUS_ON_SUBSET \\
+              Q.EXISTS_TAC ‘s’ >> art []) \\
+          Q.X_GEN_TAC ‘z’ >> rw [IN_INTERVAL] \\
+          irule (iffLR HAS_VECTOR_DERIVATIVE_WITHIN_OPEN) \\
+          Q.EXISTS_TAC ‘s’ >> art [] \\
+          CONJ_ASM1_TAC
+          >- (MATCH_MP_TAC CONNECTED_IVT \\
+              qexistsl_tac [‘t'’, ‘t’] >> simp [REAL_LT_IMP_LE, Abbr ‘t'’]) \\
+          FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+      simp [IN_INTERVAL, ABS_MUL] \\
+      Know ‘abs (inv (t' - t)) = inv (abs (t' - t))’
+      >- (MATCH_MP_TAC ABS_INV \\
+          Q.PAT_X_ASSUM ‘t' < t’ MP_TAC >> REAL_ARITH_TAC) >> Rewr' \\
+      DISCH_THEN (Q.X_CHOOSE_THEN ‘z’ STRIP_ASSUME_TAC) \\
+      Q_TAC (TRANS_TAC le_trans) ‘Normal (abs (g0 z))’ \\
+      reverse CONJ_TAC
+      >- (simp [Abbr ‘g0’] \\
+          FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
+          MATCH_MP_TAC CONNECTED_IVT \\
+          qexistsl_tac [‘t'’, ‘t’] >> simp [REAL_LT_IMP_LE, Abbr ‘t'’]) \\
+     ‘0 < t - t'’ by simp [REAL_SUB_LT] \\
+      ONCE_REWRITE_TAC [ABS_SUB] \\
+      qabbrev_tac ‘d = t - t'’ \\
+     ‘d <> 0 /\ 0 <= d’ by PROVE_TAC [REAL_LT_IMP_LE, REAL_LT_IMP_NE] \\
+     ‘abs d <> 0’ by simp [GSYM ABS_NZ] \\
+     ‘0 < abs d’ by simp [ABS_NZ'] \\
+      simp [Once REAL_MUL_COMM, GSYM real_div] \\
+      ONCE_REWRITE_TAC [REAL_MUL_COMM] >> art [],
+      (* goal 2 (of 2) *)
+      simp [ABS_MUL, Abbr ‘d’] \\
+      qabbrev_tac ‘t' = h i’ \\
+   (* applying MVT_GENERAL_ALT *)
+      MP_TAC (Q.SPECL [‘u0’, ‘g0’, ‘t’, ‘t'’] MVT_GENERAL_ALT) >> art [] \\
+      Know ‘interval [t,t'] SUBSET s’
+      >- (simp [IN_INTERVAL, SUBSET_DEF] \\
+          Q.X_GEN_TAC ‘z’ >> STRIP_TAC \\
+       (* applying CONNECTED_IVT *)
+          MATCH_MP_TAC CONNECTED_IVT \\
+          qexistsl_tac [‘t’, ‘t'’] >> simp [Abbr ‘t'’]) >> DISCH_TAC \\
+      impl_tac
+      >- (CONJ_TAC
+          >- (MATCH_MP_TAC CONTINUOUS_ON_SUBSET \\
+              Q.EXISTS_TAC ‘s’ >> art []) \\
+          Q.X_GEN_TAC ‘z’ >> rw [IN_INTERVAL] \\
+          irule (iffLR HAS_VECTOR_DERIVATIVE_WITHIN_OPEN) \\
+          Q.EXISTS_TAC ‘s’ >> art [] \\
+          CONJ_ASM1_TAC
+          >- (MATCH_MP_TAC CONNECTED_IVT \\
+              qexistsl_tac [‘t’, ‘t'’] >> simp [REAL_LT_IMP_LE, Abbr ‘t'’]) \\
+          FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+      simp [IN_INTERVAL, ABS_MUL] \\
+      Know ‘abs (inv (t' - t)) = inv (abs (t' - t))’
+      >- (MATCH_MP_TAC ABS_INV \\
+          Q.PAT_X_ASSUM ‘t < t'’ MP_TAC >> REAL_ARITH_TAC) >> Rewr' \\
+      DISCH_THEN (Q.X_CHOOSE_THEN ‘z’ STRIP_ASSUME_TAC) \\
+      Q_TAC (TRANS_TAC le_trans) ‘Normal (abs (g0 z))’ \\
+      reverse CONJ_TAC
+      >- (simp [Abbr ‘g0’] \\
+          FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
+          MATCH_MP_TAC CONNECTED_IVT \\
+          qexistsl_tac [‘t’, ‘t'’] >> simp [REAL_LT_IMP_LE, Abbr ‘t'’]) \\
+     ‘0 < t' - t’ by simp [REAL_SUB_LT] \\
+      qabbrev_tac ‘d = t' - t’ \\
+     ‘d <> 0 /\ 0 <= d’ by PROVE_TAC [REAL_LT_IMP_LE, REAL_LT_IMP_NE] \\
+     ‘abs d <> 0’ by simp [GSYM ABS_NZ] \\
+     ‘0 < abs d’ by simp [ABS_NZ'] \\
+      simp [Once REAL_MUL_COMM, GSYM real_div] \\
+      ONCE_REWRITE_TAC [REAL_MUL_COMM] >> art [] ]
 QED
 
 (* ------------------------------------------------------------------------- *)
