@@ -967,7 +967,7 @@ Proof
     simp [netfilter_def, ATPOINTOF, MDIST_POS_EQ]
 QED
 
-(* !a. netfilter (at a) =
+(* |- !a. netfilter (at a) =
           {{y | y <> a /\ dist (y,a) <= dist (x,a)} | x | T}
  *)
 Theorem NETFILTER_AT =
@@ -1023,6 +1023,68 @@ QED
 Theorem NETLIMITS_AT = NETLIMITS_ATPOINTOF |> ISPEC “mr1”
                     |> REWRITE_RULE [GSYM at_DEF]
 
+Theorem NETLIMITS_SEQUENTIALLY :
+    netlimits sequentially = {}
+Proof
+    simp [netlimits_def]
+ >> Suff ‘~?a. !x. ~netord sequentially x a’ >- rw []
+ >> rw [SEQUENTIALLY, GREATER_EQ]
+ >> Q.EXISTS_TAC ‘a’ >> simp []
+QED
+
+Theorem NETLIMITS_AT_POSINFINITY :
+    netlimits at_posinfinity = {}
+Proof
+    simp [netlimits_def]
+ >> Suff ‘~?a. !x. ~netord at_posinfinity x a’ >- rw []
+ >> rw [AT_POSINFINITY, real_ge]
+ >> Q.EXISTS_TAC ‘a’ >> simp []
+QED
+
+Theorem NETLIMITS_AT_NEGINFINITY :
+    netlimits at_neginfinity = {}
+Proof
+    simp [netlimits_def]
+ >> Suff ‘~?a. !x. ~netord at_neginfinity x a’ >- rw []
+ >> rw [AT_NEGINFINITY]
+ >> Q.EXISTS_TAC ‘a’ >> simp []
+QED
+
+Theorem NETLIMITS_AT_INFINITY :
+    netlimits at_infinity = {}
+Proof
+    simp [netlimits_def]
+ >> Suff ‘~?a. !x. ~netord at_infinity x a’ >- rw []
+ >> rw [AT_INFINITY, real_ge]
+ >> Q.EXISTS_TAC ‘abs a’ >> simp [ABS_ABS]
+QED
+
+(* ------------------------------------------------------------------------- *)
+(* Some property holds "sufficiently close" to the limit point.              *)
+(* ------------------------------------------------------------------------- *)
+
+Definition trivial_limit :
+    trivial_limit net <=>
+      (!(a:'a) b. a = b) \/
+      ?(a:'a) b. ~(a = b) /\ !x. ~(netord(net) x a) /\ ~(netord(net) x b)
+End
+
+(* old definition *)
+Definition eventually :
+    eventually p net <=>
+      trivial_limit net \/
+      ?y. (?x. netord net x y) /\ (!x. netord net x y ==> p x)
+End
+
+(* new definition (experimental, compatible with HOL-Light)
+Definition eventually_def :
+    eventually (P :'a -> bool) net <=>
+      netfilter net = {} \/
+      ?u. u IN netfilter net /\
+            !x. x IN u DIFF netlimits net ==> P x
+End
+ *)
+
 (* ------------------------------------------------------------------------- *)
 (* Identify trivial limits, where we can't approach arbitrarily closely.     *)
 (* ------------------------------------------------------------------------- *)
@@ -1030,11 +1092,6 @@ Theorem NETLIMITS_AT = NETLIMITS_ATPOINTOF |> ISPEC “mr1”
 (* HOL-Light's definition of ‘trivial_limit’
    |- !net. trivial_limit net <=> eventually (\x. F) net
  *)
-Definition trivial_limit :
-    trivial_limit net <=>
-      (!(a:'a) b. a = b) \/
-      ?(a:'a) b. ~(a = b) /\ !x. ~(netord(net) x a) /\ ~(netord(net) x b)
-End
 
 Theorem NONTRIVIAL_LIMIT_WITHIN :
     !net s. trivial_limit net ==> trivial_limit(net within s)
@@ -1083,23 +1140,6 @@ Proof
   REWRITE_TAC[trivial_limit, SEQUENTIALLY] THEN
   MESON_TAC[GREATER_EQ, LESS_EQ_REFL, SUC_NOT]
 QED
-
-(* ------------------------------------------------------------------------- *)
-(* Some property holds "sufficiently close" to the limit point.              *)
-(* ------------------------------------------------------------------------- *)
-
-(* cf. HOL-Light's definition of “eventually”:
-let eventually = new_definition
- `eventually (P:A->bool) net <=>
-        netfilter net = {} \/
-        ?u. u IN netfilter net /\
-            !x. x IN u DIFF netlimits net ==> P x`;;
- *)
-Definition eventually :
-    eventually p net <=>
-      trivial_limit net \/
-      ?y. (?x. netord net x y) /\ (!x. netord net x y ==> p x)
-End
 
 Theorem EVENTUALLY_FALSE :
     !net. eventually (\x. F) net <=> trivial_limit net
