@@ -2475,7 +2475,8 @@ Proof
         (MP_TAC o (Q.SPECL [`l`, `E1`]) o (MATCH_MP WEAK_EQUIV_TRANS_label)) \\
       RW_TAC std_ss [] \\
       MP_TAC (Q.SPECL [`Xs`, `Es`, `Ps`, `Qs`]
-                      unique_solution_of_rooted_contractions_lemma) >> RW_TAC std_ss [] \\
+                      unique_solution_of_rooted_contractions_lemma) \\
+      RW_TAC std_ss [] \\
       POP_ASSUM (MP_TAC o (Q.SPEC `C`)) >> RW_TAC std_ss [] \\
       POP_ASSUM K_TAC (* !R. EPS _ R ==> _ *) \\
       POP_ASSUM (MP_TAC o (Q.SPECL [`l`, `E2`])) >> RW_TAC std_ss [] \\
@@ -2493,7 +2494,8 @@ Proof
         (MP_TAC o (Q.SPECL [`l`, `E2`]) o (MATCH_MP WEAK_EQUIV_TRANS_label)) \\
       RW_TAC std_ss [] \\
       MP_TAC (Q.SPECL [`Xs`, `Es`, `Qs`, `Ps`]
-                      unique_solution_of_rooted_contractions_lemma) >> RW_TAC std_ss [] \\
+                      unique_solution_of_rooted_contractions_lemma) \\
+      RW_TAC std_ss [] \\
       POP_ASSUM (MP_TAC o (Q.SPEC `C`)) >> RW_TAC std_ss [] \\
       POP_ASSUM K_TAC (* !R. EPS _ R ==> _ *) \\
       POP_ASSUM (MP_TAC o (Q.SPECL [`l`, `E2'`])) >> RW_TAC std_ss [] \\
@@ -2507,7 +2509,7 @@ Proof
       IMP_RES_TAC contracts_IMP_WEAK_EQUIV \\
       PROVE_TAC [WEAK_EQUIV_TRANS],
       (* goal 3 (of 4) *)
-      Q.PAT_X_ASSUM `WEAK_EQUIV E' (CCS_SUBST (from Xs Ps) C)`
+      Q.PAT_X_ASSUM `WEAK_EQUIV E' (CCS_SUBST (fromPairs Xs Ps) C)`
         (MP_TAC o (Q.SPEC `E1`) o (MATCH_MP WEAK_EQUIV_TRANS_tau)) \\
       RW_TAC std_ss [] \\
       IMP_RES_TAC EPS_IMP_WEAK_TRANS (* 2 sub-goals here *)
@@ -2515,7 +2517,8 @@ Proof
           Q.EXISTS_TAC `C` >> art []) \\
       Q.PAT_X_ASSUM `EPS _ E2` K_TAC \\
       MP_TAC (Q.SPECL [`Xs`, `Es`, `Ps`, `Qs`]
-                      unique_solution_of_rooted_contractions_lemma) >> RW_TAC std_ss [] \\
+                      unique_solution_of_rooted_contractions_lemma) \\
+      RW_TAC std_ss [] \\
       POP_ASSUM (MP_TAC o (Q.SPEC `C`)) >> RW_TAC std_ss [] \\
       Q.PAT_X_ASSUM `!l R. WEAK_TRANS _ (label l) R => _` K_TAC \\
       POP_ASSUM (MP_TAC o (Q.SPEC `E2`)) >> RW_TAC std_ss [] \\
@@ -2529,7 +2532,7 @@ Proof
       IMP_RES_TAC contracts_IMP_WEAK_EQUIV \\
       PROVE_TAC [WEAK_EQUIV_TRANS],
       (* goal 4 (of 4) *)
-      Q.PAT_X_ASSUM `WEAK_EQUIV E'' (CCS_SUBST (from Xs Qs) C)`
+      Q.PAT_X_ASSUM `WEAK_EQUIV E'' (CCS_SUBST (fromPairs Xs Qs) C)`
         (MP_TAC o (Q.SPEC `E2`) o (MATCH_MP WEAK_EQUIV_TRANS_tau)) \\
       RW_TAC std_ss [] \\
       IMP_RES_TAC EPS_IMP_WEAK_TRANS (* 2 sub-goals here *)
@@ -2537,7 +2540,8 @@ Proof
           Q.EXISTS_TAC `C` >> art []) \\
       Q.PAT_X_ASSUM `EPS _ E2'` K_TAC \\
       MP_TAC (Q.SPECL [`Xs`, `Es`, `Qs`, `Ps`]
-                      unique_solution_of_rooted_contractions_lemma) >> RW_TAC std_ss [] \\
+                      unique_solution_of_rooted_contractions_lemma) \\
+      RW_TAC std_ss [] \\
       POP_ASSUM (MP_TAC o (Q.SPEC `C`)) >> RW_TAC std_ss [] \\
       Q.PAT_X_ASSUM `!l R. WEAK_TRANS _ (label l) R => _` K_TAC \\
       POP_ASSUM (MP_TAC o (Q.SPEC `E2'`)) >> RW_TAC std_ss [] \\
