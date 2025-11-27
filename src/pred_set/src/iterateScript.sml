@@ -1711,83 +1711,112 @@ Definition nsum :
    (nsum :('a->bool)->('a->num)->num) = iterate (+)
 End
 
-val NEUTRAL_ADD = store_thm ("NEUTRAL_ADD",
-  ``neutral((+):num->num->num) = 0``,
+Theorem NEUTRAL_ADD:
+    neutral((+):num->num->num) = 0
+Proof
   REWRITE_TAC[neutral] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
-  MESON_TAC[ADD_CLAUSES]);
+  MESON_TAC[ADD_CLAUSES]
+QED
 
-val NEUTRAL_MUL = store_thm ("NEUTRAL_MUL",
-  ``neutral(( * ):num->num->num) = 1``,
+Theorem NEUTRAL_MUL:
+    neutral(( * ):num->num->num) = 1
+Proof
   REWRITE_TAC[neutral] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
-  MESON_TAC[MULT_CLAUSES, MULT_EQ_1]);
+  MESON_TAC[MULT_CLAUSES, MULT_EQ_1]
+QED
 
-val MONOIDAL_ADD = store_thm ("MONOIDAL_ADD",
-  ``monoidal((+):num->num->num)``,
-  REWRITE_TAC[monoidal, NEUTRAL_ADD] THEN ARITH_TAC);
+Theorem MONOIDAL_ADD:
+    monoidal((+):num->num->num)
+Proof
+  REWRITE_TAC[monoidal, NEUTRAL_ADD] THEN ARITH_TAC
+QED
 
-val MONOIDAL_MUL = store_thm ("MONOIDAL_MUL",
- ``monoidal(( * ):num->num->num)``,
-  REWRITE_TAC[monoidal, NEUTRAL_MUL] THEN ARITH_TAC);
+Theorem MONOIDAL_MUL:
+   monoidal(( * ):num->num->num)
+Proof
+  REWRITE_TAC[monoidal, NEUTRAL_MUL] THEN ARITH_TAC
+QED
 
-val NSUM_DEGENERATE = store_thm ("NSUM_DEGENERATE",
- ``!f s. ~(FINITE {x | x IN s /\ ~(f x = 0:num)}) ==> (nsum s f = 0:num)``,
+Theorem NSUM_DEGENERATE:
+   !f s. ~(FINITE {x | x IN s /\ ~(f x = 0:num)}) ==> (nsum s f = 0:num)
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[nsum] THEN
-  SIMP_TAC std_ss [iterate, support, NEUTRAL_ADD]);
+  SIMP_TAC std_ss [iterate, support, NEUTRAL_ADD]
+QED
 
-val NSUM_CLAUSES = store_thm ("NSUM_CLAUSES",
- ``(!f. nsum {} f = 0) /\
+Theorem NSUM_CLAUSES:
+   (!f. nsum {} f = 0) /\
    (!x f s. FINITE(s)
             ==> (nsum (x INSERT s) f =
-                 if x IN s then nsum s f else f(x) + nsum s f))``,
+                 if x IN s then nsum s f else f(x) + nsum s f))
+Proof
   REWRITE_TAC[nsum, GSYM NEUTRAL_ADD] THEN
   KNOW_TAC ``monoidal ((+):num->num->num)`` THENL [REWRITE_TAC[MONOIDAL_ADD],
-  METIS_TAC [ITERATE_CLAUSES]]);
+  METIS_TAC [ITERATE_CLAUSES]]
+QED
 
-val NSUM_UNION = store_thm ("NSUM_UNION",
- ``!f s t. FINITE s /\ FINITE t /\ DISJOINT s t
-           ==> (nsum (s UNION t) f = nsum s f + nsum t f)``,
-  SIMP_TAC std_ss [nsum, ITERATE_UNION, MONOIDAL_ADD]);
+Theorem NSUM_UNION:
+   !f s t. FINITE s /\ FINITE t /\ DISJOINT s t
+           ==> (nsum (s UNION t) f = nsum s f + nsum t f)
+Proof
+  SIMP_TAC std_ss [nsum, ITERATE_UNION, MONOIDAL_ADD]
+QED
 
-val NSUM_DIFF = store_thm ("NSUM_DIFF",
- ``!f s t. FINITE s /\ t SUBSET s
-           ==> (nsum (s DIFF t) f = nsum s f - nsum t f)``,
+Theorem NSUM_DIFF:
+   !f s t. FINITE s /\ t SUBSET s
+           ==> (nsum (s DIFF t) f = nsum s f - nsum t f)
+Proof
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC(ARITH_PROVE ``(x + z = y:num) ==> (x = y - z)``) THEN
-  ASM_SIMP_TAC std_ss [nsum, ITERATE_DIFF, MONOIDAL_ADD]);
+  ASM_SIMP_TAC std_ss [nsum, ITERATE_DIFF, MONOIDAL_ADD]
+QED
 
-val NSUM_INCL_EXCL = store_thm ("NSUM_INCL_EXCL",
- ``!s t (f:'a->num).
+Theorem NSUM_INCL_EXCL:
+   !s t (f:'a->num).
      FINITE s /\ FINITE t
-     ==> (nsum s f + nsum t f = nsum (s UNION t) f + nsum (s INTER t) f)``,
+     ==> (nsum s f + nsum t f = nsum (s UNION t) f + nsum (s INTER t) f)
+Proof
   REWRITE_TAC[nsum, GSYM NEUTRAL_ADD] THEN
-  MATCH_MP_TAC ITERATE_INCL_EXCL THEN REWRITE_TAC[MONOIDAL_ADD]);
+  MATCH_MP_TAC ITERATE_INCL_EXCL THEN REWRITE_TAC[MONOIDAL_ADD]
+QED
 
-val NSUM_SUPPORT = store_thm ("NSUM_SUPPORT",
- ``!f s. nsum (support (+) f s) f = nsum s f``,
-  SIMP_TAC std_ss [nsum, iterate, SUPPORT_SUPPORT]);
+Theorem NSUM_SUPPORT:
+   !f s. nsum (support (+) f s) f = nsum s f
+Proof
+  SIMP_TAC std_ss [nsum, iterate, SUPPORT_SUPPORT]
+QED
 
-val NSUM_ADD = store_thm ("NSUM_ADD",
- ``!f g s. FINITE s ==> (nsum s (\x. f(x) + g(x)) = nsum s f + nsum s g)``,
-  SIMP_TAC std_ss [nsum, ITERATE_OP, MONOIDAL_ADD]);
+Theorem NSUM_ADD:
+   !f g s. FINITE s ==> (nsum s (\x. f(x) + g(x)) = nsum s f + nsum s g)
+Proof
+  SIMP_TAC std_ss [nsum, ITERATE_OP, MONOIDAL_ADD]
+QED
 
-val NSUM_ADD_GEN = store_thm ("NSUM_ADD_GEN",
- ``!f g s.
+Theorem NSUM_ADD_GEN:
+   !f g s.
        FINITE {x | x IN s /\ ~(f x = 0)} /\ FINITE {x | x IN s /\ ~(g x = 0:num)}
-       ==> (nsum s (\x. f x + g x) = nsum s f + nsum s g)``,
+       ==> (nsum s (\x. f x + g x) = nsum s f + nsum s g)
+Proof
   REWRITE_TAC[GSYM NEUTRAL_ADD, GSYM support, nsum] THEN
-  MATCH_MP_TAC ITERATE_OP_GEN THEN ACCEPT_TAC MONOIDAL_ADD);
+  MATCH_MP_TAC ITERATE_OP_GEN THEN ACCEPT_TAC MONOIDAL_ADD
+QED
 
-val NSUM_EQ_0 = store_thm ("NSUM_EQ_0",
- ``!f s. (!x:'a. x IN s ==> (f(x) = 0:num)) ==> (nsum s f = 0:num)``,
+Theorem NSUM_EQ_0:
+   !f s. (!x:'a. x IN s ==> (f(x) = 0:num)) ==> (nsum s f = 0:num)
+Proof
   REWRITE_TAC[nsum, GSYM NEUTRAL_ADD] THEN
-  SIMP_TAC std_ss [ITERATE_EQ_NEUTRAL, MONOIDAL_ADD]);
+  SIMP_TAC std_ss [ITERATE_EQ_NEUTRAL, MONOIDAL_ADD]
+QED
 
-val NSUM_0 = store_thm ("NSUM_0",
- ``!s:'a->bool. nsum s (\n. 0:num) = 0:num``,
-  SIMP_TAC std_ss [NSUM_EQ_0]);
+Theorem NSUM_0:
+   !s:'a->bool. nsum s (\n. 0:num) = 0:num
+Proof
+  SIMP_TAC std_ss [NSUM_EQ_0]
+QED
 
-val NSUM_LMUL = store_thm ("NSUM_LMUL",
- ``!f c s:'a->bool. nsum s (\x. c * f(x)) = c * nsum s f``,
+Theorem NSUM_LMUL:
+   !f c s:'a->bool. nsum s (\x. c * f(x)) = c * nsum s f
+Proof
   REPEAT GEN_TAC THEN ASM_CASES_TAC ``c = 0:num`` THEN
   ASM_REWRITE_TAC[MULT_CLAUSES, NSUM_0] THEN REWRITE_TAC[nsum] THEN
   ONCE_REWRITE_TAC[ITERATE_EXPAND_CASES] THEN
@@ -1801,27 +1830,33 @@ val NSUM_LMUL = store_thm ("NSUM_LMUL",
         (\ss. (nsum ss (\x. c * f x) = c * nsum ss f)) ss)`` THENL
   [FULL_SIMP_TAC  std_ss [], ALL_TAC] THEN DISCH_TAC THEN
   ONCE_ASM_REWRITE_TAC [] THEN HO_MATCH_MP_TAC FINITE_INDUCT THEN
-  BETA_TAC THEN SIMP_TAC std_ss [NSUM_CLAUSES, MULT_CLAUSES, LEFT_ADD_DISTRIB]);
+  BETA_TAC THEN SIMP_TAC std_ss [NSUM_CLAUSES, MULT_CLAUSES, LEFT_ADD_DISTRIB]
+QED
 
-val NSUM_RMUL = store_thm ("NSUM_RMUL",
- ``!f c s:'a->bool. nsum s (\x. f(x) * c) = nsum s f * c``,
-  ONCE_REWRITE_TAC[MULT_SYM] THEN REWRITE_TAC[NSUM_LMUL]);
+Theorem NSUM_RMUL:
+   !f c s:'a->bool. nsum s (\x. f(x) * c) = nsum s f * c
+Proof
+  ONCE_REWRITE_TAC[MULT_SYM] THEN REWRITE_TAC[NSUM_LMUL]
+QED
 
-val NSUM_LE = store_thm ("NSUM_LE",
- ``!f g s. FINITE(s) /\ (!x. x IN s ==> f(x) <= g(x))
-           ==> nsum s f <= nsum s g``,
+Theorem NSUM_LE:
+   !f g s. FINITE(s) /\ (!x. x IN s ==> f(x) <= g(x))
+           ==> nsum s f <= nsum s g
+Proof
   ONCE_REWRITE_TAC[GSYM AND_IMP_INTRO] THEN REPEAT GEN_TAC THEN
   KNOW_TAC ``((!x. x IN s ==> f x <= g x) ==> nsum s f <= nsum s g) =
          (\s. (!x. x IN s ==> f x <= g x) ==> nsum s f <= nsum s g) s`` THENL
   [FULL_SIMP_TAC std_ss [], ALL_TAC] THEN DISCH_TAC THEN ONCE_ASM_REWRITE_TAC []
   THEN MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN
-  SIMP_TAC std_ss [NSUM_CLAUSES, LESS_EQ_REFL, LESS_EQ_LESS_EQ_MONO, IN_INSERT]);
+  SIMP_TAC std_ss [NSUM_CLAUSES, LESS_EQ_REFL, LESS_EQ_LESS_EQ_MONO, IN_INSERT]
+QED
 
-val NSUM_LT = store_thm ("NSUM_LT",
- ``!f g s:'a->bool.
+Theorem NSUM_LT:
+   !f g s:'a->bool.
         FINITE(s) /\ (!x. x IN s ==> f(x) <= g(x)) /\
         (?x. x IN s /\ f(x) < g(x))
-         ==> nsum s f < nsum s g``,
+         ==> nsum s f < nsum s g
+Proof
   REPEAT GEN_TAC THEN
   REPEAT(DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
   DISCH_THEN(X_CHOOSE_THEN ``a:'a`` STRIP_ASSUME_TAC) THEN
@@ -1829,30 +1864,38 @@ val NSUM_LT = store_thm ("NSUM_LT",
    [UNDISCH_TAC ``a:'a IN s`` THEN SET_TAC[], ALL_TAC] THEN
   ASM_SIMP_TAC std_ss [NSUM_CLAUSES, FINITE_DELETE, IN_DELETE] THEN
   ASM_SIMP_TAC std_ss [ARITH_PROVE ``m < p /\ n <= q ==> m + n < p + q:num``,
-  NSUM_LE, IN_DELETE, FINITE_DELETE]);
+  NSUM_LE, IN_DELETE, FINITE_DELETE]
+QED
 
-val NSUM_LT_ALL = store_thm ("NSUM_LT_ALL",
- ``!f g s. FINITE s /\ ~(s = {}) /\ (!x. x IN s ==> f(x) < g(x))
-           ==> nsum s f < nsum s g``,
-  MESON_TAC[MEMBER_NOT_EMPTY, LESS_IMP_LESS_OR_EQ, NSUM_LT]);
+Theorem NSUM_LT_ALL:
+   !f g s. FINITE s /\ ~(s = {}) /\ (!x. x IN s ==> f(x) < g(x))
+           ==> nsum s f < nsum s g
+Proof
+  MESON_TAC[MEMBER_NOT_EMPTY, LESS_IMP_LESS_OR_EQ, NSUM_LT]
+QED
 
-val NSUM_EQ = store_thm ("NSUM_EQ",
- ``!f g s. (!x. x IN s ==> (f x = g x)) ==> (nsum s f = nsum s g)``,
+Theorem NSUM_EQ:
+   !f g s. (!x. x IN s ==> (f x = g x)) ==> (nsum s f = nsum s g)
+Proof
   REWRITE_TAC[nsum] THEN
-  MATCH_MP_TAC ITERATE_EQ THEN REWRITE_TAC[MONOIDAL_ADD]);
+  MATCH_MP_TAC ITERATE_EQ THEN REWRITE_TAC[MONOIDAL_ADD]
+QED
 
-val NSUM_CONST = store_thm ("NSUM_CONST",
- ``!c s. FINITE s ==> (nsum s (\n. c) = (CARD s) * c)``,
+Theorem NSUM_CONST:
+   !c s. FINITE s ==> (nsum s (\n. c) = (CARD s) * c)
+Proof
   REPEAT GEN_TAC THEN KNOW_TAC ``(nsum s (\n. c) = CARD s * c) =
                             (\s. (nsum s (\n. c) = CARD s * c)) s ``
   THENL [FULL_SIMP_TAC std_ss [], ALL_TAC] THEN DISCH_TAC THEN
   ONCE_ASM_REWRITE_TAC [] THEN MATCH_MP_TAC FINITE_INDUCT THEN
   BETA_TAC THEN SIMP_TAC std_ss [NSUM_CLAUSES, CARD_DEF] THEN
   REPEAT STRIP_TAC THEN SIMP_TAC std_ss [ADD1, RIGHT_ADD_DISTRIB]
-  THEN ARITH_TAC);
+  THEN ARITH_TAC
+QED
 
-val NSUM_POS_BOUND = store_thm ("NSUM_POS_BOUND",
- ``!f b s. FINITE s /\ nsum s f <= b ==> !x:'a. x IN s ==> f x <= b``,
+Theorem NSUM_POS_BOUND:
+   !f b s. FINITE s /\ nsum s f <= b ==> !x:'a. x IN s ==> f x <= b
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[GSYM AND_IMP_INTRO] THEN
   KNOW_TAC ``(nsum s f <= b ==> !x. x IN s ==> f x <= b) =
          (\s. nsum s f <= b ==> !x. x IN s ==> f x <= b) s`` THENL
@@ -1860,44 +1903,58 @@ val NSUM_POS_BOUND = store_thm ("NSUM_POS_BOUND",
   ONCE_ASM_REWRITE_TAC [] THEN MATCH_MP_TAC FINITE_INDUCT THEN
   BETA_TAC THEN SIMP_TAC std_ss [NSUM_CLAUSES, NOT_IN_EMPTY, IN_INSERT]
   THEN MESON_TAC[ZERO_LESS_EQ, ARITH_PROVE
-   ``0:num <= x /\ 0:num <= y /\ x + y <= b ==> x <= b /\ y <= b``]);
+   ``0:num <= x /\ 0:num <= y /\ x + y <= b ==> x <= b /\ y <= b``]
+QED
 
-val NSUM_EQ_0_IFF = store_thm ("NSUM_EQ_0_IFF",
- ``!s. FINITE s ==> ((nsum s f = 0:num) <=> !x. x IN s ==> (f x = 0:num))``,
+Theorem NSUM_EQ_0_IFF:
+   !s. FINITE s ==> ((nsum s f = 0:num) <=> !x. x IN s ==> (f x = 0:num))
+Proof
   REPEAT STRIP_TAC THEN EQ_TAC THEN ASM_SIMP_TAC std_ss [NSUM_EQ_0] THEN
-  ASM_MESON_TAC[LESS_EQ_0, NSUM_POS_BOUND]);
+  ASM_MESON_TAC[LESS_EQ_0, NSUM_POS_BOUND]
+QED
 
-val NSUM_POS_LT = store_thm ("NSUM_POS_LT",
- ``!f s:'a->bool.
+Theorem NSUM_POS_LT:
+   !f s:'a->bool.
         FINITE s /\ (?x. x IN s /\ 0:num < f x)
-        ==> 0:num < nsum s f``,
+        ==> 0:num < nsum s f
+Proof
   SIMP_TAC std_ss [ARITH_PROVE ``0:num < n <=> ~(n = 0:num)``, NSUM_EQ_0_IFF]
-  THEN MESON_TAC[]);
+  THEN MESON_TAC[]
+QED
 
-val NSUM_POS_LT_ALL = store_thm ("NSUM_POS_LT_ALL",
- ``!s f:'a->num.
-     FINITE s /\ ~(s = {}) /\ (!i. i IN s ==> 0:num < f i) ==> 0:num < nsum s f``,
+Theorem NSUM_POS_LT_ALL:
+   !s f:'a->num.
+     FINITE s /\ ~(s = {}) /\ (!i. i IN s ==> 0:num < f i) ==> 0:num < nsum s f
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC NSUM_POS_LT THEN
-  ASM_MESON_TAC[MEMBER_NOT_EMPTY]);
+  ASM_MESON_TAC[MEMBER_NOT_EMPTY]
+QED
 
-val NSUM_DELETE = store_thm ("NSUM_DELETE",
- ``!f s a. FINITE s /\ a IN s ==> (f(a) + nsum(s DELETE a) f = nsum s f)``,
-  SIMP_TAC std_ss [nsum, ITERATE_DELETE, MONOIDAL_ADD]);
+Theorem NSUM_DELETE:
+   !f s a. FINITE s /\ a IN s ==> (f(a) + nsum(s DELETE a) f = nsum s f)
+Proof
+  SIMP_TAC std_ss [nsum, ITERATE_DELETE, MONOIDAL_ADD]
+QED
 
-val NSUM_SING = store_thm ("NSUM_SING",
- ``!f x. nsum {x} f = f(x)``,
+Theorem NSUM_SING:
+   !f x. nsum {x} f = f(x)
+Proof
   SIMP_TAC std_ss [NSUM_CLAUSES, FINITE_EMPTY, FINITE_INSERT,
-  NOT_IN_EMPTY, ADD_CLAUSES]);
+  NOT_IN_EMPTY, ADD_CLAUSES]
+QED
 
-val NSUM_DELTA = store_thm ("NSUM_DELTA",
- ``!s a. nsum s (\x. if x = a:'a then b else 0:num) = if a IN s then b else 0:num``,
+Theorem NSUM_DELTA:
+   !s a. nsum s (\x. if x = a:'a then b else 0:num) = if a IN s then b else 0:num
+Proof
   REWRITE_TAC[nsum, GSYM NEUTRAL_ADD] THEN
-  SIMP_TAC std_ss [ITERATE_DELTA, MONOIDAL_ADD]);
+  SIMP_TAC std_ss [ITERATE_DELTA, MONOIDAL_ADD]
+QED
 
-val NSUM_SWAP = store_thm ("NSUM_SWAP",
- ``!f:'a->'b->num s t.
+Theorem NSUM_SWAP:
+   !f:'a->'b->num s t.
       FINITE(s) /\ FINITE(t)
-      ==> (nsum s (\i. nsum t (f i)) = nsum t (\j. nsum s (\i. f i j)))``,
+      ==> (nsum s (\i. nsum t (f i)) = nsum t (\j. nsum s (\i. f i j)))
+Proof
   GEN_TAC THEN SIMP_TAC std_ss [GSYM AND_IMP_INTRO, RIGHT_FORALL_IMP_THM] THEN
   GEN_TAC THEN KNOW_TAC ``( !t. FINITE t ==>
         (nsum s (\i. nsum t (f i)) = nsum t (\j. nsum s (\i. (f:'a->'b->num) i j)))) =
@@ -1905,116 +1962,148 @@ val NSUM_SWAP = store_thm ("NSUM_SWAP",
         (nsum s (\i. nsum t (f i)) = nsum t (\j. nsum s (\i. (f:'a->'b->num) i j)))) s`` THENL
   [FULL_SIMP_TAC std_ss [], ALL_TAC] THEN DISCH_TAC THEN ONCE_ASM_REWRITE_TAC []
   THEN MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN
-  SIMP_TAC std_ss [NSUM_CLAUSES, NSUM_0, NSUM_ADD, ETA_AX] THEN METIS_TAC []);
+  SIMP_TAC std_ss [NSUM_CLAUSES, NSUM_0, NSUM_ADD, ETA_AX] THEN METIS_TAC []
+QED
 
-val NSUM_IMAGE = store_thm ("NSUM_IMAGE",
- ``!f g s. (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y))
-           ==> (nsum (IMAGE f s) g = nsum s (g o f))``,
+Theorem NSUM_IMAGE:
+   !f g s. (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y))
+           ==> (nsum (IMAGE f s) g = nsum s (g o f))
+Proof
   REWRITE_TAC[nsum, GSYM NEUTRAL_ADD] THEN
-  MATCH_MP_TAC ITERATE_IMAGE THEN REWRITE_TAC[MONOIDAL_ADD]);
+  MATCH_MP_TAC ITERATE_IMAGE THEN REWRITE_TAC[MONOIDAL_ADD]
+QED
 
-val NSUM_SUPERSET = store_thm ("NSUM_SUPERSET",
- ``!f:'a->num u v.
+Theorem NSUM_SUPERSET:
+   !f:'a->num u v.
         u SUBSET v /\ (!x. x IN v /\ ~(x IN u) ==> (f(x) = 0:num))
-        ==> (nsum v f = nsum u f)``,
-  SIMP_TAC std_ss [nsum, GSYM NEUTRAL_ADD, ITERATE_SUPERSET, MONOIDAL_ADD]);
+        ==> (nsum v f = nsum u f)
+Proof
+  SIMP_TAC std_ss [nsum, GSYM NEUTRAL_ADD, ITERATE_SUPERSET, MONOIDAL_ADD]
+QED
 
-val NSUM_UNION_RZERO = store_thm ("NSUM_UNION_RZERO",
- ``!f:'a->num u v.
+Theorem NSUM_UNION_RZERO:
+   !f:'a->num u v.
         FINITE u /\ (!x. x IN v /\ ~(x IN u) ==> (f(x) = 0:num))
-        ==> (nsum (u UNION v) f = nsum u f)``,
+        ==> (nsum (u UNION v) f = nsum u f)
+Proof
   REPEAT STRIP_TAC THEN
   ONCE_REWRITE_TAC [SET_RULE ``u UNION v = u UNION (v DIFF u)``] THEN
-  MATCH_MP_TAC NSUM_SUPERSET THEN ASM_MESON_TAC[IN_UNION, IN_DIFF, SUBSET_DEF]);
+  MATCH_MP_TAC NSUM_SUPERSET THEN ASM_MESON_TAC[IN_UNION, IN_DIFF, SUBSET_DEF]
+QED
 
-val NSUM_UNION_LZERO = store_thm ("NSUM_UNION_LZERO",
- ``!f:'a->num u v.
+Theorem NSUM_UNION_LZERO:
+   !f:'a->num u v.
         FINITE v /\ (!x. x IN u /\ ~(x IN v) ==> (f(x) = 0:num))
-        ==> (nsum (u UNION v) f = nsum v f)``,
-  MESON_TAC[NSUM_UNION_RZERO, UNION_COMM]);
+        ==> (nsum (u UNION v) f = nsum v f)
+Proof
+  MESON_TAC[NSUM_UNION_RZERO, UNION_COMM]
+QED
 
-val NSUM_RESTRICT = store_thm ("NSUM_RESTRICT",
- ``!f s. FINITE s ==> (nsum s (\x. if x IN s then f(x) else 0:num) = nsum s f)``,
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC NSUM_EQ THEN ASM_SIMP_TAC std_ss []);
+Theorem NSUM_RESTRICT:
+   !f s. FINITE s ==> (nsum s (\x. if x IN s then f(x) else 0:num) = nsum s f)
+Proof
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC NSUM_EQ THEN ASM_SIMP_TAC std_ss []
+QED
 
-val NSUM_BOUND = store_thm ("NSUM_BOUND",
- ``!s f b. FINITE s /\ (!x:'a. x IN s ==> f(x) <= b)
-           ==> nsum s f <= (CARD s) * b``,
-  SIMP_TAC std_ss [GSYM NSUM_CONST, NSUM_LE]);
+Theorem NSUM_BOUND:
+   !s f b. FINITE s /\ (!x:'a. x IN s ==> f(x) <= b)
+           ==> nsum s f <= (CARD s) * b
+Proof
+  SIMP_TAC std_ss [GSYM NSUM_CONST, NSUM_LE]
+QED
 
-val NSUM_BOUND_GEN = store_thm ("NSUM_BOUND_GEN",
- ``!s f b. FINITE s /\ ~(s = {}) /\ (!x:'a. x IN s ==> f(x) <= b DIV (CARD s))
-           ==> nsum s f <= b``,
+Theorem NSUM_BOUND_GEN:
+   !s f b. FINITE s /\ ~(s = {}) /\ (!x:'a. x IN s ==> f(x) <= b DIV (CARD s))
+           ==> nsum s f <= b
+Proof
   REPEAT STRIP_TAC THEN KNOW_TAC ``0 < CARD s`` THENL
   [METIS_TAC [CARD_EQ_0, NOT_ZERO_LT_ZERO], ALL_TAC] THEN
   STRIP_TAC THEN FULL_SIMP_TAC std_ss [X_LE_DIV] THEN
   SUBGOAL_THEN ``nsum s (\x. CARD(s:'a->bool) * f x) <= CARD s * b`` MP_TAC THENL
    [ASM_SIMP_TAC arith_ss [NSUM_BOUND],
-    ASM_SIMP_TAC std_ss [NSUM_LMUL, LE_MULT_LCANCEL, CARD_EQ_0]]);
+    ASM_SIMP_TAC std_ss [NSUM_LMUL, LE_MULT_LCANCEL, CARD_EQ_0]]
+QED
 
-val NSUM_BOUND_LT = store_thm ("NSUM_BOUND_LT",
- ``!s f b. FINITE s /\ (!x:'a. x IN s ==> f x <= b) /\ (?x. x IN s /\ f x < b)
-           ==> nsum s f < (CARD s) * b``,
+Theorem NSUM_BOUND_LT:
+   !s f b. FINITE s /\ (!x:'a. x IN s ==> f x <= b) /\ (?x. x IN s /\ f x < b)
+           ==> nsum s f < (CARD s) * b
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC LESS_LESS_EQ_TRANS THEN
   EXISTS_TAC ``nsum s (\x:'a. b)`` THEN CONJ_TAC THENL
    [MATCH_MP_TAC NSUM_LT THEN ASM_REWRITE_TAC[] THEN ASM_MESON_TAC[],
-    ASM_SIMP_TAC std_ss [NSUM_CONST, LESS_EQ_REFL]]);
+    ASM_SIMP_TAC std_ss [NSUM_CONST, LESS_EQ_REFL]]
+QED
 
-val NSUM_BOUND_LT_ALL = store_thm ("NSUM_BOUND_LT_ALL",
- ``!s f b. FINITE s /\ ~(s = {}) /\ (!x. x IN s ==> f(x) < b)
-           ==> nsum s f <  (CARD s) * b``,
-  MESON_TAC[MEMBER_NOT_EMPTY, LESS_IMP_LESS_OR_EQ, NSUM_BOUND_LT]);
+Theorem NSUM_BOUND_LT_ALL:
+   !s f b. FINITE s /\ ~(s = {}) /\ (!x. x IN s ==> f(x) < b)
+           ==> nsum s f <  (CARD s) * b
+Proof
+  MESON_TAC[MEMBER_NOT_EMPTY, LESS_IMP_LESS_OR_EQ, NSUM_BOUND_LT]
+QED
 
-val NSUM_BOUND_LT_GEN = store_thm ("NSUM_BOUND_LT_GEN",
- ``!s f b. FINITE s /\ ~(s = {}) /\ (!x:'a. x IN s ==> f(x) < b DIV (CARD s))
-           ==> nsum s f < b``,
+Theorem NSUM_BOUND_LT_GEN:
+   !s f b. FINITE s /\ ~(s = {}) /\ (!x:'a. x IN s ==> f(x) < b DIV (CARD s))
+           ==> nsum s f < b
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC LESS_LESS_EQ_TRANS THEN
   EXISTS_TAC ``nsum (s:'a->bool) (\a. f(a) + 1:num)`` THEN CONJ_TAC THENL
    [MATCH_MP_TAC NSUM_LT_ALL THEN ASM_SIMP_TAC std_ss [] THEN ARITH_TAC,
     MATCH_MP_TAC NSUM_BOUND_GEN THEN
-    ASM_SIMP_TAC std_ss [ARITH_PROVE ``a + 1:num <= b <=> a < b``]]);
+    ASM_SIMP_TAC std_ss [ARITH_PROVE ``a + 1:num <= b <=> a < b``]]
+QED
 
-val NSUM_UNION_EQ = store_thm ("NSUM_UNION_EQ",
- ``!s t u. FINITE u /\ (s INTER t = {}) /\ (s UNION t = u)
-           ==> (nsum s f + nsum t f = nsum u f)``,
-  MESON_TAC[NSUM_UNION, DISJOINT_DEF, SUBSET_FINITE, SUBSET_UNION]);
+Theorem NSUM_UNION_EQ:
+   !s t u. FINITE u /\ (s INTER t = {}) /\ (s UNION t = u)
+           ==> (nsum s f + nsum t f = nsum u f)
+Proof
+  MESON_TAC[NSUM_UNION, DISJOINT_DEF, SUBSET_FINITE, SUBSET_UNION]
+QED
 
-val NSUM_EQ_SUPERSET = store_thm ("NSUM_EQ_SUPERSET",
- ``!f s t:'a->bool.
+Theorem NSUM_EQ_SUPERSET:
+   !f s t:'a->bool.
         FINITE t /\ t SUBSET s /\
         (!x. x IN t ==> (f x = g x)) /\
         (!x. x IN s /\ ~(x IN t) ==> (f(x) = 0:num))
-        ==> (nsum s f = nsum t g)``,
-  MESON_TAC[NSUM_SUPERSET, NSUM_EQ]);
+        ==> (nsum s f = nsum t g)
+Proof
+  MESON_TAC[NSUM_SUPERSET, NSUM_EQ]
+QED
 
-val NSUM_RESTRICT_SET = store_thm ("NSUM_RESTRICT_SET",
- ``!P s f. nsum {x:'a | x IN s /\ P x} f = nsum s (\x. if P x then f(x) else 0:num)``,
+Theorem NSUM_RESTRICT_SET:
+   !P s f. nsum {x:'a | x IN s /\ P x} f = nsum s (\x. if P x then f(x) else 0:num)
+Proof
   ONCE_REWRITE_TAC[GSYM NSUM_SUPPORT] THEN
   SIMP_TAC std_ss [support, NEUTRAL_ADD, GSPECIFICATION] THEN
   REWRITE_TAC[METIS []``~((if P x then f x else a) = a) <=> P x /\ ~(f x = a)``,
               GSYM CONJ_ASSOC] THEN
-  REPEAT GEN_TAC THEN MATCH_MP_TAC NSUM_EQ THEN SIMP_TAC std_ss [GSPECIFICATION]);
+  REPEAT GEN_TAC THEN MATCH_MP_TAC NSUM_EQ THEN SIMP_TAC std_ss [GSPECIFICATION]
+QED
 
-val NSUM_NSUM_RESTRICT = store_thm ("NSUM_NSUM_RESTRICT",
- ``!R f s t.
+Theorem NSUM_NSUM_RESTRICT:
+   !R f s t.
         FINITE s /\ FINITE t
         ==> (nsum s (\x. nsum {y | y IN t /\ R x y} (\y. f x y)) =
-             nsum t (\y. nsum {x | x IN s /\ R x y} (\x. f x y)))``,
+             nsum t (\y. nsum {x | x IN s /\ R x y} (\x. f x y)))
+Proof
   REPEAT GEN_TAC THEN SIMP_TAC std_ss [NSUM_RESTRICT_SET] THEN
   ASSUME_TAC NSUM_SWAP THEN POP_ASSUM (MP_TAC o Q.SPECL
   [`(\x y. if R x y then f x y else 0)`,`s`, `t`]) THEN
-  FULL_SIMP_TAC std_ss []);
+  FULL_SIMP_TAC std_ss []
+QED
 
-val CARD_EQ_NSUM = store_thm ("CARD_EQ_NSUM",
- ``!s. FINITE s ==> ((CARD s) = nsum s (\x. 1:num))``,
-  SIMP_TAC std_ss [NSUM_CONST, MULT_CLAUSES]);
+Theorem CARD_EQ_NSUM:
+   !s. FINITE s ==> ((CARD s) = nsum s (\x. 1:num))
+Proof
+  SIMP_TAC std_ss [NSUM_CONST, MULT_CLAUSES]
+QED
 
-val NSUM_MULTICOUNT_GEN = store_thm ("NSUM_MULTICOUNT_GEN",
- ``!R:'a->'b->bool s t k.
+Theorem NSUM_MULTICOUNT_GEN:
+   !R:'a->'b->bool s t k.
         FINITE s /\ FINITE t /\
         (!j. j IN t ==> (CARD {i | i IN s /\ R i j} = k(j)))
         ==> (nsum s (\i. (CARD {j | j IN t /\ R i j})) =
-             nsum t (\i. (k i)))``,
+             nsum t (\i. (k i)))
+Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[CONJ_ASSOC] THEN
   DISCH_THEN(CONJUNCTS_THEN ASSUME_TAC) THEN
   MATCH_MP_TAC EQ_TRANS THEN
@@ -2025,26 +2114,30 @@ val NSUM_MULTICOUNT_GEN = store_thm ("NSUM_MULTICOUNT_GEN",
     ASSUME_TAC NSUM_NSUM_RESTRICT THEN POP_ASSUM (MP_TAC o Q.SPEC `R`)
     THEN FULL_SIMP_TAC std_ss [] THEN DISCH_TAC THEN MATCH_MP_TAC NSUM_EQ
     THEN ASM_SIMP_TAC std_ss [NSUM_CONST, FINITE_RESTRICT] THEN
-    REWRITE_TAC[MULT_CLAUSES]]);
+    REWRITE_TAC[MULT_CLAUSES]]
+QED
 
-val NSUM_MULTICOUNT = store_thm ("NSUM_MULTICOUNT",
- ``!R:'a->'b->bool s t k.
+Theorem NSUM_MULTICOUNT:
+   !R:'a->'b->bool s t k.
         FINITE s /\ FINITE t /\
         (!j. j IN t ==> (CARD {i | i IN s /\ R i j} = k))
-        ==> (nsum s (\i. (CARD {j | j IN t /\ R i j})) = (k * CARD t))``,
+        ==> (nsum s (\i. (CARD {j | j IN t /\ R i j})) = (k * CARD t))
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC EQ_TRANS THEN
   EXISTS_TAC ``nsum t (\i:'b. k)`` THEN CONJ_TAC THENL
   [KNOW_TAC ``?j. !i:'b. &k = &(j i):num`` THENL
   [EXISTS_TAC ``(\i:'b. k:num)`` THEN METIS_TAC [], ALL_TAC] THEN
    STRIP_TAC THEN ONCE_ASM_REWRITE_TAC [] THEN
    MATCH_MP_TAC NSUM_MULTICOUNT_GEN THEN FULL_SIMP_TAC std_ss [],
-   ASM_SIMP_TAC std_ss [NSUM_CONST] THEN ARITH_TAC]);
+   ASM_SIMP_TAC std_ss [NSUM_CONST] THEN ARITH_TAC]
+QED
 
-val NSUM_IMAGE_GEN = store_thm ("NSUM_IMAGE_GEN",
- ``!f:'a->'b g s.
+Theorem NSUM_IMAGE_GEN:
+   !f:'a->'b g s.
         FINITE s
         ==> (nsum s g =
-             nsum (IMAGE f s) (\y. nsum {x | x IN s /\ (f(x) = y)} g))``,
+             nsum (IMAGE f s) (\y. nsum {x | x IN s /\ (f(x) = y)} g))
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC EQ_TRANS THEN EXISTS_TAC
    ``nsum s (\x:'a. nsum {y:'b | y IN IMAGE f s /\ (f x = y)} (\y. g x))`` THEN
   CONJ_TAC THENL
@@ -2059,22 +2152,26 @@ val NSUM_IMAGE_GEN = store_thm ("NSUM_IMAGE_GEN",
     [METIS_TAC [IMAGE_FINITE], ALL_TAC] THEN DISCH_TAC THEN
     ASSUME_TAC NSUM_NSUM_RESTRICT THEN
     POP_ASSUM (MP_TAC o Q.SPEC `(\x y. f x = y)`) THEN
-    FULL_SIMP_TAC std_ss []]);
+    FULL_SIMP_TAC std_ss []]
+QED
 
-val NSUM_GROUP = store_thm ("NSUM_GROUP",
- ``!f:'a->'b g s t.
+Theorem NSUM_GROUP:
+   !f:'a->'b g s t.
         FINITE s /\ IMAGE f s SUBSET t
-        ==> (nsum t (\y. nsum {x | x IN s /\ (f(x) = y)} g) = nsum s g)``,
+        ==> (nsum t (\y. nsum {x | x IN s /\ (f(x) = y)} g) = nsum s g)
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [``f:'a->'b``, ``g:'a->num``, ``s:'a->bool``] NSUM_IMAGE_GEN) THEN
   ASM_REWRITE_TAC[] THEN DISCH_THEN SUBST1_TAC THEN
   MATCH_MP_TAC NSUM_SUPERSET THEN ASM_REWRITE_TAC[] THEN
   REPEAT STRIP_TAC THEN BETA_TAC THEN MATCH_MP_TAC NSUM_EQ_0 THEN
-  FULL_SIMP_TAC std_ss [GSPECIFICATION, IN_IMAGE] THEN METIS_TAC []);
+  FULL_SIMP_TAC std_ss [GSPECIFICATION, IN_IMAGE] THEN METIS_TAC []
+QED
 
-val NSUM_SUBSET = store_thm ("NSUM_SUBSET",
- ``!u v f. FINITE u /\ FINITE v /\ (!x:'a. x IN (u DIFF v) ==> (f(x) = 0:num))
-           ==> nsum u f <= nsum v f``,
+Theorem NSUM_SUBSET:
+   !u v f. FINITE u /\ FINITE v /\ (!x:'a. x IN (u DIFF v) ==> (f(x) = 0:num))
+           ==> nsum u f <= nsum v f
+Proof
   REPEAT STRIP_TAC THEN
   MP_TAC(ISPECL [``f:'a->num``, ``u INTER v :'a->bool``] NSUM_UNION) THEN
   DISCH_THEN(fn th => MP_TAC(SPEC ``v DIFF u :'a->bool`` th) THEN
@@ -2084,16 +2181,20 @@ val NSUM_SUBSET = store_thm ("NSUM_SUBSET",
   ASM_SIMP_TAC std_ss [FINITE_DIFF, FINITE_INTER] THEN
   KNOW_TAC ``DISJOINT (u INTER v) (u DIFF v) /\ DISJOINT (u INTER v) (v DIFF u)``
   THENL [SET_TAC[], ALL_TAC] THEN RW_TAC std_ss [] THEN
-  ASM_SIMP_TAC std_ss [NSUM_EQ_0]);
+  ASM_SIMP_TAC std_ss [NSUM_EQ_0]
+QED
 
-val NSUM_SUBSET_SIMPLE = store_thm ("NSUM_SUBSET_SIMPLE",
- ``!u v f. FINITE v /\ u SUBSET v ==> nsum u f <= nsum v f``,
+Theorem NSUM_SUBSET_SIMPLE:
+   !u v f. FINITE v /\ u SUBSET v ==> nsum u f <= nsum v f
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC NSUM_SUBSET THEN
-  ASM_MESON_TAC[IN_DIFF, SUBSET_DEF, SUBSET_FINITE]);
+  ASM_MESON_TAC[IN_DIFF, SUBSET_DEF, SUBSET_FINITE]
+QED
 
-val NSUM_LE_GEN = store_thm ("NSUM_LE_GEN",
- ``!f g s. (!x:'a. x IN s ==> f x <= g x) /\ FINITE {x | x IN s /\ ~(g x = 0:num)}
-           ==> nsum s f <= nsum s g``,
+Theorem NSUM_LE_GEN:
+   !f g s. (!x:'a. x IN s ==> f x <= g x) /\ FINITE {x | x IN s /\ ~(g x = 0:num)}
+           ==> nsum s f <= nsum s g
+Proof
   REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[GSYM NSUM_SUPPORT] THEN
   REWRITE_TAC[support, NEUTRAL_ADD] THEN
   MATCH_MP_TAC LESS_EQ_TRANS THEN
@@ -2105,67 +2206,83 @@ val NSUM_LE_GEN = store_thm ("NSUM_LE_GEN",
     FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP (REWRITE_RULE[GSYM AND_IMP_INTRO]
       SUBSET_FINITE)) THEN
     SIMP_TAC std_ss [SUBSET_DEF, GSPECIFICATION] THEN ASM_MESON_TAC[LE],
-    MATCH_MP_TAC NSUM_LE THEN ASM_SIMP_TAC std_ss [GSPECIFICATION]]);
+    MATCH_MP_TAC NSUM_LE THEN ASM_SIMP_TAC std_ss [GSPECIFICATION]]
+QED
 
-val NSUM_IMAGE_NONZERO = store_thm ("NSUM_IMAGE_NONZERO",
- ``!d:'b->num i:'a->'b s.
+Theorem NSUM_IMAGE_NONZERO:
+   !d:'b->num i:'a->'b s.
     FINITE s /\
     (!x y. x IN s /\ y IN s /\ ~(x = y) /\ (i x = i y) ==> (d(i x) = 0:num))
-    ==> (nsum (IMAGE i s) d = nsum s (d o i))``,
+    ==> (nsum (IMAGE i s) d = nsum s (d o i))
+Proof
   REWRITE_TAC[GSYM NEUTRAL_ADD, nsum] THEN
-  MATCH_MP_TAC ITERATE_IMAGE_NONZERO THEN REWRITE_TAC[MONOIDAL_ADD]);
+  MATCH_MP_TAC ITERATE_IMAGE_NONZERO THEN REWRITE_TAC[MONOIDAL_ADD]
+QED
 
-val NSUM_BIJECTION = store_thm ("NSUM_BIJECTION",
- ``!f p s:'a->bool.
+Theorem NSUM_BIJECTION:
+   !f p s:'a->bool.
                 (!x. x IN s ==> p(x) IN s) /\
                 (!y. y IN s ==> ?!x. x IN s /\ (p(x) = y))
-                ==> (nsum s f = nsum s (f o p))``,
+                ==> (nsum s f = nsum s (f o p))
+Proof
   REWRITE_TAC[nsum] THEN MATCH_MP_TAC ITERATE_BIJECTION THEN
-  REWRITE_TAC[MONOIDAL_ADD]);
+  REWRITE_TAC[MONOIDAL_ADD]
+QED
 
-val NSUM_NSUM_PRODUCT = store_thm ("NSUM_NSUM_PRODUCT",
- ``!s:'a->bool t:'a->'b->bool x.
+Theorem NSUM_NSUM_PRODUCT:
+   !s:'a->bool t:'a->'b->bool x.
         FINITE s /\ (!i. i IN s ==> FINITE(t i))
         ==> (nsum s (\i. nsum (t i) (x i)) =
-             nsum {i,j | i IN s /\ j IN t i} (\(i,j). x i j))``,
+             nsum {i,j | i IN s /\ j IN t i} (\(i,j). x i j))
+Proof
   REWRITE_TAC[nsum] THEN MATCH_MP_TAC ITERATE_ITERATE_PRODUCT THEN
-  REWRITE_TAC[MONOIDAL_ADD]);
+  REWRITE_TAC[MONOIDAL_ADD]
+QED
 
-val NSUM_EQ_GENERAL = store_thm ("NSUM_EQ_GENERAL",
- ``!s:'a->bool t:'b->bool f g h.
+Theorem NSUM_EQ_GENERAL:
+   !s:'a->bool t:'b->bool f g h.
         (!y. y IN t ==> ?!x. x IN s /\ (h(x) = y)) /\
         (!x. x IN s ==> h(x) IN t /\ (g(h x) = f x))
-        ==> (nsum s f = nsum t g)``,
+        ==> (nsum s f = nsum t g)
+Proof
   REWRITE_TAC[nsum] THEN MATCH_MP_TAC ITERATE_EQ_GENERAL THEN
-  REWRITE_TAC[MONOIDAL_ADD]);
+  REWRITE_TAC[MONOIDAL_ADD]
+QED
 
-val NSUM_EQ_GENERAL_INVERSES = store_thm ("NSUM_EQ_GENERAL_INVERSES",
- ``!s:'a->bool t:'b->bool f g h k.
+Theorem NSUM_EQ_GENERAL_INVERSES:
+   !s:'a->bool t:'b->bool f g h k.
         (!y. y IN t ==> k(y) IN s /\ (h(k y) = y)) /\
         (!x. x IN s ==> h(x) IN t /\ (k(h x) = x) /\ (g(h x) = f x))
-        ==> (nsum s f = nsum t g)``,
+        ==> (nsum s f = nsum t g)
+Proof
   REWRITE_TAC[nsum] THEN MATCH_MP_TAC ITERATE_EQ_GENERAL_INVERSES THEN
-  REWRITE_TAC[MONOIDAL_ADD]);
+  REWRITE_TAC[MONOIDAL_ADD]
+QED
 
-val NSUM_INJECTION = store_thm ("NSUM_INJECTION",
- ``!f p s. FINITE s /\
+Theorem NSUM_INJECTION:
+   !f p s. FINITE s /\
            (!x. x IN s ==> p x IN s) /\
            (!x y. x IN s /\ y IN s /\ (p x = p y) ==> (x = y))
-           ==> (nsum s (f o p) = nsum s f)``,
+           ==> (nsum s (f o p) = nsum s f)
+Proof
   REWRITE_TAC[nsum] THEN MATCH_MP_TAC ITERATE_INJECTION THEN
-  REWRITE_TAC[MONOIDAL_ADD]);
+  REWRITE_TAC[MONOIDAL_ADD]
+QED
 
-val NSUM_UNION_NONZERO = store_thm ("NSUM_UNION_NONZERO",
- ``!f s t. FINITE s /\ FINITE t /\ (!x. x IN s INTER t ==> (f(x) = 0:num))
-           ==> (nsum (s UNION t) f = nsum s f + nsum t f)``,
+Theorem NSUM_UNION_NONZERO:
+   !f s t. FINITE s /\ FINITE t /\ (!x. x IN s INTER t ==> (f(x) = 0:num))
+           ==> (nsum (s UNION t) f = nsum s f + nsum t f)
+Proof
   REWRITE_TAC[nsum, GSYM NEUTRAL_ADD] THEN
-  MATCH_MP_TAC ITERATE_UNION_NONZERO THEN REWRITE_TAC[MONOIDAL_ADD]);
+  MATCH_MP_TAC ITERATE_UNION_NONZERO THEN REWRITE_TAC[MONOIDAL_ADD]
+QED
 
-val NSUM_BIGUNION_NONZERO = store_thm ("NSUM_BIGUNION_NONZERO",
- ``!f s. FINITE s /\ (!t:'a->bool. t IN s ==> FINITE t) /\
+Theorem NSUM_BIGUNION_NONZERO:
+   !f s. FINITE s /\ (!t:'a->bool. t IN s ==> FINITE t) /\
          (!t1 t2 x. t1 IN s /\ t2 IN s /\ ~(t1 = t2) /\ x IN t1 /\ x IN t2
                     ==> (f x = 0))
-         ==> (nsum (BIGUNION s) f = nsum s (\t. nsum t f))``,
+         ==> (nsum (BIGUNION s) f = nsum s (\t. nsum t f))
+Proof
   GEN_TAC THEN ONCE_REWRITE_TAC[GSYM AND_IMP_INTRO] THEN GEN_TAC THEN
   KNOW_TAC ``((!(t:'a->bool). t IN s ==> FINITE t) /\
     (!t1 t2 x.
@@ -2191,104 +2308,142 @@ val NSUM_BIGUNION_NONZERO = store_thm ("NSUM_BIGUNION_NONZERO",
   THEN DISCH_TAC THEN ONCE_ASM_REWRITE_TAC [] THEN
   STRIP_TAC THEN MATCH_MP_TAC NSUM_UNION_NONZERO THEN
   ASM_SIMP_TAC std_ss [FINITE_BIGUNION, IN_INTER, IN_BIGUNION] THEN
-  ASM_MESON_TAC[]);
+  ASM_MESON_TAC[]
+QED
 
-val NSUM_CASES = store_thm ("NSUM_CASES",
- ``!s P f g. FINITE s
+Theorem NSUM_CASES:
+   !s P f g. FINITE s
              ==> (nsum s (\x:'a. if P x then f x else g x) =
-                  nsum {x | x IN s /\ P x} f + nsum {x | x IN s /\ ~P x} g)``,
+                  nsum {x | x IN s /\ P x} f + nsum {x | x IN s /\ ~P x} g)
+Proof
   REWRITE_TAC[nsum, GSYM NEUTRAL_ADD] THEN
-  MATCH_MP_TAC ITERATE_CASES THEN REWRITE_TAC[MONOIDAL_ADD]);
+  MATCH_MP_TAC ITERATE_CASES THEN REWRITE_TAC[MONOIDAL_ADD]
+QED
 
-val NSUM_CLOSED = store_thm ("NSUM_CLOSED",
- ``!P f:'a->num s.
+Theorem NSUM_CLOSED:
+   !P f:'a->num s.
         P(0) /\ (!x y. P x /\ P y ==> P(x + y)) /\ (!a. a IN s ==> P(f a))
-        ==> P(nsum s f)``,
+        ==> P(nsum s f)
+Proof
   REPEAT STRIP_TAC THEN MP_TAC(MATCH_MP ITERATE_CLOSED MONOIDAL_ADD) THEN
   DISCH_THEN(MP_TAC o SPEC ``P:num->bool``) THEN
-  ASM_SIMP_TAC std_ss [NEUTRAL_ADD, GSYM nsum]);
+  ASM_SIMP_TAC std_ss [NEUTRAL_ADD, GSYM nsum]
+QED
 
-val NSUM_ADD_NUMSEG = store_thm ("NSUM_ADD_NUMSEG",
- ``!f g m n. nsum{m..n} (\i. f(i) + g(i)) = nsum{m..n} f + nsum{m..n} g``,
-  SIMP_TAC std_ss [NSUM_ADD, FINITE_NUMSEG]);
+Theorem NSUM_ADD_NUMSEG:
+   !f g m n. nsum{m..n} (\i. f(i) + g(i)) = nsum{m..n} f + nsum{m..n} g
+Proof
+  SIMP_TAC std_ss [NSUM_ADD, FINITE_NUMSEG]
+QED
 
-val NSUM_LE_NUMSEG = store_thm ("NSUM_LE_NUMSEG",
- ``!f g m n. (!i. m <= i /\ i <= n ==> f(i) <= g(i))
-             ==> nsum{m..n} f <= nsum{m..n} g``,
-  SIMP_TAC std_ss [NSUM_LE, FINITE_NUMSEG, IN_NUMSEG]);
+Theorem NSUM_LE_NUMSEG:
+   !f g m n. (!i. m <= i /\ i <= n ==> f(i) <= g(i))
+             ==> nsum{m..n} f <= nsum{m..n} g
+Proof
+  SIMP_TAC std_ss [NSUM_LE, FINITE_NUMSEG, IN_NUMSEG]
+QED
 
-val NSUM_EQ_NUMSEG = store_thm ("NSUM_EQ_NUMSEG",
- ``!f g m n. (!i. m <= i /\ i <= n ==> (f(i) = g(i)))
-             ==> (nsum{m..n} f = nsum{m..n} g)``,
-  MESON_TAC[NSUM_EQ, FINITE_NUMSEG, IN_NUMSEG]);
+Theorem NSUM_EQ_NUMSEG:
+   !f g m n. (!i. m <= i /\ i <= n ==> (f(i) = g(i)))
+             ==> (nsum{m..n} f = nsum{m..n} g)
+Proof
+  MESON_TAC[NSUM_EQ, FINITE_NUMSEG, IN_NUMSEG]
+QED
 
-val NSUM_CONST_NUMSEG = store_thm ("NSUM_CONST_NUMSEG",
- ``!c m n. nsum{m..n} (\n. c) = ((n + 1:num) - m) * c``,
-  SIMP_TAC std_ss [NSUM_CONST, FINITE_NUMSEG, CARD_NUMSEG]);
+Theorem NSUM_CONST_NUMSEG:
+   !c m n. nsum{m..n} (\n. c) = ((n + 1:num) - m) * c
+Proof
+  SIMP_TAC std_ss [NSUM_CONST, FINITE_NUMSEG, CARD_NUMSEG]
+QED
 
-val NSUM_EQ_0_NUMSEG = store_thm ("NSUM_EQ_0_NUMSEG",
- ``!f m n. (!i. m <= i /\ i <= n ==> (f(i) = 0:num)) ==> (nsum{m..n} f = 0:num)``,
-  SIMP_TAC std_ss [NSUM_EQ_0, IN_NUMSEG]);
+Theorem NSUM_EQ_0_NUMSEG:
+   !f m n. (!i. m <= i /\ i <= n ==> (f(i) = 0:num)) ==> (nsum{m..n} f = 0:num)
+Proof
+  SIMP_TAC std_ss [NSUM_EQ_0, IN_NUMSEG]
+QED
 
-val NSUM_EQ_0_IFF_NUMSEG = store_thm ("NSUM_EQ_0_IFF_NUMSEG",
- ``!f m n. (nsum {m..n} f = 0:num) <=> !i. m <= i /\ i <= n ==> (f i = 0:num)``,
-  SIMP_TAC std_ss [NSUM_EQ_0_IFF, FINITE_NUMSEG, IN_NUMSEG]);
+Theorem NSUM_EQ_0_IFF_NUMSEG:
+   !f m n. (nsum {m..n} f = 0:num) <=> !i. m <= i /\ i <= n ==> (f i = 0:num)
+Proof
+  SIMP_TAC std_ss [NSUM_EQ_0_IFF, FINITE_NUMSEG, IN_NUMSEG]
+QED
 
-val NSUM_TRIV_NUMSEG = store_thm ("NSUM_TRIV_NUMSEG",
- ``!f m n. n < m ==> (nsum{m..n} f = 0:num)``,
-  MESON_TAC[NSUM_EQ_0_NUMSEG, LESS_EQ_TRANS, NOT_LESS]);
+Theorem NSUM_TRIV_NUMSEG:
+   !f m n. n < m ==> (nsum{m..n} f = 0:num)
+Proof
+  MESON_TAC[NSUM_EQ_0_NUMSEG, LESS_EQ_TRANS, NOT_LESS]
+QED
 
-val NSUM_SING_NUMSEG = store_thm ("NSUM_SING_NUMSEG",
- ``!f n. nsum{n..n} f = f(n)``,
-  SIMP_TAC std_ss [NSUM_SING, NUMSEG_SING]);
+Theorem NSUM_SING_NUMSEG:
+   !f n. nsum{n..n} f = f(n)
+Proof
+  SIMP_TAC std_ss [NSUM_SING, NUMSEG_SING]
+QED
 
-val NSUM_CLAUSES_NUMSEG = store_thm ("NSUM_CLAUSES_NUMSEG",
- ``(!m. nsum{m..0} f = if m = 0:num then f 0 else 0) /\
+Theorem NSUM_CLAUSES_NUMSEG:
+   (!m. nsum{m..0} f = if m = 0:num then f 0 else 0) /\
    (!m n. nsum{m..SUC n} f = if m <= SUC n then nsum{m..n} f + f(SUC n)
-                             else nsum{m..n} f)``,
+                             else nsum{m..n} f)
+Proof
   MP_TAC(MATCH_MP ITERATE_CLAUSES_NUMSEG MONOIDAL_ADD) THEN
-  REWRITE_TAC[NEUTRAL_ADD, nsum]);
+  REWRITE_TAC[NEUTRAL_ADD, nsum]
+QED
 
-val NSUM_SWAP_NUMSEG = store_thm ("NSUM_SWAP_NUMSEG",
- ``!a b c d f.
+Theorem NSUM_SWAP_NUMSEG:
+   !a b c d f.
      nsum{a..b} (\i. nsum{c..d} (f i)) =
-     nsum{c..d} (\j. nsum{a..b} (\i. f i j))``,
-  REPEAT GEN_TAC THEN MATCH_MP_TAC NSUM_SWAP THEN REWRITE_TAC[FINITE_NUMSEG]);
+     nsum{c..d} (\j. nsum{a..b} (\i. f i j))
+Proof
+  REPEAT GEN_TAC THEN MATCH_MP_TAC NSUM_SWAP THEN REWRITE_TAC[FINITE_NUMSEG]
+QED
 
-val NSUM_ADD_SPLIT = store_thm ("NSUM_ADD_SPLIT",
- ``!f m n p.
-        m <= n + 1:num ==> (nsum {m..n+p} f = nsum{m..n} f + nsum{n+1..n+p} f)``,
+Theorem NSUM_ADD_SPLIT:
+   !f m n p.
+        m <= n + 1:num ==> (nsum {m..n+p} f = nsum{m..n} f + nsum{n+1..n+p} f)
+Proof
   METIS_TAC [NUMSEG_ADD_SPLIT, NSUM_UNION, DISJOINT_NUMSEG, FINITE_NUMSEG,
-           ARITH_PROVE ``x:num < x + 1:num``]);
+           ARITH_PROVE ``x:num < x + 1:num``]
+QED
 
-val NSUM_OFFSET = store_thm ("NSUM_OFFSET",
- ``!p f m n. nsum{m+p..n+p} f = nsum{m..n} (\i. f(i + p))``,
+Theorem NSUM_OFFSET:
+   !p f m n. nsum{m+p..n+p} f = nsum{m..n} (\i. f(i + p))
+Proof
   SIMP_TAC std_ss [NUMSEG_OFFSET_IMAGE, NSUM_IMAGE, EQ_ADD_RCANCEL, FINITE_NUMSEG] THEN
-  SIMP_TAC std_ss [o_DEF]);
+  SIMP_TAC std_ss [o_DEF]
+QED
 
-val NSUM_OFFSET_0 = store_thm ("NSUM_OFFSET_0",
- ``!f m n. m <= n ==> (nsum{m..n} f = nsum{0..n-m} (\i. f(i + m)))``,
-  SIMP_TAC std_ss [GSYM NSUM_OFFSET, ADD_CLAUSES, SUB_ADD]);
+Theorem NSUM_OFFSET_0:
+   !f m n. m <= n ==> (nsum{m..n} f = nsum{0..n-m} (\i. f(i + m)))
+Proof
+  SIMP_TAC std_ss [GSYM NSUM_OFFSET, ADD_CLAUSES, SUB_ADD]
+QED
 
-val NSUM_CLAUSES_LEFT = store_thm ("NSUM_CLAUSES_LEFT",
- ``!f m n. m <= n ==> (nsum{m..n} f = f(m) + nsum{m+1..n} f)``,
+Theorem NSUM_CLAUSES_LEFT:
+   !f m n. m <= n ==> (nsum{m..n} f = f(m) + nsum{m+1..n} f)
+Proof
   SIMP_TAC std_ss [GSYM NUMSEG_LREC, NSUM_CLAUSES, FINITE_NUMSEG, IN_NUMSEG] THEN
-  ARITH_TAC);
+  ARITH_TAC
+QED
 
-val NSUM_CLAUSES_RIGHT = store_thm ("NSUM_CLAUSES_RIGHT",
- ``!f m n. 0:num < n /\ m <= n ==> (nsum{m..n} f = nsum{m..n-1} f + f(n))``,
+Theorem NSUM_CLAUSES_RIGHT:
+   !f m n. 0:num < n /\ m <= n ==> (nsum{m..n} f = nsum{m..n-1} f + f(n))
+Proof
   GEN_TAC THEN GEN_TAC THEN INDUCT_TAC THEN
-  SIMP_TAC std_ss [LESS_REFL, NSUM_CLAUSES_NUMSEG, SUC_SUB1]);
+  SIMP_TAC std_ss [LESS_REFL, NSUM_CLAUSES_NUMSEG, SUC_SUB1]
+QED
 
-val NSUM_PAIR = store_thm ("NSUM_PAIR",
- ``!f m n. nsum{2*m..2*n+1} f = nsum{m..n} (\i. f(2*i) + f(2*i+1:num))``,
+Theorem NSUM_PAIR:
+   !f m n. nsum{2*m..2*n+1} f = nsum{m..n} (\i. f(2*i) + f(2*i+1:num))
+Proof
   MP_TAC(MATCH_MP ITERATE_PAIR MONOIDAL_ADD) THEN
-  REWRITE_TAC[nsum, NEUTRAL_ADD]);
+  REWRITE_TAC[nsum, NEUTRAL_ADD]
+QED
 
-val MOD_NSUM_MOD = store_thm ("MOD_NSUM_MOD",
- ``!f:'a->num n s.
+Theorem MOD_NSUM_MOD:
+   !f:'a->num n s.
         FINITE s /\ ~(n = 0:num)
-        ==> ((nsum s f) MOD n = nsum s (\i. f(i) MOD n) MOD n)``,
+        ==> ((nsum s f) MOD n = nsum s (\i. f(i) MOD n) MOD n)
+Proof
   GEN_TAC THEN GEN_TAC THEN
   ASM_CASES_TAC ``n = 0:num`` THEN ASM_REWRITE_TAC[] THEN
   GEN_TAC THEN KNOW_TAC ``(nsum s f MOD n = nsum s (\i. f i MOD n) MOD n) =
@@ -2300,35 +2455,40 @@ val MOD_NSUM_MOD = store_thm ("MOD_NSUM_MOD",
   POP_ASSUM (MP_TAC o Q.SPEC `n`) THEN FULL_SIMP_TAC std_ss [] THEN DISCH_TAC
   THEN POP_ASSUM (MP_TAC o Q.SPECL [`f e`, `nsum s f`]) THEN ASM_REWRITE_TAC []
   THEN DISCH_THEN(SUBST1_TAC o SYM) THEN
-  FULL_SIMP_TAC std_ss [MOD_PLUS, ADD_MOD]);
+  FULL_SIMP_TAC std_ss [MOD_PLUS, ADD_MOD]
+QED
 
-val MOD_NSUM_MOD_NUMSEG = store_thm ("MOD_NSUM_MOD_NUMSEG",
- ``!f a b n.
+Theorem MOD_NSUM_MOD_NUMSEG:
+   !f a b n.
         ~(n = 0:num)
-        ==> ((nsum{a..b} f) MOD n = nsum{a..b} (\i. f i MOD n) MOD n)``,
-  METIS_TAC[MOD_NSUM_MOD, FINITE_NUMSEG]);
+        ==> ((nsum{a..b} f) MOD n = nsum{a..b} (\i. f i MOD n) MOD n)
+Proof
+  METIS_TAC[MOD_NSUM_MOD, FINITE_NUMSEG]
+QED
 
-val NSUM_CONG = store_thm
-  ("NSUM_CONG",
-  ``(!f g s.   (!x. x IN s ==> (f(x) = g(x)))
+Theorem NSUM_CONG:
+    (!f g s.   (!x. x IN s ==> (f(x) = g(x)))
            ==> (nsum s (\i. f(i)) = nsum s g)) /\
     (!f g a b. (!i. a <= i /\ i <= b ==> (f(i) = g(i)))
            ==> (nsum{a..b} (\i. f(i)) = nsum{a..b} g)) /\
     (!f g p.   (!x. p x ==> (f x = g x))
-           ==> (nsum {y | p y} (\i. f(i)) = nsum {y | p y} g))``,
+           ==> (nsum {y | p y} (\i. f(i)) = nsum {y | p y} g))
+Proof
     REPEAT STRIP_TAC
  >> MATCH_MP_TAC NSUM_EQ
- >> ASM_SIMP_TAC std_ss [GSPECIFICATION, IN_NUMSEG]);
+ >> ASM_SIMP_TAC std_ss [GSPECIFICATION, IN_NUMSEG]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Thanks to finite sums, we can express cardinality of finite union.        *)
 (* ------------------------------------------------------------------------- *)
 
-val CARD_BIGUNION = store_thm ("CARD_BIGUNION",
- ``!s:('a->bool)->bool.
+Theorem CARD_BIGUNION:
+   !s:('a->bool)->bool.
         FINITE s /\ (!t. t IN s ==> FINITE t) /\
         (!t u. t IN s /\ u IN s /\ ~(t = u) ==> (t INTER u = {}))
-        ==> (CARD(BIGUNION s) = nsum s CARD)``,
+        ==> (CARD(BIGUNION s) = nsum s CARD)
+Proof
   ONCE_REWRITE_TAC[GSYM AND_IMP_INTRO] THEN GEN_TAC THEN
   KNOW_TAC ``((!t. t IN s ==> FINITE t) /\
     (!t u. t IN s /\ u IN s /\ t <> u ==> (t INTER u = {})) ==>
@@ -2356,7 +2516,8 @@ val CARD_BIGUNION = store_thm ("CARD_BIGUNION",
   MESON_TAC[IN_INTER], ALL_TAC] THEN
   DISC_RW_KILL THEN
   SIMP_TAC std_ss [SET_RULE ``!s. (BIGUNION s = {}) <=> !t. t IN s ==> (t = {})``, GSPECIFICATION] THEN
-  METIS_TAC[]]);
+  METIS_TAC[]]
+QED
 
 (* ========================================================================= *)
 (*     Products of natural numbers and real numbers (productScript.sml)      *)
@@ -2366,99 +2527,130 @@ Definition nproduct :
    nproduct = iterate(( * ):num->num->num)
 End
 
-val NPRODUCT_CLAUSES = store_thm ("NPRODUCT_CLAUSES",
- ``(!f. nproduct {} f = 1) /\
+Theorem NPRODUCT_CLAUSES:
+   (!f. nproduct {} f = 1) /\
    (!x f s. FINITE(s)
             ==> (nproduct (x INSERT s) f =
-                 if x IN s then nproduct s f else f(x) * nproduct s f))``,
+                 if x IN s then nproduct s f else f(x) * nproduct s f))
+Proof
   REWRITE_TAC[nproduct, GSYM NEUTRAL_MUL] THEN
-  METIS_TAC [SWAP_FORALL_THM, ITERATE_CLAUSES, MONOIDAL_MUL]);
+  METIS_TAC [SWAP_FORALL_THM, ITERATE_CLAUSES, MONOIDAL_MUL]
+QED
 
-val NPRODUCT_SUPPORT = store_thm ("NPRODUCT_SUPPORT",
- ``!f s. nproduct (support ( * ) f s) f = nproduct s f``,
-  REWRITE_TAC[nproduct, ITERATE_SUPPORT]);
+Theorem NPRODUCT_SUPPORT:
+   !f s. nproduct (support ( * ) f s) f = nproduct s f
+Proof
+  REWRITE_TAC[nproduct, ITERATE_SUPPORT]
+QED
 
-val NPRODUCT_UNION = store_thm ("NPRODUCT_UNION",
- ``!f s t. FINITE s /\ FINITE t /\ DISJOINT s t
-           ==> ((nproduct (s UNION t) f = nproduct s f * nproduct t f))``,
-  SIMP_TAC std_ss [nproduct, ITERATE_UNION, MONOIDAL_MUL]);
+Theorem NPRODUCT_UNION:
+   !f s t. FINITE s /\ FINITE t /\ DISJOINT s t
+           ==> ((nproduct (s UNION t) f = nproduct s f * nproduct t f))
+Proof
+  SIMP_TAC std_ss [nproduct, ITERATE_UNION, MONOIDAL_MUL]
+QED
 
-val NPRODUCT_IMAGE = store_thm ("NPRODUCT_IMAGE",
- ``!f g s. (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y))
-           ==> (nproduct (IMAGE f s) g = nproduct s (g o f))``,
+Theorem NPRODUCT_IMAGE:
+   !f g s. (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y))
+           ==> (nproduct (IMAGE f s) g = nproduct s (g o f))
+Proof
   REWRITE_TAC[nproduct, GSYM NEUTRAL_MUL] THEN
-  MATCH_MP_TAC ITERATE_IMAGE THEN REWRITE_TAC[MONOIDAL_MUL]);
+  MATCH_MP_TAC ITERATE_IMAGE THEN REWRITE_TAC[MONOIDAL_MUL]
+QED
 
-val NPRODUCT_ADD_SPLIT = store_thm ("NPRODUCT_ADD_SPLIT",
- ``!f m n p.
+Theorem NPRODUCT_ADD_SPLIT:
+   !f m n p.
         m <= n + 1
-        ==> ((nproduct {m..n+p} f = nproduct{m..n} f * nproduct{n+1..n+p} f))``,
+        ==> ((nproduct {m..n+p} f = nproduct{m..n} f * nproduct{n+1..n+p} f))
+Proof
   METIS_TAC [NUMSEG_ADD_SPLIT, NPRODUCT_UNION, DISJOINT_NUMSEG, FINITE_NUMSEG,
-           ARITH_PROVE ``x < x + 1:num``]);
+           ARITH_PROVE ``x < x + 1:num``]
+QED
 
-val NPRODUCT_POS_LT = store_thm ("NPRODUCT_POS_LT",
- ``!f s. FINITE s /\ (!x. x IN s ==> 0 < f x) ==> 0 < nproduct s f``,
+Theorem NPRODUCT_POS_LT:
+   !f s. FINITE s /\ (!x. x IN s ==> 0 < f x) ==> 0 < nproduct s f
+Proof
   GEN_TAC THEN REWRITE_TAC[CONJ_EQ_IMP] THEN
   ONCE_REWRITE_TAC [METIS []
    ``!s. ((!x. x IN s ==> 0 < f x) ==> 0 < nproduct s f) =
      (\s. (!x. x IN s ==> 0 < f x) ==> 0 < nproduct s f) s``] THEN
   MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN
-  SIMP_TAC arith_ss [NPRODUCT_CLAUSES, IN_INSERT, ZERO_LESS_MULT]);
+  SIMP_TAC arith_ss [NPRODUCT_CLAUSES, IN_INSERT, ZERO_LESS_MULT]
+QED
 
-val NPRODUCT_POS_LT_NUMSEG = store_thm ("NPRODUCT_POS_LT_NUMSEG",
- ``!f m n. (!x. m <= x /\ x <= n ==> 0 < f x) ==> 0 < nproduct{m..n} f``,
-  SIMP_TAC std_ss [NPRODUCT_POS_LT, FINITE_NUMSEG, IN_NUMSEG]);
+Theorem NPRODUCT_POS_LT_NUMSEG:
+   !f m n. (!x. m <= x /\ x <= n ==> 0 < f x) ==> 0 < nproduct{m..n} f
+Proof
+  SIMP_TAC std_ss [NPRODUCT_POS_LT, FINITE_NUMSEG, IN_NUMSEG]
+QED
 
-val NPRODUCT_OFFSET = store_thm ("NPRODUCT_OFFSET",
- ``!f m p. nproduct{m+p..n+p} f = nproduct{m..n} (\i. f(i + p))``,
+Theorem NPRODUCT_OFFSET:
+   !f m p. nproduct{m+p..n+p} f = nproduct{m..n} (\i. f(i + p))
+Proof
   SIMP_TAC std_ss [NUMSEG_OFFSET_IMAGE, NPRODUCT_IMAGE,
            EQ_ADD_RCANCEL, FINITE_NUMSEG] THEN
-  SIMP_TAC std_ss [o_DEF]);
+  SIMP_TAC std_ss [o_DEF]
+QED
 
-val NPRODUCT_SING = store_thm ("NPRODUCT_SING",
- ``!f x. nproduct {x} f = f(x)``,
-  SIMP_TAC std_ss [NPRODUCT_CLAUSES, FINITE_EMPTY, FINITE_INSERT, NOT_IN_EMPTY, MULT_CLAUSES]);
+Theorem NPRODUCT_SING:
+   !f x. nproduct {x} f = f(x)
+Proof
+  SIMP_TAC std_ss [NPRODUCT_CLAUSES, FINITE_EMPTY, FINITE_INSERT, NOT_IN_EMPTY, MULT_CLAUSES]
+QED
 
-val NPRODUCT_SING_NUMSEG = store_thm ("NPRODUCT_SING_NUMSEG",
- ``!f n. nproduct{n..n} f = f(n)``,
-  REWRITE_TAC[NUMSEG_SING, NPRODUCT_SING]);
+Theorem NPRODUCT_SING_NUMSEG:
+   !f n. nproduct{n..n} f = f(n)
+Proof
+  REWRITE_TAC[NUMSEG_SING, NPRODUCT_SING]
+QED
 
-val NPRODUCT_CLAUSES_NUMSEG = store_thm ("NPRODUCT_CLAUSES_NUMSEG",
- ``(!m. nproduct{m..0n} f = if m = 0 then f(0) else 1) /\
+Theorem NPRODUCT_CLAUSES_NUMSEG:
+   (!m. nproduct{m..0n} f = if m = 0 then f(0) else 1) /\
    (!m n. nproduct{m..SUC n} f = if m <= SUC n then nproduct{m..n} f * f(SUC n)
-                                else nproduct{m..n} f)``,
+                                else nproduct{m..n} f)
+Proof
   REWRITE_TAC[NUMSEG_CLAUSES] THEN REPEAT STRIP_TAC THEN
   COND_CASES_TAC THEN
   ASM_SIMP_TAC std_ss [NPRODUCT_SING, NPRODUCT_CLAUSES, FINITE_NUMSEG, IN_NUMSEG] THEN
-  SIMP_TAC arith_ss [ARITH_PROVE ``~(SUC n <= n)``]);
+  SIMP_TAC arith_ss [ARITH_PROVE ``~(SUC n <= n)``]
+QED
 
-val NPRODUCT_EQ = store_thm ("NPRODUCT_EQ",
- ``!f g s. (!x. x IN s ==> (f x = g x)) ==> (nproduct s f = nproduct s g)``,
+Theorem NPRODUCT_EQ:
+   !f g s. (!x. x IN s ==> (f x = g x)) ==> (nproduct s f = nproduct s g)
+Proof
   REWRITE_TAC[nproduct] THEN MATCH_MP_TAC ITERATE_EQ THEN
-  SIMP_TAC std_ss [MONOIDAL_MUL]);
+  SIMP_TAC std_ss [MONOIDAL_MUL]
+QED
 
-val NPRODUCT_EQ_NUMSEG = store_thm ("NPRODUCT_EQ_NUMSEG",
- ``!f g m n. (!i. m <= i /\ i <= n ==> (f(i) = g(i)))
-             ==> (nproduct{m..n} f = nproduct{m..n} g)``,
-  MESON_TAC[NPRODUCT_EQ, FINITE_NUMSEG, IN_NUMSEG]);
+Theorem NPRODUCT_EQ_NUMSEG:
+   !f g m n. (!i. m <= i /\ i <= n ==> (f(i) = g(i)))
+             ==> (nproduct{m..n} f = nproduct{m..n} g)
+Proof
+  MESON_TAC[NPRODUCT_EQ, FINITE_NUMSEG, IN_NUMSEG]
+QED
 
-val NPRODUCT_EQ_0 = store_thm ("NPRODUCT_EQ_0",
- ``!f s. FINITE s ==> ((nproduct s f = 0) <=> ?x. x IN s /\ (f(x) = 0))``,
+Theorem NPRODUCT_EQ_0:
+   !f s. FINITE s ==> ((nproduct s f = 0) <=> ?x. x IN s /\ (f(x) = 0))
+Proof
   GEN_TAC THEN
   ONCE_REWRITE_TAC [METIS []
    ``!s. ((nproduct s f = 0) <=> ?x. x IN s /\ (f x = 0)) =
          (\s. ((nproduct s f = 0) <=> ?x. x IN s /\ (f x = 0))) s``] THEN
   MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN
   SIMP_TAC arith_ss [NPRODUCT_CLAUSES, MULT_EQ_0, IN_INSERT, NOT_IN_EMPTY] THEN
-  MESON_TAC[]);
+  MESON_TAC[]
+QED
 
-val NPRODUCT_EQ_0_NUMSEG = store_thm ("NPRODUCT_EQ_0_NUMSEG",
- ``!f m n. (nproduct{m..n} f = 0) <=> ?x. m <= x /\ x <= n /\ (f(x) = 0)``,
-  SIMP_TAC std_ss [NPRODUCT_EQ_0, FINITE_NUMSEG, IN_NUMSEG, GSYM CONJ_ASSOC]);
+Theorem NPRODUCT_EQ_0_NUMSEG:
+   !f m n. (nproduct{m..n} f = 0) <=> ?x. m <= x /\ x <= n /\ (f(x) = 0)
+Proof
+  SIMP_TAC std_ss [NPRODUCT_EQ_0, FINITE_NUMSEG, IN_NUMSEG, GSYM CONJ_ASSOC]
+QED
 
-val NPRODUCT_LE = store_thm ("NPRODUCT_LE",
- ``!f s. FINITE s /\ (!x. x IN s ==> 0 <= f(x) /\ f(x) <= g(x))
-         ==> nproduct s f <= nproduct s g``,
+Theorem NPRODUCT_LE:
+   !f s. FINITE s /\ (!x. x IN s ==> 0 <= f(x) /\ f(x) <= g(x))
+         ==> nproduct s f <= nproduct s g
+Proof
   GEN_TAC THEN REWRITE_TAC[CONJ_EQ_IMP] THEN
   ONCE_REWRITE_TAC [METIS []
    ``!s. ((!x. x IN s ==> 0 <= f x /\ f x <= g x) ==>
@@ -2467,109 +2659,146 @@ val NPRODUCT_LE = store_thm ("NPRODUCT_LE",
   nproduct s f <= nproduct s g) s``] THEN
   MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN
   SIMP_TAC std_ss [IN_INSERT, NPRODUCT_CLAUSES, NOT_IN_EMPTY, LESS_EQ_REFL] THEN
-  MESON_TAC[LESS_MONO_MULT2, ZERO_LESS_EQ]);
+  MESON_TAC[LESS_MONO_MULT2, ZERO_LESS_EQ]
+QED
 
-val NPRODUCT_LE_NUMSEG = store_thm ("NPRODUCT_LE_NUMSEG",
- ``!f m n. (!i. m <= i /\ i <= n ==> 0 <= f(i) /\ f(i) <= g(i))
-           ==> nproduct{m..n} f <= nproduct{m..n} g``,
-  SIMP_TAC std_ss [NPRODUCT_LE, FINITE_NUMSEG, IN_NUMSEG]);
+Theorem NPRODUCT_LE_NUMSEG:
+   !f m n. (!i. m <= i /\ i <= n ==> 0 <= f(i) /\ f(i) <= g(i))
+           ==> nproduct{m..n} f <= nproduct{m..n} g
+Proof
+  SIMP_TAC std_ss [NPRODUCT_LE, FINITE_NUMSEG, IN_NUMSEG]
+QED
 
-val NPRODUCT_EQ_1 = store_thm ("NPRODUCT_EQ_1",
- ``!f s. (!x:'a. x IN s ==> (f(x) = 1)) ==> (nproduct s f = 1)``,
+Theorem NPRODUCT_EQ_1:
+   !f s. (!x:'a. x IN s ==> (f(x) = 1)) ==> (nproduct s f = 1)
+Proof
   REWRITE_TAC[nproduct, GSYM NEUTRAL_MUL] THEN
-  SIMP_TAC std_ss [ITERATE_EQ_NEUTRAL, MONOIDAL_MUL]);
+  SIMP_TAC std_ss [ITERATE_EQ_NEUTRAL, MONOIDAL_MUL]
+QED
 
-val NPRODUCT_EQ_1_NUMSEG = store_thm ("NPRODUCT_EQ_1_NUMSEG",
- ``!f m n. (!i. m <= i /\ i <= n ==> (f(i) = 1)) ==> (nproduct{m..n} f = 1)``,
-  SIMP_TAC std_ss [NPRODUCT_EQ_1, IN_NUMSEG]);
+Theorem NPRODUCT_EQ_1_NUMSEG:
+   !f m n. (!i. m <= i /\ i <= n ==> (f(i) = 1)) ==> (nproduct{m..n} f = 1)
+Proof
+  SIMP_TAC std_ss [NPRODUCT_EQ_1, IN_NUMSEG]
+QED
 
-val NPRODUCT_MUL_GEN = store_thm ("NPRODUCT_MUL_GEN",
- ``!f g s.
+Theorem NPRODUCT_MUL_GEN:
+   !f g s.
        FINITE {x | x IN s /\ ~(f x = 1)} /\ FINITE {x | x IN s /\ ~(g x = 1)}
-       ==> (nproduct s (\x. f x * g x) = nproduct s f * nproduct s g)``,
+       ==> (nproduct s (\x. f x * g x) = nproduct s f * nproduct s g)
+Proof
   SIMP_TAC std_ss [GSYM NEUTRAL_MUL, GSYM support, nproduct] THEN
-  MATCH_MP_TAC ITERATE_OP_GEN THEN ACCEPT_TAC MONOIDAL_MUL);
+  MATCH_MP_TAC ITERATE_OP_GEN THEN ACCEPT_TAC MONOIDAL_MUL
+QED
 
-val NPRODUCT_MUL = store_thm ("NPRODUCT_MUL",
- ``!f g s. FINITE s
-           ==> (nproduct s (\x. f x * g x) = nproduct s f * nproduct s g)``,
+Theorem NPRODUCT_MUL:
+   !f g s. FINITE s
+           ==> (nproduct s (\x. f x * g x) = nproduct s f * nproduct s g)
+Proof
   GEN_TAC THEN GEN_TAC THEN
   ONCE_REWRITE_TAC [METIS []
     ``(nproduct s (\x. f x * g x) = nproduct s f * nproduct s g) =
  (\s. (nproduct s (\x. f x * g x) = nproduct s f * nproduct s g)) s``] THEN
   MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN
-  SIMP_TAC arith_ss [NPRODUCT_CLAUSES, MULT_CLAUSES]);
+  SIMP_TAC arith_ss [NPRODUCT_CLAUSES, MULT_CLAUSES]
+QED
 
-val NPRODUCT_MUL_NUMSEG = store_thm ("NPRODUCT_MUL_NUMSEG",
- ``!f g m n.
-     nproduct{m..n} (\x. f x * g x) = nproduct{m..n} f * nproduct{m..n} g``,
-  SIMP_TAC std_ss [NPRODUCT_MUL, FINITE_NUMSEG]);
+Theorem NPRODUCT_MUL_NUMSEG:
+   !f g m n.
+     nproduct{m..n} (\x. f x * g x) = nproduct{m..n} f * nproduct{m..n} g
+Proof
+  SIMP_TAC std_ss [NPRODUCT_MUL, FINITE_NUMSEG]
+QED
 
-val NPRODUCT_CONST = store_thm ("NPRODUCT_CONST",
- ``!c s. FINITE s ==> (nproduct s (\x. c) = c EXP (CARD s))``,
+Theorem NPRODUCT_CONST:
+   !c s. FINITE s ==> (nproduct s (\x. c) = c EXP (CARD s))
+Proof
   GEN_TAC THEN
   ONCE_REWRITE_TAC [METIS []
    ``(nproduct s (\x. c) = c EXP (CARD s)) =
      (\s. (nproduct s (\x. c) = c EXP (CARD s))) s``] THEN
   MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN
-  SIMP_TAC arith_ss [NPRODUCT_CLAUSES, CARD_EMPTY, CARD_INSERT, EXP]);
+  SIMP_TAC arith_ss [NPRODUCT_CLAUSES, CARD_EMPTY, CARD_INSERT, EXP]
+QED
 
-val NPRODUCT_CONST_NUMSEG = store_thm ("NPRODUCT_CONST_NUMSEG",
- ``!c m n. nproduct {m..n} (\x. c) = c EXP ((n + 1) - m)``,
-  SIMP_TAC std_ss [NPRODUCT_CONST, CARD_NUMSEG, FINITE_NUMSEG]);
+Theorem NPRODUCT_CONST_NUMSEG:
+   !c m n. nproduct {m..n} (\x. c) = c EXP ((n + 1) - m)
+Proof
+  SIMP_TAC std_ss [NPRODUCT_CONST, CARD_NUMSEG, FINITE_NUMSEG]
+QED
 
-val NPRODUCT_CONST_NUMSEG_1 = store_thm ("NPRODUCT_CONST_NUMSEG_1",
- ``!c n. nproduct{1n..n} (\x. c) = c EXP n``,
-  SIMP_TAC arith_ss [NPRODUCT_CONST, CARD_NUMSEG_1, FINITE_NUMSEG]);
+Theorem NPRODUCT_CONST_NUMSEG_1:
+   !c n. nproduct{1n..n} (\x. c) = c EXP n
+Proof
+  SIMP_TAC arith_ss [NPRODUCT_CONST, CARD_NUMSEG_1, FINITE_NUMSEG]
+QED
 
-val NPRODUCT_ONE = store_thm ("NPRODUCT_ONE",
- ``!s. nproduct s (\n. 1) = 1``,
-  SIMP_TAC std_ss [NPRODUCT_EQ_1]);
+Theorem NPRODUCT_ONE:
+   !s. nproduct s (\n. 1) = 1
+Proof
+  SIMP_TAC std_ss [NPRODUCT_EQ_1]
+QED
 
-val NPRODUCT_CLOSED = store_thm ("NPRODUCT_CLOSED",
- ``!P f:'a->num s.
+Theorem NPRODUCT_CLOSED:
+   !P f:'a->num s.
         P(1) /\ (!x y. P x /\ P y ==> P(x * y)) /\ (!a. a IN s ==> P(f a))
-        ==> P(nproduct s f)``,
+        ==> P(nproduct s f)
+Proof
   REPEAT STRIP_TAC THEN MP_TAC(MATCH_MP ITERATE_CLOSED MONOIDAL_MUL) THEN
   DISCH_THEN(MP_TAC o SPEC ``P:num->bool``) THEN
-  ASM_SIMP_TAC std_ss [NEUTRAL_MUL, GSYM nproduct]);
+  ASM_SIMP_TAC std_ss [NEUTRAL_MUL, GSYM nproduct]
+QED
 
-val NPRODUCT_CLAUSES_LEFT = store_thm ("NPRODUCT_CLAUSES_LEFT",
- ``!f m n. m <= n ==> (nproduct{m..n} f = f(m) * nproduct{m+1n..n} f)``,
+Theorem NPRODUCT_CLAUSES_LEFT:
+   !f m n. m <= n ==> (nproduct{m..n} f = f(m) * nproduct{m+1n..n} f)
+Proof
   SIMP_TAC std_ss [GSYM NUMSEG_LREC, NPRODUCT_CLAUSES, FINITE_NUMSEG, IN_NUMSEG] THEN
-  ARITH_TAC);
+  ARITH_TAC
+QED
 
-val NPRODUCT_CLAUSES_RIGHT = store_thm ("NPRODUCT_CLAUSES_RIGHT",
- ``!f m n. 0 < n /\ m <= n ==> (nproduct{m..n} f = nproduct{m..n-1n} f * f(n))``,
+Theorem NPRODUCT_CLAUSES_RIGHT:
+   !f m n. 0 < n /\ m <= n ==> (nproduct{m..n} f = nproduct{m..n-1n} f * f(n))
+Proof
   GEN_TAC THEN GEN_TAC THEN INDUCT_TAC THEN
-  SIMP_TAC std_ss [LESS_REFL, NPRODUCT_CLAUSES_NUMSEG, SUC_SUB1]);
+  SIMP_TAC std_ss [LESS_REFL, NPRODUCT_CLAUSES_NUMSEG, SUC_SUB1]
+QED
 
-val NPRODUCT_SUPERSET = store_thm ("NPRODUCT_SUPERSET",
- ``!f:'a->num u v.
+Theorem NPRODUCT_SUPERSET:
+   !f:'a->num u v.
         u SUBSET v /\ (!x. x IN v /\ ~(x IN u) ==> (f(x) = 1))
-        ==> (nproduct v f = nproduct u f)``,
-  SIMP_TAC std_ss [nproduct, GSYM NEUTRAL_MUL, ITERATE_SUPERSET, MONOIDAL_MUL]);
+        ==> (nproduct v f = nproduct u f)
+Proof
+  SIMP_TAC std_ss [nproduct, GSYM NEUTRAL_MUL, ITERATE_SUPERSET, MONOIDAL_MUL]
+QED
 
-val NPRODUCT_PAIR = store_thm ("NPRODUCT_PAIR",
- ``!f m n. nproduct{2n*m..2n*n+1n} f = nproduct{m..n} (\i. f(2*i) * f(2*i+1))``,
+Theorem NPRODUCT_PAIR:
+   !f m n. nproduct{2n*m..2n*n+1n} f = nproduct{m..n} (\i. f(2*i) * f(2*i+1))
+Proof
   MP_TAC(MATCH_MP ITERATE_PAIR MONOIDAL_MUL) THEN
-  REWRITE_TAC[nproduct, NEUTRAL_MUL]);
+  REWRITE_TAC[nproduct, NEUTRAL_MUL]
+QED
 
-val NPRODUCT_DELETE = store_thm ("NPRODUCT_DELETE",
- ``!f s a. FINITE s /\ a IN s
-           ==> (f(a) * nproduct(s DELETE a) f = nproduct s f)``,
-  SIMP_TAC std_ss [nproduct, ITERATE_DELETE, MONOIDAL_MUL]);
+Theorem NPRODUCT_DELETE:
+   !f s a. FINITE s /\ a IN s
+           ==> (f(a) * nproduct(s DELETE a) f = nproduct s f)
+Proof
+  SIMP_TAC std_ss [nproduct, ITERATE_DELETE, MONOIDAL_MUL]
+QED
 
-val NPRODUCT_FACT = store_thm ("NPRODUCT_FACT",
- ``!n. nproduct{1n..n} (\m. m) = FACT n``,
+Theorem NPRODUCT_FACT:
+   !n. nproduct{1n..n} (\m. m) = FACT n
+Proof
   INDUCT_TAC THEN SIMP_TAC arith_ss [NPRODUCT_CLAUSES_NUMSEG, FACT] THEN
-  ASM_SIMP_TAC std_ss [ARITH_PROVE ``1 <= SUC n``, MULT_SYM]);
+  ASM_SIMP_TAC std_ss [ARITH_PROVE ``1 <= SUC n``, MULT_SYM]
+QED
 
-val NPRODUCT_DELTA = store_thm ("NPRODUCT_DELTA",
- ``!s a. nproduct s (\x. if x = a then b else 1) =
-         (if a IN s then b else 1)``,
+Theorem NPRODUCT_DELTA:
+   !s a. nproduct s (\x. if x = a then b else 1) =
+         (if a IN s then b else 1)
+Proof
   REWRITE_TAC[nproduct, GSYM NEUTRAL_MUL] THEN
-  SIMP_TAC std_ss [ITERATE_DELTA, MONOIDAL_MUL]);
+  SIMP_TAC std_ss [ITERATE_DELTA, MONOIDAL_MUL]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Extend congruences.                                                       *)
@@ -2599,23 +2828,28 @@ Definition lifted :
    (lifted op (SOME x) (SOME y) = SOME(op x y))
 End
 
-val NEUTRAL_LIFTED = store_thm ("NEUTRAL_LIFTED",
- ``!op. monoidal op ==> (neutral(lifted op) = SOME(neutral op))``,
+Theorem NEUTRAL_LIFTED:
+   !op. monoidal op ==> (neutral(lifted op) = SOME(neutral op))
+Proof
   REWRITE_TAC[neutral, monoidal] THEN REPEAT STRIP_TAC THEN
   MATCH_MP_TAC SELECT_UNIQUE THEN
   SIMP_TAC std_ss [FORALL_OPTION, lifted, NOT_NONE_SOME, option_CLAUSES] THEN
-  ASM_MESON_TAC[]);
+  ASM_MESON_TAC[]
+QED
 
-val MONOIDAL_LIFTED = store_thm ("MONOIDAL_LIFTED",
- ``!op. monoidal op ==> monoidal(lifted op)``,
+Theorem MONOIDAL_LIFTED:
+   !op. monoidal op ==> monoidal(lifted op)
+Proof
   REPEAT STRIP_TAC THEN ASM_SIMP_TAC std_ss [NEUTRAL_LIFTED, monoidal] THEN
   SIMP_TAC std_ss [FORALL_OPTION, lifted, NOT_NONE_SOME, option_CLAUSES] THEN
-  ASM_MESON_TAC[monoidal]);
+  ASM_MESON_TAC[monoidal]
+QED
 
-val ITERATE_SOME = store_thm ("ITERATE_SOME",
- ``!op. monoidal op ==> !f s. FINITE s
+Theorem ITERATE_SOME:
+   !op. monoidal op ==> !f s. FINITE s
    ==> (iterate (lifted op) s (\x. SOME(f x)) =
-           SOME(iterate op s f))``,
+           SOME(iterate op s f))
+Proof
   GEN_TAC THEN DISCH_TAC THEN GEN_TAC THEN
   KNOW_TAC ``!(s :'b -> bool).
                FINITE s ==>
@@ -2625,24 +2859,31 @@ val ITERATE_SOME = store_thm ("ITERATE_SOME",
   [ALL_TAC, SIMP_TAC std_ss []] THEN
   MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN
   ASM_SIMP_TAC std_ss [ITERATE_CLAUSES, MONOIDAL_LIFTED, NEUTRAL_LIFTED] THEN
-  SIMP_TAC std_ss [lifted]);
+  SIMP_TAC std_ss [lifted]
+QED
 
-val NEUTRAL_AND = store_thm ("NEUTRAL_AND",
- ``neutral(/\) = T``,
-  SIMP_TAC std_ss [neutral, FORALL_BOOL] THEN METIS_TAC[]);
+Theorem NEUTRAL_AND:
+   neutral(/\) = T
+Proof
+  SIMP_TAC std_ss [neutral, FORALL_BOOL] THEN METIS_TAC[]
+QED
 
-val MONOIDAL_AND = store_thm ("MONOIDAL_AND",
- ``monoidal(/\)``,
+Theorem MONOIDAL_AND:
+   monoidal(/\)
+Proof
   REWRITE_TAC [monoidal] THEN
-  SIMP_TAC std_ss [NEUTRAL_AND, CONJ_ACI]);
+  SIMP_TAC std_ss [NEUTRAL_AND, CONJ_ACI]
+QED
 
-val ITERATE_AND = store_thm ("ITERATE_AND",
- ``!p s. FINITE s ==> (iterate(/\) s p <=> !x. x IN s ==> p x)``,
+Theorem ITERATE_AND:
+   !p s. FINITE s ==> (iterate(/\) s p <=> !x. x IN s ==> p x)
+Proof
   GEN_TAC THEN
   ONCE_REWRITE_TAC [METIS [] ``!s. ((iterate(/\) s p <=> !x. x IN s ==> p x)) =
                           (\s. (iterate(/\) s p <=> !x. x IN s ==> p x)) s``] THEN
   MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN
-  ASM_SIMP_TAC std_ss [MONOIDAL_AND, NEUTRAL_AND, ITERATE_CLAUSES] THEN SET_TAC[]);
+  ASM_SIMP_TAC std_ss [MONOIDAL_AND, NEUTRAL_AND, ITERATE_CLAUSES] THEN SET_TAC[]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Permutations of index set for iterated operations.                        *)

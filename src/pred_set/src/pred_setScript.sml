@@ -10,6 +10,18 @@
 (* DATE:    January 1992                                                *)
 (* =====================================================================*)
 
+(*
+Theory pred_set[bare]
+Ancestors
+  numpair pair num prim_rec arithmetic While divides combin
+  relation option
+Libs
+  HolKernel Parse boolLib BasicProvers Prim_rec pairLib numLib
+  hurdUtils tautLib pureSimps metisLib mesonLib simpLib boolSimps
+  TotalDefn pred_setpp[qualified]
+
+open Unicode
+ *)
 open HolKernel Parse boolLib BasicProvers;
 
 open Prim_rec pairLib numLib numpairTheory hurdUtils tautLib pureSimps
