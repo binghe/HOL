@@ -1026,28 +1026,6 @@ Proof
   MESON_TAC[]
 QED
 
-(* NOTE: The other direction seems non-provable in HOL4...
-
-let EVENTUALLY_WITHIN_IMP = prove
- (`!net (P:A->bool) s.
-        eventually P (net within s) <=>
-        eventually (\x. x IN s ==> P x) net`,
-  REWRITE_TAC[eventually; WITHIN; RELATIVE_TO; EXISTS_IN_GSPEC] THEN
-  REWRITE_TAC[INTERS_GSPEC; NETLIMITS_WITHIN] THEN SET_TAC[]);;
- *)
-Theorem EVENTUALLY_WITHIN_IMP :
-   !net (P:'a->bool) s. ~trivial_limit (net within s) /\
-         eventually P (net within s) ==>
-         eventually (\x. x IN s ==> P x) net
-Proof
-    rw [eventually]
- >> DISJ2_TAC
- >> fs [WITHIN]
- >> Q.EXISTS_TAC ‘y’
- >> CONJ_TAC >- (Q.EXISTS_TAC ‘x’ >> art [])
- >> simp []
-QED
-
 Theorem EVENTUALLY_SEQUENTIALLY :
     !p. eventually p sequentially <=> ?N. !n. N <= n ==> p n
 Proof
@@ -1084,6 +1062,28 @@ Theorem EVENTUALLY_AT_INFINITY_POS :
 Proof
   GEN_TAC THEN REWRITE_TAC[EVENTUALLY_AT_INFINITY, real_ge] THEN
   MESON_TAC[REAL_ARITH ``&0 < abs b + &1 /\ (abs b + &1 <= x ==> b <= x:real)``]
+QED
+
+(* NOTE: The other direction seems non-provable in HOL4...
+
+let EVENTUALLY_WITHIN_IMP = prove
+ (`!net (P:A->bool) s.
+        eventually P (net within s) <=>
+        eventually (\x. x IN s ==> P x) net`,
+  REWRITE_TAC[eventually; WITHIN; RELATIVE_TO; EXISTS_IN_GSPEC] THEN
+  REWRITE_TAC[INTERS_GSPEC; NETLIMITS_WITHIN] THEN SET_TAC[]);;
+ *)
+Theorem EVENTUALLY_WITHIN_IMP :
+   !net (P:'a->bool) s. ~trivial_limit (net within s) /\
+         eventually P (net within s) ==>
+         eventually (\x. x IN s ==> P x) net
+Proof
+    rw [eventually]
+ >> DISJ2_TAC
+ >> fs [WITHIN]
+ >> Q.EXISTS_TAC ‘y’
+ >> CONJ_TAC >- (Q.EXISTS_TAC ‘x’ >> art [])
+ >> simp []
 QED
 
 (* ------------------------------------------------------------------------- *)

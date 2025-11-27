@@ -8018,7 +8018,8 @@ Proof
  DISCH_TAC THEN ASM_REWRITE_TAC [] THEN POP_ASSUM K_TAC] THEN
   REPEAT STRIP_TAC THEN
   (EQ_TAC THENL
-    [ALL_TAC, REWRITE_TAC[SUBSET_DEF, IN_BALL, IN_CBALL, dist] THEN REAL_ARITH_TAC]) THEN
+    [ALL_TAC,
+     REWRITE_TAC[SUBSET_DEF, IN_BALL, IN_CBALL, dist] THEN REAL_ARITH_TAC]) THEN
   MATCH_MP_TAC(SET_RULE
    ``((s = {}) <=> q) /\ (s SUBSET t /\ ~(s = {}) /\ ~(t = {}) ==> p)
     ==> s SUBSET t ==> p \/ q``) THEN
@@ -8028,6 +8029,89 @@ Proof
   REPEAT(POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC
 QED
 
+(* ------------------------------------------------------------------------- *)
+(* A cute way of denoting open and closed intervals using overloading.       *)
+(* ------------------------------------------------------------------------- *)
+
+Definition OPEN_interval :
+    OPEN_interval ((a:real),(b:real)) = {x:real | a < x /\ x < b}
+End
+
+Definition CLOSED_interval :
+    CLOSED_interval (l :(real # real) list) =
+      {x:real | FST (HD l) <= x /\ x <= SND (HD l)}
+End
+
+Overload interval = ``OPEN_interval``
+Overload interval = ``CLOSED_interval``
+
+Theorem interval:
+   (interval (a,b) = {x:real | a < x /\ x < b}) /\
+   (interval [a,b] = {x:real | a <= x /\ x <= b})
+Proof
+  REWRITE_TAC [OPEN_interval, CLOSED_interval, HD]
+QED
+
+Theorem IN_INTERVAL:
+   (x IN interval (a,b) <=> a < x /\ x < b) /\
+   (x IN interval [a,b] <=> a <= x /\ x <= b)
+Proof
+  SIMP_TAC std_ss [interval, GSPECIFICATION]
+QED
+
+Theorem BALL_INTERVAL:
+   !x:real e. ball(x,e) = interval(x - e,x + e)
+Proof
+  REWRITE_TAC[EXTENSION, IN_BALL, IN_INTERVAL, dist] THEN
+  REAL_ARITH_TAC
+QED
+
+Theorem CBALL_INTERVAL:
+   !x:real e. cball(x,e) = interval[x - e,x + e]
+Proof
+  REWRITE_TAC[EXTENSION, IN_CBALL, IN_INTERVAL, dist] THEN
+  REAL_ARITH_TAC
+QED
+
+Theorem DISJOINT_INTERVAL:
+    !a b c d:real.
+        ((interval[a,b] INTER interval[c,d] = {}) <=>
+          b < a \/ d < c \/
+          b < c \/ d < a) /\
+        ((interval[a,b] INTER interval(c,d) = {}) <=>
+          b < a \/ d <= c \/
+          b <= c \/ d <= a) /\
+        ((interval(a,b) INTER interval[c,d] = {}) <=>
+          b <= a \/ d < c \/
+          b <= c \/ d <= a) /\
+        ((interval(a,b) INTER interval(c,d) = {}) <=>
+          b <= a \/ d <= c \/
+          b <= c \/ d <= a)
+Proof
+  REWRITE_TAC [EXTENSION, IN_INTER, IN_INTERVAL, NOT_IN_EMPTY] THEN
+  SIMP_TAC std_ss [GSYM FORALL_AND_THM, NOT_FORALL_THM] THEN
+  REWRITE_TAC [TAUT `~((p ==> q) /\ (p ==> r)) <=> p /\ (~q \/ ~r)`] THEN
+  REWRITE_TAC [DE_MORGAN_THM] THEN
+  REPEAT STRIP_TAC THEN (* 4 subgoals *)
+  (EQ_TAC THENL
+    [DISCH_THEN
+      (MP_TAC o SPEC ``(@f. f = (max ((a:real)) ((c:real)) +
+                                 min ((b:real)) ((d:real))) / &2):real``) THEN
+     DISCH_TAC THEN
+     FULL_SIMP_TAC std_ss [REAL_LE_RDIV_EQ, REAL_LE_LDIV_EQ,
+                           REAL_LT_RDIV_EQ, REAL_LT_LDIV_EQ,
+                           REAL_ARITH ``0 < 2:real``] THEN (* 4 subgoals *)
+     FULL_SIMP_TAC bool_ss [REAL_NOT_LE, min_def, max_def] THEN
+     POP_ASSUM MP_TAC THEN
+     REPEAT COND_CASES_TAC THEN ASM_REAL_ARITH_TAC,
+
+     DISCH_THEN (fn th => GEN_TAC THEN MP_TAC th) THEN
+     SIMP_TAC std_ss [] THEN REAL_ARITH_TAC ])
+QED
+
+(* NOTE: The original proof from HOL-Light is rather long and slow. The new
+   shorter and faster proof is based on DISJOINT_INTERVAL.
+ *)
 Theorem INTER_BALLS_EQ_EMPTY :
    (!a b:real r s. (ball(a,r) INTER ball(b,s) = {}) <=>
                      r <= &0 \/ s <= &0 \/ r + s <= dist(a,b)) /\
@@ -8038,106 +8122,8 @@ Theorem INTER_BALLS_EQ_EMPTY :
    (!a b:real r s. (cball(a,r) INTER cball(b,s) = {}) <=>
                      r < &0 \/ s < &0 \/ r + s < dist(a,b))
 Proof
-  rpt STRIP_TAC >| (* 4 subgoals *)
-  [(* goal 1 (of 4) *)
-   Suff `!b:real. 0 <= b ==>
-               !r s:real. ((ball (0,r) INTER ball (b,s) = {}) <=>
-                r <= 0 \/ s <= 0 \/ r + s <= dist (0,b))` >-
-   (SIMP_TAC std_ss [ball, dist, REAL_ARITH ``abs (0 - x:real) = abs x``,
-                    EXTENSION, GSPECIFICATION, INTER_DEF, NOT_IN_EMPTY, REAL_NOT_LT] THEN
-    DISCH_TAC THEN POP_ASSUM (MP_TAC o SPEC ``abs (a - b:real)``) THEN
-    REWRITE_TAC [ABS_POS, ABS_ABS] THEN DISCH_TAC THEN
-    POP_ASSUM (MP_TAC o SPECL [``r:real``,``s:real``]) THEN
-    GEN_REWR_TAC LAND_CONV [EQ_SYM_EQ] THEN DISCH_TAC THEN ASM_REWRITE_TAC [] THEN
-    POP_ASSUM K_TAC THEN REWRITE_TAC [abs] THEN COND_CASES_TAC THEN
-    REWRITE_TAC [GSYM abs] THENL [EQ_TAC THEN DISCH_TAC THEN GEN_TAC THEN
-    POP_ASSUM (MP_TAC o SPEC ``a - x:real``) THEN REAL_ARITH_TAC, ALL_TAC] THEN
-    EQ_TAC THENL [DISCH_TAC THEN GEN_TAC THEN
-    POP_ASSUM (MP_TAC o SPEC ``a + x:real``) THEN REAL_ARITH_TAC,
-    DISCH_TAC THEN GEN_TAC THEN
-    POP_ASSUM (MP_TAC o SPEC ``-(a - x):real``) THEN REAL_ARITH_TAC]),
-   (* goal 2 (of 4) *)
-   Suff `!b:real. 0 <= b ==>
-               !r s:real. ((ball (0,r) INTER cball (b,s) = {}) <=>
-                r <= 0 \/ s < 0 \/ r + s <= dist (0,b))` >-
-   (SIMP_TAC std_ss [ball, cball, dist, REAL_ARITH ``abs (0 - x:real) = abs x``,
-                    EXTENSION, GSPECIFICATION, INTER_DEF, NOT_IN_EMPTY, REAL_NOT_LT] THEN
-    DISCH_TAC THEN POP_ASSUM (MP_TAC o SPEC ``abs (a - b:real)``) THEN
-    REWRITE_TAC [ABS_POS, ABS_ABS] THEN DISCH_TAC THEN
-    POP_ASSUM (MP_TAC o SPECL [``r:real``,``s:real``]) THEN
-    GEN_REWR_TAC LAND_CONV [EQ_SYM_EQ] THEN DISCH_TAC THEN ASM_REWRITE_TAC [] THEN
-    POP_ASSUM K_TAC THEN REWRITE_TAC [abs] THEN COND_CASES_TAC THEN
-    REWRITE_TAC [GSYM abs] THENL [EQ_TAC THEN DISCH_TAC THEN GEN_TAC THEN
-    POP_ASSUM (MP_TAC o SPEC ``a - x:real``) THEN REAL_ARITH_TAC, ALL_TAC] THEN
-    EQ_TAC THENL [DISCH_TAC THEN GEN_TAC THEN
-    POP_ASSUM (MP_TAC o SPEC ``a + x:real``) THEN REAL_ARITH_TAC,
-    DISCH_TAC THEN GEN_TAC THEN
-    POP_ASSUM (MP_TAC o SPEC ``-(a - x):real``) THEN REAL_ARITH_TAC]),
-   (* goal 3 (of 4) *)
-   Suff `!b:real. 0 <= b ==>
-               !r s:real. ((cball (0,r) INTER ball (b,s) = {}) <=>
-                r < 0 \/ s <= 0 \/ r + s <= dist (0,b))` >-
-   (SIMP_TAC std_ss [ball, cball, dist, REAL_ARITH ``abs (0 - x:real) = abs x``,
-                    EXTENSION, GSPECIFICATION, INTER_DEF, NOT_IN_EMPTY, REAL_NOT_LT] THEN
-    DISCH_TAC THEN POP_ASSUM (MP_TAC o SPEC ``abs (a - b:real)``) THEN
-    REWRITE_TAC [ABS_POS, ABS_ABS] THEN DISCH_TAC THEN
-    POP_ASSUM (MP_TAC o SPECL [``r:real``,``s:real``]) THEN
-    GEN_REWR_TAC LAND_CONV [EQ_SYM_EQ] THEN DISCH_TAC THEN ASM_REWRITE_TAC [] THEN
-    POP_ASSUM K_TAC THEN REWRITE_TAC [abs] THEN COND_CASES_TAC THEN
-    REWRITE_TAC [GSYM abs] THENL [EQ_TAC THEN DISCH_TAC THEN GEN_TAC THEN
-    POP_ASSUM (MP_TAC o SPEC ``a - x:real``) THEN REAL_ARITH_TAC, ALL_TAC] THEN
-    EQ_TAC THENL [DISCH_TAC THEN GEN_TAC THEN
-    POP_ASSUM (MP_TAC o SPEC ``a + x:real``) THEN REAL_ARITH_TAC,
-    DISCH_TAC THEN GEN_TAC THEN
-    POP_ASSUM (MP_TAC o SPEC ``-(a - x):real``) THEN REAL_ARITH_TAC]),
-   (* goal 4 (of 4) *)
-   Suff `!b:real. 0 <= b ==>
-               !r s:real. ((cball (0,r) INTER cball (b,s) = {}) <=>
-                r < 0 \/ s < 0 \/ r + s < dist (0,b))` >-
-   (SIMP_TAC std_ss [ball, cball, dist, REAL_ARITH ``abs (0 - x:real) = abs x``,
-                    EXTENSION, GSPECIFICATION, INTER_DEF, NOT_IN_EMPTY, REAL_NOT_LT] THEN
-    DISCH_TAC THEN POP_ASSUM (MP_TAC o SPEC ``abs (a - b:real)``) THEN
-    REWRITE_TAC [ABS_POS, ABS_ABS] THEN DISCH_TAC THEN
-    POP_ASSUM (MP_TAC o SPECL [``r:real``,``s:real``]) THEN
-    GEN_REWR_TAC LAND_CONV [EQ_SYM_EQ] THEN DISCH_TAC THEN ASM_REWRITE_TAC [] THEN
-    POP_ASSUM K_TAC THEN REWRITE_TAC [abs] THEN COND_CASES_TAC THEN
-    REWRITE_TAC [GSYM abs] THENL [EQ_TAC THEN DISCH_TAC THEN GEN_TAC THEN
-    POP_ASSUM (MP_TAC o SPEC ``a - x:real``) THEN REAL_ARITH_TAC, ALL_TAC] THEN
-    EQ_TAC THENL [DISCH_TAC THEN GEN_TAC THEN
-    POP_ASSUM (MP_TAC o SPEC ``a + x:real``) THEN REAL_ARITH_TAC,
-    DISCH_TAC THEN GEN_TAC THEN
-    POP_ASSUM (MP_TAC o SPEC ``-(a - x):real``) THEN REAL_ARITH_TAC])] THEN
-  (* still 4 subgoals *)
-  rpt STRIP_TAC THEN
-  REWRITE_TAC[EXTENSION, NOT_IN_EMPTY, IN_INTER, IN_CBALL, IN_BALL] THEN
-  (reverse EQ_TAC
-   >- (Q.SPEC_TAC (`b`, `v`) THEN REWRITE_TAC [dist] THEN REAL_ARITH_TAC)) THEN
-  DISCH_THEN(MP_TAC o GEN ``c:real`` o SPEC ``c:real``) THEN
-  SIMP_TAC std_ss [ABS_MUL, LESS_EQ_REFL, dist, ABS_NEG,
-           REAL_SUB_LZERO, GSYM REAL_SUB_RDISTRIB, REAL_MUL_RID] THEN
-  ASM_REWRITE_TAC[abs] THEN REWRITE_TAC[GSYM abs] THEN
-  DISCH_THEN(fn th =>
-    MP_TAC(SPEC ``min b r:real`` th) THEN
-    MP_TAC(SPEC ``max (&0) (b - s:real)`` th) THEN
-    MP_TAC(SPEC ``(r + (b - s)) / &2:real`` th)) THEN
-  REWRITE_TAC [real_div] THEN
-  ONCE_REWRITE_TAC [REAL_ARITH ``a - b * c = a * 1 - b * c:real``] THEN
-  REWRITE_TAC [METIS [REAL_DIV_REFL, REAL_ARITH ``2 <> 0:real``, real_div]
-   ``1 = 2 * inv 2:real``, REAL_ARITH ``a * (b * c) = (a * b) * c:real``] THEN
-  REWRITE_TAC [GSYM REAL_SUB_RDISTRIB] THEN
-  SIMP_TAC std_ss [real_div, ABS_MUL, REAL_ARITH ``2 <> 0:real``, ABS_INV, ABS_N] THEN
-  SIMP_TAC std_ss [GSYM real_div] THEN
-  FULL_SIMP_TAC std_ss [REAL_LT_RDIV_EQ, REAL_LE_RDIV_EQ,
-                        REAL_LT_LDIV_EQ, REAL_LE_LDIV_EQ, REAL_ARITH ``0 < 2:real``] THEN
-
-  (* NOTE: previously, when porting this proof from HOL-Light to HOL4, I had
-     to rewrite max/min/abs before calling REAL_ASM_ARITH_TAC, and this have
-     caused 1024 subgoals here (1024 calls to REAL_ARITH), which take about 10
-     10 seconds to finish. Now we forcely use the new one from RealArith, and
-     this means this last step does not participate the performance comparisons
-     when we globally switch REAL_ARITH, etc from realLib. -- Chun Tian
-   *)
-  REAL_ASM_ARITH_TAC
+    RW_TAC std_ss [BALL_INTERVAL, CBALL_INTERVAL, DISJOINT_INTERVAL, dist]
+ >> REAL_ARITH_TAC
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -9859,76 +9845,88 @@ let LIM_WITHIN_SEQUENTIALLY = prove
   REWRITE_TAC[GSYM MTOPOLOGY_EUCLIDEAN_METRIC] THEN
   GEN_REWRITE_TAC LAND_CONV [LIMIT_ATPOINTOF_SEQUENTIALLY_WITHIN] THEN
   REWRITE_TAC[EUCLIDEAN_METRIC; IN_UNIV; INTER_UNIV]);;
- *)
-Theorem LIM_WITHIN_SEQUENTIALLY :
-    !f s a l.
-        (f --> l) (at a within s) <=>
-        !x. (!n. x(n) IN s DELETE a) /\
-            (x --> a) sequentially
-            ==> ((f o x) --> l) sequentially
-Proof
-    cheat
-QED
 
-(*
-let LIM_WITHIN_SEQUENTIALLY_INJ = prove
- (`!f:real^M->real^N s a l.
-        (f --> l) (at a within s) <=>
-        !x. (!n. x(n) IN s DELETE a) /\
-            (!m n. x m = x n <=> m = n) /\
-            (x --> a) sequentially
-            ==> ((f o x) --> l) sequentially`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM LIMIT_EUCLIDEAN; at] THEN
-  REWRITE_TAC[GSYM MTOPOLOGY_EUCLIDEAN_METRIC] THEN
-  GEN_REWRITE_TAC LAND_CONV [LIMIT_ATPOINTOF_SEQUENTIALLY_WITHIN_INJ] THEN
-  REWRITE_TAC[EUCLIDEAN_METRIC; IN_UNIV; INTER_UNIV]);;
+  NOTE: The new, manual proof doesn't work :(
  *)
-Theorem LIM_WITHIN_SEQUENTIALLY_INJ :
-    !f s a l.
-        (f --> l) (at a within s) <=>
+Theorem LIM_WITHIN_SEQUENTIALLY_OPEN :
+    !(f :real -> real) s a l. a IN s /\ open s ==>
+       ((f --> l) (at a within s) <=>
         !x. (!n. x(n) IN s DELETE a) /\
-            (!m n. x m = x n <=> m = n) /\
             (x --> a) sequentially
-            ==> ((f o x) --> l) sequentially
+            ==> ((f o x) --> l) sequentially)
 Proof
-    cheat
-QED
-
-(*
-let LIM_WITHIN_SEQUENTIALLY_DECREASING = prove
- (`!f:real^M->real^N s a l.
-        (f --> l) (at a within s) <=>
-        !x. (!n. x(n) IN s DELETE a) /\
-            (!m n. m < n ==> dist(x n,a) < dist(x m,a)) /\
-            (x --> a) sequentially
-            ==> ((f o x) --> l) sequentially`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM LIMIT_EUCLIDEAN; at] THEN
-  REWRITE_TAC[GSYM MTOPOLOGY_EUCLIDEAN_METRIC] THEN GEN_REWRITE_TAC LAND_CONV
-   [LIMIT_ATPOINTOF_SEQUENTIALLY_WITHIN_DECREASING] THEN
-  REWRITE_TAC[EUCLIDEAN_METRIC; IN_UNIV; INTER_UNIV] THEN
-  EQ_TAC THEN MATCH_MP_TAC MONO_FORALL THEN GEN_TAC THEN
-  REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN
-  MATCH_MP_TAC WLOG_LT THEN ASM_MESON_TAC[REAL_LT_REFL]);;
- *)
-Theorem LIM_WITHIN_SEQUENTIALLY_DECREASING :
-    !f s a l.
-        (f --> l) (at a within s) <=>
-        !x. (!n. x(n) IN s DELETE a) /\
-            (!m n. m < n ==> dist(x n,a) < dist(x m,a)) /\
-            (x --> a) sequentially
-            ==> ((f o x) --> l) sequentially
-Proof
-    cheat
-QED
-
-Theorem LIM_AT_SEQUENTIALLY :
-    !f a l.
-        (f --> l) (at a) <=>
-        !x. (!n. ~(x(n) = a)) /\ (x --> a) sequentially
-            ==> ((f o x) --> l) sequentially
-Proof
-  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
-  REWRITE_TAC[LIM_WITHIN_SEQUENTIALLY, IN_UNIV, IN_DELETE]
+    rpt GEN_TAC >> STRIP_TAC
+ >> EQ_TAC (* '==>' is easy *)
+ >- (RW_TAC std_ss [LIM_WITHIN, LIM_SEQUENTIALLY, IN_DELETE] \\
+     Q.PAT_X_ASSUM ‘!e. 0 < e ==> ?d. 0 < d /\ _’
+       (MP_TAC o Q.SPEC ‘e’) >> RW_TAC std_ss [] \\
+     Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ (MP_TAC o Q.SPEC ‘d’) \\
+     RW_TAC std_ss [] \\
+     Q.EXISTS_TAC ‘N’ >> rpt STRIP_TAC \\
+     Q.PAT_X_ASSUM ‘!n. N <= n ==> dist (x n,a) < d’
+       (MP_TAC o Q.SPEC ‘n’) >> RW_TAC std_ss [] \\
+     Q.PAT_X_ASSUM ‘!x. x IN s /\ _ ==> _’ (MP_TAC o Q.SPEC ‘x (n :num)’) \\
+     RW_TAC std_ss [DIST_POS_LT])
+ (* stage work *)
+ >> RW_TAC std_ss [LIM_WITHIN, LIM_SEQUENTIALLY, IN_DELETE, GSYM DIST_NZ]
+ >> Q.PAT_X_ASSUM ‘open s’ (MP_TAC o REWRITE_RULE [open_def])
+ >> DISCH_THEN (MP_TAC o Q.SPEC ‘a’) >> art []
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘r’ STRIP_ASSUME_TAC)
+ (* now we construct a monotone series in (a - r,a + r), actually (a,a + r) *)
+ >> ASSUME_TAC (Q.SPEC ‘inv r’ SEQ_HARMONIC_OFFSET)
+ >> qabbrev_tac ‘h = \n. inv (&n + inv r)’
+ >> Know ‘!i. 0 <= h i’
+ >- (rw [Abbr ‘h’] \\
+     MATCH_MP_TAC REAL_LE_ADD >> simp [REAL_LT_IMP_LE])
+ >> DISCH_TAC
+ >> Know ‘!i. 0 < h (SUC i)’
+ >- (rw [Abbr ‘h’] \\
+     MATCH_MP_TAC REAL_LT_ADD >> simp [])
+ >> DISCH_TAC
+ >> Know ‘!i. h (SUC i) < r’
+ >- (rw [Abbr ‘h’] \\
+     Suff ‘inv (&SUC i + inv r) < inv (inv r)’
+     >- REWRITE_TAC [REAL_INV_INV] \\
+     MATCH_MP_TAC REAL_LT_INV >> simp [])
+ >> DISCH_TAC
+ >> ‘!i. abs (h (SUC i)) < r’ by rw [ABS_REDUCE]
+ >> MP_TAC (Q.SPECL [‘h’, ‘0’, ‘1’] SEQ_OFFSET) >> simp [GSYM ADD1]
+ >> DISCH_TAC
+ >> Know ‘((\i. h (SUC i) + a) --> (0 + a)) sequentially’
+ >- (HO_MATCH_MP_TAC LIM_ADD \\
+     simp [LIM_CONST])
+ >> simp [] >> DISCH_TAC
+ >> qabbrev_tac ‘h1 = \i. h (SUC i) + a’
+ >> Know ‘!n. h1 n IN ball (a,r) /\ h1 n <> a’
+ >- (Q.X_GEN_TAC ‘n’ >> simp [Abbr ‘h1’, IN_BALL] \\
+     reverse CONJ_TAC
+     >- (Suff ‘0 < h (SUC n)’ >- REAL_ARITH_TAC >> simp []) \\
+     ONCE_REWRITE_TAC [DIST_SYM] \\
+     simp [dist, REAL_ADD_SUB_ALT])
+ >> DISCH_THEN (STRIP_ASSUME_TAC o SIMP_RULE bool_ss [FORALL_AND_THM])
+ >> Know ‘!n. h1 n IN s’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     FULL_SIMP_TAC std_ss [IN_BALL] \\
+     simp [Once DIST_SYM])
+ >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘!x. (!n. x n IN s /\ x n <> a) /\ _ ==> _’
+      (MP_TAC o Q.SPEC ‘h1’) >> simp []
+ >> impl_tac
+ >- (Q.X_GEN_TAC ‘d’ >> DISCH_TAC \\
+     MP_TAC (Q.SPEC ‘d’ REAL_ARCH_INV_SUC) >> art [] \\
+     DISCH_THEN (Q.X_CHOOSE_THEN ‘N’ STRIP_ASSUME_TAC) \\
+     Q.EXISTS_TAC ‘N’ >> rw [dist] \\
+    ‘abs (h1 n - a) = h1 n - a’
+       by simp [ABS_REFL, Abbr ‘h1’, REAL_ADD_SUB_ALT] >> POP_ORW \\
+     Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘inv (&SUC N)’ >> art [] \\
+     ASM_SIMP_TAC std_ss [Abbr ‘h1’, REAL_ADD_SUB_ALT, Abbr ‘h’] \\
+     MATCH_MP_TAC REAL_LT_INV >> simp [] \\
+     Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘&SUC n’ >> simp [])
+ >> DISCH_THEN (MP_TAC o Q.SPEC ‘e’)
+ >> RW_TAC std_ss []
+ >> CCONTR_TAC >> FULL_SIMP_TAC bool_ss []
+ >> cheat
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -15647,36 +15645,6 @@ Proof
           METIS_TAC [REAL_LTE_TRANS, REAL_LET_TRANS, REAL_LE_TRANS, REAL_LT_TRANS]]]]]
 QED
 
-(* ------------------------------------------------------------------------- *)
-(* A cute way of denoting open and closed intervals using overloading.       *)
-(* ------------------------------------------------------------------------- *)
-
-Definition OPEN_interval :
-    OPEN_interval ((a:real),(b:real)) = {x:real | a < x /\ x < b}
-End
-
-Definition CLOSED_interval :
-    CLOSED_interval (l :(real # real) list) =
-      {x:real | FST (HD l) <= x /\ x <= SND (HD l)}
-End
-
-Overload interval = ``OPEN_interval``
-Overload interval = ``CLOSED_interval``
-
-Theorem interval:
-   (interval (a,b) = {x:real | a < x /\ x < b}) /\
-   (interval [a,b] = {x:real | a <= x /\ x <= b})
-Proof
-  REWRITE_TAC [OPEN_interval, CLOSED_interval, HD]
-QED
-
-Theorem IN_INTERVAL:
-   (x IN interval (a,b) <=> a < x /\ x < b) /\
-   (x IN interval [a,b] <=> a <= x /\ x <= b)
-Proof
-  SIMP_TAC std_ss [interval, GSPECIFICATION]
-QED
-
 Theorem IN_INTERVAL_REFLECT:
    (!a b x. (-x) IN interval[-b,-a] <=> x IN interval[a,b]) /\
    (!a b x. (-x) IN interval(-b,-a) <=> x IN interval(a,b))
@@ -15823,41 +15791,6 @@ Proof
                GSYM REAL_DOUBLE, REAL_LT_LADD, REAL_ADD_SYM, REAL_MUL_SYM, REAL_LT_ADD2,
                REAL_LTE_ADD2, REAL_NOT_LE, REAL_NOT_LT, REAL_LT_RDIV_EQ, REAL_LT_LDIV_EQ,
                REAL_LE_LADD, REAL_LE_ADD2, REAL_LE_RADD, REAL_LE_LT]]]
-QED
-
-Theorem DISJOINT_INTERVAL:
-    !a b c d:real.
-        ((interval[a,b] INTER interval[c,d] = {}) <=>
-          b < a \/ d < c \/
-          b < c \/ d < a) /\
-        ((interval[a,b] INTER interval(c,d) = {}) <=>
-          b < a \/ d <= c \/
-          b <= c \/ d <= a) /\
-        ((interval(a,b) INTER interval[c,d] = {}) <=>
-          b <= a \/ d < c \/
-          b <= c \/ d <= a) /\
-        ((interval(a,b) INTER interval(c,d) = {}) <=>
-          b <= a \/ d <= c \/
-          b <= c \/ d <= a)
-Proof
-  REWRITE_TAC [EXTENSION, IN_INTER, IN_INTERVAL, NOT_IN_EMPTY] THEN
-  SIMP_TAC std_ss [GSYM FORALL_AND_THM, NOT_FORALL_THM] THEN
-  REWRITE_TAC [TAUT `~((p ==> q) /\ (p ==> r)) <=> p /\ (~q \/ ~r)`] THEN
-  REWRITE_TAC [DE_MORGAN_THM] THEN
-  REPEAT STRIP_TAC THEN (* 4 subgoals *)
-  (EQ_TAC THENL
-    [DISCH_THEN (MP_TAC o SPEC ``(@f. f = (max ((a:real)) ((c:real)) +
-                                           min ((b:real)) ((d:real))) / &2):real``) THEN
-     DISCH_TAC THEN
-     FULL_SIMP_TAC std_ss [REAL_LE_RDIV_EQ, REAL_LE_LDIV_EQ,
-                           REAL_LT_RDIV_EQ, REAL_LT_LDIV_EQ,
-                           REAL_ARITH ``0 < 2:real``] THEN (* 4 subgoals *)
-     FULL_SIMP_TAC bool_ss [REAL_NOT_LE, min_def, max_def] THEN
-     POP_ASSUM MP_TAC THEN
-     REPEAT COND_CASES_TAC THEN ASM_REAL_ARITH_TAC,
-
-     DISCH_THEN (fn th => GEN_TAC THEN MP_TAC th) THEN
-     SIMP_TAC std_ss [] THEN REAL_ARITH_TAC ])
 QED
 
 Theorem ENDS_IN_INTERVAL:
@@ -16527,20 +16460,6 @@ Proof
   REWRITE_TAC[SET_RULE ``s DIFF {a;b} = s DELETE a DELETE b``] THEN
   REWRITE_TAC[FINITE_DELETE] THEN REPEAT GEN_TAC THEN
   SIMP_TAC std_ss [interval, FINITE_IMAGE_INJ_EQ, FINITE_REAL_INTERVAL]
-QED
-
-Theorem BALL_INTERVAL:
-   !x:real e. ball(x,e) = interval(x - e,x + e)
-Proof
-  REWRITE_TAC[EXTENSION, IN_BALL, IN_INTERVAL, dist] THEN
-  REAL_ARITH_TAC
-QED
-
-Theorem CBALL_INTERVAL:
-   !x:real e. cball(x,e) = interval[x - e,x + e]
-Proof
-  REWRITE_TAC[EXTENSION, IN_CBALL, IN_INTERVAL, dist] THEN
-  REAL_ARITH_TAC
 QED
 
 Theorem BALL_INTERVAL_0:
@@ -21982,7 +21901,8 @@ Proof
   ASM_CASES_TAC ``b:real = a`` THENL
    [FIRST_X_ASSUM SUBST_ALL_TAC THEN
     RULE_ASSUM_TAC(REWRITE_RULE[DIST_REFL]) THEN
-    ASM_CASES_TAC ``(r = &0:real) /\ (s = &0:real)`` THENL [ALL_TAC, ASM_REAL_ARITH_TAC] THEN
+    ASM_CASES_TAC ``(r = &0:real) /\ (s = &0:real)`` THENL
+     [ALL_TAC, ASM_REAL_ARITH_TAC] THEN
     ASM_SIMP_TAC std_ss [CBALL_SING, SETDIST_SINGS, dist] THEN REAL_ARITH_TAC,
     STRIP_TAC] THEN
   REWRITE_TAC[GSYM REAL_LE_ANTISYM] THEN CONJ_TAC THENL
@@ -22000,21 +21920,25 @@ Proof
     REWRITE_TAC [GSYM dist] THEN ONCE_REWRITE_TAC [DIST_SYM] THEN
     FULL_SIMP_TAC real_ss [dist, ABS_MUL, ABS_DIV, ABS_ABS, ABS_NZ,
       REAL_LT_IMP_NE, REAL_ARITH ``(b <> a) = (b - a <> 0:real)``] THEN
-    KNOW_TAC ``abs (b - a:real) <> 0`` THENL [METIS_TAC [REAL_LT_IMP_NE], DISCH_TAC] THEN
+    KNOW_TAC ``abs (b - a:real) <> 0`` THENL
+     [METIS_TAC [REAL_LT_IMP_NE], DISCH_TAC] THEN
     ASM_SIMP_TAC std_ss [REAL_DIV_RMUL, REAL_SUB_0, ABS_ZERO] THEN
     ASM_REAL_ARITH_TAC,
     REWRITE_TAC[dist, REAL_ARITH
      ``(a + d * (b - a)) - (b - e * (b - a)):real =
        (&1 - d - e) * (a - b:real)``] THEN
     REWRITE_TAC[ABS_MUL, real_div, REAL_ARITH
-      ``&1 - r * y - s * y = &1 - (r + s) * y:real``] THEN REWRITE_TAC [GSYM real_div] THEN
-    REWRITE_TAC [METIS [GSYM ABS_ABS] ``d * abs (a - b) = d * abs(abs (a - b:real))``] THEN
+      ``&1 - r * y - s * y = &1 - (r + s) * y:real``] THEN
+    REWRITE_TAC [GSYM real_div] THEN
+    REWRITE_TAC [METIS [GSYM ABS_ABS]
+                       ``d * abs (a - b) = d * abs(abs (a - b:real))``] THEN
     REWRITE_TAC[GSYM ABS_MUL] THEN
     KNOW_TAC ``!n x:real. ~(n = &0) ==> ((&1 - x / n) * n = n - x)`` THENL
     [REPEAT GEN_TAC THEN DISCH_TAC THEN
      ASM_SIMP_TAC std_ss [REAL_SUB_RDISTRIB, REAL_DIV_RMUL] THEN
      REAL_ARITH_TAC, DISCH_TAC] THEN
-    RULE_ASSUM_TAC (ONCE_REWRITE_RULE [REAL_ARITH ``(b <> a) = (abs (a - b) <> 0:real)``]) THEN
+    RULE_ASSUM_TAC
+     (ONCE_REWRITE_RULE [REAL_ARITH ``(b <> a) = (abs (a - b) <> 0:real)``]) THEN
     ASM_SIMP_TAC real_ss [REAL_SUB_0, ABS_ZERO] THEN
     FULL_SIMP_TAC std_ss [dist] THEN SIMP_TAC std_ss [REAL_LE_LT] THEN
     DISJ2_TAC THEN REWRITE_TAC [ABS_REFL, REAL_SUB_LE] THEN ASM_REWRITE_TAC []]

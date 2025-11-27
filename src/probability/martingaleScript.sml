@@ -1624,8 +1624,8 @@ QED
    NOTE: “open s /\ connected s” is to make sure both OPEN_interval and UNIV
    are included.
  *)
-Theorem differentiability_lemma :
-    !m u s. measure_space (m :'a m_space) /\ open s /\ connected s /\
+Theorem differentiable_lemma :
+    !s m u. measure_space (m :'a m_space) /\ open s /\ connected s /\
       (!t. t IN s ==> integrable m (Normal o u t)) /\
       (!x. x IN m_space m ==> (\t. u t x) differentiable_on s) /\
       (?w. integrable m w /\
@@ -1765,7 +1765,7 @@ Proof
        REWRITE_TAC [REAL_SUB_NEG2] ])
  >> Rewr'
  (* stage work *)
- >> simp [LIM_WITHIN_SEQUENTIALLY]
+ >> simp [LIM_WITHIN_SEQUENTIALLY_OPEN]
  >> simp [GSYM RIGHT_FORALL_IMP_THM, AND_IMP_INTRO, Once SWAP_FORALL_THM, o_DEF]
  >> DISCH_TAC
  (* integrable m (\x. Normal (g x))
@@ -2043,6 +2043,60 @@ Proof
       simp [Once REAL_MUL_COMM, GSYM real_div] \\
       ONCE_REWRITE_TAC [REAL_MUL_COMM] >> art [] ]
 QED
+
+Theorem differentiable_lemma' :
+    !s m u. measure_space (m :'a m_space) /\ open s /\ connected s /\
+      (!t. t IN s ==> integrable m (Normal o u t)) /\
+      (!x. x IN m_space m ==> (\t. u t x) differentiable_on s) /\
+      (?w. integrable m w /\
+          (!x. x IN m_space m ==> 0 <= w x /\ w x <> PosInf) /\
+           !t x. t IN s /\ x IN m_space m ==>
+                 Normal (abs (diff1 (\t. u t x) t)) <= w x)
+     ==> !t. t IN s ==>
+             integrable m (\x. Normal (diff1 (\t. u t x) t)) /\
+             diff1 (\t. real (integral m (Normal o u t))) t =
+             real (integral m (\x. (Normal (diff1 (\t. u t x) t))))
+Proof
+    rpt GEN_TAC >> STRIP_TAC
+ >> Q.X_GEN_TAC ‘t’ >> DISCH_TAC
+ >> MP_TAC (Q.SPECL [‘s’, ‘m’, ‘u’] differentiable_lemma) >> simp []
+ >> impl_tac >- (Q.EXISTS_TAC ‘w’ >> art [])
+ >> DISCH_THEN (MP_TAC o Q.SPEC ‘t’) >> simp []
+ >> STRIP_TAC
+ >> MATCH_MP_TAC has_vector_derivative_imp_diff1
+ >> irule (iffLR HAS_VECTOR_DERIVATIVE_WITHIN_OPEN)
+ >> Q.EXISTS_TAC ‘s’ >> art []
+QED
+
+(* |- !m u.
+        measure_space m /\ (!t. integrable m (Normal o u t)) /\
+        (!x. x IN m_space m ==> (\t. u t x) differentiable_on univ(:real)) /\
+        (?w. integrable m w /\
+             (!x. x IN m_space m ==> 0 <= w x /\ w x <> PosInf) /\
+             !t x.
+               x IN m_space m ==> Normal (abs (diff1 (\t. u t x) t)) <= w x) ==>
+        !t. integrable m (\x. Normal (diff1 (\t. u t x) t)) /\
+            ((\t. real (integral m (Normal o u t))) has_vector_derivative
+             real (integral m (\x. Normal (diff1 (\t. u t x) t)))) (at t)
+ *)
+Theorem differentiable_univ_lemma =
+        differentiable_lemma |> Q.SPEC ‘UNIV’
+     |> SRULE [OPEN_UNIV, CONNECTED_UNIV, NET_WITHIN_UNIV]
+
+(* |- !m u.
+        measure_space m /\ (!t. integrable m (Normal o u t)) /\
+        (!x. x IN m_space m ==> (\t. u t x) differentiable_on univ(:real)) /\
+        (?w. integrable m w /\
+             (!x. x IN m_space m ==> 0 <= w x /\ w x <> PosInf) /\
+             !t x.
+               x IN m_space m ==> Normal (abs (diff1 (\t. u t x) t)) <= w x) ==>
+        !t. integrable m (\x. Normal (diff1 (\t. u t x) t)) /\
+            diff1 (\t. real (integral m (Normal o u t))) t =
+            real (integral m (\x. Normal (diff1 (\t. u t x) t)))
+ *)
+Theorem differentiable_univ_lemma' =
+        differentiable_lemma' |> Q.SPEC ‘UNIV’
+     |> SRULE [OPEN_UNIV, CONNECTED_UNIV, NET_WITHIN_UNIV]
 
 (* ------------------------------------------------------------------------- *)
 (*  Product measures and Fubini's theorem (Chapter 14 of [1])                *)
