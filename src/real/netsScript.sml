@@ -974,6 +974,20 @@ Theorem NETFILTER_AT =
         NETFILTER_ATPOINTOF |> ISPEC “mr1”
                             |> REWRITE_RULE [GSYM dist_def, GSYM at_DEF]
 
+Theorem NETFILTER_WITHIN :
+    !net s. netfilter (net within s) = netfilter net relative_to s
+Proof
+    rw [netfilter_def, WITHIN, RELATIVE_TO]
+ >> rw [Once EXTENSION]
+ >> EQ_TAC >> rw []
+ >- (Q.EXISTS_TAC ‘{y | netord net y x'}’ \\
+     reverse CONJ_TAC >- (Q.EXISTS_TAC ‘x'’ >> REFL_TAC) \\
+     rw [Once EXTENSION] >> PROVE_TAC [])
+ >> Q.EXISTS_TAC ‘x'’
+ >> rw [Once EXTENSION]
+ >> PROVE_TAC []
+QED
+
 (* ------------------------------------------------------------------------- *)
 (* It's also sometimes useful to extract the limit point from the net.       *)
 (* ------------------------------------------------------------------------- *)
