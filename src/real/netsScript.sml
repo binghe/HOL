@@ -793,6 +793,7 @@ Definition at_neginfinity[nocompute]:
   at_neginfinity = mk_net(\x y:real. x <= y)
 End
 
+(* HOL-Light: sequentially = mk_net({from n | n IN (:num)},{}) *)
 Definition sequentially[nocompute]:
   sequentially = mk_net(\m:num n. m >= n)
 End
@@ -916,9 +917,56 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
+(* netfilter (compatible with HOL-Light)                                     *)
+(* ------------------------------------------------------------------------- *)
+
+Definition netfilter_def :
+    netfilter net = {{y | netord net y x} | x | T}
+End
+
+Theorem NETFILTER_AT_POSINFINITY :
+    netfilter at_posinfinity = {{x | a <= x} | a IN univ(:real)}
+Proof
+    simp [netfilter_def, AT_POSINFINITY, real_ge]
+QED
+
+Theorem NETFILTER_AT_NEGINFINITY :
+    netfilter at_neginfinity = {{x | x <= a} | a IN univ(:real)}
+Proof
+    simp [netfilter_def, AT_NEGINFINITY]
+QED
+
+Theorem NETFILTER_AT_INFINITY :
+    netfilter at_infinity = {{x | b <= abs x} | b IN univ(:real)}
+Proof
+    simp [netfilter_def, AT_INFINITY, real_ge]
+ >> rw [Once EXTENSION]
+ >> EQ_TAC >> rw []
+ >- (Q.EXISTS_TAC ‘abs x'’ >> REFL_TAC)
+ >> Cases_on ‘0 <= b’
+ >- (Q.EXISTS_TAC ‘abs b’ >> simp [ABS_REDUCE])
+ >> fs [REAL_NOT_LE]
+ >> Know ‘!x. b <= abs x <=> 0 <= abs x’
+ >- (Q.X_GEN_TAC ‘x’ \\
+     EQ_TAC >> rw [] \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘0’ >> simp [ABS_POS, REAL_LT_IMP_LE])
+ >> Rewr'
+ >> Q.EXISTS_TAC ‘0’ >> simp [ABS_0]
+QED
+
+Theorem NETFILTER_SEQUENTIALLY :
+    netfilter sequentially = {from n | n IN univ(:num)}
+Proof
+    simp [netfilter_def, SEQUENTIALLY, GREATER_EQ, from_def]
+QED
+
+(* ------------------------------------------------------------------------- *)
 (* Identify trivial limits, where we can't approach arbitrarily closely.     *)
 (* ------------------------------------------------------------------------- *)
 
+(* HOL-Light's definition of ‘trivial_limit’
+   |- !net. trivial_limit net <=> eventually (\x. F) net
+ *)
 Definition trivial_limit :
     trivial_limit net <=>
       (!(a:'a) b. a = b) \/
@@ -996,16 +1044,16 @@ Proof
   REWRITE_TAC[eventually] THEN MESON_TAC[]
 QED
 
+(* This is HOL-Light's definition of ‘trivial_limit’
+   |- !net. trivial_limit net <=> eventually (\x. F) net
+ *)
+Theorem trivial_limit_def = GSYM EVENTUALLY_FALSE
+
 Theorem EVENTUALLY_TRUE :
     !net. eventually (\x. T) net <=> T
 Proof
   REWRITE_TAC[eventually, trivial_limit] THEN MESON_TAC[]
 QED
-
-(* This is HOL-Light's definition of ‘trivial_limit’
-   |- !net. trivial_limit net <=> eventually (\x. F) net
- *)
-Theorem trivial_limit_def = GSYM EVENTUALLY_FALSE
 
 Theorem EVENTUALLY_HAPPENS :
     !net p. eventually p net ==> trivial_limit net \/ ?x. p x
@@ -1074,16 +1122,28 @@ let EVENTUALLY_WITHIN_IMP = prove
   REWRITE_TAC[INTERS_GSPEC; NETLIMITS_WITHIN] THEN SET_TAC[]);;
  *)
 Theorem EVENTUALLY_WITHIN_IMP :
-   !net (P:'a->bool) s. ~trivial_limit (net within s) /\
-         eventually P (net within s) ==>
+   !net (P:'a->bool) s.
+         eventually P (net within s) <=>
          eventually (\x. x IN s ==> P x) net
 Proof
-    rw [eventually]
- >> DISJ2_TAC
- >> fs [WITHIN]
- >> Q.EXISTS_TAC ‘y’
- >> CONJ_TAC >- (Q.EXISTS_TAC ‘x’ >> art [])
- >> simp []
+    RW_TAC std_ss [eventually]
+ >> EQ_TAC >> rpt STRIP_TAC (* 4 subgoals *)
+ >| [ (* goal 1 (of 4) *)
+      cheat,
+      (* goal 2 (of 4) *)
+      DISJ2_TAC (* provable *) \\
+      fs [WITHIN] \\
+      Q.EXISTS_TAC ‘y’ \\
+      CONJ_TAC >- (Q.EXISTS_TAC ‘x’ >> art []) \\
+      simp [],
+      (* goal 3 (of 4) *)
+      DISJ1_TAC \\
+      MATCH_MP_TAC NONTRIVIAL_LIMIT_WITHIN >> art [],
+      (* goal 4 (of 4) *)
+      Cases_on ‘trivial_limit (net within s)’ >> simp [] \\
+      fs [trivial_limit] \\
+      simp [WITHIN] \\
+      cheat ]
 QED
 
 (* ------------------------------------------------------------------------- *)

@@ -1549,7 +1549,7 @@ QED
    i.e. (\t. integral UNIV (u t)) continuous_on s
  *)
 Theorem continuity_lemma :
-    !m u s. measure_space m /\ open s /\
+    !s m u. measure_space m /\ open s /\
       (!t. t IN s ==> integrable m (Normal o u t)) /\
       (!x. x IN m_space m ==> (\t. u t x) continuous_on s) /\
       (?w. integrable m w /\
@@ -1618,6 +1618,17 @@ Proof
  >> Q.EXISTS_TAC ‘N0’ >> rpt STRIP_TAC
  >> FIRST_X_ASSUM MATCH_MP_TAC >> simp []
 QED
+
+(* |- !m u.
+        measure_space m /\ (!t. integrable m (Normal o u t)) /\
+        (!x. x IN m_space m ==> (\t. u t x) continuous_on univ(:real)) /\
+        (?w. integrable m w /\
+             (!x. x IN m_space m ==> 0 <= w x /\ w x <> PosInf) /\
+             !t x. x IN m_space m ==> Normal (abs (u t x)) <= w x) ==>
+        (\t. real (integral m (Normal o u t))) continuous_on univ(:real)
+ *)
+Theorem continuity_univ_lemma =
+        continuity_lemma |> Q.SPEC ‘UNIV’ |> SRULE [OPEN_UNIV]
 
 (* Theorem 12.5 [1, p.100]
 

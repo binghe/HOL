@@ -9131,4 +9131,37 @@ Proof
   IMP_RES_TAC (iffLR FUNPOW_eq_elim)
 QED
 
+(* ------------------------------------------------------------------------- *)
+(* Segment of natural numbers starting at a specific number.                 *)
+(* ------------------------------------------------------------------------- *)
+
+Definition from_def :
+    from n = {m:num | n <= m}
+End
+
+Theorem FROM_0 :
+    from 0 = univ(:num)
+Proof
+    REWRITE_TAC [from_def, ZERO_LESS_EQ, GSPEC_T]
+QED
+
+Theorem IN_FROM :
+    !m n. m IN from n <=> n <= m
+Proof
+    SIMP_TAC std_ss [from_def, GSPECIFICATION]
+QED
+
+Theorem FROM_NOT_EMPTY :
+    !n. from n <> {}
+Proof
+    RW_TAC std_ss [GSYM MEMBER_NOT_EMPTY, from_def, GSPECIFICATION]
+ >> Q.EXISTS_TAC `n` >> REWRITE_TAC [LESS_EQ_REFL]
+QED
+
+Theorem COUNTABLE_FROM :
+    !n. COUNTABLE (from n)
+Proof
+    PROVE_TAC [COUNTABLE_NUM]
+QED
+
 val _ = export_theory();
