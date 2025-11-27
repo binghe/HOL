@@ -960,6 +960,69 @@ Proof
     simp [netfilter_def, SEQUENTIALLY, GREATER_EQ, from_def]
 QED
 
+Theorem NETFILTER_ATPOINTOF :
+    !m a. netfilter (atpointof m a) =
+            {{y | y <> a /\ dist m (y,a) <= dist m (x,a)} | x | T}
+Proof
+    simp [netfilter_def, ATPOINTOF, MDIST_POS_EQ]
+QED
+
+(* !a. netfilter (at a) =
+          {{y | y <> a /\ dist (y,a) <= dist (x,a)} | x | T}
+ *)
+Theorem NETFILTER_AT =
+        NETFILTER_ATPOINTOF |> ISPEC “mr1”
+                            |> REWRITE_RULE [GSYM dist_def, GSYM at_DEF]
+
+(* ------------------------------------------------------------------------- *)
+(* It's also sometimes useful to extract the limit point from the net.       *)
+(* ------------------------------------------------------------------------- *)
+
+Definition netlimit :
+    netlimit net = @a. !x. ~(netord net x a)
+End
+
+Theorem NETLIMIT_ATPOINTOF :
+    !m a. netlimit(atpointof m a) = a
+Proof
+    RW_TAC std_ss [netlimit, ATPOINTOF]
+ >> SELECT_ELIM_TAC
+ >> CONJ_TAC
+ >- (Q.EXISTS_TAC ‘a’ \\
+     rw [MDIST_REFL, REAL_NOT_LE])
+ >> rw [REAL_NOT_LE, REAL_NOT_LT]
+ >> CCONTR_TAC
+ >> Q.PAT_X_ASSUM ‘!x. P’ (MP_TAC o Q.SPEC ‘x’)
+ >> simp [REAL_NOT_LE]
+ >> rw [REAL_LT_LE, METRIC_NZ]
+QED
+
+(* |- !a. netlimit (at a) = a *)
+Theorem NETLIMIT_AT = NETLIMIT_ATPOINTOF |> ISPEC “mr1”
+                   |> REWRITE_RULE [GSYM at_DEF]
+
+(* NOTE: This is compatible with HOL-Light *)
+Definition netlimits_def :
+    netlimits net = if ?a. !x. ~(netord net x a) then {netlimit net} else {}
+End
+
+Theorem NETLIMITS_ATPOINTOF :
+    !m a. netlimits (atpointof m a) = {a}
+Proof
+    rpt GEN_TAC
+ >> qabbrev_tac ‘net = atpointof m a’
+ >> Know ‘?a. !x. ~(netord net x a)’
+ >- (Q.EXISTS_TAC ‘a’ \\
+     rw [Abbr ‘net’, ATPOINTOF, MDIST_REFL, REAL_NOT_LE])
+ >> DISCH_TAC
+ >> simp [netlimits_def]
+ >> simp [NETLIMIT_ATPOINTOF, Abbr ‘net’]
+QED
+
+(* |- !a. netlimits (at a) = {a} *)
+Theorem NETLIMITS_AT = NETLIMITS_ATPOINTOF |> ISPEC “mr1”
+                    |> REWRITE_RULE [GSYM at_DEF]
+
 (* ------------------------------------------------------------------------- *)
 (* Identify trivial limits, where we can't approach arbitrarily closely.     *)
 (* ------------------------------------------------------------------------- *)
@@ -1381,14 +1444,6 @@ Proof
 QED
  *)
 
-(* ------------------------------------------------------------------------- *)
-(* It's also sometimes useful to extract the limit point from the net.       *)
-(* ------------------------------------------------------------------------- *)
-
-Definition netlimit :
-    netlimit net = @a. !x. ~(netord net x a)
-End
-
 Theorem NETLIMIT_WITHIN :
    !a:real s. ~(trivial_limit (at a within s))
     ==> (netlimit (at a within s) = a)
@@ -1400,25 +1455,6 @@ Proof
     ASSUME_TAC THENL
     [ ASM_MESON_TAC[DIST_REFL, REAL_NOT_LT], ASM_MESON_TAC[] ]
 QED
-
-Theorem NETLIMIT_ATPOINTOF :
-    !m a. netlimit(atpointof m a) = a
-Proof
-    RW_TAC std_ss [netlimit, ATPOINTOF]
- >> SELECT_ELIM_TAC
- >> CONJ_TAC
- >- (Q.EXISTS_TAC ‘a’ \\
-     rw [MDIST_REFL, REAL_NOT_LE])
- >> rw [REAL_NOT_LE, REAL_NOT_LT]
- >> CCONTR_TAC
- >> Q.PAT_X_ASSUM ‘!x. P’ (MP_TAC o Q.SPEC ‘x’)
- >> simp [REAL_NOT_LE]
- >> rw [REAL_LT_LE, METRIC_NZ]
-QED
-
-(* |- !a. netlimit (at a) = a *)
-Theorem NETLIMIT_AT = NETLIMIT_ATPOINTOF |> ISPEC “mr1”
-                   |> REWRITE_RULE [GSYM at_DEF]
 
 (* ------------------------------------------------------------------------- *)
 (* Limits in a topological space (from HOL-Light's Multivariate/metric.ml)   *)
