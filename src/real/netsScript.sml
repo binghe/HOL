@@ -1015,22 +1015,20 @@ QED
 Theorem NETLIMIT_AT = NETLIMIT_ATPOINTOF |> ISPEC “mr1”
                    |> REWRITE_RULE [GSYM at_DEF]
 
-(* NOTE: This is compatible with HOL-Light *)
+(* NOTE: This definition is compatible with HOL-Light *)
 Definition netlimits_def :
-    netlimits net = if ?a. !x. ~(netord net x a) then {netlimit net} else {}
+    netlimits net = {a | !x. ~(netord net x a)}
 End
 
 Theorem NETLIMITS_ATPOINTOF :
     !m a. netlimits (atpointof m a) = {a}
 Proof
-    rpt GEN_TAC
- >> qabbrev_tac ‘net = atpointof m a’
- >> Know ‘?a. !x. ~(netord net x a)’
- >- (Q.EXISTS_TAC ‘a’ \\
-     rw [Abbr ‘net’, ATPOINTOF, MDIST_REFL, REAL_NOT_LE])
- >> DISCH_TAC
- >> simp [netlimits_def]
- >> simp [NETLIMIT_ATPOINTOF, Abbr ‘net’]
+    rw [netlimits_def, ATPOINTOF, MDIST_POS_EQ, REAL_NOT_LE]
+ >> rw [Once EXTENSION]
+ >> reverse EQ_TAC >- rw [MDIST_REFL, MDIST_POS_EQ]
+ >> rpt STRIP_TAC
+ >> CCONTR_TAC
+ >> Q.PAT_X_ASSUM ‘!x. P’ (MP_TAC o Q.SPEC ‘x’) >> simp []
 QED
 
 (* |- !a. netlimits (at a) = {a} *)
@@ -1040,37 +1038,29 @@ Theorem NETLIMITS_AT = NETLIMITS_ATPOINTOF |> ISPEC “mr1”
 Theorem NETLIMITS_SEQUENTIALLY :
     netlimits sequentially = {}
 Proof
-    simp [netlimits_def]
- >> Suff ‘~?a. !x. ~netord sequentially x a’ >- rw []
- >> rw [SEQUENTIALLY, GREATER_EQ]
- >> Q.EXISTS_TAC ‘a’ >> simp []
+    rw [Once EXTENSION, NOT_IN_EMPTY, netlimits_def, SEQUENTIALLY, GREATER_EQ]
+ >> Q.EXISTS_TAC ‘x’ >> simp []
 QED
 
 Theorem NETLIMITS_AT_POSINFINITY :
     netlimits at_posinfinity = {}
 Proof
-    simp [netlimits_def]
- >> Suff ‘~?a. !x. ~netord at_posinfinity x a’ >- rw []
- >> rw [AT_POSINFINITY, real_ge]
- >> Q.EXISTS_TAC ‘a’ >> simp []
+    rw [Once EXTENSION, NOT_IN_EMPTY, netlimits_def, AT_POSINFINITY, real_ge]
+ >> Q.EXISTS_TAC ‘x’ >> simp []
 QED
 
 Theorem NETLIMITS_AT_NEGINFINITY :
     netlimits at_neginfinity = {}
 Proof
-    simp [netlimits_def]
- >> Suff ‘~?a. !x. ~netord at_neginfinity x a’ >- rw []
- >> rw [AT_NEGINFINITY]
- >> Q.EXISTS_TAC ‘a’ >> simp []
+    rw [Once EXTENSION, NOT_IN_EMPTY, netlimits_def, AT_NEGINFINITY]
+ >> Q.EXISTS_TAC ‘x’ >> simp []
 QED
 
 Theorem NETLIMITS_AT_INFINITY :
     netlimits at_infinity = {}
 Proof
-    simp [netlimits_def]
- >> Suff ‘~?a. !x. ~netord at_infinity x a’ >- rw []
- >> rw [AT_INFINITY, real_ge]
- >> Q.EXISTS_TAC ‘abs a’ >> simp [ABS_ABS]
+    rw [Once EXTENSION, NOT_IN_EMPTY, netlimits_def, AT_INFINITY, real_ge]
+ >> Q.EXISTS_TAC ‘x’ >> simp []
 QED
 
 (* ------------------------------------------------------------------------- *)
