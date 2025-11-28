@@ -9857,7 +9857,6 @@ Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[LIM_WITHIN] THEN EQ_TAC THENL
   [SIMP_TAC std_ss [LIM_SEQUENTIALLY, o_THM, IN_DELETE, GSYM DIST_NZ] THEN
    MESON_TAC[], ALL_TAC] THEN
- (* the hard direction *)
   ONCE_REWRITE_TAC[MONO_NOT_EQ] THEN
   SIMP_TAC std_ss [NOT_FORALL_THM, NOT_IMP, NOT_EXISTS_THM] THEN
   DISCH_THEN(X_CHOOSE_THEN ``e:real`` (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
@@ -24837,6 +24836,5 @@ val _ = export_theory();
 
 (* References:
 
-  [1] Bartle, R.G.: A Modern Theory of Integration.
-      American Mathematical Soc. (2001).
+  [1] Bartle, R.G.: A Modern Theory of Integration. American Mathematical Soc. (2001).
  *)

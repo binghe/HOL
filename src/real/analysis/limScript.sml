@@ -1588,9 +1588,10 @@ val DIFF_INVERSE_LT = store_thm("DIFF_INVERSE_LT",
 (* Lemma about introducing a closed ball in an open interval                 *)
 (*---------------------------------------------------------------------------*)
 
-val INTERVAL_CLEMMA = store_thm("INTERVAL_CLEMMA",
-  “!a b x. a < x /\ x < b ==>
-        ?d. &0 < d /\ !y. abs(y - x) <= d ==> a < y /\ y < b”,
+Theorem INTERVAL_CLEMMA:
+   !a b x. a < x /\ x < b ==>
+        ?d. &0 < d /\ !y. abs(y - x) <= d ==> a < y /\ y < b
+Proof
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   MP_TAC(SPECL [“x - a”, “b - x”] REAL_DOWN2) THEN
   ASM_REWRITE_TAC[REAL_SUB_LT] THEN ASM_REWRITE_TAC[REAL_LT_SUB_LADD] THEN
@@ -1605,20 +1606,22 @@ val INTERVAL_CLEMMA = store_thm("INTERVAL_CLEMMA",
       REWRITE_TAC[REAL_LT_LADD]],
     MATCH_MP_TAC REAL_LET_TRANS THEN EXISTS_TAC “x + d” THEN
     ASM_REWRITE_TAC[] THEN ONCE_REWRITE_TAC[REAL_ADD_SYM] THEN
-    ASM_REWRITE_TAC[]]);
+    ASM_REWRITE_TAC[]]
+QED
 
 (*---------------------------------------------------------------------------*)
 (* Alternative version of inverse function theorem                           *)
 (*---------------------------------------------------------------------------*)
 
-val DIFF_INVERSE_OPEN = store_thm("DIFF_INVERSE_OPEN",
-  “!f g l a x b.
+Theorem DIFF_INVERSE_OPEN:
+   !f g l a x b.
         a < x /\
         x < b /\
         (!z. a < z /\ z < b ==> (g(f(z)) = z) /\ f contl z) /\
         (f diffl l)(x) /\
         ~(l = &0)
-        ==> (g diffl (inv l))(f x)”,
+        ==> (g diffl (inv l))(f x)
+Proof
   REPEAT GEN_TAC THEN STRIP_TAC THEN
   MATCH_MP_TAC DIFF_INVERSE THEN
   MP_TAC(SPECL [“a:real”, “b:real”,
@@ -1628,7 +1631,8 @@ val DIFF_INVERSE_OPEN = store_thm("DIFF_INVERSE_OPEN",
   EXISTS_TAC “d:real” THEN ASM_REWRITE_TAC[] THEN
   CONJ_TAC THEN GEN_TAC THEN
   DISCH_THEN(fn th => FIRST_ASSUM(MP_TAC o C MATCH_MP th)) THEN
-  DISCH_THEN(fn th => FIRST_ASSUM(fn t => REWRITE_TAC[MATCH_MP t th])));
+  DISCH_THEN(fn th => FIRST_ASSUM(fn t => REWRITE_TAC[MATCH_MP t th]))
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Every derivative is Darboux continuous.                                   *)
@@ -2794,4 +2798,5 @@ QED
 (* Temporarily re-enable printing of numeral bits for help documents *)
 val _ = temp_remove_user_printer "num.numeral_computations";
 
+(* END *)
 val _ = export_theory ();

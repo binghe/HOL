@@ -682,7 +682,6 @@ QED
 (*  Net As Type                                                              *)
 (* ------------------------------------------------------------------------- *)
 
-(* old definition *)
 Definition isnet :
    isnet g <=> !x y. (!z. g z x ==> g z y) \/ (!z. g z y ==> g z x)
 End
