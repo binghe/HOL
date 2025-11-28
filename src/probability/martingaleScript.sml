@@ -1619,6 +1619,23 @@ Proof
  >> FIRST_X_ASSUM MATCH_MP_TAC >> simp []
 QED
 
+fun shared_tactics () =
+    Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ (MP_TAC o Q.SPEC ‘e’) >> simp [] \\
+    DISCH_THEN (Q.X_CHOOSE_THEN ‘d’ STRIP_ASSUME_TAC) \\
+    Q.EXISTS_TAC ‘d’ >> art [] \\
+    Q.X_GEN_TAC ‘y’ >> STRIP_TAC \\
+    Q.PAT_X_ASSUM ‘!t'. t' IN s /\ _ ==> _’ (MP_TAC o Q.SPEC ‘y’) >> simp [] \\
+   ‘y - t <> 0’ by simp [] \\
+   ‘0 < y - t \/ y - t < 0’ by METIS_TAC [REAL_LT_TOTAL]
+    >- (‘0 <= y - t’ by simp [REAL_LT_IMP_LE] \\
+        simp [real_sgn, ABS_REDUCE]) \\
+   ‘sgn (y - t) = -1’ by simp [REAL_SGN_EQ] \\
+    simp [ABS_EQ_NEG, REAL_INV_NEG] \\
+    REWRITE_TAC [Once (GSYM ABS_NEG)] \\
+    REWRITE_TAC [REAL_NEG_SUB] \\
+    REWRITE_TAC [GSYM REAL_NEG_LMUL] \\
+    REWRITE_TAC [REAL_SUB_NEG2];
+
 (* |- !m u.
         measure_space m /\ (!t. integrable m (Normal o u t)) /\
         (!x. x IN m_space m ==> (\t. u t x) continuous_on univ(:real)) /\
@@ -1701,37 +1718,9 @@ Proof
  >- (rw [LIM_WITHIN, dist] \\
      EQ_TAC >> rw [Abbr ‘d’] >| (* 2 subgoals, same tactics *)
      [ (* goal 1 (of 2) *)
-       Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ (MP_TAC o Q.SPEC ‘e’) >> simp [] \\
-       DISCH_THEN (Q.X_CHOOSE_THEN ‘d’ STRIP_ASSUME_TAC) \\
-       Q.EXISTS_TAC ‘d’ >> art [] \\
-       Q.X_GEN_TAC ‘y’ >> STRIP_TAC \\
-       Q.PAT_X_ASSUM ‘!t'. t' IN s /\ _ ==> _’ (MP_TAC o Q.SPEC ‘y’) >> simp [] \\
-      ‘y - t <> 0’ by simp [] \\
-      ‘0 < y - t \/ y - t < 0’ by METIS_TAC [REAL_LT_TOTAL]
-       >- (‘0 <= y - t’ by simp [REAL_LT_IMP_LE] \\
-           simp [real_sgn, ABS_REDUCE]) \\
-      ‘sgn (y - t) = -1’ by simp [REAL_SGN_EQ] \\
-       simp [ABS_EQ_NEG, REAL_INV_NEG] \\
-       REWRITE_TAC [Once (GSYM ABS_NEG)] \\
-       REWRITE_TAC [REAL_NEG_SUB] \\
-       REWRITE_TAC [GSYM REAL_NEG_LMUL] \\
-       REWRITE_TAC [REAL_SUB_NEG2],
+       shared_tactics (),
        (* goal 2 (of 2) *)
-       Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ (MP_TAC o Q.SPEC ‘e’) >> simp [] \\
-       DISCH_THEN (Q.X_CHOOSE_THEN ‘d’ STRIP_ASSUME_TAC) \\
-       Q.EXISTS_TAC ‘d’ >> art [] \\
-       Q.X_GEN_TAC ‘y’ >> STRIP_TAC \\
-       Q.PAT_X_ASSUM ‘!t'. t' IN s /\ _ ==> _’ (MP_TAC o Q.SPEC ‘y’) >> simp [] \\
-      ‘y - t <> 0’ by simp [] \\
-      ‘0 < y - t \/ y - t < 0’ by METIS_TAC [REAL_LT_TOTAL]
-       >- (‘0 <= y - t’ by simp [REAL_LT_IMP_LE] \\
-           simp [real_sgn, ABS_REDUCE]) \\
-      ‘sgn (y - t) = -1’ by simp [REAL_SGN_EQ] \\
-       simp [ABS_EQ_NEG, REAL_INV_NEG] \\
-       REWRITE_TAC [Once (GSYM ABS_NEG)] \\
-       REWRITE_TAC [REAL_NEG_SUB] \\
-       REWRITE_TAC [GSYM REAL_NEG_LMUL] \\
-       REWRITE_TAC [REAL_SUB_NEG2] ])
+       shared_tactics () ])
  >> Rewr'
  >> qabbrev_tac ‘f = \t'. real (integral m (Normal o u t'))’
  >> qabbrev_tac ‘k = real (integral m (Normal o u t))’
@@ -1743,37 +1732,9 @@ Proof
  >- (rw [LIM_WITHIN, dist] \\
      EQ_TAC >> rw [Abbr ‘d’] >| (* 2 subgoals, same tactics *)
      [ (* goal 1 (of 2) *)
-       Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ (MP_TAC o Q.SPEC ‘e’) >> simp [] \\
-       DISCH_THEN (Q.X_CHOOSE_THEN ‘d’ STRIP_ASSUME_TAC) \\
-       Q.EXISTS_TAC ‘d’ >> art [] \\
-       Q.X_GEN_TAC ‘y’ >> STRIP_TAC \\
-       Q.PAT_X_ASSUM ‘!t'. t' IN s /\ _ ==> _’ (MP_TAC o Q.SPEC ‘y’) >> simp [] \\
-      ‘y - t <> 0’ by simp [] \\
-      ‘0 < y - t \/ y - t < 0’ by METIS_TAC [REAL_LT_TOTAL]
-       >- (‘0 <= y - t’ by simp [REAL_LT_IMP_LE] \\
-           simp [real_sgn, ABS_REDUCE]) \\
-      ‘sgn (y - t) = -1’ by simp [REAL_SGN_EQ] \\
-       simp [ABS_EQ_NEG, REAL_INV_NEG] \\
-       REWRITE_TAC [Once (GSYM ABS_NEG)] \\
-       REWRITE_TAC [REAL_NEG_SUB] \\
-       REWRITE_TAC [GSYM REAL_NEG_LMUL] \\
-       REWRITE_TAC [REAL_SUB_NEG2],
+       shared_tactics (),
        (* goal 2 (of 2) *)
-       Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ (MP_TAC o Q.SPEC ‘e’) >> simp [] \\
-       DISCH_THEN (Q.X_CHOOSE_THEN ‘d’ STRIP_ASSUME_TAC) \\
-       Q.EXISTS_TAC ‘d’ >> art [] \\
-       Q.X_GEN_TAC ‘y’ >> STRIP_TAC \\
-       Q.PAT_X_ASSUM ‘!t'. t' IN s /\ _ ==> _’ (MP_TAC o Q.SPEC ‘y’) >> simp [] \\
-      ‘y - t <> 0’ by simp [] \\
-      ‘0 < y - t \/ y - t < 0’ by METIS_TAC [REAL_LT_TOTAL]
-       >- (‘0 <= y - t’ by simp [REAL_LT_IMP_LE] \\
-           simp [real_sgn, ABS_REDUCE]) \\
-      ‘sgn (y - t) = -1’ by simp [REAL_SGN_EQ] \\
-       simp [ABS_EQ_NEG, REAL_INV_NEG] \\
-       REWRITE_TAC [Once (GSYM ABS_NEG)] \\
-       REWRITE_TAC [REAL_NEG_SUB] \\
-       REWRITE_TAC [GSYM REAL_NEG_LMUL] \\
-       REWRITE_TAC [REAL_SUB_NEG2] ])
+       shared_tactics () ])
  >> Rewr'
  (* stage work *)
  >> simp [LIM_WITHIN_SEQUENTIALLY_OPEN]

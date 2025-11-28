@@ -6037,6 +6037,12 @@ Proof
   REPEAT(POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC
 QED
 
+Theorem REAL_CHOOSE_SIZE :
+   !c. &0 <= c ==> (?x. abs x = c:real)
+Proof
+  METIS_TAC [ABS_REFL]
+QED
+
 (* Temporarily re-enable printing of numeral bits for help documents *)
 val _ = temp_remove_user_printer "num.numeral_computations";
 

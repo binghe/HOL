@@ -1066,47 +1066,41 @@ QED
 (* ------------------------------------------------------------------------- *)
 (* Some property holds "sufficiently close" to the limit point.              *)
 (* ------------------------------------------------------------------------- *)
+(* Identify trivial limits, where we can't approach arbitrarily closely.     *)
+(* ------------------------------------------------------------------------- *)
 
+(* old definitions: *)
 Definition trivial_limit :
     trivial_limit net <=>
       (!(a:'a) b. a = b) \/
       ?(a:'a) b. ~(a = b) /\ !x. ~(netord(net) x a) /\ ~(netord(net) x b)
 End
 
-(* old definition *)
 Definition eventually :
     eventually p net <=>
       trivial_limit net \/
       ?y. (?x. netord net x y) /\ (!x. netord net x y ==> p x)
 End
 
-(* new definition (experimental, compatible with HOL-Light)
+(* new definitions (experimental, compatible with HOL-Light)
 Definition eventually_def :
     eventually (P :'a -> bool) net <=>
       netfilter net = {} \/
       ?u. u IN netfilter net /\
             !x. x IN u DIFF netlimits net ==> P x
 End
+
+Definition trivial_limit_def :
+    trivial_limit net = eventually (\x. F) net
+End
  *)
 
 (* ------------------------------------------------------------------------- *)
-(* Identify trivial limits, where we can't approach arbitrarily closely.     *)
-(* ------------------------------------------------------------------------- *)
-
-(* HOL-Light's definition of ‘trivial_limit’
-   |- !net. trivial_limit net <=> eventually (\x. F) net
- *)
 
 Theorem NONTRIVIAL_LIMIT_WITHIN :
     !net s. trivial_limit net ==> trivial_limit(net within s)
 Proof
     REWRITE_TAC[trivial_limit, WITHIN] THEN MESON_TAC[]
-QED
-
-Theorem REAL_CHOOSE_SIZE :
-   !c. &0 <= c ==> (?x. abs x = c:real)
-Proof
-  METIS_TAC [ABS_REFL]
 QED
 
 Theorem TRIVIAL_LIMIT_AT_INFINITY :
