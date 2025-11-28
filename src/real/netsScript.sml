@@ -974,6 +974,7 @@ Theorem NETFILTER_AT =
         NETFILTER_ATPOINTOF |> ISPEC “mr1”
                             |> REWRITE_RULE [GSYM dist_def, GSYM at_DEF]
 
+(* NOTE: This theorem is HOL-Light's WITHIN *)
 Theorem NETFILTER_WITHIN :
     !net s. netfilter (net within s) = netfilter net relative_to s
 Proof
@@ -1069,7 +1070,7 @@ QED
 (* Identify trivial limits, where we can't approach arbitrarily closely.     *)
 (* ------------------------------------------------------------------------- *)
 
-(* old definitions: *)
+(* old definitions *)
 Definition trivial_limit :
     trivial_limit net <=>
       (!(a:'a) b. a = b) \/
@@ -1082,7 +1083,7 @@ Definition eventually :
       ?y. (?x. netord net x y) /\ (!x. netord net x y ==> p x)
 End
 
-(* new definitions (experimental, compatible with HOL-Light)
+(* new definitions (compatible with HOL-Light)
 Definition eventually_def :
     eventually (P :'a -> bool) net <=>
       netfilter net = {} \/
@@ -1093,6 +1094,31 @@ End
 Definition trivial_limit_def :
     trivial_limit net = eventually (\x. F) net
 End
+
+Theorem NETLIMITS_WITHIN_lemma1 :
+    !net s. s = {} ==> netlimits (net within s) = UNIV
+Proof
+    rw [netlimits_def, WITHIN]
+QED
+
+Theorem NETLIMITS_WITHIN_lemma2 :
+    !net s. s <> {} ==> netlimits (net within s) = netlimits net
+Proof
+    rw [netlimits_def, WITHIN]
+ >> cheat
+QED
+
+Theorem EVENTUALLY_WITHIN_IMP :
+    !net (P :'a -> bool) s.
+        eventually P (net within s) <=>
+        eventually (\x. x IN s ==> P x) net
+Proof
+    rw [eventually_def, WITHIN, RELATIVE_TO, NETFILTER_WITHIN]
+ >> cheat
+ (*
+  REWRITE_TAC[INTERS_GSPEC; NETLIMITS_WITHIN] THEN SET_TAC[]
+  *)
+QED
  *)
 
 (* ------------------------------------------------------------------------- *)
@@ -1144,11 +1170,6 @@ Theorem EVENTUALLY_FALSE :
 Proof
   REWRITE_TAC[eventually] THEN MESON_TAC[]
 QED
-
-(* This is HOL-Light's definition of ‘trivial_limit’
-   |- !net. trivial_limit net <=> eventually (\x. F) net
- *)
-Theorem trivial_limit_def = GSYM EVENTUALLY_FALSE
 
 Theorem EVENTUALLY_TRUE :
     !net. eventually (\x. T) net <=> T
