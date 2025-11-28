@@ -6715,24 +6715,45 @@ Theorem gauge_differentiable_lemma :
              diff1 (\t. integral univ(:real) (u t)) t =
              integral univ(:real) (\x. diff1 (\t. u t x) t)
 Proof
-    rpt GEN_TAC >> STRIP_TAC
+    Q.X_GEN_TAC ‘u’ >> STRIP_TAC
  >> Q.X_GEN_TAC ‘t’
  >> MP_TAC (Q.SPECL [‘lborel’, ‘u’]
                     (INST_TYPE [alpha |-> “:real”] differentiable_univ_lemma'))
  >> simp [space_lborel, lborel_def]
  >> impl_tac >- (Q.EXISTS_TAC ‘w’ >> art [])
- >> DISCH_THEN (STRIP_ASSUME_TAC o SRULE [IMP_CONJ_THM, FORALL_AND_THM])
- >> simp []
+ >> DISCH_THEN (STRIP_ASSUME_TAC o
+                SRULE [IMP_CONJ_THM, FORALL_AND_THM]) >> simp []
  >> Know ‘integral univ(:real) (\x. diff1 (\t. u t x) t) =
           real (integral lborel (\x. Normal (diff1 (\t. u t x) t)))’
  >- (MP_TAC (Q.SPEC ‘\x. diff1 (\t. u t (x :real)) t’
-                    (cj 2 lebesgue_eq_gauge_integral)) \\
-     simp [o_DEF])
+                    (cj 2 lebesgue_eq_gauge_integral)) >> simp [o_DEF])
  >> Rewr'
  >> POP_ASSUM (REWRITE_TAC o wrap o GSYM)
  >> MATCH_MP_TAC limTheory.diffn_cong >> rw []
  >> MP_TAC (Q.SPEC ‘u (x :real)’ (cj 2 lebesgue_eq_gauge_integral))
  >> simp [o_DEF]
+QED
+
+Theorem gauge_higher_differentiable_lemma :
+    !u. (!t. integrable lborel (Normal o u t)) /\
+        (!n t x. higher_differentiable n (\t. u t x) t) /\
+        (?w. integrable lborel w /\
+            (!x. 0 <= w x /\ w x <> PosInf) /\
+             !n t x. Normal (abs (diffn n (\t. u t x) t)) <= w x)
+     ==> !t n. integrable lborel (\x. Normal (diffn n (\t. u t x) t)) /\
+               diffn n (\t. integral univ(:real) (u t)) t =
+               integral univ(:real) (\x. diffn n (\t. u t x) t)
+Proof
+    Q.X_GEN_TAC ‘u’ >> STRIP_TAC
+ >> Q.X_GEN_TAC ‘t’
+ >> Induct_on ‘n’
+ >- (simp [limTheory.diffn_0] \\
+    ‘(\x. u t x) = u t’ by rw [FUN_EQ_THM] \\
+     fs [o_DEF])
+ >> qabbrev_tac ‘f = \x. diffn n (\t. u t x)’
+ >> fs [FORALL_AND_THM]
+ (* applying limTheory.diffn_SUC' *)
+ >> cheat
 QED
 
 (* ------------------------------------------------------------------------- *)
