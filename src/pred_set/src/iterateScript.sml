@@ -830,41 +830,6 @@ Proof
   rw[EXTENSION]
 QED
 
-Theorem DISJOINT_COUNT_FROM:   !n. DISJOINT (count n) (from n)
-Proof
-    RW_TAC arith_ss [from_def, count_def, DISJOINT_DEF, Once EXTENSION, NOT_IN_EMPTY,
-                     GSPECIFICATION, IN_INTER]
-QED
-
-Theorem DISJOINT_FROM_COUNT:   !n. DISJOINT (from n) (count n)
-Proof
-    RW_TAC std_ss [Once DISJOINT_SYM, DISJOINT_COUNT_FROM]
-QED
-
-Theorem UNION_COUNT_FROM:   !n. (count n) UNION (from n) = UNIV
-Proof
-    RW_TAC arith_ss [from_def, count_def, Once EXTENSION, NOT_IN_EMPTY,
-                     GSPECIFICATION, IN_UNION, IN_UNIV]
-QED
-
-Theorem UNION_FROM_COUNT:   !n. (from n) UNION (count n) = UNIV
-Proof
-    RW_TAC std_ss [Once UNION_COMM, UNION_COUNT_FROM]
-QED
-
-Theorem FROM_NOT_EMPTY :
-    !n. from n <> {}
-Proof
-    RW_TAC std_ss [GSYM MEMBER_NOT_EMPTY, from_def, GSPECIFICATION]
- >> Q.EXISTS_TAC `n` >> REWRITE_TAC [LESS_EQ_REFL]
-QED
-
-Theorem COUNTABLE_FROM :
-    !n. COUNTABLE (from n)
-Proof
-    PROVE_TAC [COUNTABLE_NUM]
-QED
-
 Theorem FROM_INTER_NUMSEG_GEN:
    !k m n. (from k) INTER {m..n} = if m < k then {k..n} else {m..n}
 Proof
