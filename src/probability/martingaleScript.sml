@@ -1737,7 +1737,7 @@ Proof
        shared_tactics () ])
  >> Rewr'
  (* stage work *)
- >> simp [LIM_WITHIN_SEQUENTIALLY_OPEN]
+ >> simp [LIM_WITHIN_SEQUENTIALLY]
  >> simp [GSYM RIGHT_FORALL_IMP_THM, AND_IMP_INTRO, Once SWAP_FORALL_THM, o_DEF]
  >> DISCH_TAC
  (* integrable m (\x. Normal (g x))

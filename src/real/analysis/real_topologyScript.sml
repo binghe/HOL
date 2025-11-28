@@ -7047,6 +7047,14 @@ Proof
  REWRITE_TAC[LIM_WITHIN, GSYM DIST_NZ] THEN SIMP_TAC std_ss []
 QED
 
+(* NOTE: This theorem is not from HOL-Light. *)
+Theorem LIM_WITHIN_CONG :
+   !f g l r a s. (!x. ~(x = a) /\ x IN s ==> (f x - l = g x - r))
+  ==> ((f --> l) (at a within s) <=> ((g --> r) (at a within s)))
+Proof
+    rw [LIM_WITHIN, dist]
+QED
+
 Theorem LIM_CONG_AT:
    (!x. ~(x = a) ==> (f x = g x))
   ==> (((\x. f x) --> l) (at a) <=> ((g --> l) (at a)))
@@ -9834,99 +9842,43 @@ Proof
   REWRITE_TAC[tendsto, continuous_at, eventually] THEN MESON_TAC[]
 QED
 
-(*
-let LIM_WITHIN_SEQUENTIALLY = prove
- (`!f:real^M->real^N s a l.
-        (f --> l) (at a within s) <=>
-        !x. (!n. x(n) IN s DELETE a) /\
-            (x --> a) sequentially
-            ==> ((f o x) --> l) sequentially`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM LIMIT_EUCLIDEAN; at] THEN
-  REWRITE_TAC[GSYM MTOPOLOGY_EUCLIDEAN_METRIC] THEN
-  GEN_REWRITE_TAC LAND_CONV [LIMIT_ATPOINTOF_SEQUENTIALLY_WITHIN] THEN
-  REWRITE_TAC[EUCLIDEAN_METRIC; IN_UNIV; INTER_UNIV]);;
-
-  NOTE: The new, manual proof doesn't work :(
+(* NOTE: This proof is learnt from CONTINUOUS_WITHIN_SEQUENTIALLY, where the
+   key device is FORALL_POS_MONO_1. The original proof from HOL-Light is a
+   specialisation of a more general theorem for general metric spaces
+  (LIMIT_ATPOINTOF_SEQUENTIALLY_WITHIN from HOL-Light's topology.ml).
  *)
-Theorem LIM_WITHIN_SEQUENTIALLY_OPEN :
-    !(f :real -> real) s a l. a IN s /\ open s ==>
+Theorem LIM_WITHIN_SEQUENTIALLY :
+    !(f :real -> real) s a l.
        ((f --> l) (at a within s) <=>
         !x. (!n. x(n) IN s DELETE a) /\
             (x --> a) sequentially
             ==> ((f o x) --> l) sequentially)
 Proof
-    rpt GEN_TAC >> STRIP_TAC
- >> EQ_TAC (* '==>' is easy *)
- >- (RW_TAC std_ss [LIM_WITHIN, LIM_SEQUENTIALLY, IN_DELETE] \\
-     Q.PAT_X_ASSUM ‘!e. 0 < e ==> ?d. 0 < d /\ _’
-       (MP_TAC o Q.SPEC ‘e’) >> RW_TAC std_ss [] \\
-     Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ (MP_TAC o Q.SPEC ‘d’) \\
-     RW_TAC std_ss [] \\
-     Q.EXISTS_TAC ‘N’ >> rpt STRIP_TAC \\
-     Q.PAT_X_ASSUM ‘!n. N <= n ==> dist (x n,a) < d’
-       (MP_TAC o Q.SPEC ‘n’) >> RW_TAC std_ss [] \\
-     Q.PAT_X_ASSUM ‘!x. x IN s /\ _ ==> _’ (MP_TAC o Q.SPEC ‘x (n :num)’) \\
-     RW_TAC std_ss [DIST_POS_LT])
- (* stage work *)
- >> RW_TAC std_ss [LIM_WITHIN, LIM_SEQUENTIALLY, IN_DELETE, GSYM DIST_NZ]
- >> Q.PAT_X_ASSUM ‘open s’ (MP_TAC o REWRITE_RULE [open_def])
- >> DISCH_THEN (MP_TAC o Q.SPEC ‘a’) >> art []
- >> DISCH_THEN (Q.X_CHOOSE_THEN ‘r’ STRIP_ASSUME_TAC)
- (* now we construct a monotone series in (a - r,a + r), actually (a,a + r) *)
- >> ASSUME_TAC (Q.SPEC ‘inv r’ SEQ_HARMONIC_OFFSET)
- >> qabbrev_tac ‘h = \n. inv (&n + inv r)’
- >> Know ‘!i. 0 <= h i’
- >- (rw [Abbr ‘h’] \\
-     MATCH_MP_TAC REAL_LE_ADD >> simp [REAL_LT_IMP_LE])
- >> DISCH_TAC
- >> Know ‘!i. 0 < h (SUC i)’
- >- (rw [Abbr ‘h’] \\
-     MATCH_MP_TAC REAL_LT_ADD >> simp [])
- >> DISCH_TAC
- >> Know ‘!i. h (SUC i) < r’
- >- (rw [Abbr ‘h’] \\
-     Suff ‘inv (&SUC i + inv r) < inv (inv r)’
-     >- REWRITE_TAC [REAL_INV_INV] \\
-     MATCH_MP_TAC REAL_LT_INV >> simp [])
- >> DISCH_TAC
- >> ‘!i. abs (h (SUC i)) < r’ by rw [ABS_REDUCE]
- >> MP_TAC (Q.SPECL [‘h’, ‘0’, ‘1’] SEQ_OFFSET) >> simp [GSYM ADD1]
- >> DISCH_TAC
- >> Know ‘((\i. h (SUC i) + a) --> (0 + a)) sequentially’
- >- (HO_MATCH_MP_TAC LIM_ADD \\
-     simp [LIM_CONST])
- >> simp [] >> DISCH_TAC
- >> qabbrev_tac ‘h1 = \i. h (SUC i) + a’
- >> Know ‘!n. h1 n IN ball (a,r) /\ h1 n <> a’
- >- (Q.X_GEN_TAC ‘n’ >> simp [Abbr ‘h1’, IN_BALL] \\
-     reverse CONJ_TAC
-     >- (Suff ‘0 < h (SUC n)’ >- REAL_ARITH_TAC >> simp []) \\
-     ONCE_REWRITE_TAC [DIST_SYM] \\
-     simp [dist, REAL_ADD_SUB_ALT])
- >> DISCH_THEN (STRIP_ASSUME_TAC o SIMP_RULE bool_ss [FORALL_AND_THM])
- >> Know ‘!n. h1 n IN s’
- >- (Q.X_GEN_TAC ‘n’ \\
-     FIRST_X_ASSUM MATCH_MP_TAC \\
-     FULL_SIMP_TAC std_ss [IN_BALL] \\
-     simp [Once DIST_SYM])
- >> DISCH_TAC
- >> Q.PAT_X_ASSUM ‘!x. (!n. x n IN s /\ x n <> a) /\ _ ==> _’
-      (MP_TAC o Q.SPEC ‘h1’) >> simp []
- >> impl_tac
- >- (Q.X_GEN_TAC ‘d’ >> DISCH_TAC \\
-     MP_TAC (Q.SPEC ‘d’ REAL_ARCH_INV_SUC) >> art [] \\
-     DISCH_THEN (Q.X_CHOOSE_THEN ‘N’ STRIP_ASSUME_TAC) \\
-     Q.EXISTS_TAC ‘N’ >> rw [dist] \\
-    ‘abs (h1 n - a) = h1 n - a’
-       by simp [ABS_REFL, Abbr ‘h1’, REAL_ADD_SUB_ALT] >> POP_ORW \\
-     Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘inv (&SUC N)’ >> art [] \\
-     ASM_SIMP_TAC std_ss [Abbr ‘h1’, REAL_ADD_SUB_ALT, Abbr ‘h’] \\
-     MATCH_MP_TAC REAL_LT_INV >> simp [] \\
-     Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘&SUC n’ >> simp [])
- >> DISCH_THEN (MP_TAC o Q.SPEC ‘e’)
- >> RW_TAC std_ss []
- >> CCONTR_TAC >> FULL_SIMP_TAC bool_ss []
- >> cheat
+  REPEAT GEN_TAC THEN REWRITE_TAC[LIM_WITHIN] THEN EQ_TAC THENL
+  [SIMP_TAC std_ss [LIM_SEQUENTIALLY, o_THM, IN_DELETE, GSYM DIST_NZ] THEN
+   MESON_TAC[], ALL_TAC] THEN
+ (* the hard direction *)
+  ONCE_REWRITE_TAC[MONO_NOT_EQ] THEN
+  SIMP_TAC std_ss [NOT_FORALL_THM, NOT_IMP, NOT_EXISTS_THM] THEN
+  DISCH_THEN(X_CHOOSE_THEN ``e:real`` (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  DISCH_THEN(MP_TAC o GEN ``n:num`` o SPEC ``&1 / (&n + &1:real)``) THEN
+  SIMP_TAC arith_ss [REAL_LT_DIV, REAL_LT, REAL_OF_NUM_LE, REAL_POS,
+   REAL_ARITH ``&0 <= n ==> &0 < n + &1:real``, NOT_FORALL_THM, SKOLEM_THM] THEN
+  DISCH_THEN (X_CHOOSE_TAC ``y:num->real``) THEN EXISTS_TAC ``y:num->real`` THEN
+  POP_ASSUM MP_TAC THEN SIMP_TAC std_ss [NOT_IMP, FORALL_AND_THM] THEN
+  SIMP_TAC std_ss [LIM_SEQUENTIALLY, o_THM, IN_DELETE, GSYM DIST_NZ] THEN
+  STRIP_TAC THEN CONJ_TAC THENL [ALL_TAC, ASM_MESON_TAC[LESS_EQ_REFL]] THEN
+  KNOW_TAC ``!e. (?N:num. !n. N <= n ==> dist (y n,a) < e) =
+             (\e. ?N:num. !n. N <= n ==> dist (y n,a) < e) e`` THENL
+  [FULL_SIMP_TAC std_ss [], ALL_TAC] THEN DISC_RW_KILL THEN
+  MATCH_MP_TAC FORALL_POS_MONO_1 THEN BETA_TAC THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[REAL_LT_TRANS], ALL_TAC] THEN
+  X_GEN_TAC ``n:num`` THEN EXISTS_TAC ``n:num`` THEN X_GEN_TAC ``m:num`` THEN
+  DISCH_TAC THEN MATCH_MP_TAC REAL_LTE_TRANS THEN
+  EXISTS_TAC ``&1 / (&m + &1:real)`` THEN ASM_REWRITE_TAC[] THEN
+  ASM_SIMP_TAC std_ss
+  [REAL_LE_INV2, real_div, REAL_ARITH ``&0 <= x ==> &0 < x + &1:real``,
+   REAL_POS, REAL_MUL_LID, REAL_LE_RADD, REAL_OF_NUM_LE]
 QED
 
 (* ------------------------------------------------------------------------- *)
