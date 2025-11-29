@@ -6743,7 +6743,8 @@ Theorem gauge_higher_differentiable_lemma :
         (?w. integrable lborel w /\
             (!x. 0 <= w x /\ w x <> PosInf) /\
              !n t x. Normal (abs (diffn n (\t. u t x) t)) <= w x)
-     ==> !t n. integrable lborel (\x. Normal (diffn n (\t. u t x) t)) /\
+     ==> !t n. higher_differentiable n (\t. integral univ(:real) (u t)) t /\
+               integrable lborel (\x. Normal (diffn n (\t. u t x) t)) /\
                diffn n (\t. integral univ(:real) (u t)) t =
                integral univ(:real) (\x. diffn n (\t. u t x) t)
 Proof
@@ -6752,7 +6753,7 @@ Proof
  >> Induct_on ‘n’
  >- (simp [limTheory.diffn_0] \\
     ‘(\x. u t x) = u t’ by rw [FUN_EQ_THM] \\
-     fs [o_DEF])
+     fs [o_DEF, limTheory.higher_differentiable_def])
  (* stage work *)
  >> qabbrev_tac ‘f = \x. diffn n (\t. u t x)’
  >> fs [FORALL_AND_THM]

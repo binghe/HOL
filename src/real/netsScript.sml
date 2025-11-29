@@ -1063,6 +1063,56 @@ Proof
  >> Q.EXISTS_TAC ‘x’ >> simp []
 QED
 
+(* NOTE: This lemma shows that “within” makes netlimits potentially larger. *)
+Theorem NETLIMITS_WITHIN_lemma1[local] :
+    netlimits net SUBSET netlimits (net within s)
+Proof
+    rw [SUBSET_DEF, netlimits_def, WITHIN]
+QED
+
+Theorem NETLIMITS_WITHIN_lemma2[local] :
+    (!x. (!y. y NOTIN s \/ ~netord net y x) ==> x IN netlimits net) ==>
+    netlimits (net within s) SUBSET netlimits net
+Proof
+    rpt STRIP_TAC
+ >> simp [SUBSET_DEF, Once netlimits_def, WITHIN]
+ >> ONCE_REWRITE_TAC [DISJ_COMM]
+ (* x is any element in ‘netlimits net’ *)
+ >> Q.X_GEN_TAC ‘x’ >> DISCH_TAC
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> simp []
+QED
+
+(* converting forall to exists, negative terms to positive *)
+Theorem NETLIMITS_WITHIN_lemma3[local] :
+    (!x. (!y. y NOTIN s \/ ~netord net y x) ==> x IN netlimits net) <=>
+    (!x. x NOTIN netlimits net ==> ?y. y IN s /\ netord net y x)
+Proof
+    METIS_TAC []
+QED
+
+(* weakening the condition by removing “x NOTIN netlimits net” *)
+Theorem NETLIMITS_WITHIN_lemma4[local] :
+    (!x. ?y. y IN s /\ netord net y x) ==>
+    (!x. x NOTIN netlimits net ==> ?y. y IN s /\ netord net y x)
+Proof
+    METIS_TAC []
+QED
+
+(* NOTE: The antecedents shows that s should be a upwards closed set, e.g.
+   {x | c <= x} for net “at a” (a < c) and “at_posinfinity”.
+ *)
+Theorem NETLIMITS_WITHIN :
+    !net s. (!x. ?y. y IN s /\ netord net y x) ==>
+            netlimits (net within s) = netlimits net
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC SUBSET_ANTISYM
+ >> REWRITE_TAC [NETLIMITS_WITHIN_lemma1]
+ >> MATCH_MP_TAC NETLIMITS_WITHIN_lemma2
+ >> REWRITE_TAC [NETLIMITS_WITHIN_lemma3]
+ >> MATCH_MP_TAC NETLIMITS_WITHIN_lemma4 >> art []
+QED
+
 (* ------------------------------------------------------------------------- *)
 (* Some property holds "sufficiently close" to the limit point.              *)
 (* ------------------------------------------------------------------------- *)
