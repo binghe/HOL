@@ -996,6 +996,12 @@ Definition netlimit :
     netlimit net = @a. !x. ~(netord net x a)
 End
 
+(* new definition:
+Definition netlimit_def :
+    netlimit net = @a. !x. netord net x a ==> x = a
+End
+ *)
+
 Theorem NETLIMIT_ATPOINTOF :
     !m a. netlimit(atpointof m a) = a
 Proof
@@ -1090,31 +1096,33 @@ Proof
     METIS_TAC []
 QED
 
-(* weakening the condition by removing “x NOTIN netlimits net” *)
+(*
 Theorem NETLIMITS_WITHIN_lemma4[local] :
-    (!x. ?y. y IN s /\ netord net y x) ==>
+    transitive (netord net) /\ netlimits net SUBSET s ==>
     (!x. x NOTIN netlimits net ==> ?y. y IN s /\ netord net y x)
 Proof
-    METIS_TAC []
+    cheat
 QED
+ *)
 
-(* NOTE: The antecedents shows that s should be a upwards closed set, e.g.
-   {x | c <= x} for net “at a” (a < c) and “at_posinfinity”.
+(* NOTE: The set “s” can only exclude some minimal elements from UNIV ?! BUT,
+
+   IF “netord net” is transitive, then “s” only need to be upwards closed, and
+   can even be only limit elements, i.e. “netlimits net SUBSET s”.
  *)
 Theorem NETLIMITS_WITHIN :
-    !net s. (!x. ?y. y IN s /\ netord net y x) ==>
+    !net s. (!x. x NOTIN netlimits net ==> ?y. y IN s /\ netord net y x) ==>
             netlimits (net within s) = netlimits net
 Proof
     rpt STRIP_TAC
  >> MATCH_MP_TAC SUBSET_ANTISYM
  >> REWRITE_TAC [NETLIMITS_WITHIN_lemma1]
  >> MATCH_MP_TAC NETLIMITS_WITHIN_lemma2
- >> REWRITE_TAC [NETLIMITS_WITHIN_lemma3]
- >> MATCH_MP_TAC NETLIMITS_WITHIN_lemma4 >> art []
+ >> ASM_REWRITE_TAC [NETLIMITS_WITHIN_lemma3]
 QED
 
 (* ------------------------------------------------------------------------- *)
-(* Some property holds "sufficiently close" to the limit point.              *)
+(* Some property holds "sufficiently close" to the limit point (eventually). *)
 (* ------------------------------------------------------------------------- *)
 (* Identify trivial limits, where we can't approach arbitrarily closely.     *)
 (* ------------------------------------------------------------------------- *)
