@@ -6758,6 +6758,7 @@ Proof
  >> qabbrev_tac ‘f = \t x. diffn n (\t. u t x) t’
  >> ‘!t x. diffn n (\t. u t x) t = f t x’ by rw [Abbr ‘f’, FUN_EQ_THM]
  >> POP_ORW
+ >> ‘!t. (\x. f t x) = f t’ by rw [FUN_EQ_THM] >> POP_ORW
  >> DISCH_THEN (STRIP_ASSUME_TAC o SRULE [FORALL_AND_THM])
  (* applying limTheory.diffn_SUC' *)
  >> Know ‘!x. diffn (SUC n) (\t. u t x) = diff1 (\t. f t x)’
@@ -6765,16 +6766,45 @@ Proof
     ‘(\t. diffn n (\t. u t x) t) = diffn n (\t. u t x)’ by rw [FUN_EQ_THM] \\
      POP_ORW \\
      MATCH_MP_TAC limTheory.diffn_SUC' >> art [])
- >> Rewr'
+ >> DISCH_TAC
  (* applying gauge_differentiable_lemma on f *)
  >> MP_TAC (Q.SPEC ‘f’ gauge_differentiable_lemma) >> simp [o_DEF]
+ >> impl_tac
+ >- (CONJ_TAC (* !x. (\t. f t x) differentiable_on univ(:real) *)
+     >- (Q.X_GEN_TAC ‘x’ \\
+         simp [differentiable_on, NET_WITHIN_UNIV] \\
+         Q.X_GEN_TAC ‘t’ \\
+         simp [GSYM limTheory.higher_differentiable_1_eq_differentiable] \\
+         Q.PAT_X_ASSUM ‘!n t x. higher_differentiable n (\t. u t x) t’
+           (MP_TAC o Q.GEN ‘t’ o Q.SPECL [‘SUC n’, ‘t’, ‘x’]) \\
+         DISCH_THEN (MP_TAC o Q.SPEC ‘t’ o
+                     MATCH_MP limTheory.higher_differentiable_imp_1n) \\
+        ‘diffn n (\t. u t x) = (\t. f t x)’ by rw [Abbr ‘f’, FUN_EQ_THM] \\
+         simp []) \\
+     Q.EXISTS_TAC ‘w’ >> rw [] \\
+     POP_ASSUM (REWRITE_TAC o wrap o Q.SPEC ‘x’ o GSYM) >> art [])
+ >> simp []
+ >> DISCH_THEN (STRIP_ASSUME_TAC o SRULE [FORALL_AND_THM])
  >> qabbrev_tac ‘g = \t. integral univ(:real) (u t)’
+ >> Q.PAT_X_ASSUM ‘!t. diffn n g t = integral univ(:real) (f t)’
+      (fs o wrap o GSYM)
+ >> ‘(\t. diffn n g t) = diffn n g’ by rw [FUN_EQ_THM]
+ >> POP_ASSUM (fs o wrap)
  (* stage work *)
+ >> Know ‘!t. higher_differentiable (SUC n) g t’
+ >- (rw [limTheory.higher_differentiable_def] \\
+     qabbrev_tac ‘h = diffn n g’ \\
+    ‘(\t. h t) = h’ by rw [FUN_EQ_THM] >> POP_ASSUM (fs o wrap) \\
+     REWRITE_TAC [GSYM limTheory.higher_differentiable_1] \\
+     REWRITE_TAC [limTheory.higher_differentiable_1_eq_differentiable] \\
+     Q.PAT_X_ASSUM ‘h differentiable_on univ(:real)’ MP_TAC \\
+     simp [differentiable_on, NET_WITHIN_UNIV])
+ >> DISCH_TAC
+ >> simp []
  >> Know ‘diffn (SUC n) g = diff1 (diffn n g)’
- >- (SYM_TAC >> MATCH_MP_TAC limTheory.diffn_SUC' \\
-     cheat)
+ >- (SYM_TAC >> MATCH_MP_TAC limTheory.diffn_SUC' >> art [])
  >> Rewr'
- >> cheat
+ >> simp []
 QED
 
 (* ------------------------------------------------------------------------- *)
