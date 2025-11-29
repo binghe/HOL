@@ -6743,30 +6743,37 @@ Theorem gauge_higher_differentiable_lemma :
         (?w. integrable lborel w /\
             (!x. 0 <= w x /\ w x <> PosInf) /\
              !n t x. Normal (abs (diffn n (\t. u t x) t)) <= w x)
-     ==> !t n. higher_differentiable n (\t. integral univ(:real) (u t)) t /\
+     ==> !n t. higher_differentiable n (\t. integral univ(:real) (u t)) t /\
                integrable lborel (\x. Normal (diffn n (\t. u t x) t)) /\
                diffn n (\t. integral univ(:real) (u t)) t =
                integral univ(:real) (\x. diffn n (\t. u t x) t)
 Proof
     Q.X_GEN_TAC ‘u’ >> STRIP_TAC
- >> Q.X_GEN_TAC ‘t’
  >> Induct_on ‘n’
- >- (simp [limTheory.diffn_0] \\
+ >- (Q.X_GEN_TAC ‘t’ >> simp [limTheory.diffn_0] \\
     ‘(\x. u t x) = u t’ by rw [FUN_EQ_THM] \\
      fs [o_DEF, limTheory.higher_differentiable_def])
- (* stage work *)
- >> qabbrev_tac ‘f = \x. diffn n (\t. u t x)’
- >> fs [FORALL_AND_THM]
+ >> Q.X_GEN_TAC ‘t’
+ >> POP_ASSUM MP_TAC
+ >> qabbrev_tac ‘f = \t x. diffn n (\t. u t x) t’
+ >> ‘!t x. diffn n (\t. u t x) t = f t x’ by rw [Abbr ‘f’, FUN_EQ_THM]
+ >> POP_ORW
+ >> DISCH_THEN (STRIP_ASSUME_TAC o SRULE [FORALL_AND_THM])
  (* applying limTheory.diffn_SUC' *)
- >> Know ‘!x. diffn (SUC n) (\t. u t x) = diff1 (f x)’
+ >> Know ‘!x. diffn (SUC n) (\t. u t x) = diff1 (\t. f t x)’
  >- (rw [Abbr ‘f’, Once EQ_SYM_EQ] \\
+    ‘(\t. diffn n (\t. u t x) t) = diffn n (\t. u t x)’ by rw [FUN_EQ_THM] \\
+     POP_ORW \\
      MATCH_MP_TAC limTheory.diffn_SUC' >> art [])
  >> Rewr'
- (* applying gauge_differentiable_lemma *)
+ (* applying gauge_differentiable_lemma on f *)
+ >> MP_TAC (Q.SPEC ‘f’ gauge_differentiable_lemma) >> simp [o_DEF]
  >> qabbrev_tac ‘g = \t. integral univ(:real) (u t)’
+ (* stage work *)
  >> Know ‘diffn (SUC n) g = diff1 (diffn n g)’
  >- (SYM_TAC >> MATCH_MP_TAC limTheory.diffn_SUC' \\
      cheat)
+ >> Rewr'
  >> cheat
 QED
 
