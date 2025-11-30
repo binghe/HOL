@@ -1096,25 +1096,15 @@ Proof
     METIS_TAC []
 QED
 
-(*
-Theorem NETLIMITS_WITHIN_lemma4[local] :
-    transitive (netord net) /\ netlimits net SUBSET s ==>
+Definition net_condition_def :
+    net_condition net s =
     (!x. x NOTIN netlimits net ==> ?y. y IN s /\ netord net y x)
-Proof
-    cheat
-QED
- *)
+End
 
-(* NOTE: The set “s” can only exclude some minimal elements from UNIV ?! BUT,
-
-   IF “netord net” is transitive, then “s” only need to be upwards closed, and
-   can even be only limit elements, i.e. “netlimits net SUBSET s”.
- *)
 Theorem NETLIMITS_WITHIN :
-    !net s. (!x. x NOTIN netlimits net ==> ?y. y IN s /\ netord net y x) ==>
-            netlimits (net within s) = netlimits net
+    !net s. net_condition net s ==> netlimits (net within s) = netlimits net
 Proof
-    rpt STRIP_TAC
+    RW_TAC std_ss [net_condition_def]
  >> MATCH_MP_TAC SUBSET_ANTISYM
  >> REWRITE_TAC [NETLIMITS_WITHIN_lemma1]
  >> MATCH_MP_TAC NETLIMITS_WITHIN_lemma2
