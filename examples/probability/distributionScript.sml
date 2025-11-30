@@ -6811,16 +6811,12 @@ QED
 (*  Weak convergence and its relation with convergence in distribution       *)
 (* ------------------------------------------------------------------------- *)
 
-Definition CinftyR_def :
-    CinftyR = {f | (!n x. higher_differentiable n f x) /\
-                    !n. bounded (IMAGE (diffn n f) UNIV)}
-End
-
-Theorem converge_in_dist_alt_CinftyR :
+Theorem converge_in_dist_alt_higher_differentiable :
     !X Y p. prob_space p /\ (!n. real_random_variable (X n) p) /\
             real_random_variable Y p ==>
            ((X --> Y) (in_distribution p) <=>
-             !f. f IN CinftyR ==>
+             !f. (!n x. higher_differentiable n f x) /\
+                 (!n. bounded (IMAGE (diffn n f) UNIV)) /\
                 ((\n. expectation p (Normal o f o real o X n)) -->
                  expectation p (Normal o f o real o Y)) sequentially)
 Proof
@@ -6850,23 +6846,27 @@ Theorem mgf_linear :
                 (exp (Normal s * Normal b)) * mgf p X (a * s)
 Proof
     rw [mgf_def, real_random_variable_def]
- >> Know ‘ expectation p (λx. exp (Normal s * ((Normal a * X x) + Normal b)))
-         = expectation p (λx. exp ((Normal s * (Normal a * X x)) + Normal s * Normal b))’
+ >> Know ‘expectation p (λx. exp (Normal s * ((Normal a * X x) + Normal b)))
+        = expectation p (λx. exp (Normal s * (Normal a * X x) +
+                                  Normal s * Normal b))’
  >- (MATCH_MP_TAC expectation_cong  >> rw[] >> AP_TERM_TAC
      >> ‘∃c. X x = Normal c’ by METIS_TAC [extreal_cases] >> rw[]
      >> ‘∃d. Normal a * Normal c = Normal d’ by METIS_TAC [extreal_mul_eq]
      >> rw[add_ldistrib_normal2]) >> Rewr'
  >> Know ‘expectation p
          (λx. exp (Normal s * (Normal a * X x) + Normal s * Normal b)) =
-          expectation p (λx. (exp (Normal s * (Normal a * X x))) * exp (Normal s * Normal b))’
+          expectation p (λx. exp (Normal s * (Normal a * X x)) *
+                             exp (Normal s * Normal b))’
  >- (MATCH_MP_TAC expectation_cong
      >> rw[exp_add]
      >> ‘∃c. X x = Normal c’ by METIS_TAC [extreal_cases]>> rw[]
      >> ‘∃d. Normal a * Normal c = Normal d’ by METIS_TAC [extreal_mul_eq] >> rw[]
      >> ‘∃e. Normal s * Normal d = Normal e’ by METIS_TAC [extreal_mul_eq] >> rw[]
-     >> ‘∃f. Normal s * Normal b = Normal f’ by METIS_TAC [extreal_mul_eq] >> rw[exp_add])
+     >> ‘∃f. Normal s * Normal b = Normal f’ by METIS_TAC [extreal_mul_eq]
+     >> rw[exp_add])
  >> Rewr'
- >> ‘∃g. exp (Normal s * Normal b) = Normal g’ by  METIS_TAC [extreal_mul_eq, normal_exp]
+ >> ‘∃g. exp (Normal s * Normal b) = Normal g’
+      by METIS_TAC [extreal_mul_eq, normal_exp]
  >> rw[]
  >> GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites [mul_comm]
  >> rw [mul_assoc, extreal_mul_eq]
@@ -6891,7 +6891,8 @@ Proof
     >> Rewr'
  >> Know ‘expectation p (λx. exp (Normal s * X x + Normal s * Y x)) =
           expectation p (λx. exp (Normal s * X x) * exp (Normal s * Y x))’
- >- (MATCH_MP_TAC expectation_cong  >> rw[] >> MATCH_MP_TAC exp_add >> DISJ2_TAC
+ >- (MATCH_MP_TAC expectation_cong  >> rw[]
+     >> MATCH_MP_TAC exp_add >> DISJ2_TAC
      >> ‘∃a. X x = Normal a’ by METIS_TAC [extreal_cases]
      >> ‘∃b. Y x = Normal b’ by METIS_TAC [extreal_cases]
      >> rw[extreal_mul_eq]) >> Rewr'

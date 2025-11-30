@@ -1098,8 +1098,18 @@ QED
 
 Definition net_condition_def :
     net_condition net s =
-    (!x. x NOTIN netlimits net ==> ?y. y IN s /\ netord net y x)
+      (!x. x NOTIN netlimits net ==> ?y. y IN s /\ netord net y x)
 End
+
+(*
+Theorem NET_CONDITION_ATPOINTOF :
+    !m a s. a IN s ==> net_condition (atpointof m a) s
+Proof
+    rw [net_condition_def, NETLIMITS_ATPOINTOF, ATPOINTOF]
+ >> Q.EXISTS_TAC ‘a’
+ >> simp [MDIST_REFL, MDIST_POS_LE]
+QED
+ *)
 
 Theorem NETLIMITS_WITHIN :
     !net s. net_condition net s ==> netlimits (net within s) = netlimits net
