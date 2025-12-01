@@ -1380,6 +1380,60 @@ Proof
   rw [IN_UNIV, INTERS_IMAGE, IN_FROM, IN_DIFF, NOT_IN_EMPTY]
 QED
 
+Theorem TRIVIAL_LIMIT_SEQUENTIALLY :
+    ~(trivial_limit sequentially)
+Proof
+  REWRITE_TAC[trivial_limit, EVENTUALLY_SEQUENTIALLY] THEN
+  MESON_TAC[LE_REFL]
+QED
+
+Theorem EVENTUALLY_HAPPENS_SEQUENTIALLY :
+    !P. eventually P sequentially ==> ?n. P n
+Proof
+  MESON_TAC[EVENTUALLY_HAPPENS, TRIVIAL_LIMIT_SEQUENTIALLY]
+QED
+
+(* NOTE: added “net_condition sequentially k” after porting from HOL-Light
+
+   NOTE: But to satisfy “net_condition sequentially k”, k cannot be finite...
+ *)
+Theorem EVENTUALLY_SEQUENTIALLY_WITHIN :
+    !k p. net_condition sequentially k ==>
+         (eventually p (sequentially within k) <=>
+          FINITE k \/ (?N. !n. n IN k /\ N <= n ==> p n))
+Proof
+  rpt STRIP_TAC THEN
+  simp [EVENTUALLY_WITHIN_IMP, EVENTUALLY_SEQUENTIALLY] THEN
+  ASM_CASES_TAC ``FINITE (k:num->bool)`` THEN ASM_REWRITE_TAC[] THENL
+  [POP_ASSUM (STRIP_ASSUME_TAC o REWRITE_RULE[num_FINITE]) THEN
+   EXISTS_TAC ``a + (1 :num)`` THEN
+   REWRITE_TAC[ARITH_PROVE ``a + 1 <= n <=> a < n:num``] THEN
+   ASM_MESON_TAC[NOT_LE],
+   POP_ASSUM MP_TAC THEN
+   REWRITE_TAC[num_INFINITE_EQ] THEN
+   MESON_TAC[]]
+QED
+
+Theorem TRIVIAL_LIMIT_SEQUENTIALLY_WITHIN :
+    !k. net_condition sequentially k ==>
+       (trivial_limit (sequentially within k) <=> FINITE k)
+Proof
+  rpt STRIP_TAC THEN REWRITE_TAC[trivial_limit] THEN
+  simp [EVENTUALLY_SEQUENTIALLY_WITHIN] THEN
+  ASM_CASES_TAC ``FINITE (k:num->bool)`` THEN ASM_REWRITE_TAC[] THEN
+  simp [NOT_EXISTS_THM, NOT_FORALL_THM] THEN GEN_TAC THEN
+  POP_ASSUM (MP_TAC o REWRITE_RULE[num_INFINITE_EQ]) THEN
+  MESON_TAC[]
+QED
+
+(*
+let EVENTUALLY_SUBSEQUENCE = prove
+ (`!P r. (!m n. m < n ==> r m < r n) /\ eventually P sequentially
+         ==> eventually (P o r) sequentially`,
+  REWRITE_TAC[EVENTUALLY_SEQUENTIALLY; o_THM] THEN
+  MESON_TAC[MONOTONE_BIGGER; LE_TRANS]);;
+ *)
+
 (* TODO *)
 
 Theorem TRIVIAL_LIMIT_AT_INFINITY :
@@ -1409,13 +1463,6 @@ Proof
     ALL_TAC] THEN
   REWRITE_TAC[DE_MORGAN_THM, NOT_EXISTS_THM, real_ge, REAL_NOT_LE] THEN
   MESON_TAC[REAL_LT_TOTAL, REAL_LT_ANTISYM]
-QED
-
-Theorem TRIVIAL_LIMIT_SEQUENTIALLY :
-    ~(trivial_limit sequentially)
-Proof
-  REWRITE_TAC[trivial_limit, SEQUENTIALLY] THEN
-  MESON_TAC[GREATER_EQ, LESS_EQ_REFL, SUC_NOT]
 QED
 
 Theorem EVENTUALLY_AT_INFINITY :

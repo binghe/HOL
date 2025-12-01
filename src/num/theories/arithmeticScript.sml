@@ -409,6 +409,9 @@ val LESS_EQ = store_thm ("LESS_EQ",
   “!m n. (m < n) = (SUC m <= n)”,
   REWRITE_TAC[LESS_OR_EQ_ALT, LESS_ALT, RTC_IM_TC]) ;
 
+(* |- !m n. SUC m <= n <=> m < n *)
+Theorem LE_SUC_LT = GSYM LESS_EQ
+
 val LESS_OR = store_thm ("LESS_OR",
    “!m n. m < n ==> SUC m <= n”,
    REWRITE_TAC[LESS_EQ]) ;

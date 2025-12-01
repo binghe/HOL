@@ -1953,10 +1953,6 @@ val GE = store_thm ("GE",
   ``!n m:num. m >= n <=> n <= m``,
   METIS_TAC [GREATER_EQ]);
 
-val LE_SUC_LT = store_thm ("LE_SUC_LT",
- ``!m n. (SUC m <= n) <=> (m < n)``,
-  GEN_TAC THEN INDUCT_TAC THEN ASM_REWRITE_TAC[LE, LT, GSYM SUC_NOT, INV_SUC_EQ]);
-
 val lemma = METIS [] ``(!x. x IN s ==> (g(f(x)) = x)) <=>
                      (!y x. x IN s /\ (y = f x) ==> (g y = x))``;
 
