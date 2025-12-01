@@ -1157,7 +1157,7 @@ Definition trivial_limit_def :
     trivial_limit net = eventually (\x. F) net
 End
 
-(* NOTE: Added “net_condition net s” after porting from HOL-Light *)
+(* NOTE: added “net_condition net s” after porting from HOL-Light *)
 Theorem EVENTUALLY_WITHIN_IMP :
     !net (P:'a->bool) s. net_condition net s ==>
        (eventually P (net within s) <=>
@@ -1179,14 +1179,45 @@ Proof
  >> rw []
 QED
 
-(* TODO *)
+(* NOTE: added “net_condition net s” after porting from HOL-Light *)
+Theorem EVENTUALLY_IMP_WITHIN :
+    !net (P:'a->bool) s. net_condition net s /\
+        eventually P net ==> eventually P (net within s)
+Proof
+    rw [EVENTUALLY_WITHIN_IMP]
+ >> POP_ASSUM MP_TAC
+ >> REWRITE_TAC [eventually_def]
+ >> MESON_TAC []
+QED
+
+(* NOTE: added “net_condition (net within s) t” after porting from HOL-Light *)
+Theorem EVENTUALLY_WITHIN_INTER_IMP :
+    !net (P:'a->bool) s t. net_condition (net within s) t ==>
+       (eventually P (net within s INTER t) <=>
+        eventually (\x. x IN t ==> P x) (net within s))
+Proof
+    rpt STRIP_TAC
+ >> REWRITE_TAC [GSYM WITHIN_WITHIN]
+ >> simp [EVENTUALLY_WITHIN_IMP]
+QED
+
 (* ------------------------------------------------------------------------- *)
 
+(* NOTE: added “net_condition net s” *)
 Theorem NONTRIVIAL_LIMIT_WITHIN :
-    !net s. trivial_limit net ==> trivial_limit(net within s)
+    !net s. net_condition net s /\ trivial_limit net ==> trivial_limit(net within s)
 Proof
-    REWRITE_TAC[trivial_limit, WITHIN] THEN MESON_TAC[]
+    rw [trivial_limit_def]
+ >> simp [EVENTUALLY_IMP_WITHIN]
 QED
+
+Theorem EVENTUALLY_HAPPENS :
+    !net p. eventually p net ==> trivial_limit net \/ ?x. p x
+Proof
+  REWRITE_TAC[trivial_limit_def, eventually_def] THEN SET_TAC[]
+QED
+
+(* TODO *)
 
 Theorem TRIVIAL_LIMIT_AT_INFINITY :
     ~(trivial_limit at_infinity)
@@ -1234,12 +1265,6 @@ Theorem EVENTUALLY_TRUE :
     !net. eventually (\x. T) net <=> T
 Proof
   REWRITE_TAC[eventually, trivial_limit] THEN MESON_TAC[]
-QED
-
-Theorem EVENTUALLY_HAPPENS :
-    !net p. eventually p net ==> trivial_limit net \/ ?x. p x
-Proof
-  REWRITE_TAC[eventually] THEN MESON_TAC[]
 QED
 
 Theorem NOT_EVENTUALLY :
