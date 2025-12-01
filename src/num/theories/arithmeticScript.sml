@@ -3737,31 +3737,50 @@ val BOUNDED_EXISTS_THM = Q.store_thm ("BOUNDED_EXISTS_THM",
 (* Theorems about sequences                                                  *)
 (*---------------------------------------------------------------------------*)
 
-val transitive_monotone = Q.store_thm ("transitive_monotone",
-   `!R f. transitive R /\ (!n. R (f n) (f (SUC n))) ==>
-          !m n. m < n ==> R (f m) (f n)`,
+Theorem transitive_monotone :
+    !R f. transitive R /\ (!n. R (f n) (f (SUC n))) ==>
+          !m n. m < n ==> R (f m) (f n)
+Proof
    NTAC 3 STRIP_TAC THEN INDUCT_TAC THEN
    (INDUCT_TAC THEN1 REWRITE_TAC [NOT_LESS_0])
    THEN1 (
      POP_ASSUM MP_TAC THEN
      Q.SPEC_THEN `n` STRUCT_CASES_TAC num_CASES THEN
      METIS_TAC [LESS_0,relationTheory.transitive_def]) THEN
-   METIS_TAC [LESS_THM,relationTheory.transitive_def])
+   METIS_TAC [LESS_THM,relationTheory.transitive_def]
+QED
 
-val STRICTLY_INCREASING_TC = save_thm ("STRICTLY_INCREASING_TC",
-   (* !f. (!n. f n < f (SUC n)) ==> !m n. m < n ==> f m < f n *)
+(* |- !f. (!n. f n < f (SUC n)) ==> !m n. m < n ==> f m < f n *)
+Theorem STRICTLY_INCREASING_TC =
    transitive_monotone |> Q.ISPEC `$<` |>
    SIMP_RULE bool_ss [
      Q.prove(`transitive $<`,
-       METIS_TAC [relationTheory.transitive_def,LESS_TRANS])])
+       METIS_TAC [relationTheory.transitive_def,LESS_TRANS])]
 
-val STRICTLY_INCREASING_ONE_ONE = Q.store_thm ("STRICTLY_INCREASING_ONE_ONE",
-   `!f. (!n. f n < f (SUC n)) ==> ONE_ONE f`,
+Theorem STRICTLY_INCREASING_ONE_ONE :
+    !f. (!n. f n < f (SUC n)) ==> ONE_ONE f
+Proof
    REWRITE_TAC [ONE_ONE_THM] THEN
-   METIS_TAC [STRICTLY_INCREASING_TC,NOT_LESS,LESS_OR_EQ,LESS_EQUAL_ANTISYM])
+   METIS_TAC [STRICTLY_INCREASING_TC,NOT_LESS,LESS_OR_EQ,LESS_EQUAL_ANTISYM]
+QED
 
-val ONE_ONE_INV_IMAGE_BOUNDED = Q.store_thm ("ONE_ONE_INV_IMAGE_BOUNDED",
-  `ONE_ONE (f:num->num) ==> !b. ?a. !x. f x <= b ==> x <= a`,
+(* from HOL-Light's misc.ml *)
+Theorem MONOTONE_BIGGER_lemma[local] :
+    n <= m /\ m < p ==> SUC n <= p
+Proof
+    REWRITE_TAC [LE_SUC_LT, LET_TRANS]
+QED
+
+Theorem MONOTONE_BIGGER :
+    !r. (!m n. m < n ==> r(m) < r(n)) ==> !n:num. n <= r(n)
+Proof
+  GEN_TAC THEN DISCH_TAC THEN INDUCT_TAC THEN
+  ASM_MESON_TAC[LE_0, MONOTONE_BIGGER_lemma, LT]
+QED
+
+Theorem ONE_ONE_INV_IMAGE_BOUNDED :
+    ONE_ONE (f:num->num) ==> !b. ?a. !x. f x <= b ==> x <= a
+Proof
   REWRITE_TAC [ONE_ONE_THM] THEN DISCH_TAC THEN INDUCT_TAC
   THENL [
     (* case b of 0 *)
@@ -3786,7 +3805,8 @@ val ONE_ONE_INV_IMAGE_BOUNDED = Q.store_thm ("ONE_ONE_INV_IMAGE_BOUNDED",
             (ASSUME_TAC o UNDISCH o Q.SPECL [`x`, `z`])) THEN
           ASM_REWRITE_TAC [LESS_EQ_REFL],
         RES_TAC THEN ASM_REWRITE_TAC []],
-      Q.EXISTS_TAC `a` THEN REPEAT STRIP_TAC THEN RES_TAC] ]) ;
+      Q.EXISTS_TAC `a` THEN REPEAT STRIP_TAC THEN RES_TAC] ]
+QED
 
 val ONE_ONE_UNBOUNDED = Q.store_thm ("ONE_ONE_UNBOUNDED",
 `!f. ONE_ONE (f:num->num) ==> !b.?n. b < f n`,

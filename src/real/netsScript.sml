@@ -1427,14 +1427,6 @@ Proof
   MESON_TAC[]
 QED
 
-(* from HOL-Light's misc.ml *)
-Theorem MONOTONE_BIGGER :
-    !r. (!m n. m < n ==> r(m) < r(n)) ==> !n:num. n <= r(n)
-Proof
-  GEN_TAC THEN DISCH_TAC THEN INDUCT_TAC THEN
-  ASM_MESON_TAC[LE_0, ARITH_PROVE ``n <= m /\ m < p ==> SUC n <= p``, LT]
-QED
-
 Theorem EVENTUALLY_SUBSEQUENCE :
     !P r. (!m n. m < n ==> r m < r n) /\ eventually P sequentially
          ==> eventually (P o r) sequentially
