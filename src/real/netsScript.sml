@@ -1157,6 +1157,28 @@ Definition trivial_limit_def :
     trivial_limit net = eventually (\x. F) net
 End
 
+(* NOTE: Added “net_condition net s” after porting from HOL-Light *)
+Theorem EVENTUALLY_WITHIN_IMP :
+    !net (P:'a->bool) s. net_condition net s ==>
+       (eventually P (net within s) <=>
+        eventually (\x. x IN s ==> P x) net)
+Proof
+    rw [eventually_def, NETFILTER_WITHIN, RELATIVE_TO]
+ >> ‘{s INTER s' | netfilter net s'} = {} <=> netfilter net = {}’ by SET_TAC []
+ >> POP_ORW
+ >> simp [NETLIMITS_WITHIN]
+ >> Cases_on ‘netfilter net = {}’ >> simp []
+ >> EQ_TAC >> rw []
+ >- (rename1 ‘netfilter net t’ \\
+    ‘t IN netfilter net’ by simp [IN_APP] \\
+     Q.EXISTS_TAC ‘t’ >> rw [])
+ >> Q.EXISTS_TAC ‘s INTER u’
+ >> CONJ_TAC
+ >- (Q.EXISTS_TAC ‘u’ >> art [] \\
+     fs [IN_APP])
+ >> rw []
+QED
+
 (* TODO *)
 (* ------------------------------------------------------------------------- *)
 
