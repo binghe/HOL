@@ -1261,7 +1261,7 @@ Proof
     MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
     SIMP_TAC bool_ss [],
     (* goal 2 (of 2) *)
-    REWRITE_TAC[eventually_def] THEN
+    REWRITE_TAC[eventually] THEN
     ASM_CASES_TAC ``netfilter(net:'a net) = {}`` THEN ASM_REWRITE_TAC[] THEN
     DISCH_THEN(CONJUNCTS_THEN2
      (X_CHOOSE_THEN ``u:'a->bool`` STRIP_ASSUME_TAC)
@@ -1314,6 +1314,72 @@ Proof
   REWRITE_TAC[eventually] THEN SET_TAC[]
 QED
 
+(* NOTE: added “net_condition net s /\ net_condition net t” after porting from HOL-Light *)
+Theorem EVENTUALLY_WITHIN_SUBSET :
+    !P net s t:'a->bool. net_condition net s /\ net_condition net t /\
+       eventually P (net within s) /\ t SUBSET s ==> eventually P (net within t)
+Proof
+    rpt STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘eventually P (net within s)’ MP_TAC
+ >> simp [EVENTUALLY_WITHIN_IMP]
+ >> MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO)
+ >> ASM_SET_TAC[]
+QED
+
+(* NOTE: added “net_condition net s” after porting from HOL-Light *)
+Theorem ALWAYS_WITHIN_EVENTUALLY :
+    !net P. net_condition net s /\ (!x. x IN s ==> P x) ==> eventually P (net within s)
+Proof
+    rpt STRIP_TAC
+ >> simp [EVENTUALLY_WITHIN_IMP, EVENTUALLY_TRUE]
+QED
+
+Theorem NOT_EVENTUALLY :
+    !net p. (!x. ~(p x)) /\ ~(trivial_limit net) ==> ~(eventually p net)
+Proof
+  REWRITE_TAC[eventually, trivial_limit] THEN MESON_TAC[]
+QED
+
+Theorem EVENTUALLY_FORALL :
+    !net:('a net) p s:'b->bool.
+        FINITE s /\ ~(s = {})
+        ==> (eventually (\x. !a. a IN s ==> p a x) net <=>
+             !a. a IN s ==> eventually (p a) net)
+Proof
+  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[IMP_CONJ] THEN
+  HO_MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+  SIMP_TAC bool_ss [FORALL_IN_INSERT, EVENTUALLY_AND] THEN
+  MAP_EVERY X_GEN_TAC [``b:'b``, ``t:'b->bool``] THEN
+  ASM_CASES_TAC ``t:'b->bool = {}`` THEN
+  ASM_SIMP_TAC bool_ss [NOT_IN_EMPTY, EVENTUALLY_TRUE] THEN
+  METIS_TAC []
+QED
+
+Theorem FORALL_EVENTUALLY :
+    !net:('a net) p s:'b->bool.
+        FINITE s /\ ~(s = {})
+        ==> ((!a. a IN s ==> eventually (p a) net) <=>
+             eventually (\x. !a. a IN s ==> p a x) net)
+Proof
+  SIMP_TAC bool_ss [EVENTUALLY_FORALL]
+QED
+
+Theorem EVENTUALLY_TRIVIAL :
+    !net P:'a->bool. trivial_limit net ==> eventually P net
+Proof
+  REPEAT GEN_TAC THEN REWRITE_TAC[trivial_limit] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
+  REWRITE_TAC[]
+QED
+
+Theorem EVENTUALLY_SEQUENTIALLY :
+    !p. eventually p sequentially <=> ?N. !n. N <= n ==> p n
+Proof
+  REWRITE_TAC[eventually, NETFILTER_SEQUENTIALLY, NETLIMITS_SEQUENTIALLY] THEN
+  SIMP_TAC bool_ss [SIMPLE_IMAGE, EXISTS_IN_IMAGE, IMAGE_EQ_EMPTY, UNIV_NOT_EMPTY] THEN
+  rw [IN_UNIV, INTERS_IMAGE, IN_FROM, IN_DIFF, NOT_IN_EMPTY]
+QED
+
 (* TODO *)
 
 Theorem TRIVIAL_LIMIT_AT_INFINITY :
@@ -1352,19 +1418,6 @@ Proof
   MESON_TAC[GREATER_EQ, LESS_EQ_REFL, SUC_NOT]
 QED
 
-Theorem NOT_EVENTUALLY :
-    !net p. (!x. ~(p x)) /\ ~(trivial_limit net) ==> ~(eventually p net)
-Proof
-  REWRITE_TAC[eventually] THEN MESON_TAC[]
-QED
-
-Theorem EVENTUALLY_SEQUENTIALLY :
-    !p. eventually p sequentially <=> ?N. !n. N <= n ==> p n
-Proof
-  REWRITE_TAC[eventually, SEQUENTIALLY, GREATER_EQ, LESS_EQ_REFL,
-    TRIVIAL_LIMIT_SEQUENTIALLY] THEN  MESON_TAC[LESS_EQ_REFL]
-QED
-
 Theorem EVENTUALLY_AT_INFINITY :
     !p. eventually p at_infinity <=> ?b. !x. abs(x) >= b ==> p x
 Proof
@@ -1394,41 +1447,6 @@ Theorem EVENTUALLY_AT_INFINITY_POS :
 Proof
   GEN_TAC THEN REWRITE_TAC[EVENTUALLY_AT_INFINITY, real_ge] THEN
   MESON_TAC[REAL_ARITH ``&0 < abs b + &1 /\ (abs b + &1 <= x ==> b <= x:real)``]
-QED
-
-(* ------------------------------------------------------------------------- *)
-(* Combining theorems for "eventually". *)
-(* ------------------------------------------------------------------------- *)
-
-Theorem EVENTUALLY_FORALL :
-  !net:('a net) p s:'b->bool.
-  FINITE s /\ ~(s = {})
-  ==> (eventually (\x. !a. a IN s ==> p a x) net <=>
-   !a. a IN s ==> eventually (p a) net)
-Proof
-  GEN_TAC THEN GEN_TAC THEN REWRITE_TAC[GSYM AND_IMP_INTRO] THEN
-  KNOW_TAC ``!s:'b->bool. (s <> ({} :'b -> bool) ==>
-   (eventually (\(x :'a). !(a :'b). a IN s ==> (p :'b -> 'a -> bool) a x)
-   (net :'a net) <=> !(a :'b). a IN s ==> eventually (p a) net)) =
-             (\s. s <> ({} :'b -> bool) ==>
-   (eventually (\(x :'a). !(a :'b). a IN s ==> (p :'b -> 'a -> bool) a x)
-   (net :'a net) <=> !(a :'b). a IN s ==> eventually (p a) net)) s`` THENL
-  [FULL_SIMP_TAC std_ss [], ALL_TAC] THEN DISC_RW_KILL THEN
-  MATCH_MP_TAC FINITE_INDUCT THEN BETA_TAC THEN
-  SIMP_TAC std_ss [FORALL_IN_INSERT, EVENTUALLY_AND, ETA_AX] THEN
-  SIMP_TAC std_ss [GSYM RIGHT_FORALL_IMP_THM] THEN
-  MAP_EVERY X_GEN_TAC [``t:'b->bool``, ``b:'b``] THEN
-  ASM_CASES_TAC ``t:'b->bool = {}`` THEN
-  ASM_SIMP_TAC std_ss [NOT_IN_EMPTY, EVENTUALLY_TRUE] THEN METIS_TAC []
-QED
-
-Theorem FORALL_EVENTUALLY :
-  !net:('a net) p s:'b->bool.
-   FINITE s /\ ~(s = {})
-   ==> ((!a. a IN s ==> eventually (p a) net) <=>
-   eventually (\x. !a. a IN s ==> p a x) net)
-Proof
-  SIMP_TAC std_ss [EVENTUALLY_FORALL]
 QED
 
 (* NOTE: This theorem is trivial (by NET_WITHIN_UNIV and MSPACE) in HOL4.
