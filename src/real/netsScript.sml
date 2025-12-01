@@ -5,7 +5,7 @@
 (*
 Theory nets
 Ancestors
-  pred_set pair arithmetic num prim_rec relation real topology
+  pred_set pair combin arithmetic num prim_rec relation real topology
   metric
 Libs
   numLib reduceLib pairLib mesonLib RealArith hurdUtils jrhUtils
@@ -15,7 +15,8 @@ open HolKernel Parse boolLib bossLib;
 
 open numLib reduceLib pairLib pred_setTheory mesonLib RealArith hurdUtils
      pairTheory arithmeticTheory numTheory prim_recTheory relationTheory
-     jrhUtils realTheory topologyTheory metricTheory tautLib newtypeTools;
+     jrhUtils realTheory topologyTheory metricTheory tautLib combinTheory
+     newtypeTools;
 
 local open set_relationTheory in end;
 
@@ -1426,13 +1427,21 @@ Proof
   MESON_TAC[]
 QED
 
-(*
-let EVENTUALLY_SUBSEQUENCE = prove
- (`!P r. (!m n. m < n ==> r m < r n) /\ eventually P sequentially
-         ==> eventually (P o r) sequentially`,
-  REWRITE_TAC[EVENTUALLY_SEQUENTIALLY; o_THM] THEN
-  MESON_TAC[MONOTONE_BIGGER; LE_TRANS]);;
- *)
+(* from HOL-Light's misc.ml *)
+Theorem MONOTONE_BIGGER :
+    !r. (!m n. m < n ==> r(m) < r(n)) ==> !n:num. n <= r(n)
+Proof
+  GEN_TAC THEN DISCH_TAC THEN INDUCT_TAC THEN
+  ASM_MESON_TAC[LE_0, ARITH_PROVE ``n <= m /\ m < p ==> SUC n <= p``, LT]
+QED
+
+Theorem EVENTUALLY_SUBSEQUENCE :
+    !P r. (!m n. m < n ==> r m < r n) /\ eventually P sequentially
+         ==> eventually (P o r) sequentially
+Proof
+  REWRITE_TAC[EVENTUALLY_SEQUENTIALLY, o_THM] THEN
+  MESON_TAC[MONOTONE_BIGGER, LE_TRANS]
+QED
 
 (* TODO *)
 

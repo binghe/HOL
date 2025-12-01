@@ -2415,6 +2415,9 @@ Proof
  >> MATCH_MP_TAC REAL_LT_IMP_LE >> art []
 QED
 
+(* HOL-Light compatible *)
+Theorem REAL_ARCH_SIMPLE = SIMP_REAL_ARCH
+
 Theorem REAL_ARCH_INV :
     !e. &0 < e <=> ?n. ~(n = 0) /\ &0:real < inv(&n) /\ inv(&n) < e:real
 Proof
