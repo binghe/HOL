@@ -6811,16 +6811,45 @@ QED
 (*  Weak convergence and its relation with convergence in distribution       *)
 (* ------------------------------------------------------------------------- *)
 
+(* NOTE: “f” is "continuous, bounded, and arbitrarily higher differentiable. *)
 Theorem converge_in_dist_alt_higher_differentiable :
     !X Y p. prob_space p /\ (!n. real_random_variable (X n) p) /\
             real_random_variable Y p ==>
            ((X --> Y) (in_distribution p) <=>
-             !f. (!n x. higher_differentiable n f x) /\
-                 (!n. bounded (IMAGE (diffn n f) UNIV)) /\
+            !f. (!n x. higher_differentiable n f x) /\
+                (!n. bounded (IMAGE (diffn n f) UNIV)) ==>
                 ((\n. expectation p (Normal o f o real o X n)) -->
                  expectation p (Normal o f o real o Y)) sequentially)
 Proof
-    rpt STRIP_TAC
+    RW_TAC std_ss [real_random_variable_def, FORALL_AND_THM]
+ >> EQ_TAC
+ >- (simp [converge_in_dist_def, IN_bounded_continuous, FORALL_AND_THM] \\
+     DISCH_TAC \\
+     Q.X_GEN_TAC ‘f’ >> STRIP_TAC \\
+     POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> rw [limTheory.diffn_0] \\
+     Q.PAT_X_ASSUM ‘!n x. higher_differentiable n f x’
+       (STRIP_ASSUME_TAC o Q.SPEC ‘1’) \\
+     Know ‘f continuous_on univ(:real)’
+     >- (rw [continuous_on_def, NET_WITHIN_UNIV] \\
+         MATCH_MP_TAC limTheory.higher_differentiable_imp_continuous >> art []) \\
+     simp [continuous_on_univ_alt_continuous_map] >> DISCH_TAC \\
+     qabbrev_tac ‘g = f o real’ \\
+    ‘!n. Normal o f o real o X n = Normal o g o X n’ by METIS_TAC [o_ASSOC] \\
+     POP_ORW \\
+    ‘Normal o f o real o Y = Normal o g o Y’ by METIS_TAC [o_ASSOC] >> POP_ORW \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     CONJ_TAC
+     >- (qunabbrev_tac ‘g’ \\
+         MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE \\
+         Q.EXISTS_TAC ‘euclidean’ >> simp [continuous_map_real]) \\
+     Q.PAT_X_ASSUM ‘bounded _’ MP_TAC \\
+     rw [ext_bounded_def, bounded_def, Abbr ‘g’] \\
+     Q.EXISTS_TAC ‘a’ >> rw [] >> rename1 ‘abs (f (real z)) <= a’ \\
+     POP_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘real z’ >> REFL_TAC)
+ (* stage work *)
+ >> DISCH_TAC
+ >> rw [converge_in_dist_alt_Lipschitz, BL_alt]
  >> cheat
 QED
 

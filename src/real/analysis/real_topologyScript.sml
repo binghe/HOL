@@ -24832,9 +24832,10 @@ Proof
       REWRITE_TAC [CONTENT_EQ_0] >> ASM_REAL_ARITH_TAC ]
 QED
 
+(* END *)
 val _ = export_theory();
 
 (* References:
 
-  [1] Bartle, R.G.: A Modern Theory of Integration. American Mathematical Soc. (2001).
+  [1] Bartle, R.G.: A Modern Theory of Integration. American Math. Soc. (2001).
  *)

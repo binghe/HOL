@@ -1097,19 +1097,9 @@ Proof
 QED
 
 Definition net_condition_def :
-    net_condition net s =
-      (!x. x NOTIN netlimits net ==> ?y. y IN s /\ netord net y x)
+    net_condition net s <=>
+      !x. x NOTIN netlimits net ==> ?y. y IN s /\ netord net y x
 End
-
-(*
-Theorem NET_CONDITION_ATPOINTOF :
-    !m a s. a IN s ==> net_condition (atpointof m a) s
-Proof
-    rw [net_condition_def, NETLIMITS_ATPOINTOF, ATPOINTOF]
- >> Q.EXISTS_TAC ‘a’
- >> simp [MDIST_REFL, MDIST_POS_LE]
-QED
- *)
 
 Theorem NETLIMITS_WITHIN :
     !net s. net_condition net s ==> netlimits (net within s) = netlimits net
@@ -1120,6 +1110,18 @@ Proof
  >> MATCH_MP_TAC NETLIMITS_WITHIN_lemma2
  >> ASM_REWRITE_TAC [NETLIMITS_WITHIN_lemma3]
 QED
+
+(* NOTE: If the definition of “atpointof” were not modified, the following
+   theorem would be impossible.
+
+Theorem NET_CONDITION_ATPOINTOF :
+    !m a s. a IN s ==> net_condition (atpointof m a) s
+Proof
+    rw [ATPOINTOF, net_condition_def, NETLIMITS_ATPOINTOF]
+ >> Q.EXISTS_TAC ‘a’ >> simp [MDIST_REFL, MDIST_POS_LE]
+ >> cheat (* F *)
+QED
+ *)
 
 (* ------------------------------------------------------------------------- *)
 (* Some property holds "sufficiently close" to the limit point (eventually). *)
