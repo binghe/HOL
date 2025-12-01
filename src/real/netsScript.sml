@@ -897,6 +897,25 @@ Definition netfilter_def :
     netfilter net = {{y | netord net y x} | x | T}
 End
 
+(* NOTE: This is the theorem NET of HOL-Light *)
+Theorem NETFILTER :
+    !n s t. s IN netfilter n /\ t IN netfilter n ==> s INTER t IN netfilter n
+Proof
+    rpt GEN_TAC
+ >> simp [netfilter_def]
+ >> DISCH_THEN (CONJUNCTS_THEN2
+                 (Q.X_CHOOSE_THEN ‘u’ STRIP_ASSUME_TAC)
+                 (Q.X_CHOOSE_THEN ‘v’ STRIP_ASSUME_TAC))
+ >> ‘s INTER t = {y | netord n y u /\ netord n y v}’ by ASM_SET_TAC []
+ >> POP_ORW
+ (* applying NET here! *)
+ >> STRIP_ASSUME_TAC (Q.SPECL [‘n’, ‘u’, ‘v’] NET)
+ >| [ (* goal 1 (of 2) *)
+      Q.EXISTS_TAC ‘u’ >> ASM_SET_TAC [],
+      (* goal 2 (of 2) *)
+      Q.EXISTS_TAC ‘v’ >> ASM_SET_TAC [] ]
+QED
+
 Theorem NETFILTER_AT_POSINFINITY :
     netfilter at_posinfinity = {{x | a <= x} | a IN univ(:real)}
 Proof
@@ -1147,13 +1166,13 @@ End
 
    new definitions (compatible with HOL-Light):
  *)
-Definition eventually_def :
+Definition eventually :
     eventually (P :'a -> bool) net <=>
       netfilter net = {} \/
       ?u. u IN netfilter net /\ !x. x IN u DIFF netlimits net ==> P x
 End
 
-Definition trivial_limit_def :
+Definition trivial_limit :
     trivial_limit net = eventually (\x. F) net
 End
 
@@ -1163,7 +1182,7 @@ Theorem EVENTUALLY_WITHIN_IMP :
        (eventually P (net within s) <=>
         eventually (\x. x IN s ==> P x) net)
 Proof
-    rw [eventually_def, NETFILTER_WITHIN, RELATIVE_TO]
+    rw [eventually, NETFILTER_WITHIN, RELATIVE_TO]
  >> ‘{s INTER s' | netfilter net s'} = {} <=> netfilter net = {}’ by SET_TAC []
  >> POP_ORW
  >> simp [NETLIMITS_WITHIN]
@@ -1186,7 +1205,7 @@ Theorem EVENTUALLY_IMP_WITHIN :
 Proof
     rw [EVENTUALLY_WITHIN_IMP]
  >> POP_ASSUM MP_TAC
- >> REWRITE_TAC [eventually_def]
+ >> REWRITE_TAC [eventually]
  >> MESON_TAC []
 QED
 
@@ -1207,14 +1226,92 @@ QED
 Theorem NONTRIVIAL_LIMIT_WITHIN :
     !net s. net_condition net s /\ trivial_limit net ==> trivial_limit(net within s)
 Proof
-    rw [trivial_limit_def]
+    rw [trivial_limit]
  >> simp [EVENTUALLY_IMP_WITHIN]
 QED
 
 Theorem EVENTUALLY_HAPPENS :
     !net p. eventually p net ==> trivial_limit net \/ ?x. p x
 Proof
-  REWRITE_TAC[trivial_limit_def, eventually_def] THEN SET_TAC[]
+  REWRITE_TAC[trivial_limit, eventually] THEN SET_TAC[]
+QED
+
+Theorem ALWAYS_EVENTUALLY :
+    !net p. (!x. p x) ==> eventually p net
+Proof
+  SIMP_TAC std_ss[eventually] THEN SET_TAC[]
+QED
+
+Theorem EVENTUALLY_MONO :
+    !net:('a net) p q.
+        (!x. p x ==> q x) /\ eventually p net
+        ==> eventually q net
+Proof
+  REWRITE_TAC[eventually] THEN MESON_TAC[]
+QED
+
+Theorem EVENTUALLY_AND :
+    !net:('a net) p q.
+        eventually (\x. p x /\ q x) net <=>
+        eventually p net /\ eventually q net
+Proof
+  REPEAT GEN_TAC THEN EQ_TAC THENL
+  [ (* goal 1 (of 2) *)
+    DISCH_THEN(fn th => CONJ_TAC THEN MP_TAC th) THEN
+    MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
+    SIMP_TAC bool_ss [],
+    (* goal 2 (of 2) *)
+    REWRITE_TAC[eventually_def] THEN
+    ASM_CASES_TAC ``netfilter(net:'a net) = {}`` THEN ASM_REWRITE_TAC[] THEN
+    DISCH_THEN(CONJUNCTS_THEN2
+     (X_CHOOSE_THEN ``u:'a->bool`` STRIP_ASSUME_TAC)
+     (X_CHOOSE_THEN ``v:'a->bool`` STRIP_ASSUME_TAC)) THEN
+    EXISTS_TAC ``u INTER v:'a->bool`` THEN
+    ASM_SIMP_TAC std_ss [IN_INTER, NETFILTER] THEN ASM_SET_TAC[] ]
+QED
+
+Theorem EVENTUALLY_MP :
+    !net:('a net) p q.
+        eventually (\x. p x ==> q x) net /\ eventually p net
+        ==> eventually q net
+Proof
+  REWRITE_TAC[GSYM EVENTUALLY_AND] THEN
+  REWRITE_TAC[eventually] THEN MESON_TAC[]
+QED
+
+Theorem EVENTUALLY_EQ_MP :
+    !net P Q. eventually (\x:'a. P x <=> Q x) net /\ eventually P net
+             ==> eventually Q net
+Proof
+    rpt STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘eventually P net’ MP_TAC
+ >> MATCH_MP_TAC (REWRITE_RULE[IMP_CONJ] EVENTUALLY_MP)
+ >> POP_ASSUM MP_TAC
+ >> MATCH_MP_TAC (REWRITE_RULE[IMP_CONJ] EVENTUALLY_MP)
+ >> MATCH_MP_TAC ALWAYS_EVENTUALLY
+ >> SIMP_TAC bool_ss []
+QED
+
+Theorem EVENTUALLY_IFF :
+    !net P Q. eventually (\x:'a. P x <=> Q x) net
+             ==> (eventually P net <=> eventually Q net)
+Proof
+  REPEAT STRIP_TAC THEN EQ_TAC THEN
+  (MATCH_MP_TAC o REWRITE_RULE[IMP_CONJ]) EVENTUALLY_EQ_MP THEN
+  ASM_REWRITE_TAC[] THEN ONCE_REWRITE_TAC[EQ_SYM_EQ] THEN
+  ASM_REWRITE_TAC[]
+QED
+
+Theorem EVENTUALLY_FALSE :
+    !net. eventually (\x. F) net <=> trivial_limit net
+Proof
+  REWRITE_TAC[trivial_limit]
+QED
+
+Theorem EVENTUALLY_TRUE :
+    !net. eventually (\x. T) net <=> T
+Proof
+  REWRITE_TAC[eventually] THEN SET_TAC[]
 QED
 
 (* TODO *)
@@ -1255,29 +1352,10 @@ Proof
   MESON_TAC[GREATER_EQ, LESS_EQ_REFL, SUC_NOT]
 QED
 
-Theorem EVENTUALLY_FALSE :
-    !net. eventually (\x. F) net <=> trivial_limit net
-Proof
-  REWRITE_TAC[eventually] THEN MESON_TAC[]
-QED
-
-Theorem EVENTUALLY_TRUE :
-    !net. eventually (\x. T) net <=> T
-Proof
-  REWRITE_TAC[eventually, trivial_limit] THEN MESON_TAC[]
-QED
-
 Theorem NOT_EVENTUALLY :
     !net p. (!x. ~(p x)) /\ ~(trivial_limit net) ==> ~(eventually p net)
 Proof
   REWRITE_TAC[eventually] THEN MESON_TAC[]
-QED
-
-Theorem ALWAYS_EVENTUALLY :
-    !net p. (!x. p x) ==> eventually p net
-Proof
-  REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[eventually, trivial_limit] THEN
-  MESON_TAC[]
 QED
 
 Theorem EVENTUALLY_SEQUENTIALLY :
@@ -1321,34 +1399,6 @@ QED
 (* ------------------------------------------------------------------------- *)
 (* Combining theorems for "eventually". *)
 (* ------------------------------------------------------------------------- *)
-
-Theorem EVENTUALLY_AND :
-  !net:('a net) p q.
-   eventually (\x. p x /\ q x) net <=>
-   eventually p net /\ eventually q net
-Proof
-  REPEAT GEN_TAC THEN REWRITE_TAC[eventually] THEN
-  ASM_CASES_TAC ``trivial_limit(net:('a net))`` THEN ASM_REWRITE_TAC[] THEN
-  EQ_TAC THEN SIMP_TAC std_ss [NET_DILEMMA] THENL [MESON_TAC [], ALL_TAC] THEN
-  DISCH_TAC THEN MATCH_MP_TAC NET_DILEMMA THEN METIS_TAC []
-QED
-
-Theorem EVENTUALLY_MONO :
-  !net:('a net) p q.
-  (!x. p x ==> q x) /\ eventually p net
-    ==> eventually q net
-Proof
-  REWRITE_TAC[eventually] THEN MESON_TAC[]
-QED
-
-Theorem EVENTUALLY_MP :
-  !net:('a net) p q.
-  eventually (\x. p x ==> q x) net /\ eventually p net
-  ==> eventually q net
-Proof
-  REWRITE_TAC[GSYM EVENTUALLY_AND] THEN
-  REWRITE_TAC[eventually] THEN MESON_TAC[]
-QED
 
 Theorem EVENTUALLY_FORALL :
   !net:('a net) p s:'b->bool.
