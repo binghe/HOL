@@ -1133,6 +1133,10 @@ Proof
  >> Q.EXISTS_TAC ‘a’ >> simp [MDIST_REFL, MDIST_POS_LE]
 QED
 
+(* |- !a s. a IN s ==> net_condition (at a) s *)
+Theorem NET_CONDITION_AT =
+        NET_CONDITION_ATPOINTOF |> ISPEC “mr1” |> REWRITE_RULE [GSYM at_def]
+
 Theorem NETLIMITS_ATPOINTOF_WITHIN :
     !m a s. a IN s ==> netlimits ((atpointof m a) within s) =
                        netlimits (atpointof m a)
@@ -1143,8 +1147,8 @@ Proof
 QED
 
 (* |- !a s. a IN s ==> netlimits (at a within s) = netlimits (at a) *)
-Theorem NETLIMITS_AT_WITHIN = NETLIMITS_ATPOINTOF_WITHIN
-                           |> ISPEC “mr1” |> REWRITE_RULE [GSYM at_def]
+Theorem NETLIMITS_AT_WITHIN =
+        NETLIMITS_ATPOINTOF_WITHIN |> ISPEC “mr1” |> REWRITE_RULE [GSYM at_def]
 
 (* ------------------------------------------------------------------------- *)
 (* Some property holds "sufficiently close" to the limit point (eventually). *)
@@ -1435,14 +1439,65 @@ Proof
   MESON_TAC[MONOTONE_BIGGER, LE_TRANS]
 QED
 
-(* TODO *)
+(* ------------------------------------------------------------------------- *)
+(* Limits at a point in a topological (metric in HOL4) space                 *)
+(* ------------------------------------------------------------------------- *)
+
+(*
+let EVENTUALLY_ATPOINTOF = prove
+ (`!P top a:A.
+        eventually P (atpointof top a) <=>
+        ~(a IN topspace top) \/
+        ?u. open_in top u /\ a IN u /\ !x. x IN u DELETE a ==> P x`,
+  REWRITE_TAC[eventually; ATPOINTOF; NETLIMITS_ATPOINTOF; EXISTS_IN_GSPEC] THEN
+  REWRITE_TAC[SET_RULE `{f x | P x} = {} <=> ~(?x. P x)`] THEN
+  REPEAT STRIP_TAC THEN ASM_CASES_TAC `(a:A) IN topspace top` THENL
+   [ALL_TAC; ASM_MESON_TAC[REWRITE_RULE[SUBSET] OPEN_IN_SUBSET]] THEN
+  ASM_SIMP_TAC[IN_DELETE; IN_DIFF; IN_SING] THEN
+  ASM_MESON_TAC[OPEN_IN_TOPSPACE]);;
+ *)
+
+(* ------------------------------------------------------------------------- *)
+(* The "eventually" property in Euclidean space.                             *)
+(* from HOL-Light's topology.ml, the original theorem is for norm(x:real^N)  *)
+(* ------------------------------------------------------------------------- *)
+
+(* Added ‘a IN s’ to satisfy ‘net_condition’ *)
+Theorem EVENTUALLY_WITHIN :
+    !s a p. a IN s ==>
+       (eventually p (at a within s) <=>
+        ?d. &0 < d /\ !x. x IN s /\ &0 < dist(x,a) /\ dist(x,a) < d ==> p(x))
+Proof
+    rpt STRIP_TAC
+ >> Know ‘net_condition (at a) s’
+ >- (MATCH_MP_TAC NET_CONDITION_AT >> art [])
+ >> DISCH_TAC
+ >> simp [at_def, EVENTUALLY_WITHIN_IMP, dist_def]
+ >> cheat (*
+  REWRITE_TAC[EVENTUALLY_ATPOINTOF_METRIC] THEN
+  REWRITE_TAC[EUCLIDEAN_METRIC; IN_UNIV] THEN MESON_TAC[] *)
+QED
+
+Theorem EVENTUALLY_AT_INFINITY :
+    !p. eventually p at_infinity <=> ?b. !x. abs(x) >= b ==> p x
+Proof
+    REWRITE_TAC[eventually, NETFILTER_AT_INFINITY, NETLIMITS_AT_INFINITY]
+ >> simp [real_ge]
+ >> REWRITE_TAC[SET_RULE ``~({{x | b <= abs x} | T} = {})``]
+ >> ‘!p. (?u. (?b. u = {x | b <= abs x}) /\ !x. x IN u ==> p x) <=>
+         (?b. !x. x IN {x | b <= abs x} ==> p x)’ by METIS_TAC []
+ >> simp []
+QED
 
 Theorem TRIVIAL_LIMIT_AT_INFINITY :
     ~(trivial_limit at_infinity)
 Proof
-  REWRITE_TAC[trivial_limit, AT_INFINITY, real_ge] THEN
-  MESON_TAC[REAL_LE_REFL, REAL_CHOOSE_SIZE, REAL_LT_01, REAL_LT_LE]
+  REWRITE_TAC[trivial_limit, EVENTUALLY_AT_INFINITY, real_ge] THEN
+  MESON_TAC[REAL_CHOOSE_SIZE, REAL_ARITH
+    ``&0 <= abs b + &1 /\ b <= abs b + &1 /\ ~(abs b + &2 <= abs b + &1)``]
 QED
+
+(* TODO *)
 
 Theorem TRIVIAL_LIMIT_AT_POSINFINITY :
     ~(trivial_limit at_posinfinity)
