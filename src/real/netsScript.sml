@@ -1450,31 +1450,40 @@ QED
    TODO: This failed proof shows that the modification of “atpointof” is wrong ...
  *)
 Theorem EVENTUALLY_ATPOINTOF :
-    !P m (a:'a).
-        eventually P (atpointof m a) <=>
-        ?u. open_in (mtop m) u /\ a IN u /\ !x. x IN u DELETE a ==> P x
+    !P m (a:'a). limpt (mtop m) a UNIV ==>
+       (eventually P (atpointof m a) <=>
+        ?u. open_in (mtop m) u /\ a IN u /\ !x. x IN u DELETE a ==> P x)
 Proof
     rw [eventually, NETFILTER_ATPOINTOF, NETLIMITS_ATPOINTOF]
- >> Know ‘{{y | dist m (y,a) <= dist m (x,a)} | x | T} <> {}’
- >- rw [Once EXTENSION]
+ (* special case: there's only one value in type alpha *)
+ >> Cases_on ‘!y. y = a’
+ >- (
+     cheat)
+ >> fs []
+ >> Know ‘{{y | dist m (y,a) <= dist m (x,a)} | x | x <> a} <> {}’
+ >- (rw [Once EXTENSION, NOT_IN_EMPTY] \\
+     Q.EXISTS_TAC ‘y’ >> art [])
  >> Rewr
- >> Know ‘(?u. (?x. u = {y | dist m (y,a) <= dist m (x,a)}) /\
+ >> Know ‘(?u. (?x. u = {y | dist m (y,a) <= dist m (x,a)} /\ x <> a) /\
                !x. x IN u /\ x <> a ==> P x) <=>
-          (?z. !x. x IN {y | dist m (y,a) <= dist m (z,a)} /\ x <> a ==> P x)’
+          (?z. z <> a /\ !x. x IN {y | dist m (y,a) <= dist m (z,a)} /\ x <> a ==> P x)’
  >- (EQ_TAC >> rw [] >> fs []
      >- (Q.EXISTS_TAC ‘x’ >> art []) \\
      Q.EXISTS_TAC ‘{y | dist m (y,a) <= dist m (z,a)}’ \\
      CONJ_TAC >- (Q.EXISTS_TAC ‘z’ >> art []) \\
-     Q.X_GEN_TAC ‘y’ >> rw [])
+     rw [])
  >> Rewr'
  >> simp []
  >> EQ_TAC >> rpt STRIP_TAC
- >- (Cases_on ‘z = a’
-     >- (fs [MDIST_REFL, MDIST_LE_0, MDIST_EQ_0] \\
-         cheat) \\
-     qabbrev_tac ‘r = dist m (z,a)’ \\
-     Q.EXISTS_TAC ‘mball m (a,r)’ >> rw [OPEN_IN_MBALL, IN_MBALL, MSPACE, MDIST_REFL] \\
-     cheat)
+ >- (qabbrev_tac ‘r = dist m (z,a)’ \\
+    ‘0 < r’ by simp [Abbr ‘r’, MDIST_POS_LT] \\
+     Q.EXISTS_TAC ‘mball m (a,r)’ \\
+     rw [OPEN_IN_MBALL, IN_MBALL, MSPACE, MDIST_REFL] \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
+     MATCH_MP_TAC REAL_LT_IMP_LE \\
+     simp [Once MDIST_SYM])
+ >> fs [MTOP_OPEN']
+ >> Q.PAT_X_ASSUM ‘!x. x IN u ==> ?e. _’ (MP_TAC o Q.SPEC ‘a’) >> rw []
  >> cheat
 QED
 
