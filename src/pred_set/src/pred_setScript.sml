@@ -4240,6 +4240,13 @@ Proof
   MESON_TAC[num_FINITE, LESS_THM, NOT_LESS]
 QED
 
+Theorem num_INFINITE_EQ :
+    !s:num->bool. INFINITE s <=> !N. ?n. N <= n /\ n IN s
+Proof
+  GEN_TAC THEN REWRITE_TAC[num_FINITE] THEN
+  MESON_TAC[NOT_LE, LT_IMP_LE, LE_SUC_LT]
+QED
+
 Theorem num_INFINITE :
    INFINITE univ(:num)
 Proof
