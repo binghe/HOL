@@ -1113,15 +1113,25 @@ QED
 
 (* NOTE: If the definition of “atpointof” were not modified, the following
    theorem would be impossible.
-
-Theorem NET_CONDITION_ATPOINTOF :
-    !m a s. a IN s ==> net_condition (atpointof m a) s
-Proof
-    rw [ATPOINTOF, net_condition_def, NETLIMITS_ATPOINTOF]
- >> Q.EXISTS_TAC ‘a’ >> simp [MDIST_REFL, MDIST_POS_LE]
- >> cheat (* F *)
-QED
  *)
+Theorem NET_CONDITION_ATPOINTOF :
+    !m a s. limpt(mtop m) a s /\ a IN s ==>
+            net_condition (atpointof m a) s
+Proof
+    rw [ATPOINTOF, net_condition_def, NETLIMITS_ATPOINTOF, MTOP_LIMPT']
+ >> qabbrev_tac ‘e = dist m (x,a)’
+ >> ‘0 < e’ by simp [Abbr ‘e’, MDIST_POS_LT]
+ >> Q.PAT_X_ASSUM ‘!e. 0 < e ==> ?y. P’ (MP_TAC o Q.SPEC ‘e’) >> rw []
+ >> Q.EXISTS_TAC ‘y’ >> simp [MDIST_POS_LT]
+ >> MATCH_MP_TAC REAL_LT_IMP_LE
+ >> simp [Once MDIST_SYM]
+QED
+
+(* |- !a s.
+        limpt (mtop mr1) a s /\ a IN s ==> net_condition (atpointof mr1 a) s
+ *)
+Theorem NET_CONDITION_AT =
+        NET_CONDITION_ATPOINTOF |> ISPEC “mr1” |> REWRITE_RULE [GSYM at_def]
 
 (* ------------------------------------------------------------------------- *)
 (* Some property holds "sufficiently close" to the limit point (eventually). *)

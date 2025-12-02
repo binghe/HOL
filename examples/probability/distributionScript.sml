@@ -44,6 +44,7 @@ val T_TAC = rpt (Q.PAT_X_ASSUM ‘T’ K_TAC);
 
 val _ = hide "equiv_class"; (* in pred_setTheory *)
 val _ = hide "top"; (* defined in posetTheory *)
+val _ = hide "nf";  (* relationTheory *)
 
 val set_ss = std_ss ++ PRED_SET_ss;
 
@@ -6819,10 +6820,13 @@ QED
 (*  Weak convergence and its relation with convergence in distribution       *)
 (* ------------------------------------------------------------------------- *)
 
-(* NOTE: “f” is "continuous, bounded, and arbitrarily higher differentiable. *)
+(* NOTE: “ext_normal_rv Z p 0 1” is needed inside the proof, it doesn't occur
+   in the conclusion. This is essentially assuming the existence of normal
+   r.v. (and the richness of “prob_space p”).
+ *)
 Theorem converge_in_dist_alt_higher_differentiable :
-    !X Y p N. prob_space p /\ (!n. real_random_variable (X n) p) /\
-              real_random_variable Y p /\ std_normal_rv N p ==>
+    !X Y Z p. prob_space p /\ (!n. real_random_variable (X n) p) /\
+              real_random_variable Y p /\ ext_normal_rv Z p 0 1 ==>
            ((X --> Y) (in_distribution p) <=>
             !f. (!n x. higher_differentiable n f x) /\
                 (!n. bounded (IMAGE (diffn n f) UNIV)) ==>
@@ -6858,33 +6862,34 @@ Proof
      Q.EXISTS_TAC ‘real z’ >> REFL_TAC)
  (* stage work *)
  >> DISCH_TAC
- >> RW_TAC set_ss [converge_in_dist_alt_Lipschitz, BL_alt]
- >> qabbrev_tac ‘g :real -> real = f o Normal’
- >> Know ‘!n. expectation p (Normal o f o X n) =
-              expectation p (Normal o g o real o X n)’
+ >> simp [converge_in_dist_alt_Lipschitz, BL_alt]
+ >> Q.X_GEN_TAC ‘nf’ >> STRIP_TAC
+ >> qabbrev_tac ‘f :real -> real = nf o Normal’
+ >> Know ‘!n. expectation p (Normal o nf o X n) =
+              expectation p (Normal o f o real o X n)’
  >- (Q.X_GEN_TAC ‘n’ \\
      MATCH_MP_TAC expectation_cong >> art [] \\
-     rw [o_DEF, Abbr ‘g’] \\
+     rw [o_DEF, Abbr ‘f’] \\
      AP_TERM_TAC >> SYM_TAC \\
      simp [normal_real])
  >> Rewr'
- >> Know ‘expectation p (Normal o f o Y) = expectation p (Normal o g o real o Y)’
+ >> Know ‘expectation p (Normal o nf o Y) =
+          expectation p (Normal o f o real o Y)’
  >- (MATCH_MP_TAC expectation_cong >> art [] \\
-     rw [o_DEF, Abbr ‘g’] \\
-     AP_TERM_TAC >> SYM_TAC \\
-     simp [normal_real])
+     rw [o_DEF, Abbr ‘f’] \\
+     AP_TERM_TAC >> SYM_TAC >> simp [normal_real])
  >> Rewr'
- >> Know ‘bounded (IMAGE g UNIV)’
+ >> Know ‘bounded (IMAGE f UNIV)’
  >- (Q.PAT_X_ASSUM ‘bounded _’ MP_TAC \\
-     rw [ext_bounded_def, bounded_def, Abbr ‘g’, o_DEF] \\
+     rw [ext_bounded_def, bounded_def, Abbr ‘f’, o_DEF] \\
      Q.EXISTS_TAC ‘a’ >> rw [] \\
-     rename1 ‘abs (f (Normal y)) <= a’ \\
+     rename1 ‘abs (nf (Normal y)) <= a’ \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
      Q.EXISTS_TAC ‘Normal y’ >> REFL_TAC)
  >> DISCH_TAC
- >> Know ‘Lipschitz_continuous_map (mr1,mr1) g’
- >- (Q.PAT_X_ASSUM ‘Lipschitz_continuous_map _ f’ MP_TAC \\
-     rw [Lipschitz_continuous_map_def, Abbr ‘g’] \\
+ >> Know ‘Lipschitz_continuous_map (mr1,mr1) f’
+ >- (Q.PAT_X_ASSUM ‘Lipschitz_continuous_map _ nf’ MP_TAC \\
+     rw [Lipschitz_continuous_map_def, Abbr ‘f’] \\
      Q.EXISTS_TAC ‘k’ >> rw [] \\
      Q_TAC (TRANS_TAC REAL_LE_TRANS)
            ‘k * dist extreal_mr1 (Normal x,Normal y)’ >> art [] \\
@@ -6896,8 +6901,8 @@ Proof
          Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘1’ >> simp []) >> Rewr' \\
      MATCH_MP_TAC REAL_LE_LMUL_IMP >> simp [])
  >> DISCH_TAC
- >> Q.PAT_X_ASSUM ‘bounded (IMAGE f univ(:extreal))’ K_TAC
- >> Q.PAT_X_ASSUM ‘Lipschitz_continuous_map (extreal_mr1,mr1) f’ K_TAC
+ >> Q.PAT_X_ASSUM ‘bounded (IMAGE _ univ(:extreal))’             K_TAC
+ >> Q.PAT_X_ASSUM ‘Lipschitz_continuous_map (extreal_mr1,mr1) _’ K_TAC
  (* stage work *)
  >> cheat
 QED
