@@ -1443,26 +1443,45 @@ QED
 (* Limits at a point in a topological (metric in HOL4) space                 *)
 (* ------------------------------------------------------------------------- *)
 
-(*
-let EVENTUALLY_ATPOINTOF = prove
- (`!P top a:A.
-        eventually P (atpointof top a) <=>
-        ~(a IN topspace top) \/
-        ?u. open_in top u /\ a IN u /\ !x. x IN u DELETE a ==> P x`,
-  REWRITE_TAC[eventually; ATPOINTOF; NETLIMITS_ATPOINTOF; EXISTS_IN_GSPEC] THEN
-  REWRITE_TAC[SET_RULE `{f x | P x} = {} <=> ~(?x. P x)`] THEN
-  REPEAT STRIP_TAC THEN ASM_CASES_TAC `(a:A) IN topspace top` THENL
-   [ALL_TAC; ASM_MESON_TAC[REWRITE_RULE[SUBSET] OPEN_IN_SUBSET]] THEN
-  ASM_SIMP_TAC[IN_DELETE; IN_DIFF; IN_SING] THEN
-  ASM_MESON_TAC[OPEN_IN_TOPSPACE]);;
+(* NOTE: HOL-Light's “atpointof top a” becomes HOL4's “atpointof m a”.
+
+   TODO: This failed proof shows that the modification of “atpointof” is wrong ...
  *)
+Theorem EVENTUALLY_ATPOINTOF :
+    !P m (a:'a).
+        eventually P (atpointof m a) <=>
+        ?u. open_in (mtop m) u /\ a IN u /\ !x. x IN u DELETE a ==> P x
+Proof
+    rw [eventually, NETFILTER_ATPOINTOF, NETLIMITS_ATPOINTOF]
+ >> Know ‘{{y | dist m (y,a) <= dist m (x,a)} | x | T} <> {}’
+ >- rw [Once EXTENSION]
+ >> Rewr
+ >> Know ‘(?u. (?x. u = {y | dist m (y,a) <= dist m (x,a)}) /\
+               !x. x IN u /\ x <> a ==> P x) <=>
+          (?z. !x. x IN {y | dist m (y,a) <= dist m (z,a)} /\ x <> a ==> P x)’
+ >- (EQ_TAC >> rw [] >> fs []
+     >- (Q.EXISTS_TAC ‘x’ >> art []) \\
+     Q.EXISTS_TAC ‘{y | dist m (y,a) <= dist m (z,a)}’ \\
+     CONJ_TAC >- (Q.EXISTS_TAC ‘z’ >> art []) \\
+     Q.X_GEN_TAC ‘y’ >> rw [])
+ >> Rewr'
+ >> simp []
+ >> EQ_TAC >> rpt STRIP_TAC
+ >- (Cases_on ‘z = a’
+     >- (fs [MDIST_REFL, MDIST_LE_0, MDIST_EQ_0] \\
+         cheat) \\
+     qabbrev_tac ‘r = dist m (z,a)’ \\
+     Q.EXISTS_TAC ‘mball m (a,r)’ >> rw [OPEN_IN_MBALL, IN_MBALL, MSPACE, MDIST_REFL] \\
+     cheat)
+ >> cheat
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* The "eventually" property in Euclidean space.                             *)
 (* from HOL-Light's topology.ml, the original theorem is for norm(x:real^N)  *)
 (* ------------------------------------------------------------------------- *)
 
-(* Added ‘a IN s’ to satisfy ‘net_condition’ *)
+(* Added ‘a IN s’ to satisfy ‘net_condition (at a) s’ *)
 Theorem EVENTUALLY_WITHIN :
     !s a p. a IN s ==>
        (eventually p (at a within s) <=>
