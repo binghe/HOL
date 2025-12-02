@@ -6821,8 +6821,8 @@ QED
 
 (* NOTE: “f” is "continuous, bounded, and arbitrarily higher differentiable. *)
 Theorem converge_in_dist_alt_higher_differentiable :
-    !X Y p. prob_space p /\ (!n. real_random_variable (X n) p) /\
-            real_random_variable Y p ==>
+    !X Y p N. prob_space p /\ (!n. real_random_variable (X n) p) /\
+              real_random_variable Y p /\ std_normal_rv N p ==>
            ((X --> Y) (in_distribution p) <=>
             !f. (!n x. higher_differentiable n f x) /\
                 (!n. bounded (IMAGE (diffn n f) UNIV)) ==>
@@ -6898,6 +6898,7 @@ Proof
  >> DISCH_TAC
  >> Q.PAT_X_ASSUM ‘bounded (IMAGE f univ(:extreal))’ K_TAC
  >> Q.PAT_X_ASSUM ‘Lipschitz_continuous_map (extreal_mr1,mr1) f’ K_TAC
+ (* stage work *)
  >> cheat
 QED
 

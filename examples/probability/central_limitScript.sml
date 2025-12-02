@@ -3229,39 +3229,6 @@ Proof
  >> METIS_TAC [higher_differentiable_mono]
 QED
 
-Theorem MCLAURIN_ALT :
-    ∀f h n.
-      0 < h ∧ 0 < n ∧
-      (∀m t. m < n ∧ 0 ≤ t ∧ t ≤ h ⇒ higher_differentiable (SUC m) f t) ⇒
-      ∃t. 0 < t ∧ t < h ∧
-          f h =
-          SIGMA (λm. diffn m f 0 / &FACT m * h pow m) (count n) +
-          diffn n f t / &FACT n * h pow n
-Proof
-    rpt STRIP_TAC
- >> Q.ABBREV_TAC ‘diffn' = (λm x. diffn m f x)’
- >> MP_TAC (Q.SPECL [‘f’, ‘diffn'’, ‘h’, ‘n’] MCLAURIN)
- >> impl_tac
- >- (simp [] \\
-     CONJ_TAC >- (rw [Abbr ‘diffn'’] \\
-                  METIS_TAC []) \\
-     Q.UNABBREV_TAC ‘diffn'’ \\
-     BETA_TAC \\
-     qx_genl_tac [‘m’, ‘t’] \\
-     STRIP_TAC \\
-     Q.PAT_X_ASSUM ‘∀m x. _’ (MP_TAC o Q.SPECL [‘m’, ‘t’]) \\
-     DISCH_TAC \\
-     gs [LT_IMP_LE] \\
-     MP_TAC (Q.SPEC ‘f’ higher_differentiable_thm) >> rw [] \\
-     POP_ASSUM (STRIP_ASSUME_TAC o Q.SPECL [‘m’, ‘t’]) \\
-     METIS_TAC [ETA_AX])
- >> STRIP_TAC
- >> qexists ‘t’ >> fs []
- >> MP_TAC (Q.SPECL [‘λm. (&FACT m)⁻¹ * diffn' m (0:real) * h pow m’, ‘n’]
-             (INST_TYPE [“:'a” |-> “:num”] REAL_SUM_IMAGE_COUNT))
- >> fs []
-QED
-
 Theorem TAYLOR_THIRD_ORDER_BOUND :
     ∀f a h M.
       f ∈ CnR 3 ∧
@@ -3275,7 +3242,8 @@ Proof
   >> MP_TAC (Q.SPEC ‘f’ taylor_remainder_bound_lemma) >> simp []
   >> STRIP_TAC
   >> Cases_on ‘h = 0’
-  >- (gs [mul_rzero, normal_0, abs_0, zero_pow] >> METIS_TAC [sub_refl, extreal_not_infty])
+  >- (gs [mul_rzero, normal_0, abs_0, zero_pow] \\
+      METIS_TAC [sub_refl, extreal_not_infty])
   >> Know ‘a ≠ a + h’
   >- (CCONTR_TAC >> fs [] \\
       METIS_TAC [REAL_ADD_RID, REAL_EQ_LADD])
@@ -3290,8 +3258,10 @@ Proof
   >> ‘FACT 3 = 6’ by EVAL_TAC
   >> fs [dividesTheory.FACT_0, dividesTheory.FACT_1, dividesTheory.FACT_2]
   >> POP_ASSUM K_TAC
-  >> ‘f a + h * diffn 1 f a + 1 / 2 * (h² * diffn 2 f a) + 1 / 6 * (h³ * diffn 3 f t) −
-      f a − h * diffn 1 f a − 1 / 2 * (h² * diffn 2 f a) = 1 / 6 * (h³ * diffn 3 f t)’
+  >> ‘f a + h * diffn 1 f a + 1 / 2 * (h² * diffn 2 f a) +
+      1 / 6 * (h³ * diffn 3 f t) −
+      f a − h * diffn 1 f a − 1 / 2 * (h² * diffn 2 f a) =
+      1 / 6 * (h³ * diffn 3 f t)’
     by REAL_ARITH_TAC >> POP_ASSUM (rw o wrap)
   >> simp [TAYLOR_REMAINDER_THIRD_ORDER_BOUND]
 QED
@@ -3444,7 +3414,8 @@ Proof
   >> DISCH_TAC
   >> fs [CnR_def, bounded_def]
   >> Q.PAT_X_ASSUM ‘∀m. m ≤ n ⇒ _’ (STRIP_ASSUME_TAC o Q.SPEC ‘n’) >> gs []
-  >> MP_TAC (Q.SPECL [‘λx. abs (Normal (diffn n f x))’, ‘Normal a’] (INST_TYPE [alpha |-> “:real”] sup_bounded'))
+  >> MP_TAC (Q.SPECL [‘λx. abs (Normal (diffn n f x))’, ‘Normal a’]
+                     (INST_TYPE [alpha |-> “:real”] sup_bounded'))
   >> impl_tac
   >- (Q.X_GEN_TAC ‘m’ \\
       POP_ASSUM (STRIP_ASSUME_TAC o Q.SPEC ‘diffn n f m’) \\
@@ -3464,7 +3435,8 @@ Proof
   rpt STRIP_TAC
   >> EQ_TAC >> rw [expectation_def, GSYM (cj 4 lt_infty), GSYM o_DEF, GSYM pow_abs]
   >- (fs [prob_space_def, real_random_variable, p_space_def, events_def] \\
-      ‘integrable p (λx. X x pow n)’ by METIS_TAC [integrable_from_abs, IN_MEASURABLE_BOREL_POW] \\
+      ‘integrable p (λx. X x pow n)’
+        by METIS_TAC [integrable_from_abs, IN_MEASURABLE_BOREL_POW] \\
       METIS_TAC [integrable_alt_def])
   >> irule integrable_abs
   >> fs [prob_space_def, integrable_alt_def, real_random_variable, p_space_def, events_def]
@@ -3502,8 +3474,9 @@ Proof
     rpt STRIP_TAC
  >> MP_TAC (Q.SPECL [‘p’, ‘X’] clt_integrable_lemma) >> gs [prob_space_def]
  >> rw [GSYM extreal_mul_eq]
- >> MP_TAC (Q.SPECL [‘p’, ‘λx. Normal (real (X x))’, ‘λx. Normal (diffn 1 f (real (Z x)))’]
-             finite_second_moments_imp_integrable_mul)
+ >> MP_TAC (Q.SPECL [‘p’, ‘λx. Normal (real (X x))’,
+                     ‘λx. Normal (diffn 1 f (real (Z x)))’]
+                    finite_second_moments_imp_integrable_mul)
  >> impl_tac
  >- (simp [prob_space_def] \\
      STRONG_CONJ_TAC
@@ -3525,7 +3498,8 @@ Proof
      (* finite_second_moments p (λx. Normal (real (X x))) ∧
             finite_second_moments p (λx. Normal (diffn 1 f (real (Z x))))*)
      rw [finite_second_moments_eq_integrable_square, prob_space_def]
-     >- (MP_TAC (Q.SPECL [‘p’, ‘λx. (Normal (real (X x))) pow 2’, ‘λx. (X x) pow 2’] integrable_cong) \\
+     >- (MP_TAC (Q.SPECL [‘p’, ‘λx. (Normal (real (X x))) pow 2’,
+                          ‘λx. (X x) pow 2’] integrable_cong) \\
          impl_tac
          >- (fs [p_space_def, real_random_variable, extreal_pow_def, pow_real] \\
              METIS_TAC [normal_real, pow_not_infty]) \\
@@ -3636,7 +3610,8 @@ Theorem taylor_diffn_expectation_lemma[local] :
       M = sup (IMAGE (λt. abs (Normal (diffn 3 f t))) 𝕌(:real)) ⇒
       abs (expectation p (λx. Normal (f (real (X x + Z x)))) −
            expectation p (λx. Normal (f (real (Z x)))) −
-           expectation p (λx. Normal (real (X x))) * expectation p (λx. Normal (diffn 1 f (real (Z x)))) −
+           expectation p (λx. Normal (real (X x))) *
+           expectation p (λx. Normal (diffn 1 f (real (Z x)))) −
            Normal (1 / 2) * expectation p (λx. Normal (diffn 2 f (real (Z x)))) *
            expectation p (λx. (X x) pow 2))
       ≤ M / 6 * expectation p (λx. abs (X x) pow 3)
@@ -3653,14 +3628,16 @@ Proof
  >> POP_ASSUM K_TAC
     (*Rewrite RHS to form of expectation p f*)
  >> MP_TAC (Q.SPECL [‘p’, ‘X’] clt_integrable_lemma) >> rw []
- >> MP_TAC (Q.SPECL [‘p’, ‘λx. (X x) pow 3’] integrable_abs) >> fs [prob_space_def, o_DEF]
+ >> MP_TAC (Q.SPECL [‘p’, ‘λx. (X x) pow 3’] integrable_abs)
+ >> fs [prob_space_def, o_DEF]
  >> STRIP_TAC
  >> MP_TAC (Q.SPECL [‘p’, ‘λx. (abs (X x)) pow 3’, ‘r / 6’] expectation_cmul)
  >> fs [prob_space_def, pow_abs]
  >> DISCH_THEN (rw o wrap o SYM)
     (*Rewrite LHS to form of expectation p (a - b - c)*)
     (*Rewrite third part of LHS*)
- >> MP_TAC (Q.SPECL [‘p’, ‘λx. Normal (diffn 2 f (real (Z x)))’, ‘1 / 2’] expectation_cmul)
+ >> MP_TAC (Q.SPECL [‘p’, ‘λx. Normal (diffn 2 f (real (Z x)))’, ‘1 / 2’]
+                    expectation_cmul)
  >> impl_tac
  >- (simp [prob_space_def] \\
      MP_TAC (Q.SPECL [‘p’, ‘Z’, ‘diffn 2 f’] integrable_bounded_continuous) \\
@@ -3729,14 +3706,16 @@ Proof
                      ‘λx. Normal (f (real (Z x)))’] (GSYM expectation_sub))
  >> impl_tac
  >- (rw [prob_space_def, GSYM o_DEF]
-     >- (METIS_TAC [integrable_bounded_continuous, prob_space_def, real_random_variable_add]) \\
+     >- (METIS_TAC [integrable_bounded_continuous, prob_space_def,
+                    real_random_variable_add]) \\
      METIS_TAC [prob_space_def, integrable_bounded_continuous])
  >> DISCH_THEN (rw o wrap)
  >> Know ‘expectation p (λx. Normal (real (X x))) *
           expectation p (λx. Normal (diffn 1 f (real (Z x)))) =
           expectation p (λx. Normal (real (X x) * diffn 1 f (real (Z x))))’
  >- (MP_TAC (Q.SPECL [‘p’, ‘(λx. Normal (real (X x)))’,
-                      ‘(λx. Normal (diffn 1 f (real (Z x))))’] (GSYM indep_vars_expectation)) \\
+                      ‘(λx. Normal (diffn 1 f (real (Z x))))’]
+                     (GSYM indep_vars_expectation)) \\
      impl_tac
      >- (simp [prob_space_def] \\
          STRONG_CONJ_TAC
@@ -3801,7 +3780,8 @@ Proof
                           ‘λx. Normal (f (real (Z x)))’] integrable_sub') \\
          impl_tac
          >- (rw [GSYM o_DEF]
-             >- (METIS_TAC [integrable_bounded_continuous, prob_space_def, real_random_variable_add]) \\
+             >- (METIS_TAC [integrable_bounded_continuous, prob_space_def,
+                            real_random_variable_add]) \\
              METIS_TAC [prob_space_def, integrable_bounded_continuous]) \\
          simp []) \\
      (*integrable p (λx. Normal (real (X x) * diffn 1 f (real (Z x))))*)
@@ -3841,7 +3821,8 @@ Proof
      (*integrable p (A - C) ∧ integrable p B*)
      rw [Abbr ‘H’, Abbr ‘B’, Abbr ‘C’, Abbr ‘A’]
      >- (MP_TAC (Q.SPECL [‘p’, ‘λx. Normal (f (real (X x + Z x))) − Normal (f (real (Z x)))’,
-                          ‘λx. Normal (real (X x) * diffn 1 f (real (Z x)))’] integrable_sub') \\
+                          ‘λx. Normal (real (X x) * diffn 1 f (real (Z x)))’]
+                         integrable_sub') \\
          impl_tac
          >- (rw []
              >- (MP_TAC (Q.SPECL [‘p’, ‘λx. Normal (f (real (X x + Z x)))’,
@@ -4183,7 +4164,8 @@ Proof
          rw [GSYM (cj 4 lt_infty)] \\
          MATCH_MP_TAC (cj 1 expectation_finite) >> fs [] \\
          MP_TAC (Q.SPECL [‘p’, ‘λx. abs ((X (i: num) x / Normal r) pow 3)’,
-                          ‘λx. abs ((X (i :num) x) pow 3) / abs (Normal (r pow 3))’] integrable_cong) \\
+                          ‘λx. abs ((X (i :num) x) pow 3) / abs (Normal (r pow 3))’]
+                         integrable_cong) \\
          impl_tac >- (fs [prob_space_def, p_space_def, real_random_variable] \\
                       rw [] \\
                       Q.PAT_X_ASSUM ‘∀x. x ∈ m_space p ⇒ X i x ≠ −∞ ∧ X i x ≠ +∞’
@@ -4202,7 +4184,8 @@ Proof
          rw [GSYM (cj 4 lt_infty)] \\
          MATCH_MP_TAC (cj 1 expectation_finite) >> fs [] \\
          MP_TAC (Q.SPECL [‘p’, ‘λx. abs ((Y (i: num) x / Normal r) pow 3)’,
-                          ‘λx. abs ((Y (i :num) x) pow 3) / abs (Normal (r pow 3))’] integrable_cong) \\
+                          ‘λx. abs ((Y (i :num) x) pow 3) / abs (Normal (r pow 3))’]
+                         integrable_cong) \\
          impl_tac >- (fs [prob_space_def, p_space_def, real_random_variable] \\
                       rw [] \\
                       Q.PAT_X_ASSUM ‘∀x. x ∈ m_space p ⇒ Y i x ≠ −∞ ∧ Y i x ≠ +∞’
