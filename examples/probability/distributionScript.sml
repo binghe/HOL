@@ -6017,6 +6017,14 @@ Theorem converge_in_dist_alt_Lipschitz_lemma[local] =
      |> REWRITE_RULE [GSYM ext_euclidean_def, GSYM Borel_alt_general]
      |> REWRITE_RULE [GSYM weak_converge, GSYM expectation_def]
 
+(*
+Theorem converge_in_dist_alt_Lipschitz_lemma'[local] =
+        weak_converge_in_topology_alt_Lipschitz
+     |> ISPEC “mr1”
+     |> REWRITE_RULE [GSYM euclidean_def, GSYM borel_alt_general]
+     |> REWRITE_RULE [GSYM weak_converge, GSYM expectation_def]
+ *)
+
 Theorem converge_in_dist_alt_Lipschitz :
     !X Y p. prob_space p /\ (!n. random_variable (X n) p Borel) /\
             random_variable Y p Borel ==>
@@ -6834,9 +6842,10 @@ Proof
          MATCH_MP_TAC limTheory.higher_differentiable_imp_continuous >> art []) \\
      simp [continuous_on_univ_alt_continuous_map] >> DISCH_TAC \\
      qabbrev_tac ‘g = f o real’ \\
-    ‘!n. Normal o f o real o X n = Normal o g o X n’ by METIS_TAC [o_ASSOC] \\
-     POP_ORW \\
-    ‘Normal o f o real o Y = Normal o g o Y’ by METIS_TAC [o_ASSOC] >> POP_ORW \\
+    ‘!n. Normal o f o real o X n = Normal o g o X n’
+       by METIS_TAC [o_ASSOC] >> POP_ORW \\
+    ‘Normal o f o real o Y = Normal o g o Y’
+       by METIS_TAC [o_ASSOC] >> POP_ORW \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
      CONJ_TAC
      >- (qunabbrev_tac ‘g’ \\
@@ -6849,7 +6858,46 @@ Proof
      Q.EXISTS_TAC ‘real z’ >> REFL_TAC)
  (* stage work *)
  >> DISCH_TAC
- >> rw [converge_in_dist_alt_Lipschitz, BL_alt]
+ >> RW_TAC set_ss [converge_in_dist_alt_Lipschitz, BL_alt]
+ >> qabbrev_tac ‘g :real -> real = f o Normal’
+ >> Know ‘!n. expectation p (Normal o f o X n) =
+              expectation p (Normal o g o real o X n)’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     MATCH_MP_TAC expectation_cong >> art [] \\
+     rw [o_DEF, Abbr ‘g’] \\
+     AP_TERM_TAC >> SYM_TAC \\
+     simp [normal_real])
+ >> Rewr'
+ >> Know ‘expectation p (Normal o f o Y) = expectation p (Normal o g o real o Y)’
+ >- (MATCH_MP_TAC expectation_cong >> art [] \\
+     rw [o_DEF, Abbr ‘g’] \\
+     AP_TERM_TAC >> SYM_TAC \\
+     simp [normal_real])
+ >> Rewr'
+ >> Know ‘bounded (IMAGE g UNIV)’
+ >- (Q.PAT_X_ASSUM ‘bounded _’ MP_TAC \\
+     rw [ext_bounded_def, bounded_def, Abbr ‘g’, o_DEF] \\
+     Q.EXISTS_TAC ‘a’ >> rw [] \\
+     rename1 ‘abs (f (Normal y)) <= a’ \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘Normal y’ >> REFL_TAC)
+ >> DISCH_TAC
+ >> Know ‘Lipschitz_continuous_map (mr1,mr1) g’
+ >- (Q.PAT_X_ASSUM ‘Lipschitz_continuous_map _ f’ MP_TAC \\
+     rw [Lipschitz_continuous_map_def, Abbr ‘g’] \\
+     Q.EXISTS_TAC ‘k’ >> rw [] \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS)
+           ‘k * dist extreal_mr1 (Normal x,Normal y)’ >> art [] \\
+     simp [extreal_mr1_normal, GSYM dist_def, dist] \\
+     Know ‘abs (x - y) / (1 + abs (x - y)) <= abs (x - y) <=>
+           abs (x - y) * 1 <= abs (x - y) * (1 + abs (x - y))’
+     >- (REWRITE_TAC [REAL_MUL_RID] \\
+         MATCH_MP_TAC REAL_LE_LDIV_EQ \\
+         Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘1’ >> simp []) >> Rewr' \\
+     MATCH_MP_TAC REAL_LE_LMUL_IMP >> simp [])
+ >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘bounded (IMAGE f univ(:extreal))’ K_TAC
+ >> Q.PAT_X_ASSUM ‘Lipschitz_continuous_map (extreal_mr1,mr1) f’ K_TAC
  >> cheat
 QED
 
