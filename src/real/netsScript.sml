@@ -1447,7 +1447,7 @@ QED
 
 (* NOTE: HOL-Light's “atpointof top a” becomes HOL4's “atpointof m a”.
 
-   Added “limpt (mtop m) a UNIV” to finish the proof (right => left).
+   Added “limpt (mtop m) a UNIV” to finish the proof (direction: right to left).
  *)
 Theorem EVENTUALLY_ATPOINTOF :
     !P m (a:'a). limpt (mtop m) a UNIV ==>
@@ -1498,6 +1498,87 @@ Proof
  >> Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘dist m (a,z)’ >> art []
  >> ONCE_REWRITE_TAC [MDIST_SYM] >> art []
 QED
+
+Theorem ATPOINTOF_WITHIN_TOPSPACE :
+    !m (a:'a). ((atpointof m a) within (topspace (mtop m))) = atpointof m a
+Proof
+    simp [NET_WITHIN_UNIV, TOPSPACE_MTOP]
+QED
+
+(* NOTE: added “a IN s /\ limpt (mtop m) a univ(:'a)” needed by some lemmas *)
+Theorem TRIVIAL_LIMIT_ATPOINTOF_WITHIN :
+    !m s (a:'a). a IN s /\ limpt (mtop m) a univ(:'a) ==>
+       (trivial_limit(atpointof m a within s) <=>
+        ~(a IN (mtop m) derived_set_of s))
+Proof
+    rpt STRIP_TAC
+ >> ‘net_condition (atpointof m a) s’ by PROVE_TAC [NET_CONDITION_ATPOINTOF]
+ >> simp [trivial_limit, EVENTUALLY_WITHIN_IMP]
+ >> ASM_SIMP_TAC bool_ss [EVENTUALLY_ATPOINTOF]
+ >> simp [derived_set_of, TOPSPACE_MTOP]
+ >> SET_TAC []
+QED
+
+(* |- !m s a.
+        a IN s /\ limpt (mtop m) a univ(:'a) ==>
+        (trivial_limit (atpointof m a within s) <=> ~limpt (mtop m) a s)
+ *)
+Theorem TRIVIAL_LIMIT_ATPOINTOF_WITHIN' =
+        TRIVIAL_LIMIT_ATPOINTOF_WITHIN |> SRULE [derived_set_of_alt_limpt]
+
+Theorem DERIVED_SET_OF_TRIVIAL_LIMIT :
+    !m s (a:'a). a IN s /\ limpt (mtop m) a univ(:'a) ==>
+      (a IN (mtop m) derived_set_of s <=> ~trivial_limit(atpointof m a within s))
+Proof
+    PROVE_TAC[TRIVIAL_LIMIT_ATPOINTOF_WITHIN]
+QED
+
+Theorem TRIVIAL_LIMIT_ATPOINTOF :
+    !m (a:'a). limpt (mtop m) a univ(:'a) ==>
+       (trivial_limit(atpointof m a) <=>
+        ~(a IN (mtop m) derived_set_of topspace (mtop m)))
+Proof
+    ONCE_REWRITE_TAC[GSYM ATPOINTOF_WITHIN_TOPSPACE]
+ >> rpt STRIP_TAC
+ >> MATCH_MP_TAC TRIVIAL_LIMIT_ATPOINTOF_WITHIN
+ >> simp [TOPSPACE_MTOP]
+QED
+
+(* |- !m a. limpt (mtop m) a univ(:'a) ==> ~trivial_limit (atpointof m a) *)
+Theorem TRIVIAL_LIMIT_ATPOINTOF' =
+        TRIVIAL_LIMIT_ATPOINTOF |> SRULE [derived_set_of_alt_limpt, TOPSPACE_MTOP]
+
+(* NOTE: added “limpt (mtop m) a univ(:'a)” needed by some lemmas *)
+Theorem EVENTUALLY_ATPOINTOF_METRIC :
+    !P m (a:'a). limpt (mtop m) a univ(:'a) ==>
+       (eventually P (atpointof m a) <=>
+        a IN mspace m
+        ==> ?d. &0 < d /\
+                !x. x IN mspace m /\ &0 < mdist m (x,a) /\ mdist m (x,a) < d
+                    ==> P x)
+Proof
+    rpt STRIP_TAC
+ >> simp [EVENTUALLY_ATPOINTOF, MSPACE]
+ >> EQ_TAC
+ >- (STRIP_TAC \\
+     fs [OPEN_IN_MTOPOLOGY] \\
+     Q.PAT_X_ASSUM ‘!x. x IN u ==> ?r. 0 < r /\ _’ (MP_TAC o Q.SPEC ‘a’) >> simp [] \\
+     rw [IMP_CONJ, MDIST_POS_EQ, IN_MBALL, SUBSET_DEF, Once MDIST_SYM, MSPACE] \\
+     ASM_SET_TAC [])
+ >> rw [IMP_CONJ, MDIST_POS_EQ]
+ >> EXISTS_TAC ``mball m (a:'a,d)``
+ >> simp [OPEN_IN_MBALL, CENTRE_IN_MBALL, IN_DELETE, MSPACE]
+ >> simp [IN_MBALL, MSPACE]
+ >> ASM_MESON_TAC [MDIST_SYM]
+QED
+
+(* |- !P m a.
+        limpt (mtop m) a univ(:'a) ==>
+        (eventually P (atpointof m a) <=>
+         ?d. 0 < d /\ !x. 0 < dist m (x,a) /\ dist m (x,a) < d ==> P x)
+ *)
+Theorem EVENTUALLY_ATPOINTOF_METRIC' =
+        EVENTUALLY_ATPOINTOF_METRIC |> SRULE [MSPACE]
 
 (* ------------------------------------------------------------------------- *)
 (* The "eventually" property in Euclidean space.                             *)
