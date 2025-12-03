@@ -4260,24 +4260,13 @@ QED
 
 Theorem LIMPT_APPROACHABLE:
    !x s. x limit_point_of s <=>
-                !e. &0 < e ==> ?x'. x' IN s /\ ~(x' = x) /\ dist(x',x) < e
+         !e. &0 < e ==> ?x'. x' IN s /\ ~(x' = x) /\ dist(x',x) < e
 Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[limit_point_of] THEN
   MESON_TAC[open_def, DIST_SYM, OPEN_BALL, CENTRE_IN_BALL, IN_BALL]
 QED
 
-Theorem lemma[local]:
-   &0 < d:real ==> x <= d / &2 ==> x < d
-Proof
- SIMP_TAC std_ss [REAL_LE_RDIV_EQ, REAL_LT] THEN REAL_ARITH_TAC
-QED
-
-Theorem APPROACHABLE_LT_LE:
-   !P f. (?d:real. &0 < d /\ !x. f(x) < d ==> P x) =
-         (?d:real. &0 < d /\ !x. f(x) <= d ==> P x)
-Proof
-  MESON_TAC[REAL_LT_IMP_LE, lemma, REAL_LT_HALF1]
-QED
+Theorem APPROACHABLE_LT_LE = netsTheory.APPROACHABLE_LT_LE
 
 Theorem LIMPT_APPROACHABLE_LE:
    !x s. x limit_point_of s <=>

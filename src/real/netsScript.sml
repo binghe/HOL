@@ -1582,10 +1582,9 @@ Theorem EVENTUALLY_ATPOINTOF_METRIC' =
 
 (* ------------------------------------------------------------------------- *)
 (* The "eventually" property in Euclidean space.                             *)
-(* from HOL-Light's topology.ml, the original theorem is for norm(x:real^N)  *)
 (* ------------------------------------------------------------------------- *)
 
-(* Added ‘a IN s’ to satisfy ‘net_condition (at a) s’ *)
+(* NOTE: added ‘a IN s’ for needed lemmas *)
 Theorem EVENTUALLY_WITHIN :
     !s a p. a IN s ==>
        (eventually p (at a within s) <=>
@@ -1596,9 +1595,38 @@ Proof
  >- (MATCH_MP_TAC NET_CONDITION_AT >> art [])
  >> DISCH_TAC
  >> simp [at_def, EVENTUALLY_WITHIN_IMP, dist_def]
- >> cheat (*
-  REWRITE_TAC[EVENTUALLY_ATPOINTOF_METRIC] THEN
-  REWRITE_TAC[EUCLIDEAN_METRIC; IN_UNIV] THEN MESON_TAC[] *)
+ >> qabbrev_tac ‘P = \x. x IN s ==> p x’
+ >> Know ‘eventually P (atpointof mr1 a) <=>
+          ?d. 0 < d /\ !x. 0 < dist mr1 (x,a) /\ dist mr1 (x,a) < d ==> P x’
+ >- (MATCH_MP_TAC EVENTUALLY_ATPOINTOF_METRIC' \\
+     REWRITE_TAC [MR1_LIMPT])
+ >> Rewr'
+ >> simp [GSYM dist_def, Abbr ‘P’]
+ >> MESON_TAC []
+QED
+
+Theorem lemma[local]:
+   &0 < d:real ==> x <= d / &2 ==> x < d
+Proof
+ SIMP_TAC std_ss [REAL_LE_RDIV_EQ, REAL_LT] THEN REAL_ARITH_TAC
+QED
+
+Theorem APPROACHABLE_LT_LE:
+   !P f. (?d:real. &0 < d /\ !x. f(x) < d ==> P x) =
+         (?d:real. &0 < d /\ !x. f(x) <= d ==> P x)
+Proof
+  MESON_TAC[REAL_LT_IMP_LE, lemma, REAL_LT_HALF1]
+QED
+
+Theorem EVENTUALLY_WITHIN_LE :
+    !s a p. a IN s ==>
+       (eventually p (at a within s) <=>
+        ?d. &0 < d /\ !x. x IN s /\ &0 < dist(x,a) /\ dist(x,a) <= d ==> p(x))
+Proof
+    rpt STRIP_TAC
+ >> simp [EVENTUALLY_WITHIN]
+ >> ONCE_REWRITE_TAC[TAUT `a /\ b /\ c ==> d <=> c ==> a /\ b ==> d`]
+ >> simp [APPROACHABLE_LT_LE]
 QED
 
 Theorem EVENTUALLY_AT_INFINITY :
