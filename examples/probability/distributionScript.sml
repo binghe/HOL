@@ -6826,7 +6826,7 @@ QED
  *)
 Theorem converge_in_dist_alt_higher_differentiable :
     !X Y Z p. prob_space p /\ (!n. real_random_variable (X n) p) /\
-              real_random_variable Y p /\ ext_normal_rv Z p 0 1 ==>
+              real_random_variable Y p /\ std_normal_rv Z p ==>
            ((X --> Y) (in_distribution p) <=>
             !f. (!n x. higher_differentiable n f x) /\
                 (!n. bounded (IMAGE (diffn n f) UNIV)) ==>
@@ -6904,6 +6904,27 @@ Proof
  >> Q.PAT_X_ASSUM ‘bounded (IMAGE _ univ(:extreal))’             K_TAC
  >> Q.PAT_X_ASSUM ‘Lipschitz_continuous_map (extreal_mr1,mr1) _’ K_TAC
  (* stage work *)
+ >> qabbrev_tac ‘g = \s x (y :real). x + s * y’
+ >> qabbrev_tac ‘h = \s x. integral p (Normal o g s x o Z)’
+ (* applying integration_of_normal_rv *)
+ >> Know ‘!s x. (integrable p (Normal o g s x o Z) <=>
+                 integrable lborel (\y. Normal (g s x y * std_normal_density y))) /\
+                (integral p (Normal o g s x o Z) =
+                 integral lborel (\y. Normal (g s x y * std_normal_density y)))’
+ >- (rpt GEN_TAC \\
+     HO_MATCH_MP_TAC integration_of_normal_rv >> art [] \\
+     rw [Abbr ‘g’] \\
+     MATCH_MP_TAC in_borel_measurable_add >> simp [] \\
+     qexistsl_tac [‘\y. x’, ‘\y. s * y’] \\
+     simp [sigma_algebra_borel, space_borel] \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC in_borel_measurable_const \\
+         Q.EXISTS_TAC ‘x’ >> simp [sigma_algebra_borel, space_borel]) \\
+     MATCH_MP_TAC in_borel_measurable_cmul \\
+     qexistsl_tac [‘\x. x’, ‘s’] \\
+     simp [sigma_algebra_borel, space_borel, in_borel_measurable_I])
+ >> simp [FORALL_AND_THM]
+ >> STRIP_TAC
  >> cheat
 QED
 

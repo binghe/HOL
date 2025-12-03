@@ -916,79 +916,6 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
-(* netfilter (compatible with HOL-Light)                                     *)
-(* ------------------------------------------------------------------------- *)
-
-Definition netfilter_def :
-    netfilter net = {{y | netord net y x} | x | T}
-End
-
-Theorem NETFILTER_AT_POSINFINITY :
-    netfilter at_posinfinity = {{x | a <= x} | a IN univ(:real)}
-Proof
-    simp [netfilter_def, AT_POSINFINITY, real_ge]
-QED
-
-Theorem NETFILTER_AT_NEGINFINITY :
-    netfilter at_neginfinity = {{x | x <= a} | a IN univ(:real)}
-Proof
-    simp [netfilter_def, AT_NEGINFINITY]
-QED
-
-Theorem NETFILTER_AT_INFINITY :
-    netfilter at_infinity = {{x | b <= abs x} | b IN univ(:real)}
-Proof
-    simp [netfilter_def, AT_INFINITY, real_ge]
- >> rw [Once EXTENSION]
- >> EQ_TAC >> rw []
- >- (Q.EXISTS_TAC ‘abs x'’ >> REFL_TAC)
- >> Cases_on ‘0 <= b’
- >- (Q.EXISTS_TAC ‘abs b’ >> simp [ABS_REDUCE])
- >> fs [REAL_NOT_LE]
- >> Know ‘!x. b <= abs x <=> 0 <= abs x’
- >- (Q.X_GEN_TAC ‘x’ \\
-     EQ_TAC >> rw [] \\
-     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘0’ >> simp [ABS_POS, REAL_LT_IMP_LE])
- >> Rewr'
- >> Q.EXISTS_TAC ‘0’ >> simp [ABS_0]
-QED
-
-Theorem NETFILTER_SEQUENTIALLY :
-    netfilter sequentially = {from n | n IN univ(:num)}
-Proof
-    simp [netfilter_def, SEQUENTIALLY, GREATER_EQ, from_def]
-QED
-
-Theorem NETFILTER_ATPOINTOF :
-    !m a. netfilter (atpointof m a) =
-            {{y | y <> a /\ dist m (y,a) <= dist m (x,a)} | x | T}
-Proof
-    simp [netfilter_def, ATPOINTOF, MDIST_POS_EQ]
-QED
-
-(* |- !a. netfilter (at a) =
-          {{y | y <> a /\ dist (y,a) <= dist (x,a)} | x | T}
- *)
-Theorem NETFILTER_AT =
-        NETFILTER_ATPOINTOF |> ISPEC “mr1”
-                            |> REWRITE_RULE [GSYM dist_def, GSYM at_DEF]
-
-(* NOTE: This theorem is HOL-Light's WITHIN *)
-Theorem NETFILTER_WITHIN :
-    !net s. netfilter (net within s) = netfilter net relative_to s
-Proof
-    rw [netfilter_def, WITHIN, RELATIVE_TO]
- >> rw [Once EXTENSION]
- >> EQ_TAC >> rw []
- >- (Q.EXISTS_TAC ‘{y | netord net y x'}’ \\
-     reverse CONJ_TAC >- (Q.EXISTS_TAC ‘x'’ >> REFL_TAC) \\
-     rw [Once EXTENSION] >> PROVE_TAC [])
- >> Q.EXISTS_TAC ‘x'’
- >> rw [Once EXTENSION]
- >> PROVE_TAC []
-QED
-
-(* ------------------------------------------------------------------------- *)
 (* It's also sometimes useful to extract the limit point from the net.       *)
 (* ------------------------------------------------------------------------- *)
 
@@ -1132,6 +1059,100 @@ QED
  *)
 Theorem NET_CONDITION_AT =
         NET_CONDITION_ATPOINTOF |> ISPEC “mr1” |> REWRITE_RULE [GSYM at_def]
+
+(* ------------------------------------------------------------------------- *)
+(* netfilter (compatible with HOL-Light)                                     *)
+(* ------------------------------------------------------------------------- *)
+
+Definition netfilter_def :
+    netfilter net = {{y | netord net y x} | x | x NOTIN netlimits net}
+End
+
+Theorem NETFILTER :
+    !n s t. s IN netfilter n /\ t IN netfilter n ==> s INTER t IN netfilter n
+Proof
+    rpt GEN_TAC
+ >> simp [netfilter_def]
+ >> DISCH_THEN (CONJUNCTS_THEN2
+                 (Q.X_CHOOSE_THEN ‘u’ STRIP_ASSUME_TAC)
+                 (Q.X_CHOOSE_THEN ‘v’ STRIP_ASSUME_TAC))
+ >> ‘s INTER t = {y | netord n y u /\ netord n y v}’ by ASM_SET_TAC []
+ >> POP_ORW
+ (* applying NET here! *)
+ >> STRIP_ASSUME_TAC (Q.SPECL [‘n’, ‘u’, ‘v’] NET)
+ >| [ (* goal 1 (of 2) *)
+      Q.EXISTS_TAC ‘u’ >> ASM_SET_TAC [],
+      (* goal 2 (of 2) *)
+      Q.EXISTS_TAC ‘v’ >> ASM_SET_TAC [] ]
+QED
+
+Theorem NETFILTER_AT_POSINFINITY :
+    netfilter at_posinfinity = {{x | a <= x} | a IN univ(:real)}
+Proof
+    simp [netfilter_def, NETLIMITS_AT_POSINFINITY, AT_POSINFINITY, real_ge]
+QED
+
+Theorem NETFILTER_AT_NEGINFINITY :
+    netfilter at_neginfinity = {{x | x <= a} | a IN univ(:real)}
+Proof
+    simp [netfilter_def, NETLIMITS_AT_NEGINFINITY, AT_NEGINFINITY]
+QED
+
+Theorem NETFILTER_AT_INFINITY :
+    netfilter at_infinity = {{x | b <= abs x} | b IN univ(:real)}
+Proof
+    simp [netfilter_def, NETLIMITS_AT_INFINITY, AT_INFINITY, real_ge]
+ >> rw [Once EXTENSION]
+ >> EQ_TAC >> rw []
+ >- (Q.EXISTS_TAC ‘abs x'’ >> REFL_TAC)
+ >> Cases_on ‘0 <= b’
+ >- (Q.EXISTS_TAC ‘abs b’ >> simp [ABS_REDUCE])
+ >> fs [REAL_NOT_LE]
+ >> Know ‘!x. b <= abs x <=> 0 <= abs x’
+ >- (Q.X_GEN_TAC ‘x’ \\
+     EQ_TAC >> rw [] \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘0’ >> simp [ABS_POS, REAL_LT_IMP_LE])
+ >> Rewr'
+ >> Q.EXISTS_TAC ‘0’ >> simp [ABS_0]
+QED
+
+Theorem NETFILTER_SEQUENTIALLY :
+    netfilter sequentially = {from n | n IN univ(:num)}
+Proof
+    simp [netfilter_def, NETLIMITS_SEQUENTIALLY, SEQUENTIALLY,
+          GREATER_EQ, from_def]
+QED
+
+Theorem NETFILTER_ATPOINTOF :
+    !m a. netfilter (atpointof m a) =
+          {{y | 0 < dist m (y,a) /\ dist m (y,a) <= dist m (x,a)} | x | x <> a}
+Proof
+    simp [netfilter_def, NETLIMITS_ATPOINTOF, ATPOINTOF, MDIST_POS_EQ]
+QED
+
+(* |- !a. netfilter (at a) =
+          {{y | 0 < dist (y,a) /\ dist (y,a) <= dist (x,a)} | x | x <> a}
+ *)
+Theorem NETFILTER_AT =
+        NETFILTER_ATPOINTOF |> ISPEC “mr1”
+                            |> REWRITE_RULE [GSYM dist_def, GSYM at_DEF]
+
+(* NOTE: This theorem is HOL-Light's WITHIN *)
+Theorem NETFILTER_WITHIN :
+    !net s. net_condition net s ==>
+           (netfilter (net within s) = netfilter net relative_to s)
+Proof
+    rw [netfilter_def, WITHIN, RELATIVE_TO, NETLIMITS_WITHIN]
+ >> rw [Once EXTENSION]
+ >> EQ_TAC >> rw []
+ >- (rename1 ‘x NOTIN netlimits net’ \\
+     Q.EXISTS_TAC ‘{y | netord net y x}’ \\
+     reverse CONJ_TAC >- (Q.EXISTS_TAC ‘x’ >> art []) \\
+     SET_TAC [])
+ >> rename1 ‘x NOTIN netlimits net’
+ >> Q.EXISTS_TAC ‘x’ >> art []
+ >> SET_TAC []
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Some property holds "sufficiently close" to the limit point (eventually). *)
