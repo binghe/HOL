@@ -1456,18 +1456,23 @@ QED
 (* Limits at a point in a topological (metric in HOL4) space                 *)
 (* ------------------------------------------------------------------------- *)
 
-Theorem NETFILTER_ATPOINTOF_EMPTY :
-    !a. (!y. y = a) ==> netfilter (atpointof m a) = {}
+(* NOTE: recall that “netfilter net = {}” is the 1st part of “eventually” *)
+Theorem NETFILTER_EMPTY :
+    !net. netfilter net = {} <=> netlimits net = UNIV
 Proof
-    rw [NETFILTER_ATPOINTOF]
+    rw [netfilter_def, Once EXTENSION, NOT_IN_EMPTY]
+ >> simp [Once EXTENSION]
 QED
 
-(* NOTE: HOL-Light's “atpointof top a” becomes HOL4's “atpointof m a”.
+Theorem NETFILTER_ATPOINTOF_EMPTY :
+    !m a. netfilter (atpointof m a) = {} <=> !x. x = a
+Proof
+    rw [NETFILTER_ATPOINTOF, Once EXTENSION, NOT_IN_EMPTY]
+QED
 
-   Added “limpt (mtop m) a UNIV” to finish the proof (direction: right to left).
- *)
+(* NOTE: HOL-Light's “atpointof top a” becomes HOL4's “atpointof m a”. *)
 Theorem EVENTUALLY_ATPOINTOF_IMP :
-    !P m (a:'a). 
+    !P m (a:'a).
         eventually P (atpointof m a) ==>
         ?u. open_in (mtop m) u /\ a IN u /\ !x. x IN u DELETE a ==> P x
 Proof
@@ -1496,6 +1501,7 @@ Proof
  >> simp [Once MDIST_SYM]
 QED
 
+(* NOTE: added “limpt (mtop m) a UNIV” to finish the proof (direction: right to left) *)
 Theorem EVENTUALLY_ATPOINTOF :
     !P m (a:'a). limpt (mtop m) a UNIV ==>
        (eventually P (atpointof m a) <=>
