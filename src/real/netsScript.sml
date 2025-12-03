@@ -1453,6 +1453,40 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
+(* Within "empty" - no need for net_condition                                *)
+(* ------------------------------------------------------------------------- *)
+
+Theorem WITHIN_EMPTY :
+    !net. netord (net within {}) x y <=> F
+Proof
+    rw [WITHIN]
+QED
+
+Theorem NETLIMITS_WITHIN_EMPTY :
+    !net. netlimits (net within {}) = UNIV
+Proof
+    rw [netlimits_def, WITHIN_EMPTY]
+QED
+
+Theorem NETFILTER_WITHIN_EMPTY :
+    !net. netfilter (net within {}) = {}
+Proof
+    rw [netfilter_def, NETLIMITS_WITHIN_EMPTY]
+QED
+
+Theorem EVENTUALLY_WITHIN_EMPTY :
+    !net p. eventually p (net within {})
+Proof
+    rw [eventually, NETFILTER_WITHIN_EMPTY]
+QED
+
+Theorem TRIVIAL_LIMIT_WITHIN_EMPTY :
+    !net. trivial_limit (net within {})
+Proof
+    rw [trivial_limit, EVENTUALLY_WITHIN_EMPTY]
+QED
+
+(* ------------------------------------------------------------------------- *)
 (* Limits at a point in a topological (metric in HOL4) space                 *)
 (* ------------------------------------------------------------------------- *)
 
