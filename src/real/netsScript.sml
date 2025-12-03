@@ -1010,20 +1010,15 @@ Proof
 QED
 
 Theorem NETLIMITS_WITHIN_lemma2[local] :
-    (!x. (!y. y = x \/ y NOTIN s \/ ~netord net y x) ==> x IN netlimits net) ==>
+    (!x. (!y. y <> x ==> ~netord net y x \/ y NOTIN s) ==> x IN netlimits net) ==>
     netlimits (net within s) SUBSET netlimits net
 Proof
     rpt STRIP_TAC
  >> simp [SUBSET_DEF, Once netlimits_def, WITHIN]
- (* x is any element in ‘netlimits net’ *)
- >> Q.X_GEN_TAC ‘x’ >> DISCH_TAC
- >> FIRST_X_ASSUM MATCH_MP_TAC
- >> METIS_TAC []
 QED
 
-(* converting forall to exists, negative terms to positive *)
 Theorem NETLIMITS_WITHIN_lemma3[local] :
-    (!x. (!y. y = x \/ y NOTIN s \/ ~netord net y x) ==> x IN netlimits net) <=>
+    (!x. (!y. y <> x ==> ~netord net y x \/ y NOTIN s) ==> x IN netlimits net) <=>
     (!x. x NOTIN netlimits net ==> ?y. y IN s /\ y <> x /\ netord net y x)
 Proof
     METIS_TAC []
@@ -1083,6 +1078,7 @@ QED
 (* netfilter (compatible with HOL-Light)                                     *)
 (* ------------------------------------------------------------------------- *)
 
+(* NOTE: “x NOTIN netlimits net” is necessary for EVENTUALLY_ATPOINTOF below *)
 Definition netfilter_def :
     netfilter net = {{y | netord net y x} | x | x NOTIN netlimits net}
 End
@@ -1217,10 +1213,9 @@ Proof
     ‘t IN netfilter net’ by simp [IN_APP] \\
      Q.EXISTS_TAC ‘t’ >> rw [])
  >> Q.EXISTS_TAC ‘s INTER u’
- >> CONJ_TAC
- >- (Q.EXISTS_TAC ‘u’ >> art [] \\
-     fs [IN_APP])
- >> rw []
+ >> reverse CONJ_TAC >- rw []
+ >> Q.EXISTS_TAC ‘u’ >> art []
+ >> FULL_SIMP_TAC bool_ss [IN_APP]
 QED
 
 (* NOTE: added “net_condition net s” after porting from HOL-Light *)
@@ -1244,8 +1239,6 @@ Proof
  >> REWRITE_TAC [GSYM WITHIN_WITHIN]
  >> simp [EVENTUALLY_WITHIN_IMP]
 QED
-
-(* ------------------------------------------------------------------------- *)
 
 (* NOTE: added “net_condition net s” *)
 Theorem NONTRIVIAL_LIMIT_WITHIN :
@@ -1420,7 +1413,7 @@ QED
 
 (* NOTE: added “net_condition sequentially k” after porting from HOL-Light
 
-   NOTE: But to satisfy “net_condition sequentially k”, k cannot be finite...
+   But to satisfy “net_condition sequentially k”, k cannot be finite...
  *)
 Theorem EVENTUALLY_SEQUENTIALLY_WITHIN :
     !k p. net_condition sequentially k ==>
@@ -1463,47 +1456,68 @@ QED
 (* Limits at a point in a topological (metric in HOL4) space                 *)
 (* ------------------------------------------------------------------------- *)
 
+Theorem NETFILTER_ATPOINTOF_EMPTY :
+    !a. (!y. y = a) ==> netfilter (atpointof m a) = {}
+Proof
+    rw [NETFILTER_ATPOINTOF]
+QED
+
 (* NOTE: HOL-Light's “atpointof top a” becomes HOL4's “atpointof m a”.
 
    Added “limpt (mtop m) a UNIV” to finish the proof (direction: right to left).
  *)
+Theorem EVENTUALLY_ATPOINTOF_IMP :
+    !P m (a:'a). 
+        eventually P (atpointof m a) ==>
+        ?u. open_in (mtop m) u /\ a IN u /\ !x. x IN u DELETE a ==> P x
+Proof
+    rpt GEN_TAC
+ >> simp [eventually, NETLIMITS_ATPOINTOF]
+ (* special case: there's only one value in type alpha *)
+ >> Cases_on ‘!y. y = a’
+ >- (‘netfilter (atpointof m a) = {}’
+       by PROVE_TAC [NETFILTER_ATPOINTOF_EMPTY] >> simp [] \\
+     Q.EXISTS_TAC ‘{a}’ >> simp [] \\
+     rw [MTOP_OPEN'] \\
+     Q.EXISTS_TAC ‘1’ >> simp [])
+ >> FULL_SIMP_TAC bool_ss [NETFILTER_ATPOINTOF] (* this asserts ‘y <> a’ *)
+ >> Know ‘{{y | dist m (y,a) <= dist m (x,a)} | x | x <> a} <> {}’
+ >- (rw [Once EXTENSION, NOT_IN_EMPTY] \\
+     Q.EXISTS_TAC ‘y’ >> art [])
+ >> Rewr
+ >> simp [EXISTS_IN_GSPEC]
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘z’ STRIP_ASSUME_TAC)
+ >> qabbrev_tac ‘r = dist m (z,a)’
+ >> ‘0 < r’ by simp [Abbr ‘r’, MDIST_POS_LT]
+ >> Q.EXISTS_TAC ‘mball m (a,r)’
+ >> rw [OPEN_IN_MBALL, IN_MBALL, MSPACE, MDIST_REFL]
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+ >> MATCH_MP_TAC REAL_LT_IMP_LE
+ >> simp [Once MDIST_SYM]
+QED
+
 Theorem EVENTUALLY_ATPOINTOF :
     !P m (a:'a). limpt (mtop m) a UNIV ==>
        (eventually P (atpointof m a) <=>
         ?u. open_in (mtop m) u /\ a IN u /\ !x. x IN u DELETE a ==> P x)
 Proof
-    rw [eventually, NETFILTER_ATPOINTOF, NETLIMITS_ATPOINTOF]
+    rpt STRIP_TAC
+ >> EQ_TAC >- REWRITE_TAC [EVENTUALLY_ATPOINTOF_IMP]
+ >> simp [eventually, NETLIMITS_ATPOINTOF]
  (* special case: there's only one value in type alpha *)
  >> Cases_on ‘!y. y = a’
- >- (Know ‘{{y | dist m (y,a) <= dist m (x,a)} | x | x <> a} = {}’
-     >- rw [Once EXTENSION] >> Rewr \\
+ >- (‘netfilter (atpointof m a) = {}’
+       by PROVE_TAC [NETFILTER_ATPOINTOF_EMPTY] >> simp [] \\
      Q.EXISTS_TAC ‘{a}’ >> simp [] \\
      rw [MTOP_OPEN'] \\
      Q.EXISTS_TAC ‘1’ >> simp [])
- >> FULL_SIMP_TAC bool_ss [] (* this asserts ‘y <> a’ *)
+ >> FULL_SIMP_TAC bool_ss [NETFILTER_ATPOINTOF] (* this asserts ‘y <> a’ *)
  >> Know ‘{{y | dist m (y,a) <= dist m (x,a)} | x | x <> a} <> {}’
  >- (rw [Once EXTENSION, NOT_IN_EMPTY] \\
      Q.EXISTS_TAC ‘y’ >> art [])
  >> Rewr
- >> Know ‘(?u. (?x. u = {y | dist m (y,a) <= dist m (x,a)} /\ x <> a) /\
-               !x. x IN u /\ x <> a ==> P x) <=>
-          (?z. z <> a /\ !x. x IN {y | dist m (y,a) <= dist m (z,a)} /\ x <> a ==> P x)’
- >- (EQ_TAC >> rw [] >> fs []
-     >- (Q.EXISTS_TAC ‘x’ >> art []) \\
-     Q.EXISTS_TAC ‘{y | dist m (y,a) <= dist m (z,a)}’ \\
-     CONJ_TAC >- (Q.EXISTS_TAC ‘z’ >> art []) \\
-     rw [])
- >> Rewr'
- >> simp []
- >> EQ_TAC >> rpt STRIP_TAC
- >- (qabbrev_tac ‘r = dist m (z,a)’ \\
-    ‘0 < r’ by simp [Abbr ‘r’, MDIST_POS_LT] \\
-     Q.EXISTS_TAC ‘mball m (a,r)’ \\
-     rw [OPEN_IN_MBALL, IN_MBALL, MSPACE, MDIST_REFL] \\
-     FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
-     MATCH_MP_TAC REAL_LT_IMP_LE \\
-     simp [Once MDIST_SYM])
- (* stage work (right to left) *)
+ >> simp [EXISTS_IN_GSPEC]
+ >> STRIP_TAC
  >> fs [MTOP_OPEN']
  >> Q.PAT_X_ASSUM ‘!x. x IN u ==> ?e. _’ (MP_TAC o Q.SPEC ‘a’) >> rw []
  (* using extra antecedents *)

@@ -5836,36 +5836,51 @@ Proof
 QED
  *)
 
-(* NOTE: added missing quantifier “t” at the end *)
+(* NOTE: added missing quantifier “t” at the end; added “a IN t” as antecedents *)
 Theorem LIM_WITHIN_SUBSET:
-   !f l a s t.
+   !f l a s t. a IN t /\
     (f --> l) (at a within s) /\ t SUBSET s ==> (f --> l) (at a within t)
 Proof
-  REWRITE_TAC[LIM_WITHIN, SUBSET_DEF] THEN MESON_TAC[]
+    rpt STRIP_TAC
+ >> ‘a IN s’ by PROVE_TAC [SUBSET_DEF]
+ >> Q.PAT_X_ASSUM ‘t SUBSET s’ MP_TAC
+ >> Q.PAT_X_ASSUM ‘(f --> l) (at a within s)’ MP_TAC
+ >> rw [LIM_WITHIN, SUBSET_DEF] >> METIS_TAC []
 QED
 
+(* NOTE: added “x IN s /\ x IN t” as antecedents *)
 Theorem LIM_UNION:
-   !f x l s t.
+   !f x l s t. x IN s /\ x IN t /\
         (f --> l) (at x within s) /\ (f --> l) (at x within t)
         ==> (f --> l) (at x within (s UNION t))
 Proof
-  REPEAT GEN_TAC THEN REWRITE_TAC[LIM_WITHIN, IN_UNION] THEN
-  SIMP_TAC std_ss [GSYM FORALL_AND_THM] THEN STRIP_TAC THEN
-  X_GEN_TAC ``e:real`` THEN POP_ASSUM (MP_TAC o Q.SPEC `e:real`) THEN
-  ASM_CASES_TAC ``&0 < e:real`` THEN ASM_SIMP_TAC std_ss [] THEN
-  DISCH_THEN(CONJUNCTS_THEN2
-   (X_CHOOSE_TAC ``d1:real``) (X_CHOOSE_TAC ``d2:real``)) THEN
-  EXISTS_TAC ``min d1 d2:real`` THEN ASM_MESON_TAC[REAL_LT_MIN]
+    rpt STRIP_TAC
+ >> NTAC 2 (POP_ASSUM MP_TAC)
+ >> ‘x IN s UNION t’ by simp []
+ >> simp [LIM_WITHIN]
+ >> rpt STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘!e. 0 < e ==> ?d. 0 < d /\ _’ (MP_TAC o Q.SPEC ‘e’) >> simp []
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘d2’ STRIP_ASSUME_TAC)
+ >> Q.PAT_X_ASSUM ‘!e. 0 < e ==> ?d. 0 < d /\ _’ (MP_TAC o Q.SPEC ‘e’) >> simp []
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘d1’ STRIP_ASSUME_TAC)
+ >> Q.EXISTS_TAC ‘min d1 d2’ >> simp [REAL_LT_MIN]
+ >> Q.X_GEN_TAC ‘y’ >> STRIP_TAC
+ >| [ (* goal 1 (of 2) *)
+      Q.PAT_X_ASSUM ‘!z. z IN s /\ _ ==> dist (f z,l) < e’ MATCH_MP_TAC >> art [],
+      (* goal 2 (of 2) *)
+      Q.PAT_X_ASSUM ‘!z. z IN t /\ _ ==> dist (f z,l) < e’ MATCH_MP_TAC >> art [] ]
 QED
 
+(* NOTE: added “x IN s /\ x IN t” as antecedents *)
 Theorem LIM_UNION_UNIV:
-   !f x l s t.
+   !f x l s t. x IN s /\ x IN t /\
         (f --> l) (at x within s) /\ (f --> l) (at x within t) /\
         (s UNION t = univ(:real)) ==> (f --> l) (at x)
 Proof
   MESON_TAC[LIM_UNION, WITHIN_UNIV]
 QED
 
+(* TODO *)
 (* ------------------------------------------------------------------------- *)
 (* Composition of limits.                                                    *)
 (* ------------------------------------------------------------------------- *)
