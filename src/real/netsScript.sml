@@ -1447,7 +1447,7 @@ QED
 
 (* NOTE: HOL-Light's “atpointof top a” becomes HOL4's “atpointof m a”.
 
-   TODO: This failed proof shows that the modification of “atpointof” is wrong ...
+   Added “limpt (mtop m) a UNIV” to finish the proof (right => left).
  *)
 Theorem EVENTUALLY_ATPOINTOF :
     !P m (a:'a). limpt (mtop m) a UNIV ==>
@@ -1457,9 +1457,12 @@ Proof
     rw [eventually, NETFILTER_ATPOINTOF, NETLIMITS_ATPOINTOF]
  (* special case: there's only one value in type alpha *)
  >> Cases_on ‘!y. y = a’
- >- (
-     cheat)
- >> fs []
+ >- (Know ‘{{y | dist m (y,a) <= dist m (x,a)} | x | x <> a} = {}’
+     >- rw [Once EXTENSION] >> Rewr \\
+     Q.EXISTS_TAC ‘{a}’ >> simp [] \\
+     rw [MTOP_OPEN'] \\
+     Q.EXISTS_TAC ‘1’ >> simp [])
+ >> FULL_SIMP_TAC bool_ss [] (* this asserts ‘y <> a’ *)
  >> Know ‘{{y | dist m (y,a) <= dist m (x,a)} | x | x <> a} <> {}’
  >- (rw [Once EXTENSION, NOT_IN_EMPTY] \\
      Q.EXISTS_TAC ‘y’ >> art [])
@@ -1482,9 +1485,18 @@ Proof
      FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
      MATCH_MP_TAC REAL_LT_IMP_LE \\
      simp [Once MDIST_SYM])
+ (* stage work (right to left) *)
  >> fs [MTOP_OPEN']
  >> Q.PAT_X_ASSUM ‘!x. x IN u ==> ?e. _’ (MP_TAC o Q.SPEC ‘a’) >> rw []
- >> cheat
+ (* using extra antecedents *)
+ >> fs [MTOP_LIMPT']
+ >> Q.PAT_X_ASSUM ‘!e. 0 < e ==> ?y. _’ (MP_TAC o Q.SPEC ‘e’) >> simp []
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘z’ STRIP_ASSUME_TAC)
+ >> Q.EXISTS_TAC ‘z’ >> rw []
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘dist m (a,z)’ >> art []
+ >> ONCE_REWRITE_TAC [MDIST_SYM] >> art []
 QED
 
 (* ------------------------------------------------------------------------- *)
