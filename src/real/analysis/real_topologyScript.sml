@@ -5626,85 +5626,21 @@ QED
 (* Identify trivial limits, where we can't approach arbitrarily closely.     *)
 (* ------------------------------------------------------------------------- *)
 
+(* NOTE: added toplevel quantifier ‘s’; added “a IN s” for lemmas *)
 Theorem TRIVIAL_LIMIT_WITHIN :
-    !a:real. trivial_limit (at a within s) <=> ~(a limit_point_of s)
+    !s (a:real). a IN s ==> (trivial_limit (at a within s) <=> ~(a limit_point_of s))
 Proof
-  REWRITE_TAC[trivial_limit, LIMPT_APPROACHABLE_LE, WITHIN, AT, DIST_NZ] THEN
-  REPEAT GEN_TAC THEN EQ_TAC THENL
-   [DISCH_THEN(DISJ_CASES_THEN MP_TAC) THENL
-     [MESON_TAC[REAL_LT_01, REAL_LT_REFL, REAL_CHOOSE_DIST,
-                DIST_REFL, REAL_LT_IMP_LE],
-      DISCH_THEN(X_CHOOSE_THEN ``b:real`` (X_CHOOSE_THEN ``c:real``
-        STRIP_ASSUME_TAC)) THEN
-      SUBGOAL_THEN ``&0 < dist(a,b:real) \/ &0 < dist(a,c:real)`` MP_TAC THEN
-      ASM_MESON_TAC[DIST_TRIANGLE, DIST_SYM, GSYM DIST_NZ, GSYM DIST_EQ_0,
-                    REAL_ARITH ``x:real <= &0 + &0 ==> ~(&0 < x)``]],
-    Know ‘!e. (0 < e ==> ?x'. x' IN s /\ 0 < dist (x',a) /\ dist (x',a) <= e) =
-           (\e. 0 < e ==> ?x'. x' IN s /\ 0 < dist (x',a) /\ dist (x',a) <= e) e’
-    >- FULL_SIMP_TAC std_ss [] \\
-    DISC_RW_KILL THEN
-    REWRITE_TAC[NOT_FORALL_THM] THEN BETA_TAC THEN REWRITE_TAC [NOT_IMP] THEN
-    SIMP_TAC std_ss [GSYM LEFT_EXISTS_IMP_THM] THEN
-    STRIP_TAC THEN DISJ2_TAC THEN
-    EXISTS_TAC ``a:real`` THEN
-    SUBGOAL_THEN ``?b:real. dist(a,b) = x`` MP_TAC THENL
-     [ASM_SIMP_TAC std_ss [REAL_CHOOSE_DIST, REAL_LT_IMP_LE], ALL_TAC] THEN
-    STRIP_TAC THEN EXISTS_TAC ``b:real`` THEN POP_ASSUM MP_TAC THEN
-    DISCH_THEN(SUBST_ALL_TAC o SYM) THEN
-    ASM_MESON_TAC[REAL_NOT_LE, DIST_REFL, DIST_NZ, DIST_SYM]]
+    simp [limit_point_of_def, TRIVIAL_LIMIT_AT_WITHIN, derived_set_of_alt_limpt,
+          euclidean_def]
 QED
 
-Theorem TRIVIAL_LIMIT_AT:
-   !a. ~(trivial_limit (at a))
-Proof
-  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
-  REWRITE_TAC[TRIVIAL_LIMIT_WITHIN, LIMPT_UNIV]
-QED
-
+(*
 Theorem LIM_WITHIN_CLOSED_TRIVIAL:
    !a s. closed s /\ ~(a IN s) ==> trivial_limit (at a within s)
 Proof
   REWRITE_TAC[TRIVIAL_LIMIT_WITHIN] THEN MESON_TAC[CLOSED_LIMPT]
 QED
-
-(* ------------------------------------------------------------------------- *)
-(* Some property holds "sufficiently close" to the limit point.              *)
-(* ------------------------------------------------------------------------- *)
-
-Theorem EVENTUALLY_WITHIN_LE:
-   !s a:real p.
-     eventually p (at a within s) <=>
-        ?d. &0 < d /\ !x. x IN s /\ &0 < dist(x,a) /\ dist(x,a) <= d ==> p(x)
-Proof
-  REWRITE_TAC[eventually, AT, WITHIN, TRIVIAL_LIMIT_WITHIN] THEN
-  REWRITE_TAC[LIMPT_APPROACHABLE_LE, DIST_NZ] THEN
-  REPEAT GEN_TAC THEN EQ_TAC THENL [MESON_TAC[REAL_LTE_TRANS], ALL_TAC] THEN
-  DISCH_THEN(X_CHOOSE_THEN ``d:real`` STRIP_ASSUME_TAC) THEN
-  MATCH_MP_TAC(TAUT `(a ==> b) ==> ~a \/ b`) THEN DISCH_TAC THEN
-  SUBGOAL_THEN ``?b:real. dist(a,b) = d`` MP_TAC THENL
-   [ASM_SIMP_TAC std_ss [REAL_CHOOSE_DIST, REAL_LT_IMP_LE], ALL_TAC] THEN
-  STRIP_TAC THEN EXISTS_TAC ``b:real`` THEN POP_ASSUM MP_TAC THEN
-  DISCH_THEN(SUBST_ALL_TAC o SYM) THEN
-  ASM_MESON_TAC[REAL_NOT_LE, DIST_REFL, DIST_NZ, DIST_SYM]
-QED
-
-Theorem EVENTUALLY_WITHIN:
-   !s a:real p.
-     eventually p (at a within s) <=>
-        ?d. &0 < d /\ !x. x IN s /\ &0 < dist(x,a) /\ dist(x,a) < d ==> p(x)
-Proof
-  REWRITE_TAC[EVENTUALLY_WITHIN_LE] THEN
-  ONCE_REWRITE_TAC[TAUT `a /\ b /\ c ==> d <=> c ==> a /\ b ==> d`] THEN
-  SIMP_TAC std_ss [APPROACHABLE_LT_LE]
-QED
-
-Theorem EVENTUALLY_AT:
-   !a p. eventually p (at a) <=>
-         ?d. &0 < d /\ !x. &0 < dist(x,a) /\ dist(x,a) < d ==> p(x)
-Proof
-  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
-  REWRITE_TAC[EVENTUALLY_WITHIN, IN_UNIV]
-QED
+ *)
 
 (* ------------------------------------------------------------------------- *)
 (* Limits, defined as vacuously true when the limit is trivial.              *)
@@ -5722,7 +5658,7 @@ val _ = TeX_notation {hol = "-->",           TeX = ("\\HOLTokenLongmap{}", 1)};
  *)
 Overload "-->" = “limit euclidean”
 
-(* NOTE: This is the original definition of “tendsto_real” *)
+(* NOTE: This is the original definition of “tendsto_real” aka HOL-Light's [tendsto] *)
 Theorem tendsto_real_def :
     !f l net. (f --> l) net <=> !e. &0 < e ==> eventually (\x. dist(f(x),l) < e) net
 Proof
@@ -5750,32 +5686,13 @@ Theorem tendsto_real = REWRITE_RULE [dist] tendsto_real_def
 (* This theorem is only used locally for compatibility purposes *)
 Theorem tendsto[local] = tendsto_real_def
 
-Theorem limit_at_alt_tends :
-    !top f l a. l IN topspace top ==>
-               (limit top f l (at a) <=> (f tends l) (top,tendsto (mr1,a)))
-Proof
-    rw [tendsto_mr1]
- >> MATCH_MP_TAC limit_alt_tends
- >> rw [TRIVIAL_LIMIT_AT, AT]
- >> MATCH_MP_TAC REAL_LTE_TRANS
- >> Q.EXISTS_TAC ‘dist (x,a)’ >> art []
-QED
-
-Theorem tendsto_real_alt_tends :
-    !f l a. (f --> l) (at a) <=> (f tends l) (mtop mr1,tendsto (mr1,a))
-Proof
-    rw [GSYM euclidean_def]
- >> MP_TAC (ISPEC “euclidean” limit_at_alt_tends)
- >> simp [TOPSPACE_EUCLIDEAN]
-QED
-
 (* Now the name "reallim" follows HOL-Light's "realanalysis.ml" *)
 Definition reallim :
     reallim net f = @l. (f --> l) net
 End
 Overload lim = “reallim”
 
-(* cf. limTheory.LIM *)
+(* old version (based on old definition of “eventually”):
 Theorem LIM_DEF : (* was: LIM *)
    !f l net. (f --> l) net <=>
         trivial_limit net \/
@@ -5784,53 +5701,63 @@ Theorem LIM_DEF : (* was: LIM *)
 Proof
   REWRITE_TAC[tendsto, eventually] THEN MESON_TAC[]
 QED
-val LIM = LIM_DEF;
+ *)
+
+(* new version (based on open sets and “eventually”), not exists in HOL-Light:
+
+   |- !f l net.
+        (f --> l) net <=>
+        !u. open u /\ l IN u ==> eventually (\x. f x IN u) net
+ *)
+Theorem LIM = limit |> ISPEC “euclidean”
+                    |> SRULE [TOPSPACE_EUCLIDEAN, GSYM euclidean_open_def]
 
 (* ------------------------------------------------------------------------- *)
 (* Show that they yield usual definitions in the various cases.              *)
 (* ------------------------------------------------------------------------- *)
 
+(* NOTE: added ‘a IN s’ as antecedents *)
 Theorem LIM_WITHIN_LE:
-   !f:real->real l a s.
-        (f --> l)(at a within s) <=>
+   !f:real->real l a s. a IN s ==>
+          ((f --> l)(at a within s) <=>
            !e. &0 < e ==> ?d. &0 < d /\
                               !x. x IN s /\ &0 < dist(x,a) /\ dist(x,a) <= d
-                                   ==> dist(f(x),l) < e
+                                   ==> dist(f(x),l) < e)
 Proof
   SIMP_TAC std_ss [tendsto, EVENTUALLY_WITHIN_LE]
 QED
 
+(* NOTE: added ‘a IN s’ as antecedents *)
 Theorem LIM_WITHIN:
-   !f:real->real l a s.
-      (f --> l) (at a within s) <=>
+   !f:real->real l a s. a IN s ==>
+       ((f --> l) (at a within s) <=>
         !e. &0 < e
             ==> ?d. &0 < d /\
                     !x. x IN s /\ &0 < dist(x,a) /\ dist(x,a) < d
-                    ==> dist(f(x),l) < e
+                    ==> dist(f(x),l) < e)
 Proof
   SIMP_TAC std_ss [tendsto, EVENTUALLY_WITHIN] THEN MESON_TAC[]
 QED
 
-Theorem LIM_AT_LE:
-   !f l a. (f --> l) (at a) <=>
-           !e. &0 < e
-               ==> ?d. &0 < d /\
-                       !x. &0 < dist(x,a) /\ dist(x,a) <= d
-                           ==> dist (f x,l) < e
-Proof
-  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
-  REWRITE_TAC[LIM_WITHIN_LE, IN_UNIV]
-QED
+(* |- !f l a.
+        (f --> l) (at a) <=>
+        !e. 0 < e ==>
+            ?d. 0 < d /\
+                !x. 0 < dist (x,a) /\ dist (x,a) <= d ==> dist (f x,l) < e
+ *)
+Theorem LIM_AT_LE =
+        LIM_WITHIN_LE |> SPEC_ALL |> Q.GEN ‘s’ |> Q.SPEC ‘UNIV’
+                      |> SRULE [WITHIN_UNIV] |> Q.GENL [‘f’, ‘l’, ‘a’]
 
-Theorem LIM_AT:
-   !f l:real a:real.
-      (f --> l) (at a) <=>
-              !e. &0 < e
-                  ==> ?d. &0 < d /\ !x. &0 < dist(x,a) /\ dist(x,a) < d
-                          ==> dist(f(x),l) < e
-Proof
-  REWRITE_TAC[tendsto, EVENTUALLY_AT] THEN MESON_TAC[]
-QED
+(* |- !f l a.
+        (f --> l) (at a) <=>
+        !e. 0 < e ==>
+            ?d. 0 < d /\
+                !x. 0 < dist (x,a) /\ dist (x,a) < d ==> dist (f x,l) < e
+ *)
+Theorem LIM_AT =
+        LIM_WITHIN |> SPEC_ALL |> Q.GEN ‘s’ |> Q.SPEC ‘UNIV’
+                   |> SRULE [WITHIN_UNIV] |> Q.GENL [‘f’, ‘l’, ‘a’]
 
 Theorem LIM_AT_INFINITY:
    !f l. (f --> l) at_infinity <=>
@@ -5901,11 +5828,13 @@ QED
 (* The expected monotonicity property.                                       *)
 (* ------------------------------------------------------------------------- *)
 
+(*
 Theorem LIM_WITHIN_EMPTY:
    !f l x. (f --> l) (at x within {})
 Proof
   REWRITE_TAC[LIM_WITHIN, NOT_IN_EMPTY] THEN MESON_TAC[REAL_LT_01]
 QED
+ *)
 
 (* NOTE: added missing quantifier “t” at the end *)
 Theorem LIM_WITHIN_SUBSET:
@@ -9488,11 +9417,13 @@ Proof
   SIMP_TAC std_ss [LIM_AT_WITHIN, CONTINUOUS_AT, CONTINUOUS_WITHIN]
 QED
 
+(*
 Theorem CONTINUOUS_WITHIN_CLOSED_NONTRIVIAL:
    !a s. closed s /\ ~(a IN s) ==> f continuous (at a within s)
 Proof
   ASM_SIMP_TAC std_ss [continuous, LIM, LIM_WITHIN_CLOSED_TRIVIAL]
 QED
+ *)
 
 Theorem CONTINUOUS_TRANSFORM_WITHIN:
    !f g:real->real s x d. &0 < d /\ x IN s /\

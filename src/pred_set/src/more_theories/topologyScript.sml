@@ -83,7 +83,6 @@ Proof
 QED
 
 val SUBSET_DIFF = DIFF_SUBSET; (* |- !s t. s DIFF t SUBSET s *)
-(* End of minimal hol-light compatibility layer *)
 
 (*---------------------------------------------------------------------------*)
 (* Characterize an (alpha)topology                                           *)
