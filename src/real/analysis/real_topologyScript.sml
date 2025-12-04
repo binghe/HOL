@@ -5658,6 +5658,13 @@ val _ = TeX_notation {hol = "-->",           TeX = ("\\HOLTokenLongmap{}", 1)};
  *)
 Overload "-->" = “limit euclidean”
 
+(* |- !f l net.
+        (f --> l) net <=>
+        !u. open u /\ l IN u ==> eventually (\x. f x IN u) net
+ *)
+Theorem LIM = limit |> ISPEC “euclidean”
+                    |> SRULE [TOPSPACE_EUCLIDEAN, GSYM euclidean_open_def]
+
 (* NOTE: This is the original definition of “tendsto_real” aka HOL-Light's [tendsto] *)
 Theorem tendsto_real_def :
     !f l net. (f --> l) net <=> !e. &0 < e ==> eventually (\x. dist(f(x),l) < e) net
@@ -5701,16 +5708,36 @@ Theorem LIM_DEF : (* was: LIM *)
 Proof
   REWRITE_TAC[tendsto, eventually] THEN MESON_TAC[]
 QED
- *)
 
-(* new version (based on open sets and “eventually”), not exists in HOL-Light:
-
-   |- !f l net.
-        (f --> l) net <=>
-        !u. open u /\ l IN u ==> eventually (\x. f x IN u) net
+  new version (NOTE: “trivial_limit net” is replaced by “netfilter net = {}”.
+                     They are sometimes equal, cf. trivial_limit_alt_netfilter)
  *)
-Theorem LIM = limit |> ISPEC “euclidean”
-                    |> SRULE [TOPSPACE_EUCLIDEAN, GSYM euclidean_open_def]
+Theorem LIM_DEF :
+   !f l net. (f --> l) net <=>
+        netfilter net = {} \/
+        !e. &0 < e ==> ?y. (?x. netord(net) x y /\ x <> y) /\
+                           !x. x NOTIN netlimits net ==>
+                               netord(net) x y ==> dist(f(x),l) < e
+Proof
+    rw [tendsto, eventually]
+ >> Cases_on ‘netfilter net = {}’ >> simp []
+ >> REWRITE_TAC [netfilter_def]
+ >> SIMP_TAC bool_ss [EXISTS_IN_GSPEC] >> simp []
+ >> EQ_TAC >> rpt STRIP_TAC
+ >- (Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ (MP_TAC o Q.SPEC ‘e’) >> rw [] \\
+     Q.EXISTS_TAC ‘x’ \\
+     CONJ_TAC >- (fs [netlimits_def] \\
+                  rename1 ‘netord net y x’ \\
+                  Q.EXISTS_TAC ‘y’ >> art []) \\
+     Q.X_GEN_TAC ‘y’ >> rw [])
+ (* stage work *)
+ >> Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ (MP_TAC o Q.SPEC ‘e’) >> rw []
+ >> Q.EXISTS_TAC ‘y’
+ >> CONJ_TAC
+ >- (simp [netlimits_def] \\
+     Q.EXISTS_TAC ‘x’ >> art [])
+ >> rw []
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Show that they yield usual definitions in the various cases.              *)
