@@ -8,23 +8,20 @@ Ancestors
   pred_set pair combin arithmetic num prim_rec relation real topology
   metric cardinal
 Libs
-  numLib reduceLib pairLib mesonLib RealArith hurdUtils jrhUtils
-  tautLib newtypeTools set_relation[qualified]
+  numLib reduceLib pairLib mesonLib RealArith hurdUtils jrhUtils tautLib
  *)
 open HolKernel Parse boolLib bossLib;
 
 open numLib reduceLib pairLib pred_setTheory mesonLib RealArith hurdUtils
      pairTheory arithmeticTheory numTheory prim_recTheory relationTheory
      jrhUtils realTheory topologyTheory metricTheory tautLib combinTheory
-     newtypeTools cardinalTheory;
-
-local open set_relationTheory in end;
+     cardinalTheory;
 
 val _ = new_theory "nets";
 
 val _ = Parse.reveal "B";
 
-val num_EQ_CONV = Arithconv.NEQ_CONV;
+val NUM_EQ_CONV = Arithconv.NEQ_CONV;
 val DISC_RW_KILL = DISCH_TAC THEN ONCE_ASM_REWRITE_TAC [] THEN
                    POP_ASSUM K_TAC;
 
@@ -381,7 +378,7 @@ Proof
             THEN REWRITE_TAC[REAL_MUL_LID]) THEN
     CONJ_TAC THENL
      [ASM_REWRITE_TAC[ABS_NZ, ABS_ABS],
-      REWRITE_TAC[REAL_INJ] THEN CONV_TAC(RAND_CONV num_EQ_CONV) THEN
+      REWRITE_TAC[REAL_INJ] THEN CONV_TAC(RAND_CONV NUM_EQ_CONV) THEN
       REWRITE_TAC[]], ALL_TAC] THEN
   SUBGOAL_THEN “~(x(n:'a) = &0)” (SUBST1_TAC o MATCH_MP ABS_INV) THENL
    [ASM_REWRITE_TAC[ABS_NZ], ALL_TAC] THEN
@@ -1818,106 +1815,6 @@ Definition limit :
      l IN topspace top /\
      (!u. open_in top u /\ l IN u ==> eventually (\x. f x IN u) net)
 End
-
-(* ------------------------------------------------------------------------- *)
-(* More sequential characterizations in a metric space.                      *)
-(* ------------------------------------------------------------------------- *)
-
-(* !x. P x ==> Q x) ==> (!x. P x) ==> !x. Q x *)
-Theorem MONO_FORALL = MONO_ALL
-
-(* |- !P Q. (!x. P x) /\ (!x. Q x) <=> !x. P x /\ Q x *)
-Theorem AND_FORALL_THM = GSYM FORALL_AND_THM
-
-(* ------------------------------------------------------------------------- *)
-(*  Directed Sets and Net (alternative approach to “:'a net”) following [2]  *)
-(* ------------------------------------------------------------------------- *)
-
-(* Also called "upwards filtering". See, e.g., [2, p.65], [3] and [4, p.301].
-
-   NOTE: In case ‘x’ or ‘y’ is the maximal element, we have ‘z = x’ or ‘z = y’,
-   and therefore ‘(z,z) IN r’, i.e. “r” must be an less-equal (<=) relation.
- *)
-Definition upwards_directed_def :
-    upwards_directed r s =
-    !x y. x IN s /\ y IN s ==> ?z. z IN s /\ (x,z) IN r /\ (y,z) IN r
-End
-
-(* See, e.g. [2, p.65] (Directed Sets and Nets)
-
-   NOTE: The 1st argument of the preorder is "smaller (or equal)" than the 2nd
-   argument. This is more natural than ‘dorder’ and ‘isnet’ and makes TRANS_TAC
-   applicable.
-
-   NOTE: Here we used “reflexive” from set_relationTheory but relationTheory,
-   to make sure that the reflexivity is limited within D. This is important for
-   some concrete nets like “atpointof” (or “at”), whose ordering is like this:
-
-     g = \x y. 0 < dist m (x,a) /\ dist m (x,a) <= dist m (y,a)
-
-   Note that “g (x,x)” doesn't hold if x = a.
-
-   On the other hand, the “transitive” definition in both relation theories
-   does not take any domain argument. This seems good enough for practical uses
-   including our case, e.g. transitivity (even for elements outside of D) can
-   be proved for “atpointof” with the above ordering definition.
-
-   Note also that reflexive + transitive = pre-order (aka "quasi-order").
- *)
-Definition is_dset_def :
-   is_dset (D,g) = (D <> {} /\
-                    reflexive (rel_to_reln g) D /\
-                    transitive (rel_to_reln g) /\
-                    upwards_directed (rel_to_reln g) D)
-End
-
-Theorem dset_EXISTS[local] :
-    ?dset. is_dset dset
-Proof
-    Q.EXISTS_TAC ‘(UNIV,\x y. T)’
- >> simp [is_dset_def, upwards_directed_def,
-          set_relationTheory.rel_to_reln_def,
-          set_relationTheory.reflexive_def,
-          set_relationTheory.transitive_def]
-QED
-
-val dset_tydef as {absrep_id, newty, repabs_pseudo_id,
-                   termP, termP_exists, termP_term_REP,
-                   term_ABS_pseudo11, term_ABS_t,
-                   term_REP_11, term_REP_t} =
-    rich_new_type {tyname = "dset",
-                   exthm  = dset_EXISTS,
-                   ABS    = "mk_dset",
-                   REP    = "dest_dset"};
-
-Theorem dset_tybij :
-    (!n. mk_dset (dest_dset n) = n) /\
-    (!D g. is_dset (D,g) <=> dest_dset (mk_dset (D,g)) = (D,g))
-Proof
-    rw [absrep_id]
- >> EQ_TAC
- >- (DISCH_TAC \\
-     MATCH_MP_TAC repabs_pseudo_id >> art [])
- >> rw [termP_exists]
- >> Q.EXISTS_TAC ‘mk_dset (D,g)’ >> art []
-QED
-
-(* |- !n. is_dset (dest_dset n) *)
-Theorem dest_dset_is_dset =
-        termP_term_REP |> Q.INST [‘g’ |-> ‘n’] |> GEN_ALL
-
-(* |- !n n'. is_dset n /\ is_dset n' ==> (mk_dset n = mk_dset n' <=> n = n') *)
-Theorem mk_dset_11 =
-        term_ABS_pseudo11 |> Q.INST [‘x’ |-> ‘n’, ‘y’ |-> ‘n'’]
-                          |> Q.GENL [‘n’, ‘n'’]
-
-(* |- !n n'. dest_dset n = dest_dset n' <=> n = n' *)
-Theorem dest_dset_11 =
-        term_REP_11 |> Q.INST [‘g’ |-> ‘n’, ‘h’ |-> ‘n'’]
-                    |> Q.GENL [‘n’, ‘n'’]
-
-Overload dset_dom = “\n. FST (dest_dset n)”
-Overload dset_ord = “\n. SND (dest_dset n)”
 
 (* END *)
 val _ = export_theory ();
