@@ -65,6 +65,12 @@ Overload UNCOUNTABLE[inferior] = “uncountable”
 
 (* ------------------------------------------------------------------------- *)
 
+(* !x. P x ==> Q x) ==> (!x. P x) ==> !x. Q x *)
+Theorem MONO_FORALL = MONO_ALL
+
+(* |- !P Q. (!x. P x) /\ (!x. Q x) <=> !x. P x /\ Q x *)
+Theorem AND_FORALL_THM = GSYM FORALL_AND_THM
+
 Theorem EXISTS_IN_INSERT:
    !P a s. (?x. x IN (a INSERT s) /\ P x) <=> P a \/ ?x. x IN s /\ P x
 Proof
@@ -1745,6 +1751,7 @@ Proof
     ASM_MESON_TAC[SPAN_MONO, SUBSET_DEF, IN_INSERT, SPAN_CLAUSES]]
 QED
 
+(* TODO: This proof is a bit slow. *)
 Theorem LINEAR_INDEPENDENT_EXTEND_LEMMA:
    !f b. FINITE b ==> independent b ==>
     ?g:real->real. (!x y. x IN span b /\ y IN span b ==>
@@ -3993,6 +4000,7 @@ Proof
   ASM_SIMP_TAC std_ss [OPEN_UNION, OPEN_DIFF] THEN ASM_SET_TAC[], METIS_TAC []]
 QED
 
+(* TODO: This proof is very slow involving deep proof searching by METIS. *)
 Theorem CONNECTED_DISJOINT_BIGUNION_OPEN_UNIQUE:
    !f:(real->bool)->bool f'.
          pairwise DISJOINT f /\ pairwise DISJOINT f' /\
@@ -5855,13 +5863,11 @@ QED
 (* The expected monotonicity property.                                       *)
 (* ------------------------------------------------------------------------- *)
 
-(*
 Theorem LIM_WITHIN_EMPTY:
    !f l x. (f --> l) (at x within {})
 Proof
-  REWRITE_TAC[LIM_WITHIN, NOT_IN_EMPTY] THEN MESON_TAC[REAL_LT_01]
+   REWRITE_TAC [tendsto, EVENTUALLY_WITHIN_EMPTY]
 QED
- *)
 
 (* NOTE: added missing quantifier “t” at the end; added “a IN t” as antecedents *)
 Theorem LIM_WITHIN_SUBSET:
@@ -5907,39 +5913,46 @@ Proof
   MESON_TAC[LIM_UNION, WITHIN_UNIV]
 QED
 
-(* TODO *)
 (* ------------------------------------------------------------------------- *)
 (* Composition of limits.                                                    *)
 (* ------------------------------------------------------------------------- *)
 
-Theorem LIM_COMPOSE_WITHIN:
-   !net f:'a->real g:real->real s y z.
+Theorem LIM_COMPOSE_WITHIN_lemma[local] :
+   !net (f:'a->real) (g:real->real) s y z. y IN s ==>
     (f --> y) net /\
     eventually (\w. f w IN s /\ ((f w = y) ==> (g y = z))) net /\
     (g --> z) (at y within s)
     ==> ((g o f) --> z) net
 Proof
-  REPEAT GEN_TAC THEN REWRITE_TAC[tendsto, CONJ_ASSOC] THEN
-  KNOW_TAC ``(!e. (&0 < e ==> eventually (\x. dist ((f:'a->real) x,y) < e) net) /\
-             eventually (\w. f w IN s /\ ((f w = y) ==> ((g:real->real) y = z))) net) /\
-   (!e. &0 < e ==> eventually (\x. dist (g x,z) < e) (at y within s))
-   ==> (!e. &0 < e ==> eventually (\x. dist ((g o f) x,z) < e) net)`` THENL
-  [ALL_TAC, SIMP_TAC std_ss [LEFT_AND_FORALL_THM]] THEN
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  REWRITE_TAC[tendsto, CONJ_ASSOC] THEN
+  SIMP_TAC bool_ss [Once LEFT_AND_FORALL_THM] THEN
   DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-  STRIP_TAC THEN GEN_TAC THEN POP_ASSUM (MP_TAC o Q.SPEC `e:real`) THEN
-  ASM_CASES_TAC ``&0 < e:real`` THEN ASM_REWRITE_TAC[] THEN
-  REWRITE_TAC[EVENTUALLY_WITHIN, GSYM DIST_NZ, o_DEF] THEN
+  HO_MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC ``e:real`` THEN
+  ASM_CASES_TAC ``&0 < e`` THEN ASM_REWRITE_TAC[] THEN
+  ASM_SIMP_TAC bool_ss[EVENTUALLY_WITHIN, GSYM DIST_NZ, o_DEF] THEN
   DISCH_THEN(X_CHOOSE_THEN ``d:real`` STRIP_ASSUME_TAC) THEN
-  UNDISCH_TAC ``!e. (0 < e ==> eventually (\x. dist (f x,y) < e) net) /\
-        eventually (\w. f w IN s /\ ((f:'a->real w = y) ==> (g:real->real y = z))) net`` THEN
-  DISCH_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC ``d:real``) THEN
-  ASM_REWRITE_TAC[GSYM EVENTUALLY_AND] THEN BETA_TAC THEN
-  MATCH_MP_TAC(REWRITE_RULE[GSYM AND_IMP_INTRO] EVENTUALLY_MONO) THEN
+  Q.PAT_X_ASSUM ‘!e. (0 < e ==> _) /\ _’ (MP_TAC o Q.SPEC ‘d’) THEN
+  ASM_SIMP_TAC bool_ss [GSYM EVENTUALLY_AND] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
   ASM_MESON_TAC[DIST_REFL]
 QED
 
+(* NOTE: added “y IN s” in antecedents for the new EVENTUALLY_WITHIN *)
+Theorem LIM_COMPOSE_WITHIN :
+   !net (f:'a->real) (g:real->real) s y z. y IN s /\
+    (f --> y) net /\
+    eventually (\w. f w IN s /\ ((f w = y) ==> (g y = z))) net /\
+    (g --> z) (at y within s)
+    ==> ((g o f) --> z) net
+Proof
+    rpt STRIP_TAC
+ >> irule LIM_COMPOSE_WITHIN_lemma
+ >> qexistsl_tac [‘s’, ‘y’] >> art []
+QED
+
 Theorem LIM_COMPOSE_AT:
-   !net f:'a->real g:real->real y z.
+   !net (f:'a->real) (g:real->real) y z.
     (f --> y) net /\
     eventually (\w. (f w = y) ==> (g y = z)) net /\
     (g --> z) (at y)
@@ -5953,32 +5966,83 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
+(* For points in the interior, localization of limits makes no difference.   *)
+(* ------------------------------------------------------------------------- *)
+
+Theorem IN_INTERIOR_EVENTUALLY :
+    !s a. a IN interior s <=> a IN s /\ eventually (\x. x IN s) (at a)
+Proof
+  REWRITE_TAC[IN_INTERIOR, EVENTUALLY_AT, SUBSET_DEF, IN_BALL, GSYM DIST_NZ] THEN
+  MESON_TAC[DIST_SYM, DIST_REFL]
+QED
+
+Theorem EVENTUALLY_WITHIN_INTERIOR:
+   !p s x.
+  x IN interior s
+  ==> (eventually p (at x within s) <=> eventually p (at x))
+Proof
+  REPEAT GEN_TAC THEN REWRITE_TAC[IN_INTERIOR_EVENTUALLY] THEN
+  MATCH_MP_TAC(TAUT
+   `(p' ==> (p /\ q ==> r) /\ (p /\ r ==> q)) ==> (p' /\ p ==> (q <=> r))`) THEN
+  DISCH_TAC \\
+ ‘net_condition (at x) s’ by PROVE_TAC [NET_CONDITION_AT] \\
+  ASM_SIMP_TAC bool_ss [GSYM EVENTUALLY_AND, EVENTUALLY_WITHIN_IMP] THEN
+  CONJ_TAC THEN MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
+  SIMP_TAC bool_ss []
+QED
+
+Theorem EVENTUALLY_IN_OPEN :
+    !s a. open s /\ a IN s ==> eventually (\x. x IN s) (at a)
+Proof
+  REPEAT STRIP_TAC THEN
+  MP_TAC(Q.SPECL [`s`, `a`] IN_INTERIOR_EVENTUALLY) THEN
+  ASM_SIMP_TAC bool_ss [INTERIOR_OPEN]
+QED
+
+Theorem EVENTUALLY_WITHIN_OPEN :
+    !P f a s.
+        a IN s /\ open s
+        ==> (eventually P (at a within s) <=> eventually P (at a))
+Proof
+  REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC EVENTUALLY_WITHIN_INTERIOR THEN
+  ASM_MESON_TAC[INTERIOR_OPEN]
+QED
+
+Theorem LIM_WITHIN_INTERIOR:
+   !f l s x. x IN interior s
+   ==> ((f --> l) (at x within s) <=> (f --> l) (at x))
+Proof
+  SIMP_TAC std_ss [tendsto, EVENTUALLY_WITHIN_INTERIOR]
+QED
+
+Theorem NETLIMIT_WITHIN_INTERIOR:
+   !s x:real. x IN interior s ==> (netlimit(at x within s) = x)
+Proof
+  REPEAT STRIP_TAC THEN MATCH_MP_TAC NETLIMIT_WITHIN THEN
+  PROVE_TAC [SUBSET_DEF, INTERIOR_SUBSET]
+QED
+
+(* ------------------------------------------------------------------------- *)
 (* Interrelations between restricted and unrestricted limits.                *)
 (* ------------------------------------------------------------------------- *)
 
 Theorem LIM_AT_WITHIN:
-   !f l a s. (f --> l)(at a) ==> (f --> l)(at a within s)
+   !f l a s. a IN s /\ (f --> l)(at a) ==> (f --> l)(at a within s)
 Proof
-  REWRITE_TAC[LIM_AT, LIM_WITHIN] THEN MESON_TAC[]
+    rpt GEN_TAC
+ >> simp [IMP_CONJ] >> DISCH_TAC
+ >> simp [LIM_AT, LIM_WITHIN] >> MESON_TAC[]
 QED
 
-Theorem LIM_WITHIN_OPEN:
-   !f l a:real s.
+Theorem LIM_WITHIN_OPEN :
+   !f l a s.
      a IN s /\ open s ==> ((f --> l)(at a within s) <=> (f --> l)(at a))
 Proof
-  REPEAT STRIP_TAC THEN EQ_TAC THEN SIMP_TAC std_ss [LIM_AT_WITHIN] THEN
-  REWRITE_TAC[LIM_AT, LIM_WITHIN] THEN
-  DISCH_TAC THEN GEN_TAC THEN POP_ASSUM (MP_TAC o Q.SPEC `e:real`) THEN
-  ASM_CASES_TAC ``&0 < e:real`` THEN ASM_REWRITE_TAC[] THEN
-   DISCH_THEN(X_CHOOSE_THEN ``d1:real`` STRIP_ASSUME_TAC) THEN
-  UNDISCH_TAC ``open s`` THEN GEN_REWR_TAC LAND_CONV [open_def] THEN
-  DISCH_TAC THEN FIRST_X_ASSUM(MP_TAC o SPEC ``a:real``) THEN
-  ASM_REWRITE_TAC[] THEN
-  DISCH_THEN(X_CHOOSE_THEN ``d2:real`` STRIP_ASSUME_TAC) THEN
-  MP_TAC(SPECL [``d1:real``, ``d2:real``] REAL_DOWN2) THEN ASM_REWRITE_TAC[] THEN
-  ASM_MESON_TAC[REAL_LT_TRANS]
+  SIMP_TAC bool_ss[tendsto, EVENTUALLY_WITHIN_OPEN]
 QED
 
+(* TODO *)
 (* ------------------------------------------------------------------------- *)
 (* More limit point characterizations.                                       *)
 (* ------------------------------------------------------------------------- *)
@@ -6202,14 +6266,12 @@ Theorem LIM_LINEAR:
    !net:('a)net h f l.
         (f --> l) net /\ linear h ==> ((\x. h(f x)) --> h l) net
 Proof
-  REPEAT GEN_TAC THEN REWRITE_TAC[LIM] THEN
-  ASM_CASES_TAC ``trivial_limit (net:('a)net)`` THEN ASM_REWRITE_TAC[] THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[LIM_DEF] THEN
+  ASM_CASES_TAC ``netfilter (net:('a)net) = {}`` THEN ASM_REWRITE_TAC[] THEN
   STRIP_TAC THEN FIRST_ASSUM(X_CHOOSE_THEN ``B:real`` STRIP_ASSUME_TAC o
     MATCH_MP LINEAR_BOUNDED_POS) THEN
   X_GEN_TAC ``e:real`` THEN DISCH_TAC THEN
-  UNDISCH_TAC ``!e. 0 < e ==> ?y. (?x. netord net x y) /\
-          !x. netord net x y ==> dist (f x,l) < e`` THEN DISCH_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o SPEC ``e / B:real``) THEN
+  Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ (MP_TAC o SPEC ``e / B:real``) THEN
   ASM_SIMP_TAC std_ss [REAL_LT_DIV, dist, GSYM LINEAR_SUB, REAL_LT_RDIV_EQ] THEN
   ASM_MESON_TAC[REAL_LET_TRANS, REAL_MUL_SYM]
 QED
@@ -6217,11 +6279,18 @@ QED
 Theorem LIM_CONST:
    !net a:real. ((\x. a) --> a) net
 Proof
-  SIMP_TAC std_ss [LIM, DIST_REFL, trivial_limit] THEN MESON_TAC[]
+    rw [LIM_DEF, DIST_REFL]
+ >> Cases_on ‘netfilter net = {}’ >> simp []
+ >> fs [NETFILTER_EQ_EMPTY]
+ >> rpt STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘netlimits net <> UNIV’ MP_TAC
+ >> rw [Once EXTENSION, netlimits_def]
+ >> rename1 ‘y <> x’
+ >> qexistsl_tac [‘x’, ‘y’] >> art []
 QED
 
 Theorem LIM_CMUL:
-   !f l c. (f --> l) net ==> ((\x. c * f x) --> (c * l)) net
+   !net f l c. (f --> l) net ==> ((\x. c * f x) --> (c * l)) net
 Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC LIM_LINEAR THEN
   ASM_SIMP_TAC std_ss [REWRITE_RULE[ETA_AX]
@@ -6241,8 +6310,9 @@ QED
 Theorem LIM_NEG:
    !net f l:real. (f --> l) net ==> ((\x. -(f x)) --> -l) net
 Proof
-  REPEAT GEN_TAC THEN REWRITE_TAC[LIM, dist] THEN
-  SIMP_TAC std_ss [REAL_ARITH ``-x - -y = -(x - y:real)``, ABS_NEG]
+    rpt GEN_TAC >> REWRITE_TAC [LIM_DEF, dist]
+ >> Cases_on ‘netfilter net = {}’ >> simp []
+ >> SIMP_TAC std_ss [REAL_ARITH ``-x - -y = -(x - y:real)``, ABS_NEG]
 QED
 
 Theorem LIM_NEG_EQ:
@@ -6253,6 +6323,7 @@ Proof
   SIMP_TAC std_ss [REAL_NEG_NEG, ETA_AX]
 QED
 
+(* TODO *)
 Theorem LIM_ADD:
    !net:('a)net f g l m.
     (f --> l) net /\ (g --> m) net ==> ((\x. f(x) + g(x)) --> (l + m)) net
@@ -7345,41 +7416,6 @@ Proof
    ``!y. (x IN s ==> y IN s /\ ~(y = x)) ==> ~(s = {x})``) THEN
   EXISTS_TAC ``a - (x - a):real`` THEN REWRITE_TAC[IN_SPHERE] THEN
   REWRITE_TAC [dist] THEN REPEAT(POP_ASSUM MP_TAC) THEN REAL_ARITH_TAC
-QED
-
-(* ------------------------------------------------------------------------- *)
-(* For points in the interior, localization of limits makes no difference.   *)
-(* ------------------------------------------------------------------------- *)
-
-Theorem EVENTUALLY_WITHIN_INTERIOR:
-   !p s x.
-  x IN interior s
-  ==> (eventually p (at x within s) <=> eventually p (at x))
-Proof
-  REWRITE_TAC[EVENTUALLY_WITHIN, EVENTUALLY_AT, IN_INTERIOR] THEN
-  REPEAT GEN_TAC THEN SIMP_TAC std_ss [SUBSET_DEF, IN_BALL] THEN
-  DISCH_THEN(X_CHOOSE_THEN ``e:real`` STRIP_ASSUME_TAC) THEN
-  EQ_TAC THEN DISCH_THEN(X_CHOOSE_THEN ``d:real`` STRIP_ASSUME_TAC) THEN
-  EXISTS_TAC ``min (d:real) e`` THEN ASM_REWRITE_TAC[REAL_LT_MIN] THEN
-  ASM_MESON_TAC[DIST_SYM]
-QED
-
-Theorem LIM_WITHIN_INTERIOR:
-   !f l s x. x IN interior s
-   ==> ((f --> l) (at x within s) <=> (f --> l) (at x))
-Proof
-  SIMP_TAC std_ss [tendsto, EVENTUALLY_WITHIN_INTERIOR]
-QED
-
-Theorem NETLIMIT_WITHIN_INTERIOR:
-   !s x:real. x IN interior s ==> (netlimit(at x within s) = x)
-Proof
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC NETLIMIT_WITHIN THEN
-  REWRITE_TAC[TRIVIAL_LIMIT_WITHIN] THEN
-  FIRST_ASSUM(MP_TAC o MATCH_MP(REWRITE_RULE[OPEN_CONTAINS_BALL]
-   (SPEC_ALL OPEN_INTERIOR))) THEN
-  ASM_MESON_TAC[LIMPT_SUBSET, LIMPT_BALL, CENTRE_IN_CBALL, REAL_LT_IMP_LE,
-   SUBSET_TRANS, INTERIOR_SUBSET]
 QED
 
 (* ------------------------------------------------------------------------- *)

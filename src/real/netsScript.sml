@@ -1200,14 +1200,13 @@ Proof
     rw [trivial_limit, eventually]
 QED
 
-Theorem TRIVIAL_LIMIT_IMP_NETFILTER :
+Theorem TRIVIAL_LIMIT_IMP_NETFILTER[local] :
     !net. reflexive (netord net) ==> trivial_limit net ==> netfilter net = {}
 Proof
     rw [trivial_limit, eventually]
  >> Q.PAT_X_ASSUM ‘u IN netfilter net’ (STRIP_ASSUME_TAC o SRULE [netfilter_def])
  >> Q.PAT_X_ASSUM ‘u = {y | netord net y x}’ (fs o wrap)
  >> Q.PAT_X_ASSUM ‘!x. P’ (MP_TAC o Q.SPEC ‘x’) >> simp []
- (* NOTE: if “netord net” is reflexive, then this proof finishes *)
  >> fs [reflexive_def]
 QED
 
