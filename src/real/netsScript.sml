@@ -1197,6 +1197,29 @@ Definition trivial_limit :
     trivial_limit net = eventually (\x. F) net
 End
 
+Theorem NETFILTER_IMP_TRIVIAL_LIMIT :
+    !net. netfilter net = {} ==> trivial_limit net
+Proof
+    rw [trivial_limit, eventually]
+QED
+
+Theorem TRIVIAL_LIMIT_IMP_NETFILTER :
+    !net. reflexive (netord net) ==> trivial_limit net ==> netfilter net = {}
+Proof
+    rw [trivial_limit, eventually]
+ >> Q.PAT_X_ASSUM ‘u IN netfilter net’ (STRIP_ASSUME_TAC o SRULE [netfilter_def])
+ >> Q.PAT_X_ASSUM ‘u = {y | netord net y x}’ (fs o wrap)
+ >> Q.PAT_X_ASSUM ‘!x. P’ (MP_TAC o Q.SPEC ‘x’) >> simp []
+ (* NOTE: if “netord net” is reflexive, then this proof finishes *)
+ >> fs [reflexive_def]
+QED
+
+Theorem trivial_limit_alt_netfilter :
+    !net. reflexive (netord net) ==> (trivial_limit net <=> netfilter net = {})
+Proof
+    PROVE_TAC [NETFILTER_IMP_TRIVIAL_LIMIT, TRIVIAL_LIMIT_IMP_NETFILTER]
+QED
+
 (* NOTE: added “net_condition net s” after porting from HOL-Light *)
 Theorem EVENTUALLY_WITHIN_IMP :
     !net (P:'a->bool) s. net_condition net s ==>
@@ -1491,14 +1514,14 @@ QED
 (* ------------------------------------------------------------------------- *)
 
 (* NOTE: recall that “netfilter net = {}” is the 1st part of “eventually” *)
-Theorem NETFILTER_EMPTY :
+Theorem NETFILTER_EQ_EMPTY :
     !net. netfilter net = {} <=> netlimits net = UNIV
 Proof
     rw [netfilter_def, Once EXTENSION, NOT_IN_EMPTY]
  >> simp [Once EXTENSION]
 QED
 
-Theorem NETFILTER_ATPOINTOF_EMPTY :
+Theorem NETFILTER_ATPOINTOF_EQ_EMPTY :
     !m a. netfilter (atpointof m a) = {} <=> !x. x = a
 Proof
     rw [NETFILTER_ATPOINTOF, Once EXTENSION, NOT_IN_EMPTY]
@@ -1515,7 +1538,7 @@ Proof
  (* special case: there's only one value in type alpha *)
  >> Cases_on ‘!y. y = a’
  >- (‘netfilter (atpointof m a) = {}’
-       by PROVE_TAC [NETFILTER_ATPOINTOF_EMPTY] >> simp [] \\
+       by PROVE_TAC [NETFILTER_ATPOINTOF_EQ_EMPTY] >> simp [] \\
      Q.EXISTS_TAC ‘{a}’ >> simp [] \\
      rw [MTOP_OPEN'] \\
      Q.EXISTS_TAC ‘1’ >> simp [])
@@ -1547,7 +1570,7 @@ Proof
  (* special case: there's only one value in type alpha *)
  >> Cases_on ‘!y. y = a’
  >- (‘netfilter (atpointof m a) = {}’
-       by PROVE_TAC [NETFILTER_ATPOINTOF_EMPTY] >> simp [] \\
+       by PROVE_TAC [NETFILTER_ATPOINTOF_EQ_EMPTY] >> simp [] \\
      Q.EXISTS_TAC ‘{a}’ >> simp [] \\
      rw [MTOP_OPEN'] \\
      Q.EXISTS_TAC ‘1’ >> simp [])
