@@ -6904,8 +6904,7 @@ Proof
  >> Q.PAT_X_ASSUM ‘bounded (IMAGE _ univ(:extreal))’             K_TAC
  >> Q.PAT_X_ASSUM ‘Lipschitz_continuous_map (extreal_mr1,mr1) _’ K_TAC
  (* stage work *)
- >> qabbrev_tac ‘g = \s x (y :real). x + s * y’
- >> qabbrev_tac ‘h = \s x. integral p (Normal o g s x o Z)’
+ >> qabbrev_tac ‘g = \s x (y :real). f (x + s * y)’
  (* applying integration_of_normal_rv *)
  >> Know ‘!s x. (integrable p (Normal o g s x o Z) <=>
                  integrable lborel (\y. Normal (g s x y * std_normal_density y))) /\
@@ -6914,6 +6913,14 @@ Proof
  >- (rpt GEN_TAC \\
      HO_MATCH_MP_TAC integration_of_normal_rv >> art [] \\
      rw [Abbr ‘g’] \\
+    ‘(\y. f (x + s * y)) = f o (\y. x + s * y)’ by rw [o_DEF, FUN_EQ_THM] \\
+     POP_ORW \\
+     MATCH_MP_TAC MEASURABLE_COMP \\
+     Q.EXISTS_TAC ‘borel’ \\
+     reverse CONJ_TAC
+     >- (MATCH_MP_TAC in_borel_measurable_continuous_on \\
+         REWRITE_TAC [continuous_on_univ_alt_continuous_map, euclidean_def] \\
+         MATCH_MP_TAC Lipschitz_continuous_map_imp_continuous_map >> art []) \\
      MATCH_MP_TAC in_borel_measurable_add >> simp [] \\
      qexistsl_tac [‘\y. x’, ‘\y. s * y’] \\
      simp [sigma_algebra_borel, space_borel] \\
@@ -6923,8 +6930,8 @@ Proof
      MATCH_MP_TAC in_borel_measurable_cmul \\
      qexistsl_tac [‘\x. x’, ‘s’] \\
      simp [sigma_algebra_borel, space_borel, in_borel_measurable_I])
- >> simp [FORALL_AND_THM]
- >> STRIP_TAC
+ >> DISCH_THEN (MP_TAC o SRULE [FORALL_AND_THM, o_DEF])
+ >> simp [Abbr ‘g’]
  >> cheat
 QED
 
@@ -6974,8 +6981,7 @@ Proof
  >> rw[]
  >> GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites [mul_comm]
  >> rw [mul_assoc, extreal_mul_eq]
- >> HO_MATCH_MP_TAC expectation_cmul
- >> ASM_REWRITE_TAC []
+ >> HO_MATCH_MP_TAC expectation_cmul >> art []
 QED
 
 Theorem mgf_sum :
@@ -6999,8 +7005,7 @@ Proof
      >> ‘?a. X x = Normal a’ by METIS_TAC [extreal_cases]
      >> ‘?b. Y x = Normal b’ by METIS_TAC [extreal_cases]
      >> rw[extreal_mul_eq]) >> Rewr'
- >> HO_MATCH_MP_TAC indep_vars_expectation
- >> simp[]
+ >> HO_MATCH_MP_TAC indep_vars_expectation >> simp []
  >> CONJ_TAC
    (* real_random_variable (λx. exp (Normal s * X x)) p *)
  >- (MATCH_MP_TAC real_random_variable_exp_normal
