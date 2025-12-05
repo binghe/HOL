@@ -6959,12 +6959,12 @@ Proof
      Q.EXISTS_TAC ‘borel’ >> art [] \\
      Q.PAT_X_ASSUM ‘std_normal_rv Z p’ MP_TAC \\
      simp [normal_rv_def, random_variable_def, p_space_def, events_def])
- >> Rewr
+ >> DISCH_TAC
  (* NOTE: Now we need to transform the variable of “integral lborel _” to move
     x outside of f, i.e. “f y * _” so that the derivative of parameter-dependent
     integrals treats ‘f y’ as a constant factor.
   *)
- >> simp [Abbr ‘g’]
+ >> fs [Abbr ‘g’]
  >> qabbrev_tac ‘g = \s x y. Normal (f (x + s * y) * std_normal_density y)’
  >> simp []
  >> ‘!s x. (\y. g s x y) = g s x’ by rw [FUN_EQ_THM] >> POP_ORW
@@ -6977,12 +6977,18 @@ Proof
                 integral lborel (\y. g s x (-inv s * x + inv s * y))’
  >- (rpt GEN_TAC >> STRIP_TAC \\
      HO_MATCH_MP_TAC integral_real_affine >> simp [])
- >> simp [Abbr ‘g’, REAL_ADD_LDISTRIB, REAL_ADD_ASSOC]
+ >> fs [Abbr ‘g’, REAL_ADD_LDISTRIB, REAL_ADD_ASSOC]
  >> qabbrev_tac ‘g = \s x y. Normal (f (x + s * y) * std_normal_density y)’
  >> qabbrev_tac ‘u = \s x y. f y * std_normal_density (-inv s * x + inv s * y)’
+ >> fs [] >> DISCH_TAC
+ >> ‘!s x. (\y. g s x y) = g s x’ by rw [FUN_EQ_THM]
+ >> POP_ASSUM (fs o wrap)
+ >> Q.PAT_X_ASSUM ‘!s x. _ = integral lborel (g s x)’ (fs o wrap o GSYM)
+ >> Q.PAT_X_ASSUM ‘!s x. integrable lborel (g s x)’ K_TAC
+ >> qunabbrev_tac ‘g’
+ (* NOTE: ‘fi s’ is to be prove to converge to f *)
+ >> qabbrev_tac ‘fi = \s x. integral p (\y. Normal (f (x + s * Z y)))’
  >> fs []
- >> ‘!s x. (\y. g s x y) = g s x’ by rw [FUN_EQ_THM] >> POP_ORW
- >> DISCH_TAC
  (* stage work *)
  >> cheat
 QED

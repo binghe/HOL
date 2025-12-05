@@ -208,7 +208,8 @@ Theorem PREIMAGE_RECTANGLE :
 Proof
     rw [Once EXTENSION, IN_PREIMAGE, IN_RECTANGLE]
  >> EQ_TAC >> rw [PREIMAGE_def] >- rw []
- >> Q.PAT_X_ASSUM ‘!P. _ ==> x IN P’ (MP_TAC o (Q.SPEC ‘{x | (f :'a -> 'b['N]) x ' i IN h i}’))
+ >> Q.PAT_X_ASSUM ‘!P. _ ==> x IN P’
+     (MP_TAC o (Q.SPEC ‘{x | (f :'a -> 'b['N]) x ' i IN h i}’))
  >> simp []
  >> DISCH_THEN MATCH_MP_TAC
  >> Q.EXISTS_TAC ‘i’ >> art []
@@ -402,9 +403,12 @@ Proof
  >> MATCH_MP_TAC SUBSET_TRANS
  >> Q.EXISTS_TAC ‘prod’
  >> REWRITE_TAC [SIGMA_SUBSET_SUBSETS]
- >> Q.PAT_X_ASSUM ‘sigma_algebra (sigma (rectangle (\n. space B) (:'N)) sts)’       K_TAC
- >> Q.PAT_X_ASSUM ‘sts SUBSET subsets (sigma (rectangle (\n. space B) (:'N)) sts)’  K_TAC
- >> Q.PAT_X_ASSUM ‘prod SUBSET subsets (sigma (rectangle (\n. space B) (:'N)) sts)’ K_TAC
+ >> Q.PAT_X_ASSUM
+     ‘sigma_algebra (sigma (rectangle (\n. space B) (:'N)) sts)’       K_TAC
+ >> Q.PAT_X_ASSUM
+     ‘sts SUBSET subsets (sigma (rectangle (\n. space B) (:'N)) sts)’  K_TAC
+ >> Q.PAT_X_ASSUM
+     ‘prod SUBSET subsets (sigma (rectangle (\n. space B) (:'N)) sts)’ K_TAC
  >> rw [Abbr ‘sts’, Abbr ‘prod’, SUBSET_DEF]
  >> fs [IN_RECTANGLE]
  >> Q.EXISTS_TAC ‘h’ >> rw []
@@ -524,7 +528,8 @@ Theorem sigma_of_dimension_decomposition :
     !(B :'a algebra).
       subset_class (space B) (subsets B) /\ space B IN subsets B /\
       FINITE univ(:'M) /\ FINITE univ(:'N) ==>
-      B of_dimension (:'M + 'N) = fcp_sigma (B of_dimension (:'M)) (B of_dimension (:'N))
+      B of_dimension (:'M + 'N) =
+      fcp_sigma (B of_dimension (:'M)) (B of_dimension (:'N))
 Proof
     RW_TAC std_ss [sigma_of_dimension_alt]
  (* preparing for prod_sigma_of_generator *)
