@@ -1629,8 +1629,7 @@ Proof
  >> ‘sig⁻¹ * exp (-(sig⁻¹ * (x − mu))² * 2⁻¹) * (sqrt (2 * pi))⁻¹ =
      exp (-(sig⁻¹ * (x − mu))² * 2⁻¹) * sig⁻¹ * (sqrt (2 * pi))⁻¹’ by REAL_ARITH_TAC
  >> POP_ORW
- >> ‘(2 * (sig² * pi)) = (sig² * (2 * pi))’
-      by REAL_ARITH_TAC >> POP_ORW
+ >> ‘(2 * (sig² * pi)) = (sig² * (2 * pi))’ by REAL_ARITH_TAC >> POP_ORW
  >> MP_TAC (Q.SPECL [‘sig pow 2’, ‘2 * pi’] SQRT_MUL)
  >> impl_tac >- (simp [REAL_LE_POW2, PI_POS, REAL_LT_IMP_LE])
  >> Rewr
@@ -7303,12 +7302,10 @@ val _ = html_theory "central_limit";
 
   [1] Shiryaev, A.N.: Probability-1. Springer-Verlag New York (2016).
   [2] Shiryaev, A.N.: Probability-2. Springer-Verlag New York (2019).
-  [3] Chung, K.L.: A Course in Probability Theory, Third Edition.
-      Academic Press (2001).
-  [4] Qasim, M.: Formalization of Normal Random Variables,
-      Concordia University (2016).
-  [5] Rosenthal, J.S.: A First Look at Rigorous Probability Theory
-     (Second Edition). World Scientific Publishing Company (2006).
+  [3] Chung, K.L.: A Course in Probability Theory, Third Edition. Academic Press (2001).
+  [4] Qasim, M.: Formalization of Normal Random Variables, Concordia University (2016).
+  [5] Rosenthal, J.S.: A First Look at Rigorous Probability Theory (Second Edition).
+      World Scientific Publishing Company (2006).
   [6] Noll, W.: The chain rule for higher derivatives. (1995).
 
  *)
