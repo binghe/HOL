@@ -6931,7 +6931,27 @@ Proof
      qexistsl_tac [‘\x. x’, ‘s’] \\
      simp [sigma_algebra_borel, space_borel, in_borel_measurable_I])
  >> DISCH_THEN (MP_TAC o SRULE [FORALL_AND_THM, o_DEF])
+ (* NOTE: Now we need to transform the variable of “integral lborel _” to move
+    x outside of f, i.e. “f y * _” so that the derivative of parameter-dependent
+    integrals treats ‘f y’ as a constant factor.
+  *)
  >> simp [Abbr ‘g’]
+ >> qabbrev_tac ‘g = \s x y. Normal (f (x + s * y) * std_normal_density y)’
+ >> simp []
+ >> ‘!s x. (\y. g s x y) = g s x’ by rw [FUN_EQ_THM] >> POP_ORW
+ >> STRIP_TAC
+ (* applying integral_real_affine *)
+ >> Know ‘!s x. s <> 0 /\ integrable lborel (g s x) ==>
+                integrable lborel (\y. g s x (-inv s * x + inv s * y)) /\
+                integral lborel (g s x) =
+                Normal (abs (inv s)) *
+                integral lborel (\y. g s x (-inv s * x + inv s * y))’
+ >- (rpt GEN_TAC >> STRIP_TAC \\
+     HO_MATCH_MP_TAC integral_real_affine >> simp [])
+ >> rw [Abbr ‘g’, REAL_ADD_LDISTRIB, REAL_ADD_ASSOC]
+ >> qabbrev_tac ‘g = \s x y. Normal (f (x + s * y) * std_normal_density y)’
+ >> qabbrev_tac ‘u = \s x y. f y * std_normal_density (-inv s * x + inv s * y)’
+ >> fs []
  >> cheat
 QED
 
