@@ -6838,6 +6838,9 @@ QED
 (*  Weak convergence and its relation with convergence in distribution       *)
 (* ------------------------------------------------------------------------- *)
 
+Overload expectation'[local] = “\p f. real (expectation p f)”
+Overload integral'[local]    = “\m f. real (integral m f)”
+
 (* NOTE: “ext_normal_rv Z p 0 1” is needed inside the proof, it doesn't occur
    in the conclusion. This is essentially assuming the existence of normal
    r.v. (and the richness of “prob_space p”).
@@ -6990,10 +6993,24 @@ Proof
  >> qunabbrev_tac ‘g’
  (* NOTE: ‘fi s’ is to be prove to converge to f *)
  >> qabbrev_tac ‘fi = \s x. integral p (\y. Normal (f (x + s * Z y)))’ >> fs []
+ (* applying lebesgue_eq_gauge_integral *)
+ >> ‘!s x. (\y. Normal (u s x y)) = Normal o u s x’ by rw [FUN_EQ_THM, o_DEF]
+ >> POP_ASSUM (fs o wrap)
+ >> Know ‘!s x. s <> 0 ==>
+                integral lborel (Normal o u s x) =
+                Normal (integral univ(:real) (u s x))’
+ >- (rpt STRIP_TAC \\
+     MATCH_MP_TAC (cj 2 lebesgue_eq_gauge_integral) >> simp [])
+ >> DISCH_THEN (fs o wrap)
+ >> fs [IMP_CONJ_THM, extreal_mul_eq, FORALL_AND_THM]
+ >> qabbrev_tac ‘gi = \s x. real (fi s x)’
+ >> ‘!s x. s <> 0 ==> gi s x = abs (inv s) * integral univ(:real) (u s x)’
+      by rw [Abbr ‘gi’]
+ (* applying gauge_higher_differentiable_lemma *)
  (* stage work *)
- >> Know ‘!A h. random_variable A p Borel /\ bounded (IMAGE h univ(:real)) /\
+ >> Know ‘!R h. random_variable R p Borel /\ bounded (IMAGE h univ(:real)) /\
                 h IN borel_measurable borel ==>
-                integrable p (Normal o h o real o A)’
+                integrable p (Normal o h o real o R)’
  >- (rw [random_variable_def, p_space_def, events_def, bounded_def] \\
      MATCH_MP_TAC integrable_bounded \\
      Q.EXISTS_TAC ‘\x. Normal a’ \\
@@ -7003,7 +7020,7 @@ Proof
      reverse CONJ_TAC
      >- (Q.X_GEN_TAC ‘y’ >> rw [extreal_abs_def] \\
          FIRST_X_ASSUM MATCH_MP_TAC \\
-         Q.EXISTS_TAC ‘real (A y)’ >> art []) \\
+         Q.EXISTS_TAC ‘real (R y)’ >> art []) \\
      MATCH_MP_TAC IN_MEASURABLE_BOREL_IMP_BOREL \\
      MATCH_MP_TAC MEASURABLE_COMP \\
      Q.EXISTS_TAC ‘borel’ >> art [] \\
