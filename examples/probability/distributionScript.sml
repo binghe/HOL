@@ -6689,6 +6689,24 @@ Proof
  >> simp [Abbr ‘g’]
 QED
 
+Theorem Lipschitz_continuous_map_extreal_mr1_imp_mr1 :
+    !m f. Lipschitz_continuous_map (extreal_mr1,m) f ==>
+          Lipschitz_continuous_map (mr1,m) (f o Normal)
+Proof
+    rw [Lipschitz_continuous_map_def]
+ >> Q.EXISTS_TAC ‘k’ >> rw []
+ >> Q_TAC (TRANS_TAC REAL_LE_TRANS)
+          ‘k * dist extreal_mr1 (Normal x,Normal y)’ >> art []
+ >> simp [extreal_mr1_normal, GSYM dist_def, dist]
+ >> Know ‘abs (x - y) / (1 + abs (x - y)) <= abs (x - y) <=>
+          abs (x - y) * 1 <= abs (x - y) * (1 + abs (x - y))’
+ >- (REWRITE_TAC [REAL_MUL_RID] \\
+     MATCH_MP_TAC REAL_LE_LDIV_EQ \\
+     Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘1’ >> simp [])
+ >> Rewr'
+ >> MATCH_MP_TAC REAL_LE_LMUL_IMP >> simp []
+QED
+
 (* ------------------------------------------------------------------------- *)
 (*  Parameter-Dependent Integrals (Part of Chapter 12 of [5]) Gauge version  *)
 (* ------------------------------------------------------------------------- *)
@@ -6887,33 +6905,15 @@ Proof
      FIRST_X_ASSUM MATCH_MP_TAC \\
      Q.EXISTS_TAC ‘Normal y’ >> REFL_TAC)
  >> DISCH_TAC
- >> Know ‘Lipschitz_continuous_map (mr1,mr1) f’
- >- (Q.PAT_X_ASSUM ‘Lipschitz_continuous_map _ nf’ MP_TAC \\
-     rw [Lipschitz_continuous_map_def, Abbr ‘f’] \\
-     Q.EXISTS_TAC ‘k’ >> rw [] \\
-     Q_TAC (TRANS_TAC REAL_LE_TRANS)
-           ‘k * dist extreal_mr1 (Normal x,Normal y)’ >> art [] \\
-     simp [extreal_mr1_normal, GSYM dist_def, dist] \\
-     Know ‘abs (x - y) / (1 + abs (x - y)) <= abs (x - y) <=>
-           abs (x - y) * 1 <= abs (x - y) * (1 + abs (x - y))’
-     >- (REWRITE_TAC [REAL_MUL_RID] \\
-         MATCH_MP_TAC REAL_LE_LDIV_EQ \\
-         Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘1’ >> simp []) >> Rewr' \\
-     MATCH_MP_TAC REAL_LE_LMUL_IMP >> simp [])
- >> DISCH_TAC
+ >> ‘Lipschitz_continuous_map (mr1,mr1) f’
+      by PROVE_TAC [Lipschitz_continuous_map_extreal_mr1_imp_mr1]
  >> Q.PAT_X_ASSUM ‘bounded (IMAGE _ univ(:extreal))’             K_TAC
  >> Q.PAT_X_ASSUM ‘Lipschitz_continuous_map (extreal_mr1,mr1) _’ K_TAC
  (* stage work *)
  >> qabbrev_tac ‘Z = real o N’
  >> qabbrev_tac ‘g = \s x (y :real). f (x + s * y)’
- (* applying integration_of_normal_rv *)
- >> Know ‘!s x. (integrable p (Normal o g s x o Z) <=>
-                 integrable lborel (\y. Normal (g s x y * std_normal_density y))) /\
-                (integral p (Normal o g s x o Z) =
-                 integral lborel (\y. Normal (g s x y * std_normal_density y)))’
- >- (rpt GEN_TAC \\
-     HO_MATCH_MP_TAC integration_of_normal_rv >> art [] \\
-     rw [Abbr ‘g’] \\
+ >> Know ‘!s x. g s x IN borel_measurable borel’
+ >- (rw [Abbr ‘g’] \\
     ‘(\y. f (x + s * y)) = f o (\y. x + s * y)’ by rw [o_DEF, FUN_EQ_THM] \\
      POP_ORW \\
      MATCH_MP_TAC MEASURABLE_COMP \\
@@ -6931,7 +6931,35 @@ Proof
      MATCH_MP_TAC in_borel_measurable_cmul \\
      qexistsl_tac [‘\x. x’, ‘s’] \\
      simp [sigma_algebra_borel, space_borel, in_borel_measurable_I])
+ >> DISCH_TAC
+ (* applying integration_of_normal_rv *)
+ >> Know ‘!s x. (integrable p (Normal o g s x o Z) <=>
+                 integrable lborel (\y. Normal (g s x y * std_normal_density y))) /\
+                (integral p (Normal o g s x o Z) =
+                 integral lborel (\y. Normal (g s x y * std_normal_density y)))’
+ >- (rpt GEN_TAC \\
+     HO_MATCH_MP_TAC integration_of_normal_rv >> art [])
  >> DISCH_THEN (MP_TAC o SRULE [FORALL_AND_THM, o_DEF])
+ >> Know ‘!s x. integrable p (\y. Normal (g s x (Z y)))’
+ >- (rpt GEN_TAC >> fs [Abbr ‘g’] \\
+     Q.PAT_X_ASSUM ‘bounded _’ MP_TAC >> rw [bounded_def] \\
+     MATCH_MP_TAC integrable_bounded \\
+     Q.EXISTS_TAC ‘\x. Normal a’ \\
+     fs [prob_space_def, FORALL_AND_THM] \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC integrable_const >> simp []) \\
+     reverse CONJ_TAC
+     >- (Q.X_GEN_TAC ‘y’ >> rw [extreal_abs_def] \\
+         FIRST_X_ASSUM MATCH_MP_TAC \\
+         Q.EXISTS_TAC ‘x + s * Z y’ >> art []) \\
+    ‘(\y. Normal (f (x + s * Z y))) = Normal o ((\y. f (x + s * y)) o Z)’
+       by rw [FUN_EQ_THM, o_DEF] >> POP_ORW \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_IMP_BOREL \\
+     MATCH_MP_TAC MEASURABLE_COMP \\
+     Q.EXISTS_TAC ‘borel’ >> art [] \\
+     Q.PAT_X_ASSUM ‘std_normal_rv Z p’ MP_TAC \\
+     simp [normal_rv_def, random_variable_def, p_space_def, events_def])
+ >> Rewr
  (* NOTE: Now we need to transform the variable of “integral lborel _” to move
     x outside of f, i.e. “f y * _” so that the derivative of parameter-dependent
     integrals treats ‘f y’ as a constant factor.
@@ -6949,10 +6977,13 @@ Proof
                 integral lborel (\y. g s x (-inv s * x + inv s * y))’
  >- (rpt GEN_TAC >> STRIP_TAC \\
      HO_MATCH_MP_TAC integral_real_affine >> simp [])
- >> rw [Abbr ‘g’, REAL_ADD_LDISTRIB, REAL_ADD_ASSOC]
+ >> simp [Abbr ‘g’, REAL_ADD_LDISTRIB, REAL_ADD_ASSOC]
  >> qabbrev_tac ‘g = \s x y. Normal (f (x + s * y) * std_normal_density y)’
  >> qabbrev_tac ‘u = \s x y. f y * std_normal_density (-inv s * x + inv s * y)’
  >> fs []
+ >> ‘!s x. (\y. g s x y) = g s x’ by rw [FUN_EQ_THM] >> POP_ORW
+ >> DISCH_TAC
+ (* stage work *)
  >> cheat
 QED
 
