@@ -5741,10 +5741,9 @@ Proof
  (* stage work *)
  >> Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ (MP_TAC o Q.SPEC ‘e’) >> rw []
  >> Q.EXISTS_TAC ‘y’
- >> CONJ_TAC
- >- (simp [netlimits_def] \\
-     Q.EXISTS_TAC ‘x’ >> art [])
- >> rw []
+ >> reverse CONJ_TAC >- rw []
+ >> simp [netlimits_def]
+ >> Q.EXISTS_TAC ‘x’ >> art []
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -6042,7 +6041,6 @@ Proof
   SIMP_TAC bool_ss[tendsto, EVENTUALLY_WITHIN_OPEN]
 QED
 
-(* TODO *)
 (* ------------------------------------------------------------------------- *)
 (* More limit point characterizations.                                       *)
 (* ------------------------------------------------------------------------- *)

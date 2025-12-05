@@ -786,7 +786,13 @@ Definition sequentially[nocompute]:
   sequentially = mk_net(\m:num n. m >= n)
 End
 
-(* NOTE: “within” only requires “x IN s” (next step) but not for “y” *)
+(* HOL-Light's definition:
+
+let within = new_definition
+  `net within s = mk_net (netfilter net relative_to s,netlimits net)`;;
+
+   NOTE: “within” only requires “x IN s” (next value) but not for “y”:
+ *)
 Definition within[nocompute]:
   (net within s) = mk_net(\x y. netord net x y /\ x IN s)
 End
