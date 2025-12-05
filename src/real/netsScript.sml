@@ -1021,10 +1021,24 @@ Proof
     METIS_TAC []
 QED
 
+(* NOTE: This definition is the exact condition for “NETLIMITS_WITHIN” to hold. *)
 Definition net_condition_def :
     net_condition net s =
       !x. x NOTIN netlimits net ==> ?y. y IN s /\ y <> x /\ netord net y x
 End
+
+Theorem NET_CONDITION_MONO :
+    !net s t. net_condition net s /\ s SUBSET t ==> net_condition net t
+Proof
+    rw [net_condition_def, SUBSET_DEF]
+ >> METIS_TAC []
+QED
+
+Theorem NET_CONDITION_UNIV :
+    !net. net_condition net UNIV
+Proof
+    rw [net_condition_def, netlimits_def]
+QED
 
 Theorem NETLIMITS_WITHIN :
     !net s. net_condition net s ==> netlimits (net within s) = netlimits net
@@ -1353,10 +1367,11 @@ QED
 
 (* NOTE: added “net_condition net s /\ net_condition net t” after porting from HOL-Light *)
 Theorem EVENTUALLY_WITHIN_SUBSET :
-    !P net s t:'a->bool. net_condition net s /\ net_condition net t /\
+    !P net s t:'a->bool. net_condition net t /\
        eventually P (net within s) /\ t SUBSET s ==> eventually P (net within t)
 Proof
     rpt STRIP_TAC
+ >> ‘net_condition net s’ by PROVE_TAC [NET_CONDITION_MONO]
  >> Q.PAT_X_ASSUM ‘eventually P (net within s)’ MP_TAC
  >> simp [EVENTUALLY_WITHIN_IMP]
  >> MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO)
@@ -1824,6 +1839,5 @@ val _ = export_theory ();
      Mathematics. 44, 102-121 (1922).
  [2] Kelley, J.L.: General Topology. Springer Science & Business Media (1975).
  [3] https://en.wikipedia.org/wiki/Net_(mathematics)
- [4] Schilling, R.L.: Measures, Integrals and Martingales (2nd Edition).
-     Cambridge University Press (2017).
+
  *)
