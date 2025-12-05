@@ -6909,6 +6909,11 @@ Proof
       by PROVE_TAC [Lipschitz_continuous_map_extreal_mr1_imp_mr1]
  >> Q.PAT_X_ASSUM ‘bounded (IMAGE _ univ(:extreal))’             K_TAC
  >> Q.PAT_X_ASSUM ‘Lipschitz_continuous_map (extreal_mr1,mr1) _’ K_TAC
+ >> Know ‘f IN borel_measurable borel’
+ >- (MATCH_MP_TAC in_borel_measurable_continuous_on \\
+     REWRITE_TAC [continuous_on_univ_alt_continuous_map, euclidean_def] \\
+     MATCH_MP_TAC Lipschitz_continuous_map_imp_continuous_map >> art [])
+ >> DISCH_TAC
  (* stage work *)
  >> qabbrev_tac ‘Z = real o N’
  >> qabbrev_tac ‘g = \s x (y :real). f (x + s * y)’
@@ -6917,11 +6922,7 @@ Proof
     ‘(\y. f (x + s * y)) = f o (\y. x + s * y)’ by rw [o_DEF, FUN_EQ_THM] \\
      POP_ORW \\
      MATCH_MP_TAC MEASURABLE_COMP \\
-     Q.EXISTS_TAC ‘borel’ \\
-     reverse CONJ_TAC
-     >- (MATCH_MP_TAC in_borel_measurable_continuous_on \\
-         REWRITE_TAC [continuous_on_univ_alt_continuous_map, euclidean_def] \\
-         MATCH_MP_TAC Lipschitz_continuous_map_imp_continuous_map >> art []) \\
+     Q.EXISTS_TAC ‘borel’ >> art [] \\
      MATCH_MP_TAC in_borel_measurable_add >> simp [] \\
      qexistsl_tac [‘\y. x’, ‘\y. s * y’] \\
      simp [sigma_algebra_borel, space_borel] \\
@@ -6940,6 +6941,7 @@ Proof
  >- (rpt GEN_TAC \\
      HO_MATCH_MP_TAC integration_of_normal_rv >> art [])
  >> DISCH_THEN (MP_TAC o SRULE [FORALL_AND_THM, o_DEF])
+ (* stage work *)
  >> Know ‘!s x. integrable p (\y. Normal (g s x (Z y)))’
  >- (rpt GEN_TAC >> fs [Abbr ‘g’] \\
      Q.PAT_X_ASSUM ‘bounded _’ MP_TAC >> rw [bounded_def] \\
@@ -6987,8 +6989,43 @@ Proof
  >> Q.PAT_X_ASSUM ‘!s x. integrable lborel (g s x)’ K_TAC
  >> qunabbrev_tac ‘g’
  (* NOTE: ‘fi s’ is to be prove to converge to f *)
- >> qabbrev_tac ‘fi = \s x. integral p (\y. Normal (f (x + s * Z y)))’
- >> fs []
+ >> qabbrev_tac ‘fi = \s x. integral p (\y. Normal (f (x + s * Z y)))’ >> fs []
+ (* stage work *)
+ >> Know ‘!A h. random_variable A p Borel /\ bounded (IMAGE h univ(:real)) /\
+                h IN borel_measurable borel ==>
+                integrable p (Normal o h o real o A)’
+ >- (rw [random_variable_def, p_space_def, events_def, bounded_def] \\
+     MATCH_MP_TAC integrable_bounded \\
+     Q.EXISTS_TAC ‘\x. Normal a’ \\
+     fs [prob_space_def, FORALL_AND_THM] \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC integrable_const >> simp []) \\
+     reverse CONJ_TAC
+     >- (Q.X_GEN_TAC ‘y’ >> rw [extreal_abs_def] \\
+         FIRST_X_ASSUM MATCH_MP_TAC \\
+         Q.EXISTS_TAC ‘real (A y)’ >> art []) \\
+     MATCH_MP_TAC IN_MEASURABLE_BOREL_IMP_BOREL \\
+     MATCH_MP_TAC MEASURABLE_COMP \\
+     Q.EXISTS_TAC ‘borel’ >> art [] \\
+     MATCH_MP_TAC in_borel_measurable_from_Borel >> art [] \\
+     simp [MEASURE_SPACE_SIGMA_ALGEBRA])
+ >> DISCH_TAC
+ (* applying extreal_lim_sequentially_eq *)
+ >> qmatch_abbrev_tac ‘(h --> l) sequentially’
+ >> Know ‘((h --> l) sequentially <=> (real o h --> real l) sequentially)’
+ >- (MATCH_MP_TAC extreal_lim_sequentially_eq \\
+     CONJ_TAC
+     >- (Q.EXISTS_TAC ‘0’ >> simp [] \\
+         Q.X_GEN_TAC ‘n’ >> simp [Abbr ‘h’, expectation_def] \\
+         MATCH_MP_TAC integrable_finite_integral \\
+         fs [prob_space_def, FORALL_AND_THM] \\
+         FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+     simp [Abbr ‘l’, expectation_def] \\
+     MATCH_MP_TAC integrable_finite_integral \\
+     fs [prob_space_def, FORALL_AND_THM] \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> art [])
+ >> Rewr'
+ >> RW_TAC std_ss [LIM_SEQUENTIALLY]
  (* stage work *)
  >> cheat
 QED
