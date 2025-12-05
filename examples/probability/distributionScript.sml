@@ -6825,15 +6825,15 @@ QED
    r.v. (and the richness of “prob_space p”).
  *)
 Theorem converge_in_dist_alt_higher_differentiable :
-    !X Y Z p. prob_space p /\ (!n. real_random_variable (X n) p) /\
-              real_random_variable Y p /\ std_normal_rv Z p ==>
+    !X Y N p. prob_space p /\ (!n. real_random_variable (X n) p) /\
+              real_random_variable Y p /\ ext_normal_rv N p 0 1 ==>
            ((X --> Y) (in_distribution p) <=>
             !f. (!n x. higher_differentiable n f x) /\
                 (!n. bounded (IMAGE (diffn n f) UNIV)) ==>
                 ((\n. expectation p (Normal o f o real o X n)) -->
                  expectation p (Normal o f o real o Y)) sequentially)
 Proof
-    RW_TAC std_ss [real_random_variable_def, FORALL_AND_THM]
+    RW_TAC std_ss [real_random_variable_def, FORALL_AND_THM, ext_normal_rv_def]
  >> EQ_TAC
  >- (simp [converge_in_dist_def, IN_bounded_continuous, FORALL_AND_THM] \\
      DISCH_TAC \\
@@ -6904,6 +6904,7 @@ Proof
  >> Q.PAT_X_ASSUM ‘bounded (IMAGE _ univ(:extreal))’             K_TAC
  >> Q.PAT_X_ASSUM ‘Lipschitz_continuous_map (extreal_mr1,mr1) _’ K_TAC
  (* stage work *)
+ >> qabbrev_tac ‘Z = real o N’
  >> qabbrev_tac ‘g = \s x (y :real). f (x + s * y)’
  (* applying integration_of_normal_rv *)
  >> Know ‘!s x. (integrable p (Normal o g s x o Z) <=>

@@ -2437,20 +2437,28 @@ val clt_tactic1 =
     >> DISCH_TAC
     >> ‘∀n. 0 < s n’ by rw[lt_le];
 
-(********************************* DELETE ******************************)
-Theorem converge_in_dist_third_alt' :
-  !p X Y. prob_space p /\
-          (!n. real_random_variable (X n) p) /\ real_random_variable Y p ==>
-          ((X --> Y) (in_distribution p) <=>
-           ∀f.
-             f IN CnR 3 ⇒
-             ((\n. expectation p (Normal o f o real o (X n))) -->
-                   expectation p (Normal o f o real o Y)) sequentially)
+Theorem converge_in_dist_alt_C3 :
+    !p X Y N.
+       prob_space p /\ ext_normal_rv N p 0 1 /\
+      (!n. real_random_variable (X n) p) /\ real_random_variable Y p ==>
+      ((X --> Y) (in_distribution p) <=>
+       !f. f IN CnR 3 ==>
+           ((\n. expectation p (Normal o f o real o (X n))) -->
+                 expectation p (Normal o f o real o Y)) sequentially)
 Proof
-  cheat
+    rpt STRIP_TAC
+ >> EQ_TAC
+ >- (rw [converge_in_dist_alt_continuous_on] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     Suff ‘f IN C_b’ >- rw [C_b_def] \\
+     PROVE_TAC [SUBSET_DEF, C3_subset_C_b])
+ >> DISCH_TAC
+ >> MP_TAC (Q.SPECL [‘X’, ‘Y’, ‘N’, ‘p’]
+                    converge_in_dist_alt_higher_differentiable) >> simp []
+ >> DISCH_THEN K_TAC >> rpt STRIP_TAC
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> rw [CnR_def]
 QED
-
-(***********************************************************************)
 
 Theorem real_random_variable_prod_measure_fst[local] :
     ∀p q X (N :num).
@@ -6767,7 +6775,8 @@ val clt_tactic3_p5 =
 (* -------------------------------------------------------------------------- *)
 
 val clt_tactic3_p6 =
-Q.PAT_X_ASSUM ‘∀j. j < n ⇒ expectation r (_) − expectation r (_) = ∑ (λj'. _) (count n)’
+    Q.PAT_X_ASSUM ‘∀j. j < n ⇒ expectation r (_) − expectation r (_) =
+                               ∑ (λj'. _) (count n)’
     (STRIP_ASSUME_TAC o Q.SPEC ‘n - 1’)
 >> ‘n - 1 < n’ by fs [SUB_LESS] >> gs []
 >> qmatch_abbrev_tac ‘abs (real G) < e’
@@ -6802,8 +6811,10 @@ Theorem central_limit_theorem :
       (∀i. variance p (X i) < PosInf) ∧
       (∀i. variance p (X i) ≠ 0) ∧
       (∀n. (sqrt (second_moments p X n)) ≠ 0) ∧
-      ((\n. (absolute_third_moments p X n) / ((sqrt (second_moments p X n)) pow 3)) --> 0) sequentially ⇒
-      ((\n x. (SIGMA (λi. X i x) (count n)) / (sqrt (second_moments p X n))) --> N) (in_distribution p)
+      ((\n. absolute_third_moments p X n /
+            sqrt (second_moments p X n) pow 3) --> 0) sequentially ⇒
+      ((\n x. SIGMA (λi. X i x) (count n) /
+              sqrt (second_moments p X n)) --> N) (in_distribution p)
 Proof
     rpt STRIP_TAC
  >> Q.ABBREV_TAC ‘s = λn. sqrt (second_moments p X n)’ >> fs []
@@ -6814,7 +6825,8 @@ Proof
  >> ‘∀i. integrable p (X i) ∧ integrable p (λx. (X i x) pow 2) ∧
          integrable p (λx. (X i x)³)’ by METIS_TAC [clt_integrable_lemma]
  >> ‘∀i. integrable p (λx. (abs (X i x))³)’
-    by (rw [GSYM pow_abs, GSYM o_DEF] >> MATCH_MP_TAC integrable_abs >> fs [prob_space_def])
+    by (rw [GSYM pow_abs, GSYM o_DEF] \\
+        MATCH_MP_TAC integrable_abs >> fs [prob_space_def])
  >> Know ‘∀i. real_random_variable (R i) p’
  >- (Q.X_GEN_TAC ‘n’ \\
      drule real_random_variable_sum_cdiv >> STRIP_TAC \\
@@ -6827,12 +6839,13 @@ Proof
      POP_ASSUM (STRIP_ASSUME_TAC o Q.SPECL [‘X’, ‘s’, ‘n’]) \\
      gs [] >> fs [Abbr ‘R’])
  >> DISCH_TAC
- >> MP_TAC (Q.SPECL [‘p’, ‘R’, ‘N’] converge_in_dist_third_alt')
+ >> MP_TAC (Q.SPECL [‘p’, ‘R’, ‘N’, ‘N’] converge_in_dist_alt_C3)
  >> Know ‘real_random_variable N p’
  >- (fs [ext_normal_rv_def, real_random_variable_def, normal_rv_def] \\
-     METIS_TAC [random_variable_borel_imp_Borel]) >> Rewr >> fs []
- >> rpt STRIP_TAC
- >> Q.PAT_X_ASSUM ‘(R ⟶ N) (in_distribution p) ⇔ _’ (K_TAC)
+     METIS_TAC [random_variable_borel_imp_Borel])
+ >> Rewr
+ >> rw []
+ >> Q.PAT_X_ASSUM ‘(R ⟶ N) (in_distribution p) ⇔ _’ K_TAC
  >> Q.ABBREV_TAC ‘M = λn. expectation p (Normal ∘ f ∘ real ∘ R n)’
  >> Q.ABBREV_TAC ‘Q = expectation p (Normal ∘ f ∘ real o N)’
  >> Know ‘Q ≠ +∞ ∧ Q ≠ −∞’
