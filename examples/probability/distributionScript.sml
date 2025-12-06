@@ -4350,6 +4350,19 @@ Proof
  >> fs [continuous_on_univ_alt_continuous_map, continuous_map_real]
 QED
 
+Theorem converge_in_dist_alt :
+    !X Y p. prob_space p /\ (!n. real_random_variable (X n) p) /\
+            real_random_variable Y p ==>
+           ((X --> Y) (in_distribution p) <=>
+            !f. f IN C_b euclidean ==>
+               ((\n. expectation p (Normal o f o real o X n)) -->
+                expectation p (Normal o f o real o Y)) sequentially)
+Proof
+    rw [IN_bounded_continuous, GSYM continuous_on_univ_alt_continuous_map]
+ >> ONCE_REWRITE_TAC [CONJ_SYM]
+ >> simp [converge_in_dist_alt_continuous_on]
+QED
+
 Definition BL_def :
     BL E = {f :'a -> real | f IN bounded_continuous (mtop E) /\
                             Lipschitz_continuous_map (E,mr1) f}
@@ -6995,7 +7008,8 @@ Proof
  >- (rpt STRIP_TAC \\
      MATCH_MP_TAC (cj 2 lebesgue_eq_gauge_integral) >> simp [])
  >> DISCH_THEN (fs o wrap)
- >> fs [IMP_CONJ_THM, extreal_mul_eq, FORALL_AND_THM]
+ >> Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> _’
+      (STRIP_ASSUME_TAC o SRULE [IMP_CONJ_THM, FORALL_AND_THM, extreal_mul_eq])
  >> qabbrev_tac ‘gi = \s x. real (fi s x)’
  >> ‘!s x. s <> 0 ==> gi s x = abs (inv s) * integral univ(:real) (u s x)’
       by rw [Abbr ‘gi’]
@@ -7108,7 +7122,11 @@ Proof
    “R” doesn't change the asserted “s”. Lipschitz_continuous_map is used here.
   *)
  >> Know ‘!e. 0 < e ==> ?s. s <> 0 /\ !x. abs (gi s x - f x) < e’
- >- (
+ >- (rpt STRIP_TAC \\
+     Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> gi s x = _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> fi s x = _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘!s. s <> 0 ==> (_ --> _) sequentially’ K_TAC \\
+     simp [Abbr ‘gi’, Abbr ‘fi’, GSYM expectation_def] \\
      cheat)
  >> DISCH_TAC
  >> Know ‘!e. 0 < e ==>

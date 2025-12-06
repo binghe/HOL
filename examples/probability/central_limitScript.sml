@@ -2452,8 +2452,8 @@ Proof
      Suff ‘f IN C_b’ >- rw [C_b_def] \\
      PROVE_TAC [SUBSET_DEF, C3_subset_C_b])
  >> DISCH_TAC
- >> MP_TAC (Q.SPECL [‘X’, ‘Y’, ‘p’]
-                    converge_in_dist_alt_higher_differentiable') >> simp []
+ >> MP_TAC (Q.SPECL [‘X’, ‘Y’, ‘N’, ‘p’]
+                    converge_in_dist_alt_higher_differentiable) >> simp []
  >> DISCH_THEN K_TAC >> rpt STRIP_TAC
  >> FIRST_X_ASSUM MATCH_MP_TAC
  >> rw [CnR_def]
