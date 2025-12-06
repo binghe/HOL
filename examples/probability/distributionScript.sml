@@ -16,9 +16,8 @@ Theory distribution
 Ancestors
   combin arithmetic logroot pred_set topology pair cardinal real
   seq transc real_sigma iterate real_topology derivative metric
-  nets sigma_algebra extreal_base extreal real_borel measure
+  nets sigma_algebra extreal_base extreal real_borel measure lim
   borel lebesgue lebesgue_measure martingale probability integration
-  lim[qualified]
 Libs
   numLib hurdUtils pred_setLib tautLib jrhUtils realLib Diff
  *)
@@ -29,13 +28,11 @@ open combinTheory arithmeticTheory numLib logrootTheory hurdUtils pred_setLib
 
 open realTheory realLib seqTheory transcTheory real_sigmaTheory iterateTheory
      real_topologyTheory metricTheory netsTheory derivativeTheory Diff
-     integrationTheory;
+     integrationTheory limTheory;
 
 open sigma_algebraTheory extreal_baseTheory extrealTheory real_borelTheory
      measureTheory borelTheory lebesgueTheory martingaleTheory
      probabilityTheory lebesgue_measureTheory;
-
-local open limTheory in end;
 
 val _ = new_theory "distribution"; (* was: "normal_rv" *)
 
@@ -462,8 +459,7 @@ Proof
  >> simp [sets_lborel]
  >> Suff ‘A IN subsets borel’
  >- (simp [] >> DISCH_TAC \\
-     STRONG_CONJ_TAC >- (MATCH_MP_TAC countable_imp_borel_measurable >> art []) \\
-     DISCH_TAC \\
+     CONJ_ASM1_TAC >- (MATCH_MP_TAC countable_imp_borel_measurable >> art []) \\
      MATCH_MP_TAC SIGMA_ALGEBRA_UNION >> art [])
  >> rw [Abbr ‘A’, borel_measurable_real_set]
 QED
@@ -3563,9 +3559,9 @@ QED
  *)
 Theorem diffl_neg_x_std_normal_density[local] =
         has_vector_derivative_neg_x_std_normal_density
-     |> REWRITE_RULE [GSYM limTheory.diffl_has_vector_derivative]
+     |> REWRITE_RULE [GSYM diffl_has_vector_derivative]
 
-(* Based on limTheory.DIFF_POS_MONO_LT_CU *)
+(* Based on DIFF_POS_MONO_LT_CU *)
 Theorem neg_x_std_normal_density_increasing :
     !x y. 1 <= x /\ x <= y ==> -x * std_normal_density x <=
                                -y * std_normal_density y
@@ -3576,10 +3572,10 @@ Proof
  >> ASM_SIMP_TAC std_ss []
  >> ‘x = y \/ x < y’ by PROVE_TAC [REAL_LE_LT] >- simp []
  >> MATCH_MP_TAC REAL_LT_IMP_LE
- >> irule limTheory.DIFF_POS_MONO_LT_CU >> art []
+ >> irule DIFF_POS_MONO_LT_CU >> art []
  >> Q.EXISTS_TAC ‘1’ >> art []
  >> reverse CONJ_TAC
- >- (MATCH_MP_TAC limTheory.DIFF_CONT \\
+ >- (MATCH_MP_TAC DIFF_CONT \\
      Q.EXISTS_TAC ‘(1 pow 2 - 1) * std_normal_density 1’ >> art [])
  >> rpt STRIP_TAC
  >> Q.EXISTS_TAC ‘(z pow 2 - 1) * std_normal_density z’ >> art []
@@ -6790,9 +6786,9 @@ Theorem gauge_higher_differentiable_lemma :
 Proof
     Q.X_GEN_TAC ‘u’ >> STRIP_TAC
  >> Induct_on ‘n’
- >- (Q.X_GEN_TAC ‘t’ >> simp [limTheory.diffn_0] \\
+ >- (Q.X_GEN_TAC ‘t’ >> simp [diffn_0] \\
     ‘(\x. u t x) = u t’ by rw [FUN_EQ_THM] \\
-     fs [o_DEF, limTheory.higher_differentiable_def])
+     fs [o_DEF, higher_differentiable_def])
  >> Q.X_GEN_TAC ‘t’
  >> POP_ASSUM MP_TAC
  >> qabbrev_tac ‘f = \t x. diffn n (\t. u t x) t’
@@ -6800,12 +6796,12 @@ Proof
  >> POP_ORW
  >> ‘!t. (\x. f t x) = f t’ by rw [FUN_EQ_THM] >> POP_ORW
  >> DISCH_THEN (STRIP_ASSUME_TAC o SRULE [FORALL_AND_THM])
- (* applying limTheory.diffn_SUC' *)
+ (* applying diffn_SUC' *)
  >> Know ‘!x. diffn (SUC n) (\t. u t x) = diff1 (\t. f t x)’
  >- (rw [Abbr ‘f’, Once EQ_SYM_EQ] \\
     ‘(\t. diffn n (\t. u t x) t) = diffn n (\t. u t x)’ by rw [FUN_EQ_THM] \\
      POP_ORW \\
-     MATCH_MP_TAC limTheory.diffn_SUC' >> art [])
+     MATCH_MP_TAC diffn_SUC' >> art [])
  >> DISCH_TAC
  (* applying gauge_differentiable_lemma on f *)
  >> MP_TAC (Q.SPEC ‘f’ gauge_differentiable_lemma) >> simp [o_DEF]
@@ -6814,11 +6810,11 @@ Proof
      >- (Q.X_GEN_TAC ‘x’ \\
          simp [differentiable_on, NET_WITHIN_UNIV] \\
          Q.X_GEN_TAC ‘t’ \\
-         simp [GSYM limTheory.higher_differentiable_1_eq_differentiable] \\
+         simp [GSYM higher_differentiable_1_eq_differentiable] \\
          Q.PAT_X_ASSUM ‘!n t x. higher_differentiable n (\t. u t x) t’
            (MP_TAC o Q.GEN ‘t’ o Q.SPECL [‘SUC n’, ‘t’, ‘x’]) \\
          DISCH_THEN (MP_TAC o Q.SPEC ‘t’ o
-                     MATCH_MP limTheory.higher_differentiable_imp_1n) \\
+                     MATCH_MP higher_differentiable_imp_1n) \\
         ‘diffn n (\t. u t x) = (\t. f t x)’ by rw [Abbr ‘f’, FUN_EQ_THM] \\
          simp []) \\
      Q.EXISTS_TAC ‘w’ >> rw [] \\
@@ -6832,17 +6828,17 @@ Proof
  >> POP_ASSUM (fs o wrap)
  (* stage work *)
  >> Know ‘!t. higher_differentiable (SUC n) g t’
- >- (rw [limTheory.higher_differentiable_def] \\
+ >- (rw [higher_differentiable_def] \\
      qabbrev_tac ‘h = diffn n g’ \\
     ‘(\t. h t) = h’ by rw [FUN_EQ_THM] >> POP_ASSUM (fs o wrap) \\
-     REWRITE_TAC [GSYM limTheory.higher_differentiable_1] \\
-     REWRITE_TAC [limTheory.higher_differentiable_1_eq_differentiable] \\
+     REWRITE_TAC [GSYM higher_differentiable_1] \\
+     REWRITE_TAC [higher_differentiable_1_eq_differentiable] \\
      Q.PAT_X_ASSUM ‘h differentiable_on univ(:real)’ MP_TAC \\
      simp [differentiable_on, NET_WITHIN_UNIV])
  >> DISCH_TAC
  >> simp []
  >> Know ‘diffn (SUC n) g = diff1 (diffn n g)’
- >- (SYM_TAC >> MATCH_MP_TAC limTheory.diffn_SUC' >> art [])
+ >- (SYM_TAC >> MATCH_MP_TAC diffn_SUC' >> art [])
  >> Rewr'
  >> simp []
 QED
@@ -6892,15 +6888,13 @@ Theorem converge_in_dist_alt_higher_differentiable :
 Proof
     RW_TAC std_ss [FORALL_AND_THM, ext_normal_rv_def]
  >> EQ_TAC
- >- (simp [converge_in_dist_def, IN_bounded_continuous, FORALL_AND_THM] \\
-     DISCH_TAC \\
-     Q.X_GEN_TAC ‘f’ >> STRIP_TAC \\
-     POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> rw [limTheory.diffn_0] \\
+ >- (rw [converge_in_dist_def, IN_bounded_continuous, FORALL_AND_THM] \\
+     POP_ASSUM (MP_TAC o Q.SPEC ‘0’) >> rw [diffn_0] \\
      Q.PAT_X_ASSUM ‘!n x. higher_differentiable n f x’
        (STRIP_ASSUME_TAC o Q.SPEC ‘1’) \\
      Know ‘f continuous_on univ(:real)’
      >- (rw [continuous_on_def, NET_WITHIN_UNIV] \\
-         MATCH_MP_TAC limTheory.higher_differentiable_imp_continuous >> art []) \\
+         MATCH_MP_TAC higher_differentiable_imp_continuous >> art []) \\
      simp [continuous_on_univ_alt_continuous_map] >> DISCH_TAC \\
      qabbrev_tac ‘g = f o real’ \\
     ‘!n. Normal o f o real o X n = Normal o g o X n’
@@ -6917,7 +6911,6 @@ Proof
      Q.EXISTS_TAC ‘a’ >> rw [] >> rename1 ‘abs (f (real z)) <= a’ \\
      POP_ASSUM MATCH_MP_TAC \\
      Q.EXISTS_TAC ‘real z’ >> REFL_TAC)
- >> DISCH_TAC
  (* stage work *)
  >> rw [converge_in_dist_alt_Lipschitz_real, BL_alt]
  >> Know ‘f IN borel_measurable borel’
@@ -7032,12 +7025,16 @@ Proof
      MATCH_MP_TAC in_borel_measurable_from_Borel >> art [] \\
      simp [MEASURE_SPACE_SIGMA_ALGEBRA])
  >> DISCH_TAC
- (* NOTE: gauge_higher_differentiable_lemma is used here. *)
+ (* applying gauge_higher_differentiable_lemma *)
+ >> Know ‘!s. s <> 0 ==> !n x. higher_differentiable n (gi s) x’
+ >- (
+     cheat)
+ >> DISCH_TAC
  >> Know ‘!s. s <> 0 ==>
               ((\n. expectation p (Normal o gi s o real o X n)) -->
                expectation p (Normal o gi s o real o Y)) sequentially’
  >- (rpt STRIP_TAC \\
-     FIRST_X_ASSUM MATCH_MP_TAC \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
      cheat)
  >> Q.PAT_X_ASSUM ‘!f. (!n x. higher_differentiable n f x) /\ _ ==> _’ K_TAC
  >> DISCH_TAC
