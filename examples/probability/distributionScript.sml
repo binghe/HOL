@@ -6877,7 +6877,7 @@ Theorem converge_in_dist_alt_higher_differentiable :
                 ((\n. expectation p (Normal o f o real o X n)) -->
                  expectation p (Normal o f o real o Y)) sequentially)
 Proof
-    RW_TAC std_ss [real_random_variable_def, FORALL_AND_THM, ext_normal_rv_def]
+    RW_TAC std_ss [FORALL_AND_THM, ext_normal_rv_def]
  >> EQ_TAC
  >- (simp [converge_in_dist_def, IN_bounded_continuous, FORALL_AND_THM] \\
      DISCH_TAC \\
@@ -6906,35 +6906,7 @@ Proof
      Q.EXISTS_TAC ‘real z’ >> REFL_TAC)
  >> DISCH_TAC
  (* stage work *)
- >> simp [converge_in_dist_alt_Lipschitz, BL_alt]
- >> Q.X_GEN_TAC ‘nf’ >> STRIP_TAC
- >> qabbrev_tac ‘f :real -> real = nf o Normal’
- >> Know ‘!n. expectation p (Normal o nf o X n) =
-              expectation p (Normal o f o real o X n)’
- >- (Q.X_GEN_TAC ‘n’ \\
-     MATCH_MP_TAC expectation_cong >> art [] \\
-     rw [o_DEF, Abbr ‘f’] \\
-     AP_TERM_TAC >> SYM_TAC >> simp [normal_real])
- >> Rewr'
- >> Know ‘expectation p (Normal o nf o Y) =
-          expectation p (Normal o f o real o Y)’
- >- (MATCH_MP_TAC expectation_cong >> art [] \\
-     rw [o_DEF, Abbr ‘f’] \\
-     AP_TERM_TAC >> SYM_TAC >> simp [normal_real])
- >> Rewr'
- >> Know ‘bounded (IMAGE f UNIV)’
- >- (Q.PAT_X_ASSUM ‘bounded _’ MP_TAC \\
-     rw [ext_bounded_def, bounded_def, Abbr ‘f’, o_DEF] \\
-     Q.EXISTS_TAC ‘a’ >> rw [] \\
-     rename1 ‘abs (nf (Normal y)) <= a’ \\
-     FIRST_X_ASSUM MATCH_MP_TAC \\
-     Q.EXISTS_TAC ‘Normal y’ >> REFL_TAC)
- >> DISCH_TAC
- >> ‘Lipschitz_continuous_map (mr1,mr1) f’
-      by PROVE_TAC [Lipschitz_continuous_map_extreal_mr1_imp_mr1]
- (* “nf” is not used anymore *)
- >> Q.PAT_X_ASSUM ‘bounded (IMAGE _ univ(:extreal))’             K_TAC
- >> Q.PAT_X_ASSUM ‘Lipschitz_continuous_map (extreal_mr1,mr1) _’ K_TAC
+ >> rw [converge_in_dist_alt_Lipschitz_real, BL_alt]
  >> Know ‘f IN borel_measurable borel’
  >- (MATCH_MP_TAC in_borel_measurable_continuous_on \\
      REWRITE_TAC [continuous_on_univ_alt_continuous_map, euclidean_def] \\
@@ -6991,10 +6963,9 @@ Proof
     x outside of f, i.e. “f y * _” so that the derivative of parameter-dependent
     integrals treats ‘f y’ as a constant factor.
   *)
- >> fs [Abbr ‘g’]
+ >> fs [Abbr ‘g’, real_random_variable_def, FORALL_AND_THM]
  >> qabbrev_tac ‘g = \s x y. Normal (f (x + s * y) * std_normal_density y)’
- >> simp []
- >> ‘!s x. (\y. g s x y) = g s x’ by rw [FUN_EQ_THM] >> POP_ORW
+ >> ASM_SIMP_TAC (std_ss ++ ETA_ss) []
  >> STRIP_TAC
  (* applying integral_real_affine *)
  >> Know ‘!s x. s <> 0 /\ integrable lborel (g s x) ==>
@@ -7008,9 +6979,8 @@ Proof
  >> fs [Abbr ‘g’, REAL_ADD_LDISTRIB, REAL_ADD_ASSOC]
  >> qabbrev_tac ‘g = \s x y. Normal (f (x + s * y) * std_normal_density y)’
  >> qabbrev_tac ‘u = \s x y. f y * std_normal_density (-inv s * x + inv s * y)’
- >> fs [] >> DISCH_TAC
- >> ‘!s x. (\y. g s x y) = g s x’ by rw [FUN_EQ_THM]
- >> POP_ASSUM (fs o wrap)
+ >> FULL_SIMP_TAC (std_ss ++ ETA_ss) []
+ >> DISCH_TAC
  >> Q.PAT_X_ASSUM ‘!s x. _ = integral lborel (g s x)’ (fs o wrap o GSYM)
  >> Q.PAT_X_ASSUM ‘!s x. integrable lborel (g s x)’ K_TAC
  >> qunabbrev_tac ‘g’
@@ -7037,8 +7007,7 @@ Proof
      MATCH_MP_TAC integrable_bounded \\
      Q.EXISTS_TAC ‘\x. Normal a’ \\
      fs [prob_space_def, FORALL_AND_THM] \\
-     CONJ_TAC
-     >- (MATCH_MP_TAC integrable_const >> simp []) \\
+     CONJ_TAC >- (MATCH_MP_TAC integrable_const >> simp []) \\
      reverse CONJ_TAC
      >- (Q.X_GEN_TAC ‘y’ >> rw [extreal_abs_def] \\
          FIRST_X_ASSUM MATCH_MP_TAC \\
@@ -7071,8 +7040,7 @@ Proof
      SYM_TAC >> MATCH_MP_TAC extreal_lim_sequentially_eq \\
      Suff ‘bounded (IMAGE (gi s) univ(:real)) /\
           (gi s) IN borel_measurable borel’
-     >- (STRIP_TAC \\
-         CONJ_TAC
+     >- (STRIP_TAC >> CONJ_TAC
          >- (Q.EXISTS_TAC ‘0’ >> simp [] \\
              Q.X_GEN_TAC ‘n’ >> REWRITE_TAC [expectation_def] \\
              MATCH_MP_TAC integrable_finite_integral \\
@@ -7119,8 +7087,7 @@ Proof
          Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘real (integral p (\x. Normal a))’ \\
          reverse CONJ_TAC
          >- (Know ‘integral p (\x. Normal a) = Normal a’
-             >- (REWRITE_TAC [GSYM expectation_def] \\
-                 MATCH_MP_TAC expectation_const >> art []) >> Rewr' \\
+             >- simp [GSYM expectation_def, expectation_const] >> Rewr' \\
              simp []) \\
          MATCH_MP_TAC le_real_imp \\
          CONJ_TAC
@@ -7140,12 +7107,19 @@ Proof
  (* NOTE: This goal is called "uniformly convergence", because whatever value of
    “R” doesn't change the asserted “s”. Lipschitz_continuous_map is used here.
   *)
+ >> Know ‘!e. 0 < e ==> ?s. s <> 0 /\ !x. abs (gi s x - f x) < e’
+ >- (
+     cheat)
+ >> DISCH_TAC
  >> Know ‘!e. 0 < e ==>
               ?s. s <> 0 /\
                   !R. random_variable R p Borel ==>
                       abs (real (expectation p (Normal o gi s o real o R)) -
                            real (expectation p (Normal o f o real o R))) < e’
- >- (
+ >- (rpt STRIP_TAC \\
+     Q.PAT_X_ASSUM ‘!e. 0 < e ==> ?s. s <> 0 /\ !x. abs (gi s x - f x) < e’
+       (MP_TAC o Q.SPEC ‘e’) >> rw [] \\
+     Q.EXISTS_TAC ‘s’ >> rw [] \\
      cheat)
  >> DISCH_TAC
  (* stage work, now transforming the goal *)
