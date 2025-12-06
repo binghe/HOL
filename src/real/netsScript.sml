@@ -1857,6 +1857,30 @@ Proof
   SIMP_TAC bool_ss [limit, EVENTUALLY_TRUE]
 QED
 
+Theorem LIMIT_EVENTUALLY :
+    !net top (f:'a->'b) l.
+        l IN topspace top /\ eventually (\x. f x = l) net
+        ==> limit top f l net
+Proof
+  REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[limit] THEN
+  GEN_TAC THEN STRIP_TAC THEN FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
+   (REWRITE_RULE[IMP_CONJ_ALT] EVENTUALLY_MONO)) THEN
+  ASM_SIMP_TAC std_ss []
+QED
+
+(* NOTE: added “net_condition net t” after ported from HOL-Light. *)
+Theorem LIMIT_WITHIN_SUBSET :
+    !net top (f:'a->'b) l s t. net_condition net t /\
+        limit top f l (net within s) /\ t SUBSET s
+        ==> limit top f l (net within t)
+Proof
+    RW_TAC std_ss [limit]
+ >> ‘net_condition net s’ by PROVE_TAC [NET_CONDITION_MONO]
+ >> MATCH_MP_TAC EVENTUALLY_WITHIN_SUBSET
+ >> Q.EXISTS_TAC ‘s’ >> art []
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+QED
+
 Theorem LIMIT_HAUSDORFF_UNIQUE :
   !net top (f:'a->'b) l1 l2.
      ~trivial_limit net /\
