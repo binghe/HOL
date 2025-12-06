@@ -6835,15 +6835,38 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
-(*  Weak convergence and its relation with convergence in distribution       *)
+(*  Another alternative definition of convergence in distribution            *)
 (* ------------------------------------------------------------------------- *)
 
-Overload expectation'[local] = “\p f. real (expectation p f)”
-Overload integral'[local]    = “\m f. real (integral m f)”
+Theorem REAL_THIRD_TRIPLE :
+    !(x :real). x / 3 + x / 3 + x / 3 = x
+Proof
+    REAL_ARITH_TAC
+QED
+
+Theorem ABS_TRIANGLE_FOUR :
+    !(x :real) y x' y'.
+       abs (x - y) <= abs (x' - y') + abs (x - x') + abs (y - y')
+Proof
+    rpt GEN_TAC
+ >> ‘x - y = x - y' - (y - y')’ by REAL_ARITH_TAC >> POP_ORW
+ >> Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘abs (x - y') + abs (y - y')’
+ >> simp [ABS_TRIANGLE_NEG]
+ >> ‘x - y' = x' - y' + (x - x')’ by REAL_ARITH_TAC >> POP_ORW
+ >> simp [ABS_TRIANGLE]
+QED
+
+Theorem REAL_LT_ADD3 :
+    !x0 x1 x2 y0 y1 (y2 :real).
+        x0 < y0 /\ x1 < y1 /\ x2 < y2 ==> x0 + x1 + x2 < y0 + y1 + y2
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC REAL_LT_ADD2 >> art []
+ >> MATCH_MP_TAC REAL_LT_ADD2 >> art []
+QED
 
 (* NOTE: “ext_normal_rv Z p 0 1” is needed inside the proof, it doesn't occur
-   in the conclusion. This is essentially assuming the existence of normal
-   r.v. (and the richness of “prob_space p”).
+   in the conclusion. This is essentially assuming the existence of normal r.v.
  *)
 Theorem converge_in_dist_alt_higher_differentiable :
     !X Y N p. prob_space p /\ (!n. real_random_variable (X n) p) /\
@@ -6891,8 +6914,7 @@ Proof
  >- (Q.X_GEN_TAC ‘n’ \\
      MATCH_MP_TAC expectation_cong >> art [] \\
      rw [o_DEF, Abbr ‘f’] \\
-     AP_TERM_TAC >> SYM_TAC \\
-     simp [normal_real])
+     AP_TERM_TAC >> SYM_TAC >> simp [normal_real])
  >> Rewr'
  >> Know ‘expectation p (Normal o nf o Y) =
           expectation p (Normal o f o real o Y)’
@@ -6981,7 +7003,8 @@ Proof
                 Normal (abs (inv s)) *
                 integral lborel (\y. g s x (-inv s * x + inv s * y))’
  >- (rpt GEN_TAC >> STRIP_TAC \\
-     HO_MATCH_MP_TAC integral_real_affine >> simp [])
+     HO_MATCH_MP_TAC integral_real_affine >> simp [] \\
+     PROVE_TAC [REAL_LT_IMP_NE])
  >> fs [Abbr ‘g’, REAL_ADD_LDISTRIB, REAL_ADD_ASSOC]
  >> qabbrev_tac ‘g = \s x y. Normal (f (x + s * y) * std_normal_density y)’
  >> qabbrev_tac ‘u = \s x y. f y * std_normal_density (-inv s * x + inv s * y)’
@@ -7027,7 +7050,69 @@ Proof
      MATCH_MP_TAC in_borel_measurable_from_Borel >> art [] \\
      simp [MEASURE_SPACE_SIGMA_ALGEBRA])
  >> DISCH_TAC
- (* applying extreal_lim_sequentially_eq *)
+ (* NOTE: gauge_higher_differentiable_lemma is used here. *)
+ >> Know ‘!s. s <> 0 ==>
+              ((\n. expectation p (Normal o gi s o real o X n)) -->
+               expectation p (Normal o gi s o real o Y)) sequentially’
+ >- (rpt STRIP_TAC \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     cheat)
+ >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘!f. (!n x. higher_differentiable n f x) /\ _ ==> _’ K_TAC
+ >> Know ‘!s. s <> 0 ==>
+             (real o (\n. expectation p (Normal o gi s o real o X n)) -->
+              real (expectation p (Normal o gi s o real o Y))) sequentially’
+ >- (rpt STRIP_TAC \\
+     Suff ‘(real o (\n. expectation p (Normal o gi s o real o X n)) -->
+            real (expectation p (Normal o gi s o real o Y))) sequentially <=>
+           ((\n. expectation p (Normal o gi s o real o X n)) -->
+             expectation p (Normal o gi s o real o Y)) sequentially’
+     >- (Rewr' >> simp []) \\
+     SYM_TAC >> MATCH_MP_TAC extreal_lim_sequentially_eq \\
+     Suff ‘bounded (IMAGE (gi s) univ(:real)) /\
+          (gi s) IN borel_measurable borel’
+     >- (STRIP_TAC \\
+         CONJ_TAC
+         >- (Q.EXISTS_TAC ‘0’ >> simp [] \\
+             Q.X_GEN_TAC ‘n’ >> REWRITE_TAC [expectation_def] \\
+             MATCH_MP_TAC integrable_finite_integral \\
+             CONJ_TAC >- fs [prob_space_def] \\
+             FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+         REWRITE_TAC [expectation_def] \\
+         MATCH_MP_TAC integrable_finite_integral \\
+         CONJ_TAC >- fs [prob_space_def] \\
+         FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+     CONJ_TAC
+     >- (Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> gi s x = _’ K_TAC \\
+         Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> fi s x = _’ K_TAC \\
+         Q.PAT_X_ASSUM ‘bounded (IMAGE f univ(:real))’ MP_TAC \\
+         rw [bounded_def, Abbr ‘gi’, Abbr ‘fi’] \\
+         Q.EXISTS_TAC ‘a’ \\
+         Q.X_GEN_TAC ‘y’ \\
+         DISCH_THEN (Q.X_CHOOSE_THEN ‘x’ STRIP_ASSUME_TAC) >> POP_ORW \\
+         qmatch_abbrev_tac ‘abs (real z) <= a’ \\
+         Know ‘abs (real z) = real (abs z)’
+         >- (MATCH_MP_TAC abs_real \\
+             qunabbrev_tac ‘z’ \\
+             MATCH_MP_TAC integrable_finite_integral >> art [] \\
+             FULL_SIMP_TAC bool_ss [prob_space_def]) >> Rewr' \\
+         qunabbrev_tac ‘z’ \\
+         cheat) \\
+  (* NOTE: differentiable ==> borel_measurable *)
+     cheat)
+ >> POP_ASSUM K_TAC >> DISCH_TAC
+ (* NOTE: This goal is called "uniformly convergence". Lipschitz_continuous_map
+    is used here.
+  *)
+ >> Know ‘!e. 0 < e ==>
+              ?s. s <> 0 /\
+                  !R. random_variable R p Borel ==>
+                      abs (real (expectation p (Normal o gi s o real o R)) -
+                           real (expectation p (Normal o f o real o R))) < e’
+ >- (
+     cheat)
+ >> DISCH_TAC
+ (* stage work, now transforming the goal *)
  >> qmatch_abbrev_tac ‘(h --> l) sequentially’
  >> Know ‘((h --> l) sequentially <=> (real o h --> real l) sequentially)’
  >- (MATCH_MP_TAC extreal_lim_sequentially_eq \\
@@ -7042,9 +7127,40 @@ Proof
      fs [prob_space_def, FORALL_AND_THM] \\
      FIRST_X_ASSUM MATCH_MP_TAC >> art [])
  >> Rewr'
- >> RW_TAC std_ss [LIM_SEQUENTIALLY]
- (* stage work *)
- >> cheat
+ >> RW_TAC std_ss [LIM_SEQUENTIALLY, dist, Abbr ‘h’, Abbr ‘l’]
+ (* applying REAL_THIRD_TRIPLE *)
+ >> ASSUME_TAC (Q.SPEC ‘e’ REAL_THIRD_TRIPLE)
+ >> POP_ASSUM (ONCE_REWRITE_TAC o wrap o SYM)
+ >> ‘0 < e / 3’ by simp [REAL_LT_DIV]
+ >> Q.PAT_X_ASSUM ‘!e. 0 < e ==> ?s. s <> 0 /\ _’ (MP_TAC o Q.SPEC ‘e / 3’)
+ >> RW_TAC std_ss []
+ >> Q.PAT_X_ASSUM
+        ‘!s. s <> 0 ==>
+            (real o (\n. expectation p (Normal o gi s o real o X n)) -->
+             real (expectation p (Normal o gi s o real o Y))) sequentially’
+        (MP_TAC o Q.SPEC ‘s’)
+ >> simp [LIM_SEQUENTIALLY, dist]
+ >> DISCH_THEN (MP_TAC o Q.SPEC ‘e / 3’) >> art []
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘m’ STRIP_ASSUME_TAC)
+ >> Q.EXISTS_TAC ‘m’ >> rw []
+ >> Q.PAT_X_ASSUM ‘!n. m <= n ==> _’ (MP_TAC o Q.SPEC ‘n’)
+ >> RW_TAC std_ss []
+ (* applying ABS_TRIANGLE_FOUR *)
+ >> qmatch_abbrev_tac ‘abs (x - (y :real)) < _’
+ >> qabbrev_tac ‘x' = real (expectation p (Normal o gi s o real o X n))’
+ >> qabbrev_tac ‘y' = real (expectation p (Normal o gi s o real o Y))’
+ >> Q_TAC (TRANS_TAC REAL_LET_TRANS)
+          ‘abs (x' - y') + abs (x - x') + abs (y - y')’
+ >> REWRITE_TAC [ABS_TRIANGLE_FOUR]
+ >> MATCH_MP_TAC REAL_LT_ADD3 >> art []
+ >> ONCE_REWRITE_TAC [ABS_SUB]
+ >> CONJ_TAC
+ >| [ (* goal 1 (of 2) *)
+      qunabbrevl_tac [‘x'’, ‘x’] \\
+      FIRST_X_ASSUM MATCH_MP_TAC >> art [],
+      (* goal 2 (of 2) *)
+      qunabbrevl_tac [‘y'’, ‘y’] \\
+      FIRST_X_ASSUM MATCH_MP_TAC >> art [] ]
 QED
 
 (* ------------------------------------------------------------------------- *)
