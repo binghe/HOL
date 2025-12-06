@@ -7118,12 +7118,55 @@ Proof
  (* NOTE: This goal is called "uniformly convergence", because whatever value of
    “R” doesn't change the asserted “s”. Lipschitz_continuous_map is used here.
   *)
+ >> fs [Lipschitz_continuous_map_def, GSYM dist_def, dist] (* asserting ‘k’ *)
+ >> Know ‘!x d. abs (f (x + d) - f x) <= k * abs d’
+ >- (rpt GEN_TAC \\
+     Q.PAT_X_ASSUM ‘!x y. abs (f x - f y) <= k * abs (x - y)’
+       (MP_TAC o Q.SPECL [‘x + (d :real)’, ‘x’]) >> simp [REAL_ADD_SUB])
+ >> DISCH_TAC
  >> Know ‘!e. 0 < e ==> ?s. s <> 0 /\ !x. abs (gi s x - f x) < e’
  >- (rpt STRIP_TAC \\
      Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> gi s x = _’ K_TAC \\
      Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> fi s x = _’ K_TAC \\
      Q.PAT_X_ASSUM ‘!s. s <> 0 ==> (_ --> _) sequentially’ K_TAC \\
      simp [Abbr ‘gi’, Abbr ‘fi’, GSYM expectation_def] \\
+     Know ‘!s x. real (expectation p (\y. Normal (f (x + s * Z y)))) - f x =
+                 real (expectation p (\y. Normal (f (x + s * Z y)))) -
+                 real (expectation p (\y. Normal (f x)))’
+     >- (rpt GEN_TAC \\
+         simp [REAL_ARITH “a - b = a - c <=> c = (b :real)”] \\
+         simp [expectation_const]) >> Rewr' \\
+     Know ‘!s x. real (expectation p (\y. Normal (f (x + s * Z y)))) -
+                 real (expectation p (\y. Normal (f x))) =
+                 real (expectation p (\y. Normal (f (x + s * Z y))) -
+                       expectation p (\y. Normal (f x)))’
+     >- (rpt GEN_TAC >> SYM_TAC \\
+         MATCH_MP_TAC sub_real \\
+         simp [expectation_const] \\
+         REWRITE_TAC [expectation_def] \\
+         MATCH_MP_TAC integrable_finite_integral \\
+         fs [prob_space_def]) >> Rewr' \\
+     Know ‘!s x. abs (real (expectation p (\y. Normal (f (x + s * Z y))) -
+                            expectation p (\y. Normal (f x)))) =
+                 real (abs (expectation p (\y. Normal (f (x + s * Z y))) -
+                            expectation p (\y. Normal (f x))))’
+     >- (rpt GEN_TAC \\
+         MATCH_MP_TAC abs_real \\
+         simp [expectation_const] \\
+         Suff ‘expectation p (\y. Normal (f (x + s * Z y))) <> PosInf /\
+               expectation p (\y. Normal (f (x + s * Z y))) <> NegInf’
+         >- METIS_TAC [sub_not_infty, extreal_not_infty] \\
+         REWRITE_TAC [expectation_def] \\
+         MATCH_MP_TAC integrable_finite_integral \\
+         fs [prob_space_def]) >> Rewr' \\
+     Know ‘!s x. expectation p (\y. Normal (f (x + s * Z y))) -
+                 expectation p (\y. Normal (f x)) =
+                 expectation p (\y. Normal (f (x + s * Z y)) - Normal (f x))’
+     >- (rpt GEN_TAC >> SYM_TAC \\
+         HO_MATCH_MP_TAC expectation_sub >> art [] \\
+         MATCH_MP_TAC integrable_const >> fs [prob_space_def]) >> Rewr' \\
+     simp [extreal_sub_eq, expectation_def] \\
+  (* applying integral_triangle_ineq *)
      cheat)
  >> DISCH_TAC
  >> Know ‘!e. 0 < e ==>
@@ -7186,21 +7229,6 @@ Proof
       (* goal 2 (of 2) *)
       qunabbrevl_tac [‘y'’, ‘y’] \\
       FIRST_X_ASSUM MATCH_MP_TAC >> art [] ]
-QED
-
-(* NOTE: In case when Y is just normal r.v., there's no need to have N. *)
-Theorem converge_in_dist_alt_higher_differentiable' :
-    !X Y p. prob_space p /\ (!n. real_random_variable (X n) p) /\
-            real_random_variable Y p /\ ext_normal_rv Y p 0 1 ==>
-           ((X --> Y) (in_distribution p) <=>
-            !f. (!n x. higher_differentiable n f x) /\
-                (!n. bounded (IMAGE (diffn n f) UNIV)) ==>
-                ((\n. expectation p (Normal o f o real o X n)) -->
-                 expectation p (Normal o f o real o Y)) sequentially)
-Proof
-    rpt STRIP_TAC
- >> MATCH_MP_TAC converge_in_dist_alt_higher_differentiable
- >> Q.EXISTS_TAC ‘Y’ >> art []
 QED
 
 (* ------------------------------------------------------------------------- *)
