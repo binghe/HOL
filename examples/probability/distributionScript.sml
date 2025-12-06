@@ -7030,7 +7030,6 @@ Proof
  >> ‘!s x. s <> 0 ==> gi s x = abs (inv s) * integral univ(:real) (u s x)’
       by rw [Abbr ‘gi’]
  (* applying gauge_higher_differentiable_lemma *)
- (* stage work *)
  >> Know ‘!R h. random_variable R p Borel /\ bounded (IMAGE h univ(:real)) /\
                 h IN borel_measurable borel ==>
                 integrable p (Normal o h o real o R)’
@@ -7059,6 +7058,7 @@ Proof
      cheat)
  >> Q.PAT_X_ASSUM ‘!f. (!n x. higher_differentiable n f x) /\ _ ==> _’ K_TAC
  >> DISCH_TAC
+ (* stage work *)
  >> Know ‘!s. s <> 0 ==>
              (real o (\n. expectation p (Normal o gi s o real o X n)) -->
               real (expectation p (Normal o gi s o real o Y))) sequentially’
@@ -7098,8 +7098,42 @@ Proof
              MATCH_MP_TAC integrable_finite_integral >> art [] \\
              FULL_SIMP_TAC bool_ss [prob_space_def]) >> Rewr' \\
          qunabbrev_tac ‘z’ \\
-      (* applying integral_triangle_ineq' *)
-         cheat) \\
+      (* applying integral_triangle_ineq *)
+         qmatch_abbrev_tac ‘real (abs (integral p h)) <= a’ \\
+         Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘real (integral p (abs o h))’ \\
+         CONJ_TAC
+         >- (Know ‘real (abs (integral p h)) <= real (integral p (abs o h)) <=>
+                   abs (integral p h) <= integral p (abs o h)’
+             >- (MATCH_MP_TAC real_le_eq \\
+                 Know ‘abs (integral p h) <> PosInf /\
+                       abs (integral p h) <> NegInf’
+                 >- (MATCH_MP_TAC abs_not_infty \\
+                     MATCH_MP_TAC integrable_finite_integral \\
+                     fs [prob_space_def, Abbr ‘h’]) >> Rewr \\
+                 MATCH_MP_TAC integrable_finite_integral \\
+                 CONJ_TAC >- fs [prob_space_def] \\
+                 MATCH_MP_TAC integrable_abs \\
+                 fs [prob_space_def, Abbr ‘h’]) >> Rewr' \\
+             MATCH_MP_TAC integral_triangle_ineq \\
+             fs [prob_space_def, Abbr ‘h’]) \\
+         Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘real (integral p (\x. Normal a))’ \\
+         reverse CONJ_TAC
+         >- (Know ‘integral p (\x. Normal a) = Normal a’
+             >- (REWRITE_TAC [GSYM expectation_def] \\
+                 MATCH_MP_TAC expectation_const >> art []) >> Rewr' \\
+             simp []) \\
+         MATCH_MP_TAC le_real_imp \\
+         CONJ_TAC
+         >- (MATCH_MP_TAC integral_pos >> fs [prob_space_def]) \\
+         reverse CONJ_TAC
+         >- simp [GSYM expectation_def, expectation_const] \\
+         MATCH_MP_TAC integral_mono \\
+         fs [prob_space_def, FORALL_AND_THM] \\
+         CONJ_TAC >- (MATCH_MP_TAC integrable_abs >> simp [Abbr ‘h’]) \\
+         CONJ_TAC >- (MATCH_MP_TAC integrable_const >> simp []) \\
+         Q.X_GEN_TAC ‘y’ >> rw [Abbr ‘h’, extreal_abs_def] \\
+         FIRST_X_ASSUM MATCH_MP_TAC \\
+         Q.EXISTS_TAC ‘x + s * Z y’ >> REFL_TAC) \\
   (* NOTE: differentiable ==> borel_measurable *)
      cheat)
  >> POP_ASSUM K_TAC >> DISCH_TAC
