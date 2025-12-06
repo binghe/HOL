@@ -8,11 +8,11 @@ Ancestors
   pred_set pair combin arithmetic num prim_rec relation real topology
   metric cardinal
 Libs
-  numLib reduceLib pairLib mesonLib RealArith hurdUtils jrhUtils tautLib
+  numLib reduceLib pairLib mesonLib RealField hurdUtils jrhUtils tautLib
  *)
 open HolKernel Parse boolLib bossLib;
 
-open numLib reduceLib pairLib pred_setTheory mesonLib RealArith hurdUtils
+open numLib reduceLib pairLib pred_setTheory mesonLib realLib hurdUtils
      pairTheory arithmeticTheory numTheory prim_recTheory relationTheory
      jrhUtils realTheory topologyTheory metricTheory tautLib combinTheory
      cardinalTheory;
@@ -1835,6 +1835,127 @@ Definition limit :
      l IN topspace top /\
      (!u. open_in top u /\ l IN u ==> eventually (\x. f x IN u) net)
 End
+
+Theorem LIMIT_IMP_WITHIN :
+    !net top (f:'a->'b) l s. net_condition net s /\
+        limit top f l net ==> limit top f l (net within s)
+Proof
+    RW_TAC std_ss [limit]
+ >> MATCH_MP_TAC EVENTUALLY_IMP_WITHIN >> art []
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+QED
+
+Theorem LIMIT_IN_TOPSPACE :
+    !net top f:'a->'b l. limit top f l net ==> l IN topspace top
+Proof
+  SIMP_TAC bool_ss [limit]
+QED
+
+Theorem LIMIT_CONST :
+    !top net:'a net l:'b. limit top (\a. l) l net <=> l IN topspace top
+Proof
+  SIMP_TAC bool_ss [limit, EVENTUALLY_TRUE]
+QED
+
+Theorem LIMIT_HAUSDORFF_UNIQUE :
+  !net top (f:'a->'b) l1 l2.
+     ~trivial_limit net /\
+     hausdorff_space top /\
+     limit top f l1 net /\
+     limit top f l2 net
+     ==> l1 = l2
+Proof
+    REWRITE_TAC[limit, hausdorff_space]
+ >> rpt STRIP_TAC
+ >> CCONTR_TAC
+ >> Q.PAT_X_ASSUM ‘!x y. _’ (MP_TAC o Q.SPECL [‘l1’, ‘l2’])
+ >> simp [NOT_EXISTS_THM]
+ >> rpt GEN_TAC
+ >> Suff `open_in top u /\ open_in top v /\ l1 IN u /\ l2 IN v
+           ==> ?x. f x IN u /\ f x IN v` >- SET_TAC []
+ >> STRIP_TAC
+ >> `eventually (\x. f x IN u /\ f x IN v) net` by ASM_SIMP_TAC std_ss [EVENTUALLY_AND]
+ >> POP_ASSUM (ASSUME_TAC o (MATCH_MP EVENTUALLY_HAPPENS))
+ >> ASM_MESON_TAC[]
+QED
+
+Theorem HAUSDORFF_SPACE_MTOPOLOGY :
+    !m:'a metric. hausdorff_space(mtopology m)
+Proof
+  REWRITE_TAC[hausdorff_space, TOPSPACE_MTOPOLOGY] THEN
+  MAP_EVERY X_GEN_TAC [``m:'a metric``, ``x:'a``, ``y:'a``] THEN STRIP_TAC THEN
+  EXISTS_TAC ``mball m (x:'a,mdist m (x,y) / &2)`` THEN
+  EXISTS_TAC ``mball m (y:'a,mdist m (x,y) / &2)`` THEN
+  REWRITE_TAC[SET_RULE ``DISJOINT s t <=> !x. x IN s /\ x IN t ==> F``] THEN
+  REWRITE_TAC[OPEN_IN_MBALL, IN_MBALL] THEN
+  POP_ASSUM_LIST(MP_TAC o end_itlist CONJ) THEN
+ (* CONV_TAC METRIC_ARITH *)
+    simp [MSPACE, MDIST_REFL]
+ >> DISCH_TAC (* x <> y *)
+ >> simp [MDIST_POS_LT, REAL_LT_DIV]
+ >> Q.X_GEN_TAC ‘z’
+ >> simp [REAL_NOT_LT]
+ >> MP_TAC (Q.SPECL [‘m’, ‘x’, ‘z’, ‘y’] MDIST_TRIANGLE)
+ >> qabbrev_tac ‘a = dist m (x,y)’
+ >> qabbrev_tac ‘b = dist m (x,z)’
+ >> simp [Once MDIST_SYM]
+ >> qabbrev_tac ‘c = dist m (y,z)’
+ >> RealField.REAL_ARITH_TAC
+QED
+
+(* ------------------------------------------------------------------------- *)
+(* Topological limit in metric spaces.                                       *)
+(* ------------------------------------------------------------------------- *)
+
+Theorem LIMIT_IN_MSPACE :
+    !net m f:'a->'b l. limit (mtopology m) f l net ==> l IN mspace m
+Proof
+  MESON_TAC[LIMIT_IN_TOPSPACE, TOPSPACE_MTOPOLOGY]
+QED
+
+Theorem LIMIT_METRIC_UNIQUE :
+  !net m f:'a->'b l1 l2.
+     ~trivial_limit net /\
+     limit (mtopology m) f l1 net /\
+     limit (mtopology m) f l2 net
+     ==> l1 = l2
+Proof
+  MESON_TAC[LIMIT_HAUSDORFF_UNIQUE, HAUSDORFF_SPACE_MTOPOLOGY]
+QED
+
+(*
+let LIMIT_METRIC = prove
+ (`!m f:A->B l net.
+     limit (mtopology m) f l net <=>
+     l IN mspace m /\
+     (!e. &0 < e
+          ==> eventually (\x. f x IN mspace m /\ mdist m (f x, l) < e) net)`,
+  REPEAT GEN_TAC THEN
+  REWRITE_TAC[limit; OPEN_IN_MTOPOLOGY; TOPSPACE_MTOPOLOGY] THEN EQ_TAC THENL
+  [INTRO_TAC "l hp" THEN ASM_REWRITE_TAC[] THEN INTRO_TAC "!e; e" THEN
+   REMOVE_THEN "hp" (MP_TAC o SPEC `mball m (l:B,e)`) THEN
+   ASM_REWRITE_TAC[MBALL_SUBSET_MSPACE] THEN ASM_SIMP_TAC[CENTRE_IN_MBALL] THEN
+   REWRITE_TAC[IN_MBALL] THEN ANTS_TAC THENL
+   [INTRO_TAC "!x; x lt" THEN
+    EXISTS_TAC `e - mdist m (l:B,x)` THEN
+    CONJ_TAC THENL
+    [ASM_REAL_ARITH_TAC;
+     ASM_REWRITE_TAC[SUBSET; IN_MBALL] THEN INTRO_TAC "![y]; y lt'" THEN
+     ASM_REWRITE_TAC[] THEN
+     TRANS_TAC REAL_LET_TRANS `mdist m (l:B,x) + mdist m (x,y)` THEN
+     ASM_SIMP_TAC[MDIST_TRIANGLE] THEN ASM_REAL_ARITH_TAC];
+    MATCH_MP_TAC (REWRITE_RULE [IMP_CONJ] EVENTUALLY_MONO) THEN
+    GEN_TAC THEN REWRITE_TAC[] THEN ASM_CASES_TAC `f (x:A):B IN mspace m` THEN
+    ASM_SIMP_TAC[MDIST_SYM]];
+   INTRO_TAC "l hp" THEN ASM_REWRITE_TAC[] THEN INTRO_TAC "!u; (u hp) l" THEN
+   REMOVE_THEN "hp"
+     (DESTRUCT_TAC "@r. r sub" o C MATCH_MP (ASSUME `l:B IN u`)) THEN
+   REMOVE_THEN "hp" (MP_TAC o C MATCH_MP (ASSUME `&0 < r`)) THEN
+   MATCH_MP_TAC (REWRITE_RULE [IMP_CONJ] EVENTUALLY_MONO) THEN
+   GEN_TAC THEN REWRITE_TAC[] THEN INTRO_TAC "f lt" THEN
+   CLAIM_TAC "rmk" `f (x:A):B IN mball m (l,r)` THENL
+   [ASM_SIMP_TAC[IN_MBALL; MDIST_SYM]; HYP SET_TAC "rmk sub" []]]);;
+ *)
 
 (* END *)
 val _ = export_theory ();

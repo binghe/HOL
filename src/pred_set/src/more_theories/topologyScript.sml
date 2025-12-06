@@ -3987,10 +3987,34 @@ Proof
   ASM_MESON_TAC[CLOSED_IN_SUBSET]
 QED
 
+(* ------------------------------------------------------------------------- *)
+(* Hausdorff spaces (ported from HOL-Light's Multivariate/metric.ml)         *)
+(* ------------------------------------------------------------------------- *)
+
+Definition hausdorff_space :
+    hausdorff_space (top:'a topology) <=>
+        !x y. x IN topspace top /\ y IN topspace top /\ ~(x = y)
+              ==> ?u v. open_in top u /\ open_in top v /\ x IN u /\ y IN v /\
+                        DISJOINT u v
+End
+
+Theorem HAUSDORFF_SPACE_EXPANSIVE :
+    !top top':'a topology.
+         topspace top' = topspace top /\ (!u. open_in top u ==> open_in top' u)
+         ==> hausdorff_space top ==> hausdorff_space top'
+Proof
+  REWRITE_TAC[hausdorff_space] THEN METIS_TAC[]
+QED
+
+Theorem HAUSDORFF_SPACE_TOPSPACE_EMPTY :
+    !top:'a topology. topspace top = {} ==> hausdorff_space top
+Proof
+  SIMP_TAC std_ss[hausdorff_space, NOT_IN_EMPTY]
+QED
+
 val _ = export_theory();
 
 (* References:
 
   [1] J. L. Kelley, General Topology. Springer Science & Business Media, 1975.
-
  *)

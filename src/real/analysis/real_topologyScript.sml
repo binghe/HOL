@@ -5746,6 +5746,26 @@ Proof
  >> Q.EXISTS_TAC ‘x’ >> art []
 QED
 
+(*
+Theorem LIMIT_REAL_CONST :
+    !net:'a net l. limit euclideanreal (\a. l) l net
+Proof
+  REWRITE_TAC[LIMIT_CONST; TOPSPACE_EUCLIDEANREAL; IN_UNIV]
+QED
+
+let LIMIT_REAL_ADD = prove
+ (`!(net:A net) f g l m.
+        limit euclideanreal f l net /\ limit euclideanreal g m net
+        ==> limit euclideanreal (\x. f x + g x) (l + m) net`,
+  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC] THEN
+  REWRITE_TAC[LIMIT_METRIC; REAL_EUCLIDEAN_METRIC; IN_UNIV] THEN
+  DISCH_TAC THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(CONJUNCTS_THEN (MP_TAC o SPEC `e / &2`)) THEN
+  ASM_REWRITE_TAC[REAL_HALF; IMP_IMP; GSYM EVENTUALLY_AND] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
+  REWRITE_TAC[] THEN REAL_ARITH_TAC);;
+ *)
+
 (* ------------------------------------------------------------------------- *)
 (* Show that they yield usual definitions in the various cases.              *)
 (* ------------------------------------------------------------------------- *)
@@ -6326,8 +6346,8 @@ Theorem LIM_ADD:
    !net:('a)net f g l m.
     (f --> l) net /\ (g --> m) net ==> ((\x. f(x) + g(x)) --> (l + m)) net
 Proof
-  REPEAT GEN_TAC THEN REWRITE_TAC[LIM] THEN
-  ASM_CASES_TAC ``trivial_limit (net:('a)net)`` THEN
+  REPEAT GEN_TAC THEN REWRITE_TAC[LIM_DEF] THEN
+  ASM_CASES_TAC ``netfilter (net:('a)net) = {}`` THEN
   ASM_SIMP_TAC std_ss [GSYM FORALL_AND_THM] THEN
   DISCH_TAC THEN X_GEN_TAC ``e:real`` THEN DISCH_TAC THEN
   FIRST_X_ASSUM(MP_TAC o SPEC ``e / &2:real``) THEN ASM_REWRITE_TAC[REAL_LT_HALF1] THEN
