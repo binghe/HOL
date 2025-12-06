@@ -2452,8 +2452,8 @@ Proof
      Suff ‘f IN C_b’ >- rw [C_b_def] \\
      PROVE_TAC [SUBSET_DEF, C3_subset_C_b])
  >> DISCH_TAC
- >> MP_TAC (Q.SPECL [‘X’, ‘Y’, ‘N’, ‘p’]
-                    converge_in_dist_alt_higher_differentiable) >> simp []
+ >> MP_TAC (Q.SPECL [‘X’, ‘Y’, ‘p’]
+                    converge_in_dist_alt_higher_differentiable') >> simp []
  >> DISCH_THEN K_TAC >> rpt STRIP_TAC
  >> FIRST_X_ASSUM MATCH_MP_TAC
  >> rw [CnR_def]
@@ -2480,7 +2480,8 @@ Proof
       qexists ‘(p_space p,events p)’ \\
       simp [] \\
       irule MEASURABLE_FST \\
-      METIS_TAC [p_space_def, events_def, prob_space_def, MEASURE_SPACE_SIGMA_ALGEBRA])
+      METIS_TAC [p_space_def, events_def, prob_space_def,
+                 MEASURE_SPACE_SIGMA_ALGEBRA])
   >> simp [IN_PSPACE_PROD_SIGMA]
 QED
 
@@ -2505,7 +2506,8 @@ Proof
       qexists ‘(p_space q,events q)’ \\
       simp [] \\
       irule MEASURABLE_SND \\
-      METIS_TAC [p_space_def, events_def, prob_space_def, MEASURE_SPACE_SIGMA_ALGEBRA])
+      METIS_TAC [p_space_def, events_def, prob_space_def,
+                 MEASURE_SPACE_SIGMA_ALGEBRA])
   >> simp [IN_PSPACE_PROD_SIGMA]
 QED
 
@@ -2517,7 +2519,7 @@ Theorem expectation_multidimentional_compose_fst[local] :
 Proof
   rpt STRIP_TAC
   >> (MP_TAC o (Q.SPECL [‘p’, ‘q’, ‘f’]) o
-             (INST_TYPE [beta |-> ``:('a list)``, alpha |-> “:'b”])) expectation_fst
+      (INST_TYPE [beta |-> ``:('a list)``, alpha |-> “:'b”])) expectation_fst
   >> METIS_TAC []
 QED
 
@@ -2529,7 +2531,7 @@ Theorem expectation_multidimentional_compose_snd[local] :
 Proof
   rpt STRIP_TAC
   >> (MP_TAC o (Q.SPECL [‘p’, ‘q’, ‘f’]) o
-             (INST_TYPE [beta |-> ``:('a list)``, alpha |-> “:'b”])) expectation_snd
+      (INST_TYPE [beta |-> ``:('a list)``, alpha |-> “:'b”])) expectation_snd
   >> METIS_TAC []
 QED
 

@@ -6904,8 +6904,8 @@ Proof
      Q.EXISTS_TAC ‘a’ >> rw [] >> rename1 ‘abs (f (real z)) <= a’ \\
      POP_ASSUM MATCH_MP_TAC \\
      Q.EXISTS_TAC ‘real z’ >> REFL_TAC)
- (* stage work *)
  >> DISCH_TAC
+ (* stage work *)
  >> simp [converge_in_dist_alt_Lipschitz, BL_alt]
  >> Q.X_GEN_TAC ‘nf’ >> STRIP_TAC
  >> qabbrev_tac ‘f :real -> real = nf o Normal’
@@ -6932,6 +6932,7 @@ Proof
  >> DISCH_TAC
  >> ‘Lipschitz_continuous_map (mr1,mr1) f’
       by PROVE_TAC [Lipschitz_continuous_map_extreal_mr1_imp_mr1]
+ (* “nf” is not used anymore *)
  >> Q.PAT_X_ASSUM ‘bounded (IMAGE _ univ(:extreal))’             K_TAC
  >> Q.PAT_X_ASSUM ‘Lipschitz_continuous_map (extreal_mr1,mr1) _’ K_TAC
  >> Know ‘f IN borel_measurable borel’
@@ -7056,8 +7057,8 @@ Proof
  >- (rpt STRIP_TAC \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
      cheat)
- >> DISCH_TAC
  >> Q.PAT_X_ASSUM ‘!f. (!n x. higher_differentiable n f x) /\ _ ==> _’ K_TAC
+ >> DISCH_TAC
  >> Know ‘!s. s <> 0 ==>
              (real o (\n. expectation p (Normal o gi s o real o X n)) -->
               real (expectation p (Normal o gi s o real o Y))) sequentially’
@@ -7081,10 +7082,11 @@ Proof
          MATCH_MP_TAC integrable_finite_integral \\
          CONJ_TAC >- fs [prob_space_def] \\
          FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
-     CONJ_TAC
+     CONJ_TAC (* bounded (IMAGE (gi s) univ(:real)) *)
      >- (Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> gi s x = _’ K_TAC \\
          Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> fi s x = _’ K_TAC \\
          Q.PAT_X_ASSUM ‘bounded (IMAGE f univ(:real))’ MP_TAC \\
+         Q.PAT_X_ASSUM ‘!s. s <> 0 ==> (_ --> _) sequentially’ K_TAC \\
          rw [bounded_def, Abbr ‘gi’, Abbr ‘fi’] \\
          Q.EXISTS_TAC ‘a’ \\
          Q.X_GEN_TAC ‘y’ \\
@@ -7096,12 +7098,13 @@ Proof
              MATCH_MP_TAC integrable_finite_integral >> art [] \\
              FULL_SIMP_TAC bool_ss [prob_space_def]) >> Rewr' \\
          qunabbrev_tac ‘z’ \\
+      (* applying integral_triangle_ineq' *)
          cheat) \\
   (* NOTE: differentiable ==> borel_measurable *)
      cheat)
  >> POP_ASSUM K_TAC >> DISCH_TAC
- (* NOTE: This goal is called "uniformly convergence". Lipschitz_continuous_map
-    is used here.
+ (* NOTE: This goal is called "uniformly convergence", because whatever value of
+   “R” doesn't change the asserted “s”. Lipschitz_continuous_map is used here.
   *)
  >> Know ‘!e. 0 < e ==>
               ?s. s <> 0 /\
@@ -7160,6 +7163,21 @@ Proof
       (* goal 2 (of 2) *)
       qunabbrevl_tac [‘y'’, ‘y’] \\
       FIRST_X_ASSUM MATCH_MP_TAC >> art [] ]
+QED
+
+(* NOTE: In case when Y is just normal r.v., there's no need to have N. *)
+Theorem converge_in_dist_alt_higher_differentiable' :
+    !X Y p. prob_space p /\ (!n. real_random_variable (X n) p) /\
+            real_random_variable Y p /\ ext_normal_rv Y p 0 1 ==>
+           ((X --> Y) (in_distribution p) <=>
+            !f. (!n x. higher_differentiable n f x) /\
+                (!n. bounded (IMAGE (diffn n f) UNIV)) ==>
+                ((\n. expectation p (Normal o f o real o X n)) -->
+                 expectation p (Normal o f o real o Y)) sequentially)
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC converge_in_dist_alt_higher_differentiable
+ >> Q.EXISTS_TAC ‘Y’ >> art []
 QED
 
 (* ------------------------------------------------------------------------- *)
