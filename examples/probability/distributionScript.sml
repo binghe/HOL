@@ -6838,13 +6838,13 @@ QED
 (*  Another alternative definition of convergence in distribution            *)
 (* ------------------------------------------------------------------------- *)
 
-Theorem REAL_THIRD_TRIPLE :
+Theorem REAL_THIRD_TRIPLE[local] :
     !(x :real). x / 3 + x / 3 + x / 3 = x
 Proof
     REAL_ARITH_TAC
 QED
 
-Theorem ABS_TRIANGLE_FOUR :
+Theorem ABS_TRIANGLE_NEG3[local] :
     !(x :real) y x' y'.
        abs (x - y) <= abs (x' - y') + abs (x - x') + abs (y - y')
 Proof
@@ -6856,7 +6856,7 @@ Proof
  >> simp [ABS_TRIANGLE]
 QED
 
-Theorem REAL_LT_ADD3 :
+Theorem REAL_LT_ADD3[local] :
     !x0 x1 x2 y0 y1 (y2 :real).
         x0 < y0 /\ x1 < y1 /\ x2 < y2 ==> x0 + x1 + x2 < y0 + y1 + y2
 Proof
@@ -6973,8 +6973,7 @@ Proof
      MATCH_MP_TAC integrable_bounded \\
      Q.EXISTS_TAC ‘\x. Normal a’ \\
      fs [prob_space_def, FORALL_AND_THM] \\
-     CONJ_TAC
-     >- (MATCH_MP_TAC integrable_const >> simp []) \\
+     CONJ_TAC >- (MATCH_MP_TAC integrable_const >> simp []) \\
      reverse CONJ_TAC
      >- (Q.X_GEN_TAC ‘y’ >> rw [extreal_abs_def] \\
          FIRST_X_ASSUM MATCH_MP_TAC \\
@@ -7145,13 +7144,13 @@ Proof
  >> Q.EXISTS_TAC ‘m’ >> rw []
  >> Q.PAT_X_ASSUM ‘!n. m <= n ==> _’ (MP_TAC o Q.SPEC ‘n’)
  >> RW_TAC std_ss []
- (* applying ABS_TRIANGLE_FOUR *)
+ (* applying ABS_TRIANGLE_NEG3 *)
  >> qmatch_abbrev_tac ‘abs (x - (y :real)) < _’
  >> qabbrev_tac ‘x' = real (expectation p (Normal o gi s o real o X n))’
  >> qabbrev_tac ‘y' = real (expectation p (Normal o gi s o real o Y))’
  >> Q_TAC (TRANS_TAC REAL_LET_TRANS)
           ‘abs (x' - y') + abs (x - x') + abs (y - y')’
- >> REWRITE_TAC [ABS_TRIANGLE_FOUR]
+ >> REWRITE_TAC [ABS_TRIANGLE_NEG3]
  >> MATCH_MP_TAC REAL_LT_ADD3 >> art []
  >> ONCE_REWRITE_TAC [ABS_SUB]
  >> CONJ_TAC
