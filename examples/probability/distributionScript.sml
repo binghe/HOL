@@ -7294,6 +7294,12 @@ Proof
  >- (
      cheat)
  >> DISCH_TAC
+ >> Know ‘!s. s <> 0 ==> gi s IN borel_measurable borel’
+ >- (rpt STRIP_TAC \\
+     MATCH_MP_TAC in_borel_measurable_continuous_on \\
+     rw [continuous_on_def, NET_WITHIN_UNIV] \\
+     MATCH_MP_TAC higher_differentiable_imp_continuous >> simp [])
+ >> DISCH_TAC
  >> Know ‘!s. s <> 0 ==>
               ((\n. expectation p (Normal o gi s o real o X n)) -->
                expectation p (Normal o gi s o real o Y)) sequentially’
@@ -7325,59 +7331,56 @@ Proof
          MATCH_MP_TAC integrable_finite_integral \\
          CONJ_TAC >- fs [prob_space_def] \\
          FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
-     CONJ_TAC (* bounded (IMAGE (gi s) univ(:real)) *)
-     >- (Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> gi s x = _’ K_TAC \\
-         Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> fi s x = _’ K_TAC \\
-         Q.PAT_X_ASSUM ‘bounded (IMAGE f univ(:real))’ MP_TAC \\
-         Q.PAT_X_ASSUM ‘!s. s <> 0 ==> (_ --> _) sequentially’ K_TAC \\
-         rw [bounded_def, Abbr ‘gi’, Abbr ‘fi’] \\
-         Q.EXISTS_TAC ‘a’ \\
-         Q.X_GEN_TAC ‘y’ \\
-         DISCH_THEN (Q.X_CHOOSE_THEN ‘x’ STRIP_ASSUME_TAC) >> POP_ORW \\
-         qmatch_abbrev_tac ‘abs (real z) <= a’ \\
-         Know ‘abs (real z) = real (abs z)’
-         >- (MATCH_MP_TAC abs_real \\
-             qunabbrev_tac ‘z’ \\
-             MATCH_MP_TAC integrable_finite_integral >> art [] \\
-             FULL_SIMP_TAC bool_ss [prob_space_def]) >> Rewr' \\
+     reverse CONJ_TAC >- simp [] \\
+  (* bounded (IMAGE (gi s) univ(:real)) *)
+     Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> gi s x = _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> fi s x = _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘bounded (IMAGE f univ(:real))’ MP_TAC \\
+     Q.PAT_X_ASSUM ‘!s. s <> 0 ==> (_ --> _) sequentially’ K_TAC \\
+     rw [bounded_def, Abbr ‘gi’, Abbr ‘fi’] \\
+     Q.EXISTS_TAC ‘a’ \\
+     Q.X_GEN_TAC ‘y’ \\
+     DISCH_THEN (Q.X_CHOOSE_THEN ‘x’ STRIP_ASSUME_TAC) >> POP_ORW \\
+     qmatch_abbrev_tac ‘abs (real z) <= a’ \\
+     Know ‘abs (real z) = real (abs z)’
+     >- (MATCH_MP_TAC abs_real \\
          qunabbrev_tac ‘z’ \\
-      (* applying integral_triangle_ineq *)
-         qmatch_abbrev_tac ‘real (abs (integral p h)) <= a’ \\
-         Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘real (integral p (abs o h))’ \\
-         CONJ_TAC
-         >- (Know ‘real (abs (integral p h)) <= real (integral p (abs o h)) <=>
-                   abs (integral p h) <= integral p (abs o h)’
-             >- (MATCH_MP_TAC real_le_eq \\
-                 Know ‘abs (integral p h) <> PosInf /\
-                       abs (integral p h) <> NegInf’
-                 >- (MATCH_MP_TAC abs_not_infty \\
-                     MATCH_MP_TAC integrable_finite_integral \\
-                     fs [prob_space_def, Abbr ‘h’]) >> Rewr \\
+         MATCH_MP_TAC integrable_finite_integral >> art [] \\
+         FULL_SIMP_TAC bool_ss [prob_space_def]) >> Rewr' \\
+     qunabbrev_tac ‘z’ \\
+  (* applying integral_triangle_ineq *)
+     qmatch_abbrev_tac ‘real (abs (integral p h)) <= a’ \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘real (integral p (abs o h))’ \\
+     CONJ_TAC
+     >- (Know ‘real (abs (integral p h)) <= real (integral p (abs o h)) <=>
+               abs (integral p h) <= integral p (abs o h)’
+         >- (MATCH_MP_TAC real_le_eq \\
+             Know ‘abs (integral p h) <> PosInf /\ abs (integral p h) <> NegInf’
+             >- (MATCH_MP_TAC abs_not_infty \\
                  MATCH_MP_TAC integrable_finite_integral \\
-                 CONJ_TAC >- fs [prob_space_def] \\
-                 MATCH_MP_TAC integrable_abs \\
-                 fs [prob_space_def, Abbr ‘h’]) >> Rewr' \\
-             MATCH_MP_TAC integral_triangle_ineq \\
-             fs [prob_space_def, Abbr ‘h’]) \\
-         Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘real (integral p (\x. Normal a))’ \\
-         reverse CONJ_TAC
-         >- (Know ‘integral p (\x. Normal a) = Normal a’
-             >- simp [GSYM expectation_def, expectation_const] >> Rewr' \\
-             simp []) \\
-         MATCH_MP_TAC le_real_imp \\
-         CONJ_TAC
-         >- (MATCH_MP_TAC integral_pos >> fs [prob_space_def]) \\
-         reverse CONJ_TAC
-         >- simp [GSYM expectation_def, expectation_const] \\
-         MATCH_MP_TAC integral_mono \\
-         fs [prob_space_def, FORALL_AND_THM] \\
-         CONJ_TAC >- (MATCH_MP_TAC integrable_abs >> simp [Abbr ‘h’]) \\
-         CONJ_TAC >- (MATCH_MP_TAC integrable_const >> simp []) \\
-         Q.X_GEN_TAC ‘y’ >> rw [Abbr ‘h’, extreal_abs_def] \\
-         FIRST_X_ASSUM MATCH_MP_TAC \\
-         Q.EXISTS_TAC ‘x + s * Z y’ >> REFL_TAC) \\
-  (* NOTE: differentiable ==> borel_measurable *)
-     cheat)
+                 fs [prob_space_def, Abbr ‘h’]) >> Rewr \\
+             MATCH_MP_TAC integrable_finite_integral \\
+             CONJ_TAC >- fs [prob_space_def] \\
+             MATCH_MP_TAC integrable_abs \\
+             fs [prob_space_def, Abbr ‘h’]) >> Rewr' \\
+         MATCH_MP_TAC integral_triangle_ineq \\
+         fs [prob_space_def, Abbr ‘h’]) \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘real (integral p (\x. Normal a))’ \\
+     reverse CONJ_TAC
+     >- (Know ‘integral p (\x. Normal a) = Normal a’
+         >- simp [GSYM expectation_def, expectation_const] >> Rewr' \\
+         simp []) \\
+     MATCH_MP_TAC le_real_imp \\
+     CONJ_TAC >- (MATCH_MP_TAC integral_pos >> fs [prob_space_def]) \\
+     reverse CONJ_TAC
+     >- simp [GSYM expectation_def, expectation_const] \\
+     MATCH_MP_TAC integral_mono \\
+     fs [prob_space_def, FORALL_AND_THM] \\
+     CONJ_TAC >- (MATCH_MP_TAC integrable_abs >> simp [Abbr ‘h’]) \\
+     CONJ_TAC >- (MATCH_MP_TAC integrable_const >> simp []) \\
+     Q.X_GEN_TAC ‘y’ >> rw [Abbr ‘h’, extreal_abs_def] \\
+     FIRST_X_ASSUM MATCH_MP_TAC \\
+     Q.EXISTS_TAC ‘x + s * Z y’ >> REFL_TAC)
  >> POP_ASSUM K_TAC >> DISCH_TAC
  (* NOTE: This goal is called "uniformly convergence", because whatever value of
    “R” doesn't change the asserted “s”. Lipschitz_continuous_map is used here.
@@ -7507,12 +7510,12 @@ Proof
      POP_ORW >> simp [extreal_mul_eq] \\
      simp [Abbr ‘d’] \\
     ‘abs s' = s'’ by rw [ABS_REFL, REAL_LT_IMP_LE] >> POP_ORW \\
-     qabbrev_tac ‘ck = c * k’ \\
+     qabbrev_tac ‘c' = c * k’ \\
      ONCE_REWRITE_TAC [REAL_MUL_COMM] \\
-     Know ‘s' * ck < e <=> s' < e / ck’
+     Know ‘s' * c' < e <=> s' < e / c'’
      >- (SYM_TAC \\
          MATCH_MP_TAC REAL_LT_RDIV_EQ \\
-         qunabbrev_tac ‘ck’ \\
+         qunabbrev_tac ‘c'’ \\
          MATCH_MP_TAC REAL_LT_MUL >> art []) >> Rewr' \\
      simp [] \\
      qunabbrev_tac ‘s'’ \\
