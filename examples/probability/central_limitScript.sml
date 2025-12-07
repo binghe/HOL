@@ -618,7 +618,7 @@ Proof
  >> ‘abs x pow n = abs (x pow n)’ by rw [POW_ABS]
  >> POP_ORW
  >> Cases_on ‘x pow n = 0’
- >- (‘abs (Normal (diff n f t / &FACT n) * Normal (x pow n)) = 0’
+ >- (‘abs (Normal (diffn n f t / &FACT n) * Normal (x pow n)) = 0’
       by METIS_TAC [normal_0, mul_rzero, abs_0] \\
      ‘M / Normal (&FACT n) * Normal (abs (x pow n)) = 0’
       by METIS_TAC [ABS_0, normal_0, mul_rzero] \\
