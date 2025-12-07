@@ -1581,7 +1581,7 @@ Proof
  >> rw [continuous_on_def, CONTINUOUS_AT_ABS, netsTheory.WITHIN_UNIV]
 QED
 
-Theorem in_measurable_borel_borel_aniv :
+Theorem in_measurable_borel_borel_ainv :
   numeric_negate ∈ borel_measurable borel
 Proof
   Know ‘$real_neg = \x. -1 * x’
@@ -1779,12 +1779,15 @@ Proof
  >> DISCH_TAC >> POP_ASSUM K_TAC
  >> MP_TAC (Q.SPECL [‘lborel’, ‘λx. Normal (g x)’, ‘λx. Normal (g (-x))’]
              (INST_TYPE [“:'a” |-> “:real”] pos_fn_integral_add))
- >> impl_tac >- (fs [cj 2 lborel_def, o_DEF] \\
-                 (* (λx. Normal (g (-x))) ∈ Borel_measurable borel *)
-                 MP_TAC (Q.SPECL [‘borel’, ‘borel’, ‘λx. Normal (g x)’, ‘λx. -x’, ‘λx. Normal (g (-x))’]
-                          (INST_TYPE [“:'a” |-> “:real”, “:'b” |-> “:real”] IN_MEASURABLE_BOREL_COMP)) \\
-                 impl_tac >- (simp [] >> METIS_TAC [in_measurable_borel_borel_aniv]) \\
-                 simp [])
+ >> impl_tac
+ >- (fs [cj 2 lborel_def, o_DEF] \\
+     (* (λx. Normal (g (-x))) ∈ Borel_measurable borel *)
+     MP_TAC (Q.SPECL [‘borel’, ‘borel’, ‘λx. Normal (g x)’, ‘λx. -x’,
+                      ‘λx. Normal (g (-x))’]
+                     (INST_TYPE [“:'a” |-> “:real”, “:'b” |-> “:real”]
+                                IN_MEASURABLE_BOREL_COMP)) \\
+     impl_tac >- (simp [] >> METIS_TAC [in_measurable_borel_borel_ainv]) \\
+     simp [])
  >> rw []
  >> Know ‘pos_fn_integral lborel (Normal o (\x. g (-x))) =
           pos_fn_integral lborel (Normal o g)’

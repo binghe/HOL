@@ -1815,6 +1815,14 @@ Proof
  >> rw [in_borel_measurable_fn_plus, in_borel_measurable_fn_minus]
 QED
 
+Theorem in_borel_measurable_borel_abs :
+    abs IN borel_measurable borel
+Proof
+    MP_TAC (ISPECL [“borel”, “\x. (x :real)”] in_borel_measurable_abs)
+ >> simp [o_DEF, in_borel_measurable_I, sigma_algebra_borel]
+ >> SIMP_TAC (std_ss ++ ETA_ss) []
+QED
+
 (************************************************************)
 (*  right-open (left-closed) intervals [a, b) in R          *)
 (************************************************************)

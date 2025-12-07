@@ -6469,9 +6469,11 @@ Proof
  >> FULL_SIMP_TAC std_ss [EXTREAL_SUM_IMAGE_PROPERTY, FINITE_COUNT, COUNT_SUC]
  >> Suff `SIGMA (\i. indicator_fn (a i) x) (count x'' DELETE x'') = 0`
  >- RW_TAC std_ss [indicator_fn_def, add_rzero]
- >> `!n. n <> x'' ==> ~(x IN a n)` by METIS_TAC [DISJOINT_DEF,EXTENSION,IN_INTER,NOT_IN_EMPTY]
+ >> `!n. n <> x'' ==> ~(x IN a n)`
+      by METIS_TAC [DISJOINT_DEF,EXTENSION,IN_INTER,NOT_IN_EMPTY]
  >> MATCH_MP_TAC EXTREAL_SUM_IMAGE_0
- >> FULL_SIMP_TAC std_ss [FINITE_COUNT, FINITE_DELETE, IN_COUNT, IN_DELETE, indicator_fn_def]
+ >> FULL_SIMP_TAC std_ss [FINITE_COUNT, FINITE_DELETE, IN_COUNT, IN_DELETE,
+                          indicator_fn_def]
 QED
 
 Theorem INDICATOR_FN_ABS[simp] :
@@ -6512,6 +6514,13 @@ Proof
  >> MATCH_MP_TAC (Q.SPECL [‘f’, ‘indicator_fn s’] FN_MINUS_FMUL)
  >> GEN_TAC
  >> REWRITE_TAC [INDICATOR_FN_POS]
+QED
+
+Theorem normal_mul_indicator :
+    !c s x. Normal c * indicator_fn s x = Normal (c * indicator s x)
+Proof
+    rw [indicator_fn_def, indicator]
+ >> simp [extreal_of_num_def]
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -6888,7 +6897,8 @@ Proof
               (\x. (dist'(g x, m) < e / 2:real)) x` THENL
   [FULL_SIMP_TAC std_ss [], ALL_TAC] THEN DISC_RW_KILL THEN
   DISCH_THEN(MP_TAC o MATCH_MP NET_DILEMMA) THEN BETA_TAC THEN
-  STRIP_TAC THEN EXISTS_TAC ``c:'a`` THEN CONJ_TAC THENL [METIS_TAC [], ALL_TAC] THEN
+  STRIP_TAC THEN EXISTS_TAC ``c:'a`` THEN
+  CONJ_TAC THENL [METIS_TAC [], ALL_TAC] THEN
   GEN_TAC THEN POP_ASSUM (MP_TAC o Q.SPEC `x'`) THEN REPEAT STRIP_TAC THEN
   FULL_SIMP_TAC std_ss [] THEN MATCH_MP_TAC REAL_LET_TRANS THEN
   Q.EXISTS_TAC `dist' (f x', l) + dist' (g x', m)` THEN
