@@ -946,6 +946,10 @@ Proof
   MATCH_MP_TAC REAL_POW_LT >> art []
 QED
 
+(* |- !x. 0 < std_normal_density x *)
+Theorem std_normal_density_pos =
+            normal_density_pos |> Q.SPECL [‘0’, ‘1’] |> SRULE []
+
 Theorem std_normal_density_decreasing :
     !x y. 0 <= x /\ x <= y ==> std_normal_density y <= std_normal_density x
 Proof
@@ -3265,6 +3269,9 @@ Proof
  >> REWRITE_TAC [has_vector_derivative_x_std_normal_density]
 QED
 
+(* NOTE: There's no need to expand “std_normal_density 0” because most of time
+   we just use it as a positive constant (see normal_density_pos).
+ *)
 Theorem integral_x_std_normal_density_half :
     pos_fn_integral lborel
       (\x. Normal (x * indicator {y | 0 <= y} x * std_normal_density x)) =
@@ -3394,14 +3401,51 @@ Proof
  >> Suff ‘mono_increasing J /\ J --> r’
  >- (DISCH_THEN (MP_TAC o MATCH_MP mono_increasing_converges_to_sup) \\
      simp [])
- >> CONJ_ASM1_TAC
+ >> CONJ_TAC
  >- (simp [Abbr ‘J’, mono_increasing_def] \\
      qx_genl_tac [‘n’, ‘m’] >> rw [REAL_LE_SUB_CANCEL1] \\
      MATCH_MP_TAC std_normal_density_decreasing >> simp [])
  (* final goal: J --> r *)
  >> rw [SEQ, Abbr ‘J’, REAL_SUB_SUB]
  >> simp [normal_density_nonneg, ABS_REDUCE]
- >> cheat
+ >> REWRITE_TAC [std_normal_density_def]
+ >> qabbrev_tac ‘c = 1 / sqrt (2 * pi)’
+ >> Know ‘0 < c’
+ >- (qunabbrev_tac ‘c’ \\
+     MATCH_MP_TAC REAL_LT_DIV >> simp [] \\
+     MATCH_MP_TAC SQRT_POS_LT \\
+     MATCH_MP_TAC REAL_LT_MUL >> simp [PI_POS])
+ >> DISCH_TAC
+ >> ONCE_REWRITE_TAC [REAL_MUL_COMM]
+ >> Know ‘!n. exp (-(&n pow 2) / 2) * c < e <=> exp (-(&n pow 2) / 2) < e / c’
+ >- (Q.X_GEN_TAC ‘n’ >> SYM_TAC \\
+     MATCH_MP_TAC REAL_LT_RDIV_EQ >> art [])
+ >> Rewr'
+ >> qabbrev_tac ‘d = e / c’
+ >> ‘0 < d’ by simp [Abbr ‘d’, REAL_LT_DIV]
+ >> ‘d = exp (ln d)’ by simp [EXP_LN] >> POP_ORW
+ >> REWRITE_TAC [EXP_MONO_LT]
+ >> Know ‘!n. -(&n pow 2) / 2 < ln d <=> -(&n pow 2) < ln d * 2’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     MATCH_MP_TAC REAL_LT_LDIV_EQ >> simp [])
+ >> Rewr'
+ >> ‘!n. -(&n pow 2) < ln d * 2 <=> -(ln d * 2) < &n pow 2’
+      by REAL_ARITH_TAC >> POP_ORW
+ >> qabbrev_tac ‘l = -(ln d * 2)’
+ >> Cases_on ‘l < 0’
+ >- (Q.EXISTS_TAC ‘0’ >> rw [GREATER_EQ] \\
+     Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘0’ >> simp [REAL_LE_POW2])
+ >> fs [REAL_NOT_LT]
+ >> ‘l = sqrt l pow 2’ by simp [SQRT_POW2] >> POP_ORW
+ >> Know ‘!n. sqrt l pow 2 < &n pow 2 <=> sqrt l < &n’
+ >- (Q.X_GEN_TAC ‘n’ \\
+     MATCH_MP_TAC REAL_POW_LT_EQ >> simp [SQRT_POS_LE])
+ >> Rewr'
+ >> STRIP_ASSUME_TAC (Q.SPEC ‘sqrt l’ REAL_BIGNUM)
+ >> Q.EXISTS_TAC ‘n’
+ >> Q.X_GEN_TAC ‘m’
+ >> rw [GREATER_EQ]
+ >> Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘&n’ >> simp []
 QED
 
 Theorem integral_x_std_normal_density :
@@ -7385,8 +7429,21 @@ Proof
      >- (rpt GEN_TAC >> SYM_TAC \\
          HO_MATCH_MP_TAC expectation_sub >> art [] \\
          MATCH_MP_TAC integrable_const >> fs [prob_space_def]) >> Rewr' \\
-     simp [extreal_sub_eq, expectation_def] \\
+     Know ‘!s x. integrable p (\y. Normal (f (x + s * Z y)) - Normal (f x))’
+     >- (rpt GEN_TAC \\
+         HO_MATCH_MP_TAC integrable_sub >> simp [] \\
+         fs [prob_space_def] \\
+         MATCH_MP_TAC integrable_const >> simp []) \\
+     simp [extreal_sub_eq, expectation_def] >> DISCH_TAC \\
     ‘integrable p (Normal o Z)’ by PROVE_TAC [expectation_of_std_normal_rv] \\
+  (* applying expectation_of_abs_std_normal_rv *)
+     MP_TAC (Q.SPECL [‘p’, ‘Z’] expectation_of_abs_std_normal_rv) \\
+     fs [prob_space_def, expectation_def] \\
+     Know ‘integral p (Normal o abs o Z) = pos_fn_integral p (Normal o abs o Z)’
+     >- (MATCH_MP_TAC integral_pos_fn \\
+         rw [o_DEF, extreal_of_num_def]) >> Rewr' >> DISCH_TAC \\
+     qabbrev_tac ‘c = 2 * std_normal_density 0’ \\
+    ‘0 < c’ by simp [Abbr ‘c’, REAL_LT_MUL, std_normal_density_pos] \\
   (* NOTE: below is the reasoning process to obtain ‘s’ (positive):
 
      abs (integral p (\y. Normal (f (x + s * Z y) - f x))) <=
@@ -7398,8 +7455,68 @@ Proof
                   abs s < e / (k * c) <=>
                       s < e / (k * c)
    *)
+     qabbrev_tac ‘s = e / (c * k)’ \\
+     Know ‘0 < s’
+     >- (qunabbrev_tac ‘s’ \\
+         MATCH_MP_TAC REAL_LT_DIV >> art [] \\
+         MATCH_MP_TAC REAL_LT_MUL >> art []) >> DISCH_TAC \\
+     qabbrev_tac ‘s' = s / 2’ \\
+    ‘0 < s'’ by simp [Abbr ‘s'’, REAL_LT_DIV] \\
+     Q.EXISTS_TAC ‘s'’ \\
+     CONJ_TAC >- PROVE_TAC [REAL_LT_IMP_NE] \\
+     Q.X_GEN_TAC ‘x’ \\
+     REWRITE_TAC [GSYM extreal_lt_eq] \\
+     qmatch_abbrev_tac ‘Normal (real z) < _’ \\
+     Know ‘Normal (real z) = z’
+     >- (MATCH_MP_TAC normal_real \\
+         qunabbrev_tac ‘z’ \\
+         Suff ‘integral p (\y. Normal (f (x + s' * Z y) - f x)) <> PosInf /\
+               integral p (\y. Normal (f (x + s' * Z y) - f x)) <> NegInf’
+         >- METIS_TAC [abs_not_infty] \\
+         MATCH_MP_TAC integrable_finite_integral >> art []) >> Rewr' \\
+     qunabbrev_tac ‘z’ \\
   (* applying integral_triangle_ineq *)
-     cheat)
+     qmatch_abbrev_tac ‘abs (integral p h) < Normal e’ \\
+     Q_TAC (TRANS_TAC let_trans) ‘integral p (abs o h)’ \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC integral_triangle_ineq >> simp [Abbr ‘h’]) \\
+     rw [o_DEF, Abbr ‘h’, extreal_abs_def] \\
+     Know ‘       integral p (\y. Normal (abs (f (x + s' * Z y) - f x))) =
+           pos_fn_integral p (\y. Normal (abs (f (x + s' * Z y) - f x)))’
+     >- (MATCH_MP_TAC integral_pos_fn \\
+         rw [extreal_of_num_def]) >> Rewr' \\
+     Q_TAC (TRANS_TAC let_trans)
+           ‘pos_fn_integral p (\y. Normal (k * abs (s' * Z y)))’ \\
+     CONJ_TAC
+     >- (MATCH_MP_TAC pos_fn_integral_mono \\
+         CONJ_TAC >- rw [extreal_of_num_def] \\
+         Q.X_GEN_TAC ‘y’ >> rw []) \\
+     simp [ABS_MUL] \\
+     qabbrev_tac ‘d = k * abs s'’ \\
+     Know ‘0 < d’
+     >- (qunabbrev_tac ‘d’ \\
+         MATCH_MP_TAC REAL_LT_MUL >> art [] \\
+         REWRITE_TAC [ABS_NZ'] \\
+         PROVE_TAC [REAL_LT_IMP_NE]) >> DISCH_TAC \\
+     REWRITE_TAC [GSYM extreal_mul_eq] \\
+     Know ‘pos_fn_integral p (\y. Normal d * Normal (abs (Z y))) =
+           Normal d * pos_fn_integral p (\y. Normal (abs (Z y)))’
+     >- (HO_MATCH_MP_TAC pos_fn_integral_cmul \\
+         simp [REAL_LT_IMP_LE]) >> Rewr' \\
+    ‘(\y. Normal (abs (Z y))) = Normal o abs o Z’ by rw [FUN_EQ_THM, o_DEF] \\
+     POP_ORW >> simp [extreal_mul_eq] \\
+     simp [Abbr ‘d’] \\
+    ‘abs s' = s'’ by rw [ABS_REFL, REAL_LT_IMP_LE] >> POP_ORW \\
+     qabbrev_tac ‘ck = c * k’ \\
+     ONCE_REWRITE_TAC [REAL_MUL_COMM] \\
+     Know ‘s' * ck < e <=> s' < e / ck’
+     >- (SYM_TAC \\
+         MATCH_MP_TAC REAL_LT_RDIV_EQ \\
+         qunabbrev_tac ‘ck’ \\
+         MATCH_MP_TAC REAL_LT_MUL >> art []) >> Rewr' \\
+     simp [] \\
+     qunabbrev_tac ‘s'’ \\
+     ASM_SIMP_TAC bool_ss [REAL_LT_HALF2])
  >> DISCH_TAC
  >> Know ‘!e. 0 < e ==>
               ?s. s <> 0 /\
