@@ -2873,6 +2873,18 @@ Theorem REAL_MUL_RNEG = REAL_MUL_RNEG;
 (* |- !x y. -x * y = -(x * y) *)
 Theorem REAL_MUL_LNEG = REAL_MUL_LNEG;
 
+Theorem REAL_DIV_RNEG :
+    !x y. x / -y = -(x / y)
+Proof
+    simp [real_div, REAL_INV_NEG, REAL_MUL_RNEG]
+QED
+
+Theorem REAL_DIV_LNEG :
+    !x y. -x / y = -(x / y)
+Proof
+    simp [real_div, REAL_INV_NEG, REAL_MUL_LNEG]
+QED
+
 Theorem REAL_LE_LMUL_NEG:
   !x y z. x < 0 ==> (x * y <= x * z <=> z <= y)
 Proof

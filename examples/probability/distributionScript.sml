@@ -16,7 +16,7 @@ Theory distribution
 Ancestors
   combin arithmetic logroot pred_set topology pair cardinal real
   seq transc real_sigma iterate real_topology derivative metric
-  nets sigma_algebra extreal_base extreal real_borel measure lim
+  nets sigma_algebra extreal_base extreal real_borel measure lim poly
   borel lebesgue lebesgue_measure martingale probability integration
 Libs
   numLib hurdUtils pred_setLib tautLib jrhUtils realLib Diff
@@ -28,7 +28,7 @@ open combinTheory arithmeticTheory numLib logrootTheory hurdUtils pred_setLib
 
 open realTheory realLib seqTheory transcTheory real_sigmaTheory iterateTheory
      real_topologyTheory metricTheory netsTheory derivativeTheory Diff
-     integrationTheory limTheory;
+     integrationTheory limTheory polyTheory;
 
 open sigma_algebraTheory extreal_baseTheory extrealTheory real_borelTheory
      measureTheory borelTheory lebesgueTheory martingaleTheory
@@ -3235,13 +3235,23 @@ QED
 
    NOTE: Diff.HAS_VECTOR_DERIVATIVE_CONV is used here!
  *)
-Theorem has_vector_derivative_x_std_normal_density :
+Theorem has_vector_derivative_neg_std_normal_density :
     !x. ((\x. -std_normal_density x) has_vector_derivative
          x * std_normal_density x) (at x)
 Proof
     rw [std_normal_density_def]
  >> qabbrev_tac ‘c = inv (sqrt (2 * pi))’
  >> MP_TAC (HAS_VECTOR_DERIVATIVE_CONV “\(x :real). -(exp (-(x pow 2) / 2) * c)”)
+ >> simp [REAL_NEG_LMUL]
+QED
+
+Theorem has_vector_derivative_std_normal_density :
+    !x. ((\x. std_normal_density x) has_vector_derivative
+         -x * std_normal_density x) (at x)
+Proof
+    rw [std_normal_density_def]
+ >> qabbrev_tac ‘c = inv (sqrt (2 * pi))’
+ >> MP_TAC (HAS_VECTOR_DERIVATIVE_CONV “\(x :real). exp (-(x pow 2) / 2) * c”)
  >> simp [REAL_NEG_LMUL]
 QED
 
@@ -3266,7 +3276,7 @@ Proof
  >> HO_MATCH_MP_TAC FUNDAMENTAL_THEOREM_OF_CALCULUS
  >> rw [IN_INTERVAL]
  >> MATCH_MP_TAC HAS_VECTOR_DERIVATIVE_AT_WITHIN
- >> REWRITE_TAC [has_vector_derivative_x_std_normal_density]
+ >> REWRITE_TAC [has_vector_derivative_neg_std_normal_density]
 QED
 
 (* NOTE: There's no need to expand “std_normal_density 0” because most of time
@@ -7011,7 +7021,7 @@ Theorem gauge_differentiable_lemma :
         (?w. integrable lborel w /\
             (!x. 0 <= w x /\ w x <> PosInf) /\
              !t x. Normal (abs (diff1 (\t. u t x) t)) <= w x)
-     ==> (\t. integral univ(:real) (u t)) differentiable_on univ(:real) /\
+    ==> (\t. integral univ(:real) (u t)) differentiable_on univ(:real) /\
          !t. integrable lborel (\x. Normal (diff1 (\t. u t x) t)) /\
              diff1 (\t. integral univ(:real) (u t)) t =
              integral univ(:real) (\x. diff1 (\t. u t x) t)
@@ -7105,6 +7115,28 @@ Proof
  >- (SYM_TAC >> MATCH_MP_TAC diffn_SUC' >> art [])
  >> Rewr'
  >> simp []
+QED
+
+(* ------------------------------------------------------------------------- *)
+(*  Hermite polynomials (probabilist's) [9]                                  *)
+(* ------------------------------------------------------------------------- *)
+
+Definition Hermite_polynomial_def :
+    Hermite_polynomial n x = -1 pow n * exp (x pow 2 / 2) *
+                             diffn n (\t. exp (-(t pow 2) / 2)) x
+End
+
+(*
+Theorem Hermite_polynomial_0 =
+        Hermite_polynomial_def |> Q.SPEC ‘0’
+     |> SRULE [GSYM REAL_EXP_ADD, REAL_DIV_LNEG]
+ *)
+
+Theorem Hermite_polynomial_recurrence :
+    !n x. Hermite_polynomial (SUC n) x =
+          x * Hermite_polynomial n x - diff1 (Hermite_polynomial n) x
+Proof
+    cheat
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -7291,7 +7323,13 @@ Proof
  >> DISCH_TAC
  (* applying gauge_higher_differentiable_lemma *)
  >> Know ‘!s. s <> 0 ==> !n x. higher_differentiable n (gi s) x’
- >- (
+ >- (Q.X_GEN_TAC ‘s’ >> DISCH_TAC \\
+    ‘gi s = \x. abs (inv s) * integral univ(:real) (u s x)’
+       by rw [FUN_EQ_THM] >> POP_ORW \\
+     Q.X_GEN_TAC ‘n’ \\
+     HO_MATCH_MP_TAC higher_differentiable_mul \\
+     simp [higher_differentiable_const] \\
+     MATCH_MP_TAC (cj 1 gauge_higher_differentiable_lemma) >> simp [] \\
      cheat)
  >> DISCH_TAC
  >> Know ‘!s. s <> 0 ==> gi s IN borel_measurable borel’
@@ -7728,4 +7766,6 @@ val _ = html_theory "distribution";
   [7] Resnick, S.: A Probability Path. Springer (2019).
   [8] Klenke, A.: Probability Theory: A Comprehensive Course. Third Edition.
       Springer Science & Business Media, London (2020).
+  [9] Wikipedia: https://en.wikipedia.org/wiki/Hermite_polynomials
+
  *)
