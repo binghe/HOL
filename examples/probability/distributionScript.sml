@@ -7126,11 +7126,11 @@ Definition Hermite_polynomial_def :
                              diffn n (\t. exp (-(t pow 2) / 2)) x
 End
 
-(*
+(* |- !x. Hermite_polynomial 0 x = 1 *)
 Theorem Hermite_polynomial_0 =
         Hermite_polynomial_def |> Q.SPEC ‘0’
-     |> SRULE [GSYM REAL_EXP_ADD, REAL_DIV_LNEG]
- *)
+     |> SIMP_RULE bool_ss [GSYM REAL_EXP_ADD, REAL_DIV_LNEG, pow0, diffn_0,
+                           REAL_MUL_LID, REAL_ADD_RINV, EXP_0]
 
 Theorem Hermite_polynomial_recurrence :
     !n x. Hermite_polynomial (SUC n) x =
