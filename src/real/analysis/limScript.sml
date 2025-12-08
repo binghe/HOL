@@ -2837,6 +2837,18 @@ Proof
  >> simp [higher_differentiable_const]
 QED
 
+Theorem higher_differentiable_affine :
+    !a b n f. (!x. higher_differentiable n f x) ==>
+               !x. higher_differentiable n (λx. f (a * x + b)) x
+Proof
+    rpt GEN_TAC >> DISCH_TAC
+ >> HO_MATCH_MP_TAC higher_differentiable_chain >> art []
+ >> HO_MATCH_MP_TAC higher_differentiable_add
+ >> simp [higher_differentiable_const]
+ >> HO_MATCH_MP_TAC higher_differentiable_cmul
+ >> simp [higher_differentiable_I]
+QED
+
 (* Temporarily re-enable printing of numeral bits for help documents *)
 val _ = temp_remove_user_printer "num.numeral_computations";
 

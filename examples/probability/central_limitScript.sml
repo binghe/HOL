@@ -8,7 +8,7 @@ open pairTheory combinTheory optionTheory prim_recTheory arithmeticTheory
      pred_setTheory pred_setLib hurdUtils listTheory rich_listTheory;
 
 open realTheory realLib iterateTheory seqTheory transcTheory real_sigmaTheory
-     limTheory topologyTheory real_topologyTheory;
+     limTheory topologyTheory real_topologyTheory Diff;
 
 open extrealTheory sigma_algebraTheory measureTheory lebesgue_measureTheory
      real_borelTheory borelTheory lebesgueTheory martingaleTheory
@@ -1619,28 +1619,6 @@ Proof
     METIS_TAC [in_measurable_borel_normal_density]
 QED
 
-Theorem normal_density_affine :
-    ∀mu sig x. 0 < sig ⇒
-               normal_density mu sig x =
-               inv sig * std_normal_density ((x - mu) * inv sig)
-Proof
-    rw [normal_density, std_normal_density_def]
- >> RW_TAC boolSimps.bool_ss [real_div, REAL_INV_MUL']
- >> ‘sig⁻¹ * exp (-(sig⁻¹ * (x − mu))² * 2⁻¹) * (sqrt (2 * pi))⁻¹ =
-     exp (-(sig⁻¹ * (x − mu))² * 2⁻¹) * sig⁻¹ * (sqrt (2 * pi))⁻¹’ by REAL_ARITH_TAC
- >> POP_ORW
- >> ‘(2 * (sig² * pi)) = (sig² * (2 * pi))’ by REAL_ARITH_TAC >> POP_ORW
- >> MP_TAC (Q.SPECL [‘sig pow 2’, ‘2 * pi’] SQRT_MUL)
- >> impl_tac >- (simp [REAL_LE_POW2, PI_POS, REAL_LT_IMP_LE])
- >> Rewr
- >> Know ‘(-(x − mu)² * (2⁻¹ * sig² ⁻¹)) = (-(sig⁻¹ * (x − mu))² * 2⁻¹)’
- >- (‘-(x − mu)² * (2⁻¹ * sig² ⁻¹) = -(x − mu)² * sig² ⁻¹ * 2⁻¹’ by REAL_ARITH_TAC \\
-     POP_ORW >> rw [REAL_MUL_LNEG] >> REAL_ARITH_TAC)
- >> Rewr
- >> rw [REAL_EQ_MUL_LCANCEL] >> DISJ2_TAC
- >> rw [REAL_INV_MUL', POW_2_SQRT, PI_POS, REAL_LT_IMP_LE]
-QED
-
 Theorem has_vector_derivative_x_cubic_normal_density :
   ∀x. ((λx. -((x pow 2 + 2) * std_normal_density x))
        has_vector_derivative (x pow 3 * std_normal_density x))
@@ -1648,15 +1626,18 @@ Theorem has_vector_derivative_x_cubic_normal_density :
 Proof
     rw [std_normal_density_def]
  >> qabbrev_tac ‘c = inv (sqrt (2 * pi))’
- >> MP_TAC (Diff.HAS_VECTOR_DERIVATIVE_CONV “\(x:real). -(exp (-(x pow 2) / 2) * c * (x pow 2 + 2))”)
+ >> MP_TAC (HAS_VECTOR_DERIVATIVE_CONV
+              “\(x:real). -(exp (-(x pow 2) / 2) * c * (x pow 2 + 2))”)
  >> simp [REAL_NEG_LMUL]
  >> Know‘∀x. -(-c * x * exp (-x² / 2) * (x² + 2) + 2 * (c * x * exp (-x² / 2)))
              = c * x pow 3 * exp (-x² / 2)’
  >- (rw [] \\
      Q.ABBREV_TAC ‘a = c * x * exp (-x² / 2)’ \\
-     ‘-c * x * exp (-x² / 2) * (x² + 2) = -a * (x² + 2)’ by rw [Abbr ‘a’] >> POP_ORW \\
-     ‘-(-a * (x² + 2) + 2 * a) = a * (x² + 2) - 2 * a’ by REAL_ARITH_TAC >> POP_ORW \\
-     ‘a * (x² + 2) − 2 * a = a * x pow 2’ by REAL_ARITH_TAC >> POP_ORW \\
+    ‘-c * x * exp (-x² / 2) * (x² + 2) = -a * (x² + 2)’ by rw [Abbr ‘a’] \\
+     POP_ORW \\
+    ‘-(-a * (x² + 2) + 2 * a) = a * (x² + 2) - 2 * a’ by REAL_ARITH_TAC \\
+     POP_ORW \\
+    ‘a * (x² + 2) − 2 * a = a * x pow 2’ by REAL_ARITH_TAC >> POP_ORW \\
      rw [Abbr ‘a’] >> REAL_ARITH_TAC)
  >> rpt STRIP_TAC
  >> METIS_TAC []
@@ -1666,8 +1647,8 @@ Theorem has_integral_x_cubic_std_normal_density :
     ∀a b. 0 ≤ a ∧ a ≤ b ⇒
           ((λx. x pow 3 * std_normal_density x)
            has_integral
-           ((a pow 2 + 2) * std_normal_density a − (b pow 2 + 2) * std_normal_density b))
-          (interval [a,b])
+           ((a pow 2 + 2) * std_normal_density a −
+            (b pow 2 + 2) * std_normal_density b)) (interval [a,b])
 Proof
   rpt STRIP_TAC
   >> ONCE_REWRITE_TAC [GSYM REAL_SUB_NEG2]
@@ -1682,7 +1663,7 @@ Theorem exp_cubic_bound :
 Proof
     rpt STRIP_TAC
  >> Cases_on ‘x = 0’ >> gs [EXP_0]
- >> MP_TAC (Diff.HAS_VECTOR_DERIVATIVE_CONV
+ >> MP_TAC (HAS_VECTOR_DERIVATIVE_CONV
             “\(x:real). exp (-(x pow 2)/2) * (x pow 2 + 2)”)
  >> simp [REAL_NEG_LMUL, EXP_POS_LE] >> DISCH_TAC
  >> STRIP_ASSUME_TAC (Q.SPEC ‘x’ SIMP_REAL_ARCH)
@@ -1703,7 +1684,8 @@ Proof
                           MATCH_MP_TAC CONTINUOUS_ON_EQ \\
                           qexists ‘λx. inv 2 * (-x²)’ >> simp [] \\
                           HO_MATCH_MP_TAC CONTINUOUS_ON_CMUL \\
-                          HO_MATCH_MP_TAC CONTINUOUS_ON_POW >> rw [CONTINUOUS_ON_ID]) \\
+                          HO_MATCH_MP_TAC CONTINUOUS_ON_POW \\
+                          rw [CONTINUOUS_ON_ID]) \\
                       HO_MATCH_MP_TAC CONTINUOUS_ON_ADD \\
                       rw [CONTINUOUS_ON_CONST] \\
                       HO_MATCH_MP_TAC CONTINUOUS_ON_POW >> rw [CONTINUOUS_ON_ID]) \\
@@ -1712,7 +1694,8 @@ Proof
      FIRST_X_ASSUM (STRIP_ASSUME_TAC o Q.SPEC ‘z’) \\
      qexists ‘ -z * exp (-z² / 2) * (z² + 2) + 2 * (z * exp (-z² / 2))’ \\
      simp [] \\
-     ‘-z * exp (-z² / 2) * (z² + 2) = -(z² + 2) * (z * exp (-z² / 2))’ by REAL_ARITH_TAC >> POP_ORW \\
+     ‘-z * exp (-z² / 2) * (z² + 2) = -(z² + 2) * (z * exp (-z² / 2))’
+       by REAL_ARITH_TAC >> POP_ORW \\
      Q.ABBREV_TAC ‘a = z * exp (-z² / 2)’ \\
      simp [GSYM REAL_RDISTRIB] \\
      ‘-(z² + 2) + 2 = -z²’ by REAL_ARITH_TAC >> POP_ORW \\

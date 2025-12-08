@@ -980,6 +980,14 @@ Proof
  >> simp [real_div]
 QED
 
+(* |- !mu sig x.
+        0 < sig ==>
+        normal_density mu sig x =
+        realinv sig * std_normal_density ((x - mu) * realinv sig)
+ *)
+Theorem normal_density_affine =
+        normal_density_alt_std |> REWRITE_RULE [real_div, Once REAL_MUL_COMM]
+
 Theorem normal_density_continuous_on :
     !mu sig s. normal_density mu sig continuous_on s
 Proof
@@ -7050,9 +7058,9 @@ QED
 Theorem gauge_higher_differentiable_lemma :
     !u. (!t. integrable lborel (Normal o u t)) /\
         (!n t x. higher_differentiable n (\t. u t x) t) /\
-        (?w. integrable lborel w /\
-            (!x. 0 <= w x /\ w x <> PosInf) /\
-             !n t x. Normal (abs (diffn n (\t. u t x) t)) <= w x)
+        (!n. ?w. integrable lborel w /\
+                (!x. 0 <= w x /\ w x <> PosInf) /\
+                 !t x. Normal (abs (diffn n (\t. u t x) t)) <= w x)
      ==> !n t. higher_differentiable n (\t. integral univ(:real) (u t)) t /\
                integrable lborel (\x. Normal (diffn n (\t. u t x) t)) /\
                diffn n (\t. integral univ(:real) (u t)) t =
@@ -7091,8 +7099,8 @@ Proof
                      MATCH_MP higher_differentiable_imp_1n) \\
         ‘diffn n (\t. u t x) = (\t. f t x)’ by rw [Abbr ‘f’, FUN_EQ_THM] \\
          simp []) \\
-     Q.EXISTS_TAC ‘w’ >> rw [] \\
-     POP_ASSUM (REWRITE_TAC o wrap o Q.SPEC ‘x’ o GSYM) >> art [])
+     POP_ASSUM (REWRITE_TAC o wrap o GSYM) \\
+     Q.PAT_X_ASSUM ‘!n. ?w. P’ (MP_TAC o Q.SPEC ‘SUC n’) >> rw [])
  >> simp []
  >> DISCH_THEN (STRIP_ASSUME_TAC o SRULE [FORALL_AND_THM])
  >> qabbrev_tac ‘g = \t. integral univ(:real) (u t)’
@@ -7132,7 +7140,7 @@ Theorem Hermite_polynomial_0 =
      |> SIMP_RULE bool_ss [GSYM REAL_EXP_ADD, REAL_DIV_LNEG, pow0, diffn_0,
                            REAL_MUL_LID, REAL_ADD_RINV, EXP_0]
 
-Theorem Hermite_polynomial_higher_differentiable_lemma :
+Theorem Hermite_polynomial_higher_differentiable_lemma[local] :
     !n x. higher_differentiable n (\t. exp (-(t pow 2) / 2)) x
 Proof
     Q.X_GEN_TAC ‘n’
@@ -7146,6 +7154,17 @@ Proof
  >> REWRITE_TAC [POW_2]
  >> HO_MATCH_MP_TAC higher_differentiable_mul
  >> simp [higher_differentiable_I]
+QED
+
+Theorem higher_differentiable_std_normal_density :
+    !n x. higher_differentiable n std_normal_density x
+Proof
+    Q.X_GEN_TAC ‘n’
+ >> ‘std_normal_density = \x. 1 / sqrt (2 * pi) * exp (-(x pow 2) / 2)’
+      by rw [FUN_EQ_THM, std_normal_density_def]
+ >> POP_ORW
+ >> HO_MATCH_MP_TAC higher_differentiable_cmul
+ >> simp [Hermite_polynomial_higher_differentiable_lemma]
 QED
 
 (*
@@ -7341,7 +7360,6 @@ Proof
  >> qabbrev_tac ‘gi = \s x. real (fi s x)’
  >> ‘!s x. s <> 0 ==> gi s x = abs (inv s) * integral univ(:real) (u s x)’
       by rw [Abbr ‘gi’]
- (* applying gauge_higher_differentiable_lemma *)
  >> Know ‘!R h. random_variable R p Borel /\ bounded (IMAGE h univ(:real)) /\
                 h IN borel_measurable borel ==>
                 integrable p (Normal o h o real o R)’
@@ -7369,6 +7387,13 @@ Proof
      HO_MATCH_MP_TAC higher_differentiable_mul \\
      simp [higher_differentiable_const] \\
      MATCH_MP_TAC (cj 1 gauge_higher_differentiable_lemma) >> simp [] \\
+     CONJ_TAC
+     >- (rpt GEN_TAC \\
+         simp [Abbr ‘u’] \\
+         Q.ID_SPEC_TAC ‘t’ \\
+         HO_MATCH_MP_TAC higher_differentiable_cmul \\
+         HO_MATCH_MP_TAC higher_differentiable_affine \\
+         REWRITE_TAC [higher_differentiable_std_normal_density]) \\
      cheat)
  >> DISCH_TAC
  >> Know ‘!s. s <> 0 ==> gi s IN borel_measurable borel’
