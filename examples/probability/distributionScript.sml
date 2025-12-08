@@ -7140,7 +7140,22 @@ Theorem Hermite_polynomial_0 =
      |> SIMP_RULE bool_ss [GSYM REAL_EXP_ADD, REAL_DIV_LNEG, pow0, diffn_0,
                            REAL_MUL_LID, REAL_ADD_RINV, EXP_0]
 
-Theorem Hermite_polynomial_higher_differentiable_lemma[local] :
+Theorem Hermite_polynomial_differentiable_lemma1[local] :
+    !n x. higher_differentiable n (\t. exp ((t pow 2) / 2)) x
+Proof
+    Q.X_GEN_TAC ‘n’
+ >> qabbrev_tac ‘f = \t:real. (t pow 2) / 2’
+ >> simp []
+ >> MATCH_MP_TAC higher_differentiable_chain
+ >> simp [higher_differentiable_exp, Abbr ‘f’]
+ >> REWRITE_TAC [real_div, Once REAL_MUL_COMM]
+ >> HO_MATCH_MP_TAC higher_differentiable_cmul
+ >> REWRITE_TAC [POW_2]
+ >> HO_MATCH_MP_TAC higher_differentiable_mul
+ >> simp [higher_differentiable_I]
+QED
+
+Theorem Hermite_polynomial_differentiable_lemma2[local] :
     !n x. higher_differentiable n (\t. exp (-(t pow 2) / 2)) x
 Proof
     Q.X_GEN_TAC ‘n’
@@ -7164,38 +7179,59 @@ Proof
       by rw [FUN_EQ_THM, std_normal_density_def]
  >> POP_ORW
  >> HO_MATCH_MP_TAC higher_differentiable_cmul
- >> simp [Hermite_polynomial_higher_differentiable_lemma]
+ >> simp [Hermite_polynomial_differentiable_lemma2]
 QED
 
-(*
 Theorem Hermite_polynomial_recurrence :
     !n x. Hermite_polynomial (SUC n) x =
           x * Hermite_polynomial n x - diff1 (Hermite_polynomial n) x
 Proof
- (* Induct_on ‘n’
- >- (rw [Hermite_polynomial_0] \\
-    ‘Hermite_polynomial 0 = \x. 1’ by rw [FUN_EQ_THM, Hermite_polynomial_0] \\
-     POP_ORW \\
-     rw [diffn_const, Hermite_polynomial_def] \\
-  (* applying diffl_imp_diff1 *)
-     MP_TAC (Q.SPEC ‘x’ (DIFF_CONV “\t :real. exp (-(t pow 2) / 2)”)) >> rw [] \\
-     qabbrev_tac ‘f = \t:real. exp (-(t pow 2) / 2)’ \\
-    ‘diff1 f x = -x * exp (-(x pow 2) / 2)’ by PROVE_TAC [diffl_imp_diff1] \\
-     POP_ORW \\
-     simp [Abbr ‘f’, REAL_MUL_LNEG, GSYM REAL_EXP_ADD] \\
-     REWRITE_TAC [REAL_DIV_LNEG, REAL_ADD_LINV, EXP_0])
-  *)
- >> rw [Hermite_polynomial_def]
+    rw [Hermite_polynomial_def]
  >> ‘Hermite_polynomial n =
-     \x. -1 pow n * exp (x pow 2 / 2) * diffn n (\t. exp (-(t pow 2) / 2)) x’
+      (\x. -1 pow n * exp (x pow 2 / 2) * diffn n (\t. exp (-(t pow 2) / 2)) x)’
       by rw [FUN_EQ_THM, Hermite_polynomial_def]
  >> POP_ORW
- >> simp []
  >> qabbrev_tac ‘f = \t:real. exp (-(t pow 2) / 2)’
+ >> qabbrev_tac ‘c :real = -1 pow n’
+ >> qabbrev_tac ‘g = \x:real. exp (x pow 2 / 2)’
+ >> qabbrev_tac ‘h = \x. diffn n f x’
+ >> simp []
+ >> ‘!n x. higher_differentiable n f x’
+      by simp [Abbr ‘f’, Hermite_polynomial_differentiable_lemma2]
+ >> ‘!n x. higher_differentiable n g x’
+      by simp [Abbr ‘g’, Hermite_polynomial_differentiable_lemma1]
+ >> Know ‘!x. higher_differentiable 1 h x’
+ >- (SIMP_TAC (std_ss ++ ETA_ss) [Abbr ‘h’] \\
+     irule higher_differentiable_imp_1n >> art [])
+ >> DISCH_TAC
+ (* applying diffn_cmul *)
+ >> Know ‘diff1 (\x. c * g x * h x) x = c * diff1 (\x. g x * h x) x’
+ >- (irule (SRULE [FUN_EQ_THM] (Q.SPEC ‘\x. g x * h x’ diffn_cmul)) \\
+     MATCH_MP_TAC higher_differentiable_mul >> art [])
+ >> Rewr'
+ (* applying diffn_mul *)
+ >> Know ‘diff1 (\x. g x * h x) = (\x. diff1 g x * h x + diff1 h x * g x)’
+ >- (MATCH_MP_TAC diffn_mul >> art [])
+ >> Rewr'
+ >> POP_ASSUM K_TAC
+ >> simp [Abbr ‘h’, REAL_LDISTRIB, pow, REAL_NEG_ADD, REAL_NEG_SUB,
+          REAL_ARITH “a - (b - c) = a - b + (c:real)”]
+ >> SIMP_TAC (bool_ss ++ ETA_ss) []
  (* applying diffn_SUC' *)
- >> cheat
+ >> Know ‘diff1 (diffn n f) = diffn (SUC n) f’
+ >- (MATCH_MP_TAC diffn_SUC' >> art [])
+ >> Rewr'
+ >> qabbrev_tac ‘A = c * g x * diffn (SUC n) f x’
+ >> qabbrev_tac ‘D = diffn n f x’
+ >> Suff ‘c * D * diff1 g x = c * x * g x * D’ >- REAL_ARITH_TAC
+ >> simp []
+ >> NTAC 2 DISJ2_TAC
+ >> qunabbrevl_tac [‘A’, ‘D’, ‘f’, ‘c’]
+ >> NTAC 2 (POP_ASSUM K_TAC)
+ >> simp [Abbr ‘g’]
+ >> MP_TAC (DIFF_CONV “\x:real. exp (x pow 2 / 2)”) >> rw []
+ >> MATCH_MP_TAC diffl_imp_diff1 >> simp []
 QED
- *)
 
 (* ------------------------------------------------------------------------- *)
 (*  Another alternative definition of convergence in distribution            *)
