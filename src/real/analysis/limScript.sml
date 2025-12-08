@@ -2638,6 +2638,21 @@ Proof
  >> METIS_TAC [DIFF_CONST]
 QED
 
+(* |- !k x. higher_differentiable k (\x. -x) x *)
+Theorem higher_differentiable_ainv =
+        higher_differentiable_sub_linear |> Q.SPEC ‘0’ |> SRULE []
+
+Theorem higher_differentiable_I :
+    !k x. higher_differentiable k (\x. x) x
+Proof
+    rpt GEN_TAC
+ >> qabbrev_tac ‘f = \x. -(x :real)’
+ >> ‘(\x. x) = \x. f (f x)’
+      by rw [FUN_EQ_THM, REAL_NEG_NEG, Abbr ‘f’] >> POP_ORW
+ >> MATCH_MP_TAC higher_differentiable_chain
+ >> simp [higher_differentiable_ainv, Abbr ‘f’]
+QED
+
 Theorem pow_neg_1[local] :
   -(1 :real) pow 1 = -1
 Proof
@@ -2774,7 +2789,7 @@ Proof
 QED
 
 Theorem higher_differentiable_neg_sub :
-    !n f a.
+    !a n f.
       (!x. higher_differentiable n f x) ==>
       !x. higher_differentiable n (λx. f (a - x)) x
 Proof
@@ -2793,6 +2808,33 @@ Proof
        (STRIP_ASSUME_TAC o Q.SPEC ‘x’) \\
      qexists ‘y’ >> METIS_TAC [])
  >> METIS_TAC [higher_differentiable_sub_linear]
+QED
+
+Theorem higher_differentiable_neg :
+    !n f. (!x. higher_differentiable n f x) ==>
+           !x. higher_differentiable n (\x. -f x) x
+Proof
+    rpt GEN_TAC >> DISCH_TAC
+ >> qabbrev_tac ‘g = \x. -(x :real)’
+ >> ‘!x. -f x = g (f x)’ by rw [Abbr ‘g’] >> POP_ORW
+ >> MATCH_MP_TAC higher_differentiable_chain
+ >> simp [higher_differentiable_ainv, Abbr ‘g’]
+QED
+
+(* |- !n f.
+        (!x. higher_differentiable n f x) ==>
+        !x. higher_differentiable n (\x. f (-x)) x
+ *)
+Theorem higher_differentiable_neg' =
+        higher_differentiable_neg_sub |> Q.SPEC ‘0’ |> SRULE []
+
+Theorem higher_differentiable_cmul :
+    !f c n. (!x. higher_differentiable n f x) ==>
+            (!x. higher_differentiable n (λx. c * f x) x)
+Proof
+    rpt GEN_TAC >> DISCH_TAC
+ >> HO_MATCH_MP_TAC higher_differentiable_mul
+ >> simp [higher_differentiable_const]
 QED
 
 (* Temporarily re-enable printing of numeral bits for help documents *)

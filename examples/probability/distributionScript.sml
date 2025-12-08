@@ -8,7 +8,7 @@
 (*                       Concordia University                                *)
 (*            Contact:  <m_qasi@ece.concordia.ca>                            *)
 (*                                                                           *)
-(*   Enriched by Chun Tian (Australian National University, 2024 - 2025)     *)
+(*   Enriched by Chun Tian (binghe) <binghe.lisp@gmail.com> (2024 - 2025)    *)
 (* ========================================================================= *)
 
 (*
@@ -7132,12 +7132,51 @@ Theorem Hermite_polynomial_0 =
      |> SIMP_RULE bool_ss [GSYM REAL_EXP_ADD, REAL_DIV_LNEG, pow0, diffn_0,
                            REAL_MUL_LID, REAL_ADD_RINV, EXP_0]
 
+Theorem Hermite_polynomial_higher_differentiable_lemma :
+    !n x. higher_differentiable n (\t. exp (-(t pow 2) / 2)) x
+Proof
+    Q.X_GEN_TAC ‘n’
+ >> qabbrev_tac ‘f = \t:real. -(t pow 2) / 2’
+ >> simp []
+ >> MATCH_MP_TAC higher_differentiable_chain
+ >> simp [higher_differentiable_exp, Abbr ‘f’]
+ >> REWRITE_TAC [real_div, Once REAL_MUL_COMM]
+ >> HO_MATCH_MP_TAC higher_differentiable_cmul
+ >> HO_MATCH_MP_TAC higher_differentiable_neg
+ >> REWRITE_TAC [POW_2]
+ >> HO_MATCH_MP_TAC higher_differentiable_mul
+ >> simp [higher_differentiable_I]
+QED
+
+(*
 Theorem Hermite_polynomial_recurrence :
     !n x. Hermite_polynomial (SUC n) x =
           x * Hermite_polynomial n x - diff1 (Hermite_polynomial n) x
 Proof
-    cheat
+ (* Induct_on ‘n’
+ >- (rw [Hermite_polynomial_0] \\
+    ‘Hermite_polynomial 0 = \x. 1’ by rw [FUN_EQ_THM, Hermite_polynomial_0] \\
+     POP_ORW \\
+     rw [diffn_const, Hermite_polynomial_def] \\
+  (* applying diffl_imp_diff1 *)
+     MP_TAC (Q.SPEC ‘x’ (DIFF_CONV “\t :real. exp (-(t pow 2) / 2)”)) >> rw [] \\
+     qabbrev_tac ‘f = \t:real. exp (-(t pow 2) / 2)’ \\
+    ‘diff1 f x = -x * exp (-(x pow 2) / 2)’ by PROVE_TAC [diffl_imp_diff1] \\
+     POP_ORW \\
+     simp [Abbr ‘f’, REAL_MUL_LNEG, GSYM REAL_EXP_ADD] \\
+     REWRITE_TAC [REAL_DIV_LNEG, REAL_ADD_LINV, EXP_0])
+  *)
+ >> rw [Hermite_polynomial_def]
+ >> ‘Hermite_polynomial n =
+     \x. -1 pow n * exp (x pow 2 / 2) * diffn n (\t. exp (-(t pow 2) / 2)) x’
+      by rw [FUN_EQ_THM, Hermite_polynomial_def]
+ >> POP_ORW
+ >> simp []
+ >> qabbrev_tac ‘f = \t:real. exp (-(t pow 2) / 2)’
+ (* applying diffn_SUC' *)
+ >> cheat
 QED
+ *)
 
 (* ------------------------------------------------------------------------- *)
 (*  Another alternative definition of convergence in distribution            *)
