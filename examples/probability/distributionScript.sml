@@ -7142,16 +7142,6 @@ Proof
     rw [FUN_EQ_THM, Hermite_polynomial_def]
 QED
 
-Theorem diffn_std_normal_density_lemma[local] :
-    !n. diffn n (\t. exp (-(t pow 2) / 2)) =
-        (\t. -1 pow n * exp (-(t pow 2) / 2) * Hermite_polynomial n t)
-Proof
-    rw [FUN_EQ_THM, Hermite_polynomial_def]
- >> DISJ2_TAC
- >> REWRITE_TAC [GSYM EXP_ADD, REAL_DIV_LNEG, REAL_ADD_LINV]
- >> simp [REAL_POW_POW, EXP_0]
-QED
-
 (* |- !x. Hermite_polynomial 0 x = 1 *)
 Theorem Hermite_polynomial_0 =
         Hermite_polynomial_def
@@ -7199,6 +7189,36 @@ Proof
  >> POP_ORW
  >> HO_MATCH_MP_TAC higher_differentiable_cmul
  >> simp [Hermite_polynomial_differentiable_lemma2]
+QED
+
+Theorem diffn_std_normal_density_lemma[local] :
+    !n. diffn n (\t. exp (-(t pow 2) / 2)) =
+        (\t. -1 pow n * exp (-(t pow 2) / 2) * Hermite_polynomial n t)
+Proof
+    rw [FUN_EQ_THM, Hermite_polynomial_def]
+ >> DISJ2_TAC
+ >> REWRITE_TAC [GSYM EXP_ADD, REAL_DIV_LNEG, REAL_ADD_LINV]
+ >> simp [REAL_POW_POW, EXP_0]
+QED
+
+Theorem diffn_std_normal_density :
+    !n x. diffn n std_normal_density x =
+          -1 pow n / sqrt (2 * pi) * exp (-(x pow 2) / 2) * He n x
+Proof
+    Q.X_GEN_TAC ‘n’
+ >> ‘std_normal_density = (\t. 1 / sqrt (2 * pi) * exp (-(t pow 2) / 2))’
+      by rw [FUN_EQ_THM, std_normal_density_def]
+ >> POP_ORW
+ >> qabbrev_tac ‘c = 1 / sqrt (2 * pi)’
+ (* applying diffn_cmul_general *)
+ >> Know ‘!x. diffn n (\t. c * exp (-(t pow 2) / 2)) x =
+              c * diffn n (\t. exp (-(t pow 2) / 2)) x’
+ >- (HO_MATCH_MP_TAC diffn_cmul_general \\
+     simp [Hermite_polynomial_differentiable_lemma2])
+ >> Rewr'
+ >> rw [diffn_std_normal_density_lemma]
+ >> NTAC 2 DISJ2_TAC
+ >> simp [Abbr ‘c’, REAL_INV_1OVER]
 QED
 
 (* NOTE: “higher_differentiable n (He m) x” also holds, but currently we don't

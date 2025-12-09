@@ -2884,6 +2884,50 @@ Proof
  >> simp [higher_differentiable_I]
 QED
 
+Theorem diffn_cmul_general :
+    !c f n. (!x. higher_differentiable n f x) ==>
+             !x. diffn n (\t. c * f t) x = c * diffn n f x
+Proof
+    NTAC 2 GEN_TAC
+ >> Induct_on ‘n’ >- rw [diffn_0]
+ >> rw [diffn_def]
+ >> Know ‘!x. higher_differentiable n f x’
+ >- (Q.X_GEN_TAC ‘x’ \\
+     MATCH_MP_TAC higher_differentiable_mono \\
+     Q.EXISTS_TAC ‘SUC n’ >> simp [])
+ >> DISCH_TAC
+ >> gs []
+ >> qabbrev_tac ‘g = diffn n f’
+ >> ‘diffn n (\t. c * f t) = \x. c * g x’ by rw [FUN_EQ_THM]
+ >> POP_ORW
+ (* applying higher_differentiable_imp_1n *)
+ >> Know ‘!x. higher_differentiable 1 g x’
+ >- (qunabbrev_tac ‘g’ \\
+     MATCH_MP_TAC higher_differentiable_imp_1n >> art [])
+ >> DISCH_THEN (MP_TAC o Q.SPEC ‘x’)
+ >> RW_TAC std_ss [higher_differentiable_1]
+ >> Know ‘(@y. (g diffl y) x) = y’
+ >- (SELECT_ELIM_TAC \\
+     CONJ_TAC >- (Q.EXISTS_TAC ‘y’ >> art []) \\
+     Q.X_GEN_TAC ‘z’ >> DISCH_TAC \\
+     MATCH_MP_TAC DIFF_UNIQ \\
+     qexistsl_tac [‘g’, ‘x’] >> art [])
+ >> Rewr'
+ >> MP_TAC (Q.SPECL [‘g’, ‘c’, ‘y’, ‘x’] DIFF_CMUL) >> rw []
+ >> SELECT_ELIM_TAC
+ >> CONJ_TAC >- (Q.EXISTS_TAC ‘c * y’ >> art [])
+ >> Q.X_GEN_TAC ‘z’ >> DISCH_TAC
+ >> MATCH_MP_TAC DIFF_UNIQ
+ >> qexistsl_tac [‘\x. c * g x’, ‘x’] >> art []
+QED
+
+Theorem diffn_cmul_general' :
+    !c f n. (!x. higher_differentiable n f x) ==>
+            (diffn n (\t. c * f t) = \x. c * diffn n f x)
+Proof
+    rw [FUN_EQ_THM, diffn_cmul_general]
+QED
+
 (* Temporarily re-enable printing of numeral bits for help documents *)
 val _ = temp_remove_user_printer "num.numeral_computations";
 
