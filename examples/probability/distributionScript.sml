@@ -7306,16 +7306,13 @@ Proof
     rw [FUN_EQ_THM, Hermite_polynomial_1]
 QED
 
-(* |- diff1 (\x. x) = (\x. 1) *)
-Theorem diff1_I = SRULE [] (Q.SPECL [‘1’, ‘0’] diffn_linear)
-
 (* |- !x. Hermite_polynomial 2 x = x pow 2 - 1 *)
 Theorem Hermite_polynomial_2 =
         Hermite_polynomial_recurrence
      |> Q.SPEC ‘1’
      |> SRULE [ADD1, Hermite_polynomial_1, Hermite_polynomial_1', diff1_I]
 
-Theorem Hermite_polynomial_diff1_alt :
+Theorem Hermite_polynomial_diff1_lemma[local] :
     !n x. diff1 (Hermite_polynomial n) x =
           x * Hermite_polynomial n x - Hermite_polynomial (SUC n) x
 Proof
@@ -7361,7 +7358,7 @@ Proof
  >- (MATCH_MP_TAC diff1_cmul \\
      simp [Hermite_polynomial_higher_differentiable_1])
  >> Rewr'
- >> simp [Hermite_polynomial_diff1_alt]
+ >> simp [Hermite_polynomial_diff1_lemma]
  >> simp [REAL_SUB_LDISTRIB, REAL_ARITH “a - (b - c) = a - b + (c:real)”]
  >> REWRITE_TAC [ADD1, GSYM REAL_ADD, REAL_ADD_RDISTRIB]
  >> simp [REAL_ADD_SUB_ALT, Once REAL_ADD_COMM]
