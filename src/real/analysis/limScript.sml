@@ -2404,7 +2404,7 @@ QED
 Theorem diff1_add :
     !f g x. (!t. higher_differentiable 1 f t) /\
             (!t. higher_differentiable 1 g t) ==>
-            diff1 (\t. f t + g t) x = diff1 f x + diff1 g x
+            (diff1 (\t. f t + g t) x = diff1 f x + diff1 g x)
 Proof
     rpt STRIP_TAC
  >> MP_TAC (Q.SPECL [‘f’, ‘g’] diffn_add) >> rw [FUN_EQ_THM]
@@ -2413,7 +2413,7 @@ QED
 Theorem diff1_sub :
     !f g x. (!t. higher_differentiable 1 f t) /\
             (!t. higher_differentiable 1 g t) ==>
-            diff1 (\t. f t - g t) x = diff1 f x - diff1 g x
+            (diff1 (\t. f t - g t) x = diff1 f x - diff1 g x)
 Proof
     rpt STRIP_TAC
  >> MP_TAC (Q.SPECL [‘f’, ‘g’] diffn_sub) >> rw [FUN_EQ_THM]
@@ -2422,7 +2422,7 @@ QED
 Theorem diff1_mul :
     !f g x. (!t. higher_differentiable 1 f t) /\
             (!t. higher_differentiable 1 g t) ==>
-            diffn 1 (\t. f t * g t) x = diffn 1 f x * g x + f x * diffn 1 g x
+            (diffn 1 (\t. f t * g t) x = diffn 1 f x * g x + f x * diffn 1 g x)
 Proof
     rpt STRIP_TAC
  >> ‘f x * diff1 g x = diff1 g x * f x’ by simp [Once REAL_MUL_COMM]

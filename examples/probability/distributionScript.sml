@@ -7142,6 +7142,16 @@ Proof
     rw [FUN_EQ_THM, Hermite_polynomial_def]
 QED
 
+Theorem diffn_std_normal_density_lemma[local] :
+    !n. diffn n (\t. exp (-(t pow 2) / 2)) =
+        (\t. -1 pow n * exp (-(t pow 2) / 2) * Hermite_polynomial n t)
+Proof
+    rw [FUN_EQ_THM, Hermite_polynomial_def]
+ >> DISJ2_TAC
+ >> REWRITE_TAC [GSYM EXP_ADD, REAL_DIV_LNEG, REAL_ADD_LINV]
+ >> simp [REAL_POW_POW, EXP_0]
+QED
+
 (* |- !x. Hermite_polynomial 0 x = 1 *)
 Theorem Hermite_polynomial_0 =
         Hermite_polynomial_def
@@ -7558,6 +7568,9 @@ Proof
          HO_MATCH_MP_TAC higher_differentiable_cmul \\
          HO_MATCH_MP_TAC higher_differentiable_affine \\
          REWRITE_TAC [higher_differentiable_std_normal_density]) \\
+     Q.X_GEN_TAC ‘n’ \\
+     Q.PAT_X_ASSUM ‘bounded (IMAGE f univ(:real))’ MP_TAC \\
+     rw [bounded_alt] \\
      cheat)
  >> DISCH_TAC
  >> Know ‘!s. s <> 0 ==> gi s IN borel_measurable borel’
