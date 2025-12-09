@@ -2280,6 +2280,12 @@ Proof
  >> METIS_TAC [DIFF_UNIQ]
 QED
 
+(* |- !f c x.
+        (!x. higher_differentiable 1 f x) ==>
+        diff1 (\x. c * f x) x = c * diff1 f x
+ *)
+Theorem diff1_cmul = diffn_cmul |> SRULE [FUN_EQ_THM, PULL_FORALL]
+
 Theorem diffl_imp_diffn :
     !m f x y. (diffn m f diffl y) x ==> (diffn (SUC m) f x = y)
 Proof
@@ -2393,6 +2399,35 @@ Proof
  >> qmatch_abbrev_tac ‘y = l - m’
  >> MP_TAC (Q.SPECL [‘f’, ‘g’, ‘l’, ‘m’, ‘x’] DIFF_SUB) >> rw []
  >> METIS_TAC [DIFF_UNIQ]
+QED
+
+Theorem diff1_add :
+    !f g x. (!t. higher_differentiable 1 f t) /\
+            (!t. higher_differentiable 1 g t) ==>
+            diff1 (\t. f t + g t) x = diff1 f x + diff1 g x
+Proof
+    rpt STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘f’, ‘g’] diffn_add) >> rw [FUN_EQ_THM]
+QED
+
+Theorem diff1_sub :
+    !f g x. (!t. higher_differentiable 1 f t) /\
+            (!t. higher_differentiable 1 g t) ==>
+            diff1 (\t. f t - g t) x = diff1 f x - diff1 g x
+Proof
+    rpt STRIP_TAC
+ >> MP_TAC (Q.SPECL [‘f’, ‘g’] diffn_sub) >> rw [FUN_EQ_THM]
+QED
+
+Theorem diff1_mul :
+    !f g x. (!t. higher_differentiable 1 f t) /\
+            (!t. higher_differentiable 1 g t) ==>
+            diffn 1 (\t. f t * g t) x = diffn 1 f x * g x + f x * diffn 1 g x
+Proof
+    rpt STRIP_TAC
+ >> ‘f x * diff1 g x = diff1 g x * f x’ by simp [Once REAL_MUL_COMM]
+ >> POP_ORW
+ >> MP_TAC (Q.SPECL [‘f’, ‘g’] diffn_mul) >> rw [FUN_EQ_THM]
 QED
 
 val higher_differentiable_n_imp_1_tactic =

@@ -7133,10 +7133,19 @@ Definition Hermite_polynomial_def :
     Hermite_polynomial n x = -1 pow n * exp (x pow 2 / 2) *
                              diffn n (\t. exp (-(t pow 2) / 2)) x
 End
+Overload He[local] = “Hermite_polynomial”
+
+Theorem Hermite_polynomial :
+    !n. Hermite_polynomial n = \x. -1 pow n * exp (x pow 2 / 2) *
+                                   diffn n (\t. exp (-(t pow 2) / 2)) x
+Proof
+    rw [FUN_EQ_THM, Hermite_polynomial_def]
+QED
 
 (* |- !x. Hermite_polynomial 0 x = 1 *)
 Theorem Hermite_polynomial_0 =
-        Hermite_polynomial_def |> Q.SPEC ‘0’
+        Hermite_polynomial_def
+     |> Q.SPEC ‘0’
      |> SIMP_RULE bool_ss [GSYM REAL_EXP_ADD, REAL_DIV_LNEG, pow0, diffn_0,
                            REAL_MUL_LID, REAL_ADD_RINV, EXP_0]
 
@@ -7182,15 +7191,31 @@ Proof
  >> simp [Hermite_polynomial_differentiable_lemma2]
 QED
 
+(* NOTE: “higher_differentiable n (He m) x” also holds, but currently we don't
+   have the needed higher_differentiable lemma to prove it.
+ *)
+Theorem Hermite_polynomial_higher_differentiable_1 :
+    !n x. higher_differentiable 1 (He n) x
+Proof
+    Q.X_GEN_TAC ‘n’
+ >> simp [Hermite_polynomial]
+ >> qabbrev_tac ‘c :real = -1 pow n’
+ >> HO_MATCH_MP_TAC higher_differentiable_mul
+ >> CONJ_TAC
+ >- (ONCE_REWRITE_TAC [REAL_MUL_COMM] \\
+     HO_MATCH_MP_TAC higher_differentiable_cmul \\
+     REWRITE_TAC [Hermite_polynomial_differentiable_lemma1])
+ >> simp [SF ETA_ss]
+ >> HO_MATCH_MP_TAC higher_differentiable_imp_1n
+ >> simp [Hermite_polynomial_differentiable_lemma2]
+QED
+
 Theorem Hermite_polynomial_recurrence :
     !n x. Hermite_polynomial (SUC n) x =
           x * Hermite_polynomial n x - diff1 (Hermite_polynomial n) x
 Proof
     rw [Hermite_polynomial_def]
- >> ‘Hermite_polynomial n =
-      (\x. -1 pow n * exp (x pow 2 / 2) * diffn n (\t. exp (-(t pow 2) / 2)) x)’
-      by rw [FUN_EQ_THM, Hermite_polynomial_def]
- >> POP_ORW
+ >> simp [Hermite_polynomial]
  >> qabbrev_tac ‘f = \t:real. exp (-(t pow 2) / 2)’
  >> qabbrev_tac ‘c :real = -1 pow n’
  >> qabbrev_tac ‘g = \x:real. exp (x pow 2 / 2)’
@@ -7231,6 +7256,109 @@ Proof
  >> simp [Abbr ‘g’]
  >> MP_TAC (DIFF_CONV “\x:real. exp (x pow 2 / 2)”) >> rw []
  >> MATCH_MP_TAC diffl_imp_diff1 >> simp []
+QED
+
+Theorem Hermite_polynomial_0'[local] :
+    Hermite_polynomial 0 = \x. 1
+Proof
+    rw [FUN_EQ_THM, Hermite_polynomial_0]
+QED
+
+(* |- !x. Hermite_polynomial 1 x = x *)
+Theorem Hermite_polynomial_1 =
+        Hermite_polynomial_recurrence
+     |> Q.SPEC ‘0’
+     |> SRULE [ADD1, Hermite_polynomial_0, Hermite_polynomial_0', diffn_const]
+
+Theorem Hermite_polynomial_1'[local] :
+    Hermite_polynomial 1 = \x. x
+Proof
+    rw [FUN_EQ_THM, Hermite_polynomial_1]
+QED
+
+(* |- diff1 (\x. x) = (\x. 1) *)
+Theorem diff1_I = SRULE [] (Q.SPECL [‘1’, ‘0’] diffn_linear)
+
+(* |- !x. Hermite_polynomial 2 x = x pow 2 - 1 *)
+Theorem Hermite_polynomial_2 =
+        Hermite_polynomial_recurrence
+     |> Q.SPEC ‘1’
+     |> SRULE [ADD1, Hermite_polynomial_1, Hermite_polynomial_1', diff1_I]
+
+Theorem Hermite_polynomial_diff1_alt :
+    !n x. diff1 (Hermite_polynomial n) x =
+          x * Hermite_polynomial n x - Hermite_polynomial (SUC n) x
+Proof
+    rw [Hermite_polynomial_recurrence]
+ >> REAL_ARITH_TAC
+QED
+
+Theorem Hermite_polynomial_diff1 :
+    !n x. diff1 (Hermite_polynomial (SUC n)) x =
+          &SUC n * Hermite_polynomial n x
+Proof
+    Induct_on ‘n’
+ >- rw [ADD1, Hermite_polynomial_1', Hermite_polynomial_0, diff1_I]
+ >> Q.X_GEN_TAC ‘x’
+ >> qabbrev_tac ‘m = SUC n’
+ >> ‘Hermite_polynomial (SUC m) =
+      (\x. x * Hermite_polynomial m x - diff1 (Hermite_polynomial m) x)’
+      by rw [FUN_EQ_THM, Hermite_polynomial_recurrence]
+ >> POP_ORW
+ >> simp []
+ >> Know ‘!x. higher_differentiable 1 (\x. x * He m x) x’
+ >- (HO_MATCH_MP_TAC higher_differentiable_mul \\
+     simp [higher_differentiable_I, SF ETA_ss,
+           Hermite_polynomial_higher_differentiable_1])
+ >> DISCH_TAC
+ (* applying diffn_sub *)
+ >> Know ‘diff1 (\x. x * He m x - &m * He n x) x =
+          diff1 (\x. x * He m x) x - diff1 (\x. &m * He n x) x’
+ >- (HO_MATCH_MP_TAC diff1_sub >> simp [] \\
+     HO_MATCH_MP_TAC higher_differentiable_cmul \\
+     simp [SF ETA_ss, Hermite_polynomial_higher_differentiable_1])
+ >> Rewr'
+ >> Know ‘diff1 (\x. x * He m x) x =
+          diff1 (\x. x) x * He m x + x * diff1 (He m) x’
+ >- (qabbrev_tac ‘f = \x. x:real’ \\
+     qabbrev_tac ‘g = He m’ \\
+     MP_TAC (Q.SPECL [‘f’, ‘g’] diff1_mul) \\
+     simp [Abbr ‘f’, Abbr ‘g’, higher_differentiable_I, SF ETA_ss,
+           Hermite_polynomial_higher_differentiable_1])
+ >> Rewr'
+ >> simp [diff1_I]
+ >> Know ‘diff1 (\x. &m * He n x) x = &m * diff1 (He n) x’
+ >- (MATCH_MP_TAC diff1_cmul \\
+     simp [Hermite_polynomial_higher_differentiable_1])
+ >> Rewr'
+ >> simp [Hermite_polynomial_diff1_alt]
+ >> simp [REAL_SUB_LDISTRIB, REAL_ARITH “a - (b - c) = a - b + (c:real)”]
+ >> REWRITE_TAC [ADD1, GSYM REAL_ADD, REAL_ADD_RDISTRIB]
+ >> simp [REAL_ADD_SUB_ALT, Once REAL_ADD_COMM]
+QED
+
+Theorem Hermite_polynomial_recursive :
+    !n x. n <> 0 ==>
+          Hermite_polynomial (SUC n) x =
+          x * Hermite_polynomial n x - &n * Hermite_polynomial (PRE n) x
+Proof
+    Q.X_GEN_TAC ‘m’
+ >> rw [Hermite_polynomial_recurrence]
+ >> Suff ‘diff1 (Hermite_polynomial m) x =
+          &m * Hermite_polynomial (PRE m) x’ >- rw []
+ >> Cases_on ‘m’ >> fs [Hermite_polynomial_diff1]
+QED
+
+(* NOTE: ‘n <> 0’ can be removed since “PRE 0 = 0” (a special case) *)
+Theorem Hermite_polynomial_recursive' :
+    !n x. Hermite_polynomial (SUC n) x =
+          x * Hermite_polynomial n x - &n * Hermite_polynomial (PRE n) x
+Proof
+    rpt GEN_TAC
+ >> Cases_on ‘n = 0’
+ >- simp [Hermite_polynomial_recurrence, Hermite_polynomial_0', diffn_const,
+          Hermite_polynomial_1]
+ >> MATCH_MP_TAC Hermite_polynomial_recursive >> art []
 QED
 
 (* ------------------------------------------------------------------------- *)
