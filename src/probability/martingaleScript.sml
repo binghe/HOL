@@ -1619,6 +1619,18 @@ Proof
  >> FIRST_X_ASSUM MATCH_MP_TAC >> simp []
 QED
 
+(* |- !m u.
+        measure_space m /\ (!t. integrable m (Normal o u t)) /\
+        (!x. x IN m_space m ==> (\t. u t x) continuous_on univ(:real)) /\
+        (?w. integrable m w /\
+             (!x. x IN m_space m ==> 0 <= w x /\ w x <> PosInf) /\
+             !t x. x IN m_space m ==> Normal (abs (u t x)) <= w x) ==>
+        (\t. real (integral m (Normal o u t))) continuous_on univ(:real)
+ *)
+Theorem continuity_univ_lemma =
+        continuity_lemma |> Q.SPEC ‘UNIV’ |> SRULE [OPEN_UNIV]
+
+(* TODO: These tactics may give different results when defined as a variable *)
 fun shared_tactics () =
     Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ (MP_TAC o Q.SPEC ‘e’) >> simp [] \\
     DISCH_THEN (Q.X_CHOOSE_THEN ‘d’ STRIP_ASSUME_TAC) \\
@@ -1636,21 +1648,10 @@ fun shared_tactics () =
     REWRITE_TAC [GSYM REAL_NEG_LMUL] \\
     REWRITE_TAC [REAL_SUB_NEG2];
 
-(* |- !m u.
-        measure_space m /\ (!t. integrable m (Normal o u t)) /\
-        (!x. x IN m_space m ==> (\t. u t x) continuous_on univ(:real)) /\
-        (?w. integrable m w /\
-             (!x. x IN m_space m ==> 0 <= w x /\ w x <> PosInf) /\
-             !t x. x IN m_space m ==> Normal (abs (u t x)) <= w x) ==>
-        (\t. real (integral m (Normal o u t))) continuous_on univ(:real)
- *)
-Theorem continuity_univ_lemma =
-        continuity_lemma |> Q.SPEC ‘UNIV’ |> SRULE [OPEN_UNIV]
-
 (* Theorem 12.5 [1, p.100]
 
-   NOTE: “open s /\ connected s” is to make sure both OPEN_interval and UNIV
-   are included.
+   NOTE: The original antecedent “interval (a,b)” is replaced by “open s /\
+   connected s” so that the theorem can be generalised to UNIV.
  *)
 Theorem differentiable_lemma :
     !s m u. measure_space (m :'a m_space) /\ open s /\ connected s /\
@@ -1667,8 +1668,7 @@ Theorem differentiable_lemma :
                ) (at t within s)
 Proof
     rpt GEN_TAC >> STRIP_TAC
- >> Q.X_GEN_TAC ‘t’
- >> DISCH_TAC
+ >> Q.X_GEN_TAC ‘t’ >> DISCH_TAC
  >> ‘!x. x IN m_space m ==> (\t. u t x) continuous_on s’
       by METIS_TAC [DIFFERENTIABLE_IMP_CONTINUOUS_ON]
  (* eliminating ‘diff1’ *)
@@ -1677,7 +1677,6 @@ Proof
  >> simp [GSYM RIGHT_FORALL_IMP_THM, AND_IMP_INTRO, Once SWAP_FORALL_THM]
  >> simp [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM]
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘g’ STRIP_ASSUME_TAC)
- (* stage work *)
  >> Know ‘!t x. t IN s /\ x IN m_space m ==> diff1 (\t. u t x) t = g t x’
  >- (qx_genl_tac [‘v’, ‘x’] >> STRIP_TAC \\
      MATCH_MP_TAC has_vector_derivative_imp_diff1 \\
@@ -2016,6 +2015,7 @@ Proof
       ONCE_REWRITE_TAC [REAL_MUL_COMM] >> art [] ]
 QED
 
+(* NOTE: use diff1 (and differentiable_on) instead of “has_vector_derivative” *)
 Theorem differentiable_lemma' :
     !s m u. measure_space (m :'a m_space) /\ open s /\ connected s /\
       (!t. t IN s ==> integrable m (Normal o u t)) /\
@@ -2057,13 +2057,14 @@ QED
         (?w. integrable m w /\
              (!x. x IN m_space m ==> 0 <= w x /\ w x <> PosInf) /\
              !t x.
-               x IN m_space m ==> Normal (abs (diff1 (\t. u t x) t)) <= w x) ==>
+               x IN m_space m ==> Normal (abs (diff1 (\t. u t x) t)) <= w x)
+       ==>
         !t. integrable m (\x. Normal (diff1 (\t. u t x) t)) /\
             ((\t. real (integral m (Normal o u t))) has_vector_derivative
              real (integral m (\x. Normal (diff1 (\t. u t x) t)))) (at t)
  *)
-Theorem differentiable_univ_lemma =
-        differentiable_lemma |> Q.SPEC ‘UNIV’
+Theorem differentiable_univ_lemma = differentiable_lemma
+     |> Q.SPEC ‘UNIV’
      |> SRULE [OPEN_UNIV, CONNECTED_UNIV, NET_WITHIN_UNIV]
 
 (* |- !m u.
@@ -2072,14 +2073,15 @@ Theorem differentiable_univ_lemma =
         (?w. integrable m w /\
              (!x. x IN m_space m ==> 0 <= w x /\ w x <> PosInf) /\
              !t x.
-               x IN m_space m ==> Normal (abs (diff1 (\t. u t x) t)) <= w x) ==>
+               x IN m_space m ==> Normal (abs (diff1 (\t. u t x) t)) <= w x)
+       ==>
         (\t. real (integral m (Normal o u t))) differentiable_on univ(:real) /\
         !t. integrable m (\x. Normal (diff1 (\t. u t x) t)) /\
             diff1 (\t. real (integral m (Normal o u t))) t =
             real (integral m (\x. Normal (diff1 (\t. u t x) t)))
  *)
-Theorem differentiable_univ_lemma' =
-        differentiable_lemma' |> Q.SPEC ‘UNIV’
+Theorem differentiable_univ_lemma' = differentiable_lemma'
+     |> Q.SPEC ‘UNIV’
      |> SRULE [OPEN_UNIV, CONNECTED_UNIV, NET_WITHIN_UNIV]
 
 (* ------------------------------------------------------------------------- *)

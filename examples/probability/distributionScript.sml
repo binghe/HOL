@@ -3892,7 +3892,7 @@ Proof
  >> REWRITE_TAC [has_vector_derivative_neg_x_std_normal_density]
 QED
 
-(* NOTE: This proof is based on the new LN_LT_HALF_X (transc):
+(* NOTE: This proof is based on the new LN_LT_HALF_X (transcTheory):
 
    |- ln x < x / 2 (2 <= x)
   <=> x - ln x > x - x / 2 (= x / 2)
@@ -3934,7 +3934,7 @@ Proof
  >> qabbrev_tac ‘d = c / e’
  >> ‘0 < d’ by simp [Abbr ‘d’, REAL_LT_DIV]
  >> Know ‘!n. d * &n < sqrt (exp (&n pow 2)) <=>
-              (d * &n) pow 2 < sqrt (exp (&n pow 2)) pow 2’
+             (d * &n) pow 2 < sqrt (exp (&n pow 2)) pow 2’
  >- (Q.X_GEN_TAC ‘n’ \\
      qmatch_abbrev_tac ‘a < (b :real) <=> _’ \\
      SYM_TAC >> MATCH_MP_TAC REAL_POW_LT_EQ \\
@@ -4524,8 +4524,9 @@ Theorem converge_in_dist_alt_weak_converge :
            ((X --> Y) (in_distribution p) <=>
             (\n. distribution p (X n)) --> distribution p Y)
 Proof
-    rw [converge_in_dist_def, weak_converge_def, expectation_def, distribution_distr,
-        random_variable_def, prob_space_def, p_space_def, events_def]
+    rw [converge_in_dist_def, weak_converge_def, expectation_def,
+        distribution_distr, random_variable_def,
+        prob_space_def, p_space_def, events_def]
  >> EQ_TAC >> rw []
  >| [ (* goal 1 (of 2) *)
       qabbrev_tac ‘g = Normal o f’ \\
@@ -4539,7 +4540,8 @@ Proof
           fs [IN_bounded_continuous] \\
           simp [borel_alt_general, Borel_alt_general] \\
           MATCH_MP_TAC IN_MEASURABLE_CONTINUOUS_MAP >> art []) >> Rewr' \\
-     Know ‘!n. integral (space Borel,subsets Borel,distr p Y) g = integral p (g o Y)’
+     Know ‘!n. integral (space Borel,subsets Borel,distr p Y) g =
+               integral p (g o Y)’
      >- (MATCH_MP_TAC (cj 1 integral_distr) \\
          simp [SIGMA_ALGEBRA_BOREL, Abbr ‘g’] \\
          MATCH_MP_TAC IN_MEASURABLE_BOREL_IMP_BOREL' \\
@@ -4750,7 +4752,8 @@ Proof
  >> qmatch_abbrev_tac ‘s IN subsets (B t)’
  >> Know ‘s = {x | x IN topspace t /\
                    !n. ?u. open_in t u /\ x IN u /\
-                           !y z. y IN u /\ z IN u ==> dist (f y,f z) < inv (&SUC n)}’
+                           !y z. y IN u /\ z IN u ==>
+                                 dist (f y,f z) < inv (&SUC n)}’
  >- (RW_TAC set_ss [Abbr ‘s’, Once EXTENSION] \\
      EQ_TAC >> RW_TAC std_ss []
      >- (POP_ASSUM (MP_TAC o Q.SPEC ‘ball (f x,inv (&SUC n) / 2)’) \\
@@ -5231,7 +5234,7 @@ Proof
  >> POP_ASSUM MATCH_MP_TAC >> rw [Abbr ‘M’]
 QED
 
-(* alternative antecedents using ‘prob_space’ instead of ‘subprobability_measure’ *)
+(* NOTE: these are alternative antecedents using ‘prob_space’ instead. *)
 Definition Portemanteau_antecedents_alt_def :
     Portemanteau_antecedents_alt E X Y <=>
    (!n. prob_space (space (B E),subsets (B E),X n)) /\
@@ -7364,7 +7367,7 @@ Proof
  >> simp [REAL_ADD_SUB_ALT, Once REAL_ADD_COMM]
 QED
 
-Theorem Hermite_polynomial_recursive :
+Theorem Hermite_polynomial_recursive_lemma[local] :
     !n x. n <> 0 ==>
           Hermite_polynomial (SUC n) x =
           x * Hermite_polynomial n x - &n * Hermite_polynomial (PRE n) x
@@ -7377,7 +7380,7 @@ Proof
 QED
 
 (* NOTE: ‘n <> 0’ can be removed since “PRE 0 = 0” (a special case) *)
-Theorem Hermite_polynomial_recursive' :
+Theorem Hermite_polynomial_recursive :
     !n x. Hermite_polynomial (SUC n) x =
           x * Hermite_polynomial n x - &n * Hermite_polynomial (PRE n) x
 Proof
@@ -7385,7 +7388,7 @@ Proof
  >> Cases_on ‘n = 0’
  >- simp [Hermite_polynomial_recurrence, Hermite_polynomial_0', diffn_const,
           Hermite_polynomial_1]
- >> MATCH_MP_TAC Hermite_polynomial_recursive >> art []
+ >> MATCH_MP_TAC Hermite_polynomial_recursive_lemma >> art []
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -7586,8 +7589,17 @@ Proof
          HO_MATCH_MP_TAC higher_differentiable_affine \\
          REWRITE_TAC [higher_differentiable_std_normal_density]) \\
      Q.X_GEN_TAC ‘n’ \\
-     Q.PAT_X_ASSUM ‘bounded (IMAGE f univ(:real))’ MP_TAC \\
-     rw [bounded_alt] \\
+     Q.PAT_X_ASSUM ‘bounded (IMAGE f univ(:real))’ MP_TAC >> rw [bounded_alt] \\
+     Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> gi s x = _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> fi s x = _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> integrable lborel (Normal o u s x)’ K_TAC \\
+     simp [Abbr ‘u’] \\
+  (* applying diffn_cmul and diffn_std_normal_density *)
+     Know ‘!t x. abs (diffn n
+                      (\t. f x *
+                           std_normal_density
+                             (-realinv s * t + realinv s * x)) t) =
+                 f x * exp (-(t pow 2) / 2) * He n t’ >- cheat >> Rewr' \\
      cheat)
  >> DISCH_TAC
  >> Know ‘!s. s <> 0 ==> gi s IN borel_measurable borel’
@@ -7759,6 +7771,7 @@ Proof
      >- (qunabbrev_tac ‘s’ \\
          MATCH_MP_TAC REAL_LT_DIV >> art [] \\
          MATCH_MP_TAC REAL_LT_MUL >> art []) >> DISCH_TAC \\
+  (* s := e / (c * k), thus s' := s / 2 < e / (c * k) for sure *)
      qabbrev_tac ‘s' = s / 2’ \\
     ‘0 < s'’ by simp [Abbr ‘s'’, REAL_LT_DIV] \\
      Q.EXISTS_TAC ‘s'’ \\
@@ -8025,5 +8038,6 @@ val _ = html_theory "distribution";
   [8] Klenke, A.: Probability Theory: A Comprehensive Course. Third Edition.
       Springer Science & Business Media, London (2020).
   [9] Wikipedia: https://en.wikipedia.org/wiki/Hermite_polynomials
+  [10] Billingsley, P.: Convergence of Probability Measures. John Wiley & Sons (2013).
 
  *)

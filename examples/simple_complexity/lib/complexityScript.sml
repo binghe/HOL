@@ -1392,5 +1392,6 @@ val big_O_size_eq_big_O_ulog = store_thm(
 
 (* export theory at end *)
 val _ = export_theory();
+val _ = html_theory "complexity";
 
 (*===========================================================================*)
