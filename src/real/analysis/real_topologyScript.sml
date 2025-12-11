@@ -6019,6 +6019,14 @@ Proof
   ASM_MESON_TAC[REAL_LT_TRANS]
 QED
 
+Theorem LIM_WITHIN_OPEN_CONG :
+   !f (l :real) (a :real) s t.
+       a IN s /\ open s /\ a IN t /\ open t ==>
+      ((f --> l)(at a within s) <=> (f --> l)(at a within t))
+Proof
+    rw [LIM_WITHIN_OPEN]
+QED
+
 (* ------------------------------------------------------------------------- *)
 (* More limit point characterizations.                                       *)
 (* ------------------------------------------------------------------------- *)
@@ -7050,6 +7058,13 @@ QED
 (* NOTE: This theorem is not from HOL-Light. *)
 Theorem LIM_WITHIN_CONG :
    !f g l r a s. (!x. ~(x = a) /\ x IN s ==> (f x - l = g x - r))
+  ==> ((f --> l) (at a within s) <=> ((g --> r) (at a within s)))
+Proof
+    rw [LIM_WITHIN, dist]
+QED
+
+Theorem LIM_WITHIN_ABS_CONG :
+   !f g l r a s. (!x. ~(x = a) /\ x IN s ==> (abs (f x - l) = abs (g x - r)))
   ==> ((f --> l) (at a within s) <=> ((g --> r) (at a within s)))
 Proof
     rw [LIM_WITHIN, dist]
@@ -24830,6 +24845,27 @@ Proof
       RULE_ASSUM_TAC (SIMP_RULE std_ss [GSYM INTERVAL_EQ_EMPTY, REAL_NOT_LT]) \\
       ASM_SIMP_TAC std_ss [INTERVAL_UPPERBOUND, INTERVAL_LOWERBOUND] \\
       REWRITE_TAC [CONTENT_EQ_0] >> ASM_REAL_ARITH_TAC ]
+QED
+
+Theorem CONNECTED_INTERVAL :
+    !a b. connected (interval (a,b)) /\
+          connected (interval [a,b])
+Proof
+    rpt STRIP_TAC
+ >| [ (* goal 1 (of 2) *)
+      Cases_on ‘b < a’
+      >- simp [iffLR (cj 2 INTERVAL_EQ_EMPTY), CONNECTED_EMPTY, REAL_LT_IMP_LE] \\
+      fs [REAL_NOT_LT] \\
+     ‘segment (a,b) = interval (a,b)’ by simp [SEGMENT] \\
+      POP_ASSUM (REWRITE_TAC o wrap o SYM) \\
+      simp [CONNECTED_SEGMENT],
+      (* goal 2 (of 2) *)
+      Cases_on ‘b < a’
+      >- simp [iffLR (cj 1 INTERVAL_EQ_EMPTY), CONNECTED_EMPTY] \\
+      fs [REAL_NOT_LT] \\
+     ‘segment [a,b] = interval [a,b]’ by simp [SEGMENT] \\
+      POP_ASSUM (REWRITE_TAC o wrap o SYM) \\
+      simp [CONNECTED_SEGMENT] ]
 QED
 
 (* END *)
