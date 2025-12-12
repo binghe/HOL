@@ -2663,6 +2663,15 @@ Proof
  >> rw [higher_differentiable_def]
 QED
 
+Theorem higher_differentiable_compose :
+    !n f g. (!x. higher_differentiable n f x) /\
+            (!x. higher_differentiable n g x) ==>
+            (!x. higher_differentiable n (f o g) x)
+Proof
+    rw [o_DEF]
+ >> MATCH_MP_TAC higher_differentiable_chain >> art []
+QED
+
 Theorem diffn_linear :
     !a b. diffn 1 (λx. a * x + b) = λx. a
 Proof
@@ -2969,6 +2978,14 @@ Proof
  >> simp [higher_differentiable_I]
 QED
 
+Theorem higher_differentiable_linear :
+    !a b n x. higher_differentiable n (\x. a * x + b) x
+Proof
+    rpt GEN_TAC
+ >> MP_TAC (Q.SPECL [‘a’, ‘b’, ‘n’, ‘\x. x’] higher_differentiable_affine)
+ >> rw [higher_differentiable_I]
+QED
+
 Theorem diffn_cmul_general :
     !c f n. (!x. higher_differentiable n f x) ==>
              !x. diffn n (\t. c * f t) x = c * diffn n f x
@@ -3004,6 +3021,55 @@ Proof
  >> Q.X_GEN_TAC ‘z’ >> DISCH_TAC
  >> MATCH_MP_TAC DIFF_UNIQ
  >> qexistsl_tac [‘\x. c * g x’, ‘x’] >> art []
+QED
+
+Theorem diffn_linear_general :
+    !a b f n. (!x. higher_differentiable n f x) ==>
+              (diffn n (\x. f (a * x + b)) =
+               \x. a pow n * diffn n f (a * x + b))
+Proof
+    NTAC 3 GEN_TAC
+ >> Induct_on ‘n’ >- rw []
+ >> rw [FUN_EQ_THM]
+ >> Know ‘!x. higher_differentiable n f x’
+ >- (Q.X_GEN_TAC ‘x’ \\
+     MATCH_MP_TAC higher_differentiable_mono \\
+     Q.EXISTS_TAC ‘SUC n’ >> simp [])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘g = \x. a * x + b’ >> fs []
+ >> ‘!x. higher_differentiable (SUC n) g x’
+      by simp [Abbr ‘g’, higher_differentiable_linear]
+ >> ‘!x. higher_differentiable (SUC n) (\x. f (g x)) x’
+      by simp [higher_differentiable_chain]
+ >> Know ‘diffn (SUC n) (\x. f (g x)) = diff1 (diffn n (\x. f (g x)))’
+ >- (SYM_TAC >> MATCH_MP_TAC diffn_SUC' >> art [])
+ >> Rewr'
+ >> simp []
+ >> Know ‘diff1 (\x. a pow n * diffn n f (g x)) =
+          \x. a pow n * diff1 (\x. diffn n f (g x)) x’
+ >- (HO_MATCH_MP_TAC diffn_cmul \\
+     HO_MATCH_MP_TAC higher_differentiable_chain \\
+     reverse CONJ_TAC
+     >- (Q.X_GEN_TAC ‘x’ \\
+         MATCH_MP_TAC higher_differentiable_mono \\
+         Q.EXISTS_TAC ‘SUC n’ >> simp []) \\
+     MATCH_MP_TAC higher_differentiable_imp_1n >> art [])
+ >> Rewr'
+ >> simp []
+ >> Know ‘diff1 (\x. diffn n f (g x)) =
+          \x. diff1 (diffn n f) (g x) * diff1 g x’
+ >- (MATCH_MP_TAC diffn_chain \\
+     reverse CONJ_TAC
+     >- (Q.X_GEN_TAC ‘x’ \\
+         MATCH_MP_TAC higher_differentiable_mono \\
+         Q.EXISTS_TAC ‘SUC n’ >> simp []) \\
+     MATCH_MP_TAC higher_differentiable_imp_1n >> art [])
+ >> Rewr'
+ >> simp []
+ >> Know ‘diff1 (diffn n f) = diffn (SUC n) f’
+ >- (MATCH_MP_TAC diffn_SUC' >> art [])
+ >> Rewr'
+ >> simp [Abbr ‘g’, diffn_linear, pow]
 QED
 
 (* Temporarily re-enable printing of numeral bits for help documents *)

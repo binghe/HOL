@@ -7588,18 +7588,42 @@ Proof
          HO_MATCH_MP_TAC higher_differentiable_cmul \\
          HO_MATCH_MP_TAC higher_differentiable_affine \\
          REWRITE_TAC [higher_differentiable_std_normal_density]) \\
-     Q.X_GEN_TAC ‘n’ \\
+     rpt GEN_TAC \\
      Q.PAT_X_ASSUM ‘bounded (IMAGE f univ(:real))’ MP_TAC >> rw [bounded_alt] \\
      Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> gi s x = _’ K_TAC \\
      Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> fi s x = _’ K_TAC \\
      Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> integrable lborel (Normal o u s x)’ K_TAC \\
      simp [Abbr ‘u’] \\
-  (* applying diffn_cmul and diffn_std_normal_density *)
-     Know ‘!t x. abs (diffn n
-                      (\t. f x *
-                           std_normal_density
-                             (-realinv s * t + realinv s * x)) t) =
-                 f x * exp (-(t pow 2) / 2) * He n t’ >- cheat >> Rewr' \\
+  (* applying diffn_cmul_general *)
+     Know ‘!t x. diffn n
+                   (\t. f x *
+                        std_normal_density (-inv s * t + inv s * x)) t =
+                 f x *
+                 diffn n
+                   (\t. std_normal_density (-inv s * t + inv s * x)) t’
+     >- (simp [Once SWAP_FORALL_THM] \\
+         Q.X_GEN_TAC ‘x’ \\
+         HO_MATCH_MP_TAC diffn_cmul_general \\
+         qabbrev_tac ‘y = inv s * (x :real)’ \\
+         qabbrev_tac ‘g = \t. -inv s * t + y’ \\
+        ‘(\t. std_normal_density (-realinv s * t + y)) = std_normal_density o g’
+           by rw [FUN_EQ_THM, Abbr ‘g’, o_DEF] >> POP_ORW \\
+         MATCH_MP_TAC higher_differentiable_compose \\
+         simp [higher_differentiable_std_normal_density, Abbr ‘g’] \\
+         rw [higher_differentiable_linear]) >> Rewr' \\
+  (* applying diffn_linear_general *)
+     Know ‘!x. diffn n (\t. std_normal_density
+                              (-inv s * t + inv s * x)) =
+               (\t. -inv s pow n *
+                    diffn n std_normal_density (-inv s * t + inv s * x))’
+     >- (Q.X_GEN_TAC ‘x’ \\
+         MATCH_MP_TAC diffn_linear_general \\
+         simp [higher_differentiable_std_normal_density]) >> Rewr' \\
+  (* applying diffn_std_normal_density *)
+     simp [diffn_std_normal_density] \\
+     qabbrev_tac ‘c :real = inv (sqrt (2 * pi))’ \\
+     REWRITE_TAC [GSYM REAL_MUL_ASSOC, GSYM POW_MUL, REAL_NEG_MUL2, REAL_MUL_RID] \\
+     simp [] \\
      cheat)
  >> DISCH_TAC
  >> Know ‘!s. s <> 0 ==> gi s IN borel_measurable borel’
