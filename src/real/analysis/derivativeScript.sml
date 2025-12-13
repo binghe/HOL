@@ -431,6 +431,55 @@ Proof
   REWRITE_TAC[linear, convex_on] THEN rw []
 QED
 
+Theorem CONVEX_ON_SING :
+    !f a:real. f convex_on {a}
+Proof
+  REPEAT GEN_TAC THEN MATCH_MP_TAC CONVEX_ON_EQ THEN
+  EXISTS_TAC ``\x:real. (f:real->real) a`` THEN
+  SIMP_TAC std_ss[IN_SING, CONVEX_SING, CONVEX_ON_CONST]
+QED
+
+Theorem CONVEX_ADD :
+    !s f g. f convex_on s /\ g convex_on s ==> (\x. f(x) + g(x)) convex_on s
+Proof
+  SIMP_TAC bool_ss [convex_on, AND_FORALL_THM] THEN
+  REPEAT(HO_MATCH_MP_TAC MONO_FORALL ORELSE GEN_TAC) THEN
+  HO_MATCH_MP_TAC(TAUT
+    `(b /\ c ==> d) ==> (a ==> b) /\ (a ==> c) ==> a ==> d`) THEN
+  REAL_ARITH_TAC
+QED
+
+Theorem CONVEX_ADD_EQ :
+    !a f s:real->bool. (\x. a + f x) convex_on s <=> f convex_on s
+Proof
+  REPEAT STRIP_TAC THEN EQ_TAC THEN
+  SIMP_TAC std_ss [CONVEX_ADD, CONVEX_ON_CONST] THEN
+  DISCH_THEN(MP_TAC o SPEC ``(\x. -a):real->real`` o
+    MATCH_MP (REWRITE_RULE[IMP_CONJ_ALT] CONVEX_ADD)) THEN
+  SIMP_TAC (std_ss ++ ETA_ss) [CONVEX_ON_CONST, REAL_ARITH ``-a + (a + x:real) = x``]
+QED
+
+(* NOTE: HOL-Light's [REAL_LE_LMUL] is HOL4's [REAL_LE_LMUL_IMP]. *)
+Theorem CONVEX_CMUL :
+    !s c f. &0 <= c /\ f convex_on s ==> (\x. c * f(x)) convex_on s
+Proof
+    RW_TAC std_ss [convex_on, REAL_LE_LMUL_IMP,
+           REAL_ARITH ``u * (c * fx) + v * (c * fy) = (c :real) * (u * fx + v * fy)``]
+QED
+
+Theorem CONVEX_MAX :
+    !f g s. f convex_on s /\ g convex_on s
+           ==> (\x. max (f x) (g x)) convex_on s
+Proof
+  SIMP_TAC std_ss[convex_on, REAL_MAX_LE] THEN REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(fn th =>
+    W(MP_TAC o PART_MATCH (lhand o rand) th o lhand o snd)) THEN
+  ASM_REWRITE_TAC[] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT] REAL_LE_TRANS) THEN
+  MATCH_MP_TAC REAL_LE_ADD2 THEN CONJ_TAC THEN
+  MATCH_MP_TAC REAL_LE_LMUL_IMP THEN ASM_REAL_ARITH_TAC
+QED
+
 Theorem REAL_CONVEX_BOUND2_LT :
     !x y a b u v:real. x < a /\ y < b /\ &0 <= u /\ &0 <= v /\ (u + v = &1)
                ==> u * x + v * y < u * a + v * b
@@ -2645,8 +2694,8 @@ let CONVEX_ON_DERIVATIVE_SECANT,CONVEX_ON_DERIVATIVES =
     DISCH_THEN(CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC) THEN
     ONCE_REWRITE_TAC[TAUT `a ==> b /\ c ==> d <=> b ==> a ==> c ==> d`] THEN
     STRIP_TAC THEN REWRITE_TAC[IMP_IMP] THEN
-    DISCH_THEN(CONJUNCTS_THEN2 (MP_TAC o AP_TERM `(*) (u:real)`)
-                               (MP_TAC o AP_TERM `(*) (&1 - u:real)`)) THEN
+    DISCH_THEN(CONJUNCTS_THEN2 (MP_TAC o AP_TERM `( * ) (u:real)`)
+                               (MP_TAC o AP_TERM `( * ) (&1 - u:real)`)) THEN
     MATCH_MP_TAC(REAL_ARITH
      `f1 <= f2 /\ (xa <= xb ==> a <= b)
       ==> xa = f1 ==> xb = f2 ==> a <= b`) THEN
