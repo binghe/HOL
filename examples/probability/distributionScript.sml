@@ -7487,7 +7487,8 @@ Proof
  >> DISCH_TAC
  (* applying integration_of_normal_rv *)
  >> Know ‘!s x. (integrable p (Normal o g s x o Z) <=>
-                 integrable lborel (\y. Normal (g s x y * std_normal_density y))) /\
+                 integrable lborel
+                           (\y. Normal (g s x y * std_normal_density y))) /\
                 (integral p (Normal o g s x o Z) =
                  integral lborel (\y. Normal (g s x y * std_normal_density y)))’
  >- (rpt GEN_TAC \\
@@ -7619,11 +7620,11 @@ Proof
      >- (Q.X_GEN_TAC ‘x’ \\
          MATCH_MP_TAC diffn_linear_general \\
          simp [higher_differentiable_std_normal_density]) >> Rewr' \\
-  (* applying diffn_std_normal_density *)
      simp [diffn_std_normal_density] \\
      qabbrev_tac ‘c :real = inv (sqrt (2 * pi))’ \\
-     REWRITE_TAC [GSYM REAL_MUL_ASSOC, GSYM POW_MUL, REAL_NEG_MUL2, REAL_MUL_RID] \\
-     simp [] \\
+  (* eliminating ‘-1 pow n’ *)
+     SIMP_TAC real_ss [GSYM REAL_MUL_ASSOC, GSYM POW_MUL, REAL_NEG_MUL2] \\
+     simp [] (* further normalisation *) \\
      cheat)
  >> DISCH_TAC
  >> Know ‘!s. s <> 0 ==> gi s IN borel_measurable borel’
