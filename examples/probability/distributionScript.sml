@@ -7573,103 +7573,20 @@ Proof
      MATCH_MP_TAC in_borel_measurable_from_Borel >> art [] \\
      simp [MEASURE_SPACE_SIGMA_ALGEBRA])
  >> DISCH_TAC
- (* applying gauge_higher_differentiable_lemma *)
- >> Know ‘!s. s <> 0 ==> !n x. higher_differentiable n (gi s) x’
- >- (Q.X_GEN_TAC ‘s’ >> DISCH_TAC \\
-    ‘gi s = \x. abs (inv s) * integral univ(:real) (u s x)’
-       by rw [FUN_EQ_THM] >> POP_ORW \\
-     Q.X_GEN_TAC ‘n’ \\
-     HO_MATCH_MP_TAC higher_differentiable_mul \\
-     simp [higher_differentiable_const] \\
-     MATCH_MP_TAC (cj 1 gauge_higher_differentiable_lemma) >> simp [] \\
-     CONJ_TAC
-     >- (rpt GEN_TAC \\
-         simp [Abbr ‘u’] \\
-         Q.ID_SPEC_TAC ‘t’ \\
-         HO_MATCH_MP_TAC higher_differentiable_cmul \\
-         HO_MATCH_MP_TAC higher_differentiable_affine \\
-         REWRITE_TAC [higher_differentiable_std_normal_density]) \\
-     rpt GEN_TAC \\
-     Q.PAT_X_ASSUM ‘bounded (IMAGE f univ(:real))’ MP_TAC >> rw [bounded_alt] \\
-     Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> gi s x = _’ K_TAC \\
-     Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> fi s x = _’ K_TAC \\
-     Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> integrable lborel (Normal o u s x)’ K_TAC \\
+ (* preparing for gauge_higher_differentiable_lemma *)
+ >> Know ‘!n t x s. higher_differentiable n (\t. u s t x) t’
+ >- (rpt GEN_TAC \\
      simp [Abbr ‘u’] \\
-  (* applying diffn_cmul_general *)
-     Know ‘!t x. diffn n
-                   (\t. f x *
-                        std_normal_density (-inv s * t + inv s * x)) t =
-                 f x *
-                 diffn n
-                   (\t. std_normal_density (-inv s * t + inv s * x)) t’
-     >- (simp [Once SWAP_FORALL_THM] \\
-         Q.X_GEN_TAC ‘x’ \\
-         HO_MATCH_MP_TAC diffn_cmul_general \\
-         qabbrev_tac ‘y = inv s * (x :real)’ \\
-         qabbrev_tac ‘g = \t. -inv s * t + y’ \\
-        ‘(\t. std_normal_density (-realinv s * t + y)) = std_normal_density o g’
-           by rw [FUN_EQ_THM, Abbr ‘g’, o_DEF] >> POP_ORW \\
-         MATCH_MP_TAC higher_differentiable_compose \\
-         simp [higher_differentiable_std_normal_density, Abbr ‘g’] \\
-         rw [higher_differentiable_linear]) >> Rewr' \\
-  (* applying diffn_linear_general *)
-     Know ‘!x. diffn n (\t. std_normal_density
-                              (-inv s * t + inv s * x)) =
-               (\t. -inv s pow n *
-                    diffn n std_normal_density (-inv s * t + inv s * x))’
-     >- (Q.X_GEN_TAC ‘x’ \\
-         MATCH_MP_TAC diffn_linear_general \\
-         simp [higher_differentiable_std_normal_density]) >> Rewr' \\
-     simp [diffn_std_normal_density] \\
-     qabbrev_tac ‘c :real = inv (sqrt (2 * pi))’ \\
-  (* eliminating ‘-1 pow n’ *)
-     SIMP_TAC real_ss [GSYM REAL_MUL_ASSOC, GSYM POW_MUL, REAL_NEG_MUL2] \\
-     simp [] (* further normalisation *) \\
-     cheat)
+     Q.ID_SPEC_TAC ‘t’ \\
+     HO_MATCH_MP_TAC higher_differentiable_cmul \\
+     HO_MATCH_MP_TAC higher_differentiable_affine \\
+     REWRITE_TAC [higher_differentiable_std_normal_density])
  >> DISCH_TAC
- >> Know ‘!s. s <> 0 ==> gi s IN borel_measurable borel’
+ >> Know ‘!s. s <> 0 ==> bounded (IMAGE (gi s) univ(:real))’
  >- (rpt STRIP_TAC \\
-     MATCH_MP_TAC in_borel_measurable_continuous_on \\
-     rw [continuous_on_def, NET_WITHIN_UNIV] \\
-     MATCH_MP_TAC higher_differentiable_imp_continuous >> simp [])
- >> DISCH_TAC
- >> Know ‘!s. s <> 0 ==>
-              ((\n. expectation p (Normal o gi s o real o X n)) -->
-               expectation p (Normal o gi s o real o Y)) sequentially’
- >- (rpt STRIP_TAC \\
-     FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
-     cheat)
- >> Q.PAT_X_ASSUM ‘!f. (!n x. higher_differentiable n f x) /\ _ ==> _’ K_TAC
- >> DISCH_TAC
- (* stage work *)
- >> Know ‘!s. s <> 0 ==>
-             (real o (\n. expectation p (Normal o gi s o real o X n)) -->
-              real (expectation p (Normal o gi s o real o Y))) sequentially’
- >- (rpt STRIP_TAC \\
-     Suff ‘(real o (\n. expectation p (Normal o gi s o real o X n)) -->
-            real (expectation p (Normal o gi s o real o Y))) sequentially <=>
-           ((\n. expectation p (Normal o gi s o real o X n)) -->
-             expectation p (Normal o gi s o real o Y)) sequentially’
-     >- (Rewr' >> simp []) \\
-     SYM_TAC >> MATCH_MP_TAC extreal_lim_sequentially_eq \\
-     Suff ‘bounded (IMAGE (gi s) univ(:real)) /\
-          (gi s) IN borel_measurable borel’
-     >- (STRIP_TAC >> CONJ_TAC
-         >- (Q.EXISTS_TAC ‘0’ >> simp [] \\
-             Q.X_GEN_TAC ‘n’ >> REWRITE_TAC [expectation_def] \\
-             MATCH_MP_TAC integrable_finite_integral \\
-             CONJ_TAC >- fs [prob_space_def] \\
-             FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
-         REWRITE_TAC [expectation_def] \\
-         MATCH_MP_TAC integrable_finite_integral \\
-         CONJ_TAC >- fs [prob_space_def] \\
-         FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
-     reverse CONJ_TAC >- simp [] \\
-  (* bounded (IMAGE (gi s) univ(:real)) *)
      Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> gi s x = _’ K_TAC \\
      Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> fi s x = _’ K_TAC \\
      Q.PAT_X_ASSUM ‘bounded (IMAGE f univ(:real))’ MP_TAC \\
-     Q.PAT_X_ASSUM ‘!s. s <> 0 ==> (_ --> _) sequentially’ K_TAC \\
      rw [bounded_def, Abbr ‘gi’, Abbr ‘fi’] \\
      Q.EXISTS_TAC ‘a’ \\
      Q.X_GEN_TAC ‘y’ \\
@@ -7714,7 +7631,106 @@ Proof
      Q.X_GEN_TAC ‘y’ >> rw [Abbr ‘h’, extreal_abs_def] \\
      FIRST_X_ASSUM MATCH_MP_TAC \\
      Q.EXISTS_TAC ‘x + s * Z y’ >> REFL_TAC)
- >> POP_ASSUM K_TAC >> DISCH_TAC
+ >> DISCH_TAC
+ (* applying gauge_higher_differentiable_lemma *)
+ >> Know ‘!s. s <> 0 ==>
+              (!n x. higher_differentiable n (gi s) x) /\
+              ((\n. expectation p (Normal o gi s o real o X n)) -->
+                    expectation p (Normal o gi s o real o Y)) sequentially’
+ >- (Q.X_GEN_TAC ‘s’ >> DISCH_TAC \\
+    ‘gi s = \x. abs (inv s) * integral univ(:real) (u s x)’
+       by rw [FUN_EQ_THM] >> POP_ORW \\
+     MP_TAC (Q.SPEC ‘u (s :real)’ gauge_higher_differentiable_lemma) \\
+     impl_tac >- cheat \\
+     DISCH_THEN (STRIP_ASSUME_TAC o SRULE [FORALL_AND_THM]) \\
+     CONJ_ASM1_TAC
+     >- (Q.X_GEN_TAC ‘n’ \\
+         Know ‘(!x. higher_differentiable n
+                      (\x. abs (inv s) * integral UNIV (u s x)) x) <=>
+               (!x. higher_differentiable n (\x. integral UNIV (u s x)) x)’
+         >- (HO_MATCH_MP_TAC higher_differentiable_cmul_eq \\
+             simp [ABS_NOT_ZERO]) >> Rewr' \\
+         simp []) \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
+     rw [bounded_def] \\
+     Suff ‘?a. !y. abs (diffn n (\x. abs (inv s) * integral UNIV (u s x)) y) <= a’
+     >- METIS_TAC [] \\
+  (* applying diffn_cmul_general *)
+     Know ‘!y. diffn n (\x. abs (inv s) * integral UNIV (u s x)) y =
+               abs (inv s) * diffn n (\x. integral UNIV (u s x)) y’
+     >- (HO_MATCH_MP_TAC diffn_cmul_general >> art []) >> Rewr' \\
+     simp [ABS_MUL, ABS_ABS] \\
+     Q.PAT_X_ASSUM ‘bounded (IMAGE f univ(:real))’ MP_TAC >> rw [bounded_alt] \\
+     Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> gi s x = _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> fi s x = _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> integrable lborel (Normal o u s x)’ K_TAC \\
+     Q.PAT_X_ASSUM ‘!n t. diffn n (\t. integral UNIV (u s t)) t = _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘!n t. integrable lborel (\x. Normal (diffn n _ t))’ K_TAC \\
+     NTAC 2 (Q.PAT_X_ASSUM ‘!n t. higher_differentiable n _ t’ K_TAC) \\
+     simp [Abbr ‘u’] \\
+     Know ‘!t x. diffn n
+                   (\t. f x *
+                        std_normal_density (-inv s * t + inv s * x)) t =
+                 f x *
+                 diffn n
+                   (\t. std_normal_density (-inv s * t + inv s * x)) t’
+     >- (simp [Once SWAP_FORALL_THM] \\
+         Q.X_GEN_TAC ‘x’ \\
+         HO_MATCH_MP_TAC diffn_cmul_general \\
+         qabbrev_tac ‘y = inv s * (x :real)’ \\
+         qabbrev_tac ‘g = \t. -inv s * t + y’ \\
+        ‘(\t. std_normal_density (-inv s * t + y)) = std_normal_density o g’
+           by rw [FUN_EQ_THM, Abbr ‘g’, o_DEF] >> POP_ORW \\
+         MATCH_MP_TAC higher_differentiable_compose \\
+         simp [higher_differentiable_std_normal_density, Abbr ‘g’] \\
+         rw [higher_differentiable_linear]) >> Rewr' \\
+  (* applying diffn_linear_general *)
+     Know ‘!x. diffn n (\t. std_normal_density
+                              (-inv s * t + inv s * x)) =
+               (\t. -inv s pow n *
+                    diffn n std_normal_density (-inv s * t + inv s * x))’
+     >- (Q.X_GEN_TAC ‘x’ \\
+         MATCH_MP_TAC diffn_linear_general \\
+         simp [higher_differentiable_std_normal_density]) >> Rewr' \\
+     simp [diffn_std_normal_density] \\
+     qabbrev_tac ‘c :real = inv (sqrt (2 * pi))’ \\
+  (* eliminating ‘-1 pow n’ *)
+     SIMP_TAC real_ss [GSYM REAL_MUL_ASSOC, GSYM POW_MUL, REAL_NEG_MUL2] \\
+     simp [] (* further normalisation, c is moved in front *) \\
+     cheat)
+ >> DISCH_THEN (STRIP_ASSUME_TAC o SRULE [IMP_CONJ_THM, FORALL_AND_THM])
+ >> Know ‘!s. s <> 0 ==> gi s IN borel_measurable borel’
+ >- (rpt STRIP_TAC \\
+     MATCH_MP_TAC in_borel_measurable_continuous_on \\
+     rw [continuous_on_def, NET_WITHIN_UNIV] \\
+     MATCH_MP_TAC higher_differentiable_imp_continuous >> simp [])
+ >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘!f. (!n x. higher_differentiable n f x) /\ _ ==> _’ K_TAC
+ (* stage work *)
+ >> Know ‘!s. s <> 0 ==>
+             (real o (\n. expectation p (Normal o gi s o real o X n)) -->
+              real (expectation p (Normal o gi s o real o Y))) sequentially’
+ >- (rpt STRIP_TAC \\
+     Suff ‘(real o (\n. expectation p (Normal o gi s o real o X n)) -->
+            real (expectation p (Normal o gi s o real o Y))) sequentially <=>
+           ((\n. expectation p (Normal o gi s o real o X n)) -->
+             expectation p (Normal o gi s o real o Y)) sequentially’
+     >- (Rewr' >> simp []) \\
+     SYM_TAC >> MATCH_MP_TAC extreal_lim_sequentially_eq \\
+     Suff ‘bounded (IMAGE (gi s) univ(:real)) /\
+          (gi s) IN borel_measurable borel’
+     >- (STRIP_TAC >> CONJ_TAC
+         >- (Q.EXISTS_TAC ‘0’ >> simp [] \\
+             Q.X_GEN_TAC ‘n’ >> REWRITE_TAC [expectation_def] \\
+             MATCH_MP_TAC integrable_finite_integral \\
+             CONJ_TAC >- fs [prob_space_def] \\
+             FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+         REWRITE_TAC [expectation_def] \\
+         MATCH_MP_TAC integrable_finite_integral \\
+         CONJ_TAC >- fs [prob_space_def] \\
+         FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+     simp [])
+ >> DISCH_TAC
  (* NOTE: This goal is called "uniformly convergence", because whatever value of
    “R” doesn't change the asserted “s”. Lipschitz_continuous_map is used here.
   *)
@@ -7864,6 +7880,37 @@ Proof
      Q.PAT_X_ASSUM ‘!e. 0 < e ==> ?s. s <> 0 /\ !x. abs (gi s x - f x) < e’
        (MP_TAC o Q.SPEC ‘e’) >> rw [] \\
      Q.EXISTS_TAC ‘s’ >> rw [] \\
+     Know ‘integrable p (Normal o gi s o real o R)’
+     >- (FIRST_X_ASSUM MATCH_MP_TAC >> simp []) >> DISCH_TAC \\
+     Know ‘integrable p (Normal o f o real o R)’
+     >- (FIRST_X_ASSUM MATCH_MP_TAC >> simp []) >> DISCH_TAC \\
+     Know ‘real (expectation p (Normal o gi s o real o R)) -
+           real (expectation p (Normal o f o real o R)) =
+           real (expectation p (Normal o gi s o real o R) -
+                 expectation p (Normal o f o real o R))’
+     >- (SYM_TAC >> MATCH_MP_TAC sub_real \\
+        ‘measure_space p’ by PROVE_TAC [prob_space_def] \\
+         REWRITE_TAC [expectation_def] \\
+         PROVE_TAC [integrable_finite_integral]) >> Rewr' \\
+     qmatch_abbrev_tac ‘abs (real z) < e’ \\
+     Know ‘abs (real z) = real (abs z)’
+     >- (MATCH_MP_TAC abs_real \\
+         qunabbrev_tac ‘z’ \\
+         qmatch_abbrev_tac ‘x - y <> PosInf /\ _’ \\
+         Suff ‘x <> PosInf /\ x <> NegInf /\ y <> PosInf /\ y <> NegInf’
+         >- METIS_TAC [sub_not_infty] \\
+         simp [Abbr ‘x’, Abbr ‘y’, expectation_def] \\
+        ‘measure_space p’ by PROVE_TAC [prob_space_def] \\
+         PROVE_TAC [integrable_finite_integral]) >> Rewr' \\
+     qunabbrev_tac ‘z’ \\
+     Know ‘expectation p (Normal o gi s o real o R) -
+           expectation p (Normal o f o real o R) =
+           expectation p (\x. (Normal o gi s o real o R) x -
+                              (Normal o f o real o R) x)’
+     >- (SYM_TAC >> MATCH_MP_TAC expectation_sub >> art []) >> Rewr' \\
+     Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> gi s x = _’ K_TAC \\
+     simp [o_DEF, extreal_sub_eq] \\
+  (* NOTE: not hard *)
      cheat)
  >> DISCH_TAC
  (* stage work, now transforming the goal *)

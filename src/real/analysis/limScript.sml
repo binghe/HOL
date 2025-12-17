@@ -2959,11 +2959,26 @@ Theorem higher_differentiable_neg' =
 
 Theorem higher_differentiable_cmul :
     !f c n. (!x. higher_differentiable n f x) ==>
-            (!x. higher_differentiable n (λx. c * f x) x)
+            (!x. higher_differentiable n (\x. c * f x) x)
 Proof
     rpt GEN_TAC >> DISCH_TAC
  >> HO_MATCH_MP_TAC higher_differentiable_mul
  >> simp [higher_differentiable_const]
+QED
+
+Theorem higher_differentiable_cmul_eq :
+    !f c n. c <> 0 ==>
+           ((!x. higher_differentiable n (\x. c * f x) x) <=>
+            (!x. higher_differentiable n f x))
+Proof
+    rpt STRIP_TAC
+ >> reverse EQ_TAC
+ >- (DISCH_TAC \\
+     MATCH_MP_TAC higher_differentiable_cmul >> art [])
+ >> DISCH_TAC
+ >> qabbrev_tac ‘g = \x. c * f x’
+ >> MP_TAC (Q.SPECL [‘g’, ‘inv c’, ‘n’] higher_differentiable_cmul) >> art []
+ >> simp [Abbr ‘g’, REAL_MUL_LINV, SF ETA_ss]
 QED
 
 Theorem higher_differentiable_affine :

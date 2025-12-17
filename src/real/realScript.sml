@@ -1459,7 +1459,14 @@ Proof
     REWRITE_TAC[abs, REAL_LT_REFL, REAL_LE_REFL]]
 QED
 
+(* |- !x. 0 < abs x <=> x <> 0 *)
 Theorem ABS_NZ'[simp] = GSYM ABS_NZ
+
+Theorem ABS_NOT_ZERO :
+    !(x :real). abs x <> 0 <=> x <> 0
+Proof
+    PROVE_TAC [ABS_ZERO]
+QED
 
 Theorem ABS_INV:
    !x. ~(x = 0) ==> (abs(inv x) = inv(abs(x)))
