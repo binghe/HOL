@@ -7438,11 +7438,11 @@ QED
 Theorem converge_in_dist_alt_higher_differentiable :
     !X Y N p. prob_space p /\ (!n. real_random_variable (X n) p) /\
               real_random_variable Y p /\ ext_normal_rv N p 0 1 ==>
-           ((X --> Y) (in_distribution p) <=>
-            !f. (!n x. higher_differentiable n f x) /\
-                (!n. bounded (IMAGE (diffn n f) UNIV)) ==>
-                ((\n. expectation p (Normal o f o real o X n)) -->
-                 expectation p (Normal o f o real o Y)) sequentially)
+            ((X --> Y) (in_distribution p) <=>
+             !f. (!n x. higher_differentiable n f x) /\
+                 (!n. bounded (IMAGE (diffn n f) UNIV)) ==>
+                 ((\n. expectation p (Normal o f o real o X n)) -->
+                       expectation p (Normal o f o real o Y)) sequentially)
 Proof
     RW_TAC std_ss [FORALL_AND_THM, ext_normal_rv_def]
  >> EQ_TAC
@@ -7650,14 +7650,60 @@ Proof
  >- (Q.X_GEN_TAC ‘s’ >> DISCH_TAC \\
     ‘gi s = \x. abs (inv s) * integral univ(:real) (u s x)’
        by rw [FUN_EQ_THM] >> POP_ORW \\
-     MP_TAC (Q.SPEC ‘u (s :real)’ gauge_higher_differentiable_lemma) \\
-     simp [] \\
+     MP_TAC (Q.SPEC ‘u (s :real)’ gauge_higher_differentiable_lemma) >> simp [] \\
+     Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> gi s x = _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> fi s x = _’ K_TAC \\
+     Q.PAT_X_ASSUM ‘!n t x s. higher_differentiable n _ t’ K_TAC \\
   (* NOTE: Here the cheated goal is:
 
      !n. ?w. integrable lborel w /\ (!x. 0 <= w x /\ w x <> PosInf) /\
              !t x. Normal (abs (diffn n (\t. u s t x) t)) <= w x
    *)
-     impl_tac >- cheat \\
+     impl_tac
+     >- (Q.X_GEN_TAC ‘n’ \\
+         simp [Abbr ‘u’] \\
+         Know ‘!t x. diffn n
+                      (\t. f x *
+                           std_normal_density (-inv s * t + inv s * x)) t =
+                     f x *
+                     diffn n
+                       (\t. std_normal_density (-inv s * t + inv s * x)) t’
+         >- (simp [Once SWAP_FORALL_THM] \\
+             Q.X_GEN_TAC ‘x’ \\
+             HO_MATCH_MP_TAC diffn_cmul_general \\
+             qabbrev_tac ‘y = inv s * (x :real)’ \\
+             qabbrev_tac ‘g = \t. -inv s * t + y’ \\
+            ‘(\t. std_normal_density (-inv s * t + y)) = std_normal_density o g’
+               by rw [FUN_EQ_THM, Abbr ‘g’, o_DEF] >> POP_ORW \\
+             MATCH_MP_TAC higher_differentiable_compose \\
+             simp [higher_differentiable_std_normal_density, Abbr ‘g’] \\
+             rw [higher_differentiable_linear]) >> Rewr' \\
+      (* applying diffn_linear_general *)
+         Know ‘!x. diffn n (\t. std_normal_density
+                                  (-inv s * t + inv s * x)) =
+                   (\t. -inv s pow n *
+                        diffn n std_normal_density (-inv s * t + inv s * x))’
+         >- (Q.X_GEN_TAC ‘x’ \\
+             MATCH_MP_TAC diffn_linear_general \\
+             simp [higher_differentiable_std_normal_density]) >> Rewr' \\
+         simp [diffn_std_normal_density] \\
+         qabbrev_tac ‘c :real = inv (sqrt (2 * pi))’ \\
+      (* eliminating ‘-1 pow n’ *)
+         SIMP_TAC real_ss [GSYM REAL_MUL_ASSOC, GSYM POW_MUL, REAL_NEG_MUL2,
+                           REAL_ARITH “-a + b = b - (a :real)”] \\
+         simp [] \\
+      (* NOTE: the remaining goal here:
+
+        ?w. integrable lborel w /\ (!x. 0 <= w x /\ w x <> PosInf) /\
+            !t x.
+              Normal
+                (abs
+                   (c * f x *
+                    exp (-((inv s * x - inv s * t) pow 2) / 2) *
+                    He n (inv s * x - inv s * t) * inv (s pow n))) <=
+              w x
+       *)
+         cheat) \\
      DISCH_THEN (STRIP_ASSUME_TAC o SRULE [FORALL_AND_THM]) \\
      CONJ_ASM1_TAC
      >- (Q.X_GEN_TAC ‘n’ \\
@@ -7677,8 +7723,6 @@ Proof
      >- (HO_MATCH_MP_TAC diffn_cmul_general >> art []) >> Rewr' \\
      simp [ABS_MUL, ABS_ABS] \\
      Q.PAT_X_ASSUM ‘bounded (IMAGE f univ(:real))’ MP_TAC >> rw [bounded_alt] \\
-     Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> gi s x = _’ K_TAC \\
-     Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> fi s x = _’ K_TAC \\
      Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> integrable lborel (Normal o u s x)’ K_TAC \\
      Q.PAT_X_ASSUM ‘!n t. diffn n (\t. integral UNIV (u s t)) t = _’ K_TAC \\
      Q.PAT_X_ASSUM ‘!n t. integrable lborel (\x. Normal (diffn n _ t))’ K_TAC \\
@@ -7713,6 +7757,17 @@ Proof
   (* eliminating ‘-1 pow n’ *)
      SIMP_TAC real_ss [GSYM REAL_MUL_ASSOC, GSYM POW_MUL, REAL_NEG_MUL2] \\
      simp [] (* further normalisation, c is moved in front *) \\
+  (* NOTE: remaining goal
+
+        ?a'. !y.
+          abs (inv s) *
+          abs
+            (integral univ(:real)
+               (\x. c * f x *
+                    exp (-((-(inv s * y) + inv s * x) pow 2) / 2) *
+                    He n (-(inv s * y) + inv s * x) *
+                    inv (s pow n))) <= a'
+   *)
      cheat)
  >> DISCH_THEN (STRIP_ASSUME_TAC o SRULE [IMP_CONJ_THM, FORALL_AND_THM])
  >> Know ‘!s. s <> 0 ==> gi s IN borel_measurable borel’
