@@ -7413,6 +7413,7 @@ Proof
  >> simp [ABS_TRIANGLE]
 QED
 
+(* not used *)
 Theorem REAL_LT_ADD3[local] :
     !x0 x1 x2 y0 y1 (y2 :real).
         x0 < y0 /\ x1 < y1 /\ x2 < y2 ==> x0 + x1 + x2 < y0 + y1 + y2
@@ -7420,6 +7421,15 @@ Proof
     rpt STRIP_TAC
  >> MATCH_MP_TAC REAL_LT_ADD2 >> art []
  >> MATCH_MP_TAC REAL_LT_ADD2 >> art []
+QED
+
+Theorem REAL_LTE_ADD3[local] :
+    !x0 x1 x2 y0 y1 (y2 :real).
+        x0 < y0 /\ x1 <= y1 /\ x2 <= y2 ==> x0 + x1 + x2 < y0 + y1 + y2
+Proof
+    rpt STRIP_TAC
+ >> MATCH_MP_TAC REAL_LTE_ADD2 >> art []
+ >> MATCH_MP_TAC REAL_LTE_ADD2 >> art []
 QED
 
 (* NOTE: “ext_normal_rv Z p 0 1” is needed inside the proof, it doesn't occur
@@ -7641,6 +7651,12 @@ Proof
     ‘gi s = \x. abs (inv s) * integral univ(:real) (u s x)’
        by rw [FUN_EQ_THM] >> POP_ORW \\
      MP_TAC (Q.SPEC ‘u (s :real)’ gauge_higher_differentiable_lemma) \\
+     simp [] \\
+  (* NOTE: Here the cheated goal is:
+
+     !n. ?w. integrable lborel w /\ (!x. 0 <= w x /\ w x <> PosInf) /\
+             !t x. Normal (abs (diffn n (\t. u s t x) t)) <= w x
+   *)
      impl_tac >- cheat \\
      DISCH_THEN (STRIP_ASSUME_TAC o SRULE [FORALL_AND_THM]) \\
      CONJ_ASM1_TAC
@@ -7740,6 +7756,7 @@ Proof
      Q.PAT_X_ASSUM ‘!x y. abs (f x - f y) <= k * abs (x - y)’
        (MP_TAC o Q.SPECL [‘x + (d :real)’, ‘x’]) >> simp [REAL_ADD_SUB])
  >> DISCH_TAC
+ (* stage work *)
  >> Know ‘!e. 0 < e ==> ?s. s <> 0 /\ !x. abs (gi s x - f x) < e’
  >- (rpt STRIP_TAC \\
      Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> gi s x = _’ K_TAC \\
@@ -7871,11 +7888,12 @@ Proof
      qunabbrev_tac ‘s'’ \\
      ASM_SIMP_TAC bool_ss [REAL_LT_HALF2])
  >> DISCH_TAC
+ (* NOTE: It's enough to prove ‘abs (real _ - real _) <= e’ instead of ‘< e’. *)
  >> Know ‘!e. 0 < e ==>
               ?s. s <> 0 /\
                   !R. random_variable R p Borel ==>
                       abs (real (expectation p (Normal o gi s o real o R)) -
-                           real (expectation p (Normal o f o real o R))) < e’
+                           real (expectation p (Normal o f o real o R))) <= e’
  >- (rpt STRIP_TAC \\
      Q.PAT_X_ASSUM ‘!e. 0 < e ==> ?s. s <> 0 /\ !x. abs (gi s x - f x) < e’
        (MP_TAC o Q.SPEC ‘e’) >> rw [] \\
@@ -7892,7 +7910,7 @@ Proof
         ‘measure_space p’ by PROVE_TAC [prob_space_def] \\
          REWRITE_TAC [expectation_def] \\
          PROVE_TAC [integrable_finite_integral]) >> Rewr' \\
-     qmatch_abbrev_tac ‘abs (real z) < e’ \\
+     qmatch_abbrev_tac ‘abs (real z) <= e’ \\
      Know ‘abs (real z) = real (abs z)’
      >- (MATCH_MP_TAC abs_real \\
          qunabbrev_tac ‘z’ \\
@@ -7908,10 +7926,46 @@ Proof
            expectation p (\x. (Normal o gi s o real o R) x -
                               (Normal o f o real o R) x)’
      >- (SYM_TAC >> MATCH_MP_TAC expectation_sub >> art []) >> Rewr' \\
+     Know ‘integrable p (\x. (Normal o gi s o real o R) x -
+                             (Normal o f o real o R) x)’
+     >- (MATCH_MP_TAC integrable_sub \\
+        ‘measure_space p’ by PROVE_TAC [prob_space_def] \\
+         simp []) \\
      Q.PAT_X_ASSUM ‘!s x. s <> 0 ==> gi s x = _’ K_TAC \\
-     simp [o_DEF, extreal_sub_eq] \\
-  (* NOTE: not hard *)
-     cheat)
+     simp [o_DEF, extreal_sub_eq, expectation_def] \\
+     DISCH_TAC \\
+  (* applying integral_triangle_ineq *)
+     qmatch_abbrev_tac ‘real (abs (integral p h)) <= e’ \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘real (integral p (abs o h))’ \\
+     CONJ_TAC
+     >- (Know ‘real (abs (integral p h)) <= real (integral p (abs o h)) <=>
+               abs (integral p h) <= integral p (abs o h)’
+         >- (MATCH_MP_TAC real_le_eq \\
+             Know ‘abs (integral p h) <> PosInf /\ abs (integral p h) <> NegInf’
+             >- (MATCH_MP_TAC abs_not_infty \\
+                 MATCH_MP_TAC integrable_finite_integral \\
+                 fs [prob_space_def]) >> Rewr \\
+             MATCH_MP_TAC integrable_finite_integral \\
+             CONJ_TAC >- fs [prob_space_def] \\
+             MATCH_MP_TAC integrable_abs \\
+             fs [prob_space_def]) >> Rewr' \\
+         MATCH_MP_TAC integral_triangle_ineq \\
+         fs [prob_space_def]) \\
+     Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘real (integral p (\x. Normal e))’ \\
+     reverse CONJ_TAC
+     >- (Know ‘integral p (\x. Normal e) = Normal e’
+         >- simp [GSYM expectation_def, expectation_const] >> Rewr' \\
+         simp []) \\
+     MATCH_MP_TAC le_real_imp \\
+     CONJ_TAC >- (MATCH_MP_TAC integral_pos >> fs [prob_space_def]) \\
+     reverse CONJ_TAC
+     >- simp [GSYM expectation_def, expectation_const] \\
+     MATCH_MP_TAC integral_mono \\
+     fs [prob_space_def, FORALL_AND_THM] \\
+     CONJ_TAC >- (MATCH_MP_TAC integrable_abs >> simp [Abbr ‘h’]) \\
+     CONJ_TAC >- (MATCH_MP_TAC integrable_const >> simp []) \\
+     Q.X_GEN_TAC ‘y’ >> rw [Abbr ‘h’, extreal_abs_def] \\
+     MATCH_MP_TAC REAL_LT_IMP_LE >> art [])
  >> DISCH_TAC
  (* stage work, now transforming the goal *)
  >> qmatch_abbrev_tac ‘(h --> l) sequentially’
@@ -7953,7 +8007,7 @@ Proof
  >> Q_TAC (TRANS_TAC REAL_LET_TRANS)
           ‘abs (x' - y') + abs (x - x') + abs (y - y')’
  >> REWRITE_TAC [ABS_TRIANGLE_NEG3]
- >> MATCH_MP_TAC REAL_LT_ADD3 >> art []
+ >> MATCH_MP_TAC REAL_LTE_ADD3 >> art []
  >> ONCE_REWRITE_TAC [ABS_SUB]
  >> CONJ_TAC
  >| [ (* goal 1 (of 2) *)
