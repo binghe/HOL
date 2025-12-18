@@ -7128,9 +7128,9 @@ Proof
  >> simp []
 QED
 
-(* An alternative version of differentiable_lemma without needing a bounded
+(* An alternative version of [differentiable_lemma] without needing a bounded
    integrable function (but requiring ‘u’ to be third-order differentiable,
-   instead of just one).
+   instead of just one). Some ideas are taken from [11].
  *)
 Theorem differentiable_lemma_alt :
     !s m u. measure_space (m :'a m_space) /\ open s /\ connected s /\
@@ -7143,12 +7143,25 @@ Theorem differentiable_lemma_alt :
                      real (integral m (\x. (Normal (diff1 (\t. u t x) t))))
                 ) (at t within s)
 Proof
-    cheat
- (* rpt GEN_TAC >> STRIP_TAC
- >> Q.X_GEN_TAC ‘t’ >> DISCH_TAC
- >> ‘!x. x IN m_space m ==> (\t. u t x) continuous_on s’
-      by METIS_TAC [DIFFERENTIABLE_IMP_CONTINUOUS_ON]
+    rpt GEN_TAC >> STRIP_TAC
+ >> Know ‘!x. x IN m_space m ==> (\t. u t x) differentiable_on s’
+ >- (rpt STRIP_TAC \\
+     qmatch_abbrev_tac ‘f differentiable_on s’ \\
+     Know ‘f differentiable_on s <=>
+           !x. x IN s ==> higher_differentiable 1 f x’
+     >- (SYM_TAC \\
+         MATCH_MP_TAC higher_differentiable_1_eq_differentiable_on' >> art []) \\
+     Rewr' >> simp [Abbr ‘f’] \\
+     Q.X_GEN_TAC ‘t’ >> DISCH_TAC \\
+     MATCH_MP_TAC higher_differentiable_mono \\
+     Q.EXISTS_TAC ‘3’ >> simp [])
+ >> DISCH_TAC
+ >> Know ‘!x. x IN m_space m ==> (\t. u t x) continuous_on s’
+ >- (rpt STRIP_TAC \\
+     MATCH_MP_TAC DIFFERENTIABLE_IMP_CONTINUOUS_ON >> simp [])
+ >> DISCH_TAC
  (* eliminating ‘diff1’ *)
+ >> Q.X_GEN_TAC ‘t’ >> DISCH_TAC
  >> Q.PAT_X_ASSUM ‘!x. x IN m_space m ==> _ differentiable_on s’ MP_TAC
  >> simp [differentiable_on, differentiable_alt_has_vector_derivative]
  >> simp [GSYM RIGHT_FORALL_IMP_THM, AND_IMP_INTRO, Once SWAP_FORALL_THM]
@@ -7168,15 +7181,6 @@ Proof
           integral m (Normal o g t)’
  >- (MATCH_MP_TAC integral_cong >> rw [o_DEF])
  >> Rewr'
- >> Know ‘!t x. t IN s /\ x IN m_space m ==> Normal (abs (g t x)) <= w x’
- >- (qx_genl_tac [‘v’, ‘x’] >> STRIP_TAC \\
-     Q.PAT_X_ASSUM ‘!t x. t IN s /\ x IN m_space m ==> _’
-       (MP_TAC o Q.SPECL [‘v’, ‘x’]) >> rw [] \\
-     POP_ASSUM (REWRITE_TAC o wrap o SYM) \\
-     FIRST_X_ASSUM MATCH_MP_TAC >> art [])
- >> POP_ASSUM K_TAC (* diff1 (\t. u t x) t = g t x *)
- >> Q.PAT_X_ASSUM ‘!t x. _ ==> Normal (abs (diff1 (\t. u t x) t)) <= _’ K_TAC
- >> DISCH_TAC
  (* stage work *)
  >> Q.PAT_ASSUM ‘!t x. _ ==> (_ has_vector_derivative _) (at t within s)’
       (MP_TAC o Q.SPEC ‘t’)
@@ -7212,7 +7216,8 @@ Proof
        (* goal 2 (of 2) *)
        shared_tactics () ])
  >> Rewr'
- (* stage work *)
+ >> cheat
+ (* stage work TODO
  >> simp [LIM_WITHIN_SEQUENTIALLY]
  >> simp [GSYM RIGHT_FORALL_IMP_THM, AND_IMP_INTRO, Once SWAP_FORALL_THM, o_DEF]
  >> DISCH_TAC
@@ -8684,5 +8689,6 @@ val _ = html_theory "distribution";
       Springer Science & Business Media, London (2020).
   [9] Wikipedia: https://en.wikipedia.org/wiki/Hermite_polynomials
   [10] Billingsley, P.: Convergence of Probability Measures. John Wiley & Sons (2013).
-
+  [11] Prajea, S.M.: Local Monotony and Continuity.
+       MATHEMATICAL REFLECTIONS. 4, (2022).
  *)

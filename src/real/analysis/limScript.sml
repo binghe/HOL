@@ -2233,6 +2233,15 @@ Proof
  >> METIS_TAC [netsTheory.WITHIN_UNIV]
 QED
 
+Theorem higher_differentiable_1_eq_differentiable_on':
+    !f s. open s ==>
+          ((!x. x IN s ==> higher_differentiable 1 f x) <=>
+           f differentiable_on s)
+Proof
+    rw [higher_differentiable_1_eq_differentiable, differentiable_on]
+ >> METIS_TAC [DIFFERENTIABLE_WITHIN_OPEN]
+QED
+
 Theorem diffn_SUC :
     !m f. (!x. higher_differentiable (SUC m) f x) ==>
           (diffn m (diffn 1 f) = diffn (SUC m) f)

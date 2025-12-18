@@ -9895,6 +9895,40 @@ Proof
    REAL_POS, REAL_MUL_LID, REAL_LE_RADD, REAL_OF_NUM_LE]
 QED
 
+(* proof is rewritten for better understanding *)
+Theorem LIM_WITHIN_SEQUENTIALLY' :
+    !(f :real -> real) s a l.
+       ((f --> l) (at a within s) <=>
+        !x. (!n. x(n) IN s DELETE a) /\
+            (x --> a) sequentially
+            ==> ((f o x) --> l) sequentially)
+Proof
+  REPEAT GEN_TAC THEN REWRITE_TAC[LIM_WITHIN] THEN EQ_TAC THENL
+  [SIMP_TAC std_ss [LIM_SEQUENTIALLY, o_THM, IN_DELETE, GSYM DIST_NZ] THEN
+   MESON_TAC[], ALL_TAC] THEN
+  ONCE_REWRITE_TAC[MONO_NOT_EQ] THEN
+  SIMP_TAC std_ss [NOT_FORALL_THM, NOT_IMP, NOT_EXISTS_THM] THEN
+  DISCH_THEN(X_CHOOSE_THEN ``e:real`` (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  DISCH_THEN(MP_TAC o GEN ``n:num`` o SPEC ``&1 / (&n + &1:real)``) THEN
+  SIMP_TAC arith_ss [REAL_LT_DIV, REAL_LT, REAL_OF_NUM_LE, REAL_POS,
+   REAL_ARITH ``&0 <= n ==> &0 < n + &1:real``, NOT_FORALL_THM, SKOLEM_THM] THEN
+  DISCH_THEN (X_CHOOSE_TAC ``y:num->real``) THEN EXISTS_TAC ``y:num->real`` THEN
+  POP_ASSUM MP_TAC THEN SIMP_TAC std_ss [NOT_IMP, FORALL_AND_THM] THEN
+  SIMP_TAC std_ss [LIM_SEQUENTIALLY, o_THM, IN_DELETE, GSYM DIST_NZ] THEN
+  STRIP_TAC THEN CONJ_TAC THENL [ALL_TAC, ASM_MESON_TAC[LESS_EQ_REFL]] THEN
+  KNOW_TAC ``!e. (?N:num. !n. N <= n ==> dist (y n,a) < e) =
+             (\e. ?N:num. !n. N <= n ==> dist (y n,a) < e) e`` THENL
+  [FULL_SIMP_TAC std_ss [], ALL_TAC] THEN DISC_RW_KILL THEN
+  MATCH_MP_TAC FORALL_POS_MONO_1 THEN BETA_TAC THEN
+  CONJ_TAC THENL [ASM_MESON_TAC[REAL_LT_TRANS], ALL_TAC] THEN
+  X_GEN_TAC ``n:num`` THEN EXISTS_TAC ``n:num`` THEN X_GEN_TAC ``m:num`` THEN
+  DISCH_TAC THEN MATCH_MP_TAC REAL_LTE_TRANS THEN
+  EXISTS_TAC ``&1 / (&m + &1:real)`` THEN ASM_REWRITE_TAC[] THEN
+  ASM_SIMP_TAC std_ss
+  [REAL_LE_INV2, real_div, REAL_ARITH ``&0 <= x ==> &0 < x + &1:real``,
+   REAL_POS, REAL_MUL_LID, REAL_LE_RADD, REAL_OF_NUM_LE]
+QED
+
 (* ------------------------------------------------------------------------- *)
 (* Combination results for pointwise continuity.                             *)
 (* ------------------------------------------------------------------------- *)
