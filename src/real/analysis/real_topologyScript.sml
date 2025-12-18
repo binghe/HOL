@@ -5842,7 +5842,7 @@ QED
 Theorem LIM_EVENTUALLY:
    !net f l. eventually (\x. f x = l) net ==> (f --> l) net
 Proof
-  REWRITE_TAC[eventually, LIM] THEN MESON_TAC[DIST_REFL]
+  REWRITE_TAC[eventually, TENDSTO_ALT] THEN MESON_TAC[DIST_REFL]
 QED
 
 Theorem LIM_POSINFINITY_SEQUENTIALLY:
@@ -6526,7 +6526,9 @@ QED
 (* Need to prove closed(cball(x,e)) before deducing this as a corollary.     *)
 (* ------------------------------------------------------------------------- *)
 
-(* NOTE: The following two theorems are not from HOL-Light
+(* NOTE: The original names of the next two theorems are LIM_NORM_UBOUND and
+   LIM_NORM_LBOUND in HOL-Light (topology.ml).
+ *)
 Theorem LIM_ABS_UBOUND:
    !net:('a)net f (l:real) b.
    ~(trivial_limit net) /\ (f --> l) net /\
@@ -6534,14 +6536,15 @@ Theorem LIM_ABS_UBOUND:
    ==> abs(l) <= b
 Proof
   REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-  ASM_REWRITE_TAC[LIM] THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-  ASM_REWRITE_TAC[eventually] THEN
-  STRIP_TAC THEN REWRITE_TAC[GSYM REAL_NOT_LT] THEN
-  ONCE_REWRITE_TAC[GSYM REAL_SUB_LT] THEN DISCH_TAC THEN
-  SUBGOAL_THEN
-  ``?x:'a. dist(f(x):real,l) < abs(l:real) - b /\ abs(f x) <= b``
-   (CHOOSE_THEN MP_TAC) THENL [ASM_MESON_TAC[NET], ALL_TAC] THEN
-  REWRITE_TAC[REAL_NOT_LT, REAL_LE_SUB_RADD, DE_MORGAN_THM, dist] THEN
+  DISJ_CASES_TAC(REAL_ARITH ``abs(l:real) <= b \/ b < abs l``) THEN
+  ASM_REWRITE_TAC[tendsto] THEN (* only one subgoal left here *)
+  DISCH_THEN(CONJUNCTS_THEN2 (MP_TAC o SPEC ``abs(l:real) - b``) MP_TAC) THEN
+  ASM_REWRITE_TAC [REAL_SUB_LT, IMP_IMP, GSYM EVENTUALLY_AND] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP EVENTUALLY_HAPPENS) THEN
+  ASM_REWRITE_TAC[] THEN
+ ‘~(abs l <= b)’ by rw [REAL_NOT_LE] >> simp [] \\
+  Q.X_GEN_TAC ‘x’ \\
+  REWRITE_TAC[REAL_NOT_LT, REAL_LE_SUB_RADD, DE_MORGAN_THM, dist] \\
   REAL_ARITH_TAC
 QED
 
@@ -6552,17 +6555,17 @@ Theorem LIM_ABS_LBOUND:
    ==> b <= abs(l)
 Proof
   REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-  ASM_REWRITE_TAC[LIM] THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-  ASM_REWRITE_TAC[eventually] THEN
-  STRIP_TAC THEN REWRITE_TAC[GSYM REAL_NOT_LT] THEN
-  ONCE_REWRITE_TAC[GSYM REAL_SUB_LT] THEN DISCH_TAC THEN
-  SUBGOAL_THEN
-  ``?x:'a. dist(f(x):real,l) < b - abs(l:real) /\ b <= abs(f x)``
-   (CHOOSE_THEN MP_TAC) THENL [ASM_MESON_TAC[NET], ALL_TAC] THEN
-  REWRITE_TAC[REAL_NOT_LT, REAL_LE_SUB_RADD, DE_MORGAN_THM, dist] THEN
+  DISJ_CASES_TAC(REAL_ARITH ``abs(l:real) < b \/ b <= abs l``) THEN
+  ASM_REWRITE_TAC[tendsto] THEN (* only one subgoal left here *)
+  DISCH_THEN(CONJUNCTS_THEN2 (MP_TAC o SPEC ``b - abs(l:real)``) MP_TAC) THEN
+  ASM_REWRITE_TAC[REAL_SUB_LT, IMP_IMP, GSYM EVENTUALLY_AND] THEN
+  DISCH_THEN(MP_TAC o MATCH_MP EVENTUALLY_HAPPENS) THEN
+  ASM_REWRITE_TAC[] THEN
+ ‘~(b <= abs l)’ by rw [REAL_NOT_LE] >> simp [] \\
+  Q.X_GEN_TAC ‘x’ \\
+  REWRITE_TAC[REAL_NOT_LT, REAL_LE_SUB_RADD, DE_MORGAN_THM, dist] \\
   REAL_ARITH_TAC
 QED
- *)
 
 (* ------------------------------------------------------------------------- *)
 (* Uniqueness of the limit, when nontrivial. *)
@@ -6581,17 +6584,16 @@ Proof
   REWRITE_TAC[reallim] THEN METIS_TAC[LIM_UNIQUE]
 QED
 
-(* TODO *)
 Theorem LIM_CONST_EQ:
    !net:('a net) c d:real.
   ((\x. c) --> d) net <=> trivial_limit net \/ (c = d)
 Proof
   REPEAT GEN_TAC THEN
-  ASM_CASES_TAC ``trivial_limit (net:'a net)`` THEN ASM_REWRITE_TAC[] THENL
-  [ASM_REWRITE_TAC[LIM], ALL_TAC] THEN
-  EQ_TAC THEN SIMP_TAC std_ss [LIM_CONST] THEN DISCH_TAC THEN
-  MATCH_MP_TAC(SPEC ``net:'a net`` LIM_UNIQUE) THEN
-  EXISTS_TAC ``(\x. c):'a->real`` THEN ASM_REWRITE_TAC[LIM_CONST]
+  ASM_CASES_TAC “trivial_limit (net:'a net)” THEN
+  ASM_SIMP_TAC std_ss [LIM_TRIVIAL] THEN
+  EQ_TAC THEN SIMP_TAC std_ss[LIM_CONST] THEN DISCH_TAC THEN
+  MATCH_MP_TAC(Q.SPEC `net` LIM_UNIQUE) THEN
+  Q.EXISTS_TAC `(\x. c)` THEN ASM_REWRITE_TAC[LIM_CONST]
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -6744,16 +6746,18 @@ QED
 (* These are special for limits out of the same vector space. *)
 (* ------------------------------------------------------------------------- *)
 
+(* NOTE: added ‘a IN s’ as antecedent *)
 Theorem LIM_WITHIN_ID:
-   !a s. ((\x. x) --> a) (at a within s)
+   !a s. a IN s ==> ((\x. x) --> a) (at a within s)
 Proof
-  REWRITE_TAC[LIM_WITHIN] THEN MESON_TAC[]
+    RW_TAC std_ss [LIM_WITHIN]
+ >> Q.EXISTS_TAC ‘e’ >> rw []
 QED
 
 Theorem LIM_AT_ID:
    !a. ((\x. x) --> a) (at a)
 Proof
-  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN REWRITE_TAC[LIM_WITHIN_ID]
+  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN simp[LIM_WITHIN_ID]
 QED
 
 Theorem LIM_AT_ZERO:
@@ -6796,24 +6800,30 @@ Proof
   METIS_TAC[LIM_TRANSFORM]
 QED
 
+(* NOTE: added “x IN s” into antecedents *)
 Theorem LIM_TRANSFORM_WITHIN:
-    !f g x s d. &0 < d /\
-  (!x'. x' IN s /\ &0 < dist(x',x) /\ dist(x',x) < d ==> (f(x') = g(x'))) /\
-  (f --> l) (at x within s) ==> (g --> l) (at x within s)
+   !f g x s d.
+        &0 < d /\ x IN s /\
+        (!x'. x' IN s /\ &0 < dist(x',x) /\ dist(x',x) < d ==> f(x') = g(x')) /\
+        (f --> l) (at x within s)
+        ==> (g --> l) (at x within s)
 Proof
   REPEAT GEN_TAC THEN REWRITE_TAC[GSYM AND_IMP_INTRO] THEN
-  DISCH_TAC THEN DISCH_TAC THEN
+  NTAC 3 DISCH_TAC THEN
   MATCH_MP_TAC(REWRITE_RULE[GSYM AND_IMP_INTRO] LIM_TRANSFORM) THEN
-  REWRITE_TAC[LIM_WITHIN] THEN REPEAT STRIP_TAC THEN EXISTS_TAC ``d:real`` THEN
+  ASM_SIMP_TAC std_ss [LIM_WITHIN] THEN
+  REPEAT STRIP_TAC THEN EXISTS_TAC ``d:real`` THEN
   ASM_SIMP_TAC std_ss [REAL_SUB_REFL, DIST_REFL]
 QED
 
 Theorem LIM_TRANSFORM_AT:
-   !f g x d. &0 < d /\
-  (!x'. &0 < dist(x',x) /\ dist(x',x) < d ==> (f(x') = g(x'))) /\
-  (f --> l) (at x) ==> (g --> l) (at x)
+   !f g x d.
+        &0 < d /\
+        (!x'. &0 < dist(x',x) /\ dist(x',x) < d ==> f(x') = g(x')) /\
+        (f --> l) (at x)
+        ==> (g --> l) (at x)
 Proof
-  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN MESON_TAC[LIM_TRANSFORM_WITHIN]
+  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN MESON_TAC[IN_UNIV, LIM_TRANSFORM_WITHIN]
 QED
 
 Theorem LIM_TRANSFORM_EQ:
@@ -6828,31 +6838,35 @@ Proof
   ASM_REWRITE_TAC[REAL_NEG_SUB, REAL_NEG_0]]
 QED
 
+(* NOTE: added “a IN s /\ a IN t” into antecedents. *)
 Theorem LIM_TRANSFORM_WITHIN_SET:
-   !f a s t.
-  eventually (\x. x IN s <=> x IN t) (at a)
-  ==> ((f --> l) (at a within s) <=> (f --> l) (at a within t))
+   !f l a s t. a IN s /\ a IN t /\
+        eventually (\x. x IN s <=> x IN t) (at a)
+        ==> ((f --> l) (at a within s) <=> (f --> l) (at a within t))
 Proof
-  REPEAT GEN_TAC THEN REWRITE_TAC[EVENTUALLY_AT, LIM_WITHIN] THEN
-  DISCH_THEN(X_CHOOSE_THEN ``d:real`` STRIP_ASSUME_TAC) THEN
-  EQ_TAC THEN DISCH_TAC THEN X_GEN_TAC ``e:real`` THEN DISCH_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o SPEC ``e:real``) THEN ASM_REWRITE_TAC[] THEN
-  DISCH_THEN(X_CHOOSE_THEN ``k:real`` STRIP_ASSUME_TAC) THEN
-  EXISTS_TAC ``min d k:real`` THEN ASM_REWRITE_TAC[REAL_LT_MIN] THEN
+  REPEAT STRIP_TAC THEN POP_ASSUM MP_TAC THEN
+  ASM_SIMP_TAC std_ss[EVENTUALLY_AT, LIM_WITHIN] THEN
+  DISCH_THEN(Q.X_CHOOSE_THEN ‘d’ STRIP_ASSUME_TAC) THEN
+  EQ_TAC THEN DISCH_TAC THEN Q.X_GEN_TAC ‘e’ THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o Q.SPEC ‘e’) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(Q.X_CHOOSE_THEN ‘k’ STRIP_ASSUME_TAC) THEN
+  Q.EXISTS_TAC ‘min d k’ THEN ASM_REWRITE_TAC[REAL_LT_MIN] THEN
   ASM_MESON_TAC[]
 QED
 
+(* NOTE: added “a IN s /\ a IN t” into antecedents. *)
 Theorem LIM_TRANSFORM_WITHIN_SET_IMP:
-   !f l a s t.
-  eventually (\x. x IN t ==> x IN s) (at a) /\ (f --> l) (at a within s)
-  ==> (f --> l) (at a within t)
+   !f l a s t. a IN s /\ a IN t /\
+        eventually (\x. x IN t ==> x IN s) (at a) /\ (f --> l) (at a within s)
+        ==> (f --> l) (at a within t)
 Proof
-  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM AND_IMP_INTRO, EVENTUALLY_AT, LIM_WITHIN] THEN
-  DISCH_THEN(X_CHOOSE_THEN ``d:real`` STRIP_ASSUME_TAC) THEN
-  DISCH_TAC THEN X_GEN_TAC ``e:real`` THEN DISCH_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o SPEC ``e:real``) THEN ASM_REWRITE_TAC[] THEN
-  DISCH_THEN(X_CHOOSE_THEN ``k:real`` STRIP_ASSUME_TAC) THEN
-  EXISTS_TAC ``min d k:real`` THEN ASM_REWRITE_TAC[REAL_LT_MIN] THEN
+  REPEAT STRIP_TAC THEN NTAC 2 (POP_ASSUM MP_TAC) THEN
+  ASM_SIMP_TAC std_ss [IMP_CONJ, EVENTUALLY_AT, LIM_WITHIN] THEN
+  DISCH_THEN(Q.X_CHOOSE_THEN ‘d’ STRIP_ASSUME_TAC) THEN
+  DISCH_TAC THEN Q.X_GEN_TAC ‘e’ THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o Q.SPEC ‘e’) THEN ASM_REWRITE_TAC[] THEN
+  DISCH_THEN(Q.X_CHOOSE_THEN ‘k’ STRIP_ASSUME_TAC) THEN
+  Q.EXISTS_TAC ‘min d k’ THEN ASM_REWRITE_TAC[REAL_LT_MIN] THEN
   ASM_MESON_TAC[]
 QED
 
@@ -6860,21 +6874,24 @@ QED
 (* Common case assuming being away from some crucial point like 0.           *)
 (* ------------------------------------------------------------------------- *)
 
+(* NOTE: added “a IN s” into antecedents *)
 Theorem LIM_TRANSFORM_AWAY_WITHIN_lemma[local] :
-   !f:real->real g a b s. ~(a = b) /\
-  (!x. x IN s /\ ~(x = a) /\ ~(x = b) ==> (f(x) = g(x))) /\
-  (f --> l) (at a within s) ==> (g --> l) (at a within s)
+   !f:real->real g a b s l.
+        ~(a = b) /\ a IN s /\
+        (!x. x IN s /\ ~(x = a) /\ ~(x = b) ==> f(x) = g(x)) /\
+        (f --> l) (at a within s)
+        ==> (g --> l) (at a within s)
 Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC LIM_TRANSFORM_WITHIN THEN
   MAP_EVERY EXISTS_TAC [``f:real->real``, ``dist(a:real,b)``] THEN
-  ASM_REWRITE_TAC[GSYM DIST_NZ] THEN X_GEN_TAC ``y:real`` THEN
+  ASM_REWRITE_TAC[GSYM DIST_NZ] THEN Q.X_GEN_TAC `y` THEN
   REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
   ASM_MESON_TAC[DIST_SYM, REAL_LT_REFL]
 QED
 
-(* NOTE: removed the unused quantifier ‘b’ *)
+(* NOTE: removed the unused quantifier ‘b’, added “a IN s” into antecedents *)
 Theorem LIM_TRANSFORM_AWAY_WITHIN :
-   !f:real->real g a s l.
+   !f:real->real g a s l. a IN s /\
       (!x. x IN s /\ ~(x = a) ==> (f(x) = g(x))) /\
       (f --> l) (at a within s) ==> (g --> l) (at a within s)
 Proof
@@ -6891,7 +6908,7 @@ Theorem LIM_TRANSFORM_AWAY_AT :
       (f --> l) (at a) ==> (g --> l) (at a)
 Proof
   ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
-  MESON_TAC[LIM_TRANSFORM_AWAY_WITHIN]
+  MESON_TAC[LIM_TRANSFORM_AWAY_WITHIN, IN_UNIV]
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -6932,7 +6949,9 @@ Theorem LIM_TRANSFORM_WITHIN_OPEN_IN:
   (!x. x IN s /\ ~(x = a) ==> (f x = g x)) /\
   (f --> l) (at a within t) ==> (g --> l) (at a within t)
 Proof
-  REPEAT STRIP_TAC THEN MATCH_MP_TAC LIM_TRANSFORM_WITHIN THEN
+  REPEAT STRIP_TAC THEN
+ ‘a IN t’ by gs [OPEN_IN_SUBTOPOLOGY] THEN
+  MATCH_MP_TAC LIM_TRANSFORM_WITHIN THEN
   EXISTS_TAC ``f:real->real`` THEN ASM_REWRITE_TAC[] THEN
   UNDISCH_TAC ``open_in (subtopology euclidean t) s`` THEN
   GEN_REWR_TAC LAND_CONV [OPEN_IN_CONTAINS_BALL] THEN
@@ -6992,16 +7011,18 @@ QED
 (* A congruence rule allowing us to transform limits assuming not at point.  *)
 (* ------------------------------------------------------------------------- *)
 
+(* NOTE: added “a IN s” into antecedents *)
 Theorem LIM_CONG_WITHIN:
-   (!x. ~(x = a) ==> (f x = g x))
+   (!x. ~(x = a) ==> (f x = g x)) /\ a IN s
   ==> (((\x. f x) --> l) (at a within s) <=> ((g --> l) (at a within s)))
 Proof
- REWRITE_TAC[LIM_WITHIN, GSYM DIST_NZ] THEN SIMP_TAC std_ss []
+    STRIP_TAC
+ >> ASM_SIMP_TAC std_ss [LIM_WITHIN, GSYM DIST_NZ]
 QED
 
 (* NOTE: This theorem is not from HOL-Light. *)
 Theorem LIM_WITHIN_CONG :
-   !f g l r a s. (!x. ~(x = a) /\ x IN s ==> (f x - l = g x - r))
+   !f g l r a s. (!x. ~(x = a) /\ x IN s ==> (f x - l = g x - r)) /\ a IN s
   ==> ((f --> l) (at a within s) <=> ((g --> r) (at a within s)))
 Proof
     rw [LIM_WITHIN, dist]
