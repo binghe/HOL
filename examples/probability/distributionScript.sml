@@ -7610,7 +7610,9 @@ Proof
  (* applying gauge_differentiable_lemma on f *)
  >> MP_TAC (Q.SPEC ‘f’ gauge_differentiable_lemma_alt) >> simp [o_DEF]
  >> impl_tac
- >- cheat
+ >- (simp [Abbr ‘f’, Once SWAP_FORALL_THM, SF ETA_ss] \\
+     Q.X_GEN_TAC ‘x’ \\
+     MATCH_MP_TAC higher_differentiable_imp_mn >> art [])
  >> simp []
  >> DISCH_THEN (STRIP_ASSUME_TAC o SRULE [FORALL_AND_THM])
  >> qabbrev_tac ‘g = \t. integral univ(:real) (u t)’
