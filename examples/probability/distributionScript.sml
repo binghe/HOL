@@ -7731,13 +7731,10 @@ Proof
  >> simp [Abbr ‘c’, REAL_INV_1OVER]
 QED
 
-(* NOTE: “higher_differentiable n (He m) x” also holds, but currently we don't
-   have the needed higher_differentiable lemma to prove it.
- *)
-Theorem Hermite_polynomial_higher_differentiable_1 :
-    !n x. higher_differentiable 1 (He n) x
+Theorem Hermite_polynomial_higher_differentiable :
+    !m n x. higher_differentiable m (He n) x
 Proof
-    Q.X_GEN_TAC ‘n’
+    NTAC 2 GEN_TAC
  >> simp [Hermite_polynomial]
  >> qabbrev_tac ‘c :real = -1 pow n’
  >> HO_MATCH_MP_TAC higher_differentiable_mul
@@ -7746,9 +7743,13 @@ Proof
      HO_MATCH_MP_TAC higher_differentiable_cmul \\
      REWRITE_TAC [Hermite_polynomial_differentiable_lemma1])
  >> simp [SF ETA_ss]
- >> HO_MATCH_MP_TAC higher_differentiable_imp_1n
+ >> HO_MATCH_MP_TAC higher_differentiable_imp_mn
  >> simp [Hermite_polynomial_differentiable_lemma2]
 QED
+
+(* |- !n x. higher_differentiable 1 (He n) x *)
+Theorem Hermite_polynomial_higher_differentiable_1 =
+        Hermite_polynomial_higher_differentiable |> Q.SPEC ‘1’
 
 Theorem Hermite_polynomial_recurrence :
     !n x. Hermite_polynomial (SUC n) x =

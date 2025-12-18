@@ -2312,6 +2312,25 @@ Proof
  >> gs []
 QED
 
+Theorem higher_differentiable_imp_mn :
+    !m n f. (!x. higher_differentiable (m + n) f x) ==>
+            (!x. higher_differentiable m (diffn n f) x)
+Proof
+    Q.X_GEN_TAC ‘m’
+ >> Induct_on ‘n’ >- simp []
+ >> rpt STRIP_TAC
+ >> Know ‘diffn (SUC n) f = diffn n (diff1 f)’
+ >- (SYM_TAC >> MATCH_MP_TAC diffn_SUC \\
+     Q.X_GEN_TAC ‘x’ \\
+     MATCH_MP_TAC higher_differentiable_mono \\
+     qexists ‘m + SUC n’ >> simp [])
+ >> Rewr'
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> MATCH_MP_TAC higher_differentiable_imp_n1
+ >> ‘SUC (m + n) = m + SUC n’ by ARITH_TAC
+ >> simp []
+QED
+
 Theorem diffn_chain :
     !f g. (!t. higher_differentiable 1 f t) /\ (!t. higher_differentiable 1 g t) ==>
           (diffn 1 (λx. f (g x)) = λx. diffn 1 f (g x) * diffn 1 g x)
