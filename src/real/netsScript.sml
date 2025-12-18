@@ -25,6 +25,11 @@ val NUM_EQ_CONV = Arithconv.NEQ_CONV;
 val DISC_RW_KILL = DISCH_TAC THEN ONCE_ASM_REWRITE_TAC [] THEN
                    POP_ASSUM K_TAC;
 
+val ASM_REAL_ARITH_TAC = REAL_ASM_ARITH_TAC;
+
+(* !x. P x ==> Q x) ==> (!x. P x) ==> !x. Q x *)
+Theorem MONO_FORALL = MONO_ALL
+
 (*---------------------------------------------------------------------------*)
 (* Basic definitions: directed order, net, bounded net, pointwise limit [1]  *)
 (*---------------------------------------------------------------------------*)
@@ -1857,6 +1862,12 @@ Proof
   SIMP_TAC bool_ss [limit, EVENTUALLY_TRUE]
 QED
 
+Theorem LIMIT_REAL_CONST :
+   !net:'a net l. limit (mtop mr1) (\a. l) l net
+Proof
+  REWRITE_TAC[LIMIT_CONST, TOPSPACE_MTOP, IN_UNIV]
+QED
+
 Theorem LIMIT_EVENTUALLY :
     !net top (f:'a->'b) l.
         l IN topspace top /\ eventually (\x. f x = l) net
@@ -1947,39 +1958,158 @@ Proof
   MESON_TAC[LIMIT_HAUSDORFF_UNIQUE, HAUSDORFF_SPACE_MTOPOLOGY]
 QED
 
-(*
-let LIMIT_METRIC = prove
- (`!m f:A->B l net.
+Theorem LIMIT_METRIC :
+  !m f:'a->'b l net.
      limit (mtopology m) f l net <=>
      l IN mspace m /\
      (!e. &0 < e
-          ==> eventually (\x. f x IN mspace m /\ mdist m (f x, l) < e) net)`,
+          ==> eventually (\x. f x IN mspace m /\ mdist m (f x, l) < e) net)
+Proof
+    rpt GEN_TAC
+ >> REWRITE_TAC[limit, OPEN_IN_MTOPOLOGY, TOPSPACE_MTOPOLOGY]
+ >> EQ_TAC
+ >- (rw [MSPACE] \\
+     Q.PAT_X_ASSUM ‘!u. _’ (MP_TAC o Q.SPEC ‘mball m (l,e)’) \\
+     simp [CENTRE_IN_MBALL, MSPACE] \\
+     simp [IN_MBALL, MSPACE, MDIST_REFL] \\
+     impl_tac
+     >- (rpt STRIP_TAC \\
+         Q.EXISTS_TAC ‘e - mdist m (l,x)’ \\
+         CONJ_TAC >- REAL_ASM_ARITH_TAC \\
+         simp [SUBSET_DEF, IN_MBALL, MSPACE] \\
+         Q.X_GEN_TAC ‘y’ >> DISCH_TAC \\
+         Q_TAC (TRANS_TAC REAL_LET_TRANS) `mdist m (l,x) + mdist m (x,y)` \\
+         ASM_SIMP_TAC std_ss [MDIST_TRIANGLE] \\
+         REAL_ASM_ARITH_TAC) \\
+     simp [Once MDIST_SYM])
+ >> rw [MSPACE]
+ >> MATCH_MP_TAC EVENTUALLY_MONO
+ >> Q.PAT_X_ASSUM ‘!x. x IN u ==> _’ (MP_TAC o Q.SPEC ‘l’) >> rw []
+ >> Q.EXISTS_TAC ‘\x. dist m (f x,l) < r’ >> rw []
+ >> Q.PAT_X_ASSUM ‘_ SUBSET u’ MP_TAC >> rw [SUBSET_DEF]
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> rw [IN_MBALL, MSPACE, Once MDIST_SYM]
+QED
+
+Theorem LIMIT_METRIC_SEQUENTIALLY :
+  !m f:num->'a l.
+     limit (mtopology m) f l sequentially <=>
+     l IN mspace m /\
+     (!e. &0 < e ==> (?N. !n. N <= n
+                              ==> f n IN mspace m /\ mdist m (f n,l) < e))
+Proof
+  REPEAT GEN_TAC THEN SIMP_TAC std_ss [LIMIT_METRIC, EVENTUALLY_SEQUENTIALLY]
+QED
+
+(* ------------------------------------------------------------------------- *)
+(* Combining theorems for real limits.                                       *)
+(* ------------------------------------------------------------------------- *)
+
+Theorem REAL_HALF :
+   (!e. &0 < e / &2 <=> &0 < e) /\
+   (!e. e / &2 + e / &2 = e) /\
+   (!e. &2 * (e / &2) = e)
+Proof
+  REAL_ARITH_TAC
+QED
+
+Theorem LIMIT_REAL_MUL :
+    !(net:'a net) f g l m.
+        limit (mtop mr1) f l net /\ limit (mtop mr1) g m net
+        ==> limit (mtop mr1) (\x. f x * g x) (l * m) net
+Proof
   REPEAT GEN_TAC THEN
-  REWRITE_TAC[limit; OPEN_IN_MTOPOLOGY; TOPSPACE_MTOPOLOGY] THEN EQ_TAC THENL
-  [INTRO_TAC "l hp" THEN ASM_REWRITE_TAC[] THEN INTRO_TAC "!e; e" THEN
-   REMOVE_THEN "hp" (MP_TAC o SPEC `mball m (l:B,e)`) THEN
-   ASM_REWRITE_TAC[MBALL_SUBSET_MSPACE] THEN ASM_SIMP_TAC[CENTRE_IN_MBALL] THEN
-   REWRITE_TAC[IN_MBALL] THEN ANTS_TAC THENL
-   [INTRO_TAC "!x; x lt" THEN
-    EXISTS_TAC `e - mdist m (l:B,x)` THEN
-    CONJ_TAC THENL
-    [ASM_REAL_ARITH_TAC;
-     ASM_REWRITE_TAC[SUBSET; IN_MBALL] THEN INTRO_TAC "![y]; y lt'" THEN
-     ASM_REWRITE_TAC[] THEN
-     TRANS_TAC REAL_LET_TRANS `mdist m (l:B,x) + mdist m (x,y)` THEN
-     ASM_SIMP_TAC[MDIST_TRIANGLE] THEN ASM_REAL_ARITH_TAC];
-    MATCH_MP_TAC (REWRITE_RULE [IMP_CONJ] EVENTUALLY_MONO) THEN
-    GEN_TAC THEN REWRITE_TAC[] THEN ASM_CASES_TAC `f (x:A):B IN mspace m` THEN
-    ASM_SIMP_TAC[MDIST_SYM]];
-   INTRO_TAC "l hp" THEN ASM_REWRITE_TAC[] THEN INTRO_TAC "!u; (u hp) l" THEN
-   REMOVE_THEN "hp"
-     (DESTRUCT_TAC "@r. r sub" o C MATCH_MP (ASSUME `l:B IN u`)) THEN
-   REMOVE_THEN "hp" (MP_TAC o C MATCH_MP (ASSUME `&0 < r`)) THEN
-   MATCH_MP_TAC (REWRITE_RULE [IMP_CONJ] EVENTUALLY_MONO) THEN
-   GEN_TAC THEN REWRITE_TAC[] THEN INTRO_TAC "f lt" THEN
-   CLAIM_TAC "rmk" `f (x:A):B IN mball m (l,r)` THENL
-   [ASM_SIMP_TAC[IN_MBALL; MDIST_SYM]; HYP SET_TAC "rmk sub" []]]);;
- *)
+  simp [LIMIT_METRIC, MR1_DEF, MSPACE] THEN
+  DISCH_TAC THEN Q.X_GEN_TAC ‘e’ THEN DISCH_TAC THEN
+  FIRST_X_ASSUM(CONJUNCTS_THEN(MP_TAC o Q.SPEC
+    `min (&1) (e / &2 / (abs l + abs m + &1))`)) THEN
+  ASM_SIMP_TAC std_ss[REAL_HALF, REAL_LT_DIV, REAL_LT_MIN, REAL_LT_01, IMP_IMP,
+    GSYM EVENTUALLY_AND, REAL_ARITH “&0 < abs x + abs y + &1”] THEN
+  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
+  SIMP_TAC std_ss[REAL_LT_RDIV_EQ, REAL_ARITH “&0 < abs x + abs y + &1”] THEN
+  Q.X_GEN_TAC ‘y’ THEN
+  SIMP_TAC std_ss[REAL_LT_RDIV_EQ, REAL_ARITH “&0 < abs x + abs y + &1”] THEN
+  DISCH_THEN(CONJUNCTS_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+  MATCH_MP_TAC(REAL_ARITH
+   “abs((f' - f) * g') <= x /\ abs((g' - g) * f) <= y
+    ==> x < e / &2 ==> y < e / &2
+        ==> abs(f' * g' - f * g) < e”) THEN
+  REWRITE_TAC[REAL_ABS_MUL] THEN CONJ_TAC THEN MATCH_MP_TAC REAL_LE_LMUL_IMP THEN
+  ASM_REAL_ARITH_TAC
+QED
+
+Theorem LIMIT_REAL_LMUL :
+    !(net:'a net) c f l.
+        limit (mtop mr1) f l net
+        ==> limit (mtop mr1) (\x. c * f x) (c * l) net
+Proof
+  SIMP_TAC std_ss[LIMIT_REAL_MUL, LIMIT_REAL_CONST]
+QED
+
+Theorem LIMIT_REAL_NEG :
+    !(net:'a net) f l.
+        limit (mtop mr1) f l net
+        ==> limit (mtop mr1) (\x. -(f x)) (-l) net
+Proof
+  ONCE_REWRITE_TAC[REAL_ARITH “-x:real = -(&1) * x”] THEN
+  REWRITE_TAC[LIMIT_REAL_LMUL]
+QED
+
+Theorem LIMIT_REAL_ADD :
+    !(net:'a net) f g l m.
+        limit (mtop mr1) f l net /\ limit (mtop mr1) g m net
+        ==> limit (mtop mr1) (\x. f x + g x) (l + m) net
+Proof
+    rpt GEN_TAC
+ >> simp [LIMIT_METRIC, MSPACE, MR1_DEF] >> DISCH_TAC
+ >> Q.X_GEN_TAC ‘e’ >> DISCH_TAC
+ >> FIRST_X_ASSUM (CONJUNCTS_THEN (MP_TAC o Q.SPEC ‘e / 2’))
+ >> ASM_SIMP_TAC std_ss [REAL_HALF, IMP_IMP, GSYM EVENTUALLY_AND]
+ >> MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO)
+ >> simp []
+ >> REAL_ARITH_TAC
+QED
+
+Theorem LIMIT_REAL_SUB :
+    !(net:'a net) f g l m.
+        limit (mtop mr1) f l net /\ limit (mtop mr1) g m net
+        ==> limit (mtop mr1) (\x. f x - g x) (l - m) net
+Proof
+  SIMP_TAC std_ss[real_sub, LIMIT_REAL_ADD, LIMIT_REAL_NEG]
+QED
+
+Theorem LIMIT_REAL_ABS :
+    !(net:'a net) f l.
+        limit (mtop mr1) f l net
+        ==> limit (mtop mr1) (\x. abs(f x)) (abs l) net
+Proof
+  REPEAT GEN_TAC THEN
+  simp [LIMIT_METRIC, MSPACE, MR1_DEF] THEN
+  HO_MATCH_MP_TAC MONO_FORALL THEN GEN_TAC THEN MATCH_MP_TAC MONO_IMP THEN
+  REWRITE_TAC[] THEN MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
+  simp [] THEN REAL_ARITH_TAC
+QED
+
+Theorem LIMIT_REAL_MAX :
+    !(net:'a net) f g l m.
+        limit (mtop mr1) f l net /\ limit (mtop mr1) g m net
+        ==> limit (mtop mr1) (\x. max (f x) (g x)) (max l m) net
+Proof
+  REWRITE_TAC[REAL_ARITH “max a b = inv(&2) * (abs(a - b) + a + b)”] THEN
+  REPEAT STRIP_TAC THEN HO_MATCH_MP_TAC LIMIT_REAL_LMUL THEN
+  REPEAT(HO_MATCH_MP_TAC LIMIT_REAL_ADD THEN CONJ_TAC) THEN
+  ASM_SIMP_TAC std_ss[LIMIT_REAL_SUB, LIMIT_REAL_ABS]
+QED
+
+Theorem LIMIT_REAL_MIN :
+    !(net:'a net) f g l m.
+        limit (mtop mr1) f l net /\ limit (mtop mr1) g m net
+        ==> limit (mtop mr1) (\x. min (f x) (g x)) (min l m) net
+Proof
+  REWRITE_TAC[REAL_ARITH “min a b = inv(&2) * ((a + b) - abs(a - b))”] THEN
+  REPEAT STRIP_TAC THEN HO_MATCH_MP_TAC LIMIT_REAL_LMUL THEN
+  ASM_SIMP_TAC std_ss[LIMIT_REAL_ADD, LIMIT_REAL_SUB, LIMIT_REAL_ABS]
+QED
 
 (* END *)
 val _ = export_theory ();

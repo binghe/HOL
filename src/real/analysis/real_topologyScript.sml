@@ -65,9 +65,6 @@ Overload UNCOUNTABLE[inferior] = “uncountable”
 
 (* ------------------------------------------------------------------------- *)
 
-(* !x. P x ==> Q x) ==> (!x. P x) ==> !x. Q x *)
-Theorem MONO_FORALL = MONO_ALL
-
 (* |- !P Q. (!x. P x) /\ (!x. Q x) <=> !x. P x /\ Q x *)
 Theorem AND_FORALL_THM = GSYM FORALL_AND_THM
 
@@ -6325,13 +6322,8 @@ Proof
   ASM_SIMP_TAC std_ss [REAL_MUL_ASSOC, REAL_MUL_LINV, REAL_MUL_LID, ETA_AX]
 QED
 
-Theorem LIM_NEG:
-   !net f l:real. (f --> l) net ==> ((\x. -(f x)) --> -l) net
-Proof
-    rpt GEN_TAC >> REWRITE_TAC [LIM_DEF, dist]
- >> Cases_on ‘netfilter net = {}’ >> simp []
- >> SIMP_TAC std_ss [REAL_ARITH ``-x - -y = -(x - y:real)``, ABS_NEG]
-QED
+(* |- !net f l. (f --> l) net ==> ((\x. -f x) --> -l) net *)
+Theorem LIM_NEG = LIMIT_REAL_NEG |> REWRITE_RULE [GSYM euclidean_def]
 
 Theorem LIM_NEG_EQ:
    !net f l:real. ((\x. -(f x)) --> -l) net <=> (f --> l) net
@@ -6341,29 +6333,10 @@ Proof
   SIMP_TAC std_ss [REAL_NEG_NEG, ETA_AX]
 QED
 
-(* TODO *)
-Theorem LIM_ADD:
-   !net:('a)net f g l m.
-    (f --> l) net /\ (g --> m) net ==> ((\x. f(x) + g(x)) --> (l + m)) net
-Proof
-  REPEAT GEN_TAC THEN REWRITE_TAC[LIM_DEF] THEN
-  ASM_CASES_TAC ``netfilter (net:('a)net) = {}`` THEN
-  ASM_SIMP_TAC std_ss [GSYM FORALL_AND_THM] THEN
-  DISCH_TAC THEN X_GEN_TAC ``e:real`` THEN DISCH_TAC THEN
-  FIRST_X_ASSUM(MP_TAC o SPEC ``e / &2:real``) THEN ASM_REWRITE_TAC[REAL_LT_HALF1] THEN
-  KNOW_TAC ``!x y. (dist(f x, l) < e / 2:real) =
-              (\x. (dist(f x, l) < e / 2:real)) x`` THENL
-  [FULL_SIMP_TAC std_ss [], ALL_TAC] THEN DISC_RW_KILL THEN
-  KNOW_TAC ``!x y. (dist(g x, m) < e / 2:real) =
-              (\x. (dist(g x, m) < e / 2:real)) x`` THENL
-  [FULL_SIMP_TAC std_ss [], ALL_TAC] THEN DISC_RW_KILL THEN
-  DISCH_THEN(MP_TAC o MATCH_MP NET_DILEMMA) THEN BETA_TAC THEN
-  STRIP_TAC THEN EXISTS_TAC ``c:'a`` THEN CONJ_TAC THENL [METIS_TAC [], ALL_TAC] THEN
-  GEN_TAC THEN POP_ASSUM (MP_TAC o Q.SPEC `x'`) THEN REPEAT STRIP_TAC THEN
-  FULL_SIMP_TAC std_ss [] THEN MATCH_MP_TAC REAL_LET_TRANS THEN
-  EXISTS_TAC ``dist (f x', l) + dist (g x', m)`` THEN
-  METIS_TAC[REAL_LT_HALF1, REAL_LT_ADD2, DIST_TRIANGLE_ADD, GSYM REAL_HALF_DOUBLE]
-QED
+(* |- !net f g l m.
+        (f --> l) net /\ (g --> m) net ==> ((\x. f x + g x) --> (l + m)) net
+ *)
+Theorem LIM_ADD = LIMIT_REAL_ADD |> REWRITE_RULE [GSYM euclidean_def]
 
 Theorem lemma[local]:
    abs(x - y) <= abs(a - b) ==> dist(a,b) < e ==> dist(x,y) < e
@@ -6371,92 +6344,36 @@ Proof
   REWRITE_TAC [dist] THEN REAL_ARITH_TAC
 QED
 
-Theorem LIM_ABS:
-   !net:('a)net f:'a->real l.
-     (f --> l) net
-     ==> ((\x. abs(f(x))) --> (abs(l)):real) net
-Proof
-  REPEAT GEN_TAC THEN REWRITE_TAC[LIM] THEN
-  ASM_CASES_TAC ``trivial_limit (net:('a)net)`` THEN ASM_REWRITE_TAC[] THEN
-  DISCH_TAC THEN GEN_TAC THEN POP_ASSUM (MP_TAC o Q.SPEC `e:real`) THEN
-  MATCH_MP_TAC MONO_IMP THEN REWRITE_TAC[] THEN
-  STRIP_TAC THEN EXISTS_TAC ``y:'a`` THEN POP_ASSUM MP_TAC THEN
-  POP_ASSUM MP_TAC THEN REWRITE_TAC [AND_IMP_INTRO] THEN
-  MATCH_MP_TAC MONO_AND THEN REWRITE_TAC[] THEN
-  STRIP_TAC THENL [DISCH_TAC THEN EXISTS_TAC ``x:'a`` THEN ASM_REWRITE_TAC [],
-   ALL_TAC] THEN DISCH_TAC THEN GEN_TAC THEN
-  POP_ASSUM (MP_TAC o Q.SPEC `x:'a`) THEN
-  MATCH_MP_TAC MONO_IMP THEN REWRITE_TAC[] THEN
-  MATCH_MP_TAC lemma THEN BETA_TAC THEN
-  REAL_ARITH_TAC
-QED
+(* |- !net f l. (f --> l) net ==> ((\x. abs (f x)) --> abs l) net *)
+Theorem LIM_ABS = LIMIT_REAL_ABS |> REWRITE_RULE [GSYM euclidean_def]
 
-Theorem LIM_SUB:
-   !net:('a)net f g l m.
-    (f --> l) net /\ (g --> m) net ==> ((\x. f(x) - g(x)) --> (l - m)) net
-Proof
-  REWRITE_TAC[real_sub] THEN ASM_SIMP_TAC std_ss [LIM_ADD, LIM_NEG]
-QED
+(* |- !net f g l m.
+        (f --> l) net /\ (g --> m) net ==> ((\x. f x - g x) --> (l - m)) net
+ *)
+Theorem LIM_SUB = LIMIT_REAL_SUB |> REWRITE_RULE [GSYM euclidean_def]
 
-(* NOTE: “max f g = 1 / 2 * abs (f - g) + (f + g)” *)
-Theorem LIM_MAX :
-   !net:('a)net f g (l :real) (m :real).
-    (f --> l) net /\ (g --> m) net
-    ==> ((\x. max (f(x)) (g(x))) --> (max (l) (m)):real) net
-Proof
-  REPEAT GEN_TAC THEN DISCH_TAC THEN
-  FIRST_ASSUM(MP_TAC o MATCH_MP LIM_ADD) THEN
-  FIRST_ASSUM(MP_TAC o MATCH_MP LIM_SUB) THEN
-  DISCH_THEN(MP_TAC o MATCH_MP LIM_ABS) THEN
-  REWRITE_TAC[AND_IMP_INTRO] THEN
-  DISCH_THEN(MP_TAC o MATCH_MP LIM_ADD) THEN
-  DISCH_THEN(MP_TAC o SPEC ``inv(&2:real)`` o MATCH_MP LIM_CMUL) THEN
-  MATCH_MP_TAC EQ_IMPLIES THEN AP_THM_TAC THEN BINOP_TAC THEN
-  SIMP_TAC std_ss [FUN_EQ_THM, max_def, abs] THEN
-  ONCE_REWRITE_TAC [REAL_MUL_SYM] THEN ONCE_REWRITE_TAC [GSYM real_div] THEN
-  SIMP_TAC arith_ss [REAL_EQ_LDIV_EQ, REAL_ARITH ``0 < 2:real``] THEN
-  ONCE_REWRITE_TAC [REAL_MUL_COMM] THEN
- (* 2 subgoals here, same tactics (each with 4 subgoals) *)
- (RW_TAC arith_ss [REAL_SUB_LE] THENL
-  [(* goal 1 (of 4) *)
-   REPEAT (POP_ASSUM MP_TAC) THEN
-   RW_TAC std_ss [AND_IMP_INTRO, REAL_LE_ANTISYM, REAL_SUB_REFL,
-                  REAL_ADD_LID] THEN  REWRITE_TAC [GSYM REAL_DOUBLE],
-   (* goal 2 (of 4) *)
-   REWRITE_TAC [REAL_ARITH ``a - b + (a + b) = a + a - b + b:real``,
-                REAL_SUB_ADD, REAL_DOUBLE],
-   (* goal 3 (of 4) *)
-   REWRITE_TAC [REAL_ARITH ``-(a - b) + (a + b) = b + b - a + a:real``,
-                REAL_SUB_ADD, REAL_DOUBLE],
-   (* goal 4 (of 4) *)
-   FULL_SIMP_TAC real_ss [REAL_NOT_LE] THEN METIS_TAC [REAL_LT_ANTISYM]])
-QED
+(* |- !net f g l m.
+        (f --> l) net /\ (g --> m) net ==>
+        ((\x. max (f x) (g x)) --> max l m) net
+ *)
+Theorem LIM_MAX = LIMIT_REAL_MAX |> REWRITE_RULE [GSYM euclidean_def]
 
-Theorem LIM_MIN :
-   !net:('a)net f g l:real m:real.
-    (f --> l) net /\ (g --> m) net
-    ==> ((\x. min (f(x)) (g(x))) --> (min (l) (m)):real) net
-Proof
-  REPEAT GEN_TAC THEN
-  DISCH_THEN(CONJUNCTS_THEN(MP_TAC o MATCH_MP LIM_NEG)) THEN
-  REWRITE_TAC[AND_IMP_INTRO] THEN
-  DISCH_THEN(MP_TAC o MATCH_MP LIM_NEG o MATCH_MP LIM_MAX) THEN
-  MATCH_MP_TAC EQ_IMPLIES THEN AP_THM_TAC THEN
-  reverse BINOP_TAC >- PROVE_TAC [GSYM REAL_MIN_MAX, REAL_MIN_ACI] THEN
-  SIMP_TAC std_ss [FUN_EQ_THM] THEN
-  GEN_TAC >> PROVE_TAC [GSYM REAL_MIN_MAX, REAL_MIN_ACI]
-QED
+(* |- !net f g l m.
+        (f --> l) net /\ (g --> m) net ==>
+        ((\x. min (f x) (g x)) --> min l m) net
+ *)
+Theorem LIM_MIN = LIMIT_REAL_MIN |> REWRITE_RULE [GSYM euclidean_def]
 
 Theorem LIM_NULL:
    !net f l. (f --> l) net <=> ((\x. f(x) - l) --> 0) net
 Proof
-  SIMP_TAC arith_ss [LIM, dist, REAL_SUB_RZERO]
+  SIMP_TAC arith_ss [LIM_DEF, dist, REAL_SUB_RZERO]
 QED
 
 Theorem LIM_NULL_ABS:
    !net f. (f --> 0) net <=> ((\x. (abs(f x))) --> 0) net
 Proof
-  SIMP_TAC std_ss [LIM, dist, REAL_SUB_RZERO, ABS_ABS]
+  SIMP_TAC std_ss [LIM_DEF, dist, REAL_SUB_RZERO, ABS_ABS]
 QED
 
 Theorem LIM_NULL_CMUL_EQ:
@@ -6509,7 +6426,7 @@ Theorem LIM_COMPONENT:
    !net f i l:real. (f --> l) net
        ==> ((\a. f(a)) --> l) net
 Proof
-  REWRITE_TAC[LIM, dist] THEN
+  REWRITE_TAC[LIM_DEF, dist] THEN
   METIS_TAC[REAL_LET_TRANS]
 QED
 
@@ -6590,12 +6507,26 @@ QED
 (* Deducing things about the limit from the elements.                        *)
 (* ------------------------------------------------------------------------- *)
 
+(* TODO *)
 Theorem LIM_IN_CLOSED_SET:
    !net f:'a->real s l.
     closed s /\ eventually (\x. f(x) IN s) net /\
     ~(trivial_limit net) /\ (f --> l) net
     ==> l IN s
 Proof
+(*
+  REWRITE_TAC[closed] THEN REPEAT STRIP_TAC THEN
+  MATCH_MP_TAC(SET_RULE `~(x IN (UNIV DIFF s)) ==> x IN s`) THEN
+  DISCH_TAC THEN
+  FIRST_ASSUM(MP_TAC o SPEC `l:real^N` o GEN_REWRITE_RULE I
+          [OPEN_CONTAINS_BALL]) THEN
+  ASM_REWRITE_TAC[SUBSET; IN_BALL; IN_DIFF; IN_UNION] THEN
+  DISCH_THEN(X_CHOOSE_THEN `e:real` STRIP_ASSUME_TAC) THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `e:real` o GEN_REWRITE_RULE I [tendsto]) THEN
+  UNDISCH_TAC `eventually (\x. (f:A->real^N) x IN s) net` THEN
+  ASM_REWRITE_TAC[GSYM EVENTUALLY_AND; TAUT `a ==> ~b <=> ~(a /\ b)`] THEN
+  MATCH_MP_TAC NOT_EVENTUALLY THEN ASM_MESON_TAC[DIST_SYM]
+*)
   REWRITE_TAC[closed_def] THEN REPEAT STRIP_TAC THEN
   MATCH_MP_TAC(SET_RULE ``~(x IN (UNIV DIFF s)) ==> x IN s``) THEN
   DISCH_TAC THEN UNDISCH_TAC ``open (univ(:real) DIFF s)`` THEN
