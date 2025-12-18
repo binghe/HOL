@@ -1892,6 +1892,63 @@ Proof
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
 QED
 
+(*
+let LIMIT_SEQUENTIALLY = prove
+ (`!top s l:A.
+     limit top s l sequentially <=>
+     l IN topspace top /\
+     (!u. open_in top u /\ l IN u ==> (?N. !n. N <= n ==> s n IN u))`,
+  REWRITE_TAC[limit; EVENTUALLY_SEQUENTIALLY]);;
+
+let LIMIT_SEQUENTIALLY_OFFSET = prove
+ (`!top f l:A k. limit top f l sequentially
+                 ==> limit top (\i. f (i + k)) l sequentially`,
+  SIMP_TAC[LIMIT_SEQUENTIALLY] THEN INTRO_TAC "! *; l lim; !u; hp" THEN
+  USE_THEN "hp" (HYP_TAC "lim: @N. N" o C MATCH_MP) THEN
+  EXISTS_TAC `N:num` THEN INTRO_TAC "!n; n" THEN
+  USE_THEN "N" MATCH_MP_TAC THEN ASM_ARITH_TAC);;
+
+let LIMIT_SEQUENTIALLY_OFFSET_REV = prove
+ (`!top f l:A k. limit top (\i. f (i + k)) l sequentially
+                 ==> limit top f l sequentially`,
+  SIMP_TAC[LIMIT_SEQUENTIALLY] THEN INTRO_TAC "! *; l lim; !u; hp" THEN
+  USE_THEN "hp" (HYP_TAC "lim: @N. N" o C MATCH_MP) THEN
+  EXISTS_TAC `N+k:num` THEN INTRO_TAC "!n; n" THEN
+  REMOVE_THEN "N" (MP_TAC o SPEC `n-k:num`) THEN
+  ANTS_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+  SUBGOAL_THEN `n - k + k = n:num` (fun th -> REWRITE_TAC[th]) THEN
+  ASM_ARITH_TAC);;
+
+let LIMIT_ATPOINTOF = prove
+ (`!top top' f:A->B x y.
+        limit top' f y (atpointof top x) <=>
+        y IN topspace top' /\
+        (x IN topspace top
+         ==> !v. open_in top' v /\ y IN v
+                 ==> ?u. open_in top u /\ x IN u /\
+                         IMAGE f (u DELETE x) SUBSET v)`,
+  REPEAT GEN_TAC THEN ASM_SIMP_TAC[limit; EVENTUALLY_ATPOINTOF] THEN
+  ASM_CASES_TAC `(y:B) IN topspace top'` THEN ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC `(x:A) IN topspace top` THEN ASM_REWRITE_TAC[] THEN
+  AP_TERM_TAC THEN ABS_TAC THEN SET_TAC[]);;
+
+let LIMIT_ATPOINTOF_SELF = prove
+ (`!top1 top2 f:A->B a.
+        limit top2 f (f a) (atpointof top1 a) <=>
+        f a IN topspace top2 /\
+        (a IN topspace top1
+         ==> (!v. open_in top2 v /\ f a IN v
+                  ==> (?u. open_in top1 u /\ a IN u /\ IMAGE f u SUBSET v)))`,
+  REWRITE_TAC[LIMIT_ATPOINTOF] THEN SET_TAC[]);;
+ *)
+ 
+Theorem LIMIT_TRIVIAL :
+    !net f:'a->'b top y.
+        trivial_limit net /\ y IN topspace top ==> limit top f y net
+Proof
+  SIMP_TAC std_ss[limit, EVENTUALLY_TRIVIAL]
+QED
+
 Theorem LIMIT_HAUSDORFF_UNIQUE :
   !net top (f:'a->'b) l1 l2.
      ~trivial_limit net /\

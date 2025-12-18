@@ -5667,8 +5667,21 @@ Overload "-->" = “limit euclidean”
         (f --> l) net <=>
         !u. open u /\ l IN u ==> eventually (\x. f x IN u) net
  *)
-Theorem LIM = limit |> ISPEC “euclidean”
-                    |> SRULE [TOPSPACE_EUCLIDEAN, GSYM euclidean_open_def]
+Theorem TENDSTO_ALT = limit |> ISPEC “euclidean”
+                            |> SRULE [TOPSPACE_EUCLIDEAN, GSYM euclidean_open_def]
+
+Theorem LIM_EVENTUALLY_IN_OPEN :
+    !net f:'a->real l s.
+        open s /\ (f --> l) net /\ l IN s ==> eventually (\x. f x IN s) net
+Proof
+  REWRITE_TAC[TENDSTO_ALT] THEN METIS_TAC[]
+QED
+
+Theorem LIM_TRIVIAL :
+    !net (f:'a->real) l. trivial_limit net ==> (f --> l) net
+Proof
+  SIMP_TAC std_ss[euclidean_def, LIMIT_TRIVIAL, TOPSPACE_EUCLIDEAN, IN_UNIV]
+QED
 
 (* NOTE: This is the original definition of “tendsto_real” aka HOL-Light's [tendsto] *)
 Theorem tendsto_real_def :
@@ -5742,26 +5755,6 @@ Proof
  >> simp [netlimits_def]
  >> Q.EXISTS_TAC ‘x’ >> art []
 QED
-
-(*
-Theorem LIMIT_REAL_CONST :
-    !net:'a net l. limit euclideanreal (\a. l) l net
-Proof
-  REWRITE_TAC[LIMIT_CONST; TOPSPACE_EUCLIDEANREAL; IN_UNIV]
-QED
-
-let LIMIT_REAL_ADD = prove
- (`!(net:A net) f g l m.
-        limit euclideanreal f l net /\ limit euclideanreal g m net
-        ==> limit euclideanreal (\x. f x + g x) (l + m) net`,
-  REPEAT GEN_TAC THEN REWRITE_TAC[GSYM MTOPOLOGY_REAL_EUCLIDEAN_METRIC] THEN
-  REWRITE_TAC[LIMIT_METRIC; REAL_EUCLIDEAN_METRIC; IN_UNIV] THEN
-  DISCH_TAC THEN X_GEN_TAC `e:real` THEN DISCH_TAC THEN
-  FIRST_X_ASSUM(CONJUNCTS_THEN (MP_TAC o SPEC `e / &2`)) THEN
-  ASM_REWRITE_TAC[REAL_HALF; IMP_IMP; GSYM EVENTUALLY_AND] THEN
-  MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
-  REWRITE_TAC[] THEN REAL_ARITH_TAC);;
- *)
 
 (* ------------------------------------------------------------------------- *)
 (* Show that they yield usual definitions in the various cases.              *)
@@ -6507,26 +6500,12 @@ QED
 (* Deducing things about the limit from the elements.                        *)
 (* ------------------------------------------------------------------------- *)
 
-(* TODO *)
 Theorem LIM_IN_CLOSED_SET:
    !net f:'a->real s l.
     closed s /\ eventually (\x. f(x) IN s) net /\
     ~(trivial_limit net) /\ (f --> l) net
     ==> l IN s
 Proof
-(*
-  REWRITE_TAC[closed] THEN REPEAT STRIP_TAC THEN
-  MATCH_MP_TAC(SET_RULE `~(x IN (UNIV DIFF s)) ==> x IN s`) THEN
-  DISCH_TAC THEN
-  FIRST_ASSUM(MP_TAC o SPEC `l:real^N` o GEN_REWRITE_RULE I
-          [OPEN_CONTAINS_BALL]) THEN
-  ASM_REWRITE_TAC[SUBSET; IN_BALL; IN_DIFF; IN_UNION] THEN
-  DISCH_THEN(X_CHOOSE_THEN `e:real` STRIP_ASSUME_TAC) THEN
-  FIRST_X_ASSUM(MP_TAC o SPEC `e:real` o GEN_REWRITE_RULE I [tendsto]) THEN
-  UNDISCH_TAC `eventually (\x. (f:A->real^N) x IN s) net` THEN
-  ASM_REWRITE_TAC[GSYM EVENTUALLY_AND; TAUT `a ==> ~b <=> ~(a /\ b)`] THEN
-  MATCH_MP_TAC NOT_EVENTUALLY THEN ASM_MESON_TAC[DIST_SYM]
-*)
   REWRITE_TAC[closed_def] THEN REPEAT STRIP_TAC THEN
   MATCH_MP_TAC(SET_RULE ``~(x IN (UNIV DIFF s)) ==> x IN s``) THEN
   DISCH_TAC THEN UNDISCH_TAC ``open (univ(:real) DIFF s)`` THEN
@@ -6547,6 +6526,7 @@ QED
 (* Need to prove closed(cball(x,e)) before deducing this as a corollary.     *)
 (* ------------------------------------------------------------------------- *)
 
+(* NOTE: The following two theorems are not from HOL-Light
 Theorem LIM_ABS_UBOUND:
    !net:('a)net f (l:real) b.
    ~(trivial_limit net) /\ (f --> l) net /\
@@ -6582,6 +6562,7 @@ Proof
   REWRITE_TAC[REAL_NOT_LT, REAL_LE_SUB_RADD, DE_MORGAN_THM, dist] THEN
   REAL_ARITH_TAC
 QED
+ *)
 
 (* ------------------------------------------------------------------------- *)
 (* Uniqueness of the limit, when nontrivial. *)
@@ -6591,17 +6572,7 @@ Theorem LIM_UNIQUE:
    !net:('a)net f l:real l'.
   ~(trivial_limit net) /\ (f --> l) net /\ (f --> l') net ==> (l = l')
 Proof
-  REPEAT GEN_TAC THEN DISCH_THEN(CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-  DISCH_THEN(ASSUME_TAC o REWRITE_RULE[REAL_SUB_REFL] o MATCH_MP LIM_SUB) THEN
-  SUBGOAL_THEN ``!e. &0 < e ==> abs(l:real - l') <= e`` MP_TAC THENL
-  [GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC LIM_ABS_UBOUND THEN
-   MAP_EVERY EXISTS_TAC [``net:('a)net``, ``\x:'a. 0:real``] THEN
-   ASM_SIMP_TAC std_ss [ABS_0, REAL_LT_IMP_LE, eventually] THEN
-   ASM_MESON_TAC[trivial_limit],
-  ONCE_REWRITE_TAC[MONO_NOT_EQ] THEN REWRITE_TAC[DIST_NZ, dist] THEN
-  DISCH_TAC THEN DISCH_THEN(MP_TAC o SPEC ``abs(l - l':real) / &2``) THEN
-  ASM_SIMP_TAC arith_ss [REAL_LT_RDIV_EQ, REAL_LE_RDIV_EQ, REAL_LT] THEN
-  UNDISCH_TAC ``&0 < abs(l - l':real)`` THEN REAL_ARITH_TAC]
+  REWRITE_TAC[euclidean_def, LIMIT_METRIC_UNIQUE]
 QED
 
 Theorem TENDSTO_LIM:
@@ -6610,6 +6581,7 @@ Proof
   REWRITE_TAC[reallim] THEN METIS_TAC[LIM_UNIQUE]
 QED
 
+(* TODO *)
 Theorem LIM_CONST_EQ:
    !net:('a net) c d:real.
   ((\x. c) --> d) net <=> trivial_limit net \/ (c = d)
