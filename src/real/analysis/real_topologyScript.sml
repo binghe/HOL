@@ -7443,10 +7443,12 @@ Theorem BOUNDED_CLOSURE:
    !s:real->bool. bounded s ==> bounded(closure s)
 Proof
   REWRITE_TAC[bounded_def, CLOSURE_SEQUENTIAL] THEN
-  GEN_TAC THEN STRIP_TAC THEN EXISTS_TAC ``a:real`` THEN
-  GEN_TAC THEN
-  METIS_TAC[REWRITE_RULE[eventually] LIM_ABS_UBOUND,
-   TRIVIAL_LIMIT_SEQUENTIALLY, trivial_limit]
+  GEN_TAC THEN HO_MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN
+  DISCH_TAC THEN X_GEN_TAC ``y:real`` THEN
+  DISCH_THEN(X_CHOOSE_TAC ``x:num->real``) THEN
+  MATCH_MP_TAC(ISPEC ``sequentially`` LIM_ABS_UBOUND) THEN
+  EXISTS_TAC ``x:num->real`` THEN
+  ASM_SIMP_TAC std_ss[EVENTUALLY_TRUE, TRIVIAL_LIMIT_SEQUENTIALLY]
 QED
 
 Theorem BOUNDED_CLOSURE_EQ:
@@ -8299,22 +8301,33 @@ Proof
                   REAL_ARITH ``x <= a \/ x <= b ==> x <= abs a + abs b:real``]]
 QED
 
+Theorem CAUCHY_CONVERGENT_SUBSEQUENCE :
+   !x:num->real r.
+        cauchy x /\ (!m n. m < n ==> r m < r n) /\ ((x o r) --> l) sequentially
+        ==> (x --> l) sequentially
+Proof
+  REPEAT STRIP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[IMP_CONJ] LIM_ADD)) THEN
+  DISCH_THEN(MP_TAC o SPEC ``\n. (x:num->real)(n) - x(r n)``) THEN
+  DISCH_THEN(MP_TAC o SPEC ``0:real``) THEN ASM_REWRITE_TAC[o_THM] THEN
+  SIMP_TAC (std_ss ++ ETA_ss) [REAL_ADD_RID, REAL_SUB_ADD2] THEN
+  DISCH_THEN MATCH_MP_TAC THEN
+  FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE I empty_rewrites [cauchy]) THEN
+  REWRITE_TAC[GE, LIM_SEQUENTIALLY, dist, REAL_SUB_RZERO] THEN
+  FIRST_ASSUM(MP_TAC o MATCH_MP MONOTONE_BIGGER) THEN
+  ASM_MESON_TAC[LE_TRANS]
+QED
+
 Theorem COMPACT_IMP_COMPLETE:
    !s:real->bool. compact s ==> complete s
 Proof
   GEN_TAC THEN REWRITE_TAC[complete, compact] THEN
-  DISCH_TAC THEN GEN_TAC THEN POP_ASSUM (MP_TAC o Q.SPEC `f:num->real`) THEN
+  HO_MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC ``f:num->real`` THEN
   DISCH_THEN(fn th => STRIP_TAC THEN MP_TAC th) THEN
-  ASM_REWRITE_TAC[] THEN STRIP_TAC THEN EXISTS_TAC ``l:real`` THEN
-  FIRST_X_ASSUM(MP_TAC o MATCH_MP (REWRITE_RULE[CONJ_EQ_IMP] LIM_ADD)) THEN
-  DISCH_THEN(MP_TAC o SPEC ``\n. (f:num->real)(n) - f(r n)``) THEN
-  DISCH_THEN(MP_TAC o SPEC ``0:real``) THEN ASM_SIMP_TAC std_ss [o_THM] THEN
-  SIMP_TAC std_ss [REAL_ADD_RID, REAL_SUB_ADD2, ETA_AX] THEN
-  DISCH_THEN MATCH_MP_TAC THEN
-  UNDISCH_TAC ``cauchy f`` THEN GEN_REWR_TAC LAND_CONV [cauchy] THEN
-  SIMP_TAC std_ss [GE, LIM, SEQUENTIALLY, dist, REAL_SUB_RZERO] THEN
-  SUBGOAL_THEN ``!n:num. n <= r(n)`` MP_TAC THENL [INDUCT_TAC, ALL_TAC] THEN
-  ASM_MESON_TAC[LESS_EQ_TRANS, LESS_EQ_REFL, LT, LESS_EQ_LESS_TRANS, ZERO_LESS_EQ, LE_SUC_LT]
+  ASM_REWRITE_TAC[] THEN HO_MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN
+  DISCH_THEN(X_CHOOSE_THEN ``r:num->num`` STRIP_ASSUME_TAC) THEN
+  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC CAUCHY_CONVERGENT_SUBSEQUENCE THEN
+  ASM_MESON_TAC[]
 QED
 
 Theorem COMPLETE_UNIV:
@@ -9412,32 +9425,45 @@ End
 Theorem CONTINUOUS_TRIVIAL_LIMIT:
    !f net. trivial_limit net ==> f continuous net
 Proof
-  SIMP_TAC std_ss [continuous, LIM]
+  SIMP_TAC std_ss [continuous, LIM_TRIVIAL]
 QED
 
+(* NOTE: added “x IN s” as antecedents *)
 Theorem CONTINUOUS_WITHIN:
-   !f x:real. f continuous (at x within s) <=> (f --> f(x)) (at x within s)
+   !f x:real s. x IN s ==>
+             (f continuous (at x within s) <=> (f --> f(x)) (at x within s))
 Proof
-  REPEAT GEN_TAC THEN REWRITE_TAC[continuous] THEN
-  ASM_CASES_TAC ``trivial_limit(at (x:real) within s)`` THENL
-  [ASM_REWRITE_TAC[LIM], ASM_SIMP_TAC std_ss [NETLIMIT_WITHIN]]
+  REPEAT GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[continuous] THEN
+  ASM_CASES_TAC ``trivial_limit(at (x:real) within s)`` THEN
+  ASM_SIMP_TAC std_ss [LIM_TRIVIAL, NETLIMIT_WITHIN]
+QED
+
+Theorem LIM_CONTINUOUS_SELF_WITHIN :
+   !f:real->real s x y. x IN s /\
+        f continuous (at x within s) /\ f x = y ==> (f --> y) (at x within s)
+Proof
+    rpt STRIP_TAC
+ >> gs [CONTINUOUS_WITHIN]
 QED
 
 Theorem CONTINUOUS_AT:
    !f (x:real). f continuous (at x) <=> (f --> f(x)) (at x)
 Proof
-  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
-  REWRITE_TAC[CONTINUOUS_WITHIN, IN_UNIV]
+    ONCE_REWRITE_TAC[GSYM WITHIN_UNIV]
+ >> rpt GEN_TAC
+ >> MATCH_MP_TAC CONTINUOUS_WITHIN
+ >> REWRITE_TAC [IN_UNIV]
 QED
 
+(* NOTE: added “x IN s” into antecedents *)
 Theorem CONTINUOUS_AT_WITHIN:
-   !f:real->real x s.
+   !f:real->real x s. x IN s /\
   f continuous (at x) ==> f continuous (at x within s)
 Proof
   SIMP_TAC std_ss [LIM_AT_WITHIN, CONTINUOUS_AT, CONTINUOUS_WITHIN]
 QED
 
-(*
+(* NOTE: proofs about “at a within s” while “a NOTIN s” cannot be finished now
 Theorem CONTINUOUS_WITHIN_CLOSED_NONTRIVIAL:
    !a s. closed s /\ ~(a IN s) ==> f continuous (at a within s)
 Proof
@@ -9450,8 +9476,9 @@ Theorem CONTINUOUS_TRANSFORM_WITHIN:
    (!x'. x' IN s /\ dist(x',x) < d ==> (f(x') = g(x'))) /\
     f continuous (at x within s) ==> g continuous (at x within s)
 Proof
-  SIMP_TAC std_ss [CONTINUOUS_WITHIN] THEN
-  METIS_TAC[LIM_TRANSFORM_WITHIN, DIST_REFL]
+    rpt STRIP_TAC >> POP_ASSUM MP_TAC
+ >> ASM_SIMP_TAC std_ss [CONTINUOUS_WITHIN]
+ >> METIS_TAC[LIM_TRANSFORM_WITHIN, DIST_REFL]
 QED
 
 Theorem CONTINUOUS_TRANSFORM_AT:
@@ -9477,37 +9504,99 @@ Theorem CONTINUOUS_TRANSFORM_WITHIN_OPEN_IN:
    (!x. x IN s ==> (f x = g x)) /\
     f continuous (at a within t) ==> g continuous (at a within t)
 Proof
-  METIS_TAC[CONTINUOUS_WITHIN, LIM_TRANSFORM_WITHIN_OPEN_IN]
+    rpt STRIP_TAC
+ >> ‘a IN t’ by gs [OPEN_IN_SUBTOPOLOGY]
+ >> gs [CONTINUOUS_WITHIN]
+ >> METIS_TAC[LIM_TRANSFORM_WITHIN_OPEN_IN]
 QED
 
+(* NOTE: added “a IN s /\ a IN t” into antecedents *)
 Theorem CONTINUOUS_TRANSFORM_WITHIN_SET_IMP:
-   !f a s t. eventually (\x. x IN t ==> x IN s) (at a) /\
+   !f a s t. eventually (\x. x IN t ==> x IN s) (at a) /\ a IN s /\ a IN t /\
    f continuous (at a within s) ==> f continuous (at a within t)
 Proof
-  REWRITE_TAC[CONTINUOUS_WITHIN, LIM_TRANSFORM_WITHIN_SET_IMP]
+    rpt STRIP_TAC
+ >> POP_ASSUM MP_TAC
+ >> ASM_SIMP_TAC std_ss[CONTINUOUS_WITHIN]
+ >> METIS_TAC[LIM_TRANSFORM_WITHIN_SET_IMP]
 QED
 
 (* ------------------------------------------------------------------------- *)
 (* Derive the epsilon-delta forms, which we often use as "definitions" *)
 (* ------------------------------------------------------------------------- *)
 
+(* Added missing quantifiers and “x IN s” as antecedents *)
 Theorem continuous_within:
-   f continuous (at x within s) <=> !e. &0 < e
-   ==> ?d. &0 < d /\ !x'. x' IN s /\ dist(x',x) < d
-     ==> dist(f(x'),f(x)) < e
+   !f x s. x IN s ==>
+       (f continuous (at x within s) <=>
+        !e. &0 < e
+            ==> ?d. &0 < d /\
+                    !x'. x' IN s /\ dist(x',x) < d ==> dist(f(x'),f(x)) < e)
 Proof
-  SIMP_TAC std_ss [CONTINUOUS_WITHIN, LIM_WITHIN] THEN
-  SIMP_TAC std_ss [GSYM DIST_NZ] THEN MESON_TAC[DIST_REFL]
+    rpt STRIP_TAC
+ >> ASM_SIMP_TAC std_ss [CONTINUOUS_WITHIN, LIM_WITHIN]
+ >> SIMP_TAC std_ss [GSYM DIST_NZ]
+ >> METIS_TAC [DIST_REFL]
 QED
 
+(* Added missing quantifiers *)
 Theorem continuous_at:
-   f continuous (at x) <=>
-  !e. &0 < e ==> ?d. &0 < d /\
-  !x'. dist(x',x) < d ==> dist(f(x'),f(x)) < e
+   !f x. f continuous (at x) <=>
+        !e. &0 < e ==> ?d. &0 < d /\
+                           !x'. dist(x',x) < d ==> dist(f(x'),f(x)) < e
 Proof
   ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
   SIMP_TAC std_ss [continuous_within, IN_UNIV]
 QED
+
+(* NOTE: added “a IN s” into antecedents of the original HOL-Light statements *)
+Theorem CONTINUOUS_WITHIN_COMPARISON :
+   !f:real->real g:real->real s a.
+        g continuous (at a within s) /\ a IN s /\
+        (!x. x IN s ==> dist(f a,f x) <= dist(g a,g x))
+        ==> f continuous (at a within s)
+Proof        
+    ONCE_REWRITE_TAC[DIST_SYM]
+ >> rpt STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘g continuous _’ MP_TAC
+ >> ASM_SIMP_TAC std_ss[continuous_within]
+ >> METIS_TAC[REAL_LET_TRANS]
+QED
+
+(* NOTE: added “a IN s” as antecedents of the original HOL-Light statements, but
+   then this means “a INSERT s = s”.
+
+Theorem CONTINUOUS_EQ_CAUCHY_WITHIN_lemma :
+   !f:real->real s a. a IN s ==>
+       (f continuous (at a within s) <=>
+        !e. &0 < e
+            ==> ?d. &0 < d /\
+                    !x x'. x IN a INSERT s /\ dist(x,a) < d /\
+                           x' IN a INSERT s /\ dist(x',a) < d
+                           ==> dist(f x,f x') < e)
+Proof
+  REPEAT GEN_TAC THEN REWRITE_TAC[continuous_within; IN_INSERT] THEN
+  EQ_TAC THEN DISCH_TAC THEN X_GEN_TAC `e:real` THEN DISCH_TAC THENL
+   [ALL_TAC; ASM_MESON_TAC[DIST_REFL]] THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC `e / &2`) THEN ASM_REWRITE_TAC[REAL_HALF] THEN
+  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `d:real` THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[] THEN MAP_EVERY X_GEN_TAC [`x:real^M`; `y:real^M`] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[DIST_REFL] THEN
+  ASM_SIMP_TAC[NORM_ARITH `dist(x:real^N,a) < e / &2 ==> dist(a,x) < e`] THEN
+  ASM_SIMP_TAC[NORM_ARITH `dist(x:real^N,a) < e / &2 ==> dist(x,a) < e`] THEN
+  ASM_MESON_TAC[NORM_ARITH
+   `dist(x:real^N,a) < e / &2 /\ dist(y,a) < e / &2 ==> dist(x,y) < e`]);;
+
+let CONTINUOUS_EQ_CAUCHY_AT = prove
+ (`!f:real^M->real^N a.
+        f continuous (at a) <=>
+        !e. &0 < e
+            ==> ?d. &0 < d /\
+                    !x x'. dist(x,a) < d /\ dist(x',a) < d
+                           ==> dist(f x,f x') < e`,
+  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
+  REWRITE_TAC[CONTINUOUS_EQ_CAUCHY_WITHIN; IN_INSERT; IN_UNIV]);;
+  *)
 
 (* ------------------------------------------------------------------------- *)
 (* Versions in terms of open balls.                                          *)

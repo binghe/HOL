@@ -1215,6 +1215,7 @@ Definition eventually :
       ?u. u IN netfilter net /\ !x. x IN u DIFF netlimits net ==> P x
 End
 
+(* NOTE: This definition is "golden", should never be changed. *)
 Definition trivial_limit :
     trivial_limit net = eventually (\x. F) net
 End
@@ -1235,6 +1236,7 @@ Proof
  >> fs [reflexive_def]
 QED
 
+(* NOTE: ‘within’ nets are NOT reflexive. *)
 Theorem trivial_limit_alt_netfilter :
     !net. reflexive (netord net) ==> (trivial_limit net <=> netfilter net = {})
 Proof
