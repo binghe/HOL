@@ -819,8 +819,7 @@ fun NET_PROVE_TAC [def] =
    definition(s) of “atpointof”.
  *)
 Theorem ATPOINTOF :
-   !m a x y.
-      netord(atpointof m a) x y <=> mdist m (x,a) <= mdist m (y,a)
+   !m a x y. netord(atpointof m a) x y <=> mdist m (x,a) <= mdist m (y,a)
 Proof
   NTAC 2 GEN_TAC THEN NET_PROVE_TAC[atpointof] THEN
   METIS_TAC[REAL_LE_TOTAL, REAL_LE_REFL, REAL_LE_TRANS, REAL_LET_TRANS]
@@ -871,8 +870,7 @@ QED
 
 Theorem IN_DIRECTION:
    !a v x y. netord(a in_direction v) x y <=>
-                 dist(x,a) <= dist(y,a) /\
-                 ?c. &0 <= c /\ (x - a = c * v)
+             dist(x,a) <= dist(y,a) /\ ?c. &0 <= c /\ (x - a = c * v)
 Proof
   SIMP_TAC std_ss [WITHIN, AT, in_direction, GSPECIFICATION] THEN METIS_TAC []
 QED
@@ -880,9 +878,7 @@ QED
 Theorem NET_WITHIN_UNIV :
     !net. (net within UNIV) = net
 Proof
-    rw [within]
- >> ‘(\x y. netord net x y) = netord net’ by rw [FUN_EQ_THM]
- >> simp [net_tybij]
+    RW_TAC std_ss [within, IN_UNIV, SF ETA_ss, net_tybij]
 QED
 
 Theorem WITHIN_UNIV :
@@ -1577,9 +1573,8 @@ Proof
  >> ‘0 < r’ by simp [Abbr ‘r’, MDIST_POS_LT]
  >> Q.EXISTS_TAC ‘mball m (a,r)’
  >> rw [OPEN_IN_MBALL, IN_MBALL, MSPACE, MDIST_REFL]
- >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
- >> MATCH_MP_TAC REAL_LT_IMP_LE
- >> simp [Once MDIST_SYM]
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> simp [Once MDIST_SYM, REAL_LT_IMP_LE]
 QED
 
 (* NOTE: added “limpt (mtop m) a UNIV” to finish the proof (direction: right to left) *)
