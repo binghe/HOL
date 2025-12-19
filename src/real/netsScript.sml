@@ -1100,12 +1100,24 @@ QED
 (* netfilter (compatible with HOL-Light)                                     *)
 (* ------------------------------------------------------------------------- *)
 
-(* NOTE: “x NOTIN netlimits net” is necessary for EVENTUALLY_ATPOINTOF below *)
+(* NOTE: “x NOTIN netlimits net” is necessary for EVENTUALLY_ATPOINTOF below.
+
+   Updates: add ‘u <> {}’ to make sure any element in netfilter is non-empty.
+   Empty elements may happens for ‘net within s’ where s is not a superset of
+  ‘netlimits net’.
+ *)
 Definition netfilter_def :
-    netfilter net = {{y | netord net y x} | x | x NOTIN netlimits net}
+    netfilter net = {u | ?x. x NOTIN netlimits net /\ u = {y | netord net y x} /\
+                             u <> {}}
 End
 
-(* NOTE: This is the theorem NET of HOL-Light *)
+Theorem IN_NETFILTER_NOT_EMPTY :
+    !net u. u IN netfilter net ==> u <> {}
+Proof
+    rw [netfilter_def]
+QED
+
+(* NOTE: This is the theorem [NET] of HOL-Light (definition of netfilter) *)
 Theorem NETFILTER :
     !n s t. s IN netfilter n /\ t IN netfilter n ==> s INTER t IN netfilter n
 Proof
@@ -1128,12 +1140,28 @@ Theorem NETFILTER_AT_POSINFINITY :
     netfilter at_posinfinity = {{x | a <= x} | a IN univ(:real)}
 Proof
     simp [netfilter_def, NETLIMITS_AT_POSINFINITY, AT_POSINFINITY, real_ge]
+ >> rw [Once EXTENSION]
+ >> EQ_TAC
+ >- (DISCH_THEN (Q.X_CHOOSE_THEN ‘y’ STRIP_ASSUME_TAC) >> art [] \\
+     Q.EXISTS_TAC ‘y’ >> REFL_TAC)
+ >> STRIP_TAC
+ >> Q.EXISTS_TAC ‘a’ >> art []
+ >> rw [Once EXTENSION]
+ >> Q.EXISTS_TAC ‘a’ >> simp []
 QED
 
 Theorem NETFILTER_AT_NEGINFINITY :
     netfilter at_neginfinity = {{x | x <= a} | a IN univ(:real)}
 Proof
     simp [netfilter_def, NETLIMITS_AT_NEGINFINITY, AT_NEGINFINITY]
+ >> rw [Once EXTENSION]
+ >> EQ_TAC
+ >- (DISCH_THEN (Q.X_CHOOSE_THEN ‘y’ STRIP_ASSUME_TAC) >> art [] \\
+     Q.EXISTS_TAC ‘y’ >> REFL_TAC)
+ >> STRIP_TAC
+ >> Q.EXISTS_TAC ‘a’ >> art []
+ >> rw [Once EXTENSION]
+ >> Q.EXISTS_TAC ‘a’ >> simp []
 QED
 
 Theorem NETFILTER_AT_INFINITY :
@@ -1141,13 +1169,17 @@ Theorem NETFILTER_AT_INFINITY :
 Proof
     simp [netfilter_def, NETLIMITS_AT_INFINITY, AT_INFINITY, real_ge]
  >> rw [Once EXTENSION]
- >> EQ_TAC >> rw []
- >- (Q.EXISTS_TAC ‘abs x'’ >> REFL_TAC)
+ >> EQ_TAC
+ >- (DISCH_THEN (Q.X_CHOOSE_THEN ‘y’ STRIP_ASSUME_TAC) >> art [] \\
+     Q.EXISTS_TAC ‘abs y’ >> REFL_TAC)
+ >> STRIP_TAC
  >> Cases_on ‘0 <= b’
- >- (Q.EXISTS_TAC ‘abs b’ >> simp [ABS_REDUCE])
+ >- (Q.EXISTS_TAC ‘abs b’ >> simp [ABS_REDUCE] \\
+     rw [Once EXTENSION] \\
+     Q.EXISTS_TAC ‘abs b’ >> simp [ABS_REDUCE])
  >> fs [REAL_NOT_LE]
  >> Know ‘!x. b <= abs x <=> 0 <= abs x’
- >- (Q.X_GEN_TAC ‘x’ \\
+ >- (Q.X_GEN_TAC ‘y’ \\
      EQ_TAC >> rw [] \\
      Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘0’ >> simp [ABS_POS, REAL_LT_IMP_LE])
  >> Rewr'
@@ -1158,12 +1190,28 @@ Theorem NETFILTER_SEQUENTIALLY :
     netfilter sequentially = {from n | n IN univ(:num)}
 Proof
     simp [netfilter_def, NETLIMITS_SEQUENTIALLY, SEQUENTIALLY, GREATER_EQ, from_def]
+ >> rw [Once EXTENSION]
+ >> EQ_TAC
+ >- (DISCH_THEN (Q.X_CHOOSE_THEN ‘y’ STRIP_ASSUME_TAC) >> art [] \\
+     Q.EXISTS_TAC ‘y’ >> REFL_TAC)
+ >> STRIP_TAC
+ >> Q.EXISTS_TAC ‘n’ >> art []
+ >> rw [Once EXTENSION]
+ >> Q.EXISTS_TAC ‘n’ >> simp []
 QED
 
 Theorem NETFILTER_ATPOINTOF :
     !m a. netfilter (atpointof m a) = {{y | dist m (y,a) <= dist m (x,a)} | x | x <> a}
 Proof
-    simp [netfilter_def, NETLIMITS_ATPOINTOF, ATPOINTOF, MDIST_POS_EQ]
+    rw [netfilter_def, NETLIMITS_ATPOINTOF, ATPOINTOF, MDIST_POS_EQ]
+ >> rw [Once EXTENSION]
+ >> EQ_TAC
+ >- (DISCH_THEN (Q.X_CHOOSE_THEN ‘y’ STRIP_ASSUME_TAC) >> art [] \\
+     Q.EXISTS_TAC ‘y’ >> art [])
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘y’ STRIP_ASSUME_TAC)
+ >> Q.EXISTS_TAC ‘y’ >> art []
+ >> rw [Once EXTENSION]
+ >> Q.EXISTS_TAC ‘y’ >> simp []
 QED
 
 (* |- !a. netfilter (at a) = {{y | dist (y,a) <= dist (x,a)} | x | x <> a} *)
@@ -1178,14 +1226,24 @@ Theorem NETFILTER_WITHIN :
 Proof
     rw [netfilter_def, WITHIN, RELATIVE_TO, NETLIMITS_WITHIN]
  >> rw [Once EXTENSION]
- >> EQ_TAC >> rw []
- >- (rename1 ‘x NOTIN netlimits net’ \\
-     Q.EXISTS_TAC ‘{y | netord net y x}’ \\
-     reverse CONJ_TAC >- (Q.EXISTS_TAC ‘x’ >> art []) \\
-     SET_TAC [])
- >> rename1 ‘x NOTIN netlimits net’
- >> Q.EXISTS_TAC ‘x’ >> art []
- >> SET_TAC []
+ >> EQ_TAC
+ >- (DISCH_THEN (Q.X_CHOOSE_THEN ‘y’ STRIP_ASSUME_TAC) >> art [] \\
+     Q.EXISTS_TAC ‘{z | netord net z y}’ \\
+     CONJ_TAC >- SET_TAC [] \\
+     Q.EXISTS_TAC ‘y’ >> art [] \\
+     rw [Once EXTENSION] \\
+     fs [netlimits_def] \\
+     Q.EXISTS_TAC ‘x’ >> art [])
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘u’ MP_TAC)
+ >> DISCH_THEN (CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC)
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘y’ STRIP_ASSUME_TAC)
+ >> Q.EXISTS_TAC ‘y’ >> art []
+ >> CONJ_TAC >- SET_TAC []
+ >> rw [Once EXTENSION]
+ >> fs [net_condition_def]
+ >> Q.PAT_X_ASSUM ‘!x. x NOTIN netlimits net ==> _’ (MP_TAC o Q.SPEC ‘y’) >> art []
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘z’ STRIP_ASSUME_TAC)
+ >> Q.EXISTS_TAC ‘z’ >> art []
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -1542,7 +1600,7 @@ Theorem NETFILTER_EQ_EMPTY :
     !net. netfilter net = {} <=> netlimits net = UNIV
 Proof
     rw [netfilter_def, Once EXTENSION, NOT_IN_EMPTY]
- >> simp [Once EXTENSION]
+ >> simp [netlimits_def]
 QED
 
 Theorem NETFILTER_ATPOINTOF_EQ_EMPTY :
