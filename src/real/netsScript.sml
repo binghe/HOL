@@ -1005,20 +1005,6 @@ Theorem NETLIMITS_AT_INFINITY :
 Proof
     rw [Once EXTENSION, NOT_IN_EMPTY, netlimits_def, AT_INFINITY, real_ge]
  >> Q.EXISTS_TAC ‘x’ >> simp []
- (*
- >> Cases_on ‘0 <= x’
- >- (Q.EXISTS_TAC ‘x + 1’ \\
-    ‘0 <= x + 1’ by simp [REAL_LE_ADD] \\
-     simp [ABS_REDUCE] >> REAL_ARITH_TAC)
- >> fs [REAL_NOT_LE, ABS_EQ_NEG]
- >> Q.EXISTS_TAC ‘x - 1’
- >> Know ‘x - 1 < 0’
- >- (simp [REAL_SUB_LT_NEG] \\
-     Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘0’ >> simp [])
- >> DISCH_TAC
- >> simp [ABS_EQ_NEG]
- >> REAL_ARITH_TAC
- *)
 QED
 
 (* NOTE: This lemma shows that “within” makes netlimits potentially larger. *)
@@ -1062,6 +1048,7 @@ Proof
     rw [net_condition_def, netlimits_def]
 QED
 
+(* NOTE: This is key theorem for which the “net_condition” is defined. *)
 Theorem NETLIMITS_WITHIN :
     !net s. net_condition net s ==> netlimits (net within s) = netlimits net
 Proof
@@ -1583,7 +1570,7 @@ Proof
      rw [MTOP_OPEN'] \\
      Q.EXISTS_TAC ‘1’ >> simp [])
  >> FULL_SIMP_TAC bool_ss [NETFILTER_ATPOINTOF] (* this asserts ‘y <> a’ *)
- >> Know ‘{{y | dist m (y,a) <= dist m (x,a)} | x | x <> a} <> {}’
+ >> Know ‘{{y | 0 < dist m (y,a) /\ dist m (y,a) <= dist m (x,a)} | x | x <> a} <> {}’
  >- (rw [Once EXTENSION, NOT_IN_EMPTY] \\
      Q.EXISTS_TAC ‘y’ >> art [])
  >> Rewr
@@ -1594,6 +1581,7 @@ Proof
  >> Q.EXISTS_TAC ‘mball m (a,r)’
  >> rw [OPEN_IN_MBALL, IN_MBALL, MSPACE, MDIST_REFL]
  >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> simp [MDIST_POS_LT]
  >> simp [Once MDIST_SYM, REAL_LT_IMP_LE]
 QED
 
@@ -1614,16 +1602,16 @@ Proof
      rw [MTOP_OPEN'] \\
      Q.EXISTS_TAC ‘1’ >> simp [])
  >> FULL_SIMP_TAC bool_ss [NETFILTER_ATPOINTOF] (* this asserts ‘y <> a’ *)
- >> Know ‘{{y | dist m (y,a) <= dist m (x,a)} | x | x <> a} <> {}’
+ >> Know ‘{{y | 0 < dist m (y,a) /\ dist m (y,a) <= dist m (x,a)} | x | x <> a} <> {}’
  >- (rw [Once EXTENSION, NOT_IN_EMPTY] \\
      Q.EXISTS_TAC ‘y’ >> art [])
  >> Rewr
  >> simp [EXISTS_IN_GSPEC]
- >> STRIP_TAC
- >> fs [MTOP_OPEN']
+ >> rw [MTOP_OPEN']
  >> Q.PAT_X_ASSUM ‘!x. x IN u ==> ?e. _’ (MP_TAC o Q.SPEC ‘a’) >> rw []
  (* using extra antecedents *)
  >> fs [MTOP_LIMPT']
+ >> simp [MDIST_POS_EQ]
  >> Q.PAT_X_ASSUM ‘!e. 0 < e ==> ?y. _’ (MP_TAC o Q.SPEC ‘e’) >> simp []
  >> DISCH_THEN (Q.X_CHOOSE_THEN ‘z’ STRIP_ASSUME_TAC)
  >> Q.EXISTS_TAC ‘z’ >> rw []
@@ -1639,40 +1627,48 @@ Proof
     simp [NET_WITHIN_UNIV, TOPSPACE_MTOP]
 QED
 
-(* NOTE: added “a IN s /\ limpt (mtop m) a univ(:'a)” needed by some lemmas *)
 Theorem TRIVIAL_LIMIT_ATPOINTOF_WITHIN :
-    !m s (a:'a). a IN s /\ limpt (mtop m) a univ(:'a) ==>
+    !m s (a:'a). net_condition (atpointof m a) s /\ limpt (mtop m) a UNIV ==>
        (trivial_limit(atpointof m a within s) <=>
         ~(a IN (mtop m) derived_set_of s))
 Proof
     rpt STRIP_TAC
- >> ‘net_condition (atpointof m a) s’ by PROVE_TAC [NET_CONDITION_ATPOINTOF]
  >> simp [trivial_limit, EVENTUALLY_WITHIN_IMP]
  >> ASM_SIMP_TAC bool_ss [EVENTUALLY_ATPOINTOF]
  >> simp [derived_set_of, TOPSPACE_MTOP]
  >> SET_TAC []
 QED
 
-(* |- !m s a.
-        a IN s /\ limpt (mtop m) a univ(:'a) ==>
-        (trivial_limit (atpointof m a within s) <=> ~limpt (mtop m) a s)
- *)
-Theorem TRIVIAL_LIMIT_ATPOINTOF_WITHIN' =
-        TRIVIAL_LIMIT_ATPOINTOF_WITHIN |> SRULE [derived_set_of_alt_limpt]
+(* Another version with more compact antecedents *)
+Theorem TRIVIAL_LIMIT_ATPOINTOF_WITHIN' :
+    !m s (a:'a). limpt (mtop m) a s ==>
+       (trivial_limit(atpointof m a within s) <=>
+        ~(a IN (mtop m) derived_set_of s))
+Proof
+    rpt STRIP_TAC
+ >> ‘net_condition (atpointof m a) s’ by PROVE_TAC [NET_CONDITION_ATPOINTOF]
+ >> simp [trivial_limit, EVENTUALLY_WITHIN_IMP]
+ >> Know ‘limpt (mtop m) a UNIV’
+ >- (MATCH_MP_TAC limpt_mono \\
+     Q.EXISTS_TAC ‘s’ >> simp [])
+ >> DISCH_TAC
+ >> ASM_SIMP_TAC bool_ss [EVENTUALLY_ATPOINTOF]
+ >> simp [derived_set_of, TOPSPACE_MTOP]
+ >> SET_TAC []
+QED
 
 (* |- !s a.
-        a IN s ==>
-        (trivial_limit (at a within s) <=>
-         a NOTIN mtop mr1 derived_set_of s)
+        net_condition (at a) s ==>
+        (trivial_limit (at a within s) <=> a NOTIN mtop mr1 derived_set_of s)
  *)
 Theorem TRIVIAL_LIMIT_AT_WITHIN =
         TRIVIAL_LIMIT_ATPOINTOF_WITHIN |> ISPEC “mr1” |> SRULE [MR1_LIMPT, GSYM at_DEF]
 
 Theorem DERIVED_SET_OF_TRIVIAL_LIMIT :
-    !m s (a:'a). a IN s /\ limpt (mtop m) a univ(:'a) ==>
+    !m s (a:'a). limpt (mtop m) a s ==>
       (a IN (mtop m) derived_set_of s <=> ~trivial_limit(atpointof m a within s))
 Proof
-    PROVE_TAC[TRIVIAL_LIMIT_ATPOINTOF_WITHIN]
+    PROVE_TAC[TRIVIAL_LIMIT_ATPOINTOF_WITHIN']
 QED
 
 Theorem TRIVIAL_LIMIT_ATPOINTOF :
@@ -1682,7 +1678,7 @@ Theorem TRIVIAL_LIMIT_ATPOINTOF :
 Proof
     ONCE_REWRITE_TAC[GSYM ATPOINTOF_WITHIN_TOPSPACE]
  >> rpt STRIP_TAC
- >> MATCH_MP_TAC TRIVIAL_LIMIT_ATPOINTOF_WITHIN
+ >> MATCH_MP_TAC TRIVIAL_LIMIT_ATPOINTOF_WITHIN'
  >> simp [TOPSPACE_MTOP]
 QED
 
@@ -1730,17 +1726,14 @@ Theorem EVENTUALLY_ATPOINTOF_METRIC' =
 (* The "eventually" property in Euclidean space.                             *)
 (* ------------------------------------------------------------------------- *)
 
-(* NOTE: added ‘a IN s’ for needed lemmas *)
+(* NOTE: added “net_condition (at a) s” for needed lemmas *)
 Theorem EVENTUALLY_WITHIN :
-    !s a p. a IN s ==>
+    !s a p. net_condition (at a) s ==>
        (eventually p (at a within s) <=>
         ?d. &0 < d /\ !x. x IN s /\ &0 < dist(x,a) /\ dist(x,a) < d ==> p(x))
 Proof
     rpt STRIP_TAC
- >> Know ‘net_condition (at a) s’
- >- (MATCH_MP_TAC NET_CONDITION_AT >> art [])
- >> DISCH_TAC
- >> simp [at_def, EVENTUALLY_WITHIN_IMP, dist_def]
+ >> simp [at_DEF, EVENTUALLY_WITHIN_IMP, dist_def]
  >> qabbrev_tac ‘P = \x. x IN s ==> p x’
  >> Know ‘eventually P (atpointof mr1 a) <=>
           ?d. 0 < d /\ !x. 0 < dist mr1 (x,a) /\ dist mr1 (x,a) < d ==> P x’
@@ -1772,7 +1765,7 @@ Proof
 QED
 
 Theorem EVENTUALLY_WITHIN_LE :
-    !s a p. a IN s ==>
+    !s a p. net_condition (at a) s ==>
        (eventually p (at a within s) <=>
         ?d. &0 < d /\ !x. x IN s /\ &0 < dist(x,a) /\ dist(x,a) <= d ==> p(x))
 Proof
