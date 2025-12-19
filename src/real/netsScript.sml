@@ -1042,8 +1042,8 @@ Proof
  >> METIS_TAC []
 QED
 
-Theorem NET_CONDITION_UNIV :
-    !net. net_condition net UNIV
+Theorem NET_CONDITION_UNIV[simp] :
+    net_condition net UNIV
 Proof
     rw [net_condition_def, netlimits_def]
 QED

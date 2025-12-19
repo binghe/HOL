@@ -5734,7 +5734,7 @@ QED
 Theorem LIM_DEF :
    !f l net. (f --> l) net <=>
         netfilter net = {} \/
-        !e. &0 < e ==> ?y. (?x. netord(net) x y /\ x <> y) /\
+        !e. &0 < e ==> ?y. (?x. netord(net) x y) /\
                            !x. x NOTIN netlimits net /\
                                netord(net) x y ==> dist(f(x),l) < e
 Proof
@@ -5763,7 +5763,7 @@ QED
 
 (* NOTE: added ‘a IN s’ as antecedents *)
 Theorem LIM_WITHIN_LE:
-   !f:real->real l a s. a IN s ==>
+   !f:real->real l a s. net_condition (at a) s ==>
           ((f --> l)(at a within s) <=>
            !e. &0 < e ==> ?d. &0 < d /\
                               !x. x IN s /\ &0 < dist(x,a) /\ dist(x,a) <= d
@@ -5774,7 +5774,7 @@ QED
 
 (* NOTE: added ‘a IN s’ as antecedents *)
 Theorem LIM_WITHIN:
-   !f:real->real l a s. a IN s ==>
+   !f:real->real l a s. net_condition (at a) s ==>
        ((f --> l) (at a within s) <=>
         !e. &0 < e
             ==> ?d. &0 < d /\
@@ -5785,10 +5785,10 @@ Proof
 QED
 
 (* |- !f l a.
-        (f --> l) (at a) <=>
-        !e. 0 < e ==>
-            ?d. 0 < d /\
-                !x. 0 < dist (x,a) /\ dist (x,a) <= d ==> dist (f x,l) < e
+        ((f --> l) (at a) <=>
+         !e. 0 < e ==>
+             ?d. 0 < d /\
+                 !x. 0 < dist (x,a) /\ dist (x,a) <= d ==> dist (f x,l) < e)
  *)
 Theorem LIM_AT_LE =
         LIM_WITHIN_LE |> SPEC_ALL |> Q.GEN ‘s’ |> Q.SPEC ‘UNIV’
