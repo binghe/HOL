@@ -6018,6 +6018,27 @@ Proof
   ASM_MESON_TAC[INTERIOR_OPEN]
 QED
 
+Theorem EVENTUALLY_WITHIN_OPEN_IN :
+   !P a s t:real->bool.
+         a IN t /\ open_in (subtopology euclidean s) t
+         ==> (eventually P (at a within t) <=> eventually P (at a within s))
+Proof
+  REWRITE_TAC[OPEN_IN_OPEN] THEN REPEAT STRIP_TAC THEN
+ ‘a IN s’ by ASM_SET_TAC [] \\
+ ‘net_condition (at a) s /\ net_condition (at a) t’
+    by PROVE_TAC [NET_CONDITION_AT] \\
+  ASM_SIMP_TAC std_ss[EVENTUALLY_WITHIN_IMP] THEN
+  ONCE_REWRITE_TAC[SET_RULE
+   ``x IN s INTER t ==> P <=> x IN t ==> x IN s ==> P``] THEN
+  rename1 ‘t = s INTER u’ \\
+  qabbrev_tac ‘Q = \x. x IN s ==> P x’ >> simp [] \\
+  Know ‘eventually (\x. x IN u ==> Q x) (at a) <=> eventually Q (at a within u)’
+  >- (MATCH_MP_TAC (GSYM EVENTUALLY_WITHIN_IMP) \\
+     ‘a IN u’ by ASM_SET_TAC [] \\
+      PROVE_TAC [NET_CONDITION_AT]) >> Rewr' \\  
+  MATCH_MP_TAC EVENTUALLY_WITHIN_OPEN THEN ASM_SET_TAC[]
+QED
+
 Theorem LIM_WITHIN_INTERIOR:
    !f l s x. x IN interior s
    ==> ((f --> l) (at x within s) <=> (f --> l) (at x))
@@ -6049,6 +6070,14 @@ Theorem LIM_WITHIN_OPEN :
      a IN s /\ open s ==> ((f --> l)(at a within s) <=> (f --> l)(at a))
 Proof
   SIMP_TAC bool_ss[tendsto, EVENTUALLY_WITHIN_OPEN]
+QED
+
+Theorem LIM_WITHIN_OPEN_IN :
+   !f:real->real l a s t.
+        a IN t /\ open_in (subtopology euclidean s) t
+        ==> ((f --> l) (at a within t) <=> (f --> l) (at a within s))
+Proof
+  REWRITE_TAC[tendsto] THEN METIS_TAC[EVENTUALLY_WITHIN_OPEN_IN]
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -9550,23 +9579,22 @@ Proof
 QED
 
 (* NOTE: added “a IN s” into antecedents of the original HOL-Light statements *)
-Theorem CONTINUOUS_WITHIN_COMPARISON :
-   !f:real->real g:real->real s a.
-        g continuous (at a within s) /\ a IN s /\
+Theorem CONTINUOUS_WITHIN_COMPARISON:
+   !f:real->real g:real->real s a. a IN s /\
+        g continuous (at a within s) /\
         (!x. x IN s ==> dist(f a,f x) <= dist(g a,g x))
         ==> f continuous (at a within s)
-Proof        
-    ONCE_REWRITE_TAC[DIST_SYM]
- >> rpt STRIP_TAC
+Proof
+    rpt STRIP_TAC
  >> Q.PAT_X_ASSUM ‘g continuous _’ MP_TAC
- >> ASM_SIMP_TAC std_ss[continuous_within]
- >> METIS_TAC[REAL_LET_TRANS]
+ >> ASM_SIMP_TAC std_ss [continuous_within]
+ >> METIS_TAC[REAL_LET_TRANS, DIST_SYM] 
 QED
 
 (* NOTE: added “a IN s” as antecedents of the original HOL-Light statements, but
    then this means “a INSERT s = s”.
-
-Theorem CONTINUOUS_EQ_CAUCHY_WITHIN_lemma :
+ *)
+Theorem CONTINUOUS_EQ_CAUCHY_WITHIN_lemma[local] :
    !f:real->real s a. a IN s ==>
        (f continuous (at a within s) <=>
         !e. &0 < e
@@ -9575,63 +9603,80 @@ Theorem CONTINUOUS_EQ_CAUCHY_WITHIN_lemma :
                            x' IN a INSERT s /\ dist(x',a) < d
                            ==> dist(f x,f x') < e)
 Proof
-  REPEAT GEN_TAC THEN REWRITE_TAC[continuous_within; IN_INSERT] THEN
-  EQ_TAC THEN DISCH_TAC THEN X_GEN_TAC `e:real` THEN DISCH_TAC THENL
-   [ALL_TAC; ASM_MESON_TAC[DIST_REFL]] THEN
-  FIRST_X_ASSUM(MP_TAC o SPEC `e / &2`) THEN ASM_REWRITE_TAC[REAL_HALF] THEN
-  MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC `d:real` THEN STRIP_TAC THEN
-  ASM_REWRITE_TAC[] THEN MAP_EVERY X_GEN_TAC [`x:real^M`; `y:real^M`] THEN
-  STRIP_TAC THEN ASM_REWRITE_TAC[DIST_REFL] THEN
-  ASM_SIMP_TAC[NORM_ARITH `dist(x:real^N,a) < e / &2 ==> dist(a,x) < e`] THEN
-  ASM_SIMP_TAC[NORM_ARITH `dist(x:real^N,a) < e / &2 ==> dist(x,a) < e`] THEN
-  ASM_MESON_TAC[NORM_ARITH
-   `dist(x:real^N,a) < e / &2 /\ dist(y,a) < e / &2 ==> dist(x,y) < e`]);;
+  REPEAT GEN_TAC THEN DISCH_TAC THEN
+  ASM_SIMP_TAC std_ss[continuous_within, IN_INSERT] THEN
+  EQ_TAC THEN DISCH_TAC THEN X_GEN_TAC ``e:real`` THEN DISCH_TAC THENL
+   [ALL_TAC, ASM_MESON_TAC[DIST_REFL]] THEN
+  FIRST_X_ASSUM(MP_TAC o SPEC ``e / &2``) THEN ASM_REWRITE_TAC[REAL_HALF] THEN
+  HO_MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC ``d:real`` THEN STRIP_TAC THEN
+  ASM_REWRITE_TAC[] THEN MAP_EVERY X_GEN_TAC [``x:real``, ``y:real``] THEN
+  STRIP_TAC THEN ASM_REWRITE_TAC[DIST_REFL] >| (* 3 subgoals *)
+  [ (* goal 1 (of 3) *)
+    ONCE_REWRITE_TAC [DIST_SYM] \\
+    Suff ‘dist (f y,f a) < e / 2’ >- REAL_ASM_ARITH_TAC \\
+    FIRST_X_ASSUM MATCH_MP_TAC >> art [],
+    (* goal 2 (of 3) *)
+    Suff ‘dist (f x,f a) < e / 2’ >- REAL_ASM_ARITH_TAC \\
+    FIRST_X_ASSUM MATCH_MP_TAC >> art [],
+    (* goal 3 (of 3) *)
+    Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘dist (f x,f a) + dist (f a,f y)’ \\
+    REWRITE_TAC [DIST_TRIANGLE] \\
+   ‘e = e / 2 + e / 2’ by simp [REAL_HALF_DOUBLE] >> POP_ORW \\
+    MATCH_MP_TAC REAL_LT_ADD2 \\
+    CONJ_TAC >- (FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
+    ONCE_REWRITE_TAC [DIST_SYM] \\
+    FIRST_X_ASSUM MATCH_MP_TAC >> art [] ]
+QED
 
-let CONTINUOUS_EQ_CAUCHY_AT = prove
- (`!f:real^M->real^N a.
+(* NOTE: “a INSERT s” is replaced by “s” *)
+Theorem CONTINUOUS_EQ_CAUCHY_WITHIN :
+   !f s a. a IN s ==>
+       (f continuous (at a within s) <=>
+        !e. &0 < e
+            ==> ?d. &0 < d /\
+                    !x y. x IN s /\ dist(x,a) < d /\
+                          y IN s /\ dist(y,a) < d ==> dist(f x,f y) < e)
+Proof
+    rpt STRIP_TAC
+ >> ASM_SIMP_TAC std_ss [CONTINUOUS_EQ_CAUCHY_WITHIN_lemma]
+ >> ‘a INSERT s = s’ by ASM_SET_TAC [] >> POP_ORW
+ >> REFL_TAC
+QED
+
+Theorem CONTINUOUS_EQ_CAUCHY_AT :
+   !f:real->real a.
         f continuous (at a) <=>
         !e. &0 < e
             ==> ?d. &0 < d /\
-                    !x x'. dist(x,a) < d /\ dist(x',a) < d
-                           ==> dist(f x,f x') < e`,
+                    !x y. dist(x,a) < d /\ dist(y,a) < d ==> dist(f x,f y) < e
+Proof
   ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
-  REWRITE_TAC[CONTINUOUS_EQ_CAUCHY_WITHIN; IN_INSERT; IN_UNIV]);;
-  *)
+  ASM_SIMP_TAC std_ss[CONTINUOUS_EQ_CAUCHY_WITHIN, IN_UNIV]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Versions in terms of open balls.                                          *)
 (* ------------------------------------------------------------------------- *)
 
 Theorem CONTINUOUS_WITHIN_BALL:
-   !f s x. f continuous (at x within s) <=>
-   !e. &0 < e ==> ?d. &0 < d /\
-   IMAGE f (ball(x,d) INTER s) SUBSET ball(f x,e)
+   !f s x. x IN s ==>
+          (f continuous (at x within s) <=>
+                !e. &0 < e
+                    ==> ?d. &0 < d /\
+                            IMAGE f (ball(x,d) INTER s) SUBSET ball(f x,e))
 Proof
-  SIMP_TAC std_ss [SUBSET_DEF, FORALL_IN_IMAGE, IN_BALL, continuous_within, IN_INTER] THEN
-  MESON_TAC[DIST_SYM]
+  RW_TAC std_ss [SUBSET_DEF, FORALL_IN_IMAGE, IN_BALL, continuous_within, IN_INTER]
+  >> MESON_TAC[DIST_SYM]
 QED
 
 Theorem CONTINUOUS_AT_BALL:
    !f x. f continuous (at x) <=>
-   !e. &0 < e ==> ?d. &0 < d /\
-   IMAGE f (ball(x,d)) SUBSET ball(f x,e)
+                !e. &0 < e
+                    ==> ?d. &0 < d /\
+                            IMAGE f (ball(x,d)) SUBSET ball(f x,e)
 Proof
   SIMP_TAC std_ss [SUBSET_DEF, FORALL_IN_IMAGE, IN_BALL, continuous_at] THEN
   MESON_TAC[DIST_SYM]
-QED
-
-(* ------------------------------------------------------------------------- *)
-(*                                                                           *)
-(* ------------------------------------------------------------------------- *)
-
-Theorem CONTINUOUS_WITHIN_COMPARISON:
-   !f:real->real g:real->real s a.
-        g continuous (at a within s) /\
-        (!x. x IN s ==> dist(f a,f x) <= dist(g a,g x))
-        ==> f continuous (at a within s)
-Proof
-  ONCE_REWRITE_TAC[DIST_SYM] THEN
-  REWRITE_TAC[continuous_within] THEN MESON_TAC[REAL_LET_TRANS]
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -9680,23 +9725,40 @@ QED
 
 Theorem CONTINUOUS_ON:
    !f (s:real->bool).
-  f continuous_on s <=> !x. x IN s ==> (f --> f(x)) (at x within s)
+        f continuous_on s <=> !x. x IN s ==> (f --> f(x)) (at x within s)
 Proof
-  REWRITE_TAC[CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN, CONTINUOUS_WITHIN]
+    RW_TAC std_ss [CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN]
+ >> METIS_TAC [CONTINUOUS_WITHIN]
 QED
 
 Theorem CONTINUOUS_ON_EQ_CONTINUOUS_AT:
    !f:real->real s.
-  open s ==> (f continuous_on s <=> (!x. x IN s ==> f continuous (at x)))
+      open s ==> (f continuous_on s <=> (!x. x IN s ==> f continuous (at x)))
 Proof
   SIMP_TAC std_ss [CONTINUOUS_ON, CONTINUOUS_AT, LIM_WITHIN_OPEN]
 QED
 
-Theorem CONTINUOUS_WITHIN_SUBSET:
-   !f s t x. f continuous (at x within s) /\ t SUBSET s
-  ==> f continuous (at x within t)
+Theorem CONTINUOUS_WITHIN_OPEN_IN :
+   !f:real->real a s t.
+        a IN t /\ open_in (subtopology euclidean s) t
+        ==> (f continuous (at a within t) <=> f continuous (at a within s))
 Proof
- REWRITE_TAC[CONTINUOUS_WITHIN] THEN MESON_TAC[LIM_WITHIN_SUBSET]
+    rpt STRIP_TAC
+ >> ‘a IN s’ by gs [OPEN_IN_OPEN]
+ >> ASM_SIMP_TAC std_ss[CONTINUOUS_WITHIN]
+ >> MATCH_MP_TAC LIM_WITHIN_OPEN_IN >> art []
+QED
+
+(* NOTE: added “x IN t” into antecedents *)
+Theorem CONTINUOUS_WITHIN_SUBSET:
+   !f s t x. f continuous (at x within s) /\ t SUBSET s /\ x IN t
+             ==> f continuous (at x within t)
+Proof
+    rpt STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘f continuous _’ MP_TAC
+ >> ‘x IN s’ by PROVE_TAC [SUBSET_DEF]
+ >> ASM_SIMP_TAC std_ss [CONTINUOUS_WITHIN]
+ >> METIS_TAC[LIM_WITHIN_SUBSET]
 QED
 
 Theorem CONTINUOUS_ON_SUBSET:
@@ -9781,6 +9843,7 @@ QED
 (* Characterization of various kinds of continuity in terms of sequences.    *)
 (* ------------------------------------------------------------------------- *)
 
+(* TODO *)
 Theorem CONTINUOUS_WITHIN_SEQUENTIALLY:
    !f s a:real.
     f continuous (at a within s) <=>
