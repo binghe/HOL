@@ -5631,9 +5631,10 @@ QED
 (* Identify trivial limits, where we can't approach arbitrarily closely.     *)
 (* ------------------------------------------------------------------------- *)
 
-(* NOTE: added toplevel quantifier ‘s’; added “a IN s” for lemmas *)
+(* NOTE: added toplevel quantifier ‘s’, and “net_condition (at a) s”. *)
 Theorem TRIVIAL_LIMIT_WITHIN :
-    !s (a:real). a IN s ==> (trivial_limit (at a within s) <=> ~(a limit_point_of s))
+    !s (a:real). net_condition (at a) s ==>
+                (trivial_limit (at a within s) <=> ~(a limit_point_of s))
 Proof
     simp [limit_point_of_def, TRIVIAL_LIMIT_AT_WITHIN, derived_set_of_alt_limpt,
           euclidean_def]
@@ -5734,7 +5735,7 @@ Theorem LIM_DEF :
    !f l net. (f --> l) net <=>
         netfilter net = {} \/
         !e. &0 < e ==> ?y. (?x. netord(net) x y /\ x <> y) /\
-                           !x. x NOTIN netlimits net ==>
+                           !x. x NOTIN netlimits net /\
                                netord(net) x y ==> dist(f(x),l) < e
 Proof
     rw [tendsto, eventually]

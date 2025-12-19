@@ -1851,6 +1851,27 @@ Definition limit :
      (!u. open_in top u /\ l IN u ==> eventually (\x. f x IN u) net)
 End
 
+(* Connection between HOL-Light's ‘limit’ and HOL4's ‘tends’ *)
+Theorem tends_imp_limit :
+    !top f l net. ~trivial_limit net /\ l IN topspace top ==>
+                 (f tends l) (top,netord net) ==> limit top (f:'a->'b) l net
+Proof
+    RW_TAC std_ss [limit, tends, eventually, OPEN_NEIGH']
+ >> ‘netfilter net <> {}’ by PROVE_TAC [NETFILTER_IMP_TRIVIAL_LIMIT] >> art []
+ >> Q.PAT_X_ASSUM ‘!x. x IN u ==> _’ (MP_TAC o Q.SPEC ‘l’) >> rw []
+ >> Q.PAT_X_ASSUM ‘!N. neigh top (N,l) ==> _’ (MP_TAC o Q.SPEC ‘N’) >> rw []
+ >> Q.EXISTS_TAC ‘{m | netord net m n}’
+ >> CONJ_TAC
+ >- (rw [netfilter_def] \\
+     Q.EXISTS_TAC ‘n’ >> art [] \\
+     rw [netlimits_def] \\
+     Q.EXISTS_TAC ‘n’ >> art [])
+ >> rw []
+ >> Suff ‘f x IN N’ >- METIS_TAC [SUBSET_DEF]
+ >> REWRITE_TAC [IN_APP]
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
+QED
+
 Theorem LIMIT_IMP_WITHIN :
     !net top (f:'a->'b) l s. net_condition net s /\
         limit top f l net ==> limit top f l (net within s)
