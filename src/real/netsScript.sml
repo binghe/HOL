@@ -30,6 +30,14 @@ val ASM_REAL_ARITH_TAC = REAL_ASM_ARITH_TAC;
 (* !x. P x ==> Q x) ==> (!x. P x) ==> !x. Q x *)
 Theorem MONO_FORALL = MONO_ALL
 
+Theorem REAL_HALF :
+   (!e. &0 < e / &2 <=> &0 < e) /\
+   (!e. e / &2 + e / &2 = e) /\
+   (!e. &2 * (e / &2) = e)
+Proof
+  REAL_ARITH_TAC
+QED
+
 (*---------------------------------------------------------------------------*)
 (* Basic definitions: directed order, net, bounded net, pointwise limit [1]  *)
 (*---------------------------------------------------------------------------*)
@@ -1070,9 +1078,34 @@ Proof
  >> simp [MDIST_REFL, MDIST_POS_LE, MDIST_POS_LT, REAL_LT_IMP_LE, Once MDIST_SYM]
 QED
 
-(* |- !a s. limpt (mtop mr1) a s ==> net_condition (at a) s *)
-Theorem NET_CONDITION_AT =
-        NET_CONDITION_ATPOINTOF |> ISPEC “mr1” |> REWRITE_RULE [GSYM at_DEF]
+Theorem NET_CONDITION_AT_lemma[local] :
+    !a s. net_condition (at a) s ==> limpt (mtop mr1) a s
+Proof
+    rw [AT, net_condition_def, NETLIMITS_AT, MTOP_LIMPT', GSYM dist_def]
+ (* NOTE: this subgoal property doesn't hold for metric space in general *)
+ >> Know ‘?x. x <> a /\ dist (a,x) = e / 2’
+ >- (Q.EXISTS_TAC ‘a - e / 2’ \\
+     simp [dist, REAL_SUB_SUB2] \\
+    ‘0 < e / 2’ by simp [REAL_HALF] \\
+     simp [ABS_REDUCE, REAL_LT_IMP_LE] \\
+     REAL_ASM_ARITH_TAC)
+ >> STRIP_TAC
+ >> Q.PAT_X_ASSUM ‘!x. x <> a ==> _’ (MP_TAC o Q.SPEC ‘x’) >> rw []
+ >> Q.EXISTS_TAC ‘y’
+ >> FULL_SIMP_TAC std_ss [GSYM DIST_NZ]
+ >> simp [Once DIST_SYM]
+ >> Q_TAC (TRANS_TAC REAL_LET_TRANS) ‘dist (x,a)’ >> art []
+ >> simp [Once DIST_SYM]
+QED
+
+(* |- !a s. net_condition (at a) s <=> limpt (mtop mr1) a s *)
+Theorem NET_CONDITION_AT :
+    !a s. net_condition (at a) s <=> limpt (mtop mr1) a s
+Proof
+    rpt GEN_TAC
+ >> EQ_TAC >- REWRITE_TAC [NET_CONDITION_AT_lemma]
+ >> REWRITE_TAC [at_DEF, NET_CONDITION_ATPOINTOF]
+QED
 
 Theorem NETLIMITS_ATPOINTOF_WITHIN :
     !m a s. limpt (mtop m) a s ==>
@@ -2092,14 +2125,6 @@ QED
 (* ------------------------------------------------------------------------- *)
 (* Combining theorems for real limits.                                       *)
 (* ------------------------------------------------------------------------- *)
-
-Theorem REAL_HALF :
-   (!e. &0 < e / &2 <=> &0 < e) /\
-   (!e. e / &2 + e / &2 = e) /\
-   (!e. &2 * (e / &2) = e)
-Proof
-  REAL_ARITH_TAC
-QED
 
 Theorem LIMIT_REAL_MUL :
     !(net:'a net) f g l m.
