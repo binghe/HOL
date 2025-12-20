@@ -812,8 +812,6 @@ End
 
 let within = new_definition
   `net within s = mk_net (netfilter net relative_to s,netlimits net)`;;
-
-   NOTE: “within” only requires “x IN s” (next value) but not for “y”:
  *)
 Definition within[nocompute]:
   (net within s) = mk_net(\x y. netord net x y /\ x IN s)
@@ -1050,6 +1048,15 @@ Proof
  >> METIS_TAC []
 QED
 
+Theorem NET_CONDITION_UNION :
+    !net s t. net_condition net s /\ net_condition net s ==>
+              net_condition net (s UNION t)
+Proof
+    rw [net_condition_def]
+ >> ‘?y. y IN s /\ netord net y x’ by PROVE_TAC []
+ >> Q.EXISTS_TAC ‘y’ >> art []
+QED
+
 Theorem NET_CONDITION_UNIV[simp] :
     net_condition net UNIV
 Proof
@@ -1117,16 +1124,17 @@ Proof
 QED
 
 (* |- !a s.
-        limpt (mtop mr1) a s ==> netlimits (at a within s) = netlimits (at a) *)
+        net_condition (at a) s ==>
+        netlimits (at a within s) = netlimits (at a)
+ *)
 Theorem NETLIMITS_AT_WITHIN =
-        NETLIMITS_ATPOINTOF_WITHIN |> ISPEC “mr1” |> REWRITE_RULE [GSYM at_DEF]
+        NETLIMITS_ATPOINTOF_WITHIN |> ISPEC “mr1”
+     |> REWRITE_RULE [GSYM at_DEF, GSYM NET_CONDITION_AT]
 
-(* NOTE: added ‘a IN s’ to satisfy net_condition *)
 Theorem NETLIMIT_WITHIN :
-    !a s. limpt (mtop mr1) a s ==> netlimit (at a within s) = a
+    !a s. net_condition (at a) s ==> netlimit (at a within s) = a
 Proof
     rpt STRIP_TAC
- >> ‘net_condition (at a) s’ by PROVE_TAC [NET_CONDITION_AT]
  >> ASM_SIMP_TAC std_ss [netlimit, NETLIMITS_WITHIN]
  >> REWRITE_TAC [GSYM netlimit, NETLIMIT_AT]
 QED
@@ -1143,7 +1151,13 @@ Definition netfilter_def :
     netfilter net = {{y | netord net y x} | x | x NOTIN netlimits net}
 End
 
-(* NOTE: This is the theorem NET of HOL-Light *)
+Theorem EMPTY_NOTIN_NETFILTER :
+    !net. {} NOTIN netfilter net
+Proof
+    simp [netfilter_def, netlimits_def, Once EXTENSION] >> METIS_TAC []
+QED
+
+(* NOTE: This is the theorem [NET] of HOL-Light *)
 Theorem NETFILTER :
     !n s t. s IN netfilter n /\ t IN netfilter n ==> s INTER t IN netfilter n
 Proof
@@ -2040,11 +2054,9 @@ Theorem LIMIT_HAUSDORFF_UNIQUE :
      ~trivial_limit net /\
      hausdorff_space top /\
      limit top f l1 net /\
-     limit top f l2 net
-     ==> l1 = l2
+     limit top f l2 net ==> l1 = l2
 Proof
-    REWRITE_TAC[limit, hausdorff_space]
- >> rpt STRIP_TAC
+    RW_TAC std_ss [limit, hausdorff_space]
  >> CCONTR_TAC
  >> Q.PAT_X_ASSUM ‘!x y. _’ (MP_TAC o Q.SPECL [‘l1’, ‘l2’])
  >> simp [NOT_EXISTS_THM]

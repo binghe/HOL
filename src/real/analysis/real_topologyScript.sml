@@ -5649,8 +5649,14 @@ Theorem net_condition_at =
         NET_CONDITION_AT
      |> REWRITE_RULE [GSYM euclidean_def, GSYM limit_point_of_def]
 
+Theorem net_condition_open_in :
+    !a s. open s /\ a IN s ==> net_condition (at a) s
+Proof
+    rw [net_condition_at, LIMPT_OF_OPEN]
+QED
+
 (* NOTE: added toplevel quantifier ‘s’, and “net_condition (at a) s”. *)
-Theorem TRIVIAL_LIMIT_WITHIN_lemma1[local] :
+Theorem TRIVIAL_LIMIT_WITHIN :
     !s (a:real). net_condition (at a) s ==>
                 (trivial_limit (at a within s) <=> ~(a limit_point_of s))
 Proof
@@ -5659,8 +5665,8 @@ Proof
 QED
 
 (* |- !s a. a limit_point_of s ==> ~trivial_limit (at a within s) *)
-Theorem TRIVIAL_LIMIT_WITHIN_lemma2[local] =
-        TRIVIAL_LIMIT_WITHIN_lemma1 |> SRULE [net_condition_at]
+Theorem TRIVIAL_LIMIT_WITHIN' =
+        TRIVIAL_LIMIT_WITHIN |> SRULE [net_condition_at]
 
 Theorem limit_point_of_empty :
     !a. ~(a limit_point_of {})
@@ -5669,12 +5675,12 @@ Proof
  >> Q.EXISTS_TAC ‘1’ >> simp []
 QED
 
-(* NOTE: for ‘s = {}’, see TRIVIAL_LIMIT_WITHIN_EMPTY *)
-Theorem TRIVIAL_LIMIT_WITHIN :
+(* NOTE: for ‘s = {}’, see TRIVIAL_LIMIT_WITHIN_EMPTY
+Theorem TRIVIAL_LIMIT_WITHIN_FULL :
     !a:real s. trivial_limit (at a within s) <=> ~(a limit_point_of s)
 Proof
     rpt GEN_TAC
- >> EQ_TAC >- PROVE_TAC [TRIVIAL_LIMIT_WITHIN_lemma2]
+ >> EQ_TAC >- PROVE_TAC [TRIVIAL_LIMIT_WITHIN']
  >> Cases_on ‘s = {}’ >- simp [TRIVIAL_LIMIT_WITHIN_EMPTY]
  >> rw [limit_point_of_def, euclidean_def, MTOP_LIMPT', GSYM dist_def]
  >> fs [REAL_NOT_LT]
@@ -5683,11 +5689,29 @@ Proof
  >- (DISJ1_TAC \\
      simp [netfilter_def, WITHIN, netlimits_def] \\
      simp [AT, DIST_REFL])
- >> DISJ2_TAC
+ >> Cases_on ‘netfilter (at a within s) = {}’ >> art []
+ (*
+ >> Q.PAT_X_ASSUM ‘netfilter (at a within s) <> {}’ MP_TAC
+ >> simp [GSYM MEMBER_NOT_EMPTY]
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘u’ MP_TAC)
+ >> simp [netfilter_def, WITHIN, netlimits_def]
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘x’ MP_TAC)
+ >> DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘y’ STRIP_ASSUME_TAC)
+ >> Q.EXISTS_TAC ‘u’
+ >> CONJ_TAC
+ >- (Q.EXISTS_TAC ‘x’ >> art [] \\
+     Q.EXISTS_TAC ‘y’ >> art [])
+ >> Q.X_GEN_TAC ‘z’
+ >> simp [GSYM DISJ_ASSOC]
+ >> NTAC 2 STRONG_DISJ_TAC
+ *)
+ (*
  >> ‘?z. z IN s /\ z <> a’ by ASM_SET_TAC []
  >> ‘e <= dist (a,z)’ by PROVE_TAC []
- >> simp [netfilter_def, WITHIN, netlimits_def]
+  *)
  >> Q.EXISTS_TAC ‘{y | netord (at a) y (a + e / 2) /\ y IN s}’
+ >> simp [netfilter_def, WITHIN, netlimits_def]
  >> CONJ_TAC
  >- (Q.EXISTS_TAC ‘a + e / 2’ >> art [] \\
      cheat (* fixed by changing netfilter_def *))
@@ -5709,6 +5733,7 @@ Theorem LIM_WITHIN_CLOSED_TRIVIAL:
 Proof
   REWRITE_TAC[TRIVIAL_LIMIT_WITHIN] THEN MESON_TAC[CLOSED_LIMPT]
 QED
+ *)
 
 (* ------------------------------------------------------------------------- *)
 (* Limits, defined as vacuously true when the limit is trivial.              *)
@@ -5941,27 +5966,27 @@ Proof
    REWRITE_TAC [tendsto, EVENTUALLY_WITHIN_EMPTY]
 QED
 
-(* NOTE: added missing quantifier “t” at the end; added “a IN t” as antecedents *)
+(* NOTE: added missing quantifier “t” and net_condition *)
 Theorem LIM_WITHIN_SUBSET:
-   !f l a s t. a IN t /\
+   !f l a s t. net_condition (at a) t /\
     (f --> l) (at a within s) /\ t SUBSET s ==> (f --> l) (at a within t)
 Proof
     rpt STRIP_TAC
- >> ‘a IN s’ by PROVE_TAC [SUBSET_DEF]
+ >> ‘net_condition (at a) s’ by PROVE_TAC [NET_CONDITION_MONO]
  >> Q.PAT_X_ASSUM ‘t SUBSET s’ MP_TAC
  >> Q.PAT_X_ASSUM ‘(f --> l) (at a within s)’ MP_TAC
  >> rw [LIM_WITHIN, SUBSET_DEF] >> METIS_TAC []
 QED
 
-(* NOTE: added “x IN s /\ x IN t” as antecedents *)
+(* NOTE: added net conditions as antecedents *)
 Theorem LIM_UNION:
-   !f x l s t. x IN s /\ x IN t /\
+   !f x l s t. net_condition (at x) s /\ net_condition (at x) t /\
         (f --> l) (at x within s) /\ (f --> l) (at x within t)
         ==> (f --> l) (at x within (s UNION t))
 Proof
     rpt STRIP_TAC
  >> NTAC 2 (POP_ASSUM MP_TAC)
- >> ‘x IN s UNION t’ by simp []
+ >> ‘net_condition (at x) (s UNION t)’ by simp [NET_CONDITION_UNION]
  >> simp [LIM_WITHIN]
  >> rpt STRIP_TAC
  >> Q.PAT_X_ASSUM ‘!e. 0 < e ==> ?d. 0 < d /\ _’ (MP_TAC o Q.SPEC ‘e’) >> simp []
@@ -5976,9 +6001,9 @@ Proof
       Q.PAT_X_ASSUM ‘!z. z IN t /\ _ ==> dist (f z,l) < e’ MATCH_MP_TAC >> art [] ]
 QED
 
-(* NOTE: added “x IN s /\ x IN t” as antecedents *)
+(* NOTE: added net conditions as antecedents *)
 Theorem LIM_UNION_UNIV:
-   !f x l s t. x IN s /\ x IN t /\
+   !f x l s t. net_condition (at x) s /\ net_condition (at x) t /\
         (f --> l) (at x within s) /\ (f --> l) (at x within t) /\
         (s UNION t = univ(:real)) ==> (f --> l) (at x)
 Proof
@@ -5990,7 +6015,7 @@ QED
 (* ------------------------------------------------------------------------- *)
 
 Theorem LIM_COMPOSE_WITHIN_lemma[local] :
-   !net (f:'a->real) (g:real->real) s y z. y IN s ==>
+   !net (f:'a->real) (g:real->real) s y z. net_condition (at y) s ==>
     (f --> y) net /\
     eventually (\w. f w IN s /\ ((f w = y) ==> (g y = z))) net /\
     (g --> z) (at y within s)
@@ -6012,7 +6037,7 @@ QED
 
 (* NOTE: added “y IN s” in antecedents for the new EVENTUALLY_WITHIN *)
 Theorem LIM_COMPOSE_WITHIN :
-   !net (f:'a->real) (g:real->real) s y z. y IN s /\
+   !net (f:'a->real) (g:real->real) s y z. net_condition (at y) s /\
     (f --> y) net /\
     eventually (\w. f w IN s /\ ((f w = y) ==> (g y = z))) net /\
     (g --> z) (at y within s)
@@ -6034,7 +6059,7 @@ Proof
   MP_TAC(ISPECL [``net:('a)net``, ``f:'a->real``, ``g:real->real``,
                  ``univ(:real)``, ``y:real``, ``z:real``]
         LIM_COMPOSE_WITHIN) THEN
-  ASM_REWRITE_TAC[IN_UNIV, WITHIN_UNIV]
+  ASM_REWRITE_TAC[IN_UNIV, WITHIN_UNIV, NET_CONDITION_UNIV]
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -6048,19 +6073,33 @@ Proof
   MESON_TAC[DIST_SYM, DIST_REFL]
 QED
 
+Theorem net_condition_in_interior :
+    !x s. x IN interior s ==> net_condition (at x) s
+Proof
+    RW_TAC std_ss [NET_CONDITION_AT]
+ >> FULL_SIMP_TAC std_ss [IN_INTERIOR]
+ >> MATCH_MP_TAC limpt_mono
+ >> Q.EXISTS_TAC ‘ball (x,e)’ >> art []
+ >> simp [GSYM euclidean_def, GSYM limit_point_of_def]
+ >> MATCH_MP_TAC LIMPT_OF_OPEN
+ >> simp [OPEN_BALL, CENTRE_IN_BALL]
+QED
+
 Theorem EVENTUALLY_WITHIN_INTERIOR:
    !p s x.
   x IN interior s
   ==> (eventually p (at x within s) <=> eventually p (at x))
 Proof
-  REPEAT GEN_TAC THEN REWRITE_TAC[IN_INTERIOR_EVENTUALLY] THEN
-  MATCH_MP_TAC(TAUT
-   `(p' ==> (p /\ q ==> r) /\ (p /\ r ==> q)) ==> (p' /\ p ==> (q <=> r))`) THEN
-  DISCH_TAC \\
- ‘net_condition (at x) s’ by PROVE_TAC [NET_CONDITION_AT] \\
-  ASM_SIMP_TAC bool_ss [GSYM EVENTUALLY_AND, EVENTUALLY_WITHIN_IMP] THEN
-  CONJ_TAC THEN MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO) THEN
-  SIMP_TAC bool_ss []
+    rpt STRIP_TAC
+ >> Know ‘x IN s /\ eventually (\x. x IN s) (at x)’
+ >- simp [GSYM IN_INTERIOR_EVENTUALLY]
+ >> MATCH_MP_TAC(TAUT
+   `(p' ==> (p /\ q ==> r) /\ (p /\ r ==> q)) ==> (p' /\ p ==> (q <=> r))`)
+ >> DISCH_TAC
+ >> ‘net_condition (at x) s’ by PROVE_TAC [net_condition_in_interior]
+ >> ASM_SIMP_TAC bool_ss [GSYM EVENTUALLY_AND, EVENTUALLY_WITHIN_IMP]
+ >> CONJ_TAC THEN MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ] EVENTUALLY_MONO)
+ >> SIMP_TAC bool_ss []
 QED
 
 Theorem EVENTUALLY_IN_OPEN :
@@ -6081,15 +6120,15 @@ Proof
   ASM_MESON_TAC[INTERIOR_OPEN]
 QED
 
+(* NOTE: added “net_condition (at a) t” into antecedents *)
 Theorem EVENTUALLY_WITHIN_OPEN_IN :
-   !P a s t:real->bool.
+   !P a s t:real->bool. net_condition (at a) t /\
          a IN t /\ open_in (subtopology euclidean s) t
          ==> (eventually P (at a within t) <=> eventually P (at a within s))
 Proof
   REWRITE_TAC[OPEN_IN_OPEN] THEN REPEAT STRIP_TAC THEN
- ‘a IN s’ by ASM_SET_TAC [] \\
- ‘net_condition (at a) s /\ net_condition (at a) t’
-    by PROVE_TAC [NET_CONDITION_AT] \\
+ ‘t SUBSET s’ by ASM_SET_TAC [] \\
+ ‘net_condition (at a) s’ by PROVE_TAC [NET_CONDITION_MONO] \\
   ASM_SIMP_TAC std_ss[EVENTUALLY_WITHIN_IMP] THEN
   ONCE_REWRITE_TAC[SET_RULE
    ``x IN s INTER t ==> P <=> x IN t ==> x IN s ==> P``] THEN
@@ -6097,8 +6136,8 @@ Proof
   qabbrev_tac ‘Q = \x. x IN s ==> P x’ >> simp [] \\
   Know ‘eventually (\x. x IN u ==> Q x) (at a) <=> eventually Q (at a within u)’
   >- (MATCH_MP_TAC (GSYM EVENTUALLY_WITHIN_IMP) \\
-     ‘a IN u’ by ASM_SET_TAC [] \\
-      PROVE_TAC [NET_CONDITION_AT]) >> Rewr' \\  
+     ‘t SUBSET u’ by ASM_SET_TAC [] \\
+      PROVE_TAC [NET_CONDITION_MONO]) >> Rewr' \\  
   MATCH_MP_TAC EVENTUALLY_WITHIN_OPEN THEN ASM_SET_TAC[]
 QED
 
@@ -6113,7 +6152,8 @@ Theorem NETLIMIT_WITHIN_INTERIOR:
    !s x:real. x IN interior s ==> (netlimit(at x within s) = x)
 Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC NETLIMIT_WITHIN THEN
-  PROVE_TAC [SUBSET_DEF, INTERIOR_SUBSET]
+  simp [GSYM euclidean_def, GSYM limit_point_of_def, GSYM net_condition_at] THEN
+  MATCH_MP_TAC net_condition_in_interior >> art []
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -6121,7 +6161,8 @@ QED
 (* ------------------------------------------------------------------------- *)
 
 Theorem LIM_AT_WITHIN:
-   !f l a s. a IN s /\ (f --> l)(at a) ==> (f --> l)(at a within s)
+   !f l a s. net_condition (at a) s /\
+            (f --> l)(at a) ==> (f --> l)(at a within s)
 Proof
     rpt GEN_TAC
  >> simp [IMP_CONJ] >> DISCH_TAC
@@ -6136,7 +6177,7 @@ Proof
 QED
 
 Theorem LIM_WITHIN_OPEN_IN :
-   !f:real->real l a s t.
+   !f:real->real l a s t. net_condition (at a) t /\
         a IN t /\ open_in (subtopology euclidean s) t
         ==> ((f --> l) (at a within t) <=> (f --> l) (at a within s))
 Proof
@@ -6838,9 +6879,9 @@ QED
 (* These are special for limits out of the same vector space. *)
 (* ------------------------------------------------------------------------- *)
 
-(* NOTE: added ‘a IN s’ as antecedent *)
+(* NOTE: added net_condition as antecedent *)
 Theorem LIM_WITHIN_ID:
-   !a s. a IN s ==> ((\x. x) --> a) (at a within s)
+   !a s. net_condition (at a) s ==> ((\x. x) --> a) (at a within s)
 Proof
     RW_TAC std_ss [LIM_WITHIN]
  >> Q.EXISTS_TAC ‘e’ >> rw []
@@ -6892,10 +6933,10 @@ Proof
   METIS_TAC[LIM_TRANSFORM]
 QED
 
-(* NOTE: added “x IN s” into antecedents *)
+(* NOTE: added net_condition into antecedents *)
 Theorem LIM_TRANSFORM_WITHIN:
    !f g x s d.
-        &0 < d /\ x IN s /\
+        &0 < d /\ net_condition (at x) s /\
         (!x'. x' IN s /\ &0 < dist(x',x) /\ dist(x',x) < d ==> f(x') = g(x')) /\
         (f --> l) (at x within s)
         ==> (g --> l) (at x within s)
@@ -6915,7 +6956,8 @@ Theorem LIM_TRANSFORM_AT:
         (f --> l) (at x)
         ==> (g --> l) (at x)
 Proof
-  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN MESON_TAC[IN_UNIV, LIM_TRANSFORM_WITHIN]
+  ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
+  MESON_TAC[IN_UNIV, LIM_TRANSFORM_WITHIN, NET_CONDITION_UNIV]
 QED
 
 Theorem LIM_TRANSFORM_EQ:
@@ -6930,9 +6972,9 @@ Proof
   ASM_REWRITE_TAC[REAL_NEG_SUB, REAL_NEG_0]]
 QED
 
-(* NOTE: added “a IN s /\ a IN t” into antecedents. *)
+(* NOTE: added net conditions into antecedents. *)
 Theorem LIM_TRANSFORM_WITHIN_SET:
-   !f l a s t. a IN s /\ a IN t /\
+   !f l a s t. net_condition (at a) s /\ net_condition (at a) t /\
         eventually (\x. x IN s <=> x IN t) (at a)
         ==> ((f --> l) (at a within s) <=> (f --> l) (at a within t))
 Proof
@@ -6946,9 +6988,9 @@ Proof
   ASM_MESON_TAC[]
 QED
 
-(* NOTE: added “a IN s /\ a IN t” into antecedents. *)
+(* NOTE: added net conditions into antecedents. *)
 Theorem LIM_TRANSFORM_WITHIN_SET_IMP:
-   !f l a s t. a IN s /\ a IN t /\
+   !f l a s t. net_condition (at a) s /\ net_condition (at a) t /\
         eventually (\x. x IN t ==> x IN s) (at a) /\ (f --> l) (at a within s)
         ==> (f --> l) (at a within t)
 Proof
@@ -6966,10 +7008,10 @@ QED
 (* Common case assuming being away from some crucial point like 0.           *)
 (* ------------------------------------------------------------------------- *)
 
-(* NOTE: added “a IN s” into antecedents *)
+(* NOTE: added net_condition into antecedents *)
 Theorem LIM_TRANSFORM_AWAY_WITHIN_lemma[local] :
    !f:real->real g a b s l.
-        ~(a = b) /\ a IN s /\
+        ~(a = b) /\ net_condition (at a) s /\
         (!x. x IN s /\ ~(x = a) /\ ~(x = b) ==> f(x) = g(x)) /\
         (f --> l) (at a within s)
         ==> (g --> l) (at a within s)
@@ -6981,9 +7023,9 @@ Proof
   ASM_MESON_TAC[DIST_SYM, REAL_LT_REFL]
 QED
 
-(* NOTE: removed the unused quantifier ‘b’, added “a IN s” into antecedents *)
+(* NOTE: removed the unused quantifier ‘b’, added net_condition *)
 Theorem LIM_TRANSFORM_AWAY_WITHIN :
-   !f:real->real g a s l. a IN s /\
+   !f:real->real g a s l. net_condition (at a) s /\
       (!x. x IN s /\ ~(x = a) ==> (f(x) = g(x))) /\
       (f --> l) (at a within s) ==> (g --> l) (at a within s)
 Proof
@@ -7000,7 +7042,7 @@ Theorem LIM_TRANSFORM_AWAY_AT :
       (f --> l) (at a) ==> (g --> l) (at a)
 Proof
   ONCE_REWRITE_TAC[GSYM WITHIN_UNIV] THEN
-  MESON_TAC[LIM_TRANSFORM_AWAY_WITHIN, IN_UNIV]
+  METIS_TAC[LIM_TRANSFORM_AWAY_WITHIN, IN_UNIV, NET_CONDITION_UNIV]
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -7035,21 +7077,22 @@ Proof
       qexistsl_tac [‘g’, ‘s’] >> rw [] ]
 QED
 
+(* NOTE: added “net_condition (at a) t” into antecedents *)
 Theorem LIM_TRANSFORM_WITHIN_OPEN_IN:
-   !f g:real->real s t a l.
+   !f g:real->real s t a l. net_condition (at a) t /\
   open_in (subtopology euclidean t) s /\ a IN s /\
   (!x. x IN s /\ ~(x = a) ==> (f x = g x)) /\
   (f --> l) (at a within t) ==> (g --> l) (at a within t)
 Proof
   REPEAT STRIP_TAC THEN
- ‘a IN t’ by gs [OPEN_IN_SUBTOPOLOGY] THEN
   MATCH_MP_TAC LIM_TRANSFORM_WITHIN THEN
   EXISTS_TAC ``f:real->real`` THEN ASM_REWRITE_TAC[] THEN
   UNDISCH_TAC ``open_in (subtopology euclidean t) s`` THEN
   GEN_REWR_TAC LAND_CONV [OPEN_IN_CONTAINS_BALL] THEN
   DISCH_THEN(MP_TAC o SPEC ``a:real`` o CONJUNCT2) THEN ASM_REWRITE_TAC[] THEN
   STRIP_TAC THEN EXISTS_TAC ``e:real`` THEN POP_ASSUM MP_TAC THEN
-  REWRITE_TAC[SUBSET_DEF, IN_INTER, IN_BALL] THEN ASM_MESON_TAC[DIST_NZ, DIST_SYM]
+  REWRITE_TAC[SUBSET_DEF, IN_INTER, IN_BALL] THEN
+  ASM_MESON_TAC[DIST_NZ, DIST_SYM]
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -7065,7 +7108,8 @@ Proof
   MATCH_MP_TAC(REWRITE_RULE[GSYM AND_IMP_INTRO] LIM_TRANSFORM_EVENTUALLY) THEN
   FIRST_ASSUM(MP_TAC o SPEC ``\n:num. n`` o MATCH_MP UPPER_BOUND_FINITE_SET) THEN
   SIMP_TAC std_ss [GSPECIFICATION, LEFT_IMP_EXISTS_THM] THEN
-  X_GEN_TAC ``N:num`` THEN DISCH_TAC THEN SIMP_TAC std_ss [EVENTUALLY_SEQUENTIALLY] THEN
+  X_GEN_TAC ``N:num`` THEN DISCH_TAC THEN
+  SIMP_TAC std_ss [EVENTUALLY_SEQUENTIALLY] THEN
   EXISTS_TAC ``N + 1:num`` THEN
   METIS_TAC[ARITH_PROVE ``~(x <= n:num /\ n + 1 <= x)``]
 QED
@@ -7103,9 +7147,9 @@ QED
 (* A congruence rule allowing us to transform limits assuming not at point.  *)
 (* ------------------------------------------------------------------------- *)
 
-(* NOTE: added “a IN s” into antecedents *)
+(* NOTE: added “net_condition (at a) s” into antecedents *)
 Theorem LIM_CONG_WITHIN:
-   (!x. ~(x = a) ==> (f x = g x)) /\ a IN s
+   (!x. ~(x = a) ==> (f x = g x)) /\ net_condition (at a) s
   ==> (((\x. f x) --> l) (at a within s) <=> ((g --> l) (at a within s)))
 Proof
     STRIP_TAC
@@ -7114,7 +7158,8 @@ QED
 
 (* NOTE: This theorem is not from HOL-Light. *)
 Theorem LIM_WITHIN_CONG :
-   !f g l r a s. (!x. ~(x = a) /\ x IN s ==> (f x - l = g x - r)) /\ a IN s
+   !f g l r a s. (!x. ~(x = a) /\ x IN s ==> (f x - l = g x - r)) /\
+                  net_condition (at a) s
   ==> ((f --> l) (at a within s) <=> ((g --> r) (at a within s)))
 Proof
     rw [LIM_WITHIN, dist]
@@ -9520,9 +9565,9 @@ Proof
   SIMP_TAC std_ss [continuous, LIM_TRIVIAL]
 QED
 
-(* NOTE: added “x IN s” as antecedents *)
+(* NOTE: added net_condition as antecedents *)
 Theorem CONTINUOUS_WITHIN:
-   !f x:real s. x IN s ==>
+   !f x:real s. net_condition (at x) s ==>
              (f continuous (at x within s) <=> (f --> f(x)) (at x within s))
 Proof
   REPEAT GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[continuous] THEN
@@ -9530,8 +9575,9 @@ Proof
   ASM_SIMP_TAC std_ss [LIM_TRIVIAL, NETLIMIT_WITHIN]
 QED
 
+(* NOTE: added net_condition as antecedents *)
 Theorem LIM_CONTINUOUS_SELF_WITHIN :
-   !f:real->real s x y. x IN s /\
+   !f:real->real s x y. net_condition (at x) s /\
         f continuous (at x within s) /\ f x = y ==> (f --> y) (at x within s)
 Proof
     rpt STRIP_TAC
@@ -9547,9 +9593,9 @@ Proof
  >> REWRITE_TAC [IN_UNIV]
 QED
 
-(* NOTE: added “x IN s” into antecedents *)
+(* NOTE: added net_condition into antecedents *)
 Theorem CONTINUOUS_AT_WITHIN:
-   !f:real->real x s. x IN s /\
+   !f:real->real x s. net_condition (at x) s /\
   f continuous (at x) ==> f continuous (at x within s)
 Proof
   SIMP_TAC std_ss [LIM_AT_WITHIN, CONTINUOUS_AT, CONTINUOUS_WITHIN]
@@ -9563,8 +9609,9 @@ Proof
 QED
  *)
 
+(* NOTE: added net_condition into antecedents *)
 Theorem CONTINUOUS_TRANSFORM_WITHIN:
-   !f g:real->real s x d. &0 < d /\ x IN s /\
+   !f g:real->real s x d. &0 < d /\ net_condition (at x) s /\
    (!x'. x' IN s /\ dist(x',x) < d ==> (f(x') = g(x'))) /\
     f continuous (at x within s) ==> g continuous (at x within s)
 Proof
