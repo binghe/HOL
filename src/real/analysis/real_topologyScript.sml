@@ -5669,10 +5669,7 @@ Proof
  >> Q.EXISTS_TAC ‘1’ >> simp []
 QED
 
-(* NOTE: for ‘s = {}’, see TRIVIAL_LIMIT_WITHIN_EMPTY
-
-   Adding “connected s”?
- *)
+(* NOTE: for ‘s = {}’, see TRIVIAL_LIMIT_WITHIN_EMPTY *)
 Theorem TRIVIAL_LIMIT_WITHIN :
     !a:real s. trivial_limit (at a within s) <=> ~(a limit_point_of s)
 Proof
@@ -5690,20 +5687,28 @@ Proof
  >> ‘?z. z IN s /\ z <> a’ by ASM_SET_TAC []
  >> ‘e <= dist (a,z)’ by PROVE_TAC []
  >> simp [netfilter_def, WITHIN, netlimits_def]
- >> Q.EXISTS_TAC ‘{y | netord (at a) y (a + e) /\ y IN s}’
+ >> Q.EXISTS_TAC ‘{y | netord (at a) y (a + e / 2) /\ y IN s}’
  >> CONJ_TAC
- >- (Q.EXISTS_TAC ‘a + e’ >> art [] \\
-     cheat)
- >> cheat
+ >- (Q.EXISTS_TAC ‘a + e / 2’ >> art [] \\
+     cheat (* fixed by changing netfilter_def *))
+ >> rw [AT, REAL_NOT_LE, GSYM DIST_NZ]
+ >> DISJ1_TAC
+ >> Cases_on ‘x IN s’ >> simp []
+ >> Cases_on ‘x = a’ >> simp []
+ >> Q.PAT_X_ASSUM ‘!y. a = y \/ _’ (MP_TAC o Q.SPEC ‘x’) >> rw []
+ >> ‘dist (a + e / 2,a) = e / 2’
+      by simp [dist, REAL_ADD_SUB, ABS_REDUCE, REAL_LT_IMP_LE]
+ >> POP_ORW
+ >> ONCE_REWRITE_TAC [DIST_SYM]
+ >> Q_TAC (TRANS_TAC REAL_LTE_TRANS) ‘e’ >> art []
+ >> simp []
 QED
 
-(*
 Theorem LIM_WITHIN_CLOSED_TRIVIAL:
    !a s. closed s /\ ~(a IN s) ==> trivial_limit (at a within s)
 Proof
   REWRITE_TAC[TRIVIAL_LIMIT_WITHIN] THEN MESON_TAC[CLOSED_LIMPT]
 QED
- *)
 
 (* ------------------------------------------------------------------------- *)
 (* Limits, defined as vacuously true when the limit is trivial.              *)

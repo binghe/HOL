@@ -35,7 +35,7 @@ Theorem REAL_HALF :
    (!e. e / &2 + e / &2 = e) /\
    (!e. &2 * (e / &2) = e)
 Proof
-  REAL_ARITH_TAC
+    REAL_ARITH_TAC
 QED
 
 (*---------------------------------------------------------------------------*)
@@ -934,30 +934,12 @@ QED
 (* It's also sometimes useful to extract the limit point from the net.       *)
 (* ------------------------------------------------------------------------- *)
 
+(* NOTE: adding “x <> a” after “!x.” will break proof of NETLIMIT_ATPOINTOF. *)
 Definition netlimit_def :
     netlimit net = @a. !x. ~(netord net x a)
 End
 
-Theorem NETLIMIT_ATPOINTOF :
-    !m a. netlimit(atpointof m a) = a
-Proof
-    RW_TAC std_ss [netlimit_def, ATPOINTOF]
- >> SELECT_ELIM_TAC
- >> CONJ_TAC
- >- (Q.EXISTS_TAC ‘a’ \\
-     Q.X_GEN_TAC ‘x’ \\
-     rw [MDIST_REFL, REAL_NOT_LE, MDIST_POS_LT])
- >> rw [REAL_NOT_LE]
- >> CCONTR_TAC
- >> Q.PAT_X_ASSUM ‘!x. P’ (MP_TAC o Q.SPEC ‘x’)
- >> simp [REAL_NOT_LT, MDIST_REFL, MDIST_POS_LE, MDIST_POS_LT]
-QED
-
-(* |- !a. netlimit (at a) = a *)
-Theorem NETLIMIT_AT = NETLIMIT_ATPOINTOF |> ISPEC “mr1”
-                   |> REWRITE_RULE [GSYM at_DEF]
-
-(* NOTE: This definition is compatible with HOL-Light *)
+(* NOTE: The definition of “netlimits” must be alighed with “netlimit”. *)
 Definition netlimits_def :
     netlimits net = {a | !x. ~(netord net x a)}
 End
@@ -968,6 +950,24 @@ Theorem netlimit :
 Proof
     rw [netlimit_def, netlimits_def]
 QED
+
+Theorem NETLIMIT_ATPOINTOF :
+    !m a. netlimit(atpointof m a) = a
+Proof
+    RW_TAC std_ss [netlimit_def, ATPOINTOF]
+ >> SELECT_ELIM_TAC
+ >> CONJ_TAC
+ >- (Q.EXISTS_TAC ‘a’ \\
+     rw [MDIST_REFL, REAL_NOT_LE, MDIST_POS_LT])
+ >> rw [REAL_NOT_LE, MDIST_POS_EQ]
+ >> CCONTR_TAC
+ >> Q.PAT_X_ASSUM ‘!x. P’ (MP_TAC o Q.SPEC ‘x’)
+ >> simp [REAL_NOT_LT, MDIST_REFL, MDIST_POS_LE, MDIST_POS_LT]
+QED
+
+(* |- !a. netlimit (at a) = a *)
+Theorem NETLIMIT_AT = NETLIMIT_ATPOINTOF |> ISPEC “mr1”
+                   |> REWRITE_RULE [GSYM at_DEF]
 
 Theorem NETLIMITS_ATPOINTOF :
     !m a. netlimits (atpointof m a) = {a}
@@ -1135,7 +1135,10 @@ QED
 (* netfilter (compatible with HOL-Light)                                     *)
 (* ------------------------------------------------------------------------- *)
 
-(* NOTE: “x NOTIN netlimits net” is necessary for EVENTUALLY_ATPOINTOF below *)
+(* NOTE: “x NOTIN netlimits net” is necessary for EVENTUALLY_ATPOINTOF below.
+   And also, if it's replaced by “T” then “netfilter net <> {}” holds, making
+   the first part of “eventually” (below, unchangable) meaningless.
+ *)
 Definition netfilter_def :
     netfilter net = {{y | netord net y x} | x | x NOTIN netlimits net}
 End
@@ -1745,13 +1748,11 @@ Proof
  >- (STRIP_TAC \\
      fs [OPEN_IN_MTOPOLOGY] \\
      Q.PAT_X_ASSUM ‘!x. x IN u ==> ?r. 0 < r /\ _’ (MP_TAC o Q.SPEC ‘a’) \\
-     simp [] \\
      rw [IMP_CONJ, MDIST_POS_EQ, IN_MBALL, SUBSET_DEF, Once MDIST_SYM, MSPACE] \\
      ASM_SET_TAC [])
  >> rw [IMP_CONJ, MDIST_POS_EQ]
  >> EXISTS_TAC ``mball m (a:'a,d)``
- >> simp [OPEN_IN_MBALL, CENTRE_IN_MBALL, IN_DELETE, MSPACE]
- >> simp [IN_MBALL, MSPACE]
+ >> simp [OPEN_IN_MBALL, CENTRE_IN_MBALL, IN_DELETE, MSPACE, IN_MBALL]
  >> ASM_MESON_TAC [MDIST_SYM]
 QED
 
@@ -1964,55 +1965,68 @@ Proof
  >> FIRST_X_ASSUM MATCH_MP_TAC >> art []
 QED
 
-(*
-let LIMIT_SEQUENTIALLY = prove
- (`!top s l:A.
+Theorem LIMIT_SEQUENTIALLY :
+   !top s l:'a.
      limit top s l sequentially <=>
      l IN topspace top /\
-     (!u. open_in top u /\ l IN u ==> (?N. !n. N <= n ==> s n IN u))`,
-  REWRITE_TAC[limit; EVENTUALLY_SEQUENTIALLY]);;
+     (!u. open_in top u /\ l IN u ==> (?N. !n. N <= n ==> s n IN u))
+Proof
+  SIMP_TAC std_ss[limit, EVENTUALLY_SEQUENTIALLY]
+QED
 
-let LIMIT_SEQUENTIALLY_OFFSET = prove
- (`!top f l:A k. limit top f l sequentially
-                 ==> limit top (\i. f (i + k)) l sequentially`,
-  SIMP_TAC[LIMIT_SEQUENTIALLY] THEN INTRO_TAC "! *; l lim; !u; hp" THEN
-  USE_THEN "hp" (HYP_TAC "lim: @N. N" o C MATCH_MP) THEN
-  EXISTS_TAC `N:num` THEN INTRO_TAC "!n; n" THEN
-  USE_THEN "N" MATCH_MP_TAC THEN ASM_ARITH_TAC);;
+Theorem LIMIT_SEQUENTIALLY_OFFSET :
+   !top f l:'a k. limit top f l sequentially
+                 ==> limit top (\i. f (i + k)) l sequentially
+Proof
+    RW_TAC std_ss [LIMIT_SEQUENTIALLY]
+ >> Q.PAT_X_ASSUM ‘!u. _’ (MP_TAC o Q.SPEC ‘u’) >> rw []
+ >> Q.EXISTS_TAC ‘N’ >> rpt STRIP_TAC
+ >> FIRST_X_ASSUM MATCH_MP_TAC
+ >> POP_ASSUM MP_TAC >> ARITH_TAC
+QED
 
-let LIMIT_SEQUENTIALLY_OFFSET_REV = prove
- (`!top f l:A k. limit top (\i. f (i + k)) l sequentially
-                 ==> limit top f l sequentially`,
-  SIMP_TAC[LIMIT_SEQUENTIALLY] THEN INTRO_TAC "! *; l lim; !u; hp" THEN
-  USE_THEN "hp" (HYP_TAC "lim: @N. N" o C MATCH_MP) THEN
-  EXISTS_TAC `N+k:num` THEN INTRO_TAC "!n; n" THEN
-  REMOVE_THEN "N" (MP_TAC o SPEC `n-k:num`) THEN
-  ANTS_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
-  SUBGOAL_THEN `n - k + k = n:num` (fun th -> REWRITE_TAC[th]) THEN
-  ASM_ARITH_TAC);;
+Theorem LIMIT_SEQUENTIALLY_OFFSET_REV :
+   !top f l:'a k. limit top (\i. f (i + k)) l sequentially
+                 ==> limit top f l sequentially
+Proof
+    RW_TAC std_ss [LIMIT_SEQUENTIALLY]
+ >> Q.PAT_X_ASSUM ‘!u. _’ (MP_TAC o Q.SPEC ‘u’) >> rw []
+ >> Q.EXISTS_TAC ‘N + k’ >> rpt STRIP_TAC
+ >> ‘n = n - k + k’ by simp [] >> POP_ORW
+ >> FIRST_X_ASSUM MATCH_MP_TAC >> simp []
+QED
 
-let LIMIT_ATPOINTOF = prove
- (`!top top' f:A->B x y.
-        limit top' f y (atpointof top x) <=>
-        y IN topspace top' /\
-        (x IN topspace top
-         ==> !v. open_in top' v /\ y IN v
-                 ==> ?u. open_in top u /\ x IN u /\
-                         IMAGE f (u DELETE x) SUBSET v)`,
-  REPEAT GEN_TAC THEN ASM_SIMP_TAC[limit; EVENTUALLY_ATPOINTOF] THEN
-  ASM_CASES_TAC `(y:B) IN topspace top'` THEN ASM_REWRITE_TAC[] THEN
-  ASM_CASES_TAC `(x:A) IN topspace top` THEN ASM_REWRITE_TAC[] THEN
-  AP_TERM_TAC THEN ABS_TAC THEN SET_TAC[]);;
-
-let LIMIT_ATPOINTOF_SELF = prove
- (`!top1 top2 f:A->B a.
-        limit top2 f (f a) (atpointof top1 a) <=>
-        f a IN topspace top2 /\
-        (a IN topspace top1
-         ==> (!v. open_in top2 v /\ f a IN v
-                  ==> (?u. open_in top1 u /\ a IN u /\ IMAGE f u SUBSET v)))`,
-  REWRITE_TAC[LIMIT_ATPOINTOF] THEN SET_TAC[]);;
+(* NOTE: The original theorem from HOL-Light is about “top” and “top'”; added
+  “limpt (mtop m) x UNIV” in HOL4 for EVENTUALLY_ATPOINTOF.
  *)
+Theorem LIMIT_ATPOINTOF :
+   !m top' f:'a->'b x y. limpt (mtop m) x UNIV ==>
+       (limit top' f y (atpointof m x) <=>
+        y IN topspace top' /\
+        (x IN topspace (mtop m)
+         ==> !v. open_in top' v /\ y IN v
+                 ==> ?u. open_in (mtop m) u /\ x IN u /\
+                         IMAGE f (u DELETE x) SUBSET v))
+Proof
+    rw [TOPSPACE_MTOP]
+ >> ASM_SIMP_TAC std_ss [limit, EVENTUALLY_ATPOINTOF]
+ >> Cases_on ‘y IN topspace top'’ >> art []
+ >> AP_TERM_TAC THEN ABS_TAC THEN SET_TAC[]
+QED
+
+(* NOTE: The original theorem from HOL-Light is about “top1” and “top2” *)
+Theorem LIMIT_ATPOINTOF_SELF :
+   !m1 top2 f:'a->'b a. limpt (mtop m1) a UNIV ==>
+       (limit top2 f (f a) (atpointof m1 a) <=>
+        f a IN topspace top2 /\
+        (a IN topspace (mtop m1)
+         ==> (!v. open_in top2 v /\ f a IN v
+                  ==> (?u. open_in (mtop m1) u /\ a IN u /\ IMAGE f u SUBSET v))))
+Proof
+    rpt STRIP_TAC
+ >> ASM_SIMP_TAC std_ss [LIMIT_ATPOINTOF]
+ >> SET_TAC[]
+QED
 
 Theorem LIMIT_TRIVIAL :
     !net f:'a->'b top y.
@@ -2038,7 +2052,8 @@ Proof
  >> Suff `open_in top u /\ open_in top v /\ l1 IN u /\ l2 IN v
            ==> ?x. f x IN u /\ f x IN v` >- SET_TAC []
  >> STRIP_TAC
- >> `eventually (\x. f x IN u /\ f x IN v) net` by ASM_SIMP_TAC std_ss [EVENTUALLY_AND]
+ >> ‘eventually (\x. f x IN u /\ f x IN v) net’
+      by ASM_SIMP_TAC std_ss [EVENTUALLY_AND]
  >> POP_ASSUM (ASSUME_TAC o (MATCH_MP EVENTUALLY_HAPPENS))
  >> ASM_MESON_TAC[]
 QED
@@ -2155,8 +2170,8 @@ Proof
    “abs((f' - f) * g') <= x /\ abs((g' - g) * f) <= y
     ==> x < e / &2 ==> y < e / &2
         ==> abs(f' * g' - f * g) < e”) THEN
-  REWRITE_TAC[REAL_ABS_MUL] THEN CONJ_TAC THEN MATCH_MP_TAC REAL_LE_LMUL_IMP THEN
-  ASM_REAL_ARITH_TAC
+  REWRITE_TAC[REAL_ABS_MUL] THEN
+  CONJ_TAC THEN MATCH_MP_TAC REAL_LE_LMUL_IMP THEN ASM_REAL_ARITH_TAC
 QED
 
 Theorem LIMIT_REAL_LMUL :
