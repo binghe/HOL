@@ -5631,13 +5631,70 @@ QED
 (* Identify trivial limits, where we can't approach arbitrarily closely.     *)
 (* ------------------------------------------------------------------------- *)
 
+Theorem EVENTUALLY_AT_TOPOLOGICAL_lemma[local] =
+        EVENTUALLY_ATPOINTOF
+     |> ISPECL [“P :real -> bool”, “mr1”]
+     |> SRULE [GSYM at_DEF, MR1_LIMPT, GSYM euclidean_def, SYM euclidean_open_def]
+
+Theorem EVENTUALLY_AT_TOPOLOGICAL :
+   !P a:real.
+        eventually P (at a) <=>
+        ?t. open t /\ a IN t /\ !x. x IN t DELETE a ==> P x
+Proof
+    rw [EVENTUALLY_AT_TOPOLOGICAL_lemma]
+QED
+
+(* |- !a s. net_condition (at a) s <=> a limit_point_of s *)
+Theorem net_condition_at =
+        NET_CONDITION_AT
+     |> REWRITE_RULE [GSYM euclidean_def, GSYM limit_point_of_def]
+
 (* NOTE: added toplevel quantifier ‘s’, and “net_condition (at a) s”. *)
-Theorem TRIVIAL_LIMIT_WITHIN :
+Theorem TRIVIAL_LIMIT_WITHIN_lemma1[local] :
     !s (a:real). net_condition (at a) s ==>
                 (trivial_limit (at a within s) <=> ~(a limit_point_of s))
 Proof
     simp [limit_point_of_def, TRIVIAL_LIMIT_AT_WITHIN, derived_set_of_alt_limpt,
           euclidean_def]
+QED
+
+(* |- !s a. a limit_point_of s ==> ~trivial_limit (at a within s) *)
+Theorem TRIVIAL_LIMIT_WITHIN_lemma2[local] =
+        TRIVIAL_LIMIT_WITHIN_lemma1 |> SRULE [net_condition_at]
+
+Theorem limit_point_of_empty :
+    !a. ~(a limit_point_of {})
+Proof
+    rw [limit_point_of_def, euclidean_def, MTOP_LIMPT', GSYM dist_def]
+ >> Q.EXISTS_TAC ‘1’ >> simp []
+QED
+
+(* NOTE: for ‘s = {}’, see TRIVIAL_LIMIT_WITHIN_EMPTY
+
+   Adding “connected s”?
+ *)
+Theorem TRIVIAL_LIMIT_WITHIN :
+    !a:real s. trivial_limit (at a within s) <=> ~(a limit_point_of s)
+Proof
+    rpt GEN_TAC
+ >> EQ_TAC >- PROVE_TAC [TRIVIAL_LIMIT_WITHIN_lemma2]
+ >> Cases_on ‘s = {}’ >- simp [TRIVIAL_LIMIT_WITHIN_EMPTY]
+ >> rw [limit_point_of_def, euclidean_def, MTOP_LIMPT', GSYM dist_def]
+ >> fs [REAL_NOT_LT]
+ >> simp [trivial_limit_alt]
+ >> Cases_on ‘s = {a}’
+ >- (DISJ1_TAC \\
+     simp [netfilter_def, WITHIN, netlimits_def] \\
+     simp [AT, DIST_REFL])
+ >> DISJ2_TAC
+ >> ‘?z. z IN s /\ z <> a’ by ASM_SET_TAC []
+ >> ‘e <= dist (a,z)’ by PROVE_TAC []
+ >> simp [netfilter_def, WITHIN, netlimits_def]
+ >> Q.EXISTS_TAC ‘{y | netord (at a) y (a + e) /\ y IN s}’
+ >> CONJ_TAC
+ >- (Q.EXISTS_TAC ‘a + e’ >> art [] \\
+     cheat)
+ >> cheat
 QED
 
 (*

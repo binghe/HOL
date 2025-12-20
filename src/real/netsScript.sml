@@ -1256,6 +1256,13 @@ Definition trivial_limit :
     trivial_limit net = eventually (\x. F) net
 End
 
+(* |- !net.
+        trivial_limit net <=>
+        netfilter net = {} \/
+        ?u. u IN netfilter net /\ !x. x NOTIN u \/ x IN netlimits net
+ *)
+Theorem trivial_limit_alt = trivial_limit |> SRULE [eventually]
+
 Theorem NETFILTER_IMP_TRIVIAL_LIMIT :
     !net. netfilter net = {} ==> trivial_limit net
 Proof
@@ -1618,7 +1625,7 @@ Proof
  >> simp [Once MDIST_SYM, REAL_LT_IMP_LE]
 QED
 
-(* NOTE: added “limpt (mtop m) a UNIV” to finish the proof (direction: right to left) *)
+(* NOTE: added “limpt (mtop m) a UNIV” to finish the proof *)
 Theorem EVENTUALLY_ATPOINTOF :
     !P m (a:'a). limpt (mtop m) a UNIV ==>
        (eventually P (atpointof m a) <=>
@@ -1737,7 +1744,8 @@ Proof
  >> EQ_TAC
  >- (STRIP_TAC \\
      fs [OPEN_IN_MTOPOLOGY] \\
-     Q.PAT_X_ASSUM ‘!x. x IN u ==> ?r. 0 < r /\ _’ (MP_TAC o Q.SPEC ‘a’) >> simp [] \\
+     Q.PAT_X_ASSUM ‘!x. x IN u ==> ?r. 0 < r /\ _’ (MP_TAC o Q.SPEC ‘a’) \\
+     simp [] \\
      rw [IMP_CONJ, MDIST_POS_EQ, IN_MBALL, SUBSET_DEF, Once MDIST_SYM, MSPACE] \\
      ASM_SET_TAC [])
  >> rw [IMP_CONJ, MDIST_POS_EQ]
@@ -2005,7 +2013,7 @@ let LIMIT_ATPOINTOF_SELF = prove
                   ==> (?u. open_in top1 u /\ a IN u /\ IMAGE f u SUBSET v)))`,
   REWRITE_TAC[LIMIT_ATPOINTOF] THEN SET_TAC[]);;
  *)
- 
+
 Theorem LIMIT_TRIVIAL :
     !net f:'a->'b top y.
         trivial_limit net /\ y IN topspace top ==> limit top f y net
