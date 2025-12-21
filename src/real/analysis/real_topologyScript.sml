@@ -9961,14 +9961,32 @@ Proof
   Q.EXISTS_TAC ‘N’ >> simp []
 QED
 
+(* |- !f s a l.
+        (f --> l) (at a within s) <=>
+        !x. (!n. x n IN s DELETE a) /\ (x --> a) sequentially ==>
+            (f o x --> l) sequentially
+ *)
 Theorem LIM_WITHIN_SEQUENTIALLY =
-        cj 1 LIM_WITHIN_SEQUENTIALLY_combined
+        LIM_WITHIN_SEQUENTIALLY_combined |> cj 1
 
+(* |- !f s a l.
+        (f --> l) (at a within s) <=>
+        !x. (!n. x n IN s DELETE a) /\ (!m n. x m = x n <=> m = n) /\
+            (x --> a) sequentially ==>
+            (f o x --> l) sequentially
+ *)
 Theorem LIM_WITHIN_SEQUENTIALLY_INJ =
-        cj 2 LIM_WITHIN_SEQUENTIALLY_combined
+        LIM_WITHIN_SEQUENTIALLY_combined |> cj 2
 
+(* |- !f s a l.
+        (f --> l) (at a within s) <=>
+        !x. (!n. x n IN s DELETE a) /\
+            (!m n. m < n ==> dist (x n,a) < dist (x m,a)) /\
+            (x --> a) sequentially ==>
+            (f o x --> l) sequentially
+ *)
 Theorem LIM_WITHIN_SEQUENTIALLY_DECREASING =
-        cj 3 LIM_WITHIN_SEQUENTIALLY_combined
+        LIM_WITHIN_SEQUENTIALLY_combined |> cj 3
 
 (* ------------------------------------------------------------------------- *)
 (* Combination results for pointwise continuity.                             *)

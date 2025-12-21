@@ -2507,8 +2507,103 @@ Proof
 QED
 
 (* ------------------------------------------------------------------------- *)
-(* Various versions of Kachurovskii's theorem.                               *)
+(* Characterizations of convex functions in terms of secants.                *)
 (* ------------------------------------------------------------------------- *)
+
+Theorem CONVEX_ON_SECANT_MUL_combined[local] :
+   (!f s:real->bool.
+        f convex_on s <=>
+        !a b x. a IN s /\ b IN s /\ x IN segment[a,b]
+                ==> (f x - f a) * abs(b - a) <= (f b - f a) * abs(x - a)) /\
+   (!f s:real->bool.
+        f convex_on s <=>
+        !a b x. a IN s /\ b IN s /\ x IN segment[a,b]
+                ==> (f b - f a) * abs(b - x) <= (f b - f x) * abs(b - a)) /\
+   (!f s:real->bool.
+        f convex_on s <=>
+        !a b x. a IN s /\ b IN s /\ x IN segment[a,b]
+                ==> (f x - f a) * abs(b - x) <= (f b - f x) * abs(x - a))
+Proof
+  REPEAT CONJ_TAC THEN (* 3 subgoals, same tactics *)
+  REPEAT GEN_TAC THEN REWRITE_TAC[convex_on] THEN
+  AP_TERM_TAC THEN GEN_REWRITE_TAC I empty_rewrites [FUN_EQ_THM] THEN
+  Q.X_GEN_TAC `a:real` THEN BETA_TAC THEN
+  AP_TERM_TAC THEN GEN_REWRITE_TAC I empty_rewrites [FUN_EQ_THM] THEN
+  Q.X_GEN_TAC `b:real` THEN BETA_TAC THEN
+  ASM_CASES_TAC ``(a:real) IN s`` THEN ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC ``(b:real) IN s`` THEN ASM_REWRITE_TAC[] THEN
+  SIMP_TAC pure_ss[IN_SEGMENT, LEFT_IMP_EXISTS_THM] THEN
+  Ho_Rewrite.ONCE_REWRITE_TAC [SWAP_FORALL_THM] THEN
+  AP_TERM_TAC THEN GEN_REWRITE_TAC I empty_rewrites [FUN_EQ_THM] THEN
+  Q.X_GEN_TAC `u:real` THEN BETA_TAC THEN
+  REWRITE_TAC[TAUT `a /\ x = y <=> x = y /\ a`,
+              TAUT `a /\ x = y /\ b <=> x = y /\ a /\ b`] THEN
+  REWRITE_TAC[REAL_ARITH ``v + u = &1 <=> v = &1 - u``] THEN
+  SIMP_TAC bool_ss[FORALL_UNWIND_THM2, IMP_CONJ] THEN
+  REWRITE_TAC[REAL_SUB_LE] THEN
+  ASM_CASES_TAC ``&0 <= u`` THEN ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC ``u <= &1`` THEN ASM_REWRITE_TAC[] THEN
+  REWRITE_TAC[REAL_ARITH ``((&1 - u) * a + u * b) - a:real = u * (b - a)``,
+   REAL_ARITH ``b - ((&1 - u) * a + u * b):real = (&1 - u) * (b - a)``] THEN
+  REWRITE_TAC[ABS_MUL, REAL_MUL_ASSOC] THEN
+  (ASM_CASES_TAC ``b:real = a`` THENL
+   [ASM_REWRITE_TAC[REAL_SUB_REFL,
+                    REAL_ARITH ``(&1 - u) * a + u * a:real = a``] THEN
+    REAL_ARITH_TAC,
+   ‘0 < abs (b - a)’ by simp [GSYM ABS_NZ, REAL_SUB_0] THEN
+    ASM_SIMP_TAC std_ss[REAL_LE_RMUL] THEN
+    ASM_SIMP_TAC std_ss[REAL_ARITH
+     ``&0 <= u /\ u <= &1 ==> abs u = u /\ abs(&1 - u) = &1 - u``] THEN
+    REAL_ARITH_TAC])
+QED
+
+Theorem CONVEX_ON_LEFT_SECANT_MUL  = CONVEX_ON_SECANT_MUL_combined |> cj 1
+Theorem CONVEX_ON_RIGHT_SECANT_MUL = CONVEX_ON_SECANT_MUL_combined |> cj 2
+Theorem CONVEX_ON_MID_SECANT_MUL   = CONVEX_ON_SECANT_MUL_combined |> cj 3
+
+Theorem CONVEX_ON_SECANT_combined[local] :
+   (!f s:real->bool.
+      f convex_on s <=>
+        !a b x. a IN s /\ b IN s /\ x IN segment(a,b)
+                ==> (f x - f a) / abs(x - a) <= (f b - f a) / abs(b - a)) /\
+   (!f s:real->bool.
+      f convex_on s <=>
+        !a b x. a IN s /\ b IN s /\ x IN segment(a,b)
+                ==> (f b - f a) / abs(b - a) <= (f b - f x) / abs(b - x)) /\
+   (!f s:real->bool.
+      f convex_on s <=>
+        !a b x. a IN s /\ b IN s /\ x IN segment(a,b)
+                ==> (f x - f a) / abs(x - a) <= (f b - f x) / abs(b - x))
+Proof
+  REPEAT CONJ_TAC THEN REPEAT GEN_TAC THENL
+   [REWRITE_TAC[CONVEX_ON_LEFT_SECANT_MUL],
+    REWRITE_TAC[CONVEX_ON_RIGHT_SECANT_MUL],
+     REWRITE_TAC[CONVEX_ON_MID_SECANT_MUL]] THEN (* 3 subgoals, same tactics *)
+  AP_TERM_TAC THEN GEN_REWRITE_TAC I empty_rewrites[FUN_EQ_THM] THEN
+  Q.X_GEN_TAC `a:real` THEN BETA_TAC THEN
+  AP_TERM_TAC THEN GEN_REWRITE_TAC I empty_rewrites[FUN_EQ_THM] THEN
+  Q.X_GEN_TAC `b:real` THEN BETA_TAC THEN
+  ASM_CASES_TAC ``(a:real) IN s`` THEN ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC ``(b:real) IN s`` THEN ASM_REWRITE_TAC[] THEN
+  ASM_CASES_TAC ``a:real = b`` THEN
+  ASM_REWRITE_TAC[SEGMENT_REFL, NOT_IN_EMPTY, REAL_SUB_REFL, ABS_0,
+                  REAL_MUL_LZERO, REAL_MUL_RZERO, REAL_LE_REFL] THEN
+ (* only subgoal for ‘a <> b’ is left here *)
+  SIMP_TAC bool_ss[IN_SING, FORALL_UNWIND_THM2, REAL_LE_REFL] THEN
+  AP_TERM_TAC THEN GEN_REWRITE_TAC I empty_rewrites[FUN_EQ_THM] THEN
+  Q.X_GEN_TAC `x:real` THEN BETA_TAC THEN
+  REWRITE_TAC[open_segment, IN_DIFF, IN_INSERT, NOT_IN_EMPTY] THEN
+  MAP_EVERY ASM_CASES_TAC [``x:real = a``, ``x:real = b``] THEN
+  ASM_REWRITE_TAC[REAL_LE_REFL, REAL_SUB_REFL, ABS_0,
+                  REAL_MUL_LZERO, REAL_MUL_RZERO] THEN (* one goal left *)
+  ASM_SIMP_TAC std_ss [REAL_LE_RDIV_EQ, GSYM REAL_LE_LDIV_EQ,
+                       GSYM ABS_NZ, REAL_SUB_0] THEN
+  AP_TERM_TAC THEN REAL_ARITH_TAC
+QED
+
+Theorem CONVEX_ON_LEFT_SECANT  = CONVEX_ON_SECANT_combined |> cj 1
+Theorem CONVEX_ON_RIGHT_SECANT = CONVEX_ON_SECANT_combined |> cj 2
+Theorem CONVEX_ON_MID_SECANT   = CONVEX_ON_SECANT_combined |> cj 3
 
 (*
 let CONVEX_ON_DERIVATIVE_SECANT_IMP = prove
