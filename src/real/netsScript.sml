@@ -8,7 +8,7 @@ Ancestors
   pred_set pair combin arithmetic num prim_rec relation real topology
   metric cardinal
 Libs
-  numLib reduceLib pairLib mesonLib RealField hurdUtils jrhUtils tautLib
+  numLib reduceLib pairLib mesonLib realLib hurdUtils jrhUtils tautLib
  *)
 open HolKernel Parse boolLib bossLib;
 
@@ -987,23 +987,21 @@ Theorem NETLIMITS_SEQUENTIALLY :
     netlimits sequentially = {}
 Proof
     rw [Once EXTENSION, NOT_IN_EMPTY, netlimits_def, SEQUENTIALLY, GREATER_EQ]
- >> Q.EXISTS_TAC ‘SUC x’ >> simp []
+ >> Q.EXISTS_TAC ‘x’ >> simp []
 QED
 
 Theorem NETLIMITS_AT_POSINFINITY :
     netlimits at_posinfinity = {}
 Proof
     rw [Once EXTENSION, NOT_IN_EMPTY, netlimits_def, AT_POSINFINITY, real_ge]
- >> Q.EXISTS_TAC ‘x + 1’
- >> REAL_ARITH_TAC
+ >> Q.EXISTS_TAC ‘x’ >> simp []
 QED
 
 Theorem NETLIMITS_AT_NEGINFINITY :
     netlimits at_neginfinity = {}
 Proof
     rw [Once EXTENSION, NOT_IN_EMPTY, netlimits_def, AT_NEGINFINITY]
- >> Q.EXISTS_TAC ‘x - 1’
- >> REAL_ARITH_TAC
+ >> Q.EXISTS_TAC ‘x’ >> simp []
 QED
 
 Theorem NETLIMITS_AT_INFINITY :
@@ -1209,7 +1207,8 @@ QED
 Theorem NETFILTER_SEQUENTIALLY :
     netfilter sequentially = {from n | n IN univ(:num)}
 Proof
-    simp [netfilter_def, NETLIMITS_SEQUENTIALLY, SEQUENTIALLY, GREATER_EQ, from_def]
+    simp [netfilter_def, NETLIMITS_SEQUENTIALLY, SEQUENTIALLY,
+          GREATER_EQ, from_def]
 QED
 
 Theorem NETFILTER_ATPOINTOF :
@@ -1219,7 +1218,9 @@ Proof
     simp [netfilter_def, NETLIMITS_ATPOINTOF, ATPOINTOF, MDIST_POS_EQ]
 QED
 
-(* |- !a. netfilter (at a) = {{y | 0 < dist (y,a( /\ dist (y,a) <= dist (x,a)} | x | x <> a} *)
+(* |- !a. netfilter (at a) =
+          {{y | 0 < dist (y,a) /\ dist (y,a) <= dist (x,a)} | x | x <> a}
+ *)
 Theorem NETFILTER_AT =
         NETFILTER_ATPOINTOF |> ISPEC “mr1”
                             |> REWRITE_RULE [GSYM dist_def, GSYM at_DEF]
