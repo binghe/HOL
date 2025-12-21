@@ -27,6 +27,13 @@
    (one-dimensional) Euclidean space.
  *)
 
+(*
+Theory topology
+Ancestors
+  pair combin pred_set arithmetic relation cardinal
+Libs
+  boolSimps simpLib mesonLib metisLib pairLib tautLib hurdUtils
+ *)
 open HolKernel Parse bossLib boolLib;
 
 open boolSimps simpLib mesonLib metisLib pairTheory pairLib tautLib combinTheory
@@ -614,28 +621,34 @@ Proof
   SET_TAC[]
 QED
 
-val IS_HULL = store_thm ("IS_HULL",
- ``!P s. (!f. (!s. s IN f ==> P s) ==> P(BIGINTER f))
-         ==> (P s <=> ?t. s = P hull t)``,
-  MESON_TAC[HULL_P, P_HULL]);
+Theorem IS_HULL:
+   !P s. (!f. (!s. s IN f ==> P s) ==> P(BIGINTER f))
+         ==> (P s <=> ?t. s = P hull t)
+Proof
+  MESON_TAC[HULL_P, P_HULL]
+QED
 
-val HULLS_EQ = store_thm ("HULLS_EQ",
- ``!P s t.
+Theorem HULLS_EQ:
+   !P s t.
         (!f. (!s. s IN f ==> P s) ==> P (BIGINTER f)) /\
         s SUBSET (P hull t) /\ t SUBSET (P hull s)
-        ==> (P hull s = P hull t)``,
+        ==> (P hull s = P hull t)
+Proof
   REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN
   CONJ_TAC THEN MATCH_MP_TAC HULL_MINIMAL THEN
-  ASM_SIMP_TAC std_ss [P_HULL]);
+  ASM_SIMP_TAC std_ss [P_HULL]
+QED
 
-val HULL_P_AND_Q = store_thm ("HULL_P_AND_Q",
- ``!P Q. (!f. (!s. s IN f ==> P s) ==> P(BIGINTER f)) /\
+Theorem HULL_P_AND_Q:
+   !P Q. (!f. (!s. s IN f ==> P s) ==> P(BIGINTER f)) /\
          (!f. (!s. s IN f ==> Q s) ==> Q(BIGINTER f)) /\
          (!s. Q s ==> Q(P hull s))
-         ==> ((\x. P x /\ Q x) hull s = P hull (Q hull s))``,
+         ==> ((\x. P x /\ Q x) hull s = P hull (Q hull s))
+Proof
   REPEAT STRIP_TAC THEN
   MATCH_MP_TAC HULL_UNIQUE THEN ASM_SIMP_TAC std_ss [HULL_INC, SUBSET_HULL] THEN
-  ASM_MESON_TAC[P_HULL, HULL_SUBSET, SUBSET_TRANS]);
+  ASM_MESON_TAC[P_HULL, HULL_SUBSET, SUBSET_TRANS]
+QED
 
 (* ------------------------------------------------------------------------- *)
 (* Subspace topology (from real_topologyTheory)                              *)
@@ -1112,8 +1125,9 @@ QED
 val _ = hide "pairwise"; (* pred_setTheory *)
 
 (* NOTE: this definition is HOL-Light compatible, originally from "sets.ml". *)
-val pairwise = new_definition ("pairwise",
-  ``pairwise r s <=> !x y. x IN s /\ y IN s /\ ~(x = y) ==> r x y``);
+Definition pairwise[nocompute]:
+  pairwise r s <=> !x y. x IN s /\ y IN s /\ ~(x = y) ==> r x y
+End
 
 Overload pairwiseD        = “topology$pairwise”
 Overload pairwiseN[local] = “pred_set$pairwise”

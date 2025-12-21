@@ -1693,33 +1693,39 @@ Proof
     METIS_TAC [AND_IMP_INTRO]
 QED
 
-val lemma = prove (
-  ``(!x. x IN s ==> (g(f(x)) = x)) <=>
-    (!y x. x IN s /\ (y = f x) ==> (g y = x))``,
- MESON_TAC []);
+Theorem lemma[local]:
+    (!x. x IN s ==> (g(f(x)) = x)) <=>
+    (!y x. x IN s /\ (y = f x) ==> (g y = x))
+Proof
+ MESON_TAC []
+QED
 
-val INJECTIVE_ON_LEFT_INVERSE = store_thm
-  ("INJECTIVE_ON_LEFT_INVERSE",
- ``!f s. (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y)) <=>
-         (?g. !x. x IN s ==> (g(f(x)) = x))``,
-  REWRITE_TAC[lemma] THEN SIMP_TAC std_ss [GSYM SKOLEM_THM] THEN METIS_TAC[]);
+Theorem INJECTIVE_ON_LEFT_INVERSE:
+   !f s. (!x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y)) <=>
+         (?g. !x. x IN s ==> (g(f(x)) = x))
+Proof
+  REWRITE_TAC[lemma] THEN SIMP_TAC std_ss [GSYM SKOLEM_THM] THEN METIS_TAC[]
+QED
 
-val SURJECTIVE_ON_RIGHT_INVERSE = store_thm
-  ("SURJECTIVE_ON_RIGHT_INVERSE",
- ``!f t. (!y. y IN t ==> ?x. x IN s /\ (f(x) = y)) <=>
-   (?g. !y. y IN t ==> g(y) IN s /\ (f(g(y)) = y))``,
-  SIMP_TAC std_ss [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM]);
+Theorem SURJECTIVE_ON_RIGHT_INVERSE:
+   !f t. (!y. y IN t ==> ?x. x IN s /\ (f(x) = y)) <=>
+   (?g. !y. y IN t ==> g(y) IN s /\ (f(g(y)) = y))
+Proof
+  SIMP_TAC std_ss [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM]
+QED
 
-val SURJECTIVE_RIGHT_INVERSE = store_thm
-  ("SURJECTIVE_RIGHT_INVERSE",
- ``(!y. ?x. f(x) = y) <=> (?g. !y. f(g(y)) = y)``,
-  MESON_TAC[SURJECTIVE_ON_RIGHT_INVERSE, IN_UNIV]);
+Theorem SURJECTIVE_RIGHT_INVERSE:
+   (!y. ?x. f(x) = y) <=> (?g. !y. f(g(y)) = y)
+Proof
+  MESON_TAC[SURJECTIVE_ON_RIGHT_INVERSE, IN_UNIV]
+QED
 
-val FINITE_IMAGE_INJ_GENERAL = store_thm ("FINITE_IMAGE_INJ_GENERAL",
- ``!(f:'a->'b) A s.
+Theorem FINITE_IMAGE_INJ_GENERAL:
+   !(f:'a->'b) A s.
         (!x y. x IN s /\ y IN s /\ (f(x) = f(y)) ==> (x = y)) /\
         FINITE A
-        ==> (FINITE {x | x IN s /\ f(x) IN A})``,
+        ==> (FINITE {x | x IN s /\ f(x) IN A})
+Proof
   REPEAT STRIP_TAC THEN
   FULL_SIMP_TAC std_ss [INJECTIVE_ON_LEFT_INVERSE] THEN ASSUME_TAC SUBSET_FINITE
   THEN POP_ASSUM (MP_TAC o Q.SPEC `IMAGE (g:'b->'a) A`) THEN
@@ -1728,14 +1734,17 @@ val FINITE_IMAGE_INJ_GENERAL = store_thm ("FINITE_IMAGE_INJ_GENERAL",
   POP_ASSUM (MP_TAC o Q.SPEC `{x | x IN s /\ f x IN A}`) THEN DISCH_TAC
   THEN KNOW_TAC ``{x | x IN s /\ f x IN A} SUBSET IMAGE g A`` THENL
   [REWRITE_TAC [IMAGE_DEF, SUBSET_DEF] THEN GEN_TAC THEN
-  SIMP_TAC std_ss [GSPECIFICATION] THEN METIS_TAC [] , METIS_TAC []]]);
+  SIMP_TAC std_ss [GSPECIFICATION] THEN METIS_TAC [] , METIS_TAC []]]
+QED
 
-val FINITE_IMAGE_INJ = store_thm ("FINITE_IMAGE_INJ",
- ``!(f:'a->'b) A. (!x y. (f(x) = f(y)) ==> (x = y)) /\
-                FINITE A ==> FINITE {x | f(x) IN A}``,
+Theorem FINITE_IMAGE_INJ:
+   !(f:'a->'b) A. (!x y. (f(x) = f(y)) ==> (x = y)) /\
+                FINITE A ==> FINITE {x | f(x) IN A}
+Proof
   REPEAT GEN_TAC THEN
   MP_TAC(SPECL [``f:'a->'b``, ``A:'b->bool``, ``UNIV:'a->bool``]
-    FINITE_IMAGE_INJ_GENERAL) THEN REWRITE_TAC[IN_UNIV]);
+    FINITE_IMAGE_INJ_GENERAL) THEN REWRITE_TAC[IN_UNIV]
+QED
 
 Theorem INFINITE_IMAGE_INJ:
  !f:'a->'b. (!x y. (f x = f y) ==> (x = y)) ==>
@@ -1749,32 +1758,39 @@ Theorem INFINITE_NONEMPTY:
 Proof MESON_TAC[FINITE_EMPTY]
 QED
 
-val SURJECTIVE_IMAGE_THM = store_thm ("SURJECTIVE_IMAGE_THM",
- ``!f:'a->'b. (!y. ?x. f x = y) <=> (!P. IMAGE f {x | P(f x)} = {x | P x})``,
+Theorem SURJECTIVE_IMAGE_THM:
+   !f:'a->'b. (!y. ?x. f x = y) <=> (!P. IMAGE f {x | P(f x)} = {x | P x})
+Proof
   GEN_TAC THEN SIMP_TAC std_ss [EXTENSION, IN_IMAGE, GSPECIFICATION] THEN
   EQ_TAC THENL [ALL_TAC, DISCH_THEN(MP_TAC o SPEC ``\y:'b. T``)] THEN
-  METIS_TAC[]);
+  METIS_TAC[]
+QED
 
-val SURJECTIVE_ON_IMAGE = store_thm ("SURJECTIVE_ON_IMAGE",
- ``!f:'a->'b u v.
+Theorem SURJECTIVE_ON_IMAGE:
+   !f:'a->'b u v.
         (!t. t SUBSET v ==> ?s. s SUBSET u /\ (IMAGE f s = t)) <=>
-        (!y. y IN v ==> ?x. x IN u /\ (f x = y))``,
+        (!y. y IN v ==> ?x. x IN u /\ (f x = y))
+Proof
   REPEAT GEN_TAC THEN EQ_TAC THENL
    [DISCH_TAC THEN X_GEN_TAC ``y:'b`` THEN DISCH_TAC THEN
     FIRST_X_ASSUM(MP_TAC o SPEC ``{y:'b}``) THEN ASM_SET_TAC[],
     DISCH_TAC THEN X_GEN_TAC ``t:'b->bool`` THEN DISCH_TAC THEN
-    EXISTS_TAC ``{x | x IN u /\ (f:'a->'b) x IN t}`` THEN ASM_SET_TAC[]]);;
+    EXISTS_TAC ``{x | x IN u /\ (f:'a->'b) x IN t}`` THEN ASM_SET_TAC[]]
+QED
 
-val SURJECTIVE_IMAGE = store_thm ("SURJECTIVE_IMAGE",
- ``!f:'a->'b. (!t. ?s. IMAGE f s = t) <=> (!y. ?x. f x = y)``,
+Theorem SURJECTIVE_IMAGE:
+   !f:'a->'b. (!t. ?s. IMAGE f s = t) <=> (!y. ?x. f x = y)
+Proof
   GEN_TAC THEN
   MP_TAC (ISPECL [``f:'a->'b``,``univ(:'a)``,``univ(:'b)``] SURJECTIVE_ON_IMAGE) THEN
-  SIMP_TAC std_ss [IN_UNIV, SUBSET_UNIV]);
+  SIMP_TAC std_ss [IN_UNIV, SUBSET_UNIV]
+QED
 
-val CARD_LE_INJ = store_thm ("CARD_LE_INJ",
- ``!s t. FINITE s /\ FINITE t /\ CARD s <= CARD t
+Theorem CARD_LE_INJ:
+   !s t. FINITE s /\ FINITE t /\ CARD s <= CARD t
    ==> ?f:'a->'b. (IMAGE f s) SUBSET t /\
-                !x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y)``,
+                !x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y)
+Proof
   REWRITE_TAC[CONJ_EQ_IMP] THEN SIMP_TAC std_ss [RIGHT_FORALL_IMP_THM] THEN
   ONCE_REWRITE_TAC [METIS []
     ``!s. (!t. FINITE t ==> CARD s <= CARD t ==>
@@ -1809,50 +1825,61 @@ val CARD_LE_INJ = store_thm ("CARD_LE_INJ",
   DISCH_THEN(X_CHOOSE_THEN ``f:'a->'b`` STRIP_ASSUME_TAC) THEN
   EXISTS_TAC ``\z:'a. if z = x then (y:'b) else f(z)`` THEN
   SIMP_TAC std_ss [IN_INSERT, SUBSET_DEF, IN_IMAGE] THEN
-  METIS_TAC[SUBSET_DEF, IN_IMAGE]);
+  METIS_TAC[SUBSET_DEF, IN_IMAGE]
+QED
 
-val CARD_EQ_BIJECTION = store_thm ("CARD_EQ_BIJECTION",
- ``!s t. FINITE s /\ FINITE t /\ (CARD s = CARD t)
+Theorem CARD_EQ_BIJECTION:
+   !s t. FINITE s /\ FINITE t /\ (CARD s = CARD t)
    ==> ?f:'a->'b. (!x. x IN s ==> f(x) IN t) /\
                   (!y. y IN t ==> ?x. x IN s /\ (f x = y)) /\
-                  !x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y)``,
+                  !x y. x IN s /\ y IN s /\ (f x = f y) ==> (x = y)
+Proof
   MP_TAC CARD_LE_INJ THEN DISCH_TAC THEN GEN_TAC THEN GEN_TAC THEN
   POP_ASSUM (MP_TAC o SPECL [``s:'a->bool``,``t:'b->bool``]) THEN
   DISCH_THEN(fn th => STRIP_TAC THEN MP_TAC th) THEN
   ASM_REWRITE_TAC[LESS_EQ_REFL] THEN DISCH_THEN (X_CHOOSE_TAC ``f:'a->'b``) THEN
   EXISTS_TAC ``f:'a->'b`` THEN POP_ASSUM MP_TAC THEN
   ASM_SIMP_TAC std_ss [SURJECTIVE_IFF_INJECTIVE_GEN] THEN
-  MESON_TAC[SUBSET_DEF, IN_IMAGE]);
+  MESON_TAC[SUBSET_DEF, IN_IMAGE]
+QED
 
-val CARD_EQ_BIJECTIONS = store_thm ("CARD_EQ_BIJECTIONS",
- ``!s t. FINITE s /\ FINITE t /\ (CARD s = CARD t)
+Theorem CARD_EQ_BIJECTIONS:
+   !s t. FINITE s /\ FINITE t /\ (CARD s = CARD t)
    ==> ?f:'a->'b g. (!x. x IN s ==> f(x) IN t /\ (g(f x) = x)) /\
-                    (!y. y IN t ==> g(y) IN s /\ (f(g y) = y))``,
+                    (!y. y IN t ==> g(y) IN s /\ (f(g y) = y))
+Proof
   REPEAT GEN_TAC THEN DISCH_THEN(MP_TAC o MATCH_MP CARD_EQ_BIJECTION) THEN
   DISCH_THEN (X_CHOOSE_TAC ``f:'a->'b``) THEN
   EXISTS_TAC ``f:'a->'b`` THEN POP_ASSUM MP_TAC THEN
   SIMP_TAC std_ss [SURJECTIVE_ON_RIGHT_INVERSE] THEN
   SIMP_TAC std_ss [GSYM LEFT_EXISTS_AND_THM, GSYM RIGHT_EXISTS_AND_THM] THEN
-  METIS_TAC[]);
+  METIS_TAC[]
+QED
 
-val SING_SUBSET = store_thm ("SING_SUBSET",
- ``!s x. {x} SUBSET s <=> x IN s``,
-  SET_TAC[]);
+Theorem SING_SUBSET:
+   !s x. {x} SUBSET s <=> x IN s
+Proof
+  SET_TAC[]
+QED
 
-val INJECTIVE_ON_IMAGE = store_thm ("INJECTIVE_ON_IMAGE",
- ``!f:'a->'b u. (!s t. s SUBSET u /\ t SUBSET u /\
+Theorem INJECTIVE_ON_IMAGE:
+   !f:'a->'b u. (!s t. s SUBSET u /\ t SUBSET u /\
                 (IMAGE f s = IMAGE f t) ==> (s = t)) <=>
-      (!x y. x IN u /\ y IN u /\ (f x = f y) ==> (x = y))``,
+      (!x y. x IN u /\ y IN u /\ (f x = f y) ==> (x = y))
+Proof
   REPEAT GEN_TAC THEN EQ_TAC THENL
   [DISCH_TAC, SET_TAC[]] THEN MAP_EVERY X_GEN_TAC [``x:'a``, ``y:'a``] THEN
    STRIP_TAC THEN FIRST_X_ASSUM(MP_TAC o SPECL [``{x:'a}``, ``{y:'a}``]) THEN
-   ASM_REWRITE_TAC[SING_SUBSET, IMAGE_EMPTY, IMAGE_INSERT] THEN SET_TAC[]);
+   ASM_REWRITE_TAC[SING_SUBSET, IMAGE_EMPTY, IMAGE_INSERT] THEN SET_TAC[]
+QED
 
-val INJECTIVE_IMAGE = store_thm ("INJECTIVE_IMAGE",
- ``!f:'a->'b. (!s t. (IMAGE f s = IMAGE f t) ==> (s = t)) <=>
-              (!x y. (f x = f y) ==> (x = y))``,
+Theorem INJECTIVE_IMAGE:
+   !f:'a->'b. (!s t. (IMAGE f s = IMAGE f t) ==> (s = t)) <=>
+              (!x y. (f x = f y) ==> (x = y))
+Proof
   GEN_TAC THEN MP_TAC(ISPECL [``f:'a->'b``, ``univ(:'a)``] INJECTIVE_ON_IMAGE) THEN
-  REWRITE_TAC[IN_UNIV, SUBSET_UNIV]);
+  REWRITE_TAC[IN_UNIV, SUBSET_UNIV]
+QED
 
 Theorem FINITE_FINITE_BIGUNION[local]:
  !s. FINITE(s) ==> (FINITE(BIGUNION s) <=> (!t. t IN s ==> FINITE(t)))

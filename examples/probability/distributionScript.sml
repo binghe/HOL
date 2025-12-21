@@ -7150,7 +7150,7 @@ fun shared_tactics () =
     REWRITE_TAC [REAL_SUB_NEG2];
 
 Theorem differentiable_lemma_alt :
-    !s m u. measure_space (m :'a m_space) /\ open s /\ connected s /\
+    !s m u. measure_space (m :'a m_space) /\ open s /\ convex s /\
            (!t. t IN s ==> integrable m (Normal o u t)) /\
            (!t x. x IN m_space m /\ t IN s ==>
                   higher_differentiable 3 (\t. u t x) t)
@@ -7233,10 +7233,7 @@ Proof
        (* goal 2 (of 2) *)
        shared_tactics () ])
  >> Rewr'
- >> cheat
- (* stage work TODO
- >> simp [LIM_WITHIN_SEQUENTIALLY]
- >> simp [GSYM RIGHT_FORALL_IMP_THM, AND_IMP_INTRO, Once SWAP_FORALL_THM, o_DEF]
+ (* stage work *)
  >> DISCH_TAC
  (* integrable m (\x. Normal (g x))
 
@@ -7280,6 +7277,11 @@ Proof
      Know ‘!n. h1 n IN s’
      >- (Q.X_GEN_TAC ‘n’ \\
          FIRST_X_ASSUM MATCH_MP_TAC >> fs [IN_CBALL]) >> DISCH_TAC \\
+  (* stage work *)
+
+
+
+
      qabbrev_tac ‘gi = \i x. inv (d (h1 i)) * (u (h1 i) x - u t x)’ \\
      Know ‘!x. x IN m_space m ==> ((\i. gi i x) --> g t x) sequentially’
      >- (rw [Abbr ‘gi’] \\
@@ -7365,6 +7367,9 @@ Proof
          ONCE_REWRITE_TAC [REAL_MUL_COMM] >> art []) \\
      RW_TAC std_ss [])
  (* stage work *)
+ >> simp [LIM_WITHIN_SEQUENTIALLY]
+ >> simp [PULL_FORALL, AND_IMP_INTRO, Once SWAP_FORALL_THM, o_DEF]
+ >> DISCH_TAC
  >> Q.X_GEN_TAC ‘h’
  >> RW_TAC std_ss [Abbr ‘c’, Abbr ‘f’, Abbr ‘k’]
  >> Q.PAT_X_ASSUM ‘!h x. x IN m_space m /\ (!n. h n IN s /\ h n <> t) /\
@@ -7512,7 +7517,6 @@ Proof
      ‘0 < abs d’ by simp [ABS_NZ'] \\
       simp [Once REAL_MUL_COMM, GSYM real_div] \\
       ONCE_REWRITE_TAC [REAL_MUL_COMM] >> art [] ]
- *)
 QED
 
 (* NOTE: use diff1 (and differentiable_on) instead of “has_vector_derivative” *)
