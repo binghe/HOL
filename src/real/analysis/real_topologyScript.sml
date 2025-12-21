@@ -65,6 +65,9 @@ Overload UNCOUNTABLE[inferior] = “uncountable”
 
 (* ------------------------------------------------------------------------- *)
 
+(* |- !P Q. (!x. P x) /\ (!x. Q x) <=> !x. P x /\ Q x *)
+Theorem AND_FORALL_THM = GSYM FORALL_AND_THM
+
 Theorem EXISTS_IN_INSERT:
    !P a s. (?x. x IN (a INSERT s) /\ P x) <=> P a \/ ?x. x IN s /\ P x
 Proof
@@ -5636,6 +5639,36 @@ QED
 (* ------------------------------------------------------------------------- *)
 (* Identify trivial limits, where we can't approach arbitrarily closely.     *)
 (* ------------------------------------------------------------------------- *)
+
+(* |- !a s. net_condition (at a) s <=> a limit_point_of s *)
+Theorem net_condition_at =
+        NET_CONDITION_AT
+     |> REWRITE_RULE [GSYM euclidean_def, GSYM limit_point_of_def]
+
+Theorem net_condition_open_in :
+    !a s. open s /\ a IN s ==> net_condition (at a) s
+Proof
+    rw [net_condition_at, LIMPT_OF_OPEN]
+QED
+
+Theorem limit_point_of_empty :
+    !a. ~(a limit_point_of {})
+Proof
+    rw [limit_point_of_def, euclidean_def, MTOP_LIMPT', GSYM dist_def]
+ >> Q.EXISTS_TAC ‘1’ >> simp []
+QED
+
+Theorem net_condition_interior :
+    !x s. x IN interior s ==> net_condition (at x) s
+Proof
+    RW_TAC std_ss [NET_CONDITION_AT]
+ >> FULL_SIMP_TAC std_ss [IN_INTERIOR]
+ >> MATCH_MP_TAC limpt_mono
+ >> Q.EXISTS_TAC ‘ball (x,e)’ >> art []
+ >> simp [GSYM euclidean_def, GSYM limit_point_of_def]
+ >> MATCH_MP_TAC LIMPT_OF_OPEN
+ >> simp [OPEN_BALL, CENTRE_IN_BALL]
+QED
 
 Theorem TRIVIAL_LIMIT_WITHIN :
     !a:real. trivial_limit (at a within s) <=> ~(a limit_point_of s)
