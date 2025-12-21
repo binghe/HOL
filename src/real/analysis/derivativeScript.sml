@@ -1395,7 +1395,8 @@ Proof
    [DISCH_TAC THEN ASM_REWRITE_TAC [] THEN POP_ASSUM K_TAC THEN
     STRIP_TAC THEN Q.EXISTS_TAC `x` THEN POP_ASSUM MP_TAC THEN
     ASM_SIMP_TAC std_ss [FUN_EQ_THM] THEN DISCH_THEN (MP_TAC o SPEC ``b - a:real``),
-    ASM_SIMP_TAC real_ss [CONTINUOUS_ON_SUB, CONTINUOUS_ON_CMUL, CONTINUOUS_ON_ID] THEN
+    ASM_SIMP_TAC real_ss [CONTINUOUS_ON_SUB, CONTINUOUS_ON_CMUL,
+                          CONTINUOUS_ON_ID] THEN
     CONJ_TAC THENL
      [REWRITE_TAC[REAL_ARITH
        ``(fa - k * a = fb - k * b) <=> (fb - fa = k * (b - a:real))``] THEN
@@ -1409,6 +1410,43 @@ Proof
       ASM_SIMP_TAC real_ss [HAS_DERIVATIVE_CMUL, HAS_DERIVATIVE_ID, ETA_AX]]] THEN
   `b - a <> 0` by (UNDISCH_TAC ``a < b:real`` THEN REAL_ARITH_TAC) THEN
   ASM_SIMP_TAC real_ss [REAL_DIV_RMUL] THEN REAL_ARITH_TAC
+QED
+
+Theorem MVT_SIMPLE :
+   !f:real->real f' a b.
+        a < b /\
+        (!x. x IN interval[a,b]
+             ==> (f has_derivative f'(x)) (at x within interval[a,b]))
+        ==> ?x. x IN interval(a,b) /\ (f(b) - f(a) = f'(x) (b - a))
+Proof
+  MP_TAC MVT THEN
+  REPEAT(HO_MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+  REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[] THEN
+  CONJ_TAC THENL
+   [MATCH_MP_TAC DIFFERENTIABLE_IMP_CONTINUOUS_ON THEN
+    ASM_MESON_TAC[differentiable_on, differentiable],
+    ASM_MESON_TAC[HAS_DERIVATIVE_WITHIN_OPEN, OPEN_INTERVAL,
+                  HAS_DERIVATIVE_WITHIN_SUBSET, INTERVAL_OPEN_SUBSET_CLOSED,
+                  SUBSET_DEF]]
+QED
+
+Theorem MVT_VERY_SIMPLE :
+   !f:real->real f' a b.
+        a <= b /\
+        (!x. x IN interval[a,b]
+             ==> (f has_derivative f'(x)) (at x within interval[a,b]))
+        ==> ?x. x IN interval[a,b] /\ (f(b) - f(a) = f'(x) (b - a))
+Proof
+  REPEAT GEN_TAC THEN ASM_CASES_TAC ``b:real = a`` THENL
+   [ASM_REWRITE_TAC[REAL_SUB_REFL] THEN REPEAT STRIP_TAC THEN
+    FIRST_X_ASSUM(MP_TAC o Q.SPEC `a:real`) THEN
+    SIMP_TAC std_ss[INTERVAL_SING, IN_SING, has_derivative, UNWIND_THM2] THEN
+    MESON_TAC[LINEAR_0],
+   ‘a <> b’ by PROVE_TAC [] \\
+    ASM_REWRITE_TAC[REAL_LE_LT] THEN
+    DISCH_THEN(MP_TAC o MATCH_MP MVT_SIMPLE) THEN
+    HO_MATCH_MP_TAC MONO_EXISTS THEN
+    SIMP_TAC std_ss[REWRITE_RULE[SUBSET_DEF] INTERVAL_OPEN_SUBSET_CLOSED]]
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -2721,44 +2759,47 @@ Theorem CONVEX_ON_DERIVATIVE_SECANT_combined[local] :
         ==> (f convex_on s <=>
              !x y. x IN s /\ y IN s ==> f'(x)(y - x) <= f'(y)(y - x)))
 Proof
-cheat
-(*
-  REWRITE_TAC[AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
+  SIMP_TAC bool_ss[AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
   REWRITE_TAC[TAUT `(a ==> b) /\ (a ==> c) <=> a ==> b /\ c`] THEN
   STRIP_TAC THEN MATCH_MP_TAC(TAUT
    `(a ==> b) /\ (b ==> c) /\ (c ==> a) ==> (a <=> b) /\ (a <=> c)`) THEN
   REPEAT CONJ_TAC THENL
-   [REPEAT STRIP_TAC THEN MATCH_MP_TAC CONVEX_ON_DERIVATIVE_SECANT_IMP THEN
-    EXISTS_TAC `s:real^N->bool` THEN ASM_SIMP_TAC[ETA_AX] THEN
-    ASM_MESON_TAC[CONVEX_CONTAINS_SEGMENT];
-    DISCH_TAC THEN MAP_EVERY X_GEN_TAC [`x:real^N`; `y:real^N`] THEN
-    STRIP_TAC THEN FIRST_X_ASSUM(fun th ->
-     MP_TAC(ISPECL [`x:real^N`; `y:real^N`] th) THEN
-     MP_TAC(ISPECL [`y:real^N`; `x:real^N`] th)) THEN
+  [ (* goal 1 (of 3) *)
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC CONVEX_ON_DERIVATIVE_SECANT_IMP THEN
+    EXISTS_TAC ``s:real->bool`` THEN ASM_SIMP_TAC std_ss[] THEN
+    ASM_MESON_TAC[CONVEX_CONTAINS_SEGMENT],
+    (* goal 2 (of 3) *)
+    DISCH_TAC THEN MAP_EVERY Q.X_GEN_TAC [`x:real`, `y:real`] THEN
+    STRIP_TAC THEN FIRST_X_ASSUM(fn th =>
+     MP_TAC(Q.SPECL [`x:real`, `y:real`] th) THEN
+     MP_TAC(Q.SPECL [`y:real`, `x:real`] th)) THEN
     ASM_REWRITE_TAC[] THEN MATCH_MP_TAC(REAL_ARITH
-     `f''' = --f'' ==> f''' <= x - y ==> f' <= y - x ==> f' <= f''`) THEN
-    GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [GSYM VECTOR_NEG_SUB] THEN
-    GEN_REWRITE_TAC I [GSYM LIFT_EQ] THEN REWRITE_TAC[LIFT_NEG] THEN
-    SPEC_TAC(`y - x:real^N`,`z:real^N`) THEN
+     ``f''' = -f'' ==> f''' <= x - y ==> f' <= y - x ==> f' <= f''``) THEN
+    GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) empty_rewrites[GSYM REAL_NEG_SUB] THEN
+    Q.SPEC_TAC(`y - x:real`,`z:real`) THEN
     MATCH_MP_TAC(REWRITE_RULE[RIGHT_FORALL_IMP_THM] LINEAR_NEG) THEN
-    REWRITE_TAC[GSYM o_DEF] THEN REWRITE_TAC[GSYM I_DEF; I_O_ID] THEN
-    ASM_MESON_TAC[has_derivative];
+    ASM_MESON_TAC[has_derivative],
+    (* goal 3 (of 3) *)
     ALL_TAC] THEN
   DISCH_TAC THEN REWRITE_TAC[convex_on] THEN
-  MAP_EVERY X_GEN_TAC [`a:real^N`; `b:real^N`] THEN
-  ONCE_REWRITE_TAC[SWAP_FORALL_THM] THEN
-  REWRITE_TAC[TAUT `a /\ b /\ c /\ d /\ e <=> e /\ a /\ b /\ c /\ d`] THEN
-  REWRITE_TAC[IMP_CONJ; REAL_ARITH `u + v = &1 <=> u = &1 - v`] THEN
-  REWRITE_TAC[FORALL_UNWIND_THM2; REAL_SUB_LE] THEN X_GEN_TAC `u:real` THEN
+  MAP_EVERY Q.X_GEN_TAC [`a:real`, `b:real`] THEN
+  ASM_SIMP_TAC bool_ss[Once SWAP_FORALL_THM] THEN
+  ONCE_REWRITE_TAC[TAUT `a /\ b /\ c /\ d /\ e <=> e /\ a /\ b /\ c /\ d`] THEN
+  REWRITE_TAC[IMP_CONJ, REAL_ARITH ``u + v = &1 <=> u = &1 - v``] THEN
+  SIMP_TAC bool_ss[FORALL_UNWIND_THM2, REAL_SUB_LE] THEN
+  Q.X_GEN_TAC `u:real` THEN
   REPEAT STRIP_TAC THEN
-  ASM_CASES_TAC `u = &0` THEN
-  ASM_SIMP_TAC[REAL_SUB_RZERO; VECTOR_MUL_LZERO; VECTOR_MUL_LID; REAL_LE_REFL;
-               REAL_MUL_LZERO; REAL_MUL_LID; VECTOR_ADD_RID; REAL_ADD_RID] THEN
-  ASM_CASES_TAC `u = &1` THEN
-  ASM_SIMP_TAC[REAL_SUB_REFL; VECTOR_MUL_LZERO; VECTOR_MUL_LID; REAL_LE_REFL;
-               REAL_MUL_LZERO; REAL_MUL_LID; VECTOR_ADD_LID; REAL_ADD_LID] THEN
-  SUBGOAL_THEN `&0 < u /\ u < &1` STRIP_ASSUME_TAC THENL
-   [ASM_REWRITE_TAC[REAL_LT_LE]; ALL_TAC] THEN
+  ASM_CASES_TAC ``u = &0`` THEN
+  ASM_SIMP_TAC std_ss [REAL_SUB_RZERO, REAL_MUL_LZERO, REAL_MUL_LID,
+                       REAL_LE_REFL, REAL_ADD_RID] THEN
+  ASM_CASES_TAC ``u = &1`` THEN
+  ASM_SIMP_TAC std_ss [REAL_SUB_REFL, REAL_MUL_LZERO, REAL_MUL_LID,
+                       REAL_LE_REFL, REAL_ADD_LID] THEN
+  SUBGOAL_THEN ``&0 < u /\ u < &1`` STRIP_ASSUME_TAC THENL
+   [ASM_REWRITE_TAC[REAL_LT_LE] >> PROVE_TAC [], ALL_TAC] THEN
+
+ (* TODO *) cheat
+ (*
   MP_TAC(ISPECL
    [`lift o (f:real^N->real) o (\u. (&1 - drop u) % a + drop u % b)`;
     `\x:real^1. lift o f'((&1 - drop x) % a + drop x % b) o
