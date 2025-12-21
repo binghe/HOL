@@ -2647,6 +2647,11 @@ Theorem CONVEX_ON_LEFT_SECANT  = CONVEX_ON_SECANT_combined |> cj 1
 Theorem CONVEX_ON_RIGHT_SECANT = CONVEX_ON_SECANT_combined |> cj 2
 Theorem CONVEX_ON_MID_SECANT   = CONVEX_ON_SECANT_combined |> cj 3
 
+(* ------------------------------------------------------------------------- *)
+(* Various versions of Kachurovskii's theorem (reduced to R^1).              *)
+(*  (Ported from HOL-Light's Multivariate/derivatives.ml)                    *)
+(* ------------------------------------------------------------------------- *)
+
 Theorem CONVEX_ON_DERIVATIVE_SECANT_IMP :
    !f f' s x y:real.
         f convex_on s /\ segment[x,y] SUBSET s /\
@@ -2831,8 +2836,9 @@ Proof
         [FIRST_X_ASSUM MATCH_MP_TAC,
          SIMP_TAC std_ss[SUBSET_DEF, FORALL_IN_IMAGE] THEN
          Q.X_GEN_TAC ‘x’ THEN DISCH_TAC] THEN
-       FIRST_ASSUM(MATCH_MP_TAC o GEN_REWRITE_RULE I empty_rewrites[CONVEX_ALT]) THEN
-       fs [IN_INTERVAL] THEN
+       FIRST_ASSUM(MATCH_MP_TAC o
+                   GEN_REWRITE_RULE I empty_rewrites[CONVEX_ALT]) THEN
+       FULL_SIMP_TAC std_ss [IN_INTERVAL] THEN
        ASM_REAL_ARITH_TAC ]),
     (* goal 2 (of 2) *)
     REWRITE_TAC[REAL_SUB_REFL, REAL_MUL_LZERO, REAL_ADD_LID] THEN
