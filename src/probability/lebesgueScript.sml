@@ -4241,7 +4241,8 @@ Proof
  >> MATCH_MP_TAC pos_fn_integral_mono >> art []
 QED
 
-Theorem lebesgue_monotone_convergence_decreasing' :
+(* NOTE: renamed from lebesgue_monotone_convergence_decreasing' *)
+Theorem lebesgue_monotone_convergence_decreasing_subset :
     !m f fi A. measure_space m /\
         (!i. fi i IN measurable (m_space m, measurable_sets m) Borel) /\
         (!i x. x IN m_space m ==> 0 <= fi i x /\ fi i x < PosInf) /\

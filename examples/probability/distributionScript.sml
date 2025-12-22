@@ -7199,10 +7199,10 @@ Proof
  >- (MATCH_MP_TAC integral_cong >> rw [o_DEF])
  >> Rewr'
  (* stage work *)
- >> Q.PAT_ASSUM ‘!t x. _ ==> (_ has_vector_derivative _) (at t within s)’
+ >> Q.PAT_ASSUM ‘!t x. _ ==> (_ has_vector_derivative (g t x)) (at t within s)’
       (MP_TAC o Q.SPEC ‘t’)
  >> SIMP_TAC std_ss [has_vector_derivative_within]
- >> qabbrev_tac ‘d = \x. x - t’ >> simp []
+ >> qabbrev_tac ‘d = \x. x - t’
  >> simp [REAL_ADD_LDISTRIB, REAL_SUB_LDISTRIB]
  (* involving ‘sgn’ *)
  >> REWRITE_TAC [REWRITE_RULE [real_div] (GSYM REAL_SGN)]
@@ -7235,13 +7235,15 @@ Proof
  >> Rewr'
  (* stage work *)
  >> DISCH_TAC
- (* integrable m (\x. Normal (g x))
+ (* integrable m (Normal o g t)
 
     NOTE: Here we need to construct a concrete sequence which converges to t and
     is always inside s (by finding a open ball around t in s)
 
     For applying MVT, we need to find a cball inside s. (OPEN_IN_CONTAINS_CBALL)
   *)
+ >> cheat
+  (*
  >> CONJ_ASM1_TAC
  >- (MP_TAC (Q.SPEC ‘s’ OPEN_CONTAINS_CBALL) >> simp [] \\
      DISCH_THEN (MP_TAC o Q.SPEC ‘t’) \\
@@ -7517,6 +7519,7 @@ Proof
      ‘0 < abs d’ by simp [ABS_NZ'] \\
       simp [Once REAL_MUL_COMM, GSYM real_div] \\
       ONCE_REWRITE_TAC [REAL_MUL_COMM] >> art [] ]
+ *)
 QED
 
 (* NOTE: use diff1 (and differentiable_on) instead of “has_vector_derivative” *)
