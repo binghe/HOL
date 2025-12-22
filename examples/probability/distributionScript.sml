@@ -7524,7 +7524,7 @@ QED
 
 (* NOTE: use diff1 (and differentiable_on) instead of “has_vector_derivative” *)
 Theorem differentiable_lemma_alt' :
-    !s m u. measure_space (m :'a m_space) /\ open s /\ connected s /\
+    !s m u. measure_space (m :'a m_space) /\ open s /\ convex s /\
            (!t. t IN s ==> integrable m (Normal o u t)) /\
            (!t x. x IN m_space m /\ t IN s ==>
                   higher_differentiable 3 (\t. u t x) t)
@@ -7563,7 +7563,7 @@ QED
  *)
 Theorem differentiable_univ_lemma_alt = differentiable_lemma_alt
      |> Q.SPEC ‘UNIV’
-     |> SRULE [OPEN_UNIV, CONNECTED_UNIV, NET_WITHIN_UNIV]
+     |> SRULE [OPEN_UNIV, CONVEX_UNIV, CONNECTED_UNIV, NET_WITHIN_UNIV]
 
 (* |- !m u.
         measure_space m /\ (!t. integrable m (Normal o u t)) /\
@@ -7575,7 +7575,7 @@ Theorem differentiable_univ_lemma_alt = differentiable_lemma_alt
  *)
 Theorem differentiable_univ_lemma_alt' = differentiable_lemma_alt'
      |> Q.SPEC ‘UNIV’
-     |> SRULE [OPEN_UNIV, CONNECTED_UNIV, NET_WITHIN_UNIV]
+     |> SRULE [OPEN_UNIV, CONVEX_UNIV, CONNECTED_UNIV, NET_WITHIN_UNIV]
 
 Theorem gauge_differentiable_lemma_alt :
     !u. (!t. integrable lborel (Normal o u t)) /\
