@@ -7233,7 +7233,6 @@ Proof
        (* goal 2 (of 2) *)
        shared_tactics () ])
  >> Rewr'
- (* stage work *)
  >> DISCH_TAC
  (* integrable m (Normal o g t)
 

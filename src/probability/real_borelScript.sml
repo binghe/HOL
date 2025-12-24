@@ -1805,7 +1805,7 @@ Proof
  >> Q.EXISTS_TAC ‘0’ >> rw []
 QED
 
-Theorem in_borel_measurable_abs :
+Theorem in_borel_measurable_abs' :
     !a f. sigma_algebra a /\ f IN borel_measurable a ==>
           abs o f IN borel_measurable a
 Proof
@@ -1818,7 +1818,7 @@ QED
 Theorem in_borel_measurable_borel_abs :
     abs IN borel_measurable borel
 Proof
-    MP_TAC (ISPECL [“borel”, “\x. (x :real)”] in_borel_measurable_abs)
+    MP_TAC (ISPECL [“borel”, “\x. (x :real)”] in_borel_measurable_abs')
  >> simp [o_DEF, in_borel_measurable_I, sigma_algebra_borel]
  >> SIMP_TAC (std_ss ++ ETA_ss) []
 QED

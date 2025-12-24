@@ -4079,7 +4079,8 @@ Proof
           pos_fn_integral m (\x. inf (IMAGE (\i. fi i x) UNIV))’
  >- (MATCH_MP_TAC pos_fn_integral_cong >> rw []) >> Rewr'
  >> REWRITE_TAC [extreal_inf_def]
- >> Know ‘pos_fn_integral m (\x. -sup (IMAGE numeric_negate (IMAGE (\i. fi i x) UNIV))) =
+ >> Know ‘pos_fn_integral m
+            (\x. -sup (IMAGE numeric_negate (IMAGE (\i. fi i x) UNIV))) =
           pos_fn_integral m (\x. -sup (IMAGE (\i. gi i x - fi 0 x) UNIV))’
  >- (MATCH_MP_TAC pos_fn_integral_cong >> BETA_TAC >> art [] \\
      CONJ_TAC >- (rpt STRIP_TAC \\
@@ -4242,7 +4243,7 @@ Proof
 QED
 
 (* NOTE: renamed from lebesgue_monotone_convergence_decreasing' *)
-Theorem lebesgue_monotone_convergence_decreasing_subset :
+Theorem lebesgue_monotone_convergence_subset_decreasing :
     !m f fi A. measure_space m /\
         (!i. fi i IN measurable (m_space m, measurable_sets m) Borel) /\
         (!i x. x IN m_space m ==> 0 <= fi i x /\ fi i x < PosInf) /\
@@ -4254,9 +4255,9 @@ Theorem lebesgue_monotone_convergence_decreasing_subset :
          inf (IMAGE (\i. pos_fn_integral m (\x. fi i x * indicator_fn A x)) UNIV))
 Proof
     RW_TAC std_ss []
- >> (MP_TAC o Q.SPECL [`m`, `(\x. f x * indicator_fn A x)`,
-                       `(\i. (\x. fi i x * indicator_fn A x))`])
-       lebesgue_monotone_convergence_decreasing
+ >> MP_TAC (Q.SPECL [`m`, `(\x. f x * indicator_fn A x)`,
+                     `(\i. (\x. fi i x * indicator_fn A x))`]
+                    lebesgue_monotone_convergence_decreasing)
  >> RW_TAC std_ss []
  >> POP_ASSUM MATCH_MP_TAC
  >> CONJ_TAC
@@ -4280,13 +4281,16 @@ Proof
      [ (* goal 1 (of 2) *)
        MATCH_MP_TAC le_mul >> rw [INDICATOR_FN_POS],
        (* goal 1 (of 2) *)
-       GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) empty_rewrites [GSYM mul_rone] \\
+       GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV)
+                       empty_rewrites [GSYM mul_rone] \\
        MATCH_MP_TAC le_lmul_imp >> rw [INDICATOR_FN_LE_1] ])
  >> CONJ_TAC
- >- (RW_TAC std_ss [indicator_fn_def, mul_rone, mul_rzero, le_refl, ext_mono_decreasing_def] \\
+ >- (RW_TAC std_ss [indicator_fn_def, mul_rone, mul_rzero, le_refl,
+                    ext_mono_decreasing_def] \\
      FULL_SIMP_TAC std_ss [ext_mono_decreasing_def])
  >> RW_TAC std_ss [indicator_fn_def, mul_rone, mul_rzero]
- >> Suff `IMAGE (\i:num. 0:extreal) UNIV = (\y. y = 0)` >- RW_TAC std_ss [inf_const]
+ >> Suff `IMAGE (\i:num. 0:extreal) UNIV = (\y. y = 0)`
+ >- RW_TAC std_ss [inf_const]
  >> RW_TAC std_ss [EXTENSION, IN_ABS, IN_IMAGE, IN_UNIV]
 QED
 
