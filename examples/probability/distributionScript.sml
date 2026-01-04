@@ -7128,10 +7128,40 @@ Proof
  >> simp []
 QED
 
-(* An alternative version of [differentiable_lemma] without needing a bounded
-   integrable function (but requiring ‘u’ to be third-order differentiable,
-   instead of just one). Some ideas are taken from [11].
+(* NOTE: Below are three properties of some very nice/smooth functions *)
+Definition convex_or_concave_def :
+    convex_or_concave f s <=> f convex_on s \/ f concave_on s
+End
+
+Definition monotone_def :
+    monotone (f :real -> real) s <=>
+      (!x y. x IN s /\ y IN s /\ x <= y ==> f x <= f y) \/
+      (!x y. x IN s /\ y IN s /\ x <= y ==> f y <= f x)
+End
+
+Definition sign_stable_def :
+    sign_stable (f :real -> real) s <=>
+      (!x. x IN s ==> 0 <= f x) \/ (!x. x IN s ==> f x <= 0)
+End
+
+(* NOTE: “s” is assumed to be an open set.
+
+   The goal is to prove that, if a function is higher derivative (up to 3),
+   it's also "very smooth" in the present sense.
  *)
+Definition very_smooth_def :
+    very_smooth (f :real -> real) (s :real set) =
+      !t. t IN s ==>
+         (?a. interval (t,a) SUBSET s /\
+              convex_or_concave f (interval(t,a)) /\
+              monotone f (interval(t,a)) /\
+              sign_stable f (interval(t,a))) /\
+         (?b. interval (b,t) SUBSET s /\
+              convex_or_concave f (interval(b,t)) /\
+              monotone f (interval(b,t)) /\
+              sign_stable f (interval(b,t)))
+End
+
 fun shared_tactics () =
     Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ (MP_TAC o Q.SPEC ‘e’) >> simp [] \\
     DISCH_THEN (Q.X_CHOOSE_THEN ‘d’ STRIP_ASSUME_TAC) \\
@@ -7150,10 +7180,9 @@ fun shared_tactics () =
     REWRITE_TAC [REAL_SUB_NEG2];
 
 Theorem differentiable_lemma_alt :
-    !s m u. measure_space (m :'a m_space) /\ open s /\ convex s /\
+    !s m u. measure_space (m :'a m_space) /\ open s /\
            (!t. t IN s ==> integrable m (Normal o u t)) /\
-           (!t x. x IN m_space m /\ t IN s ==>
-                  higher_differentiable 3 (\t. u t x) t)
+           (!x. x IN m_space m ==> very_smooth (\t. u t x) s)
         ==> !t. t IN s ==>
                 integrable m (\x. Normal (diff1 (\t. u t x) t)) /\
                ((\t. real (integral m (Normal o u t))) has_vector_derivative
@@ -7202,7 +7231,7 @@ Proof
  >> Q.PAT_ASSUM ‘!t x. _ ==> (_ has_vector_derivative (g t x)) (at t within s)’
       (MP_TAC o Q.SPEC ‘t’)
  >> SIMP_TAC std_ss [has_vector_derivative_within]
- >> qabbrev_tac ‘d = \x. x - t’
+ >> qabbrev_tac ‘d = \x. x - t’ >> simp []
  >> simp [REAL_ADD_LDISTRIB, REAL_SUB_LDISTRIB]
  (* involving ‘sgn’ *)
  >> REWRITE_TAC [REWRITE_RULE [real_div] (GSYM REAL_SGN)]
