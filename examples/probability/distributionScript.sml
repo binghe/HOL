@@ -7150,17 +7150,24 @@ End
    it's also "very smooth" in the present sense.
  *)
 Definition very_smooth_def :
-    very_smooth (f :real -> real) (s :real set) =
-      !t. t IN s ==>
-         (?a. interval (t,a) SUBSET s /\
-              convex_or_concave f (interval(t,a)) /\
-              monotone f (interval(t,a)) /\
-              sign_stable f (interval(t,a))) /\
-         (?b. interval (b,t) SUBSET s /\
-              convex_or_concave f (interval(b,t)) /\
-              monotone f (interval(b,t)) /\
-              sign_stable f (interval(b,t)))
+    very_smooth (f :real -> real) (s :real set) <=>
+      (!n x. higher_differentiable n f x) /\
+       !t. t IN s ==>
+          (?a. interval (t,a) SUBSET s /\
+               convex_or_concave f (interval(t,a)) /\
+               monotone f (interval(t,a)) /\
+               sign_stable f (interval(t,a))) /\
+          (?b. interval (b,t) SUBSET s /\
+               convex_or_concave f (interval(b,t)) /\
+               monotone f (interval(b,t)) /\
+               sign_stable f (interval(b,t)))
 End
+
+Theorem very_smooth_imp_higher_differentiable :
+    !f s. very_smooth f s ==> !n x. higher_differentiable n f x
+Proof
+    PROVE_TAC [very_smooth_def]
+QED
 
 fun shared_tactics () =
     Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ (MP_TAC o Q.SPEC ‘e’) >> simp [] \\
@@ -7190,6 +7197,9 @@ Theorem differentiable_lemma_alt :
                 ) (at t within s)
 Proof
     rpt GEN_TAC >> STRIP_TAC
+ >> ‘!x. x IN m_space m ==>
+         !n t. higher_differentiable n (\t. u t x) t’
+      by METIS_TAC [very_smooth_imp_higher_differentiable]
  >> Know ‘!x. x IN m_space m ==> (\t. u t x) differentiable_on s’
  >- (rpt STRIP_TAC \\
      qmatch_abbrev_tac ‘f differentiable_on s’ \\
