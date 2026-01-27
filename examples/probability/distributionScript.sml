@@ -8,7 +8,7 @@
 (*                       Concordia University                                *)
 (*            Contact:  <m_qasi@ece.concordia.ca>                            *)
 (*                                                                           *)
-(*   Enriched by Chun Tian (binghe) <binghe.lisp@gmail.com> (2024 - 2025)    *)
+(*   Enriched by Chun Tian (Australian National University, 2024 - 2025)     *)
 (* ========================================================================= *)
 
 (*
@@ -7128,580 +7128,32 @@ Proof
  >> simp []
 QED
 
-(* NOTE: Below are three properties of some very nice/smooth functions *)
-Definition convex_or_concave_def :
-    convex_or_concave f s <=> f convex_on s \/ f concave_on s
-End
+(* Problem 14.20 (The differentiability lemma revisited) [5, p.153]
 
-Definition monotone_def :
-    monotone (f :real -> real) s <=>
-      (!x y. x IN s /\ y IN s /\ x <= y ==> f x <= f y) \/
-      (!x y. x IN s /\ y IN s /\ x <= y ==> f y <= f x)
-End
+   NOTE: The existing [differentiable_lemma] cannot be used in proving CLT,
+   as there's no way to satisfy its antecedents, which is just a necessary
+   condition for differentiating under the integral sign.
 
-Definition sign_stable_def :
-    sign_stable (f :real -> real) s <=>
-      (!x. x IN s ==> 0 <= f x) \/ (!x. x IN s ==> f x <= 0)
-End
-
-(* NOTE: “s” is assumed to be an open set.
-
-   The goal is to prove that, if a function is higher derivative (up to 3),
-   it's also "very smooth" in the present sense.
+   Here we prove another variant with antecedents closer to the necessary and
+   sufficient condition of this kind of theorem. See also [11].
  *)
-Definition very_smooth_def :
-    very_smooth (f :real -> real) (s :real set) <=>
-      (!n x. higher_differentiable n f x) /\
-       !t. t IN s ==>
-          (?a. interval (t,a) SUBSET s /\
-               convex_or_concave f (interval(t,a)) /\
-               monotone f (interval(t,a)) /\
-               sign_stable f (interval(t,a))) /\
-          (?b. interval (b,t) SUBSET s /\
-               convex_or_concave f (interval(b,t)) /\
-               monotone f (interval(b,t)) /\
-               sign_stable f (interval(b,t)))
-End
-
-Theorem very_smooth_imp_higher_differentiable :
-    !f s. very_smooth f s ==> !n x. higher_differentiable n f x
-Proof
-    PROVE_TAC [very_smooth_def]
-QED
-
-fun shared_tactics () =
-    Q.PAT_X_ASSUM ‘!e. 0 < e ==> _’ (MP_TAC o Q.SPEC ‘e’) >> simp [] \\
-    DISCH_THEN (Q.X_CHOOSE_THEN ‘d’ STRIP_ASSUME_TAC) \\
-    Q.EXISTS_TAC ‘d’ >> art [] \\
-    Q.X_GEN_TAC ‘y’ >> STRIP_TAC \\
-    Q.PAT_X_ASSUM ‘!t'. t' IN s /\ _ ==> _’ (MP_TAC o Q.SPEC ‘y’) >> simp [] \\
-   ‘y - t <> 0’ by simp [] \\
-   ‘0 < y - t \/ y - t < 0’ by METIS_TAC [REAL_LT_TOTAL]
-    >- (‘0 <= y - t’ by simp [REAL_LT_IMP_LE] \\
-        simp [real_sgn, ABS_REDUCE]) \\
-   ‘sgn (y - t) = -1’ by simp [REAL_SGN_EQ] \\
-    simp [ABS_EQ_NEG, REAL_INV_NEG] \\
-    REWRITE_TAC [Once (GSYM ABS_NEG)] \\
-    REWRITE_TAC [REAL_NEG_SUB] \\
-    REWRITE_TAC [GSYM REAL_NEG_LMUL] \\
-    REWRITE_TAC [REAL_SUB_NEG2];
-
 Theorem differentiable_lemma_alt :
-    !s m u. measure_space (m :'a m_space) /\ open s /\
-           (!t. t IN s ==> integrable m (Normal o u t)) /\
-           (!x. x IN m_space m ==> very_smooth (\t. u t x) s)
-        ==> !t. t IN s ==>
-                integrable m (\x. Normal (diff1 (\t. u t x) t)) /\
-               ((\t. real (integral m (Normal o u t))) has_vector_derivative
-                     real (integral m (\x. (Normal (diff1 (\t. u t x) t))))
-                ) (at t within s)
+    !s m u. sigma_finite_measure_space (m :'a m_space) /\
+           (!t. integrable m (Normal o u t)) /\
+           (!x. x IN m_space m ==> (\t. u t x) differentiable_on UNIV) /\
+           (!t. integrable m (\x. Normal (diff1 (\t. u t x) t))) /\
+           (\t. real (integral m (\x. (Normal (diff1 (\t. u t x) t)))))
+                continuous_on UNIV /\
+           (!k. compact k ==>
+                integral lborel
+                  (\t. integral m (\x. (Normal (abs (diff1 (\t. u t x) t))))
+                       * indicator_fn k t) <> PosInf) ==>
+       !t. ((\t. real (integral m (Normal o u t))) has_vector_derivative
+                 real (integral m (\x. (Normal (diff1 (\t. u t x) t))))
+            ) (at t)
 Proof
-    rpt GEN_TAC >> STRIP_TAC
- >> ‘!x. x IN m_space m ==>
-         !n t. higher_differentiable n (\t. u t x) t’
-      by METIS_TAC [very_smooth_imp_higher_differentiable]
- >> Know ‘!x. x IN m_space m ==> (\t. u t x) differentiable_on s’
- >- (rpt STRIP_TAC \\
-     qmatch_abbrev_tac ‘f differentiable_on s’ \\
-     Know ‘f differentiable_on s <=>
-           !x. x IN s ==> higher_differentiable 1 f x’
-     >- (SYM_TAC \\
-         MATCH_MP_TAC higher_differentiable_1_eq_differentiable_on' >> art []) \\
-     Rewr' >> simp [Abbr ‘f’] \\
-     Q.X_GEN_TAC ‘t’ >> DISCH_TAC \\
-     MATCH_MP_TAC higher_differentiable_mono \\
-     Q.EXISTS_TAC ‘3’ >> simp [])
- >> DISCH_TAC
- >> Know ‘!x. x IN m_space m ==> (\t. u t x) continuous_on s’
- >- (rpt STRIP_TAC \\
-     MATCH_MP_TAC DIFFERENTIABLE_IMP_CONTINUOUS_ON >> simp [])
- >> DISCH_TAC
- (* eliminating ‘diff1’ *)
- >> Q.X_GEN_TAC ‘t’ >> DISCH_TAC
- >> Q.PAT_X_ASSUM ‘!x. x IN m_space m ==> _ differentiable_on s’ MP_TAC
- >> simp [differentiable_on, differentiable_alt_has_vector_derivative]
- >> simp [GSYM RIGHT_FORALL_IMP_THM, AND_IMP_INTRO, Once SWAP_FORALL_THM]
- >> simp [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM]
- >> DISCH_THEN (Q.X_CHOOSE_THEN ‘g’ STRIP_ASSUME_TAC)
- >> Know ‘!t x. t IN s /\ x IN m_space m ==> diff1 (\t. u t x) t = g t x’
- >- (qx_genl_tac [‘v’, ‘x’] >> STRIP_TAC \\
-     MATCH_MP_TAC has_vector_derivative_imp_diff1 \\
-     irule (iffLR HAS_VECTOR_DERIVATIVE_WITHIN_OPEN) \\
-     Q.EXISTS_TAC ‘s’ >> simp [])
- >> DISCH_TAC
- >> Know ‘integrable m (\x. Normal (diff1 (\t. u t x) t)) <=>
-          integrable m (Normal o g t)’
- >- (MATCH_MP_TAC integrable_cong >> rw [o_DEF])
- >> Rewr'
- >> Know ‘integral m (\x. Normal (diff1 (\t. u t x) t)) =
-          integral m (Normal o g t)’
- >- (MATCH_MP_TAC integral_cong >> rw [o_DEF])
- >> Rewr'
- (* stage work *)
- >> Q.PAT_ASSUM ‘!t x. _ ==> (_ has_vector_derivative (g t x)) (at t within s)’
-      (MP_TAC o Q.SPEC ‘t’)
- >> SIMP_TAC std_ss [has_vector_derivative_within]
- >> qabbrev_tac ‘d = \x. x - t’ >> simp []
- >> simp [REAL_ADD_LDISTRIB, REAL_SUB_LDISTRIB]
- (* involving ‘sgn’ *)
- >> REWRITE_TAC [REWRITE_RULE [real_div] (GSYM REAL_SGN)]
- >> REWRITE_TAC [REAL_ARITH “a - (b + c) = a - b - (c :real)”]
- >> REWRITE_TAC [GSYM REAL_SUB_LDISTRIB]
- (* eliminating ‘sgn’ *)
- >> Know ‘!x. ((\t'. inv (abs (d t')) * (u t' x - u t x) -
-                     sgn (d t') * g t x) --> 0) (at t within s) <=>
-              ((\t'. inv (d t') * (u t' x - u t x)) --> g t x) (at t within s)’
- >- (rw [LIM_WITHIN, dist] \\
-     EQ_TAC >> rw [Abbr ‘d’] >| (* 2 subgoals, same tactics *)
-     [ (* goal 1 (of 2) *)
-       shared_tactics (),
-       (* goal 2 (of 2) *)
-       shared_tactics () ])
- >> Rewr'
- >> qabbrev_tac ‘f = \t'. real (integral m (Normal o u t'))’
- >> qabbrev_tac ‘k = real (integral m (Normal o u t))’
- >> qabbrev_tac ‘c = real (integral m (Normal o g t))’
- >> simp []
- >> Know ‘((\t'. inv (abs (d t')) * (f t' - k) - c * sgn (d t')) --> 0)
-           (at t within s) <=>
-          ((\t'. inv (d t') * (f t' - k)) --> c) (at t within s)’
- >- (rw [LIM_WITHIN, dist] \\
-     EQ_TAC >> rw [Abbr ‘d’] >| (* 2 subgoals, same tactics *)
-     [ (* goal 1 (of 2) *)
-       shared_tactics (),
-       (* goal 2 (of 2) *)
-       shared_tactics () ])
- >> Rewr'
- >> DISCH_TAC
- (* integrable m (Normal o g t)
-
-    NOTE: Here we need to construct a concrete sequence which converges to t and
-    is always inside s (by finding a open ball around t in s)
-
-    For applying MVT, we need to find a cball inside s. (OPEN_IN_CONTAINS_CBALL)
-  *)
+    RW_TAC std_ss [sigma_finite_measure_space_def, HAS_VECTOR_DERIVATIVE_ALT]
  >> cheat
-  (*
- >> CONJ_ASM1_TAC
- >- (MP_TAC (Q.SPEC ‘s’ OPEN_CONTAINS_CBALL) >> simp [] \\
-     DISCH_THEN (MP_TAC o Q.SPEC ‘t’) \\
-     simp [SUBSET_DEF, IN_CBALL] >> STRIP_TAC \\
-     ASSUME_TAC (Q.SPEC ‘inv e’ SEQ_HARMONIC_OFFSET) \\
-     qabbrev_tac ‘h = \n. inv (&n + inv e)’ \\
-     Know ‘!i. 0 <= h i’
-     >- (rw [Abbr ‘h’] \\
-         MATCH_MP_TAC REAL_LE_ADD >> simp [REAL_LT_IMP_LE]) >> DISCH_TAC \\
-     Know ‘!i. 0 < h (SUC i)’
-     >- (rw [Abbr ‘h’] \\
-         MATCH_MP_TAC REAL_LT_ADD >> simp []) >> DISCH_TAC \\
-     Know ‘!i. h (SUC i) < e’
-     >- (rw [Abbr ‘h’] \\
-         Suff ‘inv (&SUC i + inv e) < inv (inv e)’
-         >- REWRITE_TAC [REAL_INV_INV] \\
-         MATCH_MP_TAC REAL_LT_INV >> simp []) >> DISCH_TAC \\
-    ‘!i. abs (h (SUC i)) < e’ by rw [ABS_REDUCE] \\
-     MP_TAC (Q.SPECL [‘h’, ‘0’, ‘1’] SEQ_OFFSET) >> simp [GSYM ADD1] \\
-     DISCH_TAC \\
-     Know ‘((\i. h (SUC i) + t) --> (0 + t)) sequentially’
-     >- (HO_MATCH_MP_TAC real_topologyTheory.LIM_ADD \\
-         simp [real_topologyTheory.LIM_CONST]) \\
-     simp [] >> DISCH_TAC \\
-     qabbrev_tac ‘h1 = \i. h (SUC i) + t’ \\
-     Know ‘!n. h1 n IN cball (t,e) /\ h1 n <> t’
-     >- (Q.X_GEN_TAC ‘n’ >> simp [Abbr ‘h1’, IN_CBALL] \\
-         reverse CONJ_TAC
-         >- (Suff ‘0 < h (SUC n)’ >- REAL_ARITH_TAC >> simp []) \\
-         ONCE_REWRITE_TAC [DIST_SYM] \\
-         simp [Abbr ‘d’, dist, REAL_ADD_SUB_ALT, REAL_LT_IMP_LE]) \\
-     DISCH_THEN (STRIP_ASSUME_TAC o SIMP_RULE bool_ss [FORALL_AND_THM]) \\
-     Know ‘!n. h1 n IN s’
-     >- (Q.X_GEN_TAC ‘n’ \\
-         FIRST_X_ASSUM MATCH_MP_TAC >> fs [IN_CBALL]) >> DISCH_TAC \\
-  (* stage work *)
-
-
-
-
-     qabbrev_tac ‘gi = \i x. inv (d (h1 i)) * (u (h1 i) x - u t x)’ \\
-     Know ‘!x. x IN m_space m ==> ((\i. gi i x) --> g t x) sequentially’
-     >- (rw [Abbr ‘gi’] \\
-         FIRST_X_ASSUM MATCH_MP_TAC >> art []) >> DISCH_TAC \\
-     Know ‘!i. integrable m (\x. Normal (gi i x))’
-     >- (Q.X_GEN_TAC ‘n’ \\
-         simp [Abbr ‘gi’, GSYM extreal_mul_eq, GSYM extreal_sub_eq] \\
-         HO_MATCH_MP_TAC integrable_cmul >> art [] \\
-         HO_MATCH_MP_TAC integrable_sub >> simp [] \\
-         Q.PAT_X_ASSUM ‘!t. t IN s ==> integrable m (Normal o u t)’ MP_TAC \\
-         simp [o_DEF]) >> DISCH_TAC \\
-  (* applying lebesgue_dominated_convergence *)
-     MP_TAC (Q.SPECL [‘m’, ‘\x. Normal (g (t :real) x)’, ‘\i x. Normal (gi i x)’]
-                     lebesgue_dominated_convergence) >> simp [] \\
-     impl_tac
-     >- (Q.EXISTS_TAC ‘w’ >> rw [extreal_abs_def] \\
-      (* applying MVT_GENERAL_ALT *)
-         Q.PAT_X_ASSUM ‘!x. x IN m_space m ==> (\t. u t x) continuous_on s’
-           (MP_TAC o Q.SPEC ‘x’) >> rw [] \\
-         Q.PAT_X_ASSUM ‘!t x. x IN m_space m /\ t IN s ==> _’
-           (MP_TAC o Q.SPEC ‘x’ o SIMP_RULE bool_ss [Once SWAP_FORALL_THM]) \\
-         rw [] \\
-         qabbrev_tac ‘u0 = (\t. u t x)’ \\
-         qabbrev_tac ‘g0 = (\t. g t x)’ >> fs [] \\
-         Q.PAT_X_ASSUM ‘!x. _ ==> ((\i. gi i x) --> g t x) sequentially’ K_TAC \\
-         Q.PAT_X_ASSUM ‘!i. integrable m (\x. Normal (gi i x))’ K_TAC \\
-         simp [Abbr ‘gi’, ABS_MUL, Abbr ‘d’] \\
-         qabbrev_tac ‘t' = h1 i’ \\
-        ‘t < t'’ by simp [Abbr ‘t'’, Abbr ‘h1’] \\
-         MP_TAC (Q.SPECL [‘u0’, ‘g0’, ‘t’, ‘t'’] MVT_GENERAL_ALT) >> art [] \\
-         impl_tac
-         >- (CONJ_TAC
-             >- (MATCH_MP_TAC CONTINUOUS_ON_SUBSET \\
-                 Q.EXISTS_TAC ‘s’ >> simp [SUBSET_DEF, IN_INTERVAL] \\
-                 Q.X_GEN_TAC ‘y’ >> STRIP_TAC \\
-                 FIRST_X_ASSUM MATCH_MP_TAC \\
-                 simp [dist, ABS_BOUNDS] \\
-                 reverse CONJ_TAC
-                 >- (Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘0’ \\
-                     simp [REAL_LT_IMP_LE] \\
-                     Q.PAT_X_ASSUM ‘t <= y’ MP_TAC >> REAL_ARITH_TAC) \\
-                 Suff ‘y <= e + t’ >- REAL_ARITH_TAC \\
-                 Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘t'’ >> art [] \\
-                 simp [Abbr ‘t'’, Abbr ‘h1’, REAL_LT_IMP_LE]) \\
-             Q.X_GEN_TAC ‘y’ >> rw [IN_INTERVAL] \\
-             irule (iffLR HAS_VECTOR_DERIVATIVE_WITHIN_OPEN) \\
-             Q.EXISTS_TAC ‘s’ >> simp [] \\
-             CONJ_ASM1_TAC
-             >- (FIRST_X_ASSUM MATCH_MP_TAC \\
-                 simp [dist, ABS_BOUNDS] \\
-                 reverse CONJ_TAC
-                 >- (MATCH_MP_TAC REAL_LT_IMP_LE \\
-                     Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘0’ >> art [] \\
-                     Q.PAT_X_ASSUM ‘t < y’ MP_TAC >> REAL_ARITH_TAC) \\
-                 Suff ‘y <= e + t’ >- REAL_ARITH_TAC \\
-                 Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘t'’ \\
-                 simp [Abbr ‘t'’, Abbr ‘h1’, REAL_LT_IMP_LE]) \\
-             FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
-         simp [IN_INTERVAL, ABS_MUL] \\
-         Know ‘abs (inv (t' - t)) = inv (abs (t' - t))’
-         >- (MATCH_MP_TAC ABS_INV \\
-             POP_ASSUM MP_TAC >> REAL_ARITH_TAC) >> Rewr' \\
-         DISCH_THEN (Q.X_CHOOSE_THEN ‘t0’ STRIP_ASSUME_TAC) \\
-         Q_TAC (TRANS_TAC le_trans) ‘Normal (abs (g0 t0))’ \\
-         reverse CONJ_TAC
-         >- (simp [Abbr ‘g0’] \\
-             FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
-             FIRST_X_ASSUM MATCH_MP_TAC \\
-             simp [dist, ABS_BOUNDS] \\
-             reverse CONJ_TAC
-             >- (MATCH_MP_TAC REAL_LT_IMP_LE \\
-                 Q_TAC (TRANS_TAC REAL_LT_TRANS) ‘0’ >> art [] \\
-                 Q.PAT_X_ASSUM ‘t < t0’ MP_TAC >> REAL_ARITH_TAC) \\
-             Suff ‘t0 <= e + t’ >- REAL_ARITH_TAC \\
-             Q_TAC (TRANS_TAC REAL_LE_TRANS) ‘t'’ \\
-             simp [Abbr ‘t'’, Abbr ‘h1’, REAL_LT_IMP_LE]) \\
-        ‘0 < t' - t’ by simp [REAL_SUB_LT] \\
-         qabbrev_tac ‘d = t' - t’ \\
-        ‘d <> 0 /\ 0 <= d’ by PROVE_TAC [REAL_LT_IMP_LE, REAL_LT_IMP_NE] \\
-        ‘abs d <> 0’ by simp [GSYM ABS_NZ] \\
-        ‘0 < abs d’ by simp [ABS_NZ'] \\
-         simp [Once REAL_MUL_COMM, GSYM real_div] \\
-         ONCE_REWRITE_TAC [REAL_MUL_COMM] >> art []) \\
-     RW_TAC std_ss [])
- (* stage work *)
- >> simp [LIM_WITHIN_SEQUENTIALLY]
- >> simp [PULL_FORALL, AND_IMP_INTRO, Once SWAP_FORALL_THM, o_DEF]
- >> DISCH_TAC
- >> Q.X_GEN_TAC ‘h’
- >> RW_TAC std_ss [Abbr ‘c’, Abbr ‘f’, Abbr ‘k’]
- >> Q.PAT_X_ASSUM ‘!h x. x IN m_space m /\ (!n. h n IN s /\ h n <> t) /\
-                        (h --> t) sequentially ==> _’
-                  (MP_TAC o Q.SPEC ‘h’) >> rw []
- >> qabbrev_tac ‘q = Normal o g t’
- >> qabbrev_tac ‘qi = \i x. Normal (inv (d (h i)) * (u (h i) x - u t x))’
- >> Know ‘!x. x IN m_space m ==>
-              ((\i. real (qi i x)) --> real (q x)) sequentially’
- >- rw [Abbr ‘qi’, Abbr ‘q’]
- >> DISCH_TAC
- >> qmatch_abbrev_tac ‘(q' --> real (integral m q)) sequentially’
- >> Know ‘q' = (\i. real (integral m (qi i)))’
- >- (rw [Abbr ‘q'’, FUN_EQ_THM, Abbr ‘qi’, GSYM extreal_mul_eq] \\
-     Know ‘integral m (\x. Normal (inv (d (h i))) *
-                           Normal (u (h i) x - u t x)) =
-           Normal (inv (d (h i))) *
-           integral m (\x. Normal (u (h i) x - u t x))’
-     >- (HO_MATCH_MP_TAC integral_cmul >> art [] \\
-         simp [GSYM extreal_sub_eq] \\
-         HO_MATCH_MP_TAC integrable_sub' >> art [] \\
-         Q.PAT_X_ASSUM ‘!t. t IN s ==> integrable m (Normal o u t)’ MP_TAC \\
-         simp [o_DEF]) >> Rewr' \\
-     simp [GSYM extreal_sub_eq] \\
-     Know ‘integral m (\x. Normal (u (h i) x) - Normal (u t x)) =
-           integral m (Normal o u (h i)) - integral m (Normal o u t)’
-     >- (simp [o_DEF] \\
-         HO_MATCH_MP_TAC integral_sub' >> art [] \\
-         Q.PAT_X_ASSUM ‘!t. t IN s ==> integrable m (Normal o u t)’ MP_TAC \\
-         simp [o_DEF]) >> Rewr' \\
-     qmatch_abbrev_tac ‘c * (real a - real b) = _’ \\
-    ‘a <> PosInf /\ a <> NegInf /\ b <> PosInf /\ b <> NegInf’
-       by METIS_TAC [integrable_finite_integral] \\
-  (* applying mul_real *)
-     Know ‘real (Normal c * (a - b)) = real (Normal c) * real (a - b)’
-     >- (MATCH_MP_TAC mul_real >> simp [] \\
-         METIS_TAC [sub_not_infty]) >> Rewr' \\
-     Know ‘real (a - b) = real a - real b’
-     >- (MATCH_MP_TAC sub_real >> art []) >> Rewr' \\
-     simp [])
- >> Rewr'
- >> qunabbrev_tac ‘q'’
- (* applying lebesgue_dominated_convergence, again *)
- >> MATCH_MP_TAC (cj 2 lebesgue_dominated_convergence) >> art []
- >> CONJ_TAC
- >- (rw [Abbr ‘qi’, GSYM extreal_mul_eq] \\
-     HO_MATCH_MP_TAC integrable_cmul >> art [] \\
-     simp [GSYM extreal_sub_eq] \\
-     HO_MATCH_MP_TAC integrable_sub' >> art [] \\
-     Q.PAT_X_ASSUM ‘!t. t IN s ==> integrable m (Normal o u t)’ MP_TAC \\
-     simp [o_DEF])
- >> CONJ_TAC >- rw [Abbr ‘qi’]
- >> CONJ_TAC >- rw [Abbr ‘q’, o_DEF]
- (* stage work *)
- >> Q.EXISTS_TAC ‘w’ >> art []
- >> RW_TAC std_ss [Abbr ‘qi’, extreal_abs_def]
- >> Q.PAT_X_ASSUM ‘!x. x IN m_space m ==> (\t. u t x) continuous_on s’
-      (MP_TAC o Q.SPEC ‘x’)
- >> Q.PAT_X_ASSUM ‘!t x. x IN m_space m /\ t IN s ==> _’
-      (MP_TAC o Q.SPEC ‘x’ o SIMP_RULE bool_ss [Once SWAP_FORALL_THM])
- >> qabbrev_tac ‘u0 = (\t. u t x)’
- >> qabbrev_tac ‘g0 = (\t. g t x)’
- >> RW_TAC std_ss []
- >> Q.PAT_X_ASSUM ‘!x. x IN m_space m ==> (_ --> real (q x)) sequentially’ K_TAC
- >> Q.PAT_X_ASSUM ‘!x. x IN m_space m ==> (_ --> g t x) sequentially’ K_TAC
- >> ‘h i < t \/ t < h i’ by METIS_TAC [REAL_LT_TOTAL]
- >| [ (* goal 1 (of 2) *)
-      simp [ABS_MUL, Abbr ‘d’] \\
-      qabbrev_tac ‘t' = h i’ \\
-   (* applying MVT_GENERAL_ALT *)
-      MP_TAC (Q.SPECL [‘u0’, ‘g0’, ‘t'’, ‘t’] MVT_GENERAL_ALT) >> art [] \\
-      Know ‘interval [t',t] SUBSET s’
-      >- (simp [IN_INTERVAL, SUBSET_DEF] \\
-          Q.X_GEN_TAC ‘z’ >> STRIP_TAC \\
-       (* applying CONNECTED_IVT *)
-          MATCH_MP_TAC CONNECTED_IVT \\
-          qexistsl_tac [‘t'’, ‘t’] >> simp [Abbr ‘t'’]) >> DISCH_TAC \\
-      impl_tac
-      >- (CONJ_TAC
-          >- (MATCH_MP_TAC CONTINUOUS_ON_SUBSET \\
-              Q.EXISTS_TAC ‘s’ >> art []) \\
-          Q.X_GEN_TAC ‘z’ >> rw [IN_INTERVAL] \\
-          irule (iffLR HAS_VECTOR_DERIVATIVE_WITHIN_OPEN) \\
-          Q.EXISTS_TAC ‘s’ >> art [] \\
-          CONJ_ASM1_TAC
-          >- (MATCH_MP_TAC CONNECTED_IVT \\
-              qexistsl_tac [‘t'’, ‘t’] >> simp [REAL_LT_IMP_LE, Abbr ‘t'’]) \\
-          FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
-      simp [IN_INTERVAL, ABS_MUL] \\
-      Know ‘abs (inv (t' - t)) = inv (abs (t' - t))’
-      >- (MATCH_MP_TAC ABS_INV \\
-          Q.PAT_X_ASSUM ‘t' < t’ MP_TAC >> REAL_ARITH_TAC) >> Rewr' \\
-      DISCH_THEN (Q.X_CHOOSE_THEN ‘z’ STRIP_ASSUME_TAC) \\
-      Q_TAC (TRANS_TAC le_trans) ‘Normal (abs (g0 z))’ \\
-      reverse CONJ_TAC
-      >- (simp [Abbr ‘g0’] \\
-          FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
-          MATCH_MP_TAC CONNECTED_IVT \\
-          qexistsl_tac [‘t'’, ‘t’] >> simp [REAL_LT_IMP_LE, Abbr ‘t'’]) \\
-     ‘0 < t - t'’ by simp [REAL_SUB_LT] \\
-      ONCE_REWRITE_TAC [ABS_SUB] \\
-      qabbrev_tac ‘d = t - t'’ \\
-     ‘d <> 0 /\ 0 <= d’ by PROVE_TAC [REAL_LT_IMP_LE, REAL_LT_IMP_NE] \\
-     ‘abs d <> 0’ by simp [GSYM ABS_NZ] \\
-     ‘0 < abs d’ by simp [ABS_NZ'] \\
-      simp [Once REAL_MUL_COMM, GSYM real_div] \\
-      ONCE_REWRITE_TAC [REAL_MUL_COMM] >> art [],
-      (* goal 2 (of 2) *)
-      simp [ABS_MUL, Abbr ‘d’] \\
-      qabbrev_tac ‘t' = h i’ \\
-   (* applying MVT_GENERAL_ALT *)
-      MP_TAC (Q.SPECL [‘u0’, ‘g0’, ‘t’, ‘t'’] MVT_GENERAL_ALT) >> art [] \\
-      Know ‘interval [t,t'] SUBSET s’
-      >- (simp [IN_INTERVAL, SUBSET_DEF] \\
-          Q.X_GEN_TAC ‘z’ >> STRIP_TAC \\
-       (* applying CONNECTED_IVT *)
-          MATCH_MP_TAC CONNECTED_IVT \\
-          qexistsl_tac [‘t’, ‘t'’] >> simp [Abbr ‘t'’]) >> DISCH_TAC \\
-      impl_tac
-      >- (CONJ_TAC
-          >- (MATCH_MP_TAC CONTINUOUS_ON_SUBSET \\
-              Q.EXISTS_TAC ‘s’ >> art []) \\
-          Q.X_GEN_TAC ‘z’ >> rw [IN_INTERVAL] \\
-          irule (iffLR HAS_VECTOR_DERIVATIVE_WITHIN_OPEN) \\
-          Q.EXISTS_TAC ‘s’ >> art [] \\
-          CONJ_ASM1_TAC
-          >- (MATCH_MP_TAC CONNECTED_IVT \\
-              qexistsl_tac [‘t’, ‘t'’] >> simp [REAL_LT_IMP_LE, Abbr ‘t'’]) \\
-          FIRST_X_ASSUM MATCH_MP_TAC >> art []) \\
-      simp [IN_INTERVAL, ABS_MUL] \\
-      Know ‘abs (inv (t' - t)) = inv (abs (t' - t))’
-      >- (MATCH_MP_TAC ABS_INV \\
-          Q.PAT_X_ASSUM ‘t < t'’ MP_TAC >> REAL_ARITH_TAC) >> Rewr' \\
-      DISCH_THEN (Q.X_CHOOSE_THEN ‘z’ STRIP_ASSUME_TAC) \\
-      Q_TAC (TRANS_TAC le_trans) ‘Normal (abs (g0 z))’ \\
-      reverse CONJ_TAC
-      >- (simp [Abbr ‘g0’] \\
-          FIRST_X_ASSUM MATCH_MP_TAC >> art [] \\
-          MATCH_MP_TAC CONNECTED_IVT \\
-          qexistsl_tac [‘t’, ‘t'’] >> simp [REAL_LT_IMP_LE, Abbr ‘t'’]) \\
-     ‘0 < t' - t’ by simp [REAL_SUB_LT] \\
-      qabbrev_tac ‘d = t' - t’ \\
-     ‘d <> 0 /\ 0 <= d’ by PROVE_TAC [REAL_LT_IMP_LE, REAL_LT_IMP_NE] \\
-     ‘abs d <> 0’ by simp [GSYM ABS_NZ] \\
-     ‘0 < abs d’ by simp [ABS_NZ'] \\
-      simp [Once REAL_MUL_COMM, GSYM real_div] \\
-      ONCE_REWRITE_TAC [REAL_MUL_COMM] >> art [] ]
- *)
-QED
-
-(* NOTE: use diff1 (and differentiable_on) instead of “has_vector_derivative” *)
-Theorem differentiable_lemma_alt' :
-    !s m u. measure_space (m :'a m_space) /\ open s /\ convex s /\
-           (!t. t IN s ==> integrable m (Normal o u t)) /\
-           (!t x. x IN m_space m /\ t IN s ==>
-                  higher_differentiable 3 (\t. u t x) t)
-       ==> (\t. real (integral m (Normal o u t))) differentiable_on s /\
-            !t. t IN s ==>
-                integrable m (\x. Normal (diff1 (\t. u t x) t)) /\
-                diff1 (\t. real (integral m (Normal o u t))) t =
-                real (integral m (\x. (Normal (diff1 (\t. u t x) t))))
-Proof
-    rpt GEN_TAC >> STRIP_TAC
- >> MP_TAC (Q.SPECL [‘s’, ‘m’, ‘u’] differentiable_lemma_alt) >> simp []
- >> DISCH_TAC
- >> CONJ_TAC
- >- (rw [differentiable_on, differentiable_alt_has_vector_derivative] \\
-     Q.PAT_X_ASSUM ‘!t. t IN s ==>
-                        integrable m (\x. Normal (diff1 (\t. u t x) t)) /\ _’
-                   (MP_TAC o Q.SPEC ‘x’) >> simp [] \\
-     qmatch_abbrev_tac ‘_ /\ (_ has_vector_derivative l) (at x within s) ==> _’ \\
-     STRIP_TAC \\
-     Q.EXISTS_TAC ‘l’ >> art [])
- >> Q.X_GEN_TAC ‘t’ >> DISCH_TAC
- >> Q.PAT_X_ASSUM ‘!t. t IN s ==>
-                       integrable m (\x. Normal (diff1 (\t. u t x) t)) /\ _’
-                  (MP_TAC o Q.SPEC ‘t’) >> rw []
- >> MATCH_MP_TAC has_vector_derivative_imp_diff1
- >> irule (iffLR HAS_VECTOR_DERIVATIVE_WITHIN_OPEN)
- >> Q.EXISTS_TAC ‘s’ >> art []
-QED
-
-(* |- !m u.
-        measure_space m /\ (!t. integrable m (Normal o u t)) /\
-        (!t x. x IN m_space m ==> higher_differentiable 3 (\t. u t x) t) ==>
-        !t. integrable m (\x. Normal (diff1 (\t. u t x) t)) /\
-            ((\t. real (integral m (Normal o u t))) has_vector_derivative
-             real (integral m (\x. Normal (diff1 (\t. u t x) t)))) (at t)
- *)
-Theorem differentiable_univ_lemma_alt = differentiable_lemma_alt
-     |> Q.SPEC ‘UNIV’
-     |> SRULE [OPEN_UNIV, CONVEX_UNIV, CONNECTED_UNIV, NET_WITHIN_UNIV]
-
-(* |- !m u.
-        measure_space m /\ (!t. integrable m (Normal o u t)) /\
-        (!t x. x IN m_space m ==> higher_differentiable 3 (\t. u t x) t) ==>
-        (\t. real (integral m (Normal o u t))) differentiable_on univ(:real) /\
-        !t. integrable m (\x. Normal (diff1 (\t. u t x) t)) /\
-            diff1 (\t. real (integral m (Normal o u t))) t =
-            real (integral m (\x. Normal (diff1 (\t. u t x) t)))
- *)
-Theorem differentiable_univ_lemma_alt' = differentiable_lemma_alt'
-     |> Q.SPEC ‘UNIV’
-     |> SRULE [OPEN_UNIV, CONVEX_UNIV, CONNECTED_UNIV, NET_WITHIN_UNIV]
-
-Theorem gauge_differentiable_lemma_alt :
-    !u. (!t. integrable lborel (Normal o u t)) /\
-        (!t x. higher_differentiable 3 (\t. u t x) t)
-    ==> (\t. integral univ(:real) (u t)) differentiable_on univ(:real) /\
-         !t. integrable lborel (\x. Normal (diff1 (\t. u t x) t)) /\
-             diff1 (\t. integral univ(:real) (u t)) t =
-             integral univ(:real) (\x. diff1 (\t. u t x) t)
-Proof
-    Q.X_GEN_TAC ‘u’ >> STRIP_TAC
- >> MP_TAC (Q.SPECL [‘lborel’, ‘u’]
-                    (INST_TYPE [alpha |-> “:real”]
-                               differentiable_univ_lemma_alt'))
- >> simp [space_lborel, lborel_def]
- >> DISCH_THEN (STRIP_ASSUME_TAC o
-                SRULE [IMP_CONJ_THM, FORALL_AND_THM]) >> simp []
- >> Know ‘!t. integral univ(:real) (u t) =
-              real (integral lborel (Normal o u t))’
- >- (Q.X_GEN_TAC ‘t’ \\
-     MP_TAC (Q.SPEC ‘u (t :real)’ (cj 2 lebesgue_eq_gauge_integral)) \\
-     simp [])
- >> DISCH_THEN (art o wrap)
- >> Q.X_GEN_TAC ‘t’
- >> Know ‘integral univ(:real) (\x. diff1 (\t. u t x) t) =
-          real (integral lborel (\x. Normal (diff1 (\t. u t x) t)))’
- >- (MP_TAC (Q.SPEC ‘\x. diff1 (\t. u t (x :real)) t’
-                    (cj 2 lebesgue_eq_gauge_integral)) >> simp [o_DEF])
- >> Rewr
-QED
-
-(* NOTE: This alternative version of theorem has strictly one less antecedent
-         than [gauge_higher_differentiable_lemma].
- *)
-Theorem gauge_higher_differentiable_lemma_alt :
-    !u. (!t. integrable lborel (Normal o u t)) /\
-        (!n t x. higher_differentiable n (\t. u t x) t)
-     ==> !n t. higher_differentiable n (\t. integral univ(:real) (u t)) t /\
-               integrable lborel (\x. Normal (diffn n (\t. u t x) t)) /\
-               diffn n (\t. integral univ(:real) (u t)) t =
-               integral univ(:real) (\x. diffn n (\t. u t x) t)
-Proof
-    Q.X_GEN_TAC ‘u’ >> STRIP_TAC
- >> Induct_on ‘n’
- >- (Q.X_GEN_TAC ‘t’ >> simp [diffn_0] \\
-    ‘(\x. u t x) = u t’ by rw [FUN_EQ_THM] \\
-     fs [o_DEF, higher_differentiable_def])
- >> Q.X_GEN_TAC ‘t’
- >> POP_ASSUM MP_TAC
- >> qabbrev_tac ‘f = \t x. diffn n (\t. u t x) t’
- >> ‘!t x. diffn n (\t. u t x) t = f t x’ by rw [Abbr ‘f’, FUN_EQ_THM]
- >> POP_ORW
- >> ‘!t. (\x. f t x) = f t’ by rw [FUN_EQ_THM] >> POP_ORW
- >> DISCH_THEN (STRIP_ASSUME_TAC o SRULE [FORALL_AND_THM])
- (* applying diffn_SUC' *)
- >> Know ‘!x. diffn (SUC n) (\t. u t x) = diff1 (\t. f t x)’
- >- (rw [Abbr ‘f’, Once EQ_SYM_EQ] \\
-    ‘(\t. diffn n (\t. u t x) t) = diffn n (\t. u t x)’ by rw [FUN_EQ_THM] \\
-     POP_ORW \\
-     MATCH_MP_TAC diffn_SUC' >> art [])
- >> DISCH_TAC
- (* applying gauge_differentiable_lemma on f *)
- >> MP_TAC (Q.SPEC ‘f’ gauge_differentiable_lemma_alt) >> simp [o_DEF]
- >> impl_tac
- >- (simp [Abbr ‘f’, Once SWAP_FORALL_THM, SF ETA_ss] \\
-     Q.X_GEN_TAC ‘x’ \\
-     MATCH_MP_TAC higher_differentiable_imp_mn >> art [])
- >> simp []
- >> DISCH_THEN (STRIP_ASSUME_TAC o SRULE [FORALL_AND_THM])
- >> qabbrev_tac ‘g = \t. integral univ(:real) (u t)’
- >> Q.PAT_X_ASSUM ‘!t. diffn n g t = integral univ(:real) (f t)’
-      (fs o wrap o GSYM)
- >> ‘(\t. diffn n g t) = diffn n g’ by rw [FUN_EQ_THM]
- >> POP_ASSUM (fs o wrap)
- (* stage work *)
- >> Know ‘!t. higher_differentiable (SUC n) g t’
- >- (rw [higher_differentiable_def] \\
-     qabbrev_tac ‘h = diffn n g’ \\
-    ‘(\t. h t) = h’ by rw [FUN_EQ_THM] >> POP_ASSUM (fs o wrap) \\
-     REWRITE_TAC [GSYM higher_differentiable_1] \\
-     REWRITE_TAC [higher_differentiable_1_eq_differentiable] \\
-     Q.PAT_X_ASSUM ‘h differentiable_on univ(:real)’ MP_TAC \\
-     simp [differentiable_on, NET_WITHIN_UNIV])
- >> DISCH_TAC
- >> simp []
- >> Know ‘diffn (SUC n) g = diff1 (diffn n g)’
- >- (SYM_TAC >> MATCH_MP_TAC diffn_SUC' >> art [])
- >> Rewr'
- >> simp []
 QED
 
 (* ------------------------------------------------------------------------- *)
@@ -8011,7 +7463,7 @@ QED
 
 (* NOTE: “ext_normal_rv Z p 0 1” is needed inside the proof, it doesn't occur
    in the conclusion. This is essentially assuming the existence of normal r.v.
- *)
+
 Theorem converge_in_dist_alt_higher_differentiable :
     !X Y N p. prob_space p /\ (!n. real_random_variable (X n) p) /\
               real_random_variable Y p /\ ext_normal_rv N p 0 1 ==>
@@ -8603,6 +8055,7 @@ Proof
       qunabbrevl_tac [‘y'’, ‘y’] \\
       FIRST_X_ASSUM MATCH_MP_TAC >> art [] ]
 QED
+ *)
 
 (* ------------------------------------------------------------------------- *)
 (*  Moment generating function                                               *)
@@ -8751,6 +8204,6 @@ val _ = html_theory "distribution";
       Springer Science & Business Media, London (2020).
   [9] Wikipedia: https://en.wikipedia.org/wiki/Hermite_polynomials
   [10] Billingsley, P.: Convergence of Probability Measures. John Wiley & Sons (2013).
-  [11] Prajea, S.M.: Local Monotony and Continuity.
-       MATHEMATICAL REFLECTIONS. 4, (2022).
+  [11] Talvila, E.: Necessary and sufficient conditions for differentiating under
+       the integral sign. Am. Math. Monthly. 108, 544–548 (2001).
  *)

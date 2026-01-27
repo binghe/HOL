@@ -47,11 +47,7 @@ val _ = temp_clear_overloads_on "equiv_class";
 
 val set_ss = std_ss ++ PRED_SET_ss;
 
-fun PRINT_TAC pfx g = let
-in
-  print (pfx ^ "\n");
-  Tactical.ALL_TAC g
-end
+val PRINT_TAC = goalStack.note_tac
 
 val _ = hide "S";
 val _ = hide "W";
@@ -7339,33 +7335,27 @@ val _ = html_theory "large_number";
 
   [1] Kolmogorov, A.N.: Foundations of the Theory of Probability (Grundbegriffe der
       Wahrscheinlichkeitsrechnung). Chelsea Publishing Company, New York. (1950).
-  [2] Chung, K.L.: A Course in Probability Theory, Third Edition.
-      Academic Press (2001).
+  [2] Chung, K.L.: A Course in Probability Theory, Third Edition. Academic Press (2001).
   [3] Rosenthal, J.S.: A First Look at Rigorous Probability Theory (Second Editoin).
       World Scientific Publishing Company (2006).
   [4] Shiryaev, A.N.: Probability-1. Springer-Verlag New York (2016).
   [5] Shiryaev, A.N.: Probability-2. Springer-Verlag New York (2019).
-  [6] Billingsley, P.: Probability and Measure (Third Edition).
-      Wiley-Interscience (1995).
+  [6] Billingsley, P.: Probability and Measure (Third Edition). Wiley-Interscience (1995).
   [7] Cinlar, E.: Probability and Stochastics. Springer (2011).
-  [8] Kolmogoroff, A.N.: On Sums of Independent Random Variables (English
-      Translation).
-      In "Selected Works of A. N. Kolmogorov. Volume II. Probability Theory and
-      Mathematical Statistics," A.N. Shiryayev (eds.), Springer Netherlands (1992).
+  [8] Kolmogoroff, A.N.: On Sums of Independent Random Variables (English Translation).
+      In "Selected Works of A. N. Kolmogorov. Volume II. Probability Theory and Mathematical
+      Statistics, A.N. Shiryayev (eds.), Springer Netherlands (1992).
   [9] Schilling, R.L.: Measures, Integrals and Martingales (Second Edition).
       Cambridge University Press (2017).
- [10] Feller, W.: An Introduction to Probability Theory and Its Applications, vol 1,
-      3rd edition.
+ [10] Feller, W.: An Introduction to Probability Theory and Its Applications, vol 1, 3rd edition.
       John Wiley & Sons, Inc., New York, N.Y. (2004).
- [11] Feller, W.: An Introduction to Probability Theory and Its Applications, vol 2,
-      2rd edition.
+ [11] Feller, W.: An Introduction to Probability Theory and Its Applications, vol 2, 2rd edition.
       John Wiley & Sons, Inc., New York, N.Y. (1967).
  [12] Etemadi, N.: An elementary proof of the strong law of large numbers.
       Z. Wahrsch. Verw. Gebiete. 55, 119-122 (1981).
- [13] Gnedenko, B.V., Kolmogorov, A.N.: Limit distributions for sums of independent
-      random variables. Addison-Wesley Publishing Company, Inc., Cambridge, MA (1954).
- [14] Levy, P.: Theorie de L'addition des Variables Aleatoires. Gauthier-Villars,
-      Paris (1937).
- [15] Nagaev, S.V.: On Necessary and Sufficient Conditions for the Strong Law of
-      Large Numbers. Theory Probab. Appl. 17 (4), 573-581 (1973).
+ [13] Gnedenko, B.V., Kolmogorov, A.N.: Limit distributions for sums of independent random
+      variables. Addison-Wesley Publishing Company, Inc., Cambridge, MA (1954).
+ [14] Levy, P.: Theorie de L'addition des Variables Aleatoires. Gauthier-Villars, Paris (1937).
+ [15] Nagaev, S.V.: On Necessary and Sufficient Conditions for the Strong Law of Large Numbers.
+      Theory Probab. Appl. 17 (4), 573-581 (1973).
  *)
