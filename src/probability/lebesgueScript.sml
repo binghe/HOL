@@ -5417,6 +5417,14 @@ Proof
  >> METIS_TAC [mul_not_infty, integrable_def]
 QED
 
+Theorem integrable_cdiv :
+    !m f c. measure_space m /\ integrable m f /\ c <> 0 ==>
+            integrable m (\x. f x / Normal c)
+Proof
+    rw [extreal_div_def, extreal_inv_def, Once mul_comm]
+ >> MATCH_MP_TAC integrable_cmul >> art []
+QED
+
 Theorem integrable_ainv :
     !m f. measure_space m /\ integrable m f ==> integrable m (\x. -f x)
 Proof

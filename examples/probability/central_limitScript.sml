@@ -445,30 +445,6 @@ Proof
  >> fs [extreal_sqrt_def]
 QED
 
-Theorem max_lt :
-  ∀x y z. max x y < z ⇔ x < z ∧ y < z
-Proof
-    rpt STRIP_TAC
- >> EQ_TAC  >- (STRIP_TAC \\
-                ‘x ≤ max x y’ by rw [le_max1] \\
-                ‘y ≤ max x y’ by rw [le_max2] \\
-                METIS_TAC [let_trans])
- >> STRIP_TAC
- >> Cases_on ‘x ≤ y’ >> rw [extreal_max_def]
-QED
-
-Theorem lt_min:
-    ∀z x y. z < min x y ⇔ z < x ∧ z < y
-Proof
-    rpt STRIP_TAC
- >> EQ_TAC  >- (STRIP_TAC \\
-                ‘min x y ≤ x’ by rw [min_le1] \\
-                ‘min x y ≤ y’ by rw [min_le2] \\
-                METIS_TAC [lte_trans])
- >> STRIP_TAC
- >> Cases_on ‘x ≤ y’ >> rw [extreal_min_def]
-QED
-
 Theorem sup_not_in_imp_le:
     ∀s (a:extreal). (∀(x:extreal). a ≤ x ⇒ x ∉ s) ∧ a ∉ s ⇒ sup s ≤ a
 Proof
@@ -487,67 +463,6 @@ Proof
       METIS_TAC [lt_imp_le])
   >> DISCH_TAC
   >> METIS_TAC [GSYM lt_le]
-QED
-
-Theorem ext_liminf_const :
-    ∀c. liminf (λx. (c : extreal)) = c
-Proof
-    rw [ext_liminf_def]
- >> Know ‘IMAGE (λm. inf {c | x | m ≤ x}) 𝕌(:num) = {c}’
- >- ((MP_TAC o (Q.SPECL [‘UNIV’, ‘c’]) o
-             (INST_TYPE [beta |-> ``:extreal``, alpha |-> ``:num``])) IMAGE_CONST \\
-     rw [UNIV_NOT_EMPTY] \\
-     POP_ASSUM (fs o wrap o SYM) \\
-     MATCH_MP_TAC IMAGE_CONG \\
-     simp [] \\
-          strip_tac \\
-     (* ∀x. inf {c | x' | x ≤ x'} = c *)
-     sg ‘ {c | x' | x ≤ x'} = {c}’
-     >- (rw [Once EXTENSION] >> iff_tac
-         >- (SET_TAC []) \\
-         rw [IN_DEF] \\
-         qexists ‘x’ \\
-         simp [ratTheory.RAT_LEQ_REF]) \\
-     POP_ORW \\
-     SET_TAC [inf_sing])
- >> Rewr'
- >> rw [GSYM sup_sing]
-QED
-
-Theorem ext_limsup_const :
-    ∀c. limsup (λn. (c : extreal)) = c
-Proof
-    rw [ext_limsup_def]
- >> Know ‘IMAGE (λm. sup {c | x | m ≤ x}) 𝕌(:num) = {c}’
- >- ((MP_TAC o (Q.SPECL [‘UNIV’, ‘c’]) o
-             (INST_TYPE [beta |-> ``:extreal``, alpha |-> ``:num``])) IMAGE_CONST \\
-     rw [UNIV_NOT_EMPTY] \\
-     POP_ASSUM (fs o wrap o SYM) \\
-     MATCH_MP_TAC IMAGE_CONG \\
-     simp [] \\
-     strip_tac \\
-     sg  ‘{c | x' | x ≤ x'} = {c}’
-     >- (rw [Once EXTENSION] >> iff_tac
-         >- (SET_TAC []) \\
-         rw [IN_DEF] \\
-         qexists ‘x’ \\
-         simp [ratTheory.RAT_LEQ_REF]) \\
-     POP_ORW \\
-     SET_TAC [sup_sing])
- >> Rewr'
- >> rw [GSYM inf_sing]
-QED
-
-Theorem ext_limsup_eq :
-    ∀(a :num -> extreal) b. a = b ⇒ limsup a = limsup b
-Proof
-    rw [ext_limsup_def]
-QED
-
-Theorem ext_liminf_eq :
-    ∀(a :num -> extreal) b. a = b ⇒ liminf a = liminf b
-Proof
-    rw [ext_liminf_def]
 QED
 
 Theorem lim_null_equiv_extreal_real :
@@ -916,15 +831,6 @@ QED
 (*  Add to lebeguesTheory                                                    *)
 (* ------------------------------------------------------------------------- *)
 
-Theorem integrable_cdiv :
-  ∀m f c.
-    measure_space m ∧ integrable m f ∧ c ≠ 0 ⇒
-    integrable m (λx. f x / Normal c)
-Proof
-  rw [extreal_div_def, extreal_inv_def, Once mul_comm]
-  >> MATCH_MP_TAC integrable_cmul >> art []
-QED
-
 Theorem integrable_bounded_continuous :
     ∀p X f. prob_space p ∧
             real_random_variable X p ∧
@@ -962,7 +868,8 @@ Proof
      >- (qexists ‘real (X x)’ \\
          simp []) \\
      DISCH_THEN (fs o wrap) \\
-     ‘abs (Normal (f (real (X x)))) = Normal (abs (f (real (X x))))’ by METIS_TAC [extreal_abs_def] \\
+    ‘abs (Normal (f (real (X x)))) = Normal (abs (f (real (X x))))’
+       by METIS_TAC [extreal_abs_def] \\
      POP_ORW \\
      rw [extreal_le_eq])
  >> simp []
