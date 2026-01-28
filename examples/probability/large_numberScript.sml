@@ -47,7 +47,12 @@ val _ = temp_clear_overloads_on "equiv_class";
 
 val set_ss = std_ss ++ PRED_SET_ss;
 
-val PRINT_TAC = goalStack.note_tac
+(* val PRINT_TAC = goalStack.note_tac *)
+fun PRINT_TAC pfx g = let
+in
+  print (pfx ^ "\n");
+  Tactical.ALL_TAC g
+end
 
 val _ = hide "S";
 val _ = hide "W";

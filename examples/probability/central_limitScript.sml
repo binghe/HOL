@@ -2,6 +2,16 @@
 (* The Central Limit Theorems                                                *)
 (* ========================================================================= *)
 
+(*
+Theory central_limit
+Ancestors
+  pair combin option prim_rec arithmetic pred_set list rich_list real iterate
+  seq transc real_sigma lim topology real_topology extreal sigma_algebra
+  measure lebesgue_measure real_borel borel lebesgue martingale extreal_base
+  probability derivative distribution stochastic_process
+Libs
+  pred_setLib hurdUtils realLib Diff
+ *)
 open HolKernel Parse boolLib bossLib;
 
 open pairTheory combinTheory optionTheory prim_recTheory arithmeticTheory
@@ -20,6 +30,9 @@ val _ = new_theory "central_limit";
 
 val _ = intLib.deprecate_int();
 val _ = ratLib.deprecate_rat();
+
+(* some proofs here are large with too many assumptions *)
+val _ = set_trace "Goalstack.print_goal_at_top" 0;
 
 (* ------------------------------------------------------------------------- *)
 (*  Liapunov inequality                                                      *)
@@ -312,7 +325,6 @@ QED
 (* ------------------------------------------------------------------------- *)
 (*  Add to real_borelTheory                                                  *)
 (* ------------------------------------------------------------------------- *)
-
 
 Theorem IN_MEASURABLE_BOREL_SUM_CMUL :
     ∀a f g s z.
@@ -7355,6 +7367,7 @@ QED
  *---------------------------------------------------------------------------*)
 
 val _ = export_theory();
+(* END *)
 val _ = html_theory "central_limit";
 
 (* References:
