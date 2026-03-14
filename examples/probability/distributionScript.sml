@@ -7128,16 +7128,16 @@ Proof
  >> simp []
 QED
 
-(* Problem 14.20 (The differentiability lemma revisited) [5, p.153]
+(* Problem 14.20 (The differentiability lemma revisited) [5, p.153] [12, p.185]
 
    NOTE: The existing [differentiable_lemma] cannot be used in proving CLT,
    as there's no way to satisfy its antecedents, which is just a necessary
    condition for differentiating under the integral sign.
 
    Here we prove another variant with antecedents closer to the necessary and
-   sufficient condition of this kind of theorem. See also [11].
+   sufficient condition of this kind of theorems (see also [11]).
  *)
-Theorem differentiable_lemma_alt :
+Theorem differentiable_lemma_revisited :
     !s m u. sigma_finite_measure_space (m :'a m_space) /\
            (!t. integrable m (Normal o u t)) /\
            (!x. x IN m_space m ==> (\t. u t x) differentiable_on UNIV) /\
@@ -7153,6 +7153,70 @@ Theorem differentiable_lemma_alt :
             ) (at t)
 Proof
     RW_TAC std_ss [sigma_finite_measure_space_def, HAS_VECTOR_DERIVATIVE_ALT]
+ >> qabbrev_tac ‘f = \t. integral m (Normal o u t)’
+ >> simp []
+ >> Know ‘!h. real (f (t + h)) - real (f t) = real (f (t + h) - f t)’
+ >- (Q.X_GEN_TAC ‘h’ >> SYM_TAC \\
+     MATCH_MP_TAC sub_real \\
+     simp [Abbr ‘f’, integrable_finite_integral])
+ >> Rewr'
+ >> simp [Abbr ‘f’]
+ >> Know ‘!h. integral m (Normal o u (t + h)) - integral m (Normal o u t) =
+              integral m (\x. (Normal o u (t + h)) x - (Normal o u t) x)’
+ >- (Q.X_GEN_TAC ‘h’ >> SYM_TAC \\
+     MATCH_MP_TAC integral_sub >> rw [o_DEF])
+ >> Rewr'
+ >> Know ‘!h. integrable m (\x. (Normal o u (t + h)) x - (Normal o u t) x)’
+ >- (Q.X_GEN_TAC ‘h’ \\
+     MATCH_MP_TAC integrable_sub' >> art [])
+ >> simp [o_DEF, extreal_sub_def]
+ >> DISCH_TAC
+ (* eliminating ‘diff1 (\t. u t x)’ *)
+ >> Q.PAT_X_ASSUM ‘!x. x IN m_space m ==> _ differentiable_on s’ MP_TAC
+ >> simp [differentiable_on, differentiable_alt_has_vector_derivative]
+ >> simp [GSYM RIGHT_FORALL_IMP_THM, AND_IMP_INTRO, Once SWAP_FORALL_THM]
+ >> simp [GSYM RIGHT_EXISTS_IMP_THM, SKOLEM_THM]
+ >> DISCH_THEN (Q.X_CHOOSE_THEN ‘g’ STRIP_ASSUME_TAC)
+ >> Know ‘!t x. x IN m_space m ==> diff1 (\t. u t x) t = g t x’
+ >- (qx_genl_tac [‘v’, ‘x’] >> STRIP_TAC \\
+     MATCH_MP_TAC has_vector_derivative_imp_diff1 \\
+     irule (iffLR HAS_VECTOR_DERIVATIVE_WITHIN_OPEN) \\
+     Q.EXISTS_TAC ‘UNIV’ >> simp [OPEN_UNIV])
+ >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘!t. integrable m (\x. Normal (diff1 (\t. u t x) t))’ MP_TAC
+ >> Know ‘!t. integrable m (\x. Normal (diff1 (\t. u t x) t)) <=>
+              integrable m (Normal o g t)’
+ >- (Q.X_GEN_TAC ‘t’ \\
+     MATCH_MP_TAC integrable_cong >> rw [o_DEF])
+ >> Rewr'
+ >> DISCH_TAC
+ >> Know ‘!t. integral m (\x. Normal (diff1 (\t. u t x) t)) =
+              integral m (Normal o g t)’
+ >- (Q.X_GEN_TAC ‘t’ \\
+     MATCH_MP_TAC integral_cong >> rw [o_DEF])
+ >> Rewr'
+ (* applying FUNDAMENTAL_THEOREM_OF_CALCULUS, twice *)
+ >> Know ‘!x t h. x IN m_space m /\ 0 <= h ==>
+                 ((\t. g t x) has_integral (u (t + h) x - u t x))
+                  (interval [t,t + h])’
+ >- (rpt STRIP_TAC \\
+     HO_MATCH_MP_TAC FUNDAMENTAL_THEOREM_OF_CALCULUS \\
+     simp [REAL_LE_ADDR] \\
+     Q.X_GEN_TAC ‘t0’ >> DISCH_TAC \\
+     MATCH_MP_TAC HAS_VECTOR_DERIVATIVE_WITHIN_SUBSET \\
+     Q.EXISTS_TAC ‘UNIV’ >> simp [])
+ >> rw [HAS_INTEGRAL_INTEGRABLE_INTEGRAL, Once EQ_SYM_EQ]
+ >> Know ‘!x t h. x IN m_space m /\ h <= 0 ==>
+                 ((\t. g t x) has_integral (u t x - u (t + h) x))
+                  (interval [t + h,t])’
+ >- (rpt STRIP_TAC \\
+     qabbrev_tac ‘f = \t. u t x’ >> simp [] \\
+     MATCH_MP_TAC FUNDAMENTAL_THEOREM_OF_CALCULUS \\
+     simp [REAL_ARITH “h <= 0 ==> t + h <= (t :real)”] \\
+     Q.X_GEN_TAC ‘t0’ >> DISCH_TAC \\
+     MATCH_MP_TAC HAS_VECTOR_DERIVATIVE_WITHIN_SUBSET \\
+     Q.EXISTS_TAC ‘UNIV’ >> simp [Abbr ‘f’])
+ >> rw [HAS_INTEGRAL_INTEGRABLE_INTEGRAL, Once EQ_SYM_EQ]
  >> cheat
 QED
 
@@ -8206,4 +8270,6 @@ val _ = html_theory "distribution";
   [10] Billingsley, P.: Convergence of Probability Measures. John Wiley & Sons (2013).
   [11] Talvila, E.: Necessary and sufficient conditions for differentiating under
        the integral sign. Am. Math. Monthly. 108, 544–548 (2001).
+  [12] Schilling, R.L.: Measures, Integrals & Martingales (2nd edition) -
+       Solution Manual. Cambridge University Press (2019).
  *)
