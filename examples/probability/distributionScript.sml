@@ -7142,6 +7142,8 @@ Theorem differentiable_lemma_revisited :
            (!t. integrable m (Normal o u t)) /\
            (!x. x IN m_space m ==> (\t. u t x) differentiable_on UNIV) /\
            (!t. integrable m (\x. Normal (diff1 (\t. u t x) t))) /\
+           (!x. x IN m_space m ==>
+                integrable lborel (Normal o diff1 (\t. u t x))) /\
            (\t. real (integral m (\x. (Normal (diff1 (\t. u t x) t)))))
                 continuous_on UNIV /\
            (!k. compact k ==>
@@ -7195,28 +7197,58 @@ Proof
  >- (Q.X_GEN_TAC ‘t’ \\
      MATCH_MP_TAC integral_cong >> rw [o_DEF])
  >> Rewr'
- (* applying FUNDAMENTAL_THEOREM_OF_CALCULUS, twice *)
- >> Know ‘!x t h. x IN m_space m /\ 0 <= h ==>
-                 ((\t. g t x) has_integral (u (t + h) x - u t x))
-                  (interval [t,t + h])’
+ >> Know ‘!k. compact k ==>
+              integral lborel (\t. integral m (Normal o abs o g t) *
+                                   indicator_fn k t) <> PosInf’
+ >- (Q.X_GEN_TAC ‘k’ >> DISCH_TAC \\
+     Suff ‘!t. integral m (Normal o abs o g t) =
+               integral m (\x. Normal (abs (diff1 (\t. u t x) t)))’ >- simp [] \\
+     Q.X_GEN_TAC ‘t0’ >> MATCH_MP_TAC integral_cong >> rw [o_DEF])
+ >> Q.PAT_X_ASSUM ‘!k. compact k ==> _’ K_TAC
+ >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘_ continuous_on UNIV’ MP_TAC
+ >> Know ‘!t. integral m (\x. Normal (diff1 (\t. u t x) t)) =
+              integral m (Normal o g t)’
+ >- (Q.X_GEN_TAC ‘t0’ >> MATCH_MP_TAC integral_cong >> simp [])
+ >> Rewr'
+ >> DISCH_TAC
+ >> Know ‘!x. x IN m_space m ==> integrable lborel (\t. Normal (g t x))’
  >- (rpt STRIP_TAC \\
-     HO_MATCH_MP_TAC FUNDAMENTAL_THEOREM_OF_CALCULUS \\
-     simp [REAL_LE_ADDR] \\
+     Know ‘integrable lborel (\t. Normal (g t x)) <=>
+           integrable lborel (Normal o diff1 (\t. u t x))’
+     >- (MATCH_MP_TAC integrable_cong \\
+         simp [measure_space_lborel, space_lborel]) >> Rewr' \\
+     FIRST_X_ASSUM MATCH_MP_TAC >> art [])
+ >> Q.PAT_X_ASSUM ‘!x. x IN m_space m ==> integrable lborel _’ K_TAC
+ >> DISCH_TAC
+ (* applying FUNDAMENTAL_THEOREM_OF_CALCULUS, twice *)
+ >> Know ‘!x a b. x IN m_space m /\ a <= b ==>
+                 ((\t. g t x) has_integral (u b x - u a x))
+                  (interval [a,b])’
+ >- (rpt STRIP_TAC \\
+     HO_MATCH_MP_TAC FUNDAMENTAL_THEOREM_OF_CALCULUS >> art [] \\
      Q.X_GEN_TAC ‘t0’ >> DISCH_TAC \\
      MATCH_MP_TAC HAS_VECTOR_DERIVATIVE_WITHIN_SUBSET \\
      Q.EXISTS_TAC ‘UNIV’ >> simp [])
- >> rw [HAS_INTEGRAL_INTEGRABLE_INTEGRAL, Once EQ_SYM_EQ]
- >> Know ‘!x t h. x IN m_space m /\ h <= 0 ==>
-                 ((\t. g t x) has_integral (u t x - u (t + h) x))
-                  (interval [t + h,t])’
- >- (rpt STRIP_TAC \\
-     qabbrev_tac ‘f = \t. u t x’ >> simp [] \\
-     MATCH_MP_TAC FUNDAMENTAL_THEOREM_OF_CALCULUS \\
-     simp [REAL_ARITH “h <= 0 ==> t + h <= (t :real)”] \\
-     Q.X_GEN_TAC ‘t0’ >> DISCH_TAC \\
-     MATCH_MP_TAC HAS_VECTOR_DERIVATIVE_WITHIN_SUBSET \\
-     Q.EXISTS_TAC ‘UNIV’ >> simp [Abbr ‘f’])
- >> rw [HAS_INTEGRAL_INTEGRABLE_INTEGRAL, Once EQ_SYM_EQ]
+ >> simp [Once (GSYM HAS_INTEGRAL_MUL_INDICATOR),
+          HAS_INTEGRAL_INTEGRABLE_INTEGRAL, Once EQ_SYM_EQ]
+ >> qabbrev_tac ‘g2 = \t x a b. g t x * indicator (interval [a,b]) t’
+ >> rw [IMP_CONJ_THM, FORALL_AND_THM]
+ (* applying lebesgue_eq_gauge_integral *)
+ >> Know ‘!x a b. x IN m_space m /\ a <= b ==>
+                  Normal (u b x - u a x) =
+                  integral lborel (Normal o (\t'. g2 t' x a b))’
+ >- (RW_TAC std_ss [] \\
+     SYM_TAC >> MATCH_MP_TAC (cj 2 lebesgue_eq_gauge_integral) \\
+     simp [Abbr ‘g2’, o_DEF, GSYM extreal_mul_eq] \\
+    ‘!(s :real set) t. Normal (indicator s t) = indicator_fn s t’
+       by rw [indicator_fn, o_DEF] >> POP_ORW \\
+     HO_MATCH_MP_TAC integrable_mul_indicator \\
+     simp [measure_space_lborel, sets_lborel] \\
+     simp [borel_measurable_sets, interval])
+ >> POP_ASSUM K_TAC
+ >> DISCH_TAC
+ (* applying LIM_WITHIN_UNION or LIM_UNION_UNIV *)
  >> cheat
 QED
 
