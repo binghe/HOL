@@ -10878,6 +10878,14 @@ Proof
   ASM_SIMP_TAC std_ss []
 QED
 
+Theorem ABSOLUTELY_INTEGRABLE_EQ_EQ:
+   !f:real->real g s.
+        (!x. x IN s ==> (f x = g x)) ==>
+        (f absolutely_integrable_on s <=> g absolutely_integrable_on s)
+Proof
+  METIS_TAC [ABSOLUTELY_INTEGRABLE_EQ]
+QED
+
 Theorem ABSOLUTELY_INTEGRABLE_BOUNDED_SETVARIATION:
    !f:real->real s.
         f absolutely_integrable_on s
@@ -11854,6 +11862,16 @@ Theorem ABSOLUTELY_INTEGRABLE_RESTRICT_UNIV:
 Proof
   SIMP_TAC std_ss [absolutely_integrable_on, INTEGRABLE_RESTRICT_UNIV,
               COND_RAND, ABS_0]
+QED
+
+Theorem ABSOLUTELY_INTEGRABLE_MUL_INDICATOR :
+    !f s. (\x. f x * indicator s x) absolutely_integrable_on UNIV <=>
+          f absolutely_integrable_on s
+Proof
+    rpt GEN_TAC
+ >> ONCE_REWRITE_TAC [GSYM ABSOLUTELY_INTEGRABLE_RESTRICT_UNIV]
+ >> simp []
+ >> MATCH_MP_TAC ABSOLUTELY_INTEGRABLE_EQ_EQ >> rw [indicator]
 QED
 
 Theorem ABSOLUTELY_INTEGRABLE_CONST:

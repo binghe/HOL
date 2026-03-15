@@ -7126,6 +7126,11 @@ QED
 
    Here we prove another variant with antecedents closer to the necessary and
    sufficient condition of this kind of theorems (see also [11]).
+
+   NOTE: In comparison with [differentiable_lemma], the present lemma has more
+   antecedents, but none of them are hard to satisfy in concrete applications.
+   In particular, there's no requirements on the existence of an upper bound as
+   in [differentiable_lemma], which, sometimes does not exists at all.
  *)
 Theorem differentiable_lemma_revisited :
     !s m u. sigma_finite_measure_space (m :'a m_space) /\
@@ -7224,53 +7229,57 @@ Proof
      Q.EXISTS_TAC ‘UNIV’ >> simp [])
  >> simp [Once (GSYM HAS_INTEGRAL_MUL_INDICATOR),
           HAS_INTEGRAL_INTEGRABLE_INTEGRAL, Once EQ_SYM_EQ]
- >> qabbrev_tac ‘g2 = \t x a b. g t x * indicator (interval [a,b]) t’
+ >> qabbrev_tac ‘g' = \t x a b. g t x * indicator (interval [a,b]) t’
  >> rw [IMP_CONJ_THM, FORALL_AND_THM]
  (* applying lebesgue_eq_gauge_integral *)
  >> Know ‘!x a b. x IN m_space m /\ a <= b ==>
-                  Normal (u b x - u a x) =
-                  integral lborel (Normal o (\t'. g2 t' x a b))’
- >- (RW_TAC std_ss [] \\
-     SYM_TAC >> MATCH_MP_TAC (cj 2 lebesgue_eq_gauge_integral) \\
-     simp [Abbr ‘g2’, o_DEF, GSYM extreal_mul_eq] \\
+                  (\t. g' t x a b) absolutely_integrable_on UNIV /\
+                  integral lborel (Normal o (\t. g' t x a b)) =
+                  Normal (integral UNIV (\t. g' t x a b))’
+ >- (rpt GEN_TAC >> STRIP_TAC \\
+     MATCH_MP_TAC lebesgue_eq_gauge_integral \\
+     simp [Abbr ‘g'’, o_DEF, GSYM extreal_mul_eq] \\
     ‘!(s :real set) t. Normal (indicator s t) = indicator_fn s t’
        by rw [indicator_fn, o_DEF] >> POP_ORW \\
      HO_MATCH_MP_TAC integrable_mul_indicator \\
-     simp [measure_space_lborel, sets_lborel] \\
-     simp [borel_measurable_sets, interval])
- >> POP_ASSUM K_TAC
- >> DISCH_TAC
- (* applying LIM_UNION_UNIV *)
- >> MATCH_MP_TAC LIM_UNION_UNIV
- >> qabbrev_tac ‘s1 = {x | 0 <= x :real}’
- >> qabbrev_tac ‘s2 = {x | x <= 0 :real}’
- >> qexistsl_tac [‘s1’, ‘s2’]
- >> ONCE_REWRITE_TAC [CONJ_ASSOC]
- >> reverse CONJ_TAC
- >- (rw [Once EXTENSION, Abbr ‘s1’, Abbr ‘s2’] \\
-     PROVE_TAC [REAL_LE_TOTAL])
- (* preparing for LIM_WITHIN_CONG *)
- >> qabbrev_tac ‘l = real (integral m (Normal o g t0))’
- >> qmatch_abbrev_tac ‘(f --> l) (at 0 within _) /\ _’
- >> CONJ_TAC
- >| [ (* goal 1 (of 2): applying LIM_WITHIN_CONG to obtain double-integral *)
+     simp [measure_space_lborel, sets_lborel, borel_measurable_sets, interval])
+ >> rw [IMP_CONJ_THM, FORALL_AND_THM]
+ >> Know ‘!x a b. x IN m_space m /\ a <= b ==>
+                  Normal (u b x - u a x) =
+                  integral lborel (Normal o (\t. g' t x a b))’
+ >- RW_TAC std_ss []
+ >> POP_ASSUM K_TAC >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘!x a b. x IN m_space m /\ a <= b ==> u b x - u a x = _’ K_TAC
+ (* applying LIM_WITHIN_OPEN and LIM_WITHIN_UNION *)
+ >> qmatch_abbrev_tac ‘(f --> (l :real)) (at 0)’
+ >> Know ‘(f --> l) (at 0) <=> (f --> l) (at 0 within interval (-1,1))’
+ >- (SYM_TAC >> MATCH_MP_TAC LIM_WITHIN_OPEN \\
+     rw [IN_INTERVAL, OPEN_INTERVAL])
+ >> Rewr'
+ >> qabbrev_tac ‘s1 = {x | 0 <= x /\ x < (1 :real)}’
+ >> qabbrev_tac ‘s2 = {x | -1 < x /\ x <= (0 :real)}’
+ >> Know ‘interval (-1,1) = s1 UNION s2’
+ >- (rw [Once EXTENSION, IN_INTERVAL, Abbr ‘s1’, Abbr ‘s2’] \\
+     REAL_ARITH_TAC)
+ >> Rewr'
+ >> RW_TAC std_ss [LIM_WITHIN_UNION]
+ >| [ (* goal 1 (of 2) *)
       qunabbrev_tac ‘s2’ \\
       Know ‘(f --> l) (at 0 within s1) <=>
-            ((\h. real (integral m
-                               (\x. integral lborel
-                                      (Normal o (\t. g2 t x t0 (t0 + h))))) / h)
+            ((\h. real
+                   (integral m (\x. integral lborel
+                                     (Normal o (\t. g' t x t0 (t0 + h))))) / h)
              --> l) (at 0 within s1)’
       >- (MATCH_MP_TAC LIM_WITHIN_CONG \\
           rw [Abbr ‘s1’, Abbr ‘f’, o_DEF] \\
           Suff ‘integral m (\y. Normal (u (t0 + x) y - u t0 y)) =
-                integral m (\y. integral lborel (\t. Normal (g2 t y t0 (t0 + x))))’
+                integral m (\y. integral lborel (\t. Normal (g' t y t0 (t0 + x))))’
           >- simp [] \\
           MATCH_MP_TAC integral_cong >> art [] \\
           Q.X_GEN_TAC ‘y’ >> rw [o_DEF]) >> Rewr' \\
       Q.PAT_X_ASSUM ‘!x a b. x IN m_space m /\ a <= b ==>
                              Normal (u b x - u a x) = _’ K_TAC \\
-      fs [Abbr ‘g2’, o_DEF, Abbr ‘f’] \\
-   (* preparing for Fubini's theorem *)
+      fs [Abbr ‘g'’, o_DEF, Abbr ‘f’] \\
       qabbrev_tac
        ‘f = \h (x,t). Normal (g t x * indicator (interval [t0,t0 + h]) t)’ \\
      ‘!h x t. Normal (g t x * indicator (interval [t0,t0 + h]) t) = f h (x,t)’
@@ -7310,12 +7319,45 @@ Proof
       qabbrev_tac ‘f' = \h t. f t * indicator (interval [t0,t0 + h]) t’ \\
      ‘!h. (\t. Normal (f t * indicator (interval [t0,t0 + h]) t)) =
           Normal o f' h’ by rw [o_DEF, FUN_EQ_THM] >> POP_ORW \\
-      Know ‘!h. integral lborel (Normal o f' h) = Normal (integral UNIV (f' h))’
+      Know ‘!h. f' h absolutely_integrable_on UNIV /\
+                integral lborel (Normal o f' h) = Normal (integral UNIV (f' h))’
       >- (Q.X_GEN_TAC ‘h’ \\
-          MATCH_MP_TAC (cj 2 lebesgue_eq_gauge_integral) \\
-          cheat) >> Rewr' \\
-      simp [Abbr ‘f'’] \\
-      cheat,
+          MATCH_MP_TAC lebesgue_eq_gauge_integral \\
+          cheat) \\
+      RW_TAC std_ss [FORALL_AND_THM] \\
+      POP_ASSUM K_TAC \\
+      fs [SF ETA_ss, Abbr ‘f'’, INTEGRAL_MUL_INDICATOR,
+          ABSOLUTELY_INTEGRABLE_MUL_INDICATOR] \\
+   (* applying LIM_WITHIN_SUBSET to extend it to a near closed interval *)
+      qabbrev_tac ‘s = interval [0,1]’ \\
+      MATCH_MP_TAC LIM_WITHIN_SUBSET \\
+      Q.EXISTS_TAC ‘s’ \\
+      reverse CONJ_TAC
+      >- (rw [SUBSET_DEF, Abbr ‘s1’, Abbr ‘s’, IN_INTERVAL] \\
+          MATCH_MP_TAC REAL_LT_IMP_LE >> art []) \\
+   (* applying INTEGRAL_HAS_VECTOR_DERIVATIVE *)
+      MP_TAC (Q.SPECL [‘f’, ‘t0’, ‘t0 + 1’] INTEGRAL_HAS_VECTOR_DERIVATIVE) \\
+      impl_tac
+      >- (MATCH_MP_TAC CONTINUOUS_ON_SUBSET \\
+          Q.EXISTS_TAC ‘UNIV’ >> simp []) \\
+      rw [IN_INTERVAL, HAS_VECTOR_DERIVATIVE_WITHIN] \\
+      rw [LIM_WITHIN, dist, Abbr ‘s’, IN_INTERVAL] \\
+      Q.PAT_X_ASSUM ‘!x. t0 <= x /\ x <= t0 + 1 ==> _’
+        (MP_TAC o Q.SPEC ‘t0’) >> rw [] \\
+      POP_ASSUM (MP_TAC o Q.SPEC ‘e’) >> rw [] \\
+      Q.EXISTS_TAC ‘d’ >> rw [] \\
+      Q.PAT_X_ASSUM ‘!u. (t0 <= u /\ u <= t0 + 1) /\ _ ==> _’
+        (MP_TAC o Q.SPEC ‘t0 + h’) \\
+      simp [REAL_ADD_SUB, INTEGRAL_REFL] \\
+      impl_tac >- (Q.PAT_X_ASSUM ‘h <> 0’ MP_TAC >> REAL_ARITH_TAC) \\
+     ‘0 < h’ by rw [REAL_LT_LE] \\
+      qabbrev_tac ‘r = integral (interval [(t0,t0 + h)]) f’ \\
+      Know ‘abs (r / h - f t0) < e <=>
+            abs (r / h - f t0) * abs h < e * abs h’
+      >- (SYM_TAC >> MATCH_MP_TAC REAL_LT_RMUL \\
+          simp [GSYM ABS_NZ]) >> Rewr' \\
+      REWRITE_TAC [GSYM ABS_MUL, REAL_SUB_RDISTRIB] \\
+      simp [REAL_DIV_RMUL],
       (* goal 2 (of 2) *)
       cheat ]
 QED
