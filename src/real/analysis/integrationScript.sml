@@ -2785,6 +2785,14 @@ Proof
   REWRITE_TAC[integrable_on] THEN METIS_TAC[HAS_INTEGRAL_EQ]
 QED
 
+Theorem INTEGRABLE_EQ_EQ:
+   !f:real->real g s.
+        (!x. x IN s ==> (f(x) = g(x))) ==>
+        (f integrable_on s <=> g integrable_on s)
+Proof
+  METIS_TAC[INTEGRABLE_EQ]
+QED
+
 Theorem HAS_INTEGRAL_EQ_EQ:
    !f:real->real g k s.
         (!x. x IN s ==> (f(x) = g(x)))
@@ -6748,6 +6756,36 @@ Theorem INTEGRABLE_RESTRICT_UNIV:
          f integrable_on s
 Proof
   REWRITE_TAC[integrable_on, HAS_INTEGRAL_RESTRICT_UNIV]
+QED
+
+
+(* NOTE: These are modern version of the above "RESTRICT_UNIV" theorems *)
+Theorem HAS_INTEGRAL_MUL_INDICATOR :
+    !f s l. ((\x. f x * indicator s x) has_integral l) UNIV <=>
+            (f has_integral l) s
+Proof
+    rpt GEN_TAC
+ >> ONCE_REWRITE_TAC [GSYM HAS_INTEGRAL_RESTRICT_UNIV]
+ >> simp []
+ >> MATCH_MP_TAC HAS_INTEGRAL_EQ_EQ >> rw [indicator]
+QED
+
+Theorem INTEGRAL_MUL_INDICATOR :
+    !f s. integral UNIV (\x. f x * indicator s x) = integral s f
+Proof
+    rpt GEN_TAC
+ >> ONCE_REWRITE_TAC [GSYM INTEGRAL_RESTRICT_UNIV]
+ >> simp []
+ >> MATCH_MP_TAC INTEGRAL_EQ >> rw [indicator]
+QED
+
+Theorem INTEGRABLE_MUL_INDICATOR :
+    !f s. (\x. f x * indicator s x) integrable_on UNIV <=> f integrable_on s
+Proof
+    rpt GEN_TAC
+ >> ONCE_REWRITE_TAC [GSYM INTEGRABLE_RESTRICT_UNIV]
+ >> simp []
+ >> MATCH_MP_TAC INTEGRABLE_EQ_EQ >> rw [indicator]
 QED
 
 Theorem HAS_INTEGRAL_RESTRICT_INTER:

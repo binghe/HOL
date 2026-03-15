@@ -10143,10 +10143,10 @@ Proof
     simp[density_def]
 QED
 
-Theorem sig_alg_density[simp]:
-    !m f. measurable_space (density m f) = measurable_space m
+Theorem measurable_space_density[simp] :
+    measurable_space (density m f) = measurable_space m
 Proof
-    simp[density_def]
+    simp [density_def]
 QED
 
 (* END *)
