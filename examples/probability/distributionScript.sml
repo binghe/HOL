@@ -7221,7 +7221,7 @@ Proof
      FIRST_X_ASSUM MATCH_MP_TAC >> art [])
  >> Q.PAT_X_ASSUM ‘!x. x IN m_space m ==> integrable lborel _’ K_TAC
  >> DISCH_TAC
- (* applying FUNDAMENTAL_THEOREM_OF_CALCULUS, twice *)
+ (* applying FUNDAMENTAL_THEOREM_OF_CALCULUS *)
  >> Know ‘!x a b. x IN m_space m /\ a <= b ==>
                  ((\t. g t x) has_integral (u b x - u a x))
                   (interval [a,b])’
@@ -7249,7 +7249,36 @@ Proof
  >> POP_ASSUM K_TAC
  >> DISCH_TAC
  (* applying LIM_WITHIN_UNION or LIM_UNION_UNIV *)
- >> cheat
+ >> MATCH_MP_TAC LIM_UNION_UNIV
+ >> qabbrev_tac ‘s1 = {x | 0 <= x :real}’
+ >> qabbrev_tac ‘s2 = {x | x <= 0 :real}’
+ >> qexistsl_tac [‘s1’, ‘s2’]
+ >> ONCE_REWRITE_TAC [CONJ_ASSOC]
+ >> reverse CONJ_TAC
+ >- (rw [Once EXTENSION, Abbr ‘s1’, Abbr ‘s2’] \\
+     PROVE_TAC [REAL_LE_TOTAL])
+ (* preparing for LIM_WITHIN_CONG *)
+ >> qabbrev_tac ‘l = real (integral m (Normal o g t))’
+ >> qmatch_abbrev_tac ‘(f --> l) (at 0 within _) /\ _’
+ >> CONJ_TAC
+ >| [ (* goal 1 (of 2): applying LIM_WITHIN_CONG to obtain double-integral *)
+      Know ‘(f --> l) (at 0 within s1) <=>
+            ((\h. real (integral m
+                               (\x. integral lborel
+                                      (Normal o (\t'. g2 t' x t (t + h))))) / h)
+             --> l) (at 0 within s1)’
+      >- (MATCH_MP_TAC LIM_WITHIN_CONG \\
+          rw [Abbr ‘s1’, Abbr ‘f’, o_DEF] \\
+          Suff ‘integral m (\x'. Normal (u (t + x) x' - u t x')) =
+                integral m
+                  (\x'. integral lborel (\t'. Normal (g2 t' x' t (t + x))))’
+          >- simp [] \\
+          MATCH_MP_TAC integral_cong >> art [] \\
+          Q.X_GEN_TAC ‘y’ >> rw [o_DEF]) >> Rewr' \\
+   (* applying Fubini *)
+      cheat,
+      (* goal 2 (of 2) *)
+      cheat ]
 QED
 
 (* ------------------------------------------------------------------------- *)
