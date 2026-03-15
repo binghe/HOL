@@ -7154,21 +7154,24 @@ Theorem differentiable_lemma_revisited :
                  real (integral m (\x. (Normal (diff1 (\t. u t x) t))))
             ) (at t)
 Proof
-    RW_TAC std_ss [sigma_finite_measure_space_def, HAS_VECTOR_DERIVATIVE_ALT]
- >> qabbrev_tac ‘f = \t. integral m (Normal o u t)’
- >> simp []
- >> Know ‘!h. real (f (t + h)) - real (f t) = real (f (t + h) - f t)’
+    rpt GEN_TAC
+ >> REWRITE_TAC [sigma_finite_measure_space_def]
+ >> STRIP_TAC
+ >> Q.X_GEN_TAC ‘t0’
+ >> rw [HAS_VECTOR_DERIVATIVE_ALT]
+ >> qabbrev_tac ‘f = \t. integral m (Normal o u t)’ >> simp []
+ >> Know ‘!h. real (f (t0 + h)) - real (f t0) = real (f (t0 + h) - f t0)’
  >- (Q.X_GEN_TAC ‘h’ >> SYM_TAC \\
      MATCH_MP_TAC sub_real \\
      simp [Abbr ‘f’, integrable_finite_integral])
  >> Rewr'
  >> simp [Abbr ‘f’]
- >> Know ‘!h. integral m (Normal o u (t + h)) - integral m (Normal o u t) =
-              integral m (\x. (Normal o u (t + h)) x - (Normal o u t) x)’
+ >> Know ‘!h. integral m (Normal o u (t0 + h)) - integral m (Normal o u t0) =
+              integral m (\x. (Normal o u (t0 + h)) x - (Normal o u t0) x)’
  >- (Q.X_GEN_TAC ‘h’ >> SYM_TAC \\
      MATCH_MP_TAC integral_sub >> rw [o_DEF])
  >> Rewr'
- >> Know ‘!h. integrable m (\x. (Normal o u (t + h)) x - (Normal o u t) x)’
+ >> Know ‘!h. integrable m (\x. (Normal o u (t0 + h)) x - (Normal o u t0) x)’
  >- (Q.X_GEN_TAC ‘h’ \\
      MATCH_MP_TAC integrable_sub' >> art [])
  >> simp [o_DEF, extreal_sub_def]
@@ -7221,13 +7224,12 @@ Proof
      FIRST_X_ASSUM MATCH_MP_TAC >> art [])
  >> Q.PAT_X_ASSUM ‘!x. x IN m_space m ==> integrable lborel _’ K_TAC
  >> DISCH_TAC
+ >> Q.PAT_X_ASSUM ‘!t x. x IN m_space m ==> diff1 (\t. u t x) t = g t x’ K_TAC
  (* applying FUNDAMENTAL_THEOREM_OF_CALCULUS *)
  >> Know ‘!x a b. x IN m_space m /\ a <= b ==>
-                 ((\t. g t x) has_integral (u b x - u a x))
-                  (interval [a,b])’
+                 ((\t. g t x) has_integral (u b x - u a x)) (interval [a,b])’
  >- (rpt STRIP_TAC \\
-     HO_MATCH_MP_TAC FUNDAMENTAL_THEOREM_OF_CALCULUS >> art [] \\
-     Q.X_GEN_TAC ‘t0’ >> DISCH_TAC \\
+     HO_MATCH_MP_TAC FUNDAMENTAL_THEOREM_OF_CALCULUS >> rw [] \\
      MATCH_MP_TAC HAS_VECTOR_DERIVATIVE_WITHIN_SUBSET \\
      Q.EXISTS_TAC ‘UNIV’ >> simp [])
  >> simp [Once (GSYM HAS_INTEGRAL_MUL_INDICATOR),
@@ -7248,7 +7250,7 @@ Proof
      simp [borel_measurable_sets, interval])
  >> POP_ASSUM K_TAC
  >> DISCH_TAC
- (* applying LIM_WITHIN_UNION or LIM_UNION_UNIV *)
+ (* applying LIM_UNION_UNIV *)
  >> MATCH_MP_TAC LIM_UNION_UNIV
  >> qabbrev_tac ‘s1 = {x | 0 <= x :real}’
  >> qabbrev_tac ‘s2 = {x | x <= 0 :real}’
@@ -7258,24 +7260,30 @@ Proof
  >- (rw [Once EXTENSION, Abbr ‘s1’, Abbr ‘s2’] \\
      PROVE_TAC [REAL_LE_TOTAL])
  (* preparing for LIM_WITHIN_CONG *)
- >> qabbrev_tac ‘l = real (integral m (Normal o g t))’
+ >> qabbrev_tac ‘l = real (integral m (Normal o g t0))’
  >> qmatch_abbrev_tac ‘(f --> l) (at 0 within _) /\ _’
  >> CONJ_TAC
  >| [ (* goal 1 (of 2): applying LIM_WITHIN_CONG to obtain double-integral *)
       Know ‘(f --> l) (at 0 within s1) <=>
             ((\h. real (integral m
                                (\x. integral lborel
-                                      (Normal o (\t'. g2 t' x t (t + h))))) / h)
+                                      (Normal o (\t. g2 t x t0 (t0 + h))))) / h)
              --> l) (at 0 within s1)’
       >- (MATCH_MP_TAC LIM_WITHIN_CONG \\
           rw [Abbr ‘s1’, Abbr ‘f’, o_DEF] \\
-          Suff ‘integral m (\x'. Normal (u (t + x) x' - u t x')) =
-                integral m
-                  (\x'. integral lborel (\t'. Normal (g2 t' x' t (t + x))))’
+          Suff ‘integral m (\y. Normal (u (t0 + x) y - u t0 y)) =
+                integral m (\y. integral lborel (\t. Normal (g2 t y t0 (t0 + x))))’
           >- simp [] \\
           MATCH_MP_TAC integral_cong >> art [] \\
           Q.X_GEN_TAC ‘y’ >> rw [o_DEF]) >> Rewr' \\
-   (* applying Fubini *)
+      Q.PAT_X_ASSUM ‘!x a b. x IN m_space m /\ a <= b ==>
+                             Normal (u b x - u a x) = _’ K_TAC \\
+      fs [Abbr ‘g2’, o_DEF, Abbr ‘f’] \\
+   (* preparing for Fubini's theorem *)
+      qabbrev_tac
+       ‘f = \h (x,t). Normal (g t x * indicator (interval [(t0,t0 + h)]) t)’ \\
+     ‘!h x t. Normal (g t x * indicator (interval [(t0,t0 + h)]) t) = f h (x,t)’
+        by rw [Abbr ‘f’] >> POP_ORW \\
       cheat,
       (* goal 2 (of 2) *)
       cheat ]
