@@ -9640,49 +9640,78 @@ QED
 (* Internal definition transformed into an overload,
    tied back to original definition *)
 
-Overload RN_deriv_property[local] = “\sa nu mu. {f | f IN Borel_measurable sa /\
-    (!x. x IN space sa ==> 0 <= f x) /\
-    (!s. s IN subsets sa ==> (f * (space sa,subsets sa,mu)) s = nu s)}”
-(* Excl "SET_SPEC_CONV" to keep this from expanding *)
+Definition RN_deriv_property_def :
+    RN_deriv_property sa nu mu f <=>
+       f IN Borel_measurable sa /\
+      (!x. x IN space sa ==> 0 <= f x) /\
+      (!s. s IN subsets sa ==> (f * (space sa,subsets sa,mu)) s = nu s)
+End
 
-Theorem RN_deriv_RN_deriv_property[local]:
+Theorem IN_RN_deriv_property :
+    !f sa nu mu. f IN RN_deriv_property sa nu mu <=>
+                 f IN Borel_measurable sa /\
+                (!x. x IN space sa ==> 0 <= f x) /\
+                (!s. s IN subsets sa ==> (f * (space sa,subsets sa,mu)) s = nu s)
+Proof
+    rpt GEN_TAC
+ >> GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV) empty_rewrites [IN_APP]
+ >> REWRITE_TAC [RN_deriv_property_def]
+QED
+
+Theorem RN_deriv_RN_deriv_property :
     !sa mu nu. sigma_finite_measure_space (space sa,subsets sa,mu) /\
         measure_space (space sa,subsets sa,nu) /\ nu << (space sa,subsets sa,mu) ==>
         nu / (space sa,subsets sa,mu) IN RN_deriv_property sa nu mu
 Proof
-    ntac 4 strip_tac >> simp[RN_deriv_def] >> SELECT_ELIM_TAC >> simp[] >>
-    fs[sigma_finite_measure_space_def] >>
-    qspecl_then [‘(space sa,subsets sa,mu)’,‘nu’] assume_tac Radon_Nikodym' >>
-    rfs[] >> qexists_tac `f` >> simp[]
+    ntac 4 strip_tac >> simp[RN_deriv_def]
+ >> SELECT_ELIM_TAC
+ >> reverse CONJ_TAC
+ >- (Q.X_GEN_TAC ‘f’ >> rpt STRIP_TAC \\
+     simp [IN_APP, RN_deriv_property_def])
+ >> fs[sigma_finite_measure_space_def]
+ >> qspecl_then [‘(space sa,subsets sa,mu)’,‘nu’] assume_tac Radon_Nikodym'
+ >> rfs[]
+ >> qexists_tac `f` >> simp[]
 QED
 
-Theorem RN_deriv_property_almost_unique[local]:
+Theorem RN_deriv_property_almost_unique :
     !sa mu nu f g. measure_space (space sa,subsets sa,mu) /\
         sigma_finite_measure_space (space sa,subsets sa,nu) /\
         f IN RN_deriv_property sa nu mu /\ g IN RN_deriv_property sa nu mu ==>
         AE x::(space sa,subsets sa,mu). f x = g x
 Proof
-    rw[sigma_finite_measure_space_def,sigma_finite_def] >> rename [`Ai IN (univ(:num) → subsets sa)`] >>
-    qspecl_then [`(space sa,subsets sa,nu)`,`λx. !n. x IN Ai n ==> f x = g x`,`λx. f x = g x`]
-        (irule o SIMP_RULE (srw_ss ()) []) AE_subset >>
-    qexists_tac `Ai` >> CONJ_TAC
-    >- (rw[] >> qpat_x_assum `_ = space sa` $ SUBST_ALL_TAC o SYM >> rfs[IN_BIGUNION_IMAGE,SF SFY_ss]) >>
-    qspecl_then [`(space sa,subsets sa,nu)`,`λn x. x IN Ai n ==> f x = g x`,`univ(:num)`]
-        (irule o SIMP_RULE (srw_ss ()) []) AE_BIGINTER >>
-    simp[num_countable] >> rw[] >>
-    qspecl_then [`(space sa,subsets sa,nu)`,`λx. f x * indicator_fn (Ai n) x = g x * indicator_fn (Ai n) x`,`λx. x IN Ai n ==> f x = g x`]
-        (irule o SIMP_RULE (srw_ss ()) []) AE_subset >>
-    CONJ_TAC >- (rw[] >> fs[indicator_fn_def]) >>
-    qspecl_then [`m`,`λx. f x * indicator_fn (Ai n) x`,`λx. g x * indicator_fn (Ai n) x`]
-        (irule o SIMP_RULE (srw_ss ()) []) integral_eq_imp_AE_eq >>
-    fs[density_measure_def,FUNSET] >>
-    simp[INDICATOR_FN_POS,le_mul,integrable_pos,integral_pos_fn,
-        IN_MEASURABLE_BOREL_MUL_INDICATOR,lt_infty,SF SFY_ss] >>
-    rw[] >> `Ai n INTER s IN subsets sa` by (irule SIGMA_ALGEBRA_INTER >> fs[measure_space_def]) >>
-    NTAC 2 $ first_x_assum $ drule_then assume_tac >> fs[INDICATOR_FN_INTER,mul_assoc]
+    rw[sigma_finite_measure_space_def,sigma_finite_def]
+ >> rename [`Ai IN (univ(:num) → subsets sa)`]
+ >> qspecl_then [`(space sa,subsets sa,nu)`,
+                 `λx. !n. x IN Ai n ==> f x = g x`, `λx. f x = g x`]
+                (irule o SIMP_RULE (srw_ss ()) []) AE_subset
+ >> qexists_tac `Ai`
+ >> CONJ_TAC
+ >- (rw[] >> qpat_x_assum `_ = space sa` $ SUBST_ALL_TAC o SYM \\
+     rfs[IN_BIGUNION_IMAGE,SF SFY_ss])
+ >> qspecl_then [`(space sa,subsets sa,nu)`,
+                 `λn x. x IN Ai n ==> f x = g x`,`univ(:num)`]
+                (irule o SIMP_RULE (srw_ss ()) []) AE_BIGINTER
+ >> rw[]
+ >> qspecl_then [`(space sa,subsets sa,nu)`,
+                 `λx. f x * indicator_fn (Ai n) x = g x * indicator_fn (Ai n) x`,
+                 `λx. x IN Ai n ==> f x = g x`]
+                (irule o SIMP_RULE (srw_ss ()) []) AE_subset
+ >> CONJ_TAC >- (rw[] >> fs[indicator_fn_def])
+ >> qspecl_then [`m`,`λx. f x * indicator_fn (Ai n) x`,
+                 `λx. g x * indicator_fn (Ai n) x`]
+                (irule o SIMP_RULE (srw_ss ()) []) integral_eq_imp_AE_eq
+ >> fs [density_measure_def, FUNSET, IN_RN_deriv_property]
+ >> simp[INDICATOR_FN_POS,le_mul,integrable_pos,integral_pos_fn,
+         IN_MEASURABLE_BOREL_MUL_INDICATOR,lt_infty,SF SFY_ss]
+ >> rw[]
+ >> `Ai n INTER s IN subsets sa`
+      by (irule SIGMA_ALGEBRA_INTER >> fs[measure_space_def])
+ >> NTAC 2 $ first_x_assum $ drule_then assume_tac
+ >> fs[INDICATOR_FN_INTER,mul_assoc]
 QED
 
-Theorem RN_deriv_property_almost_RN_deriv[local]:
+Theorem RN_deriv_property_almost_RN_deriv :
     !sa mu nu f g. sigma_finite_measure_space (space sa,subsets sa,mu) /\
         sigma_finite_measure_space (space sa,subsets sa,nu) /\
         nu << (space sa,subsets sa,mu) /\ f IN RN_deriv_property sa nu mu ==>
@@ -9696,34 +9725,43 @@ QED
 
 (* Using RN derivative to change space of integration *)
 
-Theorem RN_deriv_property_pos_fn_integral[local]:
-    !sa mu nu dndm f. f IN Borel_measurable sa /\ (!x. x IN space sa ==> 0 <= f x) /\
-        measure_space (space sa,subsets sa,mu) /\ measure_space (space sa,subsets sa,nu) /\
+Theorem RN_deriv_property_pos_fn_integral :
+    !sa mu nu dndm f.
+        f IN Borel_measurable sa /\ (!x. x IN space sa ==> 0 <= f x) /\
+        measure_space (space sa,subsets sa,mu) /\
+        measure_space (space sa,subsets sa,nu) /\
         dndm IN RN_deriv_property sa nu mu ==>
-        pos_fn_integral (space sa,subsets sa,nu) f = pos_fn_integral (space sa,subsets sa,mu) (λx. dndm x * f x)
+        pos_fn_integral (space sa,subsets sa,nu) f =
+        pos_fn_integral (space sa,subsets sa,mu) (λx. dndm x * f x)
 Proof
     rw[] >> fs[measure_absolutely_continuous_def,density_measure_def] >>
+    fs [IN_RN_deriv_property] >>
     qspecl_then [`(space sa,subsets sa,mu)`,`dndm`,`f`] assume_tac pos_fn_integral_density_reduce >>
     rfs[density_def,density_measure_def] >> pop_assum $ SUBST1_TAC o SYM >>
     irule pos_fn_integral_cong' >> simp[]
 QED
 
 Theorem RN_deriv_property_integral[local]:
-    !sa mu nu dndm f. f IN Borel_measurable sa /\
-        measure_space (space sa,subsets sa,mu) /\ measure_space (space sa,subsets sa,nu) /\
+    !sa mu nu dndm f.
+        f IN Borel_measurable sa /\
+        measure_space (space sa,subsets sa,mu) /\
+        measure_space (space sa,subsets sa,nu) /\
         dndm IN RN_deriv_property sa nu mu ==>
-        integral (space sa,subsets sa,nu) f = integral (space sa,subsets sa,mu) (λx. dndm x * f x)
+        integral (space sa,subsets sa,nu) f =
+        integral (space sa,subsets sa,mu) (λx. dndm x * f x)
 Proof
-    rw[integral_def] >> ‘sigma_algebra sa’ by fs[measure_space_def] >>
-    map_every (fn tms => qspecl_then tms mp_tac RN_deriv_property_pos_fn_integral)
-        [[‘sa’,‘mu’,‘nu’,‘dndm’,‘f^+’],[‘sa’,‘mu’,‘nu’,‘dndm’,‘f^-’]] >>
-    simp[iffLR IN_MEASURABLE_BOREL_PLUS_MINUS,FN_PLUS_POS,FN_MINUS_POS,SF SFY_ss] >>
-    NTAC 2 $ disch_then kall_tac >>
-    ‘!x1:extreal x2 x3 x4. x1 = x3 /\ x2 = x4 ==> x1 - x2 = x3 - x4’ by simp[] >>
-    pop_assum irule >> NTAC 2 $ irule_at Any pos_fn_integral_cong >> simp[] >>
-    `!x. x IN space sa ==> ((λx. dndm x * f x)^+ x = dndm x * f^+ x) /\ ((λx. dndm x * f x)^- x = dndm x * f^- x)` by (
-        NTAC 2 strip_tac >> simp[FN_PLUS_MUL,FN_MINUS_MUL]) >>
-    simp[FN_PLUS_POS,FN_MINUS_POS,le_mul]
+    rw[integral_def] >> ‘sigma_algebra sa’ by fs[measure_space_def]
+ >> map_every (fn tms => qspecl_then tms mp_tac RN_deriv_property_pos_fn_integral)
+              [[‘sa’,‘mu’,‘nu’,‘dndm’,‘f^+’],[‘sa’,‘mu’,‘nu’,‘dndm’,‘f^-’]]
+ >> simp[iffLR IN_MEASURABLE_BOREL_PLUS_MINUS,FN_PLUS_POS,FN_MINUS_POS,SF SFY_ss]
+ >> fs [IN_RN_deriv_property]
+ >> NTAC 2 $ disch_then kall_tac
+ >> ‘!x1:extreal x2 x3 x4. x1 = x3 /\ x2 = x4 ==> x1 - x2 = x3 - x4’ by simp[]
+ >> pop_assum irule >> NTAC 2 $ irule_at Any pos_fn_integral_cong >> simp[]
+ >> `!x. x IN space sa ==> ((λx. dndm x * f x)^+ x = dndm x * f^+ x) /\
+                           ((λx. dndm x * f x)^- x = dndm x * f^- x)`
+      by (NTAC 2 strip_tac >> simp[FN_PLUS_MUL,FN_MINUS_MUL])
+ >> simp[FN_PLUS_POS,FN_MINUS_POS,le_mul]
 QED
 
 Theorem RN_deriv_pos_fn_integral:
@@ -9750,24 +9788,32 @@ QED
 
 (* Multiplying RN derivatives *)
 
-Theorem RN_deriv_property_mul[local]:
-    !sa lam mu nu dmdl dndm dndl. measure_space (space sa,subsets sa,mu) /\
-        measure_space (space sa,subsets sa,nu) /\ measure_space (space sa,subsets sa,lam) /\
-        dmdl IN RN_deriv_property sa mu lam /\ dndm IN RN_deriv_property sa nu mu /\
+Theorem RN_deriv_property_mul :
+    !sa lam mu nu dmdl dndm dndl.
+        measure_space (space sa,subsets sa,mu) /\
+        measure_space (space sa,subsets sa,nu) /\
+        measure_space (space sa,subsets sa,lam) /\
+        dmdl IN RN_deriv_property sa mu lam /\
+        dndm IN RN_deriv_property sa nu mu /\
         (!x. x IN space sa ==> dndl x = dmdl x * dndm x) ==>
         dndl IN RN_deriv_property sa nu lam
 Proof
-    ntac 8 strip_tac >> ‘sigma_algebra sa’ by fs[measure_space_def] >>
-    simp[density_measure_def] >> irule_at Any IN_MEASURABLE_BOREL_MUL' >>
-    qexistsl_tac [`dndm`,`dmdl`] >>
-    fs[] >> simp[le_mul,SF SFY_ss] >> rw[] >>
-    qpat_x_assum ‘!s. s IN subsets sa ==> _ s = nu s’ $ drule_then $ SUBST1_TAC o SYM >>
-    simp[density_measure_def] >>
-    qspecl_then [‘sa’,‘lam’,‘mu’,‘dmdl’,‘(λx. dndm x * indicator_fn s x)’] mp_tac RN_deriv_property_pos_fn_integral >>
-    simp[] >> impl_tac
-    >- (irule_at Any IN_MEASURABLE_BOREL_MUL_INDICATOR >> simp[INDICATOR_FN_POS,le_mul,SF SFY_ss]) >>
-    disch_then SUBST1_TAC >> irule pos_fn_integral_cong >>
-    simp[INDICATOR_FN_POS,le_mul] >> rw[indicator_fn_def] >> simp[mul_comm]
+    ntac 8 strip_tac >> ‘sigma_algebra sa’ by fs[measure_space_def]
+ >> fs [IN_RN_deriv_property]
+ >> simp[density_measure_def]
+ >> irule_at Any IN_MEASURABLE_BOREL_MUL'
+ >> qexistsl_tac [`dndm`,`dmdl`]
+ >> fs[] >> simp[le_mul,SF SFY_ss] >> rw[]
+ >> qpat_x_assum ‘!s. s IN subsets sa ==> _ s = nu s’ $ drule_then $ SUBST1_TAC o SYM
+ >> simp[density_measure_def]
+ >> qspecl_then [‘sa’,‘lam’,‘mu’,‘dmdl’,‘(λx. dndm x * indicator_fn s x)’]
+                mp_tac RN_deriv_property_pos_fn_integral
+ >> simp[IN_RN_deriv_property]
+ >> impl_tac
+ >- (irule_at Any IN_MEASURABLE_BOREL_MUL_INDICATOR \\
+     simp[INDICATOR_FN_POS,le_mul,SF SFY_ss])
+ >> disch_then SUBST1_TAC >> irule pos_fn_integral_cong
+ >> simp[INDICATOR_FN_POS,le_mul] >> rw[indicator_fn_def] >> simp[mul_comm]
 QED
 
 Theorem RN_deriv_mul:
@@ -9798,10 +9844,12 @@ QED
 
 (* Inverting RN derivative *)
 
-Theorem RN_deriv_property_1[local]:
-    !sa mu. measure_space (space sa,subsets sa,mu) ==> (λx. 1) IN RN_deriv_property sa mu mu
+Theorem RN_deriv_property_1 :
+    !sa mu. measure_space (space sa,subsets sa,mu) ==>
+           (λx. 1) IN RN_deriv_property sa mu mu
 Proof
     ntac 3 strip_tac >> ‘sigma_algebra sa’ by fs[measure_space_def] >>
+    fs [IN_RN_deriv_property] >>
     rw[density_measure_def,IN_MEASURABLE_BOREL_CONST',SF SFY_ss,SF ETA_ss] >>
     drule_then assume_tac pos_fn_integral_indicator >> rfs[]
 QED
